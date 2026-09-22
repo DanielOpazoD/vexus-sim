@@ -120,15 +120,20 @@ export class Simulator {
   /** Salida de audio del navegador; la cadena PW solo ve su interfaz `AudioSink`. */
   readonly audio: DopplerAudio;
 
-  constructor(patient: PatientState, canvas: HTMLCanvasElement, audio?: DopplerAudio) {
+  /**
+   * `renderer`: el de otro simulador (cambio de caso), que se queda con sus programas compilados y
+   * recibe esta escena al FINAL, cuando todo lo demás se ha construido sin errores.
+   */
+  constructor(patient: PatientState, canvas: HTMLCanvasElement, audio?: DopplerAudio, renderer?: UltrasoundRenderer) {
     this.patient = patient;
     this.audio = audio ?? new DopplerAudio();
     this.scene = new AnatomyScene(patient);
     this.anatomy = new AnatomyQuery(this.scene);
     this.physiology = new PhysiologyEngine(patient, this.scene.vesselAreas());
-    this.renderer = new UltrasoundRenderer(canvas, this.scene, this.profile);
     this.pwChain = new PwDopplerChain(this.anatomy, patient.seed, this.audio);
     this.lastFrame = probeFrame(this.pose, this.scene.torso, this.transducer);
+    if (renderer) renderer.setScene(this.scene);
+    this.renderer = renderer ?? new UltrasoundRenderer(canvas, this.scene, this.profile);
   }
 
   // Ajustes de solo lectura: se cambian con comandos (`EquipmentController`), nunca en sitio
@@ -167,9 +172,12 @@ export class Simulator {
     this.renderer = new UltrasoundRenderer(canvas, this.scene, this.profile);
   }
 
-  /** Libera los recursos GPU; el simulador no debe usarse después. */
-  dispose(): void {
-    this.renderer.dispose();
+  /**
+   * Libera los recursos GPU; el simulador no debe usarse después. Con `keepRenderer` (cambio de
+   * caso) el renderizador sigue vivo porque ya lo usa el simulador siguiente.
+   */
+  dispose(opts: { keepRenderer?: boolean } = {}): void {
+    if (!opts.keepRenderer) this.renderer.dispose();
   }
 
   /** Avanza la simulación el tiempo real transcurrido y genera la IQ correspondiente. */

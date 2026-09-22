@@ -8,7 +8,8 @@ import { Simulator, defaultEquipment } from './simulator';
 /**
  * Sesión de simulación (Fase 1): dueña del `Simulator` vivo y del estado del equipo, que
  * sobrevive a los cambios de caso. El cambio de caso es transaccional: el simulador nuevo
- * se construye antes de tocar nada; si falla, sigue el anterior y se devuelve el error.
+ * se construye antes de tocar nada; si falla, sigue el anterior y se devuelve el error. El
+ * renderizador (programas GLSL compilados) pasa al simulador nuevo con su escena.
  */
 type Listener = (next: Simulator, prev: Simulator) => void;
 
@@ -42,16 +43,24 @@ export class SimulationSession {
     if (prev.patient.id === id) return null;
     let next: Simulator;
     try {
-      next = new Simulator(clonePatient(findCase(id)), this.canvas, prev.audio);
+      next = new Simulator(clonePatient(findCase(id)), this.canvas, prev.audio, prev.renderer);
     } catch (e) {
       errorLog.report('caso', e);
+      // si llegó a cambiarse la escena del renderizador compartido, vuelve a la del caso anterior
+      if (prev.renderer.scene !== prev.scene) {
+        try {
+          prev.renderer.setScene(prev.scene);
+        } catch (e2) {
+          errorLog.report('caso', e2);
+        }
+      }
       return e;
     }
     next.setPose(prev.pose);
     next.equipment = this.equipment.state;
     next.frozen = prev.frozen;
     this.current = next;
-    prev.dispose();
+    prev.dispose({ keepRenderer: true });
     next.pwChain.reset();
     for (const l of this.listeners) l(next, prev);
     return null;

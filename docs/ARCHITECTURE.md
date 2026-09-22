@@ -100,6 +100,8 @@ par CPU→GPU sistemático es una divergencia real.
   no toca el DOM, así que la cadena PW y la fisiología pueden migrar igual manteniendo la interfaz
   `PhysiologySample`.
 - **Pérdida de contexto GPU**: `main.ts` reconstruye `UltrasoundRenderer` y conserva el paciente.
+- **Cambio de caso**: el renderizador pasa al simulador nuevo con `setScene` (los shaders no
+  dependen de la escena, solo sus uniforms y la textura de datos): no se recompila nada.
 - **Entradas de sonda**: cualquier dispositivo produce `ProbePose` (`src/probe/probe.ts`); el
   navegador 3D (`src/ui/navigator3d.ts`) y la imagen (`src/ui/probeInput.ts`) son dos ejemplos.
 

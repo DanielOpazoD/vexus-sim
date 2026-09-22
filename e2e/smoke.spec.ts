@@ -18,13 +18,12 @@ async function bootWithoutErrors(page: Page): Promise<string[]> {
 
 test('arranca, renderiza cuadros y no emite errores', async ({ page }) => {
   const errors = await bootWithoutErrors(page);
-  // El reloj de simulación avanza (t crece) y hay cuadros por segundo
-  const t1 = await page.locator('#status').textContent();
-  await page.waitForTimeout(1500);
-  const t2 = await page.locator('#status').textContent();
+  // El reloj de simulación avanza: con SwiftShader un cuadro puede tardar segundos
+  // (el bucle limita dt a 0,25 s por cuadro), así que se espera a que t cambie en
+  // vez de fijar un plazo; los fps redondeados pueden ser 0 y no se exigen.
   const tOf = (s: string | null) => Number(/t ([\d.]+) s/.exec(s ?? '')?.[1] ?? 0);
-  expect(tOf(t2)).toBeGreaterThan(tOf(t1));
-  expect(Number(/(\d+) fps/.exec(t2 ?? '')?.[1])).toBeGreaterThan(0);
+  const t1 = tOf(await page.locator('#status').textContent());
+  await expect.poll(async () => tOf(await page.locator('#status').textContent()), { timeout: 30_000 }).toBeGreaterThan(t1);
   expect(errors).toEqual([]);
 });
 

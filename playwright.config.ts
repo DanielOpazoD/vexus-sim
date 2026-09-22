@@ -12,7 +12,8 @@ export default defineConfig({
   expect: { timeout: 15_000 },
   fullyParallel: false,
   retries: process.env.CI ? 1 : 0,
-  reporter: process.env.CI ? 'github' : 'list',
+  // en CI: anotaciones de GitHub + lista con la duración de cada prueba (para ver qué encarece la e2e)
+  reporter: process.env.CI ? [['github'], ['list']] : 'list',
   use: {
     baseURL: 'http://localhost:6609',
     trace: 'retain-on-failure',

@@ -1,0 +1,105 @@
+# VExUS Sim — simulador ecográfico de congestión venosa
+
+Simulador web de VExUS (Venous Excess Ultrasound Score) construido como una **cadena causal**:
+
+```
+PatientState → fisiología (presiones, flujos, calibres) → anatomía deformable
+  → adquisición (sonda 6DOF, haz, transmisión) → imagen B / color / IQ pulsado
+  → espectro + audio → medición sobre lo adquirido → clasificación VExUS C
+```
+
+Nada dibuja una onda «normal / leve / grave»: las ondas suprahepáticas, la pulsatilidad
+portal y el calibre de la cava **emergen** de una red venosa de parámetros concentrados
+gobernada por una presión auricular derecha con forma fisiológica (ondas a/c/x/v/y,
+insuficiencia tricuspídea, función del VD, respiración). El grado se calcula después, y por
+separado para la verdad del caso y para lo que el alumno adquirió.
+
+> **Aviso.** No es un dispositivo médico. Los pacientes son sintéticos y muchos parámetros
+> están marcados como `EXTRAPOLATION / NEEDS_CALIBRATION` (ver
+> [`docs/APPROXIMATIONS.md`](docs/APPROXIMATIONS.md)). La base científica está en el informe
+> «VExUS — Base de conocimiento y especificación» (21-09-2026), del que este código toma
+> reglas, umbrales y valores iniciales.
+
+## Ejecutar
+
+```bash
+npm install
+npm run dev        # http://localhost:6600
+```
+
+| Comando              | Qué hace                                                                            |
+| -------------------- | ----------------------------------------------------------------------------------- |
+| `npm run dev`        | servidor de desarrollo (Vite)                                                       |
+| `npm test`           | pruebas rápidas (clasificador, anatomía, sonda, capas, documentación)               |
+| `npm run test:all`   | también las lentas (`// @tier slow`: fisiología emergente y cadena Doppler, ~1 min) |
+| `npm run calibrate`  | integra los casos y resume los observables fisiológicos verdaderos                  |
+| `npm run docs:index` | regenera `docs/DECISIONS_INDEX.md`                                                  |
+| `npm run check`      | lint + tipos + todas las pruebas + build + presupuesto de bundle                    |
+
+Requiere Node ≥ 22 y un navegador con WebGL2 + `EXT_color_buffer_float` (Chrome, Safari 17+,
+Firefox). Única dependencia de producción: three.js (navegador 3D); todo lo demás es procedural. El audio Doppler se activa con el botón «Audio» (política de reproducción del navegador).
+
+## Cómo se usa
+
+La pantalla tiene tres columnas: a la izquierda el **navegador 3D** («Sonda y abdomen») con el
+**corte ecográfico** debajo (mapa de las estructuras que atraviesa el plano, con rótulos); en el
+centro la **imagen** con HUD, ECG y espectro; a la derecha la **consola** por pestañas. Abajo, la
+barra de modos.
+
+- **Sonda (navegador 3D)**: arrastrar la piel desliza; arrastrar el marcador azul o la rueda rota;
+  ⇧+arrastrar bascula; ⌥+arrastrar inclina; botón derecho orbita; ⌘/Ctrl+rueda hace zoom. También se
+  puede arrastrar sobre la imagen y con el teclado (`W A S D` deslizar, `Q E` rotar, `← →` bascular,
+  `↑ ↓` inclinar, `R F` presión, `⇧` fino). Nada teletransporta a una vista: los «puntos de partida»
+  de la pestaña Adquirir deslizan la sonda de forma continua hasta una posición cutánea con ángulos
+  neutros y la ventana hay que afinarla.
+- **Consola**: _Adquirir_ (puntos de partida, sonda, caso y respiración), _Imagen_ (profundidad,
+  ganancia, foco, rango dinámico, persistencia, TGC de 8 bandas), _Doppler_ (contextual: color o PW),
+  _Medir_ (protocolo VExUS: VCI con calibrador, suprahepática, porta y vena interlobar sobre el
+  espectro adquirido, resultado y grado), _Docente_ (solo con la casilla activada: verdad fisiológica y estado de la
+  adquisición).
+- **Modos**: `2` B, `C` Color (clic en la imagen centra la caja), `P` PW (clic coloca la puerta),
+  `Espacio` congela, `H` oculta el navegador, `[ ]` profundidad, `− +` ganancia, `Esc` cancela una
+  herramienta. Cada control actúa en su etapa física: la corrección angular solo cambia el rótulo, la
+  línea de base solo la presentación, el filtro de pared elimina frecuencias bajas de la IQ.
+
+## Estructura
+
+```
+src/core         reloj único, aleatorio con semilla, FFT, unidades y fórmulas Doppler
+src/physiology   PatientState, ritmo/ECG, presión de AD, red venosa 0D, respiración, motor
+src/anatomy      primitivas implícitas, escena del avatar, deformación respiratoria, consulta
+src/probe        sonda 6DOF, contacto/acoplamiento, geometría del haz
+src/ultrasound   render WebGL2 en 7 pasadas (transmisión, campo de dispersores, PSF, color, barrido)
+src/doppler      volumen de muestra físico, IQ, filtro de pared, STFT, medición observada, cadena PW
+src/audio        separación direccional (Hilbert) + AudioWorklet
+src/vexus        mediciones de referencia y clasificador VExUS C
+src/cases        pacientes (normal, congestión grave)
+src/app          Simulator (composición), Store (estado de UI), estilos
+src/ui           navegador 3D (three.js), corte ecográfico (Worker), consola por pestañas, entrada de sonda, ECG y espectrograma
+src/validation   tests de invariantes (guía §21), ejemplos calculados (base 10.2), capas y documentación
+tools/           calibración, depuración de ondas, índice de decisiones, presupuesto de bundle
+docs/            DECISIONS.md (+ índice generado), LIMITATIONS.md, APPROXIMATIONS.md, ARCHITECTURE.md
+```
+
+## Estado (iteración 1)
+
+Implementado: reloj único; PatientState; ritmo sinusal con variabilidad y ECG; contorno de AD;
+red esplácnico–sinusoidal–suprahepática–cava con ley de tubo y lecho renal; respiración con presiones
+pleural y abdominal; anatomía implícita (pared, costillas, diafragma, pulmón, hígado en cuña con fosa
+vesicular e impresión renal, vesícula, VCI elíptica, 3 suprahepáticas con tributarias y tronco común,
+porta con ramas de segundo orden, arteria hepática, vía biliar, aorta, riñones con seno, pirámides y
+vasos renales e interlobares, columna); sonda libre
+6DOF con acoplamiento por línea; modo B en GPU con speckle ligado al tejido, PSF dependiente de
+profundidad y foco, atenuación por tejido, sombra costal, gas con reverberación y cola sucia,
+espejo diafragmático por reflexión real del rayo, TGC nominal + manual, ganancia, rango dinámico,
+persistencia; Doppler color por emulación del estimador de autocorrelación (aliasing, blooming,
+flash, filtro de clutter, cadencia propia); Doppler pulsado con volumen de muestra 3D de dispersores
+advectados, IQ, filtro de pared de 4.º orden, espectrograma STFT y audio direccional de la misma IQ;
+medición observada (suprahepática, porta, vena interlobar) y clasificación VExUS C completa con reglas
+de incertidumbre; dos casos con el mismo motor; navegador 3D; corte ecográfico en un Worker; panel por
+pestañas; modo docente.
+
+Pendiente para la iteración 3: mejoras de PSF/lóbulos laterales/armónicos, movimiento cardíaco
+transmitido, arritmias, confusores (gas, ascitis), más casos de la matriz G.2, riñón izquierdo con
+interlobares.
+Véase el informe de cierre de cada iteración en `docs/DECISIONS.md`.

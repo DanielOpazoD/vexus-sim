@@ -1,0 +1,39 @@
+# Integración continua: exactamente lo mismo que `npm run check` en local
+# (lint, tipos, todas las pruebas, build y presupuesto de bundle). Ningún
+# paso se salta en CI; si algo es lento aquí, es lento también en local.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: lint · tipos · tests · build · presupuesto
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:all
+      - run: npm run build
+      - name: Índice de decisiones al día
+        run: npx tsx tools/docs/decisions-index.ts --check
+      - name: Guardar el build
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist
+          retention-days: 7

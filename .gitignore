@@ -1,0 +1,23 @@
+# dependencias y salidas de build
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# registros y temporales
+*.log
+npm-debug.log*
+.vite/
+.cache/
+
+# sistema y editores
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# entorno local (nunca se versionan secretos)
+.env
+.env.*

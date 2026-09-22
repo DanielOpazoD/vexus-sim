@@ -1,0 +1,42 @@
+{
+  "name": "vexus-sim",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Simulador ecográfico VExUS en navegador: paciente virtual → fisiología → anatomía → adquisición → imagen/espectro/audio → medición → clasificación.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -p tsconfig.json --noEmit && vite build && node tools/ci/bundle-budget.mjs",
+    "preview": "vite preview",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "vitest run",
+    "test:slow": "VITEST_TIER=slow vitest run --testTimeout=180000",
+    "test:all": "VITEST_TIER=all vitest run --testTimeout=180000",
+    "test:watch": "vitest",
+    "calibrate": "tsx tools/calibrate.ts",
+    "docs:index": "tsx tools/docs/decisions-index.ts",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:all && vite build && node tools/ci/bundle-budget.mjs"
+  },
+  "devDependencies": {
+    "@eslint/js": "9.39.5",
+    "@types/node": "22.20.2",
+    "@types/three": "0.185.4",
+    "eslint": "9.39.5",
+    "globals": "16.3.0",
+    "prettier": "^3.9.8",
+    "tsx": "4.20.5",
+    "typescript": "5.9.3",
+    "typescript-eslint": "8.70.0",
+    "vite": "7.3.6",
+    "vitest": "4.1.11"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "three": "0.186.0"
+  }
+}

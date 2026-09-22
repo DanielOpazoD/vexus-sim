@@ -1,0 +1,262 @@
+# Decisiones de diseño
+
+Formato (práctica de EchoTwin): entrada numerada, nunca renumerada; una decisión superada se marca
+`[Estado: superada por N]` dentro de su propio título. Cada entrada lleva la medición o la
+observación que la motivó. Referencias: «guía» = prompt guía de desarrollo (27 secciones); «base» =
+base de conocimiento del 21-09-2026 (A–I, hoja 10, invariantes 10.1, ejemplos 10.2).
+`docs/DECISIONS_INDEX.md` se genera con `npm run docs:index`.
+
+## 1. Sin framework de UI; núcleo independiente del DOM
+
+`Simulator`, fisiología, anatomía y Doppler no importan nada del DOM salvo el canvas WebGL del
+renderizador. La UI se suscribe a un `Store` mínimo. `src/validation/layers.test.ts` lo comprueba
+sobre los imports reales (decisión 20).
+
+## 2. Contorno de AD prescrito («modo de calibración») en lugar de lazo cerrado
+
+La hoja consolidada admite imponer la PAD como condición de contorno. Permite variar cada mecanismo
+(a, x, v, y, IT, función VD, distensibilidad) con significado y calibrar contra trazados. El paso a
+lazo cerrado sustituiría `src/physiology/rightAtrium.ts` sin tocar la red venosa.
+
+## 3. Suprahepáticas drenan a un nodo cavoauricular sin volumen
+
+Con la HV drenando al compartimento abdominal de la VCI, su distensibilidad amortiguaba S/D hasta
+S≈D (S 13,9 / D 13,2 cm/s). Las HV entran a 1–2 cm de la aurícula (base B.2): nodo resistivo
+R 0,01 entre AD, HV y VCI abdominal. Resultado: S/D 1,38 en el sano y S −10,6 en congestión.
+
+## 4. Distensibilidad sinusoidal que se rigidiza con la presión
+
+Con C constante el sano daba PF 30 % y la congestión 60 %. C_h = C₀·exp(−(P−P_ref)/k) separa los
+casos sin ajustes por paciente; k = 12 mmHg está marcado NEEDS_CALIBRATION.
+
+## 5. Medición de S con signo
+
+S es el pico anterógrado en la ventana sistólica salvo flujo retrógrado ≤ −2 cm/s y ≥ 25 % del máximo,
+en cuyo caso S es ese mínimo. «Valor de mayor magnitud» escogía la cola del flujo diastólico previo
+y ocultaba la inversión.
+
+## 6. Velocidad uniforme a lo largo de cada tubo
+
+Q=cte en un tubo afilado multiplicaba por 2–3 la velocidad periférica (95 cm/s, aliasing artificial).
+Las colectoras reciben tributarias y las ramas portales se dividen: el caudal local escala con el área.
+
+## 7. Aire entre la cara convexa y la piel = gel
+
+El marchador trataba el hueco geométrico de las líneas laterales como gas. Se ignora el aire antes de
+entrar en el cuerpo; el acoplamiento por línea (`lineCoupling`) modela la pérdida de contacto.
+
+## 8. Reentrada de dispersores por la línea de corriente
+
+Los dispersores que salen de la caja del volumen de muestra reentran por el extremo opuesto de su
+línea de corriente. Sin esto, cada salida era un chasquido y la sangre se convertía en tejido en < 1 s.
+
+## 9. Base de flujo por dispersor y actualización lenta
+
+Cada dispersor guarda tangente·perfil; su velocidad es base·u_ref(t). Pesos, salida de caja y fD se
+recalculan cada 8 ticks; el fasor avanza por multiplicación compleja. `advance` pasó de 6 ms a 2 ms
+por cuadro a 2,6 kHz con 320 dispersores.
+
+## 10. TGC nominal del equipo y nivel de ruido
+
+Compensación nominal 2·α_hígado(f)·r antes de la TGC del usuario; ambas amplifican también el ruido.
+
+## 11. Doppler en «unidades de sangre»
+
+Color y PW expresan potencias relativas a la amplitud de sangre a transmisión 1 (clutter +41 dB;
+ruido −35 dB re sangre en color; −55 dB por muestra en PW).
+
+## 12. Navegador 3D con three.js, procedural [Estado: superada por 15]
+
+Primera versión en canvas 2D con proyección propia.
+
+## 13. Pestañas por etapa del equipo [Estado: superada por 16]
+
+Imagen / Color / PW / Paciente / Medición / Docente en un panel único.
+
+## 14. Corte ecográfico como mapa de tejidos del plano
+
+Nueva pasada GPU (`FRAG_TISSUEMAP`, 96×128) que emite clase de tejido y vaso por celda con la MISMA
+clasificación que la imagen; `src/ui/cutMapView.ts` lo convierte a sector con rótulos en el
+centroide de cada estructura, a ≤ 8 Hz y resolución 1× (36 ms → 25 ms por actualización). Idea
+tomada de `CutMapView` de EchoTwin.
+
+## 15. Navegador 3D «Sonda y abdomen» con three.js
+
+Reemplaza al canvas 2D (decisión 12). Piel superelíptica translúcida sobre la MISMA elipse que usa
+`torsoDepth`, costillas 3–11 de ambos lados como tubos (las derechas 5–10 con la ley exacta de
+`scene.ribs`), esternón, columna, crestas ilíacas, diafragma paramétrico (`domeHeight`), hígado por
+marching cubes sobre `AnatomyScene.liverSdf` con los mismos recortes que `classify`, vasos con radio
+variable, sonda convexa con marcador arrastrable y abanico del sector. Gestos idénticos a EchoTwin:
+arrastrar piel = deslizar (por diferencias, no salta), marcador o rueda = rotar, ⇧ = bascular,
+⌥ = inclinar, botón derecho = orbitar, ⌘/Ctrl+rueda = zoom. Render solo cuando cambia algo
+(pose, respiración > 0,3 mm, profundidad): 1,7 ms por cuadro en régimen, 66 k triángulos tras
+compactar el búfer de MarchingCubes (300 k triángulos vacíos costaban 80 ms). Brazos abducidos para
+no tapar el flanco. Sin activos externos.
+
+## 16. Disposición de tres columnas y consola por pestañas con iconos
+
+Rejilla `40px | 1fr | 46px` × `300px | 1fr | 280px` como EchoTwin: carril izquierdo (3D arriba,
+corte abajo, ayuda de gestos), imagen sobre negro con HUD mono en las esquinas (caso; FC/ritmo y
+profundidad/frecuencia/ganancia; modo activo), consola derecha Adquirir / Imagen / Doppler / Medir /
+Docente con secciones «bisel» (h4 en mayúsculas + guion de acento), barra inferior de modos con chip
+de contexto y estado del bucle. La consola sigue la intención: activar Color/PW abre Doppler. La
+pestaña Docente solo existe con la casilla activada.
+
+## 17. «Puntos de partida» en vez de vistas
+
+La guía §8 prohíbe botones que equivalgan a vistas. Adquirir ofrece cuatro posiciones cutáneas de
+partida (subxifoideo, intercostal derecho, flanco, renal) hacia las que la sonda se desliza de forma
+continua con ángulos neutros; la ventana diagnóstica hay que encontrarla; cualquier gesto cancela la
+animación. Es una desviación deliberada y documentada de la guía, en la línea de EchoTwin («animar,
+nunca teletransportar»).
+
+## 18. Hígado bilobulado
+
+Un solo elipsoide de 27 × 17 × 21 cm daba un hígado esférico y sobredimensionado en el 3D y en el
+corte. Ahora es la unión suave (k 30 mm) de un lóbulo derecho (88 × 78 × 92 mm) y un lóbulo
+izquierdo aplanado (90 × 42 × 58 mm), en TS (`AnatomyScene.liverSdf`) y GLSL (`smoothMin`), de modo
+que imagen, corte y malla 3D cambian a la vez.
+
+## 19. Fidelidad de imagen tomada de EchoTwin
+
+Cambios en `passes.glsl.ts`, todos con causa física: núcleos PSF de energía unitaria (Σw² = 1) y
+envolvente ×2/√π para que la amplitud media quede calibrada en unidades de retrodispersión sin
+depender de la anchura del haz; ruido del receptor gaussiano complejo añadido ANTES de la PSF y de
+la detección (el ruido de envolvente rellenaba los nulos del speckle); término especular (n·d)⁴
+confinado a la muestra que cruza la interfaz (ventana |n·d|·dr, mínimo 0,15·dr) y sin fasor;
+célula de speckle en elevación anclada al grosor de corte (decorrelación al inclinar); heterogeneidad
+lenta del parénquima ±4 dB p-p a ~1,6 ciclos/cm; campo cercano y cola sucia anclados a la sonda
+(línea, r), no al tejido; mapa de grises exponencial en dB (C = 3,5) porque en imágenes reales la
+desviación del gris crece con el nivel. Referencia de blanco −20 dB. Pendiente: medir célula de
+speckle, SNR local y asimetría contra clips reales (docs/APPROXIMATIONS.md).
+
+## 20. Prácticas de ingeniería portadas
+
+`// @tier slow` en la primera línea de una prueba la saca de `npm test`; `test:all` lo corre todo y
+es lo que ejecuta `check`. `src/validation/layers.test.ts` comprueba las fronteras de capas y detecta
+ciclos (Tarjan) con una lista de ciclos aceptados que solo puede encoger (vacía). `tools/ci/bundle-
+budget.mjs` fija presupuestos por patrón con la medición fechada en cabecera. `tools/docs/decisions-
+index.ts` genera el índice y `docs.test.ts` exige que esté al día y que ARCHITECTURE.md solo nombre
+archivos existentes.
+
+## 21. Campo profundo: techo de compensación, frecuencia efectiva y ecos de gas atenuados
+
+A 24 cm la imagen saturaba en blanco más allá de ~15 cm: la compensación nominal (2·α·r con
+α a 3,5 MHz, 4,2 dB/cm) no tenía techo y amplificaba el ruido del receptor (−55 dB) y la cola
+sucia del gas, que además no pagaba la atenuación de ida y vuelta hasta el reflector. Ahora:
+(1) la compensación nominal + TGC del usuario se limita a 50 dB (`TGC_CAP_DB`, ganancia máxima
+del amplificador): con 3 dB/cm de ida y vuelta compensa por completo hasta ~17 cm y más allá la
+imagen se oscurece y el ruido gana, como un convexo real al límite de penetración; (2) la
+atenuación de transmisión y la compensación nominal usan una frecuencia efectiva de 2,5 MHz
+(`B_EFFECTIVE_MHZ`, centro de banda desplazado por la atenuación); (3) el ruido baja a −72 dB
+re eco hepático; (4) las A-lines tras gas se multiplican por T_gas^k y la cola sucia por T_gas
+(transmisión justo antes del reflector), a −10 dB del parénquima y con caída de 40 mm. Verificado
+a 16 y 24 cm: hígado uniforme hasta 15 cm, gas como sombra con cola tenue, nieve gris oscura al
+fondo.
+
+## 22. Marco anatómico levógiro: espejo en el navegador 3D y rótulos de orientación
+
+`anatomy/scene.ts` usa x = izquierda del paciente, y anterior, z craneal, que es un marco
+LEVÓGIRO; three.js es dextrógiro, así que el avatar se veía en espejo (hígado bajo las costillas
+izquierdas). En vez de reescribir la escena, el GLSL y las pruebas (todo el eje x cambiaría de
+signo), `Navigator3D` cuelga toda la anatomía de un grupo con escala x = −1 (three.js invierte
+las caras cuando el determinante es negativo) y devuelve las intersecciones al marco anatómico con
+`worldToLocal`. La imagen, el corte y el Doppler no cambian: una reflexión conserva productos
+escalares, y la relación marcador ↔ lado de la imagen se conserva. Cámara por defecto anterior
+oblicua desde la derecha del paciente con la cabeza arriba (up = +z), rótulos «cabeza / pies /
+D / I» en el avatar, y órbita con el sentido de OrbitControls.
+
+## 23. Anatomía de la iteración 2: hígado en cuña, vía biliar, suprahepáticas y porta de segundo orden
+
+El hígado pasa de dos elipsoides a un elipsoide derecho grande (170 × 190 × 200 mm) al que la
+pared abdominal recorta la cara anterior, la cúpula la superior y un **plano visceral**
+(z = −40 − 0,35·y, arista redondeada 12 mm) la inferior: cuña con borde agudo a z ≈ −68 bajo la
+pared anterior y a −26 en la cara posterior; impresión renal (el riñón derecho + 4 mm se resta con
+`smoothMax`) y fosa vesicular (la vesícula se resta). Craneocaudal ≈ 135–140 mm en la línea
+medioclavicular; transverso 196 mm. Las suprahepáticas tienen tributarias (anterior/posterior de la
+derecha, segmento VIII de la media, II–III de la izquierda) y la media e izquierda confluyen en un
+**tronco común** de 1 cm que entra por la cara anterior izquierda de la cava, con la derecha entrando
+1 cm más abajo por la posterolateral (variante más frecuente, B.2). La porta añade la porción
+umbilical y las ramas lateral (II–III) y medial (IV). La **vía biliar** (colédoco, hepáticos derecho e
+izquierdo, cístico) es una lista de conductos (`AnatomyScene.ducts`): tubos sin flujo con luz
+`Fluid` y pared `BileDuctWall` ecogénica, anterolaterales a la porta. El gas intestinal desaparece del
+avatar de referencia (queda el mecanismo para confusores). Todo sigue siendo [EXTRAPOLACIÓN PROPIA]
+en ángulos y longitudes; `anatomy.test.ts` fija puntos de cada estructura.
+
+## 24. Riñones implícitos y datos de escena en textura
+
+Riñón como primitiva propia (`primitives.kidneyQuery`): elipsoide orientado (base u/v/w: eje largo
+con el polo superior medial y posterior, hilio anteromedial), seno renal (elipsoide + canal del hilio),
+pirámides medulares en cuña (3 ángulos × 4 posiciones, papila hacia el seno) y columnas de Bertin
+entre ellas, grasa perirrenal de 3,5 mm. Tejidos nuevos: corteza (0,8 re hígado), médula (0,3), seno
+(2,3), grasa perirrenal (1,5), pared biliar (2,4). Vasos: arteria y vena renal de cada lado (la
+arteria derecha por detrás de la cava; la vena izquierda cruza por delante de la aorta) y tres pares
+interlobares derechos en las columnas de Bertin del plano coronal lateral, arteria y vena adyacentes.
+Con 34 tubos y ~120 nodos los `uniform vec4[]` superaban el mínimo garantizado de WebGL2 (224
+vec4): los tubos viajan en una **textura de datos RGBA32F** (`uSceneTex`: 4 texels de cabecera por
+tubo con inicio, n.º de nodos, escalas, pared, tejidos, u_ref y **esfera envolvente**; nodos a partir
+de `NODE_BASE`). Los nodos se suben una vez; las cabeceras (calibre, u_ref) cada cuadro. La esfera
+envolvente descarta la mayoría de tubos por muestra en CPU y GPU. Coste GPU a 16 cm: 13,5 ms por
+cuadro (medido con `EXT_disjoint_timer_query_webgl2`), tras evitar la clasificación de los planos
+laterales de elevación cuando el central está lejos de toda interfaz (`sampleSide`).
+
+## 25. Corte ecográfico en un Worker con la anatomía TypeScript
+
+La lectura GPU→CPU del mapa de tejidos (readPixels o PBO + valla + getBufferSubData) bloqueaba el
+hilo principal 50–90 ms por lectura porque Chrome espera a toda la cola de la GPU: con 8 Hz de corte,
+la mitad del tiempo. El corte se calcula ahora en `src/ui/cutMapWorker.ts` con `AnatomyQuery`
+(la misma anatomía TS que el Doppler y las mediciones), 96 × 128 puntos por petición, una petición
+en vuelo, resultado transferido sin copia. Ventajas: cero contención con la GPU, y el corte pasa a ser
+una comprobación visual continua de la equivalencia TS ↔ GLSL. La pasada `FRAG_TISSUEMAP` se conserva
+(lectura asíncrona) para depuración y para un futuro test de equivalencia.
+
+## 26. Componente renal del VExUS emergente
+
+Nuevo compartimento renal en la red venosa (ambos riñones): arteria renal de baja resistencia
+(R 3,75, IR ≈ 0,6), lecho C_k 4,5 mL/mmHg, vena renal R 0,1 / L 0,002 hacia la VCI abdominal
+(τ ≈ 0,45 s). Las velocidades interlobares salen de Q/A con el 12 % del caudal renal por vaso
+modelado. `renalPatternFromPeaks` clasifica continuo (mín ≥ 30 % del máximo), bifásico (S ≥ 30 % de
+D con interrupción), monofásico (solo D) y «fuera del esquema» (inversión con S y D). Calibración
+(tools/calibrate.ts): sano S 16,8 / D 14,9 / mín 7,5 cm/s → continuo; congestión S 6,6 / D 32,2 /
+mín −5,4 → monofásico; los grados 0 y 3 se conservan. El caudal renal añadido a la cava subía la VCI
+sana a 19,6 mm (umbral 20): bajar R_VCI→AD la acoplaba más a la pulsación auricular (colapso
+cardíaco > 15 % en apnea), así que se desplaza la ley de tubo (P₀ −0,5 → 0 mmHg): VCI sana
+18,7/11,3 mm (colapso 39 %), congestión 31,4/27,5. Medición observada
+`measureObservedRenal` sobre el espectro adquirido, fila «Renal» del protocolo y herramienta `renal`;
+punto de partida «Renal» en la línea axilar posterior (φ 1,12π, z −75, inclinación −0,5) y alcance
+de la sonda ampliado a φ ≤ 1,2π. Verificado en vivo: puerta en la vena interlobar en apnea → espectro
+continuo y «Renal: continuo» en el resultado.
+
+## Iteración 2 — informe de cierre (22-09-2026)
+
+Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con
+fosa vesicular e impresión renal, suprahepáticas con tributarias y tronco común, porta de segundo
+orden, vía biliar, riñones con seno/pirámides/grasa perirrenal y vasos renales e interlobares, sin gas);
+textura de datos de escena con esferas envolventes; corte ecográfico en Worker; compartimento renal
+y patrón venoso intrarrenal emergente; medición renal observada; VExUS C completo. 53 tests.
+
+Verificado en vivo: ventana renal por el flanco (corteza, seno ecogénico, pirámides, hígado como
+ventana), puerta PW en la vena interlobar → espectro continuo y «Renal: continuo» en el resultado;
+campo profundo a 24 cm sin saturación; avatar con el hígado bajo las costillas derechas; 50 fps con
+13,5 ms de GPU por cuadro.
+
+Límites conocidos: riñón izquierdo sin interlobares; vesícula alineada con los ejes; confluencia de
+suprahepáticas a 15–19 cm desde el subxifoideo (avatar de tronco grande); calibración perceptual
+pendiente.
+
+Siguiente iteración: estadística de speckle contra clips reales; IQ por celda para color; confusores
+(gas, ascitis); casos G.2; arritmias; test de equivalencia TS ↔ GLSL sobre `FRAG_TISSUEMAP`.
+
+## Iteración 1 — informe de cierre (21-09-2026)
+
+Construido: cadena causal completa (reloj → fisiología → anatomía → sonda → B/color/PW → espectro y
+audio → medición → clasificación), navegador 3D, corte, consola por pestañas, dos casos, 44 tests.
+Verificado en vivo: modo B con speckle ligado al tejido, suprahepática en corte intercostal, PW con
+patrón S/D/A (S 36 / D 21 / A −6 → normal) y aliasing coherente, color rellenando la vena, 60 fps.
+
+Límites conocidos: sin riñones; color emulado (no IQ por celda); sin lóbulos laterales ni armónicos;
+sin movimiento cardíaco transmitido; calibración perceptual pendiente; el hígado sigue siendo dos
+elipsoides (sin fosa vesicular ni impresión renal).
+
+Siguiente iteración: riñones + interlobares + componente renal; IQ por celda para color; medición de
+estadística de speckle contra clips reales; casos de la matriz G.2; arritmias.

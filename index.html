@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>VExUS Sim</title>
+    <link rel="stylesheet" href="/src/app/styles.css" />
+  </head>
+  <body>
+    <div id="app" class="app">
+      <header class="topbar">
+        <span class="brand">VExUS Sim</span>
+        <span id="live-chip" class="chip live">LIVE</span>
+        <span class="spacer"></span>
+        <label class="field"
+          >Caso
+          <select id="case-select"></select
+        ></label>
+        <label class="toggle"><input type="checkbox" id="debug-toggle" /> Docente</label>
+      </header>
+
+      <aside class="left" id="left-rail">
+        <button id="rail-collapse" class="rail-collapse" title="Ocultar el navegador">«</button>
+        <div class="torso-wrap split">
+          <div class="torso-3d" id="nav3d">
+            <div class="torso-caption">Sonda y abdomen</div>
+            <div class="torso-tools">
+              <button id="nav-zoom-in" title="Acercar">+</button>
+              <button id="nav-zoom-out" title="Alejar">−</button>
+              <button id="nav-center" title="Centrar en la sonda">Sonda</button>
+              <button id="nav-layers" title="Capas">Capas</button>
+            </div>
+            <div id="layer-menu" class="menu down" hidden></div>
+          </div>
+          <div class="cut-map">
+            <div class="torso-caption">Corte ecográfico · plano de la imagen</div>
+            <canvas id="cutmap"></canvas>
+          </div>
+        </div>
+        <div class="torso-help">
+          Arrastrar piel: deslizar · Arrastrar marcador azul o rueda: rotar · ⇧+arrastrar: bascular · ⌥+arrastrar: inclinar · Botón derecho:
+          orbitar · ⌘/Ctrl+rueda: zoom
+        </div>
+      </aside>
+
+      <main class="center">
+        <div class="display-wrap" id="sector-wrap">
+          <canvas id="gl"></canvas>
+          <canvas id="overlay"></canvas>
+          <div class="img-hud">
+            <div class="hud-tl" id="hud-tl"></div>
+            <div class="hud-tr" id="hud-tr"></div>
+            <div class="hud-br" id="hud-br"></div>
+          </div>
+          <div class="disclaimer">
+            Simulador educativo con pacientes sintéticos. No utilizar para diagnóstico ni toma de decisiones clínicas.
+          </div>
+        </div>
+        <div class="traces">
+          <canvas id="ecg" class="ecg"></canvas>
+          <canvas id="spectrum" class="spectrum"></canvas>
+        </div>
+      </main>
+
+      <aside class="right" id="panel"></aside>
+
+      <footer class="modebar" role="toolbar" aria-label="Modo">
+        <div class="group">
+          <button id="mode-b" class="mode active" title="Modo B (2)">2D</button>
+          <button id="mode-color" class="mode" title="Doppler color (C)">Color</button>
+          <button id="mode-pw" class="mode" title="Doppler pulsado (P)">PW</button>
+        </div>
+        <span id="ctx-chip" class="ctx-chip"></span>
+        <span class="sep"></span>
+        <button id="freeze" class="secondary" title="Congelar (Espacio)">Freeze</button>
+        <button id="audio-toggle" class="secondary">Audio</button>
+        <span class="spacer"></span>
+        <button id="torso-toggle" class="secondary on" title="Navegador 3D (H)">Torso 3D</button>
+        <span id="status" class="modebar-status"></span>
+      </footer>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

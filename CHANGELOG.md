@@ -21,6 +21,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Los puntos de partida «Subxifoideo» y «Flanco · VCI» no cortaban la VCI (abanicaban en vez de bascular; plano coronal por delante de la vena); ahora cada ventana tiene un test que comprueba lo que promete su texto.
 - Una ventana de medida NaN (sin onda A) devolvía el mínimo global como «A» y descartaba el latido (31).
 - La medición renal sobrevivía al cambio de caso o a «Borrar» (27).
 - El navegador 3D no reconstruía la anatomía al cambiar de caso; el renderizador no liberaba recursos GPU (27).

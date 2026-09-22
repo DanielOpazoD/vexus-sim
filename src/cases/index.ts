@@ -54,7 +54,15 @@ export const SEVERE_CONGESTION: PatientState = {
 
 export const CASES: PatientState[] = [NORMAL_ADULT, SEVERE_CONGESTION];
 
-export function findCase(id: string): PatientState {
+/** Identificadores de caso conocidos: un id inválido no compila en el estado de UI. */
+export const CASE_IDS = ['normal-adult', 'severe-congestion'] as const;
+export type CaseId = (typeof CASE_IDS)[number];
+
+export function isCaseId(id: string): id is CaseId {
+  return (CASE_IDS as readonly string[]).includes(id);
+}
+
+export function findCase(id: CaseId): PatientState {
   const c = CASES.find((x) => x.id === id);
   if (!c) throw new Error(`Caso desconocido: ${id}`);
   return c;

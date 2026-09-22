@@ -32,3 +32,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [26](DECISIONS.md#L213) | Componente renal del VExUS emergente | vigente |
 | [27](DECISIONS.md#L230) | Repositorio, CI y saneamiento tras revisión adversarial | vigente |
 | [28](DECISIONS.md#L255) | Consola y navegador 3D por módulos | vigente |
+| [29](DECISIONS.md#L268) | Geometría del sector única, árbol vascular propio y `classify` por pasos | vigente |

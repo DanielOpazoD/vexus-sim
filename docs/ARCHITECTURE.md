@@ -44,8 +44,8 @@ pose de la sonda y los ajustes del equipo.
 
 ## Anatomía compartida CPU/GPU
 
-La escena es declarativa (`anatomy/scene.ts`: primitivas, riñones orientados, tubos con nodos para
-vasos y conductos). Se evalúa en TypeScript (`primitives.ts` + `scene.classify`) para Doppler,
+La escena es declarativa (`anatomy/scene.ts`: primitivas y riñones orientados; el árbol vascular y
+la vía biliar en `anatomy/vesselTree.ts`). Se evalúa en TypeScript (`primitives.ts` + `scene.classify`) para Doppler,
 mediciones, corte ecográfico (Worker) y pruebas, y en GLSL (`ultrasound/shaders/anatomy.glsl.ts`)
 para imagen y color, a partir de los **mismos datos**: primitivas como uniformes y tubos en una
 textura de datos con esferas envolventes (decisión 24). Regla del proyecto: cualquier cambio en una
@@ -100,5 +100,5 @@ por lectura de texturas en un runner con WebGL (pendiente).
 - `src/validation/docs.test.ts`: numeración de decisiones, índice generado, referencias a archivos,
   limitaciones citadas y README al día con la última iteración cerrada.
 - `.github/workflows/ci.yml`: ejecuta lo mismo que `npm run check` en cada push y PR.
-- `tools/ci/bundle-budget.mjs`: presupuestos de tamaño por patrón tras `vite build`.
+- `tools/ci/bundle-budget.ts`: presupuestos de tamaño por patrón tras `vite build`.
 - Niveles de prueba por marcador `// @tier slow` (ver `vite.config.ts`).

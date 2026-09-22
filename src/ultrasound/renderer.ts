@@ -4,6 +4,7 @@ import { RespiratoryDeformation } from '../anatomy/deformation';
 import { TISSUES, TISSUE_COUNT, attenuationDbPerCm } from '../anatomy/tissues';
 import type { PhysiologySample } from '../physiology/engine';
 import { lineAngle, lineCoupling, type ProbeFrame, type ProbePose, type Transducer } from '../probe/probe';
+import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
 import { GLProgram, bindTarget, createTarget, createTexture, deleteTarget, drawFullscreen, type RenderTarget } from './gl';
 import { MAX_GAS, MAX_NODES, MAX_RIBS, MAX_TUBES, NODE_BASE, SCENE_TEX_H, SCENE_TEX_W } from './shaders/anatomy.glsl';
 import {
@@ -68,6 +69,8 @@ export const DEFAULT_COLOR: ColorSettings = {
 
 /** Frecuencia efectiva para atenuación y compensación nominal (MHz). */
 const B_EFFECTIVE_MHZ = 2.5;
+/** Margen del sector en el lienzo de imagen (px); el corte usa el mismo módulo con su propio margen. */
+export const DISPLAY_MARGIN_PX = 8;
 /**
  * Techo de la compensación nominal + TGC (dB): ganancia máxima del amplificador. Con
  * 3 dB/cm de ida y vuelta (hígado a 2,5 MHz) compensa por completo hasta ~17 cm; más allá la
@@ -131,7 +134,7 @@ export class UltrasoundRenderer {
   private flags = new Float32Array(TISSUE_COUNT);
   private lastColorFrame: { box: [number, number, number, number]; prf: number } | null = null;
   /** Geometría de presentación del último cuadro (px). */
-  display = { apexX: 0, apexY: 0, scale: 1, width: 1, height: 1 };
+  display: SectorLayout = { apexX: 0, apexY: 0, scale: 1, width: 1, height: 1 };
 
   /** Número de líneas del sector (viene del transductor; fija el ancho de las texturas). */
   readonly lines: number;
@@ -469,14 +472,8 @@ export class UltrasoundRenderer {
     this.ensureDisplayTargets();
     const W = this.canvas.width;
     const H = this.canvas.height;
-    const margin = 8;
-    const R = tr.curvatureRadius;
-    const halfW = (R + depth) * Math.sin(tr.halfSector);
-    const totalH = R + depth - R * Math.cos(tr.halfSector);
-    const scale = Math.min((W - 2 * margin) / (2 * halfW), (H - 2 * margin) / totalH);
-    const apexX = W / 2;
-    const apexY = margin - R * Math.cos(tr.halfSector) * scale + 0;
-    this.display = { apexX, apexY, scale, width: W, height: H };
+    this.display = sectorLayout(W, H, tr, depth, DISPLAY_MARGIN_PX);
+    const { apexX, apexY, scale } = this.display;
     bindTarget(gl, this.tScan!);
     this.pScan.use();
     this.pScan.tex('uEnv', 0, this.tEnv.textures[0]);
@@ -484,7 +481,7 @@ export class UltrasoundRenderer {
     this.pScan.v2('uCanvas', W, H);
     this.pScan.v2('uApex', apexX, apexY);
     this.pScan.f('uScale', scale);
-    this.pScan.f('uCurvR', R);
+    this.pScan.f('uCurvR', tr.curvatureRadius);
     this.pScan.f('uHalfSector', tr.halfSector);
     this.pScan.f('uDepth', depth);
     this.pScan.f('uGainDb', inputs.bmode.gainDb);
@@ -524,21 +521,12 @@ export class UltrasoundRenderer {
 
   /** Convierte píxel de pantalla → (θ rad, r mm) o null fuera del sector. */
   pixelToBeam(px: number, py: number, tr: Transducer, depthMm: number): { theta: number; r: number } | null {
-    const d = this.display;
-    const dx = (px - d.apexX) / d.scale;
-    const dy = (py - d.apexY) / d.scale;
-    const rho = Math.hypot(dx, dy);
-    const theta = -Math.atan2(dx, dy);
-    const r = rho - tr.curvatureRadius;
-    if (r < 0 || r > depthMm || Math.abs(theta) > tr.halfSector) return null;
-    return { theta, r };
+    return pixelToBeam(this.display, tr, depthMm, px, py);
   }
 
   /** (θ, r) → píxel. */
   beamToPixel(theta: number, r: number, tr: Transducer): { x: number; y: number } {
-    const d = this.display;
-    const rho = tr.curvatureRadius + r;
-    return { x: d.apexX - Math.sin(theta) * rho * d.scale, y: d.apexY + Math.cos(theta) * rho * d.scale };
+    return beamToPixel(this.display, tr, theta, r);
   }
 
   /**

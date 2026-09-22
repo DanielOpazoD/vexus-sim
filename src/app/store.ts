@@ -1,3 +1,4 @@
+import type { CaseId } from '../cases';
 /**
  * Almacén de estado de la aplicación (solo UI): modo de imagen, pestaña de la
  * consola, congelación, docente, navegador. El núcleo de simulación no depende
@@ -13,7 +14,7 @@ export interface AppState {
   frozen: boolean;
   debug: boolean;
   audio: boolean;
-  caseId: string;
+  caseId: CaseId;
   torso: boolean;
   tool: MeasureTool;
 }

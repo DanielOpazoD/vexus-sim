@@ -73,7 +73,7 @@ src/ultrasound   render WebGL2 por pasadas A–G (transmisión, campo de dispers
 src/doppler      volumen de muestra físico, IQ, filtro de pared, STFT, medición observada, cadena PW
 src/audio        separación direccional (Hilbert) + AudioWorklet
 src/vexus        mediciones de referencia y clasificador VExUS C
-src/cases        pacientes (normal, congestión grave)
+src/cases        pacientes (normal, congestión grave, FA con congestión moderada)
 src/app          Simulator (composición), Store (estado de UI), estilos
 src/ui           navegador 3D (three.js), corte ecográfico (Worker), consola por pestañas, entrada de sonda, ECG y espectrograma
 src/validation   tests de invariantes (guía §21), ejemplos calculados (base 10.2), capas y documentación
@@ -96,10 +96,10 @@ persistencia; Doppler color por emulación del estimador de autocorrelación (al
 flash, filtro de clutter, cadencia propia); Doppler pulsado con volumen de muestra 3D de dispersores
 advectados, IQ, filtro de pared de 4.º orden, espectrograma STFT y audio direccional de la misma IQ;
 medición observada (suprahepática, porta, vena interlobar) y clasificación VExUS C completa con reglas
-de incertidumbre; dos casos con el mismo motor; navegador 3D; corte ecográfico en un Worker; panel por
+de incertidumbre; tres casos con el mismo motor (sano, congestión grave, FA con congestión moderada); navegador 3D; corte ecográfico en un Worker; panel por
 pestañas; modo docente.
 
 Pendiente para la iteración 3: mejoras de PSF/lóbulos laterales/armónicos, movimiento cardíaco
-transmitido, arritmias, confusores (gas, ascitis), más casos de la matriz G.2, riñón izquierdo con
+transmitido, extrasístoles y bloqueos, confusores (gas, ascitis), más casos de la matriz G.2, riñón izquierdo con
 interlobares.
 Véase el informe de cierre de cada iteración en `docs/DECISIONS.md`.

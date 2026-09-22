@@ -338,6 +338,7 @@ let lastStatus = 0;
 // Errores del bucle: se cuentan en una ventana de 2 s (no por racha), así un fallo
 // intermitente en cuadros alternos también termina en el banner.
 let errorTimes: number[] = [];
+let hrShown = 0;
 let eqPrevCpu: CutMapView['lastMap'] = null;
 function loop(now: number): void {
   const dt = Math.min(0.25, (now - last) / 1000);
@@ -356,9 +357,11 @@ function loop(now: number): void {
     drawEcg(ecgCanvas, sim, secondsVisible, t);
     spectrogram.draw(sim, sim.spectral.columns, t, secondsVisible);
     const s = sim.sample;
+    // FC mostrada como un monitor: media móvil (en FA el RR latido a latido salta)
+    hrShown = hrShown ? hrShown + (60 / s.rr - hrShown) * Math.min(1, dt * 1.5) : 60 / s.rr;
     span(hudTl, [sim.patient.label + (sim.frozen ? ' · congelada' : '')]);
     span(hudTr, [
-      `FC ${Math.round(60 / s.rr)} lpm · Sinusal`,
+      `FC ${Math.round(hrShown)} lpm · ${sim.patient.rhythm === 'atrial-fibrillation' ? 'FA' : 'Sinusal'}`,
       `${(sim.bmode.depthMm / 10).toFixed(0)} cm · 3,5 MHz · G ${sim.bmode.gainDb} dB · RD ${sim.bmode.dynamicRangeDb}`,
     ]);
     span(hudBr, [

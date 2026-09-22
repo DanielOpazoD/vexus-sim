@@ -28,7 +28,8 @@ export function extremeInWindow<T>(
   let best = Number.NaN;
   for (const x of xs) {
     const tx = t(x);
-    if (tx < w[0] || tx > w[1]) continue;
+    // Ventana NaN (p. ej. onda A inexistente en fibrilación auricular) = vacía
+    if (!(tx >= w[0] && tx <= w[1])) continue;
     const vx = v(x);
     if (Number.isNaN(best) || pick(vx) > pick(best)) best = vx;
   }

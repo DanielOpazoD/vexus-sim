@@ -112,10 +112,11 @@ export function measureObservedHepatic(columns: readonly SpectralColumn[], beats
     const s = systolicPeak(oriented, w.sWindow, (p) => p.vScreen);
     const d = extreme(oriented, w.dWindow, (v) => v);
     const a = extreme(oriented, w.aWindow, (v) => -v);
-    if ([s, d, a].some((x) => Number.isNaN(x))) continue;
+    // Sin onda A (fibrilación auricular) la ventana auricular es NaN: S y D bastan
+    if (Number.isNaN(s) || Number.isNaN(d)) continue;
     sList.push(s);
     dList.push(d);
-    aList.push(a);
+    if (!Number.isNaN(a)) aList.push(a);
   }
   if (!sList.length) return null;
   const sPeak = median(sList);

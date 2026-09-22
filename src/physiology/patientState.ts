@@ -6,7 +6,13 @@
  * Todos los valores por defecto están etiquetados en la base de conocimiento
  * como [EXTRAPOLACIÓN PROPIA] (G.1 y hoja consolidada) salvo indicación.
  */
-export type Rhythm = 'sinus';
+/**
+ * Ritmo: sinusal, o fibrilación auricular (RR irregular sin patrón, sin onda P
+ * ni contracción auricular organizada; ondas f en el ECG). En FA
+ * `atrialFunction` se ignora (vale 0) y `rrVariability` es la dispersión
+ * relativa de RR (típica 0,2–0,3).
+ */
+export type Rhythm = 'sinus' | 'atrial-fibrillation';
 export type VentilationMode = 'spontaneous' | 'positive-pressure';
 export type RespiratoryPattern = 'quiet' | 'deep' | 'apnea-expiratory' | 'apnea-inspiratory';
 

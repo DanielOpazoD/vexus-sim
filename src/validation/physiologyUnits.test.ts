@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { NORMAL_ADULT } from '../cases';
+import { AF_MODERATE_CONGESTION, NORMAL_ADULT } from '../cases';
+import { extremeInWindow } from '../core/series';
 import { clonePatient } from '../physiology/patientState';
 import { RespiratoryModel } from '../physiology/respiratory';
 import { RhythmGenerator, type Beat } from '../physiology/rhythm';
@@ -63,6 +64,48 @@ describe('Ritmo', () => {
     let p2 = 0;
     for (let t = b2.tP - 0.05; t <= b2.tP + 0.09; t += 0.0005) p2 = Math.max(p2, Math.abs(noAtrium.ecg(t)));
     expect(p2).toBeLessThan(0.01);
+  });
+});
+
+describe('Fibrilación auricular', () => {
+  it('RR irregular (CV ≈ 22 %), sin P ni contracción auricular, ondas f en la línea de base', () => {
+    const r = new RhythmGenerator(AF_MODERATE_CONGESTION, 11);
+    const seen = new Map<number, Beat>();
+    for (let t = 0; t <= 120; t += 0.25) for (const b of r.beatsAround(t)) seen.set(b.index, b);
+    const bs = [...seen.values()].sort((a, b) => a.index - b.index);
+    const rrs = bs.map((b) => b.rr);
+    const mean = rrs.reduce((a, b) => a + b, 0) / rrs.length;
+    const sd = Math.sqrt(rrs.reduce((a, b) => a + (b - mean) ** 2, 0) / rrs.length);
+    expect(Math.abs(mean / (60 / 96) - 1)).toBeLessThan(0.06);
+    expect(sd / mean).toBeGreaterThan(0.15);
+    expect(sd / mean).toBeLessThan(0.3);
+    expect(Math.min(...rrs)).toBeGreaterThanOrEqual(0.3); // refractariedad del nodo AV
+    for (const b of bs) {
+      expect(Number.isNaN(b.tP)).toBe(true);
+      expect(Number.isNaN(b.tAtrialContraction)).toBe(true);
+      expect(b.atrialAmplitude).toBe(0);
+      expect(b.rr).toBeGreaterThan(0);
+    }
+    // ondas f: la línea de base entre T y el siguiente QRS no es plana pero es pequeña
+    const b = bs.find((x) => x.tR > 10 && x.rr > 0.7)!;
+    let fMax = 0;
+    for (let t = b.tR + 0.5; t < b.tR + b.rr - 0.06; t += 0.001) fMax = Math.max(fMax, Math.abs(r.ecg(t)));
+    expect(fMax).toBeGreaterThan(0.02);
+    expect(fMax).toBeLessThan(0.1);
+    // la ventana auricular es NaN y una medición sobre ella devuelve NaN (no el mínimo global)
+    const w = beatWindows(b);
+    expect(Number.isNaN(w.aWindow[0])).toBe(true);
+    expect(
+      Number.isNaN(
+        extremeInWindow(
+          [{ t: b.tR + 0.1, v: -9 }],
+          w.aWindow,
+          (x) => x.t,
+          (x) => x.v,
+          (v) => -v,
+        ),
+      ),
+    ).toBe(true);
   });
 });
 

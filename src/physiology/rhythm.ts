@@ -75,6 +75,14 @@ export class RhythmGenerator {
 
   private nextRR(): number {
     const rr0 = this.nominalRR();
+    if (this.patient.rhythm === 'atrial-fibrillation') {
+      // FA: RR «irregularmente irregular» — lognormal alrededor de la FC media con
+      // dispersión relativa `rrVariability` y período refractario del nodo AV
+      // (≥ 0,3 s) [EXTRAPOLACIÓN PROPIA de la descripción de la base D.3].
+      const sigma = Math.max(0.05, this.patient.rrVariability);
+      const rr = rr0 * Math.exp(sigma * this.rng.gaussian() - (sigma * sigma) / 2);
+      return Math.max(0.3, Math.min(2.5 * rr0, rr));
+    }
     const jitter = this.rng.gaussian() * this.patient.rrVariability;
     return rr0 * Math.max(0.6, 1 + jitter);
   }
@@ -83,7 +91,10 @@ export class RhythmGenerator {
     const p = this.patient;
     const pr = p.prIntervalMs / 1000;
     const s = Math.sqrt(rr / 0.8); // factor de escala sistólica (√RR)
-    const tP = tR - pr;
+    const af = p.rhythm === 'atrial-fibrillation';
+    // Sin activación auricular organizada en FA: tP = NaN y amplitud auricular 0;
+    // las ventanas de medida de la onda A quedan indefinidas (no hay A que medir).
+    const tP = af ? Number.NaN : tR - pr;
     return {
       index,
       tR,
@@ -95,7 +106,7 @@ export class RhythmGenerator {
       tV: tR + 0.35 * s,
       tY: tR + 0.46 * s,
       tTend: tR + 0.4 * s,
-      atrialAmplitude: p.atrialFunction,
+      atrialAmplitude: af ? 0 : p.atrialFunction,
     };
   }
 
@@ -134,6 +145,11 @@ export class RhythmGenerator {
    */
   ecg(t: number): number {
     let v = 0;
+    // Ondas f de la FA: oscilación fina e irregular de la línea de base (≈ 6–8 Hz,
+    // 0,03–0,05 mV), determinista por t (misma semilla → mismo trazado).
+    if (this.patient.rhythm === 'atrial-fibrillation') {
+      v += 0.035 * Math.sin(2 * Math.PI * 6.5 * t + 1.7 * Math.sin(2 * Math.PI * 0.9 * t)) + 0.02 * Math.sin(2 * Math.PI * 8.3 * t + 0.4);
+    }
     for (const b of this.beatsAround(t)) {
       const s = Math.sqrt(b.rr / 0.8);
       if (Number.isFinite(b.tP)) v += 0.15 * b.atrialAmplitude * gauss(t - (b.tP + 0.045), 0.022);

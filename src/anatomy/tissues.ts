@@ -31,9 +31,11 @@ export enum Tissue {
   PerirenalFat = 20,
   BileDuctWall = 21,
   Vertebra = 22,
+  /** Ligamento redondo / falciforme: grasa y fibra en la fisura umbilical (foco ecogénico). */
+  LigamentumTeres = 23,
 }
 
-export const TISSUE_COUNT = 23;
+export const TISSUE_COUNT = 24;
 
 /**
  * Nombre de cada tejido en GLSL (`#define T_… índice`). Se genera desde aquí
@@ -64,6 +66,7 @@ export const TISSUE_GLSL_NAME: Record<Tissue, string> = {
   [Tissue.PerirenalFat]: 'T_PERIRENAL',
   [Tissue.BileDuctWall]: 'T_BILEWALL',
   [Tissue.Vertebra]: 'T_VERTEBRA',
+  [Tissue.LigamentumTeres]: 'T_LIG_TERES',
 };
 
 /** Lámina diafragmática bajo la cúpula (mm); la misma en TS, GLSL y el navegador 3D. */
@@ -116,6 +119,9 @@ export const TISSUES: TissueProps[] = [
   { name: 'pared de vía biliar', c: 1586, rho: 1079, alpha1: 0.7, b: 1, backscatter: 2.4, gas: false, bone: false },
   // Vértebra: mismas propiedades que el hueso cortical; tejido aparte solo para rotular «columna»
   { name: 'vértebra', c: 3515, rho: 1908, alpha1: 4.738, b: 1, backscatter: 0.9, gas: false, bone: true },
+  // Ligamento redondo: grasa + tejido fibroso, marcadamente ecogénico (foco brillante en el
+  // corte transversal del lóbulo izquierdo, a veces con sombra) [E.3].
+  { name: 'ligamento redondo (grasa)', c: 1470, rho: 950, alpha1: 0.6, b: 1.1, backscatter: 2.2, gas: false, bone: false },
 ];
 
 /** Impedancia acústica Z = ρc en MRayl. */

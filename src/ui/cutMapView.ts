@@ -38,6 +38,7 @@ const TISSUE_COLOR: Record<number, [number, number, number]> = {
   [Tissue.PerirenalFat]: [205, 180, 120],
   [Tissue.BileDuctWall]: [120, 200, 120],
   [Tissue.Vertebra]: [215, 215, 205],
+  [Tissue.LigamentumTeres]: [240, 220, 150],
 };
 const TISSUE_LABEL: Record<number, string> = {
   [Tissue.Liver]: 'hígado',
@@ -47,6 +48,7 @@ const TISSUE_LABEL: Record<number, string> = {
   [Tissue.Lung]: 'pulmón',
   [Tissue.Bone]: 'costilla',
   [Tissue.Vertebra]: 'columna',
+  [Tissue.LigamentumTeres]: 'lig. redondo',
   [Tissue.Bowel]: 'intestino',
   [Tissue.BowelGas]: 'gas',
   [Tissue.Fluid]: 'vesícula',

@@ -58,6 +58,7 @@ uniform vec3 uLiverLR;
 uniform float uLiverLTaper;
 uniform float uLiverBlend;
 uniform vec4 uVisceral;   // zAtY0, slopeY, edgeRound, renalImpression
+uniform vec4 uFissure;    // x, semiancho, profundidad, zMax de la fisura umbilical (redondeo 3 mm)
 uniform vec3 uGbC;
 uniform vec3 uGbR;
 uniform vec4 uRA;
@@ -310,7 +311,12 @@ float tubeQuery(vec3 p, int t, out float rho, out vec3 tangent, out float rLoc, 
 }
 
 // Hígado sin recortes de cúpula/pared: lóbulos, cara visceral, impresión renal, fosa vesicular
-float liverSdf(vec3 m, out vec3 n) {
+float fissureSdf(vec3 m, float dBase) {
+  return max(max(abs(m.x - uFissure.x) - uFissure.y, -(dBase + uFissure.z)), max(m.z - uFissure.w, -m.y));
+}
+
+// Hígado con la fisura umbilical; dBase = sin fisura (lo excavado es ligamento redondo).
+float liverSdf(vec3 m, out vec3 n, out float dBase) {
   vec3 ln; vec3 ln2;
   float dR = sdEllipsoid(m, uLiverC, uLiverR, uLiverTaper, ln);
   float dL = sdEllipsoid(m, uLiverLC, uLiverLR, uLiverLTaper, ln2);
@@ -327,7 +333,10 @@ float liverSdf(vec3 m, out vec3 n) {
   float dg = sdEllipsoid(m, uGbC, uGbR, 0.0, gn);
   float d4 = smoothMax(d3, -dg, 4.0);
   if (d4 > d3 + 1e-3) n = -gn;
-  return d4;
+  dBase = d4;
+  float d5 = smoothMax(d4, -fissureSdf(m, d4), 3.0);
+  if (d5 > d4 + 1e-3 && abs(m.x - uFissure.x) > uFissure.y - 1.0) n = vec3(sign(m.x - uFissure.x), 0.0, 0.0);
+  return d5;
 }
 
 Cls classify(vec3 m) {
@@ -416,8 +425,11 @@ Cls classify(vec3 m) {
       c.tissue = T_PERIRENAL; c.bd = min(dOuter, uKidExtra.y - dOuter); c.n = kn; c.spec = 0.6; return c;
     }
   }
-  vec3 ln;
-  float dLiver = liverSdf(m, ln);
+  vec3 ln; float dLiverBase;
+  float dLiver = liverSdf(m, ln, dLiverBase);
+  if (dLiver >= 0.0 && dLiverBase < 0.0) {
+    c.tissue = T_LIG_TERES; c.bd = min(-dLiverBase, dLiver); c.n = ln; c.spec = 0.6; return c;
+  }
   if (dLiver < 0.0) {
     float inner = min(-dLiver, min(dDome - DIAPHRAGM_MM, -depth - wall));
     c.n = (inner == -dLiver) ? ln : ((inner == dDome - DIAPHRAGM_MM) ? dn : tn);

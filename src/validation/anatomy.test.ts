@@ -30,6 +30,24 @@ describe('Anatomía implícita (base B)', () => {
     expect(cls([-12, -8, -72]).vessel).toBe('pvTrunk');
   });
 
+  it('la fisura umbilical excava el lóbulo izquierdo y la rellena el ligamento redondo (ecogénico)', () => {
+    // dentro de la fisura: x 15, bajo la cara anterior del lóbulo izquierdo, tercio inferior
+    expect(cls([15, 56, -48]).tissue).toBe(Tissue.LigamentumTeres);
+    // fuera de la lámina (x 25) y por encima de zMax (z −20): hígado normal
+    expect(cls([25, 56, -48]).tissue).toBe(Tissue.Liver);
+    expect(cls([15, 56, -20]).tissue).toBe(Tissue.Liver);
+    // más hondo que la fisura (14 mm desde la superficie): hígado
+    expect(cls([15, 40, -48]).tissue).toBe(Tissue.Liver);
+    // el SDF con fisura es ≥ el SDF base en todo punto (solo excava, nunca añade)
+    for (const p of [
+      [15, 56, -48],
+      [15, 40, -48],
+      [-60, 20, -10],
+      [15, 56, -20],
+    ] as [number, number, number][])
+      expect(scene.liverSdf(p)).toBeGreaterThanOrEqual(scene.liverBaseSdf(p) - 1e-9);
+  });
+
   it('los vasos tienen pared distinta de la luz y la porta tiene pared ecogénica', () => {
     // borde posterior del tronco portal: radio 5,5 → a 6 mm del eje hay pared
     // (por delante corre la arteria hepática, como en el ligamento hepatoduodenal)

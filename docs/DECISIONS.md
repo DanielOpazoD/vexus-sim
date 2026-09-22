@@ -521,6 +521,28 @@ PF medida queda a ≤ 5 puntos (17/13, 73/75, 35/36 %). La prueba usa la técnic
 puerta dentro de la luz con el mejor ángulo de insonación y escala hasta el límite de la
 profundidad (PRF ≤ 0,9·c/2d). La pestaña Medir hereda las correcciones.
 
+## 45. Anatomía de una sola fuente, paso 1: esquema único de uniforms de la escena
+
+**Contexto.** La anatomía existe en TS y en GLSL. Los ~40 uniforms que la describen (torso,
+diafragma, hígado, vesícula, riñones, costillas, cortina…) se declaraban a mano en
+`anatomy.glsl.ts` y se subían a mano, con los mismos nombres, en ~85 líneas de `renderer.ts`,
+cuatro veces por cuadro y con asignaciones de memoria en cada una. Un nombre mal escrito o un
+uniform olvidado no da error: `getUniformLocation` devuelve `null` y el valor se ignora.
+**Opciones.** (a) Seguir a mano con la e2e de equivalencia como red; (b) generar GLSL desde un
+subconjunto de TS (coste alto, herramientas propias); (c) un esquema de datos del que salgan
+declaraciones y subida, como primer paso hacia un grafo de nodos SDF interpretado por TS y GLSL.
+**Decisión.** (c): `ultrasound/shaders/sceneUniforms.ts` define `SCENE_UNIFORMS` (nombre, tipo,
+tamaño, documentación y función de valor). `SCENE_UNIFORMS_GLSL` sustituye las declaraciones en
+`ANATOMY_GLSL`; el renderer evalúa los valores una vez por instante (`evaluateSceneUniforms`) y
+los sube a cada programa (`uploadSceneUniforms`), comprobando el tamaño de cada valor.
+**Consecuencias.** Un órgano nuevo añade sus uniforms en un solo sitio; `renderer.ts` pierde ~85
+líneas; menos asignaciones por cuadro. Siguientes pasos: módulos por órgano que co-localicen su
+SDF en TS, su fragmento GLSL y sus uniforms; después, primitivas genéricas (elipsoides orientados,
+láminas, tubos) como datos en la textura de escena.
+**Verificación.** `sceneUniforms.test.ts`: ANATOMY_GLSL no declara uniforms a mano, todo uniform
+usado está en el esquema y ninguno sobra, valores finitos del tamaño correcto para los tres casos;
+la e2e de equivalencia TS ↔ GLSL sigue al 100 %.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

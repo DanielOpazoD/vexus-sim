@@ -48,3 +48,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [42](DECISIONS.md#L456) | Segmentos de Couinaud derivados de los vasos, ligamento venoso e hígado 3D translúcido | vigente |
 | [43](DECISIONS.md#L473) | Arquitectura renal, receso de Morison, cortina pulmonar, pared periportal y pared blanda | vigente |
 | [44](DECISIONS.md#L494) | Medición del alumno robusta: envolvente de la banda contigua, lado venoso y regla de S invertida | vigente |
+| [45](DECISIONS.md#L524) | Anatomía de una sola fuente, paso 1: esquema único de uniforms de la escena | vigente |

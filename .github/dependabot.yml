@@ -7,11 +7,14 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 3
+    # Los grupos solo reúnen minor/patch: cada versión mayor llega en su propia PR (es una migración)
     groups:
       desarrollo:
         dependency-type: development
+        update-types: [minor, patch]
       produccion:
         dependency-type: production
+        update-types: [minor, patch]
   - package-ecosystem: github-actions
     directory: /
     schedule:

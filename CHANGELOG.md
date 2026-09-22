@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Cambiado
 
+- Fase 2, paso 1: esquema único de uniforms de la anatomía (`sceneUniforms.ts`): de él salen las declaraciones GLSL y la subida desde el renderer, evaluada una vez por instante (45).
+
 - Carga inicial 760 → 179 kB de JS: el navegador 3D (con three.js) y los ganchos de prueba se cargan con `import()` dinámico después del primer cuadro.
 - Fase 1: `TransducerProfile` reúne geometría, haz, frecuencias efectivas y densidad de líneas de color (antes en cinco sitios, con dos constantes 2,5 MHz sueltas); renderer y simulador reciben el perfil.
 - Fase 1: `main.ts` pasa a raíz de composición (450 → 319 líneas): `SimulationSession` (simulador vivo, equipo y cambio de caso transaccional), `ui/controllers/*` (HUD como función pura, clic en la imagen, pérdida de GPU, avisos, menú de capas) y `ErrorBudget`; el HUD rotula la frecuencia real del transductor.

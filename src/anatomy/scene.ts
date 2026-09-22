@@ -85,6 +85,13 @@ export class AnatomyScene {
    * pared anterior, junto al reborde costal, y a −48 en la cara posterior); normal (0, 0,35, 1).
    */
   readonly visceralPlane: { zAtY0: number; slopeY: number; edgeRoundMm: number };
+  /**
+   * Fisura umbilical (ligamento redondo / falciforme): surco sagital en x = 15 mm (izquierda
+   * del paciente) sobre la cara anteroinferior del lóbulo izquierdo, entre el segmento IV y
+   * los segmentos II–III; 8 mm de ancho, 14 mm de profundidad desde la superficie, relleno de
+   * grasa ecogénica. Solo por delante (y > 0) y en el tercio inferior (z < zMax = −30): en el corte transversal es el foco ecogénico entre los segmentos III y IV.
+   */
+  readonly umbilicalFissure: { x: number; halfWidth: number; depthMm: number; zMax: number; roundMm: number };
   readonly gallbladder: Ellipsoid;
   readonly rightAtrium: Sphere;
   readonly kidneyRight: Kidney;
@@ -129,6 +136,7 @@ export class AnatomyScene {
     this.liver = { kind: 'ellipsoid', center: [-70, -5, -18], radii: [85 * f, 95 * f, 100 * f], taperX: 0.12 };
     this.liverLeft = { kind: 'ellipsoid', center: [0, 32, -25], radii: [95 * f, 36 * f, 55 * f], taperX: 0.5 };
     this.visceralPlane = { zAtY0: -62 - 100 * (f - 1), slopeY: 0.35, edgeRoundMm: 12 };
+    this.umbilicalFissure = { x: 15, halfWidth: 4, depthMm: 14, zMax: -30, roundMm: 3 };
     // Vesícula en su fosa (cara visceral del segmento IV/V); fondo hacia el borde
     this.gallbladder = { kind: 'ellipsoid', center: [-52, 42, -65], radii: [34, 17, 17], taperX: 0 };
     this.rightAtrium = { kind: 'sphere', center: [-15, 15, 95], r: 30 };
@@ -204,12 +212,28 @@ export class AnatomyScene {
    * y fosa vesicular.
    */
   liverSdf(m: Vec3): number {
+    const dBase = this.liverBaseSdf(m);
+    return smoothMax(dBase, -this.umbilicalFissureSdf(m, dBase), this.umbilicalFissure.roundMm);
+  }
+
+  /** Hígado sin la fisura umbilical (lo que la fisura excava se clasifica como ligamento redondo). */
+  liverBaseSdf(m: Vec3): number {
     let d = smoothMin(sdEllipsoid(m, this.liver), sdEllipsoid(m, this.liverLeft), this.liverBlendMm);
     d = smoothMax(d, -this.visceralPlaneDistance(m), this.visceralPlane.edgeRoundMm);
     const kr = kidneyQuery(m, this.kidneyRight);
     d = smoothMax(d, -(kr.dOuter - this.renalImpressionMm), 8);
     d = smoothMax(d, -sdEllipsoid(m, this.gallbladder), 4);
     return d;
+  }
+
+  /**
+   * Región de la fisura umbilical (negativa dentro): lámina |x − xF| < hw, a menos de
+   * `depthMm` de la superficie hepática (dBase > −depth), anterior (y > 0) y bajo zMax.
+   * Misma fórmula en GLSL (`fissureSdf`).
+   */
+  umbilicalFissureSdf(m: Vec3, dBase: number): number {
+    const f = this.umbilicalFissure;
+    return Math.max(Math.abs(m[0] - f.x) - f.halfWidth, -(dBase + f.depthMm), m[2] - f.zMax, -m[1]);
   }
 
   /** Áreas de referencia (mm²) para la fisiología (Q/A). */
@@ -381,8 +405,14 @@ export class AnatomyScene {
 
   /** Hígado con cápsula, recortado por diafragma (`dDome`) y pared (`insideWallMm`). */
   private classifyLiver(m: Vec3, dDome: number, insideWallMm: number): Classification | null {
-    const dLiver = this.liverSdf(m);
-    if (dLiver >= 0) return null;
+    const dBase = this.liverBaseSdf(m);
+    const dFissure = this.umbilicalFissureSdf(m, dBase);
+    const dLiver = smoothMax(dBase, -dFissure, this.umbilicalFissure.roundMm);
+    if (dLiver >= 0) {
+      // lo excavado por la fisura (dentro del hígado original) es el ligamento redondo
+      if (dBase < 0) return { ...NONE, tissue: Tissue.LigamentumTeres, boundaryDistance: Math.min(-dBase, dLiver), specular: 0.6 };
+      return null;
+    }
     const inner = Math.min(-dLiver, dDome - DIAPHRAGM_THICKNESS_MM, insideWallMm);
     if (inner < LIVER_CAPSULE_MM) return { ...NONE, tissue: Tissue.LiverCapsule, boundaryDistance: inner, specular: 0.5 };
     return { ...NONE, tissue: Tissue.Liver, boundaryDistance: inner, specular: 0.5 };

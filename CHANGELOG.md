@@ -7,6 +7,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Añadido
 
+- Fisura umbilical con ligamento redondo ecogénico (tejido `LigamentumTeres`) entre los segmentos III y IV, en el SDF compartido TS/GLSL y en el 3D (40).
 - Árbol vascular hepático procedural de 3.º–4.º orden (~60 ramas confinadas al hígado) y lista de tubos por cuadro (34).
 
 ### Cambiado

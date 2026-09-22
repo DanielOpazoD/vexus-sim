@@ -419,6 +419,20 @@ y con color activo la imagen entera (B + color) se refresca a esa frecuencia, qu
 esquina («· 8 Hz»): abrir la caja o bajar la PRF se paga en cuadros por segundo, como en el equipo.
 Densidad de líneas fija y sin adaptación automática del ensemble: [EXTRAPOLACIÓN PROPIA].
 
+## 40. Fisura umbilical y ligamento redondo
+
+El lóbulo izquierdo era un elipsoide liso: ni en 3D ni en el corte se distinguía el segmento IV de
+los segmentos II–III, y faltaba el foco ecogénico del ligamento redondo que cualquier ecografista
+usa como referencia en el corte transversal epigástrico. Ahora `liverSdf` = `liverBaseSdf`
+excavado por una lámina sagital en x = 15 mm (izquierda del paciente), 8 mm de ancho, 14 mm de
+profundidad desde la superficie, solo por delante (y > 0) y en el tercio inferior (z < −30):
+`umbilicalFissureSdf(m, dBase)` = max(|x − 15| − 4, −(dBase + 14), z + 30, −y), unida con
+`smoothMax` de 3 mm. Lo excavado se clasifica como tejido nuevo `LigamentumTeres` (grasa + fibra,
+retrodispersión 2,2, α 0,6): banda brillante bajo la cara anterior en el corte sagital y foco entre
+III y IV en el transversal. Misma fórmula en GLSL (`fissureSdf`, `uFissure`), equivalencia
+TS ↔ GLSL 100 %; el navegador 3D hereda el surco por marching cubes sobre el mismo SDF. Falta la
+fisura del ligamento venoso y el falciforme como lámina peritoneal.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

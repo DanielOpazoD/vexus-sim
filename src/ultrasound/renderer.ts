@@ -272,6 +272,7 @@ export class UltrasoundRenderer {
     p.f('uLiverLTaper', s.liverLeft.taperX);
     p.f('uLiverBlend', s.liverBlendMm);
     p.v4('uVisceral', s.visceralPlane.zAtY0, s.visceralPlane.slopeY, s.visceralPlane.edgeRoundMm, s.renalImpressionMm);
+    p.v4('uFissure', s.umbilicalFissure.x, s.umbilicalFissure.halfWidth, s.umbilicalFissure.depthMm, s.umbilicalFissure.zMax);
     p.v3('uGbC', s.gallbladder.center);
     p.v3('uGbR', s.gallbladder.radii);
     p.v4('uRA', s.rightAtrium.center[0], s.rightAtrium.center[1], s.rightAtrium.center[2], s.rightAtrium.r);

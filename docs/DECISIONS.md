@@ -390,6 +390,19 @@ interpolada en el shader como `const vec2 PYR[]`, así no puede divergir); corte
 (u × 1,15) por las columnas de Bertin entre las pirámides laterales (`BERTIN_COLUMNS_U`). El hilio
 queda relleno de grasa perirrenal (grasa hiliar). Equivalencia TS ↔ GLSL 100 %.
 
+## 38. PSF lateral con número F y ensanchamiento espectral intrínseco
+
+La PSF lateral era una gaussiana con σ₀ 0,9 mm en el foco y zR 28 mm, igual en TS y GLSL pero sin
+relación con la apertura: el campo lejano se veía tan fino como el cercano y la puerta PW tenía una
+anchura arbitraria. Ahora `src/ultrasound/beamModel.ts` define el haz de un convexo de 3,5 MHz
+(λ 0,44 mm, apertura tx 26 mm con foco único, recepción con enfoque dinámico D = min(26, r/2,5),
+k 1,3): FWHM de dos vías 1/√(1/tx² + 1/rx²) ≈ 1,4 mm hasta el foco y ≈ 3,5 mm a 16 cm, monótona
+tras el foco. La pasada D (GLSL `lateralSigmaMm`) recibe los cuatro parámetros en `uBeam` y
+reproduce la misma fórmula; la puerta PW usa 1,2 × esa σ; y cada dispersor del volumen de muestra
+«ve» el haz con un ángulo gaussiano σθ = D_rx/4r (≈ 0,1 rad hasta 65 mm), lo que ensancha el
+espectro como el ensanchamiento intrínseco de un equipo real (Δf/f ≈ tan θ·D/2r) en vez de dibujar
+una línea fina. Aperturas y F# son [EXTRAPOLACIÓN PROPIA] hasta medir la PSF de un equipo (E.7).
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

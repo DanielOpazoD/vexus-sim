@@ -1,4 +1,5 @@
 import { nyquistVelocityCms } from '../core/units';
+import { apertureAngleSigmaRad, lateralSigmaMm } from '../ultrasound/beamModel';
 import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene } from '../anatomy/scene';
 import { TISSUES, attenuationDbPerCm } from '../anatomy/tissues';
@@ -203,7 +204,8 @@ export class Simulator {
       fr.lateral[2] * c - fr.axial[2] * sn,
     ];
     const r = pw.depthMm;
-    const latSigma = 0.9 * Math.sqrt(1 + ((r - this.bmode.focusMm) / 28) ** 2) * 1.4;
+    // Anchura lateral del volumen de muestra = PSF de dos vías (mismo modelo que la imagen)
+    const latSigma = lateralSigmaMm(r, this.bmode.focusMm) * 1.2;
     const elevSigma = 1.6 * Math.sqrt(1 + ((r - tr.elevationFocusMm) / 45) ** 2);
     const transmission = this.estimateTransmission(fr, pw.theta, r, s);
     const gate: GateGeometry = {
@@ -215,6 +217,7 @@ export class Simulator {
       lateralSigmaMm: latSigma,
       elevationSigmaMm: elevSigma,
       pulseSigmaMm: 0.5,
+      apertureAngleSigmaRad: apertureAngleSigmaRad(r),
       transmission,
     };
     this.pwChain.setGate(gate, s);

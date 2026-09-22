@@ -448,6 +448,23 @@ de donde salen las ramas de II–III y IV: el ligamento redondo se continúa con
 anatomía real. Costillas con oblicuidad creciente (`ribTiltMm`) y profundidad por defecto 18 cm
 van en el mismo lote de fidelidad.
 
+## 42. Segmentos de Couinaud derivados de los vasos, ligamento venoso e hígado 3D translúcido
+
+El hígado 3D era una masa opaca sin referencias. Ahora `src/anatomy/couinaud.ts` deriva la
+partición de Couinaud de la MISMA escena: el plano de cada suprahepática (que contiene el tronco y
+el eje de la cava) separa V/VIII de VI/VII (derecha), el lóbulo derecho del IV (media, línea de
+Cantlie) y II de III (izquierda); la fisura umbilical (decisión 40) separa IV de II–III; el plano
+portal (z −36) separa superior de inferior; y el caudado (I) es lo que queda entre la cava y la
+fisura del ligamento venoso, por detrás de ella. Si un vaso se mueve, los segmentos lo siguen (test
+`couinaud.test.ts`). El navegador 3D colorea la malla vértice a vértice con esa función, la hace
+translúcida (opacidad 0,62, sin escritura de profundidad) para ver suprahepáticas, porta y arteria
+dentro, y rotula I–VIII en el centroide de cada segmento. La fisura del ligamento venoso entra
+también en el modelo acústico como lámina fibrosa de 2,4 mm (`LigamentumVenosum`, retrodispersión
+2,6) en el plano porta hepatis → desembocadura de la suprahepática izquierda, acotada en x y z:
+la línea ecogénica que delimita el caudado en el corte subxifoideo. Misma fórmula en GLSL
+(`uLigVen`, `uLigVenBox`), equivalencia TS ↔ GLSL 100 %. Los segmentos son metadatos: no cambian
+la señal.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

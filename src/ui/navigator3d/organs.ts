@@ -1,10 +1,12 @@
 import * as THREE from 'three';
 import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js';
 import { diaphragmHeight, kidneyLocal, kidneyOuterSdf, sdOrientedEllipsoid, torsoDepth, type Kidney } from '../../anatomy/primitives';
+import { COUINAUD_LABEL, couinaudPlanes, couinaudSegment, type CouinaudSegment } from '../../anatomy/couinaud';
 import type { AnatomyScene } from '../../anatomy/scene';
 import { DIAPHRAGM_THICKNESS_MM } from '../../anatomy/tissues';
 import type { Vec3 } from '../../core/vec3';
 import { CM } from './common';
+import { labelSprite } from './labels';
 import { variableTube } from './tubes';
 
 /**
@@ -35,7 +37,23 @@ export function meshFromSdf(sdf: (p: Vec3) => number, lo: Vec3, hi: Vec3, res: n
   return mesh;
 }
 
-/** Hígado por marching cubes sobre el MISMO SDF que corta el haz (con fisura umbilical y fosa vesicular). */
+/** Colores de los segmentos de Couinaud en el 3D (I–VIII). */
+export const COUINAUD_COLORS: Record<CouinaudSegment, number> = {
+  1: 0x8a6d5a,
+  2: 0xc97d5d,
+  3: 0xd9a066,
+  4: 0xb85c4a,
+  5: 0x9b4f3f,
+  6: 0x7f4a3a,
+  7: 0x6b3f36,
+  8: 0xa8604e,
+};
+
+/**
+ * Hígado por marching cubes sobre el MISMO SDF que corta el haz (con fisura umbilical y
+ * fosa vesicular), coloreado por segmento de Couinaud (vértice a vértice, misma
+ * partición que `couinaudSegment`) y translúcido para ver los vasos dentro.
+ */
 export function buildLiverMesh(a: AnatomyScene): THREE.Mesh {
   const lobes = [a.liver, a.liverLeft];
   const lo = [0, 1, 2].map((i) => Math.min(...lobes.map((l) => l.center[i] - l.radii[i])) - 8) as Vec3;
@@ -48,13 +66,60 @@ export function buildLiverMesh(a: AnatomyScene): THREE.Mesh {
       -(diaphragmHeight(p[0], p[1], a.diaphragm, a.torso) - p[2]) + DIAPHRAGM_THICKNESS_MM,
       torsoDepth(p, a.torso) + wall,
     );
-  return meshFromSdf(
+  const mesh = meshFromSdf(
     sdf,
     lo,
     hi,
     64,
-    new THREE.MeshStandardMaterial({ color: 0x9a5a3c, roughness: 0.6, transparent: true, opacity: 0.88 }),
+    new THREE.MeshStandardMaterial({ roughness: 0.55, transparent: true, opacity: 0.62, vertexColors: true, depthWrite: false }),
   );
+  const pos = mesh.geometry.getAttribute('position');
+  const colors = new Float32Array(pos.count * 3);
+  const planes = couinaudPlanes(a);
+  const sc = mesh.scale.x;
+  const col = new THREE.Color();
+  for (let i = 0; i < pos.count; i++) {
+    const p: Vec3 = [
+      (pos.getX(i) * sc + mesh.position.x) / CM,
+      (pos.getY(i) * sc + mesh.position.y) / CM,
+      (pos.getZ(i) * sc + mesh.position.z) / CM,
+    ];
+    col.setHex(COUINAUD_COLORS[couinaudSegment(p, planes)]);
+    colors[i * 3] = col.r;
+    colors[i * 3 + 1] = col.g;
+    colors[i * 3 + 2] = col.b;
+  }
+  mesh.geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  mesh.renderOrder = 2;
+  return mesh;
+}
+
+/** Rótulos I–VIII en el centroide de la superficie de cada segmento. */
+export function buildCouinaudLabels(a: AnatomyScene, liver: THREE.Mesh): THREE.Group {
+  const g = new THREE.Group();
+  const pos = liver.geometry.getAttribute('position');
+  const planes = couinaudPlanes(a);
+  const sc = liver.scale.x;
+  const acc = new Map<CouinaudSegment, { x: number; y: number; z: number; n: number }>();
+  for (let i = 0; i < pos.count; i++) {
+    const wx = pos.getX(i) * sc + liver.position.x;
+    const wy = pos.getY(i) * sc + liver.position.y;
+    const wz = pos.getZ(i) * sc + liver.position.z;
+    const seg = couinaudSegment([wx / CM, wy / CM, wz / CM], planes);
+    const e = acc.get(seg) ?? { x: 0, y: 0, z: 0, n: 0 };
+    e.x += wx;
+    e.y += wy;
+    e.z += wz;
+    e.n++;
+    acc.set(seg, e);
+  }
+  for (const [seg, e] of acc) {
+    const sp = labelSprite(COUINAUD_LABEL[seg], '#ffe9c8');
+    sp.scale.set(3.6, 0.9, 1);
+    sp.position.set(e.x / e.n, e.y / e.n, e.z / e.n);
+    g.add(sp);
+  }
+  return g;
 }
 
 /** Riñón en judía con escotadura hiliar: marching cubes sobre `kidneyOuterSdf` (decisión 37). */
@@ -74,7 +139,8 @@ export function buildKidneyMesh(k: Kidney): THREE.Mesh {
 
 export function buildOrgans(a: AnatomyScene): THREE.Group {
   const g = new THREE.Group();
-  g.add(buildLiverMesh(a));
+  const liver = buildLiverMesh(a);
+  g.add(liver, buildCouinaudLabels(a, liver));
   // Diafragma: superficie paramétrica sobre toda la sección del tronco (misma
   // diaphragmHeight que el clasificador: dos hemicúpulas sobre la inserción costal)
   const nR = 20;

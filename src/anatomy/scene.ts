@@ -99,6 +99,12 @@ export class AnatomyScene {
    * grasa ecogénica. Solo por delante (y > 0) y en el tercio inferior (z < zMax = −30): en el corte transversal es el foco ecogénico entre los segmentos III y IV.
    */
   readonly umbilicalFissure: { x: number; halfWidth: number; depthMm: number; zMax: number; roundMm: number };
+  /**
+   * Fisura del ligamento venoso: lámina fibrosa (1,2 mm de semiespesor) en el plano que va de
+   * la porta hepatis a la desembocadura de la suprahepática izquierda, entre el caudado
+   * (detrás) y el segmento II (delante). Línea ecogénica clásica del corte subxifoideo.
+   */
+  readonly ligamentumVenosum: { a: Vec3; b: Vec3; c: Vec3; halfMm: number; xMin: number; xMax: number; zMin: number; zMax: number };
   readonly gallbladder: OrientedEllipsoid;
   /** Pared vesicular (mm), ecogénica, entre la luz anecoica y la fosa. */
   readonly gallbladderWallMm = 1.5;
@@ -146,6 +152,7 @@ export class AnatomyScene {
     this.liverLeft = { kind: 'ellipsoid', center: [0, 32, -25], radii: [95 * f, 36 * f, 55 * f], taperX: 0.5 };
     this.visceralPlane = { zAtY0: -62 - 100 * (f - 1), slopeY: 0.35, edgeRoundMm: 12 };
     this.umbilicalFissure = { x: 15, halfWidth: 4, depthMm: 14, zMax: -30, roundMm: 3 };
+    this.ligamentumVenosum = { a: [-30, 0, -45], b: [-16, 2, 40], c: [10, 14, -10], halfMm: 1.2, xMin: -28, xMax: 12, zMin: -42, zMax: 32 };
     // Vesícula en pera en su fosa (cara visceral entre IV y V): fondo anteroinferolateral que
     // asoma bajo el reborde hepático, cuello posterosuperomedial hacia el hilio (eje u apunta
     // del fondo al cuello; afilamiento 0,45: fondo ≈ 16 mm de radio, cuello ≈ 6 mm).
@@ -428,6 +435,26 @@ export class AnatomyScene {
     return null;
   }
 
+  /** Plano de la fisura del ligamento venoso (normal unitaria, hacia +y ≈ anterior). */
+  ligamentumVenosumPlane(): { point: Vec3; normal: Vec3 } {
+    const l = this.ligamentumVenosum;
+    const ab: Vec3 = [l.b[0] - l.a[0], l.b[1] - l.a[1], l.b[2] - l.a[2]];
+    const ac: Vec3 = [l.c[0] - l.a[0], l.c[1] - l.a[1], l.c[2] - l.a[2]];
+    let n: Vec3 = [ab[1] * ac[2] - ab[2] * ac[1], ab[2] * ac[0] - ab[0] * ac[2], ab[0] * ac[1] - ab[1] * ac[0]];
+    const len = Math.hypot(n[0], n[1], n[2]) || 1;
+    n = [n[0] / len, n[1] / len, n[2] / len];
+    if (n[1] < 0) n = [-n[0], -n[1], -n[2]];
+    return { point: l.a, normal: n };
+  }
+
+  /** Distancia con signo a la lámina del ligamento venoso (negativa dentro de la lámina acotada). */
+  ligamentumVenosumSdf(m: Vec3): number {
+    const l = this.ligamentumVenosum;
+    const pl = this.ligamentumVenosumPlane();
+    const d = (m[0] - pl.point[0]) * pl.normal[0] + (m[1] - pl.point[1]) * pl.normal[1] + (m[2] - pl.point[2]) * pl.normal[2];
+    return Math.max(Math.abs(d) - l.halfMm, l.xMin - m[0], m[0] - l.xMax, l.zMin - m[2], m[2] - l.zMax);
+  }
+
   /** Hígado con cápsula, recortado por diafragma (`dDome`) y pared (`insideWallMm`). */
   private classifyLiver(m: Vec3, dDome: number, insideWallMm: number): Classification | null {
     const dBase = this.liverBaseSdf(m);
@@ -440,6 +467,8 @@ export class AnatomyScene {
     }
     const inner = Math.min(-dLiver, dDome - DIAPHRAGM_THICKNESS_MM, insideWallMm);
     if (inner < LIVER_CAPSULE_MM) return { ...NONE, tissue: Tissue.LiverCapsule, boundaryDistance: inner, specular: 0.5 };
+    const dLv = this.ligamentumVenosumSdf(m);
+    if (dLv < 0 && inner > 2) return { ...NONE, tissue: Tissue.LigamentumVenosum, boundaryDistance: Math.min(-dLv, inner), specular: 0.7 };
     return { ...NONE, tissue: Tissue.Liver, boundaryDistance: inner, specular: 0.5 };
   }
 }

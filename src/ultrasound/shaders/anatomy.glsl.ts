@@ -58,7 +58,9 @@ uniform vec3 uLiverLR;
 uniform float uLiverLTaper;
 uniform float uLiverBlend;
 uniform vec4 uVisceral;   // zAtY0, slopeY, edgeRound, renalImpression
-uniform vec4 uFissure;    // x, semiancho, profundidad, zMax de la fisura umbilical (redondeo 3 mm)
+uniform vec4 uFissure;
+uniform vec4 uLigVen;     // normal.xyz del plano del ligamento venoso, d (n·a)
+uniform vec4 uLigVenBox;  // xMin, xMax, zMin, zMax (semiespesor 1,2 mm)    // x, semiancho, profundidad, zMax de la fisura umbilical (redondeo 3 mm)
 uniform vec3 uGbC;
 uniform vec3 uGbR;
 uniform vec3 uGbU;
@@ -453,7 +455,12 @@ Cls classify(vec3 m) {
     float inner = min(-dLiver, min(dDome - DIAPHRAGM_MM, -depth - wall));
     c.n = (inner == -dLiver) ? ln : ((inner == dDome - DIAPHRAGM_MM) ? dn : tn);
     c.spec = 0.5;
-    c.tissue = inner < CAPSULE_MM ? T_CAPSULE : T_LIVER; c.bd = inner; return c;
+    if (inner < CAPSULE_MM) { c.tissue = T_CAPSULE; c.bd = inner; return c; }
+    // lámina del ligamento venoso (misma fórmula que ligamentumVenosumSdf)
+    float dPl = dot(m, uLigVen.xyz) - uLigVen.w;
+    float dLv = max(max(abs(dPl) - 1.2, uLigVenBox.x - m.x), max(max(m.x - uLigVenBox.y, uLigVenBox.z - m.z), m.z - uLigVenBox.w));
+    if (dLv < 0.0 && inner > 2.0) { c.tissue = T_LIG_VENOSUM; c.bd = min(-dLv, inner); c.n = uLigVen.xyz; c.spec = 0.7; return c; }
+    c.tissue = T_LIVER; c.bd = inner; return c;
   }
   for (int i = 0; i < MAX_GAS; i++) {
     float dg = sdSphere(m, uGas[i], sn);

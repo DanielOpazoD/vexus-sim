@@ -274,6 +274,15 @@ export class UltrasoundRenderer {
     p.f('uLiverBlend', s.liverBlendMm);
     p.v4('uVisceral', s.visceralPlane.zAtY0, s.visceralPlane.slopeY, s.visceralPlane.edgeRoundMm, s.renalImpressionMm);
     p.v4('uFissure', s.umbilicalFissure.x, s.umbilicalFissure.halfWidth, s.umbilicalFissure.depthMm, s.umbilicalFissure.zMax);
+    const lv = s.ligamentumVenosumPlane();
+    p.v4(
+      'uLigVen',
+      lv.normal[0],
+      lv.normal[1],
+      lv.normal[2],
+      lv.normal[0] * lv.point[0] + lv.normal[1] * lv.point[1] + lv.normal[2] * lv.point[2],
+    );
+    p.v4('uLigVenBox', s.ligamentumVenosum.xMin, s.ligamentumVenosum.xMax, s.ligamentumVenosum.zMin, s.ligamentumVenosum.zMax);
     p.v3('uGbC', s.gallbladder.center);
     p.v3('uGbR', s.gallbladder.radii);
     p.v3('uGbU', s.gallbladder.u);

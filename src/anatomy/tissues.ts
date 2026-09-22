@@ -33,9 +33,11 @@ export enum Tissue {
   Vertebra = 22,
   /** Ligamento redondo / falciforme: grasa y fibra en la fisura umbilical (foco ecogénico). */
   LigamentumTeres = 23,
+  /** Ligamento venoso: lámina fibrosa entre el caudado y el segmento II (línea ecogénica). */
+  LigamentumVenosum = 24,
 }
 
-export const TISSUE_COUNT = 24;
+export const TISSUE_COUNT = 25;
 
 /**
  * Nombre de cada tejido en GLSL (`#define T_… índice`). Se genera desde aquí
@@ -67,6 +69,7 @@ export const TISSUE_GLSL_NAME: Record<Tissue, string> = {
   [Tissue.BileDuctWall]: 'T_BILEWALL',
   [Tissue.Vertebra]: 'T_VERTEBRA',
   [Tissue.LigamentumTeres]: 'T_LIG_TERES',
+  [Tissue.LigamentumVenosum]: 'T_LIG_VENOSUM',
 };
 
 /** Lámina diafragmática bajo la cúpula (mm); la misma en TS, GLSL y el navegador 3D. */
@@ -122,6 +125,8 @@ export const TISSUES: TissueProps[] = [
   // Ligamento redondo: grasa + tejido fibroso, marcadamente ecogénico (foco brillante en el
   // corte transversal del lóbulo izquierdo, a veces con sombra) [E.3].
   { name: 'ligamento redondo (grasa)', c: 1470, rho: 950, alpha1: 0.6, b: 1.1, backscatter: 2.2, gas: false, bone: false },
+  // Ligamento venoso: lámina fibrosa fina, muy ecogénica (línea brillante delante del caudado)
+  { name: 'ligamento venoso', c: 1600, rho: 1100, alpha1: 0.8, b: 1, backscatter: 2.6, gas: false, bone: false },
 ];
 
 /** Impedancia acústica Z = ρc en MRayl. */

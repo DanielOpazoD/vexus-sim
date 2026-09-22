@@ -15,8 +15,9 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **Velocidad uniforme a lo largo de cada tubo** (`uniform-vessel-velocity`): el caudal local escala
   con el área; no hay conservación explícita en bifurcaciones.
 - **El hígado es una forma procedural** (`procedural-liver-shape`): elipsoides recortados por pared,
-  cúpula y plano visceral, con fosa vesicular e impresión renal, pero sin fisuras, ligamentos ni
-  segmentos de Couinaud explícitos; los ángulos de las venas y conductos son plausibles, no medidos.
+  cúpula y plano visceral, con fosa vesicular, impresión renal, fisura umbilical y lámina del
+  ligamento venoso; los segmentos de Couinaud son una partición por planos de los vasos (metadatos
+  del 3D, no una malla segmentada); los ángulos de las venas y conductos son plausibles, no medidos.
 - **La VCI es un solo compartimento abdominal** (`ivc-single-compartment`): su diámetro observado
   usa la presión del compartimento entero, no la del segmento a 2 cm de la confluencia; la pulsación
   cardíaca del calibre está amortiguada.

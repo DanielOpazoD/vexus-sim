@@ -3,7 +3,8 @@ import { apertureAngleSigmaRad, lateralSigmaMm } from '../ultrasound/beamModel';
 import { colorTiming, type ColorTiming } from '../ultrasound/colorTiming';
 import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene } from '../anatomy/scene';
-import { TISSUES, attenuationDbPerCm } from '../anatomy/tissues';
+import type { Tissue } from '../anatomy/tissues';
+import { rayTransmission } from '../ultrasound/transmission';
 import type { DopplerAudio } from '../audio/dopplerAudio';
 import { dopplerShiftHz } from '../core/units';
 import type { Vec3 } from '../core/vec3';
@@ -78,7 +79,8 @@ export function defaultEquipment(): EquipmentSettings {
   };
 }
 
-const TISSUE_ATTEN_DOPPLER = TISSUES.map((t, i) => ({ gas: t.gas, bone: t.bone, alpha: attenuationDbPerCm(i, 2.5) }));
+/** Frecuencia efectiva de penetración a la que se atenúa la puerta PW (MHz). */
+const DOPPLER_EFFECTIVE_MHZ = 2.5;
 
 /**
  * Orquestador de un caso: un reloj (el de la fisiología) gobierna latido,
@@ -236,21 +238,11 @@ export class Simulator {
   /** Transmisión aproximada hasta la puerta (marcha CPU gruesa a la frecuencia Doppler). */
   private estimateTransmission(fr: ProbeFrame, theta: number, rEnd: number, s: PhysiologySample): number {
     const step = 2.5;
-    let attenDb = 0;
-    let entered = false;
     const n = Math.ceil(rEnd / step);
-    for (let i = 0; i < n; i++) {
-      const rr = (i + 0.5) * step;
-      const p = pointOnLine(fr, this.transducer, theta, rr);
-      const q = this.anatomy.classifyWorld(p, s);
-      const props = TISSUE_ATTEN_DOPPLER[q.tissue];
-      if (q.tissue === 0 && !entered) continue; // gel de acoplamiento
-      entered = true;
-      if (props.gas) attenDb += 60 * (step / 10);
-      else if (props.bone) attenDb += 6 + 2 * props.alpha * (step / 10);
-      else attenDb += 2 * props.alpha * (step / 10);
-    }
-    return Math.pow(10, -attenDb / 20);
+    const tissues: Tissue[] = [];
+    for (let i = 0; i < n; i++)
+      tissues.push(this.anatomy.classifyWorld(pointOnLine(fr, this.transducer, theta, (i + 0.5) * step), s).tissue);
+    return rayTransmission(tissues, step, DOPPLER_EFFECTIVE_MHZ);
   }
 
   /** Cadencia física del color con la caja, PRF y ensemble actuales (decisión 39). */

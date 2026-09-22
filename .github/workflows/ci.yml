@@ -1,12 +1,16 @@
-# Integración continua: exactamente lo mismo que `npm run check` en local
-# (lint, tipos, todas las pruebas, build y presupuesto de bundle). Ningún
-# paso se salta en CI; si algo es lento aquí, es lento también en local.
+# Integración continua: lo mismo que `npm run check` en local (formato, lint,
+# tipos, todas las pruebas, build y presupuesto de bundle) más la auditoría de
+# dependencias de producción. Ningún paso se salta en CI; si algo es lento
+# aquí, es lento también en local.
 name: CI
 
 on:
   push:
     branches: [main]
   pull_request:
+
+permissions:
+  contents: read
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -24,10 +28,13 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
+      - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run test:all
       - run: npm run build
+      - name: Auditoría de dependencias de producción
+        run: npm audit --omit=dev --audit-level=high
       - name: Índice de decisiones al día
         run: npx tsx tools/docs/decisions-index.ts --check
       - name: Guardar el build

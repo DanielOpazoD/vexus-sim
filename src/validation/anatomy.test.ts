@@ -106,6 +106,34 @@ describe('Anatomía implícita (base B)', () => {
     expect(scene.gasPockets.length).toBe(0);
   });
 
+  it('árbol hepático procedural: ≥ 40 ramas de 3.º–4.º orden dentro del hígado, con id de su madre y sin alterar áreas', () => {
+    const branches = scene.vessels.filter((v) => v.flowFactor !== undefined);
+    expect(branches.length).toBeGreaterThanOrEqual(40);
+    for (const b of branches) {
+      expect(b.tube.nodes.length).toBe(2);
+      for (const n of b.tube.nodes) expect(scene.liverInteriorMargin(n.p)).toBeGreaterThan(1.9);
+      expect(scene.vesselById.has(b.id)).toBe(true); // la madre existe y sigue siendo la autoridad
+      expect(scene.vesselById.get(b.id)!.flowFactor).toBeUndefined();
+      expect(b.flowFactor!).toBeGreaterThan(0.5);
+      expect(b.flowFactor!).toBeLessThan(1);
+      expect(b.tube.nodes[0].r).toBeGreaterThanOrEqual(0.9);
+    }
+    // determinista: misma escena → mismas ramas
+    const again = new AnatomyScene(NORMAL_ADULT).vessels.filter((v) => v.flowFactor !== undefined);
+    expect(again.map((b) => b.tube.nodes[1].p)).toEqual(branches.map((b) => b.tube.nodes[1].p));
+    // un punto dentro de una rama se clasifica como sangre de la madre con factor < 1
+    const b0 = branches[0];
+    const mid: [number, number, number] = [
+      0.5 * (b0.tube.nodes[0].p[0] + b0.tube.nodes[1].p[0]),
+      0.5 * (b0.tube.nodes[0].p[1] + b0.tube.nodes[1].p[1]),
+      0.5 * (b0.tube.nodes[0].p[2] + b0.tube.nodes[1].p[2]),
+    ];
+    const c = cls(mid);
+    expect(c.tissue).toBe(Tissue.Blood);
+    expect(c.vessel).toBe(b0.id);
+    expect(c.flowFactor).toBeLessThan(1);
+  });
+
   it('el patrón renal se deriva de picos y mínimo', () => {
     expect(renalPatternFromPeaks(20, 18, 12)).toBe('continuous');
     expect(renalPatternFromPeaks(15, 18, 0)).toBe('biphasic');

@@ -1,4 +1,5 @@
-import type { Vec3 } from '../core/vec3';
+import { SeededRandom } from '../core/random';
+import { add, cross, dist, normalize, rotateAxis, scale, sub, type Vec3 } from '../core/vec3';
 import type { VesselId } from '../physiology/vessels';
 import { kidneyWorld, type Kidney, type Tube } from './primitives';
 import { Tissue } from './tissues';
@@ -13,6 +14,11 @@ export interface VesselDef {
   /** Tejido de pared y su espesor (mm). */
   wallTissue: Tissue;
   wallMm: number;
+  /**
+   * Ramas procedurales: velocidad relativa a la del vaso `id` del que dependen
+   * (una rama de 3.º orden lleva ~0,85 de la velocidad media de su madre). 1 si se omite.
+   */
+  flowFactor?: number;
 }
 
 /** Conducto biliar: tubo sin flujo, luz anecoica y pared ecogénica. */
@@ -391,4 +397,109 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
     },
   ];
   return { vessels, ducts };
+}
+
+/**
+ * Ramas hepáticas de 3.º y 4.º orden, procedurales y deterministas (semilla fija:
+ * el avatar es el mismo para todos los casos). Cada rama de 2.º orden (portal o
+ * suprahepática) emite dos hijas por bifurcación con ángulo 30–45° alrededor de un
+ * eje aleatorio perpendicular, longitud 0,7× la del segmento madre (22–40 mm) y
+ * radio 0,62×; las hijas vuelven a bifurcarse una vez. Los extremos se acortan
+ * hasta quedar a ≥ 3 mm dentro del hígado (`liverSdf`), así el árbol nunca sale del
+ * parénquima aunque el hígado cambie de tamaño. Las ramas heredan el `id`
+ * fisiológico de su madre (misma velocidad × `flowFactor`) y su tejido de pared:
+ * manguito periportal ecogénico en la porta, pared fina en las suprahepáticas
+ * (B.1–B.3; densidad de ramas [EXTRAPOLACIÓN PROPIA] de un hígado adulto).
+ */
+export function buildHepaticBranches(vessels: readonly VesselDef[], liverSdf: (m: Vec3) => number, seed = 7): VesselDef[] {
+  const rng = new SeededRandom(seed);
+  const out: VesselDef[] = [];
+  /** Ramas madre: [id, ¿extremo periférico es el PRIMER nodo? (suprahepáticas: sí)] */
+  const parents: Array<[VesselId, boolean]> = [
+    ['pvRightAnterior', false],
+    ['pvRightPosterior', false],
+    ['pvLeftLateral', false],
+    ['pvLeftMedial', false],
+    ['hvRightAnterior', true],
+    ['hvRightPosterior', true],
+    ['hvMiddleTributary', true],
+    ['hvLeftTributary', true],
+    ['hvRight', true],
+    ['hvMiddle', true],
+    ['hvLeft', true],
+  ];
+  /** Punto a distancia `len` de `origin` en `dir`, acortado hasta quedar ≥ 3 mm dentro del hígado. */
+  const fitInside = (origin: Vec3, dir: Vec3, len0: number): { end: Vec3; len: number } | null => {
+    let len = len0;
+    for (let i = 0; i < 8; i++) {
+      const end = add(origin, scale(dir, len));
+      if (liverSdf(end) <= -3) return { end, len };
+      len *= 0.75;
+    }
+    return null;
+  };
+  const grow = (
+    parent: VesselDef,
+    origin: Vec3,
+    dir: Vec3,
+    r0: number,
+    segLen: number,
+    factor: number,
+    depth: number,
+    peripheralFirst: boolean,
+  ): void => {
+    if (depth > 2 || liverSdf(origin) > -2) return; // el origen también debe estar en el parénquima
+    for (let k = 0; k < 2; k++) {
+      // eje perpendicular aleatorio; ángulo de bifurcación alterno, y si esa dirección
+      // sale del hígado se prueba la simétrica (el árbol real se acomoda a la cápsula)
+      const rnd: Vec3 = normalize([rng.float() - 0.5, rng.float() - 0.5, rng.float() - 0.5]);
+      const axis = normalize(cross(dir, rnd));
+      const angle = ((k === 0 ? 1 : -1) * ((30 + 15 * rng.float()) * Math.PI)) / 180;
+      const len0 = Math.min(40, Math.max(22, 0.7 * segLen)) * (0.9 + 0.2 * rng.float());
+      let d2 = normalize(rotateAxis(dir, axis, angle));
+      let fit = fitInside(origin, d2, len0);
+      if (!fit || fit.len < 12) {
+        d2 = normalize(rotateAxis(dir, axis, -angle * 1.6));
+        fit = fitInside(origin, d2, len0);
+      }
+      if (!fit || fit.len < 12) continue;
+      const rEnd = Math.max(0.9, r0 * 0.6);
+      const nodes = peripheralFirst
+        ? [
+            { p: fit.end, r: rEnd },
+            { p: origin, r: r0 },
+          ]
+        : [
+            { p: origin, r: r0 },
+            { p: fit.end, r: rEnd },
+          ];
+      out.push({
+        id: parent.id,
+        tube: { kind: 'tube', nodes, apScale: 1 },
+        refRadius: r0,
+        profileN: parent.profileN,
+        wallTissue: parent.wallTissue,
+        wallMm: Math.max(0.4, parent.wallMm * 0.7),
+        flowFactor: factor,
+      });
+      grow(parent, fit.end, d2, rEnd, fit.len, factor * 0.85, depth + 1, peripheralFirst);
+    }
+  };
+  for (const [id, peripheralFirst] of parents) {
+    const parent = vessels.find((v) => v.id === id);
+    if (!parent) continue;
+    const nodes = parent.tube.nodes;
+    const tip = peripheralFirst ? nodes[0] : nodes[nodes.length - 1];
+    const prev = peripheralFirst ? nodes[1] : nodes[nodes.length - 2];
+    const dir = normalize(sub(tip.p, prev.p));
+    grow(parent, tip.p, dir, tip.r * 0.62, dist(tip.p, prev.p), 0.85, 1, peripheralFirst);
+    // y ramas laterales a lo largo del último segmento (a 1/3 y 2/3), como las que
+    // nacen a lo largo de un vaso real; cada una vuelve a bifurcarse una vez
+    for (const f of [0.35, 0.7]) {
+      const at: Vec3 = add(prev.p, scale(sub(tip.p, prev.p), f));
+      const rAt = prev.r + (tip.r - prev.r) * f;
+      grow(parent, at, dir, Math.max(0.9, rAt * 0.5), dist(tip.p, prev.p) * 0.6, 0.85, 2, peripheralFirst);
+    }
+  }
+  return out;
 }

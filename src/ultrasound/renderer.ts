@@ -128,7 +128,10 @@ export class UltrasoundRenderer {
   /** Textura de datos de la escena (cabeceras de tubos + nodos, decisión 24). */
   private sceneTex: WebGLTexture;
   private sceneData = new Float32Array(SCENE_TEX_W * SCENE_TEX_H * 4);
+  /** Cabeceras de TODOS los tubos (4 texels cada una); por cuadro se suben solo las del plano. */
+  private headerAll = new Float32Array(MAX_TUBES * 16);
   private tubeCount = 0;
+  private tubeCountTotal = 0;
   private alpha = new Float32Array(TISSUE_COUNT);
   private back = new Float32Array(TISSUE_COUNT);
   private flags = new Float32Array(TISSUE_COUNT);
@@ -218,16 +221,18 @@ export class UltrasoundRenderer {
         profileN: 2,
       })),
     ];
-    this.tubeCount = tubes.length;
-    if (this.tubeCount > MAX_TUBES) throw new Error('Demasiados tubos para el shader');
+    this.tubeCountTotal = tubes.length;
+    if (this.tubeCountTotal > MAX_TUBES) throw new Error('Demasiados tubos para el shader');
     let n = 0;
     tubes.forEach((t, i) => {
       const h = i * 4;
-      this.sceneData.set([n, t.tube.nodes.length, t.tube.apScale, 1], h * 4);
-      this.sceneData.set([t.wallMm, t.wallTissue, t.lumen, t.duct], (h + 1) * 4);
-      this.sceneData.set([0, t.refRadius, t.profileN, 0], (h + 2) * 4);
+      // H2.w = índice original del tubo (el shader lo devuelve como `vessel` aunque las
+      // cabeceras se compacten por cuadro)
+      this.headerAll.set([n, t.tube.nodes.length, t.tube.apScale, 1], h * 4);
+      this.headerAll.set([t.wallMm, t.wallTissue, t.lumen, t.duct], (h + 1) * 4);
+      this.headerAll.set([0, t.refRadius, t.profileN, i], (h + 2) * 4);
       const b = s.tubeBounds[i];
-      this.sceneData.set([b.center[0], b.center[1], b.center[2], b.r], (h + 3) * 4);
+      this.headerAll.set([b.center[0], b.center[1], b.center[2], b.r], (h + 3) * 4);
       for (const node of t.tube.nodes) {
         if (n >= MAX_NODES) throw new Error('Demasiados nodos de tubo para el shader');
         this.sceneData.set([node.p[0], node.p[1], node.p[2], node.r], (NODE_BASE + n) * 4);
@@ -308,32 +313,43 @@ export class UltrasoundRenderer {
     p.f('uRespVel', inputs.sample.resp.diaphragmVelocityMmS);
   }
 
-  /** Campos dinámicos de las cabeceras de tubo (calibre y u_ref) → textura, una vez por cuadro. */
+  /**
+   * Cabeceras de tubo del cuadro: calibre y u_ref del instante, y SOLO los tubos cuya
+   * esfera envolvente corta la losa del plano de imagen (elevación ± 12 mm). Con
+   * ~90 tubos (árbol hepático procedural) el bucle por muestra era el coste dominante;
+   * por cuadro sobreviven 20–40. La lista compacta lleva el índice original en H2.w.
+   */
   private updateSceneDynamic(inputs: FrameInputs): void {
     const s = this.scene;
-    s.vessels.forEach((v, i) => {
-      const scale = inputs.caliber.radiusScale(v.id);
-      const ap = v.id.startsWith('ivc') ? inputs.caliber.ivcApScale : v.tube.apScale;
-      const h = i * 4;
-      this.sceneData[h * 4 + 2] = ap;
-      this.sceneData[h * 4 + 3] = scale;
-      this.sceneData[(h + 2) * 4] = inputs.sample.velocities[v.id];
-      this.sceneData[(h + 2) * 4 + 1] = v.refRadius * scale;
-    });
+    const fr = inputs.frame;
+    const total = this.tubeCountTotal;
+    let kept = 0;
+    for (let i = 0; i < total; i++) {
+      const b = s.tubeBounds[i];
+      const d =
+        (b.center[0] - fr.face[0]) * fr.elevation[0] +
+        (b.center[1] - fr.face[1]) * fr.elevation[1] +
+        (b.center[2] - fr.face[2]) * fr.elevation[2];
+      if (Math.abs(d) > b.r + 12) continue;
+      const src = i * 16;
+      const dst = kept * 16;
+      this.sceneData.set(this.headerAll.subarray(src, src + 16), dst);
+      if (i < s.vessels.length) {
+        const v = s.vessels[i];
+        const scale = inputs.caliber.radiusScale(v.id);
+        this.sceneData[dst + 2] = v.id.startsWith('ivc') ? inputs.caliber.ivcApScale : v.tube.apScale;
+        this.sceneData[dst + 3] = scale;
+        this.sceneData[dst + 8] = inputs.sample.velocities[v.id] * (v.flowFactor ?? 1);
+        this.sceneData[dst + 9] = v.refRadius * scale;
+      }
+      kept++;
+    }
+    this.tubeCount = kept;
     const gl = this.gl;
     gl.bindTexture(gl.TEXTURE_2D, this.sceneTex);
     // Solo las cabeceras (NODE_BASE texels) cambian por cuadro
-    gl.texSubImage2D(
-      gl.TEXTURE_2D,
-      0,
-      0,
-      0,
-      SCENE_TEX_W,
-      Math.ceil(NODE_BASE / SCENE_TEX_W),
-      gl.RGBA,
-      gl.FLOAT,
-      this.sceneData.subarray(0, SCENE_TEX_W * Math.ceil(NODE_BASE / SCENE_TEX_W) * 4),
-    );
+    const rows = Math.ceil(NODE_BASE / SCENE_TEX_W);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, SCENE_TEX_W, rows, gl.RGBA, gl.FLOAT, this.sceneData.subarray(0, SCENE_TEX_W * rows * 4));
   }
 
   private setBeamUniforms(p: GLProgram, inputs: FrameInputs): void {

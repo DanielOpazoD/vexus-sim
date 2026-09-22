@@ -7,17 +7,17 @@
  * `anatomy.test.ts` fija la versión TS.
  *
  * Disposición de la textura (índice lineal i → texel (i & 255, i >> 8)):
- *   tubo t, cabecera en 4 texels desde t·4:
+ *   tubo t (lista COMPACTA del cuadro: solo los que cortan la losa del plano), cabecera en 4 texels desde t·4:
  *     H0 = (inicio de nodos, n.º nodos, apScale, escala de radio)
  *     H1 = (espesor de pared mm, tejido de pared, tejido de la luz, tipo: 0 vaso / 1 conducto)
- *     H2 = (u_ref mm/s, r_ref mm, exponente del perfil, 0)
+ *     H2 = (u_ref mm/s, r_ref mm, exponente del perfil, índice original del tubo)
  *     H3 = esfera envolvente (cx, cy, cz, R)
  *   nodos desde NODE_BASE = MAX_TUBES·4: (x, y, z, r)
  */
 import { DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, TISSUE_GLSL_NAME } from '../../anatomy/tissues';
 
-export const MAX_TUBES = 40;
-export const MAX_NODES = 256;
+export const MAX_TUBES = 128;
+export const MAX_NODES = 640;
 export const NODE_BASE = MAX_TUBES * 4;
 export const SCENE_TEX_W = 256;
 export const SCENE_TEX_H = Math.ceil((NODE_BASE + MAX_NODES) / SCENE_TEX_W);
@@ -353,7 +353,7 @@ Cls classify(vec3 m) {
     float spec = duct ? 0.6 : (wallT == T_WALL_PORTAL ? 0.7 : (wallT == T_ARTERYWALL ? 0.6 : 0.35));
     c.n = bN; c.spec = spec; c.rho = bRho; c.tangent = bTan; c.rLoc = bR;
     c.uRef = h2.x; c.rRef = h2.y; c.profN = h2.z;
-    if (bestD < 0.0) { c.tissue = lumenT; c.bd = -bestD; c.vessel = duct ? -1 : bestT; return c; }
+    if (bestD < 0.0) { c.tissue = lumenT; c.bd = -bestD; c.vessel = duct ? -1 : int(h2.w + 0.5); return c; }
     c.tissue = wallT; c.bd = min(bestD, h1.x - bestD); return c;
   }
   // Aurícula derecha

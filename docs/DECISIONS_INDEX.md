@@ -37,3 +37,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [31](DECISIONS.md#L296) | Fibrilación auricular como ritmo y tercer caso | vigente |
 | [32](DECISIONS.md#L309) | Pruebas de extremo a extremo en Chromium | vigente |
 | [33](DECISIONS.md#L320) | La congestión se ve: calibres basales reales, plétora ×1,6 y hepatomegalia | vigente |
+| [34](DECISIONS.md#L333) | Árbol vascular hepático de 3.º–4.º orden y lista de tubos por cuadro | vigente |

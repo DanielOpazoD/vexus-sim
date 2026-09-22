@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+## [0.3.0] — 2026-09-22 — saneamiento, equivalencia TS ↔ GLSL, FA y e2e
+
 ### Corregido
 
 - Una ventana de medida NaN (sin onda A) devolvía el mínimo global como «A» y descartaba el latido (31).

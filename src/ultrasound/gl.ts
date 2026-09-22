@@ -52,8 +52,9 @@ export class GLProgram {
   v4(name: string, a: number, b: number, c: number, d: number): void {
     this.gl.uniform4f(this.loc(name), a, b, c, d);
   }
-  fv(name: string, v: Float32Array | number[]): void {
-    this.gl.uniform1fv(this.loc(name), v);
+  fv(name: string, v: Float32Array | readonly number[]): void {
+    // WebGL no muta el array; el tipo DOM no acepta `readonly`
+    this.gl.uniform1fv(this.loc(name), v as Float32List);
   }
   v4v(name: string, v: Float32Array): void {
     this.gl.uniform4fv(this.loc(name), v);

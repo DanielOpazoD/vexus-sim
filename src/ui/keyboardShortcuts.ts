@@ -1,4 +1,4 @@
-import { EQUIPMENT_LIMITS, type Simulator } from '../app/simulator';
+import type { EquipmentCommand } from '../app/equipment';
 import type { Store } from '../app/store';
 
 /**
@@ -6,12 +6,10 @@ import type { Store } from '../app/store';
  * congela, H oculta el navegador, Esc cancela la herramienta, [ ] profundidad,
  * − + ganancia. Se ignoran cuando el foco está en un control de formulario.
  */
-export function bindKeyboardShortcuts(store: Store, getSim: () => Simulator, onEquipmentChanged: () => void): () => void {
-  const clamp = (v: number, lim: { min: number; max: number }) => Math.min(lim.max, Math.max(lim.min, v));
+export function bindKeyboardShortcuts(store: Store, dispatch: (cmd: EquipmentCommand) => void): () => void {
   const handler = (e: KeyboardEvent): void => {
     const tag = (e.target as HTMLElement | null)?.tagName;
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
-    const sim = getSim();
     switch (e.key) {
       case '2':
         store.set({ mode: 'B' });
@@ -36,21 +34,17 @@ export function bindKeyboardShortcuts(store: Store, getSim: () => Simulator, onE
         store.set({ tool: 'none' });
         break;
       case '[':
-        sim.bmode.depthMm = clamp(sim.bmode.depthMm - 10, EQUIPMENT_LIMITS.depthMm);
-        onEquipmentChanged();
+        dispatch({ type: 'stepDepth', deltaMm: -10 });
         break;
       case ']':
-        sim.bmode.depthMm = clamp(sim.bmode.depthMm + 10, EQUIPMENT_LIMITS.depthMm);
-        onEquipmentChanged();
+        dispatch({ type: 'stepDepth', deltaMm: 10 });
         break;
       case '-':
-        sim.bmode.gainDb = clamp(sim.bmode.gainDb - 2, EQUIPMENT_LIMITS.gainDb);
-        onEquipmentChanged();
+        dispatch({ type: 'stepGain', deltaDb: -2 });
         break;
       case '+':
       case '=':
-        sim.bmode.gainDb = clamp(sim.bmode.gainDb + 2, EQUIPMENT_LIMITS.gainDb);
-        onEquipmentChanged();
+        dispatch({ type: 'stepGain', deltaDb: 2 });
         break;
     }
   };

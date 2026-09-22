@@ -1,4 +1,5 @@
 import { equivalenceSweep, type EquivalencePoseReport } from './equivalenceSweep';
+import type { EquipmentCommand } from './equipment';
 import { bestGateOnVessel } from './gatePlacement';
 import type { VesselId } from '../physiology/vessels';
 import type { Simulator } from './simulator';
@@ -32,7 +33,7 @@ declare global {
   }
 }
 
-export function registerDevtools(getSim: () => Simulator, getViews: () => DevViews): void {
+export function registerDevtools(getSim: () => Simulator, getViews: () => DevViews, dispatch: (cmd: EquipmentCommand) => void): void {
   if (import.meta.env.DEV || new URLSearchParams(location.search).has('e2e')) {
     window.__vexusTest = {
       equivalenceSweep: () => equivalenceSweep(getSim()),
@@ -44,8 +45,7 @@ export function registerDevtools(getSim: () => Simulator, getViews: () => DevVie
         const sim = getSim();
         const g = bestGateOnVessel(sim.anatomy, sim.frame, sim.transducer, sim.sample, vessels, sim.bmode.depthMm - 5);
         if (!g) return false;
-        sim.pw.theta = g.theta;
-        sim.pw.depthMm = g.r;
+        dispatch({ type: 'placeGate', theta: g.theta, r: g.r });
         return true;
       },
     };

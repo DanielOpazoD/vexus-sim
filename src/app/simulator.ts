@@ -73,11 +73,6 @@ export interface EquipmentSettings {
 }
 
 /** Límites del equipo (deslizadores y atajos comparten estos valores). */
-export const EQUIPMENT_LIMITS = {
-  depthMm: { min: 60, max: 240, step: 5 },
-  gainDb: { min: -20, max: 20, step: 1 },
-} as const;
-
 export function defaultEquipment(): EquipmentSettings {
   return {
     bmode: { ...DEFAULT_BMODE, tgcDb: [...DEFAULT_BMODE.tgcDb] },
@@ -110,6 +105,7 @@ export class Simulator {
   readonly pwChain: PwDopplerChain;
   renderer: UltrasoundRenderer;
   pose: ProbePose = defaultPose();
+  /** Instantánea inmutable que asigna `EquipmentController` (sobrevive a los cambios de caso). */
   equipment: EquipmentSettings = defaultEquipment();
   frozen = false;
   private lastFrame: ProbeFrame;
@@ -134,13 +130,14 @@ export class Simulator {
     this.lastFrame = probeFrame(this.pose, this.scene.torso, this.transducer);
   }
 
-  get bmode(): BModeSettings {
+  // Ajustes de solo lectura: se cambian con comandos (`EquipmentController`), nunca en sitio
+  get bmode(): Readonly<BModeSettings> {
     return this.equipment.bmode;
   }
-  get color(): ColorSettings {
+  get color(): Readonly<ColorSettings> {
     return this.equipment.color;
   }
-  get pw(): PwSettings {
+  get pw(): Readonly<PwSettings> {
     return this.equipment.pw;
   }
   get spectral(): PwDopplerChain['spectral'] {

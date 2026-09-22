@@ -3,8 +3,9 @@ import { ProbeAnimator } from './app/probeAnimation';
 import { bindKeyboardShortcuts } from './ui/keyboardShortcuts';
 import { registerDevtools } from './app/devtools';
 import { errorLog, errorMessage } from './app/errorLog';
-import { nyquistVelocityCms } from './core/units';
-import { Simulator } from './app/simulator';
+import { C_RECONSTRUCTION_MM_S, nyquistVelocityCms } from './core/units';
+import { EquipmentController } from './app/equipment';
+import { Simulator, defaultEquipment } from './app/simulator';
 import { Store, type ImagingMode } from './app/store';
 import { CASES, CASE_IDS, findCase, isCaseId, type CaseId } from './cases';
 import { NonFiniteStateError } from './physiology/engine';
@@ -84,11 +85,24 @@ try {
 registerDevtools(
   () => sim,
   () => ({ nav, cutMap, spectrogram }),
+  (cmd) => dispatch(cmd),
 );
+
+// Estado del equipo: dueño único, cambia solo por comandos normalizados y avisa sin sondeo
+const equipment = new EquipmentController(defaultEquipment(), {
+  halfSectorRad: sim.transducer.halfSector,
+  cMmS: C_RECONSTRUCTION_MM_S,
+});
+sim.equipment = equipment.state;
+const dispatch = equipment.dispatch.bind(equipment);
 
 const spectrogram = new SpectrogramView(spectrumCanvas);
 const cutMap = new CutMapView(cutCanvas);
-const panel = new ControlPanel($('panel'), () => sim, store);
+const panel = new ControlPanel($('panel'), () => sim, store, dispatch);
+equipment.subscribe((next) => {
+  sim.equipment = next;
+  panel.sync();
+});
 const input = new ProbeInput(
   sectorWrap,
   () => sim.pose,
@@ -122,9 +136,8 @@ panel.onStartPoint = (sp) => probeAnimator.goTo(sp);
 // --- Estado de UI → simulador --------------------------------------------
 const modeButtons: Record<ImagingMode, HTMLButtonElement> = { B: $('mode-b'), color: $('mode-color'), pw: $('mode-pw') };
 function applyMode(mode: ImagingMode): void {
-  sim.color.enabled = mode === 'color';
   const wasPw = sim.pw.enabled;
-  sim.pw.enabled = mode === 'pw';
+  dispatch({ type: 'mode', mode });
   if (sim.pw.enabled && !wasPw) {
     sim.pwChain.reset();
     spectrogram.reset();
@@ -236,7 +249,7 @@ function loadCase(id: CaseId): void {
     return;
   }
   next.setPose(prevSim.pose);
-  next.equipment = prevSim.equipment;
+  next.equipment = equipment.state;
   next.frozen = prevSim.frozen;
   sim = next;
   prevSim.dispose();
@@ -269,26 +282,12 @@ sectorWrap.addEventListener('click', (e) => {
     }
     return;
   }
-  if (sim.pw.enabled) {
-    sim.pw.theta = beam.theta;
-    sim.pw.depthMm = beam.r;
-  } else if (sim.color.enabled) {
-    const c = sim.color;
-    const hw = (c.theta1 - c.theta0) / 2;
-    const hr = (c.r1 - c.r0) / 2;
-    c.theta0 = beam.theta - hw;
-    c.theta1 = beam.theta + hw;
-    c.r0 = Math.max(5, beam.r - hr);
-    c.r1 = Math.min(sim.bmode.depthMm, beam.r + hr);
-  }
+  if (sim.pw.enabled) dispatch({ type: 'placeGate', theta: beam.theta, r: beam.r });
+  else if (sim.color.enabled) dispatch({ type: 'centerColorBox', theta: beam.theta, r: beam.r });
 });
 
 // --- Atajos de teclado (misma familia que EchoTwin) ---------------------------
-bindKeyboardShortcuts(
-  store,
-  () => sim,
-  () => panel.sync(),
-);
+bindKeyboardShortcuts(store, dispatch);
 
 // --- Pérdida de contexto GPU ---------------------------------------------------
 let gpuLost = false;

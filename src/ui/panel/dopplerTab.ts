@@ -1,4 +1,4 @@
-import { EQUIPMENT_LIMITS, type Simulator } from '../../app/simulator';
+import { EQUIPMENT_LIMITS } from '../../app/equipment';
 import { nyquistVelocityCms, prfFromNyquistCms } from '../../core/units';
 import { button, help, row, slider } from '../controls';
 import type { PanelContext } from './context';
@@ -34,7 +34,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
         max: 60,
         step: 1,
         get: () => Math.round(nyquistVelocityCms(s().color.prfHz, s().transducer.f0Doppler)),
-        set: (v) => (s().color.prfHz = Math.round(prfFromNyquistCms(v, s().transducer.f0Doppler))),
+        set: (v) => ctx.dispatch({ type: 'color', patch: { prfHz: Math.round(prfFromNyquistCms(v, s().transducer.f0Doppler)) } }),
         format: (v) => `±${v} cm/s`,
       },
       ch,
@@ -49,7 +49,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
         max: 400,
         step: 10,
         get: () => s().color.wallFilterHz,
-        set: (v) => (s().color.wallFilterHz = v),
+        set: (v) => ctx.dispatch({ type: 'color', patch: { wallFilterHz: v } }),
         format: (v) => `${v} Hz`,
       },
       ch,
@@ -64,7 +64,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
         max: 4,
         step: 0.1,
         get: () => s().color.gain,
-        set: (v) => (s().color.gain = v),
+        set: (v) => ctx.dispatch({ type: 'color', patch: { gain: v } }),
         format: (v) => v.toFixed(1),
       },
       ch,
@@ -75,12 +75,12 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
     button(
       cr,
       'Invertir mapa',
-      () => (s().color.invert = !s().color.invert),
+      () => ctx.dispatch({ type: 'color', patch: { invert: !s().color.invert } }),
       () => s().color.invert,
     ),
   );
-  ctx.track(button(cr, 'Caja +', () => sizeBox(s(), 1.15)));
-  ctx.track(button(cr, 'Caja −', () => sizeBox(s(), 1 / 1.15)));
+  ctx.track(button(cr, 'Caja +', () => ctx.dispatch({ type: 'scaleColorBox', factor: 1.15 })));
+  ctx.track(button(cr, 'Caja −', () => ctx.dispatch({ type: 'scaleColorBox', factor: 1 / 1.15 })));
   help(
     c,
     'Clic en la imagen centra la caja. Escala baja → aliasing; filtro alto → desaparece flujo lento; el color depende de la orientación del haz.',
@@ -98,7 +98,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
         max: 120,
         step: 1,
         get: () => Math.round(nyquistVelocityCms(s().pw.prfHz, s().transducer.f0Doppler)),
-        set: (v) => (s().pw.prfHz = Math.round(prfFromNyquistCms(v, s().transducer.f0Doppler))),
+        set: (v) => ctx.dispatch({ type: 'pw', patch: { prfHz: Math.round(prfFromNyquistCms(v, s().transducer.f0Doppler)) } }),
         format: (v) => `±${v} cm/s`,
       },
       ch,
@@ -113,7 +113,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
         max: 10,
         step: 0.5,
         get: () => s().pw.gateMm,
-        set: (v) => (s().pw.gateMm = v),
+        set: (v) => ctx.dispatch({ type: 'pw', patch: { gateMm: v } }),
         format: (v) => `${v.toFixed(1)} mm`,
       },
       ch,
@@ -128,7 +128,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
         max: 300,
         step: 5,
         get: () => s().pw.wallFilterHz,
-        set: (v) => (s().pw.wallFilterHz = v),
+        set: (v) => ctx.dispatch({ type: 'pw', patch: { wallFilterHz: v } }),
         format: (v) => `${v} Hz`,
       },
       ch,
@@ -143,7 +143,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
         max: 0.45,
         step: 0.05,
         get: () => s().pw.baselineShift,
-        set: (v) => (s().pw.baselineShift = v),
+        set: (v) => ctx.dispatch({ type: 'pw', patch: { baselineShift: v } }),
         format: (v) => `${(v * 100).toFixed(0)} %`,
       },
       ch,
@@ -156,7 +156,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
         label: 'Ganancia',
         ...EQUIPMENT_LIMITS.gainDb,
         get: () => s().pw.gainDb,
-        set: (v) => (s().pw.gainDb = v),
+        set: (v) => ctx.dispatch({ type: 'pw', patch: { gainDb: v } }),
         format: (v) => `${v} dB`,
       },
       ch,
@@ -171,7 +171,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
         max: 80,
         step: 1,
         get: () => (s().pw.angleCorrection * 180) / Math.PI,
-        set: (v) => (s().pw.angleCorrection = (v * Math.PI) / 180),
+        set: (v) => ctx.dispatch({ type: 'pw', patch: { angleCorrection: (v * Math.PI) / 180 } }),
         format: (v) => `${v.toFixed(0)}°`,
       },
       ch,
@@ -192,7 +192,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
       ['100', '100'],
     ],
     () => String(s().pw.sweepMmS) as '25' | '50' | '100',
-    (v) => (s().pw.sweepMmS = Number(v)),
+    (v) => ctx.dispatch({ type: 'pw', patch: { sweepMmS: Number(v) } }),
   );
   const so = document.createElement('output');
   so.textContent = 'mm/s';
@@ -203,7 +203,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
     button(
       pr,
       'Invertir espectro',
-      () => (s().pw.invert = !s().pw.invert),
+      () => ctx.dispatch({ type: 'pw', patch: { invert: !s().pw.invert } }),
       () => s().pw.invert,
     ),
   );
@@ -227,17 +227,4 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
     'Clic en la imagen coloca la puerta. La corrección angular solo cambia la velocidad rotulada; la línea de base solo la presentación; el filtro de pared elimina frecuencias bajas de la señal.',
   );
   return { empty, color, pw };
-}
-
-/** Agranda o encoge la caja de color alrededor de su centro. */
-function sizeBox(sim: Simulator, f: number): void {
-  const c = sim.color;
-  const cm = (c.theta0 + c.theta1) / 2;
-  const hw = ((c.theta1 - c.theta0) / 2) * f;
-  c.theta0 = cm - hw;
-  c.theta1 = cm + hw;
-  const rm = (c.r0 + c.r1) / 2;
-  const hr = ((c.r1 - c.r0) / 2) * f;
-  c.r0 = Math.max(5, rm - hr);
-  c.r1 = Math.min(sim.bmode.depthMm, rm + hr);
 }

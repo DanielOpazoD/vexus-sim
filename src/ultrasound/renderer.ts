@@ -30,7 +30,7 @@ export interface BModeSettings {
   depthMm: number;
   focusMm: number;
   gainDb: number;
-  tgcDb: number[]; // 8 bandas
+  tgcDb: readonly number[]; // 8 bandas
   dynamicRangeDb: number;
   persistence: number; // 0–0.8
 }

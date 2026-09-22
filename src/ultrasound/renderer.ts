@@ -419,6 +419,9 @@ export class UltrasoundRenderer {
     const w = this.canvas.width;
     const h = this.canvas.height;
     if (this.tScan && this.tScan.width === w && this.tScan.height === h) return;
+    // liberar los destinos del tamaño anterior (antes se filtraban ~25 MB por redimensionado)
+    if (this.tScan) deleteTarget(gl, this.tScan);
+    if (this.tPersist) for (const t of this.tPersist) deleteTarget(gl, t);
     const f = { internal: gl.RGBA8, format: gl.RGBA, type: gl.UNSIGNED_BYTE, filter: gl.LINEAR };
     this.tScan = createTarget(gl, w, h, [f]);
     this.tPersist = [createTarget(gl, w, h, [f]), createTarget(gl, w, h, [f])];

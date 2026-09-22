@@ -489,9 +489,11 @@ Cls classify(vec3 m) {
 }
 
 // Velocidad de la sangre (mm/s, marco material) para una clasificación de sangre.
+// Velocidad media UNIFORME a lo largo del vaso (decisión 6, misma ley que
+// AnatomyQuery.classifyWorld): Q = cte en un tubo afilado dispararía la periferia.
 vec3 bloodVelocity(Cls c) {
   if (c.vessel < 0) return vec3(0.0);
-  float uLocal = c.uRef * (c.rRef * c.rRef) / (c.rLoc * c.rLoc);
+  float uLocal = c.uRef;
   float n = c.profN;
   float rho = min(1.0, c.rho);
   float profile = ((n + 2.0) / n) * (1.0 - pow(rho, n));

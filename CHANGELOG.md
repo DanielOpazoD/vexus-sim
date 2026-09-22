@@ -19,6 +19,13 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 - Pestaña «Adquirir» con los mandos básicos de imagen (profundidad, ganancia, foco; una sola fuente con la pestaña «Imagen»); profundidad por defecto 18 cm.
 - Costillas con oblicuidad creciente hacia abajo (`ribTiltMm`: 60 mm la 5.ª, 90 mm la 10.ª), misma ley en el SDF y en el 3D; antes se veían casi horizontales.
 
+### Corregido
+
+- El Doppler color usaba caudal constante (`uRef·rRef²/rLoc²`) mientras la CPU (PW, medición) usa velocidad media uniforme por vaso (decisión 6): color y PW podían contradecirse en ramas afiladas. Ahora la GPU usa la misma ley.
+- La transmisión hasta la puerta PW cobraba 6 dB en cada paso dentro del hueso; la GPU solo al entrar. Regla única `rayAttenuationDb` con test.
+- Fuga de memoria de vídeo: cada redimensionado creaba tres destinos de pantalla sin liberar los anteriores.
+- CI no ejecutaba `format:check` aunque decía replicar `npm run check`; añadidos permisos mínimos y auditoría de dependencias de producción.
+
 ## [0.4.0] — 2026-09-22 — fidelidad anatómica y ecográfica (evaluación experta, decisiones 33–40)
 
 ### Añadido

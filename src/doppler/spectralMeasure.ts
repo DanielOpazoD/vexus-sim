@@ -1,3 +1,4 @@
+import { extremeInWindow, median, type TimeWindow } from '../core/series';
 import { velocityFromShiftMmS } from '../core/units';
 import type { Beat } from '../physiology/rhythm';
 import { beatWindows, systolicPeak } from '../vexus/measurements';
@@ -82,21 +83,14 @@ export function observedTrace(columns: readonly SpectralColumn[], opts: MeasureO
   return out;
 }
 
-function median(xs: number[]): number {
-  if (!xs.length) return Number.NaN;
-  const s = [...xs].sort((a, b) => a - b);
-  const m = s.length >> 1;
-  return s.length % 2 ? s[m] : 0.5 * (s[m - 1] + s[m]);
-}
-
-function extreme(trace: ObservedTracePoint[], w: [number, number], pick: (v: number) => number): number {
-  let best = Number.NaN;
-  for (const p of trace) {
-    if (p.t < w[0] || p.t > w[1]) continue;
-    if (Number.isNaN(best) || pick(p.vScreen) > pick(best)) best = p.vScreen;
-  }
-  return best;
-}
+const extreme = (trace: readonly { t: number; vScreen: number }[], w: TimeWindow, pick: (v: number) => number): number =>
+  extremeInWindow(
+    trace,
+    w,
+    (p) => p.t,
+    (p) => p.vScreen,
+    pick,
+  );
 
 export function measureObservedHepatic(columns: readonly SpectralColumn[], beats: Beat[], opts: MeasureOptions): ObservedHepatic | null {
   const trace = observedTrace(columns, opts);
@@ -109,23 +103,15 @@ export function measureObservedHepatic(columns: readonly SpectralColumn[], beats
     if (Number.isFinite(d) && Math.abs(d) > 2) dSigns.push(Math.sign(d));
   }
   const anterogradeSign = dSigns.length ? (median(dSigns) >= 0 ? 1 : -1) : -1;
-  const oriented = trace.map((p) => ({ t: p.t, v: p.vScreen * anterogradeSign }));
+  const oriented = trace.map((p) => ({ t: p.t, vScreen: p.vScreen * anterogradeSign }));
   const sList: number[] = [];
   const dList: number[] = [];
   const aList: number[] = [];
   for (const b of beats) {
     const w = beatWindows(b);
-    const s = systolicPeak(oriented, w.sWindow, (p: { v: number }) => p.v);
-    const d = extreme(
-      oriented.map((p) => ({ t: p.t, vScreen: p.v, powerDb: 0 })),
-      w.dWindow,
-      (v) => v,
-    );
-    const a = extreme(
-      oriented.map((p) => ({ t: p.t, vScreen: p.v, powerDb: 0 })),
-      w.aWindow,
-      (v) => -v,
-    );
+    const s = systolicPeak(oriented, w.sWindow, (p) => p.vScreen);
+    const d = extreme(oriented, w.dWindow, (v) => v);
+    const a = extreme(oriented, w.aWindow, (v) => -v);
     if ([s, d, a].some((x) => Number.isNaN(x))) continue;
     sList.push(s);
     dList.push(d);

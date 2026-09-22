@@ -1,3 +1,4 @@
+import { C_RECONSTRUCTION_MM_S } from '../../core/units';
 import { ANATOMY_GLSL } from './anatomy.glsl';
 
 export const VERT = /* glsl */ `#version 300 es
@@ -347,7 +348,7 @@ void main() {
   vt /= float(NS);
   if (bf > 0.0) vb /= bf;
   bf /= float(NS);
-  float c_mm = 1540000.0;
+  float c_mm = ${C_RECONSTRUCTION_MM_S}.0;
   float fdB = 2.0 * uF0 * vb / c_mm;
   float fdT = 2.0 * uF0 * vt / c_mm;
   // Potencias en unidades de sangre (amplitud de sangre = 1 a transmisión 1).

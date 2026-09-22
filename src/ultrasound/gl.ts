@@ -58,14 +58,11 @@ export class GLProgram {
   v4v(name: string, v: Float32Array): void {
     this.gl.uniform4fv(this.loc(name), v);
   }
-  v2v(name: string, v: Float32Array): void {
-    this.gl.uniform2fv(this.loc(name), v);
-  }
   v3v(name: string, v: Float32Array): void {
     this.gl.uniform3fv(this.loc(name), v);
   }
-  iv2v(name: string, v: Int32Array): void {
-    this.gl.uniform2iv(this.loc(name), v);
+  dispose(): void {
+    this.gl.deleteProgram(this.program);
   }
   tex(name: string, unit: number, texture: WebGLTexture): void {
     const gl = this.gl;
@@ -115,6 +112,12 @@ export function createTexture(
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   return t;
+}
+
+/** Libera el FBO y las texturas de un destino de render. */
+export function deleteTarget(gl: WebGL2RenderingContext, t: RenderTarget): void {
+  gl.deleteFramebuffer(t.fbo);
+  for (const tex of t.textures) gl.deleteTexture(tex);
 }
 
 export function createTarget(

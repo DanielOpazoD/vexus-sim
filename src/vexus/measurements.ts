@@ -1,4 +1,5 @@
 import type { PhysiologyEngine, PhysiologySample } from '../physiology/engine';
+import { extremeInWindow as extremeOf, median, type TimeWindow } from '../core/series';
 import { mmsToCms } from '../core/units';
 import {
   hepaticPatternFromPeaks,
@@ -61,12 +62,12 @@ export interface BeatWindows {
  * informa como S invertida (valor negativo); si no, el máximo anterógrado.
  * Regla de lectura [EXTRAPOLACIÓN PROPIA] coherente con A.1 («S retrógrada»).
  */
-export function systolicPeak(samples: readonly { t: number }[], w: [number, number], get: (s: never) => number): number {
+export function systolicPeak<T extends { t: number }>(samples: readonly T[], w: TimeWindow, get: (s: T) => number): number {
   let vmax = Number.NaN;
   let vmin = Number.NaN;
   for (const s of samples) {
     if (s.t < w[0] || s.t > w[1]) continue;
-    const v = get(s as never);
+    const v = get(s);
     if (Number.isNaN(vmax) || v > vmax) vmax = v;
     if (Number.isNaN(vmin) || v < vmin) vmin = v;
   }
@@ -86,27 +87,12 @@ export function beatWindows(b: { tR: number; rr: number; tX: number; tV: number;
   };
 }
 
-function median(xs: number[]): number {
-  if (!xs.length) return Number.NaN;
-  const s = [...xs].sort((a, b) => a - b);
-  const m = s.length >> 1;
-  return s.length % 2 ? s[m] : 0.5 * (s[m - 1] + s[m]);
-}
-
-function extremeInWindow(
+const extremeInWindow = (
   samples: readonly PhysiologySample[],
-  w: [number, number],
+  w: TimeWindow,
   pick: (v: number) => number,
   get: (s: PhysiologySample) => number,
-): number {
-  let best = Number.NaN;
-  for (const s of samples) {
-    if (s.t < w[0] || s.t > w[1]) continue;
-    const v = get(s);
-    if (Number.isNaN(best) || pick(v) > pick(best)) best = v;
-  }
-  return best;
-}
+): number => extremeOf(samples, w, (s) => s.t, get, pick);
 
 export function measurePhysiologyTruth(engine: PhysiologyEngine, range: { fromT: number; toT: number }): TruthMeasurements {
   const all = engine.samples.filter((s) => s.t >= range.fromT && s.t <= range.toT);

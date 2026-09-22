@@ -1,3 +1,4 @@
+import { nyquistVelocityCms } from '../core/units';
 import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene } from '../anatomy/scene';
 import { TISSUES, attenuationDbPerCm } from '../anatomy/tissues';
@@ -61,6 +62,12 @@ export interface EquipmentSettings {
   pw: PwSettings;
 }
 
+/** Límites del equipo (deslizadores y atajos comparten estos valores). */
+export const EQUIPMENT_LIMITS = {
+  depthMm: { min: 60, max: 240, step: 5 },
+  gainDb: { min: -20, max: 20, step: 1 },
+} as const;
+
 export function defaultEquipment(): EquipmentSettings {
   return {
     bmode: { ...DEFAULT_BMODE, tgcDb: [...DEFAULT_BMODE.tgcDb] },
@@ -107,7 +114,7 @@ export class Simulator {
     this.scene = new AnatomyScene(patient);
     this.anatomy = new AnatomyQuery(this.scene);
     this.physiology = new PhysiologyEngine(patient, this.scene.vesselAreas());
-    this.renderer = new UltrasoundRenderer(canvas, this.scene);
+    this.renderer = new UltrasoundRenderer(canvas, this.scene, this.transducer);
     this.pwChain = new PwDopplerChain(this.anatomy, patient.seed, audio);
     this.lastFrame = probeFrame(this.pose, this.scene.torso, this.transducer);
   }
@@ -146,7 +153,13 @@ export class Simulator {
 
   /** Reconstruye el renderizador tras una pérdida de contexto GPU; el estado del paciente se conserva. */
   rebuildRenderer(canvas: HTMLCanvasElement): void {
-    this.renderer = new UltrasoundRenderer(canvas, this.scene);
+    this.renderer.dispose();
+    this.renderer = new UltrasoundRenderer(canvas, this.scene, this.transducer);
+  }
+
+  /** Libera los recursos GPU; el simulador no debe usarse después. */
+  dispose(): void {
+    this.renderer.dispose();
   }
 
   /** Avanza la simulación el tiempo real transcurrido y genera la IQ correspondiente. */
@@ -260,9 +273,7 @@ export class Simulator {
 
   /** Velocidad de Nyquist rotulada (cm/s) para la escala PW actual. */
   pwNyquistCms(): number {
-    const c = 1540 * 1000;
-    const cosA = Math.max(0.05, Math.abs(Math.cos(this.pw.angleCorrection)));
-    return ((this.pw.prfHz / 2) * c) / (2 * this.transducer.f0Doppler * cosA) / 10;
+    return nyquistVelocityCms(this.pw.prfHz, this.transducer.f0Doppler, this.pw.angleCorrection);
   }
 
   /** Frecuencia Doppler física esperada en el centro de la puerta (Hz), para depuración. */

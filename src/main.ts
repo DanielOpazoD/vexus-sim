@@ -1,3 +1,7 @@
+import { ProbeAnimator } from './app/probeAnimation';
+import { bindKeyboardShortcuts } from './ui/keyboardShortcuts';
+import { registerDevtools } from './app/devtools';
+import { nyquistVelocityCms } from './core/units';
 import { Simulator } from './app/simulator';
 import { Store, type ImagingMode } from './app/store';
 import { CASES, findCase } from './cases';
@@ -68,8 +72,10 @@ try {
 } catch (e) {
   fatal((e as Error).message);
 }
-(window as unknown as { __sim: () => Simulator }).__sim = () => sim;
-(window as unknown as { __views: () => unknown }).__views = () => ({ nav, cutMap, spectrogram });
+registerDevtools(
+  () => sim,
+  () => ({ nav, cutMap, spectrogram }),
+);
 
 const spectrogram = new SpectrogramView(spectrumCanvas);
 const cutMap = new CutMapView(cutCanvas);
@@ -93,30 +99,15 @@ try {
 }
 
 // --- Animación hacia un punto de partida (continua, cancelable) --------------
-let probeTarget: { phi: number; z: number; yaw: number; tilt: number } | null = null;
+const probeAnimator = new ProbeAnimator(
+  () => sim.pose,
+  (p) => sim.setPose(p),
+);
 function setPoseManual(p: Parameters<Simulator['setPose']>[0]): void {
-  probeTarget = null; // cualquier gesto manual cancela la animación
+  probeAnimator.cancel(); // cualquier gesto manual cancela la animación
   sim.setPose(p);
 }
-panel.onStartPoint = (sp) => (probeTarget = { phi: sp.phi, z: sp.z, yaw: sp.yaw, tilt: sp.tilt ?? 0 });
-function tickProbeAnimation(dt: number): void {
-  if (!probeTarget) return;
-  const p = sim.pose;
-  const k = Math.min(1, dt * 3.5);
-  let dphi = probeTarget.phi - p.phi;
-  const next = {
-    ...p,
-    phi: p.phi + dphi * k,
-    z: p.z + (probeTarget.z - p.z) * k,
-    yaw: p.yaw + (probeTarget.yaw - p.yaw) * k,
-    rock: p.rock * (1 - k),
-    tilt: p.tilt + (probeTarget.tilt - p.tilt) * k,
-    lift: p.lift * (1 - k),
-  };
-  sim.setPose(next);
-  dphi = probeTarget.phi - next.phi;
-  if (Math.abs(dphi) < 0.003 && Math.abs(probeTarget.z - next.z) < 0.5 && Math.abs(probeTarget.yaw - next.yaw) < 0.005) probeTarget = null;
-}
+panel.onStartPoint = (sp) => probeAnimator.goTo(sp);
 
 // --- Estado de UI → simulador --------------------------------------------
 const modeButtons: Record<ImagingMode, HTMLButtonElement> = { B: $('mode-b'), color: $('mode-color'), pw: $('mode-pw') };
@@ -220,6 +211,8 @@ function loadCase(id: string): void {
   next.equipment = prevSim.equipment;
   next.frozen = prevSim.frozen;
   sim = next;
+  prevSim.dispose();
+  nav?.setAnatomy(sim.scene);
   sim.pwChain.reset();
   spectrogram.reset();
   panel.onSimulatorChanged();
@@ -263,51 +256,11 @@ sectorWrap.addEventListener('click', (e) => {
 });
 
 // --- Atajos de teclado (misma familia que EchoTwin) ---------------------------
-window.addEventListener('keydown', (e) => {
-  const tag = (e.target as HTMLElement | null)?.tagName;
-  if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
-  switch (e.key) {
-    case '2':
-      store.set({ mode: 'B' });
-      break;
-    case 'c':
-    case 'C':
-      store.set({ mode: store.get().mode === 'color' ? 'B' : 'color', tab: 'doppler' });
-      break;
-    case 'p':
-    case 'P':
-      store.set({ mode: store.get().mode === 'pw' ? 'B' : 'pw', tab: 'doppler' });
-      break;
-    case ' ':
-      store.set({ frozen: !store.get().frozen });
-      e.preventDefault();
-      break;
-    case 'h':
-    case 'H':
-      store.set({ torso: !store.get().torso });
-      break;
-    case 'Escape':
-      store.set({ tool: 'none' });
-      break;
-    case '[':
-      sim.bmode.depthMm = Math.max(60, sim.bmode.depthMm - 10);
-      panel.sync();
-      break;
-    case ']':
-      sim.bmode.depthMm = Math.min(240, sim.bmode.depthMm + 10);
-      panel.sync();
-      break;
-    case '-':
-      sim.bmode.gainDb = Math.max(-20, sim.bmode.gainDb - 2);
-      panel.sync();
-      break;
-    case '+':
-    case '=':
-      sim.bmode.gainDb = Math.min(20, sim.bmode.gainDb + 2);
-      panel.sync();
-      break;
-  }
-});
+bindKeyboardShortcuts(
+  store,
+  () => sim,
+  () => panel.sync(),
+);
 
 // --- Pérdida de contexto GPU ---------------------------------------------------
 let gpuLost = false;
@@ -372,21 +325,23 @@ const span = (host: HTMLElement, lines: string[]): void => {
     host.appendChild(s);
   }
 };
-const nyq = (prf: number) => Math.round(((prf / 2) * 1540000) / (2 * sim.transducer.f0Doppler) / 10);
+const nyq = (prf: number) => Math.round(nyquistVelocityCms(prf, sim.transducer.f0Doppler));
 
 // --- Bucle principal ---------------------------------------------------------
 let last = performance.now();
 let frames = 0;
 let frameTime = 0;
 let lastStatus = 0;
-let errorCount = 0;
+// Errores del bucle: se cuentan en una ventana de 2 s (no por racha), así un fallo
+// intermitente en cuadros alternos también termina en el banner.
+let errorTimes: number[] = [];
 function loop(now: number): void {
   const dt = Math.min(0.25, (now - last) / 1000);
   last = now;
   try {
     fitCanvases();
     input.tick(dt);
-    tickProbeAnimation(dt);
+    probeAnimator.tick(dt);
     sim.advance(dt);
     if (!gpuLost) sim.render();
     drawOverlay(overlay, sim);
@@ -426,11 +381,11 @@ function loop(now: number): void {
       panel.renderDebug();
       panel.sync();
     }
-    errorCount = 0;
   } catch (e) {
-    errorCount++;
     console.error(e);
-    if (errorCount > 30) {
+    errorTimes.push(now);
+    errorTimes = errorTimes.filter((t) => now - t < 2000);
+    if (errorTimes.length > 5) {
       showBanner(`Error persistente en el bucle: ${(e as Error).message}`);
       return;
     }

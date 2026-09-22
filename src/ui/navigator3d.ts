@@ -1,3 +1,5 @@
+import { START_POINTS } from '../app/startPoints';
+import { DIAPHRAGM_THICKNESS_MM } from '../anatomy/tissues';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js';
@@ -79,7 +81,7 @@ export class Navigator3D {
 
   constructor(
     private readonly host: HTMLElement,
-    private readonly anatomy: AnatomyScene,
+    private anatomy: AnatomyScene,
     private readonly transducer: Transducer,
     private readonly opts: Navigator3DOptions,
   ) {
@@ -103,11 +105,13 @@ export class Navigator3D {
     fill.position.set(30, -20, 10);
     this.scene.add(fill);
 
-    this.skin = buildSkin(anatomy);
-    this.skeleton = buildSkeleton(anatomy);
-    this.organs = buildOrgans(anatomy);
-    this.vessels = buildVessels(anatomy);
-    this.windows = buildWindowMarks(anatomy);
+    ({
+      skin: this.skin,
+      skeleton: this.skeleton,
+      organs: this.organs,
+      vessels: this.vessels,
+      windows: this.windows,
+    } = buildAnatomyGroups(anatomy));
     const p = buildProbe(transducer);
     this.probe = p.probe;
     this.marker = p.marker;
@@ -125,6 +129,29 @@ export class Navigator3D {
     el.addEventListener('wheel', this.onWheel, { passive: false });
     el.addEventListener('contextmenu', (e) => e.preventDefault());
     el.addEventListener('pointermove', this.onHover);
+  }
+
+  /**
+   * Sustituye la anatomía (cambio de caso): el hábito cambia la pared, la piel y los
+   * recortes del hígado, así que se reconstruyen los grupos anatómicos y se liberan
+   * las geometrías anteriores; sonda, abanico, cámara y gestos se conservan.
+   */
+  setAnatomy(anatomy: AnatomyScene): void {
+    if (anatomy === this.anatomy) return;
+    this.anatomy = anatomy;
+    for (const g of [this.skin, this.skeleton, this.organs, this.vessels, this.windows]) {
+      this.world.remove(g);
+      disposeObject(g);
+    }
+    ({
+      skin: this.skin,
+      skeleton: this.skeleton,
+      organs: this.organs,
+      vessels: this.vessels,
+      windows: this.windows,
+    } = buildAnatomyGroups(anatomy));
+    this.world.add(this.skin, this.skeleton, this.organs, this.vessels, this.windows);
+    this.setLayers({});
   }
 
   dispose(): void {
@@ -329,6 +356,31 @@ type WebGLRendererLike = THREE.WebGLRenderer;
 
 // --- constructores de geometría ---------------------------------------------
 
+/** Grupos anatómicos del avatar (todo lo que depende del paciente). */
+function buildAnatomyGroups(a: AnatomyScene): {
+  skin: THREE.Mesh;
+  skeleton: THREE.Group;
+  organs: THREE.Group;
+  vessels: THREE.Group;
+  windows: THREE.Group;
+} {
+  return { skin: buildSkin(a), skeleton: buildSkeleton(a), organs: buildOrgans(a), vessels: buildVessels(a), windows: buildWindowMarks(a) };
+}
+
+/** Libera geometrías, materiales y texturas de un subárbol de three.js. */
+function disposeObject(root: THREE.Object3D): void {
+  root.traverse((o) => {
+    const mesh = o as THREE.Mesh | THREE.Sprite;
+    if ('geometry' in mesh && mesh.geometry) mesh.geometry.dispose();
+    const mat = 'material' in mesh ? mesh.material : null;
+    for (const m of Array.isArray(mat) ? mat : mat ? [mat] : []) {
+      const sm = m as THREE.SpriteMaterial;
+      if (sm.map) sm.map.dispose();
+      m.dispose();
+    }
+  });
+}
+
 /** Escala del contorno del tronco a lo largo de z (hombros, cintura y pelvis, solo estética). */
 function torsoScale(zMm: number): number {
   if (zMm < -170) return 1 - 0.1 * Math.min(1, (-170 - zMm) / 80);
@@ -476,7 +528,7 @@ function buildLiverMesh(a: AnatomyScene): THREE.Mesh {
       for (let i = 0; i < res; i++) {
         const p: Vec3 = [min[0] + (size * (i + 0.5)) / res, min[1] + (size * (j + 0.5)) / res, min[2] + (size * (k + 0.5)) / res];
         // recortes idénticos a scene.classify: diafragma (lámina 2,5 mm) y pared del tronco
-        const d = Math.max(a.liverSdf(p), -(domeHeight(p[0], p[1], a.dome) - p[2]) + 2.5, torsoDepth(p, a.torso) + wall);
+        const d = Math.max(a.liverSdf(p), -(domeHeight(p[0], p[1], a.dome) - p[2]) + DIAPHRAGM_THICKNESS_MM, torsoDepth(p, a.torso) + wall);
         mc.field[i + j * res + k * res * res] = -d / 10; // positivo dentro; suavizado por escala
       }
   mc.isolation = 0;
@@ -642,12 +694,7 @@ function buildVessels(a: AnatomyScene): THREE.Group {
 /** Anillos y rótulos de puntos de partida sobre la piel (posiciones, no vistas). */
 function buildWindowMarks(a: AnatomyScene): THREE.Group {
   const g = new THREE.Group();
-  const marks: Array<{ label: string; phi: number; z: number; color: string }> = [
-    { label: 'Subxifoideo', phi: Math.PI / 2, z: -30, color: '#7ce8a0' },
-    { label: 'Intercostal dcho', phi: Math.PI * 0.88, z: 20, color: '#ffc857' },
-    { label: 'Flanco · VCI', phi: Math.PI * 1.02, z: 0, color: '#5cc8ff' },
-    { label: 'Renal', phi: Math.PI * 1.12, z: -75, color: '#f28cb1' },
-  ];
+  const marks = START_POINTS;
   // Orientación del paciente: cabeza, pies, derecha e izquierda
   const orient: Array<[string, Vec3]> = [
     ['cabeza', [0, 12, 52]],

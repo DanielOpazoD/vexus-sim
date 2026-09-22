@@ -69,11 +69,6 @@ export class PwDopplerChain {
     this.cursor = 0;
   }
 
-  /** Últimas muestras IQ filtradas del lote anterior (para pruebas/depuración). */
-  lastIQ(): { re: Float32Array; im: Float32Array } {
-    return { re: this.iqRe, im: this.iqIm };
-  }
-
   reset(): void {
     this.spectral.reset();
     this.wallFilter.reset();

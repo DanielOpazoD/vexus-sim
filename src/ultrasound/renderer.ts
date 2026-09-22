@@ -4,7 +4,7 @@ import { RespiratoryDeformation } from '../anatomy/deformation';
 import { TISSUES, TISSUE_COUNT, attenuationDbPerCm } from '../anatomy/tissues';
 import type { PhysiologySample } from '../physiology/engine';
 import { lineAngle, lineCoupling, type ProbeFrame, type ProbePose, type Transducer } from '../probe/probe';
-import { GLProgram, bindTarget, createTarget, createTexture, drawFullscreen, type RenderTarget } from './gl';
+import { GLProgram, bindTarget, createTarget, createTexture, deleteTarget, drawFullscreen, type RenderTarget } from './gl';
 import { MAX_GAS, MAX_NODES, MAX_RIBS, MAX_TUBES, NODE_BASE, SCENE_TEX_H, SCENE_TEX_W } from './shaders/anatomy.glsl';
 import {
   FRAG_AXIAL,
@@ -74,7 +74,6 @@ const B_EFFECTIVE_MHZ = 2.5;
  * imagen se oscurece y el ruido gana, como en un convexo real al límite de penetración.
  */
 const TGC_CAP_DB = 50;
-const LINES = 192;
 const FINE_DEPTH = 1024;
 const COARSE_DEPTH = 160;
 const COLOR_W = 96;
@@ -121,7 +120,7 @@ export class UltrasoundRenderer {
   private tPersist: [RenderTarget, RenderTarget] | null = null;
   private persistIndex = 0;
   private couplingTex: WebGLTexture;
-  private couplingData = new Float32Array(LINES);
+  private couplingData: Float32Array;
   private frameCount = 0;
   /** Textura de datos de la escena (cabeceras de tubos + nodos, decisión 24). */
   private sceneTex: WebGLTexture;
@@ -134,10 +133,17 @@ export class UltrasoundRenderer {
   /** Geometría de presentación del último cuadro (px). */
   display = { apexX: 0, apexY: 0, scale: 1, width: 1, height: 1 };
 
+  /** Número de líneas del sector (viene del transductor; fija el ancho de las texturas). */
+  readonly lines: number;
+
   constructor(
     readonly canvas: HTMLCanvasElement,
     readonly scene: AnatomyScene,
+    transducer: Transducer,
   ) {
+    this.lines = transducer.lines;
+    const LINES = this.lines;
+    this.couplingData = new Float32Array(LINES);
     const gl = canvas.getContext('webgl2', { antialias: false, premultipliedAlpha: false, preserveDrawingBuffer: false });
     if (!gl) throw new Error('WebGL2 no disponible');
     this.gl = gl;
@@ -164,6 +170,26 @@ export class UltrasoundRenderer {
     this.couplingTex = createTexture(gl, LINES, 1, gl.R32F, gl.RED, gl.FLOAT, gl.LINEAR);
     this.sceneTex = createTexture(gl, SCENE_TEX_W, SCENE_TEX_H, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
     this.uploadSceneStatic();
+  }
+
+  /**
+   * Libera programas, texturas, FBO y el PBO del mapa. Obligatorio al cambiar de
+   * caso o reconstruir tras una pérdida de contexto: el canvas es el mismo y los
+   * recursos no liberados se acumulan en la GPU.
+   */
+  dispose(): void {
+    const gl = this.gl;
+    for (const p of [this.pTrans, this.pRaw, this.pAxial, this.pLateral, this.pColor, this.pScan, this.pPersist, this.pBlit, this.pMap])
+      p.dispose();
+    for (const t of [this.tTrans, this.tRaw, this.tAxial, this.tEnv, this.tColor, this.tMap]) deleteTarget(gl, t);
+    if (this.tScan) deleteTarget(gl, this.tScan);
+    if (this.tPersist) for (const t of this.tPersist) deleteTarget(gl, t);
+    gl.deleteTexture(this.couplingTex);
+    gl.deleteTexture(this.sceneTex);
+    if (this.mapPending) gl.deleteSync(this.mapPending.sync);
+    if (this.mapPbo) gl.deleteBuffer(this.mapPbo);
+    this.mapPending = null;
+    this.mapPbo = null;
   }
 
   /** Datos estáticos de la escena (nodos, cabeceras de tubos, tejidos). */
@@ -318,7 +344,7 @@ export class UltrasoundRenderer {
     p.f('uCurvR', tr.curvatureRadius);
     p.f('uHalfSector', tr.halfSector);
     p.f('uDepth', inputs.bmode.depthMm);
-    p.f('uLinesF', LINES);
+    p.f('uLinesF', this.lines);
     p.tex('uCoupling', 7, this.couplingTex);
     p.fv('uTissueAlpha', this.alpha);
     p.fv('uTissueBack', this.back);
@@ -327,19 +353,19 @@ export class UltrasoundRenderer {
 
   private updateCoupling(inputs: FrameInputs): void {
     const gl = this.gl;
-    for (let i = 0; i < LINES; i++) {
-      const theta = lineAngle(i, { ...inputs.transducer, lines: LINES });
+    for (let i = 0; i < this.lines; i++) {
+      const theta = lineAngle(i, inputs.transducer);
       this.couplingData[i] = lineCoupling(inputs.pose, inputs.transducer, theta);
     }
     gl.bindTexture(gl.TEXTURE_2D, this.couplingTex);
-    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, LINES, 1, gl.RED, gl.FLOAT, this.couplingData);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, this.lines, 1, gl.RED, gl.FLOAT, this.couplingData);
   }
 
   /** Acoplamiento medio del último cuadro (0–1), para la UI. */
   meanCoupling(): number {
     let s = 0;
-    for (let i = 0; i < LINES; i++) s += this.couplingData[i];
-    return s / LINES;
+    for (let i = 0; i < this.lines; i++) s += this.couplingData[i];
+    return s / this.lines;
   }
 
   private ensureDisplayTargets(): void {
@@ -352,6 +378,16 @@ export class UltrasoundRenderer {
     this.tPersist = [createTarget(gl, w, h, [f]), createTarget(gl, w, h, [f])];
   }
 
+  /**
+   * Un cuadro de imagen. Pasadas, en orden (la nomenclatura A–H es la de
+   * ARCHITECTURE.md y de `shaders/passes.glsl.ts`):
+   *   A transmisión (marcha por rayos, atenuación, gas, hueso, espejo) →
+   *   B campo complejo crudo (dispersores + especular + ruido) →
+   *   C convolución axial → D convolución lateral + envolvente →
+   *   F color (cadencia propia) → G conversión de barrido + mapa de grises →
+   *   persistencia → presentación. (E está reservada; H es el mapa de tejidos
+   *   de depuración, `tissueMap`.)
+   */
   render(inputs: FrameInputs): void {
     const gl = this.gl;
     this.frameCount++;
@@ -392,18 +428,18 @@ export class UltrasoundRenderer {
     this.pAxial.tex('uField', 0, this.tRaw.textures[0]);
     const dz = depth / FINE_DEPTH;
     this.pAxial.f('uSigmaTexels', Math.max(0.6, 0.26 / dz));
-    this.pAxial.v2('uTexel', 1 / LINES, 1 / FINE_DEPTH);
+    this.pAxial.v2('uTexel', 1 / this.lines, 1 / FINE_DEPTH);
     drawFullscreen(gl);
 
     // D — convolución lateral + ruido + envolvente
     bindTarget(gl, this.tEnv);
     this.pLateral.use();
     this.pLateral.tex('uField', 0, this.tAxial.textures[0]);
-    this.pLateral.v2('uTexel', 1 / LINES, 1 / FINE_DEPTH);
+    this.pLateral.v2('uTexel', 1 / this.lines, 1 / FINE_DEPTH);
     this.pLateral.f('uDepth', depth);
     this.pLateral.f('uCurvR', tr.curvatureRadius);
     this.pLateral.f('uHalfSector', tr.halfSector);
-    this.pLateral.f('uLinesF', LINES);
+    this.pLateral.f('uLinesF', this.lines);
     this.pLateral.f('uFocus', inputs.bmode.focusMm);
     this.pLateral.f('uLatSigma0', 0.9);
     this.pLateral.f('uRayleigh', 28);
@@ -503,10 +539,6 @@ export class UltrasoundRenderer {
     const d = this.display;
     const rho = tr.curvatureRadius + r;
     return { x: d.apexX - Math.sin(theta) * rho * d.scale, y: d.apexY + Math.cos(theta) * rho * d.scale };
-  }
-
-  get lines(): number {
-    return LINES;
   }
 
   /**

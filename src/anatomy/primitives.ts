@@ -164,13 +164,15 @@ export function tubeQuery(p: Vec3, tube: Tube, radiusScale = 1): TubeHit {
     const cx = a[0] + abx * s;
     const cy = a[1] + aby * s;
     const cz = a[2] + abz * s;
-    let dx = p[0] - cx;
-    let dy = p[1] - cy;
-    let dz = p[2] - cz;
+    const dx = p[0] - cx;
+    const dy = p[1] - cy;
+    const dz = p[2] - cz;
     // Sección elíptica (VCI): el semieje anteroposterior es r·apScale. Se
     // escala la componente y del desplazamiento perpendicular al eje; válido
     // para tubos cuyo eje es aproximadamente perpendicular a +y (vertical o
-    // lateral), que es el caso de la cava.
+    // lateral), que es el caso de la cava. La componente axial (más allá de
+    // los extremos del segmento) se conserva: sin ella el tubo no tenía tapa.
+    let dist: number;
     if (tube.apScale !== 1) {
       const len = Math.sqrt(len2) || 1;
       const tx = abx / len;
@@ -180,11 +182,10 @@ export function tubeQuery(p: Vec3, tube: Tube, radiusScale = 1): TubeHit {
       const px = dx - tx * along;
       const py = (dy - ty * along) / tube.apScale;
       const pz = dz - tz * along;
-      dx = px;
-      dy = py;
-      dz = pz;
+      dist = Math.sqrt(px * px + py * py + pz * pz + along * along);
+    } else {
+      dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
-    const dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
     const r = (nodes[i].r + (nodes[i + 1].r - nodes[i].r) * s) * radiusScale;
     const d = dist - r;
     if (!best || d < best.d) {

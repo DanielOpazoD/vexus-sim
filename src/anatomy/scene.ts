@@ -24,7 +24,7 @@ import {
   type Tube,
   type TubeHit,
 } from './primitives';
-import { Tissue } from './tissues';
+import { DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, Tissue } from './tissues';
 
 /**
  * Escena anatómica del avatar adulto de referencia (guía §9): pared abdominal
@@ -677,7 +677,8 @@ export class AnatomyScene {
     // Tórax: pulmón por encima de la cúpula; diafragma como lámina bajo ella
     const dDome = sdDome(m, this.dome);
     if (dDome < 0) return { ...none, tissue: Tissue.Lung, boundaryDistance: -dDome, specular: 1.0 };
-    if (dDome < 2.5) return { ...none, tissue: Tissue.Diaphragm, boundaryDistance: Math.min(dDome, 2.5 - dDome), specular: 0.9 };
+    if (dDome < DIAPHRAGM_THICKNESS_MM)
+      return { ...none, tissue: Tissue.Diaphragm, boundaryDistance: Math.min(dDome, DIAPHRAGM_THICKNESS_MM - dDome), specular: 0.9 };
 
     // Vesícula (líquido) en su fosa
     const dGb = sdEllipsoid(m, this.gallbladder);
@@ -701,8 +702,8 @@ export class AnatomyScene {
     // Hígado con cápsula
     const dLiver = this.liverSdf(m);
     if (dLiver < 0) {
-      const inner = Math.min(-dLiver, dDome - 2.5, -depth - wall);
-      if (inner < 0.8) return { ...none, tissue: Tissue.LiverCapsule, boundaryDistance: inner, specular: 0.5 };
+      const inner = Math.min(-dLiver, dDome - DIAPHRAGM_THICKNESS_MM, -depth - wall);
+      if (inner < LIVER_CAPSULE_MM) return { ...none, tissue: Tissue.LiverCapsule, boundaryDistance: inner, specular: 0.5 };
       return { ...none, tissue: Tissue.Liver, boundaryDistance: inner, specular: 0.5 };
     }
 

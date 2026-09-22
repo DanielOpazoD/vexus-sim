@@ -32,5 +32,11 @@ export default defineConfig({
     exclude: tier === 'fast' ? ['node_modules/**', ...SLOW] : ['node_modules/**'],
     environment: 'node',
     testTimeout: 60_000,
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.ts'],
+      exclude: ['src/**/*.test.ts', 'src/main.ts', 'src/ui/**', 'src/ultrasound/**', 'src/audio/dopplerAudio.ts'],
+      reporter: ['text-summary', 'html'],
+    },
   },
 });

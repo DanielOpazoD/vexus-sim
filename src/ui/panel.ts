@@ -1,3 +1,6 @@
+import { EQUIPMENT_LIMITS } from '../app/simulator';
+import { START_POINTS, type StartPoint } from '../app/startPoints';
+import { nyquistVelocityCms, prfFromNyquistCms } from '../core/units';
 import type { Simulator } from '../app/simulator';
 import type { AppState, MeasureTool, PanelTab, Store } from '../app/store';
 import {
@@ -9,49 +12,11 @@ import {
   type ObservedRenal,
 } from '../doppler/spectralMeasure';
 import type { RespiratoryPattern } from '../physiology/patientState';
-import { classifyVexusC, type VexusResult } from '../vexus/classification';
+import { classifyVexusC, type HepaticPattern, type RenalPattern, type VexusResult } from '../vexus/classification';
 import { measurePhysiologyTruth } from '../vexus/measurements';
 import { button, help, row, slider, type Syncable } from './controls';
 
-const C_MM = 1540 * 1000;
-
 /** Puntos de partida sobre la piel (posición y marcador; la vista hay que encontrarla). */
-export const START_POINTS: Array<{ id: string; label: string; phi: number; z: number; yaw: number; tilt?: number; hint: string }> = [
-  {
-    id: 'subxiphoid',
-    label: 'Subxifoideo',
-    phi: Math.PI / 2,
-    z: -20,
-    yaw: 0,
-    tilt: 0.45,
-    hint: 'Bajo el xifoides, haz inclinado hacia la cabeza: VCI en eje largo y confluencia de suprahepáticas a 15–19 cm; rotar y abanicar hacia la derecha del paciente.',
-  },
-  {
-    id: 'intercostal',
-    label: 'Intercostal dcho',
-    phi: Math.PI * 0.88,
-    z: 20,
-    yaw: 0.35,
-    hint: 'Suprahepáticas y porta: marcador hacia la axila, deslizar por el espacio intercostal.',
-  },
-  {
-    id: 'flank',
-    label: 'Flanco · VCI',
-    phi: Math.PI * 1.02,
-    z: 0,
-    yaw: 0,
-    hint: 'VCI transhepática coronal: marcador craneal, abanicar medialmente.',
-  },
-  {
-    id: 'renal',
-    label: 'Renal',
-    phi: Math.PI * 1.12,
-    z: -75,
-    yaw: 0,
-    tilt: -0.5,
-    hint: 'Riñón derecho por el flanco (línea axilar posterior): hígado como ventana, seno ecogénico y pirámides; puerta PW en un vaso interlobar.',
-  },
-];
 
 const ICONS: Record<PanelTab, string> = {
   adquirir: '<svg viewBox="0 0 24 24"><path d="M12 3 4 19h16Z"/><path d="M7 13h10"/></svg>',
@@ -82,7 +47,7 @@ export class ControlPanel {
   private lastPortal: ObservedPortal | null = null;
   private lastRenal: ObservedRenal | null = null;
   private ivcCaliperMm: number | null = null;
-  onStartPoint: (p: (typeof START_POINTS)[number]) => void = () => undefined;
+  onStartPoint: (p: StartPoint) => void = () => undefined;
 
   constructor(
     root: HTMLElement,
@@ -140,12 +105,18 @@ export class ControlPanel {
     for (const s of this.syncables) s.sync();
   }
 
-  onSimulatorChanged(): void {
+  /** Borra toda medición adquirida (cambio de caso o «Borrar»): nunca se mezclan pacientes. */
+  clearMeasurements(): void {
     this.lastHepatic = null;
     this.lastPortal = null;
+    this.lastRenal = null;
     this.ivcCaliperMm = null;
     this.sync();
     this.renderResult();
+  }
+
+  onSimulatorChanged(): void {
+    this.clearMeasurements();
   }
 
   setIvcCaliper(mm: number | null): void {
@@ -315,9 +286,7 @@ export class ControlPanel {
         sec,
         {
           label: 'Profundidad',
-          min: 60,
-          max: 240,
-          step: 5,
+          ...EQUIPMENT_LIMITS.depthMm,
           get: () => s().bmode.depthMm,
           set: (v) => (s().bmode.depthMm = v),
           format: (v) => `${(v / 10).toFixed(0)} cm`,
@@ -330,9 +299,7 @@ export class ControlPanel {
         sec,
         {
           label: 'Ganancia',
-          min: -20,
-          max: 20,
-          step: 1,
+          ...EQUIPMENT_LIMITS.gainDb,
           get: () => s().bmode.gainDb,
           set: (v) => (s().bmode.gainDb = v),
           format: (v) => `${v} dB`,
@@ -426,8 +393,8 @@ export class ControlPanel {
           min: 4,
           max: 60,
           step: 1,
-          get: () => scaleCms(s().color.prfHz, s()),
-          set: (v) => (s().color.prfHz = prfFromScale(v, s())),
+          get: () => Math.round(nyquistVelocityCms(s().color.prfHz, s().transducer.f0Doppler)),
+          set: (v) => (s().color.prfHz = Math.round(prfFromNyquistCms(v, s().transducer.f0Doppler))),
           format: (v) => `±${v} cm/s`,
         },
         ch,
@@ -490,8 +457,8 @@ export class ControlPanel {
           min: 5,
           max: 120,
           step: 1,
-          get: () => scaleCms(s().pw.prfHz, s()),
-          set: (v) => (s().pw.prfHz = prfFromScale(v, s())),
+          get: () => Math.round(nyquistVelocityCms(s().pw.prfHz, s().transducer.f0Doppler)),
+          set: (v) => (s().pw.prfHz = Math.round(prfFromNyquistCms(v, s().transducer.f0Doppler))),
           format: (v) => `±${v} cm/s`,
         },
         ch,
@@ -547,9 +514,7 @@ export class ControlPanel {
         w,
         {
           label: 'Ganancia',
-          min: -20,
-          max: 20,
-          step: 1,
+          ...EQUIPMENT_LIMITS.gainDb,
           get: () => s().pw.gainDb,
           set: (v) => (s().pw.gainDb = v),
           format: (v) => `${v} dB`,
@@ -667,17 +632,17 @@ export class ControlPanel {
     const grid = document.createElement('div');
     grid.className = 'tool-grid';
     tools.appendChild(grid);
-    const tb = (label: string, tool: MeasureTool) => {
+    const tb = (label: string, tool: MeasureTool): HTMLButtonElement => {
       const b = document.createElement('button');
       b.textContent = label;
       b.addEventListener('click', () => this.armTool(tool));
       grid.appendChild(b);
       this.track({ sync: () => b.classList.toggle('on', this.store.get().tool === tool) });
+      return b;
     };
     tb('—', 'none');
     tb('Caliper', 'caliper');
-    tb('Borrar', 'none');
-    grid.lastElementChild!.addEventListener('click', () => this.onSimulatorChanged());
+    tb('Borrar', 'none').addEventListener('click', () => this.clearMeasurements());
 
     const res = this.section(this.measureBody, 'Resultado');
     this.resultEl = document.createElement('div');
@@ -830,7 +795,7 @@ export class ControlPanel {
 function statusText(s: VexusResult['status']): string {
   return s === 'complete' ? 'completo' : s === 'incomplete' ? 'incompleto' : 'VCI no medida';
 }
-function renalText(p: string): string {
+function renalText(p: RenalPattern): string {
   return p === 'continuous'
     ? 'continuo'
     : p === 'biphasic'
@@ -841,14 +806,8 @@ function renalText(p: string): string {
           ? 'fuera del esquema'
           : 'no evaluado';
 }
-function patternText(p: string): string {
+function patternText(p: HepaticPattern): string {
   return p === 'normal' ? 'normal (S>D)' : p === 'mild' ? 'leve (S<D)' : p === 'severe' ? 'grave (S invertida)' : 'no evaluado';
-}
-function scaleCms(prfHz: number, sim: Simulator): number {
-  return Math.round(((prfHz / 2) * C_MM) / (2 * sim.transducer.f0Doppler) / 10);
-}
-function prfFromScale(cms: number, sim: Simulator): number {
-  return Math.round((cms * 10 * 2 * 2 * sim.transducer.f0Doppler) / C_MM);
 }
 function sizeBox(sim: Simulator, f: number): void {
   const c = sim.color;

@@ -6,7 +6,7 @@ import { NORMAL_ADULT } from '../cases';
 import { SimulationClock } from '../core/clock';
 import { PhysiologyEngine } from '../physiology/engine';
 import { CONVEX_C35, lineCoupling, lineDirection, pointOnLine, probeFrame, type ProbePose } from '../probe/probe';
-import { kidneyWorld } from '../anatomy/primitives';
+import { kidneyQuery, kidneyWorld } from '../anatomy/primitives';
 import { renalPatternFromPeaks } from '../vexus/classification';
 
 describe('Anatomía implícita (base B)', () => {
@@ -72,6 +72,7 @@ describe('Anatomía implícita (base B)', () => {
     expect(cls(scene.kidneyLeft.center).tissue).toBe(Tissue.RenalSinus);
     // el hígado no invade el riñón (impresión renal): ninguna muestra de la línea
     // centro del riñón → centro del hígado es hígado dentro del riñón + 4 mm
+    let nLiver = 0;
     for (let t = 0; t <= 1; t += 0.02) {
       const p: [number, number, number] = [
         k.center[0] + (scene.liver.center[0] - k.center[0]) * t,
@@ -79,8 +80,13 @@ describe('Anatomía implícita (base B)', () => {
         k.center[2] + (scene.liver.center[2] - k.center[2]) * t,
       ];
       const c = cls(p);
-      if (c.tissue === Tissue.Liver) expect(scene.liverSdf(p)).toBeLessThan(0);
+      if (c.tissue === Tissue.Liver) {
+        nLiver++;
+        expect(scene.liverSdf(p)).toBeLessThan(0);
+        expect(kidneyQuery(p, k).dOuter).toBeGreaterThan(scene.renalImpressionMm - 1e-6);
+      }
     }
+    expect(nLiver).toBeGreaterThan(5);
   });
 
   it('el hígado tiene borde inferior por debajo del reborde costal y ≈ 13–15 cm craneocaudales', () => {
@@ -127,7 +133,7 @@ describe('Anatomía implícita (base B)', () => {
   it('las áreas de referencia son positivas y coherentes con los radios', () => {
     const a = scene.vesselAreas();
     expect(a.pvTrunk).toBeCloseTo(Math.PI * 5.5 * 5.5, 3);
-    expect(a.ivcSupra).toBeGreaterThan(200);
+    expect(a.ivcSupra).toBeCloseTo(Math.PI * 10 * 10 * 0.8, 3); // sección elíptica (apScale 0,8)
   });
 });
 

@@ -172,22 +172,23 @@ describe('Volumen de muestra físico (guía §10, §21)', () => {
     const { gateAt, runSeconds, chain, anatomy, engine } = makeChain({ respiratoryPattern: 'apnea-expiratory' });
     // Localizar la suprahepática derecha en el plano
     let best: { theta: number; r: number; bd: number } | null = null;
+    // Referencia de parénquima: el punto de hígado MÁS lejano de cualquier interfaz
+    // (más que la caja del volumen de muestra, ±2,6 × ±5,5 × ±5 mm), en el mismo plano
+    let quiet: { theta: number; r: number; bd: number } | null = null;
     for (let th = -0.5; th <= 0.5; th += 0.02) {
       for (let r = 20; r <= 150; r += 2) {
         const q = anatomy.classifyWorld(gateAt(th, r).center, engine.sample);
-        if (q.vessel !== 'hvRight') continue;
-        // 30 mm más profundo por la misma línea debe ser parénquima (no la cava ni otra vena)
-        const deeper = anatomy.classifyWorld(gateAt(th, r + 30).center, engine.sample);
-        if (deeper.tissue !== Tissue.Liver || deeper.boundaryDistance < 6) continue;
-        if (!best || q.boundaryDistance > best.bd) best = { theta: th, r, bd: q.boundaryDistance };
+        if (q.vessel === 'hvRight' && (!best || q.boundaryDistance > best.bd)) best = { theta: th, r, bd: q.boundaryDistance };
+        if (q.tissue === Tissue.Liver && (!quiet || q.boundaryDistance > quiet.bd)) quiet = { theta: th, r, bd: q.boundaryDistance };
       }
     }
     expect(best).not.toBeNull();
+    expect(quiet).not.toBeNull();
+    expect(quiet!.bd).toBeGreaterThan(8);
     runSeconds(gateAt(best!.theta, best!.r), 3);
     const onVessel = meanPowerDb(chain, 1.5);
     chain.reset();
-    // Puerta desplazada 30 mm más profunda por la misma línea: parénquima
-    runSeconds(gateAt(best!.theta, best!.r + 30), 3);
+    runSeconds(gateAt(quiet!.theta, quiet!.r), 3);
     const inLiver = meanPowerDb(chain, 1.5);
     // La banda de señal del vaso frente a la cola alta del ruido del parénquima
     // (mismo estadístico): ≥ 9 dB, es decir, ≥ 8× la potencia de los picos de ruido.

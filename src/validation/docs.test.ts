@@ -11,6 +11,18 @@ const read = (p: string) => readFileSync(resolve(ROOT, p), 'utf8');
  * de carga; si se desvían del código, la suite falla.
  */
 describe('Documentación', () => {
+  it('parseDecisions/renderIndex: numeración, estado «superada» y niveles ### ignorados (entrada sintética)', () => {
+    const md = '# T\n## 1. Elegir Vitest\ntexto\n## 2. Reloj único [Estado: superada por 5]\nx\n### 3. No\n## 10. Otra\n';
+    const ds = parseDecisions(md);
+    expect(ds).toEqual([
+      { n: 1, title: 'Elegir Vitest', status: 'vigente', line: 2 },
+      { n: 2, title: 'Reloj único', status: 'superada por 5', line: 4 },
+      { n: 10, title: 'Otra', status: 'vigente', line: 7 },
+    ]);
+    expect(renderIndex(ds)).toContain('| [2](DECISIONS.md#L4) | Reloj único | superada por 5 |');
+    expect(renderIndex([]).endsWith('|---|---|---|\n\n')).toBe(true);
+  });
+
   it('DECISIONS.md numera 1..N sin huecos y el índice generado está al día', () => {
     const ds = parseDecisions(read('docs/DECISIONS.md'));
     expect(ds.length).toBeGreaterThan(10);
@@ -22,6 +34,8 @@ describe('Documentación', () => {
     for (const doc of ['docs/ARCHITECTURE.md', 'README.md', 'docs/APPROXIMATIONS.md']) {
       const md = read(doc);
       const refs = [...md.matchAll(/`((?:src|tools|public|docs)\/[A-Za-z0-9_./-]+\.(?:ts|js|md|mjs))`/g)].map((m) => m[1]);
+      // APPROXIMATIONS.md cita módulos por carpeta (`src/physiology`), no archivos; los otros dos, archivos
+      if (doc !== 'docs/APPROXIMATIONS.md') expect(refs.length, `${doc} no cita archivos fuente`).toBeGreaterThan(2);
       for (const r of refs) expect(existsSync(resolve(ROOT, r)), `${doc} nombra ${r}, que no existe`).toBe(true);
     }
   });
@@ -31,6 +45,12 @@ describe('Documentación', () => {
     for (const s of ['npm run dev', 'npm test', 'npm run test:all', 'npm run calibrate', 'npm run check']) {
       expect(readme.includes(s), `README no menciona ${s}`).toBe(true);
     }
+  });
+
+  it('README cita la última iteración cerrada en DECISIONS.md', () => {
+    const closes = [...read('docs/DECISIONS.md').matchAll(/^## Iteración (\d+) — informe de cierre/gm)].map((m) => Number(m[1]));
+    const last = Math.max(...closes);
+    expect(read('README.md')).toMatch(new RegExp(`## Estado \\(iteración ${last}\\)`));
   });
 
   it('cada limitación declarada en código aparece en docs/LIMITATIONS.md', async () => {

@@ -34,6 +34,41 @@ export enum Tissue {
 
 export const TISSUE_COUNT = 22;
 
+/**
+ * Nombre de cada tejido en GLSL (`#define T_… índice`). Se genera desde aquí
+ * (`ultrasound/shaders/anatomy.glsl.ts`) para que TS y GPU no puedan divergir:
+ * un tejido nuevo sin nombre GLSL es un error de compilación de TypeScript.
+ */
+export const TISSUE_GLSL_NAME: Record<Tissue, string> = {
+  [Tissue.Air]: 'T_AIR',
+  [Tissue.Skin]: 'T_SKIN',
+  [Tissue.Fat]: 'T_FAT',
+  [Tissue.Muscle]: 'T_MUSCLE',
+  [Tissue.Liver]: 'T_LIVER',
+  [Tissue.LiverCapsule]: 'T_CAPSULE',
+  [Tissue.Blood]: 'T_BLOOD',
+  [Tissue.VesselWallPortal]: 'T_WALL_PORTAL',
+  [Tissue.VesselWallThin]: 'T_WALL_THIN',
+  [Tissue.Diaphragm]: 'T_DIAPHRAGM',
+  [Tissue.Lung]: 'T_LUNG',
+  [Tissue.Bone]: 'T_BONE',
+  [Tissue.Bowel]: 'T_BOWEL',
+  [Tissue.BowelGas]: 'T_BOWELGAS',
+  [Tissue.Fluid]: 'T_FLUID',
+  [Tissue.ArteryWall]: 'T_ARTERYWALL',
+  [Tissue.Cartilage]: 'T_CARTILAGE',
+  [Tissue.RenalCortex]: 'T_RENAL_CORTEX',
+  [Tissue.RenalMedulla]: 'T_RENAL_MEDULLA',
+  [Tissue.RenalSinus]: 'T_RENAL_SINUS',
+  [Tissue.PerirenalFat]: 'T_PERIRENAL',
+  [Tissue.BileDuctWall]: 'T_BILEWALL',
+};
+
+/** Lámina diafragmática bajo la cúpula (mm); la misma en TS, GLSL y el navegador 3D. */
+export const DIAPHRAGM_THICKNESS_MM = 2.5;
+/** Cápsula hepática (mm) al borde del parénquima. */
+export const LIVER_CAPSULE_MM = 0.8;
+
 export interface TissueProps {
   name: string;
   /** Velocidad del sonido, m/s (IT'IS). */

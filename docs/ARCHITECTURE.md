@@ -76,10 +76,27 @@ por lectura de texturas en un runner con WebGL (pendiente).
 - **Entradas de sonda**: cualquier dispositivo produce `ProbePose` (`src/probe/probe.ts`); el
   navegador 3D (`src/ui/navigator3d.ts`) y la imagen (`src/ui/probeInput.ts`) son dos ejemplos.
 
+## Convenciones de código
+
+- **Idioma**: identificadores en inglés (términos de programación: `render`, `dispose`, `getPose`) y
+  nombres de dominio en español cuando son los de la base de conocimiento (`Subxifoideo`, `VSH`);
+  comentarios, mensajes y documentación en español. Prosa y código no se mezclan en un identificador.
+- **Constantes compartidas TS ↔ GLSL** (`DIAPHRAGM_THICKNESS_MM`, `LIVER_CAPSULE_MM`,
+  `C_RECONSTRUCTION_MM_S`, los `#define` de tejidos generados desde `TISSUE_GLSL_NAME`) se
+  interpolan en la plantilla del shader: nunca se copian a mano.
+- **Sin duplicar física en la UI**: velocidad de Nyquist, PRF, plegado (`core/units.ts`),
+  estadísticos de series (`core/series.ts`), límites del equipo (`EQUIPMENT_LIMITS`) y puntos de
+  partida (`app/startPoints.ts`) tienen un único dueño.
+- **Recursos GPU**: todo objeto que crea programas, texturas o mallas expone `dispose()` y se llama
+  al cambiar de caso o reconstruir tras una pérdida de contexto.
+- **Ganchos de depuración** (`window.__sim()`, `window.__views()`) solo existen en desarrollo
+  (`app/devtools.ts`).
+
 ## Garantías mecánicas
 
 - `src/validation/layers.test.ts`: fronteras de capas y ciclos (Tarjan) sobre los imports reales.
-- `src/validation/docs.test.ts`: numeración de decisiones, índice generado, referencias a archivos y
-  limitaciones citadas.
+- `src/validation/docs.test.ts`: numeración de decisiones, índice generado, referencias a archivos,
+  limitaciones citadas y README al día con la última iteración cerrada.
+- `.github/workflows/ci.yml`: ejecuta lo mismo que `npm run check` en cada push y PR.
 - `tools/ci/bundle-budget.mjs`: presupuestos de tamaño por patrón tras `vite build`.
 - Niveles de prueba por marcador `// @tier slow` (ver `vite.config.ts`).

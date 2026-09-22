@@ -31,8 +31,8 @@ casos sin ajustes por paciente; k = 12 mmHg está marcado NEEDS_CALIBRATION.
 
 ## 5. Medición de S con signo
 
-S es el pico anterógrado en la ventana sistólica salvo flujo retrógrado ≤ −2 cm/s y ≥ 25 % del máximo,
-en cuyo caso S es ese mínimo. «Valor de mayor magnitud» escogía la cola del flujo diastólico previo
+S es el pico anterógrado en la ventana sistólica salvo flujo retrógrado ≤ −2 cm/s y ≥ 25 % del máximo
+(50 % desde la decisión 44), en cuyo caso S es ese mínimo. «Valor de mayor magnitud» escogía la cola del flujo diastólico previo
 y ocultaba la inversión.
 
 ## 6. Velocidad uniforme a lo largo de cada tubo
@@ -485,6 +485,36 @@ xifoides la pared absorbe el 65 % del hueco por basculación/inclinación (35 % 
 sobre costillas), así la VCI en eje largo con basculación craneal conserva el acoplamiento sin
 presionar. El punto de partida renal pasa a la línea axilar posterior con el eje largo del riñón en
 el plano (barrido de poses). Misma regla en TS y GLSL; equivalencia 100 %.
+
+## 44. Medición del alumno robusta: envolvente de la banda contigua, lado venoso y regla de S invertida
+
+La primera prueba de la cadena completa del alumno (`examChain.test.ts`: puerta desde una ventana
+real → IQ → espectro → la MISMA medición que la pestaña Medir → grado) falló en 2 de los 3 casos:
+el caso sano salía «leve» y la FA «grave». Cuatro causas, todas en la medición, ninguna en la
+fisiología:
+
+1. **Envolvente**: «último bin sobre umbral» por columna → un bin de ruido aislado era un pico de
+   hasta 3× la verdad, y S/D/PF toman extremos por ventana. Ahora: espectro promediado 3 × 3
+   (columnas × bins, potencia lineal), bins significativos (> suelo + 6 dB), banda CONTIGUA a la
+   línea de base (se corta tras 3 bins no significativos), envolvente por el método del percentil
+   (92 % de la potencia de la banda) y mediana temporal de 5 columnas (`columnBandEnvelopes`,
+   `observedTrace`). Correlación con la velocidad real 0,92 → 0,99.
+2. **Extremos**: el mínimo/máximo absoluto de una ventana caía en una columna con caída de señal.
+   Las trazas medidas usan el cuantil 0,97 (`robustExtremeInWindow`); la verdad fisiológica sigue
+   con extremos exactos sobre la señal limpia.
+3. **Renal**: arteria y vena interlobares comparten la puerta en lados opuestos de la línea de
+   base; la medición elegía el lado dominante columna a columna y en sístole saltaba a la arteria.
+   Ahora la vena se lee siempre en su lado: el arterial es el de mayor relación sístole/diástole
+   (`observedSideTraces`, `measureObservedRenal`).
+4. **S invertida** (decisión 5): «retrógrado ≥ 25 % del pico» convertía la muesca breve de la onda
+   C de la FA en «S invertida» al medirla sobre la envolvente (≈ 1,5× la velocidad media). Ahora
+   ≥ 50 % (`S_REVERSAL_FRACTION`), invariante de escala; el caso grave (S claramente retrógrada)
+   no cambia.
+
+Con ello los tres casos coinciden con la verdad en los tres territorios y dan grado 0, 3 y 1; la
+PF medida queda a ≤ 5 puntos (17/13, 73/75, 35/36 %). La prueba usa la técnica de un operador:
+puerta dentro de la luz con el mejor ángulo de insonación y escala hasta el límite de la
+profundidad (PRF ≤ 0,9·c/2d). La pestaña Medir hereda las correcciones.
 
 ## Iteración 2 — informe de cierre (22-09-2026)
 

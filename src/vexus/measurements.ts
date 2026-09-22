@@ -58,21 +58,29 @@ export interface BeatWindows {
 
 /**
  * Pico sistólico con signo: si durante la sístole mecánica existe flujo
- * retrógrado apreciable (≤ −2 cm/s y ≥ 25 % del máximo anterógrado) se
+ * retrógrado apreciable (≤ −2 cm/s y ≥ 50 % del máximo anterógrado) se
  * informa como S invertida (valor negativo); si no, el máximo anterógrado.
- * Regla de lectura [EXTRAPOLACIÓN PROPIA] coherente con A.1 («S retrógrada»).
+ * El 50 % (antes 25 %, decisión 5 → 44) distingue la inversión de la onda S de
+ * la muesca retrógrada breve de la onda C al inicio de la sístole: con 25 % una
+ * muesca de FA pasaba por «S invertida» al medirla sobre la envolvente
+ * (≈ 1,5× la velocidad media). Regla [EXTRAPOLACIÓN PROPIA] coherente con A.1.
  */
-export function systolicPeak<T extends { t: number }>(samples: readonly T[], w: TimeWindow, get: (s: T) => number): number {
-  let vmax = Number.NaN;
-  let vmin = Number.NaN;
+/** Fracción del pico anterógrado que debe alcanzar el retrógrado sistólico para «S invertida». */
+export const S_REVERSAL_FRACTION = 0.5;
+
+export function systolicPeak<T extends { t: number }>(samples: readonly T[], w: TimeWindow, get: (s: T) => number, q = 1): number {
+  // q < 1: extremos robustos (cuantiles q y 1 − q) para trazas medidas sobre el espectro
+  const vals: number[] = [];
   for (const s of samples) {
     if (!(s.t >= w[0] && s.t <= w[1])) continue; // ventana NaN = vacía
-    const v = get(s);
-    if (Number.isNaN(vmax) || v > vmax) vmax = v;
-    if (Number.isNaN(vmin) || v < vmin) vmin = v;
+    vals.push(get(s));
   }
-  if (Number.isNaN(vmax)) return Number.NaN;
-  if (vmin <= -2 && -vmin >= 0.25 * Math.max(0, vmax)) return vmin;
+  if (!vals.length) return Number.NaN;
+  vals.sort((a, b) => a - b);
+  const at = (f: number) => vals[Math.min(vals.length - 1, Math.max(0, Math.floor(f * (vals.length - 1) + 0.5)))];
+  const vmax = at(q);
+  const vmin = at(1 - q);
+  if (vmin <= -2 && -vmin >= S_REVERSAL_FRACTION * Math.max(0, vmax)) return vmin;
   return vmax;
 }
 

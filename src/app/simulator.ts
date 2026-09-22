@@ -24,7 +24,14 @@ import {
   type ProbePose,
   type Transducer,
 } from '../probe/probe';
-import { DEFAULT_BMODE, DEFAULT_COLOR, UltrasoundRenderer, type BModeSettings, type ColorSettings } from '../ultrasound/renderer';
+import {
+  DEFAULT_BMODE,
+  DEFAULT_COLOR,
+  UltrasoundRenderer,
+  type BModeSettings,
+  type ColorSettings,
+  type GpuPointQuery,
+} from '../ultrasound/renderer';
 
 /** Ajustes del Doppler pulsado (guía §9, §16). */
 export interface PwSettings {
@@ -292,6 +299,27 @@ export class Simulator {
       caliber: this.anatomy.caliberFor(s),
       probeVelocity: this.probeVel,
       bmode: { ...this.bmode, depthMm: at.depthMm },
+      color: this.color,
+      updateColor: false,
+      seed: this.patient.seed,
+    });
+  }
+
+  /**
+   * Consulta la anatomía GLSL en puntos del mundo con el estado fisiológico actual y el
+   * plano `frame` (que decide qué tubos entran en la lista por cuadro). Solo para el
+   * gate de equivalencia; bloqueante.
+   */
+  gpuQuery(points: Float32Array, frame: ProbeFrame): GpuPointQuery {
+    const s = this.sample;
+    return this.renderer.queryPoints(points, {
+      sample: s,
+      frame,
+      pose: this.pose,
+      transducer: this.transducer,
+      caliber: this.anatomy.caliberFor(s),
+      probeVelocity: [0, 0, 0],
+      bmode: this.bmode,
       color: this.color,
       updateColor: false,
       seed: this.patient.seed,

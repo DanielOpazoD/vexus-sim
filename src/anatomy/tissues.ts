@@ -82,6 +82,8 @@ export const TISSUE_GLSL_NAME: Record<Tissue, string> = {
 export const DIAPHRAGM_THICKNESS_MM = 2.5;
 /** Cápsula hepática (mm) al borde del parénquima. */
 export const LIVER_CAPSULE_MM = 0.8;
+/** Tope de la distancia a la frontera del intestino (el «resto» de la clasificación), mm. */
+export const BOWEL_BD_CAP_MM = 5;
 
 export interface TissueProps {
   name: string;

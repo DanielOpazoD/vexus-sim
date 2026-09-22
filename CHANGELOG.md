@@ -5,6 +5,10 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+### Corregido
+
+- El intestino (el «resto» de la clasificación) devolvía una distancia a la frontera fija de 5 mm en TS y GLSL: el gate volumétrico daba por interior un punto pegado al diafragma que float32 clasificaba al otro lado (flaky en CI, 1 de 44 826). Ahora es la distancia a las interfaces que ganan antes (diafragma, vesícula, aurícula, hígado, pared, grasa perirrenal, gas).
+
 ### Cambiado
 
 - Fase 2: hígado y vesícula pasan a módulos de órgano (`organs/liver.ts`, `organs/gallbladder.ts`): geometría, SDF TS y gemelo GLSL juntos (`liverSdf`, `visceralPlaneDistance`, `gallbladderSdf`); los redondeos de la impresión renal (8 mm) y de la fosa vesicular (2 mm) dejan de ser literales repetidos. La escena delega y conserva sus campos.

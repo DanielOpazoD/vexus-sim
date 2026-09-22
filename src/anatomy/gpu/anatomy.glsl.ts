@@ -14,7 +14,7 @@
  *     H3 = esfera envolvente (cx, cy, cz, R)
  *   nodos desde NODE_BASE = MAX_TUBES·4: (x, y, z, r)
  */
-import { DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, TISSUE_GLSL_NAME } from '../tissues';
+import { BOWEL_BD_CAP_MM, DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, TISSUE_GLSL_NAME } from '../tissues';
 import { ORGAN_MODULES } from '../organs';
 import { MAX_GAS, MAX_RIBS, SCENE_UNIFORMS_GLSL } from './sceneUniforms';
 
@@ -42,6 +42,7 @@ export const ANATOMY_GLSL = /* glsl */ `
 ${TISSUE_DEFINES}
 #define DIAPHRAGM_MM ${DIAPHRAGM_THICKNESS_MM.toFixed(3)}
 #define CAPSULE_MM ${LIVER_CAPSULE_MM.toFixed(3)}
+#define BOWEL_BD_CAP_MM ${BOWEL_BD_CAP_MM.toFixed(3)}
 
 ${SCENE_UNIFORMS_GLSL}
 
@@ -354,11 +355,16 @@ Cls classify(vec3 m) {
     if (dLv < 0.0 && inner > 2.0) { c.tissue = T_LIG_VENOSUM; c.bd = min(-dLv, inner); c.n = uLigVen.xyz; c.spec = 0.7; return c; }
     c.tissue = T_LIVER; c.bd = inner; return c;
   }
+  // Intestino: distancia a las interfaces que ganan antes (misma fórmula que scene.classify)
+  float bdBowel = min(min(BOWEL_BD_CAP_MM, dDome - DIAPHRAGM_MM), min(dGb - uGbExtra.y, dRa));
+  bdBowel = min(bdBowel, min(dLiverBase, -depth - wall));
+  for (int k = 0; k < 2; k++) bdBowel = min(bdBowel, kidneyOuterSdf(kidneyLocal(m, k), uKidR[k]) - uKidExtra.y);
   for (int i = 0; i < MAX_GAS; i++) {
     float dg = sdSphere(m, uGas[i], sn);
     if (dg < 0.0) { c.tissue = T_BOWELGAS; c.bd = -dg; c.n = sn; c.spec = 1.0; return c; }
+    bdBowel = min(bdBowel, dg);
   }
-  c.tissue = T_BOWEL; c.bd = 5.0; c.spec = 0.3; c.n = tn;
+  c.tissue = T_BOWEL; c.bd = max(bdBowel, 0.0); c.spec = 0.3; c.n = tn;
   return c;
 }
 

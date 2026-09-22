@@ -1,4 +1,5 @@
 import { registerDevtools } from './app/devtools';
+import { buildDiagnostics, buildLabel, diagnosticsFileName, gpuInfo } from './app/diagnostics';
 import { ErrorBudget } from './app/errorBudget';
 import { compareTissueGrids } from './app/equivalenceCheck';
 import { errorLog, errorMessage } from './app/errorLog';
@@ -46,6 +47,7 @@ const ctxChip = $<HTMLElement>('ctx-chip');
 const liveChip = $<HTMLElement>('live-chip');
 const caseSelect = $<HTMLSelectElement>('case-select');
 const sectorWrap = $<HTMLElement>('sector-wrap');
+$<HTMLElement>('build-info').textContent = buildLabel(__APP_VERSION__, __GIT_COMMIT__);
 
 for (const c of CASES) {
   const o = document.createElement('option');
@@ -95,6 +97,28 @@ function setPoseManual(p: Parameters<Simulator['setPose']>[0]): void {
   sim().setPose(p);
 }
 panel.onStartPoint = (sp) => probeAnimator.goTo(sp);
+let lastFps = 0;
+panel.onExportDiagnostics = () => {
+  const s = sim();
+  const d = buildDiagnostics({
+    version: __APP_VERSION__,
+    commit: __GIT_COMMIT__,
+    buildTime: __BUILD_TIME__,
+    userAgent: navigator.userAgent,
+    gpu: gpuInfo(s.renderer.gl),
+    viewport: { width: window.innerWidth, height: window.innerHeight, devicePixelRatio: window.devicePixelRatio },
+    caseId: s.patient.id,
+    simTimeS: s.physiology.clock.t,
+    fps: lastFps,
+    equipment: s.equipment,
+    errors: errorLog.recent(50),
+  });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(d, null, 2)], { type: 'application/json' }));
+  a.download = diagnosticsFileName(d);
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
 const input = new ProbeInput(sectorWrap, () => sim().pose, setPoseManual);
 // Navegador 3D (three.js, ~560 kB) con carga diferida: la imagen ecográfica no lo necesita
 // para su primer cuadro; si falla, la aplicación sigue sin él.
@@ -280,7 +304,8 @@ function frame(now: number, dt: number): void {
   frameTime += dt;
   if (now - lastStatus > 250) {
     lastStatus = now;
-    status.textContent = `${(frames / Math.max(1e-3, frameTime)).toFixed(0)} fps · t ${t.toFixed(1)} s`;
+    lastFps = frames / Math.max(1e-3, frameTime);
+    status.textContent = `${lastFps.toFixed(0)} fps · t ${t.toFixed(1)} s`;
     frames = 0;
     frameTime = 0;
     // Comprobación TS ↔ GLSL en vivo (solo docente): mapa GPU vs mapa del Worker, misma rejilla.

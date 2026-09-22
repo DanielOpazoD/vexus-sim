@@ -3,7 +3,7 @@ import { errorLog, errorMessage } from '../../app/errorLog';
 import { TISSUES } from '../../anatomy/tissues';
 import { classifyVexusC } from '../../vexus/classification';
 import { measurePhysiologyTruth } from '../../vexus/measurements';
-import { help } from '../controls';
+import { button, help, row } from '../controls';
 import type { PanelContext } from './context';
 import { patternText, renalText } from './vexusText';
 
@@ -12,6 +12,8 @@ export class TeacherTab {
   private debugEl!: HTMLElement;
   /** Informe de equivalencia TS ↔ GLSL (lo alimenta el bucle principal a baja cadencia). */
   equivalence: EquivalenceReport | null = null;
+  /** Descarga del diagnóstico (versión, GPU, caso, equipo, errores); la conecta `main.ts`. */
+  onExportDiagnostics: () => void = () => undefined;
 
   constructor(
     private readonly ctx: PanelContext,
@@ -26,6 +28,12 @@ export class TeacherTab {
     this.debugEl = document.createElement('div');
     this.debugEl.className = 'debug';
     sec.appendChild(this.debugEl);
+    const diag = this.ctx.section(p, 'Diagnóstico');
+    help(
+      diag,
+      'Versión, commit, navegador, GPU, caso, equipo y últimos errores en un JSON para adjuntar a un informe. Sin datos del usuario.',
+    );
+    button(row(diag), 'Descargar diagnóstico', () => this.onExportDiagnostics());
   }
 
   renderDebug(): void {

@@ -616,3 +616,11 @@ button.mode.active {
   color: var(--muted);
   white-space: nowrap;
 }
+
+/* versión y commit en la barra superior (discreto) */
+.build-info {
+  font: 11px/1 var(--mono, ui-monospace, monospace);
+  color: var(--muted, #8a93a3);
+  margin-left: 10px;
+  white-space: nowrap;
+}

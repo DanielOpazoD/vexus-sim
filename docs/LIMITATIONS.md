@@ -43,7 +43,9 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **Sin imagen armónica** (`no-harmonics`); el conmutador no existe en la consola.
 - **Estadística de speckle sin calibrar** (`speckle-statistics-uncalibrated`): no se ha medido
   célula de speckle, SNR local ni asimetría contra clips reales; los cambios de la decisión 19
-  se validaron solo por inspección.
+  se validaron solo por inspección. Sí se comprueba en la e2e que la envolvente del parénquima
+  hepático tiene la SNR teórica de Rayleigh (1,7–2,05 medido, banda 1,6–2,25): eso descarta
+  defectos de detección, no calibra textura frente a un equipo real.
 
 ## Doppler
 

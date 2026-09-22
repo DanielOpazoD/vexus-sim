@@ -629,6 +629,24 @@ export class UltrasoundRenderer {
   }
 
   /**
+   * Envolvente detectada del último cuadro (líneas × profundidad, antes de la compresión
+   * logarítmica y de la persistencia). Solo pruebas: lectura GPU→CPU bloqueante.
+   */
+  readEnvelope(): { lines: number; samples: number; data: Float32Array } {
+    const gl = this.gl;
+    const W = this.lines;
+    const H = FINE_DEPTH;
+    const rgba = new Float32Array(W * H * 4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.tEnv.fbo);
+    gl.readBuffer(gl.COLOR_ATTACHMENT0);
+    gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, rgba);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    const data = new Float32Array(W * H);
+    for (let i = 0; i < W * H; i++) data[i] = rgba[i * 4];
+    return { lines: W, samples: H, data };
+  }
+
+  /**
    * Lectura de depuración de una textura intermedia (fila `row` de 0..1 de la
    * profundidad; devuelve `n` muestras a lo largo de la línea `line` 0..1).
    */

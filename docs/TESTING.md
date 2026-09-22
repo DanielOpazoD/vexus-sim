@@ -9,7 +9,7 @@ constante o un umbral ajustado a la salida actual no protege nada.
 | Unitarias rápidas | `src/validation/*.test.ts` sin marcador    | `npm test` (~15 s), `check`, CI | DSP (FFT, filtro de pared, envolvente), unidades, clasificador VExUS C (27 combinaciones), anatomía por puntos, sonda y acoplamiento, capas, documentación, límites del shader                |
 | Lentas            | primera línea `// @tier slow`              | `npm run test:all`, `check`, CI | Fisiología emergente por caso, cadena Doppler, **cadena completa del alumno** (`examChain.test.ts`: puerta → espectro → medición → grado), **propiedades** (`properties.test.ts`, fast-check) |
 | Cobertura         | `npm run test:coverage`                    | `check`, CI                     | Umbrales globales (≥ 88 % sentencias, ≥ 83 % ramas) que solo pueden subir; excluye lo que necesita DOM/WebGL/Web Audio                                                                        |
-| e2e               | `e2e/*.spec.ts` (Playwright + SwiftShader) | `npm run e2e`, CI tras `check`  | Arranque sin errores, casos, medición numérica, pérdida y recuperación del contexto WebGL, **equivalencia TS ↔ GLSL** en tejido, vaso y velocidad                                             |
+| e2e               | `e2e/*.spec.ts` (Playwright + SwiftShader) | `npm run e2e`, CI tras `check`  | Arranque sin errores, casos, medición numérica, pérdida y recuperación del contexto WebGL, **equivalencia TS ↔ GLSL** en tejido, vaso y velocidad, **SNR de Rayleigh del speckle** hepático   |
 
 ## Principios
 
@@ -18,7 +18,8 @@ constante o un umbral ajustado a la salida actual no protege nada.
 - **Técnica del operador**: la puerta se coloca con `bestGateOnVessel` (dentro de la luz, mejor
   ángulo) y la escala hasta el límite de la profundidad; no con atajos que el alumno no tiene.
 - **Mutación**: al añadir un gate, se comprueba que falla con el defecto que pretende atrapar
-  (el de equivalencia se probó reintroduciendo la ley de caudal constante: p95 120 %).
+  (el de equivalencia se probó reintroduciendo la ley de caudal constante: p95 120 %; el del
+  speckle, detectando intensidad o magnitudes antes del haz en el shader: SNR 1,11 y 6,18).
 - **Contraejemplos**: lo que fast-check encuentra se arregla o se documenta como `it.fails`
   enlazado a una limitación de `docs/LIMITATIONS.md`.
 - **Semillas fijas**: fisiología, dispersores y fast-check son deterministas.
@@ -27,7 +28,8 @@ constante o un umbral ajustado a la salida actual no protege nada.
 
 ## Qué no está cubierto todavía
 
-- Estadística de speckle frente a clips reales (`speckle-statistics-uncalibrated`).
+- Estadística de speckle frente a clips reales (`speckle-statistics-uncalibrated`); la e2e solo
+  exige la SNR teórica de Rayleigh en parénquima (`app/speckle.ts`).
 - Imagen de referencia (golden) del modo B y del color.
 - Rendimiento por cuadro medido en CI (solo presupuesto de bundle).
 - Interacción de UI más allá de la e2e de humo (paneles, teclado completo, navegador 3D).

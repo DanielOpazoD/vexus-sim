@@ -5,6 +5,10 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+### Añadido
+
+- Fase 3: guarda de fidelidad de imagen — la e2e mide la SNR de la envolvente en parénquima hepático (parches 16 × 8 lejos de interfaces) y exige la de Rayleigh (1,6–2,25); detectar intensidad o sumar magnitudes antes del haz la hacen fallar (1,11 y 6,18).
+
 ### Corregido
 
 - El intestino (el «resto» de la clasificación) devolvía una distancia a la frontera fija de 5 mm en TS y GLSL: el gate volumétrico daba por interior un punto pegado al diafragma que float32 clasificaba al otro lado (flaky en CI, 1 de 44 826). Ahora es la distancia a las interfaces que ganan antes (diafragma, vesícula, aurícula, hígado, pared, grasa perirrenal, gas).

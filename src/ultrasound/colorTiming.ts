@@ -8,8 +8,8 @@
 export const COLOR_LINE_SPACING_RAD = (1.0 * Math.PI) / 180; // densidad de líneas de color (1° en un convexo)
 export const COLOR_PACKET_MM = 1.0; // longitud axial de la celda (paquete) de color
 
-export function colorLineCount(theta0: number, theta1: number): number {
-  return Math.max(4, Math.ceil(Math.abs(theta1 - theta0) / COLOR_LINE_SPACING_RAD));
+export function colorLineCount(theta0: number, theta1: number, spacingRad = COLOR_LINE_SPACING_RAD): number {
+  return Math.max(4, Math.ceil(Math.abs(theta1 - theta0) / spacingRad));
 }
 
 export interface ColorTiming {
@@ -30,8 +30,9 @@ export function colorTiming(
   bLines: number,
   depthMm: number,
   cMmS = 1_540_000,
+  lineSpacingRad = COLOR_LINE_SPACING_RAD,
 ): ColorTiming {
-  const lines = colorLineCount(theta0, theta1);
+  const lines = colorLineCount(theta0, theta1, lineSpacingRad);
   const colorFrameS = (lines * ensemble) / Math.max(100, prfHz);
   const bFrameS = (bLines * 2 * depthMm) / cMmS;
   const frameHz = 1 / (colorFrameS + bFrameS);

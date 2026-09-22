@@ -37,7 +37,8 @@ function layerOf(file: string): string {
 function importsOf(file: string): string[] {
   const src = readFileSync(file, 'utf8');
   const out: string[] = [];
-  const re = /from\s+['"](\.{1,2}\/[^'"]+)['"]/g;
+  // `from '…'`, `import '…'` (efecto lateral) e `import('…')` (dinámico)
+  const re = /(?:from|import)\s*\(?\s*['"](\.{1,2}\/[^'"]+)['"]/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(src))) {
     let target = resolve(dirname(file), m[1]);
@@ -62,15 +63,38 @@ for (const f of files) {
 }
 const dep = (a: string, b: string) => edges.get(a)?.has(b) ?? false;
 
+/**
+ * Dependencias PERMITIDAS de cada capa (Fase 1): matriz completa, no reglas sueltas. Una capa
+ * nueva o una dependencia nueva hay que declararlas aquí y en docs/ARCHITECTURE.md.
+ * Nota: `doppler → vexus` es deliberado (la medición produce patrones con las reglas puras de
+ * VExUS); `doppler` ya NO depende de `audio` (sumidero inyectado, `AudioSink`).
+ */
+const ALLOWED: Record<string, readonly string[]> = {
+  core: [],
+  physiology: ['core'],
+  anatomy: ['core', 'physiology'],
+  cases: ['physiology'],
+  vexus: ['core', 'physiology'],
+  probe: ['core', 'anatomy'],
+  audio: ['core'],
+  doppler: ['core', 'physiology', 'anatomy', 'vexus'],
+  ultrasound: ['core', 'physiology', 'anatomy', 'probe'],
+  app: ['core', 'physiology', 'anatomy', 'cases', 'probe', 'ultrasound', 'doppler', 'audio', 'vexus'],
+  ui: ['core', 'physiology', 'anatomy', 'cases', 'probe', 'ultrasound', 'doppler', 'vexus', 'app'],
+  // validation: solo el registro de limitaciones (las pruebas no cuentan como capa)
+  validation: [],
+  main: ['core', 'physiology', 'anatomy', 'cases', 'probe', 'ultrasound', 'doppler', 'audio', 'vexus', 'app', 'ui'],
+};
+
 describe('Fronteras entre capas (docs/ARCHITECTURE.md)', () => {
-  it('core no importa nada del proyecto', () => {
-    expect([...(edges.get('core') ?? [])]).toEqual([]);
+  it('cada capa conocida tiene su fila en la matriz de dependencias', () => {
+    for (const layer of new Set(files.map(layerOf))) expect(ALLOWED[layer], `capa sin reglas: ${layer}`).toBeDefined();
   });
-  it('physiology solo importa core', () => {
-    expect([...(edges.get('physiology') ?? [])].filter((x) => x !== 'core')).toEqual([]);
-  });
-  it('anatomy solo importa core y physiology', () => {
-    expect([...(edges.get('anatomy') ?? [])].filter((x) => !['core', 'physiology'].includes(x))).toEqual([]);
+  it('ninguna capa importa fuera de lo que su fila permite', () => {
+    const leaks: string[] = [];
+    for (const [a, targets] of edges)
+      for (const b of targets) if (!(ALLOWED[a] ?? []).includes(b)) leaks.push(`${a} → ${b}: ${examples.get(`${a}>${b}`) ?? ''}`);
+    expect(leaks).toEqual([]);
   });
   it('el motor no importa ui ni app', () => {
     for (const layer of ENGINE) {
@@ -78,9 +102,6 @@ describe('Fronteras entre capas (docs/ARCHITECTURE.md)', () => {
         expect(dep(layer, bad), `${layer} → ${bad}: ${examples.get(`${layer}>${bad}`) ?? ''}`).toBe(false);
       }
     }
-  });
-  it('vexus no depende de adquisición ni de UI', () => {
-    for (const bad of ['ui', 'app', 'ultrasound', 'doppler', 'audio', 'probe']) expect(dep('vexus', bad)).toBe(false);
   });
   it('no hay ciclos entre capas fuera de los aceptados (que solo pueden encoger)', () => {
     // Tarjan sobre el grafo de capas

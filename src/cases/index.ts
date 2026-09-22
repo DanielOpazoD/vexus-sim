@@ -81,18 +81,26 @@ export const AF_MODERATE_CONGESTION: PatientState = {
   habitus: { subcutaneousFatMm: 18, muscleMm: 11 },
 };
 
-export const CASES: PatientState[] = [NORMAL_ADULT, SEVERE_CONGESTION, AF_MODERATE_CONGESTION];
+/**
+ * Registro de casos: UNA sola fuente (Fase 1). La clave es el id; antes `CASE_IDS` repetía los
+ * ids a mano y un caso añadido solo a `CASES` aparecía en el selector pero se ignoraba.
+ * `cases.test` exige que cada clave coincida con el `id` de su paciente.
+ */
+const REGISTRY = {
+  'normal-adult': NORMAL_ADULT,
+  'severe-congestion': SEVERE_CONGESTION,
+  'af-moderate-congestion': AF_MODERATE_CONGESTION,
+} as const satisfies Record<string, PatientState>;
 
-/** Identificadores de caso conocidos: un id inválido no compila en el estado de UI. */
-export const CASE_IDS = ['normal-adult', 'severe-congestion', 'af-moderate-congestion'] as const;
-export type CaseId = (typeof CASE_IDS)[number];
+export type CaseId = keyof typeof REGISTRY;
+/** Identificadores en el orden del selector. */
+export const CASE_IDS = Object.keys(REGISTRY) as CaseId[];
+export const CASES: readonly PatientState[] = CASE_IDS.map((id) => REGISTRY[id]);
 
 export function isCaseId(id: string): id is CaseId {
   return (CASE_IDS as readonly string[]).includes(id);
 }
 
 export function findCase(id: CaseId): PatientState {
-  const c = CASES.find((x) => x.id === id);
-  if (!c) throw new Error(`Caso desconocido: ${id}`);
-  return c;
+  return REGISTRY[id];
 }

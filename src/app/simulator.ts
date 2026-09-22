@@ -1,11 +1,12 @@
-import { nyquistVelocityCms } from '../core/units';
+import { C_RECONSTRUCTION_MM_S, nyquistVelocityCms } from '../core/units';
 import { apertureAngleSigmaRad, lateralSigmaMm } from '../ultrasound/beamModel';
 import { colorTiming, type ColorTiming } from '../ultrasound/colorTiming';
+import { CONVEX_C35_PROFILE, type TransducerProfile } from '../ultrasound/transducerProfile';
 import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene } from '../anatomy/scene';
 import type { Tissue } from '../anatomy/tissues';
 import { rayTransmission } from '../ultrasound/transmission';
-import type { DopplerAudio } from '../audio/dopplerAudio';
+import { DopplerAudio } from '../audio/dopplerAudio';
 import { dopplerShiftHz } from '../core/units';
 import type { Vec3 } from '../core/vec3';
 import { PwDopplerChain } from '../doppler/pwChain';
@@ -13,7 +14,6 @@ import type { GateGeometry } from '../doppler/sampleVolume';
 import { PhysiologyEngine, type PhysiologySample } from '../physiology/engine';
 import type { PatientState } from '../physiology/patientState';
 import {
-  CONVEX_C35,
   clampPose,
   defaultPose,
   lineDirection,
@@ -73,11 +73,6 @@ export interface EquipmentSettings {
 }
 
 /** Límites del equipo (deslizadores y atajos comparten estos valores). */
-export const EQUIPMENT_LIMITS = {
-  depthMm: { min: 60, max: 240, step: 5 },
-  gainDb: { min: -20, max: 20, step: 1 },
-} as const;
-
 export function defaultEquipment(): EquipmentSettings {
   return {
     bmode: { ...DEFAULT_BMODE, tgcDb: [...DEFAULT_BMODE.tgcDb] },
@@ -85,9 +80,6 @@ export function defaultEquipment(): EquipmentSettings {
     pw: { ...DEFAULT_PW },
   };
 }
-
-/** Frecuencia efectiva de penetración a la que se atenúa la puerta PW (MHz). */
-const DOPPLER_EFFECTIVE_MHZ = 2.5;
 
 /**
  * Orquestador de un caso: un reloj (el de la fisiología) gobierna latido,
@@ -106,10 +98,15 @@ export class Simulator {
   readonly scene: AnatomyScene;
   readonly anatomy: AnatomyQuery;
   readonly physiology: PhysiologyEngine;
-  readonly transducer: Transducer = CONVEX_C35;
+  /** Perfil del transductor (geometría, haz, frecuencias efectivas): una sola fuente. */
+  readonly profile: TransducerProfile = CONVEX_C35_PROFILE;
+  get transducer(): Transducer {
+    return this.profile.geometry;
+  }
   readonly pwChain: PwDopplerChain;
   renderer: UltrasoundRenderer;
   pose: ProbePose = defaultPose();
+  /** Instantánea inmutable que asigna `EquipmentController` (sobrevive a los cambios de caso). */
   equipment: EquipmentSettings = defaultEquipment();
   frozen = false;
   private lastFrame: ProbeFrame;
@@ -120,27 +117,29 @@ export class Simulator {
   /** Información de la puerta para la UI/depuración. */
   gateInfo: { world: Vec3; transmission: number; beamAngleToFlowDeg: number | null; vessel: string | null } | null = null;
 
+  /** Salida de audio del navegador; la cadena PW solo ve su interfaz `AudioSink`. */
+  readonly audio: DopplerAudio;
+
   constructor(patient: PatientState, canvas: HTMLCanvasElement, audio?: DopplerAudio) {
     this.patient = patient;
+    this.audio = audio ?? new DopplerAudio();
     this.scene = new AnatomyScene(patient);
     this.anatomy = new AnatomyQuery(this.scene);
     this.physiology = new PhysiologyEngine(patient, this.scene.vesselAreas());
-    this.renderer = new UltrasoundRenderer(canvas, this.scene, this.transducer);
-    this.pwChain = new PwDopplerChain(this.anatomy, patient.seed, audio);
+    this.renderer = new UltrasoundRenderer(canvas, this.scene, this.profile);
+    this.pwChain = new PwDopplerChain(this.anatomy, patient.seed, this.audio);
     this.lastFrame = probeFrame(this.pose, this.scene.torso, this.transducer);
   }
 
-  get bmode(): BModeSettings {
+  // Ajustes de solo lectura: se cambian con comandos (`EquipmentController`), nunca en sitio
+  get bmode(): Readonly<BModeSettings> {
     return this.equipment.bmode;
   }
-  get color(): ColorSettings {
+  get color(): Readonly<ColorSettings> {
     return this.equipment.color;
   }
-  get pw(): PwSettings {
+  get pw(): Readonly<PwSettings> {
     return this.equipment.pw;
-  }
-  get audio(): DopplerAudio {
-    return this.pwChain.audio;
   }
   get spectral(): PwDopplerChain['spectral'] {
     return this.pwChain.spectral;
@@ -165,7 +164,7 @@ export class Simulator {
   /** Reconstruye el renderizador tras una pérdida de contexto GPU; el estado del paciente se conserva. */
   rebuildRenderer(canvas: HTMLCanvasElement): void {
     this.renderer.dispose();
-    this.renderer = new UltrasoundRenderer(canvas, this.scene, this.transducer);
+    this.renderer = new UltrasoundRenderer(canvas, this.scene, this.profile);
   }
 
   /** Libera los recursos GPU; el simulador no debe usarse después. */
@@ -215,7 +214,7 @@ export class Simulator {
     ];
     const r = pw.depthMm;
     // Anchura lateral del volumen de muestra = PSF de dos vías (mismo modelo que la imagen)
-    const latSigma = lateralSigmaMm(r, this.bmode.focusMm) * 1.2;
+    const latSigma = lateralSigmaMm(r, this.bmode.focusMm, this.profile.beam) * 1.2;
     const elevSigma = 1.6 * Math.sqrt(1 + ((r - tr.elevationFocusMm) / 45) ** 2);
     const transmission = this.estimateTransmission(fr, pw.theta, r, s);
     const gate: GateGeometry = {
@@ -227,7 +226,7 @@ export class Simulator {
       lateralSigmaMm: latSigma,
       elevationSigmaMm: elevSigma,
       pulseSigmaMm: 0.5,
-      apertureAngleSigmaRad: apertureAngleSigmaRad(r),
+      apertureAngleSigmaRad: apertureAngleSigmaRad(r, this.profile.beam),
       transmission,
     };
     this.pwChain.setGate(gate, s);
@@ -249,13 +248,22 @@ export class Simulator {
     const tissues: Tissue[] = [];
     for (let i = 0; i < n; i++)
       tissues.push(this.anatomy.classifyWorld(pointOnLine(fr, this.transducer, theta, (i + 0.5) * step), s).tissue);
-    return rayTransmission(tissues, step, DOPPLER_EFFECTIVE_MHZ);
+    return rayTransmission(tissues, step, this.profile.dopplerEffectiveMHz);
   }
 
   /** Cadencia física del color con la caja, PRF y ensemble actuales (decisión 39). */
   get colorTiming(): ColorTiming {
     const c = this.color;
-    return colorTiming(c.theta0, c.theta1, c.prfHz, c.ensemble, this.transducer.lines, this.bmode.depthMm);
+    return colorTiming(
+      c.theta0,
+      c.theta1,
+      c.prfHz,
+      c.ensemble,
+      this.transducer.lines,
+      this.bmode.depthMm,
+      C_RECONSTRUCTION_MM_S,
+      this.profile.colorLineSpacingRad,
+    );
   }
 
   /** Dibuja un cuadro con el estado actual. */

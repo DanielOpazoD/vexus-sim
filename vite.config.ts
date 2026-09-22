@@ -49,6 +49,8 @@ export default defineConfig({
         'src/ultrasound/shaders/**',
         'src/audio/dopplerAudio.ts',
         'src/app/devtools.ts',
+        'src/app/testHooks.ts', // ganchos de la e2e (la ejecuta Playwright)
+        'src/app/session.ts', // construye el Simulator sobre un canvas WebGL: lo cubre la e2e
       ],
       reporter: ['text-summary', 'html', 'json-summary'],
       // Umbrales: solo pueden subir (Fase 0). Medidos con todos los niveles.

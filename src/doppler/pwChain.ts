@@ -1,10 +1,21 @@
 import type { AnatomyQuery } from '../anatomy/query';
-import { DopplerAudio } from '../audio/dopplerAudio';
 import type { Vec3 } from '../core/vec3';
 import type { PhysiologySample } from '../physiology/engine';
 import { SampleVolumeIQ, type GateGeometry } from './sampleVolume';
 import { SpectralProcessor } from './spectral';
 import { WallFilter } from './wallFilter';
+
+/**
+ * Salida de audio de la cadena PW (Fase 1): el Doppler no conoce Web Audio; la app le
+ * inyecta un sumidero (`DopplerAudio` en el navegador, nada en pruebas o en un Worker).
+ */
+export interface AudioSink {
+  pushIQ(re: Float32Array, im: Float32Array, n: number, prfHz: number): void;
+  reset(): void;
+}
+
+/** Sumidero mudo por defecto. */
+export const SILENT_AUDIO: AudioSink = { pushIQ: () => undefined, reset: () => undefined };
 
 /**
  * Cadena del Doppler pulsado (guía §11–§12): volumen de muestra → IQ → filtro
@@ -15,18 +26,18 @@ export class PwDopplerChain {
   readonly sampleVolume: SampleVolumeIQ;
   readonly wallFilter: WallFilter;
   readonly spectral: SpectralProcessor;
-  readonly audio: DopplerAudio;
+  readonly audio: AudioSink;
   private iqRe = new Float32Array(4096);
   private iqIm = new Float32Array(4096);
   private cursor = 0;
   private pending = 0;
   private prfHz = 2600;
 
-  constructor(anatomy: AnatomyQuery, seed: number, audio?: DopplerAudio) {
+  constructor(anatomy: AnatomyQuery, seed: number, audio: AudioSink = SILENT_AUDIO) {
     this.sampleVolume = new SampleVolumeIQ(anatomy, seed);
     this.wallFilter = new WallFilter(25, this.prfHz);
     this.spectral = new SpectralProcessor({ fftSize: 128, hop: 16 });
-    this.audio = audio ?? new DopplerAudio();
+    this.audio = audio;
   }
 
   /** Configura equipo y prepara un lote de generación desde `tStart`. */

@@ -4,6 +4,7 @@ import type { AppState, PanelTab, Store } from '../app/store';
 import type { StartPoint } from '../app/startPoints';
 import type { Syncable } from './controls';
 import { buildAcquireTab } from './panel/acquireTab';
+import type { EquipmentCommand } from '../app/equipment';
 import type { PanelContext } from './panel/context';
 import { buildDopplerTab, type DopplerPanels } from './panel/dopplerTab';
 import { buildImageTab } from './panel/imageTab';
@@ -38,6 +39,7 @@ export class ControlPanel implements PanelContext {
     root: HTMLElement,
     readonly sim: () => Simulator,
     readonly store: Store,
+    readonly dispatch: (cmd: EquipmentCommand) => void,
   ) {
     root.innerHTML = '';
     const bar = document.createElement('div');

@@ -1,4 +1,4 @@
-import { EQUIPMENT_LIMITS } from '../../app/simulator';
+import { EQUIPMENT_LIMITS } from '../../app/equipment';
 import { help, slider } from '../controls';
 import type { PanelContext } from './context';
 
@@ -17,7 +17,7 @@ export function imageBasics(ctx: PanelContext, sec: HTMLElement): void {
         label: 'Profundidad',
         ...EQUIPMENT_LIMITS.depthMm,
         get: () => s().bmode.depthMm,
-        set: (v) => (s().bmode.depthMm = v),
+        set: (v) => ctx.dispatch({ type: 'bmode', patch: { depthMm: v } }),
         format: (v) => `${(v / 10).toFixed(0)} cm`,
       },
       ch,
@@ -30,7 +30,7 @@ export function imageBasics(ctx: PanelContext, sec: HTMLElement): void {
         label: 'Ganancia',
         ...EQUIPMENT_LIMITS.gainDb,
         get: () => s().bmode.gainDb,
-        set: (v) => (s().bmode.gainDb = v),
+        set: (v) => ctx.dispatch({ type: 'bmode', patch: { gainDb: v } }),
         format: (v) => `${v} dB`,
       },
       ch,
@@ -45,7 +45,7 @@ export function imageBasics(ctx: PanelContext, sec: HTMLElement): void {
         max: 200,
         step: 5,
         get: () => s().bmode.focusMm,
-        set: (v) => (s().bmode.focusMm = v),
+        set: (v) => ctx.dispatch({ type: 'bmode', patch: { focusMm: v } }),
         format: (v) => `${(v / 10).toFixed(1)} cm`,
       },
       ch,
@@ -68,7 +68,7 @@ export function buildImageTab(ctx: PanelContext, p: HTMLElement): void {
         max: 80,
         step: 2,
         get: () => s().bmode.dynamicRangeDb,
-        set: (v) => (s().bmode.dynamicRangeDb = v),
+        set: (v) => ctx.dispatch({ type: 'bmode', patch: { dynamicRangeDb: v } }),
         format: (v) => `${v} dB`,
       },
       ch,
@@ -83,7 +83,7 @@ export function buildImageTab(ctx: PanelContext, p: HTMLElement): void {
         max: 0.8,
         step: 0.05,
         get: () => s().bmode.persistence,
-        set: (v) => (s().bmode.persistence = v),
+        set: (v) => ctx.dispatch({ type: 'bmode', patch: { persistence: v } }),
         format: (v) => v.toFixed(2),
       },
       ch,
@@ -99,7 +99,7 @@ export function buildImageTab(ctx: PanelContext, p: HTMLElement): void {
     inp.max = '15';
     inp.step = '1';
     inp.title = `TGC banda ${i + 1} (${i < 4 ? 'superficial' : 'profunda'})`;
-    inp.addEventListener('input', () => (s().bmode.tgcDb[i] = Number(inp.value)));
+    inp.addEventListener('input', () => ctx.dispatch({ type: 'tgc', band: i, db: Number(inp.value) }));
     bank.appendChild(inp);
     ctx.track({ sync: () => (inp.value = String(s().bmode.tgcDb[i])) });
   }

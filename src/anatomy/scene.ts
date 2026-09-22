@@ -7,6 +7,7 @@ import {
   sdSpine,
   sdDiaphragm,
   sdEllipsoid,
+  sdOrientedEllipsoid,
   sdRib,
   sdSphere,
   smoothMax,
@@ -17,6 +18,7 @@ import {
   type Diaphragm,
   type Ellipsoid,
   type Kidney,
+  type OrientedEllipsoid,
   type Rib,
   type Sphere,
   type Torso,
@@ -97,7 +99,9 @@ export class AnatomyScene {
    * grasa ecogénica. Solo por delante (y > 0) y en el tercio inferior (z < zMax = −30): en el corte transversal es el foco ecogénico entre los segmentos III y IV.
    */
   readonly umbilicalFissure: { x: number; halfWidth: number; depthMm: number; zMax: number; roundMm: number };
-  readonly gallbladder: Ellipsoid;
+  readonly gallbladder: OrientedEllipsoid;
+  /** Pared vesicular (mm), ecogénica, entre la luz anecoica y la fosa. */
+  readonly gallbladderWallMm = 1.5;
   readonly rightAtrium: Sphere;
   readonly kidneyRight: Kidney;
   readonly kidneyLeft: Kidney;
@@ -142,8 +146,19 @@ export class AnatomyScene {
     this.liverLeft = { kind: 'ellipsoid', center: [0, 32, -25], radii: [95 * f, 36 * f, 55 * f], taperX: 0.5 };
     this.visceralPlane = { zAtY0: -62 - 100 * (f - 1), slopeY: 0.35, edgeRoundMm: 12 };
     this.umbilicalFissure = { x: 15, halfWidth: 4, depthMm: 14, zMax: -30, roundMm: 3 };
-    // Vesícula en su fosa (cara visceral del segmento IV/V); fondo hacia el borde
-    this.gallbladder = { kind: 'ellipsoid', center: [-52, 42, -65], radii: [34, 17, 17], taperX: 0 };
+    // Vesícula en pera en su fosa (cara visceral entre IV y V): fondo anteroinferolateral que
+    // asoma bajo el reborde hepático, cuello posterosuperomedial hacia el hilio (eje u apunta
+    // del fondo al cuello; afilamiento 0,45: fondo ≈ 16 mm de radio, cuello ≈ 6 mm).
+    const gbBasis = orthonormalBasis([0.56, -0.56, 0.61], [0, 1, 0]);
+    this.gallbladder = {
+      kind: 'oriented-ellipsoid',
+      center: [-58, 36, -62],
+      radii: [40, 11, 11],
+      u: gbBasis.u,
+      v: gbBasis.v,
+      w: gbBasis.w,
+      taperU: 0.45,
+    };
     this.rightAtrium = { kind: 'sphere', center: [-15, 15, 95], r: 30 };
     // Riñones: eje largo con el polo superior medial y posterior; hilio anteromedial.
     const bR = orthonormalBasis([0.22, -0.18, 1], [1, 0.25, 0]);
@@ -230,7 +245,7 @@ export class AnatomyScene {
     d = smoothMax(d, -this.visceralPlaneDistance(m), this.visceralPlane.edgeRoundMm);
     const kr = kidneyQuery(m, this.kidneyRight);
     d = smoothMax(d, -(kr.dOuter - this.renalImpressionMm), 8);
-    d = smoothMax(d, -sdEllipsoid(m, this.gallbladder), 4);
+    d = smoothMax(d, -(sdOrientedEllipsoid(m, this.gallbladder) - this.gallbladderWallMm), 2);
     return d;
   }
 
@@ -293,8 +308,10 @@ export class AnatomyScene {
     if (dDome < 0) return { ...NONE, tissue: Tissue.Lung, boundaryDistance: -dDome, specular: 1.0 };
     if (dDome < DIAPHRAGM_THICKNESS_MM)
       return { ...NONE, tissue: Tissue.Diaphragm, boundaryDistance: Math.min(dDome, DIAPHRAGM_THICKNESS_MM - dDome), specular: 0.9 };
-    const dGb = sdEllipsoid(m, this.gallbladder);
+    const dGb = sdOrientedEllipsoid(m, this.gallbladder);
     if (dGb < 0) return { ...NONE, tissue: Tissue.Fluid, boundaryDistance: -dGb, specular: 0.4 };
+    if (dGb < this.gallbladderWallMm)
+      return { ...NONE, tissue: Tissue.BileDuctWall, boundaryDistance: Math.min(dGb, this.gallbladderWallMm - dGb), specular: 0.5 };
     const kidney = this.classifyKidneys(m);
     if (kidney) return kidney;
     const liver = this.classifyLiver(m, dDome, -depth - wall.wallMm);

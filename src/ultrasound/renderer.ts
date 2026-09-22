@@ -276,6 +276,10 @@ export class UltrasoundRenderer {
     p.v4('uFissure', s.umbilicalFissure.x, s.umbilicalFissure.halfWidth, s.umbilicalFissure.depthMm, s.umbilicalFissure.zMax);
     p.v3('uGbC', s.gallbladder.center);
     p.v3('uGbR', s.gallbladder.radii);
+    p.v3('uGbU', s.gallbladder.u);
+    p.v3('uGbV', s.gallbladder.v);
+    p.v3('uGbW', s.gallbladder.w);
+    p.v2('uGbExtra', s.gallbladder.taperU, s.gallbladderWallMm);
     p.v4('uRA', s.rightAtrium.center[0], s.rightAtrium.center[1], s.rightAtrium.center[2], s.rightAtrium.r);
     const kidneys = [s.kidneyRight, s.kidneyLeft];
     const pack = (f: (k: (typeof kidneys)[number]) => number[]): Float32Array => new Float32Array(kidneys.flatMap(f));

@@ -17,8 +17,6 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **El hígado es una forma procedural** (`procedural-liver-shape`): elipsoides recortados por pared,
   cúpula y plano visceral, con fosa vesicular e impresión renal, pero sin fisuras, ligamentos ni
   segmentos de Couinaud explícitos; los ángulos de las venas y conductos son plausibles, no medidos.
-- **La vesícula es un elipsoide alineado con los ejes** (`axis-aligned-gallbladder`): sin la
-  oblicuidad real fondo-anteroinferior / cuello-posterosuperior ni pared propia.
 - **La VCI es un solo compartimento abdominal** (`ivc-single-compartment`): su diámetro observado
   usa la presión del compartimento entero, no la del segmento a 2 cm de la confluencia; la pulsación
   cardíaca del calibre está amortiguada.

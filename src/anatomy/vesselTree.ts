@@ -253,22 +253,25 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       2.5,
       0.8,
     ),
-    // Izquierda: porción transversa y porción umbilical (gira hacia anterior)
+    // Izquierda: porción transversa y porción umbilical, que gira hacia delante y abajo y
+    // termina en el receso de Rex, justo por detrás del suelo de la fisura umbilical (x 15,
+    // z < −30; decisión 40) donde se continúa con el ligamento redondo. De ahí salen las
+    // ramas laterales (II–III) y mediales (IV).
     portal(
       'pvLeft',
       [
         [[-34, 0, -45], 3.8],
-        [[-10, 8, -35], 3.6],
-        [[0, 24, -23], 3.4],
+        [[-12, 10, -40], 3.6],
+        [[8, 30, -38], 3.4],
       ],
       3.5,
     ),
     portal(
       'pvLeftLateral',
       [
-        [[0, 24, -23], 2.8],
-        [[35, 30, -13], 2.4],
-        [[65, 30, -7], 1.8],
+        [[8, 30, -38], 2.8],
+        [[38, 32, -22], 2.4],
+        [[66, 30, -8], 1.8],
       ],
       2.4,
       0.8,
@@ -276,9 +279,9 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
     portal(
       'pvLeftMedial',
       [
-        [[0, 24, -23], 2.4],
-        [[-22, 36, -17], 2],
-        [[-40, 44, -7], 1.6],
+        [[8, 30, -38], 2.4],
+        [[-16, 40, -26], 2],
+        [[-38, 46, -10], 1.6],
       ],
       2,
       0.8,

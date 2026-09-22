@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
 /**
@@ -7,7 +8,9 @@ import { defineConfig } from 'vitest/config';
  * `// @tier slow` queda fuera de `npm test` y entra en `test:slow` / `test:all`.
  * Así una prueba pesada no se cuela en la suite rápida por omisión.
  */
-function testFilesWithMarker(marker: string, dir = 'src'): string[] {
+// Relativo a este archivo, no al cwd: el servidor puede arrancar desde otro directorio
+const SRC_DIR = join(dirname(fileURLToPath(import.meta.url)), 'src');
+function testFilesWithMarker(marker: string, dir = SRC_DIR): string[] {
   const out: string[] = [];
   for (const f of readdirSync(dir)) {
     const p = join(dir, f);

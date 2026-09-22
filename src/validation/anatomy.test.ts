@@ -48,6 +48,26 @@ describe('Anatomía implícita (base B)', () => {
       expect(scene.liverSdf(p)).toBeGreaterThanOrEqual(scene.liverBaseSdf(p) - 1e-9);
   });
 
+  it('vesícula en pera: fondo ancho anteroinferior, cuello estrecho hacia el hilio, pared ecogénica y fosa en el hígado', () => {
+    const gb = scene.gallbladder;
+    const along = (t: number, off: [number, number, number] = [0, 0, 0]): [number, number, number] => [
+      gb.center[0] + gb.u[0] * t + gb.v[0] * off[1] + gb.w[0] * off[2],
+      gb.center[1] + gb.u[1] * t + gb.v[1] * off[1] + gb.w[1] * off[2],
+      gb.center[2] + gb.u[2] * t + gb.v[2] * off[1] + gb.w[2] * off[2],
+    ];
+    // el eje u va del fondo (−u, anteroinferior) al cuello (+u, posterosuperior, hacia el hilio)
+    expect(gb.u[1]).toBeLessThan(0);
+    expect(gb.u[2]).toBeGreaterThan(0);
+    expect(cls(along(0)).tissue).toBe(Tissue.Fluid);
+    // a 30 mm del centro hacia el fondo, a 9 mm del eje sigue habiendo bilis; hacia el cuello ya no
+    expect(cls(along(-30, [0, 9, 0])).tissue).toBe(Tissue.Fluid);
+    expect(cls(along(30, [0, 9, 0])).tissue).not.toBe(Tissue.Fluid);
+    // pared ecogénica de 1,5 mm alrededor de la luz, y hígado detrás (fosa vesicular)
+    expect(cls(along(0, [0, 11.7, 0])).tissue).toBe(Tissue.BileDuctWall);
+    expect(cls(along(0, [0, 11 + 1.5 + 4, 0])).tissue).toBe(Tissue.Liver);
+    expect(scene.gallbladderWallMm).toBeCloseTo(1.5, 6);
+  });
+
   it('los vasos tienen pared distinta de la luz y la porta tiene pared ecogénica', () => {
     // borde posterior del tronco portal: radio 5,5 → a 6 mm del eje hay pared
     // (por delante corre la arteria hepática, como en el ligamento hepatoduodenal)
@@ -73,11 +93,14 @@ describe('Anatomía implícita (base B)', () => {
 
   it('porta con ramas de segundo orden y vía biliar anterior a la porta', () => {
     expect(cls([-58, 2, -37]).vessel).toBe('pvRight');
-    expect(cls([-10, 8, -35]).vessel).toBe('pvLeft');
+    expect(cls([-12, 10, -40]).vessel).toBe('pvLeft');
+    // la porción umbilical termina bajo el suelo de la fisura umbilical (ligamento redondo encima)
+    expect(cls([8, 30, -38]).vessel).toBe('pvLeft');
+    expect(cls([15, 56, -40]).tissue).toBe(Tissue.LigamentumTeres);
     // la arteria renal derecha pasa entre la cava y el cuerpo vertebral sin cortarse
     expect(cls([-12, -29, -67]).vessel).toBe('renalArteryRight');
     expect(cls([-22, -16, -66]).vessel).toMatch(/ivcInfra|renalVeinRight/);
-    expect(cls([35, 30, -13]).vessel).toBe('pvLeftLateral');
+    expect(cls([38, 32, -22]).vessel).toBe('pvLeftLateral');
     expect(cls([-100, 30, -19]).vessel).toBe('pvRightAnterior');
     // colédoco: luz anecoica con pared ecogénica, sin vaso
     const cbd = cls([-16, 4, -69]);

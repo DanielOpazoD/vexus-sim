@@ -44,3 +44,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [38](DECISIONS.md#L393) | PSF lateral con número F y ensanchamiento espectral intrínseco | vigente |
 | [39](DECISIONS.md#L406) | Doppler color por celdas, varianza de Kasai y cadencia física de cuadro | vigente |
 | [40](DECISIONS.md#L422) | Fisura umbilical y ligamento redondo | vigente |
+| [41](DECISIONS.md#L436) | Vesícula en pera con pared y porción umbilical de la porta izquierda en la fisura | vigente |

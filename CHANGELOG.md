@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Cambiado
 
+- Vesícula en pera con base propia, afilamiento fondo→cuello, pared ecogénica de 1,5 mm y fosa; la porción umbilical de la porta izquierda termina bajo la fisura umbilical (receso de Rex) (41). Se retira la limitación `axis-aligned-gallbladder`.
+
 - Pestaña «Adquirir» con los mandos básicos de imagen (profundidad, ganancia, foco; una sola fuente con la pestaña «Imagen»); profundidad por defecto 18 cm.
 - Costillas con oblicuidad creciente hacia abajo (`ribTiltMm`: 60 mm la 5.ª, 90 mm la 10.ª), misma ley en el SDF y en el 3D; antes se veían casi horizontales.
 

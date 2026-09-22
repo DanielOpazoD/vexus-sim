@@ -61,6 +61,10 @@ uniform vec4 uVisceral;   // zAtY0, slopeY, edgeRound, renalImpression
 uniform vec4 uFissure;    // x, semiancho, profundidad, zMax de la fisura umbilical (redondeo 3 mm)
 uniform vec3 uGbC;
 uniform vec3 uGbR;
+uniform vec3 uGbU;
+uniform vec3 uGbV;
+uniform vec3 uGbW;
+uniform vec2 uGbExtra;    // afilamiento en +u, espesor de pared (mm)
 uniform vec4 uRA;
 uniform vec4 uGas[MAX_GAS];
 uniform vec4 uRibs[MAX_RIBS];   // zAnterior, tilt, halfWidth, halfThickness
@@ -167,6 +171,20 @@ float sdEllipsoid(vec3 p, vec3 c, vec3 r, float taperX, out vec3 n) {
   float k2 = length(k / rr);
   n = normalize(k / rr);
   return k2 > 0.0 ? (k1 * (k1 - 1.0)) / k2 : -min(r.x, min(r.y, r.z));
+}
+
+// Elipsoide con base propia y afilamiento en +u (vesícula en pera); n en el mundo
+float sdOrientedEllipsoid(vec3 p, vec3 c, vec3 r, vec3 U, vec3 V, vec3 W, float taperU, out vec3 n) {
+  vec3 d = p - c;
+  vec3 q = vec3(dot(d, U), dot(d, V), dot(d, W));
+  float taper = max(0.15, 1.0 - taperU * (q.x / r.x));
+  vec3 rr = vec3(r.x, r.y * taper, r.z * taper);
+  vec3 k = q / rr;
+  float k1 = length(k);
+  float k2 = length(k / rr);
+  vec3 nl = normalize(k / rr + vec3(1e-6));
+  n = normalize(U * nl.x + V * nl.y + W * nl.z);
+  return k2 > 0.0 ? (k1 * (k1 - 1.0)) / k2 : -min(rr.x, min(rr.y, rr.z));
 }
 
 float sdEllipsoidLocal(vec3 q, vec3 r) {
@@ -330,8 +348,8 @@ float liverSdf(vec3 m, out vec3 n, out float dBase) {
   float d3 = smoothMax(d2, -dk, 8.0);
   if (d3 > d2 + 1e-3) n = -kn;
   vec3 gn;
-  float dg = sdEllipsoid(m, uGbC, uGbR, 0.0, gn);
-  float d4 = smoothMax(d3, -dg, 4.0);
+  float dg = sdOrientedEllipsoid(m, uGbC, uGbR, uGbU, uGbV, uGbW, uGbExtra.x, gn) - uGbExtra.y;
+  float d4 = smoothMax(d3, -dg, 2.0);
   if (d4 > d3 + 1e-3) n = -gn;
   dBase = d4;
   float d5 = smoothMax(d4, -fissureSdf(m, d4), 3.0);
@@ -407,8 +425,9 @@ Cls classify(vec3 m) {
   if (dDome < 0.0) { c.tissue = T_LUNG; c.bd = -dDome; c.n = dn; c.spec = 1.0; return c; }
   if (dDome < DIAPHRAGM_MM) { c.tissue = T_DIAPHRAGM; c.bd = min(dDome, DIAPHRAGM_MM - dDome); c.n = dn; c.spec = 0.9; return c; }
   vec3 gn;
-  float dGb = sdEllipsoid(m, uGbC, uGbR, 0.0, gn);
+  float dGb = sdOrientedEllipsoid(m, uGbC, uGbR, uGbU, uGbV, uGbW, uGbExtra.x, gn);
   if (dGb < 0.0) { c.tissue = T_FLUID; c.bd = -dGb; c.n = gn; c.spec = 0.4; return c; }
+  if (dGb < uGbExtra.y) { c.tissue = T_BILEWALL; c.bd = min(dGb, uGbExtra.y - dGb); c.n = gn; c.spec = 0.5; return c; }
   // Riñones
   for (int k = 0; k < 2; k++) {
     if (distance(m, uKidC[k]) > uKidR[k].x + uKidExtra.y + 2.0) continue;

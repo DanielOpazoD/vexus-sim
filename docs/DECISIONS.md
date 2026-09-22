@@ -433,6 +433,21 @@ III y IV en el transversal. Misma fórmula en GLSL (`fissureSdf`, `uFissure`), e
 TS ↔ GLSL 100 %; el navegador 3D hereda el surco por marching cubes sobre el mismo SDF. Falta la
 fisura del ligamento venoso y el falciforme como lámina peritoneal.
 
+## 41. Vesícula en pera con pared y porción umbilical de la porta izquierda en la fisura
+
+La vesícula era un elipsoide alineado con los ejes (34 × 17 × 17 mm, eje derecha–izquierda) sin
+pared: en el corte no tenía fondo ni cuello y la fosa no apuntaba al hilio. Ahora es un elipsoide
+con base propia (`OrientedEllipsoid`, `sdOrientedEllipsoid` en TS y GLSL): eje u del fondo
+(anteroinferolateral, asomando bajo el reborde hepático) al cuello (posterosuperomedial, hacia la
+porta hepatis), semiejes 40 × 11 × 11 mm con afilamiento 0,45 en +u (fondo r ≈ 16 mm, cuello r ≈
+6 mm), pared de 1,5 mm de `BileDuctWall` (ecogénica) alrededor de la luz anecoica y fosa de 2 mm
+excavada en el hígado con el mismo SDF. El navegador 3D la extrae por marching cubes del mismo
+campo. Se retira la limitación `axis-aligned-gallbladder`. La porción umbilical de la porta
+izquierda termina ahora en el receso de Rex, bajo el suelo de la fisura umbilical (decisión 40),
+de donde salen las ramas de II–III y IV: el ligamento redondo se continúa con ella como en la
+anatomía real. Costillas con oblicuidad creciente (`ribTiltMm`) y profundidad por defecto 18 cm
+van en el mismo lote de fidelidad.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

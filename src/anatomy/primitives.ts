@@ -155,6 +155,37 @@ export function sdEllipsoid(p: Vec3, e: Ellipsoid): number {
   return k2 > 0 ? (k1 * (k1 - 1)) / k2 : -Math.min(e.radii[0], e.radii[1], e.radii[2]);
 }
 
+/**
+ * Elipsoide con base propia (u, v, w) y afilamiento lineal de los semiejes v/w al
+ * avanzar en +u (pera: fondo grande en −u, cuello estrecho en +u). Vesícula.
+ */
+export interface OrientedEllipsoid {
+  kind: 'oriented-ellipsoid';
+  center: Vec3;
+  radii: Vec3;
+  u: Vec3;
+  v: Vec3;
+  w: Vec3;
+  taperU: number;
+}
+
+export function sdOrientedEllipsoid(p: Vec3, e: OrientedEllipsoid): number {
+  const d: Vec3 = [p[0] - e.center[0], p[1] - e.center[1], p[2] - e.center[2]];
+  const q: Vec3 = [
+    d[0] * e.u[0] + d[1] * e.u[1] + d[2] * e.u[2],
+    d[0] * e.v[0] + d[1] * e.v[1] + d[2] * e.v[2],
+    d[0] * e.w[0] + d[1] * e.w[1] + d[2] * e.w[2],
+  ];
+  const taper = Math.max(0.15, 1 - e.taperU * (q[0] / e.radii[0]));
+  const rr: Vec3 = [e.radii[0], e.radii[1] * taper, e.radii[2] * taper];
+  const kx = q[0] / rr[0];
+  const ky = q[1] / rr[1];
+  const kz = q[2] / rr[2];
+  const k1 = Math.sqrt(kx * kx + ky * ky + kz * kz);
+  const k2 = Math.sqrt((kx * kx) / (rr[0] * rr[0]) + (ky * ky) / (rr[1] * rr[1]) + (kz * kz) / (rr[2] * rr[2]));
+  return k2 > 0 ? (k1 * (k1 - 1)) / k2 : -Math.min(rr[0], rr[1], rr[2]);
+}
+
 export function sdSphere(p: Vec3, s: Sphere): number {
   return Math.hypot(p[0] - s.center[0], p[1] - s.center[1], p[2] - s.center[2]) - s.r;
 }

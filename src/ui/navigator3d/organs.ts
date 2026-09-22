@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js';
-import { diaphragmHeight, kidneyLocal, kidneyOuterSdf, torsoDepth, type Kidney } from '../../anatomy/primitives';
+import { diaphragmHeight, kidneyLocal, kidneyOuterSdf, sdOrientedEllipsoid, torsoDepth, type Kidney } from '../../anatomy/primitives';
 import type { AnatomyScene } from '../../anatomy/scene';
 import { DIAPHRAGM_THICKNESS_MM } from '../../anatomy/tissues';
 import type { Vec3 } from '../../core/vec3';
@@ -113,12 +113,16 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
       }),
     ),
   );
-  const gb = new THREE.Mesh(
-    new THREE.SphereGeometry(1, 24, 16),
+  // Vesícula en pera: marching cubes sobre el mismo elipsoide orientado (fondo + cuello)
+  const gbE = a.gallbladder;
+  const gbR = Math.max(...gbE.radii) * 1.6 + 4;
+  const gb = meshFromSdf(
+    (p) => sdOrientedEllipsoid(p, gbE),
+    [gbE.center[0] - gbR, gbE.center[1] - gbR, gbE.center[2] - gbR],
+    [gbE.center[0] + gbR, gbE.center[1] + gbR, gbE.center[2] + gbR],
+    36,
     new THREE.MeshStandardMaterial({ color: 0x3fb08f, roughness: 0.5, transparent: true, opacity: 0.85 }),
   );
-  gb.scale.set(a.gallbladder.radii[0] * CM, a.gallbladder.radii[1] * CM, a.gallbladder.radii[2] * CM);
-  gb.position.set(a.gallbladder.center[0] * CM, a.gallbladder.center[1] * CM, a.gallbladder.center[2] * CM);
   const ra = new THREE.Mesh(
     new THREE.SphereGeometry(a.rightAtrium.r * CM, 24, 16),
     new THREE.MeshStandardMaterial({ color: 0xb04848, roughness: 0.6, transparent: true, opacity: 0.45, depthWrite: false }),

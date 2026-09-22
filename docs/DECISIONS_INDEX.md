@@ -47,3 +47,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [41](DECISIONS.md#L436) | Vesícula en pera con pared y porción umbilical de la porta izquierda en la fisura | vigente |
 | [42](DECISIONS.md#L451) | Segmentos de Couinaud derivados de los vasos, ligamento venoso e hígado 3D translúcido | vigente |
 | [43](DECISIONS.md#L468) | Arquitectura renal, receso de Morison, cortina pulmonar, pared periportal y pared blanda | vigente |
+| [44](DECISIONS.md#L489) | Medición del alumno robusta: envolvente de la banda contigua, lado venoso y regla de S invertida | vigente |

@@ -215,7 +215,7 @@ describe('Ventanas de medida', () => {
     expect(vfast.dWindow[1]).toBeGreaterThan(vfast.dWindow[0]);
   });
 
-  it('systolicPeak informa S invertida solo si el retrógrado alcanza 2 cm/s y el 25 % del máximo', () => {
+  it('systolicPeak informa S invertida solo si el retrógrado alcanza 2 cm/s y el 50 % del máximo', () => {
     const series = (vmax: number, vmin: number) => [
       { t: 0.2, v: vmax },
       { t: 0.5, v: vmin },
@@ -224,8 +224,10 @@ describe('Ventanas de medida', () => {
     const peak = (vmax: number, vmin: number) => systolicPeak(series(vmax, vmin), [0, 1], (s) => s.v);
     expect(peak(20, -1)).toBe(20);
     expect(peak(20, -4)).toBe(20);
-    expect(peak(20, -5)).toBe(-5);
-    expect(peak(20, -6)).toBe(-6);
+    // muesca de onda C (< 50 % del pico): no es inversión de S
+    expect(peak(20, -9)).toBe(20);
+    expect(peak(20, -10)).toBe(-10);
+    expect(peak(20, -14)).toBe(-14);
     expect(peak(4, -2)).toBe(-2);
     expect(peak(-3, -8)).toBe(-8);
     expect(Number.isNaN(systolicPeak(series(20, -5), [5, 6], (s) => s.v))).toBe(true);

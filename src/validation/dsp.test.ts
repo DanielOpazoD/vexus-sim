@@ -9,7 +9,16 @@ import {
   velocityFromShiftMmS,
   wrapToNyquist,
 } from '../core/units';
-import { SpectralProcessor, columnEnvelope, noiseFloorDb, peakFrequency, type SpectralColumn } from '../doppler/spectral';
+import {
+  SpectralProcessor,
+  columnBandEnvelopes,
+  columnEnvelope,
+  columnPercentileEnvelope,
+  noiseFloorDb,
+  peakFrequency,
+  type SpectralColumn,
+} from '../doppler/spectral';
+import { robustExtremeInWindow } from '../core/series';
 import { WallFilter } from '../doppler/wallFilter';
 
 /**
@@ -198,5 +207,63 @@ describe('STFT y envolvente', () => {
     const bothInv = columnEnvelope(col({ 71: -55, 50: -50 }), N, -80);
     expect(bothInv.fEnvelope).toBe(bothInv.fNeg);
     expect(noiseFloorDb(col({ 1: -20, 2: -20, 3: -20, 4: -20, 5: -20, 6: -20, 7: -20, 8: -20 }))).toBe(-100);
+  });
+
+  it('envolvente por percentil de la banda contigua: un bin de ruido aislado lejos no la mueve (decisión 44)', () => {
+    const N = 128;
+    const df = 2000 / N;
+    const col = (set: Record<number, number>): SpectralColumn => {
+      const powerDb = new Float32Array(N).fill(-100);
+      for (const [k, v] of Object.entries(set)) powerDb[Number(k)] = v;
+      return { t: 0, prfHz: 2000, powerDb };
+    };
+    // banda uniforme en bins +2…+11 (potencia igual): el percentil 92 cae en el 10.º bin (+11)
+    const band: Record<number, number> = {};
+    for (let j = 2; j <= 11; j++) band[64 + j] = -40;
+    expect(columnPercentileEnvelope(col(band), N, -100)).toBeCloseTo(11 * df, 9);
+    // un bin de ruido aislado en +40 (más de 3 bins de hueco): no cuenta
+    expect(columnPercentileEnvelope(col({ ...band, [64 + 40]: -40 }), N, -100)).toBeCloseTo(11 * df, 9);
+    // el «último bin sobre umbral» sí se iba al ruido
+    expect(columnEnvelope(col({ ...band, [64 + 40]: -40 }), N, -80).fPos).toBeCloseTo(40 * df, 9);
+    // dos lados simultáneos (arteria y vena): cada uno con su envolvente y su energía
+    const both = columnBandEnvelopes(col({ ...band, [64 - 5]: -45, [64 - 6]: -45, [64 - 7]: -45 }), N, -100);
+    expect(both.posHz).toBeCloseTo(11 * df, 9);
+    expect(both.negHz).toBeCloseTo(7 * df, 9);
+    expect(both.ePos).toBeGreaterThan(both.eNeg);
+    // sin nada 12 dB por encima del suelo: no hay flujo detectable
+    expect(columnPercentileEnvelope(col({ [64 + 5]: -95 }), N, -100)).toBe(0);
+  });
+
+  it('el extremo robusto ignora el 3 % más extremo de la ventana', () => {
+    const xs = Array.from({ length: 100 }, (_, i) => ({ t: i, v: i === 50 ? 999 : Math.sin(i / 10) }));
+    const plain = robustExtremeInWindow(
+      xs,
+      [0, 99],
+      (x) => x.t,
+      (x) => x.v,
+      (v) => v,
+      1,
+    );
+    const robust = robustExtremeInWindow(
+      xs,
+      [0, 99],
+      (x) => x.t,
+      (x) => x.v,
+      (v) => v,
+      0.97,
+    );
+    expect(plain).toBe(999);
+    expect(robust).toBeLessThan(1.01);
+    expect(
+      Number.isNaN(
+        robustExtremeInWindow(
+          xs,
+          [200, 300],
+          (x) => x.t,
+          (x) => x.v,
+          (v) => v,
+        ),
+      ),
+    ).toBe(true);
   });
 });

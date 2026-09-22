@@ -157,6 +157,76 @@ export function peakFrequency(col: SpectralColumn, fftSize: number): number {
 }
 
 /** Suelo de ruido estimado como mediana de una columna (dB). */
+/**
+ * Envolvente de frecuencia máxima (decisión 44), como la traza un equipo: (1) solo
+ * cuentan los bins significativos (> suelo + 6 dB; el periodograma del ruido supera 4×
+ * su media con probabilidad e⁻⁴ ≈ 2 %); (2) en cada semiplano la banda espectral es la
+ * región CONTIGUA a la línea de base (se corta tras 3 bins seguidos no significativos),
+ * así los bins de ruido aislados lejos de la banda no cuentan; (3) se elige el semiplano
+ * con más energía en su banda; (4) la envolvente es la frecuencia donde la potencia
+ * acumulada desde la continua alcanza la fracción `pct` de la banda (método del
+ * percentil). Devuelve 0 si ningún bin supera el suelo en `detectDb`.
+ */
+const SIGNIFICANT_DB = 6;
+const BAND_GAP_BINS = 3;
+
+/** Envolventes de ambos semiplanos (Hz, ≥ 0) y energía de sus bandas contiguas. */
+export interface BandEnvelopes {
+  posHz: number;
+  negHz: number;
+  ePos: number;
+  eNeg: number;
+  detected: boolean;
+}
+
+export function columnBandEnvelopes(col: SpectralColumn, fftSize: number, floorDb: number, detectDb = 12, pct = 0.92): BandEnvelopes {
+  const N = fftSize;
+  const half = N >> 1;
+  const df = col.prfHz / N;
+  const floorLin = Math.pow(10, floorDb / 10);
+  const sigLin = floorLin * Math.pow(10, SIGNIFICANT_DB / 10);
+  const binPower = (k: number): number => {
+    const lin = Math.pow(10, col.powerDb[k] / 10);
+    return lin > sigLin ? lin - floorLin : 0;
+  };
+  let peak = -200;
+  for (let k = 0; k < N; k++) if (Math.abs(k - half) > 1) peak = Math.max(peak, col.powerDb[k]);
+  if (peak < floorDb + detectDb) return { posHz: 0, negHz: 0, ePos: 0, eNeg: 0, detected: false };
+  // Banda contigua a la línea de base en un semiplano (j = distancia en bins a la continua)
+  const band = (sign: 1 | -1): { hz: number; total: number } => {
+    const power: number[] = [];
+    let total = 0;
+    let gap = 0;
+    for (let j = 2; j < half; j++) {
+      const k = half + sign * j;
+      if (k < 0 || k >= N) break;
+      const p = binPower(k);
+      power.push(p);
+      if (p > 0) {
+        gap = 0;
+        total += p;
+      } else if (++gap >= BAND_GAP_BINS && total > 0) break;
+    }
+    if (total <= 0) return { hz: 0, total: 0 };
+    let acc = 0;
+    for (let i = 0; i < power.length; i++) {
+      acc += power[i];
+      if (acc >= pct * total) return { hz: (i + 2) * df, total };
+    }
+    return { hz: (power.length + 1) * df, total };
+  };
+  const pos = band(1);
+  const neg = band(-1);
+  return { posHz: pos.hz, negHz: neg.hz, ePos: pos.total, eNeg: neg.total, detected: true };
+}
+
+/** Envolvente con signo del semiplano dominante (el de más energía en su banda). */
+export function columnPercentileEnvelope(col: SpectralColumn, fftSize: number, floorDb: number, detectDb = 12, pct = 0.92): number {
+  const b = columnBandEnvelopes(col, fftSize, floorDb, detectDb, pct);
+  if (!b.detected) return 0;
+  return b.ePos >= b.eNeg ? b.posHz : -b.negHz;
+}
+
 export function noiseFloorDb(col: SpectralColumn): number {
   const arr = Array.from(col.powerDb).sort((a, b) => a - b);
   return arr[arr.length >> 1];

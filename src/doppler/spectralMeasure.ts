@@ -1,4 +1,4 @@
-import { extremeInWindow, median, type TimeWindow } from '../core/series';
+import { median, robustExtremeInWindow, type TimeWindow } from '../core/series';
 import { velocityFromShiftMmS } from '../core/units';
 import type { Beat } from '../physiology/rhythm';
 import { beatWindows, systolicPeak } from '../vexus/measurements';
@@ -9,7 +9,7 @@ import {
   type HepaticPattern,
   type RenalPattern,
 } from '../vexus/classification';
-import { columnEnvelope, noiseFloorDb, type SpectralColumn } from './spectral';
+import { columnBandEnvelopes, columnEnvelope, columnPercentileEnvelope, noiseFloorDb, type SpectralColumn } from './spectral';
 
 /**
  * Mediciones sobre la señal ADQUIRIDA (espectro observado), separadas de la
@@ -69,27 +69,108 @@ export interface MeasureOptions {
   thresholdMarginDb?: number;
 }
 
+/**
+ * Traza observada: envolvente por el método del percentil en cada columna y mediana
+ * temporal de 5 columnas (≈ 30 ms), como el trazado automático de un equipo o el
+ * que hace a mano el operador por encima del moteado. Las mediciones toman extremos
+ * de esta traza por ventana, así que un pico de ruido ya no decide S, D ni la PF.
+ */
 export function observedTrace(columns: readonly SpectralColumn[], opts: MeasureOptions): ObservedTracePoint[] {
   const margin = opts.thresholdMarginDb ?? 12;
-  const out: ObservedTracePoint[] = [];
-  for (const col of columns) {
+  const raw: ObservedTracePoint[] = [];
+  for (const col of smoothSpectrum(columns)) {
     const floor = noiseFloorDb(col);
     const env = columnEnvelope(col, opts.fftSize, floor + margin);
-    const f = env.fEnvelope;
+    const f = columnPercentileEnvelope(col, opts.fftSize, floor, margin);
     const vMm = velocityFromShiftMmS(f, opts.f0Hz, opts.angleCorrectionRad);
     const v = (Number.isFinite(vMm) ? vMm / 10 : 0) * (opts.invert ? -1 : 1);
-    out.push({ t: col.t, vScreen: v, powerDb: Math.max(env.powerPosDb, env.powerNegDb) });
+    raw.push({ t: col.t, vScreen: v, powerDb: Math.max(env.powerPosDb, env.powerNegDb) });
   }
-  return out;
+  const filtered = medianFilter(raw.map((p) => p.vScreen));
+  return raw.map((p, i) => ({ ...p, vScreen: filtered[i] }));
 }
 
+/** Semiancho de la mediana temporal de la traza (columnas). */
+const TRACE_MEDIAN_HALF = 2;
+
+/**
+ * Promedio del espectro en una vecindad 3 × 3 (columnas × bins) en potencia lineal: reduce
+ * la varianza del periodograma (moteado espectral de pocos dispersores) antes de trazar la
+ * envolvente, como el promediado de visualización de un equipo. No toca la señal mostrada.
+ */
+export function smoothSpectrum(columns: readonly SpectralColumn[]): SpectralColumn[] {
+  const n = columns.length;
+  if (n === 0) return [];
+  const N = columns[0].powerDb.length;
+  const lin = columns.map((c) => Float64Array.from(c.powerDb, (db) => Math.pow(10, db / 10)));
+  return columns.map((c, i) => {
+    const out = new Float32Array(N);
+    for (let k = 0; k < N; k++) {
+      let acc = 0;
+      let cnt = 0;
+      for (let di = -1; di <= 1; di++) {
+        const ii = i + di;
+        if (ii < 0 || ii >= n || lin[ii].length !== N) continue;
+        for (let dk = -1; dk <= 1; dk++) {
+          const kk = k + dk;
+          if (kk < 0 || kk >= N) continue;
+          acc += lin[ii][kk];
+          cnt++;
+        }
+      }
+      out[k] = 10 * Math.log10(acc / cnt);
+    }
+    return { t: c.t, prfHz: c.prfHz, powerDb: out };
+  });
+}
+
+const medianFilter = (v: number[]): number[] =>
+  v.map((_, i) => {
+    const win: number[] = [];
+    for (let j = Math.max(0, i - TRACE_MEDIAN_HALF); j <= Math.min(v.length - 1, i + TRACE_MEDIAN_HALF); j++) win.push(v[j]);
+    return median(win);
+  });
+
+/**
+ * Trazas de magnitud de CADA semiplano por separado (cm/s, ≥ 0, corregidas por ángulo):
+ * cuando dos flujos opuestos comparten la puerta (arteria y vena interlobares) cada uno
+ * se lee en su lado de la línea de base, como hace el operador.
+ */
+export function observedSideTraces(
+  columns: readonly SpectralColumn[],
+  opts: MeasureOptions,
+): { t: number[]; pos: number[]; neg: number[] } {
+  const margin = opts.thresholdMarginDb ?? 12;
+  const t: number[] = [];
+  const pos: number[] = [];
+  const neg: number[] = [];
+  for (const col of smoothSpectrum(columns)) {
+    const b = columnBandEnvelopes(col, opts.fftSize, noiseFloorDb(col), margin);
+    const toCm = (hz: number) => {
+      const v = velocityFromShiftMmS(hz, opts.f0Hz, opts.angleCorrectionRad) / 10;
+      return Number.isFinite(v) ? v : 0;
+    };
+    t.push(col.t);
+    pos.push(toCm(b.posHz));
+    neg.push(toCm(b.negHz));
+  }
+  return { t, pos: medianFilter(pos), neg: medianFilter(neg) };
+}
+
+/**
+ * Extremo robusto de la traza medida (cuantil 0,97): una columna con caída de señal o
+ * un resto de ruido no decide el pico ni el mínimo, como no lo decide el operador al
+ * trazar (decisión 44). La verdad fisiológica usa extremos exactos sobre la señal limpia.
+ */
+const TRACE_Q = 0.97;
 const extreme = (trace: readonly { t: number; vScreen: number }[], w: TimeWindow, pick: (v: number) => number): number =>
-  extremeInWindow(
+  robustExtremeInWindow(
     trace,
     w,
     (p) => p.t,
     (p) => p.vScreen,
     pick,
+    TRACE_Q,
   );
 
 export function measureObservedHepatic(columns: readonly SpectralColumn[], beats: Beat[], opts: MeasureOptions): ObservedHepatic | null {
@@ -109,7 +190,7 @@ export function measureObservedHepatic(columns: readonly SpectralColumn[], beats
   const aList: number[] = [];
   for (const b of beats) {
     const w = beatWindows(b);
-    const s = systolicPeak(oriented, w.sWindow, (p) => p.vScreen);
+    const s = systolicPeak(oriented, w.sWindow, (p) => p.vScreen, TRACE_Q);
     const d = extreme(oriented, w.dWindow, (v) => v);
     const a = extreme(oriented, w.aWindow, (v) => -v);
     // Sin onda A (fibrilación auricular) la ventana auricular es NaN: S y D bastan
@@ -164,24 +245,49 @@ export function measureObservedPortal(columns: readonly SpectralColumn[], beats:
 }
 
 /**
- * Vena interlobar: el sentido anterógrado (hacia el hilio) se toma como el signo
- * dominante, igual que en la porta; S y D en las ventanas mecánicas del ECG.
+ * Vena interlobar. La puerta recoge a la vez la arteria (hacia la corteza) y la vena
+ * (hacia el hilio), en lados opuestos de la línea de base. El lado ARTERIAL es el de
+ * mayor relación sístole/diástole (PSV ≫ EDV); la vena se lee en el otro lado, con su
+ * magnitud como velocidad anterógrada. Si solo un lado tiene señal, ese es la vena. Un
+ * flujo venoso invertido se confundiría con la arteria y no se mide aquí (vMin ≥ 0).
  */
 export function measureObservedRenal(columns: readonly SpectralColumn[], beats: Beat[], opts: MeasureOptions): ObservedRenal | null {
-  const trace = observedTrace(columns, opts);
-  if (trace.length < 10) return null;
-  const meanV = trace.reduce((a, p) => a + p.vScreen, 0) / trace.length;
-  const anterogradeSign = meanV >= 0 ? 1 : -1;
-  const oriented = trace.map((p) => ({ t: p.t, vScreen: p.vScreen * anterogradeSign, powerDb: p.powerDb }));
+  const tr = observedSideTraces(columns, opts);
+  if (tr.t.length < 10) return null;
+  const at = (side: number[]) => tr.t.map((t, i) => ({ t, vScreen: side[i] }));
+  const pos = at(tr.pos);
+  const neg = at(tr.neg);
+  const sdRatio = (side: { t: number; vScreen: number }[]) => {
+    let s = 0;
+    let d = 0;
+    for (const b of beats) {
+      const w = beatWindows(b);
+      const sv = extreme(side, w.sWindow, (v) => v);
+      const dv = extreme(side, w.dWindow, (v) => v);
+      if (Number.isFinite(sv)) s += sv;
+      if (Number.isFinite(dv)) d += dv;
+    }
+    return { s, d, total: s + d, ratio: s / Math.max(1e-6, d) };
+  };
+  const rp = sdRatio(pos);
+  const rn = sdRatio(neg);
+  const MIN_SIGNAL = 2 * Math.max(1, beats.length); // cm/s acumulados: por debajo, el lado está vacío
+  let veinSign: 1 | -1;
+  if (rp.total < MIN_SIGNAL) veinSign = -1;
+  else if (rn.total < MIN_SIGNAL) veinSign = 1;
+  else veinSign = rp.ratio > rn.ratio ? -1 : 1; // el lado con sístole dominante es la arteria
+  const vein = veinSign === 1 ? pos : neg;
+  const anterogradeSign = (opts.invert ? -1 : 1) * veinSign;
+  const trace: ObservedTracePoint[] = vein.map((p) => ({ t: p.t, vScreen: p.vScreen * veinSign * (opts.invert ? -1 : 1), powerDb: 0 }));
   const sList: number[] = [];
   const dList: number[] = [];
   const minList: number[] = [];
   for (const b of beats) {
     const w = beatWindows(b);
     const cyc: [number, number] = [b.tR, b.tR + b.rr];
-    const s = extreme(oriented, w.sWindow, (v) => v);
-    const d = extreme(oriented, w.dWindow, (v) => v);
-    const mn = extreme(oriented, cyc, (v) => -v);
+    const s = extreme(vein, w.sWindow, (v) => v);
+    const d = extreme(vein, w.dWindow, (v) => v);
+    const mn = extreme(vein, cyc, (v) => -v);
     if ([s, d, mn].some((x) => Number.isNaN(x))) continue;
     sList.push(s);
     dList.push(d);

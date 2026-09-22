@@ -35,3 +35,28 @@ export function extremeInWindow<T>(
   }
   return best;
 }
+
+/**
+ * Extremo ROBUSTO en una ventana: el valor cuyo `pick` ocupa el cuantil `q` (0,9 = se
+ * descarta el 10 % más extremo). Para trazas medidas sobre el espectro, donde una
+ * columna aislada con caída de señal o ruido no debe decidir el pico; con q = 1 es
+ * `extremeInWindow`. NaN si la ventana está vacía.
+ */
+export function robustExtremeInWindow<T>(
+  xs: readonly T[],
+  w: TimeWindow,
+  t: (x: T) => number,
+  v: (x: T) => number,
+  pick: (v: number) => number,
+  q = 0.9,
+): number {
+  const vals: number[] = [];
+  for (const x of xs) {
+    const tx = t(x);
+    if (!(tx >= w[0] && tx <= w[1])) continue;
+    vals.push(v(x));
+  }
+  if (!vals.length) return Number.NaN;
+  vals.sort((a, b) => pick(a) - pick(b));
+  return vals[Math.min(vals.length - 1, Math.floor(q * (vals.length - 1) + 0.5))];
+}

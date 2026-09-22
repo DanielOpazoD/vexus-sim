@@ -20,6 +20,19 @@ export interface TestHooks {
    * antes la sonda en ese punto de partida y avanza lo justo para que el marco la siga.
    */
   speckle: (opts?: SpeckleOptions & { startPoint?: StartPoint['id'] }) => SpeckleStats;
+  /**
+   * Centra la caja de color sobre uno de los vasos (colocación del operador), avanza lo justo para
+   * que toque un cuadro de color y devuelve las celdas con potencia visible; null si no ve el vaso.
+   */
+  colorOnVessel: (vessels: VesselId[]) => number | null;
+  /** Celdas de color visibles tras forzar un cuadro de color (sin mover la caja). */
+  colorCells: () => number;
+  /** Potencia de la banda PW sobre el suelo de ruido (dB, mediana de los últimos `seconds`). */
+  pwBandOverFloorDb: (seconds: number) => number | null;
+  /** Coloca la sonda en un punto de partida (sin animación) y avanza lo justo para que el marco la siga. */
+  goToStartPoint: (id: StartPoint['id']) => void;
+  /** Separa la sonda de la piel `mm` (0 = contacto) sin tocar el resto de la pose. */
+  liftProbe: (mm: number) => void;
   /** Avanza la simulación (fisiología + PW) `seconds` sin renderizar: SwiftShader es lento. */
   advance: (seconds: number) => void;
   /** Coloca la puerta PW sobre uno de los vasos con la técnica del operador; false si no lo ve. */
@@ -40,6 +53,38 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       sim.render();
       return speckleStats(sim, sim.renderer.readEnvelope(), opts);
     },
+    colorOnVessel: (vessels) => {
+      const sim = getSim();
+      const g = bestGateOnVessel(sim.anatomy, sim.frame, sim.transducer, sim.sample, vessels, sim.bmode.depthMm - 5);
+      if (!g) return null;
+      dispatch({ type: 'centerColorBox', theta: g.theta, r: g.r });
+      return renderColorFrame(sim);
+    },
+    colorCells: () => renderColorFrame(getSim()),
+    pwBandOverFloorDb: (seconds) => {
+      const cols = getSim().spectral.columns;
+      if (cols.length === 0) return null;
+      const tEnd = cols[cols.length - 1].t;
+      const vals = cols
+        .filter((c) => c.t > tEnd - seconds)
+        .map((c) => {
+          const sorted = [...c.powerDb].sort((a, b) => a - b);
+          return sorted[sorted.length - 3] - sorted[Math.floor(sorted.length / 2)];
+        })
+        .sort((a, b) => a - b);
+      return vals[Math.floor(vals.length / 2)];
+    },
+    goToStartPoint: (id) => {
+      const sim = getSim();
+      const sp = START_POINTS.find((p) => p.id === id)!;
+      sim.setPose({ phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 });
+      sim.advance(0.05);
+    },
+    liftProbe: (mm) => {
+      const sim = getSim();
+      sim.setPose({ ...sim.pose, lift: mm });
+      sim.advance(0.05);
+    },
     advance: (seconds) => {
       const sim = getSim();
       for (let t = 0; t < seconds; t += 1 / 60) sim.advance(1 / 60);
@@ -52,4 +97,11 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       return true;
     },
   };
+}
+
+/** Avanza lo que exige la cadencia del color para que el siguiente render dibuje un cuadro de color. */
+function renderColorFrame(sim: Simulator): number {
+  sim.advance(1 / Math.max(1, sim.colorTiming.frameHz) + 0.02);
+  sim.render();
+  return sim.renderer.colorCellsAbove();
 }

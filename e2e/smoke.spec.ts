@@ -107,3 +107,40 @@ test('el speckle del parénquima hepático tiene estadística de Rayleigh', asyn
   }
   expect(errors).toEqual([]);
 });
+
+test('sin contacto no hay Doppler: el color y el espectro se apagan al levantar la sonda', async ({ page }) => {
+  // Invariante de §23 de la guía. Medido con GPU real: color 1 346 celdas en contacto y 0 levantada;
+  // PW 23 dB sobre el suelo en contacto y 7,5 dB (el valor del ruido puro) levantada.
+  test.setTimeout(240_000);
+  const errors = await bootWithoutErrors(page);
+  await page
+    .locator('button', { hasText: /Apnea\s*esp/ })
+    .first()
+    .click();
+  const r = await page.evaluate(() => {
+    const T = window.__vexusTest!;
+    const out: Record<string, number | boolean | null> = {};
+    const veins = ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'] as const;
+    T.goToStartPoint('renal');
+    document.querySelector<HTMLButtonElement>('#mode-color')!.click();
+    out.colorContact = T.colorOnVessel([...veins]);
+    T.liftProbe(10);
+    out.colorLifted = T.colorCells();
+    T.liftProbe(0);
+    document.querySelector<HTMLButtonElement>('#mode-pw')!.click();
+    out.gate = T.placeGate([...veins]);
+    T.advance(3);
+    out.pwContact = T.pwBandOverFloorDb(2);
+    T.liftProbe(10);
+    T.advance(3);
+    out.pwLifted = T.pwBandOverFloorDb(2);
+    return out;
+  });
+  const tag = JSON.stringify(r);
+  expect(r.colorContact, tag).toBeGreaterThan(50);
+  expect(r.colorLifted, tag).toBe(0);
+  expect(r.gate, tag).toBe(true);
+  expect(r.pwContact! as number, tag).toBeGreaterThan((r.pwLifted as number) + 8);
+  expect(r.pwLifted as number, tag).toBeLessThan(11);
+  expect(errors).toEqual([]);
+});

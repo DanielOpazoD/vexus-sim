@@ -42,3 +42,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [36](DECISIONS.md#L362) | Proporciones craneocaudales referidas al xifoides y diafragma en dos hemicúpulas | vigente |
 | [37](DECISIONS.md#L382) | Riñón en judía con escotadura hiliar, 16 pirámides e interlobares en abanico | vigente |
 | [38](DECISIONS.md#L393) | PSF lateral con número F y ensanchamiento espectral intrínseco | vigente |
+| [39](DECISIONS.md#L406) | Doppler color por celdas, varianza de Kasai y cadencia física de cuadro | vigente |

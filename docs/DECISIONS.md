@@ -403,6 +403,22 @@ reproduce la misma fórmula; la puerta PW usa 1,2 × esa σ; y cada dispersor de
 espectro como el ensanchamiento intrínseco de un equipo real (Δf/f ≈ tan θ·D/2r) en vez de dibujar
 una línea fina. Aperturas y F# son [EXTRAPOLACIÓN PROPIA] hasta medir la PSF de un equipo (E.7).
 
+## 39. Doppler color por celdas, varianza de Kasai y cadencia física de cuadro
+
+El color se estimaba por píxel de una textura de 96 × 160 con velocidad uniforme dentro del vaso: una
+mancha plana de bordes nítidos que se refrescaba a 15 Hz fijos, sin relación con la caja ni la PRF.
+Ahora el estimador trabaja por celda (una línea de color por grado × un paquete axial de 1 mm,
+`COLOR_LINE_SPACING_RAD`/`COLOR_PACKET_MM`) y la conversión de barrido interpola entre celdas: el
+mosaico grueso del color real. La autocorrelación pierde coherencia con el ensanchamiento espectral
+de la celda (ρ = exp(−2(π·σf/PRF)²), σf por la dispersión angular de la apertura del `beamModel`,
+el tiempo de tránsito y el gradiente del perfil en las celdas que tocan la pared) y el estimador
+añade la varianza de fase de Kasai (1 − ρ²)/(2Nρ²): moteado de velocidad dentro del vaso, mosaico
+en el borde del aliasing y más ruido con ensembles cortos. La cadencia es la física
+(`colorTiming`): cada cuadro cuesta líneas × ensemble disparos a la PRF más el cuadro B intercalado,
+y con color activo la imagen entera (B + color) se refresca a esa frecuencia, que se rotula en la
+esquina («· 8 Hz»): abrir la caja o bajar la PRF se paga en cuadros por segundo, como en el equipo.
+Densidad de líneas fija y sin adaptación automática del ensemble: [EXTRAPOLACIÓN PROPIA].
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

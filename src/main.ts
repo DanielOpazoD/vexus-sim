@@ -367,7 +367,7 @@ function loop(now: number): void {
     ]);
     span(hudBr, [
       sim.color.enabled
-        ? `Color ±${nyq(sim.color.prfHz)} cm/s · WF ${sim.color.wallFilterHz} Hz`
+        ? `Color ±${nyq(sim.color.prfHz)} cm/s · WF ${sim.color.wallFilterHz} Hz · ${sim.colorTiming.frameHz.toFixed(0)} Hz`
         : sim.pw.enabled
           ? `PW ±${nyq(sim.pw.prfHz)} cm/s · puerta ${sim.pw.gateMm.toFixed(1)} mm`
           : `resp ${s.resp.volume.toFixed(2)}`,

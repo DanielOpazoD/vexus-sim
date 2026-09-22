@@ -93,6 +93,15 @@ export class SampleVolumeIQ {
   private scatterers: Scatterer[] = [];
   private rng: SeededRandom;
   private tick = 0;
+  /**
+   * Desplazamiento respiratorio en el centro de la puerta. La posición de un dispersor en el mundo
+   * es m + dispNow en la comprobación de salida, en la resiembra y en la composición. Antes la
+   * resiembra y la composición usaban el campo exacto de cada punto y la comprobación el del centro:
+   * los dispersores recién colocados junto a una cara se veían fuera y se resembraban en bucle,
+   * siempre en la cara (parénquima), y la puerta sobre el tronco portal perdía la sangre en la
+   * primera inspiración sin recuperarla (0 % frente al 95 % de una siembra nueva).
+   */
+  private dispNow: Vec3 = [0, 0, 0];
   private gate: GateGeometry | null = null;
   private equipment: GateEquipment = { prfHz: 2500, f0Hz: 2.5e6, gain: 1 };
   private halfAxial = 4;
@@ -130,13 +139,14 @@ export class SampleVolumeIQ {
     this.halfAxial = g.lengthMm / 2 + 2.5 * g.pulseSigmaMm;
     this.halfLateral = 2.5 * g.lateralSigmaMm;
     this.halfElev = 2.5 * g.elevationSigmaMm;
+    this.dispNow = this.anatomy.deformation.displacement(g.center, phys.resp);
     if (moved || this.scatterers.length === 0) this.reseed(phys);
   }
 
   private reseed(phys: PhysiologySample): void {
     this.scatterers.length = 0;
     for (let i = 0; i < N_SCATTERERS; i++) this.scatterers.push(this.spawn(phys, null));
-    this.updateComposition(phys.resp);
+    this.updateComposition();
   }
 
   /** Posición uniforme en la caja, en coordenadas de la puerta. */
@@ -173,8 +183,9 @@ export class SampleVolumeIQ {
     const q = this.anatomy.classifyWorld(world, phys);
     const isBlood = q.tissue === Tissue.Blood && q.bloodVelocity !== null;
     const phase = this.rng.float() * 2 * Math.PI;
+    const d = this.dispNow;
     return {
-      m: q.material,
+      m: [world[0] - d[0], world[1] - d[1], world[2] - d[2]],
       amp: TISSUES[q.tissue].backscatter * (0.7 + 0.6 * this.rng.float()),
       phase,
       apAngle: this.rng.gaussian(),
@@ -205,7 +216,7 @@ export class SampleVolumeIQ {
     const v = exited.isBlood ? exited.vBlood : this.anatomy.deformation.tissueVelocity(exited.m, phys.resp);
     const speed = Math.hypot(v[0], v[1], v[2]);
     if (speed > 1e-6) {
-      const wExit = this.anatomy.deformation.toWorld(exited.m, phys.resp);
+      const wExit = this.worldOf(exited);
       const c = this.worldToGate(wExit);
       const dv = this.worldToGate([
         this.gate!.center[0] - v[0] / speed,
@@ -239,14 +250,14 @@ export class SampleVolumeIQ {
     return this.makeScatterer(this.gateToWorld(this.randomInBox()), phys);
   }
 
-  private updateComposition(resp?: PhysiologySample['resp']): void {
+  private updateComposition(): void {
     let blood = 0;
     let art = 0;
     let wall = 0;
     const vessels: Partial<Record<VesselId, number>> = {};
     let wsum = 0;
     for (const s of this.scatterers) {
-      const w = this.weight(s, resp);
+      const w = this.weight(s);
       wsum += w;
       if (s.isBlood) {
         blood += w;
@@ -267,10 +278,15 @@ export class SampleVolumeIQ {
     };
   }
 
+  /** Posición de un dispersor en el mundo (desplazamiento de la puerta, ver `dispNow`). */
+  private worldOf(s: Scatterer): Vec3 {
+    return [s.m[0] + this.dispNow[0], s.m[1] + this.dispNow[1], s.m[2] + this.dispNow[2]];
+  }
+
   /** Peso del haz/puerta para un dispersor (en coordenadas del mundo). */
-  private weight(s: Scatterer, resp?: PhysiologySample['resp']): number {
+  private weight(s: Scatterer): number {
     const g = this.gate!;
-    const w = resp ? this.anatomy.deformation.toWorld(s.m, resp) : s.m;
+    const w = this.worldOf(s);
     const dx = w[0] - g.center[0];
     const dy = w[1] - g.center[1];
     const dz = w[2] - g.center[2];
@@ -304,6 +320,7 @@ export class SampleVolumeIQ {
     const tissueVel = this.anatomy.deformation.tissueVelocity(g.center, phys.resp);
     // La deformación se evalúa en el centro de la puerta (varía lentamente).
     const disp = this.anatomy.deformation.displacement(g.center, phys.resp);
+    this.dispNow = disp;
     const half = g.lengthMm / 2;
     const ps = Math.max(0.2, g.pulseSigmaMm);
     const invLat2 = 1 / (g.lateralSigmaMm * g.lateralSigmaMm);
@@ -337,7 +354,8 @@ export class SampleVolumeIQ {
             continue;
           }
           if (reclass && (j + this.tick / SLOW_EVERY) % 4 === 0) {
-            // Reclasificación geométrica escalonada (¼ de los dispersores por evento).
+            // Reclasificación geométrica: por la aritmética (96/8 = 12 ≡ 0 mod 4) solo alcanza a los
+            // dispersores con j ≡ 0 (mod 4); ver la limitación `thin-vessel-sample-volume-lag`.
             const q = this.anatomy.classifyWorld([wx, wy, wz], phys);
             const nowBlood = q.tissue === Tissue.Blood && q.bloodVelocity !== null;
             if (nowBlood !== s.isBlood) {
@@ -388,7 +406,7 @@ export class SampleVolumeIQ {
       re[offset + k] = (sr * g.transmission + nr) * this.equipment.gain;
       im[offset + k] = (si * g.transmission + ni) * this.equipment.gain;
       this.tick++;
-      if (this.tick % (RECLASSIFY_EVERY * 4) === 0) this.updateComposition(phys.resp);
+      if (this.tick % (RECLASSIFY_EVERY * 4) === 0) this.updateComposition();
     }
   }
 }

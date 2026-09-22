@@ -10,7 +10,7 @@ import { PwDopplerChain } from '../doppler/pwChain';
 import type { GateGeometry } from '../doppler/sampleVolume';
 import { measureObservedHepatic, measureObservedPortal, measureObservedRenal } from '../doppler/spectralMeasure';
 import { PhysiologyEngine } from '../physiology/engine';
-import { clonePatient, type PatientState } from '../physiology/patientState';
+import { clonePatient, type PatientState, type RespiratoryPattern } from '../physiology/patientState';
 import type { VesselId } from '../physiology/vessels';
 import { CONVEX_C35, lineDirection, pointOnLine, probeFrame, type ProbePose } from '../probe/probe';
 import { apertureAngleSigmaRad, lateralSigmaMm } from '../ultrasound/beamModel';
@@ -35,8 +35,8 @@ const TERRITORIES: Territory[] = [
   { kind: 'renal', window: 'renal', vessels: ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'] },
 ];
 
-function examine(base: PatientState) {
-  const patient = { ...clonePatient(base), respiratoryPattern: 'apnea-expiratory' as const };
+function examine(base: PatientState, respiratoryPattern: RespiratoryPattern = 'apnea-expiratory', territories: Territory[] = TERRITORIES) {
+  const patient = { ...clonePatient(base), respiratoryPattern };
   const scene = new AnatomyScene(patient);
   const anatomy = new AnatomyQuery(scene);
   const engine = new PhysiologyEngine(patient, scene.vesselAreas(), { historySeconds: 12 });
@@ -44,7 +44,7 @@ function examine(base: PatientState) {
   // unos segundos para salir del transitorio inicial
   for (let i = 0; i < Math.round(2 / engine.clock.dt); i++) engine.step();
   const observed: Record<Territory['kind'], unknown> = { hepatic: null, portal: null, renal: null };
-  for (const ter of TERRITORIES) {
+  for (const ter of territories) {
     const sp = START_POINTS.find((s) => s.id === ter.window)!;
     const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
     const frame = probeFrame(pose, scene.torso, CONVEX_C35);
@@ -134,6 +134,20 @@ describe('Cadena completa del alumno: puerta → espectro → medición → grad
       });
       expect(grade.status).toBe('complete');
       expect(grade.grade).toBe(expectedGrade);
+    });
+  }
+
+  // Con respiración tranquila el tronco portal (más grueso que la puerta) nunca sale de ella: la
+  // medición debe coincidir con la de apnea. Antes el volumen de muestra perdía la sangre en la
+  // primera inspiración y no la recuperaba: PF 167 % en el sano y 136 % en el grave.
+  for (const base of [NORMAL_ADULT, SEVERE_CONGESTION]) {
+    it(`${base.label}: la PF portal con respiración tranquila coincide con la verdad`, () => {
+      const portalOnly = TERRITORIES.filter((t) => t.kind === 'portal');
+      const { truth, portal } = examine(base, 'quiet', portalOnly);
+      expect(portal, 'medición portal').not.toBeNull();
+      expect(classifyPortal(portal!.pulsatilityFraction)).toBe(classifyPortal(truth.portalPF));
+      // medido: 20/19 % y 73/63 % (la respiración añade variación a la verdad de 10 s)
+      expect(Math.abs(portal!.pulsatilityFraction - truth.portalPF)).toBeLessThan(12);
     });
   }
 });

@@ -52,5 +52,13 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **El color es una emulación del estimador** (`color-emulated-estimator`): potencia y fase se
   calculan por celda a partir de la mezcla sangre/clutter/ruido, no de una IQ real por ensemble.
 - **Con respiración tranquila la puerta pierde el vaso** (`gate-lost-with-quiet-breathing`): es
-  físico (el hígado se desplaza 10 mm), pero un vaso de 4 mm sale de una puerta de 4 mm; el
-  operador debe usar apnea espiratoria o un segmento más grueso, como en la práctica.
+  físico solo para vasos finos (el hígado se desplaza 10 mm y una interlobar de 3 mm sale de una
+  puerta de 4 mm); el operador debe usar apnea espiratoria o un segmento más grueso, como en la
+  práctica. Hasta la 0.5.0 también lo sufrían vasos más gruesos que la puerta (tronco portal: PF
+  167 % en el sano) por un defecto del volumen de muestra, ya corregido.
+- **Los vasos finos vuelven a la puerta con menos sangre de la real** (`thin-vessel-sample-volume-lag`):
+  cuando una interlobar sale de la puerta con la respiración y vuelve, su región queda con menos
+  dispersores (30–45 % de sangre frente al 69 % de una siembra nueva en fin de espiración); además
+  la reclasificación solo alcanza a un cuarto fijo de la población. Rotarla y reponer la población
+  sin más introduce saltos bruscos de amplitud de pared y tejido (30–40 dB sobre la sangre) que el
+  filtro de pared no quita: hace falta un control de población con transiciones lentas.

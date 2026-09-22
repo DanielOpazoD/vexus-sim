@@ -16,6 +16,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'ivc-single-compartment',
   'no-thoracic-waterfall',
   'gate-lost-with-quiet-breathing',
+  'thin-vessel-sample-volume-lag',
   'speckle-statistics-uncalibrated',
   'left-handed-anatomy-frame',
 ]);

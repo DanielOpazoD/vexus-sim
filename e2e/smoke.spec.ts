@@ -89,3 +89,21 @@ test('sobrevive a la pérdida del contexto WebGL: avisa, se recupera y el reloj 
   await expect.poll(async () => tOf(await page.locator('#status').textContent()), { timeout: 60_000 }).toBeGreaterThan(t1);
   expect(errors).toEqual([]);
 });
+
+test('el speckle del parénquima hepático tiene estadística de Rayleigh', async ({ page }) => {
+  // Guarda de fidelidad de imagen (Fase 3): la envolvente de un speckle plenamente desarrollado
+  // tiene SNR = 1,91. Detectar intensidad (1,0), sumar magnitudes antes del haz (≈ 9) o suavizar
+  // la envolvente (≈ 3,7) salen de la banda (src/validation/speckle.test.ts).
+  // Tres cuadros completos + lectura de la envolvente con SwiftShader: ~6 s cada uno en local y
+  // ~3× en el runner de CI (agotó los 90 s por defecto).
+  test.setTimeout(240_000);
+  const errors = await bootWithoutErrors(page);
+  for (const startPoint of ['subxiphoid', 'intercostal', 'flank'] as const) {
+    const s = await page.evaluate((id) => window.__vexusTest!.speckle({ startPoint: id }), startPoint);
+    const tag = `${startPoint}: ${JSON.stringify(s)}`;
+    expect(s.patches, tag).toBeGreaterThan(50);
+    expect(s.snr, tag).toBeGreaterThan(1.6);
+    expect(s.snr, tag).toBeLessThan(2.25);
+  }
+  expect(errors).toEqual([]);
+});

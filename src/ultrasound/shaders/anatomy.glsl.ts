@@ -14,6 +14,7 @@
  *     H3 = esfera envolvente (cx, cy, cz, R)
  *   nodos desde NODE_BASE = MAX_TUBES·4: (x, y, z, r)
  */
+import { HILUM_NOTCH, PYRAMIDS } from '../../anatomy/primitives';
 import { DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, TISSUE_GLSL_NAME } from '../../anatomy/tissues';
 
 export const MAX_TUBES = 128;
@@ -23,6 +24,9 @@ export const SCENE_TEX_W = 256;
 export const SCENE_TEX_H = Math.ceil((NODE_BASE + MAX_NODES) / SCENE_TEX_W);
 export const MAX_GAS = 6;
 export const MAX_RIBS = 6;
+
+const PYRAMID_TABLE = `const vec2 PYR[${PYRAMIDS.length}] = vec2[${PYRAMIDS.length}](${PYRAMIDS.map(([t, u]) => `vec2(${t.toFixed(6)}, ${u.toFixed(1)})`).join(', ')});`;
+const NOTCH = `const vec4 NOTCH = vec4(${HILUM_NOTCH.radii[0].toFixed(1)}, ${HILUM_NOTCH.radii[1].toFixed(1)}, ${HILUM_NOTCH.radii[2].toFixed(1)}, ${HILUM_NOTCH.offsetV.toFixed(1)}); const float NOTCH_ROUND = ${HILUM_NOTCH.roundMm.toFixed(1)};`;
 
 const TISSUE_DEFINES = Object.entries(TISSUE_GLSL_NAME)
   .map(([index, name]) => `#define ${name} ${index}`)
@@ -36,6 +40,7 @@ export const ANATOMY_GLSL = /* glsl */ `
 #define MAX_RIBS ${MAX_RIBS}
 ${TISSUE_DEFINES}
 #define DIAPHRAGM_MM ${DIAPHRAGM_THICKNESS_MM.toFixed(3)}
+#define N_PYR ${PYRAMIDS.length}
 #define CAPSULE_MM ${LIVER_CAPSULE_MM.toFixed(3)}
 
 uniform vec4 uTorso;      // a, b, zMin, zMax
@@ -216,18 +221,28 @@ vec3 kidneyLocal(vec3 p, int k) {
 }
 
 // Distancia externa del riñón k y normal en el mundo
+${PYRAMID_TABLE}
+${NOTCH}
+
+// Contorno externo: elipsoide con escotadura hiliar (forma de judía; primitives.kidneyOuterSdf)
+float kidneyOuterLocal(vec3 q, vec3 r) {
+  float ell = sdEllipsoidLocal(q, r);
+  float notch = sdEllipsoidLocal(vec3(q.x, q.y - (r.y + NOTCH.w), q.z), NOTCH.xyz);
+  return smoothMax(ell, -notch, NOTCH_ROUND);
+}
+
 float kidneyOuter(vec3 p, int k, out vec3 n) {
   vec3 q = kidneyLocal(p, k);
   vec3 r = uKidR[k];
   vec3 nl = normalize(q / (r * r) + vec3(1e-6));
   n = normalize(uKidU[k] * nl.x + uKidV[k] * nl.y + uKidW[k] * nl.z);
-  return sdEllipsoidLocal(q, r);
+  return kidneyOuterLocal(q, r);
 }
 
 // Región interna: 0 corteza, 1 médula, 2 seno; devuelve la distancia interna mínima
 int kidneyRegion(vec3 p, int k, out float inner, out float dOuter) {
   vec3 q = kidneyLocal(p, k);
-  dOuter = sdEllipsoidLocal(q, uKidR[k]);
+  dOuter = kidneyOuterLocal(q, uKidR[k]);
   vec4 sn = uKidSinus[k];
   vec3 qs = vec3(q.x, q.y - sn.w, q.z);
   float dSinus = sdEllipsoidLocal(qs, sn.xyz);
@@ -236,19 +251,14 @@ int kidneyRegion(vec3 p, int k, out float inner, out float dOuter) {
   dSinus = min(dSinus, dHilum);
   if (dSinus < 0.0) { inner = min(-dSinus, -dOuter); return 2; }
   bool medulla = false;
-  if (dSinus > 1.5 && dSinus < 13.0 && -dOuter > 5.0) {
+  if (dSinus > 1.5 && dSinus < 12.0 && -dOuter > 4.5) {
     float theta = atan(q.z, q.y);
-    float halfAng = 0.22 + 0.028 * dSinus;
-    float halfU = 4.5 + 0.45 * dSinus;
-    for (int i = 0; i < 3; i++) {
-      float th = 1.5707963 * float(i + 1);
-      float dth = theta - th;
+    float halfAng = 0.17 + 0.024 * dSinus;
+    float halfU = 3.8 + 0.4 * dSinus;
+    for (int i = 0; i < N_PYR; i++) {
+      float dth = theta - PYR[i].x;
       dth = atan(sin(dth), cos(dth));
-      if (abs(dth) > halfAng) continue;
-      for (int j = 0; j < 4; j++) {
-        float u0 = (j == 0) ? -40.0 : (j == 1 ? -13.0 : (j == 2 ? 13.0 : 40.0));
-        if (abs(q.x - u0) < halfU) { medulla = true; }
-      }
+      if (abs(dth) <= halfAng && abs(q.x - PYR[i].y) < halfU) { medulla = true; break; }
     }
   }
   inner = min(-dOuter, dSinus);

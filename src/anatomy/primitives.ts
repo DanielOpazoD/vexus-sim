@@ -374,14 +374,38 @@ function sdEllipsoidLocal(q: Vec3, r: Vec3): number {
   return k2 > 0 ? (k1 * (k1 - 1)) / k2 : -Math.min(r[0], r[1], r[2]);
 }
 
-/** Ángulos (alrededor del eje largo) de las pirámides: anterior, lateral, posterior; ninguna en el hilio. */
-export const PYRAMID_THETAS = [Math.PI / 2, Math.PI, (3 * Math.PI) / 2];
-/** Posiciones de las pirámides a lo largo del eje largo (mm). */
-export const PYRAMID_US = [-40, -13, 13, 40];
+/**
+ * Pirámides medulares: (ángulo alrededor del eje largo, posición u a lo largo de él).
+ * Fila lateral de 4 (θ = π) y filas anterior, posterior y oblicuas de 3: 16 pirámides
+ * (un riñón adulto tiene 8–18); ninguna en el hilio (θ = 0). La misma tabla se
+ * interpola en GLSL.
+ */
+export const PYRAMIDS: ReadonlyArray<readonly [number, number]> = [
+  [Math.PI, -36],
+  [Math.PI, -12],
+  [Math.PI, 12],
+  [Math.PI, 36],
+  ...[Math.PI / 2, (3 * Math.PI) / 4, (5 * Math.PI) / 4, (3 * Math.PI) / 2].flatMap((th) => [
+    [th, -24] as const,
+    [th, 0] as const,
+    [th, 24] as const,
+  ]),
+];
+/** Columnas de Bertin del plano coronal lateral (entre las pirámides laterales): posiciones u. */
+export const BERTIN_COLUMNS_U = [-24, 0, 24] as const;
+/** Escotadura hiliar: elipsoide restado en la cara medial (marco local, mm). */
+export const HILUM_NOTCH = { offsetV: 6, radii: [24, 16, 13] as Vec3, roundMm: 6 };
+
+/** Contorno externo del riñón: elipsoide con escotadura hiliar (forma de judía). */
+export function kidneyOuterSdf(q: Vec3, k: Kidney): number {
+  const ell = sdEllipsoidLocal(q, k.radii);
+  const notch = sdEllipsoidLocal([q[0], q[1] - (k.radii[1] + HILUM_NOTCH.offsetV), q[2]], HILUM_NOTCH.radii);
+  return smoothMax(ell, -notch, HILUM_NOTCH.roundMm);
+}
 
 export function kidneyQuery(p: Vec3, k: Kidney): KidneyHit {
   const q = kidneyLocal(p, k);
-  const dOuter = sdEllipsoidLocal(q, k.radii);
+  const dOuter = kidneyOuterSdf(q, k);
   const qs: Vec3 = [q[0], q[1] - k.sinusOffset, q[2]];
   let dSinus = sdEllipsoidLocal(qs, k.sinusRadii);
   // Canal del hilio: cápsula desde el centro del seno hacia la cara medial (+v)
@@ -391,21 +415,17 @@ export function kidneyQuery(p: Vec3, k: Kidney): KidneyHit {
   if (dSinus < 0) return { dOuter, dSinus, region: 'sinus', inner: Math.min(-dSinus, -dOuter) };
   // Pirámides en cuña (papila hacia el seno, base hacia la corteza)
   let medulla = false;
-  if (dSinus > 1.5 && dSinus < 13 && -dOuter > 5) {
+  if (dSinus > 1.5 && dSinus < 12 && -dOuter > 4.5) {
     const theta = Math.atan2(q[2], q[1]);
-    const halfAng = 0.22 + 0.028 * dSinus;
-    const halfU = 4.5 + 0.45 * dSinus;
-    for (const th of PYRAMID_THETAS) {
+    const halfAng = 0.17 + 0.024 * dSinus;
+    const halfU = 3.8 + 0.4 * dSinus;
+    for (const [th, u0] of PYRAMIDS) {
       let dth = theta - th;
       dth = Math.atan2(Math.sin(dth), Math.cos(dth));
-      if (Math.abs(dth) > halfAng) continue;
-      for (const u0 of PYRAMID_US) {
-        if (Math.abs(q[0] - u0) < halfU) {
-          medulla = true;
-          break;
-        }
+      if (Math.abs(dth) <= halfAng && Math.abs(q[0] - u0) < halfU) {
+        medulla = true;
+        break;
       }
-      if (medulla) break;
     }
   }
   const inner = Math.min(-dOuter, dSinus);

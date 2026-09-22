@@ -2,6 +2,7 @@ import { smoothstep, type Vec3 } from '../core/vec3';
 import type { PatientState } from '../physiology/patientState';
 import type { VesselAreas, VesselId } from '../physiology/vessels';
 import {
+  RENAL_CAPSULE_MM,
   kidneyQuery,
   orthonormalBasis,
   sdSpine,
@@ -73,6 +74,18 @@ export function tubeBoundingSphere(t: Tube, marginMm: number): { center: Vec3; r
   return { center: c, r: r + marginMm };
 }
 
+/**
+ * Espesor de pared en un punto del tubo (mm). La pared periportal (vaina de Glisson:
+ * porta + arteria + conducto + tejido fibroso) es proporcional al calibre local:
+ * 1,3 mm en el tronco (r 5,5) y 0,5 mm en las ramas periféricas (r ≤ 2), de modo que
+ * el «doble contorno» ecogénico se desvanece hacia la periferia como en la imagen real.
+ * Misma fórmula en GLSL (`portalWallMm`).
+ */
+export function wallThicknessMm(def: VesselDef, localRadiusMm: number): number {
+  if (def.wallTissue !== Tissue.VesselWallPortal) return def.wallMm;
+  return Math.min(1.4, Math.max(0.5, 0.24 * localRadiusMm));
+}
+
 /** Ascenso posterior del arco costal (mm) según el número de costilla: 60 mm la 5.ª, +6 mm por costilla. */
 export function ribTiltMm(ribNo: number): number {
   return 60 + 6 * (ribNo - 5);
@@ -112,7 +125,7 @@ export class AnatomyScene {
   readonly kidneyRight: Kidney;
   readonly kidneyLeft: Kidney;
   /** Grasa perirrenal (fascia de Gerota) alrededor del riñón (mm). */
-  readonly perirenalMm = 3.5;
+  readonly perirenalMm = 4;
   /** Separación mínima hígado–riñón (impresión renal) (mm). */
   readonly renalImpressionMm = 4;
   /** Bolsas de gas intestinal (confusor; vacío en el avatar de referencia). */
@@ -307,6 +320,8 @@ export class AnatomyScene {
     if (m[2] < torso.zMin || m[2] > torso.zMax || depth > 0) return NONE;
     const wall = this.classifyWall(m, -depth);
     if (wall.final) return wall.cls;
+    const curtain = this.classifyLungCurtain(m, -depth - wall.wallMm, caliber.diaphragmCaudalMm);
+    if (curtain) return curtain;
     const tube = this.classifyTubes(m, caliber);
     if (tube) return tube;
     const dRa = sdSphere(m, this.rightAtrium);
@@ -360,6 +375,15 @@ export class AnatomyScene {
     return { final: false, wallMm: wall };
   }
 
+  /** Lámina de pulmón en el receso costofrénico derecho (lateral y posterior), bajo la pared. */
+  private classifyLungCurtain(m: Vec3, insideWallMm: number, diaphragmCaudalMm: number): Classification | null {
+    if (insideWallMm >= LUNG_CURTAIN.thicknessMm || m[0] > LUNG_CURTAIN.xMax || m[1] > LUNG_CURTAIN.yMax) return null;
+    const zEdge = LUNG_CURTAIN.z0 - diaphragmCaudalMm;
+    if (m[2] < zEdge) return null;
+    const bd = Math.min(insideWallMm, LUNG_CURTAIN.thicknessMm - insideWallMm, m[2] - zEdge);
+    return { ...NONE, tissue: Tissue.Lung, boundaryDistance: bd, specular: 1.0 };
+  }
+
   /** Vasos y conductos (antes de los órganos: la luz prevalece). Descarte por esfera envolvente. */
   private classifyTubes(m: Vec3, caliber: VesselCaliber): Classification | null {
     let bestVessel: { def: VesselDef; hit: TubeHit } | null = null;
@@ -371,7 +395,7 @@ export class AnatomyScene {
       const scale = caliber.radiusScale(def.id);
       const apScale = def.id.startsWith('ivc') ? caliber.ivcApScale : def.tube.apScale;
       const hit = tubeQuery(m, apScale === def.tube.apScale ? def.tube : { ...def.tube, apScale }, scale);
-      if (hit.d < def.wallMm && (!bestVessel || hit.d < bestVessel.hit.d)) bestVessel = { def, hit };
+      if (hit.d < wallThicknessMm(def, hit.r) && (!bestVessel || hit.d < bestVessel.hit.d)) bestVessel = { def, hit };
     }
     for (let i = 0; i < this.ducts.length; i++) {
       const b = this.tubeBounds[this.vessels.length + i];
@@ -408,7 +432,7 @@ export class AnatomyScene {
     }
     return {
       tissue: def.wallTissue,
-      boundaryDistance: Math.min(hit.d, def.wallMm - hit.d),
+      boundaryDistance: Math.min(hit.d, wallThicknessMm(def, hit.r) - hit.d),
       boundaryNormal: [0, 0, 0],
       specular,
       vessel: null,
@@ -424,10 +448,27 @@ export class AnatomyScene {
       if (dc > k.radii[0] + this.perirenalMm + 2) continue;
       const kh = kidneyQuery(m, k);
       if (kh.dOuter < 0) {
-        const tissue = kh.region === 'sinus' ? Tissue.RenalSinus : kh.region === 'medulla' ? Tissue.RenalMedulla : Tissue.RenalCortex;
-        const specular = kh.region === 'sinus' ? 0.6 : kh.region === 'medulla' ? 0.25 : 0.45;
+        // cápsula fibrosa: línea brillante que separa la corteza de la grasa perirrenal
+        if (-kh.dOuter < RENAL_CAPSULE_MM)
+          return {
+            ...NONE,
+            tissue: Tissue.RenalCapsule,
+            boundaryDistance: Math.min(-kh.dOuter, RENAL_CAPSULE_MM + kh.dOuter),
+            specular: 0.9,
+          };
+        const tissue =
+          kh.region === 'pelvis'
+            ? Tissue.RenalPelvis
+            : kh.region === 'sinus'
+              ? Tissue.RenalSinus
+              : kh.region === 'medulla'
+                ? Tissue.RenalMedulla
+                : Tissue.RenalCortex;
+        const specular = kh.region === 'pelvis' ? 0.5 : kh.region === 'sinus' ? 0.6 : kh.region === 'medulla' ? 0.25 : 0.45;
         return { ...NONE, tissue, boundaryDistance: kh.inner, specular };
       }
+      // Grasa perirrenal (fascia de Gerota) hasta la impresión renal del hígado: en el
+      // receso de Morison la cápsula hepática apoya directamente sobre ella, sin hueco.
       if (kh.dOuter < this.perirenalMm) {
         return { ...NONE, tissue: Tissue.PerirenalFat, boundaryDistance: Math.min(kh.dOuter, this.perirenalMm - kh.dOuter), specular: 0.6 };
       }
@@ -489,9 +530,21 @@ export interface VesselCaliber {
   radiusScale(id: VesselId): number;
   /** Semieje AP / semieje lateral de la VCI. */
   ivcApScale: number;
+  /** Descenso caudal del diafragma en este instante (mm, 0 en espiración): baja la cortina pulmonar. */
+  diaphragmCaudalMm: number;
 }
 
 export const BASELINE_CALIBER: VesselCaliber = {
   radiusScale: () => 1,
   ivcApScale: 0.8,
+  diaphragmCaudalMm: 0,
 };
+
+/**
+ * Cortina pulmonar (decisión 43): el pulmón entra en el receso costofrénico lateral y
+ * posterior derecho como una lámina de 3 mm pegada a la cara interna de la pared, desde
+ * la cúpula hasta z = LUNG_CURTAIN_Z0 − descenso diafragmático. En inspiración baja y
+ * tapa la parte alta del hígado (signo de la cortina); el rayo que la toca se refleja y
+ * deja líneas A a múltiplos de su profundidad.
+ */
+export const LUNG_CURTAIN = { z0: 18, thicknessMm: 3, xMax: -45, yMax: 40 };

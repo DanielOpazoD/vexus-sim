@@ -14,7 +14,7 @@
  *     H3 = esfera envolvente (cx, cy, cz, R)
  *   nodos desde NODE_BASE = MAX_TUBES·4: (x, y, z, r)
  */
-import { HILUM_NOTCH, PYRAMIDS } from '../../anatomy/primitives';
+import { HILUM_NOTCH, PYRAMIDS, RENAL_CAPSULE_MM, RENAL_PELVIS } from '../../anatomy/primitives';
 import { DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, TISSUE_GLSL_NAME } from '../../anatomy/tissues';
 
 export const MAX_TUBES = 128;
@@ -26,6 +26,7 @@ export const MAX_GAS = 6;
 export const MAX_RIBS = 6;
 
 const PYRAMID_TABLE = `const vec2 PYR[${PYRAMIDS.length}] = vec2[${PYRAMIDS.length}](${PYRAMIDS.map(([t, u]) => `vec2(${t.toFixed(6)}, ${u.toFixed(1)})`).join(', ')});`;
+const PELVIS = `const vec4 PELVIS = vec4(${RENAL_PELVIS.radii[0].toFixed(1)}, ${RENAL_PELVIS.radii[1].toFixed(1)}, ${RENAL_PELVIS.radii[2].toFixed(1)}, ${RENAL_PELVIS.offsetV.toFixed(1)}); const float RENAL_CAPSULE_MM = ${RENAL_CAPSULE_MM.toFixed(2)};`;
 const NOTCH = `const vec4 NOTCH = vec4(${HILUM_NOTCH.radii[0].toFixed(1)}, ${HILUM_NOTCH.radii[1].toFixed(1)}, ${HILUM_NOTCH.radii[2].toFixed(1)}, ${HILUM_NOTCH.offsetV.toFixed(1)}); const float NOTCH_ROUND = ${HILUM_NOTCH.roundMm.toFixed(1)};`;
 
 const TISSUE_DEFINES = Object.entries(TISSUE_GLSL_NAME)
@@ -82,6 +83,7 @@ uniform vec2 uKidExtra;         // radio del hilio, grasa perirrenal (mm)
 uniform sampler2D uSceneTex;
 uniform int uTubeCount;
 uniform vec4 uResp;       // amplitude (mm), dir.xyz
+uniform vec4 uCurtain;    // borde caudal z de la cortina pulmonar (mm), espesor, xMax, yMax
 uniform float uRespVel;   // velocidad del diafragma (mm/s)
 
 struct Cls {
@@ -243,6 +245,7 @@ vec3 kidneyLocal(vec3 p, int k) {
 
 // Distancia externa del riñón k y normal en el mundo
 ${PYRAMID_TABLE}
+${PELVIS}
 ${NOTCH}
 
 // Contorno externo: elipsoide con escotadura hiliar (forma de judía; primitives.kidneyOuterSdf)
@@ -260,7 +263,7 @@ float kidneyOuter(vec3 p, int k, out vec3 n) {
   return kidneyOuterLocal(q, r);
 }
 
-// Región interna: 0 corteza, 1 médula, 2 seno; devuelve la distancia interna mínima
+// Región interna: 0 corteza, 1 médula, 2 seno, 3 pelvis; devuelve la distancia interna mínima
 int kidneyRegion(vec3 p, int k, out float inner, out float dOuter) {
   vec3 q = kidneyLocal(p, k);
   dOuter = kidneyOuterLocal(q, uKidR[k]);
@@ -270,12 +273,16 @@ int kidneyRegion(vec3 p, int k, out float inner, out float dOuter) {
   float t = clamp(q.y - sn.w, 0.0, uKidR[k].y);
   float dHilum = length(vec3(q.x, q.y - sn.w - t, q.z)) - uKidExtra.x;
   dSinus = min(dSinus, dHilum);
-  if (dSinus < 0.0) { inner = min(-dSinus, -dOuter); return 2; }
+  if (dSinus < 0.0) {
+    float dPelvis = sdEllipsoidLocal(vec3(qs.x, qs.y - PELVIS.w, qs.z), PELVIS.xyz);
+    if (dPelvis < 0.0) { inner = min(-dPelvis, -dOuter); return 3; }
+    inner = min(min(-dSinus, -dOuter), dPelvis); return 2;
+  }
   bool medulla = false;
-  if (dSinus > 1.5 && dSinus < 12.0 && -dOuter > 4.5) {
+  if (dSinus > 1.5 && dSinus < 12.0 && -dOuter > 5.0) {
     float theta = atan(q.z, q.y);
-    float halfAng = 0.17 + 0.024 * dSinus;
-    float halfU = 3.8 + 0.4 * dSinus;
+    float halfAng = 0.12 + 0.012 * dSinus;
+    float halfU = 3.5 + 0.38 * dSinus;
     for (int i = 0; i < N_PYR; i++) {
       float dth = theta - PYR[i].x;
       dth = atan(sin(dth), cos(dth));
@@ -395,6 +402,13 @@ Cls classify(vec3 m) {
     return c;
   }
   // Vasos y conductos (descarte por esfera envolvente)
+  // Cortina pulmonar: lámina bajo la pared en el receso costofrénico derecho (misma regla que classifyLungCurtain)
+  {
+    float insideWall = -depth - wall;
+    if (insideWall < uCurtain.y && m.x <= uCurtain.z && m.y <= uCurtain.w && m.z >= uCurtain.x) {
+      c.tissue = T_LUNG; c.bd = min(min(insideWall, uCurtain.y - insideWall), m.z - uCurtain.x); c.n = torsoNormal(m); c.spec = 1.0; return c;
+    }
+  }
   int bestT = -1; float bestD = 1e9; float bRho; vec3 bTan; float bR; vec3 bN;
   for (int t = 0; t < MAX_TUBES; t++) {
     if (t >= uTubeCount) break;
@@ -402,7 +416,9 @@ Cls classify(vec3 m) {
     if (distance(m, bs.xyz) > bs.w) continue;
     float rho; vec3 tg; float rl; vec3 nn;
     float sd = tubeQuery(m, t, rho, tg, rl, nn);
-    float wallMm = sceneTexel(t * 4 + 1).x;
+    vec4 hw = sceneTexel(t * 4 + 1);
+    // pared periportal proporcional al calibre local (misma fórmula que wallThicknessMm)
+    float wallMm = int(hw.y + 0.5) == T_WALL_PORTAL ? clamp(0.24 * rl, 0.5, 1.4) : hw.x;
     if (sd < wallMm && sd < bestD) { bestD = sd; bestT = t; bRho = rho; bTan = tg; bR = rl; bN = nn; }
   }
   if (bestT >= 0) {
@@ -415,7 +431,8 @@ Cls classify(vec3 m) {
     c.n = bN; c.spec = spec; c.rho = bRho; c.tangent = bTan; c.rLoc = bR;
     c.uRef = h2.x; c.rRef = h2.y; c.profN = h2.z;
     if (bestD < 0.0) { c.tissue = lumenT; c.bd = -bestD; c.vessel = duct ? -1 : int(h2.w + 0.5); return c; }
-    c.tissue = wallT; c.bd = min(bestD, h1.x - bestD); return c;
+    float wallBest = wallT == T_WALL_PORTAL ? clamp(0.24 * bR, 0.5, 1.4) : h1.x;
+    c.tissue = wallT; c.bd = min(bestD, wallBest - bestD); return c;
   }
   // Aurícula derecha
   vec3 sn;
@@ -438,8 +455,9 @@ Cls classify(vec3 m) {
     vec3 kn;
     kidneyOuter(m, k, kn);
     if (dOuter < 0.0) {
-      c.tissue = region == 2 ? T_RENAL_SINUS : (region == 1 ? T_RENAL_MEDULLA : T_RENAL_CORTEX);
-      c.spec = region == 2 ? 0.6 : (region == 1 ? 0.25 : 0.45);
+      if (-dOuter < RENAL_CAPSULE_MM) { c.tissue = T_RENAL_CAPSULE; c.bd = min(-dOuter, RENAL_CAPSULE_MM + dOuter); c.n = kn; c.spec = 0.9; return c; }
+      c.tissue = region == 3 ? T_RENAL_PELVIS : (region == 2 ? T_RENAL_SINUS : (region == 1 ? T_RENAL_MEDULLA : T_RENAL_CORTEX));
+      c.spec = region == 3 ? 0.5 : (region == 2 ? 0.6 : (region == 1 ? 0.25 : 0.45));
       c.bd = inner; c.n = kn; return c;
     }
     if (dOuter < uKidExtra.y) {

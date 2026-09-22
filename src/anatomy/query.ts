@@ -51,6 +51,7 @@ export class AnatomyQuery {
         return 1;
       },
       ivcApScale: s.ivc.dApMm / s.ivc.dLatMm,
+      diaphragmCaudalMm: s.resp.diaphragmCaudalMm,
     };
     this.lastSample = s;
     this.lastCaliber = caliber;

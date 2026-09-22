@@ -157,6 +157,30 @@ export function hepaticPressureFromVolume(v: number, k: NetworkParams): number {
 }
 
 /** Diámetro equivalente de la VCI en función de la presión transmural (ley de tubo). */
+/**
+ * Escala de radio de las suprahepáticas con la presión hepática (misma ley que usa la
+ * anatomía): A ∝ 1 + 0,12·(P − 7), con suelo 0,5.
+ */
+export function hvRadiusScaleFromPressure(pHepaticMmHg: number): number {
+  return Math.max(0.5, Math.sqrt(1 + 0.12 * (pHepaticMmHg - 7)));
+}
+
+/**
+ * Resistor de Starling (Fase 0, hallado por las pruebas de propiedades): una vena que
+ * colapsa LIMITA el caudal. Por debajo del calibre crítico la resistencia crece como
+ * Poiseuille (R ∝ 1/r⁴ ∝ 1/A²); por encima no cambia nada, así que los casos calibrados
+ * (VCI ≥ 11 mm, suprahepáticas ≥ 0,9) no se alteran. Sin esto, una VCI colapsada a 0,5 mm
+ * con presión auricular de −10 mmHg daba velocidades Q/A de 288 m/s.
+ */
+export const IVC_CRITICAL_DIAMETER_MM = 8;
+/** Diámetro del lumen residual de una VCI totalmente colapsada (mm). */
+export const IVC_RESIDUAL_LUMEN_MM = 3;
+export const HV_CRITICAL_RADIUS_SCALE = 0.8;
+export function collapseResistanceFactor(caliberRatio: number): number {
+  const r = Math.max(1e-3, caliberRatio);
+  return r >= 1 ? 1 : 1 / (r * r * r * r);
+}
+
 export function ivcDiameterFromPtm(ptm: number, k: NetworkParams): number {
   const s = sigmoid((ptm - k.ivcP0) / k.ivcW);
   const residual = k.ivcResidual * Math.max(0, ptm - k.ivcP0);
@@ -270,11 +294,16 @@ export class VenousNetwork {
       const qArtSp = (pArtIn - o.pSplanchnic) / k.rArtSplanchnic;
       const qArtLb = (pArtIn - o.pLowerBody) / k.rArtLowerBody;
       // Ramas con inercia
-      const dQhv = (o.pHepatic - o.pJunction - k.rHepaticVein * s.qHepaticVein) / k.lHepaticVein;
-      const dQra = (o.pIvc - o.pJunction - k.rIvcToRa * s.qIvcToRa) / k.lIvcToRa;
+      // Resistores de Starling: suprahepáticas y VCI colapsadas limitan su propio caudal
+      const rHv = k.rHepaticVein * collapseResistanceFactor(hvRadiusScaleFromPressure(o.pHepatic) / HV_CRITICAL_RADIUS_SCALE);
+      const rIvc = k.rIvcToRa * collapseResistanceFactor(o.ivcDiameterEqMm / IVC_CRITICAL_DIAMETER_MM);
+      // Término resistivo implícito: estable aunque el colapso multiplique R por 10⁴
+      // (explícito exigiría h·R/L < 2); para calibres normales difiere en O((h·R/L)²).
+      const aHv = h / k.lHepaticVein;
+      const aRa = h / k.lIvcToRa;
       const dQrv = (o.pRenal - o.pIvc - k.rRenalVein * s.qRenalVein) / k.lRenalVein;
-      s.qHepaticVein += dQhv * h;
-      s.qIvcToRa += dQra * h;
+      s.qHepaticVein = (s.qHepaticVein + aHv * (o.pHepatic - o.pJunction)) / (1 + aHv * rHv);
+      s.qIvcToRa = (s.qIvcToRa + aRa * (o.pIvc - o.pJunction)) / (1 + aRa * rIvc);
       s.qRenalVein += dQrv * h;
       // Compartimentos
       s.vSplanchnic += (qArtSp - o.qPortal) * h;
@@ -282,7 +311,10 @@ export class VenousNetwork {
       s.vLowerBody += (qArtLb - o.qLowerBody) * h;
       s.vRenal += (o.qRenalArtery - s.qRenalVein) * h;
       s.vIvc += (o.qLowerBody + s.qRenalVein - s.qIvcToRa) * h;
-      if (s.vIvc < 0.05) s.vIvc = 0.05;
+      // Lumen residual de la VCI colapsada (pliegues de la pared, ≈ 3 mm): nunca se vacía del
+      // todo; con el resistor de Starling el caudal de salida ya es mínimo a ese calibre.
+      const vIvcMin = (Math.PI * (IVC_RESIDUAL_LUMEN_MM / 2) ** 2 * k.ivcLengthMm) / 1000;
+      if (s.vIvc < vIvcMin) s.vIvc = vIvcMin;
     }
     this.outputs = this.evaluate(pArtPulseFactor, pRa, pAbd);
     return this.outputs;

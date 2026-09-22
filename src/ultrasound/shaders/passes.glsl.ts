@@ -1,3 +1,4 @@
+import { TISSUE_COUNT } from '../../anatomy/tissues';
 import { C_RECONSTRUCTION_MM_S } from '../../core/units';
 import { ANATOMY_GLSL } from './anatomy.glsl';
 
@@ -23,9 +24,9 @@ uniform float uHalfSector;
 uniform float uDepth;      // mm
 uniform float uLinesF;
 uniform sampler2D uCoupling; // 1D: acoplamiento por línea
-uniform float uTissueAlpha[27]; // dB/cm a la frecuencia B
-uniform float uTissueBack[27];  // amplitud de retrodispersión
-uniform float uTissueFlag[27];  // 1 gas, 2 hueso
+uniform float uTissueAlpha[${TISSUE_COUNT}]; // dB/cm a la frecuencia B (tamaño = TISSUE_COUNT, nunca a mano)
+uniform float uTissueBack[${TISSUE_COUNT}];  // amplitud de retrodispersión
+uniform float uTissueFlag[${TISSUE_COUNT}];  // 1 gas, 2 hueso
 
 float lineTheta(float u) { return -uHalfSector + 2.0 * uHalfSector * u; }
 vec3 lineDir(float theta) { return normalize(uAxial * cos(theta) + uLateral * sin(theta)); }

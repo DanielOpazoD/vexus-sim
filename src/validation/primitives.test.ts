@@ -83,11 +83,15 @@ describe('kidneyQuery', () => {
     const centro = kidneyQuery(k.center, k);
     expect(centro.region).toBe('sinus');
     expect(centro.dSinus).toBeCloseTo(-8, 9); // sinusRadii.v 12 − sinusOffset 4
-    expect(centro.dOuter).toBeCloseTo(-23, 9); // semieje AP
+    expect(centro.dOuter).toBeCloseTo(-17, 9); // hasta la escotadura hiliar (10 mm de profundidad en la cara medial)
     // canal del hilio: fuera del elipsoide del seno pero dentro del canal (radio 7)
-    const hilio = kidneyQuery(kidneyWorld([0, 20, 0], k), k);
+    const hilio = kidneyQuery(kidneyWorld([0, 14, 0], k), k);
     expect(hilio.region).toBe('sinus');
     expect(hilio.dSinus).toBeCloseTo(-7, 9);
+    // escotadura hiliar: en la cara medial el contorno se hunde (forma de judía)
+    expect(kidneyQuery(kidneyWorld([0, 24, 0], k), k).dOuter).toBeGreaterThan(0);
+    expect(kidneyQuery(kidneyWorld([0, -24, 0], k), k).dOuter).toBeLessThan(0);
+    expect(kidneyQuery(kidneyWorld([40, 14, 0], k), k).dOuter).toBeLessThan(0); // los polos conservan el contorno
     // pirámide lateral (θ = π, u = 13) frente al mismo radio hacia el hilio (θ = 0)
     expect(kidneyQuery(kidneyWorld([13, -18, 0], k), k).region).toBe('medulla');
     expect(kidneyQuery(kidneyWorld([13, 18, 0], k), k).region).toBe('cortex');

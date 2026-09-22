@@ -379,6 +379,17 @@ confluencia a 13–14 cm desde el subxifoideo; hígado de 113–123 mm en la lí
 (rango ecográfico 12–15 cm), diafragma y pulmón visibles en la ventana intercostal a 10–12 cm.
 Equivalencia TS ↔ GLSL 100 %.
 
+## 37. Riñón en judía con escotadura hiliar, 16 pirámides e interlobares en abanico
+
+El riñón era un elipsoide liso con 12 pirámides gruesas y unos interlobares rectos que cruzaban el
+seno como una barra. Ahora el contorno resta un elipsoide en la cara medial (`HILUM_NOTCH`, 10 mm
+de profundidad, arista 6 mm): forma de judía con hilio, en TS (`kidneyOuterSdf`) y GLSL; 16
+pirámides más finas (fila lateral de 4 y filas anterior, posterior y oblicuas de 3; tabla `PYRAMIDS`
+interpolada en el shader como `const vec2 PYR[]`, así no puede divergir); corteza 0,72 re hígado
+(ligeramente hipoecoica, adulto normal); interlobares que nacen en el seno y se abren en abanico
+(u × 1,15) por las columnas de Bertin entre las pirámides laterales (`BERTIN_COLUMNS_U`). El hilio
+queda relleno de grasa perirrenal (grasa hiliar). Equivalencia TS ↔ GLSL 100 %.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

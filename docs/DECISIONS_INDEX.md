@@ -40,3 +40,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [34](DECISIONS.md#L333) | Árbol vascular hepático de 3.º–4.º orden y lista de tubos por cuadro | vigente |
 | [35](DECISIONS.md#L348) | Columna con arco posterior, costillas que terminan en la apófisis transversa, «columna» ≠ «costilla» | vigente |
 | [36](DECISIONS.md#L362) | Proporciones craneocaudales referidas al xifoides y diafragma en dos hemicúpulas | vigente |
+| [37](DECISIONS.md#L382) | Riñón en judía con escotadura hiliar, 16 pirámides e interlobares en abanico | vigente |

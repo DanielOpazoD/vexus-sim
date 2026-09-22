@@ -1,4 +1,5 @@
 import type { EquivalenceReport } from '../../app/equivalenceCheck';
+import { errorLog, errorMessage } from '../../app/errorLog';
 import { TISSUES } from '../../anatomy/tissues';
 import { classifyVexusC } from '../../vexus/classification';
 import { measurePhysiologyTruth } from '../../vexus/measurements';
@@ -49,8 +50,8 @@ export class TeacherTab {
           `  Porta ${m.pvMax.toFixed(1)}/${m.pvMin.toFixed(1)} cm/s → PF ${m.portalPF.toFixed(0)} %\n` +
           `  V. interlobar S/D/mín ${m.rvS.toFixed(1)}/${m.rvD.toFixed(1)}/${m.rvMin.toFixed(1)} cm/s → ${renalText(m.renalPattern)}\n` +
           `  Grado C de referencia: ${g.grade ?? (g.gradeRange ? g.gradeRange.join('–') : '—')}\n`;
-      } catch {
-        truth = 'VERDAD FISIOLÓGICA: —\n';
+      } catch (e) {
+        truth = `VERDAD FISIOLÓGICA: — (${errorMessage(e)})\n`;
       }
     }
     const g = sim.gateInfo;
@@ -67,7 +68,14 @@ export class TeacherTab {
         (eq.worst.length ? ` · peor: ${eq.worst.map((w) => `${TISSUES[w.cpu].name}→${TISSUES[w.gpu].name} ${w.count}`).join(', ')}` : '') +
         '\n'
       : '';
+    const errs = errorLog.recent(5);
+    const errTxt = errs.length
+      ? `ERRORES (${errorLog.size})\n` +
+        errs.map((e) => `  [${e.source}] ${e.message}${e.count > 1 ? ` ×${e.count}` : ''}`).join('\n') +
+        '\n'
+      : '';
     this.debugEl.textContent =
+      errTxt +
       eqTxt +
       `t ${t.toFixed(2)} s · latido ${s.beatIndex} · fase ${s.cardiacPhase.toFixed(2)} · resp ${s.resp.volume.toFixed(2)}\n` +
       `P_AD ${s.pRa.toFixed(1)} · P_VCI ${s.pIvc.toFixed(1)} (Ptm ${s.pIvcTransmural.toFixed(1)}) · P_hep ${s.pHepatic.toFixed(1)} · P_abd ${s.pAbd.toFixed(1)} mmHg\n` +

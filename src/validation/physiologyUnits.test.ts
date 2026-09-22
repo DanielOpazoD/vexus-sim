@@ -231,3 +231,22 @@ describe('Ventanas de medida', () => {
     expect(Number.isNaN(systolicPeak(series(20, -5), [5, 6], (s) => s.v))).toBe(true);
   });
 });
+
+describe('Guardia de estado no finito (Fase 0)', () => {
+  it('nonFiniteFields nombra los campos culpables y el motor se detiene con NonFiniteStateError', async () => {
+    const { PhysiologyEngine, NonFiniteStateError, nonFiniteFields } = await import('../physiology/engine');
+    const { NORMAL_ADULT } = await import('../cases');
+    const { clonePatient } = await import('../physiology/patientState');
+    const { AnatomyScene } = await import('../anatomy/scene');
+    const p = clonePatient(NORMAL_ADULT);
+    const e = new PhysiologyEngine(p, new AnatomyScene(p).vesselAreas());
+    const s = e.step();
+    expect(nonFiniteFields(s)).toEqual([]);
+    expect(nonFiniteFields({ ...s, pRa: Number.NaN, ivc: { ...s.ivc, dApMm: Infinity } })).toEqual(['pRa', 'ivc.dApMm']);
+    // envenenar la red venosa: el siguiente paso debe lanzar, no propagar NaN
+    const net = e.network as unknown as { step: (...a: unknown[]) => Record<string, number> };
+    const original = net.step.bind(net);
+    net.step = (...a: unknown[]) => ({ ...original(...a), pHepatic: Number.NaN });
+    expect(() => e.step()).toThrow(NonFiniteStateError);
+  });
+});

@@ -25,7 +25,11 @@ export class Store {
   private state: AppState;
   private listeners = new Set<Listener>();
 
-  constructor(initial: AppState) {
+  constructor(
+    initial: AppState,
+    /** Un oyente que lanza no corta a los demás: su error se entrega aquí. */
+    private readonly onListenerError: (e: unknown) => void = () => undefined,
+  ) {
     this.state = initial;
   }
 
@@ -42,7 +46,13 @@ export class Store {
     }
     if (!changed) return;
     this.state = next;
-    for (const l of this.listeners) l(next, prev);
+    for (const l of this.listeners) {
+      try {
+        l(next, prev);
+      } catch (e) {
+        this.onListenerError(e);
+      }
+    }
   }
 
   subscribe(l: Listener): () => void {

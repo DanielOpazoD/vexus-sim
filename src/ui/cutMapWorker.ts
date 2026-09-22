@@ -38,33 +38,48 @@ export interface CutMapResponse {
   vessel: Int8Array;
 }
 
+/** El Worker nunca calla un fallo: responde con el id de la petición y el mensaje. */
+export interface CutMapError {
+  type: 'error';
+  id: number;
+  message: string;
+}
+
 let query: AnatomyQuery | null = null;
 let vesselIndex = new Map<string, number>();
 
+const post = (m: CutMapResponse | CutMapError, transfer: Transferable[] = []) => (self as unknown as Worker).postMessage(m, transfer);
+
 self.onmessage = (ev: MessageEvent<CutMapInit | CutMapRequest>) => {
   const msg = ev.data;
-  if (msg.type === 'init') {
-    const scene = new AnatomyScene(msg.patient);
-    query = new AnatomyQuery(scene);
-    vesselIndex = new Map(scene.vessels.map((v, i) => [v.id, i]));
-    return;
-  }
-  if (!query) return;
-  const { width, height, frame, transducer, depthMm } = msg;
-  const tissue = new Uint8Array(width * height);
-  const vessel = new Int8Array(width * height);
-  const sample = msg.sample as PhysiologySample;
-  for (let v = 0; v < height; v++) {
-    const r = (depthMm * (v + 0.5)) / height;
-    for (let u = 0; u < width; u++) {
-      const theta = -transducer.halfSector + (2 * transducer.halfSector * (u + 0.5)) / width;
-      const p = pointOnLine(frame, transducer, theta, r);
-      const c = query.classifyWorld(p, sample);
-      const i = v * width + u;
-      tissue[i] = c.tissue;
-      vessel[i] = c.vessel ? (vesselIndex.get(c.vessel) ?? -1) : -1;
+  try {
+    if (msg.type === 'init') {
+      const scene = new AnatomyScene(msg.patient);
+      query = new AnatomyQuery(scene);
+      vesselIndex = new Map(scene.vessels.map((v, i) => [v.id, i]));
+      return;
     }
+    if (!query) {
+      post({ type: 'error', id: msg.id, message: 'petición antes de inicializar la anatomía' });
+      return;
+    }
+    const { width, height, frame, transducer, depthMm } = msg;
+    const tissue = new Uint8Array(width * height);
+    const vessel = new Int8Array(width * height);
+    const sample = msg.sample as PhysiologySample;
+    for (let v = 0; v < height; v++) {
+      const r = (depthMm * (v + 0.5)) / height;
+      for (let u = 0; u < width; u++) {
+        const theta = -transducer.halfSector + (2 * transducer.halfSector * (u + 0.5)) / width;
+        const p = pointOnLine(frame, transducer, theta, r);
+        const c = query.classifyWorld(p, sample);
+        const i = v * width + u;
+        tissue[i] = c.tissue;
+        vessel[i] = c.vessel ? (vesselIndex.get(c.vessel) ?? -1) : -1;
+      }
+    }
+    post({ type: 'map', id: msg.id, width, height, tissue, vessel }, [tissue.buffer, vessel.buffer]);
+  } catch (e) {
+    post({ type: 'error', id: msg.type === 'map' ? msg.id : -1, message: e instanceof Error ? e.message : String(e) });
   }
-  const out: CutMapResponse = { type: 'map', id: msg.id, width, height, tissue, vessel };
-  (self as unknown as Worker).postMessage(out, [tissue.buffer, vessel.buffer]);
 };

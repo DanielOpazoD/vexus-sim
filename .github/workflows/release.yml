@@ -1,0 +1,34 @@
+# Release por tag (Fase 3): `git tag -a vX.Y.Z && git push origin vX.Y.Z` construye, comprueba
+# el presupuesto, empaqueta dist/ y crea la release de GitHub con la sección del CHANGELOG.
+name: Release
+
+on:
+  push:
+    tags: ['v*.*.*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: build y release
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - name: La versión del tag coincide con package.json
+        run: test "v$(node -p "require('./package.json').version")" = "${GITHUB_REF_NAME}"
+      - run: npm run build
+      - name: Notas desde el CHANGELOG
+        run: npx tsx tools/ci/release-notes.ts "${GITHUB_REF_NAME#v}" > release-notes.md
+      - name: Empaquetar dist
+        run: cd dist && zip -qr "../vexus-sim-${GITHUB_REF_NAME}.zip" .
+      - name: Crear la release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "${GITHUB_REF_NAME}" "vexus-sim-${GITHUB_REF_NAME}.zip" --title "${GITHUB_REF_NAME}" --notes-file release-notes.md

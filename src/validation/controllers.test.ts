@@ -48,3 +48,44 @@ describe('HUD', () => {
     expect(next).toBeLessThan(62);
   });
 });
+
+describe('Diagnóstico exportable (Fase 3)', () => {
+  it('reúne versión, GPU, caso, equipo y errores con un formato versionado y un nombre de archivo estable', async () => {
+    const { buildDiagnostics, diagnosticsFileName, buildLabel } = await import('../app/diagnostics');
+    const { defaultEquipment } = await import('../app/simulator');
+    const d = buildDiagnostics(
+      {
+        version: '0.4.0',
+        commit: 'abc1234',
+        buildTime: '2026-09-22T00:00:00Z',
+        userAgent: 'test',
+        gpu: { vendor: 'V', renderer: 'R' },
+        viewport: { width: 800, height: 600, devicePixelRatio: 2 },
+        caseId: 'normal-adult',
+        simTimeS: 12.5,
+        fps: 58,
+        equipment: defaultEquipment(),
+        errors: [{ source: 'gpu', message: 'contexto WebGL perdido', firstAt: 1, lastAt: 2, count: 2 }],
+      },
+      new Date('2026-09-22T10:11:12.345Z'),
+    );
+    expect(d.format).toBe('vexus-diagnostico/1');
+    expect(d.createdAt).toBe('2026-09-22T10:11:12.345Z');
+    expect(d.errors[0].count).toBe(2);
+    expect((JSON.parse(JSON.stringify(d)) as typeof d).equipment.bmode.depthMm).toBe(180);
+    expect(diagnosticsFileName(d)).toBe('vexus-diagnostico-0.4.0-abc1234-2026-09-22T10-11-12-345Z.json');
+    expect(buildLabel('0.4.0', 'abc1234')).toBe('v0.4.0 · abc1234');
+    // las constantes de build existen también en las pruebas (define de Vite)
+    expect(__APP_VERSION__).toMatch(/^\d+\.\d+\.\d+$/);
+  });
+});
+
+describe('Notas de release desde el CHANGELOG (Fase 3)', () => {
+  it('extrae la sección de la versión y falla si no existe', async () => {
+    const { releaseNotes } = await import('../../tools/ci/release-notes');
+    const md = '# H\n\n## [Sin publicar]\n\n- x\n\n## [0.4.0] — fecha\n\n### Añadido\n\n- a\n\n## [0.3.0]\n\n- b\n';
+    expect(releaseNotes(md, '0.4.0')).toBe('### Añadido\n\n- a');
+    expect(releaseNotes(md, '0.3.0')).toBe('- b');
+    expect(() => releaseNotes(md, '9.9.9')).toThrow(/no tiene sección/);
+  });
+});

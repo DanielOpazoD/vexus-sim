@@ -1,3 +1,4 @@
+import { execSync } from 'node:child_process';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -20,9 +21,27 @@ function testFilesWithMarker(marker: string, dir = SRC_DIR): string[] {
   return out;
 }
 const SLOW = testFilesWithMarker('// @tier slow');
+
+/** Versión y commit del build, visibles en la app y en el diagnóstico exportable. */
+const ROOT = dirname(fileURLToPath(import.meta.url));
+const PKG = JSON.parse(readFileSync(join(ROOT, 'package.json'), 'utf8')) as { version: string };
+function gitCommit(): string {
+  try {
+    return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] })
+      .toString()
+      .trim();
+  } catch {
+    return 'desconocido';
+  }
+}
 const tier = process.env['VITEST_TIER'] ?? 'fast';
 
 export default defineConfig({
+  define: {
+    __APP_VERSION__: JSON.stringify(PKG.version),
+    __GIT_COMMIT__: JSON.stringify(process.env['GITHUB_SHA']?.slice(0, 7) ?? gitCommit()),
+    __BUILD_TIME__: JSON.stringify(new Date().toISOString()),
+  },
   server: { port: 6600, strictPort: true },
   build: {
     target: 'es2022',

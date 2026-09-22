@@ -34,6 +34,9 @@ export class ControlPanel implements PanelContext {
   private measure: MeasureTab;
   private teacher: TeacherTab;
   onStartPoint: (p: StartPoint) => void = () => undefined;
+  set onExportDiagnostics(f: () => void) {
+    this.teacher.onExportDiagnostics = f;
+  }
 
   constructor(
     root: HTMLElement,

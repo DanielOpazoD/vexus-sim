@@ -82,6 +82,14 @@ e2e`; CI lo ejecuta tras `check`).
 Nombres de dominio en español (como la base de conocimiento), identificadores de código en inglés
 cuando son términos técnicos de programación; comentarios en español.
 
+## Publicar una versión
+
+1. Mueve lo de «Sin publicar» del `CHANGELOG.md` a `## [X.Y.Z] — fecha — resumen` y sube `version`
+   en `package.json` (PR `chore(release): X.Y.Z`).
+2. Tras el merge: `git tag -a vX.Y.Z -m "…" && git push origin vX.Y.Z`.
+3. `release.yml` comprueba que el tag coincide con `package.json`, construye, adjunta el `dist` en
+   zip y usa la sección del CHANGELOG como notas. La app muestra `vX.Y.Z · commit`.
+
 ## Herramientas locales
 
 - `npm install` activa el hook `.githooks/pre-push` (tipos + pruebas rápidas antes de empujar).

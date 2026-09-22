@@ -2,10 +2,13 @@ import { EQUIPMENT_LIMITS } from '../../app/simulator';
 import { help, slider } from '../controls';
 import type { PanelContext } from './context';
 
-/** Pestaña Imagen: profundidad, ganancia, foco, rango dinámico, persistencia y TGC de 8 bandas. */
-export function buildImageTab(ctx: PanelContext, p: HTMLElement): void {
+/**
+ * Mandos básicos de imagen (profundidad, ganancia, foco): los mismos deslizadores
+ * en «Adquirir» (para no cambiar de pestaña mientras se busca la ventana) y en
+ * «Imagen» (con rango dinámico, persistencia y TGC). Una sola fuente de verdad.
+ */
+export function imageBasics(ctx: PanelContext, sec: HTMLElement): void {
   const s = ctx.sim;
-  const sec = ctx.section(p, 'Imagen 2D');
   const ch = () => undefined;
   ctx.track(
     slider(
@@ -48,6 +51,14 @@ export function buildImageTab(ctx: PanelContext, p: HTMLElement): void {
       ch,
     ),
   );
+}
+
+/** Pestaña Imagen: profundidad, ganancia, foco, rango dinámico, persistencia y TGC de 8 bandas. */
+export function buildImageTab(ctx: PanelContext, p: HTMLElement): void {
+  const s = ctx.sim;
+  const sec = ctx.section(p, 'Imagen 2D');
+  const ch = () => undefined;
+  imageBasics(ctx, sec);
   ctx.track(
     slider(
       sec,

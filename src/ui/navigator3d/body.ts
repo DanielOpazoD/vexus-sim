@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import type { AnatomyScene } from '../../anatomy/scene';
+import { ribTiltMm, type AnatomyScene } from '../../anatomy/scene';
 import { CM, surfaceAt, torsoScale } from './common';
 
 /** Piel superelíptica del tronco (misma elipse que `torsoDepth`) y esqueleto procedural. */
@@ -72,7 +72,7 @@ export function buildSkeleton(a: AnatomyScene): THREE.Group {
   const bone = new THREE.MeshStandardMaterial({ color: 0xe9e2d2, roughness: 0.55 });
   const cartilage = new THREE.MeshStandardMaterial({ color: 0xcfd9e6, roughness: 0.5, transparent: true, opacity: 0.85 });
   // Costillas 3–11 de ambos lados. Las derechas 5–10 siguen exactamente la ley de
-  // scene.ribs (zAnterior + 60·(0,5 − 0,5·sen φ), escala 0,85); el resto la extiende.
+  // scene.ribs (zAnterior + ribTiltMm·(0,5 − 0,5·sen φ), escala 0,85); el resto la extiende.
   const anterior = [80, 60, 40, 20, 0, -25, -50, -75, -100];
   anterior.forEach((zAnt, k) => {
     const ribNo = k + 3;
@@ -83,7 +83,7 @@ export function buildSkeleton(a: AnatomyScene): THREE.Group {
       for (let i = 0; i <= 44; i++) {
         const phR = phiFront + ((1.5 * Math.PI - 0.12 - phiFront) * i) / 44; // anterior → posterior, lado derecho
         const ph = side < 0 ? phR : Math.PI - phR;
-        const zr = zAnt + 60 * (0.5 - 0.5 * Math.sin(phR));
+        const zr = zAnt + ribTiltMm(ribNo) * (0.5 - 0.5 * Math.sin(phR));
         const p = surfaceAt(a, ph, zr, 0.85);
         // el arco termina en la apófisis transversa (mismo criterio que el SDF)
         if (p.y / CM < a.spine.y0 && Math.abs(p.x / CM - a.spine.x0) < a.spine.archHalfWidth + 6) break;

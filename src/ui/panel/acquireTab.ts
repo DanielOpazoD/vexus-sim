@@ -1,6 +1,7 @@
 import { START_POINTS, type StartPoint } from '../../app/startPoints';
 import type { RespiratoryPattern } from '../../physiology/patientState';
 import { button, help, row, slider } from '../controls';
+import { imageBasics } from './imageTab';
 import type { PanelContext } from './context';
 
 /** Pestaña Adquirir: puntos de partida, sonda (ángulos y presión), caso y respiración. */
@@ -93,6 +94,14 @@ export function buildAcquireTab(ctx: PanelContext, p: HTMLElement, onStartPoint:
   });
   const r = row(probe);
   ctx.track(button(r, 'Reiniciar sonda', () => s().setPose({ ...s().pose, yaw: 0, rock: 0, tilt: 0, lift: 0 })));
+
+  // Mandos de imagen a mano mientras se busca la ventana (los mismos que en «Imagen»)
+  const img = ctx.section(p, 'Imagen');
+  imageBasics(ctx, img);
+  help(
+    img,
+    'Profundidad, ganancia y foco; rango dinámico, persistencia y TGC en la pestaña «Imagen». Teclado: <kbd>[</kbd><kbd>]</kbd> profundidad · <kbd>−</kbd><kbd>+</kbd> ganancia.',
+  );
 
   const pat = ctx.section(p, 'Caso y paciente');
   const info = document.createElement('div');

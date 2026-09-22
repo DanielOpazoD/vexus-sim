@@ -5,6 +5,10 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+### Corregido
+
+- El volumen de muestra PW perdía la sangre tras la primera inspiración y no la recuperaba aunque el vaso siguiera en la puerta (tronco portal con respiración tranquila: 0 % de sangre frente al 95 % real; PF medida 167 % en el sano y 136 % en el grave). La comprobación de salida de la caja y la resiembra usaban dos desplazamientos respiratorios distintos. Ahora PF 20 % y 73 % (verdad 19 % y 63 %).
+
 ## [0.5.0] — 2026-09-22 — bases estructurales (plan de fases 0–3 tras la evaluación 3,8/7; decisiones 41–47)
 
 ### Añadido

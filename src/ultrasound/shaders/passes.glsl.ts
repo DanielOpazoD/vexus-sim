@@ -1,6 +1,6 @@
 import { TISSUE_COUNT } from '../../anatomy/tissues';
 import { C_RECONSTRUCTION_MM_S } from '../../core/units';
-import { ANATOMY_GLSL } from './anatomy.glsl';
+import { ANATOMY_GLSL } from '../../anatomy/gpu/anatomy.glsl';
 
 export const VERT = /* glsl */ `#version 300 es
 precision highp float;

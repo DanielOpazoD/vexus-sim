@@ -97,3 +97,82 @@ export function equivalenceSweep(sim: Simulator): EquivalencePoseReport[] {
   }
   return out;
 }
+
+/**
+ * Equivalencia VOLUMÉTRICA (Fase 2): `n` puntos pseudoaleatorios (semilla fija) repartidos por
+ * todo el tronco — no solo los planos de las ventanas — clasificados en TS y en GLSL. Mide el
+ * acuerdo de tejido lejos de interfaces (distancia a la frontera ≥ 1 mm en la CPU), el de vaso y
+ * el error de velocidad en sangre. Es la red para cualquier cambio de anatomía.
+ */
+export interface VolumeEquivalenceReport {
+  points: number;
+  interiorPoints: number;
+  tissueAgreement: number;
+  bloodPoints: number;
+  vesselAgreement: number;
+  velocityP95RelErr: number;
+  worst: string;
+}
+
+export function volumeEquivalence(sim: Simulator, n = 20_000, seed = 20260922): VolumeEquivalenceReport {
+  let state = seed >>> 0;
+  const rnd = () => {
+    // mulberry32: determinista y suficiente para muestrear
+    state = (state + 0x6d2b79f5) >>> 0;
+    let t = state;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const torso = sim.scene.torso;
+  const pts = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) {
+    // dentro de la elipse del tronco (radio ≤ 1) y entre el tórax bajo y la pelvis alta
+    const r = Math.sqrt(rnd());
+    const a = 2 * Math.PI * rnd();
+    pts.set([torso.a * r * Math.cos(a), torso.b * r * Math.sin(a), -160 + 280 * rnd()], i * 3);
+  }
+  // el plano de la sonda solo decide qué tubos entran en la lista del cuadro: se usa uno por
+  // punto no es posible, así que se consulta con la lista completa (losa muy ancha)
+  const gpu = sim.gpuQuery(pts, sim.frame, true);
+  let interior = 0;
+  let same = 0;
+  let blood = 0;
+  let sameVessel = 0;
+  const errs: number[] = [];
+  const pairs = new Map<string, number>();
+  for (let i = 0; i < n; i++) {
+    const q = sim.anatomy.classifyWorld([pts[i * 3], pts[i * 3 + 1], pts[i * 3 + 2]], sim.sample);
+    if (q.boundaryDistance < 1) continue;
+    interior++;
+    const cpuTissue: number = q.tissue;
+    if (cpuTissue === gpu.tissue[i]) same++;
+    else {
+      const k = `${Tissue[q.tissue]}→${Tissue[gpu.tissue[i]]}`;
+      pairs.set(k, (pairs.get(k) ?? 0) + 1);
+    }
+    if (q.tissue !== Tissue.Blood || !q.vessel || !q.bloodVelocity) continue;
+    blood++;
+    const gi = gpu.vessel[i];
+    const gpuId = gi >= 0 && gi < sim.scene.vessels.length ? sim.scene.vessels[gi].id : null;
+    if (gpuId !== q.vessel) continue;
+    sameVessel++;
+    const v = q.bloodVelocity;
+    const d = Math.hypot(gpu.velocity[i * 3] - v[0], gpu.velocity[i * 3 + 1] - v[1], gpu.velocity[i * 3 + 2] - v[2]);
+    errs.push(d / Math.max(V_FLOOR_MM_S, Math.hypot(v[0], v[1], v[2])));
+  }
+  errs.sort((x, y) => x - y);
+  return {
+    points: n,
+    interiorPoints: interior,
+    tissueAgreement: interior ? same / interior : 1,
+    bloodPoints: blood,
+    vesselAgreement: blood ? sameVessel / blood : 1,
+    velocityP95RelErr: errs.length ? errs[Math.floor(0.95 * (errs.length - 1))] : 0,
+    worst: [...pairs.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 4)
+      .map(([k, c]) => `${k}×${c}`)
+      .join(', '),
+  };
+}

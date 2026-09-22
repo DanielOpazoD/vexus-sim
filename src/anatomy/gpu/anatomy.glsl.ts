@@ -14,8 +14,9 @@
  *     H3 = esfera envolvente (cx, cy, cz, R)
  *   nodos desde NODE_BASE = MAX_TUBES·4: (x, y, z, r)
  */
-import { HILUM_NOTCH, PYRAMIDS, RENAL_CAPSULE_MM, RENAL_PELVIS } from '../../anatomy/primitives';
-import { DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, TISSUE_GLSL_NAME } from '../../anatomy/tissues';
+import { HILUM_NOTCH, PYRAMIDS, RENAL_CAPSULE_MM, RENAL_PELVIS } from '../primitives';
+import { DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, TISSUE_GLSL_NAME } from '../tissues';
+import { ORGAN_MODULES } from '../organs';
 import { MAX_GAS, MAX_RIBS, SCENE_UNIFORMS_GLSL } from './sceneUniforms';
 
 export const MAX_TUBES = 128;
@@ -301,10 +302,8 @@ float tubeQuery(vec3 p, int t, out float rho, out vec3 tangent, out float rLoc, 
   return best;
 }
 
-// Hígado sin recortes de cúpula/pared: lóbulos, cara visceral, impresión renal, fosa vesicular
-float fissureSdf(vec3 m, float dBase) {
-  return max(max(abs(m.x - uFissure.x) - uFissure.y, -(dBase + uFissure.z)), max(m.z - uFissure.w, -m.y));
-}
+// Módulos de órgano (anatomy/organs/*): gemelos GLSL de sus funciones TS
+${ORGAN_MODULES.map((o) => o.glsl).join('\n')}
 
 // Hígado con la fisura umbilical; dBase = sin fisura (lo excavado es ligamento redondo).
 float liverSdf(vec3 m, out vec3 n, out float dBase) {
@@ -325,7 +324,7 @@ float liverSdf(vec3 m, out vec3 n, out float dBase) {
   float d4 = smoothMax(d3, -dg, 2.0);
   if (d4 > d3 + 1e-3) n = -gn;
   dBase = d4;
-  float d5 = smoothMax(d4, -fissureSdf(m, d4), 3.0);
+  float d5 = smoothMax(d4, -umbilicalFissureSdf(m, d4), FISSURE_ROUND_MM);
   if (d5 > d4 + 1e-3 && abs(m.x - uFissure.x) > uFissure.y - 1.0) n = vec3(sign(m.x - uFissure.x), 0.0, 0.0);
   return d5;
 }
@@ -366,12 +365,10 @@ Cls classify(vec3 m) {
     return c;
   }
   // Vasos y conductos (descarte por esfera envolvente)
-  // Cortina pulmonar: lámina bajo la pared en el receso costofrénico derecho (misma regla que classifyLungCurtain)
+  // Cortina pulmonar (módulo de órgano: anatomy/organs/lungCurtain.ts)
   {
-    float insideWall = -depth - wall;
-    if (insideWall < uCurtain.y && m.x <= uCurtain.z && m.y <= uCurtain.w && m.z >= uCurtain.x) {
-      c.tissue = T_LUNG; c.bd = min(min(insideWall, uCurtain.y - insideWall), m.z - uCurtain.x); c.n = torsoNormal(m); c.spec = 1.0; return c;
-    }
+    float dCurtain = lungCurtainDistance(m, -depth - wall);
+    if (dCurtain >= 0.0) { c.tissue = T_LUNG; c.bd = dCurtain; c.n = torsoNormal(m); c.spec = 1.0; return c; }
   }
   int bestT = -1; float bestD = 1e9; float bRho; vec3 bTan; float bR; vec3 bN;
   for (int t = 0; t < MAX_TUBES; t++) {
@@ -439,8 +436,7 @@ Cls classify(vec3 m) {
     c.spec = 0.5;
     if (inner < CAPSULE_MM) { c.tissue = T_CAPSULE; c.bd = inner; return c; }
     // lámina del ligamento venoso (misma fórmula que ligamentumVenosumSdf)
-    float dPl = dot(m, uLigVen.xyz) - uLigVen.w;
-    float dLv = max(max(abs(dPl) - 1.2, uLigVenBox.x - m.x), max(max(m.x - uLigVenBox.y, uLigVenBox.z - m.z), m.z - uLigVenBox.w));
+    float dLv = ligamentumVenosumSdf(m);
     if (dLv < 0.0 && inner > 2.0) { c.tissue = T_LIG_VENOSUM; c.bd = min(-dLv, inner); c.n = uLigVen.xyz; c.spec = 0.7; return c; }
     c.tissue = T_LIVER; c.bd = inner; return c;
   }

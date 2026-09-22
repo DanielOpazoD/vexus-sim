@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { AnatomyScene } from '../anatomy/scene';
 import { TISSUE_COUNT } from '../anatomy/tissues';
 import { CASES } from '../cases';
-import { ANATOMY_GLSL, MAX_NODES, MAX_TUBES, MAX_TUBE_SEGMENTS } from '../ultrasound/shaders/anatomy.glsl';
+import { ANATOMY_GLSL, MAX_NODES, MAX_TUBES, MAX_TUBE_SEGMENTS } from '../anatomy/gpu/anatomy.glsl';
 import { FRAG_TRANSMISSION } from '../ultrasound/shaders/passes.glsl';
 
 /**

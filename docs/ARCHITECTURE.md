@@ -69,7 +69,7 @@ pose de la sonda y los ajustes del equipo.
 
 La escena es declarativa (`anatomy/scene.ts`: primitivas y riñones orientados; el árbol vascular y
 la vía biliar en `anatomy/vesselTree.ts`). Se evalúa en TypeScript (`primitives.ts` + `scene.classify`) para Doppler,
-mediciones, corte ecográfico (Worker) y pruebas, y en GLSL (`ultrasound/shaders/anatomy.glsl.ts`)
+mediciones, corte ecográfico (Worker) y pruebas, y en GLSL (`anatomy/gpu/anatomy.glsl.ts`, con módulos de órgano en `anatomy/organs/`)
 para imagen y color, a partir de los **mismos datos**: primitivas como uniformes y tubos en una
 textura de datos con esferas envolventes (decisión 24). Regla del proyecto: cualquier cambio en una
 debe replicarse en la otra; `validation/anatomy.test.ts` fija la versión TS y, en modo docente, el

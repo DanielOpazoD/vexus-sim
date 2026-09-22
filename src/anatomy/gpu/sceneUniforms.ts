@@ -1,5 +1,6 @@
-import { RespiratoryDeformation } from '../../anatomy/deformation';
-import { LUNG_CURTAIN, type AnatomyScene } from '../../anatomy/scene';
+import { RespiratoryDeformation } from '../deformation';
+import { LUNG_CURTAIN } from '../organs/lungCurtain';
+import type { AnatomyScene } from '../scene';
 import type { PhysiologySample } from '../../physiology/engine';
 
 /**

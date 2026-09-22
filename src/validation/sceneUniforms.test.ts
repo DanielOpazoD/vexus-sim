@@ -2,14 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { AnatomyScene } from '../anatomy/scene';
 import { CASES } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
-import { ANATOMY_GLSL } from '../ultrasound/shaders/anatomy.glsl';
+import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
 import {
   SCENE_UNIFORMS,
   SCENE_UNIFORMS_GLSL,
   evaluateSceneUniforms,
   uploadSceneUniforms,
   type UniformSink,
-} from '../ultrasound/shaders/sceneUniforms';
+} from '../anatomy/gpu/sceneUniforms';
 
 /**
  * Esquema único de uniforms de la anatomía (Fase 2): ANATOMY_GLSL no declara uniforms a mano,

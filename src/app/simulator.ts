@@ -318,20 +318,24 @@ export class Simulator {
    * plano `frame` (que decide qué tubos entran en la lista por cuadro). Solo para el
    * gate de equivalencia; bloqueante.
    */
-  gpuQuery(points: Float32Array, frame: ProbeFrame): GpuPointQuery {
+  gpuQuery(points: Float32Array, frame: ProbeFrame, allTubes = false): GpuPointQuery {
     const s = this.sample;
-    return this.renderer.queryPoints(points, {
-      sample: s,
-      frame,
-      pose: this.pose,
-      transducer: this.transducer,
-      caliber: this.anatomy.caliberFor(s),
-      probeVelocity: [0, 0, 0],
-      bmode: this.bmode,
-      color: this.color,
-      updateColor: false,
-      seed: this.patient.seed,
-    });
+    return this.renderer.queryPoints(
+      points,
+      {
+        sample: s,
+        frame,
+        pose: this.pose,
+        transducer: this.transducer,
+        caliber: this.anatomy.caliberFor(s),
+        probeVelocity: [0, 0, 0],
+        bmode: this.bmode,
+        color: this.color,
+        updateColor: false,
+        seed: this.patient.seed,
+      },
+      allTubes,
+    );
   }
 
   /** Velocidad de Nyquist rotulada (cm/s) para la escala PW actual. */

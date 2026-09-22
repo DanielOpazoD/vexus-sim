@@ -81,3 +81,23 @@ e2e`; CI lo ejecuta tras `check`).
 `.editorconfig` (2 espacios, LF, UTF-8), `eslint` estricto y `prettier` (`npm run format`).
 Nombres de dominio en español (como la base de conocimiento), identificadores de código en inglés
 cuando son términos técnicos de programación; comentarios en español.
+
+## Herramientas locales
+
+- `npm install` activa el hook `.githooks/pre-push` (tipos + pruebas rápidas antes de empujar).
+- Dependabot abre cada lunes una PR agrupada por ecosistema; entra si CI (check + e2e) está verde.
+- ESLint usa las reglas con información de tipos (`recommendedTypeChecked`).
+
+## Plantilla de decisión (desde la 45)
+
+Cada decisión nueva de `docs/DECISIONS.md` sigue este esquema (las 1–44 son registro histórico):
+
+```markdown
+## N. Título en una línea
+
+**Contexto.** Qué problema o evidencia la motiva (con cifras o la prueba que falló).
+**Opciones.** Alternativas consideradas y por qué no.
+**Decisión.** Qué se hace, con los nombres de código y archivos.
+**Consecuencias.** Qué cambia para el alumno, el rendimiento y las pruebas; qué queda pendiente.
+**Verificación.** Qué prueba lo protege (y, si es un gate, cómo se comprobó que falla sin el cambio).
+```

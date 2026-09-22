@@ -32,7 +32,7 @@ describe('Registro de errores', () => {
   it('los manejadores globales registran excepciones y promesas rechazadas', () => {
     const log = new ErrorLog();
     const target = new EventTarget();
-    log.installGlobalHandlers(target as unknown as Window);
+    log.installGlobalHandlers(target);
     const err = new Event('error') as Event & { error: unknown };
     err.error = new Error('boom');
     target.dispatchEvent(err);

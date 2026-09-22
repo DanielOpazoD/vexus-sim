@@ -47,10 +47,9 @@ describe('Documentación', () => {
     }
   });
 
-  it('README cita la última iteración cerrada en DECISIONS.md', () => {
-    const closes = [...read('docs/DECISIONS.md').matchAll(/^## Iteración (\d+) — informe de cierre/gm)].map((m) => Number(m[1]));
-    const last = Math.max(...closes);
-    expect(read('README.md')).toMatch(new RegExp(`## Estado \\(iteración ${last}\\)`));
+  it('README cita la versión actual del paquete en su «Estado» (antes lo congelaba en la iteración 2)', () => {
+    const { version } = JSON.parse(read('package.json')) as { version: string };
+    expect(read('README.md')).toContain(`## Estado (v${version}`);
   });
 
   it('cada limitación declarada en código aparece en docs/LIMITATIONS.md', async () => {

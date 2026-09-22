@@ -317,6 +317,11 @@ pestaña Medir → suprahepática → Capturar → resultado con VSH; Docente co
 corre en un job aparte tras `check`, con Chromium + SwiftShader (WebGL2 por software, sin GPU). No
 entra en `npm run check` (2 min) pero sí en CI; `npm run e2e` en local.
 
+**Enmienda (Fase 0).** Con SwiftShader no se alcanzaban ni «fps > 0» fiable ni la verdad fisiológica
+(t > 8 s), y la prueba de medición aceptaba «VSH: —»: se relajaron sin decirlo. Ahora la e2e usa ganchos
+`?e2e` (`advance`, `placeGate`) y exige un valor numérico; además comprueba la pérdida de contexto WebGL
+y el gate de equivalencia TS ↔ GLSL (`e2e/equivalence.spec.ts`).
+
 ## 33. La congestión se ve: calibres basales reales, plétora ×1,6 y hepatomegalia
 
 Evaluación clínica (22-09): el caso grave era casi indistinguible del sano en modo B y en el 3D. Tres

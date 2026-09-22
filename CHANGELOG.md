@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Añadido
 
+- Documentación para incorporar a un equipo: `CLAUDE.md` (invariantes que se rompen fácil), `docs/GLOSSARY.md`, `docs/TESTING.md`, plantilla de decisión en `CONTRIBUTING.md`; afirmaciones obsoletas corregidas (CI, cadencia del color, pirámides, e2e de la decisión 32) y el «Estado» del README atado a la versión. ESLint con reglas tipadas, `@types/three` alineado con three, Dependabot semanal agrupado y hook de pre-push.
+
 - Cortina pulmonar con líneas A (signo de la cortina) que baja con la inspiración; cápsula y pelvis renales; pirámides discretas con columnas de Bertin (43).
 
 - Segmentos de Couinaud derivados de los planos de las suprahepáticas, la fisura umbilical y el plano portal; hígado 3D translúcido coloreado por segmento con rótulos I–VIII; lámina del ligamento venoso (`LigamentumVenosum`) en el modelo acústico y en el corte (42).

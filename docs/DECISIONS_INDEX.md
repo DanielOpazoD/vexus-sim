@@ -36,15 +36,15 @@ Generado por `npm run docs:index` — no editar a mano.
 | [30](DECISIONS.md#L280) | Comprobación en vivo de la equivalencia TS ↔ GLSL | vigente |
 | [31](DECISIONS.md#L296) | Fibrilación auricular como ritmo y tercer caso | vigente |
 | [32](DECISIONS.md#L309) | Pruebas de extremo a extremo en Chromium | vigente |
-| [33](DECISIONS.md#L320) | La congestión se ve: calibres basales reales, plétora ×1,6 y hepatomegalia | vigente |
-| [34](DECISIONS.md#L333) | Árbol vascular hepático de 3.º–4.º orden y lista de tubos por cuadro | vigente |
-| [35](DECISIONS.md#L348) | Columna con arco posterior, costillas que terminan en la apófisis transversa, «columna» ≠ «costilla» | vigente |
-| [36](DECISIONS.md#L362) | Proporciones craneocaudales referidas al xifoides y diafragma en dos hemicúpulas | vigente |
-| [37](DECISIONS.md#L382) | Riñón en judía con escotadura hiliar, 16 pirámides e interlobares en abanico | vigente |
-| [38](DECISIONS.md#L393) | PSF lateral con número F y ensanchamiento espectral intrínseco | vigente |
-| [39](DECISIONS.md#L406) | Doppler color por celdas, varianza de Kasai y cadencia física de cuadro | vigente |
-| [40](DECISIONS.md#L422) | Fisura umbilical y ligamento redondo | vigente |
-| [41](DECISIONS.md#L436) | Vesícula en pera con pared y porción umbilical de la porta izquierda en la fisura | vigente |
-| [42](DECISIONS.md#L451) | Segmentos de Couinaud derivados de los vasos, ligamento venoso e hígado 3D translúcido | vigente |
-| [43](DECISIONS.md#L468) | Arquitectura renal, receso de Morison, cortina pulmonar, pared periportal y pared blanda | vigente |
-| [44](DECISIONS.md#L489) | Medición del alumno robusta: envolvente de la banda contigua, lado venoso y regla de S invertida | vigente |
+| [33](DECISIONS.md#L325) | La congestión se ve: calibres basales reales, plétora ×1,6 y hepatomegalia | vigente |
+| [34](DECISIONS.md#L338) | Árbol vascular hepático de 3.º–4.º orden y lista de tubos por cuadro | vigente |
+| [35](DECISIONS.md#L353) | Columna con arco posterior, costillas que terminan en la apófisis transversa, «columna» ≠ «costilla» | vigente |
+| [36](DECISIONS.md#L367) | Proporciones craneocaudales referidas al xifoides y diafragma en dos hemicúpulas | vigente |
+| [37](DECISIONS.md#L387) | Riñón en judía con escotadura hiliar, 16 pirámides e interlobares en abanico | vigente |
+| [38](DECISIONS.md#L398) | PSF lateral con número F y ensanchamiento espectral intrínseco | vigente |
+| [39](DECISIONS.md#L411) | Doppler color por celdas, varianza de Kasai y cadencia física de cuadro | vigente |
+| [40](DECISIONS.md#L427) | Fisura umbilical y ligamento redondo | vigente |
+| [41](DECISIONS.md#L441) | Vesícula en pera con pared y porción umbilical de la porta izquierda en la fisura | vigente |
+| [42](DECISIONS.md#L456) | Segmentos de Couinaud derivados de los vasos, ligamento venoso e hígado 3D translúcido | vigente |
+| [43](DECISIONS.md#L473) | Arquitectura renal, receso de Morison, cortina pulmonar, pared periportal y pared blanda | vigente |
+| [44](DECISIONS.md#L494) | Medición del alumno robusta: envolvente de la banda contigua, lado venoso y regla de S invertida | vigente |

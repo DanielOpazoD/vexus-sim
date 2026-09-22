@@ -545,7 +545,7 @@ export class UltrasoundRenderer {
     const H = this.canvas.height;
     this.display = sectorLayout(W, H, tr, depth, DISPLAY_MARGIN_PX);
     const { apexX, apexY, scale } = this.display;
-    bindTarget(gl, this.tScan!);
+    bindTarget(gl, this.tScan);
     this.pScan.use();
     this.pScan.tex('uEnv', 0, this.tEnv.textures[0]);
     this.pScan.tex('uColor', 1, this.tColor.textures[0]);
@@ -644,7 +644,7 @@ export class UltrasoundRenderer {
     gl.bindBuffer(gl.PIXEL_PACK_BUFFER, null);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     const sync = gl.fenceSync(gl.SYNC_GPU_COMMANDS_COMPLETE, 0);
-    if (sync) this.mapPending = { sync, pbo: this.mapPbo! };
+    if (sync) this.mapPending = { sync, pbo: this.mapPbo };
     gl.flush();
     return this.mapLast;
   }

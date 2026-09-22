@@ -102,6 +102,9 @@ const VESSEL_LABEL: Record<VesselId, string> = {
   interlobarVein3: 'v. interlobar',
 };
 
+/** Tejido «sangre» como número (el mapa del Worker es un Uint8Array). */
+const BLOOD_ID: number = Tissue.Blood;
+
 /** Tiempo máximo de una petición al Worker antes de darlo por caído (ms). */
 const WORKER_TIMEOUT_MS = 3000;
 
@@ -245,7 +248,7 @@ export class CutMapView {
         let c: [number, number, number];
         let key: string | null = null;
         let label = '';
-        if (vi >= 0 && vi < vesselIds.length && t === Tissue.Blood) {
+        if (vi >= 0 && vi < vesselIds.length && t === BLOOD_ID) {
           const id = vesselIds[vi];
           c = vesselColor(id);
           key = `v:${id}`;

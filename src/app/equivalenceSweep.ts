@@ -30,6 +30,8 @@ const SAMPLES = 72;
 const DEPTH_MM = 160;
 /** Suelo de velocidad para el error relativo (mm/s): cerca de la pared la sangre casi no se mueve. */
 const V_FLOOR_MM_S = 30;
+/** Tejido «sangre» como número: las rejillas de tejidos son Uint8Array. */
+const BLOOD: number = Tissue.Blood;
 
 export function equivalenceSweep(sim: Simulator): EquivalencePoseReport[] {
   const tr = sim.transducer;
@@ -48,7 +50,7 @@ export function equivalenceSweep(sim: Simulator): EquivalencePoseReport[] {
     const gpu = sim.gpuQuery(pts, frame);
     const cpuTissue = new Uint8Array(n);
     const gpuTissue = new Uint8Array(n);
-    const cpuVessel: Array<string | null> = new Array(n);
+    const cpuVessel = new Array<string | null>(n).fill(null);
     const cpuVel = new Float32Array(n * 3);
     for (let i = 0; i < n; i++) {
       const q = sim.anatomy.classifyWorld([pts[i * 3], pts[i * 3 + 1], pts[i * 3 + 2]], sim.sample);
@@ -68,8 +70,8 @@ export function equivalenceSweep(sim: Simulator): EquivalencePoseReport[] {
     for (let v = 1; v < SAMPLES - 1; v++)
       for (let u = 1; u < LINES - 1; u++) {
         const i = v * LINES + u;
-        if (cpuTissue[i] !== Tissue.Blood || !cpuVessel[i]) continue;
-        if ([i - 1, i + 1, i - LINES, i + LINES].some((j) => cpuTissue[j] !== Tissue.Blood)) continue;
+        if (cpuTissue[i] !== BLOOD || !cpuVessel[i]) continue;
+        if ([i - 1, i + 1, i - LINES, i + LINES].some((j) => cpuTissue[j] !== BLOOD)) continue;
         blood++;
         const gi = gpu.vessel[i];
         const gpuId = gi >= 0 && gi < sim.scene.vessels.length ? sim.scene.vessels[gi].id : null;

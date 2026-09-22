@@ -19,7 +19,7 @@ nunca se mezclan: el modo docente muestra ambas.
 (`PwDopplerChain.step`), el espectrograma etiqueta cada columna con el tiempo del centro de la
 ventana, el ECG se dibuja desde el mismo historial y el audio se remuestrea desde esa IQ. El render
 de imagen es independiente de la cadencia del reloj (lee el último estado); el color se refresca con
-cadencia propia (15 Hz) para reproducir el coste de ensembles del equipo.
+cadencia física PRF/(líneas·ensemble) + cuadro B (`colorTiming`, decisión 39), como el equipo.
 
 ## Flujo por cuadro (`src/main.ts` → `Simulator`)
 
@@ -100,6 +100,9 @@ par CPU→GPU sistemático es una divergencia real.
 - `src/validation/layers.test.ts`: fronteras de capas y ciclos (Tarjan) sobre los imports reales.
 - `src/validation/docs.test.ts`: numeración de decisiones, índice generado, referencias a archivos,
   limitaciones citadas y README al día con la última iteración cerrada.
-- `.github/workflows/ci.yml`: ejecuta lo mismo que `npm run check` en cada push y PR.
+- `.github/workflows/ci.yml`: en cada push y PR, lo mismo que `npm run check` (formato, lint con tipos,
+  tipos, todas las pruebas con umbrales de cobertura, build, presupuesto) + auditoría de dependencias;
+  después, la e2e (arranque, casos, medición numérica, pérdida de contexto WebGL y gate de
+  equivalencia TS ↔ GLSL en tejido, vaso y velocidad).
 - `tools/ci/bundle-budget.ts`: presupuestos de tamaño por patrón tras `vite build`.
 - Niveles de prueba por marcador `// @tier slow` (ver `vite.config.ts`).

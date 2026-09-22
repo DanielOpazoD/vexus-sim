@@ -58,6 +58,8 @@ export interface PatientState {
     sinusoidalResistance: number;
     /** Distensibilidad relativa del compartimento sinusoidal (1 normal). */
     compliance: number;
+    /** Tamaño del hígado respecto al avatar basal (1 normal; 1,05–1,12 hepatomegalia congestiva). */
+    sizeFactor: number;
   };
 
   // --- Hábito corporal y ventana ---
@@ -88,4 +90,5 @@ export function validatePatient(p: PatientState): void {
   inRange(p.respiratoryRateMin, 4, 50, 'respiratoryRateMin');
   inRange(p.liver.sinusoidalResistance, 0.3, 10, 'liver.sinusoidalResistance');
   inRange(p.liver.compliance, 0.2, 3, 'liver.compliance');
+  inRange(p.liver.sizeFactor, 0.8, 1.3, 'liver.sizeFactor');
 }

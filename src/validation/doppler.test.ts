@@ -205,7 +205,9 @@ describe('Volumen de muestra físico (guía §10, §21)', () => {
       }
     }
     const gate = gateAt(best!.theta, best!.r);
-    runSeconds(gate, 4);
+    // PRF 3200 Hz (escala ±49 cm/s): la envolvente del pico S normal (~40 cm/s con
+    // perfil n = 3) no debe plegarse; en el equipo el operador sube la escala igual.
+    runSeconds(gate, 4, 3200);
     const q = anatomy.classifyWorld(gate.center, engine.sample);
     const v = q.bloodVelocity!;
     const meanAlong = -(v[0] * gate.beamDir[0] + v[1] * gate.beamDir[1] + v[2] * gate.beamDir[2]);

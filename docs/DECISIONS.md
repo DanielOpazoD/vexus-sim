@@ -317,6 +317,19 @@ pestaña Medir → suprahepática → Capturar → resultado con VSH; Docente co
 corre en un job aparte tras `check`, con Chromium + SwiftShader (WebGL2 por software, sin GPU). No
 entra en `npm run check` (2 min) pero sí en CI; `npm run e2e` en local.
 
+## 33. La congestión se ve: calibres basales reales, plétora ×1,6 y hepatomegalia
+
+Evaluación clínica (22-09): el caso grave era casi indistinguible del sano en modo B y en el 3D. Tres
+causas: (1) los radios basales de las suprahepáticas eran los de un paciente ya dilatado (curso medio
+9 mm de diámetro) → se reducen ×0,8 (curso medio 5–8 mm, desembocadura 8–10 mm, B.2); (2) la ley de
+dilatación √(1 + 0,06·(P − 7)) daba ×1,33 a 19 mmHg → √(1 + 0,12·(P − 7)): ×0,95 en el sano y ×1,6 en
+la congestión grave (12–15 mm de diámetro, plétora real); (3) el avatar 3D construía los tubos con
+los radios basales: ahora `buildVessels` recibe el calibre del caso en régimen (`getCaliber`) y la
+sección elíptica de la cava, y se reconstruye al cambiar de caso. Hepatomegalia congestiva:
+`PatientState.liver.sizeFactor` (1,1 en el grave, 1,05 en la FA) escala los lóbulos y baja el borde
+inferior ≈ 1 cm por cada 10 %. Recalibrado (r_ref en el sitio de muestreo 5,6/4,5/4,2 mm): sano S 27,1 / D 18,7 / A −5,6 (grado 0); grave S −6,8 /
+D 23,7, PF 70 %, VCI 31,4 (grado 3); FA S<D, PF 36 % (grado 1).
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

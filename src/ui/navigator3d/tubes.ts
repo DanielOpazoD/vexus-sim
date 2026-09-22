@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { Tube } from '../../anatomy/primitives';
-import type { AnatomyScene } from '../../anatomy/scene';
+import type { AnatomyScene, VesselCaliber } from '../../anatomy/scene';
 import type { Vec3 } from '../../core/vec3';
 import { CM } from './common';
 
@@ -45,7 +45,12 @@ export function variableTube(tube: Tube, color: number, opacity = 1): THREE.Mesh
   );
 }
 
-export function buildVessels(a: AnatomyScene): THREE.Group {
+/**
+ * Vasos con el calibre DEL CASO: radios × `radiusScale` y sección elíptica de la
+ * cava según la fisiología en régimen, así el avatar de una congestión grave
+ * muestra la plétora (VCI 30 mm, suprahepáticas 12–15 mm) y el sano no.
+ */
+export function buildVessels(a: AnatomyScene, caliber: VesselCaliber): THREE.Group {
   const g = new THREE.Group();
   const colorOf = (id: string): number =>
     id.startsWith('ivc')
@@ -62,7 +67,13 @@ export function buildVessels(a: AnatomyScene): THREE.Group {
                 ? 0x5a8cdc
                 : 0xf0a04d;
   for (const v of a.vessels) {
-    const tube: Tube = { ...v.tube, nodes: v.tube.nodes.map((n) => ({ p: [n.p[0], n.p[1], Math.max(-240, n.p[2])] as Vec3, r: n.r })) };
+    const scale = caliber.radiusScale(v.id);
+    const apScale = v.id.startsWith('ivc') ? caliber.ivcApScale : v.tube.apScale;
+    const tube: Tube = {
+      ...v.tube,
+      apScale,
+      nodes: v.tube.nodes.map((n) => ({ p: [n.p[0], n.p[1], Math.max(-240, n.p[2])] as Vec3, r: n.r * scale })),
+    };
     g.add(variableTube(tube, colorOf(v.id), v.id === 'aorta' ? 0.7 : 1));
   }
   return g;

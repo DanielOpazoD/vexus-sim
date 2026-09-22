@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import type { AnatomyScene } from '../anatomy/scene';
+import type { AnatomyScene, VesselCaliber } from '../anatomy/scene';
 import { RespiratoryDeformation } from '../anatomy/deformation';
 import type { ProbeFrame, ProbePose, Transducer } from '../probe/probe';
 import { buildAnatomyGroups } from './navigator3d/anatomyGroups';
@@ -27,6 +27,8 @@ export interface Navigator3DOptions {
   getFrame: () => ProbeFrame;
   getDepthMm: () => number;
   getRespCaudalMm: () => number;
+  /** Calibres del caso (escala de radio por vaso y sección de la VCI) en régimen. */
+  getCaliber: () => VesselCaliber;
 }
 
 export interface NavigatorLayers {
@@ -106,7 +108,7 @@ export class Navigator3D {
       organs: this.organs,
       vessels: this.vessels,
       windows: this.windows,
-    } = buildAnatomyGroups(anatomy));
+    } = buildAnatomyGroups(anatomy, opts.getCaliber()));
     const p = buildProbe(transducer);
     this.probe = p.probe;
     this.marker = p.marker;
@@ -144,7 +146,7 @@ export class Navigator3D {
       organs: this.organs,
       vessels: this.vessels,
       windows: this.windows,
-    } = buildAnatomyGroups(anatomy));
+    } = buildAnatomyGroups(anatomy, this.opts.getCaliber()));
     this.world.add(this.skin, this.skeleton, this.organs, this.vessels, this.windows);
     this.setLayers({});
   }

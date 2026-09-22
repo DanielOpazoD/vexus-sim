@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+## [0.4.0] — 2026-09-22 — fidelidad anatómica y ecográfica (evaluación experta, decisiones 33–40)
+
 ### Añadido
 
 - Fisura umbilical con ligamento redondo ecogénico (tejido `LigamentumTeres`) entre los segmentos III y IV, en el SDF compartido TS/GLSL y en el 3D (40).

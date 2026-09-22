@@ -243,30 +243,6 @@ float tubeQuery(vec3 p, int t, out float rho, out vec3 tangent, out float rLoc, 
 // Módulos de órgano (anatomy/organs/*): gemelos GLSL de sus funciones TS
 ${ORGAN_MODULES.map((o) => o.glsl).join('\n')}
 
-// Hígado con la fisura umbilical; dBase = sin fisura (lo excavado es ligamento redondo).
-float liverSdf(vec3 m, out vec3 n, out float dBase) {
-  vec3 ln; vec3 ln2;
-  float dR = sdEllipsoid(m, uLiverC, uLiverR, uLiverTaper, ln);
-  float dL = sdEllipsoid(m, uLiverLC, uLiverLR, uLiverLTaper, ln2);
-  float d = smoothMin(dR, dL, uLiverBlend);
-  n = dL < dR ? ln2 : ln;
-  float plane = (m.z - uVisceral.x + uVisceral.y * m.y) / length(vec2(uVisceral.y, 1.0));
-  float d2 = smoothMax(d, -plane, uVisceral.z);
-  if (d2 > d + 1e-3) n = normalize(vec3(0.0, -uVisceral.y, -1.0));
-  vec3 kn;
-  float dk = kidneyOuter(m, 0, kn) - uVisceral.w;
-  float d3 = smoothMax(d2, -dk, 8.0);
-  if (d3 > d2 + 1e-3) n = -kn;
-  vec3 gn;
-  float dg = sdOrientedEllipsoid(m, uGbC, uGbR, uGbU, uGbV, uGbW, uGbExtra.x, gn) - uGbExtra.y;
-  float d4 = smoothMax(d3, -dg, 2.0);
-  if (d4 > d3 + 1e-3) n = -gn;
-  dBase = d4;
-  float d5 = smoothMax(d4, -umbilicalFissureSdf(m, d4), FISSURE_ROUND_MM);
-  if (d5 > d4 + 1e-3 && abs(m.x - uFissure.x) > uFissure.y - 1.0) n = vec3(sign(m.x - uFissure.x), 0.0, 0.0);
-  return d5;
-}
-
 Cls classify(vec3 m) {
   Cls c;
   c.tissue = T_AIR; c.bd = 1e3; c.n = vec3(0.0, 1.0, 0.0); c.spec = 0.0; c.vessel = -1;
@@ -343,7 +319,7 @@ Cls classify(vec3 m) {
   if (dDome < 0.0) { c.tissue = T_LUNG; c.bd = -dDome; c.n = dn; c.spec = 1.0; return c; }
   if (dDome < DIAPHRAGM_MM) { c.tissue = T_DIAPHRAGM; c.bd = min(dDome, DIAPHRAGM_MM - dDome); c.n = dn; c.spec = 0.9; return c; }
   vec3 gn;
-  float dGb = sdOrientedEllipsoid(m, uGbC, uGbR, uGbU, uGbV, uGbW, uGbExtra.x, gn);
+  float dGb = gallbladderSdf(m, gn);
   if (dGb < 0.0) { c.tissue = T_FLUID; c.bd = -dGb; c.n = gn; c.spec = 0.4; return c; }
   if (dGb < uGbExtra.y) { c.tissue = T_BILEWALL; c.bd = min(dGb, uGbExtra.y - dGb); c.n = gn; c.spec = 0.5; return c; }
   // Riñones

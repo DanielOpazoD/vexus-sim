@@ -5,12 +5,9 @@ import {
   orthonormalBasis,
   sdSpine,
   sdDiaphragm,
-  sdEllipsoid,
-  sdOrientedEllipsoid,
   sdRib,
   sdSphere,
   smoothMax,
-  smoothMin,
   torsoDepth,
   tubeQuery,
   type Spine,
@@ -23,7 +20,17 @@ import {
   type Tube,
   type TubeHit,
 } from './primitives';
+import { GALLBLADDER_WALL_MM, gallbladderBody, gallbladderSdf } from './organs/gallbladder';
 import { RENAL_CAPSULE_MM, kidneyQuery, type Kidney } from './organs/kidney';
+import {
+  LIVER_BLEND_MM,
+  RENAL_IMPRESSION,
+  liverBaseSdf,
+  liverLobes,
+  liverSdf,
+  visceralPlaneDistance,
+  type VisceralPlane,
+} from './organs/liver';
 import { buildHepaticBranches, buildVesselTree, type DuctDef, type VesselDef } from './vesselTree';
 import {
   LIGAMENTUM_VENOSUM,
@@ -107,12 +114,9 @@ export class AnatomyScene {
   /** Lóbulo derecho (voluminoso) y lóbulo izquierdo (aplanado); su unión suave es el hígado. */
   readonly liver: Ellipsoid;
   readonly liverLeft: Ellipsoid;
-  readonly liverBlendMm = 30;
-  /**
-   * Cara visceral: plano z = −62 − 0,35·y (borde inferior agudo a z ≈ −83 bajo la
-   * pared anterior, junto al reborde costal, y a −48 en la cara posterior); normal (0, 0,35, 1).
-   */
-  readonly visceralPlane: { zAtY0: number; slopeY: number; edgeRoundMm: number };
+  readonly liverBlendMm = LIVER_BLEND_MM;
+  /** Cara visceral (módulo `organs/liver`). */
+  readonly visceralPlane: VisceralPlane;
   /**
    * Fisura umbilical (ligamento redondo / falciforme): surco sagital en x = 15 mm (izquierda
    * del paciente) sobre la cara anteroinferior del lóbulo izquierdo, entre el segmento IV y
@@ -128,14 +132,14 @@ export class AnatomyScene {
   readonly ligamentumVenosum: LigamentumVenosum;
   readonly gallbladder: OrientedEllipsoid;
   /** Pared vesicular (mm), ecogénica, entre la luz anecoica y la fosa. */
-  readonly gallbladderWallMm = 1.5;
+  readonly gallbladderWallMm = GALLBLADDER_WALL_MM;
   readonly rightAtrium: Sphere;
   readonly kidneyRight: Kidney;
   readonly kidneyLeft: Kidney;
   /** Grasa perirrenal (fascia de Gerota) alrededor del riñón (mm). */
   readonly perirenalMm = 4;
   /** Separación mínima hígado–riñón (impresión renal) (mm). */
-  readonly renalImpressionMm = 4;
+  readonly renalImpressionMm = RENAL_IMPRESSION.mm;
   /** Bolsas de gas intestinal (confusor; vacío en el avatar de referencia). */
   readonly gasPockets: Sphere[];
   vessels: VesselDef[];
@@ -162,31 +166,11 @@ export class AnatomyScene {
     // posterior queda ≈ 5 cm de la piel dorsal, como en un adulto); arco posterior con
     // apófisis transversas de 40 mm a cada lado. Las costillas terminan en ellas.
     this.spine = { kind: 'cylinderZ', x0: 0, y0: -46, r: 17, archHalfWidth: 40, archY0: -78, archY1: -58 };
-    // Hígado: el lóbulo derecho es un elipsoide grande (170 × 190 × 200 mm) del que la
-    // pared abdominal recorta la cara anterior (convexa, pegada a la pared), la cúpula la
-    // superior y el plano visceral la inferior: cuña con borde agudo. Craneocaudal
-    // resultante ≈ 145 mm en la línea medioclavicular; lóbulo izquierdo afilado hasta x ≈ +95.
-    // Hepatomegalia congestiva: los radios escalan con `sizeFactor` y el borde inferior
-    // (plano visceral) desciende en proporción (≈ 1 cm por cada 10 % de tamaño).
-    const f = patient.liver.sizeFactor;
-    this.liver = { kind: 'ellipsoid', center: [-70, -5, -18], radii: [85 * f, 95 * f, 100 * f], taperX: 0.12 };
-    this.liverLeft = { kind: 'ellipsoid', center: [0, 32, -25], radii: [95 * f, 36 * f, 55 * f], taperX: 0.5 };
-    this.visceralPlane = { zAtY0: -62 - 100 * (f - 1), slopeY: 0.35, edgeRoundMm: 12 };
+    // Hígado y vesícula: geometría en sus módulos de órgano (organs/liver, organs/gallbladder)
+    ({ liver: this.liver, liverLeft: this.liverLeft, visceralPlane: this.visceralPlane } = liverLobes(patient.liver.sizeFactor));
     this.umbilicalFissure = UMBILICAL_FISSURE;
     this.ligamentumVenosum = LIGAMENTUM_VENOSUM;
-    // Vesícula en pera en su fosa (cara visceral entre IV y V): fondo anteroinferolateral que
-    // asoma bajo el reborde hepático, cuello posterosuperomedial hacia el hilio (eje u apunta
-    // del fondo al cuello; afilamiento 0,45: fondo ≈ 16 mm de radio, cuello ≈ 6 mm).
-    const gbBasis = orthonormalBasis([0.56, -0.56, 0.61], [0, 1, 0]);
-    this.gallbladder = {
-      kind: 'oriented-ellipsoid',
-      center: [-58, 36, -62],
-      radii: [40, 11, 11],
-      u: gbBasis.u,
-      v: gbBasis.v,
-      w: gbBasis.w,
-      taperU: 0.45,
-    };
+    this.gallbladder = gallbladderBody();
     this.rightAtrium = { kind: 'sphere', center: [-15, 15, 95], r: 30 };
     // Riñones: eje largo con el polo superior medial y posterior; hilio anteromedial.
     const bR = orthonormalBasis([0.22, -0.18, 1], [1, 0.25, 0]);
@@ -240,8 +224,7 @@ export class AnatomyScene {
 
   /** Distancia con signo a la cara visceral (positiva dentro del hígado, por encima del plano). */
   visceralPlaneDistance(m: Vec3): number {
-    const vp = this.visceralPlane;
-    return (m[2] - vp.zAtY0 + vp.slopeY * m[1]) / Math.hypot(vp.slopeY, 1);
+    return visceralPlaneDistance(m, this.visceralPlane);
   }
 
   /**
@@ -263,18 +246,12 @@ export class AnatomyScene {
    * y fosa vesicular.
    */
   liverSdf(m: Vec3): number {
-    const dBase = this.liverBaseSdf(m);
-    return smoothMax(dBase, -this.umbilicalFissureSdf(m, dBase), this.umbilicalFissure.roundMm);
+    return liverSdf(m, this);
   }
 
   /** Hígado sin la fisura umbilical (lo que la fisura excava se clasifica como ligamento redondo). */
   liverBaseSdf(m: Vec3): number {
-    let d = smoothMin(sdEllipsoid(m, this.liver), sdEllipsoid(m, this.liverLeft), this.liverBlendMm);
-    d = smoothMax(d, -this.visceralPlaneDistance(m), this.visceralPlane.edgeRoundMm);
-    const kr = kidneyQuery(m, this.kidneyRight);
-    d = smoothMax(d, -(kr.dOuter - this.renalImpressionMm), 8);
-    d = smoothMax(d, -(sdOrientedEllipsoid(m, this.gallbladder) - this.gallbladderWallMm), 2);
-    return d;
+    return liverBaseSdf(m, this);
   }
 
   /**
@@ -337,7 +314,7 @@ export class AnatomyScene {
     if (dDome < 0) return { ...NONE, tissue: Tissue.Lung, boundaryDistance: -dDome, specular: 1.0 };
     if (dDome < DIAPHRAGM_THICKNESS_MM)
       return { ...NONE, tissue: Tissue.Diaphragm, boundaryDistance: Math.min(dDome, DIAPHRAGM_THICKNESS_MM - dDome), specular: 0.9 };
-    const dGb = sdOrientedEllipsoid(m, this.gallbladder);
+    const dGb = gallbladderSdf(m, this.gallbladder);
     if (dGb < 0) return { ...NONE, tissue: Tissue.Fluid, boundaryDistance: -dGb, specular: 0.4 };
     if (dGb < this.gallbladderWallMm)
       return { ...NONE, tissue: Tissue.BileDuctWall, boundaryDistance: Math.min(dGb, this.gallbladderWallMm - dGb), specular: 0.5 };

@@ -306,6 +306,17 @@ IT 0,35, C_h 0,5): VCI 29,5/26,0 mm, S 9,5 < D 13,5 (leve), PF 36 % (leve), rena
 emergente, con A = NaN. La FC del HUD es una media móvil (como un monitor) porque en FA el RR latido
 a latido salta.
 
+## 32. Pruebas de extremo a extremo en Chromium
+
+Ninguna prueba unitaria puede ver que el módulo arranca, que WebGL2 renderiza cuadros o que la UI
+está cableada: `ReferenceError: CASE_IDS is not defined` (un import olvidado durante un refactor)
+pasó todos los tests y solo se vio en el navegador. `e2e/smoke.spec.ts` (Playwright, sobre el build
+con `vite preview` en el puerto 6609) comprueba: arranque sin errores de consola ni `pageerror`,
+`t` avanza y hay fps > 0; cambio de caso reflejado en el HUD (incluida la FA); modo PW por teclado,
+pestaña Medir → suprahepática → Capturar → resultado con VSH; Docente con verdad fisiológica. En CI
+corre en un job aparte tras `check`, con Chromium + SwiftShader (WebGL2 por software, sin GPU). No
+entra en `npm run check` (2 min) pero sí en CI; `npm run e2e` en local.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

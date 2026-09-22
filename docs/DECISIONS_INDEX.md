@@ -35,3 +35,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [29](DECISIONS.md#L268) | Geometría del sector única, árbol vascular propio y `classify` por pasos | vigente |
 | [30](DECISIONS.md#L280) | Comprobación en vivo de la equivalencia TS ↔ GLSL | vigente |
 | [31](DECISIONS.md#L296) | Fibrilación auricular como ritmo y tercer caso | vigente |
+| [32](DECISIONS.md#L309) | Pruebas de extremo a extremo en Chromium | vigente |

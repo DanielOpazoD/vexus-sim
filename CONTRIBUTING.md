@@ -71,7 +71,9 @@ sus rangos; los nuevos valores van al informe de la decisión.
 
 - Rápidas por defecto (`npm test`). Una prueba cuya primera línea es `// @tier slow` sale de la
   suite rápida y entra en `test:slow` / `test:all`.
-- Sin WebGL ni DOM en los tests: todo lo físico se prueba en TypeScript puro.
+- Sin WebGL ni DOM en los tests unitarios: todo lo físico se prueba en TypeScript puro. Lo que solo
+  el navegador puede ver (arranque, render, cableado de la UI) va en `e2e/` (Playwright, `npm run
+e2e`; CI lo ejecuta tras `check`).
 - Los umbrales de una aserción se justifican en un comentario (qué observable, de dónde sale).
 
 ## Estilo

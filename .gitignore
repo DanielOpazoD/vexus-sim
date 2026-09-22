@@ -21,3 +21,5 @@ Thumbs.db
 # entorno local (nunca se versionan secretos)
 .env
 .env.*
+test-results/
+playwright-report/

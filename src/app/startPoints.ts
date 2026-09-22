@@ -10,6 +10,9 @@ export interface StartPoint {
   phi: number;
   z: number;
   yaw: number;
+  /** Basculación dentro del plano (talón-punta), + = haz hacia la cabeza. */
+  rock?: number;
+  /** Inclinación fuera del plano (abanicar). */
   tilt?: number;
   /** Color del anillo en el navegador 3D. */
   color: string;
@@ -21,11 +24,14 @@ export const START_POINTS: readonly StartPoint[] = [
     id: 'subxiphoid',
     color: '#7ce8a0',
     label: 'Subxifoideo',
-    phi: Math.PI / 2,
+    // Paramediana derecha (x ≈ −32 mm en la piel): la normal cutánea de la elipse
+    // converge hacia la línea media, así el plano sagital cruza la VCI (x −22) en
+    // profundidad. El haz se bascula hacia la cabeza (rock), no se abanica.
+    phi: Math.PI / 2 + 0.2,
     z: -20,
     yaw: 0,
-    tilt: 0.45,
-    hint: 'Bajo el xifoides, haz inclinado hacia la cabeza: VCI en eje largo y confluencia de suprahepáticas a 15–19 cm; rotar y abanicar hacia la derecha del paciente.',
+    rock: 0.45,
+    hint: 'Bajo el xifoides, paramediano derecho, haz basculado hacia la cabeza: VCI en eje largo hasta la aurícula derecha a 10–14 cm; abanicar suavemente hacia la derecha del paciente.',
   },
   {
     id: 'intercostal',
@@ -40,10 +46,13 @@ export const START_POINTS: readonly StartPoint[] = [
     id: 'flank',
     color: '#5cc8ff',
     label: 'Flanco · VCI',
-    phi: Math.PI * 1.02,
+    // Línea axilar media; el haz se abanica un poco hacia atrás (tilt −0,2) para
+    // que el plano coronal pase por la VCI (y −16) y no delante de ella.
+    phi: Math.PI * 1.04,
     z: -20,
     yaw: 0,
-    hint: 'VCI transhepática coronal: marcador craneal, abanicar medialmente.',
+    tilt: -0.2,
+    hint: 'VCI transhepática coronal por la línea axilar media: marcador craneal, abanicar hacia atrás hasta la VCI con las suprahepáticas desembocando en ella.',
   },
   {
     id: 'renal',

@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { EQUIPMENT_LIMITS, EquipmentController, maxPrfForDepth, normalizeEquipment, reduceEquipment, type EquipmentContext } from '../app/equipment';
+import {
+  EQUIPMENT_LIMITS,
+  EquipmentController,
+  maxPrfForDepth,
+  normalizeEquipment,
+  reduceEquipment,
+  type EquipmentContext,
+} from '../app/equipment';
 import { defaultEquipment } from '../app/simulator';
 import { C_RECONSTRUCTION_MM_S } from '../core/units';
 import { CONVEX_C35 } from '../probe/probe';

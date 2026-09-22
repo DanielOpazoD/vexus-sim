@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { kidneyLocal, kidneyQuery, kidneyWorld, smoothMax, smoothMin, tubeQuery, type Tube } from '../anatomy/primitives';
+import { kidneyLocal, kidneyQuery, kidneyWorld } from '../anatomy/organs/kidney';
+import { smoothMax, smoothMin, tubeQuery, type Tube } from '../anatomy/primitives';
 import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
 

@@ -185,7 +185,7 @@ en ángulos y longitudes; `anatomy.test.ts` fija puntos de cada estructura.
 
 ## 24. Riñones implícitos y datos de escena en textura
 
-Riñón como primitiva propia (`primitives.kidneyQuery`): elipsoide orientado (base u/v/w: eje largo
+Riñón como primitiva propia (`kidneyQuery`, hoy en el módulo `anatomy/organs/kidney.ts`): elipsoide orientado (base u/v/w: eje largo
 con el polo superior medial y posterior, hilio anteromedial), seno renal (elipsoide + canal del hilio),
 pirámides medulares en cuña (3 ángulos × 4 posiciones, papila hacia el seno) y columnas de Bertin
 entre ellas, grasa perirrenal de 3,5 mm. Tejidos nuevos: corteza (0,8 re hígado), médula (0,3), seno

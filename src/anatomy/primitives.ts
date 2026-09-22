@@ -344,133 +344,14 @@ export function smoothMax(a: number, b: number, k: number): number {
   return Math.max(a, b) + h * h * k * 0.25;
 }
 
-/**
- * Riñón implícito en un marco ortonormal propio: u = eje largo (hacia el polo
- * superior), v = hacia el hilio (medial), w = anterior. Elipsoide externo,
- * seno renal (elipsoide desplazado hacia el hilio + canal del hilio), pirámides
- * medulares en cuña alrededor del seno y columnas de Bertin entre ellas.
- * Dimensiones de un adulto (B.5): 110 × 55 × 45 mm, seno ≈ 60 × 22 mm
- * [EXTRAPOLACIÓN PROPIA para la disposición de las pirámides].
- */
-export interface Kidney {
-  kind: 'kidney';
-  center: Vec3;
-  radii: Vec3;
-  u: Vec3;
-  v: Vec3;
-  w: Vec3;
-  sinusRadii: Vec3;
-  /** Desplazamiento del seno hacia el hilio a lo largo de v (mm). */
-  sinusOffset: number;
-  hilumRadius: number;
-}
-
-export type KidneyRegion = 'cortex' | 'medulla' | 'sinus' | 'pelvis';
-
-export interface KidneyHit {
-  /** Distancia con signo al contorno externo (mm, negativa dentro). */
-  dOuter: number;
-  /** Distancia con signo al seno (negativa dentro del seno). */
-  dSinus: number;
-  region: KidneyRegion;
-  /** Distancia a la interfaz más cercana dentro del riñón (mm). */
-  inner: number;
-}
-
-/** Coordenadas locales (u, v, w) de un punto respecto al riñón. */
-export function kidneyLocal(p: Vec3, k: Kidney): Vec3 {
-  const d: Vec3 = [p[0] - k.center[0], p[1] - k.center[1], p[2] - k.center[2]];
-  return [
-    d[0] * k.u[0] + d[1] * k.u[1] + d[2] * k.u[2],
-    d[0] * k.v[0] + d[1] * k.v[1] + d[2] * k.v[2],
-    d[0] * k.w[0] + d[1] * k.w[1] + d[2] * k.w[2],
-  ];
-}
-
-/** Punto del mundo a partir de coordenadas locales del riñón. */
-export function kidneyWorld(q: Vec3, k: Kidney): Vec3 {
-  return [
-    k.center[0] + q[0] * k.u[0] + q[1] * k.v[0] + q[2] * k.w[0],
-    k.center[1] + q[0] * k.u[1] + q[1] * k.v[1] + q[2] * k.w[1],
-    k.center[2] + q[0] * k.u[2] + q[1] * k.v[2] + q[2] * k.w[2],
-  ];
-}
-
-function sdEllipsoidLocal(q: Vec3, r: Vec3): number {
+/** Distancia aproximada a un elipsoide centrado y alineado con los ejes (marco local). */
+export function sdEllipsoidLocal(q: Vec3, r: Vec3): number {
   const kx = q[0] / r[0];
   const ky = q[1] / r[1];
   const kz = q[2] / r[2];
   const k1 = Math.sqrt(kx * kx + ky * ky + kz * kz);
   const k2 = Math.sqrt((kx * kx) / (r[0] * r[0]) + (ky * ky) / (r[1] * r[1]) + (kz * kz) / (r[2] * r[2]));
   return k2 > 0 ? (k1 * (k1 - 1)) / k2 : -Math.min(r[0], r[1], r[2]);
-}
-
-/**
- * Pirámides medulares: (ángulo alrededor del eje largo, posición u a lo largo de él).
- * Fila lateral de 4 (θ = π) y filas anterior, posterior y oblicuas de 3: 16 pirámides
- * (un riñón adulto tiene 8–18); ninguna en el hilio (θ = 0). La misma tabla se
- * interpola en GLSL.
- */
-export const PYRAMIDS: ReadonlyArray<readonly [number, number]> = [
-  [Math.PI, -36],
-  [Math.PI, -12],
-  [Math.PI, 12],
-  [Math.PI, 36],
-  ...[Math.PI / 2, (3 * Math.PI) / 4, (5 * Math.PI) / 4, (3 * Math.PI) / 2].flatMap((th) => [
-    [th, -24] as const,
-    [th, 0] as const,
-    [th, 24] as const,
-  ]),
-];
-/** Columnas de Bertin del plano coronal lateral (entre las pirámides laterales): posiciones u. */
-export const BERTIN_COLUMNS_U = [-24, 0, 24] as const;
-/** Pelvis renal: elipsoide de orina en el seno, desplazado hacia el hilio (marco local del seno, mm). */
-export const RENAL_PELVIS = { offsetV: 3, radii: [9, 3.5, 2.5] as Vec3 };
-/** Cápsula renal fibrosa (mm), línea ecogénica en la superficie. */
-export const RENAL_CAPSULE_MM = 0.6;
-/** Escotadura hiliar: elipsoide restado en la cara medial (marco local, mm). */
-export const HILUM_NOTCH = { offsetV: 6, radii: [24, 16, 13] as Vec3, roundMm: 6 };
-
-/** Contorno externo del riñón: elipsoide con escotadura hiliar (forma de judía). */
-export function kidneyOuterSdf(q: Vec3, k: Kidney): number {
-  const ell = sdEllipsoidLocal(q, k.radii);
-  const notch = sdEllipsoidLocal([q[0], q[1] - (k.radii[1] + HILUM_NOTCH.offsetV), q[2]], HILUM_NOTCH.radii);
-  return smoothMax(ell, -notch, HILUM_NOTCH.roundMm);
-}
-
-export function kidneyQuery(p: Vec3, k: Kidney): KidneyHit {
-  const q = kidneyLocal(p, k);
-  const dOuter = kidneyOuterSdf(q, k);
-  const qs: Vec3 = [q[0], q[1] - k.sinusOffset, q[2]];
-  let dSinus = sdEllipsoidLocal(qs, k.sinusRadii);
-  // Canal del hilio: cápsula desde el centro del seno hacia la cara medial (+v)
-  const t = Math.min(Math.max(q[1] - k.sinusOffset, 0), k.radii[1]);
-  const dHilum = Math.hypot(q[0], q[1] - k.sinusOffset - t, q[2]) - k.hilumRadius;
-  dSinus = Math.min(dSinus, dHilum);
-  if (dSinus < 0) {
-    // Pelvis: hendidura anecoica de orina en el centro del seno, alargada en u
-    const dPelvis = sdEllipsoidLocal([qs[0], qs[1] - RENAL_PELVIS.offsetV, qs[2]], RENAL_PELVIS.radii);
-    if (dPelvis < 0) return { dOuter, dSinus, region: 'pelvis', inner: Math.min(-dPelvis, -dOuter) };
-    return { dOuter, dSinus, region: 'sinus', inner: Math.min(-dSinus, -dOuter, dPelvis) };
-  }
-  // Pirámides en cuña (papila hacia el seno, base hacia la corteza), separadas por
-  // columnas de Bertin de corteza: semiángulo 7°→14° y semilongitud 3,5→8 mm del vértice a la base
-  let medulla = false;
-  if (dSinus > 1.5 && dSinus < 12 && -dOuter > 5) {
-    const theta = Math.atan2(q[2], q[1]);
-    const halfAng = 0.12 + 0.012 * dSinus;
-    const halfU = 3.5 + 0.38 * dSinus;
-    for (const [th, u0] of PYRAMIDS) {
-      let dth = theta - th;
-      dth = Math.atan2(Math.sin(dth), Math.cos(dth));
-      if (Math.abs(dth) <= halfAng && Math.abs(q[0] - u0) < halfU) {
-        medulla = true;
-        break;
-      }
-    }
-  }
-  const inner = Math.min(-dOuter, dSinus);
-  return { dOuter, dSinus, region: medulla ? 'medulla' : 'cortex', inner };
 }
 
 /** Base ortonormal a partir de un eje largo y una dirección aproximada del hilio. */

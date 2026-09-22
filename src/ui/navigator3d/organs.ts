@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js';
-import { diaphragmHeight, kidneyLocal, kidneyOuterSdf, sdOrientedEllipsoid, torsoDepth, type Kidney } from '../../anatomy/primitives';
+import { kidneyLocal, kidneyOuterSdf, type Kidney } from '../../anatomy/organs/kidney';
+import { diaphragmHeight, sdOrientedEllipsoid, torsoDepth } from '../../anatomy/primitives';
 import { COUINAUD_LABEL, couinaudPlanes, couinaudSegment, type CouinaudSegment } from '../../anatomy/couinaud';
 import type { AnatomyScene } from '../../anatomy/scene';
 import { DIAPHRAGM_THICKNESS_MM } from '../../anatomy/tissues';

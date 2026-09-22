@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { HILUM_NOTCH, kidneyLocal } from '../anatomy/primitives';
+import { HILUM_NOTCH, kidneyLocal } from '../anatomy/organs/kidney';
 import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';

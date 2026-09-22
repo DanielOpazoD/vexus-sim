@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
 import { ORGAN_MODULES } from '../anatomy/organs';
+import { HILUM_NOTCH, PYRAMIDS, RENAL_CAPSULE_MM } from '../anatomy/organs/kidney';
 import { LUNG_CURTAIN, lungCurtainDistance } from '../anatomy/organs/lungCurtain';
 import { LIGAMENTUM_VENOSUM, ligamentumVenosumSdf, umbilicalFissureSdf, UMBILICAL_FISSURE } from '../anatomy/organs/liverLigaments';
 
@@ -10,7 +11,14 @@ describe('Módulos de órgano', () => {
     it(`${o.id}: cada función GLSL tiene su gemela TS exportada y el shader la incluye`, () => {
       const fns = [...o.glsl.matchAll(/^\s*(?:float|vec[234]|bool|int)\s+(\w+)\s*\(/gm)].map((m) => m[1]);
       expect(fns.length).toBeGreaterThan(0);
-      for (const f of fns) expect(typeof o.exports[f], `${o.id}: falta la gemela TS de ${f}`).toBe('function');
+      const gpuOnly = Object.keys(o.gpuOnly ?? {});
+      for (const f of fns.filter((f) => !gpuOnly.includes(f)))
+        expect(typeof o.exports[f], `${o.id}: falta la gemela TS de ${f}`).toBe('function');
+      // la lista de excepciones no se queda vieja: nombra funciones GLSL que existen y no tienen gemela
+      for (const f of gpuOnly) {
+        expect(fns, `${o.id}: gpuOnly nombra ${f}, que no está en el GLSL`).toContain(f);
+        expect(o.exports[f], `${o.id}: ${f} ya tiene gemela TS; sácala de gpuOnly`).toBeUndefined();
+      }
       expect(ANATOMY_GLSL).toContain(o.glsl);
     });
   }
@@ -20,6 +28,10 @@ describe('Módulos de órgano', () => {
     expect(lig).toContain(`FISSURE_ROUND_MM = ${UMBILICAL_FISSURE.roundMm.toFixed(3)}`);
     expect(lig).toContain(`LIG_VEN_HALF_MM = ${LIGAMENTUM_VENOSUM.halfMm.toFixed(3)}`);
     expect(ANATOMY_GLSL).toContain('FISSURE_ROUND_MM)');
+    const kid = ORGAN_MODULES.find((o) => o.id === 'kidney')!.glsl;
+    expect(kid).toContain(`#define N_PYR ${PYRAMIDS.length}`);
+    expect(kid).toContain(`NOTCH_ROUND = ${HILUM_NOTCH.roundMm.toFixed(1)}`);
+    expect(kid).toContain(`RENAL_CAPSULE_MM = ${RENAL_CAPSULE_MM.toFixed(2)}`);
   });
 
   it('las funciones TS del módulo se comportan como documentan', () => {

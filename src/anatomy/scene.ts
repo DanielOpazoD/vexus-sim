@@ -2,8 +2,6 @@ import { smoothstep, type Vec3 } from '../core/vec3';
 import type { PatientState } from '../physiology/patientState';
 import { VESSEL_META, type VesselAreas, type VesselId } from '../physiology/vessels';
 import {
-  RENAL_CAPSULE_MM,
-  kidneyQuery,
   orthonormalBasis,
   sdSpine,
   sdDiaphragm,
@@ -18,7 +16,6 @@ import {
   type Spine,
   type Diaphragm,
   type Ellipsoid,
-  type Kidney,
   type OrientedEllipsoid,
   type Rib,
   type Sphere,
@@ -26,6 +23,7 @@ import {
   type Tube,
   type TubeHit,
 } from './primitives';
+import { RENAL_CAPSULE_MM, kidneyQuery, type Kidney } from './organs/kidney';
 import { buildHepaticBranches, buildVesselTree, type DuctDef, type VesselDef } from './vesselTree';
 import {
   LIGAMENTUM_VENOSUM,

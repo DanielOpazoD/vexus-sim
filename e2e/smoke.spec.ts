@@ -32,10 +32,19 @@ test('arranca, renderiza cuadros y no emite errores', async ({ page }) => {
 
 test('cambia de caso y el HUD lo refleja', async ({ page }) => {
   const errors = await bootWithoutErrors(page);
+  // Si el HUD no cambia, el mensaje dice por qué: caso vivo, selector, avisos y errores de consola
+  // (en CI el paso a FA falló dos veces sin más pista que «esperaba FA»).
+  const hudOr = async (sel: string, text: string) => {
+    const hud = (await page.locator(sel).textContent()) ?? '';
+    if (hud.includes(text)) return 'ok';
+    const banner = await page.locator('.banner').allTextContents();
+    const value = await page.locator('#case-select').inputValue();
+    return `hud=${hud} · selector=${value} · avisos=${JSON.stringify(banner)} · errores=${JSON.stringify(errors)}`;
+  };
   await page.selectOption('#case-select', 'severe-congestion');
-  await expect(page.locator('#hud-tl')).toContainText('Congestión venosa grave');
+  await expect.poll(() => hudOr('#hud-tl', 'Congestión venosa grave'), { timeout: 30_000 }).toBe('ok');
   await page.selectOption('#case-select', 'af-moderate-congestion');
-  await expect(page.locator('#hud-tr')).toContainText('FA');
+  await expect.poll(() => hudOr('#hud-tr', 'FA'), { timeout: 30_000 }).toBe('ok');
   expect(errors).toEqual([]);
 });
 

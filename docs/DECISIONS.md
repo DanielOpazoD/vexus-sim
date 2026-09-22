@@ -330,6 +330,21 @@ sección elíptica de la cava, y se reconstruye al cambiar de caso. Hepatomegali
 inferior ≈ 1 cm por cada 10 %. Recalibrado (r_ref en el sitio de muestreo 5,6/4,5/4,2 mm): sano S 27,1 / D 18,7 / A −5,6 (grado 0); grave S −6,8 /
 D 23,7, PF 70 %, VCI 31,4 (grado 3); FA S<D, PF 36 % (grado 1).
 
+## 34. Árbol vascular hepático de 3.º–4.º orden y lista de tubos por cuadro
+
+El parénquima mostraba 2–3 vasos por sector donde un hígado real enseña decenas de ramas portales
+(con manguito ecogénico) y suprahepáticas finas. `buildHepaticBranches` (`anatomy/vesselTree.ts`)
+genera, con semilla fija, ~60 ramas desde los extremos y puntos medios de las ramas de 2.º orden:
+dos hijas por bifurcación a 30–45° alrededor de un eje aleatorio perpendicular, longitud 0,7× (22–40
+mm), radio 0,62× (mínimo 0,9 mm), una segunda bifurcación, y extremos acortados hasta quedar ≥ 3 mm
+dentro del hígado (`liverSdf`, que ya conoce riñón y vesícula): el árbol nunca sale del parénquima y
+sigue a la hepatomegalia. Cada rama hereda el `id` fisiológico de su madre (misma velocidad ×
+`flowFactor` 0,85ⁿ, en TS y GLSL) y su tejido de pared; `vesselById` y `vesselAreas` solo miran a
+las madres (sin esto, la última rama sustituía a la madre y disparaba las velocidades ×20). Con ~90
+tubos el bucle GLSL por muestra subía el cuadro de 13 a 23 ms: ahora la textura de escena lleva por
+cuadro solo los tubos cuya esfera envolvente corta la losa del plano (elevación ± 12 mm), 20–40 de
+~90, con el índice original en H2.w; cuadro de nuevo en 12–14 ms y equivalencia TS ↔ GLSL 100 %.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

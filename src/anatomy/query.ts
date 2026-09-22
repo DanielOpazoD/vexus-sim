@@ -72,7 +72,7 @@ export class AnatomyQuery {
       // afilado dispararía la velocidad periférica. Solo se aplica el perfil radial.
       const n = def.profileN;
       const rho = Math.min(1, c.vesselHit.rho);
-      const k = ((n + 2) / n) * (1 - Math.pow(rho, n));
+      const k = ((n + 2) / n) * (1 - Math.pow(rho, n)) * c.flowFactor;
       const t = c.vesselHit.tangent;
       flowBasis = [t[0] * k, t[1] * k, t[2] * k];
       bloodVelocity = [flowBasis[0] * uRef, flowBasis[1] * uRef, flowBasis[2] * uRef];

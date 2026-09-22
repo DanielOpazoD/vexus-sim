@@ -23,7 +23,7 @@ import {
   type Tube,
   type TubeHit,
 } from './primitives';
-import { buildVesselTree, type DuctDef, type VesselDef } from './vesselTree';
+import { buildHepaticBranches, buildVesselTree, type DuctDef, type VesselDef } from './vesselTree';
 
 export type { DuctDef, VesselDef } from './vesselTree';
 import { DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, Tissue } from './tissues';
@@ -54,6 +54,8 @@ export interface Classification {
   specular: number;
   vessel: VesselId | null;
   vesselHit: TubeHit | null;
+  /** Velocidad relativa a la del vaso `vessel` (ramas procedurales < 1). */
+  flowFactor: number;
 }
 
 /** Esfera envolvente de un tubo (para descartes rápidos en CPU y GPU). */
@@ -93,7 +95,7 @@ export class AnatomyScene {
   readonly renalImpressionMm = 4;
   /** Bolsas de gas intestinal (confusor; vacío en el avatar de referencia). */
   readonly gasPockets: Sphere[];
-  readonly vessels: VesselDef[];
+  vessels: VesselDef[];
   readonly ducts: DuctDef[];
   readonly vesselById: Map<VesselId, VesselDef>;
   /** Esferas envolventes de vasos y conductos, en el mismo orden que la GPU (vasos, luego conductos). */
@@ -154,7 +156,10 @@ export class AnatomyScene {
       });
     }
     ({ vessels: this.vessels, ducts: this.ducts } = buildVesselTree(this.kidneyRight, this.kidneyLeft));
-    this.vesselById = new Map(this.vessels.map((v) => [v.id, v]));
+    // Ramas de 3.º–4.º orden confinadas al hígado (el SDF ya conoce riñón y vesícula)
+    this.vessels = [...this.vessels, ...buildHepaticBranches(this.vessels, (m) => -this.liverInteriorMargin(m))];
+    // Solo los vasos «madre»: las ramas procedurales comparten id y no deben sustituirlos
+    this.vesselById = new Map(this.vessels.filter((v) => v.flowFactor === undefined).map((v) => [v.id, v]));
     this.tubeBounds = [
       ...this.vessels.map((v) => tubeBoundingSphere(v.tube, v.wallMm + 2)),
       ...this.ducts.map((d) => tubeBoundingSphere(d.tube, d.wallMm + 2)),
@@ -165,6 +170,15 @@ export class AnatomyScene {
   visceralPlaneDistance(m: Vec3): number {
     const vp = this.visceralPlane;
     return (m[2] - vp.zAtY0 + vp.slopeY * m[1]) / Math.hypot(vp.slopeY, 1);
+  }
+
+  /**
+   * Margen hacia dentro del parénquima hepático REAL (mm): mínimo entre la distancia al
+   * contorno del hígado, a la cara interna de la pared y a la lámina diafragmática.
+   * Positivo = dentro. Lo usa el árbol vascular procedural para no salir del hígado.
+   */
+  liverInteriorMargin(m: Vec3): number {
+    return Math.min(-this.liverSdf(m), -torsoDepth(m, this.torso) - this.wallThickness(), sdDome(m, this.dome) - DIAPHRAGM_THICKNESS_MM);
   }
 
   /**
@@ -185,6 +199,7 @@ export class AnatomyScene {
   vesselAreas(): VesselAreas {
     const out = {} as VesselAreas;
     for (const v of this.vessels) {
+      if (v.flowFactor !== undefined) continue; // las ramas procedurales no definen el área de su id
       const r = v.refRadius;
       out[v.id] = Math.PI * r * r * v.tube.apScale;
     }
@@ -306,8 +321,17 @@ export class AnatomyScene {
     if (!bestVessel) return null;
     const { def, hit } = bestVessel;
     const specular = def.wallTissue === Tissue.VesselWallPortal ? 0.7 : def.wallTissue === Tissue.ArteryWall ? 0.6 : 0.35;
+    const flowFactor = def.flowFactor ?? 1;
     if (hit.d < 0) {
-      return { tissue: Tissue.Blood, boundaryDistance: -hit.d, boundaryNormal: [0, 0, 0], specular, vessel: def.id, vesselHit: hit };
+      return {
+        tissue: Tissue.Blood,
+        boundaryDistance: -hit.d,
+        boundaryNormal: [0, 0, 0],
+        specular,
+        vessel: def.id,
+        vesselHit: hit,
+        flowFactor,
+      };
     }
     return {
       tissue: def.wallTissue,
@@ -316,6 +340,7 @@ export class AnatomyScene {
       specular,
       vessel: null,
       vesselHit: hit,
+      flowFactor,
     };
   }
 
@@ -355,6 +380,7 @@ const NONE: Classification = Object.freeze({
   specular: 0,
   vessel: null,
   vesselHit: null,
+  flowFactor: 1,
 });
 
 /** Escalas de calibre que la fisiología impone a la anatomía en un instante. */

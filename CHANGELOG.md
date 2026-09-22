@@ -5,6 +5,11 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+### Cambiado
+
+- Pestaña «Adquirir» con los mandos básicos de imagen (profundidad, ganancia, foco; una sola fuente con la pestaña «Imagen»); profundidad por defecto 18 cm.
+- Costillas con oblicuidad creciente hacia abajo (`ribTiltMm`: 60 mm la 5.ª, 90 mm la 10.ª), misma ley en el SDF y en el 3D; antes se veían casi horizontales.
+
 ## [0.4.0] — 2026-09-22 — fidelidad anatómica y ecográfica (evaluación experta, decisiones 33–40)
 
 ### Añadido

@@ -71,6 +71,11 @@ export function tubeBoundingSphere(t: Tube, marginMm: number): { center: Vec3; r
   return { center: c, r: r + marginMm };
 }
 
+/** Ascenso posterior del arco costal (mm) según el número de costilla: 60 mm la 5.ª, +6 mm por costilla. */
+export function ribTiltMm(ribNo: number): number {
+  return 60 + 6 * (ribNo - 5);
+}
+
 export class AnatomyScene {
   readonly torso: Torso;
   readonly ribs: Rib[];
@@ -163,12 +168,15 @@ export class AnatomyScene {
     };
     this.gasPockets = [];
     this.ribs = [];
-    // Costillas derechas 5–10: el 7.º cartílago llega al esternón a la altura del xifoides (z 0)
+    // Costillas derechas 5–10: el 7.º cartílago llega al esternón a la altura del xifoides (z 0).
+    // Oblicuidad creciente hacia abajo: la cabeza de la 5.ª está en T5 (≈ 6 cm sobre su
+    // extremo anterior) y la de la 10.ª en T10, a la altura del xifoides (≈ 9 cm sobre el
+    // reborde) — `ribTiltMm`, la misma ley que dibuja el navegador 3D.
     const anterior = [40, 20, 0, -25, -50, -75];
     for (let i = 0; i < anterior.length; i++) {
       this.ribs.push({
         zAnterior: anterior[i],
-        tilt: 60,
+        tilt: ribTiltMm(5 + i),
         halfWidth: 6,
         halfThickness: 3.2,
         scale: 0.85,

@@ -48,7 +48,8 @@ export interface ColorSettings {
 }
 
 export const DEFAULT_BMODE: BModeSettings = {
-  depthMm: 160,
+  depthMm: 180, // abdomen adulto: VCI y confluencia de suprahepáticas a 12–16 cm
+
   focusMm: 90,
   gainDb: 0,
   tgcDb: [0, 0, 0, 0, 0, 0, 0, 0],

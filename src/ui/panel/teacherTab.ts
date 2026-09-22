@@ -1,4 +1,5 @@
 import type { EquivalenceReport } from '../../app/equivalenceCheck';
+import { FRAME_PASSES } from '../../ultrasound/passGraph';
 import { errorLog, errorMessage } from '../../app/errorLog';
 import { TISSUES } from '../../anatomy/tissues';
 import { classifyVexusC } from '../../vexus/classification';
@@ -76,6 +77,15 @@ export class TeacherTab {
         (eq.worst.length ? ` · peor: ${eq.worst.map((w) => `${TISSUES[w.cpu].name}→${TISSUES[w.gpu].name} ${w.count}`).join(', ')}` : '') +
         '\n'
       : '';
+    const gpu = sim.renderer.gpuTimings();
+    const perPass = gpu?.perPass;
+    const gpuTxt = !gpu
+      ? 'GPU: el navegador no expone temporizadores (o aún no hay medidas)\n'
+      : perPass
+        ? `GPU ${gpu.frameMs.toFixed(1)} ms/cuadro: ${FRAME_PASSES.filter((p) => perPass[p.id] !== undefined)
+            .map((p) => `${p.label} ${perPass[p.id]!.toFixed(2)}`)
+            .join(' · ')}\n`
+        : `GPU ≈ ${gpu.frameMs.toFixed(1)} ms/cuadro (este navegador no separa las pasadas)\n`;
     const errs = errorLog.recent(5);
     const errTxt = errs.length
       ? `ERRORES (${errorLog.size})\n` +
@@ -85,6 +95,7 @@ export class TeacherTab {
     this.debugEl.textContent =
       errTxt +
       eqTxt +
+      gpuTxt +
       `t ${t.toFixed(2)} s · latido ${s.beatIndex} · fase ${s.cardiacPhase.toFixed(2)} · resp ${s.resp.volume.toFixed(2)}\n` +
       `P_AD ${s.pRa.toFixed(1)} · P_VCI ${s.pIvc.toFixed(1)} (Ptm ${s.pIvcTransmural.toFixed(1)}) · P_hep ${s.pHepatic.toFixed(1)} · P_abd ${s.pAbd.toFixed(1)} mmHg\n` +
       `Q_hv ${s.qHepaticVein.toFixed(1)} · Q_pv ${s.qPortal.toFixed(1)} · Q_ha ${s.qHepaticArtery.toFixed(1)} mL/s · VCI AP/lat ${s.ivc.dApMm.toFixed(1)}/${s.ivc.dLatMm.toFixed(1)} mm\n` +

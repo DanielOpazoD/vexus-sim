@@ -15,6 +15,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Cambiado
 
+- Fase 2: el renderer recorre una tabla declarativa de pasadas (`ultrasound/passGraph.ts`) validada como grafo; tiempo de GPU del cuadro, y por pasada donde el navegador lo separa, en la pestaña Docente y en el diagnóstico (47).
+
 - Fase 2: hígado y vesícula pasan a módulos de órgano (`organs/liver.ts`, `organs/gallbladder.ts`): geometría, SDF TS y gemelo GLSL juntos (`liverSdf`, `visceralPlaneDistance`, `gallbladderSdf`); los redondeos de la impresión renal (8 mm) y de la fosa vesicular (2 mm) dejan de ser literales repetidos. La escena delega y conserva sus campos.
 - Fase 2: el riñón pasa a módulo de órgano (`anatomy/organs/kidney.ts`): consulta TS y gemelo GLSL con el mismo nombre (`kidneyLocal`, `kidneyOuterSdf`, `kidneyQuery`), tablas del shader generadas; las funciones solo-GPU se declaran con su motivo (`gpuOnly`).
 - Cambio de caso sin recompilar shaders: el `UltrasoundRenderer` pasa al simulador nuevo con `setScene` (descarta uniforms en caché, persistencia, color y mapa de tejidos del paciente anterior); la escena se cambia al final de la construcción y se restaura si algo falla. Parte síncrona del cambio 1 750 → 178 ms con SwiftShader; cada cambio completo en la e2e 8,5 → 4,8 s.

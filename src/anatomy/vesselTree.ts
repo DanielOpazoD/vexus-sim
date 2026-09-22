@@ -1,7 +1,8 @@
 import { SeededRandom } from '../core/random';
 import { add, cross, dist, normalize, rotateAxis, scale, sub, type Vec3 } from '../core/vec3';
 import type { VesselId } from '../physiology/vessels';
-import { BERTIN_COLUMNS_U, kidneyWorld, type Kidney, type Tube } from './primitives';
+import { BERTIN_COLUMNS_U, kidneyWorld, type Kidney } from './organs/kidney';
+import type { Tube } from './primitives';
 import { Tissue } from './tissues';
 
 export interface VesselDef {

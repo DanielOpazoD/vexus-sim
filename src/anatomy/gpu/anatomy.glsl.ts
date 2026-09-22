@@ -14,7 +14,6 @@
  *     H3 = esfera envolvente (cx, cy, cz, R)
  *   nodos desde NODE_BASE = MAX_TUBES·4: (x, y, z, r)
  */
-import { HILUM_NOTCH, PYRAMIDS, RENAL_CAPSULE_MM, RENAL_PELVIS } from '../primitives';
 import { DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, TISSUE_GLSL_NAME } from '../tissues';
 import { ORGAN_MODULES } from '../organs';
 import { MAX_GAS, MAX_RIBS, SCENE_UNIFORMS_GLSL } from './sceneUniforms';
@@ -27,10 +26,6 @@ export const SCENE_TEX_W = 256;
 export const MAX_TUBE_SEGMENTS = 8;
 export const SCENE_TEX_H = Math.ceil((NODE_BASE + MAX_NODES) / SCENE_TEX_W);
 export { MAX_GAS, MAX_RIBS } from './sceneUniforms';
-
-const PYRAMID_TABLE = `const vec2 PYR[${PYRAMIDS.length}] = vec2[${PYRAMIDS.length}](${PYRAMIDS.map(([t, u]) => `vec2(${t.toFixed(6)}, ${u.toFixed(1)})`).join(', ')});`;
-const PELVIS = `const vec4 PELVIS = vec4(${RENAL_PELVIS.radii[0].toFixed(1)}, ${RENAL_PELVIS.radii[1].toFixed(1)}, ${RENAL_PELVIS.radii[2].toFixed(1)}, ${RENAL_PELVIS.offsetV.toFixed(1)}); const float RENAL_CAPSULE_MM = ${RENAL_CAPSULE_MM.toFixed(2)};`;
-const NOTCH = `const vec4 NOTCH = vec4(${HILUM_NOTCH.radii[0].toFixed(1)}, ${HILUM_NOTCH.radii[1].toFixed(1)}, ${HILUM_NOTCH.radii[2].toFixed(1)}, ${HILUM_NOTCH.offsetV.toFixed(1)}); const float NOTCH_ROUND = ${HILUM_NOTCH.roundMm.toFixed(1)};`;
 
 const TISSUE_DEFINES = Object.entries(TISSUE_GLSL_NAME)
   .map(([index, name]) => `#define ${name} ${index}`)
@@ -46,7 +41,6 @@ export const ANATOMY_GLSL = /* glsl */ `
 #define MAX_RIBS ${MAX_RIBS}
 ${TISSUE_DEFINES}
 #define DIAPHRAGM_MM ${DIAPHRAGM_THICKNESS_MM.toFixed(3)}
-#define N_PYR ${PYRAMIDS.length}
 #define CAPSULE_MM ${LIVER_CAPSULE_MM.toFixed(3)}
 
 ${SCENE_UNIFORMS_GLSL}
@@ -202,62 +196,6 @@ float sdRib(vec3 p, vec4 rib, out bool cartilage, out vec3 n) {
   return q * min(rib.w, rib.z);
 }
 
-// --- Riñón (misma construcción que primitives.kidneyQuery) --------------------
-vec3 kidneyLocal(vec3 p, int k) {
-  vec3 d = p - uKidC[k];
-  return vec3(dot(d, uKidU[k]), dot(d, uKidV[k]), dot(d, uKidW[k]));
-}
-
-// Distancia externa del riñón k y normal en el mundo
-${PYRAMID_TABLE}
-${PELVIS}
-${NOTCH}
-
-// Contorno externo: elipsoide con escotadura hiliar (forma de judía; primitives.kidneyOuterSdf)
-float kidneyOuterLocal(vec3 q, vec3 r) {
-  float ell = sdEllipsoidLocal(q, r);
-  float notch = sdEllipsoidLocal(vec3(q.x, q.y - (r.y + NOTCH.w), q.z), NOTCH.xyz);
-  return smoothMax(ell, -notch, NOTCH_ROUND);
-}
-
-float kidneyOuter(vec3 p, int k, out vec3 n) {
-  vec3 q = kidneyLocal(p, k);
-  vec3 r = uKidR[k];
-  vec3 nl = normalize(q / (r * r) + vec3(1e-6));
-  n = normalize(uKidU[k] * nl.x + uKidV[k] * nl.y + uKidW[k] * nl.z);
-  return kidneyOuterLocal(q, r);
-}
-
-// Región interna: 0 corteza, 1 médula, 2 seno, 3 pelvis; devuelve la distancia interna mínima
-int kidneyRegion(vec3 p, int k, out float inner, out float dOuter) {
-  vec3 q = kidneyLocal(p, k);
-  dOuter = kidneyOuterLocal(q, uKidR[k]);
-  vec4 sn = uKidSinus[k];
-  vec3 qs = vec3(q.x, q.y - sn.w, q.z);
-  float dSinus = sdEllipsoidLocal(qs, sn.xyz);
-  float t = clamp(q.y - sn.w, 0.0, uKidR[k].y);
-  float dHilum = length(vec3(q.x, q.y - sn.w - t, q.z)) - uKidExtra.x;
-  dSinus = min(dSinus, dHilum);
-  if (dSinus < 0.0) {
-    float dPelvis = sdEllipsoidLocal(vec3(qs.x, qs.y - PELVIS.w, qs.z), PELVIS.xyz);
-    if (dPelvis < 0.0) { inner = min(-dPelvis, -dOuter); return 3; }
-    inner = min(min(-dSinus, -dOuter), dPelvis); return 2;
-  }
-  bool medulla = false;
-  if (dSinus > 1.5 && dSinus < 12.0 && -dOuter > 5.0) {
-    float theta = atan(q.z, q.y);
-    float halfAng = 0.12 + 0.012 * dSinus;
-    float halfU = 3.5 + 0.38 * dSinus;
-    for (int i = 0; i < N_PYR; i++) {
-      float dth = theta - PYR[i].x;
-      dth = atan(sin(dth), cos(dth));
-      if (abs(dth) <= halfAng && abs(q.x - PYR[i].y) < halfU) { medulla = true; break; }
-    }
-  }
-  inner = min(-dOuter, dSinus);
-  return medulla ? 1 : 0;
-}
-
 // Consulta de tubo: distancia con signo, rho, tangente, radio local, normal.
 float tubeQuery(vec3 p, int t, out float rho, out vec3 tangent, out float rLoc, out vec3 n) {
   vec4 h0 = sceneTexel(t * 4);
@@ -304,30 +242,6 @@ float tubeQuery(vec3 p, int t, out float rho, out vec3 tangent, out float rLoc, 
 
 // Módulos de órgano (anatomy/organs/*): gemelos GLSL de sus funciones TS
 ${ORGAN_MODULES.map((o) => o.glsl).join('\n')}
-
-// Hígado con la fisura umbilical; dBase = sin fisura (lo excavado es ligamento redondo).
-float liverSdf(vec3 m, out vec3 n, out float dBase) {
-  vec3 ln; vec3 ln2;
-  float dR = sdEllipsoid(m, uLiverC, uLiverR, uLiverTaper, ln);
-  float dL = sdEllipsoid(m, uLiverLC, uLiverLR, uLiverLTaper, ln2);
-  float d = smoothMin(dR, dL, uLiverBlend);
-  n = dL < dR ? ln2 : ln;
-  float plane = (m.z - uVisceral.x + uVisceral.y * m.y) / length(vec2(uVisceral.y, 1.0));
-  float d2 = smoothMax(d, -plane, uVisceral.z);
-  if (d2 > d + 1e-3) n = normalize(vec3(0.0, -uVisceral.y, -1.0));
-  vec3 kn;
-  float dk = kidneyOuter(m, 0, kn) - uVisceral.w;
-  float d3 = smoothMax(d2, -dk, 8.0);
-  if (d3 > d2 + 1e-3) n = -kn;
-  vec3 gn;
-  float dg = sdOrientedEllipsoid(m, uGbC, uGbR, uGbU, uGbV, uGbW, uGbExtra.x, gn) - uGbExtra.y;
-  float d4 = smoothMax(d3, -dg, 2.0);
-  if (d4 > d3 + 1e-3) n = -gn;
-  dBase = d4;
-  float d5 = smoothMax(d4, -umbilicalFissureSdf(m, d4), FISSURE_ROUND_MM);
-  if (d5 > d4 + 1e-3 && abs(m.x - uFissure.x) > uFissure.y - 1.0) n = vec3(sign(m.x - uFissure.x), 0.0, 0.0);
-  return d5;
-}
 
 Cls classify(vec3 m) {
   Cls c;
@@ -405,14 +319,14 @@ Cls classify(vec3 m) {
   if (dDome < 0.0) { c.tissue = T_LUNG; c.bd = -dDome; c.n = dn; c.spec = 1.0; return c; }
   if (dDome < DIAPHRAGM_MM) { c.tissue = T_DIAPHRAGM; c.bd = min(dDome, DIAPHRAGM_MM - dDome); c.n = dn; c.spec = 0.9; return c; }
   vec3 gn;
-  float dGb = sdOrientedEllipsoid(m, uGbC, uGbR, uGbU, uGbV, uGbW, uGbExtra.x, gn);
+  float dGb = gallbladderSdf(m, gn);
   if (dGb < 0.0) { c.tissue = T_FLUID; c.bd = -dGb; c.n = gn; c.spec = 0.4; return c; }
   if (dGb < uGbExtra.y) { c.tissue = T_BILEWALL; c.bd = min(dGb, uGbExtra.y - dGb); c.n = gn; c.spec = 0.5; return c; }
   // Riñones
   for (int k = 0; k < 2; k++) {
     if (distance(m, uKidC[k]) > uKidR[k].x + uKidExtra.y + 2.0) continue;
     float inner; float dOuter;
-    int region = kidneyRegion(m, k, inner, dOuter);
+    int region = kidneyQuery(m, k, inner, dOuter);
     vec3 kn;
     kidneyOuter(m, k, kn);
     if (dOuter < 0.0) {

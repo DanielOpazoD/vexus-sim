@@ -6,7 +6,7 @@ import { NORMAL_ADULT } from '../cases';
 import { SimulationClock } from '../core/clock';
 import { PhysiologyEngine } from '../physiology/engine';
 import { CONVEX_C35, lineCoupling, lineDirection, pointOnLine, probeFrame, skinSoftness, type ProbePose } from '../probe/probe';
-import { kidneyQuery, kidneyWorld } from '../anatomy/primitives';
+import { kidneyQuery, kidneyWorld } from '../anatomy/organs/kidney';
 import { renalPatternFromPeaks } from '../vexus/classification';
 
 describe('Anatomía implícita (base B)', () => {

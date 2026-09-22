@@ -91,7 +91,8 @@ par CPU→GPU sistemático es una divergencia real.
 ## Extensión prevista
 
 - **Riñón izquierdo con interlobares / cálices**: mismos `VesselId` + tubos en `scene.ducts`/`vessels`;
-  el riñón es una primitiva (`primitives.kidneyQuery`) que admite más pirámides o cálices.
+  el riñón es un módulo de órgano (`anatomy/organs/kidney.ts`, TS y GLSL juntos) que admite más
+  pirámides o cálices.
 - **Arritmias**: la FA ya existe (`Rhythm = 'atrial-fibrillation'`, decisión 31); extrasístoles y
   bloqueos entran por `RhythmGenerator.makeBeat/nextRR` (latido prematuro con pausa, P sin QRS).
 - **Nuevos casos**: solo `PatientState`; el resto emerge.

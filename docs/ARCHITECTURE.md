@@ -36,7 +36,9 @@ Rejilla de tres columnas (decisión 16): `src/ui/navigator3d.ts` (three.js, proc
 hígado por marching cubes sobre el mismo SDF, grupo espejo por el marco levógiro — decisión 22),
 `src/ui/cutMapView.ts` + `src/ui/cutMapWorker.ts` (mapa de tejidos del plano calculado en un Worker
 con `AnatomyQuery`, decisión 25), `src/ui/displays.ts` (overlay, ECG, espectrograma),
-`src/ui/panel.ts` (consola por pestañas), `src/ui/probeInput.ts` (gestos y teclado sobre la imagen),
+`src/ui/panel.ts` (compone la consola; cada pestaña vive en `src/ui/panel/*` sobre la interfaz
+`PanelContext`), `src/ui/navigator3d/*` (constructores de geometría puros: cuerpo, órganos, tubos,
+rótulos, sonda), `src/ui/probeInput.ts` (gestos y teclado sobre la imagen),
 `src/app/store.ts` (estado de UI). Toda vista lee del `Simulator`; ninguna escribe en él salvo la
 pose de la sonda y los ajustes del equipo.
 

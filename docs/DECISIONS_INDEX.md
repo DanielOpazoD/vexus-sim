@@ -31,3 +31,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [25](DECISIONS.md#L203) | Corte ecográfico en un Worker con la anatomía TypeScript | vigente |
 | [26](DECISIONS.md#L213) | Componente renal del VExUS emergente | vigente |
 | [27](DECISIONS.md#L230) | Repositorio, CI y saneamiento tras revisión adversarial | vigente |
+| [28](DECISIONS.md#L255) | Consola y navegador 3D por módulos | vigente |

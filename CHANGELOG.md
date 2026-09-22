@@ -14,6 +14,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Cambiado
 
+- Consola por pestañas en `src/ui/panel/*` y geometría del navegador 3D en `src/ui/navigator3d/*` (28).
 - Prettier, reglas de lint adicionales, CI, plantillas; helpers compartidos (`core/series.ts`,
   Nyquist en `core/units.ts`, constantes TS ↔ GLSL, puntos de partida, límites del equipo) (27).
 - `main.ts` cede animación de sonda y atajos a módulos propios; ganchos de depuración solo en desarrollo (27).

@@ -1,0 +1,97 @@
+import { EQUIPMENT_LIMITS } from '../../app/simulator';
+import { help, slider } from '../controls';
+import type { PanelContext } from './context';
+
+/** Pestaña Imagen: profundidad, ganancia, foco, rango dinámico, persistencia y TGC de 8 bandas. */
+export function buildImageTab(ctx: PanelContext, p: HTMLElement): void {
+  const s = ctx.sim;
+  const sec = ctx.section(p, 'Imagen 2D');
+  const ch = () => undefined;
+  ctx.track(
+    slider(
+      sec,
+      {
+        label: 'Profundidad',
+        ...EQUIPMENT_LIMITS.depthMm,
+        get: () => s().bmode.depthMm,
+        set: (v) => (s().bmode.depthMm = v),
+        format: (v) => `${(v / 10).toFixed(0)} cm`,
+      },
+      ch,
+    ),
+  );
+  ctx.track(
+    slider(
+      sec,
+      {
+        label: 'Ganancia',
+        ...EQUIPMENT_LIMITS.gainDb,
+        get: () => s().bmode.gainDb,
+        set: (v) => (s().bmode.gainDb = v),
+        format: (v) => `${v} dB`,
+      },
+      ch,
+    ),
+  );
+  ctx.track(
+    slider(
+      sec,
+      {
+        label: 'Foco',
+        min: 20,
+        max: 200,
+        step: 5,
+        get: () => s().bmode.focusMm,
+        set: (v) => (s().bmode.focusMm = v),
+        format: (v) => `${(v / 10).toFixed(1)} cm`,
+      },
+      ch,
+    ),
+  );
+  ctx.track(
+    slider(
+      sec,
+      {
+        label: 'Rango dinámico',
+        min: 40,
+        max: 80,
+        step: 2,
+        get: () => s().bmode.dynamicRangeDb,
+        set: (v) => (s().bmode.dynamicRangeDb = v),
+        format: (v) => `${v} dB`,
+      },
+      ch,
+    ),
+  );
+  ctx.track(
+    slider(
+      sec,
+      {
+        label: 'Persistencia',
+        min: 0,
+        max: 0.8,
+        step: 0.05,
+        get: () => s().bmode.persistence,
+        set: (v) => (s().bmode.persistence = v),
+        format: (v) => v.toFixed(2),
+      },
+      ch,
+    ),
+  );
+  const tgcSec = ctx.section(p, 'TGC');
+  const bank = document.createElement('div');
+  bank.className = 'tgc';
+  for (let i = 0; i < 8; i++) {
+    const inp = document.createElement('input');
+    inp.type = 'range';
+    inp.min = '-15';
+    inp.max = '15';
+    inp.step = '1';
+    inp.title = `TGC banda ${i + 1} (${i < 4 ? 'superficial' : 'profunda'})`;
+    inp.addEventListener('input', () => (s().bmode.tgcDb[i] = Number(inp.value)));
+    bank.appendChild(inp);
+    ctx.track({ sync: () => (inp.value = String(s().bmode.tgcDb[i])) });
+  }
+  tgcSec.appendChild(bank);
+  help(tgcSec, 'Superficial → profundo. Amplifica ecos y ruido por igual; no recupera lo que la atenuación extinguió.');
+}

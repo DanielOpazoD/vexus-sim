@@ -5,58 +5,39 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
-### Añadido
-
-- Fase 3: guarda de fidelidad de imagen — la e2e mide la SNR de la envolvente en parénquima hepático (parches 16 × 8 lejos de interfaces) y exige la de Rayleigh (1,6–2,25); detectar intensidad o sumar magnitudes antes del haz la hacen fallar (1,11 y 6,18).
-
-### Corregido
-
-- El intestino (el «resto» de la clasificación) devolvía una distancia a la frontera fija de 5 mm en TS y GLSL: el gate volumétrico daba por interior un punto pegado al diafragma que float32 clasificaba al otro lado (flaky en CI, 1 de 44 826). Ahora es la distancia a las interfaces que ganan antes (diafragma, vesícula, aurícula, hígado, pared, grasa perirrenal, gas).
-
-### Cambiado
-
-- Fase 2: el renderer recorre una tabla declarativa de pasadas (`ultrasound/passGraph.ts`) validada como grafo; tiempo de GPU del cuadro, y por pasada donde el navegador lo separa, en la pestaña Docente y en el diagnóstico (47).
-
-- Fase 2: hígado y vesícula pasan a módulos de órgano (`organs/liver.ts`, `organs/gallbladder.ts`): geometría, SDF TS y gemelo GLSL juntos (`liverSdf`, `visceralPlaneDistance`, `gallbladderSdf`); los redondeos de la impresión renal (8 mm) y de la fosa vesicular (2 mm) dejan de ser literales repetidos. La escena delega y conserva sus campos.
-- Fase 2: el riñón pasa a módulo de órgano (`anatomy/organs/kidney.ts`): consulta TS y gemelo GLSL con el mismo nombre (`kidneyLocal`, `kidneyOuterSdf`, `kidneyQuery`), tablas del shader generadas; las funciones solo-GPU se declaran con su motivo (`gpuOnly`).
-- El navegador 3D ya no recompila los programas de three.js al cambiar de caso (5 de 10 se borraban al liberar los materiales viejos antes del primer render con los nuevos): los grupos anteriores se liberan tras ese render. Cambio de caso con SwiftShader 1,6–1,8 s → 0,13–0,41 s; era la causa del flaky «cambia de caso y el HUD lo refleja» en CI.
-- Cambio de caso sin recompilar shaders: el `UltrasoundRenderer` pasa al simulador nuevo con `setScene` (descarta uniforms en caché, persistencia, color y mapa de tejidos del paciente anterior); la escena se cambia al final de la construcción y se restaura si algo falla. Parte síncrona del cambio 1 750 → 178 ms con SwiftShader; cada cambio completo en la e2e 8,5 → 4,8 s.
-
-- Fase 2, paso 2: la anatomía es dueña de su gemelo GPU (`anatomy/gpu/`); módulos de órgano con gemelos TS/GLSL del mismo nombre y constantes generadas (`anatomy/organs/`: ligamentos hepáticos y cortina pulmonar); equivalencia volumétrica exacta en 50 000 puntos por caso en la e2e (46).
-- Fase 2, paso 1: esquema único de uniforms de la anatomía (`sceneUniforms.ts`): de él salen las declaraciones GLSL y la subida desde el renderer, evaluada una vez por instante (45).
-
-- Carga inicial 760 → 179 kB de JS: el navegador 3D (con three.js) y los ganchos de prueba se cargan con `import()` dinámico después del primer cuadro.
-- Fase 1: `TransducerProfile` reúne geometría, haz, frecuencias efectivas y densidad de líneas de color (antes en cinco sitios, con dos constantes 2,5 MHz sueltas); renderer y simulador reciben el perfil.
-- Fase 1: `main.ts` pasa a raíz de composición (450 → 319 líneas): `SimulationSession` (simulador vivo, equipo y cambio de caso transaccional), `ui/controllers/*` (HUD como función pura, clic en la imagen, pérdida de GPU, avisos, menú de capas) y `ErrorBudget`; el HUD rotula la frecuencia real del transductor.
-- Fase 1: estado del ecógrafo inmutable (`EquipmentController`) que solo cambia por comandos y siempre cumple las invariantes físicas: al reducir la profundidad la puerta PW, la caja de color y el foco se quedan dentro de la imagen; la PRF no supera c/2d; la caja y la puerta no salen del sector. Paneles, teclado, clic y ganchos de prueba despachan comandos; el `Simulator` expone ajustes de solo lectura.
-- Fase 1 (modelo de dominio), PR 1: `VESSEL_META` (sistema, tipo y ley de calibre) sustituye a los `startsWith('ivc')` de anatomía, renderer, corte, navegador 3D y volumen de muestra; registro de casos de una sola fuente (`CaseId` = claves del registro); la cadena PW recibe un `AudioSink` y el Doppler deja de depender del audio; matriz completa de dependencias entre capas (incluye imports dinámicos).
+## [0.5.0] — 2026-09-22 — bases estructurales (plan de fases 0–3 tras la evaluación 3,8/7; decisiones 41–47)
 
 ### Añadido
 
-- Documentación para incorporar a un equipo: `CLAUDE.md` (invariantes que se rompen fácil), `docs/GLOSSARY.md`, `docs/TESTING.md`, plantilla de decisión en `CONTRIBUTING.md`; afirmaciones obsoletas corregidas (CI, cadencia del color, pirámides, e2e de la decisión 32) y el «Estado» del README atado a la versión. ESLint con reglas tipadas, `@types/three` alineado con three, Dependabot semanal agrupado y hook de pre-push.
-
+- Producto (Fase 3): versión y commit visibles en la barra y en el diagnóstico exportable (versión, navegador, GPU, caso, equipo, fps, tiempo de GPU y últimos errores, sin datos del usuario); release por tag (`.github/workflows/release.yml`) con las notas de esta sección; e2e en paralelo y con la duración de cada prueba en el log de CI.
+- Guarda de fidelidad de imagen: la e2e mide la SNR de la envolvente en parénquima hepático (parches 16 × 8 lejos de interfaces) y exige la de Rayleigh (1,6–2,25); detectar intensidad o sumar magnitudes antes del haz la hacen fallar (1,11 y 6,18).
+- Grafo de pasadas del renderer (`ultrasound/passGraph.ts`), validado como grafo (orden, escritor único, sin pasadas muertas); tiempo de GPU del cuadro, y por pasada donde el navegador lo separa (en WebKit/Metal cada consulta devuelve el cuadro entero y no se publica por pasada), en la pestaña Docente y en el diagnóstico (47).
+- Documentación para incorporar a un equipo: `CLAUDE.md` (invariantes que se rompen fácil), `docs/GLOSSARY.md`, `docs/TESTING.md`, plantilla de decisión en `CONTRIBUTING.md`; afirmaciones obsoletas corregidas y el «Estado» del README atado a la versión. ESLint con reglas tipadas, Dependabot semanal (versiones mayores por separado) y hook de pre-push.
 - Cortina pulmonar con líneas A (signo de la cortina) que baja con la inspiración; cápsula y pelvis renales; pirámides discretas con columnas de Bertin (43).
-
 - Segmentos de Couinaud derivados de los planos de las suprahepáticas, la fisura umbilical y el plano portal; hígado 3D translúcido coloreado por segmento con rótulos I–VIII; lámina del ligamento venoso (`LigamentumVenosum`) en el modelo acústico y en el corte (42).
 
 ### Cambiado
 
+- Anatomía de una sola fuente (Fase 2): esquema único de uniforms (`anatomy/gpu/sceneUniforms.ts`), del que salen las declaraciones GLSL y la subida desde el renderer (45); la anatomía es dueña de su gemelo GPU (`anatomy/gpu/`) y los órganos viven en módulos con gemelos TS/GLSL del mismo nombre y constantes generadas (`anatomy/organs/`: ligamentos hepáticos, cortina pulmonar, riñón, vesícula e hígado; las funciones solo-GPU se declaran con su motivo); equivalencia volumétrica exacta en 50 000 puntos por caso en la e2e (46).
+- Modelo de dominio (Fase 1): `VESSEL_META` sustituye a los `startsWith('ivc')`; registro de casos de una sola fuente; la cadena PW recibe un `AudioSink`; matriz completa de dependencias entre capas; estado del ecógrafo inmutable (`EquipmentController`) que solo cambia por comandos con invariantes físicas (puerta, caja y foco dentro de la imagen, PRF ≤ c/2d); `SimulationSession` y `main.ts` como raíz de composición (450 → 319 líneas) con controladores de UI puros; `TransducerProfile` reúne geometría, haz y frecuencias efectivas.
+- Rendimiento: carga inicial 760 → 179 kB de JS (navegador 3D y ganchos de prueba con `import()` dinámico). El cambio de caso ya no recompila nada: el `UltrasoundRenderer` pasa al simulador nuevo con `setScene` y el navegador 3D libera los grupos anteriores tras el primer render con los nuevos (three.js recompilaba 5 de 10 programas). Con SwiftShader, parte síncrona 1 750 → 178 ms y cambio completo ≈ 1,7 → 0,3 s.
 - Interfaz hígado–riñón sin hueco (cápsula hepática → grasa de Gerota → cápsula renal); pared periportal proporcional al calibre; pared blanda que conserva el acoplamiento al bascular en el epigastrio; punto de partida renal en eje largo (43).
 - Vesícula en pera con base propia, afilamiento fondo→cuello, pared ecogénica de 1,5 mm y fosa; la porción umbilical de la porta izquierda termina bajo la fisura umbilical (receso de Rex) (41). Se retira la limitación `axis-aligned-gallbladder`.
-
-- Pestaña «Adquirir» con los mandos básicos de imagen (profundidad, ganancia, foco; una sola fuente con la pestaña «Imagen»); profundidad por defecto 18 cm.
-- Costillas con oblicuidad creciente hacia abajo (`ribTiltMm`: 60 mm la 5.ª, 90 mm la 10.ª), misma ley en el SDF y en el 3D; antes se veían casi horizontales.
+- Pestaña «Adquirir» con los mandos básicos de imagen (profundidad, ganancia, foco); profundidad por defecto 18 cm. Costillas con oblicuidad creciente hacia abajo (`ribTiltMm`), misma ley en el SDF y en el 3D.
+- Dependencias: Vitest 5, ESLint 10 (con `@eslint/js` 10 y `globals` 17) y Vite 8 (Rolldown: `codeSplitting.groups` en lugar de `manualChunks`), cada una en su PR. TypeScript 7 queda fuera: `typescript-eslint` exige TypeScript < 6.1.
 
 ### Corregido
 
-- Pruebas por propiedades (fast-check) sobre todo el dominio de pacientes coherentes: hallaron una VCI colapsada que daba 288 m/s → resistor de Starling (R ∝ 1/A² bajo 8 mm, integración implícita) y lumen residual de 3 mm; dos contraejemplos extremos quedan como `it.fails` de las limitaciones `prescribed-ra-contour` y `no-thoracic-waterfall`. Límites del shader derivados de las constantes (tamaño de tejidos, ancho de la textura, segmentos por tubo) con prueba de margen. Cobertura de todos los niveles (87 %) con umbrales en CI. La e2e de medición exige un valor numérico (antes aceptaba «VSH: —»).
-- La medición del alumno (pestaña Medir) confundía picos de ruido con ondas: el caso sano salía «leve» y la FA «grave». Envolvente por percentil de la banda contigua con espectro promediado, extremos robustos, vena interlobar leída en su lado y «S invertida» solo si el retrógrado alcanza el 50 % del pico. Nueva prueba de la cadena completa del alumno para los 3 casos y los 3 territorios (44).
-- Fallos silenciosos: registro de errores único (`errorLog`, visible en Docente) con manejadores globales; el Worker del corte informa sus errores, tiene vigilante de 3 s y se reinicia con espera creciente; el audio se activa de forma transaccional; el cambio de caso es transaccional (si falla, sigue el anterior); el bucle ya no se detiene para siempre tras errores repetidos (reintenta a 1 Hz y se recupera); un oyente del store que lanza no corta a los demás; guardia `NonFiniteStateError` en el motor fisiológico; e2e de pérdida y recuperación del contexto WebGL.
-- La equivalencia TS ↔ GLSL solo se comprobaba a mano en la pestaña Docente: ahora una prueba e2e (`e2e/equivalence.spec.ts`, WebGL real con SwiftShader) compara tejido, vaso y velocidad de la sangre en los 4 puntos de partida de los 3 casos mediante una consulta puntual de la anatomía GLSL (`queryPoints`) y el gancho `?e2e`. Reintroducir la ley de velocidad anterior la hace fallar (error p95 hasta 120 %).
-- El Doppler color usaba caudal constante (`uRef·rRef²/rLoc²`) mientras la CPU (PW, medición) usa velocidad media uniforme por vaso (decisión 6): color y PW podían contradecirse en ramas afiladas. Ahora la GPU usa la misma ley.
+- El intestino (el «resto» de la clasificación) devolvía una distancia a la frontera fija de 5 mm en TS y GLSL: el gate volumétrico daba por interior un punto pegado al diafragma que float32 clasificaba al otro lado (flaky en CI). Ahora es la distancia a las interfaces que ganan antes.
+- La e2e «cambia de caso y el HUD lo refleja» fallaba en CI porque el primer cuadro tras el cambio superaba 15 s (recompilación de shaders propios y de three.js); además, si el HUD no cambia, la prueba informa caso, selector, avisos y errores.
+- Pruebas por propiedades (fast-check) sobre todo el dominio de pacientes coherentes: hallaron una VCI colapsada que daba 288 m/s → resistor de Starling (R ∝ 1/A² bajo 8 mm, integración implícita) y lumen residual de 3 mm; dos contraejemplos extremos quedan como `it.fails` de las limitaciones `prescribed-ra-contour` y `no-thoracic-waterfall`. Límites del shader derivados de las constantes con prueba de margen. Cobertura de todos los niveles con umbrales en CI. La e2e de medición exige un valor numérico.
+- La medición del alumno (pestaña Medir) confundía picos de ruido con ondas: el caso sano salía «leve» y la FA «grave». Envolvente por percentil de la banda contigua con espectro promediado, extremos robustos, vena interlobar leída en su lado y «S invertida» solo si el retrógrado alcanza el 50 % del pico; prueba de la cadena completa del alumno para los 3 casos y los 3 territorios (44).
+- Fallos silenciosos: registro de errores único (`errorLog`, visible en Docente) con manejadores globales; el Worker del corte informa sus errores y se reinicia; el audio se activa de forma transaccional; el cambio de caso es transaccional; el bucle se recupera tras errores repetidos; guardia `NonFiniteStateError` en el motor fisiológico; e2e de pérdida y recuperación del contexto WebGL.
+- La equivalencia TS ↔ GLSL solo se comprobaba a mano en la pestaña Docente: ahora la e2e (WebGL real con SwiftShader) compara tejido, vaso y velocidad de la sangre en los 4 puntos de partida de los 3 casos y en 50 000 puntos de todo el tronco.
+- El Doppler color usaba caudal constante mientras la CPU (PW, medición) usa velocidad media uniforme por vaso (decisión 6): ahora la GPU usa la misma ley.
 - La transmisión hasta la puerta PW cobraba 6 dB en cada paso dentro del hueso; la GPU solo al entrar. Regla única `rayAttenuationDb` con test.
 - Fuga de memoria de vídeo: cada redimensionado creaba tres destinos de pantalla sin liberar los anteriores.
-- CI no ejecutaba `format:check` aunque decía replicar `npm run check`; añadidos permisos mínimos y auditoría de dependencias de producción.
+- CI no ejecutaba `format:check`; añadidos permisos mínimos y auditoría de dependencias de producción.
 
 ## [0.4.0] — 2026-09-22 — fidelidad anatómica y ecográfica (evaluación experta, decisiones 33–40)
 

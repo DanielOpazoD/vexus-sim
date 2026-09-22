@@ -142,6 +142,7 @@ button.secondary.on {
 
 /* --- carril izquierdo: navegador 3D + corte -------------------------------- */
 .left {
+  grid-column: 1;
   background: var(--panel);
   border-right: 1px solid var(--border);
   display: flex;
@@ -150,8 +151,11 @@ button.secondary.on {
   position: relative;
   min-height: 0;
 }
+/* Al ocultar el torso la columna mide 0: el carril sigue en la rejilla (no `display:none`,
+   que sacaría al centro y la consola de sus columnas) y solo deja de pintarse. */
 .app.no-torso .left {
-  display: none;
+  visibility: hidden;
+  border-right: none;
 }
 .rail-collapse {
   position: absolute;
@@ -262,6 +266,7 @@ button.secondary.on {
 
 /* --- centro: imagen -------------------------------------------------------- */
 .center {
+  grid-column: 2;
   background: #000;
   display: grid;
   grid-template-rows: minmax(0, 1fr) 200px;
@@ -356,6 +361,7 @@ button.secondary.on {
 
 /* --- consola derecha ------------------------------------------------------- */
 .right {
+  grid-column: 3;
   background: var(--panel);
   border-left: 1px solid var(--border);
   display: flex;

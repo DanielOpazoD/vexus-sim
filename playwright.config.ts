@@ -21,7 +21,8 @@ export default defineConfig({
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
   webServer: {
-    command: 'npx vite preview --port 6609 --strictPort',
+    // node + vite.js en vez de npx: en algunos entornos npx no llega a arrancar el servidor
+    command: 'node node_modules/vite/bin/vite.js preview --port 6609 --strictPort',
     url: 'http://localhost:6609',
     reuseExistingServer: !process.env.CI,
     timeout: 60_000,

@@ -23,6 +23,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Ocultar el «Torso 3D» sacaba el carril de la rejilla (`display:none`) y corría la imagen y la consola de columna: el carril queda en su columna de 0 px (`visibility:hidden`); columnas explícitas y test estático de la disposición.
+- El riñón 3D era un elipsoide liso: ahora es la misma judía con escotadura hiliar que corta el haz (marching cubes sobre `kidneyOuterSdf`, `meshFromSdf` compartido con el hígado) con test de malla.
 - Los puntos de partida «Subxifoideo» y «Flanco · VCI» no cortaban la VCI (abanicaban en vez de bascular; plano coronal por delante de la vena); ahora cada ventana tiene un test que comprueba lo que promete su texto.
 - Una ventana de medida NaN (sin onda A) devolvía el mínimo global como «A» y descartaba el latido (31).
 - La medición renal sobrevivía al cambio de caso o a «Borrar» (27).

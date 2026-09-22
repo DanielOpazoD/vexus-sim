@@ -44,3 +44,15 @@ describe('Modelo del haz (decisión 38)', () => {
     expect(Number.isFinite(apertureAngleSigmaRad(0))).toBe(true);
   });
 });
+
+describe('Perfil de transductor (Fase 1)', () => {
+  it('el haz y la geometría del perfil son coherentes: λ = c / f0 y frecuencias efectivas ≤ nominal', async () => {
+    const { CONVEX_C35_PROFILE } = await import('../ultrasound/transducerProfile');
+    const p = CONVEX_C35_PROFILE;
+    expect(p.beam.lambdaMm).toBeCloseTo(1540 / (p.geometry.f0B / 1e3), 9);
+    expect(p.bEffectiveMHz * 1e6).toBeLessThanOrEqual(p.geometry.f0B);
+    expect(p.dopplerEffectiveMHz * 1e6).toBeLessThanOrEqual(p.geometry.f0B);
+    expect(p.beam.apertureTxMm).toBeLessThanOrEqual(p.geometry.footprintMm);
+    expect(p.colorLineSpacingRad).toBeGreaterThan(0);
+  });
+});

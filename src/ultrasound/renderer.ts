@@ -5,7 +5,7 @@ import { RespiratoryDeformation } from '../anatomy/deformation';
 import { TISSUES, TISSUE_COUNT, attenuationDbPerCm } from '../anatomy/tissues';
 import type { PhysiologySample } from '../physiology/engine';
 import { lineAngle, lineCoupling, type ProbeFrame, type ProbePose, type Transducer } from '../probe/probe';
-import { CONVEX_BEAM } from './beamModel';
+import type { TransducerProfile } from './transducerProfile';
 import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
 import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
 import { GLProgram, bindTarget, createTarget, createTexture, deleteTarget, drawFullscreen, type RenderTarget } from './gl';
@@ -73,7 +73,6 @@ export const DEFAULT_COLOR: ColorSettings = {
 };
 
 /** Frecuencia efectiva para atenuación y compensación nominal (MHz). */
-const B_EFFECTIVE_MHZ = 2.5;
 /** Margen del sector en el lienzo de imagen (px); el corte usa el mismo módulo con su propio margen. */
 export const DISPLAY_MARGIN_PX = 8;
 /**
@@ -158,9 +157,9 @@ export class UltrasoundRenderer {
   constructor(
     readonly canvas: HTMLCanvasElement,
     readonly scene: AnatomyScene,
-    transducer: Transducer,
+    readonly profile: TransducerProfile,
   ) {
-    this.lines = transducer.lines;
+    this.lines = profile.geometry.lines;
     const LINES = this.lines;
     this.couplingData = new Float32Array(LINES);
     const gl = canvas.getContext('webgl2', { antialias: false, premultipliedAlpha: false, preserveDrawingBuffer: false });
@@ -259,9 +258,8 @@ export class UltrasoundRenderer {
     gl.bindTexture(gl.TEXTURE_2D, this.sceneTex);
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, SCENE_TEX_W, SCENE_TEX_H, gl.RGBA, gl.FLOAT, this.sceneData);
     for (let i = 0; i < TISSUE_COUNT; i++) {
-      // Frecuencia efectiva de penetración de un convexo «3,5 MHz» (banda 2–5 MHz,
-      // desplazamiento a bajas por atenuación): 2,5 MHz [EXTRAPOLACIÓN PROPIA].
-      this.alpha[i] = attenuationDbPerCm(i, B_EFFECTIVE_MHZ);
+      // Frecuencia efectiva de penetración del perfil (banda baja por atenuación)
+      this.alpha[i] = attenuationDbPerCm(i, this.profile.bEffectiveMHz);
       this.back[i] = TISSUES[i].backscatter;
       this.flags[i] = TISSUES[i].gas ? 1 : TISSUES[i].bone ? 2 : 0;
     }
@@ -505,10 +503,10 @@ export class UltrasoundRenderer {
     this.pLateral.f('uFocus', inputs.bmode.focusMm);
     this.pLateral.v4(
       'uBeam',
-      CONVEX_BEAM.k * CONVEX_BEAM.lambdaMm,
-      CONVEX_BEAM.apertureTxMm,
-      CONVEX_BEAM.apertureRxMaxMm,
-      CONVEX_BEAM.fNumberRxMin,
+      this.profile.beam.k * this.profile.beam.lambdaMm,
+      this.profile.beam.apertureTxMm,
+      this.profile.beam.apertureRxMaxMm,
+      this.profile.beam.fNumberRxMin,
     );
     drawFullscreen(gl);
 
@@ -521,13 +519,17 @@ export class UltrasoundRenderer {
       this.setBeamUniforms(this.pColor, inputs);
       this.pColor.tex('uTrans0', 0, this.tTrans.textures[0]);
       this.pColor.v4('uBox', c.theta0, c.theta1, c.r0, c.r1);
-      this.pColor.v2('uCells', colorLineCount(c.theta0, c.theta1), Math.max(4, Math.round((c.r1 - c.r0) / COLOR_PACKET_MM)));
+      this.pColor.v2(
+        'uCells',
+        colorLineCount(c.theta0, c.theta1, this.profile.colorLineSpacingRad),
+        Math.max(4, Math.round((c.r1 - c.r0) / COLOR_PACKET_MM)),
+      );
       this.pColor.v4(
         'uBeam',
-        CONVEX_BEAM.k * CONVEX_BEAM.lambdaMm,
-        CONVEX_BEAM.apertureTxMm,
-        CONVEX_BEAM.apertureRxMaxMm,
-        CONVEX_BEAM.fNumberRxMin,
+        this.profile.beam.k * this.profile.beam.lambdaMm,
+        this.profile.beam.apertureTxMm,
+        this.profile.beam.apertureRxMaxMm,
+        this.profile.beam.fNumberRxMin,
       );
       this.pColor.f('uPrf', c.prfHz);
       this.pColor.f('uF0', tr.f0Doppler);
@@ -559,7 +561,7 @@ export class UltrasoundRenderer {
     this.pScan.f('uGainDb', inputs.bmode.gainDb);
     this.pScan.f('uRefDb', -20);
     // Curva nominal: compensa la atenuación de ida y vuelta del hígado a la frecuencia B.
-    this.pScan.f('uNominalTgcDbPerCm', 2 * attenuationDbPerCm(4, B_EFFECTIVE_MHZ));
+    this.pScan.f('uNominalTgcDbPerCm', 2 * attenuationDbPerCm(4, this.profile.bEffectiveMHz));
     this.pScan.f('uTgcCapDb', TGC_CAP_DB);
     this.pScan.f('uDynRange', inputs.bmode.dynamicRangeDb);
     this.pScan.f('uGreyCurve', 3.5);

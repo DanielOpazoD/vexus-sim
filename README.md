@@ -69,7 +69,7 @@ src/core         reloj único, aleatorio con semilla, FFT, unidades y fórmulas 
 src/physiology   PatientState, ritmo/ECG, presión de AD, red venosa 0D, respiración, motor
 src/anatomy      primitivas implícitas, escena del avatar, deformación respiratoria, consulta
 src/probe        sonda 6DOF, contacto/acoplamiento, geometría del haz
-src/ultrasound   render WebGL2 en 7 pasadas (transmisión, campo de dispersores, PSF, color, barrido)
+src/ultrasound   render WebGL2 por pasadas A–G (transmisión, campo de dispersores, PSF axial/lateral, color, barrido, persistencia)
 src/doppler      volumen de muestra físico, IQ, filtro de pared, STFT, medición observada, cadena PW
 src/audio        separación direccional (Hilbert) + AudioWorklet
 src/vexus        mediciones de referencia y clasificador VExUS C
@@ -81,7 +81,7 @@ tools/           calibración, depuración de ondas, índice de decisiones, pres
 docs/            DECISIONS.md (+ índice generado), LIMITATIONS.md, APPROXIMATIONS.md, ARCHITECTURE.md
 ```
 
-## Estado (iteración 1)
+## Estado (iteración 2)
 
 Implementado: reloj único; PatientState; ritmo sinusal con variabilidad y ECG; contorno de AD;
 red esplácnico–sinusoidal–suprahepática–cava con ley de tubo y lecho renal; respiración con presiones

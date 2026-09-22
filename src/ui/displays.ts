@@ -1,3 +1,4 @@
+import { wrapToNyquist } from '../core/units';
 import type { Simulator } from '../app/simulator';
 import type { SpectralColumn } from '../doppler/spectral';
 import { velocityFromShiftMmS } from '../core/units';
@@ -212,7 +213,7 @@ export class SpectrogramView {
           // banda mostrada: [−PRF/2 + shift·PRF, PRF/2 + shift·PRF]
           const f = (fracBand - 0.5 + pw.baselineShift) * col.prfHz;
           // plegar a la banda medida (la línea de base no crea muestras)
-          const fw = ((((f + col.prfHz / 2) % col.prfHz) + col.prfHz) % col.prfHz) - col.prfHz / 2;
+          const fw = wrapToNyquist(f, col.prfHz);
           const k = Math.round((fw / col.prfHz) * fft + fft / 2);
           const kk = Math.min(fft - 1, Math.max(0, k));
           const db = col.powerDb[kk];

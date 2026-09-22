@@ -5,6 +5,23 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+### Corregido
+
+- La medición renal sobrevivía al cambio de caso o a «Borrar» (27).
+- El navegador 3D no reconstruía la anatomía al cambiar de caso; el renderizador no liberaba recursos GPU (27).
+- `tubeQuery` con sección elíptica prolongaba la cava más allá de su último nodo, en TS y GLSL (27).
+- `Beat.rr` era el intervalo anterior, no el siguiente; las ventanas de medida terminaban ~26 ms fuera (27).
+
+### Cambiado
+
+- Prettier, reglas de lint adicionales, CI, plantillas; helpers compartidos (`core/series.ts`,
+  Nyquist en `core/units.ts`, constantes TS ↔ GLSL, puntos de partida, límites del equipo) (27).
+- `main.ts` cede animación de sonda y atajos a módulos propios; ganchos de depuración solo en desarrollo (27).
+
+### Añadido
+
+- 20 pruebas nuevas de nivel rápido con valores cerrados y `npm run test:coverage` (27).
+
 ## [0.2.0] — 2026-09-22 — iteración 2
 
 ### Añadido

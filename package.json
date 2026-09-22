@@ -18,12 +18,14 @@
     "test:watch": "vitest",
     "calibrate": "tsx tools/calibrate.ts",
     "docs:index": "tsx tools/docs/decisions-index.ts",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:all && vite build && node tools/ci/bundle-budget.mjs"
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:all && vite build && node tools/ci/bundle-budget.mjs",
+    "test:coverage": "VITEST_TIER=all vitest run --coverage --testTimeout=180000"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",
     "@types/node": "22.20.2",
     "@types/three": "0.185.4",
+    "@vitest/coverage-v8": "4.1.11",
     "eslint": "9.39.5",
     "globals": "16.3.0",
     "prettier": "^3.9.8",

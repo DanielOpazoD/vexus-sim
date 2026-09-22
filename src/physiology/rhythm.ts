@@ -41,6 +41,8 @@ export class RhythmGenerator {
   private beats: Beat[] = [];
   private nextIndex = 0;
   private lastR = 0;
+  /** Intervalo desde el último latido programado hasta el siguiente (s). */
+  private pendingRR = 0;
 
   constructor(
     private readonly patient: PatientState,
@@ -48,7 +50,8 @@ export class RhythmGenerator {
   ) {
     this.rng = new SeededRandom(seed);
     // Primer latido en t = 0,2 s para que el ECG no empiece a mitad de QRS.
-    this.lastR = 0.2 - this.nominalRR();
+    this.pendingRR = this.nextRR();
+    this.lastR = 0.2 - this.pendingRR;
     this.scheduleUntil(4);
   }
 
@@ -59,9 +62,11 @@ export class RhythmGenerator {
   /** Garantiza latidos programados hasta el instante t (más margen). */
   scheduleUntil(t: number): void {
     while (this.lastR < t + 2) {
-      const rr = this.nextRR();
-      const tR = this.lastR + rr;
-      this.beats.push(this.makeBeat(this.nextIndex++, tR, rr));
+      const tR = this.lastR + this.pendingRR;
+      // `rr` del latido = intervalo hasta la SIGUIENTE R (contrato de `Beat`): se sortea
+      // ahora para que las ventanas [tR, tR + rr] terminen exactamente en la R siguiente.
+      this.pendingRR = this.nextRR();
+      this.beats.push(this.makeBeat(this.nextIndex++, tR, this.pendingRR));
       this.lastR = tR;
     }
     // Olvidar latidos muy antiguos.

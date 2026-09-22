@@ -14,6 +14,8 @@
  *     H3 = esfera envolvente (cx, cy, cz, R)
  *   nodos desde NODE_BASE = MAX_TUBES·4: (x, y, z, r)
  */
+import { DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, TISSUE_GLSL_NAME } from '../../anatomy/tissues';
+
 export const MAX_TUBES = 40;
 export const MAX_NODES = 256;
 export const NODE_BASE = MAX_TUBES * 4;
@@ -22,34 +24,19 @@ export const SCENE_TEX_H = Math.ceil((NODE_BASE + MAX_NODES) / SCENE_TEX_W);
 export const MAX_GAS = 6;
 export const MAX_RIBS = 6;
 
+const TISSUE_DEFINES = Object.entries(TISSUE_GLSL_NAME)
+  .map(([index, name]) => `#define ${name} ${index}`)
+  .join('\n');
+
 export const ANATOMY_GLSL = /* glsl */ `
 #define MAX_TUBES ${MAX_TUBES}
 #define MAX_NODES ${MAX_NODES}
 #define NODE_BASE ${NODE_BASE}
 #define MAX_GAS ${MAX_GAS}
 #define MAX_RIBS ${MAX_RIBS}
-#define T_AIR 0
-#define T_SKIN 1
-#define T_FAT 2
-#define T_MUSCLE 3
-#define T_LIVER 4
-#define T_CAPSULE 5
-#define T_BLOOD 6
-#define T_WALL_PORTAL 7
-#define T_WALL_THIN 8
-#define T_DIAPHRAGM 9
-#define T_LUNG 10
-#define T_BONE 11
-#define T_BOWEL 12
-#define T_BOWELGAS 13
-#define T_FLUID 14
-#define T_ARTERYWALL 15
-#define T_CARTILAGE 16
-#define T_RENAL_CORTEX 17
-#define T_RENAL_MEDULLA 18
-#define T_RENAL_SINUS 19
-#define T_PERIRENAL 20
-#define T_BILEWALL 21
+${TISSUE_DEFINES}
+#define DIAPHRAGM_MM ${DIAPHRAGM_THICKNESS_MM.toFixed(3)}
+#define CAPSULE_MM ${LIVER_CAPSULE_MM.toFixed(3)}
 
 uniform vec4 uTorso;      // a, b, zMin, zMax
 uniform vec3 uWall;       // skin, fat, muscle (mm)
@@ -275,13 +262,17 @@ float tubeQuery(vec3 p, int t, out float rho, out vec3 tangent, out float rLoc, 
     vec3 c = a.xyz + ab * s;
     vec3 d = p - c;
     vec3 tg = normalize(ab);
+    float dist;
     if (apScale != 1.0) {
+      // Sección elíptica: se escala la componente perpendicular; la axial se conserva (tapa)
       float along = dot(d, tg);
       vec3 perp = d - tg * along;
       perp.y /= apScale;
-      d = perp;
+      dist = sqrt(dot(perp, perp) + along * along);
+      d = perp + tg * along;
+    } else {
+      dist = length(d);
     }
-    float dist = length(d);
     float r = (a.w + (b.w - a.w) * s) * rs;
     float sd = dist - r;
     if (sd < best) {
@@ -373,7 +364,7 @@ Cls classify(vec3 m) {
   vec3 dn;
   float dDome = sdDome(m, dn);
   if (dDome < 0.0) { c.tissue = T_LUNG; c.bd = -dDome; c.n = dn; c.spec = 1.0; return c; }
-  if (dDome < 2.5) { c.tissue = T_DIAPHRAGM; c.bd = min(dDome, 2.5 - dDome); c.n = dn; c.spec = 0.9; return c; }
+  if (dDome < DIAPHRAGM_MM) { c.tissue = T_DIAPHRAGM; c.bd = min(dDome, DIAPHRAGM_MM - dDome); c.n = dn; c.spec = 0.9; return c; }
   vec3 gn;
   float dGb = sdEllipsoid(m, uGbC, uGbR, 0.0, gn);
   if (dGb < 0.0) { c.tissue = T_FLUID; c.bd = -dGb; c.n = gn; c.spec = 0.4; return c; }
@@ -396,10 +387,10 @@ Cls classify(vec3 m) {
   vec3 ln;
   float dLiver = liverSdf(m, ln);
   if (dLiver < 0.0) {
-    float inner = min(-dLiver, min(dDome - 2.5, -depth - wall));
-    c.n = (inner == -dLiver) ? ln : ((inner == dDome - 2.5) ? dn : tn);
+    float inner = min(-dLiver, min(dDome - DIAPHRAGM_MM, -depth - wall));
+    c.n = (inner == -dLiver) ? ln : ((inner == dDome - DIAPHRAGM_MM) ? dn : tn);
     c.spec = 0.5;
-    c.tissue = inner < 0.8 ? T_CAPSULE : T_LIVER; c.bd = inner; return c;
+    c.tissue = inner < CAPSULE_MM ? T_CAPSULE : T_LIVER; c.bd = inner; return c;
   }
   for (int i = 0; i < MAX_GAS; i++) {
     float dg = sdSphere(m, uGas[i], sn);

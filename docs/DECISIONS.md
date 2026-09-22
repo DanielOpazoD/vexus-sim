@@ -227,6 +227,31 @@ punto de partida «Renal» en la línea axilar posterior (φ 1,12π, z −75, in
 de la sonda ampliado a φ ≤ 1,2π. Verificado en vivo: puerta en la vena interlobar en apnea → espectro
 continuo y «Renal: continuo» en el resultado.
 
+## 27. Repositorio, CI y saneamiento tras revisión adversarial
+
+Repositorio en GitHub (`DanielOpazoD/vexus-sim`, privado) con `main` siempre verde, ramas cortas por
+intención y PR con plantilla (CONTRIBUTING.md); CI en GitHub Actions ejecuta exactamente `npm run
+check` (formato, lint, tipos, todas las pruebas, build, presupuesto). Prettier y reglas de lint
+adicionales (`consistent-type-imports`, `eqeqeq`, `no-explicit-any`). Dos revisiones adversariales
+de contexto limpio (estructura y pruebas) encontraron y se corrigieron: (1) la medición renal
+sobrevivía al cambio de caso (grado mezclado de dos pacientes); (2) el navegador 3D seguía mostrando
+la anatomía del caso anterior y el renderizador no liberaba recursos GPU (`dispose()` en renderer,
+simulador y `Navigator3D.setAnatomy`); (3) `tubeQuery` con sección elíptica descartaba la componente
+axial y prolongaba la cava 15 mm más allá de su último nodo (TS y GLSL); (4) `Beat.rr` era el
+intervalo anterior y no «hasta la siguiente R» como prometía el contrato del que dependen todas las
+ventanas de medida. Duplicaciones eliminadas con un único dueño: `median`/`extremeInWindow`
+(`core/series.ts`), Nyquist/PRF (`core/units.ts`), constantes TS ↔ GLSL y `#define` de tejidos
+generados desde el enum, puntos de partida (`app/startPoints.ts`, la consola y el 3D ya divergían),
+límites del equipo, `LINES` desde el transductor. `main.ts` cede la animación de la sonda
+(`app/probeAnimation.ts`) y los atajos (`ui/keyboardShortcuts.ts`); los ganchos de depuración solo en
+desarrollo. Pruebas nuevas en el nivel rápido con valores cerrados (53 → 53 + 20): primitivas
+(tubo, riñón, smoothMin/Max), DSP (unidades, FFT, filtro de pared, STFT, envolvente), ritmo,
+respiración, conservación de masa de la red venosa, ventanas de medida, tabla completa del
+clasificador (27 combinaciones + fronteras) y `decisions-index` con entrada sintética; cobertura
+del núcleo sin DOM/WebGL medida con `npm run test:coverage`. Pendiente (registrado, no hecho):
+dividir `panel.ts`, `navigator3d.ts`, `scene.classify` y el resto de `main.ts`; lint con tipos;
+`noUncheckedIndexedAccess`.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

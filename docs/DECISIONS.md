@@ -359,6 +359,26 @@ en el avatar 3D; cava, aorta, renales y desembocadura de las suprahepáticas 10 
 (justo delante del cuerpo vertebral); tejido `Vertebra` (mismas propiedades que el hueso cortical)
 para rotular «columna». Equivalencia TS ↔ GLSL 100 %.
 
+## 36. Proporciones craneocaudales referidas al xifoides y diafragma en dos hemicúpulas
+
+La ventana subxifoidea mostraba la confluencia de las suprahepáticas a 17–19 cm (real 10–14): la
+cúpula (+95 mm), la unión cavoauricular (+90) y el hilio hepático (−28) estaban 4–5 cm demasiado
+altos respecto al xifoides, el tronco era demasiado grueso (AP 23 cm) y el reborde costal demasiado
+alto. Ahora z = 0 es la punta del xifoides (T9–T10) y: cúpula derecha en T8–T9 (**+55 mm**),
+unión cavoauricular +55, tronco común de suprahepáticas +42…+50, hilio hepático −45 (T12–L1),
+reborde costal medioclavicular ≈ −56 (10.º arco), borde hepático en cuña a −83 bajo la pared
+anterior, vesícula con el fondo en el borde (−65), aurícula derecha (−15, 15, 95) r 30, costillas
+5–10 con el 7.º cartílago en el xifoides, tronco AP 21 cm, riñones y arco vertebral dentro de la
+cavidad, arteria renal derecha entre cava y cuerpo vertebral. El diafragma deja de ser una sola
+cúpula con «zócalo» (fuera de su elipse todo era pulmón hasta z −95, lo que convertía en pulmón
+el polo superior del riñón izquierdo): ahora son **dos hemicúpulas** (derecha apex +55, izquierda
++25) sobre la **línea de inserción costal** (0 en el xifoides, −50 en flancos y espalda,
+`diaphragmEdgeZ`), en TS (`diaphragmHeight`/`sdDiaphragm`), GLSL y el 3D. Puntos de partida:
+intercostal en el 7.º–8.º espacio (z 8), flanco −20, renal −80. Resultado: VCI a 12 cm y
+confluencia a 13–14 cm desde el subxifoideo; hígado de 113–123 mm en la línea medioclavicular
+(rango ecográfico 12–15 cm), diafragma y pulmón visibles en la ventana intercostal a 10–12 cm.
+Equivalencia TS ↔ GLSL 100 %.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

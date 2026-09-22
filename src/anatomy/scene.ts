@@ -5,7 +5,7 @@ import {
   kidneyQuery,
   orthonormalBasis,
   sdSpine,
-  sdDome,
+  sdDiaphragm,
   sdEllipsoid,
   sdRib,
   sdSphere,
@@ -14,7 +14,7 @@ import {
   torsoDepth,
   tubeQuery,
   type Spine,
-  type Dome,
+  type Diaphragm,
   type Ellipsoid,
   type Kidney,
   type Rib,
@@ -74,15 +74,15 @@ export function tubeBoundingSphere(t: Tube, marginMm: number): { center: Vec3; r
 export class AnatomyScene {
   readonly torso: Torso;
   readonly ribs: Rib[];
-  readonly dome: Dome;
+  readonly diaphragm: Diaphragm;
   readonly spine: Spine;
   /** Lóbulo derecho (voluminoso) y lóbulo izquierdo (aplanado); su unión suave es el hígado. */
   readonly liver: Ellipsoid;
   readonly liverLeft: Ellipsoid;
   readonly liverBlendMm = 30;
   /**
-   * Cara visceral: plano z = −40 − 0,35·y (borde inferior agudo a z ≈ −68 bajo la
-   * pared anterior y a −26 en la cara posterior); normal (0, 0,35, 1).
+   * Cara visceral: plano z = −62 − 0,35·y (borde inferior agudo a z ≈ −83 bajo la
+   * pared anterior, junto al reborde costal, y a −48 en la cara posterior); normal (0, 0,35, 1).
    */
   readonly visceralPlane: { zAtY0: number; slopeY: number; edgeRoundMm: number };
   readonly gallbladder: Ellipsoid;
@@ -104,12 +104,21 @@ export class AnatomyScene {
   constructor(patient: PatientState) {
     const fat = patient.habitus.subcutaneousFatMm;
     const muscle = patient.habitus.muscleMm;
-    this.torso = { a: 160, b: 115, zMin: -300, zMax: 300, skinMm: 2, fatMm: fat, muscleMm: muscle };
-    this.dome = { kind: 'dome', x0: -55, y0: -5, rx: 140, ry: 122, zBase: -45, h: 140 };
+    // Tronco 32 × 21 cm (adulto de IMC 25): la VCI queda a ≈ 12–13 cm del xifoides
+    this.torso = { a: 160, b: 105, zMin: -300, zMax: 300, skinMm: 2, fatMm: fat, muscleMm: muscle };
+    // Referencia craneocaudal: z = 0 en la punta del xifoides (T9–T10). Cúpula derecha
+    // en T8–T9 (+45 mm), reborde costal en la línea medioclavicular ≈ −80 mm, unión
+    // cavoauricular ≈ +55 mm, hilio hepático ≈ −45 mm (T12–L1) [B.5].
+    this.diaphragm = {
+      right: { kind: 'dome', x0: -55, y0: -5, rx: 85, ry: 92, apex: 55 },
+      left: { kind: 'dome', x0: 70, y0: -5, rx: 70, ry: 85, apex: 25 },
+      edgeZ: -50,
+      edgeRise: 50,
+    };
     // Columna: cuerpo vertebral de 36 mm justo por detrás de cava y aorta (su cara
     // posterior queda ≈ 5 cm de la piel dorsal, como en un adulto); arco posterior con
     // apófisis transversas de 40 mm a cada lado. Las costillas terminan en ellas.
-    this.spine = { kind: 'cylinderZ', x0: 0, y0: -48, r: 18, archHalfWidth: 40, archY0: -90, archY1: -64 };
+    this.spine = { kind: 'cylinderZ', x0: 0, y0: -46, r: 17, archHalfWidth: 40, archY0: -78, archY1: -58 };
     // Hígado: el lóbulo derecho es un elipsoide grande (170 × 190 × 200 mm) del que la
     // pared abdominal recorta la cara anterior (convexa, pegada a la pared), la cúpula la
     // superior y el plano visceral la inferior: cuña con borde agudo. Craneocaudal
@@ -117,18 +126,18 @@ export class AnatomyScene {
     // Hepatomegalia congestiva: los radios escalan con `sizeFactor` y el borde inferior
     // (plano visceral) desciende en proporción (≈ 1 cm por cada 10 % de tamaño).
     const f = patient.liver.sizeFactor;
-    this.liver = { kind: 'ellipsoid', center: [-70, -5, 5], radii: [85 * f, 95 * f, 100 * f], taperX: 0.12 };
-    this.liverLeft = { kind: 'ellipsoid', center: [0, 32, 12], radii: [95 * f, 36 * f, 55 * f], taperX: 0.5 };
-    this.visceralPlane = { zAtY0: -40 - 100 * (f - 1), slopeY: 0.35, edgeRoundMm: 12 };
+    this.liver = { kind: 'ellipsoid', center: [-70, -5, -18], radii: [85 * f, 95 * f, 100 * f], taperX: 0.12 };
+    this.liverLeft = { kind: 'ellipsoid', center: [0, 32, -25], radii: [95 * f, 36 * f, 55 * f], taperX: 0.5 };
+    this.visceralPlane = { zAtY0: -62 - 100 * (f - 1), slopeY: 0.35, edgeRoundMm: 12 };
     // Vesícula en su fosa (cara visceral del segmento IV/V); fondo hacia el borde
-    this.gallbladder = { kind: 'ellipsoid', center: [-52, 42, -48], radii: [34, 17, 17], taperX: 0 };
-    this.rightAtrium = { kind: 'sphere', center: [-15, 0, 150], r: 32 };
+    this.gallbladder = { kind: 'ellipsoid', center: [-52, 42, -65], radii: [34, 17, 17], taperX: 0 };
+    this.rightAtrium = { kind: 'sphere', center: [-15, 15, 95], r: 30 };
     // Riñones: eje largo con el polo superior medial y posterior; hilio anteromedial.
     const bR = orthonormalBasis([0.22, -0.18, 1], [1, 0.25, 0]);
     const bL = orthonormalBasis([-0.22, -0.18, 1], [-1, 0.25, 0]);
     this.kidneyRight = {
       kind: 'kidney',
-      center: [-72, -46, -78],
+      center: [-72, -38, -78],
       radii: [54, 27, 23],
       ...bR,
       sinusRadii: [30, 12, 10],
@@ -137,7 +146,7 @@ export class AnatomyScene {
     };
     this.kidneyLeft = {
       kind: 'kidney',
-      center: [78, -44, -70],
+      center: [78, -36, -70],
       radii: [54, 27, 23],
       ...bL,
       sinusRadii: [30, 12, 10],
@@ -146,7 +155,8 @@ export class AnatomyScene {
     };
     this.gasPockets = [];
     this.ribs = [];
-    const anterior = [70, 45, 20, -5, -30, -55];
+    // Costillas derechas 5–10: el 7.º cartílago llega al esternón a la altura del xifoides (z 0)
+    const anterior = [40, 20, 0, -25, -50, -75];
     for (let i = 0; i < anterior.length; i++) {
       this.ribs.push({
         zAnterior: anterior[i],
@@ -181,7 +191,11 @@ export class AnatomyScene {
    * Positivo = dentro. Lo usa el árbol vascular procedural para no salir del hígado.
    */
   liverInteriorMargin(m: Vec3): number {
-    return Math.min(-this.liverSdf(m), -torsoDepth(m, this.torso) - this.wallThickness(), sdDome(m, this.dome) - DIAPHRAGM_THICKNESS_MM);
+    return Math.min(
+      -this.liverSdf(m),
+      -torsoDepth(m, this.torso) - this.wallThickness(),
+      sdDiaphragm(m, this.diaphragm, this.torso) - DIAPHRAGM_THICKNESS_MM,
+    );
   }
 
   /**
@@ -243,7 +257,7 @@ export class AnatomyScene {
     if (tube) return tube;
     const dRa = sdSphere(m, this.rightAtrium);
     if (dRa < 0) return { ...NONE, tissue: Tissue.Blood, boundaryDistance: -dRa, specular: 0.5 };
-    const dDome = sdDome(m, this.dome);
+    const dDome = sdDiaphragm(m, this.diaphragm, this.torso);
     if (dDome < 0) return { ...NONE, tissue: Tissue.Lung, boundaryDistance: -dDome, specular: 1.0 };
     if (dDome < DIAPHRAGM_THICKNESS_MM)
       return { ...NONE, tissue: Tissue.Diaphragm, boundaryDistance: Math.min(dDome, DIAPHRAGM_THICKNESS_MM - dDome), specular: 0.9 };

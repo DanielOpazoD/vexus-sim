@@ -73,7 +73,7 @@ export function buildSkeleton(a: AnatomyScene): THREE.Group {
   const cartilage = new THREE.MeshStandardMaterial({ color: 0xcfd9e6, roughness: 0.5, transparent: true, opacity: 0.85 });
   // Costillas 3–11 de ambos lados. Las derechas 5–10 siguen exactamente la ley de
   // scene.ribs (zAnterior + 60·(0,5 − 0,5·sen φ), escala 0,85); el resto la extiende.
-  const anterior = [120, 95, 70, 45, 20, -5, -30, -55, -80];
+  const anterior = [80, 60, 40, 20, 0, -25, -50, -75, -100];
   anterior.forEach((zAnt, k) => {
     const ribNo = k + 3;
     for (const side of [-1, 1]) {
@@ -98,9 +98,9 @@ export function buildSkeleton(a: AnatomyScene): THREE.Group {
   });
   const yFront = a.torso.b * 0.85 * CM;
   const sternum = new THREE.Mesh(new RoundedBoxGeometry(3.2, 0.9, 11, 3, 0.4), bone);
-  sternum.position.set(0, yFront - 0.2, 12.5);
+  sternum.position.set(0, yFront - 0.2, 8.5);
   const xiphoid = new THREE.Mesh(new RoundedBoxGeometry(1.5, 0.5, 3, 3, 0.3), cartilage);
-  xiphoid.position.set(0, yFront - 0.4, 5.5);
+  xiphoid.position.set(0, yFront - 0.4, 1.5);
   g.add(sternum, xiphoid);
   for (let z = -240; z <= 280; z += 28) {
     const body = new THREE.Mesh(new THREE.CylinderGeometry(a.spine.r * CM, a.spine.r * CM, 2.2, 20), bone);

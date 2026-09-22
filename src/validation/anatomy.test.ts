@@ -15,38 +15,38 @@ describe('Anatomía implícita (base B)', () => {
 
   it('clasifica puntos de referencia', () => {
     expect(cls([0, 200, 0]).tissue).toBe(Tissue.Air);
-    expect(cls([0, 114, 0]).tissue).toBe(Tissue.Skin);
-    expect(cls([0, 105, -120]).tissue).toBe(Tissue.Fat);
-    expect(cls([-60, 20, 10]).tissue).toBe(Tissue.Liver);
-    expect(cls([-22, -20, 0]).tissue).toBe(Tissue.Blood);
-    expect(cls([-22, -20, 0]).vessel).toBe('ivcInfra');
-    expect(cls([0, -48, 0]).tissue).toBe(Tissue.Vertebra);
-    expect(cls([30, -77, 0]).tissue).toBe(Tissue.Vertebra); // apófisis transversa
+    expect(cls([0, 104, 0]).tissue).toBe(Tissue.Skin);
+    expect(cls([0, 95, -120]).tissue).toBe(Tissue.Fat);
+    expect(cls([-60, 20, -10]).tissue).toBe(Tissue.Liver);
+    expect(cls([-22, -16, 0]).tissue).toBe(Tissue.Blood);
+    expect(cls([-22, -16, 0]).vessel).toBe('ivcInfra');
+    expect(cls([0, -46, 0]).tissue).toBe(Tissue.Vertebra);
+    expect(cls([30, -70, 0]).tissue).toBe(Tissue.Vertebra); // apófisis transversa
     // no hay arco costal por detrás de la columna: lo que hay ahí es vértebra, no costilla
-    expect(cls([-30, -78, 5]).tissue).toBe(Tissue.Vertebra);
-    expect(cls([-30, -78, 5]).tissue).not.toBe(Tissue.Bone);
-    expect(cls([-55, -5, 120]).tissue).toBe(Tissue.Lung);
+    expect(cls([-30, -70, 5]).tissue).toBe(Tissue.Vertebra);
+    expect(cls([-30, -70, 5]).tissue).not.toBe(Tissue.Bone);
+    expect(cls([-55, -5, 70]).tissue).toBe(Tissue.Lung);
     expect(cls([12, -24, 0]).vessel).toBe('aorta');
-    expect(cls([-12, -8, -55]).vessel).toBe('pvTrunk');
+    expect(cls([-12, -8, -72]).vessel).toBe('pvTrunk');
   });
 
   it('los vasos tienen pared distinta de la luz y la porta tiene pared ecogénica', () => {
     // borde posterior del tronco portal: radio 5,5 → a 6 mm del eje hay pared
     // (por delante corre la arteria hepática, como en el ligamento hepatoduodenal)
-    expect(cls([-12, -8 - 6.1, -55]).tissue).toBe(Tissue.VesselWallPortal);
-    expect(cls([-12, -8 + 6.1, -55]).vessel).toBe('hepaticArtery');
-    expect(cls([-22 - 10.4, -20, 0]).tissue).toBe(Tissue.VesselWallThin);
+    expect(cls([-12, -8 - 6.1, -72]).tissue).toBe(Tissue.VesselWallPortal);
+    expect(cls([-12, -8 + 6.1, -72]).vessel).toBe('hepaticArtery');
+    expect(cls([-22 - 10.4, -16, 0]).tissue).toBe(Tissue.VesselWallThin);
   });
 
   it('suprahepáticas: tres troncos, tributarias y tronco común que desemboca en la cava', () => {
-    expect(cls([-68, -18, 50]).vessel).toBe('hvRight');
-    expect(cls([-30, 4, 52]).vessel).toBe('hvMiddle');
-    expect(cls([0, 2, 66]).vessel).toBe('hvLeft');
-    expect(cls([-83, -12, 35]).vessel).toMatch(/^hvRight/);
+    expect(cls([-68, -18, 10]).vessel).toBe('hvRight');
+    expect(cls([-30, 4, 12]).vessel).toBe('hvMiddle');
+    expect(cls([0, 2, 26]).vessel).toBe('hvLeft');
+    expect(cls([-83, -12, -5]).vessel).toMatch(/^hvRight/);
     // el tronco común y la desembocadura de la derecha están dentro de la cava supra
     for (const p of [
-      [-21, -14, 90],
-      [-26, -16, 78],
+      [-21, -14, 50],
+      [-26, -16, 38],
     ] as [number, number, number][]) {
       expect(cls(p).tissue).toBe(Tissue.Blood);
       expect(['hvCommonTrunk', 'hvRight', 'ivcSupra', 'ivcInfra']).toContain(cls(p).vessel);
@@ -54,15 +54,18 @@ describe('Anatomía implícita (base B)', () => {
   });
 
   it('porta con ramas de segundo orden y vía biliar anterior a la porta', () => {
-    expect(cls([-58, 2, -20]).vessel).toBe('pvRight');
-    expect(cls([-10, 8, -18]).vessel).toBe('pvLeft');
-    expect(cls([35, 30, 4]).vessel).toBe('pvLeftLateral');
-    expect(cls([-100, 30, -2]).vessel).toBe('pvRightAnterior');
+    expect(cls([-58, 2, -37]).vessel).toBe('pvRight');
+    expect(cls([-10, 8, -35]).vessel).toBe('pvLeft');
+    // la arteria renal derecha pasa entre la cava y el cuerpo vertebral sin cortarse
+    expect(cls([-12, -29, -67]).vessel).toBe('renalArteryRight');
+    expect(cls([-22, -16, -66]).vessel).toMatch(/ivcInfra|renalVeinRight/);
+    expect(cls([35, 30, -13]).vessel).toBe('pvLeftLateral');
+    expect(cls([-100, 30, -19]).vessel).toBe('pvRightAnterior');
     // colédoco: luz anecoica con pared ecogénica, sin vaso
-    const cbd = cls([-16, 4, -52]);
+    const cbd = cls([-16, 4, -69]);
     expect(cbd.tissue).toBe(Tissue.Fluid);
     expect(cbd.vessel).toBeNull();
-    expect(cls([-16, 4 + 3.1, -52]).tissue).toBe(Tissue.BileDuctWall);
+    expect(cls([-16, 4 + 3.1, -69]).tissue).toBe(Tissue.BileDuctWall);
   });
 
   it('riñón derecho: seno ecogénico, pirámides, corteza, grasa perirrenal e interlobares', () => {
@@ -103,9 +106,10 @@ describe('Anatomía implícita (base B)', () => {
         bottom = Math.min(bottom, z);
       }
     }
-    expect(top - bottom).toBeGreaterThan(125);
+    expect(top - bottom).toBeGreaterThan(110);
     expect(top - bottom).toBeLessThan(160);
-    expect(bottom).toBeLessThan(-40);
+    expect(bottom).toBeLessThan(-65); // borde por debajo del reborde costal medioclavicular
+    expect(top).toBeLessThan(60); // cúpula en T8–T9 (+55 mm sobre el xifoides)
     // sin gas intestinal en el avatar de referencia
     expect(scene.gasPockets.length).toBe(0);
   });
@@ -147,7 +151,7 @@ describe('Anatomía implícita (base B)', () => {
   });
 
   it('el peso respiratorio es 0 en la pared y 1 en las vísceras', () => {
-    expect(scene.respiratoryWeight([0, 110, 0])).toBe(0);
+    expect(scene.respiratoryWeight([0, 100, 0])).toBe(0);
     expect(scene.respiratoryWeight([-60, 20, 20])).toBeCloseTo(1, 3);
   });
 

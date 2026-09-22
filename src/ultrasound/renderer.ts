@@ -157,9 +157,14 @@ export class UltrasoundRenderer {
   /** Número de líneas del sector (viene del transductor; fija el ancho de las texturas). */
   readonly lines: number;
 
+  /** Escena que se dibuja; `setScene` la cambia sin recompilar los programas. */
+  get scene(): AnatomyScene {
+    return this.currentScene;
+  }
+
   constructor(
     readonly canvas: HTMLCanvasElement,
-    readonly scene: AnatomyScene,
+    private currentScene: AnatomyScene,
     readonly profile: TransducerProfile,
   ) {
     this.lines = profile.geometry.lines;
@@ -194,9 +199,36 @@ export class UltrasoundRenderer {
   }
 
   /**
-   * Libera programas, texturas, FBO y el PBO del mapa. Obligatorio al cambiar de
-   * caso o reconstruir tras una pérdida de contexto: el canvas es el mismo y los
-   * recursos no liberados se acumulan en la GPU.
+   * Cambia de paciente conservando programas y destinos: los shaders no dependen de la escena
+   * (solo sus uniforms y la textura de datos), así que el cambio de caso deja de recompilar
+   * diez programas (≈ 200 ms con GPU, muchos segundos con SwiftShader). Se descarta todo lo
+   * que pertenecía al paciente anterior: uniforms en caché, persistencia, color y mapa de tejidos.
+   */
+  setScene(scene: AnatomyScene): void {
+    const gl = this.gl;
+    this.currentScene = scene;
+    this.sceneValuesFor = null;
+    this.sceneValuesTubes = -1;
+    this.sceneData.fill(0);
+    this.headerAll.fill(0);
+    this.uploadSceneStatic();
+    this.lastColorFrame = null;
+    if (this.mapPending) gl.deleteSync(this.mapPending.sync);
+    this.mapPending = null;
+    this.mapLast = null;
+    if (this.tPersist)
+      for (const t of this.tPersist) {
+        bindTarget(gl, t);
+        gl.clearColor(0, 0, 0, 1);
+        gl.clear(gl.COLOR_BUFFER_BIT);
+      }
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  }
+
+  /**
+   * Libera programas, texturas, FBO y el PBO del mapa. Obligatorio al reconstruir tras una
+   * pérdida de contexto o al cerrar: el canvas es el mismo y los recursos no liberados se
+   * acumulan en la GPU. (El cambio de caso usa `setScene`.)
    */
   dispose(): void {
     const gl = this.gl;
@@ -216,7 +248,7 @@ export class UltrasoundRenderer {
 
   /** Datos estáticos de la escena (nodos, cabeceras de tubos, tejidos). */
   private uploadSceneStatic(): void {
-    const s = this.scene;
+    const s = this.currentScene;
     const tubes = [
       ...s.vessels.map((v) => ({
         tube: v.tube,
@@ -274,7 +306,7 @@ export class UltrasoundRenderer {
    */
   private setSceneUniforms(p: GLProgram, inputs: FrameInputs): void {
     if (this.sceneValuesFor !== inputs.sample || this.sceneValuesTubes !== this.tubeCount) {
-      this.sceneValues = evaluateSceneUniforms(this.scene, { sample: inputs.sample, tubeCount: this.tubeCount });
+      this.sceneValues = evaluateSceneUniforms(this.currentScene, { sample: inputs.sample, tubeCount: this.tubeCount });
       this.sceneValuesFor = inputs.sample;
       this.sceneValuesTubes = this.tubeCount;
     }
@@ -289,7 +321,7 @@ export class UltrasoundRenderer {
    * por cuadro sobreviven 20–40. La lista compacta lleva el índice original en H2.w.
    */
   private updateSceneDynamic(inputs: FrameInputs, allTubes = false): void {
-    const s = this.scene;
+    const s = this.currentScene;
     const fr = inputs.frame;
     const total = this.tubeCountTotal;
     let kept = 0;

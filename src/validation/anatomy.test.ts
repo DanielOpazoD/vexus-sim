@@ -18,11 +18,15 @@ describe('Anatomía implícita (base B)', () => {
     expect(cls([0, 114, 0]).tissue).toBe(Tissue.Skin);
     expect(cls([0, 105, -120]).tissue).toBe(Tissue.Fat);
     expect(cls([-60, 20, 10]).tissue).toBe(Tissue.Liver);
-    expect(cls([-22, -30, 0]).tissue).toBe(Tissue.Blood);
-    expect(cls([-22, -30, 0]).vessel).toBe('ivcInfra');
-    expect(cls([0, -72, 0]).tissue).toBe(Tissue.Bone);
+    expect(cls([-22, -20, 0]).tissue).toBe(Tissue.Blood);
+    expect(cls([-22, -20, 0]).vessel).toBe('ivcInfra');
+    expect(cls([0, -48, 0]).tissue).toBe(Tissue.Vertebra);
+    expect(cls([30, -77, 0]).tissue).toBe(Tissue.Vertebra); // apófisis transversa
+    // no hay arco costal por detrás de la columna: lo que hay ahí es vértebra, no costilla
+    expect(cls([-30, -78, 5]).tissue).toBe(Tissue.Vertebra);
+    expect(cls([-30, -78, 5]).tissue).not.toBe(Tissue.Bone);
     expect(cls([-55, -5, 120]).tissue).toBe(Tissue.Lung);
-    expect(cls([12, -38, 0]).vessel).toBe('aorta');
+    expect(cls([12, -24, 0]).vessel).toBe('aorta');
     expect(cls([-12, -8, -55]).vessel).toBe('pvTrunk');
   });
 
@@ -31,7 +35,7 @@ describe('Anatomía implícita (base B)', () => {
     // (por delante corre la arteria hepática, como en el ligamento hepatoduodenal)
     expect(cls([-12, -8 - 6.1, -55]).tissue).toBe(Tissue.VesselWallPortal);
     expect(cls([-12, -8 + 6.1, -55]).vessel).toBe('hepaticArtery');
-    expect(cls([-22 - 10.4, -30, 0]).tissue).toBe(Tissue.VesselWallThin);
+    expect(cls([-22 - 10.4, -20, 0]).tissue).toBe(Tissue.VesselWallThin);
   });
 
   it('suprahepáticas: tres troncos, tributarias y tronco común que desemboca en la cava', () => {
@@ -41,8 +45,8 @@ describe('Anatomía implícita (base B)', () => {
     expect(cls([-83, -12, 35]).vessel).toMatch(/^hvRight/);
     // el tronco común y la desembocadura de la derecha están dentro de la cava supra
     for (const p of [
-      [-21, -24, 90],
-      [-26, -26, 78],
+      [-21, -14, 90],
+      [-26, -16, 78],
     ] as [number, number, number][]) {
       expect(cls(p).tissue).toBe(Tissue.Blood);
       expect(['hvCommonTrunk', 'hvRight', 'ivcSupra', 'ivcInfra']).toContain(cls(p).vessel);

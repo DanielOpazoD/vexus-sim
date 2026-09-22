@@ -42,7 +42,8 @@ uniform vec4 uTorso;      // a, b, zMin, zMax
 uniform vec3 uWall;       // skin, fat, muscle (mm)
 uniform vec4 uDome;       // x0, y0, rx, ry
 uniform vec2 uDome2;      // zBase, h
-uniform vec3 uSpine;      // x0, y0, r
+uniform vec3 uSpine;      // x0, y0, r (cuerpo vertebral)
+uniform vec4 uSpineArch;  // semiancho, y0, y1 del arco posterior con apófisis transversas, 0
 uniform vec3 uLiverC;
 uniform vec3 uLiverR;
 uniform float uLiverTaper;
@@ -181,6 +182,8 @@ float sdRib(vec3 p, vec4 rib, out bool cartilage, out vec3 n) {
   float phi = atan(p.y / uTorso.y, p.x / uTorso.x);
   cartilage = phi > uRibParams.y;
   if (p.x > 15.0) return 1e3;
+  // el arco costal termina en la apófisis transversa: nada por detrás de la columna
+  if (p.y < uSpine.y && abs(p.x - uSpine.x) < uSpineArch.x + 6.0) return 1e3;
   float sc = uRibParams.x;
   float u = p.x / (uTorso.x * sc);
   float v = p.y / (uTorso.y * sc);
@@ -331,8 +334,17 @@ Cls classify(vec3 m) {
   }
   if (inMuscle) { c.tissue = T_MUSCLE; c.bd = min(d - fat, wall - d); c.n = tn; c.spec = 0.2; return c; }
   // Columna
-  float dSpine = length(m.xy - uSpine.xy) - uSpine.z;
-  if (dSpine < 0.0) { c.tissue = T_BONE; c.bd = -dSpine; c.n = normalize(vec3(m.xy - uSpine.xy, 0.0)); c.spec = 0.9; return c; }
+  float dBody = length(m.xy - uSpine.xy) - uSpine.z;
+  float ax = abs(m.x - uSpine.x) - uSpineArch.x;
+  float acy = 0.5 * (uSpineArch.y + uSpineArch.z);
+  float ay = abs(m.y - acy) - 0.5 * (uSpineArch.z - uSpineArch.y);
+  float dArch = length(max(vec2(ax, ay), 0.0)) + min(max(ax, ay), 0.0);
+  float dSpine = min(dBody, dArch);
+  if (dSpine < 0.0) {
+    c.tissue = T_VERTEBRA; c.bd = -dSpine; c.spec = 0.9;
+    c.n = dBody < dArch ? normalize(vec3(m.xy - uSpine.xy, 0.0)) : (ax > ay ? vec3(sign(m.x - uSpine.x), 0.0, 0.0) : vec3(0.0, sign(m.y - acy), 0.0));
+    return c;
+  }
   // Vasos y conductos (descarte por esfera envolvente)
   int bestT = -1; float bestD = 1e9; float bRho; vec3 bTan; float bR; vec3 bN;
   for (int t = 0; t < MAX_TUBES; t++) {

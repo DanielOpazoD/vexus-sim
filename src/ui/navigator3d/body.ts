@@ -85,6 +85,8 @@ export function buildSkeleton(a: AnatomyScene): THREE.Group {
         const ph = side < 0 ? phR : Math.PI - phR;
         const zr = zAnt + 60 * (0.5 - 0.5 * Math.sin(phR));
         const p = surfaceAt(a, ph, zr, 0.85);
+        // el arco termina en la apófisis transversa (mismo criterio que el SDF)
+        if (p.y / CM < a.spine.y0 && Math.abs(p.x / CM - a.spine.x0) < a.spine.archHalfWidth + 6) break;
         pts.push(p);
         if (ribNo <= 7 && phR < 0.5 * Math.PI + 0.45) cart.push(p);
       }
@@ -104,9 +106,14 @@ export function buildSkeleton(a: AnatomyScene): THREE.Group {
     const body = new THREE.Mesh(new THREE.CylinderGeometry(a.spine.r * CM, a.spine.r * CM, 2.2, 20), bone);
     body.rotation.x = Math.PI / 2;
     body.position.set(a.spine.x0 * CM, a.spine.y0 * CM, z * CM);
+    // arco posterior con apófisis transversas (misma caja que el SDF)
+    const archW = a.spine.archHalfWidth * 2 * CM;
+    const archD = (a.spine.archY1 - a.spine.archY0) * CM;
+    const arch = new THREE.Mesh(new RoundedBoxGeometry(archW, archD, 1.4, 2, 0.3), bone);
+    arch.position.set(a.spine.x0 * CM, 0.5 * (a.spine.archY0 + a.spine.archY1) * CM, z * CM);
     const spinous = new THREE.Mesh(new RoundedBoxGeometry(1.2, 2.4, 1.6, 2, 0.3), bone);
-    spinous.position.set(a.spine.x0 * CM, (a.spine.y0 - a.spine.r - 10) * CM, z * CM);
-    g.add(body, spinous);
+    spinous.position.set(a.spine.x0 * CM, (a.spine.archY0 - 8) * CM, z * CM);
+    g.add(body, arch, spinous);
   }
   for (const side of [-1, 1]) {
     const ph = (x: number) => (side < 0 ? Math.PI * x : Math.PI * (1 - x));

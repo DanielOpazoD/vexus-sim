@@ -345,6 +345,20 @@ tubos el bucle GLSL por muestra subía el cuadro de 13 a 23 ms: ahora la textura
 cuadro solo los tubos cuya esfera envolvente corta la losa del plano (elevación ± 12 mm), 20–40 de
 ~90, con el índice original en H2.w; cuadro de nuevo en 12–14 ms y equivalencia TS ↔ GLSL 100 %.
 
+## 35. Columna con arco posterior, costillas que terminan en la apófisis transversa, «columna» ≠ «costilla»
+
+Daniel señaló una «costilla» flotando bajo la VCI a 20 cm en el corte y en la imagen. Diagnóstico:
+(1) el hueso profundo era el **cuerpo vertebral** (bien situado detrás de aorta y cava) pero el corte
+rotulaba todo `Bone` como «costilla»; (2) la columna era solo un cilindro de 40 mm demasiado
+posterior (su cara dorsal quedaba dentro de la pared), sin arco ni apófisis transversas; (3) las
+costillas eran un anillo completo que pasaba por detrás de la columna. Ahora: `Spine` = cuerpo
+vertebral (r 18 mm, centro y −48: cara posterior a ≈ 5 cm de la piel dorsal) ∪ arco posterior con
+apófisis transversas (caja ±40 mm, y −90…−64), en TS (`sdSpine`) y GLSL; `sdRib` no existe por
+detrás de la columna en |x| < 46 mm (las costillas se articulan con las transversas), en TS, GLSL y
+en el avatar 3D; cava, aorta, renales y desembocadura de las suprahepáticas 10 mm más anteriores
+(justo delante del cuerpo vertebral); tejido `Vertebra` (mismas propiedades que el hueso cortical)
+para rotular «columna». Equivalencia TS ↔ GLSL 100 %.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

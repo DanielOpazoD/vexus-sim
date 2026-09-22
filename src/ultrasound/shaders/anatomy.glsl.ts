@@ -16,6 +16,7 @@
  */
 import { HILUM_NOTCH, PYRAMIDS, RENAL_CAPSULE_MM, RENAL_PELVIS } from '../../anatomy/primitives';
 import { DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, TISSUE_GLSL_NAME } from '../../anatomy/tissues';
+import { MAX_GAS, MAX_RIBS, SCENE_UNIFORMS_GLSL } from './sceneUniforms';
 
 export const MAX_TUBES = 128;
 export const MAX_NODES = 640;
@@ -24,8 +25,7 @@ export const SCENE_TEX_W = 256;
 /** Segmentos por tubo que recorre el shader (`tubeQuery`): un tubo con más nodos se truncaría. */
 export const MAX_TUBE_SEGMENTS = 8;
 export const SCENE_TEX_H = Math.ceil((NODE_BASE + MAX_NODES) / SCENE_TEX_W);
-export const MAX_GAS = 6;
-export const MAX_RIBS = 6;
+export { MAX_GAS, MAX_RIBS } from './sceneUniforms';
 
 const PYRAMID_TABLE = `const vec2 PYR[${PYRAMIDS.length}] = vec2[${PYRAMIDS.length}](${PYRAMIDS.map(([t, u]) => `vec2(${t.toFixed(6)}, ${u.toFixed(1)})`).join(', ')});`;
 const PELVIS = `const vec4 PELVIS = vec4(${RENAL_PELVIS.radii[0].toFixed(1)}, ${RENAL_PELVIS.radii[1].toFixed(1)}, ${RENAL_PELVIS.radii[2].toFixed(1)}, ${RENAL_PELVIS.offsetV.toFixed(1)}); const float RENAL_CAPSULE_MM = ${RENAL_CAPSULE_MM.toFixed(2)};`;
@@ -48,47 +48,7 @@ ${TISSUE_DEFINES}
 #define N_PYR ${PYRAMIDS.length}
 #define CAPSULE_MM ${LIVER_CAPSULE_MM.toFixed(3)}
 
-uniform vec4 uTorso;      // a, b, zMin, zMax
-uniform vec3 uWall;       // skin, fat, muscle (mm)
-uniform vec4 uDomeR;      // hemicúpula derecha: x0, y0, rx, ry
-uniform vec4 uDomeL;      // hemicúpula izquierda
-uniform vec4 uDiaphragm;  // apexR, apexL, edgeZ, edgeRise
-uniform vec3 uSpine;      // x0, y0, r (cuerpo vertebral)
-uniform vec4 uSpineArch;  // semiancho, y0, y1 del arco posterior con apófisis transversas, 0
-uniform vec3 uLiverC;
-uniform vec3 uLiverR;
-uniform float uLiverTaper;
-uniform vec3 uLiverLC;
-uniform vec3 uLiverLR;
-uniform float uLiverLTaper;
-uniform float uLiverBlend;
-uniform vec4 uVisceral;   // zAtY0, slopeY, edgeRound, renalImpression
-uniform vec4 uFissure;
-uniform vec4 uLigVen;     // normal.xyz del plano del ligamento venoso, d (n·a)
-uniform vec4 uLigVenBox;  // xMin, xMax, zMin, zMax (semiespesor 1,2 mm)    // x, semiancho, profundidad, zMax de la fisura umbilical (redondeo 3 mm)
-uniform vec3 uGbC;
-uniform vec3 uGbR;
-uniform vec3 uGbU;
-uniform vec3 uGbV;
-uniform vec3 uGbW;
-uniform vec2 uGbExtra;    // afilamiento en +u, espesor de pared (mm)
-uniform vec4 uRA;
-uniform vec4 uGas[MAX_GAS];
-uniform vec4 uRibs[MAX_RIBS];   // zAnterior, tilt, halfWidth, halfThickness
-uniform vec2 uRibParams;        // scale, cartilageFromPhi
-// Riñones: centro, semiejes, base (u, v, w), seno (semiejes, desplazamiento), radio del hilio
-uniform vec3 uKidC[2];
-uniform vec3 uKidR[2];
-uniform vec3 uKidU[2];
-uniform vec3 uKidV[2];
-uniform vec3 uKidW[2];
-uniform vec4 uKidSinus[2];      // semiejes xyz, desplazamiento
-uniform vec2 uKidExtra;         // radio del hilio, grasa perirrenal (mm)
-uniform sampler2D uSceneTex;
-uniform int uTubeCount;
-uniform vec4 uResp;       // amplitude (mm), dir.xyz
-uniform vec4 uCurtain;    // borde caudal z de la cortina pulmonar (mm), espesor, xMax, yMax
-uniform float uRespVel;   // velocidad del diafragma (mm/s)
+${SCENE_UNIFORMS_GLSL}
 
 struct Cls {
   int tissue;

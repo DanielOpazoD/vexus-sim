@@ -1,7 +1,6 @@
-import { LUNG_CURTAIN, type AnatomyScene, type VesselCaliber } from '../anatomy/scene';
+import type { AnatomyScene, VesselCaliber } from '../anatomy/scene';
 import { VESSEL_META } from '../physiology/vessels';
 import { Tissue } from '../anatomy/tissues';
-import { RespiratoryDeformation } from '../anatomy/deformation';
 import { TISSUES, TISSUE_COUNT, attenuationDbPerCm } from '../anatomy/tissues';
 import type { PhysiologySample } from '../physiology/engine';
 import { lineAngle, lineCoupling, type ProbeFrame, type ProbePose, type Transducer } from '../probe/probe';
@@ -9,7 +8,8 @@ import type { TransducerProfile } from './transducerProfile';
 import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
 import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
 import { GLProgram, bindTarget, createTarget, createTexture, deleteTarget, drawFullscreen, type RenderTarget } from './gl';
-import { MAX_GAS, MAX_NODES, MAX_RIBS, MAX_TUBES, MAX_TUBE_SEGMENTS, NODE_BASE, SCENE_TEX_H, SCENE_TEX_W } from './shaders/anatomy.glsl';
+import { MAX_NODES, MAX_TUBES, MAX_TUBE_SEGMENTS, NODE_BASE, SCENE_TEX_H, SCENE_TEX_W } from './shaders/anatomy.glsl';
+import { evaluateSceneUniforms, uploadSceneUniforms, type SceneUniformValues } from './shaders/sceneUniforms';
 import {
   FRAG_AXIAL,
   FRAG_BLIT,
@@ -121,6 +121,9 @@ export class UltrasoundRenderer {
   private pBlit: GLProgram;
   private pMap: GLProgram;
   private pQuery: GLProgram | null = null;
+  private sceneValues: SceneUniformValues = [];
+  private sceneValuesFor: FrameInputs['sample'] | null = null;
+  private sceneValuesTubes = -1;
   private tMap: RenderTarget;
   private mapPixels = new Uint8Array(0);
   private mapPbo: WebGLBuffer | null = null;
@@ -265,90 +268,18 @@ export class UltrasoundRenderer {
     }
   }
 
+  /**
+   * Uniforms de la anatomía desde el esquema único (`sceneUniforms.ts`): se evalúan una vez por
+   * instante y se suben a cada programa; la textura de escena va aparte (unidad 6).
+   */
   private setSceneUniforms(p: GLProgram, inputs: FrameInputs): void {
-    const s = this.scene;
-    const t = s.torso;
-    p.v4('uTorso', t.a, t.b, t.zMin, t.zMax);
-    p.v3('uWall', [t.skinMm, t.fatMm, t.muscleMm]);
-    const dia = s.diaphragm;
-    p.v4('uDomeR', dia.right.x0, dia.right.y0, dia.right.rx, dia.right.ry);
-    p.v4('uDomeL', dia.left.x0, dia.left.y0, dia.left.rx, dia.left.ry);
-    p.v4('uDiaphragm', dia.right.apex, dia.left.apex, dia.edgeZ, dia.edgeRise);
-    p.v3('uSpine', [s.spine.x0, s.spine.y0, s.spine.r]);
-    p.v4('uSpineArch', s.spine.archHalfWidth, s.spine.archY0, s.spine.archY1, 0);
-    p.v3('uLiverC', s.liver.center);
-    p.v3('uLiverR', s.liver.radii);
-    p.f('uLiverTaper', s.liver.taperX);
-    p.v3('uLiverLC', s.liverLeft.center);
-    p.v3('uLiverLR', s.liverLeft.radii);
-    p.f('uLiverLTaper', s.liverLeft.taperX);
-    p.f('uLiverBlend', s.liverBlendMm);
-    p.v4('uVisceral', s.visceralPlane.zAtY0, s.visceralPlane.slopeY, s.visceralPlane.edgeRoundMm, s.renalImpressionMm);
-    p.v4('uFissure', s.umbilicalFissure.x, s.umbilicalFissure.halfWidth, s.umbilicalFissure.depthMm, s.umbilicalFissure.zMax);
-    const lv = s.ligamentumVenosumPlane();
-    p.v4(
-      'uLigVen',
-      lv.normal[0],
-      lv.normal[1],
-      lv.normal[2],
-      lv.normal[0] * lv.point[0] + lv.normal[1] * lv.point[1] + lv.normal[2] * lv.point[2],
-    );
-    p.v4('uLigVenBox', s.ligamentumVenosum.xMin, s.ligamentumVenosum.xMax, s.ligamentumVenosum.zMin, s.ligamentumVenosum.zMax);
-    p.v3('uGbC', s.gallbladder.center);
-    p.v3('uGbR', s.gallbladder.radii);
-    p.v3('uGbU', s.gallbladder.u);
-    p.v3('uGbV', s.gallbladder.v);
-    p.v3('uGbW', s.gallbladder.w);
-    p.v2('uGbExtra', s.gallbladder.taperU, s.gallbladderWallMm);
-    p.v4('uRA', s.rightAtrium.center[0], s.rightAtrium.center[1], s.rightAtrium.center[2], s.rightAtrium.r);
-    const kidneys = [s.kidneyRight, s.kidneyLeft];
-    const pack = (f: (k: (typeof kidneys)[number]) => number[]): Float32Array => new Float32Array(kidneys.flatMap(f));
-    p.v3v(
-      'uKidC',
-      pack((k) => k.center),
-    );
-    p.v3v(
-      'uKidR',
-      pack((k) => k.radii),
-    );
-    p.v3v(
-      'uKidU',
-      pack((k) => k.u),
-    );
-    p.v3v(
-      'uKidV',
-      pack((k) => k.v),
-    );
-    p.v3v(
-      'uKidW',
-      pack((k) => k.w),
-    );
-    p.v4v(
-      'uKidSinus',
-      pack((k) => [...k.sinusRadii, k.sinusOffset]),
-    );
-    p.v2('uKidExtra', s.kidneyRight.hilumRadius, s.perirenalMm);
-    const gas = new Float32Array(MAX_GAS * 4);
-    s.gasPockets.slice(0, MAX_GAS).forEach((g, i) => gas.set([g.center[0], g.center[1], g.center[2], g.r], i * 4));
-    for (let i = s.gasPockets.length; i < MAX_GAS; i++) gas.set([0, 0, 9999, 0], i * 4);
-    p.v4v('uGas', gas);
-    const ribs = new Float32Array(MAX_RIBS * 4);
-    s.ribs.slice(0, MAX_RIBS).forEach((r, i) => ribs.set([r.zAnterior, r.tilt, r.halfWidth, r.halfThickness], i * 4));
-    for (let i = s.ribs.length; i < MAX_RIBS; i++) ribs.set([9999, 0, 1, 1], i * 4);
-    p.v4v('uRibs', ribs);
-    p.v2('uRibParams', s.ribs[0]?.scale ?? 0.85, s.ribs[0]?.cartilageFromPhi ?? 9);
+    if (this.sceneValuesFor !== inputs.sample || this.sceneValuesTubes !== this.tubeCount) {
+      this.sceneValues = evaluateSceneUniforms(this.scene, { sample: inputs.sample, tubeCount: this.tubeCount });
+      this.sceneValuesFor = inputs.sample;
+      this.sceneValuesTubes = this.tubeCount;
+    }
+    uploadSceneUniforms(p, this.sceneValues);
     p.tex('uSceneTex', 6, this.sceneTex);
-    p.i('uTubeCount', this.tubeCount);
-    const dir = RespiratoryDeformation.direction;
-    p.v4('uResp', inputs.sample.resp.diaphragmCaudalMm, dir[0], dir[1], dir[2]);
-    p.f('uRespVel', inputs.sample.resp.diaphragmVelocityMmS);
-    p.v4(
-      'uCurtain',
-      LUNG_CURTAIN.z0 - inputs.sample.resp.diaphragmCaudalMm,
-      LUNG_CURTAIN.thicknessMm,
-      LUNG_CURTAIN.xMax,
-      LUNG_CURTAIN.yMax,
-    );
   }
 
   /**

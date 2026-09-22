@@ -113,6 +113,8 @@ const BLOOD_ID: number = Tissue.Blood;
 const WORKER_TIMEOUT_MS = 3000;
 
 export class CutMapView {
+  /** Rótulos de estructuras sobre el corte (solo en modo docente). */
+  private labels = true;
   private img: ImageData | null = null;
   private lastUpdate = -1;
   private worker: Worker | null = null;
@@ -195,6 +197,12 @@ export class CutMapView {
   }
 
   /** Pide un mapa nuevo a ≤ `hz` veces por segundo y dibuja el último recibido. */
+  /** Muestra u oculta los rótulos; el lienzo lo refleja en `data-labels` (pruebas de extremo a extremo). */
+  setLabels(on: boolean): void {
+    this.labels = on;
+    this.canvas.dataset.labels = on ? '1' : '0';
+  }
+
   draw(sim: Simulator, nowMs: number, hz = 8): void {
     // Vigilante: una petición sin respuesta en 3 s cuenta como caída del Worker
     if (this.pending && nowMs - this.pendingSince > WORKER_TIMEOUT_MS) this.fail(new Error('el Worker del corte no responde (3 s)'), nowMs);
@@ -286,7 +294,8 @@ export class CutMapView {
       const { x, y } = beamToPixel(layout, tr, tr.halfSector, rr);
       ctx.fillText(String(cm), Math.max(2, x - 16), y);
     }
-    // rótulos
+    // rótulos (el alumno no los ve: identificar la estructura es parte del examen)
+    if (!this.labels) return;
     ctx.font = `bold ${Math.round(11 * (W / 300))}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.lineWidth = 3;

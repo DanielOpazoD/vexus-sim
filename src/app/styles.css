@@ -1,3 +1,8 @@
+/* El atributo hidden gana a cualquier display de componente (p. ej. .toggle, .menu). */
+[hidden] {
+  display: none !important;
+}
+
 :root {
   --bg: #0b0e12;
   --panel: #12161c;

@@ -5,14 +5,14 @@ import { expect, test, type Page } from '@playwright/test';
  * módulo arranca en el navegador, que WebGL2 renderiza cuadros, que la UI está
  * cableada (caso, modos, medición) y que no hay errores de consola.
  */
-async function bootWithoutErrors(page: Page): Promise<string[]> {
+async function bootWithoutErrors(page: Page, query = '?e2e=1'): Promise<string[]> {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
   page.on('console', (m) => {
     if (m.type() === 'error') errors.push(`console: ${m.text()}`);
   });
   // ?e2e expone ganchos de prueba estables (window.__vexusTest); nada más cambia
-  await page.goto('/?e2e=1');
+  await page.goto(`/${query}`);
   await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: 30_000 });
   // los ganchos de prueba se cargan de forma diferida (import dinámico)
   await expect.poll(() => page.evaluate(() => typeof window.__vexusTest), { timeout: 30_000 }).toBe('object');
@@ -42,7 +42,8 @@ test('cambia de caso y el HUD lo refleja', async ({ page }) => {
     return `hud=${hud} · selector=${value} · avisos=${JSON.stringify(banner)} · errores=${JSON.stringify(errors)}`;
   };
   await page.selectOption('#case-select', 'severe-congestion');
-  await expect.poll(() => hudOr('#hud-tl', 'Congestión venosa grave'), { timeout: 30_000 }).toBe('ok');
+  // modo alumno: el caso se rotula «Paciente B», nunca con su diagnóstico
+  await expect.poll(() => hudOr('#hud-tl', 'Paciente B'), { timeout: 30_000 }).toBe('ok');
   await page.selectOption('#case-select', 'af-moderate-congestion');
   await expect.poll(() => hudOr('#hud-tr', 'FA'), { timeout: 30_000 }).toBe('ok');
   expect(errors).toEqual([]);
@@ -50,7 +51,8 @@ test('cambia de caso y el HUD lo refleja', async ({ page }) => {
 
 test('modos por teclado, pestaña Medir y captura de una medición', async ({ page }) => {
   test.setTimeout(180_000);
-  const errors = await bootWithoutErrors(page);
+  // ?docente: al final se abre la pestaña Docente (en producción la casilla solo aparece así)
+  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
   await page.keyboard.press('p');
   await expect(page.locator('#mode-pw')).toHaveClass(/active/);
   await expect(page.locator('#hud-br')).toContainText('PW');
@@ -143,4 +145,29 @@ test('sin contacto no hay Doppler: el color y el espectro se apagan al levantar 
   expect(r.pwContact! as number, tag).toBeGreaterThan((r.pwLifted as number) + 8);
   expect(r.pwLifted as number, tag).toBeLessThan(11);
   expect(errors).toEqual([]);
+});
+
+test('modo alumno ciego: sin diagnóstico en pantalla; el docente lo ve con ?docente', async ({ page }) => {
+  // Guía §17. Nombres clínicos de los casos (no deben aparecer en modo alumno).
+  const diagnoses = ['Adulto sano', 'Congestión venosa', 'congestión moderada', 'fallo derecho'];
+  const errors = await bootWithoutErrors(page);
+  await expect(page.locator('#debug-toggle')).toBeHidden();
+  await page.selectOption('#case-select', 'severe-congestion');
+  await expect(page.locator('#hud-tl')).toContainText('Paciente B');
+  const body = await page.locator('body').innerText();
+  for (const d of diagnoses) expect(body, d).not.toContain(d);
+  const options = await page.locator('#case-select option').allTextContents();
+  expect(options).toEqual(['Paciente A', 'Paciente B', 'Paciente C']);
+  await expect(page.locator('#cutmap')).toHaveAttribute('data-labels', '0');
+  await expect(page.locator('#layer-vessels')).toBeDisabled();
+  expect(errors).toEqual([]);
+
+  // Con ?docente la casilla aparece y al marcarla vuelven el nombre, los rótulos y los vasos
+  const errors2 = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  await page.locator('#debug-toggle').check();
+  await page.selectOption('#case-select', 'severe-congestion');
+  await expect(page.locator('#hud-tl')).toContainText('Congestión venosa grave');
+  await expect(page.locator('#cutmap')).toHaveAttribute('data-labels', '1');
+  await expect(page.locator('#layer-vessels')).toBeEnabled();
+  expect(errors2).toEqual([]);
 });

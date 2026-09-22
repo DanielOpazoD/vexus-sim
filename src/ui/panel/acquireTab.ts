@@ -1,3 +1,4 @@
+import { caseDisplayLabel } from '../../app/blindMode';
 import { START_POINTS, type StartPoint } from '../../app/startPoints';
 import type { RespiratoryPattern } from '../../physiology/patientState';
 import { button, help, row, slider } from '../controls';
@@ -108,7 +109,8 @@ export function buildAcquireTab(ctx: PanelContext, p: HTMLElement, onStartPoint:
   info.className = 'help';
   pat.appendChild(info);
   ctx.track({
-    sync: () => (info.textContent = `${s().patient.label} · FC ${s().patient.heartRateBpm} · resp ${s().patient.respiratoryRateMin}/min`),
+    sync: () =>
+      (info.textContent = `${caseDisplayLabel(s().patient.id, ctx.store.get().debug)} · FC ${s().patient.heartRateBpm} · resp ${s().patient.respiratoryRateMin}/min`),
   });
   const rl = document.createElement('div');
   rl.className = 'help';

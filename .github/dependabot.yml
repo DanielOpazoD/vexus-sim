@@ -1,0 +1,21 @@
+# Actualizaciones semanales agrupadas (una PR por ecosistema): CI completo decide si entran.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    groups:
+      desarrollo:
+        dependency-type: development
+      produccion:
+        dependency-type: production
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      acciones:
+        patterns: ['*']

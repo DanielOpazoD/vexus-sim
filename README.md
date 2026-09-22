@@ -27,14 +27,15 @@ npm install
 npm run dev        # http://localhost:6600
 ```
 
-| Comando              | Qué hace                                                                            |
-| -------------------- | ----------------------------------------------------------------------------------- |
-| `npm run dev`        | servidor de desarrollo (Vite)                                                       |
-| `npm test`           | pruebas rápidas (clasificador, anatomía, sonda, capas, documentación)               |
-| `npm run test:all`   | también las lentas (`// @tier slow`: fisiología emergente y cadena Doppler, ~1 min) |
-| `npm run calibrate`  | integra los casos y resume los observables fisiológicos verdaderos                  |
-| `npm run docs:index` | regenera `docs/DECISIONS_INDEX.md`                                                  |
-| `npm run check`      | lint + tipos + todas las pruebas + build + presupuesto de bundle                    |
+| Comando              | Qué hace                                                                                   |
+| -------------------- | ------------------------------------------------------------------------------------------ |
+| `npm run dev`        | servidor de desarrollo (Vite)                                                              |
+| `npm test`           | pruebas rápidas (clasificador, anatomía, sonda, capas, documentación)                      |
+| `npm run test:all`   | también las lentas (`// @tier slow`: fisiología emergente y cadena Doppler, ~1 min)        |
+| `npm run calibrate`  | integra los casos y resume los observables fisiológicos verdaderos                         |
+| `npm run docs:index` | regenera `docs/DECISIONS_INDEX.md`                                                         |
+| `npm run check`      | formato + lint (con tipos) + tipos + todas las pruebas con cobertura + build + presupuesto |
+| `npm run e2e`        | extremo a extremo en Chromium (arranque, medición, pérdida de GPU, equivalencia TS ↔ GLSL) |
 
 Requiere Node ≥ 22 y un navegador con WebGL2 + `EXT_color_buffer_float` (Chrome, Safari 17+,
 Firefox). Única dependencia de producción: three.js (navegador 3D); todo lo demás es procedural. El audio Doppler se activa con el botón «Audio» (política de reproducción del navegador).
@@ -81,25 +82,21 @@ tools/           calibración, depuración de ondas, índice de decisiones, pres
 docs/            DECISIONS.md (+ índice generado), LIMITATIONS.md, APPROXIMATIONS.md, ARCHITECTURE.md
 ```
 
-## Estado (iteración 2)
+## Estado (v0.4.0 + cambios sin publicar)
 
-Implementado: reloj único; PatientState; ritmo sinusal con variabilidad y ECG; contorno de AD;
-red esplácnico–sinusoidal–suprahepática–cava con ley de tubo y lecho renal; respiración con presiones
-pleural y abdominal; anatomía implícita (pared, costillas, diafragma, pulmón, hígado en cuña con fosa
-vesicular e impresión renal, vesícula, VCI elíptica, 3 suprahepáticas con tributarias y tronco común,
-porta con ramas de segundo orden, arteria hepática, vía biliar, aorta, riñones con seno, pirámides y
-vasos renales e interlobares, columna); sonda libre
-6DOF con acoplamiento por línea; modo B en GPU con speckle ligado al tejido, PSF dependiente de
-profundidad y foco, atenuación por tejido, sombra costal, gas con reverberación y cola sucia,
-espejo diafragmático por reflexión real del rayo, TGC nominal + manual, ganancia, rango dinámico,
-persistencia; Doppler color por emulación del estimador de autocorrelación (aliasing, blooming,
-flash, filtro de clutter, cadencia propia); Doppler pulsado con volumen de muestra 3D de dispersores
-advectados, IQ, filtro de pared de 4.º orden, espectrograma STFT y audio direccional de la misma IQ;
-medición observada (suprahepática, porta, vena interlobar) y clasificación VExUS C completa con reglas
-de incertidumbre; tres casos con el mismo motor (sano, congestión grave, FA con congestión moderada); navegador 3D; corte ecográfico en un Worker; panel por
-pestañas; modo docente.
+Cadena causal completa: reloj único → fisiología 0D (contorno de AD, red esplácnico–sinusoidal–
+suprahepática–cava con ley de tubo, resistores de Starling y lecho renal; respiración) → anatomía
+implícita compartida TS/GLSL (pared, costillas oblicuas, columna, diafragma en dos hemicúpulas, cortina
+pulmonar, hígado con fisura umbilical, ligamentos redondo y venoso y segmentos de Couinaud, vesícula en
+pera con pared, VCI, suprahepáticas, porta con pared periportal ∝ calibre, vía biliar, riñones con
+cápsula, pirámides, seno y pelvis) → sonda 6DOF con acoplamiento y pared blanda → modo B en GPU (PSF con
+número F) → color por celdas con varianza de Kasai y cadencia física → PW con volumen de muestra 3D,
+espectro y audio → medición del alumno (envolvente por percentil de banda contigua) → VExUS C. Tres
+casos con el mismo motor (sano, congestión grave, FA con congestión moderada).
 
-Pendiente para la iteración 3: mejoras de PSF/lóbulos laterales/armónicos, movimiento cardíaco
-transmitido, extrasístoles y bloqueos, confusores (gas, ascitis), más casos de la matriz G.2, riñón izquierdo con
-interlobares.
+Garantías automáticas: equivalencia TS ↔ GLSL en CI (tejido, vaso, velocidad), cadena completa del
+alumno por caso (medido = verdad, grados 0/3/1), propiedades del motor con fast-check, límites del
+shader con margen, cobertura ≥ 86 % con umbrales, e2e con WebGL real. Guía de trabajo en `CLAUDE.md`,
+vocabulario en `docs/GLOSSARY.md`, estrategia de pruebas en `docs/TESTING.md`.
+
 Véase el informe de cierre de cada iteración en `docs/DECISIONS.md`.

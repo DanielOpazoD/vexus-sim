@@ -140,7 +140,8 @@ for (const [k, b] of Object.entries(modeButtons)) {
 const freezeBtn = $<HTMLButtonElement>('freeze');
 freezeBtn.addEventListener('click', () => store.set({ frozen: !store.get().frozen }));
 const audioBtn = $<HTMLButtonElement>('audio-toggle');
-audioBtn.addEventListener('click', async () => {
+audioBtn.addEventListener('click', () => void toggleAudio());
+async function toggleAudio(): Promise<void> {
   try {
     if (sim.audio.enabled) await sim.audio.disable();
     else await sim.audio.enable();
@@ -149,7 +150,7 @@ audioBtn.addEventListener('click', async () => {
     showBanner(`Audio no disponible: ${errorMessage(e)}`, 5000);
   }
   store.set({ audio: sim.audio.enabled });
-});
+}
 const torsoBtn = $<HTMLButtonElement>('torso-toggle');
 torsoBtn.addEventListener('click', () => store.set({ torso: !store.get().torso }));
 $<HTMLButtonElement>('rail-collapse').addEventListener('click', () => store.set({ torso: false }));

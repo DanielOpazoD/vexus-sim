@@ -60,6 +60,6 @@ export function compareTissueGrids(cpu: TissueGrid, gpu: TissueGrid): Equivalenc
   const worst = [...pairs.entries()]
     .sort((x, y) => y[1] - x[1])
     .slice(0, 3)
-    .map(([k, count]) => ({ cpu: Math.floor(k / 256) as Tissue, gpu: (k % 256) as Tissue, count }));
+    .map(([k, count]) => ({ cpu: Math.floor(k / 256), gpu: k % 256, count }));
   return { agreement: same / (W * H), interiorAgreement: interior ? interiorSame / interior : 1, worst, cells: W * H };
 }

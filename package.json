@@ -20,13 +20,14 @@
     "docs:index": "tsx tools/docs/decisions-index.ts",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && vite build && tsx tools/ci/bundle-budget.ts",
     "test:coverage": "VITEST_TIER=all vitest run --coverage --testTimeout=180000",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "prepare": "git config core.hooksPath .githooks 2>/dev/null || true"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",
     "@playwright/test": "1.63.0",
     "@types/node": "22.20.2",
-    "@types/three": "0.185.4",
+    "@types/three": "0.186.0",
     "@vitest/coverage-v8": "4.1.11",
     "eslint": "9.39.5",
     "fast-check": "4.10.2",

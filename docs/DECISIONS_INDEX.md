@@ -33,3 +33,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [27](DECISIONS.md#L230) | Repositorio, CI y saneamiento tras revisión adversarial | vigente |
 | [28](DECISIONS.md#L255) | Consola y navegador 3D por módulos | vigente |
 | [29](DECISIONS.md#L268) | Geometría del sector única, árbol vascular propio y `classify` por pasos | vigente |
+| [30](DECISIONS.md#L280) | Comprobación en vivo de la equivalencia TS ↔ GLSL | vigente |

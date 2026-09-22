@@ -49,9 +49,10 @@ la vía biliar en `anatomy/vesselTree.ts`). Se evalúa en TypeScript (`primitive
 mediciones, corte ecográfico (Worker) y pruebas, y en GLSL (`ultrasound/shaders/anatomy.glsl.ts`)
 para imagen y color, a partir de los **mismos datos**: primitivas como uniformes y tubos en una
 textura de datos con esferas envolventes (decisión 24). Regla del proyecto: cualquier cambio en una
-debe replicarse en la otra; `validation/anatomy.test.ts` fija la versión TS, el corte (calculado en
-TS) se superpone visualmente a la imagen (GPU) y `FRAG_TISSUEMAP` queda para un test de equivalencia
-por lectura de texturas en un runner con WebGL (pendiente).
+debe replicarse en la otra; `validation/anatomy.test.ts` fija la versión TS y, en modo docente, el
+bucle compara en vivo el mapa de tejidos GPU (`FRAG_TISSUEMAP`) con el del Worker en la misma rejilla
+y el mismo instante (`app/equivalenceCheck.ts`, decisión 30): 100 % de acuerdo esperado; cualquier
+par CPU→GPU sistemático es una divergencia real.
 
 ## Doppler
 

@@ -556,7 +556,9 @@ export class UltrasoundRenderer {
       }
       this.mapLast = { width: MAP_W, height: MAP_H, tissue, vessel };
     }
-    // Encolar la siguiente lectura
+    // Encolar la siguiente lectura con el calibre del instante pedido (la textura de
+    // escena la actualiza `render()` con el cuadro actual; aquí se sincroniza al mapa).
+    this.updateSceneDynamic(inputs);
     bindTarget(gl, this.tMap);
     this.pMap.use();
     this.setSceneUniforms(this.pMap, inputs);

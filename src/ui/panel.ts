@@ -1,3 +1,4 @@
+import type { EquivalenceReport } from '../app/equivalenceCheck';
 import type { Simulator } from '../app/simulator';
 import type { AppState, PanelTab, Store } from '../app/store';
 import type { StartPoint } from '../app/startPoints';
@@ -103,6 +104,10 @@ export class ControlPanel implements PanelContext {
 
   renderDebug(): void {
     this.teacher.renderDebug();
+  }
+
+  setEquivalence(report: EquivalenceReport | null): void {
+    this.teacher.equivalence = report;
   }
 
   track<T extends Syncable>(s: T): T {

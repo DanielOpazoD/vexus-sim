@@ -1,3 +1,5 @@
+import type { EquivalenceReport } from '../../app/equivalenceCheck';
+import { TISSUES } from '../../anatomy/tissues';
 import { classifyVexusC } from '../../vexus/classification';
 import { measurePhysiologyTruth } from '../../vexus/measurements';
 import { help } from '../controls';
@@ -7,6 +9,8 @@ import { patternText, renalText } from './vexusText';
 /** Pestaña Docente: verdad fisiológica y estado de la adquisición (solo con la casilla activada). */
 export class TeacherTab {
   private debugEl!: HTMLElement;
+  /** Informe de equivalencia TS ↔ GLSL (lo alimenta el bucle principal a baja cadencia). */
+  equivalence: EquivalenceReport | null = null;
 
   constructor(
     private readonly ctx: PanelContext,
@@ -57,7 +61,14 @@ export class TeacherTab {
         `  transmisión ${g ? (20 * Math.log10(Math.max(1e-6, g.transmission))).toFixed(0) : '—'} dB · fD física en el centro ${fd !== null ? fd.toFixed(0) + ' Hz' : '—'}\n` +
         `  volumen: sangre ${(comp.bloodFraction * 100).toFixed(0)} % · arterial ${(comp.arterialFraction * 100).toFixed(0)} % · pared ${(comp.wallFraction * 100).toFixed(0)} %\n`
       : '';
+    const eq = this.equivalence;
+    const eqTxt = eq
+      ? `ANATOMÍA TS ↔ GLSL: acuerdo ${(eq.agreement * 100).toFixed(1)} % · interior ${(eq.interiorAgreement * 100).toFixed(1)} %` +
+        (eq.worst.length ? ` · peor: ${eq.worst.map((w) => `${TISSUES[w.cpu].name}→${TISSUES[w.gpu].name} ${w.count}`).join(', ')}` : '') +
+        '\n'
+      : '';
     this.debugEl.textContent =
+      eqTxt +
       `t ${t.toFixed(2)} s · latido ${s.beatIndex} · fase ${s.cardiacPhase.toFixed(2)} · resp ${s.resp.volume.toFixed(2)}\n` +
       `P_AD ${s.pRa.toFixed(1)} · P_VCI ${s.pIvc.toFixed(1)} (Ptm ${s.pIvcTransmural.toFixed(1)}) · P_hep ${s.pHepatic.toFixed(1)} · P_abd ${s.pAbd.toFixed(1)} mmHg\n` +
       `Q_hv ${s.qHepaticVein.toFixed(1)} · Q_pv ${s.qPortal.toFixed(1)} · Q_ha ${s.qHepaticArtery.toFixed(1)} mL/s · VCI AP/lat ${s.ivc.dApMm.toFixed(1)}/${s.ivc.dLatMm.toFixed(1)} mm\n` +

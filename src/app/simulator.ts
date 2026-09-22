@@ -1,5 +1,6 @@
 import { nyquistVelocityCms } from '../core/units';
 import { apertureAngleSigmaRad, lateralSigmaMm } from '../ultrasound/beamModel';
+import { colorTiming, type ColorTiming } from '../ultrasound/colorTiming';
 import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene } from '../anatomy/scene';
 import { TISSUES, attenuationDbPerCm } from '../anatomy/tissues';
@@ -252,13 +253,22 @@ export class Simulator {
     return Math.pow(10, -attenDb / 20);
   }
 
+  /** Cadencia física del color con la caja, PRF y ensemble actuales (decisión 39). */
+  get colorTiming(): ColorTiming {
+    const c = this.color;
+    return colorTiming(c.theta0, c.theta1, c.prfHz, c.ensemble, this.transducer.lines, this.bmode.depthMm);
+  }
+
   /** Dibuja un cuadro con el estado actual. */
   render(): void {
     if (this.frozen) return;
     const s = this.sample;
     const t = this.physiology.clock.t;
-    const colorPeriod = 1 / 15;
+    // Con color, la imagen entera (B + color) se refresca a la cadencia que permite
+    // la caja: cada cuadro de color cuesta líneas × ensemble disparos a la PRF.
+    const colorPeriod = this.color.enabled ? 1 / this.colorTiming.frameHz : 0;
     const updateColor = t - this.lastColorUpdate >= colorPeriod;
+    if (this.color.enabled && !updateColor) return;
     if (updateColor) this.lastColorUpdate = t;
     this.renderer.render({
       sample: s,

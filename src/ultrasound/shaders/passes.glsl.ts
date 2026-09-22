@@ -314,6 +314,8 @@ ${ANATOMY_GLSL}
 ${BEAM_GLSL}
 uniform sampler2D uTrans0;
 uniform vec4 uBox;        // theta0, theta1, r0, r1
+uniform vec2 uCells;      // líneas de color × paquetes axiales dentro de la caja
+uniform vec4 uBeam;       // λ·k, D_tx, D_rx,max, F#_rx,min (mismo modelo que la PSF)
 uniform float uPrf;
 uniform float uF0;
 uniform float uWallHz;
@@ -330,8 +332,11 @@ float wallResp(float f) {
   return x * x * x * x;
 }
 void main() {
-  float theta = mix(uBox.x, uBox.y, vUv.x);
-  float r = mix(uBox.z, uBox.w, vUv.y);
+  // El estimador trabaja por celda (una línea de color × un paquete axial), no por
+  // píxel: de ahí el mosaico grueso del color real. La conversión de barrido interpola.
+  vec2 cell = (floor(vUv * uCells) + 0.5) / uCells;
+  float theta = mix(uBox.x, uBox.y, cell.x);
+  float r = mix(uBox.z, uBox.w, cell.y);
   vec3 dir = lineDir(theta);
   vec3 bhat = -dir;
   vec3 p = pointOnLine(dir, r);
@@ -360,6 +365,14 @@ void main() {
   float c_mm = ${C_RECONSTRUCTION_MM_S}.0;
   float fdB = 2.0 * uF0 * vb / c_mm;
   float fdT = 2.0 * uF0 * vt / c_mm;
+  // Ensanchamiento espectral de la sangre en la celda: dispersión angular de la
+  // apertura (σθ = D_rx/4r, como en el PW), tiempo de tránsito y gradiente del
+  // perfil de velocidades (mayor en las celdas que tocan la pared, bf < 1).
+  float dRx = min(uBeam.z, r / uBeam.w);
+  float apSig = dRx / (4.0 * max(10.0, r));
+  float sigF = abs(fdB) * (2.0 * apSig + 0.12 + (bf < 1.0 ? 0.25 : 0.0));
+  // Coherencia de la autocorrelación a un retardo: |ρ| = exp(−2(π·σf/PRF)²)
+  float rho = exp(-2.0 * pow(3.14159265 * sigF / uPrf, 2.0));
   // Potencias en unidades de sangre (amplitud de sangre = 1 a transmisión 1).
   float Ac = 0.9 / 0.008; // clutter tisular ≈ +41 dB respecto a sangre
   float Pb = bf * T * T * wallResp(fdB);
@@ -367,14 +380,24 @@ void main() {
   float Pn = 3.2e-4; // suelo de ruido Doppler ≈ −35 dB re sangre a T=1 ([EXTRAPOLACIÓN PROPIA])
   float phB = 6.2831853 * fdB / uPrf;
   float phT = 6.2831853 * fdT / uPrf;
-  vec2 R1 = Pb * vec2(cos(phB), sin(phB)) + Pc * vec2(cos(phT), sin(phT));
+  vec2 R1 = Pb * rho * vec2(cos(phB), sin(phB)) + Pc * vec2(cos(phT), sin(phT));
   // Ruido del estimador: ∝ sqrt(P_total·P_n / ensemble)
-  float n1 = hash12(vUv * 811.0 + uFrame * 2.3);
-  float n2 = hash12(vUv * 457.0 + uFrame * 5.9 + 3.0);
+  float n1 = hash12(cell * 811.0 + uFrame * 2.3);
+  float n2 = hash12(cell * 457.0 + uFrame * 5.9 + 3.0);
   float rad = sqrt(-2.0 * log(max(1e-6, n1)));
   float sigma = sqrt((Pb + Pc + Pn) * Pn / uEnsemble);
   R1 += sigma * rad * vec2(cos(6.2831853 * n2), sin(6.2831853 * n2));
-  float fEst = uPrf * atan(R1.y, R1.x) / 6.2831853;
+  // Varianza de fase de Kasai con N pares: σφ² ≈ (1 − ρ²) / (2·N·ρ²), ponderada por
+  // la fracción de sangre (el clutter residual es coherente). Es el moteado de
+  // velocidad dentro del vaso y el mosaico en el borde del aliasing.
+  float wB = Pb * rho / max(1e-9, Pb * rho + Pc);
+  float sigPh = wB * sqrt((1.0 - rho * rho) / (2.0 * uEnsemble * max(1e-3, rho * rho)));
+  float n3 = hash12(cell * 613.0 + uFrame * 3.7 + 7.0);
+  float n4 = hash12(cell * 271.0 + uFrame * 1.9 + 11.0);
+  float g = sqrt(-2.0 * log(max(1e-6, n3))) * cos(6.2831853 * n4);
+  float ph = atan(R1.y, R1.x) + sigPh * g;
+  ph = mod(ph + 3.14159265, 6.2831853) - 3.14159265;
+  float fEst = uPrf * ph / 6.2831853;
   float power = length(R1) * uColorGain;
   oColor = vec4(fEst, power, bf, 0.0);
 }

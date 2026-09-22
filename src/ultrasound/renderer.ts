@@ -5,6 +5,7 @@ import { TISSUES, TISSUE_COUNT, attenuationDbPerCm } from '../anatomy/tissues';
 import type { PhysiologySample } from '../physiology/engine';
 import { lineAngle, lineCoupling, type ProbeFrame, type ProbePose, type Transducer } from '../probe/probe';
 import { CONVEX_BEAM } from './beamModel';
+import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
 import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
 import { GLProgram, bindTarget, createTarget, createTexture, deleteTarget, drawFullscreen, type RenderTarget } from './gl';
 import { MAX_GAS, MAX_NODES, MAX_RIBS, MAX_TUBES, NODE_BASE, SCENE_TEX_H, SCENE_TEX_W } from './shaders/anatomy.glsl';
@@ -482,6 +483,14 @@ export class UltrasoundRenderer {
       this.setBeamUniforms(this.pColor, inputs);
       this.pColor.tex('uTrans0', 0, this.tTrans.textures[0]);
       this.pColor.v4('uBox', c.theta0, c.theta1, c.r0, c.r1);
+      this.pColor.v2('uCells', colorLineCount(c.theta0, c.theta1), Math.max(4, Math.round((c.r1 - c.r0) / COLOR_PACKET_MM)));
+      this.pColor.v4(
+        'uBeam',
+        CONVEX_BEAM.k * CONVEX_BEAM.lambdaMm,
+        CONVEX_BEAM.apertureTxMm,
+        CONVEX_BEAM.apertureRxMaxMm,
+        CONVEX_BEAM.fNumberRxMin,
+      );
       this.pColor.f('uPrf', c.prfHz);
       this.pColor.f('uF0', tr.f0Doppler);
       this.pColor.f('uWallHz', c.wallFilterHz);

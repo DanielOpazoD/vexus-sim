@@ -259,6 +259,7 @@ export class UltrasoundRenderer {
     p.v4('uDome', s.dome.x0, s.dome.y0, s.dome.rx, s.dome.ry);
     p.v2('uDome2', s.dome.zBase, s.dome.h);
     p.v3('uSpine', [s.spine.x0, s.spine.y0, s.spine.r]);
+    p.v4('uSpineArch', s.spine.archHalfWidth, s.spine.archY0, s.spine.archY1, 0);
     p.v3('uLiverC', s.liver.center);
     p.v3('uLiverR', s.liver.radii);
     p.f('uLiverTaper', s.liver.taperX);

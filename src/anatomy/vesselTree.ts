@@ -99,9 +99,9 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       id: 'ivcInfra',
       tube: tube(
         [
-          [[-22, -30, -300], 9.5],
-          [[-22, -30, 60], 10],
-          [[-21, -27, 75], 10],
+          [[-22, -20, -300], 9.5],
+          [[-22, -20, 60], 10],
+          [[-21, -17, 75], 10],
         ],
         0.8,
       ),
@@ -114,9 +114,9 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       id: 'ivcSupra',
       tube: tube(
         [
-          [[-21, -27, 75], 10],
-          [[-20, -22, 95], 10],
-          [[-16, -8, 125], 10.5],
+          [[-21, -17, 75], 10],
+          [[-20, -12, 95], 10],
+          [[-16, 2, 125], 10.5],
         ],
         0.8,
       ),
@@ -136,8 +136,8 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
         [[-135, 12, -25], 2.4],
         [[-105, -4, 12], 3.6],
         [[-68, -18, 50], 4.8],
-        [[-38, -26, 72], 5.6],
-        [[-26, -26, 78], 6.0],
+        [[-38, -16, 72], 5.6],
+        [[-26, -16, 78], 6.0],
       ],
       5.6,
     ),
@@ -166,8 +166,8 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
         [[-50, 40, -30], 2.0],
         [[-40, 24, 15], 3.2],
         [[-30, 4, 52], 4.0],
-        [[-24, -12, 76], 4.4],
-        [[-23, -16, 82], 4.4],
+        [[-24, -2, 76], 4.4],
+        [[-23, -6, 82], 4.4],
       ],
       4.5,
     ),
@@ -187,8 +187,8 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
         [[62, 28, 8], 2.0],
         [[30, 20, 38], 2.8],
         [[0, 2, 66], 3.6],
-        [[-16, -12, 80], 4.0],
-        [[-23, -16, 82], 4.0],
+        [[-16, -2, 80], 4.0],
+        [[-23, -6, 82], 4.0],
       ],
       4.2,
     ),
@@ -205,8 +205,8 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
     thin(
       'hvCommonTrunk',
       [
-        [[-23, -16, 82], 6.0],
-        [[-21, -24, 90], 6.4],
+        [[-23, -6, 82], 6.0],
+        [[-21, -14, 90], 6.4],
       ],
       6,
       0.6,
@@ -294,8 +294,8 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
     {
       id: 'aorta',
       tube: tube([
-        [[12, -38, 140], 11],
-        [[12, -38, -300], 10],
+        [[12, -24, 140], 11],
+        [[12, -24, -300], 10],
       ]),
       refRadius: 10,
       profileN: 5,
@@ -307,8 +307,8 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
     artery(
       'renalArteryRight',
       [
-        [[12, -40, -62], 2.6],
-        [[-10, -47, -67], 2.5],
+        [[12, -26, -62], 2.6],
+        [[-10, -36, -67], 2.5],
         [hilumR, 2.4],
         [kw(kR, [0, 6, -3]), 2.2],
       ],
@@ -319,8 +319,8 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       [
         [kw(kR, [0, 8, 3]), 4],
         [hilumR, 4.5],
-        [[-40, -38, -70], 4.5],
-        [[-22, -30, -66], 4.5],
+        [[-40, -30, -70], 4.5],
+        [[-22, -20, -66], 4.5],
       ],
       4.5,
       0.6,
@@ -328,8 +328,8 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
     artery(
       'renalArteryLeft',
       [
-        [[12, -40, -60], 2.6],
-        [[40, -48, -64], 2.5],
+        [[12, -26, -60], 2.6],
+        [[40, -38, -64], 2.5],
         [hilumL, 2.4],
         [kw(kL, [0, 6, -3]), 2.2],
       ],
@@ -340,9 +340,9 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       [
         [kw(kL, [0, 8, 3]), 4],
         [hilumL, 4.5],
-        [[40, -30, -62], 5],
-        [[12, -22, -64], 5],
-        [[-22, -28, -64], 5],
+        [[40, -22, -62], 5],
+        [[12, -12, -64], 5],
+        [[-22, -18, -64], 5],
       ],
       5,
       0.6,

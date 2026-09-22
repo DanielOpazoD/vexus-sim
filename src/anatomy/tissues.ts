@@ -30,9 +30,10 @@ export enum Tissue {
   RenalSinus = 19,
   PerirenalFat = 20,
   BileDuctWall = 21,
+  Vertebra = 22,
 }
 
-export const TISSUE_COUNT = 22;
+export const TISSUE_COUNT = 23;
 
 /**
  * Nombre de cada tejido en GLSL (`#define T_… índice`). Se genera desde aquí
@@ -62,6 +63,7 @@ export const TISSUE_GLSL_NAME: Record<Tissue, string> = {
   [Tissue.RenalSinus]: 'T_RENAL_SINUS',
   [Tissue.PerirenalFat]: 'T_PERIRENAL',
   [Tissue.BileDuctWall]: 'T_BILEWALL',
+  [Tissue.Vertebra]: 'T_VERTEBRA',
 };
 
 /** Lámina diafragmática bajo la cúpula (mm); la misma en TS, GLSL y el navegador 3D. */
@@ -112,6 +114,8 @@ export const TISSUES: TissueProps[] = [
   { name: 'seno renal', c: 1480, rho: 950, alpha1: 0.5, b: 1.1, backscatter: 2.3, gas: false, bone: false },
   { name: 'grasa perirrenal', c: 1450, rho: 920, alpha1: 0.45, b: 1.1, backscatter: 1.5, gas: false, bone: false },
   { name: 'pared de vía biliar', c: 1586, rho: 1079, alpha1: 0.7, b: 1, backscatter: 2.4, gas: false, bone: false },
+  // Vértebra: mismas propiedades que el hueso cortical; tejido aparte solo para rotular «columna»
+  { name: 'vértebra', c: 3515, rho: 1908, alpha1: 4.738, b: 1, backscatter: 0.9, gas: false, bone: true },
 ];
 
 /** Impedancia acústica Z = ρc en MRayl. */

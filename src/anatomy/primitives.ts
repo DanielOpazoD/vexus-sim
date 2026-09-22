@@ -53,6 +53,18 @@ export interface CylinderZ {
   r: number;
 }
 
+/**
+ * Columna: cuerpo vertebral (cilindro) + arco posterior con apófisis transversas
+ * (caja de semiancho `archHalfWidth`, entre `archY0` y `archY1`, por detrás del
+ * cuerpo). Las costillas se articulan con las apófisis transversas: no existen por
+ * detrás de la columna (`sdRib` las excluye en |x| < archHalfWidth + margen).
+ */
+export interface Spine extends CylinderZ {
+  archHalfWidth: number;
+  archY0: number;
+  archY1: number;
+}
+
 /** Elipse del tronco (sección transversal) y sus capas parietales. */
 export interface Torso {
   a: number; // semieje x (mm)
@@ -126,6 +138,18 @@ export function sdDome(p: Vec3, d: Dome): number {
 
 export function sdCylinderZ(p: Vec3, c: CylinderZ): number {
   return Math.hypot(p[0] - c.x0, p[1] - c.y0) - c.r;
+}
+
+/** Distancia con signo a la columna (cuerpo ∪ arco posterior); negativa en hueso. */
+export function sdSpine(p: Vec3, sp: Spine): number {
+  const body = sdCylinderZ(p, sp);
+  const dx = Math.abs(p[0] - sp.x0) - sp.archHalfWidth;
+  const cy = 0.5 * (sp.archY0 + sp.archY1);
+  const dy = Math.abs(p[1] - cy) - 0.5 * (sp.archY1 - sp.archY0);
+  const ox = Math.max(dx, 0);
+  const oy = Math.max(dy, 0);
+  const arch = Math.hypot(ox, oy) + Math.min(Math.max(dx, dy), 0);
+  return Math.min(body, arch);
 }
 
 export interface TubeHit {
@@ -232,9 +256,11 @@ export function torsoSkinPoint(phi: number, z: number, t: Torso): Vec3 {
 }
 
 /** Distancia con signo a una costilla (negativa dentro del hueso). */
-export function sdRib(p: Vec3, rib: Rib, torso: Torso): { d: number; cartilage: boolean } {
+export function sdRib(p: Vec3, rib: Rib, torso: Torso, spine?: Spine): { d: number; cartilage: boolean } {
   const phi = torsoPhi(p[0], p[1], torso);
   if (rib.rightOnly && p[0] > 15) return { d: 1e3, cartilage: false };
+  // El arco costal termina en la apófisis transversa: nada por detrás de la columna
+  if (spine && p[1] < spine.y0 && Math.abs(p[0] - spine.x0) < spine.archHalfWidth + 6) return { d: 1e3, cartilage: false };
   // radio local de la costilla a lo largo de su elipse escalada
   const u = p[0] / (torso.a * rib.scale);
   const v = p[1] / (torso.b * rib.scale);

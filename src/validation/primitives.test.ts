@@ -54,7 +54,7 @@ describe('tubeQuery', () => {
     // Reproducción con la cava real: 15 mm por encima del último nodo no es sangre
     const scene = new AnatomyScene(NORMAL_ADULT);
     const ivc = scene.vesselById.get('ivcSupra')!;
-    expect(tubeQuery([-16, -8, 140], ivc.tube).d).toBeGreaterThan(0);
+    expect(tubeQuery([-16, 2, 140], ivc.tube).d).toBeGreaterThan(0);
   });
 });
 

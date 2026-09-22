@@ -2,6 +2,7 @@
 import { describe, expect, it } from 'vitest';
 import { AnatomyQuery } from '../anatomy/query';
 import { Tissue } from '../anatomy/tissues';
+import { tubeQuery } from '../anatomy/primitives';
 import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
 import { dopplerShiftHz, velocityFromShiftMmS, wrapToNyquist } from '../core/units';
@@ -169,7 +170,7 @@ function meanPowerDb(chain: PwDopplerChain, lastSeconds: number): number {
 
 describe('Volumen de muestra físico (guía §10, §21)', () => {
   it('la puerta sobre la suprahepática produce señal; 30 mm dentro del hígado solo ruido', () => {
-    const { gateAt, runSeconds, chain, anatomy, engine } = makeChain({ respiratoryPattern: 'apnea-expiratory' });
+    const { gateAt, runSeconds, chain, anatomy, engine, scene } = makeChain({ respiratoryPattern: 'apnea-expiratory' });
     // Localizar la suprahepática derecha en el plano
     let best: { theta: number; r: number; bd: number } | null = null;
     // Referencia de parénquima: el punto de hígado MÁS lejano de cualquier interfaz
@@ -179,7 +180,13 @@ describe('Volumen de muestra físico (guía §10, §21)', () => {
       for (let r = 20; r <= 150; r += 2) {
         const q = anatomy.classifyWorld(gateAt(th, r).center, engine.sample);
         if (q.vessel === 'hvRight' && (!best || q.boundaryDistance > best.bd)) best = { theta: th, r, bd: q.boundaryDistance };
-        if (q.tissue === Tissue.Liver && (!quiet || q.boundaryDistance > quiet.bd)) quiet = { theta: th, r, bd: q.boundaryDistance };
+        // «lejos de toda interfaz» incluye los vasos: la clasificación de hígado no mide la
+        // distancia a un vaso vecino, así que se comprueba contra todos los tubos (árbol incluido)
+        if (q.tissue === Tissue.Liver && q.boundaryDistance > 8) {
+          const dVessel = Math.min(...scene.vessels.map((v) => tubeQuery(q.material, v.tube).d));
+          const bd = Math.min(q.boundaryDistance, dVessel);
+          if (!quiet || bd > quiet.bd) quiet = { theta: th, r, bd };
+        }
       }
     }
     expect(best).not.toBeNull();

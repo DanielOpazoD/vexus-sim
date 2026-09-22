@@ -4,7 +4,7 @@ import type { VesselAreas, VesselId } from '../physiology/vessels';
 import {
   kidneyQuery,
   orthonormalBasis,
-  sdCylinderZ,
+  sdSpine,
   sdDome,
   sdEllipsoid,
   sdRib,
@@ -13,7 +13,7 @@ import {
   smoothMin,
   torsoDepth,
   tubeQuery,
-  type CylinderZ,
+  type Spine,
   type Dome,
   type Ellipsoid,
   type Kidney,
@@ -75,7 +75,7 @@ export class AnatomyScene {
   readonly torso: Torso;
   readonly ribs: Rib[];
   readonly dome: Dome;
-  readonly spine: CylinderZ;
+  readonly spine: Spine;
   /** Lóbulo derecho (voluminoso) y lóbulo izquierdo (aplanado); su unión suave es el hígado. */
   readonly liver: Ellipsoid;
   readonly liverLeft: Ellipsoid;
@@ -106,7 +106,10 @@ export class AnatomyScene {
     const muscle = patient.habitus.muscleMm;
     this.torso = { a: 160, b: 115, zMin: -300, zMax: 300, skinMm: 2, fatMm: fat, muscleMm: muscle };
     this.dome = { kind: 'dome', x0: -55, y0: -5, rx: 140, ry: 122, zBase: -45, h: 140 };
-    this.spine = { kind: 'cylinderZ', x0: 0, y0: -72, r: 20 };
+    // Columna: cuerpo vertebral de 36 mm justo por detrás de cava y aorta (su cara
+    // posterior queda ≈ 5 cm de la piel dorsal, como en un adulto); arco posterior con
+    // apófisis transversas de 40 mm a cada lado. Las costillas terminan en ellas.
+    this.spine = { kind: 'cylinderZ', x0: 0, y0: -48, r: 18, archHalfWidth: 40, archY0: -90, archY1: -64 };
     // Hígado: el lóbulo derecho es un elipsoide grande (170 × 190 × 200 mm) del que la
     // pared abdominal recorta la cara anterior (convexa, pegada a la pared), la cúpula la
     // superior y el plano visceral la inferior: cuña con borde agudo. Craneocaudal
@@ -272,7 +275,7 @@ export class AnatomyScene {
       return { final: true, cls: { ...NONE, tissue: Tissue.Fat, boundaryDistance: Math.min(d - skin, fat - d), specular: 0.15 } };
     // Costillas (dentro de la pared muscular o justo por debajo)
     for (const rib of this.ribs) {
-      const r = sdRib(m, rib, torso);
+      const r = sdRib(m, rib, torso, this.spine);
       if (r.d < 0) {
         return {
           final: true,
@@ -282,8 +285,8 @@ export class AnatomyScene {
     }
     if (d < wall)
       return { final: true, cls: { ...NONE, tissue: Tissue.Muscle, boundaryDistance: Math.min(d - fat, wall - d), specular: 0.2 } };
-    const dSpine = sdCylinderZ(m, this.spine);
-    if (dSpine < 0) return { final: true, cls: { ...NONE, tissue: Tissue.Bone, boundaryDistance: -dSpine, specular: 0.9 } };
+    const dSpine = sdSpine(m, this.spine);
+    if (dSpine < 0) return { final: true, cls: { ...NONE, tissue: Tissue.Vertebra, boundaryDistance: -dSpine, specular: 0.9 } };
     return { final: false, wallMm: wall };
   }
 

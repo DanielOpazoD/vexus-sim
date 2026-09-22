@@ -268,13 +268,22 @@ uniform float uCurvR;
 uniform float uHalfSector;
 uniform float uLinesF;
 uniform float uFocus;      // mm
-uniform float uLatSigma0;  // σ lateral en el foco (mm)
-uniform float uRayleigh;   // mm
+uniform vec4 uBeam;        // λ·k (mm), D_tx (mm), D_rx,max (mm), F#_rx,min
 in vec2 vUv;
 out float oEnv;
+// PSF lateral de dos vías por número F (ultrasound/beamModel.ts: misma fórmula)
+float lateralSigmaMm(float r) {
+  float rr = max(1.0, r);
+  float F = max(10.0, uFocus);
+  float tx = length(vec2(uBeam.x * F / uBeam.y, uBeam.y * abs(rr - F) / F));
+  float dRx = min(uBeam.z, rr / uBeam.w);
+  float rx = uBeam.x * rr / max(1.0, dRx);
+  float fwhm = inversesqrt(1.0 / (tx * tx) + 1.0 / (rx * rx));
+  return fwhm / 2.3548;
+}
 void main() {
   float r = vUv.y * uDepth;
-  float sigmaMm = uLatSigma0 * sqrt(1.0 + pow((r - uFocus) / uRayleigh, 2.0));
+  float sigmaMm = lateralSigmaMm(r);
   float lineSpacing = (uCurvR + r) * (2.0 * uHalfSector / (uLinesF - 1.0));
   float sigmaTex = max(0.35, sigmaMm / lineSpacing);
   vec2 acc = vec2(0.0);

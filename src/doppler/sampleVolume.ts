@@ -38,6 +38,8 @@ export interface GateGeometry {
   elevationSigmaMm: number;
   /** Longitud del pulso Doppler (σ axial, mm). */
   pulseSigmaMm: number;
+  /** Dispersión angular de la apertura (σ, rad): ensanchamiento espectral intrínseco. */
+  apertureAngleSigmaRad?: number;
   /** Transmisión de amplitud de ida y vuelta hasta la puerta (0–1). */
   transmission: number;
 }
@@ -54,6 +56,8 @@ interface Scatterer {
   m: Vec3;
   amp: number;
   phase: number;
+  /** Ángulo (rad) con que la apertura ve a ESTE dispersor respecto al eje del haz (fijo por dispersor). */
+  apAngle: number;
   /** Fasor e^{iφ} y rotación por tick e^{i2πfDΔt} (se recalcula cada SLOW_EVERY ticks). */
   cr: number;
   ci: number;
@@ -173,6 +177,7 @@ export class SampleVolumeIQ {
       m: q.material,
       amp: TISSUES[q.tissue].backscatter * (0.7 + 0.6 * this.rng.float()),
       phase,
+      apAngle: this.rng.gaussian(),
       cr: Math.cos(phase),
       ci: Math.sin(phase),
       rotC: 1,
@@ -295,6 +300,7 @@ export class SampleVolumeIQ {
     const dt = 1 / this.equipment.prfHz;
     const f0 = this.equipment.f0Hz;
     const bHat: Vec3 = [-g.beamDir[0], -g.beamDir[1], -g.beamDir[2]];
+    const apSigma = g.apertureAngleSigmaRad ?? 0;
     const tissueVel = this.anatomy.deformation.tissueVelocity(g.center, phys.resp);
     // La deformación se evalúa en el centro de la puerta (varía lentamente).
     const disp = this.anatomy.deformation.displacement(g.center, phys.resp);
@@ -355,7 +361,14 @@ export class SampleVolumeIQ {
           const vx = (s.isBlood ? s.vBlood[0] : 0) + tissueVel[0] - probeVelocity[0];
           const vy = (s.isBlood ? s.vBlood[1] : 0) + tissueVel[1] - probeVelocity[1];
           const vz = (s.isBlood ? s.vBlood[2] : 0) + tissueVel[2] - probeVelocity[2];
-          const fd = dopplerShiftHz(vx * bHat[0] + vy * bHat[1] + vz * bHat[2], f0);
+          // Ensanchamiento intrínseco: cada dispersor es visto por la apertura con un
+          // ángulo propio (σ = D/4r) respecto al eje del haz, dentro del plano de imagen
+          const da = s.apAngle * apSigma;
+          const bx = bHat[0] + g.lateral[0] * da;
+          const by = bHat[1] + g.lateral[1] * da;
+          const bz = bHat[2] + g.lateral[2] * da;
+          const bn = 1 / Math.hypot(bx, by, bz);
+          const fd = dopplerShiftHz((vx * bx + vy * by + vz * bz) * bn, f0);
           const dphi = twoPiDt * fd;
           s.rotC = Math.cos(dphi);
           s.rotS = Math.sin(dphi);

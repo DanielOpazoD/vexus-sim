@@ -4,6 +4,7 @@ import { RespiratoryDeformation } from '../anatomy/deformation';
 import { TISSUES, TISSUE_COUNT, attenuationDbPerCm } from '../anatomy/tissues';
 import type { PhysiologySample } from '../physiology/engine';
 import { lineAngle, lineCoupling, type ProbeFrame, type ProbePose, type Transducer } from '../probe/probe';
+import { CONVEX_BEAM } from './beamModel';
 import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
 import { GLProgram, bindTarget, createTarget, createTexture, deleteTarget, drawFullscreen, type RenderTarget } from './gl';
 import { MAX_GAS, MAX_NODES, MAX_RIBS, MAX_TUBES, NODE_BASE, SCENE_TEX_H, SCENE_TEX_W } from './shaders/anatomy.glsl';
@@ -463,8 +464,13 @@ export class UltrasoundRenderer {
     this.pLateral.f('uHalfSector', tr.halfSector);
     this.pLateral.f('uLinesF', this.lines);
     this.pLateral.f('uFocus', inputs.bmode.focusMm);
-    this.pLateral.f('uLatSigma0', 0.9);
-    this.pLateral.f('uRayleigh', 28);
+    this.pLateral.v4(
+      'uBeam',
+      CONVEX_BEAM.k * CONVEX_BEAM.lambdaMm,
+      CONVEX_BEAM.apertureTxMm,
+      CONVEX_BEAM.apertureRxMaxMm,
+      CONVEX_BEAM.fNumberRxMin,
+    );
     drawFullscreen(gl);
 
     // F — color (a su propia cadencia)

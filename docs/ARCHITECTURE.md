@@ -37,6 +37,13 @@ ventana, el ECG se dibuja desde el mismo historial y el audio se remuestrea desd
 de imagen es independiente de la cadencia del reloj (lee el último estado); el color se refresca con
 cadencia física PRF/(líneas·ensemble) + cuadro B (`colorTiming`, decisión 39), como el equipo.
 
+## Composición
+
+`src/main.ts` solo compone: `SimulationSession` (`app/session.ts`) es dueña del `Simulator` vivo y
+del `EquipmentController` (`app/equipment.ts`, estado del ecógrafo por comandos con invariantes);
+las vistas y controladores (`ui/controllers/*`: HUD, clic en la imagen, pérdida de GPU, avisos,
+menú de capas) reciben funciones de acceso, no variables globales.
+
 ## Flujo por cuadro (`src/main.ts` → `Simulator`)
 
 ```

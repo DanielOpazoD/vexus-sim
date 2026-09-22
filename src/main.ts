@@ -1,25 +1,31 @@
-import { compareTissueGrids } from './app/equivalenceCheck';
-import { ProbeAnimator } from './app/probeAnimation';
-import { bindKeyboardShortcuts } from './ui/keyboardShortcuts';
 import { registerDevtools } from './app/devtools';
+import { ErrorBudget } from './app/errorBudget';
+import { compareTissueGrids } from './app/equivalenceCheck';
 import { errorLog, errorMessage } from './app/errorLog';
-import { C_RECONSTRUCTION_MM_S, nyquistVelocityCms } from './core/units';
-import { EquipmentController } from './app/equipment';
-import { Simulator, defaultEquipment } from './app/simulator';
+import { ProbeAnimator } from './app/probeAnimation';
+import { SimulationSession } from './app/session';
+import type { Simulator } from './app/simulator';
 import { Store, type ImagingMode } from './app/store';
-import { CASES, CASE_IDS, findCase, isCaseId, type CaseId } from './cases';
+import { CASES, CASE_IDS, isCaseId } from './cases';
 import { NonFiniteStateError } from './physiology/engine';
-import { clonePatient } from './physiology/patientState';
+import { Banner } from './ui/controllers/banner';
+import { bindGpuLifecycle } from './ui/controllers/gpuLifecycle';
+import { HeartRateDisplay, hudText, renderLines } from './ui/controllers/hud';
+import { bindImageClick } from './ui/controllers/imageClick';
+import { buildLayerMenu } from './ui/controllers/layerMenu';
 import { CutMapView } from './ui/cutMapView';
-import { drawEcg, drawOverlay, SpectrogramView } from './ui/displays';
+import { SpectrogramView, drawEcg, drawOverlay } from './ui/displays';
+import { bindKeyboardShortcuts } from './ui/keyboardShortcuts';
 import { Navigator3D } from './ui/navigator3d';
 import { ControlPanel } from './ui/panel';
 import { ProbeInput } from './ui/probeInput';
 
 /**
- * Composición de la aplicación: un Simulator (núcleo, sin DOM salvo el canvas
- * WebGL), un Store (estado de UI) y las vistas (navegador 3D, corte, imagen,
- * consola). Todo el tiempo procede del reloj de la simulación.
+ * Raíz de composición (Fase 1): crea la sesión de simulación, el estado de UI y las vistas, y
+ * los conecta. La lógica vive en módulos con una sola responsabilidad: `SimulationSession`
+ * (simulador vivo + equipo + cambio de caso transaccional), `ui/controllers/*` (HUD, clic en la
+ * imagen, pérdida de GPU, avisos, menú de capas) y `ErrorBudget` (bucle que se degrada, no muere).
+ * Todo el tiempo procede del reloj de la simulación.
  */
 const $ = <T extends HTMLElement>(id: string): T => {
   const el = document.getElementById(id);
@@ -34,9 +40,7 @@ const ecgCanvas = $<HTMLCanvasElement>('ecg');
 const spectrumCanvas = $<HTMLCanvasElement>('spectrum');
 const cutCanvas = $<HTMLCanvasElement>('cutmap');
 const navHost = $<HTMLElement>('nav3d');
-const hudTl = $<HTMLElement>('hud-tl');
-const hudTr = $<HTMLElement>('hud-tr');
-const hudBr = $<HTMLElement>('hud-br');
+const hud = { tl: $<HTMLElement>('hud-tl'), tr: $<HTMLElement>('hud-tr'), br: $<HTMLElement>('hud-br') };
 const status = $<HTMLElement>('status');
 const ctxChip = $<HTMLElement>('ctx-chip');
 const liveChip = $<HTMLElement>('live-chip');
@@ -54,16 +58,7 @@ for (const c of CASES) {
 // oyentes del store que lanzan terminan en el registro (pestaña Docente).
 errorLog.installGlobalHandlers(window);
 const store = new Store(
-  {
-    mode: 'B',
-    tab: 'adquirir',
-    frozen: false,
-    debug: false,
-    audio: false,
-    caseId: CASE_IDS[0],
-    torso: true,
-    tool: 'none',
-  },
+  { mode: 'B', tab: 'adquirir', frozen: false, debug: false, audio: false, caseId: CASE_IDS[0], torso: true, tool: 'none' },
   (e) => errorLog.report('ui', e),
 );
 
@@ -76,70 +71,58 @@ function fatal(message: string): never {
   throw new Error(message);
 }
 
-let sim: Simulator;
+let session: SimulationSession;
 try {
-  sim = new Simulator(clonePatient(CASES[0]), glCanvas);
+  session = new SimulationSession(glCanvas, CASE_IDS[0]);
 } catch (e) {
-  fatal((e as Error).message);
+  fatal(errorMessage(e));
 }
-registerDevtools(
-  () => sim,
-  () => ({ nav, cutMap, spectrogram }),
-  (cmd) => dispatch(cmd),
-);
+const sim = (): Simulator => session.sim;
+const dispatch = session.equipment.dispatch.bind(session.equipment);
+const banner = new Banner(sectorWrap);
 
-// Estado del equipo: dueño único, cambia solo por comandos normalizados y avisa sin sondeo
-const equipment = new EquipmentController(defaultEquipment(), {
-  halfSectorRad: sim.transducer.halfSector,
-  cMmS: C_RECONSTRUCTION_MM_S,
-});
-sim.equipment = equipment.state;
-const dispatch = equipment.dispatch.bind(equipment);
-
+// --- Vistas ------------------------------------------------------------------
 const spectrogram = new SpectrogramView(spectrumCanvas);
 const cutMap = new CutMapView(cutCanvas);
-const panel = new ControlPanel($('panel'), () => sim, store, dispatch);
-equipment.subscribe((next) => {
-  sim.equipment = next;
-  panel.sync();
-});
-const input = new ProbeInput(
-  sectorWrap,
-  () => sim.pose,
-  (p) => setPoseManual(p),
+const panel = new ControlPanel($('panel'), sim, store, dispatch);
+session.equipment.subscribe(() => panel.sync());
+const probeAnimator = new ProbeAnimator(
+  () => sim().pose,
+  (p) => sim().setPose(p),
 );
+function setPoseManual(p: Parameters<Simulator['setPose']>[0]): void {
+  probeAnimator.cancel(); // cualquier gesto manual cancela la animación
+  sim().setPose(p);
+}
+panel.onStartPoint = (sp) => probeAnimator.goTo(sp);
+const input = new ProbeInput(sectorWrap, () => sim().pose, setPoseManual);
 let nav: Navigator3D | null = null;
 try {
-  nav = new Navigator3D(navHost, sim.scene, sim.transducer, {
-    getPose: () => sim.pose,
-    setPose: (p) => setPoseManual(p),
-    getFrame: () => sim.frame,
-    getDepthMm: () => sim.bmode.depthMm,
-    getRespCaudalMm: () => sim.sample.resp.diaphragmCaudalMm,
-    getCaliber: () => sim.anatomy.caliberFor(sim.sample),
+  nav = new Navigator3D(navHost, sim().scene, sim().transducer, {
+    getPose: () => sim().pose,
+    setPose: setPoseManual,
+    getFrame: () => sim().frame,
+    getDepthMm: () => sim().bmode.depthMm,
+    getRespCaudalMm: () => sim().sample.resp.diaphragmCaudalMm,
+    getCaliber: () => sim().anatomy.caliberFor(sim().sample),
   });
 } catch (e) {
   errorLog.report('navegador3d', e);
 }
+registerDevtools(sim, () => ({ nav, cutMap, spectrogram }), dispatch);
+session.onSimulatorChanged((next) => {
+  nav?.setAnatomy(next.scene);
+  spectrogram.reset();
+  panel.onSimulatorChanged();
+});
 
-// --- Animación hacia un punto de partida (continua, cancelable) --------------
-const probeAnimator = new ProbeAnimator(
-  () => sim.pose,
-  (p) => sim.setPose(p),
-);
-function setPoseManual(p: Parameters<Simulator['setPose']>[0]): void {
-  probeAnimator.cancel(); // cualquier gesto manual cancela la animación
-  sim.setPose(p);
-}
-panel.onStartPoint = (sp) => probeAnimator.goTo(sp);
-
-// --- Estado de UI → simulador --------------------------------------------
+// --- Controles de la barra ----------------------------------------------------
 const modeButtons: Record<ImagingMode, HTMLButtonElement> = { B: $('mode-b'), color: $('mode-color'), pw: $('mode-pw') };
 function applyMode(mode: ImagingMode): void {
-  const wasPw = sim.pw.enabled;
+  const wasPw = sim().pw.enabled;
   dispatch({ type: 'mode', mode });
-  if (sim.pw.enabled && !wasPw) {
-    sim.pwChain.reset();
+  if (sim().pw.enabled && !wasPw) {
+    sim().pwChain.reset();
     spectrogram.reset();
   }
   for (const [k, b] of Object.entries(modeButtons)) b.classList.toggle('active', k === mode);
@@ -156,13 +139,13 @@ const audioBtn = $<HTMLButtonElement>('audio-toggle');
 audioBtn.addEventListener('click', () => void toggleAudio());
 async function toggleAudio(): Promise<void> {
   try {
-    if (sim.audio.enabled) await sim.audio.disable();
-    else await sim.audio.enable();
+    if (sim().audio.enabled) await sim().audio.disable();
+    else await sim().audio.enable();
   } catch (e) {
     errorLog.report('audio', e);
-    showBanner(`Audio no disponible: ${errorMessage(e)}`, 5000);
+    banner.show(`Audio no disponible: ${errorMessage(e)}`, 5000);
   }
-  store.set({ audio: sim.audio.enabled });
+  store.set({ audio: sim().audio.enabled });
 }
 const torsoBtn = $<HTMLButtonElement>('torso-toggle');
 torsoBtn.addEventListener('click', () => store.set({ torso: !store.get().torso }));
@@ -177,43 +160,27 @@ debugToggle.addEventListener('change', () =>
 caseSelect.addEventListener('change', () => {
   if (isCaseId(caseSelect.value)) store.set({ caseId: caseSelect.value });
 });
-
-// Navegador: zoom, centrar, capas
 $<HTMLButtonElement>('nav-zoom-in').addEventListener('click', () => nav?.zoomBy(0.85));
 $<HTMLButtonElement>('nav-zoom-out').addEventListener('click', () => nav?.zoomBy(1 / 0.85));
 $<HTMLButtonElement>('nav-center').addEventListener('click', () => nav?.centerOnProbe());
-const layerMenu = $<HTMLElement>('layer-menu');
-{
-  const cap = (t: string) => {
-    const d = document.createElement('div');
-    d.className = 'menu-cap';
-    d.textContent = t;
-    layerMenu.appendChild(d);
-  };
-  const item = (label: string, key: 'skin' | 'skeleton' | 'organs' | 'vessels' | 'windows') => {
-    const l = document.createElement('label');
-    const cb = document.createElement('input');
-    cb.type = 'checkbox';
-    cb.checked = true;
-    cb.addEventListener('change', () => nav?.setLayers({ [key]: cb.checked }));
-    l.append(cb, document.createTextNode(label));
-    layerMenu.appendChild(l);
-  };
-  cap('Cuerpo');
-  item('Piel', 'skin');
-  item('Hueso', 'skeleton');
-  cap('Abdomen');
-  item('Órganos', 'organs');
-  item('Vasos', 'vessels');
-  cap('Examen');
-  item('Ventanas', 'windows');
-}
-$<HTMLButtonElement>('nav-layers').addEventListener('click', () => (layerMenu.hidden = !layerMenu.hidden));
+buildLayerMenu($<HTMLElement>('layer-menu'), $<HTMLButtonElement>('nav-layers'), (patch) => nav?.setLayers(patch));
 
+const imageClick = bindImageClick({
+  host: sectorWrap,
+  canvas: glCanvas,
+  getSim: sim,
+  store,
+  setIvcCaliper: (mm) => panel.setIvcCaliper(mm),
+  dispatch,
+});
+bindKeyboardShortcuts(store, dispatch);
+const gpu = bindGpuLifecycle(glCanvas, sim, banner);
+
+// --- Estado de UI → sesión -------------------------------------------------------
 store.subscribe((st, prev) => {
   if (st.mode !== prev.mode) applyMode(st.mode);
   if (st.frozen !== prev.frozen) {
-    sim.frozen = st.frozen;
+    sim().frozen = st.frozen;
     freezeBtn.classList.toggle('on', st.frozen);
     freezeBtn.textContent = st.frozen ? 'Live' : 'Freeze';
     liveChip.textContent = st.frozen ? 'FREEZE' : 'LIVE';
@@ -227,102 +194,17 @@ store.subscribe((st, prev) => {
     app.classList.toggle('no-torso', !st.torso);
     torsoBtn.classList.toggle('on', st.torso);
   }
-  if (st.caseId !== prev.caseId) loadCase(st.caseId);
-  if (st.tool !== prev.tool && st.tool !== 'caliper') caliperA = null;
-});
-
-/**
- * Cambio de caso transaccional: el simulador nuevo se construye ANTES de tocar nada;
- * si falla, el caso anterior sigue vivo, el selector vuelve atrás y el error se ve.
- */
-function loadCase(id: CaseId): void {
-  const prevSim = sim;
-  if (prevSim.patient.id === id) return;
-  let next: Simulator;
-  try {
-    next = new Simulator(clonePatient(findCase(id)), glCanvas, prevSim.audio);
-  } catch (e) {
-    errorLog.report('caso', e);
-    showBanner(`No se pudo cargar el caso: ${errorMessage(e)}`, 6000);
-    caseSelect.value = prevSim.patient.id;
-    if (isCaseId(prevSim.patient.id)) store.set({ caseId: prevSim.patient.id });
-    return;
-  }
-  next.setPose(prevSim.pose);
-  next.equipment = equipment.state;
-  next.frozen = prevSim.frozen;
-  sim = next;
-  prevSim.dispose();
-  nav?.setAnatomy(sim.scene);
-  sim.pwChain.reset();
-  spectrogram.reset();
-  panel.onSimulatorChanged();
-}
-
-// --- Clic en la imagen: calibrador, puerta PW o caja de color -----------------
-let caliperA: { x: number; y: number } | null = null;
-let downAt: { x: number; y: number; t: number } | null = null;
-sectorWrap.addEventListener('pointerdown', (e) => (downAt = { x: e.clientX, y: e.clientY, t: performance.now() }));
-sectorWrap.addEventListener('click', (e) => {
-  if (!downAt || Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 4 || performance.now() - downAt.t > 400) return;
-  const rect = glCanvas.getBoundingClientRect();
-  const dpr = glCanvas.width / rect.width;
-  const px = (e.clientX - rect.left) * dpr;
-  const py = (e.clientY - rect.top) * dpr;
-  const beam = sim.renderer.pixelToBeam(px, py, sim.transducer, sim.bmode.depthMm);
-  if (!beam) return;
-  if (store.get().tool === 'caliper' || e.metaKey || e.ctrlKey) {
-    if (!caliperA) {
-      caliperA = { x: px, y: py };
-      panel.setIvcCaliper(null);
-    } else {
-      panel.setIvcCaliper(Math.hypot(px - caliperA.x, py - caliperA.y) / sim.renderer.display.scale);
-      caliperA = null;
-      store.set({ tool: 'none' });
+  if (st.caseId !== prev.caseId) {
+    const error = session.loadCase(st.caseId);
+    if (error) {
+      // transaccional: sigue el caso anterior; el selector y el estado vuelven atrás
+      banner.show(`No se pudo cargar el caso: ${errorMessage(error)}`, 6000);
+      caseSelect.value = prev.caseId;
+      store.set({ caseId: prev.caseId });
     }
-    return;
   }
-  if (sim.pw.enabled) dispatch({ type: 'placeGate', theta: beam.theta, r: beam.r });
-  else if (sim.color.enabled) dispatch({ type: 'centerColorBox', theta: beam.theta, r: beam.r });
+  if (st.tool !== prev.tool && st.tool !== 'caliper') imageClick.cancelCaliper();
 });
-
-// --- Atajos de teclado (misma familia que EchoTwin) ---------------------------
-bindKeyboardShortcuts(store, dispatch);
-
-// --- Pérdida de contexto GPU ---------------------------------------------------
-let gpuLost = false;
-glCanvas.addEventListener('webglcontextlost', (e) => {
-  e.preventDefault();
-  gpuLost = true;
-  errorLog.report('gpu', 'contexto WebGL perdido');
-  showBanner('Contexto GPU perdido: recuperando…');
-});
-glCanvas.addEventListener('webglcontextrestored', () => {
-  try {
-    sim.rebuildRenderer(glCanvas);
-    gpuLost = false;
-    hideBanner();
-  } catch (e) {
-    errorLog.report('gpu', e);
-    showBanner(`No se pudo recuperar la GPU: ${errorMessage(e)}`);
-  }
-});
-let bannerEl: HTMLElement | null = null;
-let bannerTimer: ReturnType<typeof setTimeout> | null = null;
-function showBanner(text: string, autoHideMs?: number): void {
-  if (bannerTimer) clearTimeout(bannerTimer);
-  bannerTimer = autoHideMs ? setTimeout(hideBanner, autoHideMs) : null;
-  if (!bannerEl) {
-    bannerEl = document.createElement('div');
-    bannerEl.className = 'banner';
-    sectorWrap.appendChild(bannerEl);
-  }
-  bannerEl.textContent = text;
-}
-function hideBanner(): void {
-  bannerEl?.remove();
-  bannerEl = null;
-}
 
 // --- Tamaño de lienzos -------------------------------------------------------
 function fitCanvases(): void {
@@ -349,97 +231,84 @@ function fitCanvases(): void {
 }
 window.addEventListener('resize', fitCanvases);
 
-const span = (host: HTMLElement, lines: string[]): void => {
-  host.innerHTML = '';
-  for (const l of lines) {
-    const s = document.createElement('span');
-    s.textContent = l;
-    host.appendChild(s);
-  }
-};
-const nyq = (prf: number) => Math.round(nyquistVelocityCms(prf, sim.transducer.f0Doppler));
-
 // --- Bucle principal ---------------------------------------------------------
 let last = performance.now();
 let frames = 0;
 let frameTime = 0;
 let lastStatus = 0;
-// Errores del bucle: se cuentan en una ventana de 2 s (no por racha), así un fallo
-// intermitente en cuadros alternos también termina en el banner.
-let errorTimes: number[] = [];
+const errorBudget = new ErrorBudget();
 let loopDegraded = false;
-let hrShown = 0;
+const heartRate = new HeartRateDisplay();
 let eqPrevCpu: CutMapView['lastMap'] = null;
+
+function frame(now: number, dt: number): void {
+  const s = sim();
+  fitCanvases();
+  input.tick(dt);
+  probeAnimator.tick(dt);
+  s.advance(dt);
+  if (!gpu.lost) s.render();
+  drawOverlay(overlay, s);
+  nav?.draw();
+  if (store.get().torso && !gpu.lost) cutMap.draw(s, now);
+  const t = s.physiology.clock.t;
+  const secondsVisible = spectrumCanvas.clientWidth / (s.pw.sweepMmS * 3.2);
+  drawEcg(ecgCanvas, s, secondsVisible, t);
+  spectrogram.draw(s, s.spectral.columns, t, secondsVisible);
+  const h = hudText({
+    patientLabel: s.patient.label,
+    frozen: s.frozen,
+    heartRateBpm: heartRate.update(s.sample.rr, dt),
+    atrialFibrillation: s.patient.rhythm === 'atrial-fibrillation',
+    transducerMHz: s.transducer.f0B / 1e6,
+    f0DopplerHz: s.transducer.f0Doppler,
+    depthMm: s.bmode.depthMm,
+    gainDb: s.bmode.gainDb,
+    dynamicRangeDb: s.bmode.dynamicRangeDb,
+    mode: store.get().mode,
+    color: { prfHz: s.color.prfHz, wallFilterHz: s.color.wallFilterHz, frameHz: s.colorTiming.frameHz },
+    pw: { prfHz: s.pw.prfHz, gateMm: s.pw.gateMm, depthMm: s.pw.depthMm, sweepMmS: s.pw.sweepMmS },
+    respVolume: s.sample.resp.volume,
+  });
+  renderLines(hud.tl, h.topLeft);
+  renderLines(hud.tr, h.topRight);
+  renderLines(hud.br, h.bottomRight);
+  ctxChip.textContent = h.chip;
+  frames++;
+  frameTime += dt;
+  if (now - lastStatus > 250) {
+    lastStatus = now;
+    status.textContent = `${(frames / Math.max(1e-3, frameTime)).toFixed(0)} fps · t ${t.toFixed(1)} s`;
+    frames = 0;
+    frameTime = 0;
+    // Comprobación TS ↔ GLSL en vivo (solo docente): mapa GPU vs mapa del Worker, misma rejilla.
+    // La lectura GPU es asíncrona: el mapa devuelto se compara con la instantánea CPU anterior.
+    if (store.get().debug && store.get().torso && !gpu.lost) {
+      const cpu = cutMap.lastMap;
+      const gpuMap = cpu ? s.gpuTissueMap(cpu) : null;
+      panel.setEquivalence(gpuMap && eqPrevCpu ? compareTissueGrids(eqPrevCpu.map, gpuMap) : null);
+      eqPrevCpu = cpu;
+    }
+    panel.renderDebug();
+    panel.sync(); // la pose y el acoplamiento cambian con el ratón; el equipo avisa por su cuenta
+  }
+}
+
 function loop(now: number): void {
   const dt = Math.min(0.25, (now - last) / 1000);
   last = now;
   try {
-    fitCanvases();
-    input.tick(dt);
-    probeAnimator.tick(dt);
-    sim.advance(dt);
-    if (!gpuLost) sim.render();
-    drawOverlay(overlay, sim);
-    nav?.draw();
-    if (store.get().torso && !gpuLost) cutMap.draw(sim, now);
-    const t = sim.physiology.clock.t;
-    const secondsVisible = spectrumCanvas.clientWidth / (sim.pw.sweepMmS * 3.2);
-    drawEcg(ecgCanvas, sim, secondsVisible, t);
-    spectrogram.draw(sim, sim.spectral.columns, t, secondsVisible);
-    const s = sim.sample;
-    // FC mostrada como un monitor: media móvil (en FA el RR latido a latido salta)
-    hrShown = hrShown ? hrShown + (60 / s.rr - hrShown) * Math.min(1, dt * 1.5) : 60 / s.rr;
-    span(hudTl, [sim.patient.label + (sim.frozen ? ' · congelada' : '')]);
-    span(hudTr, [
-      `FC ${Math.round(hrShown)} lpm · ${sim.patient.rhythm === 'atrial-fibrillation' ? 'FA' : 'Sinusal'}`,
-      `${(sim.bmode.depthMm / 10).toFixed(0)} cm · 3,5 MHz · G ${sim.bmode.gainDb} dB · RD ${sim.bmode.dynamicRangeDb}`,
-    ]);
-    span(hudBr, [
-      sim.color.enabled
-        ? `Color ±${nyq(sim.color.prfHz)} cm/s · WF ${sim.color.wallFilterHz} Hz · ${sim.colorTiming.frameHz.toFixed(0)} Hz`
-        : sim.pw.enabled
-          ? `PW ±${nyq(sim.pw.prfHz)} cm/s · puerta ${sim.pw.gateMm.toFixed(1)} mm`
-          : `resp ${s.resp.volume.toFixed(2)}`,
-    ]);
-    const st = store.get();
-    ctxChip.textContent =
-      st.mode === 'color'
-        ? `±${nyq(sim.color.prfHz)} cm/s`
-        : st.mode === 'pw'
-          ? `Puerta ${(sim.pw.depthMm / 10).toFixed(1)} cm · ${sim.pw.sweepMmS} mm/s`
-          : '';
-    frames++;
-    frameTime += dt;
-    if (now - lastStatus > 250) {
-      lastStatus = now;
-      status.textContent = `${(frames / Math.max(1e-3, frameTime)).toFixed(0)} fps · t ${t.toFixed(1)} s`;
-      frames = 0;
-      frameTime = 0;
-      // Comprobación TS ↔ GLSL (solo docente): mapa GPU vs mapa del Worker, misma rejilla
-      if (store.get().debug && store.get().torso && !gpuLost) {
-        // La lectura GPU es asíncrona: el mapa devuelto es el que se pidió en el tick
-        // anterior, así que se compara con la instantánea CPU de ese tick.
-        const cpu = cutMap.lastMap;
-        const gpu = cpu ? sim.gpuTissueMap(cpu) : null;
-        panel.setEquivalence(gpu && eqPrevCpu ? compareTissueGrids(eqPrevCpu.map, gpu) : null);
-        eqPrevCpu = cpu;
-      }
-      panel.renderDebug();
-      panel.sync();
-    }
+    frame(now, dt);
     if (loopDegraded) {
-      // se recuperó: el banner de error persistente ya no aplica
-      loopDegraded = false;
-      if (!gpuLost) hideBanner();
+      loopDegraded = false; // se recuperó: el aviso de error persistente ya no aplica
+      if (!gpu.lost) banner.hide();
     }
   } catch (e) {
     errorLog.report(e instanceof NonFiniteStateError ? 'fisiología' : 'bucle', e);
-    errorTimes.push(now);
-    errorTimes = errorTimes.filter((t) => now - t < 2000);
-    if (errorTimes.length > 5) {
+    if (errorBudget.fail(now)) {
       // Error persistente: avisar y reintentar a 1 Hz en vez de detener la aplicación para siempre
       loopDegraded = true;
-      showBanner(`Error persistente en el bucle (se reintenta cada segundo): ${errorMessage(e)}`);
+      banner.show(`Error persistente en el bucle (se reintenta cada segundo): ${errorMessage(e)}`);
       setTimeout(() => requestAnimationFrame(loop), 1000);
       return;
     }

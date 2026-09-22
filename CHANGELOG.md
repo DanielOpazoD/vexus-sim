@@ -7,6 +7,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Cambiado
 
+- Fase 1: `main.ts` pasa a raíz de composición (450 → 319 líneas): `SimulationSession` (simulador vivo, equipo y cambio de caso transaccional), `ui/controllers/*` (HUD como función pura, clic en la imagen, pérdida de GPU, avisos, menú de capas) y `ErrorBudget`; el HUD rotula la frecuencia real del transductor.
 - Fase 1: estado del ecógrafo inmutable (`EquipmentController`) que solo cambia por comandos y siempre cumple las invariantes físicas: al reducir la profundidad la puerta PW, la caja de color y el foco se quedan dentro de la imagen; la PRF no supera c/2d; la caja y la puerta no salen del sector. Paneles, teclado, clic y ganchos de prueba despachan comandos; el `Simulator` expone ajustes de solo lectura.
 - Fase 1 (modelo de dominio), PR 1: `VESSEL_META` (sistema, tipo y ley de calibre) sustituye a los `startsWith('ivc')` de anatomía, renderer, corte, navegador 3D y volumen de muestra; registro de casos de una sola fuente (`CaseId` = claves del registro); la cadena PW recibe un `AudioSink` y el Doppler deja de depender del audio; matriz completa de dependencias entre capas (incluye imports dinámicos).
 

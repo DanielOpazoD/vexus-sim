@@ -21,6 +21,8 @@ export const MAX_TUBES = 128;
 export const MAX_NODES = 640;
 export const NODE_BASE = MAX_TUBES * 4;
 export const SCENE_TEX_W = 256;
+/** Segmentos por tubo que recorre el shader (`tubeQuery`): un tubo con más nodos se truncaría. */
+export const MAX_TUBE_SEGMENTS = 8;
 export const SCENE_TEX_H = Math.ceil((NODE_BASE + MAX_NODES) / SCENE_TEX_W);
 export const MAX_GAS = 6;
 export const MAX_RIBS = 6;
@@ -36,6 +38,8 @@ const TISSUE_DEFINES = Object.entries(TISSUE_GLSL_NAME)
 export const ANATOMY_GLSL = /* glsl */ `
 #define MAX_TUBES ${MAX_TUBES}
 #define MAX_NODES ${MAX_NODES}
+#define SCENE_TEX_W ${SCENE_TEX_W}
+#define MAX_TUBE_SEGMENTS ${MAX_TUBE_SEGMENTS}
 #define NODE_BASE ${NODE_BASE}
 #define MAX_GAS ${MAX_GAS}
 #define MAX_RIBS ${MAX_RIBS}
@@ -100,7 +104,7 @@ struct Cls {
   float profN;
 };
 
-vec4 sceneTexel(int i) { return texelFetch(uSceneTex, ivec2(i & 255, i >> 8), 0); }
+vec4 sceneTexel(int i) { return texelFetch(uSceneTex, ivec2(i % SCENE_TEX_W, i / SCENE_TEX_W), 0); }
 
 float torsoDepth(vec3 p) {
   float u = p.x / uTorso.x;
@@ -302,7 +306,7 @@ float tubeQuery(vec3 p, int t, out float rho, out vec3 tangent, out float rLoc, 
   float rs = h0.w;
   float best = 1e9;
   rho = 10.0; tangent = vec3(0.0, 0.0, 1.0); rLoc = 1.0; n = vec3(0.0, 1.0, 0.0);
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < MAX_TUBE_SEGMENTS; i++) {
     if (i >= count - 1) break;
     vec4 a = sceneTexel(NODE_BASE + start + i);
     vec4 b = sceneTexel(NODE_BASE + start + i + 1);

@@ -11,7 +11,8 @@ async function bootWithoutErrors(page: Page): Promise<string[]> {
   page.on('console', (m) => {
     if (m.type() === 'error') errors.push(`console: ${m.text()}`);
   });
-  await page.goto('/');
+  // ?e2e expone ganchos de prueba estables (window.__vexusTest); nada más cambia
+  await page.goto('/?e2e=1');
   await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: 30_000 });
   return errors;
 }
@@ -44,9 +45,13 @@ test('modos por teclado, pestaña Medir y captura de una medición', async ({ pa
   await expect(page.locator('#hud-br')).toContainText('PW');
   await page.getByRole('tab', { name: 'Medir' }).click();
   await page.getByRole('button', { name: 'Suprahepática', exact: true }).click();
-  await page.waitForTimeout(2500); // unos latidos de espectro
+  // La puerta sobre la suprahepática (técnica del operador) y 7 s de espectro sin renderizar:
+  // con SwiftShader el reloj avanza despacio y 2,5 s de espera no daban latidos completos
+  expect(await page.evaluate(() => window.__vexusTest!.placeGate(['hvRight', 'hvMiddle']))).toBe(true);
+  await page.evaluate(() => window.__vexusTest!.advance(7));
   await page.getByRole('button', { name: 'Capturar' }).click();
-  await expect(page.locator('.result')).toContainText('VSH');
+  // Un valor numérico: «VSH: —» (captura fallida) ya no pasa
+  await expect(page.locator('.result')).toContainText(/VSH: S -?\d+\.\d · D -?\d+\.\d/);
   // Docente: el panel de depuración existe y se actualiza (la verdad fisiológica
   // necesita t > 8 s de simulación, inalcanzable con SwiftShader en CI; se prueba en local).
   // `force`: con render por software el hilo principal no deja al elemento «estable».

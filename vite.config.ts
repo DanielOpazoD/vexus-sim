@@ -38,8 +38,21 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       include: ['src/**/*.ts'],
-      exclude: ['src/**/*.test.ts', 'src/main.ts', 'src/ui/**', 'src/ultrasound/**', 'src/audio/dopplerAudio.ts'],
-      reporter: ['text-summary', 'html'],
+      // Solo se excluye lo que necesita DOM, WebGL o Web Audio (lo cubre la e2e); los módulos
+      // puros de ultrasound/ (haz, cadencia del color, sector, transmisión) sí cuentan.
+      exclude: [
+        'src/**/*.test.ts',
+        'src/main.ts',
+        'src/ui/**',
+        'src/ultrasound/renderer.ts',
+        'src/ultrasound/gl.ts',
+        'src/ultrasound/shaders/**',
+        'src/audio/dopplerAudio.ts',
+        'src/app/devtools.ts',
+      ],
+      reporter: ['text-summary', 'html', 'json-summary'],
+      // Umbrales: solo pueden subir (Fase 0). Medidos con todos los niveles.
+      thresholds: { statements: 86, branches: 80, functions: 82, lines: 87 },
     },
   },
 });

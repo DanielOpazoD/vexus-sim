@@ -8,7 +8,7 @@ import { CONVEX_BEAM } from './beamModel';
 import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
 import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
 import { GLProgram, bindTarget, createTarget, createTexture, deleteTarget, drawFullscreen, type RenderTarget } from './gl';
-import { MAX_GAS, MAX_NODES, MAX_RIBS, MAX_TUBES, NODE_BASE, SCENE_TEX_H, SCENE_TEX_W } from './shaders/anatomy.glsl';
+import { MAX_GAS, MAX_NODES, MAX_RIBS, MAX_TUBES, MAX_TUBE_SEGMENTS, NODE_BASE, SCENE_TEX_H, SCENE_TEX_W } from './shaders/anatomy.glsl';
 import {
   FRAG_AXIAL,
   FRAG_BLIT,
@@ -246,6 +246,8 @@ export class UltrasoundRenderer {
       this.headerAll.set([0, t.refRadius, t.profileN, i], (h + 2) * 4);
       const b = s.tubeBounds[i];
       this.headerAll.set([b.center[0], b.center[1], b.center[2], b.r], (h + 3) * 4);
+      if (t.tube.nodes.length - 1 > MAX_TUBE_SEGMENTS)
+        throw new Error(`Tubo con ${t.tube.nodes.length - 1} segmentos (máximo del shader ${MAX_TUBE_SEGMENTS})`);
       for (const node of t.tube.nodes) {
         if (n >= MAX_NODES) throw new Error('Demasiados nodos de tubo para el shader');
         this.sceneData.set([node.p[0], node.p[1], node.p[2], node.r], (NODE_BASE + n) * 4);

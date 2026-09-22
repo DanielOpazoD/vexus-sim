@@ -4,7 +4,7 @@ import { validatePatient } from './patientState';
 import { RespiratoryModel, type RespiratorySample } from './respiratory';
 import { RhythmGenerator, gauss } from './rhythm';
 import { RightAtriumModel } from './rightAtrium';
-import { VenousNetwork, defaultNetworkParams, type NetworkOutputs } from './venousNetwork';
+import { VenousNetwork, defaultNetworkParams, hvRadiusScaleFromPressure, type NetworkOutputs } from './venousNetwork';
 import { HV_FLOW_SHARE, INTERLOBAR_FLOW_SHARE, PV_FLOW_SHARE, VESSEL_IDS, type VesselAreas, type VesselId } from './vessels';
 
 /**
@@ -191,7 +191,7 @@ export class PhysiologyEngine {
     // Dilatación de las suprahepáticas con la presión hepática: A ∝ 1 + 0,12·(P − 7) →
     // radio ×0,95 a 6 mmHg (sano) y ×1,6 a 19 mmHg (plétora de la congestión grave, con
     // diámetros de 12–15 mm en el curso medio, B.2) [EXTRAPOLACIÓN PROPIA].
-    const hvRadiusScale = Math.max(0.5, Math.sqrt(1 + 0.12 * (out.pHepatic - 7)));
+    const hvRadiusScale = hvRadiusScaleFromPressure(out.pHepatic);
     const pvRadiusScale = Math.max(0.7, Math.sqrt(1 + 0.02 * (out.pSplanchnic - 9)));
     const velocities = {} as Record<VesselId, number>;
     const qHv = out.qHepaticVein;

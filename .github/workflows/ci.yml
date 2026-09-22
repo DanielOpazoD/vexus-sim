@@ -1,6 +1,6 @@
 # Integración continua: lo mismo que `npm run check` en local (formato, lint,
-# tipos, todas las pruebas, build y presupuesto de bundle) más la auditoría de
-# dependencias de producción. Ningún paso se salta en CI; si algo es lento
+# tipos, todas las pruebas con umbrales de cobertura, build y presupuesto de
+# bundle) más la auditoría de dependencias de producción. Ningún paso se salta en CI; si algo es lento
 # aquí, es lento también en local.
 name: CI
 
@@ -31,7 +31,8 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
-      - run: npm run test:all
+      - name: Pruebas (todos los niveles) con umbrales de cobertura
+        run: npm run test:coverage
       - run: npm run build
       - name: Auditoría de dependencias de producción
         run: npm audit --omit=dev --audit-level=high

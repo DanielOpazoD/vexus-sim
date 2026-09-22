@@ -11,13 +11,18 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   (3 ángulos × 4 posiciones), sin cálices ni pelvis diferenciados.
 - **La presión de aurícula derecha es un contorno prescrito** (`prescribed-ra-contour`): media del
   caso + ondas a/c/x/v/y + onda sistólica por insuficiencia tricuspídea. No hay lazo cerrado; las
-  amplitudes (3,4 / 5,2·VD / 1,8 / 2,4 / 9·IT² mmHg) son de calibración, no medidas.
+  amplitudes (3,4 / 5,2·VD / 1,8 / 2,4 / 9·IT² mmHg) son de calibración, no medidas. Hallado por fast-check: con la aurícula muy rígida (compliancia 0,3) y PAD media ≈ 0 el contorno oscila hasta −11 mmHg y la VCI suprahepática supera 2 m/s (`properties.test.ts`, `it.fails`).
 - **Velocidad uniforme a lo largo de cada tubo** (`uniform-vessel-velocity`): el caudal local escala
   con el área; no hay conservación explícita en bifurcaciones.
 - **El hígado es una forma procedural** (`procedural-liver-shape`): elipsoides recortados por pared,
   cúpula y plano visceral, con fosa vesicular, impresión renal, fisura umbilical y lámina del
   ligamento venoso; los segmentos de Couinaud son una partición por planos de los vasos (metadatos
   del 3D, no una malla segmentada); los ángulos de las venas y conductos son plausibles, no medidos.
+- **Sin cascada torácica de la VCI** (`no-thoracic-waterfall`): la unión cavoauricular transmite
+  cualquier caída de la PAD; no existe la meseta de Guyton por colapso de la VCI en la entrada
+  torácica. Hallado por fast-check: con hipovolemia (volumen 0,6) y PAD media ≈ 0 la VCI se vacía
+  hacia la aurícula a > 100 mL/s y su velocidad supera 2 m/s (`properties.test.ts`, `it.fails`).
+  Sí existe el resistor de Starling por debajo de 8 mm y un lumen residual de 3 mm.
 - **La VCI es un solo compartimento abdominal** (`ivc-single-compartment`): su diámetro observado
   usa la presión del compartimento entero, no la del segmento a 2 cm de la confluencia; la pulsación
   cardíaca del calibre está amortiguada.

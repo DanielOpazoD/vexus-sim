@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -p tsconfig.json --noEmit && vite build && node tools/ci/bundle-budget.mjs",
+    "build": "tsc -p tsconfig.json --noEmit && vite build && tsx tools/ci/bundle-budget.ts",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
@@ -18,7 +18,7 @@
     "test:watch": "vitest",
     "calibrate": "tsx tools/calibrate.ts",
     "docs:index": "tsx tools/docs/decisions-index.ts",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:all && vite build && node tools/ci/bundle-budget.mjs",
+    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:all && vite build && tsx tools/ci/bundle-budget.ts",
     "test:coverage": "VITEST_TIER=all vitest run --coverage --testTimeout=180000"
   },
   "devDependencies": {

@@ -1,6 +1,7 @@
 import type { Simulator } from '../app/simulator';
 import { Tissue } from '../anatomy/tissues';
 import type { VesselId } from '../physiology/vessels';
+import { beamToPixel, pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
 import type { CutMapInit, CutMapRequest, CutMapResponse } from './cutMapWorker';
 
 /**
@@ -161,13 +162,7 @@ export class CutMapView {
     if (W === 0 || H === 0) return;
     const tr = sim.transducer;
     const depth = sim.bmode.depthMm;
-    const R = tr.curvatureRadius;
-    const margin = 6;
-    const halfW = (R + depth) * Math.sin(tr.halfSector);
-    const totalH = R + depth - R * Math.cos(tr.halfSector);
-    const scale = Math.min((W - 2 * margin) / (2 * halfW), (H - 2 * margin) / totalH);
-    const apexX = W / 2;
-    const apexY = margin - R * Math.cos(tr.halfSector) * scale;
+    const layout = sectorLayout(W, H, tr, depth, 6);
     if (!this.img || this.img.width !== W || this.img.height !== H) this.img = ctx.createImageData(W, H);
     const px = this.img.data;
     const vesselIds = sim.scene.vessels.map((v) => v.id);
@@ -175,21 +170,17 @@ export class CutMapView {
     const acc = new Map<string, { x: number; y: number; n: number; label: string }>();
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
-        const dx = (x - apexX) / scale;
-        const dy = (y - apexY) / scale;
-        const rho = Math.hypot(dx, dy);
-        const theta = -Math.atan2(dx, dy);
-        const r = rho - R;
+        const beam = pixelToBeam(layout, tr, depth, x, y);
         const o = (y * W + x) * 4;
-        if (r < 0 || r > depth || Math.abs(theta) > tr.halfSector) {
+        if (!beam) {
           px[o] = 13;
           px[o + 1] = 15;
           px[o + 2] = 19;
           px[o + 3] = 255;
           continue;
         }
-        const u = Math.min(map.width - 1, Math.floor(((theta + tr.halfSector) / (2 * tr.halfSector)) * map.width));
-        const v = Math.min(map.height - 1, Math.floor((r / depth) * map.height));
+        const u = Math.min(map.width - 1, Math.floor(((beam.theta + tr.halfSector) / (2 * tr.halfSector)) * map.width));
+        const v = Math.min(map.height - 1, Math.floor((beam.r / depth) * map.height));
         const i = v * map.width + u;
         const t = map.tissue[i];
         const vi = map.vessel[i];
@@ -227,8 +218,7 @@ export class CutMapView {
     ctx.font = `${Math.round(10 * (W / 300))}px sans-serif`;
     for (let cm = 5; cm <= depth / 10; cm += 5) {
       const rr = cm * 10;
-      const x = apexX - Math.sin(tr.halfSector) * (R + rr) * scale;
-      const y = apexY + Math.cos(tr.halfSector) * (R + rr) * scale;
+      const { x, y } = beamToPixel(layout, tr, tr.halfSector, rr);
       ctx.fillText(String(cm), Math.max(2, x - 16), y);
     }
     // rótulos

@@ -135,7 +135,7 @@ speckle, SNR local y asimetría contra clips reales (docs/APPROXIMATIONS.md).
 `// @tier slow` en la primera línea de una prueba la saca de `npm test`; `test:all` lo corre todo y
 es lo que ejecuta `check`. `src/validation/layers.test.ts` comprueba las fronteras de capas y detecta
 ciclos (Tarjan) con una lista de ciclos aceptados que solo puede encoger (vacía). `tools/ci/bundle-
-budget.mjs` fija presupuestos por patrón con la medición fechada en cabecera. `tools/docs/decisions-
+budget.ts` fija presupuestos por patrón con la medición fechada en cabecera. `tools/docs/decisions-
 index.ts` genera el índice y `docs.test.ts` exige que esté al día y que ARCHITECTURE.md solo nombre
 archivos existentes.
 
@@ -264,6 +264,18 @@ clase (cámara, gestos, dibujo, espejo del marco) y cede los constructores de ge
 esqueleto), `organs` (hígado por marching cubes, diafragma, vesícula, riñones, vía biliar), `tubes`,
 `labels` (rótulos y puntos de partida), `probe` (sonda y abanico), `anatomyGroups`. Sin cambios de
 comportamiento; verificado en vivo (medición, captura, cambio de caso).
+
+## 29. Geometría del sector única, árbol vascular propio y `classify` por pasos
+
+`ultrasound/sectorGeometry.ts` (puro, con pruebas de inversa píxel ↔ haz y encaje en el lienzo) es
+la única definición del encaje del abanico: la usan el renderizador (conversión de barrido, overlay,
+calibrador) y el corte ecográfico, que antes reimplementaba la fórmula con otro margen, de modo que la
+superposición corte ↔ imagen ya es exacta salvo escala. El árbol vascular y la vía biliar salen del
+constructor de la escena a `anatomy/vesselTree.ts` (con `VesselDef`/`DuctDef`), y `scene.classify`
+documenta su orden de prioridad y delega en `classifyWall`, `classifyTubes`, `classifyKidneys` y
+`classifyLiver` (misma semántica; `anatomy.test.ts` intacto). `tools/ci/bundle-budget.ts` pasa a
+TypeScript como el resto de herramientas; `CaseId` tipa el estado de UI (un id de caso inválido no
+compila; el `<select>` se valida con `isCaseId`).
 
 ## Iteración 2 — informe de cierre (22-09-2026)
 

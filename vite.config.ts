@@ -24,7 +24,7 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: true,
-    // three.js en su propio chunk: el presupuesto (tools/ci/bundle-budget.mjs) lo mide aparte
+    // three.js en su propio chunk: el presupuesto (tools/ci/bundle-budget.ts) lo mide aparte
     rollupOptions: { output: { manualChunks: { three: ['three', 'three/examples/jsm/objects/MarchingCubes.js'] } } },
   },
   test: {

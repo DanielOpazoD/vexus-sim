@@ -4,7 +4,7 @@ import { registerDevtools } from './app/devtools';
 import { nyquistVelocityCms } from './core/units';
 import { Simulator } from './app/simulator';
 import { Store, type ImagingMode } from './app/store';
-import { CASES, findCase } from './cases';
+import { CASES, CASE_IDS, findCase, isCaseId, type CaseId } from './cases';
 import { clonePatient } from './physiology/patientState';
 import { CutMapView } from './ui/cutMapView';
 import { drawEcg, drawOverlay, SpectrogramView } from './ui/displays';
@@ -52,7 +52,7 @@ const store = new Store({
   frozen: false,
   debug: false,
   audio: false,
-  caseId: CASES[0].id,
+  caseId: CASE_IDS[0],
   torso: true,
   tool: 'none',
 });
@@ -149,7 +149,9 @@ debugToggle.addEventListener('change', () =>
     tab: debugToggle.checked ? 'docente' : store.get().tab === 'docente' ? 'adquirir' : store.get().tab,
   }),
 );
-caseSelect.addEventListener('change', () => store.set({ caseId: caseSelect.value }));
+caseSelect.addEventListener('change', () => {
+  if (isCaseId(caseSelect.value)) store.set({ caseId: caseSelect.value });
+});
 
 // Navegador: zoom, centrar, capas
 $<HTMLButtonElement>('nav-zoom-in').addEventListener('click', () => nav?.zoomBy(0.85));
@@ -204,7 +206,7 @@ store.subscribe((st, prev) => {
   if (st.tool !== prev.tool && st.tool !== 'caliper') caliperA = null;
 });
 
-function loadCase(id: string): void {
+function loadCase(id: CaseId): void {
   const prevSim = sim;
   const next = new Simulator(clonePatient(findCase(id)), glCanvas, prevSim.audio);
   next.setPose(prevSim.pose);

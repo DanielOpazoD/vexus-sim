@@ -6,7 +6,7 @@ import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const KB = 1024;
-const BUDGETS = [
+const BUDGETS: Array<[RegExp, number]> = [
   [/three.*\.js$/, 700 * KB],
   [/index-.*\.js$/, 200 * KB],
   [/\.css$/, 20 * KB],
@@ -15,7 +15,7 @@ const BUDGETS = [
 const TOTAL_JS_BUDGET = 1000 * KB;
 
 const dir = join(process.cwd(), 'dist', 'assets');
-let files;
+let files: string[];
 try {
   files = readdirSync(dir);
 } catch {
@@ -24,7 +24,7 @@ try {
 }
 let over = false;
 let totalJs = 0;
-const rows = [];
+const rows: string[][] = [];
 for (const f of files) {
   if (f.endsWith('.map')) continue;
   const size = statSync(join(dir, f)).size;

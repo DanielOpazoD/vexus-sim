@@ -64,6 +64,7 @@ describe('Diagnóstico exportable (Fase 3)', () => {
         caseId: 'normal-adult',
         simTimeS: 12.5,
         fps: 58,
+        gpuMs: { frameMs: 5.7, perPass: { transmission: 1.5, rawField: 4.2 } },
         equipment: defaultEquipment(),
         errors: [{ source: 'gpu', message: 'contexto WebGL perdido', firstAt: 1, lastAt: 2, count: 2 }],
       },
@@ -72,6 +73,7 @@ describe('Diagnóstico exportable (Fase 3)', () => {
     expect(d.format).toBe('vexus-diagnostico/1');
     expect(d.createdAt).toBe('2026-09-22T10:11:12.345Z');
     expect(d.errors[0].count).toBe(2);
+    expect(d.gpuMs?.perPass).toEqual({ transmission: 1.5, rawField: 4.2 });
     expect((JSON.parse(JSON.stringify(d)) as typeof d).equipment.bmode.depthMm).toBe(180);
     expect(diagnosticsFileName(d)).toBe('vexus-diagnostico-0.4.0-abc1234-2026-09-22T10-11-12-345Z.json');
     expect(buildLabel('0.4.0', 'abc1234')).toBe('v0.4.0 · abc1234');

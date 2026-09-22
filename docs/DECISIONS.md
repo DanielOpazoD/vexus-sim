@@ -568,6 +568,35 @@ red. La mutación anterior ahora falla la e2e.
 `sceneUniforms.test.ts`, e2e `equivalence.spec.ts` con 3 casos × (4 ventanas + 50 000 puntos):
 ≈ 44 700 puntos interiores y 500–960 de sangre por caso, cero discrepancias.
 
+## 47. Grafo de pasadas del renderer y tiempo de GPU que no miente
+
+**Contexto.** `UltrasoundRenderer.render` encadenaba a mano ocho pasadas (A–G, persistencia,
+presentación) en un método de 170 líneas; el orden y las dependencias entre texturas solo estaban en
+comentarios, y no había ninguna medida del coste de GPU por pasada ni del cuadro (la evaluación
+estructural lo señalaba como hueco de rendimiento). Al medir con `EXT_disjoint_timer_query_webgl2`
+en WebKit/Metal, cada pasada devolvía ≈ 18 ms (también el blit final) con un cuadro real de 16,4 ms
+medido de forma síncrona: la suma (129 ms) no significaba nada.
+**Opciones.** (a) Grafo de render completo con asignación automática de texturas (excesivo para
+ocho pasadas fijas); (b) tabla declarativa de pasadas + validación pura + temporizador por pasada;
+(c) solo temporizador. (b) sin comprobar la resolución del temporizador habría publicado números falsos.
+**Decisión.** (b). `ultrasound/passGraph.ts` declara `FRAME_PASSES` (lee, escribe, cadencia de
+cuadro o de color) y `passGraphErrors` exige que nadie lea antes de que exista su entrada, un único
+escritor por recurso (salvo la historia ping-pong), ninguna pasada muerta y salida a pantalla.
+`render()` recorre la tabla y cada pasada es un método (`passes: Record<PassId, …>` obliga a
+implementarlas todas). `ultrasound/gpuTimer.ts` mide cada pasada sin bloquear (consultas leídas
+cuando el driver las da por disponibles, media exponencial, descarte de intervalos «disjoint», tope
+de consultas en vuelo) y `summarizeGpuTimings` solo da tiempos por pasada si la pesada (B, campo
+crudo) cuesta más de 3 veces la trivial (S, presentación); si no, da solo el total del cuadro.
+**Consecuencias.** La pestaña Docente y el diagnóstico exportable muestran el tiempo de GPU del
+cuadro, y por pasada donde el navegador lo permite (en Metal: «este navegador no separa las
+pasadas»). Añadir una pasada es una fila en la tabla más su método; la suite rechaza órdenes rotos.
+Pendiente: presupuesto de tiempo por cuadro en CI (SwiftShader no expone temporizadores).
+**Verificación.** `passGraph.test.ts`: la tabla es válida y cinco mutaciones del orden (axial antes
+del campo crudo, sin lateral, sin color, color de cuadro detrás de G, dos escritores, pasada muerta,
+sin presentación) fallan; el temporizador con un WebGL falso (no bloquea, media, «disjoint»,
+reutiliza y libera consultas, deja de medir si el driver no responde) y el resumen con los valores
+medidos en Metal. En vivo: modo B y color correctos, equivalencia 100 %, «GPU ≈ 26 ms/cuadro».
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

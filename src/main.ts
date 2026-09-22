@@ -110,6 +110,7 @@ panel.onExportDiagnostics = () => {
     caseId: s.patient.id,
     simTimeS: s.physiology.clock.t,
     fps: lastFps,
+    gpuMs: s.renderer.gpuTimings(),
     equipment: s.equipment,
     errors: errorLog.recent(50),
   });

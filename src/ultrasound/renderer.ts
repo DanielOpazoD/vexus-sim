@@ -8,6 +8,8 @@ import type { TransducerProfile } from './transducerProfile';
 import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
 import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
 import { GLProgram, bindTarget, createTarget, createTexture, deleteTarget, drawFullscreen, type RenderTarget } from './gl';
+import { GpuPassTimer, summarizeGpuTimings, type GpuFrameTimings } from './gpuTimer';
+import { FRAME_PASSES, type PassId } from './passGraph';
 import { MAX_NODES, MAX_TUBES, MAX_TUBE_SEGMENTS, NODE_BASE, SCENE_TEX_H, SCENE_TEX_W } from '../anatomy/gpu/anatomy.glsl';
 import { evaluateSceneUniforms, uploadSceneUniforms, type SceneUniformValues } from '../anatomy/gpu/sceneUniforms';
 import {
@@ -121,6 +123,8 @@ export class UltrasoundRenderer {
   private pBlit: GLProgram;
   private pMap: GLProgram;
   private pQuery: GLProgram | null = null;
+  /** Tiempo de GPU por pasada (asíncrono; null sin la extensión). */
+  private readonly timer: GpuPassTimer<PassId>;
   private sceneValues: SceneUniformValues = [];
   private sceneValuesFor: FrameInputs['sample'] | null = null;
   private sceneValuesTubes = -1;
@@ -175,6 +179,7 @@ export class UltrasoundRenderer {
     this.gl = gl;
     if (!gl.getExtension('EXT_color_buffer_float')) throw new Error('EXT_color_buffer_float no disponible');
     gl.getExtension('OES_texture_float_linear');
+    this.timer = new GpuPassTimer<PassId>(gl);
     this.pTrans = new GLProgram(gl, VERT, FRAG_TRANSMISSION, 'transmission');
     this.pRaw = new GLProgram(gl, VERT, FRAG_RAWFIELD, 'rawfield');
     this.pAxial = new GLProgram(gl, VERT, FRAG_AXIAL, 'axial');
@@ -235,6 +240,7 @@ export class UltrasoundRenderer {
     for (const p of [this.pTrans, this.pRaw, this.pAxial, this.pLateral, this.pColor, this.pScan, this.pPersist, this.pBlit, this.pMap])
       p.dispose();
     this.pQuery?.dispose();
+    this.timer.dispose();
     for (const t of [this.tTrans, this.tRaw, this.tAxial, this.tEnv, this.tColor, this.tMap]) deleteTarget(gl, t);
     if (this.tScan) deleteTarget(gl, this.tScan);
     if (this.tPersist) for (const t of this.tPersist) deleteTarget(gl, t);
@@ -412,22 +418,56 @@ export class UltrasoundRenderer {
    *   de depuración, `tissueMap`.)
    */
   render(inputs: FrameInputs): void {
-    const gl = this.gl;
     this.frameCount++;
+    this.timer.poll();
     this.updateCoupling(inputs);
     this.updateSceneDynamic(inputs);
-    const tr = inputs.transducer;
-    const depth = inputs.bmode.depthMm;
+    const c = inputs.color;
+    const colorDue = c.enabled && (inputs.updateColor || !this.lastColorFrame);
+    for (const pass of FRAME_PASSES) {
+      if (pass.cadence === 'color' && !colorDue) continue;
+      this.timer.begin(pass.id);
+      this.passes[pass.id](inputs);
+      this.timer.end();
+    }
+  }
 
-    // A — transmisión
+  /**
+   * Tiempo medio de GPU del cuadro y, si el navegador los separa, por pasada (ms); null si no
+   * expone temporizadores o aún no hay medidas. El campo crudo (B) frente a la presentación (S)
+   * delata los backends que devuelven el cuadro entero en cada consulta.
+   */
+  gpuTimings(): GpuFrameTimings<PassId> | null {
+    return summarizeGpuTimings(this.timer.timings(), 'rawField', 'present');
+  }
+
+  /** Implementación de cada pasada de `FRAME_PASSES` (el tipo exige una por identificador). */
+  private readonly passes: Record<PassId, (inputs: FrameInputs) => void> = {
+    transmission: (inputs) => this.passTransmission(inputs),
+    rawField: (inputs) => this.passRawField(inputs),
+    axial: (inputs) => this.passAxial(inputs),
+    lateral: (inputs) => this.passLateral(inputs),
+    color: (inputs) => this.passColor(inputs),
+    scanConvert: (inputs) => this.passScanConvert(inputs),
+    persistence: (inputs) => this.passPersistence(inputs),
+    present: () => this.passPresent(),
+  };
+
+  // A — transmisión
+  private passTransmission(inputs: FrameInputs): void {
+    const gl = this.gl;
     bindTarget(gl, this.tTrans);
     this.pTrans.use();
     this.setSceneUniforms(this.pTrans, inputs);
     this.setBeamUniforms(this.pTrans, inputs);
     this.pTrans.f('uCoarseN', COARSE_DEPTH);
     drawFullscreen(gl);
+  }
 
-    // B — campo crudo
+  // B — campo crudo
+  private passRawField(inputs: FrameInputs): void {
+    const gl = this.gl;
+    const tr = inputs.transducer;
     bindTarget(gl, this.tRaw);
     this.pRaw.use();
     this.setSceneUniforms(this.pRaw, inputs);
@@ -444,8 +484,12 @@ export class UltrasoundRenderer {
     this.pRaw.f('uNoise', 0.00025);
     this.pRaw.f('uFrame', this.frameCount);
     drawFullscreen(gl);
+  }
 
-    // C — convolución axial (pulso ≈ 2 ciclos a 3,5 MHz → σ ≈ 0,26 mm)
+  // C — convolución axial (pulso ≈ 2 ciclos a 3,5 MHz → σ ≈ 0,26 mm)
+  private passAxial(inputs: FrameInputs): void {
+    const gl = this.gl;
+    const depth = inputs.bmode.depthMm;
     bindTarget(gl, this.tAxial);
     this.pAxial.use();
     this.pAxial.tex('uField', 0, this.tRaw.textures[0]);
@@ -453,8 +497,13 @@ export class UltrasoundRenderer {
     this.pAxial.f('uSigmaTexels', Math.max(0.6, 0.26 / dz));
     this.pAxial.v2('uTexel', 1 / this.lines, 1 / FINE_DEPTH);
     drawFullscreen(gl);
+  }
 
-    // D — convolución lateral + ruido + envolvente
+  // D — convolución lateral + envolvente
+  private passLateral(inputs: FrameInputs): void {
+    const gl = this.gl;
+    const tr = inputs.transducer;
+    const depth = inputs.bmode.depthMm;
     bindTarget(gl, this.tEnv);
     this.pLateral.use();
     this.pLateral.tex('uField', 0, this.tAxial.textures[0]);
@@ -472,40 +521,48 @@ export class UltrasoundRenderer {
       this.profile.beam.fNumberRxMin,
     );
     drawFullscreen(gl);
+  }
 
-    // F — color (a su propia cadencia)
+  // F — color (a su propia cadencia: `render` decide si toca)
+  private passColor(inputs: FrameInputs): void {
+    const gl = this.gl;
+    const tr = inputs.transducer;
     const c = inputs.color;
-    if (c.enabled && (inputs.updateColor || !this.lastColorFrame)) {
-      bindTarget(gl, this.tColor);
-      this.pColor.use();
-      this.setSceneUniforms(this.pColor, inputs);
-      this.setBeamUniforms(this.pColor, inputs);
-      this.pColor.tex('uTrans0', 0, this.tTrans.textures[0]);
-      this.pColor.v4('uBox', c.theta0, c.theta1, c.r0, c.r1);
-      this.pColor.v2(
-        'uCells',
-        colorLineCount(c.theta0, c.theta1, this.profile.colorLineSpacingRad),
-        Math.max(4, Math.round((c.r1 - c.r0) / COLOR_PACKET_MM)),
-      );
-      this.pColor.v4(
-        'uBeam',
-        this.profile.beam.k * this.profile.beam.lambdaMm,
-        this.profile.beam.apertureTxMm,
-        this.profile.beam.apertureRxMaxMm,
-        this.profile.beam.fNumberRxMin,
-      );
-      this.pColor.f('uPrf', c.prfHz);
-      this.pColor.f('uF0', tr.f0Doppler);
-      this.pColor.f('uWallHz', c.wallFilterHz);
-      this.pColor.f('uColorGain', c.gain);
-      this.pColor.f('uEnsemble', c.ensemble);
-      this.pColor.v3('uProbeVel', inputs.probeVelocity);
-      this.pColor.f('uFrame', this.frameCount);
-      drawFullscreen(gl);
-      this.lastColorFrame = { box: [c.theta0, c.theta1, c.r0, c.r1], prf: c.prfHz };
-    }
+    bindTarget(gl, this.tColor);
+    this.pColor.use();
+    this.setSceneUniforms(this.pColor, inputs);
+    this.setBeamUniforms(this.pColor, inputs);
+    this.pColor.tex('uTrans0', 0, this.tTrans.textures[0]);
+    this.pColor.v4('uBox', c.theta0, c.theta1, c.r0, c.r1);
+    this.pColor.v2(
+      'uCells',
+      colorLineCount(c.theta0, c.theta1, this.profile.colorLineSpacingRad),
+      Math.max(4, Math.round((c.r1 - c.r0) / COLOR_PACKET_MM)),
+    );
+    this.pColor.v4(
+      'uBeam',
+      this.profile.beam.k * this.profile.beam.lambdaMm,
+      this.profile.beam.apertureTxMm,
+      this.profile.beam.apertureRxMaxMm,
+      this.profile.beam.fNumberRxMin,
+    );
+    this.pColor.f('uPrf', c.prfHz);
+    this.pColor.f('uF0', tr.f0Doppler);
+    this.pColor.f('uWallHz', c.wallFilterHz);
+    this.pColor.f('uColorGain', c.gain);
+    this.pColor.f('uEnsemble', c.ensemble);
+    this.pColor.v3('uProbeVel', inputs.probeVelocity);
+    this.pColor.f('uFrame', this.frameCount);
+    drawFullscreen(gl);
+    this.lastColorFrame = { box: [c.theta0, c.theta1, c.r0, c.r1], prf: c.prfHz };
+  }
 
-    // G — conversión de barrido
+  // G — conversión de barrido + mapa de grises + superposición del color
+  private passScanConvert(inputs: FrameInputs): void {
+    const gl = this.gl;
+    const tr = inputs.transducer;
+    const depth = inputs.bmode.depthMm;
+    const c = inputs.color;
     this.ensureDisplayTargets();
     const W = this.canvas.width;
     const H = this.canvas.height;
@@ -538,8 +595,11 @@ export class UltrasoundRenderer {
     this.pScan.f('uColorPriority', 0.62);
     this.pScan.i('uColorInvert', c.invert ? 1 : 0);
     drawFullscreen(gl);
+  }
 
-    // Persistencia (ping-pong) y salida
+  // Persistencia (ping-pong): mezcla el cuadro con la historia
+  private passPersistence(inputs: FrameInputs): void {
+    const gl = this.gl;
     const prev = this.tPersist![this.persistIndex];
     const next = this.tPersist![1 - this.persistIndex];
     bindTarget(gl, next);
@@ -549,10 +609,14 @@ export class UltrasoundRenderer {
     this.pPersist.f('uPersist', inputs.bmode.persistence);
     drawFullscreen(gl);
     this.persistIndex = 1 - this.persistIndex;
+  }
 
-    bindTarget(gl, null, W, H);
+  // Presentación: la historia recién escrita, a pantalla
+  private passPresent(): void {
+    const gl = this.gl;
+    bindTarget(gl, null, this.canvas.width, this.canvas.height);
     this.pBlit.use();
-    this.pBlit.tex('uTex', 0, next.textures[0]);
+    this.pBlit.tex('uTex', 0, this.tPersist![this.persistIndex].textures[0]);
     drawFullscreen(gl);
   }
 

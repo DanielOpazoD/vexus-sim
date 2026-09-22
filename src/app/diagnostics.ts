@@ -3,8 +3,8 @@ import type { ErrorEntry } from './errorLog';
 
 /**
  * Diagnóstico exportable (Fase 3): lo que un equipo necesita para reproducir un informe de
- * fallo o de fidelidad — versión y commit, navegador y GPU, caso, estado del equipo, fps y
- * últimos errores. Solo datos técnicos y del paciente sintético; nada del usuario.
+ * fallo o de fidelidad — versión y commit, navegador y GPU, caso, estado del equipo, fps, tiempo
+ * de GPU por pasada y últimos errores. Solo datos técnicos y del paciente sintético; nada del usuario.
  */
 export interface DiagnosticsInput {
   version: string;
@@ -16,6 +16,8 @@ export interface DiagnosticsInput {
   caseId: string;
   simTimeS: number;
   fps: number;
+  /** Tiempo de GPU del cuadro y por pasada si el navegador los separa (ms); null sin temporizadores. */
+  gpuMs: { frameMs: number; perPass: Readonly<Record<string, number>> | null } | null;
   equipment: EquipmentSettings;
   errors: readonly ErrorEntry[];
 }

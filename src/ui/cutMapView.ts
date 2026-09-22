@@ -2,7 +2,7 @@ import type { Simulator } from '../app/simulator';
 import type { PhysiologySample } from '../physiology/engine';
 import type { ProbeFrame } from '../probe/probe';
 import { Tissue } from '../anatomy/tissues';
-import type { VesselId } from '../physiology/vessels';
+import { VESSEL_META, type VesselId, type VesselSystem } from '../physiology/vessels';
 import { beamToPixel, pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
 import type { CutMapError, CutMapInit, CutMapRequest, CutMapResponse } from './cutMapWorker';
 import { errorLog } from '../app/errorLog';
@@ -62,14 +62,18 @@ const TISSUE_LABEL: Record<number, string> = {
   [Tissue.RenalCortex]: 'riñón',
   [Tissue.RenalSinus]: 'seno renal',
 };
-function vesselColor(id: VesselId): [number, number, number] {
-  if (id.startsWith('ivc')) return [60, 120, 230];
-  if (id.startsWith('hv')) return [120, 180, 255];
-  if (id.startsWith('pv')) return [225, 120, 225];
-  if (id === 'aorta') return [230, 60, 60];
-  if (id.includes('Artery')) return [240, 90, 90];
-  return [90, 140, 220];
-}
+const SYSTEM_COLOR: Record<VesselSystem, [number, number, number]> = {
+  ivc: [60, 120, 230],
+  hepaticVein: [120, 180, 255],
+  portal: [225, 120, 225],
+  hepaticArtery: [240, 90, 90],
+  aorta: [230, 60, 60],
+  renalArtery: [240, 90, 90],
+  renalVein: [90, 140, 220],
+  interlobarArtery: [240, 90, 90],
+  interlobarVein: [90, 140, 220],
+};
+const vesselColor = (id: VesselId): [number, number, number] => SYSTEM_COLOR[VESSEL_META[id].system];
 const VESSEL_LABEL: Record<VesselId, string> = {
   ivcInfra: 'VCI',
   ivcSupra: 'VCI',

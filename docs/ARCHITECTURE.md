@@ -12,6 +12,22 @@ La medición sobre la señal adquirida (`doppler/spectralMeasure.ts`) y sobre la
 (`vexus/measurements.ts`) comparten ventanas y clasificador (`vexus/classification.ts`) pero
 nunca se mezclan: el modo docente muestra ambas.
 
+## Reglas de dependencia
+
+Matriz completa en `src/validation/layers.test.ts` (`ALLOWED`); cualquier import fuera de ella
+falla la suite, incluidos los dinámicos y los de efecto lateral:
+
+```
+core ← physiology ← anatomy ← probe ← ultrasound
+             ↑  ↖ cases          ↖
+           vexus ← doppler (+ anatomy)      audio (solo core)
+app (orquesta todo el motor) ← ui (vistas; hoy aún ven el Simulator concreto) ← main
+```
+
+El Doppler no conoce Web Audio: la app le inyecta un `AudioSink` (`DopplerAudio` en el navegador,
+`SILENT_AUDIO` en pruebas). Los vasos se clasifican por `VESSEL_META` (sistema, tipo, ley de
+calibre), nunca por el prefijo de su identificador; los casos salen de un único registro.
+
 ## Un reloj
 
 `core/clock.ts` — `SimulationClock` avanza en pasos fijos de 4 ms. `PhysiologyEngine.step()` es el

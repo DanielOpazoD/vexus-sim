@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import type { Tube } from '../../anatomy/primitives';
 import type { AnatomyScene, VesselCaliber } from '../../anatomy/scene';
 import type { Vec3 } from '../../core/vec3';
+import { VESSEL_META, type VesselSystem } from '../../physiology/vessels';
 import { CM } from './common';
 
 /** Tubos con radio variable (Catmull-Rom) para vasos y conductos. */
@@ -50,31 +51,31 @@ export function variableTube(tube: Tube, color: number, opacity = 1): THREE.Mesh
  * cava según la fisiología en régimen, así el avatar de una congestión grave
  * muestra la plétora (VCI 30 mm, suprahepáticas 12–15 mm) y el sano no.
  */
+/** Color de cada sistema vascular en el navegador 3D. */
+const SYSTEM_COLOR_3D: Record<VesselSystem, number> = {
+  ivc: 0x3b6fd8,
+  hepaticVein: 0x79b4ff,
+  portal: 0xd86ad8,
+  hepaticArtery: 0xf0704d,
+  aorta: 0xe04848,
+  renalArtery: 0xf0704d,
+  renalVein: 0x5a8cdc,
+  interlobarArtery: 0xf0704d,
+  interlobarVein: 0x5a8cdc,
+};
+
 export function buildVessels(a: AnatomyScene, caliber: VesselCaliber): THREE.Group {
   const g = new THREE.Group();
-  const colorOf = (id: string): number =>
-    id.startsWith('ivc')
-      ? 0x3b6fd8
-      : id.startsWith('hv')
-        ? 0x79b4ff
-        : id.startsWith('pv')
-          ? 0xd86ad8
-          : id === 'aorta'
-            ? 0xe04848
-            : id.includes('Artery')
-              ? 0xf0704d
-              : id.includes('Vein')
-                ? 0x5a8cdc
-                : 0xf0a04d;
   for (const v of a.vessels) {
     const scale = caliber.radiusScale(v.id);
-    const apScale = v.id.startsWith('ivc') ? caliber.ivcApScale : v.tube.apScale;
+    const apScale = VESSEL_META[v.id].system === 'ivc' ? caliber.ivcApScale : v.tube.apScale;
     const tube: Tube = {
       ...v.tube,
       apScale,
       nodes: v.tube.nodes.map((n) => ({ p: [n.p[0], n.p[1], Math.max(-240, n.p[2])] as Vec3, r: n.r * scale })),
     };
-    g.add(variableTube(tube, colorOf(v.id), v.id === 'aorta' ? 0.7 : 1));
+    const system = VESSEL_META[v.id].system;
+    g.add(variableTube(tube, SYSTEM_COLOR_3D[system], system === 'aorta' ? 0.7 : 1));
   }
   return g;
 }

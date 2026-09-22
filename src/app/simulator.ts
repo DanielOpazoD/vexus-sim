@@ -5,7 +5,7 @@ import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene } from '../anatomy/scene';
 import type { Tissue } from '../anatomy/tissues';
 import { rayTransmission } from '../ultrasound/transmission';
-import type { DopplerAudio } from '../audio/dopplerAudio';
+import { DopplerAudio } from '../audio/dopplerAudio';
 import { dopplerShiftHz } from '../core/units';
 import type { Vec3 } from '../core/vec3';
 import { PwDopplerChain } from '../doppler/pwChain';
@@ -120,13 +120,17 @@ export class Simulator {
   /** Información de la puerta para la UI/depuración. */
   gateInfo: { world: Vec3; transmission: number; beamAngleToFlowDeg: number | null; vessel: string | null } | null = null;
 
+  /** Salida de audio del navegador; la cadena PW solo ve su interfaz `AudioSink`. */
+  readonly audio: DopplerAudio;
+
   constructor(patient: PatientState, canvas: HTMLCanvasElement, audio?: DopplerAudio) {
     this.patient = patient;
+    this.audio = audio ?? new DopplerAudio();
     this.scene = new AnatomyScene(patient);
     this.anatomy = new AnatomyQuery(this.scene);
     this.physiology = new PhysiologyEngine(patient, this.scene.vesselAreas());
     this.renderer = new UltrasoundRenderer(canvas, this.scene, this.transducer);
-    this.pwChain = new PwDopplerChain(this.anatomy, patient.seed, audio);
+    this.pwChain = new PwDopplerChain(this.anatomy, patient.seed, this.audio);
     this.lastFrame = probeFrame(this.pose, this.scene.torso, this.transducer);
   }
 
@@ -138,9 +142,6 @@ export class Simulator {
   }
   get pw(): PwSettings {
     return this.equipment.pw;
-  }
-  get audio(): DopplerAudio {
-    return this.pwChain.audio;
   }
   get spectral(): PwDopplerChain['spectral'] {
     return this.pwChain.spectral;

@@ -1,6 +1,6 @@
 import type { Vec3 } from '../core/vec3';
 import type { PhysiologySample } from '../physiology/engine';
-import type { VesselId } from '../physiology/vessels';
+import { VESSEL_META, type VesselId } from '../physiology/vessels';
 import { RespiratoryDeformation } from './deformation';
 import { type AnatomyScene, type Classification, type VesselCaliber } from './scene';
 
@@ -45,10 +45,16 @@ export class AnatomyQuery {
     const ivcLatScale = s.ivc.dLatMm / 2 / ivcRefLat;
     const caliber: VesselCaliber = {
       radiusScale: (id: VesselId) => {
-        if (id.startsWith('ivc')) return ivcLatScale;
-        if (id.startsWith('hv')) return s.hvRadiusScale;
-        if (id.startsWith('pv')) return s.pvRadiusScale;
-        return 1;
+        switch (VESSEL_META[id].caliber) {
+          case 'ivc':
+            return ivcLatScale;
+          case 'hepaticVein':
+            return s.hvRadiusScale;
+          case 'portal':
+            return s.pvRadiusScale;
+          case 'fixed':
+            return 1;
+        }
       },
       ivcApScale: s.ivc.dApMm / s.ivc.dLatMm,
       diaphragmCaudalMm: s.resp.diaphragmCaudalMm,

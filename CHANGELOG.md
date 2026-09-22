@@ -5,6 +5,10 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+### Cambiado
+
+- Fase 1 (modelo de dominio), PR 1: `VESSEL_META` (sistema, tipo y ley de calibre) sustituye a los `startsWith('ivc')` de anatomía, renderer, corte, navegador 3D y volumen de muestra; registro de casos de una sola fuente (`CaseId` = claves del registro); la cadena PW recibe un `AudioSink` y el Doppler deja de depender del audio; matriz completa de dependencias entre capas (incluye imports dinámicos).
+
 ### Añadido
 
 - Documentación para incorporar a un equipo: `CLAUDE.md` (invariantes que se rompen fácil), `docs/GLOSSARY.md`, `docs/TESTING.md`, plantilla de decisión en `CONTRIBUTING.md`; afirmaciones obsoletas corregidas (CI, cadencia del color, pirámides, e2e de la decisión 32) y el «Estado» del README atado a la versión. ESLint con reglas tipadas, `@types/three` alineado con three, Dependabot semanal agrupado y hook de pre-push.

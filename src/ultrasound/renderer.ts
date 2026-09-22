@@ -1,4 +1,5 @@
 import { LUNG_CURTAIN, type AnatomyScene, type VesselCaliber } from '../anatomy/scene';
+import { VESSEL_META } from '../physiology/vessels';
 import { Tissue } from '../anatomy/tissues';
 import { RespiratoryDeformation } from '../anatomy/deformation';
 import { TISSUES, TISSUE_COUNT, attenuationDbPerCm } from '../anatomy/tissues';
@@ -376,7 +377,7 @@ export class UltrasoundRenderer {
       if (i < s.vessels.length) {
         const v = s.vessels[i];
         const scale = inputs.caliber.radiusScale(v.id);
-        this.sceneData[dst + 2] = v.id.startsWith('ivc') ? inputs.caliber.ivcApScale : v.tube.apScale;
+        this.sceneData[dst + 2] = VESSEL_META[v.id].system === 'ivc' ? inputs.caliber.ivcApScale : v.tube.apScale;
         this.sceneData[dst + 3] = scale;
         this.sceneData[dst + 8] = inputs.sample.velocities[v.id] * (v.flowFactor ?? 1);
         this.sceneData[dst + 9] = v.refRadius * scale;

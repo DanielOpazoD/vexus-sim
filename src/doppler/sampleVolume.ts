@@ -4,7 +4,7 @@ import { dopplerShiftHz } from '../core/units';
 import type { AnatomyQuery } from '../anatomy/query';
 import type { PhysiologySample } from '../physiology/engine';
 import { TISSUES, Tissue } from '../anatomy/tissues';
-import type { VesselId } from '../physiology/vessels';
+import { VESSEL_META, type VesselId } from '../physiology/vessels';
 
 /**
  * Volumen de muestra físico del Doppler pulsado (guía §10; base D.8):
@@ -250,7 +250,7 @@ export class SampleVolumeIQ {
       wsum += w;
       if (s.isBlood) {
         blood += w;
-        if (s.vessel === 'hepaticArtery' || s.vessel === 'aorta') art += w;
+        if (s.vessel && VESSEL_META[s.vessel].kind === 'artery') art += w;
         if (s.vessel) vessels[s.vessel] = (vessels[s.vessel] ?? 0) + w;
       } else if (s.tissue === Tissue.VesselWallPortal || s.tissue === Tissue.VesselWallThin || s.tissue === Tissue.ArteryWall) {
         wall += w;

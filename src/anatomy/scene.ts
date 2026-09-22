@@ -1,6 +1,6 @@
 import { smoothstep, type Vec3 } from '../core/vec3';
 import type { PatientState } from '../physiology/patientState';
-import type { VesselAreas, VesselId } from '../physiology/vessels';
+import { VESSEL_META, type VesselAreas, type VesselId } from '../physiology/vessels';
 import {
   RENAL_CAPSULE_MM,
   kidneyQuery,
@@ -393,7 +393,7 @@ export class AnatomyScene {
       if (Math.hypot(m[0] - b.center[0], m[1] - b.center[1], m[2] - b.center[2]) > b.r) continue;
       const def = this.vessels[i];
       const scale = caliber.radiusScale(def.id);
-      const apScale = def.id.startsWith('ivc') ? caliber.ivcApScale : def.tube.apScale;
+      const apScale = VESSEL_META[def.id].system === 'ivc' ? caliber.ivcApScale : def.tube.apScale;
       const hit = tubeQuery(m, apScale === def.tube.apScale ? def.tube : { ...def.tube, apScale }, scale);
       if (hit.d < wallThicknessMm(def, hit.r) && (!bestVessel || hit.d < bestVessel.hit.d)) bestVessel = { def, hit };
     }

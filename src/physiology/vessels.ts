@@ -46,8 +46,64 @@ export type VesselId = (typeof VESSEL_IDS)[number];
 
 export type VesselKind = 'vein' | 'artery';
 
+/** Sistema vascular: decide calibre dinámico, aspecto y lectura; nunca el prefijo del id. */
+export type VesselSystem =
+  'ivc' | 'hepaticVein' | 'portal' | 'hepaticArtery' | 'aorta' | 'renalArtery' | 'renalVein' | 'interlobarArtery' | 'interlobarVein';
+
+/** Qué escala de calibre dicta la fisiología a este vaso (`VesselCaliber.radiusScale`). */
+export type CaliberLaw = 'ivc' | 'hepaticVein' | 'portal' | 'fixed';
+
+export interface VesselMeta {
+  system: VesselSystem;
+  kind: VesselKind;
+  caliber: CaliberLaw;
+}
+
+const meta = (system: VesselSystem): VesselMeta => ({
+  system,
+  kind: system === 'aorta' || system.endsWith('Artery') || system === 'hepaticArtery' ? 'artery' : 'vein',
+  caliber: system === 'ivc' ? 'ivc' : system === 'hepaticVein' ? 'hepaticVein' : system === 'portal' ? 'portal' : 'fixed',
+});
+
+/**
+ * Metadatos de cada vaso (Fase 1): una sola tabla tipada sustituye a los `startsWith('ivc')`
+ * repartidos por anatomía, renderer, corte y navegador 3D. Añadir un vaso sin su fila no
+ * compila (`Record<VesselId, …>`).
+ */
+export const VESSEL_META: Readonly<Record<VesselId, VesselMeta>> = {
+  ivcSupra: meta('ivc'),
+  ivcInfra: meta('ivc'),
+  hvRight: meta('hepaticVein'),
+  hvRightAnterior: meta('hepaticVein'),
+  hvRightPosterior: meta('hepaticVein'),
+  hvMiddle: meta('hepaticVein'),
+  hvMiddleTributary: meta('hepaticVein'),
+  hvLeft: meta('hepaticVein'),
+  hvLeftTributary: meta('hepaticVein'),
+  hvCommonTrunk: meta('hepaticVein'),
+  pvTrunk: meta('portal'),
+  pvRight: meta('portal'),
+  pvRightAnterior: meta('portal'),
+  pvRightPosterior: meta('portal'),
+  pvLeft: meta('portal'),
+  pvLeftLateral: meta('portal'),
+  pvLeftMedial: meta('portal'),
+  hepaticArtery: meta('hepaticArtery'),
+  aorta: meta('aorta'),
+  renalArteryRight: meta('renalArtery'),
+  renalVeinRight: meta('renalVein'),
+  renalArteryLeft: meta('renalArtery'),
+  renalVeinLeft: meta('renalVein'),
+  interlobarArtery1: meta('interlobarArtery'),
+  interlobarArtery2: meta('interlobarArtery'),
+  interlobarArtery3: meta('interlobarArtery'),
+  interlobarVein1: meta('interlobarVein'),
+  interlobarVein2: meta('interlobarVein'),
+  interlobarVein3: meta('interlobarVein'),
+};
+
 export function vesselKind(id: VesselId): VesselKind {
-  return id === 'aorta' || id === 'hepaticArtery' || id.includes('Artery') ? 'artery' : 'vein';
+  return VESSEL_META[id].kind;
 }
 
 export type HepaticVeinId = Extract<VesselId, `hv${string}`>;

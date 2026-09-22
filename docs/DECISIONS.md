@@ -252,6 +252,19 @@ del núcleo sin DOM/WebGL medida con `npm run test:coverage`. Pendiente (registr
 dividir `panel.ts`, `navigator3d.ts`, `scene.classify` y el resto de `main.ts`; lint con tipos;
 `noUncheckedIndexedAccess`.
 
+## 28. Consola y navegador 3D por módulos
+
+`panel.ts` (822 líneas) pasa a un compositor de 140 líneas que implementa `PanelContext` (acceso al
+simulador y al estado, `track/sync/section/segmented`) y cinco pestañas independientes en
+`src/ui/panel/`: `acquireTab`, `imageTab`, `dopplerTab` (devuelve sus tres subpaneles), `MeasureTab`
+(clase con estado: mediciones adquiridas, calibrador, captura, resultado) y `TeacherTab`; los textos
+del clasificador viven una sola vez en `vexusText.ts`. `navigator3d.ts` (868 líneas) conserva la
+clase (cámara, gestos, dibujo, espejo del marco) y cede los constructores de geometría a
+`src/ui/navigator3d/`: `common` (unidades, `disposeObject`, superficie del tronco), `body` (piel y
+esqueleto), `organs` (hígado por marching cubes, diafragma, vesícula, riñones, vía biliar), `tubes`,
+`labels` (rótulos y puntos de partida), `probe` (sonda y abanico), `anatomyGroups`. Sin cambios de
+comportamiento; verificado en vivo (medición, captura, cambio de caso).
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

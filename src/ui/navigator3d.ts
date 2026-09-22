@@ -75,6 +75,13 @@ export class Navigator3D {
   private lastDepth = -1;
   layers: NavigatorLayers = { skin: true, skeleton: true, organs: true, vessels: true, windows: true };
   private disposed = false;
+  /**
+   * Grupos de la anatomía anterior, pendientes de liberar TRAS el primer render con la nueva: si
+   * sus materiales se liberan antes, three.js borra los programas GLSL que ya no usa nadie y los
+   * materiales nuevos (misma clave) los recompilan — 5 de 10 programas por cambio de caso, varios
+   * segundos con SwiftShader (el HUD de la e2e llegó a quedarse 15 s sin cuadro nuevo).
+   */
+  private retired: THREE.Object3D[] = [];
 
   constructor(
     private readonly host: HTMLElement,
@@ -130,15 +137,15 @@ export class Navigator3D {
 
   /**
    * Sustituye la anatomía (cambio de caso): el hábito cambia la pared, la piel y los
-   * recortes del hígado, así que se reconstruyen los grupos anatómicos y se liberan
-   * las geometrías anteriores; sonda, abanico, cámara y gestos se conservan.
+   * recortes del hígado, así que se reconstruyen los grupos anatómicos; los anteriores se
+   * liberan después del siguiente render (`retired`). Sonda, abanico, cámara y gestos se conservan.
    */
   setAnatomy(anatomy: AnatomyScene): void {
     if (anatomy === this.anatomy) return;
     this.anatomy = anatomy;
     for (const g of [this.skin, this.skeleton, this.organs, this.vessels, this.windows]) {
       this.world.remove(g);
-      disposeObject(g);
+      this.retired.push(g);
     }
     ({
       skin: this.skin,
@@ -149,10 +156,12 @@ export class Navigator3D {
     } = buildAnatomyGroups(anatomy, this.opts.getCaliber()));
     this.world.add(this.skin, this.skeleton, this.organs, this.vessels, this.windows);
     this.setLayers({});
+    this.dirty = true;
   }
 
   dispose(): void {
     this.disposed = true;
+    this.releaseRetired();
     window.removeEventListener('pointermove', this.onMove);
     window.removeEventListener('pointerup', this.onUp);
     this.renderer.dispose();
@@ -346,5 +355,11 @@ export class Navigator3D {
     updateFan(this.fan, this.fanEdges, fr, this.transducer, depth);
     this.updateCamera();
     this.renderer.render(this.scene, this.camera);
+    this.releaseRetired();
+  }
+
+  private releaseRetired(): void {
+    for (const g of this.retired) disposeObject(g);
+    this.retired = [];
   }
 }

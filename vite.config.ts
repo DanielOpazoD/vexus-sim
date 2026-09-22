@@ -46,8 +46,9 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: true,
-    // three.js en su propio chunk: el presupuesto (tools/ci/bundle-budget.ts) lo mide aparte
-    rollupOptions: { output: { manualChunks: { three: ['three', 'three/examples/jsm/objects/MarchingCubes.js'] } } },
+    // three.js en su propio chunk: el presupuesto (tools/ci/bundle-budget.ts) lo mide aparte.
+    // Rolldown (Vite 8) no admite la forma objeto de manualChunks: grupo por ruta del módulo.
+    rolldownOptions: { output: { codeSplitting: { groups: [{ name: 'three', test: /node_modules[\\/]three[\\/]/ }] } } },
   },
   test: {
     include: tier === 'slow' ? SLOW : ['src/**/*.test.ts'],

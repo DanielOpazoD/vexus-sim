@@ -161,5 +161,5 @@ export function clampPose(p: ProbePose): ProbePose {
 /** Pose inicial: ventana intercostal lateral derecha, marcador hacia la axila. */
 export function defaultPose(): ProbePose {
   // φ = π → lado derecho del paciente (−x); un poco anterior a la línea axilar media.
-  return { phi: Math.PI * 0.92, z: 5, lift: 0, yaw: 0, rock: 0, tilt: 0 };
+  return { phi: Math.PI * 0.92, z: 8, lift: 0, yaw: 0, rock: 0, tilt: 0 };
 }

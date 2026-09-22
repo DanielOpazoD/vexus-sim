@@ -260,7 +260,7 @@ describe('Volumen de muestra físico (guía §10, §21)', () => {
   it('la respiración desplaza anatomía y volumen de muestra coherentemente: un vaso puede salir de la puerta', () => {
     const { anatomy, engine } = makeChain({ respiratoryPattern: 'deep' });
     // Punto del eje de la rama portal derecha (transversal al desplazamiento caudal)
-    const edge: Vec3 = [-75, 5, -15];
+    const edge: Vec3 = [-69, 3, -32]; // sobre el eje de pvRight (nodos (−58,2,−37) → (−80,4,−31))
     expect(anatomy.classifyWorld(edge, engine.sample).vessel).toBe('pvRight');
     // avanzar hasta inspiración máxima: el vaso baja ~28 mm y el punto fijo queda fuera
     while (engine.sample.resp.volume < 0.95) engine.step();

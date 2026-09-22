@@ -256,8 +256,10 @@ export class UltrasoundRenderer {
     const t = s.torso;
     p.v4('uTorso', t.a, t.b, t.zMin, t.zMax);
     p.v3('uWall', [t.skinMm, t.fatMm, t.muscleMm]);
-    p.v4('uDome', s.dome.x0, s.dome.y0, s.dome.rx, s.dome.ry);
-    p.v2('uDome2', s.dome.zBase, s.dome.h);
+    const dia = s.diaphragm;
+    p.v4('uDomeR', dia.right.x0, dia.right.y0, dia.right.rx, dia.right.ry);
+    p.v4('uDomeL', dia.left.x0, dia.left.y0, dia.left.rx, dia.left.ry);
+    p.v4('uDiaphragm', dia.right.apex, dia.left.apex, dia.edgeZ, dia.edgeRise);
     p.v3('uSpine', [s.spine.x0, s.spine.y0, s.spine.r]);
     p.v4('uSpineArch', s.spine.archHalfWidth, s.spine.archY0, s.spine.archY1, 0);
     p.v3('uLiverC', s.liver.center);

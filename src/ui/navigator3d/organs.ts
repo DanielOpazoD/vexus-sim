@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js';
-import { domeHeight, torsoDepth } from '../../anatomy/primitives';
+import { diaphragmHeight, torsoDepth } from '../../anatomy/primitives';
 import type { AnatomyScene } from '../../anatomy/scene';
 import { DIAPHRAGM_THICKNESS_MM } from '../../anatomy/tissues';
 import type { Vec3 } from '../../core/vec3';
@@ -28,7 +28,11 @@ export function buildLiverMesh(a: AnatomyScene): THREE.Mesh {
       for (let i = 0; i < res; i++) {
         const p: Vec3 = [min[0] + (size * (i + 0.5)) / res, min[1] + (size * (j + 0.5)) / res, min[2] + (size * (k + 0.5)) / res];
         // recortes idénticos a scene.classify: diafragma (lámina 2,5 mm) y pared del tronco
-        const d = Math.max(a.liverSdf(p), -(domeHeight(p[0], p[1], a.dome) - p[2]) + DIAPHRAGM_THICKNESS_MM, torsoDepth(p, a.torso) + wall);
+        const d = Math.max(
+          a.liverSdf(p),
+          -(diaphragmHeight(p[0], p[1], a.diaphragm, a.torso) - p[2]) + DIAPHRAGM_THICKNESS_MM,
+          torsoDepth(p, a.torso) + wall,
+        );
         mc.field[i + j * res + k * res * res] = -d / 10; // positivo dentro; suavizado por escala
       }
   mc.isolation = 0;
@@ -49,8 +53,8 @@ export function buildLiverMesh(a: AnatomyScene): THREE.Mesh {
 export function buildOrgans(a: AnatomyScene): THREE.Group {
   const g = new THREE.Group();
   g.add(buildLiverMesh(a));
-  // Diafragma: cúpula paramétrica (misma domeHeight que el clasificador)
-  const dome = a.dome;
+  // Diafragma: superficie paramétrica sobre toda la sección del tronco (misma
+  // diaphragmHeight que el clasificador: dos hemicúpulas sobre la inserción costal)
   const nR = 20;
   const nA = 48;
   const pos: number[] = [];
@@ -60,15 +64,9 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
     const rho = j / nR;
     for (let i = 0; i <= nA; i++) {
       const ang = (i / nA) * Math.PI * 2;
-      let x = dome.x0 + dome.rx * rho * Math.cos(ang);
-      let y = dome.y0 + dome.ry * rho * Math.sin(ang);
-      const dep = torsoDepth([x, y, 0], a.torso);
-      if (dep > -wall) {
-        const k = Math.max(0.05, (-wall - 1) / Math.min(-1e-3, dep));
-        x = dome.x0 + (x - dome.x0) * Math.min(1, k);
-        y = dome.y0 + (y - dome.y0) * Math.min(1, k);
-      }
-      pos.push(x * CM, y * CM, domeHeight(x, y, dome) * CM);
+      const x = (a.torso.a - wall - 1) * rho * Math.cos(ang);
+      const y = (a.torso.b - wall - 1) * rho * Math.sin(ang);
+      pos.push(x * CM, y * CM, diaphragmHeight(x, y, a.diaphragm, a.torso) * CM);
     }
   }
   for (let j = 0; j < nR; j++)

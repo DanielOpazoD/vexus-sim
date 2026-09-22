@@ -40,8 +40,9 @@ ${TISSUE_DEFINES}
 
 uniform vec4 uTorso;      // a, b, zMin, zMax
 uniform vec3 uWall;       // skin, fat, muscle (mm)
-uniform vec4 uDome;       // x0, y0, rx, ry
-uniform vec2 uDome2;      // zBase, h
+uniform vec4 uDomeR;      // hemicúpula derecha: x0, y0, rx, ry
+uniform vec4 uDomeL;      // hemicúpula izquierda
+uniform vec4 uDiaphragm;  // apexR, apexL, edgeZ, edgeRise
 uniform vec3 uSpine;      // x0, y0, r (cuerpo vertebral)
 uniform vec4 uSpineArch;  // semiancho, y0, y1 del arco posterior con apófisis transversas, 0
 uniform vec3 uLiverC;
@@ -123,15 +124,24 @@ vec3 tissueVelocity(vec3 m) {
   return uResp.yzw * (uRespVel * respWeight(m));
 }
 
-float domeHeight(float x, float y) {
-  float u = (x - uDome.x) / uDome.z;
-  float v = (y - uDome.y) / uDome.w;
+float domeLift(float x, float y, vec4 dome) {
+  float u = (x - dome.x) / dome.z;
+  float v = (y - dome.y) / dome.w;
   float rho2 = u * u + v * v;
-  float q = 1.0 - rho2 * rho2;
-  return uDome2.x + uDome2.y * sqrt(max(0.0, q));
+  return sqrt(max(0.0, 1.0 - rho2 * rho2));
 }
 
-// Distancia con signo a la cúpula (negativa en el tórax) y normal hacia el abdomen.
+// Altura del diafragma: inserción costal (0 en el xifoides, −50 en flancos y espalda) +
+// la hemicúpula más alta (misma construcción que primitives.diaphragmHeight)
+float domeHeight(float x, float y) {
+  float phi = atan(y / uTorso.y, x / uTorso.x);
+  float edge = uDiaphragm.z + uDiaphragm.w * pow(max(0.0, sin(phi)), 1.5);
+  float zr = edge + max(0.0, uDiaphragm.x - edge) * domeLift(x, y, uDomeR);
+  float zl = edge + max(0.0, uDiaphragm.y - edge) * domeLift(x, y, uDomeL);
+  return max(edge, max(zr, zl));
+}
+
+// Distancia con signo al diafragma (negativa en el tórax) y normal hacia el abdomen.
 float sdDome(vec3 p, out vec3 n) {
   float zd = domeHeight(p.x, p.y);
   float h = 0.5;

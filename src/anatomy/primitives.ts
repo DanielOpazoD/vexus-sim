@@ -35,15 +35,60 @@ export interface Sphere {
   r: number;
 }
 
-/** Cúpula diafragmática: la región z > zBase + h·sqrt(1 − ((x−x0)/rx)² − ((y−y0)/ry)²) es tórax. */
+/**
+ * Hemicúpula diafragmática: elipse (x0, y0, rx, ry) con altura `apex` en su centro que
+ * desciende con perfil superelíptico (1 − ρ⁴) hasta la altura del reborde costal.
+ */
 export interface Dome {
   kind: 'dome';
   x0: number;
   y0: number;
   rx: number;
   ry: number;
-  zBase: number;
-  h: number;
+  apex: number;
+}
+
+/**
+ * Diafragma completo: dos hemicúpulas (la derecha, más alta, con el hígado debajo) sobre
+ * la línea de inserción costal. z = 0 en el xifoides: la inserción está a 0 en la línea
+ * media anterior y desciende a −50 mm en los flancos y la espalda (10.º–12.º arcos).
+ */
+export interface Diaphragm {
+  right: Dome;
+  left: Dome;
+  /** Altura de la inserción en el flanco/espalda y ascenso hacia el xifoides (mm). */
+  edgeZ: number;
+  edgeRise: number;
+}
+
+/** Altura de la línea de inserción costal en el ángulo φ del tronco. */
+export function diaphragmEdgeZ(phi: number, d: Diaphragm): number {
+  return d.edgeZ + d.edgeRise * Math.pow(Math.max(0, Math.sin(phi)), 1.5);
+}
+
+function domeLift(x: number, y: number, dome: Dome): number {
+  const u = (x - dome.x0) / dome.rx;
+  const v = (y - dome.y0) / dome.ry;
+  const rho2 = u * u + v * v;
+  return Math.sqrt(Math.max(0, 1 - rho2 * rho2));
+}
+
+/** Altura del diafragma (z, mm) en (x, y): inserción costal + la hemicúpula más alta. */
+export function diaphragmHeight(x: number, y: number, d: Diaphragm, torso: Torso): number {
+  const edge = diaphragmEdgeZ(torsoPhi(x, y, torso), d);
+  const zr = edge + Math.max(0, d.right.apex - edge) * domeLift(x, y, d.right);
+  const zl = edge + Math.max(0, d.left.apex - edge) * domeLift(x, y, d.left);
+  return Math.max(edge, zr, zl);
+}
+
+/** Distancia con signo al diafragma: negativa en el tórax (por encima). */
+export function sdDiaphragm(p: Vec3, d: Diaphragm, torso: Torso): number {
+  const zd = diaphragmHeight(p[0], p[1], d, torso);
+  const h = 0.5;
+  const gx = (diaphragmHeight(p[0] + h, p[1], d, torso) - diaphragmHeight(p[0] - h, p[1], d, torso)) / (2 * h);
+  const gy = (diaphragmHeight(p[0], p[1] + h, d, torso) - diaphragmHeight(p[0], p[1] - h, d, torso)) / (2 * h);
+  const slope = Math.sqrt(1 + gx * gx + gy * gy);
+  return (zd - p[2]) / slope;
 }
 
 export interface CylinderZ {
@@ -112,28 +157,6 @@ export function sdEllipsoid(p: Vec3, e: Ellipsoid): number {
 
 export function sdSphere(p: Vec3, s: Sphere): number {
   return Math.hypot(p[0] - s.center[0], p[1] - s.center[1], p[2] - s.center[2]) - s.r;
-}
-
-/**
- * Altura de la cúpula. Perfil superelíptico (q = 1 − ρ⁴): techo aplanado y
- * caída rápida cerca de la pared, como el seno costofrénico.
- */
-export function domeHeight(x: number, y: number, d: Dome): number {
-  const u = (x - d.x0) / d.rx;
-  const v = (y - d.y0) / d.ry;
-  const rho2 = u * u + v * v;
-  const q = 1 - rho2 * rho2;
-  return d.zBase + d.h * Math.sqrt(Math.max(0, q));
-}
-
-/** Distancia con signo a la cúpula: negativa en el tórax (por encima). */
-export function sdDome(p: Vec3, d: Dome): number {
-  const zd = domeHeight(p[0], p[1], d);
-  const h = 0.5;
-  const gx = (domeHeight(p[0] + h, p[1], d) - domeHeight(p[0] - h, p[1], d)) / (2 * h);
-  const gy = (domeHeight(p[0], p[1] + h, d) - domeHeight(p[0], p[1] - h, d)) / (2 * h);
-  const slope = Math.sqrt(1 + gx * gx + gy * gy);
-  return (zd - p[2]) / slope;
 }
 
 export function sdCylinderZ(p: Vec3, c: CylinderZ): number {

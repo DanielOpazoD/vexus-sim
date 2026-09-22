@@ -14,6 +14,8 @@ async function bootWithoutErrors(page: Page): Promise<string[]> {
   // ?e2e expone ganchos de prueba estables (window.__vexusTest); nada más cambia
   await page.goto('/?e2e=1');
   await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: 30_000 });
+  // los ganchos de prueba se cargan de forma diferida (import dinámico)
+  await expect.poll(() => page.evaluate(() => typeof window.__vexusTest), { timeout: 30_000 }).toBe('object');
   return errors;
 }
 

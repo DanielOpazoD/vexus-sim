@@ -16,7 +16,7 @@ import { buildLayerMenu } from './ui/controllers/layerMenu';
 import { CutMapView } from './ui/cutMapView';
 import { SpectrogramView, drawEcg, drawOverlay } from './ui/displays';
 import { bindKeyboardShortcuts } from './ui/keyboardShortcuts';
-import { Navigator3D } from './ui/navigator3d';
+import type { Navigator3D } from './ui/navigator3d';
 import { ControlPanel } from './ui/panel';
 import { ProbeInput } from './ui/probeInput';
 
@@ -96,19 +96,21 @@ function setPoseManual(p: Parameters<Simulator['setPose']>[0]): void {
 }
 panel.onStartPoint = (sp) => probeAnimator.goTo(sp);
 const input = new ProbeInput(sectorWrap, () => sim().pose, setPoseManual);
+// Navegador 3D (three.js, ~560 kB) con carga diferida: la imagen ecográfica no lo necesita
+// para su primer cuadro; si falla, la aplicación sigue sin él.
 let nav: Navigator3D | null = null;
-try {
-  nav = new Navigator3D(navHost, sim().scene, sim().transducer, {
-    getPose: () => sim().pose,
-    setPose: setPoseManual,
-    getFrame: () => sim().frame,
-    getDepthMm: () => sim().bmode.depthMm,
-    getRespCaudalMm: () => sim().sample.resp.diaphragmCaudalMm,
-    getCaliber: () => sim().anatomy.caliberFor(sim().sample),
-  });
-} catch (e) {
-  errorLog.report('navegador3d', e);
-}
+void import('./ui/navigator3d')
+  .then(({ Navigator3D }) => {
+    nav = new Navigator3D(navHost, sim().scene, sim().transducer, {
+      getPose: () => sim().pose,
+      setPose: setPoseManual,
+      getFrame: () => sim().frame,
+      getDepthMm: () => sim().bmode.depthMm,
+      getRespCaudalMm: () => sim().sample.resp.diaphragmCaudalMm,
+      getCaliber: () => sim().anatomy.caliberFor(sim().sample),
+    });
+  })
+  .catch((e: unknown) => errorLog.report('navegador3d', e));
 registerDevtools(sim, () => ({ nav, cutMap, spectrogram }), dispatch);
 session.onSimulatorChanged((next) => {
   nav?.setAnatomy(next.scene);

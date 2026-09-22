@@ -7,6 +7,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Cambiado
 
+- Fase 2, paso 2: la anatomía es dueña de su gemelo GPU (`anatomy/gpu/`); módulos de órgano con gemelos TS/GLSL del mismo nombre y constantes generadas (`anatomy/organs/`: ligamentos hepáticos y cortina pulmonar); equivalencia volumétrica exacta en 50 000 puntos por caso en la e2e (46).
 - Fase 2, paso 1: esquema único de uniforms de la anatomía (`sceneUniforms.ts`): de él salen las declaraciones GLSL y la subida desde el renderer, evaluada una vez por instante (45).
 
 - Carga inicial 760 → 179 kB de JS: el navegador 3D (con three.js) y los ganchos de prueba se cargan con `import()` dinámico después del primer cuadro.

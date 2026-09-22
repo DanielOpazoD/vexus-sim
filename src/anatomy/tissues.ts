@@ -45,7 +45,7 @@ export const TISSUE_COUNT = 27;
 
 /**
  * Nombre de cada tejido en GLSL (`#define T_… índice`). Se genera desde aquí
- * (`ultrasound/shaders/anatomy.glsl.ts`) para que TS y GPU no puedan divergir:
+ * (`anatomy/gpu/anatomy.glsl.ts`) para que TS y GPU no puedan divergir:
  * un tejido nuevo sin nombre GLSL es un error de compilación de TypeScript.
  */
 export const TISSUE_GLSL_NAME: Record<Tissue, string> = {

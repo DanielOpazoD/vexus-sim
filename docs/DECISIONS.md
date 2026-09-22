@@ -543,6 +543,31 @@ láminas, tubos) como datos en la textura de escena.
 usado está en el esquema y ninguno sobra, valores finitos del tamaño correcto para los tres casos;
 la e2e de equivalencia TS ↔ GLSL sigue al 100 %.
 
+## 46. Anatomía de una sola fuente, paso 2: la anatomía es dueña de su gemelo GPU, módulos de órgano y equivalencia volumétrica
+
+**Contexto.** Tras el esquema de uniforms (45) seguían tres problemas: el GLSL de la anatomía vivía
+en `ultrasound/` aunque es la misma anatomía que `anatomy/`; cada órgano repartía su SDF entre
+`scene.ts`/`primitives.ts` (TS) y `anatomy.glsl.ts` (GLSL) con constantes copiadas a mano (el
+redondeo 3,0 de la fisura, el semiespesor 1,2 del ligamento venoso); y el gate de equivalencia
+solo miraba los planos de las 4 ventanas. Prueba de mutación: cambiar en GLSL el redondeo de la
+fisura de 3 a 6 mm no lo detectaban las ventanas (100 %).
+**Opciones.** (a) Grafo de nodos SDF interpretado por TS y GLSL de una vez (reescritura completa
+de `classify`); (b) migración progresiva por módulos de órgano, protegida por un gate volumétrico
+estricto; (c) generar GLSL desde TS.
+**Decisión.** (b). `anatomy/gpu/` contiene `anatomy.glsl.ts` y `sceneUniforms.ts` (la anatomía es
+dueña de su gemelo). `anatomy/organs/` contiene módulos con la geometría, las funciones TS y su
+gemelo GLSL con el MISMO nombre y las constantes del shader generadas desde el TS; primeros
+módulos: `liverLigaments` (fisura umbilical y ligamento venoso) y `lungCurtain`. `ORGAN_MODULES`
+los registra y `ANATOMY_GLSL` incluye sus gemelos. `volumeEquivalence` compara TS y GLSL en 50 000
+puntos pseudoaleatorios de todo el tronco (semilla fija) y la e2e exige acuerdo EXACTO lejos de
+interfaces (≥ 1 mm) en tejido, vaso y velocidad.
+**Consecuencias.** Revisar un órgano es leer un archivo; un nombre GLSL sin gemela TS falla la
+suite. La migración de vesícula, riñón, hígado y tubos queda como trabajo progresivo con la misma
+red. La mutación anterior ahora falla la e2e.
+**Verificación.** `organs.test.ts` (gemelos por nombre, constantes generadas, comportamiento),
+`sceneUniforms.test.ts`, e2e `equivalence.spec.ts` con 3 casos × (4 ventanas + 50 000 puntos):
+≈ 44 700 puntos interiores y 500–960 de sangre por caso, cero discrepancias.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

@@ -8,8 +8,8 @@ import type { TransducerProfile } from './transducerProfile';
 import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
 import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
 import { GLProgram, bindTarget, createTarget, createTexture, deleteTarget, drawFullscreen, type RenderTarget } from './gl';
-import { MAX_NODES, MAX_TUBES, MAX_TUBE_SEGMENTS, NODE_BASE, SCENE_TEX_H, SCENE_TEX_W } from './shaders/anatomy.glsl';
-import { evaluateSceneUniforms, uploadSceneUniforms, type SceneUniformValues } from './shaders/sceneUniforms';
+import { MAX_NODES, MAX_TUBES, MAX_TUBE_SEGMENTS, NODE_BASE, SCENE_TEX_H, SCENE_TEX_W } from '../anatomy/gpu/anatomy.glsl';
+import { evaluateSceneUniforms, uploadSceneUniforms, type SceneUniformValues } from '../anatomy/gpu/sceneUniforms';
 import {
   FRAG_AXIAL,
   FRAG_BLIT,
@@ -269,7 +269,7 @@ export class UltrasoundRenderer {
   }
 
   /**
-   * Uniforms de la anatomía desde el esquema único (`sceneUniforms.ts`): se evalúan una vez por
+   * Uniforms de la anatomía desde el esquema único (`anatomy/gpu/sceneUniforms.ts`): se evalúan una vez por
    * instante y se suben a cada programa; la textura de escena va aparte (unidad 6).
    */
   private setSceneUniforms(p: GLProgram, inputs: FrameInputs): void {
@@ -288,7 +288,7 @@ export class UltrasoundRenderer {
    * ~90 tubos (árbol hepático procedural) el bucle por muestra era el coste dominante;
    * por cuadro sobreviven 20–40. La lista compacta lleva el índice original en H2.w.
    */
-  private updateSceneDynamic(inputs: FrameInputs): void {
+  private updateSceneDynamic(inputs: FrameInputs, allTubes = false): void {
     const s = this.scene;
     const fr = inputs.frame;
     const total = this.tubeCountTotal;
@@ -299,7 +299,7 @@ export class UltrasoundRenderer {
         (b.center[0] - fr.face[0]) * fr.elevation[0] +
         (b.center[1] - fr.face[1]) * fr.elevation[1] +
         (b.center[2] - fr.face[2]) * fr.elevation[2];
-      if (Math.abs(d) > b.r + 12) continue;
+      if (!allTubes && Math.abs(d) > b.r + 12) continue;
       const src = i * 16;
       const dst = kept * 16;
       this.sceneData.set(this.headerAll.subarray(src, src + 16), dst);
@@ -588,7 +588,7 @@ export class UltrasoundRenderer {
    * punto). Solo para pruebas y el gate de equivalencia TS ↔ GLSL: lee de la GPU de
    * forma bloqueante, así que nunca se llama por cuadro.
    */
-  queryPoints(points: Float32Array, inputs: FrameInputs): GpuPointQuery {
+  queryPoints(points: Float32Array, inputs: FrameInputs, allTubes = false): GpuPointQuery {
     const gl = this.gl;
     const n = Math.floor(points.length / 3);
     const W = 256;
@@ -600,7 +600,8 @@ export class UltrasoundRenderer {
     const f = { internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.NEAREST };
     const target = createTarget(gl, W, H, [f, f]);
     this.pQuery ??= new GLProgram(gl, VERT, FRAG_QUERY, 'query');
-    this.updateSceneDynamic(inputs);
+    // puntos fuera del plano (equivalencia volumétrica): todos los tubos, sin recorte por losa
+    this.updateSceneDynamic(inputs, allTubes);
     bindTarget(gl, target);
     this.pQuery.use();
     this.setSceneUniforms(this.pQuery, inputs);

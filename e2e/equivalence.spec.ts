@@ -27,5 +27,15 @@ test('la anatomía GLSL coincide con la TypeScript en tejido, vaso y velocidad',
     // el gate tiene dientes: las ventanas vasculares contienen sangre que comparar
     expect(report.find((r) => r.id === 'subxiphoid')!.bloodCells).toBeGreaterThan(50);
     expect(report.find((r) => r.id === 'flank')!.bloodCells).toBeGreaterThan(50);
+    // Volumen (Fase 2): 50 000 puntos de todo el tronco. Lejos de interfaces (≥ 1 mm) las dos
+    // anatomías deben coincidir EXACTAMENTE: cambiar en GLSL el redondeo de la fisura umbilical
+    // de 3 a 6 mm solo lo detecta esto (1 discrepancia en 18 000; las ventanas daban 100 %).
+    const vol = await page.evaluate(() => window.__vexusTest!.volumeEquivalence(50_000));
+    const vtag = `${id}/volumen: ${JSON.stringify(vol)}`;
+    expect(vol.interiorPoints, vtag).toBeGreaterThan(40_000);
+    expect(vol.tissueAgreement, vtag).toBe(1);
+    expect(vol.bloodPoints, vtag).toBeGreaterThan(300);
+    expect(vol.vesselAgreement, vtag).toBe(1);
+    expect(vol.velocityP95RelErr, vtag).toBeLessThan(1e-3);
   }
 });

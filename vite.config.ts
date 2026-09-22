@@ -73,7 +73,7 @@ export default defineConfig({
       ],
       reporter: ['text-summary', 'html', 'json-summary'],
       // Umbrales: solo pueden subir (Fase 0). Medidos con todos los niveles.
-      thresholds: { statements: 86, branches: 80, functions: 82, lines: 87 },
+      thresholds: { statements: 88, branches: 83, functions: 84, lines: 89 },
     },
   },
 });

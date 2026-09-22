@@ -15,8 +15,9 @@ grado. Lee primero `README.md`, `docs/ARCHITECTURE.md`, `docs/GLOSSARY.md` y `do
 ## Invariantes que se rompen fácil
 
 1. **Anatomía TS = GLSL.** Todo cambio en `src/anatomy/*.ts` que afecte a `classify` va también a
-   `src/ultrasound/shaders/anatomy.glsl.ts` (misma fórmula) y a los uniforms de `renderer.ts`. La
-   e2e `equivalence.spec.ts` lo comprueba; en la app, pestaña Docente.
+   `src/anatomy/gpu/anatomy.glsl.ts` (misma fórmula), con sus uniforms en `anatomy/gpu/sceneUniforms.ts`.
+   Los órganos nuevos van como módulo en `src/anatomy/organs/` (TS y GLSL juntos, mismo nombre).
+   La e2e `equivalence.spec.ts` exige acuerdo exacto en 50 000 puntos; en la app, pestaña Docente.
 2. **Marco levógiro**: x = izquierda del paciente. El navegador 3D lo espeja con `scale.x = −1`.
 3. **Ramas procedurales** (`flowFactor` definido) comparten id con su vaso madre: exclúyelas de
    `vesselById`/`vesselAreas` o las velocidades se multiplican.

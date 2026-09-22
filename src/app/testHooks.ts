@@ -1,6 +1,6 @@
 import type { VesselId } from '../physiology/vessels';
 import type { EquipmentCommand } from './equipment';
-import { equivalenceSweep, type EquivalencePoseReport } from './equivalenceSweep';
+import { equivalenceSweep, volumeEquivalence, type EquivalencePoseReport, type VolumeEquivalenceReport } from './equivalenceSweep';
 import { bestGateOnVessel } from './gatePlacement';
 import type { Simulator } from './simulator';
 
@@ -11,6 +11,8 @@ import type { Simulator } from './simulator';
  */
 export interface TestHooks {
   equivalenceSweep: () => EquivalencePoseReport[];
+  /** Equivalencia TS ↔ GLSL en `n` puntos aleatorios de todo el tronco. */
+  volumeEquivalence: (n?: number) => VolumeEquivalenceReport;
   /** Avanza la simulación (fisiología + PW) `seconds` sin renderizar: SwiftShader es lento. */
   advance: (seconds: number) => void;
   /** Coloca la puerta PW sobre uno de los vasos con la técnica del operador; false si no lo ve. */
@@ -20,6 +22,7 @@ export interface TestHooks {
 export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: EquipmentCommand) => void): TestHooks {
   return {
     equivalenceSweep: () => equivalenceSweep(getSim()),
+    volumeEquivalence: (n) => volumeEquivalence(getSim(), n),
     advance: (seconds) => {
       const sim = getSim();
       for (let t = 0; t < seconds; t += 1 / 60) sim.advance(1 / 60);

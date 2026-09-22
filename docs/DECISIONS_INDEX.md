@@ -49,3 +49,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [43](DECISIONS.md#L473) | Arquitectura renal, receso de Morison, cortina pulmonar, pared periportal y pared blanda | vigente |
 | [44](DECISIONS.md#L494) | Medición del alumno robusta: envolvente de la banda contigua, lado venoso y regla de S invertida | vigente |
 | [45](DECISIONS.md#L524) | Anatomía de una sola fuente, paso 1: esquema único de uniforms de la escena | vigente |
+| [46](DECISIONS.md#L546) | Anatomía de una sola fuente, paso 2: la anatomía es dueña de su gemelo GPU, módulos de órgano y equivalencia volumétrica | vigente |

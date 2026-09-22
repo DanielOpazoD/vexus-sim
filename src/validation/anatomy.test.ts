@@ -1,11 +1,11 @@
 import { describe, expect, it } from 'vitest';
 import { AnatomyQuery } from '../anatomy/query';
-import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
+import { AnatomyScene, BASELINE_CALIBER, wallThicknessMm } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
 import { NORMAL_ADULT } from '../cases';
 import { SimulationClock } from '../core/clock';
 import { PhysiologyEngine } from '../physiology/engine';
-import { CONVEX_C35, lineCoupling, lineDirection, pointOnLine, probeFrame, type ProbePose } from '../probe/probe';
+import { CONVEX_C35, lineCoupling, lineDirection, pointOnLine, probeFrame, skinSoftness, type ProbePose } from '../probe/probe';
 import { kidneyQuery, kidneyWorld } from '../anatomy/primitives';
 import { renalPatternFromPeaks } from '../vexus/classification';
 
@@ -111,6 +111,29 @@ describe('Anatomía implícita (base B)', () => {
 
   it('riñón derecho: seno ecogénico, pirámides, corteza, grasa perirrenal e interlobares', () => {
     const k = scene.kidneyRight;
+    // pelvis anecoica en el centro del seno; seno ecogénico alrededor; cápsula fina en la superficie
+    expect(cls(kidneyWorld([0, k.sinusOffset, 0], k)).tissue).toBe(Tissue.RenalPelvis);
+    expect(cls(kidneyWorld([0, k.sinusOffset - 6, 0], k)).tissue).toBe(Tissue.RenalSinus);
+    expect(cls(kidneyWorld([0, -(k.radii[1] - 0.3), 0], k)).tissue).toBe(Tissue.RenalCapsule);
+    // pirámides discretas: la lateral en u = 12 es médula y la columna de Bertin en u = 24 es corteza
+    expect(cls(kidneyWorld([12, -18, 0], k)).tissue).toBe(Tissue.RenalMedulla);
+    expect(cls(kidneyWorld([24, -18, 0], k)).tissue).toBe(Tissue.RenalCortex);
+    // interfaz hígado–riñón sin hueco: hígado (cápsula) → grasa perirrenal → cápsula renal → corteza
+    const seq: Tissue[] = [];
+    for (let t = 0; t <= 1; t += 0.01) {
+      const p: [number, number, number] = [
+        k.center[0] + (scene.liver.center[0] - k.center[0]) * t,
+        k.center[1] + (scene.liver.center[1] - k.center[1]) * t,
+        k.center[2] + (scene.liver.center[2] - k.center[2]) * t,
+      ];
+      const tis = cls(p).tissue;
+      if (seq[seq.length - 1] !== tis) seq.push(tis);
+    }
+    const iFat = seq.indexOf(Tissue.PerirenalFat);
+    expect(iFat).toBeGreaterThan(0);
+    expect(seq[iFat - 1]).toBe(Tissue.RenalCapsule);
+    expect([Tissue.Liver, Tissue.LiverCapsule]).toContain(seq[iFat + 1]);
+    expect(seq).not.toContain(Tissue.Bowel);
     expect(cls(k.center).tissue).toBe(Tissue.RenalSinus);
     expect(cls(kidneyWorld([13, -18, 0], k)).tissue).toBe(Tissue.RenalMedulla);
     expect(cls(kidneyWorld([13, -25.5, 0], k)).tissue).toBe(Tissue.RenalCortex);
@@ -118,6 +141,7 @@ describe('Anatomía implícita (base B)', () => {
     expect(cls(kidneyWorld([0, -18, 1.8], k)).vessel).toBe('interlobarVein2');
     expect(cls(kidneyWorld([0, -18, -1.8], k)).vessel).toBe('interlobarArtery2');
     expect(cls(scene.kidneyLeft.center).tissue).toBe(Tissue.RenalSinus);
+    expect(cls(kidneyWorld([0, scene.kidneyLeft.sinusOffset, 0], scene.kidneyLeft)).tissue).toBe(Tissue.RenalPelvis);
     // el hígado no invade el riñón (impresión renal): ninguna muestra de la línea
     // centro del riñón → centro del hígado es hígado dentro del riñón + 4 mm
     let nLiver = 0;
@@ -240,6 +264,19 @@ describe('Sonda (guía §8)', () => {
     expect(lineCoupling({ ...flat, lift: 12 }, CONVEX_C35, 0)).toBe(0);
     const rocked = { ...flat, rock: 0.35 };
     expect(lineCoupling(rocked, CONVEX_C35, CONVEX_C35.halfSector)).toBeLessThan(lineCoupling(rocked, CONVEX_C35, -CONVEX_C35.halfSector));
+    // la pared blanda del epigastrio absorbe la basculación: bajo el xifoides se conserva más
+    // contacto que sobre las costillas del flanco con la misma basculación craneal (decisión 43)
+    const mean = (pose: ProbePose) => {
+      let c = 0;
+      for (let i = 0; i <= 40; i++) c += lineCoupling(pose, CONVEX_C35, -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * i) / 40) / 41;
+      return c;
+    };
+    const epigastrium: ProbePose = { phi: Math.PI / 2 + 0.2, z: -20, lift: 0, yaw: 0, rock: 0.5, tilt: 0 };
+    const ribs: ProbePose = { phi: Math.PI * 0.9, z: 20, lift: 0, yaw: 0, rock: 0.5, tilt: 0 };
+    expect(skinSoftness(epigastrium)).toBeGreaterThan(0.6);
+    expect(skinSoftness(ribs)).toBeLessThan(0.2);
+    expect(mean(epigastrium)).toBeGreaterThan(0.65);
+    expect(mean(epigastrium)).toBeGreaterThan(mean(ribs) + 0.1);
   });
 });
 
@@ -252,5 +289,42 @@ describe('Reloj único', () => {
     expect(c.requestSteps(1)).toBe(0);
     c.resume();
     expect(c.requestSteps(10)).toBe(125); // tope por llamada
+  });
+});
+
+describe('Cortina pulmonar y pared periportal (decisión 43)', () => {
+  const scene = new AnatomyScene(NORMAL_ADULT);
+  it('el pulmón cubre la parte alta del hígado lateral solo por debajo del borde que baja con la inspiración', () => {
+    // punto 1,5 mm bajo la pared, flanco derecho, z −5: hígado en espiración (borde en +18),
+    // pulmón en inspiración profunda (borde en 18 − 30 = −12)
+    const wall = scene.wallThickness();
+    const phi = Math.PI * 0.95;
+    const p: [number, number, number] = [
+      (scene.torso.a - wall - 1.5) * Math.cos(phi) * 0.999,
+      (scene.torso.b - wall - 1.5) * Math.sin(phi) * 0.999,
+      -5,
+    ];
+    const at = (caudal: number) => scene.classify(p, { ...BASELINE_CALIBER, diaphragmCaudalMm: caudal }).tissue;
+    expect(at(0)).toBe(Tissue.Liver);
+    expect(at(30)).toBe(Tissue.Lung);
+    // el mismo punto 10 mm más hondo nunca es cortina (lámina de 3 mm)
+    const deep: [number, number, number] = [p[0] * 0.93, p[1] * 0.93, -5];
+    expect(scene.classify(deep, { ...BASELINE_CALIBER, diaphragmCaudalMm: 30 }).tissue).toBe(Tissue.Liver);
+    // y en el lado izquierdo (x > −45) no hay cortina
+    const left: [number, number, number] = [-p[0], p[1], -5];
+    expect(scene.classify(left, { ...BASELINE_CALIBER, diaphragmCaudalMm: 30 }).tissue).not.toBe(Tissue.Lung);
+  });
+
+  it('la pared periportal es más gruesa en el tronco que en las ramas periféricas', () => {
+    const trunk = scene.vessels.find((v) => v.id === 'pvTrunk')!;
+    const branch = scene.vessels.find((v) => v.id === 'pvLeftLateral')!;
+    expect(wallThicknessMm(trunk, 5.5)).toBeGreaterThan(1.2);
+    expect(wallThicknessMm(branch, 1.8)).toBeLessThan(0.6);
+    // gradiente monótono con el calibre y acotado
+    expect(wallThicknessMm(trunk, 3)).toBeLessThan(wallThicknessMm(trunk, 5));
+    expect(wallThicknessMm(trunk, 20)).toBe(1.4);
+    // las venas finas no cambian
+    const hv = scene.vessels.find((v) => v.id === 'hvRight')!;
+    expect(wallThicknessMm(hv, 1)).toBe(hv.wallMm);
   });
 });

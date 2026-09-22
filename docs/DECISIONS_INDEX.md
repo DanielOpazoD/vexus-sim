@@ -46,3 +46,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [40](DECISIONS.md#L422) | Fisura umbilical y ligamento redondo | vigente |
 | [41](DECISIONS.md#L436) | Vesícula en pera con pared y porción umbilical de la porta izquierda en la fisura | vigente |
 | [42](DECISIONS.md#L451) | Segmentos de Couinaud derivados de los vasos, ligamento venoso e hígado 3D translúcido | vigente |
+| [43](DECISIONS.md#L468) | Arquitectura renal, receso de Morison, cortina pulmonar, pared periportal y pared blanda | vigente |

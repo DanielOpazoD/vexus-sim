@@ -365,7 +365,7 @@ export interface Kidney {
   hilumRadius: number;
 }
 
-export type KidneyRegion = 'cortex' | 'medulla' | 'sinus';
+export type KidneyRegion = 'cortex' | 'medulla' | 'sinus' | 'pelvis';
 
 export interface KidneyHit {
   /** Distancia con signo al contorno externo (mm, negativa dentro). */
@@ -424,6 +424,10 @@ export const PYRAMIDS: ReadonlyArray<readonly [number, number]> = [
 ];
 /** Columnas de Bertin del plano coronal lateral (entre las pirámides laterales): posiciones u. */
 export const BERTIN_COLUMNS_U = [-24, 0, 24] as const;
+/** Pelvis renal: elipsoide de orina en el seno, desplazado hacia el hilio (marco local del seno, mm). */
+export const RENAL_PELVIS = { offsetV: 3, radii: [9, 3.5, 2.5] as Vec3 };
+/** Cápsula renal fibrosa (mm), línea ecogénica en la superficie. */
+export const RENAL_CAPSULE_MM = 0.6;
 /** Escotadura hiliar: elipsoide restado en la cara medial (marco local, mm). */
 export const HILUM_NOTCH = { offsetV: 6, radii: [24, 16, 13] as Vec3, roundMm: 6 };
 
@@ -443,13 +447,19 @@ export function kidneyQuery(p: Vec3, k: Kidney): KidneyHit {
   const t = Math.min(Math.max(q[1] - k.sinusOffset, 0), k.radii[1]);
   const dHilum = Math.hypot(q[0], q[1] - k.sinusOffset - t, q[2]) - k.hilumRadius;
   dSinus = Math.min(dSinus, dHilum);
-  if (dSinus < 0) return { dOuter, dSinus, region: 'sinus', inner: Math.min(-dSinus, -dOuter) };
-  // Pirámides en cuña (papila hacia el seno, base hacia la corteza)
+  if (dSinus < 0) {
+    // Pelvis: hendidura anecoica de orina en el centro del seno, alargada en u
+    const dPelvis = sdEllipsoidLocal([qs[0], qs[1] - RENAL_PELVIS.offsetV, qs[2]], RENAL_PELVIS.radii);
+    if (dPelvis < 0) return { dOuter, dSinus, region: 'pelvis', inner: Math.min(-dPelvis, -dOuter) };
+    return { dOuter, dSinus, region: 'sinus', inner: Math.min(-dSinus, -dOuter, dPelvis) };
+  }
+  // Pirámides en cuña (papila hacia el seno, base hacia la corteza), separadas por
+  // columnas de Bertin de corteza: semiángulo 7°→14° y semilongitud 3,5→8 mm del vértice a la base
   let medulla = false;
-  if (dSinus > 1.5 && dSinus < 12 && -dOuter > 4.5) {
+  if (dSinus > 1.5 && dSinus < 12 && -dOuter > 5) {
     const theta = Math.atan2(q[2], q[1]);
-    const halfAng = 0.17 + 0.024 * dSinus;
-    const halfU = 3.8 + 0.4 * dSinus;
+    const halfAng = 0.12 + 0.012 * dSinus;
+    const halfU = 3.5 + 0.38 * dSinus;
     for (const [th, u0] of PYRAMIDS) {
       let dth = theta - th;
       dth = Math.atan2(Math.sin(dth), Math.cos(dth));

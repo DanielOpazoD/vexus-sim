@@ -1,4 +1,4 @@
-import type { AnatomyScene, VesselCaliber } from '../anatomy/scene';
+import { LUNG_CURTAIN, type AnatomyScene, type VesselCaliber } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
 import { RespiratoryDeformation } from '../anatomy/deformation';
 import { TISSUES, TISSUE_COUNT, attenuationDbPerCm } from '../anatomy/tissues';
@@ -331,6 +331,13 @@ export class UltrasoundRenderer {
     const dir = RespiratoryDeformation.direction;
     p.v4('uResp', inputs.sample.resp.diaphragmCaudalMm, dir[0], dir[1], dir[2]);
     p.f('uRespVel', inputs.sample.resp.diaphragmVelocityMmS);
+    p.v4(
+      'uCurtain',
+      LUNG_CURTAIN.z0 - inputs.sample.resp.diaphragmCaudalMm,
+      LUNG_CURTAIN.thicknessMm,
+      LUNG_CURTAIN.xMax,
+      LUNG_CURTAIN.yMax,
+    );
   }
 
   /**

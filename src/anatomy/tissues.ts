@@ -35,9 +35,13 @@ export enum Tissue {
   LigamentumTeres = 23,
   /** Ligamento venoso: lámina fibrosa entre el caudado y el segmento II (línea ecogénica). */
   LigamentumVenosum = 24,
+  /** Cápsula renal: línea ecogénica fina entre la grasa perirrenal y la corteza. */
+  RenalCapsule = 25,
+  /** Pelvis renal: orina, anecoica, en el centro del seno. */
+  RenalPelvis = 26,
 }
 
-export const TISSUE_COUNT = 25;
+export const TISSUE_COUNT = 27;
 
 /**
  * Nombre de cada tejido en GLSL (`#define T_… índice`). Se genera desde aquí
@@ -70,6 +74,8 @@ export const TISSUE_GLSL_NAME: Record<Tissue, string> = {
   [Tissue.Vertebra]: 'T_VERTEBRA',
   [Tissue.LigamentumTeres]: 'T_LIG_TERES',
   [Tissue.LigamentumVenosum]: 'T_LIG_VENOSUM',
+  [Tissue.RenalCapsule]: 'T_RENAL_CAPSULE',
+  [Tissue.RenalPelvis]: 'T_RENAL_PELVIS',
 };
 
 /** Lámina diafragmática bajo la cúpula (mm); la misma en TS, GLSL y el navegador 3D. */
@@ -127,6 +133,9 @@ export const TISSUES: TissueProps[] = [
   { name: 'ligamento redondo (grasa)', c: 1470, rho: 950, alpha1: 0.6, b: 1.1, backscatter: 2.2, gas: false, bone: false },
   // Ligamento venoso: lámina fibrosa fina, muy ecogénica (línea brillante delante del caudado)
   { name: 'ligamento venoso', c: 1600, rho: 1100, alpha1: 0.8, b: 1, backscatter: 2.6, gas: false, bone: false },
+  // Cápsula renal fibrosa (línea brillante que delimita el riñón) y pelvis con orina (anecoica)
+  { name: 'cápsula renal', c: 1600, rho: 1100, alpha1: 0.8, b: 1, backscatter: 2.4, gas: false, bone: false },
+  { name: 'pelvis renal (orina)', c: 1482, rho: 994, alpha1: 0.0022, b: 1, backscatter: 0.002, gas: false, bone: false },
 ];
 
 /** Impedancia acústica Z = ρc en MRayl. */

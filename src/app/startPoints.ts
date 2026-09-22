@@ -58,10 +58,12 @@ export const START_POINTS: readonly StartPoint[] = [
     id: 'renal',
     color: '#f28cb1',
     label: 'Renal',
-    phi: Math.PI * 1.12,
-    z: -80,
-    yaw: 0,
-    tilt: -0.5,
-    hint: 'Riñón derecho por el flanco (línea axilar posterior): hígado como ventana, seno ecogénico y pirámides; puerta PW en un vaso interlobar.',
+    // Línea axilar posterior, plano coronal-oblicuo que contiene el eje largo del riñón
+    // (barrido de poses: ≈ 10 cm de riñón en el plano con seno y pirámides)
+    phi: Math.PI * 1.18,
+    z: -85,
+    yaw: -0.3,
+    tilt: -0.4,
+    hint: 'Riñón derecho en eje largo por el flanco (línea axilar posterior): hígado como ventana, cápsula, corteza, pirámides y seno con la pelvis; puerta PW en un vaso interlobar.',
   },
 ];

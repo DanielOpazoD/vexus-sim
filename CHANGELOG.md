@@ -7,10 +7,13 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Añadido
 
+- Cortina pulmonar con líneas A (signo de la cortina) que baja con la inspiración; cápsula y pelvis renales; pirámides discretas con columnas de Bertin (43).
+
 - Segmentos de Couinaud derivados de los planos de las suprahepáticas, la fisura umbilical y el plano portal; hígado 3D translúcido coloreado por segmento con rótulos I–VIII; lámina del ligamento venoso (`LigamentumVenosum`) en el modelo acústico y en el corte (42).
 
 ### Cambiado
 
+- Interfaz hígado–riñón sin hueco (cápsula hepática → grasa de Gerota → cápsula renal); pared periportal proporcional al calibre; pared blanda que conserva el acoplamiento al bascular en el epigastrio; punto de partida renal en eje largo (43).
 - Vesícula en pera con base propia, afilamiento fondo→cuello, pared ecogénica de 1,5 mm y fosa; la porción umbilical de la porta izquierda termina bajo la fisura umbilical (receso de Rex) (41). Se retira la limitación `axis-aligned-gallbladder`.
 
 - Pestaña «Adquirir» con los mandos básicos de imagen (profundidad, ganancia, foco; una sola fuente con la pestaña «Imagen»); profundidad por defecto 18 cm.

@@ -70,7 +70,7 @@ describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', 
     const s = sweep(byId('renal'), 160);
     expect(s.coupling).toBeGreaterThan(0.5);
     expect(s.tissues.get(Tissue.RenalCortex) ?? 0).toBeGreaterThan(150);
-    expect(s.tissues.get(Tissue.RenalMedulla) ?? 0).toBeGreaterThan(40);
+    expect(s.tissues.get(Tissue.RenalMedulla) ?? 0).toBeGreaterThan(25); // pirámides discretas (decisión 43)
     expect(s.tissues.get(Tissue.RenalSinus) ?? 0).toBeGreaterThan(40);
     expect([...s.vessels.keys()].some((v) => /interlobar|renalVein/i.test(v))).toBe(true);
   });

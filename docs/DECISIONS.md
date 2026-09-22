@@ -465,6 +465,27 @@ la línea ecogénica que delimita el caudado en el corte subxifoideo. Misma fór
 (`uLigVen`, `uLigVenBox`), equivalencia TS ↔ GLSL 100 %. Los segmentos son metadatos: no cambian
 la señal.
 
+## 43. Arquitectura renal, receso de Morison, cortina pulmonar, pared periportal y pared blanda
+
+Cinco defectos de fidelidad señalados sobre la imagen. (1) **Riñón**: las 16 pirámides se fundían
+en un anillo hipoecoico; ahora son cuñas discretas (semiángulo 7°→14°, semilongitud 3,5→8 mm)
+separadas por columnas de Bertin; cápsula fibrosa de 0,6 mm (`RenalCapsule`, ecogénica) que
+delimita el riñón; pelvis de orina anecoica (`RenalPelvis`, 18 × 7 × 5 mm) en el centro del seno.
+(2) **Interfaz hígado–riñón**: la grasa perirrenal (4 mm) llega hasta la impresión renal del hígado,
+así que en el receso de Morison la secuencia es cápsula hepática → grasa de Gerota → cápsula renal
+→ corteza, sin el hueco de 0,5 mm que antes se clasificaba como intestino. (3) **Cortina pulmonar**:
+lámina de pulmón de 3 mm pegada a la cara interna de la pared en el receso costofrénico derecho
+(x < −45, y < 40) desde la cúpula hasta z = 18 − descenso diafragmático; en inspiración baja y tapa
+la parte alta del hígado lateral, el rayo se refleja (pasada A) y deja líneas A a múltiplos de la
+profundidad de la pleura: signo de la cortina. El descenso viaja en `VesselCaliber.diaphragmCaudalMm`
+(el marco material es espiratorio; la lámina vive en la pared, que no se desplaza). (4) **Pared
+periportal** proporcional al calibre local (`wallThicknessMm`: 0,24·r acotado a 0,5–1,4 mm): el doble
+contorno ecogénico se desvanece hacia la periferia. (5) **Pared blanda** (`skinSoftness`): bajo el
+xifoides la pared absorbe el 65 % del hueco por basculación/inclinación (35 % bajo el reborde, 15 %
+sobre costillas), así la VCI en eje largo con basculación craneal conserva el acoplamiento sin
+presionar. El punto de partida renal pasa a la línea axilar posterior con el eje largo del riñón en
+el plano (barrido de poses). Misma regla en TS y GLSL; equivalencia 100 %.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

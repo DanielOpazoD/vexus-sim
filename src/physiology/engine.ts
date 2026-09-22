@@ -45,6 +45,30 @@ export interface PhysiologySample {
 
 const sigmoid = (x: number): number => 1 / (1 + Math.exp(-x));
 
+/** El estado fisiológico dejó de ser finito: nada aguas abajo (GPU, espectro, medición) puede confiar en él. */
+export class NonFiniteStateError extends Error {
+  constructor(
+    readonly fields: string[],
+    readonly t: number,
+  ) {
+    super(`estado fisiológico no finito en t = ${t.toFixed(3)} s: ${fields.join(', ')}`);
+    this.name = 'NonFiniteStateError';
+  }
+}
+
+/** Campos numéricos no finitos de una muestra (vacío si todo es finito). */
+export function nonFiniteFields(s: PhysiologySample): string[] {
+  const bad: string[] = [];
+  const check = (name: string, v: number) => {
+    if (!Number.isFinite(v)) bad.push(name);
+  };
+  for (const [k, v] of Object.entries(s)) if (typeof v === 'number') check(k, v);
+  for (const [k, v] of Object.entries(s.ivc)) check(`ivc.${k}`, v);
+  for (const [k, v] of Object.entries(s.resp)) if (typeof v === 'number') check(`resp.${k}`, v);
+  for (const [k, v] of Object.entries(s.velocities)) check(`velocities.${k}`, v);
+  return bad;
+}
+
 export class PhysiologyEngine {
   readonly clock: SimulationClock;
   readonly patient: PatientState;
@@ -134,7 +158,12 @@ export class PhysiologyEngine {
     const plExp = this.respiratory.pleuralAtEndExpiration();
     const pRa = this.rightAtrium.pressure(t, resp.pleuralMmHg, plExp);
     const out = this.network.step(this.clock.dt, this.arterialPulse(t), pRa, resp.abdominalMmHg);
-    this.current = this.sampleFrom(out, t, resp, pRa);
+    const next = this.sampleFrom(out, t, resp, pRa);
+    // Guardia NaN: un estado no finito se detiene aquí, con los campos culpables, en vez
+    // de viajar en silencio a la GPU, al espectro y a la medición.
+    const bad = nonFiniteFields(next);
+    if (bad.length > 0) throw new NonFiniteStateError(bad, t);
+    this.current = next;
     this.history.push(this.current);
     const tMin = t - this.historySeconds;
     while (this.history.length > 2 && this.history[0].t < tMin) this.history.shift();

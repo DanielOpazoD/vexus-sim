@@ -24,19 +24,35 @@ export class DopplerAudio {
     return this._volume;
   }
 
+  /**
+   * Activa el audio. Transaccional: si falla la carga del AudioWorklet o la reanudación,
+   * se cierra el contexto y el objeto vuelve al estado inicial (antes quedaba un
+   * contexto sin nodo y el siguiente clic lo daba por «activo» sin sonido). El error
+   * se propaga para que la interfaz lo muestre.
+   */
   async enable(): Promise<void> {
     if (this._enabled) return;
-    if (!this.ctx) {
-      this.ctx = new AudioContext({ latencyHint: 'interactive' });
-      await this.ctx.audioWorklet.addModule(`${import.meta.env.BASE_URL}doppler-worklet.js`);
-      this.node = new AudioWorkletNode(this.ctx, 'doppler-processor', { outputChannelCount: [2] });
-      this.gainNode = this.ctx.createGain();
-      this.gainNode.gain.value = 1;
-      this.node.connect(this.gainNode).connect(this.ctx.destination);
-      this.node.port.postMessage({ type: 'volume', value: this._volume });
+    try {
+      if (!this.ctx || !this.node) {
+        await this.ctx?.close().catch(() => undefined);
+        this.ctx = new AudioContext({ latencyHint: 'interactive' });
+        await this.ctx.audioWorklet.addModule(`${import.meta.env.BASE_URL}doppler-worklet.js`);
+        this.node = new AudioWorkletNode(this.ctx, 'doppler-processor', { outputChannelCount: [2] });
+        this.gainNode = this.ctx.createGain();
+        this.gainNode.gain.value = 1;
+        this.node.connect(this.gainNode).connect(this.ctx.destination);
+        this.node.port.postMessage({ type: 'volume', value: this._volume });
+      }
+      await this.ctx.resume();
+      this._enabled = true;
+    } catch (e) {
+      await this.ctx?.close().catch(() => undefined);
+      this.ctx = null;
+      this.node = null;
+      this.gainNode = null;
+      this._enabled = false;
+      throw e;
     }
-    await this.ctx.resume();
-    this._enabled = true;
   }
 
   async disable(): Promise<void> {

@@ -4,7 +4,8 @@ import type { ProbeFrame } from '../probe/probe';
 import { Tissue } from '../anatomy/tissues';
 import type { VesselId } from '../physiology/vessels';
 import { beamToPixel, pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
-import type { CutMapInit, CutMapRequest, CutMapResponse } from './cutMapWorker';
+import type { CutMapError, CutMapInit, CutMapRequest, CutMapResponse } from './cutMapWorker';
+import { errorLog } from '../app/errorLog';
 
 /**
  * «Corte ecográfico · plano de la imagen»: mapa a color de las estructuras que
@@ -101,12 +102,19 @@ const VESSEL_LABEL: Record<VesselId, string> = {
   interlobarVein3: 'v. interlobar',
 };
 
+/** Tiempo máximo de una petición al Worker antes de darlo por caído (ms). */
+const WORKER_TIMEOUT_MS = 3000;
+
 export class CutMapView {
   private img: ImageData | null = null;
   private lastUpdate = -1;
   private worker: Worker | null = null;
   private workerPatient: string | null = null;
   private pending = false;
+  private pendingSince = 0;
+  /** Fallos consecutivos del Worker (error, caída o tiempo agotado) y próximo reintento. */
+  private failures = 0;
+  private retryAt = 0;
   private requestId = 0;
   private map: CutMapResponse | null = null;
   private mapDirty = false;
@@ -130,39 +138,64 @@ export class CutMapView {
     this.worker = null;
   }
 
-  private ensureWorker(sim: Simulator): Worker | null {
+  /** El corte está degradado: el Worker falló y se espera al siguiente reintento. */
+  get degraded(): boolean {
+    return this.failures > 0;
+  }
+
+  /** Registra el fallo, descarta el Worker y programa un reintento con espera creciente (1 s → 30 s). */
+  private fail(error: unknown, nowMs: number): void {
+    errorLog.report('corte', error);
+    this.failures++;
+    this.retryAt = nowMs + Math.min(30_000, 1000 * 2 ** (this.failures - 1));
+    this.worker?.terminate();
+    this.worker = null;
+    this.pending = false;
+  }
+
+  private ensureWorker(sim: Simulator, nowMs: number): Worker | null {
     const key = sim.patient.id;
     if (this.worker && this.workerPatient === key) return this.worker;
+    if (!this.worker && nowMs < this.retryAt) return null;
     this.worker?.terminate();
     try {
       this.worker = new Worker(new URL('./cutMapWorker.ts', import.meta.url), { type: 'module' });
-    } catch {
-      this.worker = null;
+    } catch (e) {
+      this.fail(e, nowMs);
       return null;
     }
     this.workerPatient = key;
     this.pending = false;
     const init: CutMapInit = { type: 'init', patient: sim.patient };
     this.worker.postMessage(init);
-    this.worker.onmessage = (ev: MessageEvent<CutMapResponse>) => {
+    this.worker.onmessage = (ev: MessageEvent<CutMapResponse | CutMapError>) => {
+      if (ev.data.type === 'error') {
+        this.fail(new Error(ev.data.message), performance.now());
+        return;
+      }
       if (ev.data.id !== this.requestId) return;
       this.map = ev.data;
       if (this.pendingInputs?.id === ev.data.id) this.mapInputs = this.pendingInputs;
       this.mapDirty = true;
       this.pending = false;
+      this.failures = 0;
     };
-    this.worker.onerror = () => {
-      this.pending = false;
+    this.worker.onerror = (ev) => {
+      ev.preventDefault();
+      this.fail(new Error(ev.message || 'el Worker del corte se detuvo'), performance.now());
     };
     return this.worker;
   }
 
   /** Pide un mapa nuevo a ≤ `hz` veces por segundo y dibuja el último recibido. */
   draw(sim: Simulator, nowMs: number, hz = 8): void {
-    const worker = this.ensureWorker(sim);
+    // Vigilante: una petición sin respuesta en 3 s cuenta como caída del Worker
+    if (this.pending && nowMs - this.pendingSince > WORKER_TIMEOUT_MS) this.fail(new Error('el Worker del corte no responde (3 s)'), nowMs);
+    const worker = this.ensureWorker(sim, nowMs);
     if (worker && !this.pending && nowMs - this.lastUpdate >= 1000 / hz) {
       this.lastUpdate = nowMs;
       this.pending = true;
+      this.pendingSince = nowMs;
       const s = sim.sample;
       const req: CutMapRequest = {
         type: 'map',

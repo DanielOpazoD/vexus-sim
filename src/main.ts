@@ -2,10 +2,12 @@ import { compareTissueGrids } from './app/equivalenceCheck';
 import { ProbeAnimator } from './app/probeAnimation';
 import { bindKeyboardShortcuts } from './ui/keyboardShortcuts';
 import { registerDevtools } from './app/devtools';
+import { errorLog, errorMessage } from './app/errorLog';
 import { nyquistVelocityCms } from './core/units';
 import { Simulator } from './app/simulator';
 import { Store, type ImagingMode } from './app/store';
 import { CASES, CASE_IDS, findCase, isCaseId, type CaseId } from './cases';
+import { NonFiniteStateError } from './physiology/engine';
 import { clonePatient } from './physiology/patientState';
 import { CutMapView } from './ui/cutMapView';
 import { drawEcg, drawOverlay, SpectrogramView } from './ui/displays';
@@ -47,16 +49,22 @@ for (const c of CASES) {
   caseSelect.appendChild(o);
 }
 
-const store = new Store({
-  mode: 'B',
-  tab: 'adquirir',
-  frozen: false,
-  debug: false,
-  audio: false,
-  caseId: CASE_IDS[0],
-  torso: true,
-  tool: 'none',
-});
+// Ningún fallo es silencioso: excepciones no capturadas, promesas rechazadas y
+// oyentes del store que lanzan terminan en el registro (pestaña Docente).
+errorLog.installGlobalHandlers(window);
+const store = new Store(
+  {
+    mode: 'B',
+    tab: 'adquirir',
+    frozen: false,
+    debug: false,
+    audio: false,
+    caseId: CASE_IDS[0],
+    torso: true,
+    tool: 'none',
+  },
+  (e) => errorLog.report('ui', e),
+);
 
 function fatal(message: string): never {
   document.body.innerHTML = '';
@@ -97,7 +105,7 @@ try {
     getCaliber: () => sim.anatomy.caliberFor(sim.sample),
   });
 } catch (e) {
-  console.error('Navegador 3D no disponible', e);
+  errorLog.report('navegador3d', e);
 }
 
 // --- Animación hacia un punto de partida (continua, cancelable) --------------
@@ -137,7 +145,8 @@ audioBtn.addEventListener('click', async () => {
     if (sim.audio.enabled) await sim.audio.disable();
     else await sim.audio.enable();
   } catch (e) {
-    console.error('Audio no disponible', e);
+    errorLog.report('audio', e);
+    showBanner(`Audio no disponible: ${errorMessage(e)}`, 5000);
   }
   store.set({ audio: sim.audio.enabled });
 });
@@ -208,9 +217,23 @@ store.subscribe((st, prev) => {
   if (st.tool !== prev.tool && st.tool !== 'caliper') caliperA = null;
 });
 
+/**
+ * Cambio de caso transaccional: el simulador nuevo se construye ANTES de tocar nada;
+ * si falla, el caso anterior sigue vivo, el selector vuelve atrás y el error se ve.
+ */
 function loadCase(id: CaseId): void {
   const prevSim = sim;
-  const next = new Simulator(clonePatient(findCase(id)), glCanvas, prevSim.audio);
+  if (prevSim.patient.id === id) return;
+  let next: Simulator;
+  try {
+    next = new Simulator(clonePatient(findCase(id)), glCanvas, prevSim.audio);
+  } catch (e) {
+    errorLog.report('caso', e);
+    showBanner(`No se pudo cargar el caso: ${errorMessage(e)}`, 6000);
+    caseSelect.value = prevSim.patient.id;
+    if (isCaseId(prevSim.patient.id)) store.set({ caseId: prevSim.patient.id });
+    return;
+  }
   next.setPose(prevSim.pose);
   next.equipment = prevSim.equipment;
   next.frozen = prevSim.frozen;
@@ -271,6 +294,7 @@ let gpuLost = false;
 glCanvas.addEventListener('webglcontextlost', (e) => {
   e.preventDefault();
   gpuLost = true;
+  errorLog.report('gpu', 'contexto WebGL perdido');
   showBanner('Contexto GPU perdido: recuperando…');
 });
 glCanvas.addEventListener('webglcontextrestored', () => {
@@ -279,11 +303,15 @@ glCanvas.addEventListener('webglcontextrestored', () => {
     gpuLost = false;
     hideBanner();
   } catch (e) {
-    showBanner(`No se pudo recuperar la GPU: ${(e as Error).message}`);
+    errorLog.report('gpu', e);
+    showBanner(`No se pudo recuperar la GPU: ${errorMessage(e)}`);
   }
 });
 let bannerEl: HTMLElement | null = null;
-function showBanner(text: string): void {
+let bannerTimer: ReturnType<typeof setTimeout> | null = null;
+function showBanner(text: string, autoHideMs?: number): void {
+  if (bannerTimer) clearTimeout(bannerTimer);
+  bannerTimer = autoHideMs ? setTimeout(hideBanner, autoHideMs) : null;
   if (!bannerEl) {
     bannerEl = document.createElement('div');
     bannerEl.className = 'banner';
@@ -339,6 +367,7 @@ let lastStatus = 0;
 // Errores del bucle: se cuentan en una ventana de 2 s (no por racha), así un fallo
 // intermitente en cuadros alternos también termina en el banner.
 let errorTimes: number[] = [];
+let loopDegraded = false;
 let hrShown = 0;
 let eqPrevCpu: CutMapView['lastMap'] = null;
 function loop(now: number): void {
@@ -398,12 +427,20 @@ function loop(now: number): void {
       panel.renderDebug();
       panel.sync();
     }
+    if (loopDegraded) {
+      // se recuperó: el banner de error persistente ya no aplica
+      loopDegraded = false;
+      if (!gpuLost) hideBanner();
+    }
   } catch (e) {
-    console.error(e);
+    errorLog.report(e instanceof NonFiniteStateError ? 'fisiología' : 'bucle', e);
     errorTimes.push(now);
     errorTimes = errorTimes.filter((t) => now - t < 2000);
     if (errorTimes.length > 5) {
-      showBanner(`Error persistente en el bucle: ${(e as Error).message}`);
+      // Error persistente: avisar y reintentar a 1 Hz en vez de detener la aplicación para siempre
+      loopDegraded = true;
+      showBanner(`Error persistente en el bucle (se reintenta cada segundo): ${errorMessage(e)}`);
+      setTimeout(() => requestAnimationFrame(loop), 1000);
       return;
     }
   }

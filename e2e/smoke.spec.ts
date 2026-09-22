@@ -55,3 +55,21 @@ test('modos por teclado, pestaña Medir y captura de una medición', async ({ pa
   await expect(page.locator('.debug')).toContainText(/t [\d.]+ s · latido/, { timeout: 30_000 });
   expect(errors).toEqual([]);
 });
+
+test('sobrevive a la pérdida del contexto WebGL: avisa, se recupera y el reloj sigue', async ({ page }) => {
+  test.setTimeout(180_000);
+  const errors = await bootWithoutErrors(page);
+  await page.evaluate(() => {
+    const gl = (document.getElementById('gl') as HTMLCanvasElement).getContext('webgl2')!;
+    const ext = gl.getExtension('WEBGL_lose_context')!;
+    (window as unknown as { __lc: WEBGL_lose_context }).__lc = ext;
+    ext.loseContext();
+  });
+  await expect(page.locator('.banner')).toContainText('Contexto GPU perdido', { timeout: 30_000 });
+  await page.evaluate(() => (window as unknown as { __lc: WEBGL_lose_context }).__lc.restoreContext());
+  await expect(page.locator('.banner')).toHaveCount(0, { timeout: 60_000 });
+  const tOf = (s: string | null) => Number(/t ([\d.]+) s/.exec(s ?? '')?.[1] ?? 0);
+  const t1 = tOf(await page.locator('#status').textContent());
+  await expect.poll(async () => tOf(await page.locator('#status').textContent()), { timeout: 60_000 }).toBeGreaterThan(t1);
+  expect(errors).toEqual([]);
+});

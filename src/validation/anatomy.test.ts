@@ -207,6 +207,32 @@ describe('Anatomía implícita (base B)', () => {
     expect(c.flowFactor).toBeLessThan(1);
   });
 
+  it('el intestino (el «resto») mide su distancia a la frontera: tiende a 0 junto al diafragma y el hígado', () => {
+    // Antes valía 5 mm fijos: el gate volumétrico daba por interior un punto pegado al diafragma
+    // y float32 lo clasificaba al otro lado (Bowel→Diaphragm en CI). Subiendo por tres columnas,
+    // el bd de cada punto de intestino no supera la distancia a la interfaz que se encuentra.
+    for (const [x, y, expected] of [
+      [70, -5, Tissue.Diaphragm],
+      [60, 20, Tissue.LiverCapsule],
+      [40, 30, Tissue.LiverCapsule],
+    ] as const) {
+      const samples: Array<{ z: number; bd: number }> = [];
+      let zT = Number.NaN;
+      for (let z = -120; z < 60; z += 0.25) {
+        const c = cls([x, y, z]);
+        if (c.tissue === Tissue.Bowel) samples.push({ z, bd: c.boundaryDistance });
+        else if (samples.length && samples[samples.length - 1].z === z - 0.25) {
+          expect(c.tissue, `${x},${y}`).toBe(expected);
+          zT = z;
+          break;
+        }
+      }
+      expect(zT, `${x},${y}: sin transición`).not.toBeNaN();
+      expect(samples[samples.length - 1].bd).toBeLessThan(0.3);
+      for (const p of samples.filter((q) => zT - q.z < 10)) expect(p.bd).toBeLessThanOrEqual(zT - p.z + 1e-9);
+    }
+  });
+
   it('el patrón renal se deriva de picos y mínimo', () => {
     expect(renalPatternFromPeaks(20, 18, 12)).toBe('continuous');
     expect(renalPatternFromPeaks(15, 18, 0)).toBe('biphasic');

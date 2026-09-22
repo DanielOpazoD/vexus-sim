@@ -21,7 +21,7 @@ import {
   type TubeHit,
 } from './primitives';
 import { GALLBLADDER_WALL_MM, gallbladderBody, gallbladderSdf } from './organs/gallbladder';
-import { RENAL_CAPSULE_MM, kidneyQuery, type Kidney } from './organs/kidney';
+import { RENAL_CAPSULE_MM, kidneyLocal, kidneyOuterSdf, kidneyQuery, type Kidney } from './organs/kidney';
 import {
   LIVER_BLEND_MM,
   RENAL_IMPRESSION,
@@ -44,7 +44,7 @@ import {
 import { lungCurtainDistance } from './organs/lungCurtain';
 
 export type { DuctDef, VesselDef } from './vesselTree';
-import { DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, Tissue } from './tissues';
+import { BOWEL_BD_CAP_MM, DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, Tissue } from './tissues';
 
 /**
  * Escena anatómica del avatar adulto de referencia (guía §9): pared abdominal
@@ -322,11 +322,25 @@ export class AnatomyScene {
     if (kidney) return kidney;
     const liver = this.classifyLiver(m, dDome, -depth - wall.wallMm);
     if (liver) return liver;
+    // Intestino: el «resto». Su distancia a la frontera es la de las interfaces que ganan antes
+    // (diafragma, vesícula, aurícula, hígado, pared, grasa perirrenal, gas); como en el hígado, no
+    // cuenta la de los tubos. Con 5 mm fijos el gate volumétrico daba por interior un punto pegado
+    // al diafragma que float32 clasificaba al otro lado (CI de #39: Bowel→Diaphragm, 1 de 44 826).
+    let bd = Math.min(
+      BOWEL_BD_CAP_MM,
+      dDome - DIAPHRAGM_THICKNESS_MM,
+      dGb - this.gallbladderWallMm,
+      dRa,
+      this.liverBaseSdf(m),
+      -depth - wall.wallMm,
+    );
+    for (const k of [this.kidneyRight, this.kidneyLeft]) bd = Math.min(bd, kidneyOuterSdf(kidneyLocal(m, k), k) - this.perirenalMm);
     for (const g of this.gasPockets) {
       const dg = sdSphere(m, g);
       if (dg < 0) return { ...NONE, tissue: Tissue.BowelGas, boundaryDistance: -dg, specular: 1.0 };
+      bd = Math.min(bd, dg);
     }
-    return { ...NONE, tissue: Tissue.Bowel, boundaryDistance: 5, specular: 0.3 };
+    return { ...NONE, tissue: Tissue.Bowel, boundaryDistance: Math.max(0, bd), specular: 0.3 };
   }
 
   /**

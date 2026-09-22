@@ -94,6 +94,7 @@ try {
     getFrame: () => sim.frame,
     getDepthMm: () => sim.bmode.depthMm,
     getRespCaudalMm: () => sim.sample.resp.diaphragmCaudalMm,
+    getCaliber: () => sim.anatomy.caliberFor(sim.sample),
   });
 } catch (e) {
   console.error('Navegador 3D no disponible', e);

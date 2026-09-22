@@ -82,7 +82,7 @@ export class AnatomyScene {
    * Cara visceral: plano z = −40 − 0,35·y (borde inferior agudo a z ≈ −68 bajo la
    * pared anterior y a −26 en la cara posterior); normal (0, 0,35, 1).
    */
-  readonly visceralPlane = { zAtY0: -40, slopeY: 0.35, edgeRoundMm: 12 };
+  readonly visceralPlane: { zAtY0: number; slopeY: number; edgeRoundMm: number };
   readonly gallbladder: Ellipsoid;
   readonly rightAtrium: Sphere;
   readonly kidneyRight: Kidney;
@@ -109,8 +109,12 @@ export class AnatomyScene {
     // pared abdominal recorta la cara anterior (convexa, pegada a la pared), la cúpula la
     // superior y el plano visceral la inferior: cuña con borde agudo. Craneocaudal
     // resultante ≈ 145 mm en la línea medioclavicular; lóbulo izquierdo afilado hasta x ≈ +95.
-    this.liver = { kind: 'ellipsoid', center: [-70, -5, 5], radii: [85, 95, 100], taperX: 0.12 };
-    this.liverLeft = { kind: 'ellipsoid', center: [0, 32, 12], radii: [95, 36, 55], taperX: 0.5 };
+    // Hepatomegalia congestiva: los radios escalan con `sizeFactor` y el borde inferior
+    // (plano visceral) desciende en proporción (≈ 1 cm por cada 10 % de tamaño).
+    const f = patient.liver.sizeFactor;
+    this.liver = { kind: 'ellipsoid', center: [-70, -5, 5], radii: [85 * f, 95 * f, 100 * f], taperX: 0.12 };
+    this.liverLeft = { kind: 'ellipsoid', center: [0, 32, 12], radii: [95 * f, 36 * f, 55 * f], taperX: 0.5 };
+    this.visceralPlane = { zAtY0: -40 - 100 * (f - 1), slopeY: 0.35, edgeRoundMm: 12 };
     // Vesícula en su fosa (cara visceral del segmento IV/V); fondo hacia el borde
     this.gallbladder = { kind: 'ellipsoid', center: [-52, 42, -48], radii: [34, 17, 17], taperX: 0 };
     this.rightAtrium = { kind: 'sphere', center: [-15, 0, 150], r: 32 };

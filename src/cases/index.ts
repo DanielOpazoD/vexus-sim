@@ -25,7 +25,7 @@ export const NORMAL_ADULT: PatientState = {
   peepCmH2O: 0,
   respiratoryRateMin: 14,
   respiratoryPattern: 'quiet',
-  liver: { sinusoidalResistance: 1, compliance: 1 },
+  liver: { sinusoidalResistance: 1, compliance: 1, sizeFactor: 1 },
   habitus: { subcutaneousFatMm: 14, muscleMm: 12 },
 };
 
@@ -48,7 +48,7 @@ export const SEVERE_CONGESTION: PatientState = {
   peepCmH2O: 0,
   respiratoryRateMin: 20,
   respiratoryPattern: 'quiet',
-  liver: { sinusoidalResistance: 1.1, compliance: 0.8 },
+  liver: { sinusoidalResistance: 1.1, compliance: 0.8, sizeFactor: 1.1 },
   habitus: { subcutaneousFatMm: 16, muscleMm: 11 },
 };
 
@@ -77,7 +77,7 @@ export const AF_MODERATE_CONGESTION: PatientState = {
   peepCmH2O: 0,
   respiratoryRateMin: 18,
   respiratoryPattern: 'quiet',
-  liver: { sinusoidalResistance: 0.8, compliance: 0.5 },
+  liver: { sinusoidalResistance: 0.8, compliance: 0.5, sizeFactor: 1.05 },
   habitus: { subcutaneousFatMm: 18, muscleMm: 11 },
 };
 

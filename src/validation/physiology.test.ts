@@ -56,6 +56,14 @@ describe('Fisiología: el VExUS emerge de la señal, no se asigna (guía §5, §
       renal: 'not-assessed',
     });
     expect(g.grade).toBe(3);
+    // Plétora visible: suprahepáticas ≥ 1,5× el radio basal (12–15 mm de diámetro en el
+    // curso medio) frente a ≈ 1× en el sano; el hígado congestivo es un 10 % mayor.
+    expect(e.sample.hvRadiusScale).toBeGreaterThan(1.5);
+    expect(run(NORMAL_ADULT, 6).sample.hvRadiusScale).toBeLessThan(1.05);
+    const sevScene = new AnatomyScene(SEVERE_CONGESTION);
+    const normScene = new AnatomyScene(NORMAL_ADULT);
+    expect(sevScene.liver.radii[2] / normScene.liver.radii[2]).toBeCloseTo(1.1, 9);
+    expect(sevScene.visceralPlane.zAtY0).toBeLessThan(normScene.visceralPlane.zAtY0);
   });
 
   it('la presión media de AD declarada se conserva (ondas centradas)', () => {

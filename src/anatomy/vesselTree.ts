@@ -119,87 +119,90 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       wallTissue: Tissue.VesselWallThin,
       wallMm: 0.8,
     },
-    // Suprahepática derecha: plano intersegmentario del lóbulo derecho, entra en la
-    // cava por su cara posterolateral derecha 1 cm por debajo del tronco común.
+    // Suprahepáticas: calibres BASALES de un adulto sano (curso medio 5–8 mm de diámetro,
+    // desembocadura 8–10 mm; B.2); la congestión los dilata vía `hvRadiusScale` hasta
+    // ~1,6× (≈ 15 mm de diámetro a 19 mmHg), como en la plétora real.
+    // Derecha: plano intersegmentario del lóbulo derecho, entra en la cava por su cara
+    // posterolateral derecha 1 cm por debajo del tronco común.
     thin(
       'hvRight',
       [
-        [[-135, 12, -25], 3],
-        [[-105, -4, 12], 4.5],
-        [[-68, -18, 50], 6],
-        [[-38, -26, 72], 7],
-        [[-26, -26, 78], 7.5],
+        [[-135, 12, -25], 2.4],
+        [[-105, -4, 12], 3.6],
+        [[-68, -18, 50], 4.8],
+        [[-38, -26, 72], 5.6],
+        [[-26, -26, 78], 6.0],
       ],
-      6,
+      5.6,
     ),
     thin(
       'hvRightAnterior',
       [
-        [[-118, 42, 0], 2.5],
-        [[-95, 16, 25], 3.5],
-        [[-83, -12, 35], 4],
+        [[-118, 42, 0], 2.0],
+        [[-95, 16, 25], 2.8],
+        [[-83, -12, 35], 3.2],
       ],
-      3.5,
+      2.8,
     ),
     thin(
       'hvRightPosterior',
       [
-        [[-125, -45, -8], 2.5],
-        [[-100, -30, 22], 3.5],
-        [[-83, -12, 35], 4],
+        [[-125, -45, -8], 2.0],
+        [[-100, -30, 22], 2.8],
+        [[-83, -12, 35], 3.2],
       ],
-      3.5,
+      2.8,
     ),
     // Media: cisura lobar principal (línea de Cantlie), desde la fosa vesicular
     thin(
       'hvMiddle',
       [
-        [[-50, 40, -30], 2.5],
-        [[-40, 24, 15], 4],
-        [[-30, 4, 52], 5],
-        [[-24, -12, 76], 5.5],
-        [[-23, -16, 82], 5.5],
+        [[-50, 40, -30], 2.0],
+        [[-40, 24, 15], 3.2],
+        [[-30, 4, 52], 4.0],
+        [[-24, -12, 76], 4.4],
+        [[-23, -16, 82], 4.4],
       ],
-      5,
+      4.5,
     ),
     thin(
       'hvMiddleTributary',
       [
-        [[-75, 30, 20], 2.5],
-        [[-50, 20, 32], 3],
-        [[-33, 10, 41], 3.5],
+        [[-75, 30, 20], 2.0],
+        [[-50, 20, 32], 2.4],
+        [[-33, 10, 41], 2.8],
       ],
-      3,
+      2.4,
     ),
     // Izquierda: cisura intersegmentaria izquierda
     thin(
       'hvLeft',
       [
-        [[62, 28, 8], 2.5],
-        [[30, 20, 38], 3.5],
-        [[0, 2, 66], 4.5],
-        [[-16, -12, 80], 5],
-        [[-23, -16, 82], 5],
+        [[62, 28, 8], 2.0],
+        [[30, 20, 38], 2.8],
+        [[0, 2, 66], 3.6],
+        [[-16, -12, 80], 4.0],
+        [[-23, -16, 82], 4.0],
       ],
-      4.5,
+      4.2,
     ),
     thin(
       'hvLeftTributary',
       [
-        [[30, 42, -10], 2],
-        [[22, 26, 30], 2.5],
-        [[15, 11, 52], 3],
+        [[30, 42, -10], 1.6],
+        [[22, 26, 30], 2.0],
+        [[15, 11, 52], 2.4],
       ],
-      2.5,
+      2.0,
     ),
     // Tronco común media + izquierda (≈ 1 cm) hasta la cara anterior izquierda de la VCI
     thin(
       'hvCommonTrunk',
       [
-        [[-23, -16, 82], 7.5],
-        [[-21, -24, 90], 8],
+        [[-23, -16, 82], 6.0],
+        [[-21, -24, 90], 6.4],
       ],
-      7.5,
+      6,
       0.6,
     ),
     // Porta: tronco (11 mm) oblicuo hacia el hilio, bifurcación en la porta hepatis

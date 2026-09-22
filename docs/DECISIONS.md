@@ -293,6 +293,19 @@ sincronizar instante y calibre se veía 91–94 % con «pared venosa→sangre» 
 tiempo, no anatomía; ahora una divergencia real (un tejido nuevo sin `#define`, un recorte distinto)
 se ve de inmediato como pares CPU→GPU sistemáticos.
 
+## 31. Fibrilación auricular como ritmo y tercer caso
+
+`Rhythm` admite `'atrial-fibrillation'`: RR lognormal alrededor de la FC media con dispersión
+relativa `rrVariability` (0,22 en el caso) y refractariedad del nodo AV ≥ 0,3 s; sin onda P
+(`tP = NaN`) ni contracción auricular (`atrialAmplitude 0`), con lo que la presión de AD pierde la
+onda a y la suprahepática la onda A **sin ninguna regla**; ondas f deterministas en el ECG. Las
+ventanas de medida con NaN son ventanas vacías (`core/series.ts`, `systolicPeak`): antes una ventana
+NaN devolvía el mínimo GLOBAL como «A» (−5,6 cm/s en un paciente sin aurícula), y un latido sin A se
+descartaba entero; ahora A es opcional y S/D bastan. Caso «FA · congestión moderada» (PAD 13, VD 0,5,
+IT 0,35, C_h 0,5): VCI 29,5/26,0 mm, S 9,5 < D 13,5 (leve), PF 36 % (leve), renal continuo → grado 1
+emergente, con A = NaN. La FC del HUD es una media móvil (como un monitor) porque en FA el RR latido
+a latido salta.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

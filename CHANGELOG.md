@@ -7,6 +7,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Una ventana de medida NaN (sin onda A) devolvía el mínimo global como «A» y descartaba el latido (31).
 - La medición renal sobrevivía al cambio de caso o a «Borrar» (27).
 - El navegador 3D no reconstruía la anatomía al cambiar de caso; el renderizador no liberaba recursos GPU (27).
 - `tubeQuery` con sección elíptica prolongaba la cava más allá de su último nodo, en TS y GLSL (27).
@@ -22,6 +23,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Añadido
 
+- Ritmo de fibrilación auricular (RR irregular, sin P ni A, ondas f) y caso «FA · congestión moderada» (31).
 - Comprobación en vivo de la equivalencia TS ↔ GLSL en modo docente: 100 % de acuerdo celda a celda (30).
 - 20 pruebas nuevas de nivel rápido con valores cerrados y `npm run test:coverage` (27).
 

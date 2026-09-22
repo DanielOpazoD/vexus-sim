@@ -34,3 +34,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [28](DECISIONS.md#L255) | Consola y navegador 3D por módulos | vigente |
 | [29](DECISIONS.md#L268) | Geometría del sector única, árbol vascular propio y `classify` por pasos | vigente |
 | [30](DECISIONS.md#L280) | Comprobación en vivo de la equivalencia TS ↔ GLSL | vigente |
+| [31](DECISIONS.md#L296) | Fibrilación auricular como ritmo y tercer caso | vigente |

@@ -69,8 +69,8 @@ par CPU→GPU sistemático es una divergencia real.
 
 - **Riñón izquierdo con interlobares / cálices**: mismos `VesselId` + tubos en `scene.ducts`/`vessels`;
   el riñón es una primitiva (`primitives.kidneyQuery`) que admite más pirámides o cálices.
-- **Arritmias**: `RhythmGenerator.makeBeat/nextRR` (FA: sin P, RR irregular; extrasístoles: latido
-  prematuro con pausa).
+- **Arritmias**: la FA ya existe (`Rhythm = 'atrial-fibrillation'`, decisión 31); extrasístoles y
+  bloqueos entran por `RhythmGenerator.makeBeat/nextRR` (latido prematuro con pausa, P sin QRS).
 - **Nuevos casos**: solo `PatientState`; el resto emerge.
 - **Workers**: el corte ecográfico ya corre en uno (`src/ui/cutMapWorker.ts`); `Simulator.advance`
   no toca el DOM, así que la cadena PW y la fisiología pueden migrar igual manteniendo la interfaz

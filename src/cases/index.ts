@@ -52,10 +52,39 @@ export const SEVERE_CONGESTION: PatientState = {
   habitus: { subcutaneousFatMm: 16, muscleMm: 11 },
 };
 
-export const CASES: PatientState[] = [NORMAL_ADULT, SEVERE_CONGESTION];
+/**
+ * Fibrilación auricular con congestión moderada (matriz G.2, caso intermedio,
+ * [EXTRAPOLACIÓN PROPIA]): sin onda A, S amortiguada por pérdida de la
+ * contribución auricular y VD moderadamente deprimido; RR irregular, con lo que
+ * la medición latido a latido exige promediar varios ciclos.
+ */
+export const AF_MODERATE_CONGESTION: PatientState = {
+  id: 'af-moderate-congestion',
+  label: 'FA · congestión moderada',
+  seed: 20260923,
+  heartRateBpm: 96,
+  rhythm: 'atrial-fibrillation',
+  rrVariability: 0.22,
+  prIntervalMs: 160,
+  rapMeanMmHg: 13,
+  rvFunction: 0.5,
+  raCompliance: 0.7,
+  atrialFunction: 0,
+  tricuspidRegurgitation: 0.35,
+  stressedVolume: 1.15,
+  intraAbdominalPressureMmHg: 6,
+  ventilation: 'spontaneous',
+  peepCmH2O: 0,
+  respiratoryRateMin: 18,
+  respiratoryPattern: 'quiet',
+  liver: { sinusoidalResistance: 0.8, compliance: 0.5 },
+  habitus: { subcutaneousFatMm: 18, muscleMm: 11 },
+};
+
+export const CASES: PatientState[] = [NORMAL_ADULT, SEVERE_CONGESTION, AF_MODERATE_CONGESTION];
 
 /** Identificadores de caso conocidos: un id inválido no compila en el estado de UI. */
-export const CASE_IDS = ['normal-adult', 'severe-congestion'] as const;
+export const CASE_IDS = ['normal-adult', 'severe-congestion', 'af-moderate-congestion'] as const;
 export type CaseId = (typeof CASE_IDS)[number];
 
 export function isCaseId(id: string): id is CaseId {

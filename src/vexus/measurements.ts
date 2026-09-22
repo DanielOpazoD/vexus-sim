@@ -66,7 +66,7 @@ export function systolicPeak<T extends { t: number }>(samples: readonly T[], w: 
   let vmax = Number.NaN;
   let vmin = Number.NaN;
   for (const s of samples) {
-    if (s.t < w[0] || s.t > w[1]) continue;
+    if (!(s.t >= w[0] && s.t <= w[1])) continue; // ventana NaN = vacía
     const v = get(s);
     if (Number.isNaN(vmax) || v > vmax) vmax = v;
     if (Number.isNaN(vmin) || v < vmin) vmin = v;
@@ -127,10 +127,11 @@ export function measurePhysiologyTruth(engine: PhysiologyEngine, range: { fromT:
     const sPeak = systolicPeak(all, w.sWindow, hv);
     const dPeak = extremeInWindow(all, w.dWindow, (v) => v, hv);
     const aPeak = extremeInWindow(all, w.aWindow, (v) => -v, hv);
-    if ([sPeak, dPeak, aPeak].some((x) => Number.isNaN(x))) continue;
+    // La onda A puede no existir (fibrilación auricular: ventana indefinida); S y D son obligatorias
+    if (Number.isNaN(sPeak) || Number.isNaN(dPeak)) continue;
     sList.push(sPeak);
     dList.push(dPeak);
-    aList.push(aPeak);
+    if (!Number.isNaN(aPeak)) aList.push(aPeak);
     const cyc: [number, number] = [beat.tR, beat.tR + beat.rr];
     const vmax = extremeInWindow(all, cyc, (v) => v, pv);
     const vmin = extremeInWindow(all, cyc, (v) => -v, pv);

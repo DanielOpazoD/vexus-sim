@@ -82,7 +82,7 @@ tools/           calibración, depuración de ondas, índice de decisiones, pres
 docs/            DECISIONS.md (+ índice generado), LIMITATIONS.md, APPROXIMATIONS.md, ARCHITECTURE.md
 ```
 
-## Estado (v0.4.0 + cambios sin publicar)
+## Estado (v0.5.0)
 
 Cadena causal completa: reloj único → fisiología 0D (contorno de AD, red esplácnico–sinusoidal–
 suprahepática–cava con ley de tubo, resistores de Starling y lecho renal; respiración) → anatomía
@@ -90,13 +90,19 @@ implícita compartida TS/GLSL (pared, costillas oblicuas, columna, diafragma en 
 pulmonar, hígado con fisura umbilical, ligamentos redondo y venoso y segmentos de Couinaud, vesícula en
 pera con pared, VCI, suprahepáticas, porta con pared periportal ∝ calibre, vía biliar, riñones con
 cápsula, pirámides, seno y pelvis) → sonda 6DOF con acoplamiento y pared blanda → modo B en GPU (PSF con
-número F) → color por celdas con varianza de Kasai y cadencia física → PW con volumen de muestra 3D,
-espectro y audio → medición del alumno (envolvente por percentil de banda contigua) → VExUS C. Tres
-casos con el mismo motor (sano, congestión grave, FA con congestión moderada).
+número F, grafo de pasadas validado) → color por celdas con varianza de Kasai y cadencia física → PW
+con volumen de muestra 3D, espectro y audio → medición del alumno (envolvente por percentil de banda
+contigua) → VExUS C. Tres casos con el mismo motor (sano, congestión grave, FA con congestión moderada).
 
-Garantías automáticas: equivalencia TS ↔ GLSL en CI (tejido, vaso, velocidad), cadena completa del
-alumno por caso (medido = verdad, grados 0/3/1), propiedades del motor con fast-check, límites del
-shader con margen, cobertura ≥ 86 % con umbrales, e2e con WebGL real. Guía de trabajo en `CLAUDE.md`,
-vocabulario en `docs/GLOSSARY.md`, estrategia de pruebas en `docs/TESTING.md`.
+Bases estructurales (v0.5.0): modelo de dominio (metadatos de vasos, equipo por comandos con
+invariantes, sesión, perfil de transductor, matriz de capas), anatomía de una sola fuente (esquema de
+uniforms y módulos de órgano con gemelos TS/GLSL del mismo nombre), producto (versión y commit visibles,
+diagnóstico exportable con tiempo de GPU, release por tag).
+
+Garantías automáticas: equivalencia TS ↔ GLSL en CI (4 ventanas y 50 000 puntos por caso, acuerdo
+exacto), estadística de speckle de Rayleigh en parénquima, cadena completa del alumno por caso (medido =
+verdad, grados 0/3/1), propiedades del motor con fast-check, límites del shader con margen, cobertura
+≥ 88 % con umbrales, e2e con WebGL real. Guía de trabajo en `CLAUDE.md`, vocabulario en
+`docs/GLOSSARY.md`, estrategia de pruebas en `docs/TESTING.md`.
 
 Véase el informe de cierre de cada iteración en `docs/DECISIONS.md`.

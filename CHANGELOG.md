@@ -21,6 +21,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- La equivalencia TS ↔ GLSL solo se comprobaba a mano en la pestaña Docente: ahora una prueba e2e (`e2e/equivalence.spec.ts`, WebGL real con SwiftShader) compara tejido, vaso y velocidad de la sangre en los 4 puntos de partida de los 3 casos mediante una consulta puntual de la anatomía GLSL (`queryPoints`) y el gancho `?e2e`. Reintroducir la ley de velocidad anterior la hace fallar (error p95 hasta 120 %).
 - El Doppler color usaba caudal constante (`uRef·rRef²/rLoc²`) mientras la CPU (PW, medición) usa velocidad media uniforme por vaso (decisión 6): color y PW podían contradecirse en ramas afiladas. Ahora la GPU usa la misma ley.
 - La transmisión hasta la puerta PW cobraba 6 dB en cada paso dentro del hueso; la GPU solo al entrar. Regla única `rayAttenuationDb` con test.
 - Fuga de memoria de vídeo: cada redimensionado creaba tres destinos de pantalla sin liberar los anteriores.

@@ -1,3 +1,4 @@
+import { equivalenceSweep, type EquivalencePoseReport } from './equivalenceSweep';
 import type { Simulator } from './simulator';
 
 /**
@@ -12,14 +13,23 @@ export interface DevViews {
   spectrogram: unknown;
 }
 
+/** Ganchos de prueba estables (e2e): se exponen en desarrollo o con `?e2e` en la URL. */
+export interface TestHooks {
+  equivalenceSweep: () => EquivalencePoseReport[];
+}
+
 declare global {
   interface Window {
     __sim?: () => Simulator;
     __views?: () => DevViews;
+    __vexusTest?: TestHooks;
   }
 }
 
 export function registerDevtools(getSim: () => Simulator, getViews: () => DevViews): void {
+  if (import.meta.env.DEV || new URLSearchParams(location.search).has('e2e')) {
+    window.__vexusTest = { equivalenceSweep: () => equivalenceSweep(getSim()) };
+  }
   if (!import.meta.env.DEV) return;
   window.__sim = getSim;
   window.__views = getViews;

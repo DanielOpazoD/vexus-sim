@@ -18,6 +18,7 @@ import {
   FRAG_RAWFIELD,
   FRAG_SCANCONVERT,
   FRAG_TISSUEMAP,
+  FRAG_QUERY,
   FRAG_TRANSMISSION,
   VERT,
 } from './shaders/passes.glsl';
@@ -101,6 +102,13 @@ export interface FrameInputs {
   seed: number;
 }
 
+/** Resultado de `queryPoints`: tejido, índice de tubo (−1 sin vaso) y velocidad de la sangre (mm/s). */
+export interface GpuPointQuery {
+  tissue: Int32Array;
+  vessel: Int32Array;
+  velocity: Float32Array;
+}
+
 export class UltrasoundRenderer {
   readonly gl: WebGL2RenderingContext;
   private pTrans: GLProgram;
@@ -112,6 +120,7 @@ export class UltrasoundRenderer {
   private pPersist: GLProgram;
   private pBlit: GLProgram;
   private pMap: GLProgram;
+  private pQuery: GLProgram | null = null;
   private tMap: RenderTarget;
   private mapPixels = new Uint8Array(0);
   private mapPbo: WebGLBuffer | null = null;
@@ -190,6 +199,7 @@ export class UltrasoundRenderer {
     const gl = this.gl;
     for (const p of [this.pTrans, this.pRaw, this.pAxial, this.pLateral, this.pColor, this.pScan, this.pPersist, this.pBlit, this.pMap])
       p.dispose();
+    this.pQuery?.dispose();
     for (const t of [this.tTrans, this.tRaw, this.tAxial, this.tEnv, this.tColor, this.tMap]) deleteTarget(gl, t);
     if (this.tScan) deleteTarget(gl, this.tScan);
     if (this.tPersist) for (const t of this.tPersist) deleteTarget(gl, t);
@@ -635,6 +645,50 @@ export class UltrasoundRenderer {
     if (sync) this.mapPending = { sync, pbo: this.mapPbo! };
     gl.flush();
     return this.mapLast;
+  }
+
+  /**
+   * Consulta síncrona de la anatomía GLSL en una lista de puntos del mundo (xyz por
+   * punto). Solo para pruebas y el gate de equivalencia TS ↔ GLSL: lee de la GPU de
+   * forma bloqueante, así que nunca se llama por cuadro.
+   */
+  queryPoints(points: Float32Array, inputs: FrameInputs): GpuPointQuery {
+    const gl = this.gl;
+    const n = Math.floor(points.length / 3);
+    const W = 256;
+    const H = Math.max(1, Math.ceil(n / W));
+    const data = new Float32Array(W * H * 4);
+    for (let i = 0; i < n; i++) data.set([points[i * 3], points[i * 3 + 1], points[i * 3 + 2], 1], i * 4);
+    const pts = createTexture(gl, W, H, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, W, H, gl.RGBA, gl.FLOAT, data);
+    const f = { internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.NEAREST };
+    const target = createTarget(gl, W, H, [f, f]);
+    this.pQuery ??= new GLProgram(gl, VERT, FRAG_QUERY, 'query');
+    this.updateSceneDynamic(inputs);
+    bindTarget(gl, target);
+    this.pQuery.use();
+    this.setSceneUniforms(this.pQuery, inputs);
+    this.setBeamUniforms(this.pQuery, inputs);
+    this.pQuery.tex('uPoints', 0, pts);
+    drawFullscreen(gl);
+    const out0 = new Float32Array(W * H * 4);
+    const out1 = new Float32Array(W * H * 4);
+    gl.readBuffer(gl.COLOR_ATTACHMENT0);
+    gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, out0);
+    gl.readBuffer(gl.COLOR_ATTACHMENT1);
+    gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, out1);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    deleteTarget(gl, target);
+    gl.deleteTexture(pts);
+    const tissue = new Int32Array(n);
+    const vessel = new Int32Array(n);
+    const velocity = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      tissue[i] = Math.round(out0[i * 4]);
+      vessel[i] = Math.round(out0[i * 4 + 1]);
+      velocity.set([out1[i * 4], out1[i * 4 + 1], out1[i * 4 + 2]], i * 3);
+    }
+    return { tissue, vessel, velocity };
   }
 
   /**

@@ -271,6 +271,28 @@ export class Simulator {
     });
   }
 
+  /**
+   * Mapa de tejidos del plano según la GPU (asíncrono; null hasta que haya uno),
+   * para el instante indicado (muestra, marco, profundidad): así la comparación
+   * TS ↔ GLSL no confunde calibre pulsátil o respiración con desacuerdo.
+   * Solo docente/depuración.
+   */
+  gpuTissueMap(at: { sample: PhysiologySample; frame: ProbeFrame; depthMm: number }): ReturnType<UltrasoundRenderer['tissueMap']> {
+    const s = at.sample;
+    return this.renderer.tissueMap({
+      sample: s,
+      frame: at.frame,
+      pose: this.pose,
+      transducer: this.transducer,
+      caliber: this.anatomy.caliberFor(s),
+      probeVelocity: this.probeVel,
+      bmode: { ...this.bmode, depthMm: at.depthMm },
+      color: this.color,
+      updateColor: false,
+      seed: this.patient.seed,
+    });
+  }
+
   /** Velocidad de Nyquist rotulada (cm/s) para la escala PW actual. */
   pwNyquistCms(): number {
     return nyquistVelocityCms(this.pw.prfHz, this.transducer.f0Doppler, this.pw.angleCorrection);

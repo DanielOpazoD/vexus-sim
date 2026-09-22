@@ -1,4 +1,6 @@
 import type { Simulator } from '../app/simulator';
+import type { PhysiologySample } from '../physiology/engine';
+import type { ProbeFrame } from '../probe/probe';
 import { Tissue } from '../anatomy/tissues';
 import type { VesselId } from '../physiology/vessels';
 import { beamToPixel, pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
@@ -99,8 +101,20 @@ export class CutMapView {
   private requestId = 0;
   private map: CutMapResponse | null = null;
   private mapDirty = false;
+  /** Instante (muestra, marco, profundidad) con el que se pidió cada mapa, por id. */
+  private pendingInputs: { id: number; sample: PhysiologySample; frame: ProbeFrame; depthMm: number } | null = null;
+  private mapInputs: { sample: PhysiologySample; frame: ProbeFrame; depthMm: number } | null = null;
 
   constructor(private readonly canvas: HTMLCanvasElement) {}
+
+  /**
+   * Último mapa recibido del Worker (anatomía TypeScript) junto con el instante
+   * exacto (muestra fisiológica, marco de la sonda, profundidad) con el que se
+   * calculó, para que la comprobación TS ↔ GLSL compare el MISMO instante.
+   */
+  get lastMap(): { map: CutMapResponse; sample: PhysiologySample; frame: ProbeFrame; depthMm: number } | null {
+    return this.map && this.mapInputs ? { map: this.map, ...this.mapInputs } : null;
+  }
 
   dispose(): void {
     this.worker?.terminate();
@@ -124,6 +138,7 @@ export class CutMapView {
     this.worker.onmessage = (ev: MessageEvent<CutMapResponse>) => {
       if (ev.data.id !== this.requestId) return;
       this.map = ev.data;
+      if (this.pendingInputs?.id === ev.data.id) this.mapInputs = this.pendingInputs;
       this.mapDirty = true;
       this.pending = false;
     };
@@ -151,6 +166,7 @@ export class CutMapView {
         height: MAP_H,
       };
       worker.postMessage(req);
+      this.pendingInputs = { id: req.id, sample: s, frame: sim.frame, depthMm: sim.bmode.depthMm };
     }
     if (!this.mapDirty || !this.map) return;
     this.mapDirty = false;

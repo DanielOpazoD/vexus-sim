@@ -22,6 +22,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Añadido
 
+- Comprobación en vivo de la equivalencia TS ↔ GLSL en modo docente: 100 % de acuerdo celda a celda (30).
 - 20 pruebas nuevas de nivel rápido con valores cerrados y `npm run test:coverage` (27).
 
 ## [0.2.0] — 2026-09-22 — iteración 2

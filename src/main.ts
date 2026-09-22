@@ -1,3 +1,4 @@
+import { compareTissueGrids } from './app/equivalenceCheck';
 import { ProbeAnimator } from './app/probeAnimation';
 import { bindKeyboardShortcuts } from './ui/keyboardShortcuts';
 import { registerDevtools } from './app/devtools';
@@ -337,6 +338,7 @@ let lastStatus = 0;
 // Errores del bucle: se cuentan en una ventana de 2 s (no por racha), así un fallo
 // intermitente en cuadros alternos también termina en el banner.
 let errorTimes: number[] = [];
+let eqPrevCpu: CutMapView['lastMap'] = null;
 function loop(now: number): void {
   const dt = Math.min(0.25, (now - last) / 1000);
   last = now;
@@ -380,6 +382,15 @@ function loop(now: number): void {
       status.textContent = `${(frames / Math.max(1e-3, frameTime)).toFixed(0)} fps · t ${t.toFixed(1)} s`;
       frames = 0;
       frameTime = 0;
+      // Comprobación TS ↔ GLSL (solo docente): mapa GPU vs mapa del Worker, misma rejilla
+      if (store.get().debug && store.get().torso && !gpuLost) {
+        // La lectura GPU es asíncrona: el mapa devuelto es el que se pidió en el tick
+        // anterior, así que se compara con la instantánea CPU de ese tick.
+        const cpu = cutMap.lastMap;
+        const gpu = cpu ? sim.gpuTissueMap(cpu) : null;
+        panel.setEquivalence(gpu && eqPrevCpu ? compareTissueGrids(eqPrevCpu.map, gpu) : null);
+        eqPrevCpu = cpu;
+      }
       panel.renderDebug();
       panel.sync();
     }

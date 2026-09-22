@@ -277,6 +277,22 @@ documenta su orden de prioridad y delega en `classifyWall`, `classifyTubes`, `cl
 TypeScript como el resto de herramientas; `CaseId` tipa el estado de UI (un id de caso inválido no
 compila; el `<select>` se valida con `isCaseId`).
 
+## 30. Comprobación en vivo de la equivalencia TS ↔ GLSL
+
+La regla «la anatomía TypeScript y la GLSL son la misma» era, hasta ahora, una inspección visual.
+En modo docente el bucle compara cada 250 ms el mapa de tejidos de la GPU (`FRAG_TISSUEMAP`, lectura
+asíncrona) con el del Worker (`AnatomyQuery`), en la MISMA rejilla (96 × 128 celdas del plano) y en
+el MISMO instante: el corte guarda con cada mapa la muestra fisiológica, el marco de la sonda y la
+profundidad con que se pidió, `Simulator.gpuTissueMap(at)` dibuja la GPU con esos mismos datos (y
+`tissueMap` sincroniza la textura de escena al calibre de ese instante), y el mapa GPU devuelto —que
+es el del tick anterior— se compara con la instantánea CPU de ese tick. `app/equivalenceCheck.ts`
+informa acuerdo total, acuerdo en celdas interiores (4 vecinos iguales) y los pares CPU→GPU más
+frecuentes; la pestaña Docente lo muestra. Resultado: **100,0 % de acuerdo** (total e interior) en las
+ventanas renal, intercostal y subxifoidea del caso congestivo con respiración profunda. Antes de
+sincronizar instante y calibre se veía 91–94 % con «pared venosa→sangre» en la cava pulsátil: era
+tiempo, no anatomía; ahora una divergencia real (un tejido nuevo sin `#define`, un recorte distinto)
+se ve de inmediato como pares CPU→GPU sistemáticos.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

@@ -7,7 +7,7 @@ import { lineAngle, lineCoupling, type ProbeFrame, type ProbePose, type Transduc
 import type { TransducerProfile } from './transducerProfile';
 import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
 import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
-import { GREY_CURVE } from './greyMap';
+import { GREY_CURVE, greyOfLevel } from './greyMap';
 import { GLProgram, bindTarget, createTarget, createTexture, deleteTarget, drawFullscreen, type RenderTarget } from './gl';
 import { GpuPassTimer, summarizeGpuTimings, type GpuFrameTimings } from './gpuTimer';
 import { FRAME_PASSES, type PassId } from './passGraph';
@@ -66,9 +66,25 @@ export const DEFAULT_BMODE: BModeSettings = {
   focusMm: 90,
   gainDb: 0,
   tgcDb: [0, 0, 0, 0, 0, 0, 0, 0],
-  dynamicRangeDb: 60,
+  // preajuste abdominal (decisión 53): 70 dB, como el equipo moderno de referencia
+  dynamicRangeDb: 70,
   persistence: 0.35,
 };
+
+/**
+ * Nivel de referencia de la presentación (dB): con 0 dB de ganancia y el rango por defecto deja el
+ * hígado a media escala (mediana ≈ 100 de gris, como en los equipos reales; decisión 53). Con −20 dB
+ * y 60 dB quedaba en 141–147, con el contraste de un moteado crudo.
+ */
+export const DISPLAY_REF_DB = -33;
+
+/**
+ * Prioridad del color: gris del modo B por encima del cual no se pinta el color (en un equipo es un
+ * umbral de gris). Se calibra para bloquear el mismo tejido que antes del preajuste: el que queda
+ * 6 dB por encima del nivel de referencia con la ganancia y el rango por defecto (0,62 con el
+ * preajuste anterior).
+ */
+export const COLOR_PRIORITY_GREY = greyOfLevel((6 + DISPLAY_REF_DB + DEFAULT_BMODE.dynamicRangeDb) / DEFAULT_BMODE.dynamicRangeDb);
 
 export const DEFAULT_COLOR: ColorSettings = {
   enabled: false,
@@ -600,7 +616,7 @@ export class UltrasoundRenderer {
     this.pScan.f('uHalfSector', tr.halfSector);
     this.pScan.f('uDepth', depth);
     this.pScan.f('uGainDb', inputs.bmode.gainDb);
-    this.pScan.f('uRefDb', -20);
+    this.pScan.f('uRefDb', DISPLAY_REF_DB);
     // Curva nominal: compensa la atenuación de ida y vuelta del hígado a la frecuencia B.
     this.pScan.f('uNominalTgcDbPerCm', 2 * attenuationDbPerCm(4, this.profile.bEffectiveMHz));
     this.pScan.f('uTgcCapDb', TGC_CAP_DB);
@@ -612,7 +628,7 @@ export class UltrasoundRenderer {
     this.pScan.v4('uBox', lb[0], lb[1], lb[2], lb[3]);
     this.pScan.f('uPrf', this.lastColorFrame?.prf ?? c.prfHz);
     this.pScan.f('uColorThreshold', COLOR_DISPLAY_THRESHOLD);
-    this.pScan.f('uColorPriority', 0.62);
+    this.pScan.f('uColorPriority', COLOR_PRIORITY_GREY);
     this.pScan.i('uColorInvert', c.invert ? 1 : 0);
     drawFullscreen(gl);
   }

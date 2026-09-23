@@ -56,3 +56,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [50](DECISIONS.md#L690) | El color comparte la transmisión del PW y su ganancia (en dB) alcanza el ruido del equipo | vigente |
 | [51](DECISIONS.md#L712) | Transiciones lentas en el volumen de muestra e invariantes de §21 sobre la señal | vigente |
 | [52](DECISIONS.md#L750) | La fidelidad del modo B se mide con un banco reproducible, en la envolvente y en la imagen mostrada | vigente |
+| [53](DECISIONS.md#L806) | Preajuste abdominal: 70 dB y el hígado a media escala | vigente |

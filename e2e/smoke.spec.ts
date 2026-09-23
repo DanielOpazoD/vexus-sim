@@ -163,11 +163,16 @@ test('el banco de fidelidad mide el moteado del hígado despejado como un campo 
     expect(b.fwhmLateralMm / b.beamFwhmMm, JSON.stringify(b)).toBeGreaterThan(0.8);
     expect(b.fwhmLateralMm / b.beamFwhmMm, JSON.stringify(b)).toBeLessThan(1.25);
   }
-  // la imagen mostrada se lee con la orientación correcta: la máscara del hígado cae en hígado
+  // la imagen mostrada se lee con la orientación correcta (la máscara del hígado cae en hígado) y el
+  // preajuste abdominal (decisión 53) deja el hígado a media escala: mediana 99–103, desviación 16
+  // con GPU real; la luz, casi negra
   const d = s.display!;
-  expect(d.liver.pixels, JSON.stringify(d.liver)).toBeGreaterThan(1000);
-  expect(d.liver.p50, JSON.stringify(d.liver)).toBeGreaterThan(100);
-  expect(d.liver.p50, JSON.stringify(d.liver)).toBeLessThan(190);
+  const dtag = JSON.stringify({ liver: d.liver, lumen: d.lumen });
+  expect(d.liver.pixels, dtag).toBeGreaterThan(1000);
+  expect(d.liver.p50, dtag).toBeGreaterThan(85);
+  expect(d.liver.p50, dtag).toBeLessThan(120);
+  expect(d.liver.sd, dtag).toBeLessThan(19);
+  expect(d.lumen.p50, dtag).toBeLessThan(30);
   expect(d.colorOn).toBe(false);
   expect(errors).toEqual([]);
 });

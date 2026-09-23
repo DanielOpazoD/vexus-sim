@@ -9,7 +9,7 @@ import {
   type EnvelopeGeometry,
 } from '../app/fidelity';
 import { greyOfLevel, levelOfGrey } from '../ultrasound/greyMap';
-import type { DisplayFrame } from '../ultrasound/renderer';
+import { COLOR_PRIORITY_GREY, DEFAULT_BMODE, DISPLAY_REF_DB, type DisplayFrame } from '../ultrasound/renderer';
 import { detect, psf, whiteField } from './syntheticSpeckle';
 
 /**
@@ -98,6 +98,23 @@ describe('banco de fidelidad: textura de la envolvente', () => {
     expect(secondaryLobe([1, 0.6, 0.2, -0.1, 0.3, 0.1])).toBeCloseTo(0.3, 10);
     expect(secondaryLobe([1, 0.4, 0.1, 0])).toBe(0);
     expect(secondaryLobe([1, 0.9, 0.7])).toBeNaN();
+  });
+});
+
+describe('preajuste abdominal (decisión 53)', () => {
+  it('el hígado queda a media escala: 70 dB y referencia −33 dB', () => {
+    expect(DEFAULT_BMODE.dynamicRangeDb).toBe(70);
+    // la mediana del hígado estaba 16,5 dB bajo el techo con −20 dB y 60 dB (gris 144); ahora, 29,5
+    expect(greyOfLevel((-16.5 - 13 + 70) / 70) * 255).toBeGreaterThan(90);
+    expect(greyOfLevel((-16.5 - 13 + 70) / 70) * 255).toBeLessThan(110);
+    expect(DISPLAY_REF_DB).toBe(-33);
+  });
+
+  it('la prioridad del color bloquea el mismo tejido que antes: 6 dB sobre la referencia', () => {
+    // con el preajuste anterior (−20 dB, 60 dB) la misma fórmula da el 0,62 de siempre
+    expect(greyOfLevel((6 - 20 + 60) / 60)).toBeCloseTo(0.62, 2);
+    expect(COLOR_PRIORITY_GREY).toBeCloseTo(greyOfLevel((6 + DISPLAY_REF_DB + 70) / 70), 12);
+    expect(COLOR_PRIORITY_GREY).toBeCloseTo(0.434, 3);
   });
 });
 

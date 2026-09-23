@@ -1,13 +1,13 @@
 {
- "commit": "c6a3178",
- "arbolSrc": "192801170053c8ce203b86f1b9730271303ba8da",
+ "commit": "afd08b9",
+ "arbolSrc": "4de3821c187986e8763f43ab7f41fd308ac260b9",
  "srcSinCommit": false,
  "fecha": "2026-09-23",
  "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
  "url": "http://localhost:6600",
  "escenas": {
   "normal-adult/subxiphoid": {
-   "fps": 45,
+   "fps": 48,
    "stats": {
     "envelope": {
      "patches": 29,
@@ -18,7 +18,7 @@
      "secondaryLobeAxial": 0.056,
      "secondaryLobeLateral": 0.056,
      "darkFraction": 0.065,
-     "crackIndex": 0.089
+     "crackIndex": 0.083
     },
     "bands": [
      {
@@ -30,7 +30,7 @@
       "secondaryLobeAxial": 0.074,
       "secondaryLobeLateral": 0.082,
       "darkFraction": 0.064,
-      "crackIndex": 0.1,
+      "crackIndex": 0.099,
       "r0": 20,
       "r1": 60,
       "beamFwhmMm": 1.422
@@ -41,7 +41,7 @@
       "snr": 1.888,
       "fwhmAxialMm": 0.698,
       "fwhmLateralMm": 1.481,
-      "secondaryLobeAxial": 0.053,
+      "secondaryLobeAxial": 0.052,
       "secondaryLobeLateral": 0.053,
       "darkFraction": 0.068,
       "crackIndex": 0.07,
@@ -80,100 +80,110 @@
     ],
     "display": {
      "liver": {
-      "pixels": 63334,
-      "mean": 141.708,
-      "sd": 22.693,
-      "p05": 103,
-      "p50": 143,
-      "p95": 178,
-      "darkFraction": 0.001
+      "pixels": 62993,
+      "mean": 99.442,
+      "sd": 15.666,
+      "p05": 73,
+      "p50": 100,
+      "p95": 124,
+      "darkFraction": 0.002
      },
+     "lumen": {
+      "pixels": 19879,
+      "mean": 11.256,
+      "sd": 10.687,
+      "p05": 1,
+      "p50": 9,
+      "p95": 26,
+      "darkFraction": 0.28
+     },
+     "diaphragmSaturated": 0,
      "profile": {
       "bands": [
        {
         "r0": 20,
         "r1": 30,
-        "db": -17.243,
+        "db": -30.247,
         "pixels": 1382
        },
        {
         "r0": 30,
         "r1": 40,
-        "db": -16.987,
+        "db": -29.987,
         "pixels": 5779
        },
        {
         "r0": 40,
         "r1": 50,
-        "db": -16.765,
+        "db": -29.764,
         "pixels": 7739
        },
        {
         "r0": 50,
         "r1": 60,
-        "db": -17.199,
+        "db": -30.198,
         "pixels": 7521
        },
        {
         "r0": 60,
         "r1": 70,
-        "db": -17.169,
+        "db": -30.166,
         "pixels": 9340
        },
        {
         "r0": 70,
         "r1": 80,
-        "db": -17.619,
+        "db": -30.617,
         "pixels": 10267
        },
        {
         "r0": 80,
         "r1": 90,
-        "db": -17.221,
+        "db": -30.223,
         "pixels": 9022
        },
        {
         "r0": 90,
         "r1": 100,
-        "db": -16.894,
+        "db": -29.894,
         "pixels": 6494
        },
        {
         "r0": 100,
         "r1": 110,
-        "db": -17.169,
-        "pixels": 4283
+        "db": -30.109,
+        "pixels": 4089
        },
        {
         "r0": 110,
         "r1": 120,
-        "db": -16.379,
-        "pixels": 1458
+        "db": -29.328,
+        "pixels": 1311
        }
       ],
-      "slopeDbPerCm": -0.013
+      "slopeDbPerCm": -0.011
      },
      "walls": [
       {
        "fromDeg": 0,
        "toDeg": 20,
-       "walls": 0,
-       "ratio": null,
-       "deltaDb": null
+       "walls": 1,
+       "ratio": 1.258,
+       "deltaDb": 6.39
       },
       {
        "fromDeg": 20,
        "toDeg": 40,
        "walls": 90,
-       "ratio": 1.109,
-       "deltaDb": 2.741
+       "ratio": 1.104,
+       "deltaDb": 2.693
       },
       {
        "fromDeg": 40,
        "toDeg": 60,
        "walls": 2,
-       "ratio": 1.167,
-       "deltaDb": 4.241
+       "ratio": 1.162,
+       "deltaDb": 4.248
       }
      ],
      "colorOn": false
@@ -182,18 +192,18 @@
    "errors": []
   },
   "normal-adult/intercostal": {
-   "fps": 56,
+   "fps": 60,
    "stats": {
     "envelope": {
-     "patches": 19,
-     "depthMm": 84.153,
-     "snr": 1.923,
-     "fwhmAxialMm": 0.698,
-     "fwhmLateralMm": 1.79,
-     "secondaryLobeAxial": 0.039,
-     "secondaryLobeLateral": 0.057,
-     "darkFraction": 0.069,
-     "crackIndex": 0.082
+     "patches": 18,
+     "depthMm": 85.313,
+     "snr": 1.926,
+     "fwhmAxialMm": 0.696,
+     "fwhmLateralMm": 1.838,
+     "secondaryLobeAxial": 0.035,
+     "secondaryLobeLateral": 0.064,
+     "darkFraction": 0.068,
+     "crackIndex": 0.071
     },
     "bands": [
      {
@@ -203,8 +213,8 @@
       "fwhmAxialMm": 0.694,
       "fwhmLateralMm": 1.564,
       "secondaryLobeAxial": 0.039,
-      "secondaryLobeLateral": 0.123,
-      "darkFraction": 0.069,
+      "secondaryLobeLateral": 0.124,
+      "darkFraction": 0.07,
       "crackIndex": 0.064,
       "r0": 20,
       "r1": 60,
@@ -215,9 +225,9 @@
       "depthMm": 80.156,
       "snr": 2,
       "fwhmAxialMm": 0.671,
-      "fwhmLateralMm": 1.296,
-      "secondaryLobeAxial": 0.079,
-      "secondaryLobeLateral": 0.031,
+      "fwhmLateralMm": 1.295,
+      "secondaryLobeAxial": 0.08,
+      "secondaryLobeLateral": 0.03,
       "darkFraction": 0.063,
       "crackIndex": 0.021,
       "r0": 60,
@@ -227,13 +237,13 @@
      {
       "patches": 3,
       "depthMm": 119.531,
-      "snr": 1.884,
-      "fwhmAxialMm": 0.756,
-      "fwhmLateralMm": 2.654,
-      "secondaryLobeAxial": 0.077,
+      "snr": 1.877,
+      "fwhmAxialMm": 0.758,
+      "fwhmLateralMm": 2.651,
+      "secondaryLobeAxial": 0.081,
       "secondaryLobeLateral": 0.086,
-      "darkFraction": 0.079,
-      "crackIndex": 0.115,
+      "darkFraction": 0.076,
+      "crackIndex": 0.046,
       "r0": 100,
       "r1": 140,
       "beamFwhmMm": 2.519
@@ -241,12 +251,12 @@
      {
       "patches": 1,
       "depthMm": 147.656,
-      "snr": 1.795,
-      "fwhmAxialMm": 0.887,
-      "fwhmLateralMm": 3.244,
-      "secondaryLobeAxial": 0.375,
-      "secondaryLobeLateral": 0.013,
-      "darkFraction": 0.077,
+      "snr": 1.79,
+      "fwhmAxialMm": 0.895,
+      "fwhmLateralMm": 3.26,
+      "secondaryLobeAxial": 0.38,
+      "secondaryLobeLateral": 0,
+      "darkFraction": 0.081,
       "crackIndex": 0,
       "r0": 140,
       "r1": 180,
@@ -255,96 +265,106 @@
     ],
     "display": {
      "liver": {
-      "pixels": 38547,
-      "mean": 140.498,
-      "sd": 23.287,
-      "p05": 101,
-      "p50": 141,
-      "p95": 178,
-      "darkFraction": 0.001
+      "pixels": 38339,
+      "mean": 98.615,
+      "sd": 16.082,
+      "p05": 71,
+      "p50": 99,
+      "p95": 124,
+      "darkFraction": 0.002
      },
+     "lumen": {
+      "pixels": 2806,
+      "mean": 28.116,
+      "sd": 25.603,
+      "p05": 0,
+      "p50": 20,
+      "p95": 72,
+      "darkFraction": 0.454
+     },
+     "diaphragmSaturated": 0,
      "profile": {
       "bands": [
        {
         "r0": 30,
         "r1": 40,
-        "db": -17.208,
+        "db": -30.21,
         "pixels": 3202
        },
        {
         "r0": 40,
         "r1": 50,
-        "db": -16.51,
+        "db": -29.511,
         "pixels": 5971
        },
        {
         "r0": 50,
         "r1": 60,
-        "db": -17.112,
-        "pixels": 6032
+        "db": -30.117,
+        "pixels": 5983
        },
        {
         "r0": 60,
         "r1": 70,
-        "db": -17.665,
-        "pixels": 4539
+        "db": -30.662,
+        "pixels": 4526
        },
        {
         "r0": 70,
         "r1": 80,
-        "db": -16.784,
-        "pixels": 3191
+        "db": -29.782,
+        "pixels": 3185
        },
        {
         "r0": 80,
         "r1": 90,
-        "db": -17.448,
-        "pixels": 2830
+        "db": -30.412,
+        "pixels": 2777
        },
        {
         "r0": 90,
         "r1": 100,
-        "db": -17.339,
-        "pixels": 2852
+        "db": -30.341,
+        "pixels": 2839
        },
        {
         "r0": 100,
         "r1": 110,
-        "db": -19.01,
-        "pixels": 1762
+        "db": -32.01,
+        "pixels": 1688
        },
        {
         "r0": 110,
         "r1": 120,
-        "db": -18.05,
+        "db": -31.054,
         "pixels": 1755
        },
        {
         "r0": 120,
         "r1": 130,
-        "db": -17.742,
+        "db": -30.764,
         "pixels": 1845
        },
        {
         "r0": 130,
         "r1": 140,
-        "db": -18.3,
+        "db": -31.292,
         "pixels": 1926
        },
        {
         "r0": 140,
         "r1": 150,
-        "db": -17.77,
+        "db": -30.711,
         "pixels": 2053
        },
        {
         "r0": 150,
         "r1": 160,
-        "db": -18.582,
+        "db": -31.567,
         "pixels": 589
        }
       ],
-      "slopeDbPerCm": -0.132
+      "slopeDbPerCm": -0.129
      },
      "walls": [
       {
@@ -358,15 +378,15 @@
        "fromDeg": 20,
        "toDeg": 40,
        "walls": 24,
-       "ratio": 1.144,
-       "deltaDb": 3.599
+       "ratio": 1.158,
+       "deltaDb": 4.097
       },
       {
        "fromDeg": 40,
        "toDeg": 60,
-       "walls": 28,
-       "ratio": 1.127,
-       "deltaDb": 3.209
+       "walls": 30,
+       "ratio": 1.129,
+       "deltaDb": 3.356
       }
      ],
      "colorOn": false
@@ -375,7 +395,7 @@
    "errors": []
   },
   "normal-adult/flank": {
-   "fps": 52,
+   "fps": 49,
    "stats": {
     "envelope": {
      "patches": 0,
@@ -448,106 +468,116 @@
     ],
     "display": {
      "liver": {
-      "pixels": 25226,
-      "mean": 144.294,
-      "sd": 22.868,
-      "p05": 106,
-      "p50": 145,
-      "p95": 181,
+      "pixels": 25247,
+      "mean": 101.204,
+      "sd": 15.769,
+      "p05": 74,
+      "p50": 102,
+      "p95": 126,
       "darkFraction": 0.001
      },
+     "lumen": {
+      "pixels": 28091,
+      "mean": 34.316,
+      "sd": 25.941,
+      "p05": 8,
+      "p50": 24,
+      "p95": 90,
+      "darkFraction": 0.28
+     },
+     "diaphragmSaturated": 0,
      "profile": {
       "bands": [
        {
         "r0": 30,
         "r1": 40,
-        "db": -17.162,
+        "db": -30.16,
         "pixels": 1755
        },
        {
         "r0": 40,
         "r1": 50,
-        "db": -16.986,
+        "db": -29.984,
         "pixels": 3680
        },
        {
         "r0": 50,
         "r1": 60,
-        "db": -16.325,
+        "db": -29.326,
         "pixels": 3703
        },
        {
         "r0": 60,
         "r1": 70,
-        "db": -16.864,
-        "pixels": 3251
+        "db": -29.872,
+        "pixels": 3261
        },
        {
         "r0": 70,
         "r1": 80,
-        "db": -16.7,
+        "db": -29.702,
         "pixels": 2534
        },
        {
         "r0": 80,
         "r1": 90,
-        "db": -16.024,
+        "db": -29.021,
         "pixels": 2321
        },
        {
         "r0": 90,
         "r1": 100,
-        "db": -16.342,
+        "db": -29.34,
         "pixels": 2138
        },
        {
         "r0": 100,
         "r1": 110,
-        "db": -17.129,
+        "db": -30.131,
         "pixels": 2241
        },
        {
         "r0": 110,
         "r1": 120,
-        "db": -16.338,
-        "pixels": 2201
+        "db": -29.345,
+        "pixels": 2206
        },
        {
         "r0": 120,
         "r1": 130,
-        "db": -17.002,
+        "db": -30.014,
         "pixels": 1138
        },
        {
         "r0": 130,
         "r1": 140,
-        "db": -16.209,
-        "pixels": 264
+        "db": -29.193,
+        "pixels": 270
        }
       ],
-      "slopeDbPerCm": 0.036
+      "slopeDbPerCm": 0.035
      },
      "walls": [
       {
        "fromDeg": 0,
        "toDeg": 20,
        "walls": 25,
-       "ratio": 1.163,
-       "deltaDb": 4.102
+       "ratio": 1.153,
+       "deltaDb": 4.116
       },
       {
        "fromDeg": 20,
        "toDeg": 40,
-       "walls": 9,
-       "ratio": 1.047,
-       "deltaDb": 1.239
+       "walls": 10,
+       "ratio": 1.048,
+       "deltaDb": 1.29
       },
       {
        "fromDeg": 40,
        "toDeg": 60,
        "walls": 5,
-       "ratio": 1.323,
-       "deltaDb": 7.507
+       "ratio": 1.192,
+       "deltaDb": 4.88
       }
      ],
      "colorOn": false
@@ -556,7 +586,7 @@
    "errors": []
   },
   "normal-adult/renal": {
-   "fps": 41,
+   "fps": 56,
    "stats": {
     "envelope": {
      "patches": 0,
@@ -629,48 +659,58 @@
     ],
     "display": {
      "liver": {
-      "pixels": 4957,
-      "mean": 144.744,
-      "sd": 23.028,
-      "p05": 105,
-      "p50": 146,
-      "p95": 180,
+      "pixels": 5755,
+      "mean": 101.438,
+      "sd": 15.983,
+      "p05": 74,
+      "p50": 102,
+      "p95": 126,
       "darkFraction": 0.001
      },
+     "lumen": {
+      "pixels": 17594,
+      "mean": 32.413,
+      "sd": 28.437,
+      "p05": 2,
+      "p50": 21,
+      "p95": 88,
+      "darkFraction": 0.433
+     },
+     "diaphragmSaturated": null,
      "profile": {
       "bands": [
        {
         "r0": 100,
         "r1": 110,
-        "db": -16.88,
+        "db": -29.879,
         "pixels": 983
        },
        {
         "r0": 110,
         "r1": 120,
-        "db": -17.101,
-        "pixels": 1375
+        "db": -30.176,
+        "pixels": 1503
        },
        {
         "r0": 120,
         "r1": 130,
-        "db": -16.299,
-        "pixels": 1070
+        "db": -29.393,
+        "pixels": 1350
        },
        {
         "r0": 130,
         "r1": 140,
-        "db": -16.189,
-        "pixels": 1375
+        "db": -29.165,
+        "pixels": 1740
        },
        {
         "r0": 140,
         "r1": 150,
-        "db": -15.528,
-        "pixels": 154
+        "db": -29.232,
+        "pixels": 179
        }
       ],
-      "slopeDbPerCm": 0.321
+      "slopeDbPerCm": 0.303
      },
      "walls": [
       {
@@ -701,7 +741,7 @@
    "errors": []
   },
   "severe-congestion/subxiphoid": {
-   "fps": 45,
+   "fps": 53,
    "stats": {
     "envelope": {
      "patches": 34,
@@ -738,7 +778,7 @@
       "secondaryLobeAxial": 0.066,
       "secondaryLobeLateral": 0,
       "darkFraction": 0.071,
-      "crackIndex": 0.106,
+      "crackIndex": 0.115,
       "r0": 60,
       "r1": 100,
       "beamFwhmMm": 1.575
@@ -774,100 +814,110 @@
     ],
     "display": {
      "liver": {
-      "pixels": 62883,
-      "mean": 143.224,
-      "sd": 23.238,
-      "p05": 104,
-      "p50": 144,
-      "p95": 180,
+      "pixels": 62901,
+      "mean": 100.473,
+      "sd": 16.029,
+      "p05": 73,
+      "p50": 101,
+      "p95": 126,
       "darkFraction": 0.002
      },
+     "lumen": {
+      "pixels": 34503,
+      "mean": 11.619,
+      "sd": 9.069,
+      "p05": 1,
+      "p50": 10,
+      "p95": 25,
+      "darkFraction": 0.246
+     },
+     "diaphragmSaturated": 0,
      "profile": {
       "bands": [
        {
         "r0": 20,
         "r1": 30,
-        "db": -16.611,
+        "db": -29.608,
         "pixels": 1150
        },
        {
         "r0": 30,
         "r1": 40,
-        "db": -16.883,
+        "db": -29.882,
         "pixels": 5547
        },
        {
         "r0": 40,
         "r1": 50,
-        "db": -17.122,
+        "db": -30.121,
         "pixels": 7979
        },
        {
         "r0": 50,
         "r1": 60,
-        "db": -16.683,
+        "db": -29.685,
         "pixels": 8802
        },
        {
         "r0": 60,
         "r1": 70,
-        "db": -16.537,
+        "db": -29.535,
         "pixels": 9722
        },
        {
         "r0": 70,
         "r1": 80,
-        "db": -16.932,
+        "db": -29.929,
         "pixels": 10470
        },
        {
         "r0": 80,
         "r1": 90,
-        "db": -17.183,
+        "db": -30.182,
         "pixels": 9131
        },
        {
         "r0": 90,
         "r1": 100,
-        "db": -17.05,
-        "pixels": 6108
+        "db": -30.04,
+        "pixels": 6129
        },
        {
         "r0": 100,
         "r1": 110,
-        "db": -16.551,
+        "db": -29.549,
         "pixels": 3311
        },
        {
         "r0": 110,
         "r1": 120,
-        "db": -16.284,
-        "pixels": 663
+        "db": -29.292,
+        "pixels": 660
        }
       ],
-      "slopeDbPerCm": -0.008
+      "slopeDbPerCm": -0.007
      },
      "walls": [
       {
        "fromDeg": 0,
        "toDeg": 20,
-       "walls": 3,
-       "ratio": 1.192,
-       "deltaDb": 4.859
+       "walls": 2,
+       "ratio": 1.243,
+       "deltaDb": 6.186
       },
       {
        "fromDeg": 20,
        "toDeg": 40,
-       "walls": 21,
-       "ratio": 1.111,
-       "deltaDb": 2.78
+       "walls": 37,
+       "ratio": 1.076,
+       "deltaDb": 2.048
       },
       {
        "fromDeg": 40,
        "toDeg": 60,
-       "walls": 2,
-       "ratio": 1.06,
-       "deltaDb": 1.586
+       "walls": 3,
+       "ratio": 1.053,
+       "deltaDb": 1.366
       }
      ],
      "colorOn": false
@@ -876,17 +926,17 @@
    "errors": []
   },
   "severe-congestion/intercostal": {
-   "fps": 52,
+   "fps": 56,
    "stats": {
     "envelope": {
      "patches": 15,
      "depthMm": 80.719,
-     "snr": 1.933,
+     "snr": 1.931,
      "fwhmAxialMm": 0.681,
-     "fwhmLateralMm": 1.843,
+     "fwhmLateralMm": 1.846,
      "secondaryLobeAxial": 0.02,
-     "secondaryLobeLateral": 0.032,
-     "darkFraction": 0.07,
+     "secondaryLobeLateral": 0.031,
+     "darkFraction": 0.069,
      "crackIndex": 0.055
     },
     "bands": [
@@ -899,7 +949,7 @@
       "secondaryLobeAxial": 0.032,
       "secondaryLobeLateral": 0,
       "darkFraction": 0.069,
-      "crackIndex": 0.029,
+      "crackIndex": 0.03,
       "r0": 20,
       "r1": 60,
       "beamFwhmMm": 1.419
@@ -907,13 +957,13 @@
      {
       "patches": 2,
       "depthMm": 75.938,
-      "snr": 1.95,
-      "fwhmAxialMm": 0.687,
-      "fwhmLateralMm": 1.435,
-      "secondaryLobeAxial": 0.106,
-      "secondaryLobeLateral": 0.12,
-      "darkFraction": 0.064,
-      "crackIndex": 0.082,
+      "snr": 1.951,
+      "fwhmAxialMm": 0.686,
+      "fwhmLateralMm": 1.432,
+      "secondaryLobeAxial": 0.104,
+      "secondaryLobeLateral": 0.119,
+      "darkFraction": 0.065,
+      "crackIndex": 0.08,
       "r0": 60,
       "r1": 100,
       "beamFwhmMm": 1.567
@@ -921,13 +971,13 @@
      {
       "patches": 3,
       "depthMm": 119.531,
-      "snr": 1.947,
-      "fwhmAxialMm": 0.665,
-      "fwhmLateralMm": 2.518,
-      "secondaryLobeAxial": 0.024,
-      "secondaryLobeLateral": 0.072,
-      "darkFraction": 0.068,
-      "crackIndex": 0.154,
+      "snr": 1.937,
+      "fwhmAxialMm": 0.668,
+      "fwhmLateralMm": 2.531,
+      "secondaryLobeAxial": 0.029,
+      "secondaryLobeLateral": 0.074,
+      "darkFraction": 0.067,
+      "crackIndex": 0.155,
       "r0": 100,
       "r1": 140,
       "beamFwhmMm": 2.519
@@ -935,12 +985,12 @@
      {
       "patches": 1,
       "depthMm": 147.656,
-      "snr": 1.895,
-      "fwhmAxialMm": 0.722,
-      "fwhmLateralMm": 3.251,
-      "secondaryLobeAxial": 0.029,
+      "snr": 1.89,
+      "fwhmAxialMm": 0.726,
+      "fwhmLateralMm": 3.258,
+      "secondaryLobeAxial": 0.033,
       "secondaryLobeLateral": 0,
-      "darkFraction": 0.07,
+      "darkFraction": 0.064,
       "crackIndex": 0,
       "r0": 140,
       "r1": 180,
@@ -949,60 +999,70 @@
     ],
     "display": {
      "liver": {
-      "pixels": 21634,
-      "mean": 142.265,
-      "sd": 22.865,
-      "p05": 103,
-      "p50": 143,
-      "p95": 178,
+      "pixels": 22386,
+      "mean": 99.934,
+      "sd": 15.75,
+      "p05": 73,
+      "p50": 101,
+      "p95": 124,
       "darkFraction": 0.002
      },
+     "lumen": {
+      "pixels": 9461,
+      "mean": 24.674,
+      "sd": 29.55,
+      "p05": 0,
+      "p50": 8,
+      "p95": 82,
+      "darkFraction": 0.588
+     },
+     "diaphragmSaturated": 0,
      "profile": {
       "bands": [
        {
         "r0": 30,
         "r1": 40,
-        "db": -17.11,
+        "db": -30.109,
         "pixels": 2805
        },
        {
         "r0": 40,
         "r1": 50,
-        "db": -16.859,
+        "db": -29.859,
         "pixels": 5791
        },
        {
         "r0": 50,
         "r1": 60,
-        "db": -17.41,
-        "pixels": 5076
+        "db": -30.376,
+        "pixels": 5249
        },
        {
         "r0": 60,
         "r1": 70,
-        "db": -17.079,
-        "pixels": 3309
+        "db": -30.059,
+        "pixels": 3478
        },
        {
         "r0": 70,
         "r1": 80,
-        "db": -17.077,
-        "pixels": 2248
+        "db": -30.01,
+        "pixels": 2323
        },
        {
         "r0": 80,
         "r1": 90,
-        "db": -16.271,
-        "pixels": 1707
+        "db": -29.284,
+        "pixels": 1846
        },
        {
         "r0": 90,
         "r1": 100,
-        "db": -17.213,
-        "pixels": 698
+        "db": -29.804,
+        "pixels": 885
        }
       ],
-      "slopeDbPerCm": 0.046
+      "slopeDbPerCm": 0.072
      },
      "walls": [
       {
@@ -1015,16 +1075,16 @@
       {
        "fromDeg": 20,
        "toDeg": 40,
-       "walls": 40,
-       "ratio": 1.15,
-       "deltaDb": 3.753
+       "walls": 37,
+       "ratio": 1.097,
+       "deltaDb": 2.595
       },
       {
        "fromDeg": 40,
        "toDeg": 60,
-       "walls": 40,
-       "ratio": 1.136,
-       "deltaDb": 3.36
+       "walls": 38,
+       "ratio": 1.101,
+       "deltaDb": 2.733
       }
      ],
      "colorOn": false
@@ -1033,7 +1093,7 @@
    "errors": []
   },
   "severe-congestion/flank": {
-   "fps": 49,
+   "fps": 52,
    "stats": {
     "envelope": {
      "patches": 3,
@@ -1051,7 +1111,7 @@
       "patches": 2,
       "depthMm": 50.625,
       "snr": 1.996,
-      "fwhmAxialMm": 0.693,
+      "fwhmAxialMm": 0.694,
       "fwhmLateralMm": 1.262,
       "secondaryLobeAxial": 0.06,
       "secondaryLobeLateral": 0.092,
@@ -1106,100 +1166,110 @@
     ],
     "display": {
      "liver": {
-      "pixels": 31515,
-      "mean": 146.033,
-      "sd": 23.089,
-      "p05": 107,
-      "p50": 147,
-      "p95": 183,
+      "pixels": 31820,
+      "mean": 102.446,
+      "sd": 15.894,
+      "p05": 75,
+      "p50": 103,
+      "p95": 127,
       "darkFraction": 0.001
      },
+     "lumen": {
+      "pixels": 38085,
+      "mean": 31.197,
+      "sd": 25.552,
+      "p05": 6,
+      "p50": 23,
+      "p95": 91,
+      "darkFraction": 0.241
+     },
+     "diaphragmSaturated": 0,
      "profile": {
       "bands": [
        {
         "r0": 30,
         "r1": 40,
-        "db": -17.46,
+        "db": -30.46,
         "pixels": 1443
        },
        {
         "r0": 40,
         "r1": 50,
-        "db": -16.048,
+        "db": -29.048,
         "pixels": 4741
        },
        {
         "r0": 50,
         "r1": 60,
-        "db": -16.45,
-        "pixels": 4870
+        "db": -29.451,
+        "pixels": 4901
        },
        {
         "r0": 60,
         "r1": 70,
-        "db": -16.47,
-        "pixels": 4012
+        "db": -29.44,
+        "pixels": 4060
        },
        {
         "r0": 70,
         "r1": 80,
-        "db": -16.366,
+        "db": -29.364,
         "pixels": 3696
        },
        {
         "r0": 80,
         "r1": 90,
-        "db": -16.128,
+        "db": -29.129,
         "pixels": 3248
        },
        {
         "r0": 90,
         "r1": 100,
-        "db": -17.087,
+        "db": -30.085,
         "pixels": 2855
        },
        {
         "r0": 100,
         "r1": 110,
-        "db": -16.205,
-        "pixels": 2997
+        "db": -29.216,
+        "pixels": 3037
        },
        {
         "r0": 110,
         "r1": 120,
-        "db": -15.769,
-        "pixels": 2915
+        "db": -28.738,
+        "pixels": 3005
        },
        {
         "r0": 120,
         "r1": 130,
-        "db": -15.16,
-        "pixels": 684
+        "db": -28.129,
+        "pixels": 780
        }
       ],
-      "slopeDbPerCm": 0.063
+      "slopeDbPerCm": 0.067
      },
      "walls": [
       {
        "fromDeg": 0,
        "toDeg": 20,
-       "walls": 35,
-       "ratio": 1.143,
-       "deltaDb": 3.582
+       "walls": 34,
+       "ratio": 1.135,
+       "deltaDb": 3.65
       },
       {
        "fromDeg": 20,
        "toDeg": 40,
        "walls": 6,
-       "ratio": 1.007,
-       "deltaDb": 0.178
+       "ratio": 1.01,
+       "deltaDb": 0.261
       },
       {
        "fromDeg": 40,
        "toDeg": 60,
        "walls": 14,
-       "ratio": 1.053,
-       "deltaDb": 1.407
+       "ratio": 1.087,
+       "deltaDb": 2.31
       }
      ],
      "colorOn": false
@@ -1208,7 +1278,7 @@
    "errors": []
   },
   "severe-congestion/renal": {
-   "fps": 45,
+   "fps": 56,
    "stats": {
     "envelope": {
      "patches": 0,
@@ -1281,21 +1351,31 @@
     ],
     "display": {
      "liver": {
-      "pixels": 1226,
-      "mean": 139.498,
-      "sd": 22.786,
-      "p05": 101,
-      "p50": 141,
-      "p95": 175,
+      "pixels": 1432,
+      "mean": 98.414,
+      "sd": 15.463,
+      "p05": 72,
+      "p50": 100,
+      "p95": 123,
       "darkFraction": 0.002
      },
+     "lumen": {
+      "pixels": 29931,
+      "mean": 24.234,
+      "sd": 26.178,
+      "p05": 2,
+      "p50": 14,
+      "p95": 85,
+      "darkFraction": 0.457
+     },
+     "diaphragmSaturated": null,
      "profile": {
       "bands": [
        {
         "r0": 100,
         "r1": 110,
-        "db": -17.587,
-        "pixels": 1174
+        "db": -30.451,
+        "pixels": 1310
        }
       ],
       "slopeDbPerCm": null
@@ -1311,16 +1391,16 @@
       {
        "fromDeg": 20,
        "toDeg": 40,
-       "walls": 10,
-       "ratio": 1.037,
-       "deltaDb": 0.998
+       "walls": 9,
+       "ratio": 1.019,
+       "deltaDb": 0.52
       },
       {
        "fromDeg": 40,
        "toDeg": 60,
        "walls": 11,
-       "ratio": 1.209,
-       "deltaDb": 5.24
+       "ratio": 1.14,
+       "deltaDb": 3.728
       }
      ],
      "colorOn": false

@@ -803,6 +803,36 @@ adversarial encontró cinco defectos antes del PR (normal de pared falsa, refuer
 vasos dentro de la máscara, NaN convertidos en 0 y pruebas que no los veían); este registro describe
 el banco ya corregido.
 
+## 53. Preajuste abdominal: 70 dB y el hígado a media escala
+
+**Contexto.** El banco de fidelidad (decisión 52) mostró que la textura que delató las 21 imágenes de
+la prueba ciega no sale de la física del moteado (la envolvente es la de un campo ideal) sino de la
+presentación: con 60 dB de rango y la referencia en −20 dB, el hígado quedaba en una mediana de
+141–147 de gris con desviación 22–23, y cada cero del moteado se veía como una línea oscura sobre
+fondo claro. En los equipos modernos de referencia el hígado está a 52–112 con desviación 10–16, y el
+Toshiba muestra 70 dB en pantalla.
+**Opciones.** Bajar la ganancia por defecto (el deslizador en −13 dB de salida confunde al alumno y
+deja menos recorrido hacia abajo); cambiar la curva de grises (la exponencial es la de EchoTwin,
+decisión 90, y a media escala es casi lineal); filtro de reducción de moteado (cosmético, lo prohíbe
+§23).
+**Decisión.** `DEFAULT_BMODE.dynamicRangeDb` = 70 y `DISPLAY_REF_DB` = −33 (antes −20 literal): con la
+ganancia a 0 dB el hígado queda a media escala. La prioridad del color sigue siendo un umbral de gris,
+como en un equipo, pero se deriva de las constantes (`COLOR_PRIORITY_GREY`: el gris del nivel 6 dB
+sobre la referencia con el rango por defecto) para bloquear el mismo tejido que antes; la misma
+fórmula da el 0,62 del preajuste anterior. La persistencia se queda en 8 bits: en una escena quieta
+el filtro converge al valor exacto con un error ≤ 1 nivel de gris, y pasar a RGBA16F duplicaría la
+memoria de vídeo de los tres destinos a pantalla completa.
+**Consecuencias.** Banco antes → después (M4, densidad 2): hígado 141–147 → 99–103 de gris;
+desviación 22–23 → 15–16 (ya en el rango de los equipos modernos sin composición espacial); luz
+vascular 14–37 → 7–24; la envolvente, la pendiente en profundidad (−0,13 a +0,29 dB/cm), el diafragma
+(nunca saturado) y los cps no cambian. Color sobre la suprahepática desde la ventana intercostal: cubre
+el 91 % de la sangre de la caja (95 % antes, dentro de la variación entre cuadros) y el 0,07 % del
+hígado (0,45 % antes). El HUD muestra «RD 70». La luz sigue algo gris (sangre a −31 dB del hígado):
+queda para el moteado por tejido.
+**Verificación.** `fidelity.test.ts` (el hígado a media escala con estas constantes; la prioridad
+reproduce el 0,62 anterior); la e2e del banco exige hígado 85–120 de gris con desviación < 19 y luz
+< 30; banco completo antes y después en `docs/fidelity/`.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

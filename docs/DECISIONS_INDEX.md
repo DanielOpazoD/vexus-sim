@@ -54,3 +54,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [48](DECISIONS.md#L600) | La sangre del volumen de muestra reentra por su propia cuerda y la vena renal es el lado que domina la puerta | vigente |
 | [49](DECISIONS.md#L637) | Control de calidad de la captura PW: «no medible» con motivo, onda reproducible y suelo de la captura | vigente |
 | [50](DECISIONS.md#L690) | El color comparte la transmisión del PW y su ganancia (en dB) alcanza el ruido del equipo | vigente |
+| [51](DECISIONS.md#L712) | Transiciones lentas en el volumen de muestra e invariantes de §21 sobre la señal | vigente |

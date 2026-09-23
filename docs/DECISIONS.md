@@ -709,6 +709,44 @@ solo aparecen cerca del ruido, como en un equipo al límite de penetración.
 `doppler.test.ts` exige el uniform del perfil en el shader (sin exponente literal) y
 `equipment.test.ts` el acotado de la ganancia en dB.
 
+## 51. Transiciones lentas en el volumen de muestra e invariantes de §21 sobre la señal
+
+**Contexto.** Al escribir los invariantes de la guía §21 sobre la señal de la cadena completa, «un
+vaso que sale de la puerta pierde la señal» fallaba: con respiración profunda y la puerta ya fuera
+de todo vaso (composición 0 %), el espectro tenía «sangre» en el 67–98 % de las columnas. Causas,
+medidas volcando el espectro: (1) el peso del haz de cada dispersor se actualizaba a escalones cada
+SLOW_EVERY = 8 ticks y el clutter del tejido que se mueve (40 dB sobre la sangre) se replicaba a
+múltiplos de PRF/8 por toda la banda; (2) los dispersores de tejido que salían de la caja
+desaparecían de golpe con el peso de la cara (≈ 0,04 en las laterales) y (3) los que cambiaban de
+identidad (sangre ↔ tejido, ×100 de amplitud) también: chasquidos de banda ancha a cientos por
+segundo. El suelo aparente del espectro quedaba 20–40 dB sobre el ruido real.
+**Opciones.** Actualizar pesos y fases en cada tick (×8 de coste); agrandar la caja a 3,5σ para que
+se entre y salga con peso despreciable (mitad de densidad de dispersores en el centro, más varianza).
+**Decisión.** El peso se interpola en rampa entre actualizaciones (`dw`); el tejido entra y sale en
+una rampa de amplitud de AMP_RAMP_TICKS = 32 ticks (~5 ms a 6 kHz: su energía queda junto a la línea
+de base) y el que sale se resiembra al apagarse; el cambio de identidad (sangre ↔ tejido) se hace en
+dos rampas, primero se apaga la identidad vieja con su velocidad y luego se enciende la nueva (con
+una sola rampa, un eco de tejido viajaba a velocidad de sangre y daba puntas en la S). La sangre
+entra y sale con su amplitud por su cuerda (eco 100 veces menor, por caras de peso ≈ 0; apagarla en
+rampa dejaba un 20 % de la población fuera de la caja en el flujo rápido), pero la que se siembra al
+azar entra en rampa. La transmisión hasta la puerta, que la app recalcula cada ~32 ms con la anatomía
+que respira y cambia a saltos (sombras costales), se aplica suavizada (1/32 por tick): cada salto
+escalaba toda la IQ y era una línea vertical en el espectrograma. Coste: unas sumas por dispersor y
+tick. Se probó además rotar la reclasificación entre los
+cuatro grupos (ahora sin chasquidos): no mejoró la sangre que el vaso deja atrás y no se incluye.
+**Consecuencias.** Con respiración profunda el suelo del espectro vuelve a su nivel real y el clutter
+queda en la banda baja, como en un equipo; aun así, 60–70 dB sobre el ruido y por encima de un
+filtro de pared de 25 Hz, tapa el flujo venoso lento (`respiratory-clutter-masks-slow-flow`): el
+invariante de la puerta se prueba en apnea desplazando la puerta, y la coherencia respiración ↔
+volumen de muestra sobre la composición (`sampleVolume.test.ts`).
+**Verificación.** `invariants.test.ts`: reproducibilidad bit a bit (y otra semilla, otro espectro);
+invertir y corregir 60° no cambian el patrón (S y D ×2 exactos); la puerta sobre la VSH ve sangre en
+
+> 90 % de las columnas, a 10 mm en el parénquima en < 5 % y al volver otra vez > 90 %; la inversión
+> del color no aparece en el estimador. Espectros volcados en respiración profunda antes y después; en
+> la app, el espectrograma de la VSH con respiración profunda pasa de franjas horizontales por toda la
+> banda (réplicas a PRF/8) y líneas verticales a un fondo limpio con el clutter en la línea de base.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

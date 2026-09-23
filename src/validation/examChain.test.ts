@@ -243,7 +243,12 @@ describe('Cadena completa del alumno: puerta → espectro → medición → grad
         captures.filter((c) => c.issue === null && c.pattern !== truth.hepaticPattern),
         tag,
       ).toEqual([]);
-      if (apnea) expect(captures.filter((c) => c.issue === null).length, tag).toBeGreaterThan(captures.length / 2);
+      // En apnea la técnica debe servir. La FA se rechaza de más a propósito (umbral del signo de S
+      // sobre D, decisión 49: su S pequeña tiene puntas de signo contrario y el umbral que las
+      // ignoraba dejaba pasar una S invertida falsa): basta con un tercio de capturas válidas.
+      // Medido: sano 13/13; FA 5/10–8/13 según la realización del moteado espectral.
+      const minMeasurable = base === AF_MODERATE_CONGESTION ? 0.3 : 0.8;
+      if (apnea) expect(captures.filter((c) => c.issue === null).length / captures.length, tag).toBeGreaterThanOrEqual(minMeasurable);
     });
   }
 

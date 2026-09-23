@@ -55,6 +55,13 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   flujo llena toda la banda, no queda hueco y se lee a velocidades plausibles: la congestión grave a
   PRF 700 (Nyquist 11 cm/s) sale «leve» con el visto bueno. Lo detectará la retroalimentación
   docente (que conoce la verdad).
+- **Con respiración, el clutter del tejido tapa el flujo venoso lento en el espectro**
+  (`respiratory-clutter-masks-slow-flow`): el tejido que se mueve a 10–30 mm/s da un clutter 60–70 dB
+  sobre el ruido a 30–100 Hz, por encima de un filtro de pared de 25 Hz; con la ventana de la FFT
+  su falda ocupa hasta ~±450 Hz, la banda de una vena lenta, y la sangre no se distingue del
+  tejido ni en inspiración máxima. Es lo que pasa en un equipo real (por eso se pide apnea o se
+  sube el filtro), pero el simulador no modela un filtro de pared de alto orden (> 60 dB de
+  rechazo) como los de regresión de los equipos.
 - **La calidad no tiene criterio de señal débil** (`weak-signal-not-flagged`): con la sangre a
   ~15 dB sobre el suelo (VSH a 11 cm desde la pose inicial, transmisión −32 dB) la envolvente, con
   su margen de 12 dB, recoge picos sueltos del moteado espectral y S varía entre capturas

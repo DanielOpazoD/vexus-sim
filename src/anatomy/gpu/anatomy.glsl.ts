@@ -396,7 +396,8 @@ vec2 latticeValue(vec3 cell, float salt) {
   return r * vec2(cos(ph), sin(ph));
 }
 
-// Interpolación trilineal del campo complejo en una retícula de paso h (mm).
+// Interpolación trilineal del campo complejo en una retícula de paso h (mm), con fundido
+// smoothstep (derivada nula en los nodos, como el ruido de valor clásico).
 vec2 scattererField(vec3 m, float h, float salt) {
   vec3 q = m / h;
   vec3 c0 = floor(q);

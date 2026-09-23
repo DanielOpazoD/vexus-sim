@@ -7,6 +7,7 @@ import { lineAngle, lineCoupling, type ProbeFrame, type ProbePose, type Transduc
 import type { TransducerProfile } from './transducerProfile';
 import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
 import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
+import { GREY_CURVE } from './greyMap';
 import { GLProgram, bindTarget, createTarget, createTexture, deleteTarget, drawFullscreen, type RenderTarget } from './gl';
 import { GpuPassTimer, summarizeGpuTimings, type GpuFrameTimings } from './gpuTimer';
 import { FRAME_PASSES, type PassId } from './passGraph';
@@ -35,6 +36,13 @@ export interface BModeSettings {
   tgcDb: readonly number[]; // 8 bandas
   dynamicRangeDb: number;
   persistence: number; // 0–0.8
+}
+
+/** Imagen mostrada leída de la GPU (`readDisplay`): gris 0–255, fila 0 arriba. */
+export interface DisplayFrame {
+  width: number;
+  height: number;
+  gray: Uint8Array;
 }
 
 export interface ColorSettings {
@@ -597,7 +605,7 @@ export class UltrasoundRenderer {
     this.pScan.f('uNominalTgcDbPerCm', 2 * attenuationDbPerCm(4, this.profile.bEffectiveMHz));
     this.pScan.f('uTgcCapDb', TGC_CAP_DB);
     this.pScan.f('uDynRange', inputs.bmode.dynamicRangeDb);
-    this.pScan.f('uGreyCurve', 3.5);
+    this.pScan.f('uGreyCurve', GREY_CURVE);
     this.pScan.fv('uTgc', inputs.bmode.tgcDb);
     this.pScan.i('uColorOn', c.enabled && this.lastColorFrame ? 1 : 0);
     const lb = this.lastColorFrame?.box ?? [0, 0, 0, 0];
@@ -789,6 +797,28 @@ export class UltrasoundRenderer {
     const data = new Float32Array(W * H);
     for (let i = 0; i < W * H; i++) data[i] = rgba[i * 4];
     return { lines: W, samples: H, data };
+  }
+
+  /**
+   * Imagen mostrada del último cuadro (tras la curva de grises y la persistencia, sin color
+   * encima si la caja está apagada): gris 0–255 por píxel del lienzo, fila 0 arriba, en las
+   * coordenadas de `display`. Solo pruebas y banco de fidelidad: lectura GPU→CPU bloqueante.
+   */
+  readDisplay(): DisplayFrame {
+    const gl = this.gl;
+    const target = this.tPersist?.[this.persistIndex];
+    if (!target) return { width: 0, height: 0, gray: new Uint8Array(0) };
+    const { width, height } = target;
+    const rgba = new Uint8Array(width * height * 4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
+    gl.readBuffer(gl.COLOR_ATTACHMENT0);
+    gl.readPixels(0, 0, width, height, gl.RGBA, gl.UNSIGNED_BYTE, rgba);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    // la pasada de conversión escribe con y hacia abajo en la fila 0 del destino (la presentación
+    // la invierte al volcarla a pantalla): la fila 0 leída es la parte de arriba de la imagen
+    const gray = new Uint8Array(width * height);
+    for (let i = 0; i < width * height; i++) gray[i] = rgba[i * 4];
+    return { width, height, gray };
   }
 
   /**

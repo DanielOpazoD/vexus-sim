@@ -747,6 +747,62 @@ invertir y corregir 60° no cambian el patrón (S y D ×2 exactos); la puerta so
 > la app, el espectrograma de la VSH con respiración profunda pasa de franjas horizontales por toda la
 > banda (réplicas a PRF/8) y líneas verticales a un fondo limpio con el clutter en la línea de base.
 
+## 52. La fidelidad del modo B se mide con un banco reproducible, en la envolvente y en la imagen mostrada
+
+**Contexto.** Evaluación ciega de la tanda 1.5 (23-09-2026): dos jueces de contexto limpio
+distinguieron las 21 imágenes simuladas de ecografías reales de Wikimedia Commons (7 parejas A/B y
+14 sueltas), casi siempre en menos de 1 s; realismo 2,6 frente a 6,3, nota global 2/7. La pista
+número uno, en los 14 paneles, fue el grano: celdas claras separadas por «grietas» oscuras. La única
+guarda de imagen era la SNR de Rayleigh (e2e), que ya pasaba (1,7–2,05): el defecto es de segundo
+orden y ninguna prueba lo veía. Y la causa no era la que parecía (se atribuyó al fundido
+`smoothstep` de los dispersores). Con la envolvente real de la GPU (M4, Metal) en hígado despejado,
+el moteado es como el de un campo ideal en todas las vistas medibles: SNR 1,90–1,97, fracción oscura
+0,065–0,071 (Rayleigh 0,068), índice de grietas 0,055–0,089 (ideal 0,045–0,10), lóbulos ≤ 0,06,
+grano axial 0,66–0,70 mm y lateral 0,82–1,10 × la PSF de `beamModel.ts`. Lo que se ve distinto es la
+imagen mostrada: hígado en una mediana de 141–147 de gris con desviación 22–23 y 60 dB de rango, sin
+composición espacial, frente a 52–112 y 10–16 en los equipos modernos de referencia (70 dB en el
+Toshiba). Tampoco hay pared especular: la pared anterior de la VCI y las suprahepáticas da 1,0–1,2
+× el hígado a cualquier incidencia, lo mismo que el moteado solo. Las «grietas» intercostales de una
+primera medición eran sombras costales y líneas mal acopladas dentro de la máscara, y la pendiente
+de 0,46 dB/cm con congestión era el refuerzo tras la VCI.
+**Opciones.** Seguir juzgando a ojo (lo que llevó a atribuir las grietas a los dispersores);
+métricas solo en la imagen (mezclan física y presentación); discriminador aprendido real/simulado
+(necesita miles de imágenes reales del mismo equipo; queda para cuando las haya).
+**Decisión.** Banco en dos niveles, `src/app/fidelity.ts`, sobre una rejilla de clasificación en CPU:
+
+- `envelopeTexture`: SNR, grano (FWHM de la autocovarianza axial y lateral, comparado por bandas de
+  profundidad con la PSF), lóbulo secundario, fracción oscura e índice de grietas (fracción de lo
+  oscuro en componentes conexos de ≥ 2 granos); NaN si el grano no cabe en el parche.
+- La máscara de hígado despejado: a ≥ 6 mm (3 mm en la imagen) de cualquier tejido que no sea hígado,
+  vasos incluidos; líneas acopladas; antes del primer gas o hueso en la línea y sus vecinas; todas las
+  muestras del parche dentro. El gris y el perfil, además, en hígado puro (≤ 0,5 dB de atenuación
+  distinta en el camino).
+- `displayStats`, `depthProfile` (regresión ponderada por píxeles) y el contraste pared/hígado por
+  tramos de incidencia (0–20°, 20–40°, 40–60°) con la normal real de la pared (gradiente de la
+  distancia a la luz: la `boundaryNormal` de TS no es una normal), sobre la imagen que lee
+  `renderer.readDisplay()` (solo pruebas).
+- El gancho `__vexusTest.fidelity`, `npm run fidelity` (GPU real, 2 casos × 4 vistas, línea base con
+  el árbol de `src/` en `docs/fidelity/baseline.json`) y `npm run fidelity:blind` con el protocolo de
+  los jueces (`docs/fidelity/`).
+
+La curva de grises pasa a una constante compartida (`ultrasound/greyMap.ts`) porque el banco la
+invierte para medir en dB.
+**Consecuencias.** Cada PR de imagen de la tanda 1.5 se acepta con el banco antes y después; los
+umbrales están en `docs/fidelity/README.md`. Con la línea base, la tanda cambia de orden: primero la
+cadena de presentación (preajuste abdominal y, tras abaratar la pasada A, composición espacial), y de
+los dispersores solo lo que la composición necesita (fase que dependa de la dirección de insonación)
+y lo que los jueces vieron (el mismo moteado en todos los tejidos). Sin cambio para el alumno.
+**Verificación.** `fidelity.test.ts` sobre campos sintéticos con la geometría del renderizador: el
+moteado ideal da SNR 1,93, fracción oscura 0,068 y grano = 2,355·σ ± 12 %; la envolvente como
+valor absoluto de un campo real (la hipótesis de un juez) da SNR 1,34 y 7 veces más grietas; una
+modulación periódica deja un lóbulo de 0,47; un grano mayor que el parche da NaN. `fidelityScene.test.ts`
+recorre la anatomía del sano en CPU (subxifoidea e intercostal) con una envolvente ×0,1 fuera del
+hígado y una imagen pintada: la máscara solo mide hígado y las paredes salen con el cociente pintado
+en sus tramos reales. La e2e mide la envolvente y la imagen mostrada con SwiftShader. Una revisión
+adversarial encontró cinco defectos antes del PR (normal de pared falsa, refuerzo en la pendiente,
+vasos dentro de la máscara, NaN convertidos en 0 y pruebas que no los veían); este registro describe
+el banco ya corregido.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

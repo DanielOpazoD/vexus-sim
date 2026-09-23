@@ -18,6 +18,8 @@
     "test:watch": "vitest",
     "calibrate": "tsx tools/calibrate.ts",
     "docs:index": "tsx tools/docs/decisions-index.ts",
+    "fidelity": "tsx tools/fidelity/bench.ts",
+    "fidelity:blind": "tsx tools/fidelity/blind-pairs.ts",
     "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && vite build && tsx tools/ci/bundle-budget.ts",
     "test:coverage": "VITEST_TIER=all vitest run --coverage --testTimeout=180000",
     "e2e": "playwright test",

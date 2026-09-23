@@ -3,3 +3,6 @@ node_modules
 coverage
 docs/DECISIONS_INDEX.md
 package-lock.json
+
+# generado por npm run fidelity (tools/fidelity/bench.ts)
+docs/fidelity/baseline.json

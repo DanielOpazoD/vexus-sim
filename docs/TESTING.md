@@ -4,12 +4,13 @@ Qué protege cada capa de pruebas, cuándo corre y qué no cubre. Regla general:
 debe fallar si el comportamiento clínico o físico se rompe; una prueba que repite una
 constante o un umbral ajustado a la salida actual no protege nada.
 
-| Capa              | Dónde                                      | Cuándo corre                    | Qué protege                                                                                                                                                                                   |
-| ----------------- | ------------------------------------------ | ------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Unitarias rápidas | `src/validation/*.test.ts` sin marcador    | `npm test` (~15 s), `check`, CI | DSP (FFT, filtro de pared, envolvente), unidades, clasificador VExUS C (27 combinaciones), anatomía por puntos, sonda y acoplamiento, capas, documentación, límites del shader                |
-| Lentas            | primera línea `// @tier slow`              | `npm run test:all`, `check`, CI | Fisiología emergente por caso, cadena Doppler, **cadena completa del alumno** (`examChain.test.ts`: puerta → espectro → medición → grado), **propiedades** (`properties.test.ts`, fast-check) |
-| Cobertura         | `npm run test:coverage`                    | `check`, CI                     | Umbrales globales (≥ 88 % sentencias, ≥ 83 % ramas) que solo pueden subir; excluye lo que necesita DOM/WebGL/Web Audio                                                                        |
-| e2e               | `e2e/*.spec.ts` (Playwright + SwiftShader) | `npm run e2e`, CI tras `check`  | Arranque sin errores, casos, medición numérica, pérdida y recuperación del contexto WebGL, **equivalencia TS ↔ GLSL** en tejido, vaso y velocidad, **SNR de Rayleigh del speckle** hepático   |
+| Capa               | Dónde                                             | Cuándo corre                                    | Qué protege                                                                                                                                                                                   |
+| ------------------ | ------------------------------------------------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Unitarias rápidas  | `src/validation/*.test.ts` sin marcador           | `npm test` (~15 s), `check`, CI                 | DSP (FFT, filtro de pared, envolvente), unidades, clasificador VExUS C (27 combinaciones), anatomía por puntos, sonda y acoplamiento, capas, documentación, límites del shader                |
+| Lentas             | primera línea `// @tier slow`                     | `npm run test:all`, `check`, CI                 | Fisiología emergente por caso, cadena Doppler, **cadena completa del alumno** (`examChain.test.ts`: puerta → espectro → medición → grado), **propiedades** (`properties.test.ts`, fast-check) |
+| Cobertura          | `npm run test:coverage`                           | `check`, CI                                     | Umbrales globales (≥ 88 % sentencias, ≥ 83 % ramas) que solo pueden subir; excluye lo que necesita DOM/WebGL/Web Audio                                                                        |
+| e2e                | `e2e/*.spec.ts` (Playwright + SwiftShader)        | `npm run e2e`, CI tras `check`                  | Arranque sin errores, casos, medición numérica, pérdida y recuperación del contexto WebGL, **equivalencia TS ↔ GLSL** en tejido, vaso y velocidad, **SNR de Rayleigh del speckle** hepático   |
+| Banco de fidelidad | `tools/fidelity/bench.ts` (Playwright + GPU real) | `npm run fidelity`, a mano en cada PR de imagen | Textura de la envolvente y de la imagen mostrada, cps; línea base en `docs/fidelity/baseline.json` (decisión 52). La prueba ciega con jueces: `npm run fidelity:blind`                        |
 
 ## Principios
 
@@ -29,7 +30,9 @@ constante o un umbral ajustado a la salida actual no protege nada.
 ## Qué no está cubierto todavía
 
 - Estadística de speckle frente a clips reales (`speckle-statistics-uncalibrated`); la e2e solo
-  exige la SNR teórica de Rayleigh en parénquima (`app/speckle.ts`).
+  exige la SNR teórica de Rayleigh en parénquima (`app/speckle.ts`). El banco de fidelidad mide la
+  textura de segundo orden y la imagen mostrada contra imágenes reales de referencia, pero a mano y
+  sin umbrales en CI.
 - Imagen de referencia (golden) del modo B y del color.
 - Rendimiento por cuadro medido en CI (solo presupuesto de bundle).
 - Interacción de UI más allá de la e2e de humo (paneles, teclado completo, navegador 3D).

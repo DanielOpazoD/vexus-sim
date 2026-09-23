@@ -4,6 +4,7 @@ import { equivalenceSweep, volumeEquivalence, type EquivalencePoseReport, type V
 import { bestGateOnVessel } from './gatePlacement';
 import { acousticWindowWeight, gateTransmission } from './gateTransmission';
 import { lineCoupling } from '../probe/probe';
+import { fidelityStats, type FidelityStats } from './fidelity';
 import { speckleStats, type SpeckleOptions, type SpeckleStats } from './speckle';
 import type { Simulator } from './simulator';
 import { START_POINTS, type StartPoint } from './startPoints';
@@ -22,6 +23,13 @@ export interface TestHooks {
    * antes la sonda en ese punto de partida y avanza lo justo para que el marco la siga.
    */
   speckle: (opts?: SpeckleOptions & { startPoint?: StartPoint['id'] }) => SpeckleStats;
+  /**
+   * Banco de fidelidad (decisión 52): textura de la envolvente en hígado, en total y por bandas
+   * de profundidad; con `display`, además la imagen mostrada (renderiza `frames` cuadros, por
+   * defecto los que la persistencia necesita para dejar < 1 % de la vista anterior; clasifica en
+   * CPU ~1–3 s).
+   */
+  fidelity: (opts?: { startPoint?: StartPoint['id']; display?: boolean; frames?: number }) => FidelityStats;
   /**
    * Centra la caja de color sobre uno de los vasos (colocación del operador), avanza lo justo para
    * que toque un cuadro de color y devuelve las celdas con potencia visible; null si no ve el vaso.
@@ -56,13 +64,20 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
     volumeEquivalence: (n) => volumeEquivalence(getSim(), n),
     speckle: (opts) => {
       const sim = getSim();
-      const sp = START_POINTS.find((p) => p.id === opts?.startPoint);
-      if (sp) {
-        sim.setPose({ phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 });
-        sim.advance(0.05);
-      }
+      if (opts?.startPoint) goTo(sim, opts.startPoint);
       sim.render();
       return speckleStats(sim, sim.renderer.readEnvelope(), opts);
+    },
+    fidelity: (opts) => {
+      const sim = getSim();
+      if (opts?.startPoint) goTo(sim, opts.startPoint);
+      // la persistencia deja p^n de la vista anterior: cuadros hasta que quede < 1 % (máx. 30)
+      const p = Math.min(0.95, Math.max(0, sim.bmode.persistence));
+      const settle = p > 0 ? Math.min(30, Math.ceil(Math.log(0.01) / Math.log(p))) : 1;
+      const frames = opts?.display ? Math.max(1, opts.frames ?? settle) : 1;
+      for (let i = 0; i < frames; i++) sim.render();
+      const img = opts?.display ? sim.renderer.readDisplay() : null;
+      return fidelityStats(sim, sim.renderer.readEnvelope(), img, { colorOn: sim.color.enabled });
     },
     colorOnVessel: (vessels) => {
       const sim = getSim();
@@ -112,12 +127,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
         .sort((a, b) => a - b);
       return vals[Math.floor(vals.length / 2)];
     },
-    goToStartPoint: (id) => {
-      const sim = getSim();
-      const sp = START_POINTS.find((p) => p.id === id)!;
-      sim.setPose({ phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 });
-      sim.advance(0.05);
-    },
+    goToStartPoint: (id) => goTo(getSim(), id),
     liftProbe: (mm) => {
       const sim = getSim();
       sim.setPose({ ...sim.pose, lift: mm });
@@ -144,6 +154,13 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       return true;
     },
   };
+}
+
+/** Coloca la sonda en un punto de partida (sin animación) y avanza lo justo para que el marco la siga. */
+function goTo(sim: Simulator, id: StartPoint['id']): void {
+  const sp = START_POINTS.find((p) => p.id === id)!;
+  sim.setPose({ phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 });
+  sim.advance(0.05);
 }
 
 /** Avanza lo que exige la cadencia del color para que el siguiente render dibuje un cuadro de color. */

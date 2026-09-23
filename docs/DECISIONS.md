@@ -634,6 +634,59 @@ historia se mantiene > 0,8 del de una siembra nueva entre 14 y 22 s (sin el camb
 `examChain.test.ts` (sano y FA: «continuo» con la vena bien elegida; antes, con el arreglo y la
 regla S/D, salía «bifásico») y `doppler.test.ts`.
 
+## 49. Control de calidad de la captura PW: «no medible» con motivo, onda reproducible y suelo de la captura
+
+**Contexto.** La pestaña Medir clasificaba cualquier espectro: la VSH del caso grave en la cadena
+del alumno «acertaba» midiendo ruido (la puerta caía en la confluencia con la VCI dilatada), la
+e2e de captura medía la sombra de la cortina pulmonar, y con respiración tranquila la puerta fija
+sobre la suprahepática del sano daba «grave» (S +36 cm/s en un latido y −13 en el siguiente, o S
+invertida en tres latidos con D invertida en uno). La base de conocimiento A.4 exige que «no
+medible» nunca sea sinónimo de normal. Además la envolvente se hundía en el pico S: el suelo de
+cada columna era su mediana, que es sangre cuando el perfil llena más de media banda.
+**Opciones.** Umbral de potencia global (no distingue un vaso intermitente de uno débil); ajustar
+el patrón con la verdad (prohibido: la medición es sobre la señal adquirida); pedir apnea siempre
+(la respiración tranquila es parte del examen real). Para el suelo: percentil fijo por columna
+(sesgo distinto con y sin suavizado) o nivel de ruido conocido del equipo (la medición solo ve
+columnas).
+**Decisión.** `doppler/measureQuality.ts` juzga cada captura sobre el espectro suavizado:
+sangre = ≥ 2 bins contiguos a suelo + 12 dB fuera de la banda del filtro de pared; un latido vale
+con sangre en ≥ 60 % de sus columnas. Motivos, en orden: sin señal (ningún latido vale y sangre en
+< 20 % de las columnas), aliasing (en ≥ 3 columnas de algún latido la sangre toca a la vez los dos
+bordes de la banda con un hueco al nivel del ruido entre ambos, o > 25 % de la energía en el 15 %
+exterior de la banda: a PRF 1000–1800 el pico S del sano plegado al otro lado se leía como S
+invertida, «grave», y la energía junto a ±Nyquist era solo del 10–14 %),
+intermitente (algún latido no vale), inconsistente (suprahepática: S anterógrada en unos latidos e
+invertida en otros, o D invertida en alguno, con |x| ≥ 25 % de D) y pocos latidos (< 3). En la
+interlobar se juzga el lado de la vena. La captura con motivo se muestra con su texto y no entra en
+el grado. El suelo de cada columna es su percentil 25 más la distancia mediana − P25 que tiene el ruido en
+la captura (`captureNoiseFloorsDb`): una forma, no un nivel, así que no cambia con la ganancia (un
+primer intento acotaba por el decil de la captura y un cambio de ganancia a mitad dejaba pasar ruido
+como flujo: grado 3 con el visto bueno). Solo cuentan los latidos que el espectro cubre (≥ 90 %),
+la captura toma los 4 últimos latidos completos de sus 7 s y el flujo se cuenta desde el corte del
+filtro de pared + 37,5 Hz. Una captura rechazada no muestra patrón ni en el resultado ni en las
+filas del protocolo. La técnica del operador (`bestGateOnVessel`) evita la
+confluencia con la VCI (≥ 10 mm) y admite un peso de ventana acústica (`acousticWindowWeight`),
+que usan los ganchos de la e2e.
+**Consecuencias.** El alumno ve por qué no vale su captura y cómo corregirla (apnea, escala,
+contacto). La S del sano en la app pasa de 15–25 cm/s (patrón que oscilaba entre normal y leve) a
+29–31 con S/D 1,61–1,74 (verdad 1,72). Pendiente: el aliasing fuerte se pliega a velocidades
+plausibles y no se detecta (`severe-aliasing-not-detected`); la calidad es conservadora en la FA
+(una S pequeña tiene puntas de signo contrario y a veces se rechaza en apnea; un umbral relativo a
+la propia S rechazaba menos pero dejaba pasar una S invertida falsa, que sí cambia el grado).
+**Verificación.** `measureQuality.test.ts` (13 espectros sintéticos: cada motivo y sus falsos
+positivos, entre ellos un pico plegado con poca energía en los bordes y una onda que roza un solo
+borde); `examChain.test.ts`: a PRF 1400 la VSH del sano sale «grave» y la calidad dice aliasing,
+a 5000 normal y medible; `dsp.test.ts` (un flujo que llena 80 de 128 bins no sube el suelo);
+`examChain.test.ts`: en apnea las tres capturas pasan la calidad en los tres casos; la interlobar
+grave con respiración es intermitente; y en capturas sucesivas cada 2 s durante 26 s (sano, FA y
+grave con respiración tranquila; sano y FA en apnea) ninguna captura con el visto bueno da un
+patrón falso y en apnea más de la mitad son medibles (sin exigir D anterógrada, el sano con ventana
+daba «grave» a los 10 s: la prueba falla). `dsp.test.ts`: un salto de ganancia de +10 dB en una
+captura de ruido no deja ninguna columna con envolvente. Revisión adversarial de contexto limpio
+antes del PR: ganancia, filas del protocolo, cobertura del espectro, filtro de pared alto y latidos
+por captura, corregidos. E2e: en apnea la VSH se mide con valor numérico
+y con la sonda levantada la captura dice «no medible: no hay flujo en la puerta».
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

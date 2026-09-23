@@ -231,3 +231,27 @@ export function noiseFloorDb(col: SpectralColumn): number {
   const arr = Array.from(col.powerDb).sort((a, b) => a - b);
   return arr[arr.length >> 1];
 }
+
+/**
+ * Suelo de ruido de cada columna de una captura, robusto a un flujo ancho. La mediana de la columna
+ * deja de ser ruido cuando la sangre ocupa más de la mitad de los bins: en el pico S de una vena
+ * grande muestreada en su centro, el perfil llena el espectro de 0 a vmax (a PRF 2600, 62 de los 64
+ * bins de un lado) y el umbral suelo + margen borraba la envolvente justo en el pico (la S del sano
+ * salía 0–18 cm/s en un latido de cada tres y el patrón oscilaba entre normal y leve).
+ *
+ * Cada columna se estima con SU percentil 25 (ruido mientras la sangre ocupe < 75 % de los bins)
+ * más la distancia mediana − P25 que tiene el ruido en esta captura (mediana de esa distancia sobre
+ * las columnas: la mayoría son ruido o flujo estrecho). Esa distancia es una forma, no un nivel: no
+ * cambia con la ganancia. Antes el suelo se acotaba por el decil de la captura y un cambio de
+ * ganancia a mitad de la captura dejaba pasar ruido puro como flujo (grado 3 con el visto bueno).
+ */
+export function captureNoiseFloorsDb(columns: readonly SpectralColumn[]): number[] {
+  const stats = columns.map((c) => {
+    const arr = Array.from(c.powerDb).sort((a, b) => a - b);
+    return { median: arr[arr.length >> 1], p25: arr[Math.floor((arr.length - 1) / 4)] };
+  });
+  if (stats.length === 0) return [];
+  const spreads = stats.map((x) => x.median - x.p25).sort((a, b) => a - b);
+  const noiseSpread = spreads[spreads.length >> 1];
+  return stats.map((x) => Math.min(x.median, x.p25 + noiseSpread));
+}

@@ -9,7 +9,8 @@ import {
   type HepaticPattern,
   type RenalPattern,
 } from '../vexus/classification';
-import { columnBandEnvelopes, columnEnvelope, columnPercentileEnvelope, noiseFloorDb, type SpectralColumn } from './spectral';
+import { assessQuality, flowBandMinHz, type MeasurementQuality } from './measureQuality';
+import { captureNoiseFloorsDb, columnBandEnvelopes, columnEnvelope, columnPercentileEnvelope, type SpectralColumn } from './spectral';
 
 /**
  * Mediciones sobre la señal ADQUIRIDA (espectro observado), separadas de la
@@ -29,6 +30,8 @@ export interface ObservedTracePoint {
 
 export interface ObservedHepatic {
   kind: 'hepatic';
+  /** Control de calidad de la captura: si hay problema, el patrón no debe entrar en el grado. */
+  quality: MeasurementQuality;
   sPeak: number;
   dPeak: number;
   aPeak: number;
@@ -41,6 +44,8 @@ export interface ObservedHepatic {
 
 export interface ObservedPortal {
   kind: 'portal';
+  /** Control de calidad de la captura: si hay problema, el patrón no debe entrar en el grado. */
+  quality: MeasurementQuality;
   vMax: number;
   vMin: number;
   pulsatilityFraction: number;
@@ -51,6 +56,8 @@ export interface ObservedPortal {
 
 export interface ObservedRenal {
   kind: 'renal';
+  /** Control de calidad de la captura: si hay problema, el patrón no debe entrar en el grado. */
+  quality: MeasurementQuality;
   sPeak: number;
   dPeak: number;
   vMin: number;
@@ -67,9 +74,18 @@ export interface MeasureOptions {
   fftSize: number;
   /** Margen sobre el suelo de ruido (dB) para detectar la envolvente. */
   thresholdMarginDb?: number;
-  /** Filtro de pared del equipo (Hz): el clutter residual por debajo no cuenta como flujo. */
+  /** Filtro de pared del equipo (Hz): el clutter residual por debajo no cuenta como flujo (lado de la vena, calidad). */
   wallFilterHz?: number;
 }
+
+const qualityOf = (
+  columns: readonly SpectralColumn[],
+  beats: Beat[],
+  opts: MeasureOptions,
+  side: 'both' | 'pos' | 'neg',
+  waves?: { s: readonly number[]; d: readonly number[] },
+) =>
+  assessQuality(smoothSpectrum(columns), beats, { wallFilterHz: opts.wallFilterHz ?? 25, marginDb: opts.thresholdMarginDb, side }, waves);
 
 /**
  * Traza observada: envolvente por el método del percentil en cada columna y mediana
@@ -80,8 +96,10 @@ export interface MeasureOptions {
 export function observedTrace(columns: readonly SpectralColumn[], opts: MeasureOptions): ObservedTracePoint[] {
   const margin = opts.thresholdMarginDb ?? 12;
   const raw: ObservedTracePoint[] = [];
-  for (const col of smoothSpectrum(columns)) {
-    const floor = noiseFloorDb(col);
+  const smoothed = smoothSpectrum(columns);
+  const floors = captureNoiseFloorsDb(smoothed);
+  for (const [i, col] of smoothed.entries()) {
+    const floor = floors[i];
     const env = columnEnvelope(col, opts.fftSize, floor + margin);
     const f = columnPercentileEnvelope(col, opts.fftSize, floor, margin);
     const vMm = velocityFromShiftMmS(f, opts.f0Hz, opts.angleCorrectionRad);
@@ -146,8 +164,10 @@ export function observedSideTraces(
   const t: number[] = [];
   const pos: number[] = [];
   const neg: number[] = [];
-  for (const col of smoothSpectrum(columns)) {
-    const b = columnBandEnvelopes(col, opts.fftSize, noiseFloorDb(col), margin);
+  const smoothed = smoothSpectrum(columns);
+  const floors = captureNoiseFloorsDb(smoothed);
+  for (const [i, col] of smoothed.entries()) {
+    const b = columnBandEnvelopes(col, opts.fftSize, floors[i], margin);
     const toCm = (hz: number) => {
       const v = velocityFromShiftMmS(hz, opts.f0Hz, opts.angleCorrectionRad) / 10;
       return Number.isFinite(v) ? v : 0;
@@ -206,6 +226,7 @@ export function measureObservedHepatic(columns: readonly SpectralColumn[], beats
   const dPeak = median(dList);
   return {
     kind: 'hepatic',
+    quality: qualityOf(columns, beats, opts, 'both', { s: sList, d: dList }),
     sPeak,
     dPeak,
     aPeak: median(aList),
@@ -237,6 +258,7 @@ export function measureObservedPortal(columns: readonly SpectralColumn[], beats:
   if (!maxs.length) return null;
   return {
     kind: 'portal',
+    quality: qualityOf(columns, beats, opts, 'both'),
     vMax: median(maxs),
     vMin: median(mins),
     pulsatilityFraction: median(pfs),
@@ -271,10 +293,12 @@ export function sideEnergyDb(columns: readonly SpectralColumn[], opts: MeasureOp
   const margin = opts.thresholdMarginDb ?? 12;
   let pos = 1e-12;
   let neg = 1e-12;
-  for (const col of smoothSpectrum(columns)) {
+  const smoothed = smoothSpectrum(columns);
+  const floors = captureNoiseFloorsDb(smoothed);
+  for (const [i, col] of smoothed.entries()) {
     const N = col.powerDb.length;
-    const floor = noiseFloorDb(col);
-    const fMin = Math.max(2.5 * (opts.wallFilterHz ?? 25), (2 * col.prfHz) / N);
+    const floor = floors[i];
+    const fMin = flowBandMinHz(opts.wallFilterHz ?? 25, col.prfHz, N);
     for (let k = 0; k < N; k++) {
       const f = ((k - N / 2) / N) * col.prfHz;
       if (Math.abs(f) < fMin || col.powerDb[k] <= floor + margin) continue;
@@ -336,6 +360,8 @@ export function measureObservedRenal(columns: readonly SpectralColumn[], beats: 
   const vMin = median(minList);
   return {
     kind: 'renal',
+    // la arteria vecina siempre da señal: la calidad se juzga en el lado de la vena
+    quality: qualityOf(columns, beats, opts, veinSign === 1 ? 'pos' : 'neg'),
     sPeak,
     dPeak,
     vMin,

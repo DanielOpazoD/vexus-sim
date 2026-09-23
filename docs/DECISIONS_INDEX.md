@@ -52,3 +52,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [46](DECISIONS.md#L546) | Anatomía de una sola fuente, paso 2: la anatomía es dueña de su gemelo GPU, módulos de órgano y equivalencia volumétrica | vigente |
 | [47](DECISIONS.md#L571) | Grafo de pasadas del renderer y tiempo de GPU que no miente | vigente |
 | [48](DECISIONS.md#L600) | La sangre del volumen de muestra reentra por su propia cuerda y la vena renal es el lado que domina la puerta | vigente |
+| [49](DECISIONS.md#L637) | Control de calidad de la captura PW: «no medible» con motivo, onda reproducible y suelo de la captura | vigente |

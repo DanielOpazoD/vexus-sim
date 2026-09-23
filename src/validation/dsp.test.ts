@@ -13,6 +13,7 @@ import {
   SpectralProcessor,
   columnBandEnvelopes,
   columnEnvelope,
+  captureNoiseFloorsDb,
   columnPercentileEnvelope,
   noiseFloorDb,
   peakFrequency,
@@ -265,5 +266,44 @@ describe('STFT y envolvente', () => {
         ),
       ),
     ).toBe(true);
+  });
+
+  it('suelo de una captura: un flujo que llena más de media banda no sube el suelo (pico S de una vena grande)', () => {
+    const N = 128;
+    const rng = new SeededRandom(3);
+    // ruido de −100 dB ± 3 dB; en 3 de 30 columnas la sangre llena 80 de los 128 bins a −75 dB
+    const cols: SpectralColumn[] = Array.from({ length: 30 }, (_, i) => {
+      const powerDb = Float32Array.from({ length: N }, () => -100 + 6 * (rng.float() - 0.5));
+      if (i >= 10 && i < 13) for (let k = 40; k < 120; k++) powerDb[k] = -75;
+      return { t: i * 0.006, prfHz: 2600, powerDb };
+    });
+    // la mediana de esas columnas es sangre: el umbral suelo + 12 dB borraría toda la envolvente
+    expect(noiseFloorDb(cols[11])).toBe(-75);
+    const floors = captureNoiseFloorsDb(cols);
+    // el suelo de esas columnas vuelve al ruido (−100 dB), lejos de la sangre (−75 dB)
+    for (let i = 10; i < 13; i++) expect(floors[i]).toBeLessThan(-95);
+    // y en las columnas de ruido sigue siendo su propia mediana (±1 dB)
+    for (const i of [0, 5, 20, 29]) expect(Math.abs(floors[i] - noiseFloorDb(cols[i]))).toBeLessThan(1);
+    // con el suelo de la captura, la envolvente del pico llega al borde de la banda llena
+    const env = columnEnvelope(cols[11], N, floors[11] + 12);
+    expect(env.fPos).toBeCloseTo(((119 - N / 2) / N) * 2600, 6);
+  });
+
+  it('suelo de una captura: un cambio de ganancia a mitad de captura no deja pasar ruido como flujo', () => {
+    // ruido puro con +10 dB de ganancia desde la mitad (el alumno sube la ganancia al no ver flujo):
+    // cada columna conserva su propio suelo; antes se acotaba por el decil de toda la captura y la
+    // mitad con más ganancia quedaba 10 dB sobre el umbral (grado VExUS 3 con el visto bueno)
+    const N = 128;
+    const rng = new SeededRandom(5);
+    const cols: SpectralColumn[] = Array.from({ length: 40 }, (_, i) => ({
+      t: i * 0.006,
+      prfHz: 2600,
+      powerDb: Float32Array.from({ length: N }, () => (i < 20 ? -100 : -90) + 6 * (rng.float() - 0.5)),
+    }));
+    const floors = captureNoiseFloorsDb(cols);
+    for (let i = 0; i < cols.length; i++) {
+      expect(Math.abs(floors[i] - noiseFloorDb(cols[i])), `columna ${i}`).toBeLessThan(1.5);
+      expect(columnEnvelope(cols[i], N, floors[i] + 12).fEnvelope, `columna ${i}`).toBe(0);
+    }
   });
 });

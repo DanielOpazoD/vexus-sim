@@ -1,4 +1,5 @@
 import type { AppState, MeasureTool } from '../../app/store';
+import { CAPTURE_BEATS, qualityText, type QualityIssue } from '../../doppler/measureQuality';
 import {
   measureObservedHepatic,
   measureObservedPortal,
@@ -80,15 +81,22 @@ export class MeasureTab {
       this.ctx.track({ sync: () => (v.textContent = value()) });
     };
     protoRow('VCI diámetro', 'caliper', () => (this.ivcCaliperMm !== null ? `${this.ivcCaliperMm.toFixed(1)} mm` : '—'));
-    protoRow('Suprahepática', 'hepatic', () => (this.lastHepatic ? `${patternText(this.lastHepatic.pattern)}` : '—'));
-    protoRow('Porta PF', 'portal', () =>
-      this.lastPortal
-        ? Number.isFinite(this.lastPortal.pulsatilityFraction)
-          ? `${this.lastPortal.pulsatilityFraction.toFixed(0)} %`
-          : 'no aplicable'
-        : '—',
-    );
-    protoRow('Renal', 'renal', () => (this.lastRenal ? renalText(this.lastRenal.pattern) : '—'));
+    // una captura rechazada por la calidad no muestra patrón (el de un espectro de ruido es «grave»)
+    const NOT_MEASURABLE = 'no medible';
+    protoRow('Suprahepática', 'hepatic', () => {
+      const h = this.lastHepatic;
+      return h ? (h.quality.issue ? NOT_MEASURABLE : patternText(h.pattern)) : '—';
+    });
+    protoRow('Porta PF', 'portal', () => {
+      const p = this.lastPortal;
+      if (!p) return '—';
+      if (p.quality.issue) return NOT_MEASURABLE;
+      return Number.isFinite(p.pulsatilityFraction) ? `${p.pulsatilityFraction.toFixed(0)} %` : 'no aplicable';
+    });
+    protoRow('Renal', 'renal', () => {
+      const k = this.lastRenal;
+      return k ? (k.quality.issue ? NOT_MEASURABLE : renalText(k.pattern)) : '—';
+    });
     help(
       proto,
       'Suprahepática, porta y vena interlobar se miden sobre el espectro PW adquirido (últimos 7 s, ventanas S/D ancladas al ECG). La VCI con el calibrador sobre la imagen.',
@@ -146,7 +154,7 @@ export class MeasureTab {
     text.textContent =
       tool === 'caliper'
         ? 'Haz clic en dos puntos de la imagen (borde a borde de la VCI, perpendicular al eje). Esc cancela.'
-        : 'Coloca la puerta en el vaso, espera 4–5 latidos estables y pulsa «Capturar». Se mide sobre el espectro adquirido.';
+        : 'Coloca la puerta en el vaso, espera 4 latidos estables y pulsa «Capturar». Se mide sobre el espectro adquirido.';
     this.captureCard.append(title, text);
     const r = row(this.captureCard);
     if (tool !== 'caliper') button(r, 'Capturar', () => this.capture(tool));
@@ -157,12 +165,14 @@ export class MeasureTab {
   capture(kind: MeasureTool): void {
     const sim = this.ctx.sim();
     const tNow = sim.physiology.clock.t;
-    const beats = sim.physiology.rhythm.beatsAround(tNow - 3).filter((b) => b.tR > tNow - 7 && b.tR + b.rr < tNow);
+    // los últimos latidos completos del espectro guardado (7 s), como captura un equipo
+    const beats = sim.physiology.rhythm.beatsBetween(tNow - 7, tNow).slice(-CAPTURE_BEATS);
     const opts = {
       f0Hz: sim.transducer.f0Doppler,
       angleCorrectionRad: sim.pw.angleCorrection,
       invert: sim.pw.invert,
       fftSize: sim.spectral.fftSize,
+      wallFilterHz: sim.pw.wallFilterHz,
     };
     const recent = sim.spectral.columns.filter((c) => c.t > tNow - 7);
     if (kind === 'hepatic') this.lastHepatic = measureObservedHepatic(recent, beats, opts);
@@ -174,15 +184,19 @@ export class MeasureTab {
 
   renderResult(): void {
     if (!this.resultEl) return;
-    const h = this.lastHepatic;
-    const p = this.lastPortal;
-    const k = this.lastRenal;
+    // una captura sin calidad no entra en el grado («no medible» nunca es normal)
+    const usable = <T extends { quality: { issue: unknown } }>(m: T | null) => (m && m.quality.issue === null ? m : null);
+    const h = usable(this.lastHepatic);
+    const p = usable(this.lastPortal);
+    const k = usable(this.lastRenal);
     const res: VexusResult = classifyVexusC({
       ivcMaxDiameterMm: this.ivcCaliperMm,
       hepatic: h ? h.pattern : 'not-assessed',
       portalPulsatilityFraction: p ? p.pulsatilityFraction : null,
       renal: k ? k.pattern : 'not-assessed',
     });
+    const rejected = (m: { quality: { issue: QualityIssue | null } } | null, name: string) =>
+      m && m.quality.issue ? `<div>${name}: <b>${qualityText(m.quality.issue)}</b></div>` : null;
     const n = (h ? 1 : 0) + (p ? 1 : 0) + (k ? 1 : 0) + (this.ivcCaliperMm !== null ? 1 : 0);
     this.badge.textContent = String(n);
     this.badge.style.display = n ? '' : 'none';
@@ -191,15 +205,18 @@ export class MeasureTab {
     const lines = [
       `<div class="grade">${gradeTxt} <span class="small">${statusText(res.status)}</span></div>`,
       `<div>VCI: ${this.ivcCaliperMm !== null ? this.ivcCaliperMm.toFixed(1) + ' mm' : '—'} ${res.ivcDilated === null ? '' : res.ivcDilated ? '<span class="small">(≥ 20 mm: dilatada)</span>' : '<span class="small">(< 20 mm)</span>'}</div>`,
-      h
-        ? `<div>VSH: S ${h.sPeak.toFixed(1)} · D ${h.dPeak.toFixed(1)} · A ${h.aPeak.toFixed(1)} cm/s → <b>${patternText(h.pattern)}</b> <span class="small">(${h.beats} latidos)</span></div>`
-        : '<div>VSH: —</div>',
-      p
-        ? `<div>Porta: ${p.vMax.toFixed(1)}/${p.vMin.toFixed(1)} cm/s → PF <b>${Number.isFinite(p.pulsatilityFraction) ? p.pulsatilityFraction.toFixed(0) + ' %' : 'n/a'}</b> <span class="small">(${res.portalClass}${res.portalNearThreshold ? ', próximo al umbral' : ''})</span></div>`
-        : '<div>Porta: —</div>',
-      k
-        ? `<div>Renal: S ${k.sPeak.toFixed(1)} · D ${k.dPeak.toFixed(1)} · mín ${k.vMin.toFixed(1)} cm/s → <b>${renalText(k.pattern)}</b> <span class="small">(${k.beats} latidos)</span></div>`
-        : '<div class="small">Renal: no evaluado; el clasificador devuelve el intervalo compatible.</div>',
+      rejected(this.lastHepatic, 'VSH') ??
+        (h
+          ? `<div>VSH: S ${h.sPeak.toFixed(1)} · D ${h.dPeak.toFixed(1)} · A ${h.aPeak.toFixed(1)} cm/s → <b>${patternText(h.pattern)}</b> <span class="small">(${h.beats} latidos)</span></div>`
+          : '<div>VSH: —</div>'),
+      rejected(this.lastPortal, 'Porta') ??
+        (p
+          ? `<div>Porta: ${p.vMax.toFixed(1)}/${p.vMin.toFixed(1)} cm/s → PF <b>${Number.isFinite(p.pulsatilityFraction) ? p.pulsatilityFraction.toFixed(0) + ' %' : 'n/a'}</b> <span class="small">(${res.portalClass}${res.portalNearThreshold ? ', próximo al umbral' : ''})</span></div>`
+          : '<div>Porta: —</div>'),
+      rejected(this.lastRenal, 'Renal') ??
+        (k
+          ? `<div>Renal: S ${k.sPeak.toFixed(1)} · D ${k.dPeak.toFixed(1)} · mín ${k.vMin.toFixed(1)} cm/s → <b>${renalText(k.pattern)}</b> <span class="small">(${k.beats} latidos)</span></div>`
+          : '<div class="small">Renal: no evaluado; el clasificador devuelve el intervalo compatible.</div>'),
     ];
     this.resultEl.innerHTML = lines.join(''); // texto generado por el programa a partir de números
     this.ctx.sync();

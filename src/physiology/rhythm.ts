@@ -110,6 +110,12 @@ export class RhythmGenerator {
     };
   }
 
+  /** Latidos completos entre t0 y t1 (R ≥ t0 y fin ≤ t1), en orden. */
+  beatsBetween(t0: number, t1: number): Beat[] {
+    this.scheduleUntil(t1);
+    return this.beats.filter((b) => b.tR >= t0 && b.tR + b.rr <= t1);
+  }
+
   /** Latidos cuyo efecto mecánico puede solaparse con t (anterior y siguiente). */
   beatsAround(t: number): Beat[] {
     this.scheduleUntil(t);

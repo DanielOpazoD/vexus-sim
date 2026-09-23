@@ -67,6 +67,8 @@ export interface MeasureOptions {
   fftSize: number;
   /** Margen sobre el suelo de ruido (dB) para detectar la envolvente. */
   thresholdMarginDb?: number;
+  /** Filtro de pared del equipo (Hz): el clutter residual por debajo no cuenta como flujo. */
+  wallFilterHz?: number;
 }
 
 /**
@@ -246,11 +248,44 @@ export function measureObservedPortal(columns: readonly SpectralColumn[], beats:
 
 /**
  * Vena interlobar. La puerta recoge a la vez la arteria (hacia la corteza) y la vena
- * (hacia el hilio), en lados opuestos de la línea de base. El lado ARTERIAL es el de
- * mayor relación sístole/diástole (PSV ≫ EDV); la vena se lee en el otro lado, con su
- * magnitud como velocidad anterógrada. Si solo un lado tiene señal, ese es la vena. Un
- * flujo venoso invertido se confundiría con la arteria y no se mide aquí (vMin ≥ 0).
+ * (hacia el hilio), en lados opuestos de la línea de base; la vena se lee en su lado, con su
+ * magnitud como velocidad anterógrada. Qué lado es la vena, como lo decide el operador:
+ *  - si un lado domina la potencia (≥ SIDE_DOMINANCE_DB), es el vaso sobre el que se puso la
+ *    puerta, la vena; la arteria vecina solo asoma. Medido en la cadena del alumno: la arteria
+ *    queda 19–25 dB por debajo en el sano y en FA, y su traza, rozando el umbral, sale plana e
+ *    intermitente: compararla por su forma elegía una u otra al azar;
+ *  - si los dos lados son comparables (la puerta abarca los dos vasos; en la congestión grave la
+ *    vena monofásica pasa media sístole sin flujo y queda solo 3–4 dB por encima), la arteria es
+ *    el lado de mayor relación sístole/diástole (PSV ≫ EDV).
+ * Si solo un lado tiene señal, ese es la vena. Un flujo venoso invertido se confundiría con la
+ * arteria y no se mide aquí (vMin ≥ 0).
  */
+/** Diferencia de potencia (dB) a partir de la cual un lado del espectro es el vaso de la puerta. */
+const SIDE_DOMINANCE_DB = 6;
+
+/**
+ * Energía de flujo de cada lado de la línea de base (dB, relativa al suelo), sobre el espectro
+ * suavizado: bins por encima del suelo + margen, fuera de la banda del filtro de pared.
+ */
+export function sideEnergyDb(columns: readonly SpectralColumn[], opts: MeasureOptions): { pos: number; neg: number } {
+  const margin = opts.thresholdMarginDb ?? 12;
+  let pos = 1e-12;
+  let neg = 1e-12;
+  for (const col of smoothSpectrum(columns)) {
+    const N = col.powerDb.length;
+    const floor = noiseFloorDb(col);
+    const fMin = Math.max(2.5 * (opts.wallFilterHz ?? 25), (2 * col.prfHz) / N);
+    for (let k = 0; k < N; k++) {
+      const f = ((k - N / 2) / N) * col.prfHz;
+      if (Math.abs(f) < fMin || col.powerDb[k] <= floor + margin) continue;
+      const p = Math.pow(10, (col.powerDb[k] - floor) / 10);
+      if (f > 0) pos += p;
+      else neg += p;
+    }
+  }
+  return { pos: 10 * Math.log10(pos), neg: 10 * Math.log10(neg) };
+}
+
 export function measureObservedRenal(columns: readonly SpectralColumn[], beats: Beat[], opts: MeasureOptions): ObservedRenal | null {
   const tr = observedSideTraces(columns, opts);
   if (tr.t.length < 10) return null;
@@ -272,9 +307,11 @@ export function measureObservedRenal(columns: readonly SpectralColumn[], beats: 
   const rp = sdRatio(pos);
   const rn = sdRatio(neg);
   const MIN_SIGNAL = 2 * Math.max(1, beats.length); // cm/s acumulados: por debajo, el lado está vacío
+  const energy = sideEnergyDb(columns, opts);
   let veinSign: 1 | -1;
   if (rp.total < MIN_SIGNAL) veinSign = -1;
   else if (rn.total < MIN_SIGNAL) veinSign = 1;
+  else if (Math.abs(energy.pos - energy.neg) >= SIDE_DOMINANCE_DB) veinSign = energy.pos > energy.neg ? 1 : -1;
   else veinSign = rp.ratio > rn.ratio ? -1 : 1; // el lado con sístole dominante es la arteria
   const vein = veinSign === 1 ? pos : neg;
   const anterogradeSign = (opts.invert ? -1 : 1) * veinSign;

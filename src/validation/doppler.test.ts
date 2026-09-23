@@ -212,9 +212,11 @@ describe('Volumen de muestra físico (guía §10, §21)', () => {
       }
     }
     const gate = gateAt(best!.theta, best!.r);
-    // PRF 3200 Hz (escala ±49 cm/s): la envolvente del pico S normal (~40 cm/s con
-    // perfil n = 3) no debe plegarse; en el equipo el operador sube la escala igual.
-    runSeconds(gate, 4, 3200);
+    // PRF 4500 Hz (escala ±69 cm/s): la envolvente del pico S normal llega a ~48 cm/s (máximo
+    // del perfil n = 3 más el ensanchamiento de la apertura) y no debe plegarse. Con 3200 Hz
+    // (±49) se plegaba en cuanto el centro del vaso tuvo su sangre (antes la población del
+    // volumen de muestra ya se estaba yendo a los bordes a los 4 s); el operador sube la escala.
+    runSeconds(gate, 4, 4500);
     const q = anatomy.classifyWorld(gate.center, engine.sample);
     const v = q.bloodVelocity!;
     const meanAlong = -(v[0] * gate.beamDir[0] + v[1] * gate.beamDir[1] + v[2] * gate.beamDir[2]);

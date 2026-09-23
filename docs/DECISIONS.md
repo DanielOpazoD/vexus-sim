@@ -597,6 +597,43 @@ sin presentación) fallan; el temporizador con un WebGL falso (no bloquea, media
 reutiliza y libera consultas, deja de medir si el driver no responde) y el resumen con los valores
 medidos en Metal. En vivo: modo B y color correctos, equivalencia 100 %, «GPU ≈ 26 ms/cuadro».
 
+## 48. La sangre del volumen de muestra reentra por su propia cuerda y la vena renal es el lado que domina la puerta
+
+**Contexto.** Con la puerta quieta sobre la suprahepática del sano, en apnea, la señal PW se perdía
+sola: los dispersores con peso de haz > 0,3 pasaban de 30 a 0 en 10 s, el peso de sangre caía al
+66 % del de una siembra nueva y la VSH acababa «sin señal» a los ~20 s, con la verdad constante.
+Causa: al salir de la caja, la sangre reentraba por su recta de corriente pero se reclasificaba en
+el punto de entrada, y la reclasificación periódica la reorientaba con la tangente local; en un
+vaso curvo la recta de vuelta no era la de ida, la población derivaba hacia una esquina y quedaba
+atrapada en cuerdas de 8–32 ticks, demasiado cortas para volver a reclasificarse (estado
+absorbente). Además cada reentrada costaba una clasificación anatómica (44 µs): 19 000–30 000 por
+segundo, más de un segundo de CPU por segundo simulado.
+**Opciones.** (a) Reentrada por la frontera de la caja con probabilidad proporcional al flujo
+entrante v·n: exacta, pero por rechazo cuesta ~2 clasificaciones por reentrada en la suprahepática y
+~35 en una interlobar (la caja es casi toda parénquima). (b) Caja periódica en sus propios ejes:
+en un vaso oblicuo la sangre reentra fuera de la luz y se convierte en tejido para siempre (fuga).
+(c) Órbita cerrada: la sangre reentra por su cuerda con su identidad y su dirección.
+**Decisión.** (c). `SampleVolumeIQ.spawn` devuelve, para la sangre, `reenter(exited, …)`: fase y
+amplitud nuevas, mismo vaso, misma base de flujo, sin clasificar; la reclasificación periódica ya
+no reorienta la sangre que sigue en su vaso. El tejido se sigue clasificando al entrar (con la
+respiración puede entrar sangre) y, si la recta ya no cruza la caja, se resiembra al azar como
+antes. Nuevo diagnóstico `GateComposition.bloodWeight` (Σ w_sangre / N). Consecuencia en la
+medición: con el centro del vaso poblado, la arteria interlobar vecina resultó ser una señal débil
+(19–25 dB bajo la vena en el sano y en FA) cuya traza, rozando el umbral, sale plana: la regla
+«el lado de mayor S/D es la arteria» elegía al azar. `measureObservedRenal` toma ahora como vena el
+lado que domina la potencia (`sideEnergyDb`, ≥ 6 dB) y solo si ambos son comparables (congestión
+grave: la vena monofásica queda 3–4 dB por encima) usa el predominio sistólico.
+**Consecuencias.** La medición es estable durante minutos de puerta quieta; la cadena PW baja a
+~4 400 clasificaciones por segundo en la suprahepática (÷6). Las envolventes llegan ahora al máximo
+real del perfil: el pico S normal alcanza ~48 cm/s y a PRF 3200 (±49 cm/s) se pliega; la prueba de
+dirección usa 4500 Hz, como subiría la escala el operador. Pendiente: en vasos finos y curvos la
+cuerda recta puede salir de la luz (sangre fuera del vaso hasta la siguiente reclasificación, que
+sigue alcanzando a un cuarto fijo de la población: `thin-vessel-sample-volume-lag`).
+**Verificación.** `sampleVolume.test.ts`: en apnea sobre la suprahepática, el peso de sangre con
+historia se mantiene > 0,8 del de una siembra nueva entre 14 y 22 s (sin el cambio: 0,66, falla).
+`examChain.test.ts` (sano y FA: «continuo» con la vena bien elegida; antes, con el arreglo y la
+regla S/D, salía «bifásico») y `doppler.test.ts`.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

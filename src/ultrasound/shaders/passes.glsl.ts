@@ -1,6 +1,7 @@
 import { TISSUE_COUNT } from '../../anatomy/tissues';
 import { C_RECONSTRUCTION_MM_S } from '../../core/units';
 import { ANATOMY_GLSL } from '../../anatomy/gpu/anatomy.glsl';
+import { APERTURE_GLSL } from '../aperture';
 
 export const VERT = /* glsl */ `#version 300 es
 precision highp float;
@@ -34,69 +35,163 @@ vec3 pointOnLine(vec3 dir, float r) { return uCurvC + dir * (uCurvR + r); }
 `;
 
 /**
- * Pasada A: transmisión (marcha por rayos) — atenuación acumulada por tejido,
- * primer gas, primer hueso y reflexión especular en la interfaz
- * diafragma–pulmón (el rayo se refleja y sigue: artefacto en espejo real).
- * Salida 0: (transmisión de amplitud ida y vuelta, gasHit, boneHit, mirrorHit)
- * Salida 1: (dirección reflejada.xyz, tipo de gas: 1 pulmón, 2 intestinal)
+ * Pasada A en cuatro etapas (decisión 54). Antes cada celda (línea × profundidad gruesa) marchaba
+ * su rayo desde la piel: O(N²), ~2,5 millones de clasificaciones por cuadro. Ahora:
+ *   A0 impactos: una marcha por línea (primer pulmón con su reflexión especular —el espejo—, primer
+ *      gas, primer hueso);
+ *   A1 segmentos: cada segmento grueso se clasifica una vez, sobre el camino (reflejado o no) de A0;
+ *   A2 suma: la atenuación ida y vuelta acumulada hasta cada profundidad, con las mismas reglas que
+ *      `ultrasound/transmission.ts` (gel previo a la piel sin pérdidas, gas 60 dB/cm, hueso 6 dB al
+ *      entrar + absorción, espejo 0,5 dB);
+ *   A  apertura: la transmisión de ida es la media sobre el cono del haz, no la de un solo rayo: un
+ *      obstáculo que tapa parte de la apertura deja penumbra y la sombra se rellena en profundidad.
+ * Salida de A: 0 = (transmisión ida y vuelta con apertura, gasHit, boneHit, mirrorHit),
+ * 1 = (dirección reflejada, tipo de gas: 1 pulmón, 2 intestinal), 2 = (transmisión de un solo rayo:
+ * la que usan el color y el PW, que así comparten modelo; decisión 50).
  */
-export const FRAG_TRANSMISSION = /* glsl */ `#version 300 es
+export const FRAG_TRANS_HITS = /* glsl */ `#version 300 es
 precision highp float;
 precision highp int;
 ${ANATOMY_GLSL}
 ${BEAM_GLSL}
 uniform float uCoarseN;
 in vec2 vUv;
-layout(location = 0) out vec4 o0;
-layout(location = 1) out vec4 o1;
+layout(location = 0) out vec4 h0; // (segmento del espejo, del primer gas, del primer hueso, tipo de gas)
+layout(location = 1) out vec4 h1; // (dirección reflejada, r del espejo)
 void main() {
-  float theta = lineTheta(vUv.x);
-  vec3 dir0 = lineDir(theta);
-  float rEnd = vUv.y * uDepth;
+  vec3 dir0 = lineDir(lineTheta(vUv.x));
   float step = uDepth / uCoarseN;
-  int n = int(ceil(rEnd / step));
-  float attenDb = 0.0;
-  float gasHit = -1.0, boneHit = -1.0, mirrorHit = -1.0, gasKind = 0.0;
-  vec3 dir = dir0;
+  int n = int(uCoarseN);
   vec3 origin = pointOnLine(dir0, 0.0);
+  vec3 dir = dir0;
   vec3 hitPoint = origin;
   float hitR = 0.0;
-  bool boneEntered = false;
+  float mirrorSeg = -1.0, gasSeg = -1.0, boneSeg = -1.0, gasKind = 0.0;
   bool entered = false;
   for (int s = 0; s < 512; s++) {
     if (s >= n) break;
     float r = (float(s) + 0.5) * step;
-    vec3 p = mirrorHit >= 0.0 ? hitPoint + dir * (r - hitR) : origin + dir * r;
-    vec3 m = toMaterial(p);
-    Cls c = classify(m);
-    // Hueco entre la cara convexa y la piel: gel de acoplamiento, sin pérdidas
-    // ni ecos (el acoplamiento por línea se modela aparte).
+    vec3 p = mirrorSeg >= 0.0 ? hitPoint + dir * (r - hitR) : origin + dir * r;
+    Cls c = classify(toMaterial(p));
+    // Hueco entre la cara convexa y la piel: gel de acoplamiento (el acoplamiento va aparte).
     if (c.tissue == T_AIR && !entered) continue;
     entered = true;
     float flag = uTissueFlag[c.tissue];
     if (flag > 0.5 && flag < 1.5) {
-      if (c.tissue == T_LUNG && mirrorHit < 0.0) {
-        mirrorHit = r; hitR = r; hitPoint = p;
+      if (c.tissue == T_LUNG && mirrorSeg < 0.0) {
+        mirrorSeg = float(s); hitR = r; hitPoint = p;
         vec3 nn = c.n;
         if (dot(nn, dir) > 0.0) nn = -nn;
         dir = reflect(dir, nn);
-        attenDb += 0.5;
-        if (gasHit < 0.0) { gasHit = r; gasKind = 1.0; }
+        if (gasSeg < 0.0) { gasSeg = float(s); gasKind = 1.0; }
         continue;
       }
-      if (gasHit < 0.0) { gasHit = r; gasKind = 2.0; }
-      attenDb += 60.0 * step / 10.0; // gas intestinal: pérdida masiva y progresiva
+      if (gasSeg < 0.0) { gasSeg = float(s); gasKind = 2.0; }
       continue;
     }
-    if (flag > 1.5) {
-      if (boneHit < 0.0) boneHit = r;
-      if (!boneEntered) { attenDb += 6.0; boneEntered = true; }
-    }
-    attenDb += 2.0 * uTissueAlpha[c.tissue] * (step / 10.0);
+    if (flag > 1.5 && boneSeg < 0.0) boneSeg = float(s);
   }
-  float transmission = pow(10.0, -attenDb / 20.0);
-  o0 = vec4(transmission, gasHit, boneHit, mirrorHit);
-  o1 = vec4(dir, gasKind);
+  h0 = vec4(mirrorSeg, gasSeg, boneSeg, gasKind);
+  h1 = vec4(dir, hitR);
+}
+`;
+
+export const FRAG_TRANS_SEGMENTS = /* glsl */ `#version 300 es
+precision highp float;
+precision highp int;
+${ANATOMY_GLSL}
+${BEAM_GLSL}
+uniform float uCoarseN;
+uniform sampler2D uHits0;
+uniform sampler2D uHits1;
+in vec2 vUv;
+out vec4 oSeg; // (dB ida y vuelta del segmento, es aire, es hueso, 0)
+void main() {
+  int line = int(gl_FragCoord.x);
+  int s = int(gl_FragCoord.y);
+  vec4 h0 = texelFetch(uHits0, ivec2(line, 0), 0);
+  vec4 h1 = texelFetch(uHits1, ivec2(line, 0), 0);
+  vec3 dir0 = lineDir(lineTheta(vUv.x));
+  float step = uDepth / uCoarseN;
+  float r = (float(s) + 0.5) * step;
+  vec3 origin = pointOnLine(dir0, 0.0);
+  // tras el espejo, el camino sigue la dirección reflejada desde el punto de impacto
+  bool reflected = h0.x >= 0.0 && float(s) > h0.x;
+  vec3 p = reflected ? origin + dir0 * h1.w + h1.xyz * (r - h1.w) : origin + dir0 * r;
+  Cls c = classify(toMaterial(p));
+  float flag = uTissueFlag[c.tissue];
+  float db;
+  if (float(s) == h0.x) db = 0.5;                                  // el espejo: 0,5 dB y sigue
+  else if (flag > 0.5 && flag < 1.5) db = 60.0 * step / 10.0;      // gas (o aire tras la piel)
+  else db = 2.0 * uTissueAlpha[c.tissue] * (step / 10.0);
+  oSeg = vec4(db, c.tissue == T_AIR ? 1.0 : 0.0, flag > 1.5 ? 1.0 : 0.0, 0.0);
+}
+`;
+
+export const FRAG_TRANS_PREFIX = /* glsl */ `#version 300 es
+precision highp float;
+precision highp int;
+${BEAM_GLSL}
+uniform float uCoarseN;
+uniform sampler2D uSeg;
+uniform sampler2D uHits0;
+uniform sampler2D uHits1;
+in vec2 vUv;
+layout(location = 0) out vec4 o0; // (dB ida y vuelta de un rayo, gasHit, boneHit, mirrorHit)
+layout(location = 1) out vec4 o1; // (dirección, tipo de gas)
+void main() {
+  int line = int(gl_FragCoord.x);
+  int k = int(gl_FragCoord.y);
+  float attenDb = 0.0;
+  bool entered = false;
+  bool boneEntered = false;
+  for (int s = 0; s < 512; s++) {
+    if (s > k) break;
+    vec4 g = texelFetch(uSeg, ivec2(line, s), 0);
+    if (g.y > 0.5 && !entered) continue;
+    entered = true;
+    if (g.z > 0.5 && !boneEntered) { attenDb += 6.0; boneEntered = true; }
+    attenDb += g.x;
+  }
+  vec4 h0 = texelFetch(uHits0, ivec2(line, 0), 0);
+  vec4 h1 = texelFetch(uHits1, ivec2(line, 0), 0);
+  float step = uDepth / uCoarseN;
+  float kf = float(k);
+  float mirrorHit = h0.x >= 0.0 && h0.x <= kf ? (h0.x + 0.5) * step : -1.0;
+  float gasHit = h0.y >= 0.0 && h0.y <= kf ? (h0.y + 0.5) * step : -1.0;
+  float boneHit = h0.z >= 0.0 && h0.z <= kf ? (h0.z + 0.5) * step : -1.0;
+  vec3 dir = mirrorHit >= 0.0 ? h1.xyz : lineDir(lineTheta(vUv.x));
+  o0 = vec4(attenDb, gasHit, boneHit, mirrorHit);
+  o1 = vec4(dir, gasHit >= 0.0 ? h0.w : 0.0);
+}
+`;
+
+export const FRAG_TRANSMISSION = /* glsl */ `#version 300 es
+precision highp float;
+precision highp int;
+${BEAM_GLSL}
+uniform float uCoarseN;
+uniform sampler2D uPre0;
+uniform sampler2D uPre1;
+uniform sampler2D uHits0;
+uniform vec3 uAperture; // D de emisión (mm), D de recepción máxima (mm), F# de recepción mínimo
+in vec2 vUv;
+layout(location = 0) out vec4 o0;
+layout(location = 1) out vec4 o1;
+layout(location = 2) out vec4 o2;
+${APERTURE_GLSL}
+void main() {
+  int line = int(gl_FragCoord.x);
+  int k = int(gl_FragCoord.y);
+  vec4 c0 = texelFetch(uPre0, ivec2(line, k), 0);
+  vec4 c1 = texelFetch(uPre1, ivec2(line, k), 0);
+  float step = uDepth / uCoarseN;
+  float r = (float(k) + 0.5) * step;
+  float single = pow(10.0, -c0.x / 20.0);
+  float T = apertureTransmission(line, k, r, step, single);
+  o0 = vec4(T, c0.yzw);
+  o1 = c1;
+  o2 = vec4(single, 0.0, 0.0, 0.0);
 }
 `;
 
@@ -170,8 +265,12 @@ void main() {
   float theta = lineTheta(vUv.x);
   vec3 dir0 = lineDir(theta);
   float r = vUv.y * uDepth;
-  vec4 t0 = texture(uTrans0, vUv);
-  vec4 t1 = texture(uTrans1, vUv);
+  // Transmisión interpolada; impactos y dirección sin interpolar (texelFetch): mezclar entre líneas
+  // una profundidad de impacto con «sin impacto» (−1) inventaba impactos a media profundidad.
+  ivec2 ts = textureSize(uTrans0, 0);
+  ivec2 tc = ivec2(min(floor(vUv * vec2(ts)), vec2(ts) - 1.0));
+  vec4 t0 = vec4(texture(uTrans0, vUv).x, texelFetch(uTrans0, tc, 0).yzw);
+  vec4 t1 = texelFetch(uTrans1, tc, 0);
   float coupling = texture(uCoupling, vec2(vUv.x, 0.5)).r;
   float mirrorHit = t0.w;
   vec3 dir = dir0;

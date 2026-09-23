@@ -115,7 +115,11 @@ export const TISSUES: TissueProps[] = [
   { name: 'pared venosa fina', c: 1586, rho: 1079, alpha1: 0.6, b: 1, backscatter: 0.7, gas: false, bone: false },
   { name: 'diafragma', c: 1588, rho: 1090, alpha1: 0.617, b: 1.083, backscatter: 1.2, gas: false, bone: false },
   { name: 'pulmón (gas)', c: 343, rho: 1.16, alpha1: 0.0034, b: 2, backscatter: 0, gas: true, bone: false },
-  { name: 'hueso cortical', c: 3515, rho: 1908, alpha1: 4.738, b: 1, backscatter: 0.9, gas: false, bone: true },
+  // Hueso: c y ρ de IT'IS; la atenuación efectiva de una costilla (cortical + esponjosa, con su
+  // dispersión) es la de las tablas clínicas, 13–26 dB/cm a 1 MHz (Bushberg, Essential Physics of
+  // Medical Imaging, tabla de atenuaciones): la de IT'IS para cortical pura (4,7) dejaba pasar ~25 dB
+  // tras una costilla y el tejido seguía visible dentro de la sombra (decisión 54).
+  { name: 'hueso cortical', c: 3515, rho: 1908, alpha1: 20, b: 1, backscatter: 0.9, gas: false, bone: true },
   { name: 'intestino (pared/contenido)', c: 1570, rho: 1050, alpha1: 0.7, b: 1, backscatter: 0.9, gas: false, bone: false },
   { name: 'gas intestinal', c: 343, rho: 1.16, alpha1: 0.0034, b: 2, backscatter: 0, gas: true, bone: false },
   { name: 'líquido (bilis/ascitis)', c: 1482, rho: 994, alpha1: 0.0022, b: 1, backscatter: 0.002, gas: false, bone: false },
@@ -129,7 +133,7 @@ export const TISSUES: TissueProps[] = [
   { name: 'grasa perirrenal', c: 1450, rho: 920, alpha1: 0.45, b: 1.1, backscatter: 1.5, gas: false, bone: false },
   { name: 'pared de vía biliar', c: 1586, rho: 1079, alpha1: 0.7, b: 1, backscatter: 2.4, gas: false, bone: false },
   // Vértebra: mismas propiedades que el hueso cortical; tejido aparte solo para rotular «columna»
-  { name: 'vértebra', c: 3515, rho: 1908, alpha1: 4.738, b: 1, backscatter: 0.9, gas: false, bone: true },
+  { name: 'vértebra', c: 3515, rho: 1908, alpha1: 20, b: 1, backscatter: 0.9, gas: false, bone: true },
   // Ligamento redondo: grasa + tejido fibroso, marcadamente ecogénico (foco brillante en el
   // corte transversal del lóbulo izquierdo, a veces con sombra) [E.3].
   { name: 'ligamento redondo (grasa)', c: 1470, rho: 950, alpha1: 0.6, b: 1.1, backscatter: 2.2, gas: false, bone: false },

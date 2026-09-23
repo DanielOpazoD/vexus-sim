@@ -23,6 +23,9 @@ import {
   FRAG_SCANCONVERT,
   FRAG_TISSUEMAP,
   FRAG_QUERY,
+  FRAG_TRANS_HITS,
+  FRAG_TRANS_PREFIX,
+  FRAG_TRANS_SEGMENTS,
   FRAG_TRANSMISSION,
   VERT,
 } from './shaders/passes.glsl';
@@ -109,7 +112,8 @@ export const DISPLAY_MARGIN_PX = 8;
  */
 const TGC_CAP_DB = 50;
 const FINE_DEPTH = 1024;
-const COARSE_DEPTH = 160;
+/** Muestras gruesas en profundidad de la transmisión (pasada A). */
+export const COARSE_DEPTH = 160;
 const COLOR_W = 96;
 /** Umbral de potencia para pintar una celda de color (unidades de sangre a transmisión 1). */
 export const COLOR_DISPLAY_THRESHOLD = 0.0035;
@@ -148,6 +152,9 @@ export interface GpuPointQuery {
 
 export class UltrasoundRenderer {
   readonly gl: WebGL2RenderingContext;
+  private pTransHits: GLProgram;
+  private pTransSeg: GLProgram;
+  private pTransPre: GLProgram;
   private pTrans: GLProgram;
   private pRaw: GLProgram;
   private pAxial: GLProgram;
@@ -168,6 +175,10 @@ export class UltrasoundRenderer {
   private mapPbo: WebGLBuffer | null = null;
   private mapPending: { sync: WebGLSync; pbo: WebGLBuffer } | null = null;
   private mapLast: { width: number; height: number; tissue: Uint8Array; vessel: Int8Array } | null = null;
+  /** Pasada A en cuatro etapas (decisión 54): impactos por línea, segmentos, suma y apertura. */
+  private tHits: RenderTarget;
+  private tSeg: RenderTarget;
+  private tPre: RenderTarget;
   private tTrans: RenderTarget;
   private tRaw: RenderTarget;
   private tAxial: RenderTarget;
@@ -215,6 +226,9 @@ export class UltrasoundRenderer {
     if (!gl.getExtension('EXT_color_buffer_float')) throw new Error('EXT_color_buffer_float no disponible');
     gl.getExtension('OES_texture_float_linear');
     this.timer = new GpuPassTimer<PassId>(gl);
+    this.pTransHits = new GLProgram(gl, VERT, FRAG_TRANS_HITS, 'transmissionHits');
+    this.pTransSeg = new GLProgram(gl, VERT, FRAG_TRANS_SEGMENTS, 'transmissionSegments');
+    this.pTransPre = new GLProgram(gl, VERT, FRAG_TRANS_PREFIX, 'transmissionPrefix');
     this.pTrans = new GLProgram(gl, VERT, FRAG_TRANSMISSION, 'transmission');
     this.pRaw = new GLProgram(gl, VERT, FRAG_RAWFIELD, 'rawfield');
     this.pAxial = new GLProgram(gl, VERT, FRAG_AXIAL, 'axial');
@@ -227,7 +241,14 @@ export class UltrasoundRenderer {
     const f = { internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.LINEAR };
     const f2 = { internal: gl.RG32F, format: gl.RG, type: gl.FLOAT, filter: gl.LINEAR };
     const f1 = { internal: gl.R32F, format: gl.RED, type: gl.FLOAT, filter: gl.LINEAR };
-    this.tTrans = createTarget(gl, LINES, COARSE_DEPTH, [f, f]);
+    // impactos y segmentos se leen con texelFetch (NEAREST: nunca interpolar profundidades de impacto);
+    // la transmisión final: 0 = (ida y vuelta con apertura, impactos), 1 = (dirección, tipo de gas),
+    // 2 = un solo rayo (color y PW)
+    const fn = { internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.NEAREST };
+    this.tHits = createTarget(gl, LINES, 1, [fn, fn]);
+    this.tSeg = createTarget(gl, LINES, COARSE_DEPTH, [fn]);
+    this.tPre = createTarget(gl, LINES, COARSE_DEPTH, [fn, fn]);
+    this.tTrans = createTarget(gl, LINES, COARSE_DEPTH, [f, fn, f]);
     this.tRaw = createTarget(gl, LINES, FINE_DEPTH, [f2]);
     this.tAxial = createTarget(gl, LINES, FINE_DEPTH, [f2]);
     this.tEnv = createTarget(gl, LINES, FINE_DEPTH, [f1]);
@@ -272,11 +293,25 @@ export class UltrasoundRenderer {
    */
   dispose(): void {
     const gl = this.gl;
-    for (const p of [this.pTrans, this.pRaw, this.pAxial, this.pLateral, this.pColor, this.pScan, this.pPersist, this.pBlit, this.pMap])
+    for (const p of [
+      this.pTransHits,
+      this.pTransSeg,
+      this.pTransPre,
+      this.pTrans,
+      this.pRaw,
+      this.pAxial,
+      this.pLateral,
+      this.pColor,
+      this.pScan,
+      this.pPersist,
+      this.pBlit,
+      this.pMap,
+    ])
       p.dispose();
     this.pQuery?.dispose();
     this.timer.dispose();
-    for (const t of [this.tTrans, this.tRaw, this.tAxial, this.tEnv, this.tColor, this.tMap]) deleteTarget(gl, t);
+    for (const t of [this.tHits, this.tSeg, this.tPre, this.tTrans, this.tRaw, this.tAxial, this.tEnv, this.tColor, this.tMap])
+      deleteTarget(gl, t);
     if (this.tScan) deleteTarget(gl, this.tScan);
     if (this.tPersist) for (const t of this.tPersist) deleteTarget(gl, t);
     gl.deleteTexture(this.couplingTex);
@@ -478,6 +513,9 @@ export class UltrasoundRenderer {
 
   /** Implementación de cada pasada de `FRAME_PASSES` (el tipo exige una por identificador). */
   private readonly passes: Record<PassId, (inputs: FrameInputs) => void> = {
+    transmissionHits: (inputs) => this.passTransmissionHits(inputs),
+    transmissionSegments: (inputs) => this.passTransmissionSegments(inputs),
+    transmissionPrefix: (inputs) => this.passTransmissionPrefix(inputs),
     transmission: (inputs) => this.passTransmission(inputs),
     rawField: (inputs) => this.passRawField(inputs),
     axial: (inputs) => this.passAxial(inputs),
@@ -488,14 +526,55 @@ export class UltrasoundRenderer {
     present: () => this.passPresent(),
   };
 
-  // A — transmisión
+  // A0 — primeros impactos por línea (una marcha por línea)
+  private passTransmissionHits(inputs: FrameInputs): void {
+    const gl = this.gl;
+    bindTarget(gl, this.tHits);
+    this.pTransHits.use();
+    this.setSceneUniforms(this.pTransHits, inputs);
+    this.setBeamUniforms(this.pTransHits, inputs);
+    this.pTransHits.f('uCoarseN', COARSE_DEPTH);
+    drawFullscreen(gl);
+  }
+
+  // A1 — un segmento grueso por celda, sobre el camino (reflejado o no) de A0
+  private passTransmissionSegments(inputs: FrameInputs): void {
+    const gl = this.gl;
+    bindTarget(gl, this.tSeg);
+    this.pTransSeg.use();
+    this.setSceneUniforms(this.pTransSeg, inputs);
+    this.setBeamUniforms(this.pTransSeg, inputs);
+    this.pTransSeg.f('uCoarseN', COARSE_DEPTH);
+    this.pTransSeg.tex('uHits0', 0, this.tHits.textures[0]);
+    this.pTransSeg.tex('uHits1', 1, this.tHits.textures[1]);
+    drawFullscreen(gl);
+  }
+
+  // A2 — atenuación acumulada hasta cada profundidad (sin clasificar)
+  private passTransmissionPrefix(inputs: FrameInputs): void {
+    const gl = this.gl;
+    bindTarget(gl, this.tPre);
+    this.pTransPre.use();
+    this.setBeamUniforms(this.pTransPre, inputs);
+    this.pTransPre.f('uCoarseN', COARSE_DEPTH);
+    this.pTransPre.tex('uSeg', 0, this.tSeg.textures[0]);
+    this.pTransPre.tex('uHits0', 1, this.tHits.textures[0]);
+    this.pTransPre.tex('uHits1', 2, this.tHits.textures[1]);
+    drawFullscreen(gl);
+  }
+
+  // A — transmisión con la penumbra de la apertura (y la de un solo rayo para el Doppler)
   private passTransmission(inputs: FrameInputs): void {
     const gl = this.gl;
+    const beam = this.profile.beam;
     bindTarget(gl, this.tTrans);
     this.pTrans.use();
-    this.setSceneUniforms(this.pTrans, inputs);
     this.setBeamUniforms(this.pTrans, inputs);
     this.pTrans.f('uCoarseN', COARSE_DEPTH);
+    this.pTrans.tex('uPre0', 0, this.tPre.textures[0]);
+    this.pTrans.tex('uPre1', 1, this.tPre.textures[1]);
+    this.pTrans.tex('uHits0', 2, this.tHits.textures[0]);
+    this.pTrans.v3('uAperture', [beam.apertureTxMm, beam.apertureRxMaxMm, beam.fNumberRxMin]);
     drawFullscreen(gl);
   }
 
@@ -567,7 +646,8 @@ export class UltrasoundRenderer {
     this.pColor.use();
     this.setSceneUniforms(this.pColor, inputs);
     this.setBeamUniforms(this.pColor, inputs);
-    this.pColor.tex('uTrans0', 0, this.tTrans.textures[0]);
+    // el color usa la transmisión de un solo rayo, la misma que el PW (decisión 50)
+    this.pColor.tex('uTrans0', 0, this.tTrans.textures[2]);
     this.pColor.tex('uCoupling', 1, this.couplingTex);
     this.pColor.v4('uBox', c.theta0, c.theta1, c.r0, c.r1);
     this.pColor.v2(
@@ -791,7 +871,8 @@ export class UltrasoundRenderer {
     const y = Math.min(COARSE_DEPTH - 1, Math.max(0, Math.floor(v * COARSE_DEPTH)));
     const px = new Float32Array(4);
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.tTrans.fbo);
-    gl.readBuffer(gl.COLOR_ATTACHMENT0);
+    // un solo rayo: la transmisión que ven el color y el PW
+    gl.readBuffer(gl.COLOR_ATTACHMENT2);
     gl.readPixels(x, y, 1, 1, gl.RGBA, gl.FLOAT, px);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     return px[0];
@@ -813,6 +894,43 @@ export class UltrasoundRenderer {
     const data = new Float32Array(W * H);
     for (let i = 0; i < W * H; i++) data[i] = rgba[i * 4];
     return { lines: W, samples: H, data };
+  }
+
+  /**
+   * Transmisión de un solo rayo (ida y vuelta, amplitud) y profundidad del espejo por línea ×
+   * profundidad gruesa, fila k a (k + 0,5)·profundidad/COARSE_DEPTH. Solo pruebas: la paridad de la
+   * pasada A con el modelo de CPU (`ultrasound/transmission.ts`).
+   */
+  readTransmission(): { lines: number; samples: number; single: Float32Array; mirrorHit: Float32Array } {
+    const gl = this.gl;
+    const W = this.lines;
+    const H = COARSE_DEPTH;
+    const read = (attachment: number): Float32Array => {
+      const px = new Float32Array(W * H * 4);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, this.tTrans.fbo);
+      gl.readBuffer(gl.COLOR_ATTACHMENT0 + attachment);
+      gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, px);
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      return px;
+    };
+    const a2 = read(2);
+    const a0 = read(0);
+    const single = new Float32Array(W * H);
+    const mirrorHit = new Float32Array(W * H);
+    for (let i = 0; i < W * H; i++) {
+      single[i] = a2[i * 4];
+      mirrorHit[i] = a0[i * 4 + 3];
+    }
+    return { lines: W, samples: H, single, mirrorHit };
+  }
+
+  /**
+   * Espera a que la GPU acabe lo encolado (lectura de 1 píxel de la pantalla). Solo pruebas y banco:
+   * sirve para medir el coste de un cuadro en tiempo de pared.
+   */
+  finishForTiming(): void {
+    const px = new Uint8Array(4);
+    this.gl.readPixels(0, 0, 1, 1, this.gl.RGBA, this.gl.UNSIGNED_BYTE, px);
   }
 
   /**

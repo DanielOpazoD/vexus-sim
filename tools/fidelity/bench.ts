@@ -36,7 +36,7 @@ const gpuArgs =
     ? ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist']
     : ['--enable-gpu', '--ignore-gpu-blocklist'];
 const browser = await chromium.launch({ headless: true, args: gpuArgs });
-const results: Record<string, { fps: number | null; stats: FidelityStats; errors: string[] }> = {};
+const results: Record<string, { fps: number | null; msPerFrame: number; stats: FidelityStats; errors: string[] }> = {};
 let gpu = 'desconocida';
 try {
   for (const cs of CASES) {
@@ -70,16 +70,17 @@ try {
         Number(/(\d+) fps/.exec(document.querySelector('#status')?.textContent ?? '')?.[1] ?? Number.NaN),
       );
       const stats = await page.evaluate(() => window.__vexusTest!.fidelity({ display: true }));
-      results[`${cs}/${view}`] = { fps: Number.isFinite(fps) ? fps : null, stats, errors };
+      const msPerFrame = await page.evaluate(() => window.__vexusTest!.frameCostMs(20));
+      results[`${cs}/${view}`] = { fps: Number.isFinite(fps) ? fps : null, msPerFrame, stats, errors };
       await page.close();
       const e = stats.envelope;
       const d = stats.display;
       console.log(
         `${cs}/${view}`.padEnd(32),
-        `cps ${fps}`.padEnd(8),
+        `cps ${fps} · ${msPerFrame.toFixed(1)} ms`.padEnd(18),
         `SNR ${e.snr.toFixed(2)} · grano ${e.fwhmAxialMm.toFixed(2)}×${e.fwhmLateralMm.toFixed(2)} mm · oscuros ${e.darkFraction.toFixed(3)} · grietas ${e.crackIndex.toFixed(3)}`,
         d
-          ? `· hígado ${d.liver.p50} (${d.liver.sd.toFixed(1)}) · luz ${d.lumen.p50} · diafragma ${Number.isFinite(d.diaphragmSaturated) ? (100 * d.diaphragmSaturated).toFixed(1) : '—'} % · ${d.profile.slopeDbPerCm.toFixed(2)} dB/cm · pared ${d.walls
+          ? `· hígado ${d.liver.p50} (${d.liver.sd.toFixed(1)}) · sombra ${Number.isFinite(d.shadow.coreDbBelowLiver) ? d.shadow.coreDbBelowLiver.toFixed(0) : '—'} dB [${d.shadow.edgeProfileDb.map((x) => (Number.isFinite(x) ? x.toFixed(0) : '·')).join(' ')}] · luz ${d.lumen.p50} · diafragma ${Number.isFinite(d.diaphragmSaturated) ? (100 * d.diaphragmSaturated).toFixed(1) : '—'} % · ${d.profile.slopeDbPerCm.toFixed(2)} dB/cm · pared ${d.walls
               .map((b) => `${b.fromDeg}–${b.toDeg}° ${Number.isFinite(b.ratio) ? b.ratio.toFixed(2) : '—'} (${b.walls})`)
               .join(', ')}`
           : '',

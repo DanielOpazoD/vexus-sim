@@ -211,6 +211,13 @@ export function envelopeTexture(
   };
 }
 
+/** Mediana (NaN si vacío). */
+function medianOf(a: readonly number[]): number {
+  if (!a.length) return Number.NaN;
+  const s = [...a].sort((x, y) => x - y);
+  return s[s.length >> 1];
+}
+
 /** Desfase (en muestras o líneas) donde la autocovarianza normalizada cae a 0,5; NaN si no cae. */
 export function halfWidth(acf: readonly number[]): number {
   for (let l = 1; l < acf.length; l++) if (acf[l] < 0.5) return l - 1 + (acf[l - 1] - 0.5) / (acf[l - 1] - acf[l]);
@@ -360,6 +367,21 @@ export interface WallBin {
 /** Tramos de incidencia (°): una pared especular brilla a 0–20° y se apaga hacia 60°. */
 export const WALL_INCIDENCE_BINS_DEG = [0, 20, 40, 60] as const;
 
+/**
+ * Sombra ósea en la imagen mostrada: tejido blando 10–40 mm detrás del primer hueso de la línea.
+ * El núcleo son las líneas cuya vecindad ±3 también toca hueso; el perfil del borde da el nivel
+ * (dB bajo el techo) a −4…+4 líneas del borde geométrico de cada sombra (negativo = fuera, 0 = la
+ * primera línea que toca hueso), promediado entre bordes: un escalón es una sombra de un solo
+ * rayo; una rampa, la penumbra de la apertura.
+ */
+export interface ShadowStats {
+  coreLines: number;
+  /** Nivel del hígado puro menos el del núcleo de la sombra (dB): una sombra limpia llega al suelo. */
+  coreDbBelowLiver: number;
+  coreGray: number;
+  edgeProfileDb: number[];
+}
+
 export interface FidelityBand extends EnvelopeTexture {
   r0: number;
   r1: number;
@@ -380,6 +402,8 @@ export interface FidelityStats {
     lumen: DisplayStats;
     /** Fracción de los píxeles del diafragma saturados (≥ 250); NaN si no hay diafragma a la vista. */
     diaphragmSaturated: number;
+    /** Sombra ósea (costillas, columna): ver `ShadowStats`. */
+    shadow: ShadowStats;
     profile: DepthProfile;
     walls: WallBin[];
     colorOn: boolean;
@@ -403,6 +427,7 @@ const WALL_TISSUES: ReadonlySet<number> = new Set([Tissue.VesselWallThin, Tissue
 const LIVER: number = Tissue.Liver;
 const BLOOD: number = Tissue.Blood;
 const DIAPHRAGM: number = Tissue.Diaphragm;
+const AIR: number = Tissue.Air;
 /** Distancia mínima (mm) de la sangre a su pared para medir el centro de la luz. */
 const LUMEN_CLEARANCE_MM = 1.5;
 /** Acoplamiento mínimo de una línea para medir su textura (el mal contacto la oscurece entera). */
@@ -453,6 +478,7 @@ export function fidelityStats(
   const tissue = new Uint8Array(lines * nr);
   const wallVessel = new Uint8Array(lines * nr);
   const shadowAt = new Float32Array(lines).fill(Infinity);
+  const boneAt = new Float32Array(lines).fill(Infinity);
   const impureAt = new Float32Array(lines).fill(Infinity);
   const coupled = new Uint8Array(lines);
   for (let u = 0; u < lines; u++) {
@@ -470,6 +496,7 @@ export function fidelityStats(
       // el aire antes de la piel es el gel de acoplamiento (la pasada A también lo salta)
       if (q.tissue !== Tissue.Air) entered = true;
       if (entered && r < shadowAt[u] && (TISSUES[q.tissue].gas || TISSUES[q.tissue].bone)) shadowAt[u] = r;
+      if (entered && r < boneAt[u] && TISSUES[q.tissue].bone) boneAt[u] = r;
       if (q.tissue === Tissue.Liver) inLiver = true;
       else if (inLiver) {
         excessDb += 2 * (alphaLiver - attenuationDbPerCm(q.tissue, fB)) * (GRID_STEP_MM / 10);
@@ -581,6 +608,64 @@ export function fidelityStats(
     }
   const diaphragmSaturated = diaphragmPx ? diaphragmSat / diaphragmPx : Number.NaN;
 
+  // Sombra ósea: nivel por línea del tejido blando 10–40 mm detrás del hueso (el de la línea o, fuera
+  // de la sombra, el de la línea con hueso más cercana a ±6 para comparar a la misma profundidad).
+  const levelDb = (g: number): number => (levelOfGrey(g / 255) - 1) * sim.bmode.dynamicRangeDb;
+  const refBone = new Float32Array(lines).fill(Infinity);
+  for (let u = 0; u < lines; u++)
+    for (let d = 0; d <= 6 && !Number.isFinite(refBone[u]); d++)
+      for (const uu of [u - d, u + d]) if (uu >= 0 && uu < lines && Number.isFinite(boneAt[uu])) refBone[u] = boneAt[uu];
+  const perLine: number[][] = Array.from({ length: lines }, () => []);
+  const perLineGray: number[][] = Array.from({ length: lines }, () => []);
+  for (let y = 0; y < img.height; y += 2)
+    for (let x = 0; x < img.width; x += 2) {
+      const b = pixelToBeam(layout, tr, depth, x, y);
+      if (!b) continue;
+      const u = Math.round((b.theta + tr.halfSector) / dTheta - 0.5);
+      if (u < 0 || u >= lines || !Number.isFinite(refBone[u]) || b.r < refBone[u] + 10 || b.r > refBone[u] + 40) continue;
+      const i = cellOf(u, b.r);
+      if (i < 0) continue;
+      const t = TISSUES[tissue[i]];
+      if (t.gas || t.bone || tissue[i] === AIR) continue;
+      const g = img.gray[y * img.width + x];
+      perLine[u].push(levelDb(g));
+      perLineGray[u].push(g);
+    }
+  const lineLevel = perLine.map((a) => medianOf(a));
+  const hit = (u: number): boolean => u >= 0 && u < lines && Number.isFinite(boneAt[u]);
+  const core: number[] = [];
+  const coreGray: number[] = [];
+  let coreLines = 0;
+  for (let u = 0; u < lines; u++) {
+    let all = true;
+    for (let du = -3; du <= 3; du++) if (!hit(u + du)) all = false;
+    if (all && perLine[u].length) {
+      coreLines++;
+      core.push(...perLine[u]);
+      coreGray.push(...perLineGray[u]);
+    }
+  }
+  const edgeAcc = Array.from({ length: 9 }, () => [] as number[]);
+  for (let u = 0; u < lines; u++) {
+    if (!hit(u)) continue;
+    let v = u;
+    while (hit(v + 1)) v++;
+    if (v - u + 1 >= 7)
+      for (let o = -4; o <= 4; o++) {
+        for (const line of [u + o, v - o]) {
+          const lvl = line >= 0 && line < lines ? lineLevel[line] : Number.NaN;
+          if (Number.isFinite(lvl)) edgeAcc[o + 4].push(lvl);
+        }
+      }
+    u = v;
+  }
+  const shadow: ShadowStats = {
+    coreLines,
+    coreDbBelowLiver: liver.pixels && core.length ? levelDb(liver.p50) - medianOf(core) : Number.NaN,
+    coreGray: medianOf(coreGray),
+    edgeProfileDb: edgeAcc.map((a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : Number.NaN)),
+  };
+
   // Paredes anteriores: paso de ≥ 3 mm de hígado a la sangre de una VCI o suprahepática (con, a lo
   // sumo, la pared del vaso en medio). La normal de la pared es el gradiente de la distancia a la
   // luz (`vesselHit.d`) justo dentro de ella; la incidencia decide el tramo. Pico de gris en
@@ -650,17 +735,12 @@ export function fidelityStats(
       deltas[bin].push((levelOfGrey(peak / 255) - levelOfGrey(med / 255)) * sim.bmode.dynamicRangeDb);
     }
   }
-  const median = (a: number[]): number => {
-    if (!a.length) return Number.NaN;
-    const s = [...a].sort((x, y) => x - y);
-    return s[s.length >> 1];
-  };
   const walls = ratios.map((r, j) => ({
     fromDeg: WALL_INCIDENCE_BINS_DEG[j],
     toDeg: WALL_INCIDENCE_BINS_DEG[j + 1],
     walls: r.length,
-    ratio: median(r),
-    deltaDb: median(deltas[j]),
+    ratio: medianOf(r),
+    deltaDb: medianOf(deltas[j]),
   }));
-  return { envelope, bands, display: { liver, lumen, diaphragmSaturated, profile, walls, colorOn: opts.colorOn ?? false } };
+  return { envelope, bands, display: { liver, lumen, diaphragmSaturated, shadow, profile, walls, colorOn: opts.colorOn ?? false } };
 }

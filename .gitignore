@@ -1,5 +1,5 @@
 # dependencias y salidas de build
-node_modules/
+node_modules
 dist/
 coverage/
 *.tsbuildinfo

@@ -53,18 +53,44 @@ test('modos por teclado, pestaña Medir y captura de una medición', async ({ pa
   test.setTimeout(180_000);
   // ?docente: al final se abre la pestaña Docente (en producción la casilla solo aparece así)
   const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  // Técnica del operador: apnea espiratoria (pestaña Adquirir) antes de medir la suprahepática
+  await page
+    .locator('button', { hasText: /Apnea\s*esp/ })
+    .first()
+    .click();
   await page.keyboard.press('p');
   await expect(page.locator('#mode-pw')).toHaveClass(/active/);
   await expect(page.locator('#hud-br')).toContainText('PW');
-  await page.getByRole('tab', { name: 'Medir' }).click();
-  await page.getByRole('button', { name: 'Suprahepática', exact: true }).click();
-  // La puerta sobre la suprahepática (técnica del operador) y 7 s de espectro sin renderizar:
-  // con SwiftShader el reloj avanza despacio y 2,5 s de espera no daban latidos completos
-  expect(await page.evaluate(() => window.__vexusTest!.placeGate(['hvRight', 'hvMiddle']))).toBe(true);
+  const capture = async () => {
+    await page.getByRole('tab', { name: 'Medir' }).click();
+    await page.getByRole('button', { name: 'Suprahepática', exact: true }).click();
+    await page.getByRole('button', { name: 'Capturar' }).click();
+  };
+  // Ventana intercostal (la del protocolo) y la puerta sobre la suprahepática en un punto sin
+  // sombras (técnica del operador); 7 s de espectro sin renderizar: con SwiftShader el reloj avanza
+  // despacio y 2,5 s no daban latidos completos. Antes la puerta caía en la sombra de la cortina
+  // pulmonar y se «medía» el ruido; ahora sería no medible. Medido con GPU: banda 28 dB sobre el
+  // suelo (desde la pose inicial la VSH queda a 11 cm con −32 dB y solo 15 dB de banda).
+  expect(
+    await page.evaluate(() => {
+      window.__vexusTest!.goToStartPoint('intercostal');
+      return window.__vexusTest!.placeGate(['hvRight', 'hvMiddle']);
+    }),
+  ).toBe(true);
   await page.evaluate(() => window.__vexusTest!.advance(7));
-  await page.getByRole('button', { name: 'Capturar' }).click();
-  // Un valor numérico: «VSH: —» (captura fallida) ya no pasa
+  await capture();
+  // Un valor numérico con el visto bueno de la calidad: «VSH: —» o «no medible» no pasan
   await expect(page.locator('.result')).toContainText(/VSH: S -?\d+\.\d · D -?\d+\.\d/);
+  // Sin contacto no hay flujo en la puerta: la captura es no medible, con el motivo
+  await page.evaluate(() => {
+    window.__vexusTest!.liftProbe(10);
+    window.__vexusTest!.advance(7);
+  });
+  await capture();
+  await expect(page.locator('.result')).toContainText('VSH: no medible: no hay flujo en la puerta');
+  // y la fila del protocolo no muestra el patrón de esa captura (el de un espectro de ruido es «grave»)
+  const hepaticRow = page.locator('.control').filter({ has: page.getByRole('button', { name: 'Suprahepática', exact: true }) });
+  await expect(hepaticRow.locator('output')).toHaveText('no medible');
   // Docente: el panel de depuración existe y se actualiza (la verdad fisiológica
   // necesita t > 8 s de simulación, inalcanzable con SwiftShader en CI; se prueba en local).
   // `force`: con render por software el hilo principal no deja al elemento «estable».

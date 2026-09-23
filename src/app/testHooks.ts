@@ -2,6 +2,7 @@ import type { VesselId } from '../physiology/vessels';
 import type { EquipmentCommand } from './equipment';
 import { equivalenceSweep, volumeEquivalence, type EquivalencePoseReport, type VolumeEquivalenceReport } from './equivalenceSweep';
 import { bestGateOnVessel } from './gatePlacement';
+import { acousticWindowWeight } from './gateTransmission';
 import { speckleStats, type SpeckleOptions, type SpeckleStats } from './speckle';
 import type { Simulator } from './simulator';
 import { START_POINTS, type StartPoint } from './startPoints';
@@ -55,7 +56,16 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
     },
     colorOnVessel: (vessels) => {
       const sim = getSim();
-      const g = bestGateOnVessel(sim.anatomy, sim.frame, sim.transducer, sim.sample, vessels, sim.bmode.depthMm - 5);
+      const g = bestGateOnVessel(
+        sim.anatomy,
+        sim.frame,
+        sim.transducer,
+        sim.sample,
+        vessels,
+        sim.bmode.depthMm - 5,
+        1.2,
+        windowWeight(sim),
+      );
       if (!g) return null;
       dispatch({ type: 'centerColorBox', theta: g.theta, r: g.r });
       return renderColorFrame(sim);
@@ -91,7 +101,16 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
     },
     placeGate: (vessels) => {
       const sim = getSim();
-      const g = bestGateOnVessel(sim.anatomy, sim.frame, sim.transducer, sim.sample, vessels, sim.bmode.depthMm - 5);
+      const g = bestGateOnVessel(
+        sim.anatomy,
+        sim.frame,
+        sim.transducer,
+        sim.sample,
+        vessels,
+        sim.bmode.depthMm - 5,
+        1.2,
+        windowWeight(sim),
+      );
       if (!g) return false;
       dispatch({ type: 'placeGate', theta: g.theta, r: g.r });
       return true;
@@ -104,4 +123,17 @@ function renderColorFrame(sim: Simulator): number {
   sim.advance(1 / Math.max(1, sim.colorTiming.frameHz) + 0.02);
   sim.render();
   return sim.renderer.colorCellsAbove();
+}
+
+/** Peso de ventana acústica de la pose actual (ver `acousticWindowWeight`). */
+function windowWeight(sim: Simulator): (theta: number, r: number) => number {
+  return acousticWindowWeight(
+    sim.anatomy,
+    sim.frame,
+    sim.transducer,
+    sim.pose,
+    sim.sample,
+    sim.bmode.depthMm,
+    sim.profile.dopplerEffectiveMHz,
+  );
 }

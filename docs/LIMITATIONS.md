@@ -49,6 +49,23 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 
 ## Doppler
 
+- **El aliasing fuerte no se detecta en la captura** (`severe-aliasing-not-detected`): el control
+  de calidad detecta el plegado moderado (la sangre toca a la vez los dos bordes de la banda con un
+  hueco de ruido entre ambos), pero con la escala más de ~2 veces por debajo de la velocidad el
+  flujo llena toda la banda, no queda hueco y se lee a velocidades plausibles: la congestión grave a
+  PRF 700 (Nyquist 11 cm/s) sale «leve» con el visto bueno. Lo detectará la retroalimentación
+  docente (que conoce la verdad).
+- **La calidad no tiene criterio de señal débil** (`weak-signal-not-flagged`): con la sangre a
+  ~15 dB sobre el suelo (VSH a 11 cm desde la pose inicial, transmisión −32 dB) la envolvente, con
+  su margen de 12 dB, recoge picos sueltos del moteado espectral y S varía entre capturas
+  (18–29 cm/s en el sano). La captura suele dar el patrón correcto pero no lo garantiza; desde la
+  ventana intercostal la banda sube a 28 dB. Falta calibrar un umbral de SNR por captura.
+- **La colocación anatómica de la puerta ignora las sombras** (`gate-placement-ignores-shadows`):
+  sin peso, `bestGateOnVessel` evita la confluencia con la VCI pero no mira la transmisión y desde
+  algunos puntos de partida elige un punto en la sombra de una costilla o de la cortina pulmonar.
+  Los ganchos de la e2e y la prueba de respiración le pasan `acousticWindowWeight`; las pruebas de
+  la cadena del alumno en apnea siguen con la técnica anatómica y una transmisión fija de −10 dB.
+  En la app la puerta la pone el alumno.
 - **El color es una emulación del estimador** (`color-emulated-estimator`): potencia y fase se
   calculan por celda a partir de la mezcla sangre/clutter/ruido, no de una IQ real por ensemble.
 - **Con respiración tranquila la puerta pierde el vaso** (`gate-lost-with-quiet-breathing`): es

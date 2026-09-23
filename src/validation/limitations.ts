@@ -19,6 +19,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'thin-vessel-sample-volume-lag',
   'severe-aliasing-not-detected',
   'weak-signal-not-flagged',
+  'respiratory-clutter-masks-slow-flow',
   'gate-placement-ignores-shadows',
   'speckle-statistics-uncalibrated',
   'left-handed-anatomy-frame',

@@ -63,8 +63,32 @@ interface Scatterer {
   ci: number;
   rotC: number;
   rotS: number;
-  /** Peso del haz/puerta (se recalcula cada SLOW_EVERY ticks). */
+  /**
+   * Peso del haz/puerta y su incremento por tick: el objetivo se recalcula cada SLOW_EVERY ticks y
+   * el peso lo alcanza en rampa. Con escalones, el tejido que respira (clutter a +40 dB de la
+   * sangre) quedaba modulado a PRF/8 y sus réplicas llenaban todo el espectro de «sangre».
+   */
   w: number;
+  dw: number;
+  /** Salió de la caja y se está apagando en rampa; se resiembra cuando la rampa termina. */
+  fading: boolean;
+  /**
+   * Amplitud objetivo y rampa hacia ella (incremento por tick y ticks restantes, AMP_RAMP_TICKS):
+   * el tejido entra y sale en rampa y todo cambio de identidad (sangre ↔ tejido, ×100) se hace en dos
+   * rampas. Un salto brusco de un dispersor de tejido (40 dB sobre la sangre) es un chasquido de banda
+   * ancha: con la respiración llenaba todo el espectro de energía «de sangre». La sangre que reentra
+   * por su cuerda y la que sale lo hacen con su amplitud (por caras de peso ≈ 0; apagarla en rampa
+   * vaciaba la caja en el flujo rápido); la que se siembra al azar entra en rampa.
+   */
+  ampTarget: number;
+  dAmp: number;
+  rampLeft: number;
+  /**
+   * Identidad nueva a la espera de que la vieja se apague (cambio sangre ↔ tejido en dos fases: la
+   * amplitud nunca viaja con la velocidad de la otra identidad; un eco de tejido a velocidad de
+   * sangre durante la rampa daba puntas espurias en la onda S).
+   */
+  pending: { isBlood: boolean; tissue: Tissue; vessel: VesselId | null; flowBasis: Vec3; amp: number } | null;
   vessel: VesselId | null;
   isBlood: boolean;
   /** Velocidad material (mm/s) de la sangre en su posición (sin tejido). */
@@ -92,6 +116,22 @@ const N_SCATTERERS = 320;
 const RECLASSIFY_EVERY = 96;
 /** Actualización de pesos, salida de caja y frecuencia Doppler: cada 8 ticks (≈3 ms). */
 const SLOW_EVERY = 8;
+/** Duración de toda variación de amplitud (ticks): ~5 ms a 6 kHz, su energía queda junto a la línea de base. */
+const AMP_RAMP_TICKS = 32;
+/**
+ * Suavizado de la transmisión hasta la puerta (fracción por tick hacia el valor nuevo). La app la
+ * recalcula cada ~32 ms con la anatomía que respira y cambia a saltos (la marcha clasifica cada
+ * milímetro; una sombra costal entra de golpe): aplicada de golpe, cada salto escalaba toda la IQ,
+ * clutter del tejido incluido, y era una línea vertical en el espectrograma.
+ */
+const TRANSMISSION_ALPHA = 1 / AMP_RAMP_TICKS;
+
+/** Lleva la amplitud del dispersor a `target` en AMP_RAMP_TICKS ticks. */
+function startAmpRamp(s: Scatterer, target: number): void {
+  s.ampTarget = target;
+  s.dAmp = (target - s.amp) / AMP_RAMP_TICKS;
+  s.rampLeft = AMP_RAMP_TICKS;
+}
 /** Ruido electrónico relativo a la sangre a transmisión 1 ([EXTRAPOLACIÓN PROPIA]). */
 const NOISE_STD = 0.0004;
 
@@ -109,6 +149,8 @@ export class SampleVolumeIQ {
    */
   private dispNow: Vec3 = [0, 0, 0];
   private gate: GateGeometry | null = null;
+  /** Transmisión aplicada (suavizada hacia la de la puerta); NaN hasta la primera puerta. */
+  private transmissionNow = Number.NaN;
   private equipment: GateEquipment = { prfHz: 2500, f0Hz: 2.5e6, gain: 1 };
   private halfAxial = 4;
   private halfLateral = 5;
@@ -142,6 +184,7 @@ export class SampleVolumeIQ {
         0.5 * this.halfAxial ||
       Math.abs(g.lengthMm - this.gate.lengthMm) > 0.5;
     this.gate = g;
+    if (!Number.isFinite(this.transmissionNow)) this.transmissionNow = g.transmission;
     this.halfAxial = g.lengthMm / 2 + 2.5 * g.pulseSigmaMm;
     this.halfLateral = 2.5 * g.lateralSigmaMm;
     this.halfElev = 2.5 * g.elevationSigmaMm;
@@ -190,9 +233,10 @@ export class SampleVolumeIQ {
     const isBlood = q.tissue === Tissue.Blood && q.bloodVelocity !== null;
     const phase = this.rng.float() * 2 * Math.PI;
     const d = this.dispNow;
-    return {
+    const s: Scatterer = {
       m: [world[0] - d[0], world[1] - d[1], world[2] - d[2]],
-      amp: TISSUES[q.tissue].backscatter * (0.7 + 0.6 * this.rng.float()),
+      amp: 0,
+      ampTarget: TISSUES[q.tissue].backscatter * (0.7 + 0.6 * this.rng.float()),
       phase,
       apAngle: this.rng.gaussian(),
       cr: Math.cos(phase),
@@ -200,12 +244,23 @@ export class SampleVolumeIQ {
       rotC: 1,
       rotS: 0,
       w: 0,
+      dw: 0,
+      fading: false,
+      dAmp: 0,
+      rampLeft: 0,
+      pending: null,
       vessel: q.vessel,
       isBlood,
       vBlood: q.bloodVelocity ?? [0, 0, 0],
       flowBasis: q.flowBasis ?? [0, 0, 0],
       tissue: q.tissue,
     };
+    // Todo dispersor creado aquí entra en rampa: el tejido (40 dB sobre la sangre) y también la sangre,
+    // que por esta vía (siembra, resiembra al azar cuando la respiración aparta su cuerda de la caja)
+    // puede aparecer en el centro de la puerta; de golpe era una línea vertical en el espectrograma.
+    // La reentrada por su cuerda (`reenter`, en una cara de peso ≈ 0) entra con su amplitud.
+    startAmpRamp(s, s.ampTarget);
+    return s;
   }
 
   /**
@@ -269,9 +324,10 @@ export class SampleVolumeIQ {
   private reenter(exited: Scatterer, world: Vec3): Scatterer {
     const phase = this.rng.float() * 2 * Math.PI;
     const d = this.dispNow;
-    return {
+    const s: Scatterer = {
       m: [world[0] - d[0], world[1] - d[1], world[2] - d[2]],
-      amp: TISSUES[exited.tissue].backscatter * (0.7 + 0.6 * this.rng.float()),
+      amp: 0,
+      ampTarget: TISSUES[exited.tissue].backscatter * (0.7 + 0.6 * this.rng.float()),
       phase,
       apAngle: this.rng.gaussian(),
       cr: Math.cos(phase),
@@ -279,12 +335,19 @@ export class SampleVolumeIQ {
       rotC: 1,
       rotS: 0,
       w: 0,
+      dw: 0,
+      fading: false,
+      dAmp: 0,
+      rampLeft: 0,
+      pending: null,
       vessel: exited.vessel,
       isBlood: true,
       vBlood: [exited.vBlood[0], exited.vBlood[1], exited.vBlood[2]],
       flowBasis: exited.flowBasis,
       tissue: exited.tissue,
     };
+    s.amp = s.ampTarget;
+    return s;
   }
 
   private updateComposition(): void {
@@ -377,7 +440,22 @@ export class SampleVolumeIQ {
           s.m[1] += s.vBlood[1] * dt;
           s.m[2] += s.vBlood[2] * dt;
         }
-        if (slow) {
+        if (slow && s.fading && s.rampLeft <= 0) {
+          // ya se apagó en rampa: ahora se resiembra
+          this.scatterers[j] = this.spawn(phys, s);
+          continue;
+        }
+        if (slow && !s.fading && s.pending && s.rampLeft <= 0) {
+          // la identidad vieja ya se apagó: se enciende la nueva
+          const p = s.pending;
+          s.isBlood = p.isBlood;
+          s.tissue = p.tissue;
+          s.vessel = p.vessel;
+          s.flowBasis = p.flowBasis;
+          s.pending = null;
+          startAmpRamp(s, p.amp);
+        }
+        if (slow && !s.fading) {
           const wx = s.m[0] + disp[0];
           const wy = s.m[1] + disp[1];
           const wz = s.m[2] + disp[2];
@@ -387,57 +465,77 @@ export class SampleVolumeIQ {
           const ax = dx * g.beamDir[0] + dy * g.beamDir[1] + dz * g.beamDir[2];
           const la = dx * g.lateral[0] + dy * g.lateral[1] + dz * g.lateral[2];
           const el = dx * g.elevation[0] + dy * g.elevation[1] + dz * g.elevation[2];
-          if (Math.abs(ax) > this.halfAxial || Math.abs(la) > this.halfLateral || Math.abs(el) > this.halfElev) {
+          const outside = Math.abs(ax) > this.halfAxial || Math.abs(la) > this.halfLateral || Math.abs(el) > this.halfElev;
+          if (outside && s.isBlood) {
+            // La sangre que sale se resiembra al instante (por su cuerda, ver `spawn`): su amplitud es
+            // 100 veces menor que la del tejido y apagarla en rampa vaciaba la caja (el flujo rápido
+            // la cruza en ~150 ticks: un 20 % de la población estaba siempre apagándose fuera).
             this.scatterers[j] = this.spawn(phys, s);
             continue;
-          }
-          if (reclass && (j + this.tick / SLOW_EVERY) % 4 === 0) {
-            // Reclasificación geométrica: por la aritmética (96/8 = 12 ≡ 0 mod 4) solo alcanza a los
-            // dispersores con j ≡ 0 (mod 4); ver la limitación `thin-vessel-sample-volume-lag`.
-            const q = this.anatomy.classifyWorld([wx, wy, wz], phys);
-            const nowBlood = q.tissue === Tissue.Blood && q.bloodVelocity !== null;
-            // La sangre que sigue en su vaso conserva su dirección (órbita cerrada, ver `spawn`)
-            const sameVessel = nowBlood && s.isBlood && q.vessel === s.vessel;
-            if (nowBlood !== s.isBlood) {
-              s.isBlood = nowBlood;
-              s.tissue = q.tissue;
-              s.amp = TISSUES[q.tissue].backscatter * (0.7 + 0.6 * this.rng.float());
+          } else if (outside) {
+            // El tejido que sale se apaga en rampa y luego se resiembra. Desaparecer de golpe con el
+            // peso de la cara (≈ 0,04 en las laterales) era, en el tejido que respira (40 dB sobre la
+            // sangre), un chasquido de banda ancha del nivel de la sangre en cada salida.
+            s.fading = true;
+            s.dw = 0;
+            startAmpRamp(s, 0);
+          } else {
+            if (reclass && (j + this.tick / SLOW_EVERY) % 4 === 0) {
+              // Reclasificación geométrica: por la aritmética (96/8 = 12 ≡ 0 mod 4) solo alcanza a los
+              // dispersores con j ≡ 0 (mod 4); ver la limitación `thin-vessel-sample-volume-lag`.
+              const q = this.anatomy.classifyWorld([wx, wy, wz], phys);
+              const nowBlood = q.tissue === Tissue.Blood && q.bloodVelocity !== null;
+              // La sangre que sigue en su vaso conserva su dirección (órbita cerrada, ver `spawn`)
+              const sameVessel = nowBlood && s.isBlood && q.vessel === s.vessel;
+              if (nowBlood !== s.isBlood) {
+                // cambio de identidad en dos fases: primero se apaga la vieja (con su velocidad)
+                if (!s.pending) {
+                  const amp = TISSUES[q.tissue].backscatter * (0.7 + 0.6 * this.rng.float());
+                  s.pending = { isBlood: nowBlood, tissue: q.tissue, vessel: q.vessel, flowBasis: q.flowBasis ?? [0, 0, 0], amp };
+                  startAmpRamp(s, 0);
+                }
+              } else if (!sameVessel) {
+                s.vessel = q.vessel;
+                s.flowBasis = q.flowBasis ?? [0, 0, 0];
+              }
             }
-            if (!sameVessel) {
-              s.vessel = q.vessel;
-              s.flowBasis = q.flowBasis ?? [0, 0, 0];
+            if (s.isBlood && s.vessel) {
+              const u = phys.velocities[s.vessel];
+              s.vBlood[0] = s.flowBasis[0] * u;
+              s.vBlood[1] = s.flowBasis[1] * u;
+              s.vBlood[2] = s.flowBasis[2] * u;
             }
+            // Peso del haz/puerta: ventana axial (erf) × gaussianas lateral y elevacional.
+            const axialW = 0.5 * (erf((half - ax) / (ps * Math.SQRT2)) + erf((half + ax) / (ps * Math.SQRT2)));
+            const wTarget = axialW * Math.exp(-0.5 * (la * la * invLat2 + el * el * invEl2));
+            s.dw = (wTarget - s.w) / SLOW_EVERY;
+            // Velocidad relativa: sangre + tejido − sonda, proyectada sobre b̂ → fD → rotación por tick.
+            const vx = (s.isBlood ? s.vBlood[0] : 0) + tissueVel[0] - probeVelocity[0];
+            const vy = (s.isBlood ? s.vBlood[1] : 0) + tissueVel[1] - probeVelocity[1];
+            const vz = (s.isBlood ? s.vBlood[2] : 0) + tissueVel[2] - probeVelocity[2];
+            // Ensanchamiento intrínseco: cada dispersor es visto por la apertura con un
+            // ángulo propio (σ = D/4r) respecto al eje del haz, dentro del plano de imagen
+            const da = s.apAngle * apSigma;
+            const bx = bHat[0] + g.lateral[0] * da;
+            const by = bHat[1] + g.lateral[1] * da;
+            const bz = bHat[2] + g.lateral[2] * da;
+            const bn = 1 / Math.hypot(bx, by, bz);
+            const fd = dopplerShiftHz((vx * bx + vy * by + vz * bz) * bn, f0);
+            const dphi = twoPiDt * fd;
+            s.rotC = Math.cos(dphi);
+            s.rotS = Math.sin(dphi);
           }
-          if (s.isBlood && s.vessel) {
-            const u = phys.velocities[s.vessel];
-            s.vBlood[0] = s.flowBasis[0] * u;
-            s.vBlood[1] = s.flowBasis[1] * u;
-            s.vBlood[2] = s.flowBasis[2] * u;
-          }
-          // Peso del haz/puerta: ventana axial (erf) × gaussianas lateral y elevacional.
-          const axialW = 0.5 * (erf((half - ax) / (ps * Math.SQRT2)) + erf((half + ax) / (ps * Math.SQRT2)));
-          s.w = axialW * Math.exp(-0.5 * (la * la * invLat2 + el * el * invEl2));
-          // Velocidad relativa: sangre + tejido − sonda, proyectada sobre b̂ → fD → rotación por tick.
-          const vx = (s.isBlood ? s.vBlood[0] : 0) + tissueVel[0] - probeVelocity[0];
-          const vy = (s.isBlood ? s.vBlood[1] : 0) + tissueVel[1] - probeVelocity[1];
-          const vz = (s.isBlood ? s.vBlood[2] : 0) + tissueVel[2] - probeVelocity[2];
-          // Ensanchamiento intrínseco: cada dispersor es visto por la apertura con un
-          // ángulo propio (σ = D/4r) respecto al eje del haz, dentro del plano de imagen
-          const da = s.apAngle * apSigma;
-          const bx = bHat[0] + g.lateral[0] * da;
-          const by = bHat[1] + g.lateral[1] * da;
-          const bz = bHat[2] + g.lateral[2] * da;
-          const bn = 1 / Math.hypot(bx, by, bz);
-          const fd = dopplerShiftHz((vx * bx + vy * by + vz * bz) * bn, f0);
-          const dphi = twoPiDt * fd;
-          s.rotC = Math.cos(dphi);
-          s.rotS = Math.sin(dphi);
         }
         // Avance de fase por multiplicación compleja: e^{iφ} · e^{i2πfDΔt}
         const cr = s.cr * s.rotC - s.ci * s.rotS;
         const ci = s.cr * s.rotS + s.ci * s.rotC;
         s.cr = cr;
         s.ci = ci;
+        s.w += s.dw;
+        if (s.rampLeft > 0) {
+          s.amp += s.dAmp;
+          s.rampLeft--;
+        }
         const a = s.amp * s.w;
         sr += a * cr;
         si += a * ci;
@@ -445,8 +543,9 @@ export class SampleVolumeIQ {
       // Ruido electrónico: independiente de la transmisión (no se atenúa con la profundidad).
       const nr = this.rng.gaussian() * NOISE_STD;
       const ni = this.rng.gaussian() * NOISE_STD;
-      re[offset + k] = (sr * g.transmission + nr) * this.equipment.gain;
-      im[offset + k] = (si * g.transmission + ni) * this.equipment.gain;
+      this.transmissionNow += (g.transmission - this.transmissionNow) * TRANSMISSION_ALPHA;
+      re[offset + k] = (sr * this.transmissionNow + nr) * this.equipment.gain;
+      im[offset + k] = (si * this.transmissionNow + ni) * this.equipment.gain;
       this.tick++;
       if (this.tick % (RECLASSIFY_EVERY * 4) === 0) this.updateComposition();
     }

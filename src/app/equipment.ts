@@ -41,6 +41,7 @@ export const EQUIPMENT_LIMITS = {
   tgcDb: { min: -15, max: 15 },
   prfHz: { min: 250, max: 12_000 },
   gateMm: { min: 1, max: 20 },
+  colorGainDb: { min: -20, max: 24, step: 1 },
   colorBox: { minWidthRad: 0.06, minDepthMm: 10, minR0Mm: 5 },
 } as const;
 
@@ -83,7 +84,7 @@ export function normalizeEquipment(e: EquipmentSettings, ctx: EquipmentContext):
     r1,
     prfHz: clamp(c.prfHz, L.prfHz.min, maxPrfForDepth(r1, ctx.cMmS)),
     wallFilterHz: Math.max(0, c.wallFilterHz),
-    gain: Math.max(0, c.gain),
+    gainDb: clamp(c.gainDb, L.colorGainDb.min, L.colorGainDb.max),
   };
   // Puerta PW: dentro del sector y de la imagen; PRF limitada por su profundidad
   const p = e.pw;

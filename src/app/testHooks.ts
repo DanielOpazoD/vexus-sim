@@ -2,7 +2,8 @@ import type { VesselId } from '../physiology/vessels';
 import type { EquipmentCommand } from './equipment';
 import { equivalenceSweep, volumeEquivalence, type EquivalencePoseReport, type VolumeEquivalenceReport } from './equivalenceSweep';
 import { bestGateOnVessel } from './gatePlacement';
-import { acousticWindowWeight } from './gateTransmission';
+import { acousticWindowWeight, gateTransmission } from './gateTransmission';
+import { lineCoupling } from '../probe/probe';
 import { speckleStats, type SpeckleOptions, type SpeckleStats } from './speckle';
 import type { Simulator } from './simulator';
 import { START_POINTS, type StartPoint } from './startPoints';
@@ -28,6 +29,15 @@ export interface TestHooks {
   colorOnVessel: (vessels: VesselId[]) => number | null;
   /** Celdas de color visibles tras forzar un cuadro de color (sin mover la caja). */
   colorCells: () => number;
+  /** Fracción de las celdas de la caja de color visibles tras forzar un cuadro (0–1). */
+  colorCellFraction: () => number;
+  /** Fija la ganancia de color (dB) como el deslizador. */
+  setColorGainDb: (db: number) => void;
+  /**
+   * Transmisión de ida y vuelta (dB, con acoplamiento) en la puerta PW actual, tal como la ven el
+   * color (pasada A de la GPU a la frecuencia B, convertida a la Doppler) y el PW (marcha en CPU).
+   */
+  gateTransmissionDb: () => { color: number; pw: number };
   /** Potencia de la banda PW sobre el suelo de ruido (dB, mediana de los últimos `seconds`). */
   pwBandOverFloorDb: (seconds: number) => number | null;
   /** Coloca la sonda en un punto de partida (sin animación) y avanza lo justo para que el marco la siga. */
@@ -71,6 +81,24 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       return renderColorFrame(sim);
     },
     colorCells: () => renderColorFrame(getSim()),
+    colorCellFraction: () => {
+      const sim = getSim();
+      return renderColorFrame(sim) / sim.renderer.colorCellCount;
+    },
+    setColorGainDb: (db) => dispatch({ type: 'color', patch: { gainDb: db } }),
+    gateTransmissionDb: () => {
+      const sim = getSim();
+      sim.render();
+      const { theta, depthMm } = sim.pw;
+      const tr = sim.transducer;
+      const u = (theta + tr.halfSector) / (2 * tr.halfSector);
+      const tb = sim.renderer.transmissionAt(u, depthMm / sim.bmode.depthMm);
+      const ratio = sim.profile.dopplerEffectiveMHz / sim.profile.bEffectiveMHz;
+      const color = Math.pow(Math.max(tb, 1e-12), ratio) * lineCoupling(sim.pose, tr, theta);
+      const pw = gateTransmission(sim.anatomy, sim.frame, tr, sim.pose, theta, depthMm, sim.sample, sim.profile.dopplerEffectiveMHz);
+      const db = (x: number) => 20 * Math.log10(Math.max(x, 1e-12));
+      return { color: db(color), pw: db(pw) };
+    },
     pwBandOverFloorDb: (seconds) => {
       const cols = getSim().spectral.columns;
       if (cols.length === 0) return null;

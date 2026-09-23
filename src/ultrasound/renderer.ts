@@ -46,7 +46,8 @@ export interface ColorSettings {
   r1: number;
   prfHz: number;
   wallFilterHz: number;
-  gain: number;
+  /** Ganancia de color (dB sobre la referencia `COLOR_GAIN_REF`). */
+  gainDb: number;
   invert: boolean;
   ensemble: number;
 }
@@ -69,7 +70,7 @@ export const DEFAULT_COLOR: ColorSettings = {
   r1: 120,
   prfHz: 2000,
   wallFilterHz: 60,
-  gain: 1,
+  gainDb: 0,
   invert: false,
   ensemble: 8,
 };
@@ -86,8 +87,16 @@ const TGC_CAP_DB = 50;
 const FINE_DEPTH = 1024;
 const COARSE_DEPTH = 160;
 const COLOR_W = 96;
-/** Umbral de potencia para pintar una celda de color ≈ potencia de sangre a 10 cm (T_dop ≈ 0,06) con ganancia 1. */
+/** Umbral de potencia para pintar una celda de color (unidades de sangre a transmisión 1). */
 export const COLOR_DISPLAY_THRESHOLD = 0.0035;
+/**
+ * Ganancia lineal del color a 0 dB del deslizador. Calibrada con GPU real (ruido puro con la sonda
+ * levantada; factor ×1 → celdas con color): 0 % hasta ×1 +14 dB, 0,11 % a +18, 4,8 % a +22, 29 % a
+ * +26, 64 % a +30. Con ×2 (+6 dB) el 0 dB muestra la suprahepática desde la ventana intercostal
+ * (−18 dB de transmisión: 1 400 celdas; con ×1, 32) sin una sola celda de ruido, y el máximo del
+ * deslizador (+24 dB) llena de ruido el 64 % de la caja, como un equipo real al límite.
+ */
+export const COLOR_GAIN_REF = 2;
 const COLOR_H = 160;
 const MAP_W = 96;
 const MAP_H = 128;
@@ -552,7 +561,8 @@ export class UltrasoundRenderer {
     this.pColor.f('uPrf', c.prfHz);
     this.pColor.f('uF0', tr.f0Doppler);
     this.pColor.f('uWallHz', c.wallFilterHz);
-    this.pColor.f('uColorGain', c.gain);
+    this.pColor.f('uColorGain', COLOR_GAIN_REF * Math.pow(10, c.gainDb / 20));
+    this.pColor.f('uDopplerFreqRatio', this.profile.dopplerEffectiveMHz / this.profile.bEffectiveMHz);
     this.pColor.f('uEnsemble', c.ensemble);
     this.pColor.v3('uProbeVel', inputs.probeVelocity);
     this.pColor.f('uFrame', this.frameCount);
@@ -730,6 +740,11 @@ export class UltrasoundRenderer {
    * Celdas del último cuadro de color con potencia por encima del umbral de presentación (las que
    * la conversión de barrido puede pintar). Solo pruebas: lectura GPU→CPU bloqueante.
    */
+  /** Celdas del objetivo de color (la caja entera). */
+  get colorCellCount(): number {
+    return COLOR_W * COLOR_H;
+  }
+
   colorCellsAbove(threshold = COLOR_DISPLAY_THRESHOLD): number {
     const gl = this.gl;
     const px = new Float32Array(COLOR_W * COLOR_H * 4);
@@ -740,6 +755,22 @@ export class UltrasoundRenderer {
     let n = 0;
     for (let i = 0; i < COLOR_W * COLOR_H; i++) if (px[i * 4 + 1] > threshold) n++;
     return n;
+  }
+
+  /**
+   * Transmisión de amplitud de ida y vuelta de la pasada A (a la frecuencia B) en (u, v) del sector
+   * (u: línea 0–1, v: profundidad / profundidad del sector). Solo pruebas: lectura GPU→CPU bloqueante.
+   */
+  transmissionAt(u: number, v: number): number {
+    const gl = this.gl;
+    const x = Math.min(this.lines - 1, Math.max(0, Math.floor(u * this.lines)));
+    const y = Math.min(COARSE_DEPTH - 1, Math.max(0, Math.floor(v * COARSE_DEPTH)));
+    const px = new Float32Array(4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.tTrans.fbo);
+    gl.readBuffer(gl.COLOR_ATTACHMENT0);
+    gl.readPixels(x, y, 1, 1, gl.RGBA, gl.FLOAT, px);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return px[0];
   }
 
   /**

@@ -8,6 +8,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 ### Corregido
 
 - El volumen de muestra PW perdía la sangre tras la primera inspiración y no la recuperaba aunque el vaso siguiera en la puerta (tronco portal con respiración tranquila: 0 % de sangre frente al 95 % real; PF medida 167 % en el sano y 136 % en el grave). La comprobación de salida de la caja y la resiembra usaban dos desplazamientos respiratorios distintos. Ahora PF 20 % y 73 % (verdad 19 % y 63 %).
+- El color y el PW mostraban flujo con la sonda separada de la piel (modo B en negro; antipatrón §23 de la guía): la transmisión de la puerta (`app/gateTransmission.ts`) y la pasada de color multiplican ahora por el acoplamiento de su línea, como el modo B. Con la sonda levantada 10 mm: 0 celdas de color y el espectro en el nivel del ruido.
 
 ## [0.5.0] — 2026-09-22 — bases estructurales (plan de fases 0–3 tras la evaluación 3,8/7; decisiones 41–47)
 

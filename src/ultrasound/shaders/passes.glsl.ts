@@ -345,6 +345,8 @@ void main() {
   float u = (theta + uHalfSector) / (2.0 * uHalfSector);
   float Tb = texture(uTrans0, vec2(u, r / uDepth)).x;
   float T = pow(max(Tb, 1e-6), 0.714);
+  // Sin contacto no hay eco: el acoplamiento de la línea multiplica la transmisión como en modo B.
+  T *= texture(uCoupling, vec2(u, 0.5)).r;
   float bf = 0.0; float vb = 0.0; float vt = 0.0;
   vec3 lat = normalize(cross(uElev, dir));
   const int NS = 5;

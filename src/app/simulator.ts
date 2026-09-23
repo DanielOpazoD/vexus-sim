@@ -4,12 +4,11 @@ import { colorTiming, type ColorTiming } from '../ultrasound/colorTiming';
 import { CONVEX_C35_PROFILE, type TransducerProfile } from '../ultrasound/transducerProfile';
 import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene } from '../anatomy/scene';
-import type { Tissue } from '../anatomy/tissues';
-import { rayTransmission } from '../ultrasound/transmission';
 import { DopplerAudio } from '../audio/dopplerAudio';
 import { dopplerShiftHz } from '../core/units';
 import type { Vec3 } from '../core/vec3';
 import { PwDopplerChain } from '../doppler/pwChain';
+import { gateTransmission } from './gateTransmission';
 import type { GateGeometry } from '../doppler/sampleVolume';
 import { PhysiologyEngine, type PhysiologySample } from '../physiology/engine';
 import type { PatientState } from '../physiology/patientState';
@@ -224,7 +223,7 @@ export class Simulator {
     // Anchura lateral del volumen de muestra = PSF de dos vías (mismo modelo que la imagen)
     const latSigma = lateralSigmaMm(r, this.bmode.focusMm, this.profile.beam) * 1.2;
     const elevSigma = 1.6 * Math.sqrt(1 + ((r - tr.elevationFocusMm) / 45) ** 2);
-    const transmission = this.estimateTransmission(fr, pw.theta, r, s);
+    const transmission = gateTransmission(this.anatomy, fr, tr, this.pose, pw.theta, r, s, this.profile.dopplerEffectiveMHz);
     const gate: GateGeometry = {
       center,
       beamDir: dir,
@@ -247,16 +246,6 @@ export class Simulator {
       angle = (Math.acos(Math.min(1, cosA)) * 180) / Math.PI;
     }
     this.gateInfo = { world: center, transmission, beamAngleToFlowDeg: angle, vessel: q.vessel };
-  }
-
-  /** Transmisión aproximada hasta la puerta (marcha CPU gruesa a la frecuencia Doppler). */
-  private estimateTransmission(fr: ProbeFrame, theta: number, rEnd: number, s: PhysiologySample): number {
-    const step = 2.5;
-    const n = Math.ceil(rEnd / step);
-    const tissues: Tissue[] = [];
-    for (let i = 0; i < n; i++)
-      tissues.push(this.anatomy.classifyWorld(pointOnLine(fr, this.transducer, theta, (i + 0.5) * step), s).tissue);
-    return rayTransmission(tissues, step, this.profile.dopplerEffectiveMHz);
   }
 
   /** Cadencia física del color con la caja, PRF y ensemble actuales (decisión 39). */

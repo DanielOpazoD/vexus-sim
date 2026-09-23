@@ -86,6 +86,8 @@ const TGC_CAP_DB = 50;
 const FINE_DEPTH = 1024;
 const COARSE_DEPTH = 160;
 const COLOR_W = 96;
+/** Umbral de potencia para pintar una celda de color ≈ potencia de sangre a 10 cm (T_dop ≈ 0,06) con ganancia 1. */
+export const COLOR_DISPLAY_THRESHOLD = 0.0035;
 const COLOR_H = 160;
 const MAP_W = 96;
 const MAP_H = 128;
@@ -533,6 +535,7 @@ export class UltrasoundRenderer {
     this.setSceneUniforms(this.pColor, inputs);
     this.setBeamUniforms(this.pColor, inputs);
     this.pColor.tex('uTrans0', 0, this.tTrans.textures[0]);
+    this.pColor.tex('uCoupling', 1, this.couplingTex);
     this.pColor.v4('uBox', c.theta0, c.theta1, c.r0, c.r1);
     this.pColor.v2(
       'uCells',
@@ -590,8 +593,7 @@ export class UltrasoundRenderer {
     const lb = this.lastColorFrame?.box ?? [0, 0, 0, 0];
     this.pScan.v4('uBox', lb[0], lb[1], lb[2], lb[3]);
     this.pScan.f('uPrf', this.lastColorFrame?.prf ?? c.prfHz);
-    // Umbral de presentación ≈ potencia de sangre a 10 cm (T_dop ≈ 0,06) con ganancia 1.
-    this.pScan.f('uColorThreshold', 0.0035);
+    this.pScan.f('uColorThreshold', COLOR_DISPLAY_THRESHOLD);
     this.pScan.f('uColorPriority', 0.62);
     this.pScan.i('uColorInvert', c.invert ? 1 : 0);
     drawFullscreen(gl);
@@ -722,6 +724,22 @@ export class UltrasoundRenderer {
       velocity.set([out1[i * 4], out1[i * 4 + 1], out1[i * 4 + 2]], i * 3);
     }
     return { tissue, vessel, velocity };
+  }
+
+  /**
+   * Celdas del último cuadro de color con potencia por encima del umbral de presentación (las que
+   * la conversión de barrido puede pintar). Solo pruebas: lectura GPU→CPU bloqueante.
+   */
+  colorCellsAbove(threshold = COLOR_DISPLAY_THRESHOLD): number {
+    const gl = this.gl;
+    const px = new Float32Array(COLOR_W * COLOR_H * 4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.tColor.fbo);
+    gl.readBuffer(gl.COLOR_ATTACHMENT0);
+    gl.readPixels(0, 0, COLOR_W, COLOR_H, gl.RGBA, gl.FLOAT, px);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    let n = 0;
+    for (let i = 0; i < COLOR_W * COLOR_H; i++) if (px[i * 4 + 1] > threshold) n++;
+    return n;
   }
 
   /**

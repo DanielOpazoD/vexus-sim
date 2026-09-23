@@ -282,6 +282,5 @@ export class SpectrogramView {
       ctx.lineTo(x, H);
       ctx.stroke();
     }
-    void tNow;
   }
 }

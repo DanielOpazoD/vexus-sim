@@ -196,13 +196,13 @@ export class CutMapView {
     return this.worker;
   }
 
-  /** Pide un mapa nuevo a ≤ `hz` veces por segundo y dibuja el último recibido. */
   /** Muestra u oculta los rótulos; el lienzo lo refleja en `data-labels` (pruebas de extremo a extremo). */
   setLabels(on: boolean): void {
     this.labels = on;
     this.canvas.dataset.labels = on ? '1' : '0';
   }
 
+  /** Pide un mapa nuevo a ≤ `hz` veces por segundo y dibuja el último recibido. */
   draw(sim: Simulator, nowMs: number, hz = 8): void {
     // Vigilante: una petición sin respuesta en 3 s cuenta como caída del Worker
     if (this.pending && nowMs - this.pendingSince > WORKER_TIMEOUT_MS) this.fail(new Error('el Worker del corte no responde (3 s)'), nowMs);

@@ -1,4 +1,5 @@
 import { registerDevtools } from './app/devtools';
+import { caseDisplayLabel, teacherToggleAllowed } from './app/blindMode';
 import { buildDiagnostics, buildLabel, diagnosticsFileName, gpuInfo } from './app/diagnostics';
 import { ErrorBudget } from './app/errorBudget';
 import { compareTissueGrids } from './app/equivalenceCheck';
@@ -52,9 +53,13 @@ $<HTMLElement>('build-info').textContent = buildLabel(__APP_VERSION__, __GIT_COM
 for (const c of CASES) {
   const o = document.createElement('option');
   o.value = c.id;
-  o.textContent = c.label;
   caseSelect.appendChild(o);
 }
+/** Nombres del selector según el modo: «Paciente A/B/C» para el alumno (guía §17). */
+function labelCases(teacher: boolean): void {
+  for (const o of Array.from(caseSelect.options)) o.textContent = caseDisplayLabel(o.value, teacher);
+}
+labelCases(false);
 
 // Ningún fallo es silencioso: excepciones no capturadas, promesas rechazadas y
 // oyentes del store que lanzan terminan en el registro (pestaña Docente).
@@ -134,6 +139,7 @@ void import('./ui/navigator3d')
       getRespCaudalMm: () => sim().sample.resp.diaphragmCaudalMm,
       getCaliber: () => sim().anatomy.caliberFor(sim().sample),
     });
+    nav.setStudentMode(!store.get().debug);
   })
   .catch((e: unknown) => errorLog.report('navegador3d', e));
 registerDevtools(sim, () => ({ nav, cutMap, spectrogram }), dispatch);
@@ -178,6 +184,8 @@ const torsoBtn = $<HTMLButtonElement>('torso-toggle');
 torsoBtn.addEventListener('click', () => store.set({ torso: !store.get().torso }));
 $<HTMLButtonElement>('rail-collapse').addEventListener('click', () => store.set({ torso: false }));
 const debugToggle = $<HTMLInputElement>('debug-toggle');
+// en producción la casilla «Docente» solo aparece con ?docente (el alumno no la ve)
+debugToggle.parentElement!.hidden = !teacherToggleAllowed(import.meta.env.DEV, location.search);
 debugToggle.addEventListener('change', () =>
   store.set({
     debug: debugToggle.checked,
@@ -190,7 +198,15 @@ caseSelect.addEventListener('change', () => {
 $<HTMLButtonElement>('nav-zoom-in').addEventListener('click', () => nav?.zoomBy(0.85));
 $<HTMLButtonElement>('nav-zoom-out').addEventListener('click', () => nav?.zoomBy(1 / 0.85));
 $<HTMLButtonElement>('nav-center').addEventListener('click', () => nav?.centerOnProbe());
-buildLayerMenu($<HTMLElement>('layer-menu'), $<HTMLButtonElement>('nav-layers'), (patch) => nav?.setLayers(patch));
+const layerMenu = buildLayerMenu($<HTMLElement>('layer-menu'), $<HTMLButtonElement>('nav-layers'), (patch) => nav?.setLayers(patch));
+/** Modo alumno: sin nombre del caso, sin rótulos en el corte y sin vasos en el 3D. */
+function applyTeacherMode(teacher: boolean): void {
+  labelCases(teacher);
+  cutMap.setLabels(teacher);
+  nav?.setStudentMode(!teacher);
+  layerMenu.setLocked('vessels', !teacher, 'Visible en modo docente');
+}
+applyTeacherMode(false);
 
 const imageClick = bindImageClick({
   host: sectorWrap,
@@ -231,6 +247,7 @@ store.subscribe((st, prev) => {
     }
   }
   if (st.tool !== prev.tool && st.tool !== 'caliper') imageClick.cancelCaliper();
+  if (st.debug !== prev.debug) applyTeacherMode(st.debug);
 });
 
 // --- Tamaño de lienzos -------------------------------------------------------
@@ -283,7 +300,7 @@ function frame(now: number, dt: number): void {
   drawEcg(ecgCanvas, s, secondsVisible, t);
   spectrogram.draw(s, s.spectral.columns, t, secondsVisible);
   const h = hudText({
-    patientLabel: s.patient.label,
+    patientLabel: caseDisplayLabel(s.patient.id, store.get().debug),
     frozen: s.frozen,
     heartRateBpm: heartRate.update(s.sample.rr, dt),
     atrialFibrillation: s.patient.rhythm === 'atrial-fibrillation',

@@ -5,6 +5,10 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+### Cambiado
+
+- Modo alumno ciego (guía §17): el alumno ve los casos como «Paciente A/B/C» en el selector, el HUD y el panel; el corte ecográfico pierde los rótulos de estructuras y el navegador 3D los vasos (el calibre de la VCI delata la congestión). En producción la casilla «Docente» solo aparece con `?docente` en la dirección; en desarrollo siempre.
+
 ### Corregido
 
 - El volumen de muestra PW perdía la sangre tras la primera inspiración y no la recuperaba aunque el vaso siguiera en la puerta (tronco portal con respiración tranquila: 0 % de sangre frente al 95 % real; PF medida 167 % en el sano y 136 % en el grave). La comprobación de salida de la caja y la resiembra usaban dos desplazamientos respiratorios distintos. Ahora PF 20 % y 73 % (verdad 19 % y 63 %).

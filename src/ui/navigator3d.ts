@@ -168,12 +168,20 @@ export class Navigator3D {
     this.renderer.domElement.remove();
   }
 
+  /** Modo alumno: los vasos se ocultan aunque la capa esté marcada (el calibre delata el caso). */
+  private studentMode = false;
+
+  setStudentMode(on: boolean): void {
+    this.studentMode = on;
+    this.setLayers({});
+  }
+
   setLayers(l: Partial<NavigatorLayers>): void {
     this.layers = { ...this.layers, ...l };
     this.skin.visible = this.layers.skin;
     this.skeleton.visible = this.layers.skeleton;
     this.organs.visible = this.layers.organs;
-    this.vessels.visible = this.layers.vessels;
+    this.vessels.visible = this.layers.vessels && !this.studentMode;
     this.windows.visible = this.layers.windows;
     (this.skin.material as THREE.MeshStandardMaterial).opacity =
       this.layers.organs || this.layers.vessels || this.layers.skeleton ? 0.42 : 0.85;

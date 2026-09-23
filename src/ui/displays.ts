@@ -1,3 +1,4 @@
+import { ecgX, SweepTimeline } from './sweep';
 import { wrapToNyquist } from '../core/units';
 import type { Simulator } from '../app/simulator';
 import type { SpectralColumn } from '../doppler/spectral';
@@ -122,7 +123,7 @@ export function drawEcg(canvas: HTMLCanvasElement, sim: Simulator, secondsVisibl
   for (const s of samples) {
     if (s.t < tLeft) continue;
     if (s.t > tRight) break;
-    const x = ((s.t - tLeft) / secondsVisible) * W;
+    const x = ecgX(s.t, tRight, secondsVisible, W);
     const y = H * 0.75 - s.ecgMv * H * 0.45;
     if (!started) {
       ctx.moveTo(x, y);
@@ -138,7 +139,7 @@ export function drawEcg(canvas: HTMLCanvasElement, sim: Simulator, secondsVisibl
   for (const s of samples) {
     if (s.t < tLeft) continue;
     if (s.t > tRight) break;
-    const x = ((s.t - tLeft) / secondsVisible) * W;
+    const x = ecgX(s.t, tRight, secondsVisible, W);
     const y = H * 0.92 - s.resp.volume * H * 0.3;
     if (!started) {
       ctx.moveTo(x, y);
@@ -155,6 +156,8 @@ export function drawEcg(canvas: HTMLCanvasElement, sim: Simulator, secondsVisibl
 export class SpectrogramView {
   private img: ImageData | null = null;
   private lastDrawnT = -1;
+  /** Eje temporal compartido con el ECG (ver `ui/sweep.ts`). */
+  private readonly timeline = new SweepTimeline();
   private off: HTMLCanvasElement;
   private offCtx: CanvasRenderingContext2D;
   constructor(private readonly canvas: HTMLCanvasElement) {
@@ -165,6 +168,7 @@ export class SpectrogramView {
   reset(): void {
     this.lastDrawnT = -1;
     this.img = null;
+    this.timeline.reset();
   }
 
   /**
@@ -182,6 +186,7 @@ export class SpectrogramView {
       this.off.height = H;
       this.img = null;
       this.lastDrawnT = -1;
+      this.timeline.reset();
     }
     const pw = sim.pw;
     const pxPerSec = W / secondsVisible;
@@ -193,47 +198,54 @@ export class SpectrogramView {
       ctx.fillText('Doppler pulsado desactivado — pulse PW y coloque la puerta en un vaso', 8, 16);
       return;
     }
-    // Columnas nuevas → píxeles
-    const fft = sim.spectral.fftSize;
-    const newCols = columns.filter((c) => c.t > this.lastDrawnT);
-    if (newCols.length) {
-      const dtCol = sim.spectral.hop / pw.prfHz;
-      const colPx = Math.max(1, Math.round(dtCol * pxPerSec));
-      const shiftPx = newCols.length * colPx;
-      // desplazar el bitmap a la izquierda
+    // Eje temporal: desplazar el mapa de bits lo que avanzó el tiempo (píxeles enteros, con resto)
+    const { shiftPx, cleared } = this.timeline.advance(tNow, pxPerSec);
+    if (cleared) {
+      this.offCtx.fillStyle = '#000';
+      this.offCtx.fillRect(0, 0, W, H);
+      this.lastDrawnT = tNow - secondsVisible;
+    } else if (shiftPx > 0) {
       this.offCtx.drawImage(this.off, -shiftPx, 0);
-      for (let ci = 0; ci < newCols.length; ci++) {
-        const col = newCols[ci];
-        const x0 = W - (newCols.length - ci) * colPx;
-        const strip = this.offCtx.createImageData(colPx, H);
-        for (let y = 0; y < H; y++) {
-          // y=0 arriba ↔ frecuencia máxima de la banda mostrada
-          let fracBand = 1 - y / H; // 0..1 de abajo a arriba
-          if (pw.invert) fracBand = 1 - fracBand;
-          // banda mostrada: [−PRF/2 + shift·PRF, PRF/2 + shift·PRF]
-          const f = (fracBand - 0.5 + pw.baselineShift) * col.prfHz;
-          // plegar a la banda medida (la línea de base no crea muestras)
-          const fw = wrapToNyquist(f, col.prfHz);
-          const k = Math.round((fw / col.prfHz) * fft + fft / 2);
-          const kk = Math.min(fft - 1, Math.max(0, k));
-          const db = col.powerDb[kk];
-          // Mapeo de brillo: 45 dB de rango sobre el suelo de ruido a ganancia 0 (la
-          // ganancia ya multiplica la IQ, así que el ruido sube con ella).
-          let g = (db + 52) / 45;
-          g = Math.max(0, Math.min(1, g));
-          g = Math.pow(g, 1.4);
-          const v = Math.round(g * 255);
-          for (let x = 0; x < colPx; x++) {
-            const idx = (y * colPx + x) * 4;
-            strip.data[idx] = v;
-            strip.data[idx + 1] = Math.round(v * 0.95);
-            strip.data[idx + 2] = Math.round(v * 0.75);
-            strip.data[idx + 3] = 255;
-          }
+      this.offCtx.fillStyle = '#000';
+      this.offCtx.fillRect(W - shiftPx, 0, shiftPx, H);
+    }
+    // Columnas nuevas → el tramo de píxeles de su intervalo de tiempo
+    const fft = sim.spectral.fftSize;
+    const dtCol = sim.spectral.hop / pw.prfHz;
+    for (const col of columns) {
+      if (col.t <= this.lastDrawnT) continue;
+      if (!this.timeline.ready(col.t, dtCol)) break;
+      const [x0, x1] = this.timeline.span(col.t, dtCol, pxPerSec, W);
+      this.lastDrawnT = col.t;
+      const colPx = x1 - x0;
+      if (colPx <= 0) continue;
+      const strip = this.offCtx.createImageData(colPx, H);
+      for (let y = 0; y < H; y++) {
+        // y=0 arriba ↔ frecuencia máxima de la banda mostrada
+        let fracBand = 1 - y / H; // 0..1 de abajo a arriba
+        if (pw.invert) fracBand = 1 - fracBand;
+        // banda mostrada: [−PRF/2 + shift·PRF, PRF/2 + shift·PRF]
+        const f = (fracBand - 0.5 + pw.baselineShift) * col.prfHz;
+        // plegar a la banda medida (la línea de base no crea muestras)
+        const fw = wrapToNyquist(f, col.prfHz);
+        const k = Math.round((fw / col.prfHz) * fft + fft / 2);
+        const kk = Math.min(fft - 1, Math.max(0, k));
+        const db = col.powerDb[kk];
+        // Mapeo de brillo: 45 dB de rango sobre el suelo de ruido a ganancia 0 (la
+        // ganancia ya multiplica la IQ, así que el ruido sube con ella).
+        let g = (db + 52) / 45;
+        g = Math.max(0, Math.min(1, g));
+        g = Math.pow(g, 1.4);
+        const v = Math.round(g * 255);
+        for (let x = 0; x < colPx; x++) {
+          const idx = (y * colPx + x) * 4;
+          strip.data[idx] = v;
+          strip.data[idx + 1] = Math.round(v * 0.95);
+          strip.data[idx + 2] = Math.round(v * 0.75);
+          strip.data[idx + 3] = 255;
         }
-        this.offCtx.putImageData(strip, x0, 0);
       }
-      this.lastDrawnT = newCols[newCols.length - 1].t;
+      this.offCtx.putImageData(strip, x0, 0);
     }
     ctx.drawImage(this.off, 0, 0);
     // Línea de base y escala
@@ -270,6 +282,5 @@ export class SpectrogramView {
       ctx.lineTo(x, H);
       ctx.stroke();
     }
-    void tNow;
   }
 }

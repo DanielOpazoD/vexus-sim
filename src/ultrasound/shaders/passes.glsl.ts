@@ -321,6 +321,7 @@ uniform float uPrf;
 uniform float uF0;
 uniform float uWallHz;
 uniform float uColorGain;
+uniform float uDopplerFreqRatio; // f Doppler / f B del perfil: la atenuación en dB escala con f
 uniform float uEnsemble;
 uniform vec3 uProbeVel;   // mm/s
 uniform float uFrame;
@@ -341,10 +342,11 @@ void main() {
   vec3 dir = lineDir(theta);
   vec3 bhat = -dir;
   vec3 p = pointOnLine(dir, r);
-  // Transmisión (pasada A, a la frecuencia B) convertida a la frecuencia Doppler.
+  // Transmisión (pasada A, a la frecuencia B) convertida a la frecuencia Doppler del perfil: la misma
+  // que usa la puerta PW. Antes el exponente era 0,714 fijo (B a 3,5 MHz) con el perfil a 2,5 y 2,5.
   float u = (theta + uHalfSector) / (2.0 * uHalfSector);
   float Tb = texture(uTrans0, vec2(u, r / uDepth)).x;
-  float T = pow(max(Tb, 1e-6), 0.714);
+  float T = pow(max(Tb, 1e-6), uDopplerFreqRatio);
   // Sin contacto no hay eco: el acoplamiento de la línea multiplica la transmisión como en modo B.
   T *= texture(uCoupling, vec2(u, 0.5)).r;
   float bf = 0.0; float vb = 0.0; float vt = 0.0;

@@ -687,6 +687,28 @@ antes del PR: ganancia, filas del protocolo, cobertura del espectro, filtro de p
 por captura, corregidos. E2e: en apnea la VSH se mide con valor numérico
 y con la sonda levantada la captura dice «no medible: no hay flujo en la puerta».
 
+## 50. El color comparte la transmisión del PW y su ganancia (en dB) alcanza el ruido del equipo
+
+**Contexto.** El panel de expertos (22-09) encontró que el color no mostraba ruido ni a la ganancia
+máxima y que color y PW no coincidían en sensibilidad. El color convertía la transmisión de la
+pasada A (frecuencia B) a la Doppler con un exponente fijo 0,714 (B a 3,5 MHz) aunque el perfil de
+la sonda tiene B y Doppler a 2,5 MHz; el PW usa la frecuencia Doppler del perfil. La ganancia de
+color era un factor ×0,2–×4 y el ruido del estimador necesita ~×14 para asomar.
+**Opciones.** Bajar el umbral de presentación (cambia a la vez la sensibilidad a la sangre y al ruido,
+y la prueba de contacto que cuenta celdas); subir solo el máximo del factor lineal (sin unidades
+reconocibles para el operador).
+**Decisión.** `FRAG_COLOR` usa `uDopplerFreqRatio` = `dopplerEffectiveMHz / bEffectiveMHz` del
+perfil. La ganancia de color pasa a `ColorSettings.gainDb` (−20 a +24 dB, `EQUIPMENT_LIMITS`)
+sobre `COLOR_GAIN_REF` = ×2, calibrada con GPU real con la sonda levantada (ruido puro).
+**Consecuencias.** Por defecto (0 dB) la suprahepática intercostal (−18 dB de transmisión) se ve con
+~1 400 celdas y el ruido puro con 0; a +12 dB el ruido empieza a asomar (0,1 %) y al máximo llena el
+64 % de la caja. Los vasos profundos en sombra (VCI subxifoidea −36 dB, porta desde el flanco −43 dB)
+solo aparecen cerca del ruido, como en un equipo al límite de penetración.
+**Verificación.** E2e «color: la misma transmisión que el PW y una ganancia que alcanza el ruido»:
+|color − PW| < 1 dB en la puerta renal; ruido puro < 0,1 % a 0 dB y > 5 % a +24 dB.
+`doppler.test.ts` exige el uniform del perfil en el shader (sin exponente literal) y
+`equipment.test.ts` el acotado de la ganancia en dB.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

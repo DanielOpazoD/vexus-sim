@@ -65,6 +65,11 @@ describe('Estado del equipo', () => {
     expect(e.bmode.gainDb).toBe(EQUIPMENT_LIMITS.gainDb.min);
     e = reduceEquipment(e, { type: 'mode', mode: 'color' }, ctx);
     expect([e.color.enabled, e.pw.enabled]).toEqual([true, false]);
+    // la ganancia de color es en dB y se acota a los límites del deslizador
+    e = reduceEquipment(e, { type: 'color', patch: { gainDb: 99 } }, ctx);
+    expect(e.color.gainDb).toBe(EQUIPMENT_LIMITS.colorGainDb.max);
+    e = reduceEquipment(e, { type: 'color', patch: { gainDb: -99 } }, ctx);
+    expect(e.color.gainDb).toBe(EQUIPMENT_LIMITS.colorGainDb.min);
     e = reduceEquipment(e, { type: 'mode', mode: 'pw' }, ctx);
     expect([e.color.enabled, e.pw.enabled]).toEqual([false, true]);
     e = reduceEquipment(e, { type: 'tgc', band: 3, db: 99 }, ctx);

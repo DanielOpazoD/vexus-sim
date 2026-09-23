@@ -197,3 +197,31 @@ test('modo alumno ciego: sin diagnóstico en pantalla; el docente lo ve con ?doc
   await expect(page.locator('#layer-vessels')).toBeEnabled();
   expect(errors2).toEqual([]);
 });
+
+test('color: la misma transmisión que el PW y una ganancia que alcanza el ruido del equipo', async ({ page }) => {
+  // Medido con GPU real: color − PW entre −0,8 y +0,1 dB en cuatro ventanas (antes el color usaba un
+  // exponente fijo, 0,714, y veía menos atenuación); ruido puro 0 % de celdas a 0 dB y 64 % a +24 dB
+  // (antes el máximo del deslizador no mostraba ruido nunca).
+  test.setTimeout(240_000);
+  const errors = await bootWithoutErrors(page);
+  const r = await page.evaluate(() => {
+    const T = window.__vexusTest!;
+    document.querySelector<HTMLButtonElement>('#mode-pw')!.click();
+    T.goToStartPoint('renal');
+    const gate = T.placeGate(['interlobarVein1', 'interlobarVein2', 'interlobarVein3']);
+    const t = T.gateTransmissionDb();
+    document.querySelector<HTMLButtonElement>('#mode-color')!.click();
+    T.liftProbe(10);
+    T.setColorGainDb(0);
+    const noiseDefault = T.colorCellFraction();
+    T.setColorGainDb(24);
+    const noiseMax = T.colorCellFraction();
+    return { gate, ...t, noiseDefault, noiseMax };
+  });
+  const tag = JSON.stringify(r);
+  expect(r.gate, tag).toBe(true);
+  expect(Math.abs(r.color - r.pw), tag).toBeLessThan(1);
+  expect(r.noiseDefault, tag).toBeLessThan(0.001);
+  expect(r.noiseMax, tag).toBeGreaterThan(0.05);
+  expect(errors).toEqual([]);
+});

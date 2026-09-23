@@ -73,28 +73,31 @@ cabe en el parche (la autocovarianza no baja de 0,5), grietas y lóbulos salen N
 | Gris del hígado         | Media, desviación y percentiles 5/50/95 del gris 0–255.                                                                                                                                                                                      | Media 52–112; desviación 10–16 en equipos modernos (THI y composición espacial), 21–25 en moteado crudo [MEDIDO en las referencias de la tanda 1.5] |
 | Huecos a la vista       | Píxeles por debajo de la mitad de la media.                                                                                                                                                                                                  | [ESTIMADO] se calibra con las referencias                                                                                                           |
 | Perfil en profundidad   | Nivel mostrado (dB bajo el techo, invirtiendo la curva de grises) por bandas de 10 mm; pendiente.                                                                                                                                            | 0 ± 0,3 dB/cm con la TGC bien ajustada [ESTIMADO]                                                                                                   |
+| Centro de la luz        | Mediana del gris de la sangre a ≥ 1,5 mm de su pared, sin sombra delante.                                                                                                                                                                    | Casi negro: 0,6–9,6 [MEDIDO en las referencias, mínimo en 7×7]                                                                                      |
+| Diafragma saturado      | Fracción de los píxeles del diafragma en el blanco (≥ 250).                                                                                                                                                                                  | ≤ 2 % [ESTIMADO]                                                                                                                                    |
 | Pared anterior / hígado | Pico de gris en [−1,5; +1] mm del borde de la VCI o una suprahepática frente a la mediana del hígado en [−10; −3] mm, por tramos de incidencia (0–20°, 20–40°, 40–60°) sobre la normal real de la pared. Sin pared, el moteado solo da ~1,1. | 1,36–2,1 [MEDIDO en las referencias, 3 perfiles de incidencia desconocida]                                                                          |
 | Cuadros por segundo     | Lectura del HUD tras 3 s en tiempo real.                                                                                                                                                                                                     | ≥ 30 (guía)                                                                                                                                         |
 
-## Línea base (23-09-2026, árbol `src/` 1928011, M4 con Metal, densidad 2)
+## Línea base (23-09-2026, árbol `src/` 4de3821, tras el preajuste abdominal; M4 con Metal, densidad 2)
 
-| Escena                  | SNR  | Oscuros | Grietas | Grano axial / lateral ÷ PSF | Hígado p05/p50/p95 | Desviación | dB/cm | Pared 0–20° | Pared 20–40° | cps |
-| ----------------------- | ---- | ------- | ------- | --------------------------- | ------------------ | ---------- | ----- | ----------- | ------------ | --- |
-| Sano, subxifoidea       | 1,93 | 0,065   | 0,089   | 0,69 mm / 0,94–0,99         | 103 / 143 / 178    | 22,7       | −0,01 | —           | 1,11 (90)    | 45  |
-| Sano, intercostal       | 1,92 | 0,069   | 0,082   | 0,70 mm / 0,82–1,10         | 101 / 141 / 178    | 23,3       | −0,13 | —           | 1,14 (24)    | 56  |
-| Sano, flanco            | —    | —       | —       | —                           | 106 / 145 / 181    | 22,9       | 0,04  | 1,16 (25)   | 1,05 (9)     | 52  |
-| Sano, renal             | —    | —       | —       | —                           | 105 / 146 / 180    | 23,0       | 0,32  | —           | —            | 41  |
-| Congestión, subxifoidea | 1,90 | 0,067   | 0,064   | 0,70 mm / 0,93–1,07         | 104 / 144 / 180    | 23,2       | −0,01 | 1,19 (3)    | 1,11 (21)    | 45  |
-| Congestión, intercostal | 1,93 | 0,070   | 0,055   | 0,68 mm / 0,92–1,02         | 103 / 143 / 178    | 22,9       | 0,05  | —           | 1,15 (40)    | 52  |
-| Congestión, flanco      | 1,97 | 0,071   | 0,061   | 0,66 mm / 0,89              | 107 / 147 / 183    | 23,1       | 0,06  | 1,14 (35)   | 1,01 (6)     | 49  |
-| Congestión, renal       | —    | —       | —       | —                           | 101 / 141 / 175    | 22,8       | —     | —           | 1,04 (10)    | 45  |
+| Escena                  | SNR  | Oscuros | Grietas | Grano axial / lateral ÷ PSF | Hígado p05/p50/p95 | Desviación | Luz | dB/cm | Pared 0–20° | Pared 20–40° | cps |
+| ----------------------- | ---- | ------- | ------- | --------------------------- | ------------------ | ---------- | --- | ----- | ----------- | ------------ | --- |
+| Sano, subxifoidea       | 1,93 | 0,065   | 0,083   | 0,69 mm / 0,94–0,99         | 73 / 100 / 124     | 15,7       | 9   | −0,01 | 1,26 (1)    | 1,10 (90)    | 48  |
+| Sano, intercostal       | 1,93 | 0,068   | 0,071   | 0,70 mm / 0,82–1,10         | 71 / 99 / 124      | 16,1       | 20  | −0,13 | —           | 1,16 (24)    | 60  |
+| Sano, flanco            | —    | —       | —       | —                           | 74 / 102 / 126     | 15,8       | 24  | 0,04  | 1,15 (25)   | 1,05 (10)    | 49  |
+| Sano, renal             | —    | —       | —       | —                           | 74 / 102 / 126     | 16,0       | 21  | 0,30  | —           | —            | 56  |
+| Congestión, subxifoidea | 1,90 | 0,067   | 0,064   | 0,70 mm / 0,93–1,07         | 73 / 101 / 126     | 16,0       | 10  | −0,01 | 1,24 (2)    | 1,08 (37)    | 53  |
+| Congestión, intercostal | 1,93 | 0,069   | 0,055   | 0,68 mm / 0,91–1,02         | 73 / 101 / 124     | 15,8       | 8   | 0,07  | —           | 1,10 (37)    | 56  |
+| Congestión, flanco      | 1,97 | 0,071   | 0,061   | 0,66 mm / 0,89              | 75 / 103 / 127     | 15,9       | 23  | 0,07  | 1,14 (34)   | 1,01 (6)     | 52  |
+| Congestión, renal       | —    | —       | —       | —                           | 72 / 100 / 123     | 15,5       | 14  | —     | —           | 1,02 (9)     | 56  |
 
-- **La envolvente ya es la de un moteado ideal** donde hay hígado despejado: SNR 1,90–1,97, fracción
-  oscura 0,065–0,071, grietas 0,055–0,089, lóbulos ≤ 0,06 y grano lateral 0,82–1,10 × la PSF.
-- **La imagen mostrada no:** el hígado ocupa la parte alta de la escala (mediana 141–147) con el
-  contraste de un moteado crudo a 60 dB (desviación 22–23).
-- **La TGC está bien** una vez excluido el refuerzo posterior: −0,13 a +0,32 dB/cm.
-- **No hay pared especular:** a cualquier incidencia la pared da lo que el moteado solo (1,0–1,2).
+- **La envolvente es la de un moteado ideal** donde hay hígado despejado: SNR 1,90–1,97, fracción
+  oscura 0,065–0,071, grietas 0,055–0,083, lóbulos ≤ 0,06 y grano lateral 0,82–1,10 × la PSF.
+- **El preajuste abdominal (decisión 53) llevó el hígado a media escala:** mediana 141–147 → 99–103 y
+  desviación 22–23 → 15–16, ya en el rango de los equipos modernos. La luz bajó de 14–37 a 8–24;
+  sigue algo gris donde el vaso es pequeño (sangre a −31 dB del hígado).
+- **La TGC está bien** una vez excluido el refuerzo posterior: −0,13 a +0,30 dB/cm.
+- **No hay pared especular:** a cualquier incidencia la pared da lo que el moteado solo (1,0–1,3).
 - En el flanco del sano y en las ventanas renales no queda hígado despejado para la textura.
 
 El detalle está en `baseline.json`. El árbol de `src/` identifica el código medido y sobrevive al
@@ -105,14 +108,14 @@ squash-merge (`git rev-parse <commit>:src`).
 Cada PR de imagen corre el banco antes y después y cita el cambio en su descripción. Orden revisado
 con la línea base (primero la cadena de presentación, que es lo que delata la textura):
 
-| PR  | Cambio                                  | Aceptación medible                                                                                                                                                                                  |
-| --- | --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 0   | Este banco                              | Métricas reproducibles (± 0,01 entre corridas: el ruido del receptor cambia en cada cuadro); línea base en `baseline.json`.                                                                         |
-| 1   | Preajuste abdominal                     | Hígado puro a 90–110 de gris (mediana); desviación ≤ 19 sin composición; pendiente ≤ ± 0,3 dB/cm; centro de la luz ≤ 10; diafragma saturado en ≤ 2 % de su largo; el color no invade el parénquima. |
-| 2   | Fase de insonación y moteado por tejido | Envolvente igual de ideal; correlación del moteado a través de una pared < 0,1; decorrelación con 8° de dirección < 0,3 [ESTIMADO].                                                                 |
-| 3   | Transmisión O(N) con subrayos y hueso   | Núcleo de la sombra costal ≤ suelo de ruido + 3 dB; penumbra coherente con la apertura; pasada A ≥ 2× más rápida.                                                                                   |
-| 4   | Composición espacial y armónica         | Desviación del gris del hígado 10–16; ≥ 30 cps a densidad 2. Después, punto de control A (prueba ciega).                                                                                            |
-| 5   | Interfaces de Fresnel                   | Pared/hígado 1,3–2,1 a 0–20° (hoy 1,14–1,19, lo que da el moteado solo) y caída con la incidencia en las suprahepáticas; sin huecos > 1 mm a lo largo de la pared.                                  |
+| PR  | Cambio                                  | Aceptación medible                                                                                                                                                                                                                                                             |
+| --- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 0   | Este banco                              | Métricas reproducibles (± 0,01 entre corridas: el ruido del receptor cambia en cada cuadro); línea base en `baseline.json`.                                                                                                                                                    |
+| 1   | Preajuste abdominal (hecho)             | Hígado puro 99–103 de gris (objetivo 90–110) y desviación 15–16 (≤ 19); pendiente −0,13 a +0,30 dB/cm; diafragma nunca saturado; color en el hígado 0,07 % (antes 0,45 %). Luz 8–24: el ≤ 10 solo se cumple en 3 de 8 escenas y pasa al PR 2 (sangre con su propia población). |
+| 2   | Fase de insonación y moteado por tejido | Envolvente igual de ideal; correlación del moteado a través de una pared < 0,1; decorrelación con 8° de dirección < 0,3 [ESTIMADO].                                                                                                                                            |
+| 3   | Transmisión O(N) con subrayos y hueso   | Núcleo de la sombra costal ≤ suelo de ruido + 3 dB; penumbra coherente con la apertura; pasada A ≥ 2× más rápida.                                                                                                                                                              |
+| 4   | Composición espacial y armónica         | Desviación del gris del hígado 10–16; ≥ 30 cps a densidad 2. Después, punto de control A (prueba ciega).                                                                                                                                                                       |
+| 5   | Interfaces de Fresnel                   | Pared/hígado 1,3–2,1 a 0–20° (hoy 1,14–1,19, lo que da el moteado solo) y caída con la incidencia en las suprahepáticas; sin huecos > 1 mm a lo largo de la pared.                                                                                                             |
 
 Los PR 6–10 (campo cercano, pulmón, microestructura, vasos y bordes orgánicos) añaden sus propias
 métricas al banco cuando llegan; al final, punto de control B.

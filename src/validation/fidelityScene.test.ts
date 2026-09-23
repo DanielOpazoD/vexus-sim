@@ -102,6 +102,10 @@ describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
       expect(Math.abs(d.liver.mean - 100)).toBeLessThan(3);
       expect(Math.abs(d.profile.slopeDbPerCm)).toBeLessThan(0.1);
       expect(d.colorOn).toBe(false);
+      // la luz pintada a 0 y el diafragma a 60: el centro de la luz y la saturación los encuentran
+      expect(d.lumen.pixels).toBeGreaterThan(50);
+      expect(d.lumen.p50).toBe(0);
+      if (Number.isFinite(d.diaphragmSaturated)) expect(d.diaphragmSaturated).toBe(0);
     }
   });
 

@@ -374,7 +374,16 @@ export interface FidelityStats {
    * Imagen mostrada; `colorOn` avisa de que la caja de color estaba encendida (el gris leído es el
    * canal rojo y los píxeles con color no son modo B).
    */
-  display: { liver: DisplayStats; profile: DepthProfile; walls: WallBin[]; colorOn: boolean } | null;
+  display: {
+    liver: DisplayStats;
+    /** Sangre a ≥ 1,5 mm de su pared (el centro de la luz): la mediana debe quedar casi negra. */
+    lumen: DisplayStats;
+    /** Fracción de los píxeles del diafragma saturados (≥ 250); NaN si no hay diafragma a la vista. */
+    diaphragmSaturated: number;
+    profile: DepthProfile;
+    walls: WallBin[];
+    colorOn: boolean;
+  } | null;
 }
 
 /** Bandas de profundidad (mm) en que se compara el grano lateral con la PSF. */
@@ -392,6 +401,10 @@ const WALL_SYSTEMS: readonly VesselSystem[] = ['ivc', 'hepaticVein'];
 const WALL_TISSUES: ReadonlySet<number> = new Set([Tissue.VesselWallThin, Tissue.VesselWallPortal]);
 /** La rejilla guarda el tejido como número (Uint8Array). */
 const LIVER: number = Tissue.Liver;
+const BLOOD: number = Tissue.Blood;
+const DIAPHRAGM: number = Tissue.Diaphragm;
+/** Distancia mínima (mm) de la sangre a su pared para medir el centro de la luz. */
+const LUMEN_CLEARANCE_MM = 1.5;
 /** Acoplamiento mínimo de una línea para medir su textura (el mal contacto la oscurece entera). */
 const MIN_COUPLING = 0.95;
 /** Líneas vecinas que también deben estar despejadas: la PSF lateral arrastra la sombra ~2σ. */
@@ -480,13 +493,13 @@ export function fidelityStats(
   };
   const clearUntil = erode(shadowAt, true);
   const pureUntil = erode(impureAt, false);
-  // hígado a ≥ `mm` de cualquier celda que no sea hígado (distancia euclídea en la rejilla)
-  const clearance = (mm: number): Uint8Array => {
+  // celdas de `kind` a ≥ `mm` de cualquier celda de otro tejido (distancia euclídea en la rejilla)
+  const clearance = (mm: number, kind: number = LIVER): Uint8Array => {
     const ok = new Uint8Array(lines * nr);
     const K = Math.ceil(mm / GRID_STEP_MM);
     for (let u = 0; u < lines; u++)
       for (let k = 0; k < nr; k++) {
-        if (tissue[u * nr + k] !== LIVER) continue;
+        if (tissue[u * nr + k] !== kind) continue;
         const spacing = (tr.curvatureRadius + (k + 0.5) * GRID_STEP_MM) * dTheta;
         const U = Math.ceil(mm / spacing);
         let clear = true;
@@ -495,7 +508,7 @@ export function fidelityStats(
           if (uu < 0 || uu >= lines) continue;
           for (let dk = -K; dk <= K; dk++) {
             const kk = k + dk;
-            if (kk < 0 || kk >= nr || tissue[uu * nr + kk] === LIVER) continue;
+            if (kk < 0 || kk >= nr || tissue[uu * nr + kk] === kind) continue;
             if (Math.hypot(du * spacing, dk * GRID_STEP_MM) <= mm) {
               clear = false;
               break;
@@ -539,6 +552,34 @@ export function fidelityStats(
   };
   const liver = displayStats(img, (x, y) => pureLiverDepth(x, y) !== null, 2);
   const profile = depthProfile(img, pureLiverDepth, sim.bmode.dynamicRangeDb);
+  // centro de la luz: sangre a ≥ 1,5 mm de su pared, sin sombra delante
+  const lumenClear = clearance(LUMEN_CLEARANCE_MM, BLOOD);
+  const cellAt = (x: number, y: number): number => {
+    const b = pixelToBeam(layout, tr, depth, x, y);
+    if (!b) return -1;
+    const u = Math.round((b.theta + tr.halfSector) / dTheta - 0.5);
+    if (u < 0 || u >= lines || b.r >= clearUntil[u]) return -1;
+    return cellOf(u, b.r);
+  };
+  const lumen = displayStats(
+    img,
+    (x, y) => {
+      const i = cellAt(x, y);
+      return i >= 0 && lumenClear[i] === 1;
+    },
+    2,
+  );
+  // diafragma saturado: fracción de sus píxeles en el blanco (≥ 250)
+  let diaphragmPx = 0;
+  let diaphragmSat = 0;
+  for (let y = 0; y < img.height; y += 2)
+    for (let x = 0; x < img.width; x += 2) {
+      const i = cellAt(x, y);
+      if (i < 0 || tissue[i] !== DIAPHRAGM) continue;
+      diaphragmPx++;
+      if (img.gray[y * img.width + x] >= 250) diaphragmSat++;
+    }
+  const diaphragmSaturated = diaphragmPx ? diaphragmSat / diaphragmPx : Number.NaN;
 
   // Paredes anteriores: paso de ≥ 3 mm de hígado a la sangre de una VCI o suprahepática (con, a lo
   // sumo, la pared del vaso en medio). La normal de la pared es el gradiente de la distancia a la
@@ -621,5 +662,5 @@ export function fidelityStats(
     ratio: median(r),
     deltaDb: median(deltas[j]),
   }));
-  return { envelope, bands, display: { liver, profile, walls, colorOn: opts.colorOn ?? false } };
+  return { envelope, bands, display: { liver, lumen, diaphragmSaturated, profile, walls, colorOn: opts.colorOn ?? false } };
 }

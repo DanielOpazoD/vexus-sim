@@ -79,7 +79,7 @@ try {
         `cps ${fps}`.padEnd(8),
         `SNR ${e.snr.toFixed(2)} · grano ${e.fwhmAxialMm.toFixed(2)}×${e.fwhmLateralMm.toFixed(2)} mm · oscuros ${e.darkFraction.toFixed(3)} · grietas ${e.crackIndex.toFixed(3)}`,
         d
-          ? `· hígado ${d.liver.p50} (${d.liver.sd.toFixed(1)}) · ${d.profile.slopeDbPerCm.toFixed(2)} dB/cm · pared ${d.walls
+          ? `· hígado ${d.liver.p50} (${d.liver.sd.toFixed(1)}) · luz ${d.lumen.p50} · diafragma ${Number.isFinite(d.diaphragmSaturated) ? (100 * d.diaphragmSaturated).toFixed(1) : '—'} % · ${d.profile.slopeDbPerCm.toFixed(2)} dB/cm · pared ${d.walls
               .map((b) => `${b.fromDeg}–${b.toDeg}° ${Number.isFinite(b.ratio) ? b.ratio.toFixed(2) : '—'} (${b.walls})`)
               .join(', ')}`
           : '',

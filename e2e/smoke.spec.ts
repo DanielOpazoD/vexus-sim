@@ -136,6 +136,42 @@ test('el speckle del parénquima hepático tiene estadística de Rayleigh', asyn
   expect(errors).toEqual([]);
 });
 
+test('el banco de fidelidad mide el moteado del hígado despejado como un campo ideal', async ({ page }) => {
+  // Banco de fidelidad (decisión 52). Con GPU real (M4) la subxifoidea del sano da SNR 1,93,
+  // fracción oscura 0,065, grietas 0,07, grano axial 0,69 mm, lateral 0,95–1,05 × la PSF y lóbulos
+  // < 0,06; la imagen mostrada, hígado en 144 de gris (mediana). Un defecto del moteado (intensidad,
+  // magnitudes antes del haz, retícula periódica), una sombra dentro de la máscara o una lectura de
+  // la imagen al revés lo sacan de estas bandas (src/validation/fidelity*.test.ts).
+  test.setTimeout(240_000);
+  const errors = await bootWithoutErrors(page);
+  const s = await page.evaluate(() => window.__vexusTest!.fidelity({ startPoint: 'subxiphoid', display: true }));
+  const e = s.envelope;
+  const tag = JSON.stringify(e);
+  expect(e.patches, tag).toBeGreaterThan(15);
+  expect(e.snr, tag).toBeGreaterThan(1.75);
+  expect(e.snr, tag).toBeLessThan(2.1);
+  expect(e.darkFraction, tag).toBeGreaterThan(0.05);
+  expect(e.darkFraction, tag).toBeLessThan(0.09);
+  expect(e.crackIndex, tag).toBeLessThan(0.12);
+  expect(e.secondaryLobeAxial, tag).toBeLessThan(0.15);
+  expect(e.secondaryLobeLateral, tag).toBeLessThan(0.15);
+  expect(e.fwhmAxialMm, tag).toBeGreaterThan(0.5);
+  expect(e.fwhmAxialMm, tag).toBeLessThan(0.9);
+  const bands = s.bands.filter((b) => b.patches >= 5);
+  expect(bands.length, JSON.stringify(s.bands)).toBeGreaterThan(0);
+  for (const b of bands) {
+    expect(b.fwhmLateralMm / b.beamFwhmMm, JSON.stringify(b)).toBeGreaterThan(0.8);
+    expect(b.fwhmLateralMm / b.beamFwhmMm, JSON.stringify(b)).toBeLessThan(1.25);
+  }
+  // la imagen mostrada se lee con la orientación correcta: la máscara del hígado cae en hígado
+  const d = s.display!;
+  expect(d.liver.pixels, JSON.stringify(d.liver)).toBeGreaterThan(1000);
+  expect(d.liver.p50, JSON.stringify(d.liver)).toBeGreaterThan(100);
+  expect(d.liver.p50, JSON.stringify(d.liver)).toBeLessThan(190);
+  expect(d.colorOn).toBe(false);
+  expect(errors).toEqual([]);
+});
+
 test('sin contacto no hay Doppler: el color y el espectro se apagan al levantar la sonda', async ({ page }) => {
   // Invariante de §23 de la guía. Medido con GPU real: color 1 346 celdas en contacto y 0 levantada;
   // PW 23 dB sobre el suelo en contacto y 7,5 dB (el valor del ruido puro) levantada.

@@ -1,0 +1,1332 @@
+{
+ "commit": "c6a3178",
+ "arbolSrc": "192801170053c8ce203b86f1b9730271303ba8da",
+ "srcSinCommit": false,
+ "fecha": "2026-09-23",
+ "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+ "url": "http://localhost:6600",
+ "escenas": {
+  "normal-adult/subxiphoid": {
+   "fps": 45,
+   "stats": {
+    "envelope": {
+     "patches": 29,
+     "depthMm": 64.445,
+     "snr": 1.932,
+     "fwhmAxialMm": 0.694,
+     "fwhmLateralMm": 1.437,
+     "secondaryLobeAxial": 0.056,
+     "secondaryLobeLateral": 0.056,
+     "darkFraction": 0.065,
+     "crackIndex": 0.089
+    },
+    "bands": [
+     {
+      "patches": 11,
+      "depthMm": 44.872,
+      "snr": 1.975,
+      "fwhmAxialMm": 0.691,
+      "fwhmLateralMm": 1.414,
+      "secondaryLobeAxial": 0.074,
+      "secondaryLobeLateral": 0.082,
+      "darkFraction": 0.064,
+      "crackIndex": 0.1,
+      "r0": 20,
+      "r1": 60,
+      "beamFwhmMm": 1.422
+     },
+     {
+      "patches": 14,
+      "depthMm": 77.746,
+      "snr": 1.888,
+      "fwhmAxialMm": 0.698,
+      "fwhmLateralMm": 1.481,
+      "secondaryLobeAxial": 0.053,
+      "secondaryLobeLateral": 0.053,
+      "darkFraction": 0.068,
+      "crackIndex": 0.07,
+      "r0": 60,
+      "r1": 100,
+      "beamFwhmMm": 1.576
+     },
+     {
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
+      "r0": 100,
+      "r1": 140,
+      "beamFwhmMm": 2.531
+     },
+     {
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
+      "r0": 140,
+      "r1": 180,
+      "beamFwhmMm": 3.468
+     }
+    ],
+    "display": {
+     "liver": {
+      "pixels": 63334,
+      "mean": 141.708,
+      "sd": 22.693,
+      "p05": 103,
+      "p50": 143,
+      "p95": 178,
+      "darkFraction": 0.001
+     },
+     "profile": {
+      "bands": [
+       {
+        "r0": 20,
+        "r1": 30,
+        "db": -17.243,
+        "pixels": 1382
+       },
+       {
+        "r0": 30,
+        "r1": 40,
+        "db": -16.987,
+        "pixels": 5779
+       },
+       {
+        "r0": 40,
+        "r1": 50,
+        "db": -16.765,
+        "pixels": 7739
+       },
+       {
+        "r0": 50,
+        "r1": 60,
+        "db": -17.199,
+        "pixels": 7521
+       },
+       {
+        "r0": 60,
+        "r1": 70,
+        "db": -17.169,
+        "pixels": 9340
+       },
+       {
+        "r0": 70,
+        "r1": 80,
+        "db": -17.619,
+        "pixels": 10267
+       },
+       {
+        "r0": 80,
+        "r1": 90,
+        "db": -17.221,
+        "pixels": 9022
+       },
+       {
+        "r0": 90,
+        "r1": 100,
+        "db": -16.894,
+        "pixels": 6494
+       },
+       {
+        "r0": 100,
+        "r1": 110,
+        "db": -17.169,
+        "pixels": 4283
+       },
+       {
+        "r0": 110,
+        "r1": 120,
+        "db": -16.379,
+        "pixels": 1458
+       }
+      ],
+      "slopeDbPerCm": -0.013
+     },
+     "walls": [
+      {
+       "fromDeg": 0,
+       "toDeg": 20,
+       "walls": 0,
+       "ratio": null,
+       "deltaDb": null
+      },
+      {
+       "fromDeg": 20,
+       "toDeg": 40,
+       "walls": 90,
+       "ratio": 1.109,
+       "deltaDb": 2.741
+      },
+      {
+       "fromDeg": 40,
+       "toDeg": 60,
+       "walls": 2,
+       "ratio": 1.167,
+       "deltaDb": 4.241
+      }
+     ],
+     "colorOn": false
+    }
+   },
+   "errors": []
+  },
+  "normal-adult/intercostal": {
+   "fps": 56,
+   "stats": {
+    "envelope": {
+     "patches": 19,
+     "depthMm": 84.153,
+     "snr": 1.923,
+     "fwhmAxialMm": 0.698,
+     "fwhmLateralMm": 1.79,
+     "secondaryLobeAxial": 0.039,
+     "secondaryLobeLateral": 0.057,
+     "darkFraction": 0.069,
+     "crackIndex": 0.082
+    },
+    "bands": [
+     {
+      "patches": 7,
+      "depthMm": 50.022,
+      "snr": 1.86,
+      "fwhmAxialMm": 0.694,
+      "fwhmLateralMm": 1.564,
+      "secondaryLobeAxial": 0.039,
+      "secondaryLobeLateral": 0.123,
+      "darkFraction": 0.069,
+      "crackIndex": 0.064,
+      "r0": 20,
+      "r1": 60,
+      "beamFwhmMm": 1.419
+     },
+     {
+      "patches": 3,
+      "depthMm": 80.156,
+      "snr": 2,
+      "fwhmAxialMm": 0.671,
+      "fwhmLateralMm": 1.296,
+      "secondaryLobeAxial": 0.079,
+      "secondaryLobeLateral": 0.031,
+      "darkFraction": 0.063,
+      "crackIndex": 0.021,
+      "r0": 60,
+      "r1": 100,
+      "beamFwhmMm": 1.572
+     },
+     {
+      "patches": 3,
+      "depthMm": 119.531,
+      "snr": 1.884,
+      "fwhmAxialMm": 0.756,
+      "fwhmLateralMm": 2.654,
+      "secondaryLobeAxial": 0.077,
+      "secondaryLobeLateral": 0.086,
+      "darkFraction": 0.079,
+      "crackIndex": 0.115,
+      "r0": 100,
+      "r1": 140,
+      "beamFwhmMm": 2.519
+     },
+     {
+      "patches": 1,
+      "depthMm": 147.656,
+      "snr": 1.795,
+      "fwhmAxialMm": 0.887,
+      "fwhmLateralMm": 3.244,
+      "secondaryLobeAxial": 0.375,
+      "secondaryLobeLateral": 0.013,
+      "darkFraction": 0.077,
+      "crackIndex": 0,
+      "r0": 140,
+      "r1": 180,
+      "beamFwhmMm": 3.189
+     }
+    ],
+    "display": {
+     "liver": {
+      "pixels": 38547,
+      "mean": 140.498,
+      "sd": 23.287,
+      "p05": 101,
+      "p50": 141,
+      "p95": 178,
+      "darkFraction": 0.001
+     },
+     "profile": {
+      "bands": [
+       {
+        "r0": 30,
+        "r1": 40,
+        "db": -17.208,
+        "pixels": 3202
+       },
+       {
+        "r0": 40,
+        "r1": 50,
+        "db": -16.51,
+        "pixels": 5971
+       },
+       {
+        "r0": 50,
+        "r1": 60,
+        "db": -17.112,
+        "pixels": 6032
+       },
+       {
+        "r0": 60,
+        "r1": 70,
+        "db": -17.665,
+        "pixels": 4539
+       },
+       {
+        "r0": 70,
+        "r1": 80,
+        "db": -16.784,
+        "pixels": 3191
+       },
+       {
+        "r0": 80,
+        "r1": 90,
+        "db": -17.448,
+        "pixels": 2830
+       },
+       {
+        "r0": 90,
+        "r1": 100,
+        "db": -17.339,
+        "pixels": 2852
+       },
+       {
+        "r0": 100,
+        "r1": 110,
+        "db": -19.01,
+        "pixels": 1762
+       },
+       {
+        "r0": 110,
+        "r1": 120,
+        "db": -18.05,
+        "pixels": 1755
+       },
+       {
+        "r0": 120,
+        "r1": 130,
+        "db": -17.742,
+        "pixels": 1845
+       },
+       {
+        "r0": 130,
+        "r1": 140,
+        "db": -18.3,
+        "pixels": 1926
+       },
+       {
+        "r0": 140,
+        "r1": 150,
+        "db": -17.77,
+        "pixels": 2053
+       },
+       {
+        "r0": 150,
+        "r1": 160,
+        "db": -18.582,
+        "pixels": 589
+       }
+      ],
+      "slopeDbPerCm": -0.132
+     },
+     "walls": [
+      {
+       "fromDeg": 0,
+       "toDeg": 20,
+       "walls": 0,
+       "ratio": null,
+       "deltaDb": null
+      },
+      {
+       "fromDeg": 20,
+       "toDeg": 40,
+       "walls": 24,
+       "ratio": 1.144,
+       "deltaDb": 3.599
+      },
+      {
+       "fromDeg": 40,
+       "toDeg": 60,
+       "walls": 28,
+       "ratio": 1.127,
+       "deltaDb": 3.209
+      }
+     ],
+     "colorOn": false
+    }
+   },
+   "errors": []
+  },
+  "normal-adult/flank": {
+   "fps": 52,
+   "stats": {
+    "envelope": {
+     "patches": 0,
+     "depthMm": null,
+     "snr": null,
+     "fwhmAxialMm": null,
+     "fwhmLateralMm": null,
+     "secondaryLobeAxial": null,
+     "secondaryLobeLateral": null,
+     "darkFraction": null,
+     "crackIndex": null
+    },
+    "bands": [
+     {
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
+      "r0": 20,
+      "r1": 60,
+      "beamFwhmMm": 1.423
+     },
+     {
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
+      "r0": 60,
+      "r1": 100,
+      "beamFwhmMm": 1.573
+     },
+     {
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
+      "r0": 100,
+      "r1": 140,
+      "beamFwhmMm": 2.531
+     },
+     {
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
+      "r0": 140,
+      "r1": 180,
+      "beamFwhmMm": 3.468
+     }
+    ],
+    "display": {
+     "liver": {
+      "pixels": 25226,
+      "mean": 144.294,
+      "sd": 22.868,
+      "p05": 106,
+      "p50": 145,
+      "p95": 181,
+      "darkFraction": 0.001
+     },
+     "profile": {
+      "bands": [
+       {
+        "r0": 30,
+        "r1": 40,
+        "db": -17.162,
+        "pixels": 1755
+       },
+       {
+        "r0": 40,
+        "r1": 50,
+        "db": -16.986,
+        "pixels": 3680
+       },
+       {
+        "r0": 50,
+        "r1": 60,
+        "db": -16.325,
+        "pixels": 3703
+       },
+       {
+        "r0": 60,
+        "r1": 70,
+        "db": -16.864,
+        "pixels": 3251
+       },
+       {
+        "r0": 70,
+        "r1": 80,
+        "db": -16.7,
+        "pixels": 2534
+       },
+       {
+        "r0": 80,
+        "r1": 90,
+        "db": -16.024,
+        "pixels": 2321
+       },
+       {
+        "r0": 90,
+        "r1": 100,
+        "db": -16.342,
+        "pixels": 2138
+       },
+       {
+        "r0": 100,
+        "r1": 110,
+        "db": -17.129,
+        "pixels": 2241
+       },
+       {
+        "r0": 110,
+        "r1": 120,
+        "db": -16.338,
+        "pixels": 2201
+       },
+       {
+        "r0": 120,
+        "r1": 130,
+        "db": -17.002,
+        "pixels": 1138
+       },
+       {
+        "r0": 130,
+        "r1": 140,
+        "db": -16.209,
+        "pixels": 264
+       }
+      ],
+      "slopeDbPerCm": 0.036
+     },
+     "walls": [
+      {
+       "fromDeg": 0,
+       "toDeg": 20,
+       "walls": 25,
+       "ratio": 1.163,
+       "deltaDb": 4.102
+      },
+      {
+       "fromDeg": 20,
+       "toDeg": 40,
+       "walls": 9,
+       "ratio": 1.047,
+       "deltaDb": 1.239
+      },
+      {
+       "fromDeg": 40,
+       "toDeg": 60,
+       "walls": 5,
+       "ratio": 1.323,
+       "deltaDb": 7.507
+      }
+     ],
+     "colorOn": false
+    }
+   },
+   "errors": []
+  },
+  "normal-adult/renal": {
+   "fps": 41,
+   "stats": {
+    "envelope": {
+     "patches": 0,
+     "depthMm": null,
+     "snr": null,
+     "fwhmAxialMm": null,
+     "fwhmLateralMm": null,
+     "secondaryLobeAxial": null,
+     "secondaryLobeLateral": null,
+     "darkFraction": null,
+     "crackIndex": null
+    },
+    "bands": [
+     {
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
+      "r0": 20,
+      "r1": 60,
+      "beamFwhmMm": 1.423
+     },
+     {
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
+      "r0": 60,
+      "r1": 100,
+      "beamFwhmMm": 1.573
+     },
+     {
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
+      "r0": 100,
+      "r1": 140,
+      "beamFwhmMm": 2.531
+     },
+     {
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
+      "r0": 140,
+      "r1": 180,
+      "beamFwhmMm": 3.468
+     }
+    ],
+    "display": {
+     "liver": {
+      "pixels": 4957,
+      "mean": 144.744,
+      "sd": 23.028,
+      "p05": 105,
+      "p50": 146,
+      "p95": 180,
+      "darkFraction": 0.001
+     },
+     "profile": {
+      "bands": [
+       {
+        "r0": 100,
+        "r1": 110,
+        "db": -16.88,
+        "pixels": 983
+       },
+       {
+        "r0": 110,
+        "r1": 120,
+        "db": -17.101,
+        "pixels": 1375
+       },
+       {
+        "r0": 120,
+        "r1": 130,
+        "db": -16.299,
+        "pixels": 1070
+       },
+       {
+        "r0": 130,
+        "r1": 140,
+        "db": -16.189,
+        "pixels": 1375
+       },
+       {
+        "r0": 140,
+        "r1": 150,
+        "db": -15.528,
+        "pixels": 154
+       }
+      ],
+      "slopeDbPerCm": 0.321
+     },
+     "walls": [
+      {
+       "fromDeg": 0,
+       "toDeg": 20,
+       "walls": 0,
+       "ratio": null,
+       "deltaDb": null
+      },
+      {
+       "fromDeg": 20,
+       "toDeg": 40,
+       "walls": 0,
+       "ratio": null,
+       "deltaDb": null
+      },
+      {
+       "fromDeg": 40,
+       "toDeg": 60,
+       "walls": 0,
+       "ratio": null,
+       "deltaDb": null
+      }
+     ],
+     "colorOn": false
+    }
+   },
+   "errors": []
+  },
+  "severe-congestion/subxiphoid": {
+   "fps": 45,
+   "stats": {
+    "envelope": {
+     "patches": 34,
+     "depthMm": 65.018,
+     "snr": 1.9,
+     "fwhmAxialMm": 0.698,
+     "fwhmLateralMm": 1.444,
+     "secondaryLobeAxial": 0.057,
+     "secondaryLobeLateral": 0,
+     "darkFraction": 0.067,
+     "crackIndex": 0.064
+    },
+    "bands": [
+     {
+      "patches": 12,
+      "depthMm": 46.406,
+      "snr": 1.886,
+      "fwhmAxialMm": 0.727,
+      "fwhmLateralMm": 1.516,
+      "secondaryLobeAxial": 0.001,
+      "secondaryLobeLateral": 0.078,
+      "darkFraction": 0.066,
+      "crackIndex": 0.026,
+      "r0": 20,
+      "r1": 60,
+      "beamFwhmMm": 1.421
+     },
+     {
+      "patches": 16,
+      "depthMm": 77.52,
+      "snr": 1.879,
+      "fwhmAxialMm": 0.696,
+      "fwhmLateralMm": 1.461,
+      "secondaryLobeAxial": 0.066,
+      "secondaryLobeLateral": 0,
+      "darkFraction": 0.071,
+      "crackIndex": 0.106,
+      "r0": 60,
+      "r1": 100,
+      "beamFwhmMm": 1.575
+     },
+     {
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
+      "r0": 100,
+      "r1": 140,
+      "beamFwhmMm": 2.531
+     },
+     {
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
+      "r0": 140,
+      "r1": 180,
+      "beamFwhmMm": 3.468
+     }
+    ],
+    "display": {
+     "liver": {
+      "pixels": 62883,
+      "mean": 143.224,
+      "sd": 23.238,
+      "p05": 104,
+      "p50": 144,
+      "p95": 180,
+      "darkFraction": 0.002
+     },
+     "profile": {
+      "bands": [
+       {
+        "r0": 20,
+        "r1": 30,
+        "db": -16.611,
+        "pixels": 1150
+       },
+       {
+        "r0": 30,
+        "r1": 40,
+        "db": -16.883,
+        "pixels": 5547
+       },
+       {
+        "r0": 40,
+        "r1": 50,
+        "db": -17.122,
+        "pixels": 7979
+       },
+       {
+        "r0": 50,
+        "r1": 60,
+        "db": -16.683,
+        "pixels": 8802
+       },
+       {
+        "r0": 60,
+        "r1": 70,
+        "db": -16.537,
+        "pixels": 9722
+       },
+       {
+        "r0": 70,
+        "r1": 80,
+        "db": -16.932,
+        "pixels": 10470
+       },
+       {
+        "r0": 80,
+        "r1": 90,
+        "db": -17.183,
+        "pixels": 9131
+       },
+       {
+        "r0": 90,
+        "r1": 100,
+        "db": -17.05,
+        "pixels": 6108
+       },
+       {
+        "r0": 100,
+        "r1": 110,
+        "db": -16.551,
+        "pixels": 3311
+       },
+       {
+        "r0": 110,
+        "r1": 120,
+        "db": -16.284,
+        "pixels": 663
+       }
+      ],
+      "slopeDbPerCm": -0.008
+     },
+     "walls": [
+      {
+       "fromDeg": 0,
+       "toDeg": 20,
+       "walls": 3,
+       "ratio": 1.192,
+       "deltaDb": 4.859
+      },
+      {
+       "fromDeg": 20,
+       "toDeg": 40,
+       "walls": 21,
+       "ratio": 1.111,
+       "deltaDb": 2.78
+      },
+      {
+       "fromDeg": 40,
+       "toDeg": 60,
+       "walls": 2,
+       "ratio": 1.06,
+       "deltaDb": 1.586
+      }
+     ],
+     "colorOn": false
+    }
+   },
+   "errors": []
+  },
+  "severe-congestion/intercostal": {
+   "fps": 52,
+   "stats": {
+    "envelope": {
+     "patches": 15,
+     "depthMm": 80.719,
+     "snr": 1.933,
+     "fwhmAxialMm": 0.681,
+     "fwhmLateralMm": 1.843,
+     "secondaryLobeAxial": 0.02,
+     "secondaryLobeLateral": 0.032,
+     "darkFraction": 0.07,
+     "crackIndex": 0.055
+    },
+    "bands": [
+     {
+      "patches": 7,
+      "depthMm": 50.022,
+      "snr": 1.947,
+      "fwhmAxialMm": 0.671,
+      "fwhmLateralMm": 1.391,
+      "secondaryLobeAxial": 0.032,
+      "secondaryLobeLateral": 0,
+      "darkFraction": 0.069,
+      "crackIndex": 0.029,
+      "r0": 20,
+      "r1": 60,
+      "beamFwhmMm": 1.419
+     },
+     {
+      "patches": 2,
+      "depthMm": 75.938,
+      "snr": 1.95,
+      "fwhmAxialMm": 0.687,
+      "fwhmLateralMm": 1.435,
+      "secondaryLobeAxial": 0.106,
+      "secondaryLobeLateral": 0.12,
+      "darkFraction": 0.064,
+      "crackIndex": 0.082,
+      "r0": 60,
+      "r1": 100,
+      "beamFwhmMm": 1.567
+     },
+     {
+      "patches": 3,
+      "depthMm": 119.531,
+      "snr": 1.947,
+      "fwhmAxialMm": 0.665,
+      "fwhmLateralMm": 2.518,
+      "secondaryLobeAxial": 0.024,
+      "secondaryLobeLateral": 0.072,
+      "darkFraction": 0.068,
+      "crackIndex": 0.154,
+      "r0": 100,
+      "r1": 140,
+      "beamFwhmMm": 2.519
+     },
+     {
+      "patches": 1,
+      "depthMm": 147.656,
+      "snr": 1.895,
+      "fwhmAxialMm": 0.722,
+      "fwhmLateralMm": 3.251,
+      "secondaryLobeAxial": 0.029,
+      "secondaryLobeLateral": 0,
+      "darkFraction": 0.07,
+      "crackIndex": 0,
+      "r0": 140,
+      "r1": 180,
+      "beamFwhmMm": 3.189
+     }
+    ],
+    "display": {
+     "liver": {
+      "pixels": 21634,
+      "mean": 142.265,
+      "sd": 22.865,
+      "p05": 103,
+      "p50": 143,
+      "p95": 178,
+      "darkFraction": 0.002
+     },
+     "profile": {
+      "bands": [
+       {
+        "r0": 30,
+        "r1": 40,
+        "db": -17.11,
+        "pixels": 2805
+       },
+       {
+        "r0": 40,
+        "r1": 50,
+        "db": -16.859,
+        "pixels": 5791
+       },
+       {
+        "r0": 50,
+        "r1": 60,
+        "db": -17.41,
+        "pixels": 5076
+       },
+       {
+        "r0": 60,
+        "r1": 70,
+        "db": -17.079,
+        "pixels": 3309
+       },
+       {
+        "r0": 70,
+        "r1": 80,
+        "db": -17.077,
+        "pixels": 2248
+       },
+       {
+        "r0": 80,
+        "r1": 90,
+        "db": -16.271,
+        "pixels": 1707
+       },
+       {
+        "r0": 90,
+        "r1": 100,
+        "db": -17.213,
+        "pixels": 698
+       }
+      ],
+      "slopeDbPerCm": 0.046
+     },
+     "walls": [
+      {
+       "fromDeg": 0,
+       "toDeg": 20,
+       "walls": 0,
+       "ratio": null,
+       "deltaDb": null
+      },
+      {
+       "fromDeg": 20,
+       "toDeg": 40,
+       "walls": 40,
+       "ratio": 1.15,
+       "deltaDb": 3.753
+      },
+      {
+       "fromDeg": 40,
+       "toDeg": 60,
+       "walls": 40,
+       "ratio": 1.136,
+       "deltaDb": 3.36
+      }
+     ],
+     "colorOn": false
+    }
+   },
+   "errors": []
+  },
+  "severe-congestion/flank": {
+   "fps": 49,
+   "stats": {
+    "envelope": {
+     "patches": 3,
+     "depthMm": 54.844,
+     "snr": 1.966,
+     "fwhmAxialMm": 0.662,
+     "fwhmLateralMm": 1.314,
+     "secondaryLobeAxial": 0.06,
+     "secondaryLobeLateral": 0.084,
+     "darkFraction": 0.071,
+     "crackIndex": 0.061
+    },
+    "bands": [
+     {
+      "patches": 2,
+      "depthMm": 50.625,
+      "snr": 1.996,
+      "fwhmAxialMm": 0.693,
+      "fwhmLateralMm": 1.262,
+      "secondaryLobeAxial": 0.06,
+      "secondaryLobeLateral": 0.092,
+      "darkFraction": 0.068,
+      "crackIndex": 0.095,
+      "r0": 20,
+      "r1": 60,
+      "beamFwhmMm": 1.419
+     },
+     {
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
+      "r0": 60,
+      "r1": 100,
+      "beamFwhmMm": 1.573
+     },
+     {
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
+      "r0": 100,
+      "r1": 140,
+      "beamFwhmMm": 2.531
+     },
+     {
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
+      "r0": 140,
+      "r1": 180,
+      "beamFwhmMm": 3.468
+     }
+    ],
+    "display": {
+     "liver": {
+      "pixels": 31515,
+      "mean": 146.033,
+      "sd": 23.089,
+      "p05": 107,
+      "p50": 147,
+      "p95": 183,
+      "darkFraction": 0.001
+     },
+     "profile": {
+      "bands": [
+       {
+        "r0": 30,
+        "r1": 40,
+        "db": -17.46,
+        "pixels": 1443
+       },
+       {
+        "r0": 40,
+        "r1": 50,
+        "db": -16.048,
+        "pixels": 4741
+       },
+       {
+        "r0": 50,
+        "r1": 60,
+        "db": -16.45,
+        "pixels": 4870
+       },
+       {
+        "r0": 60,
+        "r1": 70,
+        "db": -16.47,
+        "pixels": 4012
+       },
+       {
+        "r0": 70,
+        "r1": 80,
+        "db": -16.366,
+        "pixels": 3696
+       },
+       {
+        "r0": 80,
+        "r1": 90,
+        "db": -16.128,
+        "pixels": 3248
+       },
+       {
+        "r0": 90,
+        "r1": 100,
+        "db": -17.087,
+        "pixels": 2855
+       },
+       {
+        "r0": 100,
+        "r1": 110,
+        "db": -16.205,
+        "pixels": 2997
+       },
+       {
+        "r0": 110,
+        "r1": 120,
+        "db": -15.769,
+        "pixels": 2915
+       },
+       {
+        "r0": 120,
+        "r1": 130,
+        "db": -15.16,
+        "pixels": 684
+       }
+      ],
+      "slopeDbPerCm": 0.063
+     },
+     "walls": [
+      {
+       "fromDeg": 0,
+       "toDeg": 20,
+       "walls": 35,
+       "ratio": 1.143,
+       "deltaDb": 3.582
+      },
+      {
+       "fromDeg": 20,
+       "toDeg": 40,
+       "walls": 6,
+       "ratio": 1.007,
+       "deltaDb": 0.178
+      },
+      {
+       "fromDeg": 40,
+       "toDeg": 60,
+       "walls": 14,
+       "ratio": 1.053,
+       "deltaDb": 1.407
+      }
+     ],
+     "colorOn": false
+    }
+   },
+   "errors": []
+  },
+  "severe-congestion/renal": {
+   "fps": 45,
+   "stats": {
+    "envelope": {
+     "patches": 0,
+     "depthMm": null,
+     "snr": null,
+     "fwhmAxialMm": null,
+     "fwhmLateralMm": null,
+     "secondaryLobeAxial": null,
+     "secondaryLobeLateral": null,
+     "darkFraction": null,
+     "crackIndex": null
+    },
+    "bands": [
+     {
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
+      "r0": 20,
+      "r1": 60,
+      "beamFwhmMm": 1.423
+     },
+     {
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
+      "r0": 60,
+      "r1": 100,
+      "beamFwhmMm": 1.573
+     },
+     {
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
+      "r0": 100,
+      "r1": 140,
+      "beamFwhmMm": 2.531
+     },
+     {
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
+      "r0": 140,
+      "r1": 180,
+      "beamFwhmMm": 3.468
+     }
+    ],
+    "display": {
+     "liver": {
+      "pixels": 1226,
+      "mean": 139.498,
+      "sd": 22.786,
+      "p05": 101,
+      "p50": 141,
+      "p95": 175,
+      "darkFraction": 0.002
+     },
+     "profile": {
+      "bands": [
+       {
+        "r0": 100,
+        "r1": 110,
+        "db": -17.587,
+        "pixels": 1174
+       }
+      ],
+      "slopeDbPerCm": null
+     },
+     "walls": [
+      {
+       "fromDeg": 0,
+       "toDeg": 20,
+       "walls": 0,
+       "ratio": null,
+       "deltaDb": null
+      },
+      {
+       "fromDeg": 20,
+       "toDeg": 40,
+       "walls": 10,
+       "ratio": 1.037,
+       "deltaDb": 0.998
+      },
+      {
+       "fromDeg": 40,
+       "toDeg": 60,
+       "walls": 11,
+       "ratio": 1.209,
+       "deltaDb": 5.24
+      }
+     ],
+     "colorOn": false
+    }
+   },
+   "errors": []
+  }
+ }
+}

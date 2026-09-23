@@ -30,33 +30,33 @@ Generado por `npm run docs:index` — no editar a mano.
 | [24](DECISIONS.md#L186) | Riñones implícitos y datos de escena en textura | vigente |
 | [25](DECISIONS.md#L203) | Corte ecográfico en un Worker con la anatomía TypeScript | vigente |
 | [26](DECISIONS.md#L213) | Componente renal del VExUS emergente | vigente |
-| [27](DECISIONS.md#L230) | Repositorio, CI y saneamiento tras revisión adversarial | vigente |
-| [28](DECISIONS.md#L255) | Consola y navegador 3D por módulos | vigente |
-| [29](DECISIONS.md#L268) | Geometría del sector única, árbol vascular propio y `classify` por pasos | vigente |
-| [30](DECISIONS.md#L280) | Comprobación en vivo de la equivalencia TS ↔ GLSL | vigente |
-| [31](DECISIONS.md#L296) | Fibrilación auricular como ritmo y tercer caso | vigente |
-| [32](DECISIONS.md#L309) | Pruebas de extremo a extremo en Chromium | vigente |
-| [33](DECISIONS.md#L325) | La congestión se ve: calibres basales reales, plétora ×1,6 y hepatomegalia | vigente |
-| [34](DECISIONS.md#L338) | Árbol vascular hepático de 3.º–4.º orden y lista de tubos por cuadro | vigente |
-| [35](DECISIONS.md#L362) | Columna con arco posterior, costillas que terminan en la apófisis transversa, «columna» ≠ «costilla» | vigente |
-| [36](DECISIONS.md#L376) | Proporciones craneocaudales referidas al xifoides y diafragma en dos hemicúpulas | vigente |
-| [37](DECISIONS.md#L396) | Riñón en judía con escotadura hiliar, 16 pirámides e interlobares en abanico | vigente |
-| [38](DECISIONS.md#L416) | PSF lateral con número F y ensanchamiento espectral intrínseco | vigente |
-| [39](DECISIONS.md#L429) | Doppler color por celdas, varianza de Kasai y cadencia física de cuadro | vigente |
-| [40](DECISIONS.md#L445) | Fisura umbilical y ligamento redondo | vigente |
-| [41](DECISIONS.md#L459) | Vesícula en pera con pared y porción umbilical de la porta izquierda en la fisura | vigente |
-| [42](DECISIONS.md#L474) | Segmentos de Couinaud derivados de los vasos, ligamento venoso e hígado 3D translúcido | vigente |
-| [43](DECISIONS.md#L491) | Arquitectura renal, receso de Morison, cortina pulmonar, pared periportal y pared blanda | vigente |
-| [44](DECISIONS.md#L512) | Medición del alumno robusta: envolvente de la banda contigua, lado venoso y regla de S invertida | vigente |
-| [45](DECISIONS.md#L542) | Anatomía de una sola fuente, paso 1: esquema único de uniforms de la escena | vigente |
-| [46](DECISIONS.md#L564) | Anatomía de una sola fuente, paso 2: la anatomía es dueña de su gemelo GPU, módulos de órgano y equivalencia volumétrica | vigente |
-| [47](DECISIONS.md#L589) | Grafo de pasadas del renderer y tiempo de GPU que no miente | vigente |
-| [48](DECISIONS.md#L618) | La sangre del volumen de muestra reentra por su propia cuerda y la vena renal es el lado que domina la puerta | vigente |
-| [49](DECISIONS.md#L655) | Control de calidad de la captura PW: «no medible» con motivo, onda reproducible y suelo de la captura | vigente |
-| [50](DECISIONS.md#L708) | El color comparte la transmisión del PW y su ganancia (en dB) alcanza el ruido del equipo | vigente |
-| [51](DECISIONS.md#L730) | Transiciones lentas en el volumen de muestra e invariantes de §21 sobre la señal | vigente |
-| [52](DECISIONS.md#L768) | La fidelidad del modo B se mide con un banco reproducible, en la envolvente y en la imagen mostrada | vigente |
-| [53](DECISIONS.md#L824) | Preajuste abdominal: 70 dB y el hígado a media escala | vigente |
-| [54](DECISIONS.md#L854) | Transmisión en cuatro etapas, hueso clínico y penumbra de la apertura | vigente |
-| [55](DECISIONS.md#L891) | El medio de dispersores está anclado y no sigue a la sonda | vigente |
-| [56](DECISIONS.md#L942) | Moteado por tejido, heterogeneidad continua y grumos en la grasa | vigente |
+| [27](DECISIONS.md#L242) | Repositorio, CI y saneamiento tras revisión adversarial | vigente |
+| [28](DECISIONS.md#L267) | Consola y navegador 3D por módulos | vigente |
+| [29](DECISIONS.md#L280) | Geometría del sector única, árbol vascular propio y `classify` por pasos | vigente |
+| [30](DECISIONS.md#L292) | Comprobación en vivo de la equivalencia TS ↔ GLSL | vigente |
+| [31](DECISIONS.md#L308) | Fibrilación auricular como ritmo y tercer caso | vigente |
+| [32](DECISIONS.md#L321) | Pruebas de extremo a extremo en Chromium | vigente |
+| [33](DECISIONS.md#L337) | La congestión se ve: calibres basales reales, plétora ×1,6 y hepatomegalia | vigente |
+| [34](DECISIONS.md#L350) | Árbol vascular hepático de 3.º–4.º orden y lista de tubos por cuadro | vigente |
+| [35](DECISIONS.md#L374) | Columna con arco posterior, costillas que terminan en la apófisis transversa, «columna» ≠ «costilla» | vigente |
+| [36](DECISIONS.md#L388) | Proporciones craneocaudales referidas al xifoides y diafragma en dos hemicúpulas | vigente |
+| [37](DECISIONS.md#L408) | Riñón en judía con escotadura hiliar, 16 pirámides e interlobares en abanico | vigente |
+| [38](DECISIONS.md#L428) | PSF lateral con número F y ensanchamiento espectral intrínseco | vigente |
+| [39](DECISIONS.md#L441) | Doppler color por celdas, varianza de Kasai y cadencia física de cuadro | vigente |
+| [40](DECISIONS.md#L457) | Fisura umbilical y ligamento redondo | vigente |
+| [41](DECISIONS.md#L471) | Vesícula en pera con pared y porción umbilical de la porta izquierda en la fisura | vigente |
+| [42](DECISIONS.md#L486) | Segmentos de Couinaud derivados de los vasos, ligamento venoso e hígado 3D translúcido | vigente |
+| [43](DECISIONS.md#L503) | Arquitectura renal, receso de Morison, cortina pulmonar, pared periportal y pared blanda | vigente |
+| [44](DECISIONS.md#L524) | Medición del alumno robusta: envolvente de la banda contigua, lado venoso y regla de S invertida | vigente |
+| [45](DECISIONS.md#L554) | Anatomía de una sola fuente, paso 1: esquema único de uniforms de la escena | vigente |
+| [46](DECISIONS.md#L576) | Anatomía de una sola fuente, paso 2: la anatomía es dueña de su gemelo GPU, módulos de órgano y equivalencia volumétrica | vigente |
+| [47](DECISIONS.md#L601) | Grafo de pasadas del renderer y tiempo de GPU que no miente | vigente |
+| [48](DECISIONS.md#L630) | La sangre del volumen de muestra reentra por su propia cuerda y la vena renal es el lado que domina la puerta | vigente |
+| [49](DECISIONS.md#L667) | Control de calidad de la captura PW: «no medible» con motivo, onda reproducible y suelo de la captura | vigente |
+| [50](DECISIONS.md#L720) | El color comparte la transmisión del PW y su ganancia (en dB) alcanza el ruido del equipo | vigente |
+| [51](DECISIONS.md#L742) | Transiciones lentas en el volumen de muestra e invariantes de §21 sobre la señal | vigente |
+| [52](DECISIONS.md#L780) | La fidelidad del modo B se mide con un banco reproducible, en la envolvente y en la imagen mostrada | vigente |
+| [53](DECISIONS.md#L836) | Preajuste abdominal: 70 dB y el hígado a media escala | vigente |
+| [54](DECISIONS.md#L866) | Transmisión en cuatro etapas, hueso clínico y penumbra de la apertura | vigente |
+| [55](DECISIONS.md#L903) | El medio de dispersores está anclado y no sigue a la sonda | vigente |
+| [56](DECISIONS.md#L954) | Moteado por tejido, heterogeneidad continua y grumos en la grasa | vigente |

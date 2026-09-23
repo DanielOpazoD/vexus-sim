@@ -14,7 +14,7 @@ identificadores. Si un término nuevo entra en el código, entra aquí.
 | **Ondas S / D / A / V** | Suprahepática: S sistólica y D diastólica (anterógradas, hacia la aurícula); A (contracción auricular) y V retrógradas. Normal S > D; leve S < D; grave S invertida. |
 | **S invertida**         | Retrógrado sistólico ≤ −2 cm/s y ≥ 50 % del pico anterógrado de la ventana (decisiones 5 y 44).                                                                      |
 | **PF**                  | Fracción de pulsatilidad portal = (Vmáx − Vmín)/Vmáx en %; < 30 normal, 30–49 leve, ≥ 50 grave.                                                                      |
-| **Patrón renal**        | Vena interlobar: continuo, bifásico (S y D con interrupción), monofásico (solo D).                                                                                   |
+| **Patrón renal**        | Vena interlobar: continuo (el flujo no llega a la línea de base, aunque sea pulsátil), bifásico (S y D con interrupción), monofásico (solo D).                       |
 | **PAD / RAP**           | Presión de aurícula derecha. Aquí es un contorno prescrito (`prescribed-ra-contour`).                                                                                |
 | **IT**                  | Insuficiencia tricuspídea.                                                                                                                                           |
 | **FA**                  | Fibrilación auricular (sin onda A, RR irregular).                                                                                                                    |

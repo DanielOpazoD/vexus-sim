@@ -227,6 +227,18 @@ punto de partida «Renal» en la línea axilar posterior (φ 1,12π, z −75, in
 de la sonda ampliado a φ ≤ 1,2π. Verificado en vivo: puerta en la vena interlobar en apnea → espectro
 continuo y «Renal: continuo» en el resultado.
 
+**Enmienda (revisión externa, 23-09-2026).** «Continuo» exigía un mínimo ≥ 30 % del máximo, y el VExUS
+lo define por la ausencia de interrupción. Un flujo pulsátil que nunca se detiene salía bifásico, o
+monofásico si S era pequeña, y entonces sumaba un componente grave al grado: (S 5, D 20, mín 4) daba
+grado 2 con hígado y porta normales. Le pasaba al estado intermedio entre el sano y el grave
+(mín/máx 0,22, mínimo +3,8 cm/s). Ahora es continuo si el mínimo supera max(2 cm/s, 10 % del máximo)
+[EXTRAPOLACIÓN PROPIA]. Los 2 cm/s son el corte del filtro de pared por defecto (25 + 37,5 Hz a
+2,5 MHz ≈ 1,9 cm/s); el 10 % es donde el valle se confunde con la línea de base en la escala del
+espectro. La verdad (`measurePhysiologyTruth`) y la vía observada (`measureObservedRenal`) comparten
+la función. Los tres casos no cambian: sano (mín 7,5) y FA (mín 7,0) continuos, grave (−5,4)
+monofásico. En la interpolación sano → grave el bifásico aparece más tarde: en la fracción 0,8
+(mín 1,9 cm/s) en vez de 0,5.
+
 ## 27. Repositorio, CI y saneamiento tras revisión adversarial
 
 Repositorio en GitHub (`DanielOpazoD/vexus-sim`, privado) con `main` siempre verde, ramas cortas por

@@ -9,6 +9,7 @@ import type { Vec3 } from '../core/vec3';
 import { SampleVolumeIQ, type GateGeometry } from '../doppler/sampleVolume';
 import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient } from '../physiology/patientState';
+import type { RespiratoryPattern } from '../physiology/patientState';
 import type { VesselId } from '../physiology/vessels';
 import { CONVEX_C35, lineDirection, pointOnLine, probeFrame } from '../probe/probe';
 import { apertureAngleSigmaRad, lateralSigmaMm } from '../ultrasound/beamModel';
@@ -21,8 +22,14 @@ import { apertureAngleSigmaRad, lateralSigmaMm } from '../ultrasound/beamModel';
  * (siembra nueva: 95–100 %). Causa: la comprobación de salida y la resiembra usaban dos
  * desplazamientos distintos y los dispersores de tejido se resembraban en bucle en las caras.
  */
-function track(window: (typeof START_POINTS)[number]['id'], vessels: VesselId[], seconds: number) {
-  const patient = { ...clonePatient(NORMAL_ADULT), respiratoryPattern: 'quiet' as const };
+function track(
+  window: (typeof START_POINTS)[number]['id'],
+  vessels: VesselId[],
+  seconds: number,
+  respiratoryPattern: RespiratoryPattern = 'quiet',
+  fromSeconds = 0,
+) {
+  const patient = { ...clonePatient(NORMAL_ADULT), respiratoryPattern };
   const scene = new AnatomyScene(patient);
   const anatomy = new AnatomyQuery(scene);
   const engine = new PhysiologyEngine(patient, scene.vesselAreas());
@@ -57,17 +64,25 @@ function track(window: (typeof START_POINTS)[number]['id'], vessels: VesselId[],
   const re = new Float32Array(64);
   const im = new Float32Array(64);
   let acc = 0;
-  const samples: Array<{ resp: number; history: number; fresh: number }> = [];
+  const samples: Array<{ t: number; resp: number; history: number; fresh: number; historyWeight: number; freshWeight: number }> = [];
+  const t0 = engine.clock.t;
   for (let i = 0; i < Math.round(seconds / engine.clock.dt); i++) {
     const s = engine.step();
     acc += prf * engine.clock.dt;
     const n = Math.floor(acc);
     acc -= n;
     if (n > 0) sv.generate(s, [0, 0, 0], n, re, im);
-    if (i % 60 === 0) {
+    if (i % 60 === 0 && s.t - t0 >= fromSeconds) {
       const fresh = new SampleVolumeIQ(anatomy, 99 + i);
       fresh.setGate(gate, s);
-      samples.push({ resp: s.resp.volume, history: sv.lastComposition.bloodFraction, fresh: fresh.lastComposition.bloodFraction });
+      samples.push({
+        t: s.t - t0,
+        resp: s.resp.volume,
+        history: sv.lastComposition.bloodFraction,
+        fresh: fresh.lastComposition.bloodFraction,
+        historyWeight: sv.lastComposition.bloodWeight,
+        freshWeight: fresh.lastComposition.bloodWeight,
+      });
     }
   }
   return samples;
@@ -82,5 +97,16 @@ describe('Volumen de muestra: la puerta no recuerda la geometría anterior', () 
     const endExp = samples.slice(10).filter((x) => x.resp < 0.02);
     expect(endExp.length).toBeGreaterThan(3);
     for (const x of endExp) expect(x.history).toBeGreaterThan(0.9 * x.fresh);
+  });
+
+  // Con la puerta quieta y sin respirar, la población no puede cambiar de distribución. Antes la
+  // sangre derivaba hacia una esquina de la caja y quedaba atrapada en cuerdas cortas: el peso de
+  // sangre caía a una fracción del de una siembra nueva y la VSH del sano acababa «sin señal».
+  it('suprahepática del sano en apnea: la sangre no se va a los bordes de la caja en 20 s', () => {
+    const samples = track('intercostal', ['hvRight'], 22, 'apnea-expiratory', 14);
+    expect(samples.length).toBeGreaterThan(20);
+    const ratio = samples.reduce((a, x) => a + x.historyWeight / x.freshWeight, 0) / samples.length;
+    expect(ratio).toBeGreaterThan(0.8);
+    for (const x of samples) expect(x.history).toBeGreaterThan(0.9 * x.fresh);
   });
 });

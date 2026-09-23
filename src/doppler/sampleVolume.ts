@@ -76,6 +76,12 @@ interface Scatterer {
 
 export interface GateComposition {
   bloodFraction: number;
+  /**
+   * Peso de haz de la sangre por dispersor (Σ w_sangre / N): cuánta sangre ve de verdad la puerta.
+   * Una siembra nueva da la referencia; si la población con historia se va a los bordes de la caja
+   * (donde w ≈ 0), la fracción de sangre puede seguir alta y la señal, sin embargo, desaparecer.
+   */
+  bloodWeight: number;
   arterialFraction: number;
   wallFraction: number;
   vessels: Partial<Record<VesselId, number>>;
@@ -107,7 +113,7 @@ export class SampleVolumeIQ {
   private halfAxial = 4;
   private halfLateral = 5;
   private halfElev = 6;
-  private composition: GateComposition = { bloodFraction: 0, arterialFraction: 0, wallFraction: 0, vessels: {} };
+  private composition: GateComposition = { bloodFraction: 0, bloodWeight: 0, arterialFraction: 0, wallFraction: 0, vessels: {} };
 
   constructor(
     private readonly anatomy: AnatomyQuery,
@@ -207,9 +213,18 @@ export class SampleVolumeIQ {
    * `exited` (un dispersor que acaba de salir): reentra por el extremo opuesto
    * de SU línea de corriente (envoltura periódica a lo largo del flujo), donde
    * el peso del haz es ≈0. Así la sangre que sale de la luz vuelve a entrar en
-   * la luz y no aparecen transitorios (chasquidos) en la IQ. Si la línea de
-   * corriente no vuelve a cruzar la caja o el punto ya no es sangre (curvatura,
-   * afilamiento), se conserva la población buscando un punto del mismo tipo.
+   * la luz y no aparecen transitorios (chasquidos) en la IQ.
+   *
+   * La sangre reentra con SU identidad y SU base de flujo, sin reclasificar: cada dispersor
+   * recorre siempre la misma cuerda de la caja (órbita cerrada) y la densidad uniforme de la
+   * siembra se conserva por construcción. Antes el punto de entrada se reclasificaba y la
+   * reclasificación periódica reorientaba el flujo con la tangente local: en un vaso curvo la
+   * recta de vuelta ya no era la de ida, la población derivaba hacia una esquina de la caja y
+   * quedaba atrapada en cuerdas tan cortas (8–32 ticks) que no volvía a reclasificarse. Con la
+   * puerta quieta sobre la suprahepática del sano, en apnea, los dispersores con peso > 0,3
+   * pasaban de 30 a 0 en 10 s (la señal se perdía) y las resiembras subían a 29 000/s. Si la
+   * recta ya no cruza la caja (la respiración la desplazó de lado), el dispersor se resiembra en
+   * un punto al azar de la caja con su identidad real.
    */
   private spawn(phys: PhysiologySample, exited: Scatterer | null): Scatterer {
     if (!exited) return this.makeScatterer(this.gateToWorld(this.randomInBox()), phys);
@@ -242,12 +257,34 @@ export class SampleVolumeIQ {
       if (ok && tIn < tOut && Number.isFinite(tOut)) {
         const t = tOut - 0.02 * (tOut - Math.max(tIn, 0));
         const entry: [number, number, number] = [c[0] + d[0] * t, c[1] + d[1] * t, c[2] + d[2] * t];
-        // La identidad se reevalúa en el punto de entrada: si el vaso ya no
-        // está ahí (respiración), el dispersor entra como tejido.
+        if (exited.isBlood) return this.reenter(exited, this.gateToWorld(entry));
+        // El tejido se reclasifica en el punto de entrada: con la respiración puede entrar sangre.
         return this.makeScatterer(this.gateToWorld(entry), phys);
       }
     }
     return this.makeScatterer(this.gateToWorld(this.randomInBox()), phys);
+  }
+
+  /** Dispersor nuevo (fase y amplitud nuevas) en la misma línea de corriente que `exited`. */
+  private reenter(exited: Scatterer, world: Vec3): Scatterer {
+    const phase = this.rng.float() * 2 * Math.PI;
+    const d = this.dispNow;
+    return {
+      m: [world[0] - d[0], world[1] - d[1], world[2] - d[2]],
+      amp: TISSUES[exited.tissue].backscatter * (0.7 + 0.6 * this.rng.float()),
+      phase,
+      apAngle: this.rng.gaussian(),
+      cr: Math.cos(phase),
+      ci: Math.sin(phase),
+      rotC: 1,
+      rotS: 0,
+      w: 0,
+      vessel: exited.vessel,
+      isBlood: true,
+      vBlood: [exited.vBlood[0], exited.vBlood[1], exited.vBlood[2]],
+      flowBasis: exited.flowBasis,
+      tissue: exited.tissue,
+    };
   }
 
   private updateComposition(): void {
@@ -272,6 +309,7 @@ export class SampleVolumeIQ {
     }
     this.composition = {
       bloodFraction: wsum > 0 ? blood / wsum : 0,
+      bloodWeight: this.scatterers.length > 0 ? blood / this.scatterers.length : 0,
       arterialFraction: wsum > 0 ? art / wsum : 0,
       wallFraction: wsum > 0 ? wall / wsum : 0,
       vessels,
@@ -358,13 +396,17 @@ export class SampleVolumeIQ {
             // dispersores con j ≡ 0 (mod 4); ver la limitación `thin-vessel-sample-volume-lag`.
             const q = this.anatomy.classifyWorld([wx, wy, wz], phys);
             const nowBlood = q.tissue === Tissue.Blood && q.bloodVelocity !== null;
+            // La sangre que sigue en su vaso conserva su dirección (órbita cerrada, ver `spawn`)
+            const sameVessel = nowBlood && s.isBlood && q.vessel === s.vessel;
             if (nowBlood !== s.isBlood) {
               s.isBlood = nowBlood;
               s.tissue = q.tissue;
               s.amp = TISSUES[q.tissue].backscatter * (0.7 + 0.6 * this.rng.float());
             }
-            s.vessel = q.vessel;
-            s.flowBasis = q.flowBasis ?? [0, 0, 0];
+            if (!sameVessel) {
+              s.vessel = q.vessel;
+              s.flowBasis = q.flowBasis ?? [0, 0, 0];
+            }
           }
           if (s.isBlood && s.vessel) {
             const u = phys.velocities[s.vessel];

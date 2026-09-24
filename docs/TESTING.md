@@ -89,6 +89,10 @@ un gancho que midiera «la envolvente» sin decir cuál cambiaría de significad
   cada cuadro, exige que cada programa de A2, A y B (el de la mirada 0 y el dirigido) reciba todos los
   uniforms y samplers que declara, cada sampler con su textura, que la mirada elija el programa, que las
   repeticiones de medida repitan ese y que la reconstrucción tras perder el contexto libere los seis.
+  También el arranque (el registro de llamadas de `recordingGl`): al crear y al reconstruir el
+  renderizador, todos los programas se enlazan antes de la primera consulta de estado, que bloquea en un
+  navegador, `KHR_parallel_shader_compile` se pide antes de compilar y un fallo de compilación o de enlace
+  (`fail`) lanza con el nombre del programa y libera el lote entero.
   `shaderLimits.test.ts` exige que los programas de la mirada 0 no lleven ningún identificador de la
   dirigida (sacados del código) y fija la huella de su main, la de antes de la composición.
 

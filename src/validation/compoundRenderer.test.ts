@@ -265,6 +265,60 @@ describe('dos programas por pasada con miradas (WebGL falso)', () => {
 });
 
 /**
+ * Arranque (decisión 58): los programas dirigidos suman tres a los que se compilan al crear el renderizador y
+ * al reconstruirlo tras perder el contexto (el de B, otros 46,5 kB de GLSL con la anatomía entera). Consultar el
+ * estado de un shader o de un programa bloquea hasta que termina: hacerlo tras cada uno encadenaba las
+ * compilaciones de una en una. Se encargan todas y se comprueban después, con KHR_parallel_shader_compile
+ * pedida antes de compilar (el navegador puede repartirlas entre sus hilos de fondo), y un fallo lanza con el
+ * nombre del programa y su registro y libera todos los del lote.
+ */
+describe('arranque: los programas se enlazan en lote (WebGL falso)', () => {
+  const build = (opts?: Parameters<typeof recordingGl>[1]) => {
+    const rec = recordingGl({ width: 320, height: 240 }, opts);
+    return { ...rec, make: () => new Simulator(clonePatient(NORMAL_ADULT), rec.canvas) };
+  };
+  /** Llamadas de `calls` desde `from`: ninguna consulta de estado antes del último enlace y una por programa. */
+  const expectBatched = (calls: readonly string[], from: number, programs: number) => {
+    const c = calls.slice(from);
+    const links = c.flatMap((x, i) => (x === 'linkProgram' ? [i] : []));
+    expect(links.length, 'un enlace por programa').toBe(programs);
+    const firstQuery = c.findIndex((x) => x === 'getShaderParameter' || x === 'getProgramParameter');
+    expect(firstQuery, 'primera consulta de estado tras el último enlace').toBeGreaterThan(links[links.length - 1]);
+    expect(c.filter((x) => x === 'getProgramParameter').length, 'cada enlace se comprueba').toBe(programs);
+    // el estado de compilación solo se lee si un enlace falla, para el mensaje
+    expect(c.filter((x) => x === 'getShaderParameter')).toEqual([]);
+  };
+
+  it('al crearse y al reconstruirse: todo encargado antes de la primera consulta, con la extensión pedida antes', () => {
+    const { calls, programs, make, canvas } = build();
+    const sim = make();
+    // los seis de las pasadas con miradas y los demás; el de consulta se crea al usarse
+    expect(programs.length).toBeGreaterThan(6);
+    expectBatched(calls, 0, programs.length);
+    const ext = calls.indexOf('getExtension:KHR_parallel_shader_compile');
+    expect(ext, 'extensión pedida').toBeGreaterThanOrEqual(0);
+    expect(ext).toBeLessThan(calls.indexOf('compileShader'));
+    const [from, before] = [calls.length, programs.length];
+    sim.rebuildRenderer(canvas);
+    expectBatched(calls, from, programs.length - before);
+    expect(programs.length - before).toBe(before);
+  });
+
+  it('un fallo de compilación o de enlace lanza con el nombre y el registro y libera todos los del lote', () => {
+    const cases = [
+      ['compile', /Compilación de rawfieldSteered\.frag:\nERROR: 0:2: falso/],
+      ['link', /Enlace de rawfieldSteered: enlace falso/],
+    ] as const;
+    for (const [stage, message] of cases) {
+      const { make, programs, deleted } = build({ fail: { frag: FRAG_RAWFIELD_STEERED, stage } });
+      expect(make, stage).toThrow(message);
+      expect(programs.length, stage).toBeGreaterThan(6);
+      expect(programs.filter((p) => !deleted.has(p)).length, `${stage}: programas sin liberar`).toBe(0);
+    }
+  });
+});
+
+/**
  * Los ganchos de prueba con el compuesto (decisión 58) sobre el renderizador real y el WebGL falso (las
  * lecturas dan ceros: aquí se comprueba el protocolo, no la imagen): llenan el anillo antes de medir, leen
  * la transmisión de cada mirada en su cuadro, dejan el conmutador como estaba y se niegan a medir «el

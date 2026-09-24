@@ -1231,7 +1231,7 @@ mirada 0 con la línea dirigida que pasa por cada una y promediadas en lineal po
   composición y sin nada de la dirigida, y el dirigido (`FRAG_TRANS_PREFIX_STEERED`,
   `FRAG_TRANSMISSION_STEERED`, `FRAG_RAWFIELD_STEERED`), el único que declara `uSteer`. El renderizador
   elige uno por cuadro por su θ (`LookPrograms`; θ = 0 con el compuesto apagado o el color encendido),
-  compila los seis al crearse (también al reconstruirse tras una pérdida de contexto), sube a cada uno los
+  enlaza los seis con los demás al crearse (también al reconstruirse tras una pérdida de contexto), sube a cada uno los
   uniforms que declara y las repeticiones de medida (`repeatPass`) repiten el del cuadro. En un cuadro de
   la mirada 0 nadie escribe ni lee A o3 ni A2 o2/o3. K es un paso directo exacto. `readEnvelope({ source })`
   lee la mirada 0 por defecto y lanza si no es la del último cuadro; `compound` es obligatorio en el tipo de
@@ -1240,6 +1240,20 @@ mirada 0 con la línea dirigida que pasa por cada una y promediadas en lineal po
   dirigido declara 107 (uSteer, uLookSalt) y 4 samplers (uTrans3 en lugar de uTrans0); K, 10 ranuras y 3
   samplers; el dirigido de A, 6 samplers. El chunk principal del bundle pasa de 228,8 a 250,1 kB (el GLSL
   viaja como texto) y su presupuesto, de 240 a 260 kB (`tools/ci/bundle-budget.ts`).
+- Arranque: el GLSL que se compila al crear el renderizador (y al reconstruirlo tras perder el contexto)
+  pasa de 184,1 kB en 12 programas en `main` eabd2aa (201,0 kB en 13 con la primera versión, un programa
+  por pasada) a 244,6 kB en 16, +33 %: B, de 42,8 kB a 42,8 + 46,5 (el dirigido compila otra vez la
+  anatomía entera). Se compilan todos al crearse y no al primer cuadro dirigido: con el compuesto encendido
+  por defecto ese es el segundo, así que diferirlos solo movería el coste un cuadro (y lo metería en las
+  medidas de `frameCostMs`, que calientan con un solo cuadro, y un fallo de enlace pasaría del arranque al
+  bucle). Para no pagarlo en serie, `GLProgram.linkAll` encarga los 16 y solo después comprueba cada
+  enlace, con `KHR_parallel_shader_compile` pedida antes de compilar (en Chrome es opcional por página y da
+  hasta 2 hilos de fondo por contexto): antes se consultaba el estado tras cada shader y cada enlace, 48
+  esperas encadenadas; ahora 16, con todo encargado. Un fallo lanza con el nombre del programa y el
+  registro y libera todo el lote. Tiempo de arranque sin medir: falta la e2e con SwiftShader (del `goto`
+  al primer «fps» y al primer cuadro dirigido) A/B intercalada con `main` bajo la misma carga; los
+  registros de e2e locales no sirven para esto porque la misma prueba de arranque, sobre el mismo código,
+  ha tardado de 11,5 s a 1,0 min según la carga de la máquina.
 
 **Consecuencias.** Predicción del gemelo B→C→D de tres planos a ±7° en la subxifoidea (8 realizaciones;
 no medida en GPU) a 20 / 45 / 90 / 150 mm: ρ(0,±) 0,23 / 0,42 / 0,65 / 0,35 (ley con la σ medida 0,32 /
@@ -1296,7 +1310,9 @@ código, con una prueba de que volver a meter la rama se detecta, y la huella de
 eabd2aa) y `compoundRenderer.test.ts` (el renderizador real sobre un WebGL falso: cada mirada dibuja A2, A
 y B con su programa y solo el dirigido recibe la mirada, cada programa recibe todos los uniforms y samplers
 que declara con el programa puesto y cada sampler su textura, `repeatPass` repite el programa del cuadro,
-la reconstrucción tras perder el contexto libera y rehace los seis, D escribe su ranura, K lee las tres con
+la reconstrucción tras perder el contexto libera y rehace los seis, el arranque y la reconstrucción encargan
+todos los programas antes de la primera consulta de estado, con la extensión pedida antes de compilar, y un
+fallo de compilación o de enlace lanza con el nombre y libera el lote, D escribe su ranura, K lee las tres con
 su validez, los reinicios, las lecturas que se niegan a dar datos de otro cuadro y el protocolo de los
 ganchos); `fidelity.test.ts` y `fidelityScene.test.ts`
 (ρ_I, costura, umbra e hígado puro de las tres miradas). e2e: «composición espacial» (G1–G4, K1, K5,

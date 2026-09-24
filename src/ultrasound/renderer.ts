@@ -260,10 +260,6 @@ interface LookPrograms {
   steered: GLProgram;
 }
 
-function lookPrograms(gl: WebGL2RenderingContext, look0: string, steered: string, name: string): LookPrograms {
-  return { look0: new GLProgram(gl, VERT, look0, name), steered: new GLProgram(gl, VERT, steered, `${name}Steered`) };
-}
-
 export class UltrasoundRenderer {
   readonly gl: WebGL2RenderingContext;
   private pTransHits: GLProgram;
@@ -373,20 +369,41 @@ export class UltrasoundRenderer {
     this.gl = gl;
     if (!gl.getExtension('EXT_color_buffer_float')) throw new Error('EXT_color_buffer_float no disponible');
     gl.getExtension('OES_texture_float_linear');
+    // compilación en hilos de fondo del navegador (opcional; sin ella, el mismo lote en serie): se pide antes
+    // de compilar, y `linkAll` encarga todos los programas antes de comprobar ninguno (decisión 58)
+    gl.getExtension('KHR_parallel_shader_compile');
     this.timer = new GpuPassTimer<PassId>(gl);
-    this.pTransHits = new GLProgram(gl, VERT, FRAG_TRANS_HITS, 'transmissionHits');
-    this.pTransSeg = new GLProgram(gl, VERT, FRAG_TRANS_SEGMENTS, 'transmissionSegments');
-    this.pTransPre = lookPrograms(gl, FRAG_TRANS_PREFIX, FRAG_TRANS_PREFIX_STEERED, 'transmissionPrefix');
-    this.pTrans = lookPrograms(gl, FRAG_TRANSMISSION, FRAG_TRANSMISSION_STEERED, 'transmission');
-    this.pRaw = lookPrograms(gl, FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED, 'rawfield');
-    this.pAxial = new GLProgram(gl, VERT, FRAG_AXIAL, 'axial');
-    this.pLateral = new GLProgram(gl, VERT, FRAG_LATERAL, 'lateral');
-    this.pCompound = new GLProgram(gl, VERT, FRAG_COMPOUND, 'compound');
-    this.pColor = new GLProgram(gl, VERT, FRAG_COLOR, 'color');
-    this.pScan = new GLProgram(gl, VERT, FRAG_SCANCONVERT, 'scanconvert');
-    this.pPersist = new GLProgram(gl, VERT, FRAG_PERSIST, 'persist');
-    this.pBlit = new GLProgram(gl, VERT, FRAG_BLIT, 'blit');
-    this.pMap = new GLProgram(gl, VERT, FRAG_TISSUEMAP, 'tissuemap');
+    const p = GLProgram.linkAll(gl, VERT, {
+      transmissionHits: FRAG_TRANS_HITS,
+      transmissionSegments: FRAG_TRANS_SEGMENTS,
+      transmissionPrefix: FRAG_TRANS_PREFIX,
+      transmissionPrefixSteered: FRAG_TRANS_PREFIX_STEERED,
+      transmission: FRAG_TRANSMISSION,
+      transmissionSteered: FRAG_TRANSMISSION_STEERED,
+      rawfield: FRAG_RAWFIELD,
+      rawfieldSteered: FRAG_RAWFIELD_STEERED,
+      axial: FRAG_AXIAL,
+      lateral: FRAG_LATERAL,
+      compound: FRAG_COMPOUND,
+      color: FRAG_COLOR,
+      scanconvert: FRAG_SCANCONVERT,
+      persist: FRAG_PERSIST,
+      blit: FRAG_BLIT,
+      tissuemap: FRAG_TISSUEMAP,
+    });
+    this.pTransHits = p.transmissionHits;
+    this.pTransSeg = p.transmissionSegments;
+    this.pTransPre = { look0: p.transmissionPrefix, steered: p.transmissionPrefixSteered };
+    this.pTrans = { look0: p.transmission, steered: p.transmissionSteered };
+    this.pRaw = { look0: p.rawfield, steered: p.rawfieldSteered };
+    this.pAxial = p.axial;
+    this.pLateral = p.lateral;
+    this.pCompound = p.compound;
+    this.pColor = p.color;
+    this.pScan = p.scanconvert;
+    this.pPersist = p.persist;
+    this.pBlit = p.blit;
+    this.pMap = p.tissuemap;
     const f = { internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.LINEAR };
     const f2 = { internal: gl.RG32F, format: gl.RG, type: gl.FLOAT, filter: gl.LINEAR };
     const f1 = { internal: gl.R32F, format: gl.RED, type: gl.FLOAT, filter: gl.LINEAR };
@@ -415,7 +432,7 @@ export class UltrasoundRenderer {
   /**
    * Cambia de paciente conservando programas y destinos: los shaders no dependen de la escena
    * (solo sus uniforms y la textura de datos), así que el cambio de caso deja de recompilar
-   * diez programas (≈ 200 ms con GPU, muchos segundos con SwiftShader). Se descarta todo lo
+   * sus 16 programas (con diez eran ≈ 200 ms con GPU y muchos segundos con SwiftShader). Se descarta todo lo
    * que pertenecía al paciente anterior: uniforms en caché, persistencia, color y mapa de tejidos.
    */
   setScene(scene: AnatomyScene): void {
@@ -1136,7 +1153,7 @@ export class UltrasoundRenderer {
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, W, H, gl.RGBA, gl.FLOAT, data);
     const f = { internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.NEAREST };
     const target = createTarget(gl, W, H, [f, f, f]);
-    this.pQuery ??= new GLProgram(gl, VERT, FRAG_QUERY, 'query');
+    this.pQuery ??= GLProgram.link(gl, VERT, FRAG_QUERY, 'query');
     // puntos fuera del plano (equivalencia volumétrica): todos los tubos, sin recorte por losa
     this.updateSceneDynamic(inputs, allTubes);
     bindTarget(gl, target);

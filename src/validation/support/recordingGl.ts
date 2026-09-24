@@ -4,10 +4,16 @@
  * cada programa en ese momento, los adjuntos (formato y tamaño) de cada FBO y los FBO y programas
  * liberados. Un uniform subido con la ubicación de un programa que no es el puesto (WebGL lo rechaza con
  * INVALID_OPERATION y no lo sube) queda en `misuse`. Todo lo demás (parámetros de textura, lecturas) no
- * hace nada; los shaders «compilan». Lo usan `frameCost.test.ts` (repeticiones de medida) y
- * `compoundRenderer.test.ts` (anillo de miradas y programas por mirada, decisión 58).
+ * hace nada; los shaders «compilan», salvo el de `fail` (compilación o enlace fallidos, con su registro).
+ * `calls` guarda en orden las extensiones pedidas, las compilaciones, los enlaces y las consultas de estado
+ * (lo que bloquea en un navegador) y `programs`, los programas creados. Lo usan `frameCost.test.ts`
+ * (repeticiones de medida) y `compoundRenderer.test.ts` (anillo de miradas, programas por mirada y su
+ * enlace en lote al arrancar, decisión 58).
  */
-export function recordingGl(canvasSize: { width: number; height: number }) {
+export function recordingGl(
+  canvasSize: { width: number; height: number },
+  opts: { fail?: { frag: string; stage: 'compile' | 'link' } } = {},
+) {
   const K: Record<string, number> = {
     TEXTURE0: 0x84c0,
     TEXTURE_2D: 0x0de1,
@@ -56,10 +62,27 @@ export function recordingGl(canvasSize: { width: number; height: number }) {
   const binds: (Obj | null)[] = [];
   const fboTextures = new Map<Obj, Obj[]>();
   const deleted = new Set<Obj>();
+  const calls: string[] = [];
+  const programs: Obj[] = [];
+  const fail = opts.fail;
+  const failsCompile = (src: string | undefined) => fail?.stage === 'compile' && src === fail.frag;
   const methods: Record<string, (...a: never[]) => unknown> = {
-    getExtension: (name: string) => (name === 'EXT_color_buffer_float' || name === 'OES_texture_float_linear' ? {} : null),
-    getShaderParameter: () => true,
-    getProgramParameter: () => true,
+    getExtension: (name: string) => {
+      calls.push(`getExtension:${name}`);
+      return name === 'EXT_color_buffer_float' || name === 'OES_texture_float_linear' ? {} : null;
+    },
+    compileShader: () => void calls.push('compileShader'),
+    linkProgram: () => void calls.push('linkProgram'),
+    getShaderParameter: (sh: Obj) => {
+      calls.push('getShaderParameter');
+      return !failsCompile(sources.get(sh));
+    },
+    getProgramParameter: (p: Obj) => {
+      calls.push('getProgramParameter');
+      return !(fail && fragOf.get(p) === fail.frag);
+    },
+    getShaderInfoLog: (sh: Obj) => (failsCompile(sources.get(sh)) ? 'ERROR: 0:2: falso' : ''),
+    getProgramInfoLog: (p: Obj) => (fail && fragOf.get(p) === fail.frag ? 'enlace falso' : ''),
     checkFramebufferStatus: () => K.FRAMEBUFFER_COMPLETE,
     getUniformLocation: (p: Obj, name: string): Loc => ({ ...make('loc'), name, program: p }),
     createShader: () => make('shader'),
@@ -74,7 +97,11 @@ export function recordingGl(canvasSize: { width: number; height: number }) {
     uniform1fv: (l: Loc, v: ArrayLike<number>) => setUniform(l, Array.from(v)),
     uniform3fv: (l: Loc, v: ArrayLike<number>) => setUniform(l, Array.from(v)),
     uniform4fv: (l: Loc, v: ArrayLike<number>) => setUniform(l, Array.from(v)),
-    createProgram: () => make('program'),
+    createProgram: () => {
+      const p = make('program');
+      programs.push(p);
+      return p;
+    },
     createTexture: () => make('texture'),
     createFramebuffer: () => make('fbo'),
     createBuffer: () => make('buffer'),
@@ -132,5 +159,5 @@ export function recordingGl(canvasSize: { width: number; height: number }) {
   );
   const canvas = { ...canvasSize, getContext: () => gl } as unknown as HTMLCanvasElement;
   /** Textura de cada FBO por adjunto (para saber qué destino lee cada unidad). */
-  return { canvas, draws, binds, attachments, deleted, fboTextures, misuse };
+  return { canvas, draws, binds, attachments, deleted, fboTextures, misuse, calls, programs };
 }

@@ -111,6 +111,42 @@ describe('Anatomía implícita (base B)', () => {
     expect(cls([-16, 4 + 3.1, -69]).tissue).toBe(Tissue.BileDuctWall);
   });
 
+  // Antes arteria y vena renales compartían el nodo hiliar: el 14–21 % del eje arterial se clasificaba
+  // como vena y una puerta PW sobre la arteria del hilio daba el espectro venoso.
+  it('en el hilio renal la vena va delante de la arteria y no se tocan', () => {
+    for (const side of ['Right', 'Left'] as const) {
+      const artery = scene.vessels.find((v) => v.id === `renalArtery${side}`)!;
+      const vein = scene.vessels.find((v) => v.id === `renalVein${side}`)!;
+      const samples = (d: typeof artery) => {
+        const out: { p: [number, number, number]; r: number }[] = [];
+        const n = d.tube.nodes;
+        for (let i = 0; i + 1 < n.length; i++)
+          for (let k = 0; k <= 50; k++) {
+            const s = k / 50;
+            out.push({
+              p: [0, 1, 2].map((j) => n[i].p[j] + (n[i + 1].p[j] - n[i].p[j]) * s) as [number, number, number],
+              r: n[i].r + (n[i + 1].r - n[i].r) * s,
+            });
+          }
+        return out;
+      };
+      const a = samples(artery);
+      const w = samples(vein);
+      // ningún punto del eje arterial es vena
+      expect(a.filter((x) => cls(x.p).vessel === vein.id).length, side).toBe(0);
+      // luz + pared de cada una sin solaparse en todo el recorrido
+      let gap = Infinity;
+      for (const x of a)
+        for (const y of w)
+          gap = Math.min(gap, Math.hypot(x.p[0] - y.p[0], x.p[1] - y.p[1], x.p[2] - y.p[2]) - (x.r + y.r + artery.wallMm + vein.wallMm));
+      expect(gap, side).toBeGreaterThanOrEqual(0);
+      // y en el hilio la vena es anterior (y mayor) a la arteria
+      const hv = vein.tube.nodes[1].p;
+      const ha = artery.tube.nodes[2].p;
+      expect(hv[1], side).toBeGreaterThan(ha[1]);
+    }
+  });
+
   it('riñón derecho: seno ecogénico, pirámides, corteza, grasa perirrenal e interlobares', () => {
     const k = scene.kidneyRight;
     // pelvis anecoica en el centro del seno; seno ecogénico alrededor; cápsula fina en la superficie

@@ -146,7 +146,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
         pose.yaw += (opts.stepDeg * Math.PI) / 180;
         const env = envelopeAt(sim, pose);
         const mask = liverMask(sim, env);
-        const d = detrended(env, mask);
+        const d = detrended(env, mask).filter(Number.isFinite);
         const mean = d.reduce((s, v) => s + v, 0) / d.length;
         const sd = Math.sqrt(d.reduce((s, v) => s + (v - mean) ** 2, 0) / d.length);
         frames.push({
@@ -317,24 +317,33 @@ function liverMask(sim: Simulator, env: { lines: number; samples: number }): num
 
 const meanOf = (data: Float32Array, idx: readonly number[]): number => idx.reduce((s, i) => s + data[i], 0) / Math.max(1, idx.length);
 
+/** Semiancho de la caja de la media local (líneas y muestras de la envolvente): ~10 × 4 mm a 8 cm. */
+const LOCAL_LINES = 6;
+const LOCAL_SAMPLES = 12;
+
 /**
- * Envolvente sin la tendencia de profundidad: cada muestra dividida por la media del hígado de su fila
- * (la atenuación de ida y vuelta, ~3 dB/cm sin TGC, domina la envolvente cruda: dos moteados
- * independientes correlacionaban 0,6 sin quitarla). Filas con < 4 muestras fuera.
+ * Envolvente sin la tendencia local: cada muestra dividida por la media del hígado en una caja de
+ * ~10 × 4 mm a su alrededor. La atenuación de ida y vuelta sin TGC (~3 dB/cm) domina la envolvente
+ * cruda, y en la ventana intercostal la penumbra de las costillas deja bandas laterales: quitar solo
+ * la media por fila de profundidad todavía correlacionaba dos moteados a 8° (0,45 en GPU).
  */
 function detrended(env: { lines: number; data: Float32Array }, idx: readonly number[]): number[] {
-  const rows = new Map<number, number[]>();
-  for (const i of idx) {
-    const k = Math.floor(i / env.lines);
-    const row = rows.get(k) ?? [];
-    row.push(i);
-    rows.set(k, row);
-  }
+  const inMask = new Set(idx);
   const out: number[] = [];
-  for (const row of rows.values()) {
-    if (row.length < 4) continue;
-    const m = meanOf(env.data, row);
-    for (const i of row) out.push(env.data[i] / m);
+  for (const i of idx) {
+    const u = i % env.lines;
+    const k = Math.floor(i / env.lines);
+    let sum = 0;
+    let n = 0;
+    for (let dk = -LOCAL_SAMPLES; dk <= LOCAL_SAMPLES; dk++)
+      for (let du = -LOCAL_LINES; du <= LOCAL_LINES; du++) {
+        const j = (k + dk) * env.lines + (u + du);
+        if (inMask.has(j)) {
+          sum += env.data[j];
+          n++;
+        }
+      }
+    out.push(n >= 8 ? env.data[i] / (sum / n) : Number.NaN);
   }
   return out;
 }
@@ -345,9 +354,16 @@ function speckleCorrelation(
   b: { lines: number; data: Float32Array },
   idx: readonly number[],
 ): number {
-  const x = detrended(a, idx);
-  const y = detrended(b, idx);
-  const n = Math.min(x.length, y.length);
+  const x0 = detrended(a, idx);
+  const y0 = detrended(b, idx);
+  const x: number[] = [];
+  const y: number[] = [];
+  for (let i = 0; i < x0.length; i++)
+    if (Number.isFinite(x0[i]) && Number.isFinite(y0[i])) {
+      x.push(x0[i]);
+      y.push(y0[i]);
+    }
+  const n = x.length;
   let mx = 0;
   let my = 0;
   for (let i = 0; i < n; i++) {

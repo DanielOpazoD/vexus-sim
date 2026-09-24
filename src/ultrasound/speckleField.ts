@@ -81,19 +81,22 @@ export class ElevationAnchor {
       this.a = here(0);
       this.b = this.a;
       this.fadeLeft = 0;
-    } else if (axisAngleDeg(elevation, this.a.e) > REANCHOR_DEG) {
-      // la vigente pasa a ser la vieja; si ya había un fundido en curso, la más vieja se descarta
+    } else if (this.fadeLeft === 0 && axisAngleDeg(elevation, this.a.e) > REANCHOR_DEG) {
+      // no se reancla a mitad de un fundido: descartar de golpe el medio más viejo era un salto de
+      // grano (en GPU, a 1°/cuadro, correlación 0,65 con el cuadro anterior); se espera a que acabe
       this.b = this.a;
       this.a = here(this.a.parity === 0 ? 1 : 0);
       this.fadeLeft = CROSSFADE_FRAMES;
     }
-    let w = 1;
+    const out: SpeckleAnchorState = { a: this.a, b: this.b ?? this.a, w: 1 };
     if (this.fadeLeft > 0) {
-      w = 1 - this.fadeLeft / (CROSSFADE_FRAMES + 1);
+      out.w = 1 - this.fadeLeft / (CROSSFADE_FRAMES + 1);
       this.fadeLeft--;
+      // el medio viejo se suelta DESPUÉS del último cuadro del fundido: soltarlo antes sumaba el
+      // mismo medio dos veces con w = 8/9 (√w + √(1−w) = 1,28: un destello de +2 dB en la GPU)
       if (this.fadeLeft === 0) this.b = this.a;
     }
-    return { a: this.a, b: this.b ?? this.a, w };
+    return out;
   }
 }
 

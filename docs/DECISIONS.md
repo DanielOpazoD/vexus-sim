@@ -921,13 +921,23 @@ estadística de Rayleigh no cambia durante el fundido. Un salto de pose entre cu
 > Coste: una evaluación más del campo durante 8 cuadros cada 6° de giro.
 > **Verificación.** `speckleField.test.ts` (gemelo TS): inclinación de 0,25–1° ≥ 0,95–0,75 y de 4–8°
 > < 0,3; giro axial; traslación elevacional; a 1° del umbral, persistencia > 0,9 y SNR < +12 %; máquina
-> de estados del ancla (fija por debajo del umbral, fundido monótono de 8 cuadros con la otra semilla,
-> salto sin fundido); Rayleigh y potencia iguales a mitad del fundido. e2e con GPU real, sobre la
-> envolvente del hígado sin la tendencia de profundidad (la atenuación sin TGC domina la envolvente
-> cruda: dos moteados independientes correlacionaban 0,6; lo halló una revisión adversarial):
-> `speckleMotion` ≥ 0,8 con 0,5° de inclinación, ≥ 0,7 con 2° de giro, < 0,3 con 8° y ≥ 0,95 al volver;
-> `speckleCrossfade` gira 1° por cuadro durante 16 cuadros, pasa el fundido (peso < 1) y exige la SNR
-> dentro de ±15 % y cada cuadro correlacionado > 0,75 con el anterior.
+> de estados del ancla (fija por debajo del umbral, fundido monótono de 8 cuadros con la otra semilla y
+> dos medios distintos en cada cuadro del fundido, sin reanclar a mitad de un fundido, salto sin
+> fundido); Rayleigh y potencia iguales a mitad del fundido. e2e con GPU real, en apnea y sobre la
+> envolvente del hígado dividida por su media local (~10 × 4 mm). La envolvente cruda la domina la
+> atenuación sin TGC, y en la ventana intercostal quedan bandas de penumbra: dos moteados
+> independientes correlacionaban 0,6 crudos y 0,45 quitando solo la media por fila. Lo halló una
+> revisión adversarial.
+
+- `speckleMotion` (GPU): 0,88 con 0,5° de inclinación, 0,78 con 2° de giro y 0,12 con 8°; exige
+  ≥ 0,8 / ≥ 0,7 / < 0,3, y ≥ 0,9 al volver a la pose.
+- `speckleCrossfade`: gira 1° por cuadro durante 16 cuadros y pasa dos fundidos. Exige la SNR dentro
+  de ±15 %, cada cuadro correlacionado > 0,7 con el anterior (0,82–0,89 sin fundido) y saltos de
+  nivel < 0,8 dB. Esta prueba halló dos defectos que el gemelo no veía:
+  - el medio viejo se soltaba un cuadro antes y el último cuadro de cada fundido sumaba el mismo
+    medio dos veces (+2,1 dB);
+  - un reanclaje a mitad de fundido descartaba un medio de golpe (correlación 0,65).
+    Ahora el medio viejo se suelta tras el último cuadro y no se reancla hasta que el fundido acaba.
 
 ## Iteración 2 — informe de cierre (22-09-2026)
 

@@ -141,10 +141,27 @@ describe('medio de dispersores anclado (decisión 55)', () => {
     expect(s.a.parity).toBe(1);
     expect(s.b).toBe(s0.a);
     weights.push(s.w);
-    for (let i = 1; i < CROSSFADE_FRAMES + 2; i++) weights.push(st({ ...BASE, yaw: BASE.yaw + deg(k) }).w);
+    for (let i = 1; i < CROSSFADE_FRAMES + 2; i++) {
+      const si = st({ ...BASE, yaw: BASE.yaw + deg(k) });
+      // mientras dure el fundido, los dos medios son distintos (si no, √w + √(1−w) > 1: destello)
+      if (si.w < 1) expect(si.b.parity).not.toBe(si.a.parity);
+      weights.push(si.w);
+    }
     expect(weights.filter((w) => w < 1)).toHaveLength(CROSSFADE_FRAMES);
     for (let i = 1; i < weights.length; i++) expect(weights[i]).toBeGreaterThan(weights[i - 1] - 1e-12);
     expect(weights.at(-1)).toBe(1);
+    // girar deprisa durante el fundido no lo interrumpe: el peso sigue subiendo hasta 1
+    const fast = new ElevationAnchor();
+    const stFast = (d: number) => {
+      const fr = probeFrame({ ...BASE, yaw: BASE.yaw + deg(d) }, torso, CONVEX_C35);
+      return fast.update(fr.face, fr.elevation);
+    };
+    stFast(0);
+    const fastW: number[] = [];
+    for (let d = 1; d <= REANCHOR_DEG + CROSSFADE_FRAMES + 2; d++) fastW.push(stFast(d).w);
+    const firstFade = fastW.findIndex((w) => w < 1);
+    const run = fastW.slice(firstFade, firstFade + CROSSFADE_FRAMES);
+    for (let i = 1; i < run.length; i++) expect(run[i]).toBeGreaterThan(run[i - 1]);
     const settled = st({ ...BASE, yaw: BASE.yaw + deg(k) });
     expect(settled.b).toBe(settled.a);
     // salto de pose (otro punto de partida): ancla nueva sin fundido y con la semilla base

@@ -94,6 +94,17 @@ export function kidneyOuterSdf(q: Vec3, k: Kidney): number {
   return smoothMax(ell, -notch, HILUM_NOTCH.roundMm);
 }
 
+/**
+ * ¿Pesa la escotadura hiliar en `kidneyOuterSdf` en q (marco local)? Fuera del redondeo de `smoothMax`
+ * (el elipsoide supera a la escotadura en `roundMm` o más) el contorno es el elipsoide exacto y su
+ * gradiente es la normal del elipsoide que usa la GPU; dentro, no. Solo pruebas (e2e de normales).
+ */
+export function hilumNotchActive(q: Vec3, k: Kidney): boolean {
+  const ell = sdEllipsoidLocal(q, k.radii);
+  const notch = sdEllipsoidLocal([q[0], q[1] - (k.radii[1] + HILUM_NOTCH.offsetV), q[2]], HILUM_NOTCH.radii);
+  return ell + notch < HILUM_NOTCH.roundMm;
+}
+
 export function kidneyQuery(p: Vec3, k: Kidney): KidneyHit {
   const q = kidneyLocal(p, k);
   const dOuter = kidneyOuterSdf(q, k);

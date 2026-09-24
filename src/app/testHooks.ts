@@ -1,9 +1,10 @@
-import type { VesselId } from '../physiology/vessels';
+import { VESSEL_META, type VesselId } from '../physiology/vessels';
 import type { EquipmentCommand } from './equipment';
 import { equivalenceSweep, volumeEquivalence, type EquivalencePoseReport, type VolumeEquivalenceReport } from './equivalenceSweep';
 import { bestGateOnVessel } from './gatePlacement';
 import { acousticWindowWeight, gateTransmission } from './gateTransmission';
 import { lineCoupling, pointOnLine, type ProbePose } from '../probe/probe';
+import { hilumNotchActive, kidneyLocal, kidneyOuterSdf } from '../anatomy/organs/kidney';
 import { FACE_GEOMETRIES, type FaceGeometry } from '../anatomy/scene';
 import { TISSUES, Tissue } from '../anatomy/tissues';
 import type { Vec3 } from '../core/vec3';
@@ -44,14 +45,15 @@ export interface TestHooks {
   }) => FidelityStats;
   /**
    * Normales de la GPU (`Cls.n`, `queryPoints` con `normals`) frente al gradiente de `faceSdf` de TS
-   * en las caras que darán brillo: por tipo de cara, |n·∇| en los puntos del plano a 0,02–0,4 mm de
-   * ella que caen en un tejido que la dibuja, con el mismo tejido en la GPU y en la CPU. `pose`
-   * bascula o inclina la sonda respecto a la pose de partida, como en `fidelity`.
+   * en las caras que darán brillo: por tipo de cara (y los subconjuntos de `FACE_NORMAL_SUBSETS`),
+   * |n·∇| en los puntos del plano a 0,02–0,4 mm de ella que caen en un tejido que la dibuja, con el
+   * mismo tejido en la GPU y en la CPU. `pose` bascula o inclina la sonda respecto a la pose de
+   * partida, como en `fidelity`.
    */
   faceNormals: (opts: {
     startPoint: StartPoint['id'];
     pose?: { rockDeg?: number; tiltDeg?: number };
-  }) => Record<FaceGeometry, FaceNormalStats>;
+  }) => Record<FaceNormalRow, FaceNormalStats>;
   /**
    * Coste medio de `n` cuadros de imagen en tiempo de pared (ms), sincronizado con la GPU al
    * principio y al final: compara versiones del renderizador en la misma máquina.
@@ -309,7 +311,7 @@ export interface FaceNormalStats {
 
 /** Banda de distancia a la cara (mm) de los puntos de la e2e de normales. */
 const FACE_BAND_MM = [0.02, 0.4] as const;
-/** Puntos por cara y plano como máximo (la GPU los consulta de una vez). */
+/** Puntos por fila y plano como máximo (la GPU los consulta de una vez). */
 const FACE_POINTS_MAX = 400;
 /** Tejidos que dibujan cada cara (su normal es la de esa cara en `classify`). */
 const TUBE_TISSUES: ReadonlySet<Tissue> = new Set([
@@ -322,13 +324,31 @@ const TUBE_TISSUES: ReadonlySet<Tissue> = new Set([
 ]);
 
 /**
+ * Subconjuntos de la e2e de normales: separan lo que la fila de su cara mezcla y se muestrean aparte
+ * (hasta `FACE_POINTS_MAX` puntos cada uno), así que la fila de la cara no cambia.
+ *  - `tubeIvc`: puntos del tubo cuya luz es la VCI. Su sección es elíptica y la normal de la GPU
+ *    (`tubeQuery`, d/dist) escala la componente AP una vez, mientras el gradiente la escala dos: en todo
+ *    el cuerpo, no solo en la tapa, se aparta 6–10° según `ivcApScale` (|n·∇| 0,991 a 0,777, 0,984 a
+ *    0,70). Mezclada con los demás tubos, no se ve en su p05.
+ *  - `tubeIvcBody`: los de la VCI dentro de su segmento (0 < s < 1): sin la tapa en la aurícula ni los
+ *    codos (las uniones con las suprahepáticas sí cuentan).
+ *  - `kidneyOuterNotchFree` y `kidneyOuterNotch`: el contorno renal fuera o dentro del redondeo de la
+ *    escotadura hiliar (`hilumNotchActive`). Fuera, la normal del elipsoide de la GPU es exacta.
+ */
+export const FACE_NORMAL_SUBSETS = ['tubeIvc', 'tubeIvcBody', 'kidneyOuterNotchFree', 'kidneyOuterNotch'] as const;
+export type FaceNormalSubset = (typeof FACE_NORMAL_SUBSETS)[number];
+/** Fila del informe de normales: una cara entera o uno de sus subconjuntos. */
+export type FaceNormalRow = FaceGeometry | FaceNormalSubset;
+
+/**
  * Puntos del plano a 0,02–0,4 mm de cada cara (rejilla de líneas × 0,5 mm y, cerca de la cara, pasos de
  * 0,05 mm) en un tejido que la dibuja: la luz y la pared del tubo, la cápsula hepática, el diafragma y el
  * pulmón bajo la cúpula (no la cortina), la cápsula renal y la grasa perirrenal, la bilis y la pared
  * vesicular. En cada uno, |n·∇| entre la normal de la GPU y el gradiente de `faceSdf` en el marco
- * material (diferencias centrales de 0,02 mm).
+ * material (diferencias centrales de 0,02 mm). Una fila por cara y otra por subconjunto
+ * (`FACE_NORMAL_SUBSETS`).
  */
-export function faceNormalStats(sim: Simulator): Record<FaceGeometry, FaceNormalStats> {
+export function faceNormalStats(sim: Simulator): Record<FaceNormalRow, FaceNormalStats> {
   const tr = sim.transducer;
   const depth = sim.bmode.depthMm;
   const scene = sim.scene;
@@ -356,7 +376,8 @@ export function faceNormalStats(sim: Simulator): Record<FaceGeometry, FaceNormal
         return !tube && (t === Tissue.Fluid || t === Tissue.BileDuctWall) ? t : null;
     }
   };
-  const candidates = new Map<FaceGeometry, { p: Vec3; m: Vec3 }[]>(FACE_GEOMETRIES.map((f) => [f, []]));
+  type Candidate = { p: Vec3; m: Vec3 };
+  const candidates = new Map<FaceGeometry, Candidate[]>(FACE_GEOMETRIES.map((f) => [f, []]));
   const nr = Math.floor(depth / 0.5);
   for (let u = 0; u < tr.lines; u++) {
     const theta = -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / tr.lines;
@@ -375,34 +396,56 @@ export function faceNormalStats(sim: Simulator): Record<FaceGeometry, FaceNormal
       }
     }
   }
-  // hasta FACE_POINTS_MAX puntos por cara, repartidos por todo el plano: se clasifican ≤ 4× candidatos a
+  // subconjuntos: la VCI (y su cuerpo) entre los tubos; el contorno renal con o sin escotadura (la del
+  // riñón más cercano, el que da `faceSdf`)
+  const ivc = candidates
+    .get('tube')!
+    .map((c) => {
+      const t = scene.faceTube(c.m, caliber);
+      return { ...c, s: t?.vessel && VESSEL_META[t.vessel].system === 'ivc' ? t.hit.s : Number.NaN };
+    })
+    .filter((c) => !Number.isNaN(c.s));
+  const kidneys = [scene.kidneyRight, scene.kidneyLeft] as const;
+  const renal = candidates.get('kidneyOuter')!.map((c) => {
+    const q = kidneys.map((k) => kidneyLocal(c.m, k));
+    const j = kidneyOuterSdf(q[0], kidneys[0]) <= kidneyOuterSdf(q[1], kidneys[1]) ? 0 : 1;
+    return { ...c, notch: hilumNotchActive(q[j], kidneys[j]) };
+  });
+  const subsets: Record<FaceNormalSubset, { face: FaceGeometry; list: Candidate[] }> = {
+    tubeIvc: { face: 'tube', list: ivc },
+    tubeIvcBody: { face: 'tube', list: ivc.filter((c) => c.s > 0 && c.s < 1) },
+    kidneyOuterNotchFree: { face: 'kidneyOuter', list: renal.filter((c) => !c.notch) },
+    kidneyOuterNotch: { face: 'kidneyOuter', list: renal.filter((c) => c.notch) },
+  };
+  // hasta FACE_POINTS_MAX puntos por fila, repartidos por todo el plano: se clasifican ≤ 4× candidatos a
   // paso fijo y, de los que caen en un tejido que dibuja la cara, se toman FACE_POINTS_MAX equiespaciados
-  const chosen: { face: FaceGeometry; p: Vec3; m: Vec3; tissue: Tissue; grad: Vec3 }[] = [];
-  for (const face of FACE_GEOMETRIES) {
-    const list = candidates.get(face)!;
+  const chosen: { row: FaceNormalRow; p: Vec3; m: Vec3; tissue: Tissue; grad: Vec3 }[] = [];
+  const pick = (row: FaceNormalRow, face: FaceGeometry, list: readonly Candidate[]): void => {
     const stride = Math.max(1, Math.floor(list.length / (4 * FACE_POINTS_MAX)));
     const owned: { p: Vec3; m: Vec3; tissue: Tissue }[] = [];
     for (let i = 0; i < list.length; i += stride) {
       const tissue = owns(face, list[i].m);
-      if (tissue !== null) owned.push({ ...list[i], tissue });
+      if (tissue !== null) owned.push({ p: list[i].p, m: list[i].m, tissue });
     }
     const step = Math.max(1, owned.length / FACE_POINTS_MAX);
     for (let j = 0; Math.floor(j * step) < owned.length; j++) {
       const { p, m, tissue } = owned[Math.floor(j * step)];
       const grad = centralGradient((q) => sdf(q, face), m);
-      if (grad && Math.hypot(grad[0], grad[1], grad[2]) > 0) chosen.push({ face, p, m, tissue, grad });
+      if (grad && Math.hypot(grad[0], grad[1], grad[2]) > 0) chosen.push({ row, p, m, tissue, grad });
     }
-  }
+  };
+  for (const face of FACE_GEOMETRIES) pick(face, face, candidates.get(face)!);
+  for (const row of FACE_NORMAL_SUBSETS) pick(row, subsets[row].face, subsets[row].list);
   const pts = new Float32Array(chosen.length * 3);
   chosen.forEach((c, i) => pts.set(c.p, i * 3));
   const gpu = sim.gpuQuery(pts, sim.frame, false, { normals: true });
   const normal = gpu.normal!;
-  const out = {} as Record<FaceGeometry, FaceNormalStats>;
-  for (const face of FACE_GEOMETRIES) {
+  const out = {} as Record<FaceNormalRow, FaceNormalStats>;
+  for (const row of [...FACE_GEOMETRIES, ...FACE_NORMAL_SUBSETS]) {
     const dots: { dot: number; i: number }[] = [];
     let mismatched = 0;
     chosen.forEach((c, i) => {
-      if (c.face !== face) return;
+      if (c.row !== row) return;
       const cpuTissue: number = c.tissue;
       if (gpu.tissue[i] !== cpuTissue) {
         mismatched++;
@@ -416,7 +459,7 @@ export function faceNormalStats(sim: Simulator): Record<FaceGeometry, FaceNormal
     dots.sort((a, b) => a.dot - b.dot);
     const pct = (q: number): number => (dots.length ? dots[Math.min(dots.length - 1, Math.floor(q * dots.length))].dot : Number.NaN);
     const w = dots[0];
-    out[face] = {
+    out[row] = {
       points: dots.length,
       mismatched,
       p01: pct(0.01),

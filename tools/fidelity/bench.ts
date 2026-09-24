@@ -7,8 +7,12 @@
  *   npm run fidelity -- --sweep            # + banco de interfaces con 4 poses más por vista
  *
  * Con `--sweep`, cada vista se mide también con la sonda basculada (±6°) e inclinada (±6°) y los
- * registros de las cinco poses se agregan con `summarizeFaces` (`sweep` en el JSON): los tramos de
- * incidencia de 0–20° tienen así más de una o dos paredes por vista.
+ * registros de las cinco poses se agregan con `summarizeFaces` (`sweep` en el JSON). Eso llena la VCI
+ * y la cápsula a 0–20° (salvo la VCI subxifoidea con congestión y la cápsula en la ventana renal), pero
+ * no las suprahepáticas a 0–20° (0–9 registros por escena) ni el diafragma a 0–20° (0 en todas), y la
+ * porta a 0–20° no da rosario. Cada escena escribe en `escasos` los tramos vigilados por el PR 5b que no
+ * llegan a 10 registros o no tienen rosario (`thinGatedBins`): esas puertas no se pueden evaluar
+ * (docs/fidelity/README.md, «Qué llena el barrido»).
  *
  * No corre en CI (necesita GPU: con SwiftShader los cps no significan nada). Las métricas y sus
  * referencias se explican en docs/fidelity/README.md.
@@ -17,7 +21,7 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { chromium } from '@playwright/test';
-import { summarizeFaces, type FaceSummary, type FidelityStats, type WallBin } from '../../src/app/fidelity';
+import { summarizeFaces, thinGatedBins, type FaceSummary, type FidelityStats, type WallBin } from '../../src/app/fidelity';
 
 // --clave valor, o --bandera sola
 const args = new Map<string, string>();
@@ -52,7 +56,15 @@ const gpuArgs =
 const browser = await chromium.launch({ headless: true, args: gpuArgs });
 const results: Record<
   string,
-  { fps: number | null; msPerFrame: number; stats: Omit<FidelityStats, 'faceSamples'>; sweep?: FaceSummary; errors: string[] }
+  {
+    fps: number | null;
+    msPerFrame: number;
+    stats: Omit<FidelityStats, 'faceSamples'>;
+    sweep?: FaceSummary;
+    /** Tramos vigilados por el PR 5b sin 10 registros o sin rosario (del barrido, o de la pose de partida). */
+    escasos: string[];
+    errors: string[];
+  }
 > = {};
 /** «0–20° 1,26 (12) huecos 0,10 rosario 0,20» de cada tramo de incidencia con paredes. */
 const binText = (bins: WallBin[]): string =>
@@ -109,7 +121,16 @@ try {
         }
         sweep = summarizeFaces(poses);
       }
-      results[`${cs}/${view}`] = { fps: Number.isFinite(fps) ? fps : null, msPerFrame, stats, ...(sweep ? { sweep } : {}), errors };
+      const faces = sweep ?? stats.display;
+      const escasos = faces ? thinGatedBins(faces) : [];
+      results[`${cs}/${view}`] = {
+        fps: Number.isFinite(fps) ? fps : null,
+        msPerFrame,
+        stats,
+        ...(sweep ? { sweep } : {}),
+        escasos,
+        errors,
+      };
       await page.close();
       const e = stats.envelope;
       const d = stats.display;
@@ -123,14 +144,14 @@ try {
               .join(', ')}`
           : '',
       );
-      if (d) {
-        const faces = sweep ?? d;
+      if (d && faces) {
         console.log(
           ''.padEnd(32),
           `${sweep ? 'barrido' : 'interfaces'}: VCI ${binText(faces.wallSystems.ivc)} · VSH ${binText(faces.wallSystems.hepaticVein)} · porta ${binText(faces.wallSystems.portal)}`,
           `· cápsula ${binText(faces.capsule)} · diafragma ${binText(faces.diaphragm)} · Morison ${binText(faces.renalCapsule)}`,
           `· saturado junto a la cara ${JSON.stringify(d.faceSaturated)}`,
         );
+        if (escasos.length) console.log(''.padEnd(32), `tramos vigilados sin evaluar: ${escasos.join(' · ')}`);
       }
     }
   }

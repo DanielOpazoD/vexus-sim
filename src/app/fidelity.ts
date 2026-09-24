@@ -5,7 +5,7 @@ import { VESSEL_META } from '../physiology/vessels';
 import { lineCoupling, lineDirection, pointOnLine } from '../probe/probe';
 import { lateralFwhmMm } from '../ultrasound/beamModel';
 import { levelOfGrey } from '../ultrasound/greyMap';
-import type { DisplayFrame } from '../ultrasound/renderer';
+import { COARSE_DEPTH, nominalTgcDbPerCm, type DisplayFrame } from '../ultrasound/renderer';
 import { beamToPixel, pixelToBeam } from '../ultrasound/sectorGeometry';
 import type { EnvelopeFrame } from './speckle';
 import type { Simulator } from './simulator';
@@ -379,7 +379,11 @@ export interface WallBin {
   beading: number;
   /** Anchura del eco a −6 dB alrededor de su pico en la envolvente (mm, mediana). */
   echoFwhmMm: number;
-  /** Pico sobre la mediana del hígado de referencia en la envolvente (dB, mediana). */
+  /**
+   * Pico sobre la mediana del hígado de referencia (dB, mediana), en la envolvente con la compensación
+   * nominal (`envelopeLine`): sin ella, la atenuación de ida y vuelta entre la cara y su referencia, a
+   * 3–10 mm, restaba ~2 dB con la referencia encima y los sumaba con ella debajo.
+   */
   peakDb: number;
 }
 
@@ -391,8 +395,18 @@ export interface DiaphragmBin extends WallBin {
   positionSdMm: number;
   /** Líneas con una racha ≥ 0,3 mm de envolvente < hígado − 15 dB en [pleura; pleura + 2,5 mm]: costura. */
   seamFraction: number;
-  /** p95 de |espejo de la GPU − pleura de la CPU| (mm); NaN sin la transmisión de la GPU. */
+  /**
+   * p95 de |espejo de la GPU − pleura de la CPU| (mm); NaN sin la transmisión de la GPU. Incluye la
+   * cuantización de la marcha gruesa de la pasada A (`mirrorFloorMm`): con la colocación de hoy no baja
+   * de ella aunque la geometría sea exacta.
+   */
   mirrorOffsetMm: number;
+  /**
+   * Suelo de `mirrorOffsetMm` con la marcha gruesa de hoy: p95 de |centro del primer segmento grueso de
+   * pulmón − pleura| (mm), con la marcha A0 (`FRAG_TRANS_HITS`: paso profundidad/`COARSE_DEPTH`, 1,125 mm
+   * a 18 cm) emulada en la CPU. Cae en [0; paso): ~1 mm de p95 sin ningún error de colocación.
+   */
+  mirrorFloorMm: number;
 }
 
 /** Tramos de incidencia (°): una pared especular brilla a 0–20° y se apaga hacia 60°. */
@@ -430,7 +444,7 @@ const SEAM_STEP_MM = 0.02;
 
 /** Una línea de imagen alrededor de una interfaz (`measureFaceLine`): la prueban líneas pintadas sin WebGL. */
 export interface FaceLine {
-  /** Envolvente detectada a la profundidad r (mm). */
+  /** Envolvente detectada a la profundidad r (mm), sin tendencia con la profundidad (`envelopeLine`). */
   env: (r: number) => number;
   /** Gris mostrado (0–255) a la profundidad r; NaN fuera de la imagen. */
   gray: (r: number) => number;
@@ -476,6 +490,8 @@ export interface FaceSample extends FaceLineMeasure {
   incidenceDeg: number;
   /** Solo el diafragma: |espejo de la GPU − pleura de la CPU| (mm). */
   mirrorOffsetMm?: number;
+  /** Solo el diafragma: |espejo de la marcha gruesa emulada en la CPU − pleura de la CPU| (mm). */
+  mirrorFloorMm?: number;
 }
 
 /** Tramos de incidencia de cada interfaz, agregados sobre uno o más planos. */
@@ -491,6 +507,25 @@ export interface FaceSummary {
 /** Recorre [r0; r1] en pasos de `step` sin acumular error de coma flotante. */
 function* stepsMm(r0: number, r1: number, step: number): Generator<number> {
   for (let i = 0; r0 + i * step <= r1 + 1e-9; i++) yield r0 + i * step;
+}
+
+/**
+ * Envolvente de la línea `u` a la profundidad r (mm), interpolada entre los centros de muestra y con
+ * la compensación nominal de la pasada de escaneo, `tgcDbPerCm`·r (`nominalTgcDbPerCm`; sin la TGC del
+ * usuario ni su techo). La envolvente de la GPU lleva la atenuación de ida y vuelta (~3 dB/cm en el
+ * hígado a 2,5 MHz) y el banco compara cada cara con el hígado a 3–10 mm: sin quitar la tendencia, el
+ * mismo eco medía ~4 dB distinto con la referencia encima (pared) o debajo (cápsula), la línea pleural
+ * ~3 dB de menos y la costura contaba huecos del moteado de un diafragma sin costura.
+ */
+export function envelopeLine(env: EnvelopeFrame, depthMm: number, tgcDbPerCm: number): (u: number, r: number) => number {
+  const dr = depthMm / env.samples;
+  const gain = Float64Array.from({ length: env.samples }, (_, v) => Math.pow(10, (tgcDbPerCm * ((v + 0.5) * dr)) / 200));
+  return (u, r) => {
+    const x = Math.min(env.samples - 1, Math.max(0, r / dr - 0.5));
+    const v = Math.min(env.samples - 2, Math.floor(x));
+    const f = x - v;
+    return env.data[v * env.lines + u] * gain[v] * (1 - f) + env.data[(v + 1) * env.lines + u] * gain[v + 1] * f;
+  };
 }
 
 /**
@@ -684,6 +719,10 @@ export function summarizeFaces(poses: readonly (readonly FaceSample[])[]): FaceS
         finite(sel, (s) => s.mirrorOffsetMm),
         0.95,
       ),
+      mirrorFloorMm: percentileOf(
+        finite(sel, (s) => s.mirrorFloorMm),
+        0.95,
+      ),
     };
   });
   return {
@@ -693,6 +732,44 @@ export function summarizeFaces(poses: readonly (readonly FaceSample[])[]): FaceS
     diaphragm,
     renalCapsule: wallBins(['renalCapsule']),
   };
+}
+
+/** Registros mínimos de un tramo para que el banco con GPU lo evalúe (plan de la tanda 1.5, §6.3). */
+export const GATED_MIN_RECORDS = 10;
+
+/**
+ * Tramos que vigila el banco con GPU de los ecos de interfaz (PR 5b): pared de VCI y de suprahepáticas a
+ * 0–20° (y la VSH a 40–60°, para su caída), la porta en los tres, y cápsula, diafragma y Morison a 0–20°.
+ */
+export const GATED_FACE_BINS: readonly { label: string; kind: FaceKind; fromDeg: number }[] = [
+  { label: 'VCI', kind: 'ivc', fromDeg: 0 },
+  { label: 'VSH', kind: 'hepaticVein', fromDeg: 0 },
+  { label: 'VSH', kind: 'hepaticVein', fromDeg: 40 },
+  { label: 'porta', kind: 'portal', fromDeg: 0 },
+  { label: 'porta', kind: 'portal', fromDeg: 20 },
+  { label: 'porta', kind: 'portal', fromDeg: 40 },
+  { label: 'cápsula', kind: 'capsule', fromDeg: 0 },
+  { label: 'diafragma', kind: 'diaphragm', fromDeg: 0 },
+  { label: 'Morison', kind: 'renalCapsule', fromDeg: 0 },
+];
+
+/**
+ * Tramos vigilados (`GATED_FACE_BINS`) que el resumen no llena: menos de `min` registros, o sin rosario
+ * medible (ninguna pared con 5 líneas a ±3 en el tramo). Cada uno como «VSH 0–20°: 3 registros»; vacío si
+ * todos se pueden evaluar. El banco lo escribe por escena para que las puertas no se salten en silencio.
+ */
+export function thinGatedBins(summary: FaceSummary, min = GATED_MIN_RECORDS): string[] {
+  const bins = (kind: FaceKind): WallBin[] =>
+    kind === 'ivc' || kind === 'hepaticVein' || kind === 'portal' ? summary.wallSystems[kind] : summary[kind];
+  const out: string[] = [];
+  for (const g of GATED_FACE_BINS) {
+    const b = bins(g.kind).find((x) => x.fromDeg === g.fromDeg);
+    if (!b) continue;
+    const name = `${g.label} ${b.fromDeg}–${b.toDeg}°`;
+    if (b.walls < min) out.push(`${name}: ${b.walls} registros`);
+    else if (!Number.isFinite(b.beading)) out.push(`${name}: ${b.walls} registros, sin rosario`);
+  }
+  return out;
 }
 
 /**
@@ -840,7 +917,9 @@ export function centralGradient(f: (p: Vec3) => number | null, p: Vec3, eps = NO
 
 /**
  * Celdas de `kind` a ≥ `mm` de cualquier celda de otro tejido en una rejilla líneas × `stepMm`
- * (distancia euclídea; `spacingAt(k)` es el paso lateral entre líneas en la fila k).
+ * (distancia euclídea en el plano; `spacingAt(k)` es el paso lateral entre líneas en la fila k). Lo que
+ * cae fuera de la rejilla (fuera del sector o del campo) no se conoce y cuenta como otro tejido: una
+ * celda a < `mm` del borde de la imagen no está despejada.
  */
 export function clearanceMask(
   tissue: Uint8Array,
@@ -861,10 +940,10 @@ export function clearanceMask(
       let clear = true;
       for (let du = -U; clear && du <= U; du++) {
         const uu = u + du;
-        if (uu < 0 || uu >= lines) continue;
         for (let dk = -K; dk <= K; dk++) {
           const kk = k + dk;
-          if (kk < 0 || kk >= nr || tissue[uu * nr + kk] === kind) continue;
+          const inGrid = uu >= 0 && uu < lines && kk >= 0 && kk < nr;
+          if (inGrid && tissue[uu * nr + kk] === kind) continue;
           if (Math.hypot(du * spacing, dk * stepMm) <= mm) {
             clear = false;
             break;
@@ -887,9 +966,10 @@ export interface ClearGrid {
 }
 
 /**
- * Hígado a ≥ `mm` de cualquier tejido que no sea hígado (vasos incluidos: la `boundaryDistance` del
- * hígado no cuenta los tubos) en el plano actual, sobre la rejilla de `lines` líneas × 0,5 mm del
- * banco. Es la máscara de la envolvente del banco y la de la guarda de Rayleigh (`speckleStats`).
+ * Hígado a ≥ `mm` de cualquier tejido que no sea hígado EN EL PLANO actual (vasos incluidos: la
+ * `boundaryDistance` del hígado no cuenta los tubos; fuera del sector cuenta como otro tejido), sobre la
+ * rejilla de `lines` líneas × 0,5 mm del banco. Es la máscara de la envolvente del banco; la guarda de
+ * Rayleigh (`speckleStats`) le añade la distancia 3D al borde del hígado, que la rejilla no ve.
  */
 export function clearLiverGrid(sim: Simulator, lines: number, mm: number): ClearGrid {
   const tr = sim.transducer;
@@ -920,13 +1000,14 @@ export function clearLiverGrid(sim: Simulator, lines: number, mm: number): Clear
  * La textura se mide en hígado «despejado»: en líneas bien acopladas, antes de cualquier tejido que
  * haga sombra (gas o hueso, como la pasada A) en la línea y en sus dos vecinas, fuera de la penumbra
  * de la apertura (con `transmission`: ≤ 0,5 dB bajo la de un solo rayo), y a ≥ 6 mm de
- * cualquier tejido que no sea hígado (≥ 3 mm en la imagen mostrada; los vasos cuentan, aunque la
- * `boundaryDistance` del hígado no los incluya). El gris y el perfil en profundidad, además, solo
- * en hígado «puro»: sin más de 0,5 dB de atenuación distinta de la del hígado en el camino (el
- * refuerzo tras un vaso es física correcta, no un defecto de la TGC). Con `img`, también el banco
- * de interfaces por tramos de incidencia sobre la normal real de cada cara (`FaceSummary`) y la
- * saturación junto a las caras; con `samples`, además, un registro por línea y pared
- * (`faceSamples`) para agregar varios planos con `summarizeFaces`.
+ * cualquier tejido que no sea hígado en el plano (≥ 3 mm en la imagen mostrada; los vasos cuentan,
+ * aunque la `boundaryDistance` del hígado no los incluya, y lo de fuera del sector cuenta como otro
+ * tejido). El gris y el perfil en profundidad, además, solo en hígado «puro»: sin más de 0,5 dB de
+ * atenuación distinta de la del hígado en el camino (el refuerzo tras un vaso es física correcta, no
+ * un defecto de la TGC). Con `img`, también el banco de interfaces por tramos de incidencia sobre la
+ * normal real de cada cara (`FaceSummary`), sobre la envolvente con la compensación nominal
+ * (`envelopeLine`), y la saturación junto a las caras; con `samples`, además, un registro por línea y
+ * pared (`faceSamples`) para agregar varios planos con `summarizeFaces`.
  */
 export function fidelityStats(
   sim: Simulator,
@@ -1138,14 +1219,8 @@ export function fidelityStats(
     if (x < 0 || y < 0 || x >= img.width || y >= img.height) return Number.NaN;
     return img.gray[y * img.width + x];
   };
-  const drEnv = depth / env.samples;
-  /** Envolvente de la línea u en r (mm), interpolada entre los centros de muestra. */
-  const envAt = (u: number, r: number): number => {
-    const x = Math.min(env.samples - 1, Math.max(0, r / drEnv - 0.5));
-    const v = Math.min(env.samples - 2, Math.floor(x));
-    const f = x - v;
-    return env.data[v * env.lines + u] * (1 - f) + env.data[(v + 1) * env.lines + u] * f;
-  };
+  // la envolvente sin la atenuación del hígado: la cara y su referencia, a la misma escala
+  const envAt = envelopeLine(env, depth, nominalTgcDbPerCm(fB));
   const faceLine = (u: number): FaceLine => ({
     env: (r) => envAt(u, r),
     gray: (r) => grayAt(u, r),
@@ -1159,6 +1234,23 @@ export function fidelityStats(
     const g = centralGradient((p) => sim.anatomy.faceSdfWorld(p, sim.sample, face), pointOnLine(sim.frame, tr, theta, r));
     const len = g ? Math.hypot(g[0], g[1], g[2]) : 0;
     return g && len > 0 ? Math.abs(dot(g, lineDirection(sim.frame, theta))) / len : null;
+  };
+  // Espejo que da la marcha gruesa de la pasada A (A0, `FRAG_TRANS_HITS`): el centro del primer segmento de
+  // profundidad/COARSE_DEPTH cuyo punto medio es pulmón, sobre la línea recta (antes del espejo no se
+  // refleja). La GPU lo publica en `mirrorHit`; es el suelo de `mirrorOffsetMm` con esa marcha.
+  const coarseStep = depth / COARSE_DEPTH;
+  const coarseMirror = new Map<number, number>();
+  const coarseMirrorAt = (u: number): number => {
+    let hit = coarseMirror.get(u);
+    if (hit === undefined) {
+      hit = -1;
+      for (let s = 0; s < COARSE_DEPTH && hit < 0; s++) {
+        const r = (s + 0.5) * coarseStep;
+        if (sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, thetaOf(u), r), sim.sample).tissue === Tissue.Lung) hit = r;
+      }
+      coarseMirror.set(u, hit);
+    }
+    return hit;
   };
   /** Cruce exacto con el pulmón entre dos profundidades de la línea recta (bisección). */
   const pleuraCrossing = (u: number, rOut: number, rIn: number): number => {
@@ -1267,7 +1359,12 @@ export function fidelityStats(
           rb,
           pitchMm: pitchMm(rb),
           incidenceDeg: (Math.acos(Math.min(1, cos)) * 180) / Math.PI,
-          ...(pleura ? { mirrorOffsetMm: mirrorGpu >= 0 ? Math.abs(mirrorGpu - rTarget) : Number.NaN } : {}),
+          ...(pleura
+            ? {
+                mirrorOffsetMm: mirrorGpu >= 0 ? Math.abs(mirrorGpu - rTarget) : Number.NaN,
+                mirrorFloorMm: coarseMirrorAt(u) >= 0 ? Math.abs(coarseMirrorAt(u) - rTarget) : Number.NaN,
+              }
+            : {}),
         });
       }
     }

@@ -103,7 +103,15 @@ export const DEFAULT_COLOR: ColorSettings = {
   ensemble: 8,
 };
 
-/** Frecuencia efectiva para atenuación y compensación nominal (MHz). */
+/**
+ * Compensación nominal del equipo (dB/cm de ida y vuelta): la atenuación del hígado a la frecuencia B
+ * efectiva (MHz). La suma la pasada de escaneo (`uNominalTgcDbPerCm`) y el banco de fidelidad la aplica
+ * a la envolvente para comparar una cara con el hígado de su entorno a la misma escala.
+ */
+export function nominalTgcDbPerCm(fMHz: number): number {
+  return 2 * attenuationDbPerCm(Tissue.Liver, fMHz);
+}
+
 /** Margen del sector en el lienzo de imagen (px); el corte usa el mismo módulo con su propio margen. */
 export const DISPLAY_MARGIN_PX = 8;
 /**
@@ -722,7 +730,7 @@ export class UltrasoundRenderer {
     this.pScan.f('uGainDb', inputs.bmode.gainDb);
     this.pScan.f('uRefDb', DISPLAY_REF_DB);
     // Curva nominal: compensa la atenuación de ida y vuelta del hígado a la frecuencia B.
-    this.pScan.f('uNominalTgcDbPerCm', 2 * attenuationDbPerCm(4, this.profile.bEffectiveMHz));
+    this.pScan.f('uNominalTgcDbPerCm', nominalTgcDbPerCm(this.profile.bEffectiveMHz));
     this.pScan.f('uTgcCapDb', TGC_CAP_DB);
     this.pScan.f('uDynRange', inputs.bmode.dynamicRangeDb);
     this.pScan.f('uGreyCurve', GREY_CURVE);

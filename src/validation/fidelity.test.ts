@@ -1,14 +1,17 @@
 import { describe, expect, it } from 'vitest';
 import {
+  clearanceMask,
   depthProfile,
   displayStats,
   echoWidthMm,
+  envelopeLine,
   envelopeTexture,
   halfWidth,
   measureFaceLine,
   RAYLEIGH_DARK_FRACTION,
   secondaryLobe,
   summarizeFaces,
+  thinGatedBins,
   type EnvelopeGeometry,
   type FaceKind,
   type FaceLine,
@@ -16,7 +19,9 @@ import {
 } from '../app/fidelity';
 import { SeededRandom } from '../core/random';
 import { greyOfLevel, levelOfGrey } from '../ultrasound/greyMap';
-import { COLOR_PRIORITY_GREY, DEFAULT_BMODE, DISPLAY_REF_DB, type DisplayFrame } from '../ultrasound/renderer';
+import { attenuationDbPerCm, Tissue } from '../anatomy/tissues';
+import type { EnvelopeFrame } from '../app/speckle';
+import { COLOR_PRIORITY_GREY, DEFAULT_BMODE, DISPLAY_REF_DB, nominalTgcDbPerCm, type DisplayFrame } from '../ultrasound/renderer';
 import { detect, psf, whiteField } from './syntheticSpeckle';
 
 /**
@@ -257,6 +262,19 @@ describe('banco de interfaces: líneas pintadas', () => {
     expect(summarizeFaces([lines(false)]).diaphragm[0].seamFraction).toBe(0);
   });
 
+  it('el banco nombra los tramos vigilados que no llenan: pocos registros o sin rosario', () => {
+    // 60 líneas de una suprahepática a 0–20° llenan ese tramo; el resto de los vigilados, vacíos
+    const one = thinGatedBins(summarizeFaces([wall(60, () => 30)]));
+    expect(one.some((x) => x.startsWith('VSH 0–20°'))).toBe(false);
+    expect(one).toContain('VSH 40–60°: 0 registros');
+    expect(one).toContain('diafragma 0–20°: 0 registros');
+    expect(one).toHaveLength(8);
+    // 9 registros no bastan; 15 líneas sueltas de 15 paredes llenan el tramo pero no dan rosario
+    expect(thinGatedBins(summarizeFaces([wall(9, () => 30)]))).toContain('VSH 0–20°: 9 registros');
+    const scattered = wall(15, () => 30, { kind: 'portal' }).map((f, i) => ({ ...f, wall: i, u: 10 * i }));
+    expect(thinGatedBins(summarizeFaces([scattered]))).toContain('porta 0–20°: 15 registros, sin rosario');
+  });
+
   it('los tramos van por incidencia y las paredes no se mezclan entre poses', () => {
     const oblique = summarizeFaces([wall(30, () => 30, { incidenceDeg: 25 })]).wallSystems.hepaticVein;
     expect(oblique.map((b) => b.walls)).toEqual([0, 30, 0]);
@@ -265,5 +283,152 @@ describe('banco de interfaces: líneas pintadas', () => {
     const b = summarizeFaces([wall(30, () => 10), wall(30, () => 40)]).wallSystems.hepaticVein[0];
     expect(b.walls).toBe(60);
     expect(b.beading).toBeLessThan(1e-9);
+  });
+});
+
+describe('banco de interfaces: la envolvente de la GPU lleva la atenuación de ida y vuelta', () => {
+  // La envolvente que lee el banco (`readEnvelope`) cae 2·α_hígado por cm con la profundidad: la TGC
+  // nominal se suma después, en la pasada de escaneo. Moteado ideal con un eco de 30× en la cara
+  // (100,5 mm) y la pendiente de la compensación nominal a 2,5 MHz (3 dB/cm).
+  const SLOPE = nominalTgcDbPerCm(2.5);
+  const speckle = detect(G, psf(G, whiteField(G, 7), 1.5, 1.0), Math.hypot);
+  const gauss = (x: number, sigma: number): number => Math.exp(-0.5 * (x / sigma) ** 2);
+  /** Envolvente pintada por muestra: moteado × `after(r)` + eco, atenuada `slope` dB/cm. */
+  const frame = (slope: number, after: (r: number) => number, echo: (r: number) => number): EnvelopeFrame => ({
+    ...speckle,
+    data: speckle.data.map((x, i) => {
+      const r = (Math.floor(i / G.lines) + 0.5) * DR_MM;
+      return (x * after(r) + echo(r)) * Math.pow(10, (-slope * r) / 200);
+    }),
+  });
+  const sample = (kind: FaceKind, u: number, m: ReturnType<typeof measureFaceLine>): FaceSample => ({
+    ...m!,
+    kind,
+    wall: 0,
+    u,
+    rb: 100,
+    pitchMm: 0.9,
+    incidenceDeg: kind === 'diaphragm' ? 50 : 5,
+  });
+  /** Pico del mismo eco con la referencia encima (pared) y debajo (cápsula), con la compensación `tgc`. */
+  const walls = (env: EnvelopeFrame, tgc: number) => {
+    const line = envelopeLine(env, GEOM.depthMm, tgc);
+    const above: FaceSample[] = [];
+    const below: FaceSample[] = [];
+    for (let u = 0; u < G.lines; u++) {
+      const env = (r: number): number => line(u, r);
+      above.push(
+        sample(
+          'hepaticVein',
+          u,
+          measureFaceLine({ env, gray: () => 100, liver: (r) => r < 100 }, { rb: 100, rTarget: 100.5, ref: 'above' }, 70),
+        ),
+      );
+      below.push(
+        sample(
+          'capsule',
+          u,
+          measureFaceLine({ env, gray: () => 100, liver: (r) => r > 101 }, { rb: 100, rTarget: 100.5, ref: 'below' }, 70),
+        ),
+      );
+    }
+    const sum = summarizeFaces([[...above, ...below]]);
+    return { above: sum.wallSystems.hepaticVein[0].peakDb, below: sum.capsule[0].peakDb };
+  };
+  /** Diafragma a 50° sin costura: 2,5 mm de músculo (retrodispersión 1,2) y la pleura a 2,5/cos 50° del borde. */
+  const RP = 100 + 2.5 / Math.cos((50 * Math.PI) / 180);
+  const diaphragm = (env: EnvelopeFrame, tgc: number) => {
+    const line = envelopeLine(env, GEOM.depthMm, tgc);
+    const list = Array.from({ length: G.lines }, (_, u) =>
+      sample(
+        'diaphragm',
+        u,
+        measureFaceLine(
+          { env: (r) => line(u, r), gray: () => 100, liver: (r) => r < 100 },
+          { rb: 100, rTarget: RP, ref: 'above', pleura: true },
+          70,
+        ),
+      ),
+    );
+    return summarizeFaces([list]).diaphragm[2];
+  };
+  const echo = (r: number): number => 30 * gauss(r - 100.5, 0.3);
+  const flatWall = walls(
+    frame(0, () => 1, echo),
+    0,
+  );
+  const slopedWall = frame(SLOPE, () => 1, echo);
+  const dia = (slope: number) =>
+    frame(
+      slope,
+      (r) => (r < 100 ? 1 : Math.sqrt(1.2)),
+      (r) => 30 * gauss(r - RP, 0.3),
+    );
+
+  it('la compensación nominal es la atenuación de ida y vuelta del hígado, la de la pasada de escaneo', () => {
+    expect(nominalTgcDbPerCm(2.5)).toBeCloseTo(2 * attenuationDbPerCm(Tissue.Liver, 2.5), 12);
+    expect(SLOPE).toBeGreaterThan(2.5);
+    expect(SLOPE).toBeLessThan(3.5);
+    // sin pendiente ni compensación, la interpolación es la de siempre: el centro de cada muestra
+    const line = envelopeLine(speckle, GEOM.depthMm, 0);
+    expect(line(5, 10.5 * DR_MM)).toBeCloseTo(speckle.data[10 * G.lines + 5], 6);
+  });
+
+  it('con la compensación, el mismo eco mide igual con la referencia encima (pared) o debajo (cápsula)', () => {
+    const fixed = walls(slopedWall, SLOPE);
+    expect(Math.abs(fixed.above - fixed.below)).toBeLessThan(0.5);
+    // la envolvente atenuada y compensada es la del moteado sin atenuar
+    expect(fixed.above).toBeCloseTo(flatWall.above, 3);
+    expect(fixed.below).toBeCloseTo(flatWall.below, 3);
+    // sin compensarla, la referencia a 3–10 mm del eco lo desplaza ~2 dB en cada sentido
+    const raw = walls(slopedWall, 0);
+    expect(raw.below - raw.above).toBeGreaterThan(3);
+  });
+
+  it('diafragma sin costura: la compensación no inventa costura ni baja la línea pleural', () => {
+    const flat = diaphragm(dia(0), 0);
+    const fixed = diaphragm(dia(SLOPE), SLOPE);
+    expect(fixed.walls).toBe(G.lines);
+    expect(fixed.seamFraction).toBe(flat.seamFraction);
+    expect(fixed.seamFraction).toBeLessThanOrEqual(0.02);
+    expect(fixed.lineDb).toBeCloseTo(flat.lineDb, 3);
+    // sin compensarla, la referencia 8 mm por encima de la pleura sube el umbral de la costura y los
+    // huecos del moteado del espejo cuentan: falla el ≤ 0,02 de §6.3 sin haber costura
+    const raw = diaphragm(dia(SLOPE), 0);
+    expect(raw.seamFraction).toBeGreaterThan(0.02);
+    expect(flat.lineDb - raw.lineDb).toBeGreaterThan(2);
+  });
+});
+
+describe('banco de fidelidad: hígado despejado', () => {
+  it('la distancia se mide en el plano y lo que cae fuera de la rejilla cuenta como otro tejido', () => {
+    // todo hígado, 40 líneas × 60 celdas de 0,5 mm y 1 mm entre líneas: a 3 mm solo las celdas a ≥ 3 mm
+    // de cada borde están despejadas (antes, fuera del sector contaba como hígado y lo estaban todas)
+    const lines = 40;
+    const nr = 60;
+    const ok = clearanceMask(new Uint8Array(lines * nr).fill(Tissue.Liver), lines, nr, 0.5, () => 1, 3, Tissue.Liver);
+    const at = (u: number, k: number): number => ok[u * nr + k];
+    expect(at(20, 30)).toBe(1);
+    for (const [u, k] of [
+      [2, 30],
+      [37, 30],
+      [20, 5],
+      [20, 54],
+    ])
+      expect(at(u, k), `${u}, ${k}`).toBe(0);
+    for (const [u, k] of [
+      [3, 30],
+      [36, 30],
+      [20, 6],
+      [20, 53],
+    ])
+      expect(at(u, k), `${u}, ${k}`).toBe(1);
+    // una celda de otro tejido dentro también la tapa, a la misma distancia euclídea
+    const tissue = new Uint8Array(lines * nr).fill(Tissue.Liver);
+    tissue[20 * nr + 30] = Tissue.Blood;
+    const withVessel = clearanceMask(tissue, lines, nr, 0.5, () => 1, 3, Tissue.Liver);
+    expect(withVessel[23 * nr + 30]).toBe(0);
+    expect(withVessel[24 * nr + 30]).toBe(1);
+    expect(withVessel[20 * nr + 30]).toBe(0);
   });
 });

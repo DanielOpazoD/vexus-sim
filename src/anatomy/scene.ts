@@ -390,6 +390,16 @@ export class AnatomyScene {
   }
 
   /**
+   * Tubo cuya luz da la cara `tube` de `faceSdf` en un punto MATERIAL: el vaso (null si es un conducto)
+   * y su impacto (segmento y parámetro `s`), o null si ningún tubo contiene el punto en su luz o su
+   * pared. Solo pruebas: la e2e de normales separa la VCI, de sección elíptica, del resto de tubos.
+   */
+  faceTube(m: Vec3, caliber: VesselCaliber): { vessel: VesselId | null; hit: TubeHit } | null {
+    const best = this.bestTube(m, caliber);
+    return best ? { vessel: best.kind === 'vessel' ? best.def.id : null, hit: best.hit } : null;
+  }
+
+  /**
    * Capas parietales y costillas. `final` = el punto está en piel, grasa,
    * costilla/cartílago, músculo o columna (no hay nada más que mirar); si no,
    * devuelve el espesor total de la pared para recortar el hígado.

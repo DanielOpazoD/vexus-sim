@@ -1,7 +1,7 @@
 // @tier slow
 import { describe, expect, it } from 'vitest';
-import { fidelityStats, type FidelityStats } from '../app/fidelity';
-import { speckleStats, type EnvelopeFrame } from '../app/speckle';
+import { fidelityStats, type FidelityStats, type TransmissionFrame } from '../app/fidelity';
+import { SPECKLE_CLEARANCE_MM, SPECKLE_PATCH, speckleMask, speckleStats, type EnvelopeFrame } from '../app/speckle';
 import type { Simulator } from '../app/simulator';
 import { START_POINTS, type StartPoint } from '../app/startPoints';
 import { AnatomyQuery } from '../anatomy/query';
@@ -13,7 +13,7 @@ import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient } from '../physiology/patientState';
 import { CONVEX_C35, lineDirection, pointOnLine, probeFrame } from '../probe/probe';
 import { lateralFwhmMm } from '../ultrasound/beamModel';
-import { DISPLAY_MARGIN_PX } from '../ultrasound/renderer';
+import { COARSE_DEPTH, DISPLAY_MARGIN_PX, type DisplayFrame } from '../ultrasound/renderer';
 import { pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import { detect, psf, whiteField } from './syntheticSpeckle';
@@ -45,7 +45,7 @@ const thetaOf = (u: number): number => -CONVEX_C35.halfSector + (2 * CONVEX_C35.
 
 const FACE_GRAY = 200;
 const frames = new Map<StartPoint['id'], ReturnType<typeof probeFrame>>();
-const planes = new Map<StartPoint['id'], { sim: Simulator; env: EnvelopeFrame }>();
+const planes = new Map<StartPoint['id'], { sim: Simulator; env: EnvelopeFrame; img: DisplayFrame }>();
 
 function measure(id: StartPoint['id']): FidelityStats {
   const sp = START_POINTS.find((s) => s.id === id)!;
@@ -90,8 +90,9 @@ function measure(id: StartPoint['id']): FidelityStats {
                 ? FACE_GRAY
                 : 60;
     }
-  planes.set(id, { sim, env });
-  return fidelityStats(sim, env, { width: W, height: H, gray }, { samples: true });
+  const img = { width: W, height: H, gray };
+  planes.set(id, { sim, env, img });
+  return fidelityStats(sim, env, img, { samples: true });
 }
 
 const subxiphoid = measure('subxiphoid');
@@ -195,6 +196,73 @@ describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
       expect(s.patches, id).toBeGreaterThan(200);
       expect(s.snr, id).toBeGreaterThan(1.9);
       expect(s.snr, id).toBeLessThan(2.1);
+    }
+  });
+  it('el espejo de la marcha gruesa de hoy da el suelo del desfase: ~1 mm sin ningún error de colocación', () => {
+    // La pasada A (A0) pone el espejo en el centro del primer segmento grueso de pulmón (paso 180/160 =
+    // 1,125 mm): |espejo − pleura| cae en [0; paso) aunque la geometría sea exacta. `mirrorFloorMm` lo
+    // emula en la CPU; una GPU que coloca el espejo así mide justo ese suelo.
+    const step = DEPTH / COARSE_DEPTH;
+    const samples = subxiphoid.faceSamples!.filter((f) => f.kind === 'diaphragm');
+    expect(samples.length).toBeGreaterThan(5);
+    for (const f of samples) {
+      expect(f.mirrorFloorMm, `línea ${f.u}`).toBeGreaterThanOrEqual(0);
+      expect(f.mirrorFloorMm, `línea ${f.u}`).toBeLessThan(step);
+    }
+    const floors = subxiphoid.display!.diaphragm.filter((b) => b.walls > 0).map((b) => b.mirrorFloorMm);
+    expect(Math.max(...floors)).toBeGreaterThan(0.5);
+    // transmisión de la GPU simulada: sin penumbra y con el espejo de A0 (primer centro de segmento en pulmón)
+    const { sim, env, img } = planes.get('subxiphoid')!;
+    const n = G.lines * COARSE_DEPTH;
+    const tx: TransmissionFrame = {
+      lines: G.lines,
+      samples: COARSE_DEPTH,
+      single: new Float32Array(n).fill(1),
+      aperture: new Float32Array(n).fill(1),
+      mirrorHit: new Float32Array(n).fill(-1),
+    };
+    const frame = frames.get('subxiphoid')!;
+    for (let u = 0; u < G.lines; u++)
+      for (let s = 0; s < COARSE_DEPTH; s++) {
+        const r = (s + 0.5) * step;
+        if (anatomy.classifyWorld(pointOnLine(frame, CONVEX_C35, thetaOf(u), r), engine.sample).tissue !== Tissue.Lung) continue;
+        tx.mirrorHit[(COARSE_DEPTH - 1) * G.lines + u] = r;
+        break;
+      }
+    const gpu = fidelityStats(sim, env, img, { samples: true, transmission: tx }).faceSamples!.filter((f) => f.kind === 'diaphragm');
+    expect(gpu.length).toBe(samples.length);
+    for (const f of gpu) expect(f.mirrorOffsetMm, `línea ${f.u}`).toBeCloseTo(f.mirrorFloorMm!, 4);
+  });
+
+  it('cada muestra de los parches de Rayleigh es hígado a ≥ 6 mm del borde del hígado en 3D y del borde del sector', () => {
+    // La rejilla solo ve el plano: con ella sola entraban parches a 4,5–5 mm de una frontera del hígado
+    // fuera del plano (3 en la subxifoidea y 2 en la intercostal) y junto al borde del sector, que
+    // contaba como hígado. La máscara exige además la `boundaryDistance` de cada muestra.
+    for (const id of ['subxiphoid', 'intercostal'] as const) {
+      const { sim, env } = planes.get(id)!;
+      const frame = frames.get(id)!;
+      const inside = speckleMask(sim, env);
+      const { axial: AX, lateral: LAT } = SPECKLE_PATCH;
+      const dTheta = (2 * CONVEX_C35.halfSector) / G.lines;
+      let patches = 0;
+      for (let u0 = 0; u0 + LAT <= G.lines; u0 += LAT)
+        for (let v0 = 0; v0 + AX <= G.samples; v0 += AX) {
+          let ok = true;
+          for (let u = u0; ok && u < u0 + LAT; u++) for (let v = v0; ok && v < v0 + AX; v++) if (!inside(u, v)) ok = false;
+          if (!ok) continue;
+          patches++;
+          for (let u = u0; u < u0 + LAT; u++)
+            for (let v = v0; v < v0 + AX; v++) {
+              const r = ((v + 0.5) / G.samples) * DEPTH;
+              const q = anatomy.classifyWorld(pointOnLine(frame, CONVEX_C35, thetaOf(u), r), engine.sample);
+              expect(q.tissue, `${id} (${u}, ${v})`).toBe(Tissue.Liver);
+              expect(q.boundaryDistance, `${id} (${u}, ${v})`).toBeGreaterThanOrEqual(SPECKLE_CLEARANCE_MM);
+              const arc = (CONVEX_C35.curvatureRadius + r) * dTheta;
+              expect(Math.min(u + 1, G.lines - u) * arc, `${id} (${u}, ${v})`).toBeGreaterThan(SPECKLE_CLEARANCE_MM);
+            }
+        }
+      expect(patches, id).toBe(speckleStats(sim, env).patches);
+      expect(patches, id).toBeGreaterThan(200);
     }
   });
 });

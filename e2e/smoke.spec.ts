@@ -179,14 +179,20 @@ test('el banco de fidelidad mide el moteado del hígado despejado como un campo 
 
 test('las normales de la GPU coinciden con el gradiente de la distancia de TS en las caras que darán brillo', async ({ page }) => {
   // Banco de interfaces (PR 5a de la tanda 1.5): el eco de una cara lisa dependerá de la incidencia sobre
-  // su normal, y la normal de la GPU (`Cls.n`) nunca se había comprobado. Por vista y tipo de cara, los
-  // puntos del plano a 0,02–0,4 mm de ella en un tejido que la dibuja (mismo tejido en GPU y CPU): |n·∇|
-  // frente al gradiente de `faceSdf`. Emulando la GLSL en TS (sano en apnea):
+  // su normal, y la normal de la GPU (`Cls.n`) nunca se había comprobado. Por vista y fila (cada cara y los
+  // subconjuntos de `FACE_NORMAL_SUBSETS`), los puntos del plano a 0,02–0,4 mm de la cara en un tejido que
+  // la dibuja (mismo tejido en GPU y CPU): |n·∇| frente al gradiente de `faceSdf`. Emulando la GLSL en TS
+  // (sano en apnea):
   //  - cúpula y vesícula: ≥ 0,99 en p01;
-  //  - tubo: ≥ 0,99 en p05; el p01 baja a 0,95 en la subxifoidea por la tapa elíptica de la VCI dentro de
-  //    la aurícula (la normal escala la sección una vez; el gradiente, dos) y por las uniones de tubos;
-  //  - riñón: 1,00 en p50, pero junto a la escotadura hiliar (ventana renal) la normal es la del elipsoide
-  //    sin escotadura: 0,61 en p01 y el 15 % de los puntos bajo 0,98;
+  //  - tubo: ≥ 0,99 en p05 mezclando todos los vasos, pero la VCI (fila `tubeIvc`) está mal en todo su
+  //    cuerpo, no solo en la tapa: su sección es elíptica y la normal escala la componente AP una vez y el
+  //    gradiente, dos. En el cuerpo (`tubeIvcBody`, sin tapa ni codos) |n·∇| va de 0,991 a 0,996 (p01–p50,
+  //    6–8°) con `ivcApScale` 0,777 y su mínimo baja a 0,984 (10°) con 0,70 respirando. La tapa dentro
+  //    de la aurícula y las uniones de tubos bajan además el p01 del tubo de la subxifoidea a 0,95. Lo
+  //    corrige 5b;
+  //  - riñón: fuera del redondeo de la escotadura hiliar (`kidneyOuterNotchFree`) la normal del elipsoide
+  //    es exacta (≥ 0,9999) y se exige p01 ≥ 0,98 en todas las vistas; junto a la escotadura
+  //    (`kidneyOuterNotch`, solo en la ventana renal) no: la fila entera da 0,61 en p01 (15 % bajo 0,98);
   //  - cápsula hepática: por tramos (`liverSdf` elige la normal de una de las superficies que funde con
   //    `smoothMax`); por la impresión renal y la unión de los lóbulos, p05 de 0,45 a 0,98 según la vista.
   // Se exige lo que ya cumple (un fallo de cableado, de marco o de signo hundiría la mediana) y el resto
@@ -207,24 +213,26 @@ test('las normales de la GPU coinciden con el gradiente de la distancia de TS en
     { startPoint: 'flank', pose: { tiltDeg: 18 } },
   ] as const;
   const faces = ['tube', 'liverSurface', 'dome', 'kidneyOuter', 'gallbladder'] as const;
-  const gated = ['tube', 'dome', 'kidneyOuter', 'gallbladder'] as const;
+  // subconjuntos (`FACE_NORMAL_SUBSETS`): se muestrean aparte y no cambian la fila de su cara
+  const subsets = ['tubeIvc', 'tubeIvcBody', 'kidneyOuterNotchFree', 'kidneyOuterNotch'] as const;
+  const gated = ['tube', 'dome', 'kidneyOuter', 'kidneyOuterNotchFree', 'gallbladder'] as const;
   const seen = new Map<string, number>();
   for (const view of views) {
     const r = await page.evaluate((v) => window.__vexusTest!.faceNormals(v), view);
-    for (const face of faces) {
-      const f = r[face];
-      const tag = `${face} ${JSON.stringify(view)}: ${JSON.stringify(f)}`;
+    for (const row of [...faces, ...subsets]) {
+      const f = r[row];
+      const tag = `${row} ${JSON.stringify(view)}: ${JSON.stringify(f)}`;
       // la GPU y la CPU clasifican igual los puntos de la banda (si no, la comparación sería vacía)
       expect(f.mismatched, tag).toBeLessThanOrEqual(0.05 * (f.points + f.mismatched));
       if (f.points < 50) continue;
       test.info().annotations.push({
-        type: `normales · ${face}`,
-        description: `${JSON.stringify(view)}: ${f.points} puntos, p01 ${f.p01.toFixed(3)}, p05 ${f.p05.toFixed(3)}, < 0,98 en ${(100 * f.below098).toFixed(1)} %; peor ${f.worst}`,
+        type: `normales · ${row}`,
+        description: `${JSON.stringify(view)}: ${f.points} puntos, p01 ${f.p01.toFixed(3)}, p05 ${f.p05.toFixed(3)}, p50 ${f.p50.toFixed(4)}, < 0,98 en ${(100 * f.below098).toFixed(1)} %; peor ${f.worst}`,
       });
-      seen.set(face, (seen.get(face) ?? 0) + 1);
-      expect(f.p50, tag).toBeGreaterThanOrEqual(0.99);
-      if (face === 'tube') expect(f.p05, tag).toBeGreaterThanOrEqual(0.98);
-      if (face === 'dome' || face === 'gallbladder') expect(f.p01, tag).toBeGreaterThanOrEqual(0.98);
+      seen.set(row, (seen.get(row) ?? 0) + 1);
+      if ((faces as readonly string[]).includes(row)) expect(f.p50, tag).toBeGreaterThanOrEqual(0.99);
+      if (row === 'tube') expect(f.p05, tag).toBeGreaterThanOrEqual(0.98);
+      if (row === 'dome' || row === 'gallbladder' || row === 'kidneyOuterNotchFree') expect(f.p01, tag).toBeGreaterThanOrEqual(0.98);
     }
   }
   // cada cara con brillo se comprobó en al menos una vista (la prueba no puede pasar vacía)

@@ -3,7 +3,7 @@ import { AnatomyScene } from '../anatomy/scene';
 import { TISSUE_COUNT } from '../anatomy/tissues';
 import { CASES } from '../cases';
 import { ANATOMY_GLSL, MAX_NODES, MAX_TUBES, MAX_TUBE_SEGMENTS } from '../anatomy/gpu/anatomy.glsl';
-import { FRAG_TRANSMISSION } from '../ultrasound/shaders/passes.glsl';
+import { FRAG_RAWFIELD, FRAG_TRANSMISSION } from '../ultrasound/shaders/passes.glsl';
 
 /**
  * Límites fijos del shader frente a la escena real (Fase 0). Superarlos no da error de
@@ -29,5 +29,13 @@ describe('Límites del shader con margen para crecer', () => {
     expect(ANATOMY_GLSL).not.toMatch(/i & 255/);
     // cada tejido tiene su #define en GLSL
     expect((ANATOMY_GLSL.match(/#define T_[A-Z_]+ \d+/g) ?? []).length).toBe(TISSUE_COUNT);
+  });
+
+  // Las constantes de TS entran en el GLSL interpoladas (`${...}`); un identificador suelto como
+  // TISSUE_COUNT no existe en el shader y no compila (le pasó a `uTissueClump4`).
+  it('ningún shader usa TISSUE_COUNT como identificador suelto', () => {
+    const code = FRAG_RAWFIELD.replace(/\/\/.*$/gm, '');
+    expect(code).not.toMatch(/\bTISSUE_COUNT\b/);
+    expect(FRAG_RAWFIELD).toContain(`uTissueClump4[${Math.ceil(TISSUE_COUNT / 4)}]`);
   });
 });

@@ -168,10 +168,11 @@ export function speckleSliceField(m: Vec3, h: number, sliceHalfMm: number, salt:
 
 /**
  * Paso de semilla entre tejidos: cada tejido tiene su propia población de dispersores, así que su
- * moteado es otra realización y no continúa a través de un borde. Irracional frente a
- * ANCHOR_SALT_STEP para que ninguna combinación (tejido, paridad) repita semilla.
+ * moteado es otra realización y no continúa a través de un borde. El hash repite con periodo
+ * 1/0,1031 ≈ 9,70 en su coordenada: 9,861 deja todas las diferencias de semilla (tejido y paridad
+ * del ancla) a ≥ 0,017 de un periodo (7,919 dejaba una a 0,002, y esa pareja correlacionaba).
  */
-export const TISSUE_SALT_STEP = 7.919;
+export const TISSUE_SALT_STEP = 9.861;
 /** Célula de la heterogeneidad lenta del parénquima (mm). */
 export const HET_CELL_MM = 6.25;
 /**
@@ -204,18 +205,35 @@ export function heterogeneityDb(m: Vec3, seed: number): number {
 }
 
 /**
- * Grumos de dispersores (`clumpGain`): amplitud multiplicada por √P con P lognormal de media 1 en
- * células de CLUMP_CELL_MM, σ = `clump` en nepers de potencia. Con `clump` = 0 no hace nada (moteado
- * plenamente desarrollado, Rayleigh); con más, pocos dispersores dominan (estadística K), como la
- * grasa del seno renal.
+ * Grumos de dispersores (`clumpGain`): la potencia se multiplica por P = exp(σz)/E[exp(σz)] con z
+ * uniforme de varianza 1 (log-uniforme, media 1) en células de CLUMP_CELL_MM, σ = `clump` en nepers.
+ * Con `clump` = 0 no hace nada (moteado plenamente desarrollado, Rayleigh); con más, pocos
+ * dispersores dominan (estadística K), como la grasa del seno renal. `q` es la coordenada ya anclada.
  */
-export function clumpGain(m: Vec3, clump: number, seed: number): number {
+export function clumpGain(q: Vec3, clump: number, seed: number, salt = 0): number {
   if (clump <= 0) return 1;
   const u =
-    hash13([Math.floor(m[0] / CLUMP_CELL_MM) + seed + 29, Math.floor(m[1] / CLUMP_CELL_MM), Math.floor(m[2] / CLUMP_CELL_MM)]) - 0.5;
-  // z uniforme de varianza 1; E[exp(σz)] = sinh(σ√3)/(σ√3) normaliza la potencia media a 1
+    hash13([Math.floor(q[0] / CLUMP_CELL_MM) + seed + 29 + salt, Math.floor(q[1] / CLUMP_CELL_MM), Math.floor(q[2] / CLUMP_CELL_MM)]) - 0.5;
   const a = clump * Math.sqrt(3);
   return Math.sqrt(Math.exp(clump * Math.sqrt(12) * u) / (Math.sinh(a) / a));
+}
+
+/**
+ * Grumos anclados (`anchoredClump` de la pasada B): la célula se comprime en elevación hasta el grosor
+ * de corte sobre el eje del ancla, como el moteado (decisión 55), y durante el fundido se mezcla en
+ * potencia. Un factor por píxel para los tres planos: conserva la potencia media.
+ */
+export function anchoredClumpGain(m: Vec3, sliceHalfMm: number, clump: number, seed: number, salt: number, st: SpeckleAnchorState): number {
+  const at = (a: SpeckleAnchor) => {
+    const e = a.e;
+    const across = dot([m[0] - a.p[0], m[1] - a.p[1], m[2] - a.p[2]], e);
+    const shrink = across * (1 - CLUMP_CELL_MM / Math.max(CLUMP_CELL_MM, 2 * sliceHalfMm));
+    return clumpGain([m[0] - e[0] * shrink, m[1] - e[1] * shrink, m[2] - e[2] * shrink], clump, seed, salt + a.parity * ANCHOR_SALT_STEP);
+  };
+  const ga = at(st.a);
+  if (st.w >= 1) return ga;
+  const gb = at(st.b);
+  return Math.sqrt(st.w * ga * ga + (1 - st.w) * gb * gb);
 }
 
 /**
@@ -241,10 +259,20 @@ float valueNoise(vec3 q, float salt) {
 float hetGain(vec3 m) {
   return pow(10.0, (valueNoise(m / HET_CELL_MM, uSeed + 11.0) - 0.5) * HET_SCALE_DB / 20.0);
 }
-float clumpGain(vec3 m, float clump) {
-  if (clump <= 0.0) return 1.0;
-  float u = hash13(vec3(floor(m.x / CLUMP_CELL_MM) + uSeed + 29.0, floor(m.y / CLUMP_CELL_MM), floor(m.z / CLUMP_CELL_MM))) - 0.5;
+float clumpGain(vec3 q, float clump, float salt) {
+  float u = hash13(vec3(floor(q.x / CLUMP_CELL_MM) + uSeed + 29.0 + salt, floor(q.y / CLUMP_CELL_MM), floor(q.z / CLUMP_CELL_MM))) - 0.5;
   float a = clump * sqrt(3.0);
   return sqrt(exp(clump * sqrt(12.0) * u) / (sinh(a) / a));
+}
+float clumpAt(vec3 m, float se, float clump, float salt, vec3 e, vec3 pivot) {
+  float across = dot(m - pivot, e);
+  vec3 q = m - e * (across * (1.0 - CLUMP_CELL_MM / max(CLUMP_CELL_MM, 2.0 * se)));
+  return clumpGain(q, clump, salt);
+}
+float anchoredClump(vec3 m, float se, float clump, float salt) {
+  float ga = clumpAt(m, se, clump, salt + uAnchorSalt.x, uAnchorE0, uAnchorP0);
+  if (uAnchorW >= 1.0) return ga;
+  float gb = clumpAt(m, se, clump, salt + uAnchorSalt.y, uAnchorE1, uAnchorP1);
+  return sqrt(uAnchorW * ga * ga + (1.0 - uAnchorW) * gb * gb);
 }
 `;

@@ -223,7 +223,7 @@ uniform vec3 uAnchorP1;
 uniform vec2 uAnchorSalt;
 uniform float uAnchorW;
 // Grumos de dispersores por tejido (decisión 56), de 4 en 4 para no gastar una ranura por tejido
-uniform vec4 uTissueClump4[(TISSUE_COUNT + 3) / 4];
+uniform vec4 uTissueClump4[${Math.ceil(TISSUE_COUNT / 4)}];
 in vec2 vUv;
 out vec2 oField;
 
@@ -258,9 +258,9 @@ vec2 speckleField(vec3 m, float h, float se, float salt) {
 ${SPECKLE_TISSUE_GLSL}
 
 // Campo de dispersores de un punto material con clasificación conocida. Cada tejido es otra
-// población: su propia semilla (el moteado no continúa a través de un borde) y sus grumos.
+// población: su propia semilla (el moteado no continúa a través de un borde).
 vec2 fieldFor(vec3 m, float se, int tissue) {
-  vec2 f = speckleField(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP) * clumpGain(m, uTissueClump4[tissue / 4][tissue % 4]);
+  vec2 f = speckleField(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP);
   // Heterogeneidad lenta y continua del parénquima (desviación 1,15 dB a ~1,6 ciclos/cm) [EXTRAPOLACIÓN PROPIA]
   float het = 1.0;
   if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX) het = hetGain(m);
@@ -312,6 +312,11 @@ void main() {
   vec2 f2 = sampleSide(p - uElev * se, se, c0);
   float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
   vec2 field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
+  // Grumos (decisión 56): un factor por píxel, del tejido del plano central, sobre la coordenada
+  // anclada con la célula elevacional del grosor de corte, para los tres planos a la vez (la potencia
+  // media se conserva y el grano no parpadea al inclinar)
+  float clump = uTissueClump4[c0.tissue / 4][c0.tissue % 4];
+  if (clump > 0.0) field *= anchoredClump(toMaterial(p), se, clump, float(c0.tissue) * TISSUE_SALT_STEP);
   // Término especular: (n·d)⁴, confinado a la muestra que atraviesa la interfaz
   // (ventana |n·d|·dr con mínimo 0,15·dr) y SIN fasor: coherente.
   float dr = uDepth / 1024.0;

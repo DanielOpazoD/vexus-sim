@@ -950,26 +950,37 @@ externa (C1).
 riesgo para la guarda de Rayleigh del hígado); (2) otra semilla por tejido, heterogeneidad continua y
 una modulación lognormal de «grumos» solo en la grasa; (3) no tocar el moteado hasta la composición
 espacial.
-**Decisión.** (2), en la pasada B (`fieldFor`) con su gemelo TS (`speckleField.ts`):
+**Decisión.** (2), en la pasada B con su gemelo TS (`speckleField.ts`):
 
-- Cada tejido suma a la semilla `tejido × 7,919`: es otra población y su moteado no continúa a
-  través de un borde. El paso es irracional frente al del ancla (decisión 55).
+- Cada tejido suma a la semilla `tejido × 9,861`: es otra población y su moteado no continúa a
+  través de un borde. El hash repite con periodo ≈ 9,70 en su coordenada; ese paso deja todas las
+  diferencias de semilla (tejido y paridad del ancla, decisión 55) a ≥ 0,017 de un periodo.
 - Heterogeneidad del parénquima con ruido de valor de fundido smoothstep sobre la misma célula de
   6,25 mm, escalada a la misma desviación que los cubos (1,15 dB). Ahora es continua: < 0,2 dB por
   0,1 mm.
-- Grumos (`speckleClump`): la potencia se multiplica por una lognormal de media 1 en células de
+- Grumos (`speckleClump`): la potencia se multiplica por una log-uniforme de media 1 en células de
   1,2 mm (~ la PSF lateral), con σ 1,0 en el seno renal, 0,8 en la grasa perirrenal y 0,5 en la
   subcutánea [EXTRAPOLACIÓN PROPIA]. Pocos dispersores dominan (estadística K) sin cambiar la
-  ecogenicidad media. Hígado, corteza y músculo no llevan grumos: siguen siendo Rayleigh.
-- Los grumos viajan en `uTissueClump4` (de 4 en 4 por vec4): la pasada B queda en ~165 de los 224
-  vec4 de uniforms que garantiza WebGL2.
+  potencia media; la mediana del gris baja algo, como toca a una K de igual potencia. Hígado, corteza
+  y músculo no llevan grumos: siguen siendo Rayleigh.
+- El grumo es un factor por píxel, del tejido del plano central, y se aplica a los tres planos de
+  elevación a la vez. Se evalúa sobre la coordenada anclada, con la célula elevacional comprimida al
+  grosor de corte como el moteado, y se mezcla en potencia durante el fundido del ancla. Un grumo por
+  plano, sin anclar, oscurecía la grasa 0,5 dB y el seno parpadeaba al inclinar: persistencia de
+  0,35 con 0,5° de inclinación, frente a 0,83 anclado.
+- Los grumos viajan en `uTissueClump4` (de 4 en 4 por vec4, 7 ranuras): la pasada B queda en
+  ~165 de los 224 vec4 de uniforms que garantiza WebGL2.
   **Consecuencias.** El seno renal y la grasa perirrenal tienen textura propia, más contrastada que la
-  del hígado; las paredes y el parénquima vecino ya no comparten el grano. La guarda de Rayleigh del
-  hígado no cambia. Coste: 7 hashes más por muestra de parénquima y 1 en la grasa.
-  **Verificación.** `tissueSpeckle.test.ts` (gemelo): correlación del campo entre tejidos < 0,08 (antes
-  1); heterogeneidad con saltos < 0,2 dB por 0,1 mm y desviación 0,9–1,4 dB; grumos del seno con la
-  misma potencia media (±8 %) y un SNR de amplitud al menos 0,3 menor que sin ellos. e2e: la envolvente
-  del hígado sigue siendo Rayleigh (`speckle`), y el banco de fidelidad no cambia en el hígado.
+  del hígado, y no parpadean al inclinar; las paredes y el parénquima vecino ya no comparten el grano.
+  La guarda de Rayleigh del hígado no cambia. Coste: 7 hashes más por muestra de parénquima y 1–2 por
+  píxel de grasa.
+  **Verificación.** `tissueSpeckle.test.ts` (gemelo, por la pasada B de tres planos): correlación del
+  campo entre tejidos < 0,08 (antes 1); heterogeneidad con saltos < 0,2 dB por 0,1 mm y desviación
+  0,9–1,4 dB; grumos del seno con la misma potencia (±6 %), SNR al menos 0,3 menor y persistencia
+
+> 0,7 con 0,5° de inclinación. `shaderLimits.test.ts`: ningún identificador suelto de TS en el GLSL
+> (una primera versión declaraba `uTissueClump4[(TISSUE_COUNT + 3) / 4]` y el shader no compilaba; lo
+> halló una revisión adversarial). e2e: la envolvente del hígado sigue siendo Rayleigh.
 
 ## Iteración 2 — informe de cierre (22-09-2026)
 

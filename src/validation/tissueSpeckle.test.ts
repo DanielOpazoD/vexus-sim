@@ -4,7 +4,7 @@ import type { Vec3 } from '../core/vec3';
 import {
   ElevationAnchor,
   TISSUE_SALT_STEP,
-  clumpGain,
+  anchoredClumpGain,
   heterogeneityDb,
   speckleSliceField,
   type SpeckleAnchorState,
@@ -80,20 +80,53 @@ describe('moteado por tejido (decisión 56)', () => {
     expect(sd).toBeLessThan(1.4);
   });
 
+  // Como la pasada B: amplitud ¼ ½ ¼ de los tres planos de elevación y UN grumo por píxel, del
+  // plano central, sobre la coordenada anclada. Con un grumo por plano la grasa salía 0,5 dB más
+  // oscura (se promediaban tres células) y el grano del seno parpadeaba al inclinar.
+  const passB = (m: Vec3, tissue: Tissue, st: SpeckleAnchorState, e: Vec3, se = 2): number => {
+    const at = (k: number) =>
+      Math.hypot(
+        ...speckleSliceField(
+          [m[0] + e[0] * se * k, m[1] + e[1] * se * k, m[2] + e[2] * se * k],
+          H,
+          se,
+          SEED + tissue * TISSUE_SALT_STEP,
+          st,
+        ),
+      );
+    const amp = 0.5 * at(0) + 0.25 * (at(1) + at(-1));
+    return amp * anchoredClumpGain(m, se, TISSUES[tissue].speckleClump ?? 0, SEED, tissue * TISSUE_SALT_STEP, st);
+  };
+
   it('los grumos del seno renal dan estadística K con la misma potencia media; el hígado sigue Rayleigh', () => {
     expect(TISSUES[Tissue.Liver].speckleClump ?? 0).toBe(0);
-    const pts = grid(60);
-    const clump = TISSUES[Tissue.RenalSinus].speckleClump ?? 0;
-    expect(clump).toBeGreaterThan(0);
-    const plain = pts.map((m) => Math.hypot(...field(m, Tissue.RenalSinus)));
-    const clumpy = pts.map((m, i) => plain[i] * clumpGain(m, clump, SEED));
+    expect(TISSUES[Tissue.RenalSinus].speckleClump ?? 0).toBeGreaterThan(0);
+    const pts = grid(70);
+    const e: Vec3 = [0, 0, 1];
+    const sinus = pts.map((m) => passB(m, Tissue.RenalSinus, anchor, e));
+    const noClump = pts.map((m) => {
+      const at = (k: number) =>
+        Math.hypot(...speckleSliceField([m[0], m[1], m[2] + 2 * k], H, 2, SEED + Tissue.RenalSinus * TISSUE_SALT_STEP, anchor));
+      return 0.5 * at(0) + 0.25 * (at(1) + at(-1));
+    });
     const power = (a: number[]) => a.reduce((s, v) => s + v * v, 0) / a.length;
-    // potencia media: la misma (±8 %), así que la ecogenicidad del tejido no cambia
-    expect(power(clumpy) / power(plain)).toBeGreaterThan(0.92);
-    expect(power(clumpy) / power(plain)).toBeLessThan(1.08);
-    // amplitud del campo antes de la PSF: ~1,75 sin grumos (Rayleigh con la varianza de la retícula);
-    // claramente más contrastada con ellos
-    expect(snr(plain)).toBeGreaterThan(1.65);
-    expect(snr(clumpy)).toBeLessThan(snr(plain) - 0.3);
+    // potencia media: la misma (±6 %) tras los tres planos, así que la ecogenicidad no cambia
+    expect(power(sinus) / power(noClump)).toBeGreaterThan(0.94);
+    expect(power(sinus) / power(noClump)).toBeLessThan(1.06);
+    // amplitud claramente más contrastada que sin grumos (estadística K)
+    expect(snr(sinus)).toBeLessThan(snr(noClump) - 0.3);
+  });
+
+  it('los grumos del seno siguen al medio anclado: inclinar medio grado no los hace parpadear', () => {
+    // plano a 100 mm de la sonda, inclinado 0,5° alrededor de un eje del plano: los puntos se mueven
+    // en elevación 0,87 mm a esa profundidad, menos que el grosor de corte
+    const st = new ElevationAnchor().update([0, 0, 0], [0, 0, 1]);
+    const tilt = (0.5 * Math.PI) / 180;
+    const base: Vec3[] = [];
+    for (let i = 0; i < 60; i++) for (let j = 0; j < 60; j++) base.push([-30 + i, 100, -30 + j]);
+    const moved = base.map((p): Vec3 => [p[0], p[1] * Math.cos(tilt), p[2] + p[1] * Math.sin(tilt)]);
+    const g0 = base.map((m) => anchoredClumpGain(m, 2.2, 1, SEED, 0, st));
+    const g1 = moved.map((m) => anchoredClumpGain(m, 2.2, 1, SEED, 0, st));
+    expect(corr(g0, g1)).toBeGreaterThan(0.7);
   });
 });

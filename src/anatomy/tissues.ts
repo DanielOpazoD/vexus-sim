@@ -102,7 +102,7 @@ export interface TissueProps {
   /** Hueso: reflexión fuerte y sombra limpia. */
   bone: boolean;
   /**
-   * Grumos de dispersores (σ lognormal de la potencia en células de 1,2 mm; 0 u omitido = moteado
+   * Grumos de dispersores (σ log-uniforme de la potencia en células de 1,2 mm; 0 u omitido = moteado
    * plenamente desarrollado). Pocos dispersores dominantes: grasa del seno y perirrenal (decisión 56).
    */
   speckleClump?: number;

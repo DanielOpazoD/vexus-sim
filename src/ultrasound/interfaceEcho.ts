@@ -116,6 +116,14 @@ export function interfaceEchoField(id: Interface, cosI: number, curv: number, de
 }
 
 /**
+ * Coseno de incidencia de la pleura a partir de la reflexión que calcula la pasada A: con d_R = d0 −
+ * 2(d0·n)n, d0·d_R = 1 − 2cos²θ.
+ */
+export function reflectionCosine(d0: readonly number[], dR: readonly number[]): number {
+  return Math.sqrt(Math.max(0, 0.5 * (1 - (d0[0] * dR[0] + d0[1] * dR[1] + d0[2] * dR[2]))));
+}
+
+/**
  * Pasada B: eco de interfaz de una muestra (necesita `Cls`, `faceNormal` y `uElev` de la anatomía y del
  * haz, y `lateralSigmaMm` de `LATERAL_PSF_GLSL`). `se` es la σ elevacional de UNA vía (`elevSigma`).
  */
@@ -165,5 +173,10 @@ float interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se) {
   if (cosI < IFACE_MIN_COS) return 0.0;
   float curv = c.iface <= IF_LAST_TUBE ? tubeCurvature(c, n, dir, r, se) : 1.0;
   return interfaceProfileEcho(c.iface, cosI, curv, c.ifd / cosI);
+}
+// Pleura: su eco se centra en el cruce exacto del espejo de la pasada A (no sale de classify), una vez
+// por línea; el coseno sale de la reflexión (reflectionCosine)
+float pleuraEcho(float delta, vec3 d0, vec3 dR) {
+  return interfaceProfileEcho(IF_PLEURA, sqrt(max(0.0, 0.5 * (1.0 - dot(d0, dR)))), 1.0, delta);
 }
 `;

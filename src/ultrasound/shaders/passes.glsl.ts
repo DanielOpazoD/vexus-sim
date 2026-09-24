@@ -2,7 +2,8 @@ import { TISSUE_COUNT } from '../../anatomy/tissues';
 import { C_RECONSTRUCTION_MM_S } from '../../core/units';
 import { ANATOMY_GLSL } from '../../anatomy/gpu/anatomy.glsl';
 import { APERTURE_GLSL } from '../aperture';
-import { INTERFACE_ECHO_GLSL } from '../interfaceEcho';
+import { IFACE_REACH_MM, INTERFACE_ECHO_GLSL } from '../interfaceEcho';
+import { MIRROR_BISECTION_STEPS } from '../transmission';
 import { SPECKLE_TISSUE_GLSL } from '../speckleField';
 
 export const VERT = /* glsl */ `#version 300 es
@@ -67,8 +68,8 @@ float lateralSigmaMm(float r) {
 /**
  * Pasada A en cuatro etapas (decisión 54). Antes cada celda (línea × profundidad gruesa) marchaba
  * su rayo desde la piel: O(N²), ~2,5 millones de clasificaciones por cuadro. Ahora:
- *   A0 impactos: una marcha por línea (primer pulmón con su reflexión especular —el espejo—, primer
- *      gas, primer hueso);
+ *   A0 impactos: una marcha por línea (primer pulmón con su reflexión especular —el espejo, en el cruce
+ *      exacto por bisección (decisión 57)—, primer gas, primer hueso);
  *   A1 segmentos: cada segmento grueso se clasifica una vez, sobre el camino (reflejado o no) de A0;
  *   A2 suma: la atenuación ida y vuelta acumulada hasta cada profundidad, con las mismas reglas que
  *      `ultrasound/transmission.ts` (gel previo a la piel sin pérdidas, gas 60 dB/cm, hueso 6 dB al
@@ -109,8 +110,18 @@ void main() {
     float flag = uTissueFlag[c.tissue];
     if (flag > 0.5 && flag < 1.5) {
       if (c.tissue == T_LUNG && mirrorSeg < 0.0) {
-        mirrorSeg = float(s); hitR = r; hitPoint = p;
+        // Cruce exacto con la pleura (decisión 57): bisección entre la muestra gruesa anterior (que no es
+        // pulmón) y esta. Antes el espejo quedaba en el centro de la primera celda de pulmón (0–1,1 mm
+        // dentro) y dejaba una costura negra entre el diafragma y su imagen especular.
+        float lo = max(r - step, 0.0);
+        float hi = r;
         vec3 nn = c.n;
+        for (int it = 0; it < ${MIRROR_BISECTION_STEPS}; it++) {
+          float mid = 0.5 * (lo + hi);
+          Cls cm = classify(toMaterial(origin + dir * mid));
+          if (cm.tissue == T_LUNG) { hi = mid; nn = cm.n; } else lo = mid;
+        }
+        mirrorSeg = float(s); hitR = 0.5 * (lo + hi); hitPoint = origin + dir * hitR;
         if (dot(nn, dir) > 0.0) nn = -nn;
         dir = reflect(dir, nn);
         if (gasSeg < 0.0) { gasSeg = float(s); gasKind = 1.0; }
@@ -187,8 +198,10 @@ void main() {
   vec4 h1 = texelFetch(uHits1, ivec2(line, 0), 0);
   float step = uDepth / uCoarseN;
   float kf = float(k);
-  float mirrorHit = h0.x >= 0.0 && h0.x <= kf ? (h0.x + 0.5) * step : -1.0;
-  float gasHit = h0.y >= 0.0 && h0.y <= kf ? (h0.y + 0.5) * step : -1.0;
+  // Espejo desde la fila que contiene su r exacta menos el alcance del eco pleural: la pasada B refleja
+  // solo r > mirrorHit y centra ahí el eco (decisión 57). Las A-lines, a múltiplos de la pleura exacta.
+  float mirrorHit = h0.x >= 0.0 && h1.w < (kf + 1.0) * step + ${IFACE_REACH_MM.toFixed(4)} ? h1.w : -1.0;
+  float gasHit = h0.y >= 0.0 && h0.y <= kf ? (h0.y == h0.x ? h1.w : (h0.y + 0.5) * step) : -1.0;
   float boneHit = h0.z >= 0.0 && h0.z <= kf ? (h0.z + 0.5) * step : -1.0;
   vec3 dir = mirrorHit >= 0.0 ? h1.xyz : lineDir(lineTheta(vUv.x));
   o0 = vec4(attenDb, gasHit, boneHit, mirrorHit);
@@ -344,8 +357,10 @@ void main() {
   // media se conserva y el grano no parpadea al inclinar)
   float clump = uTissueClump4[c0.tissue / 4][c0.tissue % 4];
   if (clump > 0.0) field *= anchoredClump(m0, se, clump, float(c0.tissue) * TISSUE_SALT_STEP);
-  // Eco de interfaz (decisión 57): coherente, con fase 0 común a la cara, antes de la transmisión
+  // Eco de interfaz (decisión 57): coherente, con fase 0 común a la cara, antes de la transmisión; la
+  // pleura, desde el cruce exacto del espejo
   field += vec2(interfaceEcho(c0, m0, dir, r, se), 0.0);
+  if (mirrorHit >= 0.0) field += vec2(pleuraEcho(r - mirrorHit, dir0, normalize(t1.xyz)), 0.0);
   float dr = uDepth / 1024.0;
   float T = t0.x * coupling;
   vec2 out2 = field * T;

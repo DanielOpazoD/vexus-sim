@@ -29,6 +29,7 @@ import {
   interfaceAmplitude,
   interfaceEchoField,
   interfaceUniforms,
+  reflectionCosine,
   roughnessCoherence,
 } from '../ultrasound/interfaceEcho';
 import { FRAG_AXIAL, FRAG_LATERAL, FRAG_RAWFIELD, LATERAL_PSF_GLSL } from '../ultrasound/shaders/passes.glsl';
@@ -237,6 +238,32 @@ describe('Factores del eco de interfaz', () => {
       if (depth === 180) expect(Math.abs(widths.reduce((a, b) => a + b) / widths.length / 0.695 - 1)).toBeLessThan(0.05);
     }
     for (const r of ratios) expect(Math.abs(r - ratios[1]), ratios.map((x) => x.toFixed(2)).join(' / ')).toBeLessThan(0.5);
+  });
+});
+
+describe('Pleura desde el espejo', () => {
+  it('el coseno de la reflexión de A0 es |d·n| y la pleura queda centrada en el cruce, sin curvatura', () => {
+    let seed = 99;
+    const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+    for (let i = 0; i < 100; i++) {
+      const unit = (v: number[]) => v.map((x) => x / Math.hypot(...v));
+      const d0 = unit([rnd() - 0.5, rnd() - 0.5, rnd() - 0.5]);
+      const n = unit([rnd() - 0.5, rnd() - 0.5, rnd() - 0.5]);
+      const dn = d0[0] * n[0] + d0[1] * n[1] + d0[2] * n[2];
+      const dR = d0.map((x, j) => x - 2 * dn * n[j]);
+      expect(reflectionCosine(d0, dR)).toBeCloseTo(Math.abs(dn), 9);
+    }
+    // de dos lados: su pico está en el cruce, con la parte coherente de su rugosidad (−28,7 dB)
+    const p = INTERFACES[Interface.Pleura];
+    expect(p.twoSided).toBe(true);
+    const at = (delta: number) => interfaceEchoField(Interface.Pleura, 1, 1, delta, K0);
+    expect(at(0)).toBeGreaterThan(at(0.05));
+    expect(at(0.05)).toBeCloseTo(at(-0.05), 9);
+    // (los uniforms van en float32: acuerdo relativo 1e-6)
+    const want = interfaceAmplitude(Interface.Pleura) * roughnessCoherence(1, p.roughnessMm, K0) * faceProfile(0, true);
+    expect(at(0) / want).toBeCloseTo(1, 6);
+    expect(INTERFACE_ECHO_GLSL).toContain('float pleuraEcho(float delta, vec3 d0, vec3 dR)');
+    expect(INTERFACE_ECHO_GLSL).toContain('interfaceProfileEcho(IF_PLEURA, sqrt(max(0.0, 0.5 * (1.0 - dot(d0, dR)))), 1.0, delta)');
   });
 });
 

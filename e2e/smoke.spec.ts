@@ -237,6 +237,52 @@ test('las normales de la GPU coinciden con el gradiente de la distancia de TS en
   expect(errors).toEqual([]);
 });
 
+test('ecos de interfaz: paredes y cápsula brillan y el espejo diafragmático no deja costura', async ({ page }) => {
+  // Decisión 57 con SwiftShader, una pose por vista y solo los tramos que se llenan (≥ 10 registros; el
+  // diafragma, ≥ 5 en el tramo que tenga: a 0–20° no hay ninguno, ver docs/fidelity/README.md, «Qué llena
+  // el barrido»). El gemelo B→C→D predice VCI 1,56, VSH 1,49 y cápsula 1,79 a 0–20° con K = 55 dB, y el
+  // espejo de A0 queda a ≤ 0,009 mm de la pleura; antes, paredes y cápsula a 1,02–1,26 y el espejo hasta
+  // 1,1 mm dentro del pulmón, con costura en el 4–18 % de las líneas. Umbrales con margen para la
+  // calibración de K en [53; 57] dB, que se hace con GPU real (`npm run fidelity -- --sweep`).
+  test.setTimeout(300_000);
+  const errors = await bootWithoutErrors(page);
+  await page
+    .locator('button', { hasText: /Apnea\s*esp/ })
+    .first()
+    .click();
+  const seen = { capsule: 0, diaphragm: 0 };
+  for (const startPoint of ['subxiphoid', 'intercostal', 'flank'] as const) {
+    const s = await page.evaluate((id) => window.__vexusTest!.fidelity({ startPoint: id, display: true }), startPoint);
+    const d = s.display!;
+    const tag = `${startPoint}: ${JSON.stringify({ capsule: d.capsule, walls: d.wallSystems, diaphragm: d.diaphragm, saturated: d.faceSaturated })}`;
+    // la imagen sigue en su sitio: hígado a media escala y el centro de la luz casi negro
+    expect(d.liver.p50, tag).toBeGreaterThan(85);
+    expect(d.liver.p50, tag).toBeLessThan(120);
+    expect(d.lumen.p50, tag).toBeLessThan(30);
+    // ninguna cara de órgano se blanquea (el diafragma, Morison y la vesícula son las más reflectantes)
+    for (const face of ['diaphragm', 'morison', 'gallbladder'] as const)
+      if (Number.isFinite(d.faceSaturated[face])) expect(d.faceSaturated[face], tag).toBeLessThanOrEqual(0.02);
+    const capsule = d.capsule[0];
+    if (capsule.walls >= 10) {
+      seen.capsule++;
+      expect(capsule.ratio, tag).toBeGreaterThanOrEqual(1.4);
+    }
+    for (const sys of ['ivc', 'hepaticVein'] as const) {
+      const wall = d.wallSystems[sys][0];
+      if (wall.walls >= 10) expect(wall.ratio, tag).toBeGreaterThanOrEqual(1.3);
+    }
+    for (const bin of d.diaphragm.filter((b) => b.walls >= 5)) {
+      seen.diaphragm++;
+      expect(bin.seamFraction, tag).toBeLessThanOrEqual(0.02);
+      expect(bin.mirrorOffsetMm, tag).toBeLessThanOrEqual(0.05);
+    }
+  }
+  // la prueba no puede pasar vacía: la cápsula y el diafragma se midieron en alguna vista
+  expect(seen.capsule).toBeGreaterThan(0);
+  expect(seen.diaphragm).toBeGreaterThan(0);
+  expect(errors).toEqual([]);
+});
+
 test('la pasada A en cuatro etapas da la misma transmisión de un solo rayo que el modelo de CPU', async ({ page }) => {
   // Decisión 54: impactos por línea, segmentos y suma acumulada reproducen `rayAttenuationDb` en los
   // mismos puntos (las líneas con espejo no: la CPU no sigue el rayo reflejado). Con GPU real,

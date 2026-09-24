@@ -315,6 +315,8 @@ void main() {
  *    su eco con el coseno de esta mirada.
  * Fuera del arreglo la mirada no existe (K la pesa 0), pero se forma hasta el alcance del núcleo lateral de
  * D (±2,5σ, el mismo cálculo): si no, D mezclaría ceros en las muestras con peso junto al borde.
+ * Gemelo de la geometría (punto, dirección, pleura, reverberación, anclas, alcance): `steeredSample`
+ * (`steering.ts`); `steeredSample.test.ts` fija estas líneas.
  */
 export const STEERED_FIELD_GLSL = /* glsl */ `
 ${SPECKLE_LOOK_GLSL}

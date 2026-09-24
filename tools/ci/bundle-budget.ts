@@ -5,13 +5,16 @@
 // 2026-09-23: index 196 kB en main; la pasada A en cuatro etapas (decisión 54) y el
 // moteado anclado y por tejido (55–56) añaden ~12 kB de GLSL, que viaja como texto en el
 // chunk principal: index sube a 240 kB.
+// 2026-09-24: la composición espacial (decisión 58) lleva index de 228,8 a 250,1 kB (+21 kB): el GLSL
+// de las ramas dirigidas de A2, A y B y de la pasada K (texto en el chunk principal, ~8 kB), el anillo de
+// miradas del renderer y los módulos de la geometría dirigida. index sube a 260 kB.
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const KB = 1024;
 const BUDGETS: Array<[RegExp, number]> = [
   [/three.*\.js$/, 700 * KB],
-  [/index-.*\.js$/, 240 * KB],
+  [/index-.*\.js$/, 260 * KB],
   [/\.css$/, 20 * KB],
   [/\.js$/, 120 * KB], // cualquier otro chunk
 ];

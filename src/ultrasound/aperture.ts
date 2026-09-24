@@ -37,6 +37,8 @@ export interface ApertureGeometry {
  * Transmisión de amplitud ida y vuelta con apertura en (línea, profundidad r).
  * `oneWay(l)`: transmisión de ida de un rayo por la línea l hasta r (0–1).
  * `firstObstacleMm(l)`: profundidad del primer gas o hueso de la línea l (Infinity si no hay).
+ * `roundBias` (líneas; 0 en el gemelo) desplaza el redondeo de las tomas del cono: la paridad con la GPU
+ * (`steeredParity.ts`) lo usa para reconocer las muestras en empate de redondeo.
  */
 export function apertureTransmission(
   geom: ApertureGeometry,
@@ -44,6 +46,7 @@ export function apertureTransmission(
   r: number,
   oneWay: (l: number) => number,
   firstObstacleMm: (l: number) => number,
+  roundBias = 0,
 ): number {
   const single = oneWay(line) ** 2;
   const dTheta = (2 * geom.halfSector) / geom.lines;
@@ -65,7 +68,7 @@ export function apertureTransmission(
     let sum = 0;
     for (let j = 0; j < APERTURE_TAPS; j++) {
       const off = halfLines * ((2 * j) / (APERTURE_TAPS - 1) - 1);
-      const l = Math.min(geom.lines - 1, Math.max(0, line + Math.floor(off + 0.5)));
+      const l = Math.min(geom.lines - 1, Math.max(0, line + Math.floor(off + 0.5 + roundBias)));
       sum += oneWay(l);
     }
     return sum / APERTURE_TAPS;
@@ -91,11 +94,12 @@ export function steeredApertureTransmission(
   r: number,
   oneWay: (l: number) => number,
   firstObstacleMm: (l: number) => number,
+  roundBias = 0,
 ): number {
-  if (theta === 0) return apertureTransmission(geom, line, r, oneWay, firstObstacleMm);
+  if (theta === 0) return apertureTransmission(geom, line, r, oneWay, firstObstacleMm, roundBias);
   const R = geom.curvatureRadius;
   const steered: ApertureGeometry = { ...geom, curvatureRadius: R * Math.cos(theta) };
-  return apertureTransmission(steered, line, alongLineMm(R + r, theta, R), oneWay, firstObstacleMm);
+  return apertureTransmission(steered, line, alongLineMm(R + r, theta, R), oneWay, firstObstacleMm, roundBias);
 }
 
 /**

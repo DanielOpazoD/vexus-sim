@@ -266,6 +266,7 @@ test('composición espacial: más SNR con el mismo grano, sin huecos, y la mirad
   const ptag = JSON.stringify(parity);
   test.info().annotations.push({ type: 'paridad de la mirada +θ', description: ptag });
   expect(parity.samples, ptag).toBeGreaterThan(500);
+  // empates de redondeo: 0,04–0,31 % en las rejillas de CPU de las cuatro vistas (steeredParity.test.ts)
   expect(parity.ambiguous!, ptag).toBeLessThanOrEqual(0.01 * parity.samples);
   expect(parity.maxDiffDb, ptag).toBeLessThan(0.01);
   expect(parity.apertureMaxDiffDb!, ptag).toBeLessThan(0.01);

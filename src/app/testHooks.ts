@@ -16,8 +16,9 @@ import { FACE_GEOMETRIES, type FaceGeometry } from '../anatomy/scene';
 import { TISSUES, Tissue } from '../anatomy/tissues';
 import type { Vec3 } from '../core/vec3';
 import { FRAME_PASSES, type PassId } from '../ultrasound/passGraph';
-import { rayAttenuationDb, steeredPrefixDb, type SteeredPrefix } from '../ultrasound/transmission';
-import { steeredApertureTransmission, type ApertureGeometry } from '../ultrasound/aperture';
+import { rayAttenuationDb } from '../ultrasound/transmission';
+import { type ApertureGeometry } from '../ultrasound/aperture';
+import { compareSteeredTransmission } from './steeredParity';
 import { compoundActive, lookTheta } from '../ultrasound/compound';
 import { levelOfGrey } from '../ultrasound/greyMap';
 import type { CompoundState } from '../ultrasound/renderer';
@@ -96,8 +97,8 @@ export interface TestHooks {
    * con espejo (la CPU no sigue el rayo reflejado) y las transmisiones por debajo de −60 dB. Con `look` ≥ 1
    * (exige `compound`, decisión 58) compara la mirada dirigida de la GPU (el prefijo de A2 y la
    * transmisión con apertura de A) con sus gemelos de TS (`steeredPrefixDb`, `steeredApertureTransmission`)
-   * sobre los mismos segmentos de A0/A1 de la GPU; las muestras cuya línea del camino está en un empate de
-   * redondeo (θ·(1 ± 2·10⁻⁴) da otra suma) se cuentan aparte.
+   * sobre los mismos segmentos de A0/A1 de la GPU; las muestras en un empate de redondeo (desplazar los
+   * redondeos de los gemelos ±`STEERED_TIE_LINES` líneas cambia el resultado) se cuentan aparte.
    */
   transmissionParity: (opts: { compound: boolean; look?: number; startPoint?: StartPoint['id']; every?: number; ambiguityMm?: number }) => {
     lines: number;
@@ -529,8 +530,8 @@ function fillRing(sim: Simulator): void {
 /**
  * Paridad de la mirada dirigida `look` (decisión 58, G8): dibuja hasta que el último cuadro sea esa mirada,
  * lee los segmentos de A0/A1 de la GPU y compara, cada `every` líneas y en todas las filas, el prefijo de A2
- * (dB) y la transmisión con apertura de A con sus gemelos de TS sobre esos segmentos. Una muestra cuya suma
- * cambia con θ·(1 ± 2·10⁻⁴) (la línea del camino en un empate de redondeo: la GPU calcula en float32) cuenta
+ * (dB) y la transmisión con apertura de A con sus gemelos de TS sobre esos segmentos
+ * (`compareSteeredTransmission`): una muestra en un empate de redondeo (la GPU calcula en float32) cuenta
  * como ambigua y no entra en el máximo.
  */
 function steeredParity(sim: Simulator, look: number, every: number): ReturnType<TestHooks['transmissionParity']> {
@@ -555,75 +556,14 @@ function steeredParity(sim: Simulator, look: number, every: number): ReturnType<
     apertureRxMaxMm: beam.apertureRxMaxMm,
     fNumberRxMin: beam.fNumberRxMin,
   };
-  const twin = (theta: number) => {
-    const cache = new Map<number, SteeredPrefix>();
-    const pre = (l: number, k: number): SteeredPrefix => {
-      const key = l * grid.rows + k;
-      let p = cache.get(key);
-      if (!p) {
-        p = steeredPrefixDb(grid, ap, theta, l, k);
-        cache.set(key, p);
-      }
-      return p;
-    };
-    return {
-      db: (l: number, k: number) => pre(l, k).db,
-      aperture: (l: number, k: number) => {
-        const first = (a: number, b: number) => (a >= 0 ? (b >= 0 ? Math.min(a, b) : a) : b);
-        const r = (k + 0.5) * grid.stepMm;
-        return steeredApertureTransmission(
-          ap,
-          theta,
-          l,
-          r,
-          (m) => Math.pow(10, -pre(m, k).db / 40),
-          (m) => {
-            const o = first(pre(m, k).sGas, pre(m, k).sBone);
-            return o >= 0 ? o : Infinity;
-          },
-        );
-      },
-    };
-  };
-  const th = gpu.theta;
-  const exact = twin(th);
-  const lo = twin(th * (1 - 2e-4));
-  const hi = twin(th * (1 + 2e-4));
-  const db = (x: number) => -20 * Math.log10(Math.max(x, 1e-12));
-  let lines = 0;
-  let samples = 0;
-  let ambiguous = 0;
-  let maxDiffDb = 0;
-  let apertureMaxDiffDb = 0;
-  let worst: { line: number; depthMm: number; cpuDb: number; gpuDb: number; tissue: string } | null = null;
-  for (let u = 0; u < gpu.lines; u += every) {
-    lines++;
-    for (let k = 0; k < gpu.samples; k++) {
-      const i = k * gpu.lines + u;
-      const tsDb = exact.db(u, k);
-      const gpuDb = gpu.prefixDb![i];
-      const tsAp = db(exact.aperture(u, k));
-      const gpuAp = db(gpu.aperture[i]);
-      if (tsDb > 60 && gpuDb > 60) continue;
-      const tie =
-        Math.abs(lo.db(u, k) - tsDb) > 1e-3 ||
-        Math.abs(hi.db(u, k) - tsDb) > 1e-3 ||
-        Math.abs(db(lo.aperture(u, k)) - tsAp) > 1e-3 ||
-        Math.abs(db(hi.aperture(u, k)) - tsAp) > 1e-3;
-      if (tie) {
-        ambiguous++;
-        continue;
-      }
-      samples++;
-      const diff = Math.abs(tsDb - gpuDb);
-      if (diff > maxDiffDb) {
-        maxDiffDb = diff;
-        worst = { line: u, depthMm: (k + 0.5) * grid.stepMm, cpuDb: tsDb, gpuDb, tissue: 'prefijo dirigido' };
-      }
-      if (tsAp < 60 || gpuAp < 60) apertureMaxDiffDb = Math.max(apertureMaxDiffDb, Math.abs(tsAp - gpuAp));
-    }
-  }
-  return { lines, samples, maxDiffDb, apertureMaxDiffDb, ambiguous, truncatedLines: 0, worst };
+  const parity = compareSteeredTransmission(
+    grid,
+    ap,
+    gpu.theta,
+    { lines: gpu.lines, samples: gpu.samples, prefixDb: gpu.prefixDb!, aperture: gpu.aperture },
+    every,
+  );
+  return { ...parity, truncatedLines: 0 };
 }
 
 /** Estabilidad temporal del compuesto en escena quieta (`TestHooks.temporalStability`). */

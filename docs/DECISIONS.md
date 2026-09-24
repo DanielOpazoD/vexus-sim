@@ -1229,16 +1229,22 @@ mirada 0 con la línea dirigida que pasa por cada una y promediadas en lineal po
   defecto y lanza si no es la del último cuadro; `compound` es obligatorio en el tipo de los ganchos de
   medida y las guardas de una mirada pasan `compound: false` con sus umbrales de siempre.
 - Presupuesto: la pasada B declara 107 ranuras de uniforms (antes 105) y 5 samplers; K, 10 ranuras y 3
-  samplers; A, 6 samplers.
+  samplers; A, 6 samplers. El chunk principal del bundle pasa de 228,8 a 250,1 kB (el GLSL viaja como
+  texto) y su presupuesto, de 240 a 260 kB (`tools/ci/bundle-budget.ts`).
 
 **Consecuencias.** Predicción del gemelo B→C→D de tres planos a ±7° en la subxifoidea (8 realizaciones;
 no medida en GPU) a 20 / 45 / 90 / 150 mm: ρ(0,±) 0,23 / 0,42 / 0,65 / 0,35 (ley con la σ medida 0,32 /
 0,53 / 0,72 / 0,41), N_eff 2,31 / 1,91 / 1,47 / 2,08, SNR 1,99 → 3,10 / 2,01 → 2,81 / 2,02 → 2,45 / 1,99
 → 2,91, grano compuesto/mirada 0 lateral 1,05 / 1,01 / 0,92 / 1,01 y axial 1,00–1,01, fracción oscura
 0,06 → 0,003–0,012; por mirada, SNR 1,97–2,01 y media a −1,1/+1,5 % de la mirada 0. La mezcla de
-magnitudes de los tres planos de B decorrela las miradas 0,06–0,11 más que la ley a 20–45 mm (con un solo
-plano, a ≤ 0,02): la T3 del plan (|ρ − ley| ≤ 0,08) no se cumplía y la prueba exige la ley con un plano y
-ρ − ley en [−0,15; +0,05] con tres. La umbra de una costilla de 12 mm a 18 mm (−40 dB respecto al hígado)
+magnitudes de los tres planos de B (no lineal, por muestra y antes de la PSF) decorrela las miradas
+0,05–0,11 más que la ley (con un solo plano, a ≤ 0,025) y sube N_eff un 4–12 %: es un artefacto del
+modelo, no física del compuesto (una suma coherente en elevación seguiría la ley), y es la causa de que a
+20 mm la SNR prevista (3,10) pase del techo de G1 (con el N_eff de la ley sería ≈ 2,95). La T3 del plan
+(|ρ − ley| ≤ 0,08) no se cumplía; la prueba exige la ley con un plano y, con tres, fija el artefacto:
+ρ − ley en [−0,13; −0,03], ρ al menos 0,03 por debajo del de un plano con las mismas realizaciones y N_eff
+entre la ley y +15 %. Calibrar θ con G4 absorbe este exceso, así que el θ calibrado no es una medida física
+del equipo (`docs/APPROXIMATIONS.md`). La umbra de una costilla de 12 mm a 18 mm (−40 dB respecto al hígado)
 acaba 2,8 mm antes (26,3 → 23,6 mm; ~4,5 mm a ±8°) con el núcleo en el suelo (−22,6 → −22,2 dB), y el
 refuerzo tras un vaso de 12 mm se ensancha +14 / +40 / +67 % a 80 / 110 / 150 mm con el pico 0,1–0,3 dB
 más bajo. A ±6° N_eff baja a 2,06 / 1,71 / 1,37 / 1,84 y a ±8° sube a 2,55 / 2,10 / 1,57 / 2,31. Las
@@ -1252,8 +1258,12 @@ luego el punto de control A de la prueba ciega. El aliasing de línea del motead
 queda para el PR 3.
 **Verificación.** Gemelos (fallan en `main`): `steering.test.ts` (geometría exacta y θ = 0 identidad),
 `speckleField.test.ts` (sin fase, bit a bit el de hoy; fase lineal ≤ 1·10⁻² rad; SNR y media por mirada),
-`compoundSpeckle.test.ts` (lento: ley con un plano, N_eff ±15 %, SNR ×√N_eff ±10 %, grano 0,9–1,1,
-oscuros ≤ 0,035), `aperture.test.ts` (θ = 0 igual a la decisión 54; umbra y refuerzo), `transmission.test.ts`
+`compoundSpeckle.test.ts` (lento: ley con un plano; con tres, el artefacto de la mezcla fijado y N_eff
+entre la ley y +15 %; SNR ×√N_eff ±10 %, grano 0,9–1,1, oscuros ≤ 0,035),
+`steeredSample.test.ts` (geometría de la rama dirigida de B: con θ = 0 la de la mirada 0; con ±θ el punto
+en el camino, el reflejado tras el espejo, la pleura con |dirK·n|, la reverberación sobre el camino y el
+alcance fuera del arreglo; líneas del GLSL fijadas), `steeredParity.test.ts` (margen de los empates de
+redondeo de G8), `aperture.test.ts` (θ = 0 igual a la decisión 54; umbra y refuerzo), `transmission.test.ts`
 (prefijo dirigido frente a la CPU a ≤ 0,05 dB, espejo congelado) y `compound.test.ts` (orden, reinicios,
 pesos, paso directo, regla de actividad). GPU sin GPU: `passGraph.test.ts` (K antes de D, D escribiendo
 `env` junto con K y B sin declarar la transmisión que muestrea: las tres se detectan),

@@ -184,6 +184,9 @@ export function mirrorLookaheadRows(stepMm: number): number {
  *
  * Las líneas fuera del arreglo se recortan (como `texelFetch` con clamp): solo pasa en caminos cuya
  * cobertura es parcial o nula. Con θ = 0 da exactamente `prefixDb`.
+ *
+ * `roundBias` (líneas; 0 en el gemelo) desplaza el argumento del redondeo de la línea del camino: la
+ * paridad con la GPU (`steeredParity.ts`) lo usa para reconocer las muestras en empate de redondeo.
  */
 export function steeredPrefixDb(
   g: SegmentGrid,
@@ -191,6 +194,7 @@ export function steeredPrefixDb(
   theta: number,
   line: number,
   k: number,
+  roundBias = 0,
 ): SteeredPrefix {
   const R = geom.curvatureRadius;
   const step = g.stepMm;
@@ -217,7 +221,10 @@ export function steeredPrefixDb(
     if (frozen >= 0) l = frozen;
     else {
       const rho = R + (s + 0.5) * step;
-      l = theta === 0 ? line : Math.min(g.lines - 1, Math.max(0, Math.floor(line + (betaK - steerBeta(rho, theta, R)) / dPhi + 0.5)));
+      l =
+        theta === 0
+          ? line
+          : Math.min(g.lines - 1, Math.max(0, Math.floor(line + (betaK - steerBeta(rho, theta, R)) / dPhi + 0.5 + roundBias)));
       const m = g.mirrorSeg[l];
       if (m >= 0 && s >= m) {
         // más allá de k, solo si el cruce queda al alcance del eco pleural desde el final de la fila k

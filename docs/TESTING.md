@@ -75,7 +75,11 @@ un gancho que midiera «la envolvente» sin decir cuál cambiaría de significad
 - Nuevos: `setCompound`, `compoundState`, `lookCorrelation` (la parte `compound` del banco),
   `temporalStability` (escena quieta: correlación entre cuadros y modulación de periodo 3) y
   `envelopeGuard` (la guarda de `readEnvelope`). `transmissionParity({ compound: true, look })` compara la
-  mirada dirigida de la GPU con sus gemelos de TS sobre los segmentos de A0/A1 de la propia GPU.
+  mirada dirigida de la GPU con sus gemelos de TS sobre los segmentos de A0/A1 de la propia GPU
+  (`app/steeredParity.ts`): una muestra cuyo resultado cambia al desplazar los redondeos de los gemelos
+  ±10⁻⁴ líneas (`STEERED_TIE_LINES`, el doble del error de float32 emulado) es un empate y se cuenta
+  aparte. `steeredParity.test.ts` comprueba el margen y que en las cuatro vistas los empates son ≤ 0,5 %
+  (0,04–0,31 % en CPU; con el criterio anterior, θ·(1 ± 2·10⁻⁴), 0,35–1,35 %).
 - `frameCostMs` mide con el conmutador como esté: con el compuesto, la media de las tres miradas.
 - `compoundRenderer.test.ts` comprueba el cableado sin GPU: el renderizador real sobre un WebGL falso
   (`support/recordingGl.ts`, que registra programa, destino, texturas y uniforms de cada dibujo).

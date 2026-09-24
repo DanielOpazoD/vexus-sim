@@ -1,3 +1,4 @@
+import { add, dot, length, normalize, scale, sub, type Vec3 } from '../core/vec3';
 import { CONVEX_BEAM, type BeamParams } from './beamModel';
 
 /**
@@ -99,6 +100,124 @@ export function lookCoverage(phiK: number, halfSector: number, lines: number, ta
   const dPhi = (2 * halfSector) / lines;
   const c = (halfSector - Math.abs(phiK)) / (taperLines * dPhi) + 0.5;
   return c <= 0 ? 0 : c >= 1 ? 1 : c;
+}
+
+/** Marco de la sonda que usa la pasada B: centro de curvatura y ejes axial y lateral (uCurvC, uAxial, uLateral). */
+export interface SteeredSampleFrame {
+  center: Vec3;
+  axial: Vec3;
+  lateral: Vec3;
+}
+
+/** Geometría de la imagen que usa la rama dirigida de la pasada B. */
+export interface SteeredSampleImage {
+  curvatureRadius: number;
+  halfSector: number;
+  lines: number;
+  depthMm: number;
+  /** PSF lateral de dos vías σ(r) (mm, `lateralSigmaMm`): el alcance del núcleo lateral de D. */
+  lateralSigmaMm: (r: number) => number;
+}
+
+/** Lo que la rama dirigida lee de la pasada A en la celda de la muestra (A o3 y, del espejo, A o1). */
+export interface SteeredSampleCell {
+  /** o3.y: primer gas a lo largo del camino (mm; −1 sin él). */
+  sGas: number;
+  /** o3.z: tipo de gas + 4·(línea del espejo + 1). */
+  code: number;
+  /** o3.w: cruce exacto del espejo a lo largo del camino (mm; −1 sin él). */
+  sMirror: number;
+  /** o1.xyz de la línea l en la última fila: su dirección reflejada (A2 la publica desde su alcance). */
+  reflectedDir: (line: number) => Vec3;
+}
+
+/** Geometría de una muestra de la mirada dirigida en la pasada B (`STEERED_FIELD_GLSL`). */
+export interface SteeredSample {
+  /** false: más allá del arreglo y fuera del alcance del núcleo lateral de D; la rama devuelve 0. */
+  formed: boolean;
+  alpha: number;
+  r: number;
+  rho: number;
+  /** Elemento φ_k del que sale el camino y su coordenada de textura (ancla de la cola y del transitorio). */
+  phiK: number;
+  uK: number;
+  /** Distancia a lo largo del camino hasta la muestra (mm). */
+  s: number;
+  dirK: Vec3;
+  element: Vec3;
+  /** Punto que se clasifica y dirección de propagación en él (la del eco de interfaz). */
+  point: Vec3;
+  dir: Vec3;
+  gasKind: number;
+  mirrorLine: number;
+  /** Eco de la pleura: distancia al cruce y coseno de incidencia de esta mirada; null sin espejo. */
+  pleura: { delta: number; cos: number } | null;
+  /** Reverberación: distancia, radio y ángulo del punto del camino donde se lee Tg y su coordenada en A o3. */
+  reverb: { s: number; rho: number; alpha: number; uv: [number, number] } | null;
+}
+
+/**
+ * Gemelo en TS de la geometría de `STEERED_FIELD_GLSL` (rama dirigida de la pasada B, decisión 58): la
+ * muestra (u, v) de la rejilla común, el elemento φ_k del camino que pasa por ella, el punto que clasifica
+ * (antes del espejo, la propia muestra; después, el camino reflejado de la línea del espejo desde el cruce
+ * del camino), la incidencia de la pleura, dónde se lee la transmisión de la reverberación y el alcance
+ * fuera del arreglo. Mismas expresiones que el GLSL (`steeredSample.test.ts` las fija línea a línea); con
+ * θ = 0 da la geometría de la mirada 0 de `FRAG_RAWFIELD`.
+ */
+export function steeredSample(
+  frame: SteeredSampleFrame,
+  img: SteeredSampleImage,
+  theta: number,
+  u: number,
+  v: number,
+  cell: SteeredSampleCell,
+): SteeredSample {
+  const R = img.curvatureRadius;
+  const H = img.halfSector;
+  const lineDir = (t: number): Vec3 => normalize(add(scale(frame.axial, Math.cos(t)), scale(frame.lateral, Math.sin(t))));
+  const lineTheta = (x: number) => -H + 2 * H * x;
+  const a = R * Math.sin(theta);
+  const rc = R * Math.cos(theta);
+  const alpha = lineTheta(u);
+  const r = v * img.depthMm;
+  const rho = R + r;
+  const phiK = alpha - theta + Math.asin(a / rho);
+  const lineSpacing = rho * ((2 * H) / (img.lines - 1));
+  const reach = Math.ceil(2.5 * Math.max(0.35, img.lateralSigmaMm(r) / lineSpacing));
+  const formed = !((Math.abs(phiK) - H) / ((2 * H) / img.lines) > 0.5 + reach);
+  const s = Math.sqrt(Math.max(rho * rho - a * a, 0)) - rc;
+  const uK = (phiK + H) / (2 * H);
+  const dirK = lineDir(alpha + Math.asin(a / rho));
+  const element = add(frame.center, scale(lineDir(phiK), R));
+  const code = Math.floor(cell.code / 4);
+  const gasKind = cell.code - 4 * code;
+  const mirror = cell.sMirror >= 0;
+  const mirrorLine = mirror ? Math.min(Math.max(code - 1, 0), img.lines - 1) : -1;
+  const dRefl = mirror ? normalize(cell.reflectedDir(mirrorLine)) : dirK;
+  const dMirror = mirror ? lineDir(lineTheta((mirrorLine + 0.5) / img.lines)) : dirK;
+  let point: Vec3;
+  let dir = dirK;
+  if (mirror && s > cell.sMirror) {
+    dir = dRefl;
+    point = add(add(element, scale(dirK, cell.sMirror)), scale(dir, s - cell.sMirror));
+  } else point = add(frame.center, scale(lineDir(alpha), rho));
+  let pleura: SteeredSample['pleura'] = null;
+  if (mirror) {
+    // la normal de la pleura sale de la reflexión de la línea del espejo (dR − d0 ∥ n)
+    const dn = sub(dRefl, dMirror);
+    const ln = length(dn);
+    const n = scale(dn, 1 / ln);
+    const dR = ln > 1e-6 ? sub(dirK, scale(n, 2 * dot(dirK, n))) : dirK;
+    pleura = { delta: s - cell.sMirror, cos: Math.sqrt(Math.max(0, 0.5 * (1 - dot(dirK, dR)))) };
+  }
+  let reverb: SteeredSample['reverb'] = null;
+  if (cell.sGas > 0 && s > cell.sGas) {
+    const sg = Math.max(cell.sGas - img.depthMm / 1024, 0);
+    const rhoG = Math.sqrt(R * R + sg * sg + 2 * sg * rc);
+    const alphaG = phiK + theta - Math.asin(a / rhoG);
+    reverb = { s: sg, rho: rhoG, alpha: alphaG, uv: [(alphaG + H) / (2 * H), (rhoG - R) / img.depthMm] };
+  }
+  return { formed, alpha, r, rho, phiK, uK, s, dirK, element, point, dir, gasKind, mirrorLine, pleura, reverb };
 }
 
 /**

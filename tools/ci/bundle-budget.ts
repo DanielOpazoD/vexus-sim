@@ -2,13 +2,16 @@
 // Medido el 2026-09-21 tras añadir three.js: index ≈ 120 kB, chunk three ≈ 560 kB.
 // Regla: un presupuesto solo se sube a propósito, en el mismo cambio que explica
 // el crecimiento. Se ejecuta tras `vite build` y falla si algún activo lo supera.
+// 2026-09-23: index 196 kB en main; la pasada A en cuatro etapas (decisión 54) y el
+// moteado anclado y por tejido (55–56) añaden ~12 kB de GLSL, que viaja como texto en el
+// chunk principal: index sube a 240 kB.
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const KB = 1024;
 const BUDGETS: Array<[RegExp, number]> = [
   [/three.*\.js$/, 700 * KB],
-  [/index-.*\.js$/, 200 * KB],
+  [/index-.*\.js$/, 240 * KB],
   [/\.css$/, 20 * KB],
   [/\.js$/, 120 * KB], // cualquier otro chunk
 ];

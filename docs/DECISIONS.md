@@ -230,14 +230,32 @@ continuo y «Renal: continuo» en el resultado.
 **Enmienda (revisión externa, 23-09-2026).** «Continuo» exigía un mínimo ≥ 30 % del máximo, y el VExUS
 lo define por la ausencia de interrupción. Un flujo pulsátil que nunca se detiene salía bifásico, o
 monofásico si S era pequeña, y entonces sumaba un componente grave al grado: (S 5, D 20, mín 4) daba
-grado 2 con hígado y porta normales. Le pasaba al estado intermedio entre el sano y el grave
-(mín/máx 0,22, mínimo +3,8 cm/s). Ahora es continuo si el mínimo supera max(2 cm/s, 10 % del máximo)
-[EXTRAPOLACIÓN PROPIA]. Los 2 cm/s son el corte del filtro de pared por defecto (25 + 37,5 Hz a
-2,5 MHz ≈ 1,9 cm/s); el 10 % es donde el valle se confunde con la línea de base en la escala del
-espectro. La verdad (`measurePhysiologyTruth`) y la vía observada (`measureObservedRenal`) comparten
-la función. Los tres casos no cambian: sano (mín 7,5) y FA (mín 7,0) continuos, grave (−5,4)
-monofásico. En la interpolación sano → grave el bifásico aparece más tarde: en la fracción 0,8
-(mín 1,9 cm/s) en vez de 0,5.
+grado 2 con hígado y porta normales. En la interpolación lineal sano → grave (con la semilla del sano)
+la regla vieja solo cambiaba el rótulo, sin tocar el grado: de 0,5 a 0,75 decía bifásico con el flujo
+sin interrumpir (en 0,6, mín/máx 0,26 y mínimo +4,5 cm/s).
+
+Ahora es continuo si el mínimo supera max(suelo, 10 % del máximo) [EXTRAPOLACIÓN PROPIA]; el 10 % es
+donde el valle se confunde con la línea de base en la escala del espectro. Una revisión adversarial
+con IQ sintética por la cadena real (filtro de pared, espectro, `measureObservedRenal`) obligó a dos
+precisiones para que la verdad y la captura digan lo mismo:
+
+- **Suelo en Hz, no en cm/s.** En la captura, «sin flujo» es lo que cae en la banda del filtro de
+  pared (`flowBandMinHz`: 25 Hz + 37,5 Hz de margen, o dos bins a PRF alta), convertido con la PRF y
+  el ángulo de la captura (`renalFloorCms`). Un suelo fijo de 2 cm/s en velocidad corregida hacía
+  que el mismo espectro fuera bifásico a 0° y continuo a 45°. La verdad usa 2 cm/s (el mismo corte
+  a la PRF por defecto sin corrección, ≈ 1,9 cm/s).
+- **Mínimo resoluble.** El cuantil robusto 0,97 del mínimo (decisión 44) descartaba ~26 ms por
+  latido: una vena que se detenía 30 ms dos veces por latido salía continua. Ahora la captura toma el
+  mínimo exacto de su traza (ya filtrada por la mediana de 5 columnas). A su vez, una pausa más
+  breve que la resolución del espectro no llega a cero: con 128 muestras se ven las pausas de 15 ms
+  a 6 kHz y de 20 ms a 2,6–3 kHz, no las de 10 ms. Por eso la verdad usa el mínimo del máximo móvil
+  de `RENAL_GAP_MIN_S` = 20 ms (`resolvableMinimum`): cuenta la interrupción que el espectro puede
+  mostrar.
+
+Los tres casos no cambian: sano (mín 7,5) y FA (mín 7,1) continuos, grave (−5,3) monofásico. En la
+interpolación, el bifásico aparece en la fracción 0,8 (mín 1,9 cm/s) en vez de 0,5. Cerca del
+umbral (0,80–0,82) la captura y la verdad pueden discrepar, como ocurría en 0,55 con el umbral
+viejo. Pruebas sobre la cadena real: `renalInterruption.test.ts`.
 
 ## 27. Repositorio, CI y saneamiento tras revisión adversarial
 

@@ -36,7 +36,10 @@ export interface TruthMeasurements {
   portalPF: number;
   haPsv: number;
   haEdv: number;
-  /** Vena interlobar (cm/s, positivo = hacia el hilio): picos S y D y mínimo del ciclo. */
+  /**
+   * Vena interlobar (cm/s, positivo = hacia el hilio): picos S y D y mínimo resoluble del ciclo
+   * (el valle sostenido `RENAL_GAP_MIN_S`, `resolvableMinimum`).
+   */
   rvS: number;
   rvD: number;
   rvMin: number;
@@ -95,6 +98,43 @@ export function beatWindows(b: { tR: number; rr: number; tX: number; tV: number;
   };
 }
 
+/**
+ * Duración mínima de una interrupción del flujo renal para que cuente (s). Una pausa más breve no
+ * llega a la línea de base en el espectro: la ventana de análisis (128 muestras, 21–49 ms a
+ * 6000–2600 Hz), el suavizado y la mediana de la traza mezclan el flujo de sus bordes. Medido con
+ * IQ sintética por la cadena real (filtro de pared, espectro, `measureObservedRenal`): se ven las
+ * pausas de 15 ms a 6 kHz y de 20 ms a 2,6–3 kHz, no las de 10 ms. La verdad usa la misma
+ * resolución que la medición para que ambas digan lo mismo [EXTRAPOLACIÓN PROPIA].
+ */
+export const RENAL_GAP_MIN_S = 0.02;
+
+/**
+ * Mínimo resoluble en la ventana `w`: el mínimo del máximo móvil de ancho `width` (s). Es el valle
+ * que un análisis con esa ventana puede mostrar; una pausa más breve que `width` no llega a cero.
+ * Las muestras deben estar ordenadas por tiempo; el máximo móvil puede asomarse fuera de `w`.
+ */
+export function resolvableMinimum<T extends { t: number }>(
+  samples: readonly T[],
+  w: TimeWindow,
+  get: (s: T) => number,
+  width: number,
+): number {
+  const half = width / 2;
+  let best = Number.NaN;
+  let lo = 0;
+  let hi = 0;
+  for (let i = 0; i < samples.length; i++) {
+    const t = samples[i].t;
+    if (!(t >= w[0] && t <= w[1])) continue;
+    while (lo < samples.length && samples[lo].t < t - half) lo++;
+    while (hi < samples.length && samples[hi].t <= t + half) hi++;
+    let localMax = -Infinity;
+    for (let j = lo; j < hi; j++) localMax = Math.max(localMax, get(samples[j]));
+    if (Number.isNaN(best) || localMax < best) best = localMax;
+  }
+  return best;
+}
+
 const extremeInWindow = (
   samples: readonly PhysiologySample[],
   w: TimeWindow,
@@ -151,7 +191,7 @@ export function measurePhysiologyTruth(engine: PhysiologyEngine, range: { fromT:
     // Renal: S en la ventana sistólica, D en la diastólica (mismas ventanas mecánicas)
     rvSList.push(extremeInWindow(all, w.sWindow, (v) => v, rv));
     rvDList.push(extremeInWindow(all, w.dWindow, (v) => v, rv));
-    rvMinList.push(extremeInWindow(all, cyc, (v) => -v, rv));
+    rvMinList.push(resolvableMinimum(all, cyc, rv, RENAL_GAP_MIN_S));
     raPsvList.push(extremeInWindow(all, cyc, (v) => v, ra));
     raEdvList.push(extremeInWindow(all, cyc, (v) => -v, ra));
   }

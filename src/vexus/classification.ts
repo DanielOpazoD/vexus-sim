@@ -95,27 +95,29 @@ export function portalPulsatilityFraction(vMax: number, vMin: number): number {
 }
 
 /**
- * Suelo de la interrupción renal (cm/s): el filtro de pared por defecto (25 Hz más el margen de la
- * banda de flujo, 62,5 Hz a 2,5 MHz) corta en ≈ 1,9 cm/s, así que por debajo la envolvente es
- * indistinguible de la línea de base.
+ * Suelo de la interrupción renal en la verdad fisiológica (cm/s): la velocidad más baja que la
+ * medición cuenta como flujo con los ajustes por defecto (filtro de pared de 25 Hz más el margen de
+ * `flowBandMinHz`, 62,5 Hz a 2,5 MHz y sin corrección angular ≈ 1,9 cm/s). La medición observada no
+ * usa este valor: pasa su propio suelo, el mismo corte en Hz convertido con su PRF y su ángulo.
  */
 export const RENAL_INTERRUPTION_FLOOR_CMS = 2;
 /** Fracción del máximo por debajo de la cual el valle se lee como línea de base en la escala del espectro. */
 export const RENAL_INTERRUPTION_FRACTION = 0.1;
 
 /**
- * Patrón venoso intrarrenal a partir de los picos S y D (anterógrados, cm/s) y
- * del mínimo del ciclo. Continuo: el flujo nunca se interrumpe, por pulsátil que
- * sea (mín > max(2 cm/s, 10 % del máximo)); bifásico: se interrumpe pero hay pico
- * sistólico y diastólico (S ≥ 30 % de D); monofásico: solo pico diastólico. Un
- * mínimo retrógrado con S y D presentes se informa «fuera del esquema». Umbrales
- * [EXTRAPOLACIÓN PROPIA] de la descripción cualitativa de la base (D.9, A.1).
+ * Patrón venoso intrarrenal a partir de los picos S y D (anterógrados, cm/s) y del mínimo
+ * RESOLUBLE del ciclo: el valle sostenido lo bastante para verse en el espectro (una pausa más
+ * breve que la ventana de análisis no llega a la línea de base, ver `RENAL_GAP_MIN_S`). Continuo:
+ * el flujo nunca se interrumpe, por pulsátil que sea (mín > max(suelo, 10 % del máximo));
+ * bifásico: se interrumpe pero hay pico sistólico y diastólico (S ≥ 30 % de D); monofásico: solo
+ * pico diastólico. Un mínimo retrógrado con S y D presentes se informa «fuera del esquema».
+ * Umbrales [EXTRAPOLACIÓN PROPIA] de la descripción cualitativa de la base (D.9, A.1).
  */
-export function renalPatternFromPeaks(sPeak: number, dPeak: number, vMin: number): RenalPattern {
+export function renalPatternFromPeaks(sPeak: number, dPeak: number, vMin: number, floorCms = RENAL_INTERRUPTION_FLOOR_CMS): RenalPattern {
   if (![sPeak, dPeak, vMin].every(Number.isFinite)) return 'not-assessed';
   const vMax = Math.max(sPeak, dPeak);
   if (!(vMax > 0)) return 'not-assessed';
-  if (vMin > Math.max(RENAL_INTERRUPTION_FLOOR_CMS, RENAL_INTERRUPTION_FRACTION * vMax)) return 'continuous';
+  if (vMin > Math.max(floorCms, RENAL_INTERRUPTION_FRACTION * vMax)) return 'continuous';
   if (sPeak >= 0.3 * dPeak) return vMin < -0.2 * vMax ? 'reversal-out-of-scheme' : 'biphasic';
   return 'monophasic';
 }

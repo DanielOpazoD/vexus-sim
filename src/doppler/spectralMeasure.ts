@@ -310,6 +310,14 @@ export function sideEnergyDb(columns: readonly SpectralColumn[], opts: MeasureOp
   return { pos: 10 * Math.log10(pos), neg: 10 * Math.log10(neg) };
 }
 
+/** Velocidad rotulada (cm/s) del borde de la banda de flujo: por debajo, la traza es línea de base. */
+export function renalFloorCms(columns: readonly SpectralColumn[], opts: MeasureOptions): number {
+  const prf = columns.length ? columns[columns.length - 1].prfHz : 0;
+  const hz = flowBandMinHz(opts.wallFilterHz ?? 25, prf, opts.fftSize);
+  const v = velocityFromShiftMmS(hz, opts.f0Hz, opts.angleCorrectionRad) / 10;
+  return Number.isFinite(v) ? v : 0;
+}
+
 export function measureObservedRenal(columns: readonly SpectralColumn[], beats: Beat[], opts: MeasureOptions): ObservedRenal | null {
   const tr = observedSideTraces(columns, opts);
   if (tr.t.length < 10) return null;
@@ -348,7 +356,16 @@ export function measureObservedRenal(columns: readonly SpectralColumn[], beats: 
     const cyc: [number, number] = [b.tR, b.tR + b.rr];
     const s = extreme(vein, w.sWindow, (v) => v);
     const d = extreme(vein, w.dWindow, (v) => v);
-    const mn = extreme(vein, cyc, (v) => -v);
+    // mínimo exacto de la traza (ya filtrada por la mediana de 5 columnas): el cuantil robusto
+    // descartaba ~26 ms por latido, lo justo para esconder una pausa real de 40 ms
+    const mn = robustExtremeInWindow(
+      vein,
+      cyc,
+      (p) => p.t,
+      (p) => p.vScreen,
+      (v) => -v,
+      1,
+    );
     if ([s, d, mn].some((x) => Number.isNaN(x))) continue;
     sList.push(s);
     dList.push(d);
@@ -365,7 +382,9 @@ export function measureObservedRenal(columns: readonly SpectralColumn[], beats: 
     sPeak,
     dPeak,
     vMin,
-    pattern: renalPatternFromPeaks(sPeak, dPeak, vMin),
+    // «sin flujo» es lo que cae en la banda del filtro de pared: el mismo corte en Hz, así que el
+    // patrón no cambia con la corrección angular ni con la PRF
+    pattern: renalPatternFromPeaks(sPeak, dPeak, vMin, renalFloorCms(columns, opts)),
     beats: sList.length,
     anterogradeSign,
     trace,

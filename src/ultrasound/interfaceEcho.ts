@@ -13,7 +13,7 @@ import { INTERFACES, INTERFACE_COUNT, Interface, interfaceReflectivity } from '.
  *                                                     con s_ref/s conserva la energía y Λ(0; s_ref) = 1
  *   χ    = exp(−2 (k0 σz cosθ)²)                      rugosidad fina (Ament)
  *   C    = [(1 + (2k0σl²κl)²)(1 + (2k0σe²κe)²)]^(−1/4) coherencia de curvatura de un haz gaussiano (solo tubos)
- *   g    = N(δ'; 0, σh), δ' = ifd/cosθ − (dos lados ? 0 : 2,5σh), |δ'| ≤ 3,5σh
+ *   g    = N(δ'; 0, σh), δ' = ifd/(|∇|·cosθ) − (dos lados ? 0 : 2,5σh), |δ'| ≤ 3,5σh
  *
  * Escala: con S = 1 el pico de la envolvente iguala la envolvente RMS del hígado. K es el de un plano
  * liso frente al moteado del hígado: 56,5 dB (Madsen, Insana y Zagzebski 1984; Chen, Phillips y Parker
@@ -21,10 +21,13 @@ import { INTERFACES, INTERFACE_COUNT, Interface, interfaceReflectivity } from '.
  * β pasa de S al campo de la pasada B: lo mide el gemelo B→C→D (`interfaceTwin.test.ts`) con una cara en
  * arco a 80 mm y 180 mm de profundidad; si cambian C, D o la retícula del moteado, se re-deriva.
  *
- * g es un perfil de integral unidad en el cruce exacto (δ = ifd/cosθ), muestreado como el moteado:
+ * g es un perfil de integral unidad en el cruce exacto (δ = ifd/(|∇|·cosθ)), muestreado como el moteado:
  * tras C, eco y moteado escalan los dos con 1/√dr y su cociente no depende de la profundidad
- * seleccionada. Sin factor de profundidad: la ganancia coherente natural de D sigue a la de un plano
- * con haces gaussianos coherentes (±1,2 dB entre 40 y 120 mm).
+ * seleccionada. `ifd` es el valor de la distancia de la cara y |∇| la norma de su gradiente
+ * (`faceGradient`): a lo largo del rayo dδ/dr = 1 aunque la distancia no sea euclídea. Sin |∇| el perfil
+ * integraba 1/|∇|: la pared AP de la VCI (|∇| = 1/apScale) perdía 2,1 dB a apScale 0,777 y 6 dB a 0,5,
+ * y se apagaba al colapsar la VCI. Sin factor de profundidad: la ganancia coherente natural de D sigue
+ * a la de un plano con haces gaussianos coherentes (±1,2 dB entre 40 y 120 mm).
  *
  * Gemelos: `interfaceEchoField` (TS, pruebas y gemelo) e `INTERFACE_ECHO_GLSL` (pasada B), misma fórmula
  * y los mismos uniforms (`interfaceUniforms`).
@@ -46,6 +49,24 @@ export const IFACE_K_RANGE_DB = [53, 57] as const;
 export const IFACE_BETA = 0.2903;
 /** Por debajo de este |cosθ| la cara no devuelve nada (rasante). */
 export const IFACE_MIN_COS = 0.05;
+/**
+ * Cota de la norma del gradiente de las caras que no son tubos (cápsula, riñón, diafragma, vesícula) para
+ * la salida barata de la pasada B, que descarta ifd > alcance·cota antes de calcular el gradiente. Es
+ * exacta si toda muestra descartada tiene ifd/|∇| > alcance (`faceGradient.test.ts` lo comprueba a ≤ 3 mm
+ * de cada cara): el riñón y la grasa descartados tienen |∇| ≤ 1,02 y la vesícula, hasta 2 con ifd/|∇|
+ * lejos del alcance; la cápsula (0,8 mm) y la mitad hepática del diafragma (1,25 mm) no llegan a la cota
+ * (1,26 mm en una cara de un lado). Más hondo, la estimación de primer orden no vale (|∇| ~50 en el centro
+ * de la vesícula) y es la salida barata la que evita un eco allí. Los tubos usan su |∇| exacta.
+ */
+export const IFACE_GRADIENT_MAX = 1.5;
+
+/**
+ * Distancia por la normal al cruce de la cara, a lo largo del rayo (mm): ifd/(|∇|·cosθ), con ifd el valor
+ * de la distancia de la cara y |∇| la norma de su gradiente. Gemelo de la línea de `interfaceEcho` (GLSL).
+ */
+export function faceDelta(ifd: number, gradNorm: number, cosI: number): number {
+  return ifd / (gradNorm * cosI);
+}
 
 /** Lóbulo de Kirchhoff en amplitud con conservación de energía: (s_ref/s)·sec²θ·exp(−tan²θ/(4s²)). */
 export function facetLobe(cosI: number, s: number): number {
@@ -100,7 +121,8 @@ let uniformCache: { k0: number; kDb: number; u: Float32Array } | null = null;
 
 /**
  * Gemelo exacto de `interfaceProfileEcho` (GLSL): el eco de la cara `id` con incidencia cosI, coherencia
- * de curvatura `curv` y la muestra a δ = ifd/cosθ del cruce. Lee los mismos números que el uniform.
+ * de curvatura `curv` y la muestra a δ = ifd/(|∇|·cosθ) del cruce (`faceDelta`). Lee los mismos números
+ * que el uniform.
  */
 export function interfaceEchoField(id: Interface, cosI: number, curv: number, delta: number, k0: number, kDb = IFACE_K_DB): number {
   if (!uniformCache || uniformCache.k0 !== k0 || uniformCache.kDb !== kDb) uniformCache = { k0, kDb, u: interfaceUniforms(k0, kDb) };
@@ -124,7 +146,7 @@ export function reflectionCosine(d0: readonly number[], dR: readonly number[]): 
 }
 
 /**
- * Pasada B: eco de interfaz de una muestra (necesita `Cls`, `faceNormal` y `uElev` de la anatomía y del
+ * Pasada B: eco de interfaz de una muestra (necesita `Cls`, `faceGradient` y `uElev` de la anatomía y del
  * haz, y `lateralSigmaMm` de `LATERAL_PSF_GLSL`). `se` es la σ elevacional de UNA vía (`elevSigma`).
  */
 export const INTERFACE_ECHO_GLSL = /* glsl */ `
@@ -134,6 +156,7 @@ uniform float uIfaceK0;                 // 2π/λ (1/mm)
 #define IFACE_SHIFT ${IFACE_SHIFT_MM.toFixed(4)}
 #define IFACE_REACH ${IFACE_REACH_MM.toFixed(4)}
 #define IFACE_MIN_COS ${IFACE_MIN_COS.toFixed(4)}
+#define IFACE_GRAD_MAX ${IFACE_GRADIENT_MAX.toFixed(4)}
 // Perfil de integral unidad en el cruce exacto (o 2,5σh dentro del dueño si solo un lado conoce la
 // cara): muestreado como el moteado, el cociente eco/moteado no depende de dr (decisión 57).
 float interfaceProfileEcho(int id, float cosI, float curv, float delta) {
@@ -148,7 +171,8 @@ float interfaceProfileEcho(int id, float cosI, float curv, float delta) {
   return P.x * lobe * chi * curv * prof;
 }
 // Coherencia de curvatura de un haz gaussiano sobre un tubo (fase estacionaria): la curvatura del
-// tubo va por la dirección circunferencial; se proyecta sobre el lateral y la elevación del haz
+// tubo (c.kc, la local de su sección) va por la dirección circunferencial; se proyecta sobre el lateral
+// y la elevación del haz
 float tubeCurvature(Cls c, vec3 n, vec3 dir, float r, float se) {
   vec3 circ = cross(n, c.tangent);
   float cl = length(circ);
@@ -157,8 +181,8 @@ float tubeCurvature(Cls c, vec3 n, vec3 dir, float r, float se) {
   vec3 lat = normalize(cross(uElev, dir));
   float sl = lateralSigmaMm(r);                       // dos vías (beamModel)
   float sE = se * 0.70710678;                         // elevSigma es de una vía
-  float kl = dot(lat, circ); kl = kl * kl / c.rLoc;
-  float ke = dot(uElev, circ); ke = ke * ke / c.rLoc;
+  float kl = dot(lat, circ); kl = kl * kl * c.kc;
+  float ke = dot(uElev, circ); ke = ke * ke * c.kc;
   float al = 2.0 * uIfaceK0 * sl * sl * kl;
   float ae = 2.0 * uIfaceK0 * sE * sE * ke;
   return inversesqrt(sqrt((1.0 + al * al) * (1.0 + ae * ae)));
@@ -166,13 +190,16 @@ float tubeCurvature(Cls c, vec3 n, vec3 dir, float r, float se) {
 // Eco de la cara que dibuja la muestra (material m, rayo dir, profundidad r)
 float interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se) {
   if (c.iface == IF_NONE) return 0.0;
-  // salida barata sin normal: δ = ifd/cosθ ≥ ifd
-  if (c.ifd > (uIface[c.iface].w > 0.5 ? IFACE_REACH : IFACE_SHIFT + IFACE_REACH)) return 0.0;
-  vec3 n = faceNormal(c, m);
-  float cosI = abs(dot(n, dir));
+  // salida barata sin gradiente: δ = ifd/(|∇|·cosθ) ≥ ifd/|∇|; la norma de un tubo ya está en c.n, la
+  // del resto se acota (IFACE_GRAD_MAX)
+  float gBound = c.iface <= IF_LAST_TUBE ? length(c.n) : IFACE_GRAD_MAX;
+  if (c.ifd > (uIface[c.iface].w > 0.5 ? IFACE_REACH : IFACE_SHIFT + IFACE_REACH) * gBound) return 0.0;
+  vec4 fg = faceGradient(c, m);
+  float cosI = abs(dot(fg.xyz, dir));
   if (cosI < IFACE_MIN_COS) return 0.0;
-  float curv = c.iface <= IF_LAST_TUBE ? tubeCurvature(c, n, dir, r, se) : 1.0;
-  return interfaceProfileEcho(c.iface, cosI, curv, c.ifd / cosI);
+  float curv = c.iface <= IF_LAST_TUBE ? tubeCurvature(c, fg.xyz, dir, r, se) : 1.0;
+  // perfil en la distancia por la normal (faceDelta): integra 1 a lo largo del rayo aunque |∇| ≠ 1
+  return interfaceProfileEcho(c.iface, cosI, curv, c.ifd / (fg.w * cosI));
 }
 // Pleura: su eco se centra en el cruce exacto del espejo de la pasada A (no sale de classify), una vez
 // por línea; el coseno sale de la reflexión (reflectionCosine)

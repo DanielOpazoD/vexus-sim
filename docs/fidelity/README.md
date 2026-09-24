@@ -143,7 +143,8 @@ La e2e de normales compara la normal de la GPU (`queryPoints` con `normals`) con
 gradiente de `faceSdf` a 0,02–0,4 mm de cada cara, en los tejidos que la dibujan, con una fila por
 cara y otras por subconjunto (`FACE_NORMAL_SUBSETS`: la VCI, su cuerpo y el riñón con y sin
 escotadura, muestreados aparte). La normal que se compara es la que usa el eco de interfaz
-(`faceNormal`). En 5a, emulando la GLSL en TS (sano en apnea), cúpula y vesícula daban |n·∇| ≥ 0,99 en
+(`faceGradient`), y también su norma (p95 del error relativo ≤ 0,01), con la que el eco pasa `ifd` a
+distancia por la normal. En 5a, emulando la GLSL en TS (sano en apnea), cúpula y vesícula daban |n·∇| ≥ 0,99 en
 p01 y el tubo, mezclando todos los vasos, ≥ 0,99 en p05, pero tres normales no eran el gradiente; el
 PR 5b (decisión 57) las corrige:
 
@@ -158,10 +159,12 @@ PR 5b (decisión 57) las corrige:
 - cápsula hepática: `liverSdf` elegía la normal de una de las superficies que funde con `smoothMax`
   (p05 de 0,45 a 0,98 según la vista, por la impresión renal y la unión de los lóbulos).
 
-En el riñón y la cápsula la GPU usa ahora el gradiente numérico de la misma distancia que decide la
-clasificación, con el paso del banco (0,02 mm), solo en las muestras al alcance de su cara. La e2e exige
-mediana ≥ 0,99 en todas las caras, p05 ≥ 0,98 en el tubo y p01 ≥ 0,98 en la cúpula, la vesícula, la
-cápsula hepática, el riñón entero (con y sin escotadura) y el cuerpo de la VCI.
+En el riñón, la cápsula, el diafragma y la vesícula la GPU usa ahora el gradiente numérico de la misma
+distancia que decide la clasificación, con el paso del banco (0,02 mm), solo en las muestras al alcance
+de su cara. La e2e exige mediana ≥ 0,99 en todas las caras, p05 ≥ 0,98 en el tubo y p01 ≥ 0,98 en la
+cúpula, la vesícula, la cápsula hepática, el riñón entero (con y sin escotadura) y el cuerpo de la VCI;
+y en la norma, p95 del error relativo ≤ 0,01 (el gemelo TS da ≤ 5·10⁻⁵; una GPU que la dejara en 1
+daría ≥ 0,1 en la VCI de la subxifoidea, donde |∇| = 1/apScale).
 
 ### Línea base de interfaces con GPU (PR 5a, antes de los ecos de interfaz)
 
@@ -229,15 +232,21 @@ El gemelo B→C→D en CPU (`src/validation/interfaceTwin.test.ts`, escenas plan
 producción, K = 55 dB) predice, en cociente pico/hígado a 0–20° (antes → después): VSH 1,14 → 1,51
 (1,50, 1,49 y 1,40 a 40, 120 y 150 mm), VCI 1,16 → 1,62, porta 1,42 → 1,62 (1,45 a 20–40° y 1,40 a
 40–60°), cápsula 1,17 → 1,78, diafragma 1,29 → 2,16 sin costura (antes en el 66 % de las líneas) y
-Morison 1,42 → 2,23; huecos a 0–20° ≤ 0,08 y rosario 0,16–0,21. La VSH vuelve a lo que da el moteado
-solo fuera de ±20° (3,5 dB a 20–60°) y la porta no (10–11 dB). Morison sale 1,5 dB por encima del
-diseño porque producción no aplica la curvatura del riñón (`interface-curvature-tubes-only`).
+Morison 1,42 → 2,17; huecos a 0–20° ≤ 0,08 y rosario 0,16–0,21. La VSH vuelve a lo que da el moteado
+solo fuera de ±20° (3,5 dB a 20–60°) y la porta no (10–11 dB). Sin la curvatura del riñón
+(`interface-curvature-tubes-only`) Morison daba 2,23 con la s de la cápsula renal del plan (0,21); su
+pico es la cara grasa/cápsula renal, 4 dB sobre la de hígado/grasa, y con s 0,25 queda en 2,17 (la s de
+la grasa no lo mueve: 0,30 → 0,35 deja 2,23). La VCI de 1,62 es circular (r 10 mm); la de la escena es
+elíptica y el eco usa la curvatura local de su sección: en apnea (apScale 0,777) la pared AP (subxifoidea)
+da 1,67 y la lateral (flanco) 1,52. El eco se evalúa en la distancia por la normal, ifd/|∇| (decisión
+57): sin |∇| la pared AP de la VCI perdía 2,2 dB en apnea y 6 dB a apScale 0,5.
 
 Las cifras con GPU están pendientes: las mide quien corre `npm run fidelity -- --sweep` (misma máquina y
 carga que la línea base, sin el runner de EchoTwin), que además calibra K. Objetivos, solo en los
 tramos con ≥ 10 registros:
 
-- **Deben pasar (hoy fallan):** VCI 0–20° ≥ 1,40 y ≤ 2,1 (flanco; subxifoidea e intercostal del sano),
+- **Deben pasar (hoy fallan):** VCI 0–20° ≥ 1,40 y ≤ 2,1 (flanco, paredes laterales: el gemelo da 1,52
+  en apnea; subxifoidea e intercostal del sano, paredes AP: 1,67),
   con huecos ≤ 0,15, tramo ≤ 1 mm y rosario ≤ 0,26; VSH 40–60° ≤ 1,20 y porta − VSH ≥ 5 dB a 20–40°
   (subxifoidea): la caída de la VSH con la incidencia, que a 0–20° no se puede medir; cápsula 0–20° ≥ 1,40
   con huecos ≤ 0,15 y rosario ≤ 0,22 (subxifoidea, intercostal y flanco); Morison 0–20° en [1,6; 2,2]
@@ -250,7 +259,10 @@ tramos con ≥ 10 registros:
   0,3 ms y, con el temporizador de GPU, rawField ≤ +0,15 ms y transmissionHits ≤ +0,05 ms.
 - **Calibración de K:** si la VCI a 0–20° queda fuera de [1,45; 1,9], K se mueve en pasos de 1 dB
   dentro de [53; 57] (`IFACE_K_DB`); si hiciera falta salir de ese rango, es un error de modelo y se
-  para. Si Morison pasa de 2,2 con K calibrado, la salida es dar al riñón su curvatura, no bajar R.
+  para. Morison sube con K (gemelo: 2,06 / 2,17 / 2,30 a 53 / 55 / 57 dB). Si pasa de 2,2 con K
+  calibrado, la palanca es la cara que da su pico, la de la cápsula renal: su s (0,25 → 0,30 da 2,10 a
+  55 dB) o su σz, no R; la s de la grasa perirrenal no lo mueve y la curvatura del riñón no está en el
+  modelo (C solo en los tubos).
 
 ## Línea base (23-09-2026, árbol `src/` 4de3821, tras el preajuste abdominal; M4 con Metal, densidad 2)
 

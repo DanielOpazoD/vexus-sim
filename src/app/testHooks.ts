@@ -53,11 +53,11 @@ export interface TestHooks {
     samples?: boolean;
   }) => FidelityStats;
   /**
-   * Normales de la GPU (la que usa el eco de interfaz, `faceNormal`; `queryPoints` con `normals`) frente
-   * al gradiente de `faceSdf` de TS en las caras que dan brillo: por tipo de cara (y los subconjuntos de `FACE_NORMAL_SUBSETS`),
-   * |n·∇| en los puntos del plano a 0,02–0,4 mm de ella que caen en un tejido que la dibuja, con el
-   * mismo tejido en la GPU y en la CPU. `pose` bascula o inclina la sonda respecto a la pose de
-   * partida, como en `fidelity`.
+   * Gradientes de la GPU (el que usa el eco de interfaz, `faceGradient`; `queryPoints` con `normals`)
+   * frente al gradiente de `faceSdf` de TS en las caras que dan brillo: por tipo de cara (y los
+   * subconjuntos de `FACE_NORMAL_SUBSETS`), |n·∇| y el error relativo de la norma en los puntos del plano
+   * a 0,02–0,4 mm de ella que caen en un tejido que la dibuja, con el mismo tejido en la GPU y en la
+   * CPU. `pose` bascula o inclina la sonda respecto a la pose de partida, como en `fidelity`.
    */
   faceNormals: (opts: {
     startPoint: StartPoint['id'];
@@ -315,6 +315,13 @@ export interface FaceNormalStats {
   min: number;
   /** Fracción de los puntos con |n·∇| < 0,98 (la contingencia de la cápsula se decide con ella). */
   below098: number;
+  /**
+   * Error relativo de la norma del gradiente de la GPU (con la que el eco pasa `ifd` a distancia por la
+   * normal) frente a |∇ faceSdf| de TS, |g_GPU/g_TS − 1|: p95 y máximo, en los puntos de tejidos con cara
+   * (sin el pulmón de la cúpula). NaN si la GPU no la devuelve.
+   */
+  normErrP95: number;
+  normErrMax: number;
   /** El peor punto, para el mensaje de la prueba. */
   worst: string;
 }
@@ -323,7 +330,7 @@ export interface FaceNormalStats {
 const FACE_BAND_MM = [0.02, 0.4] as const;
 /** Puntos por fila y plano como máximo (la GPU los consulta de una vez). */
 const FACE_POINTS_MAX = 400;
-/** Tejidos que dibujan cada cara (su normal es la de esa cara en `classify` o en `faceNormal`). */
+/** Tejidos que dibujan cada cara (su normal es la de esa cara en `classify` o en `faceGradient`). */
 const TUBE_TISSUES: ReadonlySet<Tissue> = new Set([
   Tissue.Blood,
   Tissue.VesselWallThin,
@@ -344,7 +351,7 @@ const TUBE_TISSUES: ReadonlySet<Tissue> = new Set([
  *    codos (las uniones con las suprahepáticas sí cuentan).
  *  - `kidneyOuterNotchFree` y `kidneyOuterNotch`: el contorno renal fuera o dentro del redondeo de la
  *    escotadura hiliar (`hilumNotchActive`). Fuera, la normal del elipsoide era exacta; dentro no, y
- *    desde el PR 5b la GPU usa en las dos el gradiente numérico del contorno (`faceNormal`).
+ *    desde el PR 5b la GPU usa en las dos el gradiente numérico del contorno (`faceGradient`).
  */
 export const FACE_NORMAL_SUBSETS = ['tubeIvc', 'tubeIvcBody', 'kidneyOuterNotchFree', 'kidneyOuterNotch'] as const;
 export type FaceNormalSubset = (typeof FACE_NORMAL_SUBSETS)[number];
@@ -451,9 +458,11 @@ export function faceNormalStats(sim: Simulator): Record<FaceNormalRow, FaceNorma
   chosen.forEach((c, i) => pts.set(c.p, i * 3));
   const gpu = sim.gpuQuery(pts, sim.frame, false, { normals: true });
   const normal = gpu.normal!;
+  const gradNorm = gpu.gradNorm;
   const out = {} as Record<FaceNormalRow, FaceNormalStats>;
   for (const row of [...FACE_GEOMETRIES, ...FACE_NORMAL_SUBSETS]) {
     const dots: { dot: number; i: number }[] = [];
+    const normErr: number[] = [];
     let mismatched = 0;
     chosen.forEach((c, i) => {
       if (c.row !== row) return;
@@ -466,7 +475,10 @@ export function faceNormalStats(sim: Simulator): Record<FaceNormalRow, FaceNorma
       const len = Math.hypot(g[0], g[1], g[2]);
       const dot = Math.abs(normal[i * 3] * g[0] + normal[i * 3 + 1] * g[1] + normal[i * 3 + 2] * g[2]) / len;
       dots.push({ dot, i });
+      // la norma solo cuenta donde hay cara (el pulmón bajo la cúpula no la dibuja)
+      if (gradNorm && c.tissue !== Tissue.Lung) normErr.push(Math.abs(gradNorm[i] / len - 1));
     });
+    normErr.sort((a, b) => a - b);
     dots.sort((a, b) => a.dot - b.dot);
     const pct = (q: number): number => (dots.length ? dots[Math.min(dots.length - 1, Math.floor(q * dots.length))].dot : Number.NaN);
     const w = dots[0];
@@ -478,6 +490,8 @@ export function faceNormalStats(sim: Simulator): Record<FaceNormalRow, FaceNorma
       p50: pct(0.5),
       min: w ? w.dot : Number.NaN,
       below098: dots.length ? dots.filter((d) => d.dot < 0.98).length / dots.length : Number.NaN,
+      normErrP95: normErr.length ? normErr[Math.min(normErr.length - 1, Math.floor(0.95 * normErr.length))] : Number.NaN,
+      normErrMax: normErr.length ? normErr[normErr.length - 1] : Number.NaN,
       worst: w
         ? `${TISSUES[chosen[w.i].tissue].name} en (${chosen[w.i].m.map((x) => x.toFixed(1)).join(', ')}): |n·∇| ${w.dot.toFixed(4)}, ` +
           `GPU (${[0, 1, 2].map((a) => normal[w.i * 3 + a].toFixed(3)).join(', ')})`

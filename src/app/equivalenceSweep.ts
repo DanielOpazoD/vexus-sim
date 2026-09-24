@@ -228,9 +228,10 @@ class FaceTally {
  * 0,01–0,6 mm de una cara donde el eco de interfaz se dibuja, según la CPU o según la GPU (así cuenta
  * también una cara que la GPU dibuja y la CPU no). Allí las dos deben dar la misma cara y la misma
  * distancia: el reparto de dueños (mitades del diafragma y de la grasa perirrenal, cápsula junto al
- * diafragma o a la grasa) es una comparación real, sin el margen de 1 mm del volumen. Rejilla de
- * `lines` líneas × `COARSE_MM`; alrededor de las celdas que (o cuyas vecinas) dibujan una cara en la
- * CPU, pasos de `stepMm`.
+ * diafragma o a la grasa, la VCI dentro de la aurícula) es una comparación real, sin el margen de 1 mm
+ * del volumen. Rejilla de `lines` líneas × `COARSE_MM`; alrededor de las celdas que (o cuyas vecinas)
+ * dibujan una cara en la CPU o están en un tubo (la GPU podría dibujar allí la cara de su luz aunque la
+ * CPU no: el tramo de la VCI dentro de la aurícula), pasos de `stepMm`.
  */
 export interface InterfaceShellReport {
   points: number;
@@ -264,7 +265,8 @@ export function interfaceShellEquivalence(sim: Simulator, lines = 48, stepMm = 0
       const theta = -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / lines;
       const faceAt = Array.from({ length: nCoarse }, (_, k) => {
         const p = pointOnLine(frame, tr, theta, (k + 0.5) * COARSE_MM);
-        return sim.anatomy.classifyWorld(p, sim.sample).interface !== Interface.None;
+        if (sim.anatomy.classifyWorld(p, sim.sample).interface !== Interface.None) return true;
+        return sim.anatomy.faceSdfWorld(p, sim.sample, 'tube') !== null;
       });
       for (let k = 0; k < nCoarse; k++) {
         if (!faceAt[k] && !faceAt[k - 1] && !faceAt[k + 1]) continue;

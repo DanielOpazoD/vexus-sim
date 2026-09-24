@@ -181,8 +181,10 @@ test('las normales de la GPU coinciden con el gradiente de la distancia de TS en
   // Banco de interfaces (PR 5a de la tanda 1.5): el eco de una cara lisa depende de la incidencia sobre
   // su normal (decisión 57). Por vista y fila (cada cara y los subconjuntos de `FACE_NORMAL_SUBSETS`), los
   // puntos del plano a 0,02–0,4 mm de la cara en un tejido que la dibuja (mismo tejido en GPU y CPU):
-  // |n·∇| entre la normal que usa el eco (`faceNormal`) y el gradiente de `faceSdf`. En 5a tres normales
-  // no eran el gradiente y 5b las corrige:
+  // |n·∇| entre la normal que usa el eco (`faceGradient`) y el gradiente de `faceSdf`, y el error relativo
+  // de su norma (con ella el eco pasa ifd a distancia por la normal: en las paredes AP de la VCI elíptica
+  // vale 1/apScale, y sin ella el perfil integraba apScale, −2,2 dB). En 5a tres normales no eran el
+  // gradiente y 5b las corrige:
   //  - VCI (`tubeIvc`, `tubeIvcBody`): la sección elíptica escalaba la componente AP una vez (d/dist) y el
   //    gradiente la escala dos: 6–10° en todo el cuerpo. Ahora la normal es el gradiente de la sección
   //    (con el afilamiento del radio); portada a TS da p01 ≥ 0,9999 en el cuerpo (faceNormals.test.ts);
@@ -190,8 +192,10 @@ test('las normales de la GPU coinciden con el gradiente de la distancia de TS en
   //  - cápsula hepática: `liverSdf` elegía la normal de una de sus superficies (p05 0,45–0,98).
   //    Las dos pasan al gradiente numérico de su distancia con el paso del banco (0,02 mm): el mismo
   //    cálculo que la CPU, salvo float32.
-  // Cúpula y vesícula ya daban ≥ 0,99 en p01. Un fallo de cableado, de marco o de signo hundiría la
-  // mediana; las caras que 5b corrige se exigen ahora en p01 (la VCI también en p05 ≥ 0,99).
+  // Cúpula y vesícula ya daban ≥ 0,99 en p01 (ahora también usan el gradiente numérico). Un fallo de
+  // cableado, de marco o de signo hundiría la mediana; las caras que 5b corrige se exigen ahora en p01 (la
+  // VCI también en p05 ≥ 0,99). La norma, en p95 ≤ 0,01 (el gemelo TS da ≤ 5e-5; float32 y las uniones de
+  // tubos dan el resto; una GPU sin la norma da ≥ 0,1 en la VCI de la subxifoidea, faceNormals.test.ts).
   test.setTimeout(240_000);
   const errors = await bootWithoutErrors(page);
   // apnea espiratoria: los planos cortan la anatomía en la misma posición que el gemelo de TS
@@ -222,7 +226,7 @@ test('las normales de la GPU coinciden con el gradiente de la distancia de TS en
       if (f.points < 50) continue;
       test.info().annotations.push({
         type: `normales · ${row}`,
-        description: `${JSON.stringify(view)}: ${f.points} puntos, p01 ${f.p01.toFixed(3)}, p05 ${f.p05.toFixed(3)}, p50 ${f.p50.toFixed(4)}, < 0,98 en ${(100 * f.below098).toFixed(1)} %; peor ${f.worst}`,
+        description: `${JSON.stringify(view)}: ${f.points} puntos, p01 ${f.p01.toFixed(3)}, p05 ${f.p05.toFixed(3)}, p50 ${f.p50.toFixed(4)}, < 0,98 en ${(100 * f.below098).toFixed(1)} %, norma p95 ${f.normErrP95.toExponential(1)} máx ${f.normErrMax.toExponential(1)}; peor ${f.worst}`,
       });
       seen.set(row, (seen.get(row) ?? 0) + 1);
       if ((faces as readonly string[]).includes(row)) expect(f.p50, tag).toBeGreaterThanOrEqual(0.99);
@@ -230,6 +234,7 @@ test('las normales de la GPU coinciden con el gradiente de la distancia de TS en
       if (row === 'tubeIvc' || row === 'tubeIvcBody') expect(f.p05, tag).toBeGreaterThanOrEqual(0.99);
       const exact = ['liverSurface', 'dome', 'gallbladder', 'kidneyOuter', 'kidneyOuterNotchFree', 'kidneyOuterNotch', 'tubeIvcBody'];
       if (exact.includes(row)) expect(f.p01, tag).toBeGreaterThanOrEqual(0.98);
+      if ((gated as readonly string[]).includes(row)) expect(f.normErrP95, tag).toBeLessThanOrEqual(0.01);
     }
   }
   // cada cara con brillo se comprobó en al menos una vista (la prueba no puede pasar vacía)

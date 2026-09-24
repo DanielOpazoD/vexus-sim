@@ -111,4 +111,18 @@ describe('Gates de equivalencia TS ↔ GLSL (lógica)', () => {
     expect(r.agreement).toBeLessThan(0.999);
     expect(r.disagreements.join('\n')).toContain('None→LiverCapsule (LiverCapsule)');
   });
+
+  it('la cáscara ve la cara de la VCI que una GPU sin la regla de la aurícula dibuja dentro de ella', () => {
+    // dentro de la aurícula el tubo de la VCI clasifica su pared y su luz pero no dibuja cara; una GLSL
+    // sin esa regla la dibujaría a |hit.d|. La CPU no tiene cara allí: la cáscara lo mira porque la celda
+    // está en un tubo. Con las 48 líneas de la e2e: 155 desacuerdos (acuerdo 0,993); mirando solo las
+    // celdas con cara en la CPU eran 5 (0,9998) y la e2e (≥ 0,999) no lo veía
+    const r = interfaceShellEquivalence(
+      fakeSim((_p, q) =>
+        q.vesselHit && q.interface === Interface.None ? { iface: Interface.IvcLumen, ifd: Math.abs(q.vesselHit.d) } : {},
+      ),
+    );
+    expect(r.agreement).toBeLessThan(0.999);
+    expect(r.disagreements.join('\n')).toContain('None→IvcLumen');
+  });
 });

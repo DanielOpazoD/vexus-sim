@@ -3,12 +3,14 @@ import { VESSEL_META, type VesselId } from '../physiology/vessels';
 
 /**
  * Caras especulares que dibuja la pasada B (decisión 57): una por estructura, sin signo. `classify`
- * (TS y GLSL) dice en cada muestra qué cara dibuja (`Classification.interface`, `Cls.iface`) y a qué
- * distancia está de ella por la normal (`interfaceDistance`, `Cls.ifd`); el eco lo calcula
+ * (TS y GLSL) dice en cada muestra qué cara dibuja (`Classification.interface`, `Cls.iface`) y el valor
+ * de la distancia de esa cara en ella (`interfaceDistance`, `Cls.ifd`); el eco lo pasa a distancia por la
+ * normal con la norma del gradiente de la cara (`faceGradient`) y lo calcula
  * `ultrasound/interfaceEcho.ts`. El número se comparte con GLSL (`#define IF_*`).
  *
  * Dueños de cada cara (las muestras que la conocen):
- *  - luz de un vaso o conducto y de la vesícula: la pared y la luz (dos lados, la misma consulta);
+ *  - luz de un vaso o conducto y de la vesícula: la pared y la luz (dos lados, la misma consulta), salvo
+ *    dentro de la aurícula derecha, donde la VCI entra y no hay pared que dibujar;
  *  - cápsula hepática: la cápsula, salvo junto al diafragma (cara del diafragma) o a la grasa
  *    perirrenal (cara de Morison, de la grasa);
  *  - cara hepática del diafragma: la mitad abdominal del diafragma (la pleural la dibuja el espejo
@@ -42,8 +44,9 @@ export const LAST_TUBE_INTERFACE = Interface.DuctLumen;
  */
 export const MORISON_CONTACT_MM = 0.2;
 /**
- * Paso (mm) de las diferencias centrales con que la GPU saca la normal de la cápsula hepática y del
- * contorno renal (`faceNormal`), el mismo que el gradiente de `faceSdf` del banco y de la e2e.
+ * Paso (mm) de las diferencias centrales con que la GPU saca el gradiente (normal y norma) de la cápsula
+ * hepática, el contorno renal, el diafragma y la vesícula (`faceGradient`), el mismo que el gradiente de
+ * `faceSdf` del banco y de la e2e.
  */
 export const FACE_GRADIENT_EPS_MM = 0.02;
 
@@ -184,9 +187,10 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     sides: [Tissue.PerirenalFat, Tissue.RenalCapsule],
     floor: 0,
     roughnessMm: 0.05,
-    slopeRms: 0.21,
+    slopeRms: 0.25,
     twoSided: true,
-    source: 'Fresnel grasa perirrenal / cápsula renal (TISSUES)',
+    source:
+      'Fresnel grasa perirrenal / cápsula renal (TISSUES); s 0,25 (antes 0,21) para dejar Morison en [1,6; 2,2]: es la cara que da su pico (riesgo 4 del plan) [ESTIMADO]',
   },
   [Interface.PerirenalFat]: {
     name: 'grasa perirrenal (Morison)',
@@ -195,7 +199,7 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.05,
     slopeRms: 0.3,
     twoSided: false,
-    source: 'Fresnel hígado / grasa (TISSUES); s ancha para no blanquear Morison [ESTIMADO]',
+    source: 'Fresnel hígado / grasa (TISSUES); s ancha [ESTIMADO] (no mueve el pico de Morison, que es la cápsula renal, 4 dB más fuerte)',
   },
 };
 

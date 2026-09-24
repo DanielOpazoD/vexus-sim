@@ -675,9 +675,10 @@ void main() {
  * `uPoints` es un punto del MUNDO; se clasifica con la misma `classify` que la imagen
  * y se devuelve tejido, índice de tubo (−1 sin vaso), distancia a la interfaz, la cara de
  * interfaz que dibuja y su distancia (`iface`, `ifd`: decisión 57), la velocidad de la sangre
- * en el marco material (la misma que usa el color) y la normal unitaria de la cara que usa el
- * eco de interfaz (`faceNormal`, marco material; la e2e la compara con el gradiente de
- * `faceSdf` de TS). La tercera salida solo se lee si se pide (`queryPoints(…, { normals })`).
+ * en el marco material (la misma que usa el color) y el gradiente de la cara que usa el eco de
+ * interfaz (`faceGradient`, marco material: xyz su dirección unitaria, w su norma; la e2e los
+ * compara con el gradiente de `faceSdf` de TS). La tercera salida solo se lee si se pide
+ * (`queryPoints(…, { normals })`).
  */
 export const FRAG_QUERY = /* glsl */ `#version 300 es
 precision highp float;
@@ -695,6 +696,6 @@ void main() {
   vec3 v = c.tissue == T_BLOOD ? bloodVelocity(c) : vec3(0.0);
   o0 = vec4(float(c.tissue), float(c.vessel), c.bd, c.ifd);
   o1 = vec4(v, float(c.iface));
-  o2 = vec4(faceNormal(c, m), 0.0);
+  o2 = faceGradient(c, m);
 }
 `;

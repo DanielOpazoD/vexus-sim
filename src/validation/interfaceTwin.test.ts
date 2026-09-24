@@ -43,8 +43,12 @@ import {
  * Los tramos se llenan con escenas planas a varias inclinaciones φ (el 0–20° de una pared a φ = 0 va de
  * 0° en la línea central a ~20° en las líneas laterales); cada cifra del plan (`design-spec/final`,
  * K = 55 dB) se reproduce con estas escenas salvo Morison, que allí llevaba la curvatura del riñón y
- * producción no (C = 1 fuera de los tubos, limitación `interface-curvature-tubes-only`): 2,23 frente a
- * 2,08.
+ * producción no (C = 1 fuera de los tubos, limitación `interface-curvature-tubes-only`): con la s de la
+ * tabla del plan (0,21) daba 2,23, sobre la banda M8 [1,6; 2,2]. Su pico es la cara grasa/cápsula renal
+ * (4 dB sobre la de hígado/grasa, cuya s no lo mueve: 0,30 → 0,35 deja 2,23); con s 0,25 en la cápsula
+ * renal queda en 2,17. La VCI del gemelo (`ivc`) es circular (r 10 mm); la de la anatomía, elíptica: sus
+ * paredes AP (subxifoidea) tienen curvatura apScale/r y las laterales (flanco) 1/(apScale²·r), y en apnea
+ * (apScale 0,777) dan 1,67 y 1,52 frente a 1,62 (`ivcAp`, `ivcLateral`).
  */
 type Model = SimOpts['model'];
 interface CaseSpec {
@@ -71,6 +75,8 @@ const vessel =
   (phi: number): [number, number] =>
     phi === 0 ? [D - 16, D + 10] : [Math.max(20, D - 40), Math.min(175, D + 50)];
 const hv = (D: number) => (phi: number) => planarWall(D, phi, 0.5, BACK.wallThin, 0.35, Interface.VeinLumen, 5);
+/** apScale de la VCI del adulto normal en apnea espiratoria (`caliberFor`). */
+const IVC_AP_SCALE = 0.777;
 const CASES = {
   hv80: { scene: hv(80), phis: [0, 20, 55], seeds: [1], range: vessel(80), opt: blood },
   hv40: { scene: hv(40), phis: [0], seeds: [1], range: vessel(40), opt: blood },
@@ -78,6 +84,22 @@ const CASES = {
   hv150: { scene: hv(150), phis: [0], seeds: [1], range: vessel(150), opt: blood },
   ivc: {
     scene: (phi: number) => planarWall(80, phi, 0.8, BACK.wallThin, 0.35, Interface.IvcLumen, 10),
+    phis: [0],
+    seeds: [1, 2],
+    range: vessel(80),
+    opt: blood,
+  },
+  // la VCI elíptica de la escena en apnea (apScale 0,777, r 10): pared AP (radio de curvatura r/apScale)
+  // y lateral (apScale²·r), la curvatura local de su sección (`tubeFaceGradient`)
+  ivcAp: {
+    scene: (phi: number) => planarWall(80, phi, 0.8, BACK.wallThin, 0.35, Interface.IvcLumen, 10 / IVC_AP_SCALE),
+    phis: [0],
+    seeds: [1, 2],
+    range: vessel(80),
+    opt: blood,
+  },
+  ivcLateral: {
+    scene: (phi: number) => planarWall(80, phi, 0.8, BACK.wallThin, 0.35, Interface.IvcLumen, 10 * IVC_AP_SCALE ** 2),
     phis: [0],
     seeds: [1, 2],
     range: vessel(80),
@@ -261,7 +283,12 @@ describe('Gemelo B→C→D de los ecos de interfaz (decisión 57)', () => {
       ['hv150', 1.3],
     ] as const)
       expect(bin(R[id], 0).ratio, id).toBeGreaterThanOrEqual(min);
-    for (const id of ['hv80', 'hv40', 'hv120', 'hv150', 'ivc'] as const) expect(bin(R[id], 0).ratio, id).toBeLessThanOrEqual(2.1);
+    for (const id of ['hv80', 'hv40', 'hv120', 'hv150', 'ivc', 'ivcAp', 'ivcLateral'] as const)
+      expect(bin(R[id], 0).ratio, id).toBeLessThanOrEqual(2.1);
+    // la VCI elíptica: la pared lateral, más curva, sigue en M1; la AP, más plana, brilla algo más
+    for (const id of ['ivcAp', 'ivcLateral'] as const) expect(bin(R[id], 0).ratio, id).toBeGreaterThanOrEqual(1.45);
+    expect(bin(R.ivcAp, 0).dDb).toBeGreaterThan(bin(R.ivc, 0).dDb);
+    expect(bin(R.ivcLateral, 0).dDb).toBeLessThan(bin(R.ivc, 0).dDb - 1);
     // M2: caída con la incidencia (lóbulo de s = 0,14) hasta lo que da el moteado solo
     expect(bin(R.hv80, 0).dDb - bin(R.hv80, 40).dDb).toBeGreaterThanOrEqual(5);
     expect(bin(R.hv80, 40).ratio).toBeLessThanOrEqual(1.2);
@@ -331,9 +358,10 @@ describe('Gemelo B→C→D de los ecos de interfaz (decisión 57)', () => {
     expect(bin(R.capsule, 0).ratio).toBeLessThanOrEqual(2.1);
     expect(bin(R.capsule, 20).ratio).toBeGreaterThanOrEqual(1.3);
     expect(bin(R.capsule, 20).gapFrac).toBeLessThanOrEqual(0.2);
-    // Morison sin la curvatura del riñón (C = 1 fuera de los tubos): 2,23; el plan, con ella, 2,08
+    // Morison sin la curvatura del riñón (C = 1 fuera de los tubos) y con s 0,25 en la cápsula renal: 2,17
+    // (con 0,21, 2,23; el plan, con la curvatura, 2,08)
     expect(bin(R.morison, 0).ratio).toBeGreaterThanOrEqual(1.6);
-    expect(bin(R.morison, 0).ratio).toBeLessThanOrEqual(2.3);
+    expect(bin(R.morison, 0).ratio).toBeLessThanOrEqual(2.2);
     expect(R.morison.saturated).toBeLessThanOrEqual(0.02);
   });
 

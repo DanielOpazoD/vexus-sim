@@ -630,6 +630,42 @@ describe('Caras de interfaz en classify (decisión 57)', () => {
     expect(cls(outer).interfaceDistance).toBeCloseTo(scene.perirenalMm - dOuter(outer), 9);
   });
 
+  it('la VCI que entra en la aurícula no dibuja su cara dentro de ella; por debajo, sí', () => {
+    // el último nodo de la VCI suprahepática está a ~24 mm del centro de la aurícula (r 30): ~13 mm de tubo
+    // y su tapa quedan dentro. classify prueba los tubos antes que la aurícula, así que su pared y su luz
+    // se clasifican ahí; la cara no (antes, un eco de pared a +13–14 dB sobre el hígado en la cavidad negra)
+    const ra = scene.rightAtrium;
+    const inRa = (p: V) => Math.hypot(p[0] - ra.center[0], p[1] - ra.center[1], p[2] - ra.center[2]) < ra.r;
+    const supra = scene.vessels.find((v) => v.id === 'ivcSupra')!;
+    const last = supra.tube.nodes[supra.tube.nodes.length - 1].p;
+    const prev = supra.tube.nodes[supra.tube.nodes.length - 2].p;
+    expect(inRa(last)).toBe(true);
+    expect(inRa(prev)).toBe(false);
+    let tubeInRa = 0;
+    let tubeBelow = 0;
+    for (let x = -14; x <= 14; x += 0.5)
+      for (let y = -14; y <= 14; y += 0.5)
+        for (const f of [0.6, 0.8, 1, 1.1]) {
+          const p: V = along(prev, [last[0] - prev[0], last[1] - prev[1], last[2] - prev[2]], f);
+          p[0] += x;
+          p[1] += y;
+          const c = cls(p);
+          if (scene.faceSdf(p, BASELINE_CALIBER, 'tube') === null) continue;
+          if (inRa(p)) {
+            tubeInRa++;
+            expect(c.interface, `${p.map((v) => v.toFixed(1)).join(', ')}`).toBe(Interface.None);
+            expect(c.interfaceDistance).toBe(1e3);
+            // el tubo sigue clasificando su tejido: solo se quita la cara
+            expect([Tissue.Blood, Tissue.VesselWallThin]).toContain(c.tissue);
+          } else if (c.tissue === Tissue.Blood || c.tissue === Tissue.VesselWallThin) {
+            tubeBelow++;
+            expect(c.interface).toBe(Interface.IvcLumen);
+          }
+        }
+    expect(tubeInRa).toBeGreaterThan(200);
+    expect(tubeBelow).toBeGreaterThan(200);
+  });
+
   it('hígado, intestino, músculo y pulmón no dibujan cara (llegan en los PR 6–7)', () => {
     for (const [p, t] of [
       [[-60, 20, -10], Tissue.Liver],

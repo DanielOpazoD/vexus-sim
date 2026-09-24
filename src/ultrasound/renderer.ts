@@ -157,7 +157,8 @@ export interface FrameInputs {
 /**
  * Resultado de `queryPoints`: tejido, índice de tubo (−1 sin vaso), velocidad de la sangre (mm/s), la
  * cara de interfaz que dibuja cada punto y su distancia (`Cls.iface`, `Cls.ifd`; decisión 57) y, si se
- * pidió, la normal unitaria de esa cara que usa el eco (`faceNormal`, marco material; xyz por punto).
+ * pidió, el gradiente de esa cara que usa el eco (`faceGradient`, marco material): la normal unitaria
+ * (xyz por punto) y su norma (con la que el eco pasa `ifd` a distancia por la normal).
  */
 export interface GpuPointQuery {
   tissue: Int32Array;
@@ -166,6 +167,7 @@ export interface GpuPointQuery {
   iface: Int32Array;
   ifd: Float32Array;
   normal?: Float32Array;
+  gradNorm?: Float32Array;
 }
 
 export class UltrasoundRenderer {
@@ -845,7 +847,7 @@ export class UltrasoundRenderer {
    * Consulta síncrona de la anatomía GLSL en una lista de puntos del mundo (xyz por
    * punto). Solo para pruebas y el gate de equivalencia TS ↔ GLSL: lee de la GPU de
    * forma bloqueante, así que nunca se llama por cuadro. Con `normals`, lee además el
-   * tercer adjunto: la normal de la interfaz en cada punto (siempre se crea, para que la
+   * tercer adjunto: el gradiente de la cara en cada punto (siempre se crea, para que la
    * salida `o2` del shader tenga destino).
    */
   queryPoints(points: Float32Array, inputs: FrameInputs, allTubes = false, opts: { normals?: boolean } = {}): GpuPointQuery {
@@ -888,15 +890,19 @@ export class UltrasoundRenderer {
     const iface = new Int32Array(n);
     const ifd = new Float32Array(n);
     const normal = out2 ? new Float32Array(n * 3) : undefined;
+    const gradNorm = out2 ? new Float32Array(n) : undefined;
     for (let i = 0; i < n; i++) {
       tissue[i] = Math.round(out0[i * 4]);
       vessel[i] = Math.round(out0[i * 4 + 1]);
       ifd[i] = out0[i * 4 + 3];
       velocity.set([out1[i * 4], out1[i * 4 + 1], out1[i * 4 + 2]], i * 3);
       iface[i] = Math.round(out1[i * 4 + 3]);
-      if (normal && out2) normal.set([out2[i * 4], out2[i * 4 + 1], out2[i * 4 + 2]], i * 3);
+      if (normal && gradNorm && out2) {
+        normal.set([out2[i * 4], out2[i * 4 + 1], out2[i * 4 + 2]], i * 3);
+        gradNorm[i] = out2[i * 4 + 3];
+      }
     }
-    return normal ? { tissue, vessel, velocity, iface, ifd, normal } : { tissue, vessel, velocity, iface, ifd };
+    return normal ? { tissue, vessel, velocity, iface, ifd, normal, gradNorm } : { tissue, vessel, velocity, iface, ifd };
   }
 
   /**

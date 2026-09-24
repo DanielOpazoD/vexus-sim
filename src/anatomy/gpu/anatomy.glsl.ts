@@ -59,13 +59,14 @@ ${SCENE_UNIFORMS_GLSL}
 struct Cls {
   int tissue;
   float bd;       // distancia a la interfaz (mm)
-  vec3 n;         // normal de la interfaz
+  vec3 n;         // normal de la interfaz; en los tubos, el gradiente de su distancia SIN normalizar
   int iface;      // cara que dibuja esta muestra (Interface, decisión 57) o IF_NONE
-  float ifd;      // distancia (mm) de la muestra a esa cara, por la normal; 1e3 sin cara
+  float ifd;      // valor (mm) de la distancia de esa cara en la muestra; 1e3 sin cara. Por la normal es
+                  // ifd/|∇| (faceGradient): la VCI elíptica tiene |∇| = 1/apScale en sus paredes AP
   int vessel;     // índice de tubo o -1
   float rho;      // fracción radial
   vec3 tangent;
-  float rLoc;
+  float kc;       // curvatura circunferencial (1/mm) de la cara de un tubo (tubeQuery)
   float uRef;
   float rRef;
   float profN;
@@ -208,15 +209,17 @@ float sdRib(vec3 p, vec4 rib, out bool cartilage, out vec3 n) {
   return q * min(rib.w, rib.z);
 }
 
-// Consulta de tubo: distancia con signo, rho, tangente, radio local, normal.
-float tubeQuery(vec3 p, int t, out float rho, out vec3 tangent, out float rLoc, out vec3 n) {
+// Consulta de tubo: distancia con signo, rho, tangente, radio local, gradiente de la distancia (SIN
+// normalizar: su norma pasa ifd a distancia por la normal) y curvatura circunferencial de la cara.
+// Gemelos TS: tubeQuery y tubeFaceGradient (anatomy/primitives.ts).
+float tubeQuery(vec3 p, int t, out float rho, out vec3 tangent, out float rLoc, out vec3 n, out float kc) {
   vec4 h0 = sceneTexel(t * 4);
   int start = int(h0.x + 0.5);
   int count = int(h0.y + 0.5);
   float apScale = h0.z;
   float rs = h0.w;
   float best = 1e9;
-  rho = 10.0; tangent = vec3(0.0, 0.0, 1.0); rLoc = 1.0; n = vec3(0.0, 1.0, 0.0);
+  rho = 10.0; tangent = vec3(0.0, 0.0, 1.0); rLoc = 1.0; n = vec3(0.0, 1.0, 0.0); kc = 1.0;
   for (int i = 0; i < MAX_TUBE_SEGMENTS; i++) {
     if (i >= count - 1) break;
     vec4 a = sceneTexel(NODE_BASE + start + i);
@@ -256,7 +259,17 @@ float tubeQuery(vec3 p, int t, out float rho, out vec3 tangent, out float rLoc, 
       // dentro del segmento el radio crece con s: ∇r = rs·(b.w − a.w)/|ab| a lo largo del eje
       float taper = s > 0.0 && s < 1.0 ? rs * (b.w - a.w) * inversesqrt(len2) : 0.0;
       vec3 gn = g / max(dist, 1e-6) - tg * taper;
-      n = dist > 0.0 && dot(gn, gn) > 0.0 ? normalize(gn) : vec3(0.0, 1.0, 0.0);
+      n = dist > 0.0 && dot(gn, gn) > 0.0 ? gn : vec3(0.0, 1.0, 0.0);
+      // curvatura circunferencial de la cara: 1/r en la sección circular; en la elíptica, |S·ĉ|²/(r·|∇dist|)
+      // con ĉ normal a la cara y al eje y S = diag(1, 1/apScale, 1): apScale/r en las paredes AP y
+      // 1/(apScale²·r) en las laterales (con 1/r la pared lateral de una VCI aplanada salía 2 dB brillante)
+      kc = 1.0 / r;
+      vec3 cc = cross(g, tg);
+      float cl = length(cc);
+      if (apScale != 1.0 && dist > 0.0 && cl > 1e-6) {
+        float cy = cc.y / cl;
+        kc = (1.0 + cy * cy * (1.0 / (apScale * apScale) - 1.0)) * dist / (r * length(g));
+      }
     }
   }
   return best;
@@ -268,7 +281,7 @@ ${ORGAN_MODULES.map((o) => o.glsl).join('\n')}
 Cls classify(vec3 m) {
   Cls c;
   c.tissue = T_AIR; c.bd = 1e3; c.n = vec3(0.0, 1.0, 0.0); c.iface = IF_NONE; c.ifd = 1e3; c.vessel = -1;
-  c.rho = 10.0; c.tangent = vec3(0.0, 0.0, 1.0); c.rLoc = 1.0; c.uRef = 0.0; c.rRef = 1.0; c.profN = 2.0;
+  c.rho = 10.0; c.tangent = vec3(0.0, 0.0, 1.0); c.kc = 0.0; c.uRef = 0.0; c.rRef = 1.0; c.profN = 2.0;
   float depth = torsoDepth(m);
   if (m.z < uTorso.z || m.z > uTorso.w || depth > 0.0) return c;
   float skin = uWall.x;
@@ -306,18 +319,21 @@ Cls classify(vec3 m) {
     float dCurtain = lungCurtainDistance(m, -depth - wall);
     if (dCurtain >= 0.0) { c.tissue = T_LUNG; c.bd = dCurtain; c.n = torsoNormal(m); return c; }
   }
-  int bestT = -1; float bestD = 1e9; float bRho; vec3 bTan; float bR; vec3 bN;
+  int bestT = -1; float bestD = 1e9; float bRho; vec3 bTan; float bR; vec3 bN; float bKc;
   for (int t = 0; t < MAX_TUBES; t++) {
     if (t >= uTubeCount) break;
     vec4 bs = sceneTexel(t * 4 + 3);
     if (distance(m, bs.xyz) > bs.w) continue;
-    float rho; vec3 tg; float rl; vec3 nn;
-    float sd = tubeQuery(m, t, rho, tg, rl, nn);
+    float rho; vec3 tg; float rl; vec3 nn; float kk;
+    float sd = tubeQuery(m, t, rho, tg, rl, nn, kk);
     vec4 hw = sceneTexel(t * 4 + 1);
     // pared periportal proporcional al calibre local (misma fórmula que wallThicknessMm)
     float wallMm = int(hw.y + 0.5) == T_WALL_PORTAL ? clamp(0.24 * rl, 0.5, 1.4) : hw.x;
-    if (sd < wallMm && sd < bestD) { bestD = sd; bestT = t; bRho = rho; bTan = tg; bR = rl; bN = nn; }
+    if (sd < wallMm && sd < bestD) { bestD = sd; bestT = t; bRho = rho; bTan = tg; bR = rl; bN = nn; bKc = kk; }
   }
+  // la aurícula derecha se mide antes que los tubos: dentro de ella no hay cara de tubo
+  vec3 sn;
+  float dRa = sdSphere(m, uRA, sn);
   if (bestT >= 0) {
     vec4 h1 = sceneTexel(bestT * 4 + 1);
     vec4 h2 = sceneTexel(bestT * 4 + 2);
@@ -325,17 +341,17 @@ Cls classify(vec3 m) {
     int lumenT = int(h1.z + 0.5);
     int iface = int(h1.w + 0.5);
     bool duct = iface == IF_DUCT;
-    c.n = bN; c.rho = bRho; c.tangent = bTan; c.rLoc = bR;
+    c.n = bN; c.rho = bRho; c.tangent = bTan; c.kc = bKc;
     c.uRef = h2.x; c.rRef = h2.y; c.profN = h2.z;
-    // la cara de la luz: la pared y la luz (sangre o bilis) conocen la misma, a |bestD|
-    c.iface = iface; c.ifd = abs(bestD);
+    // la cara de la luz: la pared y la luz (sangre o bilis) conocen la misma, a |bestD|; dentro de la
+    // aurícula no hay pared que dibujar (el tramo de la VCI que entra en ella, con su tapa)
+    bool inRa = dRa < 0.0;
+    c.iface = inRa ? IF_NONE : iface; c.ifd = inRa ? 1e3 : abs(bestD);
     if (bestD < 0.0) { c.tissue = lumenT; c.bd = -bestD; c.vessel = duct ? -1 : int(h2.w + 0.5); return c; }
     float wallBest = wallT == T_WALL_PORTAL ? clamp(0.24 * bR, 0.5, 1.4) : h1.x;
     c.tissue = wallT; c.bd = min(bestD, wallBest - bestD); return c;
   }
-  // Aurícula derecha
-  vec3 sn;
-  float dRa = sdSphere(m, uRA, sn);
+  // Aurícula derecha (dRa, antes de los tubos)
   if (dRa < 0.0) { c.tissue = T_BLOOD; c.bd = -dRa; c.n = sn; return c; }
   // Tórax y diafragma
   vec3 dn;
@@ -436,26 +452,46 @@ vec3 kidneyOuterGradient(vec3 m) {
   return uKidU[k] * g.x + uKidV[k] * g.y + uKidW[k] * g.z;
 }
 
-// Normal de la cara de interfaz de una muestra (decisión 57): la de classify, salvo en la cápsula
-// hepática y el contorno renal. Allí c.n es la de una de las superficies que funde liverSdf o la del
-// elipsoide sin escotadura hiliar (e2e de normales del PR 5a: p05 de 0,45 en la impresión renal,
-// p01 de 0,61 junto al hilio), y la normal pasa a ser el gradiente, por diferencias centrales de
-// FACE_GRAD_EPS mm (las del banco), de la misma distancia que decide la clasificación. Cuesta 6–8
-// evaluaciones: la pasada B solo la pide en las muestras al alcance de su cara.
-vec3 faceNormal(Cls c, vec3 m) {
+// Distancias de la cúpula y de la vesícula sin su normal (el gradiente numérico de faceGradient)
+float domeSd(vec3 m) { vec3 n; return sdDome(m, n); }
+float gallbladderSd(vec3 m) { vec3 n; return gallbladderSdf(m, n); }
+
+// Gradiente de la distancia de la cara que dibuja una muestra (decisión 57): xyz es su dirección, la
+// normal de la cara, y w su norma, que pasa ifd (el valor de esa distancia) a distancia por la normal,
+// ifd/w. En los tubos, el gradiente analítico de tubeQuery (c.n sin normalizar: 1/apScale en las paredes
+// AP de la VCI). En la cápsula hepática, el contorno renal, el diafragma y la vesícula, diferencias
+// centrales de FACE_GRAD_EPS mm (las del banco) de la misma distancia que decide la clasificación: allí
+// c.n es la de una de las superficies que funde liverSdf, la del elipsoide sin escotadura hiliar (e2e de
+// normales del PR 5a: p05 de 0,45 en la impresión renal, p01 de 0,61 junto al hilio) o la de la altura
+// de la cúpula, y la norma de la distancia se aparta de 1 en las fusiones, junto al hilio y lejos de la
+// pleura. Cuesta 6–8 evaluaciones: la pasada B solo lo pide en las muestras al alcance de su cara.
+// Gemelo TS: AnatomyScene.faceGradient.
+vec4 faceGradient(Cls c, vec3 m) {
+  vec2 h = vec2(FACE_GRAD_EPS, 0.0);
+  vec3 g;
   if (c.tissue == T_CAPSULE) {
-    vec2 h = vec2(FACE_GRAD_EPS, 0.0);
-    vec3 g = vec3(liverInner(m + h.xyy) - liverInner(m - h.xyy),
-                  liverInner(m + h.yxy) - liverInner(m - h.yxy),
-                  liverInner(m + h.yyx) - liverInner(m - h.yyx));
-    return dot(g, g) > 0.0 ? normalize(g) : c.n;
+    g = vec3(liverInner(m + h.xyy) - liverInner(m - h.xyy),
+             liverInner(m + h.yxy) - liverInner(m - h.yxy),
+             liverInner(m + h.yyx) - liverInner(m - h.yyx));
+  } else if (c.tissue == T_RENAL_CAPSULE || c.tissue == T_PERIRENAL) {
+    g = kidneyOuterGradient(m);
+  } else if (c.tissue == T_DIAPHRAGM) {
+    g = vec3(domeSd(m + h.xyy) - domeSd(m - h.xyy),
+             domeSd(m + h.yxy) - domeSd(m - h.yxy),
+             domeSd(m + h.yyx) - domeSd(m - h.yyx));
+  } else if (c.iface == IF_GALLBLADDER) {
+    g = vec3(gallbladderSd(m + h.xyy) - gallbladderSd(m - h.xyy),
+             gallbladderSd(m + h.yxy) - gallbladderSd(m - h.yxy),
+             gallbladderSd(m + h.yyx) - gallbladderSd(m - h.yyx));
+  } else {
+    // tubos (gradiente sin normalizar) y tejidos sin cara (normal unitaria)
+    float l = length(c.n);
+    return l > 0.0 ? vec4(c.n / l, l) : vec4(0.0, 1.0, 0.0, 1.0);
   }
-  if (c.tissue == T_RENAL_CAPSULE || c.tissue == T_PERIRENAL) {
-    vec3 g = kidneyOuterGradient(m);
-    return dot(g, g) > 0.0 ? normalize(g) : c.n;
-  }
-  float l = length(c.n);
-  return l > 0.0 ? c.n / l : vec3(0.0, 1.0, 0.0);
+  float lg = length(g);
+  if (lg > 0.0) return vec4(g / lg, lg / (2.0 * FACE_GRAD_EPS));
+  float ln = length(c.n);
+  return ln > 0.0 ? vec4(c.n / ln, 1.0) : vec4(0.0, 1.0, 0.0, 1.0);
 }
 
 // Velocidad de la sangre (mm/s, marco material) para una clasificación de sangre.

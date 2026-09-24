@@ -9,6 +9,7 @@ import {
   sdSphere,
   smoothMax,
   torsoDepth,
+  tubeFaceGradient,
   tubeQuery,
   type Spine,
   type Diaphragm,
@@ -47,7 +48,7 @@ import { lungCurtainDistance } from './organs/lungCurtain';
 
 export type { DuctDef, VesselDef } from './vesselTree';
 import { BOWEL_BD_CAP_MM, DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, Tissue } from './tissues';
-import { Interface, MORISON_CONTACT_MM, interfaceOfVessel } from './interfaces';
+import { FACE_GRADIENT_EPS_MM, Interface, LAST_TUBE_INTERFACE, MORISON_CONTACT_MM, interfaceOfVessel } from './interfaces';
 
 /**
  * Escena anatómica del avatar adulto de referencia (guía §9): pared abdominal
@@ -76,7 +77,11 @@ export interface Classification {
    * en `Cls.iface`. `Interface.None` si el punto no es dueño de ninguna.
    */
   interface: Interface;
-  /** Distancia (mm) del punto a esa cara, por la normal (`Cls.ifd`); 1e3 sin cara. */
+  /**
+   * Valor (mm) de la distancia de esa cara en el punto (`Cls.ifd`; |`faceSdf`| de su geometría); 1e3 sin
+   * cara. No siempre es euclídea: la distancia por la normal es, a primer orden, este valor dividido por
+   * la norma de su gradiente (`faceGradient`; 1/apScale en las paredes AP de la VCI elíptica).
+   */
   interfaceDistance: number;
   vessel: VesselId | null;
   vesselHit: TubeHit | null;
@@ -96,8 +101,36 @@ export interface Classification {
 export type FaceGeometry = 'tube' | 'liverSurface' | 'dome' | 'kidneyOuter' | 'gallbladder';
 export const FACE_GEOMETRIES: readonly FaceGeometry[] = ['tube', 'liverSurface', 'dome', 'kidneyOuter', 'gallbladder'];
 
-/** Resultado de la búsqueda de tubos de `classify`. */
-type BestTube = { kind: 'vessel'; def: VesselDef; hit: TubeHit } | { kind: 'duct'; def: DuctDef; hit: TubeHit };
+/** Geometría cuya distancia (`faceSdf`) da la cara de interfaz `i`, o null sin cara (o la pleura, del espejo). */
+export function faceGeometryOf(i: Interface): FaceGeometry | null {
+  if (i === Interface.None || i === Interface.Pleura) return null;
+  if (i <= LAST_TUBE_INTERFACE) return 'tube';
+  if (i === Interface.GallbladderLumen) return 'gallbladder';
+  if (i === Interface.LiverCapsule) return 'liverSurface';
+  if (i === Interface.DiaphragmLiver) return 'dome';
+  return 'kidneyOuter';
+}
+
+/**
+ * Gradiente de la distancia de la cara que dibuja un punto (`AnatomyScene.faceGradient`, gemelo de
+ * `faceGradient` en la GLSL; decisión 57).
+ */
+export interface FaceGradient {
+  /** Dirección del gradiente: la normal de la cara que usa el eco. */
+  normal: Vec3;
+  /**
+   * Norma del gradiente: `interfaceDistance` es el valor de la distancia de la cara, y
+   * `interfaceDistance / norm` es, a primer orden, la distancia por la normal (la VCI elíptica: 1/apScale
+   * en sus paredes AP; las fusiones suaves de la cápsula: < 1).
+   */
+  norm: number;
+  /** Curvatura circunferencial de la cara de un tubo (1/mm, `tubeFaceGradient`); 0 en el resto. */
+  curvature: number;
+}
+
+/** Resultado de la búsqueda de tubos de `classify`, con el tubo y la escala de radio con que se consultó. */
+type TubeFound = { hit: TubeHit; tube: Tube; scale: number };
+type BestTube = ({ kind: 'vessel'; def: VesselDef } & TubeFound) | ({ kind: 'duct'; def: DuctDef } & TubeFound);
 
 /** Esfera envolvente de un tubo (para descartes rápidos en CPU y GPU). */
 export function tubeBoundingSphere(t: Tube, marginMm: number): { center: Vec3; r: number } {
@@ -325,9 +358,11 @@ export class AnatomyScene {
     if (wall.final) return wall.cls;
     const curtain = this.classifyLungCurtain(m, -depth - wall.wallMm, caliber.diaphragmCaudalMm);
     if (curtain) return curtain;
-    const tube = this.classifyTubes(m, caliber);
-    if (tube) return tube;
     const dRa = sdSphere(m, this.rightAtrium);
+    const tube = this.classifyTubes(m, caliber);
+    // dentro de la aurícula no hay pared que dibujar: el tramo de la VCI que entra en ella (con su tapa)
+    // no tiene cara (antes daba un eco de pared brillante dentro de la cavidad negra)
+    if (tube) return dRa < 0 ? { ...tube, interface: Interface.None, interfaceDistance: NONE.interfaceDistance } : tube;
     if (dRa < 0) return { ...NONE, tissue: Tissue.Blood, boundaryDistance: -dRa };
     const dDome = sdDiaphragm(m, this.diaphragm, this.torso);
     if (dDome < 0) return { ...NONE, tissue: Tissue.Lung, boundaryDistance: -dDome };
@@ -421,6 +456,39 @@ export class AnatomyScene {
   }
 
   /**
+   * Gradiente de la distancia de la cara que dibuja un punto MATERIAL (gemelo de `faceGradient` en la
+   * GLSL, decisión 57), o null si el punto no dibuja ninguna. En los tubos es el analítico de su sección
+   * (`tubeFaceGradient`, con su curvatura circunferencial); en el resto, diferencias centrales de paso
+   * `FACE_GRADIENT_EPS_MM` de la distancia de su cara (`faceSdf`), como la GPU. El eco de interfaz
+   * divide `interfaceDistance` por su norma: así el perfil, muestreado a lo largo del rayo, integra 1
+   * aunque la distancia de la cara no sea euclídea (la VCI elíptica, las fusiones suaves del hígado, la
+   * escotadura renal, la cúpula lejos de la pleura). `face` fuerza la geometría (la GPU la elige por
+   * tejido, también donde no hay cara: la e2e de normales). Solo pruebas: la clasificación no la llama.
+   */
+  faceGradient(m: Vec3, caliber: VesselCaliber, face = faceGeometryOf(this.classify(m, caliber).interface)): FaceGradient | null {
+    if (face === null) return null;
+    if (face === 'tube') {
+      const best = this.bestTube(m, caliber);
+      if (!best) return null;
+      const { gradient, curvature } = tubeFaceGradient(m, best.tube, best.scale, best.hit);
+      const norm = Math.hypot(gradient[0], gradient[1], gradient[2]);
+      return { normal: [gradient[0] / norm, gradient[1] / norm, gradient[2] / norm], norm, curvature };
+    }
+    const h = FACE_GRADIENT_EPS_MM;
+    const g: Vec3 = [0, 0, 0];
+    for (let a = 0; a < 3; a++) {
+      const plus: Vec3 = [m[0], m[1], m[2]];
+      const minus: Vec3 = [m[0], m[1], m[2]];
+      plus[a] += h;
+      minus[a] -= h;
+      g[a] = this.faceSdf(plus, caliber, face)! - this.faceSdf(minus, caliber, face)!;
+    }
+    const l = Math.hypot(g[0], g[1], g[2]);
+    if (l === 0) return { normal: [0, 1, 0], norm: 1, curvature: 0 };
+    return { normal: [g[0] / l, g[1] / l, g[2] / l], norm: l / (2 * h), curvature: 0 };
+  }
+
+  /**
    * Capas parietales y costillas. `final` = el punto está en piel, grasa,
    * costilla/cartílago, músculo o columna (no hay nada más que mirar); si no,
    * devuelve el espesor total de la pared para recortar el hígado.
@@ -460,23 +528,24 @@ export class AnatomyScene {
    * `classifyTubes` y la cara `tube` de `faceSdf` (la misma que recorre `classify` en GLSL).
    */
   private bestTube(m: Vec3, caliber: VesselCaliber): BestTube | null {
-    let bestVessel: { def: VesselDef; hit: TubeHit } | null = null;
-    let bestDuct: { def: DuctDef; hit: TubeHit } | null = null;
+    let bestVessel: ({ def: VesselDef } & TubeFound) | null = null;
+    let bestDuct: ({ def: DuctDef } & TubeFound) | null = null;
     for (let i = 0; i < this.vessels.length; i++) {
       const b = this.tubeBounds[i];
       if (Math.hypot(m[0] - b.center[0], m[1] - b.center[1], m[2] - b.center[2]) > b.r) continue;
       const def = this.vessels[i];
       const scale = caliber.radiusScale(def.id);
       const apScale = VESSEL_META[def.id].system === 'ivc' ? caliber.ivcApScale : def.tube.apScale;
-      const hit = tubeQuery(m, apScale === def.tube.apScale ? def.tube : { ...def.tube, apScale }, scale);
-      if (hit.d < wallThicknessMm(def, hit.r) && (!bestVessel || hit.d < bestVessel.hit.d)) bestVessel = { def, hit };
+      const tube = apScale === def.tube.apScale ? def.tube : { ...def.tube, apScale };
+      const hit = tubeQuery(m, tube, scale);
+      if (hit.d < wallThicknessMm(def, hit.r) && (!bestVessel || hit.d < bestVessel.hit.d)) bestVessel = { def, hit, tube, scale };
     }
     for (let i = 0; i < this.ducts.length; i++) {
       const b = this.tubeBounds[this.vessels.length + i];
       if (Math.hypot(m[0] - b.center[0], m[1] - b.center[1], m[2] - b.center[2]) > b.r) continue;
       const def = this.ducts[i];
       const hit = tubeQuery(m, def.tube, 1);
-      if (hit.d < def.wallMm && (!bestDuct || hit.d < bestDuct.hit.d)) bestDuct = { def, hit };
+      if (hit.d < def.wallMm && (!bestDuct || hit.d < bestDuct.hit.d)) bestDuct = { def, hit, tube: def.tube, scale: 1 };
     }
     if (bestDuct && (!bestVessel || bestDuct.hit.d < bestVessel.hit.d)) return { kind: 'duct', ...bestDuct };
     return bestVessel ? { kind: 'vessel', ...bestVessel } : null;

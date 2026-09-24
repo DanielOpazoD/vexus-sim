@@ -1079,31 +1079,43 @@ espejo): a = A_i·Λ(θ; s)·χ(θ; σz)·C·g(δ'), con
   Λ(0; s_ref) = 1 (s_ref 0,14, la de la VSH); χ = exp(−2(k0·σz·cosθ)²), rugosidad fina de Ament;
 - C = [(1 + (2k0σl²κl)²)(1 + (2k0σe²κe)²)]^(−1/4), coherencia de curvatura de un haz gaussiano de dos
   vías sobre la dirección circunferencial del tubo (σl de `lateralSigmaMm`, compartida con D en
-  `LATERAL_PSF_GLSL`; σe = elevSigma/√2); solo tubos, C = 1 en el resto;
-- g, gaussiana de integral unidad de σh 0,14 mm en δ = ifd/cosθ, con alcance ±3,5σh; en las caras que
-  solo conoce un lado se desplaza 2,5σh dentro del dueño (mismo rizado y nivel que las de dos lados).
-  Muestreada como el moteado, tras C el cociente eco/moteado no depende de dr.
+  `LATERAL_PSF_GLSL`; σe = elevSigma/√2), con la curvatura local de su sección (`Cls.kc`: 1/r en un tubo
+  circular; en la VCI elíptica, apScale/r en las paredes AP y 1/(apScale²·r) en las laterales); solo
+  tubos, C = 1 en el resto;
+- g, gaussiana de integral unidad de σh 0,14 mm en δ = ifd/(|∇|·cosθ), con alcance ±3,5σh; en las caras
+  que solo conoce un lado se desplaza 2,5σh dentro del dueño (mismo rizado y nivel que las de dos lados).
+  ifd es el valor de la distancia de la cara, que no siempre es euclídea, y |∇| la norma de su gradiente
+  (`faceGradient`): así dδ/dr = 1 a lo largo del rayo y g integra 1 (sin |∇| integraba 1/|∇|: la pared
+  AP de la VCI, con |∇| = 1/apScale, perdía 2,2 dB en apnea y 6 dB a apScale 0,5). Muestreada como el
+  moteado, tras C el cociente eco/moteado no depende de dr.
 
 Una cara por estructura y sin signo (`Classification.interface` y `interfaceDistance` en TS,
 `Cls.iface` y `Cls.ifd` en GLSL, con la cara de la luz en H1.w de la textura de escena): la luz de cada
 sistema (VSH, VCI, porta, arteria, conducto biliar, vesícula; la conocen pared y luz), la cápsula
 hepática (salvo junto al diafragma, cuya cara es de él, o a ≤ 0,2 mm de la grasa perirrenal, cuya cara
 es de ella: Morison), la mitad abdominal del diafragma, la cápsula renal (cápsula y mitad interna de la
-grasa) y la cara externa de la grasa perirrenal. Sin cara pared/hígado ni cápsula renal/corteza. La
-normal de la VCI es el gradiente de su sección elíptica (con el afilamiento del radio) y la cápsula
-hepática y el contorno renal usan el gradiente numérico de su distancia (`faceNormal`, paso 0,02 mm),
-solo en las muestras al alcance de su cara. El espejo de A0 se coloca en el cruce exacto con una
+grasa) y la cara externa de la grasa perirrenal. Sin cara pared/hígado ni cápsula renal/corteza, ni
+cara de tubo dentro de la aurícula derecha (el tramo de la VCI que entra en ella, con su tapa, se
+clasifica antes que la aurícula pero no dibuja cara). El gradiente de la cara (`faceGradient`: normal y
+norma) es el analítico de la sección elíptica en los tubos (con el afilamiento del radio; `Cls.n` sin
+normalizar, gemelo `tubeFaceGradient`) y el numérico de su distancia en la cápsula hepática, el contorno
+renal, el diafragma y la vesícula (paso 0,02 mm, gemelo `AnatomyScene.faceGradient`), solo en las
+muestras al alcance de su cara: la salida barata descarta ifd > alcance·|∇| en los tubos y ifd >
+alcance·1,5 (`IFACE_GRADIENT_MAX`) en el resto. El espejo de A0 se coloca en el cruce exacto con una
 bisección de 6 pasos (≤ 0,009 mm, `mirrorCrossing`); A2 lo publica desde la fila que contiene r_m menos
 el alcance del eco, la pasada B refleja solo r > r_m y la pleura (σz 0,09 mm, su parte coherente a
 −28,7 dB) se dibuja desde ese punto, una vez por línea, con el coseno de la reflexión. La pasada B deja
 de declarar la atenuación y las banderas por tejido, que no lee: 125 ranuras de uniforms (antes 165).
 **Consecuencias.** En el gemelo B→C→D (K = 55 dB, cociente pico/hígado a 0–20°, antes → después): VSH
-1,14 → 1,51 (40, 120 y 150 mm: 1,50, 1,49 y 1,40), VCI 1,16 → 1,62, porta 1,42 → 1,62/1,45/1,40 en los
-tres tramos, cápsula 1,17 → 1,78, diafragma 1,29 → 2,16 sin costura (antes en el 66 % de las líneas) y
-Morison 1,42 → 2,23. La VSH cae a lo que da el moteado solo fuera de ±20° (12,2 → 3,5 dB), la porta
-no. Huecos a 0–20°: 0,79 → 0,08 en la VSH y 0 en VCI, cápsula, diafragma y Morison; rosario 0,19–0,21.
-Morison sale 1,5 dB por encima del diseño (2,08) porque allí el riñón llevaba su curvatura elevacional
-y aquí C = 1 fuera de los tubos. Coste estimado (sin medir): ≤ 0,15 ms por cuadro. Pendiente con GPU
+1,14 → 1,51 (40, 120 y 150 mm: 1,50, 1,49 y 1,40), VCI 1,16 → 1,62 (circular; la elíptica en apnea da
+1,67 en su pared AP y 1,52 en la lateral), porta 1,42 → 1,62/1,45/1,40 en los tres tramos, cápsula
+1,17 → 1,78, diafragma 1,29 → 2,16 sin costura (antes en el 66 % de las líneas) y Morison 1,42 → 2,17.
+La VSH cae a lo que da el moteado solo fuera de ±20° (12,2 → 3,5 dB), la porta no. Huecos a 0–20°:
+0,79 → 0,08 en la VSH y 0 en VCI, cápsula, diafragma y Morison; rosario 0,19–0,21. Sin la curvatura
+elevacional del riñón (C = 1 fuera de los tubos) Morison daba 2,23 con s 0,21 en la cápsula renal,
+sobre la banda del plan [1,6; 2,2] (el diseño, con la curvatura, 2,08): su pico es la cara grasa/cápsula
+renal, 4 dB sobre la de hígado/grasa, así que la palanca del riesgo 4 del plan es su s (0,21 → 0,25) y no
+la de la grasa (0,30 → 0,35 no lo mueve). Coste estimado (sin medir): ≤ 0,15 ms por cuadro. Pendiente con GPU
 real (`npm run fidelity -- --sweep`, misma máquina y carga): calibrar K dentro de [53; 57] con VCI y
 VSH, y comprobar los umbrales de `docs/fidelity/README.md` en los tramos que el barrido llena (VCI
 0–20° en el flanco, VSH 20–40° y 40–60°, porta 20–40° en la subxifoidea, cápsula 0–20° en subxifoidea,
@@ -1113,11 +1125,16 @@ diafragma a 0–20° no se llenan).
 perfil de integral unidad, línea 1D con el moteado del repositorio y el pulso de C, uniforms y GLSL),
 `interfaceTwin.test.ts` (lento: β ± 0,3 dB, deriva de β 0,21 dB y rizado 0,35/0,69 dB, tendencia con la
 profundidad frente a haces gaussianos coherentes, M1–M9 y `it.fails` con la regla de antes, que no
-cumple M1, M4 ni M7), `anatomy.test.ts` (la cara y su distancia en puntos conocidos),
-`equivalenceSweep.test.ts` y la e2e de equivalencia (cara y distancia en el volumen y en la cáscara a
-0,01–0,6 mm de cada cara, ≥ 0,999), `transmission.test.ts` y `fidelityScene.test.ts` (espejo exacto:
-suelo del desfase < 0,01 mm; el de antes, ~1 mm), `faceNormals.test.ts` (la normal de la VCI portada) y
-la e2e de normales (p01 ≥ 0,98 en la cápsula, el riñón entero y la VCI), `shaderLimits.test.ts` (≤ 171
+cumple M1, M4 ni M7), `anatomy.test.ts` (la cara y su distancia en puntos conocidos; ninguna cara de
+tubo dentro de la aurícula), `faceGradient.test.ts` (el perfil suma 1 ± 0,1 dB en las paredes AP y
+lateral de una VCI elíptica a 0–20° y apScale 0,5–1, y en la de la escena; la regla sin |∇| da
+20·log10(apScale); `tubeFaceGradient` es el gradiente de la distancia del tubo y su curvatura la de la
+sección; la salida barata no descarta muestras al alcance de su cara), `equivalenceSweep.test.ts` y la
+e2e de equivalencia (cara y distancia en el volumen y en la cáscara a 0,01–0,6 mm de cada cara, que
+también mira las celdas de un tubo sin cara, ≥ 0,999), `transmission.test.ts` y `fidelityScene.test.ts`
+(espejo exacto: suelo del desfase < 0,01 mm; el de antes, ~1 mm), `faceNormals.test.ts` (el gradiente
+de la VCI con su gemelo TS, en dirección y norma) y la e2e de normales (p01 ≥ 0,98 en la cápsula, el
+riñón entero y la VCI; norma con p95 ≤ 0,01), `shaderLimits.test.ts` (≤ 171
 ranuras en la pasada B, `uIface[12]` con el tamaño interpolado de `INTERFACE_COUNT`) y la e2e del banco (paredes ≥ 1,30 y
 cápsula ≥ 1,40 donde hay ≥ 10 registros, costura ≤ 0,02, desfase del espejo ≤ 0,05 mm, caras sin
 saturar). Todas las unitarias nuevas fallan en `main`.

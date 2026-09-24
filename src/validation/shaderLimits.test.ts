@@ -5,7 +5,7 @@ import { TISSUE_COUNT } from '../anatomy/tissues';
 import { CASES } from '../cases';
 import { ANATOMY_GLSL, MAX_NODES, MAX_TUBES, MAX_TUBE_SEGMENTS } from '../anatomy/gpu/anatomy.glsl';
 import * as PASSES from '../ultrasound/shaders/passes.glsl';
-import { FRAG_RAWFIELD, FRAG_TRANSMISSION } from '../ultrasound/shaders/passes.glsl';
+import { FRAG_RAWFIELD, FRAG_TRANSMISSION, TISSUE_VEC4 } from '../ultrasound/shaders/passes.glsl';
 
 /**
  * Ranuras vec4 de uniforms que declara un shader (cota superior del empaquetado de GLSL ES 3.0):
@@ -29,6 +29,9 @@ function uniformSlots(src: string): { slots: number; arrays: string[] } {
   return { slots, arrays };
 }
 
+/** Los shaders de fragmentos que exporta `passes.glsl.ts` (sus otras exportaciones no son shaders). */
+const FRAGMENT_SHADERS = Object.entries(PASSES).filter((e): e is [string, string] => e[0].startsWith('FRAG_') && typeof e[1] === 'string');
+
 /** Mínimo de MAX_FRAGMENT_UNIFORM_VECTORS en WebGL2; la guarda deja un 20 % de margen. */
 const WEBGL2_MIN_FRAGMENT_VECTORS = 224;
 const SLOT_GUARD = Math.floor(0.8 * WEBGL2_MIN_FRAGMENT_VECTORS);
@@ -51,8 +54,9 @@ describe('Límites del shader con margen para crecer', () => {
   }
 
   it('los tamaños compartidos TS ↔ GLSL salen de las constantes, no de literales', () => {
-    expect(FRAG_TRANSMISSION).toContain(`uTissueAlpha[${TISSUE_COUNT}]`);
-    expect(FRAG_TRANSMISSION).toContain(`uTissueFlag[${TISSUE_COUNT}]`);
+    expect(TISSUE_VEC4).toBe(Math.ceil(TISSUE_COUNT / 4));
+    expect(FRAG_TRANSMISSION).toContain(`uTissueAlpha4[${TISSUE_VEC4}]`);
+    expect(FRAG_TRANSMISSION).toContain(`uTissueFlag4[${TISSUE_VEC4}]`);
     expect(ANATOMY_GLSL).toContain(`#define MAX_TUBE_SEGMENTS ${MAX_TUBE_SEGMENTS}`);
     expect(ANATOMY_GLSL).not.toMatch(/i & 255/);
     // cada tejido tiene su #define en GLSL
@@ -61,32 +65,42 @@ describe('Límites del shader con margen para crecer', () => {
 
   // Las constantes de TS entran en el GLSL interpoladas (`${...}`); un identificador suelto como
   // TISSUE_COUNT no existe en el shader y no compila (le pasó a `uTissueClump4`).
-  it('ningún shader usa TISSUE_COUNT ni INTERFACE_COUNT como identificador suelto', () => {
-    const code = FRAG_RAWFIELD.replace(/\/\/.*$/gm, '');
-    expect(code).not.toMatch(/\bTISSUE_COUNT\b|\bINTERFACE_COUNT\b/);
-    expect(FRAG_RAWFIELD).toContain(`uTissueClump4[${Math.ceil(TISSUE_COUNT / 4)}]`);
+  it('ningún shader usa TISSUE_COUNT, TISSUE_VEC4 ni INTERFACE_COUNT como identificador suelto', () => {
+    for (const [name, src] of FRAGMENT_SHADERS) {
+      const code = src.replace(/\/\/.*$/gm, '');
+      expect(code, name).not.toMatch(/\bTISSUE_COUNT\b|\bTISSUE_VEC4\b|\bINTERFACE_COUNT\b/);
+      // y ninguno indexa una tabla por tejido que no declara (el nombre viejo tras empaquetarla no compila)
+      const declared = new Set([...code.matchAll(/\buniform\s+\w+\s+(uTissue\w+)/g)].map((m) => m[1]));
+      for (const m of code.matchAll(/\b(uTissue\w+)\s*\[/g)) expect(declared.has(m[1]), `${name} usa ${m[1]} sin declararlo`).toBe(true);
+    }
+    expect(FRAG_RAWFIELD).toContain(`uTissueClump4[${TISSUE_VEC4}]`);
     expect(FRAG_RAWFIELD).toContain(`uIface[${INTERFACE_COUNT}]`);
   });
 
   // Un shader con más uniforms de los que admite la GPU no compila en ella (o, peor, en unas sí y en
-  // otras no): cada shader de fragmentos cabe con margen en el mínimo de WebGL2 (224 vec4). Hoy COLOR
-  // declara 156 ranuras, QUERY 145 y la pasada B 125: con el eco de interfaz (decisión 57, +15) dejó de
-  // declarar la atenuación y las banderas por tejido, que no lee (−54; antes 165).
+  // otras no): cada shader de fragmentos cabe con margen en el mínimo de WebGL2 (224 vec4). Las tablas
+  // por tejido van de 4 en 4 por vec4 (TISSUE_VEC4 ranuras cada una, no TISSUE_COUNT): COLOR declara 96
+  // ranuras (antes 156), QUERY 85 (antes 145) y la pasada B 105 (antes 125; 165 antes de que el eco de
+  // interfaz, decisión 57, le quitara la atenuación y las banderas, que no lee).
   it(`cada shader de fragmentos declara ≤ ${SLOT_GUARD} ranuras vec4 de uniforms (80 % de 224)`, () => {
-    const shaders = Object.entries(PASSES).filter(([name, src]) => name.startsWith('FRAG_') && typeof src === 'string');
-    expect(shaders.length).toBeGreaterThan(8);
-    for (const [name, src] of shaders) {
+    expect(FRAGMENT_SHADERS.length).toBeGreaterThan(8);
+    for (const [name, src] of FRAGMENT_SHADERS) {
       const { slots, arrays } = uniformSlots(src);
       expect(slots, `${name}: ${slots} ranuras (${arrays.join(' ')})`).toBeLessThanOrEqual(SLOT_GUARD);
+      // ninguna tabla por tejido vuelve a gastar una ranura por tejido
+      const perTissue = arrays.filter((a) => a.endsWith(`[${TISSUE_COUNT}]`));
+      expect(perTissue, `${name} declara una tabla de un float por tejido`).toEqual([]);
     }
-    // la pasada B cuenta sus arrays de tejidos, de caras y de escena, y deja ≥ 8 ranuras de margen
+    // la pasada B cuenta sus arrays de tejidos, de caras y de escena: 105 medidas, con sitio para la
+    // composición espacial (~+5) y la THI (~+14) sin pasar de 130
     const raw = uniformSlots(FRAG_RAWFIELD);
-    expect(raw.arrays).toContain(`uTissueBack[${TISSUE_COUNT}]`);
+    expect(raw.arrays).toContain(`uTissueBack4[${TISSUE_VEC4}]`);
+    expect(raw.arrays).toContain(`uTissueClump4[${TISSUE_VEC4}]`);
     expect(raw.arrays).toContain(`uIface[${INTERFACE_COUNT}]`);
-    expect(raw.arrays).not.toContain(`uTissueAlpha[${TISSUE_COUNT}]`);
-    expect(raw.arrays).not.toContain(`uTissueFlag[${TISSUE_COUNT}]`);
-    expect(raw.slots).toBeGreaterThan(100);
-    expect(raw.slots).toBeLessThanOrEqual(SLOT_GUARD - 8);
+    expect(raw.arrays).not.toContain(`uTissueAlpha4[${TISSUE_VEC4}]`);
+    expect(raw.arrays).not.toContain(`uTissueFlag4[${TISSUE_VEC4}]`);
+    expect(raw.slots).toBeGreaterThan(90);
+    expect(raw.slots).toBeLessThanOrEqual(130);
   });
 
   it('el recuento de ranuras sigue las reglas de empaquetado y no adivina tamaños', () => {

@@ -5,6 +5,7 @@ import { APERTURE_GLSL } from '../aperture';
 import { IFACE_REACH_MM, INTERFACE_ECHO_GLSL } from '../interfaceEcho';
 import { MIRROR_BISECTION_STEPS } from '../transmission';
 import { SPECKLE_TISSUE_GLSL } from '../speckleField';
+import { RECEIVER_GLSL } from '../receiver';
 
 export const VERT = /* glsl */ `#version 300 es
 precision highp float;
@@ -34,18 +35,28 @@ vec3 lineDir(float theta) { return normalize(uAxial * cos(theta) + uLateral * si
 vec3 pointOnLine(vec3 dir, float r) { return uCurvC + dir * (uCurvR + r); }
 `;
 
+/**
+ * vec4 de una tabla por tejido empaquetada de 4 en 4 (patrón de `uTissueClump4`): una ranura de uniforms
+ * por cada 4 tejidos y no una por tejido. El renderer sube `4·TISSUE_VEC4` floats (los de relleno, a 0).
+ */
+export const TISSUE_VEC4 = Math.ceil(TISSUE_COUNT / 4);
+
 /** Retrodispersión por tejido: la única tabla por tejido que lee la pasada B. */
-const TISSUE_BACK_GLSL = /* glsl */ `uniform float uTissueBack[${TISSUE_COUNT}];  // amplitud de retrodispersión`;
+const TISSUE_BACK_GLSL = /* glsl */ `
+uniform vec4 uTissueBack4[${TISSUE_VEC4}]; // amplitud de retrodispersión, de 4 en 4
+float tissueBack(int t) { return uTissueBack4[t / 4][t % 4]; }
+`;
 
 /**
- * Geometría del haz y tablas por tejido (tamaño = TISSUE_COUNT, nunca a mano). La pasada B no declara
- * atenuación ni banderas (no las lee): 54 ranuras de uniforms libres para el eco de interfaz.
+ * Geometría del haz y tablas por tejido (tamaño desde TISSUE_COUNT, nunca a mano; de 4 en 4 por vec4:
+ * 21 ranuras en lugar de 81). La pasada B no declara atenuación ni banderas (no las lee).
  */
 const BEAM_GLSL = /* glsl */ `${BEAM_GEOMETRY_GLSL}
-uniform float uTissueAlpha[${TISSUE_COUNT}]; // dB/cm a la frecuencia B
-${TISSUE_BACK_GLSL}
-uniform float uTissueFlag[${TISSUE_COUNT}];  // 1 gas, 2 hueso
-`;
+uniform vec4 uTissueAlpha4[${TISSUE_VEC4}]; // dB/cm a la frecuencia B, de 4 en 4
+uniform vec4 uTissueFlag4[${TISSUE_VEC4}];  // 1 gas, 2 hueso, de 4 en 4
+float tissueAlpha(int t) { return uTissueAlpha4[t / 4][t % 4]; }
+float tissueFlag(int t) { return uTissueFlag4[t / 4][t % 4]; }
+${TISSUE_BACK_GLSL}`;
 
 /**
  * PSF lateral de dos vías por número F (`ultrasound/beamModel.ts`: misma fórmula). La comparten la
@@ -107,7 +118,7 @@ void main() {
     // Hueco entre la cara convexa y la piel: gel de acoplamiento (el acoplamiento va aparte).
     if (c.tissue == T_AIR && !entered) continue;
     entered = true;
-    float flag = uTissueFlag[c.tissue];
+    float flag = tissueFlag(c.tissue);
     if (flag > 0.5 && flag < 1.5) {
       if (c.tissue == T_LUNG && mirrorSeg < 0.0) {
         // Cruce exacto con la pleura (decisión 57): bisección entre la muestra gruesa anterior (que no es
@@ -160,11 +171,11 @@ void main() {
   bool reflected = h0.x >= 0.0 && float(s) > h0.x;
   vec3 p = reflected ? origin + dir0 * h1.w + h1.xyz * (r - h1.w) : origin + dir0 * r;
   Cls c = classify(toMaterial(p));
-  float flag = uTissueFlag[c.tissue];
+  float flag = tissueFlag(c.tissue);
   float db;
   if (float(s) == h0.x) db = 0.5;                                  // el espejo: 0,5 dB y sigue
   else if (flag > 0.5 && flag < 1.5) db = 60.0 * step / 10.0;      // gas (o aire tras la piel)
-  else db = 2.0 * uTissueAlpha[c.tissue] * (step / 10.0);
+  else db = 2.0 * tissueAlpha(c.tissue) * (step / 10.0);
   oSeg = vec4(db, c.tissue == T_AIR ? 1.0 : 0.0, flag > 1.5 ? 1.0 : 0.0, 0.0);
 }
 `;
@@ -266,7 +277,8 @@ uniform vec3 uAnchorP1;
 uniform vec2 uAnchorSalt;
 uniform float uAnchorW;
 // Grumos de dispersores por tejido (decisión 56), de 4 en 4 para no gastar una ranura por tejido
-uniform vec4 uTissueClump4[${Math.ceil(TISSUE_COUNT / 4)}];
+uniform vec4 uTissueClump4[${TISSUE_VEC4}];
+${RECEIVER_GLSL}
 in vec2 vUv;
 out vec2 oField;
 
@@ -309,7 +321,7 @@ vec2 fieldFor(vec3 m, float se, int tissue) {
   // Heterogeneidad lenta y continua del parénquima (desviación 1,15 dB a ~1,6 ciclos/cm) [EXTRAPOLACIÓN PROPIA]
   float het = 1.0;
   if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX) het = hetGain(m);
-  return f * uTissueBack[tissue] * het;
+  return f * tissueBack(tissue) * het;
 }
 
 // Plano lateral en elevación: si el plano central está lejos de toda interfaz
@@ -383,8 +395,12 @@ void main() {
       out2 += tail;
     }
   }
-  // Campo cercano: transitorio del transductor, anclado a la sonda (línea, r), no al tejido.
-  out2 += scattererField(vec3(vUv.x * 190.0, r * 3.0, 1.0), 0.8, uSeed + 7.0) * 0.35 * exp(-r / 4.0) * coupling;
+  // Campo cercano: transitorio del transductor, anclado a la sonda (línea, r), no al tejido. Desde
+  // TRANSIENT_SKIP_MM (receiver.ts) su escala es ≤ ruido/10 aquí, antes de la PSF (tras C y D, ≈ ruido/7
+  // con 60 mm de profundidad), y no se calcula: un campo de dispersores menos por muestra en casi toda la
+  // profundidad.
+  if (r < TRANSIENT_SKIP_MM)
+    out2 += scattererField(vec3(vUv.x * 190.0, r * 3.0, 1.0), 0.8, uSeed + 7.0) * TRANSIENT_AMPLITUDE * exp(-r / TRANSIENT_DECAY_MM) * coupling;
   // Ruido del receptor: gaussiano complejo blanco añadido ANTES de la PSF (queda
   // limitado en banda por la respuesta de recepción) y antes de la detección.
   float n1 = hash12b(vUv * 977.0 + uFrame * 1.7);

@@ -88,11 +88,21 @@ function compile(gl: WebGL2RenderingContext, type: number, src: string, name: st
   return s;
 }
 
+/** Formato de una textura de color de un destino (los argumentos de `createTexture`). */
+export interface TargetFormat {
+  internal: number;
+  format: number;
+  type: number;
+  filter: number;
+}
+
 export interface RenderTarget {
   fbo: WebGLFramebuffer;
   textures: WebGLTexture[];
   width: number;
   height: number;
+  /** Formato de cada adjunto de color, en orden (para crear otro destino igual). */
+  formats: readonly TargetFormat[];
 }
 
 export function createTexture(
@@ -121,12 +131,7 @@ export function deleteTarget(gl: WebGL2RenderingContext, t: RenderTarget): void 
   for (const tex of t.textures) gl.deleteTexture(tex);
 }
 
-export function createTarget(
-  gl: WebGL2RenderingContext,
-  width: number,
-  height: number,
-  formats: Array<{ internal: number; format: number; type: number; filter: number }>,
-): RenderTarget {
+export function createTarget(gl: WebGL2RenderingContext, width: number, height: number, formats: readonly TargetFormat[]): RenderTarget {
   const fbo = gl.createFramebuffer();
   if (!fbo) throw new Error('createFramebuffer');
   gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
@@ -142,7 +147,7 @@ export function createTarget(
   const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
   if (status !== gl.FRAMEBUFFER_COMPLETE) throw new Error(`FBO incompleto: 0x${status.toString(16)}`);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  return { fbo, textures, width, height };
+  return { fbo, textures, width, height, formats: [...formats] };
 }
 
 export function bindTarget(gl: WebGL2RenderingContext, t: RenderTarget | null, w?: number, h?: number): void {

@@ -1,6 +1,7 @@
 /**
- * Banco de fidelidad del modo B (decisión 52): mide la textura de la envolvente, la imagen mostrada
- * y los cuadros por segundo en 2 casos × 4 puntos de partida, con GPU real, y escribe la línea base.
+ * Banco de fidelidad del modo B (decisión 52): mide la textura de la envolvente, la imagen mostrada,
+ * los cuadros por segundo y el coste del cuadro sin color y con color (`msPerFrame`, `msPerFrameColor`)
+ * en 2 casos × 4 puntos de partida, con GPU real, y escribe la línea base.
  *
  *   npm run fidelity                       # contra el servidor de desarrollo (puerto 6600)
  *   npm run fidelity -- --url http://localhost:6609 --out /tmp/fidelity.json
@@ -59,7 +60,10 @@ const results: Record<
   string,
   {
     fps: number | null;
+    /** Coste del cuadro (ms, tiempo de pared) con la caja de color apagada. */
     msPerFrame: number;
+    /** Ídem con la caja de color encendida y la pasada de color en cada cuadro (`forceColor`). */
+    msPerFrameColor: number;
     stats: Omit<FidelityStats, 'faceSamples'>;
     sweep?: FaceSummary;
     /** Tramos vigilados por el PR 5b sin 10 registros o sin rosario (del barrido, o de la pose de partida). */
@@ -109,7 +113,8 @@ try {
         Number(/(\d+) fps/.exec(document.querySelector('#status')?.textContent ?? '')?.[1] ?? Number.NaN),
       );
       const { faceSamples, ...stats } = await page.evaluate((samples) => window.__vexusTest!.fidelity({ display: true, samples }), SWEEP);
-      const msPerFrame = await page.evaluate(() => window.__vexusTest!.frameCostMs(20));
+      // las dos medidas del coste, en la pose de partida: el barrido deja la sonda basculada o inclinada
+      const msPerFrame = await page.evaluate((id) => window.__vexusTest!.frameCostMs(20, { startPoint: id }), view);
       let sweep: FaceSummary | undefined;
       if (SWEEP) {
         const poses = [faceSamples ?? []];
@@ -122,11 +127,14 @@ try {
         }
         sweep = summarizeFaces(poses);
       }
+      // con color al final: la caja encendida deja color en la persistencia que las poses leerían
+      const msPerFrameColor = await page.evaluate((id) => window.__vexusTest!.frameCostMs(20, { forceColor: true, startPoint: id }), view);
       const faces = sweep ?? stats.display;
       const escasos = faces ? thinGatedBins(faces) : [];
       results[`${cs}/${view}`] = {
         fps: Number.isFinite(fps) ? fps : null,
         msPerFrame,
+        msPerFrameColor,
         stats,
         ...(sweep ? { sweep } : {}),
         escasos,
@@ -137,7 +145,7 @@ try {
       const d = stats.display;
       console.log(
         `${cs}/${view}`.padEnd(32),
-        `cps ${fps} · ${msPerFrame.toFixed(1)} ms`.padEnd(18),
+        `cps ${fps} · ${msPerFrame.toFixed(1)} ms · color ${msPerFrameColor.toFixed(1)} ms`.padEnd(32),
         `SNR ${e.snr.toFixed(2)} · grano ${e.fwhmAxialMm.toFixed(2)}×${e.fwhmLateralMm.toFixed(2)} mm · oscuros ${e.darkFraction.toFixed(3)} · grietas ${e.crackIndex.toFixed(3)}`,
         d
           ? `· hígado ${d.liver.p50} (${d.liver.sd.toFixed(1)}) · sombra ${Number.isFinite(d.shadow.coreDbBelowLiver) ? d.shadow.coreDbBelowLiver.toFixed(0) : '—'} dB [${d.shadow.edgeProfileDb.map((x) => (Number.isFinite(x) ? x.toFixed(0) : '·')).join(' ')}] · luz ${d.lumen.p50} · diafragma ${Number.isFinite(d.diaphragmSaturated) ? (100 * d.diaphragmSaturated).toFixed(1) : '—'} % · ${d.profile.slopeDbPerCm.toFixed(2)} dB/cm · pared ${d.walls

@@ -30,6 +30,7 @@ import {
   type BModeSettings,
   type ColorSettings,
   type GpuPointQuery,
+  type PassRepeat,
 } from '../ultrasound/renderer';
 
 /** Ajustes del Doppler pulsado (guía §9, §16). */
@@ -69,6 +70,18 @@ export interface EquipmentSettings {
   bmode: BModeSettings;
   color: ColorSettings;
   pw: PwSettings;
+}
+
+/**
+ * Opciones de medida de `Simulator.render`, solo para los ganchos de prueba y el banco (la aplicación
+ * llama a `render()` sin ellas, así que su comportamiento no cambia):
+ *  - `forceColor`: dibuja el cuadro entero con la pasada de color aunque la cadencia física del color
+ *    (decisión 39) lo saltaría. Exige la caja encendida: sin ella no hay pasada que forzar.
+ *  - `repeat`: repite el dibujo de una pasada dentro del cuadro (`PassRepeat`).
+ */
+export interface RenderMeasureOptions {
+  forceColor?: boolean;
+  repeat?: PassRepeat;
 }
 
 /** Límites del equipo (deslizadores y atajos comparten estos valores). */
@@ -263,29 +276,34 @@ export class Simulator {
     );
   }
 
-  /** Dibuja un cuadro con el estado actual. */
-  render(): void {
+  /** Dibuja un cuadro con el estado actual; `measure` solo lo pasan los ganchos de medida. */
+  render(measure?: RenderMeasureOptions): void {
     if (this.frozen) return;
     const s = this.sample;
     const t = this.physiology.clock.t;
     // Con color, la imagen entera (B + color) se refresca a la cadencia que permite
     // la caja: cada cuadro de color cuesta líneas × ensemble disparos a la PRF.
     const colorPeriod = this.color.enabled ? 1 / this.colorTiming.frameHz : 0;
-    const updateColor = t - this.lastColorUpdate >= colorPeriod;
+    const forceColor = measure?.forceColor === true;
+    if (forceColor && !this.color.enabled) throw new Error('render({ forceColor }) exige la caja de color encendida');
+    const updateColor = forceColor || t - this.lastColorUpdate >= colorPeriod;
     if (this.color.enabled && !updateColor) return;
     if (updateColor) this.lastColorUpdate = t;
-    this.renderer.render({
-      sample: s,
-      frame: this.lastFrame,
-      pose: this.pose,
-      transducer: this.transducer,
-      caliber: this.anatomy.caliberFor(s),
-      probeVelocity: this.probeVel,
-      bmode: this.bmode,
-      color: this.color,
-      updateColor,
-      seed: this.patient.seed,
-    });
+    this.renderer.render(
+      {
+        sample: s,
+        frame: this.lastFrame,
+        pose: this.pose,
+        transducer: this.transducer,
+        caliber: this.anatomy.caliberFor(s),
+        probeVelocity: this.probeVel,
+        bmode: this.bmode,
+        color: this.color,
+        updateColor,
+        seed: this.patient.seed,
+      },
+      measure?.repeat,
+    );
   }
 
   /**

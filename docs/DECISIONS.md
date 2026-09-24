@@ -833,6 +833,43 @@ queda para el moteado por tejido.
 reproduce el 0,62 anterior); la e2e del banco exige hígado 85–120 de gris con desviación < 19 y luz
 < 30; banco completo antes y después en `docs/fidelity/`.
 
+## 54. Transmisión en cuatro etapas, hueso clínico y penumbra de la apertura
+
+**Contexto.** Tras el preajuste (decisión 53), las sombras eran lo siguiente que delataba la imagen:
+columnas negras de techo plano con el grano del tejido dentro y bordes de un solo escalón. Tres
+causas: (1) el hueso usaba la atenuación de IT'IS para cortical pura (4,7 dB/cm/MHz): tras una
+costilla quedaban ~20–25 dB y, con 70 dB de rango, el hígado de detrás seguía visible (banco: núcleo
+de la sombra 20–21 dB bajo el hígado); (2) un solo rayo por línea: una costilla somera tapa en
+realidad solo parte del cono de la apertura, de modo que la sombra tiene penumbra y se rellena en
+profundidad; (3) la pasada A remarchaba el rayo entero para cada profundidad de salida (O(N²),
+~2,5 millones de clasificaciones por cuadro) y la textura se leía con filtrado lineal, que mezclaba
+entre líneas profundidades de impacto con «sin impacto» (−1). Una revisión externa del código llegó a
+lo mismo: separar pérdida local e integración para liberar presupuesto para subrayos.
+**Opciones.** Subrayos reales por celda (K veces el coste de hoy); desenfocar la sombra en pantalla
+(cosmético, §23); dejar el hueso de IT'IS y oscurecer con la ganancia.
+**Decisión.**
+
+- Pasada A en cuatro etapas: A0 impactos por línea (una marcha: espejo, primer gas, primer hueso),
+  A1 un segmento por celda sobre el camino de A0, A2 suma acumulada con las reglas de
+  `ultrasound/transmission.ts` y A apertura. ~60 000 clasificaciones por cuadro.
+- Apertura (`ultrasound/aperture.ts`, gemelos TS y GLSL): si un gas o hueso por encima de r corta el
+  cono (D·(1 − r₀/r) a su profundidad r₀), la transmisión de ida es la media de 9 líneas del cono,
+  de emisión (26 mm) y de recepción (dinámica, F# 2,5); la de ida y vuelta, su producto.
+- Hueso: 20 dB/cm/MHz efectivos (cortical + esponjosa; tablas clínicas 13–26, Bushberg).
+- La salida de A lleva además la transmisión de un solo rayo, que usan el color y el PW: comparten
+  así exactamente el modelo de la CPU (decisión 50). Diferencia deliberada, como el espejo: la
+  penumbra de la apertura es del haz de imagen.
+- La pasada B lee impactos y dirección con `texelFetch` (sin interpolar).
+  **Consecuencias.** Las sombras nacen bajo el hueso, son completas junto a él y se rellenan en
+  profundidad con bordes en rampa; siguen al mover la sonda. Los vasos tras una costilla quedan sin
+  señal PW (realista). El cuadro entero cuesta 4,6–7,3 ms en vez de 12,9–16,3 (M4, misma carga).
+  El banco de fidelidad excluye la penumbra de su hígado puro. Cifras antes y después en
+  `docs/fidelity/README.md`.
+  **Verificación.** e2e: la transmisión de un solo rayo de la GPU coincide con `rayAttenuationDb` en
+  los mismos puntos (≤ 0,0001 dB con GPU real en cuatro ventanas; exige < 0,01); `aperture.test.ts`:
+  sin obstáculo, un rayo; bajo una costilla sintética, sombra completa cerca y rellena en profundidad;
+  borde en rampa monótona de ≥ 5 líneas; `passGraph.test.ts` con las cuatro etapas.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

@@ -3,7 +3,9 @@ import type { EquipmentCommand } from './equipment';
 import { equivalenceSweep, volumeEquivalence, type EquivalencePoseReport, type VolumeEquivalenceReport } from './equivalenceSweep';
 import { bestGateOnVessel } from './gatePlacement';
 import { acousticWindowWeight, gateTransmission } from './gateTransmission';
-import { lineCoupling } from '../probe/probe';
+import { lineCoupling, pointOnLine } from '../probe/probe';
+import type { Tissue } from '../anatomy/tissues';
+import { rayAttenuationDb } from '../ultrasound/transmission';
 import { fidelityStats, type FidelityStats } from './fidelity';
 import { speckleStats, type SpeckleOptions, type SpeckleStats } from './speckle';
 import type { Simulator } from './simulator';
@@ -30,6 +32,17 @@ export interface TestHooks {
    * CPU ~1–3 s).
    */
   fidelity: (opts?: { startPoint?: StartPoint['id']; display?: boolean; frames?: number }) => FidelityStats;
+  /**
+   * Coste medio de `n` cuadros de imagen en tiempo de pared (ms), sincronizado con la GPU al
+   * principio y al final: compara versiones del renderizador en la misma máquina.
+   */
+  frameCostMs: (n: number) => number;
+  /**
+   * Paridad de la pasada A (un solo rayo) con el modelo de CPU `rayAttenuationDb` en los mismos
+   * puntos de muestra, cada `every` líneas y en todas las profundidades gruesas; se saltan las líneas
+   * con espejo (la CPU no sigue el rayo reflejado) y las transmisiones por debajo de −60 dB.
+   */
+  transmissionParity: (opts?: { startPoint?: StartPoint['id']; every?: number }) => { lines: number; samples: number; maxDiffDb: number };
   /**
    * Centra la caja de color sobre uno de los vasos (colocación del operador), avanza lo justo para
    * que toque un cuadro de color y devuelve las celdas con potencia visible; null si no ve el vaso.
@@ -77,7 +90,45 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       const frames = opts?.display ? Math.max(1, opts.frames ?? settle) : 1;
       for (let i = 0; i < frames; i++) sim.render();
       const img = opts?.display ? sim.renderer.readDisplay() : null;
-      return fidelityStats(sim, sim.renderer.readEnvelope(), img, { colorOn: sim.color.enabled });
+      const transmission = sim.renderer.readTransmission();
+      return fidelityStats(sim, sim.renderer.readEnvelope(), img, { colorOn: sim.color.enabled, transmission });
+    },
+    frameCostMs: (n) => {
+      const sim = getSim();
+      sim.render();
+      sim.renderer.finishForTiming();
+      const t0 = performance.now();
+      for (let i = 0; i < n; i++) sim.render();
+      sim.renderer.finishForTiming();
+      return (performance.now() - t0) / n;
+    },
+    transmissionParity: (opts) => {
+      const sim = getSim();
+      if (opts?.startPoint) goTo(sim, opts.startPoint);
+      sim.render();
+      const gpu = sim.renderer.readTransmission();
+      const tr = sim.transducer;
+      const depth = sim.bmode.depthMm;
+      const step = depth / gpu.samples;
+      const every = Math.max(1, opts?.every ?? 8);
+      let lines = 0;
+      let samples = 0;
+      let maxDiffDb = 0;
+      for (let u = 0; u < gpu.lines; u += every) {
+        if (gpu.mirrorHit[(gpu.samples - 1) * gpu.lines + u] >= 0) continue;
+        const theta = -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / gpu.lines;
+        const tissues: Tissue[] = [];
+        lines++;
+        for (let k = 0; k < gpu.samples; k++) {
+          tissues.push(sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, theta, (k + 0.5) * step), sim.sample).tissue);
+          const cpuDb = rayAttenuationDb(tissues, step, sim.profile.bEffectiveMHz);
+          const gpuDb = -20 * Math.log10(Math.max(gpu.single[k * gpu.lines + u], 1e-12));
+          if (cpuDb > 60 && gpuDb > 60) continue;
+          samples++;
+          maxDiffDb = Math.max(maxDiffDb, Math.abs(cpuDb - gpuDb));
+        }
+      }
+      return { lines, samples, maxDiffDb };
     },
     colorOnVessel: (vessels) => {
       const sim = getSim();

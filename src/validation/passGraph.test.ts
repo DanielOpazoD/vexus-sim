@@ -5,10 +5,11 @@ import { FRAME_PASSES, passGraphErrors, type PassSpec } from '../ultrasound/pass
 describe('grafo de pasadas del renderer', () => {
   it('la tabla del renderer es un grafo válido: A → B → C → D → (F) → G → persistencia → pantalla', () => {
     expect(passGraphErrors(FRAME_PASSES)).toEqual([]);
-    expect(FRAME_PASSES.map((p) => p.label).join('')).toBe('ABCDFGPS');
+    expect(FRAME_PASSES.map((p) => p.label).join(' ')).toBe('A0 A1 A2 A B C D F G P S');
   });
 
   const without = (id: string) => FRAME_PASSES.filter((p) => p.id !== id);
+  const at = (id: string) => FRAME_PASSES.findIndex((p) => p.id === id);
   const swap = (a: number, b: number) => {
     const out = [...FRAME_PASSES];
     [out[a], out[b]] = [out[b], out[a]];
@@ -17,7 +18,11 @@ describe('grafo de pasadas del renderer', () => {
 
   it('detecta una pasada que lee antes de que exista su entrada', () => {
     // la convolución axial antes del campo crudo
-    expect(passGraphErrors(swap(1, 2)).join('\n')).toMatch(/axial lee «raw»/);
+    expect(passGraphErrors(swap(at('rawField'), at('axial'))).join('\n')).toMatch(/axial lee «raw»/);
+    // la suma acumulada de la transmisión antes de sus segmentos
+    expect(passGraphErrors(swap(at('transmissionSegments'), at('transmissionPrefix'))).join('\n')).toMatch(
+      /transmissionPrefix lee «transSeg»/,
+    );
     // sin la lateral, nadie escribe la envolvente que convierte G
     expect(passGraphErrors(without('lateral')).join('\n')).toMatch(/scanConvert lee «env»/);
   });

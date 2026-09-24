@@ -1,13 +1,14 @@
 {
- "commit": "afd08b9",
- "arbolSrc": "4de3821c187986e8763f43ab7f41fd308ac260b9",
- "srcSinCommit": false,
- "fecha": "2026-09-23",
+ "commit": "a1d22af",
+ "arbolSrc": "8ca44b441d6df0c1251647c68ffa91aba0a586da",
+ "srcSinCommit": true,
+ "fecha": "2026-09-24",
  "gpu": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
  "url": "http://localhost:6600",
  "escenas": {
   "normal-adult/subxiphoid": {
-   "fps": 48,
+   "fps": 60,
+   "msPerFrame": 5.81,
    "stats": {
     "envelope": {
      "patches": 29,
@@ -18,7 +19,7 @@
      "secondaryLobeAxial": 0.056,
      "secondaryLobeLateral": 0.056,
      "darkFraction": 0.065,
-     "crackIndex": 0.083
+     "crackIndex": 0.089
     },
     "bands": [
      {
@@ -40,10 +41,10 @@
       "depthMm": 77.746,
       "snr": 1.888,
       "fwhmAxialMm": 0.698,
-      "fwhmLateralMm": 1.481,
+      "fwhmLateralMm": 1.48,
       "secondaryLobeAxial": 0.052,
-      "secondaryLobeLateral": 0.053,
-      "darkFraction": 0.068,
+      "secondaryLobeLateral": 0.052,
+      "darkFraction": 0.067,
       "crackIndex": 0.07,
       "r0": 60,
       "r1": 100,
@@ -80,36 +81,52 @@
     ],
     "display": {
      "liver": {
-      "pixels": 62993,
-      "mean": 99.442,
-      "sd": 15.666,
+      "pixels": 63401,
+      "mean": 99.437,
+      "sd": 15.673,
       "p05": 73,
       "p50": 100,
       "p95": 124,
       "darkFraction": 0.002
      },
      "lumen": {
-      "pixels": 19879,
-      "mean": 11.256,
-      "sd": 10.687,
+      "pixels": 18001,
+      "mean": 11.64,
+      "sd": 11.327,
       "p05": 1,
       "p50": 9,
-      "p95": 26,
-      "darkFraction": 0.28
+      "p95": 29,
+      "darkFraction": 0.275
      },
      "diaphragmSaturated": 0,
+     "shadow": {
+      "coreLines": 0,
+      "coreDbBelowLiver": null,
+      "coreGray": null,
+      "edgeProfileDb": [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ]
+     },
      "profile": {
       "bands": [
        {
         "r0": 20,
         "r1": 30,
-        "db": -30.247,
+        "db": -30.246,
         "pixels": 1382
        },
        {
         "r0": 30,
         "r1": 40,
-        "db": -29.987,
+        "db": -29.986,
         "pixels": 5779
        },
        {
@@ -127,38 +144,38 @@
        {
         "r0": 60,
         "r1": 70,
-        "db": -30.166,
+        "db": -30.168,
         "pixels": 9340
        },
        {
         "r0": 70,
         "r1": 80,
-        "db": -30.617,
+        "db": -30.621,
         "pixels": 10267
        },
        {
         "r0": 80,
         "r1": 90,
-        "db": -30.223,
+        "db": -30.221,
         "pixels": 9022
        },
        {
         "r0": 90,
         "r1": 100,
-        "db": -29.894,
+        "db": -29.883,
         "pixels": 6494
        },
        {
         "r0": 100,
         "r1": 110,
-        "db": -30.109,
-        "pixels": 4089
+        "db": -30.146,
+        "pixels": 4321
        },
        {
         "r0": 110,
         "r1": 120,
-        "db": -29.328,
-        "pixels": 1311
+        "db": -29.412,
+        "pixels": 1487
        }
       ],
       "slopeDbPerCm": -0.011
@@ -167,16 +184,16 @@
       {
        "fromDeg": 0,
        "toDeg": 20,
-       "walls": 1,
-       "ratio": 1.258,
-       "deltaDb": 6.39
+       "walls": 0,
+       "ratio": null,
+       "deltaDb": null
       },
       {
        "fromDeg": 20,
        "toDeg": 40,
        "walls": 90,
-       "ratio": 1.104,
-       "deltaDb": 2.693
+       "ratio": 1.113,
+       "deltaDb": 2.841
       },
       {
        "fromDeg": 40,
@@ -193,57 +210,58 @@
   },
   "normal-adult/intercostal": {
    "fps": 60,
+   "msPerFrame": 5.15,
    "stats": {
     "envelope": {
-     "patches": 18,
-     "depthMm": 85.313,
-     "snr": 1.926,
-     "fwhmAxialMm": 0.696,
-     "fwhmLateralMm": 1.838,
-     "secondaryLobeAxial": 0.035,
-     "secondaryLobeLateral": 0.064,
-     "darkFraction": 0.068,
-     "crackIndex": 0.071
+     "patches": 12,
+     "depthMm": 87.891,
+     "snr": 1.903,
+     "fwhmAxialMm": 0.723,
+     "fwhmLateralMm": 1.981,
+     "secondaryLobeAxial": 0.052,
+     "secondaryLobeLateral": 0.052,
+     "darkFraction": 0.07,
+     "crackIndex": 0.109
     },
     "bands": [
      {
-      "patches": 7,
-      "depthMm": 50.022,
-      "snr": 1.86,
-      "fwhmAxialMm": 0.694,
-      "fwhmLateralMm": 1.564,
-      "secondaryLobeAxial": 0.039,
-      "secondaryLobeLateral": 0.124,
-      "darkFraction": 0.07,
-      "crackIndex": 0.064,
+      "patches": 5,
+      "depthMm": 49.781,
+      "snr": 1.866,
+      "fwhmAxialMm": 0.697,
+      "fwhmLateralMm": 1.495,
+      "secondaryLobeAxial": 0.064,
+      "secondaryLobeLateral": 0.137,
+      "darkFraction": 0.068,
+      "crackIndex": 0.046,
       "r0": 20,
       "r1": 60,
-      "beamFwhmMm": 1.419
+      "beamFwhmMm": 1.42
      },
      {
-      "patches": 3,
-      "depthMm": 80.156,
-      "snr": 2,
-      "fwhmAxialMm": 0.671,
-      "fwhmLateralMm": 1.295,
-      "secondaryLobeAxial": 0.08,
-      "secondaryLobeLateral": 0.03,
-      "darkFraction": 0.063,
-      "crackIndex": 0.021,
+      "patches": 0,
+      "depthMm": null,
+      "snr": null,
+      "fwhmAxialMm": null,
+      "fwhmLateralMm": null,
+      "secondaryLobeAxial": null,
+      "secondaryLobeLateral": null,
+      "darkFraction": null,
+      "crackIndex": null,
       "r0": 60,
       "r1": 100,
-      "beamFwhmMm": 1.572
+      "beamFwhmMm": 1.573
      },
      {
       "patches": 3,
       "depthMm": 119.531,
-      "snr": 1.877,
-      "fwhmAxialMm": 0.758,
-      "fwhmLateralMm": 2.651,
-      "secondaryLobeAxial": 0.081,
-      "secondaryLobeLateral": 0.086,
+      "snr": 1.892,
+      "fwhmAxialMm": 0.748,
+      "fwhmLateralMm": 2.702,
+      "secondaryLobeAxial": 0.065,
+      "secondaryLobeLateral": 0.085,
       "darkFraction": 0.076,
-      "crackIndex": 0.046,
+      "crackIndex": 0.114,
       "r0": 100,
       "r1": 140,
       "beamFwhmMm": 2.519
@@ -251,10 +269,10 @@
      {
       "patches": 1,
       "depthMm": 147.656,
-      "snr": 1.79,
-      "fwhmAxialMm": 0.895,
-      "fwhmLateralMm": 3.26,
-      "secondaryLobeAxial": 0.38,
+      "snr": 1.791,
+      "fwhmAxialMm": 0.89,
+      "fwhmLateralMm": 3.277,
+      "secondaryLobeAxial": 0.378,
       "secondaryLobeLateral": 0,
       "darkFraction": 0.081,
       "crackIndex": 0,
@@ -265,106 +283,122 @@
     ],
     "display": {
      "liver": {
-      "pixels": 38339,
-      "mean": 98.615,
-      "sd": 16.082,
-      "p05": 71,
-      "p50": 99,
-      "p95": 124,
-      "darkFraction": 0.002
+      "pixels": 31502,
+      "mean": 99.85,
+      "sd": 16.168,
+      "p05": 72,
+      "p50": 100,
+      "p95": 125,
+      "darkFraction": 0.001
      },
      "lumen": {
-      "pixels": 2806,
-      "mean": 28.116,
-      "sd": 25.603,
+      "pixels": 2697,
+      "mean": 25.33,
+      "sd": 24.807,
       "p05": 0,
-      "p50": 20,
-      "p95": 72,
-      "darkFraction": 0.454
+      "p50": 15,
+      "p95": 70,
+      "darkFraction": 0.469
      },
      "diaphragmSaturated": 0,
+     "shadow": {
+      "coreLines": 0,
+      "coreDbBelowLiver": null,
+      "coreGray": null,
+      "edgeProfileDb": [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ]
+     },
      "profile": {
       "bands": [
        {
         "r0": 30,
         "r1": 40,
-        "db": -30.21,
-        "pixels": 3202
+        "db": -30.241,
+        "pixels": 3171
        },
        {
         "r0": 40,
         "r1": 50,
-        "db": -29.511,
-        "pixels": 5971
+        "db": -29.508,
+        "pixels": 5882
        },
        {
         "r0": 50,
         "r1": 60,
-        "db": -30.117,
-        "pixels": 5983
+        "db": -30.059,
+        "pixels": 5642
        },
        {
         "r0": 60,
         "r1": 70,
-        "db": -30.662,
-        "pixels": 4526
+        "db": -30.588,
+        "pixels": 3629
        },
        {
         "r0": 70,
         "r1": 80,
-        "db": -29.782,
-        "pixels": 3185
+        "db": -29.363,
+        "pixels": 2077
        },
        {
         "r0": 80,
         "r1": 90,
-        "db": -30.412,
-        "pixels": 2777
+        "db": -30.023,
+        "pixels": 1540
        },
        {
         "r0": 90,
         "r1": 100,
-        "db": -30.341,
-        "pixels": 2839
+        "db": -29.964,
+        "pixels": 1438
        },
        {
         "r0": 100,
         "r1": 110,
-        "db": -32.01,
-        "pixels": 1688
+        "db": -31.555,
+        "pixels": 1466
        },
        {
         "r0": 110,
         "r1": 120,
-        "db": -31.054,
-        "pixels": 1755
+        "db": -30.085,
+        "pixels": 1531
        },
        {
         "r0": 120,
         "r1": 130,
-        "db": -30.764,
-        "pixels": 1845
+        "db": -29.77,
+        "pixels": 1487
        },
        {
         "r0": 130,
         "r1": 140,
-        "db": -31.292,
-        "pixels": 1926
+        "db": -30.31,
+        "pixels": 1554
        },
        {
         "r0": 140,
         "r1": 150,
-        "db": -30.711,
-        "pixels": 2053
+        "db": -29.807,
+        "pixels": 1602
        },
        {
         "r0": 150,
         "r1": 160,
-        "db": -31.567,
-        "pixels": 589
+        "db": -30.089,
+        "pixels": 483
        }
       ],
-      "slopeDbPerCm": -0.129
+      "slopeDbPerCm": -0.025
      },
      "walls": [
       {
@@ -378,15 +412,15 @@
        "fromDeg": 20,
        "toDeg": 40,
        "walls": 24,
-       "ratio": 1.158,
-       "deltaDb": 4.097
+       "ratio": 1.133,
+       "deltaDb": 3.507
       },
       {
        "fromDeg": 40,
        "toDeg": 60,
-       "walls": 30,
-       "ratio": 1.129,
-       "deltaDb": 3.356
+       "walls": 29,
+       "ratio": 1.111,
+       "deltaDb": 2.99
       }
      ],
      "colorOn": false
@@ -395,7 +429,8 @@
    "errors": []
   },
   "normal-adult/flank": {
-   "fps": 49,
+   "fps": 60,
+   "msPerFrame": 7.345,
    "stats": {
     "envelope": {
      "patches": 0,
@@ -468,116 +503,96 @@
     ],
     "display": {
      "liver": {
-      "pixels": 25247,
-      "mean": 101.204,
-      "sd": 15.769,
-      "p05": 74,
-      "p50": 102,
+      "pixels": 4157,
+      "mean": 102.488,
+      "sd": 15.502,
+      "p05": 75,
+      "p50": 104,
       "p95": 126,
-      "darkFraction": 0.001
+      "darkFraction": 0.002
      },
      "lumen": {
-      "pixels": 28091,
-      "mean": 34.316,
-      "sd": 25.941,
-      "p05": 8,
+      "pixels": 28378,
+      "mean": 29.601,
+      "sd": 20.865,
+      "p05": 7,
       "p50": 24,
-      "p95": 90,
-      "darkFraction": 0.28
+      "p95": 74,
+      "darkFraction": 0.196
      },
      "diaphragmSaturated": 0,
+     "shadow": {
+      "coreLines": 47,
+      "coreDbBelowLiver": 23.016,
+      "coreGray": 35,
+      "edgeProfileDb": [
+       -42.291,
+       -42.954,
+       -42.761,
+       -43.393,
+       -44.772,
+       -45.805,
+       -46.455,
+       -47.642,
+       -48.939
+      ]
+     },
      "profile": {
       "bands": [
        {
         "r0": 30,
         "r1": 40,
-        "db": -30.16,
-        "pixels": 1755
+        "db": -29.705,
+        "pixels": 752
        },
        {
         "r0": 40,
         "r1": 50,
-        "db": -29.984,
-        "pixels": 3680
+        "db": -29.742,
+        "pixels": 1399
        },
        {
         "r0": 50,
         "r1": 60,
-        "db": -29.326,
-        "pixels": 3703
+        "db": -29.023,
+        "pixels": 1035
        },
        {
         "r0": 60,
         "r1": 70,
-        "db": -29.872,
-        "pixels": 3261
+        "db": -29.275,
+        "pixels": 710
        },
        {
         "r0": 70,
         "r1": 80,
-        "db": -29.702,
-        "pixels": 2534
-       },
-       {
-        "r0": 80,
-        "r1": 90,
-        "db": -29.021,
-        "pixels": 2321
-       },
-       {
-        "r0": 90,
-        "r1": 100,
-        "db": -29.34,
-        "pixels": 2138
-       },
-       {
-        "r0": 100,
-        "r1": 110,
-        "db": -30.131,
-        "pixels": 2241
-       },
-       {
-        "r0": 110,
-        "r1": 120,
-        "db": -29.345,
-        "pixels": 2206
-       },
-       {
-        "r0": 120,
-        "r1": 130,
-        "db": -30.014,
-        "pixels": 1138
-       },
-       {
-        "r0": 130,
-        "r1": 140,
-        "db": -29.193,
-        "pixels": 270
+        "db": -26.925,
+        "pixels": 247
        }
       ],
-      "slopeDbPerCm": 0.035
+      "slopeDbPerCm": 0.445
      },
      "walls": [
       {
        "fromDeg": 0,
        "toDeg": 20,
        "walls": 25,
-       "ratio": 1.153,
-       "deltaDb": 4.116
+       "ratio": 1.161,
+       "deltaDb": 3.362
       },
       {
        "fromDeg": 20,
        "toDeg": 40,
        "walls": 10,
-       "ratio": 1.048,
-       "deltaDb": 1.29
+       "ratio": 1.102,
+       "deltaDb": 2.071
       },
       {
        "fromDeg": 40,
        "toDeg": 60,
        "walls": 5,
-       "ratio": 1.192,
-       "deltaDb": 4.88
+       "ratio": 1.167,
+       "deltaDb": 3.377
       }
      ],
      "colorOn": false
@@ -586,7 +601,8 @@
    "errors": []
   },
   "normal-adult/renal": {
-   "fps": 56,
+   "fps": 60,
+   "msPerFrame": 6.01,
    "stats": {
     "envelope": {
      "patches": 0,
@@ -659,58 +675,74 @@
     ],
     "display": {
      "liver": {
-      "pixels": 5755,
-      "mean": 101.438,
-      "sd": 15.983,
+      "pixels": 5551,
+      "mean": 101.423,
+      "sd": 15.931,
       "p05": 74,
       "p50": 102,
       "p95": 126,
       "darkFraction": 0.001
      },
      "lumen": {
-      "pixels": 17594,
-      "mean": 32.413,
-      "sd": 28.437,
+      "pixels": 17864,
+      "mean": 32.273,
+      "sd": 28.536,
       "p05": 2,
       "p50": 21,
       "p95": 88,
-      "darkFraction": 0.433
+      "darkFraction": 0.44
      },
      "diaphragmSaturated": null,
+     "shadow": {
+      "coreLines": 17,
+      "coreDbBelowLiver": 23.799,
+      "coreGray": 32,
+      "edgeProfileDb": [
+       -52.175,
+       -52.613,
+       -52.175,
+       -52.175,
+       -51.32,
+       -52.184,
+       -52.394,
+       -52.394,
+       -52.838
+      ]
+     },
      "profile": {
       "bands": [
        {
         "r0": 100,
         "r1": 110,
-        "db": -29.879,
+        "db": -29.861,
         "pixels": 983
        },
        {
         "r0": 110,
         "r1": 120,
-        "db": -30.176,
-        "pixels": 1503
+        "db": -30.148,
+        "pixels": 1479
        },
        {
         "r0": 120,
         "r1": 130,
-        "db": -29.393,
-        "pixels": 1350
+        "db": -29.411,
+        "pixels": 1304
        },
        {
         "r0": 130,
         "r1": 140,
-        "db": -29.165,
-        "pixels": 1740
+        "db": -29.177,
+        "pixels": 1618
        },
        {
         "r0": 140,
         "r1": 150,
-        "db": -29.232,
-        "pixels": 179
+        "db": -29.087,
+        "pixels": 167
        }
       ],
-      "slopeDbPerCm": 0.303
+      "slopeDbPerCm": 0.297
      },
      "walls": [
       {
@@ -741,18 +773,19 @@
    "errors": []
   },
   "severe-congestion/subxiphoid": {
-   "fps": 53,
+   "fps": 60,
+   "msPerFrame": 5.01,
    "stats": {
     "envelope": {
      "patches": 34,
      "depthMm": 65.018,
-     "snr": 1.9,
+     "snr": 1.899,
      "fwhmAxialMm": 0.698,
-     "fwhmLateralMm": 1.444,
+     "fwhmLateralMm": 1.443,
      "secondaryLobeAxial": 0.057,
      "secondaryLobeLateral": 0,
      "darkFraction": 0.067,
-     "crackIndex": 0.064
+     "crackIndex": 0.065
     },
     "bands": [
      {
@@ -772,13 +805,13 @@
      {
       "patches": 16,
       "depthMm": 77.52,
-      "snr": 1.879,
-      "fwhmAxialMm": 0.696,
+      "snr": 1.878,
+      "fwhmAxialMm": 0.695,
       "fwhmLateralMm": 1.461,
-      "secondaryLobeAxial": 0.066,
+      "secondaryLobeAxial": 0.065,
       "secondaryLobeLateral": 0,
       "darkFraction": 0.071,
-      "crackIndex": 0.115,
+      "crackIndex": 0.107,
       "r0": 60,
       "r1": 100,
       "beamFwhmMm": 1.575
@@ -814,24 +847,40 @@
     ],
     "display": {
      "liver": {
-      "pixels": 62901,
-      "mean": 100.473,
-      "sd": 16.029,
+      "pixels": 63028,
+      "mean": 100.485,
+      "sd": 16.027,
       "p05": 73,
       "p50": 101,
       "p95": 126,
       "darkFraction": 0.002
      },
      "lumen": {
-      "pixels": 34503,
-      "mean": 11.619,
-      "sd": 9.069,
+      "pixels": 33468,
+      "mean": 11.47,
+      "sd": 9.101,
       "p05": 1,
       "p50": 10,
-      "p95": 25,
-      "darkFraction": 0.246
+      "p95": 24,
+      "darkFraction": 0.247
      },
      "diaphragmSaturated": 0,
+     "shadow": {
+      "coreLines": 0,
+      "coreDbBelowLiver": null,
+      "coreGray": null,
+      "edgeProfileDb": [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ]
+     },
      "profile": {
       "bands": [
        {
@@ -843,81 +892,81 @@
        {
         "r0": 30,
         "r1": 40,
-        "db": -29.882,
+        "db": -29.883,
         "pixels": 5547
        },
        {
         "r0": 40,
         "r1": 50,
-        "db": -30.121,
+        "db": -30.122,
         "pixels": 7979
        },
        {
         "r0": 50,
         "r1": 60,
-        "db": -29.685,
+        "db": -29.687,
         "pixels": 8802
        },
        {
         "r0": 60,
         "r1": 70,
-        "db": -29.535,
+        "db": -29.542,
         "pixels": 9722
        },
        {
         "r0": 70,
         "r1": 80,
-        "db": -29.929,
+        "db": -29.93,
         "pixels": 10470
        },
        {
         "r0": 80,
         "r1": 90,
-        "db": -30.182,
+        "db": -30.179,
         "pixels": 9131
        },
        {
         "r0": 90,
         "r1": 100,
-        "db": -30.04,
-        "pixels": 6129
+        "db": -30.029,
+        "pixels": 6151
        },
        {
         "r0": 100,
         "r1": 110,
-        "db": -29.549,
+        "db": -29.534,
         "pixels": 3311
        },
        {
         "r0": 110,
         "r1": 120,
-        "db": -29.292,
-        "pixels": 660
+        "db": -29.131,
+        "pixels": 765
        }
       ],
-      "slopeDbPerCm": -0.007
+      "slopeDbPerCm": -0.002
      },
      "walls": [
       {
        "fromDeg": 0,
        "toDeg": 20,
-       "walls": 2,
-       "ratio": 1.243,
-       "deltaDb": 6.186
+       "walls": 1,
+       "ratio": 1.176,
+       "deltaDb": 4.649
       },
       {
        "fromDeg": 20,
        "toDeg": 40,
-       "walls": 37,
-       "ratio": 1.076,
-       "deltaDb": 2.048
+       "walls": 54,
+       "ratio": 1.109,
+       "deltaDb": 2.871
       },
       {
        "fromDeg": 40,
        "toDeg": 60,
-       "walls": 3,
-       "ratio": 1.053,
-       "deltaDb": 1.366
+       "walls": 2,
+       "ratio": 1.109,
+       "deltaDb": 2.855
       }
      ],
      "colorOn": false
@@ -926,58 +975,59 @@
    "errors": []
   },
   "severe-congestion/intercostal": {
-   "fps": 56,
+   "fps": 60,
+   "msPerFrame": 5.61,
    "stats": {
     "envelope": {
-     "patches": 15,
-     "depthMm": 80.719,
-     "snr": 1.931,
-     "fwhmAxialMm": 0.681,
-     "fwhmLateralMm": 1.846,
-     "secondaryLobeAxial": 0.02,
-     "secondaryLobeLateral": 0.031,
-     "darkFraction": 0.069,
-     "crackIndex": 0.055
+     "patches": 12,
+     "depthMm": 85.078,
+     "snr": 1.942,
+     "fwhmAxialMm": 0.674,
+     "fwhmLateralMm": 1.971,
+     "secondaryLobeAxial": 0.041,
+     "secondaryLobeLateral": 0,
+     "darkFraction": 0.067,
+     "crackIndex": 0.069
     },
     "bands": [
      {
-      "patches": 7,
-      "depthMm": 50.022,
-      "snr": 1.947,
+      "patches": 6,
+      "depthMm": 49.219,
+      "snr": 1.931,
       "fwhmAxialMm": 0.671,
-      "fwhmLateralMm": 1.391,
-      "secondaryLobeAxial": 0.032,
+      "fwhmLateralMm": 1.414,
+      "secondaryLobeAxial": 0.065,
       "secondaryLobeLateral": 0,
-      "darkFraction": 0.069,
-      "crackIndex": 0.03,
+      "darkFraction": 0.072,
+      "crackIndex": 0.033,
       "r0": 20,
       "r1": 60,
-      "beamFwhmMm": 1.419
+      "beamFwhmMm": 1.42
      },
      {
-      "patches": 2,
-      "depthMm": 75.938,
-      "snr": 1.951,
-      "fwhmAxialMm": 0.686,
-      "fwhmLateralMm": 1.432,
-      "secondaryLobeAxial": 0.104,
-      "secondaryLobeLateral": 0.119,
-      "darkFraction": 0.065,
-      "crackIndex": 0.08,
+      "patches": 1,
+      "depthMm": 80.156,
+      "snr": 1.999,
+      "fwhmAxialMm": 0.69,
+      "fwhmLateralMm": 1.392,
+      "secondaryLobeAxial": 0.074,
+      "secondaryLobeLateral": 0.069,
+      "darkFraction": 0.046,
+      "crackIndex": 0,
       "r0": 60,
       "r1": 100,
-      "beamFwhmMm": 1.567
+      "beamFwhmMm": 1.572
      },
      {
       "patches": 3,
       "depthMm": 119.531,
-      "snr": 1.937,
-      "fwhmAxialMm": 0.668,
-      "fwhmLateralMm": 2.531,
-      "secondaryLobeAxial": 0.029,
-      "secondaryLobeLateral": 0.074,
-      "darkFraction": 0.067,
-      "crackIndex": 0.155,
+      "snr": 1.955,
+      "fwhmAxialMm": 0.661,
+      "fwhmLateralMm": 2.51,
+      "secondaryLobeAxial": 0.021,
+      "secondaryLobeLateral": 0.076,
+      "darkFraction": 0.066,
+      "crackIndex": 0.159,
       "r0": 100,
       "r1": 140,
       "beamFwhmMm": 2.519
@@ -985,9 +1035,9 @@
      {
       "patches": 1,
       "depthMm": 147.656,
-      "snr": 1.89,
-      "fwhmAxialMm": 0.726,
-      "fwhmLateralMm": 3.258,
+      "snr": 1.891,
+      "fwhmAxialMm": 0.723,
+      "fwhmLateralMm": 3.238,
       "secondaryLobeAxial": 0.033,
       "secondaryLobeLateral": 0,
       "darkFraction": 0.064,
@@ -999,70 +1049,80 @@
     ],
     "display": {
      "liver": {
-      "pixels": 22386,
-      "mean": 99.934,
-      "sd": 15.75,
-      "p05": 73,
-      "p50": 101,
-      "p95": 124,
-      "darkFraction": 0.002
+      "pixels": 17538,
+      "mean": 99.754,
+      "sd": 15.842,
+      "p05": 72,
+      "p50": 100,
+      "p95": 125,
+      "darkFraction": 0.001
      },
      "lumen": {
-      "pixels": 9461,
-      "mean": 24.674,
-      "sd": 29.55,
+      "pixels": 11429,
+      "mean": 17.279,
+      "sd": 22.455,
       "p05": 0,
-      "p50": 8,
-      "p95": 82,
-      "darkFraction": 0.588
+      "p50": 6,
+      "p95": 64,
+      "darkFraction": 0.592
      },
      "diaphragmSaturated": 0,
+     "shadow": {
+      "coreLines": 0,
+      "coreDbBelowLiver": null,
+      "coreGray": null,
+      "edgeProfileDb": [
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null,
+       null
+      ]
+     },
      "profile": {
       "bands": [
        {
         "r0": 30,
         "r1": 40,
-        "db": -30.109,
+        "db": -30.106,
         "pixels": 2805
        },
        {
         "r0": 40,
         "r1": 50,
-        "db": -29.859,
+        "db": -29.853,
         "pixels": 5791
        },
        {
         "r0": 50,
         "r1": 60,
-        "db": -30.376,
-        "pixels": 5249
+        "db": -30.378,
+        "pixels": 4861
        },
        {
         "r0": 60,
         "r1": 70,
-        "db": -30.059,
-        "pixels": 3478
+        "db": -29.643,
+        "pixels": 2423
        },
        {
         "r0": 70,
         "r1": 80,
-        "db": -30.01,
-        "pixels": 2323
+        "db": -30.613,
+        "pixels": 1184
        },
        {
         "r0": 80,
         "r1": 90,
-        "db": -29.284,
-        "pixels": 1846
-       },
-       {
-        "r0": 90,
-        "r1": 100,
-        "db": -29.804,
-        "pixels": 885
+        "db": -29.768,
+        "pixels": 474
        }
       ],
-      "slopeDbPerCm": 0.072
+      "slopeDbPerCm": -0.03
      },
      "walls": [
       {
@@ -1075,16 +1135,16 @@
       {
        "fromDeg": 20,
        "toDeg": 40,
-       "walls": 37,
-       "ratio": 1.097,
-       "deltaDb": 2.595
+       "walls": 40,
+       "ratio": 1.141,
+       "deltaDb": 3.645
       },
       {
        "fromDeg": 40,
        "toDeg": 60,
-       "walls": 38,
-       "ratio": 1.101,
-       "deltaDb": 2.733
+       "walls": 41,
+       "ratio": 1.123,
+       "deltaDb": 3.265
       }
      ],
      "colorOn": false
@@ -1093,33 +1153,34 @@
    "errors": []
   },
   "severe-congestion/flank": {
-   "fps": 52,
+   "fps": 60,
+   "msPerFrame": 5.055,
    "stats": {
     "envelope": {
-     "patches": 3,
-     "depthMm": 54.844,
-     "snr": 1.966,
-     "fwhmAxialMm": 0.662,
-     "fwhmLateralMm": 1.314,
-     "secondaryLobeAxial": 0.06,
-     "secondaryLobeLateral": 0.084,
-     "darkFraction": 0.071,
-     "crackIndex": 0.061
+     "patches": 1,
+     "depthMm": 46.406,
+     "snr": 1.949,
+     "fwhmAxialMm": 0.686,
+     "fwhmLateralMm": 1.181,
+     "secondaryLobeAxial": 0.163,
+     "secondaryLobeLateral": 0.117,
+     "darkFraction": 0.072,
+     "crackIndex": 0.182
     },
     "bands": [
      {
-      "patches": 2,
-      "depthMm": 50.625,
-      "snr": 1.996,
-      "fwhmAxialMm": 0.694,
-      "fwhmLateralMm": 1.262,
-      "secondaryLobeAxial": 0.06,
-      "secondaryLobeLateral": 0.092,
-      "darkFraction": 0.068,
-      "crackIndex": 0.095,
+      "patches": 1,
+      "depthMm": 46.406,
+      "snr": 1.949,
+      "fwhmAxialMm": 0.686,
+      "fwhmLateralMm": 1.181,
+      "secondaryLobeAxial": 0.163,
+      "secondaryLobeLateral": 0.117,
+      "darkFraction": 0.072,
+      "crackIndex": 0.182,
       "r0": 20,
       "r1": 60,
-      "beamFwhmMm": 1.419
+      "beamFwhmMm": 1.421
      },
      {
       "patches": 0,
@@ -1166,110 +1227,102 @@
     ],
     "display": {
      "liver": {
-      "pixels": 31820,
-      "mean": 102.446,
-      "sd": 15.894,
-      "p05": 75,
+      "pixels": 8916,
+      "mean": 102.779,
+      "sd": 15.901,
+      "p05": 76,
       "p50": 103,
-      "p95": 127,
+      "p95": 128,
       "darkFraction": 0.001
      },
      "lumen": {
-      "pixels": 38085,
-      "mean": 31.197,
-      "sd": 25.552,
-      "p05": 6,
-      "p50": 23,
-      "p95": 91,
-      "darkFraction": 0.241
+      "pixels": 38215,
+      "mean": 26.818,
+      "sd": 20.62,
+      "p05": 2,
+      "p50": 22,
+      "p95": 74,
+      "darkFraction": 0.231
      },
      "diaphragmSaturated": 0,
+     "shadow": {
+      "coreLines": 47,
+      "coreDbBelowLiver": 22.752,
+      "coreGray": 35,
+      "edgeProfileDb": [
+       -43.362,
+       -43.526,
+       -43.046,
+       -43.437,
+       -45.11,
+       -46.446,
+       -47.059,
+       -48.416,
+       -50.081
+      ]
+     },
      "profile": {
       "bands": [
        {
         "r0": 30,
         "r1": 40,
-        "db": -30.46,
-        "pixels": 1443
+        "db": -29.75,
+        "pixels": 582
        },
        {
         "r0": 40,
         "r1": 50,
-        "db": -29.048,
-        "pixels": 4741
+        "db": -28.727,
+        "pixels": 2377
        },
        {
         "r0": 50,
         "r1": 60,
-        "db": -29.451,
-        "pixels": 4901
+        "db": -28.982,
+        "pixels": 2099
        },
        {
         "r0": 60,
         "r1": 70,
-        "db": -29.44,
-        "pixels": 4060
+        "db": -29.775,
+        "pixels": 1793
        },
        {
         "r0": 70,
         "r1": 80,
-        "db": -29.364,
-        "pixels": 3696
+        "db": -29.694,
+        "pixels": 1293
        },
        {
         "r0": 80,
         "r1": 90,
-        "db": -29.129,
-        "pixels": 3248
-       },
-       {
-        "r0": 90,
-        "r1": 100,
-        "db": -30.085,
-        "pixels": 2855
-       },
-       {
-        "r0": 100,
-        "r1": 110,
-        "db": -29.216,
-        "pixels": 3037
-       },
-       {
-        "r0": 110,
-        "r1": 120,
-        "db": -28.738,
-        "pixels": 3005
-       },
-       {
-        "r0": 120,
-        "r1": 130,
-        "db": -28.129,
-        "pixels": 780
+        "db": -29.322,
+        "pixels": 633
        }
       ],
-      "slopeDbPerCm": 0.067
+      "slopeDbPerCm": -0.174
      },
      "walls": [
       {
        "fromDeg": 0,
        "toDeg": 20,
        "walls": 34,
-       "ratio": 1.135,
-       "deltaDb": 3.65
+       "ratio": 1.172,
+       "deltaDb": 3.553
       },
       {
        "fromDeg": 20,
        "toDeg": 40,
        "walls": 6,
-       "ratio": 1.01,
-       "deltaDb": 0.261
+       "ratio": 1,
+       "deltaDb": 0
       },
       {
        "fromDeg": 40,
        "toDeg": 60,
        "walls": 14,
-       "ratio": 1.087,
-       "deltaDb": 2.31
+       "ratio": 1.014,
+       "deltaDb": 0.32
       }
      ],
      "colorOn": false
@@ -1278,7 +1331,8 @@
    "errors": []
   },
   "severe-congestion/renal": {
-   "fps": 56,
+   "fps": 60,
+   "msPerFrame": 6.715,
    "stats": {
     "envelope": {
      "patches": 0,
@@ -1351,31 +1405,47 @@
     ],
     "display": {
      "liver": {
-      "pixels": 1432,
-      "mean": 98.414,
-      "sd": 15.463,
-      "p05": 72,
-      "p50": 100,
+      "pixels": 1294,
+      "mean": 97.943,
+      "sd": 15.674,
+      "p05": 71,
+      "p50": 99,
       "p95": 123,
       "darkFraction": 0.002
      },
      "lumen": {
-      "pixels": 29931,
-      "mean": 24.234,
-      "sd": 26.178,
+      "pixels": 30584,
+      "mean": 23.868,
+      "sd": 25.998,
       "p05": 2,
-      "p50": 14,
+      "p50": 13,
       "p95": 85,
-      "darkFraction": 0.457
+      "darkFraction": 0.426
      },
      "diaphragmSaturated": null,
+     "shadow": {
+      "coreLines": 17,
+      "coreDbBelowLiver": 23.89,
+      "coreGray": 30,
+      "edgeProfileDb": [
+       -50.887,
+       -51.312,
+       -51.742,
+       -51.742,
+       -50.699,
+       -52.184,
+       -53.278,
+       -53.726,
+       -53.063
+      ]
+     },
      "profile": {
       "bands": [
        {
         "r0": 100,
         "r1": 110,
-        "db": -30.451,
-        "pixels": 1310
+        "db": -30.563,
+        "pixels": 1215
        }
       ],
       "slopeDbPerCm": null
@@ -1391,16 +1461,16 @@
       {
        "fromDeg": 20,
        "toDeg": 40,
-       "walls": 9,
-       "ratio": 1.019,
-       "deltaDb": 0.52
+       "walls": 10,
+       "ratio": 1.035,
+       "deltaDb": 0.981
       },
       {
        "fromDeg": 40,
        "toDeg": 60,
        "walls": 11,
-       "ratio": 1.14,
-       "deltaDb": 3.728
+       "ratio": 1.131,
+       "deltaDb": 3.489
       }
      ],
      "colorOn": false

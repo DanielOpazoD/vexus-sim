@@ -57,3 +57,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [51](DECISIONS.md#L712) | Transiciones lentas en el volumen de muestra e invariantes de §21 sobre la señal | vigente |
 | [52](DECISIONS.md#L750) | La fidelidad del modo B se mide con un banco reproducible, en la envolvente y en la imagen mostrada | vigente |
 | [53](DECISIONS.md#L806) | Preajuste abdominal: 70 dB y el hígado a media escala | vigente |
+| [54](DECISIONS.md#L836) | Transmisión en cuatro etapas, hueso clínico y penumbra de la apertura | vigente |

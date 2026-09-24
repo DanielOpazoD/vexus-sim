@@ -177,6 +177,22 @@ test('el banco de fidelidad mide el moteado del hígado despejado como un campo 
   expect(errors).toEqual([]);
 });
 
+test('la pasada A en cuatro etapas da la misma transmisión de un solo rayo que el modelo de CPU', async ({ page }) => {
+  // Decisión 54: impactos por línea, segmentos y suma acumulada reproducen `rayAttenuationDb` en los
+  // mismos puntos (las líneas con espejo no: la CPU no sigue el rayo reflejado). Con GPU real,
+  // ≤ 0,0001 dB en cuatro ventanas; el color y el PW comparten este modelo (decisión 50).
+  test.setTimeout(240_000);
+  const errors = await bootWithoutErrors(page);
+  for (const startPoint of ['subxiphoid', 'flank'] as const) {
+    const r = await page.evaluate((id) => window.__vexusTest!.transmissionParity({ startPoint: id, every: 8 }), startPoint);
+    const tag = `${startPoint}: ${JSON.stringify(r)}`;
+    expect(r.lines, tag).toBeGreaterThan(5);
+    expect(r.samples, tag).toBeGreaterThan(500);
+    expect(r.maxDiffDb, tag).toBeLessThan(0.01);
+  }
+  expect(errors).toEqual([]);
+});
+
 test('sin contacto no hay Doppler: el color y el espectro se apagan al levantar la sonda', async ({ page }) => {
   // Invariante de §23 de la guía. Medido con GPU real: color 1 346 celdas en contacto y 0 levantada;
   // PW 23 dB sobre el suelo en contacto y 7,5 dB (el valor del ruido puro) levantada.

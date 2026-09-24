@@ -7,9 +7,33 @@
  */
 
 /** Recursos: texturas intermedias, historia de la persistencia y la pantalla. */
-export type Resource = 'scene' | 'coupling' | 'trans' | 'raw' | 'axial' | 'env' | 'color' | 'scan' | 'persist' | 'screen';
+export type Resource =
+  | 'scene'
+  | 'coupling'
+  | 'transHits'
+  | 'transSeg'
+  | 'transPrefix'
+  | 'trans'
+  | 'raw'
+  | 'axial'
+  | 'env'
+  | 'color'
+  | 'scan'
+  | 'persist'
+  | 'screen';
 
-export type PassId = 'transmission' | 'rawField' | 'axial' | 'lateral' | 'color' | 'scanConvert' | 'persistence' | 'present';
+export type PassId =
+  | 'transmissionHits'
+  | 'transmissionSegments'
+  | 'transmissionPrefix'
+  | 'transmission'
+  | 'rawField'
+  | 'axial'
+  | 'lateral'
+  | 'color'
+  | 'scanConvert'
+  | 'persistence'
+  | 'present';
 
 export interface PassSpec {
   id: PassId;
@@ -28,7 +52,11 @@ export interface PassSpec {
 export const EXTERNAL_RESOURCES: readonly Resource[] = ['scene', 'coupling', 'persist'];
 
 export const FRAME_PASSES: readonly PassSpec[] = [
-  { id: 'transmission', label: 'A', reads: ['scene', 'coupling'], writes: 'trans', cadence: 'frame' },
+  // A en cuatro etapas (decisión 54): impactos por línea, segmentos, suma acumulada y apertura
+  { id: 'transmissionHits', label: 'A0', reads: ['scene'], writes: 'transHits', cadence: 'frame' },
+  { id: 'transmissionSegments', label: 'A1', reads: ['scene', 'transHits'], writes: 'transSeg', cadence: 'frame' },
+  { id: 'transmissionPrefix', label: 'A2', reads: ['transSeg', 'transHits'], writes: 'transPrefix', cadence: 'frame' },
+  { id: 'transmission', label: 'A', reads: ['transPrefix', 'transHits'], writes: 'trans', cadence: 'frame' },
   { id: 'rawField', label: 'B', reads: ['scene', 'trans'], writes: 'raw', cadence: 'frame' },
   { id: 'axial', label: 'C', reads: ['raw'], writes: 'axial', cadence: 'frame' },
   { id: 'lateral', label: 'D', reads: ['axial'], writes: 'env', cadence: 'frame' },

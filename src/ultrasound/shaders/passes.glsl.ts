@@ -62,12 +62,25 @@ ${TISSUE_BACK_GLSL}`;
 
 /**
  * Mirada del cuadro (composición espacial, decisión 58): la adquisición intercalada forma una mirada por
- * cuadro y A2, A y B calculan, además de la mirada 0 de siempre, la dirigida de ese cuadro. θ = 0 (la
- * mirada 0, o el compuesto apagado): las ramas dirigidas no se ejecutan y todo es la imagen de hoy.
+ * cuadro. A2, A y B tienen dos programas cada una, de una sola fuente (`transPrefixShader`,
+ * `transmissionShader`, `rawFieldShader`): el de la mirada 0 (θ = 0: la mirada 0 o el compuesto apagado),
+ * que es byte a byte el de antes de la composición y no lleva nada de la dirigida, y el de las miradas ±θ,
+ * el único que declara uSteer. El renderizador elige uno por cuadro. Compilar la rama dirigida dentro del
+ * programa de la mirada 0, detrás de un `if (uSteer.x != 0.0)` que con θ = 0 no se tomaba, le costaba a B
+ * ~2 ms por cuadro en el M4 aun con el compuesto apagado (registros y tamaño del programa): se descartó.
  */
 const STEER_GLSL = /* glsl */ `
 uniform vec4 uSteer; // (θ en el elemento, R·sin θ, R·cos θ, k2 = 4π/λ): compound.ts y steering.ts
 `;
+
+/** Programa de la mirada 0 o de las miradas dirigidas de una pasada con miradas (decisión 58). */
+type Look = 'look0' | 'steered';
+
+/**
+ * Hueco de una fuente con miradas: el texto solo va en el programa dirigido; en el de la mirada 0 no queda
+ * nada (ni una línea en blanco), así que ese programa es el de antes de la composición byte a byte.
+ */
+const steeredOnly = (look: Look, glsl: string): string => (look === 'steered' ? glsl : '');
 
 /**
  * PSF lateral de dos vías por número F (`ultrasound/beamModel.ts`: misma fórmula). La comparten la
@@ -103,7 +116,8 @@ float lateralSigmaMm(float r) {
  * la que usan el color y el PW, que así comparten modelo; decisión 50), 3 = la mirada dirigida del
  * cuadro (decisión 58): (transmisión con apertura, primer gas, tipo de gas + 4·(línea del espejo + 1),
  * espejo), con las distancias a lo largo de su camino. A2 y A la suman sobre los segmentos de A1, sin
- * clasificación ni pasada nuevas (`steeredPrefixDb`, `steeredApertureTransmission`).
+ * clasificación ni pasada nuevas (`steeredPrefixDb`, `steeredApertureTransmission`), en sus programas
+ * dirigidos: en un cuadro de la mirada 0 nadie escribe ni lee la salida 3 de A ni la 2 y la 3 de A2.
  */
 export const FRAG_TRANS_HITS = /* glsl */ `#version 300 es
 precision highp float;
@@ -196,7 +210,14 @@ void main() {
 }
 `;
 
-export const FRAG_TRANS_PREFIX = /* glsl */ `#version 300 es
+/**
+ * A2 de una mirada (decisión 58). La mirada 0 es la suma de siempre; el programa dirigido calcula además, en
+ * `o2`/`o3`, el prefijo de la mirada del cuadro a lo largo de su camino (`steeredPrefix`). La mirada 0 se
+ * calcula en todos los cuadros: el programa dirigido de B lee la dirección reflejada del espejo de A o1 y
+ * `readTransmission` lee la mirada 0 tras cualquier cuadro.
+ */
+function transPrefixShader(look: Look): string {
+  return /* glsl */ `#version 300 es
 precision highp float;
 precision highp int;
 ${BEAM_GLSL}
@@ -204,17 +225,10 @@ uniform float uCoarseN;
 uniform sampler2D uSeg;
 uniform sampler2D uHits0;
 uniform sampler2D uHits1;
-${STEER_GLSL}
 in vec2 vUv;
 layout(location = 0) out vec4 o0; // (dB ida y vuelta de un rayo, gasHit, boneHit, mirrorHit)
 layout(location = 1) out vec4 o1; // (dirección, tipo de gas)
-// Mirada dirigida del cuadro (decisión 58), a lo largo de su camino: (dB, sGas, sBone, sMirror) y
-// (tipo de gas, línea del espejo, 0, 0); −1 sin impacto. Con θ = 0 no se calcula.
-layout(location = 2) out vec4 o2;
-layout(location = 3) out vec4 o3;
-${STEERING_GLSL}
-${STEERED_PREFIX_GLSL}
-void main() {
+${steeredOnly(look, STEERED_PREFIX_DECL_GLSL)}void main() {
   int line = int(gl_FragCoord.x);
   int k = int(gl_FragCoord.y);
   float attenDb = 0.0;
@@ -240,18 +254,39 @@ void main() {
   vec3 dir = mirrorHit >= 0.0 ? h1.xyz : lineDir(lineTheta(vUv.x));
   o0 = vec4(attenDb, gasHit, boneHit, mirrorHit);
   o1 = vec4(dir, gasHit >= 0.0 ? h0.w : 0.0);
-  if (uSteer.x != 0.0) {
-    vec2 extra;
-    o2 = steeredPrefix(line, k, extra);
-    o3 = vec4(extra, 0.0, 0.0);
-  } else {
-    o2 = vec4(0.0, -1.0, -1.0, -1.0);
-    o3 = vec4(0.0, -1.0, 0.0, 0.0);
-  }
+${steeredOnly(look, STEERED_PREFIX_MAIN_GLSL)}}
+`;
 }
+
+/** Declaraciones que A2 añade en su programa dirigido (decisión 58). */
+const STEERED_PREFIX_DECL_GLSL = /* glsl */ `${STEER_GLSL}
+// Mirada dirigida del cuadro (decisión 58), a lo largo de su camino: (dB, sGas, sBone, sMirror) y
+// (tipo de gas, línea del espejo, 0, 0); −1 sin impacto
+layout(location = 2) out vec4 o2;
+layout(location = 3) out vec4 o3;
+${STEERING_GLSL}
+${STEERED_PREFIX_GLSL}
 `;
 
-export const FRAG_TRANSMISSION = /* glsl */ `#version 300 es
+/** Final del main de A2 en su programa dirigido: el prefijo de la mirada del cuadro. */
+const STEERED_PREFIX_MAIN_GLSL = /* glsl */ `  vec2 extra;
+  o2 = steeredPrefix(line, k, extra);
+  o3 = vec4(extra, 0.0, 0.0);
+`;
+
+/** A2 de la mirada 0: el de antes de la composición, sin nada de la dirigida (decisión 58). */
+export const FRAG_TRANS_PREFIX = transPrefixShader('look0');
+/** A2 de las miradas ±θ: la mirada 0 y, en `o2`/`o3`, el prefijo de la mirada del cuadro. */
+export const FRAG_TRANS_PREFIX_STEERED = transPrefixShader('steered');
+
+/**
+ * A de una mirada (decisión 58). La mirada 0 es la penumbra de siempre (`o0`–`o2`); el programa dirigido
+ * calcula además, en `o3`, la de la mirada del cuadro sobre los caminos dirigidos vecinos
+ * (`steeredApertureTransmission`, con las distancias a lo largo del camino), con el primer gas, y el tipo
+ * de gas y la línea del espejo juntos en .z (enteros pequeños, exactos en float32: la pasada B los separa).
+ */
+function transmissionShader(look: Look): string {
+  return /* glsl */ `#version 300 es
 precision highp float;
 precision highp int;
 ${BEAM_GLSL}
@@ -259,19 +294,13 @@ uniform float uCoarseN;
 uniform sampler2D uPre0;
 uniform sampler2D uPre1;
 uniform sampler2D uHits0;
-uniform sampler2D uPreSteer;  // A2 o2: prefijo de la mirada dirigida del cuadro (decisión 58)
-uniform sampler2D uPreSteerX; // A2 o3: (tipo de gas, línea del espejo) de esa mirada
 uniform vec3 uAperture; // D de emisión (mm), D de recepción máxima (mm), F# de recepción mínimo
-${STEER_GLSL}
 in vec2 vUv;
 layout(location = 0) out vec4 o0;
 layout(location = 1) out vec4 o1;
 layout(location = 2) out vec4 o2;
-layout(location = 3) out vec4 o3;
 ${APERTURE_GLSL}
-${STEERING_GLSL}
-${STEERED_APERTURE_GLSL}
-void main() {
+${steeredOnly(look, STEERED_TRANSMISSION_DECL_GLSL)}void main() {
   int line = int(gl_FragCoord.x);
   int k = int(gl_FragCoord.y);
   vec4 c0 = texelFetch(uPre0, ivec2(line, k), 0);
@@ -283,20 +312,31 @@ void main() {
   o0 = vec4(T, c0.yzw);
   o1 = c1;
   o2 = vec4(single, 0.0, 0.0, 0.0);
-  // Mirada dirigida del cuadro (decisión 58): el cono sobre los caminos dirigidos vecinos, con las
-  // distancias a lo largo del camino; el tipo de gas y la línea del espejo van juntos en .z (enteros
-  // pequeños, exactos en float32: la pasada B los separa)
-  if (uSteer.x != 0.0) {
-    vec4 ps = texelFetch(uPreSteer, ivec2(line, k), 0);
-    vec4 px = texelFetch(uPreSteerX, ivec2(line, k), 0);
-    float s = alongLineMm(uCurvR + r, uSteer.y, uSteer.z);
-    float Tk = steeredApertureTransmission(line, k, s, pow(10.0, -ps.x / 20.0));
-    o3 = vec4(Tk, ps.y, px.x + 4.0 * (px.y + 1.0), ps.w);
-  } else {
-    o3 = vec4(0.0, -1.0, 0.0, -1.0);
-  }
-}
+${steeredOnly(look, STEERED_TRANSMISSION_MAIN_GLSL)}}
 `;
+}
+
+/** Declaraciones que A añade en su programa dirigido (van detrás de `APERTURE_GLSL`: usan AP_TAPS). */
+const STEERED_TRANSMISSION_DECL_GLSL = /* glsl */ `uniform sampler2D uPreSteer;  // A2 o2: prefijo de la mirada dirigida del cuadro (decisión 58)
+uniform sampler2D uPreSteerX; // A2 o3: (tipo de gas, línea del espejo) de esa mirada
+${STEER_GLSL}
+layout(location = 3) out vec4 o3;
+${STEERING_GLSL}
+${STEERED_APERTURE_GLSL}
+`;
+
+/** Final del main de A en su programa dirigido: la penumbra de la mirada del cuadro. */
+const STEERED_TRANSMISSION_MAIN_GLSL = /* glsl */ `  vec4 ps = texelFetch(uPreSteer, ivec2(line, k), 0);
+  vec4 px = texelFetch(uPreSteerX, ivec2(line, k), 0);
+  float s = alongLineMm(uCurvR + r, uSteer.y, uSteer.z);
+  float Tk = steeredApertureTransmission(line, k, s, pow(10.0, -ps.x / 20.0));
+  o3 = vec4(Tk, ps.y, px.x + 4.0 * (px.y + 1.0), ps.w);
+`;
+
+/** A de la mirada 0: el de antes de la composición, sin nada de la dirigida (decisión 58). */
+export const FRAG_TRANSMISSION = transmissionShader('look0');
+/** A de las miradas ±θ: la mirada 0 y, en `o3`, la penumbra de la mirada del cuadro. */
+export const FRAG_TRANSMISSION_STEERED = transmissionShader('steered');
 
 /**
  * Rama dirigida de la pasada B (composición espacial, decisión 58): la muestra P (línea j, fila r) de la
@@ -315,8 +355,9 @@ void main() {
  *    su eco con el coseno de esta mirada.
  * Fuera del arreglo la mirada no existe (K la pesa 0), pero se forma hasta el alcance del núcleo lateral de
  * D (±2,5σ, el mismo cálculo): si no, D mezclaría ceros en las muestras con peso junto al borde.
- * Gemelo de la geometría (punto, dirección, pleura, reverberación, anclas, alcance): `steeredSample`
- * (`steering.ts`); `steeredSample.test.ts` fija estas líneas.
+ * Va solo en el programa dirigido de B (`FRAG_RAWFIELD_STEERED`), cuyo main es `steeredField()`; el de la
+ * mirada 0 no la lleva. Gemelo de la geometría (punto, dirección, pleura, reverberación, anclas, alcance):
+ * `steeredSample` (`steering.ts`); `steeredSample.test.ts` fija estas líneas.
  */
 export const STEERED_FIELD_GLSL = /* glsl */ `
 ${SPECKLE_LOOK_GLSL}
@@ -422,21 +463,18 @@ vec2 steeredField() {
  * Pasada B: campo complejo crudo por muestra de haz — dispersores persistentes
  * en coordenadas materiales integrados en elevación, eco de interfaz coherente en
  * el cruce exacto (decisión 57), reverberación/A-lines tras gas y cola sucia del gas
- * intestinal. Con una mirada dirigida en el cuadro (decisión 58, uSteer.x ≠ 0) la muestra es la misma
- * de la rejilla común, formada por la línea dirigida que pasa por ella (`steeredField`); con θ = 0,
- * el código de siempre.
+ * intestinal. Dos programas de la misma fuente (decisión 58): el de la mirada 0 (`FRAG_RAWFIELD`, el de
+ * siempre) y el de las miradas ±θ (`FRAG_RAWFIELD_STEERED`: la muestra de la rejilla común formada por la
+ * línea dirigida que pasa por ella, `steeredField`). Comparten todo salvo sus entradas y su `main`.
  */
-export const FRAG_RAWFIELD = /* glsl */ `#version 300 es
+function rawFieldShader(look: Look): string {
+  return /* glsl */ `#version 300 es
 precision highp float;
 precision highp int;
 ${ANATOMY_GLSL}
 ${BEAM_GEOMETRY_GLSL}
 ${TISSUE_BACK_GLSL}
-uniform sampler2D uTrans0;
-uniform sampler2D uTrans1;
-uniform sampler2D uTrans3;  // A o3: la mirada dirigida del cuadro (decisión 58)
-${STEER_GLSL}
-uniform float uLookSalt;    // sal del transitorio y de la cola de la mirada (compound.ts: 0 en la mirada 0)
+${look === 'steered' ? STEERED_RAW_INPUTS_GLSL : LOOK0_RAW_INPUTS_GLSL}
 uniform float uSeed;
 uniform float uLattice;     // paso de retícula (mm)
 uniform float uElevSigma0;  // σ elevacional en el foco de la lente (mm)
@@ -506,13 +544,25 @@ vec2 sampleSide(vec3 p, float se, Cls center) {
   Cls c = classify(m);
   return fieldFor(m, se, c.tissue);
 }
-${STEERED_FIELD_GLSL}
+${look === 'steered' ? STEERED_RAW_MAIN_GLSL : LOOK0_RAW_MAIN_GLSL}`;
+}
+
+/** Entradas de B en la mirada 0: A o0 (transmisión e impactos) y A o1 (dirección reflejada, tipo de gas). */
+const LOOK0_RAW_INPUTS_GLSL = /* glsl */ `uniform sampler2D uTrans0;
+uniform sampler2D uTrans1;`;
+
+/**
+ * Entradas de B en una mirada dirigida (decisión 58): A o3 (la transmisión y los impactos del camino
+ * dirigido), A o1 (la dirección reflejada de la línea del espejo) y la mirada; no lee A o0.
+ */
+const STEERED_RAW_INPUTS_GLSL = /* glsl */ `uniform sampler2D uTrans1;
+uniform sampler2D uTrans3;  // A o3: la mirada dirigida del cuadro (decisión 58)
+${STEER_GLSL}
+uniform float uLookSalt;    // sal del transitorio y de la cola de la mirada (compound.ts)`;
+
+/** main de B en la mirada 0: el de antes de la composición. */
+const LOOK0_RAW_MAIN_GLSL = /* glsl */ `
 void main() {
-  // Mirada dirigida del cuadro (decisión 58): su propia rama; la mirada 0 sigue con el código de siempre
-  if (uSteer.x != 0.0) {
-    oField = steeredField();
-    return;
-  }
   float theta = lineTheta(vUv.x);
   vec3 dir0 = lineDir(theta);
   float r = vUv.y * uDepth;
@@ -589,6 +639,18 @@ void main() {
   oField = out2;
 }
 `;
+
+/** main de B en una mirada dirigida: solo la rama dirigida (decisión 58). */
+const STEERED_RAW_MAIN_GLSL = /* glsl */ `${STEERED_FIELD_GLSL}
+void main() {
+  oField = steeredField();
+}
+`;
+
+/** Pasada B de la mirada 0: la de antes de la composición, sin nada de la dirigida (decisión 58). */
+export const FRAG_RAWFIELD = rawFieldShader('look0');
+/** Pasada B de las miradas ±θ: la rama dirigida sobre el mismo preludio. */
+export const FRAG_RAWFIELD_STEERED = rawFieldShader('steered');
 
 /** Pasada C: convolución axial gaussiana (pulso) sobre el campo complejo. */
 export const FRAG_AXIAL = /* glsl */ `#version 300 es

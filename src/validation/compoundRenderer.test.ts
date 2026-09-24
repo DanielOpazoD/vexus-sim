@@ -10,21 +10,33 @@ import {
   FRAG_COMPOUND,
   FRAG_LATERAL,
   FRAG_RAWFIELD,
+  FRAG_RAWFIELD_STEERED,
   FRAG_SCANCONVERT,
   FRAG_TRANS_PREFIX,
+  FRAG_TRANS_PREFIX_STEERED,
   FRAG_TRANSMISSION,
+  FRAG_TRANSMISSION_STEERED,
 } from '../ultrasound/shaders/passes.glsl';
 import { lookWavenumber } from '../ultrasound/steering';
 import { recordingGl } from './support/recordingGl';
 
 /**
- * Cableado de la composición espacial en el renderizador real sobre un WebGL falso (decisión 58): la
- * mirada de cada cuadro llega a A2, A y B (uSteer, uLookSalt), D escribe en la ranura del anillo de esa
- * mirada, K lee las tres ranuras con su validez y G convierte la salida de K. Con el compuesto apagado o
+ * Cableado de la composición espacial en el renderizador real sobre un WebGL falso (decisión 58): cada
+ * cuadro de una mirada dirigida dibuja A2, A y B con sus programas dirigidos, que reciben la mirada (uSteer,
+ * uLookSalt); los de la mirada 0 son los de siempre y no la reciben. D escribe en la ranura del anillo de
+ * esa mirada, K lee las tres ranuras con su validez y G convierte la salida de K. Con el compuesto apagado o
  * el color encendido, cada cuadro es la mirada 0 y K pasa la envolvente de D. Las lecturas de prueba
  * (`readEnvelope`, `readTransmission`, `readLookEnvelope`) se niegan a devolver en silencio los datos de
  * otro cuadro. La imagen en sí la miden la e2e y el banco (GPU).
  */
+const PAIRS = {
+  prefix: [FRAG_TRANS_PREFIX, FRAG_TRANS_PREFIX_STEERED],
+  trans: [FRAG_TRANSMISSION, FRAG_TRANSMISSION_STEERED],
+  raw: [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED],
+} as const;
+type PairId = keyof typeof PAIRS;
+const PAIR_IDS = Object.keys(PAIRS) as PairId[];
+
 function rig(compound = true) {
   const rec = recordingGl({ width: 320, height: 240 });
   const sim = new Simulator(clonePatient(NORMAL_ADULT), rec.canvas);
@@ -33,15 +45,15 @@ function rig(compound = true) {
   const frame = () => {
     rec.draws.length = 0;
     sim.render(sim.color.enabled ? { forceColor: true } : undefined);
-    const by = (frag: string) => {
-      const d = rec.draws.filter((x) => x.frag === frag);
+    const by = (...frags: readonly string[]) => {
+      const d = rec.draws.filter((x) => frags.includes(x.frag));
       expect(d.length, 'un dibujo por pasada').toBe(1);
       return d[0];
     };
     return {
-      prefix: by(FRAG_TRANS_PREFIX),
-      trans: by(FRAG_TRANSMISSION),
-      raw: by(FRAG_RAWFIELD),
+      prefix: by(...PAIRS.prefix),
+      trans: by(...PAIRS.trans),
+      raw: by(...PAIRS.raw),
       lateral: by(FRAG_LATERAL),
       k: by(FRAG_COMPOUND),
       scan: by(FRAG_SCANCONVERT),
@@ -65,8 +77,14 @@ describe('composición espacial en el renderizador (WebGL falso)', () => {
     frames.forEach((f, i) => {
       const look = i % COMPOUND.order.length;
       const th = lookTheta(look);
-      for (const d of [f.prefix, f.trans, f.raw]) close(d.uniforms.uSteer, [th, R * Math.sin(th), R * Math.cos(th), K2]);
-      expect(f.raw.uniforms.uLookSalt[0]).toBeCloseTo(lookSalt(look), 12);
+      // la mirada 0 con los programas de siempre, sin la mirada; las dirigidas con los suyos, con ella
+      for (const id of PAIR_IDS) {
+        expect(f[id].frag, `${id}, mirada ${look}`).toBe(PAIRS[id][look === 0 ? 0 : 1]);
+        if (look === 0) expect(f[id].uniforms.uSteer).toBeUndefined();
+        else close(f[id].uniforms.uSteer, [th, R * Math.sin(th), R * Math.cos(th), K2]);
+      }
+      if (look === 0) expect(f.raw.uniforms.uLookSalt).toBeUndefined();
+      else expect(f.raw.uniforms.uLookSalt[0]).toBeCloseTo(lookSalt(look), 12);
       // K: las tres ranuras, sus θ y su validez tras escribir la de este cuadro
       close(
         f.k.uniforms.uLookSteer,
@@ -92,8 +110,12 @@ describe('composición espacial en el renderizador (WebGL falso)', () => {
       const fs = [frame(), frame(), frame()];
       expect(new Set(fs.map((f) => f.lateral.fbo)).size).toBe(1);
       for (const f of fs) {
-        expect(f.raw.uniforms.uSteer[0]).toBe(0);
-        expect(f.raw.uniforms.uLookSalt[0]).toBe(0);
+        // los programas de la mirada 0, que no declaran la mirada ni la reciben
+        for (const id of PAIR_IDS) {
+          expect(f[id].frag, id).toBe(PAIRS[id][0]);
+          expect(f[id].uniforms.uSteer).toBeUndefined();
+        }
+        expect(f.raw.uniforms.uLookSalt).toBeUndefined();
         expect(f.k.uniforms.uLookValid).toEqual([1, 0, 0]);
       }
       expect(sim.renderer.compoundState()).toMatchObject({ active: false, look: 0, validCount: 1 });
@@ -111,7 +133,7 @@ describe('composición espacial en el renderizador (WebGL falso)', () => {
     expect(frame().k.uniforms.uLookValid).toEqual([1, 0, 0]);
     expect(frame().raw.uniforms.uSteer[0]).toBeCloseTo(lookTheta(1), 12);
     sim.renderer.setScene(sim.scene);
-    expect(frame().raw.uniforms.uSteer[0]).toBe(0);
+    expect(frame().raw.frag).toBe(FRAG_RAWFIELD);
     frame();
     sim.equipment = { ...sim.equipment, color: { ...sim.equipment.color, enabled: true } };
     expect(frame().k.uniforms.uLookValid).toEqual([1, 0, 0]);
@@ -133,6 +155,112 @@ describe('composición espacial en el renderizador (WebGL falso)', () => {
     expect(sim.renderer.readTransmission().look).toBe(0);
     expect(() => sim.renderer.readTransmission({ look: 2 })).toThrow(/no es la del último cuadro/);
     expect(() => sim.renderer.readLookEnvelope(3)).toThrow(/fuera del anillo/);
+  });
+});
+
+/** Uniforms que declara un shader (samplers incluidos), sin los comentarios. */
+const declaredUniforms = (src: string): string[] =>
+  [...src.replace(/\/\/.*$/gm, '').matchAll(/\buniform\s+(?:(?:lowp|mediump|highp)\s+)?(\w+)\s+(\w+)/g)].map((m) => m[2]);
+const declaredSamplers = (src: string): string[] =>
+  [...src.replace(/\/\/.*$/gm, '').matchAll(/\buniform\s+(?:(?:lowp|mediump|highp)\s+)?\w*sampler\w*\s+(\w+)/g)].map((m) => m[1]);
+
+/** Textura puesta en la unidad de un sampler en un dibujo (`units`: «unidad:id» separados por espacios). */
+function samplerTexture(d: { units: string; uniforms: Record<string, number[]> }, sampler: string): number | undefined {
+  const unit = d.uniforms[sampler]?.[0];
+  const hit = d.units.split(' ').find((u) => u.startsWith(`${unit}:`));
+  return hit === undefined ? undefined : Number(hit.split(':')[1]);
+}
+
+/**
+ * Dos programas por pasada con miradas (decisión 58): la rama dirigida compilada dentro del programa de la
+ * mirada 0 le costaba a B ~2 ms por cuadro aun con el compuesto apagado, así que A2, A y B tienen un programa
+ * de la mirada 0 (el de siempre) y otro dirigido, y el renderizador elige uno por cuadro. Una subida que falta
+ * es un no-op silencioso de WebGL (el sampler leería la unidad 0): cada programa debe recibir todo lo que
+ * declara, del programa puesto, y cada sampler la textura que le toca.
+ */
+describe('dos programas por pasada con miradas (WebGL falso)', () => {
+  it('cada programa recibe todos los uniforms y samplers que declara, del programa puesto y con su textura', () => {
+    const { frame, misuse, fboTextures } = rig(true);
+    const f0 = frame(); // mirada 0: el primer dibujo de los programas de la mirada 0
+    const f1 = frame(); // +θ: el primer dibujo de los dirigidos
+    for (const [f, k] of [
+      [f0, 0],
+      [f1, 1],
+    ] as const)
+      for (const id of PAIR_IDS) {
+        const d = f[id];
+        expect(d.frag, id).toBe(PAIRS[id][k]);
+        const got = Object.keys(d.uniforms);
+        expect(
+          declaredUniforms(d.frag).filter((u) => !got.includes(u)),
+          `${id}, programa ${k === 0 ? 'de la mirada 0' : 'dirigido'}: uniforms sin subir`,
+        ).toEqual([]);
+        // cada sampler en su unidad, con una textura puesta y sin compartir unidad con otro
+        const samplers = declaredSamplers(d.frag);
+        expect(new Set(samplers.map((n) => d.uniforms[n][0])).size, id).toBe(samplers.length);
+        for (const n of samplers) expect(samplerTexture(d, n), `${id}: ${n}`).toBeDefined();
+      }
+    // las salidas de la mirada dirigida llegan a quien las lee: A2 o2/o3 → A, A o1/o3 → B
+    const pre = fboTextures.get(f1.prefix.fbo!)!.map((t) => t.id);
+    const tr = fboTextures.get(f1.trans.fbo!)!.map((t) => t.id);
+    expect(samplerTexture(f1.trans, 'uPreSteer')).toBe(pre[2]);
+    expect(samplerTexture(f1.trans, 'uPreSteerX')).toBe(pre[3]);
+    expect(samplerTexture(f1.raw, 'uTrans1')).toBe(tr[1]);
+    expect(samplerTexture(f1.raw, 'uTrans3')).toBe(tr[3]);
+    expect(samplerTexture(f0.raw, 'uTrans0')).toBe(fboTextures.get(f0.trans.fbo!)![0].id);
+    // ningún uniform fue a un programa que no estaba puesto (WebGL lo habría descartado)
+    frame();
+    frame();
+    expect(misuse).toEqual([]);
+  });
+
+  it('la mirada del cuadro elige el programa: dos por pasada, el de la mirada 0 vuelve en el cuarto cuadro', () => {
+    const { frame } = rig(true);
+    const fs = [frame(), frame(), frame(), frame()];
+    for (const id of PAIR_IDS) {
+      const programs = fs.map((f) => f[id].program);
+      expect(programs[0], id).not.toBe(programs[1]);
+      expect(programs[2], id).toBe(programs[1]);
+      expect(programs[3], id).toBe(programs[0]);
+    }
+    // con el compuesto apagado, solo el de la mirada 0
+    const off = rig(false);
+    const gs = [off.frame(), off.frame(), off.frame()];
+    for (const id of PAIR_IDS) expect(gs.map((g) => g[id].frag)).toEqual(Array(3).fill(PAIRS[id][0]));
+  });
+
+  it('repeatPass repite el programa de la mirada del cuadro, no el otro', () => {
+    const passes = { prefix: 'transmissionPrefix', trans: 'transmission', raw: 'rawField' } as const;
+    for (const id of PAIR_IDS) {
+      const { sim, draws } = rig(true);
+      for (let look = 0; look < COMPOUND.order.length; look++) {
+        draws.length = 0;
+        sim.render({ repeat: { pass: passes[id], times: 2 } });
+        const d = draws.filter((x) => (PAIRS[id] as readonly string[]).includes(x.frag));
+        expect(d.length, `${id}, mirada ${look}`).toBe(3);
+        expect(d[0].frag).toBe(PAIRS[id][look === 0 ? 0 : 1]);
+        expect(new Set(d.map((x) => x.program)).size).toBe(1);
+        expect(d.slice(1).every((x) => x.fbo !== d[0].fbo && x.units === d[0].units)).toBe(true);
+      }
+    }
+  });
+
+  it('la pérdida de contexto: la reconstrucción libera los seis programas y el renderizador nuevo usa los suyos', () => {
+    const { sim, frame, deleted, canvas } = rig(true);
+    const before = [frame(), frame()];
+    const old = new Set(before.flatMap((f) => PAIR_IDS.map((id) => f[id].program)));
+    expect(old.size).toBe(6);
+    sim.rebuildRenderer(canvas);
+    for (const p of old) expect(deleted.has(p!)).toBe(true);
+    // el anillo empieza de nuevo: la mirada 0 y luego +θ, con programas nuevos y vivos
+    const after = [frame(), frame()];
+    after.forEach((f, look) => {
+      for (const id of PAIR_IDS) {
+        expect(f[id].frag).toBe(PAIRS[id][look]);
+        expect(old.has(f[id].program)).toBe(false);
+        expect(deleted.has(f[id].program!)).toBe(false);
+      }
+    });
   });
 });
 

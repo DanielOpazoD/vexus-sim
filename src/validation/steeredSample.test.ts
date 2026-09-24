@@ -3,7 +3,7 @@ import { add, cross, dot, length, normalize, scale, sub, type Vec3 } from '../co
 import { CONVEX_C35 } from '../probe/probe';
 import { CONVEX_BEAM, lateralSigmaMm } from '../ultrasound/beamModel';
 import { COMPOUND } from '../ultrasound/compound';
-import { FRAG_RAWFIELD, FRAG_TRANSMISSION, STEERED_FIELD_GLSL } from '../ultrasound/shaders/passes.glsl';
+import { FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED, FRAG_TRANSMISSION_STEERED, STEERED_FIELD_GLSL } from '../ultrasound/shaders/passes.glsl';
 import { lookCoverage, steeredSample, type SteeredSampleCell, type SteeredSampleImage } from '../ultrasound/steering';
 import { rng } from './syntheticSpeckle';
 
@@ -11,8 +11,9 @@ import { rng } from './syntheticSpeckle';
  * Geometría de la rama dirigida de la pasada B (decisión 58): punto y dirección antes y después del espejo,
  * incidencia de la pleura, lectura de la transmisión de la reverberación, anclas de la cola y del
  * transitorio, código de A o3 y alcance fuera del arreglo. `steeredSample` es el gemelo línea a línea de
- * `STEERED_FIELD_GLSL` (la última prueba fija las líneas del GLSL); aquí se comprueba contra la geometría
- * del camino dirigido y, con θ = 0, contra las fórmulas de la mirada 0 de `FRAG_RAWFIELD`.
+ * `STEERED_FIELD_GLSL`, el main del programa dirigido de B (`FRAG_RAWFIELD_STEERED`; la última prueba fija
+ * las líneas del GLSL); aquí se comprueba contra la geometría del camino dirigido y, con θ = 0, contra las
+ * fórmulas del programa de la mirada 0 (`FRAG_RAWFIELD`).
  */
 const deg = Math.PI / 180;
 const TH = COMPOUND.steerDeg * deg;
@@ -45,7 +46,7 @@ function pleuraNormal(rnd: () => number, d0: Vec3): Vec3 {
   return dot(n, d0) > 0 ? scale(n, -1) : n;
 }
 
-/** Celda de A o3 como la empaqueta `FRAG_TRANSMISSION`: tipo de gas + 4·(línea del espejo + 1). */
+/** Celda de A o3 como la empaqueta `FRAG_TRANSMISSION_STEERED`: tipo de gas + 4·(línea del espejo + 1). */
 const cell = (
   sGas: number,
   gasKind: number,
@@ -270,8 +271,12 @@ describe('rama dirigida de la pasada B: geometría (decisión 58)', () => {
       'float coupling = texture(uCoupling, vec2(uK, 0.5)).r;',
     ])
       expect(STEERED_FIELD_GLSL, line).toContain(line);
-    // A empaqueta lo que B separa, y la mirada 0 conserva sus fórmulas
-    expect(FRAG_TRANSMISSION).toContain('o3 = vec4(Tk, ps.y, px.x + 4.0 * (px.y + 1.0), ps.w);');
+    // la rama es el main del programa dirigido de B, y el de la mirada 0 no la lleva
+    expect(FRAG_RAWFIELD_STEERED).toContain(STEERED_FIELD_GLSL);
+    expect(FRAG_RAWFIELD_STEERED).toContain('void main() {\n  oField = steeredField();\n}');
+    expect(FRAG_RAWFIELD).not.toContain('steeredField');
+    // A empaqueta (en su programa dirigido) lo que B separa, y la mirada 0 conserva sus fórmulas
+    expect(FRAG_TRANSMISSION_STEERED).toContain('o3 = vec4(Tk, ps.y, px.x + 4.0 * (px.y + 1.0), ps.w);');
     expect(FRAG_RAWFIELD).toContain('p = hp + dir * (r - mirrorHit);');
     expect(FRAG_RAWFIELD).toContain('float Tg = texture(uTrans0, vec2(vUv.x, max(gasHit - dr, 0.0) / uDepth)).x * coupling;');
     expect(FRAG_RAWFIELD).toContain('scattererField(vec3(vUv.x * 190.0, r * 0.9, 0.0), 0.6, uSeed + 3.0)');

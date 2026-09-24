@@ -1204,15 +1204,16 @@ mirada 0 con la línea dirigida que pasa por cada una y promediadas en lineal po
   (`steeredApertureTransmission`: radio R·cos θ y distancias del camino; con θ = 0, la decisión 54 exacta)
   con el primer gas, el tipo de gas y la línea del espejo empaquetados. `o0`, `o1` y `o2.x` (el rayo único
   del color y del PW) no cambian.
-- Pasada B, rama dirigida (`STEERED_FIELD_GLSL`, `uSteer` = (θ, R·sin θ, R·cos θ, k2), `uLookSalt`,
-  `uTrans3`): la fase de la mirada, la transmisión del camino y el acoplamiento del elemento φ_k, el eco de
-  interfaz y el de la pleura con la incidencia de la mirada (dirección α + β: una cara oblicua brilla en
-  unas miradas y no en otras), la reverberación a múltiplos del primer gas a lo largo del camino y la cola
-  sucia y el transitorio anclados a (línea dirigida, distancia del camino) con una sal por mirada
-  (`lookSalt`, 0 en la mirada 0): cada mirada es otro disparo. Tras el espejo, el punto sigue la dirección
-  reflejada de la línea que cruza desde su propio cruce, con la fase del potencial directo. Fuera del
-  arreglo la mirada no existe (K la pesa 0), pero B la forma hasta el alcance del núcleo lateral de D
-  (±2,5σ): si no, D mezclaría ceros en las muestras con peso junto al borde.
+- Pasada B, rama dirigida (`STEERED_FIELD_GLSL`, el main de su programa dirigido; `uSteer` = (θ, R·sin θ,
+  R·cos θ, k2), `uLookSalt`, `uTrans3`; no lee A o0): la fase de la mirada, la transmisión del camino y el
+  acoplamiento del elemento φ_k, el eco de interfaz y el de la pleura con la incidencia de la mirada
+  (dirección α + β: una cara oblicua brilla en unas miradas y no en otras), la reverberación a múltiplos
+  del primer gas a lo largo del camino y la cola sucia y el transitorio anclados a (línea dirigida,
+  distancia del camino) con una sal por mirada (`lookSalt`, 0 en la mirada 0): cada mirada es otro
+  disparo. Tras el espejo, el punto sigue la dirección reflejada de la línea que cruza desde su propio
+  cruce, con la fase del potencial directo. Fuera del arreglo la mirada no existe (K la pesa 0), pero B la
+  forma hasta el alcance del núcleo lateral de D (±2,5σ): si no, D mezclaría ceros en las muestras con
+  peso junto al borde.
 - Pasada K (`FRAG_COMPOUND`): en cada celda, la media de las envolventes válidas del anillo ponderada por
   la cobertura de cada mirada (`lookWeight`: 1 la mirada 0; rampa de una línea centrada en el borde del
   arreglo las dirigidas), con `texelFetch` en la misma celda y sin remuestreo. Con una sola mirada válida
@@ -1224,13 +1225,21 @@ mirada 0 con la línea dirigida que pasa por cada una y promediadas en lineal po
 - Regla de actividad (`compoundActive`): compuesto ⇔ conmutador encendido y color apagado; el PW lo
   conserva (no limita la cadencia del modo B). Encendido por defecto; orden `compound` del equipo,
   conmutador «Compuesto» en la pestaña Imagen y «CX» en el HUD mientras se forma.
-- La mirada 0 no cambia: con θ = 0 todos los shaders siguen el código de hoy (las ramas dirigidas van
-  detrás de `uSteer.x != 0`) y K es un paso directo exacto. `readEnvelope({ source })` lee la mirada 0 por
-  defecto y lanza si no es la del último cuadro; `compound` es obligatorio en el tipo de los ganchos de
-  medida y las guardas de una mirada pasan `compound: false` con sus umbrales de siempre.
-- Presupuesto: la pasada B declara 107 ranuras de uniforms (antes 105) y 5 samplers; K, 10 ranuras y 3
-  samplers; A, 6 samplers. El chunk principal del bundle pasa de 228,8 a 250,1 kB (el GLSL viaja como
-  texto) y su presupuesto, de 240 a 260 kB (`tools/ci/bundle-budget.ts`).
+- La mirada 0 no cambia, ni en la imagen ni en el coste: A2, A y B tienen dos programas de una sola fuente
+  (`transPrefixShader`, `transmissionShader`, `rawFieldShader` en `shaders/passes.glsl.ts`, con los huecos
+  de la dirigida vacíos en la mirada 0): el de la mirada 0, byte a byte el de `main` antes de la
+  composición y sin nada de la dirigida, y el dirigido (`FRAG_TRANS_PREFIX_STEERED`,
+  `FRAG_TRANSMISSION_STEERED`, `FRAG_RAWFIELD_STEERED`), el único que declara `uSteer`. El renderizador
+  elige uno por cuadro por su θ (`LookPrograms`; θ = 0 con el compuesto apagado o el color encendido),
+  compila los seis al crearse (también al reconstruirse tras una pérdida de contexto), sube a cada uno los
+  uniforms que declara y las repeticiones de medida (`repeatPass`) repiten el del cuadro. En un cuadro de
+  la mirada 0 nadie escribe ni lee A o3 ni A2 o2/o3. K es un paso directo exacto. `readEnvelope({ source })`
+  lee la mirada 0 por defecto y lanza si no es la del último cuadro; `compound` es obligatorio en el tipo de
+  los ganchos de medida y las guardas de una mirada pasan `compound: false` con sus umbrales de siempre.
+- Presupuesto: el programa de la mirada 0 de B conserva sus 105 ranuras de uniforms y sus 4 samplers; el
+  dirigido declara 107 (uSteer, uLookSalt) y 4 samplers (uTrans3 en lugar de uTrans0); K, 10 ranuras y 3
+  samplers; el dirigido de A, 6 samplers. El chunk principal del bundle pasa de 228,8 a 250,1 kB (el GLSL
+  viaja como texto) y su presupuesto, de 240 a 260 kB (`tools/ci/bundle-budget.ts`).
 
 **Consecuencias.** Predicción del gemelo B→C→D de tres planos a ±7° en la subxifoidea (8 realizaciones;
 no medida en GPU) a 20 / 45 / 90 / 150 mm: ρ(0,±) 0,23 / 0,42 / 0,65 / 0,35 (ley con la σ medida 0,32 /
@@ -1250,9 +1259,23 @@ refuerzo tras un vaso de 12 mm se ensancha +14 / +40 / +67 % a 80 / 110 / 150 mm
 más bajo. A ±6° N_eff baja a 2,06 / 1,71 / 1,37 / 1,84 y a ±8° sube a 2,55 / 2,10 / 1,57 / 2,31. Las
 bandas laterales de dos miradas (la costura: 5–15 líneas por lado según la profundidad) tienen menos SNR
 que el centro. Al abrir el color la textura vuelve a la de una mirada (coste asumido, como en varios
-equipos; `compound-off-in-color`); el color y el PW no cambian. Coste estimado por los diseños (no medido):
-−0,15 a +0,20 ms por cuadro de media (la rama dirigida de B en dos de cada tres cuadros, el segundo bucle
-de A2 y el segundo cono de A, y K) y +3,9 MB de memoria. Pendiente, con GPU: calibrar θ en 6–8° para una
+equipos; `compound-off-in-color`); el color y el PW no cambian. Coste estimado por los diseños: −0,15 a
++0,20 ms por cuadro de media (la rama dirigida de B en dos de cada tres cuadros, el segundo bucle de A2 y
+el segundo cono de A, y K) y +3,9 MB de memoria. Medido (M4 con Metal, A/B intercalado con `main` bajo la
+misma carga, media de carga ≈ 22, `frameCostMs(30, { repeatPass, repeatCount: 2 })`, Δ por repetición)
+con la primera versión, un solo programa por pasada y la rama dirigida detrás de `if (uSteer.x != 0.0)`:
+B costaba 4,5–4,9 ms frente a 2,6–2,9 en `main` **aun con el compuesto apagado** (θ = 0: la rama no se
+tomaba nunca) y 4,7–4,9 encendido; el cuadro, 10,5–10,7 ms apagado y 11,3 encendido frente a 8,8–9,3; A2
++0,5 ms encendido (+0,1 apagado), A +0,1–0,2, C y D ≈ 0. El programa entero paga los registros y el
+tamaño de la rama que lleva dentro, se tome o no (la de B inlinea otra vez la clasificación, el moteado con
+fase y los ecos): opción descartada, +2 ms en cada cuadro de la aplicación. Diseño adoptado: dos
+programas por pasada (arriba), con la mirada 0 byte a byte la de `main`; A2 y A se separan igual, aunque su
+coste apagado era menor, porque tenían la misma estructura (su bucle o su cono dirigidos compilados en el
+programa de la mirada 0). Previsto: con el compuesto apagado, A2, A y B cuestan lo de `main` (quedan K,
+un paso directo de LINES × 1024 texels, la marca de gas de A1 y los adjuntos 2 y 3 de A2 y el 3 de A, que
+la mirada 0 no escribe; ≈ 3 MB de carga y guardado de teselas, ≤ 0,05 ms estimados); encendido, B en las
+miradas dirigidas cuesta lo de su programa, que ya no lleva el cuerpo de la mirada 0. Pendiente de volver a
+medir con el mismo protocolo. Pendiente, con GPU: calibrar θ en 6–8° para una
 mediana de la desviación del gris de 12–13 y medir G1–G8 y K1–K12 (`docs/fidelity/README.md`, PR 4a), y
 luego el punto de control A de la prueba ciega. El aliasing de línea del moteado (`speckle-line-aliasing`)
 queda para el PR 3.
@@ -1266,11 +1289,16 @@ alcance fuera del arreglo; líneas del GLSL fijadas), `steeredParity.test.ts` (m
 redondeo de G8), `aperture.test.ts` (θ = 0 igual a la decisión 54; umbra y refuerzo), `transmission.test.ts`
 (prefijo dirigido frente a la CPU a ≤ 0,05 dB, espejo congelado) y `compound.test.ts` (orden, reinicios,
 pesos, paso directo, regla de actividad). GPU sin GPU: `passGraph.test.ts` (K antes de D, D escribiendo
-`env` junto con K y B sin declarar la transmisión que muestrea: las tres se detectan),
-`shaderLimits.test.ts` (≤ 16 samplers, arrays de K interpolados, ningún uniform sin declarar) y
-`compoundRenderer.test.ts` (el renderizador real sobre un WebGL falso: la mirada de cada cuadro llega a
-A2, A y B, D escribe su ranura, K lee las tres con su validez, los reinicios, las lecturas que se niegan a
-dar datos de otro cuadro y el protocolo de los ganchos); `fidelity.test.ts` y `fidelityScene.test.ts`
+`env` junto con K y B sin declarar la transmisión que muestrea: las tres se detectan; los samplers de los
+dos programas de cada pasada), `shaderLimits.test.ts` (≤ 16 samplers, arrays de K interpolados, ningún
+uniform sin declarar; los programas de la mirada 0 sin ningún identificador de la dirigida, sacados del
+código, con una prueba de que volver a meter la rama se detecta, y la huella de su main, la de `main`
+eabd2aa) y `compoundRenderer.test.ts` (el renderizador real sobre un WebGL falso: cada mirada dibuja A2, A
+y B con su programa y solo el dirigido recibe la mirada, cada programa recibe todos los uniforms y samplers
+que declara con el programa puesto y cada sampler su textura, `repeatPass` repite el programa del cuadro,
+la reconstrucción tras perder el contexto libera y rehace los seis, D escribe su ranura, K lee las tres con
+su validez, los reinicios, las lecturas que se niegan a dar datos de otro cuadro y el protocolo de los
+ganchos); `fidelity.test.ts` y `fidelityScene.test.ts`
 (ρ_I, costura, umbra e hígado puro de las tres miradas). e2e: «composición espacial» (G1–G4, K1, K5,
 grano, G8 y la guarda de `readEnvelope`) con SwiftShader, y las guardas de una mirada con
 `compound: false` sin tocar sus umbrales.

@@ -342,6 +342,16 @@ Deben seguir pasando:
 | K11 | `msPerFrame` ≤ 13,5 ms en las 8 escenas, con el color apagado y encendido, 3 corridas con el runner inactivo; ≥ 30 cps a densidad 2.                                                                                                                           |
 | K12 | Gemelos de las decisiones 55 y 56 sin cambios.                                                                                                                                                                                                                 |
 
+Notas de K11 (coste): se mide también por pasada, con `frameCostMs(30, { repeatPass, repeatCount: 2 })`
+intercalando `main` y la rama bajo la misma carga, con el compuesto apagado y encendido. La primera versión
+de la decisión 58 (la rama dirigida compilada en el programa de la mirada 0 de A2, A y B, detrás de
+`uSteer.x != 0`) hacía costar a B 4,5–4,9 ms por repetición frente a 2,6–2,9 en `main` aun con el
+compuesto apagado (M4, carga ≈ 22; el cuadro, 10,5–10,7 ms frente a 8,8–9,3). Ahora la mirada 0 usa el
+programa de `main` byte a byte y las dirigidas el suyo: con el compuesto apagado, A2, A y B deben costar
+lo de `main` dentro del ruido de la medida (las corridas de `main` ya se separan 0,3 ms) y el cuadro solo
+suma K; con él encendido, el coste de B es la media de su programa de la mirada 0 (un cuadro de cada tres)
+y el dirigido (dos de cada tres).
+
 Informativas: borde de la sombra 10–90 % en ±20 líneas, refuerzo tras los vasos, ρ(−,+) (aliasing de línea,
 `speckle-line-aliasing`), rosario del banco de interfaces (se espera × 0,65–0,85) y luz vascular (no se
 puntúa aquí). La e2e «composición espacial» comprueba con SwiftShader G1–G4, K1, K5, la razón de grano, G8

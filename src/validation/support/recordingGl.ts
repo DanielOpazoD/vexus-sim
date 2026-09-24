@@ -1,9 +1,11 @@
 /**
  * WebGL2 falso que registra lo que el renderizador real pide a la GPU: qué FBO está puesto, con qué
  * programa (y su nombre de shader) y qué textura hay en cada unidad en cada dibujo, los uniforms de
- * cada programa en ese momento y los adjuntos (formato y tamaño) de cada FBO. Todo lo demás (parámetros
- * de textura, lecturas) no hace nada; los shaders «compilan». Lo usan `frameCost.test.ts` (repeticiones
- * de medida) y `compoundRenderer.test.ts` (anillo de miradas, decisión 58).
+ * cada programa en ese momento, los adjuntos (formato y tamaño) de cada FBO y los FBO y programas
+ * liberados. Un uniform subido con la ubicación de un programa que no es el puesto (WebGL lo rechaza con
+ * INVALID_OPERATION y no lo sube) queda en `misuse`. Todo lo demás (parámetros de textura, lecturas) no
+ * hace nada; los shaders «compilan». Lo usan `frameCost.test.ts` (repeticiones de medida) y
+ * `compoundRenderer.test.ts` (anillo de miradas y programas por mirada, decisión 58).
  */
 export function recordingGl(canvasSize: { width: number; height: number }) {
   const K: Record<string, number> = {
@@ -40,8 +42,13 @@ export function recordingGl(canvasSize: { width: number; height: number }) {
   const fragOf = new Map<Obj, string>();
   const uniformsOf = new Map<Obj, Map<string, number[]>>();
   type Loc = Obj & { name: string; program: Obj };
+  const misuse: string[] = [];
   const setUniform = (loc: Loc | null, values: number[]): void => {
     if (!loc) return;
+    if (loc.program !== state.program) {
+      misuse.push(`${loc.name}: ubicación del programa ${loc.program.id} con el ${state.program?.id ?? '—'} puesto`);
+      return;
+    }
     const m = uniformsOf.get(loc.program) ?? new Map<string, number[]>();
     m.set(loc.name, values);
     uniformsOf.set(loc.program, m);
@@ -93,6 +100,7 @@ export function recordingGl(canvasSize: { width: number; height: number }) {
       fboTextures.set(state.fbo!, texs);
     },
     deleteFramebuffer: (fbo: Obj) => void deleted.add(fbo),
+    deleteProgram: (p: Obj) => void deleted.add(p),
     viewport: (...v: number[]) => void (state.viewport = v),
     drawArrays: () => {
       const units = [...state.units.entries()]
@@ -124,5 +132,5 @@ export function recordingGl(canvasSize: { width: number; height: number }) {
   );
   const canvas = { ...canvasSize, getContext: () => gl } as unknown as HTMLCanvasElement;
   /** Textura de cada FBO por adjunto (para saber qué destino lee cada unidad). */
-  return { canvas, draws, binds, attachments, deleted, fboTextures };
+  return { canvas, draws, binds, attachments, deleted, fboTextures, misuse };
 }

@@ -9,11 +9,14 @@ import {
   FRAG_LATERAL,
   FRAG_PERSIST,
   FRAG_RAWFIELD,
+  FRAG_RAWFIELD_STEERED,
   FRAG_SCANCONVERT,
   FRAG_TRANS_HITS,
   FRAG_TRANS_PREFIX,
+  FRAG_TRANS_PREFIX_STEERED,
   FRAG_TRANS_SEGMENTS,
   FRAG_TRANSMISSION,
+  FRAG_TRANSMISSION_STEERED,
 } from '../ultrasound/shaders/passes.glsl';
 
 describe('grafo de pasadas del renderer', () => {
@@ -192,47 +195,55 @@ describe('summarizeGpuTimings', () => {
 });
 
 /**
- * Lo que cada pasada declara leer frente a lo que su shader muestrea (decisión 58, T7): la tabla dice qué
- * recurso lee cada sampler del shader de cada pasada; los de la escena y el acoplamiento (uSceneTex,
- * uCoupling) van en el preludio común y no cuentan. Un sampler nuevo sin fila, una lectura sin declarar
- * o una declarada sin sampler son errores: el grafo no puede mentir sobre sus dependencias.
+ * Lo que cada pasada declara leer frente a lo que sus shaders muestrean (decisión 58, T7): la tabla dice qué
+ * recurso lee cada sampler de los programas de cada pasada (A2, A y B tienen dos: el de la mirada 0 y el
+ * dirigido); los de la escena y el acoplamiento (uSceneTex, uCoupling) van en el preludio común y no
+ * cuentan. Un sampler nuevo sin fila, una lectura sin declarar en cualquiera de los programas o una
+ * declarada que no muestrea ninguno son errores: el grafo no puede mentir sobre sus dependencias.
  */
-const SAMPLERS: Record<PassId, { src: string; samplers: Record<string, Resource> }> = {
-  transmissionHits: { src: FRAG_TRANS_HITS, samplers: {} },
-  transmissionSegments: { src: FRAG_TRANS_SEGMENTS, samplers: { uHits0: 'transHits', uHits1: 'transHits' } },
-  transmissionPrefix: { src: FRAG_TRANS_PREFIX, samplers: { uSeg: 'transSeg', uHits0: 'transHits', uHits1: 'transHits' } },
+const SAMPLERS: Record<PassId, { srcs: readonly string[]; samplers: Record<string, Resource> }> = {
+  transmissionHits: { srcs: [FRAG_TRANS_HITS], samplers: {} },
+  transmissionSegments: { srcs: [FRAG_TRANS_SEGMENTS], samplers: { uHits0: 'transHits', uHits1: 'transHits' } },
+  transmissionPrefix: {
+    srcs: [FRAG_TRANS_PREFIX, FRAG_TRANS_PREFIX_STEERED],
+    samplers: { uSeg: 'transSeg', uHits0: 'transHits', uHits1: 'transHits' },
+  },
   transmission: {
-    src: FRAG_TRANSMISSION,
+    srcs: [FRAG_TRANSMISSION, FRAG_TRANSMISSION_STEERED],
     samplers: { uPre0: 'transPrefix', uPre1: 'transPrefix', uPreSteer: 'transPrefix', uPreSteerX: 'transPrefix', uHits0: 'transHits' },
   },
-  rawField: { src: FRAG_RAWFIELD, samplers: { uTrans0: 'trans', uTrans1: 'trans', uTrans3: 'trans' } },
-  axial: { src: FRAG_AXIAL, samplers: { uField: 'raw' } },
-  lateral: { src: FRAG_LATERAL, samplers: { uField: 'axial' } },
-  compound: { src: FRAG_COMPOUND, samplers: { uLook0: 'envLooks', uLook1: 'envLooks', uLook2: 'envLooks' } },
-  color: { src: FRAG_COLOR, samplers: { uTrans0: 'trans' } },
-  scanConvert: { src: FRAG_SCANCONVERT, samplers: { uEnv: 'env', uColor: 'color' } },
-  persistence: { src: FRAG_PERSIST, samplers: { uCur: 'scan', uPrev: 'persist' } },
-  present: { src: FRAG_BLIT, samplers: { uTex: 'persist' } },
+  rawField: { srcs: [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED], samplers: { uTrans0: 'trans', uTrans1: 'trans', uTrans3: 'trans' } },
+  axial: { srcs: [FRAG_AXIAL], samplers: { uField: 'raw' } },
+  lateral: { srcs: [FRAG_LATERAL], samplers: { uField: 'axial' } },
+  compound: { srcs: [FRAG_COMPOUND], samplers: { uLook0: 'envLooks', uLook1: 'envLooks', uLook2: 'envLooks' } },
+  color: { srcs: [FRAG_COLOR], samplers: { uTrans0: 'trans' } },
+  scanConvert: { srcs: [FRAG_SCANCONVERT], samplers: { uEnv: 'env', uColor: 'color' } },
+  persistence: { srcs: [FRAG_PERSIST], samplers: { uCur: 'scan', uPrev: 'persist' } },
+  present: { srcs: [FRAG_BLIT], samplers: { uTex: 'persist' } },
 };
 const PRELUDE_SAMPLERS = new Set(['uSceneTex', 'uCoupling']);
 const PRELUDE_RESOURCES = new Set<Resource>(['scene', 'coupling']);
 
-function samplerErrors(passes: readonly PassSpec[]): string[] {
+function samplerErrors(passes: readonly PassSpec[], table = SAMPLERS): string[] {
   const errors: string[] = [];
   for (const p of passes) {
-    const { src, samplers } = SAMPLERS[p.id];
-    const declared = [...src.replace(/\/\/.*$/gm, '').matchAll(/\buniform\s+sampler2D\s+(\w+)/g)].map((m) => m[1]);
-    for (const name of declared) {
-      if (PRELUDE_SAMPLERS.has(name)) continue;
-      const r = samplers[name];
-      if (r === undefined) errors.push(`${p.id}: el sampler ${name} no está en la tabla`);
-      else if (!p.reads.includes(r)) errors.push(`${p.id} muestrea ${name} («${r}») sin declararlo`);
+    const { srcs, samplers } = table[p.id];
+    const all = new Set<string>();
+    for (const src of srcs) {
+      const declared = [...src.replace(/\/\/.*$/gm, '').matchAll(/\buniform\s+sampler2D\s+(\w+)/g)].map((m) => m[1]);
+      for (const name of declared) {
+        all.add(name);
+        if (PRELUDE_SAMPLERS.has(name)) continue;
+        const r = samplers[name];
+        if (r === undefined) errors.push(`${p.id}: el sampler ${name} no está en la tabla`);
+        else if (!p.reads.includes(r)) errors.push(`${p.id} muestrea ${name} («${r}») sin declararlo`);
+      }
     }
     for (const r of p.reads)
-      if (!PRELUDE_RESOURCES.has(r) && !declared.some((n) => samplers[n] === r))
+      if (!PRELUDE_RESOURCES.has(r) && ![...all].some((n) => samplers[n] === r))
         errors.push(`${p.id} declara leer «${r}» y no lo muestrea`);
   }
-  return errors;
+  return [...new Set(errors)];
 }
 
 describe('las lecturas declaradas son las de los shaders', () => {
@@ -240,10 +251,15 @@ describe('las lecturas declaradas son las de los shaders', () => {
     expect(samplerErrors(FRAME_PASSES)).toEqual([]);
   });
 
-  it('B sin leer la transmisión (su rama dirigida muestrea uTrans3): lo detecta', () => {
+  it('B sin leer la transmisión (su programa dirigido muestrea uTrans3): lo detecta', () => {
     const blind = FRAME_PASSES.map((p): PassSpec => (p.id === 'rawField' ? { ...p, reads: ['scene'] } : p));
     expect(samplerErrors(blind).join('\n')).toMatch(/rawField muestrea uTrans0 \(«trans»\) sin declararlo/);
     expect(samplerErrors(blind).join('\n')).toMatch(/rawField muestrea uTrans3 \(«trans»\) sin declararlo/);
+    // se revisan los dos programas de cada pasada: un sampler que solo declara el dirigido de A y no tiene
+    // fila en la tabla también se ve
+    const { uPreSteer: _omit, ...partial } = SAMPLERS.transmission.samplers;
+    const noRow = { ...SAMPLERS, transmission: { ...SAMPLERS.transmission, samplers: partial } };
+    expect(samplerErrors(FRAME_PASSES, noRow)).toEqual(['transmission: el sampler uPreSteer no está en la tabla']);
     // y K sin declarar el anillo
     const k = FRAME_PASSES.map((p): PassSpec => (p.id === 'compound' ? { ...p, reads: [] } : p));
     expect(samplerErrors(k).join('\n')).toMatch(/compound muestrea uLook0 \(«envLooks»\) sin declararlo/);

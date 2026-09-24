@@ -37,13 +37,16 @@ import {
   FRAG_LATERAL,
   FRAG_PERSIST,
   FRAG_RAWFIELD,
+  FRAG_RAWFIELD_STEERED,
   FRAG_SCANCONVERT,
   FRAG_TISSUEMAP,
   FRAG_QUERY,
   FRAG_TRANS_HITS,
   FRAG_TRANS_PREFIX,
+  FRAG_TRANS_PREFIX_STEERED,
   FRAG_TRANS_SEGMENTS,
   FRAG_TRANSMISSION,
+  FRAG_TRANSMISSION_STEERED,
   TISSUE_VEC4,
   VERT,
 } from './shaders/passes.glsl';
@@ -246,13 +249,28 @@ export interface CompoundState {
   resets: number;
 }
 
+/**
+ * Los dos programas de una pasada con miradas (A2, A y B; decisión 58), de una sola fuente: el de la mirada 0
+ * (θ = 0; el de antes de la composición, sin nada de la dirigida) y el de las miradas ±θ. Se elige uno por
+ * cuadro (`lookProgram`). Con uno solo y la rama dirigida detrás de `uSteer.x != 0`, B costaba ~2 ms más
+ * por cuadro en el M4 aun con el compuesto apagado.
+ */
+interface LookPrograms {
+  look0: GLProgram;
+  steered: GLProgram;
+}
+
+function lookPrograms(gl: WebGL2RenderingContext, look0: string, steered: string, name: string): LookPrograms {
+  return { look0: new GLProgram(gl, VERT, look0, name), steered: new GLProgram(gl, VERT, steered, `${name}Steered`) };
+}
+
 export class UltrasoundRenderer {
   readonly gl: WebGL2RenderingContext;
   private pTransHits: GLProgram;
   private pTransSeg: GLProgram;
-  private pTransPre: GLProgram;
-  private pTrans: GLProgram;
-  private pRaw: GLProgram;
+  private pTransPre: LookPrograms;
+  private pTrans: LookPrograms;
+  private pRaw: LookPrograms;
   private pAxial: GLProgram;
   private pLateral: GLProgram;
   private pCompound: GLProgram;
@@ -358,9 +376,9 @@ export class UltrasoundRenderer {
     this.timer = new GpuPassTimer<PassId>(gl);
     this.pTransHits = new GLProgram(gl, VERT, FRAG_TRANS_HITS, 'transmissionHits');
     this.pTransSeg = new GLProgram(gl, VERT, FRAG_TRANS_SEGMENTS, 'transmissionSegments');
-    this.pTransPre = new GLProgram(gl, VERT, FRAG_TRANS_PREFIX, 'transmissionPrefix');
-    this.pTrans = new GLProgram(gl, VERT, FRAG_TRANSMISSION, 'transmission');
-    this.pRaw = new GLProgram(gl, VERT, FRAG_RAWFIELD, 'rawfield');
+    this.pTransPre = lookPrograms(gl, FRAG_TRANS_PREFIX, FRAG_TRANS_PREFIX_STEERED, 'transmissionPrefix');
+    this.pTrans = lookPrograms(gl, FRAG_TRANSMISSION, FRAG_TRANSMISSION_STEERED, 'transmission');
+    this.pRaw = lookPrograms(gl, FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED, 'rawfield');
     this.pAxial = new GLProgram(gl, VERT, FRAG_AXIAL, 'axial');
     this.pLateral = new GLProgram(gl, VERT, FRAG_LATERAL, 'lateral');
     this.pCompound = new GLProgram(gl, VERT, FRAG_COMPOUND, 'compound');
@@ -434,9 +452,7 @@ export class UltrasoundRenderer {
     for (const p of [
       this.pTransHits,
       this.pTransSeg,
-      this.pTransPre,
-      this.pTrans,
-      this.pRaw,
+      ...[this.pTransPre, this.pTrans, this.pRaw].flatMap((l) => [l.look0, l.steered]),
       this.pAxial,
       this.pLateral,
       this.pCompound,
@@ -779,23 +795,36 @@ export class UltrasoundRenderer {
     drawFullscreen(gl);
   }
 
-  // A2 — atenuación acumulada hasta cada profundidad (sin clasificar)
+  // A2 — atenuación acumulada hasta cada profundidad (sin clasificar); con una mirada dirigida, también la
+  // de su camino (o2, o3)
   private passTransmissionPrefix(inputs: FrameInputs): void {
     const gl = this.gl;
+    const steered = this.steeredLook();
+    const p = this.lookProgram(this.pTransPre);
     bindTarget(gl, this.tPre);
-    this.pTransPre.use();
-    this.setBeamUniforms(this.pTransPre, inputs);
-    this.pTransPre.f('uCoarseN', COARSE_DEPTH);
-    this.pTransPre.tex('uSeg', 0, this.tSeg.textures[0]);
-    this.pTransPre.tex('uHits0', 1, this.tHits.textures[0]);
-    this.pTransPre.tex('uHits1', 2, this.tHits.textures[1]);
-    this.setSteerUniforms(this.pTransPre, inputs);
+    p.use();
+    this.setBeamUniforms(p, inputs);
+    p.f('uCoarseN', COARSE_DEPTH);
+    p.tex('uSeg', 0, this.tSeg.textures[0]);
+    p.tex('uHits0', 1, this.tHits.textures[0]);
+    p.tex('uHits1', 2, this.tHits.textures[1]);
+    if (steered) this.setSteerUniforms(p, inputs);
     drawFullscreen(gl);
   }
 
+  /** El cuadro es de una mirada dirigida (θ ≠ 0, decisión 58): A2, A y B usan su programa dirigido. */
+  private steeredLook(): boolean {
+    return (this.look?.theta ?? 0) !== 0;
+  }
+
+  /** Programa de la mirada del cuadro (`LookPrograms`); el que queda puesto repiten `drawRepeats`. */
+  private lookProgram(p: LookPrograms): GLProgram {
+    return this.steeredLook() ? p.steered : p.look0;
+  }
+
   /**
-   * Mirada del cuadro (decisión 58) para A2, A y B: uSteer = (θ, R·sin θ, R·cos θ, k2). Con θ = 0 las ramas
-   * dirigidas no se ejecutan (la mirada 0 es la imagen de siempre).
+   * Mirada del cuadro (decisión 58) para los programas dirigidos de A2, A y B: uSteer = (θ, R·sin θ, R·cos θ,
+   * k2). Los de la mirada 0 no la declaran.
    */
   private setSteerUniforms(p: GLProgram, inputs: FrameInputs): void {
     const th = this.look?.theta ?? 0;
@@ -803,58 +832,70 @@ export class UltrasoundRenderer {
     p.v4('uSteer', th, R * Math.sin(th), R * Math.cos(th), this.k2);
   }
 
-  // A — transmisión con la penumbra de la apertura (y la de un solo rayo para el Doppler)
+  // A — transmisión con la penumbra de la apertura (y la de un solo rayo para el Doppler); con una mirada
+  // dirigida, también la de su camino (o3)
   private passTransmission(inputs: FrameInputs): void {
     const gl = this.gl;
     const beam = this.profile.beam;
+    const steered = this.steeredLook();
+    const p = this.lookProgram(this.pTrans);
     bindTarget(gl, this.tTrans);
-    this.pTrans.use();
-    this.setBeamUniforms(this.pTrans, inputs);
-    this.pTrans.f('uCoarseN', COARSE_DEPTH);
-    this.pTrans.tex('uPre0', 0, this.tPre.textures[0]);
-    this.pTrans.tex('uPre1', 1, this.tPre.textures[1]);
-    this.pTrans.tex('uHits0', 2, this.tHits.textures[0]);
-    this.pTrans.tex('uPreSteer', 3, this.tPre.textures[2]);
-    this.pTrans.tex('uPreSteerX', 4, this.tPre.textures[3]);
-    this.pTrans.v3('uAperture', [beam.apertureTxMm, beam.apertureRxMaxMm, beam.fNumberRxMin]);
-    this.setSteerUniforms(this.pTrans, inputs);
+    p.use();
+    this.setBeamUniforms(p, inputs);
+    p.f('uCoarseN', COARSE_DEPTH);
+    p.tex('uPre0', 0, this.tPre.textures[0]);
+    p.tex('uPre1', 1, this.tPre.textures[1]);
+    p.tex('uHits0', 2, this.tHits.textures[0]);
+    p.v3('uAperture', [beam.apertureTxMm, beam.apertureRxMaxMm, beam.fNumberRxMin]);
+    if (steered) {
+      // el prefijo de la mirada del cuadro, que A2 acaba de escribir con su programa dirigido
+      p.tex('uPreSteer', 3, this.tPre.textures[2]);
+      p.tex('uPreSteerX', 4, this.tPre.textures[3]);
+      this.setSteerUniforms(p, inputs);
+    }
     drawFullscreen(gl);
   }
 
-  // B — campo crudo
+  // B — campo crudo: la mirada 0 o, en su programa, la dirigida del cuadro (decisión 58)
   private passRawField(inputs: FrameInputs): void {
     const gl = this.gl;
     const tr = inputs.transducer;
+    const steered = this.steeredLook();
+    const p = this.lookProgram(this.pRaw);
     bindTarget(gl, this.tRaw);
-    this.pRaw.use();
-    this.setSceneUniforms(this.pRaw, inputs);
-    this.setBeamUniforms(this.pRaw, inputs);
-    this.pRaw.tex('uTrans0', 0, this.tTrans.textures[0]);
-    this.pRaw.tex('uTrans1', 1, this.tTrans.textures[1]);
-    // la mirada dirigida del cuadro (decisión 58); siempre puesta: WebGL valida todos los samplers activos
-    this.pRaw.tex('uTrans3', 2, this.tTrans.textures[3]);
-    this.setSteerUniforms(this.pRaw, inputs);
-    this.pRaw.f('uLookSalt', this.look?.salt ?? 0);
-    this.pRaw.f('uSeed', (inputs.seed % 1000) / 7.0);
-    this.pRaw.f('uLattice', 0.42);
-    this.pRaw.f('uElevSigma0', 1.6);
-    this.pRaw.f('uElevFocus', tr.elevationFocusMm);
+    p.use();
+    this.setSceneUniforms(p, inputs);
+    this.setBeamUniforms(p, inputs);
+    if (steered) {
+      // la dirigida lee A o1 (la dirección reflejada de la línea del espejo) y o3 (su camino), no o0
+      p.tex('uTrans1', 1, this.tTrans.textures[1]);
+      p.tex('uTrans3', 2, this.tTrans.textures[3]);
+      this.setSteerUniforms(p, inputs);
+      p.f('uLookSalt', this.look?.salt ?? 0);
+    } else {
+      p.tex('uTrans0', 0, this.tTrans.textures[0]);
+      p.tex('uTrans1', 1, this.tTrans.textures[1]);
+    }
+    p.f('uSeed', (inputs.seed % 1000) / 7.0);
+    p.f('uLattice', 0.42);
+    p.f('uElevSigma0', 1.6);
+    p.f('uElevFocus', tr.elevationFocusMm);
     // Ruido del receptor (receiver.ts): la misma escala con la que el shader omite el transitorio
-    this.pRaw.f('uNoise', RECEIVER_NOISE);
-    this.pRaw.f('uFrame', this.frameCount);
+    p.f('uNoise', RECEIVER_NOISE);
+    p.f('uFrame', this.frameCount);
     const an = this.speckleAnchor.update(inputs.frame.face, inputs.frame.elevation);
     this.lastAnchorWeight = an.w;
-    this.pRaw.v3('uAnchorE0', an.a.e);
-    this.pRaw.v3('uAnchorP0', an.a.p);
-    this.pRaw.v3('uAnchorE1', an.b.e);
-    this.pRaw.v3('uAnchorP1', an.b.p);
-    this.pRaw.v2('uAnchorSalt', an.a.parity * ANCHOR_SALT_STEP, an.b.parity * ANCHOR_SALT_STEP);
-    this.pRaw.f('uAnchorW', an.w);
-    this.pRaw.v4v('uTissueClump4', this.clump);
+    p.v3('uAnchorE0', an.a.e);
+    p.v3('uAnchorP0', an.a.p);
+    p.v3('uAnchorE1', an.b.e);
+    p.v3('uAnchorP1', an.b.p);
+    p.v2('uAnchorSalt', an.a.parity * ANCHOR_SALT_STEP, an.b.parity * ANCHOR_SALT_STEP);
+    p.f('uAnchorW', an.w);
+    p.v4v('uTissueClump4', this.clump);
     // eco de interfaz (decisión 57): tabla de caras y PSF lateral para la coherencia de curvatura
-    this.pRaw.v4v('uIface', this.ifaceUniforms);
-    this.pRaw.f('uIfaceK0', this.ifaceK0);
-    this.setLateralPsfUniforms(this.pRaw, inputs);
+    p.v4v('uIface', this.ifaceUniforms);
+    p.f('uIfaceK0', this.ifaceK0);
+    this.setLateralPsfUniforms(p, inputs);
     drawFullscreen(gl);
   }
 

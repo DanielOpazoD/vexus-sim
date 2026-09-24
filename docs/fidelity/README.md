@@ -163,6 +163,28 @@ La e2e exige lo que ya se cumple (mediana ≥ 0,99 en todas las caras, p05 ≥ 0
 0,98 en la cúpula, la vesícula y el riñón sin escotadura) e informa del resto en sus anotaciones, con
 las filas de la VCI y de la escotadura.
 
+### Línea base de interfaces con GPU (PR 5a, antes de los ecos de interfaz)
+
+`npm run fidelity -- --sweep true` en el M4, cinco poses por vista. Cociente pico/hígado a 0–20° (40–60°
+en la segunda columna de VSH) con, entre paréntesis, registros; h = fracción de líneas con hueco
+(pico < hígado + 6 dB); r = rosario. Referencias reales: pared 1,36–2,1; una pared continua tiene
+h ≈ 0 y rosario < 0,26.
+
+| Escena                  | VCI 0–20°                  | VSH 0–20°                | VSH 40–60°                 | Cápsula 0–20°              | Morison 0–20°             |
+| ----------------------- | -------------------------- | ------------------------ | -------------------------- | -------------------------- | ------------------------- |
+| Sano, subxifoidea       | 1,11 (17; h 0,77; r 0,29)  | —                        | 1,08 (21; h 0,95; r 0,25)  | 1,12 (313; h 0,78; r 0,36) | —                         |
+| Sano, intercostal       | 1,14 (12; h 0,92; r 0,29)  | 1,04 (4; h 1,00; r —)    | 1,13 (100; h 0,78; r 0,31) | 1,02 (103; h 0,93; r 0,38) | 1,28 (10; h 0,20; r 0,23) |
+| Sano, flanco            | 1,17 (69; h 0,83; r 0,24)  | 1,54 (1; h 0,00; r —)    | 1,14 (34; h 0,85; r 0,27)  | 1,16 (137; h 0,70; r 0,28) | —                         |
+| Sano, renal             | 1,13 (13; h 0,85; r 0,23)  | —                        | —                          | —                          | —                         |
+| Congestión, subxifoidea | 1,26 (10; h 0,30; r 0,32)  | —                        | 1,17 (35; h 0,74; r 0,27)  | 1,09 (390; h 0,81; r 0,34) | —                         |
+| Congestión, intercostal | 1,07 (19; h 0,84; r 0,32)  | 1,07 (9; h 0,89; r 0,31) | 1,10 (177; h 0,79; r 0,32) | 1,11 (172; h 0,85; r 0,34) | 1,41 (55; h 0,04; r 0,30) |
+| Congestión, flanco      | 1,22 (103; h 0,66; r 0,28) | —                        | 1,12 (55; h 0,87; r 0,28)  | 1,15 (141; h 0,77; r 0,26) | —                         |
+| Congestión, renal       | 1,15 (26; h 0,65; r 0,35)  | —                        | —                          | —                          | —                         |
+
+Lo que delata la imagen, medido: paredes y cápsula a 1,02–1,26 (lo que da el moteado solo) con huecos
+en el 65–95 % de las líneas y rosario 0,23–0,38. La interfaz hepatorrenal ya destaca (1,28–1,41,
+continua) porque la grasa perirrenal es ecogénica. Estas cifras son el «antes» del PR 5b.
+
 ### Qué llena el barrido (`--sweep`)
 
 Registros por tramo de las cinco poses del barrido en apnea (réplica en CPU: la detección de las

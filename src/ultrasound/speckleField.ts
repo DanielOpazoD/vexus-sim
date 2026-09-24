@@ -163,3 +163,116 @@ export function speckleSliceField(m: Vec3, h: number, sliceHalfMm: number, salt:
   const wb = Math.sqrt(1 - st.w);
   return [wa * fa[0] + wb * fb[0], wa * fa[1] + wb * fb[1]];
 }
+
+// ——— Moteado por tejido (decisión 56) ———
+
+/**
+ * Paso de semilla entre tejidos: cada tejido tiene su propia población de dispersores, así que su
+ * moteado es otra realización y no continúa a través de un borde. El hash repite con periodo
+ * 1/0,1031 ≈ 9,70 en su coordenada: 9,861 deja todas las diferencias de semilla (tejido y paridad
+ * del ancla) a ≥ 0,017 de un periodo (7,919 dejaba una a 0,002, y esa pareja correlacionaba).
+ */
+export const TISSUE_SALT_STEP = 9.861;
+/** Célula de la heterogeneidad lenta del parénquima (mm). */
+export const HET_CELL_MM = 6.25;
+/**
+ * Escala del ruido de valor de la heterogeneidad (dB por unidad): da la misma desviación que los
+ * antiguos cubos uniformes de ±2 dB (1,15 dB), ahora continua.
+ */
+export const HET_SCALE_DB = 6.24;
+/** Célula de los grumos de dispersores (mm): ~ la PSF lateral, para que se vean como ecos sueltos. */
+export const CLUMP_CELL_MM = 1.2;
+
+/** Ruido de valor 3D en [0, 1] con fundido smoothstep (continuo, correlación ~ 1 célula). */
+export function valueNoise(q: Vec3, salt: number): number {
+  const c: Vec3 = [Math.floor(q[0]), Math.floor(q[1]), Math.floor(q[2])];
+  const s = [0, 1, 2].map((i) => {
+    const t = q[i] - c[i];
+    return t * t * (3 - 2 * t);
+  });
+  const h = (dx: number, dy: number, dz: number) => hash13([c[0] + dx + salt, c[1] + dy + salt, c[2] + dz + salt]);
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+  const x00 = lerp(h(0, 0, 0), h(1, 0, 0), s[0]);
+  const x10 = lerp(h(0, 1, 0), h(1, 1, 0), s[0]);
+  const x01 = lerp(h(0, 0, 1), h(1, 0, 1), s[0]);
+  const x11 = lerp(h(0, 1, 1), h(1, 1, 1), s[0]);
+  return lerp(lerp(x00, x10, s[1]), lerp(x01, x11, s[1]), s[2]);
+}
+
+/** Heterogeneidad lenta del parénquima (dB), continua: `hetGain` de la pasada B. */
+export function heterogeneityDb(m: Vec3, seed: number): number {
+  return (valueNoise([m[0] / HET_CELL_MM, m[1] / HET_CELL_MM, m[2] / HET_CELL_MM], seed + 11) - 0.5) * HET_SCALE_DB;
+}
+
+/**
+ * Grumos de dispersores (`clumpGain`): la potencia se multiplica por P = exp(σz)/E[exp(σz)] con z
+ * uniforme de varianza 1 (log-uniforme, media 1) en células de CLUMP_CELL_MM, σ = `clump` en nepers.
+ * Con `clump` = 0 no hace nada (moteado plenamente desarrollado, Rayleigh); con más, pocos
+ * dispersores dominan (estadística K), como la grasa del seno renal. `q` es la coordenada ya anclada.
+ */
+export function clumpGain(q: Vec3, clump: number, seed: number, salt = 0): number {
+  if (clump <= 0) return 1;
+  const u =
+    hash13([Math.floor(q[0] / CLUMP_CELL_MM) + seed + 29 + salt, Math.floor(q[1] / CLUMP_CELL_MM), Math.floor(q[2] / CLUMP_CELL_MM)]) - 0.5;
+  const a = clump * Math.sqrt(3);
+  return Math.sqrt(Math.exp(clump * Math.sqrt(12) * u) / (Math.sinh(a) / a));
+}
+
+/**
+ * Grumos anclados (`anchoredClump` de la pasada B): la célula se comprime en elevación hasta el grosor
+ * de corte sobre el eje del ancla, como el moteado (decisión 55), y durante el fundido se mezcla en
+ * potencia. Un factor por píxel para los tres planos: conserva la potencia media.
+ */
+export function anchoredClumpGain(m: Vec3, sliceHalfMm: number, clump: number, seed: number, salt: number, st: SpeckleAnchorState): number {
+  const at = (a: SpeckleAnchor) => {
+    const e = a.e;
+    const across = dot([m[0] - a.p[0], m[1] - a.p[1], m[2] - a.p[2]], e);
+    const shrink = across * (1 - CLUMP_CELL_MM / Math.max(CLUMP_CELL_MM, 2 * sliceHalfMm));
+    return clumpGain([m[0] - e[0] * shrink, m[1] - e[1] * shrink, m[2] - e[2] * shrink], clump, seed, salt + a.parity * ANCHOR_SALT_STEP);
+  };
+  const ga = at(st.a);
+  if (st.w >= 1) return ga;
+  const gb = at(st.b);
+  return Math.sqrt(st.w * ga * ga + (1 - st.w) * gb * gb);
+}
+
+/**
+ * Gemelo GLSL del moteado por tejido para la pasada B (`fieldFor`): mismas fórmulas que
+ * `valueNoise`, `heterogeneityDb` y `clumpGain`. Necesita `hash13` (anatomía) y `uSeed`.
+ */
+export const SPECKLE_TISSUE_GLSL = /* glsl */ `
+const float TISSUE_SALT_STEP = ${TISSUE_SALT_STEP.toFixed(4)};
+const float HET_CELL_MM = ${HET_CELL_MM.toFixed(4)};
+const float HET_SCALE_DB = ${HET_SCALE_DB.toFixed(4)};
+const float CLUMP_CELL_MM = ${CLUMP_CELL_MM.toFixed(4)};
+float valueNoise(vec3 q, float salt) {
+  vec3 c = floor(q);
+  vec3 s = q - c;
+  s = s * s * (3.0 - 2.0 * s);
+  vec3 o = vec3(salt);
+  float x00 = mix(hash13(c + o), hash13(c + vec3(1, 0, 0) + o), s.x);
+  float x10 = mix(hash13(c + vec3(0, 1, 0) + o), hash13(c + vec3(1, 1, 0) + o), s.x);
+  float x01 = mix(hash13(c + vec3(0, 0, 1) + o), hash13(c + vec3(1, 0, 1) + o), s.x);
+  float x11 = mix(hash13(c + vec3(0, 1, 1) + o), hash13(c + vec3(1, 1, 1) + o), s.x);
+  return mix(mix(x00, x10, s.y), mix(x01, x11, s.y), s.z);
+}
+float hetGain(vec3 m) {
+  return pow(10.0, (valueNoise(m / HET_CELL_MM, uSeed + 11.0) - 0.5) * HET_SCALE_DB / 20.0);
+}
+float clumpGain(vec3 q, float clump, float salt) {
+  float u = hash13(vec3(floor(q.x / CLUMP_CELL_MM) + uSeed + 29.0 + salt, floor(q.y / CLUMP_CELL_MM), floor(q.z / CLUMP_CELL_MM))) - 0.5;
+  float a = clump * sqrt(3.0);
+  return sqrt(exp(clump * sqrt(12.0) * u) / (sinh(a) / a));
+}
+float clumpAt(vec3 m, float se, float clump, float salt, vec3 e, vec3 pivot) {
+  float across = dot(m - pivot, e);
+  vec3 q = m - e * (across * (1.0 - CLUMP_CELL_MM / max(CLUMP_CELL_MM, 2.0 * se)));
+  return clumpGain(q, clump, salt);
+}
+float anchoredClump(vec3 m, float se, float clump, float salt) {
+  float ga = clumpAt(m, se, clump, salt + uAnchorSalt.x, uAnchorE0, uAnchorP0);
+  if (uAnchorW >= 1.0) return ga;
+  float gb = clumpAt(m, se, clump, salt + uAnchorSalt.y, uAnchorE1, uAnchorP1);
+  return sqrt(uAnchorW * ga * ga + (1.0 - uAnchorW) * gb * gb);
+}
+`;

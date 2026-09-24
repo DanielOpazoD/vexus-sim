@@ -2,6 +2,7 @@ import { TISSUE_COUNT } from '../../anatomy/tissues';
 import { C_RECONSTRUCTION_MM_S } from '../../core/units';
 import { ANATOMY_GLSL } from '../../anatomy/gpu/anatomy.glsl';
 import { APERTURE_GLSL } from '../aperture';
+import { SPECKLE_TISSUE_GLSL } from '../speckleField';
 
 export const VERT = /* glsl */ `#version 300 es
 precision highp float;
@@ -221,6 +222,8 @@ uniform vec3 uAnchorE1;
 uniform vec3 uAnchorP1;
 uniform vec2 uAnchorSalt;
 uniform float uAnchorW;
+// Grumos de dispersores por tejido (decisión 56), de 4 en 4 para no gastar una ranura por tejido
+uniform vec4 uTissueClump4[${Math.ceil(TISSUE_COUNT / 4)}];
 in vec2 vUv;
 out vec2 oField;
 
@@ -245,22 +248,22 @@ vec2 scattererFieldSlice(vec3 m, float h, float sliceHalfMm, float salt, vec3 e,
 
 // Medio anclado: fuera del fundido, una sola ancla; durante el fundido,
 // √w·A + √(1−w)·B con semillas distintas (sigue siendo gaussiano).
-vec2 speckleField(vec3 m, float h, float se) {
-  vec2 fa = scattererFieldSlice(m, h, se, uSeed + uAnchorSalt.x, uAnchorE0, uAnchorP0);
+vec2 speckleField(vec3 m, float h, float se, float salt) {
+  vec2 fa = scattererFieldSlice(m, h, se, uSeed + salt + uAnchorSalt.x, uAnchorE0, uAnchorP0);
   if (uAnchorW >= 1.0) return fa;
-  vec2 fb = scattererFieldSlice(m, h, se, uSeed + uAnchorSalt.y, uAnchorE1, uAnchorP1);
+  vec2 fb = scattererFieldSlice(m, h, se, uSeed + salt + uAnchorSalt.y, uAnchorE1, uAnchorP1);
   return sqrt(uAnchorW) * fa + sqrt(1.0 - uAnchorW) * fb;
 }
 
-// Campo de dispersores de un punto material con clasificación conocida
+${SPECKLE_TISSUE_GLSL}
+
+// Campo de dispersores de un punto material con clasificación conocida. Cada tejido es otra
+// población: su propia semilla (el moteado no continúa a través de un borde).
 vec2 fieldFor(vec3 m, float se, int tissue) {
-  vec2 f = speckleField(m, uLattice, se);
-  // Heterogeneidad lenta del parénquima (±4 dB p-p a ~1,6 ciclos/cm) [EXTRAPOLACIÓN PROPIA]
+  vec2 f = speckleField(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP);
+  // Heterogeneidad lenta y continua del parénquima (desviación 1,15 dB a ~1,6 ciclos/cm) [EXTRAPOLACIÓN PROPIA]
   float het = 1.0;
-  if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX) {
-    float hv = hash13(floor(m / 6.25) + vec3(uSeed + 11.0));
-    het = pow(10.0, (hv - 0.5) * 4.0 / 20.0);
-  }
+  if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX) het = hetGain(m);
   return f * uTissueBack[tissue] * het;
 }
 
@@ -309,6 +312,11 @@ void main() {
   vec2 f2 = sampleSide(p - uElev * se, se, c0);
   float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
   vec2 field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
+  // Grumos (decisión 56): un factor por píxel, del tejido del plano central, sobre la coordenada
+  // anclada con la célula elevacional del grosor de corte, para los tres planos a la vez (la potencia
+  // media se conserva y el grano no parpadea al inclinar)
+  float clump = uTissueClump4[c0.tissue / 4][c0.tissue % 4];
+  if (clump > 0.0) field *= anchoredClump(toMaterial(p), se, clump, float(c0.tissue) * TISSUE_SALT_STEP);
   // Término especular: (n·d)⁴, confinado a la muestra que atraviesa la interfaz
   // (ventana |n·d|·dr con mínimo 0,15·dr) y SIN fasor: coherente.
   float dr = uDepth / 1024.0;

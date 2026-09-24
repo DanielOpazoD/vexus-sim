@@ -59,3 +59,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [53](DECISIONS.md#L824) | Preajuste abdominal: 70 dB y el hígado a media escala | vigente |
 | [54](DECISIONS.md#L854) | Transmisión en cuatro etapas, hueso clínico y penumbra de la apertura | vigente |
 | [55](DECISIONS.md#L891) | El medio de dispersores está anclado y no sigue a la sonda | vigente |
+| [56](DECISIONS.md#L942) | Moteado por tejido, heterogeneidad continua y grumos en la grasa | vigente |

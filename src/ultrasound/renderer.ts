@@ -207,6 +207,7 @@ export class UltrasoundRenderer {
   private tubeCountTotal = 0;
   private alpha = new Float32Array(TISSUE_COUNT);
   private back = new Float32Array(TISSUE_COUNT);
+  private clump = new Float32Array(Math.ceil(TISSUE_COUNT / 4) * 4);
   private flags = new Float32Array(TISSUE_COUNT);
   private lastColorFrame: { box: [number, number, number, number]; prf: number } | null = null;
   /** Geometría de presentación del último cuadro (px). */
@@ -381,6 +382,7 @@ export class UltrasoundRenderer {
       // Frecuencia efectiva de penetración del perfil (banda baja por atenuación)
       this.alpha[i] = attenuationDbPerCm(i, this.profile.bEffectiveMHz);
       this.back[i] = TISSUES[i].backscatter;
+      this.clump[i] = TISSUES[i].speckleClump ?? 0;
       this.flags[i] = TISSUES[i].gas ? 1 : TISSUES[i].bone ? 2 : 0;
     }
   }
@@ -614,6 +616,7 @@ export class UltrasoundRenderer {
     this.pRaw.v3('uAnchorP1', an.b.p);
     this.pRaw.v2('uAnchorSalt', an.a.parity * ANCHOR_SALT_STEP, an.b.parity * ANCHOR_SALT_STEP);
     this.pRaw.f('uAnchorW', an.w);
+    this.pRaw.v4v('uTissueClump4', this.clump);
     drawFullscreen(gl);
   }
 

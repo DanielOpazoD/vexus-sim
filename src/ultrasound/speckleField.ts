@@ -163,3 +163,88 @@ export function speckleSliceField(m: Vec3, h: number, sliceHalfMm: number, salt:
   const wb = Math.sqrt(1 - st.w);
   return [wa * fa[0] + wb * fb[0], wa * fa[1] + wb * fb[1]];
 }
+
+// ——— Moteado por tejido (decisión 56) ———
+
+/**
+ * Paso de semilla entre tejidos: cada tejido tiene su propia población de dispersores, así que su
+ * moteado es otra realización y no continúa a través de un borde. Irracional frente a
+ * ANCHOR_SALT_STEP para que ninguna combinación (tejido, paridad) repita semilla.
+ */
+export const TISSUE_SALT_STEP = 7.919;
+/** Célula de la heterogeneidad lenta del parénquima (mm). */
+export const HET_CELL_MM = 6.25;
+/**
+ * Escala del ruido de valor de la heterogeneidad (dB por unidad): da la misma desviación que los
+ * antiguos cubos uniformes de ±2 dB (1,15 dB), ahora continua.
+ */
+export const HET_SCALE_DB = 6.24;
+/** Célula de los grumos de dispersores (mm): ~ la PSF lateral, para que se vean como ecos sueltos. */
+export const CLUMP_CELL_MM = 1.2;
+
+/** Ruido de valor 3D en [0, 1] con fundido smoothstep (continuo, correlación ~ 1 célula). */
+export function valueNoise(q: Vec3, salt: number): number {
+  const c: Vec3 = [Math.floor(q[0]), Math.floor(q[1]), Math.floor(q[2])];
+  const s = [0, 1, 2].map((i) => {
+    const t = q[i] - c[i];
+    return t * t * (3 - 2 * t);
+  });
+  const h = (dx: number, dy: number, dz: number) => hash13([c[0] + dx + salt, c[1] + dy + salt, c[2] + dz + salt]);
+  const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
+  const x00 = lerp(h(0, 0, 0), h(1, 0, 0), s[0]);
+  const x10 = lerp(h(0, 1, 0), h(1, 1, 0), s[0]);
+  const x01 = lerp(h(0, 0, 1), h(1, 0, 1), s[0]);
+  const x11 = lerp(h(0, 1, 1), h(1, 1, 1), s[0]);
+  return lerp(lerp(x00, x10, s[1]), lerp(x01, x11, s[1]), s[2]);
+}
+
+/** Heterogeneidad lenta del parénquima (dB), continua: `hetGain` de la pasada B. */
+export function heterogeneityDb(m: Vec3, seed: number): number {
+  return (valueNoise([m[0] / HET_CELL_MM, m[1] / HET_CELL_MM, m[2] / HET_CELL_MM], seed + 11) - 0.5) * HET_SCALE_DB;
+}
+
+/**
+ * Grumos de dispersores (`clumpGain`): amplitud multiplicada por √P con P lognormal de media 1 en
+ * células de CLUMP_CELL_MM, σ = `clump` en nepers de potencia. Con `clump` = 0 no hace nada (moteado
+ * plenamente desarrollado, Rayleigh); con más, pocos dispersores dominan (estadística K), como la
+ * grasa del seno renal.
+ */
+export function clumpGain(m: Vec3, clump: number, seed: number): number {
+  if (clump <= 0) return 1;
+  const u =
+    hash13([Math.floor(m[0] / CLUMP_CELL_MM) + seed + 29, Math.floor(m[1] / CLUMP_CELL_MM), Math.floor(m[2] / CLUMP_CELL_MM)]) - 0.5;
+  // z uniforme de varianza 1; E[exp(σz)] = sinh(σ√3)/(σ√3) normaliza la potencia media a 1
+  const a = clump * Math.sqrt(3);
+  return Math.sqrt(Math.exp(clump * Math.sqrt(12) * u) / (Math.sinh(a) / a));
+}
+
+/**
+ * Gemelo GLSL del moteado por tejido para la pasada B (`fieldFor`): mismas fórmulas que
+ * `valueNoise`, `heterogeneityDb` y `clumpGain`. Necesita `hash13` (anatomía) y `uSeed`.
+ */
+export const SPECKLE_TISSUE_GLSL = /* glsl */ `
+const float TISSUE_SALT_STEP = ${TISSUE_SALT_STEP.toFixed(4)};
+const float HET_CELL_MM = ${HET_CELL_MM.toFixed(4)};
+const float HET_SCALE_DB = ${HET_SCALE_DB.toFixed(4)};
+const float CLUMP_CELL_MM = ${CLUMP_CELL_MM.toFixed(4)};
+float valueNoise(vec3 q, float salt) {
+  vec3 c = floor(q);
+  vec3 s = q - c;
+  s = s * s * (3.0 - 2.0 * s);
+  vec3 o = vec3(salt);
+  float x00 = mix(hash13(c + o), hash13(c + vec3(1, 0, 0) + o), s.x);
+  float x10 = mix(hash13(c + vec3(0, 1, 0) + o), hash13(c + vec3(1, 1, 0) + o), s.x);
+  float x01 = mix(hash13(c + vec3(0, 0, 1) + o), hash13(c + vec3(1, 0, 1) + o), s.x);
+  float x11 = mix(hash13(c + vec3(0, 1, 1) + o), hash13(c + vec3(1, 1, 1) + o), s.x);
+  return mix(mix(x00, x10, s.y), mix(x01, x11, s.y), s.z);
+}
+float hetGain(vec3 m) {
+  return pow(10.0, (valueNoise(m / HET_CELL_MM, uSeed + 11.0) - 0.5) * HET_SCALE_DB / 20.0);
+}
+float clumpGain(vec3 m, float clump) {
+  if (clump <= 0.0) return 1.0;
+  float u = hash13(vec3(floor(m.x / CLUMP_CELL_MM) + uSeed + 29.0, floor(m.y / CLUMP_CELL_MM), floor(m.z / CLUMP_CELL_MM))) - 0.5;
+  float a = clump * sqrt(3.0);
+  return sqrt(exp(clump * sqrt(12.0) * u) / (sinh(a) / a));
+}
+`;

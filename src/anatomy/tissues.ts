@@ -101,12 +101,17 @@ export interface TissueProps {
   gas: boolean;
   /** Hueso: reflexión fuerte y sombra limpia. */
   bone: boolean;
+  /**
+   * Grumos de dispersores (σ lognormal de la potencia en células de 1,2 mm; 0 u omitido = moteado
+   * plenamente desarrollado). Pocos dispersores dominantes: grasa del seno y perirrenal (decisión 56).
+   */
+  speckleClump?: number;
 }
 
 export const TISSUES: TissueProps[] = [
   { name: 'aire', c: 343, rho: 1.16, alpha1: 0.0034, b: 2, backscatter: 0, gas: true, bone: false },
   { name: 'piel', c: 1600, rho: 1100, alpha1: 0.9, b: 1.05, backscatter: 1.4, gas: false, bone: false },
-  { name: 'grasa subcutánea', c: 1440, rho: 911, alpha1: 0.379, b: 1.086, backscatter: 0.55, gas: false, bone: false },
+  { name: 'grasa subcutánea', c: 1440, rho: 911, alpha1: 0.379, b: 1.086, backscatter: 0.55, gas: false, bone: false, speckleClump: 0.5 },
   { name: 'músculo', c: 1588, rho: 1090, alpha1: 0.617, b: 1.083, backscatter: 0.5, gas: false, bone: false },
   { name: 'hígado', c: 1586, rho: 1079, alpha1: 0.601, b: 1, backscatter: 1.0, gas: false, bone: false },
   { name: 'cápsula hepática', c: 1586, rho: 1079, alpha1: 0.601, b: 1, backscatter: 1.3, gas: false, bone: false },
@@ -129,8 +134,8 @@ export const TISSUES: TissueProps[] = [
   // médula (pirámides) hipoecoica; seno = grasa + vasos, marcadamente ecogénico (E.3, B.5).
   { name: 'corteza renal', c: 1560, rho: 1066, alpha1: 0.7, b: 1, backscatter: 0.72, gas: false, bone: false },
   { name: 'médula renal', c: 1560, rho: 1066, alpha1: 0.6, b: 1, backscatter: 0.3, gas: false, bone: false },
-  { name: 'seno renal', c: 1480, rho: 950, alpha1: 0.5, b: 1.1, backscatter: 2.3, gas: false, bone: false },
-  { name: 'grasa perirrenal', c: 1450, rho: 920, alpha1: 0.45, b: 1.1, backscatter: 1.5, gas: false, bone: false },
+  { name: 'seno renal', c: 1480, rho: 950, alpha1: 0.5, b: 1.1, backscatter: 2.3, gas: false, bone: false, speckleClump: 1.0 },
+  { name: 'grasa perirrenal', c: 1450, rho: 920, alpha1: 0.45, b: 1.1, backscatter: 1.5, gas: false, bone: false, speckleClump: 0.8 },
   { name: 'pared de vía biliar', c: 1586, rho: 1079, alpha1: 0.7, b: 1, backscatter: 2.4, gas: false, bone: false },
   // Vértebra: mismas propiedades que el hueso cortical; tejido aparte solo para rotular «columna»
   { name: 'vértebra', c: 3515, rho: 1908, alpha1: 20, b: 1, backscatter: 0.9, gas: false, bone: true },

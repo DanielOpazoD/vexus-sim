@@ -25,7 +25,9 @@ app (orquesta todo el motor) ← ui (vistas; hoy aún ven el Simulator concreto)
 ```
 
 Las utilidades que solo usan las pruebas (`src/validation/support/`, como el gemelo de los ecos de
-interfaz) pueden usar `core`, `anatomy` y `ultrasound`; el motor no las importa.
+interfaz) pueden usar `core`, `anatomy` y `ultrasound`, y el contorno del hígado en las vistas de las
+capturas (`liverContour.ts`), además, `probe`, `cases` y las poses de partida de `app`; el motor no las
+importa.
 
 El Doppler no conoce Web Audio: la app le inyecta un `AudioSink` (`DopplerAudio` en el navegador,
 `SILENT_AUDIO` en pruebas). Los vasos se clasifican por `VESSEL_META` (sistema, tipo, ley de

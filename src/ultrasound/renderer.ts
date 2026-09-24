@@ -10,6 +10,7 @@ import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
 import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
 import { GREY_CURVE, greyOfLevel } from './greyMap';
 import { ANCHOR_SALT_STEP, ElevationAnchor } from './speckleField';
+import { interfaceUniforms } from './interfaceEcho';
 import { GLProgram, bindTarget, createTarget, createTexture, deleteTarget, drawFullscreen, type RenderTarget } from './gl';
 import { GpuPassTimer, summarizeGpuTimings, type GpuFrameTimings } from './gpuTimer';
 import { FRAME_PASSES, type PassId } from './passGraph';
@@ -225,6 +226,9 @@ export class UltrasoundRenderer {
   private back = new Float32Array(TISSUE_COUNT);
   private clump = new Float32Array(Math.ceil(TISSUE_COUNT / 4) * 4);
   private flags = new Float32Array(TISSUE_COUNT);
+  /** Número de onda del perfil (2π/λ, 1/mm) y un vec4 por cara de interfaz (decisión 57). */
+  private readonly ifaceK0: number;
+  private readonly ifaceUniforms: Float32Array;
   private lastColorFrame: { box: [number, number, number, number]; prf: number } | null = null;
   /** Geometría de presentación del último cuadro (px). */
   display: SectorLayout = { apexX: 0, apexY: 0, scale: 1, width: 1, height: 1 };
@@ -243,6 +247,8 @@ export class UltrasoundRenderer {
     readonly profile: TransducerProfile,
   ) {
     this.lines = profile.geometry.lines;
+    this.ifaceK0 = (2 * Math.PI) / profile.beam.lambdaMm;
+    this.ifaceUniforms = interfaceUniforms(this.ifaceK0);
     const LINES = this.lines;
     this.couplingData = new Float32Array(LINES);
     const gl = canvas.getContext('webgl2', { antialias: false, premultipliedAlpha: false, preserveDrawingBuffer: false });
@@ -509,7 +515,7 @@ export class UltrasoundRenderer {
    * Un cuadro de imagen. Pasadas, en orden (la nomenclatura A–H es la de
    * ARCHITECTURE.md y de `shaders/passes.glsl.ts`):
    *   A transmisión (marcha por rayos, atenuación, gas, hueso, espejo) →
-   *   B campo complejo crudo (dispersores + especular + ruido) →
+   *   B campo complejo crudo (dispersores + eco de interfaz + ruido) →
    *   C convolución axial → D convolución lateral + envolvente →
    *   F color (cadencia propia) → G conversión de barrido + mapa de grises →
    *   persistencia → presentación. (E está reservada; H es el mapa de tejidos
@@ -633,7 +639,18 @@ export class UltrasoundRenderer {
     this.pRaw.v2('uAnchorSalt', an.a.parity * ANCHOR_SALT_STEP, an.b.parity * ANCHOR_SALT_STEP);
     this.pRaw.f('uAnchorW', an.w);
     this.pRaw.v4v('uTissueClump4', this.clump);
+    // eco de interfaz (decisión 57): tabla de caras y PSF lateral para la coherencia de curvatura
+    this.pRaw.v4v('uIface', this.ifaceUniforms);
+    this.pRaw.f('uIfaceK0', this.ifaceK0);
+    this.setLateralPsfUniforms(this.pRaw, inputs);
     drawFullscreen(gl);
+  }
+
+  /** PSF lateral de dos vías (`LATERAL_PSF_GLSL`): la pasada D y el eco de interfaz de la B. */
+  private setLateralPsfUniforms(p: GLProgram, inputs: FrameInputs): void {
+    const b = this.profile.beam;
+    p.f('uFocus', inputs.bmode.focusMm);
+    p.v4('uBeam', b.k * b.lambdaMm, b.apertureTxMm, b.apertureRxMaxMm, b.fNumberRxMin);
   }
 
   // C — convolución axial (pulso ≈ 2 ciclos a 3,5 MHz → σ ≈ 0,26 mm)
@@ -662,14 +679,7 @@ export class UltrasoundRenderer {
     this.pLateral.f('uCurvR', tr.curvatureRadius);
     this.pLateral.f('uHalfSector', tr.halfSector);
     this.pLateral.f('uLinesF', this.lines);
-    this.pLateral.f('uFocus', inputs.bmode.focusMm);
-    this.pLateral.v4(
-      'uBeam',
-      this.profile.beam.k * this.profile.beam.lambdaMm,
-      this.profile.beam.apertureTxMm,
-      this.profile.beam.apertureRxMaxMm,
-      this.profile.beam.fNumberRxMin,
-    );
+    this.setLateralPsfUniforms(this.pLateral, inputs);
     drawFullscreen(gl);
   }
 

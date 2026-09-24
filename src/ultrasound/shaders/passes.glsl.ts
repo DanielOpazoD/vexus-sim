@@ -2,6 +2,7 @@ import { TISSUE_COUNT } from '../../anatomy/tissues';
 import { C_RECONSTRUCTION_MM_S } from '../../core/units';
 import { ANATOMY_GLSL } from '../../anatomy/gpu/anatomy.glsl';
 import { APERTURE_GLSL } from '../aperture';
+import { INTERFACE_ECHO_GLSL } from '../interfaceEcho';
 import { SPECKLE_TISSUE_GLSL } from '../speckleField';
 
 export const VERT = /* glsl */ `#version 300 es
@@ -15,7 +16,7 @@ void main() {
 `;
 
 /** Geometría del haz común a las pasadas de formación de imagen. */
-const BEAM_GLSL = /* glsl */ `
+const BEAM_GEOMETRY_GLSL = /* glsl */ `
 uniform vec3 uFace;
 uniform vec3 uAxial;
 uniform vec3 uLateral;
@@ -26,13 +27,41 @@ uniform float uHalfSector;
 uniform float uDepth;      // mm
 uniform float uLinesF;
 uniform sampler2D uCoupling; // 1D: acoplamiento por línea
-uniform float uTissueAlpha[${TISSUE_COUNT}]; // dB/cm a la frecuencia B (tamaño = TISSUE_COUNT, nunca a mano)
-uniform float uTissueBack[${TISSUE_COUNT}];  // amplitud de retrodispersión
-uniform float uTissueFlag[${TISSUE_COUNT}];  // 1 gas, 2 hueso
 
 float lineTheta(float u) { return -uHalfSector + 2.0 * uHalfSector * u; }
 vec3 lineDir(float theta) { return normalize(uAxial * cos(theta) + uLateral * sin(theta)); }
 vec3 pointOnLine(vec3 dir, float r) { return uCurvC + dir * (uCurvR + r); }
+`;
+
+/** Retrodispersión por tejido: la única tabla por tejido que lee la pasada B. */
+const TISSUE_BACK_GLSL = /* glsl */ `uniform float uTissueBack[${TISSUE_COUNT}];  // amplitud de retrodispersión`;
+
+/**
+ * Geometría del haz y tablas por tejido (tamaño = TISSUE_COUNT, nunca a mano). La pasada B no declara
+ * atenuación ni banderas (no las lee): 54 ranuras de uniforms libres para el eco de interfaz.
+ */
+const BEAM_GLSL = /* glsl */ `${BEAM_GEOMETRY_GLSL}
+uniform float uTissueAlpha[${TISSUE_COUNT}]; // dB/cm a la frecuencia B
+${TISSUE_BACK_GLSL}
+uniform float uTissueFlag[${TISSUE_COUNT}];  // 1 gas, 2 hueso
+`;
+
+/**
+ * PSF lateral de dos vías por número F (`ultrasound/beamModel.ts`: misma fórmula). La comparten la
+ * pasada D (su anchura) y la B (la coherencia de curvatura del eco de interfaz, decisión 57).
+ */
+export const LATERAL_PSF_GLSL = /* glsl */ `
+uniform float uFocus;      // mm
+uniform vec4 uBeam;        // λ·k (mm), D_tx (mm), D_rx,max (mm), F#_rx,min
+float lateralSigmaMm(float r) {
+  float rr = max(1.0, r);
+  float F = max(10.0, uFocus);
+  float tx = length(vec2(uBeam.x * F / uBeam.y, uBeam.y * abs(rr - F) / F));
+  float dRx = min(uBeam.z, rr / uBeam.w);
+  float rx = uBeam.x * rr / max(1.0, dRx);
+  float fwhm = inversesqrt(1.0 / (tx * tx) + 1.0 / (rx * rx));
+  return fwhm / 2.3548;
+}
 `;
 
 /**
@@ -198,14 +227,16 @@ void main() {
 
 /**
  * Pasada B: campo complejo crudo por muestra de haz — dispersores persistentes
- * en coordenadas materiales integrados en elevación, término especular de las
- * interfaces, reverberación/A-lines tras gas y cola sucia del gas intestinal.
+ * en coordenadas materiales integrados en elevación, eco de interfaz coherente en
+ * el cruce exacto (decisión 57), reverberación/A-lines tras gas y cola sucia del gas
+ * intestinal.
  */
 export const FRAG_RAWFIELD = /* glsl */ `#version 300 es
 precision highp float;
 precision highp int;
 ${ANATOMY_GLSL}
-${BEAM_GLSL}
+${BEAM_GEOMETRY_GLSL}
+${TISSUE_BACK_GLSL}
 uniform sampler2D uTrans0;
 uniform sampler2D uTrans1;
 uniform float uSeed;
@@ -230,6 +261,8 @@ float elevSigma(float r) {
   float zr = 45.0;
   return uElevSigma0 * sqrt(1.0 + pow((r - uElevFocus) / zr, 2.0));
 }
+${LATERAL_PSF_GLSL}
+${INTERFACE_ECHO_GLSL}
 
 float hash12b(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 
@@ -266,12 +299,6 @@ vec2 fieldFor(vec3 m, float se, int tissue) {
   return f * uTissueBack[tissue] * het;
 }
 
-vec2 sampleTissue(vec3 p, float se, out Cls c) {
-  vec3 m = toMaterial(p);
-  c = classify(m);
-  return fieldFor(m, se, c.tissue);
-}
-
 // Plano lateral en elevación: si el plano central está lejos de toda interfaz
 // (bd > desplazamiento), el tejido es el mismo y se ahorra la clasificación.
 vec2 sampleSide(vec3 p, float se, Cls center) {
@@ -303,10 +330,11 @@ void main() {
     p = pointOnLine(dir0, r);
   }
   float se = elevSigma(r);
-  Cls c0;
+  vec3 m0 = toMaterial(p);
+  Cls c0 = classify(m0);
   // Tres planos en elevación: la amplitud incoherente se promedia (¼ ½ ¼); el
   // fasor viene del plano central con la célula elevacional ya anclada al corte.
-  vec2 f0 = sampleTissue(p, se, c0);
+  vec2 f0 = fieldFor(m0, se, c0.tissue);
   vec2 f1 = sampleSide(p + uElev * se, se, c0);
   vec2 f2 = sampleSide(p - uElev * se, se, c0);
   float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
@@ -315,7 +343,9 @@ void main() {
   // anclada con la célula elevacional del grosor de corte, para los tres planos a la vez (la potencia
   // media se conserva y el grano no parpadea al inclinar)
   float clump = uTissueClump4[c0.tissue / 4][c0.tissue % 4];
-  if (clump > 0.0) field *= anchoredClump(toMaterial(p), se, clump, float(c0.tissue) * TISSUE_SALT_STEP);
+  if (clump > 0.0) field *= anchoredClump(m0, se, clump, float(c0.tissue) * TISSUE_SALT_STEP);
+  // Eco de interfaz (decisión 57): coherente, con fase 0 común a la cara, antes de la transmisión
+  field += vec2(interfaceEcho(c0, m0, dir, r, se), 0.0);
   float dr = uDepth / 1024.0;
   float T = t0.x * coupling;
   vec2 out2 = field * T;
@@ -386,20 +416,9 @@ uniform float uDepth;
 uniform float uCurvR;
 uniform float uHalfSector;
 uniform float uLinesF;
-uniform float uFocus;      // mm
-uniform vec4 uBeam;        // λ·k (mm), D_tx (mm), D_rx,max (mm), F#_rx,min
 in vec2 vUv;
 out float oEnv;
-// PSF lateral de dos vías por número F (ultrasound/beamModel.ts: misma fórmula)
-float lateralSigmaMm(float r) {
-  float rr = max(1.0, r);
-  float F = max(10.0, uFocus);
-  float tx = length(vec2(uBeam.x * F / uBeam.y, uBeam.y * abs(rr - F) / F));
-  float dRx = min(uBeam.z, rr / uBeam.w);
-  float rx = uBeam.x * rr / max(1.0, dRx);
-  float fwhm = inversesqrt(1.0 / (tx * tx) + 1.0 / (rx * rx));
-  return fwhm / 2.3548;
-}
+${LATERAL_PSF_GLSL}
 void main() {
   float r = vUv.y * uDepth;
   float sigmaMm = lateralSigmaMm(r);

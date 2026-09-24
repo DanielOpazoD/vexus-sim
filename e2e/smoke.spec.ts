@@ -242,17 +242,20 @@ test('composición espacial: más SNR con el mismo grano, sin huecos, y la mirad
     expect(b.fwhmLateralMm / b.beamFwhmMm, JSON.stringify(b)).toBeGreaterThan(0.8);
     expect(b.fwhmLateralMm / b.beamFwhmMm, JSON.stringify(b)).toBeLessThan(1.25);
   }
-  // G4: el gris del hígado puro, a media escala y con la desviación de un equipo (15–17 con una mirada)
+  // G4: el gris del hígado puro, a media escala y con la desviación de un equipo (15–17 con una mirada). El
+  // banco lo mide por banda con ≥ 1000 píxeles a densidad 2; con el lienzo de la e2e (densidad 1) puede no
+  // haber bandas tan llenas: entonces, el hígado puro entero
   const d = s.display!;
+  expect(d.liver.pixels, JSON.stringify(d.liver)).toBeGreaterThan(1000);
   expect(d.liver.p50, JSON.stringify(d.liver)).toBeGreaterThanOrEqual(90);
   expect(d.liver.p50, JSON.stringify(d.liver)).toBeLessThanOrEqual(110);
-  const lb = d.liverBands.filter((b) => b.pixels >= 1000);
-  expect(lb.length, JSON.stringify(d.liverBands)).toBeGreaterThan(0);
-  for (const b of lb) {
+  for (const b of d.liverBands)
     test.info().annotations.push({
       type: `gris ${b.r0}–${b.r1} mm`,
       description: `mediana ${b.p50}, desviación ${b.sd.toFixed(2)} (${b.pixels} px)`,
     });
+  const lb = d.liverBands.filter((b) => b.pixels >= 1000);
+  for (const b of lb.length ? lb : [d.liver]) {
     expect(b.sd, JSON.stringify(b)).toBeGreaterThanOrEqual(10.5);
     expect(b.sd, JSON.stringify(b)).toBeLessThanOrEqual(14.0);
   }

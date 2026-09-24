@@ -480,7 +480,8 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       return withCompound(sim, dispatch, true, () => {
         goTo(sim, opts.startPoint);
         fillRing(sim);
-        // el anillo acaba de escribir su última ranura (una mirada dirigida): leer la mirada 0 debe lanzar
+        // un cuadro de mirada dirigida al final: leer la mirada 0 debe lanzar
+        for (let i = 0; i < sim.profile.compound.order.length && sim.renderer.compoundState().look === 0; i++) sim.render();
         const look = sim.renderer.compoundState().look;
         try {
           sim.renderer.readEnvelope();
@@ -509,20 +510,20 @@ function withCompound<T>(sim: Simulator, dispatch: (cmd: EquipmentCommand) => vo
 }
 
 /**
- * Dibuja cuadros (una mirada cada uno) hasta que las N ranuras del anillo son válidas. Lanza si el compuesto
- * no se forma (color encendido, regla de actividad) o si la imagen está congelada: medir «el compuesto»
- * sobre una sola mirada sería un número sin sentido.
+ * Dibuja N cuadros (una mirada cada uno, en el orden del anillo): las N ranuras quedan escritas en el
+ * instante y la pose de ahora, tanto si el primer cuadro reinicia el anillo (salto de pose) como si no (las
+ * de antes serían de otro instante). Lanza si el compuesto no se forma (color encendido, regla de
+ * actividad), si la imagen está congelada o si el anillo no queda lleno: medir «el compuesto» sobre una
+ * sola mirada sería un número sin sentido.
  */
 function fillRing(sim: Simulator): void {
   if (!compoundActive(sim.bmode, sim.color))
     throw new Error('el compuesto no se forma: conmutador apagado o caja de color encendida (compoundActive)');
   if (sim.frozen) throw new Error('con la imagen congelada no se dibuja ningún cuadro');
   const n = sim.profile.compound.order.length;
-  for (let i = 0; i < 2 * n; i++) {
-    sim.render();
-    if (sim.renderer.compoundState().validCount === n) return;
-  }
-  throw new Error(`el anillo no se llena en ${2 * n} cuadros: ${JSON.stringify(sim.renderer.compoundState())}`);
+  for (let i = 0; i < n; i++) sim.render();
+  if (sim.renderer.compoundState().validCount !== n)
+    throw new Error(`el anillo no se llena en ${n} cuadros: ${JSON.stringify(sim.renderer.compoundState())}`);
 }
 
 /**

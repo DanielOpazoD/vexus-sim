@@ -178,6 +178,20 @@ describe('ganchos de prueba con el compuesto (WebGL falso)', () => {
     expect(sim.bmode.compound).toBe(true);
   });
 
+  it('llenar el anillo reescribe las tres ranuras en el instante de la medida, aunque la pose no salte', () => {
+    const { sim, hooks, rec } = hookRig();
+    hooks.fidelity({ compound: true, startPoint: 'subxiphoid' });
+    const resets = sim.renderer.compoundState().resets;
+    rec.draws.length = 0;
+    hooks.fidelity({ compound: true, startPoint: 'subxiphoid' });
+    // la misma pose: el anillo no se reinicia, pero sus tres ranuras se vuelven a escribir antes de medir
+    expect(sim.renderer.compoundState().resets).toBe(resets);
+    const lateral = rec.draws.filter((d) => d.frag === FRAG_LATERAL).map((d) => d.fbo);
+    expect(lateral.length).toBe(3 + 3);
+    expect(new Set(lateral.slice(0, 3)).size).toBe(3);
+    expect(hooks.envelopeGuard({ startPoint: 'subxiphoid' }).threw).toBe(true);
+  });
+
   it('el compuesto no se mide si no se forma (color) y el conmutador vuelve a como estaba aunque falle', () => {
     const { sim, hooks, dispatch } = hookRig();
     dispatch({ type: 'compound', enabled: false });

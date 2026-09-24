@@ -77,7 +77,19 @@ describe('estadística del speckle (guarda de imagen)', () => {
     expect(s.snr).toBeGreaterThan(BAND[1]);
   });
 
-  it('solo cuenta los parches cuyas muestras de control están dentro', () => {
+  it('un vaso de 2 mm entre los puntos de control invalida el parche: se comprueban todas sus muestras', () => {
+    // luz anecoica a lo largo del haz en las líneas 17–18 (~2 mm a 8 cm), entre las columnas de control
+    // 16, 19 y 23 de su parche: antes el parche entraba con la luz dentro y la SNR caía
+    const env = envelope(coherent, Math.hypot);
+    const vessel = (u: number): boolean => u === 17 || u === 18;
+    const lumen = { ...env, data: env.data.map((x, i) => (vessel(i % LINES) ? 0 : x)) };
+    const s = patchSnr(lumen, (u) => !vessel(u));
+    expect(s.patches).toBe((LINES / 8 - 1) * (SAMPLES / 16));
+    // la columna de parches del vaso queda fuera entera: la misma SNR que sin esa columna
+    expect(s.snr).toBeCloseTo(patchSnr(env, (u) => u < 16 || u >= 24).snr, 12);
+  });
+
+  it('solo cuenta los parches cuyas muestras están todas dentro', () => {
     const env = envelope(coherent, Math.hypot);
     expect(patchSnr(env, () => false).patches).toBe(0);
     expect(patchSnr(env, () => false).snr).toBeNaN();

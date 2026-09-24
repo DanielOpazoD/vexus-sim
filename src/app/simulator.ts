@@ -313,9 +313,9 @@ export class Simulator {
   /**
    * Consulta la anatomía GLSL en puntos del mundo con el estado fisiológico actual y el
    * plano `frame` (que decide qué tubos entran en la lista por cuadro). Solo para el
-   * gate de equivalencia; bloqueante.
+   * gate de equivalencia y la e2e de normales (`normals`); bloqueante.
    */
-  gpuQuery(points: Float32Array, frame: ProbeFrame, allTubes = false): GpuPointQuery {
+  gpuQuery(points: Float32Array, frame: ProbeFrame, allTubes = false, opts: { normals?: boolean } = {}): GpuPointQuery {
     const s = this.sample;
     return this.renderer.queryPoints(
       points,
@@ -332,6 +332,7 @@ export class Simulator {
         seed: this.patient.seed,
       },
       allTubes,
+      opts,
     );
   }
 

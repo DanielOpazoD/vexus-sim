@@ -78,6 +78,21 @@ export interface Classification {
   flowFactor: number;
 }
 
+/**
+ * Cara geométrica cuya distancia con signo da la normal que usa la GPU (`Cls.n`) en esa cara: la
+ * miden el banco de fidelidad (incidencia de paredes y órganos) y la e2e de normales.
+ *  - `tube`: la luz del vaso o conducto que contiene el punto en su pared o su luz;
+ *  - `liverSurface`: el borde del parénquima (cápsula), recortado por pared y diafragma;
+ *  - `dome`: la superficie pleural del diafragma (su cara hepática es paralela);
+ *  - `kidneyOuter`: el contorno externo del riñón (cápsula renal);
+ *  - `gallbladder`: la luz vesicular.
+ */
+export type FaceGeometry = 'tube' | 'liverSurface' | 'dome' | 'kidneyOuter' | 'gallbladder';
+export const FACE_GEOMETRIES: readonly FaceGeometry[] = ['tube', 'liverSurface', 'dome', 'kidneyOuter', 'gallbladder'];
+
+/** Resultado de la búsqueda de tubos de `classify`. */
+type BestTube = { kind: 'vessel'; def: VesselDef; hit: TubeHit } | { kind: 'duct'; def: DuctDef; hit: TubeHit };
+
 /** Esfera envolvente de un tubo (para descartes rápidos en CPU y GPU). */
 export function tubeBoundingSphere(t: Tube, marginMm: number): { center: Vec3; r: number } {
   const c: Vec3 = [0, 0, 0];
@@ -342,6 +357,49 @@ export class AnatomyScene {
   }
 
   /**
+   * Distancia con signo (mm) de un punto MATERIAL a una cara geométrica, positiva fuera de lo que la
+   * cara encierra (luz, hígado, abdomen bajo la cúpula, riñón, luz vesicular). Es la misma cantidad
+   * que decide la clasificación en esa cara, así que su gradiente es la normal de la interfaz:
+   *  - `tube`: `hit.d` del tubo de `bestTube` (el de `classifyTubes`), null si ninguno contiene el
+   *    punto en su luz o su pared;
+   *  - `liverSurface`: −inner, con inner = min(−dLiver, dDome − DIAPHRAGM, pared), como `classifyLiver`;
+   *  - `dome`: `sdDiaphragm`;
+   *  - `kidneyOuter`: el menor `dOuter` de los dos riñones;
+   *  - `gallbladder`: `gallbladderSdf`.
+   * Solo banco de fidelidad y pruebas: la clasificación no la llama.
+   */
+  faceSdf(m: Vec3, caliber: VesselCaliber, face: FaceGeometry): number | null {
+    switch (face) {
+      case 'tube':
+        return this.bestTube(m, caliber)?.hit.d ?? null;
+      case 'liverSurface': {
+        const insideWallMm = -torsoDepth(m, this.torso) - this.wallThickness();
+        const dDome = sdDiaphragm(m, this.diaphragm, this.torso);
+        return -Math.min(-this.liverSdf(m), dDome - DIAPHRAGM_THICKNESS_MM, insideWallMm);
+      }
+      case 'dome':
+        return sdDiaphragm(m, this.diaphragm, this.torso);
+      case 'kidneyOuter':
+        return Math.min(
+          kidneyOuterSdf(kidneyLocal(m, this.kidneyRight), this.kidneyRight),
+          kidneyOuterSdf(kidneyLocal(m, this.kidneyLeft), this.kidneyLeft),
+        );
+      case 'gallbladder':
+        return gallbladderSdf(m, this.gallbladder);
+    }
+  }
+
+  /**
+   * Tubo cuya luz da la cara `tube` de `faceSdf` en un punto MATERIAL: el vaso (null si es un conducto)
+   * y su impacto (segmento y parámetro `s`), o null si ningún tubo contiene el punto en su luz o su
+   * pared. Solo pruebas: la e2e de normales separa la VCI, de sección elíptica, del resto de tubos.
+   */
+  faceTube(m: Vec3, caliber: VesselCaliber): { vessel: VesselId | null; hit: TubeHit } | null {
+    const best = this.bestTube(m, caliber);
+    return best ? { vessel: best.kind === 'vessel' ? best.def.id : null, hit: best.hit } : null;
+  }
+
+  /**
    * Capas parietales y costillas. `final` = el punto está en piel, grasa,
    * costilla/cartílago, músculo o columna (no hay nada más que mirar); si no,
    * devuelve el espesor total de la pared para recortar el hígado.
@@ -377,8 +435,12 @@ export class AnatomyScene {
     return bd === null ? null : { ...NONE, tissue: Tissue.Lung, boundaryDistance: bd, specular: 1.0 };
   }
 
-  /** Vasos y conductos (antes de los órganos: la luz prevalece). Descarte por esfera envolvente. */
-  private classifyTubes(m: Vec3, caliber: VesselCaliber): Classification | null {
+  /**
+   * Tubo (vaso o conducto) que contiene el punto en su luz o en su pared, con la menor distancia a
+   * la luz; a igualdad gana el vaso. Descarte por esfera envolvente. Es la búsqueda de
+   * `classifyTubes` y la cara `tube` de `faceSdf` (la misma que recorre `classify` en GLSL).
+   */
+  private bestTube(m: Vec3, caliber: VesselCaliber): BestTube | null {
     let bestVessel: { def: VesselDef; hit: TubeHit } | null = null;
     let bestDuct: { def: DuctDef; hit: TubeHit } | null = null;
     for (let i = 0; i < this.vessels.length; i++) {
@@ -397,8 +459,15 @@ export class AnatomyScene {
       const hit = tubeQuery(m, def.tube, 1);
       if (hit.d < def.wallMm && (!bestDuct || hit.d < bestDuct.hit.d)) bestDuct = { def, hit };
     }
-    if (bestDuct && (!bestVessel || bestDuct.hit.d < bestVessel.hit.d)) {
-      const { def, hit } = bestDuct;
+    if (bestDuct && (!bestVessel || bestDuct.hit.d < bestVessel.hit.d)) return { kind: 'duct', ...bestDuct };
+    return bestVessel ? { kind: 'vessel', ...bestVessel } : null;
+  }
+
+  /** Vasos y conductos (antes de los órganos: la luz prevalece). */
+  private classifyTubes(m: Vec3, caliber: VesselCaliber): Classification | null {
+    const best = this.bestTube(m, caliber);
+    if (best?.kind === 'duct') {
+      const { def, hit } = best;
       if (hit.d < 0) return { ...NONE, tissue: Tissue.Fluid, boundaryDistance: -hit.d, boundaryNormal: [0, 0, 0], specular: 0.6 };
       return {
         ...NONE,
@@ -408,8 +477,8 @@ export class AnatomyScene {
         specular: 0.6,
       };
     }
-    if (!bestVessel) return null;
-    const { def, hit } = bestVessel;
+    if (!best) return null;
+    const { def, hit } = best;
     const specular = def.wallTissue === Tissue.VesselWallPortal ? 0.7 : def.wallTissue === Tissue.ArteryWall ? 0.6 : 0.35;
     const flowFactor = def.flowFactor ?? 1;
     if (hit.d < 0) {

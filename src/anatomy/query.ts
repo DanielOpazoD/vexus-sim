@@ -2,7 +2,7 @@ import type { Vec3 } from '../core/vec3';
 import type { PhysiologySample } from '../physiology/engine';
 import { VESSEL_META, type VesselId } from '../physiology/vessels';
 import { RespiratoryDeformation } from './deformation';
-import { type AnatomyScene, type Classification, type VesselCaliber } from './scene';
+import { type AnatomyScene, type Classification, type FaceGeometry, type VesselCaliber } from './scene';
 
 /**
  * Consulta anatómica en coordenadas del MUNDO: aplica la deformación
@@ -85,5 +85,13 @@ export class AnatomyQuery {
       bloodVelocity = [flowBasis[0] * uRef, flowBasis[1] * uRef, flowBasis[2] * uRef];
     }
     return { ...c, material: m, bloodVelocity, flowBasis, tissueVelocity };
+  }
+
+  /**
+   * Distancia con signo a una cara geométrica (`AnatomyScene.faceSdf`) en un punto del MUNDO, con la
+   * deformación respiratoria y el calibre del instante. Banco de fidelidad y pruebas.
+   */
+  faceSdfWorld(p: Vec3, s: PhysiologySample, face: FaceGeometry): number | null {
+    return this.scene.faceSdf(this.deformation.toMaterial(p, s.resp), this.caliberFor(s), face);
   }
 }

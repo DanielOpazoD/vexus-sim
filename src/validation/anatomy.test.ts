@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AnatomyQuery } from '../anatomy/query';
-import { AnatomyScene, BASELINE_CALIBER, wallThicknessMm } from '../anatomy/scene';
+import { AnatomyScene, BASELINE_CALIBER, wallThicknessMm, type FaceGeometry } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
 import { CASES, NORMAL_ADULT } from '../cases';
 import { SimulationClock } from '../core/clock';
@@ -423,4 +423,92 @@ describe('Cortina pulmonar y pared periportal (decisión 43)', () => {
     const hv = scene.vessels.find((v) => v.id === 'hvRight')!;
     expect(wallThicknessMm(hv, 1)).toBe(hv.wallMm);
   });
+});
+
+describe('Caras geométricas del banco de interfaces (faceSdf)', () => {
+  // La incidencia de cada pared y cada cara del banco (y la e2e de normales de la GPU) sale del
+  // gradiente de `faceSdf`: debe valer la distancia de la clasificación, con su signo y pendiente 1.
+  const scene = new AnatomyScene(NORMAL_ADULT);
+  type V = [number, number, number];
+  const sdf = (face: FaceGeometry) => (p: V) => scene.faceSdf(p, BASELINE_CALIBER, face);
+  const grad = (f: (p: V) => number | null, p: V, eps = 0.02): V => {
+    const g: V = [0, 0, 0];
+    for (let a = 0; a < 3; a++) {
+      const plus: V = [...p];
+      const minus: V = [...p];
+      plus[a] += eps;
+      minus[a] -= eps;
+      g[a] = (f(plus)! - f(minus)!) / (2 * eps);
+    }
+    return g;
+  };
+  const along = (p: V, d: V, t: number): V => [p[0] + d[0] * t, p[1] + d[1] * t, p[2] + d[2] * t];
+  /** Cruce con la cara (sdf = 0) sobre el segmento p0 → p0 + d·tMax, con sdf(p0) < 0 < sdf(fin). */
+  const crossing = (face: FaceGeometry, p0: V, d: V, tMax: number): V => {
+    let lo = 0;
+    let hi = tMax;
+    expect(sdf(face)(p0)!).toBeLessThan(0);
+    expect(sdf(face)(along(p0, d, tMax))!).toBeGreaterThan(0);
+    for (let i = 0; i < 60; i++) {
+      const mid = 0.5 * (lo + hi);
+      if (sdf(face)(along(p0, d, mid))! > 0) hi = mid;
+      else lo = mid;
+    }
+    return along(p0, d, 0.5 * (lo + hi));
+  };
+
+  it('tubo: −r en el eje, la distancia a la luz con pendiente 1 en la pared y null fuera de todo tubo', () => {
+    // tronco portal: tramo recto de radio constante 5,5 mm; radial hacia atrás y a la derecha
+    const pv = scene.vessels.find((v) => v.id === 'pvTrunk')!;
+    const [a, b] = [pv.tube.nodes[0].p, pv.tube.nodes[1].p];
+    const axis: V = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+    const t = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+    const l = Math.hypot(t[0], t[1]);
+    const radial: V = [-t[1] / l, t[0] / l, 0];
+    expect(pv.tube.nodes[0].r).toBe(5.5);
+    expect(sdf('tube')(axis)).toBeCloseTo(-5.5, 6);
+    expect(sdf('tube')(along(axis, radial, 5.3))).toBeCloseTo(-0.2, 6);
+    // en la pared (0,5–1,4 mm) es positiva: la luz queda dentro
+    expect(sdf('tube')(along(axis, radial, 5.8))).toBeCloseTo(0.3, 6);
+    expect(sdf('tube')(along(axis, radial, 9))).toBeNull();
+    expect(sdf('tube')([-60, 20, -10])).toBeNull(); // hígado sin vasos
+    const g = grad(sdf('tube'), along(axis, radial, 5.3));
+    expect(Math.abs(Math.hypot(...g) - 1)).toBeLessThan(1e-3);
+    expect(g[0] * radial[0] + g[1] * radial[1] + g[2] * radial[2]).toBeGreaterThan(1 - 1e-5); // radial (error de las diferencias centrales)
+  });
+
+  it('cúpula, riñón, vesícula y superficie hepática: negativas dentro, positivas fuera y pendiente 1 en la cara', () => {
+    // dentro / fuera de lo que encierra cada cara
+    expect(sdf('dome')([-55, -5, 70])!).toBeLessThan(0); // tórax
+    expect(sdf('dome')([-60, 20, -10])!).toBeGreaterThan(0); // abdomen
+    expect(sdf('kidneyOuter')(scene.kidneyRight.center)!).toBeLessThan(0);
+    expect(sdf('kidneyOuter')(scene.kidneyLeft.center)!).toBeLessThan(0);
+    expect(sdf('kidneyOuter')([-60, 20, -10])!).toBeGreaterThan(0);
+    expect(sdf('gallbladder')(scene.gallbladder.center)!).toBeLessThan(0);
+    expect(sdf('gallbladder')([-60, 20, -10])!).toBeGreaterThan(0);
+    expect(sdf('liverSurface')([-60, 20, -10])!).toBeLessThan(0);
+    expect(sdf('liverSurface')([0, 75, -120])!).toBeGreaterThan(0); // músculo de la pared
+    // la cara de la clasificación: la cápsula es −faceSdf < 0,8 mm dentro del hígado
+    expect(cls0([-60, 20, -10]).boundaryDistance).toBeCloseTo(-sdf('liverSurface')([-60, 20, -10])!, 9);
+    // pendiente 1 sobre la cara: cúpula (desde el pulmón hacia abajo), contorno renal (polo lateral y
+    // polo superior), superficie hepática bajo la cúpula
+    const exact: Array<[FaceGeometry, V, V, number]> = [
+      ['dome', [-55, -5, 70], [0, 0, -1], 40],
+      ['dome', [-70, 10, 60], [0, 0, -1], 40],
+      ['kidneyOuter', [...scene.kidneyRight.center], [-1, 0, 0], 60],
+      ['kidneyOuter', [...scene.kidneyRight.center], [...scene.kidneyRight.u], 80],
+      ['liverSurface', [-60, 20, -10], [0, 0, 1], 80],
+    ];
+    for (const [face, p0, d, tMax] of exact) {
+      const g = grad(sdf(face), crossing(face, p0, d, tMax));
+      expect(Math.abs(Math.hypot(...g) - 1), `${face} desde ${p0.join(',')}`).toBeLessThan(1e-3);
+    }
+    // la vesícula es un elipsoide afilado (pera): la aproximación de distancia se aparta ≤ 1 %
+    const gb = grad(sdf('gallbladder'), crossing('gallbladder', [...scene.gallbladder.center], [...scene.gallbladder.v], 30));
+    expect(Math.abs(Math.hypot(...gb) - 1)).toBeLessThan(0.01);
+  });
+
+  function cls0(p: V) {
+    return scene.classify(p, BASELINE_CALIBER);
+  }
 });

@@ -1,12 +1,15 @@
-import type { VesselId } from '../physiology/vessels';
+import { VESSEL_META, type VesselId } from '../physiology/vessels';
 import type { EquipmentCommand } from './equipment';
 import { equivalenceSweep, volumeEquivalence, type EquivalencePoseReport, type VolumeEquivalenceReport } from './equivalenceSweep';
 import { bestGateOnVessel } from './gatePlacement';
 import { acousticWindowWeight, gateTransmission } from './gateTransmission';
 import { lineCoupling, pointOnLine, type ProbePose } from '../probe/probe';
-import { Tissue } from '../anatomy/tissues';
+import { hilumNotchActive, kidneyLocal, kidneyOuterSdf } from '../anatomy/organs/kidney';
+import { FACE_GEOMETRIES, type FaceGeometry } from '../anatomy/scene';
+import { TISSUES, Tissue } from '../anatomy/tissues';
+import type { Vec3 } from '../core/vec3';
 import { rayAttenuationDb } from '../ultrasound/transmission';
-import { fidelityStats, type FidelityStats } from './fidelity';
+import { centralGradient, fidelityStats, type FidelityStats } from './fidelity';
 import { speckleStats, type SpeckleOptions, type SpeckleStats } from './speckle';
 import type { Simulator } from './simulator';
 import { START_POINTS, type StartPoint } from './startPoints';
@@ -27,11 +30,30 @@ export interface TestHooks {
   speckle: (opts?: SpeckleOptions & { startPoint?: StartPoint['id'] }) => SpeckleStats;
   /**
    * Banco de fidelidad (decisión 52): textura de la envolvente en hígado, en total y por bandas
-   * de profundidad; con `display`, además la imagen mostrada (renderiza `frames` cuadros, por
-   * defecto los que la persistencia necesita para dejar < 1 % de la vista anterior; clasifica en
-   * CPU ~1–3 s).
+   * de profundidad; con `display`, además la imagen mostrada y el banco de interfaces (renderiza
+   * `frames` cuadros, por defecto los que la persistencia necesita para dejar < 1 % de la vista
+   * anterior; clasifica en CPU ~1–3 s). `pose` bascula (`rockDeg`) o inclina (`tiltDeg`) la sonda
+   * respecto a la pose de partida; `samples` devuelve un registro por pared (`faceSamples`) para
+   * agregar poses con `summarizeFaces`.
    */
-  fidelity: (opts?: { startPoint?: StartPoint['id']; display?: boolean; frames?: number }) => FidelityStats;
+  fidelity: (opts?: {
+    startPoint?: StartPoint['id'];
+    display?: boolean;
+    frames?: number;
+    pose?: { rockDeg?: number; tiltDeg?: number };
+    samples?: boolean;
+  }) => FidelityStats;
+  /**
+   * Normales de la GPU (`Cls.n`, `queryPoints` con `normals`) frente al gradiente de `faceSdf` de TS
+   * en las caras que darán brillo: por tipo de cara (y los subconjuntos de `FACE_NORMAL_SUBSETS`),
+   * |n·∇| en los puntos del plano a 0,02–0,4 mm de ella que caen en un tejido que la dibuja, con el
+   * mismo tejido en la GPU y en la CPU. `pose` bascula o inclina la sonda respecto a la pose de
+   * partida, como en `fidelity`.
+   */
+  faceNormals: (opts: {
+    startPoint: StartPoint['id'];
+    pose?: { rockDeg?: number; tiltDeg?: number };
+  }) => Record<FaceNormalRow, FaceNormalStats>;
   /**
    * Coste medio de `n` cuadros de imagen en tiempo de pared (ms), sincronizado con la GPU al
    * principio y al final: compara versiones del renderizador en la misma máquina.
@@ -105,6 +127,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
     fidelity: (opts) => {
       const sim = getSim();
       if (opts?.startPoint) goTo(sim, opts.startPoint);
+      if (opts?.pose) offsetPose(sim, opts.pose);
       // la persistencia deja p^n de la vista anterior: cuadros hasta que quede < 1 % (máx. 30)
       const p = Math.min(0.95, Math.max(0, sim.bmode.persistence));
       const settle = p > 0 ? Math.min(30, Math.ceil(Math.log(0.01) / Math.log(p))) : 1;
@@ -112,7 +135,13 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       for (let i = 0; i < frames; i++) sim.render();
       const img = opts?.display ? sim.renderer.readDisplay() : null;
       const transmission = sim.renderer.readTransmission();
-      return fidelityStats(sim, sim.renderer.readEnvelope(), img, { colorOn: sim.color.enabled, transmission });
+      return fidelityStats(sim, sim.renderer.readEnvelope(), img, { colorOn: sim.color.enabled, transmission, samples: opts?.samples });
+    },
+    faceNormals: (opts) => {
+      const sim = getSim();
+      goTo(sim, opts.startPoint);
+      if (opts.pose) offsetPose(sim, opts.pose);
+      return faceNormalStats(sim);
     },
     frameCostMs: (n) => {
       const sim = getSim();
@@ -263,6 +292,196 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       return true;
     },
   };
+}
+
+/** |n·∇| de una cara en un plano: la GPU frente al gradiente de `faceSdf` (ver `TestHooks.faceNormals`). */
+export interface FaceNormalStats {
+  points: number;
+  /** Candidatos descartados porque la GPU y la CPU clasifican distinto tejido. */
+  mismatched: number;
+  p01: number;
+  p05: number;
+  p50: number;
+  min: number;
+  /** Fracción de los puntos con |n·∇| < 0,98 (la contingencia de la cápsula se decide con ella). */
+  below098: number;
+  /** El peor punto, para el mensaje de la prueba. */
+  worst: string;
+}
+
+/** Banda de distancia a la cara (mm) de los puntos de la e2e de normales. */
+const FACE_BAND_MM = [0.02, 0.4] as const;
+/** Puntos por fila y plano como máximo (la GPU los consulta de una vez). */
+const FACE_POINTS_MAX = 400;
+/** Tejidos que dibujan cada cara (su normal es la de esa cara en `classify`). */
+const TUBE_TISSUES: ReadonlySet<Tissue> = new Set([
+  Tissue.Blood,
+  Tissue.VesselWallThin,
+  Tissue.VesselWallPortal,
+  Tissue.ArteryWall,
+  Tissue.Fluid,
+  Tissue.BileDuctWall,
+]);
+
+/**
+ * Subconjuntos de la e2e de normales: separan lo que la fila de su cara mezcla y se muestrean aparte
+ * (hasta `FACE_POINTS_MAX` puntos cada uno), así que la fila de la cara no cambia.
+ *  - `tubeIvc`: puntos del tubo cuya luz es la VCI. Su sección es elíptica y la normal de la GPU
+ *    (`tubeQuery`, d/dist) escala la componente AP una vez, mientras el gradiente la escala dos: en todo
+ *    el cuerpo, no solo en la tapa, se aparta 6–10° según `ivcApScale` (|n·∇| 0,991 a 0,777, 0,984 a
+ *    0,70). Mezclada con los demás tubos, no se ve en su p05.
+ *  - `tubeIvcBody`: los de la VCI dentro de su segmento (0 < s < 1): sin la tapa en la aurícula ni los
+ *    codos (las uniones con las suprahepáticas sí cuentan).
+ *  - `kidneyOuterNotchFree` y `kidneyOuterNotch`: el contorno renal fuera o dentro del redondeo de la
+ *    escotadura hiliar (`hilumNotchActive`). Fuera, la normal del elipsoide de la GPU es exacta.
+ */
+export const FACE_NORMAL_SUBSETS = ['tubeIvc', 'tubeIvcBody', 'kidneyOuterNotchFree', 'kidneyOuterNotch'] as const;
+export type FaceNormalSubset = (typeof FACE_NORMAL_SUBSETS)[number];
+/** Fila del informe de normales: una cara entera o uno de sus subconjuntos. */
+export type FaceNormalRow = FaceGeometry | FaceNormalSubset;
+
+/**
+ * Puntos del plano a 0,02–0,4 mm de cada cara (rejilla de líneas × 0,5 mm y, cerca de la cara, pasos de
+ * 0,05 mm) en un tejido que la dibuja: la luz y la pared del tubo, la cápsula hepática, el diafragma y el
+ * pulmón bajo la cúpula (no la cortina), la cápsula renal y la grasa perirrenal, la bilis y la pared
+ * vesicular. En cada uno, |n·∇| entre la normal de la GPU y el gradiente de `faceSdf` en el marco
+ * material (diferencias centrales de 0,02 mm). Una fila por cara y otra por subconjunto
+ * (`FACE_NORMAL_SUBSETS`).
+ */
+export function faceNormalStats(sim: Simulator): Record<FaceNormalRow, FaceNormalStats> {
+  const tr = sim.transducer;
+  const depth = sim.bmode.depthMm;
+  const scene = sim.scene;
+  const caliber = sim.anatomy.caliberFor(sim.sample);
+  const resp = sim.sample.resp;
+  const toMaterial = (p: Vec3): Vec3 => sim.anatomy.deformation.toMaterial(p, resp);
+  const sdf = (m: Vec3, face: FaceGeometry): number | null => scene.faceSdf(m, caliber, face);
+  const owns = (face: FaceGeometry, m: Vec3): Tissue | null => {
+    const c = scene.classify(m, caliber);
+    const t = c.tissue;
+    const tube = sdf(m, 'tube') !== null;
+    switch (face) {
+      case 'tube':
+        return tube && TUBE_TISSUES.has(t) ? t : null;
+      case 'liverSurface':
+        return t === Tissue.LiverCapsule ? t : null;
+      case 'dome': {
+        // el pulmón de la cúpula (no el de la cortina) guarda su distancia a ella
+        const d = sdf(m, 'dome')!;
+        return t === Tissue.Diaphragm || (t === Tissue.Lung && Math.abs(c.boundaryDistance + d) < 1e-9) ? t : null;
+      }
+      case 'kidneyOuter':
+        return t === Tissue.RenalCapsule || t === Tissue.PerirenalFat ? t : null;
+      case 'gallbladder':
+        return !tube && (t === Tissue.Fluid || t === Tissue.BileDuctWall) ? t : null;
+    }
+  };
+  type Candidate = { p: Vec3; m: Vec3 };
+  const candidates = new Map<FaceGeometry, Candidate[]>(FACE_GEOMETRIES.map((f) => [f, []]));
+  const nr = Math.floor(depth / 0.5);
+  for (let u = 0; u < tr.lines; u++) {
+    const theta = -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / tr.lines;
+    for (let k = 0; k < nr; k++) {
+      const rc = (k + 0.5) * 0.5;
+      const mc = toMaterial(pointOnLine(sim.frame, tr, theta, rc));
+      for (const face of FACE_GEOMETRIES) {
+        const dc = sdf(mc, face);
+        if (dc === null || Math.abs(dc) > 1) continue;
+        for (let j = 0; j < 10; j++) {
+          const p = pointOnLine(sim.frame, tr, theta, rc - 0.25 + (j + 0.5) * 0.05);
+          const m = toMaterial(p);
+          const d = sdf(m, face);
+          if (d !== null && Math.abs(d) >= FACE_BAND_MM[0] && Math.abs(d) <= FACE_BAND_MM[1]) candidates.get(face)!.push({ p, m });
+        }
+      }
+    }
+  }
+  // subconjuntos: la VCI (y su cuerpo) entre los tubos; el contorno renal con o sin escotadura (la del
+  // riñón más cercano, el que da `faceSdf`)
+  const ivc = candidates
+    .get('tube')!
+    .map((c) => {
+      const t = scene.faceTube(c.m, caliber);
+      return { ...c, s: t?.vessel && VESSEL_META[t.vessel].system === 'ivc' ? t.hit.s : Number.NaN };
+    })
+    .filter((c) => !Number.isNaN(c.s));
+  const kidneys = [scene.kidneyRight, scene.kidneyLeft] as const;
+  const renal = candidates.get('kidneyOuter')!.map((c) => {
+    const q = kidneys.map((k) => kidneyLocal(c.m, k));
+    const j = kidneyOuterSdf(q[0], kidneys[0]) <= kidneyOuterSdf(q[1], kidneys[1]) ? 0 : 1;
+    return { ...c, notch: hilumNotchActive(q[j], kidneys[j]) };
+  });
+  const subsets: Record<FaceNormalSubset, { face: FaceGeometry; list: Candidate[] }> = {
+    tubeIvc: { face: 'tube', list: ivc },
+    tubeIvcBody: { face: 'tube', list: ivc.filter((c) => c.s > 0 && c.s < 1) },
+    kidneyOuterNotchFree: { face: 'kidneyOuter', list: renal.filter((c) => !c.notch) },
+    kidneyOuterNotch: { face: 'kidneyOuter', list: renal.filter((c) => c.notch) },
+  };
+  // hasta FACE_POINTS_MAX puntos por fila, repartidos por todo el plano: se clasifican ≤ 4× candidatos a
+  // paso fijo y, de los que caen en un tejido que dibuja la cara, se toman FACE_POINTS_MAX equiespaciados
+  const chosen: { row: FaceNormalRow; p: Vec3; m: Vec3; tissue: Tissue; grad: Vec3 }[] = [];
+  const pick = (row: FaceNormalRow, face: FaceGeometry, list: readonly Candidate[]): void => {
+    const stride = Math.max(1, Math.floor(list.length / (4 * FACE_POINTS_MAX)));
+    const owned: { p: Vec3; m: Vec3; tissue: Tissue }[] = [];
+    for (let i = 0; i < list.length; i += stride) {
+      const tissue = owns(face, list[i].m);
+      if (tissue !== null) owned.push({ p: list[i].p, m: list[i].m, tissue });
+    }
+    const step = Math.max(1, owned.length / FACE_POINTS_MAX);
+    for (let j = 0; Math.floor(j * step) < owned.length; j++) {
+      const { p, m, tissue } = owned[Math.floor(j * step)];
+      const grad = centralGradient((q) => sdf(q, face), m);
+      if (grad && Math.hypot(grad[0], grad[1], grad[2]) > 0) chosen.push({ row, p, m, tissue, grad });
+    }
+  };
+  for (const face of FACE_GEOMETRIES) pick(face, face, candidates.get(face)!);
+  for (const row of FACE_NORMAL_SUBSETS) pick(row, subsets[row].face, subsets[row].list);
+  const pts = new Float32Array(chosen.length * 3);
+  chosen.forEach((c, i) => pts.set(c.p, i * 3));
+  const gpu = sim.gpuQuery(pts, sim.frame, false, { normals: true });
+  const normal = gpu.normal!;
+  const out = {} as Record<FaceNormalRow, FaceNormalStats>;
+  for (const row of [...FACE_GEOMETRIES, ...FACE_NORMAL_SUBSETS]) {
+    const dots: { dot: number; i: number }[] = [];
+    let mismatched = 0;
+    chosen.forEach((c, i) => {
+      if (c.row !== row) return;
+      const cpuTissue: number = c.tissue;
+      if (gpu.tissue[i] !== cpuTissue) {
+        mismatched++;
+        return;
+      }
+      const g = c.grad;
+      const len = Math.hypot(g[0], g[1], g[2]);
+      const dot = Math.abs(normal[i * 3] * g[0] + normal[i * 3 + 1] * g[1] + normal[i * 3 + 2] * g[2]) / len;
+      dots.push({ dot, i });
+    });
+    dots.sort((a, b) => a.dot - b.dot);
+    const pct = (q: number): number => (dots.length ? dots[Math.min(dots.length - 1, Math.floor(q * dots.length))].dot : Number.NaN);
+    const w = dots[0];
+    out[row] = {
+      points: dots.length,
+      mismatched,
+      p01: pct(0.01),
+      p05: pct(0.05),
+      p50: pct(0.5),
+      min: w ? w.dot : Number.NaN,
+      below098: dots.length ? dots.filter((d) => d.dot < 0.98).length / dots.length : Number.NaN,
+      worst: w
+        ? `${TISSUES[chosen[w.i].tissue].name} en (${chosen[w.i].m.map((x) => x.toFixed(1)).join(', ')}): |n·∇| ${w.dot.toFixed(4)}, ` +
+          `GPU (${[0, 1, 2].map((a) => normal[w.i * 3 + a].toFixed(3)).join(', ')})`
+        : '—',
+    };
+  }
+  return out;
+}
+
+/** Bascula (`rockDeg`) o inclina (`tiltDeg`) la sonda desde su pose actual y deja que el marco la siga. */
+function offsetPose(sim: Simulator, pose: { rockDeg?: number; tiltDeg?: number }): void {
+  const rad = Math.PI / 180;
+  const { rockDeg = 0, tiltDeg = 0 } = pose;
+  sim.setPose({ ...sim.pose, rock: sim.pose.rock + rockDeg * rad, tilt: sim.pose.tilt + tiltDeg * rad });
+  sim.advance(0.05);
 }
 
 /** Coloca la sonda en un punto de partida (sin animación) y avanza lo justo para que el marco la siga. */

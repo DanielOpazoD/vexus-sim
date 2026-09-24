@@ -444,13 +444,28 @@ const DISPLAY_CLEARANCE_MM = 3;
  * hígado de detrás ya no es «puro» para el nivel mostrado: el refuerzo tras un vaso de 2–3 mm.
  */
 const MAX_PATH_EXCESS_DB = 0.5;
+/**
+ * Pérdida por la penumbra de la apertura (dB, transmisión con apertura frente a la de un solo rayo)
+ * a partir de la cual el hígado ya no es «puro»: junto a una costilla el cono queda tapado en parte
+ * aunque la línea no lo esté (decisión 54), y ese tejido más oscuro es física, no el nivel del hígado.
+ */
+const MAX_PENUMBRA_DB = 0.5;
+
+/** Transmisión de ida y vuelta de la pasada A (`readTransmission`): un solo rayo y con apertura. */
+export interface TransmissionFrame {
+  lines: number;
+  samples: number;
+  single: Float32Array;
+  aperture: Float32Array;
+}
 /** Paso (mm) del gradiente numérico de la distancia a la luz para la normal de la pared. */
 const NORMAL_EPS_MM = 0.3;
 
 /**
  * Métricas del plano actual sobre una rejilla de clasificación en CPU (líneas × 0,5 mm, ~1–3 s).
  * La textura se mide en hígado «despejado»: en líneas bien acopladas, antes de cualquier tejido que
- * haga sombra (gas o hueso, como la pasada A) en la línea y en sus dos vecinas, y a ≥ 6 mm de
+ * haga sombra (gas o hueso, como la pasada A) en la línea y en sus dos vecinas, fuera de la penumbra
+ * de la apertura (con `transmission`: ≤ 0,5 dB bajo la de un solo rayo), y a ≥ 6 mm de
  * cualquier tejido que no sea hígado (≥ 3 mm en la imagen mostrada; los vasos cuentan, aunque la
  * `boundaryDistance` del hígado no los incluya). El gris y el perfil en profundidad, además, solo
  * en hígado «puro»: sin más de 0,5 dB de atenuación distinta de la del hígado en el camino (el
@@ -462,7 +477,7 @@ export function fidelityStats(
   sim: Simulator,
   env: EnvelopeFrame,
   img: DisplayFrame | null = null,
-  opts: { colorOn?: boolean } = {},
+  opts: { colorOn?: boolean; transmission?: TransmissionFrame } = {},
 ): FidelityStats {
   const tr = sim.transducer;
   const depth = sim.bmode.depthMm;
@@ -546,6 +561,15 @@ export function fidelityStats(
       }
     return ok;
   };
+  // penumbra de la apertura (solo con la transmisión de la GPU; la imagen pintada en CPU no la tiene)
+  const tx = opts.transmission;
+  const penumbraMin = Math.pow(10, -MAX_PENUMBRA_DB / 20);
+  const outOfPenumbra = (u: number, r: number): boolean => {
+    if (!tx) return true;
+    const k = Math.min(tx.samples - 1, Math.max(0, Math.floor((r / depth) * tx.samples)));
+    const s = tx.single[k * tx.lines + u];
+    return s > 1e-6 && tx.aperture[k * tx.lines + u] >= penumbraMin * s;
+  };
   const envClear = clearance(ENVELOPE_CLEARANCE_MM);
   const cellOf = (u: number, r: number): number => {
     const k = Math.floor(r / GRID_STEP_MM);
@@ -554,7 +578,7 @@ export function fidelityStats(
 
   const inBand = (r0: number, r1: number) => (u: number, v: number) => {
     const r = ((v + 0.5) / env.samples) * depth;
-    if (r < r0 || r >= r1 || r >= clearUntil[u]) return false;
+    if (r < r0 || r >= r1 || r >= clearUntil[u] || !outOfPenumbra(u, r)) return false;
     const i = cellOf(u, r);
     return i >= 0 && envClear[i] === 1;
   };
@@ -573,7 +597,7 @@ export function fidelityStats(
     const b = pixelToBeam(layout, tr, depth, x, y);
     if (!b) return null;
     const u = Math.round((b.theta + tr.halfSector) / dTheta - 0.5);
-    if (u < 0 || u >= lines || b.r >= clearUntil[u] || b.r >= pureUntil[u]) return null;
+    if (u < 0 || u >= lines || b.r >= clearUntil[u] || b.r >= pureUntil[u] || !outOfPenumbra(u, b.r)) return null;
     const i = cellOf(u, b.r);
     return i >= 0 && dispClear[i] === 1 ? b.r : null;
   };

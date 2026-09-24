@@ -90,7 +90,8 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       const frames = opts?.display ? Math.max(1, opts.frames ?? settle) : 1;
       for (let i = 0; i < frames; i++) sim.render();
       const img = opts?.display ? sim.renderer.readDisplay() : null;
-      return fidelityStats(sim, sim.renderer.readEnvelope(), img, { colorOn: sim.color.enabled });
+      const transmission = sim.renderer.readTransmission();
+      return fidelityStats(sim, sim.renderer.readEnvelope(), img, { colorOn: sim.color.enabled, transmission });
     },
     frameCostMs: (n) => {
       const sim = getSim();

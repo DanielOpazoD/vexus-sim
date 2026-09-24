@@ -901,7 +901,7 @@ export class UltrasoundRenderer {
    * profundidad gruesa, fila k a (k + 0,5)·profundidad/COARSE_DEPTH. Solo pruebas: la paridad de la
    * pasada A con el modelo de CPU (`ultrasound/transmission.ts`).
    */
-  readTransmission(): { lines: number; samples: number; single: Float32Array; mirrorHit: Float32Array } {
+  readTransmission(): { lines: number; samples: number; single: Float32Array; aperture: Float32Array; mirrorHit: Float32Array } {
     const gl = this.gl;
     const W = this.lines;
     const H = COARSE_DEPTH;
@@ -916,12 +916,14 @@ export class UltrasoundRenderer {
     const a2 = read(2);
     const a0 = read(0);
     const single = new Float32Array(W * H);
+    const aperture = new Float32Array(W * H);
     const mirrorHit = new Float32Array(W * H);
     for (let i = 0; i < W * H; i++) {
       single[i] = a2[i * 4];
+      aperture[i] = a0[i * 4];
       mirrorHit[i] = a0[i * 4 + 3];
     }
-    return { lines: W, samples: H, single, mirrorHit };
+    return { lines: W, samples: H, single, aperture, mirrorHit };
   }
 
   /**

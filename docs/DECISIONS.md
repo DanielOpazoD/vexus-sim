@@ -862,7 +862,9 @@ lo mismo: separar pérdida local e integración para liberar presupuesto para su
 - La pasada B lee impactos y dirección con `texelFetch` (sin interpolar).
   **Consecuencias.** Las sombras nacen bajo el hueso, son completas junto a él y se rellenan en
   profundidad con bordes en rampa; siguen al mover la sonda. Los vasos tras una costilla quedan sin
-  señal PW (realista). Cifras del banco antes y después en `docs/fidelity/README.md`.
+  señal PW (realista). El cuadro entero cuesta 4,6–7,3 ms en vez de 12,9–16,3 (M4, misma carga).
+  El banco de fidelidad excluye la penumbra de su hígado puro. Cifras antes y después en
+  `docs/fidelity/README.md`.
   **Verificación.** e2e: la transmisión de un solo rayo de la GPU coincide con `rayAttenuationDb` en
   los mismos puntos (≤ 0,0001 dB con GPU real en cuatro ventanas; exige < 0,01); `aperture.test.ts`:
   sin obstáculo, un rayo; bajo una costilla sintética, sombra completa cerca y rellena en profundidad;

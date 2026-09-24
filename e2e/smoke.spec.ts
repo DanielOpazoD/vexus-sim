@@ -256,8 +256,12 @@ test('ecos de interfaz: paredes y cápsula brillan y el espejo diafragmático no
     .first()
     .click();
   const seen = { capsule: 0, diaphragm: 0 };
+  // paredes de vaso casi perpendiculares (< 15°): las de las vistas de partida están hondas (VCI a
+  // 125 mm en el flanco) y curvas, y la coherencia de curvatura las deja en +6–10 dB (GPU); sin eco
+  // de interfaz, el moteado solo daba ~3,5 dB
+  const tubePeaks: number[] = [];
   for (const startPoint of ['subxiphoid', 'intercostal', 'flank'] as const) {
-    const s = await page.evaluate((id) => window.__vexusTest!.fidelity({ startPoint: id, display: true }), startPoint);
+    const s = await page.evaluate((id) => window.__vexusTest!.fidelity({ startPoint: id, display: true, samples: true }), startPoint);
     const d = s.display!;
     const tag = `${startPoint}: ${JSON.stringify({ capsule: d.capsule, walls: d.wallSystems, diaphragm: d.diaphragm, saturated: d.faceSaturated })}`;
     // la imagen sigue en su sitio: hígado a media escala y el centro de la luz casi negro
@@ -272,10 +276,9 @@ test('ecos de interfaz: paredes y cápsula brillan y el espejo diafragmático no
       seen.capsule++;
       expect(capsule.ratio, tag).toBeGreaterThanOrEqual(1.4);
     }
-    for (const sys of ['ivc', 'hepaticVein'] as const) {
-      const wall = d.wallSystems[sys][0];
-      if (wall.walls >= 10) expect(wall.ratio, tag).toBeGreaterThanOrEqual(1.3);
-    }
+    for (const r of s.faceSamples ?? [])
+      if ((r.kind === 'ivc' || r.kind === 'hepaticVein' || r.kind === 'portal') && r.incidenceDeg < 15 && Number.isFinite(r.peakDb))
+        tubePeaks.push(r.peakDb);
     for (const bin of d.diaphragm.filter((b) => b.walls >= 5)) {
       seen.diaphragm++;
       expect(bin.seamFraction, tag).toBeLessThanOrEqual(0.02);
@@ -284,6 +287,9 @@ test('ecos de interfaz: paredes y cápsula brillan y el espejo diafragmático no
   }
   // la prueba no puede pasar vacía: la cápsula y el diafragma se midieron en alguna vista
   expect(seen.capsule).toBeGreaterThan(0);
+  const sorted = [...tubePeaks].sort((a, b) => a - b);
+  expect(sorted.length, JSON.stringify(sorted)).toBeGreaterThanOrEqual(5);
+  expect(sorted[Math.floor(sorted.length / 2)], JSON.stringify(sorted)).toBeGreaterThanOrEqual(5);
   expect(seen.diaphragm).toBeGreaterThan(0);
   expect(errors).toEqual([]);
 });
@@ -352,15 +358,21 @@ test('el fundido del ancla del moteado no da saltos: la textura y la correlació
     tag,
   ).toBe(true);
   const snr0 = frames[0].snr;
+  // correlación de base entre cuadros sin fundido (1° de giro por cuadro): en el enlace de dos fundidos
+  // seguidos se espera ≈ 0,89 × la base (se comparte el medio con peso 8/9)
+  const still = frames
+    .filter((f) => f.w >= 1)
+    .map((f) => f.corrPrev)
+    .sort((a, b) => a - b);
+  const base = still[Math.floor(still.length / 2)];
   // sin destellos: el nivel del hígado no salta entre cuadros (soltar el medio viejo un cuadro antes
   // sumaba el mismo medio dos veces: +2,1 dB en el último cuadro de cada fundido)
   for (let i = 1; i < frames.length; i++) expect(Math.abs(frames[i].levelDb - frames[i - 1].levelDb), tag).toBeLessThan(0.8);
   for (const f of frames) {
     expect(f.snr / snr0, tag).toBeGreaterThan(0.85);
     expect(f.snr / snr0, tag).toBeLessThan(1.15);
-    // 1° de giro por cuadro ya da ~0,83 sin fundido (los píxeles laterales se mueven); el fundido
-    // no debe bajar de ahí más que un poco
-    expect(f.corrPrev, tag).toBeGreaterThan(0.7);
+    // el fundido no debe bajar la correlación con el cuadro anterior mucho más que el enlace esperado
+    expect(f.corrPrev, tag).toBeGreaterThan(0.75 * base);
   }
   expect(errors).toEqual([]);
 });

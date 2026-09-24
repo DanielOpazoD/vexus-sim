@@ -187,7 +187,7 @@ export function volumeEquivalence(sim: Simulator, n = 20_000, seed = 20260922): 
     interfacePoints: face.withFace,
     interfaceAgreement: face.points ? face.same / face.points : 1,
     interfaceDistanceMaxErr: face.maxErr,
-    interfaceWorst: topPairs(face.pairs),
+    interfaceWorst: [topPairs(face.pairs), face.maxErrAt && `máx. |Δifd| en ${face.maxErrAt}`].filter(Boolean).join('; '),
   };
 }
 
@@ -206,6 +206,8 @@ class FaceTally {
   withFace = 0;
   same = 0;
   maxErr = 0;
+  /** Cara y distancia del peor desacuerdo de distancia (diagnóstico). */
+  maxErrAt = '';
   readonly pairs = new Map<string, number>();
   /** Registra un punto; devuelve si la GPU dibuja la misma cara que la CPU. */
   add(cpu: Interface, cpuDist: number, gpu: number, gpuDist: number): boolean {
@@ -214,7 +216,11 @@ class FaceTally {
     const cpuFace: number = cpu;
     if (gpu === cpuFace) {
       this.same++;
-      if (cpu !== Interface.None) this.maxErr = Math.max(this.maxErr, Math.abs(gpuDist - cpuDist));
+      const err = Math.abs(gpuDist - cpuDist);
+      if (cpu !== Interface.None && err > this.maxErr) {
+        this.maxErr = err;
+        this.maxErrAt = `${Interface[cpu]} a ${cpuDist.toFixed(3)} mm`;
+      }
       return true;
     }
     const k = `${Interface[cpu]}→${Interface[gpu] ?? gpu}`;

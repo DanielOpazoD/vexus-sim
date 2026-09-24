@@ -241,8 +241,7 @@ elíptica y el eco usa la curvatura local de su sección: en apnea (apScale 0,77
 da 1,67 y la lateral (flanco) 1,52. El eco se evalúa en la distancia por la normal, ifd/|∇| (decisión
 57): sin |∇| la pared AP de la VCI perdía 2,2 dB en apnea y 6 dB a apScale 0,5.
 
-Las cifras con GPU están pendientes: las mide quien corre `npm run fidelity -- --sweep` (misma máquina y
-carga que la línea base, sin el runner de EchoTwin), que además calibra K. Objetivos, solo en los
+Los objetivos se fijaron antes de medir con GPU (lo medido va después de la lista), solo en los
 tramos con ≥ 10 registros:
 
 - **Deben pasar (hoy fallan):** VCI 0–20° ≥ 1,40 y ≤ 2,1 (flanco, paredes laterales: el gemelo da 1,52
@@ -263,6 +262,23 @@ tramos con ≥ 10 registros:
   calibrado, la palanca es la cara que da su pico, la de la cápsula renal: su s (0,25 → 0,30 da 2,10 a
   55 dB) o su σz, no R; la s de la grasa perirrenal no lo mueve y la curvatura del riñón no está en el
   modelo (C solo en los tubos).
+
+**Medido con GPU (M4, 24-09-2026, `--sweep`, K = 55 dB).** La cápsula a 0–20° pasa de 1,02–1,16 con
+70–93 % de huecos a 1,64–1,89 sin huecos (rosario 0,15–0,20) y Morison da 1,97 / 2,18 sin huecos: los dos
+como el gemelo, así que K no se mueve (Morison saldría de 2,2 con K 57). La VCI a 0–20° da 1,54–1,73 en la
+congestión (flanco 1,57, intercostal 1,73, subxifoidea 1,57, renal 1,54; huecos ≤ 0,08) y 1,23–1,51 en el
+sano (flanco 1,31, intercostal 1,51, subxifoidea 1,23, renal 1,27; huecos 0,15–0,54), frente a 1,07–1,26
+antes. Queda bajo el objetivo en el sano porque la VCI está honda (125 mm en el flanco) y la coherencia de
+curvatura C cae con la profundidad; el pico sobre el moteado, a < 15°, lo confirma: ~6 dB en la VCI y 8–10
+dB en la porta frente a 19 dB en la cápsula y 22–24 dB en la cápsula renal. La palanca que queda es σe o
+la retrodifusión de la pared delgada, no K. Las suprahepáticas a 40–60°: 1,08–1,14. Diafragma: desfase
+del espejo 0,01 mm y costura ≤ 0,04 en casi todas las escenas; en la subxifoidea del sano a 40–60° el
+banco marca 8,59 mm, igual a su `mirrorFloorMm` (la emulación en CPU de la GPU): a incidencia rasante la
+referencia toma otro cruce y la GPU sigue al modelo (costura del render 0,017); a 20–40° la costura 1,00
+sale de 2 registros. Cuadro: 4,0–5,5 ms. La e2e exige ahora, en lugar de pared/hígado ≥ 1,30, que la
+mediana del pico de las caras de tubo a < 15° sea ≥ 5 dB con ≥ 5 muestras (la GPU sigue al modelo y el
+cociente de pared en SwiftShader no llena los tramos), y la equivalencia tolera 0,02 mm en la distancia a
+la cara (SwiftShader llega a 0,014 mm en la del diafragma; la GPU real, 7·10⁻⁶).
 
 ## Línea base (23-09-2026, árbol `src/` 4de3821, tras el preajuste abdominal; M4 con Metal, densidad 2)
 
@@ -306,7 +322,7 @@ con la línea base (primero la cadena de presentación, que es lo que delata la 
 | 3   | Transmisión O(N) con subrayos y hueso (hecho, decisión 54) | Pasada A ≥ 2× más rápida: el cuadro entero pasa de 12,9–16,3 a 4,6–7,3 ms (misma máquina y carga). Penumbra coherente con la apertura: el borde de la sombra del flanco es una rampa de −42 a −49 dB en 9 líneas (antes, un escalón de −31 a −50 en 4). Núcleo de la sombra costal 23–24 dB bajo el hígado, gris 30–35 (antes 20–24 dB, gris 32–41). **Parcial:** no llega al suelo de ruido + 3 dB, porque 10–40 mm detrás de la costilla el cono ya está destapado en parte. |
 | 4   | Composición espacial y armónica                            | Desviación del gris del hígado 10–16; ≥ 30 cps a densidad 2. Después, punto de control A (prueba ciega).                                                                                                                                                                                                                                                                                                                                                                       |
 | 5a  | Banco de interfaces (hecho)                                | Banco por sistema y cara con huecos, rosario, anchura del eco, línea pleural, costura y desfase del espejo; normales de la GPU comprobadas; línea base con GPU (arriba). Sin cambio de imagen.                                                                                                                                                                                                                                                                                 |
-| 5b  | Ecos de interfaz (decisión 57)                             | Pared/hígado 1,3–2,1 a 0–20° (hoy 1,14–1,19, lo que da el moteado solo) y caída con la incidencia en las suprahepáticas; sin huecos > 1 mm a lo largo de la pared. Con GPU, los objetivos de «Ecos de interfaz (PR 5b)» en los tramos que se llenan; e2e: paredes ≥ 1,30 y cápsula ≥ 1,40 con ≥ 10 registros, costura ≤ 0,02 y espejo ≤ 0,05 mm.                                                                                                                               |
+| 5b  | Ecos de interfaz (decisión 57)                             | Pared/hígado 1,3–2,1 a 0–20° y caída con la incidencia en las suprahepáticas; sin huecos > 1 mm a lo largo de la pared. Medido con GPU: cápsula 1,64–1,89 sin huecos (antes 1,02–1,16 con 70–93 % de huecos), Morison 1,97/2,18, VCI 1,54–1,73 en la congestión y 1,23–1,51 en el sano; e2e: pico de las caras de tubo a < 15° con mediana ≥ 5 dB, cápsula ≥ 1,40 con ≥ 10 registros, costura ≤ 0,02 y espejo ≤ 0,05 mm.                                                       |
 
 Los PR 6–10 (campo cercano, pulmón, microestructura, vasos y bordes orgánicos) añaden sus propias
 métricas al banco cuando llegan; al final, punto de control B.

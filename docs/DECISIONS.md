@@ -1115,12 +1115,18 @@ La VSH cae a lo que da el moteado solo fuera de ±20° (12,2 → 3,5 dB), la por
 elevacional del riñón (C = 1 fuera de los tubos) Morison daba 2,23 con s 0,21 en la cápsula renal,
 sobre la banda del plan [1,6; 2,2] (el diseño, con la curvatura, 2,08): su pico es la cara grasa/cápsula
 renal, 4 dB sobre la de hígado/grasa, así que la palanca del riesgo 4 del plan es su s (0,21 → 0,25) y no
-la de la grasa (0,30 → 0,35 no lo mueve). Coste estimado (sin medir): ≤ 0,15 ms por cuadro. Pendiente con GPU
-real (`npm run fidelity -- --sweep`, misma máquina y carga): calibrar K dentro de [53; 57] con VCI y
-VSH, y comprobar los umbrales de `docs/fidelity/README.md` en los tramos que el barrido llena (VCI
-0–20° en el flanco, VSH 20–40° y 40–60°, porta 20–40° en la subxifoidea, cápsula 0–20° en subxifoidea,
-intercostal y flanco, diafragma 40–60° en la subxifoidea y Morison 0–20° en la intercostal; VSH y
-diafragma a 0–20° no se llenan).
+la de la grasa (0,30 → 0,35 no lo mueve). Con GPU (M4, `npm run fidelity -- --sweep`, 24-09-2026) K se queda en 55 dB: la cápsula a 0–20° pasa
+de 1,02–1,16 con 70–93 % de huecos a 1,64–1,89 sin huecos (rosario 0,15–0,20), Morison da 1,97 y 2,18
+(dentro de [1,6; 2,2], sin huecos) y la VCI a 0–20° 1,54–1,73 en la congestión (huecos ≤ 0,08) y 1,23–1,51
+en el sano (huecos 0,15–0,54). La VCI queda bajo el gemelo porque está hondo (125 mm en el flanco) y la
+coherencia de curvatura C cae con la profundidad: el pico sobre el moteado, a < 15°, es ~6 dB en la VCI y
+8–10 dB en la porta frente a 19 dB en la cápsula y 22–24 dB en la cápsula renal, como predice el modelo;
+subir K para la VCI empujaría a Morison fuera de 2,2, así que la palanca que queda es σe (el haz
+elevacional) o la retrodifusión de la pared delgada, no K. Las suprahepáticas a 40–60° dan 1,08–1,14 (la
+caída con la incidencia). Diafragma: desfase del espejo 0,01 mm y costura ≤ 0,04 en casi todas las
+escenas; en la subxifoidea del sano a 40–60° el banco marca 8,59 mm, que es su propio `mirrorFloorMm`
+(la emulación en CPU del espejo de la GPU): a incidencia rasante la referencia del banco toma otro cruce
+y la GPU sigue al modelo (costura del render 0,017). Coste medido: 4,0–5,5 ms por cuadro.
 **Verificación.** `interfaceEcho.test.ts` (tabla, cada factor contra su valor analítico o su integral,
 perfil de integral unidad, línea 1D con el moteado del repositorio y el pulso de C, uniforms y GLSL),
 `interfaceTwin.test.ts` (lento: β ± 0,3 dB, deriva de β 0,21 dB y rizado 0,35/0,69 dB, tendencia con la
@@ -1135,8 +1141,8 @@ también mira las celdas de un tubo sin cara, ≥ 0,999), `transmission.test.ts`
 (espejo exacto: suelo del desfase < 0,01 mm; el de antes, ~1 mm), `faceNormals.test.ts` (el gradiente
 de la VCI con su gemelo TS, en dirección y norma) y la e2e de normales (p01 ≥ 0,98 en la cápsula, el
 riñón entero y la VCI; norma con p95 ≤ 0,01), `shaderLimits.test.ts` (≤ 171
-ranuras en la pasada B, `uIface[12]` con el tamaño interpolado de `INTERFACE_COUNT`) y la e2e del banco (paredes ≥ 1,30 y
-cápsula ≥ 1,40 donde hay ≥ 10 registros, costura ≤ 0,02, desfase del espejo ≤ 0,05 mm, caras sin
+ranuras en la pasada B, `uIface[12]` con el tamaño interpolado de `INTERFACE_COUNT`) y la e2e del banco (pico de las caras de tubo
+a < 15° con mediana ≥ 5 dB sobre ≥ 5 muestras, cápsula ≥ 1,40 donde hay ≥ 10 registros, costura ≤ 0,02, desfase del espejo ≤ 0,05 mm, caras sin
 saturar). Todas las unitarias nuevas fallan en `main`.
 
 ## Iteración 2 — informe de cierre (22-09-2026)

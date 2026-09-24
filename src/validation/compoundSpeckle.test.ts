@@ -106,12 +106,13 @@ function band(r: number, planes: 1 | 3): BandStats {
 describe('composición espacial en el gemelo B → C → D (decisión 58)', () => {
   const coherent = new Map<number, BandStats>();
   const bmode = new Map<number, BandStats>();
+  // ~4 s solo; con la suite entera en paralelo y la cobertura pasaba del plazo de 10 s de los ganchos
   beforeAll(() => {
     for (const r of DEPTHS) {
       coherent.set(r, band(r, 1));
       bmode.set(r, band(r, 3));
     }
-  });
+  }, 120_000);
 
   it('mecanismo: con el campo coherente, la decorrelación entre miradas es la de la ley de la PSF', () => {
     for (const r of DEPTHS) {

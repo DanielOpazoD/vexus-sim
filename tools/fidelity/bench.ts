@@ -113,7 +113,8 @@ try {
         Number(/(\d+) fps/.exec(document.querySelector('#status')?.textContent ?? '')?.[1] ?? Number.NaN),
       );
       const { faceSamples, ...stats } = await page.evaluate((samples) => window.__vexusTest!.fidelity({ display: true, samples }), SWEEP);
-      const msPerFrame = await page.evaluate(() => window.__vexusTest!.frameCostMs(20));
+      // las dos medidas del coste, en la pose de partida: el barrido deja la sonda basculada o inclinada
+      const msPerFrame = await page.evaluate((id) => window.__vexusTest!.frameCostMs(20, { startPoint: id }), view);
       let sweep: FaceSummary | undefined;
       if (SWEEP) {
         const poses = [faceSamples ?? []];
@@ -127,7 +128,7 @@ try {
         sweep = summarizeFaces(poses);
       }
       // con color al final: la caja encendida deja color en la persistencia que las poses leerían
-      const msPerFrameColor = await page.evaluate(() => window.__vexusTest!.frameCostMs(20, { forceColor: true }));
+      const msPerFrameColor = await page.evaluate((id) => window.__vexusTest!.frameCostMs(20, { forceColor: true, startPoint: id }), view);
       const faces = sweep ?? stats.display;
       const escasos = faces ? thinGatedBins(faces) : [];
       results[`${cs}/${view}`] = {

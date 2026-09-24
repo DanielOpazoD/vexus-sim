@@ -4,13 +4,13 @@ Qué protege cada capa de pruebas, cuándo corre y qué no cubre. Regla general:
 debe fallar si el comportamiento clínico o físico se rompe; una prueba que repite una
 constante o un umbral ajustado a la salida actual no protege nada.
 
-| Capa               | Dónde                                             | Cuándo corre                                    | Qué protege                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| ------------------ | ------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Unitarias rápidas  | `src/validation/*.test.ts` sin marcador           | `npm test` (~15 s), `check`, CI                 | DSP (FFT, filtro de pared, envolvente), unidades, clasificador VExUS C (27 combinaciones), anatomía por puntos, sonda y acoplamiento, capas, documentación, límites del shader (tubos, nodos y ranuras de uniforms), eco de interfaz en la distancia por la normal (`faceGradient.test.ts`: el perfil suma 1 en la VCI elíptica), transitorio omitido solo bajo ruido/10 (`receiver.test.ts`), opciones de medida del coste del cuadro (`frameCost.test.ts`) |
-| Lentas             | primera línea `// @tier slow`                     | `npm run test:all`, `check`, CI                 | Fisiología emergente por caso, cadena Doppler, **cadena completa del alumno** (`examChain.test.ts`: puerta → espectro → medición → grado), **propiedades** (`properties.test.ts`, fast-check), **gemelo B→C→D de los ecos de interfaz** (`interfaceTwin.test.ts`: β, deriva con la profundidad, M1–M9 y la regla de antes con `it.fails`)                                                                                                                    |
-| Cobertura          | `npm run test:coverage`                           | `check`, CI                                     | Umbrales globales (≥ 88 % sentencias, ≥ 83 % ramas) que solo pueden subir; excluye lo que necesita DOM/WebGL/Web Audio                                                                                                                                                                                                                                                                                                                                       |
-| e2e                | `e2e/*.spec.ts` (Playwright + SwiftShader)        | `npm run e2e`, CI tras `check`                  | Arranque sin errores, casos, medición numérica, pérdida y recuperación del contexto WebGL, **equivalencia TS ↔ GLSL** en tejido, vaso, velocidad y cara de interfaz (volumen y cáscara de las caras), **SNR de Rayleigh del speckle** hepático, **normales de la GPU** frente al gradiente de `faceSdf`                                                                                                                                                      |
-| Banco de fidelidad | `tools/fidelity/bench.ts` (Playwright + GPU real) | `npm run fidelity`, a mano en cada PR de imagen | Textura de la envolvente y de la imagen mostrada, banco de interfaces (paredes por sistema, cápsula, diafragma, Morison; `--sweep` con 4 poses más por vista), cps y coste del cuadro sin y con color; línea base en `docs/fidelity/baseline.json` (decisión 52). La prueba ciega con jueces: `npm run fidelity:blind`                                                                                                                                       |
+| Capa               | Dónde                                             | Cuándo corre                                    | Qué protege                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------ | ------------------------------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Unitarias rápidas  | `src/validation/*.test.ts` sin marcador           | `npm test` (~15 s), `check`, CI                 | DSP (FFT, filtro de pared, envolvente), unidades, clasificador VExUS C (27 combinaciones), anatomía por puntos, sonda y acoplamiento, capas, documentación, límites del shader (tubos, nodos y ranuras de uniforms), eco de interfaz en la distancia por la normal (`faceGradient.test.ts`: el perfil suma 1 en la VCI elíptica), transitorio omitido bajo ruido/10 al sumarse y ≤ ruido/6 tras la PSF (`receiver.test.ts`), opciones de medida del coste del cuadro (`frameCost.test.ts`) |
+| Lentas             | primera línea `// @tier slow`                     | `npm run test:all`, `check`, CI                 | Fisiología emergente por caso, cadena Doppler, **cadena completa del alumno** (`examChain.test.ts`: puerta → espectro → medición → grado), **propiedades** (`properties.test.ts`, fast-check), **gemelo B→C→D de los ecos de interfaz** (`interfaceTwin.test.ts`: β, deriva con la profundidad, M1–M9 y la regla de antes con `it.fails`)                                                                                                                                                  |
+| Cobertura          | `npm run test:coverage`                           | `check`, CI                                     | Umbrales globales (≥ 88 % sentencias, ≥ 83 % ramas) que solo pueden subir; excluye lo que necesita DOM/WebGL/Web Audio                                                                                                                                                                                                                                                                                                                                                                     |
+| e2e                | `e2e/*.spec.ts` (Playwright + SwiftShader)        | `npm run e2e`, CI tras `check`                  | Arranque sin errores, casos, medición numérica, pérdida y recuperación del contexto WebGL, **equivalencia TS ↔ GLSL** en tejido, vaso, velocidad y cara de interfaz (volumen y cáscara de las caras), **SNR de Rayleigh del speckle** hepático, **normales de la GPU** frente al gradiente de `faceSdf`                                                                                                                                                                                    |
+| Banco de fidelidad | `tools/fidelity/bench.ts` (Playwright + GPU real) | `npm run fidelity`, a mano en cada PR de imagen | Textura de la envolvente y de la imagen mostrada, banco de interfaces (paredes por sistema, cápsula, diafragma, Morison; `--sweep` con 4 poses más por vista), cps y coste del cuadro sin y con color; línea base en `docs/fidelity/baseline.json` (decisión 52). La prueba ciega con jueces: `npm run fidelity:blind`                                                                                                                                                                     |
 
 ## Principios
 
@@ -31,20 +31,31 @@ constante o un umbral ajustado a la salida actual no protege nada.
 
 `window.__vexusTest.frameCostMs(n, opts?)` (`src/app/testHooks.ts`) mide el coste medio de `n` cuadros
 en tiempo de pared, sincronizado con la GPU al principio y al final. El reloj no avanza entre cuadros:
-con la caja de color encendida y sin opciones, la cadencia del color (decisión 39) salta casi todos los
-cuadros y la medida no significa nada.
+con la caja de color encendida, la cadencia del color (decisión 39) saltaría casi todos los cuadros y la
+media saldría ≈ 0 ms. Por eso, con la caja encendida exige `forceColor`, y lanza sin él, con la imagen
+congelada o con `n` que no sea un entero ≥ 1.
 
 - `forceColor: true`: cada cuadro es completo y lleva la pasada de color. Si la caja está apagada, la
   enciende con el comando del equipo y la deja como estaba al terminar, aunque algo falle.
+- `startPoint: '<vista>'`: coloca antes la sonda en ese punto de partida, para comparar medidas en la
+  misma pose (el barrido del banco la deja basculada o inclinada).
 - `repeatPass: '<pasada>'` (con `repeatCount`, 1 por defecto): repite el dibujo de esa pasada de
   `FRAME_PASSES` dentro de cada cuadro sin cambiar la imagen. Su coste es (con − sin) / `repeatCount`:
   así se atribuye ΔB (`'rawField'`) o ΔA (`'transmission'` y las etapas A0–A2) en Metal, que no separa
-  el tiempo de las pasadas (decisión 47). Una pasada de cadencia de color exige `forceColor`.
+  el tiempo de las pasadas (decisión 47). Una pasada de cadencia de color exige `forceColor`. Cada
+  repetición dibuja en un destino de prueba propio (dos alternados, con el tamaño y los formatos de la
+  salida de la pasada), así que es su propio pase de render: sobre el mismo destino, una GPU de teselas
+  (Apple M) podría sombrear solo el último de los triángulos opacos que se tapan. Cada repetición paga,
+  como la pasada real, la carga y la escritura de sus teselas.
+- **Comprobación de linealidad** antes de fiarse de un Δ: medir con `repeatCount` 1 y 4 (varias veces,
+  alternando) y exigir Δ(4) ≈ 4·Δ(1), con Δ(1) muy por encima de la dispersión entre corridas. Un Δ que
+  no crece con las repeticiones es que el driver las descarta o que la pasada no es la que limita.
 - Las opciones que no medirían nada lanzan (`frameMeasureOptions`). La aplicación nunca las pasa;
-  `frameCost.test.ts` lo comprueba con un renderizador falso.
+  `frameCost.test.ts` lo comprueba con un renderizador falso, y con el renderizador real sobre un WebGL
+  falso que cada repetición va a otro FBO que el dibujo anterior, con las texturas de la pasada.
 
 El banco (`npm run fidelity`) guarda por escena `msPerFrame` (color apagado) y `msPerFrameColor`
-(color encendido, `forceColor`).
+(color encendido, `forceColor`), las dos en la pose de partida de la vista.
 
 ## Qué no está cubierto todavía
 

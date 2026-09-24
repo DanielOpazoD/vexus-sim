@@ -11,7 +11,16 @@ import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sec
 import { GREY_CURVE, greyOfLevel } from './greyMap';
 import { ANCHOR_SALT_STEP, ElevationAnchor } from './speckleField';
 import { interfaceUniforms } from './interfaceEcho';
-import { GLProgram, bindTarget, createTarget, createTexture, deleteTarget, drawFullscreen, type RenderTarget } from './gl';
+import {
+  GLProgram,
+  bindTarget,
+  createTarget,
+  createTexture,
+  deleteTarget,
+  drawFullscreen,
+  type RenderTarget,
+  type TargetFormat,
+} from './gl';
 import { GpuPassTimer, summarizeGpuTimings, type GpuFrameTimings } from './gpuTimer';
 import { RECEIVER_NOISE } from './receiver';
 import { FRAME_PASSES, type PassId } from './passGraph';
@@ -159,9 +168,11 @@ export interface FrameInputs {
 /**
  * Repetición de una pasada dentro del cuadro, solo para medir su coste (`frameCostMs`; la aplicación no
  * la pasa nunca): tras dibujar la pasada se emite su mismo dibujo `times` veces más, con el programa,
- * los uniforms, las texturas y el destino que dejó puestos. Ninguna pasada lee su propia salida, así que
- * el cuadro no cambia; el coste de la pasada sale por diferencia del tiempo de pared, también en Metal,
- * donde el temporizador no separa las pasadas (decisión 47).
+ * los uniforms y las texturas que dejó puestos, en destinos de prueba con el tamaño y los formatos de su
+ * salida, alternando dos: cada repetición es su propio pase de render, que una GPU de teselas no puede
+ * descartar (ver `drawRepeats`). La salida real no se toca, así que el cuadro no cambia; el coste de la
+ * pasada sale por diferencia del tiempo de pared, también en Metal, donde el temporizador no separa las
+ * pasadas (decisión 47).
  */
 export interface PassRepeat {
   pass: PassId;
@@ -221,6 +232,11 @@ export class UltrasoundRenderer {
   private tScan: RenderTarget | null = null;
   private tPersist: [RenderTarget, RenderTarget] | null = null;
   private persistIndex = 0;
+  /**
+   * Destinos de prueba de `PassRepeat`, dos por pasada. Solo existen si se ha pedido medir con
+   * repeticiones (`frameCostMs`); `dispose` los libera.
+   */
+  private repeatTargets = new Map<PassId, [RenderTarget, RenderTarget]>();
   private couplingTex: WebGLTexture;
   private couplingData: Float32Array;
   private frameCount = 0;
@@ -369,6 +385,8 @@ export class UltrasoundRenderer {
     if (this.mapPbo) gl.deleteBuffer(this.mapPbo);
     this.mapPending = null;
     this.mapPbo = null;
+    for (const pair of this.repeatTargets.values()) for (const t of pair) deleteTarget(gl, t);
+    this.repeatTargets.clear();
   }
 
   /** Datos estáticos de la escena (nodos, cabeceras de tubos, tejidos). */
@@ -547,13 +565,70 @@ export class UltrasoundRenderer {
     this.updateSceneDynamic(inputs);
     const c = inputs.color;
     const colorDue = c.enabled && (inputs.updateColor || !this.lastColorFrame);
+    // los destinos de prueba se crean antes de las pasadas: crear una textura cambia la de la unidad activa,
+    // que la pasada ya habría dejado puesta para sus repeticiones
+    const rep = repeat === undefined ? null : { ...repeat, targets: this.ensureRepeatTargets(repeat.pass) };
     for (const pass of FRAME_PASSES) {
       if (pass.cadence === 'color' && !colorDue) continue;
       this.timer.begin(pass.id);
       this.passes[pass.id](inputs);
-      if (repeat !== undefined && repeat.pass === pass.id) for (let k = 0; k < repeat.times; k++) drawFullscreen(this.gl);
+      if (rep !== null && rep.pass === pass.id) this.drawRepeats(pass.id, rep.targets, rep.times);
       this.timer.end();
     }
+  }
+
+  /**
+   * Destino que deja escrito cada pasada (null = la pantalla); lo usan sus repeticiones de medida. Las de
+   * la presentación dependen del lienzo: antes, `ensureDisplayTargets`.
+   */
+  private readonly passOutputs: Record<PassId, () => RenderTarget | null> = {
+    transmissionHits: () => this.tHits,
+    transmissionSegments: () => this.tSeg,
+    transmissionPrefix: () => this.tPre,
+    transmission: () => this.tTrans,
+    rawField: () => this.tRaw,
+    axial: () => this.tAxial,
+    lateral: () => this.tEnv,
+    color: () => this.tColor,
+    scanConvert: () => this.tScan!,
+    // tras la pasada, `persistIndex` ya apunta a la historia recién escrita
+    persistence: () => this.tPersist![this.persistIndex],
+    present: () => null,
+  };
+
+  /** Los dos destinos de prueba de una pasada, con el tamaño y los formatos de su salida (se rehacen si cambia). */
+  private ensureRepeatTargets(id: PassId): [RenderTarget, RenderTarget] {
+    const gl = this.gl;
+    this.ensureDisplayTargets();
+    const screen: TargetFormat = { internal: gl.RGBA8, format: gl.RGBA, type: gl.UNSIGNED_BYTE, filter: gl.LINEAR };
+    const spec = this.passOutputs[id]() ?? { width: this.canvas.width, height: this.canvas.height, formats: [screen] };
+    const have = this.repeatTargets.get(id);
+    if (have && have[0].width === spec.width && have[0].height === spec.height) return have;
+    if (have) for (const t of have) deleteTarget(gl, t);
+    const pair: [RenderTarget, RenderTarget] = [
+      createTarget(gl, spec.width, spec.height, spec.formats),
+      createTarget(gl, spec.width, spec.height, spec.formats),
+    ];
+    this.repeatTargets.set(id, pair);
+    return pair;
+  }
+
+  /**
+   * Repeticiones de medida de una pasada (`PassRepeat`): su mismo dibujo, con el programa, los uniforms y
+   * las texturas que dejó puestos, alternando los dos destinos de prueba. Cada repetición es así su propio
+   * pase de render (otro FBO que el del dibujo anterior). Si fueran al mismo destino, una GPU de teselas
+   * (Apple M: TBDR) podría sombrear solo el último de los triángulos opacos que se tapan unos a otros
+   * (eliminación de superficies ocultas: no hay mezcla, ni `discard`, ni profundidad) y la diferencia no
+   * mediría nada. Cada repetición paga, como la pasada real, la carga y la escritura de sus teselas. Al
+   * terminar vuelve a quedar puesto el destino de la pasada.
+   */
+  private drawRepeats(id: PassId, targets: readonly [RenderTarget, RenderTarget], times: number): void {
+    const gl = this.gl;
+    for (let k = 0; k < times; k++) {
+      bindTarget(gl, targets[k % 2]);
+      drawFullscreen(gl);
+    }
+    bindTarget(gl, this.passOutputs[id](), this.canvas.width, this.canvas.height);
   }
 
   /**

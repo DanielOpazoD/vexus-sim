@@ -396,8 +396,9 @@ void main() {
     }
   }
   // Campo cercano: transitorio del transductor, anclado a la sonda (línea, r), no al tejido. Desde
-  // TRANSIENT_SKIP_MM (receiver.ts) vale ≤ ruido/10 y no se calcula: un campo de dispersores menos por
-  // muestra en casi toda la profundidad.
+  // TRANSIENT_SKIP_MM (receiver.ts) su escala es ≤ ruido/10 aquí, antes de la PSF (tras C y D, ≈ ruido/7
+  // con 60 mm de profundidad), y no se calcula: un campo de dispersores menos por muestra en casi toda la
+  // profundidad.
   if (r < TRANSIENT_SKIP_MM)
     out2 += scattererField(vec3(vUv.x * 190.0, r * 3.0, 1.0), 0.8, uSeed + 7.0) * TRANSIENT_AMPLITUDE * exp(-r / TRANSIENT_DECAY_MM) * coupling;
   // Ruido del receptor: gaussiano complejo blanco añadido ANTES de la PSF (queda

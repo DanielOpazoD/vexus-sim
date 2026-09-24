@@ -657,10 +657,16 @@ reutiliza y libera consultas, deja de medir si el driver no responde) y el resum
 medidos en Metal. En vivo: modo B y color correctos, equivalencia 100 %, «GPU ≈ 26 ms/cuadro».
 **Enmienda (coste por diferencia, 24-09-2026).** Como Metal no separa las pasadas, el gancho
 `frameCostMs(n, { repeatPass })` vuelve a emitir el dibujo de una pasada dentro del cuadro (mismo
-programa, uniforms, texturas y destino: ninguna pasada lee su salida, así que la imagen no cambia) y su
-coste sale por diferencia del tiempo de pared; las repeticiones caen dentro del intervalo de esa pasada en
-el temporizador. `forceColor` mide el cuadro con la pasada de color, que la cadencia de la decisión 39
-salta con el reloj quieto. La aplicación no pasa nunca estas opciones (`frameCost.test.ts`).
+programa, uniforms y texturas) y su coste sale por diferencia del tiempo de pared; las repeticiones caen
+dentro del intervalo de esa pasada en el temporizador. Cada repetición dibuja en un destino de prueba con
+el tamaño y los formatos de la salida de la pasada, alternando dos: la salida real no se toca (la imagen
+no cambia) y cada repetición es su propio pase de render, porque sobre el mismo destino una GPU de
+teselas como la del M4 podría sombrear solo el último de unos triángulos opacos que se tapan (sin mezcla,
+sin `discard`, sin profundidad) y la diferencia no mediría nada. Antes de fiarse de un Δ, comprobar que
+Δ(4 repeticiones) ≈ 4·Δ(1) (`docs/TESTING.md`). `forceColor` mide el cuadro con la pasada de color, que la
+cadencia de la decisión 39 salta con el reloj quieto; con la caja encendida y sin él, el gancho lanza en
+vez de devolver ≈ 0 ms. La aplicación no pasa nunca estas opciones (`frameCost.test.ts`, también con el
+renderizador real sobre un WebGL falso).
 
 ## 48. La sangre del volumen de muestra reentra por su propia cuerda y la vena renal es el lado que domina la puerta
 

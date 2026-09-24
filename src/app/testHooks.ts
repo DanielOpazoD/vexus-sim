@@ -67,8 +67,9 @@ export interface TestHooks {
   /**
    * Coste medio de `n` cuadros de imagen en tiempo de pared (ms), sincronizado con la GPU al
    * principio y al final: compara versiones del renderizador en la misma máquina. El reloj no avanza,
-   * así que sin opciones y con la caja de color encendida no mide casi nada (la cadencia del color,
-   * decisión 39, salta el cuadro salvo en los de color). Ver `FrameCostOptions`.
+   * así que con la caja de color encendida la cadencia del color (decisión 39) saltaría casi todos los
+   * cuadros: entonces exige `forceColor`, y lanza (en vez de devolver ≈ 0 ms) sin él, con la imagen
+   * congelada o con `n` que no sea un entero ≥ 1. Ver `FrameCostOptions`.
    */
   frameCostMs: (n: number, opts?: FrameCostOptions) => number;
   /**
@@ -148,6 +149,11 @@ export interface FrameCostOptions {
    */
   repeatPass?: PassId;
   repeatCount?: number;
+  /**
+   * Coloca antes la sonda en ese punto de partida (como `fidelity`), para comparar medidas en la misma
+   * pose: el barrido del banco (`--sweep`) deja la sonda movida entre la medida sin color y la con color.
+   */
+  startPoint?: StartPoint['id'];
 }
 
 /** Valida las opciones de `frameCostMs` (nada de ignorarlas en silencio) y las traduce a las de `render`. */
@@ -198,7 +204,15 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
     },
     frameCostMs: (n, opts) => {
       const measure = frameMeasureOptions(opts);
+      if (!Number.isInteger(n) || n < 1) throw new RangeError(`frameCostMs: n ${n} (entero ≥ 1)`);
       const sim = getSim();
+      // sin cuadros dibujados la media sería ≈ 0 ms: un número sin sentido, no una medida
+      if (sim.frozen) throw new RangeError('frameCostMs: con la imagen congelada no se dibuja ningún cuadro');
+      if (sim.color.enabled && !measure.forceColor)
+        throw new RangeError(
+          'frameCostMs: con la caja de color encendida hace falta forceColor (con el reloj quieto su cadencia salta los cuadros)',
+        );
+      if (opts?.startPoint) goTo(sim, opts.startPoint);
       const switchColor = measure.forceColor === true && !sim.color.enabled;
       if (switchColor) dispatch({ type: 'color', patch: { enabled: true } });
       try {

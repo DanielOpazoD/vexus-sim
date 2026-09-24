@@ -4,6 +4,11 @@
  *
  *   npm run fidelity                       # contra el servidor de desarrollo (puerto 6600)
  *   npm run fidelity -- --url http://localhost:6609 --out /tmp/fidelity.json
+ *   npm run fidelity -- --sweep            # + banco de interfaces con 4 poses más por vista
+ *
+ * Con `--sweep`, cada vista se mide también con la sonda basculada (±6°) e inclinada (±6°) y los
+ * registros de las cinco poses se agregan con `summarizeFaces` (`sweep` en el JSON): los tramos de
+ * incidencia de 0–20° tienen así más de una o dos paredes por vista.
  *
  * No corre en CI (necesita GPU: con SwiftShader los cps no significan nada). Las métricas y sus
  * referencias se explican en docs/fidelity/README.md.
@@ -12,12 +17,21 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { chromium } from '@playwright/test';
-import type { FidelityStats } from '../../src/app/fidelity';
+import { summarizeFaces, type FaceSummary, type FidelityStats, type WallBin } from '../../src/app/fidelity';
 
+// --clave valor, o --bandera sola
 const args = new Map<string, string>();
-for (let i = 2; i < process.argv.length; i += 2) args.set(process.argv[i].replace(/^--/, ''), process.argv[i + 1] ?? '');
+for (let i = 2; i < process.argv.length; i++) {
+  const key = process.argv[i].replace(/^--/, '');
+  const next = process.argv[i + 1];
+  if (next === undefined || next.startsWith('--')) args.set(key, 'true');
+  else args.set(key, process.argv[++i]);
+}
 const URL = args.get('url') ?? 'http://localhost:6600';
 const OUT = args.get('out') ?? 'docs/fidelity/baseline.json';
+const SWEEP = args.get('sweep') === 'true';
+/** Poses del barrido de interfaces sobre cada vista (`--sweep`). */
+const SWEEP_POSES = [{ rockDeg: 6 }, { rockDeg: -6 }, { tiltDeg: 6 }, { tiltDeg: -6 }];
 const CASES = ['normal-adult', 'severe-congestion'] as const;
 const VIEWS = ['subxiphoid', 'intercostal', 'flank', 'renal'] as const;
 /** Segundos de cuadros en tiempo real tras colocar la sonda (persistencia y lectura de cps). */
@@ -36,7 +50,19 @@ const gpuArgs =
     ? ['--use-angle=metal', '--enable-gpu', '--ignore-gpu-blocklist']
     : ['--enable-gpu', '--ignore-gpu-blocklist'];
 const browser = await chromium.launch({ headless: true, args: gpuArgs });
-const results: Record<string, { fps: number | null; msPerFrame: number; stats: FidelityStats; errors: string[] }> = {};
+const results: Record<
+  string,
+  { fps: number | null; msPerFrame: number; stats: Omit<FidelityStats, 'faceSamples'>; sweep?: FaceSummary; errors: string[] }
+> = {};
+/** «0–20° 1,26 (12) huecos 0,10 rosario 0,20» de cada tramo de incidencia con paredes. */
+const binText = (bins: WallBin[]): string =>
+  bins
+    .filter((b) => b.walls > 0)
+    .map(
+      (b) =>
+        `${b.fromDeg}–${b.toDeg}° ${b.ratio.toFixed(2)} (${b.walls}) huecos ${b.gapFraction.toFixed(2)} rosario ${b.beading.toFixed(2)}`,
+    )
+    .join(', ') || '—';
 let gpu = 'desconocida';
 try {
   for (const cs of CASES) {
@@ -69,9 +95,21 @@ try {
       const fps = await page.evaluate(() =>
         Number(/(\d+) fps/.exec(document.querySelector('#status')?.textContent ?? '')?.[1] ?? Number.NaN),
       );
-      const stats = await page.evaluate(() => window.__vexusTest!.fidelity({ display: true }));
+      const { faceSamples, ...stats } = await page.evaluate((samples) => window.__vexusTest!.fidelity({ display: true, samples }), SWEEP);
       const msPerFrame = await page.evaluate(() => window.__vexusTest!.frameCostMs(20));
-      results[`${cs}/${view}`] = { fps: Number.isFinite(fps) ? fps : null, msPerFrame, stats, errors };
+      let sweep: FaceSummary | undefined;
+      if (SWEEP) {
+        const poses = [faceSamples ?? []];
+        for (const pose of SWEEP_POSES) {
+          const s = await page.evaluate(
+            ([id, p]) => window.__vexusTest!.fidelity({ startPoint: id, display: true, pose: p, samples: true }),
+            [view, pose] as const,
+          );
+          poses.push(s.faceSamples ?? []);
+        }
+        sweep = summarizeFaces(poses);
+      }
+      results[`${cs}/${view}`] = { fps: Number.isFinite(fps) ? fps : null, msPerFrame, stats, ...(sweep ? { sweep } : {}), errors };
       await page.close();
       const e = stats.envelope;
       const d = stats.display;
@@ -85,6 +123,15 @@ try {
               .join(', ')}`
           : '',
       );
+      if (d) {
+        const faces = sweep ?? d;
+        console.log(
+          ''.padEnd(32),
+          `${sweep ? 'barrido' : 'interfaces'}: VCI ${binText(faces.wallSystems.ivc)} · VSH ${binText(faces.wallSystems.hepaticVein)} · porta ${binText(faces.wallSystems.portal)}`,
+          `· cápsula ${binText(faces.capsule)} · diafragma ${binText(faces.diaphragm)} · Morison ${binText(faces.renalCapsule)}`,
+          `· saturado junto a la cara ${JSON.stringify(d.faceSaturated)}`,
+        );
+      }
     }
   }
 } finally {

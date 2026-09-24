@@ -2,12 +2,19 @@ import { describe, expect, it } from 'vitest';
 import {
   depthProfile,
   displayStats,
+  echoWidthMm,
   envelopeTexture,
   halfWidth,
+  measureFaceLine,
   RAYLEIGH_DARK_FRACTION,
   secondaryLobe,
+  summarizeFaces,
   type EnvelopeGeometry,
+  type FaceKind,
+  type FaceLine,
+  type FaceSample,
 } from '../app/fidelity';
+import { SeededRandom } from '../core/random';
 import { greyOfLevel, levelOfGrey } from '../ultrasound/greyMap';
 import { COLOR_PRIORITY_GREY, DEFAULT_BMODE, DISPLAY_REF_DB, type DisplayFrame } from '../ultrasound/renderer';
 import { detect, psf, whiteField } from './syntheticSpeckle';
@@ -152,5 +159,111 @@ describe('banco de fidelidad: imagen mostrada', () => {
     for (let y = 0; y <= 1; y += 0.125) expect(levelOfGrey(greyOfLevel(y))).toBeCloseTo(y, 12);
     expect(greyOfLevel(0)).toBe(0);
     expect(greyOfLevel(1)).toBeCloseTo(1, 12);
+  });
+});
+
+describe('banco de interfaces: líneas pintadas', () => {
+  // Nivel mostrado como el preajuste abdominal: la envolvente del hígado (1) a 29,5 dB bajo el techo de
+  // 70 dB (gris ≈ 100); el eco se pinta como una gaussiana de amplitud sobre ese fondo. Pared a 8 cm:
+  // borde del hígado en 80 mm, luz desde 80,5 mm, 0,87 mm entre líneas.
+  const DR = 70;
+  const RB = 80;
+  const R_LUMEN = 80.5;
+  const PITCH = 0.87;
+  const grayOfEnv = (e: number): number =>
+    Math.round(255 * greyOfLevel(Math.min(1, Math.max(0, (20 * Math.log10(Math.max(e, 1e-9)) - 29.5 + DR) / DR))));
+  const gauss = (x: number, sigma: number): number => Math.exp(-0.5 * (x / sigma) ** 2);
+  const paint = (env: (r: number) => number): FaceLine => ({ env, gray: (r) => grayOfEnv(env(r)), liver: (r) => r < RB });
+  /** Una pared de `n` líneas con un eco de amplitud `amp(u)` (0 = sin eco) en la cara de la luz. */
+  const wall = (n: number, amp: (u: number) => number, o: { kind?: FaceKind; sigma?: number; incidenceDeg?: number } = {}): FaceSample[] =>
+    Array.from({ length: n }, (_, u) => ({
+      ...measureFaceLine(
+        paint((r) => 1 + amp(u) * gauss(r - R_LUMEN, o.sigma ?? 0.3)),
+        { rb: RB, rTarget: R_LUMEN, ref: 'above' },
+        DR,
+      )!,
+      kind: o.kind ?? 'hepaticVein',
+      wall: 0,
+      u,
+      rb: RB,
+      pitchMm: PITCH,
+      incidenceDeg: o.incidenceDeg ?? 5,
+    }));
+  const bin0 = (samples: FaceSample[]) => summarizeFaces([samples]).wallSystems.hepaticVein[0];
+
+  it('una pared continua no tiene huecos ni rosario; su pico sale en dB de envolvente sobre el hígado', () => {
+    const b = bin0(wall(60, () => 30));
+    expect(b.walls).toBe(60);
+    expect(b.gapFraction).toBe(0);
+    expect(b.longestGapMm).toBe(0);
+    expect(b.beading).toBeLessThan(0.1);
+    expect(b.peakDb).toBeCloseTo(20 * Math.log10(31), 6);
+    expect(b.deltaDb).toBeGreaterThan(25);
+    // la tabla histórica (VCI y suprahepáticas) la incluye; la porta no
+    expect(summarizeFaces([wall(60, () => 30)]).walls[0].walls).toBe(60);
+    expect(summarizeFaces([wall(60, () => 30)]).wallSystems.portal[0].walls).toBe(0);
+  });
+
+  it('una de cada tres líneas apagada: un tercio de huecos, de una línea cada uno', () => {
+    const b = bin0(wall(60, (u) => (u % 3 === 0 ? 0 : 30)));
+    expect(b.gapFraction).toBeCloseTo(1 / 3, 10);
+    expect(b.longestGapMm).toBeCloseTo(PITCH, 10);
+    // dos líneas seguidas apagadas: el tramo es de dos pasos
+    expect(bin0(wall(60, (u) => (u === 20 || u === 21 ? 0 : 30))).longestGapMm).toBeCloseTo(2 * PITCH, 10);
+  });
+
+  it('un eco que salta ±6 dB de línea a línea forma un rosario', () => {
+    const rng = new SeededRandom(5);
+    const gains = Array.from({ length: 60 }, () => Math.pow(10, rng.range(-6, 6) / 20));
+    const b = bin0(wall(60, (u) => 30 * gains[u]));
+    expect(b.gapFraction).toBe(0);
+    expect(b.beading).toBeGreaterThan(0.3);
+    // una tendencia lenta (el lóbulo o la profundidad) no es rosario
+    expect(bin0(wall(60, (u) => 30 * Math.pow(10, (u - 30) / 60))).beading).toBeLessThan(0.1);
+  });
+
+  it('el eco gaussiano pintado mide 2,355·σ a −6 dB', () => {
+    for (const sigma of [0.2, 0.3, 0.45]) {
+      const b = bin0(wall(20, () => 100, { sigma }));
+      expect(b.echoFwhmMm / (2.3548 * sigma), `σ ${sigma}`).toBeGreaterThan(0.95);
+      expect(b.echoFwhmMm / (2.3548 * sigma), `σ ${sigma}`).toBeLessThan(1.05);
+      expect(echoWidthMm((r) => gauss(r, sigma), 0) / (2.3548 * sigma)).toBeCloseTo(1, 2);
+    }
+    // sin bajar a la mitad dentro de la búsqueda: NaN, no un ancho inventado
+    expect(echoWidthMm(() => 1, 0)).toBeNaN();
+  });
+
+  it('diafragma: una costura pintada de 0,5 mm tras la pleura cuenta en todas las líneas; sin ella, en ninguna', () => {
+    const RP = 82;
+    const pleura = (seam: boolean) => (r: number) => (seam && r > RP + 0.5 && r < RP + 1 ? 0.01 : 1 + 30 * gauss(r - RP, 0.25));
+    const lines = (seam: boolean): FaceSample[] =>
+      Array.from({ length: 30 }, (_, u) => ({
+        ...measureFaceLine(paint(pleura(seam)), { rb: 79.5, rTarget: RP, ref: 'above', pleura: true }, DR)!,
+        kind: 'diaphragm' as const,
+        wall: 0,
+        u,
+        rb: 79.5,
+        pitchMm: PITCH,
+        incidenceDeg: 8,
+        mirrorOffsetMm: u / 30,
+      }));
+    const withSeam = summarizeFaces([lines(true)]).diaphragm[0];
+    expect(withSeam.walls).toBe(30);
+    expect(withSeam.seamFraction).toBe(1);
+    expect(withSeam.lineDb).toBeCloseTo(20 * Math.log10(31), 6);
+    expect(withSeam.positionSdMm).toBeLessThan(1e-9);
+    // p95 del desfase del espejo (0, 1/30, …, 29/30)
+    expect(withSeam.mirrorOffsetMm).toBeCloseTo(28 / 30, 10);
+    expect(summarizeFaces([lines(false)]).diaphragm[0].seamFraction).toBe(0);
+  });
+
+  it('los tramos van por incidencia y las paredes no se mezclan entre poses', () => {
+    const oblique = summarizeFaces([wall(30, () => 30, { incidenceDeg: 25 })]).wallSystems.hepaticVein;
+    expect(oblique.map((b) => b.walls)).toEqual([0, 30, 0]);
+    expect(oblique[0].gapFraction).toBeNaN();
+    // dos poses con la misma numeración de líneas y amplitudes distintas: cada pared es continua
+    const b = summarizeFaces([wall(30, () => 10), wall(30, () => 40)]).wallSystems.hepaticVein[0];
+    expect(b.walls).toBe(60);
+    expect(b.beading).toBeLessThan(1e-9);
   });
 });

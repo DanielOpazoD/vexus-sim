@@ -177,6 +177,61 @@ test('el banco de fidelidad mide el moteado del hígado despejado como un campo 
   expect(errors).toEqual([]);
 });
 
+test('las normales de la GPU coinciden con el gradiente de la distancia de TS en las caras que darán brillo', async ({ page }) => {
+  // Banco de interfaces (PR 5a de la tanda 1.5): el eco de una cara lisa dependerá de la incidencia sobre
+  // su normal, y la normal de la GPU (`Cls.n`) nunca se había comprobado. Por vista y tipo de cara, los
+  // puntos del plano a 0,02–0,4 mm de ella en un tejido que la dibuja (mismo tejido en GPU y CPU): |n·∇|
+  // frente al gradiente de `faceSdf`. Emulando la GLSL en TS (sano en apnea):
+  //  - cúpula y vesícula: ≥ 0,99 en p01;
+  //  - tubo: ≥ 0,99 en p05; el p01 baja a 0,95 en la subxifoidea por la tapa elíptica de la VCI dentro de
+  //    la aurícula (la normal escala la sección una vez; el gradiente, dos) y por las uniones de tubos;
+  //  - riñón: 1,00 en p50, pero junto a la escotadura hiliar (ventana renal) la normal es la del elipsoide
+  //    sin escotadura: 0,61 en p01 y el 15 % de los puntos bajo 0,98;
+  //  - cápsula hepática: por tramos (`liverSdf` elige la normal de una de las superficies que funde con
+  //    `smoothMax`); por la impresión renal y la unión de los lóbulos, p05 de 0,45 a 0,98 según la vista.
+  // Se exige lo que ya cumple (un fallo de cableado, de marco o de signo hundiría la mediana) y el resto
+  // se informa en las anotaciones: son los datos con los que los ecos de interfaz eligen su normal.
+  test.setTimeout(240_000);
+  const errors = await bootWithoutErrors(page);
+  // apnea espiratoria: los planos cortan la anatomía en la misma posición que el gemelo de TS
+  await page
+    .locator('button', { hasText: /Apnea\s*esp/ })
+    .first()
+    .click();
+  const views = [
+    { startPoint: 'subxiphoid' },
+    { startPoint: 'intercostal' },
+    { startPoint: 'flank' },
+    { startPoint: 'renal' },
+    // la vesícula no corta ningún plano de partida: flanco abanicado 18° hacia delante
+    { startPoint: 'flank', pose: { tiltDeg: 18 } },
+  ] as const;
+  const faces = ['tube', 'liverSurface', 'dome', 'kidneyOuter', 'gallbladder'] as const;
+  const gated = ['tube', 'dome', 'kidneyOuter', 'gallbladder'] as const;
+  const seen = new Map<string, number>();
+  for (const view of views) {
+    const r = await page.evaluate((v) => window.__vexusTest!.faceNormals(v), view);
+    for (const face of faces) {
+      const f = r[face];
+      const tag = `${face} ${JSON.stringify(view)}: ${JSON.stringify(f)}`;
+      // la GPU y la CPU clasifican igual los puntos de la banda (si no, la comparación sería vacía)
+      expect(f.mismatched, tag).toBeLessThanOrEqual(0.05 * (f.points + f.mismatched));
+      if (f.points < 50) continue;
+      test.info().annotations.push({
+        type: `normales · ${face}`,
+        description: `${JSON.stringify(view)}: ${f.points} puntos, p01 ${f.p01.toFixed(3)}, p05 ${f.p05.toFixed(3)}, < 0,98 en ${(100 * f.below098).toFixed(1)} %; peor ${f.worst}`,
+      });
+      seen.set(face, (seen.get(face) ?? 0) + 1);
+      expect(f.p50, tag).toBeGreaterThanOrEqual(0.99);
+      if (face === 'tube') expect(f.p05, tag).toBeGreaterThanOrEqual(0.98);
+      if (face === 'dome' || face === 'gallbladder') expect(f.p01, tag).toBeGreaterThanOrEqual(0.98);
+    }
+  }
+  // cada cara con brillo se comprobó en al menos una vista (la prueba no puede pasar vacía)
+  for (const face of gated) expect(seen.get(face) ?? 0, `${face} sin vista con ≥ 50 puntos`).toBeGreaterThan(0);
+  expect(errors).toEqual([]);
+});
+
 test('la pasada A en cuatro etapas da la misma transmisión de un solo rayo que el modelo de CPU', async ({ page }) => {
   // Decisión 54: impactos por línea, segmentos y suma acumulada reproducen `rayAttenuationDb` en los
   // mismos puntos (las líneas con espejo no: la CPU no sigue el rayo reflejado). Con GPU real,

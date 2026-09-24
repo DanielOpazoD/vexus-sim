@@ -646,8 +646,10 @@ void main() {
 /**
  * Consulta puntual de la anatomía GLSL (pruebas y gate de equivalencia): cada texel de
  * `uPoints` es un punto del MUNDO; se clasifica con la misma `classify` que la imagen
- * y se devuelve tejido, índice de tubo (−1 sin vaso), distancia a la interfaz y la
- * velocidad de la sangre en el marco material (la misma que usa el color).
+ * y se devuelve tejido, índice de tubo (−1 sin vaso), distancia a la interfaz, la
+ * velocidad de la sangre en el marco material (la misma que usa el color) y la normal
+ * unitaria de la interfaz (`c.n`, marco material; la e2e la compara con el gradiente de
+ * `faceSdf` de TS). La tercera salida solo se lee si se pide (`queryPoints(…, { normals })`).
  */
 export const FRAG_QUERY = /* glsl */ `#version 300 es
 precision highp float;
@@ -657,11 +659,14 @@ ${BEAM_GLSL}
 uniform sampler2D uPoints;
 layout(location = 0) out vec4 o0;
 layout(location = 1) out vec4 o1;
+layout(location = 2) out vec4 o2;
 void main() {
   vec4 p = texelFetch(uPoints, ivec2(gl_FragCoord.xy), 0);
   Cls c = classify(toMaterial(p.xyz));
   vec3 v = c.tissue == T_BLOOD ? bloodVelocity(c) : vec3(0.0);
   o0 = vec4(float(c.tissue), float(c.vessel), c.bd, 1.0);
   o1 = vec4(v, 0.0);
+  float nl = length(c.n);
+  o2 = vec4(nl > 0.0 ? c.n / nl : vec3(0.0), 0.0);
 }
 `;

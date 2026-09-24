@@ -144,11 +144,15 @@ export interface FrameInputs {
   seed: number;
 }
 
-/** Resultado de `queryPoints`: tejido, índice de tubo (−1 sin vaso) y velocidad de la sangre (mm/s). */
+/**
+ * Resultado de `queryPoints`: tejido, índice de tubo (−1 sin vaso), velocidad de la sangre (mm/s) y,
+ * si se pidió, la normal unitaria de la interfaz (`Cls.n`, marco material; xyz por punto).
+ */
 export interface GpuPointQuery {
   tissue: Int32Array;
   vessel: Int32Array;
   velocity: Float32Array;
+  normal?: Float32Array;
 }
 
 export class UltrasoundRenderer {
@@ -818,9 +822,11 @@ export class UltrasoundRenderer {
   /**
    * Consulta síncrona de la anatomía GLSL en una lista de puntos del mundo (xyz por
    * punto). Solo para pruebas y el gate de equivalencia TS ↔ GLSL: lee de la GPU de
-   * forma bloqueante, así que nunca se llama por cuadro.
+   * forma bloqueante, así que nunca se llama por cuadro. Con `normals`, lee además el
+   * tercer adjunto: la normal de la interfaz en cada punto (siempre se crea, para que la
+   * salida `o2` del shader tenga destino).
    */
-  queryPoints(points: Float32Array, inputs: FrameInputs, allTubes = false): GpuPointQuery {
+  queryPoints(points: Float32Array, inputs: FrameInputs, allTubes = false, opts: { normals?: boolean } = {}): GpuPointQuery {
     const gl = this.gl;
     const n = Math.floor(points.length / 3);
     const W = 256;
@@ -830,7 +836,7 @@ export class UltrasoundRenderer {
     const pts = createTexture(gl, W, H, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, W, H, gl.RGBA, gl.FLOAT, data);
     const f = { internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.NEAREST };
-    const target = createTarget(gl, W, H, [f, f]);
+    const target = createTarget(gl, W, H, [f, f, f]);
     this.pQuery ??= new GLProgram(gl, VERT, FRAG_QUERY, 'query');
     // puntos fuera del plano (equivalencia volumétrica): todos los tubos, sin recorte por losa
     this.updateSceneDynamic(inputs, allTubes);
@@ -846,18 +852,25 @@ export class UltrasoundRenderer {
     gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, out0);
     gl.readBuffer(gl.COLOR_ATTACHMENT1);
     gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, out1);
+    const out2 = opts.normals ? new Float32Array(W * H * 4) : null;
+    if (out2) {
+      gl.readBuffer(gl.COLOR_ATTACHMENT2);
+      gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, out2);
+    }
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     deleteTarget(gl, target);
     gl.deleteTexture(pts);
     const tissue = new Int32Array(n);
     const vessel = new Int32Array(n);
     const velocity = new Float32Array(n * 3);
+    const normal = out2 ? new Float32Array(n * 3) : undefined;
     for (let i = 0; i < n; i++) {
       tissue[i] = Math.round(out0[i * 4]);
       vessel[i] = Math.round(out0[i * 4 + 1]);
       velocity.set([out1[i * 4], out1[i * 4 + 1], out1[i * 4 + 2]], i * 3);
+      if (normal && out2) normal.set([out2[i * 4], out2[i * 4 + 1], out2[i * 4 + 2]], i * 3);
     }
-    return { tissue, vessel, velocity };
+    return normal ? { tissue, vessel, velocity, normal } : { tissue, vessel, velocity };
   }
 
   /**

@@ -268,6 +268,20 @@ describe('Cadena completa del alumno: puerta → espectro → medición → grad
     ).toEqual([]);
   });
 
+  // La onda D del grave (≈ 34 cm/s) roza el Nyquist a la PRF por defecto (2600 Hz, ±40 cm/s): se
+  // pliega, deja su ventana diastólica sin sangre del lado de la vena y ningún latido vale. La calidad
+  // decía «el vaso entra y sale de la puerta» (en apnea); ahora dice aliasing: hay que subir la escala.
+  it('Congestión grave, renal a 2600 Hz en apnea: no medible por aliasing, no «intermitente»', () => {
+    const { captures } = renalCaptures(SEVERE_CONGESTION, SEVERE_CONGESTION.seed, 20);
+    const tag = JSON.stringify(captures);
+    expect(captures.length, tag).toBeGreaterThan(4);
+    expect(
+      captures.filter((c) => c.issue === 'intermittent'),
+      tag,
+    ).toEqual([]);
+    expect(captures.filter((c) => c.issue === 'aliasing').length, tag).toBeGreaterThan(0);
+  });
+
   // La interlobar del caso grave entra y sale de la puerta con la respiración: antes se medía
   // «bifásica» (era monofásica); ahora la captura se declara no medible y no entra en el grado.
   it('Congestión grave, interlobar con respiración tranquila: la captura es no medible (intermitente)', () => {

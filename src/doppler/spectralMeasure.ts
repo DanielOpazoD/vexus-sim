@@ -85,8 +85,14 @@ const qualityOf = (
   opts: MeasureOptions,
   side: 'both' | 'pos' | 'neg',
   waves?: { s: readonly number[]; d: readonly number[] },
+  phaseWindow?: (b: Beat) => readonly [number, number],
 ) =>
-  assessQuality(smoothSpectrum(columns), beats, { wallFilterHz: opts.wallFilterHz ?? 25, marginDb: opts.thresholdMarginDb, side }, waves);
+  assessQuality(
+    smoothSpectrum(columns),
+    beats,
+    { wallFilterHz: opts.wallFilterHz ?? 25, marginDb: opts.thresholdMarginDb, side, phaseWindow },
+    waves,
+  );
 
 /**
  * Traza observada: envolvente por el método del percentil en cada columna y mediana
@@ -391,7 +397,9 @@ export function measureObservedRenal(columns: readonly SpectralColumn[], beats: 
   return {
     kind: 'renal',
     // la arteria vecina siempre da señal: la calidad se juzga en el lado de la vena
-    quality: qualityOf(columns, beats, opts, veinSign === 1 ? 'pos' : 'neg'),
+    // …y la vena monofásica solo lleva flujo en diástole: el latido vale si la sangre cubre su ventana
+    // diastólica y se repite igual en todos (C10)
+    quality: qualityOf(columns, beats, opts, veinSign === 1 ? 'pos' : 'neg', undefined, (b) => beatWindows(b).dWindow),
     sPeak,
     dPeak,
     vMin,

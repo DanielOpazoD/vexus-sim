@@ -53,10 +53,10 @@ Generado por `npm run docs:index` — no editar a mano.
 | [47](DECISIONS.md#L630) | Grafo de pasadas del renderer y tiempo de GPU que no miente | vigente |
 | [48](DECISIONS.md#L659) | La sangre del volumen de muestra reentra por su propia cuerda y la vena renal es el lado que domina la puerta | vigente |
 | [49](DECISIONS.md#L696) | Control de calidad de la captura PW: «no medible» con motivo, onda reproducible y suelo de la captura | vigente |
-| [50](DECISIONS.md#L749) | El color comparte la transmisión del PW y su ganancia (en dB) alcanza el ruido del equipo | vigente |
-| [51](DECISIONS.md#L771) | Transiciones lentas en el volumen de muestra e invariantes de §21 sobre la señal | vigente |
-| [52](DECISIONS.md#L809) | La fidelidad del modo B se mide con un banco reproducible, en la envolvente y en la imagen mostrada | vigente |
-| [53](DECISIONS.md#L865) | Preajuste abdominal: 70 dB y el hígado a media escala | vigente |
-| [54](DECISIONS.md#L895) | Transmisión en cuatro etapas, hueso clínico y penumbra de la apertura | vigente |
-| [55](DECISIONS.md#L932) | El medio de dispersores está anclado y no sigue a la sonda | vigente |
-| [56](DECISIONS.md#L983) | Moteado por tejido, heterogeneidad continua y grumos en la grasa | vigente |
+| [50](DECISIONS.md#L770) | El color comparte la transmisión del PW y su ganancia (en dB) alcanza el ruido del equipo | vigente |
+| [51](DECISIONS.md#L792) | Transiciones lentas en el volumen de muestra e invariantes de §21 sobre la señal | vigente |
+| [52](DECISIONS.md#L830) | La fidelidad del modo B se mide con un banco reproducible, en la envolvente y en la imagen mostrada | vigente |
+| [53](DECISIONS.md#L886) | Preajuste abdominal: 70 dB y el hígado a media escala | vigente |
+| [54](DECISIONS.md#L916) | Transmisión en cuatro etapas, hueso clínico y penumbra de la apertura | vigente |
+| [55](DECISIONS.md#L953) | El medio de dispersores está anclado y no sigue a la sonda | vigente |
+| [56](DECISIONS.md#L1004) | Moteado por tejido, heterogeneidad continua y grumos en la grasa | vigente |

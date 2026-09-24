@@ -2,12 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene, BASELINE_CALIBER, wallThicknessMm } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
-import { NORMAL_ADULT } from '../cases';
+import { CASES, NORMAL_ADULT } from '../cases';
 import { SimulationClock } from '../core/clock';
 import { PhysiologyEngine } from '../physiology/engine';
 import { CONVEX_C35, lineCoupling, lineDirection, pointOnLine, probeFrame, skinSoftness, type ProbePose } from '../probe/probe';
 import { kidneyQuery, kidneyWorld } from '../anatomy/organs/kidney';
 import { renalPatternFromPeaks } from '../vexus/classification';
+import { VESSEL_META } from '../physiology/vessels';
+import { BRANCH_MAX_RADIUS_SCALE } from '../anatomy/vesselTree';
 
 describe('Anatomía implícita (base B)', () => {
   const scene = new AnatomyScene(NORMAL_ADULT);
@@ -205,6 +207,38 @@ describe('Anatomía implícita (base B)', () => {
     expect(c.tissue).toBe(Tissue.Blood);
     expect(c.vessel).toBe(b0.id);
     expect(c.flowFactor).toBeLessThan(1);
+  });
+
+  // Antes la contención solo se comprobaba en los extremos: en la congestión grave una rama de
+  // hvLeftTributary cruzaba la fisura umbilical (hígado +4 mm fuera en su punto medio) y una luz con
+  // flujo sustituía al ligamento redondo; otras rozaban la cápsula con el calibre dilatado.
+  it('las ramas procedurales quedan dentro del parénquima en todo su recorrido y con el calibre máximo', () => {
+    for (const p of CASES) {
+      const sc = new AnatomyScene(p);
+      const branches = sc.vessels.filter((v) => v.flowFactor !== undefined);
+      expect(branches.length, p.id).toBeGreaterThanOrEqual(40);
+      const bad: string[] = [];
+      for (const [i, b] of branches.entries()) {
+        const [n0, n1] = b.tube.nodes;
+        // el origen es el nodo más grueso: su primer radio queda dentro de la luz de la madre
+        const [o, e] = n0.r >= n1.r ? [n0, n1] : [n1, n0];
+        const sMax = BRANCH_MAX_RADIUS_SCALE[VESSEL_META[b.id].caliber];
+        const len = Math.hypot(e.p[0] - o.p[0], e.p[1] - o.p[1], e.p[2] - o.p[2]);
+        const n = Math.ceil(2 * len);
+        for (let k = 0; k <= n; k++) {
+          const t = k / n;
+          if (t * len < o.r * sMax) continue;
+          const q: [number, number, number] = [0, 1, 2].map((j) => o.p[j] + (e.p[j] - o.p[j]) * t) as [number, number, number];
+          const r = (o.r + (e.r - o.r) * t) * sMax;
+          const margin = Math.min(sc.liverInteriorMargin(q), sc.ligamentumVenosumSdf(q));
+          if (margin < r + wallThicknessMm(b, r)) {
+            bad.push(`${p.id} #${i} ${b.id} t=${t.toFixed(2)}: margen ${margin.toFixed(2)} < ${(r + wallThicknessMm(b, r)).toFixed(2)}`);
+            break;
+          }
+        }
+      }
+      expect(bad).toEqual([]);
+    }
   });
 
   it('el intestino (el «resto») mide su distancia a la frontera: tiende a 0 junto al diafragma y el hígado', () => {

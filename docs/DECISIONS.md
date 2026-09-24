@@ -350,6 +350,15 @@ tubos el bucle GLSL por muestra subía el cuadro de 13 a 23 ms: ahora la textura
 cuadro solo los tubos cuya esfera envolvente corta la losa del plano (elevación ± 12 mm), 20–40 de
 ~90, con el índice original en H2.w; cuadro de nuevo en 12–14 ms y equivalencia TS ↔ GLSL 100 %.
 
+**Enmienda (revisión externa, 23-09-2026).** La contención solo miraba los extremos: en la congestión
+grave una rama de `hvLeftTributary` tenía los dos extremos dentro del hígado y el punto medio 4 mm
+fuera, en la fisura umbilical, así que una luz con flujo sustituía al ligamento redondo. Ahora cada
+rama se recorre cada 0,5 mm desde que sale de la luz de su madre: la luz con el calibre más dilatado
+(`BRANCH_MAX_RADIUS_SCALE`: suprahepáticas 1,8×, porta 1,2×; medido 1,71 y 1,15 en los tres casos)
+más su pared debe quedar dentro del parénquima y fuera de la fisura umbilical y del ligamento
+venoso. Si no cabe, se acorta como antes. El sano y la FA no cambian (47 ramas idénticas); el grave
+pierde esa rama (48 → 47) sin alterar las demás, porque era una hoja y no consume la semilla.
+
 ## 35. Columna con arco posterior, costillas que terminan en la apófisis transversa, «columna» ≠ «costilla»
 
 Daniel señaló una «costilla» flotando bajo la VCI a 20 cm en el corte y en la imagen. Diagnóstico:

@@ -888,6 +888,57 @@ lo mismo: separar pérdida local e integración para liberar presupuesto para su
   sin obstáculo, un rayo; bajo una costilla sintética, sombra completa cerca y rellena en profundidad;
   borde en rampa monótona de ≥ 5 líneas; `passGraph.test.ts` con las cuatro etapas.
 
+## 55. El medio de dispersores está anclado y no sigue a la sonda
+
+**Contexto.** El moteado sale de una retícula material de 0,42 mm cuya coordenada elevacional se
+comprime hasta el grosor de corte (decisión 99 de EchoTwin), para que la textura se decorrele al
+inclinar la sonda un grosor de corte y no una célula. La compresión usaba como eje la normal ACTUAL
+del plano y como pivote el origen del mundo: al girar la sonda cambiaba el medio. Con la sonda a
+~100 mm del origen, 0,5° de giro desplazaban el campo 0,9 mm: correlación del moteado 0,16 con 0,5° de
+giro y 0,02 con 1° de inclinación (gemelo TS de la pasada B). En un equipo el grano se conserva
+mientras el plano no atraviesa otro tejido, y abanicar la sonda es la maniobra central del examen.
+Lo señaló la revisión externa (C3).
+**Opciones.** (1) Pivote en el plano actual, que sigue a la sonda en el plano (lo que proponía la
+revisión): arregla el giro sobre el eje axial pero no la inclinación, porque los píxeles hondos del
+plano nuevo quedan fuera del plano viejo sin comprimir (gemelo: 0,075 con 0,5°). (2) Medio fijo: eje
+y pivote anclados. (3) Integrar de verdad en elevación con más planos (coste × planos).
+**Decisión.** Medio anclado (`ultrasound/speckleField.ts`, `ElevationAnchor`). El eje y el pivote se
+fijan con la sonda y no la siguen: la imagen se decorrela solo porque el plano atraviesa otro tejido.
+Con la normal apartada α del ancla, la célula elevacional se adelgaza (|dq/dn| = √(sin²α + k²cos²α),
+k ≈ 0,13 en el foco). A 20° la persistencia con 0,5° de inclinación cae a 0,3–0,65 y la SNR sube un
+11–17 %; a 5° sigue ≥ 0,9 y ≤ +12 %. Por eso, si la normal se aparta más de 6° del ancla, el ancla se
+renueva con un fundido de 8 cuadros entre los dos medios. El medio nuevo usa otra semilla:
+√w·A + √(1−w)·B de dos campos gaussianos independientes sigue siendo gaussiano, así que la
+estadística de Rayleigh no cambia durante el fundido. Un salto de pose entre cuadros (> 15 mm o
+
+> 10°: el teletransporte de los ganchos de prueba) y el cambio de paciente reinician el ancla sin
+> fundido; los puntos de partida de la app se animan y reanclan con fundido. En la pasada B,
+> `speckleField` evalúa el segundo medio solo durante el fundido.
+> **Consecuencias.** Abanicar o girar la sonda conserva el grano como en un equipo (gemelo: 0,95 con
+> 0,5° de inclinación, 0,83 con 1°, 0,50 con 2°, 0,11 con 4°; giro axial 0,99 con 1°); trasladarla en
+> elevación lo decorrela a la escala del grosor de corte (0,5 mm → 0,97; 2 mm → 0,66; 4 mm → 0,21). La
+> imagen depende ahora de la trayectoria: volver a una pose tras girar más de 6° no da el mismo grano.
+> Coste: una evaluación más del campo durante 8 cuadros cada 6° de giro.
+> **Verificación.** `speckleField.test.ts` (gemelo TS): inclinación de 0,25–1° ≥ 0,95–0,75 y de 4–8°
+> < 0,3; giro axial; traslación elevacional; a 1° del umbral, persistencia > 0,9 y SNR < +12 %; máquina
+> de estados del ancla (fija por debajo del umbral, fundido monótono de 8 cuadros con la otra semilla y
+> dos medios distintos en cada cuadro del fundido, sin reanclar a mitad de un fundido, salto sin
+> fundido); Rayleigh y potencia iguales a mitad del fundido. e2e con GPU real, en apnea y sobre la
+> envolvente del hígado dividida por su media local (~10 × 4 mm). La envolvente cruda la domina la
+> atenuación sin TGC, y en la ventana intercostal quedan bandas de penumbra: dos moteados
+> independientes correlacionaban 0,6 crudos y 0,45 quitando solo la media por fila. Lo halló una
+> revisión adversarial.
+
+- `speckleMotion` (GPU): 0,88 con 0,5° de inclinación, 0,78 con 2° de giro y 0,12 con 8°; exige
+  ≥ 0,8 / ≥ 0,7 / < 0,3, y ≥ 0,9 al volver a la pose.
+- `speckleCrossfade`: gira 1° por cuadro durante 16 cuadros y pasa dos fundidos. Exige la SNR dentro
+  de ±15 %, cada cuadro correlacionado > 0,7 con el anterior (0,82–0,89 sin fundido) y saltos de
+  nivel < 0,8 dB. Esta prueba halló dos defectos que el gemelo no veía:
+  - el medio viejo se soltaba un cuadro antes y el último cuadro de cada fundido sumaba el mismo
+    medio dos veces (+2,1 dB);
+  - un reanclaje a mitad de fundido descartaba un medio de golpe (correlación 0,65).
+    Ahora el medio viejo se suelta tras el último cuadro y no se reancla hasta que el fundido acaba.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

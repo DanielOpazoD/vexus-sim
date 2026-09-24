@@ -3,8 +3,8 @@ import type { EquipmentCommand } from './equipment';
 import { equivalenceSweep, volumeEquivalence, type EquivalencePoseReport, type VolumeEquivalenceReport } from './equivalenceSweep';
 import { bestGateOnVessel } from './gatePlacement';
 import { acousticWindowWeight, gateTransmission } from './gateTransmission';
-import { lineCoupling, pointOnLine } from '../probe/probe';
-import type { Tissue } from '../anatomy/tissues';
+import { lineCoupling, pointOnLine, type ProbePose } from '../probe/probe';
+import { Tissue } from '../anatomy/tissues';
 import { rayAttenuationDb } from '../ultrasound/transmission';
 import { fidelityStats, type FidelityStats } from './fidelity';
 import { speckleStats, type SpeckleOptions, type SpeckleStats } from './speckle';
@@ -43,6 +43,27 @@ export interface TestHooks {
    * con espejo (la CPU no sigue el rayo reflejado) y las transmisiones por debajo de −60 dB.
    */
   transmissionParity: (opts?: { startPoint?: StartPoint['id']; every?: number }) => { lines: number; samples: number; maxDiffDb: number };
+  /**
+   * Persistencia del moteado al mover la sonda (decisión 55): correlación de la envolvente en el
+   * hígado entre la pose de partida y la misma pose con `tiltDeg`/`yawDeg` más (`moved`), y al volver
+   * a la pose (`back`). Entre cuadros avanza un solo paso de fisiología: la respiración no cuenta.
+   */
+  speckleMotion: (opts: { startPoint: StartPoint['id']; tiltDeg?: number; yawDeg?: number }) => {
+    samples: number;
+    moved: number;
+    back: number;
+  };
+  /**
+   * Fundido del ancla del medio en la GPU (decisión 55): gira la sonda `stepDeg` por cuadro durante
+   * `frames` cuadros y devuelve por cuadro el peso del fundido, la SNR y el nivel del hígado (dB
+   * frente al primero) y la correlación del moteado con el cuadro anterior (sin tendencia).
+   */
+  speckleCrossfade: (opts: { startPoint: StartPoint['id']; stepDeg: number; frames: number }) => {
+    w: number;
+    snr: number;
+    levelDb: number;
+    corrPrev: number;
+  }[];
   /**
    * Centra la caja de color sobre uno de los vasos (colocación del operador), avanza lo justo para
    * que toque un cuadro de color y devuelve las celdas con potencia visible; null si no ve el vaso.
@@ -101,6 +122,43 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       for (let i = 0; i < n; i++) sim.render();
       sim.renderer.finishForTiming();
       return (performance.now() - t0) / n;
+    },
+    speckleMotion: (opts) => {
+      const sim = getSim();
+      goTo(sim, opts.startPoint);
+      const base = { ...sim.pose };
+      const rad = Math.PI / 180;
+      const a = envelopeAt(sim, base);
+      const mask = liverMask(sim, a);
+      const b = envelopeAt(sim, { ...base, tilt: base.tilt + (opts.tiltDeg ?? 0) * rad, yaw: base.yaw + (opts.yawDeg ?? 0) * rad });
+      const c = envelopeAt(sim, base);
+      return { samples: mask.length, moved: speckleCorrelation(a, b, mask), back: speckleCorrelation(a, c, mask) };
+    },
+    speckleCrossfade: (opts) => {
+      const sim = getSim();
+      goTo(sim, opts.startPoint);
+      const pose = { ...sim.pose };
+      const frames: { w: number; snr: number; levelDb: number; corrPrev: number }[] = [];
+      let prev = envelopeAt(sim, pose);
+      let prevMask = liverMask(sim, prev);
+      const level0 = meanOf(prev.data, prevMask);
+      for (let f = 0; f < opts.frames; f++) {
+        pose.yaw += (opts.stepDeg * Math.PI) / 180;
+        const env = envelopeAt(sim, pose);
+        const mask = liverMask(sim, env);
+        const d = detrended(env, mask).filter(Number.isFinite);
+        const mean = d.reduce((s, v) => s + v, 0) / d.length;
+        const sd = Math.sqrt(d.reduce((s, v) => s + (v - mean) ** 2, 0) / d.length);
+        frames.push({
+          w: sim.renderer.speckleAnchorWeight,
+          snr: mean / sd,
+          levelDb: 20 * Math.log10(meanOf(env.data, mask) / level0),
+          corrPrev: speckleCorrelation(prev, env, prevMask),
+        });
+        prev = env;
+        prevMask = mask;
+      }
+      return frames;
     },
     transmissionParity: (opts) => {
       const sim = getSim();
@@ -232,4 +290,95 @@ function windowWeight(sim: Simulator): (theta: number, r: number) => number {
     sim.bmode.depthMm,
     sim.profile.dopplerEffectiveMHz,
   );
+}
+
+/** Envolvente con la sonda en `pose` tras un solo paso de fisiología (sin respiración apreciable). */
+function envelopeAt(sim: Simulator, pose: ProbePose): { lines: number; samples: number; data: Float32Array } {
+  sim.setPose(pose);
+  sim.advance(1.5 * sim.physiology.clock.dt);
+  sim.render();
+  return sim.renderer.readEnvelope();
+}
+
+/** Índices de hígado del plano actual: cada 2 líneas y 4 muestras, de 30 a 120 mm. */
+function liverMask(sim: Simulator, env: { lines: number; samples: number }): number[] {
+  const tr = sim.transducer;
+  const depth = sim.bmode.depthMm;
+  const idx: number[] = [];
+  for (let u = 0; u < env.lines; u += 2)
+    for (let k = 0; k < env.samples; k += 4) {
+      const r = ((k + 0.5) * depth) / env.samples;
+      if (r < 30 || r > 120) continue;
+      const theta = -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / env.lines;
+      if (sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, theta, r), sim.sample).tissue === Tissue.Liver) idx.push(k * env.lines + u);
+    }
+  return idx;
+}
+
+const meanOf = (data: Float32Array, idx: readonly number[]): number => idx.reduce((s, i) => s + data[i], 0) / Math.max(1, idx.length);
+
+/** Semiancho de la caja de la media local (líneas y muestras de la envolvente): ~10 × 4 mm a 8 cm. */
+const LOCAL_LINES = 6;
+const LOCAL_SAMPLES = 12;
+
+/**
+ * Envolvente sin la tendencia local: cada muestra dividida por la media del hígado en una caja de
+ * ~10 × 4 mm a su alrededor. La atenuación de ida y vuelta sin TGC (~3 dB/cm) domina la envolvente
+ * cruda, y en la ventana intercostal la penumbra de las costillas deja bandas laterales: quitar solo
+ * la media por fila de profundidad todavía correlacionaba dos moteados a 8° (0,45 en GPU).
+ */
+function detrended(env: { lines: number; data: Float32Array }, idx: readonly number[]): number[] {
+  const inMask = new Set(idx);
+  const out: number[] = [];
+  for (const i of idx) {
+    const u = i % env.lines;
+    const k = Math.floor(i / env.lines);
+    let sum = 0;
+    let n = 0;
+    for (let dk = -LOCAL_SAMPLES; dk <= LOCAL_SAMPLES; dk++)
+      for (let du = -LOCAL_LINES; du <= LOCAL_LINES; du++) {
+        const j = (k + dk) * env.lines + (u + du);
+        if (inMask.has(j)) {
+          sum += env.data[j];
+          n++;
+        }
+      }
+    out.push(n >= 8 ? env.data[i] / (sum / n) : Number.NaN);
+  }
+  return out;
+}
+
+/** Correlación del moteado entre dos envolventes en las muestras de `idx`, sin la tendencia de profundidad. */
+function speckleCorrelation(
+  a: { lines: number; data: Float32Array },
+  b: { lines: number; data: Float32Array },
+  idx: readonly number[],
+): number {
+  const x0 = detrended(a, idx);
+  const y0 = detrended(b, idx);
+  const x: number[] = [];
+  const y: number[] = [];
+  for (let i = 0; i < x0.length; i++)
+    if (Number.isFinite(x0[i]) && Number.isFinite(y0[i])) {
+      x.push(x0[i]);
+      y.push(y0[i]);
+    }
+  const n = x.length;
+  let mx = 0;
+  let my = 0;
+  for (let i = 0; i < n; i++) {
+    mx += x[i];
+    my += y[i];
+  }
+  mx /= n;
+  my /= n;
+  let sxy = 0;
+  let sxx = 0;
+  let syy = 0;
+  for (let i = 0; i < n; i++) {
+    sxy += (x[i] - mx) * (y[i] - my);
+    sxx += (x[i] - mx) ** 2;
+    syy += (y[i] - my) ** 2;
+  }
+  return sxy / Math.sqrt(sxx * syy);
 }

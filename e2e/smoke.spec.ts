@@ -193,6 +193,67 @@ test('la pasada A en cuatro etapas da la misma transmisión de un solo rayo que 
   expect(errors).toEqual([]);
 });
 
+test('el moteado del hígado persiste al inclinar la sonda medio grado y se renueva con 8°', async ({ page }) => {
+  // Decisión 55: el medio de dispersores está anclado y no sigue a la normal del plano. Antes, con
+  // el eje de compresión en la normal actual y el pivote en el origen del mundo, 0,5° de inclinación
+  // cambiaba todo el moteado (gemelo: correlación −0,01); en un equipo el grano se conserva un grosor
+  // de corte y se renueva cuando el plano ya atraviesa otro tejido. La correlación se toma sin la
+  // tendencia de profundidad (gemelo: 0,95 / 0,86 / 0,06 con 0,5° / 2° de giro / 8°).
+  test.setTimeout(240_000);
+  const errors = await bootWithoutErrors(page);
+  // apnea espiratoria: entre cuadros solo se mueve la sonda
+  await page
+    .locator('button', { hasText: /Apnea\s*esp/ })
+    .first()
+    .click();
+  const r = await page.evaluate(() => {
+    const h = window.__vexusTest!;
+    return {
+      small: h.speckleMotion({ startPoint: 'intercostal', tiltDeg: 0.5 }),
+      yaw: h.speckleMotion({ startPoint: 'intercostal', yawDeg: 2 }),
+      big: h.speckleMotion({ startPoint: 'intercostal', tiltDeg: 8 }),
+    };
+  });
+  const tag = JSON.stringify(r);
+  expect(r.small.samples, tag).toBeGreaterThan(300);
+  // volver a la pose: el mismo medio (con uno nuevo daría ~0; el ruido del receptor cambia por cuadro)
+  expect(r.small.back, tag).toBeGreaterThan(0.9);
+  expect(r.small.moved, tag).toBeGreaterThan(0.8);
+  expect(r.yaw.moved, tag).toBeGreaterThan(0.7);
+  expect(r.big.moved, tag).toBeLessThan(0.3);
+  expect(errors).toEqual([]);
+});
+
+test('el fundido del ancla del moteado no da saltos: la textura y la correlación entre cuadros se mantienen', async ({ page }) => {
+  // Decisión 55: girar la sonda 1° por cuadro pasa el umbral de reanclaje; durante los cuadros del
+  // fundido (peso < 1) la GPU mezcla dos medios. La SNR del hígado no debe cambiar y cada cuadro debe
+  // parecerse al anterior (un fundido mal cableado daría un destello o un salto de grano).
+  test.setTimeout(240_000);
+  const errors = await bootWithoutErrors(page);
+  await page
+    .locator('button', { hasText: /Apnea\s*esp/ })
+    .first()
+    .click();
+  const frames = await page.evaluate(() => window.__vexusTest!.speckleCrossfade({ startPoint: 'intercostal', stepDeg: 1, frames: 16 }));
+  const tag = JSON.stringify(frames);
+  expect(
+    frames.some((f) => f.w < 1),
+    tag,
+  ).toBe(true);
+  const snr0 = frames[0].snr;
+  // sin destellos: el nivel del hígado no salta entre cuadros (soltar el medio viejo un cuadro antes
+  // sumaba el mismo medio dos veces: +2,1 dB en el último cuadro de cada fundido)
+  for (let i = 1; i < frames.length; i++) expect(Math.abs(frames[i].levelDb - frames[i - 1].levelDb), tag).toBeLessThan(0.8);
+  for (const f of frames) {
+    expect(f.snr / snr0, tag).toBeGreaterThan(0.85);
+    expect(f.snr / snr0, tag).toBeLessThan(1.15);
+    // 1° de giro por cuadro ya da ~0,83 sin fundido (los píxeles laterales se mueven); el fundido
+    // no debe bajar de ahí más que un poco
+    expect(f.corrPrev, tag).toBeGreaterThan(0.7);
+  }
+  expect(errors).toEqual([]);
+});
+
 test('sin contacto no hay Doppler: el color y el espectro se apagan al levantar la sonda', async ({ page }) => {
   // Invariante de §23 de la guía. Medido con GPU real: color 1 346 celdas en contacto y 0 levantada;
   // PW 23 dB sobre el suelo en contacto y 7,5 dB (el valor del ruido puro) levantada.

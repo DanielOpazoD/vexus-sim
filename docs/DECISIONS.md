@@ -404,6 +404,15 @@ interpolada en el shader como `const vec2 PYR[]`, así no puede divergir); corte
 (u × 1,15) por las columnas de Bertin entre las pirámides laterales (`BERTIN_COLUMNS_U`). El hilio
 queda relleno de grasa perirrenal (grasa hiliar). Equivalencia TS ↔ GLSL 100 %.
 
+**Enmienda (revisión externa, 23-09-2026).** La arteria y la vena renales compartían el nodo hiliar y
+se solapaban 8 mm en su último tramo: el 14–21 % del eje arterial se clasificaba como vena, y una
+puerta PW sobre la arteria del hilio daba el espectro venoso. Ahora, de delante atrás, vena y arteria
+con los ejes a 9 mm en el hilio (radios 4,5 y 2,4 más las paredes), y tramos extrarrenales con la
+vena por delante de la arteria (la derecha pasa además por detrás de la cava). Sin solaparse en todo
+el recorrido: holgura ≥ 0,9 mm entre paredes. La base del riñón izquierdo es especular (su w apunta
+hacia atrás) y sus desplazamientos van con el signo cambiado. Siguen sin existir las segmentarias y
+las interlobares izquierdas (`no-left-interlobar-vessels`).
+
 ## 38. PSF lateral con número F y ensanchamiento espectral intrínseco
 
 La PSF lateral era una gaussiana con σ₀ 0,9 mm en el foco y zR 28 mm, igual en TS y GLSL pero sin

@@ -70,8 +70,13 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
   const kR = kidneyRight;
   const kL = kidneyLeft;
   const kw = (k: Kidney, q: Vec3): Vec3 => kidneyWorld(q, k);
-  const hilumR = kw(kR, [0, kR.radii[1] - 2, 0]);
-  const hilumL = kw(kL, [0, kL.radii[1] - 2, 0]);
+  // En el hilio, de delante atrás: vena, arteria (y pelvis). Ejes a 9 mm (radios 4,5 + 2,4 más las
+  // paredes): antes compartían el nodo y la puerta PW sobre la arteria hiliar leía la vena.
+  const hilumVeinR = kw(kR, [0, kR.radii[1] - 2, 5]);
+  const hilumArteryR = kw(kR, [0, kR.radii[1] - 2, -4]);
+  // la base del riñón izquierdo es especular: su w apunta hacia atrás
+  const hilumVeinL = kw(kL, [0, kL.radii[1] - 2, -5]);
+  const hilumArteryL = kw(kL, [0, kL.radii[1] - 2, 4]);
   // Interlobares en las columnas de Bertin: nacen en el seno y se abren en abanico
   // (u × 1,15 hacia la corteza) entre las pirámides; arteria y vena adyacentes
   const interlobarVein = (id: VesselId, u: number): VesselDef =>
@@ -315,17 +320,17 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       [
         [[12, -26, -62], 2.6],
         [[-12, -29, -67], 2.5],
-        [hilumR, 2.4],
-        [kw(kR, [0, 6, -3]), 2.2],
+        [hilumArteryR, 2.4],
+        [kw(kR, [0, 6, -4]), 2.2],
       ],
       2.5,
     ),
     thin(
       'renalVeinRight',
       [
-        [kw(kR, [0, 8, 3]), 4],
-        [hilumR, 4.5],
-        [[-40, -30, -70], 4.5],
+        [kw(kR, [0, 8, 5]), 4],
+        [hilumVeinR, 4.5],
+        [[-40, -20, -70], 4.5],
         [[-22, -16, -66], 4.5],
       ],
       4.5,
@@ -335,18 +340,18 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       'renalArteryLeft',
       [
         [[12, -26, -60], 2.6],
-        [[40, -30, -64], 2.5],
-        [hilumL, 2.4],
-        [kw(kL, [0, 6, -3]), 2.2],
+        [[40, -32, -64], 2.5],
+        [hilumArteryL, 2.4],
+        [kw(kL, [0, 6, 4]), 2.2],
       ],
       2.5,
     ),
     thin(
       'renalVeinLeft',
       [
-        [kw(kL, [0, 8, 3]), 4],
-        [hilumL, 4.5],
-        [[40, -22, -62], 5],
+        [kw(kL, [0, 8, -5]), 4],
+        [hilumVeinL, 4.5],
+        [[40, -19, -62], 5],
         [[12, -12, -64], 5],
         [[-22, -14, -64], 5],
       ],

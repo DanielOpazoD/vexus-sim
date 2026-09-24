@@ -10,7 +10,7 @@ import { join, relative, dirname, resolve } from 'node:path';
  *  - `physiology` solo importa `core`.
  *  - `anatomy` solo importa `core` y `physiology`.
  *  - `vexus` no importa `ui`, `app`, `ultrasound` ni `doppler`.
- *  - `ui` y `app` no son importados por el motor (`core`, `physiology`, `anatomy`,
+ *  - `ui`, `app` y `validation` no son importados por el motor (`core`, `physiology`, `anatomy`,
  *    `probe`, `ultrasound`, `doppler`, `audio`, `vexus`, `cases`).
  *  - No hay ciclos entre capas salvo los aceptados en ALLOWED_CYCLES (que solo
  *    puede encoger).
@@ -81,8 +81,9 @@ const ALLOWED: Record<string, readonly string[]> = {
   ultrasound: ['core', 'physiology', 'anatomy', 'probe'],
   app: ['core', 'physiology', 'anatomy', 'cases', 'probe', 'ultrasound', 'doppler', 'audio', 'vexus'],
   ui: ['core', 'physiology', 'anatomy', 'cases', 'probe', 'ultrasound', 'doppler', 'vexus', 'app'],
-  // validation: solo el registro de limitaciones (las pruebas no cuentan como capa)
-  validation: [],
+  // validation: el registro de limitaciones y los gemelos que solo usan las pruebas (`validation/support`,
+  // p. ej. el de los ecos de interfaz, sobre el motor de imagen); las pruebas no cuentan como capa
+  validation: ['core', 'anatomy', 'ultrasound'],
   main: ['core', 'physiology', 'anatomy', 'cases', 'probe', 'ultrasound', 'doppler', 'audio', 'vexus', 'app', 'ui'],
 };
 
@@ -96,9 +97,9 @@ describe('Fronteras entre capas (docs/ARCHITECTURE.md)', () => {
       for (const b of targets) if (!(ALLOWED[a] ?? []).includes(b)) leaks.push(`${a} → ${b}: ${examples.get(`${a}>${b}`) ?? ''}`);
     expect(leaks).toEqual([]);
   });
-  it('el motor no importa ui ni app', () => {
+  it('el motor no importa ui, app ni las utilidades de prueba', () => {
     for (const layer of ENGINE) {
-      for (const bad of ['ui', 'app', 'main']) {
+      for (const bad of ['ui', 'app', 'main', 'validation']) {
         expect(dep(layer, bad), `${layer} → ${bad}: ${examples.get(`${layer}>${bad}`) ?? ''}`).toBe(false);
       }
     }

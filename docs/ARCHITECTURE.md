@@ -24,6 +24,9 @@ core ← physiology ← anatomy ← probe ← ultrasound
 app (orquesta todo el motor) ← ui (vistas; hoy aún ven el Simulator concreto) ← main
 ```
 
+Las utilidades que solo usan las pruebas (`src/validation/support/`, como el gemelo de los ecos de
+interfaz) pueden usar `core`, `anatomy` y `ultrasound`; el motor no las importa.
+
 El Doppler no conoce Web Audio: la app le inyecta un `AudioSink` (`DopplerAudio` en el navegador,
 `SILENT_AUDIO` en pruebas). Los vasos se clasifican por `VESSEL_META` (sistema, tipo, ley de
 calibre), nunca por el prefijo de su identificador; los casos salen de un único registro.

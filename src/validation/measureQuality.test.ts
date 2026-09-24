@@ -193,4 +193,63 @@ describe('Calidad de la captura PW', () => {
     // sano con respiración tranquila (puerta con ventana acústica): la mediana daba «grave»
     expect(wavesInconsistent([-36, -16, -9], [-7, 16, 12])).toBe(true);
   });
+
+  // Hallazgo C10 de la revisión externa: una vena renal monofásica solo lleva flujo en diástole (la
+  // mitad del ciclo o menos) y la regla «sangre en ≥ 60 % de las columnas del latido» la rechazaba
+  // como intermitente aunque la puerta estuviera perfecta. Con la ventana de fase (la diastólica), el
+  // latido vale si la sangre la cubre y se repite igual en todos; un latido distinto sigue siendo
+  // intermitente.
+  describe('hueco fisiológico que se repite en la misma fase (vena renal monofásica)', () => {
+    const fullBeats = (rr: number, n: number): Beat[] =>
+      Array.from({ length: n }, (_, i) => {
+        const tR = 0.5 + i * rr;
+        return {
+          index: i,
+          tR,
+          rr,
+          tP: tR - 0.15 * rr,
+          tAtrialContraction: tR - 0.1 * rr,
+          tX: tR + 0.225 * rr,
+          tV: tR + 0.45 * rr,
+          tY: tR + 0.625 * rr,
+          tTend: tR + 0.45 * rr,
+          atrialAmplitude: 1,
+        };
+      });
+    const phase = (rr: number) => (t: number) => (((t - 0.5) % rr) + rr) % rr;
+    // la ventana diastólica que usa la medición (`beatWindows`), con las fases de estos latidos
+    const diastole = (b: Beat): [number, number] => {
+      const s = Math.sqrt(b.rr / 0.8);
+      return [b.tY - 0.07 * s, Math.min(b.tY + 0.22 * s, b.tR + b.rr - 0.02)];
+    };
+    for (const bpm of [75, 110]) {
+      const rr = 60 / bpm;
+      const beatsN = fullBeats(rr, 5);
+      const seconds = 0.5 + 5 * rr + 0.1;
+      // flujo solo en la segunda mitad de cada ciclo (diástole)
+      const mono = columns(seconds, (t) => (phase(rr)(t) >= 0.5 * rr ? venous : null));
+      it(`${bpm} lpm: flujo solo en diástole en todos los latidos es medible con la ventana de fase`, () => {
+        expect(assessQuality(mono, beatsN, { wallFilterHz: 25, side: 'pos' }).issue).toBe('intermittent'); // sin ventana: la regla vieja
+        const q = assessQuality(mono, beatsN, { wallFilterHz: 25, side: 'pos', phaseWindow: diastole });
+        expect(q.issue).toBeNull();
+        expect(q.validBeats).toBe(5);
+      });
+      it(`${bpm} lpm: un latido sin flujo en su diástole sigue siendo intermitente`, () => {
+        const b2 = beatsN[2];
+        const dropped = columns(seconds, (t) => (t >= b2.tR && t < b2.tR + rr ? null : phase(rr)(t) >= 0.5 * rr ? venous : null));
+        expect(assessQuality(dropped, beatsN, { wallFilterHz: 25, side: 'pos', phaseWindow: diastole }).issue).toBe('intermittent');
+      });
+      it(`${bpm} lpm: la sangre solo en sístole no se acepta con la ventana diastólica`, () => {
+        const sys = columns(seconds, (t) => (phase(rr)(t) < 0.3 * rr ? venous : null));
+        expect(assessQuality(sys, beatsN, { wallFilterHz: 25, side: 'pos', phaseWindow: diastole }).issue).toBe('intermittent');
+      });
+    }
+    it('un latido con la mitad de flujo que los demás (la puerta pierde el vaso en parte): intermitente por no reproducirse', () => {
+      const rr = 0.8;
+      const beatsN = fullBeats(rr, 5);
+      // flujo en la segunda mitad de cada ciclo; en el latido 1, además, en todo el ciclo (otro vaso entra)
+      const odd = columns(4.7, (t) => (t >= beatsN[1].tR && t < beatsN[1].tR + rr ? venous : phase(rr)(t) >= 0.5 * rr ? venous : null));
+      expect(assessQuality(odd, beatsN, { wallFilterHz: 25, side: 'pos', phaseWindow: diastole }).issue).toBe('intermittent');
+    });
+  });
 });

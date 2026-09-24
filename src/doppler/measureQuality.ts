@@ -55,7 +55,20 @@ export interface QualityOptions {
   side?: 'both' | 'pos' | 'neg';
   /** Margen sobre el suelo de ruido (dB). */
   marginDb?: number;
+  /**
+   * Ventana de fase de cada latido en la que el flujo debe estar (la diastólica en la vena renal).
+   * Con ella, un latido también vale si la sangre cubre ≥ PHASE_COVERAGE de esa ventana y su fracción
+   * de columnas con sangre se repite (a ≤ PHASE_REPRODUCIBILITY de la mediana de la captura): una
+   * vena monofásica solo lleva flujo en diástole, menos del 60 % del ciclo, y no por eso entra y sale
+   * de la puerta (hallazgo C10 de la revisión externa).
+   */
+  phaseWindow?: (b: Beat) => readonly [number, number];
 }
+
+/** Cobertura de la ventana de fase con sangre para que el latido valga. */
+const PHASE_COVERAGE = 0.8;
+/** Diferencia máxima de la fracción de sangre de un latido frente a la mediana de la captura. */
+const PHASE_REPRODUCIBILITY = 0.15;
 
 /** Latidos de una captura: los últimos completos de sus 7 s de espectro (4 caben a 45 lpm). */
 export const CAPTURE_BEATS = 4;
@@ -172,6 +185,8 @@ export function assessQuality(
   let columnsWithBlood = 0;
   const floors = captureNoiseFloorsDb(columns);
   const floorOf = new Map(columns.map((c, i) => [c, floors[i]]));
+  // por latido: fracción de columnas con sangre y cobertura de su ventana de fase
+  const perBeat: { fraction: number; phaseCover: number }[] = [];
   for (const b of beats) {
     const inBeat = columns.filter((c) => c.t >= b.tR && c.t < b.tR + b.rr);
     // un latido a medias (PW recién encendido, o búfer corto a PRF alta) no dice nada del vaso
@@ -179,17 +194,34 @@ export function assessQuality(
     coveredBeats++;
     let withBlood = 0;
     let wrappedColumns = 0;
+    let inPhase = 0;
+    let phaseBlood = 0;
+    const w = opts.phaseWindow?.(b);
     for (const c of inBeat) {
       const r = bloodInColumn(c, opts, floorOf.get(c));
       if (r.present) withBlood++;
+      if (w && c.t >= w[0] && c.t <= w[1]) {
+        inPhase++;
+        if (r.present) phaseBlood++;
+      }
       if (r.wrapped) wrappedColumns++;
       energy += r.energy;
       edgeEnergy += r.edgeEnergy;
     }
-    if (withBlood / inBeat.length >= BEAT_SIGNAL_FRACTION) validBeats++;
+    perBeat.push({ fraction: withBlood / inBeat.length, phaseCover: inPhase ? phaseBlood / inPhase : 0 });
     if (wrappedColumns >= WRAP_COLUMNS) wrappedBeats++;
     columnsSeen += inBeat.length;
     columnsWithBlood += withBlood;
+  }
+  const medianFraction = perBeat.length ? median(perBeat.map((p) => p.fraction)) : 0;
+  for (const p of perBeat) {
+    const full = p.fraction >= BEAT_SIGNAL_FRACTION;
+    const phased =
+      opts.phaseWindow !== undefined && p.phaseCover >= PHASE_COVERAGE && Math.abs(p.fraction - medianFraction) <= PHASE_REPRODUCIBILITY;
+    // con ventana de fase, también el latido «lleno» debe reproducirse: otro vaso que entra a ratos
+    // llena un latido entero entre latidos monofásicos
+    if (opts.phaseWindow !== undefined ? phased || (full && Math.abs(p.fraction - medianFraction) <= PHASE_REPRODUCIBILITY) : full)
+      validBeats++;
   }
   const edgeEnergyFraction = energy > 0 ? edgeEnergy / energy : 0;
   const bloodColumns = columnsSeen > 0 ? columnsWithBlood / columnsSeen : 0;
@@ -209,7 +241,7 @@ export function qualityText(issue: QualityIssue): string {
     case 'no-signal':
       return 'no medible: no hay flujo en la puerta (¿está sobre el vaso? ¿hay sombra o poco contacto?)';
     case 'intermittent':
-      return 'no medible: el vaso entra y sale de la puerta (pida apnea o agrande la puerta)';
+      return 'no medible: el flujo no se repite de un latido a otro (el vaso entra y sale de la puerta: pida apnea o agrande la puerta)';
     case 'inconsistent':
       return 'no medible: la onda cambia de un latido a otro (otro vaso entra a ratos en la puerta: recoloque la puerta; si respira, pida apnea)';
     case 'aliasing':

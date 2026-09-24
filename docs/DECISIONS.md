@@ -746,6 +746,19 @@ antes del PR: ganancia, filas del protocolo, cobertura del espectro, filtro de p
 por captura, corregidos. E2e: en apnea la VSH se mide con valor numérico
 y con la sonda levantada la captura dice «no medible: no hay flujo en la puerta».
 
+**Enmienda (revisión externa, C10, 24-09-2026).** La regla «sangre en ≥ 60 % de las columnas del latido»
+no mira la fase. Una vena renal monofásica solo lleva flujo en diástole, la mitad del ciclo o menos, y
+se rechazaba como intermitente aunque la puerta estuviera bien puesta; el texto culpaba a la puerta.
+Ahora la medición renal pasa su ventana diastólica (`phaseWindow`). Un latido vale si la sangre cubre
+≥ 80 % de esa ventana y su fracción de columnas con sangre queda a ≤ 0,15 de la mediana de la captura.
+La reproducibilidad se exige también a los latidos llenos: si no, una vena bifásica que perdiera la
+sístole en tres de cuatro latidos (el vaso sale de la puerta al respirar) se leería monofásica y daría
+grado 3. Suprahepática y porta no cambian. El texto de «intermitente» dice ahora que el flujo no se
+repite de un latido a otro. Pruebas: flujo solo en diástole a 75 y 110 lpm, medible (antes
+intermitente); un latido sin flujo diastólico, solo sístole o un latido distinto de los demás, siguen
+intermitentes; la cadena del alumno no cambia (el grave con respiración tranquila sigue no medible:
+allí el vaso sí sale de la puerta).
+
 ## 50. El color comparte la transmisión del PW y su ganancia (en dB) alcanza el ruido del equipo
 
 **Contexto.** El panel de expertos (22-09) encontró que el color no mostraba ruido ni a la ganancia

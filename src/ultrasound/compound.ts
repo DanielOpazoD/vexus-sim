@@ -44,6 +44,21 @@ export function compoundActive(bmode: { compound: boolean }, color: { enabled: b
   return bmode.compound && !color.enabled;
 }
 
+/**
+ * Ley gaussiana de decorrelación entre dos miradas cuyos haces difieren Δ en el punto (Trahey, Smith y
+ * von Ramm 1986; O'Donnell y Silverstein 1988): ρ_I = exp(−(k2·2·sin(Δ/2)·σ)²/2), con σ la de la PSF
+ * lateral de amplitud (FWHM/2,355). Con la σ del grano lateral medido de la mirada 0 es la referencia de la
+ * composición en el gemelo (`compoundSpeckle.test.ts`) y en el banco de GPU (`fidelity.ts`).
+ */
+export function lookCorrelationLaw(delta: number, sigmaMm: number, k2: number): number {
+  return Math.exp(-((k2 * 2 * Math.sin(Math.abs(delta) / 2) * sigmaMm) ** 2) / 2);
+}
+
+/** N_eff = N²/Σρ_ij (con ρ_ii = 1) de una matriz de correlaciones entre miradas dada por sus pares. */
+export function effectiveLooks(n: number, pairs: readonly number[]): number {
+  return (n * n) / (n + 2 * pairs.reduce((s, v) => s + v, 0));
+}
+
 /** Ángulo de dirección (rad, con signo) de la mirada `index` del orden. */
 export function lookTheta(index: number, p: CompoundParams = COMPOUND): number {
   return (p.order[index] * p.steerDeg * Math.PI) / 180;

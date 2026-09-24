@@ -6,6 +6,13 @@
  *   npm run fidelity                       # contra el servidor de desarrollo (puerto 6600)
  *   npm run fidelity -- --url http://localhost:6609 --out /tmp/fidelity.json
  *   npm run fidelity -- --sweep            # + banco de interfaces con 4 poses más por vista
+ *   npm run fidelity -- --compound false   # la imagen de una mirada (composición espacial apagada)
+ *
+ * La composición espacial (decisión 58) está encendida por defecto, como en la aplicación: el banco llena
+ * el anillo de miradas antes de medir y cada escena añade el bloque `compound` (por banda: SNR de la mirada
+ * 0 y del compuesto, ρ entre miradas frente a la ley, N_eff, fracción oscura, grietas, razón de grano; la
+ * costura con parches de 8 × 48) y el acortamiento de la umbra costal (`shadow.umbraShiftMm`). El coste del
+ * cuadro sin color es el medio de las tres miradas; con color el compuesto no se forma (K en paso directo).
  *
  * Con `--sweep`, cada vista se mide también con la sonda basculada (±6°) e inclinada (±6°) y los
  * registros de las cinco poses se agregan con `summarizeFaces` (`sweep` en el JSON). Eso llena la VCI
@@ -36,6 +43,8 @@ for (let i = 2; i < process.argv.length; i++) {
 const URL = args.get('url') ?? 'http://localhost:6600';
 const OUT = args.get('out') ?? 'docs/fidelity/baseline.json';
 const SWEEP = args.get('sweep') === 'true';
+/** Composición espacial (decisión 58): encendida salvo `--compound false`. */
+const COMPOUND_ON = args.get('compound') !== 'false';
 /** Poses del barrido de interfaces sobre cada vista (`--sweep`). */
 const SWEEP_POSES = [{ rockDeg: 6 }, { rockDeg: -6 }, { tiltDeg: 6 }, { tiltDeg: -6 }];
 const CASES = ['normal-adult', 'severe-congestion'] as const;
@@ -64,6 +73,8 @@ const results: Record<
     msPerFrame: number;
     /** Ídem con la caja de color encendida y la pasada de color en cada cuadro (`forceColor`). */
     msPerFrameColor: number;
+    /** Composición espacial encendida durante la medida (decisión 58). */
+    compound: boolean;
     stats: Omit<FidelityStats, 'faceSamples'>;
     sweep?: FaceSummary;
     /** Tramos vigilados por el PR 5b sin 10 registros o sin rosario (del barrido, o de la pose de partida). */
@@ -107,12 +118,16 @@ try {
         .locator('button', { hasText: /Apnea\s*esp/ })
         .first()
         .click();
+      await page.evaluate((on) => window.__vexusTest!.setCompound(on), COMPOUND_ON);
       await page.evaluate((id) => window.__vexusTest!.goToStartPoint(id), view);
       await page.waitForTimeout(SETTLE_S * 1000);
       const fps = await page.evaluate(() =>
         Number(/(\d+) fps/.exec(document.querySelector('#status')?.textContent ?? '')?.[1] ?? Number.NaN),
       );
-      const { faceSamples, ...stats } = await page.evaluate((samples) => window.__vexusTest!.fidelity({ display: true, samples }), SWEEP);
+      const { faceSamples, ...stats } = await page.evaluate(
+        ([samples, compound]) => window.__vexusTest!.fidelity({ display: true, samples, compound }),
+        [SWEEP, COMPOUND_ON] as const,
+      );
       // las dos medidas del coste, en la pose de partida: el barrido deja la sonda basculada o inclinada
       const msPerFrame = await page.evaluate((id) => window.__vexusTest!.frameCostMs(20, { startPoint: id }), view);
       let sweep: FaceSummary | undefined;
@@ -120,8 +135,8 @@ try {
         const poses = [faceSamples ?? []];
         for (const pose of SWEEP_POSES) {
           const s = await page.evaluate(
-            ([id, p]) => window.__vexusTest!.fidelity({ startPoint: id, display: true, pose: p, samples: true }),
-            [view, pose] as const,
+            ([id, p, compound]) => window.__vexusTest!.fidelity({ startPoint: id, display: true, pose: p, samples: true, compound }),
+            [view, pose, COMPOUND_ON] as const,
           );
           poses.push(s.faceSamples ?? []);
         }
@@ -135,6 +150,7 @@ try {
         fps: Number.isFinite(fps) ? fps : null,
         msPerFrame,
         msPerFrameColor,
+        compound: COMPOUND_ON,
         stats,
         ...(sweep ? { sweep } : {}),
         escasos,
@@ -162,6 +178,24 @@ try {
         );
         if (escasos.length) console.log(''.padEnd(32), `tramos vigilados sin evaluar: ${escasos.join(' · ')}`);
       }
+      const c = stats.compound;
+      const f2 = (x: number): string => (Number.isFinite(x) ? x.toFixed(2) : '—');
+      if (c)
+        console.log(
+          ''.padEnd(32),
+          `compuesto: ${c.bands
+            .map(
+              (b) =>
+                `${b.r0}–${b.r1} (${b.compound.patches}) SNR ${f2(b.look0.snr)}→${f2(b.compound.snr)} ρ ${f2(b.rho0p)}/${f2(b.rho0m)} ley ${f2(b.law1)} ` +
+                `ρ(−,+) ${f2(b.rhoPm)} N_eff ${f2(b.nEff)} (ley ${f2(b.nEffLaw)}) osc ${b.compound.darkFraction.toFixed(3)} ` +
+                `grietas ${b.compound.crackIndex.toFixed(3)} grano ${f2(b.grainRatioLateral)}×${f2(b.grainRatioAxial)}`,
+            )
+            .join(' · ')}`,
+          `· costura ${c.seam.map((x) => `${x.r0}–${x.r1} ${f2(x.ratio)}`).join(', ')}`,
+          d
+            ? `· gris ${d.liverBands.map((b) => `${b.r0}–${b.r1} ${f2(b.sd)} (${b.pixels})`).join(', ')} · umbra ${f2(d.shadow.umbraEndLook0Mm)}→${f2(d.shadow.umbraEndCompoundMm)} mm (${f2(d.shadow.umbraShiftMm)})`
+            : '',
+        );
     }
   }
 } finally {
@@ -185,6 +219,6 @@ const provenance = {
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(
   OUT,
-  `${JSON.stringify({ ...provenance, fecha: new Date().toISOString().slice(0, 10), gpu, url: URL, escenas: roundDeep(results) }, null, 1)}\n`,
+  `${JSON.stringify({ ...provenance, fecha: new Date().toISOString().slice(0, 10), gpu, url: URL, compuesto: COMPOUND_ON, escenas: roundDeep(results) }, null, 1)}\n`,
 );
 console.log(`línea base → ${OUT}`);

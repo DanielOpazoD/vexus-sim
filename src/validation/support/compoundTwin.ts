@@ -206,15 +206,5 @@ export function intensityCorrelation(a: Float64Array, b: Float64Array): number {
   return sab / Math.sqrt(saa * sbb);
 }
 
-/**
- * Ley gaussiana de decorrelación entre dos miradas cuyos haces difieren Δ en el punto:
- * ρ_I = exp(−(k2·2·sin(Δ/2)·σ)²/2), con σ la de la PSF lateral de amplitud (FWHM/2,355).
- */
-export function lookCorrelationLaw(delta: number, sigmaMm: number, k2: number): number {
-  return Math.exp(-((k2 * 2 * Math.sin(Math.abs(delta) / 2) * sigmaMm) ** 2) / 2);
-}
-
-/** N_eff = N²/Σρ_ij (con ρ_ii = 1) de una matriz de correlaciones entre miradas dada por sus pares. */
-export function effectiveLooks(n: number, pairs: readonly number[]): number {
-  return (n * n) / (n + 2 * pairs.reduce((s, v) => s + v, 0));
-}
+// La ley de decorrelación y N_eff son también del banco de GPU (`fidelity.ts`): viven en `compound.ts`.
+export { effectiveLooks, lookCorrelationLaw } from '../../ultrasound/compound';

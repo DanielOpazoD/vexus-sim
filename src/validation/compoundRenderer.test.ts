@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { Simulator } from '../app/simulator';
+import { EquipmentController, type EquipmentCommand } from '../app/equipment';
+import { Simulator, defaultEquipment } from '../app/simulator';
+import { createTestHooks } from '../app/testHooks';
+import { C_RECONSTRUCTION_MM_S } from '../core/units';
 import { NORMAL_ADULT } from '../cases';
 import { clonePatient } from '../physiology/patientState';
 import { COMPOUND, lookSalt, lookTheta } from '../ultrasound/compound';
@@ -130,5 +133,70 @@ describe('composición espacial en el renderizador (WebGL falso)', () => {
     expect(sim.renderer.readTransmission().look).toBe(0);
     expect(() => sim.renderer.readTransmission({ look: 2 })).toThrow(/no es la del último cuadro/);
     expect(() => sim.renderer.readLookEnvelope(3)).toThrow(/fuera del anillo/);
+  });
+});
+
+/**
+ * Los ganchos de prueba con el compuesto (decisión 58) sobre el renderizador real y el WebGL falso (las
+ * lecturas dan ceros: aquí se comprueba el protocolo, no la imagen): llenan el anillo antes de medir, leen
+ * la transmisión de cada mirada en su cuadro, dejan el conmutador como estaba y se niegan a medir «el
+ * compuesto» cuando no se forma.
+ */
+describe('ganchos de prueba con el compuesto (WebGL falso)', () => {
+  function hookRig() {
+    const rec = recordingGl({ width: 320, height: 240 });
+    const sim = new Simulator(clonePatient(NORMAL_ADULT), rec.canvas);
+    const equipment = new EquipmentController(defaultEquipment(), {
+      halfSectorRad: sim.transducer.halfSector,
+      cMmS: C_RECONSTRUCTION_MM_S,
+    });
+    sim.equipment = equipment.state;
+    equipment.subscribe((next) => {
+      sim.equipment = next;
+    });
+    const dispatch = (cmd: EquipmentCommand): void => equipment.dispatch(cmd);
+    const lateralDraws = () => rec.draws.filter((d) => d.frag === FRAG_LATERAL).length;
+    return { rec, sim, dispatch, hooks: createTestHooks(() => sim, dispatch), lateralDraws };
+  }
+
+  it('fidelity con el compuesto llena el anillo, asienta la persistencia y devuelve la composición', () => {
+    const { sim, hooks, rec, lateralDraws } = hookRig();
+    expect(sim.bmode.compound).toBe(true);
+    const s = hooks.fidelity({ compound: true, startPoint: 'subxiphoid', display: true });
+    // 3 cuadros para llenar el anillo tras el salto de pose y 5 de persistencia (0,35⁵ < 1 %)
+    expect(lateralDraws()).toBe(3 + 5);
+    expect(s.compound?.thetas).toEqual(COMPOUND.order.map((_, i) => lookTheta(i)));
+    expect(s.compound?.bands.length).toBe(4);
+    expect(Number.isNaN(s.display!.shadow.umbraShiftMm)).toBe(true);
+    // el último cuadro dibujado fue una mirada del anillo lleno
+    expect(sim.renderer.compoundState().validCount).toBe(3);
+    rec.draws.length = 0;
+    // con el compuesto apagado, un cuadro por medida y ninguna composición; el conmutador vuelve a su sitio
+    const one = hooks.fidelity({ compound: false, startPoint: 'subxiphoid' });
+    expect(lateralDraws()).toBe(1);
+    expect(one.compound).toBeUndefined();
+    expect(sim.bmode.compound).toBe(true);
+  });
+
+  it('el compuesto no se mide si no se forma (color) y el conmutador vuelve a como estaba aunque falle', () => {
+    const { sim, hooks, dispatch } = hookRig();
+    dispatch({ type: 'compound', enabled: false });
+    dispatch({ type: 'color', patch: { enabled: true } });
+    expect(() => hooks.speckle({ compound: true, startPoint: 'subxiphoid' })).toThrow(/el compuesto no se forma/);
+    expect(sim.bmode.compound).toBe(false);
+    expect(() => hooks.transmissionParity({ compound: false, look: 1, startPoint: 'subxiphoid' })).toThrow(/exige el compuesto activo/);
+  });
+
+  it('la guarda de readEnvelope lanza tras una mirada dirigida; la paridad dirigida mide su mirada', () => {
+    const { sim, hooks } = hookRig();
+    const g = hooks.envelopeGuard({ startPoint: 'subxiphoid' });
+    expect(g.threw).toBe(true);
+    expect(g.look).not.toBe(0);
+    expect(g.message).toMatch(/la mirada 0 no es del último cuadro/);
+    const p = hooks.transmissionParity({ compound: true, look: 2, startPoint: 'subxiphoid', every: 32 });
+    expect(sim.renderer.compoundState().look).toBe(2);
+    expect(p.lines).toBe(6);
+    expect(p.samples + (p.ambiguous ?? 0)).toBeGreaterThan(0);
+    expect(hooks.compoundState().active).toBe(true);
   });
 });

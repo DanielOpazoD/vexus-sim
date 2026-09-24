@@ -7,11 +7,14 @@ import {
   envelopeLine,
   envelopeTexture,
   halfWidth,
+  lookCorrelations,
   measureFaceLine,
   RAYLEIGH_DARK_FRACTION,
+  seamStats,
   secondaryLobe,
   summarizeFaces,
   thinGatedBins,
+  umbraEndMm,
   type EnvelopeGeometry,
   type FaceKind,
   type FaceLine,
@@ -432,5 +435,84 @@ describe('banco de fidelidad: hígado despejado', () => {
     expect(withVessel[23 * nr + 30]).toBe(0);
     expect(withVessel[24 * nr + 30]).toBe(1);
     expect(withVessel[20 * nr + 30]).toBe(0);
+  });
+});
+
+/**
+ * Composición espacial en el banco (decisión 58), sobre campos sintéticos: la correlación de intensidad
+ * entre miradas (con la compensación nominal: sin ella la tendencia común de la atenuación la infla), la
+ * costura (parches 8 × 48) y el fin de la umbra.
+ */
+describe('banco de fidelidad: composición espacial', () => {
+  const mix = (a: Float32Array, b: Float32Array, c: number): Float32Array =>
+    Float32Array.from(a, (x, i) => Math.sqrt(c) * x + Math.sqrt(1 - c) * b[i]);
+  const f0 = psf(G, whiteField(G, 11), 1.5, 1.0);
+  const f1 = psf(G, whiteField(G, 12), 1.5, 1.0);
+  const f2 = psf(G, whiteField(G, 13), 1.5, 1.0);
+  const TGC = 3; // dB/cm de ida y vuelta, la del hígado
+  const attenuate = (e: EnvelopeFrame): EnvelopeFrame => ({
+    ...e,
+    data: Float32Array.from(e.data, (x, i) => x * Math.pow(10, (-TGC * ((Math.floor(i / G.lines) + 0.5) * DR_MM)) / 200)),
+  });
+  const env = (f: Float32Array) => attenuate(detect(G, f, Math.hypot));
+
+  it('ρ_I es |ρ del campo|²: 1 entre miradas iguales, ≈ 0 entre independientes, c con √c·A + √(1−c)·B', () => {
+    const e0 = env(f0);
+    const same = lookCorrelations([e0, e0], everywhere, GEOM.depthMm, TGC);
+    expect(same.pairs[0]).toBeCloseTo(1, 10);
+    const ind = lookCorrelations([e0, env(f1), env(f2)], everywhere, GEOM.depthMm, TGC);
+    expect(ind.patches).toBe((192 / 16) * Math.floor(1024 / 48));
+    for (const r of ind.pairs) expect(Math.abs(r)).toBeLessThan(0.03);
+    const part = lookCorrelations([e0, env(mix(f0, f1, 0.6))], everywhere, GEOM.depthMm, TGC);
+    // el campo √c·A + √(1−c)·B correlaciona √c con A: en intensidad, c
+    expect(Math.abs(part.pairs[0] - 0.6)).toBeLessThan(0.04);
+    // sin compensar la atenuación, la tendencia común dentro de cada parche infla la correlación
+    const raw = lookCorrelations([e0, env(f1)], everywhere, GEOM.depthMm, 0);
+    expect(raw.pairs[0]).toBeGreaterThan(ind.pairs[0] + 0.01);
+  });
+
+  it('costura: con dos miradas independientes la SNR es √(2/3) de la de tres; sin 5 parches, NaN', () => {
+    const [a, b, c] = [f0, f1, f2].map((f) => detect(G, f, Math.hypot));
+    const left = (u: number) => u < G.lines / 2;
+    const compound = {
+      ...a,
+      data: Float32Array.from(a.data, (x, i) => (left(i % G.lines) ? (x + b.data[i]) / 2 : (x + b.data[i] + c.data[i]) / 3)),
+    };
+    const band = { r0: 0, r1: 180 };
+    const st = seamStats(
+      compound,
+      (u) => left(u),
+      (u) => !left(u),
+      GEOM,
+      band,
+    );
+    expect(st.patches2).toBe((96 / 8) * Math.floor(1024 / 48));
+    expect(st.ratio).toBeGreaterThan(0.78);
+    expect(st.ratio).toBeLessThan(0.86);
+    const few = seamStats(
+      compound,
+      (u, v) => left(u) && v < 48 * 4,
+      (u) => !left(u),
+      GEOM,
+      band,
+    );
+    expect(few.patches2).toBe(4 * 12);
+    const none = seamStats(
+      compound,
+      (u, v) => u < 8 && v < 48 * 4,
+      (u) => !left(u),
+      GEOM,
+      band,
+    );
+    expect(none.patches2).toBe(4);
+    expect(none.ratio).toBeNaN();
+  });
+
+  it('fin de la umbra: el primer cruce de −40 dB hacia arriba, interpolado; NaN si no sale', () => {
+    expect(umbraEndMm([-10, -30, -50, -45, -41, -39, -30])).toBeCloseTo(4.5, 10);
+    expect(umbraEndMm([-60, -50, -40])).toBeCloseTo(2, 10);
+    expect(umbraEndMm([-60, -55, -50])).toBeNaN();
+    expect(umbraEndMm([-10, -20, -30])).toBeNaN();
+    expect(umbraEndMm([-50, Number.NaN, -30])).toBeNaN();
   });
 });

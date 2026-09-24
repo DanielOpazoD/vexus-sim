@@ -1,6 +1,7 @@
 // @tier slow
 import { describe, expect, it } from 'vitest';
 import { fidelityStats, type FidelityStats, type TransmissionFrame } from '../app/fidelity';
+import { COMPOUND, compoundEnvelope, lookTheta } from '../ultrasound/compound';
 import { SPECKLE_CLEARANCE_MM, SPECKLE_PATCH, speckleMask, speckleStats, type EnvelopeFrame } from '../app/speckle';
 import type { Simulator } from '../app/simulator';
 import { START_POINTS, type StartPoint } from '../app/startPoints';
@@ -46,7 +47,7 @@ const thetaOf = (u: number): number => -CONVEX_C35.halfSector + (2 * CONVEX_C35.
 
 const FACE_GRAY = 200;
 const frames = new Map<StartPoint['id'], ReturnType<typeof probeFrame>>();
-const planes = new Map<StartPoint['id'], { sim: Simulator; env: EnvelopeFrame; img: DisplayFrame }>();
+const planes = new Map<StartPoint['id'], { sim: Simulator; env: EnvelopeFrame; img: DisplayFrame; gain: Float32Array }>();
 
 function measure(id: StartPoint['id']): FidelityStats {
   const sp = START_POINTS.find((s) => s.id === id)!;
@@ -67,13 +68,14 @@ function measure(id: StartPoint['id']): FidelityStats {
   const tissueAt = (theta: number, r: number): Tissue =>
     anatomy.classifyWorld(pointOnLine(frame, CONVEX_C35, theta, r), engine.sample).tissue;
   // envolvente: moteado ideal en el hígado, ×0,1 en cualquier otro tejido (rejilla de 0,5 mm)
-  const env = { ...speckle, data: new Float32Array(speckle.data) };
+  const gain = new Float32Array(speckle.data.length).fill(1);
   for (let u = 0; u < G.lines; u++)
     for (let k = 0; k < NR; k++) {
       if (tissueAt(thetaOf(u), (k + 0.5) * GRID_MM) === Tissue.Liver) continue;
       for (let v = Math.ceil((k * GRID_MM * G.samples) / DEPTH - 0.5); v < Math.ceil(((k + 1) * GRID_MM * G.samples) / DEPTH - 0.5); v++)
-        if (v >= 0 && v < G.samples) env.data[v * G.lines + u] *= 0.1;
+        if (v >= 0 && v < G.samples) gain[v * G.lines + u] = 0.1;
     }
+  const env = { ...speckle, data: Float32Array.from(speckle.data, (x, i) => x * gain[i]) };
   const gray = new Uint8Array(W * H);
   for (let y = 0; y < H; y++)
     for (let x = 0; x < W; x++) {
@@ -92,7 +94,7 @@ function measure(id: StartPoint['id']): FidelityStats {
                 : 60;
     }
   const img = { width: W, height: H, gray };
-  planes.set(id, { sim, env, img });
+  planes.set(id, { sim, env, img, gain });
   return fidelityStats(sim, env, img, { samples: true });
 }
 
@@ -275,5 +277,85 @@ describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
       expect(patches, id).toBe(speckleStats(sim, env).patches);
       expect(patches, id).toBeGreaterThan(200);
     }
+  });
+});
+
+/**
+ * El banco con las tres miradas del anillo (decisión 58), sin GPU: la mirada 0 es el moteado de arriba y las
+ * dirigidas, moteados independientes con el mismo ×0,1 fuera del hígado; el compuesto, el gemelo de K
+ * (`compoundEnvelope`, con la cobertura de cada mirada). Transmisión 1 en todas (sin sombras) salvo donde
+ * se pide lo contrario.
+ */
+describe('banco de fidelidad con las tres miradas del anillo, sin GPU', () => {
+  const thetas = COMPOUND.order.map((_, i) => lookTheta(i));
+  const others = [8, 9].map((seed) => detect(G, psf(G, whiteField(G, seed), 1.5, 1.0), Math.hypot));
+  const tx = (aperture: number): TransmissionFrame => {
+    const n = G.lines * COARSE_DEPTH;
+    return {
+      lines: G.lines,
+      samples: COARSE_DEPTH,
+      single: new Float32Array(n).fill(1),
+      aperture: new Float32Array(n).fill(aperture),
+      mirrorHit: new Float32Array(n).fill(-1),
+    };
+  };
+  function withLooks(id: StartPoint['id'], look2Aperture = 1): FidelityStats {
+    const { sim, env, img, gain } = planes.get(id)!;
+    const envelopes = [env, ...others.map((o) => ({ ...o, data: Float32Array.from(o.data, (x, i) => x * gain[i]) }))];
+    const data = compoundEnvelope(
+      thetas.map((theta, i) => ({ theta, data: envelopes[i].data })),
+      {
+        lines: G.lines,
+        samples: G.samples,
+        depthMm: DEPTH,
+        halfSector: CONVEX_C35.halfSector,
+        curvatureRadius: CONVEX_C35.curvatureRadius,
+      },
+    );
+    return fidelityStats(sim, { ...env, data }, img, {
+      looks: { thetas, envelopes, transmissions: [tx(1), tx(1), tx(look2Aperture)] },
+    });
+  }
+  const sub = withLooks('subxiphoid');
+
+  it('miradas independientes: ρ ≈ 0, N_eff ≈ 3, la SNR sube √N_eff y el grano no cambia', () => {
+    const c = sub.compound!;
+    const bands = c.bands.filter((b) => b.compound.patches >= 5);
+    expect(bands.length).toBeGreaterThan(0);
+    for (const b of bands) {
+      const tag = JSON.stringify({
+        r0: b.r0,
+        rho: [b.rho0p, b.rho0m, b.rhoPm],
+        nEff: b.nEff,
+        gain: b.snrGain,
+        grain: [b.grainRatioLateral, b.grainRatioAxial],
+      });
+      for (const r of [b.rho0p, b.rho0m, b.rhoPm]) expect(Math.abs(r), tag).toBeLessThan(0.1);
+      expect(b.nEff, tag).toBeGreaterThan(2.5);
+      expect(b.nEff, tag).toBeLessThanOrEqual(3.3);
+      expect(Math.abs(b.snrGain / Math.sqrt(b.nEff) - 1), tag).toBeLessThan(0.1);
+      expect(b.grainRatioLateral, tag).toBeGreaterThan(0.9);
+      expect(b.grainRatioLateral, tag).toBeLessThan(1.1);
+      expect(b.grainRatioAxial, tag).toBeGreaterThan(0.9);
+      expect(b.grainRatioAxial, tag).toBeLessThan(1.1);
+      expect(b.compound.darkFraction, tag).toBeLessThan(0.035);
+      for (const t of b.perLook) expect(Math.abs(t.meanRatio - 1), tag).toBeLessThan(0.05);
+      // la ley con β de ±7° y el grano medido: ρ(0,±) de 0,2 a 0,8 según la profundidad
+      expect(b.law1, tag).toBeGreaterThan(b.law2);
+    }
+    for (const seam of c.seam)
+      if (Number.isFinite(seam.ratio)) expect(Math.abs(seam.ratio - Math.sqrt(2 / 3)), JSON.stringify(seam)).toBeLessThan(0.08);
+  });
+
+  it('el hígado puro es el de las tres miradas: la sombra de una dirigida lo quita, sin la costura', () => {
+    const one = subxiphoid.envelope.patches;
+    expect(sub.envelope.patches).toBeGreaterThan(0);
+    expect(sub.envelope.patches).toBeLessThanOrEqual(one);
+    const shadowed = withLooks('subxiphoid', 0.5);
+    expect(shadowed.envelope.patches).toBe(0);
+    for (const b of shadowed.compound!.bands) expect(b.compound.patches).toBe(0);
+    expect(shadowed.display!.liver.pixels).toBe(0);
+    // con transmisión 1 en todo el plano (ninguna sombra en la pasada A), la umbra no se mide
+    expect(sub.display!.shadow.umbraShiftMm).toBeNaN();
   });
 });

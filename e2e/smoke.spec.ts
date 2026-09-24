@@ -127,7 +127,8 @@ test('el speckle del parénquima hepático tiene estadística de Rayleigh', asyn
   test.setTimeout(240_000);
   const errors = await bootWithoutErrors(page);
   for (const startPoint of ['subxiphoid', 'intercostal', 'flank'] as const) {
-    const s = await page.evaluate((id) => window.__vexusTest!.speckle({ startPoint: id }), startPoint);
+    // guarda de una mirada (decisión 58): compuesto apagado, umbrales de siempre
+    const s = await page.evaluate((id) => window.__vexusTest!.speckle({ startPoint: id, compound: false }), startPoint);
     const tag = `${startPoint}: ${JSON.stringify(s)}`;
     expect(s.patches, tag).toBeGreaterThan(50);
     expect(s.snr, tag).toBeGreaterThan(1.6);
@@ -144,7 +145,8 @@ test('el banco de fidelidad mide el moteado del hígado despejado como un campo 
   // la imagen al revés lo sacan de estas bandas (src/validation/fidelity*.test.ts).
   test.setTimeout(240_000);
   const errors = await bootWithoutErrors(page);
-  const s = await page.evaluate(() => window.__vexusTest!.fidelity({ startPoint: 'subxiphoid', display: true }));
+  // guarda de una mirada (decisión 58): compuesto apagado, umbrales de siempre
+  const s = await page.evaluate(() => window.__vexusTest!.fidelity({ startPoint: 'subxiphoid', display: true, compound: false }));
   const e = s.envelope;
   const tag = JSON.stringify(e);
   expect(e.patches, tag).toBeGreaterThan(15);
@@ -174,6 +176,101 @@ test('el banco de fidelidad mide el moteado del hígado despejado como un campo 
   expect(d.liver.sd, dtag).toBeLessThan(19);
   expect(d.lumen.p50, dtag).toBeLessThan(30);
   expect(d.colorOn).toBe(false);
+  expect(errors).toEqual([]);
+});
+
+test('composición espacial: más SNR con el mismo grano, sin huecos, y la mirada dirigida de la GPU igual a su gemelo', async ({ page }) => {
+  // Decisión 58 con SwiftShader (misma aritmética float32 que la GPU; el banco repite G1–G8 con GPU real y
+  // calibra θ en 6–8°). Tres miradas intercaladas (0, ±θ) formadas en la rejilla común y promediadas en
+  // lineal: la SNR de la envolvente sube como √N_eff (Burckhardt 1978) sin agrandar el grano (no es un
+  // filtro, §23), y la fracción oscura y las grietas del moteado casi desaparecen. Gemelo B→C→D a ±7°
+  // (subxifoidea, compoundSpeckle.test.ts): SNR 1,99 → 3,10 / 2,81 / 2,45 / 2,91 a 20 / 45 / 90 / 150 mm,
+  // fracción oscura 0,06 → 0,003–0,012, grano compuesto/mirada 0 0,92–1,05. La mirada 0 sigue siendo la de
+  // siempre: las guardas de una mirada de este archivo miden con el compuesto apagado.
+  test.setTimeout(240_000);
+  const errors = await bootWithoutErrors(page);
+  const s = await page.evaluate(() => window.__vexusTest!.fidelity({ startPoint: 'subxiphoid', display: true, compound: true }));
+  const c = s.compound!;
+  expect(c, 'el banco devuelve la composición').toBeTruthy();
+  const bands = c.bands.filter((b) => b.compound.patches >= 5 && b.look0.patches >= 5);
+  expect(bands.length, JSON.stringify(c.bands.map((b) => [b.r0, b.compound.patches]))).toBeGreaterThan(0);
+  for (const b of c.bands)
+    test.info().annotations.push({
+      type: `compuesto ${b.r0}–${b.r1} mm`,
+      description:
+        `parches ${b.compound.patches}; SNR ${b.look0.snr.toFixed(2)} → ${b.compound.snr.toFixed(2)} (×${b.snrGain.toFixed(3)}, √N_eff ${Math.sqrt(b.nEff).toFixed(3)}); ` +
+        `ρ(0,+) ${b.rho0p.toFixed(3)} ρ(0,−) ${b.rho0m.toFixed(3)} ley ${b.law1.toFixed(3)}; ρ(−,+) ${b.rhoPm.toFixed(3)} ley ${b.law2.toFixed(3)}; ` +
+        `N_eff ${b.nEff.toFixed(2)} ley ${b.nEffLaw.toFixed(2)}; oscuros ${b.look0.darkFraction.toFixed(3)} → ${b.compound.darkFraction.toFixed(3)}; ` +
+        `grietas ${b.compound.crackIndex.toFixed(3)}; grano ${b.grainRatioLateral.toFixed(3)} × ${b.grainRatioAxial.toFixed(3)}; ` +
+        `por mirada SNR ${b.perLook.map((t) => t.snr.toFixed(2)).join('/')} media ${b.perLook.map((t) => t.meanRatio.toFixed(3)).join('/')}`,
+    });
+  for (const seam of c.seam)
+    test.info().annotations.push({
+      type: `costura ${seam.r0}–${seam.r1} mm`,
+      description: `SNR 2 miradas ${seam.snr2.toFixed(2)} (${seam.patches2}) / 3 miradas ${seam.snr3.toFixed(2)} (${seam.patches3}) = ${seam.ratio.toFixed(3)}`,
+    });
+  for (const b of bands) {
+    const tag = JSON.stringify({
+      r0: b.r0,
+      compound: b.compound,
+      look0: b.look0,
+      snrGain: b.snrGain,
+      nEff: b.nEff,
+      grain: [b.grainRatioLateral, b.grainRatioAxial],
+    });
+    // G1: SNR del compuesto y su coherencia con N_eff medido
+    expect(b.compound.snr, tag).toBeGreaterThanOrEqual(b.r0 < 60 || b.r0 >= 140 ? 2.1 : 2.0);
+    expect(b.compound.snr, tag).toBeLessThanOrEqual(3.0);
+    expect(Math.abs(b.snrGain / Math.sqrt(b.nEff) - 1), tag).toBeLessThanOrEqual(0.1);
+    // G2 y G3: sin los huecos oscuros ni las grietas del moteado de una mirada
+    expect(b.compound.darkFraction, tag).toBeLessThanOrEqual(0.035);
+    expect(b.compound.crackIndex, tag).toBeLessThanOrEqual(0.04);
+    // el grano del compuesto es el de la mirada 0: no es un suavizado (§23)
+    for (const g of [b.grainRatioLateral, b.grainRatioAxial]) {
+      expect(g, tag).toBeGreaterThanOrEqual(0.9);
+      expect(g, tag).toBeLessThanOrEqual(1.1);
+    }
+    // K5: cada mirada es un moteado de Rayleigh con la misma media que la 0
+    for (const t of b.perLook) {
+      expect(t.snr, tag).toBeGreaterThan(1.75);
+      expect(t.snr, tag).toBeLessThan(2.1);
+      expect(Math.abs(t.meanRatio - 1), tag).toBeLessThanOrEqual(0.05);
+    }
+  }
+  // K1: el grano lateral del compuesto sigue a la PSF
+  for (const b of s.bands.filter((x) => x.patches >= 5)) {
+    expect(b.fwhmLateralMm / b.beamFwhmMm, JSON.stringify(b)).toBeGreaterThan(0.8);
+    expect(b.fwhmLateralMm / b.beamFwhmMm, JSON.stringify(b)).toBeLessThan(1.25);
+  }
+  // G4: el gris del hígado puro, a media escala y con la desviación de un equipo (15–17 con una mirada)
+  const d = s.display!;
+  expect(d.liver.p50, JSON.stringify(d.liver)).toBeGreaterThanOrEqual(90);
+  expect(d.liver.p50, JSON.stringify(d.liver)).toBeLessThanOrEqual(110);
+  const lb = d.liverBands.filter((b) => b.pixels >= 1000);
+  expect(lb.length, JSON.stringify(d.liverBands)).toBeGreaterThan(0);
+  for (const b of lb) {
+    test.info().annotations.push({
+      type: `gris ${b.r0}–${b.r1} mm`,
+      description: `mediana ${b.p50}, desviación ${b.sd.toFixed(2)} (${b.pixels} px)`,
+    });
+    expect(b.sd, JSON.stringify(b)).toBeGreaterThanOrEqual(10.5);
+    expect(b.sd, JSON.stringify(b)).toBeLessThanOrEqual(14.0);
+  }
+  // G8: A2 y A dirigidos de la GPU frente a sus gemelos de TS sobre los mismos segmentos de A1
+  const parity = await page.evaluate(() =>
+    window.__vexusTest!.transmissionParity({ startPoint: 'subxiphoid', every: 8, compound: true, look: 1 }),
+  );
+  const ptag = JSON.stringify(parity);
+  test.info().annotations.push({ type: 'paridad de la mirada +θ', description: ptag });
+  expect(parity.samples, ptag).toBeGreaterThan(500);
+  expect(parity.ambiguous!, ptag).toBeLessThanOrEqual(0.01 * parity.samples);
+  expect(parity.maxDiffDb, ptag).toBeLessThan(0.01);
+  expect(parity.apertureMaxDiffDb!, ptag).toBeLessThan(0.01);
+  // una guarda de una mirada no puede medir en silencio una envolvente de otro cuadro
+  const guard = await page.evaluate(() => window.__vexusTest!.envelopeGuard({ startPoint: 'subxiphoid' }));
+  expect(guard.look, JSON.stringify(guard)).not.toBe(0);
+  expect(guard.threw, JSON.stringify(guard)).toBe(true);
+  expect(guard.message).toMatch(/la mirada 0 no es del último cuadro/);
   expect(errors).toEqual([]);
 });
 
@@ -261,7 +358,10 @@ test('ecos de interfaz: paredes y cápsula brillan y el espejo diafragmático no
   // de interfaz, el moteado solo daba ~3,5 dB
   const tubePeaks: number[] = [];
   for (const startPoint of ['subxiphoid', 'intercostal', 'flank'] as const) {
-    const s = await page.evaluate((id) => window.__vexusTest!.fidelity({ startPoint: id, display: true, samples: true }), startPoint);
+    const s = await page.evaluate(
+      (id) => window.__vexusTest!.fidelity({ startPoint: id, display: true, samples: true, compound: false }),
+      startPoint,
+    );
     const d = s.display!;
     const tag = `${startPoint}: ${JSON.stringify({ capsule: d.capsule, walls: d.wallSystems, diaphragm: d.diaphragm, saturated: d.faceSaturated })}`;
     // la imagen sigue en su sitio: hígado a media escala y el centro de la luz casi negro
@@ -304,7 +404,10 @@ test('la pasada A en cuatro etapas da la misma transmisión de un solo rayo que 
   test.setTimeout(240_000);
   const errors = await bootWithoutErrors(page);
   for (const startPoint of ['subxiphoid', 'flank'] as const) {
-    const r = await page.evaluate((id) => window.__vexusTest!.transmissionParity({ startPoint: id, every: 8 }), startPoint);
+    const r = await page.evaluate(
+      (id) => window.__vexusTest!.transmissionParity({ startPoint: id, every: 8, compound: false }),
+      startPoint,
+    );
     const tag = `${startPoint}: ${JSON.stringify(r)}`;
     expect(r.lines, tag).toBeGreaterThan(5);
     expect(r.samples, tag).toBeGreaterThan(500);
@@ -329,9 +432,9 @@ test('el moteado del hígado persiste al inclinar la sonda medio grado y se renu
   const r = await page.evaluate(() => {
     const h = window.__vexusTest!;
     return {
-      small: h.speckleMotion({ startPoint: 'intercostal', tiltDeg: 0.5 }),
-      yaw: h.speckleMotion({ startPoint: 'intercostal', yawDeg: 2 }),
-      big: h.speckleMotion({ startPoint: 'intercostal', tiltDeg: 8 }),
+      small: h.speckleMotion({ startPoint: 'intercostal', tiltDeg: 0.5, compound: false }),
+      yaw: h.speckleMotion({ startPoint: 'intercostal', yawDeg: 2, compound: false }),
+      big: h.speckleMotion({ startPoint: 'intercostal', tiltDeg: 8, compound: false }),
     };
   });
   const tag = JSON.stringify(r);
@@ -354,7 +457,9 @@ test('el fundido del ancla del moteado no da saltos: la textura y la correlació
     .locator('button', { hasText: /Apnea\s*esp/ })
     .first()
     .click();
-  const frames = await page.evaluate(() => window.__vexusTest!.speckleCrossfade({ startPoint: 'intercostal', stepDeg: 1, frames: 16 }));
+  const frames = await page.evaluate(() =>
+    window.__vexusTest!.speckleCrossfade({ startPoint: 'intercostal', stepDeg: 1, frames: 16, compound: false }),
+  );
   const tag = JSON.stringify(frames);
   expect(
     frames.some((f) => f.w < 1),

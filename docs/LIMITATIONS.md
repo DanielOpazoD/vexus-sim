@@ -71,8 +71,21 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **Estadística de speckle sin calibrar** (`speckle-statistics-uncalibrated`): no se ha medido
   célula de speckle, SNR local ni asimetría contra clips reales; los cambios de la decisión 19
   se validaron solo por inspección. Sí se comprueba en la e2e que la envolvente del parénquima
-  hepático tiene la SNR teórica de Rayleigh (1,7–2,05 medido, banda 1,6–2,25): eso descarta
-  defectos de detección, no calibra textura frente a un equipo real.
+  hepático de una mirada (compuesto apagado) tiene la SNR teórica de Rayleigh (1,7–2,05 medido,
+  banda 1,6–2,25): eso descarta defectos de detección, no calibra textura frente a un equipo real.
+- **El moteado se submuestrea en las líneas** (`speckle-line-aliasing`): 192 líneas quedan a 0,5–1,5 mm
+  (de 20 a 180 mm) frente a un grano lateral de 1,4 mm hasta el foco y 3–4 mm a 15–18 cm, así que en el
+  foco apenas hay 1,5 líneas por grano y la pasada D convoluciona un campo muestreado de menos. Mecer la sonda media línea cambia el moteado más que en un equipo (gemelo del
+  diseño de la decisión 58: correlación 0,45–0,53 / 0,05–0,13 / −0,03 a −0,01 a 45 / 90 / 150 mm): el
+  hígado «hierve» al deslizar la sonda. La composición espacial lo esquiva entre miradas (se forman en la
+  rejilla común), pero el par (−,+) puede correlacionar de más, así que su ρ se informa sin puerta. El
+  arreglo previsto (PR 3) es un prefiltro de 3 submuestras por línea, con la fase de la mirada 0 referida
+  al ancla.
+- **Sin composición espacial con el color encendido** (`compound-off-in-color`, decisión 58): con la
+  caja de color el cuadro B se refresca a la cadencia del color (4–11 Hz, decisión 39) y las tres miradas
+  cubrirían 280–715 ms, con estela respiratoria de varios mm; el compuesto se apaga y la textura del
+  hígado vuelve a la de una mirada (desviación del gris ≈ 12 → 16 [ESTIMADO]), como en varios equipos. El
+  PW lo conserva. Componer con color exige una métrica de estela y otra decisión.
 
 ## Doppler
 

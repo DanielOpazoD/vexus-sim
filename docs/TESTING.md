@@ -57,6 +57,28 @@ congelada o con `n` que no sea un entero ≥ 1.
 El banco (`npm run fidelity`) guarda por escena `msPerFrame` (color apagado) y `msPerFrameColor`
 (color encendido, `forceColor`), las dos en la pose de partida de la vista.
 
+## Composición espacial en los ganchos (decisión 58)
+
+La imagen de la aplicación es, por defecto, el compuesto de tres miradas intercaladas (una por cuadro), y
+un gancho que midiera «la envolvente» sin decir cuál cambiaría de significado en silencio. Por eso:
+
+- `compound` es obligatorio en el tipo de `speckle`, `fidelity`, `speckleMotion`, `speckleCrossfade` y
+  `transmissionParity`: con `false`, la imagen de una mirada de siempre (las guardas de una mirada lo
+  pasan con sus umbrales de antes); con `true`, el gancho dibuja cuadros hasta llenar el anillo de miradas
+  (`compoundState().validCount`) y, si mide la imagen mostrada, asienta después la persistencia. El
+  conmutador vuelve a como estaba al terminar, aunque algo falle, y medir «el compuesto» con el color
+  encendido (donde no se forma) lanza.
+- `readEnvelope()` lee la mirada 0 y lanza si no es la del último cuadro; el compuesto se pide con
+  `{ source: 'compound' }` y cada mirada con `readLookEnvelope(ranura)`. `readTransmission({ look })` da la
+  transmisión de una mirada dirigida solo tras el cuadro que la forma.
+- Nuevos: `setCompound`, `compoundState`, `lookCorrelation` (la parte `compound` del banco),
+  `temporalStability` (escena quieta: correlación entre cuadros y modulación de periodo 3) y
+  `envelopeGuard` (la guarda de `readEnvelope`). `transmissionParity({ compound: true, look })` compara la
+  mirada dirigida de la GPU con sus gemelos de TS sobre los segmentos de A0/A1 de la propia GPU.
+- `frameCostMs` mide con el conmutador como esté: con el compuesto, la media de las tres miradas.
+- `compoundRenderer.test.ts` comprueba el cableado sin GPU: el renderizador real sobre un WebGL falso
+  (`support/recordingGl.ts`, que registra programa, destino, texturas y uniforms de cada dibujo).
+
 ## Qué no está cubierto todavía
 
 - Estadística de speckle frente a clips reales (`speckle-statistics-uncalibrated`); la e2e solo

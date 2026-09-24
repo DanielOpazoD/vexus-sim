@@ -1157,6 +1157,114 @@ ranuras en la pasada B, `uIface[12]` con el tamaño interpolado de `INTERFACE_CO
 a < 15° con mediana ≥ 5 dB sobre ≥ 5 muestras, cápsula ≥ 1,40 donde hay ≥ 10 registros, costura ≤ 0,02, desfase del espejo ≤ 0,05 mm, caras sin
 saturar). Todas las unitarias nuevas fallan en `main`.
 
+## 58. Composición espacial: tres miradas intercaladas (0, ±7°) en la rejilla común con la fase de mirada por nodo, promediadas en lineal
+
+**Contexto.** La textura del hígado es la pista número uno de la prueba ciega (decisión 52): en la línea
+base con GPU del 23-09 el hígado puro muestra una desviación del gris de 15,1–16,7 frente a 10–16 en los
+equipos modernos de las referencias, y la envolvente es la de una sola mirada coherente: SNR 1,87–1,97,
+fracción oscura 0,063–0,071 (Rayleigh, 0,068) e índice de grietas 0,055–0,094. Los preajustes abdominales
+de los convexos actuales componen 3–9 miradas con actualización continua [LITERATURA: Jespersen,
+Wilhjelm y Sillesen 1998, Ultrason Imaging 20:81; Entrekin et al. 2001, Semin Ultrasound CT MR 22:50], y
+la media de N miradas decorreladas sube la SNR de la envolvente como √N_eff sin agrandar el grano
+(Burckhardt 1978, IEEE Trans Sonics Ultrason 25:1). Los tres diseños y los tres jueces de esta decisión
+coincidieron: en este modelo la armónica (THI) mueve la desviación entre −0,1 y +0,4 de gris, así que va
+después y aparte (decisión 59).
+**Opciones.** (1) Subcuadros dirigidos de verdad remuestreados a la rejilla de la mirada 0: una sola
+mirada remuestreada ya da un grano de 1,13–1,59 × la PSF (el remuestreo es un suavizado, §23) y el
+aliasing de línea sobredecorrela (N_eff 2,3–2,9 frente a la ley, 1,5–2,2). (2) Promedio logarítmico (en
+dB): encoge el grano a 0,80–0,85 × la PSF; los equipos componen la envolvente en lineal. (3) Solo la
+persistencia como compuesto (IIR): con 0,35 los pesos de las tres últimas miradas son 0,679/0,238/0,083 y
+N_eff no pasa de 1,91 aun con miradas independientes; además ata la textura a un control del usuario.
+(4) Desplazamiento virtual por nodo (giro de fase aleatorio de cada nodo con la varianza de la mirada):
+reproduce la ley en estadística (N_eff a ±2 % en el foco), pero no es la fase de una dirección, así que
+no tiene geometría (ni la penumbra, ni la incidencia de las caras, ni la costura dependen de la mirada);
+queda como alternativa documentada si G1 o G5 fallan tras calibrar θ. (5) 384 líneas: quita el aliasing
+de línea pero duplica B, C y D sin componer nada. (6) Componer con el color encendido: el cuadro B va a la
+cadencia del color (4–11 Hz, decisión 39) y las tres miradas cubrirían 280–715 ms, con estela respiratoria
+de varios mm. (7) Apagarlo por debajo de 30 cps medidos: no es determinista. (8) La elegida.
+**Decisión.** Tres miradas, una por cuadro B en el orden 0, +θ, −θ (`COMPOUND` de
+`ultrasound/compound.ts`: θ = 7° en el elemento, calibrable en 6–8° con el banco de GPU,
+`COMPOUND_STEER_RANGE_DEG`; un único θ global, sin ajuste por profundidad), formadas en las muestras de la
+mirada 0 con la línea dirigida que pasa por cada una y promediadas en lineal por la pasada K nueva:
+
+- Geometría exacta del convexo (`ultrasound/steering.ts`): la mirada θ sale del elemento φ con dirección
+  φ + θ y corta ρ = R + r a la distancia s(ρ) = √(ρ² − a²) − R·cos θ (a = R·sin θ); la inversa es cerrada,
+  φ_k = α − θ + β(ρ) con β = asin(a/ρ), y la dirección del haz en el punto es α + β. ψ_k = √(ρ² − a²) +
+  a·(α + β) − a·π/2 es un potencial exacto (∇ψ_k = b_k): el desfase de ida y vuelta respecto a la mirada 0,
+  Δ_k = k2·(ψ_k − ρ) con k2 = 4π/λ = 28,56 rad/mm, se suma por nodo de la retícula del moteado en forma
+  lineal, Δ_k(P) + g⊥·(x_n − P), dentro del cos/sin que ya existe (`speckleFieldPh`; ≤ 1·10⁻² rad frente a
+  la fase exacta del nodo). Los valores de los nodos son los de siempre (sal por tejido y ancla, decisiones
+  55 y 56): grumos y heterogeneidad son del material y comunes a las tres miradas.
+- Transmisión dirigida sin clasificación ni pasada nuevas: A1 marca el gas de cada segmento en `oSeg.w`
+  (1 pulmón, 2 otro); A2 suma, para la mirada del cuadro, los segmentos de A1 a lo largo del camino
+  dirigido (la línea más cercana al cruce de cada fila, ×ds/dρ exacto, las reglas de hoy: gel previo, hueso
+  6 dB al entrar, espejo 0,5 dB) en `o2`/`o3` (`steeredPrefixDb`); al cruzar el espejo de la decisión 57,
+  en su cruce exacto, el camino se congela en esa línea y sigue su camino reflejado (el espejo no se dirige
+  tras la reflexión). A calcula en `o3` la penumbra sobre los caminos dirigidos vecinos
+  (`steeredApertureTransmission`: radio R·cos θ y distancias del camino; con θ = 0, la decisión 54 exacta)
+  con el primer gas, el tipo de gas y la línea del espejo empaquetados. `o0`, `o1` y `o2.x` (el rayo único
+  del color y del PW) no cambian.
+- Pasada B, rama dirigida (`STEERED_FIELD_GLSL`, `uSteer` = (θ, R·sin θ, R·cos θ, k2), `uLookSalt`,
+  `uTrans3`): la fase de la mirada, la transmisión del camino y el acoplamiento del elemento φ_k, el eco de
+  interfaz y el de la pleura con la incidencia de la mirada (dirección α + β: una cara oblicua brilla en
+  unas miradas y no en otras), la reverberación a múltiplos del primer gas a lo largo del camino y la cola
+  sucia y el transitorio anclados a (línea dirigida, distancia del camino) con una sal por mirada
+  (`lookSalt`, 0 en la mirada 0): cada mirada es otro disparo. Tras el espejo, el punto sigue la dirección
+  reflejada de la línea que cruza desde su propio cruce, con la fase del potencial directo. Fuera del
+  arreglo la mirada no existe (K la pesa 0), pero B la forma hasta el alcance del núcleo lateral de D
+  (±2,5σ): si no, D mezclaría ceros en las muestras con peso junto al borde.
+- Pasada K (`FRAG_COMPOUND`): en cada celda, la media de las envolventes válidas del anillo ponderada por
+  la cobertura de cada mirada (`lookWeight`: 1 la mirada 0; rampa de una línea centrada en el borde del
+  arreglo las dirigidas), con `texelFetch` en la misma celda y sin remuestreo. Con una sola mirada válida
+  da env·1/1: la envolvente de D bit a bit.
+- Anillo (`CompoundRing`): tres destinos R32F (`envLooks`, una historia externa en `passGraph.ts`: D
+  escribe la ranura de la mirada del cuadro y K lee las tres y escribe `env`). Se reinicia (todas las
+  ranuras inválidas y la siguiente es la mirada 0) con un salto de pose (`JUMP_MM` 15, `JUMP_DEG` 10),
+  `setScene`, un cambio de profundidad, foco o líneas y un cambio de modo.
+- Regla de actividad (`compoundActive`): compuesto ⇔ conmutador encendido y color apagado; el PW lo
+  conserva (no limita la cadencia del modo B). Encendido por defecto; orden `compound` del equipo,
+  conmutador «Compuesto» en la pestaña Imagen y «CX» en el HUD mientras se forma.
+- La mirada 0 no cambia: con θ = 0 todos los shaders siguen el código de hoy (las ramas dirigidas van
+  detrás de `uSteer.x != 0`) y K es un paso directo exacto. `readEnvelope({ source })` lee la mirada 0 por
+  defecto y lanza si no es la del último cuadro; `compound` es obligatorio en el tipo de los ganchos de
+  medida y las guardas de una mirada pasan `compound: false` con sus umbrales de siempre.
+- Presupuesto: la pasada B declara 107 ranuras de uniforms (antes 105) y 5 samplers; K, 10 ranuras y 3
+  samplers; A, 6 samplers.
+
+**Consecuencias.** Predicción del gemelo B→C→D de tres planos a ±7° en la subxifoidea (8 realizaciones;
+no medida en GPU) a 20 / 45 / 90 / 150 mm: ρ(0,±) 0,23 / 0,42 / 0,65 / 0,35 (ley con la σ medida 0,32 /
+0,53 / 0,72 / 0,41), N_eff 2,31 / 1,91 / 1,47 / 2,08, SNR 1,99 → 3,10 / 2,01 → 2,81 / 2,02 → 2,45 / 1,99
+→ 2,91, grano compuesto/mirada 0 lateral 1,05 / 1,01 / 0,92 / 1,01 y axial 1,00–1,01, fracción oscura
+0,06 → 0,003–0,012; por mirada, SNR 1,97–2,01 y media a −1,1/+1,5 % de la mirada 0. La mezcla de
+magnitudes de los tres planos de B decorrela las miradas 0,06–0,11 más que la ley a 20–45 mm (con un solo
+plano, a ≤ 0,02): la T3 del plan (|ρ − ley| ≤ 0,08) no se cumplía y la prueba exige la ley con un plano y
+ρ − ley en [−0,15; +0,05] con tres. La umbra de una costilla de 12 mm a 18 mm (−40 dB respecto al hígado)
+acaba 2,8 mm antes (26,3 → 23,6 mm; ~4,5 mm a ±8°) con el núcleo en el suelo (−22,6 → −22,2 dB), y el
+refuerzo tras un vaso de 12 mm se ensancha +14 / +40 / +67 % a 80 / 110 / 150 mm con el pico 0,1–0,3 dB
+más bajo. A ±6° N_eff baja a 2,06 / 1,71 / 1,37 / 1,84 y a ±8° sube a 2,55 / 2,10 / 1,57 / 2,31. Las
+bandas laterales de dos miradas (la costura: 5–15 líneas por lado según la profundidad) tienen menos SNR
+que el centro. Al abrir el color la textura vuelve a la de una mirada (coste asumido, como en varios
+equipos; `compound-off-in-color`); el color y el PW no cambian. Coste estimado por los diseños (no medido):
+−0,15 a +0,20 ms por cuadro de media (la rama dirigida de B en dos de cada tres cuadros, el segundo bucle
+de A2 y el segundo cono de A, y K) y +3,9 MB de memoria. Pendiente, con GPU: calibrar θ en 6–8° para una
+mediana de la desviación del gris de 12–13 y medir G1–G8 y K1–K12 (`docs/fidelity/README.md`, PR 4a), y
+luego el punto de control A de la prueba ciega. El aliasing de línea del moteado (`speckle-line-aliasing`)
+queda para el PR 3.
+**Verificación.** Gemelos (fallan en `main`): `steering.test.ts` (geometría exacta y θ = 0 identidad),
+`speckleField.test.ts` (sin fase, bit a bit el de hoy; fase lineal ≤ 1·10⁻² rad; SNR y media por mirada),
+`compoundSpeckle.test.ts` (lento: ley con un plano, N_eff ±15 %, SNR ×√N_eff ±10 %, grano 0,9–1,1,
+oscuros ≤ 0,035), `aperture.test.ts` (θ = 0 igual a la decisión 54; umbra y refuerzo), `transmission.test.ts`
+(prefijo dirigido frente a la CPU a ≤ 0,05 dB, espejo congelado) y `compound.test.ts` (orden, reinicios,
+pesos, paso directo, regla de actividad). GPU sin GPU: `passGraph.test.ts` (K antes de D, D escribiendo
+`env` junto con K y B sin declarar la transmisión que muestrea: las tres se detectan),
+`shaderLimits.test.ts` (≤ 16 samplers, arrays de K interpolados, ningún uniform sin declarar) y
+`compoundRenderer.test.ts` (el renderizador real sobre un WebGL falso: la mirada de cada cuadro llega a
+A2, A y B, D escribe su ranura, K lee las tres con su validez, los reinicios, las lecturas que se niegan a
+dar datos de otro cuadro y el protocolo de los ganchos); `fidelity.test.ts` y `fidelityScene.test.ts`
+(ρ_I, costura, umbra e hígado puro de las tres miradas). e2e: «composición espacial» (G1–G4, K1, K5,
+grano, G8 y la guarda de `readEnvelope`) con SwiftShader, y las guardas de una mirada con
+`compound: false` sin tocar sus umbrales.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

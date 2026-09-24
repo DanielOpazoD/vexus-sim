@@ -2,8 +2,9 @@
  * Grafo de pasadas del modo B / color (Fase 2): qué lee y qué escribe cada pasada de
  * `UltrasoundRenderer.render`, declarado como datos. El renderer recorre esta tabla (no un
  * orden escrito a mano) y `passGraphErrors` comprueba que es un grafo válido: nadie lee un
- * recurso antes de que exista, nadie lo escribe dos veces y ninguna pasada trabaja para nadie.
- * Las letras A–G son las de ARCHITECTURE.md y de `shaders/passes.glsl.ts`.
+ * recurso antes de que exista, nadie lo escribe dos veces, nadie lee una historia antes de que su
+ * pasada la escriba en el cuadro y ninguna pasada trabaja para nadie. Las letras A–G y K son las de
+ * ARCHITECTURE.md y de `shaders/passes.glsl.ts`.
  */
 
 /** Recursos: texturas intermedias, historia de la persistencia y la pantalla. */
@@ -16,6 +17,7 @@ export type Resource =
   | 'trans'
   | 'raw'
   | 'axial'
+  | 'envLooks'
   | 'env'
   | 'color'
   | 'scan'
@@ -30,6 +32,7 @@ export type PassId =
   | 'rawField'
   | 'axial'
   | 'lateral'
+  | 'compound'
   | 'color'
   | 'scanConvert'
   | 'persistence'
@@ -48,8 +51,12 @@ export interface PassSpec {
   cadence: 'frame' | 'color';
 }
 
-/** Recursos que existen antes de la primera pasada: escena, acoplamiento e historia (ping-pong). */
-export const EXTERNAL_RESOURCES: readonly Resource[] = ['scene', 'coupling', 'persist'];
+/**
+ * Recursos que existen antes de la primera pasada: escena, acoplamiento e historias: la de la persistencia
+ * (ping-pong) y el anillo de miradas de la composición espacial (decisión 58), cuyas ranuras guardan las
+ * envolventes de los cuadros anteriores.
+ */
+export const EXTERNAL_RESOURCES: readonly Resource[] = ['scene', 'coupling', 'persist', 'envLooks'];
 
 export const FRAME_PASSES: readonly PassSpec[] = [
   // A en cuatro etapas (decisión 54): impactos por línea, segmentos, suma acumulada y apertura
@@ -59,7 +66,10 @@ export const FRAME_PASSES: readonly PassSpec[] = [
   { id: 'transmission', label: 'A', reads: ['transPrefix', 'transHits'], writes: 'trans', cadence: 'frame' },
   { id: 'rawField', label: 'B', reads: ['scene', 'trans'], writes: 'raw', cadence: 'frame' },
   { id: 'axial', label: 'C', reads: ['raw'], writes: 'axial', cadence: 'frame' },
-  { id: 'lateral', label: 'D', reads: ['axial'], writes: 'env', cadence: 'frame' },
+  // D escribe la envolvente de la mirada del cuadro en su ranura del anillo; K compone las válidas (paso
+  // directo exacto con una sola mirada: compuesto apagado)
+  { id: 'lateral', label: 'D', reads: ['axial'], writes: 'envLooks', cadence: 'frame' },
+  { id: 'compound', label: 'K', reads: ['envLooks'], writes: 'env', cadence: 'frame' },
   { id: 'color', label: 'F', reads: ['scene', 'trans'], writes: 'color', cadence: 'color' },
   { id: 'scanConvert', label: 'G', reads: ['env', 'color'], writes: 'scan', cadence: 'frame' },
   { id: 'persistence', label: 'P', reads: ['scan', 'persist'], writes: 'persist', cadence: 'frame' },
@@ -83,6 +93,14 @@ export function passGraphErrors(passes: readonly PassSpec[], external: readonly 
     if (prev && !external.includes(p.writes)) errors.push(`«${p.writes}» lo escriben ${prev} y ${p.id}`);
     writer.set(p.writes, p.id);
     available.add(p.writes);
+  }
+  // una historia que escribe una pasada del cuadro solo la leen, además de ella misma (ping-pong), las
+  // pasadas que van detrás: antes leerían la del cuadro anterior (K antes de D compondría miradas viejas)
+  for (const r of external) {
+    const w = passes.findIndex((p) => p.writes === r);
+    if (w < 0) continue;
+    for (const q of passes.slice(0, w))
+      if (q.reads.includes(r)) errors.push(`${q.id} lee «${r}» antes de que ${passes[w].id} lo escriba en el cuadro`);
   }
   for (const p of passes) {
     if (p.writes === 'screen') continue;

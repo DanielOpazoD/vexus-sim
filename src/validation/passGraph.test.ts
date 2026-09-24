@@ -1,11 +1,25 @@
 import { describe, expect, it } from 'vitest';
 import { GpuPassTimer, summarizeGpuTimings } from '../ultrasound/gpuTimer';
-import { FRAME_PASSES, passGraphErrors, type PassSpec } from '../ultrasound/passGraph';
+import { FRAME_PASSES, passGraphErrors, type PassId, type PassSpec, type Resource } from '../ultrasound/passGraph';
+import {
+  FRAG_AXIAL,
+  FRAG_BLIT,
+  FRAG_COLOR,
+  FRAG_COMPOUND,
+  FRAG_LATERAL,
+  FRAG_PERSIST,
+  FRAG_RAWFIELD,
+  FRAG_SCANCONVERT,
+  FRAG_TRANS_HITS,
+  FRAG_TRANS_PREFIX,
+  FRAG_TRANS_SEGMENTS,
+  FRAG_TRANSMISSION,
+} from '../ultrasound/shaders/passes.glsl';
 
 describe('grafo de pasadas del renderer', () => {
-  it('la tabla del renderer es un grafo válido: A → B → C → D → (F) → G → persistencia → pantalla', () => {
+  it('la tabla del renderer es un grafo válido: A → B → C → D → K → (F) → G → persistencia → pantalla', () => {
     expect(passGraphErrors(FRAME_PASSES)).toEqual([]);
-    expect(FRAME_PASSES.map((p) => p.label).join(' ')).toBe('A0 A1 A2 A B C D F G P S');
+    expect(FRAME_PASSES.map((p) => p.label).join(' ')).toBe('A0 A1 A2 A B C D K F G P S');
   });
 
   const without = (id: string) => FRAME_PASSES.filter((p) => p.id !== id);
@@ -23,8 +37,23 @@ describe('grafo de pasadas del renderer', () => {
     expect(passGraphErrors(swap(at('transmissionSegments'), at('transmissionPrefix'))).join('\n')).toMatch(
       /transmissionPrefix lee «transSeg»/,
     );
-    // sin la lateral, nadie escribe la envolvente que convierte G
-    expect(passGraphErrors(without('lateral')).join('\n')).toMatch(/scanConvert lee «env»/);
+    // sin la composición (K), nadie escribe la envolvente que convierte G; sin la lateral (D), nadie lee la
+    // convolución axial
+    expect(passGraphErrors(without('compound')).join('\n')).toMatch(/scanConvert lee «env»/);
+    expect(passGraphErrors(without('lateral')).join('\n')).toMatch(/nadie lee lo que escribe axial/);
+  });
+
+  // Composición espacial (decisión 58, T7): el anillo de miradas es una historia externa, así que la regla de
+  // «leer antes de que exista» no la ve; la guarda propia de las historias sí
+  it('K antes de D compondría las miradas del cuadro anterior: lo detecta', () => {
+    expect(passGraphErrors(swap(at('lateral'), at('compound'))).join('\n')).toMatch(
+      /compound lee «envLooks» antes de que lateral lo escriba en el cuadro/,
+    );
+  });
+
+  it('D escribiendo la envolvente a la vez que K: dos escritores', () => {
+    const both = FRAME_PASSES.map((p): PassSpec => (p.id === 'lateral' ? { ...p, writes: 'env' } : p));
+    expect(passGraphErrors(both).join('\n')).toMatch(/«env» lo escriben lateral y compound/);
   });
 
   it('el color de cadencia propia puede leerse del cuadro anterior; uno de cada cuadro no', () => {
@@ -159,5 +188,64 @@ describe('summarizeGpuTimings', () => {
   it('sin temporizadores o sin medidas de referencia no inventa nada', () => {
     expect(summarizeGpuTimings(null, 'rawField', 'present')).toBeNull();
     expect(summarizeGpuTimings({ rawField: 5 }, 'rawField', 'present')).toBeNull();
+  });
+});
+
+/**
+ * Lo que cada pasada declara leer frente a lo que su shader muestrea (decisión 58, T7): la tabla dice qué
+ * recurso lee cada sampler del shader de cada pasada; los de la escena y el acoplamiento (uSceneTex,
+ * uCoupling) van en el preludio común y no cuentan. Un sampler nuevo sin fila, una lectura sin declarar
+ * o una declarada sin sampler son errores: el grafo no puede mentir sobre sus dependencias.
+ */
+const SAMPLERS: Record<PassId, { src: string; samplers: Record<string, Resource> }> = {
+  transmissionHits: { src: FRAG_TRANS_HITS, samplers: {} },
+  transmissionSegments: { src: FRAG_TRANS_SEGMENTS, samplers: { uHits0: 'transHits', uHits1: 'transHits' } },
+  transmissionPrefix: { src: FRAG_TRANS_PREFIX, samplers: { uSeg: 'transSeg', uHits0: 'transHits', uHits1: 'transHits' } },
+  transmission: {
+    src: FRAG_TRANSMISSION,
+    samplers: { uPre0: 'transPrefix', uPre1: 'transPrefix', uPreSteer: 'transPrefix', uPreSteerX: 'transPrefix', uHits0: 'transHits' },
+  },
+  rawField: { src: FRAG_RAWFIELD, samplers: { uTrans0: 'trans', uTrans1: 'trans', uTrans3: 'trans' } },
+  axial: { src: FRAG_AXIAL, samplers: { uField: 'raw' } },
+  lateral: { src: FRAG_LATERAL, samplers: { uField: 'axial' } },
+  compound: { src: FRAG_COMPOUND, samplers: { uLook0: 'envLooks', uLook1: 'envLooks', uLook2: 'envLooks' } },
+  color: { src: FRAG_COLOR, samplers: { uTrans0: 'trans' } },
+  scanConvert: { src: FRAG_SCANCONVERT, samplers: { uEnv: 'env', uColor: 'color' } },
+  persistence: { src: FRAG_PERSIST, samplers: { uCur: 'scan', uPrev: 'persist' } },
+  present: { src: FRAG_BLIT, samplers: { uTex: 'persist' } },
+};
+const PRELUDE_SAMPLERS = new Set(['uSceneTex', 'uCoupling']);
+const PRELUDE_RESOURCES = new Set<Resource>(['scene', 'coupling']);
+
+function samplerErrors(passes: readonly PassSpec[]): string[] {
+  const errors: string[] = [];
+  for (const p of passes) {
+    const { src, samplers } = SAMPLERS[p.id];
+    const declared = [...src.replace(/\/\/.*$/gm, '').matchAll(/\buniform\s+sampler2D\s+(\w+)/g)].map((m) => m[1]);
+    for (const name of declared) {
+      if (PRELUDE_SAMPLERS.has(name)) continue;
+      const r = samplers[name];
+      if (r === undefined) errors.push(`${p.id}: el sampler ${name} no está en la tabla`);
+      else if (!p.reads.includes(r)) errors.push(`${p.id} muestrea ${name} («${r}») sin declararlo`);
+    }
+    for (const r of p.reads)
+      if (!PRELUDE_RESOURCES.has(r) && !declared.some((n) => samplers[n] === r))
+        errors.push(`${p.id} declara leer «${r}» y no lo muestrea`);
+  }
+  return errors;
+}
+
+describe('las lecturas declaradas son las de los shaders', () => {
+  it('cada pasada muestrea exactamente lo que declara el grafo', () => {
+    expect(samplerErrors(FRAME_PASSES)).toEqual([]);
+  });
+
+  it('B sin leer la transmisión (su rama dirigida muestrea uTrans3): lo detecta', () => {
+    const blind = FRAME_PASSES.map((p): PassSpec => (p.id === 'rawField' ? { ...p, reads: ['scene'] } : p));
+    expect(samplerErrors(blind).join('\n')).toMatch(/rawField muestrea uTrans0 \(«trans»\) sin declararlo/);
+    expect(samplerErrors(blind).join('\n')).toMatch(/rawField muestrea uTrans3 \(«trans»\) sin declararlo/);
+    // y K sin declarar el anillo
+    const k = FRAME_PASSES.map((p): PassSpec => (p.id === 'compound' ? { ...p, reads: [] } : p));
+    expect(samplerErrors(k).join('\n')).toMatch(/compound muestrea uLook0 \(«envLooks»\) sin declararlo/);
   });
 });

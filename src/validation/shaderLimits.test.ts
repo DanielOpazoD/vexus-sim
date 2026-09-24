@@ -5,7 +5,8 @@ import { TISSUE_COUNT } from '../anatomy/tissues';
 import { CASES } from '../cases';
 import { ANATOMY_GLSL, MAX_NODES, MAX_TUBES, MAX_TUBE_SEGMENTS } from '../anatomy/gpu/anatomy.glsl';
 import * as PASSES from '../ultrasound/shaders/passes.glsl';
-import { FRAG_RAWFIELD, FRAG_TRANSMISSION, TISSUE_VEC4 } from '../ultrasound/shaders/passes.glsl';
+import { FRAG_COMPOUND, FRAG_RAWFIELD, FRAG_TRANSMISSION, TISSUE_VEC4 } from '../ultrasound/shaders/passes.glsl';
+import { COMPOUND } from '../ultrasound/compound';
 
 /**
  * Ranuras vec4 de uniforms que declara un shader (cota superior del empaquetado de GLSL ES 3.0):
@@ -27,6 +28,23 @@ function uniformSlots(src: string): { slots: number; arrays: string[] } {
     if (size !== undefined) arrays.push(`${name}[${n}]`);
   }
   return { slots, arrays };
+}
+
+/** Samplers que declara un shader, en orden. */
+const samplersOf = (src: string): string[] =>
+  [...src.replace(/\/\/.*$/gm, '').matchAll(/\buniform\s+(?:(?:lowp|mediump|highp)\s+)?\w*sampler\w*\s+(\w+)/g)].map((m) => m[1]);
+
+/**
+ * Uniforms (`uNombre`) que un shader usa sin declararlos: un nombre suelto no compila, y la GPU de las
+ * pruebas unitarias no existe. Se excluyen los accesos a campos (`c.uRef`) y los nombres declarados como
+ * variable local o parámetro.
+ */
+function undeclaredUniforms(src: string): string[] {
+  const code = src.replace(/\/\/.*$/gm, '');
+  const declared = new Set([...code.matchAll(/\buniform\s+(?:(?:lowp|mediump|highp)\s+)?\w+\s+(\w+)/g)].map((m) => m[1]));
+  const locals = new Set([...code.matchAll(/\b(?:float|int|bool|vec[234]|ivec[234]|mat[34]|Cls)\s+(u[A-Z]\w*)/g)].map((m) => m[1]));
+  const used = new Set((code.match(/(?<![.\w])u[A-Z][A-Za-z0-9]*\b/g) ?? []).filter((n) => !locals.has(n) || declared.has(n)));
+  return [...used].filter((n) => !declared.has(n)).sort();
 }
 
 /** Los shaders de fragmentos que exporta `passes.glsl.ts` (sus otras exportaciones no son shaders). */
@@ -80,7 +98,8 @@ describe('Límites del shader con margen para crecer', () => {
   // Un shader con más uniforms de los que admite la GPU no compila en ella (o, peor, en unas sí y en
   // otras no): cada shader de fragmentos cabe con margen en el mínimo de WebGL2 (224 vec4). Las tablas
   // por tejido van de 4 en 4 por vec4 (TISSUE_VEC4 ranuras cada una, no TISSUE_COUNT): COLOR declara 96
-  // ranuras (antes 156), QUERY 85 (antes 145) y la pasada B 105 (antes 125; 165 antes de que el eco de
+  // ranuras (antes 156), QUERY 85 (antes 145) y la pasada B 107 (105 antes de la composición espacial,
+  // decisión 58, que le suma uSteer y uLookSalt; 125 antes del empaquetado; 165 antes de que el eco de
   // interfaz, decisión 57, le quitara la atenuación y las banderas, que no lee).
   it(`cada shader de fragmentos declara ≤ ${SLOT_GUARD} ranuras vec4 de uniforms (80 % de 224)`, () => {
     expect(FRAGMENT_SHADERS.length).toBeGreaterThan(8);
@@ -91,8 +110,8 @@ describe('Límites del shader con margen para crecer', () => {
       const perTissue = arrays.filter((a) => a.endsWith(`[${TISSUE_COUNT}]`));
       expect(perTissue, `${name} declara una tabla de un float por tejido`).toEqual([]);
     }
-    // la pasada B cuenta sus arrays de tejidos, de caras y de escena: 105 medidas, con sitio para la
-    // composición espacial (~+5) y la THI (~+14) sin pasar de 130
+    // la pasada B cuenta sus arrays de tejidos, de caras y de escena: 107 medidas con la composición
+    // espacial, con sitio para la THI (~+14) sin pasar de 130
     const raw = uniformSlots(FRAG_RAWFIELD);
     expect(raw.arrays).toContain(`uTissueBack4[${TISSUE_VEC4}]`);
     expect(raw.arrays).toContain(`uTissueClump4[${TISSUE_VEC4}]`);
@@ -101,6 +120,31 @@ describe('Límites del shader con margen para crecer', () => {
     expect(raw.arrays).not.toContain(`uTissueFlag4[${TISSUE_VEC4}]`);
     expect(raw.slots).toBeGreaterThan(90);
     expect(raw.slots).toBeLessThanOrEqual(130);
+  });
+
+  // Composición espacial (decisión 58, T7): WebGL2 garantiza 16 unidades de textura por shader de
+  // fragmentos; B pasa de 4 a 5 samplers (la mirada dirigida) y K lee una textura por mirada.
+  it('cada shader de fragmentos declara ≤ 16 samplers; B y K, los de su diseño', () => {
+    for (const [name, src] of FRAGMENT_SHADERS) expect(samplersOf(src).length, name).toBeLessThanOrEqual(16);
+    expect(samplersOf(FRAG_RAWFIELD)).toEqual(['uSceneTex', 'uCoupling', 'uTrans0', 'uTrans1', 'uTrans3']);
+    expect(samplersOf(FRAG_TRANSMISSION)).toEqual(['uCoupling', 'uPre0', 'uPre1', 'uHits0', 'uPreSteer', 'uPreSteerX']);
+    expect(samplersOf(FRAG_COMPOUND)).toEqual(COMPOUND.order.map((_, i) => `uLook${i}`));
+  });
+
+  it('K dimensiona sus arrays con el número de miradas interpolado, no escrito a mano', () => {
+    const n = COMPOUND.order.length;
+    const k = uniformSlots(FRAG_COMPOUND);
+    expect(k.arrays).toEqual([`uLookSteer[${n}]`, `uLookValid[${n}]`]);
+    expect(k.slots).toBe(2 * n + 4);
+    // con el identificador GLSL en lugar del número interpolado, el recuento no adivina el tamaño
+    expect(() => uniformSlots(FRAG_COMPOUND.replace(`uLookSteer[${n}]`, 'uLookSteer[COMPOUND_LOOKS]'))).toThrow(/sin resolver/);
+  });
+
+  it('todo uniform que usa un shader está declarado en él (un nombre suelto no compila)', () => {
+    for (const [name, src] of FRAGMENT_SHADERS) expect(undeclaredUniforms(src), name).toEqual([]);
+    // la rama dirigida de B sin sus uniforms: se ve
+    expect(undeclaredUniforms(FRAG_RAWFIELD.replace('uniform float uLookSalt;', ''))).toEqual(['uLookSalt']);
+    expect(undeclaredUniforms(FRAG_RAWFIELD.replace(/uniform vec4 uSteer;[^\n]*\n/, ''))).toEqual(['uSteer']);
   });
 
   it('el recuento de ranuras sigue las reglas de empaquetado y no adivina tamaños', () => {

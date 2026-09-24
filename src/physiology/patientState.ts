@@ -48,6 +48,10 @@ export interface PatientState {
   // --- Presiones externas y respiración ---
   intraAbdominalPressureMmHg: number;
   ventilation: VentilationMode;
+  /**
+   * PEEP (cmH₂O): solo desplaza la presión pleural (40 %); no tiene efecto hemodinámico porque la PAD
+   * se prescribe respecto a la pleural de fin de espiración (`peep-no-hemodynamic-effect`).
+   */
   peepCmH2O: number;
   respiratoryRateMin: number;
   respiratoryPattern: RespiratoryPattern;

@@ -28,7 +28,7 @@ identificadores. Si un término nuevo entra en el código, entra aquí.
 | ------------------- | ------------------------------------------------------------------------------------------------------ |
 | **Modo B**          | Imagen en escala de grises (brillo = ecogenicidad).                                                    |
 | **PW**              | Doppler pulsado: puerta en un punto, espectro velocidad–tiempo.                                        |
-| **Color**           | Doppler color: velocidad media por celda con el estimador de autocorrelación (Kasai).                  |
+| **Color**           | Doppler color: velocidad media por celda con el estimador de autocorrelación (Kasai), emulado sin IQ.  |
 | **Puerta**          | Volumen de muestra del PW (longitud axial × PSF lateral × elevacional).                                |
 | **PRF / Nyquist**   | Frecuencia de repetición de pulsos; la velocidad máxima sin plegado es c·PRF/(4·f0).                   |
 | **Aliasing**        | Plegado de velocidades por encima de Nyquist.                                                          |

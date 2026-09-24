@@ -5,7 +5,9 @@ import type { Simulator } from '../app/simulator';
 import { START_POINTS, type StartPoint } from '../app/startPoints';
 import { faceNormalStats } from '../app/testHooks';
 import { hilumNotchActive, kidneyLocal, kidneyOuterSdf, type Kidney } from '../anatomy/organs/kidney';
-import { sdEllipsoidLocal } from '../anatomy/primitives';
+import { sdEllipsoidLocal, tubeQuery, type Tube } from '../anatomy/primitives';
+import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
+import { FRAG_QUERY } from '../ultrasound/shaders/passes.glsl';
 import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene, type FaceGeometry } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
@@ -57,6 +59,54 @@ const ellipsoidNormal = (m: Vec3): Vec3 => {
   return unit([0, 1, 2].map((i) => k.u[i] * nl[0] + k.v[i] * nl[1] + k.w[i] * nl[2]) as Vec3);
 };
 
+/**
+ * Normal de `tubeQuery` en la GLSL del PR 5b, portada tal cual: en la sección elíptica el gradiente
+ * escala la componente AP dos veces (d/dist la escalaba una) y, dentro del segmento, resta el
+ * crecimiento del radio a lo largo del eje. Solo para esta prueba: TS no tiene normales de tubo.
+ */
+function glslTubeNormal(m: Vec3, tube: Tube, apScale: number, rs: number, seg: number, s: number): Vec3 {
+  const a = tube.nodes[seg];
+  const b = tube.nodes[seg + 1];
+  const ab = [0, 1, 2].map((i) => b.p[i] - a.p[i]);
+  const len = Math.hypot(ab[0], ab[1], ab[2]);
+  const tg = ab.map((x) => x / len);
+  const d = [0, 1, 2].map((i) => m[i] - (a.p[i] + ab[i] * s));
+  const dot = (x: number[], y: number[]) => x[0] * y[0] + x[1] * y[1] + x[2] * y[2];
+  let g: number[];
+  let dist: number;
+  if (apScale !== 1) {
+    const along = dot(d, tg);
+    const perp = d.map((x, i) => x - tg[i] * along);
+    perp[1] /= apScale;
+    dist = Math.hypot(perp[0], perp[1], perp[2], along);
+    const q = [...perp];
+    q[1] /= apScale;
+    const qt = dot(q, tg);
+    g = q.map((x, i) => x - tg[i] * qt + tg[i] * along);
+  } else {
+    dist = Math.hypot(d[0], d[1], d[2]);
+    g = d;
+  }
+  const taper = s > 0 && s < 1 ? (rs * (b.r - a.r)) / len : 0;
+  return unit(g.map((x, i) => x / dist - tg[i] * taper) as Vec3);
+}
+
+/** La VCI (y su impacto) cuya luz da la cara `tube` en m, con el calibre del instante. */
+function ivcHit(m: Vec3) {
+  let best: { tube: Tube; apScale: number; rs: number; seg: number; s: number; d: number } | null = null;
+  for (const v of scene.vessels) {
+    if (VESSEL_META[v.id].system !== 'ivc') continue;
+    const tube = { ...v.tube, apScale: caliber.ivcApScale };
+    const rs = caliber.radiusScale(v.id);
+    const hit = tubeQuery(m, tube, rs);
+    if (!best || hit.d < best.d) best = { tube, apScale: caliber.ivcApScale, rs, seg: hit.segment, s: hit.s, d: hit.d };
+  }
+  return best!;
+}
+
+/** Qué GPU se simula: la del PR 5a (errores plantados) o la del 5b (normales corregidas, portadas). */
+let gpuMode: '5a' | '5b' = '5a';
+
 /** GPU simulada: tejido de la CPU y la normal de la cara que dibuja ese tejido, con los dos errores plantados. */
 function gpuQuery(points: Float32Array) {
   const n = points.length / 3;
@@ -70,10 +120,17 @@ function gpuQuery(points: Float32Array) {
     let nv: Vec3 = [0, 1, 0];
     if (tube && t !== Tissue.Liver) {
       nv = gradientOf(m, 'tube');
-      if (tube.vessel && VESSEL_META[tube.vessel].system === 'ivc') nv = rotate(nv, tube.hit.tangent, (IVC_ERROR_DEG * Math.PI) / 180);
+      if (tube.vessel && VESSEL_META[tube.vessel].system === 'ivc') {
+        if (gpuMode === '5a') nv = rotate(nv, tube.hit.tangent, (IVC_ERROR_DEG * Math.PI) / 180);
+        else {
+          const h = ivcHit(m);
+          nv = glslTubeNormal(m, h.tube, h.apScale, h.rs, h.seg, h.s);
+        }
+      }
     } else if (t === Tissue.LiverCapsule) nv = gradientOf(m, 'liverSurface');
     else if (t === Tissue.Diaphragm || t === Tissue.Lung) nv = gradientOf(m, 'dome');
-    else if (t === Tissue.RenalCapsule || t === Tissue.PerirenalFat) nv = ellipsoidNormal(m);
+    else if (t === Tissue.RenalCapsule || t === Tissue.PerirenalFat)
+      nv = gpuMode === '5a' ? ellipsoidNormal(m) : gradientOf(m, 'kidneyOuter');
     else if (t === Tissue.Fluid || t === Tissue.BileDuctWall) nv = gradientOf(m, 'gallbladder');
     normal.set(nv, i * 3);
   }
@@ -135,5 +192,39 @@ describe('e2e de normales: filas de la VCI y de la escotadura renal (sin GPU)', 
     expect(r.kidneyOuterNotchFree.points).toBeGreaterThanOrEqual(50);
     expect(r.kidneyOuterNotchFree.points).toBe(r.kidneyOuter.points);
     expect(r.kidneyOuterNotchFree.p01).toBe(r.kidneyOuter.p01);
+  });
+});
+
+describe('e2e de normales con las normales del PR 5b (sin GPU)', () => {
+  // La GLSL de 5b saca la normal de la VCI del gradiente de su sección elíptica (con el afilamiento
+  // del radio) y la del contorno renal y la cápsula del gradiente numérico de su distancia
+  // (`faceNormal`, mismo paso que el banco). La fórmula de la VCI, portada, debe dar el gradiente de
+  // `faceSdf` en todo el cuerpo: es la fila que la e2e pasa a exigir.
+  it('subxifoidea y flanco: la VCI con la normal de la sección elíptica coincide con el gradiente', () => {
+    // el port de `glslTubeNormal` es el de la GLSL: el gradiente de la sección y el afilamiento
+    const glsl = ANATOMY_GLSL.replace(/\s+/g, ' ');
+    expect(glsl).toContain('vec3 q = perp; q.y /= apScale; g = q - tg * dot(q, tg) + tg * along;');
+    expect(glsl).toContain('float taper = s > 0.0 && s < 1.0 ? rs * (b.w - a.w) * inversesqrt(len2) : 0.0;');
+    expect(glsl).toContain('vec3 gn = g / max(dist, 1e-6) - tg * taper;');
+    // y el contorno renal y la cápsula usan el gradiente de su distancia con el paso del banco
+    expect(glsl).toContain('vec3 kidneyOuterGradient(vec3 m)');
+    expect(glsl).toContain('vec3 faceNormal(Cls c, vec3 m)');
+    // la e2e lee la normal que usa el eco
+    expect(FRAG_QUERY).toContain('o2 = vec4(faceNormal(c, m), 0.0);');
+    gpuMode = '5b';
+    try {
+      for (const id of ['subxiphoid', 'flank'] as const) {
+        const r = stats(id);
+        expect(r.tubeIvcBody.points, id).toBeGreaterThanOrEqual(50);
+        expect(r.tubeIvcBody.p01, `${id}: ${r.tubeIvcBody.worst}`).toBeGreaterThan(0.999);
+        expect(r.tubeIvc.p05, `${id}: ${r.tubeIvc.worst}`).toBeGreaterThan(0.99);
+        expect(r.tube.p05, id).toBeGreaterThanOrEqual(0.98);
+      }
+      const renal = stats('renal');
+      expect(renal.kidneyOuter.p01).toBeGreaterThan(0.999);
+      expect(renal.kidneyOuterNotch.p01).toBeGreaterThan(0.999);
+    } finally {
+      gpuMode = '5a';
+    }
   });
 });

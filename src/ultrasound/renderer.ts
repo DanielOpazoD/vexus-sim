@@ -1,6 +1,7 @@
 import type { AnatomyScene, VesselCaliber } from '../anatomy/scene';
 import { VESSEL_META } from '../physiology/vessels';
 import { Tissue } from '../anatomy/tissues';
+import { Interface, interfaceOfVessel } from '../anatomy/interfaces';
 import { TISSUES, TISSUE_COUNT, attenuationDbPerCm } from '../anatomy/tissues';
 import type { PhysiologySample } from '../physiology/engine';
 import { lineAngle, lineCoupling, type ProbeFrame, type ProbePose, type Transducer } from '../probe/probe';
@@ -153,13 +154,16 @@ export interface FrameInputs {
 }
 
 /**
- * Resultado de `queryPoints`: tejido, índice de tubo (−1 sin vaso), velocidad de la sangre (mm/s) y,
- * si se pidió, la normal unitaria de la interfaz (`Cls.n`, marco material; xyz por punto).
+ * Resultado de `queryPoints`: tejido, índice de tubo (−1 sin vaso), velocidad de la sangre (mm/s), la
+ * cara de interfaz que dibuja cada punto y su distancia (`Cls.iface`, `Cls.ifd`; decisión 57) y, si se
+ * pidió, la normal unitaria de esa cara que usa el eco (`faceNormal`, marco material; xyz por punto).
  */
 export interface GpuPointQuery {
   tissue: Int32Array;
   vessel: Int32Array;
   velocity: Float32Array;
+  iface: Int32Array;
+  ifd: Float32Array;
   normal?: Float32Array;
 }
 
@@ -353,7 +357,7 @@ export class UltrasoundRenderer {
         wallMm: v.wallMm,
         wallTissue: v.wallTissue,
         lumen: Tissue.Blood,
-        duct: 0,
+        iface: interfaceOfVessel(v.id, v.wallTissue),
         refRadius: v.refRadius,
         profileN: v.profileN,
       })),
@@ -362,7 +366,7 @@ export class UltrasoundRenderer {
         wallMm: d.wallMm,
         wallTissue: Tissue.BileDuctWall,
         lumen: Tissue.Fluid,
-        duct: 1,
+        iface: Interface.DuctLumen,
         refRadius: 1,
         profileN: 2,
       })),
@@ -375,7 +379,8 @@ export class UltrasoundRenderer {
       // H2.w = índice original del tubo (el shader lo devuelve como `vessel` aunque las
       // cabeceras se compacten por cuadro)
       this.headerAll.set([n, t.tube.nodes.length, t.tube.apScale, 1], h * 4);
-      this.headerAll.set([t.wallMm, t.wallTissue, t.lumen, t.duct], (h + 1) * 4);
+      // H1.w: la cara de la luz (decisión 57); el shader reconoce el conducto por ella
+      this.headerAll.set([t.wallMm, t.wallTissue, t.lumen, t.iface], (h + 1) * 4);
       this.headerAll.set([0, t.refRadius, t.profileN, i], (h + 2) * 4);
       const b = s.tubeBounds[i];
       this.headerAll.set([b.center[0], b.center[1], b.center[2], b.r], (h + 3) * 4);
@@ -615,7 +620,6 @@ export class UltrasoundRenderer {
     this.pRaw.f('uLattice', 0.42);
     this.pRaw.f('uElevSigma0', 1.6);
     this.pRaw.f('uElevFocus', tr.elevationFocusMm);
-    this.pRaw.f('uSpecGain', 1.0);
     // Ruido del receptor ≈ −72 dB respecto al eco hepático sin atenuar; con el techo de 60 dB
     // de compensación el campo profundo (> 20 cm) queda como «nieve» gris oscura [EXTRAPOLACIÓN PROPIA]
     this.pRaw.f('uNoise', 0.00025);
@@ -871,14 +875,18 @@ export class UltrasoundRenderer {
     const tissue = new Int32Array(n);
     const vessel = new Int32Array(n);
     const velocity = new Float32Array(n * 3);
+    const iface = new Int32Array(n);
+    const ifd = new Float32Array(n);
     const normal = out2 ? new Float32Array(n * 3) : undefined;
     for (let i = 0; i < n; i++) {
       tissue[i] = Math.round(out0[i * 4]);
       vessel[i] = Math.round(out0[i * 4 + 1]);
+      ifd[i] = out0[i * 4 + 3];
       velocity.set([out1[i * 4], out1[i * 4 + 1], out1[i * 4 + 2]], i * 3);
+      iface[i] = Math.round(out1[i * 4 + 3]);
       if (normal && out2) normal.set([out2[i * 4], out2[i * 4 + 1], out2[i * 4 + 2]], i * 3);
     }
-    return normal ? { tissue, vessel, velocity, normal } : { tissue, vessel, velocity };
+    return normal ? { tissue, vessel, velocity, iface, ifd, normal } : { tissue, vessel, velocity, iface, ifd };
   }
 
   /**

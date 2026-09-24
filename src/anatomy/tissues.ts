@@ -1,9 +1,10 @@
 /**
  * Propiedades acústicas por tejido (base E.2, tabla IT'IS V5.0 redondeada;
  * atenuación α(1 MHz) en dB/cm y exponente b; c en m/s; ρ en kg/m³). Las
- * amplitudes de retrodispersión relativas y las reflectividades especulares
- * son [EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION: la base solo aporta BSC de
- * hígado y riñón (E.3); el resto se fijó para revisión visual.
+ * amplitudes de retrodispersión relativas son [EXTRAPOLACIÓN PROPIA] /
+ * NEEDS_CALIBRATION: la base solo aporta BSC de hígado y riñón (E.3); el resto se
+ * fijó para revisión visual. Las reflexiones de las caras lisas salen de Z = ρc
+ * (`reflectionCoefficient`) y de la tabla de caras (`anatomy/interfaces.ts`, decisión 57).
  *
  * El índice numérico de cada tejido se comparte con el shader (uniform arrays).
  */

@@ -26,7 +26,10 @@ export const ORGAN_MODULES: readonly OrganModule[] = [
     id: 'kidney',
     exports: kidney,
     glsl: kidney.KIDNEY_GLSL,
-    gpuOnly: { kidneyOuter: 'normal del contorno para el término especular; la clasificación TS no usa normales' },
+    gpuOnly: {
+      kidneyOuter:
+        'normal del elipsoide de la clasificación (el eco de interfaz usa el gradiente del contorno, `faceNormal`); TS no usa normales',
+    },
   },
   { id: 'liverLigaments', exports: liverLigaments, glsl: liverLigaments.LIVER_LIGAMENTS_GLSL },
   { id: 'lungCurtain', exports: lungCurtain, glsl: lungCurtain.LUNG_CURTAIN_GLSL },

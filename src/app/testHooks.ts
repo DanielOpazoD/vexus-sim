@@ -1,6 +1,13 @@
 import { VESSEL_META, type VesselId } from '../physiology/vessels';
 import type { EquipmentCommand } from './equipment';
-import { equivalenceSweep, volumeEquivalence, type EquivalencePoseReport, type VolumeEquivalenceReport } from './equivalenceSweep';
+import {
+  equivalenceSweep,
+  interfaceShellEquivalence,
+  volumeEquivalence,
+  type EquivalencePoseReport,
+  type InterfaceShellReport,
+  type VolumeEquivalenceReport,
+} from './equivalenceSweep';
 import { bestGateOnVessel } from './gatePlacement';
 import { acousticWindowWeight, gateTransmission } from './gateTransmission';
 import { lineCoupling, pointOnLine, type ProbePose } from '../probe/probe';
@@ -23,6 +30,8 @@ export interface TestHooks {
   equivalenceSweep: () => EquivalencePoseReport[];
   /** Equivalencia TS ↔ GLSL en `n` puntos aleatorios de todo el tronco. */
   volumeEquivalence: (n?: number) => VolumeEquivalenceReport;
+  /** Equivalencia de la cara de interfaz y su distancia a 0,01–0,6 mm de cada cara, en los planos de partida. */
+  interfaceShell: () => InterfaceShellReport;
   /**
    * Estadística del speckle en parénquima hepático (guarda de imagen). Con `startPoint`, coloca
    * antes la sonda en ese punto de partida y avanza lo justo para que el marco la siga.
@@ -44,8 +53,8 @@ export interface TestHooks {
     samples?: boolean;
   }) => FidelityStats;
   /**
-   * Normales de la GPU (`Cls.n`, `queryPoints` con `normals`) frente al gradiente de `faceSdf` de TS
-   * en las caras que darán brillo: por tipo de cara (y los subconjuntos de `FACE_NORMAL_SUBSETS`),
+   * Normales de la GPU (la que usa el eco de interfaz, `faceNormal`; `queryPoints` con `normals`) frente
+   * al gradiente de `faceSdf` de TS en las caras que dan brillo: por tipo de cara (y los subconjuntos de `FACE_NORMAL_SUBSETS`),
    * |n·∇| en los puntos del plano a 0,02–0,4 mm de ella que caen en un tejido que la dibuja, con el
    * mismo tejido en la GPU y en la CPU. `pose` bascula o inclina la sonda respecto a la pose de
    * partida, como en `fidelity`.
@@ -118,6 +127,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
   return {
     equivalenceSweep: () => equivalenceSweep(getSim()),
     volumeEquivalence: (n) => volumeEquivalence(getSim(), n),
+    interfaceShell: () => interfaceShellEquivalence(getSim()),
     speckle: (opts) => {
       const sim = getSim();
       if (opts?.startPoint) goTo(sim, opts.startPoint);
@@ -313,7 +323,7 @@ export interface FaceNormalStats {
 const FACE_BAND_MM = [0.02, 0.4] as const;
 /** Puntos por fila y plano como máximo (la GPU los consulta de una vez). */
 const FACE_POINTS_MAX = 400;
-/** Tejidos que dibujan cada cara (su normal es la de esa cara en `classify`). */
+/** Tejidos que dibujan cada cara (su normal es la de esa cara en `classify` o en `faceNormal`). */
 const TUBE_TISSUES: ReadonlySet<Tissue> = new Set([
   Tissue.Blood,
   Tissue.VesselWallThin,
@@ -326,14 +336,15 @@ const TUBE_TISSUES: ReadonlySet<Tissue> = new Set([
 /**
  * Subconjuntos de la e2e de normales: separan lo que la fila de su cara mezcla y se muestrean aparte
  * (hasta `FACE_POINTS_MAX` puntos cada uno), así que la fila de la cara no cambia.
- *  - `tubeIvc`: puntos del tubo cuya luz es la VCI. Su sección es elíptica y la normal de la GPU
- *    (`tubeQuery`, d/dist) escala la componente AP una vez, mientras el gradiente la escala dos: en todo
- *    el cuerpo, no solo en la tapa, se aparta 6–10° según `ivcApScale` (|n·∇| 0,991 a 0,777, 0,984 a
- *    0,70). Mezclada con los demás tubos, no se ve en su p05.
+ *  - `tubeIvc`: puntos del tubo cuya luz es la VCI. Su sección es elíptica: hasta el PR 5b la normal de
+ *    la GPU (`tubeQuery`, d/dist) escalaba la componente AP una vez, mientras el gradiente la escala dos,
+ *    y en todo el cuerpo, no solo en la tapa, se apartaba 6–10° según `ivcApScale` (|n·∇| 0,991 a 0,777,
+ *    0,984 a 0,70). Mezclada con los demás tubos, no se veía en su p05.
  *  - `tubeIvcBody`: los de la VCI dentro de su segmento (0 < s < 1): sin la tapa en la aurícula ni los
  *    codos (las uniones con las suprahepáticas sí cuentan).
  *  - `kidneyOuterNotchFree` y `kidneyOuterNotch`: el contorno renal fuera o dentro del redondeo de la
- *    escotadura hiliar (`hilumNotchActive`). Fuera, la normal del elipsoide de la GPU es exacta.
+ *    escotadura hiliar (`hilumNotchActive`). Fuera, la normal del elipsoide era exacta; dentro no, y
+ *    desde el PR 5b la GPU usa en las dos el gradiente numérico del contorno (`faceNormal`).
  */
 export const FACE_NORMAL_SUBSETS = ['tubeIvc', 'tubeIvcBody', 'kidneyOuterNotchFree', 'kidneyOuterNotch'] as const;
 export type FaceNormalSubset = (typeof FACE_NORMAL_SUBSETS)[number];

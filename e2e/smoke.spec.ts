@@ -177,26 +177,21 @@ test('el banco de fidelidad mide el moteado del hígado despejado como un campo 
   expect(errors).toEqual([]);
 });
 
-test('las normales de la GPU coinciden con el gradiente de la distancia de TS en las caras que darán brillo', async ({ page }) => {
-  // Banco de interfaces (PR 5a de la tanda 1.5): el eco de una cara lisa dependerá de la incidencia sobre
-  // su normal, y la normal de la GPU (`Cls.n`) nunca se había comprobado. Por vista y fila (cada cara y los
-  // subconjuntos de `FACE_NORMAL_SUBSETS`), los puntos del plano a 0,02–0,4 mm de la cara en un tejido que
-  // la dibuja (mismo tejido en GPU y CPU): |n·∇| frente al gradiente de `faceSdf`. Emulando la GLSL en TS
-  // (sano en apnea):
-  //  - cúpula y vesícula: ≥ 0,99 en p01;
-  //  - tubo: ≥ 0,99 en p05 mezclando todos los vasos, pero la VCI (fila `tubeIvc`) está mal en todo su
-  //    cuerpo, no solo en la tapa: su sección es elíptica y la normal escala la componente AP una vez y el
-  //    gradiente, dos. En el cuerpo (`tubeIvcBody`, sin tapa ni codos) |n·∇| va de 0,991 a 0,996 (p01–p50,
-  //    6–8°) con `ivcApScale` 0,777 y su mínimo baja a 0,984 (10°) con 0,70 respirando. La tapa dentro
-  //    de la aurícula y las uniones de tubos bajan además el p01 del tubo de la subxifoidea a 0,95. Lo
-  //    corrige 5b;
-  //  - riñón: fuera del redondeo de la escotadura hiliar (`kidneyOuterNotchFree`) la normal del elipsoide
-  //    es exacta (≥ 0,9999) y se exige p01 ≥ 0,98 en todas las vistas; junto a la escotadura
-  //    (`kidneyOuterNotch`, solo en la ventana renal) no: la fila entera da 0,61 en p01 (15 % bajo 0,98);
-  //  - cápsula hepática: por tramos (`liverSdf` elige la normal de una de las superficies que funde con
-  //    `smoothMax`); por la impresión renal y la unión de los lóbulos, p05 de 0,45 a 0,98 según la vista.
-  // Se exige lo que ya cumple (un fallo de cableado, de marco o de signo hundiría la mediana) y el resto
-  // se informa en las anotaciones: son los datos con los que los ecos de interfaz eligen su normal.
+test('las normales de la GPU coinciden con el gradiente de la distancia de TS en las caras que dan brillo', async ({ page }) => {
+  // Banco de interfaces (PR 5a de la tanda 1.5): el eco de una cara lisa depende de la incidencia sobre
+  // su normal (decisión 57). Por vista y fila (cada cara y los subconjuntos de `FACE_NORMAL_SUBSETS`), los
+  // puntos del plano a 0,02–0,4 mm de la cara en un tejido que la dibuja (mismo tejido en GPU y CPU):
+  // |n·∇| entre la normal que usa el eco (`faceNormal`) y el gradiente de `faceSdf`. En 5a tres normales
+  // no eran el gradiente y 5b las corrige:
+  //  - VCI (`tubeIvc`, `tubeIvcBody`): la sección elíptica escalaba la componente AP una vez (d/dist) y el
+  //    gradiente la escala dos: 6–10° en todo el cuerpo. Ahora la normal es el gradiente de la sección
+  //    (con el afilamiento del radio); portada a TS da p01 ≥ 0,9999 en el cuerpo (faceNormals.test.ts);
+  //  - riñón: junto a la escotadura hiliar la normal era la del elipsoide (p01 0,61 en la ventana renal);
+  //  - cápsula hepática: `liverSdf` elegía la normal de una de sus superficies (p05 0,45–0,98).
+  //    Las dos pasan al gradiente numérico de su distancia con el paso del banco (0,02 mm): el mismo
+  //    cálculo que la CPU, salvo float32.
+  // Cúpula y vesícula ya daban ≥ 0,99 en p01. Un fallo de cableado, de marco o de signo hundiría la
+  // mediana; las caras que 5b corrige se exigen ahora en p01 (la VCI también en p05 ≥ 0,99).
   test.setTimeout(240_000);
   const errors = await bootWithoutErrors(page);
   // apnea espiratoria: los planos cortan la anatomía en la misma posición que el gemelo de TS
@@ -215,7 +210,7 @@ test('las normales de la GPU coinciden con el gradiente de la distancia de TS en
   const faces = ['tube', 'liverSurface', 'dome', 'kidneyOuter', 'gallbladder'] as const;
   // subconjuntos (`FACE_NORMAL_SUBSETS`): se muestrean aparte y no cambian la fila de su cara
   const subsets = ['tubeIvc', 'tubeIvcBody', 'kidneyOuterNotchFree', 'kidneyOuterNotch'] as const;
-  const gated = ['tube', 'dome', 'kidneyOuter', 'kidneyOuterNotchFree', 'gallbladder'] as const;
+  const gated = ['tube', 'liverSurface', 'dome', 'kidneyOuter', 'kidneyOuterNotchFree', 'gallbladder', 'tubeIvcBody'] as const;
   const seen = new Map<string, number>();
   for (const view of views) {
     const r = await page.evaluate((v) => window.__vexusTest!.faceNormals(v), view);
@@ -232,7 +227,9 @@ test('las normales de la GPU coinciden con el gradiente de la distancia de TS en
       seen.set(row, (seen.get(row) ?? 0) + 1);
       if ((faces as readonly string[]).includes(row)) expect(f.p50, tag).toBeGreaterThanOrEqual(0.99);
       if (row === 'tube') expect(f.p05, tag).toBeGreaterThanOrEqual(0.98);
-      if (row === 'dome' || row === 'gallbladder' || row === 'kidneyOuterNotchFree') expect(f.p01, tag).toBeGreaterThanOrEqual(0.98);
+      if (row === 'tubeIvc' || row === 'tubeIvcBody') expect(f.p05, tag).toBeGreaterThanOrEqual(0.99);
+      const exact = ['liverSurface', 'dome', 'gallbladder', 'kidneyOuter', 'kidneyOuterNotchFree', 'kidneyOuterNotch', 'tubeIvcBody'];
+      if (exact.includes(row)) expect(f.p01, tag).toBeGreaterThanOrEqual(0.98);
     }
   }
   // cada cara con brillo se comprobó en al menos una vista (la prueba no puede pasar vacía)

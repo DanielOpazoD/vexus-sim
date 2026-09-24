@@ -47,6 +47,7 @@ import { lungCurtainDistance } from './organs/lungCurtain';
 
 export type { DuctDef, VesselDef } from './vesselTree';
 import { BOWEL_BD_CAP_MM, DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, Tissue } from './tissues';
+import { Interface, MORISON_CONTACT_MM, interfaceOfVessel } from './interfaces';
 
 /**
  * Escena anatómica del avatar adulto de referencia (guía §9): pared abdominal
@@ -70,8 +71,13 @@ export interface Classification {
   boundaryDistance: number;
   /** Normal aproximada de esa interfaz (apunta hacia fuera del tejido actual). */
   boundaryNormal: Vec3;
-  /** Reflectividad especular relativa de esa interfaz (0–1). */
-  specular: number;
+  /**
+   * Cara de interfaz que dibuja este punto (decisión 57, `anatomy/interfaces.ts`): la misma que la GPU
+   * en `Cls.iface`. `Interface.None` si el punto no es dueño de ninguna.
+   */
+  interface: Interface;
+  /** Distancia (mm) del punto a esa cara, por la normal (`Cls.ifd`); 1e3 sin cara. */
+  interfaceDistance: number;
   vessel: VesselId | null;
   vesselHit: TubeHit | null;
   /** Velocidad relativa a la del vaso `vessel` (ramas procedurales < 1). */
@@ -322,18 +328,33 @@ export class AnatomyScene {
     const tube = this.classifyTubes(m, caliber);
     if (tube) return tube;
     const dRa = sdSphere(m, this.rightAtrium);
-    if (dRa < 0) return { ...NONE, tissue: Tissue.Blood, boundaryDistance: -dRa, specular: 0.5 };
+    if (dRa < 0) return { ...NONE, tissue: Tissue.Blood, boundaryDistance: -dRa };
     const dDome = sdDiaphragm(m, this.diaphragm, this.torso);
-    if (dDome < 0) return { ...NONE, tissue: Tissue.Lung, boundaryDistance: -dDome, specular: 1.0 };
-    if (dDome < DIAPHRAGM_THICKNESS_MM)
-      return { ...NONE, tissue: Tissue.Diaphragm, boundaryDistance: Math.min(dDome, DIAPHRAGM_THICKNESS_MM - dDome), specular: 0.9 };
+    if (dDome < 0) return { ...NONE, tissue: Tissue.Lung, boundaryDistance: -dDome };
+    if (dDome < DIAPHRAGM_THICKNESS_MM) {
+      // la mitad abdominal dibuja la cara hepática; la pleural la dibuja el espejo exacto de la pasada A
+      const liverFace = dDome > 0.5 * DIAPHRAGM_THICKNESS_MM;
+      return {
+        ...NONE,
+        tissue: Tissue.Diaphragm,
+        boundaryDistance: Math.min(dDome, DIAPHRAGM_THICKNESS_MM - dDome),
+        ...(liverFace ? { interface: Interface.DiaphragmLiver, interfaceDistance: DIAPHRAGM_THICKNESS_MM - dDome } : {}),
+      };
+    }
     const dGb = gallbladderSdf(m, this.gallbladder);
-    if (dGb < 0) return { ...NONE, tissue: Tissue.Fluid, boundaryDistance: -dGb, specular: 0.4 };
+    if (dGb < 0)
+      return { ...NONE, tissue: Tissue.Fluid, boundaryDistance: -dGb, interface: Interface.GallbladderLumen, interfaceDistance: -dGb };
     if (dGb < this.gallbladderWallMm)
-      return { ...NONE, tissue: Tissue.BileDuctWall, boundaryDistance: Math.min(dGb, this.gallbladderWallMm - dGb), specular: 0.5 };
+      return {
+        ...NONE,
+        tissue: Tissue.BileDuctWall,
+        boundaryDistance: Math.min(dGb, this.gallbladderWallMm - dGb),
+        interface: Interface.GallbladderLumen,
+        interfaceDistance: dGb,
+      };
     const kidney = this.classifyKidneys(m);
-    if (kidney) return kidney;
-    const liver = this.classifyLiver(m, dDome, -depth - wall.wallMm);
+    if (kidney.cls) return kidney.cls;
+    const liver = this.classifyLiver(m, dDome, -depth - wall.wallMm, kidney.dPeriMm);
     if (liver) return liver;
     // Intestino: el «resto». Su distancia a la frontera es la de las interfaces que ganan antes
     // (diafragma, vesícula, aurícula, hígado, pared, grasa perirrenal, gas); como en el hígado, no
@@ -350,10 +371,10 @@ export class AnatomyScene {
     for (const k of [this.kidneyRight, this.kidneyLeft]) bd = Math.min(bd, kidneyOuterSdf(kidneyLocal(m, k), k) - this.perirenalMm);
     for (const g of this.gasPockets) {
       const dg = sdSphere(m, g);
-      if (dg < 0) return { ...NONE, tissue: Tissue.BowelGas, boundaryDistance: -dg, specular: 1.0 };
+      if (dg < 0) return { ...NONE, tissue: Tissue.BowelGas, boundaryDistance: -dg };
       bd = Math.min(bd, dg);
     }
-    return { ...NONE, tissue: Tissue.Bowel, boundaryDistance: Math.max(0, bd), specular: 0.3 };
+    return { ...NONE, tissue: Tissue.Bowel, boundaryDistance: Math.max(0, bd) };
   }
 
   /**
@@ -409,30 +430,28 @@ export class AnatomyScene {
     const skin = torso.skinMm;
     const fat = skin + torso.fatMm;
     const wall = fat + torso.muscleMm;
-    if (d < skin) return { final: true, cls: { ...NONE, tissue: Tissue.Skin, boundaryDistance: skin - d, specular: 0.1 } };
-    if (d < fat)
-      return { final: true, cls: { ...NONE, tissue: Tissue.Fat, boundaryDistance: Math.min(d - skin, fat - d), specular: 0.15 } };
+    if (d < skin) return { final: true, cls: { ...NONE, tissue: Tissue.Skin, boundaryDistance: skin - d } };
+    if (d < fat) return { final: true, cls: { ...NONE, tissue: Tissue.Fat, boundaryDistance: Math.min(d - skin, fat - d) } };
     // Costillas (dentro de la pared muscular o justo por debajo)
     for (const rib of this.ribs) {
       const r = sdRib(m, rib, torso, this.spine);
       if (r.d < 0) {
         return {
           final: true,
-          cls: { ...NONE, tissue: r.cartilage ? Tissue.Cartilage : Tissue.Bone, boundaryDistance: -r.d, specular: r.cartilage ? 0.3 : 0.9 },
+          cls: { ...NONE, tissue: r.cartilage ? Tissue.Cartilage : Tissue.Bone, boundaryDistance: -r.d },
         };
       }
     }
-    if (d < wall)
-      return { final: true, cls: { ...NONE, tissue: Tissue.Muscle, boundaryDistance: Math.min(d - fat, wall - d), specular: 0.2 } };
+    if (d < wall) return { final: true, cls: { ...NONE, tissue: Tissue.Muscle, boundaryDistance: Math.min(d - fat, wall - d) } };
     const dSpine = sdSpine(m, this.spine);
-    if (dSpine < 0) return { final: true, cls: { ...NONE, tissue: Tissue.Vertebra, boundaryDistance: -dSpine, specular: 0.9 } };
+    if (dSpine < 0) return { final: true, cls: { ...NONE, tissue: Tissue.Vertebra, boundaryDistance: -dSpine } };
     return { final: false, wallMm: wall };
   }
 
   /** Lámina de pulmón en el receso costofrénico derecho (lateral y posterior), bajo la pared. */
   private classifyLungCurtain(m: Vec3, insideWallMm: number, diaphragmCaudalMm: number): Classification | null {
     const bd = lungCurtainDistance(m, insideWallMm, diaphragmCaudalMm);
-    return bd === null ? null : { ...NONE, tissue: Tissue.Lung, boundaryDistance: bd, specular: 1.0 };
+    return bd === null ? null : { ...NONE, tissue: Tissue.Lung, boundaryDistance: bd };
   }
 
   /**
@@ -466,27 +485,30 @@ export class AnatomyScene {
   /** Vasos y conductos (antes de los órganos: la luz prevalece). */
   private classifyTubes(m: Vec3, caliber: VesselCaliber): Classification | null {
     const best = this.bestTube(m, caliber);
+    // la cara de la luz: la pared y la luz (sangre o bilis) conocen la misma, a |hit.d|
     if (best?.kind === 'duct') {
       const { def, hit } = best;
-      if (hit.d < 0) return { ...NONE, tissue: Tissue.Fluid, boundaryDistance: -hit.d, boundaryNormal: [0, 0, 0], specular: 0.6 };
+      const face = { interface: Interface.DuctLumen, interfaceDistance: Math.abs(hit.d) };
+      if (hit.d < 0) return { ...NONE, tissue: Tissue.Fluid, boundaryDistance: -hit.d, boundaryNormal: [0, 0, 0], ...face };
       return {
         ...NONE,
         tissue: Tissue.BileDuctWall,
         boundaryDistance: Math.min(hit.d, def.wallMm - hit.d),
         boundaryNormal: [0, 0, 0],
-        specular: 0.6,
+        ...face,
       };
     }
     if (!best) return null;
     const { def, hit } = best;
-    const specular = def.wallTissue === Tissue.VesselWallPortal ? 0.7 : def.wallTissue === Tissue.ArteryWall ? 0.6 : 0.35;
+    const iface = interfaceOfVessel(def.id, def.wallTissue);
     const flowFactor = def.flowFactor ?? 1;
     if (hit.d < 0) {
       return {
         tissue: Tissue.Blood,
         boundaryDistance: -hit.d,
         boundaryNormal: [0, 0, 0],
-        specular,
+        interface: iface,
+        interfaceDistance: -hit.d,
         vessel: def.id,
         vesselHit: hit,
         flowFactor,
@@ -496,28 +518,38 @@ export class AnatomyScene {
       tissue: def.wallTissue,
       boundaryDistance: Math.min(hit.d, wallThicknessMm(def, hit.r) - hit.d),
       boundaryNormal: [0, 0, 0],
-      specular,
+      interface: iface,
+      interfaceDistance: hit.d,
       vessel: null,
       vesselHit: hit,
       flowFactor,
     };
   }
 
-  /** Riñones: corteza / pirámides / seno, con grasa perirrenal alrededor. */
-  private classifyKidneys(m: Vec3): Classification | null {
+  /**
+   * Riñones: corteza / pirámides / seno, con grasa perirrenal alrededor. Devuelve también la distancia
+   * a la cara externa de la grasa perirrenal (`dPeriMm`, el menor `dOuter − perirenalMm` de los riñones
+   * cercanos): la cápsula hepática que la toca no dibuja su cara (Morison es de la grasa).
+   */
+  private classifyKidneys(m: Vec3): { cls: Classification | null; dPeriMm: number } {
+    let dPeriMm = 1e3;
     for (const k of [this.kidneyRight, this.kidneyLeft]) {
       const dc = Math.hypot(m[0] - k.center[0], m[1] - k.center[1], m[2] - k.center[2]);
       if (dc > k.radii[0] + this.perirenalMm + 2) continue;
       const kh = kidneyQuery(m, k);
+      dPeriMm = Math.min(dPeriMm, kh.dOuter - this.perirenalMm);
       if (kh.dOuter < 0) {
         // cápsula fibrosa: línea brillante que separa la corteza de la grasa perirrenal
-        if (-kh.dOuter < RENAL_CAPSULE_MM)
-          return {
+        if (-kh.dOuter < RENAL_CAPSULE_MM) {
+          const cls: Classification = {
             ...NONE,
             tissue: Tissue.RenalCapsule,
             boundaryDistance: Math.min(-kh.dOuter, RENAL_CAPSULE_MM + kh.dOuter),
-            specular: 0.9,
+            interface: Interface.RenalCapsule,
+            interfaceDistance: -kh.dOuter,
           };
+          return { cls, dPeriMm };
+        }
         const tissue =
           kh.region === 'pelvis'
             ? Tissue.RenalPelvis
@@ -526,16 +558,24 @@ export class AnatomyScene {
               : kh.region === 'medulla'
                 ? Tissue.RenalMedulla
                 : Tissue.RenalCortex;
-        const specular = kh.region === 'pelvis' ? 0.5 : kh.region === 'sinus' ? 0.6 : kh.region === 'medulla' ? 0.25 : 0.45;
-        return { ...NONE, tissue, boundaryDistance: kh.inner, specular };
+        return { cls: { ...NONE, tissue, boundaryDistance: kh.inner }, dPeriMm };
       }
       // Grasa perirrenal (fascia de Gerota) hasta la impresión renal del hígado: en el
-      // receso de Morison la cápsula hepática apoya directamente sobre ella, sin hueco.
+      // receso de Morison la cápsula hepática apoya directamente sobre ella, sin hueco. La mitad
+      // externa dibuja la cara hígado/grasa; la interna, la de la cápsula renal (dos lados).
       if (kh.dOuter < this.perirenalMm) {
-        return { ...NONE, tissue: Tissue.PerirenalFat, boundaryDistance: Math.min(kh.dOuter, this.perirenalMm - kh.dOuter), specular: 0.6 };
+        const outerFace = kh.dOuter > 0.5 * this.perirenalMm;
+        const cls: Classification = {
+          ...NONE,
+          tissue: Tissue.PerirenalFat,
+          boundaryDistance: Math.min(kh.dOuter, this.perirenalMm - kh.dOuter),
+          interface: outerFace ? Interface.PerirenalFat : Interface.RenalCapsule,
+          interfaceDistance: outerFace ? this.perirenalMm - kh.dOuter : kh.dOuter,
+        };
+        return { cls, dPeriMm };
       }
     }
-    return null;
+    return { cls: null, dPeriMm };
   }
 
   /** Plano de la fisura del ligamento venoso (módulo `organs/liverLigaments`). */
@@ -548,21 +588,35 @@ export class AnatomyScene {
     return ligamentumVenosumSdf(m, this.ligamentumVenosum);
   }
 
-  /** Hígado con cápsula, recortado por diafragma (`dDome`) y pared (`insideWallMm`). */
-  private classifyLiver(m: Vec3, dDome: number, insideWallMm: number): Classification | null {
+  /**
+   * Hígado con cápsula, recortado por diafragma (`dDome`) y pared (`insideWallMm`). La cápsula dibuja
+   * su cara salvo donde la manda el diafragma (su cara es del diafragma) o donde toca la grasa
+   * perirrenal a ≤ `MORISON_CONTACT_MM` (`dPeriMm`: la cara de Morison es de la grasa).
+   */
+  private classifyLiver(m: Vec3, dDome: number, insideWallMm: number, dPeriMm: number): Classification | null {
     const dBase = this.liverBaseSdf(m);
     const dFissure = this.umbilicalFissureSdf(m, dBase);
     const dLiver = smoothMax(dBase, -dFissure, this.umbilicalFissure.roundMm);
     if (dLiver >= 0) {
       // lo excavado por la fisura (dentro del hígado original) es el ligamento redondo
-      if (dBase < 0) return { ...NONE, tissue: Tissue.LigamentumTeres, boundaryDistance: Math.min(-dBase, dLiver), specular: 0.6 };
+      if (dBase < 0) return { ...NONE, tissue: Tissue.LigamentumTeres, boundaryDistance: Math.min(-dBase, dLiver) };
       return null;
     }
-    const inner = Math.min(-dLiver, dDome - DIAPHRAGM_THICKNESS_MM, insideWallMm);
-    if (inner < LIVER_CAPSULE_MM) return { ...NONE, tissue: Tissue.LiverCapsule, boundaryDistance: inner, specular: 0.5 };
+    const dDiaphragm = dDome - DIAPHRAGM_THICKNESS_MM;
+    const inner = Math.min(-dLiver, dDiaphragm, insideWallMm);
+    if (inner < LIVER_CAPSULE_MM) {
+      // `Math.min` devuelve uno de sus argumentos: la igualdad con la cara del diafragma es exacta
+      const other = inner === dDiaphragm || dPeriMm <= inner + MORISON_CONTACT_MM;
+      return {
+        ...NONE,
+        tissue: Tissue.LiverCapsule,
+        boundaryDistance: inner,
+        ...(other ? {} : { interface: Interface.LiverCapsule, interfaceDistance: inner }),
+      };
+    }
     const dLv = this.ligamentumVenosumSdf(m);
-    if (dLv < 0 && inner > 2) return { ...NONE, tissue: Tissue.LigamentumVenosum, boundaryDistance: Math.min(-dLv, inner), specular: 0.7 };
-    return { ...NONE, tissue: Tissue.Liver, boundaryDistance: inner, specular: 0.5 };
+    if (dLv < 0 && inner > 2) return { ...NONE, tissue: Tissue.LigamentumVenosum, boundaryDistance: Math.min(-dLv, inner) };
+    return { ...NONE, tissue: Tissue.Liver, boundaryDistance: inner };
   }
 }
 
@@ -571,7 +625,8 @@ const NONE: Classification = Object.freeze({
   tissue: Tissue.Air,
   boundaryDistance: 1e3,
   boundaryNormal: [0, 1, 0] as Vec3,
-  specular: 0,
+  interface: Interface.None,
+  interfaceDistance: 1e3,
   vessel: null,
   vesselHit: null,
   flowFactor: 1,

@@ -212,7 +212,6 @@ uniform float uSeed;
 uniform float uLattice;     // paso de retícula (mm)
 uniform float uElevSigma0;  // σ elevacional en el foco de la lente (mm)
 uniform float uElevFocus;   // mm
-uniform float uSpecGain;
 uniform float uNoise;
 uniform float uFrame;
 // Ancla del medio de dispersores (speckleField.ts): vigente (0) y anterior (1), peso del fundido
@@ -317,13 +316,7 @@ void main() {
   // media se conserva y el grano no parpadea al inclinar)
   float clump = uTissueClump4[c0.tissue / 4][c0.tissue % 4];
   if (clump > 0.0) field *= anchoredClump(toMaterial(p), se, clump, float(c0.tissue) * TISSUE_SALT_STEP);
-  // Término especular: (n·d)⁴, confinado a la muestra que atraviesa la interfaz
-  // (ventana |n·d|·dr con mínimo 0,15·dr) y SIN fasor: coherente.
   float dr = uDepth / 1024.0;
-  float cosI = abs(dot(normalize(c0.n), dir));
-  float win = max(cosI, 0.15) * dr;
-  float spec = c0.spec * uSpecGain * pow(cosI, 4.0) * (c0.bd < win ? 1.0 : 0.0) * 0.5;
-  field += vec2(spec, 0.0);
   float T = t0.x * coupling;
   vec2 out2 = field * T;
   // Reverberación tras gas: A-lines a múltiplos de la profundidad del reflector.
@@ -646,9 +639,10 @@ void main() {
 /**
  * Consulta puntual de la anatomía GLSL (pruebas y gate de equivalencia): cada texel de
  * `uPoints` es un punto del MUNDO; se clasifica con la misma `classify` que la imagen
- * y se devuelve tejido, índice de tubo (−1 sin vaso), distancia a la interfaz, la
- * velocidad de la sangre en el marco material (la misma que usa el color) y la normal
- * unitaria de la interfaz (`c.n`, marco material; la e2e la compara con el gradiente de
+ * y se devuelve tejido, índice de tubo (−1 sin vaso), distancia a la interfaz, la cara de
+ * interfaz que dibuja y su distancia (`iface`, `ifd`: decisión 57), la velocidad de la sangre
+ * en el marco material (la misma que usa el color) y la normal unitaria de la cara que usa el
+ * eco de interfaz (`faceNormal`, marco material; la e2e la compara con el gradiente de
  * `faceSdf` de TS). La tercera salida solo se lee si se pide (`queryPoints(…, { normals })`).
  */
 export const FRAG_QUERY = /* glsl */ `#version 300 es
@@ -662,11 +656,11 @@ layout(location = 1) out vec4 o1;
 layout(location = 2) out vec4 o2;
 void main() {
   vec4 p = texelFetch(uPoints, ivec2(gl_FragCoord.xy), 0);
-  Cls c = classify(toMaterial(p.xyz));
+  vec3 m = toMaterial(p.xyz);
+  Cls c = classify(m);
   vec3 v = c.tissue == T_BLOOD ? bloodVelocity(c) : vec3(0.0);
-  o0 = vec4(float(c.tissue), float(c.vessel), c.bd, 1.0);
-  o1 = vec4(v, 0.0);
-  float nl = length(c.n);
-  o2 = vec4(nl > 0.0 ? c.n / nl : vec3(0.0), 0.0);
+  o0 = vec4(float(c.tissue), float(c.vessel), c.bd, c.ifd);
+  o1 = vec4(v, float(c.iface));
+  o2 = vec4(faceNormal(c, m), 0.0);
 }
 `;

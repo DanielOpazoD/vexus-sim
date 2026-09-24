@@ -9,12 +9,13 @@
  * Disposición de la textura (índice lineal i → texel (i & 255, i >> 8)):
  *   tubo t (lista COMPACTA del cuadro: solo los que cortan la losa del plano), cabecera en 4 texels desde t·4:
  *     H0 = (inicio de nodos, n.º nodos, apScale, escala de radio)
- *     H1 = (espesor de pared mm, tejido de pared, tejido de la luz, tipo: 0 vaso / 1 conducto)
+ *     H1 = (espesor de pared mm, tejido de pared, tejido de la luz, cara de la luz: `Interface`, decisión 57)
  *     H2 = (u_ref mm/s, r_ref mm, exponente del perfil, índice original del tubo)
  *     H3 = esfera envolvente (cx, cy, cz, R)
  *   nodos desde NODE_BASE = MAX_TUBES·4: (x, y, z, r)
  */
 import { BOWEL_BD_CAP_MM, DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, TISSUE_GLSL_NAME } from '../tissues';
+import { FACE_GRADIENT_EPS_MM, INTERFACE_COUNT, INTERFACE_GLSL_NAME, LAST_TUBE_INTERFACE, MORISON_CONTACT_MM } from '../interfaces';
 import { ORGAN_MODULES } from '../organs';
 import { MAX_GAS, MAX_RIBS, SCENE_UNIFORMS_GLSL } from './sceneUniforms';
 
@@ -30,6 +31,10 @@ export { MAX_GAS, MAX_RIBS } from './sceneUniforms';
 const TISSUE_DEFINES = Object.entries(TISSUE_GLSL_NAME)
   .map(([index, name]) => `#define ${name} ${index}`)
   .join('\n');
+/** Caras de interfaz (`anatomy/interfaces.ts`): `#define IF_… índice`. */
+const INTERFACE_DEFINES = Object.entries(INTERFACE_GLSL_NAME)
+  .map(([index, name]) => `#define ${name} ${index}`)
+  .join('\n');
 
 export const ANATOMY_GLSL = /* glsl */ `
 #define MAX_TUBES ${MAX_TUBES}
@@ -40,6 +45,11 @@ export const ANATOMY_GLSL = /* glsl */ `
 #define MAX_GAS ${MAX_GAS}
 #define MAX_RIBS ${MAX_RIBS}
 ${TISSUE_DEFINES}
+${INTERFACE_DEFINES}
+#define IFACE_COUNT ${INTERFACE_COUNT}
+#define IF_LAST_TUBE ${LAST_TUBE_INTERFACE}
+#define MORISON_CONTACT_MM ${MORISON_CONTACT_MM.toFixed(3)}
+#define FACE_GRAD_EPS ${FACE_GRADIENT_EPS_MM.toFixed(3)}
 #define DIAPHRAGM_MM ${DIAPHRAGM_THICKNESS_MM.toFixed(3)}
 #define CAPSULE_MM ${LIVER_CAPSULE_MM.toFixed(3)}
 #define BOWEL_BD_CAP_MM ${BOWEL_BD_CAP_MM.toFixed(3)}
@@ -50,7 +60,8 @@ struct Cls {
   int tissue;
   float bd;       // distancia a la interfaz (mm)
   vec3 n;         // normal de la interfaz
-  float spec;     // reflectividad especular relativa
+  int iface;      // cara que dibuja esta muestra (Interface, decisión 57) o IF_NONE
+  float ifd;      // distancia (mm) de la muestra a esa cara, por la normal; 1e3 sin cara
   int vessel;     // índice de tubo o -1
   float rho;      // fracción radial
   vec3 tangent;
@@ -218,15 +229,22 @@ float tubeQuery(vec3 p, int t, out float rho, out vec3 tangent, out float rLoc, 
     vec3 d = p - c;
     vec3 tg = normalize(ab);
     float dist;
+    // g = gradiente de dist × dist: la normal de la cara es el gradiente de sd = dist − r(s)
+    vec3 g;
     if (apScale != 1.0) {
       // Sección elíptica: se escala la componente perpendicular; la axial se conserva (tapa)
       float along = dot(d, tg);
       vec3 perp = d - tg * along;
       perp.y /= apScale;
       dist = sqrt(dot(perp, perp) + along * along);
-      d = perp + tg * along;
+      // el gradiente escala la componente AP DOS veces (no una, como d/dist): la normal del cuerpo de
+      // la VCI se apartaba 6–10° del gradiente (e2e de normales del PR 5a)
+      vec3 q = perp;
+      q.y /= apScale;
+      g = q - tg * dot(q, tg) + tg * along;
     } else {
       dist = length(d);
+      g = d;
     }
     float r = (a.w + (b.w - a.w) * s) * rs;
     float sd = dist - r;
@@ -235,7 +253,10 @@ float tubeQuery(vec3 p, int t, out float rho, out vec3 tangent, out float rLoc, 
       rho = dist / max(1e-6, r);
       tangent = tg;
       rLoc = r;
-      n = dist > 0.0 ? d / dist : vec3(0.0, 1.0, 0.0);
+      // dentro del segmento el radio crece con s: ∇r = rs·(b.w − a.w)/|ab| a lo largo del eje
+      float taper = s > 0.0 && s < 1.0 ? rs * (b.w - a.w) * inversesqrt(len2) : 0.0;
+      vec3 gn = g / max(dist, 1e-6) - tg * taper;
+      n = dist > 0.0 && dot(gn, gn) > 0.0 ? normalize(gn) : vec3(0.0, 1.0, 0.0);
     }
   }
   return best;
@@ -246,7 +267,7 @@ ${ORGAN_MODULES.map((o) => o.glsl).join('\n')}
 
 Cls classify(vec3 m) {
   Cls c;
-  c.tissue = T_AIR; c.bd = 1e3; c.n = vec3(0.0, 1.0, 0.0); c.spec = 0.0; c.vessel = -1;
+  c.tissue = T_AIR; c.bd = 1e3; c.n = vec3(0.0, 1.0, 0.0); c.iface = IF_NONE; c.ifd = 1e3; c.vessel = -1;
   c.rho = 10.0; c.tangent = vec3(0.0, 0.0, 1.0); c.rLoc = 1.0; c.uRef = 0.0; c.rRef = 1.0; c.profN = 2.0;
   float depth = torsoDepth(m);
   if (m.z < uTorso.z || m.z > uTorso.w || depth > 0.0) return c;
@@ -255,18 +276,18 @@ Cls classify(vec3 m) {
   float wall = fat + uWall.z;
   float d = -depth;
   vec3 tn = torsoNormal(m);
-  if (d < skin) { c.tissue = T_SKIN; c.bd = skin - d; c.n = tn; c.spec = 0.1; return c; }
-  if (d < fat) { c.tissue = T_FAT; c.bd = min(d - skin, fat - d); c.n = tn; c.spec = 0.15; return c; }
+  if (d < skin) { c.tissue = T_SKIN; c.bd = skin - d; c.n = tn; return c; }
+  if (d < fat) { c.tissue = T_FAT; c.bd = min(d - skin, fat - d); c.n = tn; return c; }
   bool inMuscle = d < wall;
   // Costillas
   for (int i = 0; i < MAX_RIBS; i++) {
     bool cart; vec3 rn;
     float rd = sdRib(m, uRibs[i], cart, rn);
     if (rd < 0.0) {
-      c.tissue = cart ? T_CARTILAGE : T_BONE; c.bd = -rd; c.n = rn; c.spec = cart ? 0.3 : 0.9; return c;
+      c.tissue = cart ? T_CARTILAGE : T_BONE; c.bd = -rd; c.n = rn; return c;
     }
   }
-  if (inMuscle) { c.tissue = T_MUSCLE; c.bd = min(d - fat, wall - d); c.n = tn; c.spec = 0.2; return c; }
+  if (inMuscle) { c.tissue = T_MUSCLE; c.bd = min(d - fat, wall - d); c.n = tn; return c; }
   // Columna
   float dBody = length(m.xy - uSpine.xy) - uSpine.z;
   float ax = abs(m.x - uSpine.x) - uSpineArch.x;
@@ -275,7 +296,7 @@ Cls classify(vec3 m) {
   float dArch = length(max(vec2(ax, ay), 0.0)) + min(max(ax, ay), 0.0);
   float dSpine = min(dBody, dArch);
   if (dSpine < 0.0) {
-    c.tissue = T_VERTEBRA; c.bd = -dSpine; c.spec = 0.9;
+    c.tissue = T_VERTEBRA; c.bd = -dSpine;
     c.n = dBody < dArch ? normalize(vec3(m.xy - uSpine.xy, 0.0)) : (ax > ay ? vec3(sign(m.x - uSpine.x), 0.0, 0.0) : vec3(0.0, sign(m.y - acy), 0.0));
     return c;
   }
@@ -283,7 +304,7 @@ Cls classify(vec3 m) {
   // Cortina pulmonar (módulo de órgano: anatomy/organs/lungCurtain.ts)
   {
     float dCurtain = lungCurtainDistance(m, -depth - wall);
-    if (dCurtain >= 0.0) { c.tissue = T_LUNG; c.bd = dCurtain; c.n = torsoNormal(m); c.spec = 1.0; return c; }
+    if (dCurtain >= 0.0) { c.tissue = T_LUNG; c.bd = dCurtain; c.n = torsoNormal(m); return c; }
   }
   int bestT = -1; float bestD = 1e9; float bRho; vec3 bTan; float bR; vec3 bN;
   for (int t = 0; t < MAX_TUBES; t++) {
@@ -302,10 +323,12 @@ Cls classify(vec3 m) {
     vec4 h2 = sceneTexel(bestT * 4 + 2);
     int wallT = int(h1.y + 0.5);
     int lumenT = int(h1.z + 0.5);
-    bool duct = h1.w > 0.5;
-    float spec = duct ? 0.6 : (wallT == T_WALL_PORTAL ? 0.7 : (wallT == T_ARTERYWALL ? 0.6 : 0.35));
-    c.n = bN; c.spec = spec; c.rho = bRho; c.tangent = bTan; c.rLoc = bR;
+    int iface = int(h1.w + 0.5);
+    bool duct = iface == IF_DUCT;
+    c.n = bN; c.rho = bRho; c.tangent = bTan; c.rLoc = bR;
     c.uRef = h2.x; c.rRef = h2.y; c.profN = h2.z;
+    // la cara de la luz: la pared y la luz (sangre o bilis) conocen la misma, a |bestD|
+    c.iface = iface; c.ifd = abs(bestD);
     if (bestD < 0.0) { c.tissue = lumenT; c.bd = -bestD; c.vessel = duct ? -1 : int(h2.w + 0.5); return c; }
     float wallBest = wallT == T_WALL_PORTAL ? clamp(0.24 * bR, 0.5, 1.4) : h1.x;
     c.tissue = wallT; c.bd = min(bestD, wallBest - bestD); return c;
@@ -313,46 +336,68 @@ Cls classify(vec3 m) {
   // Aurícula derecha
   vec3 sn;
   float dRa = sdSphere(m, uRA, sn);
-  if (dRa < 0.0) { c.tissue = T_BLOOD; c.bd = -dRa; c.n = sn; c.spec = 0.5; return c; }
+  if (dRa < 0.0) { c.tissue = T_BLOOD; c.bd = -dRa; c.n = sn; return c; }
   // Tórax y diafragma
   vec3 dn;
   float dDome = sdDome(m, dn);
-  if (dDome < 0.0) { c.tissue = T_LUNG; c.bd = -dDome; c.n = dn; c.spec = 1.0; return c; }
-  if (dDome < DIAPHRAGM_MM) { c.tissue = T_DIAPHRAGM; c.bd = min(dDome, DIAPHRAGM_MM - dDome); c.n = dn; c.spec = 0.9; return c; }
+  if (dDome < 0.0) { c.tissue = T_LUNG; c.bd = -dDome; c.n = dn; return c; }
+  if (dDome < DIAPHRAGM_MM) {
+    c.tissue = T_DIAPHRAGM; c.bd = min(dDome, DIAPHRAGM_MM - dDome); c.n = dn;
+    // la mitad abdominal dibuja la cara hepática; la pleural la dibuja el espejo exacto de la pasada A
+    if (dDome > 0.5 * DIAPHRAGM_MM) { c.iface = IF_DIAPHRAGM_LIVER; c.ifd = DIAPHRAGM_MM - dDome; }
+    return c;
+  }
   vec3 gn;
   float dGb = gallbladderSdf(m, gn);
-  if (dGb < 0.0) { c.tissue = T_FLUID; c.bd = -dGb; c.n = gn; c.spec = 0.4; return c; }
-  if (dGb < uGbExtra.y) { c.tissue = T_BILEWALL; c.bd = min(dGb, uGbExtra.y - dGb); c.n = gn; c.spec = 0.5; return c; }
-  // Riñones
+  if (dGb < 0.0) { c.tissue = T_FLUID; c.bd = -dGb; c.n = gn; c.iface = IF_GALLBLADDER; c.ifd = -dGb; return c; }
+  if (dGb < uGbExtra.y) { c.tissue = T_BILEWALL; c.bd = min(dGb, uGbExtra.y - dGb); c.n = gn; c.iface = IF_GALLBLADDER; c.ifd = dGb; return c; }
+  // Riñones; dPeri = distancia a la cara externa de la grasa perirrenal (la cápsula hepática que la
+  // toca no dibuja su cara: Morison es de la grasa)
+  float dPeri = 1e3;
   for (int k = 0; k < 2; k++) {
     if (distance(m, uKidC[k]) > uKidR[k].x + uKidExtra.y + 2.0) continue;
     float inner; float dOuter;
     int region = kidneyQuery(m, k, inner, dOuter);
+    dPeri = min(dPeri, dOuter - uKidExtra.y);
     vec3 kn;
     kidneyOuter(m, k, kn);
     if (dOuter < 0.0) {
-      if (-dOuter < RENAL_CAPSULE_MM) { c.tissue = T_RENAL_CAPSULE; c.bd = min(-dOuter, RENAL_CAPSULE_MM + dOuter); c.n = kn; c.spec = 0.9; return c; }
+      if (-dOuter < RENAL_CAPSULE_MM) {
+        c.tissue = T_RENAL_CAPSULE; c.bd = min(-dOuter, RENAL_CAPSULE_MM + dOuter); c.n = kn;
+        c.iface = IF_RENAL_CAPSULE; c.ifd = -dOuter;
+        return c;
+      }
       c.tissue = region == 3 ? T_RENAL_PELVIS : (region == 2 ? T_RENAL_SINUS : (region == 1 ? T_RENAL_MEDULLA : T_RENAL_CORTEX));
-      c.spec = region == 3 ? 0.5 : (region == 2 ? 0.6 : (region == 1 ? 0.25 : 0.45));
       c.bd = inner; c.n = kn; return c;
     }
     if (dOuter < uKidExtra.y) {
-      c.tissue = T_PERIRENAL; c.bd = min(dOuter, uKidExtra.y - dOuter); c.n = kn; c.spec = 0.6; return c;
+      c.tissue = T_PERIRENAL; c.bd = min(dOuter, uKidExtra.y - dOuter); c.n = kn;
+      // mitad externa: cara hígado/grasa; mitad interna: la de la cápsula renal (dos lados)
+      bool outerFace = dOuter > 0.5 * uKidExtra.y;
+      c.iface = outerFace ? IF_PERIRENAL : IF_RENAL_CAPSULE;
+      c.ifd = outerFace ? uKidExtra.y - dOuter : dOuter;
+      return c;
     }
   }
   vec3 ln; float dLiverBase;
   float dLiver = liverSdf(m, ln, dLiverBase);
   if (dLiver >= 0.0 && dLiverBase < 0.0) {
-    c.tissue = T_LIG_TERES; c.bd = min(-dLiverBase, dLiver); c.n = ln; c.spec = 0.6; return c;
+    c.tissue = T_LIG_TERES; c.bd = min(-dLiverBase, dLiver); c.n = ln; return c;
   }
   if (dLiver < 0.0) {
-    float inner = min(-dLiver, min(dDome - DIAPHRAGM_MM, -depth - wall));
-    c.n = (inner == -dLiver) ? ln : ((inner == dDome - DIAPHRAGM_MM) ? dn : tn);
-    c.spec = 0.5;
-    if (inner < CAPSULE_MM) { c.tissue = T_CAPSULE; c.bd = inner; return c; }
+    float dDia = dDome - DIAPHRAGM_MM;
+    float inner = min(-dLiver, min(dDia, -depth - wall));
+    c.n = (inner == -dLiver) ? ln : ((inner == dDia) ? dn : tn);
+    if (inner < CAPSULE_MM) {
+      c.tissue = T_CAPSULE; c.bd = inner;
+      // la cara hacia el diafragma es del diafragma; la de Morison, de la grasa perirrenal
+      bool other = inner == dDia || dPeri <= inner + MORISON_CONTACT_MM;
+      if (!other) { c.iface = IF_LIVER_CAPSULE; c.ifd = inner; }
+      return c;
+    }
     // lámina del ligamento venoso (misma fórmula que ligamentumVenosumSdf)
     float dLv = ligamentumVenosumSdf(m);
-    if (dLv < 0.0 && inner > 2.0) { c.tissue = T_LIG_VENOSUM; c.bd = min(-dLv, inner); c.n = uLigVen.xyz; c.spec = 0.7; return c; }
+    if (dLv < 0.0 && inner > 2.0) { c.tissue = T_LIG_VENOSUM; c.bd = min(-dLv, inner); c.n = uLigVen.xyz; return c; }
     c.tissue = T_LIVER; c.bd = inner; return c;
   }
   // Intestino: distancia a las interfaces que ganan antes (misma fórmula que scene.classify)
@@ -361,11 +406,56 @@ Cls classify(vec3 m) {
   for (int k = 0; k < 2; k++) bdBowel = min(bdBowel, kidneyOuterSdf(kidneyLocal(m, k), uKidR[k]) - uKidExtra.y);
   for (int i = 0; i < MAX_GAS; i++) {
     float dg = sdSphere(m, uGas[i], sn);
-    if (dg < 0.0) { c.tissue = T_BOWELGAS; c.bd = -dg; c.n = sn; c.spec = 1.0; return c; }
+    if (dg < 0.0) { c.tissue = T_BOWELGAS; c.bd = -dg; c.n = sn; return c; }
     bdBowel = min(bdBowel, dg);
   }
-  c.tissue = T_BOWEL; c.bd = max(bdBowel, 0.0); c.spec = 0.3; c.n = tn;
+  c.tissue = T_BOWEL; c.bd = max(bdBowel, 0.0); c.n = tn;
   return c;
+}
+
+// −faceSdf('liverSurface') de TS: margen hacia dentro del parénquima (hígado, cúpula y pared), la
+// misma cantidad que decide la cápsula en classify
+float liverInner(vec3 m) {
+  vec3 ln; float dLiverBase; vec3 dn;
+  float dLiver = liverSdf(m, ln, dLiverBase);
+  return min(-dLiver, min(sdDome(m, dn) - DIAPHRAGM_MM, -torsoDepth(m) - (uWall.x + uWall.y + uWall.z)));
+}
+
+// Contorno externo del riñón más cercano (el menor dOuter, como faceSdf('kidneyOuter') de TS):
+// gradiente por diferencias centrales en su marco local, devuelto en el mundo
+vec3 kidneyOuterGradient(vec3 m) {
+  vec3 q0 = kidneyLocal(m, 0);
+  vec3 q1 = kidneyLocal(m, 1);
+  int k = kidneyOuterSdf(q0, uKidR[0]) <= kidneyOuterSdf(q1, uKidR[1]) ? 0 : 1;
+  vec3 q = k == 0 ? q0 : q1;
+  vec3 r = uKidR[k];
+  vec2 h = vec2(FACE_GRAD_EPS, 0.0);
+  vec3 g = vec3(kidneyOuterSdf(q + h.xyy, r) - kidneyOuterSdf(q - h.xyy, r),
+                kidneyOuterSdf(q + h.yxy, r) - kidneyOuterSdf(q - h.yxy, r),
+                kidneyOuterSdf(q + h.yyx, r) - kidneyOuterSdf(q - h.yyx, r));
+  return uKidU[k] * g.x + uKidV[k] * g.y + uKidW[k] * g.z;
+}
+
+// Normal de la cara de interfaz de una muestra (decisión 57): la de classify, salvo en la cápsula
+// hepática y el contorno renal. Allí c.n es la de una de las superficies que funde liverSdf o la del
+// elipsoide sin escotadura hiliar (e2e de normales del PR 5a: p05 de 0,45 en la impresión renal,
+// p01 de 0,61 junto al hilio), y la normal pasa a ser el gradiente, por diferencias centrales de
+// FACE_GRAD_EPS mm (las del banco), de la misma distancia que decide la clasificación. Cuesta 6–8
+// evaluaciones: la pasada B solo la pide en las muestras al alcance de su cara.
+vec3 faceNormal(Cls c, vec3 m) {
+  if (c.tissue == T_CAPSULE) {
+    vec2 h = vec2(FACE_GRAD_EPS, 0.0);
+    vec3 g = vec3(liverInner(m + h.xyy) - liverInner(m - h.xyy),
+                  liverInner(m + h.yxy) - liverInner(m - h.yxy),
+                  liverInner(m + h.yyx) - liverInner(m - h.yyx));
+    return dot(g, g) > 0.0 ? normalize(g) : c.n;
+  }
+  if (c.tissue == T_RENAL_CAPSULE || c.tissue == T_PERIRENAL) {
+    vec3 g = kidneyOuterGradient(m);
+    return dot(g, g) > 0.0 ? normalize(g) : c.n;
+  }
+  float l = length(c.n);
+  return l > 0.0 ? c.n / l : vec3(0.0, 1.0, 0.0);
 }
 
 // Velocidad de la sangre (mm/s, marco material) para una clasificación de sangre.

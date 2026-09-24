@@ -15,10 +15,11 @@ import { hilumNotchActive, kidneyLocal, kidneyOuterSdf } from '../anatomy/organs
 import { FACE_GEOMETRIES, type FaceGeometry } from '../anatomy/scene';
 import { TISSUES, Tissue } from '../anatomy/tissues';
 import type { Vec3 } from '../core/vec3';
+import { FRAME_PASSES, type PassId } from '../ultrasound/passGraph';
 import { rayAttenuationDb } from '../ultrasound/transmission';
 import { centralGradient, fidelityStats, type FidelityStats } from './fidelity';
 import { speckleStats, type SpeckleOptions, type SpeckleStats } from './speckle';
-import type { Simulator } from './simulator';
+import type { RenderMeasureOptions, Simulator } from './simulator';
 import { START_POINTS, type StartPoint } from './startPoints';
 
 /**
@@ -65,9 +66,11 @@ export interface TestHooks {
   }) => Record<FaceNormalRow, FaceNormalStats>;
   /**
    * Coste medio de `n` cuadros de imagen en tiempo de pared (ms), sincronizado con la GPU al
-   * principio y al final: compara versiones del renderizador en la misma máquina.
+   * principio y al final: compara versiones del renderizador en la misma máquina. El reloj no avanza,
+   * así que sin opciones y con la caja de color encendida no mide casi nada (la cadencia del color,
+   * decisión 39, salta el cuadro salvo en los de color). Ver `FrameCostOptions`.
    */
-  frameCostMs: (n: number) => number;
+  frameCostMs: (n: number, opts?: FrameCostOptions) => number;
   /**
    * Paridad de la pasada A (un solo rayo) con el modelo de CPU `rayAttenuationDb` en los mismos
    * puntos de muestra, cada `every` líneas y en todas las profundidades gruesas; se saltan las líneas
@@ -131,6 +134,38 @@ export interface TestHooks {
   placeGate: (vessels: VesselId[]) => boolean;
 }
 
+/** Opciones de `frameCostMs`. */
+export interface FrameCostOptions {
+  /**
+   * Cada cuadro es completo y CON la pasada de color. Si la caja está apagada, la enciende con el
+   * comando del equipo (el camino de la aplicación) y la deja como estaba al terminar, aunque falle.
+   */
+  forceColor?: boolean;
+  /**
+   * Repite esa pasada `repeatCount` veces más (1 por defecto) dentro de cada cuadro, sin cambiar la
+   * imagen: su coste es la diferencia con la medida sin repetir dividida por `repeatCount`. Metal no
+   * separa el tiempo de las pasadas (decisión 47). Una pasada de cadencia de color exige `forceColor`.
+   */
+  repeatPass?: PassId;
+  repeatCount?: number;
+}
+
+/** Valida las opciones de `frameCostMs` (nada de ignorarlas en silencio) y las traduce a las de `render`. */
+export function frameMeasureOptions(opts: FrameCostOptions = {}): RenderMeasureOptions {
+  const { forceColor = false, repeatPass, repeatCount } = opts;
+  if (repeatPass === undefined) {
+    if (repeatCount !== undefined) throw new RangeError('frameCostMs: repeatCount sin repeatPass');
+    return { forceColor };
+  }
+  const spec = FRAME_PASSES.find((p) => p.id === repeatPass);
+  if (!spec) throw new RangeError(`frameCostMs: «${String(repeatPass)}» no es una pasada de FRAME_PASSES`);
+  const times = repeatCount ?? 1;
+  if (!Number.isInteger(times) || times < 1) throw new RangeError(`frameCostMs: repeatCount ${times} (entero ≥ 1)`);
+  // sin forzar el color, la pasada de color no se dibuja en casi ningún cuadro: no habría qué repetir
+  if (spec.cadence === 'color' && !forceColor) throw new RangeError(`frameCostMs: repetir «${repeatPass}» exige forceColor`);
+  return { forceColor, repeat: { pass: repeatPass, times } };
+}
+
 export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: EquipmentCommand) => void): TestHooks {
   return {
     equivalenceSweep: () => equivalenceSweep(getSim()),
@@ -161,14 +196,21 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       if (opts.pose) offsetPose(sim, opts.pose);
       return faceNormalStats(sim);
     },
-    frameCostMs: (n) => {
+    frameCostMs: (n, opts) => {
+      const measure = frameMeasureOptions(opts);
       const sim = getSim();
-      sim.render();
-      sim.renderer.finishForTiming();
-      const t0 = performance.now();
-      for (let i = 0; i < n; i++) sim.render();
-      sim.renderer.finishForTiming();
-      return (performance.now() - t0) / n;
+      const switchColor = measure.forceColor === true && !sim.color.enabled;
+      if (switchColor) dispatch({ type: 'color', patch: { enabled: true } });
+      try {
+        sim.render(measure);
+        sim.renderer.finishForTiming();
+        const t0 = performance.now();
+        for (let i = 0; i < n; i++) sim.render(measure);
+        sim.renderer.finishForTiming();
+        return (performance.now() - t0) / n;
+      } finally {
+        if (switchColor) dispatch({ type: 'color', patch: { enabled: false } });
+      }
     },
     speckleMotion: (opts) => {
       const sim = getSim();

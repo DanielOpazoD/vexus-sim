@@ -13,6 +13,7 @@ import { ANCHOR_SALT_STEP, ElevationAnchor } from './speckleField';
 import { interfaceUniforms } from './interfaceEcho';
 import { GLProgram, bindTarget, createTarget, createTexture, deleteTarget, drawFullscreen, type RenderTarget } from './gl';
 import { GpuPassTimer, summarizeGpuTimings, type GpuFrameTimings } from './gpuTimer';
+import { RECEIVER_NOISE } from './receiver';
 import { FRAME_PASSES, type PassId } from './passGraph';
 import { MAX_NODES, MAX_TUBES, MAX_TUBE_SEGMENTS, NODE_BASE, SCENE_TEX_H, SCENE_TEX_W } from '../anatomy/gpu/anatomy.glsl';
 import { evaluateSceneUniforms, uploadSceneUniforms, type SceneUniformValues } from '../anatomy/gpu/sceneUniforms';
@@ -30,6 +31,7 @@ import {
   FRAG_TRANS_PREFIX,
   FRAG_TRANS_SEGMENTS,
   FRAG_TRANSMISSION,
+  TISSUE_VEC4,
   VERT,
 } from './shaders/passes.glsl';
 import type { Vec3 } from '../core/vec3';
@@ -155,6 +157,18 @@ export interface FrameInputs {
 }
 
 /**
+ * Repetición de una pasada dentro del cuadro, solo para medir su coste (`frameCostMs`; la aplicación no
+ * la pasa nunca): tras dibujar la pasada se emite su mismo dibujo `times` veces más, con el programa,
+ * los uniforms, las texturas y el destino que dejó puestos. Ninguna pasada lee su propia salida, así que
+ * el cuadro no cambia; el coste de la pasada sale por diferencia del tiempo de pared, también en Metal,
+ * donde el temporizador no separa las pasadas (decisión 47).
+ */
+export interface PassRepeat {
+  pass: PassId;
+  times: number;
+}
+
+/**
  * Resultado de `queryPoints`: tejido, índice de tubo (−1 sin vaso), velocidad de la sangre (mm/s), la
  * cara de interfaz que dibuja cada punto y su distancia (`Cls.iface`, `Cls.ifd`; decisión 57) y, si se
  * pidió, el gradiente de esa cara que usa el eco (`faceGradient`, marco material): la normal unitaria
@@ -224,10 +238,11 @@ export class UltrasoundRenderer {
   private headerAll = new Float32Array(MAX_TUBES * 16);
   private tubeCount = 0;
   private tubeCountTotal = 0;
-  private alpha = new Float32Array(TISSUE_COUNT);
-  private back = new Float32Array(TISSUE_COUNT);
-  private clump = new Float32Array(Math.ceil(TISSUE_COUNT / 4) * 4);
-  private flags = new Float32Array(TISSUE_COUNT);
+  /** Tablas por tejido de 4 en 4 (`TISSUE_VEC4` vec4; el relleno tras el último tejido queda a 0). */
+  private alpha = new Float32Array(TISSUE_VEC4 * 4);
+  private back = new Float32Array(TISSUE_VEC4 * 4);
+  private clump = new Float32Array(TISSUE_VEC4 * 4);
+  private flags = new Float32Array(TISSUE_VEC4 * 4);
   /** Número de onda del perfil (2π/λ, 1/mm) y un vec4 por cara de interfaz (decisión 57). */
   private readonly ifaceK0: number;
   private readonly ifaceUniforms: Float32Array;
@@ -478,9 +493,9 @@ export class UltrasoundRenderer {
     p.f('uDepth', inputs.bmode.depthMm);
     p.f('uLinesF', this.lines);
     p.tex('uCoupling', 7, this.couplingTex);
-    p.fv('uTissueAlpha', this.alpha);
-    p.fv('uTissueBack', this.back);
-    p.fv('uTissueFlag', this.flags);
+    p.v4v('uTissueAlpha4', this.alpha);
+    p.v4v('uTissueBack4', this.back);
+    p.v4v('uTissueFlag4', this.flags);
   }
 
   private updateCoupling(inputs: FrameInputs): void {
@@ -522,8 +537,10 @@ export class UltrasoundRenderer {
    *   F color (cadencia propia) → G conversión de barrido + mapa de grises →
    *   persistencia → presentación. (E está reservada; H es el mapa de tejidos
    *   de depuración, `tissueMap`.)
+   * `repeat` (solo medida, ver `PassRepeat`) vuelve a dibujar una pasada dentro del cuadro; sin él no
+   * cuesta nada.
    */
-  render(inputs: FrameInputs): void {
+  render(inputs: FrameInputs, repeat?: PassRepeat): void {
     this.frameCount++;
     this.timer.poll();
     this.updateCoupling(inputs);
@@ -534,6 +551,7 @@ export class UltrasoundRenderer {
       if (pass.cadence === 'color' && !colorDue) continue;
       this.timer.begin(pass.id);
       this.passes[pass.id](inputs);
+      if (repeat !== undefined && repeat.pass === pass.id) for (let k = 0; k < repeat.times; k++) drawFullscreen(this.gl);
       this.timer.end();
     }
   }
@@ -628,9 +646,8 @@ export class UltrasoundRenderer {
     this.pRaw.f('uLattice', 0.42);
     this.pRaw.f('uElevSigma0', 1.6);
     this.pRaw.f('uElevFocus', tr.elevationFocusMm);
-    // Ruido del receptor ≈ −72 dB respecto al eco hepático sin atenuar; con el techo de 60 dB
-    // de compensación el campo profundo (> 20 cm) queda como «nieve» gris oscura [EXTRAPOLACIÓN PROPIA]
-    this.pRaw.f('uNoise', 0.00025);
+    // Ruido del receptor (receiver.ts): la misma escala con la que el shader omite el transitorio
+    this.pRaw.f('uNoise', RECEIVER_NOISE);
     this.pRaw.f('uFrame', this.frameCount);
     const an = this.speckleAnchor.update(inputs.frame.face, inputs.frame.elevation);
     this.lastAnchorWeight = an.w;

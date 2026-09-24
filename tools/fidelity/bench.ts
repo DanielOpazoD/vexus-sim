@@ -10,8 +10,9 @@
  * registros de las cinco poses se agregan con `summarizeFaces` (`sweep` en el JSON). Eso llena la VCI
  * y la cápsula a 0–20° (salvo la VCI subxifoidea con congestión y la cápsula en la ventana renal), pero
  * no las suprahepáticas a 0–20° (0–9 registros por escena) ni el diafragma a 0–20° (0 en todas), y la
- * porta a 0–20° no da rosario. Cada escena escribe en `escasos` los tramos vigilados por el PR 5b que no
- * llegan a 10 registros o no tienen rosario (`thinGatedBins`): esas puertas no se pueden evaluar
+ * porta a 0–20° no da rosario. Los ecos de interfaz (decisión 57) solo vigilan los tramos que el barrido
+ * llena en alguna vista (`GATED_FACE_BINS`); cada escena escribe en `escasos` los que en ella no llegan a
+ * 10 registros o no tienen rosario (`thinGatedBins`): esas puertas no se evalúan en esa escena
  * (docs/fidelity/README.md, «Qué llena el barrido»).
  *
  * No corre en CI (necesita GPU: con SwiftShader los cps no significan nada). Las métricas y sus

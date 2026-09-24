@@ -739,18 +739,18 @@ export function summarizeFaces(poses: readonly (readonly FaceSample[])[]): FaceS
 export const GATED_MIN_RECORDS = 10;
 
 /**
- * Tramos que vigila el banco con GPU de los ecos de interfaz (PR 5b): pared de VCI y de suprahepáticas a
- * 0–20° (y la VSH a 40–60°, para su caída), la porta en los tres, y cápsula, diafragma y Morison a 0–20°.
+ * Tramos que vigila el banco con GPU de los ecos de interfaz (decisión 57): solo los que el barrido llena
+ * en alguna vista (docs/fidelity/README.md, «Qué llena el barrido»). La pared de la VCI a 0–20°, la VSH a
+ * 20–40° y 40–60° (su caída), la porta a 20–40°, la cápsula y Morison a 0–20° y el diafragma a 40–60°.
+ * La VSH y el diafragma a 0–20° no llegan a 10 registros en ninguna vista y no se vigilan.
  */
 export const GATED_FACE_BINS: readonly { label: string; kind: FaceKind; fromDeg: number }[] = [
   { label: 'VCI', kind: 'ivc', fromDeg: 0 },
-  { label: 'VSH', kind: 'hepaticVein', fromDeg: 0 },
+  { label: 'VSH', kind: 'hepaticVein', fromDeg: 20 },
   { label: 'VSH', kind: 'hepaticVein', fromDeg: 40 },
-  { label: 'porta', kind: 'portal', fromDeg: 0 },
   { label: 'porta', kind: 'portal', fromDeg: 20 },
-  { label: 'porta', kind: 'portal', fromDeg: 40 },
   { label: 'cápsula', kind: 'capsule', fromDeg: 0 },
-  { label: 'diafragma', kind: 'diaphragm', fromDeg: 0 },
+  { label: 'diafragma', kind: 'diaphragm', fromDeg: 40 },
   { label: 'Morison', kind: 'renalCapsule', fromDeg: 0 },
 ];
 

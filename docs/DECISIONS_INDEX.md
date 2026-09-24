@@ -60,3 +60,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [54](DECISIONS.md#L916) | Transmisión en cuatro etapas, hueso clínico y penumbra de la apertura | vigente |
 | [55](DECISIONS.md#L953) | El medio de dispersores está anclado y no sigue a la sonda | vigente |
 | [56](DECISIONS.md#L1004) | Moteado por tejido, heterogeneidad continua y grumos en la grasa | vigente |
+| [57](DECISIONS.md#L1047) | Ecos de interfaz: reflexión coherente en el cruce exacto, con Fresnel y suelo, lóbulo de Kirchhoff y coherencia de curvatura; espejo diafragmático exacto | vigente |

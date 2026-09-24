@@ -24,22 +24,28 @@ identificadores. Si un término nuevo entra en el código, entra aquí.
 
 ## Física y adquisición
 
-| Término             | Significado                                                                                            |
-| ------------------- | ------------------------------------------------------------------------------------------------------ |
-| **Modo B**          | Imagen en escala de grises (brillo = ecogenicidad).                                                    |
-| **PW**              | Doppler pulsado: puerta en un punto, espectro velocidad–tiempo.                                        |
-| **Color**           | Doppler color: velocidad media por celda con el estimador de autocorrelación (Kasai), emulado sin IQ.  |
-| **Puerta**          | Volumen de muestra del PW (longitud axial × PSF lateral × elevacional).                                |
-| **PRF / Nyquist**   | Frecuencia de repetición de pulsos; la velocidad máxima sin plegado es c·PRF/(4·f0).                   |
-| **Aliasing**        | Plegado de velocidades por encima de Nyquist.                                                          |
-| **Filtro de pared** | Paso alto que elimina el eco lento del tejido (clutter).                                               |
-| **Envolvente**      | Borde superior del espectro; aquí, percentil 92 de la banda contigua a la línea de base (decisión 44). |
-| **PSF**             | Point spread function: respuesta del sistema a un punto (axial, lateral, elevacional).                 |
-| **Número F**        | Profundidad / apertura; fija la anchura lateral del haz (`beamModel.ts`).                              |
-| **TGC**             | Compensación de ganancia en profundidad.                                                               |
-| **Speckle**         | Moteado por interferencia de dispersores sub-resolución.                                               |
-| **Líneas A**        | Reverberaciones horizontales equiespaciadas bajo una interfaz de gas (pleura).                         |
-| **Ensemble**        | Número de disparos por línea de color.                                                                 |
+| Término                     | Significado                                                                                                                                                                                                       |
+| --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Modo B**                  | Imagen en escala de grises (brillo = ecogenicidad).                                                                                                                                                               |
+| **PW**                      | Doppler pulsado: puerta en un punto, espectro velocidad–tiempo.                                                                                                                                                   |
+| **Color**                   | Doppler color: velocidad media por celda con el estimador de autocorrelación (Kasai), emulado sin IQ.                                                                                                             |
+| **Puerta**                  | Volumen de muestra del PW (longitud axial × PSF lateral × elevacional).                                                                                                                                           |
+| **PRF / Nyquist**           | Frecuencia de repetición de pulsos; la velocidad máxima sin plegado es c·PRF/(4·f0).                                                                                                                              |
+| **Aliasing**                | Plegado de velocidades por encima de Nyquist.                                                                                                                                                                     |
+| **Filtro de pared**         | Paso alto que elimina el eco lento del tejido (clutter).                                                                                                                                                          |
+| **Envolvente**              | Borde superior del espectro; aquí, percentil 92 de la banda contigua a la línea de base (decisión 44).                                                                                                            |
+| **PSF**                     | Point spread function: respuesta del sistema a un punto (axial, lateral, elevacional).                                                                                                                            |
+| **Número F**                | Profundidad / apertura; fija la anchura lateral del haz (`beamModel.ts`).                                                                                                                                         |
+| **TGC**                     | Compensación de ganancia en profundidad.                                                                                                                                                                          |
+| **Speckle**                 | Moteado por interferencia de dispersores sub-resolución.                                                                                                                                                          |
+| **Líneas A**                | Reverberaciones horizontales equiespaciadas bajo una interfaz de gas (pleura).                                                                                                                                    |
+| **Eco de interfaz**         | Reflexión determinista de una cara lisa (pared, cápsula, diafragma, pleura, Morison): se suma coherente al moteado en la pasada B (decisión 57).                                                                  |
+| **Reflectividad efectiva**  | R_ef = max(\|R_Fresnel\|, suelo): el salto de impedancia de los dos tejidos o, si es menor, el de la capa de colágeno que los separa.                                                                             |
+| **Lóbulo de Kirchhoff**     | Caída del eco de una cara con la incidencia θ: sec²θ·exp(−tan²θ/4s²) en amplitud, con s la **pendiente rms** de la superficie (VSH 0,14: brillante solo a ±12°).                                                  |
+| **Coherencia de curvatura** | Pérdida del eco de una cara curva dentro del haz (tubos): la fase k0·κx² se descorrelaciona sobre la anchura lateral y elevacional del haz.                                                                       |
+| **Cara de uno o dos lados** | Una cara la conocen las muestras de los dos tejidos (luz de un vaso: pared y sangre) o solo las de su **dueño** (cápsula, mitad abdominal del diafragma, grasa de Morison); entonces su perfil entra 2,5σh en él. |
+| **Costura del espejo**      | Banda oscura entre el diafragma y su imagen especular cuando el espejo queda dentro del pulmón; desaparece con el espejo en el cruce exacto.                                                                      |
+| **Ensemble**                | Número de disparos por línea de color.                                                                                                                                                                            |
 
 ## Código
 

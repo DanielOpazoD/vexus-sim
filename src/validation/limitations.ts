@@ -28,4 +28,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'peep-no-hemodynamic-effect',
   'fixed-arterial-resistive-index',
   'side-plane-skips-tubes',
+  'interface-echo-scope',
+  'interface-echo-coherent-only',
+  'interface-curvature-tubes-only',
 ]);

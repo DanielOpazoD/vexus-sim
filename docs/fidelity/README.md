@@ -14,9 +14,10 @@ npm run fidelity     # 2 casos × 4 puntos de partida con GPU real → docs/fide
 
 `npm run fidelity -- --url <servidor> --out <archivo>` cambia el destino. `npm run fidelity -- --sweep`
 mide además cada vista con la sonda basculada ±6° e inclinada ±6° y agrega el banco de interfaces
-de las cinco poses (`sweep` en el JSON, con `summarizeFaces`). No llena todos los tramos que vigila
-el PR 5b: las suprahepáticas y el diafragma a 0–20° quedan casi vacíos (ver «Qué llena el barrido»),
-y cada escena lista en `escasos` los tramos vigilados sin 10 registros o sin rosario. Necesita GPU:
+de las cinco poses (`sweep` en el JSON, con `summarizeFaces`). No llena todos los tramos: las
+suprahepáticas y el diafragma a 0–20° quedan casi vacíos (ver «Qué llena el barrido»), así que los
+ecos de interfaz (decisión 57) solo vigilan los que se llenan en alguna vista (`GATED_FACE_BINS`) y cada
+escena lista en `escasos` los que en ella no llegan a 10 registros o no tienen rosario. Necesita GPU:
 con SwiftShader los cuadros por segundo no significan nada, así que no corre en CI. En este Mac,
 espera a que no esté corriendo el runner de EchoTwin (`pgrep -f /Users/daniel/builds/`).
 
@@ -123,15 +124,16 @@ costura daba 0,02–0,03 de costura. En cada tramo:
 | FWHM del eco  | Anchura a −6 dB alrededor del pico de la envolvente, en pasos de 0,05 mm.                                                                                                                                                         |
 | Pico          | Pico de la envolvente compensada sobre la mediana del hígado de referencia (dB).                                                                                                                                                  |
 | Diafragma     | Línea pleural (pico a ±1,5 mm del cruce exacto, bisección de 20 pasos en la CPU), desviación de su posición, costura (racha ≥ 0,3 mm de envolvente < hígado − 15 dB en [pleura; +2,5 mm]) y p95 del desfase del espejo de la GPU. |
-| Suelo espejo  | `mirrorFloorMm`: p95 del desfase que da la marcha gruesa de la pasada A sola (emulada en la CPU), el suelo del anterior.                                                                                                          |
+| Suelo espejo  | `mirrorFloorMm`: p95 del desfase que da la colocación de la pasada A (marcha gruesa y bisección, emuladas en la CPU), el suelo del anterior.                                                                                      |
 | Cara saturada | Píxeles ≥ 250 a ≤ 1 mm de la cúpula, del contorno renal y de la vesícula.                                                                                                                                                         |
 
-El desfase del espejo tiene un suelo que no es de geometría: la pasada A pone hoy el espejo en el
-centro del primer segmento grueso de pulmón (paso = profundidad/160, 1,125 mm a 18 cm), así que
-|espejo − pleura| cae en [0; paso) y su p95 ronda 1 mm aunque la cúpula esté en su sitio (0,002–1,10 mm,
-p95 1,02, en las 33 líneas de la subxifoidea del sano). Mientras `mirrorOffsetMm` ≈ `mirrorFloorMm`, el
-espejo está donde la marcha gruesa lo pone; la puerta de 5b (p95 ≤ 0,05 mm) exige colocarlo en el
-cruce exacto y solo entonces baja del suelo.
+El desfase del espejo tiene un suelo que no es de geometría: el de la colocación de la pasada A. Hasta
+el PR 5b el espejo quedaba en el centro del primer segmento grueso de pulmón (paso = profundidad/160,
+1,125 mm a 18 cm), así que |espejo − pleura| caía en [0; paso) y su p95 rondaba 1 mm aunque la cúpula
+estuviera en su sitio (0,002–1,10 mm, p95 1,02, en las 33 líneas de la subxifoidea del sano). Con la
+decisión 57, A0 lleva ese segmento al cruce con una bisección de 6 pasos (`mirrorCrossing`) y el suelo
+baja a ≤ 0,009 mm. `mirrorOffsetMm` ≈ `mirrorFloorMm` dice que la GPU coloca el espejo como la CPU
+emula; la puerta de 5b es p95 ≤ 0,05 mm.
 
 Las líneas pintadas de `src/validation/fidelity.test.ts` fijan cada métrica (una pared continua no
 tiene huecos ni rosario; una línea de cada tres apagada da un tercio de huecos de un paso; ±6 dB al
@@ -140,28 +142,26 @@ líneas; con 3 dB/cm de atenuación, el eco compensado mide lo mismo con la refe
 La e2e de normales compara la normal de la GPU (`queryPoints` con `normals`) con el
 gradiente de `faceSdf` a 0,02–0,4 mm de cada cara, en los tejidos que la dibujan, con una fila por
 cara y otras por subconjunto (`FACE_NORMAL_SUBSETS`: la VCI, su cuerpo y el riñón con y sin
-escotadura, muestreados aparte). Emulando la GLSL en TS (sano en apnea): cúpula y vesícula dan
-|n·∇| ≥ 0,99 en p01 y el tubo, mezclando todos los vasos, ≥ 0,99 en p05. Tres normales no son el
-gradiente y lo que exija el eco de interfaz se decide con estos datos:
+escotadura, muestreados aparte). La normal que se compara es la que usa el eco de interfaz
+(`faceNormal`). En 5a, emulando la GLSL en TS (sano en apnea), cúpula y vesícula daban |n·∇| ≥ 0,99 en
+p01 y el tubo, mezclando todos los vasos, ≥ 0,99 en p05, pero tres normales no eran el gradiente; el
+PR 5b (decisión 57) las corrige:
 
-- tubo: la VCI (`tubeIvc`) no coincide en todo su cuerpo, no solo en la tapa. Su sección es elíptica y
-  la normal de la GPU (`tubeQuery`, d/dist) escala la componente anteroposterior una vez, mientras el
-  gradiente la escala dos. En el cuerpo (`tubeIvcBody`, 0 < s < 1 en su segmento) |n·∇| va de 0,991 a
-  0,996 (p01–p50) con `ivcApScale` 0,777 (apnea; 6–8°), y el mínimo analítico baja a 0,984 (10°) con
-  0,70, que el sano alcanza respirando. En la fila del tubo no se ve; la tapa dentro de la aurícula y las
-  uniones de tubos bajan además su p01 a 0,95 en la subxifoidea (2,5 % bajo 0,98). Es la pared que 5b
-  hará brillar por incidencia: allí la normal debe salir del gradiente (la componente AP dividida dos
-  veces por `apScale`) y la fila de la VCI exigirse ≥ 0,99 en p05;
-- riñón: junto a la escotadura hiliar (`kidneyOuterNotch`, solo en la ventana renal) la normal es la
-  del elipsoide sin escotadura: la fila entera da 0,61 en p01 (15 % bajo 0,98). Fuera del redondeo de la
-  escotadura (`kidneyOuterNotchFree`, `hilumNotchActive`) es exacta (≥ 0,9999);
-- cápsula hepática: `liverSdf` elige la normal de una de las superficies que funde con `smoothMax`;
-  en la impresión renal (83 % de sus puntos bajo 0,98) y en la unión de los lóbulos se aparta del
-  gradiente (p05 de 0,45 a 0,98 según la vista); donde manda la pared o la cúpula es exacta.
+- tubo: la VCI (`tubeIvc`) no coincidía en todo su cuerpo, no solo en la tapa. Su sección es elíptica
+  y la normal de la GPU (`tubeQuery`, d/dist) escalaba la componente anteroposterior una vez, mientras el
+  gradiente la escala dos: en el cuerpo (`tubeIvcBody`, 0 < s < 1 en su segmento) |n·∇| iba de 0,991 a
+  0,996 (p01–p50) con `ivcApScale` 0,777 (6–8°) y bajaba a 0,984 (10°) con 0,70. Ahora la normal es el
+  gradiente de la sección, con el afilamiento del radio; portada a TS da p01 ≥ 0,9999 en el cuerpo
+  (`faceNormals.test.ts`) y la e2e exige p05 ≥ 0,99 en la VCI y p01 ≥ 0,98 en su cuerpo;
+- riñón: junto a la escotadura hiliar (`kidneyOuterNotch`, solo en la ventana renal) la normal era la
+  del elipsoide sin escotadura (la fila entera daba 0,61 en p01);
+- cápsula hepática: `liverSdf` elegía la normal de una de las superficies que funde con `smoothMax`
+  (p05 de 0,45 a 0,98 según la vista, por la impresión renal y la unión de los lóbulos).
 
-La e2e exige lo que ya se cumple (mediana ≥ 0,99 en todas las caras, p05 ≥ 0,98 en el tubo, p01 ≥
-0,98 en la cúpula, la vesícula y el riñón sin escotadura) e informa del resto en sus anotaciones, con
-las filas de la VCI y de la escotadura.
+En el riñón y la cápsula la GPU usa ahora el gradiente numérico de la misma distancia que decide la
+clasificación, con el paso del banco (0,02 mm), solo en las muestras al alcance de su cara. La e2e exige
+mediana ≥ 0,99 en todas las caras, p05 ≥ 0,98 en el tubo y p01 ≥ 0,98 en la cúpula, la vesícula, la
+cápsula hepática, el riñón entero (con y sin escotadura) y el cuerpo de la VCI.
 
 ### Línea base de interfaces con GPU (PR 5a, antes de los ecos de interfaz)
 
@@ -220,7 +220,37 @@ Lo que eso deja fuera de las puertas de 5b (solo cuentan los tramos con n ≥ 10
 Más poses no lo arreglan: una búsqueda de ±24° de basculación e inclinación en pasos de 8° (49 poses
 por vista y caso) da VSH 0–20° ≥ 10 en 3 (sano) y 8 (congestión) de 196 poses, siempre con 1–3
 paredes, y el diafragma a 0–20° no pasa de 11 registros de una pared. Por eso el barrido sigue siendo
-de ±6°.
+de ±6° y los ecos de interfaz solo vigilan los tramos que se llenan (`GATED_FACE_BINS`): VCI 0–20°,
+VSH 20–40° y 40–60°, porta 20–40°, cápsula 0–20°, diafragma 40–60° y Morison 0–20°.
+
+### Ecos de interfaz (PR 5b, decisión 57): predicción del gemelo y puertas con GPU
+
+El gemelo B→C→D en CPU (`src/validation/interfaceTwin.test.ts`, escenas planas con las funciones de
+producción, K = 55 dB) predice, en cociente pico/hígado a 0–20° (antes → después): VSH 1,14 → 1,51
+(1,50, 1,49 y 1,40 a 40, 120 y 150 mm), VCI 1,16 → 1,62, porta 1,42 → 1,62 (1,45 a 20–40° y 1,40 a
+40–60°), cápsula 1,17 → 1,78, diafragma 1,29 → 2,16 sin costura (antes en el 66 % de las líneas) y
+Morison 1,42 → 2,23; huecos a 0–20° ≤ 0,08 y rosario 0,16–0,21. La VSH vuelve a lo que da el moteado
+solo fuera de ±20° (3,5 dB a 20–60°) y la porta no (10–11 dB). Morison sale 1,5 dB por encima del
+diseño porque producción no aplica la curvatura del riñón (`interface-curvature-tubes-only`).
+
+Las cifras con GPU están pendientes: las mide quien corre `npm run fidelity -- --sweep` (misma máquina y
+carga que la línea base, sin el runner de EchoTwin), que además calibra K. Objetivos, solo en los
+tramos con ≥ 10 registros:
+
+- **Deben pasar (hoy fallan):** VCI 0–20° ≥ 1,40 y ≤ 2,1 (flanco; subxifoidea e intercostal del sano),
+  con huecos ≤ 0,15, tramo ≤ 1 mm y rosario ≤ 0,26; VSH 40–60° ≤ 1,20 y porta − VSH ≥ 5 dB a 20–40°
+  (subxifoidea): la caída de la VSH con la incidencia, que a 0–20° no se puede medir; cápsula 0–20° ≥ 1,40
+  con huecos ≤ 0,15 y rosario ≤ 0,22 (subxifoidea, intercostal y flanco); Morison 0–20° en [1,6; 2,2]
+  con rosario ≤ 0,22 (intercostal); diafragma 40–60° (subxifoidea) con costura ≤ 0,02 y desfase del
+  espejo p95 ≤ 0,05 mm. La línea pleural (≥ +18 dB) y su posición (≤ 0,15 mm) dependen de la incidencia
+  y solo se exigirían a 0–20°, que no se llena.
+- **Guardas (no deben empeorar):** porta 20–40° ≥ 1,40 (subxifoidea); moteado a ± 0,01 de la línea base
+  (SNR 1,90–1,97, oscuros 0,065–0,071, grietas 0,055–0,083); hígado p50 99–103 y desviación ≤ 19; luz
+  p50 < 30; caras sin saturar (≤ 0,02 en diafragma, Morison y vesícula); msPerFrame ≤ línea base +
+  0,3 ms y, con el temporizador de GPU, rawField ≤ +0,15 ms y transmissionHits ≤ +0,05 ms.
+- **Calibración de K:** si la VCI a 0–20° queda fuera de [1,45; 1,9], K se mueve en pasos de 1 dB
+  dentro de [53; 57] (`IFACE_K_DB`); si hiciera falta salir de ese rango, es un error de modelo y se
+  para. Si Morison pasa de 2,2 con K calibrado, la salida es dar al riñón su curvatura, no bajar R.
 
 ## Línea base (23-09-2026, árbol `src/` 4de3821, tras el preajuste abdominal; M4 con Metal, densidad 2)
 
@@ -263,7 +293,8 @@ con la línea base (primero la cadena de presentación, que es lo que delata la 
 | 2   | Fase de insonación y moteado por tejido                    | Envolvente igual de ideal; correlación del moteado a través de una pared < 0,1; decorrelación con 8° de dirección < 0,3 [ESTIMADO].                                                                                                                                                                                                                                                                                                                                            |
 | 3   | Transmisión O(N) con subrayos y hueso (hecho, decisión 54) | Pasada A ≥ 2× más rápida: el cuadro entero pasa de 12,9–16,3 a 4,6–7,3 ms (misma máquina y carga). Penumbra coherente con la apertura: el borde de la sombra del flanco es una rampa de −42 a −49 dB en 9 líneas (antes, un escalón de −31 a −50 en 4). Núcleo de la sombra costal 23–24 dB bajo el hígado, gris 30–35 (antes 20–24 dB, gris 32–41). **Parcial:** no llega al suelo de ruido + 3 dB, porque 10–40 mm detrás de la costilla el cono ya está destapado en parte. |
 | 4   | Composición espacial y armónica                            | Desviación del gris del hígado 10–16; ≥ 30 cps a densidad 2. Después, punto de control A (prueba ciega).                                                                                                                                                                                                                                                                                                                                                                       |
-| 5   | Interfaces de Fresnel                                      | Pared/hígado 1,3–2,1 a 0–20° (hoy 1,14–1,19, lo que da el moteado solo) y caída con la incidencia en las suprahepáticas; sin huecos > 1 mm a lo largo de la pared.                                                                                                                                                                                                                                                                                                             |
+| 5a  | Banco de interfaces (hecho)                                | Banco por sistema y cara con huecos, rosario, anchura del eco, línea pleural, costura y desfase del espejo; normales de la GPU comprobadas; línea base con GPU (arriba). Sin cambio de imagen.                                                                                                                                                                                                                                                                                 |
+| 5b  | Ecos de interfaz (decisión 57)                             | Pared/hígado 1,3–2,1 a 0–20° (hoy 1,14–1,19, lo que da el moteado solo) y caída con la incidencia en las suprahepáticas; sin huecos > 1 mm a lo largo de la pared. Con GPU, los objetivos de «Ecos de interfaz (PR 5b)» en los tramos que se llenan; e2e: paredes ≥ 1,30 y cápsula ≥ 1,40 con ≥ 10 registros, costura ≤ 0,02 y espejo ≤ 0,05 mm.                                                                                                                               |
 
 Los PR 6–10 (campo cercano, pulmón, microestructura, vasos y bordes orgánicos) añaden sus propias
 métricas al banco cuando llegan; al final, punto de control B.

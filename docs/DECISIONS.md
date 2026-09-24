@@ -1044,6 +1044,84 @@ espacial.
 > (una primera versión declaraba `uTissueClump4[(TISSUE_COUNT + 3) / 4]` y el shader no compilaba; lo
 > halló una revisión adversarial). e2e: la envolvente del hígado sigue siendo Rayleigh.
 
+## 57. Ecos de interfaz: reflexión coherente en el cruce exacto, con Fresnel y suelo, lóbulo de Kirchhoff y coherencia de curvatura; espejo diafragmático exacto
+
+**Contexto.** El banco de interfaces (PR 5a) midió con GPU paredes y cápsula a 1,02–1,26 sobre el
+hígado, lo que da el moteado solo (referencias reales: 1,36–2,1), con huecos en el 65–95 % de las
+líneas y rosario 0,23–0,38. El término especular de la pasada B (reflectividad·(n·d)⁴ en la muestra
+cuya `bd` era menor que max(cosθ; 0,15)·dr, sin fasor) quedaba unos 10 dB bajo el moteado, vivía en
+una sola muestra y dependía de dr (7,4 dB de deriva entre 100 y 240 mm de profundidad seleccionada).
+Llevar Fresnel a la escala del moteado (hígado = 1) tampoco sirve: las paredes desaparecen (lo vio
+la revisión externa). El espejo diafragmático quedaba en el centro de la primera celda gruesa de
+pulmón, hasta 1,1 mm dentro, y el camino reflejado cruzaba pulmón negro: una costura entre el
+diafragma y su imagen (gemelo: 66 % de las líneas; banco con GPU: 4–18 %). Tres normales de la GPU no
+eran el gradiente de su distancia (e2e de 5a): la VCI (6–10°), el riñón junto al hilio y la cápsula.
+**Opciones.** (1) Descriptor de la cara y eco en la pasada C: un MRT nuevo para lo que la pasada B ya
+sabe con la misma consulta de `classify`. (2) Láminas de densidad Hann a través del espesor (diseño 3):
+confunde reflexión con dispersión y no conserva el nivel. (3) Fase exacta de ida y vuelta −2k0·r_cara:
+varía 2,2 rad por línea a 5°, las líneas (0,9–1,5 mm) la submuestrean y D la aliasa (gemelo: 1,25–1,38
+con 27–47 % de huecos); una fase aleatoria o un canal incoherente de potencia dan lo mismo. (4) Un
+factor de celda de resolución G(r): es la ley de un blanco puntual y apaga las paredes hondas 4–10 dB;
+la ganancia coherente natural de D ya sigue a la de haces gaussianos coherentes (±1,2 dB entre 40 y
+120 mm). (5) Sumar el eco en los tres planos elevacionales: duplica el término elevacional de C, que ya
+es el resultado exacto de fase estacionaria. (6) Eco híbrido en la pasada B: el elegido.
+**Decisión.** Eco determinista de una cara lisa, sumado en la pasada B de forma coherente y con fase 0
+común a la cara al fasor del moteado, antes de la transmisión (envolvente de Rice); C y D no cambian.
+Para la muestra dueña de la cara i, con θ el ángulo entre su normal y el rayo (el reflejado tras el
+espejo): a = A_i·Λ(θ; s)·χ(θ; σz)·C·g(δ'), con
+
+- A_i = β·10^(K/20)·R_ef·s_ref/s, R_ef = max(|R_Fresnel|, suelo) de la tabla de caras
+  (`anatomy/interfaces.ts`: Z de TISSUES; suelos por la capa de colágeno de la pared, de Glisson, de la
+  cápsula y de la fascia); K₀ = 55 dB (un plano liso frente al moteado del hígado, 56,5 dB según Madsen,
+  Insana y Zagzebski 1984 y Chen, Phillips y Parker 1997, menos 1,5 dB de aberración de la pared;
+  `IFACE_K_DB`, calibrable con GPU dentro de [53; 57]) y β = 0,2903 (gemelo, `IFACE_BETA`);
+- Λ = sec²θ·exp(−tan²θ/(4s²)): lóbulo de Kirchhoff en amplitud con conservación de energía y
+  Λ(0; s_ref) = 1 (s_ref 0,14, la de la VSH); χ = exp(−2(k0·σz·cosθ)²), rugosidad fina de Ament;
+- C = [(1 + (2k0σl²κl)²)(1 + (2k0σe²κe)²)]^(−1/4), coherencia de curvatura de un haz gaussiano de dos
+  vías sobre la dirección circunferencial del tubo (σl de `lateralSigmaMm`, compartida con D en
+  `LATERAL_PSF_GLSL`; σe = elevSigma/√2); solo tubos, C = 1 en el resto;
+- g, gaussiana de integral unidad de σh 0,14 mm en δ = ifd/cosθ, con alcance ±3,5σh; en las caras que
+  solo conoce un lado se desplaza 2,5σh dentro del dueño (mismo rizado y nivel que las de dos lados).
+  Muestreada como el moteado, tras C el cociente eco/moteado no depende de dr.
+
+Una cara por estructura y sin signo (`Classification.interface` y `interfaceDistance` en TS,
+`Cls.iface` y `Cls.ifd` en GLSL, con la cara de la luz en H1.w de la textura de escena): la luz de cada
+sistema (VSH, VCI, porta, arteria, conducto biliar, vesícula; la conocen pared y luz), la cápsula
+hepática (salvo junto al diafragma, cuya cara es de él, o a ≤ 0,2 mm de la grasa perirrenal, cuya cara
+es de ella: Morison), la mitad abdominal del diafragma, la cápsula renal (cápsula y mitad interna de la
+grasa) y la cara externa de la grasa perirrenal. Sin cara pared/hígado ni cápsula renal/corteza. La
+normal de la VCI es el gradiente de su sección elíptica (con el afilamiento del radio) y la cápsula
+hepática y el contorno renal usan el gradiente numérico de su distancia (`faceNormal`, paso 0,02 mm),
+solo en las muestras al alcance de su cara. El espejo de A0 se coloca en el cruce exacto con una
+bisección de 6 pasos (≤ 0,009 mm, `mirrorCrossing`); A2 lo publica desde la fila que contiene r_m menos
+el alcance del eco, la pasada B refleja solo r > r_m y la pleura (σz 0,09 mm, su parte coherente a
+−28,7 dB) se dibuja desde ese punto, una vez por línea, con el coseno de la reflexión. La pasada B deja
+de declarar la atenuación y las banderas por tejido, que no lee: 125 ranuras de uniforms (antes 165).
+**Consecuencias.** En el gemelo B→C→D (K = 55 dB, cociente pico/hígado a 0–20°, antes → después): VSH
+1,14 → 1,51 (40, 120 y 150 mm: 1,50, 1,49 y 1,40), VCI 1,16 → 1,62, porta 1,42 → 1,62/1,45/1,40 en los
+tres tramos, cápsula 1,17 → 1,78, diafragma 1,29 → 2,16 sin costura (antes en el 66 % de las líneas) y
+Morison 1,42 → 2,23. La VSH cae a lo que da el moteado solo fuera de ±20° (12,2 → 3,5 dB), la porta
+no. Huecos a 0–20°: 0,79 → 0,08 en la VSH y 0 en VCI, cápsula, diafragma y Morison; rosario 0,19–0,21.
+Morison sale 1,5 dB por encima del diseño (2,08) porque allí el riñón llevaba su curvatura elevacional
+y aquí C = 1 fuera de los tubos. Coste estimado (sin medir): ≤ 0,15 ms por cuadro. Pendiente con GPU
+real (`npm run fidelity -- --sweep`, misma máquina y carga): calibrar K dentro de [53; 57] con VCI y
+VSH, y comprobar los umbrales de `docs/fidelity/README.md` en los tramos que el barrido llena (VCI
+0–20° en el flanco, VSH 20–40° y 40–60°, porta 20–40° en la subxifoidea, cápsula 0–20° en subxifoidea,
+intercostal y flanco, diafragma 40–60° en la subxifoidea y Morison 0–20° en la intercostal; VSH y
+diafragma a 0–20° no se llenan).
+**Verificación.** `interfaceEcho.test.ts` (tabla, cada factor contra su valor analítico o su integral,
+perfil de integral unidad, línea 1D con el moteado del repositorio y el pulso de C, uniforms y GLSL),
+`interfaceTwin.test.ts` (lento: β ± 0,3 dB, deriva de β 0,21 dB y rizado 0,35/0,69 dB, tendencia con la
+profundidad frente a haces gaussianos coherentes, M1–M9 y `it.fails` con la regla de antes, que no
+cumple M1, M4 ni M7), `anatomy.test.ts` (la cara y su distancia en puntos conocidos),
+`equivalenceSweep.test.ts` y la e2e de equivalencia (cara y distancia en el volumen y en la cáscara a
+0,01–0,6 mm de cada cara, ≥ 0,999), `transmission.test.ts` y `fidelityScene.test.ts` (espejo exacto:
+suelo del desfase < 0,01 mm; el de antes, ~1 mm), `faceNormals.test.ts` (la normal de la VCI portada) y
+la e2e de normales (p01 ≥ 0,98 en la cápsula, el riñón entero y la VCI), `shaderLimits.test.ts` (≤ 171
+ranuras en la pasada B, `uIface[12]` con el tamaño interpolado de `INTERFACE_COUNT`) y la e2e del banco (paredes ≥ 1,30 y
+cápsula ≥ 1,40 donde hay ≥ 10 registros, costura ≤ 0,02, desfase del espejo ≤ 0,05 mm, caras sin
+saturar). Todas las unitarias nuevas fallan en `main`.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

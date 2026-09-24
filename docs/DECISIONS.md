@@ -904,22 +904,30 @@ plano nuevo quedan fuera del plano viejo sin comprimir (gemelo: 0,075 con 0,5°)
 y pivote anclados. (3) Integrar de verdad en elevación con más planos (coste × planos).
 **Decisión.** Medio anclado (`ultrasound/speckleField.ts`, `ElevationAnchor`). El eje y el pivote se
 fijan con la sonda y no la siguen: la imagen se decorrela solo porque el plano atraviesa otro tejido.
-Si la normal se aparta más de 20° del ancla (el grano empezaría a alargarse en el plano, un 6 % a
-20°), el ancla se renueva con un fundido de 8 cuadros entre los dos medios. El medio nuevo usa otra
-semilla: √w·A + √(1−w)·B de dos campos gaussianos independientes sigue siendo gaussiano, así que la
-estadística de Rayleigh no cambia durante el fundido. Un salto de pose entre cuadros (> 15 mm o > 10°:
-otro punto de partida) y el cambio de paciente reinician el ancla sin fundido. En la pasada B,
-`speckleField` evalúa el segundo medio solo durante el fundido.
-**Consecuencias.** Abanicar o girar la sonda conserva el grano como en un equipo (gemelo: 0,95 con
-0,5° de inclinación, 0,83 con 1°, 0,50 con 2°, 0,11 con 4°; giro axial 0,99 con 1°); trasladarla en elevación lo
-decorrela a la escala del grosor de corte (0,5 mm → 0,97; 2 mm → 0,66; 4 mm → 0,21). La imagen depende ahora de
-la trayectoria: volver a una pose tras girar más de 20° no da el mismo grano. Coste: una evaluación
-más del campo durante 8 cuadros cada 20° de giro.
-**Verificación.** `speckleField.test.ts` (gemelo TS): inclinación de 0,25–1° ≥ 0,95–0,75 y de 4–8°
-< 0,3; giro axial; traslación elevacional; máquina de estados del ancla (fijo < 20°, fundido monótono
-de 8 cuadros con la otra semilla, salto sin fundido); Rayleigh y potencia iguales a mitad del fundido.
-e2e con GPU real (`speckleMotion`): correlación de la envolvente en hígado ≥ 0,8 con 0,5° de
-inclinación y con 2° de giro, < 0,3 con 8°, y ≥ 0,95 al volver a la pose.
+Con la normal apartada α del ancla, la célula elevacional se adelgaza (|dq/dn| = √(sin²α + k²cos²α),
+k ≈ 0,13 en el foco). A 20° la persistencia con 0,5° de inclinación cae a 0,3–0,65 y la SNR sube un
+11–17 %; a 5° sigue ≥ 0,9 y ≤ +12 %. Por eso, si la normal se aparta más de 6° del ancla, el ancla se
+renueva con un fundido de 8 cuadros entre los dos medios. El medio nuevo usa otra semilla:
+√w·A + √(1−w)·B de dos campos gaussianos independientes sigue siendo gaussiano, así que la
+estadística de Rayleigh no cambia durante el fundido. Un salto de pose entre cuadros (> 15 mm o
+
+> 10°: el teletransporte de los ganchos de prueba) y el cambio de paciente reinician el ancla sin
+> fundido; los puntos de partida de la app se animan y reanclan con fundido. En la pasada B,
+> `speckleField` evalúa el segundo medio solo durante el fundido.
+> **Consecuencias.** Abanicar o girar la sonda conserva el grano como en un equipo (gemelo: 0,95 con
+> 0,5° de inclinación, 0,83 con 1°, 0,50 con 2°, 0,11 con 4°; giro axial 0,99 con 1°); trasladarla en
+> elevación lo decorrela a la escala del grosor de corte (0,5 mm → 0,97; 2 mm → 0,66; 4 mm → 0,21). La
+> imagen depende ahora de la trayectoria: volver a una pose tras girar más de 6° no da el mismo grano.
+> Coste: una evaluación más del campo durante 8 cuadros cada 6° de giro.
+> **Verificación.** `speckleField.test.ts` (gemelo TS): inclinación de 0,25–1° ≥ 0,95–0,75 y de 4–8°
+> < 0,3; giro axial; traslación elevacional; a 1° del umbral, persistencia > 0,9 y SNR < +12 %; máquina
+> de estados del ancla (fija por debajo del umbral, fundido monótono de 8 cuadros con la otra semilla,
+> salto sin fundido); Rayleigh y potencia iguales a mitad del fundido. e2e con GPU real, sobre la
+> envolvente del hígado sin la tendencia de profundidad (la atenuación sin TGC domina la envolvente
+> cruda: dos moteados independientes correlacionaban 0,6; lo halló una revisión adversarial):
+> `speckleMotion` ≥ 0,8 con 0,5° de inclinación, ≥ 0,7 con 2° de giro, < 0,3 con 8° y ≥ 0,95 al volver;
+> `speckleCrossfade` gira 1° por cuadro durante 16 cuadros, pasa el fundido (peso < 1) y exige la SNR
+> dentro de ±15 % y cada cuadro correlacionado > 0,75 con el anterior.
 
 ## Iteración 2 — informe de cierre (22-09-2026)
 

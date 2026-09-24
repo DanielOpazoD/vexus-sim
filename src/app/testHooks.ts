@@ -3,7 +3,7 @@ import type { EquipmentCommand } from './equipment';
 import { equivalenceSweep, volumeEquivalence, type EquivalencePoseReport, type VolumeEquivalenceReport } from './equivalenceSweep';
 import { bestGateOnVessel } from './gatePlacement';
 import { acousticWindowWeight, gateTransmission } from './gateTransmission';
-import { lineCoupling, pointOnLine } from '../probe/probe';
+import { lineCoupling, pointOnLine, type ProbePose } from '../probe/probe';
 import { Tissue } from '../anatomy/tissues';
 import { rayAttenuationDb } from '../ultrasound/transmission';
 import { fidelityStats, type FidelityStats } from './fidelity';
@@ -53,6 +53,17 @@ export interface TestHooks {
     moved: number;
     back: number;
   };
+  /**
+   * Fundido del ancla del medio en la GPU (decisión 55): gira la sonda `stepDeg` por cuadro durante
+   * `frames` cuadros y devuelve por cuadro el peso del fundido, la SNR y el nivel del hígado (dB
+   * frente al primero) y la correlación del moteado con el cuadro anterior (sin tendencia).
+   */
+  speckleCrossfade: (opts: { startPoint: StartPoint['id']; stepDeg: number; frames: number }) => {
+    w: number;
+    snr: number;
+    levelDb: number;
+    corrPrev: number;
+  }[];
   /**
    * Centra la caja de color sobre uno de los vasos (colocación del operador), avanza lo justo para
    * que toque un cuadro de color y devuelve las celdas con potencia visible; null si no ve el vaso.
@@ -116,48 +127,38 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       const sim = getSim();
       goTo(sim, opts.startPoint);
       const base = { ...sim.pose };
-      const frameAt = (pose: typeof base) => {
-        sim.setPose(pose);
-        sim.advance(1.5 * sim.physiology.clock.dt);
-        sim.render();
-        return sim.renderer.readEnvelope();
-      };
-      const a = frameAt(base);
       const rad = Math.PI / 180;
-      const b = frameAt({ ...base, tilt: base.tilt + (opts.tiltDeg ?? 0) * rad, yaw: base.yaw + (opts.yawDeg ?? 0) * rad });
-      const c = frameAt(base);
-      // muestras de hígado en la pose de partida: cada 2 líneas y 4 muestras, de 30 a 120 mm
-      const tr = sim.transducer;
-      const depth = sim.bmode.depthMm;
-      const idx: number[] = [];
-      for (let u = 0; u < a.lines; u += 2)
-        for (let k = 0; k < a.samples; k += 4) {
-          const r = ((k + 0.5) * depth) / a.samples;
-          if (r < 30 || r > 120) continue;
-          const theta = -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / a.lines;
-          if (sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, theta, r), sim.sample).tissue === Tissue.Liver)
-            idx.push(k * a.lines + u);
-        }
-      const corr = (x: Float32Array, y: Float32Array): number => {
-        let mx = 0;
-        let my = 0;
-        for (const i of idx) {
-          mx += x[i];
-          my += y[i];
-        }
-        mx /= idx.length;
-        my /= idx.length;
-        let sxy = 0;
-        let sxx = 0;
-        let syy = 0;
-        for (const i of idx) {
-          sxy += (x[i] - mx) * (y[i] - my);
-          sxx += (x[i] - mx) ** 2;
-          syy += (y[i] - my) ** 2;
-        }
-        return sxy / Math.sqrt(sxx * syy);
-      };
-      return { samples: idx.length, moved: corr(a.data, b.data), back: corr(a.data, c.data) };
+      const a = envelopeAt(sim, base);
+      const mask = liverMask(sim, a);
+      const b = envelopeAt(sim, { ...base, tilt: base.tilt + (opts.tiltDeg ?? 0) * rad, yaw: base.yaw + (opts.yawDeg ?? 0) * rad });
+      const c = envelopeAt(sim, base);
+      return { samples: mask.length, moved: speckleCorrelation(a, b, mask), back: speckleCorrelation(a, c, mask) };
+    },
+    speckleCrossfade: (opts) => {
+      const sim = getSim();
+      goTo(sim, opts.startPoint);
+      const pose = { ...sim.pose };
+      const frames: { w: number; snr: number; levelDb: number; corrPrev: number }[] = [];
+      let prev = envelopeAt(sim, pose);
+      let prevMask = liverMask(sim, prev);
+      const level0 = meanOf(prev.data, prevMask);
+      for (let f = 0; f < opts.frames; f++) {
+        pose.yaw += (opts.stepDeg * Math.PI) / 180;
+        const env = envelopeAt(sim, pose);
+        const mask = liverMask(sim, env);
+        const d = detrended(env, mask);
+        const mean = d.reduce((s, v) => s + v, 0) / d.length;
+        const sd = Math.sqrt(d.reduce((s, v) => s + (v - mean) ** 2, 0) / d.length);
+        frames.push({
+          w: sim.renderer.speckleAnchorWeight,
+          snr: mean / sd,
+          levelDb: 20 * Math.log10(meanOf(env.data, mask) / level0),
+          corrPrev: speckleCorrelation(prev, env, prevMask),
+        });
+        prev = env;
+        prevMask = mask;
+      }
+      return frames;
     },
     transmissionParity: (opts) => {
       const sim = getSim();
@@ -289,4 +290,79 @@ function windowWeight(sim: Simulator): (theta: number, r: number) => number {
     sim.bmode.depthMm,
     sim.profile.dopplerEffectiveMHz,
   );
+}
+
+/** Envolvente con la sonda en `pose` tras un solo paso de fisiología (sin respiración apreciable). */
+function envelopeAt(sim: Simulator, pose: ProbePose): { lines: number; samples: number; data: Float32Array } {
+  sim.setPose(pose);
+  sim.advance(1.5 * sim.physiology.clock.dt);
+  sim.render();
+  return sim.renderer.readEnvelope();
+}
+
+/** Índices de hígado del plano actual: cada 2 líneas y 4 muestras, de 30 a 120 mm. */
+function liverMask(sim: Simulator, env: { lines: number; samples: number }): number[] {
+  const tr = sim.transducer;
+  const depth = sim.bmode.depthMm;
+  const idx: number[] = [];
+  for (let u = 0; u < env.lines; u += 2)
+    for (let k = 0; k < env.samples; k += 4) {
+      const r = ((k + 0.5) * depth) / env.samples;
+      if (r < 30 || r > 120) continue;
+      const theta = -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / env.lines;
+      if (sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, theta, r), sim.sample).tissue === Tissue.Liver) idx.push(k * env.lines + u);
+    }
+  return idx;
+}
+
+const meanOf = (data: Float32Array, idx: readonly number[]): number => idx.reduce((s, i) => s + data[i], 0) / Math.max(1, idx.length);
+
+/**
+ * Envolvente sin la tendencia de profundidad: cada muestra dividida por la media del hígado de su fila
+ * (la atenuación de ida y vuelta, ~3 dB/cm sin TGC, domina la envolvente cruda: dos moteados
+ * independientes correlacionaban 0,6 sin quitarla). Filas con < 4 muestras fuera.
+ */
+function detrended(env: { lines: number; data: Float32Array }, idx: readonly number[]): number[] {
+  const rows = new Map<number, number[]>();
+  for (const i of idx) {
+    const k = Math.floor(i / env.lines);
+    const row = rows.get(k) ?? [];
+    row.push(i);
+    rows.set(k, row);
+  }
+  const out: number[] = [];
+  for (const row of rows.values()) {
+    if (row.length < 4) continue;
+    const m = meanOf(env.data, row);
+    for (const i of row) out.push(env.data[i] / m);
+  }
+  return out;
+}
+
+/** Correlación del moteado entre dos envolventes en las muestras de `idx`, sin la tendencia de profundidad. */
+function speckleCorrelation(
+  a: { lines: number; data: Float32Array },
+  b: { lines: number; data: Float32Array },
+  idx: readonly number[],
+): number {
+  const x = detrended(a, idx);
+  const y = detrended(b, idx);
+  const n = Math.min(x.length, y.length);
+  let mx = 0;
+  let my = 0;
+  for (let i = 0; i < n; i++) {
+    mx += x[i];
+    my += y[i];
+  }
+  mx /= n;
+  my /= n;
+  let sxy = 0;
+  let sxx = 0;
+  let syy = 0;
+  for (let i = 0; i < n; i++) {
+    sxy += (x[i] - mx) * (y[i] - my);
+    sxx += (x[i] - mx) ** 2;
+    syy += (y[i] - my) ** 2;
+  }
+  return sxy / Math.sqrt(sxx * syy);
 }

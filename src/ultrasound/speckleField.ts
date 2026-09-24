@@ -10,18 +10,20 @@ import type { Vec3 } from '../core/vec3';
  *
  * Ahora el eje y el pivote son un ANCLA que se fija con la sonda y no la sigue: el medio queda
  * quieto y la imagen se decorrela solo porque el plano atraviesa otro tejido, como en un equipo
- * (gemelo: 0,95 con 0,5° de inclinación, 0,83 con 1°, 0,11 con 4°). Cuando la normal se aparta
- * más de REANCHOR_DEG del ancla, el grano empezaría a alargarse en el plano (con 20° solo un 6 %),
- * así que el ancla se renueva con un fundido de CROSSFADE_FRAMES cuadros entre los dos medios,
+ * (gemelo: 0,95 con 0,5° de inclinación, 0,83 con 1°, 0,11 con 4°). Con la normal apartada α del
+ * ancla, la célula elevacional se adelgaza (|dq/dn| = √(sin²α + k²cos²α), k ≈ 0,13): a 20° la
+ * persistencia con 0,5° cae a 0,3–0,65 y la SNR sube un 11–17 %; a 5,5° sigue en 0,93 y +3–9 %. Así
+ * que pasados REANCHOR_DEG el ancla se renueva con un fundido de CROSSFADE_FRAMES cuadros entre los dos medios,
  * con semillas distintas: la suma √w·A + √(1−w)·B de dos campos gaussianos independientes sigue
  * siendo gaussiana, así que la estadística de Rayleigh no cambia durante el fundido. Un salto de
- * pose (otro punto de partida, otro paciente) reinicia el ancla sin fundido.
+ * pose (el teletransporte de los ganchos de prueba) y el cambio de paciente reinician el ancla sin
+ * fundido; los puntos de partida de la app se animan y reanclan con fundido.
  *
  * Gemelos: `speckleSliceField` (TS, pruebas) y `scattererFieldSlice` de la pasada B, misma fórmula.
  */
 
 /** Ángulo entre la normal del plano y la del ancla a partir del cual se renueva el ancla. */
-export const REANCHOR_DEG = 20;
+export const REANCHOR_DEG = 6;
 /** Cuadros del fundido entre el ancla vieja y la nueva. */
 export const CROSSFADE_FRAMES = 8;
 /** Entre dos cuadros, un desplazamiento o un giro mayores son un salto de pose: el ancla se reinicia. */

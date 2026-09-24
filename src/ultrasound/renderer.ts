@@ -193,6 +193,11 @@ export class UltrasoundRenderer {
   private frameCount = 0;
   /** Ancla del medio de dispersores (decisión 55): fija con la sonda, se renueva con giros grandes. */
   private readonly speckleAnchor = new ElevationAnchor();
+  private lastAnchorWeight = 1;
+  /** Peso del fundido del ancla en el último cuadro (1 fuera del fundido). Solo pruebas. */
+  get speckleAnchorWeight(): number {
+    return this.lastAnchorWeight;
+  }
   /** Textura de datos de la escena (cabeceras de tubos + nodos, decisión 24). */
   private sceneTex: WebGLTexture;
   private sceneData = new Float32Array(SCENE_TEX_W * SCENE_TEX_H * 4);
@@ -602,6 +607,7 @@ export class UltrasoundRenderer {
     this.pRaw.f('uNoise', 0.00025);
     this.pRaw.f('uFrame', this.frameCount);
     const an = this.speckleAnchor.update(inputs.frame.face, inputs.frame.elevation);
+    this.lastAnchorWeight = an.w;
     this.pRaw.v3('uAnchorE0', an.a.e);
     this.pRaw.v3('uAnchorP0', an.a.p);
     this.pRaw.v3('uAnchorE1', an.b.e);

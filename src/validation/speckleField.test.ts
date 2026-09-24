@@ -68,11 +68,12 @@ describe('medio de dispersores anclado (decisión 55)', () => {
     expect(after(0.25)).toBeGreaterThan(0.95);
     expect(after(0.5)).toBeGreaterThan(0.9);
     expect(after(1)).toBeGreaterThan(0.75);
-    // a 4° el plano está a 3–7 mm del original en el parche, más que el grosor de corte
-    expect(after(4)).toBeLessThan(0.3);
-    expect(after(8)).toBeLessThan(0.3);
     // el ancla no cambió: volver a la pose da la misma imagen
     expect(image(BASE, anchor)).toEqual(ref);
+    // a 4° el plano está a 3–7 mm del original en el parche, más que el grosor de corte
+    expect(after(4)).toBeLessThan(0.3);
+    // a 8° además se renueva el ancla (REANCHOR_DEG): sigue decorrelado
+    expect(after(8)).toBeLessThan(0.3);
   });
 
   it('girar la sonda sobre su eje axial conserva el moteado del centro del plano', () => {
@@ -92,6 +93,30 @@ describe('medio de dispersores anclado (decisión 55)', () => {
     // la célula mide 0,42 mm: sin la compresión, 0,5 mm ya decorrelaría
     expect(shifted(0.5)).toBeGreaterThan(0.85);
     expect(shifted(4)).toBeLessThan(0.3);
+  });
+
+  // La célula elevacional se adelgaza con el ancla desviada: el umbral de reanclaje se elige para que,
+  // justo antes de renovarse, el grano se conserve y la textura no cambie de carácter (a 20° la
+  // persistencia caía a 0,3–0,65 y la SNR subía un 11–17 %).
+  it('justo antes de reanclar, el moteado aún persiste y la textura no cambia', () => {
+    const snrOf = (a: number[]) => {
+      const m = a.reduce((s, v) => s + v, 0) / a.length;
+      return m / Math.sqrt(a.reduce((s, v) => s + (v - m) ** 2, 0) / a.length);
+    };
+    const aligned = new ElevationAnchor();
+    const snr0 = snrOf(image(BASE, aligned));
+    for (const kind of ['tilt', 'yaw'] as const) {
+      const anchor = new ElevationAnchor();
+      image(BASE, anchor);
+      // a 1° del umbral, para que la inclinación de 0,5° no lo cruce
+      const alpha = REANCHOR_DEG - 1;
+      for (let d = 1; d < alpha; d++) image({ ...BASE, [kind]: BASE[kind] + deg(d) }, anchor);
+      const drifted = { ...BASE, [kind]: BASE[kind] + deg(alpha) };
+      const a = image(drifted, anchor);
+      const b = image({ ...drifted, tilt: drifted.tilt + deg(0.5) }, anchor);
+      expect(corr(a, b), kind).toBeGreaterThan(0.9);
+      expect(snrOf(a) / snr0, kind).toBeLessThan(1.12);
+    }
   });
 
   it('el ancla sigue fija con giros pequeños, se renueva con un fundido pasado REANCHOR_DEG y se reinicia con un salto', () => {

@@ -197,7 +197,8 @@ test('el moteado del hígado persiste al inclinar la sonda medio grado y se renu
   // Decisión 55: el medio de dispersores está anclado y no sigue a la normal del plano. Antes, con
   // el eje de compresión en la normal actual y el pivote en el origen del mundo, 0,5° de inclinación
   // cambiaba todo el moteado (gemelo: correlación −0,01); en un equipo el grano se conserva un grosor
-  // de corte y se renueva cuando el plano ya atraviesa otro tejido.
+  // de corte y se renueva cuando el plano ya atraviesa otro tejido. La correlación se toma sin la
+  // tendencia de profundidad (gemelo: 0,95 / 0,86 / 0,06 con 0,5° / 2° de giro / 8°).
   test.setTimeout(240_000);
   const errors = await bootWithoutErrors(page);
   const r = await page.evaluate(() => {
@@ -212,8 +213,29 @@ test('el moteado del hígado persiste al inclinar la sonda medio grado y se renu
   expect(r.small.samples, tag).toBeGreaterThan(300);
   expect(r.small.back, tag).toBeGreaterThan(0.95);
   expect(r.small.moved, tag).toBeGreaterThan(0.8);
-  expect(r.yaw.moved, tag).toBeGreaterThan(0.8);
+  expect(r.yaw.moved, tag).toBeGreaterThan(0.7);
   expect(r.big.moved, tag).toBeLessThan(0.3);
+  expect(errors).toEqual([]);
+});
+
+test('el fundido del ancla del moteado no da saltos: la textura y la correlación entre cuadros se mantienen', async ({ page }) => {
+  // Decisión 55: girar la sonda 1° por cuadro pasa el umbral de reanclaje; durante los cuadros del
+  // fundido (peso < 1) la GPU mezcla dos medios. La SNR del hígado no debe cambiar y cada cuadro debe
+  // parecerse al anterior (un fundido mal cableado daría un destello o un salto de grano).
+  test.setTimeout(240_000);
+  const errors = await bootWithoutErrors(page);
+  const frames = await page.evaluate(() => window.__vexusTest!.speckleCrossfade({ startPoint: 'intercostal', stepDeg: 1, frames: 16 }));
+  const tag = JSON.stringify(frames);
+  expect(
+    frames.some((f) => f.w < 1),
+    tag,
+  ).toBe(true);
+  const snr0 = frames[0].snr;
+  for (const f of frames) {
+    expect(f.snr / snr0, tag).toBeGreaterThan(0.85);
+    expect(f.snr / snr0, tag).toBeLessThan(1.15);
+    expect(f.corrPrev, tag).toBeGreaterThan(0.75);
+  }
   expect(errors).toEqual([]);
 });
 

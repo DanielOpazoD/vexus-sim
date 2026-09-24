@@ -747,17 +747,25 @@ por captura, corregidos. E2e: en apnea la VSH se mide con valor numérico
 y con la sonda levantada la captura dice «no medible: no hay flujo en la puerta».
 
 **Enmienda (revisión externa, C10, 24-09-2026).** La regla «sangre en ≥ 60 % de las columnas del latido»
-no mira la fase. Una vena renal monofásica solo lleva flujo en diástole, la mitad del ciclo o menos, y
-se rechazaba como intermitente aunque la puerta estuviera bien puesta; el texto culpaba a la puerta.
-Ahora la medición renal pasa su ventana diastólica (`phaseWindow`). Un latido vale si la sangre cubre
-≥ 80 % de esa ventana y su fracción de columnas con sangre queda a ≤ 0,15 de la mediana de la captura.
-La reproducibilidad se exige también a los latidos llenos: si no, una vena bifásica que perdiera la
-sístole en tres de cuatro latidos (el vaso sale de la puerta al respirar) se leería monofásica y daría
-grado 3. Suprahepática y porta no cambian. El texto de «intermitente» dice ahora que el flujo no se
-repite de un latido a otro. Pruebas: flujo solo en diástole a 75 y 110 lpm, medible (antes
-intermitente); un latido sin flujo diastólico, solo sístole o un latido distinto de los demás, siguen
-intermitentes; la cadena del alumno no cambia (el grave con respiración tranquila sigue no medible:
-allí el vaso sí sale de la puerta).
+no mira la fase: una vena renal monofásica solo lleva flujo en diástole. Una revisión adversarial sobre
+la cadena real (1296 capturas) mostró que la vena monofásica alcanzable (congestión grave, apnea) se
+rechazaba por otra causa. A la PRF por defecto (2600 Hz, ±40 cm/s) su onda D (~34 cm/s) se pliega y
+deja la ventana diastólica sin sangre del lado de la vena. Ningún latido valía, y la calidad decía «el
+vaso entra y sale de la puerta» en vez de «suba la escala». A la PRF máxima ya era medible. Cambios en
+la medición renal (suprahepática y porta no cambian):
+
+- Pasa su ventana diastólica (`phaseWindow`). Un latido vale si la sangre cubre ≥ 80 % de esa ventana
+  y su fracción de columnas con sangre queda a ≤ 0,15 de la mediana de los DEMÁS latidos. Con la
+  mediana de todos, 4 latidos permitían un reparto 2/2: una vena bifásica que perdiera la sístole en
+  dos latidos se habría leído monofásica, con grado 3.
+- La reproducibilidad se exige también a los latidos llenos.
+- Si ningún latido vale y la captura se pliega, la calidad dice aliasing antes que intermitente.
+- El texto de «intermitente» dice que el flujo no se repite de un latido a otro.
+
+Efecto medido en la cadena real: con respiración, las capturas aceptadas bajan de 642 a 467 y su
+precisión sube del 70 % al 88 %. El coste: se rechaza el 8,7 % de las que ya eran correctas (venas
+continuas con un latido a 0,6–0,85 de sangre frente a 0,92–1). En apnea nada cambia, salvo el mensaje
+del grave a 2600 Hz, que ahora es aliasing. Ninguna captura pasa a dar un monofásico falso.
 
 ## 50. El color comparte la transmisión del PW y su ganancia (en dB) alcanza el ruido del equipo
 

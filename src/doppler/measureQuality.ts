@@ -213,22 +213,34 @@ export function assessQuality(
     columnsSeen += inBeat.length;
     columnsWithBlood += withBlood;
   }
-  const medianFraction = perBeat.length ? median(perBeat.map((p) => p.fraction)) : 0;
-  for (const p of perBeat) {
+  // reproducibilidad frente a la mediana de los DEMÁS latidos: con 4 latidos, la mediana de todos
+  // promedia los dos centrales y un reparto 2/2 (la sístole perdida en dos latidos) pasaba entero
+  const othersMedian = (i: number): number => {
+    const rest = perBeat.filter((_, j) => j !== i).map((p) => p.fraction);
+    return rest.length ? median(rest) : perBeat[i].fraction;
+  };
+  for (const [i, p] of perBeat.entries()) {
     const full = p.fraction >= BEAT_SIGNAL_FRACTION;
-    const phased =
-      opts.phaseWindow !== undefined && p.phaseCover >= PHASE_COVERAGE && Math.abs(p.fraction - medianFraction) <= PHASE_REPRODUCIBILITY;
+    if (opts.phaseWindow === undefined) {
+      if (full) validBeats++;
+      continue;
+    }
     // con ventana de fase, también el latido «lleno» debe reproducirse: otro vaso que entra a ratos
     // llena un latido entero entre latidos monofásicos
-    if (opts.phaseWindow !== undefined ? phased || (full && Math.abs(p.fraction - medianFraction) <= PHASE_REPRODUCIBILITY) : full)
-      validBeats++;
+    const repeats = Math.abs(p.fraction - othersMedian(i)) <= PHASE_REPRODUCIBILITY;
+    if (repeats && (full || p.phaseCover >= PHASE_COVERAGE)) validBeats++;
   }
   const edgeEnergyFraction = energy > 0 ? edgeEnergy / energy : 0;
   const bloodColumns = columnsSeen > 0 ? columnsWithBlood / columnsSeen : 0;
   let issue: QualityIssue | null = null;
+  const aliased = wrappedBeats > 0 || edgeEnergyFraction > MAX_EDGE_ENERGY;
   if (coveredBeats === 0) issue = 'few-beats';
+  // con ventana de fase (vena renal), el plegado se dice antes que la intermitencia: la onda D del
+  // grave roza el Nyquist a 2600 Hz, se pliega al otro lado, deja su ventana sin sangre y se leía
+  // «el vaso entra y sale de la puerta» (en apnea) en vez de «suba la escala»
+  else if (validBeats === 0 && opts.phaseWindow !== undefined && aliased && bloodColumns >= MIN_BLOOD_COLUMNS) issue = 'aliasing';
   else if (validBeats === 0) issue = bloodColumns >= MIN_BLOOD_COLUMNS ? 'intermittent' : 'no-signal';
-  else if (wrappedBeats > 0 || edgeEnergyFraction > MAX_EDGE_ENERGY) issue = 'aliasing';
+  else if (aliased) issue = 'aliasing';
   else if (validBeats < coveredBeats) issue = 'intermittent';
   else if (waves && wavesInconsistent(waves.s, waves.d)) issue = 'inconsistent';
   else if (validBeats < MIN_VALID_BEATS) issue = 'few-beats';

@@ -367,17 +367,18 @@ cambios de imagen (decisión 60: contacto suave del hígado con la pared y la c�
 la cápsula) y **no son puertas**: se informan en el bloque `contour` de cada escena del banco (la pose de
 partida, la de las capturas) y en `contourSweep` con `--sweep` (`contourStats`).
 
-| Métrica                                     | Definición                                                                                                                                                                                                                                                                     |
-| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Contraste (`contrastGrey`)                  | Por tramo, mediana de (gris de la cresta − gris mediano del hígado de referencia) de cada línea. Depende de la curva de grises: con la pendiente gris/dB a ±10 % varía ±10 %.                                                                                                  |
-| CVc                                         | DE de (cresta − mediana de las crestas a ±3 líneas de la misma pared) / contraste. Numerador y denominador escalan igual con la pendiente gris/dB: la métrica para comparar con referencias de curva desconocida (en la curva del simulador, < 3 % con el rango a ±10 %).      |
-| σ_L (`sigmaLDb`)                            | DE de [mediana del pico de envolvente en 7 líneas − mediana en 41], en las líneas con sus 41 vecinas en el tramo (≥ 10): la variación a escala de centímetros, lo «dibujado». Frágil entre semillas: se promedia sobre ≥ 8 realizaciones (gemelo) o poses.                     |
-| Extremos bruscos (`capsuleEnds`)            | Veces que la mediana de 3 líneas de una pared de la cápsula cae ≥ 10 dB (nivel mostrado) en ≤ 1 mm de pared (paso lateral) desde ≥ +6 dB, en los dos sentidos, **con los cambios de dueño incluidos** (la cara pasa al diafragma o a la grasa y la cápsula deja de dibujarla). |
-| Salto de incidencia (`incidenceJumpP99Deg`) | p99 (y máximo, `incidenceJumpMaxDeg`) de \|Δincidencia\| entre líneas contiguas de una misma pared de la cápsula. Es geometría de la CPU (la normal de `faceSdf`): una arista del SDF lo dispara. Con > 100 pares, una arista sola queda por encima del p99.                   |
+| Métrica                                     | Definición                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Contraste (`contrastGrey`)                  | Por tramo, mediana de (gris de la cresta − gris mediano del hígado de referencia) de cada línea. Depende de la curva de grises: con la pendiente gris/dB a ±10 % varía ±10 %.                                                                                                                                                                                                                                                  |
+| CVc                                         | DE de (cresta − mediana de las crestas a ±3 líneas de la misma pared) / contraste. Numerador y denominador escalan igual con la pendiente gris/dB: la métrica para comparar con referencias de curva desconocida (en la curva del simulador, < 3 % con el rango a ±10 %). NaN con < 10 desviaciones (`cvcLines`).                                                                                                              |
+| σ_L (`sigmaLDb`)                            | DE de [mediana del pico de envolvente en 7 líneas − mediana en 41], en las líneas con sus 41 vecinas en el tramo (≥ 10): la variación a escala de centímetros, lo «dibujado». Frágil entre semillas: se promedia sobre ≥ 8 realizaciones (gemelo) o poses.                                                                                                                                                                     |
+| Extremos bruscos (`capsuleEnds`)            | Veces que la mediana de 3 líneas de una pared de la cápsula cae ≥ 10 dB (nivel mostrado) en ≤ 1 mm de pared (paso lateral) desde ≥ +6 dB, en los dos sentidos, **con los cambios de dueño incluidos** (la cara pasa al diafragma o a la grasa y la cápsula deja de dibujarla). La caída que arranca a ≤ 1 mm de donde aterrizó otra es el mismo corte (la escalera de la PSF). NaN sin medianas evaluadas (`capsuleEndLines`). |
+| Salto de incidencia (`incidenceJumpMaxDeg`) | Máximo (y p99, `incidenceJumpP99Deg`) de \|Δincidencia\| entre líneas contiguas de una misma pared de la cápsula. Es geometría de la CPU (la normal de `faceSdf`): una arista del SDF lo dispara. Con > 100 pares, una arista sola queda por encima del p99: la puerta es el máximo.                                                                                                                                           |
 
 `GATED_FACE_BINS` no cambia: la 61 añadirá la cápsula a 20–40° y a 40–60° (esta, solo en las vistas con
 ≥ 10 registros). El plan de la 60 convierte en puertas `capsuleEnds` = 0 en las cuatro vistas de las
-capturas y el salto de incidencia ≤ 3°, pero las dos, tal como están definidas, ven poco hoy:
+capturas y el salto de incidencia ≤ 3° (el máximo), pero `capsuleEnds` y el p99 del salto, tal como están
+definidos, ven poco hoy:
 
 - **`capsuleEnds` con 1 mm casi no ve un corte.** En el gemelo (8 semillas por escena, `bench` del gemelo
   con la misma regla) un pliegue de 10° a 50° da 0 extremos de 8, uno de 32° a 58°, 1 de 8: la PSF lateral
@@ -386,7 +387,8 @@ capturas y el salto de incidencia ≤ 3°, pero las dos, tal como están definid
   Rice de una cápsula a ~8 dB cae lo mismo. En la imagen no separa el corte del moteado; los extremos se
   miden en el contorno en CPU (`liverContour.test.ts`, abajo), con el nivel previsto del eco.
 - **El p99 del salto no ve una arista sola** con más de 100 pares: la subxifoidea de la congestión da p99
-  2,5° con un salto de 29,4°. El máximo sí.
+  2,5° con un salto de 29,4°, y la del sano, con dos aristas (29,8° y 24,4°) en 115 pares, da de p99 la
+  segunda: si la 60 quitara solo una, bajaría a 1,0°. El máximo las ve.
 
 **Registros de la cápsula por tramo** (réplica en CPU del barrido de cinco poses; `design-contour`,
 diffuse-first `run5`). El tramo de 40–60° solo llega a 10 registros en cinco escenas y el de 60–80° en
@@ -408,7 +410,7 @@ ninguna:
 - Salto de incidencia de la cápsula (pose de partida, p99 / máximo): sano, subxifoidea 24,4° / 29,8°
   (la arista pared|unión de los lóbulos: de ~33° a ~58° entre dos líneas); intercostal 20,5° / 20,5°;
   flanco 0,7° / 0,7°; congestión, subxifoidea 2,5° / 29,4° (136 pares: el salto único queda por encima del
-  p99). `fidelityScene.test.ts` lo exige ≤ 3° en la subxifoidea con `it.fails`.
+  p99). `fidelityScene.test.ts` exige el máximo ≤ 3° en la subxifoidea con `it.fails`.
 - Contorno del hígado en el plano (`src/validation/support/liverContour.ts`: marching squares de
   `faceSdf('liverSurface')` a 0,25 mm, normales de `faceGradient`, nivel previsto con el lóbulo de la 57):
   11 aristas 3D en las cuatro vistas de las capturas (4, 1, 3 y 3), todas del min duro (un lado es la

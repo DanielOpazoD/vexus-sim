@@ -351,6 +351,15 @@ describe('contorno de las caras: líneas pintadas (PR 0 de las decisiones 60 y 6
     // sin 41 líneas seguidas en el tramo no hay σ_L; sin cresta sobre el hígado, tampoco CVc
     expect(bin0(capsule(40, () => 30)).sigmaLDb).toBeNaN();
     expect(bin0(capsule(20, () => 0)).cvc).toBeNaN();
+    // el CVc pide ≥ 10 desviaciones (líneas con ≥ 5 vecinas a ±3 en su pared): con una sola, su DE de 0
+    // sería un CVc 0 falso (el tramo de 60–80° tiene ≤ 8 registros por vista)
+    expect(bin0(capsule(12, () => 30)).cvcLines).toBe(10);
+    expect(bin0(capsule(12, () => 30)).cvc).toBe(0);
+    expect(bin0(capsule(11, () => 30)).cvcLines).toBe(9);
+    expect(bin0(capsule(11, () => 30)).cvc).toBeNaN();
+    const gapped = bin0(capsule(6, (u) => 30 * db(-2 * u)).filter((s) => s.u !== 3));
+    expect([gapped.walls, gapped.cvcLines]).toEqual([5, 1]);
+    expect(gapped.cvc).toBeNaN();
   });
 
   it('σ_L mide la variación a escala de centímetros: ±3 dB con periodo de 3,5 cm dan ~2 dB', () => {
@@ -396,6 +405,19 @@ describe('contorno de las caras: líneas pintadas (PR 0 de las decisiones 60 y 6
     expect(CAPSULE_END_SPAN_MM).toBe(1);
     // la cara que sale de la imagen o de la pared (el registro termina) no es un extremo de la línea
     expect(ends(capsule(20, () => 30))).toBe(0);
+    // el corte repartido por la PSF en varias líneas (28 → 17 → 6 → 0 dB, 11 dB por línea) es un solo
+    // extremo, en los dos sentidos: la caída que arranca a ≤ 1 mm de donde aterrizó la anterior la continúa
+    const stair = (u: number): number => db(u < 28 ? 28 : u === 28 ? 17 : u === 29 ? 6 : 0) - 1;
+    expect(ends(capsule(60, stair))).toBe(1);
+    expect(ends(capsule(60, (u) => stair(59 - u)))).toBe(1);
+    // dos caídas con 8,7 mm de meseta entre ellas son dos, aunque el nivel no vuelva a subir
+    expect(ends(capsule(60, (u) => db(u < 20 ? 28 : u < 30 ? 17 : 0) - 1))).toBe(2);
+    // sin ninguna mediana de 3 evaluada (sin registros, o paredes de < 3 líneas seguidas) no hay cifra: NaN,
+    // no un 0 que aprobaría en silencio la puerta de la 60 en una vista que perdió sus registros
+    const none = contourStats([]);
+    expect([none.capsuleEnds, none.capsuleEndLines]).toEqual([Number.NaN, 0]);
+    expect(ends(capsule(2, () => 30))).toBeNaN();
+    expect(contourStats([capsule(60, () => 30)]).capsuleEndLines).toBe(58);
   });
 
   it('el salto de incidencia se mide entre líneas contiguas de la misma pared', () => {

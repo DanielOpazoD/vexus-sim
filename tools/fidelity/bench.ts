@@ -109,13 +109,15 @@ const binText = (bins: WallBin[]): string =>
         `${b.fromDeg}–${b.toDeg}° ${b.ratio.toFixed(2)} (${b.walls}) huecos ${b.gapFraction.toFixed(2)} rosario ${b.beading.toFixed(2)}`,
     )
     .join(', ') || '—';
+/** Cifra con `digits` decimales, o «—» si no se pudo medir (NaN). */
+const orDash = (x: number, digits: number): string => (Number.isFinite(x) ? x.toFixed(digits) : '—');
 /** «0–20° contraste 95 CVc 0,12 σL 1,3 dB (313)» de cada tramo del contorno con registros. */
 const contourText = (bins: ContourBin[]): string =>
   bins
     .filter((b) => b.walls > 0)
     .map(
       (b) =>
-        `${b.fromDeg}–${b.toDeg}° contraste ${b.contrastGrey.toFixed(0)} CVc ${b.cvc.toFixed(2)} σL ${Number.isFinite(b.sigmaLDb) ? b.sigmaLDb.toFixed(2) : '—'} dB (${b.walls})`,
+        `${b.fromDeg}–${b.toDeg}° contraste ${b.contrastGrey.toFixed(0)} CVc ${orDash(b.cvc, 2)} σL ${orDash(b.sigmaLDb, 2)} dB (${b.walls})`,
     )
     .join(', ') || '—';
 let gpu = 'desconocida';
@@ -232,7 +234,7 @@ try {
       const cc = contourSweep ?? contour;
       console.log(
         ''.padEnd(32),
-        `contorno: extremos bruscos ${contour.capsuleEnds} · salto de incidencia p99 ${Number.isFinite(contour.incidenceJumpP99Deg) ? contour.incidenceJumpP99Deg.toFixed(1) : '—'}° / máx ${Number.isFinite(contour.incidenceJumpMaxDeg) ? contour.incidenceJumpMaxDeg.toFixed(1) : '—'}° (${contour.incidencePairs} pares)`,
+        `contorno: extremos bruscos ${orDash(contour.capsuleEnds, 0)} (${contour.capsuleEndLines} líneas) · salto de incidencia p99 ${orDash(contour.incidenceJumpP99Deg, 1)}° / máx ${orDash(contour.incidenceJumpMaxDeg, 1)}° (${contour.incidencePairs} pares)`,
         `· ${contourSweep ? 'barrido' : 'pose'}: cápsula ${contourText(cc.capsule)} · Morison ${contourText(cc.renalCapsule)}`,
       );
     }

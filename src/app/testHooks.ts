@@ -4,7 +4,7 @@ import { equivalenceSweep, volumeEquivalence, type EquivalencePoseReport, type V
 import { bestGateOnVessel } from './gatePlacement';
 import { acousticWindowWeight, gateTransmission } from './gateTransmission';
 import { lineCoupling, pointOnLine } from '../probe/probe';
-import type { Tissue } from '../anatomy/tissues';
+import { Tissue } from '../anatomy/tissues';
 import { rayAttenuationDb } from '../ultrasound/transmission';
 import { fidelityStats, type FidelityStats } from './fidelity';
 import { speckleStats, type SpeckleOptions, type SpeckleStats } from './speckle';
@@ -43,6 +43,16 @@ export interface TestHooks {
    * con espejo (la CPU no sigue el rayo reflejado) y las transmisiones por debajo de −60 dB.
    */
   transmissionParity: (opts?: { startPoint?: StartPoint['id']; every?: number }) => { lines: number; samples: number; maxDiffDb: number };
+  /**
+   * Persistencia del moteado al mover la sonda (decisión 55): correlación de la envolvente en el
+   * hígado entre la pose de partida y la misma pose con `tiltDeg`/`yawDeg` más (`moved`), y al volver
+   * a la pose (`back`). Entre cuadros avanza un solo paso de fisiología: la respiración no cuenta.
+   */
+  speckleMotion: (opts: { startPoint: StartPoint['id']; tiltDeg?: number; yawDeg?: number }) => {
+    samples: number;
+    moved: number;
+    back: number;
+  };
   /**
    * Centra la caja de color sobre uno de los vasos (colocación del operador), avanza lo justo para
    * que toque un cuadro de color y devuelve las celdas con potencia visible; null si no ve el vaso.
@@ -101,6 +111,53 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       for (let i = 0; i < n; i++) sim.render();
       sim.renderer.finishForTiming();
       return (performance.now() - t0) / n;
+    },
+    speckleMotion: (opts) => {
+      const sim = getSim();
+      goTo(sim, opts.startPoint);
+      const base = { ...sim.pose };
+      const frameAt = (pose: typeof base) => {
+        sim.setPose(pose);
+        sim.advance(1.5 * sim.physiology.clock.dt);
+        sim.render();
+        return sim.renderer.readEnvelope();
+      };
+      const a = frameAt(base);
+      const rad = Math.PI / 180;
+      const b = frameAt({ ...base, tilt: base.tilt + (opts.tiltDeg ?? 0) * rad, yaw: base.yaw + (opts.yawDeg ?? 0) * rad });
+      const c = frameAt(base);
+      // muestras de hígado en la pose de partida: cada 2 líneas y 4 muestras, de 30 a 120 mm
+      const tr = sim.transducer;
+      const depth = sim.bmode.depthMm;
+      const idx: number[] = [];
+      for (let u = 0; u < a.lines; u += 2)
+        for (let k = 0; k < a.samples; k += 4) {
+          const r = ((k + 0.5) * depth) / a.samples;
+          if (r < 30 || r > 120) continue;
+          const theta = -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / a.lines;
+          if (sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, theta, r), sim.sample).tissue === Tissue.Liver)
+            idx.push(k * a.lines + u);
+        }
+      const corr = (x: Float32Array, y: Float32Array): number => {
+        let mx = 0;
+        let my = 0;
+        for (const i of idx) {
+          mx += x[i];
+          my += y[i];
+        }
+        mx /= idx.length;
+        my /= idx.length;
+        let sxy = 0;
+        let sxx = 0;
+        let syy = 0;
+        for (const i of idx) {
+          sxy += (x[i] - mx) * (y[i] - my);
+          sxx += (x[i] - mx) ** 2;
+          syy += (y[i] - my) ** 2;
+        }
+        return sxy / Math.sqrt(sxx * syy);
+      };
+      return { samples: idx.length, moved: corr(a.data, b.data), back: corr(a.data, c.data) };
     },
     transmissionParity: (opts) => {
       const sim = getSim();

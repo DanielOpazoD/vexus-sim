@@ -193,6 +193,30 @@ test('la pasada A en cuatro etapas da la misma transmisión de un solo rayo que 
   expect(errors).toEqual([]);
 });
 
+test('el moteado del hígado persiste al inclinar la sonda medio grado y se renueva con 8°', async ({ page }) => {
+  // Decisión 55: el medio de dispersores está anclado y no sigue a la normal del plano. Antes, con
+  // el eje de compresión en la normal actual y el pivote en el origen del mundo, 0,5° de inclinación
+  // cambiaba todo el moteado (gemelo: correlación −0,01); en un equipo el grano se conserva un grosor
+  // de corte y se renueva cuando el plano ya atraviesa otro tejido.
+  test.setTimeout(240_000);
+  const errors = await bootWithoutErrors(page);
+  const r = await page.evaluate(() => {
+    const h = window.__vexusTest!;
+    return {
+      small: h.speckleMotion({ startPoint: 'intercostal', tiltDeg: 0.5 }),
+      yaw: h.speckleMotion({ startPoint: 'intercostal', yawDeg: 2 }),
+      big: h.speckleMotion({ startPoint: 'intercostal', tiltDeg: 8 }),
+    };
+  });
+  const tag = JSON.stringify(r);
+  expect(r.small.samples, tag).toBeGreaterThan(300);
+  expect(r.small.back, tag).toBeGreaterThan(0.95);
+  expect(r.small.moved, tag).toBeGreaterThan(0.8);
+  expect(r.yaw.moved, tag).toBeGreaterThan(0.8);
+  expect(r.big.moved, tag).toBeLessThan(0.3);
+  expect(errors).toEqual([]);
+});
+
 test('sin contacto no hay Doppler: el color y el espectro se apagan al levantar la sonda', async ({ page }) => {
   // Invariante de §23 de la guía. Medido con GPU real: color 1 346 celdas en contacto y 0 levantada;
   // PW 23 dB sobre el suelo en contacto y 7,5 dB (el valor del ruido puro) levantada.

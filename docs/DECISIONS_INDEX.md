@@ -58,3 +58,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [52](DECISIONS.md#L768) | La fidelidad del modo B se mide con un banco reproducible, en la envolvente y en la imagen mostrada | vigente |
 | [53](DECISIONS.md#L824) | Preajuste abdominal: 70 dB y el hígado a media escala | vigente |
 | [54](DECISIONS.md#L854) | Transmisión en cuatro etapas, hueso clínico y penumbra de la apertura | vigente |
+| [55](DECISIONS.md#L891) | El medio de dispersores está anclado y no sigue a la sonda | vigente |

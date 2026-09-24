@@ -214,6 +214,13 @@ uniform float uElevFocus;   // mm
 uniform float uSpecGain;
 uniform float uNoise;
 uniform float uFrame;
+// Ancla del medio de dispersores (speckleField.ts): vigente (0) y anterior (1), peso del fundido
+uniform vec3 uAnchorE0;
+uniform vec3 uAnchorP0;
+uniform vec3 uAnchorE1;
+uniform vec3 uAnchorP1;
+uniform vec2 uAnchorSalt;
+uniform float uAnchorW;
 in vec2 vUv;
 out vec2 oField;
 
@@ -225,18 +232,29 @@ float elevSigma(float r) {
 float hash12b(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 
 // Campo de dispersores con la célula ELEVACIONAL igual al grosor de corte: la
-// coordenada material a lo largo de la normal del plano se comprime para que la
+// coordenada material a lo largo del eje del ancla se comprime para que la
 // textura se decorrele al inclinar la sonda un grosor de corte, no una célula
 // de 0,4 mm (idea de EchoTwin, decisión 99; Chen/Fowlkes/Carson/Rubin 1997).
-vec2 scattererFieldSlice(vec3 m, float h, float sliceHalfMm, float salt) {
-  float across = dot(m, uElev);
-  vec3 q = m - uElev * across + uElev * (across * (h / max(h, 2.0 * sliceHalfMm)));
+// El eje y el pivote son un ancla fija, no la normal actual ni el origen del
+// mundo: el medio no cambia al girar la sonda (decisión 55, speckleField.ts).
+vec2 scattererFieldSlice(vec3 m, float h, float sliceHalfMm, float salt, vec3 e, vec3 pivot) {
+  float across = dot(m - pivot, e);
+  vec3 q = m - e * (across * (1.0 - h / max(h, 2.0 * sliceHalfMm)));
   return scattererField(q, h, salt);
+}
+
+// Medio anclado: fuera del fundido, una sola ancla; durante el fundido,
+// √w·A + √(1−w)·B con semillas distintas (sigue siendo gaussiano).
+vec2 speckleField(vec3 m, float h, float se) {
+  vec2 fa = scattererFieldSlice(m, h, se, uSeed + uAnchorSalt.x, uAnchorE0, uAnchorP0);
+  if (uAnchorW >= 1.0) return fa;
+  vec2 fb = scattererFieldSlice(m, h, se, uSeed + uAnchorSalt.y, uAnchorE1, uAnchorP1);
+  return sqrt(uAnchorW) * fa + sqrt(1.0 - uAnchorW) * fb;
 }
 
 // Campo de dispersores de un punto material con clasificación conocida
 vec2 fieldFor(vec3 m, float se, int tissue) {
-  vec2 f = scattererFieldSlice(m, uLattice, se, uSeed);
+  vec2 f = speckleField(m, uLattice, se);
   // Heterogeneidad lenta del parénquima (±4 dB p-p a ~1,6 ciclos/cm) [EXTRAPOLACIÓN PROPIA]
   float het = 1.0;
   if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX) {

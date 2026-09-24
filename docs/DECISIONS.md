@@ -888,6 +888,39 @@ lo mismo: separar pérdida local e integración para liberar presupuesto para su
   sin obstáculo, un rayo; bajo una costilla sintética, sombra completa cerca y rellena en profundidad;
   borde en rampa monótona de ≥ 5 líneas; `passGraph.test.ts` con las cuatro etapas.
 
+## 55. El medio de dispersores está anclado y no sigue a la sonda
+
+**Contexto.** El moteado sale de una retícula material de 0,42 mm cuya coordenada elevacional se
+comprime hasta el grosor de corte (decisión 99 de EchoTwin), para que la textura se decorrele al
+inclinar la sonda un grosor de corte y no una célula. La compresión usaba como eje la normal ACTUAL
+del plano y como pivote el origen del mundo: al girar la sonda cambiaba el medio. Con la sonda a
+~100 mm del origen, 0,5° de giro desplazaban el campo 0,9 mm: correlación del moteado 0,16 con 0,5° de
+giro y 0,02 con 1° de inclinación (gemelo TS de la pasada B). En un equipo el grano se conserva
+mientras el plano no atraviesa otro tejido, y abanicar la sonda es la maniobra central del examen.
+Lo señaló la revisión externa (C3).
+**Opciones.** (1) Pivote en el plano actual, que sigue a la sonda en el plano (lo que proponía la
+revisión): arregla el giro sobre el eje axial pero no la inclinación, porque los píxeles hondos del
+plano nuevo quedan fuera del plano viejo sin comprimir (gemelo: 0,075 con 0,5°). (2) Medio fijo: eje
+y pivote anclados. (3) Integrar de verdad en elevación con más planos (coste × planos).
+**Decisión.** Medio anclado (`ultrasound/speckleField.ts`, `ElevationAnchor`). El eje y el pivote se
+fijan con la sonda y no la siguen: la imagen se decorrela solo porque el plano atraviesa otro tejido.
+Si la normal se aparta más de 20° del ancla (el grano empezaría a alargarse en el plano, un 6 % a
+20°), el ancla se renueva con un fundido de 8 cuadros entre los dos medios. El medio nuevo usa otra
+semilla: √w·A + √(1−w)·B de dos campos gaussianos independientes sigue siendo gaussiano, así que la
+estadística de Rayleigh no cambia durante el fundido. Un salto de pose entre cuadros (> 15 mm o > 10°:
+otro punto de partida) y el cambio de paciente reinician el ancla sin fundido. En la pasada B,
+`speckleField` evalúa el segundo medio solo durante el fundido.
+**Consecuencias.** Abanicar o girar la sonda conserva el grano como en un equipo (gemelo: 0,95 con
+0,5° de inclinación, 0,83 con 1°, 0,50 con 2°, 0,11 con 4°; giro axial 0,99 con 1°); trasladarla en elevación lo
+decorrela a la escala del grosor de corte (0,5 mm → 0,97; 2 mm → 0,66; 4 mm → 0,21). La imagen depende ahora de
+la trayectoria: volver a una pose tras girar más de 20° no da el mismo grano. Coste: una evaluación
+más del campo durante 8 cuadros cada 20° de giro.
+**Verificación.** `speckleField.test.ts` (gemelo TS): inclinación de 0,25–1° ≥ 0,95–0,75 y de 4–8°
+< 0,3; giro axial; traslación elevacional; máquina de estados del ancla (fijo < 20°, fundido monótono
+de 8 cuadros con la otra semilla, salto sin fundido); Rayleigh y potencia iguales a mitad del fundido.
+e2e con GPU real (`speckleMotion`): correlación de la envolvente en hígado ≥ 0,8 con 0,5° de
+inclinación y con 2° de giro, < 0,3 con 8°, y ≥ 0,95 al volver a la pose.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

@@ -8,6 +8,7 @@ import type { TransducerProfile } from './transducerProfile';
 import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
 import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
 import { GREY_CURVE, greyOfLevel } from './greyMap';
+import { ANCHOR_SALT_STEP, ElevationAnchor } from './speckleField';
 import { GLProgram, bindTarget, createTarget, createTexture, deleteTarget, drawFullscreen, type RenderTarget } from './gl';
 import { GpuPassTimer, summarizeGpuTimings, type GpuFrameTimings } from './gpuTimer';
 import { FRAME_PASSES, type PassId } from './passGraph';
@@ -190,6 +191,8 @@ export class UltrasoundRenderer {
   private couplingTex: WebGLTexture;
   private couplingData: Float32Array;
   private frameCount = 0;
+  /** Ancla del medio de dispersores (decisión 55): fija con la sonda, se renueva con giros grandes. */
+  private readonly speckleAnchor = new ElevationAnchor();
   /** Textura de datos de la escena (cabeceras de tubos + nodos, decisión 24). */
   private sceneTex: WebGLTexture;
   private sceneData = new Float32Array(SCENE_TEX_W * SCENE_TEX_H * 4);
@@ -268,6 +271,7 @@ export class UltrasoundRenderer {
   setScene(scene: AnatomyScene): void {
     const gl = this.gl;
     this.currentScene = scene;
+    this.speckleAnchor.reset();
     this.sceneValuesFor = null;
     this.sceneValuesTubes = -1;
     this.sceneData.fill(0);
@@ -597,6 +601,13 @@ export class UltrasoundRenderer {
     // de compensación el campo profundo (> 20 cm) queda como «nieve» gris oscura [EXTRAPOLACIÓN PROPIA]
     this.pRaw.f('uNoise', 0.00025);
     this.pRaw.f('uFrame', this.frameCount);
+    const an = this.speckleAnchor.update(inputs.frame.face, inputs.frame.elevation);
+    this.pRaw.v3('uAnchorE0', an.a.e);
+    this.pRaw.v3('uAnchorP0', an.a.p);
+    this.pRaw.v3('uAnchorE1', an.b.e);
+    this.pRaw.v3('uAnchorP1', an.b.p);
+    this.pRaw.v2('uAnchorSalt', an.a.parity * ANCHOR_SALT_STEP, an.b.parity * ANCHOR_SALT_STEP);
+    this.pRaw.f('uAnchorW', an.w);
     drawFullscreen(gl);
   }
 

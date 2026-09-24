@@ -64,8 +64,9 @@ un gancho que midiera «la envolvente» sin decir cuál cambiaría de significad
 
 - `compound` es obligatorio en el tipo de `speckle`, `fidelity`, `speckleMotion`, `speckleCrossfade` y
   `transmissionParity`: con `false`, la imagen de una mirada de siempre (las guardas de una mirada lo
-  pasan con sus umbrales de antes); con `true`, el gancho dibuja cuadros hasta llenar el anillo de miradas
-  (`compoundState().validCount`) y, si mide la imagen mostrada, asienta después la persistencia. El
+  pasan con sus umbrales de antes); con `true`, el gancho dibuja N cuadros, uno por mirada, para que las N
+  ranuras del anillo sean del instante de la medida (con un salto de pose el anillo se reinicia; sin él,
+  guardaría miradas de antes) y, si mide la imagen mostrada, asienta después la persistencia. El
   conmutador vuelve a como estaba al terminar, aunque algo falle, y medir «el compuesto» con el color
   encendido (donde no se forma) lanza.
 - `readEnvelope()` lee la mirada 0 y lanza si no es la del último cuadro; el compuesto se pide con

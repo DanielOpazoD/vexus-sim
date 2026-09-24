@@ -23,6 +23,11 @@
  * 10 registros o no tienen rosario (`thinGatedBins`): esas puertas no se evalúan en esa escena
  * (docs/fidelity/README.md, «Qué llena el barrido»).
  *
+ * El bloque `contour` de cada escena (`contourStats`, PR 0 de las decisiones 60 y 63) informa, sin puertas,
+ * el contorno de la cápsula en la pose de partida (la de las capturas): extremos bruscos, salto de
+ * incidencia entre líneas vecinas y, por tramo de 0–80°, contraste en gris, CVc y σ_L de la cápsula y de
+ * Morison; con `--sweep`, `contourSweep` lo mismo sobre las cinco poses.
+ *
  * No corre en CI (necesita GPU: con SwiftShader los cps no significan nada). Las métricas y sus
  * referencias se explican en docs/fidelity/README.md.
  */
@@ -30,7 +35,16 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { chromium } from '@playwright/test';
-import { summarizeFaces, thinGatedBins, type FaceSummary, type FidelityStats, type WallBin } from '../../src/app/fidelity';
+import {
+  contourStats,
+  summarizeFaces,
+  thinGatedBins,
+  type ContourBin,
+  type ContourStats,
+  type FaceSummary,
+  type FidelityStats,
+  type WallBin,
+} from '../../src/app/fidelity';
 
 // --clave valor, o --bandera sola
 const args = new Map<string, string>();
@@ -79,6 +93,10 @@ const results: Record<
     sweep?: FaceSummary;
     /** Tramos vigilados por el PR 5b sin 10 registros o sin rosario (del barrido, o de la pose de partida). */
     escasos: string[];
+    /** Contorno de la cápsula y de Morison en la pose de partida (solo informado). */
+    contour: ContourStats;
+    /** Ídem sobre las cinco poses del barrido. */
+    contourSweep?: ContourStats;
     errors: string[];
   }
 > = {};
@@ -89,6 +107,15 @@ const binText = (bins: WallBin[]): string =>
     .map(
       (b) =>
         `${b.fromDeg}–${b.toDeg}° ${b.ratio.toFixed(2)} (${b.walls}) huecos ${b.gapFraction.toFixed(2)} rosario ${b.beading.toFixed(2)}`,
+    )
+    .join(', ') || '—';
+/** «0–20° contraste 95 CVc 0,12 σL 1,3 dB (313)» de cada tramo del contorno con registros. */
+const contourText = (bins: ContourBin[]): string =>
+  bins
+    .filter((b) => b.walls > 0)
+    .map(
+      (b) =>
+        `${b.fromDeg}–${b.toDeg}° contraste ${b.contrastGrey.toFixed(0)} CVc ${b.cvc.toFixed(2)} σL ${Number.isFinite(b.sigmaLDb) ? b.sigmaLDb.toFixed(2) : '—'} dB (${b.walls})`,
     )
     .join(', ') || '—';
 let gpu = 'desconocida';
@@ -124,13 +151,15 @@ try {
       const fps = await page.evaluate(() =>
         Number(/(\d+) fps/.exec(document.querySelector('#status')?.textContent ?? '')?.[1] ?? Number.NaN),
       );
+      // los registros siempre: el contorno los necesita también sin barrido
       const { faceSamples, ...stats } = await page.evaluate(
-        ([samples, compound]) => window.__vexusTest!.fidelity({ display: true, samples, compound }),
-        [SWEEP, COMPOUND_ON] as const,
+        (compound) => window.__vexusTest!.fidelity({ display: true, samples: true, compound }),
+        COMPOUND_ON,
       );
       // las dos medidas del coste, en la pose de partida: el barrido deja la sonda basculada o inclinada
       const msPerFrame = await page.evaluate((id) => window.__vexusTest!.frameCostMs(20, { startPoint: id }), view);
       let sweep: FaceSummary | undefined;
+      let contourSweep: ContourStats | undefined;
       if (SWEEP) {
         const poses = [faceSamples ?? []];
         for (const pose of SWEEP_POSES) {
@@ -141,7 +170,9 @@ try {
           poses.push(s.faceSamples ?? []);
         }
         sweep = summarizeFaces(poses);
+        contourSweep = contourStats(poses);
       }
+      const contour = contourStats([faceSamples ?? []]);
       // con color al final: la caja encendida deja color en la persistencia que las poses leerían
       const msPerFrameColor = await page.evaluate((id) => window.__vexusTest!.frameCostMs(20, { forceColor: true, startPoint: id }), view);
       const faces = sweep ?? stats.display;
@@ -154,6 +185,8 @@ try {
         stats,
         ...(sweep ? { sweep } : {}),
         escasos,
+        contour,
+        ...(contourSweep ? { contourSweep } : {}),
         errors,
       };
       await page.close();
@@ -196,6 +229,12 @@ try {
             ? `· gris ${d.liverBands.map((b) => `${b.r0}–${b.r1} ${f2(b.sd)} (${b.pixels})`).join(', ')} · umbra ${f2(d.shadow.umbraEndLook0Mm)}→${f2(d.shadow.umbraEndCompoundMm)} mm (${f2(d.shadow.umbraShiftMm)})`
             : '',
         );
+      const cc = contourSweep ?? contour;
+      console.log(
+        ''.padEnd(32),
+        `contorno: extremos bruscos ${contour.capsuleEnds} · salto de incidencia p99 ${Number.isFinite(contour.incidenceJumpP99Deg) ? contour.incidenceJumpP99Deg.toFixed(1) : '—'}° / máx ${Number.isFinite(contour.incidenceJumpMaxDeg) ? contour.incidenceJumpMaxDeg.toFixed(1) : '—'}° (${contour.incidencePairs} pares)`,
+        `· ${contourSweep ? 'barrido' : 'pose'}: cápsula ${contourText(cc.capsule)} · Morison ${contourText(cc.renalCapsule)}`,
+      );
     }
   }
 } finally {

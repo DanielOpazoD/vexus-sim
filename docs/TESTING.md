@@ -24,6 +24,12 @@ constante o un umbral ajustado a la salida actual no protege nada.
 - **Contraejemplos**: lo que fast-check encuentra se arregla o se documenta como `it.fails`
   enlazado a una limitación de `docs/LIMITATIONS.md`.
 - **Semillas fijas**: fisiología, dispersores y fast-check son deterministas.
+- **Primero la prueba que falla**: una decisión de imagen planificada deja antes sus pruebas con
+  `it.fails` y los umbrales del plan, en un PR sin cambio de imagen; el PR de la decisión las pasa a
+  `it`. Las decisiones 60 y 63 (contorno de la cápsula) las tienen en `liverContour.test.ts` (aristas y
+  extremos del contorno del hígado en las vistas de las capturas), `capsuleTwin.test.ts` (la cápsula
+  oblicua en el gemelo B→C→D) y `fidelityScene.test.ts` (salto de incidencia entre líneas), las tres
+  lentas.
 - **Fronteras**: cerca de un umbral clínico (PF 30/50 %, S/D renal 0,3) una prueba acepta la
   clase vecina y lo dice; lejos de él exige igualdad.
 

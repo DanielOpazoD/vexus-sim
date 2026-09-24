@@ -5,18 +5,23 @@
  *  - B: el medio anclado de tres planos de `speckleField.ts` (`anchoredSliceField`) y el eco de
  *    `interfaceEcho.ts` (`interfaceEchoField`, gemelo exacto de la GLSL, con `curvatureCoherence` en las
  *    caras de tubo); el espejo de A0 en el cruce exacto (`mirrorCrossing`) y la pleura desde él;
- *  - C: gaussiana axial de σ = max(0,6; 0,26/dr) muestras, truncada a ±12 y de energía unidad;
+ *  - C: gaussiana axial de σ = max(0,6; AXIAL_SIGMA_MM/dr) muestras, truncada a ±12 y de energía unidad;
  *  - D: gaussiana lateral de σ = max(0,35; σ_PSF/paso de línea) líneas (`lateralFwhmMm`), ±14, energía
  *    unidad, y envolvente ×2/√π;
  *  - G: gris de `greyMap.ts` con el hígado a 100 y 70 dB de rango.
  * El modelo `today` es la regla de antes (spec·cos⁴ en la muestra con bd < max(cosθ; 0,15)·dr, con el
  * espejo en el centro de la primera celda gruesa de pulmón): la prueba de regresión la usa.
  * La curvatura de cada cara entra con sus κ lateral y elevacional analíticos (la escena los da).
+ * `lines` cambia el número de líneas (192, las del convexo, por omisión): la prueba de convergencia de
+ * la cápsula difusa (decisión 63) compara 192 con 768. Las escenas de incidencia constante
+ * (`spiralCapsule`), de pliegue (`kinkCapsule`), la traza a lo largo de la cara (`faceTrace`) y σ_L
+ * (`sigmaL`) son las del PR 0 de las decisiones 60 y 63 (`capsuleTwin.test.ts`).
  */
 import { INTERFACES, Interface, LAST_TUBE_INTERFACE } from '../../anatomy/interfaces';
-import { lateralFwhmMm } from '../../ultrasound/beamModel';
+import { TISSUES, Tissue } from '../../anatomy/tissues';
+import { AXIAL_SIGMA_MM, lateralFwhmMm } from '../../ultrasound/beamModel';
 import { greyOfLevel, levelOfGrey } from '../../ultrasound/greyMap';
-import { IFACE_K_DB, curvatureCoherence, faceProfile, interfaceEchoField } from '../../ultrasound/interfaceEcho';
+import { IFACE_K_DB, IFACE_SHIFT_MM, curvatureCoherence, faceProfile, interfaceEchoField } from '../../ultrasound/interfaceEcho';
 import { anchoredSliceField, hash13, type SpeckleAnchor } from '../../ultrasound/speckleField';
 import { mirrorCrossing } from '../../ultrasound/transmission';
 import type { Vec3 } from '../../core/vec3';
@@ -37,15 +42,15 @@ export const K0 = (2 * Math.PI) / (1540 / 3.5e3);
 const Y_LIVER = levelOfGrey(100 / 255);
 
 export const elevSigma = (r: number): number => 1.6 * Math.sqrt(1 + ((r - EFOCUS) / 45) ** 2);
-export const thetaOf = (u: number): number => -HALF + (2 * HALF * (u + 0.5)) / LINES;
+export const thetaOf = (u: number, lines = LINES): number => -HALF + (2 * HALF * (u + 0.5)) / lines;
 export const lineDir = (th: number): V2 => [Math.sin(th), Math.cos(th)];
 export const posOn = (th: number, r: number): V2 => [(RC + r) * Math.sin(th), (RC + r) * Math.cos(th) - RC];
-export const linePitch = (r: number): number => (RC + r) * ((2 * HALF) / (LINES - 1));
+export const linePitch = (r: number, lines = LINES): number => (RC + r) * ((2 * HALF) / (lines - 1));
 export const latSigmaMm = (r: number, focus = FOCUS): number => lateralFwhmMm(r, focus) / 2.3548;
 
 /** Ganancia coherente de la pasada D para un reflector continuo (Σw/√Σw²), como FRAG_LATERAL. */
-export function lateralCoherentGain(r: number, focus = FOCUS): number {
-  const sT = Math.max(0.35, latSigmaMm(r, focus) / linePitch(r));
+export function lateralCoherentGain(r: number, focus = FOCUS, lines = LINES): number {
+  const sT = Math.max(0.35, latSigmaMm(r, focus) / linePitch(r, lines));
   const R = Math.min(14, Math.ceil(sT * 2.5));
   let s1 = 0;
   let s2 = 0;
@@ -91,6 +96,8 @@ export interface SimOpts {
   speckleGain?: number;
   /** Solo el perfil de la cara con amplitud `beta` (calibración de β). */
   unitS?: { beta: number };
+  /** Líneas del sector (192 por omisión): el mismo abanico de ±34° con otro paso. */
+  lines?: number;
 }
 
 export interface SimOut {
@@ -98,6 +105,7 @@ export interface SimOut {
   v0: number;
   nv: number;
   dr: number;
+  lines: number;
   cls: Cls[];
   reflected: Uint8Array;
 }
@@ -140,13 +148,14 @@ export function simulate(scene: Scene, o: SimOpts): SimOut {
   const v0 = Math.max(0, Math.floor(o.r0 / dr) - 24);
   const v1 = Math.min(FINE, Math.ceil(o.r1 / dr) + 24);
   const nv = v1 - v0;
-  const raw = new Float32Array(nv * LINES * 2);
-  const cls: Cls[] = new Array<Cls>(nv * LINES);
-  const reflected = new Uint8Array(nv * LINES);
+  const L = o.lines ?? LINES;
+  const raw = new Float32Array(nv * L * 2);
+  const cls: Cls[] = new Array<Cls>(nv * L);
+  const reflected = new Uint8Array(nv * L);
   const sg = o.speckleGain ?? 1;
   const echo = o.model === 'echo';
-  for (let u = 0; u < LINES; u++) {
-    const th = thetaOf(u);
+  for (let u = 0; u < L; u++) {
+    const th = thetaOf(u, L);
     const d0 = lineDir(th);
     let mirrorHit = -1;
     let dRefl: V2 = d0;
@@ -203,7 +212,7 @@ export function simulate(scene: Scene, o: SimOpts): SimOut {
           re += interfaceEchoField(Interface.Pleura, cm, 1, r - mirrorHit, K0, o.kDb ?? IFACE_K_DB);
         }
       }
-      const i = (v - v0) * LINES + u;
+      const i = (v - v0) * L + u;
       raw[i * 2] = re;
       raw[i * 2 + 1] = im;
       cls[i] = c;
@@ -211,43 +220,43 @@ export function simulate(scene: Scene, o: SimOpts): SimOut {
     }
   }
   // C: axial, energía unidad
-  const sAx = Math.max(0.6, 0.26 / dr);
+  const sAx = Math.max(0.6, AXIAL_SIGMA_MM / dr);
   const RA = Math.min(12, Math.ceil(sAx * 2.5));
   const wA = Array.from({ length: 2 * RA + 1 }, (_, k) => Math.exp(-0.5 * ((k - RA) / sAx) ** 2));
   const nA = Math.hypot(...wA);
   const ax = new Float32Array(raw.length);
   for (let v = 0; v < nv; v++)
-    for (let u = 0; u < LINES; u++) {
+    for (let u = 0; u < L; u++) {
       let re = 0;
       let im = 0;
       for (let k = -RA; k <= RA; k++) {
-        const j = (Math.min(nv - 1, Math.max(0, v + k)) * LINES + u) * 2;
+        const j = (Math.min(nv - 1, Math.max(0, v + k)) * L + u) * 2;
         re += wA[k + RA] * raw[j];
         im += wA[k + RA] * raw[j + 1];
       }
-      ax[(v * LINES + u) * 2] = re / nA;
-      ax[(v * LINES + u) * 2 + 1] = im / nA;
+      ax[(v * L + u) * 2] = re / nA;
+      ax[(v * L + u) * 2 + 1] = im / nA;
     }
   // D: lateral por profundidad y envolvente
-  const env = new Float32Array(nv * LINES);
+  const env = new Float32Array(nv * L);
   for (let v = 0; v < nv; v++) {
     const r = (v + v0 + 0.5) * dr;
-    const sT = Math.max(0.35, latSigmaMm(r, focus) / linePitch(r));
+    const sT = Math.max(0.35, latSigmaMm(r, focus) / linePitch(r, L));
     const RL = Math.min(14, Math.ceil(sT * 2.5));
     const wL = Array.from({ length: 2 * RL + 1 }, (_, k) => Math.exp(-0.5 * ((k - RL) / sT) ** 2));
     const nL = Math.hypot(...wL);
-    for (let u = 0; u < LINES; u++) {
+    for (let u = 0; u < L; u++) {
       let re = 0;
       let im = 0;
       for (let k = -RL; k <= RL; k++) {
-        const j = (v * LINES + Math.min(LINES - 1, Math.max(0, u + k))) * 2;
+        const j = (v * L + Math.min(L - 1, Math.max(0, u + k))) * 2;
         re += wL[k + RL] * ax[j];
         im += wL[k + RL] * ax[j + 1];
       }
-      env[v * LINES + u] = (Math.hypot(re, im) / nL) * 1.1283792;
+      env[v * L + u] = (Math.hypot(re, im) / nL) * 1.1283792;
     }
   }
-  return { env, v0, nv, dr, cls, reflected };
+  return { env, v0, nv, dr, lines: L, cls, reflected };
 }
 
 export const median = (a: readonly number[]): number => {
@@ -263,7 +272,15 @@ export function envAt(o: SimOut, u: number, r: number): number {
   const i = Math.floor(x);
   if (i < 0 || i + 1 >= o.nv) return NaN;
   const f = x - i;
-  return o.env[i * LINES + u] * (1 - f) + o.env[(i + 1) * LINES + u] * f;
+  return o.env[i * o.lines + u] * (1 - f) + o.env[(i + 1) * o.lines + u] * f;
+}
+
+/** Envolvente interpolada entre líneas y muestras en (línea continua `uc`, r), como la conversión de barrido. */
+export function envBilinear(o: SimOut, uc: number, r: number): number {
+  const u0 = Math.floor(uc);
+  if (u0 < 0 || u0 + 1 >= o.lines) return NaN;
+  const f = uc - u0;
+  return envAt(o, u0, r) * (1 - f) + envAt(o, u0 + 1, r) * f;
 }
 
 /** Gris mostrado con el hígado a 100 (mediana de su envolvente `liverMed`) y 70 dB de rango. */
@@ -273,12 +290,19 @@ export const grayOf = (env: number, liverMed: number): number => {
 };
 
 /** Hígado puro: mediana, media y RMS de la envolvente y su SNR (retrodispersión 1, sin heterogeneidad). */
-export function liverStats(depth = 180, seeds = [1, 2, 3], rc = 80): { median: number; mean: number; rms: number; snr: number } {
+export function liverStats(
+  depth = 180,
+  seeds = [1, 2, 3],
+  rc = 80,
+  lines = LINES,
+): { median: number; mean: number; rms: number; snr: number } {
   const sc: Scene = { classify: () => ({ back: 1, het: false, kind: 'liver', n: [0, 1], bd: 1e3, specOld: 0.5 }) };
   const envs: number[] = [];
+  // las mismas líneas laterales descartadas en ángulo (20 de 192) con cualquier número de líneas
+  const edge = Math.round((20 * lines) / LINES);
   for (const seed of seeds) {
-    const o = simulate(sc, { model: 'echo', r0: rc - 8, r1: rc + 8, seed, depth });
-    for (let v = 24; v < o.nv - 24; v++) for (let u = 20; u < LINES - 20; u++) envs.push(o.env[v * LINES + u]);
+    const o = simulate(sc, { model: 'echo', r0: rc - 8, r1: rc + 8, seed, depth, lines });
+    for (let v = 24; v < o.nv - 24; v++) for (let u = edge; u < lines - edge; u++) envs.push(o.env[v * lines + u]);
   }
   const me = mean(envs);
   const sd = Math.sqrt(mean(envs.map((x) => (x - me) ** 2)));
@@ -308,7 +332,7 @@ export function arcFace(R: number, twoSided = true): Scene {
 export function arcPeak(depth: number, rFace: number, beta: number, twoSided = true, stepMm = 0.02, every = 1): number {
   const o = simulate(arcFace(rFace, twoSided), { model: 'echo', depth, r0: rFace - 4, r1: rFace + 4, unitS: { beta }, speckleGain: 0 });
   const peaks: number[] = [];
-  for (let u = 40; u < LINES - 40; u += every) {
+  for (let u = 40; u < o.lines - 40; u += every) {
     let pk = 0;
     for (let r = rFace - 2; r <= rFace + 2; r += stepMm) pk = Math.max(pk, envAt(o, u, r) || 0);
     peaks.push(pk);
@@ -325,10 +349,13 @@ export function calibrateBeta(depth: number, rFace = 80, twoSided = true): { bet
 
 // ——— Escenas del diseño (s = pendiente rms verdadera, la tabla de `interfaces.ts`) ———
 
-/** Retrodispersión de los tejidos de las escenas (la de TISSUES, redondeada). */
+/**
+ * Retrodispersión de los tejidos de las escenas (la de TISSUES, redondeada). La de la cápsula es la de
+ * producción (`T_CAPSULE`): si cambia (decisión 63), el gemelo la sigue.
+ */
 export const BACK = {
   liver: 1.0,
-  capsule: 1.3,
+  capsule: TISSUES[Tissue.LiverCapsule].backscatter,
   wallThin: 0.7,
   wallPortal: 2.6,
   blood: 0.008,
@@ -390,6 +417,59 @@ export function capsuleScene(D: number, phiDeg: number): Scene {
 }
 
 /**
+ * Cápsula en espiral logarítmica centrada en el centro de curvatura del convexo: la misma incidencia θ en
+ * TODAS las líneas (la cara corta cada línea con el mismo ángulo). ρ_cara(th) = ρ0·exp(−th·tanθ), con ρ la
+ * distancia al centro y th el ángulo de la línea; s = (ρ − ρ_cara)·cosθ (positiva hacia el hígado) y normal
+ * cosθ·ρ̂ + senθ·ψ̂. Músculo | cápsula 0,8 (dueña de la cara, un lado) | hígado, como `capsuleScene`.
+ * `faceR(th)` es la profundidad de la cara en la línea de ángulo th.
+ */
+export function spiralCapsule(thetaDeg: number, rFace0: number, capsuleBack = BACK.capsule): Scene & { faceR: (th: number) => number } {
+  const T = (thetaDeg * Math.PI) / 180;
+  const c = Math.cos(T);
+  const sn = Math.sin(T);
+  const t = Math.tan(T);
+  const rho0 = RC + rFace0;
+  return {
+    faceR: (th: number) => rho0 * Math.exp(-th * t) - RC,
+    classify(p) {
+      const qx = p[0];
+      const qy = p[1] + RC;
+      const rho = Math.hypot(qx, qy);
+      const th = Math.atan2(qx, qy);
+      const s = (rho - rho0 * Math.exp(-th * t)) * c;
+      const n: V2 = [c * Math.sin(th) + sn * Math.cos(th), c * Math.cos(th) - sn * Math.sin(th)];
+      if (s < 0) return { back: BACK.muscle, het: true, kind: 'muscle', n, bd: -s, specOld: 0.2 };
+      if (s < 0.8) return { back: capsuleBack, het: false, kind: 'capsule', n, bd: s, specOld: 0.5, face: Interface.LiverCapsule, ifd: s };
+      return { back: BACK.liver, het: true, kind: 'liver', n, bd: s, specOld: 0.5 };
+    },
+  };
+}
+
+/**
+ * Pliegue de la cápsula: espiral de incidencia θR a la derecha de la línea th0 (th ≥ th0) y θL a su
+ * izquierda, continuas en th0 y con un salto de la normal (el corte de la cápsula anterior de la
+ * subxifoidea, que pasa de ~30° a ~58° en una línea). `incOf(th)` es la incidencia de cada lado.
+ */
+export function kinkCapsule(
+  thetaRDeg: number,
+  thetaLDeg: number,
+  rFace0: number,
+  th0 = 0,
+  capsuleBack = BACK.capsule,
+): Scene & { faceR: (th: number) => number; incOf: (th: number) => number } {
+  const right = spiralCapsule(thetaRDeg, rFace0, capsuleBack);
+  const rho0L = (RC + right.faceR(th0)) * Math.exp(th0 * Math.tan((thetaLDeg * Math.PI) / 180));
+  const left = spiralCapsule(thetaLDeg, rho0L - RC, capsuleBack);
+  return {
+    faceR: (th: number) => (th >= th0 ? right.faceR(th) : left.faceR(th)),
+    incOf: (th: number) => (th >= th0 ? thetaRDeg : thetaLDeg),
+    classify(p) {
+      return Math.atan2(p[0], p[1] + RC) >= th0 ? right.classify(p) : left.classify(p);
+    },
+  };
+}
+
+/**
  * Hígado | cápsula 0,8 | diafragma 2,5 | pulmón. La mitad abdominal del diafragma dibuja la cara
  * hepática; la cápsula junto al diafragma no dibuja nada; la pleura sale del espejo.
  */
@@ -417,13 +497,20 @@ export function diaphragmScene(D: number, phiDeg: number): Scene {
   };
 }
 
-/** Morison: hígado | grasa perirrenal 4 | cápsula renal 0,6 | corteza (riñón de radio 30 mm en elevación). */
-export function renalScene(D: number, phiDeg: number): Scene {
+/**
+ * Morison: hígado | grasa perirrenal 4 | cápsula renal 0,6 | corteza (riñón de radio 30 mm en elevación).
+ * Con `capsule`, una banda de cápsula hepática de `mm` y retrodispersión `back` entre el hígado y la grasa,
+ * como en la anatomía: allí la cápsula no dibuja su cara (es de la grasa, `MORISON_CONTACT_MM`), pero su
+ * retrodispersión (`T_CAPSULE`) está en el camino del pico de Morison.
+ */
+export function renalScene(D: number, phiDeg: number, capsule?: { mm: number; back: number }): Scene {
   const n = normalOf(phiDeg);
   const ke = 1 / 30;
   return {
     classify(p) {
       const s = p[0] * n[0] + (p[1] - D) * n[1];
+      if (capsule && s < -4 && s >= -4 - capsule.mm)
+        return { back: capsule.back, het: false, kind: 'capsule', n, bd: Math.min(s + 4 + capsule.mm, -4 - s), specOld: 0.5 };
       if (s < -4) return { back: BACK.liver, het: true, kind: 'liver', n, bd: 1e3, specOld: 0.5 };
       if (s < 0) {
         const outer = s + 4 < -s;
@@ -469,6 +556,8 @@ export interface BenchLine {
   peakEnvDb: number;
   rb: number;
   rLumen: number;
+  /** Paso entre líneas (mm) a la profundidad del borde. */
+  pitchMm: number;
 }
 
 export interface BenchOpts {
@@ -488,8 +577,8 @@ export function bench(scene: Scene, o: SimOut, liverMed: number, depth: number, 
   const before = opt.before ?? ((c: Cls) => c.kind === 'liver');
   const between = opt.between ?? ((c: Cls) => c.kind === 'wall');
   const lv = (g: number) => levelOfGrey(g / 255) * DR_DB;
-  for (let u = 8; u < LINES - 8; u++) {
-    const th = thetaOf(u);
+  for (let u = 8; u < o.lines - 8; u++) {
+    const th = thetaOf(u, o.lines);
     const cells: Cls[] = [];
     for (let k = 0; k < nr; k++) cells.push(scene.classify(posOn(th, (k + 0.5) * G)));
     let run = 0;
@@ -531,7 +620,16 @@ export function bench(scene: Scene, o: SimOut, liverMed: number, depth: number, 
       }
       if (ref.length < 8) break;
       const med = median(ref);
-      out.push({ u, inc, ratio: peak / med, dDb: lv(peak) - lv(med), peakEnvDb: 20 * Math.log10(peakEnv / median(refEnv)), rb, rLumen });
+      out.push({
+        u,
+        inc,
+        ratio: peak / med,
+        dDb: lv(peak) - lv(med),
+        peakEnvDb: 20 * Math.log10(peakEnv / median(refEnv)),
+        rb,
+        rLumen,
+        pitchMm: linePitch(rb, o.lines),
+      });
       break; // primera pared de la línea
     }
   }
@@ -556,7 +654,7 @@ export function summarize(lines: readonly BenchLine[]): BinSummary[] {
     let lastU = -10;
     for (const l of [...sel].sort((a, b) => a.u - b.u)) {
       if (l.dDb < 6) {
-        cur = l.u === lastU + 1 ? cur + linePitch(l.rb) : linePitch(l.rb);
+        cur = l.u === lastU + 1 ? cur + l.pitchMm : l.pitchMm;
         best = Math.max(best, cur);
       } else cur = 0;
       lastU = l.u;
@@ -595,6 +693,69 @@ export function beading(lines: readonly BenchLine[], b0: number, b1: number): nu
 }
 
 /**
+ * σ_L (dB) de las líneas de un tramo de incidencia: DE de [mediana del pico en 7 líneas − mediana en 41],
+ * en las líneas con sus 41 vecinas en el tramo; NaN con < 10. La variación del nivel a escala de
+ * centímetros (la línea «dibujada» de la crítica), la misma definición que `ContourBin.sigmaLDb` del banco.
+ */
+export function sigmaL(lines: readonly BenchLine[], b0: number, b1: number): number {
+  const byU = new Map<number, number>();
+  for (const l of lines) if (l.inc >= b0 && l.inc < b1) byU.set(l.u, l.peakEnvDb);
+  const win = (u: number, h: number): number | null => {
+    const v: number[] = [];
+    for (let du = -h; du <= h; du++) {
+      const x = byU.get(u + du);
+      if (x === undefined) return null;
+      v.push(x);
+    }
+    return median(v);
+  };
+  const res: number[] = [];
+  for (const u of byU.keys()) {
+    const a = win(u, 3);
+    const b = win(u, 20);
+    if (a !== null && b !== null) res.push(a - b);
+  }
+  if (res.length < 10) return NaN;
+  const m = mean(res);
+  return Math.sqrt(mean(res.map((x) => (x - m) ** 2)));
+}
+
+/**
+ * Traza a lo largo de la cara en la imagen (entre líneas, como la conversión de barrido bilineal): cada 0,1°
+ * de th en `thRange`, el máximo de la envolvente a ±0,6 mm del centro del perfil de la cara (su cruce más el
+ * desplazamiento de un lado), en dB de nivel mostrado sobre el hígado (gris 100). Devuelve la fracción de la
+ * traza a < +6 dB (huecos que se ven ENTRE líneas: el banco por línea no los cuenta), el CV de la amplitud y
+ * el dB mediano.
+ */
+export function faceTrace(
+  o: SimOut,
+  faceR: (th: number) => number,
+  liverMed: number,
+  thRange: readonly [number, number],
+): { gap: number; cv: number; meanDb: number; n: number } {
+  const dbs: number[] = [];
+  const amps: number[] = [];
+  const lv = (g: number) => levelOfGrey(g / 255) * DR_DB;
+  const step = (0.1 * Math.PI) / 180;
+  for (let th = thRange[0]; th <= thRange[1]; th += step) {
+    const uc = ((th + HALF) * o.lines) / (2 * HALF) - 0.5;
+    const rf = faceR(th) + IFACE_SHIFT_MM;
+    let pk = 0;
+    for (let r = rf - 0.6; r <= rf + 0.6; r += 0.05) pk = Math.max(pk, envBilinear(o, uc, r) || 0);
+    if (!(pk > 0)) continue;
+    dbs.push(lv(grayOf(pk, liverMed)) - lv(100));
+    amps.push(pk);
+  }
+  const m = mean(amps);
+  return {
+    gap: dbs.filter((x) => x < 6).length / Math.max(1, dbs.length),
+    cv: Math.sqrt(mean(amps.map((x) => (x - m) ** 2))) / m,
+    meanDb: median(dbs),
+    n: dbs.length,
+  };
+}
+
+/**
  * Diafragma con espejo: píxeles del diafragma saturados (≥ 250) y líneas con costura (> 0,3 mm de pulmón
  * en su camino antes o después del espejo).
  */
@@ -609,13 +770,13 @@ export function diaphragmExtras(
   let px = 0;
   let seamLines = 0;
   let lines = 0;
-  for (let u = 8; u < LINES - 8; u++) {
+  for (let u = 8; u < o.lines - 8; u++) {
     let n = 0;
-    for (let v = 0; v < o.nv; v++) if (o.cls[v * LINES + u].kind === 'lung') n++;
+    for (let v = 0; v < o.nv; v++) if (o.cls[v * o.lines + u].kind === 'lung') n++;
     lines++;
     if (n * o.dr > 0.3) seamLines++;
     for (let r = r0; r < r1; r += 0.1) {
-      if (sc.classify(posOn(thetaOf(u), r)).kind !== 'diaphragm') continue;
+      if (sc.classify(posOn(thetaOf(u, o.lines), r)).kind !== 'diaphragm') continue;
       px++;
       if (grayOf(envAt(o, u, r), liverMed) >= 250) sat++;
     }

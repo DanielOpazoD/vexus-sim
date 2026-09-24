@@ -9,6 +9,7 @@ import type { TransducerProfile } from './transducerProfile';
 import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
 import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
 import { GREY_CURVE, greyOfLevel } from './greyMap';
+import { AXIAL_SIGMA_MM } from './beamModel';
 import { ANCHOR_SALT_STEP, ElevationAnchor } from './speckleField';
 import { interfaceUniforms } from './interfaceEcho';
 import {
@@ -930,7 +931,7 @@ export class UltrasoundRenderer {
     p.v4('uBeam', b.k * b.lambdaMm, b.apertureTxMm, b.apertureRxMaxMm, b.fNumberRxMin);
   }
 
-  // C — convolución axial (pulso ≈ 2 ciclos a 3,5 MHz → σ ≈ 0,26 mm)
+  // C — convolución axial (pulso ≈ 2 ciclos a 3,5 MHz → σ = AXIAL_SIGMA_MM, 0,26 mm)
   private passAxial(inputs: FrameInputs): void {
     const gl = this.gl;
     const depth = inputs.bmode.depthMm;
@@ -938,7 +939,7 @@ export class UltrasoundRenderer {
     this.pAxial.use();
     this.pAxial.tex('uField', 0, this.tRaw.textures[0]);
     const dz = depth / FINE_DEPTH;
-    this.pAxial.f('uSigmaTexels', Math.max(0.6, 0.26 / dz));
+    this.pAxial.f('uSigmaTexels', Math.max(0.6, AXIAL_SIGMA_MM / dz));
     this.pAxial.v2('uTexel', 1 / this.lines, 1 / FINE_DEPTH);
     drawFullscreen(gl);
   }

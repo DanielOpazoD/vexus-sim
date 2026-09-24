@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  CAPSULE_END_SPAN_MM,
   clearanceMask,
+  contourStats,
   depthProfile,
   displayStats,
   echoWidthMm,
@@ -282,12 +284,137 @@ describe('banco de interfaces: líneas pintadas', () => {
 
   it('los tramos van por incidencia y las paredes no se mezclan entre poses', () => {
     const oblique = summarizeFaces([wall(30, () => 30, { incidenceDeg: 25 })]).wallSystems.hepaticVein;
-    expect(oblique.map((b) => b.walls)).toEqual([0, 30, 0]);
+    expect(oblique.map((b) => b.walls)).toEqual([0, 30, 0, 0]);
     expect(oblique[0].gapFraction).toBeNaN();
     // dos poses con la misma numeración de líneas y amplitudes distintas: cada pared es continua
     const b = summarizeFaces([wall(30, () => 10), wall(30, () => 40)]).wallSystems.hepaticVein[0];
     expect(b.walls).toBe(60);
     expect(b.beading).toBeLessThan(1e-9);
+  });
+
+  it('el tramo de 60–80° se informa y lo de ≥ 80° no entra en ninguno', () => {
+    const bins = (inc: number) => summarizeFaces([wall(10, () => 30, { kind: 'capsule', incidenceDeg: inc })]).capsule.map((b) => b.walls);
+    expect(bins(70)).toEqual([0, 0, 0, 10]);
+    expect(bins(85)).toEqual([0, 0, 0, 0]);
+  });
+});
+
+describe('contorno de las caras: líneas pintadas (PR 0 de las decisiones 60 y 63)', () => {
+  // Cápsula: cresta pintada a 80,5 mm sobre el hígado de debajo (gris ≈ 100), 0,87 mm entre líneas
+  const RB = 80;
+  const R_FACE = 80.5;
+  const PITCH = 0.87;
+  const gauss = (x: number, sigma: number): number => Math.exp(-0.5 * (x / sigma) ** 2);
+  /** Gris de la curva del simulador con el hígado (envolvente 1) 29,5 dB bajo el techo de `dr` dB. */
+  const curveGray =
+    (dr: number) =>
+    (e: number): number =>
+      Math.round(255 * greyOfLevel(Math.min(1, Math.max(0, (20 * Math.log10(Math.max(e, 1e-9)) - 29.5 + dr) / dr))));
+  /** Gris lineal en dB: 100 en el hígado y `slope` grises por dB. */
+  const linearGray =
+    (slope: number) =>
+    (e: number): number =>
+      100 + slope * 20 * Math.log10(Math.max(e, 1e-9));
+  const capsule = (
+    n: number,
+    amp: (u: number) => number,
+    o: { gray?: (e: number) => number; dr?: number; incidenceDeg?: (u: number) => number; wall?: number } = {},
+  ): FaceSample[] =>
+    Array.from({ length: n }, (_, u) => {
+      const env = (r: number): number => 1 + amp(u) * gauss(r - R_FACE, 0.3);
+      const gray = o.gray ?? curveGray(70);
+      return {
+        ...measureFaceLine(
+          { env, gray: (r) => gray(env(r)), liver: (r) => r > R_FACE + 1 },
+          { rb: RB, rTarget: R_FACE, ref: 'below' },
+          o.dr ?? 70,
+        )!,
+        kind: 'capsule' as const,
+        wall: o.wall ?? 0,
+        u,
+        rb: RB,
+        pitchMm: PITCH,
+        incidenceDeg: o.incidenceDeg?.(u) ?? 5,
+      };
+    });
+  const bin0 = (samples: FaceSample[]) => contourStats([samples]).capsule[0];
+  const db = (x: number): number => Math.pow(10, x / 20);
+
+  it('una cresta constante da CVc 0 y σ_L 0; su contraste es el de la cresta pintada en gris', () => {
+    const b = bin0(capsule(60, () => 30));
+    expect(b.walls).toBe(60);
+    expect(b.cvc).toBe(0);
+    expect(b.sigmaLDb).toBe(0);
+    expect(b.contrastGrey).toBe(curveGray(70)(31) - curveGray(70)(1));
+    // la tendencia lenta (lóbulo, profundidad) tampoco cuenta: las dos medianas la siguen
+    expect(bin0(capsule(60, (u) => 30 * db((u - 30) / 6))).sigmaLDb).toBeLessThan(1e-9);
+    // sin 41 líneas seguidas en el tramo no hay σ_L; sin cresta sobre el hígado, tampoco CVc
+    expect(bin0(capsule(40, () => 30)).sigmaLDb).toBeNaN();
+    expect(bin0(capsule(20, () => 0)).cvc).toBeNaN();
+  });
+
+  it('σ_L mide la variación a escala de centímetros: ±3 dB con periodo de 3,5 cm dan ~2 dB', () => {
+    const b = bin0(capsule(90, (u) => 30 * db(3 * Math.sin((2 * Math.PI * u) / 40))));
+    expect(b.sigmaLDb).toBeGreaterThan(1.5);
+    expect(b.sigmaLDb).toBeLessThan(2.5);
+  });
+
+  it('el contraste en gris varía con la curva de grises del equipo; el CVc casi no', () => {
+    const rng = new SeededRandom(5);
+    const gains = Array.from({ length: 60 }, () => db(rng.range(-6, 6)));
+    const amp = (u: number) => 10 * gains[u];
+    // gris lineal en dB con la pendiente ±10 %: el contraste escala ±10 % y el CVc no cambia
+    const ref = bin0(capsule(60, amp, { gray: linearGray(3) }));
+    expect(ref.cvc).toBeGreaterThan(0.1);
+    for (const k of [0.9, 1.1]) {
+      const b = bin0(capsule(60, amp, { gray: linearGray(3 * k) }));
+      expect(b.contrastGrey / ref.contrastGrey).toBeCloseTo(k, 9);
+      expect(b.cvc).toBeCloseTo(ref.cvc, 9);
+    }
+    // la curva del simulador con el rango dinámico a ±10 %: el contraste se mueve 5–10 %, el CVc < 3 %
+    const at70 = bin0(capsule(60, amp));
+    for (const dr of [63, 77]) {
+      const b = bin0(capsule(60, amp, { gray: curveGray(dr), dr }));
+      expect(Math.abs(b.contrastGrey / at70.contrastGrey - 1), `${dr} dB`).toBeGreaterThan(0.04);
+      expect(Math.abs(b.contrastGrey / at70.contrastGrey - 1), `${dr} dB`).toBeLessThan(0.1);
+      expect(Math.abs(b.cvc / at70.cvc - 1), `${dr} dB`).toBeLessThan(0.03);
+    }
+  });
+
+  it('extremos bruscos: la mediana de 3 líneas cae ≥ 10 dB en ≤ 1 mm de pared desde ≥ +6 dB', () => {
+    const ends = (samples: FaceSample[]) => contourStats([samples]).capsuleEnds;
+    // cápsula que se corta a mitad de la pared (en un sentido o en el otro): un extremo
+    expect(ends(capsule(60, (u) => (u < 30 ? 30 : 0)))).toBe(1);
+    expect(ends(capsule(60, (u) => (u < 30 ? 0 : 30)))).toBe(1);
+    // un hueco de 3 líneas: dos extremos; una sola línea apagada (el moteado) no corta la línea
+    expect(ends(capsule(60, (u) => (u >= 28 && u < 31 ? 0 : 30)))).toBe(2);
+    expect(ends(capsule(60, (u) => (u === 30 ? 0 : 30)))).toBe(0);
+    // fundido de 30 dB en 6 mm (4,4 dB por línea): no es brusco; la pared continua, tampoco
+    const fade = (u: number) => 30 * db(-Math.min(30, Math.max(0, (u - 20) * ((30 * PITCH) / 6))));
+    expect(ends(capsule(60, fade))).toBe(0);
+    expect(ends(capsule(60, () => 30))).toBe(0);
+    expect(CAPSULE_END_SPAN_MM).toBe(1);
+    // la cara que sale de la imagen o de la pared (el registro termina) no es un extremo de la línea
+    expect(ends(capsule(20, () => 30))).toBe(0);
+  });
+
+  it('el salto de incidencia se mide entre líneas contiguas de la misma pared', () => {
+    const jump = (samples: FaceSample[]) => contourStats([samples]);
+    const step = jump(capsule(60, () => 30, { incidenceDeg: (u) => (u < 30 ? 32 : 58) }));
+    expect(step.incidenceJumpP99Deg).toBeCloseTo(26, 9);
+    expect(step.incidenceJumpMaxDeg).toBeCloseTo(26, 9);
+    expect(step.incidencePairs).toBe(59);
+    // con más de 100 pares, una arista sola queda por encima del p99: el máximo la sigue viendo
+    const long = jump(capsule(150, () => 30, { incidenceDeg: (u) => (u < 75 ? 32 : 58) }));
+    expect(long.incidenceJumpP99Deg).toBe(0);
+    expect(long.incidenceJumpMaxDeg).toBeCloseTo(26, 9);
+    expect(jump(capsule(60, () => 30, { incidenceDeg: (u) => 10 + 0.2 * u })).incidenceJumpP99Deg).toBeCloseTo(0.2, 9);
+    // dos paredes distintas a 5° y a 45° no son vecinas aunque compartan líneas
+    const two = [...capsule(30, () => 30, { wall: 0 }), ...capsule(30, () => 30, { wall: 1, incidenceDeg: () => 45 })];
+    expect(jump(two).incidenceJumpP99Deg).toBe(0);
+    // sin pares, NaN (no un 0 falso)
+    expect(jump([]).incidenceJumpP99Deg).toBeNaN();
+    expect(jump([]).incidenceJumpMaxDeg).toBeNaN();
   });
 });
 

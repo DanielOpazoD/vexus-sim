@@ -8,6 +8,7 @@ import {
   glslFloat,
   transientScale,
 } from '../ultrasound/receiver';
+import { AXIAL_SIGMA_MM } from '../ultrasound/beamModel';
 import { FRAG_AXIAL, FRAG_LATERAL, FRAG_RAWFIELD } from '../ultrasound/shaders/passes.glsl';
 import { scattererField } from '../ultrasound/speckleField';
 import { FINE, LINES, latSigmaMm, linePitch } from './support/interfaceTwin';
@@ -26,15 +27,15 @@ function unitKernel(sigma: number, cap: number): number[] {
 
 /**
  * Lo que la pasada B deja de sumar (campo del transitorio · escala desde el corte, acoplamiento 1) a la
- * profundidad seleccionada `depthMm`, filtrado como la imagen: C axial (σ = max(0,6; 0,26/dz) muestras,
- * ±12) y D lateral (σ = max(0,35; σ_PSF/paso de línea) líneas, ±14). Devuelve el peor rms sobre las líneas,
+ * profundidad seleccionada `depthMm`, filtrado como la imagen: C axial (σ = max(0,6; AXIAL_SIGMA_MM/dz)
+ * muestras, ±12) y D lateral (σ = max(0,35; σ_PSF/paso de línea) líneas, ±14). Devuelve el peor rms sobre las líneas,
  * en cualquier muestra desde el corte, relativo al rms del ruido del receptor, que al ser blanco no cambia
  * con núcleos de energía unidad.
  */
 function omittedVsNoise(depthMm: number, seed: number): { summed: number; axial: number; lateral: number } {
   const dz = depthMm / FINE;
   const focus = Math.min(90, depthMm); // foco por defecto, recortado a la profundidad como el equipo
-  const wA = unitKernel(Math.max(0.6, 0.26 / dz), 12);
+  const wA = unitKernel(Math.max(0.6, AXIAL_SIGMA_MM / dz), 12);
   const RA = (wA.length - 1) / 2;
   const v0 = Math.floor(TRANSIENT_SKIP_MM / dz) - RA;
   const nv = 2 * RA + Math.ceil(6 / dz); // hasta 6 mm tras el corte: el transitorio ya ha caído a e^(−1,5)

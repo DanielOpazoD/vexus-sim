@@ -13,7 +13,7 @@ import { Tissue } from '../anatomy/tissues';
 import { NORMAL_ADULT } from '../cases';
 import { VESSEL_IDS, VESSEL_META } from '../physiology/vessels';
 import { CONVEX_C35 } from '../probe/probe';
-import { CONVEX_BEAM, lateralSigmaMm } from '../ultrasound/beamModel';
+import { AXIAL_SIGMA_MM, CONVEX_BEAM, lateralSigmaMm } from '../ultrasound/beamModel';
 import {
   IFACE_BETA,
   IFACE_K_DB,
@@ -188,9 +188,9 @@ describe('Factores del eco de interfaz', () => {
   });
 
   it('una línea con el moteado del repositorio y el pulso de C: el cociente eco/moteado no depende de dr', () => {
-    // pasada C: gaussiana de σ = max(0,6; 0,26/dr) muestras, truncada a ±12 y de energía unidad
+    // pasada C: gaussiana de σ = max(0,6; AXIAL_SIGMA_MM/dr) muestras, truncada a ±12 y de energía unidad
     const kernel = (dr: number) => {
-      const s = Math.max(0.6, 0.26 / dr);
+      const s = Math.max(0.6, AXIAL_SIGMA_MM / dr);
       const R = Math.min(12, Math.ceil(2.5 * s));
       const w = Array.from({ length: 2 * R + 1 }, (_, k) => Math.exp(-0.5 * ((k - R) / s) ** 2));
       const n = Math.hypot(...w);

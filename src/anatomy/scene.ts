@@ -31,7 +31,9 @@ import {
   visceralPlaneDistance,
   type VisceralPlane,
 } from './organs/liver';
-import { buildHepaticBranches, buildVesselTree, type DuctDef, type VesselDef } from './vesselTree';
+import { buildHepaticBranches, buildVesselTree, wallThicknessMm, type DuctDef, type VesselDef } from './vesselTree';
+
+export { wallThicknessMm };
 import {
   LIGAMENTUM_VENOSUM,
   UMBILICAL_FISSURE,
@@ -87,18 +89,6 @@ export function tubeBoundingSphere(t: Tube, marginMm: number): { center: Vec3; r
   let r = 0;
   for (const n of t.nodes) r = Math.max(r, Math.hypot(n.p[0] - c[0], n.p[1] - c[1], n.p[2] - c[2]) + n.r * 1.6);
   return { center: c, r: r + marginMm };
-}
-
-/**
- * Espesor de pared en un punto del tubo (mm). La pared periportal (vaina de Glisson:
- * porta + arteria + conducto + tejido fibroso) es proporcional al calibre local:
- * 1,3 mm en el tronco (r 5,5) y 0,5 mm en las ramas periféricas (r ≤ 2), de modo que
- * el «doble contorno» ecogénico se desvanece hacia la periferia como en la imagen real.
- * Misma fórmula en GLSL (`portalWallMm`).
- */
-export function wallThicknessMm(def: VesselDef, localRadiusMm: number): number {
-  if (def.wallTissue !== Tissue.VesselWallPortal) return def.wallMm;
-  return Math.min(1.4, Math.max(0.5, 0.24 * localRadiusMm));
 }
 
 /** Ascenso posterior del arco costal (mm) según el número de costilla: 60 mm la 5.ª, +6 mm por costilla. */
@@ -213,7 +203,15 @@ export class AnatomyScene {
     }
     ({ vessels: this.vessels, ducts: this.ducts } = buildVesselTree(this.kidneyRight, this.kidneyLeft));
     // Ramas de 3.º–4.º orden confinadas al hígado (el SDF ya conoce riñón y vesícula)
-    this.vessels = [...this.vessels, ...buildHepaticBranches(this.vessels, (m) => -this.liverInteriorMargin(m))];
+    this.vessels = [
+      ...this.vessels,
+      ...buildHepaticBranches(
+        this.vessels,
+        (m) => -this.liverInteriorMargin(m),
+        7,
+        (m) => Math.min(this.liverInteriorMargin(m), this.ligamentumVenosumSdf(m)),
+      ),
+    ];
     // Solo los vasos «madre»: las ramas procedurales comparten id y no deben sustituirlos
     this.vesselById = new Map(this.vessels.filter((v) => v.flowFactor === undefined).map((v) => [v.id, v]));
     this.tubeBounds = [

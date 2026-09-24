@@ -1,6 +1,6 @@
 import { SeededRandom } from '../core/random';
 import { add, cross, dist, normalize, rotateAxis, scale, sub, type Vec3 } from '../core/vec3';
-import type { VesselId } from '../physiology/vessels';
+import { VESSEL_META, type CaliberLaw, type VesselId } from '../physiology/vessels';
 import { BERTIN_COLUMNS_U, kidneyWorld, type Kidney } from './organs/kidney';
 import type { Tube } from './primitives';
 import { Tissue } from './tissues';
@@ -406,18 +406,46 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
 }
 
 /**
+ * Espesor de pared en un punto del tubo (mm). La pared periportal (vaina de Glisson:
+ * porta + arteria + conducto + tejido fibroso) es proporcional al calibre local:
+ * 1,3 mm en el tronco (r 5,5) y 0,5 mm en las ramas periféricas (r ≤ 2), de modo que
+ * el «doble contorno» ecogénico se desvanece hacia la periferia como en la imagen real.
+ * Misma fórmula en GLSL (`portalWallMm`).
+ */
+export function wallThicknessMm(def: Pick<VesselDef, 'wallTissue' | 'wallMm'>, localRadiusMm: number): number {
+  if (def.wallTissue !== Tissue.VesselWallPortal) return def.wallMm;
+  return Math.min(1.4, Math.max(0.5, 0.24 * localRadiusMm));
+}
+
+/**
+ * Escala de radio máxima que la fisiología puede dar a una rama según la ley de calibre de su
+ * madre (medido en 20 s de los tres casos: suprahepáticas 1,71 en la congestión grave, porta
+ * 1,15). Las ramas se generan una vez para todos los casos, así que su contención se comprueba
+ * con el calibre más dilatado, con margen.
+ */
+export const BRANCH_MAX_RADIUS_SCALE: Record<CaliberLaw, number> = { hepaticVein: 1.8, portal: 1.2, ivc: 1, fixed: 1 };
+
+/**
  * Ramas hepáticas de 3.º y 4.º orden, procedurales y deterministas (semilla fija:
  * el avatar es el mismo para todos los casos). Cada rama de 2.º orden (portal o
  * suprahepática) emite dos hijas por bifurcación con ángulo 30–45° alrededor de un
  * eje aleatorio perpendicular, longitud 0,7× la del segmento madre (22–40 mm) y
- * radio 0,62×; las hijas vuelven a bifurcarse una vez. Los extremos se acortan
- * hasta quedar a ≥ 3 mm dentro del hígado (`liverSdf`), así el árbol nunca sale del
- * parénquima aunque el hígado cambie de tamaño. Las ramas heredan el `id`
+ * radio 0,62×; las hijas vuelven a bifurcarse una vez. Cada rama se acorta hasta que
+ * su extremo queda a ≥ 3 mm dentro del hígado (`liverSdf`) y su recorrido entero cabe con
+ * el calibre más dilatado (`BRANCH_MAX_RADIUS_SCALE`) y su pared lejos de la cápsula y de
+ * las fisuras (`clearance`), así el árbol nunca sale del parénquima aunque el hígado cambie
+ * de tamaño o las venas se dilaten. Las ramas heredan el `id`
  * fisiológico de su madre (misma velocidad × `flowFactor`) y su tejido de pared:
  * manguito periportal ecogénico en la porta, pared fina en las suprahepáticas
  * (B.1–B.3; densidad de ramas [EXTRAPOLACIÓN PROPIA] de un hígado adulto).
  */
-export function buildHepaticBranches(vessels: readonly VesselDef[], liverSdf: (m: Vec3) => number, seed = 7): VesselDef[] {
+export function buildHepaticBranches(
+  vessels: readonly VesselDef[],
+  liverSdf: (m: Vec3) => number,
+  seed = 7,
+  /** Holgura para la pared de la rama (mm, positiva dentro): por defecto −liverSdf; la escena añade las fisuras. */
+  clearance: (m: Vec3) => number = (m) => -liverSdf(m),
+): VesselDef[] {
   const rng = new SeededRandom(seed);
   const out: VesselDef[] = [];
   /** Ramas madre: [id, ¿extremo periférico es el PRIMER nodo? (suprahepáticas: sí)] */
@@ -434,12 +462,35 @@ export function buildHepaticBranches(vessels: readonly VesselDef[], liverSdf: (m
     ['hvMiddle', true],
     ['hvLeft', true],
   ];
-  /** Punto a distancia `len` de `origin` en `dir`, acortado hasta quedar ≥ 3 mm dentro del hígado. */
-  const fitInside = (origin: Vec3, dir: Vec3, len0: number): { end: Vec3; len: number } | null => {
+  /**
+   * ¿Cabe la rama entera con el calibre más dilatado? Se recorre cada 0,5 mm desde que sale de la luz
+   * de la madre: la luz (r·S_máx) más la pared debe quedar dentro del parénquima y fuera de las
+   * fisuras. Antes solo se miraban los extremos y una rama del caso grave cruzaba la fisura umbilical.
+   */
+  const segmentFits = (
+    origin: Vec3,
+    end: Vec3,
+    r0: number,
+    rEnd: number,
+    wall: Pick<VesselDef, 'wallTissue' | 'wallMm'>,
+    sMax: number,
+  ): boolean => {
+    const len = dist(origin, end);
+    const n = Math.max(1, Math.ceil(2 * len));
+    for (let k = 0; k <= n; k++) {
+      const t = k / n;
+      if (t * len < r0 * sMax) continue;
+      const r = (r0 + (rEnd - r0) * t) * sMax;
+      if (clearance(add(origin, scale(sub(end, origin), t))) < r + wallThicknessMm(wall, r)) return false;
+    }
+    return true;
+  };
+  /** Punto a distancia `len` de `origin` en `dir`, acortado hasta quedar ≥ 3 mm dentro del hígado y con la rama entera dentro. */
+  const fitInside = (origin: Vec3, dir: Vec3, len0: number, fits: (end: Vec3) => boolean): { end: Vec3; len: number } | null => {
     let len = len0;
     for (let i = 0; i < 8; i++) {
       const end = add(origin, scale(dir, len));
-      if (liverSdf(end) <= -3) return { end, len };
+      if (liverSdf(end) <= -3 && fits(end)) return { end, len };
       len *= 0.75;
     }
     return null;
@@ -462,14 +513,17 @@ export function buildHepaticBranches(vessels: readonly VesselDef[], liverSdf: (m
       const axis = normalize(cross(dir, rnd));
       const angle = ((k === 0 ? 1 : -1) * ((30 + 15 * rng.float()) * Math.PI)) / 180;
       const len0 = Math.min(40, Math.max(22, 0.7 * segLen)) * (0.9 + 0.2 * rng.float());
+      const rEnd = Math.max(0.9, r0 * 0.6);
+      const wall = { wallTissue: parent.wallTissue, wallMm: Math.max(0.4, parent.wallMm * 0.7) };
+      const sMax = BRANCH_MAX_RADIUS_SCALE[VESSEL_META[parent.id].caliber];
+      const fits = (end: Vec3) => segmentFits(origin, end, r0, rEnd, wall, sMax);
       let d2 = normalize(rotateAxis(dir, axis, angle));
-      let fit = fitInside(origin, d2, len0);
+      let fit = fitInside(origin, d2, len0, fits);
       if (!fit || fit.len < 12) {
         d2 = normalize(rotateAxis(dir, axis, -angle * 1.6));
-        fit = fitInside(origin, d2, len0);
+        fit = fitInside(origin, d2, len0, fits);
       }
       if (!fit || fit.len < 12) continue;
-      const rEnd = Math.max(0.9, r0 * 0.6);
       const nodes = peripheralFirst
         ? [
             { p: fit.end, r: rEnd },
@@ -484,8 +538,7 @@ export function buildHepaticBranches(vessels: readonly VesselDef[], liverSdf: (m
         tube: { kind: 'tube', nodes, apScale: 1 },
         refRadius: r0,
         profileN: parent.profileN,
-        wallTissue: parent.wallTissue,
-        wallMm: Math.max(0.4, parent.wallMm * 0.7),
+        ...wall,
         flowFactor: factor,
       });
       grow(parent, fit.end, d2, rEnd, fit.len, factor * 0.85, depth + 1, peripheralFirst);

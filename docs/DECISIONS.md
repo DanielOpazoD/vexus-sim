@@ -198,7 +198,11 @@ tubo con inicio, n.º de nodos, escalas, pared, tejidos, u_ref y **esfera envolv
 de `NODE_BASE`). Los nodos se suben una vez; las cabeceras (calibre, u_ref) cada cuadro. La esfera
 envolvente descarta la mayoría de tubos por muestra en CPU y GPU. Coste GPU a 16 cm: 13,5 ms por
 cuadro (medido con `EXT_disjoint_timer_query_webgl2`), tras evitar la clasificación de los planos
-laterales de elevación cuando el central está lejos de toda interfaz (`sampleSide`).
+laterales de elevación cuando el central está lejos de toda interfaz (`sampleSide`). Precisión
+(revisión externa, 23-09-2026): «lejos» es `bd` > desplazamiento + 0,5 mm, y la `bd` del hígado no
+cuenta los tubos, así que junto a un vaso fuera del plano el plano lateral hereda el tejido del
+central (1–5 % de los píxeles de hígado, `side-plane-skips-tubes`); el margen de 0,5 mm es además
+menor que la cápsula (0,8 mm).
 
 ## 25. Corte ecográfico en un Worker con la anatomía TypeScript
 

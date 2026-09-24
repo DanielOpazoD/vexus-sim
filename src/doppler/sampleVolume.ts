@@ -19,9 +19,10 @@ import { VESSEL_META, type VesselId } from '../physiology/vessels';
  * la transmisión acumulada. La frecuencia Doppler física usa la velocidad
  * relativa v_rel = v_sangre + v_tejido − v_sonda proyectada sobre el haz.
  *
- * El resultado es una IQ que comparten espectro, color (a través de la misma
- * convención) y audio. Ningún elemento aquí consulta «si el cursor está
- * dentro del vaso».
+ * El resultado es una IQ que comparten espectro y audio. El color no la usa:
+ * es una emulación analítica por celda (pasada F) que solo comparte con el PW
+ * el campo de velocidades y la convención de signo. Ningún elemento aquí
+ * consulta «si el cursor está dentro del vaso».
  */
 export interface GateGeometry {
   /** Centro de la puerta en el mundo (mm). */

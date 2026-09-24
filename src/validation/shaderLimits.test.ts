@@ -38,4 +38,10 @@ describe('Límites del shader con margen para crecer', () => {
     expect(code).not.toMatch(/\bTISSUE_COUNT\b/);
     expect(FRAG_RAWFIELD).toContain(`uTissueClump4[${Math.ceil(TISSUE_COUNT / 4)}]`);
   });
+
+  // El GLSL de las costillas (`sdRib`) corta en x > 15 mm sin mirar `rightOnly`: todas deben serlo
+  // hasta que el corte viaje como dato (`no-spleen-no-left-ribs`).
+  it('todas las costillas son derechas, como supone el corte del shader', () => {
+    for (const c of CASES) for (const rib of new AnatomyScene(c).ribs) expect(rib.rightOnly, c.id).toBe(true);
+  });
 });

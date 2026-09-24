@@ -28,6 +28,17 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   cardíaca del calibre está amortiguada.
 - **Sin movimiento cardíaco transmitido a hígado/cava** (`no-cardiac-tissue-motion`); la
   respiración es el único movimiento tisular.
+- **Sin bazo ni costillas izquierdas** (`no-spleen-no-left-ribs`): el hipocondrio izquierdo solo
+  tiene riñón y vasos; todas las costillas son derechas (`rightOnly`), así que una ventana izquierda
+  no muestra sombras costales. El corte del shader (`sdRib`, `x > 15 mm`) supone que todas lo son:
+  `shaderLimits.test.ts` falla si se añade una costilla izquierda sin llevar `rightOnly` al GLSL.
+- **La PEEP no tiene efecto hemodinámico** (`peep-no-hemodynamic-effect`): se transmite un 40 % a la
+  pleura, pero la PAD se prescribe respecto a la pleural de fin de espiración y la PEEP se cancela;
+  con 0, 5 o 15 cmH₂O la PAD, la VCI y los caudales son idénticos. Solo cambia el modo ventilatorio.
+- **El índice de resistencia arterial es fijo** (`fixed-arterial-resistive-index`): el pulso arterial
+  es multiplicativo y el mismo en todos los casos, así que el IR renal (0,53) y el hepático (0,63) no
+  cambian entre casos; además el pulso sube 130–170 ms antes de la R. Medir el IR hoy no enseñaría
+  nada.
 
 ## Marco de coordenadas
 
@@ -41,6 +52,10 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **Sin lóbulos laterales ni de rejilla** (`no-sidelobes`); una luz vascular no recibe ecos de
   reflectores fuera del eje salvo por el grosor de corte.
 - **Sin imagen armónica** (`no-harmonics`); el conmutador no existe en la consola.
+- **Los planos laterales de elevación se saltan los vasos** (`side-plane-skips-tubes`): si el plano
+  central está a más de σe + 0,5 mm de una interfaz, los laterales heredan su tejido sin clasificar
+  (decisión 24), pero la `bd` del hígado no cuenta los tubos: junto a un vaso fuera del plano, el 1–5 %
+  de los píxeles de hígado no ve su borde en elevación.
 - **Estadística de speckle sin calibrar** (`speckle-statistics-uncalibrated`): no se ha medido
   célula de speckle, SNR local ni asimetría contra clips reales; los cambios de la decisión 19
   se validaron solo por inspección. Sí se comprueba en la e2e que la envolvente del parénquima

@@ -249,14 +249,15 @@ export class VenousNetwork {
     const qPortal = (pSplanchnic + pAbd - pHepatic) / k.rPortal;
     // Arteria hepática: el caudal arterial es mucho más pulsátil que la
     // presión media (lecho de alta resistencia con distensibilidad aguas
-    // arriba); factor 1,1 → IR ≈ 0,65 [EXTRAPOLACIÓN PROPIA].
+    // arriba); factor 1,1 → IR 0,63 medido sobre la verdad en los tres casos [EXTRAPOLACIÓN PROPIA].
     const qHepaticArtery = Math.max(0, (k.pArtMean - pHepatic) / k.rHepaticArtery) * (1 + 1.1 * pArtPulseFactor);
     // El cuerpo inferior está fuera del abdomen: su presión externa es ~0, por lo
     // que una presión abdominal alta reduce su retorno hacia la VCI.
     const qLowerBody = (pLowerBody - pIvc) / k.rLowerBody;
     const pJunction = pRa + k.rJunction * (s.qHepaticVein + s.qIvcToRa);
     // Lecho renal: presión elástica lineal + presión abdominal; la arteria renal es
-    // un lecho de baja resistencia (IR ≈ 0,6 → factor 0,8 sobre el pulso).
+    // un lecho de baja resistencia (factor 0,8 sobre el pulso → IR 0,53 medido; el mismo en los tres
+    // casos porque el pulso es multiplicativo y fijo, `fixed-arterial-resistive-index`).
     const pRenal = pAbd + (s.vRenal - k.v0Renal) / k.cRenal;
     const qRenalArtery = Math.max(0, (k.pArtMean - pRenal) / k.rRenalArtery) * (1 + 0.8 * pArtPulseFactor);
     return {

@@ -24,4 +24,8 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'speckle-statistics-uncalibrated',
   'left-handed-anatomy-frame',
   'renal-pause-resolution-prf',
+  'no-spleen-no-left-ribs',
+  'peep-no-hemodynamic-effect',
+  'fixed-arterial-resistive-index',
+  'side-plane-skips-tubes',
 ]);

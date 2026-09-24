@@ -101,10 +101,10 @@ export function beatWindows(b: { tR: number; rr: number; tX: number; tV: number;
 /**
  * Duración mínima de una interrupción del flujo renal para que cuente (s). Una pausa más breve no
  * llega a la línea de base en el espectro: la ventana de análisis (128 muestras, 21–49 ms a
- * 6000–2600 Hz), el suavizado y la mediana de la traza mezclan el flujo de sus bordes. Medido con
- * IQ sintética por la cadena real (filtro de pared, espectro, `measureObservedRenal`): se ven las
- * pausas de 15 ms a 6 kHz y de 20 ms a 2,6–3 kHz, no las de 10 ms. La verdad usa la misma
- * resolución que la medición para que ambas digan lo mismo [EXTRAPOLACIÓN PROPIA].
+ * 6000–2600 Hz), el suavizado y la mediana de la traza mezclan el flujo de sus bordes. 20 ms es lo
+ * que resuelve la captura a ~4 kHz (IQ sintética por la cadena real, cuatro semillas); a 1,5–2,6 kHz
+ * se pierden pausas de 20–30 ms y a 6 kHz se ven las de 10 ms (`renal-pause-resolution-prf`). La
+ * verdad usa esa resolución para decir lo mismo que la medición [EXTRAPOLACIÓN PROPIA].
  */
 export const RENAL_GAP_MIN_S = 0.02;
 

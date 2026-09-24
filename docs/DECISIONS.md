@@ -246,11 +246,18 @@ precisiones para que la verdad y la captura digan lo mismo:
   a la PRF por defecto sin corrección, ≈ 1,9 cm/s).
 - **Mínimo resoluble.** El cuantil robusto 0,97 del mínimo (decisión 44) descartaba ~26 ms por
   latido: una vena que se detenía 30 ms dos veces por latido salía continua. Ahora la captura toma el
-  mínimo exacto de su traza (ya filtrada por la mediana de 5 columnas). A su vez, una pausa más
-  breve que la resolución del espectro no llega a cero: con 128 muestras se ven las pausas de 15 ms
-  a 6 kHz y de 20 ms a 2,6–3 kHz, no las de 10 ms. Por eso la verdad usa el mínimo del máximo móvil
-  de `RENAL_GAP_MIN_S` = 20 ms (`resolvableMinimum`): cuenta la interrupción que el espectro puede
-  mostrar.
+  mínimo exacto de su traza, pero solo de columnas creíbles. A la PRF por defecto (2600 Hz) la
+  envolvente de la vena se hunde 3–6 columnas justo en su pico, con la sangre llenando el espectro
+  (+20 dB sobre el suelo en el lado de la vena). Una segunda revisión midió que así el sano salía
+  bifásico en 13 de 72 capturas, y en 12 de 72 con la regla vieja. Ahora una columna con la traza en
+  la línea de base y sangre en el lado de la vena (la prueba de presencia de la calidad,
+  `bloodInColumn`) es un hundimiento del detector y no fija el mínimo. Una pausa real está en el
+  suelo (±2 dB).
+- **Resolución de la verdad.** Una pausa más breve que la resolución del espectro no llega a cero.
+  La verdad usa el mínimo del máximo móvil de `RENAL_GAP_MIN_S` = 20 ms (`resolvableMinimum`). Esa
+  resolución es la del espectro a ~4 kHz: a 1,5–2,6 kHz se pierden pausas de 20–30 ms y a 6 kHz se
+  ven las de 10 ms (`renal-pause-resolution-prf`). Ninguno de los tres casos tiene pausas de 10–40 ms,
+  así que no cambia ningún resultado.
 
 Los tres casos no cambian: sano (mín 7,5) y FA (mín 7,1) continuos, grave (−5,3) monofásico. En la
 interpolación, el bifásico aparece en la fracción 0,8 (mín 1,9 cm/s) en vez de 0,5. Cerca del

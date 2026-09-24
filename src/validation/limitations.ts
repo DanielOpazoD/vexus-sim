@@ -23,4 +23,5 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'gate-placement-ignores-shadows',
   'speckle-statistics-uncalibrated',
   'left-handed-anatomy-frame',
+  'renal-pause-resolution-prf',
 ]);

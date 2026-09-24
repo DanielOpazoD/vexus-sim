@@ -297,7 +297,10 @@ test('ecos de interfaz: paredes y cápsula brillan y el espejo diafragmático no
 test('la pasada A en cuatro etapas da la misma transmisión de un solo rayo que el modelo de CPU', async ({ page }) => {
   // Decisión 54: impactos por línea, segmentos y suma acumulada reproducen `rayAttenuationDb` en los
   // mismos puntos (las líneas con espejo no: la CPU no sigue el rayo reflejado). Con GPU real,
-  // ≤ 0,0001 dB en cuatro ventanas; el color y el PW comparten este modelo (decisión 50).
+  // ≤ 0,0001 dB en cuatro ventanas; el color y el PW comparten este modelo (decisión 50). Cada línea se
+  // compara hasta su primer segmento ambiguo (otro tejido a ±0,02 mm): en SwiftShader un segmento en el
+  // borde de una cápsula o del intestino caía del otro lado en 33 de 50 fases respiratorias (también en
+  // main) y la suma difería 0,06–0,27 dB desde ahí; con el corte, 0 de 30 y ≤ 5·10⁻⁵ dB.
   test.setTimeout(240_000);
   const errors = await bootWithoutErrors(page);
   for (const startPoint of ['subxiphoid', 'flank'] as const) {

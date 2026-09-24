@@ -73,7 +73,15 @@ export interface TestHooks {
    * puntos de muestra, cada `every` líneas y en todas las profundidades gruesas; se saltan las líneas
    * con espejo (la CPU no sigue el rayo reflejado) y las transmisiones por debajo de −60 dB.
    */
-  transmissionParity: (opts?: { startPoint?: StartPoint['id']; every?: number }) => { lines: number; samples: number; maxDiffDb: number };
+  transmissionParity: (opts?: { startPoint?: StartPoint['id']; every?: number; ambiguityMm?: number }) => {
+    lines: number;
+    samples: number;
+    maxDiffDb: number;
+    /** Líneas cortadas en su primer segmento de tejido ambiguo (otro tejido a ±`ambiguityMm` del centro). */
+    truncatedLines: number;
+    /** Dónde está el peor desacuerdo (diagnóstico del mensaje de la e2e). */
+    worst: { line: number; depthMm: number; cpuDb: number; gpuDb: number; tissue: string } | null;
+  };
   /**
    * Persistencia del moteado al mover la sonda (decisión 55): correlación de la envolvente en el
    * hígado entre la pose de partida y la misma pose con `tiltDeg`/`yawDeg` más (`moved`), y al volver
@@ -208,24 +216,43 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       const depth = sim.bmode.depthMm;
       const step = depth / gpu.samples;
       const every = Math.max(1, opts?.every ?? 8);
+      // Un segmento cuyo centro está a menos de ε de una interfaz puede caer de un lado en float32 y del
+      // otro en float64 (SwiftShader llega a 0,014 mm en la cara del diafragma; el intestino, con ruido,
+      // más): la suma de A2 difiere entonces en un segmento (2·Δα·paso, 0,06–0,27 dB) de ahí en adelante.
+      // La clasificación ya la comprueba la equivalencia; aquí se compara la suma hasta ese segmento.
+      const eps = opts?.ambiguityMm ?? 0.02;
+      const classifyAt = (theta: number, r: number): Tissue =>
+        sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, theta, r), sim.sample).tissue;
       let lines = 0;
       let samples = 0;
       let maxDiffDb = 0;
+      let truncatedLines = 0;
+      let worst: { line: number; depthMm: number; cpuDb: number; gpuDb: number; tissue: string } | null = null;
       for (let u = 0; u < gpu.lines; u += every) {
         if (gpu.mirrorHit[(gpu.samples - 1) * gpu.lines + u] >= 0) continue;
         const theta = -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / gpu.lines;
         const tissues: Tissue[] = [];
         lines++;
         for (let k = 0; k < gpu.samples; k++) {
-          tissues.push(sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, theta, (k + 0.5) * step), sim.sample).tissue);
+          const r = (k + 0.5) * step;
+          const t = classifyAt(theta, r);
+          if (eps > 0 && (classifyAt(theta, r - eps) !== t || classifyAt(theta, r + eps) !== t)) {
+            truncatedLines++;
+            break;
+          }
+          tissues.push(t);
           const cpuDb = rayAttenuationDb(tissues, step, sim.profile.bEffectiveMHz);
           const gpuDb = -20 * Math.log10(Math.max(gpu.single[k * gpu.lines + u], 1e-12));
           if (cpuDb > 60 && gpuDb > 60) continue;
           samples++;
-          maxDiffDb = Math.max(maxDiffDb, Math.abs(cpuDb - gpuDb));
+          const diff = Math.abs(cpuDb - gpuDb);
+          if (diff > maxDiffDb) {
+            maxDiffDb = diff;
+            worst = { line: u, depthMm: r, cpuDb, gpuDb, tissue: TISSUES[t].name };
+          }
         }
       }
-      return { lines, samples, maxDiffDb };
+      return { lines, samples, maxDiffDb, truncatedLines, worst };
     },
     colorOnVessel: (vessels) => {
       const sim = getSim();

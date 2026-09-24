@@ -281,6 +281,54 @@ export function tubeQuery(p: Vec3, tube: Tube, radiusScale = 1): TubeHit {
   return best as TubeHit;
 }
 
+/**
+ * Gradiente de la distancia con signo del tubo (sd = dist − r(s)) en el segmento de `hit` y curvatura
+ * circunferencial de su cara: gemelo de `tubeQuery` en la GLSL, que deja el primero en `Cls.n` (sin
+ * normalizar) y la segunda en `Cls.kc` (decisión 57). En la sección elíptica el gradiente escala dos
+ * veces la componente AP, así que su norma es 1/apScale en las paredes anterior y posterior: la pasada B
+ * divide por ella `ifd` (el valor de sd) para tener la distancia por la normal. Dentro del segmento se
+ * resta el crecimiento del radio a lo largo del eje. La curvatura de la cara en su dirección
+ * circunferencial ĉ (normal a la cara y al eje) es |S·ĉ|²/(r·|∇dist|), con S = diag(1, 1/apScale, 1):
+ * 1/r en la sección circular, apScale/r en las paredes AP y 1/(apScale²·r) en las laterales.
+ */
+export function tubeFaceGradient(p: Vec3, tube: Tube, radiusScale: number, hit: TubeHit): { gradient: Vec3; curvature: number } {
+  const a = tube.nodes[hit.segment];
+  const b = tube.nodes[hit.segment + 1];
+  const ab: Vec3 = [b.p[0] - a.p[0], b.p[1] - a.p[1], b.p[2] - a.p[2]];
+  const len = Math.hypot(ab[0], ab[1], ab[2]) || 1;
+  const tg: Vec3 = [ab[0] / len, ab[1] / len, ab[2] / len];
+  const s = hit.s;
+  const d: Vec3 = [p[0] - (a.p[0] + ab[0] * s), p[1] - (a.p[1] + ab[1] * s), p[2] - (a.p[2] + ab[2] * s)];
+  const dot = (x: Vec3, y: Vec3) => x[0] * y[0] + x[1] * y[1] + x[2] * y[2];
+  let dist: number;
+  let g: Vec3;
+  const ap = tube.apScale;
+  if (ap !== 1) {
+    const along = dot(d, tg);
+    const perp: Vec3 = [d[0] - tg[0] * along, (d[1] - tg[1] * along) / ap, d[2] - tg[2] * along];
+    dist = Math.hypot(perp[0], perp[1], perp[2], along);
+    const q: Vec3 = [perp[0], perp[1] / ap, perp[2]];
+    const qt = dot(q, tg);
+    g = [q[0] - tg[0] * qt + tg[0] * along, q[1] - tg[1] * qt + tg[1] * along, q[2] - tg[2] * qt + tg[2] * along];
+  } else {
+    dist = Math.hypot(d[0], d[1], d[2]);
+    g = d;
+  }
+  const r = (a.r + (b.r - a.r) * s) * radiusScale;
+  const taper = s > 0 && s < 1 ? (radiusScale * (b.r - a.r)) / len : 0;
+  const inv = 1 / Math.max(dist, 1e-6);
+  const gn: Vec3 = [g[0] * inv - tg[0] * taper, g[1] * inv - tg[1] * taper, g[2] * inv - tg[2] * taper];
+  const gradient: Vec3 = dist > 0 && dot(gn, gn) > 0 ? gn : [0, 1, 0];
+  let curvature = 1 / r;
+  const c: Vec3 = [g[1] * tg[2] - g[2] * tg[1], g[2] * tg[0] - g[0] * tg[2], g[0] * tg[1] - g[1] * tg[0]];
+  const cl = Math.hypot(c[0], c[1], c[2]);
+  if (ap !== 1 && dist > 0 && cl > 1e-6) {
+    const cy = c[1] / cl;
+    curvature = ((1 + cy * cy * (1 / (ap * ap) - 1)) * dist) / (r * Math.hypot(g[0], g[1], g[2]));
+  }
+  return { gradient, curvature };
+}
+
 /** Ángulo alrededor del tronco: 0 = lado izquierdo del paciente (+x), π/2 = anterior (+y). */
 export function torsoPhi(x: number, y: number, t: Torso): number {
   return Math.atan2(y / t.b, x / t.a);

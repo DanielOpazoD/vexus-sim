@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AnatomyScene } from '../anatomy/scene';
+import { INTERFACE_COUNT } from '../anatomy/interfaces';
 import { TISSUE_COUNT } from '../anatomy/tissues';
 import { CASES } from '../cases';
 import { ANATOMY_GLSL, MAX_NODES, MAX_TUBES, MAX_TUBE_SEGMENTS } from '../anatomy/gpu/anatomy.glsl';
@@ -60,15 +61,17 @@ describe('Límites del shader con margen para crecer', () => {
 
   // Las constantes de TS entran en el GLSL interpoladas (`${...}`); un identificador suelto como
   // TISSUE_COUNT no existe en el shader y no compila (le pasó a `uTissueClump4`).
-  it('ningún shader usa TISSUE_COUNT como identificador suelto', () => {
+  it('ningún shader usa TISSUE_COUNT ni INTERFACE_COUNT como identificador suelto', () => {
     const code = FRAG_RAWFIELD.replace(/\/\/.*$/gm, '');
-    expect(code).not.toMatch(/\bTISSUE_COUNT\b/);
+    expect(code).not.toMatch(/\bTISSUE_COUNT\b|\bINTERFACE_COUNT\b/);
     expect(FRAG_RAWFIELD).toContain(`uTissueClump4[${Math.ceil(TISSUE_COUNT / 4)}]`);
+    expect(FRAG_RAWFIELD).toContain(`uIface[${INTERFACE_COUNT}]`);
   });
 
   // Un shader con más uniforms de los que admite la GPU no compila en ella (o, peor, en unas sí y en
-  // otras no): cada shader de fragmentos cabe con margen en el mínimo de WebGL2 (224 vec4). Hoy la
-  // pasada B (FRAG_RAWFIELD) declara 165 ranuras, COLOR 156 y QUERY 145.
+  // otras no): cada shader de fragmentos cabe con margen en el mínimo de WebGL2 (224 vec4). Hoy COLOR
+  // declara 156 ranuras, QUERY 145 y la pasada B 125: con el eco de interfaz (decisión 57, +15) dejó de
+  // declarar la atenuación y las banderas por tejido, que no lee (−54; antes 165).
   it(`cada shader de fragmentos declara ≤ ${SLOT_GUARD} ranuras vec4 de uniforms (80 % de 224)`, () => {
     const shaders = Object.entries(PASSES).filter(([name, src]) => name.startsWith('FRAG_') && typeof src === 'string');
     expect(shaders.length).toBeGreaterThan(8);
@@ -76,10 +79,14 @@ describe('Límites del shader con margen para crecer', () => {
       const { slots, arrays } = uniformSlots(src);
       expect(slots, `${name}: ${slots} ranuras (${arrays.join(' ')})`).toBeLessThanOrEqual(SLOT_GUARD);
     }
-    // la pasada B, la más cargada, cuenta sus arrays de tejidos y de escena
+    // la pasada B cuenta sus arrays de tejidos, de caras y de escena, y deja ≥ 8 ranuras de margen
     const raw = uniformSlots(FRAG_RAWFIELD);
     expect(raw.arrays).toContain(`uTissueBack[${TISSUE_COUNT}]`);
-    expect(raw.slots).toBeGreaterThan(150);
+    expect(raw.arrays).toContain(`uIface[${INTERFACE_COUNT}]`);
+    expect(raw.arrays).not.toContain(`uTissueAlpha[${TISSUE_COUNT}]`);
+    expect(raw.arrays).not.toContain(`uTissueFlag[${TISSUE_COUNT}]`);
+    expect(raw.slots).toBeGreaterThan(100);
+    expect(raw.slots).toBeLessThanOrEqual(SLOT_GUARD - 8);
   });
 
   it('el recuento de ranuras sigue las reglas de empaquetado y no adivina tamaños', () => {

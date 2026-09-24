@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene, BASELINE_CALIBER, wallThicknessMm, type FaceGeometry } from '../anatomy/scene';
+import { Interface } from '../anatomy/interfaces';
 import { Tissue } from '../anatomy/tissues';
 import { CASES, NORMAL_ADULT } from '../cases';
 import { SimulationClock } from '../core/clock';
@@ -511,4 +512,170 @@ describe('Caras geométricas del banco de interfaces (faceSdf)', () => {
   function cls0(p: V) {
     return scene.classify(p, BASELINE_CALIBER);
   }
+});
+
+describe('Caras de interfaz en classify (decisión 57)', () => {
+  // Cada punto dice qué cara dibuja (una por estructura) y a qué distancia está de ella; la GPU dice
+  // lo mismo (`Cls.iface`, `Cls.ifd`) y la e2e de equivalencia lo comprueba punto a punto.
+  const scene = new AnatomyScene(NORMAL_ADULT);
+  type V = [number, number, number];
+  const cls = (p: V) => scene.classify(p, BASELINE_CALIBER);
+  const sdf = (face: FaceGeometry, p: V) => scene.faceSdf(p, BASELINE_CALIBER, face)!;
+  const along = (p: V, d: V, t: number): V => [p[0] + d[0] * t, p[1] + d[1] * t, p[2] + d[2] * t];
+  /** Cruce de la cara (sdf = 0) entre p0 (sdf < 0) y p0 + d·tMax (sdf > 0). */
+  const crossing = (face: FaceGeometry, p0: V, d: V, tMax: number, sign = 1): V => {
+    let lo = 0;
+    let hi = tMax;
+    expect(sign * sdf(face, p0)).toBeLessThan(0);
+    expect(sign * sdf(face, along(p0, d, tMax))).toBeGreaterThan(0);
+    for (let i = 0; i < 60; i++) {
+      const mid = 0.5 * (lo + hi);
+      if (sign * sdf(face, along(p0, d, mid)) > 0) hi = mid;
+      else lo = mid;
+    }
+    return along(p0, d, 0.5 * (lo + hi));
+  };
+  /** Primer punto (pasos de 0,05 mm) de `tissue` sobre p0 + d·t. */
+  const first = (p0: V, d: V, tissue: Tissue, tMax: number): { p: V; t: number } => {
+    for (let t = 0; t <= tMax; t += 0.05) if (cls(along(p0, d, t)).tissue === tissue) return { p: along(p0, d, t), t };
+    throw new Error(`${Tissue[tissue]} no aparece`);
+  };
+
+  it('luz de la VCI: la sangre a 0,2 mm de la pared y la pared dibujan IvcLumen a |hit.d|', () => {
+    const center: V = [-22, -16, 0];
+    expect(cls(center).vessel).toBe('ivcInfra');
+    const c = crossing('tube', center, [1, 0, 0], first(center, [1, 0, 0], Tissue.VesselWallThin, 20).t);
+    const blood = cls(along(c, [1, 0, 0], -0.2));
+    expect(blood.tissue).toBe(Tissue.Blood);
+    expect(blood.interface).toBe(Interface.IvcLumen);
+    expect(blood.interfaceDistance).toBeCloseTo(Math.abs(sdf('tube', along(c, [1, 0, 0], -0.2))), 6);
+    expect(blood.interfaceDistance).toBeGreaterThan(0.1);
+    const wall = cls(along(c, [1, 0, 0], 0.2));
+    expect(wall.tissue).toBe(Tissue.VesselWallThin);
+    expect(wall.interface).toBe(Interface.IvcLumen);
+    expect(wall.interfaceDistance).toBeCloseTo(sdf('tube', along(c, [1, 0, 0], 0.2)), 6);
+  });
+
+  it('cada sistema tiene su cara de la luz: suprahepática, porta, arteria, colédoco y vesícula', () => {
+    const mid = (nodes: { p: V }[]): V =>
+      along(nodes[0].p, [nodes[1].p[0] - nodes[0].p[0], nodes[1].p[1] - nodes[0].p[1], nodes[1].p[2] - nodes[0].p[2]], 0.5);
+    const hv = scene.vessels.find((v) => VESSEL_META[v.id].system === 'hepaticVein' && v.flowFactor === undefined)!;
+    const hvCls = cls(mid(hv.tube.nodes));
+    expect(hvCls.tissue).toBe(Tissue.Blood);
+    expect(hvCls.interface).toBe(Interface.VeinLumen);
+    expect(cls([-12, -8, -72]).vessel).toBe('pvTrunk');
+    expect(cls([-12, -8, -72]).interface).toBe(Interface.PortalLumen);
+    expect(cls([12, -24, 0]).vessel).toBe('aorta');
+    expect(cls([12, -24, 0]).interface).toBe(Interface.ArteryLumen);
+    const cbd = scene.ducts.find((d) => d.id === 'cbd')!;
+    const cbdCls = cls(mid(cbd.tube.nodes));
+    expect(cbdCls.tissue).toBe(Tissue.Fluid);
+    expect(cbdCls.interface).toBe(Interface.DuctLumen);
+    const gb = cls([...scene.gallbladder.center]);
+    expect(gb.tissue).toBe(Tissue.Fluid);
+    expect(gb.interface).toBe(Interface.GallbladderLumen);
+    expect(gb.interfaceDistance).toBeCloseTo(-sdf('gallbladder', [...scene.gallbladder.center]), 9);
+  });
+
+  it('diafragma: la mitad abdominal dibuja la cara hepática a 2,5 − dDome; la pleural, ninguna', () => {
+    const c = crossing('dome', [-55, -5, 70], [0, 0, -1], 40);
+    const pleural = along(c, [0, 0, -1], 0.5);
+    expect(cls(pleural).tissue).toBe(Tissue.Diaphragm);
+    expect(sdf('dome', pleural)).toBeLessThan(1.25);
+    expect(cls(pleural).interface).toBe(Interface.None);
+    const abdominal = along(c, [0, 0, -1], 2);
+    const d = sdf('dome', abdominal);
+    expect(d).toBeGreaterThan(1.25);
+    expect(d).toBeLessThan(2.5);
+    expect(cls(abdominal).tissue).toBe(Tissue.Diaphragm);
+    expect(cls(abdominal).interface).toBe(Interface.DiaphragmLiver);
+    expect(cls(abdominal).interfaceDistance).toBeCloseTo(2.5 - d, 9);
+  });
+
+  it('cápsula hepática: dibuja su cara bajo la pared, no junto al diafragma ni en Morison', () => {
+    const liver: V = [-60, 20, -10];
+    const underWall = along(crossing('liverSurface', liver, [0, 1, 0], 90), [0, 1, 0], -0.3);
+    expect(cls(underWall).tissue).toBe(Tissue.LiverCapsule);
+    expect(cls(underWall).interface).toBe(Interface.LiverCapsule);
+    expect(cls(underWall).interfaceDistance).toBeCloseTo(-sdf('liverSurface', underWall), 9);
+    // bajo la cúpula manda la cara del diafragma
+    const underDome = along(crossing('liverSurface', liver, [0, 0, 1], 80), [0, 0, 1], -0.3);
+    expect(cls(underDome).tissue).toBe(Tissue.LiverCapsule);
+    expect(cls(underDome).interface).toBe(Interface.None);
+    // Morison: subiendo desde el riñón derecho, grasa perirrenal y enseguida la cápsula, que la toca
+    const k = scene.kidneyRight.center;
+    const morison = first(k, [0, 0, 1], Tissue.LiverCapsule, 70);
+    expect(cls(along(k, [0, 0, 1], morison.t - 0.3)).tissue).toBe(Tissue.PerirenalFat);
+    expect(cls(morison.p).interface).toBe(Interface.None);
+  });
+
+  it('riñón: cápsula renal y mitad interna de la grasa dibujan la cápsula; la mitad externa, la grasa', () => {
+    const k = scene.kidneyRight;
+    const up: V = [0, 0, 1];
+    const dOuter = (p: V) => kidneyQuery(p, k).dOuter;
+    const capsule = first(k.center, up, Tissue.RenalCapsule, 70).p;
+    const capsuleIn = along(capsule, up, 0.2);
+    expect(cls(capsuleIn).tissue).toBe(Tissue.RenalCapsule);
+    expect(cls(capsuleIn).interface).toBe(Interface.RenalCapsule);
+    expect(cls(capsuleIn).interfaceDistance).toBeCloseTo(-dOuter(capsuleIn), 9);
+    const fat = first(k.center, up, Tissue.PerirenalFat, 70).p;
+    const inner = along(fat, up, 0.5);
+    const outer = along(fat, up, 3.2);
+    expect(dOuter(inner)).toBeLessThan(2);
+    expect(dOuter(outer)).toBeGreaterThan(2);
+    expect(cls(inner).interface).toBe(Interface.RenalCapsule);
+    expect(cls(inner).interfaceDistance).toBeCloseTo(dOuter(inner), 9);
+    expect(cls(outer).tissue).toBe(Tissue.PerirenalFat);
+    expect(cls(outer).interface).toBe(Interface.PerirenalFat);
+    expect(cls(outer).interfaceDistance).toBeCloseTo(scene.perirenalMm - dOuter(outer), 9);
+  });
+
+  it('la VCI que entra en la aurícula no dibuja su cara dentro de ella; por debajo, sí', () => {
+    // el último nodo de la VCI suprahepática está a ~24 mm del centro de la aurícula (r 30): ~13 mm de tubo
+    // y su tapa quedan dentro. classify prueba los tubos antes que la aurícula, así que su pared y su luz
+    // se clasifican ahí; la cara no (antes, un eco de pared a +13–14 dB sobre el hígado en la cavidad negra)
+    const ra = scene.rightAtrium;
+    const inRa = (p: V) => Math.hypot(p[0] - ra.center[0], p[1] - ra.center[1], p[2] - ra.center[2]) < ra.r;
+    const supra = scene.vessels.find((v) => v.id === 'ivcSupra')!;
+    const last = supra.tube.nodes[supra.tube.nodes.length - 1].p;
+    const prev = supra.tube.nodes[supra.tube.nodes.length - 2].p;
+    expect(inRa(last)).toBe(true);
+    expect(inRa(prev)).toBe(false);
+    let tubeInRa = 0;
+    let tubeBelow = 0;
+    for (let x = -14; x <= 14; x += 0.5)
+      for (let y = -14; y <= 14; y += 0.5)
+        for (const f of [0.6, 0.8, 1, 1.1]) {
+          const p: V = along(prev, [last[0] - prev[0], last[1] - prev[1], last[2] - prev[2]], f);
+          p[0] += x;
+          p[1] += y;
+          const c = cls(p);
+          if (scene.faceSdf(p, BASELINE_CALIBER, 'tube') === null) continue;
+          if (inRa(p)) {
+            tubeInRa++;
+            expect(c.interface, `${p.map((v) => v.toFixed(1)).join(', ')}`).toBe(Interface.None);
+            expect(c.interfaceDistance).toBe(1e3);
+            // el tubo sigue clasificando su tejido: solo se quita la cara
+            expect([Tissue.Blood, Tissue.VesselWallThin]).toContain(c.tissue);
+          } else if (c.tissue === Tissue.Blood || c.tissue === Tissue.VesselWallThin) {
+            tubeBelow++;
+            expect(c.interface).toBe(Interface.IvcLumen);
+          }
+        }
+    expect(tubeInRa).toBeGreaterThan(200);
+    expect(tubeBelow).toBeGreaterThan(200);
+  });
+
+  it('hígado, intestino, músculo y pulmón no dibujan cara (llegan en los PR 6–7)', () => {
+    for (const [p, t] of [
+      [[-60, 20, -10], Tissue.Liver],
+      [[40, 40, -120], Tissue.Bowel],
+      [[-60, 72, -10], Tissue.Muscle],
+      [[-55, -5, 70], Tissue.Lung],
+    ] as [V, Tissue][]) {
+      expect(cls(p).tissue).toBe(t);
+      expect(cls(p).interface, Tissue[t]).toBe(Interface.None);
+      expect(cls(p).interfaceDistance).toBe(1e3);
+    }
+  });
 });

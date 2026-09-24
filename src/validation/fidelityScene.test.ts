@@ -16,6 +16,7 @@ import { lateralFwhmMm } from '../ultrasound/beamModel';
 import { COARSE_DEPTH, DISPLAY_MARGIN_PX, type DisplayFrame } from '../ultrasound/renderer';
 import { pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
+import { mirrorCrossing } from '../ultrasound/transmission';
 import { detect, psf, whiteField } from './syntheticSpeckle';
 
 /**
@@ -198,40 +199,50 @@ describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
       expect(s.snr, id).toBeLessThan(2.1);
     }
   });
-  it('el espejo de la marcha gruesa de hoy da el suelo del desfase: ~1 mm sin ningún error de colocación', () => {
-    // La pasada A (A0) pone el espejo en el centro del primer segmento grueso de pulmón (paso 180/160 =
-    // 1,125 mm): |espejo − pleura| cae en [0; paso) aunque la geometría sea exacta. `mirrorFloorMm` lo
-    // emula en la CPU; una GPU que coloca el espejo así mide justo ese suelo.
+  it('el espejo de la pasada A queda en el cruce exacto: el suelo del desfase baja de ~1 mm a < 0,01 mm', () => {
+    // A0 halla el primer segmento grueso de pulmón (paso 180/160 = 1,125 mm) y la bisección de 6 pasos lo
+    // lleva al cruce (decisión 57): |espejo − pleura| ≤ 0,009 mm. `mirrorFloorMm` lo emula en la CPU; una
+    // GPU que coloca el espejo así mide justo ese suelo, y una que lo deja en el centro del segmento (la
+    // marcha gruesa de antes) se aparta hasta un paso y no pasa la puerta de 0,05 mm del banco.
     const step = DEPTH / COARSE_DEPTH;
     const samples = subxiphoid.faceSamples!.filter((f) => f.kind === 'diaphragm');
     expect(samples.length).toBeGreaterThan(5);
     for (const f of samples) {
       expect(f.mirrorFloorMm, `línea ${f.u}`).toBeGreaterThanOrEqual(0);
-      expect(f.mirrorFloorMm, `línea ${f.u}`).toBeLessThan(step);
+      expect(f.mirrorFloorMm, `línea ${f.u}`).toBeLessThan(0.01);
     }
-    const floors = subxiphoid.display!.diaphragm.filter((b) => b.walls > 0).map((b) => b.mirrorFloorMm);
-    expect(Math.max(...floors)).toBeGreaterThan(0.5);
-    // transmisión de la GPU simulada: sin penumbra y con el espejo de A0 (primer centro de segmento en pulmón)
+    // transmisión de la GPU simulada, sin penumbra: el espejo de A0 (bisección) o el de la marcha gruesa
     const { sim, env, img } = planes.get('subxiphoid')!;
-    const n = G.lines * COARSE_DEPTH;
-    const tx: TransmissionFrame = {
-      lines: G.lines,
-      samples: COARSE_DEPTH,
-      single: new Float32Array(n).fill(1),
-      aperture: new Float32Array(n).fill(1),
-      mirrorHit: new Float32Array(n).fill(-1),
-    };
     const frame = frames.get('subxiphoid')!;
-    for (let u = 0; u < G.lines; u++)
-      for (let s = 0; s < COARSE_DEPTH; s++) {
-        const r = (s + 0.5) * step;
-        if (anatomy.classifyWorld(pointOnLine(frame, CONVEX_C35, thetaOf(u), r), engine.sample).tissue !== Tissue.Lung) continue;
-        tx.mirrorHit[(COARSE_DEPTH - 1) * G.lines + u] = r;
-        break;
+    const withMirror = (exact: boolean): TransmissionFrame => {
+      const n = G.lines * COARSE_DEPTH;
+      const tx: TransmissionFrame = {
+        lines: G.lines,
+        samples: COARSE_DEPTH,
+        single: new Float32Array(n).fill(1),
+        aperture: new Float32Array(n).fill(1),
+        mirrorHit: new Float32Array(n).fill(-1),
+      };
+      for (let u = 0; u < G.lines; u++) {
+        const isLung = (r: number) =>
+          anatomy.classifyWorld(pointOnLine(frame, CONVEX_C35, thetaOf(u), r), engine.sample).tissue === Tissue.Lung;
+        for (let s = 0; s < COARSE_DEPTH; s++) {
+          const r = (s + 0.5) * step;
+          if (!isLung(r)) continue;
+          tx.mirrorHit[(COARSE_DEPTH - 1) * G.lines + u] = exact ? mirrorCrossing(isLung, r, step) : r;
+          break;
+        }
       }
-    const gpu = fidelityStats(sim, env, img, { samples: true, transmission: tx }).faceSamples!.filter((f) => f.kind === 'diaphragm');
+      return tx;
+    };
+    const diaphragm = (tx: TransmissionFrame) => fidelityStats(sim, env, img, { samples: true, transmission: tx });
+    const exact = diaphragm(withMirror(true));
+    const gpu = exact.faceSamples!.filter((f) => f.kind === 'diaphragm');
     expect(gpu.length).toBe(samples.length);
     for (const f of gpu) expect(f.mirrorOffsetMm, `línea ${f.u}`).toBeCloseTo(f.mirrorFloorMm!, 4);
+    for (const b of exact.display!.diaphragm.filter((x) => x.walls > 0)) expect(b.mirrorOffsetMm).toBeLessThan(0.01);
+    const coarse = diaphragm(withMirror(false)).display!.diaphragm.filter((x) => x.walls > 0);
+    expect(Math.max(...coarse.map((b) => b.mirrorOffsetMm))).toBeGreaterThan(0.5);
   });
 
   it('cada muestra de los parches de Rayleigh es hígado a ≥ 6 mm del borde del hígado en 3D y del borde del sector', () => {

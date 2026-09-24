@@ -7,6 +7,7 @@ import { lateralFwhmMm } from '../ultrasound/beamModel';
 import { levelOfGrey } from '../ultrasound/greyMap';
 import { COARSE_DEPTH, nominalTgcDbPerCm, type DisplayFrame } from '../ultrasound/renderer';
 import { beamToPixel, pixelToBeam } from '../ultrasound/sectorGeometry';
+import { mirrorCrossing } from '../ultrasound/transmission';
 import type { EnvelopeFrame } from './speckle';
 import type { Simulator } from './simulator';
 
@@ -396,15 +397,15 @@ export interface DiaphragmBin extends WallBin {
   /** Líneas con una racha ≥ 0,3 mm de envolvente < hígado − 15 dB en [pleura; pleura + 2,5 mm]: costura. */
   seamFraction: number;
   /**
-   * p95 de |espejo de la GPU − pleura de la CPU| (mm); NaN sin la transmisión de la GPU. Incluye la
-   * cuantización de la marcha gruesa de la pasada A (`mirrorFloorMm`): con la colocación de hoy no baja
-   * de ella aunque la geometría sea exacta.
+   * p95 de |espejo de la GPU − pleura de la CPU| (mm); NaN sin la transmisión de la GPU. Incluye el error
+   * de colocación de la pasada A (`mirrorFloorMm`): no baja de él aunque la geometría sea exacta.
    */
   mirrorOffsetMm: number;
   /**
-   * Suelo de `mirrorOffsetMm` con la marcha gruesa de hoy: p95 de |centro del primer segmento grueso de
-   * pulmón − pleura| (mm), con la marcha A0 (`FRAG_TRANS_HITS`: paso profundidad/`COARSE_DEPTH`, 1,125 mm
-   * a 18 cm) emulada en la CPU. Cae en [0; paso): ~1 mm de p95 sin ningún error de colocación.
+   * Suelo de `mirrorOffsetMm` con la colocación de la pasada A: p95 de |espejo de A0 − pleura| (mm), con
+   * A0 (`FRAG_TRANS_HITS`: marcha de paso profundidad/`COARSE_DEPTH` y bisección de
+   * `MIRROR_BISECTION_STEPS` pasos, `mirrorCrossing`) emulada en la CPU. Con la bisección (decisión 57)
+   * es ≤ 0,009 mm; con la marcha gruesa sola caía en [0; paso), ~1 mm de p95.
    */
   mirrorFloorMm: number;
 }
@@ -738,18 +739,18 @@ export function summarizeFaces(poses: readonly (readonly FaceSample[])[]): FaceS
 export const GATED_MIN_RECORDS = 10;
 
 /**
- * Tramos que vigila el banco con GPU de los ecos de interfaz (PR 5b): pared de VCI y de suprahepáticas a
- * 0–20° (y la VSH a 40–60°, para su caída), la porta en los tres, y cápsula, diafragma y Morison a 0–20°.
+ * Tramos que vigila el banco con GPU de los ecos de interfaz (decisión 57): solo los que el barrido llena
+ * en alguna vista (docs/fidelity/README.md, «Qué llena el barrido»). La pared de la VCI a 0–20°, la VSH a
+ * 20–40° y 40–60° (su caída), la porta a 20–40°, la cápsula y Morison a 0–20° y el diafragma a 40–60°.
+ * La VSH y el diafragma a 0–20° no llegan a 10 registros en ninguna vista y no se vigilan.
  */
 export const GATED_FACE_BINS: readonly { label: string; kind: FaceKind; fromDeg: number }[] = [
   { label: 'VCI', kind: 'ivc', fromDeg: 0 },
-  { label: 'VSH', kind: 'hepaticVein', fromDeg: 0 },
+  { label: 'VSH', kind: 'hepaticVein', fromDeg: 20 },
   { label: 'VSH', kind: 'hepaticVein', fromDeg: 40 },
-  { label: 'porta', kind: 'portal', fromDeg: 0 },
   { label: 'porta', kind: 'portal', fromDeg: 20 },
-  { label: 'porta', kind: 'portal', fromDeg: 40 },
   { label: 'cápsula', kind: 'capsule', fromDeg: 0 },
-  { label: 'diafragma', kind: 'diaphragm', fromDeg: 0 },
+  { label: 'diafragma', kind: 'diaphragm', fromDeg: 40 },
   { label: 'Morison', kind: 'renalCapsule', fromDeg: 0 },
 ];
 
@@ -1235,20 +1236,22 @@ export function fidelityStats(
     const len = g ? Math.hypot(g[0], g[1], g[2]) : 0;
     return g && len > 0 ? Math.abs(dot(g, lineDirection(sim.frame, theta))) / len : null;
   };
-  // Espejo que da la marcha gruesa de la pasada A (A0, `FRAG_TRANS_HITS`): el centro del primer segmento de
-  // profundidad/COARSE_DEPTH cuyo punto medio es pulmón, sobre la línea recta (antes del espejo no se
-  // refleja). La GPU lo publica en `mirrorHit`; es el suelo de `mirrorOffsetMm` con esa marcha.
+  // Espejo de la pasada A (A0, `FRAG_TRANS_HITS`): la marcha de paso profundidad/COARSE_DEPTH halla el
+  // primer segmento cuyo punto medio es pulmón, sobre la línea recta (antes del espejo no se refleja), y la
+  // bisección (`mirrorCrossing`) lo lleva al cruce. La GPU lo publica en `mirrorHit`; es el suelo de
+  // `mirrorOffsetMm` con esa colocación.
   const coarseStep = depth / COARSE_DEPTH;
-  const coarseMirror = new Map<number, number>();
-  const coarseMirrorAt = (u: number): number => {
-    let hit = coarseMirror.get(u);
+  const passAMirror = new Map<number, number>();
+  const passAMirrorAt = (u: number): number => {
+    let hit = passAMirror.get(u);
     if (hit === undefined) {
       hit = -1;
+      const isLung = (r: number) => sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, thetaOf(u), r), sim.sample).tissue === Tissue.Lung;
       for (let s = 0; s < COARSE_DEPTH && hit < 0; s++) {
         const r = (s + 0.5) * coarseStep;
-        if (sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, thetaOf(u), r), sim.sample).tissue === Tissue.Lung) hit = r;
+        if (isLung(r)) hit = mirrorCrossing(isLung, r, coarseStep);
       }
-      coarseMirror.set(u, hit);
+      passAMirror.set(u, hit);
     }
     return hit;
   };
@@ -1362,7 +1365,7 @@ export function fidelityStats(
           ...(pleura
             ? {
                 mirrorOffsetMm: mirrorGpu >= 0 ? Math.abs(mirrorGpu - rTarget) : Number.NaN,
-                mirrorFloorMm: coarseMirrorAt(u) >= 0 ? Math.abs(coarseMirrorAt(u) - rTarget) : Number.NaN,
+                mirrorFloorMm: passAMirrorAt(u) >= 0 ? Math.abs(passAMirrorAt(u) - rTarget) : Number.NaN,
               }
             : {}),
         });

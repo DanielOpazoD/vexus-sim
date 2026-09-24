@@ -52,6 +52,18 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **Sin lóbulos laterales ni de rejilla** (`no-sidelobes`); una luz vascular no recibe ecos de
   reflectores fuera del eje salvo por el grosor de corte.
 - **Sin imagen armónica** (`no-harmonics`); el conmutador no existe en la consola.
+- **Solo tienen eco de interfaz las caras de vasos, vesícula, cápsula hepática, diafragma y riñón**
+  (`interface-echo-scope`, decisión 57): las fascias de la pared, las costillas, la piel y el gas
+  intestinal no dibujan su cara (PR 6 y 7); se ven por su moteado y su sombra.
+- **El eco de interfaz es solo la parte coherente de una cara lisa** (`interface-echo-coherent-only`):
+  sin destellos ni parte difusa de las superficies rugosas (la pleura da solo su parte coherente, −28,7 dB
+  a 0°), una cara por estructura y sin signo, sin la cara pared/hígado (misma impedancia) ni la de
+  cápsula renal/corteza, y sin interferencia de capa fina. Su nivel sale de K = 55 dB, un valor derivado
+  de un plano liso (± 6 dB) que se calibra con GPU dentro de [53; 57] dB.
+- **La coherencia de curvatura solo la tienen los tubos** (`interface-curvature-tubes-only`): vesícula,
+  riñón y cúpula son localmente planos para el eco. Sin la curvatura elevacional del riñón, Morison salía
+  ~1,5 dB más brillante que en el diseño (gemelo: 2,23 frente a 2,08 sobre el hígado a 0–20°); la s de la
+  cápsula renal, la cara que da su pico, pasa de 0,21 a 0,25 y lo deja en 2,17.
 - **Los planos laterales de elevación se saltan los vasos** (`side-plane-skips-tubes`): si el plano
   central está a más de σe + 0,5 mm de una interfaz, los laterales heredan su tejido sin clasificar
   (decisión 24), pero la `bd` del hígado no cuenta los tubos: junto a un vaso fuera del plano, el 1–5 %

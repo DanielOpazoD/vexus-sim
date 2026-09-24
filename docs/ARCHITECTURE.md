@@ -24,6 +24,9 @@ core ← physiology ← anatomy ← probe ← ultrasound
 app (orquesta todo el motor) ← ui (vistas; hoy aún ven el Simulator concreto) ← main
 ```
 
+Las utilidades que solo usan las pruebas (`src/validation/support/`, como el gemelo de los ecos de
+interfaz) pueden usar `core`, `anatomy` y `ultrasound`; el motor no las importa.
+
 El Doppler no conoce Web Audio: la app le inyecta un `AudioSink` (`DopplerAudio` en el navegador,
 `SILENT_AUDIO` en pruebas). Los vasos se clasifican por `VESSEL_META` (sistema, tipo, ley de
 calibre), nunca por el prefijo de su identificador; los casos salen de un único registro.
@@ -49,7 +52,7 @@ menú de capas) reciben funciones de acceso, no variables globales.
 ```
 input.tick(dt) / animación de punto de partida     gestos y teclas → pose
 sim.advance(dt)                     n pasos: fisiología → (si PW) puerta + IQ → filtro → STFT → audio
-sim.render()                        GPU: A transmisión → B campo+ruido → C/D PSF unitaria+envolvente → F color → G barrido → persistencia
+sim.render()                        GPU: A transmisión → B campo+eco de interfaz+ruido → C/D PSF unitaria+envolvente → F color → G barrido → persistencia
                                     (tabla FRAME_PASSES de ultrasound/passGraph.ts, validada; tiempo de GPU por pasada)
 overlay, navegador 3D, corte, ECG, espectrograma, HUD, consola   vistas
 ```

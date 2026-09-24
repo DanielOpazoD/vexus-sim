@@ -263,16 +263,18 @@ describe('banco de interfaces: líneas pintadas', () => {
   });
 
   it('el banco nombra los tramos vigilados que no llenan: pocos registros o sin rosario', () => {
-    // 60 líneas de una suprahepática a 0–20° llenan ese tramo; el resto de los vigilados, vacíos
-    const one = thinGatedBins(summarizeFaces([wall(60, () => 30)]));
-    expect(one.some((x) => x.startsWith('VSH 0–20°'))).toBe(false);
-    expect(one).toContain('VSH 40–60°: 0 registros');
-    expect(one).toContain('diafragma 0–20°: 0 registros');
-    expect(one).toHaveLength(8);
+    // 60 líneas de una suprahepática a 40–60° llenan ese tramo; el resto de los vigilados, vacíos. Solo
+    // se vigilan los tramos que el barrido llena: ni la VSH ni el diafragma a 0–20° (decisión 57)
+    const one = thinGatedBins(summarizeFaces([wall(60, () => 30, { incidenceDeg: 45 })]));
+    expect(one.some((x) => x.startsWith('VSH 40–60°'))).toBe(false);
+    expect(one).toContain('VSH 20–40°: 0 registros');
+    expect(one).toContain('diafragma 40–60°: 0 registros');
+    expect(one.some((x) => x.includes('0–20°') && (x.startsWith('VSH') || x.startsWith('diafragma')))).toBe(false);
+    expect(one).toHaveLength(6);
     // 9 registros no bastan; 15 líneas sueltas de 15 paredes llenan el tramo pero no dan rosario
-    expect(thinGatedBins(summarizeFaces([wall(9, () => 30)]))).toContain('VSH 0–20°: 9 registros');
-    const scattered = wall(15, () => 30, { kind: 'portal' }).map((f, i) => ({ ...f, wall: i, u: 10 * i }));
-    expect(thinGatedBins(summarizeFaces([scattered]))).toContain('porta 0–20°: 15 registros, sin rosario');
+    expect(thinGatedBins(summarizeFaces([wall(9, () => 30, { incidenceDeg: 45 })]))).toContain('VSH 40–60°: 9 registros');
+    const scattered = wall(15, () => 30, { kind: 'portal', incidenceDeg: 25 }).map((f, i) => ({ ...f, wall: i, u: 10 * i }));
+    expect(thinGatedBins(summarizeFaces([scattered]))).toContain('porta 20–40°: 15 registros, sin rosario');
   });
 
   it('los tramos van por incidencia y las paredes no se mezclan entre poses', () => {

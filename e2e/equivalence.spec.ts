@@ -4,8 +4,9 @@ import { expect, test } from '@playwright/test';
  * Gate de equivalencia TS ↔ GLSL (Fase 0). La anatomía existe dos veces: en
  * TypeScript (medición, PW, corte) y en GLSL (imagen, color). Aquí, con WebGL real
  * (SwiftShader en CI), se comparan en los cuatro puntos de partida de cada caso:
- * tejido lejos de bordes, identificador de vaso y velocidad de la sangre. Antes solo
- * se comprobaba a mano en la pestaña Docente y dejó pasar dos divergencias.
+ * tejido lejos de bordes, identificador de vaso y velocidad de la sangre, y la cara de
+ * interfaz que dibuja cada punto con su distancia (decisión 57). Antes solo se comprobaba
+ * a mano en la pestaña Docente y dejó pasar dos divergencias.
  */
 const CASES = ['normal-adult', 'severe-congestion', 'af-moderate-congestion'] as const;
 
@@ -37,5 +38,22 @@ test('la anatomía GLSL coincide con la TypeScript en tejido, vaso y velocidad',
     expect(vol.bloodPoints, vtag).toBeGreaterThan(300);
     expect(vol.vesselAgreement, vtag).toBe(1);
     expect(vol.velocityP95RelErr, vtag).toBeLessThan(1e-3);
+    // Caras de interfaz (decisión 57): lejos de los bordes, la misma cara (luz de cada sistema, mitad
+    // abdominal del diafragma, mitades de la grasa perirrenal) y la misma distancia a ella
+    expect(vol.interfacePoints, vtag).toBeGreaterThan(300);
+    expect(vol.interfaceAgreement, vtag).toBe(1);
+    // 7e-6 mm con GPU real (M4); SwiftShader llega a 0,014 mm en la cara del diafragma, cuya distancia
+    // es empinada junto al borde de la cúpula: una décima de la anchura del eco (σh 0,14 mm), invisible
+    expect(vol.interfaceDistanceMaxErr, vtag).toBeLessThan(0.02);
+    // …y en la cáscara donde se dibuja el eco (0,01–0,6 mm de la cara, según la CPU o la GPU): el
+    // reparto de dueños es una comparación real (umbral de Morison, mitades), así que se admite un
+    // desacuerdo por mil y se listan
+    const shell = await page.evaluate(() => window.__vexusTest!.interfaceShell());
+    const stag = `${id}/cáscara: ${JSON.stringify(shell)}`;
+    expect(shell.points, stag).toBeGreaterThan(5000);
+    for (const face of ['IvcLumen', 'VeinLumen', 'PortalLumen', 'LiverCapsule', 'DiaphragmLiver', 'RenalCapsule', 'PerirenalFat'])
+      expect(shell.byInterface[face] ?? 0, stag).toBeGreaterThan(50);
+    expect(shell.agreement, stag).toBeGreaterThanOrEqual(0.999);
+    expect(shell.distanceMaxErr, stag).toBeLessThan(0.02); // SwiftShader: 0,0033 mm; GPU real (M4): 2e-5
   }
 });

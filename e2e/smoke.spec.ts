@@ -177,26 +177,25 @@ test('el banco de fidelidad mide el moteado del hígado despejado como un campo 
   expect(errors).toEqual([]);
 });
 
-test('las normales de la GPU coinciden con el gradiente de la distancia de TS en las caras que darán brillo', async ({ page }) => {
-  // Banco de interfaces (PR 5a de la tanda 1.5): el eco de una cara lisa dependerá de la incidencia sobre
-  // su normal, y la normal de la GPU (`Cls.n`) nunca se había comprobado. Por vista y fila (cada cara y los
-  // subconjuntos de `FACE_NORMAL_SUBSETS`), los puntos del plano a 0,02–0,4 mm de la cara en un tejido que
-  // la dibuja (mismo tejido en GPU y CPU): |n·∇| frente al gradiente de `faceSdf`. Emulando la GLSL en TS
-  // (sano en apnea):
-  //  - cúpula y vesícula: ≥ 0,99 en p01;
-  //  - tubo: ≥ 0,99 en p05 mezclando todos los vasos, pero la VCI (fila `tubeIvc`) está mal en todo su
-  //    cuerpo, no solo en la tapa: su sección es elíptica y la normal escala la componente AP una vez y el
-  //    gradiente, dos. En el cuerpo (`tubeIvcBody`, sin tapa ni codos) |n·∇| va de 0,991 a 0,996 (p01–p50,
-  //    6–8°) con `ivcApScale` 0,777 y su mínimo baja a 0,984 (10°) con 0,70 respirando. La tapa dentro
-  //    de la aurícula y las uniones de tubos bajan además el p01 del tubo de la subxifoidea a 0,95. Lo
-  //    corrige 5b;
-  //  - riñón: fuera del redondeo de la escotadura hiliar (`kidneyOuterNotchFree`) la normal del elipsoide
-  //    es exacta (≥ 0,9999) y se exige p01 ≥ 0,98 en todas las vistas; junto a la escotadura
-  //    (`kidneyOuterNotch`, solo en la ventana renal) no: la fila entera da 0,61 en p01 (15 % bajo 0,98);
-  //  - cápsula hepática: por tramos (`liverSdf` elige la normal de una de las superficies que funde con
-  //    `smoothMax`); por la impresión renal y la unión de los lóbulos, p05 de 0,45 a 0,98 según la vista.
-  // Se exige lo que ya cumple (un fallo de cableado, de marco o de signo hundiría la mediana) y el resto
-  // se informa en las anotaciones: son los datos con los que los ecos de interfaz eligen su normal.
+test('las normales de la GPU coinciden con el gradiente de la distancia de TS en las caras que dan brillo', async ({ page }) => {
+  // Banco de interfaces (PR 5a de la tanda 1.5): el eco de una cara lisa depende de la incidencia sobre
+  // su normal (decisión 57). Por vista y fila (cada cara y los subconjuntos de `FACE_NORMAL_SUBSETS`), los
+  // puntos del plano a 0,02–0,4 mm de la cara en un tejido que la dibuja (mismo tejido en GPU y CPU):
+  // |n·∇| entre la normal que usa el eco (`faceGradient`) y el gradiente de `faceSdf`, y el error relativo
+  // de su norma (con ella el eco pasa ifd a distancia por la normal: en las paredes AP de la VCI elíptica
+  // vale 1/apScale, y sin ella el perfil integraba apScale, −2,2 dB). En 5a tres normales no eran el
+  // gradiente y 5b las corrige:
+  //  - VCI (`tubeIvc`, `tubeIvcBody`): la sección elíptica escalaba la componente AP una vez (d/dist) y el
+  //    gradiente la escala dos: 6–10° en todo el cuerpo. Ahora la normal es el gradiente de la sección
+  //    (con el afilamiento del radio); portada a TS da p01 ≥ 0,9999 en el cuerpo (faceNormals.test.ts);
+  //  - riñón: junto a la escotadura hiliar la normal era la del elipsoide (p01 0,61 en la ventana renal);
+  //  - cápsula hepática: `liverSdf` elegía la normal de una de sus superficies (p05 0,45–0,98).
+  //    Las dos pasan al gradiente numérico de su distancia con el paso del banco (0,02 mm): el mismo
+  //    cálculo que la CPU, salvo float32.
+  // Cúpula y vesícula ya daban ≥ 0,99 en p01 (ahora también usan el gradiente numérico). Un fallo de
+  // cableado, de marco o de signo hundiría la mediana; las caras que 5b corrige se exigen ahora en p01 (la
+  // VCI también en p05 ≥ 0,99). La norma, en p95 ≤ 0,01 (el gemelo TS da ≤ 5e-5; float32 y las uniones de
+  // tubos dan el resto; una GPU sin la norma da ≥ 0,1 en la VCI de la subxifoidea, faceNormals.test.ts).
   test.setTimeout(240_000);
   const errors = await bootWithoutErrors(page);
   // apnea espiratoria: los planos cortan la anatomía en la misma posición que el gemelo de TS
@@ -215,7 +214,7 @@ test('las normales de la GPU coinciden con el gradiente de la distancia de TS en
   const faces = ['tube', 'liverSurface', 'dome', 'kidneyOuter', 'gallbladder'] as const;
   // subconjuntos (`FACE_NORMAL_SUBSETS`): se muestrean aparte y no cambian la fila de su cara
   const subsets = ['tubeIvc', 'tubeIvcBody', 'kidneyOuterNotchFree', 'kidneyOuterNotch'] as const;
-  const gated = ['tube', 'dome', 'kidneyOuter', 'kidneyOuterNotchFree', 'gallbladder'] as const;
+  const gated = ['tube', 'liverSurface', 'dome', 'kidneyOuter', 'kidneyOuterNotchFree', 'gallbladder', 'tubeIvcBody'] as const;
   const seen = new Map<string, number>();
   for (const view of views) {
     const r = await page.evaluate((v) => window.__vexusTest!.faceNormals(v), view);
@@ -227,12 +226,15 @@ test('las normales de la GPU coinciden con el gradiente de la distancia de TS en
       if (f.points < 50) continue;
       test.info().annotations.push({
         type: `normales · ${row}`,
-        description: `${JSON.stringify(view)}: ${f.points} puntos, p01 ${f.p01.toFixed(3)}, p05 ${f.p05.toFixed(3)}, p50 ${f.p50.toFixed(4)}, < 0,98 en ${(100 * f.below098).toFixed(1)} %; peor ${f.worst}`,
+        description: `${JSON.stringify(view)}: ${f.points} puntos, p01 ${f.p01.toFixed(3)}, p05 ${f.p05.toFixed(3)}, p50 ${f.p50.toFixed(4)}, < 0,98 en ${(100 * f.below098).toFixed(1)} %, norma p95 ${f.normErrP95.toExponential(1)} máx ${f.normErrMax.toExponential(1)}; peor ${f.worst}`,
       });
       seen.set(row, (seen.get(row) ?? 0) + 1);
       if ((faces as readonly string[]).includes(row)) expect(f.p50, tag).toBeGreaterThanOrEqual(0.99);
       if (row === 'tube') expect(f.p05, tag).toBeGreaterThanOrEqual(0.98);
-      if (row === 'dome' || row === 'gallbladder' || row === 'kidneyOuterNotchFree') expect(f.p01, tag).toBeGreaterThanOrEqual(0.98);
+      if (row === 'tubeIvc' || row === 'tubeIvcBody') expect(f.p05, tag).toBeGreaterThanOrEqual(0.99);
+      const exact = ['liverSurface', 'dome', 'gallbladder', 'kidneyOuter', 'kidneyOuterNotchFree', 'kidneyOuterNotch', 'tubeIvcBody'];
+      if (exact.includes(row)) expect(f.p01, tag).toBeGreaterThanOrEqual(0.98);
+      if ((gated as readonly string[]).includes(row)) expect(f.normErrP95, tag).toBeLessThanOrEqual(0.01);
     }
   }
   // cada cara con brillo se comprobó en al menos una vista (la prueba no puede pasar vacía)
@@ -240,10 +242,65 @@ test('las normales de la GPU coinciden con el gradiente de la distancia de TS en
   expect(errors).toEqual([]);
 });
 
+test('ecos de interfaz: paredes y cápsula brillan y el espejo diafragmático no deja costura', async ({ page }) => {
+  // Decisión 57 con SwiftShader, una pose por vista y solo los tramos que se llenan (≥ 10 registros; el
+  // diafragma, ≥ 5 en el tramo que tenga: a 0–20° no hay ninguno, ver docs/fidelity/README.md, «Qué llena
+  // el barrido»). El gemelo B→C→D predice VCI 1,56, VSH 1,49 y cápsula 1,79 a 0–20° con K = 55 dB, y el
+  // espejo de A0 queda a ≤ 0,009 mm de la pleura; antes, paredes y cápsula a 1,02–1,26 y el espejo hasta
+  // 1,1 mm dentro del pulmón, con costura en el 4–18 % de las líneas. Umbrales con margen para la
+  // calibración de K en [53; 57] dB, que se hace con GPU real (`npm run fidelity -- --sweep`).
+  test.setTimeout(300_000);
+  const errors = await bootWithoutErrors(page);
+  await page
+    .locator('button', { hasText: /Apnea\s*esp/ })
+    .first()
+    .click();
+  const seen = { capsule: 0, diaphragm: 0 };
+  // paredes de vaso casi perpendiculares (< 15°): las de las vistas de partida están hondas (VCI a
+  // 125 mm en el flanco) y curvas, y la coherencia de curvatura las deja en +6–10 dB (GPU); sin eco
+  // de interfaz, el moteado solo daba ~3,5 dB
+  const tubePeaks: number[] = [];
+  for (const startPoint of ['subxiphoid', 'intercostal', 'flank'] as const) {
+    const s = await page.evaluate((id) => window.__vexusTest!.fidelity({ startPoint: id, display: true, samples: true }), startPoint);
+    const d = s.display!;
+    const tag = `${startPoint}: ${JSON.stringify({ capsule: d.capsule, walls: d.wallSystems, diaphragm: d.diaphragm, saturated: d.faceSaturated })}`;
+    // la imagen sigue en su sitio: hígado a media escala y el centro de la luz casi negro
+    expect(d.liver.p50, tag).toBeGreaterThan(85);
+    expect(d.liver.p50, tag).toBeLessThan(120);
+    expect(d.lumen.p50, tag).toBeLessThan(30);
+    // ninguna cara de órgano se blanquea (el diafragma, Morison y la vesícula son las más reflectantes)
+    for (const face of ['diaphragm', 'morison', 'gallbladder'] as const)
+      if (Number.isFinite(d.faceSaturated[face])) expect(d.faceSaturated[face], tag).toBeLessThanOrEqual(0.02);
+    const capsule = d.capsule[0];
+    if (capsule.walls >= 10) {
+      seen.capsule++;
+      expect(capsule.ratio, tag).toBeGreaterThanOrEqual(1.4);
+    }
+    for (const r of s.faceSamples ?? [])
+      if ((r.kind === 'ivc' || r.kind === 'hepaticVein' || r.kind === 'portal') && r.incidenceDeg < 15 && Number.isFinite(r.peakDb))
+        tubePeaks.push(r.peakDb);
+    for (const bin of d.diaphragm.filter((b) => b.walls >= 5)) {
+      seen.diaphragm++;
+      expect(bin.seamFraction, tag).toBeLessThanOrEqual(0.02);
+      expect(bin.mirrorOffsetMm, tag).toBeLessThanOrEqual(0.05);
+    }
+  }
+  // la prueba no puede pasar vacía: la cápsula y el diafragma se midieron en alguna vista
+  expect(seen.capsule).toBeGreaterThan(0);
+  const sorted = [...tubePeaks].sort((a, b) => a - b);
+  expect(sorted.length, JSON.stringify(sorted)).toBeGreaterThanOrEqual(5);
+  expect(sorted[Math.floor(sorted.length / 2)], JSON.stringify(sorted)).toBeGreaterThanOrEqual(5);
+  expect(seen.diaphragm).toBeGreaterThan(0);
+  expect(errors).toEqual([]);
+});
+
 test('la pasada A en cuatro etapas da la misma transmisión de un solo rayo que el modelo de CPU', async ({ page }) => {
   // Decisión 54: impactos por línea, segmentos y suma acumulada reproducen `rayAttenuationDb` en los
   // mismos puntos (las líneas con espejo no: la CPU no sigue el rayo reflejado). Con GPU real,
-  // ≤ 0,0001 dB en cuatro ventanas; el color y el PW comparten este modelo (decisión 50).
+  // ≤ 0,0001 dB en cuatro ventanas; el color y el PW comparten este modelo (decisión 50). Cada línea se
+  // compara hasta su primer segmento ambiguo (otro tejido a ±0,02 mm): en SwiftShader un segmento en el
+  // borde de una cápsula o del intestino caía del otro lado en 33 de 50 fases respiratorias (también en
+  // main) y la suma difería 0,06–0,27 dB desde ahí; con el corte, 0 de 30 y ≤ 5·10⁻⁵ dB.
   test.setTimeout(240_000);
   const errors = await bootWithoutErrors(page);
   for (const startPoint of ['subxiphoid', 'flank'] as const) {
@@ -304,15 +361,21 @@ test('el fundido del ancla del moteado no da saltos: la textura y la correlació
     tag,
   ).toBe(true);
   const snr0 = frames[0].snr;
+  // correlación de base entre cuadros sin fundido (1° de giro por cuadro): en el enlace de dos fundidos
+  // seguidos se espera ≈ 0,89 × la base (se comparte el medio con peso 8/9)
+  const still = frames
+    .filter((f) => f.w >= 1)
+    .map((f) => f.corrPrev)
+    .sort((a, b) => a - b);
+  const base = still[Math.floor(still.length / 2)];
   // sin destellos: el nivel del hígado no salta entre cuadros (soltar el medio viejo un cuadro antes
   // sumaba el mismo medio dos veces: +2,1 dB en el último cuadro de cada fundido)
   for (let i = 1; i < frames.length; i++) expect(Math.abs(frames[i].levelDb - frames[i - 1].levelDb), tag).toBeLessThan(0.8);
   for (const f of frames) {
     expect(f.snr / snr0, tag).toBeGreaterThan(0.85);
     expect(f.snr / snr0, tag).toBeLessThan(1.15);
-    // 1° de giro por cuadro ya da ~0,83 sin fundido (los píxeles laterales se mueven); el fundido
-    // no debe bajar de ahí más que un poco
-    expect(f.corrPrev, tag).toBeGreaterThan(0.7);
+    // el fundido no debe bajar la correlación con el cuadro anterior mucho más que el enlace esperado
+    expect(f.corrPrev, tag).toBeGreaterThan(0.75 * base);
   }
   expect(errors).toEqual([]);
 });

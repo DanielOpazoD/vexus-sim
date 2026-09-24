@@ -1,6 +1,13 @@
 import { VESSEL_META, type VesselId } from '../physiology/vessels';
 import type { EquipmentCommand } from './equipment';
-import { equivalenceSweep, volumeEquivalence, type EquivalencePoseReport, type VolumeEquivalenceReport } from './equivalenceSweep';
+import {
+  equivalenceSweep,
+  interfaceShellEquivalence,
+  volumeEquivalence,
+  type EquivalencePoseReport,
+  type InterfaceShellReport,
+  type VolumeEquivalenceReport,
+} from './equivalenceSweep';
 import { bestGateOnVessel } from './gatePlacement';
 import { acousticWindowWeight, gateTransmission } from './gateTransmission';
 import { lineCoupling, pointOnLine, type ProbePose } from '../probe/probe';
@@ -23,6 +30,8 @@ export interface TestHooks {
   equivalenceSweep: () => EquivalencePoseReport[];
   /** Equivalencia TS ↔ GLSL en `n` puntos aleatorios de todo el tronco. */
   volumeEquivalence: (n?: number) => VolumeEquivalenceReport;
+  /** Equivalencia de la cara de interfaz y su distancia a 0,01–0,6 mm de cada cara, en los planos de partida. */
+  interfaceShell: () => InterfaceShellReport;
   /**
    * Estadística del speckle en parénquima hepático (guarda de imagen). Con `startPoint`, coloca
    * antes la sonda en ese punto de partida y avanza lo justo para que el marco la siga.
@@ -44,11 +53,11 @@ export interface TestHooks {
     samples?: boolean;
   }) => FidelityStats;
   /**
-   * Normales de la GPU (`Cls.n`, `queryPoints` con `normals`) frente al gradiente de `faceSdf` de TS
-   * en las caras que darán brillo: por tipo de cara (y los subconjuntos de `FACE_NORMAL_SUBSETS`),
-   * |n·∇| en los puntos del plano a 0,02–0,4 mm de ella que caen en un tejido que la dibuja, con el
-   * mismo tejido en la GPU y en la CPU. `pose` bascula o inclina la sonda respecto a la pose de
-   * partida, como en `fidelity`.
+   * Gradientes de la GPU (el que usa el eco de interfaz, `faceGradient`; `queryPoints` con `normals`)
+   * frente al gradiente de `faceSdf` de TS en las caras que dan brillo: por tipo de cara (y los
+   * subconjuntos de `FACE_NORMAL_SUBSETS`), |n·∇| y el error relativo de la norma en los puntos del plano
+   * a 0,02–0,4 mm de ella que caen en un tejido que la dibuja, con el mismo tejido en la GPU y en la
+   * CPU. `pose` bascula o inclina la sonda respecto a la pose de partida, como en `fidelity`.
    */
   faceNormals: (opts: {
     startPoint: StartPoint['id'];
@@ -64,7 +73,15 @@ export interface TestHooks {
    * puntos de muestra, cada `every` líneas y en todas las profundidades gruesas; se saltan las líneas
    * con espejo (la CPU no sigue el rayo reflejado) y las transmisiones por debajo de −60 dB.
    */
-  transmissionParity: (opts?: { startPoint?: StartPoint['id']; every?: number }) => { lines: number; samples: number; maxDiffDb: number };
+  transmissionParity: (opts?: { startPoint?: StartPoint['id']; every?: number; ambiguityMm?: number }) => {
+    lines: number;
+    samples: number;
+    maxDiffDb: number;
+    /** Líneas cortadas en su primer segmento de tejido ambiguo (otro tejido a ±`ambiguityMm` del centro). */
+    truncatedLines: number;
+    /** Dónde está el peor desacuerdo (diagnóstico del mensaje de la e2e). */
+    worst: { line: number; depthMm: number; cpuDb: number; gpuDb: number; tissue: string } | null;
+  };
   /**
    * Persistencia del moteado al mover la sonda (decisión 55): correlación de la envolvente en el
    * hígado entre la pose de partida y la misma pose con `tiltDeg`/`yawDeg` más (`moved`), y al volver
@@ -118,6 +135,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
   return {
     equivalenceSweep: () => equivalenceSweep(getSim()),
     volumeEquivalence: (n) => volumeEquivalence(getSim(), n),
+    interfaceShell: () => interfaceShellEquivalence(getSim()),
     speckle: (opts) => {
       const sim = getSim();
       if (opts?.startPoint) goTo(sim, opts.startPoint);
@@ -198,24 +216,43 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       const depth = sim.bmode.depthMm;
       const step = depth / gpu.samples;
       const every = Math.max(1, opts?.every ?? 8);
+      // Un segmento cuyo centro está a menos de ε de una interfaz puede caer de un lado en float32 y del
+      // otro en float64 (SwiftShader llega a 0,014 mm en la cara del diafragma; el intestino, con ruido,
+      // más): la suma de A2 difiere entonces en un segmento (2·Δα·paso, 0,06–0,27 dB) de ahí en adelante.
+      // La clasificación ya la comprueba la equivalencia; aquí se compara la suma hasta ese segmento.
+      const eps = opts?.ambiguityMm ?? 0.02;
+      const classifyAt = (theta: number, r: number): Tissue =>
+        sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, theta, r), sim.sample).tissue;
       let lines = 0;
       let samples = 0;
       let maxDiffDb = 0;
+      let truncatedLines = 0;
+      let worst: { line: number; depthMm: number; cpuDb: number; gpuDb: number; tissue: string } | null = null;
       for (let u = 0; u < gpu.lines; u += every) {
         if (gpu.mirrorHit[(gpu.samples - 1) * gpu.lines + u] >= 0) continue;
         const theta = -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / gpu.lines;
         const tissues: Tissue[] = [];
         lines++;
         for (let k = 0; k < gpu.samples; k++) {
-          tissues.push(sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, theta, (k + 0.5) * step), sim.sample).tissue);
+          const r = (k + 0.5) * step;
+          const t = classifyAt(theta, r);
+          if (eps > 0 && (classifyAt(theta, r - eps) !== t || classifyAt(theta, r + eps) !== t)) {
+            truncatedLines++;
+            break;
+          }
+          tissues.push(t);
           const cpuDb = rayAttenuationDb(tissues, step, sim.profile.bEffectiveMHz);
           const gpuDb = -20 * Math.log10(Math.max(gpu.single[k * gpu.lines + u], 1e-12));
           if (cpuDb > 60 && gpuDb > 60) continue;
           samples++;
-          maxDiffDb = Math.max(maxDiffDb, Math.abs(cpuDb - gpuDb));
+          const diff = Math.abs(cpuDb - gpuDb);
+          if (diff > maxDiffDb) {
+            maxDiffDb = diff;
+            worst = { line: u, depthMm: r, cpuDb, gpuDb, tissue: TISSUES[t].name };
+          }
         }
       }
-      return { lines, samples, maxDiffDb };
+      return { lines, samples, maxDiffDb, truncatedLines, worst };
     },
     colorOnVessel: (vessels) => {
       const sim = getSim();
@@ -305,6 +342,13 @@ export interface FaceNormalStats {
   min: number;
   /** Fracción de los puntos con |n·∇| < 0,98 (la contingencia de la cápsula se decide con ella). */
   below098: number;
+  /**
+   * Error relativo de la norma del gradiente de la GPU (con la que el eco pasa `ifd` a distancia por la
+   * normal) frente a |∇ faceSdf| de TS, |g_GPU/g_TS − 1|: p95 y máximo, en los puntos de tejidos con cara
+   * (sin el pulmón de la cúpula). NaN si la GPU no la devuelve.
+   */
+  normErrP95: number;
+  normErrMax: number;
   /** El peor punto, para el mensaje de la prueba. */
   worst: string;
 }
@@ -313,7 +357,7 @@ export interface FaceNormalStats {
 const FACE_BAND_MM = [0.02, 0.4] as const;
 /** Puntos por fila y plano como máximo (la GPU los consulta de una vez). */
 const FACE_POINTS_MAX = 400;
-/** Tejidos que dibujan cada cara (su normal es la de esa cara en `classify`). */
+/** Tejidos que dibujan cada cara (su normal es la de esa cara en `classify` o en `faceGradient`). */
 const TUBE_TISSUES: ReadonlySet<Tissue> = new Set([
   Tissue.Blood,
   Tissue.VesselWallThin,
@@ -326,14 +370,15 @@ const TUBE_TISSUES: ReadonlySet<Tissue> = new Set([
 /**
  * Subconjuntos de la e2e de normales: separan lo que la fila de su cara mezcla y se muestrean aparte
  * (hasta `FACE_POINTS_MAX` puntos cada uno), así que la fila de la cara no cambia.
- *  - `tubeIvc`: puntos del tubo cuya luz es la VCI. Su sección es elíptica y la normal de la GPU
- *    (`tubeQuery`, d/dist) escala la componente AP una vez, mientras el gradiente la escala dos: en todo
- *    el cuerpo, no solo en la tapa, se aparta 6–10° según `ivcApScale` (|n·∇| 0,991 a 0,777, 0,984 a
- *    0,70). Mezclada con los demás tubos, no se ve en su p05.
+ *  - `tubeIvc`: puntos del tubo cuya luz es la VCI. Su sección es elíptica: hasta el PR 5b la normal de
+ *    la GPU (`tubeQuery`, d/dist) escalaba la componente AP una vez, mientras el gradiente la escala dos,
+ *    y en todo el cuerpo, no solo en la tapa, se apartaba 6–10° según `ivcApScale` (|n·∇| 0,991 a 0,777,
+ *    0,984 a 0,70). Mezclada con los demás tubos, no se veía en su p05.
  *  - `tubeIvcBody`: los de la VCI dentro de su segmento (0 < s < 1): sin la tapa en la aurícula ni los
  *    codos (las uniones con las suprahepáticas sí cuentan).
  *  - `kidneyOuterNotchFree` y `kidneyOuterNotch`: el contorno renal fuera o dentro del redondeo de la
- *    escotadura hiliar (`hilumNotchActive`). Fuera, la normal del elipsoide de la GPU es exacta.
+ *    escotadura hiliar (`hilumNotchActive`). Fuera, la normal del elipsoide era exacta; dentro no, y
+ *    desde el PR 5b la GPU usa en las dos el gradiente numérico del contorno (`faceGradient`).
  */
 export const FACE_NORMAL_SUBSETS = ['tubeIvc', 'tubeIvcBody', 'kidneyOuterNotchFree', 'kidneyOuterNotch'] as const;
 export type FaceNormalSubset = (typeof FACE_NORMAL_SUBSETS)[number];
@@ -440,9 +485,11 @@ export function faceNormalStats(sim: Simulator): Record<FaceNormalRow, FaceNorma
   chosen.forEach((c, i) => pts.set(c.p, i * 3));
   const gpu = sim.gpuQuery(pts, sim.frame, false, { normals: true });
   const normal = gpu.normal!;
+  const gradNorm = gpu.gradNorm;
   const out = {} as Record<FaceNormalRow, FaceNormalStats>;
   for (const row of [...FACE_GEOMETRIES, ...FACE_NORMAL_SUBSETS]) {
     const dots: { dot: number; i: number }[] = [];
+    const normErr: number[] = [];
     let mismatched = 0;
     chosen.forEach((c, i) => {
       if (c.row !== row) return;
@@ -455,7 +502,10 @@ export function faceNormalStats(sim: Simulator): Record<FaceNormalRow, FaceNorma
       const len = Math.hypot(g[0], g[1], g[2]);
       const dot = Math.abs(normal[i * 3] * g[0] + normal[i * 3 + 1] * g[1] + normal[i * 3 + 2] * g[2]) / len;
       dots.push({ dot, i });
+      // la norma solo cuenta donde hay cara (el pulmón bajo la cúpula no la dibuja)
+      if (gradNorm && c.tissue !== Tissue.Lung) normErr.push(Math.abs(gradNorm[i] / len - 1));
     });
+    normErr.sort((a, b) => a - b);
     dots.sort((a, b) => a.dot - b.dot);
     const pct = (q: number): number => (dots.length ? dots[Math.min(dots.length - 1, Math.floor(q * dots.length))].dot : Number.NaN);
     const w = dots[0];
@@ -467,6 +517,8 @@ export function faceNormalStats(sim: Simulator): Record<FaceNormalRow, FaceNorma
       p50: pct(0.5),
       min: w ? w.dot : Number.NaN,
       below098: dots.length ? dots.filter((d) => d.dot < 0.98).length / dots.length : Number.NaN,
+      normErrP95: normErr.length ? normErr[Math.min(normErr.length - 1, Math.floor(0.95 * normErr.length))] : Number.NaN,
+      normErrMax: normErr.length ? normErr[normErr.length - 1] : Number.NaN,
       worst: w
         ? `${TISSUES[chosen[w.i].tissue].name} en (${chosen[w.i].m.map((x) => x.toFixed(1)).join(', ')}): |n·∇| ${w.dot.toFixed(4)}, ` +
           `GPU (${[0, 1, 2].map((a) => normal[w.i * 3 + a].toFixed(3)).join(', ')})`

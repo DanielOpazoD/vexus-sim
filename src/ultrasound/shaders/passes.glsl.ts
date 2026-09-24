@@ -2,6 +2,8 @@ import { TISSUE_COUNT } from '../../anatomy/tissues';
 import { C_RECONSTRUCTION_MM_S } from '../../core/units';
 import { ANATOMY_GLSL } from '../../anatomy/gpu/anatomy.glsl';
 import { APERTURE_GLSL } from '../aperture';
+import { IFACE_REACH_MM, INTERFACE_ECHO_GLSL } from '../interfaceEcho';
+import { MIRROR_BISECTION_STEPS } from '../transmission';
 import { SPECKLE_TISSUE_GLSL } from '../speckleField';
 
 export const VERT = /* glsl */ `#version 300 es
@@ -15,7 +17,7 @@ void main() {
 `;
 
 /** Geometría del haz común a las pasadas de formación de imagen. */
-const BEAM_GLSL = /* glsl */ `
+const BEAM_GEOMETRY_GLSL = /* glsl */ `
 uniform vec3 uFace;
 uniform vec3 uAxial;
 uniform vec3 uLateral;
@@ -26,20 +28,48 @@ uniform float uHalfSector;
 uniform float uDepth;      // mm
 uniform float uLinesF;
 uniform sampler2D uCoupling; // 1D: acoplamiento por línea
-uniform float uTissueAlpha[${TISSUE_COUNT}]; // dB/cm a la frecuencia B (tamaño = TISSUE_COUNT, nunca a mano)
-uniform float uTissueBack[${TISSUE_COUNT}];  // amplitud de retrodispersión
-uniform float uTissueFlag[${TISSUE_COUNT}];  // 1 gas, 2 hueso
 
 float lineTheta(float u) { return -uHalfSector + 2.0 * uHalfSector * u; }
 vec3 lineDir(float theta) { return normalize(uAxial * cos(theta) + uLateral * sin(theta)); }
 vec3 pointOnLine(vec3 dir, float r) { return uCurvC + dir * (uCurvR + r); }
 `;
 
+/** Retrodispersión por tejido: la única tabla por tejido que lee la pasada B. */
+const TISSUE_BACK_GLSL = /* glsl */ `uniform float uTissueBack[${TISSUE_COUNT}];  // amplitud de retrodispersión`;
+
+/**
+ * Geometría del haz y tablas por tejido (tamaño = TISSUE_COUNT, nunca a mano). La pasada B no declara
+ * atenuación ni banderas (no las lee): 54 ranuras de uniforms libres para el eco de interfaz.
+ */
+const BEAM_GLSL = /* glsl */ `${BEAM_GEOMETRY_GLSL}
+uniform float uTissueAlpha[${TISSUE_COUNT}]; // dB/cm a la frecuencia B
+${TISSUE_BACK_GLSL}
+uniform float uTissueFlag[${TISSUE_COUNT}];  // 1 gas, 2 hueso
+`;
+
+/**
+ * PSF lateral de dos vías por número F (`ultrasound/beamModel.ts`: misma fórmula). La comparten la
+ * pasada D (su anchura) y la B (la coherencia de curvatura del eco de interfaz, decisión 57).
+ */
+export const LATERAL_PSF_GLSL = /* glsl */ `
+uniform float uFocus;      // mm
+uniform vec4 uBeam;        // λ·k (mm), D_tx (mm), D_rx,max (mm), F#_rx,min
+float lateralSigmaMm(float r) {
+  float rr = max(1.0, r);
+  float F = max(10.0, uFocus);
+  float tx = length(vec2(uBeam.x * F / uBeam.y, uBeam.y * abs(rr - F) / F));
+  float dRx = min(uBeam.z, rr / uBeam.w);
+  float rx = uBeam.x * rr / max(1.0, dRx);
+  float fwhm = inversesqrt(1.0 / (tx * tx) + 1.0 / (rx * rx));
+  return fwhm / 2.3548;
+}
+`;
+
 /**
  * Pasada A en cuatro etapas (decisión 54). Antes cada celda (línea × profundidad gruesa) marchaba
  * su rayo desde la piel: O(N²), ~2,5 millones de clasificaciones por cuadro. Ahora:
- *   A0 impactos: una marcha por línea (primer pulmón con su reflexión especular —el espejo—, primer
- *      gas, primer hueso);
+ *   A0 impactos: una marcha por línea (primer pulmón con su reflexión especular —el espejo, en el cruce
+ *      exacto por bisección (decisión 57)—, primer gas, primer hueso);
  *   A1 segmentos: cada segmento grueso se clasifica una vez, sobre el camino (reflejado o no) de A0;
  *   A2 suma: la atenuación ida y vuelta acumulada hasta cada profundidad, con las mismas reglas que
  *      `ultrasound/transmission.ts` (gel previo a la piel sin pérdidas, gas 60 dB/cm, hueso 6 dB al
@@ -80,8 +110,18 @@ void main() {
     float flag = uTissueFlag[c.tissue];
     if (flag > 0.5 && flag < 1.5) {
       if (c.tissue == T_LUNG && mirrorSeg < 0.0) {
-        mirrorSeg = float(s); hitR = r; hitPoint = p;
+        // Cruce exacto con la pleura (decisión 57): bisección entre la muestra gruesa anterior (que no es
+        // pulmón) y esta. Antes el espejo quedaba en el centro de la primera celda de pulmón (0–1,1 mm
+        // dentro) y dejaba una costura negra entre el diafragma y su imagen especular.
+        float lo = max(r - step, 0.0);
+        float hi = r;
         vec3 nn = c.n;
+        for (int it = 0; it < ${MIRROR_BISECTION_STEPS}; it++) {
+          float mid = 0.5 * (lo + hi);
+          Cls cm = classify(toMaterial(origin + dir * mid));
+          if (cm.tissue == T_LUNG) { hi = mid; nn = cm.n; } else lo = mid;
+        }
+        mirrorSeg = float(s); hitR = 0.5 * (lo + hi); hitPoint = origin + dir * hitR;
         if (dot(nn, dir) > 0.0) nn = -nn;
         dir = reflect(dir, nn);
         if (gasSeg < 0.0) { gasSeg = float(s); gasKind = 1.0; }
@@ -158,8 +198,10 @@ void main() {
   vec4 h1 = texelFetch(uHits1, ivec2(line, 0), 0);
   float step = uDepth / uCoarseN;
   float kf = float(k);
-  float mirrorHit = h0.x >= 0.0 && h0.x <= kf ? (h0.x + 0.5) * step : -1.0;
-  float gasHit = h0.y >= 0.0 && h0.y <= kf ? (h0.y + 0.5) * step : -1.0;
+  // Espejo desde la fila que contiene su r exacta menos el alcance del eco pleural: la pasada B refleja
+  // solo r > mirrorHit y centra ahí el eco (decisión 57). Las A-lines, a múltiplos de la pleura exacta.
+  float mirrorHit = h0.x >= 0.0 && h1.w < (kf + 1.0) * step + ${IFACE_REACH_MM.toFixed(4)} ? h1.w : -1.0;
+  float gasHit = h0.y >= 0.0 && h0.y <= kf ? (h0.y == h0.x ? h1.w : (h0.y + 0.5) * step) : -1.0;
   float boneHit = h0.z >= 0.0 && h0.z <= kf ? (h0.z + 0.5) * step : -1.0;
   vec3 dir = mirrorHit >= 0.0 ? h1.xyz : lineDir(lineTheta(vUv.x));
   o0 = vec4(attenDb, gasHit, boneHit, mirrorHit);
@@ -198,21 +240,22 @@ void main() {
 
 /**
  * Pasada B: campo complejo crudo por muestra de haz — dispersores persistentes
- * en coordenadas materiales integrados en elevación, término especular de las
- * interfaces, reverberación/A-lines tras gas y cola sucia del gas intestinal.
+ * en coordenadas materiales integrados en elevación, eco de interfaz coherente en
+ * el cruce exacto (decisión 57), reverberación/A-lines tras gas y cola sucia del gas
+ * intestinal.
  */
 export const FRAG_RAWFIELD = /* glsl */ `#version 300 es
 precision highp float;
 precision highp int;
 ${ANATOMY_GLSL}
-${BEAM_GLSL}
+${BEAM_GEOMETRY_GLSL}
+${TISSUE_BACK_GLSL}
 uniform sampler2D uTrans0;
 uniform sampler2D uTrans1;
 uniform float uSeed;
 uniform float uLattice;     // paso de retícula (mm)
 uniform float uElevSigma0;  // σ elevacional en el foco de la lente (mm)
 uniform float uElevFocus;   // mm
-uniform float uSpecGain;
 uniform float uNoise;
 uniform float uFrame;
 // Ancla del medio de dispersores (speckleField.ts): vigente (0) y anterior (1), peso del fundido
@@ -231,6 +274,8 @@ float elevSigma(float r) {
   float zr = 45.0;
   return uElevSigma0 * sqrt(1.0 + pow((r - uElevFocus) / zr, 2.0));
 }
+${LATERAL_PSF_GLSL}
+${INTERFACE_ECHO_GLSL}
 
 float hash12b(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 
@@ -267,12 +312,6 @@ vec2 fieldFor(vec3 m, float se, int tissue) {
   return f * uTissueBack[tissue] * het;
 }
 
-vec2 sampleTissue(vec3 p, float se, out Cls c) {
-  vec3 m = toMaterial(p);
-  c = classify(m);
-  return fieldFor(m, se, c.tissue);
-}
-
 // Plano lateral en elevación: si el plano central está lejos de toda interfaz
 // (bd > desplazamiento), el tejido es el mismo y se ahorra la clasificación.
 vec2 sampleSide(vec3 p, float se, Cls center) {
@@ -304,10 +343,11 @@ void main() {
     p = pointOnLine(dir0, r);
   }
   float se = elevSigma(r);
-  Cls c0;
+  vec3 m0 = toMaterial(p);
+  Cls c0 = classify(m0);
   // Tres planos en elevación: la amplitud incoherente se promedia (¼ ½ ¼); el
   // fasor viene del plano central con la célula elevacional ya anclada al corte.
-  vec2 f0 = sampleTissue(p, se, c0);
+  vec2 f0 = fieldFor(m0, se, c0.tissue);
   vec2 f1 = sampleSide(p + uElev * se, se, c0);
   vec2 f2 = sampleSide(p - uElev * se, se, c0);
   float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
@@ -316,14 +356,12 @@ void main() {
   // anclada con la célula elevacional del grosor de corte, para los tres planos a la vez (la potencia
   // media se conserva y el grano no parpadea al inclinar)
   float clump = uTissueClump4[c0.tissue / 4][c0.tissue % 4];
-  if (clump > 0.0) field *= anchoredClump(toMaterial(p), se, clump, float(c0.tissue) * TISSUE_SALT_STEP);
-  // Término especular: (n·d)⁴, confinado a la muestra que atraviesa la interfaz
-  // (ventana |n·d|·dr con mínimo 0,15·dr) y SIN fasor: coherente.
+  if (clump > 0.0) field *= anchoredClump(m0, se, clump, float(c0.tissue) * TISSUE_SALT_STEP);
+  // Eco de interfaz (decisión 57): coherente, con fase 0 común a la cara, antes de la transmisión; la
+  // pleura, desde el cruce exacto del espejo
+  field += vec2(interfaceEcho(c0, m0, dir, r, se), 0.0);
+  if (mirrorHit >= 0.0) field += vec2(pleuraEcho(r - mirrorHit, dir0, normalize(t1.xyz)), 0.0);
   float dr = uDepth / 1024.0;
-  float cosI = abs(dot(normalize(c0.n), dir));
-  float win = max(cosI, 0.15) * dr;
-  float spec = c0.spec * uSpecGain * pow(cosI, 4.0) * (c0.bd < win ? 1.0 : 0.0) * 0.5;
-  field += vec2(spec, 0.0);
   float T = t0.x * coupling;
   vec2 out2 = field * T;
   // Reverberación tras gas: A-lines a múltiplos de la profundidad del reflector.
@@ -393,20 +431,9 @@ uniform float uDepth;
 uniform float uCurvR;
 uniform float uHalfSector;
 uniform float uLinesF;
-uniform float uFocus;      // mm
-uniform vec4 uBeam;        // λ·k (mm), D_tx (mm), D_rx,max (mm), F#_rx,min
 in vec2 vUv;
 out float oEnv;
-// PSF lateral de dos vías por número F (ultrasound/beamModel.ts: misma fórmula)
-float lateralSigmaMm(float r) {
-  float rr = max(1.0, r);
-  float F = max(10.0, uFocus);
-  float tx = length(vec2(uBeam.x * F / uBeam.y, uBeam.y * abs(rr - F) / F));
-  float dRx = min(uBeam.z, rr / uBeam.w);
-  float rx = uBeam.x * rr / max(1.0, dRx);
-  float fwhm = inversesqrt(1.0 / (tx * tx) + 1.0 / (rx * rx));
-  return fwhm / 2.3548;
-}
+${LATERAL_PSF_GLSL}
 void main() {
   float r = vUv.y * uDepth;
   float sigmaMm = lateralSigmaMm(r);
@@ -646,10 +673,12 @@ void main() {
 /**
  * Consulta puntual de la anatomía GLSL (pruebas y gate de equivalencia): cada texel de
  * `uPoints` es un punto del MUNDO; se clasifica con la misma `classify` que la imagen
- * y se devuelve tejido, índice de tubo (−1 sin vaso), distancia a la interfaz, la
- * velocidad de la sangre en el marco material (la misma que usa el color) y la normal
- * unitaria de la interfaz (`c.n`, marco material; la e2e la compara con el gradiente de
- * `faceSdf` de TS). La tercera salida solo se lee si se pide (`queryPoints(…, { normals })`).
+ * y se devuelve tejido, índice de tubo (−1 sin vaso), distancia a la interfaz, la cara de
+ * interfaz que dibuja y su distancia (`iface`, `ifd`: decisión 57), la velocidad de la sangre
+ * en el marco material (la misma que usa el color) y el gradiente de la cara que usa el eco de
+ * interfaz (`faceGradient`, marco material: xyz su dirección unitaria, w su norma; la e2e los
+ * compara con el gradiente de `faceSdf` de TS). La tercera salida solo se lee si se pide
+ * (`queryPoints(…, { normals })`).
  */
 export const FRAG_QUERY = /* glsl */ `#version 300 es
 precision highp float;
@@ -662,11 +691,11 @@ layout(location = 1) out vec4 o1;
 layout(location = 2) out vec4 o2;
 void main() {
   vec4 p = texelFetch(uPoints, ivec2(gl_FragCoord.xy), 0);
-  Cls c = classify(toMaterial(p.xyz));
+  vec3 m = toMaterial(p.xyz);
+  Cls c = classify(m);
   vec3 v = c.tissue == T_BLOOD ? bloodVelocity(c) : vec3(0.0);
-  o0 = vec4(float(c.tissue), float(c.vessel), c.bd, 1.0);
-  o1 = vec4(v, 0.0);
-  float nl = length(c.n);
-  o2 = vec4(nl > 0.0 ? c.n / nl : vec3(0.0), 0.0);
+  o0 = vec4(float(c.tissue), float(c.vessel), c.bd, c.ifd);
+  o1 = vec4(v, float(c.iface));
+  o2 = faceGradient(c, m);
 }
 `;

@@ -96,6 +96,27 @@ describe('Clasificación VExUS C (base A.1, guía §6/§21)', () => {
     }
   });
 
+  // VExUS renal: continuo es que el flujo no llegue a la línea de base, por pulsátil que sea. La regla
+  // antigua (mínimo ≥ 30 % del máximo) llamaba bifásico o monofásico a un flujo que nunca se detiene
+  // y, con S pequeña, sumaba un componente grave al grado.
+  it('renal: un flujo pulsátil que no se interrumpe es continuo y no suma al grado', () => {
+    expect(renalPatternFromPeaks(20, 18, 4)).toBe('continuous');
+    expect(renalPatternFromPeaks(18, 20, 4)).toBe('continuous');
+    expect(renalPatternFromPeaks(5, 20, 4)).toBe('continuous');
+    const g = classifyVexusC({
+      ivcMaxDiameterMm: 25,
+      hepatic: 'normal',
+      portalPulsatilityFraction: 10,
+      renal: renalPatternFromPeaks(5, 20, 4),
+    });
+    expect(g.severeCount).toBe(0);
+    expect(g.grade).toBe(1);
+    // con interrupción, S decide entre bifásico y monofásico
+    expect(renalPatternFromPeaks(20, 18, 0.5)).toBe('biphasic');
+    expect(renalPatternFromPeaks(2, 18, 0.5)).toBe('monophasic');
+    expect(renalPatternFromPeaks(5, 20, 1.9)).toBe('monophasic');
+  });
+
   it('fronteras: VCI 20 mm inclusiva, VCI ausente, VCI normal cierra el caso aunque falte todo, porta hepatófuga', () => {
     const normal = { hepatic: 'normal' as const, portalPulsatilityFraction: 10, renal: 'continuous' as const };
     expect(classifyVexusC({ ivcMaxDiameterMm: 20, ...normal }).grade).toBe(1);
@@ -126,9 +147,11 @@ describe('Clasificación VExUS C (base A.1, guía §6/§21)', () => {
     expect(hepatofugal.grade).toBeNull();
     expect(hepatofugal.gradeRange).toEqual([1, 2]);
     expect(hepatofugal.status).toBe('incomplete');
-    // fronteras de los patrones (30 % inclusivo)
-    expect(renalPatternFromPeaks(10, 20, 6)).toBe('continuous');
-    expect(renalPatternFromPeaks(10, 20, 5.999)).toBe('biphasic');
+    // fronteras de los patrones: interrupción = mínimo ≤ max(2 cm/s, 10 % del máximo); S ≥ 30 % de D
+    expect(renalPatternFromPeaks(10, 15, 2.001)).toBe('continuous');
+    expect(renalPatternFromPeaks(10, 15, 2)).toBe('biphasic');
+    expect(renalPatternFromPeaks(40, 30, 4.001)).toBe('continuous');
+    expect(renalPatternFromPeaks(40, 30, 4)).toBe('biphasic');
     expect(renalPatternFromPeaks(6, 20, 0)).toBe('biphasic');
     expect(renalPatternFromPeaks(5.999, 20, 0)).toBe('monophasic');
     expect(renalPatternFromPeaks(15, 18, -3.6)).toBe('biphasic');

@@ -157,6 +157,47 @@ function hepaticCaptures(base: PatientState, respiratoryPattern: RespiratoryPatt
   return { captures, truth };
 }
 
+/**
+ * Capturas renales sucesivas cada 2 s desde el punto de partida «Renal», con la puerta en la vena
+ * interlobar y la PRF por defecto del equipo (2600 Hz), como las hace la pestaña Medir.
+ */
+function renalCaptures(base: PatientState, seed: number, seconds: number, prfHz = 2600) {
+  const patient = { ...clonePatient(base), respiratoryPattern: 'apnea-expiratory' as const, seed };
+  const scene = new AnatomyScene(patient);
+  const anatomy = new AnatomyQuery(scene);
+  const engine = new PhysiologyEngine(patient, scene.vesselAreas(), { historySeconds: seconds + 4 });
+  const chain = new PwDopplerChain(anatomy, patient.seed);
+  for (let i = 0; i < Math.round(2 / engine.clock.dt); i++) engine.step();
+  const sp = START_POINTS.find((s) => s.id === 'renal')!;
+  const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
+  const frame = probeFrame(pose, scene.torso, CONVEX_C35);
+  const best = bestGateOnVessel(anatomy, frame, CONVEX_C35, engine.sample, ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'], 170)!;
+  const gate = gateFor(frame, best);
+  chain.begin(prfHz, CONVEX_C35.f0Doppler, 0, 25, engine.clock.t + engine.clock.dt);
+  const opts = { f0Hz: CONVEX_C35.f0Doppler, angleCorrectionRad: 0, invert: false, fftSize: chain.spectral.fftSize, wallFilterHz: 25 };
+  const captures: Array<{ t: number; pattern: string; issue: string | null; vMin: number }> = [];
+  let next = engine.clock.t + 8;
+  const t0 = engine.clock.t;
+  for (let i = 0; engine.clock.t < t0 + seconds; i++) {
+    const s = engine.step();
+    if (i % 8 === 0) chain.setGate(gate, s);
+    chain.step(s, [0, 0, 0], engine.clock.dt);
+    if (engine.clock.t < next) continue;
+    next += 2;
+    chain.flush();
+    const tNow = engine.clock.t;
+    const beats = engine.rhythm.beatsBetween(tNow - 7, tNow).slice(-CAPTURE_BEATS);
+    const m = measureObservedRenal(
+      chain.spectral.columns.filter((c) => c.t > tNow - 7),
+      beats,
+      opts,
+    );
+    if (m) captures.push({ t: +tNow.toFixed(1), pattern: m.pattern, issue: m.quality.issue, vMin: +m.vMin.toFixed(2) });
+  }
+  const truth = measurePhysiologyTruth(engine, { fromT: t0 + 4, toT: engine.clock.t });
+  return { captures, truth };
+}
+
 describe('Cadena completa del alumno: puerta → espectro → medición → grado (Fase 0)', () => {
   for (const [base, expectedGrade] of [
     [NORMAL_ADULT, 0],
@@ -210,6 +251,22 @@ describe('Cadena completa del alumno: puerta → espectro → medición → grad
       expect(Math.abs(portal!.pulsatilityFraction - truth.portalPF)).toBeLessThan(12);
     });
   }
+
+  // A la PRF por defecto (2600 Hz) la envolvente de la vena se hunde 3–6 columnas en su PICO, con la
+  // sangre llenando el espectro: el mínimo exacto lo leía como pausa y el sano salía bifásico en
+  // todas las capturas de esta semilla (antes, con el cuantil y el 30 %, también). Una columna con
+  // sangre en el lado de la vena no puede fijar el mínimo; la vena del sano no se detiene.
+  it('Adulto sano, renal a 2600 Hz: el hundimiento del detector en el pico no se lee como pausa', () => {
+    const { captures, truth } = renalCaptures(NORMAL_ADULT, 6, 20);
+    const tag = JSON.stringify(captures);
+    expect(truth.renalPattern).toBe('continuous');
+    const valid = captures.filter((c) => c.issue === null);
+    expect(valid.length, tag).toBeGreaterThan(4);
+    expect(
+      valid.filter((c) => c.pattern !== 'continuous'),
+      tag,
+    ).toEqual([]);
+  });
 
   // La interlobar del caso grave entra y sale de la puerta con la respiración: antes se medía
   // «bifásica» (era monofásica); ahora la captura se declara no medible y no entra en el grado.

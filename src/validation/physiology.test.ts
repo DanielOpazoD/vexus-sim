@@ -15,6 +15,19 @@ function run(patient: PatientState, seconds: number): PhysiologyEngine {
   return engine;
 }
 
+/** Estado intermedio: interpolación lineal de los campos numéricos (la semilla y el resto, de `a`). */
+function interpolate(a: PatientState, b: PatientState, t: number): PatientState {
+  const mix = (x: unknown, y: unknown, key: string): unknown => {
+    if (typeof x === 'number' && typeof y === 'number') return key === 'seed' ? x : x + (y - x) * t;
+    if (x && y && typeof x === 'object' && typeof y === 'object') {
+      const o = x as Record<string, unknown>;
+      for (const k of Object.keys(o)) o[k] = mix(o[k], (y as Record<string, unknown>)[k], k);
+    }
+    return x;
+  };
+  return mix(clonePatient(a), b, '') as PatientState;
+}
+
 describe('Fisiología: el VExUS emerge de la señal, no se asigna (guía §5, §21)', () => {
   it('el PatientState no contiene ningún campo que sea un grado VExUS', () => {
     const keys = JSON.stringify(NORMAL_ADULT).toLowerCase();
@@ -64,6 +77,21 @@ describe('Fisiología: el VExUS emerge de la señal, no se asigna (guía §5, §
     const normScene = new AnatomyScene(NORMAL_ADULT);
     expect(sevScene.liver.radii[2] / normScene.liver.radii[2]).toBeCloseTo(1.1, 9);
     expect(sevScene.visceralPlane.zAtY0).toBeLessThan(normScene.visceralPlane.zAtY0);
+  });
+
+  // Entre el sano y el grave la vena interlobar late (mínimo ≈ 25 % del máximo) sin llegar a la
+  // línea de base: en el VExUS eso sigue siendo flujo continuo. Con la regla antigua (mínimo ≥ 30 %
+  // del máximo) salía bifásico, y el patrón cambiaba sin que el flujo se interrumpiera.
+  it('congestión intermedia: flujo renal pulsátil que no se interrumpe → continuo', () => {
+    const e = run(interpolate(NORMAL_ADULT, SEVERE_CONGESTION, 0.6), 16);
+    const m = measurePhysiologyTruth(e, { fromT: 6, toT: 16 });
+    expect(m.rvMin / Math.max(m.rvS, m.rvD)).toBeLessThan(0.3);
+    expect(m.rvMin).toBeGreaterThan(3); // medido: 4,5 cm/s (mínimo resoluble)
+    expect(m.renalPattern).toBe('continuous');
+    // más cerca del grave el mínimo sí toca la línea de base (medido −0,5 cm/s): hay interrupción
+    const late = measurePhysiologyTruth(run(interpolate(NORMAL_ADULT, SEVERE_CONGESTION, 0.9), 16), { fromT: 6, toT: 16 });
+    expect(late.rvMin).toBeLessThan(1);
+    expect(late.renalPattern).not.toBe('continuous');
   });
 
   it('la presión media de AD declarada se conserva (ondas centradas)', () => {

@@ -3,13 +3,14 @@ import { velocityFromShiftMmS } from '../core/units';
 import type { Beat } from '../physiology/rhythm';
 import { beatWindows, systolicPeak } from '../vexus/measurements';
 import {
+  RENAL_INTERRUPTION_FRACTION,
   hepaticPatternFromPeaks,
   portalPulsatilityFraction,
   renalPatternFromPeaks,
   type HepaticPattern,
   type RenalPattern,
 } from '../vexus/classification';
-import { assessQuality, flowBandMinHz, type MeasurementQuality } from './measureQuality';
+import { assessQuality, bloodInColumn, flowBandMinHz, type MeasurementQuality } from './measureQuality';
 import { captureNoiseFloorsDb, columnBandEnvelopes, columnEnvelope, columnPercentileEnvelope, type SpectralColumn } from './spectral';
 
 /**
@@ -310,6 +311,14 @@ export function sideEnergyDb(columns: readonly SpectralColumn[], opts: MeasureOp
   return { pos: 10 * Math.log10(pos), neg: 10 * Math.log10(neg) };
 }
 
+/** Velocidad rotulada (cm/s) del borde de la banda de flujo: por debajo, la traza es línea de base. */
+export function renalFloorCms(columns: readonly SpectralColumn[], opts: MeasureOptions): number {
+  const prf = columns.length ? columns[columns.length - 1].prfHz : 0;
+  const hz = flowBandMinHz(opts.wallFilterHz ?? 25, prf, opts.fftSize);
+  const v = velocityFromShiftMmS(hz, opts.f0Hz, opts.angleCorrectionRad) / 10;
+  return Number.isFinite(v) ? v : 0;
+}
+
 export function measureObservedRenal(columns: readonly SpectralColumn[], beats: Beat[], opts: MeasureOptions): ObservedRenal | null {
   const tr = observedSideTraces(columns, opts);
   if (tr.t.length < 10) return null;
@@ -342,22 +351,43 @@ export function measureObservedRenal(columns: readonly SpectralColumn[], beats: 
   const trace: ObservedTracePoint[] = vein.map((p) => ({ t: p.t, vScreen: p.vScreen * veinSign * (opts.invert ? -1 : 1), powerDb: 0 }));
   const sList: number[] = [];
   const dList: number[] = [];
-  const minList: number[] = [];
+  const measured: Beat[] = [];
   for (const b of beats) {
     const w = beatWindows(b);
-    const cyc: [number, number] = [b.tR, b.tR + b.rr];
     const s = extreme(vein, w.sWindow, (v) => v);
     const d = extreme(vein, w.dWindow, (v) => v);
-    const mn = extreme(vein, cyc, (v) => -v);
-    if ([s, d, mn].some((x) => Number.isNaN(x))) continue;
+    if (Number.isNaN(s) || Number.isNaN(d)) continue;
     sList.push(s);
     dList.push(d);
-    minList.push(mn);
+    measured.push(b);
   }
   if (!sList.length) return null;
   const sPeak = median(sList);
   const dPeak = median(dList);
-  const vMin = median(minList);
+  // «Sin flujo» es lo que cae en la banda del filtro de pared: el mismo corte en Hz, así que el patrón
+  // no cambia con la corrección angular ni con la PRF.
+  const floorCms = renalFloorCms(columns, opts);
+  const baseline = Math.max(floorCms, RENAL_INTERRUPTION_FRACTION * Math.max(sPeak, dPeak));
+  // Mínimo exacto de la traza (el cuantil robusto descartaba ~26 ms por latido, lo justo para esconder
+  // una pausa real), pero solo de columnas creíbles: si la traza cae a la línea de base con sangre en
+  // el lado de la vena (la misma prueba de presencia que la calidad), es el detector el que se hunde
+  // (a PRF ≤ 2600 Hz, en el pico de la vena, 3–6 columnas con +20 dB), no una pausa.
+  const smoothed = smoothSpectrum(columns);
+  const floors = captureNoiseFloorsDb(smoothed);
+  const presence = {
+    wallFilterHz: opts.wallFilterHz ?? 25,
+    marginDb: opts.thresholdMarginDb,
+    side: veinSign === 1 ? ('pos' as const) : ('neg' as const),
+  };
+  const credible = vein.map((p, i) => p.vScreen > baseline || !bloodInColumn(smoothed[i], presence, floors[i]).present);
+  const minList: number[] = [];
+  for (const b of measured) {
+    let mn = Infinity;
+    for (let i = 0; i < vein.length; i++)
+      if (credible[i] && vein[i].t >= b.tR && vein[i].t <= b.tR + b.rr) mn = Math.min(mn, vein[i].vScreen);
+    if (Number.isFinite(mn)) minList.push(mn);
+  }
+  const vMin = minList.length ? median(minList) : Number.NaN;
   return {
     kind: 'renal',
     // la arteria vecina siempre da señal: la calidad se juzga en el lado de la vena
@@ -365,7 +395,7 @@ export function measureObservedRenal(columns: readonly SpectralColumn[], beats: 
     sPeak,
     dPeak,
     vMin,
-    pattern: renalPatternFromPeaks(sPeak, dPeak, vMin),
+    pattern: renalPatternFromPeaks(sPeak, dPeak, vMin, floorCms),
     beats: sList.length,
     anterogradeSign,
     trace,

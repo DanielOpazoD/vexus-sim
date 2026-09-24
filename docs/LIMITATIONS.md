@@ -73,6 +73,11 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   Los ganchos de la e2e y la prueba de respiración le pasan `acousticWindowWeight`; las pruebas de
   la cadena del alumno en apnea siguen con la técnica anatómica y una transmisión fija de −10 dB.
   En la app la puerta la pone el alumno.
+- **La resolución de las pausas renales depende de la PRF** (`renal-pause-resolution-prf`): la
+  verdad cuenta como interrupción una pausa de ≥ 20 ms (decisión 26), lo que resuelve el espectro de
+  128 muestras a ~4 kHz. A 1,5–2,6 kHz la captura pierde pausas de 20–30 ms; a 6 kHz ve las de 10 ms.
+  Con el filtro de pared muy alto (300 Hz) un valle justo por encima del corte cuenta como línea de
+  base y el patrón pasa a bifásico. Los casos actuales no tienen pausas de 10–40 ms.
 - **El color es una emulación del estimador** (`color-emulated-estimator`): potencia y fase se
   calculan por celda a partir de la mezcla sangre/clutter/ruido, no de una IQ real por ensemble.
 - **Con respiración tranquila la puerta pierde el vaso** (`gate-lost-with-quiet-breathing`): es

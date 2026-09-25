@@ -77,6 +77,22 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   cartílago costal va de la línea media anterior a ±45° en todas las costillas (un ángulo común, no la unión
   costocondral de cada una), más los últimos 25 mm antes del extremo de las que acaban en el reborde costal, y
   el reborde es una recta desde el xifoides; las costillas 11.ª y 12.ª no existen.
+- **La compresión de la sonda es cinemática, no elástica** (`probe-compression-kinematic`, decisión 63): no hay
+  rigideces ni fuerza. La pared entera (con las costillas y los cartílagos) se lleva como una placa de rigidez
+  homogénea y el hígado de debajo absorbe la transición; la capacidad de cierre del contacto y la caída en
+  profundidad son [ESTIMADO]. El marco es el de la pose: la sonda no se hunde en el tronco, el tejido sube a la cara
+  (en un contacto de Hertz se hundiría la sonda y se comprimiría el centro), así que en los bordes del sector el
+  hígado bajo la pared se estira a lo largo de la línea hasta 2,5×. Sin histéresis ni viscoelasticidad (la
+  deformación sigue a la pose en el mismo cuadro) y sin velocidad del tejido por el movimiento de la sonda (el
+  Doppler no ve el arrastre). Los gemelos de imagen de la pared y la pleura (`wallTwin`, `pleuraTwin`) siguen sobre
+  el tronco rígido.
+- **La compresión solo mueve el tejido a lo largo de las líneas de la cara** (`probe-compression-in-plane`,
+  decisión 63): es radial en el plano de la cara (el tejido no se desliza ni se cizalla de lado), plana en
+  elevación (la pared no se amolda a la inclinación fuera del plano: con la sonda abanicada las capas conservan esa
+  inclinación) y lineal a tramos entre los 32 nodos de la cara. En las líneas muy oblicuas a la pared la placa llega
+  al tope de 25 mm y deja de ser concéntrica (el lado de la punta de la subxifoidea basculada; los bordes de la
+  intercostal, más allá de la huella). La dirección de la sangre no se gira con la jacobiana (los vasos hondos casi
+  no se mueven; los superficiales no existen).
 - **Los planos laterales de elevación se saltan los vasos** (`side-plane-skips-tubes`): si el plano
   central está a más de σe + 0,5 mm de una interfaz, los laterales heredan su tejido sin clasificar
   (decisión 24), pero la `bd` del hígado no cuenta los tubos: junto a un vaso fuera del plano, el 1–5 %

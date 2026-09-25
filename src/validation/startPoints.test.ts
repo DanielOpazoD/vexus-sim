@@ -8,13 +8,16 @@ import { Tissue } from '../anatomy/tissues';
 import { NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient, type RespiratoryPattern } from '../physiology/patientState';
-import { CONVEX_C35, lineCoupling, pointOnLine, probeFrame, type ProbePose } from '../probe/probe';
+import { uncompress } from '../anatomy/compression';
+import { contactCoupling, probeContact } from '../probe/contact';
+import { CONVEX_C35, pointOnLine, probeFrame, type ProbePose } from '../probe/probe';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 
 /**
  * Cada punto de partida debe cortar de verdad la estructura que promete su
  * texto, sin afinar la sonda: la anatomía cambia a menudo (decisiones 33–37) y
- * esta es la única valla que impide que una ventana quede «vacía».
+ * esta es la única valla que impide que una ventana quede «vacía». El tejido es el que muestra la aplicación: el
+ * de la pose con la compresión de la sonda (decisión 63), y el acoplamiento, el contacto conseguido.
  */
 const scene = new AnatomyScene(NORMAL_ADULT);
 
@@ -27,15 +30,16 @@ interface Sweep {
 function sweep(sp: StartPoint, depthMm: number): Sweep {
   const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
   const fr = probeFrame(pose, scene.torso, CONVEX_C35);
+  const contact = probeContact(pose, fr, CONVEX_C35, scene.torso);
   const vessels = new Map<string, number>();
   const tissues = new Map<Tissue, number>();
   let coupling = 0;
   const nLines = 61;
   for (let i = 0; i < nLines; i++) {
     const theta = -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * i) / (nLines - 1);
-    coupling += lineCoupling(pose, CONVEX_C35, theta) / nLines;
+    coupling += contactCoupling(contact, theta) / nLines;
     for (let r = 2; r < depthMm; r += 2) {
-      const q = scene.classify(pointOnLine(fr, CONVEX_C35, theta, r), BASELINE_CALIBER);
+      const q = scene.classify(uncompress(pointOnLine(fr, CONVEX_C35, theta, r), contact), BASELINE_CALIBER);
       tissues.set(q.tissue, (tissues.get(q.tissue) ?? 0) + 1);
       if (q.vessel) vessels.set(q.vessel, (vessels.get(q.vessel) ?? 0) + 1);
     }
@@ -70,12 +74,14 @@ describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', 
     // con 11° de basculación, dejaba una en cada borde (a 36–52 y a 71 mm) y 14 líneas sin acoplar. Con la de
     // ahora, girar la sonda 2° ya mete la 9.ª en un borde. La vértebra, al fondo (14–16 cm), no cuenta.
     const sp = byId('intercostal');
-    const fr = probeFrame({ phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 }, scene.torso, CONVEX_C35);
+    const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
+    const fr = probeFrame(pose, scene.torso, CONVEX_C35);
+    const contact = probeContact(pose, fr, CONVEX_C35, scene.torso);
     const nLines = 61;
     for (let i = 0; i < nLines; i++) {
       const theta = -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * i) / (nLines - 1);
       for (let r = 1; r < 180; r += 1) {
-        const t = scene.classify(pointOnLine(fr, CONVEX_C35, theta, r), BASELINE_CALIBER).tissue;
+        const t = scene.classify(uncompress(pointOnLine(fr, CONVEX_C35, theta, r), contact), BASELINE_CALIBER).tissue;
         expect(t === Tissue.Bone || t === Tissue.Cartilage, `línea ${i} a ${r} mm`).toBe(false);
       }
     }
@@ -100,7 +106,9 @@ describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', 
         if (s.resp.diaphragmCaudalMm > sample.resp.diaphragmCaudalMm) sample = s;
       }
       const frame = probeFrame(pose, sc.torso, CONVEX_C35);
-      const w = acousticWindowWeight(anatomy, frame, CONVEX_C35, pose, sample, 180, CONVEX_C35_PROFILE.dopplerEffectiveMHz);
+      const contact = probeContact(pose, frame, CONVEX_C35, sc.torso);
+      anatomy.setProbeCompression(contact);
+      const w = acousticWindowWeight(anatomy, frame, CONVEX_C35, contact, sample, 180, CONVEX_C35_PROFILE.dopplerEffectiveMHz);
       const g = bestGateOnVessel(anatomy, frame, CONVEX_C35, sample, ['hvRight', 'hvMiddle'], 175, 1.2, w);
       expect(g, pattern).not.toBeNull();
       const tag = `${pattern}: ${JSON.stringify({ r: g!.r, theta: g!.theta })}`;

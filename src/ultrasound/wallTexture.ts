@@ -1,5 +1,6 @@
 import { FIRST_WALL_INTERFACE, LAST_WALL_INTERFACE, isWallLayerInterface, type Interface } from '../anatomy/interfaces';
 import { wallArc, wallDepths, wallWavenumber } from '../anatomy/organs/wall';
+import { IDENTITY_WARP, warpNormal, type Warp } from '../anatomy/compression';
 import { torsoDepth, torsoDepthGradient, type Torso } from '../anatomy/primitives';
 import { TISSUES, Tissue } from '../anatomy/tissues';
 import type { Vec3 } from '../core/vec3';
@@ -185,19 +186,26 @@ export function muscleStriation(m: Vec3, t: Torso): [number, number, number, num
   return [normal[0], normal[1], normal[2], mask * Math.exp(-0.5 * (dist / T.striationSigmaMm) ** 2)];
 }
 
+/** Normal de una lámina en el mundo: la material por la jacobiana de la compresión de la sonda (decisión 63). */
+function worldLamina(w: Warp, s: readonly number[]): Vec3 {
+  return norm3(warpNormal(w, [s[0], s[1], s[2]]));
+}
+
 /**
  * Factor de amplitud de la textura de la pared en el punto material `m` del tejido `tissue`, con el haz en
- * la dirección `dir` (unitaria): 1 + (G·brillo − 1)·peso, con G la ganancia del septo o de la estría. 1 en
- * cualquier tejido que no sea la grasa subcutánea o el músculo de la pared.
+ * la dirección `dir` (unitaria, del mundo): 1 + (G·brillo − 1)·peso, con G la ganancia del septo o de la estría.
+ * 1 en cualquier tejido que no sea la grasa subcutánea o el músculo de la pared. La incidencia es la del mundo:
+ * la normal material de la lámina pasa por la jacobiana de la compresión (`warp`, decisión 63; la identidad sin
+ * sonda).
  */
-export function wallTexture(m: Vec3, tissue: Tissue, dir: Vec3, t: Torso): number {
+export function wallTexture(m: Vec3, tissue: Tissue, dir: Vec3, t: Torso, warp: Warp = IDENTITY_WARP): number {
   if (tissue === Tissue.Fat) {
     const s = fatSeptum(m, t);
-    return 1 + (SEPTUM_GAIN * wallOrientation([s[0], s[1], s[2]], dir) - 1) * s[3];
+    return 1 + (SEPTUM_GAIN * wallOrientation(worldLamina(warp, s), dir) - 1) * s[3];
   }
   if (tissue === Tissue.Muscle) {
     const s = muscleStriation(m, t);
-    return 1 + (STRIATION_GAIN * wallOrientation([s[0], s[1], s[2]], dir) - 1) * s[3];
+    return 1 + (STRIATION_GAIN * wallOrientation(worldLamina(warp, s), dir) - 1) * s[3];
   }
   return 1;
 }
@@ -219,11 +227,21 @@ export function wallFaceGain(m: Vec3, face: Interface, t: Torso): number {
  * SwiftShader). Las capas son casi paralelas a la piel: la normal y la norma del gradiente son las de la
  * profundidad radial (`torsoDepthGradient`), sin la ondulación de la capa (≤ 0,15 de pendiente: < 1 dB en el
  * lóbulo de s 0,3); sin la cortical costal ni el pericondrio (0 en cualquier otra cara). `ifd`, la distancia de
- * la cara en la muestra (`interfaceDistance`); `dir`, la dirección unitaria del camino.
+ * la cara en la muestra (`interfaceDistance`); `dir`, la dirección unitaria del camino; `warp`, la jacobiana de la
+ * compresión de la sonda (decisión 63), que lleva el gradiente al mundo.
  */
-export function wallFaceEchoFlat(face: Interface, ifd: number, m: Vec3, dir: Vec3, t: Torso, k0: number, kDb = IFACE_K_DB): number {
+export function wallFaceEchoFlat(
+  face: Interface,
+  ifd: number,
+  m: Vec3,
+  dir: Vec3,
+  t: Torso,
+  k0: number,
+  kDb = IFACE_K_DB,
+  warp: Warp = IDENTITY_WARP,
+): number {
   if (!isWallLayerInterface(face)) return 0;
-  const g = torsoDepthGradient(m, t);
+  const g = warpNormal(warp, torsoDepthGradient(m, t));
   const gl = Math.hypot(g[0], g[1], g[2]);
   const cosI = Math.abs(g[0] * dir[0] + g[1] * dir[1] + g[2] * dir[2]) / gl;
   if (cosI < IFACE_MIN_COS) return 0;
@@ -329,15 +347,16 @@ float wallFaceGain(vec3 m, int face) {
   if (face < IF_FIRST_WALL || face > IF_LAST_WALL) return 1.0;
   return exp(WT_FACE_VAR[face - IF_FIRST_WALL] * (valueNoise(vec3(wallArc(m) / WT_FACE_VAR_MM, m.z / WT_FACE_VAR_MM, float(face - IF_FIRST_WALL + 1) * 3.7), ${f4(SALT.face)}) - 0.5));
 }
-// Factor de amplitud de la textura de la pared (grasa subcutánea y músculo; 1 en el resto)
-float wallTexture(vec3 m, int tissue, vec3 dir) {
+// Factor de amplitud de la textura de la pared (grasa subcutánea y músculo; 1 en el resto); la incidencia, la del
+// mundo: la normal de la lámina por la jacobiana de la compresión (w, decisión 63)
+float wallTexture(vec3 m, int tissue, vec3 dir, Warp w) {
   if (tissue == T_FAT) {
     vec4 s = fatSeptum(m);
-    return 1.0 + (WT_SEPTUM_GAIN * wallOrientation(s.xyz, dir) - 1.0) * s.w;
+    return 1.0 + (WT_SEPTUM_GAIN * wallOrientation(normalize(warpNormal(w, s.xyz)), dir) - 1.0) * s.w;
   }
   if (tissue == T_MUSCLE) {
     vec4 s = muscleStriation(m);
-    return 1.0 + (WT_STRIA_GAIN * wallOrientation(s.xyz, dir) - 1.0) * s.w;
+    return 1.0 + (WT_STRIA_GAIN * wallOrientation(normalize(warpNormal(w, s.xyz)), dir) - 1.0) * s.w;
   }
   return 1.0;
 }
@@ -356,11 +375,12 @@ vec3 torsoDepthGrad(vec3 p) {
   return vec3(g, 0.0);
 }
 // Eco de cara plana de una capa de la pared: las copias de la serie de la pleura (decisión 61), en su bucle
-// y sin faceGradient; normal y norma de la profundidad radial, sin costillas ni pericondrio
-float wallFaceEchoFlat(Cls c, vec3 m, vec3 dir) {
+// y sin faceGradient; normal y norma de la profundidad radial llevadas al mundo por la compresión (w), sin
+// costillas ni pericondrio
+float wallFaceEchoFlat(Cls c, vec3 m, vec3 dir, Warp w) {
   if (c.iface < IF_FIRST_WALL || c.iface > IF_LAST_WALL) return 0.0;
-  if (c.ifd > (uIface[c.iface].w > 0.5 ? IFACE_REACH : IFACE_SHIFT + IFACE_REACH) * IFACE_GRAD_MAX) return 0.0;
-  vec3 g = torsoDepthGrad(m);
+  if (c.ifd > (uIface[c.iface].w > 0.5 ? IFACE_REACH : IFACE_SHIFT + IFACE_REACH) * IFACE_GRAD_MAX * warpBound(w)) return 0.0;
+  vec3 g = warpNormal(w, torsoDepthGrad(m));
   float gl = length(g);
   float cosI = abs(dot(g, dir)) / gl;
   if (cosI < IFACE_MIN_COS) return 0.0;

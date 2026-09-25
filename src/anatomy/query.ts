@@ -1,12 +1,13 @@
 import type { Vec3 } from '../core/vec3';
 import type { PhysiologySample } from '../physiology/engine';
 import { VESSEL_META, type VesselId } from '../physiology/vessels';
+import type { ProbeCompression } from './compression';
 import { RespiratoryDeformation } from './deformation';
 import { type AnatomyScene, type Classification, type FaceGeometry, type VesselCaliber } from './scene';
 
 /**
- * Consulta anatómica en coordenadas del MUNDO: aplica la deformación
- * respiratoria, clasifica el tejido y devuelve el campo de velocidades
+ * Consulta anatómica en coordenadas del MUNDO: deshace la compresión de la sonda
+ * (decisión 63) y la deformación respiratoria, clasifica el tejido y devuelve el campo de velocidades
  * (sangre relativa al vaso + movimiento global del vaso), tal como exige la
  * invariante Doppler 10.1: v_rel = u·t̂ + v_vaso − v_sonda.
  */
@@ -29,6 +30,18 @@ export class AnatomyQuery {
 
   constructor(readonly scene: AnatomyScene) {
     this.deformation = new RespiratoryDeformation(scene);
+  }
+
+  /**
+   * Contacto de la sonda del cuadro (decisión 63): la compresión que ven todas las consultas del mundo (la
+   * misma que sube la GPU). null: el tronco rígido (sin sonda).
+   */
+  setProbeCompression(k: ProbeCompression | null): void {
+    this.deformation.compression = k;
+  }
+
+  get probeCompression(): ProbeCompression | null {
+    return this.deformation.compression;
   }
 
   private lastSample: PhysiologySample | null = null;

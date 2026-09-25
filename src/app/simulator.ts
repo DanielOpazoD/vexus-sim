@@ -2,6 +2,7 @@ import { C_RECONSTRUCTION_MM_S, nyquistVelocityCms } from '../core/units';
 import { apertureAngleSigmaRad, lateralSigmaMm } from '../ultrasound/beamModel';
 import { colorTiming, type ColorTiming } from '../ultrasound/colorTiming';
 import { CONVEX_C35_PROFILE, type TransducerProfile } from '../ultrasound/transducerProfile';
+import type { ProbeCompression } from '../anatomy/compression';
 import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene } from '../anatomy/scene';
 import { DopplerAudio } from '../audio/dopplerAudio';
@@ -12,6 +13,7 @@ import { gateTransmission } from './gateTransmission';
 import type { GateGeometry } from '../doppler/sampleVolume';
 import { PhysiologyEngine, type PhysiologySample } from '../physiology/engine';
 import type { PatientState } from '../physiology/patientState';
+import { probeContact } from '../probe/contact';
 import {
   clampPose,
   defaultPose,
@@ -32,6 +34,11 @@ import {
   type GpuPointQuery,
   type PassRepeat,
 } from '../ultrasound/renderer';
+
+/** Misma pose, campo a campo (el contacto se reutiliza con la sonda quieta). */
+function samePose(a: ProbePose, b: ProbePose): boolean {
+  return a.phi === b.phi && a.z === b.z && a.lift === b.lift && a.yaw === b.yaw && a.rock === b.rock && a.tilt === b.tilt;
+}
 
 /** Ajustes del Doppler pulsado (guía §9, §16). */
 export interface PwSettings {
@@ -122,6 +129,9 @@ export class Simulator {
   equipment: EquipmentSettings = defaultEquipment();
   frozen = false;
   private lastFrame: ProbeFrame;
+  /** Contacto de la sonda con el marco del cuadro (decisión 63): la compresión y el acoplamiento por línea. */
+  private lastContact: ProbeCompression;
+  private contactPose: ProbePose;
   private lastFrameT = 0;
   private probeVel: Vec3 = [0, 0, 0];
   private lastColorUpdate = -1;
@@ -144,6 +154,9 @@ export class Simulator {
     this.physiology = new PhysiologyEngine(patient, this.scene.vesselAreas());
     this.pwChain = new PwDopplerChain(this.anatomy, patient.seed, this.audio);
     this.lastFrame = probeFrame(this.pose, this.scene.torso, this.transducer);
+    this.lastContact = probeContact(this.pose, this.lastFrame, this.transducer, this.scene.torso);
+    this.contactPose = this.pose;
+    this.anatomy.setProbeCompression(this.lastContact);
     if (renderer) renderer.setScene(this.scene);
     this.renderer = renderer ?? new UltrasoundRenderer(canvas, this.scene, this.profile);
   }
@@ -169,6 +182,10 @@ export class Simulator {
   }
   get frame(): ProbeFrame {
     return this.lastFrame;
+  }
+  /** Contacto de la sonda del último marco (decisión 63): la misma compresión que ven la CPU y la GPU. */
+  get contact(): ProbeCompression {
+    return this.lastContact;
   }
   get probeVelocity(): Vec3 {
     return this.probeVel;
@@ -206,6 +223,13 @@ export class Simulator {
     this.probeVel = [v[0] * 0.6, v[1] * 0.6, v[2] * 0.6];
     this.lastFrame = newFrame;
     this.lastFrameT = clock.t;
+    // la compresión sigue a la sonda (decisión 63): todo el cuadro (CPU, GPU, puerta) ve el mismo tejido. Con la
+    // sonda quieta el contacto no cambia (el marco sale solo de la pose): se reutiliza
+    if (!samePose(this.pose, this.contactPose)) {
+      this.lastContact = probeContact(this.pose, newFrame, this.transducer, this.scene.torso);
+      this.contactPose = this.pose;
+      this.anatomy.setProbeCompression(this.lastContact);
+    }
 
     const pw = this.pw;
     if (pw.enabled) this.pwChain.begin(pw.prfHz, this.transducer.f0Doppler, pw.gainDb, pw.wallFilterHz, t0 + clock.dt);
@@ -236,7 +260,7 @@ export class Simulator {
     // Anchura lateral del volumen de muestra = PSF de dos vías (mismo modelo que la imagen)
     const latSigma = lateralSigmaMm(r, this.bmode.focusMm, this.profile.beam) * 1.2;
     const elevSigma = 1.6 * Math.sqrt(1 + ((r - tr.elevationFocusMm) / 45) ** 2);
-    const transmission = gateTransmission(this.anatomy, fr, tr, this.pose, pw.theta, r, s, this.profile.dopplerEffectiveMHz);
+    const transmission = gateTransmission(this.anatomy, fr, tr, this.lastContact, pw.theta, r, s, this.profile.dopplerEffectiveMHz);
     const gate: GateGeometry = {
       center,
       beamDir: dir,
@@ -294,6 +318,7 @@ export class Simulator {
         sample: s,
         frame: this.lastFrame,
         pose: this.pose,
+        compression: this.lastContact,
         transducer: this.transducer,
         caliber: this.anatomy.caliberFor(s),
         probeVelocity: this.probeVel,
@@ -318,6 +343,7 @@ export class Simulator {
       sample: s,
       frame: at.frame,
       pose: this.pose,
+      compression: this.lastContact,
       transducer: this.transducer,
       caliber: this.anatomy.caliberFor(s),
       probeVelocity: this.probeVel,
@@ -331,9 +357,15 @@ export class Simulator {
   /**
    * Consulta la anatomía GLSL en puntos del mundo con el estado fisiológico actual y el
    * plano `frame` (que decide qué tubos entran en la lista por cuadro). Solo para el
-   * gate de equivalencia y la e2e de normales (`normals`); bloqueante.
+   * gate de equivalencia y la e2e de normales (`normals`); bloqueante. `compression`: el contacto de la sonda
+   * que deforma el tejido (decisión 63); por omisión, el del último marco.
    */
-  gpuQuery(points: Float32Array, frame: ProbeFrame, allTubes = false, opts: { normals?: boolean } = {}): GpuPointQuery {
+  gpuQuery(
+    points: Float32Array,
+    frame: ProbeFrame,
+    allTubes = false,
+    opts: { normals?: boolean; compression?: ProbeCompression } = {},
+  ): GpuPointQuery {
     const s = this.sample;
     return this.renderer.queryPoints(
       points,
@@ -341,6 +373,7 @@ export class Simulator {
         sample: s,
         frame,
         pose: this.pose,
+        compression: opts.compression ?? this.lastContact,
         transducer: this.transducer,
         caliber: this.anatomy.caliberFor(s),
         probeVelocity: [0, 0, 0],

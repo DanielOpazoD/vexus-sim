@@ -18,13 +18,16 @@
 // 3c2cec6): el GLSL del módulo de la pared en la anatomía (~7 kB, que viaja en todas las pasadas que
 // clasifican), el de su textura y del eco de cara plana en la pasada B (~6 kB), sus gemelos TS, el banco de la
 // pared y las filas de las caras nuevas. index sube a 305 kB.
+// 2026-09-25 (quater): la compresión de la sonda (decisión 63) lleva index de 296,6 a 310,3 kB (vite build sobre
+// main f0d98d3): el GLSL del campo y de su jacobiana en la anatomía (~4,5 kB de texto), su uso en la pasada B, el
+// módulo del campo y el del contacto (tabla por nodo) con sus comentarios en el GLSL. index sube a 320 kB.
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const KB = 1024;
 const BUDGETS: Array<[RegExp, number]> = [
   [/three.*\.js$/, 700 * KB],
-  [/index-.*\.js$/, 305 * KB],
+  [/index-.*\.js$/, 320 * KB],
   [/\.css$/, 20 * KB],
   [/\.js$/, 120 * KB], // cualquier otro chunk
 ];

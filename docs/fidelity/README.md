@@ -578,6 +578,20 @@ septos y estrías > 2 dB, líneas ≤ 16 dB y ≤ 2 % saturadas, cortical ≥ 12
 en la GPU la misma cara, normal (p05 de |n·∇| > 0,98) y norma del gradiente (p95 del error < 1 %) que en TS
 (`wallNormals`). Juicio visual: el dueño, frente a las referencias de la decisión 62.
 
+### Compresión de la sonda (decisión 63): qué cambia en el banco
+
+El tejido bajo la huella está comprimido (`anatomy/compression.ts`): la pared se lleva a la cara como una placa. El
+banco de la pared mide la incidencia «sobre la piel» (`WALL_NORMAL_DEG`, `WALL_LAYER_DEG`) y la de la pleura de la
+cortina con la normal del MUNDO (la material por la jacobiana, `warpNormal`), así que bajo la huella casi todas las
+líneas cuentan como normales y las capas están a su profundidad de siempre bajo la cara en todas ellas; la
+orientación de los septos y las estrías, igual. Las líneas acopladas (`MIN_COUPLING`) son las del contacto
+conseguido (`probe/contact.ts`). Gemelo (CPU, `compression.test.ts`), bajo la huella: la cara interna de la pared a
+28,00–28,05 mm en el flanco y el renal, 28,0–29,4 en la intercostal y 25,4–36,6 en la subxifoidea (tronco rígido:
+28,3–36,0, 28,1–46,9 y 21,8–57,7); la normal de las capas a ≤ 2° de la línea en el flanco y el renal. Qué mirar con
+GPU (sin metas nuevas del banco): en la intercostal, la piel, las fascias y la pleura como arcos paralelos a la
+cara en la huella (hoy, cúpula); en el flanco y el renal, el sector entero acoplado; en la subxifoidea basculada,
+el lado del talón comprimido y el de la punta todavía oblicuo.
+
 ## Línea base (23-09-2026, árbol `src/` 4de3821, tras el preajuste abdominal; M4 con Metal, densidad 2)
 
 | Escena                  | SNR  | Oscuros | Grietas | Grano axial / lateral ÷ PSF | Hígado p05/p50/p95 | Desviación | Luz | dB/cm | Pared 0–20° | Pared 20–40° | cps | ms sin / con color |

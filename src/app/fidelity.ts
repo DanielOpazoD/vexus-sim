@@ -1,11 +1,13 @@
 import { TISSUES, Tissue, attenuationDbPerCm } from '../anatomy/tissues';
 import { Interface } from '../anatomy/interfaces';
-import { wallArc, wallDepths } from '../anatomy/organs/wall';
+import { WALL, wallArc, wallDepths } from '../anatomy/organs/wall';
 import { torsoDepth, torsoNormal } from '../anatomy/primitives';
 import type { FaceGeometry } from '../anatomy/scene';
-import { dot, type Vec3 } from '../core/vec3';
+import { warpAt, warpNormal } from '../anatomy/compression';
+import { dot, normalize, type Vec3 } from '../core/vec3';
 import { VESSEL_META } from '../physiology/vessels';
-import { lineCoupling, lineDirection, pointOnLine } from '../probe/probe';
+import { contactCoupling } from '../probe/contact';
+import { lineDirection, pointOnLine } from '../probe/probe';
 import { lateralFwhmMm, lateralSigmaMm } from '../ultrasound/beamModel';
 import { effectiveLooks, lookCorrelationLaw, lookWeight } from '../ultrasound/compound';
 import { IFACE_REACH_MM, IFACE_SHIFT_MM } from '../ultrasound/interfaceEcho';
@@ -1631,7 +1633,7 @@ export function fidelityStats(
   const coupled = new Uint8Array(lines);
   for (let u = 0; u < lines; u++) {
     const theta = thetaOf(u);
-    coupled[u] = lineCoupling(sim.pose, tr, theta) >= MIN_COUPLING ? 1 : 0;
+    coupled[u] = contactCoupling(sim.contact, theta) >= MIN_COUPLING ? 1 : 0;
     let entered = false;
     let inLiver = false;
     let excessDb = 0;
@@ -2262,7 +2264,9 @@ function wallStatsOf(
       else lo = mid;
     }
     skin[u] = hi;
-    const n = torsoNormal(toMaterial(pointOnLine(sim.frame, tr, theta, hi)), torso);
+    // la normal de la piel en el mundo: con la compresión de la sonda (decisión 63) la piel sigue a la cara
+    const pSkin = pointOnLine(sim.frame, tr, theta, hi);
+    const n = normalize(warpNormal(warpAt(pSkin, sim.anatomy.probeCompression), torsoNormal(toMaterial(pSkin), torso)));
     inc[u] = (Math.acos(Math.min(1, Math.abs(dot(n, lineDirection(sim.frame, theta))))) * 180) / Math.PI;
   }
   // perfil: la envolvente a la profundidad bajo la piel w de cada paso, mediana entre las líneas más normales
@@ -2321,7 +2325,14 @@ function wallStatsOf(
       if (!far) continue;
       (sub ? fatLayer : musLayer).push(e);
       if (tex[3] < 0.05) (sub ? lob : mus).push(grayAt(u, r));
-      else if (tex[3] > 0.7 && wallOrientation([tex[0], tex[1], tex[2]], dir) > 0.7) (sub ? sep : str).push(e);
+      else if (
+        tex[3] > 0.7 &&
+        wallOrientation(
+          normalize(warpNormal(warpAt(pointOnLine(sim.frame, tr, theta, r), sim.anatomy.probeCompression), [tex[0], tex[1], tex[2]])),
+          dir,
+        ) > 0.7
+      )
+        (sub ? sep : str).push(e);
     }
     boneAtLine[u] = bone;
     if (bone < 0) continue;
@@ -2344,7 +2355,10 @@ function wallStatsOf(
           rL = r;
           break;
         }
-      if (rL < 0 || (boneAtLine[u] >= 0 && boneAtLine[u] < rL + 0.6)) continue;
+      // sin hueso en la ventana del pico ni en el eco de su cortical, que dibuja el tejido blando a menos de
+      // `ribFacePriorityMm` de la costilla (decisión 62): con la pared comprimida (decisión 63) la capa hallada a
+      // ~1 mm sobre una costilla era su cortical, +26 dB, y se contaba como línea de la pared saturada
+      if (rL < 0 || (boneAtLine[u] >= 0 && boneAtLine[u] < rL + 0.6 + WALL.ribFacePriorityMm)) continue;
       let pk = -Infinity;
       let gy = 0;
       for (let r = rL - 0.6; r <= rL + 0.6; r += 0.05) {
@@ -2449,10 +2463,12 @@ export function curtainLines(sim: Simulator, lines: number): (CurtainLine | null
     }
     const point: Vec3 = [origin[0] + dir[0] * c.D, origin[1] + dir[1] * c.D, origin[2] + dir[2] * c.D];
     const m = mat(point);
+    // la normal de la pleura en el mundo (la compresión de la sonda la pone de cara a la línea, decisión 63)
+    const nW = normalize(warpNormal(warpAt(point, a.probeCompression), torsoNormal(m, a.scene.torso)));
     const { fAir, sigmaMm } = curtainAirFractionAt(c.dz, c.D, dir, sim.frame.elevation, tr.elevationFocusMm, (r) =>
       lateralSigmaMm(r, sim.bmode.focusMm, sim.profile.beam),
     );
-    const cos = Math.abs(dot(torsoNormal(m, a.scene.torso), dir));
+    const cos = Math.abs(dot(nW, dir));
     let shadowed = false;
     for (let r = 0.25; r < c.D && !shadowed; r += GRID_STEP_MM)
       shadowed = TISSUES[a.classifyWorld(pointOnLine(sim.frame, tr, theta, r), sim.sample).tissue].bone;

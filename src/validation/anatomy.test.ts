@@ -6,7 +6,8 @@ import { Tissue } from '../anatomy/tissues';
 import { CASES, NORMAL_ADULT } from '../cases';
 import { SimulationClock } from '../core/clock';
 import { PhysiologyEngine } from '../physiology/engine';
-import { CONVEX_C35, lineCoupling, lineDirection, pointOnLine, probeFrame, skinSoftness, type ProbePose } from '../probe/probe';
+import { contactCoupling, contactForPose } from '../probe/contact';
+import { CONVEX_C35, lineDirection, pointOnLine, probeFrame, skinSoftness, type ProbePose } from '../probe/probe';
 import { kidneyQuery, kidneyWorld } from '../anatomy/organs/kidney';
 import { renalPatternFromPeaks } from '../vexus/classification';
 import { VESSEL_META } from '../physiology/vessels';
@@ -355,17 +356,19 @@ describe('Sonda (guía §8)', () => {
     expect(Math.abs(d[0] - fr.axial[0]) + Math.abs(d[1] - fr.axial[1]) + Math.abs(d[2] - fr.axial[2])).toBeLessThan(1e-9);
   });
 
-  it('el acoplamiento es total en contacto y se pierde al separar o bascular', () => {
+  it('el acoplamiento es total en contacto y se pierde al separar o bascular (contacto de la decisión 63)', () => {
+    const coupling = (pose: ProbePose, theta: number) => contactCoupling(contactForPose(pose, CONVEX_C35, scene.torso), theta);
     const flat: ProbePose = { phi: 0, z: 0, lift: 0, yaw: 0, rock: 0, tilt: 0 };
-    expect(lineCoupling(flat, CONVEX_C35, 0)).toBe(1);
-    expect(lineCoupling({ ...flat, lift: 12 }, CONVEX_C35, 0)).toBe(0);
+    expect(coupling(flat, 0)).toBe(1);
+    expect(coupling({ ...flat, lift: 12 }, 0)).toBe(0);
     const rocked = { ...flat, rock: 0.35 };
-    expect(lineCoupling(rocked, CONVEX_C35, CONVEX_C35.halfSector)).toBeLessThan(lineCoupling(rocked, CONVEX_C35, -CONVEX_C35.halfSector));
+    expect(coupling(rocked, CONVEX_C35.halfSector)).toBeLessThan(coupling(rocked, -CONVEX_C35.halfSector));
     // la pared blanda del epigastrio absorbe la basculación: bajo el xifoides se conserva más
     // contacto que sobre las costillas del flanco con la misma basculación craneal (decisión 43)
     const mean = (pose: ProbePose) => {
+      const k = contactForPose(pose, CONVEX_C35, scene.torso);
       let c = 0;
-      for (let i = 0; i <= 40; i++) c += lineCoupling(pose, CONVEX_C35, -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * i) / 40) / 41;
+      for (let i = 0; i <= 40; i++) c += contactCoupling(k, -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * i) / 40) / 41;
       return c;
     };
     const epigastrium: ProbePose = { phi: Math.PI / 2 + 0.2, z: -20, lift: 0, yaw: 0, rock: 0.5, tilt: 0 };

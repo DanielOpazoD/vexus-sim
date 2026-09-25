@@ -37,7 +37,7 @@ describe('Esquema de uniforms de la escena', () => {
     for (const c of CASES) {
       const scene = new AnatomyScene(c);
       const sample = new PhysiologyEngine(c, scene.vesselAreas()).step();
-      const values = evaluateSceneUniforms(scene, { sample, tubeCount: 40 });
+      const values = evaluateSceneUniforms(scene, { sample, tubeCount: 40, compression: null });
       expect(values).toHaveLength(SCENE_UNIFORMS.length);
       for (const { spec, data } of values) for (const v of data) expect(Number.isFinite(v), `${spec.name} no finito`).toBe(true);
       const calls: string[] = [];

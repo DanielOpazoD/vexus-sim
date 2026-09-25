@@ -13,6 +13,8 @@
  *     H2 = (u_ref mm/s, r_ref mm, exponente del perfil, índice original del tubo)
  *     H3 = esfera envolvente (cx, cy, cz, R)
  *   nodos desde NODE_BASE = MAX_TUBES·4: (x, y, z, r)
+ *   tabla de la compresión de la sonda desde COMPRESSION_BASE = NODE_BASE + MAX_NODES (decisión 63,
+ *   `anatomy/compression.ts`): un téxel por nodo de la cara, (s₀ mm, b − 1, 0, 0)
  */
 import { BOWEL_BD_CAP_MM, DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, TISSUE_GLSL_NAME } from '../tissues';
 import {
@@ -24,6 +26,7 @@ import {
   LAST_WALL_INTERFACE,
   MORISON_CONTACT_MM,
 } from '../interfaces';
+import { COMPRESSION_GLSL, PROBE_COMPRESSION } from '../compression';
 import { ORGAN_MODULES } from '../organs';
 import { RIB_ANTERIOR_END } from '../primitives';
 import { MAX_GAS, MAX_RIBS, SCENE_UNIFORMS_GLSL } from './sceneUniforms';
@@ -34,7 +37,9 @@ export const NODE_BASE = MAX_TUBES * 4;
 export const SCENE_TEX_W = 256;
 /** Segmentos por tubo que recorre el shader (`tubeQuery`): un tubo con más nodos se truncaría. */
 export const MAX_TUBE_SEGMENTS = 8;
-export const SCENE_TEX_H = Math.ceil((NODE_BASE + MAX_NODES) / SCENE_TEX_W);
+/** Primer téxel de la tabla de compresión de la sonda (decisión 63): tras los nodos de los tubos. */
+export const COMPRESSION_BASE = NODE_BASE + MAX_NODES;
+export const SCENE_TEX_H = Math.ceil((COMPRESSION_BASE + PROBE_COMPRESSION.nodes) / SCENE_TEX_W);
 export { MAX_GAS, MAX_RIBS } from './sceneUniforms';
 
 const TISSUE_DEFINES = Object.entries(TISSUE_GLSL_NAME)
@@ -51,6 +56,7 @@ export const ANATOMY_GLSL = /* glsl */ `
 #define SCENE_TEX_W ${SCENE_TEX_W}
 #define MAX_TUBE_SEGMENTS ${MAX_TUBE_SEGMENTS}
 #define NODE_BASE ${NODE_BASE}
+#define COMP_BASE ${NODE_BASE + MAX_NODES}
 #define MAX_GAS ${MAX_GAS}
 #define MAX_RIBS ${MAX_RIBS}
 ${TISSUE_DEFINES}
@@ -111,9 +117,12 @@ vec3 respDisplacement(vec3 m) {
   return uResp.yzw * (uResp.x * respWeight(m));
 }
 
+${COMPRESSION_GLSL}
+// Mundo → material: la compresión de la sonda (decisión 63) y después la respiración (deformation.ts)
 vec3 toMaterial(vec3 p) {
-  vec3 m = p;
-  for (int i = 0; i < 2; i++) m = p - respDisplacement(m);
+  vec3 q = uncompress(p);
+  vec3 m = q;
+  for (int i = 0; i < 2; i++) m = q - respDisplacement(m);
   return m;
 }
 

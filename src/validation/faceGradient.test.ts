@@ -327,7 +327,10 @@ describe('Eco de interfaz en la distancia por la normal (|∇| de la cara)', () 
     expect(glsl).toContain('c.iface = inRa ? IF_NONE : iface; c.ifd = inRa ? 1e3 : abs(bestD);');
     const echo = INTERFACE_ECHO_GLSL.replace(/\s+/g, ' ');
     expect(echo).toContain(`#define IFACE_GRAD_MAX ${IFACE_GRADIENT_MAX.toFixed(4)}`);
-    expect(echo).toContain('float gBound = c.iface <= IF_LAST_TUBE ? length(c.n) : IFACE_GRAD_MAX;');
+    // con la compresión de la sonda (decisión 63) la cota se multiplica por la de la jacobiana (warpBound) y el
+    // gradiente de la cara se lleva al mundo antes del eco
+    expect(echo).toContain('float gBound = (c.iface <= IF_LAST_TUBE ? length(c.n) : IFACE_GRAD_MAX) * warpBound(w);');
+    expect(echo).toContain('vec3 gw = warpNormal(w, fg.xyz * fg.w); float gn = length(gw); fg = vec4(gw / max(gn, 1e-9), gn);');
     expect(echo).toContain('return interfaceProfileEcho(c.iface, cosI, curv, c.ifd / (fg.w * cosI));');
     expect(echo).toContain('float kl = dot(lat, circ); kl = kl * kl * c.kc;');
     expect(FRAG_QUERY).toContain('o2 = faceGradient(c, m);');

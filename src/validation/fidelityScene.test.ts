@@ -13,6 +13,7 @@ import { NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient } from '../physiology/patientState';
 import { CONVEX_C35, lineDirection, pointOnLine, probeFrame } from '../probe/probe';
+import { probeContact } from '../probe/contact';
 import { lateralFwhmMm } from '../ultrasound/beamModel';
 import { COARSE_DEPTH, DISPLAY_MARGIN_PX, type DisplayFrame } from '../ultrasound/renderer';
 import { pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
@@ -80,6 +81,8 @@ function measure(id: Plane): FidelityStats {
     anatomy,
     frame,
     pose,
+    // el acoplamiento de las líneas (decisión 63); la anatomía de este gemelo es la del tronco rígido
+    contact: probeContact(pose, frame, CONVEX_C35, scene.torso),
     sample: engine.sample,
     renderer: { display },
   } as unknown as Simulator;

@@ -58,3 +58,11 @@ realismo (1–7) = n` y sus pistas. Al final: un JSON `{"img01": {"veredicto": "
 
 Primera ronda (23-09-2026, `main` af57add): 7/7 parejas y 14/14 sueltas; realismo 2,6 (simuladas)
 frente a 6,3 (reales); nota global 2/7.
+
+Segunda ronda (25-09-2026, `main` 92f1ae8, tras las decisiones 58–63): 7/7 parejas (confianza
+90–97 %) y 13/14 sueltas; el único fallo es la pared real (img01), tomada por sintética con 70 %
+(«borrosidad pareja»). Realismo 1,9 (simuladas, sueltas y parejas) frente a 5,9 (reales); nota global
+2/7. No mejora a la primera: la pared y la cortina ya no delatan, y lo que delata ahora es la
+geometría profunda (vasos elípticos con halo simétrico, VCI de bordes paralelos, cápsula renal de
+doble línea, pelvis recortada), el brillo de borde que no depende de la incidencia, el grano igual a
+toda profundidad y las luces sin ruido. La pareja mejor puntuada (3/7) fue la pared con costillas.

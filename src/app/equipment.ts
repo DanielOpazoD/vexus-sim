@@ -155,7 +155,7 @@ export function reduceEquipment(e: EquipmentSettings, cmd: EquipmentCommand, ctx
         if (!e.pw.enabled) {
           next = { ...next, pw: { ...next.pw, theta: (e.color.theta0 + e.color.theta1) / 2, depthMm: (e.color.r0 + e.color.r1) / 2 } };
         } else if (!e.color.enabled) {
-          next = reduceEquipment(next, { type: 'centerColorBox', theta: e.pw.theta, r: e.pw.depthMm }, ctx);
+          next = centerBox(next, e.pw.theta, e.pw.depthMm);
         }
       }
       break;
@@ -175,12 +175,9 @@ export function reduceEquipment(e: EquipmentSettings, cmd: EquipmentCommand, ctx
       next = { ...e, bmode: { ...e.bmode, tgcDb } };
       break;
     }
-    case 'centerColorBox': {
-      const hw = (e.color.theta1 - e.color.theta0) / 2;
-      const hr = (e.color.r1 - e.color.r0) / 2;
-      next = { ...e, color: { ...e.color, theta0: cmd.theta - hw, theta1: cmd.theta + hw, r0: cmd.r - hr, r1: cmd.r + hr } };
+    case 'centerColorBox':
+      next = centerBox(e, cmd.theta, cmd.r);
       break;
-    }
     case 'scaleColorBox': {
       const c = e.color;
       const tm = (c.theta0 + c.theta1) / 2;
@@ -192,12 +189,29 @@ export function reduceEquipment(e: EquipmentSettings, cmd: EquipmentCommand, ctx
     }
     case 'placeGate':
       next = { ...e, pw: { ...e.pw, theta: cmd.theta, depthMm: cmd.r } };
-      // en tríplex la caja acompaña a la puerta: si la puerta sale de la caja, la caja se centra en ella
-      if (e.color.enabled && e.pw.enabled && !gateInColorBox(next))
-        next = reduceEquipment(next, { type: 'centerColorBox', theta: cmd.theta, r: cmd.r }, ctx);
       break;
   }
-  return normalizeEquipment(next, ctx);
+  const out = normalizeEquipment(next, ctx);
+  // Invariante del tríplex (decisión 66): la puerta queda siempre dentro de la caja. Si el comando movió la caja
+  // (centrarla), la puerta va a su centro; si no (mover la puerta, escalar la caja, cambiar la profundidad), la caja
+  // acompaña a la puerta y se centra en ella con su tamaño
+  if (out.color.enabled && out.pw.enabled && !gateInColorBox(out)) {
+    const c = out.color;
+    return normalizeEquipment(
+      cmd.type === 'centerColorBox'
+        ? { ...out, pw: { ...out.pw, theta: (c.theta0 + c.theta1) / 2, depthMm: (c.r0 + c.r1) / 2 } }
+        : centerBox(out, out.pw.theta, out.pw.depthMm),
+      ctx,
+    );
+  }
+  return out;
+}
+
+/** La caja de color centrada en (θ, r), con su tamaño. */
+function centerBox(e: EquipmentSettings, theta: number, r: number): EquipmentSettings {
+  const hw = (e.color.theta1 - e.color.theta0) / 2;
+  const hr = (e.color.r1 - e.color.r0) / 2;
+  return { ...e, color: { ...e.color, theta0: theta - hw, theta1: theta + hw, r0: r - hr, r1: r + hr } };
 }
 
 type Listener = (next: EquipmentSettings, prev: EquipmentSettings) => void;

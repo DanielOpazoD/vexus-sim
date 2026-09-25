@@ -1948,8 +1948,11 @@ tríplex la caja se centra en la puerta cuando esta sale de ella, conservando su
 dúplex, sin color, la caja no se mueve). La cadencia física del color (decisión 39) descuenta el tiempo del PW
 intercalado: cada disparo PW espera el eco del fondo de la puerta y se repite a su PRF sin huecos, así que la
 imagen solo dispone de la fracción `1 − PRF·2d/c` (`pwDutyCycle`, acotada a 0,8): con la PRF por omisión y la
-puerta a 9 cm, un 31 % menos de cuadros. El HUD da las dos líneas (color y PW) y el chip las dos escalas; la
-pestaña Doppler muestra los dos subpaneles.
+puerta a 9 cm, un 31 % menos de cuadros. Invariante: en tríplex la puerta queda siempre dentro de la caja; si un
+comando la sacaría (mover la puerta, «Caja −», reducir la profundidad) la caja se centra en ella, y si lo que se movió
+fue la caja, la puerta va a su centro (la revisión adversarial halló que «Caja −» la dejaba fuera en ~la mitad de los
+estados). El HUD da las dos líneas (color y PW) y el chip la escala del color con la profundidad de la puerta y el
+barrido; la pestaña Doppler muestra los dos subpaneles.
 **Consecuencias.** El alumno coloca la puerta sobre el color, como en la clínica, y ve que la imagen se refresca más
 despacio en tríplex. La PRF del PW no se reparte con el color (los equipos reales limitan a veces la escala del PW
 en tríplex simultáneo): queda en `LIMITATIONS.md`. La composición espacial sigue apagada mientras haya color.

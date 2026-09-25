@@ -176,4 +176,25 @@ describe('Tríplex (decisión 66)', () => {
     expect(e.color.theta1).toBeLessThanOrEqual(ctx.halfSectorRad + 1e-9);
     expect(normalizeEquipment(e, ctx)).toEqual(e);
   });
+
+  it('«Caja −», centrar la caja o reducir la profundidad nunca dejan la puerta fuera de la caja en tríplex', () => {
+    let e = base();
+    e = reduceEquipment(e, { type: 'color', patch: { theta0: -0.25, theta1: 0.25, r0: 60, r1: 120 } }, ctx);
+    e = reduceEquipment(e, { type: 'mode', mode: 'triplex' }, ctx);
+    e = reduceEquipment(e, { type: 'placeGate', theta: 0.22, r: 112 }, ctx);
+    for (let i = 0; i < 6; i++) {
+      e = reduceEquipment(e, { type: 'scaleColorBox', factor: 1 / 1.15 }, ctx);
+      expect(gateInColorBox(e), `Caja − ×${i + 1}`).toBe(true);
+    }
+    // la puerta que el alumno colocó no se pierde: fue la caja la que se movió
+    expect([e.pw.theta, e.pw.depthMm]).toEqual([0.22, 112]);
+    // centrar la caja lejos de la puerta la lleva a su centro
+    e = reduceEquipment(e, { type: 'centerColorBox', theta: -0.3, r: 70 }, ctx);
+    expect(gateInColorBox(e)).toBe(true);
+    expect(e.pw.theta).toBeCloseTo((e.color.theta0 + e.color.theta1) / 2, 9);
+    // reducir la profundidad arrastra las dos y la puerta sigue dentro
+    e = reduceEquipment(e, { type: 'bmode', patch: { depthMm: 60 } }, ctx);
+    expect(gateInColorBox(e)).toBe(true);
+    expect(normalizeEquipment(e, ctx)).toEqual(e);
+  });
 });

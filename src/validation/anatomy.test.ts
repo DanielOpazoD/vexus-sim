@@ -23,7 +23,7 @@ import {
   perirenalThicknessMm,
   sdRoundCone,
 } from '../anatomy/organs/kidney';
-import { sdEllipsoidLocal } from '../anatomy/primitives';
+import { sdEllipsoidLocal, tubeQuery } from '../anatomy/primitives';
 import { renalPatternFromPeaks } from '../vexus/classification';
 import { VESSEL_META } from '../physiology/vessels';
 import { BRANCH_MAX_RADIUS_SCALE } from '../anatomy/vesselTree';
@@ -48,7 +48,7 @@ describe('Anatomía implícita (base B)', () => {
     expect(cls([-30, -70, 5]).tissue).not.toBe(Tissue.Bone);
     expect(cls([-55, -5, 70]).tissue).toBe(Tissue.Lung);
     expect(cls([12, -24, 0]).vessel).toBe('aorta');
-    expect(cls([-12, -8, -72]).vessel).toBe('pvTrunk');
+    expect(cls([-14, 4, -75]).vessel).toBe('pvTrunk');
   });
 
   it('la fisura umbilical excava el lóbulo izquierdo y la rellena el ligamento redondo (ecogénico)', () => {
@@ -174,21 +174,88 @@ describe('Anatomía implícita (base B)', () => {
 
   it('los vasos tienen pared distinta de la luz y la porta tiene pared ecogénica', () => {
     // borde posterior del tronco portal: radio 5,5 → a 6 mm del eje hay pared
-    // (por delante corre la arteria hepática, como en el ligamento hepatoduodenal)
-    expect(cls([-12, -8 - 6.1, -72]).tissue).toBe(Tissue.VesselWallPortal);
-    expect(cls([-12, -8 + 6.1, -72]).vessel).toBe('hepaticArtery');
-    expect(cls([-22 - 10.4, -16, 0]).tissue).toBe(Tissue.VesselWallThin);
+    expect(cls([-14, 4 - 6.1, -75]).tissue).toBe(Tissue.VesselWallPortal);
+    // la arteria hepática propia corre por delante y a la izquierda de la porta hacia el hilio (decisión 69)
+    expect(cls([-18, 8, -49]).vessel).toBe('hepaticArtery');
+    // pared lateral de la VCI a z 0 (eje interpolado entre sus nodos)
+    const ivc = scene.vessels.find((v) => v.id === 'ivcInfra')!.tube.nodes;
+    const k = ivc.findIndex((n, i) => i < ivc.length - 1 && n.p[2] <= 0 && ivc[i + 1].p[2] > 0);
+    const t = (0 - ivc[k].p[2]) / (ivc[k + 1].p[2] - ivc[k].p[2]);
+    const c = [0, 1, 2].map((j) => ivc[k].p[j] + (ivc[k + 1].p[j] - ivc[k].p[j]) * t);
+    expect(cls([c[0] - 10.4, c[1], 0]).tissue).toBe(Tissue.VesselWallThin);
+  });
+
+  it('VCI y aorta (decisión 69): VCI curva con embudo, por delante de la aorta arriba; ramas viscerales en su orden', () => {
+    const tubeOf = (id: string) => scene.vessels.find((v) => v.id === id)!.tube;
+    // eje de un tubo a una altura z (interpolado entre sus nodos)
+    const axisAt = (id: string, z: number): [number, number, number] => {
+      const n = tubeOf(id).nodes;
+      for (let i = 0; i < n.length - 1; i++) {
+        const [a, b] = [n[i].p, n[i + 1].p];
+        if ((a[2] - z) * (b[2] - z) <= 0 && a[2] !== b[2]) {
+          const t = (z - a[2]) / (b[2] - a[2]);
+          return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, z];
+        }
+      }
+      throw new Error(`${id} no llega a z ${z}`);
+    };
+    const ivcAt = (z: number) => axisAt(z >= 35 ? 'ivcSupra' : 'ivcInfra', z);
+    // la VCI no es recta: entre el nivel renal y la AD sube hacia delante más de 15 mm, sin saltos
+    expect(ivcAt(70)[1] - ivcAt(-60)[1]).toBeGreaterThan(15);
+    let prev = ivcAt(-60)[1];
+    for (let z = -50; z <= 70; z += 10) {
+      const y = ivcAt(z)[1];
+      expect(y - prev, `z ${z}`).toBeGreaterThan(-1.5);
+      expect(y - prev, `z ${z}`).toBeLessThan(6);
+      prev = y;
+    }
+    // por delante de la aorta: ≥ 10 mm en el segmento retrohepático y ≥ 20 mm cerca de la AD; casi a la par en el renal
+    expect(ivcAt(15)[1] - axisAt('aorta', 15)[1]).toBeGreaterThan(10);
+    expect(ivcAt(60)[1] - axisAt('aorta', 60)[1]).toBeGreaterThan(20);
+    expect(Math.abs(ivcAt(-62)[1] - axisAt('aorta', -62)[1])).toBeLessThan(10);
+    // a la derecha de la aorta, a ~30 mm entre centros
+    expect(axisAt('aorta', -62)[0] - ivcAt(-62)[0]).toBeGreaterThan(25);
+    // embudo hacia la AD
+    const sup = tubeOf('ivcSupra').nodes;
+    expect(sup[sup.length - 1].r).toBeGreaterThan(sup[0].r + 2);
+    // ramas viscerales por la cara anterior: celíaco por encima de la AMS, y esta por encima de las renales
+    const originZ = (id: string) => tubeOf(id).nodes[0].p[2];
+    expect(originZ('celiacTrunk')).toBeGreaterThan(originZ('sma'));
+    expect(originZ('sma')).toBeGreaterThan(originZ('renalArteryRight'));
+    expect(cls(tubeOf('celiacTrunk').nodes[1].p).vessel).toBe('celiacTrunk');
+    expect(cls(tubeOf('sma').nodes[2].p).vessel).toBe('sma');
+    // la hepática nace del celíaco (no de la aorta)
+    const ha0 = tubeOf('hepaticArtery').nodes[0].p;
+    const celEnd = tubeOf('celiacTrunk').nodes.at(-1)!.p;
+    expect(Math.hypot(ha0[0] - celEnd[0], ha0[1] - celEnd[1], ha0[2] - celEnd[2])).toBeLessThan(1);
+    // la porta pasa por delante de la VCI con un hueco (hiato de Winslow) y no toca la aorta ni la vena renal izquierda
+    for (const z of [-75, -60]) {
+      const pv = axisAt('pvTrunk', z);
+      const ivc = ivcAt(z);
+      expect(pv[1] - ivc[1], `z ${z}`).toBeGreaterThan(10);
+    }
+    const pvNodes = tubeOf('pvTrunk').nodes;
+    for (const other of ['aorta', 'renalVeinLeft', 'ivcInfra'] as const) {
+      let clearance = Infinity;
+      for (let i = 0; i < pvNodes.length - 1; i++)
+        for (let t = 0; t <= 1; t += 0.05) {
+          const q = [0, 1, 2].map((j) => pvNodes[i].p[j] + (pvNodes[i + 1].p[j] - pvNodes[i].p[j]) * t) as [number, number, number];
+          const r = pvNodes[i].r + (pvNodes[i + 1].r - pvNodes[i].r) * t;
+          clearance = Math.min(clearance, tubeQuery(q, tubeOf(other), 1).d - r);
+        }
+      expect(clearance, other).toBeGreaterThan(2);
+    }
   });
 
   it('suprahepáticas: tres troncos, tributarias y tronco común que desemboca en la cava', () => {
     expect(cls([-68, -18, 10]).vessel).toBe('hvRight');
     expect(cls([-30, 4, 12]).vessel).toBe('hvMiddle');
-    expect(cls([0, 2, 26]).vessel).toBe('hvLeft');
+    expect(cls([0, 6, 26]).vessel).toBe('hvLeft');
     expect(cls([-83, -12, -5]).vessel).toMatch(/^hvRight/);
     // el tronco común y la desembocadura de la derecha están dentro de la cava supra
     for (const p of [
-      [-21, -14, 50],
-      [-26, -16, 38],
+      [-20, -1, 50],
+      [-27, -9, 39],
     ] as [number, number, number][]) {
       expect(cls(p).tissue).toBe(Tissue.Blood);
       expect(['hvCommonTrunk', 'hvRight', 'ivcSupra', 'ivcInfra']).toContain(cls(p).vessel);
@@ -206,11 +273,11 @@ describe('Anatomía implícita (base B)', () => {
     expect(cls([-22, -16, -66]).vessel).toMatch(/ivcInfra|renalVeinRight/);
     expect(cls([38, 32, -22]).vessel).toBe('pvLeftLateral');
     expect(cls([-100, 30, -19]).vessel).toBe('pvRightAnterior');
-    // colédoco: luz anecoica con pared ecogénica, sin vaso
-    const cbd = cls([-16, 4, -69]);
+    // colédoco: luz anecoica con pared ecogénica, sin vaso, a la derecha y por delante de la porta (decisión 69)
+    const cbd = cls([-26, 12, -69]);
     expect(cbd.tissue).toBe(Tissue.Fluid);
     expect(cbd.vessel).toBeNull();
-    expect(cls([-16, 4 + 3.1, -69]).tissue).toBe(Tissue.BileDuctWall);
+    expect(cls([-26, 12 + 3.1, -69]).tissue).toBe(Tissue.BileDuctWall);
   });
 
   // Antes arteria y vena renales compartían el nodo hiliar: el 14–21 % del eje arterial se clasificaba
@@ -775,8 +842,8 @@ describe('Caras de interfaz en classify (decisión 57)', () => {
     const hvCls = cls(mid(hv.tube.nodes));
     expect(hvCls.tissue).toBe(Tissue.Blood);
     expect(hvCls.interface).toBe(Interface.VeinLumen);
-    expect(cls([-12, -8, -72]).vessel).toBe('pvTrunk');
-    expect(cls([-12, -8, -72]).interface).toBe(Interface.PortalLumen);
+    expect(cls([-14, 4, -75]).vessel).toBe('pvTrunk');
+    expect(cls([-14, 4, -75]).interface).toBe(Interface.PortalLumen);
     expect(cls([12, -24, 0]).vessel).toBe('aorta');
     expect(cls([12, -24, 0]).interface).toBe(Interface.ArteryLumen);
     const cbd = scene.ducts.find((d) => d.id === 'cbd')!;

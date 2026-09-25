@@ -58,6 +58,7 @@ const SYSTEM_COLOR_3D: Record<VesselSystem, number> = {
   portal: 0xd86ad8,
   hepaticArtery: 0xf0704d,
   aorta: 0xe04848,
+  visceralArtery: 0xf0704d,
   renalArtery: 0xf0704d,
   renalVein: 0x5a8cdc,
   interlobarArtery: 0xf0704d,

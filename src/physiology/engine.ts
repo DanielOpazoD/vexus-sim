@@ -236,6 +236,17 @@ export class PhysiologyEngine {
           // Aorta: caudal descendente ilustrativo (no forma parte de VExUS).
           q = 60 + 90 * this.arterialPulse(t);
           break;
+        // Ramas viscerales (decisión 69, ilustrativas): celíaco ≈ 0,6 L/min, esplénica ≈ 0,3, AMS en ayunas ≈ 0,5; con el
+        // mismo pulso de baja resistencia que la hepática
+        case 'celiacTrunk':
+          q = 10 * (1 + 1.1 * this.arterialPulse(t));
+          break;
+        case 'splenicArtery':
+          q = 5 * (1 + 1.1 * this.arterialPulse(t));
+          break;
+        case 'sma':
+          q = 8 * (1 + 1.4 * this.arterialPulse(t));
+          break;
         case 'renalArteryRight':
         case 'renalArteryLeft':
           q = 0.5 * out.qRenalArtery;

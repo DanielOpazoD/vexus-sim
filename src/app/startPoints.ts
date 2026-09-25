@@ -5,7 +5,7 @@
  * φ en el marco anatómico (0 = izquierda del paciente, π/2 = anterior), z en mm.
  */
 export interface StartPoint {
-  id: 'subxiphoid' | 'intercostal' | 'flank' | 'renal';
+  id: 'subxiphoid' | 'intercostal' | 'flank' | 'portal' | 'renal';
   label: string;
   phi: number;
   z: number;
@@ -67,6 +67,24 @@ export const START_POINTS: readonly StartPoint[] = [
     yaw: 0,
     tilt: -0.2,
     hint: 'VCI transhepática coronal por la línea axilar media: marcador craneal, abanicar hacia atrás hasta la VCI con las suprahepáticas desembocando en ella.',
+  },
+  {
+    id: 'portal',
+    color: '#c08cff',
+    label: 'Porta · lateral',
+    // Ventana preferida de la porta en VExUS (Beaubien-Souligny 2018; Koratala 2024): lateral derecha, entre la axilar
+    // media y la posterior, más caudal que la de las suprahepáticas; plano coronal oblicuo con el haz algo hacia atrás y
+    // abajo. La porta principal queda en el centro del sector a < 60° del haz (48 de 48 muestras en la búsqueda de poses)
+    // y corre craneocaudal, así que la respiración la desliza por su eje; la VCI por detrás (decisión 69: el tronco
+    // portal pasa por delante de la VCI y el plano del flanco, que va a la VCI, ya no lo corta). Pendiente: con el hígado
+    // de 12,3 cm craneocaudales del modelo (normal 14 ± 1,7) el lóbulo derecho no llega a este nivel y el campo cercano es
+    // el «resto» en lugar de hígado; al corregir su tamaño la ventana será transhepática.
+    phi: 3.466,
+    z: -66,
+    yaw: 0.08,
+    rock: -0.3,
+    tilt: -0.2,
+    hint: 'Porta principal por la línea axilar media–posterior, más caudal que la ventana de las suprahepáticas: marcador craneal, haz algo hacia atrás; la porta roja de paredes brillantes en el centro con la VCI por detrás; puerta PW en la porta principal.',
   },
   {
     id: 'renal',

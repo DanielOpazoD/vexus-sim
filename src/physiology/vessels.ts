@@ -40,6 +40,11 @@ export const VESSEL_IDS = [
   'interlobarVein1',
   'interlobarVein2',
   'interlobarVein3',
+  // Ramas viscerales de la aorta (decisión 69): tronco celíaco con la esplénica y la mesentérica superior; no son
+  // VExUS, pero distinguen la aorta de la VCI (la «gaviota» y la AMS)
+  'celiacTrunk',
+  'splenicArtery',
+  'sma',
 ] as const;
 
 export type VesselId = (typeof VESSEL_IDS)[number];
@@ -48,7 +53,16 @@ export type VesselKind = 'vein' | 'artery';
 
 /** Sistema vascular: decide calibre dinámico, aspecto y lectura; nunca el prefijo del id. */
 export type VesselSystem =
-  'ivc' | 'hepaticVein' | 'portal' | 'hepaticArtery' | 'aorta' | 'renalArtery' | 'renalVein' | 'interlobarArtery' | 'interlobarVein';
+  | 'ivc'
+  | 'hepaticVein'
+  | 'portal'
+  | 'hepaticArtery'
+  | 'aorta'
+  | 'visceralArtery'
+  | 'renalArtery'
+  | 'renalVein'
+  | 'interlobarArtery'
+  | 'interlobarVein';
 
 /** Qué escala de calibre dicta la fisiología a este vaso (`VesselCaliber.radiusScale`). */
 export type CaliberLaw = 'ivc' | 'hepaticVein' | 'portal' | 'fixed';
@@ -100,6 +114,9 @@ export const VESSEL_META: Readonly<Record<VesselId, VesselMeta>> = {
   interlobarVein1: meta('interlobarVein'),
   interlobarVein2: meta('interlobarVein'),
   interlobarVein3: meta('interlobarVein'),
+  celiacTrunk: meta('visceralArtery'),
+  splenicArtery: meta('visceralArtery'),
+  sma: meta('visceralArtery'),
 };
 
 export function vesselKind(id: VesselId): VesselKind {

@@ -18,7 +18,7 @@ describe('Registro de casos y metadatos de vasos (Fase 1)', () => {
   it('cada vaso tiene sistema, tipo y ley de calibre coherentes', () => {
     for (const id of VESSEL_IDS) {
       const m = VESSEL_META[id];
-      expect(m.kind).toBe(/Artery|aorta/.test(id) ? 'artery' : 'vein');
+      expect(m.kind).toBe(/Artery|aorta|celiac|^sma$/.test(id) ? 'artery' : 'vein');
       if (m.caliber !== 'fixed') expect(m.kind).toBe('vein');
     }
     expect(VESSEL_META.ivcSupra.caliber).toBe('ivc');

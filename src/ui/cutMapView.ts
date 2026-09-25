@@ -68,6 +68,7 @@ const SYSTEM_COLOR: Record<VesselSystem, [number, number, number]> = {
   portal: [225, 120, 225],
   hepaticArtery: [240, 90, 90],
   aorta: [230, 60, 60],
+  visceralArtery: [240, 90, 90],
   renalArtery: [240, 90, 90],
   renalVein: [90, 140, 220],
   interlobarArtery: [240, 90, 90],
@@ -104,6 +105,9 @@ const VESSEL_LABEL: Record<VesselId, string> = {
   interlobarVein1: 'v. interlobar',
   interlobarVein2: 'v. interlobar',
   interlobarVein3: 'v. interlobar',
+  celiacTrunk: 'tronco celíaco',
+  splenicArtery: 'art. esplénica',
+  sma: 'AMS',
 };
 
 /** Tejido «sangre» como número (el mapa del Worker es un Uint8Array). */

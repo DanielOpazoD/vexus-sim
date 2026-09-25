@@ -72,3 +72,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [66](DECISIONS.md#L1929) | Tríplex: el color sigue en pantalla con el PW, la puerta nace en la caja y la caja acompaña a la puerta | vigente |
 | [67](DECISIONS.md#L1966) | Vesícula en pera curvada con una sola pared; ningún vaso la atraviesa | vigente |
 | [68](DECISIONS.md#L2001) | Riñón con una sola línea capsular, pirámides tenues y distintas, seno digitado y pelvis colapsada | vigente |
+| [69](DECISIONS.md#L2062) | VCI con curva sagital y embudo, por delante de la aorta; ramas viscerales de la aorta; hilio hepático sin choques | vigente |

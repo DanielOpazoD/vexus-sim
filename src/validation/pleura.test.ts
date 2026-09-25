@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { INTERFACES, INTERFACE_GLSL_NAME, Interface, interfaceReflectivity } from '../anatomy/interfaces';
+import {
+  FIRST_WALL_INTERFACE,
+  INTERFACES,
+  INTERFACE_GLSL_NAME,
+  Interface,
+  LAST_WALL_INTERFACE,
+  interfaceReflectivity,
+} from '../anatomy/interfaces';
 import { LUNG_CURTAIN, lungCurtainEdgeMm } from '../anatomy/organs/lungCurtain';
 import { AnatomyScene, type VesselCaliber } from '../anatomy/scene';
 import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
@@ -20,6 +27,7 @@ import {
   roughnessCoherence,
 } from '../ultrasound/interfaceEcho';
 import {
+  CURTAIN_CONTIGUOUS_SEGMENTS,
   CURTAIN_GAS_KIND,
   CURTAIN_MIN_AIR,
   CURTAIN_RECORD_MM,
@@ -29,6 +37,8 @@ import {
   PLEURA_RT,
   PLEURA_SERIES_FLOOR,
   PLEURA_WALL_FIELD_BOUND,
+  WALL_COPY_FACE_GAIN,
+  WALL_COPY_FACE_GAIN_RANGE,
   SLIDING_AX_MM,
   SLIDING_DB,
   SLIDING_EFOLD_MM,
@@ -53,6 +63,7 @@ import {
   slidingLattice,
 } from '../ultrasound/pleura';
 import { FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED, FRAG_TRANS_HITS, FRAG_TRANS_SEGMENTS } from '../ultrasound/shaders/passes.glsl';
+import { WALL_TEXTURE } from '../ultrasound/wallTexture';
 import {
   GAS_DB_PER_CM,
   MIRROR_BISECTION_STEPS,
@@ -279,6 +290,21 @@ describe('serie de reverberaciones bajo la pleura: amplitudes frente a los camin
     expect(wall).not.toMatch(/IF_PLEURA_WALL|pleuraEcho/);
   });
 
+  it('la cota del campo de la pared cubre el moteado y la cara más brillante de la copia (decisión 62)', () => {
+    // la cara de la pared más brillante en su copia: su pico en incidencia y profundidad, con su variación máxima
+    // a lo largo de la cara, por el tope del rango de WALL_COPY_FACE_GAIN, a 2 MHz (la frecuencia B más baja)
+    const k0 = (2 * Math.PI) / (1540 / 2000);
+    let peak = 0;
+    for (let f = FIRST_WALL_INTERFACE; f <= LAST_WALL_INTERFACE; f++) {
+      let pk = 0;
+      for (let c = 0.05; c <= 1.0001; c += 0.01) for (let d = -1; d <= 1; d += 0.01) pk = Math.max(pk, interfaceEchoField(f, c, 1, d, k0));
+      peak = Math.max(peak, pk * Math.exp(0.5 * WALL_TEXTURE.faceVariation[f - FIRST_WALL_INTERFACE]));
+    }
+    expect(PLEURA_WALL_FIELD_BOUND).toBeGreaterThanOrEqual(1.4 * 3 + WALL_COPY_FACE_GAIN_RANGE[1] * peak);
+    expect(WALL_COPY_FACE_GAIN).toBeGreaterThanOrEqual(WALL_COPY_FACE_GAIN_RANGE[0]);
+    expect(WALL_COPY_FACE_GAIN).toBeLessThanOrEqual(WALL_COPY_FACE_GAIN_RANGE[1]);
+  });
+
   it('la serie se trunca bajo la décima del ruido del receptor (órdenes 2–5 con la pared y la pleura de la tabla)', () => {
     const chi = pleuraCoherence(1, K0);
     for (const tD of [0.2, 0.34, 0.6]) {
@@ -461,18 +487,20 @@ describe('clasificación sin la cortina (gemelo de classifyWith(m, false))', () 
     expect(ANATOMY_GLSL).toMatch(/if \(withCurtain\) \{\n\s+float dCurtain = lungCurtainDistance\(m, -depth - wall\);/);
     expect(ANATOMY_GLSL).toContain('float insideWallMm(vec3 m) { return -torsoDepth(m) - (uWall.x + uWall.y + uWall.z); }');
     // el tejido que se ve a través del borde y sus planos laterales usan la variante bajo la pleura (la muestra de
-    // la imagen); la pared que copia la serie, el prefijo de la pared de classify (classifyWall: piel, grasa,
-    // costillas y músculo, lo mismo que da classify antes de la pleura, sin órganos ni tubos)
+    // la imagen); la pared que copia la serie, el prefijo de la pared de classify (classifyWall: piel, costillas y
+    // las capas de la decisión 62, lo mismo que da classify antes de la pleura, sin órganos ni tubos), con el eco de
+    // cara plana de sus capas (wallFaceEchoFlat, sin faceGradient) y, pasada la cara interna, la capa más honda
     expect(PLEURA_GLSL).toContain('Cls c = classifyWith(m, withCurtain);');
     expect(PLEURA_GLSL).toContain('vec2 f1 = sampleSide(p + uElev * se, se, c, withCurtain);');
     expect(FRAG_RAWFIELD).toContain('vec2 tissue = wTissue >= CURTAIN_MIN_AIR ? mediumField(p, dir, r, elevSigma(r), !under) : vec2(0.0);');
     expect(FRAG_RAWFIELD_STEERED).toContain('vec2 f1 = sampleSidePh(p + uElev * se, se, c, ph0, g, withCurtain);');
     expect(FRAG_RAWFIELD_STEERED).toContain('tissue = mediumFieldPh(p, dir, s, elevSigma(r), !under, lookPhase(rho, alpha, a, uSteer.w)');
     expect(ANATOMY_GLSL).toContain('if (classifyWall(m, c, depth, tn)) return c;');
-    expect(PLEURA_GLSL).toContain('if (!classifyWall(m, c, depth, tn)) { c.tissue = T_MUSCLE; c.n = tn; }');
-    expect(FRAG_RAWFIELD).toContain('vec2 f = wallField(pointOnLine(dir0, d), elevSigma(d));');
+    expect(PLEURA_GLSL).toContain('if (!classifyWall(m, c, depth, tn)) { c.tissue = T_FAT; c.n = tn; }');
+    expect(PLEURA_GLSL).toContain('return field + vec2(WALL_COPY_FACE_GAIN * wallFaceEchoFlat(c, m, dir), 0.0);');
+    expect(FRAG_RAWFIELD).toContain('vec2 f = wallField(pointOnLine(dir0, d), dir0, elevSigma(d));');
     expect(FRAG_RAWFIELD_STEERED).toContain(
-      'vec2 f = wallFieldPh(elem + dirK * d, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, uSteer.w)',
+      'vec2 f = wallFieldPh(elem + dirK * d, dirK, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, uSteer.w)',
     );
   });
 });
@@ -640,15 +668,17 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
   /**
    * Primer y último segmento de pulmón del receso en el camino recto: el que toca la pared (la cortina o el
    * tórax por encima de la inserción) y el que le sigue pegado; un camino que roza la cúpula puede tener
-   * varios tramos. Se para en el primer pulmón que no es del receso (el espejo del diafragma). −1 sin él.
+   * varios tramos. Se para en el primer pulmón que no es del receso (el espejo del diafragma). −1 sin él. Con la
+   * pleura registrada en `D`, un tramo solo empieza pegado a ella (decisión 62: a ≤ `CURTAIN_CONTIGUOUS_SEGMENTS`);
+   * el pulmón del receso más hondo es el espejo.
    */
-  const curtainRunOf = (q: HitsLineQuery, fr: ProbeFrame, th: number, step: number): { first: number; last: number } => {
+  const curtainRunOf = (q: HitsLineQuery, fr: ProbeFrame, th: number, step: number, D = Infinity): { first: number; last: number } => {
     let first = -1;
     let last = -1;
     let run = false;
     for (let s = 0; s < N; s++) {
       const c = q.at(pointOnLine(fr, CONVEX_C35, th, (s + 0.5) * step));
-      run = c.tissue === Tissue.Lung && (run || c.curtain);
+      run = c.tissue === Tissue.Lung && (run || (c.curtain && s * step <= D + CURTAIN_CONTIGUOUS_SEGMENTS * step));
       if (run) {
         if (first < 0) first = s;
         last = s;
@@ -674,8 +704,10 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
           const step = depth / N;
           // ¿pasa el camino recto por el pulmón del receso antes de cualquier espejo? (solo con su pleura registrada:
           // si el cruce de la pared cae fuera de la huella, el pulmón sigue siendo el espejo de siempre)
-          const recorded = pleuraCrossingLine(q.insideWall, q.curtainEdge, origin, dir, depth, N) !== null;
-          const run = recorded ? curtainRunOf(q, fr, th, step) : { first: -1, last: -1 };
+          const crossing = pleuraCrossingLine(q.insideWall, q.curtainEdge, origin, dir, depth, N);
+          // y solo si ese pulmón empieza pegado al cruce (decisión 62): una línea que roza el borde y llega al pulmón
+          // del receso mucho más hondo tiene el espejo de siempre
+          const run = crossing ? curtainRunOf(q, fr, th, step, crossing.D) : { first: -1, last: -1 };
           const firstCurtain = run.first;
           const tag = `${id} línea ${i} descenso ${caudal}`;
           if (firstCurtain >= 0) {
@@ -685,8 +717,9 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
             expect(p.kind).toBe(CURTAIN_GAS_KIND);
             // el cruce exacto de la cara interna de la pared (bisección de 6 pasos: ≤ 0,009 mm en la línea)
             expect(Math.abs(scene.insideWallMm(pointOnLine(fr, CONVEX_C35, th, p.D))), tag).toBeLessThan(0.01);
-            // el borde queda a menos de un segmento grueso del primer pulmón de la línea
+            // el borde queda a menos de un segmento grueso del primer pulmón de la línea, que empieza pegado al cruce
             expect(p.dz, tag).toBeGreaterThan(-1.2);
+            expect(run.first * step, tag).toBeLessThanOrEqual(p.D + step);
             // donde el cruce ya está en la cortina, el pulmón empieza ahí (sin costilla delante)
             if (p.dz > 0.1) expect(q.at(pointOnLine(fr, CONVEX_C35, th, p.D + 0.05)).tissue, tag).toBe(Tissue.Lung);
             // la decisión 57 ponía el espejo en la cortina; ahora no hay espejo en ella ni en el pulmón del tórax
@@ -730,6 +763,47 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
     expect(curtainLines).toBeGreaterThan(150);
     expect(edgeLines).toBeGreaterThan(20);
     expect(thoraxBehind).toBeGreaterThan(20);
+  });
+
+  // Decisión 62 (enmienda de la 61): la vista intercostal de la primera versión de la 62 (φ 0,98π, z 3, yaw −1,25,
+  // basculada 0,2) tenía líneas que rozan el borde de la cortina en espiración (132–140; 93–111 basculada 0,55). A0 registraba su pleura con el volumen
+  // parcial del borde (D 47–59 mm, f 0,12–0,35) y trataba como cortina el pulmón del receso posterior que la línea
+  // alcanza 53–91 mm más hondo: sin espejo, ΔL 50–82 dB, y la pasada B quitaba así de 21 a 33 dB de atenuación al
+  // hígado de en medio (una banda clara en la captura con GPU). Ese pulmón es el espejo del diafragma.
+  it('una línea que roza el borde de la cortina y alcanza el pulmón del receso lejos de su pleura lo refleja (espejo, ΔL 0)', () => {
+    const cal = caliberOf(0);
+    const q = sceneQuery(scene, cal);
+    const step = depth / N;
+    let grazingLines = 0;
+    for (const rock of [0.2, 0.55]) {
+      const fr = probeFrame({ phi: Math.PI * 0.98, z: 3, lift: 0, yaw: -1.25, rock, tilt: 0 }, scene.torso, CONVEX_C35);
+      for (let i = 0; i < CONVEX_C35.lines; i++) {
+        const th = -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * (i + 0.5)) / CONVEX_C35.lines;
+        const origin = pointOnLine(fr, CONVEX_C35, th, 0);
+        const dir = lineDirection(fr, th);
+        const crossing = pleuraCrossingLine(q.insideWall, q.curtainEdge, origin, dir, depth, N);
+        if (!crossing) continue;
+        const run = curtainRunOf(q, fr, th, step);
+        if (run.first < 0 || (run.first + 0.5) * step - crossing.D < 20) continue;
+        grazingLines++;
+        const tag = `roca ${rock} línea ${i}: D ${crossing.D.toFixed(1)}, pulmón a ${((run.first + 0.5) * step).toFixed(0)} mm`;
+        const got = transmissionHitsLine(q, origin, dir, depth, N, dbOf);
+        const old = hitsBefore61(q, origin, dir, depth, N);
+        // la pleura (el volumen parcial del borde) sigue registrada, sin lámina ni ΔL
+        expect(got.pleura, tag).not.toBeNull();
+        expect(got.pleura!.dL, tag).toBe(0);
+        expect(got.pleura!.curtainLast, tag).toBe(-1);
+        // y el pulmón lejano es el espejo de la decisión 57, en su segmento
+        expect(got.mirrorSeg, tag).toBe(run.first);
+        expect(got.mirrorSeg, tag).toBe(old.mirrorSeg);
+        expect(got.mirrorR, tag).toBe(old.mirrorR);
+      }
+    }
+    expect(grazingLines).toBeGreaterThanOrEqual(20);
+    // la misma regla en la GPU (A0)
+    expect(FRAG_TRANS_HITS).toContain(
+      `(curtainRun || (pleuraD >= 0.0 && float(s) * step <= pleuraD + ${CURTAIN_CONTIGUOUS_SEGMENTS.toFixed(1)} * step && inLungRecess(m, insideWallMm(m))));`,
+    );
   });
 
   // A0 en la GPU clasifica lo de detrás de la lámina solo en la lámina (una vuelta más del bucle con
@@ -824,7 +898,6 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
       'if (insideWallMm(toMaterial(origin + dir0 * mid)) >= 0.0) hi = mid; else lo = mid;',
       'float dz = lungCurtainEdgeMm(toMaterial(origin + dir0 * rp));',
       `if (dz > -${CURTAIN_RECORD_MM.toFixed(1)}) { pleuraD = rp; pleuraDz = dz; }`,
-      'curtainRun = c.tissue == T_LUNG && mirrorSeg < 0.0 && (curtainRun || (pleuraD >= 0.0 && inLungRecess(m, insideWallMm(m))));',
       'if (mirrorSeg < 0.0 && !crossed) {',
       // una sola clasificación por vuelta: la de la cortina y, en la vuelta siguiente, la de detrás de la lámina
       'Cls c = classifyWith(m, !behind);',
@@ -833,6 +906,7 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
       'if (!behind) s++;',
       'behind = lungCurtainDistance(m, insideWallMm(m)) >= 0.0;',
       'curtainLast = float(s);',
+      `curtainRun = c.tissue == T_LUNG && mirrorSeg < 0.0 && (curtainRun || (pleuraD >= 0.0 && float(s) * step <= pleuraD + ${CURTAIN_CONTIGUOUS_SEGMENTS.toFixed(1)} * step && inLungRecess(m, insideWallMm(m))));`,
       `h2 = pleuraD >= 0.0 ? vec4(pleuraD, pleuraDz, curtainDb, ${CURTAIN_GAS_KIND.toFixed(1)} + 4.0 * (curtainLast + 1.0)) : vec4(-1.0, 0.0, 0.0, 0.0);`,
     ])
       expect(FRAG_TRANS_HITS, line).toContain(line);
@@ -886,7 +960,7 @@ describe('banco de la cortina (fidelity.ts): líneas, hígado puro, borde y desl
   const engine = new PhysiologyEngine(patient, scene.vesselAreas(), { historySeconds: 4 });
   for (let i = 0; i < Math.round(1 / engine.clock.dt); i++) engine.step();
   const sp = START_POINTS.find((p) => p.id === 'intercostal')!;
-  const pose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: 0, tilt: 0 };
+  const pose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
   const frame = probeFrame(pose, scene.torso, CONVEX_C35);
   const sim = {
     transducer: CONVEX_C35,
@@ -931,7 +1005,7 @@ describe('banco de la cortina (fidelity.ts): líneas, hígado puro, borde y desl
     }
     expect(full).toBeGreaterThan(60);
     expect(edge).toBeGreaterThan(5);
-    // en esta ventana los arcos costales son cartílago (cartilageFromPhi): sin sombra de hueso sobre la pleura
+    // ninguna costilla entra en la vista por el 8.º espacio (decisión 62): sin sombra de hueso sobre la pleura
     expect(shadowed).toBe(0);
   });
 
@@ -946,10 +1020,11 @@ describe('banco de la cortina (fidelity.ts): líneas, hígado puro, borde y desl
       for (let r = c.D; r < 180; r += 0.5) expect(clear.at(c.u, r), `línea ${c.u} a ${r} mm`).toBe(false);
     }
     expect(covered).toBeGreaterThan(60);
-    // y sigue habiendo hígado despejado fuera de ella
+    // y sigue habiendo hígado despejado fuera de ella (en inspiración profunda la cortina tapa 39 de 61 líneas de
+    // la vista por el 8.º espacio, decisión 62: quedan 102 muestras; con la pose de antes, más de 200)
     let ok = 0;
     for (let u = 0; u < CONVEX_C35.lines; u++) for (let r = 30; r < 150; r += 2) if (clear.at(u, r)) ok++;
-    expect(ok).toBeGreaterThan(200);
+    expect(ok).toBeGreaterThan(50);
   });
 
   it('el ajuste del borde recupera centro y anchura de un borde gaussiano con moteado', () => {

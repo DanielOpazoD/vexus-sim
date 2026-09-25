@@ -351,14 +351,17 @@ test('ecos de interfaz: paredes y cápsula brillan y el espejo diafragmático no
   // el barrido»). El gemelo B→C→D predice VCI 1,56, VSH 1,49 y cápsula 1,79 a 0–20° con K = 55 dB, y el
   // espejo de A0 queda a ≤ 0,009 mm de la pleura; antes, paredes y cápsula a 1,02–1,26 y el espejo hasta
   // 1,1 mm dentro del pulmón, con costura en el 4–18 % de las líneas. Umbrales con margen para la
-  // calibración de K en [53; 57] dB, que se hace con GPU real (`npm run fidelity -- --sweep`).
+  // calibración de K en [53; 57] dB, que se hace con GPU real (`npm run fidelity -- --sweep`). Desde la
+  // decisión 62 la cápsula bajo la pared tiene encima la grasa preperitoneal y el peritoneo parietal, a
+  // 0,7 mm: el banco mide esa línea como `peritoneum` (gemelo 1,82–1,83 a 0–20°; la cápsula sola, sin el
+  // peritoneo, 1,48–1,79: `wallTwin.test.ts`), con techo para que no se blanquee.
   test.setTimeout(300_000);
   const errors = await bootWithoutErrors(page);
   await page
     .locator('button', { hasText: /Apnea\s*esp/ })
     .first()
     .click();
-  const seen = { capsule: 0, diaphragm: 0 };
+  const seen = { peritoneum: 0, diaphragm: 0, lumen: 0 };
   // paredes de vaso casi perpendiculares (< 15°): las de las vistas de partida están hondas (VCI a
   // 125 mm en el flanco) y curvas, y la coherencia de curvatura las deja en +6–10 dB (GPU); sin eco
   // de interfaz, el moteado solo daba ~3,5 dB
@@ -369,18 +372,27 @@ test('ecos de interfaz: paredes y cápsula brillan y el espejo diafragmático no
       startPoint,
     );
     const d = s.display!;
-    const tag = `${startPoint}: ${JSON.stringify({ capsule: d.capsule, walls: d.wallSystems, diaphragm: d.diaphragm, saturated: d.faceSaturated })}`;
+    const tag = `${startPoint}: ${JSON.stringify({ lumen: d.lumen, capsule: d.capsule, peritoneum: d.peritoneum, walls: d.wallSystems, diaphragm: d.diaphragm, saturated: d.faceSaturated })}`;
     // la imagen sigue en su sitio: hígado a media escala y el centro de la luz casi negro
     expect(d.liver.p50, tag).toBeGreaterThan(85);
     expect(d.liver.p50, tag).toBeLessThan(120);
-    expect(d.lumen.p50, tag).toBeLessThan(30);
+    // (la luz es la de VCI, suprahepáticas y porta con toda la rodaja en sangre, decisión 62: en la intercostal
+    // por el 8.º espacio las suprahepáticas son finas y oblicuas al plano y la VCI queda contra la vértebra, y no
+    // hay luz que medir; antes, con la luz del plano, su mediana era 52 con SwiftShader)
+    if (d.lumen.pixels >= 50) {
+      seen.lumen++;
+      expect(d.lumen.p50, tag).toBeLessThan(30);
+    }
     // ninguna cara de órgano se blanquea (el diafragma, Morison y la vesícula son las más reflectantes)
     for (const face of ['diaphragm', 'morison', 'gallbladder'] as const)
       if (Number.isFinite(d.faceSaturated[face])) expect(d.faceSaturated[face], tag).toBeLessThanOrEqual(0.02);
     const capsule = d.capsule[0];
-    if (capsule.walls >= 10) {
-      seen.capsule++;
-      expect(capsule.ratio, tag).toBeGreaterThanOrEqual(1.4);
+    if (capsule.walls >= 10) expect(capsule.ratio, tag).toBeGreaterThanOrEqual(1.4);
+    const peritoneum = d.peritoneum[0];
+    if (peritoneum.walls >= 10) {
+      seen.peritoneum++;
+      expect(peritoneum.ratio, tag).toBeGreaterThanOrEqual(1.4);
+      expect(peritoneum.ratio, tag).toBeLessThanOrEqual(2.4);
     }
     for (const r of s.faceSamples ?? [])
       if ((r.kind === 'ivc' || r.kind === 'hepaticVein' || r.kind === 'portal') && r.incidenceDeg < 15 && Number.isFinite(r.peakDb))
@@ -394,8 +406,10 @@ test('ecos de interfaz: paredes y cápsula brillan y el espejo diafragmático no
       expect(bin.mirrorOffsetMm - bin.mirrorFloorMm, tag).toBeLessThanOrEqual(0.05);
     }
   }
-  // la prueba no puede pasar vacía: la cápsula y el diafragma se midieron en alguna vista
-  expect(seen.capsule).toBeGreaterThan(0);
+  // la prueba no puede pasar vacía: la línea del peritoneo y el diafragma se midieron en alguna vista, y la luz
+  // en la subxifoidea y el flanco (la VCI en eje largo)
+  expect(seen.peritoneum).toBeGreaterThan(0);
+  expect(seen.lumen).toBeGreaterThanOrEqual(2);
   const sorted = [...tubePeaks].sort((a, b) => a - b);
   expect(sorted.length, JSON.stringify(sorted)).toBeGreaterThanOrEqual(5);
   expect(sorted[Math.floor(sorted.length / 2)], JSON.stringify(sorted)).toBeGreaterThanOrEqual(5);
@@ -430,6 +444,50 @@ test('pleura parietal: la línea pleural brilla y bajo ella hay neblina con lín
   expect(s.hazeGreyDeep, tag).toBeLessThan(s.hazeGrey);
   // la primera réplica de la pleura (línea A de orden 2) destaca sobre la neblina
   expect(s.aLine2ProminenceDb, tag).toBeGreaterThan(3);
+  expect(errors).toEqual([]);
+});
+
+test('pared (decisión 62): líneas brillantes, grasa hipoecoica con septos, músculo con estrías, cortical costal y sus normales', async ({
+  page,
+}) => {
+  // Mirada 0 con SwiftShader en tres vistas de partida, con las definiciones del banco (`display.wall`). El
+  // gemelo de CPU (wallTwin.test.ts, el mismo código del banco sobre su envolvente) da 4–6 líneas dentro, la
+  // grasa a 0,47–0,57 del hígado, septos +5,0–10,4 dB, estrías +4,4–9,7 dB, la cortical +19,3 dB en el flanco y
+  // las líneas a incidencia normal a +6,4–9,2 dB del hígado, sin picos saturados (SwiftShader: 6,6–11,3 dB, 0 %);
+  // antes, ninguna línea dentro de la pared, y con las caras de σz 0,05 (GPU real) líneas blancas saturadas.
+  // Umbrales con margen: las metas del README se miden con GPU real.
+  test.setTimeout(300_000);
+  const errors = await bootWithoutErrors(page);
+  await page
+    .locator('button', { hasText: /Apnea\s*esp/ })
+    .first()
+    .click();
+  for (const startPoint of ['subxiphoid', 'intercostal', 'flank'] as const) {
+    const s = await page.evaluate((id) => window.__vexusTest!.fidelity({ startPoint: id, display: true, compound: false }), startPoint);
+    const w = s.display!.wall;
+    const tag = `${startPoint}: ${JSON.stringify({ ...w, profileDb: undefined })}`;
+    expect(w.profileLines, tag).toBeGreaterThanOrEqual(5);
+    expect(w.linesInside, tag).toBeGreaterThanOrEqual(3);
+    expect(w.fatToLiver, tag).toBeLessThan(0.75);
+    expect(w.septumDb, tag).toBeGreaterThan(2);
+    expect(w.striationDb, tag).toBeGreaterThan(2);
+    // las líneas no se blanquean: bajo la pleura y la cortical, que son las más brillantes (W7)
+    expect(w.lineSaturated, tag).toBeLessThanOrEqual(0.02);
+    expect(w.lineLevelDb, tag).toBeLessThanOrEqual(16);
+    // la cortical, en el flanco (W4), donde las costillas cruzan el plano bajo la sonda (en la intercostal por el
+    // 8.º espacio no entra ninguna)
+    if (startPoint === 'flank') {
+      expect(w.ribLines, tag).toBeGreaterThanOrEqual(5);
+      expect(w.ribPeakDb, tag).toBeGreaterThanOrEqual(12);
+    }
+    // las caras de la pared y de las costillas: la misma cara, normal y norma del gradiente en la GPU que en TS
+    const n = await page.evaluate((id) => window.__vexusTest!.wallNormals({ startPoint: id }), startPoint);
+    const ntag = `${startPoint} normales: ${JSON.stringify(n)}`;
+    expect(n.points, ntag).toBeGreaterThan(300);
+    expect(n.mismatched / (n.points + n.mismatched), ntag).toBeLessThan(0.01);
+    expect(n.p05, ntag).toBeGreaterThan(0.98);
+    expect(n.normErrP95, ntag).toBeLessThan(0.01);
+  }
   expect(errors).toEqual([]);
 });
 
@@ -607,9 +665,15 @@ test('modo alumno ciego: sin diagnóstico en pantalla; el docente lo ve con ?doc
 });
 
 test('color: la misma transmisión que el PW y una ganancia que alcanza el ruido del equipo', async ({ page }) => {
-  // Medido con GPU real: color − PW entre −0,8 y +0,1 dB en cuatro ventanas (antes el color usaba un
-  // exponente fijo, 0,714, y veía menos atenuación); ruido puro 0 % de celdas a 0 dB y 64 % a +24 dB
-  // (antes el máximo del deslizador no mostraba ruido nunca).
+  // El modelo, en el mismo punto: el téxel de la pasada A que lee el color en la puerta (convertido a la
+  // frecuencia Doppler y con el acoplamiento que muestrea el color) frente al mismo téxel en la CPU, a ≤ 0,1 dB
+  // (antes el color usaba un exponente fijo, 0,714, y veía menos atenuación: 3–4 dB aquí). La diferencia con
+  // el PW en la puerta exacta es informativa, con una cota holgada: el téxel es el de la línea y la fila que
+  // contienen la puerta (hasta ½ línea al lado y 1,125 mm antes) y el PW marcha a pasos de 2,5 mm hasta el
+  // múltiplo siguiente; con las capas de la pared (decisión 62) esas discretizaciones cruzan más fronteras.
+  // CPU, 40 fases de la respiración tranquila: |color − PW| ≤ 0,88 dB y, en el mismo punto, ≤ 0,77 dB; la
+  // e2e llegó a medir 1,16 dB (1 de cada ~6 corridas pasaba de 1 dB, la cota de antes). Ruido puro 0 % de
+  // celdas a 0 dB y 64 % a +24 dB (antes el máximo del deslizador no mostraba ruido nunca).
   test.setTimeout(240_000);
   const errors = await bootWithoutErrors(page);
   const r = await page.evaluate(() => {
@@ -628,7 +692,9 @@ test('color: la misma transmisión que el PW y una ganancia que alcanza el ruido
   });
   const tag = JSON.stringify(r);
   expect(r.gate, tag).toBe(true);
-  expect(Math.abs(r.color - r.pw), tag).toBeLessThan(1);
+  expect(r.color, tag).toBeGreaterThanOrEqual(r.cpu[0] - 0.1);
+  expect(r.color, tag).toBeLessThanOrEqual(r.cpu[1] + 0.1);
+  expect(Math.abs(r.color - r.pw), tag).toBeLessThan(2);
   expect(r.noiseDefault, tag).toBeLessThan(0.001);
   expect(r.noiseMax, tag).toBeGreaterThan(0.05);
   expect(errors).toEqual([]);

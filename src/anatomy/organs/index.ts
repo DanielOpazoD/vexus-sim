@@ -3,6 +3,7 @@ import * as kidney from './kidney';
 import * as liver from './liver';
 import * as liverLigaments from './liverLigaments';
 import * as lungCurtain from './lungCurtain';
+import * as wall from './wall';
 
 /**
  * Registro de módulos de órgano (decisión 46). Cada módulo reúne en UN archivo la geometría,
@@ -22,6 +23,7 @@ export interface OrganModule {
 }
 
 export const ORGAN_MODULES: readonly OrganModule[] = [
+  { id: 'wall', exports: wall, glsl: wall.WALL_GLSL },
   {
     id: 'kidney',
     exports: kidney,

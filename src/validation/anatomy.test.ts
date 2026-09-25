@@ -666,16 +666,22 @@ describe('Caras de interfaz en classify (decisión 57)', () => {
     expect(tubeBelow).toBeGreaterThan(200);
   });
 
-  it('hígado, intestino, músculo y pulmón no dibujan cara (llegan en los PR 6–7)', () => {
+  it('hígado, intestino y pulmón no dibujan cara; el músculo de la pared, la de su capa (decisión 62)', () => {
     for (const [p, t] of [
       [[-60, 20, -10], Tissue.Liver],
       [[40, 40, -120], Tissue.Bowel],
-      [[-60, 72, -10], Tissue.Muscle],
       [[-55, -5, 70], Tissue.Lung],
     ] as [V, Tissue][]) {
       expect(cls(p).tissue).toBe(t);
       expect(cls(p).interface, Tissue[t]).toBe(Interface.None);
       expect(cls(p).interfaceDistance).toBe(1e3);
     }
+    // a 20 mm bajo la piel (músculo de 16 a 25,9 mm): la cara de pared más cercana, a menos de medio músculo
+    const muscle = cls([-64, 76.8, -10]);
+    expect(muscle.tissue).toBe(Tissue.Muscle);
+    expect([Interface.DeepFascia, Interface.ObliquePlane, Interface.TransversusPlane, Interface.Transversalis]).toContain(muscle.interface);
+    expect(muscle.interfaceDistance).toBeLessThan(5);
+    // antes era músculo; ahora la grasa preperitoneal (2,1 mm) de la cara interna de la pared
+    expect(cls([-60, 72, -10]).tissue).toBe(Tissue.Fat);
   });
 });

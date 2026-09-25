@@ -104,7 +104,8 @@ export function equivalenceSweep(sim: Simulator): EquivalencePoseReport[] {
 /**
  * Equivalencia VOLUMÉTRICA (Fase 2): `n` puntos pseudoaleatorios (semilla fija) repartidos por
  * todo el tronco — no solo los planos de las ventanas — clasificados en TS y en GLSL. Mide el
- * acuerdo de tejido lejos de interfaces (distancia a la frontera ≥ 1 mm en la CPU), el de vaso,
+ * acuerdo de tejido lejos de interfaces (distancia a la frontera ≥ 1 mm en la CPU y la misma cara a
+ * ±`FACE_STABLE_MM`: la pared de la decisión 62 cambia de dueño dentro de sus capas), el de vaso,
  * el error de velocidad en sangre y el de la cara de interfaz que dibuja cada punto (decisión 57:
  * misma cara y la misma distancia a ella). Es la red para cualquier cambio de anatomía.
  */
@@ -155,8 +156,9 @@ export function volumeEquivalence(sim: Simulator, n = 20_000, seed = 20260922): 
   const pairs = new Map<string, number>();
   const face = new FaceTally();
   for (let i = 0; i < n; i++) {
-    const q = sim.anatomy.classifyWorld([pts[i * 3], pts[i * 3 + 1], pts[i * 3 + 2]], sim.sample);
-    if (q.boundaryDistance < 1) continue;
+    const p: [number, number, number] = [pts[i * 3], pts[i * 3 + 1], pts[i * 3 + 2]];
+    const q = sim.anatomy.classifyWorld(p, sim.sample);
+    if (q.boundaryDistance < 1 || !faceStable(sim, p, q.interface)) continue;
     interior++;
     const cpuTissue: number = q.tissue;
     if (cpuTissue === gpu.tissue[i]) same++;
@@ -189,6 +191,25 @@ export function volumeEquivalence(sim: Simulator, n = 20_000, seed = 20260922): 
     interfaceDistanceMaxErr: face.maxErr,
     interfaceWorst: [topPairs(face.pairs), face.maxErrAt && `máx. |Δifd| en ${face.maxErrAt}`].filter(Boolean).join('; '),
   };
+}
+
+/** Desplazamiento (mm) con que se comprueba que la cara de un punto interior no está en un cambio de dueño. */
+export const FACE_STABLE_MM = 0.02;
+
+/**
+ * La cara de la CPU es la misma a ±`FACE_STABLE_MM` en cada eje: el punto no está en una superficie donde el
+ * dueño cambia sin cambiar el tejido (la mitad del diafragma, la capa más cercana de la pared, el umbral de la
+ * cortical costal, la fusión de un plano intermuscular; decisiones 57 y 62). Allí un redondeo de float32
+ * cambia la cara: el acuerdo exacto del volumen solo se exige lejos (a 1e-5 mm la GPU aún coincide).
+ */
+function faceStable(sim: Simulator, p: readonly [number, number, number], face: Interface): boolean {
+  for (let a = 0; a < 3; a++)
+    for (const s of [-FACE_STABLE_MM, FACE_STABLE_MM]) {
+      const q: [number, number, number] = [p[0], p[1], p[2]];
+      q[a] += s;
+      if (sim.anatomy.classifyWorld(q, sim.sample).interface !== face) return false;
+    }
+  return true;
 }
 
 /** Las 4 parejas con más desacuerdos, como «A→B×n». */

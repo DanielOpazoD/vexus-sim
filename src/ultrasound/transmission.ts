@@ -1,7 +1,7 @@
 import { TISSUES, Tissue, attenuationDbPerCm } from '../anatomy/tissues';
 import type { Vec3 } from '../core/vec3';
 import { IFACE_REACH_MM } from './interfaceEcho';
-import { CURTAIN_GAS_KIND, CURTAIN_RECORD_MM } from './pleura';
+import { CURTAIN_CONTIGUOUS_SEGMENTS, CURTAIN_GAS_KIND, CURTAIN_RECORD_MM } from './pleura';
 import { glslFloat } from './receiver';
 import { alongLineMm, steerBeta, steeredElement } from './steering';
 
@@ -176,8 +176,13 @@ export function transmissionHitsLine(
     if (c.tissue === Tissue.Air && !entered) continue;
     entered = true;
     const props = TISSUES[c.tissue];
-    // solo con la pleura registrada: si el cruce cae fuera de la huella, el pulmón es el espejo de siempre
-    curtainRun = c.tissue === Tissue.Lung && mirrorSeg < 0 && (curtainRun || (pleura !== null && c.curtain));
+    // solo con la pleura registrada y pegado a ella (su primer segmento a ≤ CURTAIN_CONTIGUOUS_SEGMENTS de D): si el
+    // cruce cae fuera de la huella, o el pulmón del receso está lejos de él (una línea que roza el borde), el pulmón
+    // es el espejo de siempre
+    curtainRun =
+      c.tissue === Tissue.Lung &&
+      mirrorSeg < 0 &&
+      (curtainRun || (pleura !== null && s * step <= pleura.D + CURTAIN_CONTIGUOUS_SEGMENTS * step && c.curtain));
     if (props.gas) {
       if (curtainRun) {
         curtainDb += dbOf(c.tissue, step) - dbOf(q.behind(p), step);

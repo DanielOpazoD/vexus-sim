@@ -52,18 +52,31 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **Sin lóbulos laterales ni de rejilla** (`no-sidelobes`); una luz vascular no recibe ecos de
   reflectores fuera del eje salvo por el grosor de corte.
 - **Sin imagen armónica** (`no-harmonics`); el conmutador no existe en la consola.
-- **Solo tienen eco de interfaz las caras de vasos, vesícula, cápsula hepática, diafragma, riñón y la
-  pleura parietal** (`interface-echo-scope`, decisiones 57 y 61): las fascias de la pared, las costillas, la
-  piel y el gas intestinal no dibujan su cara (PR 6 y 7); se ven por su moteado y su sombra.
+- **Tienen eco de interfaz los vasos, la vesícula, la cápsula hepática, el diafragma, el riñón, la pleura
+  parietal y la pared, pero no el gas intestinal** (`interface-echo-scope`, decisiones 57, 61 y 62): el gas
+  intestinal no dibuja su cara (PR 7); se ve por su reverberación y su cola sucia. Las capas de la pared, la
+  cortical costal y el pericondrio la dibujan desde la decisión 62; en las copias de la pared bajo la pleura
+  (la serie de la decisión 61) las capas llevan un eco analítico de cara plana paralela a la piel, sin la
+  cortical ni el pericondrio.
 - **El eco de interfaz es solo la parte coherente de una cara lisa** (`interface-echo-coherent-only`):
   sin destellos ni parte difusa de las superficies rugosas (la pleura del diafragma da solo su parte
   coherente, −28,7 dB a 0°, y la parietal −8,9 dB), una cara por estructura y sin signo, sin la cara pared/hígado (misma impedancia) ni la de
   cápsula renal/corteza, y sin interferencia de capa fina. Su nivel sale de K = 55 dB, un valor derivado
   de un plano liso (± 6 dB) que se calibra con GPU dentro de [53; 57] dB.
-- **La coherencia de curvatura solo la tienen los tubos** (`interface-curvature-tubes-only`): vesícula,
-  riñón y cúpula son localmente planos para el eco. Sin la curvatura elevacional del riñón, Morison salía
+- **La coherencia de curvatura solo la tienen los tubos y las costillas** (`interface-curvature-tubes-only`;
+  las costillas desde la decisión 62, con la curvatura de su sección elíptica): vesícula, riñón, cúpula y las
+  capas de la pared son localmente planos para el eco. Sin la curvatura elevacional del riñón, Morison salía
   ~1,5 dB más brillante que en el diseño (gemelo: 2,23 frente a 2,08 sobre el hígado a 0–20°); la s de la
   cápsula renal, la cara que da su pico, pasa de 0,21 a 0,25 y lo deja en 2,17.
+- **La pared es genérica** (`wall-generic-layers`, decisión 62): el mismo modelo de tres músculos con dos
+  planos intermusculares en el tórax, el flanco y la espalda (sin intercostales, serrato ni paravertebrales
+  propios), sin línea alba ni intersecciones tendinosas del recto, y un solo hábito de lóbulos y estrías cuyos
+  tamaños, retrodispersiones y rugosidades efectivas son [ESTIMADO] (se calibran con GPU frente a las
+  referencias). u es la longitud de arco de la piel: en la cara interna de la pared del flanco las estructuras
+  quedan ~1,5× más largas. La textura tiene una costura en la línea media posterior, sobre la columna. El
+  cartílago costal va de la línea media anterior a ±45° en todas las costillas (un ángulo común, no la unión
+  costocondral de cada una), más los últimos 25 mm antes del extremo de las que acaban en el reborde costal, y
+  el reborde es una recta desde el xifoides; las costillas 11.ª y 12.ª no existen.
 - **Los planos laterales de elevación se saltan los vasos** (`side-plane-skips-tubes`): si el plano
   central está a más de σe + 0,5 mm de una interfaz, los laterales heredan su tejido sin clasificar
   (decisión 24), pero la `bd` del hígado no cuenta los tubos: junto a un vaso fuera del plano, el 1–5 %
@@ -81,6 +94,13 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   rejilla común), pero el par (−,+) puede correlacionar de más, así que su ρ se informa sin puerta. El
   arreglo previsto (PR 3) es un prefiltro de 3 submuestras por línea, con la fase de la mirada 0 referida
   al ancla.
+- **La estadística del medio anclado depende algo de la orientación del plano** (`speckle-anchor-orientation`,
+  decisiones 55 y 62): el medio es una red de valores alineada con los ejes del mundo, comprimida a lo largo de
+  la elevación del ancla, y un plano oblicuo a esos ejes la corta de otra manera. Justo antes de reanclar
+  inclinando (5° de deriva), la SNR del moteado de un parche sube un 2 % en la vista intercostal de antes (casi
+  craneocaudal) y un 12 % en la de la decisión 62 (a lo largo del 8.º espacio, yaw −1,15; una realización
+  alineada en esa pose, un 5 %), cerca de la cota de 1,12 con la que la 55 eligió `REANCHOR_DEG`: sus pruebas se
+  quedan en la pose de antes. Si se nota en la GPU, se baja `REANCHOR_DEG` o se gira la red con el ancla.
 - **La serie bajo la pleura remuestrea la pared en la misma línea** (`pleura-series-same-line`, decisión
   61): las copias espejo y directa de la pared y las líneas A se forman con la pared del propio camino, no
   con la de la dirección reflejada por una pleura oblicua; no cambian con la incidencia salvo por la

@@ -1,17 +1,21 @@
 import { TISSUES, Tissue, attenuationDbPerCm } from '../anatomy/tissues';
+import { Interface } from '../anatomy/interfaces';
+import { wallArc, wallDepths } from '../anatomy/organs/wall';
+import { torsoDepth, torsoNormal } from '../anatomy/primitives';
 import type { FaceGeometry } from '../anatomy/scene';
-import { torsoNormal } from '../anatomy/primitives';
 import { dot, type Vec3 } from '../core/vec3';
 import { VESSEL_META } from '../physiology/vessels';
 import { lineCoupling, lineDirection, pointOnLine } from '../probe/probe';
 import { lateralFwhmMm, lateralSigmaMm } from '../ultrasound/beamModel';
 import { effectiveLooks, lookCorrelationLaw, lookWeight } from '../ultrasound/compound';
+import { IFACE_REACH_MM, IFACE_SHIFT_MM } from '../ultrasound/interfaceEcho';
 import { lookWavenumber, steerBeta } from '../ultrasound/steering';
 import { levelOfGrey } from '../ultrasound/greyMap';
-import { CURTAIN_MIN_AIR, curtainAirFractionAt, edgeWidth1090Mm, normalCdf } from '../ultrasound/pleura';
+import { CURTAIN_MIN_AIR, curtainAirFractionAt, edgeWidth1090Mm, elevSigmaMm, normalCdf } from '../ultrasound/pleura';
 import { COARSE_DEPTH, nominalTgcDbPerCm, type DisplayFrame } from '../ultrasound/renderer';
 import { beamToPixel, pixelToBeam } from '../ultrasound/sectorGeometry';
 import { mirrorCrossing, pleuraCrossingLine } from '../ultrasound/transmission';
+import { fatSeptum, muscleStriation, wallOrientation } from '../ultrasound/wallTexture';
 import type { EnvelopeFrame } from './speckle';
 import type { Simulator } from './simulator';
 
@@ -425,8 +429,11 @@ export type WallSystem = 'ivc' | 'hepaticVein' | 'portal';
 export const WALL_SYSTEMS: readonly WallSystem[] = ['ivc', 'hepaticVein', 'portal'];
 /** Paredes de la tabla histórica del banco (decisión 52): VCI y suprahepáticas juntas. */
 export const HISTORIC_WALL_SYSTEMS: readonly WallSystem[] = ['ivc', 'hepaticVein'];
-/** Caras de órgano del banco de interfaces: cápsula hepática, diafragma (con la pleura) y Morison. */
-export type OrganFace = 'capsule' | 'diaphragm' | 'renalCapsule';
+/**
+ * Caras de órgano del banco de interfaces: cápsula hepática, la línea del peritoneo parietal sobre la
+ * cápsula (decisión 62), diafragma (con la pleura) y Morison.
+ */
+export type OrganFace = 'capsule' | 'peritoneum' | 'diaphragm' | 'renalCapsule';
 /** Interfaz de un registro del banco: el sistema de la pared o la cara del órgano. */
 export type FaceKind = WallSystem | OrganFace;
 
@@ -470,6 +477,8 @@ export interface FaceLineGeometry {
   ref: 'above' | 'below';
   /** Solo el diafragma: el objetivo es la pleura y se miden su línea, su posición y la costura. */
   pleura?: boolean;
+  /** Inicio de la ventana del pico si no es rb − `PEAK_BEFORE_MM` (la línea del peritoneo). */
+  peakFrom?: number;
 }
 
 /** Medida de una línea en una interfaz. */
@@ -511,7 +520,10 @@ export interface FaceSummary {
   /** VCI y suprahepáticas juntas: la tabla histórica del banco. */
   walls: WallBin[];
   wallSystems: Record<WallSystem, WallBin[]>;
+  /** Cápsula hepática sin la cara interna de la pared en la ventana del pico: su eco solo. */
   capsule: WallBin[];
+  /** Cápsula con el peritoneo parietal en la ventana (`PERITONEUM_REACH_MM`): la línea de los dos. */
+  peritoneum: WallBin[];
   diaphragm: DiaphragmBin[];
   renalCapsule: WallBin[];
 }
@@ -591,7 +603,7 @@ export function measureFaceLine(line: FaceLine, g: FaceLineGeometry, dynamicRang
   const med = medianOf(refGray);
   const medEnv = medianOf(refEnv);
   if (!(med > 0) || !(medEnv > 0)) return null;
-  const w0 = g.rb - PEAK_BEFORE_MM;
+  const w0 = g.peakFrom ?? g.rb - PEAK_BEFORE_MM;
   const w1 = g.rTarget + PEAK_AFTER_MM;
   let peak = 0;
   for (const r of stepsMm(w0, w1, 0.1)) peak = Math.max(peak, line.gray(r) || 0);
@@ -743,6 +755,7 @@ export function summarizeFaces(poses: readonly (readonly FaceSample[])[]): FaceS
     walls: wallBins(HISTORIC_WALL_SYSTEMS),
     wallSystems: { ivc: wallBins(['ivc']), hepaticVein: wallBins(['hepaticVein']), portal: wallBins(['portal']) },
     capsule: wallBins(['capsule']),
+    peritoneum: wallBins(['peritoneum']),
     diaphragm,
     renalCapsule: wallBins(['renalCapsule']),
   };
@@ -754,15 +767,17 @@ export const GATED_MIN_RECORDS = 10;
 /**
  * Tramos que vigila el banco con GPU de los ecos de interfaz (decisión 57): solo los que el barrido llena
  * en alguna vista (docs/fidelity/README.md, «Qué llena el barrido»). La pared de la VCI a 0–20°, la VSH a
- * 20–40° y 40–60° (su caída), la porta a 20–40°, la cápsula y Morison a 0–20° y el diafragma a 40–60°.
- * La VSH y el diafragma a 0–20° no llegan a 10 registros en ninguna vista y no se vigilan.
+ * 20–40° y 40–60° (su caída), la porta a 20–40°, la línea del hígado bajo la pared (peritoneo y cápsula) y
+ * Morison a 0–20° y el diafragma a 40–60°. La VSH y el diafragma a 0–20° no llegan a 10 registros en
+ * ninguna vista y no se vigilan; desde la decisión 62 tampoco la cápsula sola: bajo la pared siempre tiene
+ * la grasa preperitoneal y el peritoneo encima, en su ventana (su eco lo vigila el gemelo, `wallTwin.test.ts`).
  */
 export const GATED_FACE_BINS: readonly { label: string; kind: FaceKind; fromDeg: number }[] = [
   { label: 'VCI', kind: 'ivc', fromDeg: 0 },
   { label: 'VSH', kind: 'hepaticVein', fromDeg: 20 },
   { label: 'VSH', kind: 'hepaticVein', fromDeg: 40 },
   { label: 'porta', kind: 'portal', fromDeg: 20 },
-  { label: 'cápsula', kind: 'capsule', fromDeg: 0 },
+  { label: 'peritoneo', kind: 'peritoneum', fromDeg: 0 },
   { label: 'diafragma', kind: 'diaphragm', fromDeg: 40 },
   { label: 'Morison', kind: 'renalCapsule', fromDeg: 0 },
 ];
@@ -967,10 +982,17 @@ function capsuleEndsOf(sel: readonly KeyedSample[]): { ends: number; lines: numb
 /**
  * Métricas del contorno de la cápsula y de Morison sobre uno o más planos (como `summarizeFaces`: las
  * paredes se enlazan dentro de su plano). Solo se informan (banco con GPU, bloque `contour`); las puertas
- * llegan con las decisiones 60 (`capsuleEnds`, `incidenceJumpMaxDeg`) y 61 (cápsula a 20–60°).
+ * llegan con las decisiones 60 (`capsuleEnds`, `incidenceJumpMaxDeg`) y 61 (cápsula a 20–60°). El contorno
+ * del hígado es el de la cápsula y el de la línea del peritoneo con ella (decisión 62, `peritoneum`): la misma
+ * pared, que bajo la pared abdominal se ve como esa línea.
  */
 export function contourStats(poses: readonly (readonly FaceSample[])[]): ContourStats {
-  const all: KeyedSample[] = poses.flatMap((list, p) => list.map((s) => ({ ...s, key: `${p}:${s.kind}:${s.wall}` })));
+  const all: KeyedSample[] = poses.flatMap((list, p) =>
+    list.map((s) => {
+      const kind: FaceKind = s.kind === 'peritoneum' ? 'capsule' : s.kind;
+      return { ...s, kind, key: `${p}:${kind}:${s.wall}` };
+    }),
+  );
   const bins = (kind: FaceKind): ContourBin[] =>
     WALL_INCIDENCE_BINS_DEG.slice(0, -1).map((b0, j) => {
       const b1 = WALL_INCIDENCE_BINS_DEG[j + 1];
@@ -1223,7 +1245,10 @@ export interface FidelityStats {
     liver: DisplayStats;
     /** El mismo hígado puro por bandas de profundidad (`DEPTH_BANDS_MM`). */
     liverBands: (DisplayStats & { r0: number; r1: number })[];
-    /** Sangre a ≥ 1,5 mm de su pared (el centro de la luz): la mediana debe quedar casi negra. */
+    /**
+     * El centro de la luz: sangre de VCI, suprahepáticas y porta a ≥ 1,5 mm de su pared en el plano y a ≥ 1,5 mm
+     * más la σ elevacional en 3D (toda la rodaja es sangre). La mediana debe quedar casi negra.
+     */
     lumen: DisplayStats;
     /** Fracción de los píxeles del diafragma saturados (≥ 250); NaN si no hay diafragma a la vista. */
     diaphragmSaturated: number;
@@ -1234,14 +1259,25 @@ export interface FidelityStats {
     walls: WallBin[];
     /** Banco de interfaces por sistema: VCI, suprahepáticas y porta. */
     wallSystems: Record<WallSystem, WallBin[]>;
-    /** Cápsula hepática bajo la pared (músculo o grasa → cápsula; referencia, el hígado de debajo). */
+    /**
+     * Cápsula hepática bajo la pared (músculo o grasa → cápsula; referencia, el hígado de debajo), sin la
+     * cara interna de la pared en la ventana del pico.
+     */
     capsule: WallBin[];
+    /**
+     * Los mismos registros con el peritoneo parietal en la ventana (decisión 62): la grasa preperitoneal →
+     * hígado. Sus ecos (0,35 mm a cada lado del cruce) se funden en una línea, la que se ve en la imagen y
+     * la que medía la cápsula de la decisión 57 (referencias 1,3–2,1 a 0–20°).
+     */
+    peritoneum: WallBin[];
     /** Hígado → diafragma → pulmón: cara hepática, línea pleural, costura y espejo. */
     diaphragm: DiaphragmBin[];
     /** Morison: hígado → grasa perirrenal → cápsula renal. */
     renalCapsule: WallBin[];
     /** Fracción de píxeles saturados (≥ 250) a ≤ 1 mm de cada cara; NaN si no está a la vista. */
     faceSaturated: { diaphragm: number; morison: number; gallbladder: number };
+    /** Pared torácica y abdominal (decisión 62): líneas brillantes, capas y cortical costal. */
+    wall: WallStats;
     colorOn: boolean;
   } | null;
   /** Con `opts.samples`: un registro por línea y pared medida, para agregar planos con `summarizeFaces`. */
@@ -1255,6 +1291,111 @@ export const DEPTH_BANDS_MM = [
   [100, 140],
   [140, 180],
 ] as const;
+
+// ——— Pared (decisión 62) ———
+
+/** Una línea brillante de la pared está ≥ esto (dB) sobre la mediana local de su perfil. */
+export const WALL_LINE_DB = 6;
+/** Semiancho (mm) de la ventana de la mediana local del perfil de la pared. */
+export const WALL_LINE_WINDOW_MM = 4;
+/** Dos tramos sobre el umbral separados por menos de esto (mm) son la misma línea. */
+export const WALL_LINE_MERGE_MM = 1;
+/** Paso (mm) del perfil de la pared en profundidad bajo la piel. */
+export const WALL_PROFILE_STEP_MM = 0.1;
+/**
+ * Líneas con incidencia sobre la piel por debajo de esto (°) pueden formar el perfil de la pared (se toman
+ * las `WALL_PROFILE_LINES` más normales): las vistas de partida bascularan o inclinan la sonda (la
+ * subxifoidea 26° en el plano, el flanco 11° fuera de él) y a 25° una fascia (s 0,3) pierde 3,5 dB.
+ */
+export const WALL_NORMAL_DEG = 25;
+/** Como mucho, tantas líneas (las de menor incidencia) en el perfil: ~7 mm de piel a 10 mm. */
+export const WALL_PROFILE_LINES = 17;
+/**
+ * Interior de una capa: a ≥ esto (mm) de toda cara de la pared, fuera de la falda de sus ecos (con la PSF
+ * axial, σ ≈ 0,3 mm, un eco de +20 dB sobre el hígado cae a 1 mm 48 dB: 20 dB bajo el músculo).
+ */
+export const WALL_INTERIOR_MM = 1;
+/** Las capas se miden en las líneas a menos de esto (°) de la normal a la piel. */
+export const WALL_LAYER_DEG = 15;
+
+export interface BrightLines {
+  /** Número de líneas distintas. */
+  count: number;
+  /** Profundidad (mm, en el eje del perfil) y exceso (dB) sobre la mediana local del pico de cada una. */
+  depthsMm: number[];
+  excessDb: number[];
+}
+
+/**
+ * Líneas brillantes de un perfil en dB a paso `stepMm` (NaN = sin dato): tramos ≥ `WALL_LINE_DB` sobre la
+ * mediana del perfil en ±`WALL_LINE_WINDOW_MM`, fundidos si los separan < `WALL_LINE_MERGE_MM`. Un moteado
+ * de Rayleigh supera 6 dB sobre su mediana en el 6 % de las muestras: el perfil debe ser la mediana lateral
+ * de varias líneas (así una línea es continua a lo ancho, no un grano).
+ */
+export function brightLines(profileDb: readonly number[], stepMm: number): BrightLines {
+  const n = profileDb.length;
+  const half = Math.round(WALL_LINE_WINDOW_MM / stepMm);
+  const runs: { end: number; peak: number; excess: number }[] = [];
+  for (let i = 0; i < n; i++) {
+    if (!Number.isFinite(profileDb[i])) continue;
+    const win: number[] = [];
+    for (let k = Math.max(0, i - half); k <= Math.min(n - 1, i + half); k++) if (Number.isFinite(profileDb[k])) win.push(profileDb[k]);
+    const excess = profileDb[i] - medianOf(win);
+    if (excess < WALL_LINE_DB) continue;
+    const last = runs[runs.length - 1];
+    if (last && (i - last.end) * stepMm < WALL_LINE_MERGE_MM) {
+      last.end = i;
+      if (excess > last.excess) {
+        last.excess = excess;
+        last.peak = i;
+      }
+    } else runs.push({ end: i, peak: i, excess });
+  }
+  return { count: runs.length, depthsMm: runs.map((r) => r.peak * stepMm), excessDb: runs.map((r) => r.excess) };
+}
+
+/** Banco de la pared de un plano (decisión 62). */
+export interface WallStats {
+  /** Líneas con incidencia < `WALL_NORMAL_DEG` sobre la piel y las usadas en el perfil (≤ `WALL_PROFILE_LINES`). */
+  normalLines: number;
+  profileLines: number;
+  /** Líneas brillantes del perfil de la pared (piel → peritoneo + 1 mm) y las de dentro (0,5 mm → peritoneo − 1 mm). */
+  lines: BrightLines;
+  linesInside: number;
+  /** Perfil (dB de envolvente compensada sobre el hígado) cada `WALL_PROFILE_STEP_MM` desde la piel. */
+  profileDb: number[];
+  /**
+   * Gris mediano del interior de los lóbulos de grasa (lejos de septos y caras) y del músculo entre estrías,
+   * en las líneas a menos de `WALL_LAYER_DEG` de la normal a la piel.
+   */
+  fatGray: number;
+  muscleGray: number;
+  /** Los mismos sobre el gris mediano del hígado (objetivo de la grasa: ≤ 0,6). */
+  fatToLiver: number;
+  muscleToLiver: number;
+  /**
+   * Septos y estrías de frente (peso > 0,7, brillo de orientación > 0,7) sobre la mediana de su capa (dB de
+   * envolvente), los dos a ≥ `WALL_INTERIOR_MM` de toda cara (sin la falda de sus ecos).
+   */
+  septumDb: number;
+  striationDb: number;
+  septumSamples: number;
+  striationSamples: number;
+  /** Pico de la cortical costal en [hueso − 1,5; hueso + 0,5] mm sobre el hígado (dB de envolvente compensada), mediana de las líneas. */
+  ribPeakDb: number;
+  ribLines: number;
+  /**
+   * Las líneas de la pared en la imagen (las de `lines` dentro de ella), en las líneas a menos de `WALL_NORMAL_DEG`
+   * de la normal: `lineLevelDb`, el pico (±0,6 mm de su profundidad, sin hueso delante) sobre el hígado, mediana
+   * (objetivo +6 a +14 dB: gris-blanca, sin saturar y bajo la pleura y la cortical); `lineSaturated`, la fracción
+   * de esos picos con gris ≥ 250 (objetivo ≈ 0); `lineCv`, el coeficiente de variación del pico (lineal) a lo
+   * largo de cada línea con ≥ 5 líneas del haz, mediana de las líneas (su brillo fluctúa a lo largo de la cara:
+   * objetivo ≥ 0,3). W7 de `docs/fidelity/README.md`.
+   */
+  lineLevelDb: number;
+  lineSaturated: number;
+  lineCv: number;
+}
 
 /** Paso radial (mm) de la rejilla de clasificación en CPU. */
 export const GRID_STEP_MM = 0.5;
@@ -1273,13 +1414,27 @@ const PERIRENAL: number = Tissue.PerirenalFat;
 const RENAL_CAPSULE: number = Tissue.RenalCapsule;
 /** Celdas seguidas de tejido previo que exige una interfaz (3 mm). */
 const MIN_BEFORE_CELLS = 6;
+/**
+ * Alcance del eco del peritoneo parietal hacia la grasa (mm): desplazamiento más alcance del perfil de una
+ * cara de un solo lado. Si la cara interna de la pared cae en la ventana del pico de la cápsula ensanchada
+ * por él, el registro es de la línea del peritoneo y la cápsula (`peritoneum`), no de la cápsula sola, y su
+ * ventana empieza a este alcance por encima del cruce exacto con el peritoneo (no 1,5 mm sobre el borde:
+ * ahí está la transversalis).
+ */
+export const PERITONEUM_REACH_MM = IFACE_SHIFT_MM + IFACE_REACH_MM;
+/**
+ * La transversalis, al menos a esto (mm de profundidad) por encima del inicio de esa ventana: con el pulso
+ * (anchura del eco de una cara ~0,75 mm a −6 dB), su eco llega ~24 dB más bajo. Donde la grasa
+ * preperitoneal es más fina, la línea del peritoneo no se mide (su pico sería el de la transversalis).
+ */
+export const TRANSVERSALIS_CLEAR_MM = 0.7;
 /** Enlace de una pared entre líneas vecinas: su borde no se mueve más que esto (mm). */
 const WALL_LINK_MM = 3;
 /** Pasos de la bisección del cruce exacto con la pleura (0,5 mm / 2²⁰). */
 const PLEURA_BISECTION_STEPS = 20;
 /** Saturación de una cara: píxeles ≥ 250 a ≤ 1 mm de ella. */
 const FACE_SATURATION_MM = 1;
-/** Distancia mínima (mm) de la sangre a su pared para medir el centro de la luz. */
+/** Distancia mínima (mm) de la sangre a su pared para medir el centro de la luz (en 3D, más la σ elevacional). */
 const LUMEN_CLEARANCE_MM = 1.5;
 /** Acoplamiento mínimo de una línea para medir su textura (el mal contacto la oscurece entera). */
 const MIN_COUPLING = 0.95;
@@ -1468,6 +1623,7 @@ export function fidelityStats(
   const nr = Math.floor(depth / GRID_STEP_MM);
   const tissue = new Uint8Array(lines * nr);
   const system = new Uint8Array(lines * nr);
+  const bloodDepth = new Float32Array(lines * nr);
   const shadowAt = new Float32Array(lines).fill(Infinity);
   const gasAt = new Float32Array(lines).fill(Infinity);
   const boneAt = new Float32Array(lines).fill(Infinity);
@@ -1485,6 +1641,7 @@ export function fidelityStats(
       const i = u * nr + k;
       tissue[i] = q.tissue;
       if (q.tissue === Tissue.Blood && q.vessel) system[i] = 1 + (WALL_SYSTEMS as readonly string[]).indexOf(VESSEL_META[q.vessel].system);
+      if (q.tissue === Tissue.Blood) bloodDepth[i] = q.boundaryDistance;
       // el aire antes de la piel es el gel de acoplamiento (la pasada A también lo salta)
       if (q.tissue !== Tissue.Air) entered = true;
       if (entered && r < shadowAt[u] && (TISSUES[q.tissue].gas || TISSUES[q.tissue].bone)) shadowAt[u] = r;
@@ -1658,7 +1815,12 @@ export function fidelityStats(
     ),
   }));
   const profile = depthProfile(img, pureLiverDepth, sim.bmode.dynamicRangeDb);
-  // centro de la luz: sangre a ≥ 1,5 mm de su pared, sin sombra delante
+  // centro de la luz: sangre de las venas del banco (VCI, suprahepáticas y porta) a ≥ 1,5 mm de su pared en el
+  // plano y, en 3D, a ≥ 1,5 mm + la σ elevacional del haz, sin sombra delante (decisión 62). La rodaja entera es
+  // sangre: una vena fina u oblicua al plano tiene su pared y el hígado dentro del grosor de corte y su «luz» es
+  // gris (en la intercostal por el 8.º espacio las suprahepáticas, a 1,2–1,9 mm de su pared en 3D, daban una
+  // mediana de 45–52). La aorta y los vasos renales no cuentan: la aorta asoma al fondo de alguna vista, donde
+  // manda el ruido del receptor.
   const lumenClear = clearance(LUMEN_CLEARANCE_MM, BLOOD);
   const cellAt = (x: number, y: number): number => {
     const b = pixelToBeam(layout, tr, depth, x, y);
@@ -1671,7 +1833,9 @@ export function fidelityStats(
     img,
     (x, y) => {
       const i = cellAt(x, y);
-      return i >= 0 && lumenClear[i] === 1;
+      if (i < 0 || lumenClear[i] !== 1 || system[i] === 0) return false;
+      const r = ((i % nr) + 0.5) * GRID_STEP_MM;
+      return bloodDepth[i] >= LUMEN_CLEARANCE_MM + elevSigmaMm(r, tr.elevationFocusMm);
     },
     2,
   );
@@ -1849,6 +2013,29 @@ export function fidelityStats(
     }
     return 0.5 * (lo + hi);
   };
+  // Cruce exacto de la línea u con la cara interna de la pared (el peritoneo parietal, −torsoDepth = pared)
+  // entre r0 (dentro de la pared) y r1 (fuera), o null; y cuánto más honda que la transversalis está la
+  // muestra r (mm de profundidad bajo la piel)
+  const torso = sim.anatomy.scene.torso;
+  const innerWallMm = torso.skinMm + torso.fatMm + torso.muscleMm;
+  const materialAt = (u: number, r: number): Vec3 =>
+    sim.anatomy.deformation.toMaterial(pointOnLine(sim.frame, tr, thetaOf(u), r), sim.sample.resp);
+  const wallDepthAt = (u: number, r: number): number => -torsoDepth(materialAt(u, r), torso);
+  const peritoneumCrossing = (u: number, r0: number, r1: number): number | null => {
+    if (!(wallDepthAt(u, r0) < innerWallMm && wallDepthAt(u, r1) >= innerWallMm)) return null;
+    let lo = r0;
+    let hi = r1;
+    for (let it = 0; it < PLEURA_BISECTION_STEPS; it++) {
+      const mid = 0.5 * (lo + hi);
+      if (wallDepthAt(u, mid) >= innerWallMm) hi = mid;
+      else lo = mid;
+    }
+    return 0.5 * (lo + hi);
+  };
+  const belowTransversalisMm = (u: number, r: number): number => {
+    const m = materialAt(u, r);
+    return -torsoDepth(m, torso) - wallDepths(torso, wallArc(m, torso), m[2]).transversalis;
+  };
   const tissueIn =
     (...ts: number[]) =>
     (i: number): boolean =>
@@ -1935,11 +2122,23 @@ export function fidelityStats(
         const rTarget = pleura ? pleuraCrossing(u, rCell - GRID_STEP_MM, rCell) : (k + hit) * GRID_STEP_MM;
         const cos = faceCosine(u, pleura ? rTarget : rCell, spec.face);
         if (cos === null) continue;
-        const m = measureFaceLine(faceLine(u), { rb, rTarget, ref: spec.ref, pleura }, sim.bmode.dynamicRangeDb);
+        // la cápsula con el peritoneo en su ventana es la línea de los dos (decisión 62): ventana desde el
+        // alcance del eco del peritoneo, sin la transversalis
+        let kind: FaceKind = spec.kind;
+        let peakFrom: number | undefined;
+        if (spec.kind === 'capsule') {
+          const rP = peritoneumCrossing(u, rb - PEAK_BEFORE_MM - PERITONEUM_REACH_MM, rTarget + PEAK_AFTER_MM + PERITONEUM_REACH_MM);
+          if (rP !== null) {
+            peakFrom = rP - PERITONEUM_REACH_MM;
+            if (belowTransversalisMm(u, peakFrom) < TRANSVERSALIS_CLEAR_MM) continue;
+            kind = 'peritoneum';
+          }
+        }
+        const m = measureFaceLine(faceLine(u), { rb, rTarget, ref: spec.ref, pleura, peakFrom }, sim.bmode.dynamicRangeDb);
         if (!m) continue;
         faceSamples.push({
           ...m,
-          kind: spec.kind,
+          kind,
           wall,
           u,
           rb,
@@ -1957,6 +2156,18 @@ export function fidelityStats(
     prevLine = curLine;
   }
   const summary = summarizeFaces([faceSamples]);
+
+  // Pared (decisión 62): el perfil de la envolvente compensada en profundidad bajo la piel, mediana lateral de
+  // las líneas casi normales a la piel; las capas en toda la imagen, con la geometría de la textura en CPU
+  // (`wallTexture.ts`: los septos y las estrías están en el mismo sitio del material que en la GPU)
+  const liverEnv: number[] = [];
+  {
+    const mask = inBand(0, Infinity);
+    for (let u = 0; u < lines; u++)
+      for (let v = 0; v < env.samples; v++)
+        if (mask(u, v)) liverEnv.push(20 * Math.log10(Math.max(envAt(u, ((v + 0.5) / env.samples) * depth), 1e-12)));
+  }
+  const wall = wallStatsOf(sim, envAt, grayAt, thetaOf, lines, medianOf(liverEnv), liver.p50);
 
   // Caras saturadas: píxeles ≥ 250 a ≤ 1 mm de la cúpula, del contorno renal y de la vesícula, entre los
   // tejidos a ambos lados de cada cara (distancia de `faceSdf` en el punto del píxel).
@@ -1988,8 +2199,189 @@ export function fidelityStats(
     envelope,
     bands,
     ...(compound ? { compound } : {}),
-    display: { liver, liverBands, lumen, diaphragmSaturated, shadow, profile, ...summary, faceSaturated, colorOn: opts.colorOn ?? false },
+    display: {
+      liver,
+      liverBands,
+      lumen,
+      diaphragmSaturated,
+      shadow,
+      profile,
+      ...summary,
+      faceSaturated,
+      wall,
+      colorOn: opts.colorOn ?? false,
+    },
     ...(opts.samples ? { faceSamples } : {}),
+  };
+}
+
+/**
+ * Banco de la pared de un plano (decisión 62): `envAt` es la envolvente compensada con la atenuación nominal
+ * del hígado (la de `envelopeLine`), `grayAt` el gris mostrado, `liverEnvDb` la mediana en dB de esa
+ * envolvente en el hígado despejado y `liverGray` su gris mediano.
+ */
+/** Caras que dibuja la grasa subcutánea (la preperitoneal dibuja la transversalis y el peritoneo). */
+const SUBCUTANEOUS_FACES: ReadonlySet<Interface> = new Set([Interface.SkinFat, Interface.Scarpa, Interface.DeepFascia]);
+
+function wallStatsOf(
+  sim: Simulator,
+  envAt: (u: number, r: number) => number,
+  grayAt: (u: number, r: number) => number,
+  thetaOf: (u: number) => number,
+  lines: number,
+  liverEnvDb: number,
+  liverGray: number,
+): WallStats {
+  const tr = sim.transducer;
+  const depth = sim.bmode.depthMm;
+  const scene = sim.anatomy.scene;
+  const torso = scene.torso;
+  const caliber = sim.anatomy.caliberFor(sim.sample);
+  const toMaterial = (p: Vec3): Vec3 => sim.anatomy.deformation.toMaterial(p, sim.sample.resp);
+  const wallMm = torso.skinMm + torso.fatMm + torso.muscleMm;
+  const dB = (u: number, r: number): number => 20 * Math.log10(Math.max(envAt(u, r), 1e-12));
+  const STEP = 0.1;
+  // cruce con la piel (bisección) e incidencia de cada línea sobre su normal
+  const skin = new Float64Array(lines).fill(Number.NaN);
+  const inc = new Float64Array(lines).fill(Number.NaN);
+  for (let u = 0; u < lines; u++) {
+    const theta = thetaOf(u);
+    const depthAt = (r: number): number => torsoDepth(toMaterial(pointOnLine(sim.frame, tr, theta, r)), torso);
+    let r0 = -1;
+    for (let r = 0; r < 40; r += 0.25)
+      if (depthAt(r) <= 0) {
+        r0 = r;
+        break;
+      }
+    if (r0 < 0) continue;
+    let lo = Math.max(0, r0 - 0.25);
+    let hi = r0;
+    for (let it = 0; it < 12 && r0 > 0; it++) {
+      const mid = 0.5 * (lo + hi);
+      if (depthAt(mid) <= 0) hi = mid;
+      else lo = mid;
+    }
+    skin[u] = hi;
+    const n = torsoNormal(toMaterial(pointOnLine(sim.frame, tr, theta, hi)), torso);
+    inc[u] = (Math.acos(Math.min(1, Math.abs(dot(n, lineDirection(sim.frame, theta))))) * 180) / Math.PI;
+  }
+  // perfil: la envolvente a la profundidad bajo la piel w de cada paso, mediana entre las líneas más normales
+  const normal = [...Array(lines).keys()].filter((u) => inc[u] < WALL_NORMAL_DEG).sort((a, b) => inc[a] - inc[b]);
+  const chosen = normal.slice(0, WALL_PROFILE_LINES);
+  const nb = Math.round((wallMm + 1) / STEP) + 1;
+  const perBin: number[][] = Array.from({ length: nb }, () => []);
+  for (const u of chosen) {
+    const theta = thetaOf(u);
+    let prevR = skin[u];
+    let prevW = 0;
+    let b = 0;
+    for (let r = skin[u] + 0.05; r < Math.min(depth, skin[u] + 2 * (wallMm + 1)) && b < nb; r += 0.05) {
+      const w = -torsoDepth(toMaterial(pointOnLine(sim.frame, tr, theta, r)), torso);
+      while (b < nb && b * STEP <= w) {
+        const f = w > prevW ? (b * STEP - prevW) / (w - prevW) : 0;
+        perBin[b].push(dB(u, prevR + f * (r - prevR)));
+        b++;
+      }
+      prevR = r;
+      prevW = w;
+    }
+  }
+  const profileDb = perBin.map((v) => (v.length ? medianOf(v) - liverEnvDb : Number.NaN));
+  const found = brightLines(profileDb, STEP);
+  const insideCount = found.depthsMm.filter((d) => d >= 0.5 && d <= wallMm - 1).length;
+  // capas en las líneas casi normales a la piel (< WALL_LAYER_DEG) y cortical en todas, cada 0,1 mm
+  const lob: number[] = [];
+  const mus: number[] = [];
+  const fatLayer: number[] = [];
+  const musLayer: number[] = [];
+  const sep: number[] = [];
+  const str: number[] = [];
+  const rib: number[] = [];
+  const boneAtLine = new Float64Array(lines).fill(-1);
+  for (let u = 0; u < lines; u++) {
+    if (!Number.isFinite(skin[u])) continue;
+    const theta = thetaOf(u);
+    const dir = lineDirection(sim.frame, theta);
+    let bone = -1;
+    for (let r = skin[u]; r < Math.min(depth, skin[u] + wallMm + 8); r += STEP) {
+      const m = toMaterial(pointOnLine(sim.frame, tr, theta, r));
+      const c = scene.classify(m, caliber);
+      if (c.tissue === Tissue.Bone) {
+        bone = r;
+        break;
+      }
+      if (!(inc[u] < WALL_LAYER_DEG)) continue;
+      // la grasa subcutánea dibuja sus caras (piel, Scarpa, fascia); la preperitoneal, las de dentro
+      const sub = c.tissue === Tissue.Fat && SUBCUTANEOUS_FACES.has(c.interface);
+      if (!sub && c.tissue !== Tissue.Muscle) continue;
+      const tex = sub ? fatSeptum(m, torso) : muscleStriation(m, torso);
+      const far = c.interfaceDistance >= WALL_INTERIOR_MM;
+      const e = dB(u, r);
+      // todo lejos de las caras: la falda axial de un eco de fascia (+15–25 dB) no puede contar como septo
+      if (!far) continue;
+      (sub ? fatLayer : musLayer).push(e);
+      if (tex[3] < 0.05) (sub ? lob : mus).push(grayAt(u, r));
+      else if (tex[3] > 0.7 && wallOrientation([tex[0], tex[1], tex[2]], dir) > 0.7) (sub ? sep : str).push(e);
+    }
+    boneAtLine[u] = bone;
+    if (bone < 0) continue;
+    let pk = -Infinity;
+    for (let r = bone - 1.5; r <= bone + 0.5; r += 0.05) pk = Math.max(pk, dB(u, r));
+    rib.push(pk - liverEnvDb);
+  }
+  // las líneas de la pared en la imagen: el pico de cada una a lo largo de las líneas casi normales
+  const lineLevel: number[] = [];
+  let linePeaks = 0;
+  let lineSat = 0;
+  const lineCvs: number[] = [];
+  for (const wL of found.depthsMm.filter((d) => d >= 0.5 && d <= wallMm - 1)) {
+    const amps: number[] = [];
+    for (const u of normal) {
+      const theta = thetaOf(u);
+      let rL = -1;
+      for (let r = skin[u]; r < Math.min(depth, skin[u] + 2 * (wallMm + 1)); r += 0.05)
+        if (-torsoDepth(toMaterial(pointOnLine(sim.frame, tr, theta, r)), torso) >= wL) {
+          rL = r;
+          break;
+        }
+      if (rL < 0 || (boneAtLine[u] >= 0 && boneAtLine[u] < rL + 0.6)) continue;
+      let pk = -Infinity;
+      let gy = 0;
+      for (let r = rL - 0.6; r <= rL + 0.6; r += 0.05) {
+        pk = Math.max(pk, dB(u, r));
+        gy = Math.max(gy, grayAt(u, r) || 0);
+      }
+      lineLevel.push(pk - liverEnvDb);
+      linePeaks++;
+      if (gy >= 250) lineSat++;
+      amps.push(Math.pow(10, pk / 20));
+    }
+    if (amps.length >= 5) {
+      const mean = amps.reduce((a, b) => a + b, 0) / amps.length;
+      lineCvs.push(Math.sqrt(amps.reduce((a, b) => a + (b - mean) ** 2, 0) / amps.length) / mean);
+    }
+  }
+  const fatGray = medianOf(lob.filter(Number.isFinite));
+  const muscleGray = medianOf(mus.filter(Number.isFinite));
+  return {
+    normalLines: normal.length,
+    profileLines: chosen.length,
+    lines: found,
+    linesInside: insideCount,
+    profileDb,
+    fatGray,
+    muscleGray,
+    fatToLiver: fatGray / liverGray,
+    muscleToLiver: muscleGray / liverGray,
+    septumDb: medianOf(sep) - medianOf(fatLayer),
+    striationDb: medianOf(str) - medianOf(musLayer),
+    septumSamples: sep.length,
+    striationSamples: str.length,
+    ribPeakDb: medianOf(rib),
+    ribLines: rib.length,
+    lineLevelDb: medianOf(lineLevel),
+    lineSaturated: linePeaks ? lineSat / linePeaks : Number.NaN,
+    lineCv: medianOf(lineCvs),
   };
 }
 

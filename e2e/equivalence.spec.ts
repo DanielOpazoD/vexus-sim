@@ -51,7 +51,26 @@ test('la anatomía GLSL coincide con la TypeScript en tejido, vaso y velocidad',
     const shell = await page.evaluate(() => window.__vexusTest!.interfaceShell());
     const stag = `${id}/cáscara: ${JSON.stringify(shell)}`;
     expect(shell.points, stag).toBeGreaterThan(5000);
-    for (const face of ['IvcLumen', 'VeinLumen', 'PortalLumen', 'LiverCapsule', 'DiaphragmLiver', 'RenalCapsule', 'PerirenalFat'])
+    // con las capas de la pared y las costillas de la decisión 62 (la pared ondula en (u, z): la misma
+    // fórmula en TS y en GLSL, `organs/wall.ts`)
+    for (const face of [
+      'IvcLumen',
+      'VeinLumen',
+      'PortalLumen',
+      'LiverCapsule',
+      'DiaphragmLiver',
+      'RenalCapsule',
+      'PerirenalFat',
+      'SkinFat',
+      'Scarpa',
+      'DeepFascia',
+      'ObliquePlane',
+      'TransversusPlane',
+      'Transversalis',
+      'Peritoneum',
+      'RibCortex',
+      'Perichondrium',
+    ])
       expect(shell.byInterface[face] ?? 0, stag).toBeGreaterThan(50);
     expect(shell.agreement, stag).toBeGreaterThanOrEqual(0.999);
     expect(shell.distanceMaxErr, stag).toBeLessThan(0.02); // SwiftShader: 0,0033 mm; GPU real (M4): 2e-5

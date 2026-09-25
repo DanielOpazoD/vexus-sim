@@ -251,6 +251,26 @@ describe('Eco de interfaz en la distancia por la normal (|∇| de la cara)', () 
         expect(seen.get(f)?.near ?? 0, Interface[f]).toBeGreaterThan(200);
       for (const f of [Interface.RenalCapsule, Interface.PerirenalFat, Interface.GallbladderLumen])
         expect(seen.get(f)?.dropped ?? 0, Interface[f]).toBeGreaterThan(100);
+      // las caras de la pared y de las costillas (decisión 62): la distancia de su capa ondula en (u, z) y la
+      // de la costilla no es euclídea; la salida barata tampoco pierde muestras suyas. Sin ondas periódicas en
+      // la vuelta, la línea media posterior (donde u salta de +P/2 a −P/2) daba aquí un |∇| de ~10³
+      for (const f of [
+        Interface.SkinFat,
+        Interface.Scarpa,
+        Interface.DeepFascia,
+        Interface.ObliquePlane,
+        Interface.TransversusPlane,
+        Interface.Transversalis,
+        Interface.Peritoneum,
+        Interface.RibCortex,
+        Interface.Perichondrium,
+      ]) {
+        expect(seen.get(f)?.near ?? 0, Interface[f]).toBeGreaterThan(50);
+        // el peritoneo lo dibuja una grasa preperitoneal de ≥ 1,5 mm cuya mitad honda cae entera dentro de la
+        // cota: nunca se descarta
+        if (f !== Interface.Peritoneum) expect(seen.get(f)?.dropped ?? 0, Interface[f]).toBeGreaterThan(20);
+        expect(seen.get(f)?.maxNorm ?? 0, Interface[f]).toBeLessThan(IFACE_GRADIENT_MAX);
+      }
     });
 
     it('faceGradient da el gradiente numérico de faceSdf fuera de los tubos y el analítico en ellos', () => {

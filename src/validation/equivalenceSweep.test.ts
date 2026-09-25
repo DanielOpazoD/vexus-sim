@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { equivalenceSweep, interfaceShellEquivalence, volumeEquivalence } from '../app/equivalenceSweep';
 import type { Simulator } from '../app/simulator';
-import { Interface } from '../anatomy/interfaces';
+import { Interface, isRibInterface, isWallLayerInterface } from '../anatomy/interfaces';
 import { AnatomyQuery, type WorldQuery } from '../anatomy/query';
 import { AnatomyScene } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
@@ -13,6 +13,20 @@ import type { GpuPointQuery } from '../ultrasound/renderer';
 type P = [number, number, number];
 /** Lo que la «GPU» cambia respecto a la CPU en un punto: tejido, cara o distancia a la cara. */
 type Corruption = (p: P, q: WorldQuery) => { tissue?: number; iface?: number; ifd?: number };
+
+/** Caras de órgano que reparte `classify` (decisión 57) y las de la pared y las costillas (decisión 62). */
+const ORGAN_FACES = ['IvcLumen', 'VeinLumen', 'PortalLumen', 'LiverCapsule', 'DiaphragmLiver', 'RenalCapsule', 'PerirenalFat'];
+const WALL_FACES = [
+  'SkinFat',
+  'Scarpa',
+  'DeepFascia',
+  'ObliquePlane',
+  'TransversusPlane',
+  'Transversalis',
+  'Peritoneum',
+  'RibCortex',
+  'Perichondrium',
+];
 
 /**
  * Lógica de los gates de equivalencia sin WebGL: la «GPU» del simulador falso es la propia
@@ -93,9 +107,26 @@ describe('Gates de equivalencia TS ↔ GLSL (lógica)', () => {
     expect(r.agreement).toBe(1);
     expect(r.distanceMaxErr).toBeLessThan(1e-4);
     expect(r.disagreements).toEqual([]);
-    // los dueños que reparte `classify`, todos en algún plano de partida
-    for (const face of ['IvcLumen', 'VeinLumen', 'PortalLumen', 'LiverCapsule', 'DiaphragmLiver', 'RenalCapsule', 'PerirenalFat'])
+    // los dueños que reparte `classify`, todos en algún plano de partida (con las capas de la pared y las
+    // costillas de la decisión 62)
+    for (const face of [...ORGAN_FACES, ...WALL_FACES])
       expect(r.byInterface[face] ?? 0, `${face}: ${JSON.stringify(r.byInterface)}`).toBeGreaterThan(10);
+  });
+
+  it('la cáscara ve una GPU sin las caras de la pared, o con la ondulación de la fascia cambiada', () => {
+    // decisión 62: sin las caras de la pared, toda la pared quedaría sin eco; con otra ondulación (el
+    // gemelo GLSL de `wallDepths` con otra fase), la distancia a la fascia profunda cambiaría
+    const none = interfaceShellEquivalence(
+      fakeSim((_p, q) => (isWallLayerInterface(q.interface) || isRibInterface(q.interface) ? { iface: Interface.None, ifd: 1e3 } : {})),
+      24,
+    );
+    expect(none.agreement).toBeLessThan(0.9);
+    expect(none.disagreements.join('\n')).toMatch(/(SkinFat|Scarpa|DeepFascia|Transversalis)→None/);
+    const wavy = interfaceShellEquivalence(
+      fakeSim((p, q) => (q.interface === Interface.DeepFascia ? { ifd: Math.abs(q.interfaceDistance - 0.05 * Math.sin(p[2] / 7)) } : {})),
+      24,
+    );
+    expect(wavy.distanceMaxErr).toBeGreaterThan(0.02);
   });
 
   it('la cáscara ve una cara que la GPU dibuja y la CPU no (la cápsula junto a Morison o al diafragma)', () => {

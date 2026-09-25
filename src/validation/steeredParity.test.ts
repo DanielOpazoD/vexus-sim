@@ -172,7 +172,7 @@ describe('paridad de la mirada dirigida: empates de redondeo (G8, decisión 58)'
     }
   });
 
-  it('en las cuatro vistas, ≤ 0,5 % de las muestras son empates (la e2e admite 1 %)', () => {
+  it('en las cuatro vistas, ≤ 0,75 % de las muestras son empates (la e2e admite 1 %)', () => {
     for (const view of VIEWS) {
       const { grid, ap } = gridOf(view);
       for (const look of [1, 2]) {
@@ -180,7 +180,10 @@ describe('paridad de la mirada dirigida: empates de redondeo (G8, decisión 58)'
         const p = compareSteeredTransmission(grid, ap, th, gpuLike(grid, ap, th, 0), 8);
         const tag = `${view}, mirada ${look}: ${p.ambiguous} empates en ${p.samples + p.ambiguous} muestras`;
         expect(p.maxDiffDb, tag).toBe(0);
-        expect(p.ambiguous, tag).toBeLessThanOrEqual(0.005 * p.samples);
+        // 0,04–0,31 % hasta la decisión 62; la vista intercostal por el 8.º espacio ve la vértebra al fondo
+        // (14–16 cm), con fronteras hueso/tejido donde el redondeo decide: 0,40 y 0,64 % (13 de sus 22 empates
+        // de la mirada 2 están a 154–169 mm)
+        expect(p.ambiguous, tag).toBeLessThanOrEqual(0.0075 * p.samples);
       }
     }
   });

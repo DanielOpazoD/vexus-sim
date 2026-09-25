@@ -1362,7 +1362,14 @@ brillante como el hígado (gemelo: neblina 0,99 × el hígado; aceptación 0,35�
   son espejo ni impacto de gas; el camino sigue recto. A1 los marca con 3 y los prefijos de A2 (y su gemelo)
   no los toman por un gas. El espejo del diafragma (el pulmón que se alcanza desde el hígado) no cambia, y
   tampoco el pulmón de una línea cuyo cruce de la pared cae fuera de la huella del receso: es el espejo de
-  antes (costura de la huella, abajo).
+  antes (costura de la huella, abajo). _Enmienda de la decisión 62:_ el pulmón del receso solo es la cortina si
+  su primer segmento grueso empieza a ≤ un segmento del cruce D (`CURTAIN_CONTIGUOUS_SEGMENTS`, A0 y su gemelo
+  `transmissionHitsLine`). Una línea que pasa junto al borde de la cortina registra su pleura con el volumen
+  parcial del borde y, 50–90 mm más allá, toca el pulmón del receso posterior: con la regla de arriba ese pulmón
+  era cortina (sin espejo y con ΔL 50–82 dB) y la pasada B le quitaba al hígado de en medio 21–33 dB de
+  atenuación: una banda clara en la vista intercostal de la primera versión de la 62 al final de la espiración
+  (pleura a 47–59 mm con f 0,12–0,35 y el pulmón 53–91 mm más hondo). Ahora es el espejo del diafragma de la
+  decisión 57.
 - **Línea pleural.** Cara nueva `Interface.PleuraWall` (Fresnel músculo/gas 0,9995; s 0,15 [ESTIMADO
   0,10–0,15]; σz 0,05 mm [ESTIMADO, calibrable 0,04–0,07]; de un lado, la dibuja el músculo). Eco a D con
   el lóbulo de Kirchhoff y la χ de Ament con la incidencia de la línea sobre la pared, y la transmisión de
@@ -1478,6 +1485,269 @@ cruce de la pared dentro de la huella registraba una pleura sin espejo en línea
 reflejaba), la sobrecompensación de ΔL por el cono de la apertura y las multiplicidades de la serie. e2e
 (SwiftShader): en la intercostal en apnea inspiratoria, línea pleural ≥ 230,
 neblina ≥ 20 de gris y > 0,2 × el hígado, más oscura en el intervalo siguiente, línea A de orden 2 > 3 dB.
+
+## 62. Pared torácica y abdominal realista: capas con caras, textura anclada de la grasa y el músculo, cortical costal y pericondrio
+
+**Contexto.** El dueño (25-09-2026): «la fidelidad debe empezar desde la pared torácica/abdominal». En las
+referencias (convexo de 3,5 MHz: Häggström, hígado normal, Wikimedia Commons CC0; N. Dilmen, VCI, Commons)
+la pared es una pila de líneas finas brillantes que siguen la curvatura de la sonda (piel, septos, fascias,
+peritoneo) con huecos hipoecoicos en los primeros 1,5–3 cm, y el hígado empieza bajo una línea brillante
+(peritoneo y cápsula). La anatomía ecográfica de la pared (revisión pictórica del Journal of Ultrasound 2020,
+PMC7441131; Egyptian J Radiol Nucl Med 2019): piel ecogénica de 1–2 mm; grasa subcutánea en lóbulos
+hipoecoicos separados por septos ecogénicos, con la fascia de Scarpa como línea dentro de la grasa; músculo
+hipoecoico con septos de perimisio; vainas fasciales brillantes; fascia transversalis, grasa preperitoneal y
+peritoneo parietal. Las costillas dan una cortical convexa muy brillante con sombra limpia (PMC10132878,
+fig. 2A). En `main` (57/58) la pared eran tres bandas uniformes de moteado (grasa 0,55 con grumos, músculo
+0,5), sin ninguna cara, las costillas sin eco de cortical y el cartílago a 0,6. Con el gemelo de la imagen
+(A → B → C → D de la mirada 0 sobre la anatomía real, incidencia normal en la línea central): ninguna línea
+dentro de la pared (la piel con el transitorio y la cápsula bajo la pared, fuera del tramo interior), la
+grasa a −4/−6 dB del hígado (gris 80–86 con el hígado a 100) y la cortical costal a −3 dB del hígado.
+**Opciones.** (1) Un tejido por capa sin caras: bandas de moteado de otro nivel; una banda de 0,3 mm se
+diluye en la PSF y no da una línea fina, y cada tejido nuevo toca todas las tablas. (2) Eco coherente de
+lámina lisa para todo, también septos y perimisio: líneas perfectas y continuas, cuando septos y perimisio
+son láminas fibrosas irregulares que se ven como estrías granulosas. (3) La textura una vez por píxel, del
+plano central, como los grumos (decisión 56): más barata, pero cambia el main de la mirada 0 (su huella) y
+pierde el volumen parcial elevacional, que es física (la rodaja de 5–7 mm del campo cercano promedia láminas
+de al lado). (4) La elegida: las capas y la cortical con la maquinaria de caras de la decisión 57 (cada
+muestra dibuja su cara más cercana) y los septos y el perimisio como textura anclada de la amplitud en la
+pasada B, evaluada en cada plano de elevación.
+**Decisión.** Módulo de órgano `anatomy/organs/wall.ts` (TS y GLSL con los mismos nombres) y
+`ultrasound/wallTexture.ts` (pasada B), con el gemelo de la imagen `validation/support/wallTwin.ts`:
+
+- Coordenadas de la pared, todas del marco material (la pared no respira: lo que se construye con ellas está
+  anclado): d, la profundidad bajo la piel (−`torsoDepth`, la métrica radial de las capas); u, la longitud de
+  arco de la piel desde la línea media anterior (`wallArc`: serie hasta ε³, |du/ds| = 1 a ±0,5 %; su corte
+  cae en la línea media posterior); y z. Toda onda en u es un armónico del perímetro (`wallWavenumber`):
+  periódica en la vuelta. Con una longitud de onda cualquiera la profundidad de las capas saltaba en la línea
+  media posterior y la diferencia central del gradiente de la GPU daba un eco espurio (lo halló la prueba de
+  la salida barata).
+- Capas: piel 2 mm; grasa subcutánea del hábito con la fascia de Scarpa al 40 % de su profundidad (±0,8 mm);
+  músculo = el del hábito menos la grasa preperitoneal, con la fascia profunda ondulada (±1,2 mm); y la grasa
+  preperitoneal (`Tissue.Fat`, 15 % de la subcutánea entre 1,5 y 4 mm: 2,1 en el sano) entre la
+  transversalis (±0,25·(espesor − 1) mm) y el peritoneo parietal. La piel y el peritoneo no ondulan: el
+  espesor total de la pared, y con él el hígado, la cortina y los vasos, no cambian. En la pared lateral, dos
+  planos intermusculares (oblicuo externo/interno e interno/transverso) al 35 % del músculo desde la fascia y
+  al 30 % desde la transversalis (±0,8 mm); hacia el recto (|u| de 50 a 80 mm, la línea semilunar) se acercan
+  a sus vainas y a menos de 1 mm se funden con ellas [ESTIMADO].
+- Caras (tabla de la decisión 57, `INTERFACES` 12 → 21): dermis/grasa (Fresnel 0,146, s 0,35), Scarpa
+  (colágeno en grasa, suelo 0,07), fascia profunda (Fresnel grasa/músculo 0,138), los dos planos
+  intermusculares (suelo 0,08), transversalis (0,138) y peritoneo parietal (grasa/hígado 0,132), con s 0,3
+  y rugosidad efectiva σz 0,075 mm (una fascia ondulada a la escala del haz, con el volumen parcial de la
+  rodaja): en la imagen sus líneas quedan a +6–14 dB sobre el hígado a incidencia normal, gris-blancas, sin
+  saturar y bajo la pleura y la cortical, que son lo más brillante, como en las referencias [ESTIMADO]. Con
+  σz 0,05 (la primera versión) quedaban a +15–29 dB y en la captura con GPU del flanco eran cinco líneas
+  blancas, uniformes y saturadas, tan brillantes como la pleura y la cortical; con 0,10, al nivel del
+  hígado; lisas (σz 0,03, s 0,2), a +30–40 dB y su falda axial llenaba el músculo, de 10 mm con cuatro caras.
+  El peritoneo, σz 0,08 y s 0,4 (su cara la hacen irregular los lóbulos de la grasa preperitoneal): donde el
+  hígado toca la pared su eco (0,35 mm por encima del cruce) y el de la cápsula (0,35 mm por debajo) se
+  funden en una línea de ~1,3 mm, la misma que en las referencias y que la cápsula de la decisión 57 calibró
+  en 1,3–2,1 × el hígado a 0–20°: 1,82–1,83 en el gemelo (con σz 0,04 y s 0,3, 2,24–2,40; con 0,06 y 0,4,
+  1,88–1,97; la cápsula sola, 1,48–1,79). Cada muestra de piel, grasa, músculo o grasa
+  preperitoneal dibuja la cara de su capa más cercana (a igualdad, la de fuera; `wallFace`): dos lados salvo
+  el peritoneo, que solo lo conoce la grasa preperitoneal. La distancia de cada cara (`wallFaceSd`) es la de
+  su capa, continua (los planos sin el corte de su fusión); su gradiente en la GPU es la diferencia central
+  de siempre (`faceGradient`). La reflectividad de cada cara varía a lo largo de ella, exp(a·(n − 0,5)) con
+  un ruido de valor anclado de 4 mm (a = 4, 5, 4, 4, 4, 3,5, 3 de la piel al peritoneo, ±4–6 dB: la rugosidad
+  a la escala del haz, el volumen parcial y la oblicuidad, anclados; Scarpa a tramos casi desaparece;
+  `wallFaceGain`). Con 6 mm y a = 1,5–3 (la primera versión) las líneas se veían trazadas con regla.
+- Costillas: la cortical (Fresnel músculo/hueso 0,59, s 0,15, σz 0,045: su parte coherente queda bajo la de
+  la pleura parietal de la decisión 61, la cara más brillante de la tabla) la dibuja el tejido blando de la pared
+  a menos de 1,3 mm de una costilla ósea (≥ el perfil de una cara de un lado por la cota de su gradiente),
+  con prioridad sobre las capas; el hueso no dibuja nada (su interior se atenúa). De la cortical solo da eco la
+  cara que mira a la sonda (`faceLitFromProbe`: n·dir ≤ 0 con la normal exterior, en la mirada 0 y en las
+  dirigidas; TS y GLSL): la cara posterior está a la sombra del hueso, pero la transmisión con apertura (la
+  penumbra de la decisión 54) y los caminos dirigidos (58) la iluminaban a medias en los bordes de la costilla, y
+  el eco, con |cosθ|, la dibujaba como a la anterior: en la captura con GPU del flanco cada costilla era un
+  anillo entero (en el flanco, sin la regla, el eco de la cara posterior queda a < 3 dB del de la anterior; con
+  ella, nada). El pericondrio (suelo 0,025, σz 0,06 y s 0,3, como las fascias) lo dibuja el cartílago, también
+  en su cara profunda (el cartílago transmite). Con el suelo 0,06, σz 0,03 y s 0,2 (la primera versión) los
+  cortes de los cartílagos del reborde eran en la subxifoidea una cadena de rizos blancos (captura con GPU): en
+  el gemelo de la subxifoidea su pico sobre el hígado, en la mediana de sus 75 líneas, baja de +20,9 dB (p90
+  +24,7) a +3,5 (p90 +6,2). Las dos llevan la coherencia de curvatura de la
+  decisión 57 con la curvatura de la sección elíptica de la costilla (`ribCurvature`: a·b/(a²sin²t +
+  b²cos²t)^{3/2}, 0,089/mm en la cresta que mira a la piel) sobre su eje (`ribTangent`), como un tubo.
+  Retrodispersión del cartílago 0,6 → 0,15 (hialino homogéneo). `classify` busca las costillas antes que la
+  grasa subcutánea, desde `ribSearchDepth` (la profundidad mínima a la que una puede llegar, conservadora):
+  con la fascia profunda ondulada, la cresta de las costillas del arco anterior asomaba en la grasa y quedaba
+  cortada por ella. Las coordenadas de la pared (`wallArc`, `wallDepths`) solo se calculan dentro de ella,
+  no en cada punto del tronco.
+- Extensión del cartílago costal: en `sdRib` era cartílago todo el arco con φ > `cartilageFromPhi` (1,05 rad),
+  una regla escrita para el lado izquierdo (φ < π/2): en las costillas derechas, φ ∈ (π/2, π], todo el arco
+  anterolateral y posterior era cartílago, y la ventana intercostal no tenía cortical ni sombra. Anatomía: el
+  cartílago es el segmento anterior, de la unión costocondral (en la línea medioclavicular) al esternón (5.ª–7.ª)
+  o al reborde costal (8.ª–10.ª); lateral a ella la costilla es hueso, con la cortical convexa brillante y la
+  sombra limpia de las ventanas intercostales (el signo del murciélago de la ecografía pulmonar, PMC10132878).
+  Regla nueva, simétrica: cartílago a menos de π/2 − `cartilageFromPhi` = 45° de la línea media anterior (la
+  unión a x ≈ 96 mm en la elipse de la costilla, 136 × 89 mm: la línea medioclavicular; TS y GLSL). Y las 8.ª–
+  10.ª acaban en el reborde costal (`ribAnteriorEndX`: x ≤ 15 + 1,53·z anterior; la 8.ª a −23 mm y la 9.ª a −62,
+  mediales a la línea medioclavicular, la 10.ª a −100, en ella): antes todas cruzaban la línea media, y la
+  ventana subxifoidea pasaba por los cartílagos de la 8.ª y la 9.ª. Los últimos 25 mm antes del extremo, en la
+  mitad anterior, son cartílago aunque caigan fuera de los ±45° (`cartilageTailMm`): la 10.ª, cuyo extremo
+  queda en la línea medioclavicular, conserva así su cartílago corto, unido al de la 9.ª en el reborde (sin la
+  cola era hueso hasta su extremo). Con las costillas enteras (arriba) esos cartílagos atenuaban las miradas dirigidas de la
+  subxifoidea y la composición (decisión 58) se quedaba sin hígado limpio que medir (1 parche frente a 6).
+- Vista intercostal de partida: con las costillas óseas, la de antes (φ 0,88π, z 8, yaw 0,35, casi
+  craneocaudal) cruzaba seis costillas con seis sombras, y a lo largo del 7.º espacio (φ 0,94π, z 19) la
+  cortina pulmonar de la decisión 61 tapaba en espiración medio sector con las suprahepáticas (la captura PW
+  de la e2e las perdía). Nueva pose, buscada en una rejilla de φ, z, yaw y basculación con criterios de
+  función: el 8.º espacio (entre la 8.ª y la 9.ª costillas) en la línea axilar media, a lo largo del espacio y
+  sin basculación (φ π, z 0, yaw −1,15). Ninguna costilla en todo el sector hasta 180 mm (quedan a ~14 mm a
+  cada lado del plano; girar la sonda 2° mete la 9.ª en un borde), la huella apoyada entera (4 de 61 líneas
+  sin acoplar, las de los bordes), la vértebra al fondo (14–16 cm) y 42 de 61 líneas con ≥ 30 mm de hígado
+  antes de pulmón o hueso. La primera versión de esta pose (φ 0,98π, z 3, yaw −1,25, basculada 11°) tenía 14
+  líneas sin acoplar, una costilla en cada borde (a 36–52 y a 71 mm) y 37 líneas de hígado. La puerta del
+  operador (`bestGateOnVessel` con el peso de ventana) cae en una suprahepática con 43° y peso 0,058 a 89 mm
+  en apnea espiratoria y con 35° y 0,038 a 101 mm en el máximo descenso de la respiración tranquila; la de la
+  pose casi craneocaudal quedaba a 63–80 mm con 57–68° (el peso incluye la atenuación de ida y vuelta: una
+  puerta más honda pesa menos aunque no tenga sombra, 0,09–0,16 allí). 161 parches de Rayleigh con la
+  respiración tranquila; la cortina entra por el lado craneal (4 de 61 líneas en espiración, 13 en el máximo de
+  la respiración tranquila y 39 en inspiración profunda: 84 líneas de cortina entera y 27 casi normales a la
+  pleura de 192). Morison (hígado → grasa perirrenal → cápsula renal), que daba la vista intercostal de
+  antes, sale del flanco inclinado 20° hacia atrás (en la pose de antes, las líneas del banco sin GPU acaban en
+  la cortical de sus seis costillas); las suprahepáticas oblicuas del banco sin GPU se miden en la pose de
+  antes, fija como las del contorno (`CAPTURE_POSES`).
+- Textura (`wallTexture`, un factor de la amplitud de `fieldFor` y `fieldForPh` en la grasa y el músculo): la
+  grasa subcutánea en lóbulos (columnas de Voronoi de 7 mm en (u, z) con estratos de 3,5 mm de hondo, con
+  desfase e inclinación ≤ 14° por columna), septos de σ 0,15 mm con retrodispersión 1,6 sobre el interior
+  del lóbulo (0,08); el músculo (0,35) con estrías de perimisio cada 2,2 mm (±15 %), casi paralelas a la piel
+  con una ondulación peniforme de ±10–15° y en tramos de 10–30 mm (máscara de ruido por estría), σ 0,15 mm y
+  retrodispersión 3,0 [ESTIMADO]. Cada lámina brilla 0,2 + 0,8·|cosθ|⁴ con su incidencia. Dirección del haz:
+  en la mirada 0, la radial desde el centro de curvatura (exacta en la pared, que no respira); en las
+  dirigidas, b_0 + g/k2 con g = k2·(b_k − b_0) el gradiente de la fase de la mirada (decisión 58). Se evalúa
+  en cada plano de elevación: la mezcla de los tres la promedia en elevación como al moteado.
+- La grasa baja de 0,55 a 0,08: la del interior del lóbulo. Con 0,25 (la del diseño) el interior mostrado
+  quedaba a 0,62–0,70 del gris del hígado: los septos de los planos laterales de elevación y la falda axial de
+  los del plano central le suman 2–4 dB; con 0,15, a 0,60–0,62 una vez medido lejos de las caras. El músculo
+  baja de 0,5 a 0,35.
+- Métricas de las capas (banco y gemelo): solo en las líneas a < 15° de la normal a la piel
+  (`WALL_LAYER_DEG`) y solo las muestras a ≥ 1 mm de toda cara de la pared (`WALL_INTERIOR_MM`; con la PSF
+  axial, un eco de +20 dB cae allí 20 dB bajo el músculo), también los septos y las estrías. Antes los septos y
+  las estrías se tomaban a cualquier distancia de las fascias y la falda de sus ecos contaba como textura: sin
+  textura alguna, el gemelo daba 2,1–2,8 dB de «septos» y 0,3–4,7 dB de «estrías»; ahora −0,4/+0,5 dB.
+- Banco de interfaces (decisión 57): la cápsula bajo la pared tiene siempre encima la grasa preperitoneal y
+  el peritoneo, dentro de la ventana de su pico, así que su puerta medía el peritoneo (quitar la cara de la
+  cápsula no la movía: 2,40 → 2,39). Los registros con la cara interna de la pared en esa ventana (ensanchada
+  por el alcance del eco de un lado, `PERITONEUM_REACH_MM`) pasan a `peritoneum`: la línea de los dos, con la
+  ventana desde el cruce exacto con el peritoneo menos ese alcance (no 1,5 mm sobre el borde, donde está la
+  transversalis; sin la línea si la transversalis queda a < 0,7 mm de ella). La puerta de la GPU «cápsula
+  0–20°» pasa a esa línea (`GATED_FACE_BINS`, e2e ≥ 1,4 y ≤ 2,4); `capsule` queda para la cápsula sin la
+  pared encima (bajo la pared, vacía).
+- Centro de la luz del banco (`display.lumen`): la sangre de VCI, suprahepáticas y porta (sin la aorta ni los
+  vasos renales) a ≥ 1,5 mm de su pared en el plano y, en 3D, a ≥ 1,5 mm más la σ elevacional del haz: toda la
+  rodaja es sangre. Con la vista intercostal nueva la luz del plano daba una mediana de 45–52 (gemelo y
+  SwiftShader): sus suprahepáticas, finas y oblicuas al plano, están a 1,2–1,9 mm de su pared en 3D y el grosor de
+  corte mete la pared y el hígado en su «luz» (física, no un defecto del eco), y la VCI queda contra la vértebra.
+  Ahora esa vista no tiene luz que medir; la subxifoidea y el flanco, con la VCI en eje largo, siguen a 1 (gemelo).
+  Las guardas del moteado con giro (`speckleMotion`, `speckleCrossfade`) dejan fuera de su máscara la penumbra de
+  la apertura (como el banco) y el fundido suma el nivel paso a paso en las muestras comunes a dos cuadros: girar
+  16° desde la vista nueva mete la 9.ª costilla, y la media de una máscara que cambia de profundidad (la envolvente
+  no lleva la compensación de la atenuación) movía el nivel 4 dB sin que nada cambiara de brillo.
+- Con la decisión 61: las capas, las costillas y sus caras viven en `classifyWall`, el prefijo de la pared de
+  `classify` (TS y GLSL) que la serie de reverberaciones de la pleura usa para copiar la pared bajo ella
+  (`wallField`, `wallFieldPh`): las copias heredan la textura (en `fieldFor`) y llevan las caras de sus capas.
+  El eco de interfaz completo no puede ir en ese bucle (`faceGradient`, ~67 kB inlineados: con SwiftShader el
+  JIT de B tardaba 128 s y perdía el contexto; `shaderLimits.test.ts` lo vigila), así que las copias usan un eco
+  de cara plana (`wallFaceEchoFlat`, TS y GLSL): las capas son casi paralelas a la piel y su normal y la norma
+  de su gradiente son las de la profundidad radial (`torsoDepthGradient`, analítico), sin su ondulación (±0,25
+  dB de la energía del eco completo por cara), sin la cortical ni el pericondrio. Pasada la cara interna la copia
+  es la capa más honda (grasa preperitoneal, sin cara). La imagen coherente de una cara especular se degrada en el
+  camino de la reverberación (cuatro pasos más por la pared, con su aberración, y la pleura, que no es plana a
+  la escala del haz), lo que χ, la rugosidad fina, no recoge: el eco de las caras en las copias va por
+  `WALL_COPY_FACE_GAIN` 0,35 [ESTIMADO 0,25–0,5]. Con 1, la imagen bajo la pleura era un peine de arcos
+  brillantes (captura con SwiftShader, intercostal en inspiración) y el deslizamiento se perdía entre ellos (la
+  banda de 2–6 mm bajo la pleura correlacionaba 0,99 al bajar el pulmón 2 mm con las caras de la primera versión,
+  0,89 con las de ahora); con 0,35, bandas tenues (+2–4 dB sobre la neblina de entre ellas, Lee 2017 fig. 5B) y
+  0,70, y en todo el rango 0,66–0,75 (aceptación < 0,8; `pleuraTwin.test.ts`). Con las caras de la primera
+  versión (σz 0,05) la ganancia era 0,15 [0,1–0,3] y el tope de ese rango ya pasaba de 0,8 (0,89 con 0,3).
+  Enmienda de la decisión 61 en A0 (y su gemelo): el pulmón del receso solo es la cortina si su primer segmento
+  grueso empieza a ≤ un segmento del cruce D (`CURTAIN_CONTIGUOUS_SEGMENTS`; ver la 61): las líneas que rozaban
+  el borde de la cortina en la vista intercostal de la primera versión tomaban por cortina el pulmón del receso
+  posterior, 53–91 mm más hondo. Las caras nuevas van tras la pleura parietal
+  (`PleuraWall` = 12): 13–21; la variación a lo largo de cada cara se siembra con su índice entre las de la
+  pared, no con su número.
+- La mirada 0 cambia su main solo en la llamada a la pared de la serie (`wallField` recibe la dirección de la
+  línea, para el eco de cara plana; huella nueva en `shaderLimits.test.ts`); cambian además `classifyWall`,
+  `faceGradient`, `fieldFor`, `interfaceEcho` y, en el programa dirigido, `fieldForPh` y `wallFieldPh`. La
+  textura y `SPECKLE_TISSUE_GLSL` van antes del eco de interfaz (que usa `wallFaceGain`) en los dos programas
+  de B. uWall pasa a vec4 (la grasa preperitoneal en .w): sin ranuras nuevas en la escena; `uIface` 13 → 22: la
+  pasada B 106 → 115 ranuras (108 → 117 el programa dirigido); K no cambia (17).
+- La equivalencia volumétrica solo exige la misma cara donde la de la CPU no cambia a ±0,02 mm
+  (`FACE_STABLE_MM`): la pared cambia de dueño dentro de sus capas (la capa más cercana, el umbral de la
+  cortical, la fusión de un plano) y allí un redondeo de float32 cambiaría la cara. Plegar esos márgenes en la
+  distancia a la frontera dejaba un 13 % menos de puntos interiores (la e2e exige > 40 000 de 50 000) y
+  obligaba a clasificar más planos laterales en la pasada B.
+
+**Consecuencias.** El banco de la GPU (`display.wall`) sobre la envolvente del gemelo de la imagen en las
+poses de partida (subxifoidea, intercostal, flanco y renal), antes → después: líneas brillantes dentro de la
+pared 0–1 → 4–7 (+8–36 dB sobre la mediana local de su capa, que es oscura; a incidencia normal su pico queda
+a +8,1 / +9,2 / +6,4 / +13,7 dB del hígado, con 0–0,2 % de picos saturados y un coeficiente de variación a lo
+largo de cada línea de 55–73 %: gris-blancas y con tramos, no reglas blancas); el interior de los lóbulos,
+0,47–0,57 del gris del hígado (antes, −4/−6 dB: 0,80–0,86); septos +5,0–10,4 dB y estrías +4,4–9,7 dB sobre
+la mediana de su capa (antes ≈ 0; sin textura, con las caras, −2,5/+1,0 dB); el músculo entre estrías,
+0,73–0,83 del hígado; la cortical costal del flanco, −3 → +19,3 dB sobre el hígado (67 líneas), 13 dB sobre las
+líneas de la pared, sin eco de su cara posterior; en la intercostal no entra ninguna costilla, y la renal no
+tiene líneas a < 15° de la normal para las capas. Hígado y riñón: el mismo campo bit a bit bajo la pared; la
+grasa preperitoneal atenúa algo menos que el músculo que sustituye (+0,1–0,6 dB en el hígado, la SNR igual).
+La línea del peritoneo y la cápsula (banco sobre el gemelo, 0–20°): 1,82–1,83 × el hígado (la cápsula sola,
+sin la cara del peritoneo, ≥ 1,4, como la cápsula de antes; sin ninguna de las dos, < 1,3). Bajo la pleura de
+la cortina (gemelo de la decisión 61, ahora con las capas planas de la pared, sus caras y su retrodispersión;
+sin la textura): línea pleural saturada 1,26–1,34 mm (antes 1,24–1,30), neblina 65 de gris (0,65 × el hígado; 68) y 37 en el intervalo siguiente, línea A de orden 2 +44,7 dB sobre la neblina y +28,6 sobre el hígado, la 3
++9,1, anisotropía 2,61 / 0,74 mm = 3,52 (2,57) por las bandas, y la banda de 2–6 mm bajo la pleura
+correlaciona 0,70 con 2 mm de descenso del pulmón (0,61; el deslizamiento solo, 0,61). Coste: en las
+muestras de pared la pasada B suma la textura en tres planos y clasifica más planos laterales (~+70 % en
+ellas, ~15 % de las muestras a 180 mm), y las copias de la pared bajo la pleura, la textura y el eco de cara
+plana: +0,3–0,5 ms por cuadro estimados (sin medir con GPU); las caras de pared calculan su gradiente (6
+evaluaciones de su capa) solo al alcance de su eco; `classifyWall` calcula las coordenadas de la pared solo
+dentro de ella y busca las costillas solo desde `ribSearchDepth`. El GLSL que se compila al arrancar pasa de
+298,2 a 364,8 kB (+22 %: el módulo de la pared va en todas las pasadas que clasifican); con SwiftShader la
+aplicación arranca en 13,6–14,1 s frente a 10,7 s de main 3c2cec6 (25,7 frente a 19,5 s con la máquina
+cargada), sin perder el contexto; el bucle de la serie no lo encarece (vaciarlo no mueve el arranque). El
+chunk principal del bundle, 269,9 → 296,6 kB (`vite build`; presupuesto 280 → 305 kB). Reconciliación con la
+decisión 60: su retirada entre la pared y el hígado debe clasificarse como grasa extraperitoneal de la pared
+(prolongar la capa `Tissue.Fat` y la cara `Peritoneum` hasta el hígado), no como intestino; la cápsula
+conserva su cara, y la línea de los dos sigue siendo la del banco (`peritoneum`). En el receso costofrénico la
+capa interna de la pared es la grasa extrapleural y su «peritoneo» la fascia endotorácica, 0,35 mm sobre la
+pleura; su eco (+20 dB sobre el hígado) queda ~30 dB bajo la línea pleural. La textura tiene una costura en la
+línea media posterior (lóbulos y ruidos en u), sobre la columna y fuera de toda ventana. Pendiente con GPU: las
+metas del banco de la pared y de la pleura (`docs/fidelity/README.md`), `WALL_COPY_FACE_GAIN` dentro de su
+rango y el juicio visual del dueño frente a las referencias.
+
+**Verificación.** `wall.test.ts` (geometría de las capas, arco y periodicidad, orden de las caras, planos
+fundidos en el recto, caras de `classify` de la piel al peritoneo, cortical y pericondrio, las costillas no
+cortadas por la grasa y `ribSearchDepth` conservadora, gradiente, tabla y nombres GLSL, GLSL de la anatomía
+(costillas antes de la grasa, coordenadas de la pared solo dentro) y de la pasada B, textura: 1 fuera de la
+pared, septos y estrías con su geometría, anclaje; la cara posterior de la cortical sin eco en la mirada 0 y en
+las dirigidas, y a < 3 dB de la anterior sin la regla; el cartílago a ±45°, el reborde costal y la cola de
+cartílago de la 10.ª; el eco de cara plana frente al completo, ≤ 0,5 dB por cara y ≤ 0,05 sin ondulación, y el
+gradiente analítico frente al numérico); `wallTwin.test.ts` (lento, el gemelo de la imagen: ≥ 3 líneas dentro
+de la pared y ≤ 1 antes, lóbulos ≤ 0,6 del hígado, septos y estrías ≥ 1,5× su capa y < 1,5 dB sin textura,
+cortical ≥ +15 dB, anclaje al girar la sonda una línea (correlación > 0,999), hígado y riñón bit a bit sin
+transmisión, y el banco de la GPU sobre el gemelo en las poses de partida: sus metas, las líneas a incidencia
+normal a +4–16 dB del hígado con ≤ 1 % de picos saturados, un CV ≥ 0,3 a lo largo y ≥ 6 dB bajo la cortical,
+septos y estrías < 1,5 dB sin textura, la cápsula sin registros bajo la pared y la línea del peritoneo en
+1,4–2,1, la cápsula sola ≥ 1,4 y < 1,3 sin las dos caras), con el modelo de antes fallando cada meta;
+`startPoints.test.ts` (la intercostal: ninguna costilla, ósea o cartílago, en todo el sector hasta 180 mm,
+acoplamiento > 0,9, las suprahepáticas y la VCI, y la puerta del operador en una suprahepática a ≤ 50° y con
+peso de ventana ≥ 0,03 en apnea espiratoria y en el máximo descenso de la respiración tranquila);
+`pleura.test.ts` y `pleuraTwin.test.ts` de la decisión 61 con la pared nueva (las copias con sus caras por
+`WALL_COPY_FACE_GAIN`, y el deslizamiento < 0,8 en los dos extremos de su rango; la cota del campo de la pared;
+en toda línea con cortina, el borde a > −1,2 mm y su pulmón pegado al cruce, y las líneas que rozan el borde en
+la pose de la primera versión, con su pulmón lejano como espejo y ΔL 0, también en el GLSL de A0; en la vista
+intercostal la cortina entera y el borde en inspiración, sin sombra de costilla sobre la pleura);
+`faceGradient.test.ts` (la salida barata con las caras de pared y costilla, |∇| ≤ 1,5; falló con la costura en
+la línea media posterior y con los planos cortados); `equivalenceSweep.test.ts` (la cáscara ve las nueve caras
+en los planos de partida y una GPU sin ellas o con otra ondulación); `fidelityScene.test.ts` (las
+suprahepáticas oblicuas en la intercostal de las capturas, Morison desde el flanco inclinado, la línea del
+peritoneo); `speckleField.test.ts` (sus cotas, en la pose intercostal de antes: ver LIMITATIONS.md);
+`steeredParity.test.ts` (≤ 0,75 % de empates: la vértebra al fondo de la intercostal); `anatomy.test.ts`;
+`shaderLimits.test.ts` (ranuras; huella del main de B por la llamada a `wallField`; faceGradient fuera de todo
+bucle); e2e: «pared (decisión 62)» (banco de la pared con umbrales para SwiftShader, sus líneas sin saturar, la
+cortical en el flanco, y las normales de sus caras en la GPU frente a TS, `wallNormals`), la de ecos de
+interfaz (la línea del peritoneo; la luz < 30 donde hay ≥ 50 píxeles, al menos en la subxifoidea y el flanco), la
+del color (el téxel de la pasada A que lee el color frente al mismo téxel en la CPU, ≤ 0,1 dB; con el PW en la
+puerta, < 2 dB: el téxel es la línea y la fila que la contienen y el PW marcha a pasos de 2,5 mm; en la CPU,
+≤ 0,88 dB en 40 fases de la respiración y ≤ 0,77 en el mismo punto), la de la pleura y las del moteado en la intercostal nueva, y la de equivalencia con las caras
+nuevas.
 
 ## Iteración 2 — informe de cierre (22-09-2026)
 

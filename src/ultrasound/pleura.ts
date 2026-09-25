@@ -64,6 +64,14 @@ export const CURTAIN_TAPER_RANGE_MM = [3, 5] as const;
  * (mm): con σ ≤ 5,6 mm (σ_taper 5, el haz más ancho de la imagen) la fracción de aire ya es < 10⁻³.
  */
 export const CURTAIN_RECORD_MM = 20;
+/**
+ * El pulmón del receso es la cortina de la pleura registrada (sin espejo, con su ΔL) solo si su primer segmento
+ * grueso empieza a ≤ esto (en segmentos) del cruce D (decisión 62, enmienda de la 61). Una línea que pasa junto al
+ * borde de la cortina registra su pleura con el volumen parcial del borde y, 50–90 mm más allá, toca el pulmón
+ * del receso posterior: ese pulmón es el espejo del diafragma (decisión 57), no la lámina de la pleura, y el
+ * hígado de en medio conserva su atenuación.
+ */
+export const CURTAIN_CONTIGUOUS_SEGMENTS = 1;
 /** Fracción de aire por debajo de la cual la línea no tiene cortina (y por encima de 1 − esto, ni tejido detrás). */
 export const CURTAIN_MIN_AIR = 1e-3;
 /**
@@ -91,10 +99,24 @@ export const SLIDING_SALT = 23.17;
 /** La serie se suma solo mientras su término puede pasar de la décima parte del ruido del receptor. */
 export const PLEURA_SERIES_FLOOR = RECEIVER_NOISE / 10;
 /**
- * Cota del campo de la pared en una muestra (moteado de la piel a 3σ, 1,4·3, más el pico de una cara de
- * la pared con |R| ≤ 0,05): decide cuándo se deja de sumar la serie (`PLEURA_SERIES_FLOOR`).
+ * Eco de las caras de la pared en sus copias bajo la pleura (decisión 62) sobre el de la pared directa
+ * [ESTIMADO 0,25–0,5]: la imagen coherente de una cara especular se degrada en el camino de la reverberación
+ * (cuatro pasos más por la pared, con su aberración de fase, y la pleura, que no es plana a la escala del haz),
+ * cosa que χ, la rugosidad fina, no recoge; el moteado es incoherente y no la pierde. Con 1 las copias de las
+ * fascias quedaban a +8–12 dB sobre la neblina de entre ellas y la imagen bajo la pleura era un peine de arcos
+ * brillantes (captura con SwiftShader, intercostal en inspiración); con 0,35 (y las caras de σz 0,075 mm) son
+ * las bandas tenues de las referencias (Lee 2017, fig. 5B: +2–4 dB en el gemelo) y el deslizamiento sigue a la
+ * vista en todo el rango (la banda de 2–6 mm bajo la pleura correlaciona 0,66 con 0,25 y 0,75 con 0,5 al bajar
+ * el pulmón 2 mm; aceptación < 0,8).
  */
-export const PLEURA_WALL_FIELD_BOUND = 16;
+export const WALL_COPY_FACE_GAIN = 0.35;
+export const WALL_COPY_FACE_GAIN_RANGE = [0.25, 0.5] as const;
+/**
+ * Cota del campo de la pared en una muestra (moteado de la piel a 3σ, 1,4·3, más el pico de una cara de la
+ * pared en su copia: `WALL_COPY_FACE_GAIN_RANGE[1]` por el pico de la más brillante con su variación máxima a 2
+ * MHz, ≈ 105; `pleura.test.ts` lo comprueba): decide cuándo se deja de sumar la serie (`PLEURA_SERIES_FLOOR`).
+ */
+export const PLEURA_WALL_FIELD_BOUND = 57;
 /** Pasos del punto fijo que busca la línea cuyo cruce de la pleura corta un camino dirigido. */
 export const PLEURA_STEER_ITERATIONS = 3;
 /** Profundidad de la pleura (mm) con que empieza ese punto fijo si la línea de la muestra no tiene pleura. */
@@ -341,8 +363,8 @@ float curtainSteerWeight(float r, float D, float fAir) { return D > 0.0 && fAir 
 
 /**
  * La misma física en GLSL, común a los dos programas de la pasada B (va detrás de `sampleSide`: usa
- * `elevSigma`, `lateralSigmaMm`, `fieldFor`, `anchoredClump`, `interfaceEcho`, `scattererField`, `uSeed`,
- * `uElev` y `uCurtain`). Lleva `CURTAIN_AIR_GLSL` (y con él `uHits2`).
+ * `elevSigma`, `lateralSigmaMm`, `fieldFor`, `anchoredClump`, `interfaceEcho`, `wallFaceEchoFlat`,
+ * `scattererField`, `uSeed`, `uElev` y `uCurtain`). Lleva `CURTAIN_AIR_GLSL` (y con él `uHits2`).
  */
 export const PLEURA_GLSL = /* glsl */ `${CURTAIN_AIR_GLSL}
 uniform sampler2D uTrans2; // A o2: rayo único (x la mirada 0, y la dirigida): tope de la transmisión sin la lámina
@@ -356,6 +378,7 @@ const float SLIDING_AX_MM = ${glslFloat(SLIDING_AX_MM)};
 const float SLIDING_SALT = ${glslFloat(SLIDING_SALT)};
 const float PLEURA_SERIES_FLOOR = ${glslFloat(PLEURA_SERIES_FLOOR)};
 const float PLEURA_WALL_FIELD_BOUND = ${glslFloat(PLEURA_WALL_FIELD_BOUND)};
+const float WALL_COPY_FACE_GAIN = ${glslFloat(WALL_COPY_FACE_GAIN)};
 float pleuraCapMm(float D, float step) { return (max(ceil(D / step - 0.5) - 1.0, 0.0) + 0.5) * step; }
 // χ de Ament de la pleura parietal: la parte coherente de su reflexión especular
 float pleuraCoherence(float cosI) { float x = uIface[IF_PLEURA_WALL].y * cosI; return exp(-0.5 * x * x); }
@@ -390,20 +413,23 @@ vec2 mediumField(vec3 p, vec3 dir, float r, float se, bool withCurtain) {
   if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
   return field + vec2(interfaceEcho(c, m, dir, r, se), 0.0);
 }
-// La pared que copia la serie (decisión 61) en p: el prefijo de la pared de classify (piel, grasa, costillas y
-// músculo, sin órganos ni tubos: la muestra está antes de la pleura), moteado anclado y grumos del plano central.
-// La pared no tiene caras de interfaz (su eco es 0). Si la muestra pasa de la cara interna (en una mirada
-// dirigida, ≤ 0,3 mm al final de la copia, junto a la réplica de la pleura), es la capa más honda: el músculo.
-// Barata a propósito: va en el bucle de la serie, y el JIT de SwiftShader se dispara con código pesado en un bucle.
-vec2 wallField(vec3 p, float se) {
+// La pared que copia la serie (decisión 61) en p, con el camino en dir: el prefijo de la pared de classify (piel,
+// costillas y las capas de la decisión 62, sin órganos ni tubos: la muestra está antes de la pleura), moteado
+// anclado con la textura de la pared (fieldFor), grumos del plano central y el eco de cara plana de su capa
+// (wallFaceEchoFlat por WALL_COPY_FACE_GAIN: las bandas horizontales tenues de la neblina). Si la muestra pasa
+// de la cara interna (en una
+// mirada dirigida, ≤ 0,3 mm al final de la copia, junto a la réplica de la pleura), es la capa más honda: la
+// grasa preperitoneal, sin cara. Barata a propósito: va en el bucle de la serie, y el JIT de SwiftShader se
+// dispara con código pesado en un bucle (faceGradient no puede ir aquí).
+vec2 wallField(vec3 p, vec3 dir, float se) {
   vec3 m = toMaterial(p);
   Cls c;
   float depth;
   vec3 tn;
-  if (!classifyWall(m, c, depth, tn)) { c.tissue = T_MUSCLE; c.n = tn; }
+  if (!classifyWall(m, c, depth, tn)) { c.tissue = T_FAT; c.n = tn; }
   vec2 field = fieldFor(m, se, c.tissue);
   float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
   if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
-  return field;
+  return field + vec2(WALL_COPY_FACE_GAIN * wallFaceEchoFlat(c, m, dir), 0.0);
 }
 `;

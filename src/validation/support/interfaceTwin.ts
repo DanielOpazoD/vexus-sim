@@ -350,8 +350,10 @@ export function calibrateBeta(depth: number, rFace = 80, twoSided = true): { bet
 // ——— Escenas del diseño (s = pendiente rms verdadera, la tabla de `interfaces.ts`) ———
 
 /**
- * Retrodispersión de los tejidos de las escenas (la de TISSUES, redondeada). La de la cápsula es la de
- * producción (`T_CAPSULE`): si cambia (decisión 63), el gemelo la sigue.
+ * Retrodispersión de los tejidos de las escenas (la de TISSUES, redondeada, cuando se calibró la decisión 57;
+ * la decisión 62 bajó el músculo de la pared a 0,35, pero aquí es solo el tejido de encima de la cápsula, que
+ * se mide contra el hígado de debajo). La de la cápsula es la de producción (`T_CAPSULE`): si cambia
+ * (decisión 63), el gemelo la sigue.
  */
 export const BACK = {
   liver: 1.0,

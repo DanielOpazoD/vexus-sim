@@ -79,7 +79,8 @@ src/app          Simulator (composición), Store (estado de UI), estilos
 src/ui           navegador 3D (three.js), corte ecográfico (Worker), consola por pestañas, entrada de sonda, ECG y espectrograma
 src/validation   tests de invariantes (guía §21), ejemplos calculados (base 10.2), capas y documentación
 tools/           calibración, depuración de ondas, índice de decisiones, presupuesto de bundle
-docs/            DECISIONS.md (+ índice generado), LIMITATIONS.md, APPROXIMATIONS.md, ARCHITECTURE.md
+docs/            DECISIONS.md (+ índice generado), LIMITATIONS.md, APPROXIMATIONS.md, ARCHITECTURE.md,
+                 anatomia/revision-normal.md (anatomía y ecografía normal, ventanas VExUS, brechas del modelo)
 ```
 
 ## Estado (v0.5.0)

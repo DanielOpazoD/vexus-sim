@@ -505,22 +505,39 @@ test('el fundido del ancla del moteado no da saltos: la textura y la correlació
     tag,
   ).toBe(true);
   const snr0 = frames[0].snr;
-  // correlación de base entre cuadros sin fundido (1° de giro por cuadro): en el enlace de dos fundidos
-  // seguidos se espera ≈ 0,89 × la base (se comparte el medio con peso 8/9)
-  const still = frames
-    .filter((f) => f.w >= 1)
-    .map((f) => f.corrPrev)
-    .sort((a, b) => a - b);
-  const base = still[Math.floor(still.length / 2)];
+  // Lo que el fundido le cuesta a la correlación con el cuadro anterior, de sus pesos: el medio de un cuadro es
+  // √w·N + √(1 − w)·V (N el ancla nueva, V la anterior; `SpeckleAnchor`). Si el fundido sigue, las dos anclas son
+  // las mismas: ρ = √(w₀·w) + √((1 − w₀)(1 − w)) ≈ 0,99. Si empieza uno (w baja), la nueva del cuadro anterior es
+  // la vieja de este: ρ = √(w₀)·√(1 − w) (√(8/9) tras un cuadro sin fundido; 8/9 en el enlace de dos fundidos
+  // seguidos). La envolvente de un moteado de Rayleigh correlaciona ≈ ρ² (0,876 y 0,770, Monte Carlo; ρ² da
+  // 0,889 y 0,790, algo más exigente).
+  const fade = frames.map((f, i) => {
+    const w0 = i === 0 ? 1 : frames[i - 1].w;
+    const rho = f.w < w0 ? Math.sqrt(w0 * (1 - f.w)) : Math.sqrt(w0 * f.w) + Math.sqrt((1 - w0) * (1 - f.w));
+    return rho * rho;
+  });
+  // La correlación que da el giro de 1° por cuadro, sin el fundido, cambia a lo largo del barrido (lo que se
+  // ve del hígado cambia: 0,89 → 0,80 en 12°, igual en main banda a banda): cada cuadro se compara con los de
+  // su entorno (±3), no con los primeros. Un fundido mal cableado (un destello, un salto de grano, soltar el
+  // medio de golpe) da mucho menos que lo que el fundido cuesta.
+  const motion = frames.map((f, i) => f.corrPrev / fade[i]);
+  const localBase = (i: number) => {
+    const v = motion.filter((_, j) => j !== i && Math.abs(j - i) <= 3).sort((a, b) => a - b);
+    return v[Math.floor(v.length / 2)];
+  };
   // sin destellos: el nivel del hígado no salta entre cuadros (soltar el medio viejo un cuadro antes
   // sumaba el mismo medio dos veces: +2,1 dB en el último cuadro de cada fundido)
   for (let i = 1; i < frames.length; i++) expect(Math.abs(frames[i].levelDb - frames[i - 1].levelDb), tag).toBeLessThan(0.8);
-  for (const f of frames) {
+  frames.forEach((f, i) => {
     expect(f.snr / snr0, tag).toBeGreaterThan(0.85);
     expect(f.snr / snr0, tag).toBeLessThan(1.15);
-    // el fundido no debe bajar la correlación con el cuadro anterior mucho más que el enlace esperado
-    expect(f.corrPrev, tag).toBeGreaterThan(0.75 * base);
-  }
+    // el ancla no cambia más de 1/9 del medio entre dos cuadros (ρ² ≥ (8/9)²): reanclar a mitad de un fundido
+    // soltaba de golpe el medio viejo (w 0,44 → 0,11: ρ² = 0,39; en GPU, correlación 0,65)
+    expect(fade[i], `cuadro ${i}: ${tag}`).toBeGreaterThan(0.78);
+    // el fundido no baja la correlación con el cuadro anterior más de lo que cuesta (hígado puro, intercostal en
+    // espiración: 0,96–0,97 de su entorno en los dos arranques de fundido, el del cuadro 5 y el enlace del 13)
+    expect(motion[i] / localBase(i), `cuadro ${i}: ${tag}`).toBeGreaterThan(0.85);
+  });
   expect(errors).toEqual([]);
 });
 

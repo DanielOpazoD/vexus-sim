@@ -1444,7 +1444,16 @@ correlaciona 0,96 / 0,86 / 0,61 / 0,32 con 0,5 / 1 / 2 / 5 mm de descenso del pu
 −7,3). El borde baja 10 mm con la respiración tranquila y 30 mm con la profunda. El hígado «puro» del banco y
 de la guarda de Rayleigh deja fuera lo que hay bajo la pleura donde f ≥ 0,01 (−0,09 dB; la réplica de orden 2
 ≤ −12 dB): antes la guarda medía también el «hígado» de detrás de la cortina, que la imagen no mostraba; en
-la intercostal en espiración quedan 105 parches de 16 × 8 en lugar de 276 (CPU; la guarda e2e pide > 50). El GLSL que viaja como texto en el chunk
+la intercostal en espiración quedan 105 parches de 16 × 8 en lugar de 276 (CPU; la guarda e2e pide > 50). La e2e del fundido del ancla (decisión 55, intercostal en espiración, 1°/cuadro) perdió así el
+~43 % de su «hígado» (3126 de 7205 muestras) que era el espejo de la cortina, en parte ajeno al fundido (banda de líneas 112–127:
+correlación 0,85 con el cuadro anterior en el enlace de dos fundidos, igual que sin fundido); en las bandas de
+hígado de verdad la imagen es la de main (la misma correlación, banda a banda y cuadro a cuadro). En hígado
+puro el enlace de dos fundidos seguidos cuesta lo que dice la teoría, ρ = 8/9 y una correlación de la
+envolvente ×0,77 (Monte Carlo; medido ×0,78), y la base del giro baja de 0,89 a 0,80 a lo largo del barrido:
+la prueba comparaba con 0,75 × la base de los primeros cuadros (0,619 < 0,667). Ahora deduce de los pesos lo
+que cuesta cada fundido (ρ², fijado frente a las anclas en `speckleField.test.ts`), compara cada cuadro con su
+entorno (±3) y exige además que el ancla no cambie más de 1/9 del medio por cuadro: 0,96–0,97 del entorno en
+los dos arranques de fundido (umbral 0,85). El GLSL que viaja como texto en el chunk
 principal crece ~15,4 kB (esbuild minificado frente a la base, sin el chunk de las pruebas): presupuesto de 260 a 270 kB, y a 280 kB tras el arreglo del JIT de SwiftShader y la cortina en K (269,9 kB con `vite build` sobre main a9520b8). Pendiente, con GPU: las
 métricas del bloque `pleura` del banco (`docs/fidelity/README.md`), el coste (`msPerFrame` ≤ +0,5 ms, y
 `msPerFrameInspiration` con la cortina tapando el sector), la calibración de R_t, σz y del nivel del

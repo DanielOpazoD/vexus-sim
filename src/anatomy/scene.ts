@@ -2,6 +2,7 @@ import { smoothstep, type Vec3 } from '../core/vec3';
 import type { PatientState } from '../physiology/patientState';
 import { VESSEL_META, type VesselAreas, type VesselId } from '../physiology/vessels';
 import {
+  diaphragmHeight,
   orthonormalBasis,
   sdSpine,
   sdDiaphragm,
@@ -44,7 +45,7 @@ import {
   type LigamentumVenosum,
   type UmbilicalFissure,
 } from './organs/liverLigaments';
-import { inLungCurtain, lungCurtainDistance } from './organs/lungCurtain';
+import { inLungCurtain, inLungRecess, lungCurtainDistance, lungCurtainEdgeMm } from './organs/lungCurtain';
 
 export type { DuctDef, VesselDef } from './vesselTree';
 import { BOWEL_BD_CAP_MM, DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, Tissue } from './tissues';
@@ -348,6 +349,23 @@ export class AnatomyScene {
    */
   inLungCurtain(m: Vec3, caliber: VesselCaliber): boolean {
     return inLungCurtain(m, this.insideWallMm(m), caliber.diaphragmCaudalMm);
+  }
+
+  /**
+   * El punto MATERIAL, si `classify` da pulmón, toca la pared en el receso (la cortina o el tórax por encima de
+   * la inserción del diafragma): ahí empieza la pleura parietal (decisión 61; gemelo GLSL `inLungRecess`).
+   */
+  inLungRecess(m: Vec3): boolean {
+    return inLungRecess(m, this.insideWallMm(m));
+  }
+
+  /**
+   * Distancia (mm) de un punto MATERIAL de la cara interna de la pared al borde del pulmón que la toca en el
+   * receso: z − min(borde de la cortina, inserción del diafragma); null fuera de la huella (gemelo GLSL
+   * `lungCurtainEdgeMm`, decisión 61).
+   */
+  lungEdgeMm(m: Vec3, caliber: VesselCaliber): number | null {
+    return lungCurtainEdgeMm(m, caliber.diaphragmCaudalMm, diaphragmHeight(m[0], m[1], this.diaphragm, this.torso));
   }
 
   /**

@@ -1351,13 +1351,16 @@ brillante como el hígado (gemelo: neblina 0,99 × el hígado; aceptación 0,35�
 - **Cortina frente a diafragma.** `classify` sigue igual y binaria; la variante sin la cortina es
   `classifyWith(m, false)` (GLSL) y `classify(m, caliber, false)` (TS). A0 (`FRAG_TRANS_HITS`) registra en
   una salida nueva, `h2`, la pleura parietal: el primer cruce exacto de la cara interna de la pared
-  (`insideWallMm`, bisección de 6 pasos como el espejo), su distancia con signo al borde de la cortina
-  (`lungCurtainEdgeMm`, en la huella del receso) si está a menos de 20 mm por el lado del hígado, la pérdida
-  ΔL que el gas de la lámina cuesta de más frente al tejido de detrás y el tipo 3 empaquetado con el último
-  segmento de la cortina (3 + 4·(último + 1)). El pulmón de la cortina y el del tórax pegado a ella (aire con
-  aire: no hay pleura del diafragma entre los dos) no son espejo ni impacto de gas; el camino sigue recto.
-  A1 los marca con 3 y los prefijos de A2 (y su gemelo) no los toman por un gas. El espejo del diafragma no
-  cambia.
+  (`insideWallMm`, bisección de 6 pasos como el espejo), su distancia con signo al borde del pulmón que toca
+  la pared en la huella del receso (`lungCurtainEdgeMm`: z − min(borde de la cortina, inserción del
+  diafragma), porque por encima de la inserción el pulmón del tórax toca la pared: en el flanco en espiración
+  la cúpula llega a la pared ~3 mm por debajo del borde de la cortina) si está a menos de 20 mm por el lado
+  del hígado, la pérdida ΔL que el gas de la lámina cuesta de más frente al tejido de detrás y el tipo 3
+  empaquetado con el último segmento de la cortina (3 + 4·(último + 1)). El pulmón que toca la pared en el
+  receso (`inLungRecess`: la cortina o el tórax a < 3 mm de la pared) y el que le sigue pegado (aire con aire:
+  no hay pleura del diafragma entre los dos) no son espejo ni impacto de gas; el camino sigue recto. A1 los
+  marca con 3 y los prefijos de A2 (y su gemelo) no los toman por un gas. El espejo del diafragma (el pulmón
+  que se alcanza desde el hígado) no cambia.
 - **Línea pleural.** Cara nueva `Interface.PleuraWall` (Fresnel músculo/gas 0,9995; s 0,15 [ESTIMADO
   0,10–0,15]; σz 0,05 mm [ESTIMADO, calibrable 0,04–0,07]; de un lado, la dibuja el músculo). Eco a D con
   el lóbulo de Kirchhoff y la χ de Ament con la incidencia de la línea sobre la pared, y la transmisión de

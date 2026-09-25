@@ -70,13 +70,13 @@ export function mirrorCrossing(isLung: (r: number) => boolean, rLung: number, st
  * respiratoria va aparte, en el llamador).
  */
 export interface HitsLineQuery {
-  /** Tejido de `classify`, la normal de la interfaz y si es pulmón de la cortina (`inLungCurtain`). */
+  /** Tejido de `classify`, la normal de la interfaz y si es pulmón que toca la pared en el receso (`inLungRecess`). */
   at: (p: Vec3) => { tissue: Tissue; normal: Vec3; curtain: boolean };
   /** Tejido de `classify` sin la cortina (`classify(m, caliber, false)`): lo que hay detrás de la lámina. */
   behind: (p: Vec3) => Tissue;
   /** Profundidad bajo la cara interna de la pared (`insideWallMm`). */
   insideWall: (p: Vec3) => number;
-  /** Distancia al borde de la cortina en la huella del receso (`lungCurtainEdgeMm`), null fuera. */
+  /** Distancia al borde del pulmón que toca la pared en la huella del receso (`lungCurtainEdgeMm`), null fuera. */
   curtainEdge: (p: Vec3) => number | null;
 }
 

@@ -176,8 +176,8 @@ void main() {
     if (c.tissue == T_AIR && !entered) continue;
     entered = true;
     float flag = tissueFlag(c.tissue);
-    // pulmón de la cortina y el del tórax pegado a ella (aire con aire: sin pleura entre los dos)
-    curtainRun = c.tissue == T_LUNG && mirrorSeg < 0.0 && (curtainRun || inLungCurtain(m, insideWallMm(m)));
+    // pulmón que toca la pared en el receso (la cortina o el tórax) y el que le sigue pegado (aire con aire)
+    curtainRun = c.tissue == T_LUNG && mirrorSeg < 0.0 && (curtainRun || inLungRecess(m, insideWallMm(m)));
     if (flag > 0.5 && flag < 1.5) {
       if (curtainRun) {
         // ni espejo ni impacto de gas; ΔL: lo que su gas cuesta de más frente al tejido de detrás

@@ -362,9 +362,13 @@ describe('borde blando de la cortina: fracción de aire del haz', () => {
     }
     // el borde sigue al descenso de la cortina: 10 mm de respiración tranquila mueven dz 10 mm
     const m: Vec3 = [-120, 10, 5];
-    expect(lungCurtainEdgeMm(m, 10)! - lungCurtainEdgeMm(m, 0)!).toBeCloseTo(10, 9);
-    expect(lungCurtainEdgeMm([0, 10, 5], 0)).toBeNull();
-    expect(lungCurtainEdgeMm([-120, LUNG_CURTAIN.yMax + 1, 5], 0)).toBeNull();
+    expect(lungCurtainEdgeMm(m, 10, 99)! - lungCurtainEdgeMm(m, 0, 99)!).toBeCloseTo(10, 9);
+    expect(lungCurtainEdgeMm([0, 10, 5], 0, 99)).toBeNull();
+    expect(lungCurtainEdgeMm([-120, LUNG_CURTAIN.yMax + 1, 5], 0, 99)).toBeNull();
+    // si la cúpula toca la pared por debajo del borde de la cortina, el borde del pulmón es su inserción
+    expect(lungCurtainEdgeMm(m, 0, 12)).toBeCloseTo(5 - 12, 9);
+    expect(lungCurtainEdgeMm(m, 30, 12)).toBeCloseTo(5 - (LUNG_CURTAIN.z0 - 30), 9);
+    expect(ANATOMY_GLSL).toContain('return m.x <= uCurtain.z && m.y <= uCurtain.w ? m.z - min(uCurtain.x, domeHeight(m.x, m.y)) : -1e3;');
   });
 
   it('la GLSL calcula la fracción con el haz de dos vías y lo que ve del tejido de detrás con 1 − f', () => {
@@ -567,11 +571,11 @@ function sceneQuery(scene: AnatomyScene, cal: VesselCaliber): HitsLineQuery {
     at: (p) => {
       const c = scene.classify(p, cal);
       const normal = c.tissue === Tissue.Lung ? (scene.faceGradient(p, cal, 'dome')?.normal ?? [0, 0, 1]) : c.boundaryNormal;
-      return { tissue: c.tissue, normal, curtain: c.tissue === Tissue.Lung && scene.inLungCurtain(p, cal) };
+      return { tissue: c.tissue, normal, curtain: c.tissue === Tissue.Lung && scene.inLungRecess(p) };
     },
     behind: (p) => scene.classify(p, cal, false).tissue,
     insideWall: (p) => scene.insideWallMm(p),
-    curtainEdge: (p) => lungCurtainEdgeMm(p, cal.diaphragmCaudalMm),
+    curtainEdge: (p) => scene.lungEdgeMm(p, cal),
   };
 }
 
@@ -596,20 +600,21 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
   }
 
   /**
-   * Primer segmento de pulmón de la cortina en el camino recto (−1 si el primer pulmón es el del tórax o no lo
-   * hay) y el último del pulmón pegado a él (la lámina y el tórax que la sigue sin tejido en medio).
+   * Primer y último segmento de pulmón del receso en el camino recto: el que toca la pared (la cortina o el
+   * tórax por encima de la inserción) y el que le sigue pegado; un camino que roza la cúpula puede tener
+   * varios tramos. Se para en el primer pulmón que no es del receso (el espejo del diafragma). −1 sin él.
    */
   const curtainRunOf = (q: HitsLineQuery, fr: ProbeFrame, th: number, step: number): { first: number; last: number } => {
     let first = -1;
     let last = -1;
+    let run = false;
     for (let s = 0; s < N; s++) {
       const c = q.at(pointOnLine(fr, CONVEX_C35, th, (s + 0.5) * step));
-      if (first < 0) {
-        if (c.tissue !== Tissue.Lung) continue;
-        if (!c.curtain) break;
-        first = last = s;
-      } else if (c.tissue === Tissue.Lung) last = s;
-      else break;
+      run = c.tissue === Tissue.Lung && (run || c.curtain);
+      if (run) {
+        if (first < 0) first = s;
+        last = s;
+      } else if (c.tissue === Tissue.Lung) break;
     }
     return { first, last };
   };
@@ -655,7 +660,8 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
             let dL = 0;
             for (let s = run.first; s <= run.last; s++) {
               const pp = pointOnLine(fr, CONVEX_C35, th, (s + 0.5) * step);
-              dL += GAS_DB_PER_CM * (step / 10) - dbOf(q.behind(pp), step);
+              // entre dos tramos (un camino que roza la cúpula) puede haber diafragma: no es pulmón
+              if (q.at(pp).tissue === Tissue.Lung) dL += GAS_DB_PER_CM * (step / 10) - dbOf(q.behind(pp), step);
             }
             expect(p.dL, tag).toBeCloseTo(dL, 9);
             // con el tórax detrás no cuesta nada de más (detrás también hay gas)
@@ -738,7 +744,7 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
       'if (insideWallMm(toMaterial(origin + dir0 * mid)) >= 0.0) hi = mid; else lo = mid;',
       'float dz = lungCurtainEdgeMm(toMaterial(origin + dir0 * rp));',
       `if (dz > -${CURTAIN_RECORD_MM.toFixed(1)}) { pleuraD = rp; pleuraDz = dz; }`,
-      'curtainRun = c.tissue == T_LUNG && mirrorSeg < 0.0 && (curtainRun || inLungCurtain(m, insideWallMm(m)));',
+      'curtainRun = c.tissue == T_LUNG && mirrorSeg < 0.0 && (curtainRun || inLungRecess(m, insideWallMm(m)));',
       'curtainDb += segmentDb(c.tissue, step) - segmentDb(classifyWith(m, false).tissue, step);',
       'curtainLast = float(s);',
       `h2 = pleuraD >= 0.0 ? vec4(pleuraD, pleuraDz, curtainDb, ${CURTAIN_GAS_KIND.toFixed(1)} + 4.0 * (curtainLast + 1.0)) : vec4(-1.0, 0.0, 0.0, 0.0);`,

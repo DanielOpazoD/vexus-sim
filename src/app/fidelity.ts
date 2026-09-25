@@ -1,6 +1,5 @@
 import { TISSUES, Tissue, attenuationDbPerCm } from '../anatomy/tissues';
 import type { FaceGeometry } from '../anatomy/scene';
-import { lungCurtainEdgeMm } from '../anatomy/organs/lungCurtain';
 import { torsoNormal } from '../anatomy/primitives';
 import { dot, type Vec3 } from '../core/vec3';
 import { VESSEL_META } from '../physiology/vessels';
@@ -2046,7 +2045,7 @@ export function curtainLines(sim: Simulator, lines: number): (CurtainLine | null
     const dir = lineDirection(sim.frame, theta);
     const c = pleuraCrossingLine(
       (p) => a.scene.insideWallMm(mat(p)),
-      (p) => lungCurtainEdgeMm(mat(p), resp.diaphragmCaudalMm),
+      (p) => a.scene.lungEdgeMm(mat(p), a.caliberFor(sim.sample)),
       origin,
       dir,
       depth,

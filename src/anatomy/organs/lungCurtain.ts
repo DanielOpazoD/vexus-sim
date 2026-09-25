@@ -33,15 +33,26 @@ export function inLungCurtain(m: Vec3, insideWallMm: number, caudalMm: number): 
 }
 
 /**
- * Distancia con signo (mm) de un punto de la cara interna de la pared al borde caudal de la cortina,
- * positiva hacia el pulmón (z − z_borde), dentro de la huella del receso (x ≤ xMax, y ≤ yMax); `null`
- * fuera de ella. La pasada A0 la evalúa en el cruce de la pleura de cada línea: el borde blando de la
- * cortina (decisión 61) sale de ella.
+ * Pulmón en el receso bajo la pared (decisión 61): un punto que `classify` da como pulmón y que está a menos
+ * del espesor de la cortina bajo la cara interna de la pared, en la huella del receso: el de la cortina o el
+ * del tórax que toca la pared por encima de la inserción del diafragma. Allí empieza la pleura parietal (A0).
  */
-export function lungCurtainEdgeMm(m: Vec3, caudalMm: number): number | null {
+export function inLungRecess(m: Vec3, insideWallMm: number): boolean {
+  const c = LUNG_CURTAIN;
+  return insideWallMm < c.thicknessMm && m[0] <= c.xMax && m[1] <= c.yMax;
+}
+
+/**
+ * Distancia con signo (mm) de un punto de la cara interna de la pared al borde caudal del pulmón que la
+ * toca, positiva hacia el pulmón, dentro de la huella del receso (x ≤ xMax, y ≤ yMax); `null` fuera de ella.
+ * El borde es el más bajo de la cortina (z0 − descenso) y la inserción del diafragma en ese punto (`domeZ`,
+ * la altura de la cúpula: por encima, el pulmón del tórax toca la pared), z − min(z_borde, domeZ). La pasada
+ * A0 la evalúa en el cruce de la pleura de cada línea: el borde blando de la cortina (decisión 61) sale de ella.
+ */
+export function lungCurtainEdgeMm(m: Vec3, caudalMm: number, domeZ: number): number | null {
   const c = LUNG_CURTAIN;
   if (m[0] > c.xMax || m[1] > c.yMax) return null;
-  return m[2] - (c.z0 - caudalMm);
+  return m[2] - Math.min(c.z0 - caudalMm, domeZ);
 }
 
 /** Gemelo GLSL: devuelve la distancia a la frontera (≥ 0) o −1 fuera de la cortina. */
@@ -52,5 +63,8 @@ float lungCurtainDistance(vec3 m, float insideWall) {
   return -1.0;
 }
 bool inLungCurtain(vec3 m, float insideWall) { return lungCurtainDistance(m, insideWall) >= 0.0; }
-float lungCurtainEdgeMm(vec3 m) { return m.x <= uCurtain.z && m.y <= uCurtain.w ? m.z - uCurtain.x : -1e3; }
+bool inLungRecess(vec3 m, float insideWall) { return insideWall < uCurtain.y && m.x <= uCurtain.z && m.y <= uCurtain.w; }
+float lungCurtainEdgeMm(vec3 m) {
+  return m.x <= uCurtain.z && m.y <= uCurtain.w ? m.z - min(uCurtain.x, domeHeight(m.x, m.y)) : -1e3;
+}
 `;

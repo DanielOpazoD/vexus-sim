@@ -363,7 +363,7 @@ y que `readEnvelope()` lanza si la mirada 0 no es la del último cuadro.
 La crítica visual del 24-09 señaló tres defectos del contorno del hígado: (a) la cápsula se corta (a
 mitad del hígado en la subxifoidea, a los dos lados en el flanco) y es invisible a más de ~35°; (b) la
 línea es uniforme, «dibujada»; (c) pliegues y muescas. Las métricas que lo miden llegan antes que los
-cambios de imagen (decisión 60: contacto suave del hígado con la pared y la cúpula; 61: lámina difusa de
+cambios de imagen (decisión 60: contacto suave del hígado con la pared y la cúpula; 63: lámina difusa de
 la cápsula) y **no son puertas**: se informan en el bloque `contour` de cada escena del banco (la pose de
 partida, la de las capturas) y en `contourSweep` con `--sweep` (`contourStats`).
 
@@ -375,7 +375,7 @@ partida, la de las capturas) y en `contourSweep` con `--sweep` (`contourStats`).
 | Extremos bruscos (`capsuleEnds`)            | Veces que la mediana de 3 líneas de una pared de la cápsula cae ≥ 10 dB (nivel mostrado) en ≤ 1 mm de pared (paso lateral) desde ≥ +6 dB, en los dos sentidos, **con los cambios de dueño incluidos** (la cara pasa al diafragma o a la grasa y la cápsula deja de dibujarla). La caída que arranca a ≤ 1 mm de donde aterrizó otra es el mismo corte (la escalera de la PSF). NaN sin medianas evaluadas (`capsuleEndLines`). |
 | Salto de incidencia (`incidenceJumpMaxDeg`) | Máximo (y p99, `incidenceJumpP99Deg`) de \|Δincidencia\| entre líneas contiguas de una misma pared de la cápsula. Es geometría de la CPU (la normal de `faceSdf`): una arista del SDF lo dispara. Con > 100 pares, una arista sola queda por encima del p99: la puerta es el máximo.                                                                                                                                           |
 
-`GATED_FACE_BINS` no cambia: la 61 añadirá la cápsula a 20–40° y a 40–60° (esta, solo en las vistas con
+`GATED_FACE_BINS` no cambia: la 63 añadirá la cápsula a 20–40° y a 40–60° (esta, solo en las vistas con
 ≥ 10 registros). El plan de la 60 convierte en puertas `capsuleEnds` = 0 en las cuatro vistas de las
 capturas y el salto de incidencia ≤ 3° (el máximo), pero `capsuleEnds` y el p99 del salto, tal como están
 definidos, ven poco hoy:
@@ -447,6 +447,39 @@ de un ápice estimado (±5–10°). Por eso no son puertas; el CVc no tiene tech
 línea, antipatrón §23 de la guía), y el rosario no se compara con ellas: el de la referencia necesita un
 rango dinámico supuesto (dominios distintos). Falta una referencia de la cápsula de Glisson (3–5
 capturas), requisito de la modulación de R_ef (decisión 64).
+
+### Pleura parietal y cortina pulmonar (decisión 61): métricas informadas y referencias
+
+El banco añade el bloque `pleura` en las vistas intercostal y flanco (`pleuraStats`, `curtainEdgeFit` y
+`slidingCorrelation` de `src/app/fidelity.ts`; gancho `pleura`): se mide en apnea espiratoria y en apnea
+inspiratoria (la cortina baja 30 mm) y se imprime en las líneas «cortina esp» y «cortina insp». Las líneas de
+la cortina son las de `curtainLines` (el gemelo de A0 h2 y de la fracción de aire f de la pasada B); las de
+«cortina entera» tienen f ≥ 0,99 y ninguna costilla antes de la pleura. Las métricas se **informan**: no hay
+puerta en el banco; el responsable las compara con la especificación y con las capturas antes de integrar.
+El juicio visual frente a las referencias (Lee 2017, J Med Ultrasound 25:101, figs. 1B y 5; PMC10132878
+fig. 2A) es del dueño.
+
+| Métrica                                              | Definición                                                                                                                                                                                                   | Objetivo (especificación §4)                              | Gemelo B → C → D (`pleuraTwin.test.ts`)                   |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- | --------------------------------------------------------- |
+| `pleuraSaturatedMm`, `pleuraPeakGrey`                | Línea pleural en las líneas de cortina entera a ≤ 15° de incidencia: ancho con gris ≥ 250 en D ± 3 mm (mediana) y gris pico.                                                                                 | Saturada ≥ 0,8 mm a 0–15°                                 | 1,24–1,30 mm; pico +49,6 dB (0°), +43 (15°), +21 (30°)    |
+| `hazeGrey`, `hazeRatio`, `hazeGreyDeep`              | Mediana del gris en [D + 2, 2D − 2] (cortina entera, ≤ 25°), cociente con la mediana del hígado puro fuera de la cortina (`liverP50`), y la del intervalo [2D + 2, 3D − 2].                                  | 0,35–0,9 × el hígado (hoy ≈ 0), más oscura en profundidad | 61 de gris (0,61); 32 en el intervalo siguiente           |
+| `aLine2ProminenceDb`, `aLine2PeakDb`, `aLine3PeakDb` | Envolvente con la compensación nominal: pico en 2D − 1,5…2D + 1 frente a la mediana de la neblina a ±(0,15–0,4)·D; picos de las réplicas 2 y 3.                                                              | k = 2 ≥ +3 dB sobre la neblina; k = 3 más débil que k = 2 | +45 dB; picos +28 y +8 dB sobre el hígado                 |
+| `hazeAnisotropy` (`haze`)                            | FWHM lateral / axial de la autocovarianza de la envolvente en [D + 2, 2D − 2], parches del banco (48 × 16).                                                                                                  | ≥ 2,5                                                     | 2,12 / 0,77 mm = 2,8                                      |
+| `edge.width1090Mm`, `edge.width1090ImageMm`          | Φ ajustada al nivel medio de [2D + 3, 2D + 20] frente a la z del cruce de la pleura (y a lo largo de la pleura en la imagen), entre las mesetas f < 0,02 y f > 0,98.                                         | 5–15 mm                                                   | 11,8 mm (σ analítico de la intercostal 4,05 mm: 10,4 mm)  |
+| `edgeMotionMm`                                       | Distancia entre los centros del borde (z) en fin de espiración y fin de inspiración.                                                                                                                         | ≥ 10 mm                                                   | 30 mm con las apneas (10 mm con la respiración tranquila) |
+| `sliding.subPleural`, `sliding.wall`                 | Correlación de Pearson entre dos cuadros de una mirada (el pulmón baja `SLIDING_MM` = 2 mm con la respiración tranquila) de la banda de 2–6 mm bajo la pleura y de la de 2–6 mm sobre ella (cortina entera). | Bajo la pleura < 0,8; la pared ≥ 0,9                      | 0,47 con 2 mm (0,80 con 1 mm); la pared 1,000             |
+| `msPerFrame`, `msPerFrameInspiration`                | Coste del cuadro en la pose de partida en apnea espiratoria y en apnea inspiratoria (la cortina tapa buena parte del sector).                                                                                | ≤ +0,5 ms frente a la base (misma máquina y carga)        | —                                                         |
+
+Además deben seguir igual fuera de la cortina el banco del hígado (± 0,01), el de interfaces y el Doppler
+(decisiones 52–58). El hígado puro del banco y la guarda de Rayleigh dejan fuera, bajo la pleura, las líneas
+con f ≥ 0,01 (`CURTAIN_LIVER_MAX_AIR`): en la intercostal en espiración la guarda pasa de 276 a 118
+parches en la CPU (antes medía también el «hígado» de detrás de la cortina, que la imagen no mostraba). Qué
+mirar en las capturas (intercostal y una pose de cortina en fin de inspiración y de espiración): la línea
+pleural continua y la más brillante, la neblina gris con bandas (las capas de la pared en espejo) y líneas A
+que siguen la curvatura de la sonda y se apagan, el borde oblicuo y blando de ~1 cm con el hígado a medias, y
+el centelleo de la neblina con la respiración con la pared quieta. Palancas dentro de sus rangos: R_t 0,2–0,5
+(líneas A y copias directas), σz de la pleura 0,04–0,07 mm (línea pleural y cada rebote), el nivel del
+deslizamiento −8 a −12 dB y su caída 10–20 mm, y σ_taper 3–5 mm (anchura del borde).
 
 ## Línea base (23-09-2026, árbol `src/` 4de3821, tras el preajuste abdominal; M4 con Metal, densidad 2)
 

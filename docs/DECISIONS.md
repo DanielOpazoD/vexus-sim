@@ -1312,6 +1312,124 @@ ganchos); `fidelity.test.ts` y `fidelityScene.test.ts`
 grano, G8 y la guarda de `readEnvelope`) con SwiftShader, y las guardas de una mirada con
 `compound: false` sin tocar sus umbrales.
 
+## 59. Reservada: imagen armónica (THI) [Estado: reservada]
+
+Número reservado para la armónica, que la decisión 58 dejó después y aparte; la redacta su rama.
+
+## 60. Reservada: hígado sin aristas [Estado: reservada]
+
+Número reservado para la rama pendiente del contorno del hígado sin aristas; la redacta su rama.
+
+## 61. Pleura parietal y cortina pulmonar: línea pleural, serie de reverberaciones de la pared, deslizamiento y borde blando
+
+**Contexto.** El dueño (médico, 25-09-2026): «el signo de la cortina pulmonar sobre el hígado es de las
+peores representaciones ecográficas que he visto». Referencias con convexo de 2–5 MHz: Lee FCY, _The
+Curtain Sign in Lung Ultrasound_, J Med Ultrasound 2017;25:101–104 (fig. 1B: el pulmón aireado del receso
+echa una cortina de aire gris y brumosa sobre el campo cercano del hígado, con un borde blando y oblicuo
+de ~1 cm; la línea pleural acaba en el límite inferior del receso; fig. 5B: bajo la pared, la pleura es la
+línea continua más brillante y debajo hay una neblina gris con bandas horizontales y líneas A a múltiplos
+de la distancia sonda–pleura, que se apagan con la profundidad); PMC10132878 fig. 2A (signo del
+murciélago: bajo la pleura todo el campo es neblina gris con 4–6 líneas A anchas y tenues que siguen la
+curvatura de la sonda); Häggström (Commons CC0) y N. Dilmen (Commons) para la pared abdominal. El modelo
+de antes: la cortina (decisión 43) era una lámina de pulmón de 3 mm bajo la pared y A0 trataba cualquier
+primer pulmón como el espejo del diafragma (decisión 57): el camino se reflejaba en la cortina, volvía a
+subir por la pared y salía al gel; la pasada B solo sumaba tres gaussianas de 1,2 mm a k·gasHit. Resultado:
+sin eco de la pleura parietal, un rectángulo negro con arcos finos perfectos y un borde de un escalón de
+una línea.
+**Opciones.** (1) Dejar el espejo y pintar una neblina encima (cosmético, §23). (2) Ensanchar las gaussianas
+de las líneas A (sigue sin física). (3) La integral completa de la reverberación con todas las
+multiplicidades de caminos (coste: una muestra de la pared por orden). (4) Un programa de B aparte para las
+líneas con cortina (más compilación y programas: la decisión 58 ya tiene dos por pasada). (5) El borde
+blando con la penumbra de la apertura (decisión 54): la cuenta dos veces con la fracción de aire del haz,
+que ya incluye su anchura lateral. (6) Una clasificación fraccionaria: rompe las puertas de equivalencia
+TS ↔ GLSL. (7) La serie con R_p = |R_Fresnel| ≈ 1, como el plan: la copia espejo de la pared sale tan
+brillante como el hígado (gemelo: neblina 0,99 × el hígado; aceptación 0,35–0,9) y la neblina es isótropa
+(anisotropía 1,9; aceptación ≥ 2,5). (8) La elegida.
+**Decisión.** Modelo físico de la especificación de la tanda (§2), en `ultrasound/pleura.ts` (gemelos TS y
+`PLEURA_GLSL`):
+
+- **Cortina frente a diafragma.** `classify` sigue igual y binaria; la variante sin la cortina es
+  `classifyWith(m, false)` (GLSL) y `classify(m, caliber, false)` (TS). A0 (`FRAG_TRANS_HITS`) registra en
+  una salida nueva, `h2`, la pleura parietal: el primer cruce exacto de la cara interna de la pared
+  (`insideWallMm`, bisección de 6 pasos como el espejo), su distancia con signo al borde de la cortina
+  (`lungCurtainEdgeMm`, en la huella del receso) si está a menos de 20 mm por el lado del hígado, la pérdida
+  ΔL que el gas de la lámina cuesta de más frente al tejido de detrás y el tipo 3 empaquetado con el último
+  segmento de la cortina (3 + 4·(último + 1)). El pulmón de la cortina y el del tórax pegado a ella (aire con
+  aire: no hay pleura del diafragma entre los dos) no son espejo ni impacto de gas; el camino sigue recto.
+  A1 los marca con 3 y los prefijos de A2 (y su gemelo) no los toman por un gas. El espejo del diafragma no
+  cambia.
+- **Línea pleural.** Cara nueva `Interface.PleuraWall` (Fresnel músculo/gas 0,9995; s 0,15 [ESTIMADO
+  0,10–0,15]; σz 0,05 mm [ESTIMADO, calibrable 0,04–0,07]; de un lado, la dibuja el músculo). Eco a D con
+  el lóbulo de Kirchhoff y la χ de Ament con la incidencia de la línea sobre la pared, y la transmisión de
+  la última fila de A que no toca el pulmón (`pleuraCapMm`: interpolar mezclaba hasta 6,75 dB de gas).
+- **Serie de la pared.** Cada reflexión especular de la pleura vale R_p·χ, su reflexión coherente (la misma
+  χ que da el nivel de la línea pleural; la parte difusa se va en otras direcciones). Con E(d) = f(d)·T(d)
+  el eco directo de la pared a la distancia d del camino: copia espejo a 2D − d con E·(R_p·χ)²·(T(D)/T(d))²,
+  copia directa a D + d con E·G, G = R_p·χ·R_t·T(D), R_t 0,3 [ESTIMADO, calibrable 0,2–0,5]; cada ida y vuelta
+  más, ×G y +D. Cada muestra bajo la pleura remuestrea la pared en el MISMO camino en a lo sumo dos puntos,
+  d_M = (n+2)D − s y d_F = s − (n+1)D con n = ⌊s/D⌋ − 1 (clasificación, moteado anclado, grumos y ecos de
+  interfaz de la pared: la neblina hereda las capas de la pared), mientras Gⁿ·T(D)·16 pase de la décima del
+  ruido del receptor. Las líneas A son las réplicas del eco pleural (la copia directa con d = D):
+  G^(k−1)·(eco pleural) a kD; la copia espejo no lleva el eco pleural (sin doble cuenta). Sustituyen a las
+  gaussianas para la cortina; la cola sucia del gas intestinal no cambia.
+- **Deslizamiento.** Campo incoherente anclado a las coordenadas materiales del pulmón (la z del cruce más
+  el descenso de la cortina), con grano de 3 mm a lo largo de la pleura y 0,5 mm en profundidad [ESTIMADO],
+  caída e^(−h/15 mm) [ESTIMADO 10–20] y nivel mostrado −9 dB del hígado junto a la pleura [ESTIMADO −8 a
+  −12]. Como su grano es más largo que la PSF, C y D le dan 8,9 dB más de ganancia coherente que al moteado
+  del hígado [MEDIDO, gemelo]: el campo va a −18 dB (`SLIDING_PSF_GAIN_DB`). En las miradas dirigidas lleva
+  la sal de la mirada.
+- **Borde blando.** f = Φ(dz/σ), σ² = (σe·|e_z|)² + (σl·|l_z|)² + σ_taper², con σe y σl el haz de dos vías a
+  la profundidad de la pleura y σ_taper 4 mm [ESTIMADO 3–5]; Φ de Abramowitz y Stegun 7.1.26. Bajo la pleura
+  la muestra es f·(pulmón) + (1 − f)·(el tejido de detrás, `classifyWith(m, false)`, con la transmisión
+  min(T·10^(ΔL/20), T(D))). Las líneas con f < 10⁻³ son las de siempre.
+- **Coste y estructura.** La muestra de la imagen y las dos de la pared pasan por un solo bucle
+  (`mediumField`, `mediumFieldPh`): la clasificación y el eco de interfaz no se compilan dos veces más
+  (lección de la decisión 58). B lee `h2` (uHits2, un sampler más: 5 en los dos programas) y la tabla de
+  caras crece una fila: 106 ranuras de uniforms en la mirada 0 y 108 en la dirigida (antes 105 y 107).
+- **Miradas dirigidas.** El mismo modelo a lo largo del camino dirigido: su cruce sD es el de la línea que el
+  camino corta a la profundidad de la pleura (punto fijo de tres pasos sobre `h2`), la serie remuestrea la
+  pared en el propio camino con la fase de la mirada y la transmisión se lee en la celda de cada punto (A o3).
+  Gemelo de la geometría: `steeredSample`.
+
+Otras aproximaciones declaradas: la serie remuestrea la pared en la misma línea, no en la dirección
+reflejada (las copias no cambian con la incidencia salvo por χ; las líneas A llevan el lóbulo una vez, el
+del eco pleural), sin la multiplicidad de caminos de igual retardo (la copia directa tiene dos órdenes
+recíprocos: ×2 en rigor, absorbible en R_t) ni colas de cometa; el tejido de detrás se muestrea en el rayo
+central, no en la parte del haz que cae bajo el borde; la lámina no es obstáculo de la penumbra de la
+apertura. El color y el PW siguen cruzando la lámina recta con 60 dB/cm (18 dB), como la CPU.
+
+**Consecuencias.** Gemelo B → C → D → G (pared plana del adulto de referencia, `pleuraTwin.test.ts`): la
+línea pleural satura 1,24–1,30 mm a 0–15° (pico +49,6 dB sobre el hígado a 0°, +43 a 15°) y no satura a 30°
+(+21 dB); neblina en [D + 2, 2D − 2] a 61 de gris (0,61 × el hígado; antes, negro) y 32 en el intervalo
+siguiente; la línea A de orden 2 a +28 dB sobre el hígado y +45 dB sobre la neblina vecina, la de orden 3 a
++8 dB; anisotropía de la neblina 2,12 / 0,77 mm = 2,8 (parches del banco); borde 10–90 % de 11,8 mm (el σ
+analítico con el haz de la intercostal, 4,05 mm: 10,4 mm); deslizamiento: la banda de 2–6 mm bajo la pleura
+correlaciona 0,94 / 0,80 / 0,47 / 0,09 con 0,5 / 1 / 2 / 5 mm de descenso del pulmón y la pared de encima
+1,000; sin deslizamiento la neblina junto a la pleura estaría a −17 dB. El borde baja 10 mm con la
+respiración tranquila y 30 mm con la profunda. El hígado «puro» del banco y de la guarda de Rayleigh deja
+fuera lo que hay bajo la pleura donde f ≥ 0,01 (−0,09 dB; la réplica de orden 2 ≤ −12 dB): antes la guarda
+medía también el «hígado» de detrás de la cortina, que la imagen no mostraba; en la intercostal en
+espiración quedan 118 parches de 16 × 8 en lugar de 276 (CPU). El GLSL que viaja como texto en el chunk
+principal crece ~13,5 kB (esbuild frente a la base): presupuesto de 260 a 270 kB. Pendiente, con GPU: las
+métricas del bloque `pleura` del banco (`docs/fidelity/README.md`), el coste (`msPerFrame` ≤ +0,5 ms, y
+`msPerFrameInspiration` con la cortina tapando el sector), la calibración de R_t, σz y del nivel del
+deslizamiento dentro de sus rangos y la comparación visual con las referencias; el juicio es del dueño.
+**Verificación.** Pruebas que fallan en la base: `pleura.test.ts` (la cara de la tabla y su fila de uIface;
+las amplitudes de la serie frente a la enumeración de los caminos acústicos; las réplicas de la línea
+pleural; sin doble eco pleural; la truncación; la χ de cada rebote; Φ frente a la tabla y σ del borde en las
+ventanas de partida; la clasificación sin la cortina igual a `classify` salvo en la lámina, donde da lo de
+detrás; el deslizamiento anclado —la misma fase, la misma neblina; otra fase, otra; el pulmón que baja con
+ella la conserva— y alargado; A0 frente a la decisión 57 en la intercostal, el flanco y la subxifoidea
+basculadas: tipo 3 en el cruce exacto a ≤ 0,01 mm, sin espejo en la cortina, ΔL segmento a segmento, el
+espejo del diafragma idéntico donde la línea no cruza la cortina; las marcas de A1 y los gemelos de A2; el
+banco: líneas de la cortina, hígado puro, ajuste del borde y deslizamiento), `steeredSample.test.ts` (con
+θ = 0 la cortina es la de la mirada 0; con ±θ el cruce del camino dirigido a ≤ 0,3 mm de la pleura, la serie
+en el propio camino y la transmisión en la celda de cada punto; las líneas del GLSL) y `pleuraTwin.test.ts`
+(lento, las métricas de arriba). `shaderLimits.test.ts`: cambio deliberado de la huella del main de B en la
+mirada 0 (fuera de las líneas con pleura hace las mismas cuentas), cinco samplers en B. `passGraph.test.ts`:
+B y A1 leen `transHits`. e2e (SwiftShader): en la intercostal en apnea inspiratoria, línea pleural ≥ 230,
+neblina ≥ 20 de gris y > 0,2 × el hígado, más oscura en el intervalo siguiente, línea A de orden 2 > 3 dB.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

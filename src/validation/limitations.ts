@@ -33,4 +33,8 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'interface-curvature-tubes-only',
   'speckle-line-aliasing',
   'compound-off-in-color',
+  'pleura-series-same-line',
+  'no-lung-comet-tails',
+  'curtain-edge-central-ray',
+  'curtain-doppler-through-lung',
 ]);

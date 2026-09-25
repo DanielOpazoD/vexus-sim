@@ -1,5 +1,5 @@
 /**
- * Contorno del hígado en el plano de imagen (PR 0 de las decisiones 60 y 63), portado del diseño
+ * Contorno del hígado en el plano de imagen (PR 0 de las decisiones 60 y 64), portado del diseño
  * «geometry-first» (`design-contour/geometry-first/contour.ts`) sobre las funciones de producción. Lo usa
  * `liverContour.test.ts`.
  *
@@ -68,7 +68,7 @@ export interface ContourView {
   pose: ProbePose;
   /**
    * Contacto de la pose (decisión 63): solo el acoplamiento de las líneas; el contorno se mide sobre la anatomía
-   * rígida (la forma del hígado, no su compresión: la placa no llega al hígado salvo en su cara anterior).
+   * rígida y con el marco de la pose sin hundir (la forma del hígado, no su compresión ni su acercamiento).
    */
   contact: ProbeCompression;
 }
@@ -107,7 +107,7 @@ export function contourView(c: ContourCase, sp: StartPoint['id'], dPhi = 0, dRoc
     frame,
     caliber: { ...BASELINE_CALIBER, ivcApScale: 0.777 },
     pose,
-    contact: probeContact(pose, frame, CONVEX_C35, scene.torso),
+    contact: probeContact(pose, CONVEX_C35, scene.torso),
   };
 }
 

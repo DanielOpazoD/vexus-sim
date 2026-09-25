@@ -26,7 +26,7 @@ constante o un umbral ajustado a la salida actual no protege nada.
 - **Semillas fijas**: fisiología, dispersores y fast-check son deterministas.
 - **Primero la prueba que falla**: una decisión de imagen planificada deja antes sus pruebas con
   `it.fails` y los umbrales del plan, en un PR sin cambio de imagen; el PR de la decisión las pasa a
-  `it`. Las decisiones 60 y 63 (contorno de la cápsula) las tienen en `liverContour.test.ts` (aristas y
+  `it`. Las decisiones 60 y 64 (contorno de la cápsula) las tienen en `liverContour.test.ts` (aristas y
   extremos del contorno del hígado en las vistas de las capturas), `capsuleTwin.test.ts` (la cápsula
   oblicua en el gemelo B→C→D) y `fidelityScene.test.ts` (salto de incidencia entre líneas), las tres
   lentas.

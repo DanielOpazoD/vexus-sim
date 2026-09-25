@@ -611,10 +611,10 @@ export class UltrasoundRenderer {
 
   /**
    * Tabla de la compresión de la sonda (decisión 63) en la textura de escena, desde COMPRESSION_BASE: un téxel por
-   * nodo, (s₀, b − 1). Se sube la fila entera que la contiene (los nodos de tubo de esa fila no cambian).
+   * nodo, (s₀, s_D, D, R). Se sube la fila entera que la contiene (los nodos de tubo de esa fila no cambian).
    */
   private uploadCompressionTable(k: ProbeCompression): void {
-    k.nodes.forEach((n, i) => this.sceneData.set([n[0], n[1], 0, 0], (COMPRESSION_BASE + i) * 4));
+    k.nodes.forEach((n, i) => this.sceneData.set([n[0], n[1], n[2], k.radiusMm], (COMPRESSION_BASE + i) * 4));
     const row0 = Math.floor(COMPRESSION_BASE / SCENE_TEX_W);
     const row1 = Math.floor((COMPRESSION_BASE + k.nodes.length - 1) / SCENE_TEX_W);
     const gl = this.gl;

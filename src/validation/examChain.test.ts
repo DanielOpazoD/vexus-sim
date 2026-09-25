@@ -15,7 +15,7 @@ import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient, type PatientState, type RespiratoryPattern } from '../physiology/patientState';
 import type { VesselId } from '../physiology/vessels';
 import { probeContact } from '../probe/contact';
-import { CONVEX_C35, lineDirection, pointOnLine, probeFrame, type ProbeFrame, type ProbePose } from '../probe/probe';
+import { CONVEX_C35, lineDirection, pointOnLine, type ProbeFrame, type ProbePose } from '../probe/probe';
 import { apertureAngleSigmaRad, lateralSigmaMm } from '../ultrasound/beamModel';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import { classifyPortal, classifyVexusC } from '../vexus/classification';
@@ -75,9 +75,10 @@ function examine(base: PatientState, respiratoryPattern: RespiratoryPattern = 'a
   for (const ter of territories) {
     const sp = START_POINTS.find((s) => s.id === ter.window)!;
     const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
-    const frame = probeFrame(pose, scene.torso, CONVEX_C35);
-    // la compresión de la sonda en esa ventana (decisión 63), como en la aplicación
-    anatomy.setProbeCompression(probeContact(pose, frame, CONVEX_C35, scene.torso));
+    // la compresión de la sonda en esa ventana y su marco efectivo (decisión 63), como en la aplicación
+    const contact = probeContact(pose, CONVEX_C35, scene.torso);
+    const frame = contact.frame;
+    anatomy.setProbeCompression(contact);
     const best = bestGateOnVessel(anatomy, frame, CONVEX_C35, engine.sample, ter.vessels, 170);
     expect(best, `${base.id}: ${ter.kind} sin vaso en la ventana ${ter.window}`).not.toBeNull();
     const gate = gateFor(frame, best!);
@@ -128,8 +129,8 @@ function hepaticCaptures(base: PatientState, respiratoryPattern: RespiratoryPatt
   for (let i = 0; i < Math.round(2 / engine.clock.dt); i++) engine.step();
   const sp = START_POINTS.find((s) => s.id === 'intercostal')!;
   const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
-  const frame = probeFrame(pose, scene.torso, CONVEX_C35);
-  const contact = probeContact(pose, frame, CONVEX_C35, scene.torso);
+  const contact = probeContact(pose, CONVEX_C35, scene.torso);
+  const frame = contact.frame;
   anatomy.setProbeCompression(contact);
   const weight = window
     ? acousticWindowWeight(anatomy, frame, CONVEX_C35, contact, engine.sample, 180, CONVEX_C35_PROFILE.dopplerEffectiveMHz)
@@ -175,8 +176,9 @@ function renalCaptures(base: PatientState, seed: number, seconds: number, prfHz 
   for (let i = 0; i < Math.round(2 / engine.clock.dt); i++) engine.step();
   const sp = START_POINTS.find((s) => s.id === 'renal')!;
   const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
-  const frame = probeFrame(pose, scene.torso, CONVEX_C35);
-  anatomy.setProbeCompression(probeContact(pose, frame, CONVEX_C35, scene.torso));
+  const contact = probeContact(pose, CONVEX_C35, scene.torso);
+  const frame = contact.frame;
+  anatomy.setProbeCompression(contact);
   const best = bestGateOnVessel(anatomy, frame, CONVEX_C35, engine.sample, ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'], 170)!;
   const gate = gateFor(frame, best);
   chain.begin(prfHz, CONVEX_C35.f0Doppler, 0, 25, engine.clock.t + engine.clock.dt);

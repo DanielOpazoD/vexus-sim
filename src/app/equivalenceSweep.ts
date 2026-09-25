@@ -4,7 +4,7 @@ import { Interface } from '../anatomy/interfaces';
 import { Tissue } from '../anatomy/tissues';
 import type { ProbeCompression } from '../anatomy/compression';
 import { probeContact } from '../probe/contact';
-import { pointOnLine, probeFrame, type ProbeFrame, type ProbePose } from '../probe/probe';
+import { pointOnLine, type ProbeFrame, type ProbePose } from '../probe/probe';
 import { compareTissueGrids } from './equivalenceCheck';
 
 /**
@@ -58,8 +58,9 @@ export function equivalenceSweep(sim: Simulator): EquivalencePoseReport[] {
   const out: EquivalencePoseReport[] = [];
   for (const sp of START_POINTS) {
     const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
-    const frame = probeFrame(pose, sim.scene.torso, tr);
-    const k = probeContact(pose, frame, tr, sim.scene.torso);
+    // el marco efectivo (la sonda hundida) y su compresión: los del simulador en esa pose (decisión 63)
+    const k = probeContact(pose, tr, sim.scene.torso);
+    const frame = k.frame;
     out.push(withCompression(sim, k, () => poseReport(sim, sp.id, frame, k)));
   }
   return out;
@@ -311,8 +312,9 @@ export function interfaceShellEquivalence(sim: Simulator, lines = 48, stepMm = 0
   const perCell = Math.round(COARSE_MM / stepMm);
   for (const sp of START_POINTS) {
     const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
-    const frame = probeFrame(pose, sim.scene.torso, tr);
-    const k = probeContact(pose, frame, tr, sim.scene.torso);
+    // el marco efectivo (la sonda hundida) y su compresión: los del simulador en esa pose (decisión 63)
+    const k = probeContact(pose, tr, sim.scene.torso);
+    const frame = k.frame;
     withCompression(sim, k, () => {
       const near: { p: [number, number, number]; iface: Interface; dist: number; tissue: Tissue }[] = [];
       for (let u = 0; u < lines; u++) {

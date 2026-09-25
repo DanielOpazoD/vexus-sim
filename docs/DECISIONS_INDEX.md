@@ -66,4 +66,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [60](DECISIONS.md#L1319) | Reservada: hígado sin aristas | reservada |
 | [61](DECISIONS.md#L1323) | Pleura parietal y cortina pulmonar: línea pleural, serie de reverberaciones de la pared, deslizamiento y borde blando | vigente |
 | [62](DECISIONS.md#L1489) | Pared torácica y abdominal realista: capas con caras, textura anclada de la grasa y el músculo, cortical costal y pericondrio | vigente |
-| [63](DECISIONS.md#L1752) | La sonda comprime el tejido: la pared bajo la huella queda paralela a la cara y el acoplamiento es el contacto conseguido | vigente |
+| [63](DECISIONS.md#L1752) | La sonda comprime el tejido: solo empuja, la pared bajo las líneas acopladas queda paralela a la cara y el acoplamiento es el contacto conseguido | vigente |

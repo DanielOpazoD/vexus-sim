@@ -5,33 +5,39 @@ import type { Torso } from './primitives';
  * La sonda comprime el tejido (decisión 63). El tronco es rígido y la cara convexa de la sonda (radio 60 mm)
  * apoyada en una piel convexa solo la toca en un punto: sin deformación, bajo la huella las capas de la pared
  * (piel, septos, fascias, peritoneo, pleura) se dibujaban como una cúpula (∩) y los elementos de los bordes
- * quedaban en el aire. En un examen el operador aprieta y el tejido blando se amolda a la cara.
+ * quedaban en el aire. En un examen el operador aprieta hasta que los bordes apoyan y el tejido blando se amolda
+ * a la cara.
  *
- * Campo de desplazamiento a lo largo de la dirección de compresión de cada elemento (la normal de la cara: la
- * línea radial desde el eje de curvatura). Se define por su inversa, mundo → material, que es lo que necesitan
- * la GPU y el gemelo: el punto p a profundidad d bajo la cara (d = ρ − R, ρ la distancia al eje en el plano
- * de la cara) en el ángulo α y la elevación e viene del punto rígido de la misma línea a distancia d + s:
+ * SOLO EMPUJA: el tejido se aparta de la sonda (nunca se estira hacia ella) y a lo largo de la dirección de
+ * compresión de cada elemento (la normal de la cara: la línea radial desde el eje de curvatura) solo se comprime.
+ * Para que los bordes apoyen, la sonda entera se hunde (`probe/contact.ts`: la indentación efectiva, con el tope
+ * de la presión del examen): el campo de cerca se acerca a la sonda y lo profundo aparece unos milímetros menos
+ * profundo, como en un examen real.
  *
- *   m' = p + s·r̂,   s = W_e(e)·(s₀(α) + (b(α) − 1)·min(d, W))·(1 − smoothstep(W, W + S, d)),
+ * El campo se define por su inversa, mundo → material, que es lo que necesitan la GPU y el gemelo: el punto p a
+ * profundidad d bajo la cara (d = ρ − R, ρ la distancia al eje en el plano de la cara) en el ángulo α y la
+ * elevación e viene del punto rígido de la misma línea a distancia d + s, s ≤ 0:
  *
- * con W el espesor de la pared y, por nodo de la cara (`probe/contact.ts`; la tabla viaja en la textura de escena,
- * `uSceneTex` desde `COMPRESSION_BASE`, sin ranuras de uniforms ni indexado dinámico):
- *  - s₀: el hueco a la piel sin deformar a lo largo de la normal del elemento (> 0 aire, < 0 la sonda hunde la
- *    piel), por el contacto conseguido y menos la película de gel: la piel llega a la cara;
- *  - b: el estiramiento de la placa. La pared entera (0 ≤ d ≤ W) se lleva como una placa: la capa a
- *    profundidad W queda a W de la cara en toda la huella. Con incidencia oblicua la pared mide W·b a lo largo
- *    de la línea, y b la devuelve a W: las capas quedan paralelas a la cara (exacto en la piel y en la cara
- *    interna de la pared, peritoneo y pleura; entre ellas, lineal a lo largo de la línea). El fondo de la placa
- *    se desplaza a lo sumo `plateShiftMaxMm` (s_W = s₀ + (b − 1)·W): en las líneas muy oblicuas la placa no
- *    llega a ser concéntrica; al hundir la piel la pared se lleva la mitad adelgazando (`probe/contact.ts`);
- *  - bajo la placa el desplazamiento se apaga en S = max(2L, 2,5·s_W): cero exacto a W + S (60 mm en el centro
- *    del adulto de referencia, ≤ W + 62,5 en todo caso) y dr/dd ≥ 1 − 1,5/2,5 = 0,4: nunca se pliega.
+ *   m' = p + s·r̂,   s = W_e(e)·T_l(σ)·g(d),
+ *   g(d) = s₀ + (s_D − s₀)·clamp(d, 0, D)/D  (d < D),   g(d) = s_D·(1 − smoothstep(D, D + S, d))  (d ≥ D),
  *
- * El mapa es radial en coordenadas polares de la cara (α y e no cambian): es invertible si r + s crece con d, y
- * crece: b > 0 en la placa y 1 + s_W·f′ ≥ 0,4 debajo. Los nodos son equiespaciados en σ = sen α (σ = (P·lateral)/ρ:
- * sin atan, que en SwiftShader encarecía la compilación de cada `toMaterial`). W_e, la ventana elevacional (la
- * huella mide 13 mm), y más allá del borde de la cara los nodos del borde se apagan en `lateralTaperSin` (en σ).
- * Después, la respiración (`deformation.ts`).
+ * con, por nodo de la cara (`probe/contact.ts`; la tabla viaja en la textura de escena, `uSceneTex` desde
+ * `COMPRESSION_BASE`, sin ranuras de uniforms ni indexado dinámico):
+ *  - s₀ ≤ 0: la piel rígida a lo largo de la normal del elemento cuando la cara la hunde (0 si no la toca: no se
+ *    tira de ella; el gel salva un hueco pequeño y más allá la línea no acopla);
+ *  - D: la profundidad del mundo a la que queda la cara interna de la pared (peritoneo, pleura): la misma en
+ *    toda la huella que apoya (D* = W + tolerancia, W el espesor de la pared) si la presión basta, la rígida si no;
+ *  - s_D ≤ 0: lo que se empuja la cara interna de la pared, s_D ≥ s₀ (la pared se comprime o se traslada
+ *    entera);
+ *  - bajo la pared el empuje se apaga en S = max(2L, κ·|s_D|): cero exacto a D + S. dr/dd = 1 + ∂s/∂d ≥ 1: la
+ *    compresión nunca pliega el tejido (el mapa es monótono a lo largo de cada línea) y nunca lo estira a lo largo
+ *    de ella. A lo ancho, en cambio, el tejido empujado se abre: el arco a la misma α mide ρ en el mundo y ρ + s en
+ *    el material (ρ/(ρ + s) > 1).
+ *
+ * El mapa es radial en coordenadas polares de la cara (α y e no cambian): es invertible porque r + s crece con d.
+ * Los nodos son equiespaciados en σ = sen α (σ = (P·lateral)/ρ: sin atan, que en SwiftShader encarecía la
+ * compilación de cada `toMaterial`). W_e, la ventana elevacional (la huella mide 13 mm), y T_l, más allá del borde
+ * de la cara los nodos del borde se apagan en `lateralTaperSin` (en σ). Después, la respiración (`deformation.ts`).
  *
  * Todo lo que pasa por `toMaterial` ve el mismo tejido deformado: clasificación, moteado anclado, transmisión,
  * ecos de interfaz, pleura y cortina, velocidades Doppler y los gemelos TS. Las direcciones (la incidencia de un
@@ -40,38 +46,39 @@ import type { Torso } from './primitives';
  * nombres: `COMPRESSION_GLSL`.
  */
 export const PROBE_COMPRESSION = {
-  /** Nodos de la tabla a lo largo de la cara, de −halfAngle a +halfAngle (dos por vec4: 8 ranuras). */
-  nodes: 32,
   /**
-   * L (mm): bajo la pared el desplazamiento se apaga en al menos 2·L con un smoothstep (cero exacto a
-   * W + 2L = 60 mm en el adulto de referencia). [ESTIMADO 12–25 mm; ver DECISIONS 63: carga en franja de
-   * Boussinesq/Flamant sobre la huella de 13 × 62 mm, de memoria]
+   * Nodos de la tabla a lo largo de la cara, de −halfAngle a +halfAngle (un téxel cada uno; 3 líneas de 192 por
+   * nodo). Entre nodos la tabla es lineal: la pendiente de las capas en el mundo oscila con el periodo de un nodo
+   * (con 32, hasta 9° en la media pared de la intercostal: el eco especular de las fascias se «abalorio»).
+   */
+  nodes: 64,
+  /**
+   * L (mm): bajo la pared el empuje se apaga en al menos 2·L con un smoothstep. [ESTIMADO 12–25 mm; ver
+   * DECISIONS 63: carga en franja de Boussinesq/Flamant sobre la huella de 13 × 62 mm, de memoria]
    */
   decayMm: 16,
-  /** La caída bajo la placa mide al menos este múltiplo del desplazamiento de la placa: dr/dd ≥ 1 − 1,5/2,5. */
-  decaySpanPerShift: 2.5,
   /**
-   * Tope (mm) del desplazamiento del fondo de la placa a lo largo de la línea, s_W = s₀ + (b − 1)·W: con él la
-   * caída bajo la placa acaba a W + max(2L, 2,5·s_W) ≤ W + 62,5 mm. Sin tope, en los bordes de la intercostal la
-   * placa concéntrica subía el peritoneo 40–60 mm a lo largo de la línea (la pared, oblicua, medía allí 2–3 W)
-   * y el hígado de debajo se movía decenas de mm a 60–100 mm de la sonda. [ESTIMADO]
+   * κ: la caída bajo la pared mide al menos κ veces el empuje s_D, así el tejido de debajo se comprime a lo largo de
+   * la línea a lo sumo 1,5/κ (el hígado, casi incompresible, ≤ 20 %: con κ = 4, 27 %, y el hígado despejado del
+   * banco en la subxifoidea pasaba de 31 a 22 parches). A cambio lo hondo se mueve más: con el empuje de 15–24 mm,
+   * los vasos y el riñón a más de 6 cm, 8–14 mm. [ESTIMADO]
    */
-  plateShiftMaxMm: 25,
+  decaySpanPerShift: 6,
   /** Más allá del borde de la cara la tabla se apaga en este intervalo de σ = sen α (~6° y ~6 mm de arco). [ESTIMADO] */
   lateralTaperSin: 0.09,
   /** Más allá de la media huella elevacional se apaga en estos mm. [ESTIMADO] */
   elevationTaperMm: 10,
 } as const;
 
-/** Un nodo de la cara: (s₀ mm, b − 1). */
-export type CompressionNode = readonly [number, number];
+/** Un nodo de la cara: (s₀ mm, s_D mm, D mm). */
+export type CompressionNode = readonly [number, number, number];
 
 /**
- * Estado del contacto de un cuadro (lo calcula `probe/contact.ts` desde la pose): la geometría de la cara y la
- * tabla por nodo. Datos planos: la anatomía no conoce la sonda.
+ * Estado del contacto de un cuadro (lo calcula `probe/contact.ts` desde la pose): la geometría de la cara ya
+ * hundida y la tabla por nodo. Datos planos: la anatomía no conoce la sonda.
  */
 export interface ProbeCompression {
-  /** Centro de curvatura de la cara (mm, mundo). */
+  /** Centro de curvatura de la cara (mm, mundo), el del marco efectivo (con la indentación). */
   center: Vec3;
   /** Radio de curvatura de la cara (mm). */
   radiusMm: number;
@@ -83,23 +90,34 @@ export interface ProbeCompression {
   halfAngle: number;
   /** Media huella elevacional (mm). */
   halfElevationMm: number;
-  /** Espesor de la pared (mm): la placa. */
+  /** Espesor de la pared (mm). */
   plateMm: number;
-  /** Tabla por nodo: (s₀ mm, b − 1); `PROBE_COMPRESSION.nodes` nodos. La que sube a la GPU (`uCompNodes`). */
+  /** Tabla por nodo: (s₀, s_D, D); `PROBE_COMPRESSION.nodes` nodos. La que sube a la GPU (`uSceneTex`). */
   nodes: readonly CompressionNode[];
+  /** Profundidad bajo la cara (mm) desde la que s = 0: el máximo de D + S en la tabla (`compressionReachMm`). */
+  reachMm: number;
   /** Contacto conseguido por nodo (0–1): el acoplamiento de las líneas (`probe/contact.ts`). Solo CPU. */
   contact: readonly number[];
 }
 
-/** Espesor total de la pared (mm): la placa que se lleva entera (piel, grasa y músculo con la preperitoneal). */
+/** Espesor total de la pared (mm): piel, grasa y músculo con la preperitoneal. */
 export function compressionPlateMm(t: Torso): number {
   return t.skinMm + t.fatMm + t.muscleMm;
 }
 
-/** Profundidad bajo la cara (mm) a partir de la cual no hay desplazamiento: W + max(2L, 2,5·tope). */
-export function compressionReachMm(plateMm: number): number {
-  const c = PROBE_COMPRESSION;
-  return plateMm + Math.max(2 * c.decayMm, c.decaySpanPerShift * c.plateShiftMaxMm);
+/** S: longitud de la caída del empuje bajo la pared (mm), max(2L, κ·|s_D|). */
+export function compressionSpanMm(sD: number): number {
+  return Math.max(2 * PROBE_COMPRESSION.decayMm, PROBE_COMPRESSION.decaySpanPerShift * Math.max(0, -sD));
+}
+
+/**
+ * Alcance del campo (mm bajo la cara): max_k (D_k + S_k). Entre dos nodos D y s_D se interpolan linealmente y
+ * D + max(2L, −κ·s_D) es convexa en la interpolación: su máximo está en los nodos.
+ */
+export function compressionReachMm(nodes: readonly CompressionNode[]): number {
+  let r = 0;
+  for (const n of nodes) r = Math.max(r, n[2] + compressionSpanMm(n[1]));
+  return r;
 }
 
 /** σ = sen α del nodo k (equiespaciados en σ entre ±sen(halfAngle)). */
@@ -115,22 +133,6 @@ export function nodeInterp(sigma: number, halfAngle: number, table: readonly num
   const x = clamp(((sigma + h) / (2 * h)) * (n - 1), 0, n - 1);
   const i = Math.min(Math.floor(x), n - 2);
   return table[i] + (table[i + 1] - table[i]) * (x - i);
-}
-
-/**
- * (s₀, b − 1) en σ = sen α: la tabla con interpolación lineal y, más allá del borde, el nodo del borde
- * apagándose en `lateralTaperSin`.
- */
-export function compressionNode(sigma: number, k: ProbeCompression): [number, number] {
-  const h = Math.sin(k.halfAngle);
-  const n = PROBE_COMPRESSION.nodes;
-  const x = clamp(((sigma + h) / (2 * h)) * (n - 1), 0, n - 1);
-  const i = Math.min(Math.floor(x), n - 2);
-  const t = x - i;
-  const a = k.nodes[i];
-  const b = k.nodes[i + 1];
-  const tl = 1 - smoothstep(h, h + PROBE_COMPRESSION.lateralTaperSin, Math.abs(sigma));
-  return [(a[0] + (b[0] - a[0]) * t) * tl, (a[1] + (b[1] - a[1]) * t) * tl];
 }
 
 /** Desplazamiento s (mm, a lo largo de r̂) en p y la geometría polar que lo lleva. */
@@ -151,6 +153,55 @@ export function compressionElevation(k: ProbeCompression): Vec3 {
   return [a[1] * l[2] - a[2] * l[1], a[2] * l[0] - a[0] * l[2], a[0] * l[1] - a[1] * l[0]];
 }
 
+/** Perfil g(d) a lo largo de la línea de un nodo (s₀, s_D, D) y sus derivadas (en d y en los tres parámetros). */
+interface Profile {
+  g: number;
+  /** ∂g/∂d. */
+  gd: number;
+  /** ∂g/∂s₀, ∂g/∂s_D, ∂g/∂D. */
+  g0: number;
+  gD: number;
+  gDepth: number;
+}
+
+function profile(depth: number, s0: number, sD: number, D: number): Profile {
+  if (depth <= 0) return { g: s0, gd: 0, g0: 1, gD: 0, gDepth: 0 };
+  if (depth < D) {
+    const t = depth / D;
+    return { g: s0 + (sD - s0) * t, gd: (sD - s0) / D, g0: 1 - t, gD: t, gDepth: (-(sD - s0) * t) / D };
+  }
+  const C = PROBE_COMPRESSION;
+  const longSpan = -C.decaySpanPerShift * sD > 2 * C.decayMm;
+  const span = longSpan ? -C.decaySpanPerShift * sD : 2 * C.decayMm;
+  const u = Math.min(1, (depth - D) / span);
+  const f = 1 - u * u * (3 - 2 * u);
+  const fu = u < 1 ? -6 * u * (1 - u) : 0;
+  // ∂u/∂s_D (por S) y ∂u/∂D
+  const uS = longSpan ? (u / span) * C.decaySpanPerShift : 0;
+  return { g: sD * f, gd: (sD * fu) / span, g0: 0, gD: f + sD * fu * uS, gDepth: (-sD * fu) / span };
+}
+
+/** (s₀, s_D, D) en σ con interpolación lineal, su derivada en σ (0 fuera de la cara) y la cola lateral T_l. */
+function tableAt(sigma: number, k: ProbeCompression): { v: CompressionNode; dv: CompressionNode; tl: number; dtl: number } {
+  const C = PROBE_COMPRESSION;
+  const h = Math.sin(k.halfAngle);
+  const n = C.nodes;
+  const xr = ((sigma + h) / (2 * h)) * (n - 1);
+  const x = clamp(xr, 0, n - 1);
+  const i = Math.min(Math.floor(x), n - 2);
+  const t = x - i;
+  const a = k.nodes[i];
+  const b = k.nodes[i + 1];
+  // en el borde exacto de la cara (las líneas extremas) la pendiente de dentro: la de las líneas vecinas
+  const inside = xr >= -1e-4 && xr <= n - 1 + 1e-4 ? (n - 1) / (2 * h) : 0;
+  return {
+    v: [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t],
+    dv: [(b[0] - a[0]) * inside, (b[1] - a[1]) * inside, (b[2] - a[2]) * inside],
+    tl: 1 - smoothstep(h, h + C.lateralTaperSin, Math.abs(sigma)),
+    dtl: -smoothstepSlope(h, h + C.lateralTaperSin, Math.abs(sigma)) * Math.sign(sigma),
+  };
+}
+
 /** s(p), r̂ y ρ (ver la cabecera). s = 0 sin compresión y lejos de la sonda. */
 export function compressionSample(p: Vec3, k: ProbeCompression | null): CompressionSample {
   if (!k) return { shift: 0, rhat: ZERO, rho: 0 };
@@ -162,15 +213,11 @@ export function compressionSample(p: Vec3, k: ProbeCompression | null): Compress
   if (rho < 1e-6) return { shift: 0, rhat: ZERO, rho };
   const rhat: Vec3 = [P[0] / rho, P[1] / rho, P[2] / rho];
   const depth = rho - k.radiusMm;
-  const W = k.plateMm;
-  if (depth >= compressionReachMm(W) || Math.abs(e) >= k.halfElevationMm + PROBE_COMPRESSION.elevationTaperMm || dot(P, k.axial) <= 0)
+  if (depth >= k.reachMm || Math.abs(e) >= k.halfElevationMm + PROBE_COMPRESSION.elevationTaperMm || dot(P, k.axial) <= 0)
     return { shift: 0, rhat, rho };
-  const [s0, bm1] = compressionNode(dot(P, k.lateral) / rho, k);
-  const sW = s0 + bm1 * W;
-  const span = Math.max(2 * PROBE_COMPRESSION.decayMm, PROBE_COMPRESSION.decaySpanPerShift * Math.max(sW, 0));
+  const { v, tl } = tableAt(dot(P, k.lateral) / rho, k);
   const we = 1 - smoothstep(k.halfElevationMm, k.halfElevationMm + PROBE_COMPRESSION.elevationTaperMm, Math.abs(e));
-  const f = 1 - smoothstep(W, W + span, depth);
-  return { shift: we * f * (s0 + bm1 * Math.min(depth, W)), rhat, rho };
+  return { shift: we * tl * profile(depth, v[0], v[1], v[2]).g, rhat, rho };
 }
 
 /** Punto «sin comprimir» (el del tronco rígido, antes de deshacer la respiración): m' = p + s·r̂. */
@@ -207,43 +254,16 @@ export function warpAt(p: Vec3, k: ProbeCompression | null): Warp {
   if (rho < 1e-6) return { ...IDENTITY_WARP, elevation: el };
   const rhat: Vec3 = [P[0] / rho, P[1] / rho, P[2] / rho];
   const depth = rho - k.radiusMm;
-  const W = k.plateMm;
   const E0 = k.halfElevationMm;
-  if (depth >= compressionReachMm(W) || Math.abs(e) >= E0 + C.elevationTaperMm) return { shift: 0, rhat, rho, elevation: el, grad: ZERO };
-  if (dot(P, k.axial) <= 0) return { shift: 0, rhat, rho, elevation: el, grad: ZERO };
+  if (depth >= k.reachMm || Math.abs(e) >= E0 + C.elevationTaperMm || dot(P, k.axial) <= 0)
+    return { shift: 0, rhat, rho, elevation: el, grad: ZERO };
   const sigma = dot(P, k.lateral) / rho;
-  // tabla y su derivada en σ (lineal a tramos; 0 fuera de la cara) y la cola lateral
-  const h = Math.sin(k.halfAngle);
-  const n = C.nodes;
-  const xr = ((sigma + h) / (2 * h)) * (n - 1);
-  const x = clamp(xr, 0, n - 1);
-  const i = Math.min(Math.floor(x), n - 2);
-  const t = x - i;
-  const a = k.nodes[i];
-  const b = k.nodes[i + 1];
-  const inside = xr > 0 && xr < n - 1 ? (n - 1) / (2 * h) : 0;
-  const v0 = a[0] + (b[0] - a[0]) * t;
-  const v1 = a[1] + (b[1] - a[1]) * t;
-  const tl = 1 - smoothstep(h, h + C.lateralTaperSin, Math.abs(sigma));
-  const dtl = -smoothstepSlope(h, h + C.lateralTaperSin, Math.abs(sigma)) * Math.sign(sigma);
-  const s0 = v0 * tl;
-  const bm1 = v1 * tl;
-  const ds0 = (b[0] - a[0]) * inside * tl + v0 * dtl;
-  const dbm1 = (b[1] - a[1]) * inside * tl + v1 * dtl;
-  // caída bajo la placa: su longitud depende de s_W (de σ)
-  const sW = s0 + bm1 * W;
-  const longSpan = C.decaySpanPerShift * sW > 2 * C.decayMm;
-  const span = longSpan ? C.decaySpanPerShift * sW : 2 * C.decayMm;
-  const dspan = longSpan ? C.decaySpanPerShift * (ds0 + dbm1 * W) : 0;
-  const u = clamp((depth - W) / span, 0, 1);
-  const f = 1 - u * u * (3 - 2 * u);
-  const fu = u > 0 && u < 1 ? -6 * u * (1 - u) : 0;
-  const md = Math.min(depth, W);
-  const g = s0 + bm1 * md;
+  const { v, dv, tl, dtl } = tableAt(sigma, k);
+  const pr = profile(depth, v[0], v[1], v[2]);
   // la ventana elevacional es plana en ±E0 (toda muestra de la imagen cae ahí): su derivada no se lleva
   const we = 1 - smoothstep(E0, E0 + C.elevationTaperMm, Math.abs(e));
-  const dDepth = we * ((fu / span) * g + f * (depth < W ? bm1 : 0));
-  const dSigma = we * (fu * (-u / span) * dspan * g + f * (ds0 + dbm1 * md));
+  const dDepth = we * tl * pr.gd;
+  const dSigma = we * (dtl * pr.g + tl * (pr.g0 * dv[0] + pr.gD * dv[1] + pr.gDepth * dv[2]));
   // ∇σ = (lateral − σ·r̂)/ρ
   const q = dSigma / rho;
   const grad: Vec3 = [
@@ -251,7 +271,7 @@ export function warpAt(p: Vec3, k: ProbeCompression | null): Warp {
     dDepth * rhat[1] + q * (k.lateral[1] - sigma * rhat[1]),
     dDepth * rhat[2] + q * (k.lateral[2] - sigma * rhat[2]),
   ];
-  return { shift: we * f * g, rhat, rho, elevation: el, grad };
+  return { shift: we * tl * pr.g, rhat, rho, elevation: el, grad };
 }
 
 /** Derivada de smoothstep(e0, e1, x) respecto a x. */
@@ -285,18 +305,38 @@ const f4 = (x: number): string => x.toFixed(4);
 
 /**
  * Gemelo GLSL (en `ANATOMY_GLSL`, antes de `toMaterial`; usa los uniforms `uComp*` del esquema único,
- * `anatomy/gpu/sceneUniforms.ts`).
+ * `anatomy/gpu/sceneUniforms.ts`): uCompC = (centro, R + alcance; 0 = sin compresión), uCompAx = (axial,
+ * sen del semiángulo), uCompLat = (lateral, media huella elevacional) y la tabla en la textura de escena, un téxel
+ * por nodo (s₀, s_D, D, R): el radio viaja en la tabla para que el alcance quepa en las tres ranuras.
  */
 export const COMPRESSION_GLSL = /* glsl */ `
 #define COMP_NODES ${PROBE_COMPRESSION.nodes}
 #define COMP_DECAY_MM ${f4(PROBE_COMPRESSION.decayMm)}
 #define COMP_SPAN_PER_SHIFT ${f4(PROBE_COMPRESSION.decaySpanPerShift)}
-#define COMP_PLATE_SHIFT_MAX ${f4(PROBE_COMPRESSION.plateShiftMaxMm)}
 #define COMP_LAT_TAPER ${f4(PROBE_COMPRESSION.lateralTaperSin)}
 #define COMP_ELEV_TAPER ${f4(PROBE_COMPRESSION.elevationTaperMm)}
-// la tabla por nodo en la textura de escena (COMP_BASE, de ANATOMY_GLSL): (s₀, b − 1)
-vec2 compressionTable(int i) { return sceneTexel(COMP_BASE + i).xy; }
+// la tabla por nodo en la textura de escena (COMP_BASE, de ANATOMY_GLSL): (s₀, s_D, D, R)
+vec4 compressionTable(int i) { return sceneTexel(COMP_BASE + i); }
 vec3 compressionElevation() { return cross(uCompAx.xyz, uCompLat.xyz); }
+// perfil g(d) de un nodo (s₀, s_D, D) interpolado; gd = ∂g/∂d y gp = (∂g/∂s₀, ∂g/∂s_D, ∂g/∂D)
+float compressionProfile(float depth, vec3 v, out float gd, out vec3 gp) {
+  if (depth <= 0.0) { gd = 0.0; gp = vec3(1.0, 0.0, 0.0); return v.x; }
+  if (depth < v.z) {
+    float t = depth / v.z;
+    gd = (v.y - v.x) / v.z;
+    gp = vec3(1.0 - t, t, -(v.y - v.x) * t / v.z);
+    return v.x + (v.y - v.x) * t;
+  }
+  bool longSpan = -COMP_SPAN_PER_SHIFT * v.y > 2.0 * COMP_DECAY_MM;
+  float span = longSpan ? -COMP_SPAN_PER_SHIFT * v.y : 2.0 * COMP_DECAY_MM;
+  float u = min(1.0, (depth - v.z) / span);
+  float f = 1.0 - u * u * (3.0 - 2.0 * u);
+  float fu = u < 1.0 ? -6.0 * u * (1.0 - u) : 0.0;
+  float uS = longSpan ? u / span * COMP_SPAN_PER_SHIFT : 0.0;
+  gd = v.y * fu / span;
+  gp = vec3(0.0, f + v.y * fu * uS, -v.y * fu / span);
+  return v.y * f;
+}
 // s(p) a lo largo de r̂ (anatomy/compression.ts); rhat y rho, la geometría polar de la cara
 float compressionSample(vec3 p, out vec3 rhat, out float rho) {
   vec3 el = compressionElevation();
@@ -305,21 +345,17 @@ float compressionSample(vec3 p, out vec3 rhat, out float rho) {
   vec3 P = d - e * el;
   rho = length(P);
   rhat = rho > 1e-6 ? P / rho : vec3(0.0);
-  if (uCompC.w <= 0.0 || rho < 1e-6) return 0.0;
-  float depth = rho - uCompC.w;
-  float W = uWall.x + uWall.y + uWall.z;
-  if (depth >= W + max(2.0 * COMP_DECAY_MM, COMP_SPAN_PER_SHIFT * COMP_PLATE_SHIFT_MAX) || abs(e) >= uCompLat.w + COMP_ELEV_TAPER || dot(P, uCompAx.xyz) <= 0.0)
-    return 0.0;
+  if (rho < 1e-6 || rho >= uCompC.w || abs(e) >= uCompLat.w + COMP_ELEV_TAPER || dot(P, uCompAx.xyz) <= 0.0) return 0.0;
   float sg = dot(P, uCompLat.xyz) / rho;
   float h = uCompAx.w;
   float x = clamp((sg + h) / (2.0 * h) * float(COMP_NODES - 1), 0.0, float(COMP_NODES - 1));
   int i = min(int(floor(x)), COMP_NODES - 2);
-  vec2 nd = mix(compressionTable(i), compressionTable(i + 1), x - float(i)) * (1.0 - smoothstep(h, h + COMP_LAT_TAPER, abs(sg)));
-  float sW = nd.x + nd.y * W;
-  float span = max(2.0 * COMP_DECAY_MM, COMP_SPAN_PER_SHIFT * max(sW, 0.0));
+  vec4 v = mix(compressionTable(i), compressionTable(i + 1), x - float(i));
+  float gd;
+  vec3 gp;
+  float g = compressionProfile(rho - v.w, v.xyz, gd, gp);
   float we = 1.0 - smoothstep(uCompLat.w, uCompLat.w + COMP_ELEV_TAPER, abs(e));
-  float f = 1.0 - smoothstep(W, W + span, depth);
-  return we * f * (nd.x + nd.y * min(depth, W));
+  return we * (1.0 - smoothstep(h, h + COMP_LAT_TAPER, abs(sg))) * g;
 }
 vec3 uncompress(vec3 p) {
   vec3 rhat;
@@ -345,38 +381,27 @@ Warp warpAt(vec3 p) {
   if (rho < 1e-6) return w;
   w.rho = rho;
   w.rhat = P / rho;
-  float depth = rho - uCompC.w;
-  float W = uWall.x + uWall.y + uWall.z;
   float E0 = uCompLat.w;
-  if (depth >= W + max(2.0 * COMP_DECAY_MM, COMP_SPAN_PER_SHIFT * COMP_PLATE_SHIFT_MAX) || abs(e) >= E0 + COMP_ELEV_TAPER || dot(P, uCompAx.xyz) <= 0.0)
-    return w;
+  if (rho >= uCompC.w || abs(e) >= E0 + COMP_ELEV_TAPER || dot(P, uCompAx.xyz) <= 0.0) return w;
   float sg = dot(P, uCompLat.xyz) / rho;
   float h = uCompAx.w;
   float xr = (sg + h) / (2.0 * h) * float(COMP_NODES - 1);
   float x = clamp(xr, 0.0, float(COMP_NODES - 1));
   int i = min(int(floor(x)), COMP_NODES - 2);
-  vec2 a = compressionTable(i);
-  vec2 b = compressionTable(i + 1);
-  float inside = xr > 0.0 && xr < float(COMP_NODES - 1) ? float(COMP_NODES - 1) / (2.0 * h) : 0.0;
-  vec2 v = mix(a, b, x - float(i));
+  vec4 a = compressionTable(i);
+  vec4 b = compressionTable(i + 1);
+  float inside = xr >= -1e-4 && xr <= float(COMP_NODES - 1) + 1e-4 ? float(COMP_NODES - 1) / (2.0 * h) : 0.0;
+  vec4 v = mix(a, b, x - float(i));
+  vec3 dv = (b.xyz - a.xyz) * inside;
   float tl = 1.0 - smoothstep(h, h + COMP_LAT_TAPER, abs(sg));
   float dtl = -smoothstepSlope(h, h + COMP_LAT_TAPER, abs(sg)) * sign(sg);
-  vec2 nd = v * tl;
-  vec2 dnd = (b - a) * inside * tl + v * dtl;
-  float sW = nd.x + nd.y * W;
-  bool longSpan = COMP_SPAN_PER_SHIFT * sW > 2.0 * COMP_DECAY_MM;
-  float span = longSpan ? COMP_SPAN_PER_SHIFT * sW : 2.0 * COMP_DECAY_MM;
-  float dspan = longSpan ? COMP_SPAN_PER_SHIFT * (dnd.x + dnd.y * W) : 0.0;
-  float u = clamp((depth - W) / span, 0.0, 1.0);
-  float f = 1.0 - u * u * (3.0 - 2.0 * u);
-  float fu = u > 0.0 && u < 1.0 ? -6.0 * u * (1.0 - u) : 0.0;
-  float md = min(depth, W);
-  float g = nd.x + nd.y * md;
+  float gd;
+  vec3 gp;
+  float g = compressionProfile(rho - v.w, v.xyz, gd, gp);
   float we = 1.0 - smoothstep(E0, E0 + COMP_ELEV_TAPER, abs(e));
-  float dDepth = we * (fu / span * g + f * (depth < W ? nd.y : 0.0));
-  float dSigma = we * (fu * (-u / span) * dspan * g + f * (dnd.x + dnd.y * md));
-  w.s = we * f * g;
-  w.g = dDepth * w.rhat + dSigma / rho * (uCompLat.xyz - sg * w.rhat);
+  float dSigma = we * (dtl * g + tl * dot(gp, dv));
+  w.s = we * tl * g;
+  w.g = we * tl * gd * w.rhat + dSigma / rho * (uCompLat.xyz - sg * w.rhat);
   return w;
 }
 vec3 warpNormal(Warp w, vec3 n) {

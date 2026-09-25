@@ -365,12 +365,12 @@ Informativas: borde de la sombra 10–90 % en ±20 líneas, refuerzo tras los va
 puntúa aquí). La e2e «composición espacial» comprueba con SwiftShader G1–G4, K1, K5, la razón de grano, G8
 y que `readEnvelope()` lanza si la mirada 0 no es la del último cuadro.
 
-### Contorno de la cápsula (PR 0 de las decisiones 60 y 63): métricas solo informadas
+### Contorno de la cápsula (PR 0 de las decisiones 60 y 64): métricas solo informadas
 
 La crítica visual del 24-09 señaló tres defectos del contorno del hígado: (a) la cápsula se corta (a
 mitad del hígado en la subxifoidea, a los dos lados en el flanco) y es invisible a más de ~35°; (b) la
 línea es uniforme, «dibujada»; (c) pliegues y muescas. Las métricas que lo miden llegan antes que los
-cambios de imagen (decisión 60: contacto suave del hígado con la pared y la cúpula; 63: lámina difusa de
+cambios de imagen (decisión 60: contacto suave del hígado con la pared y la cúpula; 64: lámina difusa de
 la cápsula) y **no son puertas**: se informan en el bloque `contour` de cada escena del banco (la pose de
 partida, la de las capturas) y en `contourSweep` con `--sweep` (`contourStats`).
 
@@ -382,7 +382,7 @@ partida, la de las capturas) y en `contourSweep` con `--sweep` (`contourStats`).
 | Extremos bruscos (`capsuleEnds`)            | Veces que la mediana de 3 líneas de una pared de la cápsula cae ≥ 10 dB (nivel mostrado) en ≤ 1 mm de pared (paso lateral) desde ≥ +6 dB, en los dos sentidos, **con los cambios de dueño incluidos** (la cara pasa al diafragma o a la grasa y la cápsula deja de dibujarla). La caída que arranca a ≤ 1 mm de donde aterrizó otra es el mismo corte (la escalera de la PSF). NaN sin medianas evaluadas (`capsuleEndLines`). |
 | Salto de incidencia (`incidenceJumpMaxDeg`) | Máximo (y p99, `incidenceJumpP99Deg`) de \|Δincidencia\| entre líneas contiguas de una misma pared de la cápsula. Es geometría de la CPU (la normal de `faceSdf`): una arista del SDF lo dispara. Con > 100 pares, una arista sola queda por encima del p99: la puerta es el máximo.                                                                                                                                           |
 
-`GATED_FACE_BINS` no cambia: la 63 añadirá la cápsula a 20–40° y a 40–60° (esta, solo en las vistas con
+`GATED_FACE_BINS` no cambia: la 64 añadirá la cápsula a 20–40° y a 40–60° (esta, solo en las vistas con
 ≥ 10 registros). El plan de la 60 convierte en puertas `capsuleEnds` = 0 en las cuatro vistas de las
 capturas y el salto de incidencia ≤ 3° (el máximo), pero `capsuleEnds` y el p99 del salto, tal como están
 definidos, ven poco hoy:
@@ -453,7 +453,7 @@ moteado) y la curva de grises del equipo es desconocida; la cresta se trazó a m
 de un ápice estimado (±5–10°). Por eso no son puertas; el CVc no tiene techo (premiaría suavizar la
 línea, antipatrón §23 de la guía), y el rosario no se compara con ellas: el de la referencia necesita un
 rango dinámico supuesto (dominios distintos). Falta una referencia de la cápsula de Glisson (3–5
-capturas), requisito de la modulación de R_ef (decisión 64).
+capturas), requisito de la modulación de R_ef (decisión 65).
 
 ### Pleura parietal y cortina pulmonar (decisión 61): métricas informadas y referencias
 
@@ -580,17 +580,21 @@ en la GPU la misma cara, normal (p05 de |n·∇| > 0,98) y norma del gradiente (
 
 ### Compresión de la sonda (decisión 63): qué cambia en el banco
 
-El tejido bajo la huella está comprimido (`anatomy/compression.ts`): la pared se lleva a la cara como una placa. El
-banco de la pared mide la incidencia «sobre la piel» (`WALL_NORMAL_DEG`, `WALL_LAYER_DEG`) y la de la pleura de la
-cortina con la normal del MUNDO (la material por la jacobiana, `warpNormal`), así que bajo la huella casi todas las
-líneas cuentan como normales y las capas están a su profundidad de siempre bajo la cara en todas ellas; la
-orientación de los septos y las estrías, igual. Las líneas acopladas (`MIN_COUPLING`) son las del contacto
-conseguido (`probe/contact.ts`). Gemelo (CPU, `compression.test.ts`), bajo la huella: la cara interna de la pared a
-28,00–28,05 mm en el flanco y el renal, 28,0–29,4 en la intercostal y 25,4–36,6 en la subxifoidea (tronco rígido:
-28,3–36,0, 28,1–46,9 y 21,8–57,7); la normal de las capas a ≤ 2° de la línea en el flanco y el renal. Qué mirar con
-GPU (sin metas nuevas del banco): en la intercostal, la piel, las fascias y la pleura como arcos paralelos a la
-cara en la huella (hoy, cúpula); en el flanco y el renal, el sector entero acoplado; en la subxifoidea basculada,
-el lado del talón comprimido y el de la punta todavía oblicuo.
+El tejido bajo la huella está comprimido (`anatomy/compression.ts`) y la sonda, hundida a lo largo de su eje lo que
+haga falta para que apoye toda la cara (con un tope de presión): el marco del simulador es el efectivo, así que las
+escenas de las poses de partida ven lo hondo 15–20 mm menos profundo que antes (la VCI del flanco, de 127 a 112,5 mm
+por la línea central). El banco de la pared mide la incidencia «sobre la piel» (`WALL_NORMAL_DEG`, `WALL_LAYER_DEG`)
+y la de la pleura de la cortina con la normal del MUNDO (la material por la jacobiana, `warpNormal`), así que bajo
+las líneas que apoyan casi todas cuentan como normales y las capas están a su profundidad de siempre bajo la cara;
+la orientación de los septos y las estrías, igual. Las líneas acopladas (`MIN_COUPLING`) son las del contacto
+conseguido (`probe/contact.ts`): toda la cara en el flanco y el renal, ±21,5° en la intercostal (122 de 192) y
+−34…+18° en la subxifoidea basculada (148). Gemelo (CPU, `compression.test.ts`), bajo las líneas acopladas: la cara
+interna de la pared a 28,55–29,00 mm en el flanco, 28,30–29,05 en el renal, 28,00–29,00 en la intercostal y
+27,40–29,15 en la subxifoidea (tronco rígido bajo las mismas líneas: 28,6–46,8, 28,3–51,5, 28,1–50,0 y 21,5–53,4); la
+normal de las capas a ≤ 3–8° de la línea. Qué mirar con GPU (sin metas nuevas del banco): la piel, las fascias y la
+pleura como arcos paralelos a la cara bajo las líneas acopladas en las cuatro vistas; los bordes de la intercostal y
+la punta de la subxifoidea, oscuros (sin acoplar) con una transición de unas 12 líneas, sin capas dobladas en las que
+se ven; el talón de la subxifoidea, empujado 24 mm, sin cuña.
 
 ## Línea base (23-09-2026, árbol `src/` 4de3821, tras el preajuste abdominal; M4 con Metal, densidad 2)
 

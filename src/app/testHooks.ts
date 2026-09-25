@@ -12,7 +12,6 @@ import { bestGateOnVessel } from './gatePlacement';
 import { acousticWindowWeight, gateTransmission } from './gateTransmission';
 import { contactCoupling } from '../probe/contact';
 import { lineAngle, pointOnLine, type ProbePose } from '../probe/probe';
-import { compressionSample } from '../anatomy/compression';
 import { hilumNotchActive, kidneyLocal, kidneyOuterSdf } from '../anatomy/organs/kidney';
 import { FACE_GEOMETRIES, type FaceGeometry } from '../anatomy/scene';
 import { Interface, isRibInterface, isWallLayerInterface } from '../anatomy/interfaces';
@@ -398,10 +397,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
         const rad = Math.PI / 180;
         const looks = opts.compound ? sim.profile.compound.order.length : 1;
         const a = envelopeAt(sim, base, opts.compound, looks);
-        // el medio anclado se mide donde la sonda no deforma el tejido (decisión 63): girarla cambia su contacto y
-        // la compresión mueve con ella el hígado de bajo la pared (gemelo: la correlación del hígado a < 60 mm con
-        // 2° de giro, 0,93 → 0,69; más hondo, 0,86 → 0,84)
-        const mask = liverMask(sim, a, { uncompressed: true });
+        const mask = liverMask(sim, a);
         const b = envelopeAt(
           sim,
           { ...base, tilt: base.tilt + (opts.tiltDeg ?? 0) * rad, yaw: base.yaw + (opts.yawDeg ?? 0) * rad },
@@ -1144,6 +1140,8 @@ function envelopeAt(sim: Simulator, pose: ProbePose, compound = false, frames = 
 const LIVER_MASK_SHADOW_LINES = 3;
 /** Penumbra que deja fuera `liverMask`: la transmisión con apertura más de esto bajo la de un solo rayo (dB). */
 const LIVER_MASK_PENUMBRA_DB = 0.5;
+/** Acoplamiento mínimo de una línea de `liverMask` (el del banco, `MIN_COUPLING` de fidelity.ts). */
+const LIVER_MASK_MIN_COUPLING = 0.95;
 
 /**
  * Índices de hígado del plano actual: cada 2 líneas y 4 muestras, de 30 a 120 mm, sin lo que queda bajo la
@@ -1153,10 +1151,11 @@ const LIVER_MASK_PENUMBRA_DB = 0.5;
  * cuadro con apertura a más de `LIVER_MASK_PENUMBRA_DB` bajo la de un solo rayo, como el banco). Decisión 62: con
  * las costillas óseas, girar la sonda 2° desde la ventana intercostal mete la 9.ª costilla en un borde; su sombra
  * y su penumbra entraban en la máscara y el nivel del hígado bajaba 4 dB en un giro de 16° (1,2 dB en un cuadro).
- * `uncompressed`: solo donde la compresión de la sonda no desplaza el tejido (decisión 63; las guardas del medio
- * anclado al girar la sonda).
+ * Decisión 63: solo en las líneas acopladas (el contacto conseguido; los bordes de la intercostal no apoyan y son
+ * ruido del receptor). Girar la sonda 2° cambia su contacto, pero solo empujando: el tejido comprimido se mueve por
+ * ello 0,05 mm de mediana (p90 0,18 mm; gemelo), muy por debajo del grano.
  */
-function liverMask(sim: Simulator, env: { lines: number; samples: number }, opts: { uncompressed?: boolean } = {}): number[] {
+function liverMask(sim: Simulator, env: { lines: number; samples: number }): number[] {
   const tr = sim.transducer;
   const depth = sim.bmode.depthMm;
   const curtain = curtainLines(sim, env.lines);
@@ -1184,7 +1183,8 @@ function liverMask(sim: Simulator, env: { lines: number; samples: number }, opts
     return m;
   });
   const idx: number[] = [];
-  for (let u = 0; u < env.lines; u += 2)
+  for (let u = 0; u < env.lines; u += 2) {
+    if (contactCoupling(sim.contact, thetaOf(u)) < LIVER_MASK_MIN_COUPLING) continue;
     for (let k = 0; k < env.samples; k += 4) {
       const r = ((k + 0.5) * depth) / env.samples;
       if (r < 30 || r > 120 || r >= shadowFrom[u]) continue;
@@ -1192,10 +1192,9 @@ function liverMask(sim: Simulator, env: { lines: number; samples: number }, opts
       if (c && c.fAir >= CURTAIN_LIVER_MAX_AIR && r >= c.D) continue;
       if (!lit(u, r)) continue;
       const theta = thetaOf(u);
-      const p = pointOnLine(sim.frame, tr, theta, r);
-      if (opts.uncompressed && compressionSample(p, sim.anatomy.probeCompression).shift !== 0) continue;
-      if (sim.anatomy.classifyWorld(p, sim.sample).tissue === Tissue.Liver) idx.push(k * env.lines + u);
+      if (sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, theta, r), sim.sample).tissue === Tissue.Liver) idx.push(k * env.lines + u);
     }
+  }
   return idx;
 }
 

@@ -24,9 +24,9 @@ import {
 } from './support/interfaceTwin';
 
 /**
- * Gemelo B→C→D de la cápsula hepática oblicua (PR 0 de las decisiones 60 y 63), con las funciones de
+ * Gemelo B→C→D de la cápsula hepática oblicua (PR 0 de las decisiones 60 y 64), con las funciones de
  * producción de `support/interfaceTwin.ts`. Fija las escenas y las métricas del contorno y deja escritas
- * las pruebas que la decisión 63 (lámina difusa de la cápsula) debe hacer pasar, con los umbrales del plan
+ * las pruebas que la decisión 64 (lámina difusa de la cápsula) debe hacer pasar, con los umbrales del plan
  * (`it.fails` hoy): la cápsula solo tiene el lóbulo coherente de la decisión 57, así que desde ~35° de
  * incidencia queda en el suelo del moteado (cociente 1,16–1,19 con 62–71 % de huecos a 40–70°) y su nivel
  * varía poco a escala de centímetros (σ_L 1,30 dB: la línea «dibujada» de la crítica visual).
@@ -89,7 +89,7 @@ function spiral(thetaDeg: number, liverMed: number): SpiralResult {
   };
 }
 
-describe('Gemelo de la cápsula oblicua: escenas y métricas del contorno (PR 0 de las decisiones 60 y 63)', () => {
+describe('Gemelo de la cápsula oblicua: escenas y métricas del contorno (PR 0 de las decisiones 60 y 64)', () => {
   let liverMed = 1;
   const S: Record<number, SpiralResult> = {};
   /** Escena del repositorio: 0–20° (φ 0) y los tramos oblicuos (φ 25, 45 y 65), 8 semillas. */
@@ -193,7 +193,7 @@ describe('Gemelo de la cápsula oblicua: escenas y métricas del contorno (PR 0 
     for (const x of repo.sigmaL) expect(x).toBeGreaterThan(0.5);
   });
 
-  it('hoy, la cápsula a 0° brilla sin huecos: cociente 1,86 ± 0,05 (la guarda de 0–20° de la decisión 63)', () => {
+  it('hoy, la cápsula a 0° brilla sin huecos: cociente 1,86 ± 0,05 (la guarda de 0–20° de la decisión 64)', () => {
     expect(Math.abs(S[0].ratio - 1.86)).toBeLessThanOrEqual(0.05);
     expect(S[0].gapFrac).toBe(0);
     expect(S[0].traceGap).toBe(0);
@@ -224,7 +224,7 @@ describe('Gemelo de la cápsula oblicua: escenas y métricas del contorno (PR 0 
     }
   });
 
-  // ——— Lo que debe hacer la decisión 63 (hoy falla; umbrales del plan, con margen sobre lo medido) ———
+  // ——— Lo que debe hacer la decisión 64 (hoy falla; umbrales del plan, con margen sobre lo medido) ———
 
   it.fails('61: la cápsula a 40° y 50° sigue a la vista: cociente ≥ 1,28 y huecos ≤ 0,32 (hoy 1,17–1,19 / 0,62–0,69)', () => {
     for (const th of [40, 50]) {

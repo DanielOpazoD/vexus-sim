@@ -6,7 +6,7 @@ import { Tissue } from '../anatomy/tissues';
 import { CASES, NORMAL_ADULT } from '../cases';
 import { SimulationClock } from '../core/clock';
 import { PhysiologyEngine } from '../physiology/engine';
-import { contactCoupling, contactForPose } from '../probe/contact';
+import { contactCoupling, probeContact } from '../probe/contact';
 import { CONVEX_C35, lineDirection, pointOnLine, probeFrame, skinSoftness, type ProbePose } from '../probe/probe';
 import { kidneyQuery, kidneyWorld } from '../anatomy/organs/kidney';
 import { renalPatternFromPeaks } from '../vexus/classification';
@@ -357,7 +357,7 @@ describe('Sonda (guía §8)', () => {
   });
 
   it('el acoplamiento es total en contacto y se pierde al separar o bascular (contacto de la decisión 63)', () => {
-    const coupling = (pose: ProbePose, theta: number) => contactCoupling(contactForPose(pose, CONVEX_C35, scene.torso), theta);
+    const coupling = (pose: ProbePose, theta: number) => contactCoupling(probeContact(pose, CONVEX_C35, scene.torso), theta);
     const flat: ProbePose = { phi: 0, z: 0, lift: 0, yaw: 0, rock: 0, tilt: 0 };
     expect(coupling(flat, 0)).toBe(1);
     expect(coupling({ ...flat, lift: 12 }, 0)).toBe(0);
@@ -366,7 +366,7 @@ describe('Sonda (guía §8)', () => {
     // la pared blanda del epigastrio absorbe la basculación: bajo el xifoides se conserva más
     // contacto que sobre las costillas del flanco con la misma basculación craneal (decisión 43)
     const mean = (pose: ProbePose) => {
-      const k = contactForPose(pose, CONVEX_C35, scene.torso);
+      const k = probeContact(pose, CONVEX_C35, scene.torso);
       let c = 0;
       for (let i = 0; i <= 40; i++) c += contactCoupling(k, -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * i) / 40) / 41;
       return c;

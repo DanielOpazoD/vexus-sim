@@ -14,7 +14,7 @@
  *     H3 = esfera envolvente (cx, cy, cz, R)
  *   nodos desde NODE_BASE = MAX_TUBES·4: (x, y, z, r)
  *   tabla de la compresión de la sonda desde COMPRESSION_BASE = NODE_BASE + MAX_NODES (decisión 63,
- *   `anatomy/compression.ts`): un téxel por nodo de la cara, (s₀ mm, b − 1, 0, 0)
+ *   `anatomy/compression.ts`): un téxel por nodo de la cara, (s₀ mm, s_D mm, D mm, R mm)
  */
 import { BOWEL_BD_CAP_MM, DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, TISSUE_GLSL_NAME } from '../tissues';
 import {

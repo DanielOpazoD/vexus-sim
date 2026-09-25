@@ -189,7 +189,12 @@ test('composición espacial: más SNR con el mismo grano, sin huecos, y la mirad
   // siempre: las guardas de una mirada de este archivo miden con el compuesto apagado.
   test.setTimeout(240_000);
   const errors = await bootWithoutErrors(page);
-  const s = await page.evaluate(() => window.__vexusTest!.fidelity({ startPoint: 'subxiphoid', display: true, compound: true }));
+  // la subxifoidea basculada 10° menos: con la sonda que solo empuja (decisión 63) la punta de la de partida (26°)
+  // no apoya más allá de +18° y lo hondo sube ~16 mm; en la rejilla de la e2e le quedaba 1 parche compuesto de
+  // hígado despejado a 20–60 mm (5 en main, el mínimo). Con 16° apoyan 177 de 192 líneas: 7 parches
+  const s = await page.evaluate(() =>
+    window.__vexusTest!.fidelity({ startPoint: 'subxiphoid', display: true, compound: true, pose: { rockDeg: -10 } }),
+  );
   const c = s.compound!;
   expect(c, 'el banco devuelve la composición').toBeTruthy();
   const bands = c.bands.filter((b) => b.compound.patches >= 5 && b.look0.patches >= 5);

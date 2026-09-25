@@ -180,13 +180,13 @@ export const SCENE_UNIFORMS: readonly UniformSpec[] = [
   {
     name: 'uCompC',
     type: 'vec4',
-    doc: 'compresión de la sonda (decisión 63): centro de curvatura de la cara, radio (0 = sin compresión)',
-    value: (_s, c) => (c.compression ? [...c.compression.center, c.compression.radiusMm] : [0, 0, 0, 0]),
+    doc: 'compresión de la sonda (decisión 63): centro de curvatura de la cara, radio + alcance (0 = sin compresión)',
+    value: (_s, c) => (c.compression ? [...c.compression.center, c.compression.radiusMm + c.compression.reachMm] : [0, 0, 0, 0]),
   },
   {
     name: 'uCompAx',
     type: 'vec4',
-    doc: 'eje axial de la sonda, sen del semiángulo de la cara (la tabla por nodo va en uSceneTex, COMP_BASE)',
+    doc: 'eje axial de la sonda, sen del semiángulo de la cara (la tabla por nodo, con el radio, va en uSceneTex, COMP_BASE)',
     value: (_s, c) => (c.compression ? [...c.compression.axial, Math.sin(c.compression.halfAngle)] : [0, 0, 1, 1]),
   },
   {

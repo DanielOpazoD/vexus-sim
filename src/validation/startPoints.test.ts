@@ -10,14 +10,15 @@ import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient, type RespiratoryPattern } from '../physiology/patientState';
 import { uncompress } from '../anatomy/compression';
 import { contactCoupling, probeContact } from '../probe/contact';
-import { CONVEX_C35, pointOnLine, probeFrame, type ProbePose } from '../probe/probe';
+import { CONVEX_C35, pointOnLine, type ProbePose } from '../probe/probe';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 
 /**
  * Cada punto de partida debe cortar de verdad la estructura que promete su
  * texto, sin afinar la sonda: la anatomía cambia a menudo (decisiones 33–37) y
  * esta es la única valla que impide que una ventana quede «vacía». El tejido es el que muestra la aplicación: el
- * de la pose con la compresión de la sonda (decisión 63), y el acoplamiento, el contacto conseguido.
+ * de la pose con la compresión de la sonda y su marco efectivo (la sonda hundida, decisión 63), y el
+ * acoplamiento, el contacto conseguido.
  */
 const scene = new AnatomyScene(NORMAL_ADULT);
 
@@ -29,8 +30,8 @@ interface Sweep {
 
 function sweep(sp: StartPoint, depthMm: number): Sweep {
   const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
-  const fr = probeFrame(pose, scene.torso, CONVEX_C35);
-  const contact = probeContact(pose, fr, CONVEX_C35, scene.torso);
+  const contact = probeContact(pose, CONVEX_C35, scene.torso);
+  const fr = contact.frame;
   const vessels = new Map<string, number>();
   const tissues = new Map<Tissue, number>();
   let coupling = 0;
@@ -62,9 +63,11 @@ describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', 
 
   it('intercostal derecho: suprahepáticas y VCI a través del hígado', () => {
     const s = sweep(byId('intercostal'), 160);
-    expect(s.coupling).toBeGreaterThan(0.9);
+    // los bordes, más allá de ±21°, no apoyan en el tórax curvo (decisión 63): 0,63
+    expect(s.coupling).toBeGreaterThan(0.55);
     const hv = samples(s, 'hvRight') + samples(s, 'hvMiddle') + samples(s, 'hvRightAnterior');
-    expect(hv).toBeGreaterThan(30);
+    // 31 muestras en el tronco rígido; 30 con la sonda hundida (el empuje baja la derecha de 22 a 20 muestras)
+    expect(hv).toBeGreaterThan(25);
     expect(samples(s, 'ivcInfra') + samples(s, 'ivcSupra')).toBeGreaterThan(20);
     expect(s.tissues.get(Tissue.Liver) ?? 0).toBeGreaterThan(600);
   });
@@ -75,8 +78,8 @@ describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', 
     // ahora, girar la sonda 2° ya mete la 9.ª en un borde. La vértebra, al fondo (14–16 cm), no cuenta.
     const sp = byId('intercostal');
     const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
-    const fr = probeFrame(pose, scene.torso, CONVEX_C35);
-    const contact = probeContact(pose, fr, CONVEX_C35, scene.torso);
+    const contact = probeContact(pose, CONVEX_C35, scene.torso);
+    const fr = contact.frame;
     const nLines = 61;
     for (let i = 0; i < nLines; i++) {
       const theta = -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * i) / (nLines - 1);
@@ -105,8 +108,8 @@ describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', 
         const s = engine.step();
         if (s.resp.diaphragmCaudalMm > sample.resp.diaphragmCaudalMm) sample = s;
       }
-      const frame = probeFrame(pose, sc.torso, CONVEX_C35);
-      const contact = probeContact(pose, frame, CONVEX_C35, sc.torso);
+      const contact = probeContact(pose, CONVEX_C35, sc.torso);
+      const frame = contact.frame;
       anatomy.setProbeCompression(contact);
       const w = acousticWindowWeight(anatomy, frame, CONVEX_C35, contact, sample, 180, CONVEX_C35_PROFILE.dopplerEffectiveMHz);
       const g = bestGateOnVessel(anatomy, frame, CONVEX_C35, sample, ['hvRight', 'hvMiddle'], 175, 1.2, w);

@@ -299,7 +299,7 @@ describe('banco de interfaces: líneas pintadas', () => {
   });
 });
 
-describe('contorno de las caras: líneas pintadas (PR 0 de las decisiones 60 y 63)', () => {
+describe('contorno de las caras: líneas pintadas (PR 0 de las decisiones 60 y 64)', () => {
   // Cápsula: cresta pintada a 80,5 mm sobre el hígado de debajo (gris ≈ 100), 0,87 mm entre líneas
   const RB = 80;
   const R_FACE = 80.5;

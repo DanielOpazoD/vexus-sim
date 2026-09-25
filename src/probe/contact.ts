@@ -1,6 +1,7 @@
 import {
   PROBE_COMPRESSION,
   compressionPlateMm,
+  compressionReachMm,
   nodeInterp,
   nodeSin,
   type CompressionNode,
@@ -11,84 +12,74 @@ import { length, smoothstep, type Vec3 } from '../core/vec3';
 import { probeFrame, skinSoftness, type ProbeFrame, type ProbePose, type Transducer } from './probe';
 
 /**
- * Geometría del contacto de un cuadro (decisión 63): cuánto de la cara convexa consigue apoyar el operador sobre
- * la piel y, con ello, la tabla del campo de compresión (`anatomy/compression.ts`) y el acoplamiento de cada
- * línea (acoplamiento = contacto conseguido). Sustituye al hueco ad hoc de `lineCoupling` (un radio de piel fijo
- * de 130 mm con el signo de la curvatura al revés —la piel convexa se aparta de la cara, no la acompaña— y 4 mm
- * de gel).
+ * Contacto de la sonda de un cuadro (decisión 63): cuánto aprieta el operador, el marco efectivo de la sonda (ya
+ * hundida), la tabla del campo de compresión (`anatomy/compression.ts`) y el acoplamiento de cada línea
+ * (acoplamiento = contacto conseguido). Sustituye al hueco ad hoc de `lineCoupling` (un radio de piel fijo de
+ * 130 mm con el signo de la curvatura al revés —la piel convexa se aparta de la cara, no la acompaña— y 4 mm de
+ * gel).
  *
- * Criterio de contacto, por nodo α_k de la cara (equiespaciados en sen α), con el hueco con signo de la cara a la
- * piel sin deformar por la normal de la piel (d(q)/|∇d|: < 0 la sonda hunde la piel, > 0 aire), el mayor de tres
- * puntos de la huella elevacional (la inclinación fuera del plano levanta un borde):
- *  - flotación: g_ref, el menor hueco de la cara en el plano de imagen. Si es positivo la sonda flota y la
- *    película de gel lo salva hasta `gelMm` (se apaga en `gelRampMm` más);
- *  - capacidad: el hueco relativo al punto más hundido, g_k − g_ref, se cierra hasta
- *    G = capacityMm + capacitySoftMm·blandura + capacityPerPressure·max(0, −g_ref): el tejido blando del
- *    epigastrio cede más que la pared sobre costillas (`skinSoftness`) y apretar ensancha el contacto (en un
- *    contacto de Hertz el hueco que se cierra en el borde crece con la penetración); se apaga en
- *    `capacityRampMm` más.
- * contacto_k = flotación·capacidad. [ESTIMADO: el umbral lo fija que en el abdomen plano un convexo de 60 mm de
- * radio y ±34° apoye entero con la presión normal del examen (su sagita en el borde son 10,3 mm), como en
- * cualquier equipo; ver DECISIONS 63]
+ * SOLO EMPUJA. La cara convexa sobre la piel sin deformar la toca en un punto; para que los bordes apoyen, el
+ * operador hunde la sonda entera a lo largo de su eje (δ mm: el plano de imagen no cambia) y el tejido se aparta.
+ * Por nodo α_k de la cara (equiespaciados en sen α), a lo largo de su línea y en el tronco rígido: r_s, la
+ * distancia a la piel (< 0: la cara la hunde), y r_W, la distancia a la cara interna de la pared (profundidad W).
+ *  - Un elemento apoya con la pared paralela a la cara si r_W ≤ D* = W + `wallTolMm`: empujando la piel hasta la
+ *    cara, la cara interna de la pared queda a D* (o, si la pared mide menos de D* a lo largo de la línea, a lo que
+ *    mide: la pared se traslada entera) y nada se estira. Si r_W > D* la pared bajo ese elemento se dobla alejándose
+ *    de la cara (el empuje no alcanza: la línea es oblicua a la pared) y la línea no acopla. Los bordes
+ *    elevacionales de la huella, además, a ≤ `gelMm` de la piel (la inclinación fuera del plano levanta uno).
+ *  - δ: el menor que consigue lo anterior en todos los nodos, con el tope de la presión del examen: la cara no se
+ *    hunde en la piel rígida más de P = `pressMm` + `pressSoftMm`·blandura. Lo que no apoya con ese tope queda sin
+ *    acoplar. Lo que el usuario apriete (lift < 0) se suma a δ, a lo largo del eje. Al levantar la sonda (lift > 0)
+ *    el operador deja de apretar en `releaseMm`.
+ *  - Acoplamiento por nodo = (1 − smoothstep(gel, gel + rampa, hueco)) · (1 − smoothstep(D*, D* + rampa, r_W −
+ *    max(0, r_s))), el segundo factor erosionado un nodo y el producto filtrado [1 2 1]/4, interpolado entre nodos
+ *    (3 líneas por nodo): la transición ocupa unas 12 líneas y ninguna línea acoplada ve la pared doblada.
+ * [ESTIMADO: la presión. En el abdomen plano un convexo de 60 mm de radio y ±34° necesita hundirse su sagita en el
+ * borde (10,3 mm) para apoyar entero, y algo más para que la pared oblicua de los bordes quede paralela; ver
+ * DECISIONS 63]
  *
- * La tabla del campo, a lo largo de la normal del elemento (la línea θ = α_k): s₀ = contacto·(r_piel − b·gel), el
- * hueco a la piel sin deformar, y el desplazamiento del fondo de la placa s_W = s₀ + contacto·(b − 1)·W con
- * b = (r_W − r_piel)/W, lo que la pared mide a lo largo de la línea sobre su espesor W (así la cara interna de la
- * pared queda a W de la cara), menos la parte del hundimiento que se lleva la pared (`wallIndentationShare`), con el
- * tope `PROBE_COMPRESSION.plateShiftMaxMm`; la tabla guarda (s₀, (s_W − s₀)/W).
+ * Consecuencia aceptada: al apretar, todo el campo cercano se acerca a la sonda (lo profundo aparece δ mm menos
+ * profundo en la imagen: el marco efectivo es el hundido), como en un examen real.
  */
 export const CONTACT = {
-  /** Película de gel (mm) que salva la flotación sin perder el acoplamiento. [ESTIMADO] */
+  /** Película de gel (mm) que salva un hueco sin perder el acoplamiento. [ESTIMADO] */
   gelMm: 2,
-  /** Se apaga en estos mm más (la sonda levantada 4,5 mm ya no acopla). [ESTIMADO] */
+  /** Se apaga en estos mm más (un elemento a 4,5 mm de la piel ya no acopla). [ESTIMADO] */
   gelRampMm: 2.5,
-  /** Hueco relativo (mm) que la presión normal del examen cierra sobre la pared más rígida. [ESTIMADO] */
-  capacityMm: 11.5,
+  /** Tolerancia de la cara interna de la pared bajo las líneas acopladas (mm): D* = W + tolerancia. [ESTIMADO] */
+  wallTolMm: 1,
+  /** El acoplamiento se apaga en estos mm de pared doblada más allá de D*. [ESTIMADO] */
+  wallRampMm: 1.5,
+  /** Hundimiento máximo de la cara en la piel rígida (mm) con la presión del examen, sobre la pared más rígida. [ESTIMADO] */
+  pressMm: 13,
   /** Lo que añade la blandura de la pared (0,15 sobre costillas … 0,65 en el epigastrio). [ESTIMADO] */
-  capacitySoftMm: 14,
-  /** mm de hueco cerrado por mm de penetración de la sonda (contacto de Hertz, orden 1). [ESTIMADO] */
-  capacityPerPressure: 1,
-  /** El contacto se apaga en estos mm más allá de la capacidad. [ESTIMADO] */
-  capacityRampMm: 4,
-  /**
-   * Fracción del hundimiento de la piel (s₀ < 0: la sonda aprieta o bascula sobre ella) que se lleva la pared al
-   * adelgazar; el resto empuja lo de debajo. La grasa subcutánea (1–4 kPa, de memoria) es más blanda que el hígado
-   * (~5 kPa) y el músculo: con la placa rígida el talón de la subxifoidea empujaba el hígado 6 mm. [ESTIMADO 0,3–0,7]
-   */
-  wallIndentationShare: 0.5,
+  pressSoftMm: 20,
+  /** Al levantar la sonda (lift > 0) el operador deja de apretar en estos mm. [ESTIMADO] */
+  releaseMm: 3,
 } as const;
 
-/** La piel se busca hasta este múltiplo de W a lo largo de la línea para medir lo que la pared mide en ella. */
-const PLATE_SEARCH_FACTOR = 3;
-/** Estiramiento mínimo de la placa (b): la pared puede encoger a lo largo de la línea hasta la mitad, nunca invertirse. */
-const MIN_PLATE_STRETCH = 0.5;
+/** La cara interna de la pared se busca hasta este múltiplo de W a lo largo de la línea. */
+const WALL_SEARCH_FACTOR = 3;
+/** Con la pared doblada (r_W > D*) el empuje se apaga dentro de la pared, a lo sumo a D* + esto (acota el alcance). */
+const WALL_FADE_MAX_MM = 20;
+/** Iteraciones de la búsqueda de δ (falsa posición de Illinois). */
+const PRESS_ITERATIONS = 8;
 
-/**
- * Desplazamiento con el tope `plateShiftMaxMm` (S) y rodilla suave: x/(1 + (x/S)⁴)^¼ (≈ x hasta ~S/2, → ±S). Lo
- * llevan el fondo de la placa y, al hundir la sonda, la piel: con la sonda muy basculada (0,7 rad) las líneas del
- * talón corren casi paralelas a la piel y su cruce con ella queda a > 100 mm por detrás del elemento; sin tope el
- * material cruzaba el eje de curvatura (se plegaba).
- */
-export function plateShift(x: number): number {
-  const u = x / PROBE_COMPRESSION.plateShiftMaxMm;
-  return x / Math.pow(1 + u * u * u * u, 0.25);
-}
-
-/** Hueco con signo (mm) del punto q de la cara a la piel sin deformar, por la normal de la piel. */
+/** Hueco con signo (mm) del punto q a la piel sin deformar, por la normal de la piel (< 0: dentro). */
 function skinGap(q: Vec3, t: Torso): number {
   return torsoDepth(q, t) / Math.max(1e-6, length(torsoDepthGradient(q, t)));
 }
 
 /** Primer cruce (mm a lo largo de la línea) del nivel `w` de profundidad radial en [r0, r1], o null. */
 function firstCrossing(depthAt: (r: number) => number, w: number, r0: number, r1: number): number | null {
-  const step = 1;
+  const step = 2;
   let prev = r0;
   if (depthAt(r0) >= w) return r0;
   for (let r = r0 + step; r <= r1 + 1e-9; r += step) {
     if (depthAt(r) >= w) {
       let lo = prev;
       let hi = r;
-      for (let i = 0; i < 24; i++) {
+      for (let i = 0; i < 18; i++) {
         const mid = 0.5 * (lo + hi);
         if (depthAt(mid) >= w) hi = mid;
         else lo = mid;
@@ -100,34 +91,53 @@ function firstCrossing(depthAt: (r: number) => number, w: number, r0: number, r1
   return null;
 }
 
-/** Resumen del contacto (para la UI, el banco y las pruebas). */
-export interface ContactSummary {
-  /** Menor hueco de la cara en el plano de imagen (mm): > 0 la sonda flota. */
-  gapRefMm: number;
-  /** Capacidad G (mm) del cuadro. */
-  capacityMm: number;
-  /** Película de gel entre la cara y la piel (mm). */
-  gelMm: number;
-  /** Por nodo: hueco relativo (mm), distancia a la piel a lo largo de la línea (mm), estiramiento b sin contacto. */
-  relativeGapMm: number[];
-  skinAlongMm: number[];
-  stretch: number[];
+/**
+ * Primer punto de la línea E + dir·r (r ∈ [r0, r1]) dentro de la piel: la elipse del tronco (ρ = 1, donde
+ * `torsoDepth` = 0), analítica. null si la línea no entra.
+ */
+function skinEntry(E: Vec3, dir: Vec3, t: Torso, r0: number, r1: number): number | null {
+  const ia = 1 / (t.a * t.a);
+  const ib = 1 / (t.b * t.b);
+  const A = dir[0] * dir[0] * ia + dir[1] * dir[1] * ib;
+  const B = 2 * (E[0] * dir[0] * ia + E[1] * dir[1] * ib);
+  const C = E[0] * E[0] * ia + E[1] * E[1] * ib - 1;
+  if (A < 1e-12) return C <= 0 ? r0 : null;
+  const disc = B * B - 4 * A * C;
+  if (disc < 0) return null;
+  const q = Math.sqrt(disc);
+  const enter = (-B - q) / (2 * A);
+  const exit = (-B + q) / (2 * A);
+  if (exit < r0 || enter > r1) return null;
+  return Math.max(enter, r0);
 }
 
-/** Contacto y tabla de compresión de un cuadro, desde la pose y su marco. */
-export function probeContact(pose: ProbePose, frame: ProbeFrame, tr: Transducer, t: Torso): ProbeCompression & { summary: ContactSummary } {
+/** La geometría de un nodo en el tronco rígido, a lo largo de su línea desde el elemento. */
+interface NodeGeometry {
+  /** Distancia a la piel (mm; < 0 la cara la hunde); null si la línea no la cruza. */
+  rs: number | null;
+  /** Distancia a la cara interna de la pared (mm); la de búsqueda si no llega. */
+  rW: number;
+  /** Mayor hueco de los bordes elevacionales de la huella a la piel (mm, por la normal de la piel). */
+  gapElevation: number;
+}
+
+interface FaceGeometry {
+  nodes: NodeGeometry[];
+  /** Hundimiento de la cara en la piel rígida (mm): el mayor −hueco de los elementos. */
+  penetration: number;
+}
+
+function measureFace(frame: ProbeFrame, tr: Transducer, t: Torso, W: number): FaceGeometry {
   const n = PROBE_COMPRESSION.nodes;
-  const half = tr.halfSector;
   const R = tr.curvatureRadius;
   const halfElev = tr.elevationMm / 2;
   const C = frame.curvatureCenter;
-  const W = compressionPlateMm(t);
-  const gaps: number[] = [];
-  const lines: Array<{ rs: number | null; b: number }> = [];
-  let gRef = Infinity;
+  const el = frame.elevation;
+  const nodes: NodeGeometry[] = [];
+  let penetration = -Infinity;
   for (let k = 0; k < n; k++) {
     // nodos equiespaciados en σ = sen α (anatomy/compression.ts)
-    const s = nodeSin(k, half);
+    const s = nodeSin(k, tr.halfSector);
     const c = Math.sqrt(1 - s * s);
     const dir: Vec3 = [
       frame.axial[0] * c + frame.lateral[0] * s,
@@ -135,69 +145,159 @@ export function probeContact(pose: ProbePose, frame: ProbeFrame, tr: Transducer,
       frame.axial[2] * c + frame.lateral[2] * s,
     ];
     const E: Vec3 = [C[0] + dir[0] * R, C[1] + dir[1] * R, C[2] + dir[2] * R];
-    let worst = -Infinity;
-    for (const e of [-halfElev, 0, halfElev]) {
-      const g = skinGap([E[0] + frame.elevation[0] * e, E[1] + frame.elevation[1] * e, E[2] + frame.elevation[2] * e], t);
-      worst = Math.max(worst, g);
-      // la flotación y la presión, en el plano de imagen: un borde elevacional hundido no es presión
-      if (e === 0) gRef = Math.min(gRef, g);
-    }
-    gaps.push(worst);
-    // la línea del nodo en el tronco rígido: la piel y lo que la pared mide a lo largo de ella (b)
+    const gapE = Math.max(
+      skinGap([E[0] + el[0] * halfElev, E[1] + el[1] * halfElev, E[2] + el[2] * halfElev], t),
+      skinGap([E[0] - el[0] * halfElev, E[1] - el[1] * halfElev, E[2] - el[2] * halfElev], t),
+    );
+    penetration = Math.max(penetration, -skinGap(E, t));
     const depthAt = (r: number): number => -torsoDepth([E[0] + dir[0] * r, E[1] + dir[1] * r, E[2] + dir[2] * r], t);
-    const rs = firstCrossing(depthAt, 0, -60, 200);
-    const rW = rs === null ? null : firstCrossing(depthAt, W, rs, rs + PLATE_SEARCH_FACTOR * W);
-    // una línea que roza la pared y no llega a W: la placa la estira lo que el tope permita
-    lines.push({ rs, b: rs === null ? 1 : rW === null ? PLATE_SEARCH_FACTOR : (rW - rs) / W });
+    const rs = skinEntry(E, dir, t, -60, 200);
+    // a lo largo de la línea la pared mide al menos ~W: la búsqueda de su cara interna empieza cerca
+    const near = rs === null ? 0 : rs + 0.9 * W;
+    const rW =
+      rs === null
+        ? null
+        : depthAt(near) >= W
+          ? firstCrossing(depthAt, W, rs, near)
+          : firstCrossing(depthAt, W, near, rs + WALL_SEARCH_FACTOR * W);
+    nodes.push({ rs, rW: rs === null ? Infinity : (rW ?? rs + WALL_SEARCH_FACTOR * W), gapElevation: gapE });
   }
-  const hover = 1 - smoothstep(CONTACT.gelMm, CONTACT.gelMm + CONTACT.gelRampMm, gRef);
-  const G = CONTACT.capacityMm + CONTACT.capacitySoftMm * skinSoftness(pose) + CONTACT.capacityPerPressure * Math.max(0, -gRef);
-  const gel = Math.max(0, gRef);
-  const relative = gaps.map((g) => g - gRef);
-  // Lo más que la piel puede subir a lo largo de una línea: el tope de la placa más lo que la placa puede encoger
-  // (b ≥ 0,5). Una línea que lo pide (> 60° de la normal de la piel, con la sonda muy basculada) no llega a apoyar
-  // entera: su contacto se reduce hasta ahí. Así s_W ≤ el tope en todo nodo y la caída acaba a W + 62,5 mm.
-  const riseMax = PROBE_COMPRESSION.plateShiftMaxMm + (1 - MIN_PLATE_STRETCH) * W;
-  const contact = lines.map((l, k) => {
-    const c = l.rs === null ? 0 : hover * (1 - smoothstep(G, G + CONTACT.capacityRampMm, relative[k]));
-    const along = (l.rs ?? 0) - l.b * gel;
-    return c * along > riseMax ? riseMax / along : c;
-  });
-  const nodes: CompressionNode[] = lines.map((l, k) => {
-    // el tope de la piel, solo al hundir (al subir el tejido lo limita el contacto)
-    const raw = contact[k] * ((l.rs ?? 0) - l.b * gel);
-    const s0 = raw < 0 ? plateShift(raw) : raw;
-    // el fondo de la placa: concéntrico con la cara, salvo la parte del hundimiento que se lleva la pared al
-    // adelgazar; con el tope y rodilla suave (sin ella el peritoneo pasaba de concéntrico a la cúpula rígida en
-    // 2–3° de las líneas oblicuas) y b ≥ 0,5: la placa nunca se invierte
-    const sW = s0 + contact[k] * (l.b - 1) * W - CONTACT.wallIndentationShare * Math.min(0, s0);
-    const bm1 = Math.max(MIN_PLATE_STRETCH - 1, (plateShift(sW) - s0) / W);
-    return [s0, bm1];
-  });
-  return {
-    center: [C[0], C[1], C[2]],
-    radiusMm: R,
-    axial: frame.axial,
-    lateral: frame.lateral,
-    halfAngle: half,
-    halfElevationMm: halfElev,
-    plateMm: W,
-    nodes,
-    contact,
-    summary: {
-      gapRefMm: gRef,
-      capacityMm: G,
-      gelMm: gel,
-      relativeGapMm: relative,
-      skinAlongMm: lines.map((l) => l.rs ?? NaN),
-      stretch: lines.map((l) => l.b),
-    },
-  };
+  return { nodes, penetration };
 }
 
-/** Contacto de una pose con su propio marco (pruebas y consultas sin simulador). */
-export function contactForPose(pose: ProbePose, tr: Transducer, t: Torso): ProbeCompression {
-  return probeContact(pose, probeFrame(pose, t, tr), tr, t);
+/** Lo que le falta al nodo para apoyar con la pared paralela (mm; ≤ 0: apoya). */
+function nodeShortfall(g: NodeGeometry, wallTarget: number): number {
+  if (g.rs === null) return Infinity;
+  return Math.max(g.rW - wallTarget, g.gapElevation - CONTACT.gelMm);
+}
+
+/** Resumen del contacto (para la UI, el banco y las pruebas). */
+export interface ContactSummary {
+  /** Indentación efectiva (mm, a lo largo del eje de la sonda) que el operador añade a la pose. */
+  indentMm: number;
+  /** La que haría falta para que apoye toda la cara (mm; Infinity si ninguna basta). */
+  neededMm: number;
+  /** Tope del hundimiento de la cara en la piel rígida (mm), con lo que apriete el usuario. */
+  capacityMm: number;
+  /** Hundimiento de la cara en la piel rígida con el marco efectivo (mm). */
+  penetrationMm: number;
+  /** D*: profundidad (mm) de la cara interna de la pared bajo las líneas que apoyan. */
+  wallTargetMm: number;
+  /** Por nodo, en el marco efectivo: distancia a la piel y a la cara interna de la pared a lo largo de la línea (mm). */
+  skinAlongMm: number[];
+  wallAlongMm: number[];
+}
+
+/** El contacto de un cuadro: la tabla del campo, el marco efectivo de la sonda (hundida) y el resumen. */
+export interface ProbeContact extends ProbeCompression {
+  frame: ProbeFrame;
+  summary: ContactSummary;
+}
+
+/** Contacto, marco efectivo y tabla de compresión de un cuadro, desde la pose. */
+export function probeContact(pose: ProbePose, tr: Transducer, t: Torso): ProbeContact {
+  const W = compressionPlateMm(t);
+  const target = W + CONTACT.wallTolMm;
+  // la sonda se hunde a lo largo de su eje (el operador empuja el mango): el plano de imagen no cambia, solo su
+  // origen baja por la línea central. Lo que el usuario aprieta (lift < 0) se suma a lo largo del mismo eje (por
+  // la normal de la piel, con la sonda inclinada, alejaba la cara y deslizaba el plano fuera de sí mismo)
+  const press = Math.max(0, -pose.lift);
+  const rigidFrame = probeFrame({ ...pose, lift: Math.max(0, pose.lift) }, t, tr);
+  const frameAt = (indent: number): ProbeFrame => {
+    const a = rigidFrame.axial;
+    const move = (p: Vec3): Vec3 => [p[0] + a[0] * indent, p[1] + a[1] * indent, p[2] + a[2] * indent];
+    return { ...rigidFrame, face: move(rigidFrame.face), curvatureCenter: move(rigidFrame.curvatureCenter) };
+  };
+  const shortfall = (g: FaceGeometry): number => Math.max(...g.nodes.map((n) => nodeShortfall(n, target)));
+  // δ: el menor que hace apoyar toda la cara, con el tope de la presión
+  const rigid = measureFace(frameAt(0), tr, t, W);
+  const capacity = CONTACT.pressMm + CONTACT.pressSoftMm * skinSoftness(pose);
+  const maxIndent = Math.max(0, capacity - Math.max(0, rigid.penetration));
+  let q0 = shortfall(rigid);
+  let indent = 0;
+  let needed = 0;
+  if (q0 > 0) {
+    let hi = maxIndent;
+    let q1 = hi > 0 ? shortfall(measureFace(frameAt(hi), tr, t, W)) : q0;
+    if (q1 > 0 || !Number.isFinite(q0)) {
+      indent = hi;
+      needed = q1 > 0 ? Infinity : hi;
+    } else {
+      // falsa posición (Illinois) en [lo, hi] con q(lo) > 0 ≥ q(hi); se queda con el extremo que apoya
+      let lo = 0;
+      let side = 0;
+      for (let i = 0; i < PRESS_ITERATIONS && hi - lo > 0.05; i++) {
+        const x = Math.min(hi - 0.01, Math.max(lo + 0.01, (lo * q1 - hi * q0) / (q1 - q0)));
+        const qx = shortfall(measureFace(frameAt(x), tr, t, W));
+        if (qx > 0) {
+          lo = x;
+          q0 = qx;
+          if (side === -1) q1 /= 2;
+          side = -1;
+        } else {
+          hi = x;
+          q1 = qx;
+          if (side === 1) q0 /= 2;
+          side = 1;
+        }
+      }
+      indent = hi;
+      needed = hi;
+    }
+  }
+  // al levantar la sonda el operador deja de apretar; lo que apriete el usuario, encima
+  indent = indent * (1 - smoothstep(0, CONTACT.releaseMm, pose.lift)) + press;
+  const frame = frameAt(indent);
+  const face = measureFace(frame, tr, t, W);
+  const nodes: CompressionNode[] = [];
+  const hover: number[] = [];
+  const parallel: number[] = [];
+  for (const g of face.nodes) {
+    if (g.rs === null) {
+      nodes.push([0, 0, target]);
+      hover.push(0);
+      parallel.push(0);
+      continue;
+    }
+    // la piel hundida llega a la cara; la cara interna de la pared a D* (o a lo que la pared mida a lo largo de la
+    // línea: se traslada entera) si el empuje alcanza; si no, el empuje se apaga dentro de la pared
+    const s0 = Math.min(0, g.rs);
+    const T = g.rW - g.rs;
+    const D = Math.min(Math.max(g.rW, Math.min(target, T)), target + WALL_FADE_MAX_MM);
+    nodes.push([s0, Math.min(0, g.rW - D), D]);
+    hover.push(1 - smoothstep(CONTACT.gelMm, CONTACT.gelMm + CONTACT.gelRampMm, Math.max(g.rs, g.gapElevation)));
+    // la pared, respecto de la piel (un hueco de gel la baja entera, sin doblarla)
+    parallel.push(1 - smoothstep(target, target + CONTACT.wallRampMm, g.rW - Math.max(0, g.rs)));
+  }
+  // La pared paralela, erosionada un nodo: entre un nodo que apoya y otro cuya pared se dobla, la tabla interpolada
+  // ya dobla la pared (la cara interna sube 10 mm en 1°); esas líneas no acoplan. Después, un filtro [1 2 1]/4: la
+  // transición ocupa ~4 nodos (12 líneas) y lo que se extiende más allá de la erosión queda ≤ 1/8
+  const n = parallel.length;
+  const at = (v: number[], k: number): number => v[Math.min(n - 1, Math.max(0, k))];
+  const eroded = hover.map((h, k) => h * Math.min(at(parallel, k - 1), parallel[k], at(parallel, k + 1)));
+  const contact = eroded.map((c, k) => 0.25 * at(eroded, k - 1) + 0.5 * c + 0.25 * at(eroded, k + 1));
+  return {
+    center: [frame.curvatureCenter[0], frame.curvatureCenter[1], frame.curvatureCenter[2]],
+    radiusMm: tr.curvatureRadius,
+    axial: frame.axial,
+    lateral: frame.lateral,
+    halfAngle: tr.halfSector,
+    halfElevationMm: tr.elevationMm / 2,
+    plateMm: W,
+    nodes,
+    reachMm: compressionReachMm(nodes),
+    contact,
+    frame,
+    summary: {
+      indentMm: indent,
+      neededMm: needed,
+      capacityMm: capacity + press,
+      penetrationMm: face.penetration,
+      wallTargetMm: target,
+      skinAlongMm: face.nodes.map((g) => g.rs ?? NaN),
+      wallAlongMm: face.nodes.map((g) => g.rW),
+    },
+  };
 }
 
 /** Acoplamiento acústico de la línea θ (0–1): el contacto conseguido en su elemento. */

@@ -6,7 +6,7 @@ import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
-import { contactForPose } from '../probe/contact';
+import { probeContact } from '../probe/contact';
 import { CONVEX_C35, probeFrame, type ProbePose } from '../probe/probe';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 
@@ -28,7 +28,7 @@ describe('Transmisión hasta la puerta PW', () => {
       anatomy,
       frame,
       CONVEX_C35,
-      contactForPose(p, CONVEX_C35, scene.torso),
+      probeContact(p, CONVEX_C35, scene.torso),
       gate.theta,
       gate.r,
       sample,
@@ -40,8 +40,9 @@ describe('Transmisión hasta la puerta PW', () => {
     const contact = t(pose);
     expect(contact).toBeGreaterThan(0.01);
     expect(t({ ...pose, lift: 10 })).toBe(0);
-    // el acoplamiento parcial atenúa sin apagar (misma ley que el modo B)
-    const partial = t({ ...pose, lift: 3 });
+    // el acoplamiento parcial atenúa sin apagar (misma ley que el modo B): levantada 2,5 mm el operador casi ha
+    // dejado de apretar (decisión 63) y el gel salva el hueco a medias
+    const partial = t({ ...pose, lift: 2.5 });
     expect(partial).toBeGreaterThan(0);
     expect(partial).toBeLessThan(contact);
   });

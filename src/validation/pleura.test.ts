@@ -970,8 +970,8 @@ describe('banco de la cortina (fidelity.ts): líneas, hígado puro, borde y desl
     anatomy,
     frame,
     pose,
-    // el acoplamiento de las líneas (decisión 63); la anatomía de este gemelo es la del tronco rígido
-    contact: probeContact(pose, frame, CONVEX_C35, scene.torso),
+    // el acoplamiento de las líneas (decisión 63); la anatomía y el marco de este gemelo son los del tronco rígido
+    contact: probeContact(pose, CONVEX_C35, scene.torso),
     sample: engine.sample,
   } as unknown as Simulator;
 

@@ -422,7 +422,7 @@ export interface DiaphragmBin extends WallBin {
 
 /**
  * Tramos de incidencia (°): una pared especular brilla a 0–20° y se apaga hacia 60°. El de 60–80° solo
- * se informa (la cápsula oblicua de la subxifoidea, decisiones 60 y 63); a ≥ 80° no se agrega nada.
+ * se informa (la cápsula oblicua de la subxifoidea, decisiones 60 y 64); a ≥ 80° no se agrega nada.
  */
 export const WALL_INCIDENCE_BINS_DEG = [0, 20, 40, 60, 80] as const;
 
@@ -803,7 +803,7 @@ export function thinGatedBins(summary: FaceSummary, min = GATED_MIN_RECORDS): st
   return out;
 }
 
-// ——— Contorno de las caras de órgano (PR 0 de las decisiones 60 y 63): métricas solo informadas ———
+// ——— Contorno de las caras de órgano (PR 0 de las decisiones 60 y 64): métricas solo informadas ———
 
 /** σ_L: vecinas a cada lado de la mediana corta (7 líneas) y de la larga (41), y registros mínimos. */
 export const SIGMA_L_SHORT_HALF = 3;

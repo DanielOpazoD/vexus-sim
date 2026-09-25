@@ -528,6 +528,9 @@ test('sin contacto no hay Doppler: el color y el espectro se apagan al levantar 
 
 test('modo alumno ciego: sin diagnóstico en pantalla; el docente lo ve con ?docente', async ({ page }) => {
   // Guía §17. Nombres clínicos de los casos (no deben aparecer en modo alumno).
+  // Arranca la aplicación dos veces: con SwiftShader cada arranque compila los 16 programas (decisión 58) y
+  // con la máquina cargada los dos no caben en los 90 s por omisión (fallaba igual en main).
+  test.setTimeout(240_000);
   const diagnoses = ['Adulto sano', 'Congestión venosa', 'congestión moderada', 'fallo derecho'];
   const errors = await bootWithoutErrors(page);
   await expect(page.locator('#debug-toggle')).toBeHidden();

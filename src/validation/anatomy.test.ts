@@ -70,13 +70,13 @@ describe('Anatomía implícita (base B)', () => {
       const l = Math.hypot(...d);
       return [d[0] / l, d[1] / l, d[2] / l];
     };
-    const d1 = dir(infundibulum.p as V, hartmann.p as V);
-    const d2 = dir(hartmann.p as V, neck.p as V);
+    const d1 = dir(infundibulum.p, hartmann.p);
+    const d2 = dir(hartmann.p, neck.p);
     expect((Math.acos(d1[0] * d2[0] + d1[1] * d2[1] + d1[2] * d2[2]) * 180) / Math.PI).toBeGreaterThan(40);
     // volumen y tamaño de una vesícula normal en ayunas (7–10 cm × ≤ 4 cm; 30–50 mL)
     const lo = [0, 1, 2].map((k) => Math.min(...gb.nodes.map((n) => n.p[k] - n.r)));
     const hi = [0, 1, 2].map((k) => Math.max(...gb.nodes.map((n) => n.p[k] + n.r)));
-    const axis = dir(neck.p as V, fundus.p as V);
+    const axis = dir(neck.p, fundus.p);
     let lumen = 0;
     let aMin = Infinity;
     let aMax = -Infinity;
@@ -103,7 +103,7 @@ describe('Anatomía implícita (base B)', () => {
   it('pared vesicular única (decisión 67): la cápsula hepática de la fosa no dibuja su propia cara', () => {
     // desde el cuerpo hacia arriba (craneal) se cruza la luz, la pared y entra en el hígado por la fosa: la única
     // cara especular es la de la luz; la cápsula pegada a la pared no dibuja otra línea paralela
-    const body = scene.gallbladder.nodes[1].p as V;
+    const body = scene.gallbladder.nodes[1].p;
     const faces = new Set<Interface>();
     let reachedLiver = false;
     for (let t = 0; t < 40; t += 0.05) {

@@ -70,3 +70,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [64](DECISIONS.md#L1919) | Reservada: lámina difusa de la cápsula hepática | reservada |
 | [65](DECISIONS.md#L1924) | Reservada: modulación de R_ef de las caras | reservada |
 | [66](DECISIONS.md#L1929) | Tríplex: el color sigue en pantalla con el PW, la puerta nace en la caja y la caja acompaña a la puerta | vigente |
+| [67](DECISIONS.md#L1963) | Vesícula en pera curvada con una sola pared; ningún vaso la atraviesa | vigente |

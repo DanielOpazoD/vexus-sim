@@ -1963,6 +1963,38 @@ se acota junto al borde del sector, normalización idempotente),
 «tríplex» de `smoke.spec.ts` (color sobre las interlobares y espectro a la vez, puerta dentro de la caja, cadencia
 menor que con el color solo y vuelta al color solo).
 
+## 67. Vesícula en pera curvada con una sola pared; ningún vaso la atraviesa
+
+**Contexto.** El dueño (médico, 25-09-2026): «vesícula biliar demasiado perfectamente geométrica, doble pared,
+vasos hepáticos que pasan a través de la vesícula». Medido en el modelo: la vesícula era un único elipsoide recto
+afilado (decisión 41), sin cuello, bolsa de Hartmann ni pliegues; en el lado hepático se veían dos líneas especulares
+paralelas a 1,9 mm (la de la luz y la de la cápsula hepática de la fosa, que no se suprimía), lisas y de grosor
+idéntico; y la suprahepática media nacía en la fosa: su primer tramo cruzaba la luz 34 mm (726 mm³, hasta 5,4 mm
+dentro, igual en los tres casos), con sangre y flujo Doppler dentro de la bilis. El cístico acababa a 40 mm del
+cuello. Referencias (revisión con fuentes, 25-09): vesícula de 7–10 × 3–4 cm y 30–50 mL; pared en ayunas < 3 mm,
+una sola línea ecogénica fina (la pared doble o en capas es patológica: edema, hepatitis, insuficiencia cardíaca);
+el cuello se curva y pliega (bolsa de Hartmann); la VHM corre por encima y por detrás de la vesícula en el plano de
+Cantlie y solo tributarias de 2–3 mm llegan a rozar el lecho (Radiopaedia; Lucius 2025; Ball 2006; Zhang 2005).
+**Opciones.** (1) Retocar el elipsoide (radios y afilamiento): sigue siendo un óvalo sin cuello. (2) Unión de
+elipsoides: cuesta más uniforms y deja cinturas entre ellos. (3) La elegida: una cadena de conos redondeados sobre
+una línea media curva, unida con mezcla suave.
+**Decisión.** `organs/gallbladder.ts`: la luz es una cadena de cinco nodos (fondo 12 mm, cuerpo 14,5, infundíbulo 11,
+bolsa de Hartmann 8, cuello 4,5) con `smoothMin` de 6 mm entre tramos (`gbSegment`, gemelo GLSL con el mismo orden de
+operaciones; uniforms `uGbNodes[5]` y `uGbExtra` = mezcla y pared, las mismas 6 ranuras que antes). El fondo queda
+anteroinferolateral contra el peritoneo de la pared anterior (2–6 mm según el hábito), la bolsa de Hartmann cuelga
+por debajo del infundíbulo y del cuello, y el cuello se dobla en «S» (> 40°) hacia el hilio; 35,5 mL y ~8 cm. La pared
+pasa a 1,8 mm. La cápsula hepática que toca la pared de la vesícula en su fosa no dibuja su cara
+(`GALLBLADDER_CONTACT_MM` = 1 mm, como Morison con la grasa perirrenal): la pared vesicular es una sola línea. La VHM
+nace en el parénquima de IVb/V por encima de la fosa (a ≥ 5 mm de la pared con su calibre máximo) y el cístico sale de
+la punta del cuello y baja hacia dentro hasta el colédoco. El navegador 3D dibuja la vesícula con la misma distancia.
+**Consecuencias.** La vesícula se ve como una pera con el cuello plegado y una sola pared fina; en color no hay flujo
+dentro. Falta la sombra de refracción de los bordes laterales del cuello y del fondo, que no está modelada. Un gancho
+`setPose` de las pruebas permite capturar cualquier pose (la de la vesícula en eje largo sale de una búsqueda en CPU).
+**Verificación.** `anatomy.test.ts`: la forma (fondo anteroinferolateral, cuello doblado > 40°, Hartmann colgante,
+30–50 mL, 70–100 mm de largo, cuerpo ≤ 40 mm), la pared única (desde el cuerpo hacia la fosa la única cara especular
+es la de la luz) y ningún vaso en la luz ni en la pared en los tres casos, con la VHM a ≥ 5 mm (antes 726 mm³ dentro);
+la e2e de equivalencia TS↔GLSL (50 000 puntos); capturas con GPU (M4) antes y después en eje largo, en 2D y color.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

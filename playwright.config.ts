@@ -10,7 +10,10 @@ export default defineConfig({
   testDir: 'e2e',
   timeout: 90_000,
   expect: { timeout: 15_000 },
-  fullyParallel: false,
+  // en CI la e2e se reparte en fragmentos (`--shard`, ci.yml): por prueba y no por archivo, que son dos y muy
+  // desiguales (la equivalencia, una prueba; el humo, el resto). Con un trabajador por fragmento el orden no
+  // importa (cada prueba abre su página). En local, por archivo como siempre.
+  fullyParallel: !!process.env.CI,
   retries: process.env.CI ? 1 : 0,
   // en CI: anotaciones de GitHub + lista con la duración de cada prueba (para ver qué encarece la e2e)
   reporter: process.env.CI ? [['github'], ['list']] : 'list',

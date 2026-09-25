@@ -41,6 +41,13 @@ describe('HUD', () => {
     expect(p.topRight[0]).toContain('FA');
     expect(p.chip).toBe('Puerta 9.5 cm · 50 mm/s');
   });
+  it('tríplex (decisión 66): las líneas del color y del PW, y el chip con las dos', () => {
+    const t = hudText({ ...base, mode: 'triplex' });
+    expect(t.bottomRight).toHaveLength(2);
+    expect(t.bottomRight[0]).toMatch(/^Color ±\d+ cm\/s · WF 60 Hz · 8 Hz$/);
+    expect(t.bottomRight[1]).toMatch(/^PW ±\d+ cm\/s · puerta 4\.0 mm$/);
+    expect(t.chip).toMatch(/^±\d+ cm\/s · Puerta 9\.5 cm · 50 mm\/s$/);
+  });
   it('«CX» cuando la composición espacial se forma (decisión 58), y solo entonces', () => {
     expect(hudText({ ...base, compound: true }).topRight[1]).toBe('18 cm · 3,5 MHz · G 0 dB · RD 60 · CX');
     expect(hudText({ ...base, compound: false }).topRight[1]).not.toContain('CX');

@@ -1916,6 +1916,50 @@ equivalencia GLSL = TS con la compresión de cada punto de partida, arranque, ca
 de fidelidad, composición espacial (con la subxifoidea basculada 10° menos), normales, ecos de interfaz, pleura,
 pared, pasada A, moteado al inclinar y girar, fundido del ancla, sin contacto no hay Doppler y color: pasan.
 
+## 64. Reservada: lámina difusa de la cápsula hepática [Estado: reservada]
+
+Número reservado para la lámina difusa de la cápsula (plan de contornos); ya la citan `capsuleTwin.test.ts`,
+`fidelity.ts` y `beamModel.ts`. La redacta su rama.
+
+## 65. Reservada: modulación de R_ef de las caras [Estado: reservada]
+
+Número reservado para la modulación de R_ef a lo largo de las caras (plan de contornos; la cita
+`docs/fidelity/README.md`). La redacta su rama.
+
+## 66. Tríplex: el color sigue en pantalla con el PW, la puerta nace en la caja y la caja acompaña a la puerta
+
+**Contexto.** El dueño (médico, 25-09-2026): «al poner color doppler y luego poner PW se espera que se mantenga el
+doppler color en pantalla». En un ecógrafo real, pulsar PW con el color encendido da el modo tríplex (B + color +
+espectro): el color muestra dónde está el vaso y la puerta se coloca dentro de él. Aquí el reductor del equipo
+hacía los modos excluyentes (`color.enabled = mode === 'color'`, `pw.enabled = mode === 'pw'`): el color se apagaba
+al abrir el PW y la puerta quedaba donde estuviera (por omisión a 9 cm en el centro, casi siempre en parénquima). El
+motor ya podía llevar las dos cosas a la vez (la pasada F y la cadena PW miran cada una su bandera).
+**Opciones.** (1) Solo quitar la exclusividad: el color se queda, pero la puerta puede nacer fuera de la caja y, al
+moverla, salir de ella sin que el color la siga. (2) El modo «actualizar» de algunos equipos (la imagen se congela
+mientras corre el espectro): útil para PRF altas, pero el alumno pierde la imagen mientras coloca la puerta. (3) La
+elegida: tríplex simultáneo como en los equipos actuales, con la puerta que nace en la caja y la caja que la
+acompaña.
+**Decisión.** `ImagingMode` gana `'triplex'` (`src/app/equipment.ts`; `store.ts` reexporta el tipo). Los botones y
+atajos de Color y PW alternan su función y conservan la otra (`toggleMode`: color + PW → tríplex; PW otra vez →
+color solo; 2D apaga las dos), como las teclas de un equipo; la herramienta de medida de la pestaña Medir abre el PW
+conservando el color. En el reductor, el PW que se abre con el color encendido pone la puerta en el centro de la
+caja si estaba fuera (`gateInColorBox`); el color que se abre con el PW encendido centra la caja en la puerta; y en
+tríplex la caja se centra en la puerta cuando esta sale de ella, conservando su tamaño y acotada al sector (en
+dúplex, sin color, la caja no se mueve). La cadencia física del color (decisión 39) descuenta el tiempo del PW
+intercalado: cada disparo PW espera el eco del fondo de la puerta y se repite a su PRF sin huecos, así que la
+imagen solo dispone de la fracción `1 − PRF·2d/c` (`pwDutyCycle`, acotada a 0,8): con la PRF por omisión y la
+puerta a 9 cm, un 31 % menos de cuadros. El HUD da las dos líneas (color y PW) y el chip las dos escalas; la
+pestaña Doppler muestra los dos subpaneles.
+**Consecuencias.** El alumno coloca la puerta sobre el color, como en la clínica, y ve que la imagen se refresca más
+despacio en tríplex. La PRF del PW no se reparte con el color (los equipos reales limitan a veces la escala del PW
+en tríplex simultáneo): queda en `LIMITATIONS.md`. La composición espacial sigue apagada mientras haya color.
+**Verificación.** `equipment.test.ts` (alternancia de los modos, la puerta que salta a la caja o se queda si ya
+estaba dentro, la caja que se centra en la puerta al abrir el color desde el PW, la caja que acompaña a la puerta y
+se acota junto al borde del sector, normalización idempotente),
+`colorTiming.test.ts` (el tiempo del PW y su cota), `controllers.test.ts` (HUD y chip del tríplex) y la e2e
+«tríplex» de `smoke.spec.ts` (color sobre las interlobares y espectro a la vez, puerta dentro de la caja, cadencia
+menor que con el color solo y vuelta al color solo).
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

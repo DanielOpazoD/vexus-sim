@@ -1,8 +1,9 @@
-import type { EquipmentCommand } from '../app/equipment';
+import { toggleMode, type EquipmentCommand } from '../app/equipment';
 import type { Store } from '../app/store';
 
 /**
- * Atajos de teclado (misma familia que EchoTwin): 2 / C / P modos, Espacio
+ * Atajos de teclado (misma familia que EchoTwin): 2 / C / P modos (C y P alternan su función y
+ * conservan la otra: tríplex, decisión 66), Espacio
  * congela, H oculta el navegador, Esc cancela la herramienta, [ ] profundidad,
  * − + ganancia. Se ignoran cuando el foco está en un control de formulario.
  */
@@ -16,11 +17,11 @@ export function bindKeyboardShortcuts(store: Store, dispatch: (cmd: EquipmentCom
         break;
       case 'c':
       case 'C':
-        store.set({ mode: store.get().mode === 'color' ? 'B' : 'color', tab: 'doppler' });
+        store.set({ mode: toggleMode(store.get().mode, 'color'), tab: 'doppler' });
         break;
       case 'p':
       case 'P':
-        store.set({ mode: store.get().mode === 'pw' ? 'B' : 'pw', tab: 'doppler' });
+        store.set({ mode: toggleMode(store.get().mode, 'pw'), tab: 'doppler' });
         break;
       case ' ':
         store.set({ frozen: !store.get().frozen });

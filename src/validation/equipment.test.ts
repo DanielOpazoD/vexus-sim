@@ -2,10 +2,16 @@ import { describe, expect, it } from 'vitest';
 import {
   EQUIPMENT_LIMITS,
   EquipmentController,
+  gateInColorBox,
   maxPrfForDepth,
+  modeFrom,
+  modeHasColor,
+  modeHasPw,
   normalizeEquipment,
   reduceEquipment,
+  toggleMode,
   type EquipmentContext,
+  type ImagingMode,
 } from '../app/equipment';
 import { defaultEquipment } from '../app/simulator';
 import { C_RECONSTRUCTION_MM_S } from '../core/units';
@@ -97,6 +103,77 @@ describe('Estado del equipo', () => {
     expect(e.bmode.compound).toBe(true);
     e = reduceEquipment(e, { type: 'mode', mode: 'B' }, ctx);
     expect(e.bmode.compound).toBe(true);
+    expect(normalizeEquipment(e, ctx)).toEqual(e);
+  });
+});
+
+describe('Tríplex (decisión 66)', () => {
+  const box = (e: ReturnType<typeof base>) => [e.color.theta0, e.color.theta1, e.color.r0, e.color.r1];
+
+  it('Color y PW alternan su función y conservan la otra; 2D apaga las dos', () => {
+    expect(toggleMode('B', 'color')).toBe('color');
+    expect(toggleMode('B', 'pw')).toBe('pw');
+    expect(toggleMode('color', 'pw')).toBe('triplex');
+    expect(toggleMode('pw', 'color')).toBe('triplex');
+    expect(toggleMode('triplex', 'pw')).toBe('color');
+    expect(toggleMode('triplex', 'color')).toBe('pw');
+    expect(toggleMode('color', 'color')).toBe('B');
+    expect(toggleMode('pw', 'pw')).toBe('B');
+    for (const m of ['B', 'color', 'pw', 'triplex'] as ImagingMode[]) expect(modeFrom(modeHasColor(m), modeHasPw(m))).toBe(m);
+  });
+
+  it('el tríplex enciende color y PW; la puerta que estaba fuera de la caja salta a su centro', () => {
+    let e = base();
+    e = reduceEquipment(e, { type: 'color', patch: { theta0: -0.1, theta1: 0.1, r0: 100, r1: 140 } }, ctx);
+    // con el color apagado la puerta se mueve sola y la caja no la sigue
+    e = reduceEquipment(e, { type: 'placeGate', theta: 0.3, r: 60 }, ctx);
+    expect(box(e)).toEqual([-0.1, 0.1, 100, 140]);
+    e = reduceEquipment(e, { type: 'mode', mode: 'color' }, ctx);
+    e = reduceEquipment(e, { type: 'mode', mode: 'triplex' }, ctx);
+    expect([e.color.enabled, e.pw.enabled]).toEqual([true, true]);
+    expect(e.pw.theta).toBeCloseTo(0, 9);
+    expect(e.pw.depthMm).toBeCloseTo(120, 9);
+    expect(gateInColorBox(e)).toBe(true);
+  });
+
+  it('el color que se abre con el PW encendido centra la caja en la puerta', () => {
+    let e = base();
+    e = reduceEquipment(e, { type: 'color', patch: { theta0: -0.1, theta1: 0.1, r0: 100, r1: 140 } }, ctx);
+    e = reduceEquipment(e, { type: 'mode', mode: 'pw' }, ctx);
+    e = reduceEquipment(e, { type: 'placeGate', theta: 0.3, r: 60 }, ctx);
+    // en dúplex (sin color) la caja no sigue a la puerta
+    expect(box(e)).toEqual([-0.1, 0.1, 100, 140]);
+    e = reduceEquipment(e, { type: 'mode', mode: 'triplex' }, ctx);
+    expect([e.pw.theta, e.pw.depthMm]).toEqual([0.3, 60]);
+    expect(gateInColorBox(e)).toBe(true);
+    expect((e.color.theta0 + e.color.theta1) / 2).toBeCloseTo(0.3, 9);
+  });
+
+  it('la puerta que ya estaba dentro de la caja no se mueve al abrir el tríplex', () => {
+    let e = base();
+    e = reduceEquipment(e, { type: 'color', patch: { theta0: -0.1, theta1: 0.1, r0: 100, r1: 140 } }, ctx);
+    e = reduceEquipment(e, { type: 'placeGate', theta: 0.05, r: 110 }, ctx);
+    e = reduceEquipment(e, { type: 'mode', mode: 'color' }, ctx);
+    e = reduceEquipment(e, { type: 'mode', mode: 'triplex' }, ctx);
+    expect([e.pw.theta, e.pw.depthMm]).toEqual([0.05, 110]);
+  });
+
+  it('en tríplex la caja acompaña a la puerta que sale de ella, con su tamaño; dentro no se mueve', () => {
+    let e = base();
+    e = reduceEquipment(e, { type: 'color', patch: { theta0: -0.1, theta1: 0.1, r0: 100, r1: 140 } }, ctx);
+    e = reduceEquipment(e, { type: 'mode', mode: 'triplex' }, ctx);
+    e = reduceEquipment(e, { type: 'placeGate', theta: 0.02, r: 130 }, ctx);
+    expect(box(e)).toEqual([-0.1, 0.1, 100, 140]);
+    e = reduceEquipment(e, { type: 'placeGate', theta: -0.3, r: 70 }, ctx);
+    expect(gateInColorBox(e)).toBe(true);
+    expect((e.color.theta0 + e.color.theta1) / 2).toBeCloseTo(-0.3, 9);
+    expect((e.color.r0 + e.color.r1) / 2).toBeCloseTo(70, 9);
+    expect(e.color.theta1 - e.color.theta0).toBeCloseTo(0.2, 9);
+    expect(e.color.r1 - e.color.r0).toBeCloseTo(40, 9);
+    // junto al borde del sector la caja se acota dentro de la imagen y sigue conteniendo la puerta
+    e = reduceEquipment(e, { type: 'placeGate', theta: ctx.halfSectorRad, r: 170 }, ctx);
+    expect(gateInColorBox(e)).toBe(true);
+    expect(e.color.theta1).toBeLessThanOrEqual(ctx.halfSectorRad + 1e-9);
     expect(normalizeEquipment(e, ctx)).toEqual(e);
   });
 });

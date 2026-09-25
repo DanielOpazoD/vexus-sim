@@ -1,5 +1,5 @@
 import { VESSEL_META, type VesselId } from '../physiology/vessels';
-import type { EquipmentCommand } from './equipment';
+import { gateInColorBox, type EquipmentCommand } from './equipment';
 import {
   equivalenceSweep,
   interfaceShellEquivalence,
@@ -174,6 +174,8 @@ export interface TestHooks {
   colorOnVessel: (vessels: VesselId[]) => number | null;
   /** Celdas de color visibles tras forzar un cuadro de color (sin mover la caja). */
   colorCells: () => number;
+  /** Funciones encendidas del equipo y si la puerta está dentro de la caja (tríplex, decisión 66). */
+  modeState: () => { color: boolean; pw: boolean; gateInBox: boolean; frameHz: number };
   /** Fracción de las celdas de la caja de color visibles tras forzar un cuadro (0–1). */
   colorCellFraction: () => number;
   /** Fija la ganancia de color (dB) como el deslizador. */
@@ -479,6 +481,15 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       return renderColorFrame(sim);
     },
     colorCells: () => renderColorFrame(getSim()),
+    modeState: () => {
+      const sim = getSim();
+      return {
+        color: sim.color.enabled,
+        pw: sim.pw.enabled,
+        gateInBox: gateInColorBox({ bmode: sim.bmode, color: sim.color, pw: sim.pw }),
+        frameHz: sim.colorTiming.frameHz,
+      };
+    },
     colorCellFraction: () => {
       const sim = getSim();
       return renderColorFrame(sim) / sim.renderer.colorCellCount;

@@ -643,6 +643,47 @@ test('sin contacto no hay Doppler: el color y el espectro se apagan al levantar 
   expect(errors).toEqual([]);
 });
 
+test('tríplex (decisión 66): el color sigue en pantalla con el PW y la caja acompaña a la puerta', async ({ page }) => {
+  test.setTimeout(240_000);
+  const errors = await bootWithoutErrors(page);
+  await page
+    .locator('button', { hasText: /Apnea\s*esp/ })
+    .first()
+    .click();
+  await page.evaluate(() => window.__vexusTest!.goToStartPoint('renal'));
+  await page.locator('#mode-color').click();
+  const colorOnly = await page.evaluate(() => window.__vexusTest!.modeState());
+  await page.locator('#mode-pw').click();
+  await expect(page.locator('#mode-color')).toHaveClass(/active/);
+  await expect(page.locator('#mode-pw')).toHaveClass(/active/);
+  await expect(page.locator('#hud-br')).toContainText('Color');
+  await expect(page.locator('#hud-br')).toContainText('PW');
+  const r = await page.evaluate(() => {
+    const T = window.__vexusTest!;
+    const veins = ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'] as const;
+    const color = T.colorOnVessel([...veins]);
+    const gate = T.placeGate([...veins]);
+    T.advance(3);
+    return { color, gate, pw: T.pwBandOverFloorDb(2), cells: T.colorCells(), state: T.modeState() };
+  });
+  const tag = JSON.stringify({ colorOnly, ...r });
+  expect(colorOnly.color && !colorOnly.pw, tag).toBe(true);
+  expect(r.gate, tag).toBe(true);
+  expect(r.state.color && r.state.pw && r.state.gateInBox, tag).toBe(true);
+  // el color sigue pintando el vaso y el espectro corre a la vez
+  expect(r.color!, tag).toBeGreaterThan(50);
+  expect(r.cells, tag).toBeGreaterThan(50);
+  expect(r.pw!, tag).toBeGreaterThan(8);
+  // el PW intercalado se lleva su tiempo: la imagen se refresca más despacio que con el color solo
+  expect(r.state.frameHz, tag).toBeLessThan(colorOnly.frameHz);
+  // volver a pulsar PW deja el color solo
+  await page.locator('#mode-pw').click();
+  await expect(page.locator('#mode-pw')).not.toHaveClass(/active/);
+  await expect(page.locator('#mode-color')).toHaveClass(/active/);
+  expect(await page.evaluate(() => window.__vexusTest!.modeState().pw)).toBe(false);
+  expect(errors).toEqual([]);
+});
+
 test('modo alumno ciego: sin diagnóstico en pantalla; el docente lo ve con ?docente', async ({ page }) => {
   // Guía §17. Nombres clínicos de los casos (no deben aparecer en modo alumno).
   // Arranca la aplicación dos veces: con SwiftShader cada arranque compila los 16 programas (decisión 58) y

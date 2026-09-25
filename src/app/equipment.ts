@@ -8,7 +8,26 @@ import type { EquipmentSettings, PwSettings } from './simulator';
  * propios límites: al reducir la profundidad la puerta PW o la caja de color quedaban fuera de
  * la imagen, y la PRF podía superar lo que permite la profundidad.
  */
-export type ImagingMode = 'B' | 'color' | 'pw';
+export type ImagingMode = 'B' | 'color' | 'pw' | 'triplex';
+
+/** El modo lleva color: color solo o tríplex (color + PW, decisión 66). */
+export const modeHasColor = (m: ImagingMode): boolean => m === 'color' || m === 'triplex';
+/** El modo lleva PW: dúplex (B + PW) o tríplex. */
+export const modeHasPw = (m: ImagingMode): boolean => m === 'pw' || m === 'triplex';
+
+export function modeFrom(color: boolean, pw: boolean): ImagingMode {
+  return color ? (pw ? 'triplex' : 'color') : pw ? 'pw' : 'B';
+}
+
+/**
+ * Pulsar Color o PW en el equipo (decisión 66): alterna esa función y conserva la otra, como en un
+ * ecógrafo real (PW con el color encendido da el tríplex; volver a pulsar PW deja el color).
+ */
+export function toggleMode(m: ImagingMode, key: 'color' | 'pw'): ImagingMode {
+  const color = modeHasColor(m);
+  const pw = modeHasPw(m);
+  return key === 'color' ? modeFrom(!color, pw) : modeFrom(color, !pw);
+}
 
 export type EquipmentCommand =
   | { type: 'bmode'; patch: Partial<BModeSettings> }
@@ -107,6 +126,13 @@ export function normalizeEquipment(e: EquipmentSettings, ctx: EquipmentContext):
   return { bmode, color, pw };
 }
 
+/** El centro de la puerta PW está dentro de la caja de color. */
+export function gateInColorBox(e: EquipmentSettings): boolean {
+  const c = e.color;
+  const p = e.pw;
+  return p.theta >= c.theta0 && p.theta <= c.theta1 && p.depthMm >= c.r0 && p.depthMm <= c.r1;
+}
+
 /** Reductor puro: estado + comando → estado normalizado. */
 export function reduceEquipment(e: EquipmentSettings, cmd: EquipmentCommand, ctx: EquipmentContext): EquipmentSettings {
   let next: EquipmentSettings;
@@ -120,9 +146,20 @@ export function reduceEquipment(e: EquipmentSettings, cmd: EquipmentCommand, ctx
     case 'pw':
       next = { ...e, pw: { ...e.pw, ...cmd.patch } };
       break;
-    case 'mode':
-      next = { ...e, color: { ...e.color, enabled: cmd.mode === 'color' }, pw: { ...e.pw, enabled: cmd.mode === 'pw' } };
+    case 'mode': {
+      next = { ...e, color: { ...e.color, enabled: modeHasColor(cmd.mode) }, pw: { ...e.pw, enabled: modeHasPw(cmd.mode) } };
+      // Tríplex (decisión 66): el PW que se abre con el color encendido pone la puerta en el centro de la caja si
+      // estaba fuera de ella, como el equipo real (el color señala el vaso; la puerta va a donde se mira); el color
+      // que se abre con el PW encendido centra la caja en la puerta
+      if (next.color.enabled && next.pw.enabled && !gateInColorBox(e)) {
+        if (!e.pw.enabled) {
+          next = { ...next, pw: { ...next.pw, theta: (e.color.theta0 + e.color.theta1) / 2, depthMm: (e.color.r0 + e.color.r1) / 2 } };
+        } else if (!e.color.enabled) {
+          next = reduceEquipment(next, { type: 'centerColorBox', theta: e.pw.theta, r: e.pw.depthMm }, ctx);
+        }
+      }
       break;
+    }
     case 'stepDepth':
       next = { ...e, bmode: { ...e.bmode, depthMm: e.bmode.depthMm + cmd.deltaMm } };
       break;
@@ -155,6 +192,9 @@ export function reduceEquipment(e: EquipmentSettings, cmd: EquipmentCommand, ctx
     }
     case 'placeGate':
       next = { ...e, pw: { ...e.pw, theta: cmd.theta, depthMm: cmd.r } };
+      // en tríplex la caja acompaña a la puerta: si la puerta sale de la caja, la caja se centra en ella
+      if (e.color.enabled && e.pw.enabled && !gateInColorBox(next))
+        next = reduceEquipment(next, { type: 'centerColorBox', theta: cmd.theta, r: cmd.r }, ctx);
       break;
   }
   return normalizeEquipment(next, ctx);

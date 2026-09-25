@@ -1,3 +1,4 @@
+import { toggleMode } from '../../app/equipment';
 import type { AppState, MeasureTool } from '../../app/store';
 import { CAPTURE_BEATS, qualityText, type QualityIssue } from '../../doppler/measureQuality';
 import {
@@ -127,7 +128,8 @@ export class MeasureTab {
 
   private armTool(tool: MeasureTool): void {
     if (tool === 'hepatic' || tool === 'portal' || tool === 'renal') {
-      if (!this.ctx.sim().pw.enabled) this.ctx.store.set({ mode: 'pw' });
+      // abre el PW conservando el color si estaba encendido (tríplex, decisión 66)
+      if (!this.ctx.sim().pw.enabled) this.ctx.store.set({ mode: toggleMode(this.ctx.store.get().mode, 'pw') });
       this.ctx.store.set({ tool });
       this.renderCapture();
       return;

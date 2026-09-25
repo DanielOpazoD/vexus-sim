@@ -193,6 +193,10 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   128 muestras a ~4 kHz. A 1,5–2,6 kHz la captura pierde pausas de 20–30 ms; a 6 kHz ve las de 10 ms.
   Con el filtro de pared muy alto (300 Hz) un valle justo por encima del corte cuenta como línea de
   base y el patrón pasa a bifásico. Los casos actuales no tienen pausas de 10–40 ms.
+- **En tríplex la PRF del PW no se reparte con la imagen** (`triplex-prf-not-shared`): la imagen
+  (B + color) pierde la fracción del tiempo que se lleva el PW intercalado (decisión 66), pero la
+  escala del PW sigue siendo la del dúplex; algunos equipos limitan la PRF del PW en tríplex
+  simultáneo (o pasan a «actualizar», con la imagen congelada) y el Nyquist baja.
 - **El color es una emulación del estimador** (`color-emulated-estimator`): potencia y fase se
   calculan por celda a partir de la mezcla sangre/clutter/ruido, no de una IQ real por ensemble.
 - **Con respiración tranquila la puerta pierde el vaso** (`gate-lost-with-quiet-breathing`): es

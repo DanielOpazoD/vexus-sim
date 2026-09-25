@@ -6,10 +6,14 @@
  * INVALID_OPERATION y no lo sube) queda en `misuse`. Todo lo demás (parámetros de textura, lecturas) no
  * hace nada; los shaders «compilan», salvo el de `fail` (compilación o enlace fallidos, con su registro).
  * `calls` guarda en orden las extensiones pedidas, las compilaciones, los enlaces y las consultas de estado
- * (lo que bloquea en un navegador) y `programs`, los programas creados. Lo usan `frameCost.test.ts`
+ * (lo que bloquea en un navegador) y `programs`, los programas creados. Como WebGL, un dibujo con un
+ * adjunto activo (`drawBuffers`) sin salida en el shader de fragmentos se rechaza: queda en `misuse` y no se
+ * registra en `draws` (el destino conserva lo anterior). Lo usan `frameCost.test.ts`
  * (repeticiones de medida) y `compoundRenderer.test.ts` (anillo de miradas, programas por mirada y su
  * enlace en lote al arrancar, decisión 58).
  */
+import { fragmentOutputCount } from '../../ultrasound/gl';
+
 export function recordingGl(
   canvasSize: { width: number; height: number },
   opts: { fail?: { frag: string; stage: 'compile' | 'link' } } = {},
@@ -20,6 +24,7 @@ export function recordingGl(
     FRAMEBUFFER: 0x8d40,
     FRAMEBUFFER_COMPLETE: 0x8cd5,
     COLOR_ATTACHMENT0: 0x8ce0,
+    NONE: 0,
   };
   let nextConst = 0x10000;
   let nextId = 1;
@@ -60,6 +65,8 @@ export function recordingGl(
     uniformsOf.set(loc.program, m);
   };
   const binds: (Obj | null)[] = [];
+  /** Adjuntos activos de cada FBO (`drawBuffers`); sin llamada, todos los que tenga (como `createTarget`). */
+  const drawBuffersOf = new Map<Obj, number[]>();
   const fboTextures = new Map<Obj, Obj[]>();
   const deleted = new Set<Obj>();
   const calls: string[] = [];
@@ -129,7 +136,18 @@ export function recordingGl(
     deleteFramebuffer: (fbo: Obj) => void deleted.add(fbo),
     deleteProgram: (p: Obj) => void deleted.add(p),
     viewport: (...v: number[]) => void (state.viewport = v),
+    drawBuffers: (bufs: number[]) => void (state.fbo && drawBuffersOf.set(state.fbo, [...bufs])),
     drawArrays: () => {
+      const p0 = state.program;
+      if (state.fbo && p0) {
+        const outputs = fragmentOutputCount(fragOf.get(p0) ?? '');
+        const active = (drawBuffersOf.get(state.fbo) ?? []).map((b, i) => (b === K.NONE ? -1 : i)).filter((i) => i >= 0);
+        const missing = active.filter((i) => i >= outputs);
+        if (missing.length) {
+          misuse.push(`dibujo rechazado: adjuntos activos ${missing.join(',')} sin salida en el programa ${p0.id} (${outputs} salidas)`);
+          return;
+        }
+      }
       const units = [...state.units.entries()]
         .filter(([, t]) => t)
         .sort(([a], [b]) => a - b)

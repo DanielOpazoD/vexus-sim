@@ -229,6 +229,22 @@ describe('dos programas por pasada con miradas (WebGL falso)', () => {
     for (const id of PAIR_IDS) expect(gs.map((g) => g[id].frag)).toEqual(Array(3).fill(PAIRS[id][0]));
   });
 
+  it('ningún dibujo tiene adjuntos activos sin salida en su programa (WebGL no dibujaría), en las tres miradas y apagado', () => {
+    // A2 y A de la mirada 0 escriben 2 y 3 de los 4 adjuntos de su destino: con los 4 activos, WebGL
+    // rechaza el dibujo y el destino conserva el cuadro anterior (la transmisión, el espejo y el hueso
+    // de la mirada 0 salían de la dirigida anterior: paridad a 407 dB y espejo a 99 mm en la e2e)
+    for (const compound of [true, false]) {
+      const { frame, misuse, sim } = rig(compound);
+      for (let i = 0; i < 4; i++) frame();
+      for (let i = 0; i < 3; i++) sim.render({ repeat: { pass: 'transmissionPrefix', times: 2 } });
+      for (let i = 0; i < 3; i++) sim.render({ repeat: { pass: 'transmission', times: 2 } });
+      expect(
+        misuse.filter((m) => m.startsWith('dibujo rechazado')),
+        `compuesto ${compound}`,
+      ).toEqual([]);
+    }
+  });
+
   it('repeatPass repite el programa de la mirada del cuadro, no el otro', () => {
     const passes = { prefix: 'transmissionPrefix', trans: 'transmission', raw: 'rawField' } as const;
     for (const id of PAIR_IDS) {

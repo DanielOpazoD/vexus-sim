@@ -14,10 +14,12 @@ import { interfaceUniforms } from './interfaceEcho';
 import {
   GLProgram,
   bindTarget,
+  bindTargetFor,
   createTarget,
   createTexture,
   deleteTarget,
   drawFullscreen,
+  setActiveOutputs,
   type RenderTarget,
   type TargetFormat,
 } from './gl';
@@ -756,8 +758,11 @@ export class UltrasoundRenderer {
    */
   private drawRepeats(id: PassId, targets: readonly [RenderTarget, RenderTarget], times: number): void {
     const gl = this.gl;
+    // los destinos de prueba, con los mismos adjuntos activos que el de la pasada (el programa puesto es el suyo)
+    const outputs = this.passOutputs[id]()?.activeOutputs;
     for (let k = 0; k < times; k++) {
       bindTarget(gl, targets[k % 2]);
+      if (outputs !== undefined) setActiveOutputs(gl, targets[k % 2], outputs);
       drawFullscreen(gl);
     }
     bindTarget(gl, this.passOutputs[id](), this.canvas.width, this.canvas.height);
@@ -818,7 +823,8 @@ export class UltrasoundRenderer {
     const gl = this.gl;
     const steered = this.steeredLook();
     const p = this.lookProgram(this.pTransPre);
-    bindTarget(gl, this.tPre);
+    // la mirada 0 escribe 2 de sus 4 adjuntos: con los otros activos WebGL no dibujaría
+    bindTargetFor(gl, this.tPre, p);
     p.use();
     this.setBeamUniforms(p, inputs);
     p.f('uCoarseN', COARSE_DEPTH);
@@ -856,7 +862,8 @@ export class UltrasoundRenderer {
     const beam = this.profile.beam;
     const steered = this.steeredLook();
     const p = this.lookProgram(this.pTrans);
-    bindTarget(gl, this.tTrans);
+    // la mirada 0 escribe 3 de sus 4 adjuntos (ver A2)
+    bindTargetFor(gl, this.tTrans, p);
     p.use();
     this.setBeamUniforms(p, inputs);
     p.f('uCoarseN', COARSE_DEPTH);

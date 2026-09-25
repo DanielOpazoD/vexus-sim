@@ -7,6 +7,8 @@ export class GLProgram {
     readonly gl: WebGL2RenderingContext,
     readonly program: WebGLProgram,
     readonly name: string,
+    /** Salidas de color que escribe su shader de fragmentos (`fragmentOutputCount`). */
+    readonly outputs: number,
   ) {}
 
   /** Un programa solo (el de consulta, que se crea al usarse): un lote de uno. */
@@ -45,7 +47,7 @@ export class GLProgram {
       throw error;
     }
     const out = {} as Record<K, GLProgram>;
-    for (const s of staged) out[s.name] = new GLProgram(gl, s.p, s.name);
+    for (const s of staged) out[s.name] = new GLProgram(gl, s.p, s.name, fragmentOutputCount(frags[s.name]));
     return out;
   }
 
@@ -142,6 +144,21 @@ export interface RenderTarget {
   height: number;
   /** Formato de cada adjunto de color, en orden (para crear otro destino igual). */
   formats: readonly TargetFormat[];
+  /** Adjuntos activos en `drawBuffers` (los primeros): los que escribe el programa que dibuja (`bindTargetFor`). */
+  activeOutputs: number;
+}
+
+/**
+ * Salidas de color de un shader de fragmentos: la mayor `layout(location = N) out` más uno, o las `out` sin
+ * posición (WebGL2 admite una sola). WebGL rechaza el dibujo (INVALID_OPERATION, «Active draw buffers with
+ * missing fragment shader outputs») si un adjunto activo del FBO no tiene salida en el shader, y entonces no
+ * escribe nada: el destino conserva el cuadro anterior sin avisar.
+ */
+export function fragmentOutputCount(frag: string): number {
+  let max = -1;
+  for (const m of frag.matchAll(/layout\s*\(\s*location\s*=\s*(\d+)\s*\)\s*out\b/g)) max = Math.max(max, Number(m[1]));
+  if (max >= 0) return max + 1;
+  return /^\s*out\s+(?:(?:lowp|mediump|highp)\s+)?\w+\s+\w+\s*;/m.test(frag) ? 1 : 0;
 }
 
 export function createTexture(
@@ -186,12 +203,30 @@ export function createTarget(gl: WebGL2RenderingContext, width: number, height: 
   const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
   if (status !== gl.FRAMEBUFFER_COMPLETE) throw new Error(`FBO incompleto: 0x${status.toString(16)}`);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  return { fbo, textures, width, height, formats: [...formats] };
+  return { fbo, textures, width, height, formats: [...formats], activeOutputs: formats.length };
 }
 
 export function bindTarget(gl: WebGL2RenderingContext, t: RenderTarget | null, w?: number, h?: number): void {
   gl.bindFramebuffer(gl.FRAMEBUFFER, t ? t.fbo : null);
   gl.viewport(0, 0, t ? t.width : (w ?? gl.drawingBufferWidth), t ? t.height : (h ?? gl.drawingBufferHeight));
+}
+
+/**
+ * Pone el destino con activos solo los adjuntos que escribe el programa (`outputs`; el resto, NONE). Hace
+ * falta cuando dos programas con distinto número de salidas dibujan en el mismo destino (A2 y A de la mirada
+ * 0 y de la dirigida, decisión 58): con un adjunto activo sin salida, WebGL no dibuja.
+ */
+export function bindTargetFor(gl: WebGL2RenderingContext, t: RenderTarget, program: { outputs: number }): void {
+  bindTarget(gl, t);
+  setActiveOutputs(gl, t, program.outputs);
+}
+
+/** Adjuntos activos del destino ya puesto: los `n` primeros (se llama solo si cambia). */
+export function setActiveOutputs(gl: WebGL2RenderingContext, t: RenderTarget, n: number): void {
+  const count = Math.min(n, t.formats.length);
+  if (t.activeOutputs === count) return;
+  gl.drawBuffers(t.formats.map((_, i) => (i < count ? gl.COLOR_ATTACHMENT0 + i : gl.NONE)));
+  t.activeOutputs = count;
 }
 
 export function drawFullscreen(gl: WebGL2RenderingContext): void {

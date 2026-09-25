@@ -39,36 +39,39 @@ const SIM_SIZE = [1720, 1228] as const;
 /**
  * Recortes enteros dentro del abanico (vértice ≈ (860, −308), borde derecho x ≈ 1115 + 0,676·(y − 75))
  * y, en las reales, dentro de su sector y lejos de rótulos; escala física parecida (6–11 cm de ancho).
+ * Ronda 2 (25-09-2026, tras las decisiones 58–63): el intercostal nuevo (8.º espacio) ya no muestra el
+ * riñón, así que la pareja 2 sale de la ventana renal, y la compresión (63) acerca las estructuras a la
+ * sonda; los recortes se movieron para que cada pareja siga mostrando su tema.
  */
 const PAIRS: readonly Pair[] = [
   {
     id: 1,
     tema: 'hígado con vena hepática',
-    sim: { scene: 'normal-adult/intercostal', crop: [840, 330, 440] },
+    sim: { scene: 'normal-adult/intercostal', crop: [680, 520, 440] },
     real: { file: 'Ultrasonography_of_a_normal_liver.jpg', crop: [290, 160, 440], cred: 'Mikael Häggström, CC0' },
   },
   {
     id: 2,
     tema: 'hígado y riñón derecho',
-    sim: { scene: 'normal-adult/intercostal', crop: [1000, 620, 480] },
+    sim: { scene: 'normal-adult/renal', crop: [520, 300, 520] },
     real: { file: 'Ultrasound_liver_right_lobe_and_right_kidney.jpg', crop: [335, 200, 290], cred: 'Ptrump16, CC BY-SA 4.0' },
   },
   {
     id: 3,
     tema: 'riñón en eje largo',
-    sim: { scene: 'normal-adult/renal', crop: [560, 300, 600] },
+    sim: { scene: 'normal-adult/renal', crop: [500, 260, 640] },
     real: { file: 'MorisonNoText.png', crop: [450, 300, 640], cred: 'Drahreg01, CC BY-SA 3.0' },
   },
   {
     id: 4,
     tema: 'VCI en eje largo (normal)',
-    sim: { scene: 'normal-adult/subxiphoid', crop: [880, 520, 520] },
+    sim: { scene: 'normal-adult/subxiphoid', crop: [880, 500, 520] },
     real: { file: 'Ultrasound_image_IVC_110321140522_1406460.jpg', crop: [160, 205, 340], cred: 'Nevit Dilmen, CC BY-SA 3.0' },
   },
   {
     id: 5,
     tema: 'VCI ancha (congestión)',
-    sim: { scene: 'severe-congestion/subxiphoid', crop: [840, 500, 540] },
+    sim: { scene: 'severe-congestion/subxiphoid', crop: [840, 480, 540] },
     real: { file: 'Ultrasound_image_IVC_110317193740_1949000.jpg', crop: [140, 200, 360], cred: 'Nevit Dilmen, CC BY-SA 3.0' },
   },
   {
@@ -80,7 +83,7 @@ const PAIRS: readonly Pair[] = [
   {
     id: 7,
     tema: 'venas hepáticas anchas',
-    sim: { scene: 'severe-congestion/intercostal', crop: [840, 350, 440] },
+    sim: { scene: 'severe-congestion/intercostal', crop: [640, 500, 480] },
     real: { file: 'Ultrasound_image_IVC_110318083647_0841470.jpg', crop: [200, 190, 250], cred: 'Nevit Dilmen, CC BY-SA 3.0' },
   },
 ];
@@ -159,12 +162,17 @@ async function panel(page: Page, native: Buffer): Promise<{ jpg: Buffer; corners
     const g = c.getContext('2d')!;
     g.drawImage(img, 0, 0);
     const d = g.getImageData(0, 0, W, H).data;
-    const frac = (cx: number, cy: number) => {
+    // sin funciones con nombre: tsx (esbuild con keepNames) las envuelve en `__name(…)`, que no existe en la página
+    return [
+      [0, 0],
+      [W - 24, 0],
+      [0, H - 24],
+      [W - 24, H - 24],
+    ].map(([cx, cy]) => {
       let n = 0;
       for (let y = cy; y < cy + 24; y++) for (let x = cx; x < cx + 24; x++) if (d[(y * W + x) * 4] < 6) n++;
       return n / (24 * 24);
-    };
-    return [frac(0, 0), frac(W - 24, 0), frac(0, H - 24), frac(W - 24, H - 24)];
+    });
   }, PANEL);
   return { jpg, corners };
 }

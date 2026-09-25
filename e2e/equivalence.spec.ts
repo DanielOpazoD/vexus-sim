@@ -11,7 +11,9 @@ import { expect, test } from '@playwright/test';
 const CASES = ['normal-adult', 'severe-congestion', 'af-moderate-congestion'] as const;
 
 test('la anatomía GLSL coincide con la TypeScript en tejido, vaso y velocidad', async ({ page }) => {
-  test.setTimeout(240_000);
+  // En el corredor de GitHub (dos núcleos) la prueba ya tardaba 4,0 min con 240 s de plazo; la compresión
+  // bajo la sonda (decisión 63) encarece cada clasificación en TS (el mapa mundo→material) y la pasa de 4 min
+  test.setTimeout(480_000);
   await page.goto('/?e2e=1');
   await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: 60_000 });
   for (const id of CASES) {

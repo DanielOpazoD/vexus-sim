@@ -149,7 +149,9 @@ test('el banco de fidelidad mide el moteado del hígado despejado como un campo 
   const s = await page.evaluate(() => window.__vexusTest!.fidelity({ startPoint: 'subxiphoid', display: true, compound: false }));
   const e = s.envelope;
   const tag = JSON.stringify(e);
-  expect(e.patches, tag).toBeGreaterThan(15);
+  // con la compresión (decisión 63) la subxifoidea deja menos hígado despejado en el plano (16–17 parches
+  // en local, 15 en el CI de GitHub; antes, > 15): 12 parches de 16 × 8 bastan para la SNR y la fracción oscura
+  expect(e.patches, tag).toBeGreaterThanOrEqual(12);
   expect(e.snr, tag).toBeGreaterThan(1.75);
   expect(e.snr, tag).toBeLessThan(2.1);
   expect(e.darkFraction, tag).toBeGreaterThan(0.05);

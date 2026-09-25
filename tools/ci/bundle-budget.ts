@@ -8,7 +8,7 @@
 // 2026-09-24: la composición espacial (decisión 58) lleva index de 228,8 a 250,1 kB (+21 kB): el GLSL
 // de las ramas dirigidas de A2, A y B y de la pasada K (texto en el chunk principal, ~8 kB), el anillo de
 // miradas del renderer y los módulos de la geometría dirigida. index sube a 260 kB.
-// 2026-09-25: la pleura parietal y la cortina (decisión 61) añaden ~13,5 kB (estimado con esbuild frente a la
+// 2026-09-25: la pleura parietal y la cortina (decisión 61) añaden ~15,4 kB (estimado con esbuild frente a la
 // base, main 3cd8cb3): el GLSL de la pleura, la serie y el deslizamiento en los dos programas de B, A0 y A1
 // (texto en el chunk principal) y su módulo. index sube a 270 kB.
 import { readdirSync, statSync } from 'node:fs';

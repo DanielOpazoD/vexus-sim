@@ -1427,7 +1427,7 @@ correlaciona 0,96 / 0,86 / 0,61 / 0,32 con 0,5 / 1 / 2 / 5 mm de descenso del pu
 de la guarda de Rayleigh deja fuera lo que hay bajo la pleura donde f ≥ 0,01 (−0,09 dB; la réplica de orden 2
 ≤ −12 dB): antes la guarda medía también el «hígado» de detrás de la cortina, que la imagen no mostraba; en
 la intercostal en espiración quedan 105 parches de 16 × 8 en lugar de 276 (CPU; la guarda e2e pide > 50). El GLSL que viaja como texto en el chunk
-principal crece ~13,5 kB (esbuild frente a la base): presupuesto de 260 a 270 kB. Pendiente, con GPU: las
+principal crece ~15,4 kB (esbuild minificado frente a la base, sin el chunk de las pruebas): presupuesto de 260 a 270 kB. Pendiente, con GPU: las
 métricas del bloque `pleura` del banco (`docs/fidelity/README.md`), el coste (`msPerFrame` ≤ +0,5 ms, y
 `msPerFrameInspiration` con la cortina tapando el sector), la calibración de R_t, σz y del nivel del
 deslizamiento dentro de sus rangos y la comparación visual con las referencias; el juicio es del dueño.

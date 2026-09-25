@@ -11,13 +11,16 @@
 // 2026-09-25: la pleura parietal y la cortina (decisión 61) añaden ~15,4 kB (estimado con esbuild frente a la
 // base, main 3cd8cb3): el GLSL de la pleura, la serie y el deslizamiento en los dos programas de B, A0 y A1
 // (texto en el chunk principal) y su módulo. index sube a 270 kB.
+// 2026-09-25 (bis): sobre main a9520b8 la rama de la decisión 61 medía 266,2 kB; el arreglo del JIT de
+// SwiftShader (classifyWall, wallField) y la cortina en K (fracción de aire compartida) la llevan a 269,9 kB
+// (vite build): 0,1 kB de margen. index sube a 280 kB.
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const KB = 1024;
 const BUDGETS: Array<[RegExp, number]> = [
   [/three.*\.js$/, 700 * KB],
-  [/index-.*\.js$/, 270 * KB],
+  [/index-.*\.js$/, 280 * KB],
   [/\.css$/, 20 * KB],
   [/\.js$/, 120 * KB], // cualquier otro chunk
 ];

@@ -403,6 +403,36 @@ test('ecos de interfaz: paredes y cápsula brillan y el espejo diafragmático no
   expect(errors).toEqual([]);
 });
 
+test('pleura parietal: la línea pleural brilla y bajo ella hay neblina con líneas A, no un rectángulo negro', async ({ page }) => {
+  // Decisión 61, con SwiftShader: la ventana intercostal en apnea inspiratoria (la cortina 30 mm abajo tapa
+  // buena parte del sector), una mirada. Antes la cortina era el espejo del diafragma: bajo la pleura el
+  // camino volvía a la pared y salía al gel (neblina ≈ 0 de gris) y no había eco de la pleura parietal. El
+  // gemelo B → C → D (pleuraTwin.test.ts) da la línea pleural saturada, la neblina a 0,61 × el hígado y la
+  // línea A de orden 2 +45 dB sobre ella; aquí, umbrales holgados (lo exacto lo mide el banco con GPU).
+  test.setTimeout(300_000);
+  const errors = await bootWithoutErrors(page);
+  const s = await page.evaluate(() =>
+    window.__vexusTest!.pleura({ startPoint: 'intercostal', respiration: 'apnea-inspiratory', compound: false }),
+  );
+  const tag = JSON.stringify({
+    ...s,
+    haze: { patches: s.haze.patches, fwhmAxialMm: s.haze.fwhmAxialMm, fwhmLateralMm: s.haze.fwhmLateralMm },
+  });
+  expect(s.caudalMm, tag).toBeGreaterThan(25);
+  // la cortina está a la vista: líneas enteras y, de ellas, casi perpendiculares a la pleura
+  expect(s.fullLines, tag).toBeGreaterThan(30);
+  expect(s.normalLines, tag).toBeGreaterThan(5);
+  // la línea pleural, la más brillante de la imagen
+  expect(s.pleuraPeakGrey, tag).toBeGreaterThanOrEqual(230);
+  // bajo ella, neblina gris, no negro, y más oscura en el intervalo siguiente
+  expect(s.hazeGrey, tag).toBeGreaterThanOrEqual(20);
+  expect(s.hazeRatio, tag).toBeGreaterThan(0.2);
+  expect(s.hazeGreyDeep, tag).toBeLessThan(s.hazeGrey);
+  // la primera réplica de la pleura (línea A de orden 2) destaca sobre la neblina
+  expect(s.aLine2ProminenceDb, tag).toBeGreaterThan(3);
+  expect(errors).toEqual([]);
+});
+
 test('la pasada A en cuatro etapas da la misma transmisión de un solo rayo que el modelo de CPU', async ({ page }) => {
   // Decisión 54: impactos por línea, segmentos y suma acumulada reproducen `rayAttenuationDb` en los
   // mismos puntos (las líneas con espejo no: la CPU no sigue el rayo reflejado). Con GPU real,

@@ -102,10 +102,21 @@ const subxiphoid = measure('subxiphoid');
 const intercostal = measure('intercostal');
 const renal = measure('renal');
 
+/**
+ * En la ventana intercostal la cortina pulmonar tapa el sector desde la línea ~97 en espiración (decisión 61):
+ * bajo su pleura, también en el borde blando (fracción de aire ≥ 0,01), no hay hígado puro. Antes el borde era
+ * un escalón en la línea ~116 y la guarda de Rayleigh medía también el «hígado» de detrás de la cortina, que la
+ * imagen no mostraba (el espejo lo llevaba al gel: ruido del receptor, que también es de Rayleigh).
+ */
+const MIN_PATCHES = { subxiphoid: { envelope: 10, rayleigh: 200 }, intercostal: { envelope: 4, rayleigh: 100 } } as const;
+
 describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
   it('la envolvente se mide solo en hígado: el moteado ideal sale ideal aunque el resto esté a ×0,1', () => {
-    for (const s of [subxiphoid, intercostal]) {
-      expect(s.envelope.patches).toBeGreaterThan(10);
+    for (const [id, s] of [
+      ['subxiphoid', subxiphoid],
+      ['intercostal', intercostal],
+    ] as const) {
+      expect(s.envelope.patches, id).toBeGreaterThan(MIN_PATCHES[id].envelope);
       expect(s.envelope.snr).toBeGreaterThan(1.8);
       expect(s.envelope.snr).toBeLessThan(2.1);
       expect(s.envelope.darkFraction).toBeGreaterThan(0.055);
@@ -122,7 +133,8 @@ describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
       expect(d.liver.pixels).toBeGreaterThan(500);
       expect(d.liver.p50).toBe(100);
       expect(Math.abs(d.liver.mean - 100)).toBeLessThan(3);
-      expect(Math.abs(d.profile.slopeDbPerCm)).toBeLessThan(0.1);
+      // en la intercostal, con la cortina, puede no quedar hígado puro en dos bandas de profundidad
+      if (d.profile.bands.length >= 2) expect(Math.abs(d.profile.slopeDbPerCm)).toBeLessThan(0.1);
       expect(d.colorOn).toBe(false);
       // la luz pintada a 0 y el diafragma a 200: el centro de la luz y la saturación los encuentran
       expect(d.lumen.pixels).toBeGreaterThan(50);
@@ -221,7 +233,7 @@ describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
     for (const id of ['subxiphoid', 'intercostal'] as const) {
       const { sim, env } = planes.get(id)!;
       const s = speckleStats(sim, env);
-      expect(s.patches, id).toBeGreaterThan(200);
+      expect(s.patches, id).toBeGreaterThan(MIN_PATCHES[id].rayleigh);
       expect(s.snr, id).toBeGreaterThan(1.9);
       expect(s.snr, id).toBeLessThan(2.1);
     }
@@ -300,7 +312,7 @@ describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
             }
         }
       expect(patches, id).toBe(speckleStats(sim, env).patches);
-      expect(patches, id).toBeGreaterThan(200);
+      expect(patches, id).toBeGreaterThan(MIN_PATCHES[id].rayleigh);
     }
   });
 });

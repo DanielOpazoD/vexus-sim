@@ -65,6 +65,20 @@ import {
   type HitsLine,
   type HitsLineQuery,
 } from '../ultrasound/transmission';
+import {
+  CURTAIN_FULL_AIR,
+  CURTAIN_LIVER_MAX_AIR,
+  clearLiverGrid,
+  curtainEdgeFit,
+  curtainLines,
+  slidingCorrelation,
+  type CurtainLine,
+} from '../app/fidelity';
+import type { Simulator } from '../app/simulator';
+import { AnatomyQuery } from '../anatomy/query';
+import { PhysiologyEngine } from '../physiology/engine';
+import { clonePatient } from '../physiology/patientState';
+import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import { rng } from './syntheticSpeckle';
 import { emptyGrid } from './support/segmentGrid';
 
@@ -767,5 +781,141 @@ describe('la rama de la cortina de la pasada B (mirada 0)', () => {
     expect(aLineOrder(40, 27)).toBe(1);
     expect(aLineOrder(41, 27)).toBe(2);
     expect(mirrorGain(0.3, 0.6, 0.5, 0.1, 2)).toBeCloseTo(((PLEURA_RP * 0.5) ** 2 * 0.09) / 0.6 / 100, 12);
+  });
+});
+
+describe('banco de la cortina (fidelity.ts): líneas, hígado puro, borde y deslizamiento', () => {
+  // el sano en apnea inspiratoria (la cortina 30 mm abajo) en la ventana intercostal, sin GPU
+  const patient = { ...clonePatient(NORMAL_ADULT), respiratoryPattern: 'apnea-inspiratory' as const };
+  const scene = new AnatomyScene(patient);
+  const anatomy = new AnatomyQuery(scene);
+  const engine = new PhysiologyEngine(patient, scene.vesselAreas(), { historySeconds: 4 });
+  for (let i = 0; i < Math.round(1 / engine.clock.dt); i++) engine.step();
+  const sp = START_POINTS.find((p) => p.id === 'intercostal')!;
+  const pose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: 0, tilt: 0 };
+  const frame = probeFrame(pose, scene.torso, CONVEX_C35);
+  const sim = {
+    transducer: CONVEX_C35,
+    profile: CONVEX_C35_PROFILE,
+    bmode: { depthMm: 180, focusMm: 90, dynamicRangeDb: 70 },
+    anatomy,
+    frame,
+    pose,
+    sample: engine.sample,
+  } as unknown as Simulator;
+
+  it('la pleura de cada línea es la de A0 y su fracción de aire la de la pasada B; hay líneas enteras, de borde y en sombra', () => {
+    expect(engine.sample.resp.diaphragmCaudalMm).toBeCloseTo(30, 6);
+    const lines = curtainLines(sim, CONVEX_C35.lines);
+    const cal = anatomy.caliberFor(engine.sample);
+    const q = sceneQuery(scene, cal);
+    let full = 0;
+    let edge = 0;
+    let shadowed = 0;
+    for (let u = 0; u < CONVEX_C35.lines; u++) {
+      const th = -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * (u + 0.5)) / CONVEX_C35.lines;
+      const origin = pointOnLine(frame, CONVEX_C35, th, 0);
+      const dir = lineDirection(frame, th);
+      const a0 = transmissionHitsLine(q, origin, dir, 180, 160, (t, step) => segmentDb(t, step, 2.5));
+      const c = lines[u];
+      expect(c === null, `línea ${u}`).toBe(a0.pleura === null);
+      if (!c) continue;
+      // el banco pasa el punto al marco material (la pared apenas se mueve con la respiración: ≤ 10⁻⁵ mm)
+      expect(c.D).toBeCloseTo(a0.pleura!.D, 4);
+      expect(c.dz).toBeCloseTo(a0.pleura!.dz, 4);
+      const lat = normalize(cross(frame.elevation, dir));
+      const sg = curtainEdgeSigmaMm(
+        elevSigmaMm(c.D, CONVEX_C35.elevationFocusMm) * Math.SQRT1_2,
+        lateralSigmaMm(c.D, 90, CONVEX_BEAM),
+        frame.elevation[2],
+        lat[2],
+      );
+      expect(c.fAir).toBeCloseTo(curtainAirFraction(c.dz, sg), 9);
+      if (c.fAir >= CURTAIN_FULL_AIR) full++;
+      else if (c.fAir >= CURTAIN_MIN_AIR) edge++;
+      if (c.shadowed) shadowed++;
+    }
+    expect(full).toBeGreaterThan(60);
+    expect(edge).toBeGreaterThan(5);
+    // en esta ventana los arcos costales son cartílago (cartilageFromPhi): sin sombra de hueso sobre la pleura
+    expect(shadowed).toBe(0);
+  });
+
+  it('el hígado «puro» del banco y de la guarda de Rayleigh no entra bajo la pleura de la cortina ni en su borde', () => {
+    const lines = curtainLines(sim, CONVEX_C35.lines);
+    const clear = clearLiverGrid(sim, CONVEX_C35.lines, 3);
+    let covered = 0;
+    for (const c of lines) {
+      // donde la cortina ya toca el nivel o la textura del hígado (la réplica de orden 2 a ≥ −12 dB de él)
+      if (!c || c.fAir < CURTAIN_LIVER_MAX_AIR) continue;
+      covered++;
+      for (let r = c.D; r < 180; r += 0.5) expect(clear.at(c.u, r), `línea ${c.u} a ${r} mm`).toBe(false);
+    }
+    expect(covered).toBeGreaterThan(60);
+    // y sigue habiendo hígado despejado fuera de ella
+    let ok = 0;
+    for (let u = 0; u < CONVEX_C35.lines; u++) for (let r = 30; r < 150; r += 2) if (clear.at(u, r)) ok++;
+    expect(ok).toBeGreaterThan(200);
+  });
+
+  it('el ajuste del borde recupera centro y anchura de un borde gaussiano con moteado', () => {
+    const rnd = rng(615);
+    const synth: CurtainLine[] = [];
+    for (let u = 0; u < 160; u++) {
+      const z = -40 + u * 0.5;
+      synth.push({
+        u,
+        D: 28,
+        dz: z - 3,
+        fAir: normalCdf((z - 3) / 4.2),
+        sigmaMm: 4.2,
+        incidenceDeg: 5,
+        z,
+        point: [0, 0, z],
+        shadowed: false,
+      });
+    }
+    // nivel: hígado 0 dB, pulmón −20 dB, con el borde en z = 3 (σ 4,2 mm) y ±1,5 dB de moteado por línea
+    const level = (u: number) => -20 * normalCdf((synth[u].z - 3) / 4.2) + 3 * (rnd() - 0.5);
+    const lv = synth.map((_, u) => level(u));
+    const fit = curtainEdgeFit(synth, (u) => lv[u], 180, 180 / 1024)!;
+    expect(fit.centerZMm).toBeCloseTo(3, 0);
+    expect(fit.width1090Mm / edgeWidth1090Mm(4.2)).toBeGreaterThan(0.85);
+    expect(fit.width1090Mm / edgeWidth1090Mm(4.2)).toBeLessThan(1.15);
+    // a lo largo de la pleura, los cruces están a 0,5 mm: la misma anchura en la imagen
+    expect(fit.width1090ImageMm).toBeCloseTo(fit.width1090Mm, 1);
+    expect(fit.liverSideDb).toBeCloseTo(0, 0);
+    expect(fit.lungSideDb).toBeCloseTo(-20, 0);
+  });
+
+  it('deslizamiento: la misma banda da 1; otra neblina bajo la pleura, ~0, con la pared quieta', () => {
+    const rnd = rng(616);
+    const lines = 32;
+    const samples = 1024;
+    const dr = 180 / samples;
+    const cl: CurtainLine[] = Array.from({ length: lines }, (_, u) => ({
+      u,
+      D: 30,
+      dz: 40,
+      fAir: 1,
+      sigmaMm: 4,
+      incidenceDeg: 5,
+      z: u,
+      point: [0, 0, u] as Vec3,
+      shadowed: false,
+    }));
+    const a = new Float32Array(lines * samples).map(() => rnd());
+    const b = Float32Array.from(a, (x, i) => {
+      const r = (Math.floor(i / lines) + 0.5) * dr;
+      return r >= 32 && r <= 36 ? rnd() : x;
+    });
+    const f = (d: Float32Array) => ({ lines, samples, data: d });
+    const same = slidingCorrelation(f(a), f(a), cl, cl, 180);
+    expect(same.subPleural).toBeCloseTo(1, 9);
+    expect(same.wall).toBeCloseTo(1, 9);
+    const moved = slidingCorrelation(f(a), f(b), cl, cl, 180);
+    expect(Math.abs(moved.subPleural)).toBeLessThan(0.1);
+    expect(moved.wall).toBeCloseTo(1, 9);
+    expect(moved.lines).toBe(lines);
   });
 });

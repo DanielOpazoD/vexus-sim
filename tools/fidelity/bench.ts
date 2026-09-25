@@ -14,6 +14,12 @@
  * costura con parches de 8 × 48) y el acortamiento de la umbra costal (`shadow.umbraShiftMm`). El coste del
  * cuadro sin color es el medio de las tres miradas; con color el compuesto no se forma (K en paso directo).
  *
+ * En las vistas con la cortina pulmonar (intercostal y flanco, decisión 61) añade el bloque `pleura`: las
+ * métricas de la pleura parietal y la cortina (`pleuraStats`) en apnea espiratoria y en apnea inspiratoria,
+ * cuánto baja el borde entre las dos, el deslizamiento (dos cuadros de una mirada con el pulmón 2 mm más
+ * abajo) y el coste del cuadro con la cortina tapando el sector (`msPerFrameInspiration`). Se informan; las
+ * referencias de la especificación están en docs/fidelity/README.md.
+ *
  * Con `--sweep`, cada vista se mide también con la sonda basculada (±6°) e inclinada (±6°) y los
  * registros de las cinco poses se agregan con `summarizeFaces` (`sweep` en el JSON). Eso llena la VCI
  * y la cápsula a 0–20° (salvo la VCI subxifoidea con congestión y la cápsula en la ventana renal), pero
@@ -43,6 +49,7 @@ import {
   type ContourStats,
   type FaceSummary,
   type FidelityStats,
+  type PleuraStats,
   type WallBin,
 } from '../../src/app/fidelity';
 
@@ -63,6 +70,10 @@ const COMPOUND_ON = args.get('compound') !== 'false';
 const SWEEP_POSES = [{ rockDeg: 6 }, { rockDeg: -6 }, { tiltDeg: 6 }, { tiltDeg: -6 }];
 const CASES = ['normal-adult', 'severe-congestion'] as const;
 const VIEWS = ['subxiphoid', 'intercostal', 'flank', 'renal'] as const;
+/** Vistas en que la cortina pulmonar entra en el sector (decisión 61). */
+const CURTAIN_VIEWS: readonly string[] = ['intercostal', 'flank'];
+/** Descenso del pulmón entre los dos cuadros del deslizamiento (mm). */
+const SLIDING_MM = 2;
 /** Segundos de cuadros en tiempo real tras colocar la sonda (persistencia y lectura de cps). */
 const SETTLE_S = 3;
 
@@ -97,6 +108,15 @@ const results: Record<
     contour: ContourStats;
     /** Ídem sobre las cinco poses del barrido. */
     contourSweep?: ContourStats;
+    /** Pleura parietal y cortina (decisión 61), en las vistas con cortina. */
+    pleura?: {
+      expiration: PleuraStats & { caudalMm: number };
+      inspiration: PleuraStats & { caudalMm: number; sliding?: { subPleural: number; wall: number; lines: number; shiftMm: number } };
+      /** Desplazamiento del centro del borde (z, mm) entre fin de espiración y fin de inspiración. */
+      edgeMotionMm: number;
+      /** Coste del cuadro (ms) en apnea inspiratoria: la cortina tapa buena parte del sector. */
+      msPerFrameInspiration: number;
+    };
     errors: string[];
   }
 > = {};
@@ -179,6 +199,30 @@ try {
       const msPerFrameColor = await page.evaluate((id) => window.__vexusTest!.frameCostMs(20, { forceColor: true, startPoint: id }), view);
       const faces = sweep ?? stats.display;
       const escasos = faces ? thinGatedBins(faces) : [];
+      let pleura: (typeof results)[string]['pleura'];
+      if (CURTAIN_VIEWS.includes(view)) {
+        const expiration = await page.evaluate(
+          ([id, compound]) => window.__vexusTest!.pleura({ startPoint: id, respiration: 'apnea-expiratory', compound }),
+          [view, COMPOUND_ON] as const,
+        );
+        const inspiration = await page.evaluate(
+          ([id, compound, mm]) => window.__vexusTest!.pleura({ startPoint: id, respiration: 'apnea-inspiratory', compound, slidingMm: mm }),
+          [view, COMPOUND_ON, SLIDING_MM] as const,
+        );
+        // el coste con la cortina tapando el sector: la respiración con el botón del equipo, y de vuelta
+        await page
+          .locator('button', { hasText: /Apnea\s*insp/ })
+          .first()
+          .click();
+        const msPerFrameInspiration = await page.evaluate((id) => window.__vexusTest!.frameCostMs(20, { startPoint: id }), view);
+        await page
+          .locator('button', { hasText: /Apnea\s*esp/ })
+          .first()
+          .click();
+        const edgeMotionMm =
+          expiration.edge && inspiration.edge ? Math.abs(expiration.edge.centerZMm - inspiration.edge.centerZMm) : Number.NaN;
+        pleura = { expiration, inspiration, edgeMotionMm, msPerFrameInspiration };
+      }
       results[`${cs}/${view}`] = {
         fps: Number.isFinite(fps) ? fps : null,
         msPerFrame,
@@ -189,6 +233,7 @@ try {
         escasos,
         contour,
         ...(contourSweep ? { contourSweep } : {}),
+        ...(pleura ? { pleura } : {}),
         errors,
       };
       await page.close();
@@ -213,8 +258,23 @@ try {
         );
         if (escasos.length) console.log(''.padEnd(32), `tramos vigilados sin evaluar: ${escasos.join(' · ')}`);
       }
-      const c = stats.compound;
       const f2 = (x: number): string => (Number.isFinite(x) ? x.toFixed(2) : '—');
+      if (pleura) {
+        const line = (name: string, p: PleuraStats & { caudalMm: number }) =>
+          `${name} (descenso ${f2(p.caudalMm)} mm): líneas ${p.lines}/${p.fullLines}/${p.normalLines} · pleura ${f2(p.pleuraSaturatedMm)} mm saturada, pico ${f2(p.pleuraPeakGrey)} · ` +
+          `neblina ${f2(p.hazeGrey)} (${f2(p.hazeRatio)} × hígado ${f2(p.liverP50)}) → ${f2(p.hazeGreyDeep)} · A2 +${f2(p.aLine2ProminenceDb)} dB, ` +
+          `A2/A3 ${f2(p.aLine2PeakDb)}/${f2(p.aLine3PeakDb)} dB · grano ${f2(p.haze.fwhmLateralMm)}×${f2(p.haze.fwhmAxialMm)} mm (${f2(p.hazeAnisotropy)}, ${p.haze.patches} parches) · ` +
+          `borde ${p.edge ? `z ${f2(p.edge.centerZMm)}, ${f2(p.edge.width1090Mm)} mm (imagen ${f2(p.edge.width1090ImageMm)})` : '—'}`;
+        console.log(''.padEnd(32), line('cortina esp', pleura.expiration));
+        console.log(''.padEnd(32), line('cortina insp', pleura.inspiration));
+        const sl = pleura.inspiration.sliding;
+        console.log(
+          ''.padEnd(32),
+          `borde −${f2(pleura.edgeMotionMm)} mm al inspirar · deslizamiento (${f2(sl?.shiftMm ?? Number.NaN)} mm, ${sl?.lines ?? 0} líneas): ` +
+            `bajo la pleura ${f2(sl?.subPleural ?? Number.NaN)}, pared ${f2(sl?.wall ?? Number.NaN)} · ${pleura.msPerFrameInspiration.toFixed(1)} ms en inspiración`,
+        );
+      }
+      const c = stats.compound;
       if (c)
         console.log(
           ''.padEnd(32),

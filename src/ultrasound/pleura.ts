@@ -1,6 +1,6 @@
 import { INTERFACES, Interface, interfaceReflectivity } from '../anatomy/interfaces';
 import { LUNG_CURTAIN } from '../anatomy/organs/lungCurtain';
-import type { Vec3 } from '../core/vec3';
+import { cross, normalize, type Vec3 } from '../core/vec3';
 import { roughnessCoherence } from './interfaceEcho';
 import { RECEIVER_NOISE, glslFloat } from './receiver';
 import { scattererField } from './speckleField';
@@ -132,6 +132,24 @@ export function curtainEdgeSigmaMm(
 /** Fracción del haz que da en el pulmón: Φ(dz/σ); dz, distancia al borde caudal (positiva hacia el pulmón). */
 export function curtainAirFraction(dzMm: number, sigmaMm: number): number {
   return normalCdf(dzMm / sigmaMm);
+}
+
+/**
+ * Fracción de aire de una línea (gemelo de `curtainAirFraction` de la GLSL): el haz de dos vías a la
+ * profundidad D de la pleura, con la dirección `dir` de la línea, el eje de elevación del marco y la PSF
+ * lateral de dos vías del equipo (`lateralSigmaMm` de `beamModel.ts` con su foco).
+ */
+export function curtainAirFractionAt(
+  dz: number,
+  D: number,
+  dir: Vec3,
+  elevation: Vec3,
+  elevationFocusMm: number,
+  lateralSigma: (r: number) => number,
+): { fAir: number; sigmaMm: number } {
+  const lat = normalize(cross(elevation, dir));
+  const sigmaMm = curtainEdgeSigmaMm(elevSigmaMm(D, elevationFocusMm) * Math.SQRT1_2, lateralSigma(D), elevation[2], lat[2]);
+  return { fAir: curtainAirFraction(dz, sigmaMm), sigmaMm };
 }
 
 /** Anchura 10–90 % (mm) de un borde gaussiano de σ: 2·1,2816·σ. */

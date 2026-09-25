@@ -26,12 +26,17 @@ import { pixelToBeam } from '../ultrasound/sectorGeometry';
 import {
   centralGradient,
   clearLiverGrid,
+  curtainLines,
   fidelityStats,
+  pleuraStats,
+  slidingCorrelation,
   type CompoundStats,
   type FidelityStats,
   type LookFrames,
+  type PleuraStats,
   type TransmissionFrame,
 } from './fidelity';
+import type { RespiratoryPattern } from '../physiology/patientState';
 import { speckleStats, type SpeckleOptions, type SpeckleStats } from './speckle';
 import type { RenderMeasureOptions, Simulator } from './simulator';
 import { START_POINTS, type StartPoint } from './startPoints';
@@ -72,6 +77,23 @@ export interface TestHooks {
     pose?: { rockDeg?: number; tiltDeg?: number };
     samples?: boolean;
   }) => FidelityStats;
+  /**
+   * Pleura parietal y cortina pulmonar (decisión 61): coloca la sonda en `startPoint` con la respiración
+   * `respiration` (la apnea espiratoria deja el borde de la cortina arriba; la inspiratoria, 30 mm más abajo),
+   * asienta la persistencia (con `compound`, con el anillo lleno) y devuelve `pleuraStats` de la envolvente (la
+   * de la mirada 0 o la compuesta) y de la imagen mostrada, con el descenso del diafragma del cuadro. Con
+   * `slidingMm`, además el deslizamiento: con la respiración tranquila, dos cuadros de una mirada entre los que
+   * el pulmón baja esa distancia (`slidingCorrelation`). La respiración y el compuesto vuelven a como estaban.
+   */
+  pleura: (opts: {
+    startPoint: StartPoint['id'];
+    respiration: Extract<RespiratoryPattern, 'apnea-expiratory' | 'apnea-inspiratory'>;
+    compound: boolean;
+    slidingMm?: number;
+  }) => PleuraStats & {
+    caudalMm: number;
+    sliding?: { subPleural: number; wall: number; lines: number; shiftMm: number };
+  };
   /**
    * Gradientes de la GPU (el que usa el eco de interfaz, `faceGradient`; `queryPoints` con `normals`)
    * frente al gradiente de `faceSdf` de TS en las caras que dan brillo: por tipo de cara (y los
@@ -287,6 +309,29 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
           samples: opts.samples,
         });
       });
+    },
+    pleura: (opts) => {
+      const sim = getSim();
+      const pattern = sim.patient.respiratoryPattern;
+      try {
+        sim.patient.respiratoryPattern = opts.respiration;
+        const stats = withCompound(sim, dispatch, opts.compound, () => {
+          goTo(sim, opts.startPoint);
+          // la persistencia deja p^n de la vista anterior: cuadros hasta que quede < 1 % (máx. 30)
+          const p = Math.min(0.95, Math.max(0, sim.bmode.persistence));
+          const frames = p > 0 ? Math.min(30, Math.ceil(Math.log(0.01) / Math.log(p))) : 1;
+          if (opts.compound) fillRing(sim);
+          for (let i = 0; i < frames; i++) sim.render();
+          const env = opts.compound ? sim.renderer.readEnvelope({ source: 'compound' }) : sim.renderer.readEnvelope();
+          return pleuraStats(sim, env, sim.renderer.readDisplay(), curtainLines(sim, env.lines));
+        });
+        const caudalMm = sim.sample.resp.diaphragmCaudalMm;
+        if (!opts.slidingMm) return { ...stats, caudalMm };
+        const sliding = withCompound(sim, dispatch, false, () => slidingAt(sim, opts.slidingMm!));
+        return { ...stats, caudalMm, sliding };
+      } finally {
+        sim.patient.respiratoryPattern = pattern;
+      }
     },
     faceNormals: (opts) => {
       const sim = getSim();
@@ -866,6 +911,27 @@ export function faceNormalStats(sim: Simulator): Record<FaceNormalRow, FaceNorma
     };
   }
   return out;
+}
+
+/**
+ * Deslizamiento (decisión 61) con la respiración tranquila: avanza hasta que el diafragma se mueve, dibuja un
+ * cuadro (una mirada), avanza hasta que el pulmón ha bajado o subido `shiftMm` y dibuja otro, sin mover la
+ * sonda; compara las bandas de 2–6 mm bajo y sobre la pleura (`slidingCorrelation`).
+ */
+function slidingAt(sim: Simulator, shiftMm: number): { subPleural: number; wall: number; lines: number; shiftMm: number } {
+  sim.patient.respiratoryPattern = 'quiet';
+  const caudal = () => sim.sample.resp.diaphragmCaudalMm;
+  // hasta la mitad de la inspiración o de la espiración (el diafragma a > 3 mm/s), como mucho un ciclo
+  for (let t = 0; t < 12 && Math.abs(sim.sample.resp.diaphragmVelocityMmS) < 3; t += 0.05) sim.advance(0.05);
+  sim.render();
+  const a = sim.renderer.readEnvelope();
+  const ca = curtainLines(sim, a.lines);
+  const c0 = caudal();
+  for (let t = 0; t < 6 && Math.abs(caudal() - c0) < shiftMm; t += 0.01) sim.advance(0.01);
+  sim.render();
+  const b = sim.renderer.readEnvelope();
+  const cb = curtainLines(sim, b.lines);
+  return { ...slidingCorrelation(a, b, ca, cb, sim.bmode.depthMm), shiftMm: Math.abs(caudal() - c0) };
 }
 
 /** Bascula (`rockDeg`) o inclina (`tiltDeg`) la sonda desde su pose actual y deja que el marco la siga. */

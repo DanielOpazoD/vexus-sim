@@ -71,13 +71,13 @@ export function mirrorCrossing(isLung: (r: number) => boolean, rLung: number, st
  */
 export interface HitsLineQuery {
   /** Tejido de `classify`, la normal de la interfaz y si es pulmón de la cortina (`inLungCurtain`). */
-  at(p: Vec3): { tissue: Tissue; normal: Vec3; curtain: boolean };
+  at: (p: Vec3) => { tissue: Tissue; normal: Vec3; curtain: boolean };
   /** Tejido de `classify` sin la cortina (`classify(m, caliber, false)`): lo que hay detrás de la lámina. */
-  behind(p: Vec3): Tissue;
+  behind: (p: Vec3) => Tissue;
   /** Profundidad bajo la cara interna de la pared (`insideWallMm`). */
-  insideWall(p: Vec3): number;
+  insideWall: (p: Vec3) => number;
   /** Distancia al borde de la cortina en la huella del receso (`lungCurtainEdgeMm`), null fuera. */
-  curtainEdge(p: Vec3): number | null;
+  curtainEdge: (p: Vec3) => number | null;
 }
 
 /** Salidas de A0 de una línea: h0, h1 y h2 (la pleura parietal, decisión 61). */
@@ -95,6 +95,44 @@ export interface HitsLine {
    * a la lámina: aire con aire, sin pleura entre los dos); null sin ella. En h2.w van juntos: tipo + 4·(último + 1).
    */
   pleura: { D: number; dz: number; dL: number; kind: number; curtainLast: number } | null;
+}
+
+/**
+ * La pleura parietal de A0 (decisión 61) sobre una línea recta: el primer cruce de la cara interna de la
+ * pared (`insideWall` pasa de < 0 a ≥ 0 entre dos muestras gruesas), llevado al punto exacto con la bisección
+ * del espejo, y su distancia al borde de la cortina si cae en la huella del receso a menos de
+ * `CURTAIN_RECORD_MM` del borde; null si no. No necesita la clasificación: el cruce va siempre antes que
+ * cualquier espejo (la cúpula está bajo la pared). La usa `transmissionHitsLine` y el banco.
+ */
+export function pleuraCrossingLine(
+  insideWall: (p: Vec3) => number,
+  curtainEdge: (p: Vec3) => number | null,
+  origin: Vec3,
+  dir: Vec3,
+  depthMm: number,
+  coarseN: number,
+): { D: number; dz: number } | null {
+  const step = depthMm / coarseN;
+  const at = (r: number): Vec3 => [origin[0] + dir[0] * r, origin[1] + dir[1] * r, origin[2] + dir[2] * r];
+  let prev = -1;
+  for (let s = 0; s < coarseN; s++) {
+    const r = (s + 0.5) * step;
+    const inside = insideWall(at(r));
+    if (inside >= 0 && prev < 0) {
+      let lo = Math.max(r - step, 0);
+      let hi = r;
+      for (let it = 0; it < MIRROR_BISECTION_STEPS; it++) {
+        const mid = 0.5 * (lo + hi);
+        if (insideWall(at(mid)) >= 0) hi = mid;
+        else lo = mid;
+      }
+      const D = 0.5 * (lo + hi);
+      const dz = curtainEdge(at(D));
+      return dz !== null && dz > -CURTAIN_RECORD_MM ? { D, dz } : null;
+    }
+    prev = inside;
+  }
+  return null;
 }
 
 /**
@@ -124,32 +162,17 @@ export function transmissionHitsLine(
   let gasSeg = -1;
   let boneSeg = -1;
   let gasKind = 0;
-  let pleura: HitsLine['pleura'] = null;
+  // la pleura parietal: su cruce va antes que cualquier espejo (misma marcha que la de A0)
+  const crossing = pleuraCrossingLine(q.insideWall, q.curtainEdge, origin, dir0, depthMm, coarseN);
+  const pleura: HitsLine['pleura'] = crossing ? { ...crossing, dL: 0, kind: CURTAIN_GAS_KIND, curtainLast: -1 } : null;
   let curtainDb = 0;
   let curtainLast = -1;
   let curtainRun = false;
-  let prevInside = -1;
   let entered = false;
   for (let s = 0; s < coarseN; s++) {
     const r = (s + 0.5) * step;
     const p = mirrorSeg >= 0 ? at(hitPoint, dir, r - hitR) : at(origin, dir0, r);
     const c = q.at(p);
-    if (mirrorSeg < 0 && pleura === null) {
-      const inside = q.insideWall(p);
-      if (inside >= 0 && prevInside < 0) {
-        let lo = Math.max(r - step, 0);
-        let hi = r;
-        for (let it = 0; it < MIRROR_BISECTION_STEPS; it++) {
-          const mid = 0.5 * (lo + hi);
-          if (q.insideWall(at(origin, dir0, mid)) >= 0) hi = mid;
-          else lo = mid;
-        }
-        const rp = 0.5 * (lo + hi);
-        const dz = q.curtainEdge(at(origin, dir0, rp));
-        if (dz !== null && dz > -CURTAIN_RECORD_MM) pleura = { D: rp, dz, dL: 0, kind: CURTAIN_GAS_KIND, curtainLast: -1 };
-      }
-      prevInside = inside;
-    }
     if (c.tissue === Tissue.Air && !entered) continue;
     entered = true;
     const props = TISSUES[c.tissue];

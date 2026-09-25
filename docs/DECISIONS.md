@@ -1285,14 +1285,7 @@ tamaño de la rama que lleva dentro, se tome o no (la de B inlinea otra vez la c
 fase y los ecos): opción descartada, +2 ms en cada cuadro de la aplicación. Diseño adoptado: dos
 programas por pasada (arriba), con la mirada 0 byte a byte la de `main`; A2 y A se separan igual, aunque su
 coste apagado era menor, porque tenían la misma estructura (su bucle o su cono dirigidos compilados en el
-programa de la mirada 0). Previsto: con el compuesto apagado, A2, A y B cuestan lo de `main` (quedan K,
-un paso directo de LINES × 1024 texels, la marca de gas de A1 y los adjuntos 2 y 3 de A2 y el 3 de A, que
-la mirada 0 no escribe; ≈ 3 MB de carga y guardado de teselas, ≤ 0,05 ms estimados); encendido, B en las
-miradas dirigidas cuesta lo de su programa, que ya no lleva el cuerpo de la mirada 0. Pendiente de volver a
-medir con el mismo protocolo. Pendiente, con GPU: calibrar θ en 6–8° para una
-mediana de la desviación del gris de 12–13 y medir G1–G8 y K1–K12 (`docs/fidelity/README.md`, PR 4a), y
-luego el punto de control A de la prueba ciega. El aliasing de línea del moteado (`speckle-line-aliasing`)
-queda para el PR 3.
+programa de la mirada 0). Los programas de la mirada 0 de A2 y A escriben 2 y 3 de los 4 adjuntos de su destino: se dibujan con solo esos activos (`bindTargetFor`). Con los cuatro activos WebGL rechaza el dibujo («Active draw buffers with missing fragment shader outputs») y el destino conserva el cuadro anterior: la e2e lo vio como transmisión a 407 dB de la CPU y espejo a 99 mm, y el WebGL falso de las pruebas rechaza ahora el dibujo igual. Medido con GPU (M4, 25-09-2026, mismas condiciones de carga, intercalado): con el compuesto apagado el cuadro cuesta lo de `main` (7,9–11,0 frente a 8,6–12,0 ms en las mismas rondas), encendido +0,9–1,7 ms. Con θ = 7° el banco da en el hígado puro una desviación del gris de 11,0–12,6 (antes 15,1–16,7; mediana 12,0, dentro de 12–13, así que θ se queda en 7°), SNR 2,37–2,51, oscuros 0,007–0,010, grietas 0 y grano axial 0,72–0,78 mm: la textura cambia sin agrandar el grano. G5–G8 y K7–K12 se informan en el banco (`compound.bands`, `seam`, `umbraShiftMm`); el punto de control A de la prueba ciega queda pendiente. El aliasing de línea del moteado (`speckle-line-aliasing`) queda para el PR 3.
 **Verificación.** Gemelos (fallan en `main`): `steering.test.ts` (geometría exacta y θ = 0 identidad),
 `speckleField.test.ts` (sin fase, bit a bit el de hoy; fase lineal ≤ 1·10⁻² rad; SNR y media por mirada),
 `compoundSpeckle.test.ts` (lento: ley con un plano; con tres, el artefacto de la mezcla fijado y N_eff

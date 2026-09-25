@@ -1,6 +1,6 @@
 import type { Vec3 } from '../../core/vec3';
-import { sdEllipsoid, smoothMax, smoothMin, type Ellipsoid, type OrientedEllipsoid } from '../primitives';
-import { gallbladderSdf } from './gallbladder';
+import { sdEllipsoid, smoothMax, smoothMin, type Ellipsoid } from '../primitives';
+import { gallbladderSdf, type GallbladderShape } from './gallbladder';
 import { kidneyLocal, kidneyOuterSdf, type Kidney } from './kidney';
 import { umbilicalFissureSdf, type UmbilicalFissure } from './liverLigaments';
 
@@ -52,7 +52,7 @@ export interface LiverShape {
   readonly visceralPlane: VisceralPlane;
   readonly renalImpressionMm: number;
   readonly kidneyRight: Kidney;
-  readonly gallbladder: OrientedEllipsoid;
+  readonly gallbladder: GallbladderShape;
   readonly gallbladderWallMm: number;
   readonly umbilicalFissure: UmbilicalFissure;
 }

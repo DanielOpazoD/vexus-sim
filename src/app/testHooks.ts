@@ -209,6 +209,8 @@ export interface TestHooks {
   pwBandOverFloorDb: (seconds: number) => number | null;
   /** Coloca la sonda en un punto de partida (sin animación) y avanza lo justo para que el marco la siga. */
   goToStartPoint: (id: StartPoint['id']) => void;
+  /** Lleva la sonda a una pose cualquiera (capturas del banco y búsqueda de ventanas). */
+  setPose: (pose: ProbePose) => void;
   /** Separa la sonda de la piel `mm` (0 = contacto) sin tocar el resto de la pose. */
   liftProbe: (mm: number) => void;
   /** Avanza la simulación (fisiología + PW) `seconds` sin renderizar: SwiftShader es lento. */
@@ -583,6 +585,11 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       return vals[Math.floor(vals.length / 2)];
     },
     goToStartPoint: (id) => goTo(getSim(), id),
+    setPose: (pose) => {
+      const sim = getSim();
+      sim.setPose(pose);
+      sim.advance(0.05);
+    },
     liftProbe: (mm) => {
       const sim = getSim();
       sim.setPose({ ...sim.pose, lift: mm });

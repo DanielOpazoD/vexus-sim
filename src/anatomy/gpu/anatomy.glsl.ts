@@ -24,6 +24,7 @@ import {
   INTERFACE_GLSL_NAME,
   LAST_TUBE_INTERFACE,
   LAST_WALL_INTERFACE,
+  GALLBLADDER_CONTACT_MM,
   MORISON_CONTACT_MM,
 } from '../interfaces';
 import { COMPRESSION_GLSL, PROBE_COMPRESSION } from '../compression';
@@ -66,6 +67,7 @@ ${INTERFACE_DEFINES}
 #define IF_FIRST_WALL ${FIRST_WALL_INTERFACE}
 #define IF_LAST_WALL ${LAST_WALL_INTERFACE}
 #define MORISON_CONTACT_MM ${MORISON_CONTACT_MM.toFixed(3)}
+#define GALLBLADDER_CONTACT_MM ${GALLBLADDER_CONTACT_MM.toFixed(3)}
 #define FACE_GRAD_EPS ${FACE_GRADIENT_EPS_MM.toFixed(3)}
 #define DIAPHRAGM_MM ${DIAPHRAGM_THICKNESS_MM.toFixed(3)}
 #define CAPSULE_MM ${LIVER_CAPSULE_MM.toFixed(3)}
@@ -167,20 +169,6 @@ float sdEllipsoid(vec3 p, vec3 c, vec3 r, float taperX, out vec3 n) {
   float k2 = length(k / rr);
   n = normalize(k / rr);
   return k2 > 0.0 ? (k1 * (k1 - 1.0)) / k2 : -min(r.x, min(r.y, r.z));
-}
-
-// Elipsoide con base propia y afilamiento en +u (vesícula en pera); n en el mundo
-float sdOrientedEllipsoid(vec3 p, vec3 c, vec3 r, vec3 U, vec3 V, vec3 W, float taperU, out vec3 n) {
-  vec3 d = p - c;
-  vec3 q = vec3(dot(d, U), dot(d, V), dot(d, W));
-  float taper = max(0.15, 1.0 - taperU * (q.x / r.x));
-  vec3 rr = vec3(r.x, r.y * taper, r.z * taper);
-  vec3 k = q / rr;
-  float k1 = length(k);
-  float k2 = length(k / rr);
-  vec3 nl = normalize(k / rr + vec3(1e-6));
-  n = normalize(U * nl.x + V * nl.y + W * nl.z);
-  return k2 > 0.0 ? (k1 * (k1 - 1.0)) / k2 : -min(rr.x, min(rr.y, rr.z));
 }
 
 float sdEllipsoidLocal(vec3 q, vec3 r) {
@@ -465,8 +453,9 @@ Cls classifyWith(vec3 m, bool withCurtain) {
     c.n = (inner == -dLiver) ? ln : ((inner == dDia) ? dn : tn);
     if (inner < CAPSULE_MM) {
       c.tissue = T_CAPSULE; c.bd = inner;
-      // la cara hacia el diafragma es del diafragma; la de Morison, de la grasa perirrenal
-      bool other = inner == dDia || dPeri <= inner + MORISON_CONTACT_MM;
+      // la cara hacia el diafragma es del diafragma; la de Morison, de la grasa perirrenal; la de la fosa
+      // vesicular, de la pared de la vesícula (una sola línea)
+      bool other = inner == dDia || dPeri <= inner + MORISON_CONTACT_MM || dGb - uGbExtra.y <= inner + GALLBLADDER_CONTACT_MM;
       if (!other) { c.iface = IF_LIVER_CAPSULE; c.ifd = inner; }
       return c;
     }

@@ -1,5 +1,6 @@
 import type { ProbeCompression } from '../compression';
 import { RespiratoryDeformation } from '../deformation';
+import { GALLBLADDER_NODES } from '../organs/gallbladder';
 import { LUNG_CURTAIN } from '../organs/lungCurtain';
 import type { AnatomyScene } from '../scene';
 import type { PhysiologySample } from '../../physiology/engine';
@@ -103,16 +104,18 @@ export const SCENE_UNIFORMS: readonly UniformSpec[] = [
     doc: 'caja del ligamento venoso: xMin, xMax, zMin, zMax',
     value: (s) => [s.ligamentumVenosum.xMin, s.ligamentumVenosum.xMax, s.ligamentumVenosum.zMin, s.ligamentumVenosum.zMax],
   },
-  { name: 'uGbC', type: 'vec3', doc: 'centro de la vesícula', value: (s) => s.gallbladder.center },
-  { name: 'uGbR', type: 'vec3', doc: 'semiejes de la vesícula', value: (s) => s.gallbladder.radii },
-  { name: 'uGbU', type: 'vec3', doc: 'eje fondo → cuello', value: (s) => s.gallbladder.u },
-  { name: 'uGbV', type: 'vec3', doc: 'eje v de la vesícula', value: (s) => s.gallbladder.v },
-  { name: 'uGbW', type: 'vec3', doc: 'eje w de la vesícula', value: (s) => s.gallbladder.w },
+  {
+    name: 'uGbNodes',
+    type: 'vec4',
+    count: GALLBLADDER_NODES,
+    doc: 'línea media de la luz vesicular, del fondo al cuello: centro, radio',
+    value: (s) => s.gallbladder.nodes.flatMap((n) => [...n.p, n.r]),
+  },
   {
     name: 'uGbExtra',
     type: 'vec2',
-    doc: 'afilamiento en +u, espesor de pared (mm)',
-    value: (s) => [s.gallbladder.taperU, s.gallbladderWallMm],
+    doc: 'radio de la unión suave entre tramos, espesor de pared (mm)',
+    value: (s) => [s.gallbladder.blendMm, s.gallbladderWallMm],
   },
   { name: 'uRA', type: 'vec4', doc: 'aurícula derecha: centro, radio', value: (s) => [...s.rightAtrium.center, s.rightAtrium.r] },
   {

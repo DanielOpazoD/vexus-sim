@@ -15,14 +15,13 @@ import {
   type Spine,
   type Diaphragm,
   type Ellipsoid,
-  type OrientedEllipsoid,
   type Rib,
   type Sphere,
   type Torso,
   type Tube,
   type TubeHit,
 } from './primitives';
-import { GALLBLADDER_WALL_MM, gallbladderBody, gallbladderSdf } from './organs/gallbladder';
+import { GALLBLADDER_WALL_MM, gallbladderBody, gallbladderSdf, type GallbladderShape } from './organs/gallbladder';
 import { RENAL_CAPSULE_MM, kidneyLocal, kidneyOuterSdf, kidneyQuery, type Kidney } from './organs/kidney';
 import {
   LIVER_BLEND_MM,
@@ -65,6 +64,7 @@ import {
   FACE_GRADIENT_EPS_MM,
   Interface,
   LAST_TUBE_INTERFACE,
+  GALLBLADDER_CONTACT_MM,
   MORISON_CONTACT_MM,
   interfaceOfVessel,
   isRibInterface,
@@ -206,7 +206,7 @@ export class AnatomyScene {
    * (detrás) y el segmento II (delante). Línea ecogénica clásica del corte subxifoideo.
    */
   readonly ligamentumVenosum: LigamentumVenosum;
-  readonly gallbladder: OrientedEllipsoid;
+  readonly gallbladder: GallbladderShape;
   /** Pared vesicular (mm), ecogénica, entre la luz anecoica y la fosa. */
   readonly gallbladderWallMm = GALLBLADDER_WALL_MM;
   readonly rightAtrium: Sphere;
@@ -462,7 +462,7 @@ export class AnatomyScene {
       };
     const kidney = this.classifyKidneys(m);
     if (kidney.cls) return kidney.cls;
-    const liver = this.classifyLiver(m, dDome, -depth - wall.wallMm, kidney.dPeriMm);
+    const liver = this.classifyLiver(m, dDome, -depth - wall.wallMm, kidney.dPeriMm, dGb - this.gallbladderWallMm);
     if (liver) return liver;
     // Intestino: el «resto». Su distancia a la frontera es la de las interfaces que ganan antes
     // (diafragma, vesícula, aurícula, hígado, pared, grasa perirrenal, gas); como en el hígado, no
@@ -769,9 +769,10 @@ export class AnatomyScene {
   /**
    * Hígado con cápsula, recortado por diafragma (`dDome`) y pared (`insideWallMm`). La cápsula dibuja
    * su cara salvo donde la manda el diafragma (su cara es del diafragma) o donde toca la grasa
-   * perirrenal a ≤ `MORISON_CONTACT_MM` (`dPeriMm`: la cara de Morison es de la grasa).
+   * perirrenal a ≤ `MORISON_CONTACT_MM` (`dPeriMm`: la cara de Morison es de la grasa) o la pared de la
+   * vesícula a ≤ `GALLBLADDER_CONTACT_MM` (`dGbWallMm`, en su fosa: la pared vesicular es una sola línea).
    */
-  private classifyLiver(m: Vec3, dDome: number, insideWallMm: number, dPeriMm: number): Classification | null {
+  private classifyLiver(m: Vec3, dDome: number, insideWallMm: number, dPeriMm: number, dGbWallMm: number): Classification | null {
     const dBase = this.liverBaseSdf(m);
     const dFissure = this.umbilicalFissureSdf(m, dBase);
     const dLiver = smoothMax(dBase, -dFissure, this.umbilicalFissure.roundMm);
@@ -784,7 +785,7 @@ export class AnatomyScene {
     const inner = Math.min(-dLiver, dDiaphragm, insideWallMm);
     if (inner < LIVER_CAPSULE_MM) {
       // `Math.min` devuelve uno de sus argumentos: la igualdad con la cara del diafragma es exacta
-      const other = inner === dDiaphragm || dPeriMm <= inner + MORISON_CONTACT_MM;
+      const other = inner === dDiaphragm || dPeriMm <= inner + MORISON_CONTACT_MM || dGbWallMm <= inner + GALLBLADDER_CONTACT_MM;
       return {
         ...NONE,
         tissue: Tissue.LiverCapsule,

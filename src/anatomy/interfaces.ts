@@ -91,6 +91,11 @@ export function hasCurvatureCoherence(i: Interface): boolean {
  */
 export const MORISON_CONTACT_MM = 0.2;
 /**
+ * La cápsula hepática que toca la pared de la vesícula (en su fosa) no dibuja su cara: la pared vesicular es una
+ * sola línea ecogénica (decisión 67). Holgura sobre la cara externa de la pared, por el redondeo del borde de la fosa.
+ */
+export const GALLBLADDER_CONTACT_MM = 1.0;
+/**
  * Paso (mm) de las diferencias centrales con que la GPU saca el gradiente (normal y norma) de la cápsula
  * hepática, el contorno renal, el diafragma y la vesícula (`faceGradient`), el mismo que el gradiente de
  * `faceSdf` del banco y de la e2e.

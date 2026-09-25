@@ -10,7 +10,8 @@ import {
 } from './equivalenceSweep';
 import { bestGateOnVessel } from './gatePlacement';
 import { acousticWindowWeight, gateTransmission } from './gateTransmission';
-import { lineAngle, lineCoupling, pointOnLine, type ProbePose } from '../probe/probe';
+import { contactCoupling } from '../probe/contact';
+import { lineAngle, pointOnLine, type ProbePose } from '../probe/probe';
 import { hilumNotchActive, kidneyLocal, kidneyOuterSdf } from '../anatomy/organs/kidney';
 import { FACE_GEOMETRIES, type FaceGeometry } from '../anatomy/scene';
 import { Interface, isRibInterface, isWallLayerInterface } from '../anatomy/interfaces';
@@ -501,7 +502,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       const x = Math.min(lines - 1, Math.max(0, u * lines - 0.5));
       const i0 = Math.floor(x);
       const i1 = Math.min(lines - 1, i0 + 1);
-      const cAt = (i: number) => lineCoupling(sim.pose, tr, lineAngle(i, tr));
+      const cAt = (i: number) => contactCoupling(sim.contact, lineAngle(i, tr));
       const coupling = cAt(i0) + (cAt(i1) - cAt(i0)) * (x - i0);
       const db = (v: number) => 20 * Math.log10(Math.max(v, 1e-12));
       const color = db(Math.pow(Math.max(tb, 1e-12), ratio) * coupling);
@@ -535,8 +536,8 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       };
       walk(0);
       const fD = sim.profile.dopplerEffectiveMHz;
-      const pw = gateTransmission(sim.anatomy, sim.frame, tr, sim.pose, theta, depthMm, sim.sample, fD);
-      const pwAtTexel = gateTransmission(sim.anatomy, sim.frame, tr, sim.pose, thetaTexel, (row + 1) * step, sim.sample, fD);
+      const pw = gateTransmission(sim.anatomy, sim.frame, tr, sim.contact, theta, depthMm, sim.sample, fD);
+      const pwAtTexel = gateTransmission(sim.anatomy, sim.frame, tr, sim.contact, thetaTexel, (row + 1) * step, sim.sample, fD);
       return {
         color,
         cpu: [lo, hi],
@@ -1113,7 +1114,7 @@ function windowWeight(sim: Simulator): (theta: number, r: number) => number {
     sim.anatomy,
     sim.frame,
     sim.transducer,
-    sim.pose,
+    sim.contact,
     sim.sample,
     sim.bmode.depthMm,
     sim.profile.dopplerEffectiveMHz,
@@ -1139,6 +1140,8 @@ function envelopeAt(sim: Simulator, pose: ProbePose, compound = false, frames = 
 const LIVER_MASK_SHADOW_LINES = 3;
 /** Penumbra que deja fuera `liverMask`: la transmisión con apertura más de esto bajo la de un solo rayo (dB). */
 const LIVER_MASK_PENUMBRA_DB = 0.5;
+/** Acoplamiento mínimo de una línea de `liverMask` (el del banco, `MIN_COUPLING` de fidelity.ts). */
+const LIVER_MASK_MIN_COUPLING = 0.95;
 
 /**
  * Índices de hígado del plano actual: cada 2 líneas y 4 muestras, de 30 a 120 mm, sin lo que queda bajo la
@@ -1148,6 +1151,9 @@ const LIVER_MASK_PENUMBRA_DB = 0.5;
  * cuadro con apertura a más de `LIVER_MASK_PENUMBRA_DB` bajo la de un solo rayo, como el banco). Decisión 62: con
  * las costillas óseas, girar la sonda 2° desde la ventana intercostal mete la 9.ª costilla en un borde; su sombra
  * y su penumbra entraban en la máscara y el nivel del hígado bajaba 4 dB en un giro de 16° (1,2 dB en un cuadro).
+ * Decisión 63: solo en las líneas acopladas (el contacto conseguido; los bordes de la intercostal no apoyan y son
+ * ruido del receptor). Girar la sonda 2° cambia su contacto, pero solo empujando: el tejido comprimido se mueve por
+ * ello 0,05 mm de mediana (p90 0,18 mm; gemelo), muy por debajo del grano.
  */
 function liverMask(sim: Simulator, env: { lines: number; samples: number }): number[] {
   const tr = sim.transducer;
@@ -1177,7 +1183,8 @@ function liverMask(sim: Simulator, env: { lines: number; samples: number }): num
     return m;
   });
   const idx: number[] = [];
-  for (let u = 0; u < env.lines; u += 2)
+  for (let u = 0; u < env.lines; u += 2) {
+    if (contactCoupling(sim.contact, thetaOf(u)) < LIVER_MASK_MIN_COUPLING) continue;
     for (let k = 0; k < env.samples; k += 4) {
       const r = ((k + 0.5) * depth) / env.samples;
       if (r < 30 || r > 120 || r >= shadowFrom[u]) continue;
@@ -1187,6 +1194,7 @@ function liverMask(sim: Simulator, env: { lines: number; samples: number }): num
       const theta = thetaOf(u);
       if (sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, theta, r), sim.sample).tissue === Tissue.Liver) idx.push(k * env.lines + u);
     }
+  }
   return idx;
 }
 

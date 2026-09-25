@@ -101,7 +101,7 @@ describe('capas de la pared (decisión 62)', () => {
     // el esquema único sube la grasa preperitoneal en uWall.w
     const uWall = SCENE_UNIFORMS.find((u) => u.name === 'uWall')!;
     expect(uWall.type).toBe('vec4');
-    expect(Array.from(uWall.value(scene, { sample: null as never, tubeCount: 0 }))).toEqual([
+    expect(Array.from(uWall.value(scene, { sample: null as never, tubeCount: 0, compression: null }))).toEqual([
       t.skinMm,
       t.fatMm,
       t.muscleMm,
@@ -470,7 +470,7 @@ describe('eco de cara plana de las copias de la pared (serie de la pleura, decis
     for (const src of [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED]) {
       expect(src).toContain(WALL_FACE_ECHO_GLSL);
       expect(src.indexOf(WALL_FACE_ECHO_GLSL)).toBeGreaterThan(src.indexOf(INTERFACE_ECHO_GLSL));
-      expect(src).toContain('return field + vec2(WALL_COPY_FACE_GAIN * wallFaceEchoFlat(c, m, dir), 0.0);');
+      expect(src).toContain('return field + vec2(WALL_COPY_FACE_GAIN * wallFaceEchoFlat(c, m, dir, w), 0.0);');
     }
   });
 });
@@ -506,10 +506,14 @@ describe('gemelo GLSL (organs/wall.ts y wallTexture.ts)', () => {
 
   it('la pasada B aplica la textura solo a la grasa y al músculo, y el eco de las caras de pared y costilla', () => {
     expect(FRAG_RAWFIELD).toContain(WALL_TEXTURE_GLSL);
-    expect(FRAG_RAWFIELD).toContain('if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, normalize(m - uCurvC));');
+    // la dirección del haz de la mirada 0 es la radial desde el centro de curvatura en el punto del MUNDO (con la
+    // compresión de la sonda, decisión 63, m ya no es p en la pared) y la lámina va al mundo por la jacobiana
+    expect(FRAG_RAWFIELD).toContain('if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, dir, w);');
+    expect(FRAG_RAWFIELD).toContain('vec2 f0 = fieldFor(m, se, c.tissue, normalize(p - uCurvC), w);');
     expect(FRAG_RAWFIELD_STEERED).toContain(
-      'if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, normalize(normalize(m - uCurvC) + g / uSteer.w));',
+      'if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, normalize(b0 + g / uSteer.w), w);',
     );
+    expect(FRAG_RAWFIELD_STEERED).toContain('vec2 f0 = fieldForPh(m, se, c.tissue, ph0, g, normalize(p - uCurvC), w);');
     // la textura va antes del eco de interfaz (que usa wallFaceGain) en los dos programas
     for (const src of [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED])
       expect(src.indexOf('float wallFaceGain(')).toBeLessThan(src.indexOf('float interfaceEcho('));

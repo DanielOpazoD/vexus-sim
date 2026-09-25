@@ -4,7 +4,9 @@ import { Tissue } from '../anatomy/tissues';
 import { Interface, interfaceOfVessel } from '../anatomy/interfaces';
 import { TISSUES, TISSUE_COUNT, attenuationDbPerCm } from '../anatomy/tissues';
 import type { PhysiologySample } from '../physiology/engine';
-import { lineAngle, lineCoupling, type ProbeFrame, type ProbePose, type Transducer } from '../probe/probe';
+import type { ProbeCompression } from '../anatomy/compression';
+import { contactCoupling } from '../probe/contact';
+import { lineAngle, type ProbeFrame, type ProbePose, type Transducer } from '../probe/probe';
 import type { TransducerProfile } from './transducerProfile';
 import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
 import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
@@ -31,7 +33,15 @@ import { FRAME_PASSES, type PassId } from './passGraph';
 import { CompoundRing, compoundActive, lookTheta, type CompoundLook } from './compound';
 import { lookWavenumber } from './steering';
 import type { SegmentGrid } from './transmission';
-import { MAX_NODES, MAX_TUBES, MAX_TUBE_SEGMENTS, NODE_BASE, SCENE_TEX_H, SCENE_TEX_W } from '../anatomy/gpu/anatomy.glsl';
+import {
+  COMPRESSION_BASE,
+  MAX_NODES,
+  MAX_TUBES,
+  MAX_TUBE_SEGMENTS,
+  NODE_BASE,
+  SCENE_TEX_H,
+  SCENE_TEX_W,
+} from '../anatomy/gpu/anatomy.glsl';
 import { evaluateSceneUniforms, uploadSceneUniforms, type SceneUniformValues } from '../anatomy/gpu/sceneUniforms';
 import {
   FRAG_AXIAL,
@@ -172,6 +182,11 @@ export interface FrameInputs {
   sample: PhysiologySample;
   frame: ProbeFrame;
   pose: ProbePose;
+  /**
+   * Contacto de la sonda del cuadro (decisión 63, `probe/contact.ts`): la compresión del tejido (uniforms
+   * `uComp*`, la misma que la CPU en `AnatomyQuery`) y el acoplamiento por línea.
+   */
+  compression: ProbeCompression;
   transducer: Transducer;
   caliber: VesselCaliber;
   probeVelocity: Vec3;
@@ -284,6 +299,7 @@ export class UltrasoundRenderer {
   private readonly timer: GpuPassTimer<PassId>;
   private sceneValues: SceneUniformValues = [];
   private sceneValuesFor: FrameInputs['sample'] | null = null;
+  private sceneValuesCompression: ProbeCompression | null = null;
   private sceneValuesTubes = -1;
   private tMap: RenderTarget;
   private mapPixels = new Uint8Array(0);
@@ -448,6 +464,7 @@ export class UltrasoundRenderer {
     this.ring.invalidate();
     this.sceneValuesFor = null;
     this.sceneValuesTubes = -1;
+    this.sceneValuesCompression = null;
     this.sceneData.fill(0);
     this.headerAll.fill(0);
     this.uploadSceneStatic();
@@ -573,13 +590,46 @@ export class UltrasoundRenderer {
    * instante y se suben a cada programa; la textura de escena va aparte (unidad 6).
    */
   private setSceneUniforms(p: GLProgram, inputs: FrameInputs): void {
-    if (this.sceneValuesFor !== inputs.sample || this.sceneValuesTubes !== this.tubeCount) {
-      this.sceneValues = evaluateSceneUniforms(this.currentScene, { sample: inputs.sample, tubeCount: this.tubeCount });
+    if (
+      this.sceneValuesFor !== inputs.sample ||
+      this.sceneValuesTubes !== this.tubeCount ||
+      this.sceneValuesCompression !== inputs.compression
+    ) {
+      this.sceneValues = evaluateSceneUniforms(this.currentScene, {
+        sample: inputs.sample,
+        tubeCount: this.tubeCount,
+        compression: inputs.compression,
+      });
       this.sceneValuesFor = inputs.sample;
       this.sceneValuesTubes = this.tubeCount;
+      if (this.sceneValuesCompression !== inputs.compression) this.uploadCompressionTable(inputs.compression);
+      this.sceneValuesCompression = inputs.compression;
     }
     uploadSceneUniforms(p, this.sceneValues);
     p.tex('uSceneTex', 6, this.sceneTex);
+  }
+
+  /**
+   * Tabla de la compresión de la sonda (decisión 63) en la textura de escena, desde COMPRESSION_BASE: un téxel por
+   * nodo, (s₀, s_D, D, R). Se sube la fila entera que la contiene (los nodos de tubo de esa fila no cambian).
+   */
+  private uploadCompressionTable(k: ProbeCompression): void {
+    k.nodes.forEach((n, i) => this.sceneData.set([n[0], n[1], n[2], k.radiusMm], (COMPRESSION_BASE + i) * 4));
+    const row0 = Math.floor(COMPRESSION_BASE / SCENE_TEX_W);
+    const row1 = Math.floor((COMPRESSION_BASE + k.nodes.length - 1) / SCENE_TEX_W);
+    const gl = this.gl;
+    gl.bindTexture(gl.TEXTURE_2D, this.sceneTex);
+    gl.texSubImage2D(
+      gl.TEXTURE_2D,
+      0,
+      0,
+      row0,
+      SCENE_TEX_W,
+      row1 - row0 + 1,
+      gl.RGBA,
+      gl.FLOAT,
+      this.sceneData.subarray(row0 * SCENE_TEX_W * 4, (row1 + 1) * SCENE_TEX_W * 4),
+    );
   }
 
   /**
@@ -643,7 +693,7 @@ export class UltrasoundRenderer {
     const gl = this.gl;
     for (let i = 0; i < this.lines; i++) {
       const theta = lineAngle(i, inputs.transducer);
-      this.couplingData[i] = lineCoupling(inputs.pose, inputs.transducer, theta);
+      this.couplingData[i] = contactCoupling(inputs.compression, theta);
     }
     gl.bindTexture(gl.TEXTURE_2D, this.couplingTex);
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, this.lines, 1, gl.RED, gl.FLOAT, this.couplingData);

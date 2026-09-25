@@ -40,16 +40,21 @@ export const START_POINTS: readonly StartPoint[] = [
     // 8.º espacio intercostal (entre la 8.ª y la 9.ª costillas) en la línea axilar media, con la sonda a lo largo
     // del espacio (las costillas suben hacia atrás), el marcador hacia la axila y sin basculación: ninguna
     // costilla entra en el sector en toda su profundidad (quedan a ~14 mm a cada lado del plano; girar la sonda
-    // 2° mete la 9.ª en un borde), la huella apoya entera (acoplamiento medio 0,93) y la vértebra asoma al fondo,
-    // a 14–16 cm. Las suprahepáticas derecha y media y la VCI se ven por el hígado; la cortina pulmonar entra por
-    // el lado craneal (4 de 61 líneas en espiración, 13 en el máximo de la respiración tranquila y 39 en
-    // inspiración profunda). Con las costillas óseas (decisión 62) la pose de antes (φ 0,88π, z 8, yaw 0,35, casi
-    // craneocaudal) cruzaba seis costillas y dejaba seis sombras; a lo largo del 7.º espacio (φ 0,94π, z 19) la
-    // cortina tapaba en espiración medio sector, las suprahepáticas incluidas (decisión 61).
+    // 2° mete la 9.ª en un borde) y la vértebra asoma al fondo. Las suprahepáticas derecha y media y la VCI se ven
+    // por el hígado; la cortina pulmonar entra por el lado craneal (4 de 61 líneas en espiración, 13 en el máximo
+    // de la respiración tranquila y 39 en inspiración profunda). Con la sonda que solo empuja (decisión 63) apoyan
+    // las líneas de ±21° (122 de 192, con la presión máxima sobre costillas, 16 mm): en la sección la pared
+    // lateral del tórax tiene 69 mm de radio y la pared de los bordes no queda paralela a la cara ni hundiendo la
+    // sonda 50 mm. La alternativa coronal (marcador craneal) entre dos costillas en la axilar media apoya entera
+    // pero cruza 3–5 costillas (a 17–22 mm en z, el sector abarca ±47 mm a su profundidad; una casi en el centro),
+    // deja 44–59 líneas de hígado frente a 122 y solo abanicada hacia atrás (la del flanco, algo más alta) da un
+    // ángulo Doppler ≤ 50° (decisión 63). Con las costillas óseas (decisión 62) la pose de antes (φ 0,88π, z 8,
+    // yaw 0,35, casi craneocaudal) cruzaba seis costillas y dejaba seis sombras; a lo largo del 7.º espacio
+    // (φ 0,94π, z 19) la cortina tapaba en espiración medio sector, las suprahepáticas incluidas (decisión 61).
     phi: Math.PI,
     z: 0,
     yaw: -1.15,
-    hint: 'Suprahepáticas y VCI por el 8.º espacio intercostal en la línea axilar media: la sonda a lo largo del espacio, marcador hacia la axila, sin costillas en el sector; la cortina pulmonar entra por el lado craneal y baja con la inspiración.',
+    hint: 'Suprahepáticas y VCI por el 8.º espacio intercostal en la línea axilar media: la sonda a lo largo del espacio, marcador hacia la axila, sin costillas en el sector (los bordes, sobre el tórax curvo, no apoyan); la cortina pulmonar entra por el lado craneal y baja con la inspiración.',
   },
   {
     id: 'flank',

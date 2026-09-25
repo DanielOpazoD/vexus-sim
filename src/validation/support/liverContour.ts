@@ -1,5 +1,5 @@
 /**
- * Contorno del hígado en el plano de imagen (PR 0 de las decisiones 60 y 63), portado del diseño
+ * Contorno del hígado en el plano de imagen (PR 0 de las decisiones 60 y 64), portado del diseño
  * «geometry-first» (`design-contour/geometry-first/contour.ts`) sobre las funciones de producción. Lo usa
  * `liverContour.test.ts`.
  *
@@ -32,7 +32,9 @@ import { DIAPHRAGM_THICKNESS_MM, Tissue } from '../../anatomy/tissues';
 import { START_POINTS, type StartPoint } from '../../app/startPoints';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../../cases';
 import type { Vec3 } from '../../core/vec3';
-import { CONVEX_C35, lineCoupling, lineDirection, pointOnLine, probeFrame, type ProbeFrame, type ProbePose } from '../../probe/probe';
+import type { ProbeCompression } from '../../anatomy/compression';
+import { contactCoupling, probeContact } from '../../probe/contact';
+import { CONVEX_C35, lineDirection, pointOnLine, probeFrame, type ProbeFrame, type ProbePose } from '../../probe/probe';
 import { facetLobe, roughnessCoherence } from '../../ultrasound/interfaceEcho';
 import { FACE_GRADIENT_EPS_MM } from '../../anatomy/interfaces';
 
@@ -64,6 +66,11 @@ export interface ContourView {
   frame: ProbeFrame;
   caliber: VesselCaliber;
   pose: ProbePose;
+  /**
+   * Contacto de la pose (decisión 63): solo el acoplamiento de las líneas; el contorno se mide sobre la anatomía
+   * rígida y con el marco de la pose sin hundir (la forma del hígado, no su compresión ni su acercamiento).
+   */
+  contact: ProbeCompression;
 }
 
 const scenes = new Map<ContourCase, AnatomyScene>();
@@ -93,12 +100,14 @@ export function contourView(c: ContourCase, sp: StartPoint['id'], dPhi = 0, dRoc
   const scene = sceneOf(c);
   const p = CAPTURE_POSES[sp] ?? START_POINTS.find((s) => s.id === sp)!;
   const pose: ProbePose = { phi: p.phi + dPhi, z: p.z, lift: 0, yaw: p.yaw, rock: (p.rock ?? 0) + dRock, tilt: (p.tilt ?? 0) + dTilt };
+  const frame = probeFrame(pose, scene.torso, CONVEX_C35);
   return {
     id: `${c}-${sp}`,
     scene,
-    frame: probeFrame(pose, scene.torso, CONVEX_C35),
+    frame,
     caliber: { ...BASELINE_CALIBER, ivcApScale: 0.777 },
     pose,
+    contact: probeContact(pose, CONVEX_C35, scene.torso),
   };
 }
 
@@ -365,7 +374,7 @@ export function analyzeContour(v: ContourView, inner?: (m: Vec3) => number): Con
       } else n = v.scene.faceGradient(p, v.caliber, 'liverSurface')!.normal;
       const d = lineDirection(v.frame, theta);
       const cosI = Math.abs(n[0] * d[0] + n[1] * d[1] + n[2] * d[2]);
-      let hidden = lineCoupling(v.pose, CONVEX_C35, theta) < 0.5;
+      let hidden = contactCoupling(v.contact, theta) < 0.5;
       for (let rr = 1; rr < r - 1 && !hidden; rr += 1) {
         const tt = v.scene.classify(pointOnLine(v.frame, CONVEX_C35, theta, rr), v.caliber).tissue;
         if (tt === Tissue.Lung || tt === Tissue.BowelGas) hidden = true;

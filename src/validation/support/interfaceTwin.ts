@@ -13,9 +13,9 @@
  * espejo en el centro de la primera celda gruesa de pulmón): la prueba de regresión la usa.
  * La curvatura de cada cara entra con sus κ lateral y elevacional analíticos (la escena los da).
  * `lines` cambia el número de líneas (192, las del convexo, por omisión): la prueba de convergencia de
- * la cápsula difusa (decisión 63) compara 192 con 768. Las escenas de incidencia constante
+ * la cápsula difusa (decisión 64) compara 192 con 768. Las escenas de incidencia constante
  * (`spiralCapsule`), de pliegue (`kinkCapsule`), la traza a lo largo de la cara (`faceTrace`) y σ_L
- * (`sigmaL`) son las del PR 0 de las decisiones 60 y 63 (`capsuleTwin.test.ts`).
+ * (`sigmaL`) son las del PR 0 de las decisiones 60 y 64 (`capsuleTwin.test.ts`).
  */
 import { INTERFACES, Interface, LAST_TUBE_INTERFACE } from '../../anatomy/interfaces';
 import { TISSUES, Tissue } from '../../anatomy/tissues';
@@ -353,7 +353,7 @@ export function calibrateBeta(depth: number, rFace = 80, twoSided = true): { bet
  * Retrodispersión de los tejidos de las escenas (la de TISSUES, redondeada, cuando se calibró la decisión 57;
  * la decisión 62 bajó el músculo de la pared a 0,35, pero aquí es solo el tejido de encima de la cápsula, que
  * se mide contra el hígado de debajo). La de la cápsula es la de producción (`T_CAPSULE`): si cambia
- * (decisión 63), el gemelo la sigue.
+ * (decisión 64), el gemelo la sigue.
  */
 export const BACK = {
   liver: 1.0,

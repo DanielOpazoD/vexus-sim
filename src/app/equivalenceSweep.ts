@@ -2,7 +2,9 @@ import { START_POINTS } from './startPoints';
 import type { Simulator } from './simulator';
 import { Interface } from '../anatomy/interfaces';
 import { Tissue } from '../anatomy/tissues';
-import { pointOnLine, probeFrame, type ProbePose } from '../probe/probe';
+import type { ProbeCompression } from '../anatomy/compression';
+import { probeContact } from '../probe/contact';
+import { pointOnLine, type ProbeFrame, type ProbePose } from '../probe/probe';
 import { compareTissueGrids } from './equivalenceCheck';
 
 /**
@@ -13,8 +15,23 @@ import { compareTissueGrids } from './equivalenceCheck';
  *  - vaso: en las celdas de sangre interiores, mismo identificador de vaso;
  *  - velocidad de la sangre: error relativo en esas celdas (p95 y máximo).
  * La e2e lo ejecuta con SwiftShader en CI; así la regla central del proyecto deja de
- * depender de mirar la pestaña Docente.
+ * depender de mirar la pestaña Docente. En cada punto de partida el tejido está deformado por la compresión de
+ * la sonda en esa pose (decisión 63), en la CPU y en la GPU: el acuerdo se exige con la deformación activa.
  */
+
+/**
+ * Ejecuta `fn` con la compresión de la sonda `k` en la anatomía TS (la de la GPU se pasa a `gpuQuery`) y deja
+ * después la del simulador.
+ */
+function withCompression<T>(sim: Simulator, k: ProbeCompression, fn: () => T): T {
+  const saved = sim.anatomy.probeCompression;
+  sim.anatomy.setProbeCompression(k);
+  try {
+    return fn();
+  } finally {
+    sim.anatomy.setProbeCompression(saved);
+  }
+}
 export interface EquivalencePoseReport {
   id: string;
   agreement: number;
@@ -41,7 +58,17 @@ export function equivalenceSweep(sim: Simulator): EquivalencePoseReport[] {
   const out: EquivalencePoseReport[] = [];
   for (const sp of START_POINTS) {
     const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
-    const frame = probeFrame(pose, sim.scene.torso, tr);
+    // el marco efectivo (la sonda hundida) y su compresión: los del simulador en esa pose (decisión 63)
+    const k = probeContact(pose, tr, sim.scene.torso);
+    const frame = k.frame;
+    out.push(withCompression(sim, k, () => poseReport(sim, sp.id, frame, k)));
+  }
+  return out;
+}
+
+function poseReport(sim: Simulator, id: string, frame: ProbeFrame, k: ProbeCompression): EquivalencePoseReport {
+  const tr = sim.transducer;
+  {
     const n = LINES * SAMPLES;
     const pts = new Float32Array(n * 3);
     for (let v = 0; v < SAMPLES; v++)
@@ -50,7 +77,7 @@ export function equivalenceSweep(sim: Simulator): EquivalencePoseReport[] {
         const p = pointOnLine(frame, tr, theta, ((v + 0.5) / SAMPLES) * DEPTH_MM);
         pts.set(p, (v * LINES + u) * 3);
       }
-    const gpu = sim.gpuQuery(pts, frame);
+    const gpu = sim.gpuQuery(pts, frame, false, { compression: k });
     const cpuTissue = new Uint8Array(n);
     const gpuTissue = new Uint8Array(n);
     const cpuVessel = new Array<string | null>(n).fill(null);
@@ -87,8 +114,8 @@ export function equivalenceSweep(sim: Simulator): EquivalencePoseReport[] {
         errs.push(Math.hypot(dx, dy, dz) / ref);
       }
     errs.sort((a, b) => a - b);
-    out.push({
-      id: sp.id,
+    return {
+      id,
       agreement: rep.agreement,
       interiorAgreement: rep.interiorAgreement,
       bloodCells: blood,
@@ -96,9 +123,8 @@ export function equivalenceSweep(sim: Simulator): EquivalencePoseReport[] {
       velocityP95RelErr: errs.length ? errs[Math.floor(0.95 * (errs.length - 1))] : 0,
       velocityMaxRelErr: errs.length ? errs[errs.length - 1] : 0,
       worst: rep.worst.map((w) => `${Tissue[w.cpu]}→${Tissue[w.gpu]}×${w.count}`).join(', '),
-    });
+    };
   }
-  return out;
 }
 
 /**
@@ -286,36 +312,40 @@ export function interfaceShellEquivalence(sim: Simulator, lines = 48, stepMm = 0
   const perCell = Math.round(COARSE_MM / stepMm);
   for (const sp of START_POINTS) {
     const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
-    const frame = probeFrame(pose, sim.scene.torso, tr);
-    const near: { p: [number, number, number]; iface: Interface; dist: number; tissue: Tissue }[] = [];
-    for (let u = 0; u < lines; u++) {
-      const theta = -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / lines;
-      const faceAt = Array.from({ length: nCoarse }, (_, k) => {
-        const p = pointOnLine(frame, tr, theta, (k + 0.5) * COARSE_MM);
-        if (sim.anatomy.classifyWorld(p, sim.sample).interface !== Interface.None) return true;
-        return sim.anatomy.faceSdfWorld(p, sim.sample, 'tube') !== null;
-      });
-      for (let k = 0; k < nCoarse; k++) {
-        if (!faceAt[k] && !faceAt[k - 1] && !faceAt[k + 1]) continue;
-        for (let j = 0; j < perCell; j++) {
-          const p = pointOnLine(frame, tr, theta, k * COARSE_MM + (j + 0.5) * stepMm);
-          const q = sim.anatomy.classifyWorld(p, sim.sample);
-          near.push({ p, iface: q.interface, dist: q.interfaceDistance, tissue: q.tissue });
+    // el marco efectivo (la sonda hundida) y su compresión: los del simulador en esa pose (decisión 63)
+    const k = probeContact(pose, tr, sim.scene.torso);
+    const frame = k.frame;
+    withCompression(sim, k, () => {
+      const near: { p: [number, number, number]; iface: Interface; dist: number; tissue: Tissue }[] = [];
+      for (let u = 0; u < lines; u++) {
+        const theta = -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / lines;
+        const faceAt = Array.from({ length: nCoarse }, (_, k) => {
+          const p = pointOnLine(frame, tr, theta, (k + 0.5) * COARSE_MM);
+          if (sim.anatomy.classifyWorld(p, sim.sample).interface !== Interface.None) return true;
+          return sim.anatomy.faceSdfWorld(p, sim.sample, 'tube') !== null;
+        });
+        for (let k = 0; k < nCoarse; k++) {
+          if (!faceAt[k] && !faceAt[k - 1] && !faceAt[k + 1]) continue;
+          for (let j = 0; j < perCell; j++) {
+            const p = pointOnLine(frame, tr, theta, k * COARSE_MM + (j + 0.5) * stepMm);
+            const q = sim.anatomy.classifyWorld(p, sim.sample);
+            near.push({ p, iface: q.interface, dist: q.interfaceDistance, tissue: q.tissue });
+          }
         }
       }
-    }
-    const pts = new Float32Array(near.length * 3);
-    near.forEach((s, i) => pts.set(s.p, i * 3));
-    const gpu = sim.gpuQuery(pts, frame);
-    const inBand = (face: number, d: number) => face !== NO_FACE && d >= SHELL_BAND_MM[0] && d <= SHELL_BAND_MM[1];
-    near.forEach((s, i) => {
-      if (!inBand(s.iface, s.dist) && !inBand(gpu.iface[i], gpu.ifd[i])) return;
-      byInterface[Interface[s.iface]] = (byInterface[Interface[s.iface]] ?? 0) + 1;
-      if (tally.add(s.iface, s.dist, gpu.iface[i], gpu.ifd[i]) || disagreements.length >= MAX_LISTED) return;
-      disagreements.push(
-        `${sp.id}: ${Interface[s.iface]}→${Interface[gpu.iface[i]] ?? gpu.iface[i]} (${Tissue[s.tissue]}) en ` +
-          `(${s.p.map((x) => x.toFixed(2)).join(', ')}), a ${s.dist.toFixed(3)} mm`,
-      );
+      const pts = new Float32Array(near.length * 3);
+      near.forEach((s, i) => pts.set(s.p, i * 3));
+      const gpu = sim.gpuQuery(pts, frame, false, { compression: k });
+      const inBand = (face: number, d: number) => face !== NO_FACE && d >= SHELL_BAND_MM[0] && d <= SHELL_BAND_MM[1];
+      near.forEach((s, i) => {
+        if (!inBand(s.iface, s.dist) && !inBand(gpu.iface[i], gpu.ifd[i])) return;
+        byInterface[Interface[s.iface]] = (byInterface[Interface[s.iface]] ?? 0) + 1;
+        if (tally.add(s.iface, s.dist, gpu.iface[i], gpu.ifd[i]) || disagreements.length >= MAX_LISTED) return;
+        disagreements.push(
+          `${sp.id}: ${Interface[s.iface]}→${Interface[gpu.iface[i]] ?? gpu.iface[i]} (${Tissue[s.tissue]}) en ` +
+            `(${s.p.map((x) => x.toFixed(2)).join(', ')}), a ${s.dist.toFixed(3)} mm`,
+        );
+      });
     });
   }
   return {

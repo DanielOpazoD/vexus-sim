@@ -1,3 +1,4 @@
+import type { ProbeCompression } from '../compression';
 import { RespiratoryDeformation } from '../deformation';
 import { LUNG_CURTAIN } from '../organs/lungCurtain';
 import type { AnatomyScene } from '../scene';
@@ -19,6 +20,8 @@ const SIZE: Record<GlslType, number> = { float: 1, int: 1, vec2: 2, vec3: 3, vec
 export interface UniformContext {
   sample: PhysiologySample;
   tubeCount: number;
+  /** Contacto de la sonda del cuadro (decisión 63); null: sin compresión (uCompC.w = 0). */
+  compression: ProbeCompression | null;
 }
 
 interface UniformSpec {
@@ -174,6 +177,24 @@ export const SCENE_UNIFORMS: readonly UniformSpec[] = [
     value: (_s, c) => [c.sample.resp.diaphragmCaudalMm, ...RespiratoryDeformation.direction],
   },
   { name: 'uRespVel', type: 'float', doc: 'velocidad del diafragma (mm/s)', value: (_s, c) => [c.sample.resp.diaphragmVelocityMmS] },
+  {
+    name: 'uCompC',
+    type: 'vec4',
+    doc: 'compresión de la sonda (decisión 63): centro de curvatura de la cara, radio + alcance (0 = sin compresión)',
+    value: (_s, c) => (c.compression ? [...c.compression.center, c.compression.radiusMm + c.compression.reachMm] : [0, 0, 0, 0]),
+  },
+  {
+    name: 'uCompAx',
+    type: 'vec4',
+    doc: 'eje axial de la sonda, sen del semiángulo de la cara (la tabla por nodo, con el radio, va en uSceneTex, COMP_BASE)',
+    value: (_s, c) => (c.compression ? [...c.compression.axial, Math.sin(c.compression.halfAngle)] : [0, 0, 1, 1]),
+  },
+  {
+    name: 'uCompLat',
+    type: 'vec4',
+    doc: 'eje lateral de la sonda, media huella elevacional (mm)',
+    value: (_s, c) => (c.compression ? [...c.compression.lateral, c.compression.halfElevationMm] : [1, 0, 0, 0]),
+  },
   {
     name: 'uCurtain',
     type: 'vec4',

@@ -29,7 +29,7 @@
  * llegan a 10 registros o no tienen rosario (`thinGatedBins`): esas puertas no se evalúan en esa escena
  * (docs/fidelity/README.md, «Qué llena el barrido»).
  *
- * El bloque `contour` de cada escena (`contourStats`, PR 0 de las decisiones 60 y 63) informa, sin puertas,
+ * El bloque `contour` de cada escena (`contourStats`, PR 0 de las decisiones 60 y 64) informa, sin puertas,
  * el contorno de la cápsula en la pose de partida (la de las capturas): extremos bruscos, salto de
  * incidencia entre líneas vecinas y, por tramo de 0–80°, contraste en gris, CVc y σ_L de la cápsula y de
  * Morison (con la línea del peritoneo de la decisión 62 como cápsula); con `--sweep`, `contourSweep` lo mismo

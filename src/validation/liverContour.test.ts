@@ -14,7 +14,7 @@ import {
 } from './support/liverContour';
 
 /**
- * Contorno del hígado en el plano de imagen (PR 0 de las decisiones 60 y 63; `support/liverContour.ts`,
+ * Contorno del hígado en el plano de imagen (PR 0 de las decisiones 60 y 64; `support/liverContour.ts`,
  * portado del diseño «geometry-first»): la superficie `liverSurface` de producción cortada por el plano de
  * las cuatro vistas de las capturas (sano: subxifoidea, intercostal y flanco; congestión grave:
  * subxifoidea), en apnea espiratoria.
@@ -40,7 +40,7 @@ const todayInner =
     liverTerms(v.scene, m).inner;
 const productionInner = (v: ContourView, m: Vec3): number => -v.scene.faceSdf(m, v.caliber, 'liverSurface')!;
 
-describe('Contorno del hígado en las vistas de las capturas (PR 0 de las decisiones 60 y 63)', () => {
+describe('Contorno del hígado en las vistas de las capturas (PR 0 de las decisiones 60 y 64)', () => {
   let views: ContourView[] = [];
   let reports: ContourReport[] = [];
   beforeAll(() => {

@@ -1,4 +1,5 @@
 /// <reference lib="webworker" />
+import type { ProbeCompression } from '../anatomy/compression';
 import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene } from '../anatomy/scene';
 import type { PhysiologySample } from '../physiology/engine';
@@ -16,6 +17,8 @@ export interface CutMapRequest {
   id: number;
   frame: ProbeFrame;
   transducer: Transducer;
+  /** Contacto de la sonda del marco (decisión 63): el corte muestra el tejido comprimido, como la imagen. */
+  compression: ProbeCompression | null;
   depthMm: number;
   /** Subconjunto de la muestra fisiológica que la clasificación necesita. */
   sample: Pick<PhysiologySample, 'resp' | 'ivc' | 'hvRadiusScale' | 'pvRadiusScale' | 'velocities'>;
@@ -64,6 +67,7 @@ self.onmessage = (ev: MessageEvent<CutMapInit | CutMapRequest>) => {
       return;
     }
     const { width, height, frame, transducer, depthMm } = msg;
+    query.setProbeCompression(msg.compression);
     const tissue = new Uint8Array(width * height);
     const vessel = new Int8Array(width * height);
     const sample = msg.sample as PhysiologySample;

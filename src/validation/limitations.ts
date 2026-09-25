@@ -41,4 +41,6 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'compound-off-under-curtain',
   'wall-generic-layers',
   'speckle-anchor-orientation',
+  'probe-compression-kinematic',
+  'probe-compression-in-plane',
 ]);

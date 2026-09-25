@@ -138,35 +138,17 @@ export function pointOnSteeredLine(frame: ProbeFrame, tr: Transducer, phi: numbe
 }
 
 /**
- * Acoplamiento acústico por línea (0–1) según el hueco entre la cara convexa y
- * la piel (aproximada como plano tangente): basculación, separación y
- * curvatura levantan los extremos; una película de gel de ~1 mm y la
- * deformación cutánea toleran huecos pequeños ([EXTRAPOLACIÓN PROPIA], C.5).
- */
-/**
  * Blandura de la pared bajo la sonda (0–1): fracción del hueco por basculación e
  * inclinación que la pared absorbe al hundirse. Epigastrio y abdomen anterior sin
  * costillas (bajo el xifoides) ≈ 0,65: la sonda se «entierra» y se bascula hacia la
- * cabeza sin perder contacto; flanco bajo el reborde ≈ 0,35; sobre las costillas ≈ 0,15.
+ * cabeza sin perder contacto; flanco bajo el reborde ≈ 0,35; sobre las costillas ≈ 0,15. La usa el criterio
+ * de contacto (`probe/contact.ts`, decisión 63): cuánto hueco cierra la presión del examen.
  */
 export function skinSoftness(pose: ProbePose): number {
   const anterior = smoothstep(0.2 * Math.PI, 0.3 * Math.PI, pose.phi) * (1 - smoothstep(0.7 * Math.PI, 0.8 * Math.PI, pose.phi));
   const belowXiphoid = 1 - smoothstep(-5, 15, pose.z);
   const belowMargin = 1 - smoothstep(-70, -40, pose.z);
   return 0.15 + 0.5 * anterior * belowXiphoid + 0.2 * (1 - anterior) * belowMargin;
-}
-
-export function lineCoupling(pose: ProbePose, tr: Transducer, theta: number): number {
-  const x = tr.curvatureRadius * Math.sin(theta); // posición lateral del elemento
-  const faceHeight = tr.curvatureRadius - Math.sqrt(Math.max(0, tr.curvatureRadius ** 2 - x * x));
-  // La piel se curva con el tronco (radio ~130 mm): compensa parte de la convexidad.
-  const skinHeight = (x * x) / (2 * 130);
-  const rigid = 1 - skinSoftness(pose);
-  const gap =
-    pose.lift + faceHeight - skinHeight + rigid * (x * Math.tan(pose.rock) + Math.abs(Math.tan(pose.tilt)) * tr.elevationMm * 0.5);
-  // Gel + deformación cutánea toleran ~4 mm; presionar (lift < 0) amplía el área de contacto.
-  const tolerance = 4.0 + 2.5 * smoothstep(0, -3, pose.lift);
-  return smoothstep(tolerance + 2.5, tolerance, gap);
 }
 
 /** Vector de velocidad de la sonda estimado a partir de dos poses (mm/s). */

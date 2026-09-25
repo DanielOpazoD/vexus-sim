@@ -12,6 +12,7 @@ import type { Vec3 } from '../core/vec3';
 import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient } from '../physiology/patientState';
 import { CONVEX_C35, probeFrame } from '../probe/probe';
+import { probeContact } from '../probe/contact';
 import { greyOfLevel, levelOfGrey } from '../ultrasound/greyMap';
 import { DISPLAY_MARGIN_PX, DISPLAY_REF_DB, nominalTgcDbPerCm } from '../ultrasound/renderer';
 import { pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
@@ -349,6 +350,8 @@ function benchOnTwinUncached(id: StartPoint['id'], bo: BenchOpts) {
     scene,
     frame,
     pose,
+    // el acoplamiento de las líneas (decisión 63); la anatomía y el marco de este gemelo son los del tronco rígido
+    contact: probeContact(pose, CONVEX_C35, scene.torso),
     sample: engine.sample,
     renderer: { display },
   } as unknown as Simulator;

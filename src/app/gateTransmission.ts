@@ -1,7 +1,9 @@
+import type { ProbeCompression } from '../anatomy/compression';
 import type { AnatomyQuery } from '../anatomy/query';
 import type { Tissue } from '../anatomy/tissues';
 import type { PhysiologySample } from '../physiology/engine';
-import { lineCoupling, pointOnLine, type ProbeFrame, type ProbePose, type Transducer } from '../probe/probe';
+import { contactCoupling } from '../probe/contact';
+import { pointOnLine, type ProbeFrame, type Transducer } from '../probe/probe';
 import { rayTransmission } from '../ultrasound/transmission';
 
 /** Paso de la marcha CPU gruesa hasta la puerta (mm). */
@@ -10,7 +12,8 @@ const STEP_MM = 2.5;
 /**
  * Transmisión de amplitud de ida y vuelta hasta la puerta PW (0–1): marcha CPU gruesa a la
  * frecuencia Doppler por los tejidos de la línea, multiplicada por el acoplamiento de ESA línea
- * con la piel, igual que el modo B (`T = transmisión · acoplamiento` en la pasada B). Sin el
+ * con la piel (el contacto del cuadro, `probe/contact.ts`, decisión 63), igual que el modo B
+ * (`T = transmisión · acoplamiento` en la pasada B). Sin el
  * acoplamiento, con la sonda levantada la imagen se apagaba pero el espectro y el audio seguían
  * (antipatrón §23 de la guía: vasos que aparecen con la sonda mal situada).
  */
@@ -18,7 +21,7 @@ export function gateTransmission(
   anatomy: AnatomyQuery,
   frame: ProbeFrame,
   transducer: Transducer,
-  pose: ProbePose,
+  contact: ProbeCompression,
   theta: number,
   rEndMm: number,
   sample: PhysiologySample,
@@ -28,7 +31,7 @@ export function gateTransmission(
   const tissues: Tissue[] = [];
   for (let i = 0; i < n; i++)
     tissues.push(anatomy.classifyWorld(pointOnLine(frame, transducer, theta, (i + 0.5) * STEP_MM), sample).tissue);
-  return rayTransmission(tissues, STEP_MM, dopplerMHz) * lineCoupling(pose, transducer, theta);
+  return rayTransmission(tissues, STEP_MM, dopplerMHz) * contactCoupling(contact, theta);
 }
 
 /**
@@ -40,13 +43,13 @@ export function lineTransmissionProfile(
   anatomy: AnatomyQuery,
   frame: ProbeFrame,
   transducer: Transducer,
-  pose: ProbePose,
+  contact: ProbeCompression,
   theta: number,
   maxDepthMm: number,
   sample: PhysiologySample,
   dopplerMHz: number,
 ): { stepMm: number; profile: number[] } {
-  const coupling = lineCoupling(pose, transducer, theta);
+  const coupling = contactCoupling(contact, theta);
   const tissues: Tissue[] = [];
   const profile: number[] = [];
   for (let i = 0; (i + 0.5) * STEP_MM <= maxDepthMm + STEP_MM; i++) {
@@ -64,7 +67,7 @@ export function acousticWindowWeight(
   anatomy: AnatomyQuery,
   frame: ProbeFrame,
   transducer: Transducer,
-  pose: ProbePose,
+  contact: ProbeCompression,
   sample: PhysiologySample,
   maxDepthMm: number,
   dopplerMHz: number,
@@ -73,7 +76,7 @@ export function acousticWindowWeight(
   return (theta, r) => {
     let line = lines.get(theta);
     if (!line) {
-      line = lineTransmissionProfile(anatomy, frame, transducer, pose, theta, maxDepthMm, sample, dopplerMHz);
+      line = lineTransmissionProfile(anatomy, frame, transducer, contact, theta, maxDepthMm, sample, dopplerMHz);
       lines.set(theta, line);
     }
     return line.profile[Math.min(line.profile.length - 1, Math.floor(r / line.stepMm))];

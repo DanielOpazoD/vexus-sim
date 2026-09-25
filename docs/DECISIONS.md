@@ -1749,6 +1749,173 @@ puerta, < 2 dB: el téxel es la línea y la fila que la contienen y el PW marcha
 ≤ 0,88 dB en 40 fases de la respiración y ≤ 0,77 en el mismo punto), la de la pleura y las del moteado en la intercostal nueva, y la de equivalencia con las caras
 nuevas.
 
+## 63. La sonda comprime el tejido: solo empuja, la pared bajo las líneas acopladas queda paralela a la cara y el acoplamiento es el contacto conseguido
+
+**Contexto.** El dueño (25-09-2026), con la pared de la decisión 62 en la GPU real: la fidelidad empieza en la
+pared, y ahora se ve un defecto nuevo. El tronco es rígido: la cara convexa de la sonda (radio 60 mm, ±34°)
+apoyada en una piel convexa solo la toca en un punto, y bajo la huella la piel, los septos, las fascias, el
+peritoneo y la pleura se dibujan como una cúpula (∩): en las capturas de la intercostal en apnea espiratoria e
+inspiratoria (`scratchpad/pared2`, mitad derecha) la pleura va de ~25 mm en el centro a 60–100 mm en los bordes
+del sector. En un examen el operador aprieta hasta que los bordes apoyan, el tejido blando se amolda a la cara y
+las capas del campo cercano corren paralelas a ella; lo hondo casi no se mueve. El acoplamiento (`lineCoupling`)
+usaba un hueco ad hoc con un radio de piel fijo de 130 mm y el signo de su curvatura al revés (restaba la sagita de
+la piel a la de la cara, como si la piel fuera cóncava) y 4 mm de gel: media 0,83 / 0,76 / 0,94 / 0,78 (flanco,
+renal, intercostal, subxifoidea), con líneas «acopladas» sobre aire.
+**Opciones.** (1) Desplazar por la normal de la piel hasta la profundidad de la cara: la vuelta a la identidad se
+pliega en las líneas oblicuas (gemelo: dw/dd hasta −1,4 en la intercostal). (2) Columnas de la normal de la piel
+desplazadas por su hueco: convergen mientras las líneas divergen y el campo se plegaba cerca del borde.
+(3) Flexión de placa con giro (Kirchhoff): el giro crece con la profundidad y la transición se pliega igual.
+(4) Un modelo elástico (elementos finitos): fuera del presupuesto de un `toMaterial` que corre en cada muestra de
+cada pasada. (5) Mapa radial que TIRA del tejido hacia la cara, con el marco de la pose (la primera versión, bf26527):
+la sonda no se hunde; la piel sube a la cara y la pared se lleva como una placa (la cara interna a W en toda la
+huella). En la GPU (Metal) el flanco quedó excelente, pero en la intercostal los bordes del sector se doblaban hacia
+abajo (una «bañera»: la placa llegaba al tope de 25 mm en las líneas muy oblicuas) y en la subxifoidea basculada el
+talón se doblaba con una cuña oscura y arcos raros y la punta chocaba con el tope; el hígado se estiraba a lo largo
+de las líneas hasta 2,5×. (6) La elegida: solo empujar.
+**Decisión.** Campo de desplazamiento que SOLO EMPUJA, a lo largo de la dirección de compresión de cada elemento
+(la normal de la cara: la línea radial desde el eje de curvatura), definido por su inversa mundo → material en
+`anatomy/compression.ts` (gemelos TS y GLSL con los mismos nombres) y aplicado en `toMaterial` antes de deshacer
+la respiración (`deformation.ts`; GLSL `toMaterial` = respiración⁻¹(`uncompress`(p))), con el contacto y el marco
+efectivo en `probe/contact.ts`:
+
+- Indentación efectiva. Para que los bordes apoyen, el operador hunde la sonda entera a lo largo de su eje (el
+  mango): δ, el menor que hace que todos los nodos apoyen con la pared paralela (falsa posición de Illinois en
+  [0, δ_max]), con el tope de la presión: la cara no se hunde en la piel rígida más de P = 13 + 20·blandura mm
+  (`skinSoftness` de la decisión 43: 16 sobre costillas … 26 en el epigastrio). Lo que el usuario apriete (lift < 0,
+  el deslizador «Presión») se suma a δ a lo largo del mismo eje (por la normal de la piel, con la sonda inclinada,
+  alejaba la cara y deslizaba el plano fuera de sí mismo). Al levantar la sonda (lift > 0) el operador deja de
+  apretar en 3 mm (la cara sube ~5 mm por mm de lift al principio). El marco efectivo (la pose más δ a lo largo del
+  eje: el plano de imagen no cambia, solo su origen baja por la línea central) es el del simulador (`sim.frame`):
+  imagen, puerta, gates, ganchos y el navegador 3D (que dibuja la sonda hundida en el tronco rígido) lo usan.
+- Por nodo (64, equiespaciados en σ = sen α; 3 líneas por nodo), a lo largo de su línea en el tronco rígido desde
+  el elemento del marco efectivo: r_s, la distancia a la piel (analítica: la elipse del tronco; < 0, la cara la
+  hunde), y r_W, la distancia a la cara interna de la pared (profundidad W). Tabla: s₀ = min(0, r_s) (la piel
+  hundida llega a la cara; si no la toca no se tira de ella), D = min(max(r_W, min(D*, T)), D* + 20) con
+  T = r_W − r_s y D* = W + 1 mm, y s_D = min(0, r_W − D): la cara interna de la pared queda a D* en el mundo si el
+  empuje alcanza (o a T si la pared mide menos a lo largo de la línea: se traslada entera); si no, el empuje se apaga
+  dentro de la pared, que se dobla como en el tronco rígido.
+- m′ = p + s·r̂, s = W_e(e)·T_l(σ)·g(d): g = s₀ + (s_D − s₀)·clamp(d, 0, D)/D para d < D y s_D·(1 −
+  smoothstep(D, D + S, d)) debajo, S = max(2L, 6·|s_D|), L = 16 mm. s ≤ 0 (se aparta de la sonda) y ∂s/∂d ≥ 0
+  (s_D ≥ s₀ y la caída multiplica s_D por algo decreciente): a lo largo de la línea el tejido solo se comprime
+  (dr/dd ≥ 1; bajo la pared, a lo sumo un 20 %: 1/(1 + 1,5/6)) y el mapa nunca se pliega. A lo ancho el tejido
+  empujado se abre: el arco de la misma α mide ρ en el mundo y ρ + s en el material. W_e: plana en la media huella
+  elevacional (±6,5 mm) y cola de 10 mm; T_l: más allá del borde de la cara, los nodos del borde se apagan en Δσ 0,09.
+- Acoplamiento = contacto conseguido (`contactCoupling`), por nodo: (1 − smoothstep(2, 4,5, max(r_s, hueco de
+  los bordes elevacionales))) (el gel) · (1 − smoothstep(D*, D* + 1,5, r_W − max(0, r_s))) (la pared paralela; un
+  hueco de gel la baja entera sin doblarla), el segundo factor erosionado un nodo (entre un nodo que apoya y otro
+  cuya pared se dobla la tabla interpolada ya dobla la pared: la cara interna sube 10 mm en 1°) y el producto
+  filtrado [1 2 1]/4: la transición ocupa ~4 nodos (12 líneas) y lo que pasa de la erosión queda ≤ 1/8. Lo usan la
+  textura de acoplamiento del renderizador, la transmisión de la puerta PW (`gateTransmission`), el banco y los
+  ganchos. `lineCoupling` se va.
+- Las direcciones van al mundo con la jacobiana de la inversa (`warpAt`, analítica: una evaluación del campo;
+  `warpNormal`: J^T·n = n + (r̂·n)·∇s + (s/ρ)·(n − (n·r̂)·r̂ − (n·ê)·ê)): el gradiente de cada cara en el eco de
+  interfaz (normal y norma; la salida barata multiplica su cota por `warpBound`), la normal de las láminas de la
+  textura de la pared, el eco de cara plana de las copias bajo la pleura y la incidencia de la pleura. En el borde
+  exacto de la cara (las líneas extremas) la pendiente de la tabla es la de dentro.
+- GPU: los mismos tres vec4 del esquema único (`uCompC`: centro de curvatura y R + alcance, 0 sin compresión;
+  `uCompAx`: eje axial y sen del semiángulo; `uCompLat`: eje lateral y media huella) y la tabla en la textura de
+  escena desde `COMPRESSION_BASE`, un téxel por nodo (s₀, s_D, D, R): el radio viaja en la tabla para que el alcance
+  (max D + S de la tabla, la salida temprana antes de leerla) quepa en las tres ranuras. Dos lecturas de la textura
+  por evaluación, como antes; sin atan (σ = (P·lateral)/ρ).
+- El simulador calcula el contacto (y el marco efectivo) cuando cambia la pose (0,7–1,7 ms), lo pone en la
+  anatomía (`AnatomyQuery.setProbeCompression`) y lo pasa al renderizador (`FrameInputs.compression`): CPU y GPU ven
+  el mismo tejido. Los gates de equivalencia deforman cada punto de partida con la suya y su marco efectivo.
+
+Parámetros y fuentes, todo [ESTIMADO]: la presión, que un convexo de 60 mm de radio y ±34° necesita hundirse su sagita
+en el borde (10,3 mm) para apoyar entero en un abdomen plano, y algo más para que la pared oblicua de los bordes
+quede paralela (flanco: 14,8 mm); fuerza de la sonda en el examen abdominal 5–20 N; módulos de contexto, de memoria:
+hígado sano ~5 kPa (elastografía de transición), grasa 1–4 kPa, músculo 10–30 kPa. L = 16 mm [12–25] y κ = 6: bajo
+una carga en franja o en rectángulo la tensión vertical cae a ~la mitad a una anchura del lado corto y a ~10 % a 3–4
+anchuras (Boussinesq 1885, Flamant 1892; gráficos de Newmark 1935; de memoria, sin verificar); κ acota la compresión
+del hígado (casi incompresible: en realidad se desliza de lado, ver `probe-compression-in-plane`): con κ = 4 (27 %)
+el hígado despejado del banco en la subxifoidea pasaba de 31 a 22 parches (gemelo) y la e2e del banco se quedaba
+en 15 (pide > 15); con 6, 28 y 16–17. A cambio lo hondo se mueve más (con κ = 4, ≤ 5–10 mm). Tolerancia de la
+pared 1 mm y rampa 1,5 mm: la dispersión de la cara interna bajo las líneas acopladas ≤ 3 mm (el requisito de la
+revisión con GPU). Gel 2 mm con 2,5 de rampa.
+
+**Consecuencias.** Gemelo (CPU, `compression.test.ts`; adulto de referencia), en las poses de partida (subxifoidea,
+intercostal, flanco, renal):
+
+- Indentación δ 20,0 / 16,0 / 14,8 / 17,4 mm (topes 26 / 16 / 16 / 20; la subxifoidea, con 26° de basculación, ya
+  hunde el talón 6 mm en la pose). Consecuencia aceptada: al apretar, el campo cercano se acerca a la sonda y lo
+  hondo aparece hasta δ mm menos profundo en la imagen, como en un examen real. A lo largo de la línea central: la VCI
+  de 123 → 107 mm (subxifoidea), el ligamento venoso de 132 → 116,5 (intercostal), la VCI de 127 → 112,5 (flanco); el
+  riñón, justo bajo la pared en la vista renal, se lo lleva el empuje: su corteza, de 39 → 38,5 mm. Apretar 3 mm más
+  (lift −3) baja la cara 3 mm por el eje y ensancha el contacto de la intercostal (media 0,64 → 0,70).
+- Acopladas (≥ 0,5; plenas ≥ 0,99; media): 148 (−34°…+18°), 141, 0,77 / 122 (±21,5°), 114, 0,64 / 192, 192, 1 /
+  192, 192, 1 (`main`: 151 / 180 / 160 / 148 líneas, media 0,78 / 0,94 / 0,83 / 0,76). La punta de la subxifoidea
+  basculada no apoya más allá de +18° ni con la presión máxima; en la intercostal, a lo largo del espacio
+  (casi transversal: en la sección la pared lateral del tórax tiene 69 mm de radio), la pared de los bordes no queda
+  paralela ni hundiendo la sonda 50 mm.
+- Bajo las líneas acopladas la piel queda en la cara (≤ 0,05 mm) y cada capa a su profundidad: la media pared con
+  dispersión 0,85 / 0,80 / 0,25 / 0,45 mm y la cara interna (peritoneo y pleura) a 27,40–29,15 / 28,00–29,00 /
+  28,55–29,00 / 28,30–29,05 mm (tronco rígido, con el marco de la pose, bajo las mismas líneas: 21,5–53,4 /
+  28,1–50,0 / 28,6–46,8 / 28,3–51,5). La normal de las capas en el plano, frente a la línea, bajo las líneas de
+  contacto pleno: ≤ 6,4 / 7,8 / 3,2 / 4,6° (rígido 41,6 / 46,7 / 34,0 / 39,0°); la tabla es lineal entre nodos y la
+  pendiente de las capas oscila con el periodo de un nodo (con 32 nodos, hasta 9° en la media pared de la
+  intercostal: el eco especular de las fascias se habría «abalorio»; con 64, la mitad).
+- A lo largo de la línea el estiramiento (mundo/material) va de 0,763 / 0,756 / 0,800 / 0,779 a 1,000: solo
+  compresión (el mínimo, la pared oblicua comprimida hasta D*). A lo ancho, ≤ 1,67 / 1,36 / 1,33 / 1,41 (el talón de
+  la subxifoidea, empujado 24 mm). Empuje máximo 24,0 / 16,0 / 14,7 / 17,4 mm; alcance 172 / 124 / 117 / 133 mm; más
+  allá, la identidad exacta. Lo hondo (mundo): VCI, suprahepáticas y riñón a más de 60 mm de la cara se mueven ≤ 11,6 /
+  7,7 / 9,4 / 13,6 mm (el riñón, bajo la pared de la vista renal): se mueven con el empuje, menos que la cara.
+- Los otros casos (pared de 29 y 31 mm): el flanco apoya entero con δ 14,9 y 15,3; la intercostal, 118 y 108 líneas.
+- Intercostal: la pose de partida (a lo largo del 8.º espacio, φ π, z 0, yaw −1,15) frente a la coronal
+  (marcador craneal) entre dos costillas en la axilar media, en un barrido de φ 0,96–1,04π, z −14…30 mm e
+  inclinación 0 y −0,2, con la función de la vista (ángulo de la puerta en una suprahepática ≤ 50° con `bestGateOnVessel`
+  y el peso de ventana ≥ 0,03, en apnea espiratoria y respirando; líneas de hígado; sombras costales ≤ 1 por borde) y
+  la geometría del campo cercano (dispersión de la cara interna bajo las acopladas ≤ 3 mm). La actual pasa todas:
+  ninguna costilla, 122 líneas de hígado, puerta a 42° / 35° con peso 0,085 / 0,060, cara interna Δ 1,0 mm; solo
+  pierde los bordes (acoplamiento medio 0,64). Ninguna coronal pasa: apoyan enteras (Δ 0,4–1,2 mm) pero cruzan 3–5
+  costillas (a 17–22 mm en z en la axilar media; el sector abarca ±47 mm a su profundidad; casi siempre una en el
+  centro), dejan 19–63 líneas de hígado y solo las abanicadas hacia atrás (tilt −0,2, z −14…+6 mm: la del flanco,
+  algo más alta) dan ≤ 50° (35–50°). Se queda la actual.
+- Coste: `toMaterial` suma una evaluación del campo (salida temprana más allá del alcance) y la pasada B dos
+  jacobianas por píxel (la muestra y, en las líneas con cortina, la pleura); +3 ranuras de uniforms en cada programa
+  con anatomía (B 115 → 118, la dirigida 117 → 120). Arranque con SwiftShader: la primera versión (con atan, la
+  tabla en uniforms indexada y la jacobiana por diferencias centrales) pasaba de 14,3–15,0 s en `main` a 17,1–18,3 s;
+  la de solo empujar lee lo mismo de la textura y su perfil tiene una rama más: en 3 pares intercalados con `main`
+  (carga de la máquina ~9, por otros procesos), 39,2 / 38,3 / 30,2 s frente a 42,7 / 34,6 / 27,5 s (razón 0,92 / 1,11 /
+  1,10; con carga 25–55 los pares daban de 0,86 a 1,63): +10 % a lo sumo, a confirmar en una máquina quieta. Huella
+  nueva del main de B (la incidencia de la pleura y la jacobiana que recibe `wallField`); sin compresión
+  (uCompC.w = 0) las cuentas son las de antes.
+- El banco de la pared (`display.wall`) elige las líneas «normales a la piel» con la normal del mundo y deja fuera de
+  las líneas de la pared la ventana del eco de la cortical costal (hueso a < 0,6 + 1,3 mm del pico): con la pared
+  comprimida, en el flanco la capa hallada a ~1 mm sobre las costillas era su cortical. Las costillas se llevan con
+  la pared. Las guardas del medio anclado (`speckleMotion`, `speckleCrossfade`) miden el hígado de las líneas
+  acopladas (≥ 0,95, como el banco): los bordes de la intercostal, sin acoplar, son ruido del receptor. Girar la
+  sonda 2° cambia su contacto, pero solo empujando el tejido comprimido se mueve por ello 0,05 mm de mediana (p90
+  0,18; gemelo), muy por debajo del grano (la versión que tiraba del tejido lo movía tanto que la guarda tuvo que
+  medir solo donde no había compresión). La e2e de la composición espacial mide la subxifoidea basculada 10° menos
+  (`pose: { rockDeg: −10 }`): con la de partida (26°) la punta no apoya más allá de +18° y lo hondo sube ~16 mm; en la
+  rejilla de la e2e le quedaba 1 parche compuesto de hígado despejado a 20–60 mm (5 en `main`, el mínimo), con 16°, 7
+  (apoyan 177 de 192 líneas; gemelo: VCI 272 → 309 muestras). El corte anatómico (`cutMapWorker`)
+  recibe el contacto y muestra el tejido comprimido; los gemelos de imagen de la pared y la pleura (`wallTwin`,
+  `pleuraTwin`) y el del contorno del hígado siguen sobre el tronco rígido con el marco de la pose sin hundir (solo
+  toman del contacto el acoplamiento).
+- Limitaciones: `probe-compression-kinematic` y `probe-compression-in-plane`. Pendiente con GPU: la comparación
+  visual de la intercostal, el flanco y la subxifoidea con las capturas de bf26527 y el coste por cuadro.
+
+**Verificación.** `compression.test.ts` (falla en `main`: la cúpula —la cara interna del tronco rígido bajo las
+mismas líneas se dispersa 18–32 mm—, la normal a 34–47° y el acoplamiento): bajo las líneas acopladas, la piel en
+la cara y cada capa a su profundidad (dispersión de la cara interna ≤ 1 / 1,5 / 3 / 3 mm; flanco y renal, 192
+líneas; intercostal ≥ 110; subxifoidea ≥ 140); la normal del mundo de las capas bajo las de contacto pleno
+(≤ 6° / 9°); solo empuja y solo comprime (s ≤ 0 y dr/dd ≥ 1 − 10⁻⁶ en un barrido de 144 poses de presión,
+flotación, basculación e inclinación, en el plano y a ±3 mm; el empuje de la piel < 0,6·R); acoplamiento pleno en el
+flanco y el renal, un solo tramo acoplado con el centro y los bordes sin acoplar en la intercostal y la
+subxifoidea, sin saltos de más de 0,25 entre líneas vecinas; apretar lo ensancha y flotar lo quita; la cara se
+hunde δ a lo largo del eje y lo hondo se acerca (> 0,5·δ salvo el riñón, que se lleva el empuje: < 0,3·δ); más allá
+del alcance, la identidad, y lo hondo se mueve < 0,8·δ; la identidad con la sonda levantada 12 y 20 mm en las poses
+de partida (con más basculación el elemento más bajo sigue en la piel más arriba: es físico); el gradiente analítico
+frente al numérico; `warpNormal` = J^T numérica; `toWorld`∘`toMaterial` = identidad; la GLSL (constantes,
+funciones, orden en `toMaterial`, sin atan, la tabla en la textura de escena, R + alcance en uCompC.w). `startPoints.test.ts`
+y `examChain.test.ts` con el tejido comprimido y el marco efectivo de cada pose (la intercostal, con un acoplamiento
+medio de más de 0,55); `anatomy.test.ts` y `gateTransmission.test.ts` con el contacto nuevo; `shaderLimits.test.ts`:
+huella del main de B y `warpAt` fuera de todo bucle. e2e con SwiftShader (en el puerto propio, la máquina cargada):
+equivalencia GLSL = TS con la compresión de cada punto de partida, arranque, cambio de caso, Medir, Rayleigh, banco
+de fidelidad, composición espacial (con la subxifoidea basculada 10° menos), normales, ecos de interfaz, pleura,
+pared, pasada A, moteado al inclinar y girar, fundido del ancla, sin contacto no hay Doppler y color: pasan.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

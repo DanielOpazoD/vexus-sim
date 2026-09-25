@@ -6,6 +6,7 @@ import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
+import { probeContact } from '../probe/contact';
 import { CONVEX_C35, probeFrame, type ProbePose } from '../probe/probe';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 
@@ -23,15 +24,25 @@ describe('Transmisión hasta la puerta PW', () => {
   const frame = probeFrame(pose, scene.torso, CONVEX_C35);
   const gate = bestGateOnVessel(anatomy, frame, CONVEX_C35, sample, ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'], 170)!;
   const t = (p: ProbePose) =>
-    gateTransmission(anatomy, frame, CONVEX_C35, p, gate.theta, gate.r, sample, CONVEX_C35_PROFILE.dopplerEffectiveMHz);
+    gateTransmission(
+      anatomy,
+      frame,
+      CONVEX_C35,
+      probeContact(p, CONVEX_C35, scene.torso),
+      gate.theta,
+      gate.r,
+      sample,
+      CONVEX_C35_PROFILE.dopplerEffectiveMHz,
+    );
 
   it('en contacto llega eco a la interlobar; separada 10 mm de la piel, nada', () => {
     expect(gate).not.toBeNull();
     const contact = t(pose);
     expect(contact).toBeGreaterThan(0.01);
     expect(t({ ...pose, lift: 10 })).toBe(0);
-    // el acoplamiento parcial atenúa sin apagar (misma ley que el modo B)
-    const partial = t({ ...pose, lift: 3 });
+    // el acoplamiento parcial atenúa sin apagar (misma ley que el modo B): levantada 2,5 mm el operador casi ha
+    // dejado de apretar (decisión 63) y el gel salva el hueco a medias
+    const partial = t({ ...pose, lift: 2.5 });
     expect(partial).toBeGreaterThan(0);
     expect(partial).toBeLessThan(contact);
   });

@@ -217,6 +217,7 @@ export class CutMapView {
         id: ++this.requestId,
         frame: sim.frame,
         transducer: sim.transducer,
+        compression: sim.contact,
         depthMm: sim.bmode.depthMm,
         sample: { resp: s.resp, ivc: s.ivc, hvRadiusScale: s.hvRadiusScale, pvRadiusScale: s.pvRadiusScale, velocities: s.velocities },
         width: MAP_W,

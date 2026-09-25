@@ -400,18 +400,20 @@ vec2 slidingField(vec3 pD, float h, float salt) {
 // Campo del medio de la imagen en p (mirada 0): clasificación (withCurtain = false bajo la pleura de la cortina:
 // lo de detrás de la lámina), tres planos de elevación (¼ ½ ¼, fasor del central), grumos (decisión 56) y eco de
 // interfaz (decisión 57: coherente, fase 0 común a la cara, antes de la transmisión). Una llamada por programa y
-// fuera de bucles: faceGradient, en el eco, es el código más pesado de B.
+// fuera de bucles: faceGradient, en el eco, es el código más pesado de B. La jacobiana de la compresión de la
+// sonda en p (decisión 63) lleva al mundo la incidencia del eco y de la textura de la pared, en los tres planos.
 vec2 mediumField(vec3 p, vec3 dir, float r, float se, bool withCurtain) {
   vec3 m = toMaterial(p);
+  Warp w = warpAt(p);
   Cls c = classifyWith(m, withCurtain);
-  vec2 f0 = fieldFor(m, se, c.tissue);
-  vec2 f1 = sampleSide(p + uElev * se, se, c, withCurtain);
-  vec2 f2 = sampleSide(p - uElev * se, se, c, withCurtain);
+  vec2 f0 = fieldFor(m, se, c.tissue, normalize(p - uCurvC), w);
+  vec2 f1 = sampleSide(p + uElev * se, se, c, withCurtain, w);
+  vec2 f2 = sampleSide(p - uElev * se, se, c, withCurtain, w);
   float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
   vec2 field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
   float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
   if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
-  return field + vec2(interfaceEcho(c, m, dir, r, se), 0.0);
+  return field + vec2(interfaceEcho(c, m, dir, r, se, w), 0.0);
 }
 // La pared que copia la serie (decisión 61) en p, con el camino en dir: el prefijo de la pared de classify (piel,
 // costillas y las capas de la decisión 62, sin órganos ni tubos: la muestra está antes de la pleura), moteado
@@ -420,16 +422,17 @@ vec2 mediumField(vec3 p, vec3 dir, float r, float se, bool withCurtain) {
 // de la cara interna (en una
 // mirada dirigida, ≤ 0,3 mm al final de la copia, junto a la réplica de la pleura), es la capa más honda: la
 // grasa preperitoneal, sin cara. Barata a propósito: va en el bucle de la serie, y el JIT de SwiftShader se
-// dispara con código pesado en un bucle (faceGradient no puede ir aquí).
-vec2 wallField(vec3 p, vec3 dir, float se) {
+// dispara con código pesado en un bucle (faceGradient no puede ir aquí). w: la jacobiana de la compresión de la
+// sonda en la pleura de la línea (decisión 63): la de la pared de encima, sin calcularla otra vez en el bucle.
+vec2 wallField(vec3 p, vec3 dir, float se, Warp w) {
   vec3 m = toMaterial(p);
   Cls c;
   float depth;
   vec3 tn;
   if (!classifyWall(m, c, depth, tn)) { c.tissue = T_FAT; c.n = tn; }
-  vec2 field = fieldFor(m, se, c.tissue);
+  vec2 field = fieldFor(m, se, c.tissue, normalize(p - uCurvC), w);
   float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
   if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
-  return field + vec2(WALL_COPY_FACE_GAIN * wallFaceEchoFlat(c, m, dir), 0.0);
+  return field + vec2(WALL_COPY_FACE_GAIN * wallFaceEchoFlat(c, m, dir, w), 0.0);
 }
 `;

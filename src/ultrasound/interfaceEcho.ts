@@ -200,14 +200,18 @@ float tubeCurvature(Cls c, vec3 n, vec3 dir, float r, float se) {
   float ae = 2.0 * uIfaceK0 * sE * sE * ke;
   return inversesqrt(sqrt((1.0 + al * al) * (1.0 + ae * ae)));
 }
-// Eco de la cara que dibuja la muestra (material m, rayo dir, profundidad r)
-float interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se) {
+// Eco de la cara que dibuja la muestra (material m, rayo dir, profundidad r). La normal y la norma del
+// gradiente son las del mundo: las materiales por la jacobiana de la compresión de la sonda (w, decisión 63)
+float interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w) {
   if (c.iface == IF_NONE) return 0.0;
   // salida barata sin gradiente: δ = ifd/(|∇|·cosθ) ≥ ifd/|∇|; la norma de un tubo ya está en c.n, la
-  // del resto se acota (IFACE_GRAD_MAX)
-  float gBound = c.iface <= IF_LAST_TUBE ? length(c.n) : IFACE_GRAD_MAX;
+  // del resto se acota (IFACE_GRAD_MAX); la compresión la multiplica a lo sumo por warpBound
+  float gBound = (c.iface <= IF_LAST_TUBE ? length(c.n) : IFACE_GRAD_MAX) * warpBound(w);
   if (c.ifd > (uIface[c.iface].w > 0.5 ? IFACE_REACH : IFACE_SHIFT + IFACE_REACH) * gBound) return 0.0;
   vec4 fg = faceGradient(c, m);
+  vec3 gw = warpNormal(w, fg.xyz * fg.w);
+  float gn = length(gw);
+  fg = vec4(gw / max(gn, 1e-9), gn);
   // la cara posterior de una costilla ósea solo se alcanza a través del hueso (faceLitFromProbe, decisión 62)
   if (c.iface == IF_RIB && dot(fg.xyz, dir) > 0.0) return 0.0;
   float cosI = abs(dot(fg.xyz, dir));

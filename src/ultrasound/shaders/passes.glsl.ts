@@ -455,20 +455,21 @@ ${SPECKLE_LOOK_GLSL}
 ${STEERING_GLSL}
 const int PLEURA_STEER_ITERATIONS = ${PLEURA_STEER_ITERATIONS};
 const float PLEURA_STEER_GUESS_MM = ${glslFloat(PLEURA_STEER_GUESS_MM)};
-// fieldFor y sampleSide con la fase de la mirada por nodo (speckleField.ts, variantes …Ph)
-vec2 fieldForPh(vec3 m, float se, int tissue, float ph0, vec3 g) {
+// fieldFor y sampleSide con la fase de la mirada por nodo (speckleField.ts, variantes …Ph); b0, la dirección de la
+// mirada 0 en el punto del mundo (la radial desde el centro de curvatura); w, la jacobiana de la compresión
+vec2 fieldForPh(vec3 m, float se, int tissue, float ph0, vec3 g, vec3 b0, Warp w) {
   vec2 f = speckleFieldPh(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP, ph0, g);
   float het = 1.0;
   if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX) het = hetGain(m);
   // textura de la pared (decisión 62) con la dirección de esta mirada: b_k = b_0 + g/k2 (g = k2·(b_k − b_0))
-  if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, normalize(normalize(m - uCurvC) + g / uSteer.w));
+  if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, normalize(b0 + g / uSteer.w), w);
   return f * tissueBack(tissue) * het;
 }
-vec2 sampleSidePh(vec3 p, float se, Cls center, float ph0, vec3 g, bool withCurtain) {
+vec2 sampleSidePh(vec3 p, float se, Cls center, float ph0, vec3 g, bool withCurtain, Warp w) {
   vec3 m = toMaterial(p);
-  if (center.bd > se + 0.5) return fieldForPh(m, se, center.tissue, ph0, g);
+  if (center.bd > se + 0.5) return fieldForPh(m, se, center.tissue, ph0, g, normalize(p - uCurvC), w);
   Cls c = classifyWith(m, withCurtain);
-  return fieldForPh(m, se, c.tissue, ph0, g);
+  return fieldForPh(m, se, c.tissue, ph0, g, normalize(p - uCurvC), w);
 }
 // h2 de A0 de la línea cuyo cruce de la pleura está en el camino de φ_k (punto fijo) y sD, su distancia en él
 vec4 steeredPleura(float phiK, float a, int line0, out float sD) {
@@ -492,26 +493,27 @@ float steeredT(float phiK, float a, float x) {
 // mediumField y wallField con la fase de la mirada por nodo
 vec2 mediumFieldPh(vec3 p, vec3 dir, float r, float se, bool withCurtain, float ph0, vec3 g) {
   vec3 m = toMaterial(p);
+  Warp w = warpAt(p);
   Cls c = classifyWith(m, withCurtain);
-  vec2 f0 = fieldForPh(m, se, c.tissue, ph0, g);
-  vec2 f1 = sampleSidePh(p + uElev * se, se, c, ph0, g, withCurtain);
-  vec2 f2 = sampleSidePh(p - uElev * se, se, c, ph0, g, withCurtain);
+  vec2 f0 = fieldForPh(m, se, c.tissue, ph0, g, normalize(p - uCurvC), w);
+  vec2 f1 = sampleSidePh(p + uElev * se, se, c, ph0, g, withCurtain, w);
+  vec2 f2 = sampleSidePh(p - uElev * se, se, c, ph0, g, withCurtain, w);
   float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
   vec2 field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
   float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
   if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
-  return field + vec2(interfaceEcho(c, m, dir, r, se), 0.0);
+  return field + vec2(interfaceEcho(c, m, dir, r, se, w), 0.0);
 }
-vec2 wallFieldPh(vec3 p, vec3 dir, float se, float ph0, vec3 g) {
+vec2 wallFieldPh(vec3 p, vec3 dir, float se, float ph0, vec3 g, Warp w) {
   vec3 m = toMaterial(p);
   Cls c;
   float depth;
   vec3 tn;
   if (!classifyWall(m, c, depth, tn)) { c.tissue = T_FAT; c.n = tn; }
-  vec2 field = fieldForPh(m, se, c.tissue, ph0, g);
+  vec2 field = fieldForPh(m, se, c.tissue, ph0, g, normalize(p - uCurvC), w);
   float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
   if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
-  return field + vec2(WALL_COPY_FACE_GAIN * wallFaceEchoFlat(c, m, dir), 0.0);
+  return field + vec2(WALL_COPY_FACE_GAIN * wallFaceEchoFlat(c, m, dir, w), 0.0);
 }
 vec2 steeredField() {
   float alpha = lineTheta(vUv.x);
@@ -559,7 +561,10 @@ vec2 steeredField() {
   float sCap = alongLineMm(uCurvR + pleuraCapMm(max(h2.x, 0.0), uDepth / float(ts.y)), a, uSteer.z);
   float tD = curtain ? steeredT(phiK, a, sCap) : 0.0;
   vec3 pD = elem + dirK * max(sD, 0.0);
-  float cosI = curtain ? abs(dot(torsoNormal(toMaterial(pD)), dirK)) : 1.0;
+  // la incidencia de la pleura en el mundo: su normal material por la jacobiana de la compresión (decisión 63)
+  Warp wD = noWarp();
+  if (curtain) wD = warpAt(pD);
+  float cosI = curtain ? abs(dot(normalize(warpNormal(wD, torsoNormal(toMaterial(pD)))), dirK)) : 1.0;
   float chi = pleuraCoherence(cosI);
   float G = pleuraRoundTrip(tD, chi);
   vec3 ser = under ? pleuraSeriesDepths(s, sD) : vec3(0.0);
@@ -580,7 +585,7 @@ vec2 steeredField() {
     float rhoJ = sqrt(uCurvR * uCurvR + d * d + 2.0 * d * uSteer.z);
     float alJ = phiK + uSteer.x - steerBeta(rhoJ, a);
     vec2 gr = lookPhaseGrad(rhoJ, alJ, a, uSteer.w);
-    vec2 f = wallFieldPh(elem + dirK * d, dirK, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, uSteer.w), gr.x * uLateral + gr.y * uAxial);
+    vec2 f = wallFieldPh(elem + dirK * d, dirK, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, uSteer.w), gr.x * uLateral + gr.y * uAxial, wD);
     float td = steeredT(phiK, a, min(d, sCap));
     air += f * (j == 1 ? (ser.x + 1.0) * PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : (ser.x + 2.0) * td * G * gn);
   }
@@ -697,26 +702,26 @@ vec2 speckleField(vec3 m, float h, float se, float salt) {
 
 // Campo de dispersores de un punto material con clasificación conocida. Cada tejido es otra
 // población: su propia semilla (el moteado no continúa a través de un borde).
-vec2 fieldFor(vec3 m, float se, int tissue) {
+vec2 fieldFor(vec3 m, float se, int tissue, vec3 dir, Warp w) {
   vec2 f = speckleField(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP);
   // Heterogeneidad lenta y continua del parénquima (desviación 1,15 dB a ~1,6 ciclos/cm) [EXTRAPOLACIÓN PROPIA]
   float het = 1.0;
   if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX) het = hetGain(m);
   // Textura de la pared (decisión 62, wallTexture.ts): septos de la grasa y estrías del músculo, anclados al
-  // material; la dirección del haz de la mirada 0 en la pared es la radial desde el centro de curvatura
-  // (la pared no respira: m es el punto del mundo)
-  if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, normalize(m - uCurvC));
+  // material; dir, la dirección del haz de la mirada 0 en el punto del mundo (la radial desde el centro de
+  // curvatura) y w, la jacobiana de la compresión de la sonda (decisión 63) que lleva la lámina al mundo
+  if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, dir, w);
   return f * tissueBack(tissue) * het;
 }
 
 // Plano lateral en elevación: si el plano central está lejos de toda interfaz
 // (bd > desplazamiento), el tejido es el mismo y se ahorra la clasificación. Bajo la pleura de la
 // cortina (decisión 61) el tejido es el de detrás de la lámina de pulmón (withCurtain = false).
-vec2 sampleSide(vec3 p, float se, Cls center, bool withCurtain) {
+vec2 sampleSide(vec3 p, float se, Cls center, bool withCurtain, Warp w) {
   vec3 m = toMaterial(p);
-  if (center.bd > se + 0.5) return fieldFor(m, se, center.tissue);
+  if (center.bd > se + 0.5) return fieldFor(m, se, center.tissue, normalize(p - uCurvC), w);
   Cls c = classifyWith(m, withCurtain);
-  return fieldFor(m, se, c.tissue);
+  return fieldFor(m, se, c.tissue, normalize(p - uCurvC), w);
 }
 ${PLEURA_GLSL}
 ${look === 'steered' ? STEERED_RAW_MAIN_GLSL : LOOK0_RAW_MAIN_GLSL}`;
@@ -772,7 +777,10 @@ void main() {
   float rCap = pleuraCapMm(max(D, 0.0), uDepth / float(ts.y));
   float tD = curtain ? texture(uTrans0, vec2(vUv.x, rCap / uDepth)).x : 0.0;
   vec3 pD = pointOnLine(dir0, max(D, 0.0));
-  float cosI = curtain ? abs(dot(torsoNormal(toMaterial(pD)), dir0)) : 1.0;
+  // la incidencia de la pleura en el mundo: su normal material por la jacobiana de la compresión (decisión 63)
+  Warp wD = noWarp();
+  if (curtain) wD = warpAt(pD);
+  float cosI = curtain ? abs(dot(normalize(warpNormal(wD, torsoNormal(toMaterial(pD)))), dir0)) : 1.0;
   float chi = pleuraCoherence(cosI);
   float G = pleuraRoundTrip(tD, chi);
   vec3 ser = under ? pleuraSeriesDepths(r, D) : vec3(0.0);
@@ -788,7 +796,7 @@ void main() {
   int nWall = series ? 2 : 0;
   for (int j = 1; j <= nWall; j++) {
     float d = j == 1 ? ser.y : ser.z;
-    vec2 f = wallField(pointOnLine(dir0, d), dir0, elevSigma(d));
+    vec2 f = wallField(pointOnLine(dir0, d), dir0, elevSigma(d), wD);
     float td = texture(uTrans0, vec2(vUv.x, min(d, rCap) / uDepth)).x;
     air += f * (j == 1 ? (ser.x + 1.0) * PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : (ser.x + 2.0) * td * G * gn);
   }

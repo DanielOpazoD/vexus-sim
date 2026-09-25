@@ -16,6 +16,7 @@ import { START_POINTS } from '../app/startPoints';
 import { NORMAL_ADULT } from '../cases';
 import { cross, normalize, type Vec3 } from '../core/vec3';
 import { CONVEX_C35, lineDirection, pointOnLine, probeFrame, type ProbeFrame } from '../probe/probe';
+import { probeContact } from '../probe/contact';
 import { CONVEX_BEAM, lateralSigmaMm } from '../ultrasound/beamModel';
 import {
   IFACE_K_DB,
@@ -491,14 +492,14 @@ describe('clasificación sin la cortina (gemelo de classifyWith(m, false))', () 
     // las capas de la decisión 62, lo mismo que da classify antes de la pleura, sin órganos ni tubos), con el eco de
     // cara plana de sus capas (wallFaceEchoFlat, sin faceGradient) y, pasada la cara interna, la capa más honda
     expect(PLEURA_GLSL).toContain('Cls c = classifyWith(m, withCurtain);');
-    expect(PLEURA_GLSL).toContain('vec2 f1 = sampleSide(p + uElev * se, se, c, withCurtain);');
+    expect(PLEURA_GLSL).toContain('vec2 f1 = sampleSide(p + uElev * se, se, c, withCurtain, w);');
     expect(FRAG_RAWFIELD).toContain('vec2 tissue = wTissue >= CURTAIN_MIN_AIR ? mediumField(p, dir, r, elevSigma(r), !under) : vec2(0.0);');
-    expect(FRAG_RAWFIELD_STEERED).toContain('vec2 f1 = sampleSidePh(p + uElev * se, se, c, ph0, g, withCurtain);');
+    expect(FRAG_RAWFIELD_STEERED).toContain('vec2 f1 = sampleSidePh(p + uElev * se, se, c, ph0, g, withCurtain, w);');
     expect(FRAG_RAWFIELD_STEERED).toContain('tissue = mediumFieldPh(p, dir, s, elevSigma(r), !under, lookPhase(rho, alpha, a, uSteer.w)');
     expect(ANATOMY_GLSL).toContain('if (classifyWall(m, c, depth, tn)) return c;');
     expect(PLEURA_GLSL).toContain('if (!classifyWall(m, c, depth, tn)) { c.tissue = T_FAT; c.n = tn; }');
-    expect(PLEURA_GLSL).toContain('return field + vec2(WALL_COPY_FACE_GAIN * wallFaceEchoFlat(c, m, dir), 0.0);');
-    expect(FRAG_RAWFIELD).toContain('vec2 f = wallField(pointOnLine(dir0, d), dir0, elevSigma(d));');
+    expect(PLEURA_GLSL).toContain('return field + vec2(WALL_COPY_FACE_GAIN * wallFaceEchoFlat(c, m, dir, w), 0.0);');
+    expect(FRAG_RAWFIELD).toContain('vec2 f = wallField(pointOnLine(dir0, d), dir0, elevSigma(d), wD);');
     expect(FRAG_RAWFIELD_STEERED).toContain(
       'vec2 f = wallFieldPh(elem + dirK * d, dirK, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, uSteer.w)',
     );
@@ -969,6 +970,8 @@ describe('banco de la cortina (fidelity.ts): líneas, hígado puro, borde y desl
     anatomy,
     frame,
     pose,
+    // el acoplamiento de las líneas (decisión 63); la anatomía y el marco de este gemelo son los del tronco rígido
+    contact: probeContact(pose, CONVEX_C35, scene.torso),
     sample: engine.sample,
   } as unknown as Simulator;
 

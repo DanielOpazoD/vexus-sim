@@ -52,7 +52,8 @@ jobs:
   e2e:
     name: extremo a extremo (Chromium + SwiftShader) ${{ matrix.shard }}/2
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    # el fragmento con la equivalencia (4–5 min con la compresión) ronda los 21 min; con un reintento, más
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:

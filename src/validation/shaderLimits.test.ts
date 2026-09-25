@@ -275,15 +275,18 @@ describe('Límites del shader con margen para crecer', () => {
   // las mismas cuentas que antes (el peso del tejido es 1 y la transmisión, la de siempre). Después (e5fca934a2dddf02
   // → b6752d41c82c4fe2), la muestra de la imagen sale del bucle de la serie (mediumField, una vez, como antes de
   // la decisión 61) y la pared copiada se clasifica con el prefijo de la pared (wallField): el JIT de
-  // SwiftShader. Después (→ la de abajo), wallField recibe la dirección de la línea para el eco de cara plana de
-  // las capas de la pared en las copias (decisión 62, `wallFaceEchoFlat`); nada más cambia en el main.
+  // SwiftShader. Después (1a2d3049e1b0adbc), wallField recibe la dirección de la línea para el eco de cara plana de
+  // las capas de la pared en las copias (decisión 62, `wallFaceEchoFlat`). Después (→ la de abajo), la compresión
+  // de la sonda (decisión 63): la incidencia de la pleura sale de su normal llevada al mundo por la jacobiana
+  // (`warpAt` en la pleura, solo en las líneas con cortina) y wallField recibe esa jacobiana; sin compresión
+  // (uCompC.w = 0) las cuentas son las de antes.
   it('el main de los programas de la mirada 0 es, letra a letra, el de antes de la composición', () => {
     const mainOf = (src: string): string => src.slice(src.lastIndexOf('\nvoid main() {'));
     const print = (src: string): string => createHash('sha256').update(mainOf(src)).digest('hex').slice(0, 16);
     expect(Object.fromEntries(LOOK_PAIRS.map((p) => [p.name, print(p.look0)]))).toEqual({
       FRAG_TRANS_PREFIX: 'f6b08093f699bc04',
       FRAG_TRANSMISSION: '668efb9a2b5c7008',
-      FRAG_RAWFIELD: '1a2d3049e1b0adbc',
+      FRAG_RAWFIELD: '1b85e5e856534fd1',
     });
     // y el resto de B es el mismo texto en los dos programas: solo cambian sus entradas y su main
     const inputs0 = 'uniform sampler2D uTrans0;\nuniform sampler2D uTrans1;\n';
@@ -344,10 +347,12 @@ describe('Límites del shader con margen para crecer', () => {
       if (!g.has('main')) continue;
       expect(inlinedCopies(g, 'main', 'classifyWith'), name).toBe(budget[name] ?? 0);
       for (const body of loopBodies(g)) expect(reaches(g, body, 'faceGradient'), `${name}: faceGradient en un bucle`).toBe(false);
+      // la jacobiana de la compresión (decisión 63: siete evaluaciones del campo) tampoco va en un bucle
+      for (const body of loopBodies(g)) expect(reaches(g, body, 'warpAt'), `${name}: warpAt en un bucle`).toBe(false);
     }
     // el detector ve la regresión: la muestra completa del medio (con su eco de interfaz) en el bucle de la serie
     const inLoop = FRAG_RAWFIELD.replace(
-      'vec2 f = wallField(pointOnLine(dir0, d), dir0, elevSigma(d));',
+      'vec2 f = wallField(pointOnLine(dir0, d), dir0, elevSigma(d), wD);',
       'vec2 f = mediumField(pointOnLine(dir0, d), dir0, d, elevSigma(d), true);',
     );
     expect(inLoop).not.toBe(FRAG_RAWFIELD);

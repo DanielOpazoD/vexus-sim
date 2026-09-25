@@ -32,7 +32,7 @@ export const CONVEX_BEAM: BeamParams = {
 /**
  * σ axial (mm) del pulso de dos vías de la pasada C (≈ 2 ciclos a 3,5 MHz): la gaussiana de
  * `FRAG_AXIAL` tiene σ = max(0,6; AXIAL_SIGMA_MM/dr) muestras. La comparten el renderizador, el gemelo
- * B→C→D de los ecos de interfaz y la anchura del perfil de la cápsula difusa (decisión 63).
+ * B→C→D de los ecos de interfaz y la anchura del perfil de la cápsula difusa (decisión 64).
  */
 export const AXIAL_SIGMA_MM = 0.26;
 

@@ -315,7 +315,8 @@ describe('Uniforms y GLSL del eco de interfaz', () => {
     expect(FRAG_RAWFIELD).toContain(INTERFACE_ECHO_GLSL);
     expect(FRAG_RAWFIELD).toContain(LATERAL_PSF_GLSL);
     expect(FRAG_LATERAL).toContain(LATERAL_PSF_GLSL);
-    expect(FRAG_RAWFIELD).toContain('field += vec2(interfaceEcho(c0, m0, dir, r, se), 0.0);');
+    // la muestra del medio (decisión 61: `mediumField`, en un bucle con la pared que copia la serie de la pleura)
+    expect(FRAG_RAWFIELD).toContain('return field + vec2(interfaceEcho(c, m, dir, rEcho, se), 0.0);');
     expect(FRAG_RAWFIELD).not.toMatch(/uSpecGain|pow\(cosI, 4\.0\)/);
     // β se midió con estas pasadas C y D: si cambian, hay que re-derivarlo (interfaceTwin.test.ts)
     expect(FRAG_AXIAL).toContain('k <= 12');

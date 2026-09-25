@@ -24,6 +24,7 @@ import { levelOfGrey } from '../ultrasound/greyMap';
 import type { CompoundState } from '../ultrasound/renderer';
 import { pixelToBeam } from '../ultrasound/sectorGeometry';
 import {
+  CURTAIN_LIVER_MAX_AIR,
   centralGradient,
   clearLiverGrid,
   curtainLines,
@@ -984,15 +985,22 @@ function envelopeAt(sim: Simulator, pose: ProbePose, compound = false, frames = 
   return sim.renderer.readEnvelope({ source: 'compound' });
 }
 
-/** Índices de hígado del plano actual: cada 2 líneas y 4 muestras, de 30 a 120 mm. */
+/**
+ * Índices de hígado del plano actual: cada 2 líneas y 4 muestras, de 30 a 120 mm, sin lo que queda bajo la
+ * pleura de la cortina donde ya toca el hígado (decisión 61, `CURTAIN_LIVER_MAX_AIR`: la imagen muestra ahí la
+ * neblina y las líneas A, no el moteado del hígado).
+ */
 function liverMask(sim: Simulator, env: { lines: number; samples: number }): number[] {
   const tr = sim.transducer;
   const depth = sim.bmode.depthMm;
+  const curtain = curtainLines(sim, env.lines);
   const idx: number[] = [];
   for (let u = 0; u < env.lines; u += 2)
     for (let k = 0; k < env.samples; k += 4) {
       const r = ((k + 0.5) * depth) / env.samples;
       if (r < 30 || r > 120) continue;
+      const c = curtain[u];
+      if (c && c.fAir >= CURTAIN_LIVER_MAX_AIR && r >= c.D) continue;
       const theta = -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / env.lines;
       if (sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, theta, r), sim.sample).tissue === Tissue.Liver) idx.push(k * env.lines + u);
     }

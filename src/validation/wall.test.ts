@@ -39,14 +39,18 @@ import {
 } from '../anatomy/primitives';
 import { AnatomyScene, BASELINE_CALIBER, faceGeometryOf } from '../anatomy/scene';
 import { TISSUE_COUNT, Tissue } from '../anatomy/tissues';
+import { START_POINTS } from '../app/startPoints';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
+import { CONVEX_C35, lineDirection, pointOnLine, probeFrame } from '../probe/probe';
+import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import {
   IFACE_GRADIENT_MAX,
   IFACE_REACH_MM,
   IFACE_SHIFT_MM,
   INTERFACE_ECHO_GLSL,
   faceDelta,
+  faceLitFromProbe,
   interfaceEchoField,
 } from '../ultrasound/interfaceEcho';
 import { FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED } from '../ultrasound/shaders/passes.glsl';
@@ -252,11 +256,24 @@ describe('capas de la pared (decisión 62)', () => {
         expect(a.cartilage && a.d < 0, `${i + 5}.ª a 120°`).toBe(true);
       else expect(a.d, `${i + 5}.ª a 120°: más allá del reborde`).toBe(1e3);
     }
+    // la 10.ª, cuyo extremo cae en la línea medioclavicular, conserva su cartílago corto antes del extremo
+    const r10 = ribs[5];
+    const phiEnd = Math.acos(Math.max(-1, (ribAnteriorEndX(r10) - 5) / (0.85 * t.a)));
+    const qEnd: Vec3 = [
+      0.85 * t.a * Math.cos(phiEnd),
+      0.85 * t.b * Math.sin(phiEnd),
+      r10.zAnterior + r10.tilt * (0.5 - 0.5 * Math.sin(phiEnd)),
+    ];
+    expect(sdRib(qEnd, r10, t, scene.spine).d).toBeLessThan(0);
+    expect(sdRib(qEnd, r10, t, scene.spine).cartilage).toBe(true);
     // gemelo GLSL: la misma regla del cartílago y el mismo extremo anterior
-    expect(ANATOMY_GLSL).toContain('cartilage = abs(phi - 1.5707963) < 1.5707963 - uRibParams.y;');
     expect(ANATOMY_GLSL).toContain(
-      `if (p.x > min(${RIB_ANTERIOR_END.xMm.toFixed(4)}, ${RIB_ANTERIOR_END.xMm.toFixed(4)} + ${RIB_ANTERIOR_END.marginSlope.toFixed(4)} * rib.x)) return 1e3;`,
+      `float endX = min(${RIB_ANTERIOR_END.xMm.toFixed(4)}, ${RIB_ANTERIOR_END.xMm.toFixed(4)} + ${RIB_ANTERIOR_END.marginSlope.toFixed(4)} * rib.x);`,
     );
+    expect(ANATOMY_GLSL).toContain(
+      `cartilage = abs(phi - 1.5707963) < 1.5707963 - uRibParams.y || (p.y > 0.0 && p.x > endX - ${RIB_ANTERIOR_END.cartilageTailMm.toFixed(4)});`,
+    );
+    expect(ANATOMY_GLSL).toContain('if (p.x > endX) return 1e3;');
     expect(ribs.every((r) => r.cartilageFromPhi === Math.PI / 4)).toBe(true);
   });
 
@@ -309,7 +326,7 @@ describe('caras nuevas en la tabla de la decisión 57', () => {
     for (const f of [...WALL_FACES, Interface.RibCortex, Interface.Perichondrium]) {
       const p = INTERFACES[f];
       expect(p.source.length, Interface[f]).toBeGreaterThan(20);
-      expect(interfaceReflectivity(f), Interface[f]).toBeGreaterThan(0.05);
+      expect(interfaceReflectivity(f), Interface[f]).toBeGreaterThan(0.02);
       expect(ANATOMY_GLSL, Interface[f]).toContain(`#define ${INTERFACE_GLSL_NAME[f]} ${f}`);
     }
     for (const f of WALL_FACES) expect(isWallLayerInterface(f)).toBe(true);
@@ -327,6 +344,58 @@ describe('caras nuevas en la tabla de la decisión 57', () => {
     expect(hasCurvatureCoherence(Interface.Perichondrium)).toBe(true);
     expect(hasCurvatureCoherence(Interface.DeepFascia)).toBe(false);
     expect(isRibInterface(Interface.RibCortex)).toBe(true);
+  });
+});
+
+describe('cortical costal: solo la cara que mira a la sonda (decisión 62)', () => {
+  // Capturas con GPU (25-09-2026): cada costilla del flanco dibujaba un anillo entero (la cara anterior y la
+  // posterior). La cara posterior está a la sombra del hueso: su normal exterior apunta lejos de la sonda y solo se
+  // la alcanza a través del hueso; la transmisión con apertura (penumbra, decisión 54) y los caminos dirigidos (58)
+  // la iluminaban a medias en los bordes de la costilla, y el eco (con |cosθ|) la dibujaba como a la anterior. Con
+  // SwiftShader, el flanco con y sin la regla: sin ella, los anillos inferiores; con ella, solo el arco anterior.
+  it('la cara posterior no da eco (en la mirada 0 ni en las dirigidas); sin la regla, casi tanto como la anterior', () => {
+    const sp = START_POINTS.find((p) => p.id === 'flank')!;
+    const fr = probeFrame({ phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 }, t, CONVEX_C35);
+    const k0 = (2 * Math.PI) / (1540 / (CONVEX_C35_PROFILE.bEffectiveMHz * 1000));
+    const R = CONVEX_C35.curvatureRadius;
+    const L = CONVEX_C35.lines;
+    const th = (u: number) => -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * (u + 0.5)) / L;
+    let front = 0;
+    let backUnlit = 0;
+    let backLit = 0;
+    let backSamples = 0;
+    for (const theta of [0, (7 * Math.PI) / 180, (-7 * Math.PI) / 180])
+      for (let u = 0; u < L; u += 2)
+        for (let r = 12; r < 45; r += 0.05) {
+          const m = pointOnLine(fr, CONVEX_C35, th(u), r);
+          const c = cls(m);
+          if (c.interface !== Interface.RibCortex) continue;
+          // el camino de la mirada θ que pasa por la muestra (su dirección, `steeredSample`)
+          const dir = lineDirection(fr, th(u) + Math.asin((R * Math.sin(theta)) / (R + r)));
+          const fg = scene.faceGradient(m, BASELINE_CALIBER)!;
+          const dot = fg.normal[0] * dir[0] + fg.normal[1] * dir[1] + fg.normal[2] * dir[2];
+          const cosI = Math.abs(dot);
+          const e = interfaceEchoField(c.interface, cosI, 1, faceDelta(c.interfaceDistance, fg.norm, cosI), k0);
+          if (dot <= 0) front = Math.max(front, e);
+          else {
+            backSamples++;
+            backUnlit = Math.max(backUnlit, e);
+            if (faceLitFromProbe(c.interface, fg.normal, dir)) backLit = Math.max(backLit, e);
+          }
+        }
+    expect(backSamples).toBeGreaterThan(100);
+    expect(front).toBeGreaterThan(0);
+    // el eco de la cara posterior con |cosθ| (sin la regla) llega a menos de 3 dB del de la anterior
+    expect(20 * Math.log10(backUnlit / front)).toBeGreaterThan(-3);
+    // con la regla, nada (≥ 30 dB bajo la anterior, sea cual sea la transmisión)
+    expect(backLit).toBe(0);
+    // gemelo GLSL de la regla, en el eco de interfaz de los dos programas de B
+    expect(INTERFACE_ECHO_GLSL).toContain('if (c.iface == IF_RIB && dot(fg.xyz, dir) > 0.0) return 0.0;');
+    for (const src of [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED]) expect(src).toContain(INTERFACE_ECHO_GLSL);
+    // el cartílago transmite: su cara profunda sí se ve
+    expect(faceLitFromProbe(Interface.Perichondrium, [0, 0, 1], [0, 0, 1])).toBe(true);
+    expect(faceLitFromProbe(Interface.RibCortex, [0, 0, 1], [0, 0, 1])).toBe(false);
+    expect(faceLitFromProbe(Interface.RibCortex, [0, 0, -1], [0, 0, 1])).toBe(true);
   });
 });
 

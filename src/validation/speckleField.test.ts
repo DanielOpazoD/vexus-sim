@@ -32,8 +32,14 @@ const H = 0.42;
 const SALT = (1234 % 1000) / 7;
 const elevSigma = (r: number): number => 1.6 * Math.sqrt(1 + ((r - CONVEX_C35.elevationFocusMm) / 45) ** 2);
 const torso = new AnatomyScene(NORMAL_ADULT).torso;
-const sp = START_POINTS.find((s) => s.id === 'intercostal')!;
-const BASE: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
+/**
+ * La intercostal de antes de la decisión 62 (casi craneocaudal), con la que la 55 calibró sus cotas: el medio
+ * es una red de valores alineada con los ejes del mundo y comprimida a lo largo de la elevación del ancla, y su
+ * estadística depende algo de la orientación. Con la de partida de la 62 (a lo largo del 8.º espacio, yaw
+ * −1,15) la SNR justo antes de reanclar inclinando sube un 12 % (un 7 % más que una realización alineada en esa
+ * pose; aquí, un 2 %): `speckle-anchor-orientation` en LIMITATIONS.md.
+ */
+const BASE: ProbePose = { phi: Math.PI * 0.88, z: 8, lift: 0, yaw: 0.35, rock: 0, tilt: 0 };
 const deg = (d: number): number => (d * Math.PI) / 180;
 
 function image(pose: ProbePose, anchor: ElevationAnchor, shift: Vec3 = [0, 0, 0]): number[] {

@@ -11,7 +11,7 @@ import { effectiveLooks, lookCorrelationLaw, lookWeight } from '../ultrasound/co
 import { IFACE_REACH_MM, IFACE_SHIFT_MM } from '../ultrasound/interfaceEcho';
 import { lookWavenumber, steerBeta } from '../ultrasound/steering';
 import { levelOfGrey } from '../ultrasound/greyMap';
-import { CURTAIN_MIN_AIR, curtainAirFractionAt, edgeWidth1090Mm, normalCdf } from '../ultrasound/pleura';
+import { CURTAIN_MIN_AIR, curtainAirFractionAt, edgeWidth1090Mm, elevSigmaMm, normalCdf } from '../ultrasound/pleura';
 import { COARSE_DEPTH, nominalTgcDbPerCm, type DisplayFrame } from '../ultrasound/renderer';
 import { beamToPixel, pixelToBeam } from '../ultrasound/sectorGeometry';
 import { mirrorCrossing, pleuraCrossingLine } from '../ultrasound/transmission';
@@ -1245,7 +1245,10 @@ export interface FidelityStats {
     liver: DisplayStats;
     /** El mismo hígado puro por bandas de profundidad (`DEPTH_BANDS_MM`). */
     liverBands: (DisplayStats & { r0: number; r1: number })[];
-    /** Sangre a ≥ 1,5 mm de su pared (el centro de la luz): la mediana debe quedar casi negra. */
+    /**
+     * El centro de la luz: sangre de VCI, suprahepáticas y porta a ≥ 1,5 mm de su pared en el plano y a ≥ 1,5 mm
+     * más la σ elevacional en 3D (toda la rodaja es sangre). La mediana debe quedar casi negra.
+     */
     lumen: DisplayStats;
     /** Fracción de los píxeles del diafragma saturados (≥ 250); NaN si no hay diafragma a la vista. */
     diaphragmSaturated: number;
@@ -1381,6 +1384,17 @@ export interface WallStats {
   /** Pico de la cortical costal en [hueso − 1,5; hueso + 0,5] mm sobre el hígado (dB de envolvente compensada), mediana de las líneas. */
   ribPeakDb: number;
   ribLines: number;
+  /**
+   * Las líneas de la pared en la imagen (las de `lines` dentro de ella), en las líneas a menos de `WALL_NORMAL_DEG`
+   * de la normal: `lineLevelDb`, el pico (±0,6 mm de su profundidad, sin hueso delante) sobre el hígado, mediana
+   * (objetivo +6 a +14 dB: gris-blanca, sin saturar y bajo la pleura y la cortical); `lineSaturated`, la fracción
+   * de esos picos con gris ≥ 250 (objetivo ≈ 0); `lineCv`, el coeficiente de variación del pico (lineal) a lo
+   * largo de cada línea con ≥ 5 líneas del haz, mediana de las líneas (su brillo fluctúa a lo largo de la cara:
+   * objetivo ≥ 0,3). W7 de `docs/fidelity/README.md`.
+   */
+  lineLevelDb: number;
+  lineSaturated: number;
+  lineCv: number;
 }
 
 /** Paso radial (mm) de la rejilla de clasificación en CPU. */
@@ -1420,7 +1434,7 @@ const WALL_LINK_MM = 3;
 const PLEURA_BISECTION_STEPS = 20;
 /** Saturación de una cara: píxeles ≥ 250 a ≤ 1 mm de ella. */
 const FACE_SATURATION_MM = 1;
-/** Distancia mínima (mm) de la sangre a su pared para medir el centro de la luz. */
+/** Distancia mínima (mm) de la sangre a su pared para medir el centro de la luz (en 3D, más la σ elevacional). */
 const LUMEN_CLEARANCE_MM = 1.5;
 /** Acoplamiento mínimo de una línea para medir su textura (el mal contacto la oscurece entera). */
 const MIN_COUPLING = 0.95;
@@ -1609,6 +1623,7 @@ export function fidelityStats(
   const nr = Math.floor(depth / GRID_STEP_MM);
   const tissue = new Uint8Array(lines * nr);
   const system = new Uint8Array(lines * nr);
+  const bloodDepth = new Float32Array(lines * nr);
   const shadowAt = new Float32Array(lines).fill(Infinity);
   const gasAt = new Float32Array(lines).fill(Infinity);
   const boneAt = new Float32Array(lines).fill(Infinity);
@@ -1626,6 +1641,7 @@ export function fidelityStats(
       const i = u * nr + k;
       tissue[i] = q.tissue;
       if (q.tissue === Tissue.Blood && q.vessel) system[i] = 1 + (WALL_SYSTEMS as readonly string[]).indexOf(VESSEL_META[q.vessel].system);
+      if (q.tissue === Tissue.Blood) bloodDepth[i] = q.boundaryDistance;
       // el aire antes de la piel es el gel de acoplamiento (la pasada A también lo salta)
       if (q.tissue !== Tissue.Air) entered = true;
       if (entered && r < shadowAt[u] && (TISSUES[q.tissue].gas || TISSUES[q.tissue].bone)) shadowAt[u] = r;
@@ -1799,7 +1815,12 @@ export function fidelityStats(
     ),
   }));
   const profile = depthProfile(img, pureLiverDepth, sim.bmode.dynamicRangeDb);
-  // centro de la luz: sangre a ≥ 1,5 mm de su pared, sin sombra delante
+  // centro de la luz: sangre de las venas del banco (VCI, suprahepáticas y porta) a ≥ 1,5 mm de su pared en el
+  // plano y, en 3D, a ≥ 1,5 mm + la σ elevacional del haz, sin sombra delante (decisión 62). La rodaja entera es
+  // sangre: una vena fina u oblicua al plano tiene su pared y el hígado dentro del grosor de corte y su «luz» es
+  // gris (en la intercostal por el 8.º espacio las suprahepáticas, a 1,2–1,9 mm de su pared en 3D, daban una
+  // mediana de 45–52). La aorta y los vasos renales no cuentan: la aorta asoma al fondo de alguna vista, donde
+  // manda el ruido del receptor.
   const lumenClear = clearance(LUMEN_CLEARANCE_MM, BLOOD);
   const cellAt = (x: number, y: number): number => {
     const b = pixelToBeam(layout, tr, depth, x, y);
@@ -1812,7 +1833,9 @@ export function fidelityStats(
     img,
     (x, y) => {
       const i = cellAt(x, y);
-      return i >= 0 && lumenClear[i] === 1;
+      if (i < 0 || lumenClear[i] !== 1 || system[i] === 0) return false;
+      const r = ((i % nr) + 0.5) * GRID_STEP_MM;
+      return bloodDepth[i] >= LUMEN_CLEARANCE_MM + elevSigmaMm(r, tr.elevationFocusMm);
     },
     2,
   );
@@ -2274,6 +2297,7 @@ function wallStatsOf(
   const sep: number[] = [];
   const str: number[] = [];
   const rib: number[] = [];
+  const boneAtLine = new Float64Array(lines).fill(-1);
   for (let u = 0; u < lines; u++) {
     if (!Number.isFinite(skin[u])) continue;
     const theta = thetaOf(u);
@@ -2299,10 +2323,43 @@ function wallStatsOf(
       if (tex[3] < 0.05) (sub ? lob : mus).push(grayAt(u, r));
       else if (tex[3] > 0.7 && wallOrientation([tex[0], tex[1], tex[2]], dir) > 0.7) (sub ? sep : str).push(e);
     }
+    boneAtLine[u] = bone;
     if (bone < 0) continue;
     let pk = -Infinity;
     for (let r = bone - 1.5; r <= bone + 0.5; r += 0.05) pk = Math.max(pk, dB(u, r));
     rib.push(pk - liverEnvDb);
+  }
+  // las líneas de la pared en la imagen: el pico de cada una a lo largo de las líneas casi normales
+  const lineLevel: number[] = [];
+  let linePeaks = 0;
+  let lineSat = 0;
+  const lineCvs: number[] = [];
+  for (const wL of found.depthsMm.filter((d) => d >= 0.5 && d <= wallMm - 1)) {
+    const amps: number[] = [];
+    for (const u of normal) {
+      const theta = thetaOf(u);
+      let rL = -1;
+      for (let r = skin[u]; r < Math.min(depth, skin[u] + 2 * (wallMm + 1)); r += 0.05)
+        if (-torsoDepth(toMaterial(pointOnLine(sim.frame, tr, theta, r)), torso) >= wL) {
+          rL = r;
+          break;
+        }
+      if (rL < 0 || (boneAtLine[u] >= 0 && boneAtLine[u] < rL + 0.6)) continue;
+      let pk = -Infinity;
+      let gy = 0;
+      for (let r = rL - 0.6; r <= rL + 0.6; r += 0.05) {
+        pk = Math.max(pk, dB(u, r));
+        gy = Math.max(gy, grayAt(u, r) || 0);
+      }
+      lineLevel.push(pk - liverEnvDb);
+      linePeaks++;
+      if (gy >= 250) lineSat++;
+      amps.push(Math.pow(10, pk / 20));
+    }
+    if (amps.length >= 5) {
+      const mean = amps.reduce((a, b) => a + b, 0) / amps.length;
+      lineCvs.push(Math.sqrt(amps.reduce((a, b) => a + (b - mean) ** 2, 0) / amps.length) / mean);
+    }
   }
   const fatGray = medianOf(lob.filter(Number.isFinite));
   const muscleGray = medianOf(mus.filter(Number.isFinite));
@@ -2322,6 +2379,9 @@ function wallStatsOf(
     striationSamples: str.length,
     ribPeakDb: medianOf(rib),
     ribLines: rib.length,
+    lineLevelDb: medianOf(lineLevel),
+    lineSaturated: linePeaks ? lineSat / linePeaks : Number.NaN,
+    lineCv: medianOf(lineCvs),
   };
 }
 

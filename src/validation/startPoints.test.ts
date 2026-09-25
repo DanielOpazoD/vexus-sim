@@ -1,9 +1,15 @@
 import { describe, expect, it } from 'vitest';
+import { bestGateOnVessel } from '../app/gatePlacement';
+import { acousticWindowWeight } from '../app/gateTransmission';
 import { START_POINTS, type StartPoint } from '../app/startPoints';
+import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
 import { NORMAL_ADULT } from '../cases';
+import { PhysiologyEngine } from '../physiology/engine';
+import { clonePatient, type RespiratoryPattern } from '../physiology/patientState';
 import { CONVEX_C35, lineCoupling, pointOnLine, probeFrame, type ProbePose } from '../probe/probe';
+import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 
 /**
  * Cada punto de partida debe cortar de verdad la estructura que promete su
@@ -52,34 +58,55 @@ describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', 
 
   it('intercostal derecho: suprahepáticas y VCI a través del hígado', () => {
     const s = sweep(byId('intercostal'), 160);
-    expect(s.coupling).toBeGreaterThan(0.5);
+    expect(s.coupling).toBeGreaterThan(0.9);
     const hv = samples(s, 'hvRight') + samples(s, 'hvMiddle') + samples(s, 'hvRightAnterior');
-    // desde la decisión 62, por el 8.º espacio en la línea axilar media (28 muestras de 2 mm: la derecha y la
-    // media hacia la VCI; la pose de antes, casi craneocaudal, cruzaba seis costillas óseas)
-    expect(hv).toBeGreaterThan(25);
+    expect(hv).toBeGreaterThan(30);
     expect(samples(s, 'ivcInfra') + samples(s, 'ivcSupra')).toBeGreaterThan(20);
     expect(s.tissues.get(Tissue.Liver) ?? 0).toBeGreaterThan(600);
   });
 
-  it('intercostal derecho: una costilla ósea asoma en un borde con su sombra y el centro queda despejado', () => {
-    // decisión 62: con la regla de antes del cartílago (φ > 1,05) todo el arco derecho anterolateral era
-    // cartílago, sin cortical ni sombra; ahora es hueso y la vista va a lo largo del 8.º espacio intercostal
+  it('intercostal derecho: ninguna costilla en todo el sector, ósea o cartílago, hasta el fondo de la imagen', () => {
+    // decisión 62: la pose de antes (casi craneocaudal) cruzaba seis costillas óseas; la primera del 8.º espacio,
+    // con 11° de basculación, dejaba una en cada borde (a 36–52 y a 71 mm) y 14 líneas sin acoplar. Con la de
+    // ahora, girar la sonda 2° ya mete la 9.ª en un borde. La vértebra, al fondo (14–16 cm), no cuenta.
     const sp = byId('intercostal');
     const fr = probeFrame({ phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 }, scene.torso, CONVEX_C35);
     const nLines = 61;
-    const boneLine = Array.from({ length: nLines }, (_, i) => {
+    for (let i = 0; i < nLines; i++) {
       const theta = -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * i) / (nLines - 1);
-      for (let r = 2; r < 60; r += 1) {
+      for (let r = 1; r < 180; r += 1) {
         const t = scene.classify(pointOnLine(fr, CONVEX_C35, theta, r), BASELINE_CALIBER).tissue;
-        expect(t, `línea ${i} a ${r} mm`).not.toBe(Tissue.Cartilage);
-        if (t === Tissue.Bone) return true;
+        expect(t === Tissue.Bone || t === Tissue.Cartilage, `línea ${i} a ${r} mm`).toBe(false);
       }
-      return false;
-    });
-    // una costilla en el 20 % de un borde, a lo sumo 12 líneas con sombra y el 60 % central sin ninguna
-    expect(boneLine.slice(0, 12).some(Boolean) || boneLine.slice(nLines - 12).some(Boolean)).toBe(true);
-    expect(boneLine.filter(Boolean).length).toBeLessThanOrEqual(12);
-    expect(boneLine.slice(12, nLines - 12).every((b) => !b)).toBe(true);
+    }
+  });
+
+  it('intercostal derecho: la puerta del operador en una suprahepática a ≤ 50° y con ventana, en espiración y respirando', () => {
+    // La función de la vista, no solo su anatomía: `bestGateOnVessel` con el peso de ventana acústica (como la
+    // e2e y la pestaña Medir) en apnea espiratoria y en el máximo descenso del diafragma de la respiración
+    // tranquila (8 s). El peso incluye la atenuación de ida y vuelta a la frecuencia Doppler: 0,058 a 89 mm con
+    // 43° y 0,038 a 101 mm con 35°; la puerta de la pose casi craneocaudal de antes quedaba a 63–80 mm (peso
+    // 0,09–0,16, sin sombra en la puerta) con 57–68°, por encima de la cota.
+    const sp = byId('intercostal');
+    const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
+    for (const pattern of ['apnea-expiratory', 'quiet'] as RespiratoryPattern[]) {
+      const patient = { ...clonePatient(NORMAL_ADULT), respiratoryPattern: pattern };
+      const sc = new AnatomyScene(patient);
+      const anatomy = new AnatomyQuery(sc);
+      const engine = new PhysiologyEngine(patient, sc.vesselAreas(), { historySeconds: 12 });
+      let sample = engine.step();
+      for (let i = 1; i < Math.round(8 / engine.clock.dt); i++) {
+        const s = engine.step();
+        if (s.resp.diaphragmCaudalMm > sample.resp.diaphragmCaudalMm) sample = s;
+      }
+      const frame = probeFrame(pose, sc.torso, CONVEX_C35);
+      const w = acousticWindowWeight(anatomy, frame, CONVEX_C35, pose, sample, 180, CONVEX_C35_PROFILE.dopplerEffectiveMHz);
+      const g = bestGateOnVessel(anatomy, frame, CONVEX_C35, sample, ['hvRight', 'hvMiddle'], 175, 1.2, w);
+      expect(g, pattern).not.toBeNull();
+      const tag = `${pattern}: ${JSON.stringify({ r: g!.r, theta: g!.theta })}`;
+      expect((Math.acos(g!.cosAngle) * 180) / Math.PI, tag).toBeLessThanOrEqual(50);
+      expect(w(g!.theta, g!.r), tag).toBeGreaterThanOrEqual(0.03);
+    }
   });
 
   it('flanco: VCI transhepática coronal con suprahepáticas desembocando en ella', () => {

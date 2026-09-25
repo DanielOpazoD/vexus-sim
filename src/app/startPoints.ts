@@ -37,18 +37,19 @@ export const START_POINTS: readonly StartPoint[] = [
     id: 'intercostal',
     color: '#ffc857',
     label: 'Intercostal dcho',
-    // 8.º espacio intercostal en la línea axilar media, con la sonda a lo largo del espacio (las costillas suben
-    // hacia atrás), el marcador hacia la axila y 11° de basculación talón-punta: una costilla asoma en un borde
-    // con su cortical y su sombra, y el resto del sector es hígado con las suprahepáticas derecha y media y
-    // la VCI, despejadas de la cortina pulmonar con la respiración tranquila (que baja hasta ellas en inspiración
-    // profunda). Con las costillas óseas (decisión 62) la pose de antes (φ 0,88π, z 8, yaw 0,35, casi
+    // 8.º espacio intercostal (entre la 8.ª y la 9.ª costillas) en la línea axilar media, con la sonda a lo largo
+    // del espacio (las costillas suben hacia atrás), el marcador hacia la axila y sin basculación: ninguna
+    // costilla entra en el sector en toda su profundidad (quedan a ~14 mm a cada lado del plano; girar la sonda
+    // 2° mete la 9.ª en un borde), la huella apoya entera (acoplamiento medio 0,93) y la vértebra asoma al fondo,
+    // a 14–16 cm. Las suprahepáticas derecha y media y la VCI se ven por el hígado; la cortina pulmonar entra por
+    // el lado craneal (4 de 61 líneas en espiración, 13 en el máximo de la respiración tranquila y 39 en
+    // inspiración profunda). Con las costillas óseas (decisión 62) la pose de antes (φ 0,88π, z 8, yaw 0,35, casi
     // craneocaudal) cruzaba seis costillas y dejaba seis sombras; a lo largo del 7.º espacio (φ 0,94π, z 19) la
     // cortina tapaba en espiración medio sector, las suprahepáticas incluidas (decisión 61).
-    phi: Math.PI * 0.98,
-    z: 3,
-    yaw: -1.25,
-    rock: 0.2,
-    hint: 'Suprahepáticas y VCI por el 8.º espacio intercostal en la línea axilar media: la sonda a lo largo del espacio, marcador hacia la axila; una costilla asoma en el borde con su sombra y la cortina pulmonar baja con la inspiración.',
+    phi: Math.PI,
+    z: 0,
+    yaw: -1.15,
+    hint: 'Suprahepáticas y VCI por el 8.º espacio intercostal en la línea axilar media: la sonda a lo largo del espacio, marcador hacia la axila, sin costillas en el sector; la cortina pulmonar entra por el lado craneal y baja con la inspiración.',
   },
   {
     id: 'flank',

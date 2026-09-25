@@ -37,7 +37,8 @@
  *
  * Cada escena escribe también el banco de la pared (decisión 62, `display.wall`): líneas brillantes del
  * perfil de las líneas casi normales a la piel, gris del interior de los lóbulos de grasa y del músculo,
- * septos y estrías sobre su capa y el pico de la cortical costal sobre el hígado.
+ * septos y estrías sobre su capa, el pico de la cortical costal sobre el hígado y el nivel, la saturación y la
+ * variación a lo largo de las líneas de la pared.
  *
  * No corre en CI (necesita GPU: con SwiftShader los cps no significan nada). Las métricas y sus
  * referencias se explican en docs/fidelity/README.md.
@@ -281,6 +282,7 @@ try {
           `· grasa ${f1(w.fatGray)} (${f1(w.fatToLiver * 100)} % del hígado) · músculo ${f1(w.muscleGray)} (${f1(w.muscleToLiver * 100)} %)`,
           `· septos +${f1(w.septumDb)} dB (${w.septumSamples}) · estrías +${f1(w.striationDb)} dB (${w.striationSamples})`,
           `· cortical costal +${f1(w.ribPeakDb)} dB (${w.ribLines} líneas) · perfil con ${w.profileLines} de ${w.normalLines} líneas normales`,
+          `· líneas a +${f1(w.lineLevelDb)} dB del hígado, ${f1(w.lineSaturated * 100)} % saturadas, CV ${f1(w.lineCv * 100)} %`,
         );
       }
       const f2 = (x: number): string => (Number.isFinite(x) ? x.toFixed(2) : '—');

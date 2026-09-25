@@ -64,6 +64,14 @@ export const CURTAIN_TAPER_RANGE_MM = [3, 5] as const;
  * (mm): con σ ≤ 5,6 mm (σ_taper 5, el haz más ancho de la imagen) la fracción de aire ya es < 10⁻³.
  */
 export const CURTAIN_RECORD_MM = 20;
+/**
+ * El pulmón del receso es la cortina de la pleura registrada (sin espejo, con su ΔL) solo si su primer segmento
+ * grueso empieza a ≤ esto (en segmentos) del cruce D (decisión 62, enmienda de la 61). Una línea que pasa junto al
+ * borde de la cortina registra su pleura con el volumen parcial del borde y, 50–90 mm más allá, toca el pulmón
+ * del receso posterior: ese pulmón es el espejo del diafragma (decisión 57), no la lámina de la pleura, y el
+ * hígado de en medio conserva su atenuación.
+ */
+export const CURTAIN_CONTIGUOUS_SEGMENTS = 1;
 /** Fracción de aire por debajo de la cual la línea no tiene cortina (y por encima de 1 − esto, ni tejido detrás). */
 export const CURTAIN_MIN_AIR = 1e-3;
 /**
@@ -92,21 +100,23 @@ export const SLIDING_SALT = 23.17;
 export const PLEURA_SERIES_FLOOR = RECEIVER_NOISE / 10;
 /**
  * Eco de las caras de la pared en sus copias bajo la pleura (decisión 62) sobre el de la pared directa
- * [ESTIMADO 0,1–0,3]: la imagen coherente de una cara especular se degrada en el camino de la reverberación
+ * [ESTIMADO 0,25–0,5]: la imagen coherente de una cara especular se degrada en el camino de la reverberación
  * (cuatro pasos más por la pared, con su aberración de fase, y la pleura, que no es plana a la escala del haz),
  * cosa que χ, la rugosidad fina, no recoge; el moteado es incoherente y no la pierde. Con 1 las copias de las
  * fascias quedaban a +8–12 dB sobre la neblina de entre ellas y la imagen bajo la pleura era un peine de arcos
- * brillantes (captura con SwiftShader, intercostal en inspiración); con 0,15 son las bandas tenues de las
- * referencias (Lee 2017, fig. 5B: +2–5 dB en el gemelo) y el deslizamiento sigue a la vista.
+ * brillantes (captura con SwiftShader, intercostal en inspiración); con 0,35 (y las caras de σz 0,075 mm) son
+ * las bandas tenues de las referencias (Lee 2017, fig. 5B: +2–4 dB en el gemelo) y el deslizamiento sigue a la
+ * vista en todo el rango (la banda de 2–6 mm bajo la pleura correlaciona 0,66 con 0,25 y 0,75 con 0,5 al bajar
+ * el pulmón 2 mm; aceptación < 0,8).
  */
-export const WALL_COPY_FACE_GAIN = 0.15;
-export const WALL_COPY_FACE_GAIN_RANGE = [0.1, 0.3] as const;
+export const WALL_COPY_FACE_GAIN = 0.35;
+export const WALL_COPY_FACE_GAIN_RANGE = [0.25, 0.5] as const;
 /**
- * Cota del campo de la pared en una muestra (moteado de la piel a 3σ, 1,4·3, más el pico de una cara de
- * la pared con |R| ≤ 0,05; desde la decisión 62, el de la piel en las copias: ≈ 11 con su variación máxima y
- * `WALL_COPY_FACE_GAIN`): decide cuándo se deja de sumar la serie (`PLEURA_SERIES_FLOOR`).
+ * Cota del campo de la pared en una muestra (moteado de la piel a 3σ, 1,4·3, más el pico de una cara de la
+ * pared en su copia: `WALL_COPY_FACE_GAIN_RANGE[1]` por el pico de la más brillante con su variación máxima a 2
+ * MHz, ≈ 105; `pleura.test.ts` lo comprueba): decide cuándo se deja de sumar la serie (`PLEURA_SERIES_FLOOR`).
  */
-export const PLEURA_WALL_FIELD_BOUND = 16;
+export const PLEURA_WALL_FIELD_BOUND = 57;
 /** Pasos del punto fijo que busca la línea cuyo cruce de la pleura corta un camino dirigido. */
 export const PLEURA_STEER_ITERATIONS = 3;
 /** Profundidad de la pleura (mm) con que empieza ese punto fijo si la línea de la muestra no tiene pleura. */

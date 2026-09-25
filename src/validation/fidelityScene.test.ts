@@ -19,6 +19,7 @@ import { pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import { mirrorCrossing } from '../ultrasound/transmission';
 import { detect, psf, whiteField } from './syntheticSpeckle';
+import { CAPTURE_POSES } from './support/liverContour';
 
 /**
  * El banco de fidelidad sobre la anatomía real, sin GPU: el sano en apnea en las ventanas subxifoidea,
@@ -46,12 +47,29 @@ const speckle = detect(G, psf(G, whiteField(G, 7), 1.5, 1.0), Math.hypot);
 const thetaOf = (u: number): number => -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * (u + 0.5)) / G.lines;
 
 const FACE_GRAY = 200;
-const frames = new Map<StartPoint['id'], ReturnType<typeof probeFrame>>();
-const planes = new Map<StartPoint['id'], { sim: Simulator; env: EnvelopeFrame; img: DisplayFrame; gain: Float32Array }>();
+/**
+ * Planos del banco: las vistas de partida y dos poses fijas. `intercostalCapture`, la intercostal de las capturas
+ * (casi craneocaudal, `CAPTURE_POSES`), corta las suprahepáticas oblicuas; la de partida va por el 8.º espacio
+ * desde la decisión 62 y las corta en pocas líneas. `morison`: el flanco inclinado 20° hacia atrás, que llega al
+ * riñón (hasta la 62 lo hacía la intercostal de las capturas; ahora sus seis costillas óseas cortan las líneas del
+ * banco en su cortical, `shadowAt`, y el hepatorrenal queda detrás de ellas).
+ */
+type Plane = StartPoint['id'] | 'intercostalCapture' | 'morison';
+const frames = new Map<Plane, ReturnType<typeof probeFrame>>();
+const planes = new Map<Plane, { sim: Simulator; env: EnvelopeFrame; img: DisplayFrame; gain: Float32Array }>();
 
-function measure(id: StartPoint['id'], tiltDeg = 0): FidelityStats {
-  const sp = START_POINTS.find((s) => s.id === id)!;
-  const pose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: (sp.tilt ?? 0) + (tiltDeg * Math.PI) / 180 };
+function poseOf(id: Plane): Pick<StartPoint, 'phi' | 'z' | 'yaw' | 'rock' | 'tilt'> {
+  if (id === 'intercostalCapture') return CAPTURE_POSES.intercostal!;
+  if (id === 'morison') {
+    const flank = START_POINTS.find((s) => s.id === 'flank')!;
+    return { ...flank, tilt: (flank.tilt ?? 0) - (20 * Math.PI) / 180 };
+  }
+  return START_POINTS.find((s) => s.id === id)!;
+}
+
+function measure(id: Plane): FidelityStats {
+  const sp = poseOf(id);
+  const pose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
   const frame = probeFrame(pose, scene.torso, CONVEX_C35);
   frames.set(id, frame);
   const display = sectorLayout(W, H, CONVEX_C35, DEPTH, DISPLAY_MARGIN_PX);
@@ -101,17 +119,18 @@ function measure(id: StartPoint['id'], tiltDeg = 0): FidelityStats {
 const subxiphoid = measure('subxiphoid');
 const intercostal = measure('intercostal');
 const renal = measure('renal');
-// Morison: el flanco inclinado 20° hacia atrás (la vista intercostal de la decisión 62 no llega al riñón)
-const morison = measure('flank', -20);
-// la VCI y las suprahepáticas del flanco: luces y paredes a 0–60° (la vista intercostal de la decisión 62 las
-// corta más oblicuas y sus paredes finas caen entre los píxeles de esta imagen de 320 × 229)
+const intercostalCapture = measure('intercostalCapture');
+const morison = measure('morison');
+// la VCI del flanco en eje largo: el centro de la luz
 const flank = measure('flank');
 
 /**
- * En la ventana intercostal la cortina pulmonar tapa el sector desde la línea ~97 en espiración (decisión 61):
- * bajo su pleura, también en el borde blando (fracción de aire ≥ 0,01), no hay hígado puro. Antes el borde era
- * un escalón en la línea ~116 y la guarda de Rayleigh medía también el «hígado» de detrás de la cortina, que la
- * imagen no mostraba (el espejo lo llevaba al gel: ruido del receptor, que también es de Rayleigh).
+ * En la ventana intercostal la cortina pulmonar entra por el lado craneal (decisión 61): en espiración, con la pose
+ * de la 62, su borde blando (fracción de aire ≥ 0,01) empieza en la línea ~88 de 192 y es media cortina (≥ 0,5)
+ * desde la ~157 (con la pose de antes tapaba desde la ~97). Bajo su pleura, también en el borde blando, no hay
+ * hígado puro. Antes del borde blando era un escalón en la línea ~116 y la guarda de Rayleigh medía también el
+ * «hígado» de detrás de la cortina, que la imagen no mostraba (el espejo lo llevaba al gel: ruido del receptor,
+ * que también es de Rayleigh).
  */
 const MIN_PATCHES = { subxiphoid: { envelope: 10, rayleigh: 200 }, intercostal: { envelope: 4, rayleigh: 100 } } as const;
 
@@ -143,7 +162,8 @@ describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
       expect(d.colorOn).toBe(false);
       if (Number.isFinite(d.diaphragmSaturated)) expect(d.diaphragmSaturated).toBe(0);
     }
-    // la luz pintada a 0: el centro de la luz la encuentra (subxifoidea y flanco, con la VCI en eje largo)
+    // la luz pintada a 0: el centro de la luz la encuentra (subxifoidea y flanco, con la VCI en eje largo: 419 y
+    // 415 píxeles; en la intercostal por el 8.º espacio ninguna vena tiene la rodaja entera en sangre)
     for (const s of [subxiphoid, flank]) {
       expect(s.display!.lumen.pixels).toBeGreaterThan(50);
       expect(s.display!.lumen.p50).toBe(0);
@@ -151,18 +171,15 @@ describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
   });
 
   it('encuentra las paredes anteriores con su incidencia real y da el cociente pintado', () => {
-    // subxifoidea: la mayoría a 20–40°; flanco: de 0 a 60° (la VCI casi perpendicular y las suprahepáticas
-    // oblicuas)
+    // subxifoidea: la mayoría a 20–40°; intercostal de las capturas: la VH cruza oblicua (20–60°; 23 paredes con
+    // las líneas que dejan sus costillas óseas, 4 / 14 / 5 por tramo)
     const sub = subxiphoid.display!.walls.find((b) => b.fromDeg === 20)!;
     expect(sub.walls).toBeGreaterThan(20);
     expect(sub.ratio).toBeCloseTo(1.8, 5);
     expect(sub.deltaDb).toBeGreaterThan(10);
-    const flankWalls = flank.display!.walls.filter((b) => b.walls > 0);
-    expect(flankWalls.reduce((n, b) => n + b.walls, 0)).toBeGreaterThan(20);
-    // (con las costillas óseas de la decisión 62 las del flanco hacen sombra sobre parte de las suprahepáticas
-    // oblicuas: queda al menos una pared a 20–40°; con el cartílago de antes, más de 3)
-    expect(flank.display!.walls.find((b) => b.fromDeg === 20)!.walls).toBeGreaterThanOrEqual(1);
-    for (const b of flankWalls) expect(b.ratio).toBeCloseTo(1.8, 5);
+    const oblique = intercostalCapture.display!.walls.filter((b) => b.fromDeg >= 20);
+    expect(oblique.reduce((n, b) => n + b.walls, 0)).toBeGreaterThan(20);
+    for (const b of oblique) expect(b.ratio).toBeCloseTo(1.8, 5);
   });
 
   it('el banco de interfaces encuentra la porta, la cápsula, el diafragma y Morison con su cara pintada', () => {
@@ -170,10 +187,9 @@ describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
     const walls = (pick: (d: (typeof all)[number]) => { walls: number; ratio: number }[]) =>
       all.flatMap((d) => pick(d)).filter((b) => b.walls > 0);
     // subxifoidea: porta y diafragma; subxifoidea e intercostal: la cápsula bajo la pared, que desde la
-    // decisión 62 tiene el peritoneo parietal en la ventana del pico (`peritoneum`); el flanco inclinado
-    // 20° hacia atrás: Morison (hígado → grasa perirrenal → cápsula renal; hasta la decisión 62 lo daba la
-    // vista intercostal, que cruzaba seis costillas). La ventana renal ve el riñón por detrás y el hígado
-    // debajo: allí Morison va en el otro orden y el banco no lo cuenta.
+    // decisión 62 tiene el peritoneo parietal en la ventana del pico (`peritoneum`); el flanco inclinado 20°
+    // hacia atrás: Morison (hígado → grasa perirrenal → cápsula renal). La ventana renal ve el riñón por detrás
+    // y el hígado debajo: allí Morison va en el otro orden y el banco no lo cuenta.
     const n = (bins: { walls: number }[]) => bins.reduce((a, b) => a + b.walls, 0);
     expect(n(walls((d) => d.wallSystems.portal))).toBeGreaterThan(10);
     expect(n(walls((d) => d.peritoneum))).toBeGreaterThan(50);

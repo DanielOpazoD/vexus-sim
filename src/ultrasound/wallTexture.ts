@@ -54,11 +54,13 @@ export const WALL_TEXTURE = {
   orientationFloor: 0.2,
   /**
    * Variación de la reflectividad a lo largo de cada cara de la pared: exp(a·(n − 0,5)) con n un ruido de
-   * valor anclado de correlación `faceVariationMm` (desviación de n ≈ 0,14: a = 2 → ±2,4 dB, a = 5 → ±6 dB).
-   * Scarpa es la más irregular (a tramos casi desaparece), el peritoneo la más uniforme.
+   * valor anclado de correlación `faceVariationMm` (desviación de n ≈ 0,14: a = 3 → ±3,6 dB, a = 5 → ±6 dB):
+   * rugosidad a la escala del haz, volumen parcial y oblicuidad, anclados (no hierven). Scarpa es la más
+   * irregular (a tramos casi desaparece); con 6 mm y a = 1,5–3 las líneas se veían trazadas con regla (capturas
+   * con GPU, 25-09-2026).
    */
-  faceVariationMm: 6,
-  faceVariation: [3, 5, 2, 3, 3, 2, 1.5] as const,
+  faceVariationMm: 4,
+  faceVariation: [4, 5, 4, 4, 4, 3.5, 3] as const,
 } as const;
 
 /** Sales del hash de la textura (fijas: la anatomía del paciente no depende de la semilla del moteado). */

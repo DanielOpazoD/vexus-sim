@@ -380,10 +380,13 @@ export function torsoSkinPoint(phi: number, z: number, t: Torso): Vec3 {
 /**
  * Extremo anterior de las costillas derechas (decisión 62): la 5.ª–7.ª llegan al esternón (x ≤ 15 mm); las
  * 8.ª–10.ª acaban en el reborde costal, que baja desde el xifoides hacia fuera: x ≤ 15 + pendiente·z anterior
- * (la 8.ª a −23 mm, la 9.ª a −62, la 10.ª a −100, entre las líneas medioclavicular y axilar anterior). Antes
- * todas cruzaban la línea media y la ventana subxifoidea pasaba por los cartílagos de la 8.ª y la 9.ª.
+ * (la 8.ª a −23 mm y la 9.ª a −62, mediales a la línea medioclavicular, x ≈ −96 en la elipse de la costilla; la
+ * 10.ª a −100, en ella). Antes todas cruzaban la línea media y la ventana subxifoidea pasaba por los cartílagos
+ * de la 8.ª y la 9.ª. `cartilageTailMm`: los últimos milímetros (en x, en la mitad anterior) antes del extremo son
+ * cartílago aunque caigan fuera de ±45° de la línea media (la 10.ª, cuyo extremo queda en la línea medioclavicular, conserva así
+ * su cartílago corto, unido al de la 9.ª en el reborde).
  */
-export const RIB_ANTERIOR_END = { xMm: 15, marginSlope: 1.53 } as const;
+export const RIB_ANTERIOR_END = { xMm: 15, marginSlope: 1.53, cartilageTailMm: 25 } as const;
 
 /** x máxima (mm) de la costilla: su extremo anterior (`RIB_ANTERIOR_END`). */
 export function ribAnteriorEndX(rib: Pick<Rib, 'zAnterior'>): number {
@@ -412,7 +415,10 @@ export function sdRib(p: Vec3, rib: Rib, torso: Torso, spine?: Spine): { d: numb
   // cartílago solo en el arco anterior, a menos de π/2 − cartilageFromPhi de la línea media (φ = π/2), a los
   // dos lados (antes `φ > cartilageFromPhi`, que en las costillas derechas, φ ∈ (π/2, π], hacía cartílago todo
   // el arco anterolateral: la ventana intercostal sin cortical ni sombra; decisión 62)
-  const cartilage = Number.isFinite(rib.cartilageFromPhi) && Math.abs(phi - Math.PI / 2) < Math.PI / 2 - rib.cartilageFromPhi;
+  const cartilage =
+    Number.isFinite(rib.cartilageFromPhi) &&
+    (Math.abs(phi - Math.PI / 2) < Math.PI / 2 - rib.cartilageFromPhi ||
+      (rib.rightOnly && p[1] > 0 && p[0] > ribAnteriorEndX(rib) - RIB_ANTERIOR_END.cartilageTailMm));
   return { d, cartilage };
 }
 

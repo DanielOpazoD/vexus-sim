@@ -376,6 +376,21 @@ describe('banco de la pared de la GPU (display.wall) sobre el gemelo en las pose
     }
   });
 
+  it('las líneas de la pared a incidencia normal: gris-blancas, sin saturar, bajo la cortical y variando a lo largo', () => {
+    // Capturas con GPU (25-09-2026): con σz 0,05 las fascias y el peritoneo eran líneas blancas uniformes, +15–29 dB
+    // sobre el hígado y saturadas como la pleura y la cortical. Gemelo con σz 0,075: 8,1 / 9,2 / 6,4 / 13,7 dB en
+    // las cuatro vistas, 0–0,2 % de picos saturados y un CV del pico a lo largo de cada línea de 55–73 %.
+    for (const id of ['subxiphoid', 'intercostal', 'flank', 'renal'] as const) {
+      const w = benchOnTwin(id).wall;
+      const msg = `${id}: ${JSON.stringify({ lineLevelDb: w.lineLevelDb, lineSaturated: w.lineSaturated, lineCv: w.lineCv })}`;
+      expect(w.lineLevelDb, msg).toBeGreaterThanOrEqual(4);
+      expect(w.lineLevelDb, msg).toBeLessThanOrEqual(16);
+      expect(w.lineSaturated, msg).toBeLessThanOrEqual(0.01);
+      expect(w.lineCv, msg).toBeGreaterThanOrEqual(0.3);
+      if (id === 'flank') expect(w.ribPeakDb - w.lineLevelDb, msg).toBeGreaterThanOrEqual(6);
+    }
+  });
+
   it('septos y estrías del banco: sin textura, con las caras, < 1,5 dB (no cuentan la falda de las fascias)', () => {
     for (const id of ['subxiphoid', 'flank'] as const) {
       const w = benchOnTwin(id, { noTexture: true }).wall;

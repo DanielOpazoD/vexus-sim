@@ -77,17 +77,18 @@ function sceneOf(c: ContourCase): AnatomyScene {
 }
 
 /**
- * Vista `sp` del caso: la pose de partida con φ + `dPhi`, basculación + `dRock` e inclinación + `dTilt`
- * (rad). Apnea espiratoria: el diafragma en espiración y la VCI con apScale 0,777.
- */
-/**
  * Poses de las capturas del dueño (24-09-2026) que ya no son las de partida: la intercostal de entonces (casi
- * craneocaudal); desde la decisión 62 la de partida va por el 8.º espacio. El contorno se compara con las capturas.
+ * craneocaudal); desde la decisión 62 la de partida va por el 8.º espacio. El contorno se compara con las capturas
+ * y el banco sin GPU (`fidelityScene.test.ts`) mide en ella las suprahepáticas oblicuas y Morison.
  */
-const CAPTURE_POSES: Partial<Record<StartPoint['id'], Pick<StartPoint, 'phi' | 'z' | 'yaw' | 'rock' | 'tilt'>>> = {
+export const CAPTURE_POSES: Partial<Record<StartPoint['id'], Pick<StartPoint, 'phi' | 'z' | 'yaw' | 'rock' | 'tilt'>>> = {
   intercostal: { phi: Math.PI * 0.88, z: 8, yaw: 0.35 },
 };
 
+/**
+ * Vista `sp` del caso: la pose de partida con φ + `dPhi`, basculación + `dRock` e inclinación + `dTilt`
+ * (rad). Apnea espiratoria: el diafragma en espiración y la VCI con apScale 0,777.
+ */
 export function contourView(c: ContourCase, sp: StartPoint['id'], dPhi = 0, dRock = 0, dTilt = 0): ContourView {
   const scene = sceneOf(c);
   const p = CAPTURE_POSES[sp] ?? START_POINTS.find((s) => s.id === sp)!;

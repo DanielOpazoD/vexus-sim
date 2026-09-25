@@ -201,9 +201,11 @@ float sdSphere(vec3 p, vec4 s, out vec3 n) {
 // Costilla: devuelve distancia y si es cartílago (φ anterior)
 float sdRib(vec3 p, vec4 rib, out bool cartilage, out vec3 n) {
   float phi = atan(p.y / uTorso.y, p.x / uTorso.x);
-  cartilage = abs(phi - 1.5707963) < 1.5707963 - uRibParams.y; // arco anterior (primitives.sdRib, decisión 62)
   // extremo anterior: el esternón (5.ª–7.ª) o el reborde costal (8.ª–10.ª; primitives.ribAnteriorEndX)
-  if (p.x > min(${RIB_ANTERIOR_END.xMm.toFixed(4)}, ${RIB_ANTERIOR_END.xMm.toFixed(4)} + ${RIB_ANTERIOR_END.marginSlope.toFixed(4)} * rib.x)) return 1e3;
+  float endX = min(${RIB_ANTERIOR_END.xMm.toFixed(4)}, ${RIB_ANTERIOR_END.xMm.toFixed(4)} + ${RIB_ANTERIOR_END.marginSlope.toFixed(4)} * rib.x);
+  // cartílago: el arco anterior y los últimos mm antes del extremo (primitives.sdRib, decisión 62)
+  cartilage = abs(phi - 1.5707963) < 1.5707963 - uRibParams.y || (p.y > 0.0 && p.x > endX - ${RIB_ANTERIOR_END.cartilageTailMm.toFixed(4)});
+  if (p.x > endX) return 1e3;
   // el arco costal termina en la apófisis transversa: nada por detrás de la columna
   if (p.y < uSpine.y && abs(p.x - uSpine.x) < uSpineArch.x + 6.0) return 1e3;
   float sc = uRibParams.x;

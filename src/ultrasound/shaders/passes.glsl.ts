@@ -7,6 +7,7 @@ import { IFACE_REACH_MM, INTERFACE_ECHO_GLSL } from '../interfaceEcho';
 import { GAS_DB_PER_CM, MIRROR_BISECTION_STEPS, STEERED_PREFIX_GLSL } from '../transmission';
 import {
   CURTAIN_AIR_GLSL,
+  CURTAIN_CONTIGUOUS_SEGMENTS,
   CURTAIN_GAS_KIND,
   CURTAIN_RECORD_MM,
   PLEURA_GLSL,
@@ -213,8 +214,9 @@ void main() {
     entered = true;
     float flag = tissueFlag(c.tissue);
     // pulmón que toca la pared en el receso (la cortina o el tórax) y el que le sigue pegado (aire con aire),
-    // solo si su pleura está registrada (si el cruce cae fuera de la huella, el modelo de antes: el espejo)
-    curtainRun = c.tissue == T_LUNG && mirrorSeg < 0.0 && (curtainRun || (pleuraD >= 0.0 && inLungRecess(m, insideWallMm(m))));
+    // solo si su pleura está registrada y el pulmón empieza pegado a ella (si el cruce cae fuera de la huella, o
+    // la línea roza el borde y llega al pulmón del receso mucho más hondo, el modelo de antes: el espejo)
+    curtainRun = c.tissue == T_LUNG && mirrorSeg < 0.0 && (curtainRun || (pleuraD >= 0.0 && float(s) * step <= pleuraD + ${glslFloat(CURTAIN_CONTIGUOUS_SEGMENTS)} * step && inLungRecess(m, insideWallMm(m))));
     if (flag > 0.5 && flag < 1.5) {
       if (curtainRun) {
         // ni espejo ni impacto de gas; en la lámina, la vuelta siguiente clasifica lo de detrás (ΔL). Fuera de ella

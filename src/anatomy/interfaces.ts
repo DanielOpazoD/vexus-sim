@@ -150,7 +150,7 @@ export interface InterfaceProps {
 const FASCIA_IN_FAT = 'capa fina de colágeno en grasa: 2Γ·sen(kt), Γ colágeno (Z ≈ 1,85, Duck 1990) / grasa ≈ 0,17';
 /** Nivel de las caras de la pared (decisión 62): la rugosidad efectiva deja su parte coherente en el de las referencias. */
 const WALL_ROUGH =
-  'rugosidad efectiva σz 0,05 mm y s 0,3 de una fascia ondulada: su parte coherente queda a +15–25 dB sobre el hígado a 0°, como las líneas de las referencias (antes, lisa, a +30–40 dB y su falda llenaba el músculo) [ESTIMADO]';
+  'rugosidad efectiva σz 0,075 mm y s 0,3 de una fascia ondulada a la escala del haz (volumen parcial en la rodaja): en la imagen sus líneas quedan a +6–14 dB sobre el hígado (mediana por vista a incidencia normal, gemelo 6,4–13,7 dB y ≤ 0,2 % de píxeles saturados), gris-blancas, bajo la pleura y la cortical, como las de las referencias; con σz 0,05, +15–29 dB y cinco líneas saturadas cruzando el flanco (capturas con GPU, 25-09-2026); con 0,10, al nivel del hígado; lisa (0,03), +30–40 dB y su falda llenaba el músculo [ESTIMADO]';
 /** Plano intermuscular de la pared lateral (decisión 62). */
 const INTERMUSCULAR = 'fascia con grasa entre dos músculos: 2Γ·sen(kt) con Γ grasa/músculo 0,14 y t ≈ 0,03 mm ≈ 0,08 [ESTIMADO]';
 const WALL = 'Z de TISSUES (IT’IS); suelo por la pared vascular (IT’IS «blood vessel wall», |R| ≈ 0,024) [LITERATURA aprox.]';
@@ -279,16 +279,16 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     name: 'dermis / grasa subcutánea',
     sides: [Tissue.Skin, Tissue.Fat],
     floor: 0,
-    roughnessMm: 0.05,
+    roughnessMm: 0.075,
     slopeRms: 0.35,
     twoSided: true,
-    source: 'Fresnel piel / grasa 0,146 (TISSUES); cara ondulada (papilas, folículos): s 0,35 y σz 0,05 [ESTIMADO]',
+    source: 'Fresnel piel / grasa 0,146 (TISSUES); cara ondulada (papilas, folículos): s 0,35 y σz 0,075 [ESTIMADO]',
   },
   [Interface.Scarpa]: {
     name: 'fascia de Scarpa (capa membranosa)',
     sides: [Tissue.Fat, Tissue.Fat],
     floor: 0.07,
-    roughnessMm: 0.05,
+    roughnessMm: 0.075,
     slopeRms: 0.3,
     twoSided: true,
     source: `${FASCIA_IN_FAT}; t 0,05–0,1 mm daría 0,2–0,3, 0,07 por su irregularidad y ${WALL_ROUGH} (PMC7441131)`,
@@ -297,7 +297,7 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     name: 'fascia profunda (vaina anterior del recto, aponeurosis del oblicuo externo)',
     sides: [Tissue.Fat, Tissue.Muscle],
     floor: 0,
-    roughnessMm: 0.05,
+    roughnessMm: 0.075,
     slopeRms: 0.3,
     twoSided: true,
     source: `Fresnel grasa / músculo 0,138 (TISSUES); ${WALL_ROUGH}`,
@@ -306,7 +306,7 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     name: 'plano entre los oblicuos externo e interno',
     sides: [Tissue.Muscle, Tissue.Muscle],
     floor: 0.08,
-    roughnessMm: 0.05,
+    roughnessMm: 0.075,
     slopeRms: 0.3,
     twoSided: true,
     source: `${INTERMUSCULAR}; ${WALL_ROUGH}`,
@@ -315,7 +315,7 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     name: 'plano entre el oblicuo interno y el transverso',
     sides: [Tissue.Muscle, Tissue.Muscle],
     floor: 0.08,
-    roughnessMm: 0.05,
+    roughnessMm: 0.075,
     slopeRms: 0.3,
     twoSided: true,
     source: `${INTERMUSCULAR}; ${WALL_ROUGH}`,
@@ -324,7 +324,7 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     name: 'fascia transversalis (músculo / grasa preperitoneal)',
     sides: [Tissue.Muscle, Tissue.Fat],
     floor: 0,
-    roughnessMm: 0.05,
+    roughnessMm: 0.075,
     slopeRms: 0.3,
     twoSided: true,
     source: `Fresnel músculo / grasa 0,138 (TISSUES); ${WALL_ROUGH}`,
@@ -333,11 +333,11 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     name: 'peritoneo parietal (grasa preperitoneal / víscera)',
     sides: [Tissue.Fat, Tissue.Liver],
     floor: 0,
-    roughnessMm: 0.06,
+    roughnessMm: 0.08,
     slopeRms: 0.4,
     twoSided: false,
     source:
-      'Fresnel grasa / hígado 0,132 (TISSUES); cara irregular por los lóbulos de la grasa preperitoneal (σz 0,06, s 0,4) [ESTIMADO]: junto al hígado su eco y el de la cápsula quedan a 0,7 mm y se ven como una línea, calibrada en el rango de la cápsula de la decisión 57 (gemelo 1,88–1,97 a 0–20°; con σz 0,04 y s 0,3, 2,24–2,40)',
+      'Fresnel grasa / hígado 0,132 (TISSUES); cara irregular por los lóbulos de la grasa preperitoneal (σz 0,08, s 0,4) [ESTIMADO]: junto al hígado su eco y el de la cápsula quedan a 0,7 mm y se ven como una línea, calibrada en el rango de la cápsula de la decisión 57 (gemelo 1,82–1,83 a 0–20°; con σz 0,06, 1,88–1,97; con σz 0,04 y s 0,3, 2,24–2,40)',
   },
   [Interface.RibCortex]: {
     name: 'cortical costal',
@@ -352,11 +352,12 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
   [Interface.Perichondrium]: {
     name: 'pericondrio',
     sides: [Tissue.Cartilage, Tissue.Muscle],
-    floor: 0.06,
-    roughnessMm: 0.03,
-    slopeRms: 0.2,
+    floor: 0.025,
+    roughnessMm: 0.06,
+    slopeRms: 0.3,
     twoSided: false,
-    source: 'Fresnel cartílago / músculo 0,021 (TISSUES); lámina densa de colágeno: suelo 0,06 [ESTIMADO]',
+    source:
+      'Fresnel cartílago / músculo 0,021 (TISSUES); lámina densa de colágeno: suelo 0,025, σz 0,06 y s 0,3 como las fascias [ESTIMADO]: su eco especular (K·|R|·Λ·χ a 2,5 MHz) queda en 9,8 dB a 0° y 5,9 a 30°; con el suelo 0,06, σz 0,03 y s 0,2 (25,8 y 10,6), en la subxifoidea los cortes de los cartílagos del reborde eran una cadena de rizos blancos (capturas con GPU, 25-09-2026)',
   },
 };
 

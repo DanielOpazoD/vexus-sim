@@ -109,6 +109,8 @@ export interface PleuraTwinOpts {
   noiseSeed?: number;
   /** Qué partes del pulmón se suman (todas por omisión): para separar su contribución en la neblina. */
   parts?: { pleura?: boolean; series?: boolean; sliding?: boolean; tissue?: boolean };
+  /** Ganancia del eco de las caras en las copias de la pared (`WALL_COPY_FACE_GAIN` por omisión): su rango. */
+  wallCopyFaceGain?: number;
 }
 
 export interface PleuraTwinOut {
@@ -187,6 +189,7 @@ export function simulatePleura(o: PleuraTwinOpts): PleuraTwinOut {
   const embed = (x: number, y: number): Vec3 => [O[0] + x * a[0] + y * b[0], O[1] + x * a[1] + y * b[1], O[2] + x * a[2] + y * b[2]];
   const noise = rng(o.noiseSeed ?? 7);
   const parts = { pleura: true, series: true, sliding: true, tissue: true, ...o.parts };
+  const copyFaceGain = o.wallCopyFaceGain ?? WALL_COPY_FACE_GAIN;
   /** Campo de la pasada B de un tejido en (x, y): el plano central o los tres planos de elevación. */
   const fieldAt = (x: number, y: number, r: number, planes: boolean): [number, number] => {
     const t = wallTissue(y);
@@ -261,7 +264,7 @@ export function simulatePleura(o: PleuraTwinOpts): PleuraTwinOut {
           const f = fieldAt((RC + d) * sn, yd, d, false);
           // la copia de la pared lleva el eco de cara plana de sus capas (wallFaceEchoFlat de la GPU, degradado
           // en el camino de la reverberación: WALL_COPY_FACE_GAIN)
-          ar += (f[0] + WALL_COPY_FACE_GAIN * wallEcho(yd, c)) * term.gain;
+          ar += (f[0] + copyFaceGain * wallEcho(yd, c)) * term.gain;
           ai += f[1] * term.gain;
         }
         if (under && parts.sliding) {

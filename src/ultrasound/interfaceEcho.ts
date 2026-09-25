@@ -117,6 +117,18 @@ export function interfaceUniforms(k0: number, kDb = IFACE_K_DB): Float32Array {
   return out;
 }
 
+/**
+ * ¿Llega el haz a la cara desde el lado de fuera? Solo cuenta para la cortical costal (decisión 62): su cara
+ * posterior (la normal exterior, el gradiente de `ribSd`, apunta lejos de la sonda: `normal·dir > 0`) solo se
+ * alcanza a través del hueso, que la apaga (−60 dB o más ida y vuelta); los rayos del borde de la apertura que
+ * rodean la costilla siguen hacia dentro y nunca la iluminan desde fuera, así que la transmisión con apertura
+ * (la penumbra de la decisión 54) no vale para ella, y sin esta regla cada costilla dibujaba un anillo entero.
+ * El cartílago transmite: su cara profunda sí se ve. Gemelo de la condición de `interfaceEcho` (GLSL).
+ */
+export function faceLitFromProbe(face: Interface, normal: readonly number[], dir: readonly number[]): boolean {
+  return face !== Interface.RibCortex || normal[0] * dir[0] + normal[1] * dir[1] + normal[2] * dir[2] <= 0;
+}
+
 /** Uniforms del último (k0, K) pedido: el gemelo evalúa el eco en cientos de miles de muestras. */
 let uniformCache: { k0: number; kDb: number; u: Float32Array } | null = null;
 
@@ -196,6 +208,8 @@ float interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se) {
   float gBound = c.iface <= IF_LAST_TUBE ? length(c.n) : IFACE_GRAD_MAX;
   if (c.ifd > (uIface[c.iface].w > 0.5 ? IFACE_REACH : IFACE_SHIFT + IFACE_REACH) * gBound) return 0.0;
   vec4 fg = faceGradient(c, m);
+  // la cara posterior de una costilla ósea solo se alcanza a través del hueso (faceLitFromProbe, decisión 62)
+  if (c.iface == IF_RIB && dot(fg.xyz, dir) > 0.0) return 0.0;
   float cosI = abs(dot(fg.xyz, dir));
   if (cosI < IFACE_MIN_COS) return 0.0;
   // tubos y costillas (decisión 62): cilindros con la curvatura de su sección en c.kc y su eje en c.tangent

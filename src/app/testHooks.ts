@@ -10,7 +10,7 @@ import {
 } from './equivalenceSweep';
 import { bestGateOnVessel } from './gatePlacement';
 import { acousticWindowWeight, gateTransmission } from './gateTransmission';
-import { lineCoupling, pointOnLine, type ProbePose } from '../probe/probe';
+import { lineAngle, lineCoupling, pointOnLine, type ProbePose } from '../probe/probe';
 import { hilumNotchActive, kidneyLocal, kidneyOuterSdf } from '../anatomy/organs/kidney';
 import { FACE_GEOMETRIES, type FaceGeometry } from '../anatomy/scene';
 import { Interface, isRibInterface, isWallLayerInterface } from '../anatomy/interfaces';
@@ -22,7 +22,7 @@ import { type ApertureGeometry } from '../ultrasound/aperture';
 import { compareSteeredTransmission } from './steeredParity';
 import { compoundActive, lookTheta } from '../ultrasound/compound';
 import { levelOfGrey } from '../ultrasound/greyMap';
-import type { CompoundState } from '../ultrasound/renderer';
+import { COARSE_DEPTH, type CompoundState } from '../ultrasound/renderer';
 import { pixelToBeam } from '../ultrasound/sectorGeometry';
 import {
   CURTAIN_LIVER_MAX_AIR,
@@ -156,8 +156,9 @@ export interface TestHooks {
   /**
    * Fundido del ancla del medio en la GPU (decisión 55): gira la sonda `stepDeg` por cuadro durante
    * `frames` cuadros y devuelve por cuadro el peso del fundido, la SNR y el nivel del hígado (dB
-   * frente al primero) y la correlación del moteado con el cuadro anterior (sin tendencia). Con
-   * `compound`, un cuadro (una mirada) por paso, como la aplicación, y la envolvente compuesta.
+   * frente al primero, sumando los pasos de cuadro a cuadro medidos en las muestras comunes a las dos
+   * máscaras) y la correlación del moteado con el cuadro anterior (sin tendencia). Con `compound`, un
+   * cuadro (una mirada) por paso, como la aplicación, y la envolvente compuesta.
    */
   speckleCrossfade: (opts: { startPoint: StartPoint['id']; stepDeg: number; frames: number; compound: boolean }) => {
     w: number;
@@ -177,10 +178,21 @@ export interface TestHooks {
   /** Fija la ganancia de color (dB) como el deslizador. */
   setColorGainDb: (db: number) => void;
   /**
-   * Transmisión de ida y vuelta (dB, con acoplamiento) en la puerta PW actual, tal como la ven el
-   * color (pasada A de la GPU a la frecuencia B, convertida a la Doppler) y el PW (marcha en CPU).
+   * Transmisión de ida y vuelta (dB, con acoplamiento) en la puerta PW actual, tal como la ven el color y el PW.
+   * `color`: el téxel de la pasada A de la GPU que lee el color en la puerta (NEAREST: su línea y su fila por
+   * defecto), convertido a la frecuencia Doppler y con el acoplamiento que muestrea el color. `cpu`: el mismo
+   * téxel en la CPU (`rayAttenuationDb` sobre los segmentos de A hasta esa fila, por el centro de esa línea),
+   * como intervalo [mín, máx]: un segmento cuyo centro está a < 0,02 mm de una interfaz puede caer de un lado en
+   * float32 y del otro en float64, y el intervalo admite los dos. `pw`: la marcha del PW (pasos de 2,5 mm) en la
+   * puerta exacta; `pwAtTexel`, la misma marcha en el punto del téxel (su línea y el final de su fila).
    */
-  gateTransmissionDb: () => { color: number; pw: number };
+  gateTransmissionDb: () => {
+    color: number;
+    cpu: [number, number];
+    pw: number;
+    pwAtTexel: number;
+    texel: { line: number; row: number; theta: number; depthMm: number; ambiguousSegments: number };
+  };
   /** Potencia de la banda PW sobre el suelo de ruido (dB, mediana de los últimos `seconds`). */
   pwBandOverFloorDb: (seconds: number) => number | null;
   /** Coloca la sonda en un punto de partida (sin animación) y avanza lo justo para que el marco la siga. */
@@ -476,13 +488,62 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       sim.render();
       const { theta, depthMm } = sim.pw;
       const tr = sim.transducer;
+      const depth = sim.bmode.depthMm;
+      const lines = sim.renderer.lines;
       const u = (theta + tr.halfSector) / (2 * tr.halfSector);
-      const tb = sim.renderer.transmissionAt(u, depthMm / sim.bmode.depthMm);
-      const ratio = sim.profile.dopplerEffectiveMHz / sim.profile.bEffectiveMHz;
-      const color = Math.pow(Math.max(tb, 1e-12), ratio) * lineCoupling(sim.pose, tr, theta);
-      const pw = gateTransmission(sim.anatomy, sim.frame, tr, sim.pose, theta, depthMm, sim.sample, sim.profile.dopplerEffectiveMHz);
-      const db = (x: number) => 20 * Math.log10(Math.max(x, 1e-12));
-      return { color: db(color), pw: db(pw) };
+      const tb = sim.renderer.transmissionAt(u, depthMm / depth);
+      const fB = sim.profile.bEffectiveMHz;
+      const ratio = sim.profile.dopplerEffectiveMHz / fB;
+      // el téxel que lee el color (el mismo índice que `transmissionAt`) y el acoplamiento como lo muestrea:
+      // textura LINEAR de `lines` téxeles con el valor de `lineAngle(i)` en el i-ésimo
+      const line = Math.min(lines - 1, Math.max(0, Math.floor(u * lines)));
+      const row = Math.min(COARSE_DEPTH - 1, Math.max(0, Math.floor((depthMm / depth) * COARSE_DEPTH)));
+      const x = Math.min(lines - 1, Math.max(0, u * lines - 0.5));
+      const i0 = Math.floor(x);
+      const i1 = Math.min(lines - 1, i0 + 1);
+      const cAt = (i: number) => lineCoupling(sim.pose, tr, lineAngle(i, tr));
+      const coupling = cAt(i0) + (cAt(i1) - cAt(i0)) * (x - i0);
+      const db = (v: number) => 20 * Math.log10(Math.max(v, 1e-12));
+      const color = db(Math.pow(Math.max(tb, 1e-12), ratio) * coupling);
+      // el mismo téxel en la CPU: segmentos de la pasada A por el centro de la línea, con los dos lados de
+      // cada segmento ambiguo (centro a < 0,02 mm de una interfaz)
+      const thetaTexel = -tr.halfSector + (2 * tr.halfSector * (line + 0.5)) / lines;
+      const step = depth / COARSE_DEPTH;
+      const at = (r: number) => sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, thetaTexel, r), sim.sample).tissue;
+      const options: Tissue[][] = [];
+      for (let k = 0; k <= row; k++) {
+        const r = (k + 0.5) * step;
+        options.push([...new Set([at(r), at(r - 0.02), at(r + 0.02)])]);
+      }
+      const ambiguous = options.filter((o) => o.length > 1).length;
+      if (ambiguous > 12) throw new Error(`gateTransmissionDb: ${ambiguous} segmentos ambiguos en el téxel`);
+      let lo = Infinity;
+      let hi = -Infinity;
+      const path: Tissue[] = [];
+      const walk = (k: number): void => {
+        if (k === options.length) {
+          const v = -rayAttenuationDb(path, step, fB) * ratio + db(coupling);
+          lo = Math.min(lo, v);
+          hi = Math.max(hi, v);
+          return;
+        }
+        for (const t of options[k]) {
+          path.push(t);
+          walk(k + 1);
+          path.pop();
+        }
+      };
+      walk(0);
+      const fD = sim.profile.dopplerEffectiveMHz;
+      const pw = gateTransmission(sim.anatomy, sim.frame, tr, sim.pose, theta, depthMm, sim.sample, fD);
+      const pwAtTexel = gateTransmission(sim.anatomy, sim.frame, tr, sim.pose, thetaTexel, (row + 1) * step, sim.sample, fD);
+      return {
+        color,
+        cpu: [lo, hi],
+        pw: db(pw),
+        pwAtTexel: db(pwAtTexel),
+        texel: { line, row, theta: thetaTexel, depthMm: (row + 1) * step, ambiguousSegments: ambiguous },
+      };
     },
     pwBandOverFloorDb: (seconds) => {
       const cols = getSim().spectral.columns;
@@ -709,7 +770,10 @@ function crossfade(
   // con el compuesto, el primer cuadro llena el anillo; luego una mirada por paso, como la aplicación
   let prev = envelopeAt(sim, pose, opts.compound, opts.compound ? sim.profile.compound.order.length : 1);
   let prevMask = liverMask(sim, prev);
-  const level0 = meanOf(prev.data, prevMask);
+  // El nivel se suma paso a paso en las muestras de hígado comunes a las dos máscaras: la envolvente no lleva la
+  // compensación de la atenuación, y un giro que mete o saca hígado a otra profundidad (o la sombra y la penumbra
+  // de una costilla, decisión 62) cambiaba la media de toda la máscara sin que cambiara el brillo de nada.
+  let levelDb = 0;
   for (let f = 0; f < opts.frames; f++) {
     pose.yaw += (opts.stepDeg * Math.PI) / 180;
     const env = envelopeAt(sim, pose, opts.compound, 1);
@@ -717,10 +781,13 @@ function crossfade(
     const d = detrended(env, mask).filter(Number.isFinite);
     const mean = d.reduce((s, v) => s + v, 0) / d.length;
     const sd = Math.sqrt(d.reduce((s, v) => s + (v - mean) ** 2, 0) / d.length);
+    const inPrev = new Set(prevMask);
+    const common = mask.filter((i) => inPrev.has(i));
+    levelDb += 20 * Math.log10(meanOf(env.data, common) / meanOf(prev.data, common));
     frames.push({
       w: sim.renderer.speckleAnchorWeight,
       snr: mean / sd,
-      levelDb: 20 * Math.log10(meanOf(env.data, mask) / level0),
+      levelDb,
       corrPrev: speckleCorrelation(prev, env, prevMask),
     });
     prev = env;
@@ -1070,18 +1137,30 @@ function envelopeAt(sim: Simulator, pose: ProbePose, compound = false, frames = 
 
 /** Líneas vecinas (a cada lado) cuya sombra también tapa una línea en `liverMask` (la penumbra de la apertura). */
 const LIVER_MASK_SHADOW_LINES = 3;
+/** Penumbra que deja fuera `liverMask`: la transmisión con apertura más de esto bajo la de un solo rayo (dB). */
+const LIVER_MASK_PENUMBRA_DB = 0.5;
 
 /**
  * Índices de hígado del plano actual: cada 2 líneas y 4 muestras, de 30 a 120 mm, sin lo que queda bajo la
  * pleura de la cortina donde ya toca el hígado (decisión 61, `CURTAIN_LIVER_MAX_AIR`: la imagen muestra ahí la
  * neblina y las líneas A, no el moteado del hígado) ni tras un hueso o un gas en la línea o en sus
- * `LIVER_MASK_SHADOW_LINES` vecinas (decisión 62: con las costillas óseas la ventana intercostal tiene una a un
- * lado, y girar la sonda metía y sacaba su sombra de la máscara).
+ * `LIVER_MASK_SHADOW_LINES` vecinas, ni en la penumbra de la apertura (la transmisión de la pasada A del último
+ * cuadro con apertura a más de `LIVER_MASK_PENUMBRA_DB` bajo la de un solo rayo, como el banco). Decisión 62: con
+ * las costillas óseas, girar la sonda 2° desde la ventana intercostal mete la 9.ª costilla en un borde; su sombra
+ * y su penumbra entraban en la máscara y el nivel del hígado bajaba 4 dB en un giro de 16° (1,2 dB en un cuadro).
  */
 function liverMask(sim: Simulator, env: { lines: number; samples: number }): number[] {
   const tr = sim.transducer;
   const depth = sim.bmode.depthMm;
   const curtain = curtainLines(sim, env.lines);
+  const tx = sim.renderer.readTransmission();
+  const penumbraMin = Math.pow(10, -LIVER_MASK_PENUMBRA_DB / 20);
+  const lit = (u: number, r: number): boolean => {
+    const ut = Math.min(tx.lines - 1, Math.floor(((u + 0.5) / env.lines) * tx.lines));
+    const kt = Math.min(tx.samples - 1, Math.floor((r / depth) * tx.samples));
+    const single = tx.single[kt * tx.lines + ut];
+    return single > 1e-6 && tx.aperture[kt * tx.lines + ut] >= penumbraMin * single;
+  };
   const thetaOf = (u: number): number => -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / env.lines;
   // primer hueso o gas del cuerpo de cada línea (cada 1 mm hasta 120 mm; el aire de fuera no cuenta)
   const blocked = Float32Array.from({ length: env.lines }, (_, u) => {
@@ -1104,6 +1183,7 @@ function liverMask(sim: Simulator, env: { lines: number; samples: number }): num
       if (r < 30 || r > 120 || r >= shadowFrom[u]) continue;
       const c = curtain[u];
       if (c && c.fAir >= CURTAIN_LIVER_MAX_AIR && r >= c.D) continue;
+      if (!lit(u, r)) continue;
       const theta = thetaOf(u);
       if (sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, theta, r), sim.sample).tissue === Tissue.Liver) idx.push(k * env.lines + u);
     }

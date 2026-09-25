@@ -28,6 +28,7 @@ import {
   IFACE_SHIFT_MM,
   curvatureCoherence,
   faceDelta,
+  faceLitFromProbe,
   interfaceEchoField,
 } from '../../ultrasound/interfaceEcho';
 import { TRANSIENT_AMPLITUDE, TRANSIENT_DECAY_MM, TRANSIENT_SKIP_MM } from '../../ultrasound/receiver';
@@ -320,6 +321,7 @@ function echoOf(
   if (c.interfaceDistance > reach * 2.5) return 0;
   const fg = scene.faceGradient(m, caliber);
   if (!fg) return 0;
+  if (!faceLitFromProbe(face, fg.normal, dir)) return 0;
   const cosI = Math.abs(dot(fg.normal, dir));
   if (cosI < IFACE_MIN_COS) return 0;
   let curv = 1;

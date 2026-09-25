@@ -176,11 +176,12 @@ describe('Límites del shader con margen para crecer', () => {
 
   // Composición espacial (decisión 58, T7): WebGL2 garantiza 16 unidades de textura por shader de
   // fragmentos. Los programas de la mirada 0 conservan los samplers de siempre; el dirigido de B cambia A o0
-  // por A o3 (la mirada dirigida), el de A suma el prefijo dirigido de A2 y K lee una textura por mirada.
+  // por A o3 (la mirada dirigida), el de A suma el prefijo dirigido de A2 y K lee una textura por mirada. Los
+  // dos de B leen además la pleura parietal de A0 (uHits2, decisión 61).
   it('cada shader de fragmentos declara ≤ 16 samplers; B, A y K, los de su diseño', () => {
     for (const [name, src] of FRAGMENT_SHADERS) expect(samplersOf(src).length, name).toBeLessThanOrEqual(16);
-    expect(samplersOf(FRAG_RAWFIELD)).toEqual(['uSceneTex', 'uCoupling', 'uTrans0', 'uTrans1']);
-    expect(samplersOf(FRAG_RAWFIELD_STEERED)).toEqual(['uSceneTex', 'uCoupling', 'uTrans1', 'uTrans3']);
+    expect(samplersOf(FRAG_RAWFIELD)).toEqual(['uSceneTex', 'uCoupling', 'uTrans0', 'uTrans1', 'uHits2']);
+    expect(samplersOf(FRAG_RAWFIELD_STEERED)).toEqual(['uSceneTex', 'uCoupling', 'uTrans1', 'uTrans3', 'uHits2']);
     expect(samplersOf(FRAG_TRANSMISSION)).toEqual(['uCoupling', 'uPre0', 'uPre1', 'uHits0']);
     expect(samplersOf(FRAG_TRANSMISSION_STEERED)).toEqual(['uCoupling', 'uPre0', 'uPre1', 'uHits0', 'uPreSteer', 'uPreSteerX']);
     expect(samplersOf(FRAG_TRANS_PREFIX_STEERED)).toEqual(samplersOf(FRAG_TRANS_PREFIX));
@@ -219,14 +220,16 @@ describe('Límites del shader con margen para crecer', () => {
   // los tres (A2, A y B) eran byte a byte los de main eabd2aa (`git show eabd2aa:src/…/passes.glsl.ts` en una
   // copia y emitidos con tsx). Aquí queda la huella de su main, que no depende de los fragmentos compartidos
   // (la anatomía cambia a menudo). Si cambias a propósito el main de la mirada 0 de una pasada, actualiza su
-  // huella; si no lo cambiaste, alguien lo ha tocado sin querer.
+  // huella; si no lo cambiaste, alguien lo ha tocado sin querer. Cambio deliberado: el main de B lleva la
+  // rama de la cortina (decisión 61; antes 4314c49a44f58052); fuera de las líneas con pleura parietal hace
+  // las mismas cuentas que antes (el peso del tejido es 1 y la transmisión, la de siempre).
   it('el main de los programas de la mirada 0 es, letra a letra, el de antes de la composición', () => {
     const mainOf = (src: string): string => src.slice(src.lastIndexOf('\nvoid main() {'));
     const print = (src: string): string => createHash('sha256').update(mainOf(src)).digest('hex').slice(0, 16);
     expect(Object.fromEntries(LOOK_PAIRS.map((p) => [p.name, print(p.look0)]))).toEqual({
       FRAG_TRANS_PREFIX: 'f6b08093f699bc04',
       FRAG_TRANSMISSION: '668efb9a2b5c7008',
-      FRAG_RAWFIELD: '4314c49a44f58052',
+      FRAG_RAWFIELD: '1092085c58af77ae',
     });
     // y el resto de B es el mismo texto en los dos programas: solo cambian sus entradas y su main
     const inputs0 = 'uniform sampler2D uTrans0;\nuniform sampler2D uTrans1;\n';

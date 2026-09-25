@@ -203,7 +203,7 @@ describe('summarizeGpuTimings', () => {
  */
 const SAMPLERS: Record<PassId, { srcs: readonly string[]; samplers: Record<string, Resource> }> = {
   transmissionHits: { srcs: [FRAG_TRANS_HITS], samplers: {} },
-  transmissionSegments: { srcs: [FRAG_TRANS_SEGMENTS], samplers: { uHits0: 'transHits', uHits1: 'transHits' } },
+  transmissionSegments: { srcs: [FRAG_TRANS_SEGMENTS], samplers: { uHits0: 'transHits', uHits1: 'transHits', uHits2: 'transHits' } },
   transmissionPrefix: {
     srcs: [FRAG_TRANS_PREFIX, FRAG_TRANS_PREFIX_STEERED],
     samplers: { uSeg: 'transSeg', uHits0: 'transHits', uHits1: 'transHits' },
@@ -212,7 +212,11 @@ const SAMPLERS: Record<PassId, { srcs: readonly string[]; samplers: Record<strin
     srcs: [FRAG_TRANSMISSION, FRAG_TRANSMISSION_STEERED],
     samplers: { uPre0: 'transPrefix', uPre1: 'transPrefix', uPreSteer: 'transPrefix', uPreSteerX: 'transPrefix', uHits0: 'transHits' },
   },
-  rawField: { srcs: [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED], samplers: { uTrans0: 'trans', uTrans1: 'trans', uTrans3: 'trans' } },
+  // la pleura parietal de A0 (uHits2, decisión 61) en los dos programas de B
+  rawField: {
+    srcs: [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED],
+    samplers: { uTrans0: 'trans', uTrans1: 'trans', uTrans3: 'trans', uHits2: 'transHits' },
+  },
   axial: { srcs: [FRAG_AXIAL], samplers: { uField: 'raw' } },
   lateral: { srcs: [FRAG_LATERAL], samplers: { uField: 'axial' } },
   compound: { srcs: [FRAG_COMPOUND], samplers: { uLook0: 'envLooks', uLook1: 'envLooks', uLook2: 'envLooks' } },
@@ -255,6 +259,8 @@ describe('las lecturas declaradas son las de los shaders', () => {
     const blind = FRAME_PASSES.map((p): PassSpec => (p.id === 'rawField' ? { ...p, reads: ['scene'] } : p));
     expect(samplerErrors(blind).join('\n')).toMatch(/rawField muestrea uTrans0 \(«trans»\) sin declararlo/);
     expect(samplerErrors(blind).join('\n')).toMatch(/rawField muestrea uTrans3 \(«trans»\) sin declararlo/);
+    // y sin la pleura de A0 (decisión 61)
+    expect(samplerErrors(blind).join('\n')).toMatch(/rawField muestrea uHits2 \(«transHits»\) sin declararlo/);
     // se revisan los dos programas de cada pasada: un sampler que solo declara el dirigido de A y no tiene
     // fila en la tabla también se ve
     const { uPreSteer: _omit, ...partial } = SAMPLERS.transmission.samplers;

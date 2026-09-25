@@ -4,9 +4,10 @@ import { ANATOMY_GLSL } from '../../anatomy/gpu/anatomy.glsl';
 import { APERTURE_GLSL, STEERED_APERTURE_GLSL } from '../aperture';
 import { COMPOUND, COMPOUND_GLSL } from '../compound';
 import { IFACE_REACH_MM, INTERFACE_ECHO_GLSL } from '../interfaceEcho';
-import { MIRROR_BISECTION_STEPS, STEERED_PREFIX_GLSL } from '../transmission';
+import { GAS_DB_PER_CM, MIRROR_BISECTION_STEPS, STEERED_PREFIX_GLSL } from '../transmission';
+import { CURTAIN_GAS_KIND, CURTAIN_RECORD_MM, PLEURA_GLSL, PLEURA_STEER_GUESS_MM, PLEURA_STEER_ITERATIONS } from '../pleura';
 import { SPECKLE_LOOK_GLSL, SPECKLE_TISSUE_GLSL } from '../speckleField';
-import { RECEIVER_GLSL } from '../receiver';
+import { RECEIVER_GLSL, glslFloat } from '../receiver';
 import { STEERING_GLSL } from '../steering';
 
 export const VERT = /* glsl */ `#version 300 es
@@ -103,8 +104,11 @@ float lateralSigmaMm(float r) {
 /**
  * Pasada A en cuatro etapas (decisión 54). Antes cada celda (línea × profundidad gruesa) marchaba
  * su rayo desde la piel: O(N²), ~2,5 millones de clasificaciones por cuadro. Ahora:
- *   A0 impactos: una marcha por línea (primer pulmón con su reflexión especular —el espejo, en el cruce
- *      exacto por bisección (decisión 57)—, primer gas, primer hueso);
+ *   A0 impactos: una marcha por línea (primer pulmón del tórax con su reflexión especular —el espejo, en
+ *      el cruce exacto por bisección (decisión 57)—, primer gas, primer hueso) y, aparte, la pleura
+ *      parietal (decisión 61): el cruce exacto de la cara interna de la pared en el receso, su distancia al
+ *      borde de la cortina y la pérdida que el pulmón de la cortina añade frente al tejido de detrás; el
+ *      pulmón de la cortina no es espejo ni impacto de gas (el camino sigue recto);
  *   A1 segmentos: cada segmento grueso se clasifica una vez, sobre el camino (reflejado o no) de A0;
  *   A2 suma: la atenuación ida y vuelta acumulada hasta cada profundidad, con las mismas reglas que
  *      `ultrasound/transmission.ts` (gel previo a la piel sin pérdidas, gas 60 dB/cm, hueso 6 dB al
@@ -128,6 +132,12 @@ uniform float uCoarseN;
 in vec2 vUv;
 layout(location = 0) out vec4 h0; // (segmento del espejo, del primer gas, del primer hueso, tipo de gas)
 layout(location = 1) out vec4 h1; // (dirección reflejada, r del espejo)
+layout(location = 2) out vec4 h2; // pleura parietal (decisión 61): (D, dz, ΔL dB, 3 + 4·(último seg. de la cortina + 1))
+// dB ida y vuelta del segmento con la regla de A1
+float segmentDb(int t, float step) {
+  float flag = tissueFlag(t);
+  return flag > 0.5 && flag < 1.5 ? ${glslFloat(GAS_DB_PER_CM)} * step / 10.0 : 2.0 * tissueAlpha(t) * (step / 10.0);
+}
 void main() {
   vec3 dir0 = lineDir(lineTheta(vUv.x));
   float step = uDepth / uCoarseN;
@@ -137,17 +147,44 @@ void main() {
   vec3 hitPoint = origin;
   float hitR = 0.0;
   float mirrorSeg = -1.0, gasSeg = -1.0, boneSeg = -1.0, gasKind = 0.0;
+  float pleuraD = -1.0, pleuraDz = 0.0, curtainDb = 0.0, prevInside = -1.0, curtainLast = -1.0;
   bool entered = false;
+  bool curtainRun = false;
   for (int s = 0; s < 512; s++) {
     if (s >= n) break;
     float r = (float(s) + 0.5) * step;
     vec3 p = mirrorSeg >= 0.0 ? hitPoint + dir * (r - hitR) : origin + dir * r;
-    Cls c = classify(toMaterial(p));
+    vec3 m = toMaterial(p);
+    Cls c = classify(m);
+    // Pleura parietal: primer cruce exacto de la cara interna de la pared, si cae en el receso cerca del borde
+    if (mirrorSeg < 0.0 && pleuraD < 0.0) {
+      float inside = insideWallMm(m);
+      if (inside >= 0.0 && prevInside < 0.0) {
+        float lo = max(r - step, 0.0);
+        float hi = r;
+        for (int it = 0; it < ${MIRROR_BISECTION_STEPS}; it++) {
+          float mid = 0.5 * (lo + hi);
+          if (insideWallMm(toMaterial(origin + dir0 * mid)) >= 0.0) hi = mid; else lo = mid;
+        }
+        float rp = 0.5 * (lo + hi);
+        float dz = lungCurtainEdgeMm(toMaterial(origin + dir0 * rp));
+        if (dz > -${glslFloat(CURTAIN_RECORD_MM)}) { pleuraD = rp; pleuraDz = dz; }
+      }
+      prevInside = inside;
+    }
     // Hueco entre la cara convexa y la piel: gel de acoplamiento (el acoplamiento va aparte).
     if (c.tissue == T_AIR && !entered) continue;
     entered = true;
     float flag = tissueFlag(c.tissue);
+    // pulmón de la cortina y el del tórax pegado a ella (aire con aire: sin pleura entre los dos)
+    curtainRun = c.tissue == T_LUNG && mirrorSeg < 0.0 && (curtainRun || inLungCurtain(m, insideWallMm(m)));
     if (flag > 0.5 && flag < 1.5) {
+      if (curtainRun) {
+        // ni espejo ni impacto de gas; ΔL: lo que su gas cuesta de más frente al tejido de detrás
+        curtainDb += segmentDb(c.tissue, step) - segmentDb(classifyWith(m, false).tissue, step);
+        curtainLast = float(s);
+        continue;
+      }
       if (c.tissue == T_LUNG && mirrorSeg < 0.0) {
         // Cruce exacto con la pleura (decisión 57): bisección entre la muestra gruesa anterior (que no es
         // pulmón) y esta. Antes el espejo quedaba en el centro de la primera celda de pulmón (0–1,1 mm
@@ -173,6 +210,7 @@ void main() {
   }
   h0 = vec4(mirrorSeg, gasSeg, boneSeg, gasKind);
   h1 = vec4(dir, hitR);
+  h2 = pleuraD >= 0.0 ? vec4(pleuraD, pleuraDz, curtainDb, ${glslFloat(CURTAIN_GAS_KIND)} + 4.0 * (curtainLast + 1.0)) : vec4(-1.0, 0.0, 0.0, 0.0);
 }
 `;
 
@@ -184,13 +222,17 @@ ${BEAM_GLSL}
 uniform float uCoarseN;
 uniform sampler2D uHits0;
 uniform sampler2D uHits1;
+uniform sampler2D uHits2;
 in vec2 vUv;
-out vec4 oSeg; // (dB ida y vuelta del segmento, es aire, es hueso, tipo de gas: 0 no, 1 pulmón, 2 otro)
+out vec4 oSeg; // (dB ida y vuelta del segmento, es aire, es hueso, tipo de gas: 0 no, 1 pulmón, 2 otro, 3 cortina)
 void main() {
   int line = int(gl_FragCoord.x);
   int s = int(gl_FragCoord.y);
   vec4 h0 = texelFetch(uHits0, ivec2(line, 0), 0);
   vec4 h1 = texelFetch(uHits1, ivec2(line, 0), 0);
+  vec4 h2 = texelFetch(uHits2, ivec2(line, 0), 0);
+  // último segmento del pulmón de la cortina (A0, decisión 61)
+  float curtainLast = h2.x >= 0.0 ? floor(h2.w / 4.0) - 1.0 : -1.0;
   vec3 dir0 = lineDir(lineTheta(vUv.x));
   float step = uDepth / uCoarseN;
   float r = (float(s) + 0.5) * step;
@@ -204,8 +246,9 @@ void main() {
   if (float(s) == h0.x) db = 0.5;                                  // el espejo: 0,5 dB y sigue
   else if (flag > 0.5 && flag < 1.5) db = 60.0 * step / 10.0;      // gas (o aire tras la piel)
   else db = 2.0 * tissueAlpha(c.tissue) * (step / 10.0);
-  // .w: marca de gas del segmento para el prefijo dirigido (decisión 58), la misma regla que A0
-  float gas = flag > 0.5 && flag < 1.5 ? (c.tissue == T_LUNG ? 1.0 : 2.0) : 0.0;
+  // .w: marca de gas para el prefijo dirigido (decisión 58), como A0: 1 pulmón, 2 otro gas, 3 cortina (61)
+  float lung = !reflected && float(s) <= curtainLast ? ${glslFloat(CURTAIN_GAS_KIND)} : 1.0;
+  float gas = flag > 0.5 && flag < 1.5 ? (c.tissue == T_LUNG ? lung : 2.0) : 0.0;
   oSeg = vec4(db, c.tissue == T_AIR ? 1.0 : 0.0, flag > 1.5 ? 1.0 : 0.0, gas);
 }
 `;
@@ -352,16 +395,22 @@ export const FRAG_TRANSMISSION_STEERED = transmissionShader('steered');
  *    mirada es otro disparo y no comparte artefactos;
  *  - tras el espejo diafragmático: el camino sigue la dirección reflejada de la línea cuyo espejo cruza,
  *    desde su propio cruce, con la fase del potencial directo (aproximaciones declaradas); la pleura dibuja
- *    su eco con el coseno de esta mirada.
+ *    su eco con el coseno de esta mirada;
+ *  - la pleura parietal y la cortina (decisión 61), con el mismo modelo que la mirada 0 a lo largo del camino
+ *    dirigido: su cruce sD es el de la línea que el camino corta a la profundidad de la pleura (punto fijo
+ *    sobre A0 h2), la serie remuestrea la pared en el propio camino con la fase de la mirada y el
+ *    deslizamiento lleva la sal de la mirada.
  * Fuera del arreglo la mirada no existe (K la pesa 0), pero se forma hasta el alcance del núcleo lateral de
  * D (±2,5σ, el mismo cálculo): si no, D mezclaría ceros en las muestras con peso junto al borde.
  * Va solo en el programa dirigido de B (`FRAG_RAWFIELD_STEERED`), cuyo main es `steeredField()`; el de la
- * mirada 0 no la lleva. Gemelo de la geometría (punto, dirección, pleura, reverberación, anclas, alcance):
- * `steeredSample` (`steering.ts`); `steeredSample.test.ts` fija estas líneas.
+ * mirada 0 no la lleva. Gemelo de la geometría (punto, dirección, pleura, reverberación, anclas, alcance,
+ * cortina): `steeredSample` (`steering.ts`); `steeredSample.test.ts` fija estas líneas.
  */
 export const STEERED_FIELD_GLSL = /* glsl */ `
 ${SPECKLE_LOOK_GLSL}
 ${STEERING_GLSL}
+const int PLEURA_STEER_ITERATIONS = ${PLEURA_STEER_ITERATIONS};
+const float PLEURA_STEER_GUESS_MM = ${glslFloat(PLEURA_STEER_GUESS_MM)};
 // fieldFor y sampleSide con la fase de la mirada por nodo (speckleField.ts, variantes …Ph)
 vec2 fieldForPh(vec3 m, float se, int tissue, float ph0, vec3 g) {
   vec2 f = speckleFieldPh(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP, ph0, g);
@@ -369,11 +418,46 @@ vec2 fieldForPh(vec3 m, float se, int tissue, float ph0, vec3 g) {
   if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX) het = hetGain(m);
   return f * tissueBack(tissue) * het;
 }
-vec2 sampleSidePh(vec3 p, float se, Cls center, float ph0, vec3 g) {
+vec2 sampleSidePh(vec3 p, float se, Cls center, float ph0, vec3 g, bool withCurtain) {
   vec3 m = toMaterial(p);
   if (center.bd > se + 0.5) return fieldForPh(m, se, center.tissue, ph0, g);
-  Cls c = classify(m);
+  Cls c = classifyWith(m, withCurtain);
   return fieldForPh(m, se, c.tissue, ph0, g);
+}
+// h2 de A0 de la línea cuyo cruce de la pleura está en el camino de φ_k (punto fijo) y sD, su distancia en él
+vec4 steeredPleura(float phiK, float a, int line0, out float sD) {
+  vec4 h = texelFetch(uHits2, ivec2(line0, 0), 0);
+  float dg = h.x >= 0.0 ? h.x : PLEURA_STEER_GUESS_MM;
+  for (int it = 0; it < PLEURA_STEER_ITERATIONS; it++) {
+    float al = phiK + uSteer.x - steerBeta(uCurvR + dg, a);
+    int l = clamp(int(floor((al + uHalfSector) / (2.0 * uHalfSector) * uLinesF)), 0, int(uLinesF) - 1);
+    h = texelFetch(uHits2, ivec2(l, 0), 0);
+    if (h.x >= 0.0) dg = h.x;
+  }
+  sD = h.x >= 0.0 ? alongLineMm(uCurvR + h.x, a, uSteer.z) : -1.0;
+  return h;
+}
+// A o3 (sin acoplamiento) en el punto del camino a la distancia x
+float steeredT(float phiK, float a, float x) {
+  float rho = sqrt(uCurvR * uCurvR + x * x + 2.0 * x * uSteer.z);
+  float al = phiK + uSteer.x - steerBeta(rho, a);
+  return texture(uTrans3, vec2((al + uHalfSector) / (2.0 * uHalfSector), (rho - uCurvR) / uDepth)).x;
+}
+// mediumField con la fase de la mirada por nodo
+vec2 mediumFieldPh(vec3 p, vec3 dir, float se, float rEcho, bool withCurtain, bool planes, float ph0, vec3 g) {
+  vec3 m = toMaterial(p);
+  Cls c = classifyWith(m, withCurtain);
+  vec2 f0 = fieldForPh(m, se, c.tissue, ph0, g);
+  vec2 field = f0;
+  if (planes) {
+    vec2 f1 = sampleSidePh(p + uElev * se, se, c, ph0, g, withCurtain);
+    vec2 f2 = sampleSidePh(p - uElev * se, se, c, ph0, g, withCurtain);
+    float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
+    field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
+  }
+  float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
+  if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
+  return field + vec2(interfaceEcho(c, m, dir, rEcho, se), 0.0);
 }
 vec2 steeredField() {
   float alpha = lineTheta(vUv.x);
@@ -411,44 +495,79 @@ vec2 steeredField() {
   } else {
     p = pointOnLine(lineDir(alpha), r);
   }
-  // σe de la rejilla común, como el gemelo de la decisión 58 (s − r ≤ 0,5 mm: la misma losa)
-  float se = elevSigma(r);
-  vec3 m0 = toMaterial(p);
-  Cls c0 = classify(m0);
-  float ph0 = lookPhase(rho, alpha, a, uSteer.w);
-  vec2 gr = lookPhaseGrad(rho, alpha, a, uSteer.w);
-  vec3 g = gr.x * uLateral + gr.y * uAxial;
-  vec2 f0 = fieldForPh(m0, se, c0.tissue, ph0, g);
-  vec2 f1 = sampleSidePh(p + uElev * se, se, c0, ph0, g);
-  vec2 f2 = sampleSidePh(p - uElev * se, se, c0, ph0, g);
-  float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
-  vec2 field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
-  float clump = uTissueClump4[c0.tissue / 4][c0.tissue % 4];
-  if (clump > 0.0) field *= anchoredClump(m0, se, clump, float(c0.tissue) * TISSUE_SALT_STEP);
-  field += vec2(interfaceEcho(c0, m0, dir, s, se), 0.0);
-  if (sMirror >= 0.0) {
-    // la normal de la pleura sale de la reflexión de la línea del espejo (dR − d0 ∥ n)
-    vec3 dn = dRefl - dMirror;
-    float ln = length(dn);
-    field += vec2(pleuraEcho(s - sMirror, dirK, ln > 1e-6 ? reflect(dirK, dn / ln) : dirK), 0.0);
-  }
-  float dr = uDepth / 1024.0;
-  float T = texture(uTrans3, vUv).x * coupling;
-  vec2 out2 = field * T;
-  if (sGas > 0.0 && s > sGas) {
-    // transmisión del camino hasta su gas: la de la mirada en el punto de la rejilla por el que pasa
-    float sg = max(sGas - dr, 0.0);
-    float rhoG = sqrt(uCurvR * uCurvR + sg * sg + 2.0 * sg * uSteer.z);
-    float alphaG = phiK + uSteer.x - steerBeta(rhoG, a);
-    float Tg = texture(uTrans3, vec2((alphaG + uHalfSector) / (2.0 * uHalfSector), (rhoG - uCurvR) / uDepth)).x * coupling;
-    float amp = 0.0;
-    for (int k = 2; k <= 4; k++) {
-      float z = (s - float(k) * sGas) / 1.2;
-      amp += pow(0.5, float(k - 1)) * pow(Tg, float(k)) * exp(-0.5 * z * z);
+  // Pleura parietal y cortina (decisión 61) a lo largo del camino dirigido, con su propio cruce sD
+  vec3 elem = uCurvC + uCurvR * lineDir(phiK);
+  float sD;
+  vec4 h2 = steeredPleura(phiK, a, tc.x, sD);
+  float fAir = sD > 0.0 ? curtainAirFraction(h2.y, h2.x, dirK) : 0.0;
+  bool curtain = fAir >= CURTAIN_MIN_AIR;
+  bool under = curtain && s > sD;
+  float sCap = alongLineMm(uCurvR + pleuraCapMm(max(h2.x, 0.0), uDepth / float(ts.y)), a, uSteer.z);
+  float tD = curtain ? steeredT(phiK, a, sCap) : 0.0;
+  vec3 pD = elem + dirK * max(sD, 0.0);
+  float cosI = curtain ? abs(dot(torsoNormal(toMaterial(pD)), dirK)) : 1.0;
+  float chi = pleuraCoherence(cosI);
+  float G = pleuraRoundTrip(tD, chi);
+  vec3 ser = under ? pleuraSeriesDepths(s, sD) : vec3(0.0);
+  float gn = seriesPow(G, ser.x);
+  bool series = under && gn * tD * PLEURA_WALL_FIELD_BOUND * coupling > PLEURA_SERIES_FLOOR;
+  float wTissue = under ? 1.0 - fAir : 1.0;
+  // Muestras del medio en un bucle, como la mirada 0 (σe de la rejilla común: s − r ≤ 0,5 mm), cada una con
+  // la fase de la mirada en su punto
+  vec2 tissue = vec2(0.0);
+  vec2 air = vec2(0.0);
+  int j0 = wTissue >= CURTAIN_MIN_AIR ? 0 : 1;
+  int j1 = series ? 3 : 1;
+  for (int j = j0; j < j1; j++) {
+    float d = j == 1 ? ser.y : ser.z;
+    float rhoJ = j == 0 ? rho : sqrt(uCurvR * uCurvR + d * d + 2.0 * d * uSteer.z);
+    float alJ = j == 0 ? alpha : phiK + uSteer.x - steerBeta(rhoJ, a);
+    vec2 gr = lookPhaseGrad(rhoJ, alJ, a, uSteer.w);
+    vec3 g = gr.x * uLateral + gr.y * uAxial;
+    vec2 f = mediumFieldPh(j == 0 ? p : elem + dirK * d, j == 0 ? dir : dirK, elevSigma(j == 0 ? r : rhoJ - uCurvR), j == 0 ? s : d, j != 0 || !under, j == 0,
+                           lookPhase(rhoJ, alJ, a, uSteer.w), g);
+    if (j == 0) tissue = f;
+    else {
+      float td = steeredT(phiK, a, min(d, sCap));
+      air += f * (j == 1 ? PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : td * G * gn);
     }
-    out2 += vec2(amp * 0.9, 0.0);
-    if (gasKind > 1.5)
-      out2 += scattererField(vec3(uK * 190.0, s * 0.9, 0.0), 0.6, uSeed + 3.0 + uLookSalt) * 0.3 * Tg * exp(-(s - sGas) / 40.0);
+  }
+  vec2 out2 = vec2(0.0);
+  if (wTissue >= CURTAIN_MIN_AIR) {
+    if (sMirror >= 0.0) {
+      // la normal de la pleura sale de la reflexión de la línea del espejo (dR − d0 ∥ n)
+      vec3 dn = dRefl - dMirror;
+      float ln = length(dn);
+      tissue += vec2(pleuraEcho(s - sMirror, dirK, ln > 1e-6 ? reflect(dirK, dn / ln) : dirK), 0.0);
+    }
+    float dr = uDepth / 1024.0;
+    float gain = pow(10.0, h2.z / 20.0);
+    float T = (curtain ? (under ? min(texture(uTrans3, vUv).x * gain, tD) : steeredT(phiK, a, min(s, sCap))) : texture(uTrans3, vUv).x) * coupling;
+    tissue *= T;
+    if (sGas > 0.0 && s > sGas) {
+      // transmisión del camino hasta su gas: la de la mirada en el punto de la rejilla por el que pasa
+      float sg = max(sGas - dr, 0.0);
+      float rhoG = sqrt(uCurvR * uCurvR + sg * sg + 2.0 * sg * uSteer.z);
+      float alphaG = phiK + uSteer.x - steerBeta(rhoG, a);
+      float Tg = texture(uTrans3, vec2((alphaG + uHalfSector) / (2.0 * uHalfSector), (rhoG - uCurvR) / uDepth)).x * coupling;
+      if (curtain && sGas > sD) Tg = min(Tg * gain, tD * coupling);
+      float amp = 0.0;
+      for (int k = 2; k <= 4; k++) {
+        float z = (s - float(k) * sGas) / 1.2;
+        amp += pow(0.5, float(k - 1)) * pow(Tg, float(k)) * exp(-0.5 * z * z);
+      }
+      tissue += vec2(amp * 0.9, 0.0);
+      if (gasKind > 1.5)
+        tissue += scattererField(vec3(uK * 190.0, s * 0.9, 0.0), 0.6, uSeed + 3.0 + uLookSalt) * 0.3 * Tg * exp(-(s - sGas) / 40.0);
+    }
+    out2 = tissue * wTissue;
+  }
+  if (curtain) {
+    // el pulmón con la incidencia de esta mirada; el deslizamiento con su sal (cada mirada, otro disparo)
+    float k = aLineOrder(s, sD);
+    air += vec2(seriesPow(G, k - 1.0) * tD * interfaceProfileEcho(IF_PLEURA_WALL, cosI, 1.0, k * sD - s), 0.0);
+    if (under && slidingAmplitude(s - sD) * tD * coupling > PLEURA_SERIES_FLOOR) air += slidingField(pD, s - sD, uLookSalt) * tD;
+    out2 += air * (fAir * coupling);
   }
   if (s < TRANSIENT_SKIP_MM)
     out2 += scattererField(vec3(uK * 190.0, s * 3.0, 1.0), 0.8, uSeed + 7.0 + uLookSalt) * TRANSIENT_AMPLITUDE * exp(-s / TRANSIENT_DECAY_MM) * coupling;
@@ -462,8 +581,9 @@ vec2 steeredField() {
 /**
  * Pasada B: campo complejo crudo por muestra de haz — dispersores persistentes
  * en coordenadas materiales integrados en elevación, eco de interfaz coherente en
- * el cruce exacto (decisión 57), reverberación/A-lines tras gas y cola sucia del gas
- * intestinal. Dos programas de la misma fuente (decisión 58): el de la mirada 0 (`FRAG_RAWFIELD`, el de
+ * el cruce exacto (decisión 57), reverberación/A-lines tras gas, cola sucia del gas
+ * intestinal y, bajo la pleura parietal de la cortina, la línea pleural, la serie de reverberaciones de
+ * la pared, el deslizamiento y el borde blando (decisión 61, `pleura.ts`). Dos programas de la misma fuente (decisión 58): el de la mirada 0 (`FRAG_RAWFIELD`, el de
  * siempre) y el de las miradas ±θ (`FRAG_RAWFIELD_STEERED`: la muestra de la rejilla común formada por la
  * línea dirigida que pasa por ella, `steeredField`). Comparten todo salvo sus entradas y su `main`.
  */
@@ -537,13 +657,15 @@ vec2 fieldFor(vec3 m, float se, int tissue) {
 }
 
 // Plano lateral en elevación: si el plano central está lejos de toda interfaz
-// (bd > desplazamiento), el tejido es el mismo y se ahorra la clasificación.
-vec2 sampleSide(vec3 p, float se, Cls center) {
+// (bd > desplazamiento), el tejido es el mismo y se ahorra la clasificación. Bajo la pleura de la
+// cortina (decisión 61) el tejido es el de detrás de la lámina de pulmón (withCurtain = false).
+vec2 sampleSide(vec3 p, float se, Cls center, bool withCurtain) {
   vec3 m = toMaterial(p);
   if (center.bd > se + 0.5) return fieldFor(m, se, center.tissue);
-  Cls c = classify(m);
+  Cls c = classifyWith(m, withCurtain);
   return fieldFor(m, se, c.tissue);
 }
+${PLEURA_GLSL}
 ${look === 'steered' ? STEERED_RAW_MAIN_GLSL : LOOK0_RAW_MAIN_GLSL}`;
 }
 
@@ -560,7 +682,11 @@ uniform sampler2D uTrans3;  // A o3: la mirada dirigida del cuadro (decisión 58
 ${STEER_GLSL}
 uniform float uLookSalt;    // sal del transitorio y de la cola de la mirada (compound.ts)`;
 
-/** main de B en la mirada 0: el de antes de la composición. */
+/**
+ * main de B en la mirada 0: el de antes de la composición salvo en las líneas de la cortina (decisión 61),
+ * donde la fracción del haz que da en el pulmón (fAir) dibuja la línea pleural, sus réplicas, la serie de
+ * reverberaciones de la pared y el deslizamiento, y el resto ve el tejido de detrás de la lámina de pulmón.
+ */
 const LOOK0_RAW_MAIN_GLSL = /* glsl */ `
 void main() {
   float theta = lineTheta(vUv.x);
@@ -583,46 +709,76 @@ void main() {
   } else {
     p = pointOnLine(dir0, r);
   }
-  float se = elevSigma(r);
-  vec3 m0 = toMaterial(p);
-  Cls c0 = classify(m0);
-  // Tres planos en elevación: la amplitud incoherente se promedia (¼ ½ ¼); el
-  // fasor viene del plano central con la célula elevacional ya anclada al corte.
-  vec2 f0 = fieldFor(m0, se, c0.tissue);
-  vec2 f1 = sampleSide(p + uElev * se, se, c0);
-  vec2 f2 = sampleSide(p - uElev * se, se, c0);
-  float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
-  vec2 field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
-  // Grumos (decisión 56): un factor por píxel, del tejido del plano central, sobre la coordenada
-  // anclada con la célula elevacional del grosor de corte, para los tres planos a la vez (la potencia
-  // media se conserva y el grano no parpadea al inclinar)
-  float clump = uTissueClump4[c0.tissue / 4][c0.tissue % 4];
-  if (clump > 0.0) field *= anchoredClump(m0, se, clump, float(c0.tissue) * TISSUE_SALT_STEP);
-  // Eco de interfaz (decisión 57): coherente, con fase 0 común a la cara, antes de la transmisión; la
-  // pleura, desde el cruce exacto del espejo
-  field += vec2(interfaceEcho(c0, m0, dir, r, se), 0.0);
-  if (mirrorHit >= 0.0) field += vec2(pleuraEcho(r - mirrorHit, dir0, normalize(t1.xyz)), 0.0);
-  float dr = uDepth / 1024.0;
-  float T = t0.x * coupling;
-  vec2 out2 = field * T;
-  // Reverberación tras gas: A-lines a múltiplos de la profundidad del reflector.
-  float gasHit = t0.y;
-  if (gasHit > 0.0 && r > gasHit) {
-    // Transmisión de ida y vuelta hasta el reflector: cada eco múltiple la paga k veces
-    // y la cola sucia una vez. Sin este factor la TGC los amplificaba hasta el blanco.
-    float Tg = texture(uTrans0, vec2(vUv.x, max(gasHit - dr, 0.0) / uDepth)).x * coupling;
-    float a = 0.0;
-    for (int k = 2; k <= 4; k++) {
-      float rk = float(k) * gasHit;
-      a += pow(0.5, float(k - 1)) * pow(Tg, float(k)) * exp(-0.5 * pow((r - rk) / 1.2, 2.0));
+  // Pleura parietal y cortina (decisión 61): cruce D (A0), fracción de aire del haz, transmisión hasta la
+  // pleura sin el gas de su fila y, bajo ella, la serie (orden, distancias de la pared copiada)
+  vec4 h2 = texelFetch(uHits2, ivec2(tc.x, 0), 0);
+  float D = h2.x;
+  float fAir = D > 0.0 ? curtainAirFraction(h2.y, D, dir0) : 0.0;
+  bool curtain = fAir >= CURTAIN_MIN_AIR;
+  bool under = curtain && r > D;
+  float rCap = pleuraCapMm(max(D, 0.0), uDepth / float(ts.y));
+  float tD = curtain ? texture(uTrans0, vec2(vUv.x, rCap / uDepth)).x : 0.0;
+  vec3 pD = pointOnLine(dir0, max(D, 0.0));
+  float cosI = curtain ? abs(dot(torsoNormal(toMaterial(pD)), dir0)) : 1.0;
+  float chi = pleuraCoherence(cosI);
+  float G = pleuraRoundTrip(tD, chi);
+  vec3 ser = under ? pleuraSeriesDepths(r, D) : vec3(0.0);
+  float gn = seriesPow(G, ser.x);
+  bool series = under && gn * tD * PLEURA_WALL_FIELD_BOUND * coupling > PLEURA_SERIES_FLOOR;
+  // El tejido: todo sobre la pleura; bajo ella, el de detrás de la cortina con peso 1 − fAir
+  float wTissue = under ? 1.0 - fAir : 1.0;
+  // Muestras del medio en un bucle (se compila una vez): 0 la de la imagen, 1 y 2 la pared de las copias
+  // espejo y directa
+  vec2 tissue = vec2(0.0);
+  vec2 air = vec2(0.0);
+  int j0 = wTissue >= CURTAIN_MIN_AIR ? 0 : 1;
+  int j1 = series ? 3 : 1;
+  for (int j = j0; j < j1; j++) {
+    float d = j == 0 ? r : (j == 1 ? ser.y : ser.z);
+    vec2 f = mediumField(j == 0 ? p : pointOnLine(dir0, d), j == 0 ? dir : dir0, elevSigma(d), d, j != 0 || !under, j == 0);
+    if (j == 0) tissue = f;
+    else {
+      float td = texture(uTrans0, vec2(vUv.x, min(d, rCap) / uDepth)).x;
+      air += f * (j == 1 ? PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : td * G * gn);
     }
-    out2 += vec2(a * 0.9, 0.0);
-    if (t1.w > 1.5) {
-      // Sombra sucia: cola de ecos incoherentes anclada a línea y profundidad (no al tejido),
-      // ~−10 dB re parénquima junto al gas y decayendo con 40 mm [EXTRAPOLACIÓN PROPIA]
-      vec2 tail = scattererField(vec3(vUv.x * 190.0, r * 0.9, 0.0), 0.6, uSeed + 3.0) * 0.3 * Tg * exp(-(r - gasHit) / 40.0);
-      out2 += tail;
+  }
+  vec2 out2 = vec2(0.0);
+  if (wTissue >= CURTAIN_MIN_AIR) {
+    // la pleura del diafragma, desde el cruce exacto del espejo
+    if (mirrorHit >= 0.0) tissue += vec2(pleuraEcho(r - mirrorHit, dir0, normalize(t1.xyz)), 0.0);
+    float dr = uDepth / 1024.0;
+    // cortina: sobre la pleura, sin el gas de su fila; bajo ella, sin el de la lámina (ΔL), ≤ la de la pleura
+    float gain = pow(10.0, h2.z / 20.0);
+    float T = (curtain ? (under ? min(t0.x * gain, tD) : texture(uTrans0, vec2(vUv.x, min(r, rCap) / uDepth)).x) : t0.x) * coupling;
+    tissue *= T;
+    // Reverberación tras gas: A-lines a múltiplos de la profundidad del reflector.
+    float gasHit = t0.y;
+    if (gasHit > 0.0 && r > gasHit) {
+      // Transmisión de ida y vuelta hasta el reflector: cada eco múltiple la paga k veces
+      // y la cola sucia una vez. Sin este factor la TGC los amplificaba hasta el blanco.
+      float tg = texture(uTrans0, vec2(vUv.x, max(gasHit - dr, 0.0) / uDepth)).x;
+      float Tg = (curtain && gasHit > D ? min(tg * gain, tD) : tg) * coupling;
+      float a = 0.0;
+      for (int k = 2; k <= 4; k++) {
+        float rk = float(k) * gasHit;
+        a += pow(0.5, float(k - 1)) * pow(Tg, float(k)) * exp(-0.5 * pow((r - rk) / 1.2, 2.0));
+      }
+      tissue += vec2(a * 0.9, 0.0);
+      if (t1.w > 1.5) {
+        // Sombra sucia: cola de ecos incoherentes anclada a línea y profundidad (no al tejido),
+        // ~−10 dB re parénquima junto al gas y decayendo con 40 mm [EXTRAPOLACIÓN PROPIA]
+        vec2 tail = scattererField(vec3(vUv.x * 190.0, r * 0.9, 0.0), 0.6, uSeed + 3.0) * 0.3 * Tg * exp(-(r - gasHit) / 40.0);
+        tissue += tail;
+      }
     }
+    out2 = tissue * wTissue;
+  }
+  if (curtain) {
+    // El pulmón, con peso fAir: línea pleural y réplicas (líneas A), la serie (arriba) y el deslizamiento
+    float k = aLineOrder(r, D);
+    air += vec2(seriesPow(G, k - 1.0) * tD * interfaceProfileEcho(IF_PLEURA_WALL, cosI, 1.0, k * D - r), 0.0);
+    if (under && slidingAmplitude(r - D) * tD * coupling > PLEURA_SERIES_FLOOR) air += slidingField(pD, r - D, 0.0) * tD;
+    out2 += air * (fAir * coupling);
   }
   // Campo cercano: transitorio del transductor, anclado a la sonda (línea, r), no al tejido. Desde
   // TRANSIENT_SKIP_MM (receiver.ts) su escala es ≤ ruido/10 aquí, antes de la PSF (tras C y D, ≈ ruido/7

@@ -278,7 +278,11 @@ float tubeQuery(vec3 p, int t, out float rho, out vec3 tangent, out float rLoc, 
 // Módulos de órgano (anatomy/organs/*): gemelos GLSL de sus funciones TS
 ${ORGAN_MODULES.map((o) => o.glsl).join('\n')}
 
-Cls classify(vec3 m) {
+// Profundidad bajo la cara interna de la pared (mm; 0 en la pleura parietal). Gemelo: AnatomyScene.insideWallMm
+float insideWallMm(vec3 m) { return -torsoDepth(m) - (uWall.x + uWall.y + uWall.z); }
+
+// withCurtain = false: sin la cortina (decisión 61), lo de detrás de la lámina; gemelo classify(m, cal, false)
+Cls classifyWith(vec3 m, bool withCurtain) {
   Cls c;
   c.tissue = T_AIR; c.bd = 1e3; c.n = vec3(0.0, 1.0, 0.0); c.iface = IF_NONE; c.ifd = 1e3; c.vessel = -1;
   c.rho = 10.0; c.tangent = vec3(0.0, 0.0, 1.0); c.kc = 0.0; c.uRef = 0.0; c.rRef = 1.0; c.profN = 2.0;
@@ -313,12 +317,12 @@ Cls classify(vec3 m) {
     c.n = dBody < dArch ? normalize(vec3(m.xy - uSpine.xy, 0.0)) : (ax > ay ? vec3(sign(m.x - uSpine.x), 0.0, 0.0) : vec3(0.0, sign(m.y - acy), 0.0));
     return c;
   }
-  // Vasos y conductos (descarte por esfera envolvente)
   // Cortina pulmonar (módulo de órgano: anatomy/organs/lungCurtain.ts)
-  {
+  if (withCurtain) {
     float dCurtain = lungCurtainDistance(m, -depth - wall);
     if (dCurtain >= 0.0) { c.tissue = T_LUNG; c.bd = dCurtain; c.n = torsoNormal(m); return c; }
   }
+  // Vasos y conductos (descarte por esfera envolvente)
   int bestT = -1; float bestD = 1e9; float bRho; vec3 bTan; float bR; vec3 bN; float bKc;
   for (int t = 0; t < MAX_TUBES; t++) {
     if (t >= uTubeCount) break;
@@ -428,6 +432,8 @@ Cls classify(vec3 m) {
   c.tissue = T_BOWEL; c.bd = max(bdBowel, 0.0); c.n = tn;
   return c;
 }
+
+Cls classify(vec3 m) { return classifyWith(m, true); }
 
 // −faceSdf('liverSurface') de TS: margen hacia dentro del parénquima (hígado, cúpula y pared), la
 // misma cantidad que decide la cápsula en classify

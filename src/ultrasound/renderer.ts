@@ -26,6 +26,7 @@ import {
 } from './gl';
 import { GpuPassTimer, summarizeGpuTimings, type GpuFrameTimings } from './gpuTimer';
 import { RECEIVER_NOISE } from './receiver';
+import { ELEV_SIGMA0_MM } from './pleura';
 import { FRAME_PASSES, type PassId } from './passGraph';
 import { CompoundRing, compoundActive, lookTheta, type CompoundLook } from './compound';
 import { lookWavenumber } from './steering';
@@ -415,7 +416,8 @@ export class UltrasoundRenderer {
     // 2 = un solo rayo (color y PW), 3 = la mirada dirigida del cuadro (decisión 58; su .x se interpola
     // como la 0); la suma A2, además, el prefijo de esa mirada (2 y 3)
     const fn = { internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.NEAREST };
-    this.tHits = createTarget(gl, LINES, 1, [fn, fn]);
+    // A0: espejo e impactos (0 y 1) y la pleura parietal de cada línea (2, decisión 61), que lee la pasada B
+    this.tHits = createTarget(gl, LINES, 1, [fn, fn, fn]);
     this.tSeg = createTarget(gl, LINES, COARSE_DEPTH, [fn]);
     this.tPre = createTarget(gl, LINES, COARSE_DEPTH, [fn, fn, fn, fn]);
     this.tTrans = createTarget(gl, LINES, COARSE_DEPTH, [f, fn, f, f]);
@@ -815,6 +817,8 @@ export class UltrasoundRenderer {
     this.pTransSeg.f('uCoarseN', COARSE_DEPTH);
     this.pTransSeg.tex('uHits0', 0, this.tHits.textures[0]);
     this.pTransSeg.tex('uHits1', 1, this.tHits.textures[1]);
+    // el pulmón de la cortina de cada línea (decisión 61) se marca aparte: no es un impacto de gas
+    this.pTransSeg.tex('uHits2', 2, this.tHits.textures[2]);
     drawFullscreen(gl);
   }
 
@@ -901,9 +905,11 @@ export class UltrasoundRenderer {
       p.tex('uTrans0', 0, this.tTrans.textures[0]);
       p.tex('uTrans1', 1, this.tTrans.textures[1]);
     }
+    // la pleura parietal de A0 (decisión 61): su cruce, el borde de la cortina y la pérdida de la lámina
+    p.tex('uHits2', 3, this.tHits.textures[2]);
     p.f('uSeed', (inputs.seed % 1000) / 7.0);
     p.f('uLattice', 0.42);
-    p.f('uElevSigma0', 1.6);
+    p.f('uElevSigma0', ELEV_SIGMA0_MM);
     p.f('uElevFocus', tr.elevationFocusMm);
     // Ruido del receptor (receiver.ts): la misma escala con la que el shader omite el transitorio
     p.f('uNoise', RECEIVER_NOISE);

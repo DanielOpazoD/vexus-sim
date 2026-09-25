@@ -64,7 +64,8 @@ export const FRAME_PASSES: readonly PassSpec[] = [
   { id: 'transmissionSegments', label: 'A1', reads: ['scene', 'transHits'], writes: 'transSeg', cadence: 'frame' },
   { id: 'transmissionPrefix', label: 'A2', reads: ['transSeg', 'transHits'], writes: 'transPrefix', cadence: 'frame' },
   { id: 'transmission', label: 'A', reads: ['transPrefix', 'transHits'], writes: 'trans', cadence: 'frame' },
-  { id: 'rawField', label: 'B', reads: ['scene', 'trans'], writes: 'raw', cadence: 'frame' },
+  // B lee además la pleura parietal de A0 (decisión 61)
+  { id: 'rawField', label: 'B', reads: ['scene', 'trans', 'transHits'], writes: 'raw', cadence: 'frame' },
   { id: 'axial', label: 'C', reads: ['raw'], writes: 'axial', cadence: 'frame' },
   // D escribe la envolvente de la mirada del cuadro en su ranura del anillo; K compone las válidas (paso
   // directo exacto con una sola mirada: compuesto apagado)

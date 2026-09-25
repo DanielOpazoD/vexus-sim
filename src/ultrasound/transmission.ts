@@ -1,5 +1,7 @@
 import { TISSUES, Tissue, attenuationDbPerCm } from '../anatomy/tissues';
+import type { Vec3 } from '../core/vec3';
 import { IFACE_REACH_MM } from './interfaceEcho';
+import { CURTAIN_GAS_KIND, CURTAIN_RECORD_MM } from './pleura';
 import { glslFloat } from './receiver';
 import { alongLineMm, steerBeta, steeredElement } from './steering';
 
@@ -10,8 +12,9 @@ import { alongLineMm, steerBeta, steeredElement } from './steering';
  * (reflexión en la interfaz) más su absorción por paso; el resto, 2·α(f)·paso.
  * La usan la puerta PW (transmisión hasta la muestra) y sus pruebas; el shader la
  * reproduce. Única diferencia deliberada: la pasada A refleja el rayo en el primer
- * pulmón (espejo diafragmático, en el cruce exacto: `mirrorCrossing`) y sigue; la puerta
- * PW no sigue rayos reflejados.
+ * pulmón del tórax (espejo diafragmático, en el cruce exacto: `mirrorCrossing`) y sigue; la puerta
+ * PW no sigue rayos reflejados. El pulmón de la cortina (decisión 61) no refleja: el rayo sigue recto
+ * y paga su gas, como aquí.
  */
 export const BONE_ENTRY_DB = 6;
 export const GAS_DB_PER_CM = 60;
@@ -62,6 +65,144 @@ export function mirrorCrossing(isLung: (r: number) => boolean, rLung: number, st
   return 0.5 * (lo + hi);
 }
 
+/**
+ * Lo que A0 consulta en un punto del camino (gemelo de `classify` en el punto MATERIAL; la deformación
+ * respiratoria va aparte, en el llamador).
+ */
+export interface HitsLineQuery {
+  /** Tejido de `classify`, la normal de la interfaz y si es pulmón de la cortina (`inLungCurtain`). */
+  at(p: Vec3): { tissue: Tissue; normal: Vec3; curtain: boolean };
+  /** Tejido de `classify` sin la cortina (`classify(m, caliber, false)`): lo que hay detrás de la lámina. */
+  behind(p: Vec3): Tissue;
+  /** Profundidad bajo la cara interna de la pared (`insideWallMm`). */
+  insideWall(p: Vec3): number;
+  /** Distancia al borde de la cortina en la huella del receso (`lungCurtainEdgeMm`), null fuera. */
+  curtainEdge(p: Vec3): number | null;
+}
+
+/** Salidas de A0 de una línea: h0, h1 y h2 (la pleura parietal, decisión 61). */
+export interface HitsLine {
+  mirrorSeg: number;
+  gasSeg: number;
+  boneSeg: number;
+  gasKind: number;
+  /** Profundidad del espejo en el cruce exacto (mm; 0 sin espejo, como h1.w) y dirección reflejada. */
+  mirrorR: number;
+  dir: Vec3;
+  /**
+   * Pleura parietal: cruce exacto D (mm), distancia al borde dz, pérdida de la cortina ΔL (dB), tipo 3 y el
+   * último segmento del pulmón de la cortina (−1 si el rayo central no da en él; con el pulmón del tórax pegado
+   * a la lámina: aire con aire, sin pleura entre los dos); null sin ella. En h2.w van juntos: tipo + 4·(último + 1).
+   */
+  pleura: { D: number; dz: number; dL: number; kind: number; curtainLast: number } | null;
+}
+
+/**
+ * Gemelo de A0 (`FRAG_TRANS_HITS`) sobre una línea: la marcha de paso `depth/coarseN` con el espejo del
+ * primer pulmón del tórax (bisección `mirrorCrossing` y reflexión en su normal), el primer gas y el primer
+ * hueso, y la pleura parietal (decisión 61): el primer cruce de la cara interna de la pared en el camino
+ * recto, llevado al punto exacto con la misma bisección, registrado si cae en la huella del receso a menos de
+ * `CURTAIN_RECORD_MM` del borde, y ΔL = Σ(gas − tejido de detrás) sobre los segmentos de pulmón de la
+ * cortina, con las reglas de A1 (`dbOf`). El pulmón de la cortina no es espejo ni impacto de gas, y el del
+ * tórax que sigue pegado a la lámina tampoco (aire con aire: no hay pleura del diafragma entre los dos; si
+ * no, el rayo se reflejaba dentro del pulmón a 3 mm de la pared).
+ */
+export function transmissionHitsLine(
+  q: HitsLineQuery,
+  origin: Vec3,
+  dir0: Vec3,
+  depthMm: number,
+  coarseN: number,
+  dbOf: (t: Tissue, stepMm: number) => number,
+): HitsLine {
+  const step = depthMm / coarseN;
+  const at = (p0: Vec3, d: Vec3, r: number): Vec3 => [p0[0] + d[0] * r, p0[1] + d[1] * r, p0[2] + d[2] * r];
+  let dir: Vec3 = dir0;
+  let hitPoint: Vec3 = origin;
+  let hitR = 0;
+  let mirrorSeg = -1;
+  let gasSeg = -1;
+  let boneSeg = -1;
+  let gasKind = 0;
+  let pleura: HitsLine['pleura'] = null;
+  let curtainDb = 0;
+  let curtainLast = -1;
+  let curtainRun = false;
+  let prevInside = -1;
+  let entered = false;
+  for (let s = 0; s < coarseN; s++) {
+    const r = (s + 0.5) * step;
+    const p = mirrorSeg >= 0 ? at(hitPoint, dir, r - hitR) : at(origin, dir0, r);
+    const c = q.at(p);
+    if (mirrorSeg < 0 && pleura === null) {
+      const inside = q.insideWall(p);
+      if (inside >= 0 && prevInside < 0) {
+        let lo = Math.max(r - step, 0);
+        let hi = r;
+        for (let it = 0; it < MIRROR_BISECTION_STEPS; it++) {
+          const mid = 0.5 * (lo + hi);
+          if (q.insideWall(at(origin, dir0, mid)) >= 0) hi = mid;
+          else lo = mid;
+        }
+        const rp = 0.5 * (lo + hi);
+        const dz = q.curtainEdge(at(origin, dir0, rp));
+        if (dz !== null && dz > -CURTAIN_RECORD_MM) pleura = { D: rp, dz, dL: 0, kind: CURTAIN_GAS_KIND, curtainLast: -1 };
+      }
+      prevInside = inside;
+    }
+    if (c.tissue === Tissue.Air && !entered) continue;
+    entered = true;
+    const props = TISSUES[c.tissue];
+    curtainRun = c.tissue === Tissue.Lung && mirrorSeg < 0 && (curtainRun || c.curtain);
+    if (props.gas) {
+      if (curtainRun) {
+        curtainDb += dbOf(c.tissue, step) - dbOf(q.behind(p), step);
+        curtainLast = s;
+        continue;
+      }
+      if (c.tissue === Tissue.Lung && mirrorSeg < 0) {
+        let nn = c.normal;
+        const mr = mirrorCrossing(
+          (x) => {
+            const cm = q.at(at(origin, dir, x));
+            if (cm.tissue === Tissue.Lung) nn = cm.normal;
+            return cm.tissue === Tissue.Lung;
+          },
+          r,
+          step,
+        );
+        mirrorSeg = s;
+        hitR = mr;
+        hitPoint = at(origin, dir, hitR);
+        if (nn[0] * dir[0] + nn[1] * dir[1] + nn[2] * dir[2] > 0) nn = [-nn[0], -nn[1], -nn[2]];
+        const dd = dir[0] * nn[0] + dir[1] * nn[1] + dir[2] * nn[2];
+        dir = [dir[0] - 2 * dd * nn[0], dir[1] - 2 * dd * nn[1], dir[2] - 2 * dd * nn[2]];
+        if (gasSeg < 0) {
+          gasSeg = s;
+          gasKind = 1;
+        }
+        continue;
+      }
+      if (gasSeg < 0) {
+        gasSeg = s;
+        gasKind = 2;
+      }
+      continue;
+    }
+    if (props.bone && boneSeg < 0) boneSeg = s;
+  }
+  if (pleura) {
+    pleura.dL = curtainDb;
+    pleura.curtainLast = curtainLast;
+  }
+  return { mirrorSeg, gasSeg, boneSeg, gasKind, mirrorR: hitR, dir, pleura };
+}
+
+/** Pérdida ida y vuelta (dB) de un segmento con las reglas de A1 (gas 60 dB/cm; el resto 2·α(f)·paso). */
+export function segmentDb(t: Tissue, stepMm: number, fMHz: number): number {
+  return TISSUES[t].gas ? GAS_DB_PER_CM * (stepMm / 10) : 2 * attenuationDbPerCm(t, fMHz) * (stepMm / 10);
+}
+
 /** Transmisión de amplitud ida y vuelta (0–1) correspondiente a `rayAttenuationDb`. */
 export function rayTransmission(tissues: Iterable<Tissue>, stepMm: number, fMHz: number): number {
   return Math.pow(10, -rayAttenuationDb(tissues, stepMm, fMHz) / 20);
@@ -85,7 +226,10 @@ export interface SegmentGrid {
   air: Uint8Array;
   /** A1 .z: hueso. */
   bone: Uint8Array;
-  /** A1 .w (decisión 58): gas del segmento, 0 ninguno, 1 pulmón, 2 intestinal o aire tras la piel. */
+  /**
+   * A1 .w (decisión 58): gas del segmento, 0 ninguno, 1 pulmón del tórax, 2 intestinal o aire tras la piel,
+   * 3 pulmón de la cortina (decisión 61, `CURTAIN_GAS_KIND`), que no es un impacto de gas.
+   */
   gas: Uint8Array;
   /** A0 h0.x: segmento del espejo (primer pulmón) de cada línea, −1 sin espejo. */
   mirrorSeg: Int32Array;
@@ -103,7 +247,8 @@ export function lineHits(g: SegmentGrid, line: number): { mirrorSeg: number; gas
     const i = line * g.rows + s;
     if (g.air[i] && !entered) continue;
     entered = true;
-    if (g.gas[i] && gasSeg < 0) {
+    // el pulmón de la cortina no es un impacto de gas (A0 lo lleva aparte, decisión 61)
+    if (g.gas[i] && g.gas[i] !== CURTAIN_GAS_KIND && gasSeg < 0) {
       gasSeg = s;
       gasKind = g.gas[i];
     }
@@ -247,7 +392,7 @@ export function steeredPrefixDb(
       boneEntered = true;
     }
     if (g.bone[i] && sBone < 0) sBone = along((s + 0.5) * step);
-    if (g.gas[i] && sGas < 0) {
+    if (g.gas[i] && g.gas[i] !== CURTAIN_GAS_KIND && sGas < 0) {
       sGas = crossing ? sMirror : along((s + 0.5) * step);
       gasKind = g.gas[i];
     }
@@ -314,7 +459,8 @@ vec4 steeredPrefix(int line, int k, out vec2 extra) {
     if (g.z > 0.5 && !boneEntered) { db += ${glslFloat(BONE_ENTRY_DB)}; boneEntered = true; }
     float sRow = alongLineMm(uCurvR + (float(s) + 0.5) * step, a, rc);
     if (g.z > 0.5 && sBone < 0.0) sBone = sRow;
-    if (g.w > 0.5 && sGas < 0.0) { sGas = crossing ? sMirror : sRow; gasKind = g.w; }
+    // el pulmón de la cortina (marca ${CURTAIN_GAS_KIND}, decisión 61) no es un impacto de gas
+    if (g.w > 0.5 && g.w < ${glslFloat(CURTAIN_GAS_KIND - 0.5)} && sGas < 0.0) { sGas = crossing ? sMirror : sRow; gasKind = g.w; }
     db += g.x * scale;
   }
   extra = vec2(sGas >= 0.0 ? gasKind : 0.0, sMirror >= 0.0 ? float(frozen) : -1.0);

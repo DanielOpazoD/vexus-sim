@@ -5,7 +5,14 @@ import { APERTURE_GLSL, STEERED_APERTURE_GLSL } from '../aperture';
 import { COMPOUND, COMPOUND_GLSL } from '../compound';
 import { IFACE_REACH_MM, INTERFACE_ECHO_GLSL } from '../interfaceEcho';
 import { GAS_DB_PER_CM, MIRROR_BISECTION_STEPS, STEERED_PREFIX_GLSL } from '../transmission';
-import { CURTAIN_GAS_KIND, CURTAIN_RECORD_MM, PLEURA_GLSL, PLEURA_STEER_GUESS_MM, PLEURA_STEER_ITERATIONS } from '../pleura';
+import {
+  CURTAIN_AIR_GLSL,
+  CURTAIN_GAS_KIND,
+  CURTAIN_RECORD_MM,
+  PLEURA_GLSL,
+  PLEURA_STEER_GUESS_MM,
+  PLEURA_STEER_ITERATIONS,
+} from '../pleura';
 import { SPECKLE_LOOK_GLSL, SPECKLE_TISSUE_GLSL } from '../speckleField';
 import { RECEIVER_GLSL, glslFloat } from '../receiver';
 import { STEERING_GLSL } from '../steering';
@@ -21,12 +28,16 @@ void main() {
 `;
 
 /** Geometría del haz común a las pasadas de formación de imagen. */
-const BEAM_GEOMETRY_GLSL = /* glsl */ `
-uniform vec3 uFace;
+/** Ejes de la sonda y dirección de una línea de la mirada 0: los comparten las pasadas con geometría del haz y K. */
+const LINE_DIR_GLSL = /* glsl */ `
 uniform vec3 uAxial;
 uniform vec3 uLateral;
 uniform vec3 uElev;
-uniform vec3 uCurvC;
+vec3 lineDir(float theta) { return normalize(uAxial * cos(theta) + uLateral * sin(theta)); }
+`;
+
+const BEAM_GEOMETRY_GLSL = /* glsl */ `
+uniform vec3 uFace;${LINE_DIR_GLSL}uniform vec3 uCurvC;
 uniform float uCurvR;
 uniform float uHalfSector;
 uniform float uDepth;      // mm
@@ -34,8 +45,17 @@ uniform float uLinesF;
 uniform sampler2D uCoupling; // 1D: acoplamiento por línea
 
 float lineTheta(float u) { return -uHalfSector + 2.0 * uHalfSector * u; }
-vec3 lineDir(float theta) { return normalize(uAxial * cos(theta) + uLateral * sin(theta)); }
 vec3 pointOnLine(vec3 dir, float r) { return uCurvC + dir * (uCurvR + r); }
+`;
+
+/** σ elevacional de una vía de la lente (mm) a la distancia r: la usan B y, por la cortina (decisión 61), K. */
+const ELEV_SIGMA_GLSL = /* glsl */ `
+uniform float uElevSigma0;  // σ elevacional en el foco de la lente (mm)
+uniform float uElevFocus;   // mm
+float elevSigma(float r) {
+  float zr = 45.0;
+  return uElevSigma0 * sqrt(1.0 + pow((r - uElevFocus) / zr, 2.0));
+}
 `;
 
 /**
@@ -626,8 +646,6 @@ ${TISSUE_BACK_GLSL}
 ${look === 'steered' ? STEERED_RAW_INPUTS_GLSL : LOOK0_RAW_INPUTS_GLSL}
 uniform float uSeed;
 uniform float uLattice;     // paso de retícula (mm)
-uniform float uElevSigma0;  // σ elevacional en el foco de la lente (mm)
-uniform float uElevFocus;   // mm
 uniform float uNoise;
 uniform float uFrame;
 // Ancla del medio de dispersores (speckleField.ts): vigente (0) y anterior (1), peso del fundido
@@ -642,12 +660,7 @@ uniform vec4 uTissueClump4[${TISSUE_VEC4}];
 ${RECEIVER_GLSL}
 in vec2 vUv;
 out vec2 oField;
-
-float elevSigma(float r) {
-  float zr = 45.0;
-  return uElevSigma0 * sqrt(1.0 + pow((r - uElevFocus) / zr, 2.0));
-}
-${LATERAL_PSF_GLSL}
+${ELEV_SIGMA_GLSL}${LATERAL_PSF_GLSL}
 ${INTERFACE_ECHO_GLSL}
 
 float hash12b(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
@@ -907,6 +920,9 @@ const LOOKS = COMPOUND.order.length;
  * solo la mirada 0 válida (compuesto apagado, o el cuadro tras un reinicio) da env·1/1: la envolvente de D
  * bit a bit. Gemelo: `compoundEnvelope`. La celda sale de gl_FragCoord (centro exacto del texel), como el
  * gemelo. Una textura por mirada: en GLSL ES 3.00 un array de samplers solo se indexa con constantes.
+ * Bajo la pleura de la cortina (decisión 61) las dirigidas pesan además 1 − fAir de la mirada 0
+ * (`curtainSteerWeight`, con la pleura de A0 y la fracción de aire de B): cada mirada reverbera a múltiplos de
+ * su propio camino y la media partía cada línea A en tres arcos; los equipos no componen en pulmón.
  */
 export const FRAG_COMPOUND = /* glsl */ `#version 300 es
 precision highp float;
@@ -920,7 +936,7 @@ uniform float uLinesF;
 uniform float uDepth;
 out float oEnv;
 ${STEERING_GLSL}
-${COMPOUND_GLSL}
+${COMPOUND_GLSL}${LINE_DIR_GLSL}${ELEV_SIGMA_GLSL}${LATERAL_PSF_GLSL}${CURTAIN_AIR_GLSL}
 float lookEnvelope(int i, ivec2 c) {
 ${COMPOUND.order.map((_, i) => `  if (i == ${i}) return texelFetch(uLook${i}, c, 0).r;`).join('\n')}
   return 0.0;
@@ -929,11 +945,16 @@ void main() {
   ivec2 c = ivec2(gl_FragCoord.xy);
   float alpha = -uHalfSector + gl_FragCoord.x * (2.0 * uHalfSector / uLinesF);
   float rho = uCurvR + gl_FragCoord.y * (uDepth / float(textureSize(uLook0, 0).y));
+  // bajo la pleura de la cortina (decisión 61), la mirada 0 sola: las dirigidas pesan 1 − fAir de la mirada 0
+  vec4 h2 = texelFetch(uHits2, ivec2(c.x, 0), 0);
+  float fAir = h2.x > 0.0 ? curtainAirFraction(h2.y, h2.x, lineDir(alpha)) : 0.0;
+  float steerKeep = curtainSteerWeight(rho - uCurvR, h2.x, fAir);
   float sum = 0.0;
   float wsum = 0.0;
   for (int i = 0; i < COMPOUND_LOOKS; i++) {
     if (uLookValid[i] < 0.5) continue;
     float w = lookWeight(alpha, rho, uLookSteer[i], uCurvR, uHalfSector, uLinesF);
+    if (uLookSteer[i] != 0.0) w *= steerKeep;
     if (w <= 0.0) continue;
     sum += w * lookEnvelope(i, c);
     wsum += w;

@@ -70,7 +70,7 @@ export const FRAME_PASSES: readonly PassSpec[] = [
   // D escribe la envolvente de la mirada del cuadro en su ranura del anillo; K compone las válidas (paso
   // directo exacto con una sola mirada: compuesto apagado)
   { id: 'lateral', label: 'D', reads: ['axial'], writes: 'envLooks', cadence: 'frame' },
-  { id: 'compound', label: 'K', reads: ['envLooks'], writes: 'env', cadence: 'frame' },
+  { id: 'compound', label: 'K', reads: ['envLooks', 'transHits'], writes: 'env', cadence: 'frame' },
   { id: 'color', label: 'F', reads: ['scene', 'trans'], writes: 'color', cadence: 'color' },
   { id: 'scanConvert', label: 'G', reads: ['env', 'color'], writes: 'scan', cadence: 'frame' },
   { id: 'persistence', label: 'P', reads: ['scan', 'persist'], writes: 'persist', cadence: 'frame' },

@@ -1,4 +1,5 @@
 import type { Vec3 } from '../core/vec3';
+import { curtainSteerWeight } from './pleura';
 import { glslFloat } from './receiver';
 import { JUMP_DEG, JUMP_MM } from './speckleField';
 import { lookCoverage, steeredElement } from './steering';
@@ -108,13 +109,27 @@ export interface LookSlot {
 
 const f32 = Math.fround;
 
+/** Pleura de la cortina de una línea de la mirada 0 (A0 h2 y la fracción de aire de B, decisión 61). */
+export interface CurtainLineWeight {
+  /** Cruce de la pleura parietal (mm; ≤ 0 sin él). */
+  D: number;
+  /** Fracción de aire del haz en el cruce. */
+  fAir: number;
+}
+
 /**
  * Gemelo de la pasada K: en cada celda, media lineal de las envolventes válidas ponderada por su peso
  * (`lookWeight`), en float32 como la GPU. Con solo la mirada 0 válida da env·1/1: la misma envolvente,
  * bit a bit (paso directo). La celda (u, v) es la de la pasada D: α = lineTheta((u + ½)/líneas),
- * r = (v + ½)·profundidad/muestras.
+ * r = (v + ½)·profundidad/muestras. Con `curtain` (una entrada por línea), bajo la pleura de la cortina las
+ * dirigidas pesan además `curtainSteerWeight` (1 − fAir; decisión 61).
  */
-export function compoundEnvelope(slots: readonly LookSlot[], g: CompoundGrid, taperLines: number = COMPOUND.taperLines): Float32Array {
+export function compoundEnvelope(
+  slots: readonly LookSlot[],
+  g: CompoundGrid,
+  taperLines: number = COMPOUND.taperLines,
+  curtain?: readonly CurtainLineWeight[],
+): Float32Array {
   const out = new Float32Array(g.lines * g.samples);
   const dPhi = (2 * g.halfSector) / g.lines;
   for (let v = 0; v < g.samples; v++) {
@@ -123,9 +138,12 @@ export function compoundEnvelope(slots: readonly LookSlot[], g: CompoundGrid, ta
       const alpha = -g.halfSector + (u + 0.5) * dPhi;
       let sum = 0;
       let wsum = 0;
+      const c = curtain?.[u];
+      const keep = c ? f32(curtainSteerWeight(rho - g.curvatureRadius, c.D, c.fAir)) : 1;
       for (const s of slots) {
         if (s.data === null) continue;
-        const w = f32(lookWeight(alpha, rho, s.theta, g, taperLines));
+        let w = f32(lookWeight(alpha, rho, s.theta, g, taperLines));
+        if (s.theta !== 0) w = f32(w * keep);
         if (w <= 0) continue;
         sum = f32(sum + f32(w * s.data[v * g.lines + u]));
         wsum = f32(wsum + w);

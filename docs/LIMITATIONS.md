@@ -108,6 +108,14 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   cruzan la lámina de pulmón en línea recta con la atenuación del gas de la CPU (60 dB/cm: ~18 dB en sus
   3 mm), como el modelo de la puerta; un pulmón aireado real no deja pasar nada. Antes el color de detrás
   de la cortina usaba la transmisión del camino reflejado, sin pérdida.
+- **Sin composición espacial bajo la cortina** (`compound-off-under-curtain`, decisión 61): bajo la pleura
+  de la cortina la pasada K da a las miradas dirigidas el peso 1 − fAir de la mirada 0 (0 en la cortina
+  entera, sin costura en el borde blando): cada mirada reverbera a múltiplos de su propio camino y la media
+  de tres partía cada línea A en tres arcos (con SwiftShader, la línea A de orden 3 quedaba 6 dB por debajo
+  de la de la mirada 0). Allí la imagen es la de una mirada, como en los preajustes de pulmón de los
+  equipos, que no componen; sobre la pleura (la pared) sigue compuesta, así que el cambio de textura cae en
+  la línea pleural. Las métricas del compuesto del banco (bandas de hígado limpio) no llevan este peso:
+  bajo la pleura con 10⁻³ ≤ fAir < 0,01 cuentan 1 donde K pone 0,99–0,999.
 - **Sin composición espacial con el color encendido** (`compound-off-in-color`, decisión 58): con la
   caja de color el cuadro B se refresca a la cadencia del color (4–11 Hz, decisión 39) y las tres miradas
   cubrirían 280–715 ms, con estela respiratoria de varios mm; el compuesto se apaga y la textura del

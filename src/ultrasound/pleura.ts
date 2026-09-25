@@ -157,6 +157,16 @@ export function curtainAirFractionAt(
   return { fAir: curtainAirFraction(dz, sigmaMm), sigmaMm };
 }
 
+/**
+ * Peso de las miradas dirigidas en K bajo la cortina (decisión 61): cada mirada reverbera bajo la pleura a
+ * múltiplos de su propio camino, y la media de tres dejaba cada línea A partida en tres arcos (los equipos no
+ * componen en pulmón). Bajo la pleura de la mirada 0 (r > D, fAir ≥ CURTAIN_MIN_AIR) la dirigida pesa 1 − fAir
+ * (0 en la cortina entera, sin costura en el borde blando); fuera, 1. Gemelo de `curtainSteerWeight` (GLSL).
+ */
+export function curtainSteerWeight(r: number, D: number, fAir: number): number {
+  return D > 0 && fAir >= CURTAIN_MIN_AIR && r > D ? 1 - fAir : 1;
+}
+
 /** Anchura 10–90 % (mm) de un borde gaussiano de σ: 2·1,2816·σ. */
 export function edgeWidth1090Mm(sigmaMm: number): number {
   return 2 * 1.2815516 * sigmaMm;
@@ -301,25 +311,14 @@ export function slidingField(pD: Vec3, outwardNormal: Vec3, caudalMm: number, h:
 }
 
 /**
- * La misma física en GLSL, común a los dos programas de la pasada B (va detrás de `sampleSide`: usa
- * `elevSigma`, `lateralSigmaMm`, `fieldFor`, `anchoredClump`, `interfaceEcho`, `scattererField`, `uSeed`,
- * `uElev` y `uCurtain`). Declara `uHits2`, la salida de la pleura de A0: (D, dz, ΔL dB, 3) por línea.
+ * Fracción de aire del haz en el cruce de la pleura y peso de las miradas dirigidas bajo la cortina, en GLSL:
+ * los comparten B (el borde blando) y K. Usa `elevSigma`, `lateralSigmaMm` (`LATERAL_PSF_GLSL`) y `uElev`, y
+ * declara `uHits2`, la salida de la pleura de A0: (D, dz, ΔL dB, tipo) por línea.
  */
-export const PLEURA_GLSL = /* glsl */ `
+export const CURTAIN_AIR_GLSL = /* glsl */ `
 uniform sampler2D uHits2; // A0 h2 (decisión 61): pleura parietal de cada línea
-uniform sampler2D uTrans2; // A o2: rayo único (x la mirada 0, y la dirigida): tope de la transmisión sin la lámina
-const float PLEURA_RP = ${glslFloat(PLEURA_RP)};
-const float PLEURA_RT = ${glslFloat(PLEURA_RT)};
 const float CURTAIN_TAPER_MM = ${glslFloat(CURTAIN_TAPER_MM)};
 const float CURTAIN_MIN_AIR = ${glslFloat(CURTAIN_MIN_AIR)};
-const float CURTAIN_Z0 = ${glslFloat(LUNG_CURTAIN.z0)};
-const float SLIDING_AMP = ${glslFloat(slidingAmplitude(0))};
-const float SLIDING_EFOLD_MM = ${glslFloat(SLIDING_EFOLD_MM)};
-const float SLIDING_LAT_MM = ${glslFloat(SLIDING_LAT_MM)};
-const float SLIDING_AX_MM = ${glslFloat(SLIDING_AX_MM)};
-const float SLIDING_SALT = ${glslFloat(SLIDING_SALT)};
-const float PLEURA_SERIES_FLOOR = ${glslFloat(PLEURA_SERIES_FLOOR)};
-const float PLEURA_WALL_FIELD_BOUND = ${glslFloat(PLEURA_WALL_FIELD_BOUND)};
 // Φ(x), erf de Abramowitz y Stegun 7.1.26
 float normalCdf(float x) {
   float z = abs(x) * 0.70710678;
@@ -336,6 +335,27 @@ float curtainAirFraction(float dz, float dRow, vec3 dir) {
   vec3 lat = normalize(cross(uElev, dir));
   return normalCdf(dz / curtainEdgeSigmaMm(elevSigma(dRow) * 0.70710678, lateralSigmaMm(dRow), uElev.z, lat.z));
 }
+// Peso de las miradas dirigidas en K: 1 − fAir bajo la pleura de la cortina de la mirada 0, 1 fuera
+float curtainSteerWeight(float r, float D, float fAir) { return D > 0.0 && fAir >= CURTAIN_MIN_AIR && r > D ? 1.0 - fAir : 1.0; }
+`;
+
+/**
+ * La misma física en GLSL, común a los dos programas de la pasada B (va detrás de `sampleSide`: usa
+ * `elevSigma`, `lateralSigmaMm`, `fieldFor`, `anchoredClump`, `interfaceEcho`, `scattererField`, `uSeed`,
+ * `uElev` y `uCurtain`). Lleva `CURTAIN_AIR_GLSL` (y con él `uHits2`).
+ */
+export const PLEURA_GLSL = /* glsl */ `${CURTAIN_AIR_GLSL}
+uniform sampler2D uTrans2; // A o2: rayo único (x la mirada 0, y la dirigida): tope de la transmisión sin la lámina
+const float PLEURA_RP = ${glslFloat(PLEURA_RP)};
+const float PLEURA_RT = ${glslFloat(PLEURA_RT)};
+const float CURTAIN_Z0 = ${glslFloat(LUNG_CURTAIN.z0)};
+const float SLIDING_AMP = ${glslFloat(slidingAmplitude(0))};
+const float SLIDING_EFOLD_MM = ${glslFloat(SLIDING_EFOLD_MM)};
+const float SLIDING_LAT_MM = ${glslFloat(SLIDING_LAT_MM)};
+const float SLIDING_AX_MM = ${glslFloat(SLIDING_AX_MM)};
+const float SLIDING_SALT = ${glslFloat(SLIDING_SALT)};
+const float PLEURA_SERIES_FLOOR = ${glslFloat(PLEURA_SERIES_FLOOR)};
+const float PLEURA_WALL_FIELD_BOUND = ${glslFloat(PLEURA_WALL_FIELD_BOUND)};
 float pleuraCapMm(float D, float step) { return (max(ceil(D / step - 0.5) - 1.0, 0.0) + 0.5) * step; }
 // χ de Ament de la pleura parietal: la parte coherente de su reflexión especular
 float pleuraCoherence(float cosI) { float x = uIface[IF_PLEURA_WALL].y * cosI; return exp(-0.5 * x * x); }

@@ -234,7 +234,7 @@ describe('Límites del shader con margen para crecer', () => {
     expect(samplersOf(FRAG_TRANSMISSION)).toEqual(['uCoupling', 'uPre0', 'uPre1', 'uHits0']);
     expect(samplersOf(FRAG_TRANSMISSION_STEERED)).toEqual(['uCoupling', 'uPre0', 'uPre1', 'uHits0', 'uPreSteer', 'uPreSteerX']);
     expect(samplersOf(FRAG_TRANS_PREFIX_STEERED)).toEqual(samplersOf(FRAG_TRANS_PREFIX));
-    expect(samplersOf(FRAG_COMPOUND)).toEqual(COMPOUND.order.map((_, i) => `uLook${i}`));
+    expect(samplersOf(FRAG_COMPOUND)).toEqual([...COMPOUND.order.map((_, i) => `uLook${i}`), 'uHits2']);
   });
 
   // Decisión 58: la rama dirigida compilada en el programa de la mirada 0 (detrás de un `if` que con θ = 0
@@ -295,7 +295,9 @@ describe('Límites del shader con margen para crecer', () => {
     const n = COMPOUND.order.length;
     const k = uniformSlots(FRAG_COMPOUND);
     expect(k.arrays).toEqual([`uLookSteer[${n}]`, `uLookValid[${n}]`]);
-    expect(k.slots).toBe(2 * n + 4);
+    // 2 arrays de n, 4 de la rejilla y, por la cortina de la mirada 0 (decisión 61), 3 ejes, 2 de la lente y 2 de
+    // la PSF lateral
+    expect(k.slots).toBe(2 * n + 11);
     // con el identificador GLSL en lugar del número interpolado, el recuento no adivina el tamaño
     expect(() => uniformSlots(FRAG_COMPOUND.replace(`uLookSteer[${n}]`, 'uLookSteer[COMPOUND_LOOKS]'))).toThrow(/sin resolver/);
   });

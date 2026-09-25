@@ -971,6 +971,7 @@ export class UltrasoundRenderer {
   }
 
   // K — composición espacial (decisión 58): media de las miradas válidas del anillo ponderada por cobertura
+  // (y, bajo la pleura de la cortina, por 1 − fAir de la mirada 0: decisión 61)
   private passCompound(inputs: FrameInputs): void {
     const gl = this.gl;
     const tr = inputs.transducer;
@@ -990,6 +991,14 @@ export class UltrasoundRenderer {
     this.pCompound.f('uHalfSector', tr.halfSector);
     this.pCompound.f('uLinesF', this.lines);
     this.pCompound.f('uDepth', inputs.bmode.depthMm);
+    // la cortina de la mirada 0 (decisión 61): su pleura (A0 h2) y lo que pide su fracción de aire, como en B
+    this.pCompound.tex('uHits2', order.length, this.tHits.textures[2]);
+    this.pCompound.v3('uAxial', inputs.frame.axial);
+    this.pCompound.v3('uLateral', inputs.frame.lateral);
+    this.pCompound.v3('uElev', inputs.frame.elevation);
+    this.pCompound.f('uElevSigma0', ELEV_SIGMA0_MM);
+    this.pCompound.f('uElevFocus', tr.elevationFocusMm);
+    this.setLateralPsfUniforms(this.pCompound, inputs);
     drawFullscreen(gl);
   }
 

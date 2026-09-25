@@ -208,6 +208,17 @@ describe('dos programas por pasada con miradas (WebGL falso)', () => {
     expect(samplerTexture(f1.raw, 'uTrans1')).toBe(tr[1]);
     expect(samplerTexture(f1.raw, 'uTrans3')).toBe(tr[3]);
     expect(samplerTexture(f0.raw, 'uTrans0')).toBe(fboTextures.get(f0.trans.fbo!)![0].id);
+    // K recibe todo lo que declara y la pleura de A0 (la cortina de la mirada 0, decisión 61) es la textura que lee B
+    for (const f of [f0, f1]) {
+      const got = Object.keys(f.k.uniforms);
+      expect(
+        declaredUniforms(FRAG_COMPOUND).filter((u) => !got.includes(u)),
+        'K: uniforms sin subir',
+      ).toEqual([]);
+      expect(samplerTexture(f.k, 'uHits2')).toBeDefined();
+      expect(samplerTexture(f.k, 'uHits2')).toBe(samplerTexture(f.raw, 'uHits2'));
+      expect(new Set(declaredSamplers(FRAG_COMPOUND).map((n) => f.k.uniforms[n][0])).size).toBe(declaredSamplers(FRAG_COMPOUND).length);
+    }
     // ningún uniform fue a un programa que no estaba puesto (WebGL lo habría descartado)
     frame();
     frame();

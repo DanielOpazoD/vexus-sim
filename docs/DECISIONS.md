@@ -1409,6 +1409,14 @@ brillante como el hígado (gemelo: neblina 0,99 × el hígado; aceptación 0,35�
   dirigida, que el programa dirigido de A escribe ahora en o2.y): dos samplers más, 6 en los dos programas. La
   tabla de caras crece una fila: 106 ranuras de uniforms en la mirada 0 y 108 en la dirigida (antes 105 y
   107).
+- **Sin composición bajo la cortina.** Cada mirada dirigida reverbera a múltiplos de su propio camino y K
+  promediaba tres arcos por línea A (capturas con GPU: desde la de orden 3, tres arcos paralelos); los
+  preajustes de pulmón de los equipos no componen. K da a las dirigidas el peso `curtainSteerWeight`: 1 − fAir
+  de la mirada 0 bajo su pleura (r > D, fAir ≥ 10⁻³), 1 fuera; en la cortina entera la imagen es la de la
+  mirada 0 y el borde blando no deja costura. K lee la pleura de A0 (uHits2) y calcula fAir con la misma
+  función que B (`CURTAIN_AIR_GLSL`); gemelo: `compoundEnvelope(…, curtain)`. Con SwiftShader, en la
+  intercostal en apnea inspiratoria con el compuesto, la línea A de orden 2 pasa de +25,5 a +28,9 dB sobre el
+  hígado y la de orden 3 de +2,5 a +8,7 dB: las de la mirada 0 (`compound-off-under-curtain`).
 - **Miradas dirigidas.** El mismo modelo a lo largo del camino dirigido: su cruce sD es el de la línea que el
   camino corta a la profundidad de la pleura (punto fijo de tres pasos sobre `h2`), la serie remuestrea la
   pared en el propio camino con la fase de la mirada y la transmisión se lee en la celda de cada punto (A o3).

@@ -470,7 +470,10 @@ fig. 2A) es del dueño.
 | `sliding.subPleural`, `sliding.wall`                 | Correlación de Pearson entre dos cuadros de una mirada (el pulmón baja `SLIDING_MM` = 2 mm con la respiración tranquila) de la banda de 2–6 mm bajo la pleura y de la de 2–6 mm sobre ella (cortina entera). | Bajo la pleura < 0,8; la pared ≥ 0,9                      | 0,61 con 2 mm (0,86 con 1 mm); la pared 1,000             |
 | `msPerFrame`, `msPerFrameInspiration`                | Coste del cuadro en la pose de partida en apnea espiratoria y en apnea inspiratoria (la cortina tapa buena parte del sector).                                                                                | ≤ +0,5 ms frente a la base (misma máquina y carga)        | —                                                         |
 
-Además deben seguir igual fuera de la cortina el banco del hígado (± 0,01), el de interfaces y el Doppler
+Con el compuesto encendido, bajo la pleura de la cortina entera la imagen es la de la mirada 0 (K pesa las
+dirigidas 1 − fAir: `compound-off-under-curtain`); con SwiftShader el bloque `pleura` da allí las mismas
+cifras con y sin compuesto (neblina 61, línea A 2 +43,1 dB, anisotropía 2,87; antes, línea A 3 a +2,5 dB en
+lugar de +8,7). Además deben seguir igual fuera de la cortina el banco del hígado (± 0,01), el de interfaces y el Doppler
 (decisiones 52–58). El hígado puro del banco y la guarda de Rayleigh dejan fuera, bajo la pleura, las líneas
 con f ≥ 0,01 (`CURTAIN_LIVER_MAX_AIR`): en la intercostal en espiración la guarda pasa de 276 a 105
 parches en la CPU (antes medía también el «hígado» de detrás de la cortina, que la imagen no mostraba). Qué

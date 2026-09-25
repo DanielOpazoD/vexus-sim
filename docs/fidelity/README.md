@@ -104,8 +104,9 @@ cabe en el parche (la autocovarianza no baja de 0,5), grietas y lóbulos salen N
 Cada línea que pasa de ≥ 3 mm de tejido previo a una interfaz da un registro, con la incidencia
 sobre la normal de la cara: el gradiente (diferencias centrales de 0,02 mm) de `faceSdf`, la misma
 distancia que decide la clasificación (`AnatomyScene.faceSdf`: luz del tubo, superficie hepática,
-cúpula, contorno renal y luz vesicular). Los registros se agrupan por tramos de incidencia y se
-enlazan en paredes (líneas vecinas con el borde a ≤ 3 mm) para los huecos y el rosario.
+cúpula, contorno renal y luz vesicular). Los registros se agrupan por tramos de incidencia (0–20,
+20–40, 40–60 y, solo informado, 60–80°; a ≥ 80° no entran) y se enlazan en paredes (líneas vecinas con
+el borde a ≤ 3 mm) para los huecos y el rosario.
 
 | Interfaz                    | Paso en la línea                                                                           | Referencia (hígado)     | Normal         |
 | --------------------------- | ------------------------------------------------------------------------------------------ | ----------------------- | -------------- |
@@ -356,6 +357,96 @@ Informativas: borde de la sombra 10–90 % en ±20 líneas, refuerzo tras los va
 `speckle-line-aliasing`), rosario del banco de interfaces (se espera × 0,65–0,85) y luz vascular (no se
 puntúa aquí). La e2e «composición espacial» comprueba con SwiftShader G1–G4, K1, K5, la razón de grano, G8
 y que `readEnvelope()` lanza si la mirada 0 no es la del último cuadro.
+
+### Contorno de la cápsula (PR 0 de las decisiones 60 y 63): métricas solo informadas
+
+La crítica visual del 24-09 señaló tres defectos del contorno del hígado: (a) la cápsula se corta (a
+mitad del hígado en la subxifoidea, a los dos lados en el flanco) y es invisible a más de ~35°; (b) la
+línea es uniforme, «dibujada»; (c) pliegues y muescas. Las métricas que lo miden llegan antes que los
+cambios de imagen (decisión 60: contacto suave del hígado con la pared y la cúpula; 61: lámina difusa de
+la cápsula) y **no son puertas**: se informan en el bloque `contour` de cada escena del banco (la pose de
+partida, la de las capturas) y en `contourSweep` con `--sweep` (`contourStats`).
+
+| Métrica                                     | Definición                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Contraste (`contrastGrey`)                  | Por tramo, mediana de (gris de la cresta − gris mediano del hígado de referencia) de cada línea. Depende de la curva de grises: con la pendiente gris/dB a ±10 % varía ±10 %.                                                                                                                                                                                                                                                  |
+| CVc                                         | DE de (cresta − mediana de las crestas a ±3 líneas de la misma pared) / contraste. Numerador y denominador escalan igual con la pendiente gris/dB: la métrica para comparar con referencias de curva desconocida (en la curva del simulador, < 3 % con el rango a ±10 %). NaN con < 10 desviaciones (`cvcLines`).                                                                                                              |
+| σ_L (`sigmaLDb`)                            | DE de [mediana del pico de envolvente en 7 líneas − mediana en 41], en las líneas con sus 41 vecinas en el tramo (≥ 10): la variación a escala de centímetros, lo «dibujado». Frágil entre semillas: se promedia sobre ≥ 8 realizaciones (gemelo) o poses.                                                                                                                                                                     |
+| Extremos bruscos (`capsuleEnds`)            | Veces que la mediana de 3 líneas de una pared de la cápsula cae ≥ 10 dB (nivel mostrado) en ≤ 1 mm de pared (paso lateral) desde ≥ +6 dB, en los dos sentidos, **con los cambios de dueño incluidos** (la cara pasa al diafragma o a la grasa y la cápsula deja de dibujarla). La caída que arranca a ≤ 1 mm de donde aterrizó otra es el mismo corte (la escalera de la PSF). NaN sin medianas evaluadas (`capsuleEndLines`). |
+| Salto de incidencia (`incidenceJumpMaxDeg`) | Máximo (y p99, `incidenceJumpP99Deg`) de \|Δincidencia\| entre líneas contiguas de una misma pared de la cápsula. Es geometría de la CPU (la normal de `faceSdf`): una arista del SDF lo dispara. Con > 100 pares, una arista sola queda por encima del p99: la puerta es el máximo.                                                                                                                                           |
+
+`GATED_FACE_BINS` no cambia: la 61 añadirá la cápsula a 20–40° y a 40–60° (esta, solo en las vistas con
+≥ 10 registros). El plan de la 60 convierte en puertas `capsuleEnds` = 0 en las cuatro vistas de las
+capturas y el salto de incidencia ≤ 3° (el máximo), pero `capsuleEnds` y el p99 del salto, tal como están
+definidos, ven poco hoy:
+
+- **`capsuleEnds` con 1 mm casi no ve un corte.** En el gemelo (8 semillas por escena, `bench` del gemelo
+  con la misma regla) un pliegue de 10° a 50° da 0 extremos de 8, uno de 32° a 58°, 1 de 8: la PSF lateral
+  (FWHM ~1,5–2 mm a 45 mm) reparte el corte en 3–4 líneas y ninguna mediana de 3 cae 10 dB en 1 mm. Con 2
+  mm los ve (7 y 5 de 8), pero la espiral de 30° sin pliegue da 4 de 8 y la de 45°, 1: la fluctuación de
+  Rice de una cápsula a ~8 dB cae lo mismo. En la imagen no separa el corte del moteado; los extremos se
+  miden en el contorno en CPU (`liverContour.test.ts`, abajo), con el nivel previsto del eco.
+- **El p99 del salto no ve una arista sola** con más de 100 pares: la subxifoidea de la congestión da p99
+  2,5° con un salto de 29,4°, y la del sano, con dos aristas (29,8° y 24,4°) en 115 pares, da de p99 la
+  segunda: si la 60 quitara solo una, bajaría a 1,0°. El máximo las ve.
+
+**Registros de la cápsula por tramo** (réplica en CPU del barrido de cinco poses; `design-contour`,
+diffuse-first `run5`). El tramo de 40–60° solo llega a 10 registros en cinco escenas y el de 60–80° en
+ninguna:
+
+| Escena                  | 0–20° | 20–40° | 40–60° | 60–80° |
+| ----------------------- | ----- | ------ | ------ | ------ |
+| Sano, subxifoidea       | 313   | 238    | 17     | 8      |
+| Sano, intercostal       | 103   | 151    | 9      | 0      |
+| Sano, flanco            | 137   | 161    | 6      | 0      |
+| Sano, renal             | 0     | 0      | 0      | 0      |
+| Congestión, subxifoidea | 390   | 271    | 12     | 8      |
+| Congestión, intercostal | 172   | 171    | 15     | 0      |
+| Congestión, flanco      | 141   | 208    | 11     | 0      |
+| Congestión, renal       | 0     | 6      | 10     | 0      |
+
+**Hoy, medido en CPU (árbol de `eabd2aa`):**
+
+- Salto de incidencia de la cápsula (pose de partida, p99 / máximo): sano, subxifoidea 24,4° / 29,8°
+  (la arista pared|unión de los lóbulos: de ~33° a ~58° entre dos líneas); intercostal 20,5° / 20,5°;
+  flanco 0,7° / 0,7°; congestión, subxifoidea 2,5° / 29,4° (136 pares: el salto único queda por encima del
+  p99). `fidelityScene.test.ts` exige el máximo ≤ 3° en la subxifoidea con `it.fails`.
+- Contorno del hígado en el plano (`src/validation/support/liverContour.ts`: marching squares de
+  `faceSdf('liverSurface')` a 0,25 mm, normales de `faceGradient`, nivel previsto con el lóbulo de la 57):
+  11 aristas 3D en las cuatro vistas de las capturas (4, 1, 3 y 3), todas del min duro (un lado es la
+  pared o la cúpula); 9 extremos de la cápsula visible, 3 bruscos, más 5 cambios de dueño; fundido de 15 a
+  6 dB de 0, 3, 4, 5,5, 12, 18, 20,5, 25 y 52 mm; cápsula visible el 44 % de 998 mm. En 56 poses (2 casos
+  × 4 vistas × 7 desvíos): 102 aristas fuera de la fisura (y 17 de la fisura), 48 de 117 extremos bruscos
+  y 67 cambios de dueño. Tramos rectos, solo informados: 601 mm con flecha ≤ 0,25 mm (1 px de la rejilla)
+  y 833 mm con ≤ 0,5 mm; con 0,1 mm (0,4 px) la recta mide ruido de la isolínea y no se usa.
+- Gemelo B→C→D de la cápsula (`capsuleTwin.test.ts`, 8 semillas): con la espiral de incidencia
+  constante, cociente / huecos / huecos de la traza entre líneas a 0° 1,86 / 0,00 / 0,00; 40° 1,19 / 0,62
+  / 0,70; 50° 1,17 / 0,69 / 0,79; 60° 1,16 / 0,71 / 0,81; 70° 1,17 / 0,69 / 0,82; el nivel cae 14,3 dB de
+  0° a 50°. En la escena del repositorio: 0–20° 1,81 sin huecos, rosario 0,200 (sin compuesto), σ_L 1,30 dB
+  (0,90–1,54 por semilla); 20–40° 1,38 / 0,24; 40–60° 1,19 / 0,66. Pliegue de 10° a 50°: el lado de 50° se
+  ve en el 34 % de las líneas, con huecos en el 75 % de la traza. Morison con la banda de cápsula hepática
+  junto a la grasa: 2,17 a 0–20° con `T_CAPSULE` 1,3 y con 1,0 (la banda no mueve su pico).
+
+El banco con GPU de la línea base de estas métricas (contraste, CVc, σ_L, extremos bruscos) está
+pendiente de una corrida con la máquina libre.
+
+**Referencias reales, solo informadas.** Medidas a mano por roughness-first (`design-contour`, `run6` y
+`run7`) con la misma métrica en los dos lados: contraste en gris frente al hígado a 3–8 mm (el banco,
+3–10 mm) y CVc con las crestas vecinas a ±3 muestras cada ~0,7 mm (el paso de línea del banco a 30–60
+mm).
+
+| Referencia                                                              | 0–20°           | 20–40°          | 40–60°         | 60–80°         |
+| ----------------------------------------------------------------------- | --------------- | --------------- | -------------- | -------------- |
+| Morison, Siemens 3,5C40H con armónica, 13 cm (Wikimedia)                | 95 / 0,08 (15)  | 95 / 0,14 (31)  | 78 / 0,20 (16) | —              |
+| Hígado y riñón, Toshiba Aplio 500 (6C1), 70 dB, reducción y composición | 137 / 0,03 (43) | 110 / 0,10 (16) | 72 / 0,19 (31) | 65 / 0,21 (19) |
+
+Contraste en grises / CVc (registros). Salvedades: son la interfaz hepatorrenal (Morison), no la
+cápsula de Glisson bajo la pared; las imágenes están procesadas (armónica, composición, reducción de
+moteado) y la curva de grises del equipo es desconocida; la cresta se trazó a mano y la incidencia sale
+de un ápice estimado (±5–10°). Por eso no son puertas; el CVc no tiene techo (premiaría suavizar la
+línea, antipatrón §23 de la guía), y el rosario no se compara con ellas: el de la referencia necesita un
+rango dinámico supuesto (dominios distintos). Falta una referencia de la cápsula de Glisson (3–5
+capturas), requisito de la modulación de R_ef (decisión 64).
 
 ## Línea base (23-09-2026, árbol `src/` 4de3821, tras el preajuste abdominal; M4 con Metal, densidad 2)
 

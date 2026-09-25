@@ -82,8 +82,10 @@ const ALLOWED: Record<string, readonly string[]> = {
   app: ['core', 'physiology', 'anatomy', 'cases', 'probe', 'ultrasound', 'doppler', 'audio', 'vexus'],
   ui: ['core', 'physiology', 'anatomy', 'cases', 'probe', 'ultrasound', 'doppler', 'vexus', 'app'],
   // validation: el registro de limitaciones y los gemelos que solo usan las pruebas (`validation/support`,
-  // p. ej. el de los ecos de interfaz, sobre el motor de imagen); las pruebas no cuentan como capa
-  validation: ['core', 'anatomy', 'ultrasound'],
+  // p. ej. el de los ecos de interfaz, sobre el motor de imagen, y el contorno del hígado de las vistas de
+  // las capturas, que necesita la sonda, los casos y las poses de partida de `app/startPoints`); las pruebas
+  // no cuentan como capa
+  validation: ['core', 'anatomy', 'ultrasound', 'probe', 'cases', 'app'],
   main: ['core', 'physiology', 'anatomy', 'cases', 'probe', 'ultrasound', 'doppler', 'audio', 'vexus', 'app', 'ui'],
 };
 

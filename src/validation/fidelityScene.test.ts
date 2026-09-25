@@ -1,6 +1,6 @@
 // @tier slow
 import { describe, expect, it } from 'vitest';
-import { fidelityStats, type FidelityStats, type TransmissionFrame } from '../app/fidelity';
+import { contourStats, fidelityStats, type FidelityStats, type TransmissionFrame } from '../app/fidelity';
 import { COMPOUND, compoundEnvelope, lookTheta } from '../ultrasound/compound';
 import { SPECKLE_CLEARANCE_MM, SPECKLE_PATCH, speckleMask, speckleStats, type EnvelopeFrame } from '../app/speckle';
 import type { Simulator } from '../app/simulator';
@@ -162,6 +162,31 @@ describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
     // sin la transmisión de la GPU no hay espejo con el que comparar: el desfase es NaN, no un 0 falso
     for (const b of subxiphoid.display!.diaphragm.filter((x) => x.walls > 0)) expect(b.mirrorOffsetMm).toBeNaN();
     expect(subxiphoid.faceSamples!.length).toBeGreaterThan(100);
+  });
+
+  it('contorno de la cápsula de extremo a extremo: los registros del banco dan el contraste pintado en cada tramo', () => {
+    const c = contourStats([subxiphoid.faceSamples!, intercostal.faceSamples!]);
+    expect(c.capsule.map((b) => [b.fromDeg, b.toDeg])).toEqual([
+      [0, 20],
+      [20, 40],
+      [40, 60],
+      [60, 80],
+    ]);
+    const filled = [...c.capsule, ...c.renalCapsule].filter((b) => b.walls > 0);
+    expect(c.capsule.reduce((n, b) => n + b.walls, 0)).toBeGreaterThan(100);
+    // la cara pintada a 200 sobre el hígado a 100 (la rejilla de píxeles pierde la cápsula de 0,8 mm en
+    // alguna línea: la mediana no lo nota; el CVc y los extremos, sí, y por eso aquí no se miden)
+    for (const b of filled) expect(b.contrastGrey).toBe(FACE_GRAY - 100);
+    expect(c.incidencePairs).toBeGreaterThan(100);
+  });
+
+  // Decisión 60: la subxifoidea salta de ~33° a ~58° entre dos líneas vecinas en la arista pared|unión de
+  // los lóbulos (la cápsula «acaba a mitad del hígado»). La incidencia es de la CPU (normal de `faceSdf`):
+  // la misma cifra que el bloque `contour` del banco con GPU. La puerta es el máximo, no el p99: hoy hay dos
+  // saltos grandes (29,8° y 24,4°) en 115 pares, el p99 es el segundo y, si la 60 quitara solo uno de los
+  // dos, bajaría a 1,0° con el otro todavía en la imagen.
+  it.fails('60: el mayor salto de incidencia de la cápsula entre líneas vecinas es ≤ 3° (hoy, en la subxifoidea, ~30°)', () => {
+    expect(contourStats([subxiphoid.faceSamples!]).incidenceJumpMaxDeg).toBeLessThanOrEqual(3);
   });
 
   it('la incidencia del diafragma es la de la normal de la cúpula en el cruce exacto con la pleura', () => {

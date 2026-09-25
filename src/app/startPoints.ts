@@ -37,10 +37,18 @@ export const START_POINTS: readonly StartPoint[] = [
     id: 'intercostal',
     color: '#ffc857',
     label: 'Intercostal dcho',
-    phi: Math.PI * 0.88,
-    z: 8,
-    yaw: 0.35,
-    hint: 'Suprahepáticas y porta: marcador hacia la axila, deslizar por el espacio intercostal.',
+    // 8.º espacio intercostal en la línea axilar media, con la sonda a lo largo del espacio (las costillas suben
+    // hacia atrás), el marcador hacia la axila y 11° de basculación talón-punta: una costilla asoma en un borde
+    // con su cortical y su sombra, y el resto del sector es hígado con las suprahepáticas derecha y media y
+    // la VCI, despejadas de la cortina pulmonar con la respiración tranquila (que baja hasta ellas en inspiración
+    // profunda). Con las costillas óseas (decisión 62) la pose de antes (φ 0,88π, z 8, yaw 0,35, casi
+    // craneocaudal) cruzaba seis costillas y dejaba seis sombras; a lo largo del 7.º espacio (φ 0,94π, z 19) la
+    // cortina tapaba en espiración medio sector, las suprahepáticas incluidas (decisión 61).
+    phi: Math.PI * 0.98,
+    z: 3,
+    yaw: -1.25,
+    rock: 0.2,
+    hint: 'Suprahepáticas y VCI por el 8.º espacio intercostal en la línea axilar media: la sonda a lo largo del espacio, marcador hacia la axila; una costilla asoma en el borde con su sombra y la cortina pulmonar baja con la inspiración.',
   },
   {
     id: 'flank',

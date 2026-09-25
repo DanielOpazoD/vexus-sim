@@ -197,7 +197,11 @@ describe('e2e de normales con los gradientes del PR 5b (sin GPU)', () => {
       expect(renal.kidneyOuterNotch.p01).toBeGreaterThan(0.999);
       // fuera de los tubos, el mismo cálculo que la referencia (salvo el punto, que la GPU recibe en float32)
       for (const row of ['kidneyOuter', 'kidneyOuterNotch', 'liverSurface'] as const) expect(renal[row].normErrMax, row).toBeLessThan(1e-5);
-      expect(stats('intercostal').dome.normErrMax).toBeLessThan(1e-5);
+      // la cúpula, desde la subxifoidea (la vista intercostal de partida va por el 8.º espacio desde la decisión
+      // 62 y apenas la ve)
+      const sub = stats('subxiphoid');
+      expect(sub.dome.points).toBeGreaterThan(50);
+      expect(sub.dome.normErrMax).toBeLessThan(1e-5);
     } finally {
       gpuMode = '5a';
     }

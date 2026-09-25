@@ -35,7 +35,12 @@ const pad = (values: number[][], count: number, filler: number[]): number[] =>
 
 export const SCENE_UNIFORMS: readonly UniformSpec[] = [
   { name: 'uTorso', type: 'vec4', doc: 'a, b, zMin, zMax', value: (s) => [s.torso.a, s.torso.b, s.torso.zMin, s.torso.zMax] },
-  { name: 'uWall', type: 'vec3', doc: 'piel, grasa, músculo (mm)', value: (s) => [s.torso.skinMm, s.torso.fatMm, s.torso.muscleMm] },
+  {
+    name: 'uWall',
+    type: 'vec4',
+    doc: 'piel, grasa, músculo (con la grasa preperitoneal), grasa preperitoneal (mm)',
+    value: (s) => [s.torso.skinMm, s.torso.fatMm, s.torso.muscleMm, s.torso.preperitonealMm],
+  },
   {
     name: 'uDomeR',
     type: 'vec4',

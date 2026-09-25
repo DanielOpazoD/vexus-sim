@@ -1,7 +1,10 @@
 /**
  * Gemelo en CPU de las pasadas B → C → D → G de la mirada 0 para la pleura parietal y la cortina (decisión 61),
  * sobre una pared plana extruida en elevación: piel 2 mm, grasa 14 mm y músculo 12 mm (el adulto de
- * referencia) paralelos a la tangente de la cara, y debajo la lámina de pulmón de la cortina (a partir del
+ * referencia) paralelos a la tangente de la cara, con las capas de la decisión 62 (Scarpa, fascia profunda, los
+ * dos planos intermusculares de la pared lateral, transversalis, grasa preperitoneal y peritoneo, planas y con
+ * sus caras; sin la textura de septos y estrías ni la variación de las caras), y debajo la lámina de pulmón de
+ * la cortina (a partir del
  * borde, en la dirección lateral de la imagen, que aquí es la craneocaudal: l_z = cos θ, e_z = 0, como la
  * ventana del flanco) o la cápsula y el hígado. Usa las funciones de producción: el moteado anclado de tres
  * planos (`anchoredSliceField`), los grumos y la heterogeneidad (`speckleField.ts`), el eco de las caras
@@ -12,6 +15,7 @@
  * Lo usa `pleuraTwin.test.ts` (lento) para las métricas del banco de la decisión 61 antes de la GPU.
  */
 import { Interface } from '../../anatomy/interfaces';
+import { WALL as WALL_LAYERS, preperitonealMm } from '../../anatomy/organs/wall';
 import { TISSUES, Tissue, attenuationDbPerCm } from '../../anatomy/tissues';
 import type { Vec3 } from '../../core/vec3';
 import { lateralFwhmMm } from '../../ultrasound/beamModel';
@@ -19,6 +23,7 @@ import { greyOfLevel, levelOfGrey } from '../../ultrasound/greyMap';
 import { interfaceEchoField } from '../../ultrasound/interfaceEcho';
 import {
   CURTAIN_MIN_AIR,
+  WALL_COPY_FACE_GAIN,
   curtainAirFraction,
   curtainEdgeSigmaMm,
   elevSigmaMm,
@@ -52,6 +57,38 @@ const TGC_CAP_DB = 50;
 /** Pared del adulto de referencia (mm): la pleura está a WALL[2] bajo la cara, en y. */
 export const WALL = [2, 16, 28] as const;
 const CAPSULE_MM = 0.8;
+/**
+ * Caras de la pared plana (decisión 62, `organs/wall.ts` sin ondulación, en la pared lateral): profundidad de
+ * cada una bajo la cara. La transversalis deja la grasa preperitoneal del hábito encima de la pleura.
+ */
+const TRANSVERSALIS = WALL[2] - preperitonealMm(WALL[1] - WALL[0]);
+const FACES: readonly (readonly [Interface, number])[] = [
+  [Interface.SkinFat, WALL[0]],
+  [Interface.Scarpa, WALL[0] + WALL_LAYERS.scarpaFraction * (WALL[1] - WALL[0])],
+  [Interface.DeepFascia, WALL[1]],
+  [Interface.ObliquePlane, WALL[1] + WALL_LAYERS.planeFractions[0] * (TRANSVERSALIS - WALL[1])],
+  [Interface.TransversusPlane, TRANSVERSALIS - WALL_LAYERS.planeFractions[1] * (TRANSVERSALIS - WALL[1])],
+  [Interface.Transversalis, TRANSVERSALIS],
+  [Interface.Peritoneum, WALL[2]],
+];
+
+/**
+ * Cara de la capa que dibuja la muestra de la pared a la profundidad y y su distancia (`wallFace` de la
+ * anatomía: la más cercana de su capa, a igualdad la de fuera); null fuera de la pared.
+ */
+function flatWallFace(y: number): [Interface, number] | null {
+  if (y < 0 || y >= WALL[2]) return null;
+  if (y < WALL[0]) return [Interface.SkinFat, WALL[0] - y];
+  // las caras que conoce cada capa: grasa, piel/Scarpa/fascia; músculo, fascia/planos/transversalis; grasa
+  // preperitoneal, transversalis/peritoneo
+  const own = y < WALL[1] ? [0, 1, 2] : y < TRANSVERSALIS ? [2, 3, 4, 5] : [5, 6];
+  let best: [Interface, number] = [FACES[own[0]][0], Math.abs(y - FACES[own[0]][1])];
+  for (const k of own.slice(1)) {
+    const dist = Math.abs(y - FACES[k][1]);
+    if (dist < best[1]) best = [FACES[k][0], dist];
+  }
+  return best;
+}
 
 export const thetaOf = (u: number): number => -HALF + (2 * HALF * (u + 0.5)) / LINES;
 const linePitch = (r: number): number => (RC + r) * ((2 * HALF) / (LINES - 1));
@@ -89,7 +126,8 @@ function wallTissue(y: number): Tissue {
   if (y < 0) return Tissue.Air;
   if (y < WALL[0]) return Tissue.Skin;
   if (y < WALL[1]) return Tissue.Fat;
-  if (y < WALL[2]) return Tissue.Muscle;
+  if (y < TRANSVERSALIS) return Tissue.Muscle;
+  if (y < WALL[2]) return Tissue.Fat;
   if (y < WALL[2] + CAPSULE_MM) return Tissue.LiverCapsule;
   return Tissue.Liver;
 }
@@ -100,11 +138,11 @@ function transmission(th: number, r: number): number {
   const yOf = (rr: number) => (RC + rr) * c - RC;
   const y = yOf(r);
   // longitudes en cada capa a lo largo de la línea (capas planas: espesor / cosθ)
-  const bounds = [0, WALL[0], WALL[1], WALL[2], Infinity];
-  const tissues = [Tissue.Skin, Tissue.Fat, Tissue.Muscle, Tissue.Liver];
+  const bounds = [0, WALL[0], WALL[1], TRANSVERSALIS, WALL[2], Infinity];
+  const tissues = [Tissue.Skin, Tissue.Fat, Tissue.Muscle, Tissue.Fat, Tissue.Liver];
   const y0 = yOf(0);
   let db = 0;
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < tissues.length; i++) {
     const a = Math.max(bounds[i], y0);
     const b = Math.min(bounds[i + 1], y);
     if (b > a) db += 2 * attenuationDbPerCm(tissues[i], F_B) * ((b - a) / c / 10);
@@ -172,6 +210,11 @@ export function simulatePleura(o: PleuraTwinOpts): PleuraTwinOut {
   /** Eco de la cápsula (cara de un lado, la cápsula es su dueña) en y. */
   const capsuleEcho = (y: number, cosI: number): number =>
     y >= WALL[2] && y < WALL[2] + CAPSULE_MM ? interfaceEchoField(Interface.LiverCapsule, cosI, 1, (y - WALL[2]) / cosI, K0) : 0;
+  /** Eco de la cara de la capa de la pared en y (planas: |∇| = 1, incidencia la de la línea). */
+  const wallEcho = (y: number, cosI: number): number => {
+    const f = flatWallFace(y);
+    return f ? interfaceEchoField(f[0], cosI, 1, f[1] / cosI, K0) : 0;
+  };
   const nv = FINE;
   const raw = new Float32Array(nv * LINES * 2);
   const Ds = new Float64Array(LINES);
@@ -201,7 +244,7 @@ export function simulatePleura(o: PleuraTwinOpts): PleuraTwinOut {
       if (wTissue >= CURTAIN_MIN_AIR && (parts.tissue || !under)) {
         const f = fieldAt(x, y, r, true);
         const tr = transmission(th, r);
-        re += (f[0] + capsuleEcho(y, c)) * tr * wTissue;
+        re += (f[0] + capsuleEcho(y, c) + wallEcho(y, c)) * tr * wTissue;
         im += f[1] * tr * wTissue;
       }
       if (curtain) {
@@ -214,8 +257,11 @@ export function simulatePleura(o: PleuraTwinOpts): PleuraTwinOut {
           }
           if (!parts.series) continue;
           const d = term.depth;
-          const f = fieldAt((RC + d) * sn, (RC + d) * c - RC, d, false);
-          ar += f[0] * term.gain;
+          const yd = (RC + d) * c - RC;
+          const f = fieldAt((RC + d) * sn, yd, d, false);
+          // la copia de la pared lleva el eco de cara plana de sus capas (wallFaceEchoFlat de la GPU, degradado
+          // en el camino de la reverberación: WALL_COPY_FACE_GAIN)
+          ar += (f[0] + WALL_COPY_FACE_GAIN * wallEcho(yd, c)) * term.gain;
           ai += f[1] * term.gain;
         }
         if (under && parts.sliding) {

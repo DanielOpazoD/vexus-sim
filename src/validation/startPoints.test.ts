@@ -54,9 +54,32 @@ describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', 
     const s = sweep(byId('intercostal'), 160);
     expect(s.coupling).toBeGreaterThan(0.5);
     const hv = samples(s, 'hvRight') + samples(s, 'hvMiddle') + samples(s, 'hvRightAnterior');
-    expect(hv).toBeGreaterThan(30);
+    // desde la decisión 62, por el 8.º espacio en la línea axilar media (28 muestras de 2 mm: la derecha y la
+    // media hacia la VCI; la pose de antes, casi craneocaudal, cruzaba seis costillas óseas)
+    expect(hv).toBeGreaterThan(25);
     expect(samples(s, 'ivcInfra') + samples(s, 'ivcSupra')).toBeGreaterThan(20);
     expect(s.tissues.get(Tissue.Liver) ?? 0).toBeGreaterThan(600);
+  });
+
+  it('intercostal derecho: una costilla ósea asoma en un borde con su sombra y el centro queda despejado', () => {
+    // decisión 62: con la regla de antes del cartílago (φ > 1,05) todo el arco derecho anterolateral era
+    // cartílago, sin cortical ni sombra; ahora es hueso y la vista va a lo largo del 8.º espacio intercostal
+    const sp = byId('intercostal');
+    const fr = probeFrame({ phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 }, scene.torso, CONVEX_C35);
+    const nLines = 61;
+    const boneLine = Array.from({ length: nLines }, (_, i) => {
+      const theta = -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * i) / (nLines - 1);
+      for (let r = 2; r < 60; r += 1) {
+        const t = scene.classify(pointOnLine(fr, CONVEX_C35, theta, r), BASELINE_CALIBER).tissue;
+        expect(t, `línea ${i} a ${r} mm`).not.toBe(Tissue.Cartilage);
+        if (t === Tissue.Bone) return true;
+      }
+      return false;
+    });
+    // una costilla en el 20 % de un borde, a lo sumo 12 líneas con sombra y el 60 % central sin ninguna
+    expect(boneLine.slice(0, 12).some(Boolean) || boneLine.slice(nLines - 12).some(Boolean)).toBe(true);
+    expect(boneLine.filter(Boolean).length).toBeLessThanOrEqual(12);
+    expect(boneLine.slice(12, nLines - 12).every((b) => !b)).toBe(true);
   });
 
   it('flanco: VCI transhepática coronal con suprahepáticas desembocando en ella', () => {

@@ -12,7 +12,8 @@ import { INTERFACES, INTERFACE_COUNT, Interface, interfaceReflectivity } from '.
  *   Λ    = sec²θ · exp(−tan²θ / (4 s²))               lóbulo de Kirchhoff (óptica geométrica) en amplitud;
  *                                                     con s_ref/s conserva la energía y Λ(0; s_ref) = 1
  *   χ    = exp(−2 (k0 σz cosθ)²)                      rugosidad fina (Ament)
- *   C    = [(1 + (2k0σl²κl)²)(1 + (2k0σe²κe)²)]^(−1/4) coherencia de curvatura de un haz gaussiano (solo tubos)
+ *   C    = [(1 + (2k0σl²κl)²)(1 + (2k0σe²κe)²)]^(−1/4) coherencia de curvatura de un haz gaussiano (tubos y,
+ *                                                     desde la decisión 62, costillas: `hasCurvatureCoherence`)
  *   g    = N(δ'; 0, σh), δ' = ifd/(|∇|·cosθ) − (dos lados ? 0 : 2,5σh), |δ'| ≤ 3,5σh
  *
  * Escala: con S = 1 el pico de la envolvente iguala la envolvente RMS del hígado. K es el de un plano
@@ -147,7 +148,7 @@ export function reflectionCosine(d0: readonly number[], dR: readonly number[]): 
 
 /**
  * Pasada B: eco de interfaz de una muestra (necesita `Cls`, `faceGradient` y `uElev` de la anatomía y del
- * haz, y `lateralSigmaMm` de `LATERAL_PSF_GLSL`). `se` es la σ elevacional de UNA vía (`elevSigma`).
+ * haz, `lateralSigmaMm` de `LATERAL_PSF_GLSL` y `wallFaceGain` de `WALL_TEXTURE_GLSL`). `se` es la σ elevacional de UNA vía (`elevSigma`).
  */
 export const INTERFACE_ECHO_GLSL = /* glsl */ `
 uniform vec4 uIface[${INTERFACE_COUNT}]; // (A, 2·k0·σz, 1/(4s²), dos lados) — interfaceEcho.ts
@@ -197,7 +198,10 @@ float interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se) {
   vec4 fg = faceGradient(c, m);
   float cosI = abs(dot(fg.xyz, dir));
   if (cosI < IFACE_MIN_COS) return 0.0;
-  float curv = c.iface <= IF_LAST_TUBE ? tubeCurvature(c, fg.xyz, dir, r, se) : 1.0;
+  // tubos y costillas (decisión 62): cilindros con la curvatura de su sección en c.kc y su eje en c.tangent
+  float curv = c.iface <= IF_LAST_TUBE || c.iface == IF_RIB || c.iface == IF_PERICHONDRIUM ? tubeCurvature(c, fg.xyz, dir, r, se) : 1.0;
+  // las caras de la pared: la variación anclada de su reflectividad a lo largo de la cara (wallTexture.ts)
+  if (c.iface >= IF_FIRST_WALL && c.iface <= IF_LAST_WALL) curv *= wallFaceGain(m, c.iface);
   // perfil en la distancia por la normal (faceDelta): integra 1 a lo largo del rayo aunque |∇| ≠ 1
   return interfaceProfileEcho(c.iface, cosI, curv, c.ifd / (fg.w * cosI));
 }

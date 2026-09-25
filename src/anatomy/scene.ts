@@ -46,10 +46,30 @@ import {
   type UmbilicalFissure,
 } from './organs/liverLigaments';
 import { inLungCurtain, inLungRecess, lungCurtainDistance, lungCurtainEdgeMm } from './organs/lungCurtain';
+import {
+  nearestRib,
+  preperitonealMm,
+  ribCurvature,
+  ribSd,
+  ribSearchDepth,
+  ribTangent,
+  wallArc,
+  wallDepths,
+  wallFace,
+  wallFaceSd,
+} from './organs/wall';
 
 export type { DuctDef, VesselDef } from './vesselTree';
 import { BOWEL_BD_CAP_MM, DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, Tissue } from './tissues';
-import { FACE_GRADIENT_EPS_MM, Interface, LAST_TUBE_INTERFACE, MORISON_CONTACT_MM, interfaceOfVessel } from './interfaces';
+import {
+  FACE_GRADIENT_EPS_MM,
+  Interface,
+  LAST_TUBE_INTERFACE,
+  MORISON_CONTACT_MM,
+  interfaceOfVessel,
+  isRibInterface,
+  isWallLayerInterface,
+} from './interfaces';
 
 /**
  * Escena anatómica del avatar adulto de referencia (guía §9): pared abdominal
@@ -104,10 +124,13 @@ export const FACE_GEOMETRIES: readonly FaceGeometry[] = ['tube', 'liverSurface',
 
 /**
  * Geometría cuya distancia (`faceSdf`) da la cara de interfaz `i`, o null sin cara (o las pleuras: la del
- * espejo y la parietal, que no salen de `classify`).
+ * espejo y la parietal, que no salen de `classify`). Las caras de la pared y de las costillas (decisión 62)
+ * tampoco tienen geometría de `faceSdf`: su distancia es la de su capa (`wallFaceSd`) o la de su costilla
+ * (`ribSd`), y `faceGradient` las trata aparte.
  */
 export function faceGeometryOf(i: Interface): FaceGeometry | null {
-  if (i === Interface.None || i === Interface.Pleura || i === Interface.PleuraWall) return null;
+  if (i === Interface.None || i === Interface.Pleura || i === Interface.PleuraWall || isWallLayerInterface(i) || isRibInterface(i))
+    return null;
   if (i <= LAST_TUBE_INTERFACE) return 'tube';
   if (i === Interface.GallbladderLumen) return 'gallbladder';
   if (i === Interface.LiverCapsule) return 'liverSurface';
@@ -128,8 +151,13 @@ export interface FaceGradient {
    * en sus paredes AP; las fusiones suaves de la cápsula: < 1).
    */
   norm: number;
-  /** Curvatura circunferencial de la cara de un tubo (1/mm, `tubeFaceGradient`); 0 en el resto. */
+  /**
+   * Curvatura circunferencial de la cara de un tubo (1/mm, `tubeFaceGradient`) o de la sección de una
+   * costilla (`ribCurvature`, decisión 62); 0 en el resto.
+   */
   curvature: number;
+  /** Eje del cilindro cuya sección da `curvature` (tubo o costilla); ausente en el resto. */
+  axis?: Vec3;
 }
 
 /** Resultado de la búsqueda de tubos de `classify`, con el tubo y la escala de radio con que se consultó. */
@@ -200,7 +228,8 @@ export class AnatomyScene {
     const fat = patient.habitus.subcutaneousFatMm;
     const muscle = patient.habitus.muscleMm;
     // Tronco 32 × 21 cm (adulto de IMC 25): la VCI queda a ≈ 12–13 cm del xifoides
-    this.torso = { a: 160, b: 105, zMin: -300, zMax: 300, skinMm: 2, fatMm: fat, muscleMm: muscle };
+    // la grasa preperitoneal es la parte más honda del espesor muscular del hábito (decisión 62)
+    this.torso = { a: 160, b: 105, zMin: -300, zMax: 300, skinMm: 2, fatMm: fat, muscleMm: muscle, preperitonealMm: preperitonealMm(fat) };
     // Referencia craneocaudal: z = 0 en la punta del xifoides (T9–T10). Cúpula derecha
     // en T8–T9 (+45 mm), reborde costal en la línea medioclavicular ≈ −80 mm, unión
     // cavoauricular ≈ +55 mm, hilio hepático ≈ −45 mm (T12–L1) [B.5].
@@ -255,7 +284,9 @@ export class AnatomyScene {
         halfWidth: 6,
         halfThickness: 3.2,
         scale: 0.85,
-        cartilageFromPhi: 1.05,
+        // cartílago a ±45° de la línea media: la unión costocondral en la línea medioclavicular (x ≈ 96 mm en la
+        // elipse de la costilla, 136 × 89 mm), la del reborde costal de las costillas 7–10 (decisión 62)
+        cartilageFromPhi: Math.PI / 4,
         rightOnly: true,
       });
     }
@@ -507,15 +538,32 @@ export class AnatomyScene {
    * escotadura renal, la cúpula lejos de la pleura). `face` fuerza la geometría (la GPU la elige por
    * tejido, también donde no hay cara: la e2e de normales). Solo pruebas: la clasificación no la llama.
    */
-  faceGradient(m: Vec3, caliber: VesselCaliber, face = faceGeometryOf(this.classify(m, caliber).interface)): FaceGradient | null {
+  faceGradient(m: Vec3, caliber: VesselCaliber, face?: FaceGeometry | null): FaceGradient | null {
+    if (face === undefined) {
+      // las caras de la pared y de las costillas (decisión 62) no tienen geometría de faceSdf
+      const iface = this.classify(m, caliber).interface;
+      if (isWallLayerInterface(iface)) return this.numericGradient(m, (p) => wallFaceSd(p, iface, this.torso), 0);
+      if (isRibInterface(iface)) {
+        const rib = this.ribs[nearestRib(m, this.ribs, this.torso, this.spine)];
+        const g = this.numericGradient(m, (p) => ribSd(p, rib, this.torso, this.spine), ribCurvature(m, rib, this.torso));
+        return { ...g, axis: ribTangent(m, rib, this.torso) };
+      }
+      face = faceGeometryOf(iface);
+    }
     if (face === null) return null;
     if (face === 'tube') {
       const best = this.bestTube(m, caliber);
       if (!best) return null;
       const { gradient, curvature } = tubeFaceGradient(m, best.tube, best.scale, best.hit);
       const norm = Math.hypot(gradient[0], gradient[1], gradient[2]);
-      return { normal: [gradient[0] / norm, gradient[1] / norm, gradient[2] / norm], norm, curvature };
+      return { normal: [gradient[0] / norm, gradient[1] / norm, gradient[2] / norm], norm, curvature, axis: best.hit.tangent };
     }
+    const geometry = face;
+    return this.numericGradient(m, (p) => this.faceSdf(p, caliber, geometry)!, 0);
+  }
+
+  /** Gradiente por diferencias centrales de paso `FACE_GRADIENT_EPS_MM` (el de la GPU) de una distancia. */
+  private numericGradient(m: Vec3, sd: (p: Vec3) => number, curvature: number): FaceGradient {
     const h = FACE_GRADIENT_EPS_MM;
     const g: Vec3 = [0, 0, 0];
     for (let a = 0; a < 3; a++) {
@@ -523,39 +571,58 @@ export class AnatomyScene {
       const minus: Vec3 = [m[0], m[1], m[2]];
       plus[a] += h;
       minus[a] -= h;
-      g[a] = this.faceSdf(plus, caliber, face)! - this.faceSdf(minus, caliber, face)!;
+      g[a] = sd(plus) - sd(minus);
     }
     const l = Math.hypot(g[0], g[1], g[2]);
-    if (l === 0) return { normal: [0, 1, 0], norm: 1, curvature: 0 };
-    return { normal: [g[0] / l, g[1] / l, g[2] / l], norm: l / (2 * h), curvature: 0 };
+    if (l === 0) return { normal: [0, 1, 0], norm: 1, curvature };
+    return { normal: [g[0] / l, g[1] / l, g[2] / l], norm: l / (2 * h), curvature };
   }
 
   /**
-   * Capas parietales y costillas. `final` = el punto está en piel, grasa,
-   * costilla/cartílago, músculo o columna (no hay nada más que mirar); si no,
-   * devuelve el espesor total de la pared para recortar el hígado.
+   * Capas parietales y costillas (decisión 62, módulo `organs/wall`). `final` = el punto está en piel,
+   * grasa subcutánea, costilla/cartílago, músculo, grasa preperitoneal o columna (no hay nada más que
+   * mirar); si no, devuelve el espesor total de la pared para recortar el hígado. Cada muestra de las capas
+   * dibuja la cara de la capa más cercana (`wallFace`); junto a una costilla ósea, su cortical; el cartílago,
+   * su pericondrio. El hueso no dibuja cara (su cortical la dibuja el tejido blando de fuera).
    */
   private classifyWall(m: Vec3, d: number): { final: true; cls: Classification } | { final: false; wallMm: number } {
     const torso = this.torso;
     const skin = torso.skinMm;
-    const fat = skin + torso.fatMm;
-    const wall = fat + torso.muscleMm;
-    if (d < skin) return { final: true, cls: { ...NONE, tissue: Tissue.Skin, boundaryDistance: skin - d } };
-    if (d < fat) return { final: true, cls: { ...NONE, tissue: Tissue.Fat, boundaryDistance: Math.min(d - skin, fat - d) } };
-    // Costillas (dentro de la pared muscular o justo por debajo)
-    for (const rib of this.ribs) {
-      const r = sdRib(m, rib, torso, this.spine);
-      if (r.d < 0) {
-        return {
-          final: true,
-          cls: { ...NONE, tissue: r.cartilage ? Tissue.Cartilage : Tissue.Bone, boundaryDistance: -r.d },
-        };
+    const wall = skin + torso.fatMm + torso.muscleMm;
+    // la cara de la capa más cercana; la distancia a la frontera cuenta la costilla más cercana (|∇| ≤ 1,1)
+    const layer = (tissue: Tissue, bd: number, u: number, ribD: number, ribAny: number): { final: true; cls: Classification } => {
+      const [face, dist] = wallFace(d, u, m[2], ribD, torso);
+      const boundaryDistance = Math.min(bd, ribAny / 1.1);
+      return { final: true, cls: { ...NONE, tissue, boundaryDistance, interface: face, interfaceDistance: dist } };
+    };
+    if (d < skin) return layer(Tissue.Skin, skin - d, 0, 1e3, 1e3);
+    // Costillas, antes de la grasa subcutánea donde una puede llegar (la grasa no las corta): dentro de la
+    // pared o justo por debajo; la ósea más cercana da la cortical, el cartílago su pericondrio
+    let ribD = 1e3;
+    let ribAny = 1e3;
+    if (d >= ribSearchDepth(torso, this.ribs[0]?.scale ?? 1))
+      for (const rib of this.ribs) {
+        const r = sdRib(m, rib, torso, this.spine);
+        if (r.d < 0) {
+          const tissue = r.cartilage ? Tissue.Cartilage : Tissue.Bone;
+          const face = r.cartilage ? { interface: Interface.Perichondrium, interfaceDistance: -r.d } : {};
+          return { final: true, cls: { ...NONE, tissue, boundaryDistance: -r.d, ...face } };
+        }
+        ribAny = Math.min(ribAny, r.d);
+        if (!r.cartilage) ribD = Math.min(ribD, r.d);
       }
+    if (d >= wall) {
+      const dSpine = sdSpine(m, this.spine);
+      if (dSpine < 0) return { final: true, cls: { ...NONE, tissue: Tissue.Vertebra, boundaryDistance: -dSpine } };
+      return { final: false, wallMm: wall };
     }
-    if (d < wall) return { final: true, cls: { ...NONE, tissue: Tissue.Muscle, boundaryDistance: Math.min(d - fat, wall - d) } };
-    const dSpine = sdSpine(m, this.spine);
-    if (dSpine < 0) return { final: true, cls: { ...NONE, tissue: Tissue.Vertebra, boundaryDistance: -dSpine } };
-    return { final: false, wallMm: wall };
+    // las coordenadas de la pared solo dentro de ella: fascia profunda y transversalis onduladas en (u, z)
+    const u = wallArc(m, torso);
+    const w = wallDepths(torso, u, m[2]);
+    if (d < w.fascia) return layer(Tissue.Fat, Math.min(d - skin, w.fascia - d), u, ribD, ribAny);
+    if (d < w.transversalis) return layer(Tissue.Muscle, Math.min(d - w.fascia, w.transversalis - d), u, ribD, ribAny);
+    // grasa preperitoneal (extraperitoneal) entre la transversalis y el peritoneo parietal
+    return layer(Tissue.Fat, Math.min(d - w.transversalis, wall - d), u, ribD, ribAny);
   }
 
   /** Lámina de pulmón en el receso costofrénico derecho (lateral y posterior), bajo la pared. */

@@ -261,7 +261,7 @@ describe('rama dirigida de la pasada B: geometría (decisión 58)', () => {
       'p = pointOnLine(lineDir(alpha), r);',
       'tissue = mediumFieldPh(p, dir, s, elevSigma(r), !under, lookPhase(rho, alpha, a, uSteer.w), gr.x * uLateral + gr.y * uAxial);',
       'float rhoJ = sqrt(uCurvR * uCurvR + d * d + 2.0 * d * uSteer.z);',
-      'vec2 f = wallFieldPh(elem + dirK * d, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, uSteer.w), gr.x * uLateral + gr.y * uAxial);',
+      'vec2 f = wallFieldPh(elem + dirK * d, dirK, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, uSteer.w), gr.x * uLateral + gr.y * uAxial);',
       'return field + vec2(interfaceEcho(c, m, dir, r, se), 0.0);',
       'vec3 dn = dRefl - dMirror;',
       'tissue += vec2(pleuraEcho(s - sMirror, dirK, ln > 1e-6 ? reflect(dirK, dn / ln) : dirK), 0.0);',

@@ -195,9 +195,10 @@ describe('Límites del shader con margen para crecer', () => {
   // Un shader con más uniforms de los que admite la GPU no compila en ella (o, peor, en unas sí y en
   // otras no): cada shader de fragmentos cabe con margen en el mínimo de WebGL2 (224 vec4). Las tablas
   // por tejido van de 4 en 4 por vec4 (TISSUE_VEC4 ranuras cada una, no TISSUE_COUNT): COLOR declara 96
-  // ranuras (antes 156), QUERY 85 (antes 145) y la pasada B 105 (125 antes del empaquetado; 165 antes de
-  // que el eco de interfaz, decisión 57, le quitara la atenuación y las banderas, que no lee); su programa
-  // dirigido (decisión 58), 107: uSteer y uLookSalt. Los programas dirigidos son FRAG_* y entran aquí.
+  // ranuras (antes 156), QUERY 85 (antes 145) y la pasada B 114 (125 antes del empaquetado; 165 antes de
+  // que el eco de interfaz, decisión 57, le quitara la atenuación y las banderas, que no lee; 105 antes de las
+  // 9 caras de la pared y las costillas de la decisión 62, en uIface); su programa dirigido (decisión 58),
+  // 116: uSteer y uLookSalt. Los programas dirigidos son FRAG_* y entran aquí.
   it(`cada shader de fragmentos declara ≤ ${SLOT_GUARD} ranuras vec4 de uniforms (80 % de 224)`, () => {
     expect(FRAGMENT_SHADERS.length).toBeGreaterThan(8);
     for (const [name, src] of FRAGMENT_SHADERS) {
@@ -208,8 +209,8 @@ describe('Límites del shader con margen para crecer', () => {
       expect(perTissue, `${name} declara una tabla de un float por tejido`).toEqual([]);
     }
     expect(FRAGMENT_SHADERS.map(([name]) => name)).toEqual(expect.arrayContaining(LOOK_PAIRS.map((p) => `${p.name}_STEERED`)));
-    // la pasada B cuenta sus arrays de tejidos, de caras y de escena: 105 medidas y 107 en su programa
-    // dirigido, con sitio para la THI (~+14) sin pasar de 130
+    // la pasada B cuenta sus arrays de tejidos, de caras y de escena: 114 medidas y 116 en su programa
+    // dirigido (con las caras de la pared, decisión 62), con sitio para la THI (~+14) sin pasar de 130
     const raw = uniformSlots(FRAG_RAWFIELD);
     const rawSteered = uniformSlots(FRAG_RAWFIELD_STEERED);
     expect(raw.arrays).toContain(`uTissueBack4[${TISSUE_VEC4}]`);
@@ -272,15 +273,17 @@ describe('Límites del shader con margen para crecer', () => {
   // huella; si no lo cambiaste, alguien lo ha tocado sin querer. Cambio deliberado: el main de B lleva la
   // rama de la cortina (decisión 61; antes 4314c49a44f58052); fuera de las líneas con pleura parietal hace
   // las mismas cuentas que antes (el peso del tejido es 1 y la transmisión, la de siempre). Después (e5fca934a2dddf02
-  // → la de abajo), la muestra de la imagen sale del bucle de la serie (mediumField, una vez, como antes de la
-  // decisión 61) y la pared copiada se clasifica con el prefijo de la pared (wallField): el JIT de SwiftShader.
+  // → b6752d41c82c4fe2), la muestra de la imagen sale del bucle de la serie (mediumField, una vez, como antes de
+  // la decisión 61) y la pared copiada se clasifica con el prefijo de la pared (wallField): el JIT de
+  // SwiftShader. Después (→ la de abajo), wallField recibe la dirección de la línea para el eco de cara plana de
+  // las capas de la pared en las copias (decisión 62, `wallFaceEchoFlat`); nada más cambia en el main.
   it('el main de los programas de la mirada 0 es, letra a letra, el de antes de la composición', () => {
     const mainOf = (src: string): string => src.slice(src.lastIndexOf('\nvoid main() {'));
     const print = (src: string): string => createHash('sha256').update(mainOf(src)).digest('hex').slice(0, 16);
     expect(Object.fromEntries(LOOK_PAIRS.map((p) => [p.name, print(p.look0)]))).toEqual({
       FRAG_TRANS_PREFIX: 'f6b08093f699bc04',
       FRAG_TRANSMISSION: '668efb9a2b5c7008',
-      FRAG_RAWFIELD: 'b6752d41c82c4fe2',
+      FRAG_RAWFIELD: '1a2d3049e1b0adbc',
     });
     // y el resto de B es el mismo texto en los dos programas: solo cambian sus entradas y su main
     const inputs0 = 'uniform sampler2D uTrans0;\nuniform sampler2D uTrans1;\n';
@@ -344,7 +347,7 @@ describe('Límites del shader con margen para crecer', () => {
     }
     // el detector ve la regresión: la muestra completa del medio (con su eco de interfaz) en el bucle de la serie
     const inLoop = FRAG_RAWFIELD.replace(
-      'vec2 f = wallField(pointOnLine(dir0, d), elevSigma(d));',
+      'vec2 f = wallField(pointOnLine(dir0, d), dir0, elevSigma(d));',
       'vec2 f = mediumField(pointOnLine(dir0, d), dir0, d, elevSigma(d), true);',
     );
     expect(inLoop).not.toBe(FRAG_RAWFIELD);

@@ -112,8 +112,13 @@ export interface TissueProps {
 export const TISSUES: TissueProps[] = [
   { name: 'aire', c: 343, rho: 1.16, alpha1: 0.0034, b: 2, backscatter: 0, gas: true, bone: false },
   { name: 'piel', c: 1600, rho: 1100, alpha1: 0.9, b: 1.05, backscatter: 1.4, gas: false, bone: false },
-  { name: 'grasa subcutánea', c: 1440, rho: 911, alpha1: 0.379, b: 1.086, backscatter: 0.55, gas: false, bone: false, speckleClump: 0.5 },
-  { name: 'músculo', c: 1588, rho: 1090, alpha1: 0.617, b: 1.083, backscatter: 0.5, gas: false, bone: false },
+  // Pared (decisión 62): la retrodispersión es la del interior del lóbulo de grasa (0,08: con la falda de
+  // los septos y la mezcla en elevación, el interior mostrado queda a 0,52–0,58 del gris del hígado) y del
+  // músculo entre estrías (0,35), hipoecoicos en las referencias; los septos, las estrías y las fascias los añaden
+  // `ultrasound/wallTexture.ts` y las caras de `anatomy/interfaces.ts`. La grasa es la subcutánea y la
+  // preperitoneal (la cara interna de la pared).
+  { name: 'grasa de la pared', c: 1440, rho: 911, alpha1: 0.379, b: 1.086, backscatter: 0.08, gas: false, bone: false, speckleClump: 0.5 },
+  { name: 'músculo', c: 1588, rho: 1090, alpha1: 0.617, b: 1.083, backscatter: 0.35, gas: false, bone: false },
   { name: 'hígado', c: 1586, rho: 1079, alpha1: 0.601, b: 1, backscatter: 1.0, gas: false, bone: false },
   { name: 'cápsula hepática', c: 1586, rho: 1079, alpha1: 0.601, b: 1, backscatter: 1.3, gas: false, bone: false },
   { name: 'sangre', c: 1578, rho: 1050, alpha1: 0.206, b: 1.05, backscatter: 0.008, gas: false, bone: false },
@@ -130,7 +135,8 @@ export const TISSUES: TissueProps[] = [
   { name: 'gas intestinal', c: 343, rho: 1.16, alpha1: 0.0034, b: 2, backscatter: 0, gas: true, bone: false },
   { name: 'líquido (bilis/ascitis)', c: 1482, rho: 994, alpha1: 0.0022, b: 1, backscatter: 0.002, gas: false, bone: false },
   { name: 'pared arterial', c: 1586, rho: 1079, alpha1: 0.7, b: 1, backscatter: 1.8, gas: false, bone: false },
-  { name: 'cartílago costal', c: 1640, rho: 1100, alpha1: 0.9, b: 1, backscatter: 0.6, gas: false, bone: false },
+  // cartílago hialino: homogéneo e hipoecoico (≈ 0,15), con el pericondrio como cara (decisión 62)
+  { name: 'cartílago costal', c: 1640, rho: 1100, alpha1: 0.9, b: 1, backscatter: 0.15, gas: false, bone: false },
   // Riñón (IT'IS: c 1560, ρ 1066, α 0,7·f^1,0). Corteza iso/ligeramente hipoecoica al hígado;
   // médula (pirámides) hipoecoica; seno = grasa + vasos, marcadamente ecogénico (E.3, B.5).
   { name: 'corteza renal', c: 1560, rho: 1066, alpha1: 0.7, b: 1, backscatter: 0.72, gas: false, bone: false },

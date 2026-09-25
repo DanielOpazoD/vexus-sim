@@ -14,6 +14,7 @@ import {
   PLEURA_STEER_ITERATIONS,
 } from '../pleura';
 import { SPECKLE_LOOK_GLSL, SPECKLE_TISSUE_GLSL } from '../speckleField';
+import { WALL_FACE_ECHO_GLSL, WALL_TEXTURE_GLSL } from '../wallTexture';
 import { RECEIVER_GLSL, glslFloat } from '../receiver';
 import { STEERING_GLSL } from '../steering';
 
@@ -457,6 +458,8 @@ vec2 fieldForPh(vec3 m, float se, int tissue, float ph0, vec3 g) {
   vec2 f = speckleFieldPh(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP, ph0, g);
   float het = 1.0;
   if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX) het = hetGain(m);
+  // textura de la pared (decisión 62) con la dirección de esta mirada: b_k = b_0 + g/k2 (g = k2·(b_k − b_0))
+  if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, normalize(normalize(m - uCurvC) + g / uSteer.w));
   return f * tissueBack(tissue) * het;
 }
 vec2 sampleSidePh(vec3 p, float se, Cls center, float ph0, vec3 g, bool withCurtain) {
@@ -497,16 +500,16 @@ vec2 mediumFieldPh(vec3 p, vec3 dir, float r, float se, bool withCurtain, float 
   if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
   return field + vec2(interfaceEcho(c, m, dir, r, se), 0.0);
 }
-vec2 wallFieldPh(vec3 p, float se, float ph0, vec3 g) {
+vec2 wallFieldPh(vec3 p, vec3 dir, float se, float ph0, vec3 g) {
   vec3 m = toMaterial(p);
   Cls c;
   float depth;
   vec3 tn;
-  if (!classifyWall(m, c, depth, tn)) { c.tissue = T_MUSCLE; c.n = tn; }
+  if (!classifyWall(m, c, depth, tn)) { c.tissue = T_FAT; c.n = tn; }
   vec2 field = fieldForPh(m, se, c.tissue, ph0, g);
   float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
   if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
-  return field;
+  return field + vec2(WALL_COPY_FACE_GAIN * wallFaceEchoFlat(c, m, dir), 0.0);
 }
 vec2 steeredField() {
   float alpha = lineTheta(vUv.x);
@@ -575,7 +578,7 @@ vec2 steeredField() {
     float rhoJ = sqrt(uCurvR * uCurvR + d * d + 2.0 * d * uSteer.z);
     float alJ = phiK + uSteer.x - steerBeta(rhoJ, a);
     vec2 gr = lookPhaseGrad(rhoJ, alJ, a, uSteer.w);
-    vec2 f = wallFieldPh(elem + dirK * d, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, uSteer.w), gr.x * uLateral + gr.y * uAxial);
+    vec2 f = wallFieldPh(elem + dirK * d, dirK, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, uSteer.w), gr.x * uLateral + gr.y * uAxial);
     float td = steeredT(phiK, a, min(d, sCap));
     air += f * (j == 1 ? (ser.x + 1.0) * PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : (ser.x + 2.0) * td * G * gn);
   }
@@ -661,7 +664,10 @@ ${RECEIVER_GLSL}
 in vec2 vUv;
 out vec2 oField;
 ${ELEV_SIGMA_GLSL}${LATERAL_PSF_GLSL}
+${SPECKLE_TISSUE_GLSL}
+${WALL_TEXTURE_GLSL}
 ${INTERFACE_ECHO_GLSL}
+${WALL_FACE_ECHO_GLSL}
 
 float hash12b(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 
@@ -686,7 +692,6 @@ vec2 speckleField(vec3 m, float h, float se, float salt) {
   return sqrt(uAnchorW) * fa + sqrt(1.0 - uAnchorW) * fb;
 }
 
-${SPECKLE_TISSUE_GLSL}
 
 // Campo de dispersores de un punto material con clasificación conocida. Cada tejido es otra
 // población: su propia semilla (el moteado no continúa a través de un borde).
@@ -695,6 +700,10 @@ vec2 fieldFor(vec3 m, float se, int tissue) {
   // Heterogeneidad lenta y continua del parénquima (desviación 1,15 dB a ~1,6 ciclos/cm) [EXTRAPOLACIÓN PROPIA]
   float het = 1.0;
   if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX) het = hetGain(m);
+  // Textura de la pared (decisión 62, wallTexture.ts): septos de la grasa y estrías del músculo, anclados al
+  // material; la dirección del haz de la mirada 0 en la pared es la radial desde el centro de curvatura
+  // (la pared no respira: m es el punto del mundo)
+  if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, normalize(m - uCurvC));
   return f * tissueBack(tissue) * het;
 }
 
@@ -777,7 +786,7 @@ void main() {
   int nWall = series ? 2 : 0;
   for (int j = 1; j <= nWall; j++) {
     float d = j == 1 ? ser.y : ser.z;
-    vec2 f = wallField(pointOnLine(dir0, d), elevSigma(d));
+    vec2 f = wallField(pointOnLine(dir0, d), dir0, elevSigma(d));
     float td = texture(uTrans0, vec2(vUv.x, min(d, rCap) / uDepth)).x;
     air += f * (j == 1 ? (ser.x + 1.0) * PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : (ser.x + 2.0) * td * G * gn);
   }

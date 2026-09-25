@@ -118,7 +118,10 @@ export interface Torso {
   zMax: number;
   skinMm: number;
   fatMm: number;
+  /** Capa musculoaponeurótica del hábito, con la grasa preperitoneal de su cara interna (decisión 62). */
   muscleMm: number;
+  /** Grasa preperitoneal (mm): la parte más honda de `muscleMm`, entre la transversalis y el peritoneo. */
+  preperitonealMm: number;
 }
 
 export interface Rib {
@@ -131,7 +134,10 @@ export interface Rib {
   halfThickness: number;
   /** Escala de la elipse del tronco a la que corre la costilla (0–1). */
   scale: number;
-  /** Ángulo a partir del cual (hacia anterior) el arco es cartílago; NaN = todo hueso. */
+  /**
+   * El arco es cartílago a menos de π/2 − cartilageFromPhi de la línea media anterior (φ = π/2), a cada lado
+   * (con π/4: ±45°, hasta la línea medioclavicular); NaN = todo hueso.
+   */
   cartilageFromPhi: number;
   /** Solo en el lado derecho del paciente (x < 0)? */
   rightOnly: boolean;
@@ -344,6 +350,20 @@ export function torsoDepth(p: Vec3, t: Torso): number {
   return (rho - 1) * localR;
 }
 
+/**
+ * Gradiente de `torsoDepth` (su métrica radial: no es unitario salvo en un tronco circular), analítico:
+ * ∂d/∂x = (x/r)(1 − 1/ρ) + r·x/(a²ρ³), igual en y con b; 0 en z. Da la normal y la norma del gradiente de las
+ * caras de las capas de la pared sin su ondulación (el eco de cara plana de la serie de la pleura, decisión 62).
+ */
+export function torsoDepthGradient(p: Vec3, t: Torso): Vec3 {
+  const r = Math.hypot(p[0], p[1]);
+  if (r < 1e-6) return [0, 1, 0];
+  const rho = Math.hypot(p[0] / t.a, p[1] / t.b);
+  const k = 1 - 1 / rho;
+  const c = r / (rho * rho * rho);
+  return [(p[0] / r) * k + (c * p[0]) / (t.a * t.a), (p[1] / r) * k + (c * p[1]) / (t.b * t.b), 0];
+}
+
 /** Normal exterior aproximada de la piel en el punto. */
 export function torsoNormal(p: Vec3, t: Torso): Vec3 {
   const nx = p[0] / (t.a * t.a);
@@ -357,10 +377,23 @@ export function torsoSkinPoint(phi: number, z: number, t: Torso): Vec3 {
   return [t.a * Math.cos(phi), t.b * Math.sin(phi), z];
 }
 
+/**
+ * Extremo anterior de las costillas derechas (decisión 62): la 5.ª–7.ª llegan al esternón (x ≤ 15 mm); las
+ * 8.ª–10.ª acaban en el reborde costal, que baja desde el xifoides hacia fuera: x ≤ 15 + pendiente·z anterior
+ * (la 8.ª a −23 mm, la 9.ª a −62, la 10.ª a −100, entre las líneas medioclavicular y axilar anterior). Antes
+ * todas cruzaban la línea media y la ventana subxifoidea pasaba por los cartílagos de la 8.ª y la 9.ª.
+ */
+export const RIB_ANTERIOR_END = { xMm: 15, marginSlope: 1.53 } as const;
+
+/** x máxima (mm) de la costilla: su extremo anterior (`RIB_ANTERIOR_END`). */
+export function ribAnteriorEndX(rib: Pick<Rib, 'zAnterior'>): number {
+  return Math.min(RIB_ANTERIOR_END.xMm, RIB_ANTERIOR_END.xMm + RIB_ANTERIOR_END.marginSlope * rib.zAnterior);
+}
+
 /** Distancia con signo a una costilla (negativa dentro del hueso). */
 export function sdRib(p: Vec3, rib: Rib, torso: Torso, spine?: Spine): { d: number; cartilage: boolean } {
   const phi = torsoPhi(p[0], p[1], torso);
-  if (rib.rightOnly && p[0] > 15) return { d: 1e3, cartilage: false };
+  if (rib.rightOnly && p[0] > ribAnteriorEndX(rib)) return { d: 1e3, cartilage: false };
   // El arco costal termina en la apófisis transversa: nada por detrás de la columna
   if (spine && p[1] < spine.y0 && Math.abs(p[0] - spine.x0) < spine.archHalfWidth + 6) return { d: 1e3, cartilage: false };
   // radio local de la costilla a lo largo de su elipse escalada
@@ -376,7 +409,10 @@ export function sdRib(p: Vec3, rib: Rib, torso: Torso, spine?: Spine): { d: numb
   const qz = Math.abs(dz) / rib.halfWidth;
   const q = Math.sqrt(qx * qx + qz * qz) - 1;
   const d = q * Math.min(rib.halfThickness, rib.halfWidth);
-  const cartilage = Number.isFinite(rib.cartilageFromPhi) && phi > rib.cartilageFromPhi;
+  // cartílago solo en el arco anterior, a menos de π/2 − cartilageFromPhi de la línea media (φ = π/2), a los
+  // dos lados (antes `φ > cartilageFromPhi`, que en las costillas derechas, φ ∈ (π/2, π], hacía cartílago todo
+  // el arco anterolateral: la ventana intercostal sin cortical ni sombra; decisión 62)
+  const cartilage = Number.isFinite(rib.cartilageFromPhi) && Math.abs(phi - Math.PI / 2) < Math.PI / 2 - rib.cartilageFromPhi;
   return { d, cartilage };
 }
 

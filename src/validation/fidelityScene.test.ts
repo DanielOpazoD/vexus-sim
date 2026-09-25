@@ -49,9 +49,9 @@ const FACE_GRAY = 200;
 const frames = new Map<StartPoint['id'], ReturnType<typeof probeFrame>>();
 const planes = new Map<StartPoint['id'], { sim: Simulator; env: EnvelopeFrame; img: DisplayFrame; gain: Float32Array }>();
 
-function measure(id: StartPoint['id']): FidelityStats {
+function measure(id: StartPoint['id'], tiltDeg = 0): FidelityStats {
   const sp = START_POINTS.find((s) => s.id === id)!;
-  const pose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
+  const pose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: (sp.tilt ?? 0) + (tiltDeg * Math.PI) / 180 };
   const frame = probeFrame(pose, scene.torso, CONVEX_C35);
   frames.set(id, frame);
   const display = sectorLayout(W, H, CONVEX_C35, DEPTH, DISPLAY_MARGIN_PX);
@@ -101,6 +101,11 @@ function measure(id: StartPoint['id']): FidelityStats {
 const subxiphoid = measure('subxiphoid');
 const intercostal = measure('intercostal');
 const renal = measure('renal');
+// Morison: el flanco inclinado 20° hacia atrás (la vista intercostal de la decisión 62 no llega al riñón)
+const morison = measure('flank', -20);
+// la VCI y las suprahepáticas del flanco: luces y paredes a 0–60° (la vista intercostal de la decisión 62 las
+// corta más oblicuas y sus paredes finas caen entre los píxeles de esta imagen de 320 × 229)
+const flank = measure('flank');
 
 /**
  * En la ventana intercostal la cortina pulmonar tapa el sector desde la línea ~97 en espiración (decisión 61):
@@ -136,40 +141,53 @@ describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
       // en la intercostal, con la cortina, puede no quedar hígado puro en dos bandas de profundidad
       if (s === subxiphoid || d.profile.bands.length >= 2) expect(Math.abs(d.profile.slopeDbPerCm)).toBeLessThan(0.1);
       expect(d.colorOn).toBe(false);
-      // la luz pintada a 0 y el diafragma a 200: el centro de la luz y la saturación los encuentran
-      expect(d.lumen.pixels).toBeGreaterThan(50);
-      expect(d.lumen.p50).toBe(0);
       if (Number.isFinite(d.diaphragmSaturated)) expect(d.diaphragmSaturated).toBe(0);
+    }
+    // la luz pintada a 0: el centro de la luz la encuentra (subxifoidea y flanco, con la VCI en eje largo)
+    for (const s of [subxiphoid, flank]) {
+      expect(s.display!.lumen.pixels).toBeGreaterThan(50);
+      expect(s.display!.lumen.p50).toBe(0);
     }
   });
 
   it('encuentra las paredes anteriores con su incidencia real y da el cociente pintado', () => {
-    // subxifoidea: la mayoría a 20–40°; intercostal: la VH cruza oblicua (20–60°), ninguna a < 20°
+    // subxifoidea: la mayoría a 20–40°; flanco: de 0 a 60° (la VCI casi perpendicular y las suprahepáticas
+    // oblicuas)
     const sub = subxiphoid.display!.walls.find((b) => b.fromDeg === 20)!;
     expect(sub.walls).toBeGreaterThan(20);
     expect(sub.ratio).toBeCloseTo(1.8, 5);
     expect(sub.deltaDb).toBeGreaterThan(10);
-    const oblique = intercostal.display!.walls.filter((b) => b.fromDeg >= 20);
-    expect(oblique.reduce((n, b) => n + b.walls, 0)).toBeGreaterThan(20);
-    for (const b of oblique) expect(b.ratio).toBeCloseTo(1.8, 5);
+    const flankWalls = flank.display!.walls.filter((b) => b.walls > 0);
+    expect(flankWalls.reduce((n, b) => n + b.walls, 0)).toBeGreaterThan(20);
+    // (con las costillas óseas de la decisión 62 las del flanco hacen sombra sobre parte de las suprahepáticas
+    // oblicuas: queda al menos una pared a 20–40°; con el cartílago de antes, más de 3)
+    expect(flank.display!.walls.find((b) => b.fromDeg === 20)!.walls).toBeGreaterThanOrEqual(1);
+    for (const b of flankWalls) expect(b.ratio).toBeCloseTo(1.8, 5);
   });
 
   it('el banco de interfaces encuentra la porta, la cápsula, el diafragma y Morison con su cara pintada', () => {
-    const all = [subxiphoid, intercostal, renal].map((s) => s.display!);
+    const all = [subxiphoid, intercostal, renal, morison].map((s) => s.display!);
     const walls = (pick: (d: (typeof all)[number]) => { walls: number; ratio: number }[]) =>
       all.flatMap((d) => pick(d)).filter((b) => b.walls > 0);
-    // subxifoidea: porta y diafragma; subxifoidea e intercostal: cápsula bajo la pared; intercostal:
-    // Morison (hígado → grasa perirrenal → cápsula renal). La ventana renal ve el riñón por detrás y el
-    // hígado debajo: allí Morison va en el otro orden y el banco no lo cuenta.
+    // subxifoidea: porta y diafragma; subxifoidea e intercostal: la cápsula bajo la pared, que desde la
+    // decisión 62 tiene el peritoneo parietal en la ventana del pico (`peritoneum`); el flanco inclinado
+    // 20° hacia atrás: Morison (hígado → grasa perirrenal → cápsula renal; hasta la decisión 62 lo daba la
+    // vista intercostal, que cruzaba seis costillas). La ventana renal ve el riñón por detrás y el hígado
+    // debajo: allí Morison va en el otro orden y el banco no lo cuenta.
     const n = (bins: { walls: number }[]) => bins.reduce((a, b) => a + b.walls, 0);
     expect(n(walls((d) => d.wallSystems.portal))).toBeGreaterThan(10);
-    expect(n(walls((d) => d.capsule))).toBeGreaterThan(50);
+    expect(n(walls((d) => d.peritoneum))).toBeGreaterThan(50);
     expect(n(walls((d) => d.diaphragm))).toBeGreaterThan(5);
     expect(n(walls((d) => d.renalCapsule))).toBeGreaterThan(5);
     // la tabla histórica es la suma de VCI y suprahepáticas
     for (const d of all) d.walls.forEach((b, j) => expect(b.walls).toBe(d.wallSystems.ivc[j].walls + d.wallSystems.hepaticVein[j].walls));
     // la cara pintada a 200 sobre el hígado a 100: cociente 2 en todas las caras de órgano
-    for (const b of [...walls((d) => d.capsule), ...walls((d) => d.diaphragm), ...walls((d) => d.renalCapsule)])
+    for (const b of [
+      ...walls((d) => d.capsule),
+      ...walls((d) => d.peritoneum),
+      ...walls((d) => d.diaphragm),
+      ...walls((d) => d.renalCapsule),
+    ])
       expect(b.ratio).toBeCloseTo(FACE_GRAY / 100, 5);
     // sin la transmisión de la GPU no hay espejo con el que comparar: el desfase es NaN, no un 0 falso
     for (const b of subxiphoid.display!.diaphragm.filter((x) => x.walls > 0)) expect(b.mirrorOffsetMm).toBeNaN();

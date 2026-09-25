@@ -15,8 +15,17 @@
  *   nodos desde NODE_BASE = MAX_TUBES·4: (x, y, z, r)
  */
 import { BOWEL_BD_CAP_MM, DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, TISSUE_GLSL_NAME } from '../tissues';
-import { FACE_GRADIENT_EPS_MM, INTERFACE_COUNT, INTERFACE_GLSL_NAME, LAST_TUBE_INTERFACE, MORISON_CONTACT_MM } from '../interfaces';
+import {
+  FACE_GRADIENT_EPS_MM,
+  FIRST_WALL_INTERFACE,
+  INTERFACE_COUNT,
+  INTERFACE_GLSL_NAME,
+  LAST_TUBE_INTERFACE,
+  LAST_WALL_INTERFACE,
+  MORISON_CONTACT_MM,
+} from '../interfaces';
 import { ORGAN_MODULES } from '../organs';
+import { RIB_ANTERIOR_END } from '../primitives';
 import { MAX_GAS, MAX_RIBS, SCENE_UNIFORMS_GLSL } from './sceneUniforms';
 
 export const MAX_TUBES = 128;
@@ -48,6 +57,8 @@ ${TISSUE_DEFINES}
 ${INTERFACE_DEFINES}
 #define IFACE_COUNT ${INTERFACE_COUNT}
 #define IF_LAST_TUBE ${LAST_TUBE_INTERFACE}
+#define IF_FIRST_WALL ${FIRST_WALL_INTERFACE}
+#define IF_LAST_WALL ${LAST_WALL_INTERFACE}
 #define MORISON_CONTACT_MM ${MORISON_CONTACT_MM.toFixed(3)}
 #define FACE_GRAD_EPS ${FACE_GRADIENT_EPS_MM.toFixed(3)}
 #define DIAPHRAGM_MM ${DIAPHRAGM_THICKNESS_MM.toFixed(3)}
@@ -65,8 +76,8 @@ struct Cls {
                   // ifd/|∇| (faceGradient): la VCI elíptica tiene |∇| = 1/apScale en sus paredes AP
   int vessel;     // índice de tubo o -1
   float rho;      // fracción radial
-  vec3 tangent;
-  float kc;       // curvatura circunferencial (1/mm) de la cara de un tubo (tubeQuery)
+  vec3 tangent;   // eje del tubo o, en la cara de una costilla, de la costilla (decisión 62)
+  float kc;       // curvatura circunferencial (1/mm) de la cara de un tubo (tubeQuery) o de la sección costal
   float uRef;
   float rRef;
   float profN;
@@ -190,8 +201,9 @@ float sdSphere(vec3 p, vec4 s, out vec3 n) {
 // Costilla: devuelve distancia y si es cartílago (φ anterior)
 float sdRib(vec3 p, vec4 rib, out bool cartilage, out vec3 n) {
   float phi = atan(p.y / uTorso.y, p.x / uTorso.x);
-  cartilage = phi > uRibParams.y;
-  if (p.x > 15.0) return 1e3;
+  cartilage = abs(phi - 1.5707963) < 1.5707963 - uRibParams.y; // arco anterior (primitives.sdRib, decisión 62)
+  // extremo anterior: el esternón (5.ª–7.ª) o el reborde costal (8.ª–10.ª; primitives.ribAnteriorEndX)
+  if (p.x > min(${RIB_ANTERIOR_END.xMm.toFixed(4)}, ${RIB_ANTERIOR_END.xMm.toFixed(4)} + ${RIB_ANTERIOR_END.marginSlope.toFixed(4)} * rib.x)) return 1e3;
   // el arco costal termina en la apófisis transversa: nada por detrás de la columna
   if (p.y < uSpine.y && abs(p.x - uSpine.x) < uSpineArch.x + 6.0) return 1e3;
   float sc = uRibParams.x;
@@ -281,10 +293,10 @@ ${ORGAN_MODULES.map((o) => o.glsl).join('\n')}
 // Profundidad bajo la cara interna de la pared (mm; 0 en la pleura parietal). Gemelo: AnatomyScene.insideWallMm
 float insideWallMm(vec3 m) { return -torsoDepth(m) - (uWall.x + uWall.y + uWall.z); }
 
-// La pared de classify: fuera del torso (aire), piel, grasa, costillas y músculo. true si la muestra queda
-// decidida (en c); si no, depth y tn (profundidad y normal del torso) sirven al resto de classifyWith. La serie
-// de la pleura (decisión 61) remuestrea la pared solo con ella: sin órganos ni tubos. Gemelo: la classifyWall
-// privada de AnatomyScene
+// La pared de classify: fuera del torso (aire), piel, costillas y las capas de la pared con sus caras (grasa
+// subcutánea, músculo y grasa preperitoneal, decisión 62). true si la muestra queda decidida (en c); si no,
+// depth y tn (profundidad y normal del torso) sirven al resto de classifyWith. La serie de la pleura (decisión
+// 61) remuestrea la pared solo con ella: sin órganos ni tubos. Gemelo: la classifyWall privada de AnatomyScene
 bool classifyWall(vec3 m, out Cls c, out float depth, out vec3 tn) {
   c.tissue = T_AIR; c.bd = 1e3; c.n = vec3(0.0, 1.0, 0.0); c.iface = IF_NONE; c.ifd = 1e3; c.vessel = -1;
   c.rho = 10.0; c.tangent = vec3(0.0, 0.0, 1.0); c.kc = 0.0; c.uRef = 0.0; c.rRef = 1.0; c.profN = 2.0;
@@ -292,22 +304,41 @@ bool classifyWall(vec3 m, out Cls c, out float depth, out vec3 tn) {
   tn = vec3(0.0, 1.0, 0.0);
   if (m.z < uTorso.z || m.z > uTorso.w || depth > 0.0) return true;
   float skin = uWall.x;
-  float fat = skin + uWall.y;
-  float wall = fat + uWall.z;
+  float wall = skin + uWall.y + uWall.z;
   float d = -depth;
   tn = torsoNormal(m);
-  if (d < skin) { c.tissue = T_SKIN; c.bd = skin - d; c.n = tn; return true; }
-  if (d < fat) { c.tissue = T_FAT; c.bd = min(d - skin, fat - d); c.n = tn; return true; }
-  bool inMuscle = d < wall;
-  // Costillas
-  for (int i = 0; i < MAX_RIBS; i++) {
-    bool cart; vec3 rn;
-    float rd = sdRib(m, uRibs[i], cart, rn);
-    if (rd < 0.0) {
-      c.tissue = cart ? T_CARTILAGE : T_BONE; c.bd = -rd; c.n = rn; return true;
+  // Capas de la pared (decisión 62, organs/wall.ts): cada muestra dibuja la cara de su capa más cercana
+  if (d < skin) { c.tissue = T_SKIN; c.bd = skin - d; c.n = tn; c.iface = IF_SKIN_FAT; c.ifd = skin - d; return true; }
+  // Costillas, antes de la grasa subcutánea donde una puede llegar (la grasa no las corta); la ósea más
+  // cercana da la cortical al tejido blando de fuera, el cartílago su pericondrio
+  float ribD = 1e3; float ribAny = 1e3; int ribI = 0;
+  if (d >= ribSearchDepth()) {
+    for (int i = 0; i < MAX_RIBS; i++) {
+      bool cart; vec3 rn;
+      float rd = sdRib(m, uRibs[i], cart, rn);
+      if (rd < 0.0) {
+        c.tissue = cart ? T_CARTILAGE : T_BONE; c.bd = -rd; c.n = rn;
+        if (cart) { c.iface = IF_PERICHONDRIUM; c.ifd = -rd; c.tangent = ribTangent(m, uRibs[i]); c.kc = ribCurvature(m, uRibs[i]); }
+        return true;
+      }
+      ribAny = min(ribAny, rd);
+      if (!cart && rd < ribD) { ribD = rd; ribI = i; }
     }
   }
-  if (inMuscle) { c.tissue = T_MUSCLE; c.bd = min(d - fat, wall - d); c.n = tn; return true; }
+  if (d < wall) {
+    // coordenadas de la pared solo dentro de ella: fascia profunda y transversalis onduladas en (u, z);
+    // debajo de la fascia, músculo hasta la transversalis y la grasa preperitoneal hasta el peritoneo
+    float u = wallArc(m);
+    vec4 wd = wallDepths(u, m.z);
+    c.tissue = d < wd.y ? T_FAT : (d < wd.z ? T_MUSCLE : T_FAT);
+    c.bd = d < wd.y ? min(d - skin, wd.y - d) : (d < wd.z ? min(d - wd.y, wd.z - d) : min(d - wd.z, wall - d));
+    c.bd = min(c.bd, ribAny / 1.1);
+    c.n = tn;
+    vec2 wf = wallFace(d, u, m.z, ribD);
+    c.iface = int(wf.x + 0.5); c.ifd = wf.y;
+    if (c.iface == IF_RIB) { c.tangent = ribTangent(m, uRibs[ribI]); c.kc = ribCurvature(m, uRibs[ribI]); }
+    return true;
+  }
   return false;
 }
 
@@ -502,6 +533,17 @@ vec4 faceGradient(Cls c, vec3 m) {
     g = vec3(gallbladderSd(m + h.xyy) - gallbladderSd(m - h.xyy),
              gallbladderSd(m + h.yxy) - gallbladderSd(m - h.yxy),
              gallbladderSd(m + h.yyx) - gallbladderSd(m - h.yyx));
+  } else if (c.iface >= IF_FIRST_WALL && c.iface <= IF_LAST_WALL) {
+    // capas de la pared (decisión 62): la distancia de su capa (wallFaceSd)
+    g = vec3(wallFaceSd(m + h.xyy, c.iface) - wallFaceSd(m - h.xyy, c.iface),
+             wallFaceSd(m + h.yxy, c.iface) - wallFaceSd(m - h.yxy, c.iface),
+             wallFaceSd(m + h.yyx, c.iface) - wallFaceSd(m - h.yyx, c.iface));
+  } else if (c.iface == IF_RIB || c.iface == IF_PERICHONDRIUM) {
+    // cortical o pericondrio: la distancia de la costilla más cercana (ribSd)
+    int k = nearestRib(m);
+    g = vec3(ribSd(m + h.xyy, k) - ribSd(m - h.xyy, k),
+             ribSd(m + h.yxy, k) - ribSd(m - h.yxy, k),
+             ribSd(m + h.yyx, k) - ribSd(m - h.yyx, k));
   } else {
     // tubos (gradiente sin normalizar) y tejidos sin cara (normal unitaria)
     float l = length(c.n);

@@ -14,13 +14,17 @@
 // 2026-09-25 (bis): sobre main a9520b8 la rama de la decisión 61 medía 266,2 kB; el arreglo del JIT de
 // SwiftShader (classifyWall, wallField) y la cortina en K (fracción de aire compartida) la llevan a 269,9 kB
 // (vite build): 0,1 kB de margen. index sube a 280 kB.
+// 2026-09-25 (ter): la pared realista (decisión 62) lleva index de 269,9 a 295,4 kB (vite build sobre main
+// 3c2cec6): el GLSL del módulo de la pared en la anatomía (~7 kB, que viaja en todas las pasadas que
+// clasifican), el de su textura y del eco de cara plana en la pasada B (~6 kB), sus gemelos TS, el banco de la
+// pared y las filas de las caras nuevas. index sube a 305 kB.
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const KB = 1024;
 const BUDGETS: Array<[RegExp, number]> = [
   [/three.*\.js$/, 700 * KB],
-  [/index-.*\.js$/, 280 * KB],
+  [/index-.*\.js$/, 305 * KB],
   [/\.css$/, 20 * KB],
   [/\.js$/, 120 * KB], // cualquier otro chunk
 ];

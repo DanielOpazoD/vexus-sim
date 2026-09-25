@@ -22,17 +22,22 @@
  *
  * Con `--sweep`, cada vista se mide también con la sonda basculada (±6°) e inclinada (±6°) y los
  * registros de las cinco poses se agregan con `summarizeFaces` (`sweep` en el JSON). Eso llena la VCI
- * y la cápsula a 0–20° (salvo la VCI subxifoidea con congestión y la cápsula en la ventana renal), pero
- * no las suprahepáticas a 0–20° (0–9 registros por escena) ni el diafragma a 0–20° (0 en todas), y la
- * porta a 0–20° no da rosario. Los ecos de interfaz (decisión 57) solo vigilan los tramos que el barrido
- * llena en alguna vista (`GATED_FACE_BINS`); cada escena escribe en `escasos` los que en ella no llegan a
- * 10 registros o no tienen rosario (`thinGatedBins`): esas puertas no se evalúan en esa escena
+ * y la línea del peritoneo sobre la cápsula a 0–20° (salvo la VCI subxifoidea con congestión y la ventana
+ * renal), pero no las suprahepáticas a 0–20° (0–9 registros por escena) ni el diafragma a 0–20° (0 en
+ * todas), y la porta a 0–20° no da rosario. Los ecos de interfaz (decisión 57) solo vigilan los tramos que
+ * el barrido llena en alguna vista (`GATED_FACE_BINS`); cada escena escribe en `escasos` los que en ella no
+ * llegan a 10 registros o no tienen rosario (`thinGatedBins`): esas puertas no se evalúan en esa escena
  * (docs/fidelity/README.md, «Qué llena el barrido»).
  *
  * El bloque `contour` de cada escena (`contourStats`, PR 0 de las decisiones 60 y 63) informa, sin puertas,
  * el contorno de la cápsula en la pose de partida (la de las capturas): extremos bruscos, salto de
  * incidencia entre líneas vecinas y, por tramo de 0–80°, contraste en gris, CVc y σ_L de la cápsula y de
- * Morison; con `--sweep`, `contourSweep` lo mismo sobre las cinco poses.
+ * Morison (con la línea del peritoneo de la decisión 62 como cápsula); con `--sweep`, `contourSweep` lo mismo
+ * sobre las cinco poses.
+ *
+ * Cada escena escribe también el banco de la pared (decisión 62, `display.wall`): líneas brillantes del
+ * perfil de las líneas casi normales a la piel, gris del interior de los lóbulos de grasa y del músculo,
+ * septos y estrías sobre su capa y el pico de la cortical costal sobre el hígado.
  *
  * No corre en CI (necesita GPU: con SwiftShader los cps no significan nada). Las métricas y sus
  * referencias se explican en docs/fidelity/README.md.
@@ -68,6 +73,14 @@ const SWEEP = args.get('sweep') === 'true';
 const COMPOUND_ON = args.get('compound') !== 'false';
 /** Poses del barrido de interfaces sobre cada vista (`--sweep`). */
 const SWEEP_POSES = [{ rockDeg: 6 }, { rockDeg: -6 }, { tiltDeg: 6 }, { tiltDeg: -6 }];
+/**
+ * Poses extra del barrido por vista: Morison (hígado → grasa perirrenal → cápsula renal) desde el flanco
+ * inclinado 20° hacia atrás. Hasta la decisión 62 lo daba la vista intercostal, que cruzaba seis costillas;
+ * la de ahora va a lo largo del 8.º espacio y no llega al riñón.
+ */
+const EXTRA_SWEEP_POSES: Partial<Record<(typeof VIEWS)[number], { rockDeg?: number; tiltDeg?: number }[]>> = {
+  flank: [{ tiltDeg: -20 }],
+};
 const CASES = ['normal-adult', 'severe-congestion'] as const;
 const VIEWS = ['subxiphoid', 'intercostal', 'flank', 'renal'] as const;
 /** Vistas en que la cortina pulmonar entra en el sector (decisión 61). */
@@ -184,7 +197,7 @@ try {
       let contourSweep: ContourStats | undefined;
       if (SWEEP) {
         const poses = [faceSamples ?? []];
-        for (const pose of SWEEP_POSES) {
+        for (const pose of [...SWEEP_POSES, ...(EXTRA_SWEEP_POSES[view] ?? [])]) {
           const s = await page.evaluate(
             ([id, p, compound]) => window.__vexusTest!.fidelity({ startPoint: id, display: true, pose: p, samples: true, compound }),
             [view, pose, COMPOUND_ON] as const,
@@ -253,10 +266,22 @@ try {
         console.log(
           ''.padEnd(32),
           `${sweep ? 'barrido' : 'interfaces'}: VCI ${binText(faces.wallSystems.ivc)} · VSH ${binText(faces.wallSystems.hepaticVein)} · porta ${binText(faces.wallSystems.portal)}`,
-          `· cápsula ${binText(faces.capsule)} · diafragma ${binText(faces.diaphragm)} · Morison ${binText(faces.renalCapsule)}`,
+          `· cápsula ${binText(faces.capsule)} · peritoneo ${binText(faces.peritoneum)} · diafragma ${binText(faces.diaphragm)} · Morison ${binText(faces.renalCapsule)}`,
           `· saturado junto a la cara ${JSON.stringify(d.faceSaturated)}`,
         );
         if (escasos.length) console.log(''.padEnd(32), `tramos vigilados sin evaluar: ${escasos.join(' · ')}`);
+      }
+      if (d) {
+        // pared (decisión 62): objetivos en docs/fidelity/README.md, «Pared torácica y abdominal»
+        const w = d.wall;
+        const f1 = (x: number): string => (Number.isFinite(x) ? x.toFixed(1) : '—');
+        console.log(
+          ''.padEnd(32),
+          `pared: ${w.lines.count} líneas (${w.linesInside} dentro) a ${w.lines.depthsMm.map(f1).join('/')} mm, +${w.lines.excessDb.map(f1).join('/')} dB`,
+          `· grasa ${f1(w.fatGray)} (${f1(w.fatToLiver * 100)} % del hígado) · músculo ${f1(w.muscleGray)} (${f1(w.muscleToLiver * 100)} %)`,
+          `· septos +${f1(w.septumDb)} dB (${w.septumSamples}) · estrías +${f1(w.striationDb)} dB (${w.striationSamples})`,
+          `· cortical costal +${f1(w.ribPeakDb)} dB (${w.ribLines} líneas) · perfil con ${w.profileLines} de ${w.normalLines} líneas normales`,
+        );
       }
       const f2 = (x: number): string => (Number.isFinite(x) ? x.toFixed(2) : '—');
       if (pleura) {

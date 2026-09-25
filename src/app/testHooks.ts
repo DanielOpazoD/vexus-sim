@@ -13,6 +13,7 @@ import { acousticWindowWeight, gateTransmission } from './gateTransmission';
 import { lineCoupling, pointOnLine, type ProbePose } from '../probe/probe';
 import { hilumNotchActive, kidneyLocal, kidneyOuterSdf } from '../anatomy/organs/kidney';
 import { FACE_GEOMETRIES, type FaceGeometry } from '../anatomy/scene';
+import { Interface, isRibInterface, isWallLayerInterface } from '../anatomy/interfaces';
 import { TISSUES, Tissue } from '../anatomy/tissues';
 import type { Vec3 } from '../core/vec3';
 import { FRAME_PASSES, type PassId } from '../ultrasound/passGraph';
@@ -106,6 +107,12 @@ export interface TestHooks {
     startPoint: StartPoint['id'];
     pose?: { rockDeg?: number; tiltDeg?: number };
   }) => Record<FaceNormalRow, FaceNormalStats>;
+  /**
+   * Caras de la pared y de las costillas (decisión 62): la cara, la normal y la norma del gradiente de la GPU
+   * (`faceGradient`: `wallFaceSd`, `ribSd`) frente a las de TS (`AnatomyScene.faceGradient`) en los puntos del
+   * plano a 0,02–0,4 mm de la cara que dibujan según la CPU. Ver `WallNormalStats`.
+   */
+  wallNormals: (opts: { startPoint: StartPoint['id'] }) => WallNormalStats;
   /**
    * Coste medio de `n` cuadros de imagen en tiempo de pared (ms), sincronizado con la GPU al
    * principio y al final: compara versiones del renderizador en la misma máquina. El reloj no avanza,
@@ -339,6 +346,11 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       goTo(sim, opts.startPoint);
       if (opts.pose) offsetPose(sim, opts.pose);
       return faceNormalStats(sim);
+    },
+    wallNormals: (opts) => {
+      const sim = getSim();
+      goTo(sim, opts.startPoint);
+      return wallNormalStats(sim);
     },
     frameCostMs: (n, opts) => {
       const measure = frameMeasureOptions(opts);
@@ -717,6 +729,77 @@ function crossfade(
   return frames;
 }
 
+/** Caras de la pared y de las costillas en un plano: la GPU frente a TS (ver `TestHooks.wallNormals`). */
+export interface WallNormalStats {
+  points: number;
+  /** Puntos por cara (nombre de `Interface`), para ver que la prueba tiene dientes. */
+  byFace: Record<string, number>;
+  /** Puntos con otra cara en la GPU (el reparto de dueños de la pared es una comparación real). */
+  mismatched: number;
+  /** |n_GPU·n_TS|: percentil 5 y mínimo, en los puntos con la misma cara. */
+  p05: number;
+  min: number;
+  /** |g_GPU/g_TS − 1| de la norma del gradiente: percentil 95. */
+  normErrP95: number;
+  worst: string;
+}
+
+/** Como mucho, tantos puntos de pared por plano (la GPU los consulta de una vez). */
+const WALL_POINTS_MAX = 3000;
+
+export function wallNormalStats(sim: Simulator): WallNormalStats {
+  const tr = sim.transducer;
+  const scene = sim.scene;
+  const caliber = sim.anatomy.caliberFor(sim.sample);
+  const toMaterial = (p: Vec3): Vec3 => sim.anatomy.deformation.toMaterial(p, sim.sample.resp);
+  const reach = scene.wallThickness() + 12;
+  const cand: { p: Vec3; face: Interface; normal: Vec3; norm: number }[] = [];
+  for (let u = 0; u < tr.lines; u += 2) {
+    const theta = -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / tr.lines;
+    for (let r = 0.025; r < reach; r += 0.05) {
+      const p = pointOnLine(sim.frame, tr, theta, r);
+      const m = toMaterial(p);
+      const c = scene.classify(m, caliber);
+      if (!isWallLayerInterface(c.interface) && !isRibInterface(c.interface)) continue;
+      if (c.interfaceDistance < FACE_BAND_MM[0] || c.interfaceDistance > FACE_BAND_MM[1]) continue;
+      const g = scene.faceGradient(m, caliber);
+      if (g) cand.push({ p, face: c.interface, normal: g.normal, norm: g.norm });
+    }
+  }
+  const step = Math.max(1, cand.length / WALL_POINTS_MAX);
+  const chosen = Array.from({ length: Math.min(cand.length, WALL_POINTS_MAX) }, (_, j) => cand[Math.floor(j * step)]);
+  const pts = new Float32Array(chosen.length * 3);
+  chosen.forEach((c, i) => pts.set(c.p, i * 3));
+  const gpu = sim.gpuQuery(pts, sim.frame, false, { normals: true });
+  const byFace: Record<string, number> = {};
+  const dots: { dot: number; i: number }[] = [];
+  const errs: number[] = [];
+  let mismatched = 0;
+  chosen.forEach((c, i) => {
+    byFace[Interface[c.face]] = (byFace[Interface[c.face]] ?? 0) + 1;
+    const cpuFace: number = c.face;
+    if (gpu.iface[i] !== cpuFace) {
+      mismatched++;
+      return;
+    }
+    const n = gpu.normal!;
+    dots.push({ dot: Math.abs(n[i * 3] * c.normal[0] + n[i * 3 + 1] * c.normal[1] + n[i * 3 + 2] * c.normal[2]), i });
+    if (gpu.gradNorm) errs.push(Math.abs(gpu.gradNorm[i] / c.norm - 1));
+  });
+  dots.sort((a, b) => a.dot - b.dot);
+  errs.sort((a, b) => a - b);
+  const w = dots[0];
+  return {
+    points: dots.length,
+    byFace,
+    mismatched,
+    p05: dots.length ? dots[Math.floor(0.05 * dots.length)].dot : Number.NaN,
+    min: w ? w.dot : Number.NaN,
+    normErrP95: errs.length ? errs[Math.min(errs.length - 1, Math.floor(0.95 * errs.length))] : Number.NaN,
+    worst: w ? `${Interface[chosen[w.i].face]} en (${chosen[w.i].p.map((x) => x.toFixed(2)).join(', ')}): ${w.dot.toFixed(4)}` : '',
+  };
+}
+
 /** |n·∇| de una cara en un plano: la GPU frente al gradiente de `faceSdf` (ver `TestHooks.faceNormals`). */
 export interface FaceNormalStats {
   points: number;
@@ -985,23 +1068,43 @@ function envelopeAt(sim: Simulator, pose: ProbePose, compound = false, frames = 
   return sim.renderer.readEnvelope({ source: 'compound' });
 }
 
+/** Líneas vecinas (a cada lado) cuya sombra también tapa una línea en `liverMask` (la penumbra de la apertura). */
+const LIVER_MASK_SHADOW_LINES = 3;
+
 /**
  * Índices de hígado del plano actual: cada 2 líneas y 4 muestras, de 30 a 120 mm, sin lo que queda bajo la
  * pleura de la cortina donde ya toca el hígado (decisión 61, `CURTAIN_LIVER_MAX_AIR`: la imagen muestra ahí la
- * neblina y las líneas A, no el moteado del hígado).
+ * neblina y las líneas A, no el moteado del hígado) ni tras un hueso o un gas en la línea o en sus
+ * `LIVER_MASK_SHADOW_LINES` vecinas (decisión 62: con las costillas óseas la ventana intercostal tiene una a un
+ * lado, y girar la sonda metía y sacaba su sombra de la máscara).
  */
 function liverMask(sim: Simulator, env: { lines: number; samples: number }): number[] {
   const tr = sim.transducer;
   const depth = sim.bmode.depthMm;
   const curtain = curtainLines(sim, env.lines);
+  const thetaOf = (u: number): number => -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / env.lines;
+  // primer hueso o gas del cuerpo de cada línea (cada 1 mm hasta 120 mm; el aire de fuera no cuenta)
+  const blocked = Float32Array.from({ length: env.lines }, (_, u) => {
+    for (let r = 0.5; r <= 120; r += 1) {
+      const tissue = sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, thetaOf(u), r), sim.sample).tissue;
+      if (tissue !== Tissue.Air && (TISSUES[tissue].bone || TISSUES[tissue].gas)) return r;
+    }
+    return Infinity;
+  });
+  const shadowFrom = Float32Array.from({ length: env.lines }, (_, u) => {
+    let m = Infinity;
+    for (let du = -LIVER_MASK_SHADOW_LINES; du <= LIVER_MASK_SHADOW_LINES; du++)
+      if (u + du >= 0 && u + du < env.lines) m = Math.min(m, blocked[u + du]);
+    return m;
+  });
   const idx: number[] = [];
   for (let u = 0; u < env.lines; u += 2)
     for (let k = 0; k < env.samples; k += 4) {
       const r = ((k + 0.5) * depth) / env.samples;
-      if (r < 30 || r > 120) continue;
+      if (r < 30 || r > 120 || r >= shadowFrom[u]) continue;
       const c = curtain[u];
       if (c && c.fAir >= CURTAIN_LIVER_MAX_AIR && r >= c.D) continue;
-      const theta = -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / env.lines;
+      const theta = thetaOf(u);
       if (sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, theta, r), sim.sample).tissue === Tissue.Liver) idx.push(k * env.lines + u);
     }
   return idx;

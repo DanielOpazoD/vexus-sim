@@ -461,18 +461,20 @@ describe('clasificación sin la cortina (gemelo de classifyWith(m, false))', () 
     expect(ANATOMY_GLSL).toMatch(/if \(withCurtain\) \{\n\s+float dCurtain = lungCurtainDistance\(m, -depth - wall\);/);
     expect(ANATOMY_GLSL).toContain('float insideWallMm(vec3 m) { return -torsoDepth(m) - (uWall.x + uWall.y + uWall.z); }');
     // el tejido que se ve a través del borde y sus planos laterales usan la variante bajo la pleura (la muestra de
-    // la imagen); la pared que copia la serie, el prefijo de la pared de classify (classifyWall: piel, grasa,
-    // costillas y músculo, lo mismo que da classify antes de la pleura, sin órganos ni tubos)
+    // la imagen); la pared que copia la serie, el prefijo de la pared de classify (classifyWall: piel, costillas y
+    // las capas de la decisión 62, lo mismo que da classify antes de la pleura, sin órganos ni tubos), con el eco de
+    // cara plana de sus capas (wallFaceEchoFlat, sin faceGradient) y, pasada la cara interna, la capa más honda
     expect(PLEURA_GLSL).toContain('Cls c = classifyWith(m, withCurtain);');
     expect(PLEURA_GLSL).toContain('vec2 f1 = sampleSide(p + uElev * se, se, c, withCurtain);');
     expect(FRAG_RAWFIELD).toContain('vec2 tissue = wTissue >= CURTAIN_MIN_AIR ? mediumField(p, dir, r, elevSigma(r), !under) : vec2(0.0);');
     expect(FRAG_RAWFIELD_STEERED).toContain('vec2 f1 = sampleSidePh(p + uElev * se, se, c, ph0, g, withCurtain);');
     expect(FRAG_RAWFIELD_STEERED).toContain('tissue = mediumFieldPh(p, dir, s, elevSigma(r), !under, lookPhase(rho, alpha, a, uSteer.w)');
     expect(ANATOMY_GLSL).toContain('if (classifyWall(m, c, depth, tn)) return c;');
-    expect(PLEURA_GLSL).toContain('if (!classifyWall(m, c, depth, tn)) { c.tissue = T_MUSCLE; c.n = tn; }');
-    expect(FRAG_RAWFIELD).toContain('vec2 f = wallField(pointOnLine(dir0, d), elevSigma(d));');
+    expect(PLEURA_GLSL).toContain('if (!classifyWall(m, c, depth, tn)) { c.tissue = T_FAT; c.n = tn; }');
+    expect(PLEURA_GLSL).toContain('return field + vec2(WALL_COPY_FACE_GAIN * wallFaceEchoFlat(c, m, dir), 0.0);');
+    expect(FRAG_RAWFIELD).toContain('vec2 f = wallField(pointOnLine(dir0, d), dir0, elevSigma(d));');
     expect(FRAG_RAWFIELD_STEERED).toContain(
-      'vec2 f = wallFieldPh(elem + dirK * d, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, uSteer.w)',
+      'vec2 f = wallFieldPh(elem + dirK * d, dirK, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, uSteer.w)',
     );
   });
 });
@@ -685,8 +687,14 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
             expect(p.kind).toBe(CURTAIN_GAS_KIND);
             // el cruce exacto de la cara interna de la pared (bisección de 6 pasos: ≤ 0,009 mm en la línea)
             expect(Math.abs(scene.insideWallMm(pointOnLine(fr, CONVEX_C35, th, p.D))), tag).toBeLessThan(0.01);
-            // el borde queda a menos de un segmento grueso del primer pulmón de la línea
-            expect(p.dz, tag).toBeGreaterThan(-1.2);
+            // el borde queda a menos de un segmento grueso del primer pulmón de la línea, llevado a lo largo de la
+            // línea hasta ese pulmón (una línea rasante corre bajo la pared antes de entrar en la lámina: su z cambia
+            // |d_z| por mm), si ese pulmón es el de la cortina junto al cruce. En la ventana intercostal de la línea
+            // axilar media (decisión 62) hay líneas que pasan junto al borde (dz −1,4 a −7 mm: su fracción de aire es
+            // el volumen parcial de ese borde, fuera de la línea) y tocan el pulmón del receso posterior 50–90 mm
+            // más allá, lejos de la pleura registrada
+            const ahead = (run.first + 0.5) * step - p.D;
+            if (ahead < CURTAIN_RECORD_MM) expect(p.dz, tag).toBeGreaterThan(-1.2 - Math.max(0, ahead) * Math.abs(dir[2]));
             // donde el cruce ya está en la cortina, el pulmón empieza ahí (sin costilla delante)
             if (p.dz > 0.1) expect(q.at(pointOnLine(fr, CONVEX_C35, th, p.D + 0.05)).tissue, tag).toBe(Tissue.Lung);
             // la decisión 57 ponía el espejo en la cortina; ahora no hay espejo en ella ni en el pulmón del tórax
@@ -931,8 +939,9 @@ describe('banco de la cortina (fidelity.ts): líneas, hígado puro, borde y desl
     }
     expect(full).toBeGreaterThan(60);
     expect(edge).toBeGreaterThan(5);
-    // en esta ventana los arcos costales son cartílago (cartilageFromPhi): sin sombra de hueso sobre la pleura
-    expect(shadowed).toBe(0);
+    // con las costillas óseas (decisión 62) la costilla del borde de la ventana tapa alguna línea con pleura
+    expect(shadowed).toBeGreaterThan(0);
+    expect(shadowed).toBeLessThan(10);
   });
 
   it('el hígado «puro» del banco y de la guarda de Rayleigh no entra bajo la pleura de la cortina ni en su borde', () => {

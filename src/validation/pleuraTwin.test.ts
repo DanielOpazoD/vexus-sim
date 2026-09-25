@@ -58,7 +58,7 @@ describe('gemelo de la cortina: la imagen bajo la pleura parietal (decisión 61)
       for (let r = full.D[u] - 3; r <= full.D[u] + 3; r += 0.02) if (greyAt(envAt(full, u, r), r, liver) >= 250) w += 0.02;
       return w;
     });
-    // gemelo: 1,24–1,30 mm
+    // gemelo: 1,28–1,34 mm (1,24–1,30 antes de las capas de la decisión 62)
     expect(Math.min(...widths)).toBeGreaterThanOrEqual(0.8);
     const edge = [...Array(LINES).keys()].filter((u) => Math.abs(Math.abs(thetaOf(u)) - 30 * deg) < 0.4 * deg);
     for (const u of edge) {
@@ -88,7 +88,7 @@ describe('gemelo de la cortina: la imagen bajo la pleura parietal (decisión 61)
         grey,
       ),
     );
-    // gemelo: 68 y 38 de gris (el hígado puro, 100)
+    // gemelo: 66 y 38 de gris (el hígado puro, 100); 68 y 38 antes de la decisión 62
     expect(first / 100).toBeGreaterThanOrEqual(0.35);
     expect(first / 100).toBeLessThanOrEqual(0.9);
     expect(second).toBeLessThan(first);
@@ -111,7 +111,7 @@ describe('gemelo de la cortina: la imagen bajo la pleura parietal (decisión 61)
     const pro2 = median(central.map((u) => peak(u, 2) - around(u, 2)));
     const pk2 = median(central.map((u) => peak(u, 2)));
     const pk3 = median(central.map((u) => peak(u, 3)));
-    // gemelo: +43,8 dB sobre la neblina; 28 y 8 dB sobre el hígado
+    // gemelo: +44,6 dB sobre la neblina; 29 y 9 dB sobre el hígado (+43,8, 28 y 8 antes de la decisión 62)
     expect(pro2).toBeGreaterThanOrEqual(3);
     expect(pk3).toBeLessThan(pk2);
   });
@@ -126,7 +126,7 @@ describe('gemelo de la cortina: la imagen bajo la pleura parietal (decisión 61)
       GEOM,
       { axial: 48, lateral: 16 },
     );
-    // gemelo: 1,97 / 0,77 mm = 2,57 (2,12 sin el deslizamiento)
+    // gemelo: 2,77 / 0,76 mm = 3,64 (las bandas de las caras de la pared; 2,57 antes de la decisión 62)
     expect(t.patches).toBeGreaterThanOrEqual(8);
     expect(t.fwhmLateralMm / t.fwhmAxialMm).toBeGreaterThanOrEqual(2.5);
   });
@@ -168,9 +168,15 @@ describe('gemelo de la cortina: la imagen bajo la pleura parietal (decisión 61)
       );
     // la misma fase: solo cambia el ruido del receptor (gemelo: 1,000)
     expect(pearson(sub(a), sub(same))).toBeGreaterThan(0.98);
-    // otra fase (gemelo: 0,61 con 2 mm; 0,86 con 1 mm) y la pared quieta (1,000)
+    // otra fase (gemelo: 0,76 con 2 mm; 0,61 antes de la decisión 62, cuyas copias de la pared llevan las bandas
+    // estáticas de sus caras) y la pared quieta (1,000)
     expect(pearson(sub(a), sub(moved))).toBeLessThan(0.8);
     expect(pearson(wall(a), wall(moved))).toBeGreaterThanOrEqual(0.9);
+    // el deslizamiento solo (sin la serie, la pleura ni el tejido), anclado al pulmón: 0,61 con 2 mm
+    const only = { pleura: false, series: false, sliding: true, tissue: false };
+    const oa = simulatePleura({ edgeMm: -Infinity, seed: 1, caudalMm: 0, noiseSeed: 3, parts: only });
+    const om = simulatePleura({ edgeMm: -Infinity, seed: 1, caudalMm: 2, noiseSeed: 3, parts: only });
+    expect(pearson(sub(oa), sub(om))).toBeLessThan(0.7);
   });
 
   it('borde de la cortina: 5–15 mm de 10 a 90 %, sigue al borde y fuera de él la imagen es la de siempre', () => {

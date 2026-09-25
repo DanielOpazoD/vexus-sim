@@ -1393,9 +1393,19 @@ brillante como el hígado (gemelo: neblina 0,99 × el hígado; aceptación 0,35�
   min(min(T, T₁)·10^(ΔL/20), T(D)), T la de la apertura y T₁ la del rayo único de la línea, A o2: el cono de
   la apertura mezcla líneas vecinas con otra ΔL y la compensación de la línea sola, sin el tope, devolvía más
   de lo que su lámina quitó). Las líneas con f < 10⁻³ son las de siempre.
-- **Coste y estructura.** La muestra de la imagen y las dos de la pared pasan por un solo bucle
-  (`mediumField`, `mediumFieldPh`): la clasificación y el eco de interfaz no se compilan dos veces más
-  (lección de la decisión 58). B lee `h2` (uHits2) y el rayo único de A (uTrans2: .x la mirada 0, .y la
+- **Coste y estructura.** Cada programa inlinea `classify` las mismas veces que antes (A0 2, A1 1, B 3; una
+  sola implementación, `classifyWith`, y `classify` es su envoltorio). La muestra de la imagen (`mediumField`,
+  `mediumFieldPh`: clasificación, tres planos, grumos y eco de interfaz) va una vez y fuera de bucles, como
+  antes; las dos de la pared que copia la serie, en un bucle barato (`wallField`, `wallFieldPh`) que clasifica
+  con el prefijo de la pared de `classify` (`classifyWall`: fuera del torso, piel, grasa, costillas y músculo;
+  la muestra está antes de la pleura, así que es lo mismo que da `classify`, y la pared no tiene caras de
+  interfaz; si pasa de la cara interna —en una mirada dirigida, ≤ 0,3 mm al final de la copia, bajo la réplica
+  de la pleura— es músculo). A0 clasifica una vez por vuelta: tras una muestra de la lámina, la vuelta
+  siguiente clasifica la misma muestra sin la cortina (ΔL); en el pulmón del tórax pegado a la lámina lo de
+  detrás es el mismo pulmón y no hace falta. Motivo: con SwiftShader (la e2e y el CI) el JIT de B tardaba
+  128 s en lugar de 6 (faceGradient, ~67 kB inlineados, dentro de un bucle) y el vigilante de la GPU de Chrome
+  perdía el contexto al arrancar; `shaderLimits.test.ts` fija las copias de `classify` por programa y que
+  faceGradient no quede dentro de un bucle. B lee `h2` (uHits2) y el rayo único de A (uTrans2: .x la mirada 0, .y la
   dirigida, que el programa dirigido de A escribe ahora en o2.y): dos samplers más, 6 en los dos programas. La
   tabla de caras crece una fila: 106 ranuras de uniforms en la mirada 0 y 108 en la dirigida (antes 105 y
   107).

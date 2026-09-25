@@ -63,6 +63,55 @@ function undeclaredUniforms(src: string): string[] {
 }
 
 /** Los shaders de fragmentos que exporta `passes.glsl.ts` (sus otras exportaciones no son shaders). */
+/** Funciones de un shader (sin comentarios): nombre → cuerpo. El compilador inlinea cada llamada. */
+function glslCallGraph(src: string): Map<string, string> {
+  const code = src.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  const fns = new Map<string, string>();
+  const re = /(?:^|\n)[ \t]*(?:void|float|int|bool|[iu]?vec[234]|mat[234]|[A-Z]\w*)\s+(\w+)\s*\([^)]*\)\s*\{/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(code))) {
+    let depth = 1;
+    let i = re.lastIndex;
+    while (depth > 0 && i < code.length) {
+      if (code[i] === '{') depth++;
+      else if (code[i] === '}') depth--;
+      i++;
+    }
+    fns.set(m[1], code.slice(re.lastIndex, i - 1));
+    re.lastIndex = i;
+  }
+  return fns;
+}
+/** Llamadas a funciones del shader en un trozo de código (una por aparición). */
+const callsIn = (g: Map<string, string>, code: string, self?: string): string[] =>
+  [...code.matchAll(/\b(\w+)\s*\(/g)].map((x) => x[1]).filter((f) => g.has(f) && f !== self);
+/** Copias inlineadas del cuerpo de `target` en `fn` (por todos los caminos de llamadas). */
+function inlinedCopies(g: Map<string, string>, fn: string, target: string): number {
+  return callsIn(g, g.get(fn)!, fn).reduce((n, c) => n + (c === target ? 1 : 0) + inlinedCopies(g, c, target), 0);
+}
+/** ¿Llega el código a `target` por alguna cadena de llamadas? */
+function reaches(g: Map<string, string>, code: string, target: string, seen = new Set<string>()): boolean {
+  return callsIn(g, code).some((c) => c === target || (!seen.has(c) && (seen.add(c), reaches(g, g.get(c)!, target, seen))));
+}
+/** Cuerpos de los bucles `for` de todas las funciones del shader. */
+function loopBodies(g: Map<string, string>): string[] {
+  const out: string[] = [];
+  for (const body of g.values())
+    for (const m of body.matchAll(/\bfor\s*\(/g)) {
+      let i = m.index + m[0].length;
+      for (let depth = 1; depth > 0; i++) depth += body[i] === '(' ? 1 : body[i] === ')' ? -1 : 0;
+      while (/\s/.test(body[i])) i++;
+      if (body[i] !== '{') {
+        out.push(body.slice(i, body.indexOf(';', i)));
+        continue;
+      }
+      const start = ++i;
+      for (let depth = 1; depth > 0; i++) depth += body[i] === '{' ? 1 : body[i] === '}' ? -1 : 0;
+      out.push(body.slice(start, i - 1));
+    }
+  return out;
+}
+
 const FRAGMENT_SHADERS = Object.entries(PASSES).filter((e): e is [string, string] => e[0].startsWith('FRAG_') && typeof e[1] === 'string');
 
 /**
@@ -222,14 +271,16 @@ describe('Límites del shader con margen para crecer', () => {
   // (la anatomía cambia a menudo). Si cambias a propósito el main de la mirada 0 de una pasada, actualiza su
   // huella; si no lo cambiaste, alguien lo ha tocado sin querer. Cambio deliberado: el main de B lleva la
   // rama de la cortina (decisión 61; antes 4314c49a44f58052); fuera de las líneas con pleura parietal hace
-  // las mismas cuentas que antes (el peso del tejido es 1 y la transmisión, la de siempre).
+  // las mismas cuentas que antes (el peso del tejido es 1 y la transmisión, la de siempre). Después (e5fca934a2dddf02
+  // → la de abajo), la muestra de la imagen sale del bucle de la serie (mediumField, una vez, como antes de la
+  // decisión 61) y la pared copiada se clasifica con el prefijo de la pared (wallField): el JIT de SwiftShader.
   it('el main de los programas de la mirada 0 es, letra a letra, el de antes de la composición', () => {
     const mainOf = (src: string): string => src.slice(src.lastIndexOf('\nvoid main() {'));
     const print = (src: string): string => createHash('sha256').update(mainOf(src)).digest('hex').slice(0, 16);
     expect(Object.fromEntries(LOOK_PAIRS.map((p) => [p.name, print(p.look0)]))).toEqual({
       FRAG_TRANS_PREFIX: 'f6b08093f699bc04',
       FRAG_TRANSMISSION: '668efb9a2b5c7008',
-      FRAG_RAWFIELD: 'e5fca934a2dddf02',
+      FRAG_RAWFIELD: 'b6752d41c82c4fe2',
     });
     // y el resto de B es el mismo texto en los dos programas: solo cambian sus entradas y su main
     const inputs0 = 'uniform sampler2D uTrans0;\nuniform sampler2D uTrans1;\n';
@@ -266,6 +317,37 @@ describe('Límites del shader con margen para crecer', () => {
       // uniform vec4 uComentado[100];`;
     expect(uniformSlots(src)).toEqual({ slots: 13, arrays: ['uB[3]', 'uC[5]'] });
     expect(() => uniformSlots('uniform vec4 uX[SIN_DEFINIR];')).toThrow(/sin resolver/);
+  });
+
+  // Coste de compilación en SwiftShader (el de la e2e y el CI): el compilador inlinea cada llamada, y el JIT
+  // (LLVM) de SwiftShader crece con el código inlineado y se dispara con código pesado dentro de un bucle. La
+  // decisión 61 metió faceGradient (6–8 distancias, ~67 kB) en el bucle de las muestras del medio de B: el
+  // primer dibujo de B pasó de 6 s a 128 s y el vigilante de la GPU de Chrome perdía el contexto al arrancar.
+  // Estas cotas son las de main a9520b8 (A0 2 copias de classify, A1 1, B 3, color, consulta y mapa 1).
+  it('ningún shader inlinea classify más veces que antes de la decisión 61, ni faceGradient dentro de un bucle', () => {
+    const budget: Record<string, number> = {
+      FRAG_TRANS_HITS: 2,
+      FRAG_TRANS_SEGMENTS: 1,
+      FRAG_RAWFIELD: 3,
+      FRAG_RAWFIELD_STEERED: 3,
+      FRAG_COLOR: 1,
+      FRAG_QUERY: 1,
+      FRAG_TISSUEMAP: 1,
+    };
+    for (const [name, src] of FRAGMENT_SHADERS) {
+      const g = glslCallGraph(src);
+      if (!g.has('main')) continue;
+      expect(inlinedCopies(g, 'main', 'classifyWith'), name).toBe(budget[name] ?? 0);
+      for (const body of loopBodies(g)) expect(reaches(g, body, 'faceGradient'), `${name}: faceGradient en un bucle`).toBe(false);
+    }
+    // el detector ve la regresión: la muestra completa del medio (con su eco de interfaz) en el bucle de la serie
+    const inLoop = FRAG_RAWFIELD.replace(
+      'vec2 f = wallField(pointOnLine(dir0, d), elevSigma(d));',
+      'vec2 f = mediumField(pointOnLine(dir0, d), dir0, d, elevSigma(d), true);',
+    );
+    expect(inLoop).not.toBe(FRAG_RAWFIELD);
+    const g = glslCallGraph(inLoop);
+    expect(loopBodies(g).some((b) => reaches(g, b, 'faceGradient'))).toBe(true);
   });
 
   // El GLSL de las costillas (`sdRib`) corta en x > 15 mm sin mirar `rightOnly`: todas deben serlo

@@ -354,23 +354,36 @@ vec2 slidingField(vec3 pD, float h, float salt) {
   vec3 q = (m + vec3(0.0, 0.0, CURTAIN_Z0 - uCurtain.x)) / SLIDING_LAT_MM - torsoNormal(m) * (h / SLIDING_AX_MM);
   return scattererField(q, 1.0, uSeed + SLIDING_SALT + salt) * slidingAmplitude(h);
 }
-// Campo del medio en p (mirada 0): clasificación, moteado anclado, grumos y eco de interfaz. Con planes, los tres
-// planos de elevación (¼ ½ ¼, fasor del central); sin ellos, el central: la pared que copia la serie.
-vec2 mediumField(vec3 p, vec3 dir, float se, float rEcho, bool withCurtain, bool planes) {
+// Campo del medio de la imagen en p (mirada 0): clasificación (withCurtain = false bajo la pleura de la cortina:
+// lo de detrás de la lámina), tres planos de elevación (¼ ½ ¼, fasor del central), grumos (decisión 56) y eco de
+// interfaz (decisión 57: coherente, fase 0 común a la cara, antes de la transmisión). Una llamada por programa y
+// fuera de bucles: faceGradient, en el eco, es el código más pesado de B.
+vec2 mediumField(vec3 p, vec3 dir, float r, float se, bool withCurtain) {
   vec3 m = toMaterial(p);
   Cls c = classifyWith(m, withCurtain);
   vec2 f0 = fieldFor(m, se, c.tissue);
-  vec2 field = f0;
-  if (planes) {
-    vec2 f1 = sampleSide(p + uElev * se, se, c, withCurtain);
-    vec2 f2 = sampleSide(p - uElev * se, se, c, withCurtain);
-    float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
-    field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
-  }
-  // grumos (decisión 56): un factor del plano central para los tres planos
+  vec2 f1 = sampleSide(p + uElev * se, se, c, withCurtain);
+  vec2 f2 = sampleSide(p - uElev * se, se, c, withCurtain);
+  float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
+  vec2 field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
   float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
   if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
-  // eco de interfaz (decisión 57): coherente, fase 0 común a la cara, antes de la transmisión
-  return field + vec2(interfaceEcho(c, m, dir, rEcho, se), 0.0);
+  return field + vec2(interfaceEcho(c, m, dir, r, se), 0.0);
+}
+// La pared que copia la serie (decisión 61) en p: el prefijo de la pared de classify (piel, grasa, costillas y
+// músculo, sin órganos ni tubos: la muestra está antes de la pleura), moteado anclado y grumos del plano central.
+// La pared no tiene caras de interfaz (su eco es 0). Si la muestra pasa de la cara interna (en una mirada
+// dirigida, ≤ 0,3 mm al final de la copia, junto a la réplica de la pleura), es la capa más honda: el músculo.
+// Barata a propósito: va en el bucle de la serie, y el JIT de SwiftShader se dispara con código pesado en un bucle.
+vec2 wallField(vec3 p, float se) {
+  vec3 m = toMaterial(p);
+  Cls c;
+  float depth;
+  vec3 tn;
+  if (!classifyWall(m, c, depth, tn)) { c.tissue = T_MUSCLE; c.n = tn; }
+  vec2 field = fieldFor(m, se, c.tissue);
+  float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
+  if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
+  return field;
 }
 `;

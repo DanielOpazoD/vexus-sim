@@ -275,7 +275,7 @@ describe('serie de reverberaciones bajo la pleura: amplitudes frente a los camin
       expect(code.match(/IF_PLEURA_WALL/g)?.length).toBe(3);
       expect(code.match(/interfaceProfileEcho\(IF_PLEURA_WALL, cosI, 1\.0, k \* (D|sD) - (r|s)\)/g)?.length).toBe(1);
     }
-    const wall = PLEURA_GLSL.slice(PLEURA_GLSL.indexOf('vec2 mediumField('));
+    const wall = PLEURA_GLSL.slice(PLEURA_GLSL.indexOf('vec2 wallField('));
     expect(wall).not.toMatch(/IF_PLEURA_WALL|pleuraEcho/);
   });
 
@@ -461,14 +461,19 @@ describe('clasificación sin la cortina (gemelo de classifyWith(m, false))', () 
     expect(ANATOMY_GLSL).toMatch(/if \(withCurtain\) \{\n\s+float dCurtain = lungCurtainDistance\(m, -depth - wall\);/);
     expect(ANATOMY_GLSL).toContain('float insideWallMm(vec3 m) { return -torsoDepth(m) - (uWall.x + uWall.y + uWall.z); }');
     // el tejido que se ve a través del borde y sus planos laterales usan la variante bajo la pleura (la muestra de
-    // la imagen, j = 0); la pared que copia la serie, la de siempre
+    // la imagen); la pared que copia la serie, el prefijo de la pared de classify (classifyWall: piel, grasa,
+    // costillas y músculo, lo mismo que da classify antes de la pleura, sin órganos ni tubos)
     expect(PLEURA_GLSL).toContain('Cls c = classifyWith(m, withCurtain);');
     expect(PLEURA_GLSL).toContain('vec2 f1 = sampleSide(p + uElev * se, se, c, withCurtain);');
-    expect(FRAG_RAWFIELD).toContain(
-      'vec2 f = mediumField(j == 0 ? p : pointOnLine(dir0, d), j == 0 ? dir : dir0, elevSigma(d), d, j != 0 || !under, j == 0);',
-    );
+    expect(FRAG_RAWFIELD).toContain('vec2 tissue = wTissue >= CURTAIN_MIN_AIR ? mediumField(p, dir, r, elevSigma(r), !under) : vec2(0.0);');
     expect(FRAG_RAWFIELD_STEERED).toContain('vec2 f1 = sampleSidePh(p + uElev * se, se, c, ph0, g, withCurtain);');
-    expect(FRAG_RAWFIELD_STEERED).toContain('j != 0 || !under, j == 0,');
+    expect(FRAG_RAWFIELD_STEERED).toContain('tissue = mediumFieldPh(p, dir, s, elevSigma(r), !under, lookPhase(rho, alpha, a, uSteer.w)');
+    expect(ANATOMY_GLSL).toContain('if (classifyWall(m, c, depth, tn)) return c;');
+    expect(PLEURA_GLSL).toContain('if (!classifyWall(m, c, depth, tn)) { c.tissue = T_MUSCLE; c.n = tn; }');
+    expect(FRAG_RAWFIELD).toContain('vec2 f = wallField(pointOnLine(dir0, d), elevSigma(d));');
+    expect(FRAG_RAWFIELD_STEERED).toContain(
+      'vec2 f = wallFieldPh(elem + dirK * d, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, uSteer.w)',
+    );
   });
 });
 
@@ -727,6 +732,44 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
     expect(thoraxBehind).toBeGreaterThan(20);
   });
 
+  // A0 en la GPU clasifica lo de detrás de la lámina solo en la lámina (una vuelta más del bucle con
+  // classifyWith sin la cortina); en el pulmón del tórax que le sigue pegado no hace falta: sin la cortina es
+  // el mismo pulmón y su ΔL es 0. El gemelo lo suma en todo el tramo: la misma cuenta.
+  it('en el tramo de la cortina, fuera de la lámina lo de detrás es el mismo pulmón (ΔL 0)', () => {
+    let sheet = 0;
+    let thorax = 0;
+    for (const caudal of [0, 30]) {
+      const cal = caliberOf(caudal);
+      const q = sceneQuery(scene, cal);
+      for (const { id, fr } of frames)
+        for (let i = 0; i < CONVEX_C35.lines; i++) {
+          const th = -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * (i + 0.5)) / CONVEX_C35.lines;
+          const origin = pointOnLine(fr, CONVEX_C35, th, 0);
+          const dir = lineDirection(fr, th);
+          if (pleuraCrossingLine(q.insideWall, q.curtainEdge, origin, dir, depth, N) === null) continue;
+          const step = depth / N;
+          // el tramo como el de A0 (y curtainRunOf): pulmón del receso y el que le sigue pegado
+          let run = false;
+          for (let s = 0; s < N; s++) {
+            const p = pointOnLine(fr, CONVEX_C35, th, (s + 0.5) * step);
+            const c = q.at(p);
+            run = c.tissue === Tissue.Lung && (run || c.curtain);
+            if (!run) {
+              if (c.tissue === Tissue.Lung) break;
+              continue;
+            }
+            if (scene.inLungCurtain(p, cal)) sheet++;
+            else {
+              thorax++;
+              expect(q.behind(p), `${id} línea ${i} segmento ${s}`).toBe(Tissue.Lung);
+            }
+          }
+        }
+    }
+    expect(sheet).toBeGreaterThan(100);
+    expect(thorax).toBeGreaterThan(100);
+  });
+
   it('el espejo del diafragma queda igual donde la línea llega a la cúpula sin cruzar la cortina', () => {
     let mirrors = 0;
     for (const caudal of [0, 10]) {
@@ -783,7 +826,12 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
       `if (dz > -${CURTAIN_RECORD_MM.toFixed(1)}) { pleuraD = rp; pleuraDz = dz; }`,
       'curtainRun = c.tissue == T_LUNG && mirrorSeg < 0.0 && (curtainRun || (pleuraD >= 0.0 && inLungRecess(m, insideWallMm(m))));',
       'if (mirrorSeg < 0.0 && !crossed) {',
-      'curtainDb += segmentDb(c.tissue, step) - segmentDb(classifyWith(m, false).tissue, step);',
+      // una sola clasificación por vuelta: la de la cortina y, en la vuelta siguiente, la de detrás de la lámina
+      'Cls c = classifyWith(m, !behind);',
+      'curtainDb += lungDb - segmentDb(c.tissue, step);',
+      'lungDb = segmentDb(c.tissue, step);',
+      'if (!behind) s++;',
+      'behind = lungCurtainDistance(m, insideWallMm(m)) >= 0.0;',
       'curtainLast = float(s);',
       `h2 = pleuraD >= 0.0 ? vec4(pleuraD, pleuraDz, curtainDb, ${CURTAIN_GAS_KIND.toFixed(1)} + 4.0 * (curtainLast + 1.0)) : vec4(-1.0, 0.0, 0.0, 0.0);`,
     ])
@@ -806,8 +854,8 @@ describe('la rama de la cortina de la pasada B (mirada 0)', () => {
       'air += vec2(seriesPow(G, k - 1.0) * tD * interfaceProfileEcho(IF_PLEURA_WALL, cosI, 1.0, k * D - r), 0.0);',
       'vec3 ser = under ? pleuraSeriesDepths(r, D) : vec3(0.0);',
       'bool series = under && gn * tD * PLEURA_WALL_FIELD_BOUND * coupling > PLEURA_SERIES_FLOOR;',
-      'int j1 = series ? 3 : 1;',
-      'float d = j == 0 ? r : (j == 1 ? ser.y : ser.z);',
+      'int nWall = series ? 2 : 0;',
+      'float d = j == 1 ? ser.y : ser.z;',
       'float td = texture(uTrans0, vec2(vUv.x, min(d, rCap) / uDepth)).x;',
       'air += f * (j == 1 ? (ser.x + 1.0) * PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : (ser.x + 2.0) * td * G * gn);',
       'if (under && slidingAmplitude(r - D) * tD * coupling > PLEURA_SERIES_FLOOR) air += slidingField(pD, r - D, 0.0) * tD;',

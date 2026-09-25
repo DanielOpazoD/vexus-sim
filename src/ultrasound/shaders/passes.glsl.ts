@@ -151,12 +151,25 @@ void main() {
   bool entered = false;
   bool curtainRun = false;
   bool crossed = false;
-  for (int s = 0; s < 512; s++) {
+  // Una sola clasificación por vuelta (classifyWith inlineado una vez, como classify antes de la decisión 61):
+  // tras una muestra de la lámina de la cortina, la vuelta siguiente (behind) clasifica la misma muestra sin la
+  // cortina, lo de detrás de la lámina, y suma su ΔL. Hasta 2·512 vueltas para 512 muestras.
+  bool behind = false;
+  float lungDb = 0.0;
+  int s = -1;
+  for (int it = 0; it < 1024; it++) {
+    if (!behind) s++;
     if (s >= n) break;
     float r = (float(s) + 0.5) * step;
     vec3 p = mirrorSeg >= 0.0 ? hitPoint + dir * (r - hitR) : origin + dir * r;
     vec3 m = toMaterial(p);
-    Cls c = classify(m);
+    Cls c = classifyWith(m, !behind);
+    if (behind) {
+      // ΔL: lo que el gas de la cortina cuesta de más frente al tejido de detrás
+      curtainDb += lungDb - segmentDb(c.tissue, step);
+      behind = false;
+      continue;
+    }
     // Pleura parietal: primer cruce exacto de la cara interna de la pared, si cae en el receso cerca del borde
     if (mirrorSeg < 0.0 && !crossed) {
       float inside = insideWallMm(m);
@@ -183,9 +196,11 @@ void main() {
     curtainRun = c.tissue == T_LUNG && mirrorSeg < 0.0 && (curtainRun || (pleuraD >= 0.0 && inLungRecess(m, insideWallMm(m))));
     if (flag > 0.5 && flag < 1.5) {
       if (curtainRun) {
-        // ni espejo ni impacto de gas; ΔL: lo que su gas cuesta de más frente al tejido de detrás
-        curtainDb += segmentDb(c.tissue, step) - segmentDb(classifyWith(m, false).tissue, step);
+        // ni espejo ni impacto de gas; en la lámina, la vuelta siguiente clasifica lo de detrás (ΔL). Fuera de ella
+        // (el pulmón del tórax que le sigue pegado) classifyWith sin la cortina da el mismo pulmón: ΔL 0, sin vuelta
+        lungDb = segmentDb(c.tissue, step);
         curtainLast = float(s);
+        behind = lungCurtainDistance(m, insideWallMm(m)) >= 0.0;
         continue;
       }
       if (c.tissue == T_LUNG && mirrorSeg < 0.0) {
@@ -449,21 +464,29 @@ float steeredT(float phiK, float a, float x) {
   float al = phiK + uSteer.x - steerBeta(rho, a);
   return texture(uTrans3, vec2((al + uHalfSector) / (2.0 * uHalfSector), (rho - uCurvR) / uDepth)).x;
 }
-// mediumField con la fase de la mirada por nodo
-vec2 mediumFieldPh(vec3 p, vec3 dir, float se, float rEcho, bool withCurtain, bool planes, float ph0, vec3 g) {
+// mediumField y wallField con la fase de la mirada por nodo
+vec2 mediumFieldPh(vec3 p, vec3 dir, float r, float se, bool withCurtain, float ph0, vec3 g) {
   vec3 m = toMaterial(p);
   Cls c = classifyWith(m, withCurtain);
   vec2 f0 = fieldForPh(m, se, c.tissue, ph0, g);
-  vec2 field = f0;
-  if (planes) {
-    vec2 f1 = sampleSidePh(p + uElev * se, se, c, ph0, g, withCurtain);
-    vec2 f2 = sampleSidePh(p - uElev * se, se, c, ph0, g, withCurtain);
-    float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
-    field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
-  }
+  vec2 f1 = sampleSidePh(p + uElev * se, se, c, ph0, g, withCurtain);
+  vec2 f2 = sampleSidePh(p - uElev * se, se, c, ph0, g, withCurtain);
+  float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
+  vec2 field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
   float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
   if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
-  return field + vec2(interfaceEcho(c, m, dir, rEcho, se), 0.0);
+  return field + vec2(interfaceEcho(c, m, dir, r, se), 0.0);
+}
+vec2 wallFieldPh(vec3 p, float se, float ph0, vec3 g) {
+  vec3 m = toMaterial(p);
+  Cls c;
+  float depth;
+  vec3 tn;
+  if (!classifyWall(m, c, depth, tn)) { c.tissue = T_MUSCLE; c.n = tn; }
+  vec2 field = fieldForPh(m, se, c.tissue, ph0, g);
+  float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
+  if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
+  return field;
 }
 vec2 steeredField() {
   float alpha = lineTheta(vUv.x);
@@ -518,25 +541,23 @@ vec2 steeredField() {
   float gn = seriesPow(G, ser.x);
   bool series = under && gn * tD * PLEURA_WALL_FIELD_BOUND * coupling > PLEURA_SERIES_FLOOR;
   float wTissue = under ? 1.0 - fAir : 1.0;
-  // Muestras del medio en un bucle, como la mirada 0 (σe de la rejilla común: s − r ≤ 0,5 mm), cada una con
-  // la fase de la mirada en su punto
+  // El tejido de la imagen fuera de bucles y la pared de las series en un bucle barato, como la mirada 0, cada
+  // muestra con la fase de la mirada en su punto (σe de la rejilla común: s − r ≤ 0,5 mm)
   vec2 tissue = vec2(0.0);
+  if (wTissue >= CURTAIN_MIN_AIR) {
+    vec2 gr = lookPhaseGrad(rho, alpha, a, uSteer.w);
+    tissue = mediumFieldPh(p, dir, s, elevSigma(r), !under, lookPhase(rho, alpha, a, uSteer.w), gr.x * uLateral + gr.y * uAxial);
+  }
   vec2 air = vec2(0.0);
-  int j0 = wTissue >= CURTAIN_MIN_AIR ? 0 : 1;
-  int j1 = series ? 3 : 1;
-  for (int j = j0; j < j1; j++) {
+  int nWall = series ? 2 : 0;
+  for (int j = 1; j <= nWall; j++) {
     float d = j == 1 ? ser.y : ser.z;
-    float rhoJ = j == 0 ? rho : sqrt(uCurvR * uCurvR + d * d + 2.0 * d * uSteer.z);
-    float alJ = j == 0 ? alpha : phiK + uSteer.x - steerBeta(rhoJ, a);
+    float rhoJ = sqrt(uCurvR * uCurvR + d * d + 2.0 * d * uSteer.z);
+    float alJ = phiK + uSteer.x - steerBeta(rhoJ, a);
     vec2 gr = lookPhaseGrad(rhoJ, alJ, a, uSteer.w);
-    vec3 g = gr.x * uLateral + gr.y * uAxial;
-    vec2 f = mediumFieldPh(j == 0 ? p : elem + dirK * d, j == 0 ? dir : dirK, elevSigma(j == 0 ? r : rhoJ - uCurvR), j == 0 ? s : d, j != 0 || !under, j == 0,
-                           lookPhase(rhoJ, alJ, a, uSteer.w), g);
-    if (j == 0) tissue = f;
-    else {
-      float td = steeredT(phiK, a, min(d, sCap));
-      air += f * (j == 1 ? (ser.x + 1.0) * PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : (ser.x + 2.0) * td * G * gn);
-    }
+    vec2 f = wallFieldPh(elem + dirK * d, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, uSteer.w), gr.x * uLateral + gr.y * uAxial);
+    float td = steeredT(phiK, a, min(d, sCap));
+    air += f * (j == 1 ? (ser.x + 1.0) * PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : (ser.x + 2.0) * td * G * gn);
   }
   vec2 out2 = vec2(0.0);
   if (wTissue >= CURTAIN_MIN_AIR) {
@@ -735,20 +756,17 @@ void main() {
   bool series = under && gn * tD * PLEURA_WALL_FIELD_BOUND * coupling > PLEURA_SERIES_FLOOR;
   // El tejido: todo sobre la pleura; bajo ella, el de detrás de la cortina con peso 1 − fAir
   float wTissue = under ? 1.0 - fAir : 1.0;
-  // Muestras del medio en un bucle (se compila una vez): 0 la de la imagen, 1 y 2 la pared de las copias
-  // espejo y directa
-  vec2 tissue = vec2(0.0);
+  // El tejido de la imagen, fuera de bucles como antes de la decisión 61 (bajo la pleura, el de detrás de la
+  // cortina con peso 1 − fAir); la pared que copian las series espejo y directa, a lo sumo dos muestras baratas
+  // en un bucle (wallField: el JIT de SwiftShader se dispara con código pesado dentro de un bucle)
+  vec2 tissue = wTissue >= CURTAIN_MIN_AIR ? mediumField(p, dir, r, elevSigma(r), !under) : vec2(0.0);
   vec2 air = vec2(0.0);
-  int j0 = wTissue >= CURTAIN_MIN_AIR ? 0 : 1;
-  int j1 = series ? 3 : 1;
-  for (int j = j0; j < j1; j++) {
-    float d = j == 0 ? r : (j == 1 ? ser.y : ser.z);
-    vec2 f = mediumField(j == 0 ? p : pointOnLine(dir0, d), j == 0 ? dir : dir0, elevSigma(d), d, j != 0 || !under, j == 0);
-    if (j == 0) tissue = f;
-    else {
-      float td = texture(uTrans0, vec2(vUv.x, min(d, rCap) / uDepth)).x;
-      air += f * (j == 1 ? (ser.x + 1.0) * PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : (ser.x + 2.0) * td * G * gn);
-    }
+  int nWall = series ? 2 : 0;
+  for (int j = 1; j <= nWall; j++) {
+    float d = j == 1 ? ser.y : ser.z;
+    vec2 f = wallField(pointOnLine(dir0, d), elevSigma(d));
+    float td = texture(uTrans0, vec2(vUv.x, min(d, rCap) / uDepth)).x;
+    air += f * (j == 1 ? (ser.x + 1.0) * PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : (ser.x + 2.0) * td * G * gn);
   }
   vec2 out2 = vec2(0.0);
   if (wTissue >= CURTAIN_MIN_AIR) {

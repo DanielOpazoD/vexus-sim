@@ -281,30 +281,43 @@ ${ORGAN_MODULES.map((o) => o.glsl).join('\n')}
 // Profundidad bajo la cara interna de la pared (mm; 0 en la pleura parietal). Gemelo: AnatomyScene.insideWallMm
 float insideWallMm(vec3 m) { return -torsoDepth(m) - (uWall.x + uWall.y + uWall.z); }
 
-// withCurtain = false: sin la cortina (decisión 61), lo de detrás de la lámina; gemelo classify(m, cal, false)
-Cls classifyWith(vec3 m, bool withCurtain) {
-  Cls c;
+// La pared de classify: fuera del torso (aire), piel, grasa, costillas y músculo. true si la muestra queda
+// decidida (en c); si no, depth y tn (profundidad y normal del torso) sirven al resto de classifyWith. La serie
+// de la pleura (decisión 61) remuestrea la pared solo con ella: sin órganos ni tubos. Gemelo: la classifyWall
+// privada de AnatomyScene
+bool classifyWall(vec3 m, out Cls c, out float depth, out vec3 tn) {
   c.tissue = T_AIR; c.bd = 1e3; c.n = vec3(0.0, 1.0, 0.0); c.iface = IF_NONE; c.ifd = 1e3; c.vessel = -1;
   c.rho = 10.0; c.tangent = vec3(0.0, 0.0, 1.0); c.kc = 0.0; c.uRef = 0.0; c.rRef = 1.0; c.profN = 2.0;
-  float depth = torsoDepth(m);
-  if (m.z < uTorso.z || m.z > uTorso.w || depth > 0.0) return c;
+  depth = torsoDepth(m);
+  tn = vec3(0.0, 1.0, 0.0);
+  if (m.z < uTorso.z || m.z > uTorso.w || depth > 0.0) return true;
   float skin = uWall.x;
   float fat = skin + uWall.y;
   float wall = fat + uWall.z;
   float d = -depth;
-  vec3 tn = torsoNormal(m);
-  if (d < skin) { c.tissue = T_SKIN; c.bd = skin - d; c.n = tn; return c; }
-  if (d < fat) { c.tissue = T_FAT; c.bd = min(d - skin, fat - d); c.n = tn; return c; }
+  tn = torsoNormal(m);
+  if (d < skin) { c.tissue = T_SKIN; c.bd = skin - d; c.n = tn; return true; }
+  if (d < fat) { c.tissue = T_FAT; c.bd = min(d - skin, fat - d); c.n = tn; return true; }
   bool inMuscle = d < wall;
   // Costillas
   for (int i = 0; i < MAX_RIBS; i++) {
     bool cart; vec3 rn;
     float rd = sdRib(m, uRibs[i], cart, rn);
     if (rd < 0.0) {
-      c.tissue = cart ? T_CARTILAGE : T_BONE; c.bd = -rd; c.n = rn; return c;
+      c.tissue = cart ? T_CARTILAGE : T_BONE; c.bd = -rd; c.n = rn; return true;
     }
   }
-  if (inMuscle) { c.tissue = T_MUSCLE; c.bd = min(d - fat, wall - d); c.n = tn; return c; }
+  if (inMuscle) { c.tissue = T_MUSCLE; c.bd = min(d - fat, wall - d); c.n = tn; return true; }
+  return false;
+}
+
+// withCurtain = false: sin la cortina (decisión 61), lo de detrás de la lámina; gemelo classify(m, cal, false)
+Cls classifyWith(vec3 m, bool withCurtain) {
+  Cls c;
+  float depth;
+  vec3 tn;
+  if (classifyWall(m, c, depth, tn)) return c;
+  float wall = uWall.x + uWall.y + uWall.z;
   // Columna
   float dBody = length(m.xy - uSpine.xy) - uSpine.z;
   float ax = abs(m.x - uSpine.x) - uSpineArch.x;

@@ -248,8 +248,10 @@ describe('Eco de interfaz en la distancia por la normal (|∇| de la cara)', () 
         Interface.PerirenalFat,
         Interface.GallbladderLumen,
       ])
-        expect(seen.get(f)?.near ?? 0, Interface[f]).toBeGreaterThan(200);
-      for (const f of [Interface.RenalCapsule, Interface.PerirenalFat, Interface.GallbladderLumen])
+        // la cara externa de la grasa perirrenal solo existe donde la grasa es fina (Morison, decisión 68): menos muestras
+        expect(seen.get(f)?.near ?? 0, Interface[f]).toBeGreaterThan(f === Interface.PerirenalFat ? 100 : 200);
+      // (la grasa perirrenal con cara es fina, ≤ 2,5 mm: todas sus muestras quedan al alcance y ninguna se recorta)
+      for (const f of [Interface.RenalCapsule, Interface.GallbladderLumen])
         expect(seen.get(f)?.dropped ?? 0, Interface[f]).toBeGreaterThan(100);
       // las caras de la pared y de las costillas (decisión 62): la distancia de su capa ondula en (u, z) y la
       // de la costilla no es euclídea; la salida barata tampoco pierde muestras suyas. Sin ondas periódicas en

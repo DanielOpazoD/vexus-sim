@@ -22,16 +22,19 @@ import {
   type TubeHit,
 } from './primitives';
 import { GALLBLADDER_WALL_MM, gallbladderBody, gallbladderSdf, type GallbladderShape } from './organs/gallbladder';
-import { RENAL_CAPSULE_MM, kidneyLocal, kidneyOuterSdf, kidneyQuery, type Kidney } from './organs/kidney';
 import {
-  LIVER_BLEND_MM,
-  RENAL_IMPRESSION,
-  liverBaseSdf,
-  liverLobes,
-  liverSdf,
-  visceralPlaneDistance,
-  type VisceralPlane,
-} from './organs/liver';
+  KIDNEY_RADII,
+  KIDNEY_SINUS,
+  PERIRENAL,
+  RENAL_CAPSULE_MM,
+  kidneyLocal,
+  kidneyOuterSdf,
+  kidneyQuery,
+  perirenalOuterSdf,
+  perirenalThicknessMm,
+  type Kidney,
+} from './organs/kidney';
+import { LIVER_BLEND_MM, liverBaseSdf, liverLobes, liverSdf, visceralPlaneDistance, type VisceralPlane } from './organs/liver';
 import { buildHepaticBranches, buildVesselTree, wallThicknessMm, type DuctDef, type VesselDef } from './vesselTree';
 
 export { wallThicknessMm };
@@ -212,10 +215,6 @@ export class AnatomyScene {
   readonly rightAtrium: Sphere;
   readonly kidneyRight: Kidney;
   readonly kidneyLeft: Kidney;
-  /** Grasa perirrenal (fascia de Gerota) alrededor del riñón (mm). */
-  readonly perirenalMm = 4;
-  /** Separación mínima hígado–riñón (impresión renal) (mm). */
-  readonly renalImpressionMm = RENAL_IMPRESSION.mm;
   /** Bolsas de gas intestinal (confusor; vacío en el avatar de referencia). */
   readonly gasPockets: Sphere[];
   vessels: VesselDef[];
@@ -255,19 +254,19 @@ export class AnatomyScene {
     this.kidneyRight = {
       kind: 'kidney',
       center: [-72, -38, -78],
-      radii: [54, 27, 23],
+      radii: KIDNEY_RADII,
       ...bR,
-      sinusRadii: [30, 12, 10],
-      sinusOffset: 4,
+      sinusRadii: KIDNEY_SINUS.radii,
+      sinusOffset: KIDNEY_SINUS.offsetV,
       hilumRadius: 7,
     };
     this.kidneyLeft = {
       kind: 'kidney',
       center: [78, -36, -70],
-      radii: [54, 27, 23],
+      radii: KIDNEY_RADII,
       ...bL,
-      sinusRadii: [30, 12, 10],
-      sinusOffset: 4,
+      sinusRadii: KIDNEY_SINUS.radii,
+      sinusOffset: KIDNEY_SINUS.offsetV,
       hilumRadius: 7,
     };
     this.gasPockets = [];
@@ -476,7 +475,7 @@ export class AnatomyScene {
       this.liverBaseSdf(m),
       -depth - wall.wallMm,
     );
-    for (const k of [this.kidneyRight, this.kidneyLeft]) bd = Math.min(bd, kidneyOuterSdf(kidneyLocal(m, k), k) - this.perirenalMm);
+    for (const k of [this.kidneyRight, this.kidneyLeft]) bd = Math.min(bd, perirenalOuterSdf(kidneyLocal(m, k), k));
     for (const g of this.gasPockets) {
       const dg = sdSphere(m, g);
       if (dg < 0) return { ...NONE, tissue: Tissue.BowelGas, boundaryDistance: -dg };
@@ -706,16 +705,17 @@ export class AnatomyScene {
 
   /**
    * Riñones: corteza / pirámides / seno, con grasa perirrenal alrededor. Devuelve también la distancia
-   * a la cara externa de la grasa perirrenal (`dPeriMm`, el menor `dOuter − perirenalMm` de los riñones
+   * a la cara externa de la grasa perirrenal (`dPeriMm`, el menor `dOuter − grosor local` de los riñones
    * cercanos): la cápsula hepática que la toca no dibuja su cara (Morison es de la grasa).
    */
   private classifyKidneys(m: Vec3): { cls: Classification | null; dPeriMm: number } {
     let dPeriMm = 1e3;
     for (const k of [this.kidneyRight, this.kidneyLeft]) {
       const dc = Math.hypot(m[0] - k.center[0], m[1] - k.center[1], m[2] - k.center[2]);
-      if (dc > k.radii[0] + this.perirenalMm + 2) continue;
+      if (dc > k.radii[0] + PERIRENAL.maxMm + 2) continue;
       const kh = kidneyQuery(m, k);
-      dPeriMm = Math.min(dPeriMm, kh.dOuter - this.perirenalMm);
+      const fat = perirenalThicknessMm(kidneyLocal(m, k), k.radii);
+      dPeriMm = Math.min(dPeriMm, kh.dOuter - fat);
       if (kh.dOuter < 0) {
         // cápsula fibrosa: línea brillante que separa la corteza de la grasa perirrenal
         if (-kh.dOuter < RENAL_CAPSULE_MM) {
@@ -738,17 +738,20 @@ export class AnatomyScene {
                 : Tissue.RenalCortex;
         return { cls: { ...NONE, tissue, boundaryDistance: kh.inner }, dPeriMm };
       }
-      // Grasa perirrenal (fascia de Gerota) hasta la impresión renal del hígado: en el
-      // receso de Morison la cápsula hepática apoya directamente sobre ella, sin hueco. La mitad
-      // externa dibuja la cara hígado/grasa; la interna, la de la cápsula renal (dos lados).
-      if (kh.dOuter < this.perirenalMm) {
-        const outerFace = kh.dOuter > 0.5 * this.perirenalMm;
+      // Grasa perirrenal (fascia de Gerota) de grosor variable (decisión 68) hasta la impresión renal del hígado: en
+      // el receso de Morison es fina y la cápsula hepática apoya directamente sobre ella, sin hueco. La mitad externa
+      // dibuja la cara hígado/grasa; la interna, la de la cápsula renal (dos lados): donde la grasa es fina las dos
+      // caras se funden en una sola línea.
+      if (kh.dOuter < fat) {
+        const outerFace = kh.dOuter > 0.5 * fat;
+        // la cara externa solo donde la grasa es fina (Morison); donde es gruesa se funde sin línea
+        const iface = outerFace ? (fat <= PERIRENAL.faceMaxMm ? Interface.PerirenalFat : Interface.None) : Interface.RenalCapsule;
         const cls: Classification = {
           ...NONE,
           tissue: Tissue.PerirenalFat,
-          boundaryDistance: Math.min(kh.dOuter, this.perirenalMm - kh.dOuter),
-          interface: outerFace ? Interface.PerirenalFat : Interface.RenalCapsule,
-          interfaceDistance: outerFace ? this.perirenalMm - kh.dOuter : kh.dOuter,
+          boundaryDistance: Math.min(kh.dOuter, fat - kh.dOuter),
+          interface: iface,
+          interfaceDistance: iface === Interface.None ? NONE.interfaceDistance : outerFace ? fat - kh.dOuter : kh.dOuter,
         };
         return { cls, dPeriMm };
       }

@@ -8,7 +8,20 @@ import { SimulationClock } from '../core/clock';
 import { PhysiologyEngine } from '../physiology/engine';
 import { contactCoupling, probeContact } from '../probe/contact';
 import { CONVEX_C35, lineDirection, pointOnLine, probeFrame, skinSoftness, type ProbePose } from '../probe/probe';
-import { kidneyQuery, kidneyWorld } from '../anatomy/organs/kidney';
+import {
+  MEDULLA_MIN_DEPTH_MM,
+  PERIRENAL,
+  PYRAMIDS,
+  RENAL_IMPRESSION_OVERLAP_MM,
+  kidneyLocal,
+  kidneyOuterSdf,
+  kidneyQuery,
+  kidneySinusSdf,
+  kidneyWorld,
+  perirenalThicknessMm,
+  sdRoundCone,
+} from '../anatomy/organs/kidney';
+import { sdEllipsoidLocal } from '../anatomy/primitives';
 import { renalPatternFromPeaks } from '../vexus/classification';
 import { VESSEL_META } from '../physiology/vessels';
 import { BRANCH_MAX_RADIUS_SCALE } from '../anatomy/vesselTree';
@@ -234,6 +247,62 @@ describe('Anatomía implícita (base B)', () => {
     }
   });
 
+  it('riñón realista (decisión 68): pirámides distintas bajo la corteza, seno digitado, pelvis colapsada, grasa variable', () => {
+    const k = scene.kidneyRight;
+    // pirámides: conos redondeados de tamaños distintos, con la base a ≥ 3 mm de la cápsula
+    const bases = PYRAMIDS.map((p) => p.baseR);
+    expect(Math.max(...bases) - Math.min(...bases)).toBeGreaterThan(1.5);
+    expect(PYRAMIDS.length).toBeGreaterThanOrEqual(12);
+    // el centro de la base de cada pirámide queda bajo la corteza (7,5 mm de la cápsula por su eje)
+    for (const p of PYRAMIDS) expect(-kidneyOuterSdf(p.base, k)).toBeGreaterThan(5);
+    // en el corte coronal por el eje largo (plano u–v) se ven ≥ 5 pirámides separadas, siempre con corteza encima
+    const blobs = new Set<number>();
+    for (let u = -50; u <= 50; u += 1)
+      for (let v = -27; v <= 27; v += 1) {
+        const q: V = [u, v, 0];
+        const kh = kidneyQuery(kidneyWorld(q, k), k);
+        if (kh.region !== 'medulla') continue;
+        expect(-kh.dOuter).toBeGreaterThan(MEDULLA_MIN_DEPTH_MM);
+        let best = 0;
+        let bd = Infinity;
+        PYRAMIDS.forEach((p, i) => {
+          const dd = sdRoundCone(q, p.apex, p.base, p.apexR, p.baseR);
+          if (dd < bd) {
+            bd = dd;
+            best = i;
+          }
+        });
+        blobs.add(best);
+      }
+    expect(blobs.size).toBeGreaterThanOrEqual(5);
+    // pelvis colapsada: a lo sumo una hendidura de ≤ 2,5 mm de grosor anteroposterior
+    let pelvisAp = 0;
+    for (let w = -5; w <= 5; w += 0.1) if (kidneyQuery(kidneyWorld([0, k.sinusOffset + 3, w], k), k).region === 'pelvis') pelvisAp += 0.1;
+    expect(pelvisAp).toBeLessThanOrEqual(2.5);
+    // seno digitado: el radio del borde del seno en el plano coronal varía más que el de un óvalo liso
+    const radii: number[] = [];
+    for (let a = 0; a < 72; a++) {
+      const th = (2 * Math.PI * a) / 72;
+      let r = 0;
+      while (r < 40 && kidneySinusSdf([Math.cos(th) * r * 2.2, k.sinusOffset + Math.sin(th) * r, 0], k) < 0) r += 0.1;
+      radii.push(r);
+    }
+    const ellipse = radii.map((_, a) => {
+      const th = (2 * Math.PI * a) / 72;
+      let r = 0;
+      while (r < 40 && sdEllipsoidLocal([Math.cos(th) * r * 2.2, Math.sin(th) * r, 0], k.sinusRadii) < 0) r += 0.1;
+      return r;
+    });
+    const bumps = radii.map((r, a) => r - ellipse[a]);
+    expect(Math.max(...bumps)).toBeGreaterThan(2);
+    // grasa perirrenal: fina en Morison (anterolateral), gruesa detrás y en los polos
+    const t = (q: V) => perirenalThicknessMm(q, k.radii);
+    expect(t([0, -20, 15])).toBeLessThan(1.5);
+    expect(t([0, 0, -23])).toBeGreaterThan(6);
+    expect(t([54, 0, 0])).toBeGreaterThan(6);
+    expect(t([-54, 0, 0])).toBeGreaterThan(6);
+  });
+
   it('riñón derecho: seno ecogénico, pirámides, corteza, grasa perirrenal e interlobares', () => {
     const k = scene.kidneyRight;
     // pelvis anecoica en el centro del seno; seno ecogénico alrededor; cápsula fina en la superficie
@@ -262,9 +331,12 @@ describe('Anatomía implícita (base B)', () => {
     expect(cls(k.center).tissue).toBe(Tissue.RenalSinus);
     expect(cls(kidneyWorld([13, -18, 0], k)).tissue).toBe(Tissue.RenalMedulla);
     expect(cls(kidneyWorld([13, -25.5, 0], k)).tissue).toBe(Tissue.RenalCortex);
-    expect(cls(kidneyWorld([0, -28.5, 0], k)).tissue).toBe(Tissue.PerirenalFat);
-    expect(cls(kidneyWorld([0, -18, 1.8], k)).vessel).toBe('interlobarVein2');
-    expect(cls(kidneyWorld([0, -18, -1.8], k)).vessel).toBe('interlobarArtery2');
+    // grasa perirrenal lateral fina (≈ 1 mm, decisión 68)
+    expect(cls(kidneyWorld([0, -27.5, 0], k)).tissue).toBe(Tissue.PerirenalFat);
+    // interlobares por la columna de Bertin: el nodo medio de cada tubo es luz de su vaso
+    const mid = (id: string) => scene.vessels.find((v) => v.id === id)!.tube.nodes[1].p;
+    expect(cls(mid('interlobarVein2')).vessel).toBe('interlobarVein2');
+    expect(cls(mid('interlobarArtery2')).vessel).toBe('interlobarArtery2');
     expect(cls(scene.kidneyLeft.center).tissue).toBe(Tissue.RenalSinus);
     expect(cls(kidneyWorld([0, scene.kidneyLeft.sinusOffset, 0], scene.kidneyLeft)).tissue).toBe(Tissue.RenalPelvis);
     // el hígado no invade el riñón (impresión renal): ninguna muestra de la línea
@@ -280,7 +352,10 @@ describe('Anatomía implícita (base B)', () => {
       if (c.tissue === Tissue.Liver) {
         nLiver++;
         expect(scene.liverSdf(p)).toBeLessThan(0);
-        expect(kidneyQuery(p, k).dOuter).toBeGreaterThan(scene.renalImpressionMm - 1e-6);
+        // el hígado apoya en la cara externa de la grasa perirrenal, de grosor variable (decisión 68)
+        expect(kidneyQuery(p, k).dOuter).toBeGreaterThan(
+          perirenalThicknessMm(kidneyLocal(p, k), k.radii) - RENAL_IMPRESSION_OVERLAP_MM - 1e-6,
+        );
       }
     }
     expect(nLiver).toBeGreaterThan(5);
@@ -369,7 +444,8 @@ describe('Anatomía implícita (base B)', () => {
     // y float32 lo clasificaba al otro lado (Bowel→Diaphragm en CI). Subiendo por tres columnas,
     // el bd de cada punto de intestino no supera la distancia a la interfaz que se encuentra.
     for (const [x, y, expected] of [
-      [70, -5, Tissue.Diaphragm],
+      // (65, 0): la columna de antes, (70, −5), cruza ahora la grasa perirrenal del polo superior izquierdo (decisión 68)
+      [65, 0, Tissue.Diaphragm],
       [60, 20, Tissue.LiverCapsule],
       [40, 30, Tissue.LiverCapsule],
     ] as const) {
@@ -693,11 +769,15 @@ describe('Caras de interfaz en classify (decisión 57)', () => {
     const underDome = along(crossing('liverSurface', liver, [0, 0, 1], 80), [0, 0, 1], -0.3);
     expect(cls(underDome).tissue).toBe(Tissue.LiverCapsule);
     expect(cls(underDome).interface).toBe(Interface.None);
-    // Morison: subiendo desde el riñón derecho, grasa perirrenal y enseguida la cápsula, que la toca
+    // Morison: subiendo desde el riñón derecho, grasa perirrenal y enseguida el hígado, sin hueco (la impresión renal
+    // solapa 1 mm la grasa, que gana: decisión 68); si asoma la cápsula, no dibuja cara (la de Morison es de la grasa)
     const k = scene.kidneyRight.center;
-    const morison = first(k, [0, 0, 1], Tissue.LiverCapsule, 70);
-    expect(cls(along(k, [0, 0, 1], morison.t - 0.3)).tissue).toBe(Tissue.PerirenalFat);
-    expect(cls(morison.p).interface).toBe(Interface.None);
+    const fat = first(k, [0, 0, 1], Tissue.PerirenalFat, 70);
+    let t = fat.t;
+    while (cls(along(k, [0, 0, 1], t)).tissue === Tissue.PerirenalFat) t += 0.05;
+    const after = cls(along(k, [0, 0, 1], t));
+    expect([Tissue.LiverCapsule, Tissue.Liver]).toContain(after.tissue);
+    if (after.tissue === Tissue.LiverCapsule) expect(after.interface).toBe(Interface.None);
   });
 
   it('riñón: cápsula renal y mitad interna de la grasa dibujan la cápsula; la mitad externa, la grasa', () => {
@@ -710,15 +790,28 @@ describe('Caras de interfaz en classify (decisión 57)', () => {
     expect(cls(capsuleIn).interface).toBe(Interface.RenalCapsule);
     expect(cls(capsuleIn).interfaceDistance).toBeCloseTo(-dOuter(capsuleIn), 9);
     const fat = first(k.center, up, Tissue.PerirenalFat, 70).p;
-    const inner = along(fat, up, 0.5);
-    const outer = along(fat, up, 3.2);
-    expect(dOuter(inner)).toBeLessThan(2);
-    expect(dOuter(outer)).toBeGreaterThan(2);
+    // grosor local de la grasa (decisión 68): en el polo superior, gruesa
+    const t = (p: V) => perirenalThicknessMm(kidneyLocal(p, k), k.radii);
+    const inner = along(fat, up, 0.2 * t(fat));
+    const outer = along(fat, up, 0.8 * t(fat));
+    expect(t(fat)).toBeGreaterThan(4);
+    expect(dOuter(inner)).toBeLessThan(0.5 * t(inner));
+    expect(dOuter(outer)).toBeGreaterThan(0.5 * t(outer));
     expect(cls(inner).interface).toBe(Interface.RenalCapsule);
     expect(cls(inner).interfaceDistance).toBeCloseTo(dOuter(inner), 9);
     expect(cls(outer).tissue).toBe(Tissue.PerirenalFat);
-    expect(cls(outer).interface).toBe(Interface.PerirenalFat);
-    expect(cls(outer).interfaceDistance).toBeCloseTo(scene.perirenalMm - dOuter(outer), 9);
+    // en el polo la grasa es gruesa: su mitad externa se funde con la grasa retroperitoneal sin cara (decisión 68)
+    expect(cls(outer).interface).toBe(Interface.None);
+    // donde es fina (anterolateral, contra el hígado) la mitad externa dibuja la cara de Morison
+    const antLat = kidneyWorld([0, -0.6 * k.radii[1], 0.8 * k.radii[2]], k);
+    const dirOut: V = [antLat[0] - k.center[0], antLat[1] - k.center[1], antLat[2] - k.center[2]];
+    const nOut: V = dirOut.map((x) => x / Math.hypot(...dirOut)) as V;
+    const fatThin = first(k.center, nOut, Tissue.PerirenalFat, 70).p;
+    expect(t(fatThin)).toBeLessThan(PERIRENAL.faceMaxMm);
+    const outerThin = along(fatThin, nOut, 0.8 * t(fatThin));
+    expect(cls(outerThin).tissue).toBe(Tissue.PerirenalFat);
+    expect(cls(outerThin).interface).toBe(Interface.PerirenalFat);
+    expect(cls(outerThin).interfaceDistance).toBeCloseTo(t(outerThin) - dOuter(outerThin), 9);
   });
 
   it('la VCI que entra en la aurícula no dibuja su cara dentro de ella; por debajo, sí', () => {

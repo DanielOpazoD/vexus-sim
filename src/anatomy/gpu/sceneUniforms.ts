@@ -1,6 +1,7 @@
 import type { ProbeCompression } from '../compression';
 import { RespiratoryDeformation } from '../deformation';
 import { GALLBLADDER_NODES } from '../organs/gallbladder';
+import { PERIRENAL } from '../organs/kidney';
 import { LUNG_CURTAIN } from '../organs/lungCurtain';
 import type { AnatomyScene } from '../scene';
 import type { PhysiologySample } from '../../physiology/engine';
@@ -79,9 +80,9 @@ export const SCENE_UNIFORMS: readonly UniformSpec[] = [
   { name: 'uLiverBlend', type: 'float', doc: 'unión suave de los lóbulos (mm)', value: (s) => [s.liverBlendMm] },
   {
     name: 'uVisceral',
-    type: 'vec4',
-    doc: 'zAtY0, slopeY, edgeRound, renalImpression',
-    value: (s) => [s.visceralPlane.zAtY0, s.visceralPlane.slopeY, s.visceralPlane.edgeRoundMm, s.renalImpressionMm],
+    type: 'vec3',
+    doc: 'zAtY0, slopeY, edgeRound (la impresión renal sigue a la grasa perirrenal: decisión 68)',
+    value: (s) => [s.visceralPlane.zAtY0, s.visceralPlane.slopeY, s.visceralPlane.edgeRoundMm],
   },
   {
     name: 'uFissure',
@@ -169,8 +170,8 @@ export const SCENE_UNIFORMS: readonly UniformSpec[] = [
   {
     name: 'uKidExtra',
     type: 'vec2',
-    doc: 'radio del hilio, grasa perirrenal (mm)',
-    value: (s) => [s.kidneyRight.hilumRadius, s.perirenalMm],
+    doc: 'radio del hilio, grosor máximo de la grasa perirrenal (mm; el local lo da perirenalThicknessMm)',
+    value: (s) => [s.kidneyRight.hilumRadius, PERIRENAL.maxMm],
   },
   { name: 'uTubeCount', type: 'int', doc: 'tubos en la lista del cuadro', value: (_s, c) => [c.tubeCount] },
   {

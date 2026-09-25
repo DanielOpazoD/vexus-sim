@@ -196,7 +196,13 @@ describe('e2e de normales con los gradientes del PR 5b (sin GPU)', () => {
       expect(renal.kidneyOuter.p01).toBeGreaterThan(0.999);
       expect(renal.kidneyOuterNotch.p01).toBeGreaterThan(0.999);
       // fuera de los tubos, el mismo cálculo que la referencia (salvo el punto, que la GPU recibe en float32)
-      for (const row of ['kidneyOuter', 'kidneyOuterNotch', 'liverSurface'] as const) expect(renal[row].normErrMax, row).toBeLessThan(1e-5);
+      // (una muestra cuya plantilla de diferencias centrales cabalga la arista del min entre hígado y pared puede
+      // cambiar de rama con el redondeo float32 del punto: 1e-4 en la cápsula posterolateral desde la decisión 68, que
+      // movió las muestras; el p95 sigue en 1e-7)
+      for (const row of ['kidneyOuter', 'kidneyOuterNotch', 'liverSurface'] as const) {
+        expect(renal[row].normErrP95, row).toBeLessThan(1e-6);
+        expect(renal[row].normErrMax, row).toBeLessThan(row === 'liverSurface' ? 2e-4 : 1e-5);
+      }
       // la cúpula, desde la subxifoidea (la vista intercostal de partida va por el 8.º espacio desde la decisión
       // 62 y apenas la ve)
       const sub = stats('subxiphoid');

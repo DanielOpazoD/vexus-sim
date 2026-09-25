@@ -421,7 +421,8 @@ Cls classifyWith(vec3 m, bool withCurtain) {
     if (distance(m, uKidC[k]) > uKidR[k].x + uKidExtra.y + 2.0) continue;
     float inner; float dOuter;
     int region = kidneyQuery(m, k, inner, dOuter);
-    dPeri = min(dPeri, dOuter - uKidExtra.y);
+    float fat = perirenalThicknessMm(kidneyLocal(m, k), uKidR[k]);
+    dPeri = min(dPeri, dOuter - fat);
     vec3 kn;
     kidneyOuter(m, k, kn);
     if (dOuter < 0.0) {
@@ -433,12 +434,13 @@ Cls classifyWith(vec3 m, bool withCurtain) {
       c.tissue = region == 3 ? T_RENAL_PELVIS : (region == 2 ? T_RENAL_SINUS : (region == 1 ? T_RENAL_MEDULLA : T_RENAL_CORTEX));
       c.bd = inner; c.n = kn; return c;
     }
-    if (dOuter < uKidExtra.y) {
-      c.tissue = T_PERIRENAL; c.bd = min(dOuter, uKidExtra.y - dOuter); c.n = kn;
-      // mitad externa: cara hígado/grasa; mitad interna: la de la cápsula renal (dos lados)
-      bool outerFace = dOuter > 0.5 * uKidExtra.y;
-      c.iface = outerFace ? IF_PERIRENAL : IF_RENAL_CAPSULE;
-      c.ifd = outerFace ? uKidExtra.y - dOuter : dOuter;
+    if (dOuter < fat) {
+      c.tissue = T_PERIRENAL; c.bd = min(dOuter, fat - dOuter); c.n = kn;
+      // mitad externa: cara hígado/grasa; mitad interna: la de la cápsula renal (dos lados); fina, una sola línea
+      bool outerFace = dOuter > 0.5 * fat;
+      // la cara externa solo donde la grasa es fina (Morison); donde es gruesa se funde sin línea
+      if (!outerFace) { c.iface = IF_RENAL_CAPSULE; c.ifd = dOuter; }
+      else if (fat <= PERI.z) { c.iface = IF_PERIRENAL; c.ifd = fat - dOuter; }
       return c;
     }
   }
@@ -467,7 +469,7 @@ Cls classifyWith(vec3 m, bool withCurtain) {
   // Intestino: distancia a las interfaces que ganan antes (misma fórmula que scene.classify)
   float bdBowel = min(min(BOWEL_BD_CAP_MM, dDome - DIAPHRAGM_MM), min(dGb - uGbExtra.y, dRa));
   bdBowel = min(bdBowel, min(dLiverBase, -depth - wall));
-  for (int k = 0; k < 2; k++) bdBowel = min(bdBowel, kidneyOuterSdf(kidneyLocal(m, k), uKidR[k]) - uKidExtra.y);
+  for (int k = 0; k < 2; k++) bdBowel = min(bdBowel, perirenalOuterSdf(kidneyLocal(m, k), k));
   for (int i = 0; i < MAX_GAS; i++) {
     float dg = sdSphere(m, uGas[i], sn);
     if (dg < 0.0) { c.tissue = T_BOWELGAS; c.bd = -dg; c.n = sn; return c; }

@@ -2251,10 +2251,8 @@ export function curtainEdgeFit(
   let arc = 0;
   let prev: CurtainLine | null = null;
   for (const c of curtain) {
-    if (!c) {
-      prev = null;
-      continue;
-    }
+    if (!c) continue;
+    // a través de las líneas sin pleura, la distancia entre los cruces que las rodean
     if (prev) arc += Math.hypot(c.point[0] - prev.point[0], c.point[1] - prev.point[1], c.point[2] - prev.point[2]);
     prev = c;
     // las líneas en la sombra de una costilla no dicen nada del borde

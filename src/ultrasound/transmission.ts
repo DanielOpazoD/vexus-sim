@@ -176,7 +176,8 @@ export function transmissionHitsLine(
     if (c.tissue === Tissue.Air && !entered) continue;
     entered = true;
     const props = TISSUES[c.tissue];
-    curtainRun = c.tissue === Tissue.Lung && mirrorSeg < 0 && (curtainRun || c.curtain);
+    // solo con la pleura registrada: si el cruce cae fuera de la huella, el pulmón es el espejo de siempre
+    curtainRun = c.tissue === Tissue.Lung && mirrorSeg < 0 && (curtainRun || (pleura !== null && c.curtain));
     if (props.gas) {
       if (curtainRun) {
         curtainDb += dbOf(c.tissue, step) - dbOf(q.behind(p), step);

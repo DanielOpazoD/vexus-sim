@@ -25,8 +25,8 @@ export function lungCurtainDistance(m: Vec3, insideWallMm: number, caudalMm: num
 
 /**
  * Pulmón de la cortina (decisión 61): un punto que `classify` da como pulmón es de la lámina bajo la
- * pared (la pleura parietal) y no del tórax bajo la cúpula (el espejo del diafragma, decisión 57). La
- * cortina se mira antes que la cúpula en `classify`, así que basta con que el punto esté en la lámina.
+ * pared y no del tórax bajo la cúpula. La cortina se mira antes que la cúpula en `classify`, así que basta
+ * con que el punto esté en la lámina. Solo TS (pruebas y banco): la GPU usa `inLungRecess`.
  */
 export function inLungCurtain(m: Vec3, insideWallMm: number, caudalMm: number): boolean {
   return lungCurtainDistance(m, insideWallMm, caudalMm) !== null;
@@ -62,7 +62,6 @@ float lungCurtainDistance(vec3 m, float insideWall) {
     return min(min(insideWall, uCurtain.y - insideWall), m.z - uCurtain.x);
   return -1.0;
 }
-bool inLungCurtain(vec3 m, float insideWall) { return lungCurtainDistance(m, insideWall) >= 0.0; }
 bool inLungRecess(vec3 m, float insideWall) { return insideWall < uCurtain.y && m.x <= uCurtain.z && m.y <= uCurtain.w; }
 float lungCurtainEdgeMm(vec3 m) {
   return m.x <= uCurtain.z && m.y <= uCurtain.w ? m.z - min(uCurtain.x, domeHeight(m.x, m.y)) : -1e3;

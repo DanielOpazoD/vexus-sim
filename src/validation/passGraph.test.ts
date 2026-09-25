@@ -215,7 +215,7 @@ const SAMPLERS: Record<PassId, { srcs: readonly string[]; samplers: Record<strin
   // la pleura parietal de A0 (uHits2, decisión 61) en los dos programas de B
   rawField: {
     srcs: [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED],
-    samplers: { uTrans0: 'trans', uTrans1: 'trans', uTrans3: 'trans', uHits2: 'transHits' },
+    samplers: { uTrans0: 'trans', uTrans1: 'trans', uTrans2: 'trans', uTrans3: 'trans', uHits2: 'transHits' },
   },
   axial: { srcs: [FRAG_AXIAL], samplers: { uField: 'raw' } },
   lateral: { srcs: [FRAG_LATERAL], samplers: { uField: 'axial' } },

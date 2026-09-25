@@ -37,4 +37,5 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'no-lung-comet-tails',
   'curtain-edge-central-ray',
   'curtain-doppler-through-lung',
+  'curtain-footprint-seam',
 ]);

@@ -27,8 +27,10 @@ import { scattererField } from './speckleField';
  *  - copia espejo (sonda → pleura → sube hasta d → dispersa → pleura → sonda), a la distancia aparente
  *    2D − d: E(d)·(R_p·χ)²·(T(D)/T(d))²;
  *  - copia directa (sonda → pleura → cara de la sonda → baja hasta d → dispersa), a D + d: E(d)·G, con
- *    G = R_p·χ·R_t·T(D) la ganancia de una ida y vuelta pleura–sonda;
- *  - cada ida y vuelta más multiplica por G y desplaza D: espejo y directa se alternan y se solapan en
+ *    G = R_p·χ·R_t·T(D) la ganancia de una ida y vuelta pleura–sonda; el camino recíproco (sonda → d →
+ *    dispersa → cara → pleura → sonda) tiene el mismo retardo y la misma fase y se suma coherente: ×2;
+ *  - cada ida y vuelta más multiplica por G y desplaza D, y los caminos del mismo retardo se suman: el orden n
+ *    de la copia espejo tiene n + 1 y el de la directa n + 2; espejo y directa se alternan y se solapan en
  *    cada intervalo [nD, (n+1)D], así que cada muestra necesita a lo sumo dos muestras de la pared, en
  *    las distancias d_M = (n+2)D − s y d_F = s − (n+1)D con n = ⌊s/D⌋ − 1;
  *  - líneas A: las réplicas del eco pleural (la copia directa con d = D): orden k a kD, G^(k−1) por la
@@ -64,8 +66,11 @@ export const CURTAIN_TAPER_RANGE_MM = [3, 5] as const;
 export const CURTAIN_RECORD_MM = 20;
 /** Fracción de aire por debajo de la cual la línea no tiene cortina (y por encima de 1 − esto, ni tejido detrás). */
 export const CURTAIN_MIN_AIR = 1e-3;
-/** Deslizamiento: nivel mostrado junto a la pleura respecto al moteado del hígado a esa profundidad (dB) [ESTIMADO −8 a −12]. */
-export const SLIDING_DB = -9;
+/**
+ * Deslizamiento: nivel mostrado junto a la pleura respecto al moteado del hígado a esa profundidad (dB) [ESTIMADO −8 a
+ * −12]. El tope del rango: su grano alargado sostiene la anisotropía de la neblina (gemelo: 2,57 con −8; 2,50 con −9).
+ */
+export const SLIDING_DB = -8;
 export const SLIDING_DB_RANGE = [-12, -8] as const;
 /**
  * Ganancia coherente (dB) que las pasadas C y D dan al campo del deslizamiento sobre la que dan al moteado del
@@ -203,17 +208,22 @@ export function seriesPow(G: number, n: number): number {
 }
 
 /**
- * Ganancia de la copia espejo de orden n sobre el campo de la pared f(d): (R_p·χ)²·T(D)²/T(d)·Gⁿ
- * (= E(d)·(R_p·χ)²·(T(D)/T(d))²·Gⁿ / f).
+ * Ganancia de la copia espejo de orden n sobre el campo de la pared f(d): (n + 1)·(R_p·χ)²·T(D)²/T(d)·Gⁿ
+ * (= E(d)·(R_p·χ)²·(T(D)/T(d))²·Gⁿ / f por cada camino). Las n idas y vueltas pleura–sonda más pueden ir antes o
+ * después de la dispersión: n + 1 caminos del mismo retardo y la misma fase, que se suman coherentes.
  */
 export function mirrorGain(tD: number, td: number, chi: number, G: number, n: number): number {
   const rp = PLEURA_RP * chi;
-  return ((rp * rp * tD * tD) / Math.max(td, 1e-6)) * seriesPow(G, n);
+  return (n + 1) * ((rp * rp * tD * tD) / Math.max(td, 1e-6)) * seriesPow(G, n);
 }
 
-/** Ganancia de la copia directa de orden n sobre f(d): T(d)·G^(n+1) (= E(d)·G^(n+1) / f). */
+/**
+ * Ganancia de la copia directa de orden n sobre f(d): (n + 2)·T(d)·G^(n+1) (= E(d)·G^(n+1) / f por camino). La
+ * dispersión puede ir en cualquiera de las n + 2 posiciones de la secuencia de rebotes (con n = 0: sonda → pleura
+ * → cara → d y sonda → d → cara → pleura), caminos del mismo retardo y la misma fase.
+ */
 export function forwardGain(td: number, G: number, n: number): number {
-  return td * G * seriesPow(G, n);
+  return (n + 2) * td * G * seriesPow(G, n);
 }
 
 /** Ganancia de la réplica k del eco pleural (k = 1: la línea pleural). */
@@ -297,6 +307,7 @@ export function slidingField(pD: Vec3, outwardNormal: Vec3, caudalMm: number, h:
  */
 export const PLEURA_GLSL = /* glsl */ `
 uniform sampler2D uHits2; // A0 h2 (decisión 61): pleura parietal de cada línea
+uniform sampler2D uTrans2; // A o2: rayo único (x la mirada 0, y la dirigida): tope de la transmisión sin la lámina
 const float PLEURA_RP = ${glslFloat(PLEURA_RP)};
 const float PLEURA_RT = ${glslFloat(PLEURA_RT)};
 const float CURTAIN_TAPER_MM = ${glslFloat(CURTAIN_TAPER_MM)};

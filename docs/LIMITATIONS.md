@@ -85,9 +85,9 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   61): las copias espejo y directa de la pared y las líneas A se forman con la pared del propio camino, no
   con la de la dirección reflejada por una pleura oblicua; no cambian con la incidencia salvo por la
   coherencia de la pleura (χ) y las líneas A llevan el lóbulo de Kirchhoff una sola vez (el del eco
-  pleural); cada familia de caminos cuenta una vez aunque tenga varios del mismo retardo (la copia directa
-  tiene dos órdenes recíprocos: ×2 en rigor, que cabe en el rango de R_t). Las líneas A tienen la anchura
-  de la línea pleural (en las referencias son algo más anchas y tenues).
+  pleural), no una vez por rebote. Los caminos del mismo retardo sí se suman (n + 1 en la copia espejo de
+  orden n, n + 2 en la directa). Las líneas A tienen la anchura de la línea pleural (en las referencias son
+  algo más anchas y tenues).
 - **Sin colas de cometa ni líneas B** (`no-lung-comet-tails`, decisión 61): el pulmón bajo la pleura es la
   serie de la pared y el deslizamiento incoherente; no hay líneas Z ni B (ni pulmón patológico), y el
   deslizamiento se ve como neblina que cambia con la respiración, no como el centelleo puntual de la
@@ -95,9 +95,15 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **El borde de la cortina muestra el tejido del rayo central** (`curtain-edge-central-ray`, decisión 61):
   en el borde blando la fracción 1 − f del haz ve lo que hay detrás de la lámina en el rayo central
   (`classify` sin la cortina), no la parte del haz que cae bajo el borde; donde detrás de la lámina sigue
-  el pulmón del tórax, esa fracción es negra. Su transmisión suma la pérdida de la lámina de A0 (ΔL) sobre
-  la de la línea y, dentro de la lámina (3 mm), queda hasta ~1 dB alta. La lámina no es un obstáculo de la
-  penumbra de la apertura: el borde lo hace solo la fracción de aire.
+  el pulmón del tórax, esa fracción es negra. Su transmisión es la de la línea sin la pérdida de la lámina
+  de A0 (ΔL), con el rayo único de la línea por tope, y dentro de la lámina (3 mm) queda hasta ~1 dB alta.
+  La lámina no es un obstáculo de la penumbra de la apertura: el borde lo hace solo la fracción de aire.
+- **Costura en el límite de la huella del receso** (`curtain-footprint-seam`, decisión 61): la pleura
+  parietal se registra solo si la línea cruza la pared dentro de la huella del receso (x ≤ −45 mm,
+  y ≤ 40 mm). Una línea que la cruza justo fuera y alcanza después el pulmón de la cortina bajo la pared lo
+  ve como el espejo del diafragma de la decisión 57 (en la CPU, 5–7 líneas en la intercostal y 24–36 en la
+  subxifoidea, de refilón): allí no hay línea pleural ni neblina, sino lo de antes. Quitar la huella de
+  `lungCurtainEdgeMm` lo resolvería cambiando esas ventanas; queda para el dueño.
 - **El Doppler atraviesa la cortina** (`curtain-doppler-through-lung`, decisión 61): el color y el PW
   cruzan la lámina de pulmón en línea recta con la atenuación del gas de la CPU (60 dB/cm: ~18 dB en sus
   3 mm), como el modelo de la puerta; un pulmón aireado real no deja pasar nada. Antes el color de detrás

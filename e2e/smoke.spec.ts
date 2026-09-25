@@ -407,8 +407,8 @@ test('pleura parietal: la línea pleural brilla y bajo ella hay neblina con lín
   // Decisión 61, con SwiftShader: la ventana intercostal en apnea inspiratoria (la cortina 30 mm abajo tapa
   // buena parte del sector), una mirada. Antes la cortina era el espejo del diafragma: bajo la pleura el
   // camino volvía a la pared y salía al gel (neblina ≈ 0 de gris) y no había eco de la pleura parietal. El
-  // gemelo B → C → D (pleuraTwin.test.ts) da la línea pleural saturada, la neblina a 0,61 × el hígado y la
-  // línea A de orden 2 +45 dB sobre ella; aquí, umbrales holgados (lo exacto lo mide el banco con GPU).
+  // gemelo B → C → D (pleuraTwin.test.ts) da la línea pleural saturada, la neblina a 0,68 × el hígado y la
+  // línea A de orden 2 +44 dB sobre ella; aquí, umbrales holgados (lo exacto lo mide el banco con GPU).
   test.setTimeout(300_000);
   const errors = await bootWithoutErrors(page);
   const s = await page.evaluate(() =>

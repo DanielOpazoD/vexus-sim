@@ -59,6 +59,7 @@ import {
   STEERED_PREFIX_GLSL,
   lineHits,
   mirrorCrossing,
+  pleuraCrossingLine,
   segmentDb,
   steeredPrefixDb,
   transmissionHitsLine,
@@ -143,52 +144,81 @@ describe('la cara de la pleura parietal (decisión 61)', () => {
 const wallT = (tD: number, D: number) => (d: number) => tD ** (Math.min(d, D) / D);
 
 /**
- * Los caminos acústicos de la reverberación entre la pleura (reflexión coherente R_p·χ) y la cara de la sonda
- * (R_t), escritos uno a uno: para un dispersor a la distancia d de la pared (eco directo E = f·T(d)) y la
- * pleura (eco E_p):
- *  - M_n: sonda → pleura → d → pleura → sonda, con n idas y vueltas pleura–sonda más: a 2D − d + nD,
- *    E·(R_p·χ)²·(T(D)/T(d))²·Gⁿ;
- *  - F_n: sonda → pleura → sonda → d, con n idas y vueltas más: a D + d + nD, E·G^(n+1);
- *  - P_k: la pleura con k − 1 idas y vueltas: a kD, E_p·G^(k−1);
- * con G = R_p·χ·R_t·T(D).
+ * Todos los caminos acústicos, uno a uno, entre la cara de la sonda (F, reflexión R_t, que también recibe), un
+ * dispersor a la distancia d (una sola retrodispersión, amplitud 1: la f de la pared va aparte) y la pleura a D
+ * (reflexión coherente R_p·χ), con la transmisión de una vía de cada tramo (√T). Una onda baja o sube; al subir
+ * a la cara, o se recibe o se refleja. Devuelve, por familia (espejo: el dispersor iluminado desde abajo;
+ * directa: desde arriba), la suma de las amplitudes de los caminos que llegan a la profundidad aparente s (la
+ * mitad del recorrido), con a lo sumo `maxP` rebotes en la pleura.
  */
-function pathsAt(s: number, D: number, tD: number, chi: number, T: (d: number) => number, maxOrder = 12) {
-  const G = PLEURA_RP * chi * PLEURA_RT * tD;
-  const out: { family: 'mirror' | 'forward'; order: number; d: number; ampOverF: number }[] = [];
-  for (let n = 0; n <= maxOrder; n++) {
-    const dM = 2 * D + n * D - s;
-    if (dM >= 0 && dM < D)
-      out.push({ family: 'mirror', order: n, d: dM, ampOverF: T(dM) * (PLEURA_RP * chi) ** 2 * (tD / T(dM)) ** 2 * G ** n });
-    const dF = s - D - n * D;
-    if (dF >= 0 && dF < D) out.push({ family: 'forward', order: n, d: dF, ampOverF: T(dF) * G ** (n + 1) });
-  }
-  return out;
+function enumeratePaths(s: number, d: number, D: number, tD: number, chi: number, T: (x: number) => number, maxP = 10) {
+  const rp = PLEURA_RP * chi;
+  const leg = (a: number, b: number) => Math.sqrt(T(Math.max(a, b)) / T(Math.min(a, b)));
+  const sum = { mirror: 0, forward: 0 };
+  const tol = 1e-6;
+  // pos: profundidad actual (0 cara, d dispersor, D pleura); down: sentido; len: recorrido; amp; kind: familia
+  const walk = (pos: number, down: boolean, len: number, amp: number, pBounces: number, kind: 'mirror' | 'forward' | null): void => {
+    if (len / 2 > s + tol || pBounces > maxP) return;
+    if (down) {
+      // bajando desde pos: primero el dispersor (si está debajo), luego la pleura
+      if (pos < d) {
+        // retrodispersión en d (iluminado desde arriba: la copia directa) o pasa de largo
+        if (kind === null) walk(d, false, len + (d - pos), amp * leg(pos, d), pBounces, 'forward');
+        walk(d, true, len + (d - pos), amp * leg(pos, d), pBounces, kind);
+        return;
+      }
+      walk(D, false, len + (D - pos), amp * leg(pos, D) * rp, pBounces + 1, kind);
+      return;
+    }
+    // subiendo desde pos: primero el dispersor (si está encima), luego la cara
+    if (pos > d) {
+      if (kind === null) walk(d, true, len + (pos - d), amp * leg(d, pos), pBounces, 'mirror');
+      walk(d, false, len + (pos - d), amp * leg(d, pos), pBounces, kind);
+      return;
+    }
+    const atFace = amp * leg(0, pos);
+    const L = len + pos;
+    if (kind !== null && Math.abs(L / 2 - s) < tol) sum[kind] += atFace;
+    walk(0, true, L, atFace * PLEURA_RT, pBounces, kind);
+  };
+  walk(0, true, 0, 1, 0, null);
+  return sum;
 }
 
 describe('serie de reverberaciones bajo la pleura: amplitudes frente a los caminos', () => {
-  it('cada muestra bajo la pleura recibe exactamente una copia espejo y una directa, con la amplitud de su camino', () => {
+  it('cada muestra bajo la pleura recibe la copia espejo y la directa con la suma de todos sus caminos (espejo ×(n+1), directa ×(n+2))', () => {
     const rnd = rng(611);
     let checked = 0;
-    for (let t = 0; t < 3000; t++) {
+    const orders = new Set<number>();
+    for (let t = 0; t < 1500; t++) {
       const D = 15 + 35 * rnd();
       const tD = 0.1 + 0.8 * rnd();
       const chi = pleuraCoherence(Math.cos(40 * deg * rnd()), K0);
       const T = wallT(tD, D);
-      const s = D + 1e-6 + 5 * D * rnd();
-      const terms = pleuraTerms(s, D, tD, chi, T, Infinity);
-      const paths = pathsAt(s, D, tD, chi, T);
-      const series = terms.filter((x) => x.family !== 'pleura');
-      // los caminos con d en [0, D): uno de cada familia, con el mismo orden
-      expect(paths.map((p) => p.family).sort()).toEqual(['forward', 'mirror']);
-      for (const p of paths) {
-        const got = series.find((x) => x.family === p.family)!;
-        expect(got.order).toBe(p.order);
-        expect(got.depth).toBeCloseTo(p.d, 9);
-        expect(got.gain / p.ampOverF).toBeCloseTo(1, 9);
+      const s = D + 1e-3 + 4 * D * rnd();
+      const series = pleuraTerms(s, D, tD, chi, T, Infinity).filter((x) => x.family !== 'pleura');
+      expect(series.map((x) => x.family).sort()).toEqual(['forward', 'mirror']);
+      for (const term of series) {
+        // la suma de todos los caminos de igual retardo con el dispersor a esa distancia
+        const paths = enumeratePaths(s, term.depth, D, tD, chi, T);
+        expect(term.gain / paths[term.family as 'mirror' | 'forward'], `${term.family} n ${term.order}`).toBeCloseTo(1, 9);
+        orders.add(term.order);
         checked++;
       }
     }
-    expect(checked).toBe(6000);
+    expect(checked).toBe(3000);
+    expect([...orders].sort()).toEqual([0, 1, 2, 3]);
+    // la cuenta de caminos: con n idas y vueltas más, n + 1 en el espejo y n + 2 en la directa
+    const D = 27;
+    const T = wallT(0.4, D);
+    const chi = pleuraCoherence(1, K0);
+    for (const n of [0, 1, 2]) {
+      const s = (n + 1.5) * D;
+      const { mirror, forward } = enumeratePaths(s, 0.5 * D, D, 0.4, chi, T);
+      const G = pleuraRoundTrip(0.4, chi);
+      expect(mirror / ((((PLEURA_RP * chi) ** 2 * 0.4 ** 2) / T(0.5 * D)) * G ** n)).toBeCloseTo(n + 1, 9);
+      expect(forward / (T(0.5 * D) * G ** (n + 1))).toBeCloseTo(n + 2, 9);
+    }
   });
 
   it('las líneas A son las réplicas del eco pleural: la copia directa con d = D, a kD, con G^(k−1)', () => {
@@ -204,8 +234,9 @@ describe('serie de reverberaciones bajo la pleura: amplitudes frente a los camin
         expect(p.order).toBe(k);
         expect(p.depth).toBeCloseTo(IFACE_SHIFT_MM, 9);
         expect(p.gain).toBeCloseTo(tD * G ** (k - 1), 12);
-        // la réplica k es F_{k−2} con d = D (salvo el eco pleural directo, k = 1)
-        if (k >= 2) expect(aLineGain(G, k) * tD).toBeCloseTo(forwardGain(tD, G, k - 2), 12);
+        // la réplica k es un camino de F_{k−2} con d = D (salvo el eco pleural directo, k = 1): la pleura no es un
+        // dispersor aparte, así que las k posiciones de la «dispersión» son el mismo camino y cuenta una vez
+        if (k >= 2) expect(aLineGain(G, k) * tD).toBeCloseTo(forwardGain(tD, G, k - 2) / k, 12);
       }
       // cada réplica pierde G (una ida y vuelta más): la k = 3 es más débil que la 2
       expect(aLineGain(G, 3)).toBeLessThan(aLineGain(G, 2));
@@ -282,7 +313,9 @@ describe('serie de reverberaciones bajo la pleura: amplitudes frente a los camin
     for (const src of [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED]) {
       expect(src).toContain('float chi = pleuraCoherence(cosI);');
       expect(src).toContain('float G = pleuraRoundTrip(tD, chi);');
-      expect(src).toContain('air += f * (j == 1 ? PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : td * G * gn);');
+      expect(src).toContain(
+        'air += f * (j == 1 ? (ser.x + 1.0) * PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : (ser.x + 2.0) * td * G * gn);',
+      );
     }
   });
 
@@ -627,15 +660,17 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
       const cal = caliberOf(caudal);
       const q = sceneQuery(scene, cal);
       for (const { id, fr } of frames)
-        for (let i = 0; i < CONVEX_C35.lines; i += 3) {
+        for (let i = 0; i < CONVEX_C35.lines; i++) {
           const th = -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * (i + 0.5)) / CONVEX_C35.lines;
           const origin = pointOnLine(fr, CONVEX_C35, th, 0);
           const dir = lineDirection(fr, th);
           const got = transmissionHitsLine(q, origin, dir, depth, N, dbOf);
           const old = hitsBefore61(q, origin, dir, depth, N);
           const step = depth / N;
-          // ¿pasa el camino recto por el pulmón de la cortina antes de cualquier espejo?
-          const run = curtainRunOf(q, fr, th, step);
+          // ¿pasa el camino recto por el pulmón del receso antes de cualquier espejo? (solo con su pleura registrada:
+          // si el cruce de la pared cae fuera de la huella, el pulmón sigue siendo el espejo de siempre)
+          const recorded = pleuraCrossingLine(q.insideWall, q.curtainEdge, origin, dir, depth, N) !== null;
+          const run = recorded ? curtainRunOf(q, fr, th, step) : { first: -1, last: -1 };
           const firstCurtain = run.first;
           const tag = `${id} línea ${i} descenso ${caudal}`;
           if (firstCurtain >= 0) {
@@ -678,7 +713,8 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
             if (got.pleura) {
               edgeLines++;
               // cerca del borde por el lado del hígado: la pleura existe aunque el rayo central no dé en el pulmón
-              expect(got.pleura.dz, tag).toBeLessThan(1.5);
+              // junto a la inserción del diafragma la cuña de pulmón bajo la pared es más fina que un segmento grueso
+              expect(got.pleura.dz, tag).toBeLessThan(3);
               expect(got.pleura.dz, tag).toBeGreaterThan(-CURTAIN_RECORD_MM);
               expect(got.pleura.dL).toBe(0);
               expect(got.pleura.curtainLast).toBe(-1);
@@ -702,7 +738,8 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
           const origin = pointOnLine(fr, CONVEX_C35, th, 0);
           const dir = lineDirection(fr, th);
           const got = transmissionHitsLine(q, origin, dir, depth, N, dbOf);
-          if (curtainRunOf(q, fr, th, depth / N).first >= 0) continue;
+          if (pleuraCrossingLine(q.insideWall, q.curtainEdge, origin, dir, depth, N) && curtainRunOf(q, fr, th, depth / N).first >= 0)
+            continue;
           const old = hitsBefore61(q, origin, dir, depth, N);
           if (old.mirrorSeg < 0) continue;
           mirrors++;
@@ -716,7 +753,7 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
   });
 
   it('A1 marca el pulmón de la cortina con 3 y los gemelos de A2 no lo toman por un impacto de gas', () => {
-    expect(FRAG_TRANS_SEGMENTS).toContain('float curtainLast = h2.x >= 0.0 ? floor(h2.w / 4.0) - 1.0 : -1.0;');
+    expect(FRAG_TRANS_SEGMENTS).toContain('float curtainLast = floor(h2.w / 4.0) - 1.0;');
     expect(FRAG_TRANS_SEGMENTS).toContain(`float lung = !reflected && float(s) <= curtainLast ? ${CURTAIN_GAS_KIND.toFixed(1)} : 1.0;`);
     expect(STEERED_PREFIX_GLSL).toContain('if (g.w > 0.5 && g.w < 2.5 && sGas < 0.0) { sGas = crossing ? sMirror : sRow; gasKind = g.w; }');
     // una línea con 3 segmentos de cortina bajo la pared y gas intestinal más hondo
@@ -744,7 +781,8 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
       'if (insideWallMm(toMaterial(origin + dir0 * mid)) >= 0.0) hi = mid; else lo = mid;',
       'float dz = lungCurtainEdgeMm(toMaterial(origin + dir0 * rp));',
       `if (dz > -${CURTAIN_RECORD_MM.toFixed(1)}) { pleuraD = rp; pleuraDz = dz; }`,
-      'curtainRun = c.tissue == T_LUNG && mirrorSeg < 0.0 && (curtainRun || inLungRecess(m, insideWallMm(m)));',
+      'curtainRun = c.tissue == T_LUNG && mirrorSeg < 0.0 && (curtainRun || (pleuraD >= 0.0 && inLungRecess(m, insideWallMm(m))));',
+      'if (mirrorSeg < 0.0 && !crossed) {',
       'curtainDb += segmentDb(c.tissue, step) - segmentDb(classifyWith(m, false).tissue, step);',
       'curtainLast = float(s);',
       `h2 = pleuraD >= 0.0 ? vec4(pleuraD, pleuraDz, curtainDb, ${CURTAIN_GAS_KIND.toFixed(1)} + 4.0 * (curtainLast + 1.0)) : vec4(-1.0, 0.0, 0.0, 0.0);`,
@@ -762,7 +800,8 @@ describe('la rama de la cortina de la pasada B (mirada 0)', () => {
       'float fAir = D > 0.0 ? curtainAirFraction(h2.y, D, dir0) : 0.0;',
       'float rCap = pleuraCapMm(max(D, 0.0), uDepth / float(ts.y));',
       'float tD = curtain ? texture(uTrans0, vec2(vUv.x, rCap / uDepth)).x : 0.0;',
-      'float T = (curtain ? (under ? min(t0.x * gain, tD) : texture(uTrans0, vec2(vUv.x, min(r, rCap) / uDepth)).x) : t0.x) * coupling;',
+      'float tFree = min(t0.x, texture(uTrans2, vUv).x) * gain;',
+      'float T = (curtain ? (under ? min(tFree, tD) : texture(uTrans0, vec2(vUv.x, min(r, rCap) / uDepth)).x) : t0.x) * coupling;',
       'float k = aLineOrder(r, D);',
       'air += vec2(seriesPow(G, k - 1.0) * tD * interfaceProfileEcho(IF_PLEURA_WALL, cosI, 1.0, k * D - r), 0.0);',
       'vec3 ser = under ? pleuraSeriesDepths(r, D) : vec3(0.0);',
@@ -770,7 +809,7 @@ describe('la rama de la cortina de la pasada B (mirada 0)', () => {
       'int j1 = series ? 3 : 1;',
       'float d = j == 0 ? r : (j == 1 ? ser.y : ser.z);',
       'float td = texture(uTrans0, vec2(vUv.x, min(d, rCap) / uDepth)).x;',
-      'air += f * (j == 1 ? PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : td * G * gn);',
+      'air += f * (j == 1 ? (ser.x + 1.0) * PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : (ser.x + 2.0) * td * G * gn);',
       'if (under && slidingAmplitude(r - D) * tD * coupling > PLEURA_SERIES_FLOOR) air += slidingField(pD, r - D, 0.0) * tD;',
     ])
       expect(FRAG_RAWFIELD, line).toContain(line);
@@ -786,7 +825,8 @@ describe('la rama de la cortina de la pasada B (mirada 0)', () => {
     expect(pleuraSeriesDepths(70, 27)).toEqual({ n: 1, mirror: 3 * 27 - 70, forward: 70 - 2 * 27 });
     expect(aLineOrder(40, 27)).toBe(1);
     expect(aLineOrder(41, 27)).toBe(2);
-    expect(mirrorGain(0.3, 0.6, 0.5, 0.1, 2)).toBeCloseTo(((PLEURA_RP * 0.5) ** 2 * 0.09) / 0.6 / 100, 12);
+    expect(mirrorGain(0.3, 0.6, 0.5, 0.1, 2)).toBeCloseTo((3 * ((PLEURA_RP * 0.5) ** 2 * 0.09)) / 0.6 / 100, 12);
+    expect(forwardGain(0.6, 0.1, 2)).toBeCloseTo(4 * 0.6 * 0.1 ** 3, 12);
   });
 });
 

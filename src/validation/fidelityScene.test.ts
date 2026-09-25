@@ -134,7 +134,7 @@ describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
       expect(d.liver.p50).toBe(100);
       expect(Math.abs(d.liver.mean - 100)).toBeLessThan(3);
       // en la intercostal, con la cortina, puede no quedar hígado puro en dos bandas de profundidad
-      if (d.profile.bands.length >= 2) expect(Math.abs(d.profile.slopeDbPerCm)).toBeLessThan(0.1);
+      if (s === subxiphoid || d.profile.bands.length >= 2) expect(Math.abs(d.profile.slopeDbPerCm)).toBeLessThan(0.1);
       expect(d.colorOn).toBe(false);
       // la luz pintada a 0 y el diafragma a 200: el centro de la luz y la saturación los encuentran
       expect(d.lumen.pixels).toBeGreaterThan(50);

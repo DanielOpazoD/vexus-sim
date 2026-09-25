@@ -150,6 +150,7 @@ void main() {
   float pleuraD = -1.0, pleuraDz = 0.0, curtainDb = 0.0, prevInside = -1.0, curtainLast = -1.0;
   bool entered = false;
   bool curtainRun = false;
+  bool crossed = false;
   for (int s = 0; s < 512; s++) {
     if (s >= n) break;
     float r = (float(s) + 0.5) * step;
@@ -157,9 +158,10 @@ void main() {
     vec3 m = toMaterial(p);
     Cls c = classify(m);
     // Pleura parietal: primer cruce exacto de la cara interna de la pared, si cae en el receso cerca del borde
-    if (mirrorSeg < 0.0 && pleuraD < 0.0) {
+    if (mirrorSeg < 0.0 && !crossed) {
       float inside = insideWallMm(m);
       if (inside >= 0.0 && prevInside < 0.0) {
+        crossed = true;
         float lo = max(r - step, 0.0);
         float hi = r;
         for (int it = 0; it < ${MIRROR_BISECTION_STEPS}; it++) {
@@ -176,8 +178,9 @@ void main() {
     if (c.tissue == T_AIR && !entered) continue;
     entered = true;
     float flag = tissueFlag(c.tissue);
-    // pulmón que toca la pared en el receso (la cortina o el tórax) y el que le sigue pegado (aire con aire)
-    curtainRun = c.tissue == T_LUNG && mirrorSeg < 0.0 && (curtainRun || inLungRecess(m, insideWallMm(m)));
+    // pulmón que toca la pared en el receso (la cortina o el tórax) y el que le sigue pegado (aire con aire),
+    // solo si su pleura está registrada (si el cruce cae fuera de la huella, el modelo de antes: el espejo)
+    curtainRun = c.tissue == T_LUNG && mirrorSeg < 0.0 && (curtainRun || (pleuraD >= 0.0 && inLungRecess(m, insideWallMm(m))));
     if (flag > 0.5 && flag < 1.5) {
       if (curtainRun) {
         // ni espejo ni impacto de gas; ΔL: lo que su gas cuesta de más frente al tejido de detrás
@@ -232,7 +235,7 @@ void main() {
   vec4 h1 = texelFetch(uHits1, ivec2(line, 0), 0);
   vec4 h2 = texelFetch(uHits2, ivec2(line, 0), 0);
   // último segmento del pulmón de la cortina (A0, decisión 61)
-  float curtainLast = h2.x >= 0.0 ? floor(h2.w / 4.0) - 1.0 : -1.0;
+  float curtainLast = floor(h2.w / 4.0) - 1.0;
   vec3 dir0 = lineDir(lineTheta(vUv.x));
   float step = uDepth / uCoarseN;
   float r = (float(s) + 0.5) * step;
@@ -372,7 +375,10 @@ ${STEERED_APERTURE_GLSL}
 const STEERED_TRANSMISSION_MAIN_GLSL = /* glsl */ `  vec4 ps = texelFetch(uPreSteer, ivec2(line, k), 0);
   vec4 px = texelFetch(uPreSteerX, ivec2(line, k), 0);
   float s = alongLineMm(uCurvR + r, uSteer.y, uSteer.z);
-  float Tk = steeredApertureTransmission(line, k, s, pow(10.0, -ps.x / 20.0));
+  float singleK = pow(10.0, -ps.x / 20.0);
+  float Tk = steeredApertureTransmission(line, k, s, singleK);
+  // el rayo único de la mirada: la pasada B acota con él la transmisión sin la lámina de la cortina (decisión 61)
+  o2.y = singleK;
   o3 = vec4(Tk, ps.y, px.x + 4.0 * (px.y + 1.0), ps.w);
 `;
 
@@ -529,7 +535,7 @@ vec2 steeredField() {
     if (j == 0) tissue = f;
     else {
       float td = steeredT(phiK, a, min(d, sCap));
-      air += f * (j == 1 ? PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : td * G * gn);
+      air += f * (j == 1 ? (ser.x + 1.0) * PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : (ser.x + 2.0) * td * G * gn);
     }
   }
   vec2 out2 = vec2(0.0);
@@ -542,7 +548,8 @@ vec2 steeredField() {
     }
     float dr = uDepth / 1024.0;
     float gain = pow(10.0, h2.z / 20.0);
-    float T = (curtain ? (under ? min(texture(uTrans3, vUv).x * gain, tD) : steeredT(phiK, a, min(s, sCap))) : texture(uTrans3, vUv).x) * coupling;
+    float tFree = min(texture(uTrans3, vUv).x, texture(uTrans2, vUv).y) * gain;
+    float T = (curtain ? (under ? min(tFree, tD) : steeredT(phiK, a, min(s, sCap))) : texture(uTrans3, vUv).x) * coupling;
     tissue *= T;
     if (sGas > 0.0 && s > sGas) {
       // transmisión del camino hasta su gas: la de la mirada en el punto de la rejilla por el que pasa
@@ -550,7 +557,8 @@ vec2 steeredField() {
       float rhoG = sqrt(uCurvR * uCurvR + sg * sg + 2.0 * sg * uSteer.z);
       float alphaG = phiK + uSteer.x - steerBeta(rhoG, a);
       float Tg = texture(uTrans3, vec2((alphaG + uHalfSector) / (2.0 * uHalfSector), (rhoG - uCurvR) / uDepth)).x * coupling;
-      if (curtain && sGas > sD) Tg = min(Tg * gain, tD * coupling);
+      vec2 uvG = vec2((alphaG + uHalfSector) / (2.0 * uHalfSector), (rhoG - uCurvR) / uDepth);
+      if (curtain && sGas > sD) Tg = min(min(Tg, texture(uTrans2, uvG).y * coupling) * gain, tD * coupling);
       float amp = 0.0;
       for (int k = 2; k <= 4; k++) {
         float z = (s - float(k) * sGas) / 1.2;
@@ -739,7 +747,7 @@ void main() {
     if (j == 0) tissue = f;
     else {
       float td = texture(uTrans0, vec2(vUv.x, min(d, rCap) / uDepth)).x;
-      air += f * (j == 1 ? PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : td * G * gn);
+      air += f * (j == 1 ? (ser.x + 1.0) * PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : (ser.x + 2.0) * td * G * gn);
     }
   }
   vec2 out2 = vec2(0.0);
@@ -747,17 +755,20 @@ void main() {
     // la pleura del diafragma, desde el cruce exacto del espejo
     if (mirrorHit >= 0.0) tissue += vec2(pleuraEcho(r - mirrorHit, dir0, normalize(t1.xyz)), 0.0);
     float dr = uDepth / 1024.0;
-    // cortina: sobre la pleura, sin el gas de su fila; bajo ella, sin el de la lámina (ΔL), ≤ la de la pleura
+    // cortina: sobre la pleura, sin el gas de su fila; bajo ella, sin el de la lámina (ΔL de la línea), con el
+    // rayo único de la línea por tope (el cono de la apertura mezcla líneas con otra lámina) y ≤ la de la pleura
     float gain = pow(10.0, h2.z / 20.0);
-    float T = (curtain ? (under ? min(t0.x * gain, tD) : texture(uTrans0, vec2(vUv.x, min(r, rCap) / uDepth)).x) : t0.x) * coupling;
+    float tFree = min(t0.x, texture(uTrans2, vUv).x) * gain;
+    float T = (curtain ? (under ? min(tFree, tD) : texture(uTrans0, vec2(vUv.x, min(r, rCap) / uDepth)).x) : t0.x) * coupling;
     tissue *= T;
     // Reverberación tras gas: A-lines a múltiplos de la profundidad del reflector.
     float gasHit = t0.y;
     if (gasHit > 0.0 && r > gasHit) {
       // Transmisión de ida y vuelta hasta el reflector: cada eco múltiple la paga k veces
       // y la cola sucia una vez. Sin este factor la TGC los amplificaba hasta el blanco.
-      float tg = texture(uTrans0, vec2(vUv.x, max(gasHit - dr, 0.0) / uDepth)).x;
-      float Tg = (curtain && gasHit > D ? min(tg * gain, tD) : tg) * coupling;
+      vec2 uvG = vec2(vUv.x, max(gasHit - dr, 0.0) / uDepth);
+      float tg = texture(uTrans0, uvG).x;
+      float Tg = (curtain && gasHit > D ? min(min(tg, texture(uTrans2, uvG).x) * gain, tD) : tg) * coupling;
       float a = 0.0;
       for (int k = 2; k <= 4; k++) {
         float rk = float(k) * gasHit;

@@ -282,8 +282,11 @@ describe('rama dirigida de la pasada B: geometría (decisión 58)', () => {
     // A empaqueta (en su programa dirigido) lo que B separa, y la mirada 0 conserva sus fórmulas
     expect(FRAG_TRANSMISSION_STEERED).toContain('o3 = vec4(Tk, ps.y, px.x + 4.0 * (px.y + 1.0), ps.w);');
     expect(FRAG_RAWFIELD).toContain('p = hp + dir * (r - mirrorHit);');
-    expect(FRAG_RAWFIELD).toContain('float tg = texture(uTrans0, vec2(vUv.x, max(gasHit - dr, 0.0) / uDepth)).x;');
-    expect(FRAG_RAWFIELD).toContain('float Tg = (curtain && gasHit > D ? min(tg * gain, tD) : tg) * coupling;');
+    expect(FRAG_RAWFIELD).toContain('vec2 uvG = vec2(vUv.x, max(gasHit - dr, 0.0) / uDepth);');
+    expect(FRAG_RAWFIELD).toContain('float tg = texture(uTrans0, uvG).x;');
+    expect(FRAG_RAWFIELD).toContain(
+      'float Tg = (curtain && gasHit > D ? min(min(tg, texture(uTrans2, uvG).x) * gain, tD) : tg) * coupling;',
+    );
     expect(FRAG_RAWFIELD).toContain('scattererField(vec3(vUv.x * 190.0, r * 0.9, 0.0), 0.6, uSeed + 3.0)');
     expect(FRAG_RAWFIELD).toContain('scattererField(vec3(vUv.x * 190.0, r * 3.0, 1.0), 0.8, uSeed + 7.0)');
   });
@@ -426,7 +429,8 @@ describe('rama dirigida de la pasada B: pleura parietal y cortina (decisión 61)
       'float rhoJ = j == 0 ? rho : sqrt(uCurvR * uCurvR + d * d + 2.0 * d * uSteer.z);',
       'float alJ = j == 0 ? alpha : phiK + uSteer.x - steerBeta(rhoJ, a);',
       'float td = steeredT(phiK, a, min(d, sCap));',
-      'air += f * (j == 1 ? PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : td * G * gn);',
+      'air += f * (j == 1 ? (ser.x + 1.0) * PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : (ser.x + 2.0) * td * G * gn);',
+      'float tFree = min(texture(uTrans3, vUv).x, texture(uTrans2, vUv).y) * gain;',
       'air += slidingField(pD, s - sD, uLookSalt) * tD;',
     ])
       expect(STEERED_FIELD_GLSL, line).toContain(line);

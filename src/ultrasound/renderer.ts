@@ -905,8 +905,10 @@ export class UltrasoundRenderer {
       p.tex('uTrans0', 0, this.tTrans.textures[0]);
       p.tex('uTrans1', 1, this.tTrans.textures[1]);
     }
-    // la pleura parietal de A0 (decisión 61): su cruce, el borde de la cortina y la pérdida de la lámina
+    // la pleura parietal de A0 (decisión 61): su cruce, el borde de la cortina y la pérdida de la lámina; y el
+    // rayo único de A (tope de la transmisión sin la lámina)
     p.tex('uHits2', 3, this.tHits.textures[2]);
+    p.tex('uTrans2', 4, this.tTrans.textures[2]);
     p.f('uSeed', (inputs.seed % 1000) / 7.0);
     p.f('uLattice', 0.42);
     p.f('uElevSigma0', ELEV_SIGMA0_MM);

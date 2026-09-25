@@ -73,6 +73,12 @@ con una sola mirada válida (compuesto apagado, color encendido o el cuadro tras
 directo exacto. Las pruebas leen la fuente explícita: `readEnvelope({ source: 'look0' | 'compound' })`,
 `readLookEnvelope(ranura)` y `readTransmission({ look })`.
 
+Pleura parietal y cortina pulmonar (decisión 61): A0 escribe una tercera salida por línea (`h2`: el cruce
+exacto de la pleura, la distancia al borde de la cortina y la pérdida de la lámina de pulmón) que leen A1 y
+los dos programas de B. En las líneas con cortina, B suma la línea pleural, la serie de reverberaciones de la
+pared remuestreada en el mismo camino y el deslizamiento, con la fracción de aire del borde blando, y el
+tejido de detrás con `classifyWith(m, false)`; gemelos y constantes en `src/ultrasound/pleura.ts`.
+
 ## Disposición y vistas (`src/ui`)
 
 Rejilla de tres columnas (decisión 16): `src/ui/navigator3d.ts` (three.js, procedural, malla del

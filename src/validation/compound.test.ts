@@ -15,6 +15,8 @@ import {
   type CompoundGrid,
   type LookSlot,
 } from '../ultrasound/compound';
+import { CURTAIN_AIR_GLSL, CURTAIN_MIN_AIR, curtainSteerWeight } from '../ultrasound/pleura';
+import { FRAG_COMPOUND, FRAG_RAWFIELD } from '../ultrasound/shaders/passes.glsl';
 import { JUMP_DEG, JUMP_MM } from '../ultrasound/speckleField';
 import { steerBeta } from '../ultrasound/steering';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
@@ -209,5 +211,74 @@ describe('gemelo de la pasada K', () => {
     expect(seam).toBeGreaterThan(0);
     // la mirada 0 pesa siempre 1, incluso en el borde del sector
     expect(lookWeight(-G.halfSector + 0.5 * dPhi, G.curvatureRadius + 100, 0, G)).toBe(1);
+  });
+
+  // Decisión 61: bajo la pleura de la cortina cada mirada dirigida reverbera a múltiplos de su propio camino y
+  // la media dejaba cada línea A partida en tres arcos (capturas con GPU); los equipos no componen en pulmón.
+  it('bajo la pleura de la cortina las dirigidas pesan 1 − fAir de la mirada 0: la cortina entera es la mirada 0', () => {
+    const [e0, ep, em] = [random(5), random(6), random(7)];
+    const slots: LookSlot[] = [
+      { theta: 0, data: e0 },
+      { theta: lookTheta(1), data: ep },
+      { theta: lookTheta(2), data: em },
+    ];
+    const D = 30;
+    // cortina entera en las líneas 60–99, borde blando en 100–119 (fAir de 1 a 0), sin cortina en el resto
+    const curtain = Array.from({ length: G.lines }, (_, u) => ({
+      D: u >= 60 && u < 120 ? D : -1,
+      fAir: u < 60 ? 0 : u < 100 ? 1 : Math.max(0, 1 - (u - 99) / 20),
+    }));
+    const out = compoundEnvelope(slots, G, COMPOUND.taperLines, curtain);
+    const plain = compoundEnvelope(slots, G);
+    const dPhi = (2 * G.halfSector) / G.lines;
+    let under = 0;
+    let soft = 0;
+    for (let v = 0; v < G.samples; v++) {
+      const r = ((v + 0.5) * G.depthMm) / G.samples;
+      const rho = G.curvatureRadius + r;
+      for (let u = 0; u < G.lines; u++) {
+        const i = v * G.lines + u;
+        const c = curtain[u];
+        if (c.D < 0 || r <= D || c.fAir < CURTAIN_MIN_AIR) {
+          // fuera de la cortina y sobre la pleura, el compuesto de siempre, bit a bit
+          expect(out[i]).toBe(plain[i]);
+          continue;
+        }
+        const alpha = -G.halfSector + (u + 0.5) * dPhi;
+        const keep = 1 - c.fAir;
+        const wp = lookWeight(alpha, rho, lookTheta(1), G) * keep;
+        const wm = lookWeight(alpha, rho, lookTheta(2), G) * keep;
+        const expected = (e0[i] + wp * ep[i] + wm * em[i]) / (1 + wp + wm);
+        expect(out[i]).toBeCloseTo(expected, 5);
+        if (c.fAir === 1) {
+          // la cortina entera: la mirada 0 sola, bit a bit
+          expect(out[i]).toBe(e0[i]);
+          under++;
+        } else soft++;
+      }
+    }
+    expect(under).toBeGreaterThan(1000);
+    expect(soft).toBeGreaterThan(500);
+    expect(curtainSteerWeight(D + 1, D, 1)).toBe(0);
+    expect(curtainSteerWeight(D - 1, D, 1)).toBe(1);
+    expect(curtainSteerWeight(D + 1, D, CURTAIN_MIN_AIR / 2)).toBe(1);
+    expect(curtainSteerWeight(D + 1, -1, 1)).toBe(1);
+  });
+
+  it('la GLSL de K pesa las dirigidas con la cortina de la mirada 0 (A0 h2 y la fracción de aire de B)', () => {
+    for (const line of [
+      'vec4 h2 = texelFetch(uHits2, ivec2(c.x, 0), 0);',
+      'float fAir = h2.x > 0.0 ? curtainAirFraction(h2.y, h2.x, lineDir(alpha)) : 0.0;',
+      'float steerKeep = curtainSteerWeight(rho - uCurvR, h2.x, fAir);',
+      'if (uLookSteer[i] != 0.0) w *= steerKeep;',
+    ])
+      expect(FRAG_COMPOUND, line).toContain(line);
+    expect(FRAG_COMPOUND).toContain(CURTAIN_AIR_GLSL);
+    expect(CURTAIN_AIR_GLSL).toContain(
+      'float curtainSteerWeight(float r, float D, float fAir) { return D > 0.0 && fAir >= CURTAIN_MIN_AIR && r > D ? 1.0 - fAir : 1.0; }',
+    );
+    // la misma fracción de aire que B
+    expect(FRAG_RAWFIELD).toContain(CURTAIN_AIR_GLSL);
+    expect(FRAG_RAWFIELD).toContain('float fAir = D > 0.0 ? curtainAirFraction(h2.y, D, dir0) : 0.0;');
   });
 });

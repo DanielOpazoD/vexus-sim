@@ -5,6 +5,8 @@ import { CONVEX_BEAM, lateralSigmaMm } from '../ultrasound/beamModel';
 import { COMPOUND } from '../ultrasound/compound';
 import { FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED, FRAG_TRANSMISSION_STEERED, STEERED_FIELD_GLSL } from '../ultrasound/shaders/passes.glsl';
 import { lookCoverage, steeredSample, type SteeredSampleCell, type SteeredSampleImage } from '../ultrasound/steering';
+import { COARSE_DEPTH } from '../ultrasound/renderer';
+import { PLEURA_STEER_GUESS_MM, aLineOrder, pleuraCapMm, pleuraSeriesDepths } from '../ultrasound/pleura';
 import { rng } from './syntheticSpeckle';
 
 /**
@@ -24,6 +26,7 @@ const IMG: SteeredSampleImage = {
   lines: CONVEX_C35.lines,
   depthMm: DEPTH,
   lateralSigmaMm: (r) => lateralSigmaMm(r, 90, CONVEX_BEAM),
+  coarseRows: COARSE_DEPTH,
 };
 const R = IMG.curvatureRadius;
 const H = IMG.halfSector;
@@ -256,9 +259,12 @@ describe('rama dirigida de la pasada B: geometría (decisión 58)', () => {
       'if (sMirror >= 0.0 && s > sMirror) {',
       'p = uCurvC + uCurvR * lineDir(phiK) + dirK * sMirror + dir * (s - sMirror);',
       'p = pointOnLine(lineDir(alpha), r);',
-      'field += vec2(interfaceEcho(c0, m0, dir, s, se), 0.0);',
+      'tissue = mediumFieldPh(p, dir, s, elevSigma(r), !under, lookPhase(rho, alpha, a, uSteer.w), gr.x * uLateral + gr.y * uAxial);',
+      'float rhoJ = sqrt(uCurvR * uCurvR + d * d + 2.0 * d * uSteer.z);',
+      'vec2 f = wallFieldPh(elem + dirK * d, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, uSteer.w), gr.x * uLateral + gr.y * uAxial);',
+      'return field + vec2(interfaceEcho(c, m, dir, r, se), 0.0);',
       'vec3 dn = dRefl - dMirror;',
-      'field += vec2(pleuraEcho(s - sMirror, dirK, ln > 1e-6 ? reflect(dirK, dn / ln) : dirK), 0.0);',
+      'tissue += vec2(pleuraEcho(s - sMirror, dirK, ln > 1e-6 ? reflect(dirK, dn / ln) : dirK), 0.0);',
       'if (sGas > 0.0 && s > sGas) {',
       'float sg = max(sGas - dr, 0.0);',
       'float rhoG = sqrt(uCurvR * uCurvR + sg * sg + 2.0 * sg * uSteer.z);',
@@ -278,8 +284,157 @@ describe('rama dirigida de la pasada B: geometría (decisión 58)', () => {
     // A empaqueta (en su programa dirigido) lo que B separa, y la mirada 0 conserva sus fórmulas
     expect(FRAG_TRANSMISSION_STEERED).toContain('o3 = vec4(Tk, ps.y, px.x + 4.0 * (px.y + 1.0), ps.w);');
     expect(FRAG_RAWFIELD).toContain('p = hp + dir * (r - mirrorHit);');
-    expect(FRAG_RAWFIELD).toContain('float Tg = texture(uTrans0, vec2(vUv.x, max(gasHit - dr, 0.0) / uDepth)).x * coupling;');
+    expect(FRAG_RAWFIELD).toContain('vec2 uvG = vec2(vUv.x, max(gasHit - dr, 0.0) / uDepth);');
+    expect(FRAG_RAWFIELD).toContain('float tg = texture(uTrans0, uvG).x;');
+    expect(FRAG_RAWFIELD).toContain(
+      'float Tg = (curtain && gasHit > D ? min(min(tg, texture(uTrans2, uvG).x) * gain, tD) : tg) * coupling;',
+    );
     expect(FRAG_RAWFIELD).toContain('scattererField(vec3(vUv.x * 190.0, r * 0.9, 0.0), 0.6, uSeed + 3.0)');
     expect(FRAG_RAWFIELD).toContain('scattererField(vec3(vUv.x * 190.0, r * 3.0, 1.0), 0.8, uSeed + 7.0)');
+  });
+});
+
+/**
+ * La pleura parietal y la cortina a lo largo del camino de la muestra (decisión 61): con θ = 0 el cruce de la
+ * propia línea y la serie sobre ella (la mirada 0); con ±θ el cruce del camino dirigido, hallado sobre el h2 de
+ * A0 con el punto fijo, la serie en el propio camino y la transmisión leída en la celda de la rejilla de cada
+ * punto (A o3).
+ */
+describe('rama dirigida de la pasada B: pleura parietal y cortina (decisión 61)', () => {
+  const STEP = DEPTH / COARSE_DEPTH;
+  /** Pleura plana a Zp mm bajo la cara, paralela a su tangente: el cruce de la línea l, como lo da A0. */
+  const flatPleura = (Zp: number) => (l: number) => {
+    const al = lineTheta((l + 0.5) / L);
+    return { D: (R + Zp) / Math.cos(al) - R, dz: l - 100, dL: 7.5 };
+  };
+  /** Ángulo polar y radio de un punto respecto al centro de curvatura, en el plano de imagen. */
+  const polar = (p: Vec3): { alpha: number; rho: number } => {
+    const q = sub(p, FRAME.center);
+    return { alpha: Math.atan2(dot(q, LATERAL), dot(q, AXIAL)), rho: length(q) };
+  };
+  const uvOf = (p: Vec3): [number, number] => {
+    const { alpha, rho } = polar(p);
+    return [(alpha + H) / (2 * H), (rho - R) / DEPTH];
+  };
+
+  it('con θ = 0 es la de la mirada 0: el cruce de su línea y la pared sobre la línea, con la transmisión en su columna', () => {
+    const rnd = rng(611);
+    for (let t = 0; t < 3000; t++) {
+      const j = Math.floor(rnd() * L);
+      const u = (j + 0.5) / L;
+      const v = rnd();
+      const r = v * DEPTH;
+      const Dj = 15 + 30 * rnd();
+      const pleuraAt = (l: number) => (l === j ? { D: Dj, dz: 2, dL: 9 } : { D: 80, dz: -3, dL: 0 });
+      const got = steeredSample(FRAME, IMG, 0, u, v, { ...cell(-1, 0, -1, -1, () => [0, 0, 1]), pleuraAt }).curtain!;
+      const d0 = lineDir(lineTheta(u));
+      expect(got.line).toBe(j);
+      expect(got.sD).toBeCloseTo(Dj, 9);
+      expect(near(got.point, add(FRAME.center, scale(d0, R + Dj)))).toBeLessThan(1e-9);
+      const rCap = pleuraCapMm(Dj, STEP);
+      expect(got.sCap).toBeCloseTo(rCap, 9);
+      expect(got.uvD[0]).toBeCloseTo(u, 12);
+      expect(got.uvD[1]).toBeCloseTo(rCap / DEPTH, 12);
+      expect(got.aLine).toBe(aLineOrder(r, Dj));
+      if (r > Dj) {
+        const d = pleuraSeriesDepths(r, Dj);
+        expect(got.series!.n).toBe(d.n);
+        expect(got.series!.mirror).toBeCloseTo(d.mirror, 9);
+        expect(got.series!.forward).toBeCloseTo(d.forward, 9);
+        // la pared remuestreada sobre la propia línea y la transmisión en su columna, con la fila de la pleura por tope
+        expect(near(got.series!.mirrorPoint, add(FRAME.center, scale(d0, R + d.mirror)))).toBeLessThan(1e-9);
+        expect(near(got.series!.forwardPoint, add(FRAME.center, scale(d0, R + d.forward)))).toBeLessThan(1e-9);
+        expect(got.series!.uvMirror[0]).toBeCloseTo(u, 12);
+        expect(got.series!.uvMirror[1]).toBeCloseTo(Math.min(d.mirror, rCap) / DEPTH, 12);
+        expect(got.series!.uvForward[1]).toBeCloseTo(Math.min(d.forward, rCap) / DEPTH, 12);
+      } else expect(got.series).toBeNull();
+    }
+    // sin pleura en la línea (ni en ninguna), sin cortina
+    expect(steeredSample(FRAME, IMG, 0, 0.5, 0.5, { ...cell(-1, 0, -1, -1, () => [0, 0, 1]), pleuraAt: () => null }).curtain).toBeNull();
+  });
+
+  it('con ±θ la pleura es la del camino dirigido: el cruce del camino con la pleura, a ≤ 0,3 mm', () => {
+    const rnd = rng(612);
+    let n = 0;
+    for (let t = 0; t < 3000; t++) {
+      const th = rnd() < 0.5 ? TH : -TH;
+      const u = (Math.floor(rnd() * L) + 0.5) / L;
+      const v = rnd();
+      const Zp = 20 + 25 * rnd();
+      const pleuraAt = flatPleura(Zp);
+      const got = steeredSample(FRAME, IMG, th, u, v, { ...cell(-1, 0, -1, -1, () => [0, 0, 1]), pleuraAt });
+      const c = got.curtain!;
+      // el cruce exacto del camino del elemento φ_k con el plano de la pleura
+      const sStar = (R + Zp - R * Math.cos(got.phiK)) / Math.cos(got.phiK + th);
+      const cross = polar(add(got.element, scale(got.dirK, sStar)));
+      // el camino cruza la pleura fuera del sector (junto al borde, antes de entrar): A0 no tiene esa línea
+      if (Math.abs(cross.alpha) > H - (2 * H) / L) continue;
+      n++;
+      expect(Math.abs(c.sD - sStar), `θ ${th} u ${u}`).toBeLessThan(0.3);
+      expect(near(c.point, add(got.element, scale(got.dirK, c.sD)))).toBeLessThan(1e-9);
+      // la línea hallada es la que el camino corta a la profundidad de la pleura (o su vecina)
+      expect(Math.abs(c.line - ((cross.alpha + H) / (2 * H)) * L + 0.5)).toBeLessThanOrEqual(1.5);
+      expect(c.dz).toBe(c.line - 100);
+      // la transmisión de la pleura, en la celda del camino a la fila tope
+      expect(near(add(got.element, scale(got.dirK, c.sCap)), FRAME.center)).toBeCloseTo(R + pleuraCapMm(c.D, STEP), 9);
+      const uvD = uvOf(add(got.element, scale(got.dirK, c.sCap)));
+      expect(c.uvD[0]).toBeCloseTo(uvD[0], 9);
+      expect(c.uvD[1]).toBeCloseTo(uvD[1], 9);
+      if (got.s > c.sD) {
+        const sr = c.series!;
+        // la serie remuestrea la pared en el propio camino dirigido
+        expect(near(sr.mirrorPoint, add(got.element, scale(got.dirK, sr.mirror)))).toBeLessThan(1e-9);
+        expect(near(sr.forwardPoint, add(got.element, scale(got.dirK, sr.forward)))).toBeLessThan(1e-9);
+        expect(sr.mirror).toBeGreaterThanOrEqual(-1e-9);
+        expect(sr.mirror).toBeLessThanOrEqual(c.sD + 1e-9);
+        const uvM = uvOf(add(got.element, scale(got.dirK, Math.min(sr.mirror, c.sCap))));
+        expect(sr.uvMirror[0]).toBeCloseTo(uvM[0], 9);
+        expect(sr.uvMirror[1]).toBeCloseTo(uvM[1], 9);
+      }
+    }
+    expect(n).toBeGreaterThan(2000);
+  });
+
+  it('sin pleura en la línea de la muestra, el punto fijo empieza en PLEURA_STEER_GUESS_MM', () => {
+    // solo las líneas 90–100 tienen pleura, a 30 mm: la muestra de la línea 60, con el camino que llega allí
+    const pleuraAt = (l: number) => (l >= 90 && l <= 100 ? { D: PLEURA_STEER_GUESS_MM, dz: 1, dL: 0 } : null);
+    let found = 0;
+    for (let i = 0; i < 1024; i += 3) {
+      const got = steeredSample(FRAME, IMG, TH, (60.5 + (i % 40)) / L, (i + 0.5) / 1024, {
+        ...cell(-1, 0, -1, -1, () => [0, 0, 1]),
+        pleuraAt,
+      });
+      if (got.curtain) {
+        found++;
+        expect(got.curtain.line).toBeGreaterThanOrEqual(90);
+        expect(got.curtain.line).toBeLessThanOrEqual(100);
+      }
+    }
+    expect(found).toBeGreaterThan(10);
+  });
+
+  it('el GLSL lleva la misma pleura del camino que el gemelo', () => {
+    for (const line of [
+      'vec4 h = texelFetch(uHits2, ivec2(line0, 0), 0);',
+      'float dg = h.x >= 0.0 ? h.x : PLEURA_STEER_GUESS_MM;',
+      'float al = phiK + uSteer.x - steerBeta(uCurvR + dg, a);',
+      'int l = clamp(int(floor((al + uHalfSector) / (2.0 * uHalfSector) * uLinesF)), 0, int(uLinesF) - 1);',
+      'sD = h.x >= 0.0 ? alongLineMm(uCurvR + h.x, a, uSteer.z) : -1.0;',
+      'vec4 h2 = steeredPleura(phiK, a, tc.x, sD);',
+      'float fAir = sD > 0.0 ? curtainAirFraction(h2.y, h2.x, dirK) : 0.0;',
+      'float sCap = alongLineMm(uCurvR + pleuraCapMm(max(h2.x, 0.0), uDepth / float(ts.y)), a, uSteer.z);',
+      'float rho = sqrt(uCurvR * uCurvR + x * x + 2.0 * x * uSteer.z);',
+      'return texture(uTrans3, vec2((al + uHalfSector) / (2.0 * uHalfSector), (rho - uCurvR) / uDepth)).x;',
+      'vec3 pD = elem + dirK * max(sD, 0.0);',
+      'float k = aLineOrder(s, sD);',
+      'vec3 ser = under ? pleuraSeriesDepths(s, sD) : vec3(0.0);',
+      'float rhoJ = sqrt(uCurvR * uCurvR + d * d + 2.0 * d * uSteer.z);',
+      'float alJ = phiK + uSteer.x - steerBeta(rhoJ, a);',
+      'float td = steeredT(phiK, a, min(d, sCap));',
+      'air += f * (j == 1 ? (ser.x + 1.0) * PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : (ser.x + 2.0) * td * G * gn);',
+      'float tFree = min(texture(uTrans3, vUv).x, texture(uTrans2, vUv).y) * gain;',
+      'air += slidingField(pD, s - sD, uLookSalt) * tD;',
+    ])
+      expect(STEERED_FIELD_GLSL, line).toContain(line);
   });
 });

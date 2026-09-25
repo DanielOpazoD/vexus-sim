@@ -16,7 +16,9 @@ import { VESSEL_META, type VesselId } from '../physiology/vessels';
  *  - cara hepática del diafragma: la mitad abdominal del diafragma (la pleural la dibuja el espejo
  *    exacto de la pasada A);
  *  - cápsula renal externa: la cápsula renal y la mitad interna de la grasa perirrenal (dos lados);
- *  - cara externa de la grasa perirrenal (Morison): la mitad externa de la grasa.
+ *  - cara externa de la grasa perirrenal (Morison): la mitad externa de la grasa;
+ *  - pleura parietal bajo la pared (decisión 61): no sale de `classify`; la dibuja la pasada B desde el
+ *    cruce exacto de A0, del lado del músculo (la pared es su dueña), con la serie de reverberaciones.
  * No se dibujan la cara pared/hígado (misma impedancia) ni cápsula renal/corteza, ni hay capa fina.
  */
 export enum Interface {
@@ -33,9 +35,14 @@ export enum Interface {
   Pleura = 9,
   RenalCapsule = 10,
   PerirenalFat = 11,
+  /**
+   * Pleura parietal bajo la pared, sobre el pulmón de la cortina (decisión 61): no sale de `classify`; la
+   * dibuja la pasada B en el cruce exacto que da A0, con su serie de reverberaciones.
+   */
+  PleuraWall = 12,
 }
 
-export const INTERFACE_COUNT = 12;
+export const INTERFACE_COUNT = 13;
 /** Las caras de tubo van primero (ids ≤ esta): solo ellas llevan coherencia de curvatura. */
 export const LAST_TUBE_INTERFACE = Interface.DuctLumen;
 /**
@@ -64,6 +71,7 @@ export const INTERFACE_GLSL_NAME: Record<Interface, string> = {
   [Interface.Pleura]: 'IF_PLEURA',
   [Interface.RenalCapsule]: 'IF_RENAL_CAPSULE',
   [Interface.PerirenalFat]: 'IF_PERIRENAL',
+  [Interface.PleuraWall]: 'IF_PLEURA_WALL',
 };
 
 /** Propiedades de una cara lisa (tabla de la decisión 57). */
@@ -200,6 +208,16 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     slopeRms: 0.3,
     twoSided: false,
     source: 'Fresnel hígado / grasa (TISSUES); s ancha [ESTIMADO] (no mueve el pico de Morison, que es la cápsula renal, 4 dB más fuerte)',
+  },
+  [Interface.PleuraWall]: {
+    name: 'pleura parietal (pared / pulmón de la cortina)',
+    sides: [Tissue.Muscle, Tissue.Lung],
+    floor: 0,
+    roughnessMm: 0.05,
+    slopeRms: 0.15,
+    twoSided: false,
+    source:
+      'Fresnel músculo / gas (TISSUES), |R| ≈ 0,9995; s 0,15 [ESTIMADO 0,10–0,15]: la línea pleural es la más brillante cerca de la normal y se apaga en los bordes del sector (Lee 2017, J Med Ultrasound 25:101, fig. 5B; PMC10132878 fig. 2A); σz 0,05 mm [ESTIMADO, calibrable 0,04–0,07]: su parte coherente (−8,9 dB a 0°) la satura 1,2–1,3 mm a 0–15° con K = 55 dB (gemelo) y es la reflexión coherente de cada rebote de la serie bajo la pleura; de un lado: la dibuja el músculo (la pared es su dueña, decisión 61)',
   },
 };
 

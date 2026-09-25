@@ -1,5 +1,6 @@
 import { add, dot, length, normalize, scale, sub, type Vec3 } from '../core/vec3';
 import { CONVEX_BEAM, type BeamParams } from './beamModel';
+import { PLEURA_STEER_GUESS_MM, PLEURA_STEER_ITERATIONS, aLineOrder, pleuraCapMm, pleuraSeriesDepths } from './pleura';
 
 /**
  * Geometría exacta de las miradas dirigidas de un convexo (composición espacial, decisión 58).
@@ -117,6 +118,8 @@ export interface SteeredSampleImage {
   depthMm: number;
   /** PSF lateral de dos vías σ(r) (mm, `lateralSigmaMm`): el alcance del núcleo lateral de D. */
   lateralSigmaMm: (r: number) => number;
+  /** Filas de la pasada A (`COARSE_DEPTH`): el tope de la transmisión en la pleura (`pleuraCapMm`). */
+  coarseRows: number;
 }
 
 /** Lo que la rama dirigida lee de la pasada A en la celda de la muestra (A o3 y, del espejo, A o1). */
@@ -129,6 +132,42 @@ export interface SteeredSampleCell {
   sMirror: number;
   /** o1.xyz de la línea l en la última fila: su dirección reflejada (A2 la publica desde su alcance). */
   reflectedDir: (line: number) => Vec3;
+  /**
+   * A0 h2 de la línea l (decisión 61): el cruce D de su pleura parietal, la distancia al borde de la cortina
+   * y la pérdida de la lámina (ΔL, dB); null sin pleura. Sin él la muestra no tiene cortina.
+   */
+  pleuraAt?: (line: number) => { D: number; dz: number; dL: number } | null;
+}
+
+/**
+ * La pleura parietal a lo largo del camino de la muestra (decisión 61): qué línea de A0 da el cruce, la
+ * distancia sD al cruce a lo largo del camino y dónde lee la rama de la cortina la transmisión (coordenadas de
+ * textura de A o3; en la mirada 0, las de A o0 en la propia línea) y muestrea la pared para la serie.
+ */
+export interface SteeredCurtain {
+  /** Línea de A0 cuyo cruce D corta el camino (punto fijo) y su h2. */
+  line: number;
+  D: number;
+  dz: number;
+  dL: number;
+  /** Distancia a lo largo del camino hasta la pleura y su punto. */
+  sD: number;
+  point: Vec3;
+  /** Tope de la transmisión (la fila de la pleura sin el gas, `pleuraCapMm`) a lo largo del camino y su coordenada. */
+  sCap: number;
+  uvD: [number, number];
+  /** Orden de la réplica del eco pleural más cercana (1: la línea pleural). */
+  aLine: number;
+  /** Bajo la pleura: el orden de la serie, las dos distancias de la pared, sus puntos y dónde se lee su T. */
+  series: {
+    n: number;
+    mirror: number;
+    forward: number;
+    mirrorPoint: Vec3;
+    forwardPoint: Vec3;
+    uvMirror: [number, number];
+    uvForward: [number, number];
+  } | null;
 }
 
 /** Geometría de una muestra de la mirada dirigida en la pasada B (`STEERED_FIELD_GLSL`). */
@@ -154,6 +193,8 @@ export interface SteeredSample {
   pleura: { delta: number; cos: number } | null;
   /** Reverberación: distancia, radio y ángulo del punto del camino donde se lee Tg y su coordenada en A o3. */
   reverb: { s: number; rho: number; alpha: number; uv: [number, number] } | null;
+  /** Pleura parietal y cortina (decisión 61) a lo largo del camino; null sin pleura en él. */
+  curtain: SteeredCurtain | null;
 }
 
 /**
@@ -217,7 +258,45 @@ export function steeredSample(
     const alphaG = phiK + theta - Math.asin(a / rhoG);
     reverb = { s: sg, rho: rhoG, alpha: alphaG, uv: [(alphaG + H) / (2 * H), (rhoG - R) / img.depthMm] };
   }
-  return { formed, alpha, r, rho, phiK, uK, s, dirK, element, point, dir, gasKind, mirrorLine, pleura, reverb };
+  // Pleura parietal (decisión 61): la línea que el camino corta a la profundidad de la pleura de la anterior,
+  // desde la línea de la muestra (o, si no tiene pleura, desde PLEURA_STEER_GUESS_MM); con θ = 0 es la propia
+  let curtain: SteeredCurtain | null = null;
+  const hAt = (l: number) => cell.pleuraAt?.(l) ?? null;
+  const line0 = Math.min(Math.floor(u * img.lines), img.lines - 1);
+  let h = hAt(line0);
+  let line = line0;
+  let dg = h ? h.D : PLEURA_STEER_GUESS_MM;
+  for (let it = 0; it < PLEURA_STEER_ITERATIONS; it++) {
+    const al = phiK + theta - Math.asin(a / (R + dg));
+    line = Math.min(Math.max(Math.floor(((al + H) / (2 * H)) * img.lines), 0), img.lines - 1);
+    h = hAt(line);
+    if (h) dg = h.D;
+  }
+  if (h) {
+    // punto y coordenada de textura (A o3; con θ = 0, A o0 en la línea) del camino a la distancia x
+    const rhoAt = (x: number) => Math.sqrt(R * R + x * x + 2 * x * rc);
+    const uvAt = (x: number): [number, number] => {
+      const rr = rhoAt(x);
+      return [(phiK + theta - Math.asin(a / rr) + H) / (2 * H), (rr - R) / img.depthMm];
+    };
+    const onPath = (x: number): Vec3 => add(element, scale(dirK, x));
+    const sD = Math.sqrt(Math.max((R + h.D) ** 2 - a * a, 0)) - rc;
+    const rCap = pleuraCapMm(h.D, img.depthMm / img.coarseRows);
+    const sCap = Math.sqrt(Math.max((R + rCap) ** 2 - a * a, 0)) - rc;
+    let series: SteeredCurtain['series'] = null;
+    if (s > sD) {
+      const d = pleuraSeriesDepths(s, sD);
+      series = {
+        ...d,
+        mirrorPoint: onPath(d.mirror),
+        forwardPoint: onPath(d.forward),
+        uvMirror: uvAt(Math.min(d.mirror, sCap)),
+        uvForward: uvAt(Math.min(d.forward, sCap)),
+      };
+    }
+    curtain = { line, D: h.D, dz: h.dz, dL: h.dL, sD, point: onPath(sD), sCap, uvD: uvAt(sCap), aLine: aLineOrder(s, sD), series };
+  }
+  return { formed, alpha, r, rho, phiK, uK, s, dirK, element, point, dir, gasKind, mirrorLine, pleura, reverb, curtain };
 }
 
 /**

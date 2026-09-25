@@ -52,12 +52,12 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **Sin lóbulos laterales ni de rejilla** (`no-sidelobes`); una luz vascular no recibe ecos de
   reflectores fuera del eje salvo por el grosor de corte.
 - **Sin imagen armónica** (`no-harmonics`); el conmutador no existe en la consola.
-- **Solo tienen eco de interfaz las caras de vasos, vesícula, cápsula hepática, diafragma y riñón**
-  (`interface-echo-scope`, decisión 57): las fascias de la pared, las costillas, la piel y el gas
-  intestinal no dibujan su cara (PR 6 y 7); se ven por su moteado y su sombra.
+- **Solo tienen eco de interfaz las caras de vasos, vesícula, cápsula hepática, diafragma, riñón y la
+  pleura parietal** (`interface-echo-scope`, decisiones 57 y 61): las fascias de la pared, las costillas, la
+  piel y el gas intestinal no dibujan su cara (PR 6 y 7); se ven por su moteado y su sombra.
 - **El eco de interfaz es solo la parte coherente de una cara lisa** (`interface-echo-coherent-only`):
-  sin destellos ni parte difusa de las superficies rugosas (la pleura da solo su parte coherente, −28,7 dB
-  a 0°), una cara por estructura y sin signo, sin la cara pared/hígado (misma impedancia) ni la de
+  sin destellos ni parte difusa de las superficies rugosas (la pleura del diafragma da solo su parte
+  coherente, −28,7 dB a 0°, y la parietal −8,9 dB), una cara por estructura y sin signo, sin la cara pared/hígado (misma impedancia) ni la de
   cápsula renal/corteza, y sin interferencia de capa fina. Su nivel sale de K = 55 dB, un valor derivado
   de un plano liso (± 6 dB) que se calibra con GPU dentro de [53; 57] dB.
 - **La coherencia de curvatura solo la tienen los tubos** (`interface-curvature-tubes-only`): vesícula,
@@ -81,6 +81,41 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   rejilla común), pero el par (−,+) puede correlacionar de más, así que su ρ se informa sin puerta. El
   arreglo previsto (PR 3) es un prefiltro de 3 submuestras por línea, con la fase de la mirada 0 referida
   al ancla.
+- **La serie bajo la pleura remuestrea la pared en la misma línea** (`pleura-series-same-line`, decisión
+  61): las copias espejo y directa de la pared y las líneas A se forman con la pared del propio camino, no
+  con la de la dirección reflejada por una pleura oblicua; no cambian con la incidencia salvo por la
+  coherencia de la pleura (χ) y las líneas A llevan el lóbulo de Kirchhoff una sola vez (el del eco
+  pleural), no una vez por rebote. Los caminos del mismo retardo sí se suman (n + 1 en la copia espejo de
+  orden n, n + 2 en la directa). Las líneas A tienen la anchura de la línea pleural (en las referencias son
+  algo más anchas y tenues).
+- **Sin colas de cometa ni líneas B** (`no-lung-comet-tails`, decisión 61): el pulmón bajo la pleura es la
+  serie de la pared y el deslizamiento incoherente; no hay líneas Z ni B (ni pulmón patológico), y el
+  deslizamiento se ve como neblina que cambia con la respiración, no como el centelleo puntual de la
+  pleura visceral.
+- **El borde de la cortina muestra el tejido del rayo central** (`curtain-edge-central-ray`, decisión 61):
+  en el borde blando la fracción 1 − f del haz ve lo que hay detrás de la lámina en el rayo central
+  (`classify` sin la cortina), no la parte del haz que cae bajo el borde; donde detrás de la lámina sigue
+  el pulmón del tórax, esa fracción es negra. Su transmisión es la de la línea sin la pérdida de la lámina
+  de A0 (ΔL), con el rayo único de la línea por tope, y dentro de la lámina (3 mm) queda hasta ~1 dB alta.
+  La lámina no es un obstáculo de la penumbra de la apertura: el borde lo hace solo la fracción de aire.
+- **Costura en el límite de la huella del receso** (`curtain-footprint-seam`, decisión 61): la pleura
+  parietal se registra solo si la línea cruza la pared dentro de la huella del receso (x ≤ −45 mm,
+  y ≤ 40 mm). Una línea que la cruza justo fuera y alcanza después el pulmón de la cortina bajo la pared lo
+  ve como el espejo del diafragma de la decisión 57 (en la CPU, 5–7 líneas en la intercostal y 24–36 en la
+  subxifoidea, de refilón): allí no hay línea pleural ni neblina, sino lo de antes. Quitar la huella de
+  `lungCurtainEdgeMm` lo resolvería cambiando esas ventanas; queda para el dueño.
+- **El Doppler atraviesa la cortina** (`curtain-doppler-through-lung`, decisión 61): el color y el PW
+  cruzan la lámina de pulmón en línea recta con la atenuación del gas de la CPU (60 dB/cm: ~18 dB en sus
+  3 mm), como el modelo de la puerta; un pulmón aireado real no deja pasar nada. Antes el color de detrás
+  de la cortina usaba la transmisión del camino reflejado, sin pérdida.
+- **Sin composición espacial bajo la cortina** (`compound-off-under-curtain`, decisión 61): bajo la pleura
+  de la cortina la pasada K da a las miradas dirigidas el peso 1 − fAir de la mirada 0 (0 en la cortina
+  entera, sin costura en el borde blando): cada mirada reverbera a múltiplos de su propio camino y la media
+  de tres partía cada línea A en tres arcos (con SwiftShader, la línea A de orden 3 quedaba 6 dB por debajo
+  de la de la mirada 0). Allí la imagen es la de una mirada, como en los preajustes de pulmón de los
+  equipos, que no componen; sobre la pleura (la pared) sigue compuesta, así que el cambio de textura cae en
+  la línea pleural. Las métricas del compuesto del banco (bandas de hígado limpio) no llevan este peso:
+  bajo la pleura con 10⁻³ ≤ fAir < 0,01 cuentan 1 donde K pone 0,99–0,999.
 - **Sin composición espacial con el color encendido** (`compound-off-in-color`, decisión 58): con la
   caja de color el cuadro B se refresca a la cadencia del color (4–11 Hz, decisión 39) y las tres miradas
   cubrirían 280–715 ms, con estela respiratoria de varios mm; el compuesto se apaga y la textura del

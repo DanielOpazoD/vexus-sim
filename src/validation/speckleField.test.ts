@@ -188,6 +188,42 @@ describe('medio de dispersores anclado (decisión 55)', () => {
     expect(jump.b).toBe(jump.a);
   });
 
+  // La e2e del fundido (`smoke.spec.ts`, «el fundido del ancla…») deduce de los pesos que publica el renderer lo
+  // que el fundido le cuesta a la correlación entre dos cuadros: si w baja empieza un fundido y la nueva del
+  // cuadro anterior es la vieja de este, ρ = √(w₀(1 − w)); si no, ρ = √(w₀w) + √((1 − w₀)(1 − w)).
+  it('la correlación del medio entre cuadros que deduce la e2e de los pesos es la de las anclas, y nunca baja de 8/9', () => {
+    const anchor = new ElevationAnchor();
+    const media = (st: SpeckleAnchorState): Map<object, number> =>
+      st.a === st.b
+        ? new Map([[st.a, 1]])
+        : new Map<object, number>([
+            [st.a, Math.sqrt(st.w)],
+            [st.b, Math.sqrt(1 - st.w)],
+          ]);
+    let prev = anchor.update(probeFrame(BASE, torso, CONVEX_C35).face, probeFrame(BASE, torso, CONVEX_C35).elevation);
+    let starts = 0;
+    let links = 0;
+    for (let d = 1; d <= 40; d++) {
+      const fr = probeFrame({ ...BASE, yaw: BASE.yaw + deg(d) }, torso, CONVEX_C35);
+      const st = anchor.update(fr.face, fr.elevation);
+      const m0 = media(prev);
+      let exact = 0;
+      for (const [k, amp] of media(st)) exact += amp * (m0.get(k) ?? 0);
+      const w0 = prev.w;
+      const fromWeights = st.w < w0 ? Math.sqrt(w0 * (1 - st.w)) : Math.sqrt(w0 * st.w) + Math.sqrt((1 - w0) * (1 - st.w));
+      expect(fromWeights, `giro ${d}°`).toBeCloseTo(exact, 12);
+      expect(exact * exact, `giro ${d}°`).toBeGreaterThan((8 / 9) ** 2 - 1e-12);
+      if (st.w < w0) {
+        starts++;
+        if (w0 < 1) links++;
+      }
+      prev = st;
+    }
+    // a 1° por cuadro los fundidos van seguidos: el enlace de dos (ρ = 8/9) es el peor caso
+    expect(starts).toBeGreaterThanOrEqual(3);
+    expect(links).toBeGreaterThanOrEqual(2);
+  });
+
   it('durante el fundido el moteado sigue siendo de Rayleigh con la misma potencia media', () => {
     const anchor = new ElevationAnchor();
     const fr = probeFrame(BASE, torso, CONVEX_C35);

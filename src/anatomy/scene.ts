@@ -2,6 +2,7 @@ import { smoothstep, type Vec3 } from '../core/vec3';
 import type { PatientState } from '../physiology/patientState';
 import { VESSEL_META, type VesselAreas, type VesselId } from '../physiology/vessels';
 import {
+  diaphragmHeight,
   orthonormalBasis,
   sdSpine,
   sdDiaphragm,
@@ -44,7 +45,7 @@ import {
   type LigamentumVenosum,
   type UmbilicalFissure,
 } from './organs/liverLigaments';
-import { lungCurtainDistance } from './organs/lungCurtain';
+import { inLungCurtain, inLungRecess, lungCurtainDistance, lungCurtainEdgeMm } from './organs/lungCurtain';
 
 export type { DuctDef, VesselDef } from './vesselTree';
 import { BOWEL_BD_CAP_MM, DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, Tissue } from './tissues';
@@ -101,9 +102,12 @@ export interface Classification {
 export type FaceGeometry = 'tube' | 'liverSurface' | 'dome' | 'kidneyOuter' | 'gallbladder';
 export const FACE_GEOMETRIES: readonly FaceGeometry[] = ['tube', 'liverSurface', 'dome', 'kidneyOuter', 'gallbladder'];
 
-/** Geometría cuya distancia (`faceSdf`) da la cara de interfaz `i`, o null sin cara (o la pleura, del espejo). */
+/**
+ * Geometría cuya distancia (`faceSdf`) da la cara de interfaz `i`, o null sin cara (o las pleuras: la del
+ * espejo y la parietal, que no salen de `classify`).
+ */
 export function faceGeometryOf(i: Interface): FaceGeometry | null {
-  if (i === Interface.None || i === Interface.Pleura) return null;
+  if (i === Interface.None || i === Interface.Pleura || i === Interface.PleuraWall) return null;
   if (i <= LAST_TUBE_INTERFACE) return 'tube';
   if (i === Interface.GallbladderLumen) return 'gallbladder';
   if (i === Interface.LiverCapsule) return 'liverSurface';
@@ -332,6 +336,39 @@ export class AnatomyScene {
   }
 
   /**
+   * Profundidad (mm) de un punto MATERIAL bajo la cara interna de la pared: negativa en la pared, 0 en la
+   * pleura parietal (gemelo GLSL `insideWallMm`). A0 busca en ella el cruce exacto de la pleura (decisión 61).
+   */
+  insideWallMm(m: Vec3): number {
+    return -torsoDepth(m, this.torso) - this.wallThickness();
+  }
+
+  /**
+   * El punto MATERIAL es pulmón de la cortina (la lámina bajo la pared), no del tórax bajo la cúpula
+   * (decisión 61; gemelo GLSL `inLungCurtain`). Solo tiene sentido donde `classify` da pulmón.
+   */
+  inLungCurtain(m: Vec3, caliber: VesselCaliber): boolean {
+    return inLungCurtain(m, this.insideWallMm(m), caliber.diaphragmCaudalMm);
+  }
+
+  /**
+   * El punto MATERIAL, si `classify` da pulmón, toca la pared en el receso (la cortina o el tórax por encima de
+   * la inserción del diafragma): ahí empieza la pleura parietal (decisión 61; gemelo GLSL `inLungRecess`).
+   */
+  inLungRecess(m: Vec3): boolean {
+    return inLungRecess(m, this.insideWallMm(m));
+  }
+
+  /**
+   * Distancia (mm) de un punto MATERIAL de la cara interna de la pared al borde del pulmón que la toca en el
+   * receso: z − min(borde de la cortina, inserción del diafragma); null fuera de la huella (gemelo GLSL
+   * `lungCurtainEdgeMm`, decisión 61).
+   */
+  lungEdgeMm(m: Vec3, caliber: VesselCaliber): number | null {
+    return lungCurtainEdgeMm(m, caliber.diaphragmCaudalMm, diaphragmHeight(m[0], m[1], this.diaphragm, this.torso));
+  }
+
+  /**
    * Peso del campo de desplazamiento respiratorio en un punto material: 1 en
    * las vísceras, 0 en pared, costillas y columna (B.4, [EXTRAPOLACIÓN PROPIA]).
    */
@@ -346,17 +383,22 @@ export class AnatomyScene {
   /**
    * Clasifica un punto MATERIAL. `caliber` aporta las escalas de radio que
    * dicta la fisiología en este instante. Orden de prioridad (el primero que
-   * contiene el punto gana): pared → costillas → columna → vasos y conductos →
+   * contiene el punto gana): pared → costillas → columna → cortina pulmonar → vasos y conductos →
    * aurícula derecha → tórax/diafragma → vesícula → riñones → hígado → gas →
-   * intestino. Cada paso es un método propio; el mismo orden vive en GLSL.
+   * intestino. Cada paso es un método propio; el mismo orden vive en GLSL (`classifyWith`).
+   *
+   * `withCurtain = false` es la variante sin la cortina pulmonar (decisión 61): lo que hay detrás de la
+   * lámina de pulmón, igual que `classify` en todos los demás puntos. La usan el tejido que se ve en
+   * parte a través del borde blando de la cortina y su transmisión (gemelo GLSL `classifyWith(m, false)`).
+   * La clasificación sigue siendo binaria: la fracción de aire del haz es de la imagen, no de la anatomía.
    */
-  classify(m: Vec3, caliber: VesselCaliber): Classification {
+  classify(m: Vec3, caliber: VesselCaliber, withCurtain = true): Classification {
     const torso = this.torso;
     const depth = torsoDepth(m, torso);
     if (m[2] < torso.zMin || m[2] > torso.zMax || depth > 0) return NONE;
     const wall = this.classifyWall(m, -depth);
     if (wall.final) return wall.cls;
-    const curtain = this.classifyLungCurtain(m, -depth - wall.wallMm, caliber.diaphragmCaudalMm);
+    const curtain = withCurtain ? this.classifyLungCurtain(m, -depth - wall.wallMm, caliber.diaphragmCaudalMm) : null;
     if (curtain) return curtain;
     const dRa = sdSphere(m, this.rightAtrium);
     const tube = this.classifyTubes(m, caliber);

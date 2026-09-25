@@ -63,6 +63,55 @@ function undeclaredUniforms(src: string): string[] {
 }
 
 /** Los shaders de fragmentos que exporta `passes.glsl.ts` (sus otras exportaciones no son shaders). */
+/** Funciones de un shader (sin comentarios): nombre → cuerpo. El compilador inlinea cada llamada. */
+function glslCallGraph(src: string): Map<string, string> {
+  const code = src.replace(/\/\/.*$/gm, '').replace(/\/\*[\s\S]*?\*\//g, '');
+  const fns = new Map<string, string>();
+  const re = /(?:^|\n)[ \t]*(?:void|float|int|bool|[iu]?vec[234]|mat[234]|[A-Z]\w*)\s+(\w+)\s*\([^)]*\)\s*\{/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(code))) {
+    let depth = 1;
+    let i = re.lastIndex;
+    while (depth > 0 && i < code.length) {
+      if (code[i] === '{') depth++;
+      else if (code[i] === '}') depth--;
+      i++;
+    }
+    fns.set(m[1], code.slice(re.lastIndex, i - 1));
+    re.lastIndex = i;
+  }
+  return fns;
+}
+/** Llamadas a funciones del shader en un trozo de código (una por aparición). */
+const callsIn = (g: Map<string, string>, code: string, self?: string): string[] =>
+  [...code.matchAll(/\b(\w+)\s*\(/g)].map((x) => x[1]).filter((f) => g.has(f) && f !== self);
+/** Copias inlineadas del cuerpo de `target` en `fn` (por todos los caminos de llamadas). */
+function inlinedCopies(g: Map<string, string>, fn: string, target: string): number {
+  return callsIn(g, g.get(fn)!, fn).reduce((n, c) => n + (c === target ? 1 : 0) + inlinedCopies(g, c, target), 0);
+}
+/** ¿Llega el código a `target` por alguna cadena de llamadas? */
+function reaches(g: Map<string, string>, code: string, target: string, seen = new Set<string>()): boolean {
+  return callsIn(g, code).some((c) => c === target || (!seen.has(c) && (seen.add(c), reaches(g, g.get(c)!, target, seen))));
+}
+/** Cuerpos de los bucles `for` de todas las funciones del shader. */
+function loopBodies(g: Map<string, string>): string[] {
+  const out: string[] = [];
+  for (const body of g.values())
+    for (const m of body.matchAll(/\bfor\s*\(/g)) {
+      let i = m.index + m[0].length;
+      for (let depth = 1; depth > 0; i++) depth += body[i] === '(' ? 1 : body[i] === ')' ? -1 : 0;
+      while (/\s/.test(body[i])) i++;
+      if (body[i] !== '{') {
+        out.push(body.slice(i, body.indexOf(';', i)));
+        continue;
+      }
+      const start = ++i;
+      for (let depth = 1; depth > 0; i++) depth += body[i] === '{' ? 1 : body[i] === '}' ? -1 : 0;
+      out.push(body.slice(start, i - 1));
+    }
+  return out;
+}
+
 const FRAGMENT_SHADERS = Object.entries(PASSES).filter((e): e is [string, string] => e[0].startsWith('FRAG_') && typeof e[1] === 'string');
 
 /**
@@ -176,15 +225,16 @@ describe('Límites del shader con margen para crecer', () => {
 
   // Composición espacial (decisión 58, T7): WebGL2 garantiza 16 unidades de textura por shader de
   // fragmentos. Los programas de la mirada 0 conservan los samplers de siempre; el dirigido de B cambia A o0
-  // por A o3 (la mirada dirigida), el de A suma el prefijo dirigido de A2 y K lee una textura por mirada.
+  // por A o3 (la mirada dirigida), el de A suma el prefijo dirigido de A2 y K lee una textura por mirada. Los
+  // dos de B leen además la pleura parietal de A0 (uHits2) y el rayo único de A (uTrans2), decisión 61.
   it('cada shader de fragmentos declara ≤ 16 samplers; B, A y K, los de su diseño', () => {
     for (const [name, src] of FRAGMENT_SHADERS) expect(samplersOf(src).length, name).toBeLessThanOrEqual(16);
-    expect(samplersOf(FRAG_RAWFIELD)).toEqual(['uSceneTex', 'uCoupling', 'uTrans0', 'uTrans1']);
-    expect(samplersOf(FRAG_RAWFIELD_STEERED)).toEqual(['uSceneTex', 'uCoupling', 'uTrans1', 'uTrans3']);
+    expect(samplersOf(FRAG_RAWFIELD)).toEqual(['uSceneTex', 'uCoupling', 'uTrans0', 'uTrans1', 'uHits2', 'uTrans2']);
+    expect(samplersOf(FRAG_RAWFIELD_STEERED)).toEqual(['uSceneTex', 'uCoupling', 'uTrans1', 'uTrans3', 'uHits2', 'uTrans2']);
     expect(samplersOf(FRAG_TRANSMISSION)).toEqual(['uCoupling', 'uPre0', 'uPre1', 'uHits0']);
     expect(samplersOf(FRAG_TRANSMISSION_STEERED)).toEqual(['uCoupling', 'uPre0', 'uPre1', 'uHits0', 'uPreSteer', 'uPreSteerX']);
     expect(samplersOf(FRAG_TRANS_PREFIX_STEERED)).toEqual(samplersOf(FRAG_TRANS_PREFIX));
-    expect(samplersOf(FRAG_COMPOUND)).toEqual(COMPOUND.order.map((_, i) => `uLook${i}`));
+    expect(samplersOf(FRAG_COMPOUND)).toEqual([...COMPOUND.order.map((_, i) => `uLook${i}`), 'uHits2']);
   });
 
   // Decisión 58: la rama dirigida compilada en el programa de la mirada 0 (detrás de un `if` que con θ = 0
@@ -219,14 +269,18 @@ describe('Límites del shader con margen para crecer', () => {
   // los tres (A2, A y B) eran byte a byte los de main eabd2aa (`git show eabd2aa:src/…/passes.glsl.ts` en una
   // copia y emitidos con tsx). Aquí queda la huella de su main, que no depende de los fragmentos compartidos
   // (la anatomía cambia a menudo). Si cambias a propósito el main de la mirada 0 de una pasada, actualiza su
-  // huella; si no lo cambiaste, alguien lo ha tocado sin querer.
+  // huella; si no lo cambiaste, alguien lo ha tocado sin querer. Cambio deliberado: el main de B lleva la
+  // rama de la cortina (decisión 61; antes 4314c49a44f58052); fuera de las líneas con pleura parietal hace
+  // las mismas cuentas que antes (el peso del tejido es 1 y la transmisión, la de siempre). Después (e5fca934a2dddf02
+  // → la de abajo), la muestra de la imagen sale del bucle de la serie (mediumField, una vez, como antes de la
+  // decisión 61) y la pared copiada se clasifica con el prefijo de la pared (wallField): el JIT de SwiftShader.
   it('el main de los programas de la mirada 0 es, letra a letra, el de antes de la composición', () => {
     const mainOf = (src: string): string => src.slice(src.lastIndexOf('\nvoid main() {'));
     const print = (src: string): string => createHash('sha256').update(mainOf(src)).digest('hex').slice(0, 16);
     expect(Object.fromEntries(LOOK_PAIRS.map((p) => [p.name, print(p.look0)]))).toEqual({
       FRAG_TRANS_PREFIX: 'f6b08093f699bc04',
       FRAG_TRANSMISSION: '668efb9a2b5c7008',
-      FRAG_RAWFIELD: '4314c49a44f58052',
+      FRAG_RAWFIELD: 'b6752d41c82c4fe2',
     });
     // y el resto de B es el mismo texto en los dos programas: solo cambian sus entradas y su main
     const inputs0 = 'uniform sampler2D uTrans0;\nuniform sampler2D uTrans1;\n';
@@ -241,7 +295,9 @@ describe('Límites del shader con margen para crecer', () => {
     const n = COMPOUND.order.length;
     const k = uniformSlots(FRAG_COMPOUND);
     expect(k.arrays).toEqual([`uLookSteer[${n}]`, `uLookValid[${n}]`]);
-    expect(k.slots).toBe(2 * n + 4);
+    // 2 arrays de n, 4 de la rejilla y, por la cortina de la mirada 0 (decisión 61), 3 ejes, 2 de la lente y 2 de
+    // la PSF lateral
+    expect(k.slots).toBe(2 * n + 11);
     // con el identificador GLSL en lugar del número interpolado, el recuento no adivina el tamaño
     expect(() => uniformSlots(FRAG_COMPOUND.replace(`uLookSteer[${n}]`, 'uLookSteer[COMPOUND_LOOKS]'))).toThrow(/sin resolver/);
   });
@@ -263,6 +319,37 @@ describe('Límites del shader con margen para crecer', () => {
       // uniform vec4 uComentado[100];`;
     expect(uniformSlots(src)).toEqual({ slots: 13, arrays: ['uB[3]', 'uC[5]'] });
     expect(() => uniformSlots('uniform vec4 uX[SIN_DEFINIR];')).toThrow(/sin resolver/);
+  });
+
+  // Coste de compilación en SwiftShader (el de la e2e y el CI): el compilador inlinea cada llamada, y el JIT
+  // (LLVM) de SwiftShader crece con el código inlineado y se dispara con código pesado dentro de un bucle. La
+  // decisión 61 metió faceGradient (6–8 distancias, ~67 kB) en el bucle de las muestras del medio de B: el
+  // primer dibujo de B pasó de 6 s a 128 s y el vigilante de la GPU de Chrome perdía el contexto al arrancar.
+  // Estas cotas son las de main a9520b8 (A0 2 copias de classify, A1 1, B 3, color, consulta y mapa 1).
+  it('ningún shader inlinea classify más veces que antes de la decisión 61, ni faceGradient dentro de un bucle', () => {
+    const budget: Record<string, number> = {
+      FRAG_TRANS_HITS: 2,
+      FRAG_TRANS_SEGMENTS: 1,
+      FRAG_RAWFIELD: 3,
+      FRAG_RAWFIELD_STEERED: 3,
+      FRAG_COLOR: 1,
+      FRAG_QUERY: 1,
+      FRAG_TISSUEMAP: 1,
+    };
+    for (const [name, src] of FRAGMENT_SHADERS) {
+      const g = glslCallGraph(src);
+      if (!g.has('main')) continue;
+      expect(inlinedCopies(g, 'main', 'classifyWith'), name).toBe(budget[name] ?? 0);
+      for (const body of loopBodies(g)) expect(reaches(g, body, 'faceGradient'), `${name}: faceGradient en un bucle`).toBe(false);
+    }
+    // el detector ve la regresión: la muestra completa del medio (con su eco de interfaz) en el bucle de la serie
+    const inLoop = FRAG_RAWFIELD.replace(
+      'vec2 f = wallField(pointOnLine(dir0, d), elevSigma(d));',
+      'vec2 f = mediumField(pointOnLine(dir0, d), dir0, d, elevSigma(d), true);',
+    );
+    expect(inLoop).not.toBe(FRAG_RAWFIELD);
+    const g = glslCallGraph(inLoop);
+    expect(loopBodies(g).some((b) => reaches(g, b, 'faceGradient'))).toBe(true);
   });
 
   // El GLSL de las costillas (`sdRib`) corta en x > 15 mm sin mirar `rightOnly`: todas deben serlo

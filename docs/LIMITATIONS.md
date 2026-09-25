@@ -75,8 +75,8 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   referencias). u es la longitud de arco de la piel: en la cara interna de la pared del flanco las estructuras
   quedan ~1,5× más largas. La textura tiene una costura en la línea media posterior, sobre la columna. El
   cartílago costal va de la línea media anterior a ±45° en todas las costillas (un ángulo común, no la unión
-  costocondral de cada una) y el reborde costal es una recta desde el xifoides; las costillas 11.ª y 12.ª no
-  existen.
+  costocondral de cada una), más los últimos 25 mm antes del extremo de las que acaban en el reborde costal, y
+  el reborde es una recta desde el xifoides; las costillas 11.ª y 12.ª no existen.
 - **Los planos laterales de elevación se saltan los vasos** (`side-plane-skips-tubes`): si el plano
   central está a más de σe + 0,5 mm de una interfaz, los laterales heredan su tejido sin clasificar
   (decisión 24), pero la `bd` del hígado no cuenta los tubos: junto a un vaso fuera del plano, el 1–5 %
@@ -94,6 +94,13 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   rejilla común), pero el par (−,+) puede correlacionar de más, así que su ρ se informa sin puerta. El
   arreglo previsto (PR 3) es un prefiltro de 3 submuestras por línea, con la fase de la mirada 0 referida
   al ancla.
+- **La estadística del medio anclado depende algo de la orientación del plano** (`speckle-anchor-orientation`,
+  decisiones 55 y 62): el medio es una red de valores alineada con los ejes del mundo, comprimida a lo largo de
+  la elevación del ancla, y un plano oblicuo a esos ejes la corta de otra manera. Justo antes de reanclar
+  inclinando (5° de deriva), la SNR del moteado de un parche sube un 2 % en la vista intercostal de antes (casi
+  craneocaudal) y un 12 % en la de la decisión 62 (a lo largo del 8.º espacio, yaw −1,15; una realización
+  alineada en esa pose, un 5 %), cerca de la cota de 1,12 con la que la 55 eligió `REANCHOR_DEG`: sus pruebas se
+  quedan en la pose de antes. Si se nota en la GPU, se baja `REANCHOR_DEG` o se gira la red con el ancla.
 - **La serie bajo la pleura remuestrea la pared en la misma línea** (`pleura-series-same-line`, decisión
   61): las copias espejo y directa de la pared y las líneas A se forman con la pared del propio camino, no
   con la de la dirección reflejada por una pleura oblicua; no cambian con la incidencia salvo por la

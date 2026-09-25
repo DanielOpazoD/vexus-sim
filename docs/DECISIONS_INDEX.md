@@ -65,4 +65,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [59](DECISIONS.md#L1315) | Reservada: imagen armónica (THI) | reservada |
 | [60](DECISIONS.md#L1319) | Reservada: hígado sin aristas | reservada |
 | [61](DECISIONS.md#L1323) | Pleura parietal y cortina pulmonar: línea pleural, serie de reverberaciones de la pared, deslizamiento y borde blando | vigente |
-| [62](DECISIONS.md#L1482) | Pared torácica y abdominal realista: capas con caras, textura anclada de la grasa y el músculo, cortical costal y pericondrio | vigente |
+| [62](DECISIONS.md#L1489) | Pared torácica y abdominal realista: capas con caras, textura anclada de la grasa y el músculo, cortical costal y pericondrio | vigente |

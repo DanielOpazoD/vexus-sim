@@ -27,7 +27,7 @@ identificadores. Si un término nuevo entra en el código, entra aquí.
 | **Unión costocondral**              | Paso de la costilla ósea a su cartílago: en las costillas 7–10, cerca de la línea medioclavicular. Lateral a ella la costilla es hueso (cortical brillante y sombra); medial, cartílago hipoecoico con pericondrio (decisión 62).                         |
 | **Reborde costal**                  | Borde inferior de la pared torácica anterior: los cartílagos de las costillas 7–10 desde el xifoides hacia abajo y afuera. Aquí las 8.ª–10.ª acaban en él (`ribAnteriorEndX`); la ventana subxifoidea queda por debajo, libre de cartílago (decisión 62). |
 | **Septos / perimisio**              | Láminas fibrosas: los septos separan los lóbulos de la grasa subcutánea; el perimisio, los fascículos del músculo (estrías ecogénicas casi paralelas a la piel).                                                                                          |
-| **Pericondrio**                     | Envoltura de colágeno del cartílago costal: línea brillante alrededor de un cartílago hipoecoico.                                                                                                                                                         |
+| **Pericondrio**                     | Envoltura de colágeno del cartílago costal: contorno tenue alrededor de un cartílago hipoecoico, más claro donde el haz le llega de frente.                                                                                                               |
 
 ## Física y adquisición
 

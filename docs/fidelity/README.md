@@ -93,7 +93,7 @@ cabe en el parche (la autocovarianza no baja de 0,5), grietas y lóbulos salen N
 | Gris del hígado         | Media, desviación y percentiles 5/50/95 del gris 0–255.                                                                                                                                                                                                                                                                                                                                                      | Media 52–112; desviación 10–16 en equipos modernos (THI y composición espacial), 21–25 en moteado crudo [MEDIDO en las referencias de la tanda 1.5] |
 | Huecos a la vista       | Píxeles por debajo de la mitad de la media.                                                                                                                                                                                                                                                                                                                                                                  | [ESTIMADO] se calibra con las referencias                                                                                                           |
 | Perfil en profundidad   | Nivel mostrado (dB bajo el techo, invirtiendo la curva de grises) por bandas de 10 mm; pendiente.                                                                                                                                                                                                                                                                                                            | 0 ± 0,3 dB/cm con la TGC bien ajustada [ESTIMADO]                                                                                                   |
-| Centro de la luz        | Mediana del gris de la sangre a ≥ 1,5 mm de su pared, sin sombra delante.                                                                                                                                                                                                                                                                                                                                    | Casi negro: 0,6–9,6 [MEDIDO en las referencias, mínimo en 7×7]                                                                                      |
+| Centro de la luz        | Mediana del gris de la sangre de VCI, suprahepáticas y porta a ≥ 1,5 mm de su pared en el plano y a ≥ 1,5 mm + σ elevacional en 3D (la rodaja entera es sangre), sin sombra delante (decisión 62; antes, toda la sangre a ≥ 1,5 mm en el plano: no comparable).                                                                                                                                              | Casi negro: 0,6–9,6 [MEDIDO en las referencias, mínimo en 7×7]                                                                                      |
 | Diafragma saturado      | Fracción de los píxeles del diafragma en el blanco (≥ 250).                                                                                                                                                                                                                                                                                                                                                  | ≤ 2 % [ESTIMADO]                                                                                                                                    |
 | Pared anterior / hígado | Pico de gris en [−1,5 mm del borde; +0,5 mm de la primera celda de sangre] de la VCI o una suprahepática frente a la mediana del hígado en [−10; −3] mm, por tramos de incidencia (0–20°, 20–40°, 40–60°) sobre la normal real de la pared (gradiente de `faceSdf`). Sin pared, el moteado solo da ~1,1.                                                                                                     | 1,36–2,1 [MEDIDO en las referencias, 3 perfiles de incidencia desconocida]                                                                          |
 | Cuadros por segundo     | Lectura del HUD tras 3 s en tiempo real.                                                                                                                                                                                                                                                                                                                                                                     | ≥ 30 (guía)                                                                                                                                         |
@@ -468,13 +468,13 @@ fig. 2A) es del dueño.
 
 | Métrica                                              | Definición                                                                                                                                                                                                   | Objetivo (especificación §4)                              | Gemelo B → C → D (`pleuraTwin.test.ts`)                                                    |
 | ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| `pleuraSaturatedMm`, `pleuraPeakGrey`                | Línea pleural en las líneas de cortina entera a ≤ 15° de incidencia: ancho con gris ≥ 250 en D ± 3 mm (mediana) y gris pico.                                                                                 | Saturada ≥ 0,8 mm a 0–15°                                 | 1,28–1,34 mm (1,24–1,30 antes de la decisión 62); pico +49,6 dB (0°), +43 (15°), +21 (30°) |
-| `hazeGrey`, `hazeRatio`, `hazeGreyDeep`              | Mediana del gris en [D + 2, 2D − 2] (cortina entera, ≤ 25°), cociente con la mediana del hígado puro fuera de la cortina (`liverP50`), y la del intervalo [2D + 2, 3D − 2].                                  | 0,35–0,9 × el hígado (hoy ≈ 0), más oscura en profundidad | 66 de gris (0,66); 38 en el intervalo siguiente (68 y 38 antes de la decisión 62)          |
-| `aLine2ProminenceDb`, `aLine2PeakDb`, `aLine3PeakDb` | Envolvente con la compensación nominal: pico en 2D − 1,5…2D + 1 frente a la mediana de la neblina a ±(0,15–0,4)·D; picos de las réplicas 2 y 3.                                                              | k = 2 ≥ +3 dB sobre la neblina; k = 3 más débil que k = 2 | +44,6 dB; picos +29 y +9 dB sobre el hígado (+43,8, +28 y +8)                              |
-| `hazeAnisotropy` (`haze`)                            | FWHM lateral / axial de la autocovarianza de la envolvente en [D + 2, 2D − 2], parches del banco (48 × 16).                                                                                                  | ≥ 2,5                                                     | 2,77 / 0,76 mm = 3,64 (2,57 antes de la decisión 62)                                       |
+| `pleuraSaturatedMm`, `pleuraPeakGrey`                | Línea pleural en las líneas de cortina entera a ≤ 15° de incidencia: ancho con gris ≥ 250 en D ± 3 mm (mediana) y gris pico.                                                                                 | Saturada ≥ 0,8 mm a 0–15°                                 | 1,26–1,34 mm (1,24–1,30 antes de la decisión 62); pico +49,6 dB (0°), +43 (15°), +21 (30°) |
+| `hazeGrey`, `hazeRatio`, `hazeGreyDeep`              | Mediana del gris en [D + 2, 2D − 2] (cortina entera, ≤ 25°), cociente con la mediana del hígado puro fuera de la cortina (`liverP50`), y la del intervalo [2D + 2, 3D − 2].                                  | 0,35–0,9 × el hígado (hoy ≈ 0), más oscura en profundidad | 65 de gris (0,65); 37 en el intervalo siguiente (68 y 38 antes de la decisión 62)          |
+| `aLine2ProminenceDb`, `aLine2PeakDb`, `aLine3PeakDb` | Envolvente con la compensación nominal: pico en 2D − 1,5…2D + 1 frente a la mediana de la neblina a ±(0,15–0,4)·D; picos de las réplicas 2 y 3.                                                              | k = 2 ≥ +3 dB sobre la neblina; k = 3 más débil que k = 2 | +44,7 dB; picos +29 y +9 dB sobre el hígado (+43,8, +28 y +8)                              |
+| `hazeAnisotropy` (`haze`)                            | FWHM lateral / axial de la autocovarianza de la envolvente en [D + 2, 2D − 2], parches del banco (48 × 16).                                                                                                  | ≥ 2,5                                                     | 2,61 / 0,74 mm = 3,52 (2,57 antes de la decisión 62)                                       |
 | `edge.width1090Mm`, `edge.width1090ImageMm`          | Φ ajustada al nivel medio de [2D + 3, 2D + 20] frente a la z del cruce de la pleura (y a lo largo de la pleura en la imagen), entre las mesetas f < 0,02 y f > 0,98.                                         | 5–15 mm                                                   | 10,5 mm (σ analítico de la intercostal 4,05 mm: 10,4 mm)                                   |
 | `edgeMotionMm`                                       | Distancia entre los centros del borde (z) en fin de espiración y fin de inspiración.                                                                                                                         | ≥ 10 mm                                                   | 30 mm con las apneas (10 mm con la respiración tranquila)                                  |
-| `sliding.subPleural`, `sliding.wall`                 | Correlación de Pearson entre dos cuadros de una mirada (el pulmón baja `SLIDING_MM` = 2 mm con la respiración tranquila) de la banda de 2–6 mm bajo la pleura y de la de 2–6 mm sobre ella (cortina entera). | Bajo la pleura < 0,8; la pared ≥ 0,9                      | 0,76 con 2 mm (0,61 antes de la decisión 62 y con el deslizamiento solo); la pared 1,000   |
+| `sliding.subPleural`, `sliding.wall`                 | Correlación de Pearson entre dos cuadros de una mirada (el pulmón baja `SLIDING_MM` = 2 mm con la respiración tranquila) de la banda de 2–6 mm bajo la pleura y de la de 2–6 mm sobre ella (cortina entera). | Bajo la pleura < 0,8; la pared ≥ 0,9                      | 0,70 con 2 mm (0,61 antes de la decisión 62 y con el deslizamiento solo); la pared 1,000   |
 | `msPerFrame`, `msPerFrameInspiration`                | Coste del cuadro en la pose de partida en apnea espiratoria y en apnea inspiratoria (la cortina tapa buena parte del sector).                                                                                | ≤ +0,5 ms frente a la base (misma máquina y carga)        | —                                                                                          |
 
 Con el compuesto encendido, bajo la pleura de la cortina entera la imagen es la de la mirada 0 (K pesa las
@@ -492,15 +492,17 @@ el centelleo de la neblina con la respiración con la pared quieta. Palancas den
 deslizamiento −8 a −12 dB y su caída 10–20 mm, y σ_taper 3–5 mm (anchura del borde).
 
 **Con la pared de la decisión 62.** Las copias de la pared que suma la serie llevan sus capas (la textura de
-septos y estrías y el eco de cara plana de sus caras, `wallFaceEchoFlat`, por `WALL_COPY_FACE_GAIN` 0,15): la
-neblina tiene las bandas horizontales tenues de las referencias (Lee 2017, fig. 5B), +2–5 dB sobre la de entre
-ellas. Con las caras a pleno (1) la imagen bajo la pleura era un peine de arcos brillantes y el deslizamiento
-se perdía (la banda de 2–6 mm correlacionaba 0,99). El gemelo (`pleuraTwin.ts`, con las capas planas y sus
-caras, sin la textura) da las cifras de la tabla. La vista intercostal de partida va por el 8.º espacio en la
-línea axilar media (decisión 62): en espiración la pleura queda registrada con su volumen parcial (f 0,05–0,65
-en 84 líneas; el borde del receso está a 1–7 mm del cruce) sin ninguna línea de cortina entera, y en
-inspiración la cortina entera ocupa 88 líneas (37 de borde, 35 casi normales a la pleura): el ajuste del borde
-solo sale en inspiración y `edgeMotionMm` se mide en el flanco.
+septos y estrías y el eco de cara plana de sus caras, `wallFaceEchoFlat`, por `WALL_COPY_FACE_GAIN` 0,35
+[0,25–0,5]): la neblina tiene las bandas horizontales tenues de las referencias (Lee 2017, fig. 5B), +2–4 dB
+sobre la de entre ellas. Con las caras a pleno (1) la imagen bajo la pleura era un peine de arcos brillantes y
+el deslizamiento se perdía (la banda de 2–6 mm correlacionaba 0,89; en el rango de la ganancia, 0,66–0,75). El
+gemelo (`pleuraTwin.ts`, con las capas planas y sus caras, sin la textura) da las cifras de la tabla. La vista
+intercostal de partida va a lo largo del 8.º espacio en la línea axilar media, sin costillas en el sector
+(decisión 62): la cortina entra por el lado craneal (en espiración, su borde blando desde la línea ~88 de 192 y
+media cortina desde la ~157), y en inspiración profunda la cortina entera ocupa 84 líneas (27 casi normales a la
+pleura): el ajuste del borde sale en inspiración y `edgeMotionMm` se mide en el flanco. Enmienda de la 61: el
+pulmón del receso que una línea alcanza a más de un segmento grueso de su pleura registrada (una línea que roza
+el borde de la cortina) es el espejo del diafragma, no la cortina.
 
 ### Pared torácica y abdominal (decisión 62): métricas, predicción del gemelo y metas con GPU
 
@@ -527,21 +529,27 @@ escena y resume en una línea «pared: …»:
 - **Cortical costal.** En cada línea con hueso en los primeros peritoneo + 8 mm, el pico de la envolvente
   compensada en [hueso − 1,5; hueso + 0,5] mm sobre el hígado (dB); `ribPeakDb` es la mediana de las
   líneas (`ribLines`).
+- **Nivel de las líneas** (capturas con GPU, 25-09-2026: con las caras de σz 0,05 las fascias y el peritoneo
+  eran líneas blancas, uniformes y saturadas, tan brillantes como la pleura y la cortical). En cada línea de la
+  pared hallada en el perfil (0,5 mm → peritoneo − 1 mm) y cada línea del haz a < 25° de la normal a la piel,
+  el pico de la envolvente compensada a ±0,6 mm de la profundidad de esa capa (sin hueso delante):
+  `lineLevelDb`, su mediana sobre el hígado; `lineSaturated`, la fracción de esos picos con gris ≥ 250 en la
+  imagen; y `lineCv`, la mediana por línea de la pared del coeficiente de variación del pico (lineal) a lo
+  largo de ella (con ≥ 5 líneas del haz).
 
 El gemelo de la imagen (`src/validation/wallTwin.test.ts`: A → B → C → D de la mirada 0 sobre la anatomía
-real con las funciones de producción; sondas en incidencia normal en la línea central) predice, antes →
-después: líneas dentro de la pared 0–1 → 4–6 (subxifoidea transversal en el recto: piel/grasa, Scarpa,
-fascia, transversalis/peritoneo; intercostal y flanco longitudinales, además los dos planos del flanco),
-+9–40 dB sobre la mediana local; interior de los lóbulos gris 80–86 → 49–54 (−14,5/−16,3 dB del hígado);
-septos +7,0–8,9 dB y estrías +6,6–9,8 dB sobre su capa (antes ≈ 0; sin textura, con las caras, ≤ +0,5);
-músculo entre estrías gris 76–79; la cortical del flanco −3 → +28 dB sobre el hígado (σz 0,045). El mismo código del
-banco sobre la envolvente del gemelo en las poses de partida (la imagen con la cadena de grises de la
-aplicación) da: subxifoidea 4 líneas dentro, grasa 0,57 del hígado, septos +5,1 dB, estrías +9,7;
-intercostal (8.º espacio) 7, 0,52, +9,1, +8,1 (su costilla del borde, oblicua al plano: +0,3 dB); flanco 5,
-0,53, +7,0, +4,1 y cortical +19,3 dB (67 líneas; la pose inclina la sonda 11°); renal 7 líneas dentro, sin líneas a
-< 15° para las capas. Sin textura, septos y estrías del banco quedan en −2,5/+1,0 dB. La línea del peritoneo
-y la cápsula (`peritoneum`, 0–20°): 1,88–1,97 (la cápsula sola 1,48–1,79, como antes; sin las dos caras,
-1,00–1,07). No se ha medido con GPU.
+real con las funciones de producción) y el mismo código del banco sobre su envolvente en las poses de partida
+(la imagen con la cadena de grises de la aplicación) dan, antes → después: subxifoidea 4 líneas dentro, grasa
+0,57 del hígado, septos +5,0 dB, estrías +9,7; intercostal (a lo largo del 8.º espacio, sin costillas) 6, 0,47,
++10,4, +8,6; flanco 5, 0,53, +7,0, +4,4 y cortical +19,3 dB (67 líneas; la pose inclina la sonda 11°); renal 7
+líneas dentro, sin líneas a < 15° para las capas (antes: 0–1 líneas, grasa 0,80–0,86, septos y estrías ≈ 0,
+cortical −3 dB). Las líneas, +8–36 dB sobre la mediana local de su capa; a incidencia normal su pico queda a
++8,1 / +9,2 / +6,4 / +13,7 dB del hígado (subxifoidea, intercostal, flanco, renal), con 0 / 0 / 0 / 0,2 % de
+picos saturados y un CV a lo largo de 63 / 64 / 73 / 55 % (con σz 0,05, +15–29 dB). Sin textura, septos y
+estrías del banco quedan en −2,5/+1,0 dB. La línea del peritoneo y la cápsula (`peritoneum`, 0–20°): 1,82–1,83
+(la cápsula sola ≥ 1,4, como antes; sin las dos caras, < 1,3). SwiftShader (mirada 0, apnea espiratoria): las
+líneas a +6,6 dB en el flanco, +8,1–11,3 en la subxifoidea, sin picos saturados, CV 75–87 % en el flanco; septos
++7,6–8,9 y la cortical +18,4 dB en el flanco.
 
 Metas con GPU (mirada 0, apnea, las vistas de partida; hoy fallan porque la pared no tenía caras ni
 textura; las fija este documento antes de medir y las verifica quien corre el banco):
@@ -549,19 +557,24 @@ textura; las fija este documento antes de medir y las verifica quien corre el ba
 | #   | Métrica                                                                     | Meta                                                                                    | Hoy (gemelo) | Predicción (banco sobre el gemelo)           |
 | --- | --------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ------------ | -------------------------------------------- |
 | W1  | `linesInside` (subxifoidea, intercostal, flanco)                            | ≥ 3                                                                                     | 0–1          | 4–7                                          |
-| W2  | `fatToLiver` (interior de los lóbulos; subxifoidea, intercostal, flanco)    | ≤ 0,60                                                                                  | 0,80–0,86    | 0,52–0,57                                    |
-| W3  | `septumDb` y `striationDb` (las mismas vistas)                              | ≥ 3,5 dB (1,5×)                                                                         | ≈ 0          | +5,1–9,1 y +4,1–9,7                          |
+| W2  | `fatToLiver` (interior de los lóbulos; subxifoidea, intercostal, flanco)    | ≤ 0,60                                                                                  | 0,80–0,86    | 0,47–0,57                                    |
+| W3  | `septumDb` y `striationDb` (las mismas vistas)                              | ≥ 3,5 dB (1,5×)                                                                         | ≈ 0          | +5,0–10,4 y +4,4–9,7                         |
 | W4  | `ribPeakDb` (flanco, renal si hay hueso)                                    | ≥ +15 dB                                                                                | −3           | +19,3 (flanco)                               |
+| W7  | `lineLevelDb`, `lineSaturated`, `lineCv` (las cuatro vistas)                | +6 a +14 dB sobre el hígado, ≈ 0 saturadas, CV ≥ 0,3; ≥ 6 dB bajo `ribPeakDb`           | —            | +6,4–13,7 dB, 0–0,2 %, 55–73 %               |
 | W5  | Guardas: hígado p50, SNR y bancos de las decisiones 52–58 lejos de la pared | p50 99–103 (+0,1–0,6 dB por la grasa preperitoneal), SNR ± 0,01, interfaces sin cambios | —            | sin cambios bajo la pared (gemelo bit a bit) |
 | W6  | `msPerFrame`                                                                | ≤ línea base + 0,6 ms                                                                   | —            | +0,3–0,5 ms estimados                        |
 
-Palancas de calibración si W1–W4 fallan con GPU: el nivel de las líneas es la rugosidad efectiva σz de las
-caras de la pared (0,05 mm; cada 0,01 mm, ~3 dB a 0°) y su s; el gris de los lóbulos, la retrodispersión de la
-grasa (0,08) y la de los septos (1,6; baja también su contraste); las estrías, su retrodispersión (3,0). La
-línea del peritoneo y la cápsula del banco de interfaces (`peritoneum` 0–20°) debe quedar en el rango de la
-cápsula de la decisión 57 (1,3–2,1; e2e ≥ 1,4 y ≤ 2,4); su palanca es la σz y la s del peritoneo (0,06 y 0,4).
-La e2e «pared (decisión 62)» comprueba con SwiftShader W1–W4 con margen (≥ 3 líneas dentro, grasa < 0,75,
-septos y estrías > 2 dB, cortical ≥ 12 dB en el flanco) y que las caras de la pared y de las costillas tienen
+Palancas de calibración si W1–W4 o W7 fallan con GPU: el nivel de las líneas es la rugosidad efectiva σz de las
+caras de la pared (0,075 mm; de 0,05 a 0,10, de +15–29 dB al nivel del hígado) y su s; su variación a lo largo,
+la amplitud y la escala de `wallFaceGain` (`WALL_TEXTURE.faceVariation`, 4 mm); el gris de los lóbulos, la
+retrodispersión de la grasa (0,08) y la de los septos (1,6; baja también su contraste); las estrías, su
+retrodispersión (3,0). La línea del peritoneo y la cápsula del banco de interfaces (`peritoneum` 0–20°) debe
+quedar en el rango de la cápsula de la decisión 57 (1,3–2,1; e2e ≥ 1,4 y ≤ 2,4); su palanca es la σz y la s
+del peritoneo (0,08 y 0,4). Qué mirar en las capturas: las líneas de la pared gris-blancas con tramos, más
+tenues que la pleura y la cortical; cada costilla, un arco anterior con su sombra (sin anillo: la cara
+posterior no da eco); los cartílagos del reborde en la subxifoidea, óvalos hipoecoicos con un borde tenue.
+La e2e «pared (decisión 62)» comprueba con SwiftShader W1–W4 y W7 con margen (≥ 3 líneas dentro, grasa < 0,75,
+septos y estrías > 2 dB, líneas ≤ 16 dB y ≤ 2 % saturadas, cortical ≥ 12 dB en el flanco) y que las caras de la pared y de las costillas tienen
 en la GPU la misma cara, normal (p05 de |n·∇| > 0,98) y norma del gradiente (p95 del error < 1 %) que en TS
 (`wallNormals`). Juicio visual: el dueño, frente a las referencias de la decisión 62.
 

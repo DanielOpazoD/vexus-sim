@@ -17,7 +17,21 @@ import { TISSUES, Tissue } from '../anatomy/tissues';
 import type { Vec3 } from '../core/vec3';
 import { FRAME_PASSES, type PassId } from '../ultrasound/passGraph';
 import { rayAttenuationDb } from '../ultrasound/transmission';
-import { centralGradient, fidelityStats, type FidelityStats } from './fidelity';
+import { type ApertureGeometry } from '../ultrasound/aperture';
+import { compareSteeredTransmission } from './steeredParity';
+import { compoundActive, lookTheta } from '../ultrasound/compound';
+import { levelOfGrey } from '../ultrasound/greyMap';
+import type { CompoundState } from '../ultrasound/renderer';
+import { pixelToBeam } from '../ultrasound/sectorGeometry';
+import {
+  centralGradient,
+  clearLiverGrid,
+  fidelityStats,
+  type CompoundStats,
+  type FidelityStats,
+  type LookFrames,
+  type TransmissionFrame,
+} from './fidelity';
 import { speckleStats, type SpeckleOptions, type SpeckleStats } from './speckle';
 import type { RenderMeasureOptions, Simulator } from './simulator';
 import { START_POINTS, type StartPoint } from './startPoints';
@@ -35,18 +49,23 @@ export interface TestHooks {
   interfaceShell: () => InterfaceShellReport;
   /**
    * Estadística del speckle en parénquima hepático (guarda de imagen). Con `startPoint`, coloca
-   * antes la sonda en ese punto de partida y avanza lo justo para que el marco la siga.
+   * antes la sonda en ese punto de partida y avanza lo justo para que el marco la siga. `compound`
+   * (obligatorio, decisión 58): con `false`, la imagen de una mirada de siempre; con `true`, llena el anillo
+   * de miradas y mide la envolvente compuesta. El conmutador vuelve a como estaba al terminar.
    */
-  speckle: (opts?: SpeckleOptions & { startPoint?: StartPoint['id'] }) => SpeckleStats;
+  speckle: (opts: SpeckleOptions & { startPoint?: StartPoint['id']; compound: boolean }) => SpeckleStats;
   /**
    * Banco de fidelidad (decisión 52): textura de la envolvente en hígado, en total y por bandas
    * de profundidad; con `display`, además la imagen mostrada y el banco de interfaces (renderiza
    * `frames` cuadros, por defecto los que la persistencia necesita para dejar < 1 % de la vista
    * anterior; clasifica en CPU ~1–3 s). `pose` bascula (`rockDeg`) o inclina (`tiltDeg`) la sonda
    * respecto a la pose de partida; `samples` devuelve un registro por pared (`faceSamples`) para
-   * agregar poses con `summarizeFaces`.
+   * agregar poses con `summarizeFaces`. `compound` (obligatorio, decisión 58): con `true` llena el anillo,
+   * asienta la persistencia con él lleno, mide la envolvente compuesta en el hígado puro de las tres miradas
+   * y devuelve `compound` (por banda y en la costura) y la umbra del compuesto; con `false`, la mirada 0.
    */
-  fidelity: (opts?: {
+  fidelity: (opts: {
+    compound: boolean;
     startPoint?: StartPoint['id'];
     display?: boolean;
     frames?: number;
@@ -75,12 +94,19 @@ export interface TestHooks {
   /**
    * Paridad de la pasada A (un solo rayo) con el modelo de CPU `rayAttenuationDb` en los mismos
    * puntos de muestra, cada `every` líneas y en todas las profundidades gruesas; se saltan las líneas
-   * con espejo (la CPU no sigue el rayo reflejado) y las transmisiones por debajo de −60 dB.
+   * con espejo (la CPU no sigue el rayo reflejado) y las transmisiones por debajo de −60 dB. Con `look` ≥ 1
+   * (exige `compound`, decisión 58) compara la mirada dirigida de la GPU (el prefijo de A2 y la
+   * transmisión con apertura de A) con sus gemelos de TS (`steeredPrefixDb`, `steeredApertureTransmission`)
+   * sobre los mismos segmentos de A0/A1 de la GPU; las muestras en un empate de redondeo (desplazar los
+   * redondeos de los gemelos ±`STEERED_TIE_LINES` líneas cambia el resultado) se cuentan aparte.
    */
-  transmissionParity: (opts?: { startPoint?: StartPoint['id']; every?: number; ambiguityMm?: number }) => {
+  transmissionParity: (opts: { compound: boolean; look?: number; startPoint?: StartPoint['id']; every?: number; ambiguityMm?: number }) => {
     lines: number;
     samples: number;
     maxDiffDb: number;
+    /** Solo miradas dirigidas: el peor desacuerdo de la transmisión con apertura (dB) y las muestras en empate. */
+    apertureMaxDiffDb?: number;
+    ambiguous?: number;
     /** Líneas cortadas en su primer segmento de tejido ambiguo (otro tejido a ±`ambiguityMm` del centro). */
     truncatedLines: number;
     /** Dónde está el peor desacuerdo (diagnóstico del mensaje de la e2e). */
@@ -89,9 +115,10 @@ export interface TestHooks {
   /**
    * Persistencia del moteado al mover la sonda (decisión 55): correlación de la envolvente en el
    * hígado entre la pose de partida y la misma pose con `tiltDeg`/`yawDeg` más (`moved`), y al volver
-   * a la pose (`back`). Entre cuadros avanza un solo paso de fisiología: la respiración no cuenta.
+   * a la pose (`back`). Entre cuadros avanza un solo paso de fisiología: la respiración no cuenta. Con
+   * `compound`, en cada pose se forman las tres miradas (tres cuadros) y se compara la envolvente compuesta.
    */
-  speckleMotion: (opts: { startPoint: StartPoint['id']; tiltDeg?: number; yawDeg?: number }) => {
+  speckleMotion: (opts: { startPoint: StartPoint['id']; tiltDeg?: number; yawDeg?: number; compound: boolean }) => {
     samples: number;
     moved: number;
     back: number;
@@ -99,9 +126,10 @@ export interface TestHooks {
   /**
    * Fundido del ancla del medio en la GPU (decisión 55): gira la sonda `stepDeg` por cuadro durante
    * `frames` cuadros y devuelve por cuadro el peso del fundido, la SNR y el nivel del hígado (dB
-   * frente al primero) y la correlación del moteado con el cuadro anterior (sin tendencia).
+   * frente al primero) y la correlación del moteado con el cuadro anterior (sin tendencia). Con
+   * `compound`, un cuadro (una mirada) por paso, como la aplicación, y la envolvente compuesta.
    */
-  speckleCrossfade: (opts: { startPoint: StartPoint['id']; stepDeg: number; frames: number }) => {
+  speckleCrossfade: (opts: { startPoint: StartPoint['id']; stepDeg: number; frames: number; compound: boolean }) => {
     w: number;
     snr: number;
     levelDb: number;
@@ -133,6 +161,35 @@ export interface TestHooks {
   advance: (seconds: number) => void;
   /** Coloca la puerta PW sobre uno de los vasos con la técnica del operador; false si no lo ve. */
   placeGate: (vessels: VesselId[]) => boolean;
+  /** Enciende o apaga la composición espacial con el comando del equipo (decisión 58). */
+  setCompound: (on: boolean) => void;
+  /** Estado del anillo de miradas tras el último cuadro (decisión 58). */
+  compoundState: () => CompoundState;
+  /**
+   * Correlación entre miradas y composición por banda en el hígado puro (decisión 58): llena el anillo en
+   * `startPoint` y devuelve la parte `compound` del banco (sin la imagen mostrada).
+   */
+  lookCorrelation: (opts: { startPoint: StartPoint['id'] }) => CompoundStats;
+  /**
+   * Estabilidad temporal del compuesto en escena quieta (decisión 58, K7): llena el anillo, asienta la
+   * persistencia y dibuja `frames` cuadros más; de la imagen mostrada en el hígado despejado da la
+   * correlación entre cuadros consecutivos y la modulación de periodo 3 (una mirada por cuadro) del nivel.
+   */
+  temporalStability: (opts: { startPoint: StartPoint['id']; frames: number }) => {
+    frames: number;
+    pixels: number;
+    corrMin: number;
+    corrMedian: number;
+    /** Nivel mostrado medio por cuadro (dB bajo el techo del rango dinámico). */
+    levelDb: number[];
+    /** Máximo menos mínimo de los niveles medios de las tres fases del anillo (dB). */
+    period3Db: number;
+  };
+  /**
+   * La guarda de `readEnvelope` (decisión 58): con el compuesto, tras un cuadro de mirada dirigida, leer la
+   * mirada 0 lanza; devuelve si lanzó, el mensaje y la mirada del último cuadro.
+   */
+  envelopeGuard: (opts: { startPoint: StartPoint['id'] }) => { threw: boolean; message: string; look: number };
 }
 
 /** Opciones de `frameCostMs`. */
@@ -173,28 +230,63 @@ export function frameMeasureOptions(opts: FrameCostOptions = {}): RenderMeasureO
 }
 
 export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: EquipmentCommand) => void): TestHooks {
-  return {
+  const hooks: TestHooks = {
     equivalenceSweep: () => equivalenceSweep(getSim()),
     volumeEquivalence: (n) => volumeEquivalence(getSim(), n),
     interfaceShell: () => interfaceShellEquivalence(getSim()),
     speckle: (opts) => {
       const sim = getSim();
-      if (opts?.startPoint) goTo(sim, opts.startPoint);
-      sim.render();
-      return speckleStats(sim, sim.renderer.readEnvelope(), opts);
+      return withCompound(sim, dispatch, opts.compound, () => {
+        if (opts.startPoint) goTo(sim, opts.startPoint);
+        if (opts.compound) {
+          fillRing(sim);
+          return speckleStats(sim, sim.renderer.readEnvelope({ source: 'compound' }), opts);
+        }
+        sim.render();
+        return speckleStats(sim, sim.renderer.readEnvelope(), opts);
+      });
     },
     fidelity: (opts) => {
       const sim = getSim();
-      if (opts?.startPoint) goTo(sim, opts.startPoint);
-      if (opts?.pose) offsetPose(sim, opts.pose);
-      // la persistencia deja p^n de la vista anterior: cuadros hasta que quede < 1 % (máx. 30)
-      const p = Math.min(0.95, Math.max(0, sim.bmode.persistence));
-      const settle = p > 0 ? Math.min(30, Math.ceil(Math.log(0.01) / Math.log(p))) : 1;
-      const frames = opts?.display ? Math.max(1, opts.frames ?? settle) : 1;
-      for (let i = 0; i < frames; i++) sim.render();
-      const img = opts?.display ? sim.renderer.readDisplay() : null;
-      const transmission = sim.renderer.readTransmission();
-      return fidelityStats(sim, sim.renderer.readEnvelope(), img, { colorOn: sim.color.enabled, transmission, samples: opts?.samples });
+      return withCompound(sim, dispatch, opts.compound, () => {
+        if (opts.startPoint) goTo(sim, opts.startPoint);
+        if (opts.pose) offsetPose(sim, opts.pose);
+        // la persistencia deja p^n de la vista anterior: cuadros hasta que quede < 1 % (máx. 30)
+        const p = Math.min(0.95, Math.max(0, sim.bmode.persistence));
+        const settle = p > 0 ? Math.min(30, Math.ceil(Math.log(0.01) / Math.log(p))) : 1;
+        const frames = opts.display ? Math.max(1, opts.frames ?? settle) : 1;
+        if (!opts.compound) {
+          for (let i = 0; i < frames; i++) sim.render();
+          const img = opts.display ? sim.renderer.readDisplay() : null;
+          const transmission = sim.renderer.readTransmission();
+          return fidelityStats(sim, sim.renderer.readEnvelope(), img, { colorOn: sim.color.enabled, transmission, samples: opts.samples });
+        }
+        // compuesto: el anillo lleno, la persistencia asentada con él y la transmisión de cada mirada leída en el
+        // cuadro que la forma (las N últimas: la escena no se mueve entre cuadros)
+        fillRing(sim);
+        const order = sim.profile.compound.order;
+        const transmissions: TransmissionFrame[] = [];
+        const total = Math.max(frames, order.length);
+        for (let i = 0; i < total; i++) {
+          sim.render();
+          if (i >= total - order.length) {
+            const look = sim.renderer.compoundState().look;
+            transmissions[look] = sim.renderer.readTransmission({ look });
+          }
+        }
+        const img = opts.display ? sim.renderer.readDisplay() : null;
+        const looks: LookFrames = {
+          thetas: order.map((_, i) => lookTheta(i, sim.profile.compound)),
+          envelopes: order.map((_, i) => sim.renderer.readLookEnvelope(i)),
+          transmissions,
+        };
+        return fidelityStats(sim, sim.renderer.readEnvelope({ source: 'compound' }), img, {
+          colorOn: sim.color.enabled,
+          transmission: transmissions[0],
+          looks,
+          samples: opts.samples,
+        });
+      });
     },
     faceNormals: (opts) => {
       const sim = getSim();
@@ -228,88 +320,77 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
     },
     speckleMotion: (opts) => {
       const sim = getSim();
-      goTo(sim, opts.startPoint);
-      const base = { ...sim.pose };
-      const rad = Math.PI / 180;
-      const a = envelopeAt(sim, base);
-      const mask = liverMask(sim, a);
-      const b = envelopeAt(sim, { ...base, tilt: base.tilt + (opts.tiltDeg ?? 0) * rad, yaw: base.yaw + (opts.yawDeg ?? 0) * rad });
-      const c = envelopeAt(sim, base);
-      return { samples: mask.length, moved: speckleCorrelation(a, b, mask), back: speckleCorrelation(a, c, mask) };
+      return withCompound(sim, dispatch, opts.compound, () => {
+        goTo(sim, opts.startPoint);
+        const base = { ...sim.pose };
+        const rad = Math.PI / 180;
+        const looks = opts.compound ? sim.profile.compound.order.length : 1;
+        const a = envelopeAt(sim, base, opts.compound, looks);
+        const mask = liverMask(sim, a);
+        const b = envelopeAt(
+          sim,
+          { ...base, tilt: base.tilt + (opts.tiltDeg ?? 0) * rad, yaw: base.yaw + (opts.yawDeg ?? 0) * rad },
+          opts.compound,
+          looks,
+        );
+        const c = envelopeAt(sim, base, opts.compound, looks);
+        return { samples: mask.length, moved: speckleCorrelation(a, b, mask), back: speckleCorrelation(a, c, mask) };
+      });
     },
     speckleCrossfade: (opts) => {
       const sim = getSim();
-      goTo(sim, opts.startPoint);
-      const pose = { ...sim.pose };
-      const frames: { w: number; snr: number; levelDb: number; corrPrev: number }[] = [];
-      let prev = envelopeAt(sim, pose);
-      let prevMask = liverMask(sim, prev);
-      const level0 = meanOf(prev.data, prevMask);
-      for (let f = 0; f < opts.frames; f++) {
-        pose.yaw += (opts.stepDeg * Math.PI) / 180;
-        const env = envelopeAt(sim, pose);
-        const mask = liverMask(sim, env);
-        const d = detrended(env, mask).filter(Number.isFinite);
-        const mean = d.reduce((s, v) => s + v, 0) / d.length;
-        const sd = Math.sqrt(d.reduce((s, v) => s + (v - mean) ** 2, 0) / d.length);
-        frames.push({
-          w: sim.renderer.speckleAnchorWeight,
-          snr: mean / sd,
-          levelDb: 20 * Math.log10(meanOf(env.data, mask) / level0),
-          corrPrev: speckleCorrelation(prev, env, prevMask),
-        });
-        prev = env;
-        prevMask = mask;
-      }
-      return frames;
+      return withCompound(sim, dispatch, opts.compound, () => crossfade(sim, opts));
     },
-    transmissionParity: (opts) => {
-      const sim = getSim();
-      if (opts?.startPoint) goTo(sim, opts.startPoint);
-      sim.render();
-      const gpu = sim.renderer.readTransmission();
-      const tr = sim.transducer;
-      const depth = sim.bmode.depthMm;
-      const step = depth / gpu.samples;
-      const every = Math.max(1, opts?.every ?? 8);
-      // Un segmento cuyo centro está a menos de ε de una interfaz puede caer de un lado en float32 y del
-      // otro en float64 (SwiftShader llega a 0,014 mm en la cara del diafragma; el intestino, con ruido,
-      // más): la suma de A2 difiere entonces en un segmento (2·Δα·paso, 0,06–0,27 dB) de ahí en adelante.
-      // La clasificación ya la comprueba la equivalencia; aquí se compara la suma hasta ese segmento.
-      const eps = opts?.ambiguityMm ?? 0.02;
-      const classifyAt = (theta: number, r: number): Tissue =>
-        sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, theta, r), sim.sample).tissue;
-      let lines = 0;
-      let samples = 0;
-      let maxDiffDb = 0;
-      let truncatedLines = 0;
-      let worst: { line: number; depthMm: number; cpuDb: number; gpuDb: number; tissue: string } | null = null;
-      for (let u = 0; u < gpu.lines; u += every) {
-        if (gpu.mirrorHit[(gpu.samples - 1) * gpu.lines + u] >= 0) continue;
-        const theta = -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / gpu.lines;
-        const tissues: Tissue[] = [];
-        lines++;
-        for (let k = 0; k < gpu.samples; k++) {
-          const r = (k + 0.5) * step;
-          const t = classifyAt(theta, r);
-          if (eps > 0 && (classifyAt(theta, r - eps) !== t || classifyAt(theta, r + eps) !== t)) {
-            truncatedLines++;
-            break;
-          }
-          tissues.push(t);
-          const cpuDb = rayAttenuationDb(tissues, step, sim.profile.bEffectiveMHz);
-          const gpuDb = -20 * Math.log10(Math.max(gpu.single[k * gpu.lines + u], 1e-12));
-          if (cpuDb > 60 && gpuDb > 60) continue;
-          samples++;
-          const diff = Math.abs(cpuDb - gpuDb);
-          if (diff > maxDiffDb) {
-            maxDiffDb = diff;
-            worst = { line: u, depthMm: r, cpuDb, gpuDb, tissue: TISSUES[t].name };
+    transmissionParity: (opts) =>
+      withCompound(getSim(), dispatch, opts.compound, () => {
+        const sim = getSim();
+        if (opts.startPoint) goTo(sim, opts.startPoint);
+        const look = opts.look ?? 0;
+        if (look !== 0) return steeredParity(sim, look, Math.max(1, opts.every ?? 8));
+        sim.render();
+        const gpu = sim.renderer.readTransmission();
+        const tr = sim.transducer;
+        const depth = sim.bmode.depthMm;
+        const step = depth / gpu.samples;
+        const every = Math.max(1, opts.every ?? 8);
+        // Un segmento cuyo centro está a menos de ε de una interfaz puede caer de un lado en float32 y del
+        // otro en float64 (SwiftShader llega a 0,014 mm en la cara del diafragma; el intestino, con ruido,
+        // más): la suma de A2 difiere entonces en un segmento (2·Δα·paso, 0,06–0,27 dB) de ahí en adelante.
+        // La clasificación ya la comprueba la equivalencia; aquí se compara la suma hasta ese segmento.
+        const eps = opts.ambiguityMm ?? 0.02;
+        const classifyAt = (theta: number, r: number): Tissue =>
+          sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, theta, r), sim.sample).tissue;
+        let lines = 0;
+        let samples = 0;
+        let maxDiffDb = 0;
+        let truncatedLines = 0;
+        let worst: { line: number; depthMm: number; cpuDb: number; gpuDb: number; tissue: string } | null = null;
+        for (let u = 0; u < gpu.lines; u += every) {
+          if (gpu.mirrorHit[(gpu.samples - 1) * gpu.lines + u] >= 0) continue;
+          const theta = -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / gpu.lines;
+          const tissues: Tissue[] = [];
+          lines++;
+          for (let k = 0; k < gpu.samples; k++) {
+            const r = (k + 0.5) * step;
+            const t = classifyAt(theta, r);
+            if (eps > 0 && (classifyAt(theta, r - eps) !== t || classifyAt(theta, r + eps) !== t)) {
+              truncatedLines++;
+              break;
+            }
+            tissues.push(t);
+            const cpuDb = rayAttenuationDb(tissues, step, sim.profile.bEffectiveMHz);
+            const gpuDb = -20 * Math.log10(Math.max(gpu.single[k * gpu.lines + u], 1e-12));
+            if (cpuDb > 60 && gpuDb > 60) continue;
+            samples++;
+            const diff = Math.abs(cpuDb - gpuDb);
+            if (diff > maxDiffDb) {
+              maxDiffDb = diff;
+              worst = { line: u, depthMm: r, cpuDb, gpuDb, tissue: TISSUES[t].name };
+            }
           }
         }
-      }
-      return { lines, samples, maxDiffDb, truncatedLines, worst };
-    },
+        return { lines, samples, maxDiffDb, truncatedLines, worst };
+      }),
     colorOnVessel: (vessels) => {
       const sim = getSim();
       const g = bestGateOnVessel(
@@ -384,7 +465,210 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       dispatch({ type: 'placeGate', theta: g.theta, r: g.r });
       return true;
     },
+    setCompound: (on) => dispatch({ type: 'compound', enabled: on }),
+    compoundState: () => getSim().renderer.compoundState(),
+    lookCorrelation: (opts) => {
+      const c = hooks.fidelity({ compound: true, startPoint: opts.startPoint }).compound;
+      if (!c) throw new Error('lookCorrelation: el banco no devolvió la composición');
+      return c;
+    },
+    temporalStability: (opts) => {
+      const sim = getSim();
+      return withCompound(sim, dispatch, true, () => temporalStability(sim, opts));
+    },
+    envelopeGuard: (opts) => {
+      const sim = getSim();
+      return withCompound(sim, dispatch, true, () => {
+        goTo(sim, opts.startPoint);
+        fillRing(sim);
+        // un cuadro de mirada dirigida al final: leer la mirada 0 debe lanzar
+        for (let i = 0; i < sim.profile.compound.order.length && sim.renderer.compoundState().look === 0; i++) sim.render();
+        const look = sim.renderer.compoundState().look;
+        try {
+          sim.renderer.readEnvelope();
+          return { threw: false, message: '', look };
+        } catch (e) {
+          return { threw: true, message: e instanceof Error ? e.message : String(e), look };
+        }
+      });
+    },
   };
+  return hooks;
+}
+
+/**
+ * Pone el conmutador del compuesto en `on` con el comando del equipo mientras dura `fn` y lo deja como
+ * estaba al terminar, aunque falle (decisión 58: los ganchos dicen siempre con qué imagen miden).
+ */
+function withCompound<T>(sim: Simulator, dispatch: (cmd: EquipmentCommand) => void, on: boolean, fn: () => T): T {
+  const was = sim.bmode.compound;
+  if (was !== on) dispatch({ type: 'compound', enabled: on });
+  try {
+    return fn();
+  } finally {
+    if (was !== on) dispatch({ type: 'compound', enabled: was });
+  }
+}
+
+/**
+ * Dibuja N cuadros (una mirada cada uno, en el orden del anillo): las N ranuras quedan escritas en el
+ * instante y la pose de ahora, tanto si el primer cuadro reinicia el anillo (salto de pose) como si no (las
+ * de antes serían de otro instante). Lanza si el compuesto no se forma (color encendido, regla de
+ * actividad), si la imagen está congelada o si el anillo no queda lleno: medir «el compuesto» sobre una
+ * sola mirada sería un número sin sentido.
+ */
+function fillRing(sim: Simulator): void {
+  if (!compoundActive(sim.bmode, sim.color))
+    throw new Error('el compuesto no se forma: conmutador apagado o caja de color encendida (compoundActive)');
+  if (sim.frozen) throw new Error('con la imagen congelada no se dibuja ningún cuadro');
+  const n = sim.profile.compound.order.length;
+  for (let i = 0; i < n; i++) sim.render();
+  if (sim.renderer.compoundState().validCount !== n)
+    throw new Error(`el anillo no se llena en ${n} cuadros: ${JSON.stringify(sim.renderer.compoundState())}`);
+}
+
+/**
+ * Paridad de la mirada dirigida `look` (decisión 58, G8): dibuja hasta que el último cuadro sea esa mirada,
+ * lee los segmentos de A0/A1 de la GPU y compara, cada `every` líneas y en todas las filas, el prefijo de A2
+ * (dB) y la transmisión con apertura de A con sus gemelos de TS sobre esos segmentos
+ * (`compareSteeredTransmission`): una muestra en un empate de redondeo (la GPU calcula en float32) cuenta
+ * como ambigua y no entra en el máximo.
+ */
+function steeredParity(sim: Simulator, look: number, every: number): ReturnType<TestHooks['transmissionParity']> {
+  const n = sim.profile.compound.order.length;
+  if (!Number.isInteger(look) || look < 0 || look >= n) throw new RangeError(`transmissionParity: mirada ${look} fuera del anillo (${n})`);
+  if (!compoundActive(sim.bmode, sim.color)) throw new Error('transmissionParity: una mirada dirigida exige el compuesto activo');
+  // al menos un cuadro en la pose pedida; luego, hasta que el último sea la mirada `look`
+  for (let i = 0; i < 2 * n; i++) {
+    sim.render();
+    if (sim.renderer.compoundState().look === look) break;
+  }
+  const gpu = sim.renderer.readTransmission({ look });
+  const depth = sim.bmode.depthMm;
+  const grid = sim.renderer.readSegments(depth);
+  const tr = sim.transducer;
+  const beam = sim.profile.beam;
+  const ap: ApertureGeometry = {
+    lines: gpu.lines,
+    halfSector: tr.halfSector,
+    curvatureRadius: tr.curvatureRadius,
+    apertureTxMm: beam.apertureTxMm,
+    apertureRxMaxMm: beam.apertureRxMaxMm,
+    fNumberRxMin: beam.fNumberRxMin,
+  };
+  const parity = compareSteeredTransmission(
+    grid,
+    ap,
+    gpu.theta,
+    { lines: gpu.lines, samples: gpu.samples, prefixDb: gpu.prefixDb!, aperture: gpu.aperture },
+    every,
+  );
+  return { ...parity, truncatedLines: 0 };
+}
+
+/** Estabilidad temporal del compuesto en escena quieta (`TestHooks.temporalStability`). */
+function temporalStability(
+  sim: Simulator,
+  opts: { startPoint: StartPoint['id']; frames: number },
+): ReturnType<TestHooks['temporalStability']> {
+  if (!Number.isInteger(opts.frames) || opts.frames < 3) throw new RangeError(`temporalStability: frames ${opts.frames} (entero ≥ 3)`);
+  goTo(sim, opts.startPoint);
+  fillRing(sim);
+  const p = Math.min(0.95, Math.max(0, sim.bmode.persistence));
+  const settle = p > 0 ? Math.min(30, Math.ceil(Math.log(0.01) / Math.log(p))) : 1;
+  for (let i = 0; i < settle; i++) sim.render();
+  const tr = sim.transducer;
+  const depth = sim.bmode.depthMm;
+  const lines = tr.lines;
+  const clear = clearLiverGrid(sim, lines, 3);
+  const dTheta = (2 * tr.halfSector) / lines;
+  const grays: Uint8Array[] = [];
+  const phases: number[] = [];
+  let idx: number[] = [];
+  for (let f = 0; f < opts.frames; f++) {
+    sim.render();
+    phases.push(sim.renderer.compoundState().look);
+    const img = sim.renderer.readDisplay();
+    if (f === 0) {
+      // píxeles del hígado despejado (cada 2), una vez: la escena no se mueve
+      for (let y = 0; y < img.height; y += 2)
+        for (let x = 0; x < img.width; x += 2) {
+          const b = pixelToBeam(sim.renderer.display, tr, depth, x, y);
+          if (!b) continue;
+          const u = Math.round((b.theta + tr.halfSector) / dTheta - 0.5);
+          if (clear.at(u, b.r)) idx.push(y * img.width + x);
+        }
+      if (idx.length < 100) throw new Error(`temporalStability: ${idx.length} píxeles de hígado despejado`);
+    }
+    grays.push(img.gray);
+  }
+  idx = idx.filter((i) => grays.every((g) => i < g.length));
+  const dr = sim.bmode.dynamicRangeDb;
+  const levelDb = grays.map((g) => idx.reduce((s, i) => s + (levelOfGrey(g[i] / 255) - 1) * dr, 0) / idx.length);
+  const corr: number[] = [];
+  for (let f = 1; f < grays.length; f++) {
+    const a = idx.map((i) => grays[f - 1][i]);
+    const b = idx.map((i) => grays[f][i]);
+    corr.push(pearsonOf(a, b));
+  }
+  const byPhase = new Map<number, number[]>();
+  phases.forEach((ph, f) => byPhase.set(ph, [...(byPhase.get(ph) ?? []), levelDb[f]]));
+  const phaseMeans = [...byPhase.values()].map((v) => v.reduce((s, x) => s + x, 0) / v.length);
+  const sorted = [...corr].sort((x, y) => x - y);
+  return {
+    frames: grays.length,
+    pixels: idx.length,
+    corrMin: sorted[0],
+    corrMedian: sorted[sorted.length >> 1],
+    levelDb,
+    period3Db: Math.max(...phaseMeans) - Math.min(...phaseMeans),
+  };
+}
+
+function pearsonOf(a: readonly number[], b: readonly number[]): number {
+  const n = a.length;
+  const ma = a.reduce((s, v) => s + v, 0) / n;
+  const mb = b.reduce((s, v) => s + v, 0) / n;
+  let sab = 0;
+  let saa = 0;
+  let sbb = 0;
+  for (let i = 0; i < n; i++) {
+    sab += (a[i] - ma) * (b[i] - mb);
+    saa += (a[i] - ma) ** 2;
+    sbb += (b[i] - mb) ** 2;
+  }
+  return sab / Math.sqrt(saa * sbb);
+}
+
+/** Fundido del ancla (`TestHooks.speckleCrossfade`): un cuadro por paso de giro. */
+function crossfade(
+  sim: Simulator,
+  opts: { startPoint: StartPoint['id']; stepDeg: number; frames: number; compound: boolean },
+): { w: number; snr: number; levelDb: number; corrPrev: number }[] {
+  goTo(sim, opts.startPoint);
+  const pose = { ...sim.pose };
+  const frames: { w: number; snr: number; levelDb: number; corrPrev: number }[] = [];
+  // con el compuesto, el primer cuadro llena el anillo; luego una mirada por paso, como la aplicación
+  let prev = envelopeAt(sim, pose, opts.compound, opts.compound ? sim.profile.compound.order.length : 1);
+  let prevMask = liverMask(sim, prev);
+  const level0 = meanOf(prev.data, prevMask);
+  for (let f = 0; f < opts.frames; f++) {
+    pose.yaw += (opts.stepDeg * Math.PI) / 180;
+    const env = envelopeAt(sim, pose, opts.compound, 1);
+    const mask = liverMask(sim, env);
+    const d = detrended(env, mask).filter(Number.isFinite);
+    const mean = d.reduce((s, v) => s + v, 0) / d.length;
+    const sd = Math.sqrt(d.reduce((s, v) => s + (v - mean) ** 2, 0) / d.length);
+    frames.push({
+      w: sim.renderer.speckleAnchorWeight,
+      snr: mean / sd,
+      levelDb: 20 * Math.log10(meanOf(env.data, mask) / level0),
+      corrPrev: speckleCorrelation(prev, env, prevMask),
+    });
+    prev = env;
+    prevMask = mask;
+  }
+  return frames;
 }
 
 /** |n·∇| de una cara en un plano: la GPU frente al gradiente de `faceSdf` (ver `TestHooks.faceNormals`). */
@@ -619,12 +903,19 @@ function windowWeight(sim: Simulator): (theta: number, r: number) => number {
   );
 }
 
-/** Envolvente con la sonda en `pose` tras un solo paso de fisiología (sin respiración apreciable). */
-function envelopeAt(sim: Simulator, pose: ProbePose): { lines: number; samples: number; data: Float32Array } {
+/**
+ * Envolvente con la sonda en `pose` tras un solo paso de fisiología (sin respiración apreciable): la de la
+ * mirada 0 tras un cuadro o, con `compound`, la compuesta tras `frames` cuadros (una mirada cada uno; con N,
+ * todas las miradas son de esta pose). Si el anillo no queda lleno, lanza.
+ */
+function envelopeAt(sim: Simulator, pose: ProbePose, compound = false, frames = 1): { lines: number; samples: number; data: Float32Array } {
   sim.setPose(pose);
   sim.advance(1.5 * sim.physiology.clock.dt);
-  sim.render();
-  return sim.renderer.readEnvelope();
+  for (let i = 0; i < frames; i++) sim.render();
+  if (!compound) return sim.renderer.readEnvelope();
+  const st = sim.renderer.compoundState();
+  if (st.validCount !== sim.profile.compound.order.length) throw new Error(`envelopeAt: anillo incompleto ${JSON.stringify(st)}`);
+  return sim.renderer.readEnvelope({ source: 'compound' });
 }
 
 /** Índices de hígado del plano actual: cada 2 líneas y 4 muestras, de 30 a 120 mm. */

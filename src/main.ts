@@ -21,6 +21,7 @@ import { bindKeyboardShortcuts } from './ui/keyboardShortcuts';
 import type { Navigator3D } from './ui/navigator3d';
 import { ControlPanel } from './ui/panel';
 import { ProbeInput } from './ui/probeInput';
+import { compoundActive } from './ultrasound/compound';
 
 /**
  * Raíz de composición (Fase 1): crea la sesión de simulación, el estado de UI y las vistas, y
@@ -309,6 +310,7 @@ function frame(now: number, dt: number): void {
     depthMm: s.bmode.depthMm,
     gainDb: s.bmode.gainDb,
     dynamicRangeDb: s.bmode.dynamicRangeDb,
+    compound: compoundActive(s.bmode, s.color),
     mode: store.get().mode,
     color: { prfHz: s.color.prfHz, wallFilterHz: s.color.wallFilterHz, frameHz: s.colorTiming.frameHz },
     pw: { prfHz: s.pw.prfHz, gateMm: s.pw.gateMm, depthMm: s.pw.depthMm, sweepMmS: s.pw.sweepMmS },

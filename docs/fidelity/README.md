@@ -21,8 +21,14 @@ escena lista en `escasos` los que en ella no llegan a 10 registros o no tienen r
 con SwiftShader los cuadros por segundo no significan nada, así que no corre en CI. En este Mac,
 espera a que no esté corriendo el runner de EchoTwin (`pgrep -f /Users/daniel/builds/`).
 
-El gancho `window.__vexusTest.fidelity({ startPoint, display, pose, samples })` da las mismas métricas
-desde la consola o una e2e; sin `display` solo mide la envolvente (sirve con SwiftShader). `pose`
+La composición espacial (decisión 58) está encendida por defecto, como en la aplicación:
+`npm run fidelity -- --compound false` mide la imagen de una mirada (la de las líneas base de abajo), y el
+JSON dice con cuál se midió (`compuesto`).
+
+El gancho `window.__vexusTest.fidelity({ compound, startPoint, display, pose, samples })` da las mismas
+métricas desde la consola o una e2e; `compound` es obligatorio: con `true` llena el anillo de miradas,
+asienta la persistencia con él lleno y mide la envolvente compuesta; sin `display` solo mide la
+envolvente (sirve con SwiftShader). `pose`
 (`{ rockDeg, tiltDeg }`) mueve la sonda respecto a la pose de partida y `samples` devuelve un registro
 por línea y pared (`faceSamples`). Clasifica en CPU una rejilla de líneas × 0,5 mm (~1–3 s).
 
@@ -281,6 +287,76 @@ mediana del pico de las caras de tubo a < 15° sea ≥ 5 dB con ≥ 5 muestras (
 cociente de pared en SwiftShader no llena los tramos), y la equivalencia tolera 0,02 mm en la distancia a
 la cara (SwiftShader llega a 0,014 mm en la del diafragma; la GPU real, 7·10⁻⁶).
 
+### Composición espacial (PR 4a, decisión 58): predicción del gemelo y puertas con GPU
+
+El gemelo B→C→D de tres planos (`src/validation/compoundSpeckle.test.ts`, subxifoidea, ±7°, 8
+realizaciones; funciones de producción) predice a 20 / 45 / 90 / 150 mm: SNR 1,99 → 3,10 / 2,01 → 2,81 /
+2,02 → 2,45 / 1,99 → 2,91; ρ(0,±) 0,23 / 0,42 / 0,65 / 0,35 frente a la ley con la σ medida 0,32 / 0,53 /
+0,72 / 0,41 (la mezcla de magnitudes de los tres planos, no lineal y antes de la PSF, decorrela 0,05–0,11
+más que la ley y sube N_eff un 4–12 %: un artefacto del modelo, no física del compuesto; con un plano, a
+≤ 0,025); ρ(−,+) −0,003 / 0,014 / 0,27 / −0,035; N_eff 2,31 / 1,91 / 1,47 / 2,08; grano
+compuesto/mirada 0 lateral 1,05 / 1,01 / 0,92 / 1,01 y axial 1,00–1,01; fracción oscura 0,06 → 0,003 /
+0,005 / 0,012 / 0,003. Con ±6° N_eff 2,06 / 1,71 / 1,37 / 1,84 (grano a 90 mm 0,94) y con ±8° 2,55 /
+2,10 / 1,57 / 2,31 (0,90). La umbra de una costilla de 12 mm a 18 mm acaba 2,8 mm antes (≈ 4,5 a ±8°) y
+el refuerzo tras un vaso de 12 mm se ensancha +14 / +40 / +67 % a 80 / 110 / 150 mm. Ninguna de estas
+cifras se ha medido con GPU: la GPU da una SNR de la mirada 0 0,05–0,1 más baja que el gemelo.
+
+Métricas nuevas del banco con el compuesto (`fidelityStats` con las miradas del anillo): el hígado puro
+es el de las tres miradas (cada dirigida con su peso entero y su transmisión con apertura a ≤ 0,5 dB del
+rayo de la mirada 0: el AND de las penumbras); `compound.bands` (SNR de la mirada 0 y del compuesto,
+ρ_I entre miradas con la compensación nominal en parches de 48 × 16, la ley con la σ del grano medido,
+N_eff, oscuros, grietas, grano y la estadística de cada mirada), `compound.seam` (SNR con dos miradas / con
+tres en parches de 8 × 48: con los 6 mm de margen al borde del sector solo caben en las bandas hondas),
+`display.liverBands` (gris por banda) y `display.shadow.umbraShiftMm` (fin de la umbra a −40 dB respecto al
+hígado en la transmisión de la pasada A, sin ruido, mediana de las líneas del núcleo cada 1 mm; mirada 0
+menos compuesto; NaN si la mirada 0 no sale de −40 dB antes de 40 mm).
+
+Objetivos con GPU (compuesto encendido, apnea, por banda de `DEPTH_BANDS_MM`; hoy fallan porque el
+compuesto no existía; los fija este documento antes de medir y los verifica quien corre el banco):
+
+| #   | Métrica                                                                         | Umbral                                                                                                                                                                         | Hoy (una mirada) | Predicción                                                                                      |
+| --- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ---------------- | ----------------------------------------------------------------------------------------------- |
+| G1  | SNR de la envolvente compuesta (bandas con ≥ 5 parches)                         | 2,1–3,0 en 20–60 y 140–180 mm; 2,0–3,0 en 60–140 mm; SNRc/SNR0 a ± 10 % de √N_eff medido                                                                                       | 1,87–1,97        | 2,4–3,1 (a 20 mm, 3,10 por el artefacto de la mezcla de planos; con el N_eff de la ley, ≈ 2,95) |
+| G2  | Fracción oscura                                                                 | ≤ 0,035                                                                                                                                                                        | 0,063–0,071      | 0,003–0,012                                                                                     |
+| G3  | Índice de grietas                                                               | ≤ 0,04                                                                                                                                                                         | 0,055–0,094      | 0,00–0,02                                                                                       |
+| G4  | Desviación del gris del hígado puro por banda (≥ 1000 px)                       | 10,5–14,0; mediana del gris 90–110; θ se calibra en 6–8° para una mediana de 12–13 (absorbe el exceso de N_eff de la mezcla de planos: el θ calibrado no es una medida física) | 15,1–16,7        | 11–12,7                                                                                         |
+| G5  | ρ(0,±) frente a la ley con la σ medida; N_eff                                   | ρ − ley en [−0,13; −0,03] (la predicción del gemelo de tres planos, −0,05 a −0,11, ± 0,02: la GPU hace la misma mezcla); N_eff entre la ley y +15 %                            | —                | ρ 0,23 / 0,42 / 0,65 / 0,35; N_eff +4–12 % sobre la ley                                         |
+| G6  | Costura: SNR con 2 miradas / con 3 en la misma banda (parches 8 × 48)           | 0,80–0,95; NaN con < 5 parches; al menos una vista finita                                                                                                                      | 1,0              | 0,86–0,92 (diseño)                                                                              |
+| G7  | Acortamiento de la umbra costal, compuesto frente a mirada 0 (flanco y renal)   | 1,5–8 mm                                                                                                                                                                       | 0                | ≈ 2,8 mm (≈ 4,5 a ±8°)                                                                          |
+| G8  | Paridad de A2/A dirigidos con `steeredPrefixDb` y `steeredApertureTransmission` | ≤ 0,01 dB (`transmissionParity({ compound: true, look })`, sin las muestras en empate de redondeo: ±10⁻⁴ líneas, ≤ 1 %)                                                        | —                | empates 0,04–0,31 % (rejillas de CPU)                                                           |
+
+Deben seguir pasando:
+
+| #   | Condición                                                                                                                                                                                                                                                      |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| K1  | Grano lateral ÷ PSF 0,8–1,25 por banda con el compuesto; y grano compuesto/mirada 0 0,9–1,1 (lateral y axial): separa la composición de un suavizado, que agranda el grano (el gemelo da 0,92 a 90 mm con ±7° y 0,90 con ±8°: cerca del suelo).                |
+| K2  | Grano axial 0,5–0,9 mm.                                                                                                                                                                                                                                        |
+| K3  | Lóbulos secundarios ≤ 0,15.                                                                                                                                                                                                                                    |
+| K4  | Pendiente en profundidad 0 ± 0,3 dB/cm.                                                                                                                                                                                                                        |
+| K5  | Por mirada (`compound.bands[].perLook`): SNR 1,75–2,1 y media a ± 3 % de la mirada 0 (la e2e admite ± 5 %).                                                                                                                                                    |
+| K6  | Núcleo de la sombra costal ≥ 20 dB bajo el hígado con el compuesto (hoy 22,6–23,4).                                                                                                                                                                            |
+| K7  | Escena quieta (`temporalStability`): correlación entre cuadros mostrados consecutivos ≥ 0,97 y modulación de periodo 3 ≤ 0,2 dB.                                                                                                                               |
+| K8  | Rayo único de la mirada 0 ≤ 0,01 dB frente a la CPU; \|color − PW\| < 1 dB en la puerta renal.                                                                                                                                                                 |
+| K9  | Color en la vista de la decisión 53: sangre ≥ 85 % e hígado ≤ 0,3 % (hoy 91 % y 0,07 %).                                                                                                                                                                       |
+| K10 | Guardas de una mirada con `compound: false`, con los umbrales de hoy (SNR 1,6–2,25 y 1,75–2,1, oscuros 0,05–0,09, `speckleCrossfade` ± 15 %, `speckleMotion` ≥ 0,8 / ≥ 0,7 / < 0,3 / ≥ 0,9); la mirada 0 sigue el código de hoy (θ = 0) y K la pasa bit a bit. |
+| K11 | `msPerFrame` ≤ 13,5 ms en las 8 escenas, con el color apagado y encendido, 3 corridas con el runner inactivo; ≥ 30 cps a densidad 2.                                                                                                                           |
+| K12 | Gemelos de las decisiones 55 y 56 sin cambios.                                                                                                                                                                                                                 |
+
+Notas de K11 (coste): se mide también por pasada, con `frameCostMs(30, { repeatPass, repeatCount: 2 })`
+intercalando `main` y la rama bajo la misma carga, con el compuesto apagado y encendido. La primera versión
+de la decisión 58 (la rama dirigida compilada en el programa de la mirada 0 de A2, A y B, detrás de
+`uSteer.x != 0`) hacía costar a B 4,5–4,9 ms por repetición frente a 2,6–2,9 en `main` aun con el
+compuesto apagado (M4, carga ≈ 22; el cuadro, 10,5–10,7 ms frente a 8,8–9,3). Ahora la mirada 0 usa el
+programa de `main` byte a byte y las dirigidas el suyo: con el compuesto apagado, A2, A y B deben costar
+lo de `main` dentro del ruido de la medida (las corridas de `main` ya se separan 0,3 ms) y el cuadro solo
+suma K; con él encendido, el coste de B es la media de su programa de la mirada 0 (un cuadro de cada tres)
+y el dirigido (dos de cada tres).
+
+Informativas: borde de la sombra 10–90 % en ±20 líneas, refuerzo tras los vasos, ρ(−,+) (aliasing de línea,
+`speckle-line-aliasing`), rosario del banco de interfaces (se espera × 0,65–0,85) y luz vascular (no se
+puntúa aquí). La e2e «composición espacial» comprueba con SwiftShader G1–G4, K1, K5, la razón de grano, G8
+y que `readEnvelope()` lanza si la mirada 0 no es la del último cuadro.
+
 ## Línea base (23-09-2026, árbol `src/` 4de3821, tras el preajuste abdominal; M4 con Metal, densidad 2)
 
 | Escena                  | SNR  | Oscuros | Grietas | Grano axial / lateral ÷ PSF | Hígado p05/p50/p95 | Desviación | Luz | dB/cm | Pared 0–20° | Pared 20–40° | cps | ms sin / con color |
@@ -331,7 +407,8 @@ con la línea base (primero la cadena de presentación, que es lo que delata la 
 | 1   | Preajuste abdominal (hecho)                                | Hígado puro 99–103 de gris (objetivo 90–110) y desviación 15–16 (≤ 19); pendiente −0,13 a +0,30 dB/cm; diafragma nunca saturado; color en el hígado 0,07 % (antes 0,45 %). Luz 8–24: el ≤ 10 solo se cumple en 3 de 8 escenas y pasa al PR 2 (sangre con su propia población).                                                                                                                                                                                                 |
 | 2   | Fase de insonación y moteado por tejido                    | Envolvente igual de ideal; correlación del moteado a través de una pared < 0,1; decorrelación con 8° de dirección < 0,3 [ESTIMADO].                                                                                                                                                                                                                                                                                                                                            |
 | 3   | Transmisión O(N) con subrayos y hueso (hecho, decisión 54) | Pasada A ≥ 2× más rápida: el cuadro entero pasa de 12,9–16,3 a 4,6–7,3 ms (misma máquina y carga). Penumbra coherente con la apertura: el borde de la sombra del flanco es una rampa de −42 a −49 dB en 9 líneas (antes, un escalón de −31 a −50 en 4). Núcleo de la sombra costal 23–24 dB bajo el hígado, gris 30–35 (antes 20–24 dB, gris 32–41). **Parcial:** no llega al suelo de ruido + 3 dB, porque 10–40 mm detrás de la costilla el cono ya está destapado en parte. |
-| 4   | Composición espacial y armónica                            | Desviación del gris del hígado 10–16; ≥ 30 cps a densidad 2. Después, punto de control A (prueba ciega).                                                                                                                                                                                                                                                                                                                                                                       |
+| 4a  | Composición espacial (decisión 58)                         | Objetivos con GPU (sección «Composición espacial», G1–G8 y K1–K12): SNR del compuesto 2,0–3,0 y ×√N_eff ± 10 %, fracción oscura ≤ 0,035, grietas ≤ 0,04, desviación del gris del hígado puro 10,5–14,0 por banda (θ se calibra en 6–8° para una mediana de 12–13), grano igual al de la mirada 0 (0,9–1,1), costura 0,80–0,95, umbra costal 1,5–8 mm más corta, paridad dirigida ≤ 0,01 dB, ≤ 13,5 ms y ≥ 30 cps a densidad 2. Después, punto de control A (prueba ciega).     |
+| 4b  | Armónica (THI, decisión 59)                                | Grano lateral a 140–180 mm × 0,80–0,93, transitorio bajo −40 dB antes de 7 mm, reverberación de orden 2 ≤ −6 dB; la desviación del gris apenas cambia (−0,1 a +0,4 en los diseños). Se enciende por defecto solo si gana en el punto de control A.                                                                                                                                                                                                                             |
 | 5a  | Banco de interfaces (hecho)                                | Banco por sistema y cara con huecos, rosario, anchura del eco, línea pleural, costura y desfase del espejo; normales de la GPU comprobadas; línea base con GPU (arriba). Sin cambio de imagen.                                                                                                                                                                                                                                                                                 |
 | 5b  | Ecos de interfaz (decisión 57)                             | Pared/hígado 1,3–2,1 a 0–20° y caída con la incidencia en las suprahepáticas; sin huecos > 1 mm a lo largo de la pared. Medido con GPU: cápsula 1,64–1,89 sin huecos (antes 1,02–1,16 con 70–93 % de huecos), Morison 1,97/2,18, VCI 1,54–1,73 en la congestión y 1,23–1,51 en el sano; e2e: pico de las caras de tubo a < 15° con mediana ≥ 5 dB, cápsula ≥ 1,40 con ≥ 10 registros, costura ≤ 0,02 y espejo ≤ 0,05 mm.                                                       |
 

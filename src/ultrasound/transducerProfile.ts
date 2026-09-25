@@ -1,5 +1,6 @@
 import { CONVEX_C35, type Transducer } from '../probe/probe';
 import { CONVEX_BEAM, type BeamParams } from './beamModel';
+import { COMPOUND, type CompoundParams } from './compound';
 
 /**
  * Perfil completo de un transductor (Fase 1): geometría de la sonda, modelo del haz y las
@@ -19,6 +20,8 @@ export interface TransducerProfile {
   dopplerEffectiveMHz: number;
   /** Separación angular entre líneas de color (rad). */
   colorLineSpacingRad: number;
+  /** Composición espacial (decisión 58): ángulo y orden de las miradas y rampa de cobertura. */
+  compound: CompoundParams;
 }
 
 export const CONVEX_C35_PROFILE: TransducerProfile = {
@@ -31,4 +34,5 @@ export const CONVEX_C35_PROFILE: TransducerProfile = {
   bEffectiveMHz: 2.5,
   dopplerEffectiveMHz: 2.5,
   colorLineSpacingRad: (1.0 * Math.PI) / 180,
+  compound: COMPOUND,
 };

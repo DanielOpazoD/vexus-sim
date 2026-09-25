@@ -1,27 +1,54 @@
 /** Utilidades WebGL2 mínimas: programas, texturas flotantes y FBO. */
 export class GLProgram {
-  readonly program: WebGLProgram;
   private uniforms = new Map<string, WebGLUniformLocation | null>();
 
-  constructor(
+  /** Un programa ya enlazado y comprobado: se crean con `link` o `linkAll`. */
+  private constructor(
     readonly gl: WebGL2RenderingContext,
-    vert: string,
-    frag: string,
+    readonly program: WebGLProgram,
     readonly name: string,
-  ) {
-    const vs = compile(gl, gl.VERTEX_SHADER, vert, name + '.vert');
-    const fs = compile(gl, gl.FRAGMENT_SHADER, frag, name + '.frag');
-    const p = gl.createProgram();
-    if (!p) throw new Error('createProgram');
-    gl.attachShader(p, vs);
-    gl.attachShader(p, fs);
-    gl.linkProgram(p);
-    if (!gl.getProgramParameter(p, gl.LINK_STATUS)) {
-      throw new Error(`Enlace de ${name}: ${gl.getProgramInfoLog(p)}`);
+    /** Salidas de color que escribe su shader de fragmentos (`fragmentOutputCount`). */
+    readonly outputs: number,
+  ) {}
+
+  /** Un programa solo (el de consulta, que se crea al usarse): un lote de uno. */
+  static link(gl: WebGL2RenderingContext, vert: string, frag: string, name: string): GLProgram {
+    return GLProgram.linkAll(gl, vert, { [name]: frag })[name];
+  }
+
+  /**
+   * Compila y enlaza un lote de programas con el mismo shader de vértices (el nombre de cada uno es su clave)
+   * sin esperar a ninguno, y solo después comprueba cada enlace. Consultar un estado bloquea hasta que ese
+   * trabajo termina: hacerlo tras cada shader encadenaba las compilaciones de una en una; así el navegador
+   * las tiene todas encargadas y, con KHR_parallel_shader_compile activada (la pide el renderizador antes),
+   * puede repartirlas entre sus hilos de fondo (dos por contexto en Chrome). El estado de compilación solo
+   * se lee si un enlace falla, para el mensaje (MDN, «WebGL best practices»). Si uno falla, se liberan todos
+   * los del lote y se lanza con su nombre y el registro del compilador o del enlazador (decisión 58).
+   */
+  static linkAll<K extends string>(gl: WebGL2RenderingContext, vert: string, frags: Record<K, string>): Record<K, GLProgram> {
+    const staged = (Object.keys(frags) as K[]).map((name) => {
+      const vs = shader(gl, gl.VERTEX_SHADER, vert);
+      const fs = shader(gl, gl.FRAGMENT_SHADER, frags[name]);
+      const p = gl.createProgram();
+      if (!p) throw new Error('createProgram');
+      gl.attachShader(p, vs);
+      gl.attachShader(p, fs);
+      gl.linkProgram(p);
+      return { name, vs, fs, p };
+    });
+    let error: Error | null = null;
+    for (const s of staged) {
+      if (!error && !gl.getProgramParameter(s.p, gl.LINK_STATUS)) error = linkError(gl, s, vert, frags[s.name]);
+      gl.deleteShader(s.vs);
+      gl.deleteShader(s.fs);
     }
-    gl.deleteShader(vs);
-    gl.deleteShader(fs);
-    this.program = p;
+    if (error) {
+      for (const s of staged) gl.deleteProgram(s.p);
+      throw error;
+    }
+    const out = {} as Record<K, GLProgram>;
+    for (const s of staged) out[s.name] = new GLProgram(gl, s.p, s.name, fragmentOutputCount(frags[s.name]));
+    return out;
   }
 
   use(): void {
@@ -73,19 +100,33 @@ export class GLProgram {
   }
 }
 
-function compile(gl: WebGL2RenderingContext, type: number, src: string, name: string): WebGLShader {
+function shader(gl: WebGL2RenderingContext, type: number, src: string): WebGLShader {
   const s = gl.createShader(type);
   if (!s) throw new Error('createShader');
   gl.shaderSource(s, src);
   gl.compileShader(s);
-  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
-    const log = gl.getShaderInfoLog(s) ?? '';
+  return s;
+}
+
+/** Causa de un enlace fallido: el shader que no compiló (con las líneas del error) o el registro del enlace. */
+function linkError(
+  gl: WebGL2RenderingContext,
+  s: { name: string; vs: WebGLShader; fs: WebGLShader; p: WebGLProgram },
+  vert: string,
+  frag: string,
+): Error {
+  for (const [sh, src, stage] of [
+    [s.vs, vert, 'vert'],
+    [s.fs, frag, 'frag'],
+  ] as const) {
+    if (gl.getShaderParameter(sh, gl.COMPILE_STATUS)) continue;
+    const log = gl.getShaderInfoLog(sh) ?? '';
     const lines = src.split('\n');
     const m = /ERROR: \d+:(\d+)/.exec(log);
     const ctx = m ? lines.slice(Math.max(0, +m[1] - 3), +m[1] + 2).join('\n') : '';
-    throw new Error(`Compilación de ${name}:\n${log}\n${ctx}`);
+    return new Error(`Compilación de ${s.name}.${stage}:\n${log}\n${ctx}`);
   }
-  return s;
+  return new Error(`Enlace de ${s.name}: ${gl.getProgramInfoLog(s.p)}`);
 }
 
 /** Formato de una textura de color de un destino (los argumentos de `createTexture`). */
@@ -103,6 +144,21 @@ export interface RenderTarget {
   height: number;
   /** Formato de cada adjunto de color, en orden (para crear otro destino igual). */
   formats: readonly TargetFormat[];
+  /** Adjuntos activos en `drawBuffers` (los primeros): los que escribe el programa que dibuja (`bindTargetFor`). */
+  activeOutputs: number;
+}
+
+/**
+ * Salidas de color de un shader de fragmentos: la mayor `layout(location = N) out` más uno, o las `out` sin
+ * posición (WebGL2 admite una sola). WebGL rechaza el dibujo (INVALID_OPERATION, «Active draw buffers with
+ * missing fragment shader outputs») si un adjunto activo del FBO no tiene salida en el shader, y entonces no
+ * escribe nada: el destino conserva el cuadro anterior sin avisar.
+ */
+export function fragmentOutputCount(frag: string): number {
+  let max = -1;
+  for (const m of frag.matchAll(/layout\s*\(\s*location\s*=\s*(\d+)\s*\)\s*out\b/g)) max = Math.max(max, Number(m[1]));
+  if (max >= 0) return max + 1;
+  return /^\s*out\s+(?:(?:lowp|mediump|highp)\s+)?\w+\s+\w+\s*;/m.test(frag) ? 1 : 0;
 }
 
 export function createTexture(
@@ -147,12 +203,30 @@ export function createTarget(gl: WebGL2RenderingContext, width: number, height: 
   const status = gl.checkFramebufferStatus(gl.FRAMEBUFFER);
   if (status !== gl.FRAMEBUFFER_COMPLETE) throw new Error(`FBO incompleto: 0x${status.toString(16)}`);
   gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-  return { fbo, textures, width, height, formats: [...formats] };
+  return { fbo, textures, width, height, formats: [...formats], activeOutputs: formats.length };
 }
 
 export function bindTarget(gl: WebGL2RenderingContext, t: RenderTarget | null, w?: number, h?: number): void {
   gl.bindFramebuffer(gl.FRAMEBUFFER, t ? t.fbo : null);
   gl.viewport(0, 0, t ? t.width : (w ?? gl.drawingBufferWidth), t ? t.height : (h ?? gl.drawingBufferHeight));
+}
+
+/**
+ * Pone el destino con activos solo los adjuntos que escribe el programa (`outputs`; el resto, NONE). Hace
+ * falta cuando dos programas con distinto número de salidas dibujan en el mismo destino (A2 y A de la mirada
+ * 0 y de la dirigida, decisión 58): con un adjunto activo sin salida, WebGL no dibuja.
+ */
+export function bindTargetFor(gl: WebGL2RenderingContext, t: RenderTarget, program: { outputs: number }): void {
+  bindTarget(gl, t);
+  setActiveOutputs(gl, t, program.outputs);
+}
+
+/** Adjuntos activos del destino ya puesto: los `n` primeros (se llama solo si cambia). */
+export function setActiveOutputs(gl: WebGL2RenderingContext, t: RenderTarget, n: number): void {
+  const count = Math.min(n, t.formats.length);
+  if (t.activeOutputs === count) return;
+  gl.drawBuffers(t.formats.map((_, i) => (i < count ? gl.COLOR_ATTACHMENT0 + i : gl.NONE)));
+  t.activeOutputs = count;
 }
 
 export function drawFullscreen(gl: WebGL2RenderingContext): void {

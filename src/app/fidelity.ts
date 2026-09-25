@@ -4,6 +4,8 @@ import { dot, type Vec3 } from '../core/vec3';
 import { VESSEL_META } from '../physiology/vessels';
 import { lineCoupling, lineDirection, pointOnLine } from '../probe/probe';
 import { lateralFwhmMm } from '../ultrasound/beamModel';
+import { effectiveLooks, lookCorrelationLaw, lookWeight } from '../ultrasound/compound';
+import { lookWavenumber, steerBeta } from '../ultrasound/steering';
 import { levelOfGrey } from '../ultrasound/greyMap';
 import { COARSE_DEPTH, nominalTgcDbPerCm, type DisplayFrame } from '../ultrasound/renderer';
 import { beamToPixel, pixelToBeam } from '../ultrasound/sectorGeometry';
@@ -786,6 +788,196 @@ export interface ShadowStats {
   coreDbBelowLiver: number;
   coreGray: number;
   edgeProfileDb: number[];
+  /**
+   * Fin de la umbra (mm tras la cara del hueso) en la transmisión de la pasada A, sin ruido: la mediana
+   * sobre las líneas del núcleo, en pasos de 1 mm, de la transmisión con apertura respecto a la del hígado
+   * (la del rayo justo antes del hueso con la atenuación del hígado desde ahí) sube de −40 dB (`umbraEndMm`).
+   * De la mirada 0 y, con las miradas del anillo (decisión 58), del compuesto (media de sus transmisiones);
+   * `umbraShiftMm` = mirada 0 − compuesto, NaN si la mirada 0 no sale de −40 dB antes de 40 mm.
+   */
+  umbraEndLook0Mm: number;
+  umbraEndCompoundMm: number;
+  umbraShiftMm: number;
+}
+
+/** Nivel respecto al hígado que marca el fin de la umbra (dB) y alcance de la búsqueda tras el hueso (mm). */
+export const UMBRA_DB = -40;
+export const UMBRA_SEARCH_MM = 40;
+
+/**
+ * Fin de la umbra en un perfil (dB respecto al hígado cada 1 mm tras el hueso, desde 0): el primer cruce de
+ * `UMBRA_DB` hacia arriba, interpolado en dB; NaN si no sale de la umbra (o nunca estuvo en ella).
+ */
+export function umbraEndMm(profileDb: readonly number[], stepMm = 1, threshold = UMBRA_DB): number {
+  for (let i = 1; i < profileDb.length; i++) {
+    const a = profileDb[i - 1];
+    const b = profileDb[i];
+    if (a < threshold && b >= threshold) return (i - 1 + (threshold - a) / (b - a)) * stepMm;
+  }
+  return Number.NaN;
+}
+
+/**
+ * Miradas del anillo tras llenarlo (composición espacial, decisión 58), en el orden de adquisición: su θ,
+ * su envolvente (la ranura del anillo) y su transmisión (pasada A del cuadro que la formó: la de la mirada 0
+ * o la del camino dirigido que llega a cada celda).
+ */
+export interface LookFrames {
+  thetas: readonly number[];
+  envelopes: readonly EnvelopeFrame[];
+  transmissions: readonly TransmissionFrame[];
+}
+
+/**
+ * Correlación de la intensidad entre miradas en una máscara (decisión 58): la media de parches (48 × 16)
+ * de la correlación de Pearson de |env|² con la compensación nominal (la envolvente de la GPU lleva la
+ * atenuación: su tendencia común inflaría ρ). Un valor por par (i < j, en orden: con 0, +θ, −θ, los pares
+ * (0,+), (0,−) y (+,−)).
+ */
+export function lookCorrelations(
+  looks: readonly EnvelopeFrame[],
+  inside: (line: number, sample: number) => boolean,
+  depthMm: number,
+  tgcDbPerCm: number,
+  patch: { axial: number; lateral: number } = TEXTURE_PATCH,
+): { patches: number; pairs: number[] } {
+  const n = looks.length;
+  const { lines, samples } = looks[0];
+  const dr = depthMm / samples;
+  const gain2 = Float64Array.from({ length: samples }, (_, v) => Math.pow(10, (tgcDbPerCm * ((v + 0.5) * dr)) / 100));
+  const acc = new Float64Array((n * (n - 1)) / 2);
+  let patches = 0;
+  const I = looks.map(() => new Float64Array(patch.axial * patch.lateral));
+  for (let u0 = 0; u0 + patch.lateral <= lines; u0 += patch.lateral)
+    for (let v0 = 0; v0 + patch.axial <= samples; v0 += patch.axial) {
+      let ok = true;
+      for (let u = u0; ok && u < u0 + patch.lateral; u++) for (let v = v0; ok && v < v0 + patch.axial; v++) if (!inside(u, v)) ok = false;
+      if (!ok) continue;
+      looks.forEach((e, k) => {
+        let i = 0;
+        for (let v = v0; v < v0 + patch.axial; v++)
+          for (let u = u0; u < u0 + patch.lateral; u++) {
+            const x = e.data[v * lines + u];
+            I[k][i++] = x * x * gain2[v];
+          }
+      });
+      let p = 0;
+      for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) acc[p++] += pearson(I[a], I[b]);
+      patches++;
+    }
+  return { patches, pairs: Array.from(acc, (x) => (patches ? x / patches : Number.NaN)) };
+}
+
+function pearson(x: Float64Array, y: Float64Array): number {
+  const n = x.length;
+  let mx = 0;
+  let my = 0;
+  for (let i = 0; i < n; i++) {
+    mx += x[i];
+    my += y[i];
+  }
+  mx /= n;
+  my /= n;
+  let sxy = 0;
+  let sxx = 0;
+  let syy = 0;
+  for (let i = 0; i < n; i++) {
+    const a = x[i] - mx;
+    const b = y[i] - my;
+    sxy += a * b;
+    sxx += a * a;
+    syy += b * b;
+  }
+  return sxy / Math.sqrt(sxx * syy);
+}
+
+/** Media de la envolvente en las muestras de la máscara (NaN sin muestras). */
+function maskedMean(env: EnvelopeFrame, inside: (line: number, sample: number) => boolean): number {
+  let s = 0;
+  let n = 0;
+  for (let v = 0; v < env.samples; v++)
+    for (let u = 0; u < env.lines; u++)
+      if (inside(u, v)) {
+        s += env.data[v * env.lines + u];
+        n++;
+      }
+  return n ? s / n : Number.NaN;
+}
+
+/**
+ * Composición espacial en una banda de hígado puro con las tres miradas (decisión 58): la textura del
+ * compuesto y de cada mirada en la misma máscara, la ganancia de SNR, la razón de grano (compuesto/mirada
+ * 0: 0,9–1,1, no es un filtro de suavizado, §23), la correlación entre miradas frente a la ley gaussiana
+ * con la σ del grano lateral medido de la mirada 0, y N_eff = N²/Σρ_ij.
+ */
+export interface CompoundBand {
+  r0: number;
+  r1: number;
+  compound: EnvelopeTexture;
+  look0: EnvelopeTexture;
+  /** Cada mirada (en el orden del anillo) y su media respecto a la de la mirada 0. */
+  perLook: (EnvelopeTexture & { meanRatio: number })[];
+  snrGain: number;
+  grainRatioLateral: number;
+  grainRatioAxial: number;
+  correlationPatches: number;
+  /** ρ_I de los pares (0,+), (0,−) y (+,−), y la ley con β y 2β a la profundidad media de la banda. */
+  rho0p: number;
+  rho0m: number;
+  rhoPm: number;
+  law1: number;
+  law2: number;
+  nEff: number;
+  nEffLaw: number;
+}
+
+/**
+ * Costura del compuesto (decisión 58): SNR de la envolvente compuesta en parches de 8 líneas × 48 muestras
+ * (`SEAM_PATCH`) enteros en la banda de dos miradas (la 0 y una dirigida: el borde del arreglo de la otra)
+ * frente a los de tres miradas, en la misma banda de profundidad y en hígado puro. `ratio` = SNR₂/SNR₃, NaN
+ * con < 5 parches en alguna de las dos. Con parches de 16 líneas nunca cabría uno en la costura (5–15 líneas).
+ */
+export interface SeamStats {
+  r0: number;
+  r1: number;
+  patches2: number;
+  patches3: number;
+  snr2: number;
+  snr3: number;
+  ratio: number;
+}
+
+/** Parche de la costura: 8 líneas × 48 muestras. */
+export const SEAM_PATCH = { axial: 48, lateral: 8 } as const;
+/** Parches mínimos por lado para dar la razón de la costura. */
+export const SEAM_MIN_PATCHES = 5;
+
+/** `SeamStats` de una banda con las máscaras de dos y de tres miradas. */
+export function seamStats(
+  env: EnvelopeFrame,
+  inside2: (line: number, sample: number) => boolean,
+  inside3: (line: number, sample: number) => boolean,
+  geom: EnvelopeGeometry,
+  band: { r0: number; r1: number },
+): SeamStats {
+  const t2 = envelopeTexture(env, inside2, geom, SEAM_PATCH);
+  const t3 = envelopeTexture(env, inside3, geom, SEAM_PATCH);
+  const ok = t2.patches >= SEAM_MIN_PATCHES && t3.patches >= SEAM_MIN_PATCHES;
+  return {
+    ...band,
+    patches2: t2.patches,
+    patches3: t3.patches,
+    snr2: t2.snr,
+    snr3: t3.snr,
+    ratio: ok ? t2.snr / t3.snr : Number.NaN,
+  };
+}
+
+/** Composición espacial del plano (decisión 58): por banda de profundidad y en la costura. */
+export interface CompoundStats {
+  thetas: number[];
+  bands: CompoundBand[];
+  seam: SeamStats[];
 }
 
 export interface FidelityBand extends EnvelopeTexture {
@@ -796,14 +988,19 @@ export interface FidelityBand extends EnvelopeTexture {
 }
 
 export interface FidelityStats {
+  /** La envolvente medida: la de la mirada 0 o, con las miradas del anillo (decisión 58), la compuesta. */
   envelope: EnvelopeTexture;
   bands: FidelityBand[];
+  /** Con las miradas del anillo (`opts.looks`): la composición espacial por banda y en la costura. */
+  compound?: CompoundStats;
   /**
    * Imagen mostrada; `colorOn` avisa de que la caja de color estaba encendida (el gris leído es el
    * canal rojo y los píxeles con color no son modo B).
    */
   display: {
     liver: DisplayStats;
+    /** El mismo hígado puro por bandas de profundidad (`DEPTH_BANDS_MM`). */
+    liverBands: (DisplayStats & { r0: number; r1: number })[];
     /** Sangre a ≥ 1,5 mm de su pared (el centro de la luz): la mediana debe quedar casi negra. */
     lumen: DisplayStats;
     /** Fracción de los píxeles del diafragma saturados (≥ 250); NaN si no hay diafragma a la vista. */
@@ -1009,12 +1206,18 @@ export function clearLiverGrid(sim: Simulator, lines: number, mm: number): Clear
  * normal real de cada cara (`FaceSummary`), sobre la envolvente con la compensación nominal
  * (`envelopeLine`), y la saturación junto a las caras; con `samples`, además, un registro por línea y
  * pared (`faceSamples`) para agregar varios planos con `summarizeFaces`.
+ *
+ * Con `looks` (composición espacial, decisión 58), `env` es la envolvente compuesta y el hígado puro es el
+ * de las tres miradas: cada dirigida con su peso entero y con su transmisión con apertura a ≤ 0,5 dB del
+ * rayo de la mirada 0 (ni su sombra, ni su penumbra, ni otro tejido en su camino: el AND de las penumbras);
+ * la costura (la 0 y una sola dirigida) se mide aparte (`seamStats`), y `compound` da por banda la
+ * composición (`CompoundBand`) y la umbra de las costillas del compuesto.
  */
 export function fidelityStats(
   sim: Simulator,
   env: EnvelopeFrame,
   img: DisplayFrame | null = null,
-  opts: { colorOn?: boolean; transmission?: TransmissionFrame; samples?: boolean } = {},
+  opts: { colorOn?: boolean; transmission?: TransmissionFrame; samples?: boolean; looks?: LookFrames } = {},
 ): FidelityStats {
   const tr = sim.transducer;
   const depth = sim.bmode.depthMm;
@@ -1081,33 +1284,110 @@ export function fidelityStats(
   const spacingAt = (k: number): number => (tr.curvatureRadius + (k + 0.5) * GRID_STEP_MM) * dTheta;
   const clearance = (mm: number, kind: number = LIVER): Uint8Array => clearanceMask(tissue, lines, nr, GRID_STEP_MM, spacingAt, mm, kind);
   // penumbra de la apertura (solo con la transmisión de la GPU; la imagen pintada en CPU no la tiene)
-  const tx = opts.transmission;
+  const looks = opts.looks;
+  const tx = opts.transmission ?? looks?.transmissions[0];
+  if (looks && !tx) throw new Error('fidelityStats: las miradas del anillo exigen la transmisión de la mirada 0');
   const penumbraMin = Math.pow(10, -MAX_PENUMBRA_DB / 20);
+  const txAt = (t: TransmissionFrame, field: 'single' | 'aperture', u: number, r: number): number => {
+    const k = Math.min(t.samples - 1, Math.max(0, Math.floor((r / depth) * t.samples)));
+    return t[field][k * t.lines + u];
+  };
   const outOfPenumbra = (u: number, r: number): boolean => {
     if (!tx) return true;
-    const k = Math.min(tx.samples - 1, Math.max(0, Math.floor((r / depth) * tx.samples)));
-    const s = tx.single[k * tx.lines + u];
-    return s > 1e-6 && tx.aperture[k * tx.lines + u] >= penumbraMin * s;
+    const s = txAt(tx, 'single', u, r);
+    return s > 1e-6 && txAt(tx, 'aperture', u, r) >= penumbraMin * s;
   };
   const envClear = clearance(ENVELOPE_CLEARANCE_MM);
   const cellOf = (u: number, r: number): number => {
     const k = Math.floor(r / GRID_STEP_MM);
     return k < 0 || k >= nr ? -1 : u * nr + k;
   };
+  // Miradas limpias de cada celda de la rejilla (decisión 58): la 0 (su penumbra la mira `outOfPenumbra`)
+  // y las dirigidas con peso entero y transmisión a ≤ 0,5 dB del rayo de la mirada 0; una dirigida a medias
+  // o sucia deja la celda fuera. Sin miradas, todas son «de tres».
+  const nLooks = looks ? looks.thetas.length : 1;
+  const lookRegion = new Uint8Array(lines * nr).fill(nLooks);
+  if (looks && tx) {
+    const wGeom = { curvatureRadius: tr.curvatureRadius, halfSector: tr.halfSector, lines };
+    for (let u = 0; u < lines; u++)
+      for (let k = 0; k < nr; k++) {
+        const r = (k + 0.5) * GRID_STEP_MM;
+        const ref = penumbraMin * txAt(tx, 'single', u, r);
+        let clean = 1;
+        let absent = 0;
+        for (let j = 1; j < nLooks; j++) {
+          const w = lookWeight(thetaOf(u), tr.curvatureRadius + r, looks.thetas[j], wGeom);
+          if (w <= 0) absent++;
+          else if (w >= 1 && txAt(looks.transmissions[j], 'aperture', u, r) >= ref) clean++;
+        }
+        lookRegion[u * nr + k] = clean + absent === nLooks ? clean : 0;
+      }
+  }
 
-  const inBand = (r0: number, r1: number) => (u: number, v: number) => {
-    const r = ((v + 0.5) / env.samples) * depth;
-    if (r < r0 || r >= r1 || r >= clearUntil[u] || !outOfPenumbra(u, r)) return false;
-    const i = cellOf(u, r);
-    return i >= 0 && envClear[i] === 1;
-  };
+  const inBandWith =
+    (looksWanted: number) =>
+    (r0: number, r1: number) =>
+    (u: number, v: number): boolean => {
+      const r = ((v + 0.5) / env.samples) * depth;
+      if (r < r0 || r >= r1 || r >= clearUntil[u] || !outOfPenumbra(u, r)) return false;
+      const i = cellOf(u, r);
+      return i >= 0 && envClear[i] === 1 && lookRegion[i] === looksWanted;
+    };
+  const inBand = inBandWith(nLooks);
+  const inSeam = inBandWith(nLooks - 1);
+  const tgcNominal = nominalTgcDbPerCm(fB);
+
+  /** Composición espacial por banda y en la costura (`CompoundBand`, `SeamStats`). */
+  function compoundOf(lf: LookFrames): CompoundStats {
+    const k2 = lookWavenumber(sim.profile.beam);
+    const R = tr.curvatureRadius;
+    const n = lf.thetas.length;
+    const out: CompoundBand[] = [];
+    const seam: SeamStats[] = [];
+    for (const [r0, r1] of DEPTH_BANDS_MM) {
+      if (r0 >= depth) continue;
+      const mask = inBand(r0, r1);
+      const c = envelopeTexture(env, mask, geom);
+      const per = lf.envelopes.map((e) => envelopeTexture(e, mask, geom));
+      const m0 = maskedMean(lf.envelopes[0], mask);
+      const corr = lookCorrelations(lf.envelopes, mask, depth, tgcNominal);
+      // la ley de cada par con la diferencia de dirección de sus haces en el punto (β de cada mirada) y la
+      // σ del grano lateral medido de la mirada 0
+      const sigma = per[0].fwhmLateralMm / 2.3548;
+      const rho = R + (Number.isFinite(per[0].depthMm) ? per[0].depthMm : (r0 + r1) / 2);
+      const beta = lf.thetas.map((th) => steerBeta(rho, th, R));
+      const laws: number[] = [];
+      for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) laws.push(lookCorrelationLaw(beta[a] - beta[b], sigma, k2));
+      out.push({
+        r0,
+        r1,
+        compound: c,
+        look0: per[0],
+        perLook: per.map((t, i) => ({ ...t, meanRatio: maskedMean(lf.envelopes[i], mask) / m0 })),
+        snrGain: c.snr / per[0].snr,
+        grainRatioLateral: c.fwhmLateralMm / per[0].fwhmLateralMm,
+        grainRatioAxial: c.fwhmAxialMm / per[0].fwhmAxialMm,
+        correlationPatches: corr.patches,
+        rho0p: corr.pairs[0],
+        rho0m: corr.pairs[1],
+        rhoPm: corr.pairs[2],
+        law1: laws[0],
+        law2: laws[2],
+        nEff: effectiveLooks(n, corr.pairs),
+        nEffLaw: effectiveLooks(n, laws),
+      });
+      seam.push(seamStats(env, inSeam(r0, r1), mask, geom, { r0, r1 }));
+    }
+    return { thetas: [...lf.thetas], bands: out, seam };
+  }
   const envelope = envelopeTexture(env, inBand(0, Infinity), geom);
   const bands = DEPTH_BANDS_MM.filter(([r0]) => r0 < depth).map(([r0, r1]) => {
     const t = envelopeTexture(env, inBand(r0, r1), geom);
     const rMid = Number.isFinite(t.depthMm) ? t.depthMm : (r0 + r1) / 2;
     return { ...t, r0, r1, beamFwhmMm: lateralFwhmMm(rMid, sim.bmode.focusMm, sim.profile.beam) };
   });
-  if (!img || img.width === 0) return { envelope, bands, display: null };
+  const compound = looks ? compoundOf(looks) : undefined;
+  if (!img || img.width === 0) return { envelope, bands, ...(compound ? { compound } : {}), display: null };
 
   const dispClear = clearance(DISPLAY_CLEARANCE_MM);
   const layout = sim.renderer.display;
@@ -1118,9 +1398,21 @@ export function fidelityStats(
     const u = Math.round((b.theta + tr.halfSector) / dTheta - 0.5);
     if (u < 0 || u >= lines || b.r >= clearUntil[u] || b.r >= pureUntil[u] || !outOfPenumbra(u, b.r)) return null;
     const i = cellOf(u, b.r);
-    return i >= 0 && dispClear[i] === 1 ? b.r : null;
+    return i >= 0 && dispClear[i] === 1 && lookRegion[i] === nLooks ? b.r : null;
   };
   const liver = displayStats(img, (x, y) => pureLiverDepth(x, y) !== null, 2);
+  const liverBands = DEPTH_BANDS_MM.filter(([r0]) => r0 < depth).map(([r0, r1]) => ({
+    r0,
+    r1,
+    ...displayStats(
+      img,
+      (x, y) => {
+        const r = pureLiverDepth(x, y);
+        return r !== null && r >= r0 && r < r1;
+      },
+      2,
+    ),
+  }));
   const profile = depthProfile(img, pureLiverDepth, sim.bmode.dynamicRangeDb);
   // centro de la luz: sangre a ≥ 1,5 mm de su pared, sin sombra delante
   const lumenClear = clearance(LUMEN_CLEARANCE_MM, BLOOD);
@@ -1176,13 +1468,15 @@ export function fidelityStats(
     }
   const lineLevel = perLine.map((a) => medianOf(a));
   const hit = (u: number): boolean => u >= 0 && u < lines && Number.isFinite(boneAt[u]);
+  const isCore = (u: number): boolean => {
+    for (let du = -3; du <= 3; du++) if (!hit(u + du)) return false;
+    return true;
+  };
   const core: number[] = [];
   const coreGray: number[] = [];
   let coreLines = 0;
   for (let u = 0; u < lines; u++) {
-    let all = true;
-    for (let du = -3; du <= 3; du++) if (!hit(u + du)) all = false;
-    if (all && perLine[u].length) {
+    if (isCore(u) && perLine[u].length) {
       coreLines++;
       core.push(...perLine[u]);
       coreGray.push(...perLineGray[u]);
@@ -1202,11 +1496,56 @@ export function fidelityStats(
       }
     u = v;
   }
+  // Umbra en la transmisión de la pasada A (sin ruido: la umbra a −40 dB queda bajo el suelo de la imagen)
+  // en las líneas del núcleo, cada 1 mm tras la cara del hueso, respecto al hígado: el rayo de la mirada 0
+  // justo antes del hueso con la atenuación del hígado desde ahí (decisión 58)
+  const txLerp = (t: TransmissionFrame, field: 'single' | 'aperture', u: number, r: number): number => {
+    const x = Math.min(t.samples - 1, Math.max(0, (r / depth) * t.samples - 0.5));
+    const k = Math.min(t.samples - 2, Math.floor(x));
+    const f = x - k;
+    return t[field][k * t.lines + u] * (1 - f) + t[field][(k + 1) * t.lines + u] * f;
+  };
+  const umbraProfile = (T: (u: number, r: number) => number): number[] => {
+    const prof: number[] = [];
+    for (let d = 0; d <= UMBRA_SEARCH_MM; d++) {
+      const vals: number[] = [];
+      for (let u = 0; u < lines; u++) {
+        if (!tx || !isCore(u)) continue;
+        const rRef = Math.max(0, boneAt[u] - 1);
+        const r = boneAt[u] + d;
+        if (r >= depth) continue;
+        const ref = txLerp(tx, 'single', u, rRef) * Math.pow(10, (-tgcNominal * (r - rRef)) / 200);
+        if (ref > 0) vals.push(20 * Math.log10(Math.max(T(u, r), 1e-12) / ref));
+      }
+      prof.push(vals.length ? medianOf(vals) : Number.NaN);
+    }
+    return prof;
+  };
+  const umbraEndLook0Mm = tx ? umbraEndMm(umbraProfile((u, r) => txLerp(tx, 'aperture', u, r))) : Number.NaN;
+  let umbraEndCompoundMm = Number.NaN;
+  if (looks) {
+    const wGeom = { curvatureRadius: tr.curvatureRadius, halfSector: tr.halfSector, lines };
+    umbraEndCompoundMm = umbraEndMm(
+      umbraProfile((u, r) => {
+        let sum = 0;
+        let wsum = 0;
+        looks.thetas.forEach((th, j) => {
+          const w = lookWeight(thetaOf(u), tr.curvatureRadius + r, th, wGeom);
+          sum += w * txLerp(looks.transmissions[j], 'aperture', u, r);
+          wsum += w;
+        });
+        return sum / wsum;
+      }),
+    );
+  }
   const shadow: ShadowStats = {
     coreLines,
     coreDbBelowLiver: liver.pixels && core.length ? levelDb(liver.p50) - medianOf(core) : Number.NaN,
     coreGray: medianOf(coreGray),
     edgeProfileDb: edgeAcc.map((a) => (a.length ? a.reduce((x, y) => x + y, 0) / a.length : Number.NaN)),
+    umbraEndLook0Mm,
+    umbraEndCompoundMm,
+    umbraShiftMm: umbraEndLook0Mm - umbraEndCompoundMm,
   };
 
   // Banco de interfaces. Cada línea que pasa de ≥ 3 mm de tejido previo a su objetivo (con, a lo sumo,
@@ -1402,7 +1741,8 @@ export function fidelityStats(
   return {
     envelope,
     bands,
-    display: { liver, lumen, diaphragmSaturated, shadow, profile, ...summary, faceSaturated, colorOn: opts.colorOn ?? false },
+    ...(compound ? { compound } : {}),
+    display: { liver, liverBands, lumen, diaphragmSaturated, shadow, profile, ...summary, faceSaturated, colorOn: opts.colorOn ?? false },
     ...(opts.samples ? { faceSamples } : {}),
   };
 }

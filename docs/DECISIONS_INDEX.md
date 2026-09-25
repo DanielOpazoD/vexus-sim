@@ -61,3 +61,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [55](DECISIONS.md#L965) | El medio de dispersores está anclado y no sigue a la sonda | vigente |
 | [56](DECISIONS.md#L1016) | Moteado por tejido, heterogeneidad continua y grumos en la grasa | vigente |
 | [57](DECISIONS.md#L1059) | Ecos de interfaz: reflexión coherente en el cruce exacto, con Fresnel y suelo, lóbulo de Kirchhoff y coherencia de curvatura; espejo diafragmático exacto | vigente |
+| [58](DECISIONS.md#L1160) | Composición espacial: tres miradas intercaladas (0, ±7°) en la rejilla común con la fase de mirada por nodo, promediadas en lineal | vigente |

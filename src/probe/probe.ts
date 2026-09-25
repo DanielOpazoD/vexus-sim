@@ -124,6 +124,20 @@ export function pointOnLine(frame: ProbeFrame, tr: Transducer, theta: number, r:
 }
 
 /**
+ * Punto del mundo a distancia s (mm) del elemento φ a lo largo de la línea dirigida θ (composición
+ * espacial, decisión 58): sale de la cara en el elemento φ con dirección φ + θ. Con θ = 0 es la línea
+ * radial (`pointOnLine` con r = s).
+ */
+export function pointOnSteeredLine(frame: ProbeFrame, tr: Transducer, phi: number, th: number, s: number): Vec3 {
+  if (th === 0) return pointOnLine(frame, tr, phi, s);
+  const e = lineDirection(frame, phi);
+  const d = lineDirection(frame, phi + th);
+  const R = tr.curvatureRadius;
+  const c = frame.curvatureCenter;
+  return [c[0] + e[0] * R + d[0] * s, c[1] + e[1] * R + d[1] * s, c[2] + e[2] * R + d[2] * s];
+}
+
+/**
  * Acoplamiento acústico por línea (0–1) según el hueco entre la cara convexa y
  * la piel (aproximada como plano tangente): basculación, separación y
  * curvatura levantan los extremos; una película de gel de ~1 mm y la

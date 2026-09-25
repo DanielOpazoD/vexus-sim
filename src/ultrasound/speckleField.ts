@@ -164,6 +164,143 @@ export function speckleSliceField(m: Vec3, h: number, sliceHalfMm: number, salt:
   return [wa * fa[0] + wb * fb[0], wa * fa[1] + wb * fb[1]];
 }
 
+// ——— Fase de mirada por nodo (composición espacial, decisión 58) ———
+
+/**
+ * Fase de una mirada dirigida en el punto de la muestra (decisión 58, `steering.ts`): Δ_k(P) y su
+ * gradiente g = k2·(b_k − b_0) en el mundo (rad/mm). La pasada B la calcula una vez por muestra y la
+ * reparte por nodo en su forma lineal, Δ_k(P) + g⊥·(x_n − P), dentro del cos/sin que ya existe en
+ * `latticeValue` (sin sincos extra). g⊥ es g sin su componente en el eje del ancla: a lo largo de ese eje
+ * la coordenada del medio está comprimida al grosor de corte y el desplazamiento del nodo no es el del
+ * mundo (g, en el plano de imagen, apenas la tiene). El valor del nodo (c_n, con su sal por tejido y por
+ * ancla) es el de siempre: grumos y heterogeneidad son del material y comunes a todas las miradas. La
+ * forma lineal se aparta de la fase exacta del nodo ≤ 1e-2 rad (5,5e-3 a 20 mm).
+ */
+export interface LookPhase {
+  /** Δ_k en el punto de la muestra (rad). */
+  ph0: number;
+  /** Gradiente de Δ_k en el mundo (rad/mm). */
+  g: Vec3;
+}
+
+/** `latticeValue` con la fase de mirada sumada a la del nodo: con ph = 0, idéntico bit a bit. */
+export function latticeValuePh(c: Vec3, salt: number, ph: number): [number, number] {
+  const a = hash13([c[0] + salt, c[1], c[2]]);
+  const b = hash13([c[0], c[1] + salt + 17.1, c[2]]);
+  const r = Math.sqrt(-2 * Math.log(Math.max(1e-6, a)));
+  const p = 6.2831853 * b + ph;
+  return [r * Math.cos(p), r * Math.sin(p)];
+}
+
+/**
+ * `scattererField` de una mirada: el nodo c + d lleva la fase ph0 + g·(c + d − m/h)·h, escrita como
+ * base + (g·h)·d con base = ph0 − (g·h)·(m/h − c), para no restar coordenadas grandes. Sin fase
+ * (`lp` null) es `scattererField`; con ph0 = 0 y g = 0 da lo mismo bit a bit.
+ */
+export function scattererFieldPh(m: Vec3, h: number, salt: number, lp: LookPhase | null): [number, number] {
+  if (lp === null) return scattererField(m, h, salt);
+  const q: Vec3 = [m[0] / h, m[1] / h, m[2] / h];
+  const c: Vec3 = [Math.floor(q[0]), Math.floor(q[1]), Math.floor(q[2])];
+  const fr = [q[0] - c[0], q[1] - c[1], q[2] - c[2]];
+  const s = fr.map((t) => t * t * (3 - 2 * t));
+  const gh: Vec3 = [lp.g[0] * h, lp.g[1] * h, lp.g[2] * h];
+  const base = lp.ph0 - (gh[0] * fr[0] + gh[1] * fr[1] + gh[2] * fr[2]);
+  const L = (dx: number, dy: number, dz: number) =>
+    latticeValuePh([c[0] + dx, c[1] + dy, c[2] + dz], salt, base + gh[0] * dx + gh[1] * dy + gh[2] * dz);
+  const x00 = mix2(L(0, 0, 0), L(1, 0, 0), s[0]);
+  const x10 = mix2(L(0, 1, 0), L(1, 1, 0), s[0]);
+  const x01 = mix2(L(0, 0, 1), L(1, 0, 1), s[0]);
+  const x11 = mix2(L(0, 1, 1), L(1, 1, 1), s[0]);
+  return mix2(mix2(x00, x10, s[1]), mix2(x01, x11, s[1]), s[2]);
+}
+
+/** `anchoredSliceField` de una mirada: la fase se reparte con g⊥ (sin la componente del eje del ancla). */
+export function anchoredSliceFieldPh(
+  m: Vec3,
+  h: number,
+  sliceHalfMm: number,
+  salt: number,
+  anchor: SpeckleAnchor,
+  lp: LookPhase | null,
+): [number, number] {
+  if (lp === null) return anchoredSliceField(m, h, sliceHalfMm, salt, anchor);
+  const e = anchor.e;
+  const across = dot([m[0] - anchor.p[0], m[1] - anchor.p[1], m[2] - anchor.p[2]], e);
+  const shrink = across * (1 - h / Math.max(h, 2 * sliceHalfMm));
+  const ge = dot(lp.g, e);
+  const gPerp: Vec3 = [lp.g[0] - e[0] * ge, lp.g[1] - e[1] * ge, lp.g[2] - e[2] * ge];
+  return scattererFieldPh([m[0] - e[0] * shrink, m[1] - e[1] * shrink, m[2] - e[2] * shrink], h, salt + anchor.parity * ANCHOR_SALT_STEP, {
+    ph0: lp.ph0,
+    g: gPerp,
+  });
+}
+
+/** `speckleSliceField` de una mirada (con el fundido entre anclas). Sin fase es `speckleSliceField`. */
+export function speckleSliceFieldPh(
+  m: Vec3,
+  h: number,
+  sliceHalfMm: number,
+  salt: number,
+  st: SpeckleAnchorState,
+  lp: LookPhase | null,
+): [number, number] {
+  if (lp === null) return speckleSliceField(m, h, sliceHalfMm, salt, st);
+  const fa = anchoredSliceFieldPh(m, h, sliceHalfMm, salt, st.a, lp);
+  if (st.w >= 1) return fa;
+  const fb = anchoredSliceFieldPh(m, h, sliceHalfMm, salt, st.b, lp);
+  const wa = Math.sqrt(st.w);
+  const wb = Math.sqrt(1 - st.w);
+  return [wa * fa[0] + wb * fb[0], wa * fa[1] + wb * fb[1]];
+}
+
+/**
+ * Gemelo GLSL de las variantes con fase de mirada para la rama dirigida de la pasada B (etapa 2 de la
+ * decisión 58). Va en `FRAG_RAWFIELD` detrás de `speckleField` (usa hash13 de la anatomía, uSeed y las
+ * uniforms del ancla); la mirada 0 no lo llama. ph0 y g salen de `lookPhase`/`lookPhaseGrad`
+ * (`STEERING_GLSL`), con g = gx·uLateral + gz·uAxial.
+ */
+export const SPECKLE_LOOK_GLSL = /* glsl */ `
+vec2 latticeValuePh(vec3 cell, float salt, float ph) {
+  float a = hash13(cell + vec3(salt, 0.0, 0.0));
+  float b = hash13(cell + vec3(0.0, salt + 17.1, 0.0));
+  float r = sqrt(-2.0 * log(max(1e-6, a)));
+  float p = 6.2831853 * b + ph;
+  return r * vec2(cos(p), sin(p));
+}
+vec2 scattererFieldPh(vec3 m, float h, float salt, float ph0, vec3 g) {
+  vec3 q = m / h;
+  vec3 c0 = floor(q);
+  vec3 fr = q - c0;
+  vec3 f = fr * fr * (3.0 - 2.0 * fr);
+  vec3 gh = g * h;
+  float base = ph0 - dot(gh, fr);
+  vec2 v000 = latticeValuePh(c0, salt, base);
+  vec2 v100 = latticeValuePh(c0 + vec3(1, 0, 0), salt, base + gh.x);
+  vec2 v010 = latticeValuePh(c0 + vec3(0, 1, 0), salt, base + gh.y);
+  vec2 v110 = latticeValuePh(c0 + vec3(1, 1, 0), salt, base + gh.x + gh.y);
+  vec2 v001 = latticeValuePh(c0 + vec3(0, 0, 1), salt, base + gh.z);
+  vec2 v101 = latticeValuePh(c0 + vec3(1, 0, 1), salt, base + gh.x + gh.z);
+  vec2 v011 = latticeValuePh(c0 + vec3(0, 1, 1), salt, base + gh.y + gh.z);
+  vec2 v111 = latticeValuePh(c0 + vec3(1, 1, 1), salt, base + gh.x + gh.y + gh.z);
+  vec2 x00 = mix(v000, v100, f.x);
+  vec2 x10 = mix(v010, v110, f.x);
+  vec2 x01 = mix(v001, v101, f.x);
+  vec2 x11 = mix(v011, v111, f.x);
+  return mix(mix(x00, x10, f.y), mix(x01, x11, f.y), f.z);
+}
+vec2 scattererFieldSlicePh(vec3 m, float h, float sliceHalfMm, float salt, vec3 e, vec3 pivot, float ph0, vec3 g) {
+  float across = dot(m - pivot, e);
+  vec3 q = m - e * (across * (1.0 - h / max(h, 2.0 * sliceHalfMm)));
+  return scattererFieldPh(q, h, salt, ph0, g - e * dot(g, e));
+}
+vec2 speckleFieldPh(vec3 m, float h, float se, float salt, float ph0, vec3 g) {
+  vec2 fa = scattererFieldSlicePh(m, h, se, uSeed + salt + uAnchorSalt.x, uAnchorE0, uAnchorP0, ph0, g);
+  if (uAnchorW >= 1.0) return fa;
+  vec2 fb = scattererFieldSlicePh(m, h, se, uSeed + salt + uAnchorSalt.y, uAnchorE1, uAnchorP1, ph0, g);
+  return sqrt(uAnchorW) * fa + sqrt(1.0 - uAnchorW) * fb;
+}
+`;
+
 // ——— Moteado por tejido (decisión 56) ———
 
 /**

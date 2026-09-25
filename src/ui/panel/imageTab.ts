@@ -1,5 +1,6 @@
 import { EQUIPMENT_LIMITS } from '../../app/equipment';
-import { help, slider } from '../controls';
+import { COMPOUND } from '../../ultrasound/compound';
+import { button, help, row, slider } from '../controls';
 import type { PanelContext } from './context';
 
 /**
@@ -53,7 +54,10 @@ export function imageBasics(ctx: PanelContext, sec: HTMLElement): void {
   );
 }
 
-/** Pestaña Imagen: profundidad, ganancia, foco, rango dinámico, persistencia y TGC de 8 bandas. */
+/**
+ * Pestaña Imagen: profundidad, ganancia, foco, rango dinámico, persistencia, composición espacial y TGC
+ * de 8 bandas.
+ */
 export function buildImageTab(ctx: PanelContext, p: HTMLElement): void {
   const s = ctx.sim;
   const sec = ctx.section(p, 'Imagen 2D');
@@ -88,6 +92,19 @@ export function buildImageTab(ctx: PanelContext, p: HTMLElement): void {
       },
       ch,
     ),
+  );
+  // Composición espacial (decisión 58): el conmutador; con el color encendido no se forma
+  ctx.track(
+    button(
+      row(sec),
+      'Compuesto',
+      () => ctx.dispatch({ type: 'compound', enabled: !s().bmode.compound }),
+      () => s().bmode.compound,
+    ),
+  );
+  help(
+    sec,
+    `Composición espacial: tres miradas intercaladas (0° y ±${COMPOUND.steerDeg}°) promediadas; el moteado pierde contraste con el mismo grano y las sombras se acortan. Se apaga con el color.`,
   );
   const tgcSec = ctx.section(p, 'TGC');
   const bank = document.createElement('div');

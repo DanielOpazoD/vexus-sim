@@ -18,6 +18,11 @@ export type EquipmentCommand =
   | { type: 'stepDepth'; deltaMm: number }
   | { type: 'stepGain'; deltaDb: number }
   | { type: 'tgc'; band: number; db: number }
+  /**
+   * Composición espacial (decisión 58): el conmutador del equipo. Solo se forma con el color apagado
+   * (`compoundActive`); el conmutador se conserva al abrir y cerrar el color.
+   */
+  | { type: 'compound'; enabled: boolean }
   /** Centra la caja de color en (θ, r) conservando su tamaño. */
   | { type: 'centerColorBox'; theta: number; r: number }
   /** Escala la caja de color alrededor de su centro. */
@@ -123,6 +128,9 @@ export function reduceEquipment(e: EquipmentSettings, cmd: EquipmentCommand, ctx
       break;
     case 'stepGain':
       next = { ...e, bmode: { ...e.bmode, gainDb: e.bmode.gainDb + cmd.deltaDb } };
+      break;
+    case 'compound':
+      next = { ...e, bmode: { ...e.bmode, compound: cmd.enabled } };
       break;
     case 'tgc': {
       const tgcDb = [...e.bmode.tgcDb];

@@ -57,6 +57,45 @@ congelada o con `n` que no sea un entero ≥ 1.
 El banco (`npm run fidelity`) guarda por escena `msPerFrame` (color apagado) y `msPerFrameColor`
 (color encendido, `forceColor`), las dos en la pose de partida de la vista.
 
+## Composición espacial en los ganchos (decisión 58)
+
+La imagen de la aplicación es, por defecto, el compuesto de tres miradas intercaladas (una por cuadro), y
+un gancho que midiera «la envolvente» sin decir cuál cambiaría de significado en silencio. Por eso:
+
+- `compound` es obligatorio en el tipo de `speckle`, `fidelity`, `speckleMotion`, `speckleCrossfade` y
+  `transmissionParity`: con `false`, la imagen de una mirada de siempre (las guardas de una mirada lo
+  pasan con sus umbrales de antes); con `true`, el gancho dibuja N cuadros, uno por mirada, para que las N
+  ranuras del anillo sean del instante de la medida (con un salto de pose el anillo se reinicia; sin él,
+  guardaría miradas de antes) y, si mide la imagen mostrada, asienta después la persistencia. El
+  conmutador vuelve a como estaba al terminar, aunque algo falle, y medir «el compuesto» con el color
+  encendido (donde no se forma) lanza.
+- `readEnvelope()` lee la mirada 0 y lanza si no es la del último cuadro; el compuesto se pide con
+  `{ source: 'compound' }` y cada mirada con `readLookEnvelope(ranura)`. `readTransmission({ look })` da la
+  transmisión de una mirada dirigida solo tras el cuadro que la forma.
+- Nuevos: `setCompound`, `compoundState`, `lookCorrelation` (la parte `compound` del banco),
+  `temporalStability` (escena quieta: correlación entre cuadros y modulación de periodo 3) y
+  `envelopeGuard` (la guarda de `readEnvelope`). `transmissionParity({ compound: true, look })` compara la
+  mirada dirigida de la GPU con sus gemelos de TS sobre los segmentos de A0/A1 de la propia GPU
+  (`app/steeredParity.ts`): una muestra cuyo resultado cambia al desplazar los redondeos de los gemelos
+  ±10⁻⁴ líneas (`STEERED_TIE_LINES`, el doble del error de float32 emulado) es un empate y se cuenta
+  aparte. `steeredParity.test.ts` comprueba el margen y que en las cuatro vistas los empates son ≤ 0,5 %
+  (0,04–0,31 % en CPU; con el criterio anterior, θ·(1 ± 2·10⁻⁴), 0,35–1,35 %).
+- `frameCostMs` mide con el conmutador como esté: con el compuesto, la media de las tres miradas (la 0
+  con los programas de siempre de A2, A y B y las dirigidas con los suyos; `repeatPass` repite el programa
+  del cuadro). Para comparar la mirada 0 con `main`, mide con el compuesto apagado.
+- `compoundRenderer.test.ts` comprueba el cableado sin GPU: el renderizador real sobre un WebGL falso
+  (`support/recordingGl.ts`, que registra programa, destino, texturas y uniforms de cada dibujo, los
+  programas liberados y los uniforms subidos con el programa equivocado puesto). Además de la mirada de
+  cada cuadro, exige que cada programa de A2, A y B (el de la mirada 0 y el dirigido) reciba todos los
+  uniforms y samplers que declara, cada sampler con su textura, que la mirada elija el programa, que las
+  repeticiones de medida repitan ese y que la reconstrucción tras perder el contexto libere los seis.
+  También el arranque (el registro de llamadas de `recordingGl`): al crear y al reconstruir el
+  renderizador, todos los programas se enlazan antes de la primera consulta de estado, que bloquea en un
+  navegador, `KHR_parallel_shader_compile` se pide antes de compilar y un fallo de compilación o de enlace
+  (`fail`) lanza con el nombre del programa y libera el lote entero.
+  `shaderLimits.test.ts` exige que los programas de la mirada 0 no lleven ningún identificador de la
+  dirigida (sacados del código) y fija la huella de su main, la de antes de la composición.
+
 ## Qué no está cubierto todavía
 
 - Estadística de speckle frente a clips reales (`speckle-statistics-uncalibrated`); la e2e solo

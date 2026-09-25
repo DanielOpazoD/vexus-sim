@@ -7,6 +7,7 @@ import { C_RECONSTRUCTION_MM_S } from '../core/units';
 import { clonePatient } from '../physiology/patientState';
 import { FRAME_PASSES, type PassId } from '../ultrasound/passGraph';
 import type { FrameInputs, PassRepeat, UltrasoundRenderer } from '../ultrasound/renderer';
+import { recordingGl } from './support/recordingGl';
 
 /** Renderizador falso: registra lo que pide cada cuadro (el coste en GPU lo mide el banco, no vitest). */
 class FakeRenderer {
@@ -149,93 +150,14 @@ describe('frameCostMs: el coste del cuadro con color y por pasada', () => {
 });
 
 /**
- * WebGL2 falso que registra lo que el renderizador real pide a la GPU: qué FBO está puesto, con qué
- * programa y qué textura hay en cada unidad en cada dibujo, y los adjuntos (formato y tamaño) de cada
- * FBO. Todo lo demás (uniforms, parámetros de textura) no hace nada; los shaders «compilan».
+ * Simulador con el renderizador REAL sobre el WebGL falso (sin caja de color: 11 pasadas por cuadro). Sin
+ * composición espacial: con ella, D escribe cada cuadro en otra ranura del anillo (decisión 58,
+ * `compoundRenderer.test.ts`) y aquí se comparan cuadros de la misma paridad de la persistencia.
  */
-function recordingGl(canvasSize: { width: number; height: number }) {
-  const K: Record<string, number> = {
-    TEXTURE0: 0x84c0,
-    TEXTURE_2D: 0x0de1,
-    FRAMEBUFFER: 0x8d40,
-    FRAMEBUFFER_COMPLETE: 0x8cd5,
-    COLOR_ATTACHMENT0: 0x8ce0,
-  };
-  let nextConst = 0x10000;
-  let nextId = 1;
-  type Obj = { kind: string; id: number };
-  const make = (kind: string): Obj => ({ kind, id: nextId++ });
-  const state = {
-    fbo: null as Obj | null,
-    program: null as Obj | null,
-    unit: 0,
-    units: new Map<number, Obj | null>(),
-    viewport: [0, 0, 0, 0] as number[],
-  };
-  const texInfo = new Map<Obj, { internal: number; w: number; h: number }>();
-  const attachments = new Map<Obj, { internal: number; w: number; h: number }[]>();
-  const draws: { fbo: Obj | null; program: Obj | null; units: string; viewport: number[] }[] = [];
-  const binds: (Obj | null)[] = [];
-  const deleted = new Set<Obj>();
-  const methods: Record<string, (...a: never[]) => unknown> = {
-    getExtension: (name: string) => (name === 'EXT_color_buffer_float' || name === 'OES_texture_float_linear' ? {} : null),
-    getShaderParameter: () => true,
-    getProgramParameter: () => true,
-    checkFramebufferStatus: () => K.FRAMEBUFFER_COMPLETE,
-    getUniformLocation: () => make('loc'),
-    createShader: () => make('shader'),
-    createProgram: () => make('program'),
-    createTexture: () => make('texture'),
-    createFramebuffer: () => make('fbo'),
-    createBuffer: () => make('buffer'),
-    createQuery: () => make('query'),
-    fenceSync: () => make('sync'),
-    useProgram: (p: Obj) => void (state.program = p),
-    activeTexture: (u: number) => void (state.unit = u - K.TEXTURE0),
-    bindTexture: (_t: number, tex: Obj | null) => void state.units.set(state.unit, tex),
-    texImage2D: (_t: number, _l: number, internal: number, w: number, h: number) => {
-      const tex = state.units.get(state.unit);
-      if (tex) texInfo.set(tex, { internal, w, h });
-    },
-    bindFramebuffer: (_t: number, fbo: Obj | null) => {
-      state.fbo = fbo;
-      binds.push(fbo);
-    },
-    framebufferTexture2D: (_t: number, att: number, _tt: number, tex: Obj) => {
-      const list = attachments.get(state.fbo!) ?? [];
-      list[att - K.COLOR_ATTACHMENT0] = texInfo.get(tex)!;
-      attachments.set(state.fbo!, list);
-    },
-    deleteFramebuffer: (fbo: Obj) => void deleted.add(fbo),
-    viewport: (...v: number[]) => void (state.viewport = v),
-    drawArrays: () => {
-      const units = [...state.units.entries()]
-        .filter(([, t]) => t)
-        .sort(([a], [b]) => a - b)
-        .map(([u, t]) => `${u}:${t!.id}`)
-        .join(' ');
-      draws.push({ fbo: state.fbo, program: state.program, units, viewport: state.viewport });
-    },
-  };
-  const gl = new Proxy(
-    { drawingBufferWidth: canvasSize.width, drawingBufferHeight: canvasSize.height },
-    {
-      get(target: Record<string, unknown>, prop: string) {
-        if (prop in target) return target[prop];
-        if (prop in methods) return methods[prop];
-        if (/^[A-Z][A-Z0-9_]*$/.test(prop)) return (K[prop] ??= nextConst++);
-        return () => undefined;
-      },
-    },
-  );
-  const canvas = { ...canvasSize, getContext: () => gl } as unknown as HTMLCanvasElement;
-  return { canvas, draws, binds, attachments, deleted };
-}
-
-/** Simulador con el renderizador REAL sobre el WebGL falso (sin caja de color: 10 pasadas por cuadro). */
 function realRig() {
   const rec = recordingGl({ width: 320, height: 240 });
   const sim = new Simulator(clonePatient(NORMAL_ADULT), rec.canvas);
+  sim.equipment = { ...sim.equipment, bmode: { ...sim.equipment.bmode, compound: false } };
   return { ...rec, sim };
 }
 

@@ -23,6 +23,7 @@ describe('HUD', () => {
     depthMm: 180,
     gainDb: 0,
     dynamicRangeDb: 60,
+    compound: false,
     mode: 'B',
     color: { prfHz: 2000, wallFilterHz: 60, frameHz: 8.2 },
     pw: { prfHz: 2600, gateMm: 4, depthMm: 95, sweepMmS: 50 },
@@ -39,6 +40,10 @@ describe('HUD', () => {
     expect(p.topLeft[0]).toBe('Adulto sano · congelada');
     expect(p.topRight[0]).toContain('FA');
     expect(p.chip).toBe('Puerta 9.5 cm · 50 mm/s');
+  });
+  it('«CX» cuando la composición espacial se forma (decisión 58), y solo entonces', () => {
+    expect(hudText({ ...base, compound: true }).topRight[1]).toBe('18 cm · 3,5 MHz · G 0 dB · RD 60 · CX');
+    expect(hudText({ ...base, compound: false }).topRight[1]).not.toContain('CX');
   });
   it('la FC mostrada se suaviza (media móvil) y arranca en el primer valor', () => {
     const hr = new HeartRateDisplay();

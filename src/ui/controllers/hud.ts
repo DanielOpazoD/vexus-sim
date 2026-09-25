@@ -14,6 +14,8 @@ export interface HudInput {
   depthMm: number;
   gainDb: number;
   dynamicRangeDb: number;
+  /** Composición espacial formándose (decisión 58: `compoundActive`, apagada con el color): «CX». */
+  compound: boolean;
   mode: 'B' | 'color' | 'pw';
   color: { prfHz: number; wallFilterHz: number; frameHz: number };
   pw: { prfHz: number; gateMm: number; depthMm: number; sweepMmS: number };
@@ -35,7 +37,8 @@ export function hudText(v: HudInput): HudText {
     topLeft: [v.patientLabel + (v.frozen ? ' · congelada' : '')],
     topRight: [
       `FC ${Math.round(v.heartRateBpm)} lpm · ${v.atrialFibrillation ? 'FA' : 'Sinusal'}`,
-      `${(v.depthMm / 10).toFixed(0)} cm · ${mhz(v.transducerMHz)} MHz · G ${v.gainDb} dB · RD ${v.dynamicRangeDb}`,
+      `${(v.depthMm / 10).toFixed(0)} cm · ${mhz(v.transducerMHz)} MHz · G ${v.gainDb} dB · RD ${v.dynamicRangeDb}` +
+        (v.compound ? ' · CX' : ''),
     ],
     bottomRight: [
       v.mode === 'color'

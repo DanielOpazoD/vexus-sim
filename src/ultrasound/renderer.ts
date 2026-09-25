@@ -14,32 +14,41 @@ import { interfaceUniforms } from './interfaceEcho';
 import {
   GLProgram,
   bindTarget,
+  bindTargetFor,
   createTarget,
   createTexture,
   deleteTarget,
   drawFullscreen,
+  setActiveOutputs,
   type RenderTarget,
   type TargetFormat,
 } from './gl';
 import { GpuPassTimer, summarizeGpuTimings, type GpuFrameTimings } from './gpuTimer';
 import { RECEIVER_NOISE } from './receiver';
 import { FRAME_PASSES, type PassId } from './passGraph';
+import { CompoundRing, compoundActive, lookTheta, type CompoundLook } from './compound';
+import { lookWavenumber } from './steering';
+import type { SegmentGrid } from './transmission';
 import { MAX_NODES, MAX_TUBES, MAX_TUBE_SEGMENTS, NODE_BASE, SCENE_TEX_H, SCENE_TEX_W } from '../anatomy/gpu/anatomy.glsl';
 import { evaluateSceneUniforms, uploadSceneUniforms, type SceneUniformValues } from '../anatomy/gpu/sceneUniforms';
 import {
   FRAG_AXIAL,
   FRAG_BLIT,
   FRAG_COLOR,
+  FRAG_COMPOUND,
   FRAG_LATERAL,
   FRAG_PERSIST,
   FRAG_RAWFIELD,
+  FRAG_RAWFIELD_STEERED,
   FRAG_SCANCONVERT,
   FRAG_TISSUEMAP,
   FRAG_QUERY,
   FRAG_TRANS_HITS,
   FRAG_TRANS_PREFIX,
+  FRAG_TRANS_PREFIX_STEERED,
   FRAG_TRANS_SEGMENTS,
   FRAG_TRANSMISSION,
+  FRAG_TRANSMISSION_STEERED,
   TISSUE_VEC4,
   VERT,
 } from './shaders/passes.glsl';
@@ -53,6 +62,11 @@ export interface BModeSettings {
   tgcDb: readonly number[]; // 8 bandas
   dynamicRangeDb: number;
   persistence: number; // 0–0.8
+  /**
+   * Composición espacial (decisión 58): tres miradas (0, ±θ) intercaladas, una por cuadro, promediadas
+   * en lineal. Solo se forma con el color apagado (`compoundActive`).
+   */
+  compound: boolean;
 }
 
 /** Imagen mostrada leída de la GPU (`readDisplay`): gris 0–255, fila 0 arriba. */
@@ -86,6 +100,7 @@ export const DEFAULT_BMODE: BModeSettings = {
   // preajuste abdominal (decisión 53): 70 dB, como el equipo moderno de referencia
   dynamicRangeDb: 70,
   persistence: 0.35,
+  compound: true,
 };
 
 /**
@@ -195,15 +210,68 @@ export interface GpuPointQuery {
   gradNorm?: Float32Array;
 }
 
+/** Envolvente detectada leída de la GPU (solo pruebas): `data[muestra · lines + línea]`. */
+export interface EnvelopeRead {
+  lines: number;
+  samples: number;
+  data: Float32Array;
+}
+
+/**
+ * Transmisión de la pasada A de una mirada (solo pruebas, `readTransmission`), por línea × profundidad
+ * gruesa (fila k a (k + 0,5)·profundidad/COARSE_DEPTH): la de un solo rayo, la de la apertura y la
+ * profundidad del espejo (−1 sin espejo hasta esa fila). En una mirada dirigida (decisión 58) son las de su
+ * camino, que llega a la celda de la rejilla común: el espejo, en mm a lo largo del camino, y además el
+ * prefijo de A2 (dB) y el primer gas del camino.
+ */
+export interface TransmissionRead {
+  lines: number;
+  samples: number;
+  single: Float32Array;
+  aperture: Float32Array;
+  mirrorHit: Float32Array;
+  /** Mirada (índice del anillo) y su θ (rad). */
+  look: number;
+  theta: number;
+  prefixDb?: Float32Array;
+  sGas?: Float32Array;
+}
+
+/** Composición espacial tras el último cuadro (`compoundState`, decisión 58). */
+export interface CompoundState {
+  /** Regla de actividad del último cuadro (`compoundActive`). */
+  active: boolean;
+  /** Mirada que formó el último cuadro (índice del anillo; la 0 es la mirada 0) y su θ (rad). */
+  look: number;
+  theta: number;
+  /** Ranuras válidas del anillo y cuántas. */
+  valid: readonly boolean[];
+  validCount: number;
+  /** Reinicios del anillo contados desde la creación del renderizador. */
+  resets: number;
+}
+
+/**
+ * Los dos programas de una pasada con miradas (A2, A y B; decisión 58), de una sola fuente: el de la mirada 0
+ * (θ = 0; el de antes de la composición, sin nada de la dirigida) y el de las miradas ±θ. Se elige uno por
+ * cuadro (`lookProgram`). Con uno solo y la rama dirigida detrás de `uSteer.x != 0`, B costaba ~2 ms más
+ * por cuadro en el M4 aun con el compuesto apagado.
+ */
+interface LookPrograms {
+  look0: GLProgram;
+  steered: GLProgram;
+}
+
 export class UltrasoundRenderer {
   readonly gl: WebGL2RenderingContext;
   private pTransHits: GLProgram;
   private pTransSeg: GLProgram;
-  private pTransPre: GLProgram;
-  private pTrans: GLProgram;
-  private pRaw: GLProgram;
+  private pTransPre: LookPrograms;
+  private pTrans: LookPrograms;
+  private pRaw: LookPrograms;
   private pAxial: GLProgram;
   private pLateral: GLProgram;
+  private pCompound: GLProgram;
   private pColor: GLProgram;
   private pScan: GLProgram;
   private pPersist: GLProgram;
@@ -227,6 +295,11 @@ export class UltrasoundRenderer {
   private tTrans: RenderTarget;
   private tRaw: RenderTarget;
   private tAxial: RenderTarget;
+  /**
+   * Anillo de miradas (decisión 58): la envolvente de D de cada mirada, en su ranura; K compone las válidas
+   * en `tEnv`, la que convierte G.
+   */
+  private readonly tEnvLooks: RenderTarget[];
   private tEnv: RenderTarget;
   private tColor: RenderTarget;
   private tScan: RenderTarget | null = null;
@@ -240,6 +313,13 @@ export class UltrasoundRenderer {
   private couplingTex: WebGLTexture;
   private couplingData: Float32Array;
   private frameCount = 0;
+  /** Adquisición intercalada de la composición espacial (decisión 58): una mirada por cuadro. */
+  private readonly ring: CompoundRing;
+  /** Mirada del último cuadro (null antes del primero) y la regla de actividad con que se formó. */
+  private look: CompoundLook | null = null;
+  private lookActive = false;
+  /** Número de onda de ida y vuelta de la fase de mirada (4π/λ, rad/mm). */
+  private readonly k2: number;
   /** Ancla del medio de dispersores (decisión 55): fija con la sonda, se renueva con giros grandes. */
   private readonly speckleAnchor = new ElevationAnchor();
   private lastAnchorWeight = 1;
@@ -280,6 +360,8 @@ export class UltrasoundRenderer {
     readonly profile: TransducerProfile,
   ) {
     this.lines = profile.geometry.lines;
+    this.ring = new CompoundRing(profile.compound);
+    this.k2 = lookWavenumber(profile.beam);
     this.ifaceK0 = (2 * Math.PI) / profile.beam.lambdaMm;
     this.ifaceUniforms = interfaceUniforms(this.ifaceK0);
     const LINES = this.lines;
@@ -289,32 +371,58 @@ export class UltrasoundRenderer {
     this.gl = gl;
     if (!gl.getExtension('EXT_color_buffer_float')) throw new Error('EXT_color_buffer_float no disponible');
     gl.getExtension('OES_texture_float_linear');
+    // compilación en hilos de fondo del navegador (opcional; sin ella, el mismo lote en serie): se pide antes
+    // de compilar, y `linkAll` encarga todos los programas antes de comprobar ninguno (decisión 58)
+    gl.getExtension('KHR_parallel_shader_compile');
     this.timer = new GpuPassTimer<PassId>(gl);
-    this.pTransHits = new GLProgram(gl, VERT, FRAG_TRANS_HITS, 'transmissionHits');
-    this.pTransSeg = new GLProgram(gl, VERT, FRAG_TRANS_SEGMENTS, 'transmissionSegments');
-    this.pTransPre = new GLProgram(gl, VERT, FRAG_TRANS_PREFIX, 'transmissionPrefix');
-    this.pTrans = new GLProgram(gl, VERT, FRAG_TRANSMISSION, 'transmission');
-    this.pRaw = new GLProgram(gl, VERT, FRAG_RAWFIELD, 'rawfield');
-    this.pAxial = new GLProgram(gl, VERT, FRAG_AXIAL, 'axial');
-    this.pLateral = new GLProgram(gl, VERT, FRAG_LATERAL, 'lateral');
-    this.pColor = new GLProgram(gl, VERT, FRAG_COLOR, 'color');
-    this.pScan = new GLProgram(gl, VERT, FRAG_SCANCONVERT, 'scanconvert');
-    this.pPersist = new GLProgram(gl, VERT, FRAG_PERSIST, 'persist');
-    this.pBlit = new GLProgram(gl, VERT, FRAG_BLIT, 'blit');
-    this.pMap = new GLProgram(gl, VERT, FRAG_TISSUEMAP, 'tissuemap');
+    const p = GLProgram.linkAll(gl, VERT, {
+      transmissionHits: FRAG_TRANS_HITS,
+      transmissionSegments: FRAG_TRANS_SEGMENTS,
+      transmissionPrefix: FRAG_TRANS_PREFIX,
+      transmissionPrefixSteered: FRAG_TRANS_PREFIX_STEERED,
+      transmission: FRAG_TRANSMISSION,
+      transmissionSteered: FRAG_TRANSMISSION_STEERED,
+      rawfield: FRAG_RAWFIELD,
+      rawfieldSteered: FRAG_RAWFIELD_STEERED,
+      axial: FRAG_AXIAL,
+      lateral: FRAG_LATERAL,
+      compound: FRAG_COMPOUND,
+      color: FRAG_COLOR,
+      scanconvert: FRAG_SCANCONVERT,
+      persist: FRAG_PERSIST,
+      blit: FRAG_BLIT,
+      tissuemap: FRAG_TISSUEMAP,
+    });
+    this.pTransHits = p.transmissionHits;
+    this.pTransSeg = p.transmissionSegments;
+    this.pTransPre = { look0: p.transmissionPrefix, steered: p.transmissionPrefixSteered };
+    this.pTrans = { look0: p.transmission, steered: p.transmissionSteered };
+    this.pRaw = { look0: p.rawfield, steered: p.rawfieldSteered };
+    this.pAxial = p.axial;
+    this.pLateral = p.lateral;
+    this.pCompound = p.compound;
+    this.pColor = p.color;
+    this.pScan = p.scanconvert;
+    this.pPersist = p.persist;
+    this.pBlit = p.blit;
+    this.pMap = p.tissuemap;
     const f = { internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.LINEAR };
     const f2 = { internal: gl.RG32F, format: gl.RG, type: gl.FLOAT, filter: gl.LINEAR };
     const f1 = { internal: gl.R32F, format: gl.RED, type: gl.FLOAT, filter: gl.LINEAR };
     // impactos y segmentos se leen con texelFetch (NEAREST: nunca interpolar profundidades de impacto);
     // la transmisión final: 0 = (ida y vuelta con apertura, impactos), 1 = (dirección, tipo de gas),
-    // 2 = un solo rayo (color y PW)
+    // 2 = un solo rayo (color y PW), 3 = la mirada dirigida del cuadro (decisión 58; su .x se interpola
+    // como la 0); la suma A2, además, el prefijo de esa mirada (2 y 3)
     const fn = { internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.NEAREST };
     this.tHits = createTarget(gl, LINES, 1, [fn, fn]);
     this.tSeg = createTarget(gl, LINES, COARSE_DEPTH, [fn]);
-    this.tPre = createTarget(gl, LINES, COARSE_DEPTH, [fn, fn]);
-    this.tTrans = createTarget(gl, LINES, COARSE_DEPTH, [f, fn, f]);
+    this.tPre = createTarget(gl, LINES, COARSE_DEPTH, [fn, fn, fn, fn]);
+    this.tTrans = createTarget(gl, LINES, COARSE_DEPTH, [f, fn, f, f]);
     this.tRaw = createTarget(gl, LINES, FINE_DEPTH, [f2]);
     this.tAxial = createTarget(gl, LINES, FINE_DEPTH, [f2]);
+    // anillo de miradas: K las lee con texelFetch, en la misma celda
+    const f1n = { internal: gl.R32F, format: gl.RED, type: gl.FLOAT, filter: gl.NEAREST };
+    this.tEnvLooks = profile.compound.order.map(() => createTarget(gl, LINES, FINE_DEPTH, [f1n]));
     this.tEnv = createTarget(gl, LINES, FINE_DEPTH, [f1]);
     this.tColor = createTarget(gl, COLOR_W, COLOR_H, [f]);
     this.tMap = createTarget(gl, MAP_W, MAP_H, [{ internal: gl.RGBA8, format: gl.RGBA, type: gl.UNSIGNED_BYTE, filter: gl.NEAREST }]);
@@ -326,13 +434,15 @@ export class UltrasoundRenderer {
   /**
    * Cambia de paciente conservando programas y destinos: los shaders no dependen de la escena
    * (solo sus uniforms y la textura de datos), así que el cambio de caso deja de recompilar
-   * diez programas (≈ 200 ms con GPU, muchos segundos con SwiftShader). Se descarta todo lo
+   * sus 16 programas (con diez eran ≈ 200 ms con GPU y muchos segundos con SwiftShader). Se descarta todo lo
    * que pertenecía al paciente anterior: uniforms en caché, persistencia, color y mapa de tejidos.
    */
   setScene(scene: AnatomyScene): void {
     const gl = this.gl;
     this.currentScene = scene;
     this.speckleAnchor.reset();
+    // las miradas guardadas son de otro paciente: el siguiente cuadro reinicia el anillo con la mirada 0
+    this.ring.invalidate();
     this.sceneValuesFor = null;
     this.sceneValuesTubes = -1;
     this.sceneData.fill(0);
@@ -361,11 +471,10 @@ export class UltrasoundRenderer {
     for (const p of [
       this.pTransHits,
       this.pTransSeg,
-      this.pTransPre,
-      this.pTrans,
-      this.pRaw,
+      ...[this.pTransPre, this.pTrans, this.pRaw].flatMap((l) => [l.look0, l.steered]),
       this.pAxial,
       this.pLateral,
+      this.pCompound,
       this.pColor,
       this.pScan,
       this.pPersist,
@@ -375,7 +484,18 @@ export class UltrasoundRenderer {
       p.dispose();
     this.pQuery?.dispose();
     this.timer.dispose();
-    for (const t of [this.tHits, this.tSeg, this.tPre, this.tTrans, this.tRaw, this.tAxial, this.tEnv, this.tColor, this.tMap])
+    for (const t of [
+      this.tHits,
+      this.tSeg,
+      this.tPre,
+      this.tTrans,
+      this.tRaw,
+      this.tAxial,
+      ...this.tEnvLooks,
+      this.tEnv,
+      this.tColor,
+      this.tMap,
+    ])
       deleteTarget(gl, t);
     if (this.tScan) deleteTarget(gl, this.tScan);
     if (this.tPersist) for (const t of this.tPersist) deleteTarget(gl, t);
@@ -552,6 +672,7 @@ export class UltrasoundRenderer {
    *   A transmisión (marcha por rayos, atenuación, gas, hueso, espejo) →
    *   B campo complejo crudo (dispersores + eco de interfaz + ruido) →
    *   C convolución axial → D convolución lateral + envolvente →
+   *   K composición espacial (media de las miradas del anillo; paso directo exacto con una) →
    *   F color (cadencia propia) → G conversión de barrido + mapa de grises →
    *   persistencia → presentación. (E está reservada; H es el mapa de tejidos
    *   de depuración, `tissueMap`.)
@@ -563,6 +684,18 @@ export class UltrasoundRenderer {
     this.timer.poll();
     this.updateCoupling(inputs);
     this.updateSceneDynamic(inputs);
+    // mirada de este cuadro (decisión 58): con el compuesto inactivo, siempre la 0
+    const fr = inputs.frame;
+    this.lookActive = compoundActive(inputs.bmode, inputs.color);
+    this.look = this.ring.next({
+      active: this.lookActive,
+      depthMm: inputs.bmode.depthMm,
+      focusMm: inputs.bmode.focusMm,
+      lines: this.lines,
+      face: fr.face,
+      axial: fr.axial,
+      elevation: fr.elevation,
+    });
     const c = inputs.color;
     const colorDue = c.enabled && (inputs.updateColor || !this.lastColorFrame);
     // los destinos de prueba se crean antes de las pasadas: crear una textura cambia la de la unidad activa,
@@ -588,7 +721,8 @@ export class UltrasoundRenderer {
     transmission: () => this.tTrans,
     rawField: () => this.tRaw,
     axial: () => this.tAxial,
-    lateral: () => this.tEnv,
+    lateral: () => this.tEnvLooks[this.look?.index ?? 0],
+    compound: () => this.tEnv,
     color: () => this.tColor,
     scanConvert: () => this.tScan!,
     // tras la pasada, `persistIndex` ya apunta a la historia recién escrita
@@ -624,8 +758,11 @@ export class UltrasoundRenderer {
    */
   private drawRepeats(id: PassId, targets: readonly [RenderTarget, RenderTarget], times: number): void {
     const gl = this.gl;
+    // los destinos de prueba, con los mismos adjuntos activos que el de la pasada (el programa puesto es el suyo)
+    const outputs = this.passOutputs[id]()?.activeOutputs;
     for (let k = 0; k < times; k++) {
       bindTarget(gl, targets[k % 2]);
+      if (outputs !== undefined) setActiveOutputs(gl, targets[k % 2], outputs);
       drawFullscreen(gl);
     }
     bindTarget(gl, this.passOutputs[id](), this.canvas.width, this.canvas.height);
@@ -649,6 +786,7 @@ export class UltrasoundRenderer {
     rawField: (inputs) => this.passRawField(inputs),
     axial: (inputs) => this.passAxial(inputs),
     lateral: (inputs) => this.passLateral(inputs),
+    compound: (inputs) => this.passCompound(inputs),
     color: (inputs) => this.passColor(inputs),
     scanConvert: (inputs) => this.passScanConvert(inputs),
     persistence: (inputs) => this.passPersistence(inputs),
@@ -679,64 +817,109 @@ export class UltrasoundRenderer {
     drawFullscreen(gl);
   }
 
-  // A2 — atenuación acumulada hasta cada profundidad (sin clasificar)
+  // A2 — atenuación acumulada hasta cada profundidad (sin clasificar); con una mirada dirigida, también la
+  // de su camino (o2, o3)
   private passTransmissionPrefix(inputs: FrameInputs): void {
     const gl = this.gl;
-    bindTarget(gl, this.tPre);
-    this.pTransPre.use();
-    this.setBeamUniforms(this.pTransPre, inputs);
-    this.pTransPre.f('uCoarseN', COARSE_DEPTH);
-    this.pTransPre.tex('uSeg', 0, this.tSeg.textures[0]);
-    this.pTransPre.tex('uHits0', 1, this.tHits.textures[0]);
-    this.pTransPre.tex('uHits1', 2, this.tHits.textures[1]);
+    const steered = this.steeredLook();
+    const p = this.lookProgram(this.pTransPre);
+    // la mirada 0 escribe 2 de sus 4 adjuntos: con los otros activos WebGL no dibujaría
+    bindTargetFor(gl, this.tPre, p);
+    p.use();
+    this.setBeamUniforms(p, inputs);
+    p.f('uCoarseN', COARSE_DEPTH);
+    p.tex('uSeg', 0, this.tSeg.textures[0]);
+    p.tex('uHits0', 1, this.tHits.textures[0]);
+    p.tex('uHits1', 2, this.tHits.textures[1]);
+    if (steered) this.setSteerUniforms(p, inputs);
     drawFullscreen(gl);
   }
 
-  // A — transmisión con la penumbra de la apertura (y la de un solo rayo para el Doppler)
+  /** El cuadro es de una mirada dirigida (θ ≠ 0, decisión 58): A2, A y B usan su programa dirigido. */
+  private steeredLook(): boolean {
+    return (this.look?.theta ?? 0) !== 0;
+  }
+
+  /** Programa de la mirada del cuadro (`LookPrograms`); el que queda puesto repiten `drawRepeats`. */
+  private lookProgram(p: LookPrograms): GLProgram {
+    return this.steeredLook() ? p.steered : p.look0;
+  }
+
+  /**
+   * Mirada del cuadro (decisión 58) para los programas dirigidos de A2, A y B: uSteer = (θ, R·sin θ, R·cos θ,
+   * k2). Los de la mirada 0 no la declaran.
+   */
+  private setSteerUniforms(p: GLProgram, inputs: FrameInputs): void {
+    const th = this.look?.theta ?? 0;
+    const R = inputs.transducer.curvatureRadius;
+    p.v4('uSteer', th, R * Math.sin(th), R * Math.cos(th), this.k2);
+  }
+
+  // A — transmisión con la penumbra de la apertura (y la de un solo rayo para el Doppler); con una mirada
+  // dirigida, también la de su camino (o3)
   private passTransmission(inputs: FrameInputs): void {
     const gl = this.gl;
     const beam = this.profile.beam;
-    bindTarget(gl, this.tTrans);
-    this.pTrans.use();
-    this.setBeamUniforms(this.pTrans, inputs);
-    this.pTrans.f('uCoarseN', COARSE_DEPTH);
-    this.pTrans.tex('uPre0', 0, this.tPre.textures[0]);
-    this.pTrans.tex('uPre1', 1, this.tPre.textures[1]);
-    this.pTrans.tex('uHits0', 2, this.tHits.textures[0]);
-    this.pTrans.v3('uAperture', [beam.apertureTxMm, beam.apertureRxMaxMm, beam.fNumberRxMin]);
+    const steered = this.steeredLook();
+    const p = this.lookProgram(this.pTrans);
+    // la mirada 0 escribe 3 de sus 4 adjuntos (ver A2)
+    bindTargetFor(gl, this.tTrans, p);
+    p.use();
+    this.setBeamUniforms(p, inputs);
+    p.f('uCoarseN', COARSE_DEPTH);
+    p.tex('uPre0', 0, this.tPre.textures[0]);
+    p.tex('uPre1', 1, this.tPre.textures[1]);
+    p.tex('uHits0', 2, this.tHits.textures[0]);
+    p.v3('uAperture', [beam.apertureTxMm, beam.apertureRxMaxMm, beam.fNumberRxMin]);
+    if (steered) {
+      // el prefijo de la mirada del cuadro, que A2 acaba de escribir con su programa dirigido
+      p.tex('uPreSteer', 3, this.tPre.textures[2]);
+      p.tex('uPreSteerX', 4, this.tPre.textures[3]);
+      this.setSteerUniforms(p, inputs);
+    }
     drawFullscreen(gl);
   }
 
-  // B — campo crudo
+  // B — campo crudo: la mirada 0 o, en su programa, la dirigida del cuadro (decisión 58)
   private passRawField(inputs: FrameInputs): void {
     const gl = this.gl;
     const tr = inputs.transducer;
+    const steered = this.steeredLook();
+    const p = this.lookProgram(this.pRaw);
     bindTarget(gl, this.tRaw);
-    this.pRaw.use();
-    this.setSceneUniforms(this.pRaw, inputs);
-    this.setBeamUniforms(this.pRaw, inputs);
-    this.pRaw.tex('uTrans0', 0, this.tTrans.textures[0]);
-    this.pRaw.tex('uTrans1', 1, this.tTrans.textures[1]);
-    this.pRaw.f('uSeed', (inputs.seed % 1000) / 7.0);
-    this.pRaw.f('uLattice', 0.42);
-    this.pRaw.f('uElevSigma0', 1.6);
-    this.pRaw.f('uElevFocus', tr.elevationFocusMm);
+    p.use();
+    this.setSceneUniforms(p, inputs);
+    this.setBeamUniforms(p, inputs);
+    if (steered) {
+      // la dirigida lee A o1 (la dirección reflejada de la línea del espejo) y o3 (su camino), no o0
+      p.tex('uTrans1', 1, this.tTrans.textures[1]);
+      p.tex('uTrans3', 2, this.tTrans.textures[3]);
+      this.setSteerUniforms(p, inputs);
+      p.f('uLookSalt', this.look?.salt ?? 0);
+    } else {
+      p.tex('uTrans0', 0, this.tTrans.textures[0]);
+      p.tex('uTrans1', 1, this.tTrans.textures[1]);
+    }
+    p.f('uSeed', (inputs.seed % 1000) / 7.0);
+    p.f('uLattice', 0.42);
+    p.f('uElevSigma0', 1.6);
+    p.f('uElevFocus', tr.elevationFocusMm);
     // Ruido del receptor (receiver.ts): la misma escala con la que el shader omite el transitorio
-    this.pRaw.f('uNoise', RECEIVER_NOISE);
-    this.pRaw.f('uFrame', this.frameCount);
+    p.f('uNoise', RECEIVER_NOISE);
+    p.f('uFrame', this.frameCount);
     const an = this.speckleAnchor.update(inputs.frame.face, inputs.frame.elevation);
     this.lastAnchorWeight = an.w;
-    this.pRaw.v3('uAnchorE0', an.a.e);
-    this.pRaw.v3('uAnchorP0', an.a.p);
-    this.pRaw.v3('uAnchorE1', an.b.e);
-    this.pRaw.v3('uAnchorP1', an.b.p);
-    this.pRaw.v2('uAnchorSalt', an.a.parity * ANCHOR_SALT_STEP, an.b.parity * ANCHOR_SALT_STEP);
-    this.pRaw.f('uAnchorW', an.w);
-    this.pRaw.v4v('uTissueClump4', this.clump);
+    p.v3('uAnchorE0', an.a.e);
+    p.v3('uAnchorP0', an.a.p);
+    p.v3('uAnchorE1', an.b.e);
+    p.v3('uAnchorP1', an.b.p);
+    p.v2('uAnchorSalt', an.a.parity * ANCHOR_SALT_STEP, an.b.parity * ANCHOR_SALT_STEP);
+    p.f('uAnchorW', an.w);
+    p.v4v('uTissueClump4', this.clump);
     // eco de interfaz (decisión 57): tabla de caras y PSF lateral para la coherencia de curvatura
-    this.pRaw.v4v('uIface', this.ifaceUniforms);
-    this.pRaw.f('uIfaceK0', this.ifaceK0);
-    this.setLateralPsfUniforms(this.pRaw, inputs);
+    p.v4v('uIface', this.ifaceUniforms);
+    p.f('uIfaceK0', this.ifaceK0);
+    this.setLateralPsfUniforms(p, inputs);
     drawFullscreen(gl);
   }
 
@@ -765,7 +948,8 @@ export class UltrasoundRenderer {
     const gl = this.gl;
     const tr = inputs.transducer;
     const depth = inputs.bmode.depthMm;
-    bindTarget(gl, this.tEnv);
+    // la envolvente de la mirada del cuadro va a su ranura del anillo; K la compone en tEnv
+    bindTarget(gl, this.tEnvLooks[this.look?.index ?? 0]);
     this.pLateral.use();
     this.pLateral.tex('uField', 0, this.tAxial.textures[0]);
     this.pLateral.v2('uTexel', 1 / this.lines, 1 / FINE_DEPTH);
@@ -774,6 +958,29 @@ export class UltrasoundRenderer {
     this.pLateral.f('uHalfSector', tr.halfSector);
     this.pLateral.f('uLinesF', this.lines);
     this.setLateralPsfUniforms(this.pLateral, inputs);
+    drawFullscreen(gl);
+  }
+
+  // K — composición espacial (decisión 58): media de las miradas válidas del anillo ponderada por cobertura
+  private passCompound(inputs: FrameInputs): void {
+    const gl = this.gl;
+    const tr = inputs.transducer;
+    const order = this.profile.compound.order;
+    bindTarget(gl, this.tEnv);
+    this.pCompound.use();
+    this.tEnvLooks.forEach((t, i) => this.pCompound.tex(`uLook${i}`, i, t.textures[0]));
+    this.pCompound.fv(
+      'uLookSteer',
+      order.map((_, i) => lookTheta(i, this.profile.compound)),
+    );
+    this.pCompound.fv(
+      'uLookValid',
+      order.map((_, i) => (this.look?.valid[i] ? 1 : 0)),
+    );
+    this.pCompound.f('uCurvR', tr.curvatureRadius);
+    this.pCompound.f('uHalfSector', tr.halfSector);
+    this.pCompound.f('uLinesF', this.lines);
+    this.pCompound.f('uDepth', inputs.bmode.depthMm);
     drawFullscreen(gl);
   }
 
@@ -953,7 +1160,7 @@ export class UltrasoundRenderer {
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, W, H, gl.RGBA, gl.FLOAT, data);
     const f = { internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.NEAREST };
     const target = createTarget(gl, W, H, [f, f, f]);
-    this.pQuery ??= new GLProgram(gl, VERT, FRAG_QUERY, 'query');
+    this.pQuery ??= GLProgram.link(gl, VERT, FRAG_QUERY, 'query');
     // puntos fuera del plano (equivalencia volumétrica): todos los tubos, sin recorte por losa
     this.updateSceneDynamic(inputs, allTubes);
     bindTarget(gl, target);
@@ -1036,15 +1243,59 @@ export class UltrasoundRenderer {
   }
 
   /**
-   * Envolvente detectada del último cuadro (líneas × profundidad, antes de la compresión
-   * logarítmica y de la persistencia). Solo pruebas: lectura GPU→CPU bloqueante.
+   * Envolvente detectada (líneas × profundidad, antes de la compresión logarítmica y de la persistencia).
+   * Solo pruebas: lectura GPU→CPU bloqueante. La fuente es explícita (decisión 58):
+   *  - `'look0'` (por defecto): la mirada 0, la imagen de una mirada de siempre. Lanza si la mirada 0 no es
+   *    la del último cuadro (compuesto activo y el último cuadro fue una mirada dirigida): una guarda de una
+   *    mirada no debe medir en silencio una envolvente de otro cuadro;
+   *  - `'compound'`: la salida de K, la que se ve (con el compuesto apagado, la mirada 0 bit a bit).
    */
-  readEnvelope(): { lines: number; samples: number; data: Float32Array } {
+  readEnvelope(opts: { source?: 'look0' | 'compound' } = {}): EnvelopeRead {
+    const source = opts.source ?? 'look0';
+    if (source === 'compound') return this.readR32F(this.tEnv);
+    const last = this.look;
+    if (last !== null && last.index !== 0)
+      throw new Error(
+        `readEnvelope: la mirada 0 no es del último cuadro (compuesto activo, mirada ${last.index}); ` +
+          "lee { source: 'compound' } o mide con el compuesto apagado",
+      );
+    return this.readR32F(this.tEnvLooks[0]);
+  }
+
+  /**
+   * Envolvente de una ranura del anillo de miradas (decisión 58), con su θ. Solo pruebas: lectura GPU→CPU
+   * bloqueante. Lanza si la ranura no tiene una mirada válida (anillo reiniciado o compuesto apagado).
+   */
+  readLookEnvelope(slot: number): EnvelopeRead & { theta: number } {
+    const valid = this.look?.valid ?? [];
+    if (!Number.isInteger(slot) || slot < 0 || slot >= this.tEnvLooks.length)
+      throw new RangeError(`readLookEnvelope: ranura ${slot} fuera del anillo (${this.tEnvLooks.length})`);
+    if (!valid[slot]) throw new Error(`readLookEnvelope: la ranura ${slot} no tiene una mirada válida (anillo ${JSON.stringify(valid)})`);
+    return { ...this.readR32F(this.tEnvLooks[slot]), theta: lookTheta(slot, this.profile.compound) };
+  }
+
+  /** Estado de la composición espacial tras el último cuadro (decisión 58). */
+  compoundState(): CompoundState {
+    const st = this.ring.state();
+    const last = st.last;
+    const n = this.profile.compound.order.length;
+    return {
+      active: this.lookActive,
+      look: last?.index ?? 0,
+      theta: last?.theta ?? 0,
+      valid: last ? [...last.valid] : Array<boolean>(n).fill(false),
+      validCount: last?.validCount ?? 0,
+      resets: st.resets,
+    };
+  }
+
+  /** Lectura bloqueante de un destino R32F (solo pruebas). */
+  private readR32F(t: RenderTarget): EnvelopeRead {
     const gl = this.gl;
-    const W = this.lines;
-    const H = FINE_DEPTH;
+    const W = t.width;
+    const H = t.height;
     const rgba = new Float32Array(W * H * 4);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.tEnv.fbo);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, t.fbo);
     gl.readBuffer(gl.COLOR_ATTACHMENT0);
     gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, rgba);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -1053,34 +1304,99 @@ export class UltrasoundRenderer {
     return { lines: W, samples: H, data };
   }
 
-  /**
-   * Transmisión de un solo rayo (ida y vuelta, amplitud) y profundidad del espejo por línea ×
-   * profundidad gruesa, fila k a (k + 0,5)·profundidad/COARSE_DEPTH. Solo pruebas: la paridad de la
-   * pasada A con el modelo de CPU (`ultrasound/transmission.ts`).
-   */
-  readTransmission(): { lines: number; samples: number; single: Float32Array; aperture: Float32Array; mirrorHit: Float32Array } {
+  /** Un adjunto RGBA32F entero de un destino (solo pruebas: lectura bloqueante). */
+  private readRgba(t: RenderTarget, attachment: number): Float32Array {
     const gl = this.gl;
+    const px = new Float32Array(t.width * t.height * 4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, t.fbo);
+    gl.readBuffer(gl.COLOR_ATTACHMENT0 + attachment);
+    gl.readPixels(0, 0, t.width, t.height, gl.RGBA, gl.FLOAT, px);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return px;
+  }
+
+  /**
+   * Transmisión de la pasada A por línea × profundidad gruesa (`TransmissionRead`). Solo pruebas: la
+   * paridad de la pasada A con el modelo de CPU (`ultrasound/transmission.ts`) y las máscaras del banco.
+   * `look` (0 por defecto) es la mirada: la 0 se calcula en todos los cuadros; una dirigida, solo en el
+   * cuadro que la forma, así que lanza si el último cuadro fue de otra mirada (decisión 58).
+   */
+  readTransmission(opts: { look?: number } = {}): TransmissionRead {
+    const look = opts.look ?? 0;
     const W = this.lines;
     const H = COARSE_DEPTH;
-    const read = (attachment: number): Float32Array => {
-      const px = new Float32Array(W * H * 4);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, this.tTrans.fbo);
-      gl.readBuffer(gl.COLOR_ATTACHMENT0 + attachment);
-      gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, px);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      return px;
-    };
-    const a2 = read(2);
-    const a0 = read(0);
-    const single = new Float32Array(W * H);
-    const aperture = new Float32Array(W * H);
-    const mirrorHit = new Float32Array(W * H);
-    for (let i = 0; i < W * H; i++) {
-      single[i] = a2[i * 4];
-      aperture[i] = a0[i * 4];
-      mirrorHit[i] = a0[i * 4 + 3];
+    const n = W * H;
+    if (look === 0) {
+      const a2 = this.readRgba(this.tTrans, 2);
+      const a0 = this.readRgba(this.tTrans, 0);
+      const single = new Float32Array(n);
+      const aperture = new Float32Array(n);
+      const mirrorHit = new Float32Array(n);
+      for (let i = 0; i < n; i++) {
+        single[i] = a2[i * 4];
+        aperture[i] = a0[i * 4];
+        mirrorHit[i] = a0[i * 4 + 3];
+      }
+      return { lines: W, samples: H, single, aperture, mirrorHit, look: 0, theta: 0 };
     }
-    return { lines: W, samples: H, single, aperture, mirrorHit };
+    const last = this.look;
+    if (last === null || last.index !== look)
+      throw new Error(`readTransmission: la mirada ${look} no es la del último cuadro (mirada ${last?.index ?? '—'})`);
+    const pre = this.readRgba(this.tPre, 2);
+    const a3 = this.readRgba(this.tTrans, 3);
+    const single = new Float32Array(n);
+    const aperture = new Float32Array(n);
+    const mirrorHit = new Float32Array(n);
+    const prefixDb = new Float32Array(n);
+    const sGas = new Float32Array(n);
+    for (let i = 0; i < n; i++) {
+      prefixDb[i] = pre[i * 4];
+      single[i] = Math.pow(10, -pre[i * 4] / 20);
+      aperture[i] = a3[i * 4];
+      sGas[i] = a3[i * 4 + 1];
+      mirrorHit[i] = a3[i * 4 + 3];
+    }
+    return { lines: W, samples: H, single, aperture, mirrorHit, look, theta: last.theta, prefixDb, sGas };
+  }
+
+  /**
+   * Salidas de A0 y A1 del último cuadro como rejilla de segmentos (`SegmentGrid`): la entrada de los
+   * gemelos de A2 (`prefixDb`, `steeredPrefixDb`). Solo pruebas: la paridad del prefijo dirigido de la GPU
+   * con el de TS sobre los mismos segmentos (decisión 58).
+   */
+  readSegments(depthMm: number): SegmentGrid {
+    const W = this.lines;
+    const H = COARSE_DEPTH;
+    const seg = this.readRgba(this.tSeg, 0);
+    const h0 = this.readRgba(this.tHits, 0);
+    const h1 = this.readRgba(this.tHits, 1);
+    const n = W * H;
+    const grid: SegmentGrid = {
+      lines: W,
+      rows: H,
+      stepMm: depthMm / H,
+      db: new Float64Array(n),
+      air: new Uint8Array(n),
+      bone: new Uint8Array(n),
+      gas: new Uint8Array(n),
+      mirrorSeg: new Int32Array(W),
+      mirrorR: new Float64Array(W),
+    };
+    // la textura va por filas (fila s, línea l); la rejilla, por línea (l·rows + s)
+    for (let s = 0; s < H; s++)
+      for (let l = 0; l < W; l++) {
+        const t = (s * W + l) * 4;
+        const i = l * H + s;
+        grid.db[i] = seg[t];
+        grid.air[i] = seg[t + 1] > 0.5 ? 1 : 0;
+        grid.bone[i] = seg[t + 2] > 0.5 ? 1 : 0;
+        grid.gas[i] = Math.round(seg[t + 3]);
+      }
+    for (let l = 0; l < W; l++) {
+      grid.mirrorSeg[l] = Math.round(h0[l * 4]);
+      grid.mirrorR[l] = h0[l * 4] >= 0 ? h1[l * 4 + 3] : -1;
+    }
+    return grid;
   }
 
   /**

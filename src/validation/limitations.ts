@@ -31,4 +31,6 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'interface-echo-scope',
   'interface-echo-coherent-only',
   'interface-curvature-tubes-only',
+  'speckle-line-aliasing',
+  'compound-off-in-color',
 ]);

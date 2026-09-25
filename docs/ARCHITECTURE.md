@@ -52,10 +52,24 @@ menú de capas) reciben funciones de acceso, no variables globales.
 ```
 input.tick(dt) / animación de punto de partida     gestos y teclas → pose
 sim.advance(dt)                     n pasos: fisiología → (si PW) puerta + IQ → filtro → STFT → audio
-sim.render()                        GPU: A transmisión → B campo+eco de interfaz+ruido → C/D PSF unitaria+envolvente → F color → G barrido → persistencia
+sim.render()                        GPU: A transmisión → B campo+eco de interfaz+ruido → C/D PSF unitaria+envolvente → K composición → F color → G barrido → persistencia
                                     (tabla FRAME_PASSES de ultrasound/passGraph.ts, validada; tiempo de GPU por pasada)
 overlay, navegador 3D, corte, ECG, espectrograma, HUD, consola   vistas
 ```
+
+Composición espacial (decisión 58): cada cuadro B forma una mirada, en el orden 0, +θ, −θ, que lleva el
+anillo `CompoundRing` de `src/ultrasound/compound.ts` dentro del renderizador. A2, A y B tienen dos
+programas cada una, de una sola fuente en `src/ultrasound/shaders/passes.glsl.ts`: el de la mirada 0, byte a
+byte el de antes de la composición, y el dirigido (`FRAG_*_STEERED`, el único que declara `uSteer`); el
+renderizador usa el de la mirada del cuadro (`LookPrograms`). En un cuadro dirigido, A2 y A calculan la
+mirada 0 de siempre y además la de esa mirada, y B solo la dirigida, en la rejilla común (geometría en
+`src/ultrasound/steering.ts`; prefijo y penumbra dirigidos en `src/ultrasound/transmission.ts` y
+`src/ultrasound/aperture.ts`; fase por nodo en `src/ultrasound/speckleField.ts`). D escribe la envolvente
+en la ranura de su mirada (`envLooks`, tres destinos R32F: una historia externa del grafo, como la de la
+persistencia) y la pasada K (`FRAG_COMPOUND`) compone las ranuras válidas en `env`, la que convierte G;
+con una sola mirada válida (compuesto apagado, color encendido o el cuadro tras un reinicio) es un paso
+directo exacto. Las pruebas leen la fuente explícita: `readEnvelope({ source: 'look0' | 'compound' })`,
+`readLookEnvelope(ranura)` y `readTransmission({ look })`.
 
 ## Disposición y vistas (`src/ui`)
 

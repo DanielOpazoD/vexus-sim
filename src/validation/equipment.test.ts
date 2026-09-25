@@ -85,4 +85,18 @@ describe('Estado del equipo', () => {
     c.dispatch({ type: 'stepDepth', deltaMm: -20 });
     expect(seen).toEqual([-20]);
   });
+
+  it('composición espacial (decisión 58): encendida por defecto; el conmutador sobrevive a abrir el color', () => {
+    let e = base();
+    expect(e.bmode.compound).toBe(true);
+    e = reduceEquipment(e, { type: 'compound', enabled: false }, ctx);
+    expect(e.bmode.compound).toBe(false);
+    e = reduceEquipment(e, { type: 'compound', enabled: true }, ctx);
+    // el color apaga el compuesto por la regla de actividad (compoundActive), no el conmutador
+    e = reduceEquipment(e, { type: 'mode', mode: 'color' }, ctx);
+    expect(e.bmode.compound).toBe(true);
+    e = reduceEquipment(e, { type: 'mode', mode: 'B' }, ctx);
+    expect(e.bmode.compound).toBe(true);
+    expect(normalizeEquipment(e, ctx)).toEqual(e);
+  });
 });

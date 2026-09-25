@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { AnatomyScene } from '../anatomy/scene';
 import { INTERFACE_COUNT } from '../anatomy/interfaces';
@@ -5,7 +6,22 @@ import { TISSUE_COUNT } from '../anatomy/tissues';
 import { CASES } from '../cases';
 import { ANATOMY_GLSL, MAX_NODES, MAX_TUBES, MAX_TUBE_SEGMENTS } from '../anatomy/gpu/anatomy.glsl';
 import * as PASSES from '../ultrasound/shaders/passes.glsl';
-import { FRAG_RAWFIELD, FRAG_TRANSMISSION, TISSUE_VEC4 } from '../ultrasound/shaders/passes.glsl';
+import {
+  FRAG_COMPOUND,
+  FRAG_RAWFIELD,
+  FRAG_RAWFIELD_STEERED,
+  FRAG_TRANS_PREFIX,
+  FRAG_TRANS_PREFIX_STEERED,
+  FRAG_TRANSMISSION,
+  FRAG_TRANSMISSION_STEERED,
+  STEERED_FIELD_GLSL,
+  TISSUE_VEC4,
+} from '../ultrasound/shaders/passes.glsl';
+import { COMPOUND } from '../ultrasound/compound';
+import { STEERED_APERTURE_GLSL } from '../ultrasound/aperture';
+import { SPECKLE_LOOK_GLSL } from '../ultrasound/speckleField';
+import { STEERING_GLSL } from '../ultrasound/steering';
+import { STEERED_PREFIX_GLSL } from '../ultrasound/transmission';
 
 /**
  * Ranuras vec4 de uniforms que declara un shader (cota superior del empaquetado de GLSL ES 3.0):
@@ -29,8 +45,58 @@ function uniformSlots(src: string): { slots: number; arrays: string[] } {
   return { slots, arrays };
 }
 
+/** Samplers que declara un shader, en orden. */
+const samplersOf = (src: string): string[] =>
+  [...src.replace(/\/\/.*$/gm, '').matchAll(/\buniform\s+(?:(?:lowp|mediump|highp)\s+)?\w*sampler\w*\s+(\w+)/g)].map((m) => m[1]);
+
+/**
+ * Uniforms (`uNombre`) que un shader usa sin declararlos: un nombre suelto no compila, y la GPU de las
+ * pruebas unitarias no existe. Se excluyen los accesos a campos (`c.uRef`) y los nombres declarados como
+ * variable local o parámetro.
+ */
+function undeclaredUniforms(src: string): string[] {
+  const code = src.replace(/\/\/.*$/gm, '');
+  const declared = new Set([...code.matchAll(/\buniform\s+(?:(?:lowp|mediump|highp)\s+)?\w+\s+(\w+)/g)].map((m) => m[1]));
+  const locals = new Set([...code.matchAll(/\b(?:float|int|bool|vec[234]|ivec[234]|mat[34]|Cls)\s+(u[A-Z]\w*)/g)].map((m) => m[1]));
+  const used = new Set((code.match(/(?<![.\w])u[A-Z][A-Za-z0-9]*\b/g) ?? []).filter((n) => !locals.has(n) || declared.has(n)));
+  return [...used].filter((n) => !declared.has(n)).sort();
+}
+
 /** Los shaders de fragmentos que exporta `passes.glsl.ts` (sus otras exportaciones no son shaders). */
 const FRAGMENT_SHADERS = Object.entries(PASSES).filter((e): e is [string, string] => e[0].startsWith('FRAG_') && typeof e[1] === 'string');
+
+/**
+ * Pasadas con miradas (decisión 58): el programa de la mirada 0, el dirigido y el fragmento GLSL de la
+ * mirada dirigida que solo lleva el segundo.
+ */
+const LOOK_PAIRS = [
+  { name: 'FRAG_TRANS_PREFIX', look0: FRAG_TRANS_PREFIX, steered: FRAG_TRANS_PREFIX_STEERED, snippet: STEERED_PREFIX_GLSL },
+  { name: 'FRAG_TRANSMISSION', look0: FRAG_TRANSMISSION, steered: FRAG_TRANSMISSION_STEERED, snippet: STEERED_APERTURE_GLSL },
+  { name: 'FRAG_RAWFIELD', look0: FRAG_RAWFIELD, steered: FRAG_RAWFIELD_STEERED, snippet: STEERED_FIELD_GLSL },
+] as const;
+
+const uncommented = (src: string): string => src.replace(/\/\/.*$/gm, '');
+const declaredUniforms = (src: string): Set<string> =>
+  new Set([...uncommented(src).matchAll(/\buniform\s+(?:(?:lowp|mediump|highp)\s+)?\w+\s+(\w+)/g)].map((m) => m[1]));
+const declaredOutputs = (src: string): Set<string> => new Set([...uncommented(src).matchAll(/\bout\s+\w+\s+(\w+)\s*;/g)].map((m) => m[1]));
+/** Funciones que define un fragmento GLSL. */
+const functionsOf = (src: string): string[] =>
+  [...uncommented(src).matchAll(/\b(?:void|float|int|bool|[iu]?vec[234]|mat[234])\s+(\w+)\s*\(/g)].map((m) => m[1]);
+
+/**
+ * Identificadores de la mirada dirigida (decisión 58), sacados del código y no de una lista a mano: los
+ * uniforms y las salidas que declara el programa dirigido y no el de la mirada 0, y las funciones de los
+ * fragmentos de la mirada dirigida (geometría, fase por nodo, prefijo, penumbra y rama de B).
+ */
+function steeredIdentifiers(look0: string, steered: string): string[] {
+  const own = (f: (src: string) => Set<string>) => [...f(steered)].filter((n) => !f(look0).has(n));
+  const fns = [STEERING_GLSL, SPECKLE_LOOK_GLSL, STEERED_PREFIX_GLSL, STEERED_APERTURE_GLSL, STEERED_FIELD_GLSL].flatMap(functionsOf);
+  return [...new Set([...own(declaredUniforms), ...own(declaredOutputs), ...fns])].sort();
+}
+
+/** Los identificadores de la mirada dirigida que aparecen en un programa (fuera de los comentarios). */
+const steeredLeaks = (src: string, ids: readonly string[]): string[] =>
+  ids.filter((id) => new RegExp(`\\b${id}\\b`).test(uncommented(src)));
 
 /** Mínimo de MAX_FRAGMENT_UNIFORM_VECTORS en WebGL2; la guarda deja un 20 % de margen. */
 const WEBGL2_MIN_FRAGMENT_VECTORS = 224;
@@ -80,8 +146,9 @@ describe('Límites del shader con margen para crecer', () => {
   // Un shader con más uniforms de los que admite la GPU no compila en ella (o, peor, en unas sí y en
   // otras no): cada shader de fragmentos cabe con margen en el mínimo de WebGL2 (224 vec4). Las tablas
   // por tejido van de 4 en 4 por vec4 (TISSUE_VEC4 ranuras cada una, no TISSUE_COUNT): COLOR declara 96
-  // ranuras (antes 156), QUERY 85 (antes 145) y la pasada B 105 (antes 125; 165 antes de que el eco de
-  // interfaz, decisión 57, le quitara la atenuación y las banderas, que no lee).
+  // ranuras (antes 156), QUERY 85 (antes 145) y la pasada B 105 (125 antes del empaquetado; 165 antes de
+  // que el eco de interfaz, decisión 57, le quitara la atenuación y las banderas, que no lee); su programa
+  // dirigido (decisión 58), 107: uSteer y uLookSalt. Los programas dirigidos son FRAG_* y entran aquí.
   it(`cada shader de fragmentos declara ≤ ${SLOT_GUARD} ranuras vec4 de uniforms (80 % de 224)`, () => {
     expect(FRAGMENT_SHADERS.length).toBeGreaterThan(8);
     for (const [name, src] of FRAGMENT_SHADERS) {
@@ -91,16 +158,99 @@ describe('Límites del shader con margen para crecer', () => {
       const perTissue = arrays.filter((a) => a.endsWith(`[${TISSUE_COUNT}]`));
       expect(perTissue, `${name} declara una tabla de un float por tejido`).toEqual([]);
     }
-    // la pasada B cuenta sus arrays de tejidos, de caras y de escena: 105 medidas, con sitio para la
-    // composición espacial (~+5) y la THI (~+14) sin pasar de 130
+    expect(FRAGMENT_SHADERS.map(([name]) => name)).toEqual(expect.arrayContaining(LOOK_PAIRS.map((p) => `${p.name}_STEERED`)));
+    // la pasada B cuenta sus arrays de tejidos, de caras y de escena: 105 medidas y 107 en su programa
+    // dirigido, con sitio para la THI (~+14) sin pasar de 130
     const raw = uniformSlots(FRAG_RAWFIELD);
+    const rawSteered = uniformSlots(FRAG_RAWFIELD_STEERED);
     expect(raw.arrays).toContain(`uTissueBack4[${TISSUE_VEC4}]`);
     expect(raw.arrays).toContain(`uTissueClump4[${TISSUE_VEC4}]`);
     expect(raw.arrays).toContain(`uIface[${INTERFACE_COUNT}]`);
     expect(raw.arrays).not.toContain(`uTissueAlpha4[${TISSUE_VEC4}]`);
     expect(raw.arrays).not.toContain(`uTissueFlag4[${TISSUE_VEC4}]`);
+    expect(rawSteered.arrays).toEqual(raw.arrays);
+    expect(rawSteered.slots).toBe(raw.slots + 2);
     expect(raw.slots).toBeGreaterThan(90);
-    expect(raw.slots).toBeLessThanOrEqual(130);
+    expect(rawSteered.slots).toBeLessThanOrEqual(130);
+  });
+
+  // Composición espacial (decisión 58, T7): WebGL2 garantiza 16 unidades de textura por shader de
+  // fragmentos. Los programas de la mirada 0 conservan los samplers de siempre; el dirigido de B cambia A o0
+  // por A o3 (la mirada dirigida), el de A suma el prefijo dirigido de A2 y K lee una textura por mirada.
+  it('cada shader de fragmentos declara ≤ 16 samplers; B, A y K, los de su diseño', () => {
+    for (const [name, src] of FRAGMENT_SHADERS) expect(samplersOf(src).length, name).toBeLessThanOrEqual(16);
+    expect(samplersOf(FRAG_RAWFIELD)).toEqual(['uSceneTex', 'uCoupling', 'uTrans0', 'uTrans1']);
+    expect(samplersOf(FRAG_RAWFIELD_STEERED)).toEqual(['uSceneTex', 'uCoupling', 'uTrans1', 'uTrans3']);
+    expect(samplersOf(FRAG_TRANSMISSION)).toEqual(['uCoupling', 'uPre0', 'uPre1', 'uHits0']);
+    expect(samplersOf(FRAG_TRANSMISSION_STEERED)).toEqual(['uCoupling', 'uPre0', 'uPre1', 'uHits0', 'uPreSteer', 'uPreSteerX']);
+    expect(samplersOf(FRAG_TRANS_PREFIX_STEERED)).toEqual(samplersOf(FRAG_TRANS_PREFIX));
+    expect(samplersOf(FRAG_COMPOUND)).toEqual(COMPOUND.order.map((_, i) => `uLook${i}`));
+  });
+
+  // Decisión 58: la rama dirigida compilada en el programa de la mirada 0 (detrás de un `if` que con θ = 0
+  // no se toma) le costaba a B ~2 ms por cuadro en el M4 aun con el compuesto apagado. Los programas de la
+  // mirada 0 no llevan nada de la dirigida; esta guarda falla si alguien vuelve a meterla en ellos.
+  it('los programas de la mirada 0 no llevan nada de la mirada dirigida y los dirigidos sí', () => {
+    for (const { name, look0, steered, snippet } of LOOK_PAIRS) {
+      const ids = steeredIdentifiers(look0, steered);
+      expect(ids, name).toContain('uSteer');
+      expect(steeredLeaks(look0, ids), `${name}: la mirada 0 lleva código de la dirigida`).toEqual([]);
+      // el dirigido lleva su fragmento y la geometría de la mirada, y lee uSteer
+      expect(steered, name).toContain(snippet);
+      expect(steered, name).toContain(STEERING_GLSL);
+      expect(uncommented(steered), name).toMatch(/\buSteer\.[xyzw]/);
+      // ninguno de los dos decide la mirada en el shader: la elige el renderizador
+      for (const src of [look0, steered]) expect(src, name).not.toMatch(/if \(uSteer\.x != 0\.0\)/);
+    }
+    // B dirigido: solo la rama dirigida, sin el cuerpo de la mirada 0 (no lee A o0)
+    expect(FRAG_RAWFIELD_STEERED.slice(FRAG_RAWFIELD_STEERED.lastIndexOf('\nvoid main() {'))).toBe(
+      '\nvoid main() {\n  oField = steeredField();\n}\n',
+    );
+    // volver a meter la rama en el programa de la mirada 0: se detecta
+    const ids = steeredIdentifiers(FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED);
+    const reinlined = FRAG_RAWFIELD.replace(
+      '\nvoid main() {\n',
+      `${STEERED_FIELD_GLSL}\nvoid main() {\n  if (uSteer.x != 0.0) { oField = steeredField(); return; }\n`,
+    );
+    expect(steeredLeaks(reinlined, ids)).toEqual(expect.arrayContaining(['uSteer', 'steeredField', 'speckleFieldPh', 'lookPhase']));
+  });
+
+  // El programa de la mirada 0 es el de antes de la composición: al separar los programas se comprobó que
+  // los tres (A2, A y B) eran byte a byte los de main eabd2aa (`git show eabd2aa:src/…/passes.glsl.ts` en una
+  // copia y emitidos con tsx). Aquí queda la huella de su main, que no depende de los fragmentos compartidos
+  // (la anatomía cambia a menudo). Si cambias a propósito el main de la mirada 0 de una pasada, actualiza su
+  // huella; si no lo cambiaste, alguien lo ha tocado sin querer.
+  it('el main de los programas de la mirada 0 es, letra a letra, el de antes de la composición', () => {
+    const mainOf = (src: string): string => src.slice(src.lastIndexOf('\nvoid main() {'));
+    const print = (src: string): string => createHash('sha256').update(mainOf(src)).digest('hex').slice(0, 16);
+    expect(Object.fromEntries(LOOK_PAIRS.map((p) => [p.name, print(p.look0)]))).toEqual({
+      FRAG_TRANS_PREFIX: 'f6b08093f699bc04',
+      FRAG_TRANSMISSION: '668efb9a2b5c7008',
+      FRAG_RAWFIELD: '4314c49a44f58052',
+    });
+    // y el resto de B es el mismo texto en los dos programas: solo cambian sus entradas y su main
+    const inputs0 = 'uniform sampler2D uTrans0;\nuniform sampler2D uTrans1;\n';
+    const at = FRAG_RAWFIELD.indexOf(inputs0);
+    const afterInputs = FRAG_RAWFIELD.slice(at + inputs0.length, FRAG_RAWFIELD.lastIndexOf('\nvoid main() {'));
+    expect(at).toBeGreaterThan(0);
+    expect(FRAG_RAWFIELD_STEERED.startsWith(FRAG_RAWFIELD.slice(0, at))).toBe(true);
+    expect(FRAG_RAWFIELD_STEERED).toContain(afterInputs);
+  });
+
+  it('K dimensiona sus arrays con el número de miradas interpolado, no escrito a mano', () => {
+    const n = COMPOUND.order.length;
+    const k = uniformSlots(FRAG_COMPOUND);
+    expect(k.arrays).toEqual([`uLookSteer[${n}]`, `uLookValid[${n}]`]);
+    expect(k.slots).toBe(2 * n + 4);
+    // con el identificador GLSL en lugar del número interpolado, el recuento no adivina el tamaño
+    expect(() => uniformSlots(FRAG_COMPOUND.replace(`uLookSteer[${n}]`, 'uLookSteer[COMPOUND_LOOKS]'))).toThrow(/sin resolver/);
+  });
+
+  it('todo uniform que usa un shader está declarado en él (un nombre suelto no compila)', () => {
+    for (const [name, src] of FRAGMENT_SHADERS) expect(undeclaredUniforms(src), name).toEqual([]);
+    // el programa dirigido de B sin sus uniforms: se ve
+    expect(undeclaredUniforms(FRAG_RAWFIELD_STEERED.replace('uniform float uLookSalt;', ''))).toEqual(['uLookSalt']);
+    expect(undeclaredUniforms(FRAG_RAWFIELD_STEERED.replace(/uniform vec4 uSteer;[^\n]*\n/, ''))).toEqual(['uSteer']);
   });
 
   it('el recuento de ranuras sigue las reglas de empaquetado y no adivina tamaños', () => {

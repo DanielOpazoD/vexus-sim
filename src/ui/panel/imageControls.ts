@@ -1,14 +1,10 @@
 import { EQUIPMENT_LIMITS } from '../../app/equipment';
 import { COMPOUND } from '../../ultrasound/compound';
-import { button, help, row, slider } from '../controls';
+import { button, controlId, note, row, slider } from '../controls';
 import type { PanelContext } from './context';
 
-/**
- * Mandos básicos de imagen (profundidad, ganancia, foco): los mismos deslizadores
- * en «Adquirir» (para no cambiar de pestaña mientras se busca la ventana) y en
- * «Imagen» (con rango dinámico, persistencia y TGC). Una sola fuente de verdad.
- */
-export function imageBasics(ctx: PanelContext, sec: HTMLElement): void {
+/** Mandos básicos de la imagen 2D (profundidad, ganancia, foco), a mano mientras se busca la ventana. */
+export function buildImageBasics(ctx: PanelContext, sec: HTMLElement): void {
   const s = ctx.sim;
   const ch = () => undefined;
   ctx.track(
@@ -54,15 +50,16 @@ export function imageBasics(ctx: PanelContext, sec: HTMLElement): void {
   );
 }
 
-/**
- * Pestaña Imagen: profundidad, ganancia, foco, rango dinámico, persistencia, composición espacial y TGC
- * de 8 bandas.
- */
-export function buildImageTab(ctx: PanelContext, p: HTMLElement): void {
+/** Explicación de los mandos avanzados (el ⓘ de su sección). */
+export const IMAGE_ADVANCED_INFO =
+  `Composición espacial: tres miradas intercaladas (0° y ±${COMPOUND.steerDeg}°) promediadas; el moteado pierde contraste ` +
+  'con el mismo grano y las sombras se acortan; se apaga con el color. TGC, de superficial a profundo: amplifica ecos y ruido ' +
+  'por igual; no recupera lo que la atenuación extinguió.';
+
+/** Mandos avanzados de la imagen 2D: rango dinámico, persistencia, composición espacial y TGC de 8 bandas. */
+export function buildImageAdvanced(ctx: PanelContext, sec: HTMLElement): void {
   const s = ctx.sim;
-  const sec = ctx.section(p, 'Imagen 2D');
   const ch = () => undefined;
-  imageBasics(ctx, sec);
   ctx.track(
     slider(
       sec,
@@ -97,29 +94,33 @@ export function buildImageTab(ctx: PanelContext, p: HTMLElement): void {
   ctx.track(
     button(
       row(sec),
-      'Compuesto',
+      'Composición espacial',
       () => ctx.dispatch({ type: 'compound', enabled: !s().bmode.compound }),
       () => s().bmode.compound,
     ),
   );
-  help(
-    sec,
-    `Composición espacial: tres miradas intercaladas (0° y ±${COMPOUND.steerDeg}°) promediadas; el moteado pierde contraste con el mismo grano y las sombras se acortan. Se apaga con el color.`,
-  );
-  const tgcSec = ctx.section(p, 'TGC');
+  note(sec, 'TGC · superficial → profundo');
   const bank = document.createElement('div');
   bank.className = 'tgc';
+  // cada banda con su número debajo (`<label for>`); el nombre accesible dice cuál es y a qué profundidad
   for (let i = 0; i < 8; i++) {
+    const band = document.createElement('div');
+    band.className = 'tgc-band';
     const inp = document.createElement('input');
     inp.type = 'range';
+    inp.id = controlId(`tgc-${i + 1}`);
     inp.min = '-15';
     inp.max = '15';
     inp.step = '1';
     inp.title = `TGC banda ${i + 1} (${i < 4 ? 'superficial' : 'profunda'})`;
+    inp.setAttribute('aria-label', inp.title);
     inp.addEventListener('input', () => ctx.dispatch({ type: 'tgc', band: i, db: Number(inp.value) }));
-    bank.appendChild(inp);
+    const l = document.createElement('label');
+    l.htmlFor = inp.id;
+    l.textContent = String(i + 1);
+    band.append(inp, l);
+    bank.appendChild(band);
     ctx.track({ sync: () => (inp.value = String(s().bmode.tgcDb[i])) });
   }
-  tgcSec.appendChild(bank);
-  help(tgcSec, 'Superficial → profundo. Amplifica ecos y ruido por igual; no recupera lo que la atenuación extinguió.');
+  sec.appendChild(bank);
 }

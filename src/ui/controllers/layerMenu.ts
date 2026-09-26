@@ -1,3 +1,4 @@
+import { bindPopover } from '../disclosure';
 import type { NavigatorLayers } from '../navigator3d';
 
 type LayerKey = keyof NavigatorLayers;
@@ -39,7 +40,7 @@ export function buildLayerMenu(
   item('Vasos', 'vessels');
   cap('Examen');
   item('Ventanas', 'windows');
-  toggle.addEventListener('click', () => (menu.hidden = !menu.hidden));
+  bindPopover(toggle, menu);
   return {
     setLocked(key, locked, reason) {
       const cb = boxes.get(key);

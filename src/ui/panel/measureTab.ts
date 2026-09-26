@@ -10,15 +10,15 @@ import {
   type ObservedRenal,
 } from '../../doppler/spectralMeasure';
 import { classifyVexusC, type VexusResult } from '../../vexus/classification';
-import { button, help, row } from '../controls';
+import { button, note, row } from '../controls';
 import type { PanelContext } from './context';
 import { patternText, renalText, statusText } from './vexusText';
 
 /**
  * Pestaña Medir: protocolo VExUS (calibrador de VCI, suprahepática, porta y vena
- * interlobar sobre el espectro adquirido), herramientas libres y resultado. Guarda
- * las mediciones adquiridas; `clearMeasurements` las borra al cambiar de caso
- * para no mezclar pacientes.
+ * interlobar sobre el espectro adquirido) y resultado. Guarda las mediciones
+ * adquiridas; `clearMeasurements` las borra al cambiar de caso para no mezclar
+ * pacientes. Con una medición armada, arriba aparece su tarjeta de captura.
  */
 export class MeasureTab {
   private captureCard!: HTMLElement;
@@ -37,9 +37,10 @@ export class MeasureTab {
     this.build(host);
   }
 
+  /** Con una medición armada solo se ve su tarjeta de captura; sin ella, el protocolo y el resultado. */
   applyStore(st: AppState): void {
-    this.captureCard.style.display = st.tool === 'none' ? 'none' : '';
-    this.measureBody.style.display = st.tool === 'none' ? '' : 'none';
+    this.captureCard.hidden = st.tool === 'none';
+    this.measureBody.hidden = st.tool !== 'none';
   }
 
   /** Borra toda medición adquirida (cambio de caso o «Borrar»): nunca se mezclan pacientes. */
@@ -59,26 +60,25 @@ export class MeasureTab {
 
   private build(p: HTMLElement): void {
     this.captureCard = document.createElement('div');
-    this.captureCard.className = 'section';
+    this.captureCard.className = 'callout';
     p.appendChild(this.captureCard);
     this.measureBody = document.createElement('div');
-    this.measureBody.className = 'tab-panel';
     p.appendChild(this.measureBody);
 
-    const proto = this.ctx.section(this.measureBody, 'Protocolo VExUS');
-    const rowsHost = document.createElement('div');
-    proto.appendChild(rowsHost);
+    const proto = this.ctx.section(this.measureBody, 'Protocolo VExUS', {
+      info: 'Suprahepática, porta y vena interlobar se miden sobre el espectro PW adquirido (últimos 7 s, ventanas S/D ancladas al ECG); la VCI, con el calibrador sobre la imagen. Pulsa una fila para medirla.',
+    });
+    // una fila por medición: el botón la arma y la salida muestra el valor
     const protoRow = (label: string, tool: MeasureTool, value: () => string) => {
       const r = document.createElement('div');
-      r.className = 'control';
+      r.className = 'control proto';
       const b = document.createElement('button');
+      b.type = 'button';
       b.textContent = label;
-      b.style.fontSize = '11px';
       b.addEventListener('click', () => this.armTool(tool));
       const v = document.createElement('output');
-      v.style.gridColumn = 'span 2';
       r.append(b, v);
-      rowsHost.appendChild(r);
+      proto.appendChild(r);
       this.ctx.track({ sync: () => (v.textContent = value()) });
     };
     protoRow('VCI diámetro', 'caliper', () => (this.ivcCaliperMm !== null ? `${this.ivcCaliperMm.toFixed(1)} mm` : '—'));
@@ -98,31 +98,16 @@ export class MeasureTab {
       const k = this.lastRenal;
       return k ? (k.quality.issue ? NOT_MEASURABLE : renalText(k.pattern)) : '—';
     });
-    help(
-      proto,
-      'Suprahepática, porta y vena interlobar se miden sobre el espectro PW adquirido (últimos 7 s, ventanas S/D ancladas al ECG). La VCI con el calibrador sobre la imagen.',
-    );
-
-    const tools = this.ctx.section(this.measureBody, 'Herramientas libres');
-    const grid = document.createElement('div');
-    grid.className = 'tool-grid';
-    tools.appendChild(grid);
-    const tb = (label: string, tool: MeasureTool): HTMLButtonElement => {
-      const b = document.createElement('button');
-      b.textContent = label;
-      b.addEventListener('click', () => this.armTool(tool));
-      grid.appendChild(b);
-      this.ctx.track({ sync: () => b.classList.toggle('on', this.ctx.store.get().tool === tool) });
-      return b;
-    };
-    tb('—', 'none');
-    tb('Caliper', 'caliper');
-    tb('Borrar', 'none').addEventListener('click', () => this.clearMeasurements());
 
     const res = this.ctx.section(this.measureBody, 'Resultado');
     this.resultEl = document.createElement('div');
     this.resultEl.className = 'result';
     res.appendChild(this.resultEl);
+    // el calibrador libre era la misma herramienta que «VCI diámetro»: queda solo borrar
+    button(row(res), 'Borrar mediciones', () => {
+      this.ctx.store.set({ tool: 'none' });
+      this.clearMeasurements();
+    });
     this.renderResult();
   }
 
@@ -142,7 +127,7 @@ export class MeasureTab {
     const tool = this.ctx.store.get().tool;
     this.captureCard.innerHTML = '';
     if (tool === 'none') return;
-    const title = document.createElement('h4');
+    const title = document.createElement('h3');
     title.textContent =
       tool === 'caliper'
         ? 'Calibrador'
@@ -151,15 +136,15 @@ export class MeasureTab {
           : tool === 'portal'
             ? 'Medir porta'
             : 'Medir vena interlobar';
-    const text = document.createElement('div');
-    text.className = 'help';
-    text.textContent =
+    this.captureCard.appendChild(title);
+    note(
+      this.captureCard,
       tool === 'caliper'
         ? 'Haz clic en dos puntos de la imagen (borde a borde de la VCI, perpendicular al eje). Esc cancela.'
-        : 'Coloca la puerta en el vaso, espera 4 latidos estables y pulsa «Capturar». Se mide sobre el espectro adquirido.';
-    this.captureCard.append(title, text);
+        : 'Coloca la puerta en el vaso, espera 4 latidos estables y pulsa «Capturar». Se mide sobre el espectro adquirido.',
+    );
     const r = row(this.captureCard);
-    if (tool !== 'caliper') button(r, 'Capturar', () => this.capture(tool));
+    if (tool !== 'caliper') button(r, 'Capturar', () => this.capture(tool)).el.classList.add('primary');
     button(r, 'Cancelar (Esc)', () => this.ctx.store.set({ tool: 'none' }));
   }
 
@@ -201,7 +186,7 @@ export class MeasureTab {
       m && m.quality.issue ? `<div>${name}: <b>${qualityText(m.quality.issue)}</b></div>` : null;
     const n = (h ? 1 : 0) + (p ? 1 : 0) + (k ? 1 : 0) + (this.ivcCaliperMm !== null ? 1 : 0);
     this.badge.textContent = String(n);
-    this.badge.style.display = n ? '' : 'none';
+    this.badge.hidden = n === 0;
     const gradeTxt =
       res.grade !== null ? `VExUS ${res.grade}` : res.gradeRange ? `VExUS ${res.gradeRange[0]}–${res.gradeRange[1]}` : 'VExUS —';
     const lines = [

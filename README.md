@@ -42,24 +42,28 @@ Firefox). Única dependencia de producción: three.js (navegador 3D); todo lo de
 
 ## Cómo se usa
 
-La pantalla tiene tres columnas: a la izquierda el **navegador 3D** («Sonda y abdomen») con el
-**corte ecográfico** debajo (mapa de las estructuras que atraviesa el plano, con rótulos); en el
-centro la **imagen** con HUD, ECG y espectro; a la derecha la **consola** por pestañas. Abajo, la
-barra de modos.
+La pantalla tiene tres columnas: a la izquierda las **ventanas VExUS** (una tarjeta por punto de
+partida), el **navegador 3D** («Sonda y abdomen») y el **corte ecográfico** plegable (mapa de las
+estructuras que atraviesa el plano, con rótulos en modo docente); en el centro la **imagen** con HUD
+y ECG (el espectro aparece con el PW); a la derecha la **consola** por pestañas. Abajo, la barra de
+modos: [2D | Color | PW] (Color y PW a la vez es el tríplex), Congelar, Audio y Torso 3D.
 
+- **Ventanas**: cada tarjeta desliza la sonda de forma continua hasta su punto de partida con ángulos
+  neutros; la ventana hay que afinarla (nada teletransporta a una vista). La tarjeta de la ventana en
+  la que está la sonda queda resaltada; su nombre y su color son los de su anillo en el 3D.
 - **Sonda (navegador 3D)**: arrastrar la piel desliza; arrastrar el marcador azul o la rueda rota;
   ⇧+arrastrar bascula; ⌥+arrastrar inclina; botón derecho orbita; ⌘/Ctrl+rueda hace zoom. También se
   puede arrastrar sobre la imagen y con el teclado (`W A S D` deslizar, `Q E` rotar, `← →` bascular,
-  `↑ ↓` inclinar, `R F` presión, `⇧` fino). Nada teletransporta a una vista: los «puntos de partida»
-  de la pestaña Adquirir deslizan la sonda de forma continua hasta una posición cutánea con ángulos
-  neutros y la ventana hay que afinarla.
-- **Consola**: _Adquirir_ (puntos de partida, sonda, caso y respiración), _Imagen_ (profundidad,
-  ganancia, foco, rango dinámico, persistencia, TGC de 8 bandas), _Doppler_ (contextual: color o PW),
-  _Medir_ (protocolo VExUS: VCI con calibrador, suprahepática, porta y vena interlobar sobre el
-  espectro adquirido, resultado y grado), _Docente_ (solo con la casilla activada: verdad fisiológica y estado de la
-  adquisición).
+  `↑ ↓` inclinar, `R F` presión, `⇧` fino). La chuleta de gestos y teclado está detrás del «?» del
+  navegador.
+- **Consola**: _Adquirir_ (imagen: profundidad, ganancia y foco; sonda; respiración; y, plegado,
+  lo avanzado: rango dinámico, persistencia, composición espacial y TGC de 8 bandas), _Doppler_
+  (contextual: color o PW, con lo avanzado plegado), _Medir_ (protocolo VExUS: VCI con calibrador,
+  suprahepática, porta y vena interlobar sobre el espectro adquirido, resultado y grado), _Docente_
+  (solo con la casilla activada: verdad fisiológica y estado de la adquisición). Las explicaciones
+  están detrás del ⓘ de cada sección.
 - **Modos**: `2` B, `C` Color (clic en la imagen centra la caja), `P` PW (clic coloca la puerta),
-  `Espacio` congela, `H` oculta el navegador, `[ ]` profundidad, `− +` ganancia, `Esc` cancela una
+  `Espacio` congela, `H` oculta el carril izquierdo, `[ ]` profundidad, `− +` ganancia, `Esc` cancela una
   herramienta. Cada control actúa en su etapa física: la corrección angular solo cambia el rótulo, la
   línea de base solo la presentación, el filtro de pared elimina frecuencias bajas de la IQ.
 

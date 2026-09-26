@@ -78,3 +78,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [72](DECISIONS.md#L2179) | Hígado con el borde inferior agudo apoyado en la pared, cara visceral cóncava y el tamaño de la revisión | vigente |
 | [73](DECISIONS.md#L2255) | Pared viscoelástica de la VCI: el latido la mueve la mitad y la respiración igual | vigente |
 | [74](DECISIONS.md#L2281) | El resto del abdomen deja de parecer hígado: asas con su firma y grasa mesentérica | vigente |
+| [75](DECISIONS.md#L2303) | Interfaz limpia: ventanas VExUS como tarjetas, la imagen manda y consola con divulgación progresiva | vigente |

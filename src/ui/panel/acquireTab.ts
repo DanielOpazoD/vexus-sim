@@ -1,30 +1,21 @@
 import { caseDisplayLabel } from '../../app/blindMode';
-import { START_POINTS, type StartPoint } from '../../app/startPoints';
 import type { RespiratoryPattern } from '../../physiology/patientState';
-import { button, help, row, slider } from '../controls';
-import { imageBasics } from './imageTab';
+import { button, note, row, slider } from '../controls';
 import type { PanelContext } from './context';
+import { buildImageAdvanced, buildImageBasics, IMAGE_ADVANCED_INFO } from './imageControls';
 
-/** Pestaña Adquirir: puntos de partida, sonda (ángulos y presión), caso y respiración. */
-export function buildAcquireTab(ctx: PanelContext, p: HTMLElement, onStartPoint: (sp: StartPoint) => void): void {
+/**
+ * Pestaña Adquirir: lo que se toca mientras se busca y se sostiene la ventana — la imagen (profundidad,
+ * ganancia, foco), la sonda (ángulos y presión) y la respiración —, con los mandos avanzados de la imagen
+ * plegados. Las ventanas (puntos de partida) están en el carril izquierdo.
+ */
+export function buildAcquireTab(ctx: PanelContext, p: HTMLElement): void {
   const s = ctx.sim;
-  const start = ctx.section(p, 'Puntos de partida');
-  const grid = document.createElement('div');
-  grid.className = 'tool-grid';
-  for (const sp of START_POINTS) {
-    const b = document.createElement('button');
-    b.textContent = sp.label;
-    b.title = sp.hint;
-    b.addEventListener('click', () => onStartPoint(sp));
-    grid.appendChild(b);
-  }
-  start.appendChild(grid);
-  help(
-    start,
-    'La sonda se desliza de forma continua hasta la posición cutánea de partida con ángulos neutros; la ventana diagnóstica hay que afinarla a mano (guía §8).',
-  );
+  buildImageBasics(ctx, ctx.section(p, 'Imagen', { info: 'También con el teclado: [ ] profundidad · − + ganancia.' }));
 
-  const probe = ctx.section(p, 'Sonda');
+  const probe = ctx.section(p, 'Sonda', {
+    info: 'Arrastra sobre la imagen o el 3D para mover la sonda; los deslizadores la afinan. Teclado: W A S D deslizar · Q E rotar · ← → bascular · ↑ ↓ inclinar · R F presión · ⇧ fino.',
+  });
   const deg = (v: number) => `${v.toFixed(0)}°`;
   ctx.track(
     slider(
@@ -86,49 +77,32 @@ export function buildAcquireTab(ctx: PanelContext, p: HTMLElement, onStartPoint:
       () => undefined,
     ),
   );
-  const pos = document.createElement('div');
-  pos.className = 'help';
-  probe.appendChild(pos);
+  const pos = note(probe);
   ctx.track({
     sync: () =>
       (pos.textContent = `φ ${((s().pose.phi * 180) / Math.PI).toFixed(0)}° · z ${(s().pose.z / 10).toFixed(1)} cm · acoplamiento ${(s().renderer.meanCoupling() * 100).toFixed(0)} %`),
   });
-  const r = row(probe);
-  ctx.track(button(r, 'Reiniciar sonda', () => s().setPose({ ...s().pose, yaw: 0, rock: 0, tilt: 0, lift: 0 })));
+  ctx.track(button(row(probe), 'Reiniciar sonda', () => s().setPose({ ...s().pose, yaw: 0, rock: 0, tilt: 0, lift: 0 })));
 
-  // Mandos de imagen a mano mientras se busca la ventana (los mismos que en «Imagen»)
-  const img = ctx.section(p, 'Imagen');
-  imageBasics(ctx, img);
-  help(
-    img,
-    'Profundidad, ganancia y foco; rango dinámico, persistencia y TGC en la pestaña «Imagen». Teclado: <kbd>[</kbd><kbd>]</kbd> profundidad · <kbd>−</kbd><kbd>+</kbd> ganancia.',
-  );
-
-  const pat = ctx.section(p, 'Caso y paciente');
-  const info = document.createElement('div');
-  info.className = 'help';
-  pat.appendChild(info);
+  const resp = ctx.section(p, 'Respiración', { info: 'La maniobra cambia presiones y movimiento; no reinicia el ciclo cardíaco.' });
+  const info = note(resp);
   ctx.track({
     sync: () =>
-      (info.textContent = `${caseDisplayLabel(s().patient.id, ctx.store.get().debug)} · FC ${s().patient.heartRateBpm} · resp ${s().patient.respiratoryRateMin}/min`),
+      (info.textContent = `${caseDisplayLabel(s().patient.id, ctx.store.get().debug)} · FC ${s().patient.heartRateBpm} lpm · resp ${s().patient.respiratoryRateMin}/min`),
   });
-  const rl = document.createElement('div');
-  rl.className = 'help';
-  rl.textContent = 'Respiración';
-  pat.appendChild(rl);
-  ctx.segmented<RespiratoryPattern>(
-    pat,
-    [
-      ['quiet', 'Tranquila'],
-      ['deep', 'Profunda'],
-      ['apnea-expiratory', 'Apnea esp'],
-      ['apnea-inspiratory', 'Apnea insp'],
-    ],
-    () => s().patient.respiratoryPattern,
-    (v) => (s().patient.respiratoryPattern = v),
-  );
-  help(
-    pat,
-    'La maniobra cambia presiones y movimiento; no reinicia el ciclo cardíaco. Teclado: <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> deslizar · <kbd>Q</kbd><kbd>E</kbd> rotar · <kbd>←→</kbd> bascular · <kbd>↑↓</kbd> inclinar · <kbd>R</kbd><kbd>F</kbd> presión.',
-  );
+  ctx
+    .segmented<RespiratoryPattern>(
+      resp,
+      [
+        ['quiet', 'Tranquila'],
+        ['deep', 'Profunda'],
+        ['apnea-expiratory', 'Apnea espiratoria'],
+        ['apnea-inspiratory', 'Apnea inspiratoria'],
+      ],
+      () => s().patient.respiratoryPattern,
+      (v) => (s().patient.respiratoryPattern = v),
+    )
+    .classList.add('grid2');
+
+  buildImageAdvanced(ctx, ctx.section(p, 'Avanzado', { collapsed: true, info: IMAGE_ADVANCED_INFO }));
 }

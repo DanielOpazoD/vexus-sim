@@ -9,39 +9,114 @@
   <body>
     <div id="app" class="app">
       <header class="topbar">
-        <span class="brand">VExUS Sim</span>
+        <span class="brand"
+          ><svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 3h6l6 13a13 13 0 0 1-18 0Z" />
+            <path d="M12 7v10" /></svg
+          >VExUS Sim</span
+        >
         <span id="live-chip" class="chip live">LIVE</span>
         <span class="spacer"></span>
         <label class="field"
           >Caso
           <select id="case-select"></select
         ></label>
-        <label class="toggle"><input type="checkbox" id="debug-toggle" /> Docente</label>
+        <label class="toggle"><input type="checkbox" id="debug-toggle" class="switch" /> Docente</label>
         <span id="build-info" class="build-info" title="Versión y commit"></span>
       </header>
 
-      <aside class="left" id="left-rail">
-        <button id="rail-collapse" class="rail-collapse" title="Ocultar el navegador">«</button>
-        <div class="torso-wrap split">
-          <div class="torso-3d" id="nav3d">
-            <div class="torso-caption">Sonda y abdomen</div>
-            <div class="torso-tools">
-              <button id="nav-zoom-in" title="Acercar">+</button>
-              <button id="nav-zoom-out" title="Alejar">−</button>
-              <button id="nav-center" title="Centrar en la sonda">Sonda</button>
-              <button id="nav-layers" title="Capas">Capas</button>
-            </div>
-            <div id="layer-menu" class="menu down" hidden></div>
+      <aside class="left" id="left-rail" aria-label="Ventanas, navegador 3D y corte">
+        <section class="rail-block windows-block" aria-labelledby="windows-title">
+          <div class="rail-head">
+            <h2 class="rail-title" id="windows-title">Ventanas VExUS</h2>
+            <button id="rail-collapse" class="icon-btn" title="Ocultar el carril (H)" aria-label="Ocultar el carril">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m11 17-5-5 5-5M18 17l-5-5 5-5" /></svg>
+            </button>
           </div>
-          <div class="cut-map">
-            <div class="torso-caption">Corte ecográfico · plano de la imagen</div>
-            <canvas id="cutmap"></canvas>
+          <div id="start-points" class="windows" role="group" aria-labelledby="windows-title"></div>
+        </section>
+        <section class="rail-block nav-block" aria-labelledby="nav-title">
+          <div class="rail-head">
+            <h2 class="rail-title" id="nav-title">Sonda y abdomen</h2>
+            <button id="nav-zoom-in" class="icon-btn" title="Acercar" aria-label="Acercar">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+            </button>
+            <button id="nav-zoom-out" class="icon-btn" title="Alejar" aria-label="Alejar">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14" /></svg>
+            </button>
+            <button id="nav-center" class="icon-btn" title="Centrar en la sonda" aria-label="Centrar en la sonda">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M12 3v4M12 17v4M3 12h4M17 12h4" />
+              </svg>
+            </button>
+            <button id="nav-layers" class="icon-btn" title="Capas" aria-label="Capas">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="m12 4 9 5-9 5-9-5 9-5Z" />
+                <path d="m3 14 9 5 9-5" />
+              </svg>
+            </button>
+            <button id="nav-help" class="icon-btn" title="Cómo mover la sonda" aria-label="Cómo mover la sonda">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" />
+                <path d="M9.5 9.5a2.5 2.5 0 1 1 3.4 2.3c-.6.3-.9.8-.9 1.4v.3M12 17h.01" />
+              </svg>
+            </button>
           </div>
-        </div>
-        <div class="torso-help">
-          Arrastrar piel: deslizar · Arrastrar marcador azul o rueda: rotar · ⇧+arrastrar: bascular · ⌥+arrastrar: inclinar · Botón derecho:
-          orbitar · ⌘/Ctrl+rueda: zoom
-        </div>
+          <div id="layer-menu" class="menu down" hidden></div>
+          <div id="nav-help-pop" class="menu popover" role="region" aria-label="Cómo mover la sonda" hidden>
+            <h3>En el 3D</h3>
+            <dl>
+              <dt>Arrastrar la piel</dt>
+              <dd>deslizar</dd>
+              <dt>Marcador azul o rueda</dt>
+              <dd>rotar</dd>
+              <dt><kbd>⇧</kbd> + arrastrar</dt>
+              <dd>bascular</dd>
+              <dt><kbd>⌥</kbd> + arrastrar</dt>
+              <dd>inclinar</dd>
+              <dt>Botón derecho</dt>
+              <dd>orbitar</dd>
+              <dt><kbd>⌘</kbd>/<kbd>Ctrl</kbd> + rueda</dt>
+              <dd>zoom</dd>
+            </dl>
+            <h3>En la imagen</h3>
+            <dl>
+              <dt>Arrastrar</dt>
+              <dd>deslizar</dd>
+              <dt>Botón derecho o <kbd>⌥</kbd></dt>
+              <dd>bascular/inclinar</dd>
+              <dt>Rueda · <kbd>⇧</kbd> + rueda</dt>
+              <dd>rotar · presión</dd>
+            </dl>
+            <h3>Teclado</h3>
+            <ul class="keys">
+              <li><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> deslizar</li>
+              <li><kbd>Q</kbd><kbd>E</kbd> rotar</li>
+              <li><kbd>←</kbd><kbd>→</kbd> bascular</li>
+              <li><kbd>↑</kbd><kbd>↓</kbd> inclinar</li>
+              <li><kbd>R</kbd><kbd>F</kbd> presión</li>
+              <li><kbd>⇧</kbd> fino</li>
+              <li><kbd>[</kbd><kbd>]</kbd> profundidad</li>
+              <li><kbd>−</kbd><kbd>+</kbd> ganancia</li>
+              <li><kbd>2</kbd><kbd>C</kbd><kbd>P</kbd> modos</li>
+              <li><kbd>Espacio</kbd> congelar</li>
+              <li><kbd>H</kbd> carril</li>
+              <li><kbd>Esc</kbd> cancelar</li>
+            </ul>
+          </div>
+          <div class="torso-3d" id="nav3d"></div>
+        </section>
+        <section class="rail-block cut-block" id="cut-block">
+          <div class="rail-head">
+            <h2 class="rail-heading">
+              <button id="cut-toggle" class="rail-toggle" aria-controls="cut-body">
+                <span class="chevron" aria-hidden="true"></span><span class="rail-title">Plano de la imagen</span>
+              </button>
+            </h2>
+          </div>
+          <div class="cut-map" id="cut-body"><canvas id="cutmap"></canvas></div>
+        </section>
       </aside>
 
       <main class="center">
@@ -65,19 +140,36 @@
 
       <aside class="right" id="panel"></aside>
 
-      <footer class="modebar" role="toolbar" aria-label="Modo">
-        <div class="group">
-          <button id="mode-b" class="mode active" title="Modo B (2)">2D</button>
-          <button id="mode-color" class="mode" title="Doppler color (C)">Color</button>
-          <button id="mode-pw" class="mode" title="Doppler pulsado (P)">PW</button>
+      <footer class="modebar" role="toolbar" aria-label="Modo y equipo">
+        <div class="modes" role="group" aria-label="Modo de imagen">
+          <button id="mode-b" class="mode active" title="Modo B (2)" aria-pressed="true">2D</button>
+          <button id="mode-color" class="mode" title="Doppler color (C)" aria-pressed="false">Color</button>
+          <button id="mode-pw" class="mode" title="Doppler pulsado (P); con Color, tríplex" aria-pressed="false">PW</button>
         </div>
         <span id="ctx-chip" class="ctx-chip"></span>
-        <span class="sep"></span>
-        <button id="freeze" class="secondary" title="Congelar (Espacio)">Freeze</button>
-        <button id="audio-toggle" class="secondary">Audio</button>
         <span class="spacer"></span>
-        <button id="torso-toggle" class="secondary on" title="Navegador 3D (H)">Torso 3D</button>
-        <span id="status" class="modebar-status"></span>
+        <button id="freeze" class="secondary" title="Congelar la imagen (Espacio)" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9" />
+            <path d="m9.5 4.5 2.5 2 2.5-2M9.5 19.5l2.5-2 2.5 2" />
+          </svg>
+          Congelar
+        </button>
+        <button id="audio-toggle" class="secondary" title="Audio Doppler" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 9v6h4l5 4V5L8 9H4Z" />
+            <path class="wave" d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11" />
+          </svg>
+          Audio
+        </button>
+        <button id="torso-toggle" class="secondary on" title="Carril izquierdo: ventanas, 3D y corte (H)" aria-pressed="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3 20 7.5v9L12 21l-8-4.5v-9L12 3Z" />
+            <path d="M12 12 20 7.5M12 12v9M12 12 4 7.5" />
+          </svg>
+          Torso 3D
+        </button>
+        <span id="status" class="modebar-status" aria-live="off"></span>
       </footer>
     </div>
     <script type="module" src="/src/main.ts"></script>

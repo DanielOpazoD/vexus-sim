@@ -4,7 +4,7 @@ import { errorLog, errorMessage } from '../../app/errorLog';
 import { TISSUES } from '../../anatomy/tissues';
 import { classifyVexusC } from '../../vexus/classification';
 import { measurePhysiologyTruth } from '../../vexus/measurements';
-import { button, help, row } from '../controls';
+import { button, note, row } from '../controls';
 import type { PanelContext } from './context';
 import { patternText, renalText } from './vexusText';
 
@@ -25,15 +25,13 @@ export class TeacherTab {
 
   private build(p: HTMLElement): void {
     const sec = this.ctx.section(p, 'Verdad fisiológica y adquisición');
-    help(sec, 'Se oculta al alumno. La verdad del caso y lo adquirido se calculan por separado.');
+    note(sec, 'Oculto al alumno; la verdad del caso y lo adquirido se calculan por separado.');
     this.debugEl = document.createElement('div');
     this.debugEl.className = 'debug';
     sec.appendChild(this.debugEl);
-    const diag = this.ctx.section(p, 'Diagnóstico');
-    help(
-      diag,
-      'Versión, commit, navegador, GPU, caso, equipo y últimos errores en un JSON para adjuntar a un informe. Sin datos del usuario.',
-    );
+    const diag = this.ctx.section(p, 'Diagnóstico', {
+      info: 'Versión, commit, navegador, GPU, caso, equipo y últimos errores en un JSON para adjuntar a un informe. Sin datos del usuario.',
+    });
     button(row(diag), 'Descargar diagnóstico', () => this.onExportDiagnostics());
   }
 

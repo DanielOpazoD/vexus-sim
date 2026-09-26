@@ -231,6 +231,9 @@ export class CutMapView {
       this.pendingInputs = { id: req.id, sample: s, frame: sim.frame, depthMm: sim.bmode.depthMm };
     }
     if (!this.mapDirty || !this.map) return;
+    // Corte plegado: los mapas se siguen pidiendo (la comprobación TS ↔ GLSL los usa), pero el último solo se
+    // pinta cuando el lienzo vuelve a verse
+    if (this.canvas.clientHeight === 0) return;
     this.mapDirty = false;
     const map = this.map;
     const ctx = this.canvas.getContext('2d');

@@ -6,6 +6,7 @@ import { modeHasColor, modeHasPw, toggleMode } from './app/equipment';
 import { compareTissueGrids } from './app/equivalenceCheck';
 import { errorLog, errorMessage } from './app/errorLog';
 import { ProbeAnimator } from './app/probeAnimation';
+import { START_POINTS } from './app/startPoints';
 import { SimulationSession } from './app/session';
 import type { Simulator } from './app/simulator';
 import { Store, type ImagingMode } from './app/store';
@@ -17,11 +18,14 @@ import { HeartRateDisplay, hudText, renderLines } from './ui/controllers/hud';
 import { bindImageClick } from './ui/controllers/imageClick';
 import { buildLayerMenu } from './ui/controllers/layerMenu';
 import { CutMapView } from './ui/cutMapView';
+import { bindCollapsible, bindPopover } from './ui/disclosure';
 import { SpectrogramView, drawEcg, drawOverlay } from './ui/displays';
 import { bindKeyboardShortcuts } from './ui/keyboardShortcuts';
 import type { Navigator3D } from './ui/navigator3d';
-import { ControlPanel } from './ui/panel';
+import { setPressed } from './ui/controls';
+import { ControlPanel, tabAfterMode } from './ui/panel';
 import { ProbeInput } from './ui/probeInput';
+import { StartPointCards } from './ui/startPointCards';
 import { compoundActive } from './ultrasound/compound';
 
 /**
@@ -88,6 +92,12 @@ try {
 }
 const sim = (): Simulator => session.sim;
 const dispatch = session.equipment.dispatch.bind(session.equipment);
+// La app arranca en la ventana subxifoidea, la primera del protocolo VExUS, y no en la pose por defecto del
+// simulador (sobre las costillas del flanco). La e2e conserva la pose por defecto: sus pruebas la suponen.
+if (!new URLSearchParams(location.search).has('e2e')) {
+  const first = START_POINTS[0];
+  sim().setPose({ ...sim().pose, phi: first.phi, z: first.z, yaw: first.yaw, rock: first.rock ?? 0, tilt: first.tilt ?? 0 });
+}
 const banner = new Banner(sectorWrap);
 
 // --- Vistas ------------------------------------------------------------------
@@ -103,7 +113,15 @@ function setPoseManual(p: Parameters<Simulator['setPose']>[0]): void {
   probeAnimator.cancel(); // cualquier gesto manual cancela la animación
   sim().setPose(p);
 }
-panel.onStartPoint = (sp) => probeAnimator.goTo(sp);
+// Carril izquierdo: ventanas VExUS (la sonda se desliza hasta su punto de partida), ayuda y corte plegable
+const windows = new StartPointCards($('start-points'), {
+  onPick: (sp) => probeAnimator.goTo(sp),
+  getPose: () => sim().pose,
+  getTorso: () => sim().scene.torso,
+  animating: () => probeAnimator.active,
+});
+bindPopover($<HTMLButtonElement>('nav-help'), $('nav-help-pop'));
+bindCollapsible($<HTMLButtonElement>('cut-toggle'), $('cut-block'));
 let lastFps = 0;
 panel.onExportDiagnostics = () => {
   const s = sim();
@@ -160,16 +178,20 @@ function applyMode(mode: ImagingMode): void {
     sim().pwChain.reset();
     spectrogram.reset();
   }
-  modeButtons.B.classList.toggle('active', mode === 'B');
-  modeButtons.color.classList.toggle('active', modeHasColor(mode));
-  modeButtons.pw.classList.toggle('active', modeHasPw(mode));
+  const on = { B: mode === 'B', color: modeHasColor(mode), pw: modeHasPw(mode) };
+  for (const k of ['B', 'color', 'pw'] as const) {
+    modeButtons[k].classList.toggle('active', on[k]);
+    modeButtons[k].setAttribute('aria-pressed', String(on[k]));
+  }
+  // la imagen manda: el espectro solo ocupa su franja con el PW encendido
+  app.classList.toggle('pw-on', modeHasPw(mode));
 }
 // 2D apaga todo; Color y PW alternan su función y conservan la otra (tríplex, decisión 66)
-modeButtons.B.addEventListener('click', () => store.set({ mode: 'B', tab: store.get().tab === 'doppler' ? 'imagen' : store.get().tab }));
+modeButtons.B.addEventListener('click', () => store.set({ mode: 'B', tab: tabAfterMode('B', store.get().tab) }));
 for (const key of ['color', 'pw'] as const) {
   modeButtons[key].addEventListener('click', () => {
     const mode = toggleMode(store.get().mode, key);
-    store.set({ mode, tab: mode === 'B' ? (store.get().tab === 'doppler' ? 'imagen' : store.get().tab) : 'doppler' });
+    store.set({ mode, tab: tabAfterMode(mode, store.get().tab) });
   });
 }
 const freezeBtn = $<HTMLButtonElement>('freeze');
@@ -230,18 +252,14 @@ store.subscribe((st, prev) => {
   if (st.mode !== prev.mode) applyMode(st.mode);
   if (st.frozen !== prev.frozen) {
     sim().frozen = st.frozen;
-    freezeBtn.classList.toggle('on', st.frozen);
-    freezeBtn.textContent = st.frozen ? 'Live' : 'Freeze';
+    setPressed(freezeBtn, st.frozen);
     liveChip.textContent = st.frozen ? 'FREEZE' : 'LIVE';
     liveChip.className = `chip ${st.frozen ? 'freeze' : 'live'}`;
   }
-  if (st.audio !== prev.audio) {
-    audioBtn.classList.toggle('on', st.audio);
-    audioBtn.textContent = st.audio ? 'Audio ●' : 'Audio';
-  }
+  if (st.audio !== prev.audio) setPressed(audioBtn, st.audio);
   if (st.torso !== prev.torso) {
     app.classList.toggle('no-torso', !st.torso);
-    torsoBtn.classList.toggle('on', st.torso);
+    setPressed(torsoBtn, st.torso);
   }
   if (st.caseId !== prev.caseId) {
     const error = session.loadCase(st.caseId);
@@ -302,7 +320,8 @@ function frame(now: number, dt: number): void {
   nav?.draw();
   if (store.get().torso && !gpu.lost) cutMap.draw(s, now);
   const t = s.physiology.clock.t;
-  const secondsVisible = spectrumCanvas.clientWidth / (s.pw.sweepMmS * 3.2);
+  // el ECG siempre está a la vista (el espectro, solo con PW) y comparte el eje de tiempo con él
+  const secondsVisible = ecgCanvas.clientWidth / (s.pw.sweepMmS * 3.2);
   drawEcg(ecgCanvas, s, secondsVisible, t);
   spectrogram.draw(s, s.spectral.columns, t, secondsVisible);
   const h = hudText({
@@ -343,6 +362,7 @@ function frame(now: number, dt: number): void {
     }
     panel.renderDebug();
     panel.sync(); // la pose y el acoplamiento cambian con el ratón; el equipo avisa por su cuenta
+    windows.sync();
   }
 }
 

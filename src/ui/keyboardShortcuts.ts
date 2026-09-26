@@ -1,5 +1,6 @@
 import { toggleMode, type EquipmentCommand } from '../app/equipment';
 import type { Store } from '../app/store';
+import { tabAfterMode } from './panel';
 
 /**
  * Atajos de teclado (misma familia que EchoTwin): 2 / C / P modos (C y P alternan su función y
@@ -13,16 +14,16 @@ export function bindKeyboardShortcuts(store: Store, dispatch: (cmd: EquipmentCom
     if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
     switch (e.key) {
       case '2':
-        store.set({ mode: 'B' });
+        store.set({ mode: 'B', tab: tabAfterMode('B', store.get().tab) });
         break;
       case 'c':
       case 'C':
-        store.set({ mode: toggleMode(store.get().mode, 'color'), tab: 'doppler' });
-        break;
       case 'p':
-      case 'P':
-        store.set({ mode: toggleMode(store.get().mode, 'pw'), tab: 'doppler' });
+      case 'P': {
+        const mode = toggleMode(store.get().mode, e.key.toLowerCase() === 'c' ? 'color' : 'pw');
+        store.set({ mode, tab: tabAfterMode(mode, store.get().tab) });
         break;
+      }
       case ' ':
         store.set({ frozen: !store.get().frozen });
         e.preventDefault();

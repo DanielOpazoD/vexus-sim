@@ -13,17 +13,33 @@ export interface Syncable {
   sync(): void;
 }
 
+let nextId = 0;
+/** Identificador único de control, para asociar `<label for>` y `<output for>`. */
+export function controlId(label: string): string {
+  const slug = label
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/[^A-Za-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '')
+    .toLowerCase();
+  return `ctl-${slug}-${++nextId}`;
+}
+
+/** Deslizador: rótulo y valor en una fila, la barra debajo a todo el ancho. */
 export function slider(parent: HTMLElement, spec: SliderSpec, onChange: () => void): Syncable {
   const row = document.createElement('div');
   row.className = 'control';
-  const l = document.createElement('label');
-  l.textContent = spec.label;
   const input = document.createElement('input');
   input.type = 'range';
+  input.id = controlId(spec.label);
   input.min = String(spec.min);
   input.max = String(spec.max);
   input.step = String(spec.step);
+  const l = document.createElement('label');
+  l.htmlFor = input.id;
+  l.textContent = spec.label;
   const out = document.createElement('output');
+  out.htmlFor.add(input.id);
   const fmt = spec.format ?? ((v: number) => v.toFixed(0));
   const sync = () => {
     input.value = String(spec.get());
@@ -34,12 +50,13 @@ export function slider(parent: HTMLElement, spec: SliderSpec, onChange: () => vo
     out.textContent = fmt(Number(input.value));
     onChange();
   });
-  row.append(l, input, out);
+  row.append(l, out, input);
   parent.appendChild(row);
   sync();
   return { sync };
 }
 
+/** Botón; con `isOn` es un conmutador (clase `on` y `aria-pressed`). */
 export function button(
   parent: HTMLElement,
   label: string,
@@ -47,9 +64,10 @@ export function button(
   isOn?: () => boolean,
 ): Syncable & { el: HTMLButtonElement } {
   const b = document.createElement('button');
+  b.type = 'button';
   b.textContent = label;
   const sync = () => {
-    if (isOn) b.classList.toggle('on', isOn());
+    if (isOn) setPressed(b, isOn());
   };
   b.addEventListener('click', () => {
     onClick();
@@ -60,6 +78,12 @@ export function button(
   return { sync, el: b };
 }
 
+/** Estado de un conmutador (clase `on` y `aria-pressed`) sin tocar su rótulo ni su icono. */
+export function setPressed(b: HTMLButtonElement, on: boolean): void {
+  b.classList.toggle('on', on);
+  b.setAttribute('aria-pressed', String(on));
+}
+
 export function row(parent: HTMLElement): HTMLElement {
   const r = document.createElement('div');
   r.className = 'row';
@@ -67,10 +91,11 @@ export function row(parent: HTMLElement): HTMLElement {
   return r;
 }
 
-export function help(parent: HTMLElement, html: string): HTMLElement {
+/** Línea corta en gris (dato o aclaración); las explicaciones largas van al ⓘ de la sección. */
+export function note(parent: HTMLElement, text = ''): HTMLElement {
   const d = document.createElement('div');
-  d.className = 'help';
-  d.innerHTML = html; // contenido estático del programa, no entrada del usuario
+  d.className = 'note';
+  d.textContent = text;
   parent.appendChild(d);
   return d;
 }

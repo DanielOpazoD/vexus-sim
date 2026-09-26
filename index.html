@@ -9,14 +9,19 @@
   <body>
     <div id="app" class="app">
       <header class="topbar">
-        <span class="brand">VExUS Sim</span>
+        <span class="brand"
+          ><svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M9 3h6l6 13a13 13 0 0 1-18 0Z" />
+            <path d="M12 7v10" /></svg
+          >VExUS Sim</span
+        >
         <span id="live-chip" class="chip live">LIVE</span>
         <span class="spacer"></span>
         <label class="field"
           >Caso
           <select id="case-select"></select
         ></label>
-        <label class="toggle"><input type="checkbox" id="debug-toggle" /> Docente</label>
+        <label class="toggle"><input type="checkbox" id="debug-toggle" class="switch" /> Docente</label>
         <span id="build-info" class="build-info" title="Versión y commit"></span>
       </header>
 

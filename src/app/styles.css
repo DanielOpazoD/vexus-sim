@@ -3,18 +3,27 @@
   display: none !important;
 }
 
+/* Tema oscuro único: superficies en tres niveles, un acento para lo activo, rejilla de 8 px y
+   tipografía de 12/13/14 px. */
 :root {
   --bg: #0b0e12;
   --panel: #12161c;
   --panel-2: #181d25;
+  --panel-3: #212833;
   --border: #242b36;
   --text: #d8dde5;
   --muted: #8b95a5;
+  --faint: #677181;
   --accent: #5cc8ff;
+  --accent-soft: rgba(92, 200, 255, 0.14);
+  --accent-ink: #06121c;
   --accent-2: #ffc857;
   --ok: #57d38c;
   --warn: #ffb347;
   --bad: #ff6b6b;
+  --rail-w: 288px;
+  --panel-w: 280px;
+  --spectrum-h: clamp(144px, 24vh, 224px);
   --font: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   color-scheme: dark;
@@ -32,28 +41,24 @@ body {
 }
 .app {
   display: grid;
-  grid-template-rows: 40px minmax(0, 1fr) 46px;
-  grid-template-columns: 300px minmax(0, 1fr) 280px;
+  grid-template-rows: 40px minmax(0, 1fr) 48px;
+  grid-template-columns: var(--rail-w) minmax(0, 1fr) var(--panel-w);
   height: 100%;
   transition: grid-template-columns 0.25s ease;
 }
 .app.no-torso {
-  grid-template-columns: 0 minmax(0, 1fr) 280px;
+  grid-template-columns: 0 minmax(0, 1fr) var(--panel-w);
 }
 @media (max-width: 1200px) {
   .app {
-    grid-template-columns: 240px minmax(0, 1fr) 252px;
-  }
-  .app.no-torso {
-    grid-template-columns: 0 minmax(0, 1fr) 252px;
+    --rail-w: 248px;
+    --panel-w: 256px;
   }
 }
 @media (max-width: 800px) {
   .app {
-    grid-template-columns: 200px minmax(0, 1fr) 230px;
-  }
-  .app.no-torso {
-    grid-template-columns: 0 minmax(0, 1fr) 230px;
+    --rail-w: 200px;
+    --panel-w: 232px;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -61,30 +66,55 @@ body {
     transition: none;
   }
 }
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+/* Todos los SVG de la interfaz son iconos de trazo en línea (sin dependencias) */
+svg {
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+kbd {
+  font: 11px/16px var(--mono);
+  color: var(--text);
+  background: var(--panel-3);
+  border-radius: 4px;
+  padding: 0 4px;
+}
 
 /* --- barra superior ------------------------------------------------------ */
 .topbar {
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 0 12px;
+  gap: 16px;
+  padding: 0 16px;
   background: var(--panel);
   border-bottom: 1px solid var(--border);
   font-variant-numeric: tabular-nums;
 }
 .brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
   font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--accent);
+  letter-spacing: 0.02em;
   white-space: nowrap;
 }
+.brand svg {
+  width: 20px;
+  height: 20px;
+  color: var(--accent);
+}
 .chip {
-  font-family: var(--mono);
-  font-size: 11px;
-  font-weight: 700;
+  font: 700 11px/16px var(--mono);
   letter-spacing: 0.08em;
-  padding: 1px 7px;
+  padding: 0 8px;
   border-radius: 4px;
 }
 .chip.live {
@@ -98,19 +128,16 @@ body {
 .spacer {
   flex: 1;
 }
-.field {
+.field,
+label.toggle {
   color: var(--muted);
   display: inline-flex;
-  gap: 6px;
+  gap: 8px;
   align-items: center;
   white-space: nowrap;
 }
 label.toggle {
-  color: var(--muted);
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  white-space: nowrap;
+  cursor: pointer;
 }
 select {
   font: inherit;
@@ -118,31 +145,98 @@ select {
   color: var(--text);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 3px 6px;
+  padding: 4px 8px;
   max-width: 220px;
+}
+/* Casilla con forma de interruptor (sigue siendo la casilla nativa: teclado y lectores de pantalla) */
+input.switch {
+  appearance: none;
+  position: relative;
+  width: 28px;
+  height: 16px;
+  margin: 0;
+  border-radius: 8px;
+  background: var(--panel-3);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+input.switch::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--muted);
+  transition: transform 0.15s;
+}
+input.switch:checked {
+  background: var(--accent-soft);
+}
+input.switch:checked::after {
+  transform: translateX(12px);
+  background: var(--accent);
 }
 button {
   font: inherit;
   color: var(--text);
   background: var(--panel-2);
-  border: 1px solid var(--border);
+  border: 1px solid transparent;
   border-radius: 6px;
-  padding: 4px 10px;
+  padding: 4px 12px;
   cursor: pointer;
 }
 button:hover {
-  background: #222a35;
+  background: var(--panel-3);
 }
 button.on {
-  border-color: var(--accent);
   color: var(--accent);
+  background: var(--accent-soft);
+}
+button.primary {
+  color: var(--accent-ink);
+  background: var(--accent);
+  font-weight: 600;
+}
+button svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+/* Botón de icono (herramientas del navegador, plegar el carril) */
+.icon-btn {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  color: var(--muted);
+  background: transparent;
+}
+.icon-btn:hover {
+  color: var(--text);
+  background: var(--panel-2);
+}
+.icon-btn.on {
+  color: var(--accent);
+  background: var(--accent-soft);
 }
 button.secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
   color: var(--muted);
+  background: transparent;
+}
+button.secondary:hover {
+  color: var(--text);
+  background: var(--panel-2);
 }
 button.secondary.on {
   color: var(--accent);
-  border-color: var(--accent);
+  background: var(--accent-soft);
 }
 
 /* --- carril izquierdo: navegador 3D + corte -------------------------------- */
@@ -624,8 +718,7 @@ button.mode.active {
 
 /* versión y commit en la barra superior (discreto) */
 .build-info {
-  font: 11px/1 var(--mono, ui-monospace, monospace);
-  color: var(--muted, #8a93a3);
-  margin-left: 10px;
+  font: 12px/1 var(--mono);
+  color: var(--faint);
   white-space: nowrap;
 }

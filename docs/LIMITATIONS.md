@@ -15,8 +15,9 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **Velocidad uniforme a lo largo de cada tubo** (`uniform-vessel-velocity`): el caudal local escala
   con el área; no hay conservación explícita en bifurcaciones.
 - **El hígado es una forma procedural** (`procedural-liver-shape`): elipsoides recortados por pared,
-  cúpula y plano visceral, con fosa vesicular, impresión renal, fisura umbilical y lámina del
-  ligamento venoso; los segmentos de Couinaud son una partición por planos de los vasos (metadatos
+  cúpula y una cara visceral en cuña ajustada a mano (decisión 72), con fosa vesicular, impresión renal, fisura
+  umbilical y lámina del ligamento venoso; sin caudado propio ni grasa hiliar (la hepática y el colédoco del hilio van
+  por el parénquima); los segmentos de Couinaud son una partición por planos de los vasos (metadatos
   del 3D, no una malla segmentada); los ángulos de las venas y conductos son plausibles, no medidos.
 - **Sin cascada torácica de la VCI** (`no-thoracic-waterfall`): la unión cavoauricular transmite
   cualquier caída de la PAD; no existe la meseta de Guyton por colapso de la VCI en la entrada

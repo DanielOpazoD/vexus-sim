@@ -423,12 +423,17 @@ describe('borde blando de la cortina: fracción de aire del haz', () => {
     // el borde sigue al descenso de la cortina: 10 mm de respiración tranquila mueven dz 10 mm
     const m: Vec3 = [-120, 10, 5];
     expect(lungCurtainEdgeMm(m, 10, 99)! - lungCurtainEdgeMm(m, 0, 99)!).toBeCloseTo(10, 9);
-    expect(lungCurtainEdgeMm([0, 10, 5], 0, 99)).toBeNull();
-    expect(lungCurtainEdgeMm([-120, LUNG_CURTAIN.yMax + 1, 5], 0, 99)).toBeNull();
+    // la huella es todo el hemitórax derecho (decisión 71): la pared anterior también; el lado izquierdo, no
+    expect(lungCurtainEdgeMm([20, 10, 5], 0, 99)).toBeNull();
+    expect(lungCurtainEdgeMm([-60, 90, 20], 0, 99)).not.toBeNull();
     // si la cúpula toca la pared por debajo del borde de la cortina, el borde del pulmón es su inserción
     expect(lungCurtainEdgeMm(m, 0, 12)).toBeCloseTo(5 - 12, 9);
     expect(lungCurtainEdgeMm(m, 30, 12)).toBeCloseTo(5 - (LUNG_CURTAIN.z0 - 30), 9);
-    expect(ANATOMY_GLSL).toContain('return m.x <= uCurtain.z && m.y <= uCurtain.w ? m.z - min(uCurtain.x, domeHeight(m.x, m.y)) : -1e3;');
+    expect(ANATOMY_GLSL).toContain(
+      'return m.x <= uCurtain.z && m.y <= uCurtain.w ? m.z - min(uCurtain.x, domeHeight(m.x, m.y)) : m.z - domeHeight(m.x, m.y);',
+    );
+    // fuera de la lámina, el borde es la inserción del diafragma
+    expect(lungCurtainEdgeMm([-60, 90, 20], 30, 7)).toBeCloseTo(13, 9);
   });
 
   it('la GLSL calcula la fracción con el haz de dos vías y lo que ve del tejido de detrás con 1 − f', () => {
@@ -687,6 +692,35 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
     }
     return { first, last };
   };
+
+  it('pared torácica anterior derecha (decisión 71): el pulmón bajo la pared es pleura con líneas A, no el espejo', () => {
+    // Antes la huella del receso era solo lateral y posterior (x ≤ −45, y ≤ 40): con la sonda en un espacio intercostal
+    // anterior el pulmón bajo la pared se dibujaba como el espejo del diafragma, sin línea pleural ni líneas A
+    const cal = caliberOf(0);
+    const q = sceneQuery(scene, cal);
+    const step = depth / N;
+    let lines = 0;
+    let pleuraLines = 0;
+    for (const phi of [0.58 * Math.PI, 0.64 * Math.PI])
+      for (const z of [30, 45]) {
+        const fr = probeFrame({ phi, z, lift: 0, yaw: 0, rock: 0, tilt: 0 }, scene.torso, CONVEX_C35);
+        for (let i = 0; i < CONVEX_C35.lines; i += 4) {
+          const th = -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * (i + 0.5)) / CONVEX_C35.lines;
+          const origin = pointOnLine(fr, CONVEX_C35, th, 0);
+          const dir = lineDirection(fr, th);
+          const got = transmissionHitsLine(q, origin, dir, depth, N, dbOf);
+          // solo las líneas cuyo primer tejido tras la pared es pulmón (las costillas tapan algunas)
+          const crossing = pleuraCrossingLine(q.insideWall, q.curtainEdge, origin, dir, depth, N);
+          if (!crossing) continue;
+          const run = curtainRunOf(q, fr, th, step, crossing.D);
+          if (run.first < 0) continue;
+          lines++;
+          if (got.pleura && got.pleura.kind === CURTAIN_GAS_KIND) pleuraLines++;
+        }
+      }
+    expect(lines).toBeGreaterThan(20);
+    expect(pleuraLines).toBe(lines);
+  });
 
   it('las líneas que cruzan la cortina: tipo 3 en el cruce exacto de la cara interna de la pared, sin espejo en ella', () => {
     let curtainLines = 0;

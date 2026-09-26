@@ -74,3 +74,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [68](DECISIONS.md#L2001) | Riñón con una sola línea capsular, pirámides tenues y distintas, seno digitado y pelvis colapsada | vigente |
 | [69](DECISIONS.md#L2062) | VCI con curva sagital y embudo, por delante de la aorta; ramas viscerales de la aorta; hilio hepático reordenado | vigente |
 | [70](DECISIONS.md#L2123) | Doppler color sin bloques: estimación continua, grano correlado a la celda de resolución y barra de escala | vigente |
+| [71](DECISIONS.md#L2153) | Pleura y líneas A en todo el hemitórax derecho, también bajo la pared anterior | vigente |

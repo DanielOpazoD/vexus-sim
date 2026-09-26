@@ -2150,6 +2150,32 @@ irregulares y un grano que cambia en cada cuadro, sin mosaico de celdas. Pendien
 color idénticos (antes, la mayoría), correlación de la potencia a 1 téxel > 0,5 y menor a 4 téxeles; las e2e de color
 existentes (transmisión igual al PW, ruido a 0 y +24 dB, tríplex, sin contacto) sin cambiar sus umbrales.
 
+## 71. Pleura y líneas A en todo el hemitórax derecho, también bajo la pared anterior
+
+**Contexto.** El dueño (médico, 25-09-2026): «líneas A solo por lateral a nivel del tórax, no por anterior». La
+pleura parietal de la decisión 61 (línea pleural, serie de reverberaciones de la pared, líneas A y deslizamiento) solo se
+registraba en la huella de la lámina de la cortina (x ≤ −45, y ≤ 40: el receso lateral y posterior). Con la sonda en un
+espacio intercostal anterior derecho, el pulmón del tórax que toca la pared por encima de la inserción del diafragma
+quedaba fuera de la huella y la pasada A lo trataba como el espejo del diafragma (decisión 57): sin línea pleural, sin
+líneas A, con el eco débil de la cúpula. Referencia (revisión con fuentes, 25-09): bajo toda la pared anterior derecha
+hay pulmón aireado hasta el 6.º cartílago; en las ventanas intercostales anteriores y laterales se ven la línea pleural,
+el deslizamiento y las líneas A (Dartmouth Human Anatomy; Lee 2017; POCUS101).
+**Opciones.** (1) Extender la huella de la lámina a todo el hemitórax: la lámina que baja sobre el hígado taparía en
+inspiración profunda toda la ventana del 8.º espacio (la prueba del hígado despejado se quedaba sin muestras) y bajaría
+en horizontal por delante, donde el borde pulmonar real está más alto. (2) La elegida: dos huellas.
+**Decisión.** `LUNG_CURTAIN.pleuraXMax` = 10 mm (hasta la línea media): `inLungRecess` (dónde empieza la pleura parietal
+en A0) y `lungCurtainEdgeMm` (el borde del pulmón que toca la pared) usan todo el hemitórax derecho, delante, al lado y
+detrás; fuera de la huella de la lámina el borde del pulmón es la inserción del diafragma. La lámina (`xMax`, `yMax`)
+sigue solo en el receso lateral y posterior. Gemelos TS y GLSL.
+**Consecuencias.** Con la sonda en un espacio intercostal anterior derecho por encima de la inserción del diafragma se ven
+la línea pleural, las líneas A y el deslizamiento, como en el lateral. Por delante, la lámina no baja sobre el hígado con
+la inspiración (el receso anterior queda para el ajuste del borde pulmonar por altura, pendiente); el lado izquierdo
+(escotadura cardíaca) sigue sin pleura parietal.
+**Verificación.** `pleura.test.ts`: desde cuatro poses intercostales anteriores derechas, todas las líneas cuyo primer
+tejido tras la pared es pulmón registran la pleura de tipo 3 (antes, ninguna); la huella de la pleura llega a la pared
+anterior y no al lado izquierdo; fuera de la lámina el borde es la inserción del diafragma. `organs.test.ts`: la lámina
+conserva su huella. e2e de la pleura y de la cortina (decisión 61) sin cambiar umbrales.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

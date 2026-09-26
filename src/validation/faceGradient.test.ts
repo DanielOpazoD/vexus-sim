@@ -295,7 +295,18 @@ describe('Eco de interfaz en la distancia por la normal (|∇| de la cara)', () 
             const t0 = face === 'tube' ? scene.faceTube(m, caliber)! : null;
             const same = (p: V) => {
               const t = scene.faceTube(p, caliber);
-              return t !== null && t.vessel === t0!.vessel && t.hit.segment === t0!.hit.segment && t.hit.s > 0 && t.hit.s < 1;
+              // (las ramas procedurales comparten el id de su madre: dos hermanas con el mismo id y segmento se distinguen
+              // por la dirección de su eje)
+              const tg = t?.hit.tangent;
+              const t0g = t0!.hit.tangent;
+              return (
+                t !== null &&
+                t.vessel === t0!.vessel &&
+                t.hit.segment === t0!.hit.segment &&
+                t.hit.s > 0 &&
+                t.hit.s < 1 &&
+                Math.abs(tg![0] * t0g[0] + tg![1] * t0g[1] + tg![2] * t0g[2] - 1) < 1e-9
+              );
             };
             let ok = true;
             const num = [0, 1, 2].map((a) => {

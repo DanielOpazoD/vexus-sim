@@ -229,13 +229,15 @@ describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
     expect(c.incidencePairs).toBeGreaterThan(100);
   });
 
-  // Decisión 60: la subxifoidea salta de ~33° a ~58° entre dos líneas vecinas en la arista pared|unión de
-  // los lóbulos (la cápsula «acaba a mitad del hígado»). La incidencia es de la CPU (normal de `faceSdf`):
-  // la misma cifra que el bloque `contour` del banco con GPU. La puerta es el máximo, no el p99: hoy hay dos
-  // saltos grandes (29,8° y 24,4°) en 115 pares, el p99 es el segundo y, si la 60 quitara solo uno de los
-  // dos, bajaría a 1,0° con el otro todavía en la imagen.
-  it.fails('60: el mayor salto de incidencia de la cápsula entre líneas vecinas es ≤ 3° (hoy, en la subxifoidea, ~30°)', () => {
-    expect(contourStats([subxiphoid.faceSamples!]).incidenceJumpMaxDeg).toBeLessThanOrEqual(3);
+  // Decisión 60: la subxifoidea saltaba de ~33° a ~58° entre dos líneas vecinas en la arista pared|unión de los lóbulos
+  // (la cápsula «acababa a mitad del hígado»; dos saltos de 29,8° y 24,4° en 115 pares). La decisión 72 lo quita en
+  // esta vista: el hígado apoya en la pared hasta su borde inferior y la cápsula bajo la pared ya no cambia de dueño
+  // (máximo 0,36° en 126 pares). La incidencia es de la CPU (normal de `faceSdf`), la cifra del bloque `contour` del
+  // banco con GPU; la puerta es el máximo, no el p99.
+  it('60 en la subxifoidea (decisión 72): el mayor salto de incidencia de la cápsula entre líneas vecinas es ≤ 3°', () => {
+    const c = contourStats([subxiphoid.faceSamples!]);
+    expect(c.incidencePairs).toBeGreaterThan(100);
+    expect(c.incidenceJumpMaxDeg).toBeLessThanOrEqual(3);
   });
 
   it('la incidencia del diafragma es la de la normal de la cúpula en el cruce exacto con la pleura', () => {

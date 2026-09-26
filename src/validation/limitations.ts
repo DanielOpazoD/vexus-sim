@@ -15,6 +15,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'procedural-liver-shape',
   'no-left-interlobar-vessels',
   'ivc-single-compartment',
+  'morison-rim-sliver',
   'no-thoracic-waterfall',
   'gate-lost-with-quiet-breathing',
   'thin-vessel-sample-volume-lag',

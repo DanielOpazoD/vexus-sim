@@ -73,8 +73,9 @@ describe('Contorno del hígado en las vistas de las capturas (PR 0 de las decisi
     const creases = reports.flatMap((r) => r.creases.filter((c) => !c.fissure));
     expect(creases.length).toBeGreaterThan(0);
     for (const c of creases) expect(/(^|\|)(wall|dome)(\||$)/.test(c.labels), c.labels).toBe(true);
-    // la subxifoidea del sano: la cápsula bajo la pared pasa a la unión de los lóbulos con un salto > 30 dB
-    expect(reports[0].creases.some((c) => c.labels.includes('wall') && c.labels.includes('lobeBlend') && c.dbJump > 30)).toBe(true);
+    // la subxifoidea del sano ya no tiene la arista pared|unión de los lóbulos (> 30 dB antes de la decisión 72: el
+    // hígado apoya ahora en la pared hasta su borde inferior)
+    expect(reports[0].creases.some((c) => c.labels.includes('wall') && c.labels.includes('lobeBlend') && c.dbJump > 30)).toBe(false);
   });
 
   it('tramos rectos (solo informados): con flecha de 0,5 mm nunca menos que con 0,25 mm, todos ≥ 20 mm', () => {

@@ -34,7 +34,7 @@ import {
   perirenalThicknessMm,
   type Kidney,
 } from './organs/kidney';
-import { LIVER_BLEND_MM, liverBaseSdf, liverLobes, liverSdf, visceralPlaneDistance, type VisceralPlane } from './organs/liver';
+import { LIVER_BLEND_MM, liverBaseSdf, liverLobes, liverSdf, visceralFaceDistance, type VisceralFace } from './organs/liver';
 import { buildHepaticBranches, buildVesselTree, wallThicknessMm, type DuctDef, type VesselDef } from './vesselTree';
 
 export { wallThicknessMm };
@@ -197,8 +197,8 @@ export class AnatomyScene {
   readonly liver: Ellipsoid;
   readonly liverLeft: Ellipsoid;
   readonly liverBlendMm = LIVER_BLEND_MM;
-  /** Cara visceral (módulo `organs/liver`). */
-  readonly visceralPlane: VisceralPlane;
+  /** Cara visceral en cuña (módulo `organs/liver`, decisión 72). */
+  readonly visceralFace: VisceralFace;
   /**
    * Fisura umbilical (ligamento redondo / falciforme): surco sagital en x = 15 mm (izquierda
    * del paciente) sobre la cara anteroinferior del lóbulo izquierdo, entre el segmento IV y
@@ -246,7 +246,7 @@ export class AnatomyScene {
     // apófisis transversas de 40 mm a cada lado. Las costillas terminan en ellas.
     this.spine = { kind: 'cylinderZ', x0: 0, y0: -46, r: 17, archHalfWidth: 40, archY0: -78, archY1: -58 };
     // Hígado y vesícula: geometría en sus módulos de órgano (organs/liver, organs/gallbladder)
-    ({ liver: this.liver, liverLeft: this.liverLeft, visceralPlane: this.visceralPlane } = liverLobes(patient.liver.sizeFactor));
+    ({ liver: this.liver, liverLeft: this.liverLeft, visceralFace: this.visceralFace } = liverLobes(patient.liver.sizeFactor));
     this.umbilicalFissure = UMBILICAL_FISSURE;
     this.ligamentumVenosum = LIGAMENTUM_VENOSUM;
     this.gallbladder = gallbladderBody();
@@ -311,9 +311,9 @@ export class AnatomyScene {
     ];
   }
 
-  /** Distancia con signo a la cara visceral (positiva dentro del hígado, por encima del plano). */
-  visceralPlaneDistance(m: Vec3): number {
-    return visceralPlaneDistance(m, this.visceralPlane);
+  /** Distancia con signo a la cara visceral (positiva dentro del hígado, por encima de ella). */
+  visceralFaceDistance(m: Vec3): number {
+    return visceralFaceDistance(m, this.visceralFace, this.torso, this.wallThickness()).d;
   }
 
   /**

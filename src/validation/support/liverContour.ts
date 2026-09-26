@@ -24,7 +24,13 @@
 import { MORISON_CONTACT_MM, INTERFACES, Interface } from '../../anatomy/interfaces';
 import { RENAL_IMPRESSION_OVERLAP_MM, kidneyLocal, perirenalOuterSdf } from '../../anatomy/organs/kidney';
 import { gallbladderSdf } from '../../anatomy/organs/gallbladder';
-import { GALLBLADDER_FOSSA_ROUND_MM, RENAL_IMPRESSION, visceralPlaneDistance } from '../../anatomy/organs/liver';
+import {
+  GALLBLADDER_FOSSA_ROUND_MM,
+  MEDIAL_CUT,
+  RENAL_IMPRESSION,
+  medialCutDistance,
+  visceralFaceDistance,
+} from '../../anatomy/organs/liver';
 import { umbilicalFissureSdf } from '../../anatomy/organs/liverLigaments';
 import { sdDiaphragm, sdEllipsoid, smoothMax, smoothMin, torsoDepth } from '../../anatomy/primitives';
 import { AnatomyScene, BASELINE_CALIBER, type VesselCaliber } from '../../anatomy/scene';
@@ -56,7 +62,7 @@ const K0 = (2 * Math.PI) / (1540 / 3.5e3);
 
 export type ContourCase = 'normal' | 'severe';
 export type ContourLabel =
-  'lobeR' | 'lobeL' | 'lobeBlend' | 'visceral' | 'visceralBlend' | 'renal' | 'gbFossa' | 'fissure' | 'wall' | 'dome';
+  'lobeR' | 'lobeL' | 'lobeBlend' | 'visceral' | 'visceralBlend' | 'medialCut' | 'renal' | 'gbFossa' | 'fissure' | 'wall' | 'dome';
 export type ContourOwner = 'capsule' | 'dome' | 'morison';
 
 /** Plano de imagen de una vista: la pose de partida en apnea espiratoria (la de las capturas), con desvíos. */
@@ -123,17 +129,20 @@ export interface LiverTerms {
 }
 
 /**
- * La fórmula de hoy de `faceSdf('liverSurface')` término a término: lóbulos (unión suave), cara visceral,
- * impresión renal, fosa vesicular y fisura (`liverSdf`), y el min duro con la cúpula y la pared.
+ * La fórmula de hoy de `faceSdf('liverSurface')` término a término: lóbulos (unión suave), cara visceral en cuña
+ * (decisión 72), plano posteromedial, impresión renal, fosa vesicular y fisura (`liverSdf`), y el min duro con la
+ * cúpula y la pared.
  */
 export function liverTerms(s: AnatomyScene, m: Vec3): LiverTerms {
   const dR = sdEllipsoid(m, s.liver);
   const dL = sdEllipsoid(m, s.liverLeft);
   const d0 = smoothMin(dR, dL, s.liverBlendMm);
   let label: ContourLabel = Math.abs(dR - dL) < s.liverBlendMm ? 'lobeBlend' : dR < dL ? 'lobeR' : 'lobeL';
-  const visc = -visceralPlaneDistance(m, s.visceralPlane);
-  const d1 = smoothMax(d0, visc, s.visceralPlane.edgeRoundMm);
-  if (d1 > d0 + 1e-3) label = Math.abs(d0 - visc) < s.visceralPlane.edgeRoundMm ? 'visceralBlend' : 'visceral';
+  const visc = -visceralFaceDistance(m, s.visceralFace, s.torso, s.wallThickness()).d;
+  const d1v = smoothMax(d0, visc, s.visceralFace.edgeRoundMm);
+  if (d1v > d0 + 1e-3) label = Math.abs(d0 - visc) < s.visceralFace.edgeRoundMm ? 'visceralBlend' : 'visceral';
+  const d1 = smoothMax(d1v, medialCutDistance(m), MEDIAL_CUT.roundMm);
+  if (d1 > d1v + 1e-3) label = 'medialCut';
   const d2 = smoothMax(
     d1,
     -(perirenalOuterSdf(kidneyLocal(m, s.kidneyRight), s.kidneyRight) + RENAL_IMPRESSION_OVERLAP_MM),

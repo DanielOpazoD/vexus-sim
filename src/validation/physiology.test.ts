@@ -76,7 +76,9 @@ describe('Fisiología: el VExUS emerge de la señal, no se asigna (guía §5, §
     const sevScene = new AnatomyScene(SEVERE_CONGESTION);
     const normScene = new AnatomyScene(NORMAL_ADULT);
     expect(sevScene.liver.radii[2] / normScene.liver.radii[2]).toBeCloseTo(1.1, 9);
-    expect(sevScene.visceralPlane.zAtY0).toBeLessThan(normScene.visceralPlane.zAtY0);
+    // la cara visceral y el borde bajan (decisión 72)
+    expect(sevScene.visceralFace.inner[0]).toBeLessThan(normScene.visceralFace.inner[0]);
+    expect(sevScene.visceralFace.anterior[0]).toBeLessThan(normScene.visceralFace.anterior[0]);
   });
 
   // Entre el sano y el grave la vena interlobar late (mínimo ≈ 25 % del máximo) sin llegar a la

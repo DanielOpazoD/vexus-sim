@@ -356,6 +356,12 @@ describe('Límites del shader con margen para crecer', () => {
       for (const body of loopBodies(g)) expect(reaches(g, body, 'warpAt'), `${name}: warpAt en un bucle`).toBe(false);
       // ni la textura del psoas y del cuadrado (decisión 81: un Voronoi de 3 × 3 células por plano de elevación)
       for (const body of loopBodies(g)) expect(reaches(g, body, 'fascicleSeptum'), `${name}: fascicleSeptum en un bucle`).toBe(false);
+      // ni el eco de interfaz de la muestra (decisión 65: tres ruidos de valor de la faceta y, en la cara interna de la
+      // pared, hígado, cúpula y cuadrado lumbar), que hoy también para faceGradient
+      for (const body of loopBodies(g)) {
+        expect(reaches(g, body, 'interfaceEcho'), `${name}: interfaceEcho en un bucle`).toBe(false);
+        expect(reaches(g, body, 'facetTilt'), `${name}: facetTilt en un bucle`).toBe(false);
+      }
     }
     // el detector ve la regresión: la pared que copia la serie con la textura del retroperitoneo (fieldFor, no la base)
     const wallInLoop = FRAG_RAWFIELD.replace(

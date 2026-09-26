@@ -9,8 +9,9 @@
  *  - B: el medio anclado de tres planos (`speckleSliceField`), la retrodispersión de `TISSUES`, la
  *    heterogeneidad, los grumos, la textura de la pared (`wallTexture`, con la dirección de la línea), la del «resto»
  *    (`restTexture`) y la de los músculos retroperitoneales (`retroTexture`, decisión 81) y el eco
- *    de interfaz (`interfaceEchoField` con `faceGradient` y la coherencia de curvatura de tubos y costillas),
- *    y el transitorio del campo cercano anclado a (línea, r);
+ *    de interfaz (la especular de la faceta, `facetEchoField`, con `faceGradient`, el campo de inclinación anclado y la
+ *    coherencia de curvatura de tubos y costillas, y la difusa sobre el fasor del moteado: decisión 65), y el
+ *    transitorio del campo cercano anclado a (línea, r);
  *  - C: gaussiana axial de σ = max(0,6; σ_ax(r)/dr) muestras (`axialSigmaMm`, decisión 84), ±12, energía unidad;
  *  - D: gaussiana lateral de σ = max(0,35; σ_PSF/paso de línea) líneas, ±14, energía unidad, envolvente ×2/√π.
  * El modelo `base` es la pared de antes de la decisión 62: retrodispersión 0,55 / 0,5 / 0,6 (grasa, músculo,
@@ -32,9 +33,15 @@ import {
   IFACE_MIN_COS,
   IFACE_REACH_MM,
   IFACE_SHIFT_MM,
+  addInterfaceEcho,
   curvatureCoherence,
+  diffuseEchoField,
   faceDelta,
   faceLitFromProbe,
+  faceSiteGain,
+  facetCosine,
+  facetEchoField,
+  facetTilt,
   interfaceEchoField,
 } from '../../ultrasound/interfaceEcho';
 import { TRANSIENT_AMPLITUDE, TRANSIENT_DECAY_MM, TRANSIENT_SKIP_MM } from '../../ultrasound/receiver';
@@ -92,6 +99,8 @@ export interface WallTwinOpts {
   noFaces?: readonly Interface[];
   /** Sin las réplicas de reverberación de la pared (decisión 76): para comparar el campo de B bit a bit. */
   noReverb?: boolean;
+  /** El eco de la decisión 57 (lóbulo del conjunto, χ(θ), sin facetas ni difusa): la comparación de la 65. */
+  noFacets?: boolean;
   /**
    * Sin el pedestal de lóbulos laterales (decisión 76): llega a ±40 líneas, hasta los bordes del sector, donde los
    * modelos de pared difieren a la misma profundidad; para comparar el campo de B bit a bit.
@@ -281,7 +290,10 @@ export function wallTwin(
         fr *= k;
         fi *= k;
       }
-      if (!o.noFaces?.includes(c0.interface)) fr += echoOf(scene, caliber, c0, p, dir, r, se, frame, g);
+      if (!o.noFaces?.includes(c0.interface)) {
+        const [spec, diff] = echoOf(scene, caliber, c0, p, dir, r, se, frame, g, o.noFacets ?? false);
+        [fr, fi] = addInterfaceEcho([fr, fi], spec, diff);
+      }
       // la transmisión y la ganancia focal de la emisión (decisión 84): el eco, no el transitorio
       const T = Tat(r) * focalGain(r, g.focusMm, g.beam);
       let outR = fr * T;
@@ -364,7 +376,10 @@ export function wallTwin(
   };
 }
 
-/** Eco de interfaz de la muestra (`interfaceEcho` de la pasada B). */
+/**
+ * Eco de interfaz de la muestra (`interfaceEcho` de la pasada B): [especular de la faceta, amplitud de la difusa]
+ * (decisión 65); con `noFacets`, la especular de la decisión 57 y sin difusa.
+ */
 function echoOf(
   scene: AnatomyScene,
   caliber: VesselCaliber,
@@ -375,16 +390,17 @@ function echoOf(
   se: number,
   frame: TwinFrame,
   g: TwinGeometry,
-): number {
+  noFacets: boolean,
+): [number, number] {
   const face = c.interface;
-  if (face === Interface.None) return 0;
+  if (face === Interface.None) return [0, 0];
   const reach = INTERFACES[face].twoSided ? IFACE_REACH_MM : IFACE_SHIFT_MM + IFACE_REACH_MM;
-  if (c.interfaceDistance > reach * 2.5) return 0;
+  if (c.interfaceDistance > reach * 2.5) return [0, 0];
   const fg = scene.faceGradient(m, caliber);
-  if (!fg) return 0;
-  if (!faceLitFromProbe(face, fg.normal, dir)) return 0;
+  if (!fg) return [0, 0];
+  if (!faceLitFromProbe(face, fg.normal, dir)) return [0, 0];
   const cosI = Math.abs(dot(fg.normal, dir));
-  if (cosI < IFACE_MIN_COS) return 0;
+  if (cosI < IFACE_MIN_COS) return [0, 0];
   let curv = 1;
   if (hasCurvatureCoherence(face) && fg.axis) {
     const circ = cross(fg.normal, fg.axis);
@@ -397,6 +413,9 @@ function echoOf(
       curv = curvatureCoherence(lateralSigmaMm(r, g.focusMm, g.beam), se * Math.SQRT1_2, kl, ke, K0 * frequencyRatio(r, g.beam));
     }
   }
-  curv *= wallFaceGain(m, face, scene.torso);
-  return interfaceEchoField(face, cosI, curv, faceDelta(c.interfaceDistance, fg.norm, cosI), K0);
+  const delta = faceDelta(c.interfaceDistance, fg.norm, cosI);
+  if (noFacets) return [interfaceEchoField(face, cosI, curv * wallFaceGain(m, face, scene.torso), delta, K0), 0];
+  const gain = wallFaceGain(m, face, scene.torso) * faceSiteGain(face, m, scene);
+  const cosF = facetCosine(fg.normal, dir, facetTilt(m, face));
+  return [facetEchoField(face, cosF, curv * gain, delta, K0), diffuseEchoField(face, cosI, delta, K0) * gain];
 }

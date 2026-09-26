@@ -343,7 +343,8 @@ describe('Eco de interfaz en la distancia por la normal (|∇| de la cara)', () 
     // gradiente de la cara se lleva al mundo antes del eco
     expect(echo).toContain('float gBound = (c.iface <= IF_LAST_TUBE ? length(c.n) : IFACE_GRAD_MAX) * warpBound(w);');
     expect(echo).toContain('vec3 gw = warpNormal(w, fg.xyz * fg.w); float gn = length(gw); fg = vec4(gw / max(gn, 1e-9), gn);');
-    expect(echo).toContain('return interfaceProfileEcho(c.iface, cosI, curv, c.ifd / (fg.w * cosI));');
+    expect(echo).toContain('float g = faceShape(c.iface, c.ifd / (fg.w * cosI)) * gain;');
+    expect(echo).toContain('return vec2(faceEcho(c.iface, cosF, min(1.0 - 4.0 * FACET_TILT2 * P.z, 1.0 - FACET_RHO2), 1.0, curv, g),');
     expect(echo).toContain('float kl = dot(lat, circ); kl = kl * kl * c.kc;');
     expect(FRAG_QUERY).toContain('o2 = faceGradient(c, m);');
     // las diferencias centrales de la vesícula y de la cápsula usan las sobrecargas sin normal (decisión 67)

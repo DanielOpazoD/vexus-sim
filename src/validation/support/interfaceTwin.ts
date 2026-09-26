@@ -3,8 +3,11 @@
  * escenas 2D extruidas en elevación. Lo usa `interfaceTwin.test.ts`; nació en el diseño del PR 5 de la
  * tanda 1.5 (`design-spec/final/lib2.ts`) y aquí usa las funciones de producción:
  *  - B: el medio anclado de tres planos de `speckleField.ts` (`anchoredSliceField`) y el eco de
- *    `interfaceEcho.ts` (`interfaceEchoField`, gemelo exacto de la GLSL, con `curvatureCoherence` en las
- *    caras de tubo); el espejo de A0 en el cruce exacto (`mirrorCrossing`) y la pleura desde él;
+ *    `interfaceEcho.ts`, gemelo de la GLSL: la especular de la faceta con el campo de inclinación anclado en el punto
+ *    embebido (`facetEchoField`, `facetTilt`) y la difusa sobre el fasor del moteado (`diffuseEchoField`,
+ *    `addInterfaceEcho`) de la decisión 65, o el eco de la 57 (`interfaceEchoField`) con `noFacets`; con
+ *    `curvatureCoherence` en las caras de tubo; el espejo de A0 en el cruce exacto (`mirrorCrossing`) y la pleura
+ *    desde él;
  *  - C: gaussiana axial de σ = max(0,6; σ_ax(r)/dr) muestras (`axialSigmaMm`, que se alarga con la bajada de la
  *    frecuencia central, decisión 84), truncada a ±12 y de energía unidad;
  *  - D: gaussiana lateral de σ = max(0,35; σ_PSF/paso de línea) líneas (`lateralFwhmMm` con el haz de la imagen B en
@@ -27,7 +30,18 @@ import { axialSigmaMm, lateralFwhmMm } from '../../ultrasound/beamModel';
 import { frequencyRatio } from '../../ultrasound/beamEcho';
 import { bmodeBeam, CONVEX_C35_PROFILE } from '../../ultrasound/transducerProfile';
 import { greyOfLevel, levelOfGrey } from '../../ultrasound/greyMap';
-import { IFACE_K_DB, IFACE_SHIFT_MM, curvatureCoherence, faceProfile, interfaceEchoField } from '../../ultrasound/interfaceEcho';
+import {
+  IFACE_K_DB,
+  IFACE_SHIFT_MM,
+  addInterfaceEcho,
+  curvatureCoherence,
+  diffuseEchoField,
+  facetCosine,
+  facetEchoField,
+  facetTilt,
+  faceProfile,
+  interfaceEchoField,
+} from '../../ultrasound/interfaceEcho';
 import { anchoredSliceField, hash13, type SpeckleAnchor } from '../../ultrasound/speckleField';
 import { mirrorCrossing } from '../../ultrasound/transmission';
 import type { Vec3 } from '../../core/vec3';
@@ -106,6 +120,8 @@ export interface SimOpts {
   unitS?: { beta: number };
   /** Líneas del sector (192 por omisión): el mismo abanico de ±34° con otro paso. */
   lines?: number;
+  /** El eco de la decisión 57 (lóbulo del conjunto, χ(θ), sin facetas ni difusa): la prueba de regresión de la 65. */
+  noFacets?: boolean;
 }
 
 export interface SimOut {
@@ -132,16 +148,26 @@ function rot(ax: number, ay: number, az: number): [Vec3, Vec3, Vec3] {
   ];
 }
 
-/** Eco de interfaz de una muestra del modelo `echo` (0 sin cara o fuera de su alcance). */
-function echoAt(c: Cls, cosI: number, r: number, o: SimOpts, focus: number): number {
-  if (c.face === undefined || c.ifd === undefined) return 0;
+/**
+ * Eco de interfaz de una muestra del modelo `echo`: [especular, amplitud de la difusa] (0 sin cara o fuera de su
+ * alcance). La especular es la de la faceta (decisión 65): `cosF`, la incidencia sobre la normal inclinada por el
+ * campo anclado al material (`facetTilt` en el punto embebido); `unitS` (la calibración de β) es la cara lisa sin
+ * facetas ni difusa.
+ */
+function echoAt(c: Cls, cosI: number, cosF: number, r: number, o: SimOpts, focus: number): [number, number] {
+  if (c.face === undefined || c.ifd === undefined) return [0, 0];
   const delta = c.ifd / Math.max(cosI, 1e-9);
-  if (o.unitS) return cosI < 0.05 ? 0 : o.unitS.beta * faceProfile(delta, INTERFACES[c.face].twoSided);
+  if (o.unitS) return [cosI < 0.05 ? 0 : o.unitS.beta * faceProfile(delta, INTERFACES[c.face].twoSided), 0];
+  if (cosI < 0.05) return [0, 0];
   const curv =
     c.face <= LAST_TUBE_INTERFACE
       ? curvatureCoherence(latSigmaMm(r, focus), elevSigma(r) / Math.SQRT2, c.kl ?? 0, c.ke ?? 0, K0 * frequencyRatio(r, TWIN_BEAM))
       : 1;
-  return interfaceEchoField(c.face, cosI, curv, delta, K0, o.kDb ?? IFACE_K_DB);
+  if (o.noFacets) return [interfaceEchoField(c.face, cosI, curv, delta, K0, o.kDb ?? IFACE_K_DB), 0];
+  return [
+    facetEchoField(c.face, cosF, curv, delta, K0, o.kDb ?? IFACE_K_DB),
+    diffuseEchoField(c.face, cosI, delta, K0, o.kDb ?? IFACE_K_DB),
+  ];
 }
 
 export function simulate(scene: Scene, o: SimOpts): SimOut {
@@ -215,7 +241,15 @@ export function simulate(scene: Scene, o: SimOpts): SimOut {
         const win = Math.max(cosI, 0.15) * dr;
         re += c.specOld * Math.pow(cosI, 4) * (c.bd < win ? 1 : 0) * 0.5;
       } else {
-        re += echoAt(c, cosI, r, o, focus);
+        // la faceta en el punto material, con la normal y el rayo del plano embebidos en 3D
+        let cosF = cosI;
+        if (c.face !== undefined && !o.unitS && !o.noFacets) {
+          const n3: Vec3 = [0, 1, 2].map((k) => a[k] * c.n[0] + b[k] * c.n[1]) as Vec3;
+          const d3: Vec3 = [0, 1, 2].map((k) => a[k] * dir[0] + b[k] * dir[1]) as Vec3;
+          cosF = facetCosine(n3, d3, facetTilt(m, c.face));
+        }
+        const [spec, diff] = echoAt(c, cosI, cosF, r, o, focus);
+        [re, im] = addInterfaceEcho([re, im], spec, diff);
         // pleura: centrada en el cruce exacto del espejo, con el coseno de la reflexión
         if (mirrorHit >= 0 && !o.unitS) {
           const cm = Math.sqrt(Math.max(0, 0.5 * (1 - (d0[0] * dRefl[0] + d0[1] * dRefl[1]))));

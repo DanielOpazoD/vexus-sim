@@ -22,7 +22,9 @@ import {
   posOn,
   renalScene,
   simulate,
+  spiralCapsule,
   summarize,
+  faceTrace,
   thetaOf,
   grayOf,
   TWIN_BEAM,
@@ -48,9 +50,15 @@ import {
  * producción no (C = 1 fuera de los tubos, limitación `interface-curvature-tubes-only`): con la s de la
  * tabla del plan (0,21) daba 2,23, sobre la banda M8 [1,6; 2,2]. Su pico es la cara grasa/cápsula renal
  * (4 dB sobre la de hígado/grasa, cuya s no lo mueve: 0,30 → 0,35 deja 2,23); con s 0,25 en la cápsula
- * renal queda en 2,17. La VCI del gemelo (`ivc`) es circular (r 10 mm); la de la anatomía, elíptica: sus
+ * renal quedaba en 2,17 y, desde la decisión 65 (s 0,2 y σz 0,06, con el nivel fijado por χ(0)), en 2,0–2,1. La VCI
+ * del gemelo (`ivc`) es circular (r 10 mm); la de la anatomía, elíptica: sus
  * paredes AP (subxifoidea) tienen curvatura apScale/r y las laterales (flanco) 1/(apScale²·r), y en apnea
  * (apScale 0,777) dan 1,67 y 1,52 frente a 1,62 (`ivcAp`, `ivcLateral`).
+ *
+ * Desde la decisión 65 el eco es el de la faceta (la normal inclinada por un campo anclado, con el lóbulo propio y
+ * χ(0)) más la componente difusa: en media conserva el del conjunto (M1–M3 no cambian), pero la línea se arrosaria y
+ * se fragmenta más cuanto más oblicua. M4 y M8 pasan a pedir eso: continuidad a 0–20° sin exigir una cresta constante,
+ * y la cápsula que se apaga y se rompe a 20–40°. `noFacets` es el eco de la 57, para la regresión.
  */
 type Model = SimOpts['model'];
 interface CaseSpec {
@@ -318,12 +326,18 @@ describe('Gemelo B→C→D de los ecos de interfaz (decisión 57)', () => {
     expect(bin(R.portal, 0).dDb).toBeGreaterThanOrEqual(bin(R.hv80, 0).dDb);
   });
 
-  it('M4: paredes y caras continuas a 0–20°, sin huecos largos ni rosario', () => {
+  it('M4: a 0–20° la línea sigue siendo la que se ve, arrosariada como las reales sin romperse', () => {
+    // las cotas de la decisión 57 (huecos ≤ 0,15 en la VSH y ≤ 0,05 en el resto, tramos ≤ 1 mm, rosario ≤ 0,26 en las
+    // paredes y ≤ 0,22 en el resto) salvo donde las facetas de la 65 las mueven, medido con 8 semillas (26-09-2026): el
+    // tramo de la VSH (lóbulo estrecho, 0,14: se corta en tramos cortos como las paredes reales; hasta 2,65 mm) y de la
+    // cápsula (hasta 1,77 mm con una semilla, 1,18 con las dos de la prueba) y el rosario de Morison (0,26 con las dos)
+    const runMax: Partial<Record<CaseId, number>> = { hv80: 3.5, capsule: 1.5 };
+    const beadMax: Partial<Record<CaseId, number>> = { hv80: 0.26, ivc: 0.26, morison: 0.32 };
     for (const id of ['hv80', 'ivc', 'capsule', 'diaphragm', 'morison'] as const) {
       const b = bin(R[id], 0);
       expect(b.gapFrac, id).toBeLessThanOrEqual(id === 'hv80' ? 0.15 : 0.05);
-      expect(b.gapRunMm, id).toBeLessThanOrEqual(1);
-      expect(R[id].beading, id).toBeLessThanOrEqual(id === 'hv80' || id === 'ivc' ? 0.26 : 0.22);
+      expect(b.gapRunMm, id).toBeLessThanOrEqual(runMax[id] ?? 1);
+      expect(R[id].beading, id).toBeLessThanOrEqual(beadMax[id] ?? 0.22);
     }
   });
 
@@ -373,13 +387,66 @@ describe('Gemelo B→C→D de los ecos de interfaz (decisión 57)', () => {
     expect(R.diaphragm.saturated).toBeLessThanOrEqual(0.02);
     expect(bin(R.capsule, 0).ratio).toBeGreaterThanOrEqual(1.4);
     expect(bin(R.capsule, 0).ratio).toBeLessThanOrEqual(2.1);
-    expect(bin(R.capsule, 20).ratio).toBeGreaterThanOrEqual(1.3);
-    expect(bin(R.capsule, 20).gapFrac).toBeLessThanOrEqual(0.2);
-    // Morison sin la curvatura del riñón (C = 1 fuera de los tubos) y con s 0,25 en la cápsula renal: 2,17
-    // (con 0,21, 2,23; el plan, con la curvatura, 2,08)
+    // decisión 65: a 20–40° la cápsula se apaga y se rompe. Con cuatro semillas, frente al eco de la 57 con la misma
+    // tabla (s 0,2): la caída de 0–20° a 20–40° y los huecos a 20–40° (26-09-2026: 10,5 frente a 9,5 dB y 0,34 frente
+    // a 0,25; en main, s 0,25 y χ(θ), 6,7 dB y ≤ 0,2)
+    const m8 = (noFacets: boolean) => {
+      const all: BenchLine[] = [];
+      for (const seed of [1, 2, 3, 4])
+        for (const phi of CASES.capsule.phis) {
+          const sc = CASES.capsule.scene(phi);
+          const [r0, r1] = CASES.capsule.range();
+          all.push(...bench(sc, simulate(sc, { model: 'echo', r0, r1, seed, noFacets }), liverMed, 180, CASES.capsule.opt));
+        }
+      const b = summarize(all);
+      const [b0, b20] = [b.find((x) => x.from === 0)!, b.find((x) => x.from === 20)!];
+      return { drop: b0.dDb - b20.dDb, gaps: b20.gapFrac };
+    };
+    const [f65, f57] = [m8(false), m8(true)];
+    const msg = JSON.stringify({ f65, f57 });
+    expect(f65.drop, msg).toBeGreaterThanOrEqual(9.5);
+    expect(f65.gaps, msg).toBeGreaterThanOrEqual(0.28);
+    expect(f65.drop - f57.drop, msg).toBeGreaterThanOrEqual(0.3);
+    expect(f65.gaps - f57.gaps, msg).toBeGreaterThanOrEqual(0.04);
+    // Morison sin la curvatura del riñón (C = 1 fuera de los tubos): con la cápsula renal de la 65 (s 0,2, σz 0,06: su
+    // nivel lo fija χ(0)), 2,0–2,1 (con s 0,25 y χ(θ), 2,17; con 0,21, 2,23; el plan, con la curvatura, 2,08)
     expect(bin(R.morison, 0).ratio).toBeGreaterThanOrEqual(1.6);
     expect(bin(R.morison, 0).ratio).toBeLessThanOrEqual(2.2);
     expect(R.morison.saturated).toBeLessThanOrEqual(0.02);
+  });
+
+  it('decisión 65: la fragmentación depende de la incidencia (cápsula en espiral: CV de la traza a 0°, 10° y 20°)', () => {
+    // la traza a lo largo de la cara entre líneas (la de la imagen), 4 semillas; con el eco de la 57 la línea es un
+    // trazo: CV 0,09 / 0,12 / 0,22 (el moteado solo); con las facetas, 0,16 / 0,27 / 0,48 y huecos que aparecen a 20°
+    const cv = (th: number, noFacets: boolean) => {
+      const out: number[] = [];
+      const gaps: number[] = [];
+      for (const seed of [1, 2, 3, 4]) {
+        const sc = spiralCapsule(th, 50);
+        const o = simulate(sc, { model: 'echo', r0: 10, r1: 90, seed, noFacets });
+        const ths: number[] = [];
+        for (let u = 8; u < LINES - 8; u++) {
+          const t = thetaOf(u);
+          if (sc.faceR(t) >= 25 && sc.faceR(t) <= 75) ths.push(t);
+        }
+        const tr = faceTrace(o, sc.faceR, liverMed, [Math.min(...ths), Math.max(...ths)]);
+        out.push(tr.cv);
+        gaps.push(tr.gap);
+      }
+      return { cv: mean(out), gap: mean(gaps) };
+    };
+    const now = [0, 10, 20].map((th) => cv(th, false));
+    const before = [0, 10, 20].map((th) => cv(th, true));
+    const msg = JSON.stringify({ now, before });
+    expect(now[0].cv, msg).toBeLessThan(0.3);
+    expect(now[0].gap, msg).toBe(0);
+    expect(now[1].cv, msg).toBeGreaterThan(0.22);
+    expect(now[2].cv, msg).toBeGreaterThan(0.4);
+    expect(now[2].gap, msg).toBeGreaterThan(0.1);
+    expect(now[1].cv - now[0].cv, msg).toBeGreaterThan(0.06);
+    // el eco de la 57: la cresta apenas varía a 10° (lo que da el moteado)
+    expect(before[1].cv, msg).toBeLessThan(0.2);
+    expect(before[2].gap, msg).toBeLessThan(0.05);
   });
 
   it('M9: el moteado del hígado a ≥ 6 mm de la pared no cambia con los ecos', () => {

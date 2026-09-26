@@ -7,8 +7,10 @@
  * la cortina (a partir del
  * borde, en la dirección lateral de la imagen, que aquí es la craneocaudal: l_z = cos θ, e_z = 0, como la
  * ventana del flanco) o la cápsula y el hígado. Usa las funciones de producción: el moteado anclado de tres
- * planos (`anchoredSliceField`), los grumos y la heterogeneidad (`speckleField.ts`), el eco de las caras
- * (`interfaceEchoField`) y todo el modelo de la pleura (`pleura.ts`: línea pleural y réplicas, serie de la
+ * planos (`anchoredSliceField`), los grumos y la heterogeneidad (`speckleField.ts`), el eco de las caras (el de la
+ * faceta y la difusa de la decisión 65, `facetEchoField` y `diffuseEchoField`, con el campo de inclinación anclado en el
+ * punto embebido; las copias de la serie, el de la 57, como `wallFaceEchoFlat`) y todo el modelo de la pleura
+ * (`pleura.ts`: línea pleural y réplicas, serie de la
  * pared, deslizamiento y fracción de aire). La transmisión es la analítica de las capas a la frecuencia B
  * efectiva; bajo la pleura, la del tejido de detrás (lo que la GPU aproxima con ΔL). La PSF es la de la imagen B en
  * fundamental (decisión 84, `bmodeBeam`): C con el pulso de cada fila (`axialSigmaMm`), D con la PSF lateral que baja
@@ -25,7 +27,14 @@ import { axialSigmaMm, lateralFwhmMm } from '../../ultrasound/beamModel';
 import { focalGain } from '../../ultrasound/beamEcho';
 import { bmodeBeam, CONVEX_C35_PROFILE } from '../../ultrasound/transducerProfile';
 import { greyOfLevel, levelOfGrey } from '../../ultrasound/greyMap';
-import { interfaceEchoField } from '../../ultrasound/interfaceEcho';
+import {
+  addInterfaceEcho,
+  diffuseEchoField,
+  facetCosine,
+  facetEchoField,
+  facetTilt,
+  interfaceEchoField,
+} from '../../ultrasound/interfaceEcho';
 import {
   CURTAIN_MIN_AIR,
   WALL_COPY_FACE_GAIN,
@@ -217,10 +226,20 @@ export function simulatePleura(o: PleuraTwinOpts): PleuraTwinOut {
     const side = 0.5 * l0 + 0.25 * (Math.hypot(f1[0], f1[1]) + Math.hypot(f2[0], f2[1]));
     return l0 > 1e-6 ? [(f0[0] * side * g) / l0, (f0[1] * side * g) / l0] : [0, 0];
   };
-  /** Eco de la cápsula (cara de un lado, la cápsula es su dueña) en y. */
-  const capsuleEcho = (y: number, cosI: number): number =>
-    y >= WALL[2] && y < WALL[2] + CAPSULE_MM ? interfaceEchoField(Interface.LiverCapsule, cosI, 1, (y - WALL[2]) / cosI, K0) : 0;
-  /** Eco de la cara de la capa de la pared en y (planas: |∇| = 1, incidencia la de la línea). */
+  /**
+   * Eco de la cara que dibuja la muestra (x, y) de la línea de dirección (sn, c) en la imagen: la cápsula (cara de un
+   * lado, la cápsula es su dueña) o la de la capa de la pared (planas: |∇| = 1 y la normal la del plano, b). La
+   * especular de la faceta y la difusa de la decisión 65, como `interfaceEcho` de la pasada B: [especular, difusa].
+   */
+  const faceEcho = (x: number, y: number, sn: number, c: number): [number, number] => {
+    const cap = y >= WALL[2] && y < WALL[2] + CAPSULE_MM;
+    const f: [Interface, number] | null = cap ? [Interface.LiverCapsule, y - WALL[2]] : flatWallFace(y);
+    if (!f) return [0, 0];
+    const dir: Vec3 = [a[0] * sn + b[0] * c, a[1] * sn + b[1] * c, a[2] * sn + b[2] * c];
+    const cosF = facetCosine(b, dir, facetTilt(embed(x, y), f[0]));
+    return [facetEchoField(f[0], cosF, 1, f[1] / c, K0), diffuseEchoField(f[0], c, f[1] / c, K0)];
+  };
+  /** La cara de la capa de la pared en y de una copia de la serie: el eco de la decisión 57 (`wallFaceEchoFlat`). */
   const wallEcho = (y: number, cosI: number): number => {
     const f = flatWallFace(y);
     return f ? interfaceEchoField(f[0], cosI, 1, f[1] / cosI, K0) : 0;
@@ -252,9 +271,10 @@ export function simulatePleura(o: PleuraTwinOpts): PleuraTwinOut {
       let im = 0;
       const wTissue = under ? 1 - fAir : 1;
       if (wTissue >= CURTAIN_MIN_AIR && (parts.tissue || !under)) {
-        const f = fieldAt(x, y, r, true);
+        const [spec, diff] = faceEcho(x, y, sn, c);
+        const f = addInterfaceEcho(fieldAt(x, y, r, true), spec, diff);
         const tr = transmission(th, r);
-        re += (f[0] + capsuleEcho(y, c) + wallEcho(y, c)) * tr * wTissue;
+        re += f[0] * tr * wTissue;
         im += f[1] * tr * wTissue;
       }
       if (curtain) {

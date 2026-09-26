@@ -31,6 +31,16 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Cambiado
 
+- Ecos de interfaz como en un ecógrafo y no como trazos (65): cada cara refleja con facetas de normal inclinada por un
+  campo liso anclado al tejido (unos grados, correlación de 1,5–3 mm), así que la línea brilla de frente con tramos más y
+  menos intensos y, al inclinarse, se rompe y se apaga en lugar de seguir como un alambre; la rugosidad fina de las
+  facetas que devuelven el eco es la de frente (antes subía con la oblicuidad y dejaba las fascias y la cápsula renal
+  brillando a 30–40°), y la energía que quita vuelve como una componente difusa granulosa y casi independiente del
+  ángulo. La cápsula hepática, la renal y la cara externa de la grasa perirrenal tienen el lóbulo más estrecho; donde la
+  cara interna de la pared tiene grasa detrás (el retroperitoneo de la ventana renal) es solo una fascia, y contra el
+  hígado sigue siendo la línea grasa/hígado. Morison vuelve a su rango (2,01–2,13; con la PSF de la decisión 84 estaba
+  en 2,19–2,32) y se rompe a 20–40°; la «U» del contorno profundo del riñón y las paredes de la VCI dejan de ser líneas
+  uniformes (rosario 0,14–0,28).
 - Retroperitoneo (81): el riñón derecho ya no aparece rodeado de asas: lo rodea la grasa retroperitoneal, ecogénica y granulosa, y las asas quedan delante (duodeno, colon). Hay psoas y cuadrado lumbar a los dos lados, hipoecoicos y con estrías finas a lo largo de sus fibras, junto a la columna y contra la pared posterior; se ven en las vistas transversas y más posteriores del flanco. La cápsula del lado cercano del riñón y Morison son una sola línea (antes, dos paralelas a 1–1,6 mm), y entre la VCI y la aorta del flanco hay grasa en lugar de asas.
 - Build aún más ligero, tercera etapa: el texto de los shaders se publica sin los espacios ni los saltos de línea que no separan nada (las directivas siguen en su propia línea). El chunk principal baja de 318,0 a 304,6 kB y el JS total de 953,1 a 939,6 kB; el fuente no cambia y una prueba comprueba que cada programa del build tiene los mismos tokens y las mismas directivas que sin la etapa.
 - La pestaña Docente (verdad fisiológica, intervenciones y diagnóstico) se descarga la primera vez que se activa el modo

@@ -68,23 +68,23 @@ Generado por `npm run docs:index` — no editar a mano.
 | [62](DECISIONS.md#L1490) | Pared torácica y abdominal realista: capas con caras, textura anclada de la grasa y el músculo, cortical costal y pericondrio | vigente |
 | [63](DECISIONS.md#L1753) | La sonda comprime el tejido: solo empuja, la pared bajo las líneas acopladas queda paralela a la cara y el acoplamiento es el contacto conseguido | vigente |
 | [64](DECISIONS.md#L1920) | Reservada: lámina difusa de la cápsula hepática | reservada |
-| [65](DECISIONS.md#L1925) | Reservada: modulación de R_ef de las caras | reservada |
-| [66](DECISIONS.md#L1930) | Tríplex: el color sigue en pantalla con el PW, la puerta nace en la caja y la caja acompaña a la puerta | vigente |
-| [67](DECISIONS.md#L1967) | Vesícula en pera curvada con una sola pared; ningún vaso la atraviesa | vigente |
-| [68](DECISIONS.md#L2002) | Riñón con una sola línea capsular, pirámides tenues y distintas, seno digitado y pelvis colapsada | vigente |
-| [69](DECISIONS.md#L2063) | VCI con curva sagital y embudo, por delante de la aorta; ramas viscerales de la aorta; hilio hepático reordenado | vigente |
-| [70](DECISIONS.md#L2124) | Doppler color sin bloques: estimación continua, grano correlado a la celda de resolución y barra de escala | vigente |
-| [71](DECISIONS.md#L2154) | Pleura y líneas A en todo el hemitórax derecho, también bajo la pared anterior | vigente |
-| [72](DECISIONS.md#L2180) | Hígado con el borde inferior agudo apoyado en la pared, cara visceral cóncava y el tamaño de la revisión | vigente |
-| [73](DECISIONS.md#L2256) | Pared viscoelástica de la VCI: el latido la mueve la mitad y la respiración igual | vigente |
-| [74](DECISIONS.md#L2282) | El resto del abdomen deja de parecer hígado: asas con su firma y grasa mesentérica | vigente |
-| [75](DECISIONS.md#L2304) | Interfaz limpia: ventanas VExUS como tarjetas, la imagen manda y consola con divulgación progresiva | vigente |
-| [76](DECISIONS.md#L2343) | Ecos parásitos del modo fundamental: lóbulos laterales con la aberración de la pared y reverberación de sus caras | vigente |
-| [77](DECISIONS.md#L2404) | Armónica tisular: el modo B de un equipo moderno, con su haz, su acumulación y su ruido | vigente |
-| [78](DECISIONS.md#L2491) | Tríadas portales finas: el hígado deja de ser un moteado uniforme | vigente |
-| [79](DECISIONS.md#L2560) | Aurícula de lazo cerrado en la media e intervenciones docentes: bolo, diurético y PEEP | vigente |
-| [80](DECISIONS.md#L2645) | Cine y modo M: los cuadros adquiridos antes de la conversión de barrido y la franja M en la GPU | vigente |
-| [81](DECISIONS.md#L2728) | Retroperitoneo: psoas, cuadrado lumbar y grasa retroperitoneal alrededor del riñón; Morison y la cápsula con una sola línea | vigente |
-| [82](DECISIONS.md#L2841) | Casos trampa y contexto clínico: viñeta, confusores que marca el alumno, fiabilidad por territorio y mVExUS | vigente |
-| [83](DECISIONS.md#L2942) | Ventanas clásicas que faltaban: transversa epigástrica (VCI y aorta) y suprahepática subcostal | vigente |
-| [84](DECISIONS.md#L3059) | PSF que cambia con la profundidad: bajada de la frecuencia central, pulso de la banda de cada modo, emisión apodizada y banda del foco | vigente |
+| [65](DECISIONS.md#L1925) | Modulación de R_ef de las caras: facetas inclinadas ancladas, rugosidad fina de frente y componente difusa | vigente |
+| [66](DECISIONS.md#L2060) | Tríplex: el color sigue en pantalla con el PW, la puerta nace en la caja y la caja acompaña a la puerta | vigente |
+| [67](DECISIONS.md#L2097) | Vesícula en pera curvada con una sola pared; ningún vaso la atraviesa | vigente |
+| [68](DECISIONS.md#L2132) | Riñón con una sola línea capsular, pirámides tenues y distintas, seno digitado y pelvis colapsada | vigente |
+| [69](DECISIONS.md#L2193) | VCI con curva sagital y embudo, por delante de la aorta; ramas viscerales de la aorta; hilio hepático reordenado | vigente |
+| [70](DECISIONS.md#L2254) | Doppler color sin bloques: estimación continua, grano correlado a la celda de resolución y barra de escala | vigente |
+| [71](DECISIONS.md#L2284) | Pleura y líneas A en todo el hemitórax derecho, también bajo la pared anterior | vigente |
+| [72](DECISIONS.md#L2310) | Hígado con el borde inferior agudo apoyado en la pared, cara visceral cóncava y el tamaño de la revisión | vigente |
+| [73](DECISIONS.md#L2386) | Pared viscoelástica de la VCI: el latido la mueve la mitad y la respiración igual | vigente |
+| [74](DECISIONS.md#L2412) | El resto del abdomen deja de parecer hígado: asas con su firma y grasa mesentérica | vigente |
+| [75](DECISIONS.md#L2434) | Interfaz limpia: ventanas VExUS como tarjetas, la imagen manda y consola con divulgación progresiva | vigente |
+| [76](DECISIONS.md#L2473) | Ecos parásitos del modo fundamental: lóbulos laterales con la aberración de la pared y reverberación de sus caras | vigente |
+| [77](DECISIONS.md#L2534) | Armónica tisular: el modo B de un equipo moderno, con su haz, su acumulación y su ruido | vigente |
+| [78](DECISIONS.md#L2621) | Tríadas portales finas: el hígado deja de ser un moteado uniforme | vigente |
+| [79](DECISIONS.md#L2690) | Aurícula de lazo cerrado en la media e intervenciones docentes: bolo, diurético y PEEP | vigente |
+| [80](DECISIONS.md#L2775) | Cine y modo M: los cuadros adquiridos antes de la conversión de barrido y la franja M en la GPU | vigente |
+| [81](DECISIONS.md#L2858) | Retroperitoneo: psoas, cuadrado lumbar y grasa retroperitoneal alrededor del riñón; Morison y la cápsula con una sola línea | vigente |
+| [82](DECISIONS.md#L2971) | Casos trampa y contexto clínico: viñeta, confusores que marca el alumno, fiabilidad por territorio y mVExUS | vigente |
+| [83](DECISIONS.md#L3072) | Ventanas clásicas que faltaban: transversa epigástrica (VCI y aorta) y suprahepática subcostal | vigente |
+| [84](DECISIONS.md#L3189) | PSF que cambia con la profundidad: bajada de la frecuencia central, pulso de la banda de cada modo, emisión apodizada y banda del foco | vigente |

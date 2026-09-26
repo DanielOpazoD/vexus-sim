@@ -1922,10 +1922,140 @@ pared, pasada A, moteado al inclinar y girar, fundido del ancla, sin contacto no
 Número reservado para la lámina difusa de la cápsula (plan de contornos); ya la citan `capsuleTwin.test.ts`,
 `fidelity.ts` y `beamModel.ts`. La redacta su rama.
 
-## 65. Reservada: modulación de R_ef de las caras [Estado: reservada]
+## 65. Modulación de R_ef de las caras: facetas inclinadas ancladas, rugosidad fina de frente y componente difusa
 
-Número reservado para la modulación de R_ef a lo largo de las caras (plan de contornos; la cita
-`docs/fidelity/README.md`). La redacta su rama.
+**Contexto.** Sirve al objetivo 2 (fidelidad ecográfica). En la ronda 3 del juez ciego (21/21 detectadas) la pista n.º 2
+son las interfaces como trazos de pluma: líneas finas de brillo y grosor constantes a lo largo de toda su curva, que
+siguen brillando oblicuas, sin fragmentación ni rugosidad, y alguna que sale del órgano (la ventana renal con la
+cápsula, Morison y una «U» larga; las paredes de la VCI como alambres paralelos; los vasos; los nueve arcos de la
+pared). Inventario en CPU de las cuatro ventanas (`scratchpad/iface/faces.mts`: con la compresión de la sonda, apnea
+espiratoria, cada cruce de cada línea con su cara, su par de tejidos, su incidencia y el pico previsto del eco
+coherente sobre el moteado, K + R_ef + Λ + χ + C; y el mapa de caras de la CPU sobre la captura con GPU,
+`faceprobe.mts`):
+
+- **La «U» de la ventana renal** es la cápsula renal (cara 10, grasa perirrenal/corteza) en el contorno profundo del
+  riñón, que sigue a la izquierda por la cara externa de la grasa perirrenal (11, Morison: hígado/grasa) y la cápsula
+  hepática (7) del hígado junto a la grasa retroperitoneal: anatomía real (la cápsula posterior del riñón y la
+  interfaz hepatorrenal), pero a +23 dB a 0–20°, +18 a 20–40° y aún +12 dB (la 11) a 40–60°: un alambre en todo su
+  recorrido. Las líneas rectas que «salen del órgano» en la intercostal y el flanco son la cápsula hepática (7) de
+  la cara posterior del hígado junto a la VCI y la grasa retroperitoneal (una cara plana de la cuña visceral,
+  decisión 72): reales, con forma de primitiva. En la ventana renal la cara del peritoneo parietal (19) de la pared
+  separa en 114 de 192 líneas la grasa preperitoneal de la retroperitoneal (91 en el tronco sin la compresión de la
+  sonda): grasa con grasa, sin peritoneo; en otras 56 (65), de la cápsula hepática: el área desnuda del hígado.
+- Paredes de la VCI: +8,7 dB a 0–20° en la subxifoidea, uniformes; las fascias y el peritoneo de la pared, +4–16
+  dB a 0–20° y, en la renal (sonda inclinada 23°), +5–14 dB a 20–40°: los arcos.
+
+Tres causas en el eco de la decisión 57: (1) Λ(θ; s) es la **media del conjunto** de facetas, así que la línea es la
+media en todas partes, sin la realización (tramos que miran a la sonda y tramos que no); (2) la coherencia de la
+rugosidad fina se evaluaba en la incidencia media, χ(θ) = exp(−2(k0σz·cosθ)²), que **crece** con la oblicuidad: en
+retrodispersión las facetas que devuelven el eco miran de frente al transductor, así que su χ es la de incidencia
+normal (el término cuasi especular del modelo de dos escalas: Valenzuela 1978, _Boundary-Layer Meteorol._ 13:61; Leader
+1978, _Radio Sci._ 13:441); con χ(θ) una fascia (σz 0,075 mm) ganaba +5 dB a 30° y +8 a 40°, casi lo que el lóbulo
+le quitaba; (3) la energía que la rugosidad fina quita a la parte coherente (1 − χ²) se perdía: sin componente
+difusa, una cara oblicua era o un alambre o nada.
+**Opciones.** (1) Una ganancia aleatoria de R_ef a lo largo de la cara (como `wallFaceGain` de la 62): no depende de la
+incidencia, pinta. (2) La fase de ida y vuelta de cada faceta: la descartó la 57 (las líneas la submuestrean). (3)
+Facetas de Monte Carlo por rayo (Mattausch y Goksel, VCBM 2016 y _Comput. Graph. Forum_ 37:202, 2018: la rugosidad
+como distribución de microfacetas): muchos rayos por muestra. (4) La elegida: un campo de inclinación liso y anclado
+sobre el lóbulo propio de la faceta, con χ(0), y la componente difusa sobre el fasor del moteado.
+**Decisión.** En la pasada B (`INTERFACE_ECHO_GLSL`; gemelos en `ultrasound/interfaceEcho.ts`: `facetTilt`,
+`facetCosine`, `facetEchoField`, `diffuseEchoField`, `addInterfaceEcho`, `faceSiteGain`), para las caras que salen de
+`classify`:
+
+- **Facetas.** La normal de la cara se inclina con τ, tres ruidos de valor anclados al punto material (`FACET`: célula
+  de 3 mm, correlación 0,67 a 1,5 mm y 0,18 a 3 mm, del orden del haz lateral; sales fijas por cara), de desviación
+  σ_t = max(tan 5°, 0,5·s) por componente tangente: 5° en la VSH, la VCI y la cortical, 5,7° en las cápsulas, 7° en la
+  porta, 8,5° en las fascias y 11° en el peritoneo [EXTRAPOLACIÓN PROPIA]. La especular es la de la faceta: su lóbulo
+  propio de pendiente s_f = √(s² − σ_t²) (0,87·s; 0,78·s en la VSH y 0,81·s en la cortical, las más lisas: hace falta
+  s > tan 5°, que una prueba vigila) en la incidencia sobre la normal inclinada, con la amplitud que conserva la
+  energía (A_i·s/s_f): en media sobre τ la potencia de cada muestra es la del lóbulo del conjunto (±0,6 dB hasta 30° en
+  las 19 caras), así que K y las R_ef calibradas no cambian en media. De frente la faceta apenas cambia el eco (la
+  dependencia es de segundo orden en τ); en el flanco del lóbulo es exponencial en τ: la línea se arrosaria de frente y
+  se rompe oblicua. El perfil (δ) sigue en la cara, con su incidencia; la curvatura C de tubos y costillas, la de la
+  cara. La especular tiene la fase 0 común de la cara (decisión 57), así que C y D suman las facetas vecinas en amplitud:
+  donde la PSF lateral abarca facetas distintas la imagen sigue su amplitud media, que a 10–20° queda bajo el lóbulo del
+  conjunto (si la PSF las promediara del todo: −0,4 / −0,9 / −1,6 dB a 10 / 15 / 20° en la VCI, −1,2 / −2,4 / −3,8 en la
+  VSH, −0,3 / −0,8 / −1,3 en la cápsula; con la PSF de 1,4–2 mm frente a la célula de 3 mm, menos); una fase por faceta
+  la dejaría en la potencia media, pero las líneas la submuestrean.
+- **χ(0)** en la especular de la faceta. La pleura del espejo, la pleura parietal de la cortina y las copias de la pared
+  de su serie (decisiones 57, 61 y 62) conservan el eco del conjunto con χ(θ): sus niveles están calibrados con él y las
+  copias van en un bucle (el JIT de SwiftShader).
+- **Difusa.** a_d = κ_d·R_ef·√(1 − χ(0)²)·cosθ·g(δ)/g(0) sobre el fasor unidad del campo del tejido de la muestra
+  (`mediumField` y `mediumFieldPh`: `field·(1 + a_d/|field|)`): incoherente con la especular, granulosa, anclada, con la
+  fase de cada mirada del compuesto y casi independiente del ángulo (Lambert en amplitud). Al ir sobre el fasor del
+  tejido refuerza su grano en lugar de sumar uno independiente: por muestra, (|f| + a_d)² frente a |f|² + a_d², hasta
+  +2,8 dB más de potencia cuando la difusa iguala al moteado (Rayleigh: 1 + 2a·E|f|/(1 + a²) con E|f| = √π/2) y nada
+  cuando una de las dos domina. κ_d = 24 (`FACET.diffuse`)
+  [ESTIMADO]: no sale de la conservación de la energía (la parte que vuelve a la apertura depende de ella y de la PSF),
+  se calibra: en el gemelo de la pared deja las líneas a +4,4–8,7 dB y la cortical costal a +17,7 dB, en sus metas (W7
+  y W4 de la 62), que sin difusa bajaban a 0,6 y 11,3 al perder χ(θ). De frente, por muestra, la difusa queda 21–32 dB
+  bajo la especular en las caras lisas (vasos, vesícula, cápsula hepática, cortical), 11 dB en la cápsula renal y
+  Morison (σz 0,06) y es comparable en las fascias y el peritoneo (−5 a +0,5 dB), cuya rugosidad deja ~1 % de energía
+  coherente.
+- **Pendientes revisadas** (lo que dejaba alambres oblicuos no era el suelo, que no depende del ángulo, sino el lóbulo
+  ancho con χ(θ)): cápsula hepática s 0,25 → 0,2; cápsula renal 0,25 → 0,2 con σz 0,05 → 0,06 y la cara externa de la
+  grasa perirrenal 0,3 → 0,2 con σz 0,06 (el nivel de Morison lo fija ahora χ(0), no la s). La VCI conserva 0,18: con
+  0,14 su pared a 0–20° en la subxifoidea del sano caía a 1,16 con un 62 % de huecos. Los suelos no cambian.
+- **Grasa con grasa.** La cara interna de la pared con grasa detrás no tiene peritoneo: la grasa extraperitoneal sigue en
+  la retroperitoneal o la perirrenal y queda una fascia, así que su R_ef baja de 0,132 a 0,03 (`RETRO_PERITONEUM_GAIN`)
+  [ESTIMADO]. Grasa detrás (`fatAcrossWall`): dentro del compartimento retroperitoneal (decisión 81, `retroFatSdf` < 0)
+  y sin hígado, cúpula (diafragma o pulmón) ni cuadrado lumbar a 1,5 mm de la muestra (`WALL_ACROSS_MM`), porque en
+  `classify` los órganos ganan al compartimento. Contra el área desnuda del hígado, el diafragma o un músculo el salto
+  de impedancia sigue ahí y la cara no cambia; la columna no se descarta (desde las ventanas abdominales esa cara está
+  en la sombra del hueso). En el tronco entero el predicado acierta las 1032 caras con grasa detrás salvo 29 y no marca
+  ninguna otra (`scratchpad/iface/retropred.mts`). Scarpa y los planos intermusculares conservan sus suelos: se rompen
+  con sus facetas y su difusa queda ~4 dB bajo la de las fascias principales.
+- **Sin ranuras nuevas:** todo son constantes (`#define`) y el uniform `uIface` de siempre, del que sale también la
+  R_ef de la difusa (κ_d·R_ef = `IFACE_DIFFUSE`·A·2s, sin tabla) (la pasada B sigue en 128 y 130 ranuras). El campo de
+  inclinación (tres ruidos de valor) solo se evalúa en las muestras al alcance de su cara, y el hígado, la cúpula y el
+  cuadrado lumbar solo en las de la cara interna de la pared dentro del compartimento; todo fuera de los bucles (una
+  prueba vigila que ni `interfaceEcho` ni `facetTilt` entren en uno). Las pleuras y las copias de la pared de la serie,
+  en su bucle, usan el eco del conjunto sin difusa (`interfaceProfileEcho`).
+
+**Consecuencias.** Banco con GPU (M4, armónica y compuesto, `--sweep`, 26-09-2026; `main` d1f3600, con la PSF de la
+decisión 84 → esta decisión, `docs/fidelity/README.md`): Morison a 0–20° 2,19–2,32 → 2,01–2,13 (vuelve a [1,6; 2,2]:
+con la PSF de la 84 había quedado por encima en tres de las cuatro escenas) con rosario 0,11–0,14 → 0,14–0,35, y a
+20–40° 1,89–2,02 → 1,45–1,64; la línea del peritoneo y la cápsula a 0–20° 1,73–1,85 → 1,81–1,95 y a 20–40° 1,53–1,84
+→ 1,33–1,59 (en la renal son las líneas contra el hígado, 1,53–1,55 → 1,33–1,39: la métrica pide la cápsula debajo y
+no ve las de grasa con grasa); la VCI a 0–20° en la congestión 1,54–1,72 → 1,48–1,75 y en el sano 1,39–1,41 →
+1,30–1,52, con huecos 0–0,20 → 0–0,38 y rosario 0,10–0,23 → 0,14–0,28 (las referencias, 0,23–0,38). La mediana del
+sano en la subxifoidea (1,30) queda bajo el 1,36–2,1 de las tres referencias de pared y la del flanco en su borde
+(1,36): cuenta ahora los tramos sin eco entre los brillantes (36–38 % de los registros), como la VCI real de las
+imágenes del juez, que solo brilla en tramos cortos, y la imagen sigue la amplitud media de las facetas (arriba); la
+potencia media por muestra es la de antes. VSH a 40–60° 1,05–1,15 → 1,06–1,15, porta a 20–40° 1,24–1,33 →
+1,26–1,35 y el hígado (gris 86–95, desviación, SNR) sin cambios. Contorno de Morison: CVc a 0–20° 0,01 → 0,03–0,14
+(referencias 0,03–0,08) y a 20–40° 0,03–0,06 → 0,12–0,16 (0,10–0,14); su contraste a 40–60° frente al de 0–20° sube de
+0,23–0,27 a 0,31–0,35, aún lejos del 0,53–0,82 de las referencias (allí manda la banda de grasa perirrenal, que es del
+tejido y no de la cara). Las líneas de la pared: dentro 5–6 como antes, nivel −0,2–13,6 → −0,1–11,3 dB (la renal,
+13,4–13,6 → 10,7–11,3) y ningún pico saturado; en el gemelo de la pared, con la PSF de la 84, +4,6–8,4 dB y la
+cortical costal +17,8 dB. En la ventana renal, línea a línea en el gemelo, la cara interna de la pared con grasa
+detrás baja de −0,4 a −6,4 dB sobre el tejido de alrededor (91 líneas: ya no hay línea) y contra el hígado queda en
+2,1 dB (2,7 con el eco de la 57; 65 líneas). En las capturas (`scratchpad/iface/ab-r1`) las paredes de la VCI son
+líneas con tramos más y menos brillantes, los brazos de la «U» renal y Morison oblicuo se apagan y se rompen, y la
+línea larga de la cara posterior del hígado en el flanco se modula y se apaga hacia el borde. Queda: el grosor de la
+línea no depende de la inclinación de la cara en elevación (la rodaja de 3–5 mm la ensancharía; la cara de un lado es
+fina en `classify`), las líneas a incidencia normal siguen siendo continuas y limpias (se arrosarian, no se
+fragmentan), la pared sigue con sus capas equidistantes (anatomía de la 62) y la difusa es una capa fina sobre el
+moteado del tejido, no la de un septo con volumen. Coste: tres ruidos de valor por muestra junto a una cara, y el
+hígado, la cúpula y el cuadrado lumbar en las de la cara interna de la pared dentro del compartimento; el cuadro con
+GPU no cambia de forma medible (9,3–11,5 → 9,7–13,1 ms con la máquina cargada) y el índice crece 1,8 kB. Revisión
+adversarial: la primera versión bajaba la cara interna de la pared en todo el compartimento, también contra el área
+desnuda del hígado (65 de las 156 líneas de la ventana renal), y su prueba medía justo esas líneas; ahora el
+predicado mira lo que hay detrás y la prueba mide las dos familias por separado.
+**Verificación.** `interfaceEcho.test.ts` (el ruido normalizado; la inclinación con σ_t por componente, media nula,
+componentes y caras independientes, anclada y correlada 1,5–3 mm; s > tan 5° en todas las caras; la media sobre las
+facetas igual al lóbulo del conjunto con χ(0) a ±1 dB hasta 20° en cinco caras; el CV de la especular que crece con la
+incidencia; χ(0) frente a χ(θ); la difusa, Lambert, 21–32 dB bajo la especular por muestra en las caras lisas,
+comparable en las fascias y escalando con K; la cara interna de la pared con grasa detrás y contra el hígado; las
+constantes y las fórmulas en la GLSL de los dos programas de B), `interfaceTwin.test.ts` (M4 a 0–20° con las cotas de
+la 57 salvo el tramo de la VSH y de la cápsula y el rosario de Morison, medidos con 8 semillas; M8 con cuatro
+semillas frente al eco de la 57 con la misma tabla: la cápsula de 0–20° a 20–40° cae 10,5 frente a 9,4 dB y se rompe
+más, huecos 0,34 frente a 0,25; y la fragmentación que depende de la incidencia en la cápsula en espiral: CV de la
+traza 0,16 / 0,27 / 0,48 a 0° / 10° / 20° frente a 0,09 / 0,12 / 0,22 con el eco de la 57), `capsuleTwin.test.ts` (la
+cresta sin moteado modulada y σ_L ≥ 1,6 dB a 0–20°), `wallTwin.test.ts` (las metas de la pared y la cortical con la
+difusa, y las dos familias de la cara interna de la pared en la ventana renal), `pleuraTwin.test.ts` (su gemelo con el
+eco de la faceta en la cápsula y las capas de la pared), `shaderLimits.test.ts` (ranuras, y ni `interfaceEcho` ni
+`facetTilt` en un bucle), la e2e completa y el banco con GPU.
 
 ## 66. Tríplex: el color sigue en pantalla con el PW, la puerta nace en la caja y la caja acompaña a la puerta
 

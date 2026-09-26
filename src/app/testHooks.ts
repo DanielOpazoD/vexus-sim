@@ -1,5 +1,5 @@
 import { VESSEL_META, type VesselId } from '../physiology/vessels';
-import type { EquipmentCommand } from './equipment';
+import { gateInColorBox, type EquipmentCommand } from './equipment';
 import {
   equivalenceSweep,
   interfaceShellEquivalence,
@@ -174,6 +174,17 @@ export interface TestHooks {
   colorOnVessel: (vessels: VesselId[]) => number | null;
   /** Celdas de color visibles tras forzar un cuadro de color (sin mover la caja). */
   colorCells: () => number;
+  /** Funciones encendidas del equipo, puerta y centro de la caja (θ rad, r mm) y si la puerta está dentro (tríplex, 66). */
+  modeState: () => {
+    color: boolean;
+    pw: boolean;
+    gateInBox: boolean;
+    frameHz: number;
+    gate: { theta: number; r: number };
+    box: { theta: number; r: number };
+  };
+  /** Coloca la puerta PW en (θ, r) como un clic del alumno. */
+  placeGateAt: (theta: number, r: number) => void;
   /** Fracción de las celdas de la caja de color visibles tras forzar un cuadro (0–1). */
   colorCellFraction: () => number;
   /** Fija la ganancia de color (dB) como el deslizador. */
@@ -479,6 +490,18 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       return renderColorFrame(sim);
     },
     colorCells: () => renderColorFrame(getSim()),
+    modeState: () => {
+      const sim = getSim();
+      return {
+        color: sim.color.enabled,
+        pw: sim.pw.enabled,
+        gateInBox: gateInColorBox({ bmode: sim.bmode, color: sim.color, pw: sim.pw }),
+        frameHz: sim.colorTiming.frameHz,
+        gate: { theta: sim.pw.theta, r: sim.pw.depthMm },
+        box: { theta: (sim.color.theta0 + sim.color.theta1) / 2, r: (sim.color.r0 + sim.color.r1) / 2 },
+      };
+    },
+    placeGateAt: (theta, r) => dispatch({ type: 'placeGate', theta, r }),
     colorCellFraction: () => {
       const sim = getSim();
       return renderColorFrame(sim) / sim.renderer.colorCellCount;

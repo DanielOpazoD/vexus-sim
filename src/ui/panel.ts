@@ -4,7 +4,7 @@ import type { AppState, PanelTab, Store } from '../app/store';
 import type { StartPoint } from '../app/startPoints';
 import type { Syncable } from './controls';
 import { buildAcquireTab } from './panel/acquireTab';
-import type { EquipmentCommand } from '../app/equipment';
+import { modeHasColor, modeHasPw, type EquipmentCommand } from '../app/equipment';
 import type { PanelContext } from './panel/context';
 import { buildDopplerTab, type DopplerPanels } from './panel/dopplerTab';
 import { buildImageTab } from './panel/imageTab';
@@ -84,8 +84,8 @@ export class ControlPanel implements PanelContext {
     for (const [id, p] of this.panels) p.style.display = id === st.tab ? '' : 'none';
     this.tabs.get('docente')!.style.display = st.debug ? '' : 'none';
     this.doppler.empty.style.display = st.mode === 'B' ? '' : 'none';
-    this.doppler.color.style.display = st.mode === 'color' ? '' : 'none';
-    this.doppler.pw.style.display = st.mode === 'pw' ? '' : 'none';
+    this.doppler.color.style.display = modeHasColor(st.mode) ? '' : 'none';
+    this.doppler.pw.style.display = modeHasPw(st.mode) ? '' : 'none';
     this.measure.applyStore(st);
     this.sync();
   }

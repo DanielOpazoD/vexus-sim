@@ -1,6 +1,6 @@
 import { C_RECONSTRUCTION_MM_S, nyquistVelocityCms } from '../core/units';
 import { apertureAngleSigmaRad, lateralSigmaMm } from '../ultrasound/beamModel';
-import { colorTiming, type ColorTiming } from '../ultrasound/colorTiming';
+import { colorTiming, pwDutyCycle, type ColorTiming } from '../ultrasound/colorTiming';
 import { CONVEX_C35_PROFILE, type TransducerProfile } from '../ultrasound/transducerProfile';
 import type { ProbeCompression } from '../anatomy/compression';
 import { AnatomyQuery } from '../anatomy/query';
@@ -286,9 +286,13 @@ export class Simulator {
     this.gateInfo = { world: center, transmission, beamAngleToFlowDeg: angle, vessel: q.vessel };
   }
 
-  /** Cadencia física del color con la caja, PRF y ensemble actuales (decisión 39). */
+  /**
+   * Cadencia física del color con la caja, PRF y ensemble actuales (decisión 39); en tríplex el PW
+   * intercalado se lleva su parte del tiempo de disparo (decisión 66).
+   */
   get colorTiming(): ColorTiming {
     const c = this.color;
+    const pw = this.pw;
     return colorTiming(
       c.theta0,
       c.theta1,
@@ -298,6 +302,7 @@ export class Simulator {
       this.bmode.depthMm,
       C_RECONSTRUCTION_MM_S,
       this.profile.colorLineSpacingRad,
+      pw.enabled ? pwDutyCycle(pw.prfHz, pw.depthMm + pw.gateMm / 2, C_RECONSTRUCTION_MM_S) : 0,
     );
   }
 

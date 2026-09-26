@@ -81,7 +81,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
   ctx.track(button(cr, 'Caja −', () => ctx.dispatch({ type: 'scaleColorBox', factor: 1 / 1.15 })));
   help(
     c,
-    'Clic en la imagen centra la caja. Escala baja → aliasing; filtro alto → desaparece flujo lento; el color depende de la orientación del haz.',
+    'Clic en la imagen: centra la caja (con PW, en tríplex, coloca la puerta y la caja la acompaña). Escala baja → aliasing; filtro alto → desaparece flujo lento; el color depende de la orientación del haz.',
   );
 
   const pw = document.createElement('div');

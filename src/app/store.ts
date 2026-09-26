@@ -1,10 +1,11 @@
 import type { CaseId } from '../cases';
+import type { ImagingMode } from './equipment';
 /**
  * Almacén de estado de la aplicación (solo UI): modo de imagen, pestaña de la
  * consola, congelación, docente, navegador. El núcleo de simulación no depende
  * de él; la UI se suscribe y reacciona. Observable tipado sin dependencias.
  */
-export type ImagingMode = 'B' | 'color' | 'pw';
+export type { ImagingMode } from './equipment';
 export type PanelTab = 'adquirir' | 'imagen' | 'doppler' | 'medir' | 'docente';
 export type MeasureTool = 'none' | 'caliper' | 'hepatic' | 'portal' | 'renal';
 

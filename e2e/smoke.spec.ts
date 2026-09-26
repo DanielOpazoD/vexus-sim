@@ -625,6 +625,7 @@ test('sin contacto no hay Doppler: el color y el espectro se apagan al levantar 
     T.liftProbe(10);
     out.colorLifted = T.colorCells();
     T.liftProbe(0);
+    // PW con el color encendido: el tríplex (decisión 66); el espectro se mide igual
     document.querySelector<HTMLButtonElement>('#mode-pw')!.click();
     out.gate = T.placeGate([...veins]);
     T.advance(3);
@@ -640,6 +641,63 @@ test('sin contacto no hay Doppler: el color y el espectro se apagan al levantar 
   expect(r.gate, tag).toBe(true);
   expect(r.pwContact! as number, tag).toBeGreaterThan((r.pwLifted as number) + 8);
   expect(r.pwLifted as number, tag).toBeLessThan(11);
+  expect(errors).toEqual([]);
+});
+
+test('tríplex (decisión 66): el color sigue en pantalla con el PW, la puerta nace en la caja y la caja la acompaña', async ({ page }) => {
+  test.setTimeout(240_000);
+  const errors = await bootWithoutErrors(page);
+  await page
+    .locator('button', { hasText: /Apnea\s*esp/ })
+    .first()
+    .click();
+  await page.evaluate(() => window.__vexusTest!.goToStartPoint('renal'));
+  await page.locator('#mode-color').click();
+  // con el color solo, una puerta fuera de la caja no la mueve (la caja no sigue a una puerta que no se ve)
+  const colorOnly = await page.evaluate(() => {
+    const T = window.__vexusTest!;
+    T.placeGateAt(0.4, 150);
+    return T.modeState();
+  });
+  await page.locator('#mode-pw').click();
+  await expect(page.locator('#mode-color')).toHaveClass(/active/);
+  await expect(page.locator('#mode-pw')).toHaveClass(/active/);
+  await expect(page.locator('#hud-br')).toContainText('Color');
+  await expect(page.locator('#hud-br')).toContainText('PW');
+  const r = await page.evaluate(() => {
+    const T = window.__vexusTest!;
+    // al abrir el PW la puerta saltó al centro de la caja
+    const entered = T.modeState();
+    // en tríplex, la puerta que sale de la caja se lleva la caja
+    T.placeGateAt(-0.35, 60);
+    const followed = T.modeState();
+    const veins = ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'] as const;
+    const color = T.colorOnVessel([...veins]);
+    const gate = T.placeGate([...veins]);
+    T.advance(3);
+    return { entered, followed, color, gate, pw: T.pwBandOverFloorDb(2), cells: T.colorCells(), state: T.modeState() };
+  });
+  const tag = JSON.stringify({ colorOnly, ...r });
+  expect(colorOnly.color && !colorOnly.pw, tag).toBe(true);
+  expect(colorOnly.gateInBox, tag).toBe(false);
+  expect(r.entered.gateInBox, tag).toBe(true);
+  expect(r.entered.gate.theta, tag).toBeCloseTo(colorOnly.box.theta, 6);
+  expect(r.entered.gate.r, tag).toBeCloseTo(colorOnly.box.r, 6);
+  expect(r.followed.gateInBox, tag).toBe(true);
+  expect(r.followed.box.theta, tag).toBeLessThan(r.entered.box.theta - 0.1);
+  expect(r.gate, tag).toBe(true);
+  expect(r.state.color && r.state.pw && r.state.gateInBox, tag).toBe(true);
+  // el color sigue pintando el vaso y el espectro corre a la vez
+  expect(r.color!, tag).toBeGreaterThan(50);
+  expect(r.cells, tag).toBeGreaterThan(50);
+  expect(r.pw!, tag).toBeGreaterThan(8);
+  // el PW intercalado se lleva su tiempo: la imagen se refresca más despacio que con el color solo
+  expect(r.state.frameHz, tag).toBeLessThan(colorOnly.frameHz);
+  // volver a pulsar PW deja el color solo
+  await page.locator('#mode-pw').click();
+  await expect(page.locator('#mode-pw')).not.toHaveClass(/active/);
+  await expect(page.locator('#mode-color')).toHaveClass(/active/);
+  expect(await page.evaluate(() => window.__vexusTest!.modeState().pw)).toBe(false);
   expect(errors).toEqual([]);
 });
 
@@ -689,6 +747,8 @@ test('color: la misma transmisión que el PW y una ganancia que alcanza el ruido
     T.goToStartPoint('renal');
     const gate = T.placeGate(['interlobarVein1', 'interlobarVein2', 'interlobarVein3']);
     const t = T.gateTransmissionDb();
+    // 2D antes de Color: el color solo, como se calibró el ruido (desde el PW, Color daría el tríplex, decisión 66)
+    document.querySelector<HTMLButtonElement>('#mode-b')!.click();
     document.querySelector<HTMLButtonElement>('#mode-color')!.click();
     T.liftProbe(10);
     T.setColorGainDb(0);

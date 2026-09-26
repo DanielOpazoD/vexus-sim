@@ -2,6 +2,7 @@ import { registerDevtools } from './app/devtools';
 import { caseDisplayLabel, teacherToggleAllowed } from './app/blindMode';
 import { buildDiagnostics, buildLabel, diagnosticsFileName, gpuInfo } from './app/diagnostics';
 import { ErrorBudget } from './app/errorBudget';
+import { modeHasColor, modeHasPw, toggleMode } from './app/equipment';
 import { compareTissueGrids } from './app/equivalenceCheck';
 import { errorLog, errorMessage } from './app/errorLog';
 import { ProbeAnimator } from './app/probeAnimation';
@@ -151,7 +152,7 @@ session.onSimulatorChanged((next) => {
 });
 
 // --- Controles de la barra ----------------------------------------------------
-const modeButtons: Record<ImagingMode, HTMLButtonElement> = { B: $('mode-b'), color: $('mode-color'), pw: $('mode-pw') };
+const modeButtons = { B: $<HTMLButtonElement>('mode-b'), color: $<HTMLButtonElement>('mode-color'), pw: $<HTMLButtonElement>('mode-pw') };
 function applyMode(mode: ImagingMode): void {
   const wasPw = sim().pw.enabled;
   dispatch({ type: 'mode', mode });
@@ -159,11 +160,15 @@ function applyMode(mode: ImagingMode): void {
     sim().pwChain.reset();
     spectrogram.reset();
   }
-  for (const [k, b] of Object.entries(modeButtons)) b.classList.toggle('active', k === mode);
+  modeButtons.B.classList.toggle('active', mode === 'B');
+  modeButtons.color.classList.toggle('active', modeHasColor(mode));
+  modeButtons.pw.classList.toggle('active', modeHasPw(mode));
 }
-for (const [k, b] of Object.entries(modeButtons)) {
-  b.addEventListener('click', () => {
-    const mode = k as ImagingMode;
+// 2D apaga todo; Color y PW alternan su función y conservan la otra (tríplex, decisión 66)
+modeButtons.B.addEventListener('click', () => store.set({ mode: 'B', tab: store.get().tab === 'doppler' ? 'imagen' : store.get().tab }));
+for (const key of ['color', 'pw'] as const) {
+  modeButtons[key].addEventListener('click', () => {
+    const mode = toggleMode(store.get().mode, key);
     store.set({ mode, tab: mode === 'B' ? (store.get().tab === 'doppler' ? 'imagen' : store.get().tab) : 'doppler' });
   });
 }

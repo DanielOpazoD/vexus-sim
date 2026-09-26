@@ -28,6 +28,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Cambiado
 
+- Retroperitoneo (81): el riñón derecho ya no aparece rodeado de asas: lo rodea la grasa retroperitoneal, ecogénica y granulosa, y las asas quedan delante (duodeno, colon). Hay psoas y cuadrado lumbar a los dos lados, hipoecoicos y con estrías finas a lo largo de sus fibras, junto a la columna y contra la pared posterior; se ven en las vistas transversas y más posteriores del flanco. La cápsula del lado cercano del riñón y Morison son una sola línea (antes, dos paralelas a 1–1,6 mm), y entre la VCI y la aorta del flanco hay grasa en lugar de asas.
 - Build aún más ligero, tercera etapa: el texto de los shaders se publica sin los espacios ni los saltos de línea que no separan nada (las directivas siguen en su propia línea). El chunk principal baja de 318,0 a 304,6 kB y el JS total de 953,1 a 939,6 kB; el fuente no cambia y una prueba comprueba que cada programa del build tiene los mismos tokens y las mismas directivas que sin la etapa.
 - La pestaña Docente (verdad fisiológica, intervenciones y diagnóstico) se descarga la primera vez que se activa el modo
   docente: el alumno no la carga y el chunk principal baja ~7 kB. El JS total del presupuesto del bundle cuenta lo que

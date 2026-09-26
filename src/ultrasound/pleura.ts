@@ -425,7 +425,8 @@ vec2 mediumField(vec3 p, vec3 dir, float r, float se, bool withCurtain) {
 }
 // La pared que copia la serie (decisión 61) en p, con el camino en dir: el prefijo de la pared de classify (piel,
 // costillas y las capas de la decisión 62, sin órganos ni tubos: la muestra está antes de la pleura), moteado
-// anclado con la textura de la pared (fieldFor), grumos del plano central y el eco de cara plana de su capa
+// anclado con la textura de la pared (fieldForBase: sin la del psoas y del cuadrado, decisión 81), grumos del plano
+// central y el eco de cara plana de su capa
 // (wallFaceEchoFlat por WALL_COPY_FACE_GAIN: las bandas horizontales tenues de la neblina). Si la muestra pasa
 // de la cara interna (en una
 // mirada dirigida, ≤ 0,3 mm al final de la copia, junto a la réplica de la pleura), es la capa más honda: la
@@ -438,7 +439,7 @@ vec2 wallField(vec3 p, vec3 dir, float se, Warp w) {
   float depth;
   vec3 tn;
   if (!classifyWall(m, c, depth, tn)) { c.tissue = T_FAT; c.n = tn; }
-  vec2 field = fieldFor(m, se, c.tissue, normalize(p - uCurvC), w);
+  vec2 field = fieldForBase(m, se, c.tissue, normalize(p - uCurvC), w);
   float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
   if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
   return field + vec2(WALL_COPY_FACE_GAIN * wallFaceEchoFlat(c, m, dir, w), 0.0);

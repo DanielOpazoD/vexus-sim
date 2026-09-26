@@ -524,7 +524,8 @@ describe('gemelo GLSL (organs/wall.ts y wallTexture.ts)', () => {
     // tablas del GLSL con el tamaño interpolado
     expect(WALL_TEXTURE_GLSL).toContain(`const float WT_FACE_VAR[${WALL_TEXTURE.faceVariation.length}]`);
     expect(WALL_TEXTURE.faceVariation.length).toBe(LAST_WALL_INTERFACE - FIRST_WALL_INTERFACE + 1);
-    expect(TISSUE_COUNT).toBe(27);
+    // los tejidos de la decisión 81 (psoas, cuadrado lumbar, grasa retroperitoneal) van al final: no mueven índices
+    expect(TISSUE_COUNT).toBe(30);
   });
 });
 

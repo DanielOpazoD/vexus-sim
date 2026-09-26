@@ -94,10 +94,11 @@ export function hasCurvatureCoherence(i: Interface): boolean {
  */
 export const MORISON_CONTACT_MM = 0.8;
 /**
- * La cápsula hepática a ≤ esto (mm) de una grasa perirrenal fina (≤ `PERIRENAL.faceMaxMm`, que siempre dibuja su cara
- * externa) tampoco dibuja la suya (revisión de la decisión 68): entre ambas solo queda una lámina de «intestino» (el
- * receso de Morison, de 1,2–3 mm en el borde de la impresión renal) y serían dos líneas paralelas (el 11–14 % de los
- * pasos hígado–grasa de los rayos desde el riñón). Contra la grasa gruesa, que solo la dibuja en contacto, la cápsula sí.
+ * La cápsula hepática a ≤ esto (mm) de una grasa perirrenal fina (≤ `PERIRENAL.faceMaxMm`) tampoco dibuja la suya
+ * (revisión de la decisión 68): entre ambas solo queda una lámina (el receso de Morison, de 1,2–3 mm en el borde de la
+ * impresión renal, grasa retroperitoneal desde la decisión 81) y serían dos líneas paralelas (el 11–14 % de los pasos
+ * hígado–grasa de los rayos desde el riñón). La línea de Morison es entonces la de la grasa fina, que desde la decisión 81
+ * es la de la cápsula renal. Contra la grasa gruesa, que solo dibuja su cara en contacto, la cápsula hepática sí.
  */
 export const MORISON_SLIVER_MM = 3.5;
 /**

@@ -621,7 +621,8 @@ describe('Anatomía implícita (base B)', () => {
   it('el intestino (el «resto») mide su distancia a la frontera: tiende a 0 junto al diafragma y el hígado', () => {
     // Antes valía 5 mm fijos: el gate volumétrico daba por interior un punto pegado al diafragma
     // y float32 lo clasificaba al otro lado (Bowel→Diaphragm en CI). Subiendo por tres columnas,
-    // el bd de cada punto de intestino no supera la distancia a la interfaz que se encuentra.
+    // el bd de cada punto de intestino no supera la distancia a la interfaz que se encuentra. Desde la decisión 81 el
+    // «resto» de detrás del peritoneo parietal posterior es grasa retroperitoneal (la primera columna), con el mismo bd
     for (const [x, y, expected] of [
       [70, -5, Tissue.Diaphragm],
       [60, 20, Tissue.LiverCapsule],
@@ -631,7 +632,7 @@ describe('Anatomía implícita (base B)', () => {
       let zT = Number.NaN;
       for (let z = -120; z < 60; z += 0.25) {
         const c = cls([x, y, z]);
-        if (c.tissue === Tissue.Bowel) samples.push({ z, bd: c.boundaryDistance });
+        if (c.tissue === Tissue.Bowel || c.tissue === Tissue.RetroperitonealFat) samples.push({ z, bd: c.boundaryDistance });
         else if (samples.length && samples[samples.length - 1].z === z - 0.25) {
           expect(c.tissue, `${x},${y}`).toBe(expected);
           zT = z;
@@ -966,7 +967,7 @@ describe('Caras de interfaz en classify (decisión 57)', () => {
     expect(cls(last).interfaceDistance).toBeLessThan(0.1);
   });
 
-  it('riñón: cápsula renal y mitad interna de la grasa dibujan la cápsula; la mitad externa, la grasa', () => {
+  it('riñón: cápsula renal, mitad interna de la grasa y toda la fina dibujan la cápsula; la mitad externa de la gruesa, la grasa', () => {
     const k = scene.kidneyRight;
     const up: V = [0, 0, 1];
     const dOuter = (p: V) => kidneyQuery(p, k).dOuter;
@@ -996,7 +997,8 @@ describe('Caras de interfaz en classify (decisión 57)', () => {
     const outerBack = along(fatBack, back, 0.8 * t(fatBack));
     expect(cls(outerBack).tissue).toBe(Tissue.PerirenalFat);
     expect(cls(outerBack).interface).toBe(Interface.None);
-    // donde es fina (anterolateral, contra el hígado) la mitad externa dibuja la cara de Morison
+    // donde es fina (anterolateral, contra el hígado) toda ella dibuja la cápsula renal (decisión 81): su cara externa, a
+    // 1–2,5 mm de la de la cápsula, hacía de Morison una doble línea paralela; la cápsula hepática le cede la suya
     const antLat = kidneyWorld([0, -0.6 * k.radii[1], 0.8 * k.radii[2]], k);
     const dirOut: V = [antLat[0] - k.center[0], antLat[1] - k.center[1], antLat[2] - k.center[2]];
     const nOut: V = dirOut.map((x) => x / Math.hypot(...dirOut)) as V;
@@ -1004,33 +1006,54 @@ describe('Caras de interfaz en classify (decisión 57)', () => {
     expect(t(fatThin)).toBeLessThan(PERIRENAL.faceMaxMm);
     const outerThin = along(fatThin, nOut, 0.8 * t(fatThin));
     expect(cls(outerThin).tissue).toBe(Tissue.PerirenalFat);
-    expect(cls(outerThin).interface).toBe(Interface.PerirenalFat);
-    expect(cls(outerThin).interfaceDistance).toBeCloseTo(t(outerThin) - dOuter(outerThin), 9);
+    expect(cls(outerThin).interface).toBe(Interface.RenalCapsule);
+    expect(cls(outerThin).interfaceDistance).toBeCloseTo(dOuter(outerThin), 9);
+    // al otro lado de la grasa fina, el hígado (la impresión renal la solapa) sin cara
+    let past = outerThin;
+    while (cls(past).tissue === Tissue.PerirenalFat) past = along(past, nOut, 0.05);
+    expect([Tissue.Liver, Tissue.LiverCapsule]).toContain(cls(past).tissue);
+    expect(cls(past).interface).toBe(Interface.None);
   });
 
-  it('Morison (decisión 68): todo paso hígado ↔ grasa perirrenal tiene una cara, también donde la grasa es gruesa', () => {
+  it('Morison (decisiones 68 y 81): todo paso hígado ↔ grasa perirrenal tiene una línea y una sola', () => {
     // Antes la cara externa de la grasa solo se dibujaba donde medía ≤ 2,5 mm, y la cápsula hepática que la toca le
     // cede la suya: el contacto con grasa gruesa (el 62 %) quedaba sin línea (26 de 29 pasos en la vista renal, 26 de 38
     // en el plano de Morison del flanco, 454 de 905 en los rayos desde el riñón). Pasos directos o por una lámina de
-    // intestino de ≤ 3 mm; cara: la de la grasa o la de la cápsula, a < 0,5 mm, en ±1,5 mm del paso. Y una sola línea:
-    // la de la grasa y la de la cápsula a la vez, a ≥ 0,6 mm y sin parénquima entre ellas, eran el 11–14 % de los pasos de
-    // los rayos (una grasa fina y la cápsula al otro lado de la lámina)
-    type Sample = { r: number; t: Tissue; f: Interface; fd: number };
+    // intestino (grasa retroperitoneal desde la decisión 81) de ≤ 3 mm. Línea: con la grasa gruesa, la de la grasa o la
+    // de la cápsula hepática, a < 0,5 mm, en ±1,5 mm del paso; con la fina (decisión 81), la de la cápsula renal al otro
+    // lado de la grasa. Y una sola: la de la grasa y la de la cápsula hepática a la vez, a ≥ 0,6 mm y sin parénquima
+    // entre ellas, eran el 11–14 % de los pasos de los rayos (una grasa fina y la cápsula al otro lado de la lámina); y
+    // con la fina, su cara externa y la de la cápsula renal, a 1–2,5 mm, dos líneas paralelas (el 100 % hasta la 81)
+    type Sample = { r: number; t: Tissue; f: Interface; fd: number; fat: number };
     const isLiver = (t: Tissue) => t === Tissue.Liver || t === Tissue.LiverCapsule;
+    const isLamina = (t: Tissue) => t === Tissue.Bowel || t === Tissue.RetroperitonealFat;
+    // grosor local de la grasa perirrenal del riñón derecho (el de Morison) en un punto
+    const fatAt = (p: V) => perirenalThicknessMm(kidneyLocal(p, scene.kidneyRight), scene.kidneyRight);
     const faceless: string[] = [];
     const doubled: string[] = [];
     let passes = 0;
+    let thinPasses = 0;
     const check = (seq: Sample[], tag: string) => {
       for (let j = 1; j < seq.length; j++) {
         const a = seq[j - 1];
         let k = j;
-        while (k < seq.length && seq[k].t === Tissue.Bowel && seq[k].r - seq[j].r < 3) k++;
+        while (k < seq.length && isLamina(seq[k].t) && seq[k].r - seq[j].r < 3) k++;
         const b = seq[k];
         if (!b || !((isLiver(a.t) && b.t === Tissue.PerirenalFat) || (a.t === Tissue.PerirenalFat && isLiver(b.t)))) continue;
         passes++;
+        // la grasa del paso: fina si su grosor local en el paso no pasa de faceMaxMm; su tramo en el rayo, hasta el riñón
+        const into = a.t === Tissue.PerirenalFat ? -1 : 1;
+        const fatAt = a.t === Tissue.PerirenalFat ? j - 1 : k;
+        let end = fatAt;
+        while (seq[end + into]?.t === Tissue.PerirenalFat) end += into;
+        const thin = seq[fatAt].fat <= PERIRENAL.faceMaxMm;
         const near = seq.filter((q) => q.r >= Math.min(a.r, b.r) - 1.5 && q.r <= Math.max(a.r, b.r) + 1.5);
-        if (!near.some((q) => (q.f === Interface.PerirenalFat || q.f === Interface.LiverCapsule) && q.fd < 0.5))
-          faceless.push(`${tag} r ${b.r.toFixed(1)}`);
+        const [lo, hi] = [Math.min(seq[fatAt].r, seq[end].r) - 0.5, Math.max(seq[fatAt].r, seq[end].r) + 0.5];
+        const inFat = seq.filter((q) => q.r >= lo && q.r <= hi);
+        const line = thin
+          ? inFat.some((q) => q.f === Interface.RenalCapsule && q.fd < 0.5)
+          : near.some((q) => (q.f === Interface.PerirenalFat || q.f === Interface.LiverCapsule) && q.fd < 0.5);
+        if (!line) faceless.push(`${tag} r ${b.r.toFixed(1)}`);
         const fatFace = near.filter((q) => q.f === Interface.PerirenalFat && q.fd < 0.3).map((q) => q.r);
         const capFace = near.filter((q) => q.f === Interface.LiverCapsule && q.fd < 0.3).map((q) => q.r);
         const apart = (rf: number, rc: number) => {
@@ -1038,6 +1061,11 @@ describe('Caras de interfaz en classify (decisión 57)', () => {
           return hi - lo >= 0.6 && !seq.some((q) => q.r > lo && q.r < hi && q.t === Tissue.Liver);
         };
         if (fatFace.some((rf) => capFace.some((rc) => apart(rf, rc)))) doubled.push(`${tag} r ${b.r.toFixed(1)}`);
+        if (thin) {
+          thinPasses++;
+          // con la fina, ni su cara externa ni la de la cápsula hepática junto a la de la cápsula renal
+          if (fatFace.length || capFace.length) doubled.push(`${tag} r ${b.r.toFixed(1)} (fina)`);
+        }
       }
     };
     // rayos desde el centro del riñón derecho, en todas las direcciones de su marco
@@ -1050,8 +1078,9 @@ describe('Caras de interfaz en classify (decisión 57)', () => {
         const d = [0, 1, 2].map((a) => kr.u[a] * dl[0] + kr.v[a] * dl[1] + kr.w[a] * dl[2]) as V;
         const seq: Sample[] = [];
         for (let r = 10; r < 90; r += 0.1) {
-          const c = cls(along(kr.center, d, r));
-          seq.push({ r, t: c.tissue, f: c.interface, fd: c.interfaceDistance });
+          const p = along(kr.center, d, r);
+          const c = cls(p);
+          seq.push({ r, t: c.tissue, f: c.interface, fd: c.interfaceDistance, fat: fatAt(p) });
         }
         check(seq, `rayo ${i},${j}`);
       }
@@ -1077,14 +1106,18 @@ describe('Caras de interfaz en classify (decisión 57)', () => {
         const theta = -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * i) / 60;
         const seq: Sample[] = [];
         for (let r = 2; r < 180; r += 0.1) {
-          const c = cls(uncompress(pointOnLine(contact.frame, CONVEX_C35, theta, r), contact));
-          seq.push({ r, t: c.tissue, f: c.interface, fd: c.interfaceDistance });
+          const p = uncompress(pointOnLine(contact.frame, CONVEX_C35, theta, r), contact);
+          const c = cls(p);
+          seq.push({ r, t: c.tissue, f: c.interface, fd: c.interfaceDistance, fat: fatAt(p) });
         }
         check(seq, `${id}${dTilt ? ` ${dTilt}°` : ''} línea ${i}`);
       }
     }
     expect(fromRays).toBeGreaterThan(50);
     expect(passes - fromRays).toBeGreaterThan(20);
+    // la prueba tiene dientes en los dos casos: grasa fina y gruesa
+    expect(thinPasses).toBeGreaterThan(20);
+    expect(passes - thinPasses).toBeGreaterThan(20);
     expect(faceless).toEqual([]);
     // en las vistas, ninguna doble línea; en los rayos desde el riñón, como mucho dos pasos (de ~150): detrás del polo
     // superior, junto a la pared posterior (donde no mira ninguna ventana), el redondeo del borde de la impresión renal

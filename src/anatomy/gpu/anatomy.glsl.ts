@@ -440,11 +440,12 @@ Cls classifyWith(vec3 m, bool withCurtain) {
     }
     if (dOuter < fat) {
       c.tissue = T_PERIRENAL; c.bd = min(dOuter, fat - dOuter); c.n = kn;
-      // mitad externa: cara hígado/grasa; mitad interna: la de la cápsula renal (dos lados); fina, una sola línea
-      bool outerFace = dOuter > 0.5 * fat;
+      // mitad externa de la gruesa: la cara de Morison; la interna y toda la fina (decisión 81: sus dos caras, a 1–2,5 mm,
+      // eran dos líneas paralelas), la de la cápsula renal
+      bool outerFace = dOuter > 0.5 * fat && fat > PERI.z;
       c.iface = outerFace ? IF_PERIRENAL : IF_RENAL_CAPSULE;
       c.ifd = outerFace ? fat - dOuter : dOuter;
-      if (!outerFace || fat <= PERI.z) return c;
+      if (!outerFace) return c;
       // grasa gruesa: su cara externa solo si apoya el hígado (se decide con liverSdf, tras el bucle)
       thickFat = true;
       break;
@@ -490,7 +491,11 @@ Cls classifyWith(vec3 m, bool withCurtain) {
     if (dg < 0.0) { c.tissue = T_BOWELGAS; c.bd = -dg; c.n = sn; return c; }
     bdBowel = min(bdBowel, dg);
   }
-  c.tissue = T_BOWEL; c.bd = max(bdBowel, 0.0); c.n = tn;
+  // detrás del peritoneo parietal posterior, el retroperitoneo (decisión 81): psoas, cuadrado lumbar y grasa; la
+  // distancia a la frontera cuenta también la columna, que se clasifica antes
+  float bdRetro;
+  c.tissue = retroperitoneum(m, -depth - wall, dPeri, bdRetro);
+  c.bd = max(min(min(bdBowel, bdRetro), dSpine), 0.0); c.n = tn;
   return c;
 }
 

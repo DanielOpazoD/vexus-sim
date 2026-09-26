@@ -3,6 +3,7 @@ import * as kidney from './kidney';
 import * as liver from './liver';
 import * as liverLigaments from './liverLigaments';
 import * as lungCurtain from './lungCurtain';
+import * as retroperitoneum from './retroperitoneum';
 import * as wall from './wall';
 
 /**
@@ -10,7 +11,7 @@ import * as wall from './wall';
  * sus funciones TS y su gemelo GLSL (mismos nombres); `ANATOMY_GLSL` incluye todos los gemelos.
  * `organs.test.ts` exige que cada función GLSL tenga su gemela TS exportada con el mismo nombre,
  * salvo las declaradas en `gpuOnly` con su motivo.
- * El ORDEN es el de dependencia en GLSL (el hígado usa riñón, vesícula y fisura). Los tubos
+ * El ORDEN es el de dependencia en GLSL (el hígado usa riñón, vesícula y fisura; el retroperitoneo, los conos del riñón). Los tubos
  * (árbol vascular en textura de datos) y las primitivas genéricas siguen en `primitives.ts`.
  */
 export interface OrganModule {
@@ -37,4 +38,5 @@ export const ORGAN_MODULES: readonly OrganModule[] = [
   { id: 'lungCurtain', exports: lungCurtain, glsl: lungCurtain.LUNG_CURTAIN_GLSL },
   { id: 'gallbladder', exports: gallbladder, glsl: gallbladder.GALLBLADDER_GLSL },
   { id: 'liver', exports: liver, glsl: liver.LIVER_GLSL },
+  { id: 'retroperitoneum', exports: retroperitoneum, glsl: retroperitoneum.RETROPERITONEUM_GLSL },
 ];

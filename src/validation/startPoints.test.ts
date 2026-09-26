@@ -9,6 +9,7 @@ import { NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient, type RespiratoryPattern } from '../physiology/patientState';
 import { uncompress } from '../anatomy/compression';
+import { kidneyLocal, perirenalOuterSdf } from '../anatomy/organs/kidney';
 import { contactCoupling, probeContact } from '../probe/contact';
 import { CONVEX_C35, pointOnLine, type ProbePose } from '../probe/probe';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
@@ -144,12 +145,34 @@ describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', 
     expect(samples(s, 'hvRight') + samples(s, 'hvMiddle')).toBeGreaterThan(30);
   });
 
-  it('renal: corteza, médula y seno del riñón derecho con un vaso interlobar', () => {
+  it('renal: corteza, médula y seno del riñón derecho con un vaso interlobar, el hígado y grasa alrededor', () => {
     const s = sweep(byId('renal'), 160);
     expect(s.coupling).toBeGreaterThan(0.5);
     expect(s.tissues.get(Tissue.RenalCortex) ?? 0).toBeGreaterThan(150);
     expect(s.tissues.get(Tissue.RenalMedulla) ?? 0).toBeGreaterThan(25); // pirámides discretas (decisión 43)
     expect(s.tissues.get(Tissue.RenalSinus) ?? 0).toBeGreaterThan(40);
     expect([...s.vessels.keys()].some((v) => /interlobar|renalVein/i.test(v))).toBe(true);
+    // el hígado junto al polo superior (Morison)
+    expect(s.tissues.get(Tissue.Liver) ?? 0).toBeGreaterThan(150);
+    // decisión 81: alrededor del riñón (a 8 mm de su grasa perirrenal) grasa retroperitoneal y ninguna asa; antes, 328
+    // muestras de asas y ninguna de grasa
+    const sp = byId('renal');
+    const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
+    const contact = probeContact(pose, CONVEX_C35, scene.torso);
+    const k = scene.kidneyRight;
+    const ring = new Map<Tissue, number>();
+    for (let i = 0; i < 61; i++) {
+      const theta = -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * i) / 60;
+      for (let r = 2; r < 160; r += 2) {
+        const m = uncompress(pointOnLine(contact.frame, CONVEX_C35, theta, r), contact);
+        const d = perirenalOuterSdf(kidneyLocal(m, k), k);
+        if (d <= 0 || d > 8) continue;
+        const t = scene.classify(m, BASELINE_CALIBER).tissue;
+        ring.set(t, (ring.get(t) ?? 0) + 1);
+      }
+    }
+    const tag = JSON.stringify(Object.fromEntries([...ring].map(([t, n]) => [Tissue[t], n])));
+    expect(ring.get(Tissue.Bowel) ?? 0, tag).toBe(0);
+    expect(ring.get(Tissue.RetroperitonealFat) ?? 0, tag).toBeGreaterThan(200);
   });
 });

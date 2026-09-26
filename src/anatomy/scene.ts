@@ -48,6 +48,7 @@ import {
   type UmbilicalFissure,
 } from './organs/liverLigaments';
 import { inLungCurtain, inLungRecess, lungCurtainDistance, lungCurtainEdgeMm } from './organs/lungCurtain';
+import { retroperitoneum } from './organs/retroperitoneum';
 import {
   nearestRib,
   preperitonealMm,
@@ -417,8 +418,9 @@ export class AnatomyScene {
    * Clasifica un punto MATERIAL. `caliber` aporta las escalas de radio que
    * dicta la fisiología en este instante. Orden de prioridad (el primero que
    * contiene el punto gana): pared → costillas → columna → cortina pulmonar → vasos y conductos →
-   * aurícula derecha → tórax/diafragma → vesícula → riñones → hígado → gas →
-   * intestino. Cada paso es un método propio; el mismo orden vive en GLSL (`classifyWith`).
+   * aurícula derecha → tórax/diafragma → vesícula → riñones → hígado → gas → psoas → cuadrado lumbar →
+   * grasa retroperitoneal → intestino (decisión 81). Cada paso es un método propio; el mismo orden vive en GLSL
+   * (`classifyWith`).
    *
    * `withCurtain = false` es la variante sin la cortina pulmonar (decisión 61): lo que hay detrás de la
    * lámina de pulmón, igual que `classify` en todos los demás puntos. La usan el tejido que se ve en
@@ -484,7 +486,10 @@ export class AnatomyScene {
       if (dg < 0) return { ...NONE, tissue: Tissue.BowelGas, boundaryDistance: -dg };
       bd = Math.min(bd, dg);
     }
-    return { ...NONE, tissue: Tissue.Bowel, boundaryDistance: Math.max(0, bd) };
+    // detrás del peritoneo parietal posterior, el retroperitoneo (decisión 81): psoas, cuadrado lumbar y grasa; delante, el
+    // intestino. Su distancia a la frontera cuenta también la columna, que se clasifica antes (el psoas la bordea)
+    const [tissue, dRetro] = retroperitoneum(m, -depth - wall.wallMm, kidney.dPeriMm);
+    return { ...NONE, tissue, boundaryDistance: Math.max(0, Math.min(bd, dRetro, sdSpine(m, this.spine))) };
   }
 
   /**
@@ -715,8 +720,8 @@ export class AnatomyScene {
   /**
    * Riñones: corteza / pirámides / seno, con grasa perirrenal alrededor. Devuelve también la distancia
    * a la cara externa de la grasa perirrenal (`dPeriMm`, el menor `dOuter − grosor local` de los riñones
-   * cercanos) y si esa grasa es fina (`periThin`: siempre dibuja su cara): la cápsula hepática que la toca, o que
-   * está a una lámina de ella, no dibuja la suya (Morison es de la grasa).
+   * cercanos) y si esa grasa es fina (`periThin`): la cápsula hepática que la toca, o que está a una lámina de una fina,
+   * no dibuja la suya (Morison es de la grasa: su cara externa si es gruesa, la de la cápsula renal si es fina).
    */
   private classifyKidneys(m: Vec3): { cls: Classification | null; dPeriMm: number; periThin: boolean } {
     let dPeriMm = 1e3;
@@ -753,16 +758,17 @@ export class AnatomyScene {
         return { cls: { ...NONE, tissue, boundaryDistance: kh.inner }, dPeriMm, periThin };
       }
       // Grasa perirrenal (fascia de Gerota) de grosor variable (decisión 68) hasta la impresión renal del hígado: en
-      // el receso de Morison la cápsula hepática apoya directamente sobre ella, sin hueco. La mitad externa dibuja la
-      // cara hígado/grasa; la interna, la de la cápsula renal (dos lados): donde la grasa es fina las dos caras se
-      // funden en una sola línea.
+      // el receso de Morison la cápsula hepática apoya directamente sobre ella, sin hueco.
       if (kh.dOuter < fat) {
-        const outerFace = kh.dOuter > 0.5 * fat;
+        // la mitad externa de la grasa gruesa dibuja la cara de Morison, solo si apoya el hígado (la impresión renal solapa
+        // la grasa y la cápsula hepática le cede la cara, `MORISON_CONTACT_MM`); si no, se funde sin línea con la grasa
+        // retroperitoneal (antes la gruesa nunca la dibujaba y el 62 % del contacto hígado–grasa quedaba sin línea). La
+        // mitad interna, y toda la fina (decisión 81), la de la cápsula renal: las dos caras de la fina, a 1–2,5 mm, eran dos
+        // líneas paralelas (frente al hígado, la grasa retroperitoneal o el intestino); ahora son una, y en Morison la
+        // cápsula hepática le sigue cediendo la suya
+        const outerFace = kh.dOuter > 0.5 * fat && fat > PERIRENAL.faceMaxMm;
         const ifd = outerFace ? fat - kh.dOuter : kh.dOuter;
-        // la cara externa, donde la grasa es fina; donde es gruesa, solo si apoya el hígado (Morison: la impresión renal
-        // solapa la grasa y la cápsula hepática le cede la cara, `MORISON_CONTACT_MM`); si no, se funde sin línea con la
-        // grasa retroperitoneal. Antes la gruesa nunca la dibujaba y el 62 % del contacto hígado–grasa quedaba sin línea
-        const face = !outerFace || fat <= PERIRENAL.faceMaxMm || this.liverSdf(m) <= ifd + MORISON_CONTACT_MM;
+        const face = !outerFace || this.liverSdf(m) <= ifd + MORISON_CONTACT_MM;
         const cls: Classification = {
           ...NONE,
           tissue: Tissue.PerirenalFat,
@@ -790,7 +796,7 @@ export class AnatomyScene {
    * Hígado con cápsula, recortado por diafragma (`dDome`) y pared (`insideWallMm`). La cápsula dibuja
    * su cara salvo donde la manda el diafragma (su cara es del diafragma), donde toca la grasa
    * perirrenal a ≤ `MORISON_CONTACT_MM` (`dPeriMm`: la cara de Morison es de la grasa) o a ≤ `MORISON_SLIVER_MM` de
-   * una grasa fina (que siempre la dibuja: solo las separa una lámina), o donde toca la pared de la
+   * una grasa fina (solo las separa una lámina; la línea es la de la cápsula renal, decisión 81), o donde toca la pared de la
    * vesícula a ≤ `GALLBLADDER_CONTACT_MM` (`dGbWallMm`, en su fosa: la pared vesicular es una sola línea).
    * La distancia a la frontera cuenta también la cara externa de la grasa (`dPeriMm`): la impresión renal la solapa
    * 1 mm y la grasa, que gana, es la frontera real del hígado en Morison.

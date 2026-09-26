@@ -209,8 +209,9 @@ describe('Límites del shader con margen para crecer', () => {
       expect(perTissue, `${name} declara una tabla de un float por tejido`).toEqual([]);
     }
     expect(FRAGMENT_SHADERS.map(([name]) => name)).toEqual(expect.arrayContaining(LOOK_PAIRS.map((p) => `${p.name}_STEERED`)));
-    // la pasada B cuenta sus arrays de tejidos, de caras y de escena: 114 medidas y 116 en su programa
-    // dirigido (con las caras de la pared, decisión 62), con sitio para la THI (~+14) sin pasar de 130
+    // la pasada B cuenta sus arrays de tejidos, de caras y de escena: 128 ranuras y 130 en su programa dirigido (114 y
+    // 116 con las caras de la pared, decisión 62; la armónica, decisión 77, y los tejidos del retroperitoneo, decisión 81,
+    // con TISSUE_VEC4 de 7 a 8, llevan al tope de 130)
     const raw = uniformSlots(FRAG_RAWFIELD);
     const rawSteered = uniformSlots(FRAG_RAWFIELD_STEERED);
     expect(raw.arrays).toContain(`uTissueBack4[${TISSUE_VEC4}]`);
@@ -351,7 +352,17 @@ describe('Límites del shader con margen para crecer', () => {
       for (const body of loopBodies(g)) expect(reaches(g, body, 'faceGradient'), `${name}: faceGradient en un bucle`).toBe(false);
       // la jacobiana de la compresión (decisión 63: siete evaluaciones del campo) tampoco va en un bucle
       for (const body of loopBodies(g)) expect(reaches(g, body, 'warpAt'), `${name}: warpAt en un bucle`).toBe(false);
+      // ni la textura del psoas y del cuadrado (decisión 81: un Voronoi de 3 × 3 células por plano de elevación)
+      for (const body of loopBodies(g)) expect(reaches(g, body, 'fascicleSeptum'), `${name}: fascicleSeptum en un bucle`).toBe(false);
     }
+    // el detector ve la regresión: la pared que copia la serie con la textura del retroperitoneo (fieldFor, no la base)
+    const wallInLoop = FRAG_RAWFIELD.replace(
+      'vec2 field = fieldForBase(m, se, c.tissue, normalize(p - uCurvC), w);',
+      'vec2 field = fieldFor(m, se, c.tissue, normalize(p - uCurvC), w);',
+    );
+    expect(wallInLoop).not.toBe(FRAG_RAWFIELD);
+    const gw = glslCallGraph(wallInLoop);
+    expect(loopBodies(gw).some((b) => reaches(gw, b, 'fascicleSeptum'))).toBe(true);
     // el detector ve la regresión: la muestra completa del medio (con su eco de interfaz) en el bucle de la serie
     const inLoop = FRAG_RAWFIELD.replace(
       'vec2 f = wallField(pointOnLine(dir0, d), dir0, elevSigma(d), wD);',

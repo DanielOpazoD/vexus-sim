@@ -39,6 +39,10 @@ test('la anatomía GLSL coincide con la TypeScript en tejido, vaso y velocidad',
     const vtag = `${id}/volumen: ${JSON.stringify(vol)}`;
     expect(vol.interiorPoints, vtag).toBeGreaterThan(40_000);
     expect(vol.tissueAgreement, vtag).toBe(1);
+    // el retroperitoneo (decisión 81) entra en el volumen: psoas, cuadrado lumbar y grasa retroperitoneal
+    expect(vol.byTissue.Psoas ?? 0, vtag).toBeGreaterThan(50);
+    expect(vol.byTissue.QuadratusLumborum ?? 0, vtag).toBeGreaterThan(50);
+    expect(vol.byTissue.RetroperitonealFat ?? 0, vtag).toBeGreaterThan(500);
     expect(vol.bloodPoints, vtag).toBeGreaterThan(300);
     expect(vol.vesselAgreement, vtag).toBe(1);
     expect(vol.velocityP95RelErr, vtag).toBeLessThan(1e-3);

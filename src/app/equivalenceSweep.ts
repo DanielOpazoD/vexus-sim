@@ -151,6 +151,8 @@ export interface VolumeEquivalenceReport {
   interfaceDistanceMaxErr: number;
   /** Parejas de caras CPU → GPU con más desacuerdos. */
   interfaceWorst: string;
+  /** Puntos interiores por tejido de la CPU: que el gate tenga dientes en cada tejido (p. ej. el retroperitoneo, decisión 81). */
+  byTissue: Record<string, number>;
 }
 
 export function volumeEquivalence(sim: Simulator, n = 20_000, seed = 20260922): VolumeEquivalenceReport {
@@ -181,11 +183,13 @@ export function volumeEquivalence(sim: Simulator, n = 20_000, seed = 20260922): 
   const errs: number[] = [];
   const pairs = new Map<string, number>();
   const face = new FaceTally();
+  const byTissue: Record<string, number> = {};
   for (let i = 0; i < n; i++) {
     const p: [number, number, number] = [pts[i * 3], pts[i * 3 + 1], pts[i * 3 + 2]];
     const q = sim.anatomy.classifyWorld(p, sim.sample);
     if (q.boundaryDistance < 1 || !faceStable(sim, p, q.interface)) continue;
     interior++;
+    byTissue[Tissue[q.tissue]] = (byTissue[Tissue[q.tissue]] ?? 0) + 1;
     const cpuTissue: number = q.tissue;
     if (cpuTissue === gpu.tissue[i]) same++;
     else {
@@ -216,6 +220,7 @@ export function volumeEquivalence(sim: Simulator, n = 20_000, seed = 20260922): 
     interfaceAgreement: face.points ? face.same / face.points : 1,
     interfaceDistanceMaxErr: face.maxErr,
     interfaceWorst: [topPairs(face.pairs), face.maxErrAt && `máx. |Δifd| en ${face.maxErrAt}`].filter(Boolean).join('; '),
+    byTissue,
   };
 }
 

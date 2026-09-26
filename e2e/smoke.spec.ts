@@ -779,6 +779,51 @@ test('modo alumno ciego: sin diagnóstico en pantalla; el docente lo ve con ?doc
   expect(errors2).toEqual([]);
 });
 
+test('intervenciones docentes (decisión 79): bolo y PEEP mueven el lazo del simulador vivo y «Reiniciar paciente» vuelve al caso', async ({
+  page,
+}) => {
+  test.setTimeout(180_000);
+  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  // `force`: con render por software el hilo principal no deja a los elementos «estables»
+  await page.locator('#debug-toggle').check({ force: true });
+  await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
+  const loop = () => page.evaluate(() => window.__vexusTest!.circulation());
+  expect(await loop()).toMatchObject({ caseId: 'normal-adult', rapMeanMmHg: 5, fluidTargetMl: 0, peepTargetCmH2O: 0, interventions: 0 });
+  await page.getByRole('button', { name: 'Bolo 500 mL', exact: true }).click({ force: true });
+  await expect(page.getByRole('status').filter({ hasText: 'Bolo de 500 mL en curso' })).toBeVisible();
+  expect(await loop()).toMatchObject({ fluidTargetMl: 500, interventions: 1 });
+  // 30 s de simulación sin renderizar (tiempo docente acelerado: el bolo llega en ~30 s): la PAD sube ~3 mmHg
+  await page.evaluate(() => window.__vexusTest!.advance(30));
+  expect((await loop()).rapMeanMmHg).toBeGreaterThan(7);
+  await expect(page.locator('.loop-state')).toContainText(/bolo de 500 mL, hace \d+ s/, { timeout: 30_000 });
+  const peep = page.getByRole('group', { name: 'PEEP' });
+  await peep.getByRole('button', { name: '10', exact: true }).click({ force: true });
+  expect(await loop()).toMatchObject({ peepTargetCmH2O: 10, interventions: 2 });
+  await expect(peep.getByRole('button', { name: '10', exact: true })).toHaveAttribute('aria-pressed', 'true');
+  await page.getByRole('button', { name: 'Reiniciar paciente', exact: true }).click({ force: true });
+  await expect
+    .poll(loop, { timeout: 30_000 })
+    .toMatchObject({ caseId: 'normal-adult', rapMeanMmHg: 5, fluidTargetMl: 0, peepTargetCmH2O: 0, interventions: 0 });
+  await expect(page.getByRole('status').filter({ hasText: 'Paciente reiniciado' })).toBeVisible();
+  await expect(peep.getByRole('button', { name: '0', exact: true })).toHaveAttribute('aria-pressed', 'true', { timeout: 30_000 });
+  await expect(page.locator('.loop-state dd').last()).toHaveText('ninguna', { timeout: 30_000 });
+  // con el teclado: el sano admite −563 mL; el segundo diurético se recorta y el botón queda no disponible sin perder el foco
+  const diuretic = page.getByRole('button', { name: 'Diurético −500 mL', exact: true });
+  await diuretic.focus();
+  await page.keyboard.press('Enter');
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('status').filter({ hasText: 'recortado al límite del paciente' })).toBeVisible();
+  await expect(diuretic).toHaveAttribute('aria-disabled', 'true');
+  expect(await diuretic.evaluate((el) => el === document.activeElement)).toBe(true);
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('status').filter({ hasText: 'Sin efecto' })).toBeVisible();
+  // otro caso: el aviso de la intervención anterior desaparece
+  await page.selectOption('#case-select', 'severe-congestion');
+  await expect.poll(loop, { timeout: 30_000 }).toMatchObject({ caseId: 'severe-congestion', interventions: 0 });
+  await expect(page.getByRole('status')).toHaveText('');
+  expect(errors).toEqual([]);
+});
+
 test('color: la misma transmisión que el PW y una ganancia que alcanza el ruido del equipo', async ({ page }) => {
   // El modelo, en el mismo punto: el téxel de la pasada A que lee el color en la puerta (convertido a la
   // frecuencia Doppler y con el acoplamiento que muestrea el color) frente al mismo téxel en la CPU, a ≤ 0,1 dB

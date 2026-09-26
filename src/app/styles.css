@@ -199,6 +199,16 @@ button.primary {
   background: var(--accent);
   font-weight: 600;
 }
+/* Mando sin efecto posible (p. ej. un bolo con el volumen en su límite): visible pero apagado; con aria-disabled
+   sigue enfocable y un clic explica por qué */
+button:disabled,
+button:disabled:hover,
+button[aria-disabled='true'],
+button[aria-disabled='true']:hover {
+  color: var(--faint);
+  background: var(--panel-2);
+  cursor: not-allowed;
+}
 button svg {
   width: 16px;
   height: 16px;
@@ -828,6 +838,24 @@ input[type='range'] {
   font-size: 12px;
   line-height: 16px;
   color: var(--muted);
+}
+/* Estado del lazo cerrado en la pestaña Docente: la magnitud a la izquierda y su valor a la derecha */
+.loop-state {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 12px;
+  margin: 0;
+  font-size: 12px;
+  line-height: 16px;
+}
+.loop-state dt {
+  color: var(--muted);
+}
+.loop-state dd {
+  margin: 0;
+  text-align: right;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 .row {
   display: flex;

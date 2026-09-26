@@ -60,7 +60,8 @@ modos: [2D | Color | PW] (Color y PW a la vez es el tríplex), Congelar, Audio y
   lo avanzado: rango dinámico, persistencia, composición espacial y TGC de 8 bandas), _Doppler_
   (contextual: color o PW, con lo avanzado plegado), _Medir_ (protocolo VExUS: VCI con calibrador,
   suprahepática, porta y vena interlobar sobre el espectro adquirido, resultado y grado), _Docente_
-  (solo con la casilla activada: verdad fisiológica y estado de la adquisición). Las explicaciones
+  (solo con la casilla activada: intervenciones —bolo, diurético y PEEP— sobre la aurícula de lazo cerrado,
+  «Reiniciar paciente», verdad fisiológica y estado de la adquisición). Las explicaciones
   están detrás del ⓘ de cada sección.
 - **Modos**: `2` B, `C` Color (clic en la imagen centra la caja), `P` PW (clic coloca la puerta),
   `Espacio` congela, `H` oculta el carril izquierdo, `[ ]` profundidad, `− +` ganancia, `Esc` cancela una
@@ -89,7 +90,8 @@ docs/            DECISIONS.md (+ índice generado), LIMITATIONS.md, APPROXIMATIO
 
 ## Estado (v0.5.0)
 
-Cadena causal completa: reloj único → fisiología 0D (contorno de AD, red esplácnico–sinusoidal–
+Cadena causal completa: reloj único → fisiología 0D (aurícula de lazo cerrado en la media con la forma de onda
+calibrada, red esplácnico–sinusoidal–
 suprahepática–cava con ley de tubo, resistores de Starling y lecho renal; respiración) → anatomía
 implícita compartida TS/GLSL (pared, costillas oblicuas, columna, diafragma en dos hemicúpulas, cortina
 pulmonar, hígado con fisura umbilical, ligamentos redondo y venoso y segmentos de Couinaud, vesícula en

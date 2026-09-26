@@ -30,8 +30,9 @@ export interface PatientState {
   /** Intervalo PR sintético en ms (hoja consolidada: 160). */
   prIntervalMs: number;
 
-  // --- Hemodinámica derecha (modo de calibración: PAD media impuesta como
-  //     condición de contorno, hoja consolidada). ---
+  // --- Hemodinámica derecha. La PAD del caso es el punto de trabajo del lazo cerrado
+  //     (decisión 79; antes, condición de contorno impuesta, hoja consolidada): sin
+  //     intervenciones la PAD es esta; con ellas sale del cruce de retorno venoso y Starling. ---
   /** Presión auricular derecha media al final de espiración, mmHg. */
   rapMeanMmHg: number;
   /** Función sistólica longitudinal del VD, 0–1 (gobierna el descenso x). */
@@ -42,15 +43,18 @@ export interface PatientState {
   atrialFunction: number;
   /** Conductancia regurgitante tricuspídea relativa, 0–1 (0 ausente … 1 masiva). */
   tricuspidRegurgitation: number;
-  /** Volumen estresado relativo al basal del avatar (hoja: 1,0; 0,6–1,5). */
+  /**
+   * Volumen estresado relativo al basal del avatar (hoja: 1,0; 0,6–1,5): fija los caudales de la red en el caso. Los
+   * mililitros que añaden o quitan las intervenciones van aparte, en el lazo (`circulation.ts`).
+   */
   stressedVolume: number;
 
   // --- Presiones externas y respiración ---
   intraAbdominalPressureMmHg: number;
   ventilation: VentilationMode;
   /**
-   * PEEP (cmH₂O): solo desplaza la presión pleural (40 %); no tiene efecto hemodinámico porque la PAD
-   * se prescribe respecto a la pleural de fin de espiración (`peep-no-hemodynamic-effect`).
+   * PEEP del caso (cmH₂O): sube la presión pleural un 40 % en los dos modos (con respiración espontánea es una CPAP); lo
+   * que mueve la PAD y el gasto lo decide el lazo cerrado (decisión 79), que también la cambia como intervención.
    */
   peepCmH2O: number;
   respiratoryRateMin: number;

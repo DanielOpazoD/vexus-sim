@@ -44,6 +44,9 @@ export class ControlPanel implements PanelContext {
   set onExportDiagnostics(f: () => void) {
     this.teacher.onExportDiagnostics = f;
   }
+  set onResetPatient(f: () => unknown) {
+    this.teacher.onResetPatient = f;
+  }
 
   constructor(
     root: HTMLElement,
@@ -103,6 +106,8 @@ export class ControlPanel implements PanelContext {
     this.doppler = buildDopplerTab(this, this.panels.get('doppler')!);
     this.measure = new MeasureTab(this, this.panels.get('medir')!, badge);
     this.teacher = new TeacherTab(this, this.panels.get('docente')!);
+    // una intervención cambia al paciente: las mediciones de antes no entran en el grado de después
+    this.teacher.onIntervention = () => this.measure.clearMeasurements();
     this.applyStore(store.get());
     store.subscribe((st) => this.applyStore(st));
   }
@@ -125,9 +130,10 @@ export class ControlPanel implements PanelContext {
     for (const s of this.syncables) s.sync();
   }
 
-  /** Borra las mediciones adquiridas (cambio de caso): nunca se mezclan pacientes. */
+  /** Borra las mediciones adquiridas y el aviso de la última intervención (cambio de caso o reinicio). */
   onSimulatorChanged(): void {
     this.measure.clearMeasurements();
+    this.teacher.onSimulatorChanged();
   }
 
   setIvcCaliper(mm: number | null): void {

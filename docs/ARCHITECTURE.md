@@ -5,7 +5,7 @@
 | Capa                    | Módulos                                           | Qué contiene                                                                                                                                                                      |
 | ----------------------- | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Estado del paciente** | `physiology/patientState.ts`                      | La verdad latente: ritmo, PAD media, función del VD, IT, distensibilidad auricular, volumen estresado, presiones externas, respiración, hígado, hábito. No contiene ningún grado. |
-| **Estado físico/señal** | `physiology/*`, `anatomy/*`                       | Presiones, caudales, calibres (red 0D + contorno de AD + respiración) y la geometría deformable con su campo de velocidades.                                                      |
+| **Estado físico/señal** | `physiology/*`, `anatomy/*`                       | Presiones, caudales, calibres (red 0D + lazo cerrado de la media + contorno de AD + respiración) y la geometría deformable con su campo de velocidades.                           |
 | **Señal adquirida**     | `probe/*`, `ultrasound/*`, `doppler/*`, `audio/*` | Lo que la sonda, el haz, la transmisión, la puerta, la PRF, el filtro, la ganancia y la presentación producen. Puede ser incorrecta con un paciente perfectamente definido.       |
 
 La medición sobre la señal adquirida (`doppler/spectralMeasure.ts`) y sobre la verdad
@@ -41,6 +41,15 @@ calibre), nunca por el prefijo de su identificador; los casos salen de un único
 ventana, el ECG se dibuja desde el mismo historial y el audio se remuestrea desde esa IQ. El render
 de imagen es independiente de la cadencia del reloj (lee el último estado); el color se refresca con
 cadencia física PRF/(líneas·ensemble) + cuadro B (`colorTiming`, decisión 39), como el equipo.
+
+## Lazo cerrado e intervenciones (decisión 79)
+
+`src/physiology/circulation.ts` calcula en cada paso la PAD media y el gasto como el cruce del retorno venoso de la red
+con la curva de Frank–Starling del VD, y guarda las intervenciones (`PhysiologyEngine.intervene`: bolo, diurético y
+PEEP, con su cinética). El motor pasa la PEEP vigente a `RespiratoryModel`, la carga (media, llenado por volumen, IT) a
+`RightAtriumModel`, que la congela por latido, y la presión arterial a `VenousNetwork.step`. Sin intervenciones devuelve
+el caso tal cual. La pestaña Docente (`src/ui/panel/teacherTab.ts`) es su interfaz; «Reiniciar paciente» recarga el caso
+con `SimulationSession.reloadCase`.
 
 ## Composición
 

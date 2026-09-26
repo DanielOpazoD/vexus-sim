@@ -94,6 +94,16 @@ describe('Diagnóstico exportable (Fase 3)', () => {
     expect((JSON.parse(JSON.stringify(d)) as typeof d).equipment.bmode.depthMm).toBe(180);
     expect(diagnosticsFileName(d)).toBe('vexus-diagnostico-0.4.0-abc1234-2026-09-22T10-11-12-345Z.json');
     expect(buildLabel('0.4.0', 'abc1234')).toBe('v0.4.0 · abc1234');
+    // el lazo cerrado y las intervenciones docentes viajan en el diagnóstico (decisión 79)
+    const { Circulation } = await import('../physiology/circulation');
+    const { NORMAL_ADULT } = await import('../cases');
+    const c = new Circulation(NORMAL_ADULT, -3.678);
+    c.calibrate({ cardiacOutputMlS: 75, arterialMeanMmHg: 90, compartments: [{ name: 'a', complianceMlPerMmHg: 100, pressureMmHg: 10 }] });
+    c.intervene({ kind: 'bolus', volumeMl: 250 }, 3);
+    const withLoop = buildDiagnostics({ ...d, circulation: { state: c.update(8), interventions: [...c.interventions] } });
+    const parsed = JSON.parse(JSON.stringify(withLoop)) as typeof withLoop;
+    expect(parsed.circulation?.interventions).toEqual([{ kind: 'bolus', volumeMl: 250, t0: 3 }]);
+    expect(parsed.circulation?.state.fluidTargetMl).toBe(250);
     // las constantes de build existen también en las pruebas (define de Vite)
     expect(__APP_VERSION__).toMatch(/^\d+\.\d+\.\d+$/);
   });

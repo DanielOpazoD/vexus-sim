@@ -221,6 +221,8 @@ export interface TestHooks {
   liftProbe: (mm: number) => void;
   /** Avanza la simulación (fisiología + PW) `seconds` sin renderizar: SwiftShader es lento. */
   advance: (seconds: number) => void;
+  /** Lazo cerrado del simulador vivo (decisión 79): PAD, volumen y PEEP pedidos, intervenciones y el caso. */
+  circulation: () => { caseId: string; rapMeanMmHg: number; fluidTargetMl: number; peepTargetCmH2O: number; interventions: number };
   /** Coloca la puerta PW sobre uno de los vasos con la técnica del operador; false si no lo ve. */
   placeGate: (vessels: VesselId[]) => boolean;
   /** Enciende o apaga la composición espacial con el comando del equipo (decisión 58). */
@@ -664,6 +666,17 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
     advance: (seconds) => {
       const sim = getSim();
       for (let t = 0; t < seconds; t += 1 / 60) sim.advance(1 / 60);
+    },
+    circulation: () => {
+      const sim = getSim();
+      const c = sim.physiology.circulation;
+      return {
+        caseId: sim.patient.id,
+        rapMeanMmHg: c.state.rapMeanMmHg,
+        fluidTargetMl: c.state.fluidTargetMl,
+        peepTargetCmH2O: c.state.peepTargetCmH2O,
+        interventions: c.interventions.length,
+      };
     },
     placeGate: (vessels) => {
       const sim = getSim();

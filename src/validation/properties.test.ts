@@ -95,8 +95,9 @@ describe('Propiedades del motor fisiológico (fast-check)', () => {
   // rígida y PAD media ≈ 0 el contorno prescrito oscila hasta −11 mmHg y la VCI suprahepática
   // (un solo compartimento) supera 2 m/s. Este primer contraejemplo ya no la supera desde la pared
   // viscoelástica de la VCI (decisión 73): la luz no se cierra dentro de un latido. El segundo
-  // (`it.fails`, abajo) sigue documentando la limitación: cuando el modelo auricular la resuelva,
-  // empezará a «pasar» y avisará para retirarla.
+  // (`it.fails`, abajo) sigue documentando la limitación: el lazo cerrado de la decisión 79 solo
+  // cierra la media (sin intervenciones la PAD es la del caso) y la forma de onda sigue prescrita;
+  // cuando el modelo auricular la resuelva, empezará a «pasar» y avisará para retirarla.
   it('contraejemplo (hipovolemia + PAD ≈ 0, sin cascada torácica): con la pared viscoelástica la VCI no supera 2 m/s', () => {
     const p = {
       ...clonePatient(NORMAL_ADULT),

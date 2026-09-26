@@ -237,8 +237,11 @@ export class VenousNetwork {
     return { d, area: areaMm2, ptm: ivcPtmFromDiameter(d, k) };
   }
 
-  /** Evalúa presiones y caudales para el estado actual. */
-  evaluate(pArtPulseFactor: number, pRa: number, pAbd: number): NetworkOutputs {
+  /**
+   * Evalúa presiones y caudales para el estado actual. `pArtMean`: presión arterial media (mmHg); por omisión la
+   * del modelo, y la del lazo cerrado cuando una intervención cambia el gasto (decisión 79).
+   */
+  evaluate(pArtPulseFactor: number, pRa: number, pAbd: number, pArtMean = this.k.pArtMean): NetworkOutputs {
     const k = this.k;
     const s = this.state;
     const pSplanchnic = (s.vSplanchnic - k.v0Splanchnic) / k.cSplanchnic;
@@ -250,7 +253,7 @@ export class VenousNetwork {
     // Arteria hepática: el caudal arterial es mucho más pulsátil que la
     // presión media (lecho de alta resistencia con distensibilidad aguas
     // arriba); factor 1,1 → IR 0,63 medido sobre la verdad en los tres casos [EXTRAPOLACIÓN PROPIA].
-    const qHepaticArtery = Math.max(0, (k.pArtMean - pHepatic) / k.rHepaticArtery) * (1 + 1.1 * pArtPulseFactor);
+    const qHepaticArtery = Math.max(0, (pArtMean - pHepatic) / k.rHepaticArtery) * (1 + 1.1 * pArtPulseFactor);
     // El cuerpo inferior está fuera del abdomen: su presión externa es ~0, por lo
     // que una presión abdominal alta reduce su retorno hacia la VCI.
     const qLowerBody = (pLowerBody - pIvc) / k.rLowerBody;
@@ -259,7 +262,7 @@ export class VenousNetwork {
     // un lecho de baja resistencia (factor 0,8 sobre el pulso → IR 0,53 medido; el mismo en los tres
     // casos porque el pulso es multiplicativo y fijo, `fixed-arterial-resistive-index`).
     const pRenal = pAbd + (s.vRenal - k.v0Renal) / k.cRenal;
-    const qRenalArtery = Math.max(0, (k.pArtMean - pRenal) / k.rRenalArtery) * (1 + 0.8 * pArtPulseFactor);
+    const qRenalArtery = Math.max(0, (pArtMean - pRenal) / k.rRenalArtery) * (1 + 0.8 * pArtPulseFactor);
     return {
       pSplanchnic: pSplanchnic + pAbd,
       pHepatic,
@@ -281,17 +284,43 @@ export class VenousNetwork {
   }
 
   /**
-   * Integra un paso `dt` (s) con Euler semi-implícito y subpasos. `pRa` y
-   * `pAbd` son condiciones de contorno del paso; `pArtPulseFactor` ∈ [−0,5, 1].
+   * Sube (o baja, con `dP` < 0) en `dP` mmHg la presión elástica de todos los compartimentos venosos añadiendo o
+   * quitando su volumen: el volumen estresado que el lazo cerrado infunde o retira (decisión 79), repartido como se
+   * repartiría sin flujo (la Pmsf sube ΔV/C y cada compartimento con ella). El hígado y la VCI usan su ley no lineal,
+   * así que el hígado rígido no se llena de más. Devuelve el volumen movido (mL).
    */
-  step(dt: number, pArtPulseFactor: number, pRa: number, pAbd: number): NetworkOutputs {
+  shiftVenousPressures(dP: number): number {
+    const k = this.k;
+    const s = this.state;
+    const ivcVolume = (ptm: number) => (Math.PI * ivcDiameterFromPtm(ptm, k) ** 2 * 0.25 * k.ivcLengthMm) / 1000;
+    const ivcPtm = this.ivcGeometry(s.vIvc).ptm;
+    const moved = {
+      vSplanchnic: k.cSplanchnic * dP,
+      vHepatic: hepaticVolumeFromPressure(hepaticPressureFromVolume(s.vHepatic, k) + dP, k) - s.vHepatic,
+      vLowerBody: k.cLowerBody * dP,
+      vIvc: ivcVolume(ivcPtm + dP) - ivcVolume(ivcPtm),
+      vRenal: k.cRenal * dP,
+    };
+    let total = 0;
+    for (const key of Object.keys(moved) as Array<keyof typeof moved>) {
+      s[key] += moved[key];
+      total += moved[key];
+    }
+    return total;
+  }
+
+  /**
+   * Integra un paso `dt` (s) con Euler semi-implícito y subpasos. `pRa`, `pAbd` y
+   * `pArtMean` son condiciones de contorno del paso; `pArtPulseFactor` ∈ [−0,5, 1].
+   */
+  step(dt: number, pArtPulseFactor: number, pRa: number, pAbd: number, pArtMean = this.k.pArtMean): NetworkOutputs {
     const k = this.k;
     const sub = 4;
     const h = dt / sub;
     for (let i = 0; i < sub; i++) {
-      const o = this.evaluate(pArtPulseFactor, pRa, pAbd);
+      const o = this.evaluate(pArtPulseFactor, pRa, pAbd, pArtMean);
       const s = this.state;
-      const pArtIn = k.pArtMean + k.pArtPulse * pArtPulseFactor;
+      const pArtIn = pArtMean + k.pArtPulse * pArtPulseFactor;
       const qArtSp = (pArtIn - o.pSplanchnic) / k.rArtSplanchnic;
       const qArtLb = (pArtIn - o.pLowerBody) / k.rArtLowerBody;
       // Ramas con inercia
@@ -317,7 +346,7 @@ export class VenousNetwork {
       const vIvcMin = (Math.PI * (IVC_RESIDUAL_LUMEN_MM / 2) ** 2 * k.ivcLengthMm) / 1000;
       if (s.vIvc < vIvcMin) s.vIvc = vIvcMin;
     }
-    this.outputs = this.evaluate(pArtPulseFactor, pRa, pAbd);
+    this.outputs = this.evaluate(pArtPulseFactor, pRa, pAbd, pArtMean);
     return this.outputs;
   }
 }

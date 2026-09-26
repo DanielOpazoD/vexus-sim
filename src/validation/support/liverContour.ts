@@ -22,7 +22,7 @@
  * 0,5 mm en ≥ 20 mm, solo informados: con 0,1 mm la flecha es 0,4 px de la rejilla).
  */
 import { MORISON_CONTACT_MM, INTERFACES, Interface } from '../../anatomy/interfaces';
-import { kidneyLocal, kidneyOuterSdf } from '../../anatomy/organs/kidney';
+import { RENAL_IMPRESSION_OVERLAP_MM, kidneyLocal, perirenalOuterSdf } from '../../anatomy/organs/kidney';
 import { gallbladderSdf } from '../../anatomy/organs/gallbladder';
 import { GALLBLADDER_FOSSA_ROUND_MM, RENAL_IMPRESSION, visceralPlaneDistance } from '../../anatomy/organs/liver';
 import { umbilicalFissureSdf } from '../../anatomy/organs/liverLigaments';
@@ -134,8 +134,11 @@ export function liverTerms(s: AnatomyScene, m: Vec3): LiverTerms {
   const visc = -visceralPlaneDistance(m, s.visceralPlane);
   const d1 = smoothMax(d0, visc, s.visceralPlane.edgeRoundMm);
   if (d1 > d0 + 1e-3) label = Math.abs(d0 - visc) < s.visceralPlane.edgeRoundMm ? 'visceralBlend' : 'visceral';
-  const dk = kidneyOuterSdf(kidneyLocal(m, s.kidneyRight), s.kidneyRight);
-  const d2 = smoothMax(d1, -(dk - s.renalImpressionMm), RENAL_IMPRESSION.roundMm);
+  const d2 = smoothMax(
+    d1,
+    -(perirenalOuterSdf(kidneyLocal(m, s.kidneyRight), s.kidneyRight) + RENAL_IMPRESSION_OVERLAP_MM),
+    RENAL_IMPRESSION.roundMm,
+  );
   if (d2 > d1 + 1e-3) label = 'renal';
   const d3 = smoothMax(d2, -(gallbladderSdf(m, s.gallbladder) - s.gallbladderWallMm), GALLBLADDER_FOSSA_ROUND_MM);
   if (d3 > d2 + 1e-3) label = 'gbFossa';
@@ -380,9 +383,10 @@ export function analyzeContour(v: ContourView, inner?: (m: Vec3) => number): Con
         if (tt === Tissue.Lung || tt === Tissue.BowelGas) hidden = true;
       }
       const s = v.scene;
-      const dPeri =
-        Math.min(kidneyOuterSdf(kidneyLocal(p, s.kidneyRight), s.kidneyRight), kidneyOuterSdf(kidneyLocal(p, s.kidneyLeft), s.kidneyLeft)) -
-        s.perirenalMm;
+      const dPeri = Math.min(
+        perirenalOuterSdf(kidneyLocal(p, s.kidneyRight), s.kidneyRight),
+        perirenalOuterSdf(kidneyLocal(p, s.kidneyLeft), s.kidneyLeft),
+      );
       const innerHere = innerOf(p);
       const owner: ContourOwner =
         t.dDiaphragm - innerHere <= DOME_OWNER_MM ? 'dome' : dPeri <= MORISON_CONTACT_MM + 0.5 ? 'morison' : 'capsule';

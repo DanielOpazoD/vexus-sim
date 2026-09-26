@@ -9,7 +9,8 @@ import { sdEllipsoidLocal } from '../anatomy/primitives';
 import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
 import { FRAG_QUERY } from '../ultrasound/shaders/passes.glsl';
 import { AnatomyQuery } from '../anatomy/query';
-import { AnatomyScene, type FaceGeometry } from '../anatomy/scene';
+import { Interface } from '../anatomy/interfaces';
+import { AnatomyScene, type Classification, type FaceGeometry } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
@@ -62,15 +63,21 @@ const ellipsoidNormal = (m: Vec3): Vec3 => {
 /**
  * Qué GPU se simula: la del PR 5a (errores de normal plantados, norma 1), la del 5b (el gradiente de
  * `AnatomyScene.faceGradient`, gemelo de `faceGradient` de la GLSL: analítico en los tubos y numérico
- * en el resto) o la del 5b sin la norma (normales corregidas, norma 1: la que integraba 1/|∇|).
+ * en el resto), la del 5b sin la norma (normales corregidas, norma 1: la que integraba 1/|∇|) o la del 5b con
+ * la cara externa de la grasa perirrenal en el gradiente del contorno renal (como antes de la revisión de la 68).
  */
-let gpuMode: '5a' | '5b' | '5b-norm1' = '5a';
+let gpuMode: '5a' | '5b' | '5b-norm1' | '5b-peri-kidney' = '5a';
 
-/** Geometría que la GPU usa para el gradiente de cada tejido (`faceGradient`, por tejido). */
-function faceOfTissue(m: Vec3, t: Tissue): FaceGeometry | null {
+/**
+ * Geometría que la GPU usa para el gradiente de cada muestra (`faceGradient`: por tejido, y la mitad externa de la
+ * grasa perirrenal que dibuja su cara, la de esa cara).
+ */
+function faceOf(m: Vec3, c: Classification): FaceGeometry | null {
+  const t = c.tissue;
   if (scene.faceTube(m, caliber) && t !== Tissue.Liver) return 'tube';
   if (t === Tissue.LiverCapsule) return 'liverSurface';
   if (t === Tissue.Diaphragm) return 'dome';
+  if (c.interface === Interface.PerirenalFat) return gpuMode === '5b-peri-kidney' ? 'kidneyOuter' : 'perirenalOuter';
   if (t === Tissue.RenalCapsule || t === Tissue.PerirenalFat) return 'kidneyOuter';
   if (t === Tissue.Fluid || t === Tissue.BileDuctWall) return 'gallbladder';
   return null;
@@ -84,9 +91,10 @@ function gpuQuery(points: Float32Array) {
   const gradNorm = new Float32Array(n).fill(1);
   for (let i = 0; i < n; i++) {
     const m = anatomy.deformation.toMaterial([points[i * 3], points[i * 3 + 1], points[i * 3 + 2]], engine.sample.resp);
-    const t = scene.classify(m, caliber).tissue;
+    const c = scene.classify(m, caliber);
+    const t = c.tissue;
     tissue[i] = t;
-    const face = faceOfTissue(m, t);
+    const face = faceOf(m, c);
     let nv: Vec3 = t === Tissue.Lung ? gradientOf(m, 'dome') : [0, 1, 0];
     if (gpuMode === '5a') {
       const tube = scene.faceTube(m, caliber);
@@ -196,12 +204,37 @@ describe('e2e de normales con los gradientes del PR 5b (sin GPU)', () => {
       expect(renal.kidneyOuter.p01).toBeGreaterThan(0.999);
       expect(renal.kidneyOuterNotch.p01).toBeGreaterThan(0.999);
       // fuera de los tubos, el mismo cálculo que la referencia (salvo el punto, que la GPU recibe en float32)
-      for (const row of ['kidneyOuter', 'kidneyOuterNotch', 'liverSurface'] as const) expect(renal[row].normErrMax, row).toBeLessThan(1e-5);
+      // (una muestra cuya plantilla de diferencias centrales cabalga la arista del min entre hígado y pared puede
+      // cambiar de rama con el redondeo float32 del punto: 1e-4 en la cápsula posterolateral desde la decisión 68, que
+      // movió las muestras; el p95 sigue en 1e-7)
+      for (const row of ['kidneyOuter', 'kidneyOuterNotch', 'liverSurface'] as const) {
+        expect(renal[row].normErrP95, row).toBeLessThan(1e-6);
+        expect(renal[row].normErrMax, row).toBeLessThan(row === 'liverSurface' ? 2e-4 : 1e-5);
+      }
+      // la cara externa de la grasa perirrenal (Morison), con el gradiente de su propia distancia (revisión de la 68)
+      expect(renal.perirenalOuter.points).toBeGreaterThanOrEqual(50);
+      expect(renal.perirenalOuter.p01).toBeGreaterThan(0.999);
+      expect(renal.perirenalOuter.normErrP95).toBeLessThan(1e-6);
+      expect(renal.perirenalOuter.normErrMax).toBeLessThan(1e-5);
       // la cúpula, desde la subxifoidea (la vista intercostal de partida va por el 8.º espacio desde la decisión
       // 62 y apenas la ve)
       const sub = stats('subxiphoid');
       expect(sub.dome.points).toBeGreaterThan(50);
       expect(sub.dome.normErrMax).toBeLessThan(1e-5);
+    } finally {
+      gpuMode = '5a';
+    }
+  });
+
+  it('una GPU con la cara externa de la grasa perirrenal en el gradiente del contorno renal la delata su fila', () => {
+    // la superficie es el contorno menos el grosor local de la grasa, no el contorno: con su gradiente la normal se
+    // apartaba hasta 15° (p01 0,965 en la ventana renal) y la norma un 15 % (revisión de la decisión 68)
+    gpuMode = '5b-peri-kidney';
+    try {
+      const r = stats('renal');
+      expect(r.perirenalOuter.points).toBeGreaterThanOrEqual(50);
+      expect(r.perirenalOuter.p01).toBeLessThan(0.98);
+      expect(r.perirenalOuter.normErrP95).toBeGreaterThan(0.1);
     } finally {
       gpuMode = '5a';
     }

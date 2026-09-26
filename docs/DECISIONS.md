@@ -1998,6 +1998,67 @@ dentro. Falta la sombra de refracción de los bordes laterales del cuello y del 
 es la de la luz) y ningún vaso en la luz ni en la pared en los tres casos, con la VHM a ≥ 5 mm (antes 726 mm³ dentro);
 la e2e de equivalencia TS↔GLSL (50 000 puntos); capturas con GPU (M4) antes y después en eje largo, en 2D y color.
 
+## 68. Riñón con una sola línea capsular, pirámides tenues y distintas, seno digitado y pelvis colapsada
+
+**Contexto.** El dueño (médico, 25-09-2026): «pésima representación ecográfica del riñón». La prueba ciega (ronda 2)
+lo reconocía al instante: cápsula como doble línea paralela perfecta, pelvis negra recortada, seno ovalado homogéneo y
+rayas oscuras verticales finas, rectas y equidistantes. En el modelo: la grasa perirrenal era una capa de 4 mm
+constante cuyas dos caras (cápsula y cara externa) dibujaban dos líneas concéntricas en todo el contorno; la pelvis,
+un elipsoide de 18 × 7 × 5 mm de orina; el seno, un elipsoide liso; las pirámides, 16 cuñas finas (se veían como rayas)
+y las interlobares, tres pares rectos equidistantes que llegaban a 3 mm de la cápsula. Referencias (revisión con
+fuentes, 25-09): cápsula = una sola interfaz especular, brillante de frente y perdida en los bordes; grasa perirrenal
+de grosor variable, ≤ 1 mm contra el hígado en la mitad de los casos; pirámides hipoecoicas pero no negras, de tamaño
+variable y a menudo tenues en el adulto, 6–8 por corte; seno ecogénico de bordes digitados e irregulares; sistema
+colector colapsado; corteza de 7–8 mm; interlobares por las columnas de Bertin hasta la base de las pirámides
+(Radiopaedia; PMC12731967; Emamian 1993; ACEP Sonoguide).
+**Opciones.** (1) Quitar la cara externa de la grasa: Morison (grasa contra hígado) perdería su línea. (2) Grosor
+variable con la cara externa solo donde la grasa es fina: una sola línea en todo el contorno y Morison conservado.
+(3) Modelar la fascia de Gerota como capa aparte: más caras paralelas, el mismo defecto.
+**Decisión.** Opción 2, más forma interna. `organs/kidney.ts` (gemelos TS/GLSL):
+`perirenalThicknessMm` va de 1 mm (anterolateral, donde apoya el hígado) a 9 mm (detrás, hacia el hilio y en los
+polos), en los dos riñones (el marco del izquierdo es especular: su w apunta hacia atrás). La cara externa se dibuja
+donde la grasa mide ≤ 2,5 mm (`PERIRENAL.faceMaxMm`), fundida con la de la cápsula en una sola línea, y, aunque sea
+gruesa, donde apoya el hígado (Morison: `liverSdf` a ≤ `MORISON_CONTACT_MM` de ella); donde es gruesa y no la toca el
+hígado se confunde con la grasa retroperitoneal sin línea. La cápsula hepática le cede su cara en el contacto y, junto
+a una grasa fina, también a ≤ `MORISON_SLIVER_MM` (3,5 mm, la lámina del borde de la impresión): una sola línea en
+todo Morison. Esa cara tiene su propia geometría (`perirenalOuter`, el gradiente de `perirenalOuterSdf`), no la del
+contorno renal. La impresión renal del hígado sigue a la cara externa de la grasa y la solapa 1 mm (la grasa, que se
+clasifica antes, gana, y la distancia a la frontera del hígado la cuenta): menos láminas de «intestino» entre grasa e
+hígado que antes (51–71 frente a 96–132 en el barrido de la cara). La banda difusa de la cápsula baja de 2,4 a 1,4 (la
+línea la da su cara especular). Pirámides: 14 conos redondeados (papila de 1,5 mm a 3 mm del seno, base de 5,2–7,4 mm
+de radio centrada a 7,5 mm de la cápsula, con orientación y tamaño algo distintos, dos compuestas en los polos;
+`PYRAMIDS`); la unión corticomedular (`MEDULLA_MIN_DEPTH_MM`, 7 mm bajo la cápsula) corta el casquete de su base en una
+base ancha que sigue al contorno: corteza ≥ 7 mm sobre toda pirámide; su eco pasa de 0,3 a 0,42 (−4,6 dB bajo la
+corteza). Seno: elipsoide con el canal del hilio y un dedo (cáliz) hacia cada papila con mezcla suave
+(`kidneySinusSdf`, que fuera del riñón no se evalúa): borde digitado. Pelvis colapsada: una lámina de 2,4 mm hacia el
+hilio (antes 18 × 7 × 5). Interlobares: por columnas de Bertin a intervalos desiguales (u −27, −2,5, 23,5), con una
+curva propia, hasta la unión corticomedular (19–21,5 mm del centro) y algo más finas.
+**Consecuencias.** El riñón se ve con una sola línea capsular que se apaga en los bordes, un seno lobulado y ecogénico,
+pirámides tenues y sin la barra negra de la pelvis, y Morison con una sola línea en todo el contacto. Una revisión
+adversarial halló que la cara externa de la grasa gruesa, suprimida siempre, dejaba sin línea el 62 % del contacto
+hígado–grasa (26 de 29 pasos en la vista renal); que el izquierdo tenía la grasa gruesa delante (8,2 mm) y fina detrás
+(1,2); que el casquete de las pirámides llegaba a 3 mm de la cápsula (3,9 mm de corteza en la mediana), y que esta cara
+usaba la normal del contorno (9° de error en el p90): corregidos. Morison no tiene hueco donde la grasa y el hígado se
+tocan, pero en el borde de la impresión el redondeo del hígado deja una lámina de «intestino» de 1,2–1,35 mm de mediana
+(hasta 3 mm) en el 29 % de los contactos del adulto normal (22–26 % en los congestivos): es el receso, y allí la línea
+es la de la grasa fina o la de la cápsula, nunca las dos. Las pirámides pierden el casquete que ocupaba la corteza
+externa: la mitad de su volumen o más (la médula pasa del 20 al 11 % del parénquima del corte coronal), con 7–10 mm de
+alto y 10–15 mm de base en el plano coronal. Siguen pendientes la sombra de
+refracción de los polos, los ecos arcuatos en la base de las pirámides, el psoas y el cuadrado lumbar detrás del riñón
+(el «resto» tiene hoy la textura del intestino) y los lóbulos laterales que darían neblina en las luces vasculares
+(`no-sidelobes`).
+**Verificación.** `anatomy.test.ts`: pirámides de tamaños distintos, ≥ 5 separadas en el corte coronal, con ≥ 6,5 mm
+de corteza en toda su superficie (rayos hasta la superficie de cada cono; antes solo el centro de la base) y médula
+visible en cada una; pelvis ≤ 2,5 mm; el borde del seno sobresale > 2 mm del óvalo; grasa de menos de 1,5 mm
+anterolateral y de más de 6 mm detrás y en los polos, fina delante y gruesa detrás también en el izquierdo; la mitad
+externa de la grasa gruesa sin cara salvo contra el hígado y la fina con la cara de Morison; todo paso hígado ↔ grasa
+con una cara y una sola (rayos desde el riñón y líneas de las vistas renal, de flanco y de Morison; antes 454 de 905,
+26 de 29 y 26 de 38 sin cara, y el 11–14 % de los pasos de los rayos con la de la grasa y la de la cápsula a los dos lados
+de una lámina); Morison sin hueco y, por el polo superior (grasa gruesa), con la cara de la grasa; `faceGradient.test.ts` (la cara de la grasa
+gruesa sí la recorta la salida barata y su norma queda bajo la cota) y `faceNormals.test.ts` (fila `perirenalOuter`: la
+GPU con el gradiente del contorno daba p01 0,965 en la ventana renal), también en la e2e de normales; equivalencia
+TS↔GLSL (e2e); capturas con GPU (M4) de la vista renal antes y después.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

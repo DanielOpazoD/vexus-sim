@@ -22,16 +22,19 @@ import {
   type TubeHit,
 } from './primitives';
 import { GALLBLADDER_WALL_MM, gallbladderBody, gallbladderSdf, type GallbladderShape } from './organs/gallbladder';
-import { RENAL_CAPSULE_MM, kidneyLocal, kidneyOuterSdf, kidneyQuery, type Kidney } from './organs/kidney';
 import {
-  LIVER_BLEND_MM,
-  RENAL_IMPRESSION,
-  liverBaseSdf,
-  liverLobes,
-  liverSdf,
-  visceralPlaneDistance,
-  type VisceralPlane,
-} from './organs/liver';
+  KIDNEY_RADII,
+  KIDNEY_SINUS,
+  PERIRENAL,
+  RENAL_CAPSULE_MM,
+  kidneyLocal,
+  kidneyOuterSdf,
+  kidneyQuery,
+  perirenalOuterSdf,
+  perirenalThicknessMm,
+  type Kidney,
+} from './organs/kidney';
+import { LIVER_BLEND_MM, liverBaseSdf, liverLobes, liverSdf, visceralPlaneDistance, type VisceralPlane } from './organs/liver';
 import { buildHepaticBranches, buildVesselTree, wallThicknessMm, type DuctDef, type VesselDef } from './vesselTree';
 
 export { wallThicknessMm };
@@ -66,6 +69,7 @@ import {
   LAST_TUBE_INTERFACE,
   GALLBLADDER_CONTACT_MM,
   MORISON_CONTACT_MM,
+  MORISON_SLIVER_MM,
   interfaceOfVessel,
   isRibInterface,
   isWallLayerInterface,
@@ -117,10 +121,11 @@ export interface Classification {
  *  - `liverSurface`: el borde del parénquima (cápsula), recortado por pared y diafragma;
  *  - `dome`: la superficie pleural del diafragma (su cara hepática es paralela);
  *  - `kidneyOuter`: el contorno externo del riñón (cápsula renal);
+ *  - `perirenalOuter`: la cara externa de la grasa perirrenal (Morison), el contorno menos su grosor local;
  *  - `gallbladder`: la luz vesicular.
  */
-export type FaceGeometry = 'tube' | 'liverSurface' | 'dome' | 'kidneyOuter' | 'gallbladder';
-export const FACE_GEOMETRIES: readonly FaceGeometry[] = ['tube', 'liverSurface', 'dome', 'kidneyOuter', 'gallbladder'];
+export type FaceGeometry = 'tube' | 'liverSurface' | 'dome' | 'kidneyOuter' | 'perirenalOuter' | 'gallbladder';
+export const FACE_GEOMETRIES: readonly FaceGeometry[] = ['tube', 'liverSurface', 'dome', 'kidneyOuter', 'perirenalOuter', 'gallbladder'];
 
 /**
  * Geometría cuya distancia (`faceSdf`) da la cara de interfaz `i`, o null sin cara (o las pleuras: la del
@@ -135,6 +140,7 @@ export function faceGeometryOf(i: Interface): FaceGeometry | null {
   if (i === Interface.GallbladderLumen) return 'gallbladder';
   if (i === Interface.LiverCapsule) return 'liverSurface';
   if (i === Interface.DiaphragmLiver) return 'dome';
+  if (i === Interface.PerirenalFat) return 'perirenalOuter';
   return 'kidneyOuter';
 }
 
@@ -212,10 +218,6 @@ export class AnatomyScene {
   readonly rightAtrium: Sphere;
   readonly kidneyRight: Kidney;
   readonly kidneyLeft: Kidney;
-  /** Grasa perirrenal (fascia de Gerota) alrededor del riñón (mm). */
-  readonly perirenalMm = 4;
-  /** Separación mínima hígado–riñón (impresión renal) (mm). */
-  readonly renalImpressionMm = RENAL_IMPRESSION.mm;
   /** Bolsas de gas intestinal (confusor; vacío en el avatar de referencia). */
   readonly gasPockets: Sphere[];
   vessels: VesselDef[];
@@ -255,19 +257,19 @@ export class AnatomyScene {
     this.kidneyRight = {
       kind: 'kidney',
       center: [-72, -38, -78],
-      radii: [54, 27, 23],
+      radii: KIDNEY_RADII,
       ...bR,
-      sinusRadii: [30, 12, 10],
-      sinusOffset: 4,
+      sinusRadii: KIDNEY_SINUS.radii,
+      sinusOffset: KIDNEY_SINUS.offsetV,
       hilumRadius: 7,
     };
     this.kidneyLeft = {
       kind: 'kidney',
       center: [78, -36, -70],
-      radii: [54, 27, 23],
+      radii: KIDNEY_RADII,
       ...bL,
-      sinusRadii: [30, 12, 10],
-      sinusOffset: 4,
+      sinusRadii: KIDNEY_SINUS.radii,
+      sinusOffset: KIDNEY_SINUS.offsetV,
       hilumRadius: 7,
     };
     this.gasPockets = [];
@@ -462,7 +464,7 @@ export class AnatomyScene {
       };
     const kidney = this.classifyKidneys(m);
     if (kidney.cls) return kidney.cls;
-    const liver = this.classifyLiver(m, dDome, -depth - wall.wallMm, kidney.dPeriMm, dGb - this.gallbladderWallMm);
+    const liver = this.classifyLiver(m, dDome, -depth - wall.wallMm, kidney, dGb - this.gallbladderWallMm);
     if (liver) return liver;
     // Intestino: el «resto». Su distancia a la frontera es la de las interfaces que ganan antes
     // (diafragma, vesícula, aurícula, hígado, pared, grasa perirrenal, gas); como en el hígado, no
@@ -476,7 +478,7 @@ export class AnatomyScene {
       this.liverBaseSdf(m),
       -depth - wall.wallMm,
     );
-    for (const k of [this.kidneyRight, this.kidneyLeft]) bd = Math.min(bd, kidneyOuterSdf(kidneyLocal(m, k), k) - this.perirenalMm);
+    for (const k of [this.kidneyRight, this.kidneyLeft]) bd = Math.min(bd, perirenalOuterSdf(kidneyLocal(m, k), k));
     for (const g of this.gasPockets) {
       const dg = sdSphere(m, g);
       if (dg < 0) return { ...NONE, tissue: Tissue.BowelGas, boundaryDistance: -dg };
@@ -494,6 +496,7 @@ export class AnatomyScene {
    *  - `liverSurface`: −inner, con inner = min(−dLiver, dDome − DIAPHRAGM, pared), como `classifyLiver`;
    *  - `dome`: `sdDiaphragm`;
    *  - `kidneyOuter`: el menor `dOuter` de los dos riñones;
+   *  - `perirenalOuter`: el menor `perirenalOuterSdf` de los dos riñones (`dOuter` − grosor local de la grasa);
    *  - `gallbladder`: `gallbladderSdf`.
    * Solo banco de fidelidad y pruebas: la clasificación no la llama.
    */
@@ -512,6 +515,11 @@ export class AnatomyScene {
         return Math.min(
           kidneyOuterSdf(kidneyLocal(m, this.kidneyRight), this.kidneyRight),
           kidneyOuterSdf(kidneyLocal(m, this.kidneyLeft), this.kidneyLeft),
+        );
+      case 'perirenalOuter':
+        return Math.min(
+          perirenalOuterSdf(kidneyLocal(m, this.kidneyRight), this.kidneyRight),
+          perirenalOuterSdf(kidneyLocal(m, this.kidneyLeft), this.kidneyLeft),
         );
       case 'gallbladder':
         return gallbladderSdf(m, this.gallbladder);
@@ -706,16 +714,22 @@ export class AnatomyScene {
 
   /**
    * Riñones: corteza / pirámides / seno, con grasa perirrenal alrededor. Devuelve también la distancia
-   * a la cara externa de la grasa perirrenal (`dPeriMm`, el menor `dOuter − perirenalMm` de los riñones
-   * cercanos): la cápsula hepática que la toca no dibuja su cara (Morison es de la grasa).
+   * a la cara externa de la grasa perirrenal (`dPeriMm`, el menor `dOuter − grosor local` de los riñones
+   * cercanos) y si esa grasa es fina (`periThin`: siempre dibuja su cara): la cápsula hepática que la toca, o que
+   * está a una lámina de ella, no dibuja la suya (Morison es de la grasa).
    */
-  private classifyKidneys(m: Vec3): { cls: Classification | null; dPeriMm: number } {
+  private classifyKidneys(m: Vec3): { cls: Classification | null; dPeriMm: number; periThin: boolean } {
     let dPeriMm = 1e3;
+    let periThin = false;
     for (const k of [this.kidneyRight, this.kidneyLeft]) {
       const dc = Math.hypot(m[0] - k.center[0], m[1] - k.center[1], m[2] - k.center[2]);
-      if (dc > k.radii[0] + this.perirenalMm + 2) continue;
+      if (dc > k.radii[0] + PERIRENAL.maxMm + 2) continue;
       const kh = kidneyQuery(m, k);
-      dPeriMm = Math.min(dPeriMm, kh.dOuter - this.perirenalMm);
+      const fat = perirenalThicknessMm(kidneyLocal(m, k), k);
+      if (kh.dOuter - fat < dPeriMm) {
+        dPeriMm = kh.dOuter - fat;
+        periThin = fat <= PERIRENAL.faceMaxMm;
+      }
       if (kh.dOuter < 0) {
         // cápsula fibrosa: línea brillante que separa la corteza de la grasa perirrenal
         if (-kh.dOuter < RENAL_CAPSULE_MM) {
@@ -726,7 +740,7 @@ export class AnatomyScene {
             interface: Interface.RenalCapsule,
             interfaceDistance: -kh.dOuter,
           };
-          return { cls, dPeriMm };
+          return { cls, dPeriMm, periThin };
         }
         const tissue =
           kh.region === 'pelvis'
@@ -736,24 +750,30 @@ export class AnatomyScene {
               : kh.region === 'medulla'
                 ? Tissue.RenalMedulla
                 : Tissue.RenalCortex;
-        return { cls: { ...NONE, tissue, boundaryDistance: kh.inner }, dPeriMm };
+        return { cls: { ...NONE, tissue, boundaryDistance: kh.inner }, dPeriMm, periThin };
       }
-      // Grasa perirrenal (fascia de Gerota) hasta la impresión renal del hígado: en el
-      // receso de Morison la cápsula hepática apoya directamente sobre ella, sin hueco. La mitad
-      // externa dibuja la cara hígado/grasa; la interna, la de la cápsula renal (dos lados).
-      if (kh.dOuter < this.perirenalMm) {
-        const outerFace = kh.dOuter > 0.5 * this.perirenalMm;
+      // Grasa perirrenal (fascia de Gerota) de grosor variable (decisión 68) hasta la impresión renal del hígado: en
+      // el receso de Morison la cápsula hepática apoya directamente sobre ella, sin hueco. La mitad externa dibuja la
+      // cara hígado/grasa; la interna, la de la cápsula renal (dos lados): donde la grasa es fina las dos caras se
+      // funden en una sola línea.
+      if (kh.dOuter < fat) {
+        const outerFace = kh.dOuter > 0.5 * fat;
+        const ifd = outerFace ? fat - kh.dOuter : kh.dOuter;
+        // la cara externa, donde la grasa es fina; donde es gruesa, solo si apoya el hígado (Morison: la impresión renal
+        // solapa la grasa y la cápsula hepática le cede la cara, `MORISON_CONTACT_MM`); si no, se funde sin línea con la
+        // grasa retroperitoneal. Antes la gruesa nunca la dibujaba y el 62 % del contacto hígado–grasa quedaba sin línea
+        const face = !outerFace || fat <= PERIRENAL.faceMaxMm || this.liverSdf(m) <= ifd + MORISON_CONTACT_MM;
         const cls: Classification = {
           ...NONE,
           tissue: Tissue.PerirenalFat,
-          boundaryDistance: Math.min(kh.dOuter, this.perirenalMm - kh.dOuter),
-          interface: outerFace ? Interface.PerirenalFat : Interface.RenalCapsule,
-          interfaceDistance: outerFace ? this.perirenalMm - kh.dOuter : kh.dOuter,
+          boundaryDistance: Math.min(kh.dOuter, fat - kh.dOuter),
+          interface: face ? (outerFace ? Interface.PerirenalFat : Interface.RenalCapsule) : Interface.None,
+          interfaceDistance: face ? ifd : NONE.interfaceDistance,
         };
-        return { cls, dPeriMm };
+        return { cls, dPeriMm, periThin };
       }
     }
-    return { cls: null, dPeriMm };
+    return { cls: null, dPeriMm, periThin };
   }
 
   /** Plano de la fisura del ligamento venoso (módulo `organs/liverLigaments`). */
@@ -768,11 +788,20 @@ export class AnatomyScene {
 
   /**
    * Hígado con cápsula, recortado por diafragma (`dDome`) y pared (`insideWallMm`). La cápsula dibuja
-   * su cara salvo donde la manda el diafragma (su cara es del diafragma) o donde toca la grasa
-   * perirrenal a ≤ `MORISON_CONTACT_MM` (`dPeriMm`: la cara de Morison es de la grasa) o la pared de la
+   * su cara salvo donde la manda el diafragma (su cara es del diafragma), donde toca la grasa
+   * perirrenal a ≤ `MORISON_CONTACT_MM` (`dPeriMm`: la cara de Morison es de la grasa) o a ≤ `MORISON_SLIVER_MM` de
+   * una grasa fina (que siempre la dibuja: solo las separa una lámina), o donde toca la pared de la
    * vesícula a ≤ `GALLBLADDER_CONTACT_MM` (`dGbWallMm`, en su fosa: la pared vesicular es una sola línea).
+   * La distancia a la frontera cuenta también la cara externa de la grasa (`dPeriMm`): la impresión renal la solapa
+   * 1 mm y la grasa, que gana, es la frontera real del hígado en Morison.
    */
-  private classifyLiver(m: Vec3, dDome: number, insideWallMm: number, dPeriMm: number, dGbWallMm: number): Classification | null {
+  private classifyLiver(
+    m: Vec3,
+    dDome: number,
+    insideWallMm: number,
+    { dPeriMm, periThin }: { dPeriMm: number; periThin: boolean },
+    dGbWallMm: number,
+  ): Classification | null {
     const dBase = this.liverBaseSdf(m);
     const dFissure = this.umbilicalFissureSdf(m, dBase);
     const dLiver = smoothMax(dBase, -dFissure, this.umbilicalFissure.roundMm);
@@ -783,19 +812,21 @@ export class AnatomyScene {
     }
     const dDiaphragm = dDome - DIAPHRAGM_THICKNESS_MM;
     const inner = Math.min(-dLiver, dDiaphragm, insideWallMm);
+    const bd = Math.min(inner, dPeriMm);
     if (inner < LIVER_CAPSULE_MM) {
       // `Math.min` devuelve uno de sus argumentos: la igualdad con la cara del diafragma es exacta
-      const other = inner === dDiaphragm || dPeriMm <= inner + MORISON_CONTACT_MM || dGbWallMm <= inner + GALLBLADDER_CONTACT_MM;
+      const morison = dPeriMm <= inner + (periThin ? MORISON_SLIVER_MM : MORISON_CONTACT_MM);
+      const other = inner === dDiaphragm || morison || dGbWallMm <= inner + GALLBLADDER_CONTACT_MM;
       return {
         ...NONE,
         tissue: Tissue.LiverCapsule,
-        boundaryDistance: inner,
+        boundaryDistance: bd,
         ...(other ? {} : { interface: Interface.LiverCapsule, interfaceDistance: inner }),
       };
     }
     const dLv = this.ligamentumVenosumSdf(m);
-    if (dLv < 0 && inner > 2) return { ...NONE, tissue: Tissue.LigamentumVenosum, boundaryDistance: Math.min(-dLv, inner) };
-    return { ...NONE, tissue: Tissue.Liver, boundaryDistance: inner };
+    if (dLv < 0 && inner > 2) return { ...NONE, tissue: Tissue.LigamentumVenosum, boundaryDistance: Math.min(-dLv, bd) };
+    return { ...NONE, tissue: Tissue.Liver, boundaryDistance: bd };
   }
 }
 

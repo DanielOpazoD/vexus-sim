@@ -79,26 +79,29 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
   const hilumArteryL = kw(kL, [0, kL.radii[1] - 2, 4]);
   // Interlobares en las columnas de Bertin: nacen en el seno y se abren en abanico
   // (u × 1,15 hacia la corteza) entre las pirámides; arteria y vena adyacentes
-  const interlobarVein = (id: VesselId, u: number): VesselDef =>
+  // Interlobares (decisión 68): por la columna de Bertin desde el seno hasta la base de las pirámides (unión
+  // corticomedular, donde se hacen arcuatas), con una leve curva propia y hondura distinta en cada columna; antes
+  // llegaban a 3 mm de la cápsula y eran tres rayas rectas, paralelas y equidistantes
+  const interlobarVein = (id: VesselId, u: number, bow: number, outer: number): VesselDef =>
     thin(
       id,
       [
-        [kw(kR, [u * 1.15, -24, 1.8]), 1.4],
-        [kw(kR, [u * 1.06, -15, 1.8]), 1.7],
-        [kw(kR, [u, -6, 1.8]), 2.0],
+        [kw(kR, [u * 1.12 + 0.4 * bow, outer, 1.8]), 1.3],
+        [kw(kR, [u * 1.05 + bow, (outer - 6) / 2, 1.8]), 1.65],
+        [kw(kR, [u, -6, 1.8]), 1.95],
       ],
-      1.8,
+      1.7,
       0.4,
     );
-  const interlobarArtery = (id: VesselId, u: number): VesselDef =>
+  const interlobarArtery = (id: VesselId, u: number, bow: number, outer: number): VesselDef =>
     artery(
       id,
       [
-        [kw(kR, [u, -6, -1.8]), 1.4],
-        [kw(kR, [u * 1.06, -15, -1.8]), 1.2],
-        [kw(kR, [u * 1.15, -24, -1.8]), 1.0],
+        [kw(kR, [u, -6, -1.8]), 1.35],
+        [kw(kR, [u * 1.05 + bow, (outer - 6) / 2, -1.8]), 1.15],
+        [kw(kR, [u * 1.12 + 0.4 * bow, outer, -1.8]), 0.95],
       ],
-      1.2,
+      1.15,
       0.4,
     );
 
@@ -361,12 +364,12 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
     ),
     // Interlobares del riñón derecho en las columnas de Bertin (entre pirámides),
     // arteria y vena adyacentes en el plano coronal lateral
-    interlobarArtery('interlobarArtery1', BERTIN_COLUMNS_U[0]),
-    interlobarArtery('interlobarArtery2', BERTIN_COLUMNS_U[1]),
-    interlobarArtery('interlobarArtery3', BERTIN_COLUMNS_U[2]),
-    interlobarVein('interlobarVein1', BERTIN_COLUMNS_U[0]),
-    interlobarVein('interlobarVein2', BERTIN_COLUMNS_U[1]),
-    interlobarVein('interlobarVein3', BERTIN_COLUMNS_U[2]),
+    interlobarArtery('interlobarArtery1', BERTIN_COLUMNS_U[0], 1.5, -20),
+    interlobarArtery('interlobarArtery2', BERTIN_COLUMNS_U[1], -1.2, -21.5),
+    interlobarArtery('interlobarArtery3', BERTIN_COLUMNS_U[2], 0.8, -19),
+    interlobarVein('interlobarVein1', BERTIN_COLUMNS_U[0], 1.5, -20),
+    interlobarVein('interlobarVein2', BERTIN_COLUMNS_U[1], -1.2, -21.5),
+    interlobarVein('interlobarVein3', BERTIN_COLUMNS_U[2], 0.8, -19),
   ];
   // Vía biliar: colédoco anterolateral a la porta en el ligamento hepatoduodenal,
   // hepáticos derecho e izquierdo por delante de las ramas portales, cístico al cuello.

@@ -1,7 +1,7 @@
 import type { Vec3 } from '../../core/vec3';
 import { sdEllipsoid, smoothMax, smoothMin, type Ellipsoid } from '../primitives';
 import { gallbladderSdf, type GallbladderShape } from './gallbladder';
-import { kidneyLocal, kidneyOuterSdf, type Kidney } from './kidney';
+import { RENAL_IMPRESSION_OVERLAP_MM, kidneyLocal, perirenalOuterSdf, type Kidney } from './kidney';
 import { umbilicalFissureSdf, type UmbilicalFissure } from './liverLigaments';
 
 /**
@@ -26,7 +26,7 @@ export interface VisceralPlane {
 /** Unión suave de los lóbulos (mm). */
 export const LIVER_BLEND_MM = 30;
 /** Separación mínima hígado–riñón (impresión renal, mm) y redondeo de su borde. */
-export const RENAL_IMPRESSION = { mm: 4, roundMm: 8 } as const;
+export const RENAL_IMPRESSION = { roundMm: 8 } as const;
 /** Redondeo del borde de la fosa vesicular (mm). */
 export const GALLBLADDER_FOSSA_ROUND_MM = 2;
 
@@ -50,7 +50,6 @@ export interface LiverShape {
   readonly liverLeft: Ellipsoid;
   readonly liverBlendMm: number;
   readonly visceralPlane: VisceralPlane;
-  readonly renalImpressionMm: number;
   readonly kidneyRight: Kidney;
   readonly gallbladder: GallbladderShape;
   readonly gallbladderWallMm: number;
@@ -66,8 +65,12 @@ export function visceralPlaneDistance(m: Vec3, vp: VisceralPlane): number {
 export function liverBaseSdf(m: Vec3, s: LiverShape): number {
   let d = smoothMin(sdEllipsoid(m, s.liver), sdEllipsoid(m, s.liverLeft), s.liverBlendMm);
   d = smoothMax(d, -visceralPlaneDistance(m, s.visceralPlane), s.visceralPlane.edgeRoundMm);
-  const dk = kidneyOuterSdf(kidneyLocal(m, s.kidneyRight), s.kidneyRight);
-  d = smoothMax(d, -(dk - s.renalImpressionMm), RENAL_IMPRESSION.roundMm);
+  // impresión renal: el hígado apoya en la cara externa de la grasa perirrenal, de grosor variable (decisión 68)
+  d = smoothMax(
+    d,
+    -(perirenalOuterSdf(kidneyLocal(m, s.kidneyRight), s.kidneyRight) + RENAL_IMPRESSION_OVERLAP_MM),
+    RENAL_IMPRESSION.roundMm,
+  );
   d = smoothMax(d, -(gallbladderSdf(m, s.gallbladder) - s.gallbladderWallMm), GALLBLADDER_FOSSA_ROUND_MM);
   return d;
 }
@@ -88,6 +91,7 @@ export function liverSdf(m: Vec3, s: LiverShape): number {
  */
 export const LIVER_GLSL = /* glsl */ `
 const float RENAL_IMPRESSION_ROUND_MM = ${RENAL_IMPRESSION.roundMm.toFixed(3)};
+const float RENAL_IMPRESSION_OVERLAP_MM = ${RENAL_IMPRESSION_OVERLAP_MM.toFixed(3)};
 const float GALLBLADDER_FOSSA_ROUND_MM = ${GALLBLADDER_FOSSA_ROUND_MM.toFixed(3)};
 
 float visceralPlaneDistance(vec3 m) {
@@ -103,7 +107,7 @@ float liverSdf(vec3 m, out vec3 n, out float dBase) {
   float d2 = smoothMax(d, -visceralPlaneDistance(m), uVisceral.z);
   if (d2 > d + 1e-3) n = normalize(vec3(0.0, -uVisceral.y, -1.0));
   vec3 kn;
-  float dk = kidneyOuter(m, 0, kn) - uVisceral.w;
+  float dk = kidneyOuter(m, 0, kn) - perirenalThicknessMm(kidneyLocal(m, 0), 0) + RENAL_IMPRESSION_OVERLAP_MM;
   float d3 = smoothMax(d2, -dk, RENAL_IMPRESSION_ROUND_MM);
   if (d3 > d2 + 1e-3) n = -kn;
   vec3 gn;
@@ -122,7 +126,7 @@ float liverSdf(vec3 m, out float dBase) {
   float dL = sdEllipsoid(m, uLiverLC, uLiverLR, uLiverLTaper, ln);
   float d = smoothMin(dR, dL, uLiverBlend);
   float d2 = smoothMax(d, -visceralPlaneDistance(m), uVisceral.z);
-  float dk = kidneyOuterSdf(kidneyLocal(m, 0), uKidR[0]) - uVisceral.w;
+  float dk = kidneyOuterSdf(kidneyLocal(m, 0), uKidR[0]) - perirenalThicknessMm(kidneyLocal(m, 0), 0) + RENAL_IMPRESSION_OVERLAP_MM;
   float d3 = smoothMax(d2, -dk, RENAL_IMPRESSION_ROUND_MM);
   float dg = gallbladderSdf(m) - uGbExtra.y;
   float d4 = smoothMax(d3, -dg, GALLBLADDER_FOSSA_ROUND_MM);

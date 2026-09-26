@@ -138,9 +138,10 @@ export const TISSUES: TissueProps[] = [
   // cartílago hialino: homogéneo e hipoecoico (≈ 0,15), con el pericondrio como cara (decisión 62)
   { name: 'cartílago costal', c: 1640, rho: 1100, alpha1: 0.9, b: 1, backscatter: 0.15, gas: false, bone: false },
   // Riñón (IT'IS: c 1560, ρ 1066, α 0,7·f^1,0). Corteza iso/ligeramente hipoecoica al hígado;
-  // médula (pirámides) hipoecoica; seno = grasa + vasos, marcadamente ecogénico (E.3, B.5).
+  // médula (pirámides) hipoecoica pero no negra, tenue en el adulto (−4,6 dB bajo la corteza; decisión 68); seno =
+  // grasa + vasos, marcadamente ecogénico (E.3, B.5).
   { name: 'corteza renal', c: 1560, rho: 1066, alpha1: 0.7, b: 1, backscatter: 0.72, gas: false, bone: false },
-  { name: 'médula renal', c: 1560, rho: 1066, alpha1: 0.6, b: 1, backscatter: 0.3, gas: false, bone: false },
+  { name: 'médula renal', c: 1560, rho: 1066, alpha1: 0.6, b: 1, backscatter: 0.42, gas: false, bone: false },
   { name: 'seno renal', c: 1480, rho: 950, alpha1: 0.5, b: 1.1, backscatter: 2.3, gas: false, bone: false, speckleClump: 1.0 },
   { name: 'grasa perirrenal', c: 1450, rho: 920, alpha1: 0.45, b: 1.1, backscatter: 1.5, gas: false, bone: false, speckleClump: 0.8 },
   { name: 'pared de vía biliar', c: 1586, rho: 1079, alpha1: 0.7, b: 1, backscatter: 2.4, gas: false, bone: false },
@@ -152,7 +153,9 @@ export const TISSUES: TissueProps[] = [
   // Ligamento venoso: lámina fibrosa fina, muy ecogénica (línea brillante delante del caudado)
   { name: 'ligamento venoso', c: 1600, rho: 1100, alpha1: 0.8, b: 1, backscatter: 2.6, gas: false, bone: false },
   // Cápsula renal fibrosa (línea brillante que delimita el riñón) y pelvis con orina (anecoica)
-  { name: 'cápsula renal', c: 1600, rho: 1100, alpha1: 0.8, b: 1, backscatter: 2.4, gas: false, bone: false },
+  // cápsula renal: la línea la da sobre todo su cara especular (brilla de frente y se apaga en los bordes); la banda
+  // difusa de 0,6 mm, más tenue (decisión 68: con 2,4 brillaba igual a cualquier incidencia, como un trazo)
+  { name: 'cápsula renal', c: 1600, rho: 1100, alpha1: 0.8, b: 1, backscatter: 1.4, gas: false, bone: false },
   { name: 'pelvis renal (orina)', c: 1482, rho: 994, alpha1: 0.0022, b: 1, backscatter: 0.002, gas: false, bone: false },
 ];
 

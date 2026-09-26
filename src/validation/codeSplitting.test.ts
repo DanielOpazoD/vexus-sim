@@ -6,12 +6,13 @@ import { describe, expect, it } from 'vitest';
  * Carga diferida: estos módulos viajan en su propio chunk y el chunk principal no los debe arrastrar. Un `import`
  * estático (que no sea `import type`) desde el código de la aplicación los metería en él sin que nada falle, salvo el
  * presupuesto del bundle mucho después. Los ganchos de prueba solo se cargan con `?e2e` o en desarrollo; el navegador
- * 3D (three.js) tras el primer cuadro; la pestaña Docente solo en modo docente.
+ * 3D (three.js) y el mapa del plano tras el primer cuadro; la pestaña Docente solo en modo docente.
  */
 const LAZY: Array<{ module: RegExp; name: string }> = [
   { module: /\/testHooks['"]/, name: 'testHooks' },
   { module: /\/navigator3d['"]/, name: 'navigator3d' },
   { module: /\/panel\/teacherTab['"]/, name: 'teacherTab' },
+  { module: /\/cutMapView['"]/, name: 'cutMapView' },
 ];
 
 const SRC = join(__dirname, '..');

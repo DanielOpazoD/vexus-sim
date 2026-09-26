@@ -139,6 +139,22 @@ export class PhysiologyEngine {
     return this.history;
   }
 
+  /**
+   * Pulso de la mesentérica superior en ayunas (decisión 69, revisión): lecho de alta resistencia, trifásico, con el pico
+   * sistólico, un reflujo protodiastólico breve (≈ 0,1 s, hasta −0,25 del pico) y un flujo telediastólico bajo (≈ 0,12 del
+   * pico, con la cola del latido siguiente): IR ≈ 0,88 (normal en ayunas 0,85–0,9; tras comer baja a ~0,7 y el reflujo
+   * desaparece). En unidades del pico; la forma escala con el RR como la de `arterialPulse`.
+   */
+  private mesentericFastingPulse(t: number): number {
+    let v = 0.07;
+    for (const b of this.rhythm.beatsAround(t)) {
+      const s = Math.sqrt(b.rr / 0.8);
+      const tau = t - b.tR;
+      v += 0.93 * gauss(tau - 0.12 * s, 0.05 * s) - 0.32 * gauss(tau - 0.28 * s, 0.035 * s);
+    }
+    return v;
+  }
+
   /** Factor pulsátil arterial ∈ ≈[−0,35, 1], centrado en media ≈ 0. */
   private arterialPulse(t: number): number {
     let v = -0.3;
@@ -236,8 +252,9 @@ export class PhysiologyEngine {
           // Aorta: caudal descendente ilustrativo (no forma parte de VExUS).
           q = 60 + 90 * this.arterialPulse(t);
           break;
-        // Ramas viscerales (decisión 69, ilustrativas): celíaco ≈ 0,6 L/min, esplénica ≈ 0,3, AMS en ayunas ≈ 0,5; con el
-        // mismo pulso de baja resistencia que la hepática
+        // Ramas viscerales (decisión 69, ilustrativas): celíaco ≈ 0,6 L/min y esplénica ≈ 0,3, con el pulso de baja
+        // resistencia de la hepática; AMS en ayunas ≈ 0,25 L/min con el suyo, trifásico de alta resistencia (pico ≈ 1,5 m/s en
+        // el eje)
         case 'celiacTrunk':
           q = 10 * (1 + 1.1 * this.arterialPulse(t));
           break;
@@ -245,7 +262,7 @@ export class PhysiologyEngine {
           q = 5 * (1 + 1.1 * this.arterialPulse(t));
           break;
         case 'sma':
-          q = 8 * (1 + 1.4 * this.arterialPulse(t));
+          q = 22 * this.mesentericFastingPulse(t);
           break;
         case 'renalArteryRight':
         case 'renalArteryLeft':

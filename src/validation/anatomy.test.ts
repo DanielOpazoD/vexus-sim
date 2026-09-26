@@ -23,7 +23,7 @@ import {
   perirenalThicknessMm,
   sdRoundCone,
 } from '../anatomy/organs/kidney';
-import { sdEllipsoidLocal, tubeQuery } from '../anatomy/primitives';
+import { sdEllipsoidLocal, sdSpine, tubeQuery } from '../anatomy/primitives';
 import { renalPatternFromPeaks } from '../vexus/classification';
 import { VESSEL_META } from '../physiology/vessels';
 import { BRANCH_MAX_RADIUS_SCALE } from '../anatomy/vesselTree';
@@ -135,7 +135,8 @@ describe('Anatomía implícita (base B)', () => {
 
   it('ningún vaso ni conducto atraviesa la luz o la pared de la vesícula (decisión 67)', () => {
     // Antes la suprahepática media nacía en la fosa y cruzaba 34 mm de la luz (726 mm³, hasta 5,4 mm dentro): la
-    // vena se dibujaba con flujo dentro de la bilis. Solo el cístico toca el cuello, donde nace.
+    // vena se dibujaba con flujo dentro de la bilis. Solo el cístico toca el cuello, donde nace: el colédoco (antes
+    // 1,4 mm dentro de la pared del cuello, con su luz a 1 mm de la bilis, decisión 69) y los hepáticos, nunca.
     for (const p of CASES) {
       const sc = new AnatomyScene(p);
       const gb = sc.gallbladder;
@@ -148,14 +149,17 @@ describe('Anatomía implícita (base B)', () => {
             const m: V = [x, y, z];
             if (sc.faceSdf(m, BASELINE_CALIBER, 'gallbladder')! >= sc.gallbladderWallMm) continue;
             const t = sc.faceTube(m, BASELINE_CALIBER);
-            if (!t) continue;
-            const id = t.vessel ?? 'conducto';
-            inside.set(id, (inside.get(id) ?? 0) + 1);
+            if (t?.vessel) inside.set(t.vessel, (inside.get(t.vessel) ?? 0) + 1);
+            // cada conducto por separado, con su luz y su pared (la clasificación solo ve el que gana)
+            for (const d of sc.ducts)
+              if (tubeQuery(m, d.tube, 1).d < d.wallMm) inside.set(`conducto ${d.id}`, (inside.get(`conducto ${d.id}`) ?? 0) + 1);
           }
-      const vessels = [...inside].filter(([id]) => id !== 'conducto');
-      expect(vessels, p.id).toEqual([]);
+      expect(
+        [...inside].filter(([id]) => id !== 'conducto cysticDuct'),
+        p.id,
+      ).toEqual([]);
       // el cístico solo entra en la punta del cuello
-      expect(inside.get('conducto') ?? 0, p.id).toBeLessThan(60);
+      expect(inside.get('conducto cysticDuct') ?? 0, p.id).toBeLessThan(60);
     }
     // la suprahepática media corre por encima de la fosa, a ≥ 5 mm de la pared aun con el calibre máximo
     const hvm = scene.vessels.find((v) => v.id === 'hvMiddle')!;
@@ -245,6 +249,65 @@ describe('Anatomía implícita (base B)', () => {
         }
       expect(clearance, other).toBeGreaterThan(2);
     }
+    // holguras entre paredes (≥ 0) de los pares que chocaban (revisión de la decisión 69): la vena renal izquierda con la
+    // aorta (3,45 mm de su luz dentro de la aórtica, sin pared entre ambas) y con la AMS en la pinza; la hepática con el
+    // cístico (−0,8 mm entre luces) y con el colédoco (−2,8 mm)
+    const tubeDef = (id: string) => {
+      const v = scene.vessels.find((x) => x.id === id && x.flowFactor === undefined);
+      if (v) return { tube: v.tube, wall: (r: number) => wallThicknessMm(v, r) };
+      const d = scene.ducts.find((x) => x.id === id)!;
+      return { tube: d.tube, wall: () => d.wallMm };
+    };
+    const wallGap = (a: string, b: string) => {
+      const [A, B] = [tubeDef(a), tubeDef(b)];
+      let gap = Infinity;
+      const n = A.tube.nodes;
+      for (let i = 0; i < n.length - 1; i++)
+        for (let k = 0; k <= 100; k++) {
+          const t = k / 100;
+          const q = [0, 1, 2].map((j) => n[i].p[j] + (n[i + 1].p[j] - n[i].p[j]) * t) as [number, number, number];
+          const r = n[i].r + (n[i + 1].r - n[i].r) * t;
+          const h = tubeQuery(q, B.tube, 1);
+          gap = Math.min(gap, h.d - B.wall(h.r) - r - A.wall(r));
+        }
+      return gap;
+    };
+    for (const [a, b] of [
+      ['renalVeinLeft', 'aorta'],
+      ['renalVeinLeft', 'sma'],
+      ['cysticDuct', 'hepaticArtery'],
+      ['hepaticArtery', 'cbd'],
+    ] as const)
+      expect(Math.min(wallGap(a, b), wallGap(b, a)), `${a} × ${b}`).toBeGreaterThanOrEqual(0);
+    // la pinza aortomesentérica: 10–28 mm entre las luces de la aorta y de la AMS donde la cruza la vena renal izquierda
+    // (antes 8), con la vena más estrecha allí que junto al hilio
+    const lrv = tubeOf('renalVeinLeft').nodes;
+    const clamp = lrv.reduce((best, n) =>
+      Math.abs(n.p[0] - axisAt('aorta', n.p[2])[0]) < Math.abs(best.p[0] - axisAt('aorta', best.p[2])[0]) ? n : best,
+    );
+    const radiusAt = (id: string, z: number) => {
+      const n = tubeOf(id).nodes;
+      const i = n.findIndex((a, j) => j < n.length - 1 && (a.p[2] - z) * (n[j + 1].p[2] - z) <= 0);
+      return n[i].r + ((n[i + 1].r - n[i].r) * (z - n[i].p[2])) / (n[i + 1].p[2] - n[i].p[2]);
+    };
+    const ao = axisAt('aorta', clamp.p[2]);
+    const sm = axisAt('sma', clamp.p[2]);
+    const amd = Math.hypot(sm[0] - ao[0], sm[1] - ao[1]) - radiusAt('aorta', clamp.p[2]) - radiusAt('sma', clamp.p[2]);
+    expect(amd).toBeGreaterThan(10);
+    expect(amd).toBeLessThan(28);
+    expect(clamp.r).toBeLessThan(lrv[1].r);
+    // la aorta apoya en la cara anterior izquierda de la vértebra sin hundirse en ella (antes su luz entraba 4,8 mm y el
+    // 9 % de ella se clasificaba como vértebra, que va antes que los tubos)
+    const aorta = scene.vessels.find((v) => v.id === 'aorta')!;
+    let spineGap = Infinity;
+    const an = aorta.tube.nodes;
+    for (let i = 0; i < an.length - 1; i++)
+      for (let k = 0; k <= 100; k++) {
+        const t = k / 100;
+        const q = [0, 1, 2].map((j) => an[i].p[j] + (an[i + 1].p[j] - an[i].p[j]) * t) as [number, number, number];
+        spineGap = Math.min(spineGap, sdSpine(q, scene.spine) - (an[i].r + (an[i + 1].r - an[i].r) * t) - aorta.wallMm);
+      }
+    expect(spineGap).toBeGreaterThanOrEqual(0);
   });
 
   it('suprahepáticas: tres troncos, tributarias y tronco común que desemboca en la cava', () => {

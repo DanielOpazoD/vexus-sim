@@ -426,10 +426,11 @@ test('ecos de interfaz: paredes y cápsula brillan y el espejo diafragmático no
         tubePeaks.push(r.peakDb);
     for (const bin of d.diaphragm.filter((b) => b.walls >= 5)) {
       seen.diaphragm++;
-      // ≤ 2 % de costuras; con pocos registros en el tramo (17 en la subxifoidea desde la decisión 69) una sola ya es el
-      // 6 %: se admite una aislada (con GPU real la misma vista da 0 costuras; con SwiftShader, una por un valle del moteado
-      // del espejo justo tras la línea)
-      expect(bin.seamFraction * bin.walls, tag).toBeLessThanOrEqual(Math.max(1, 0.02 * bin.walls));
+      // ≤ 2 % de costuras; una aislada solo en un tramo de ≥ 15 registros (17 en la subxifoidea desde la decisión 69, donde
+      // una sola ya es el 6 %: con GPU real la misma vista da 0 costuras; con SwiftShader, una por un valle del moteado del
+      // espejo justo tras la línea). En un tramo más corto, ninguna, como antes
+      const seams = Math.round(bin.seamFraction * bin.walls);
+      expect(seams, tag).toBeLessThanOrEqual(bin.walls >= 15 ? Math.max(1, Math.floor(0.02 * bin.walls)) : Math.floor(0.02 * bin.walls));
       // el desfase del espejo sobre el suelo del banco (su emulación en CPU del espejo de la GPU): a
       // incidencia rasante la referencia del banco toma otro cruce y los dos valen lo mismo (8,6–19,8 mm en
       // la subxifoidea según la fase respiratoria), con la GPU siguiendo al modelo

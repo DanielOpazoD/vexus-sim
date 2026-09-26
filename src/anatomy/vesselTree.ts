@@ -309,60 +309,66 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       0.8,
     ),
     // Decisión 69: hepática común desde el tronco celíaco (T12) hacia la derecha y propia por delante y a la izquierda
-    // de la porta hasta el hilio; antes salía de la aorta 40 mm por debajo de las arterias renales.
+    // de la porta hasta el hilio; antes salía de la aorta 40 mm por debajo de las arterias renales. Sube a la izquierda
+    // del colédoco y cruza el hilio por delante de la confluencia de los hepáticos y por encima del cístico (revisión:
+    // cruzaba el cístico, −0,8 mm entre luces, y el colédoco, −2,8; y corría pegada al hepático derecho)
     artery(
       'hepaticArtery',
       [
-        [[8, -3, -32], 2.6],
+        [[13, -3, -32], 2.6],
         [[-6, -1, -38], 2.5],
         [[-18, 8, -49], 2.4],
-        [[-27, 13, -47], 2.2],
-        [[-33, 10, -42], 2.1],
-        [[-70, 10, -27], 1.7],
+        [[-24.5, 14.5, -45], 2.3],
+        [[-33, 14.5, -38], 2.1],
+        [[-70, 16, -27], 1.7],
       ],
       2.4,
     ),
-    // tronco celíaco: ~12 mm desde la cara anterior de la aorta hasta su bifurcación («gaviota»)
+    // tronco celíaco: desde la cara anterior de la aorta hasta su bifurcación («gaviota»), por delante de ella
     artery(
       'celiacTrunk',
       [
-        [[9.5, -20, -30], 3.3],
-        [[9, -9, -31], 3.2],
-        [[8, -3, -32], 3.0],
+        [[15.5, -14, -30], 3.3],
+        [[14.5, -7.5, -31], 3.2],
+        [[13, -3, -32], 3.0],
       ],
       3.2,
     ),
     artery(
       'splenicArtery',
       [
-        [[8, -3, -32], 2.5],
-        [[22, -5, -29], 2.4],
+        [[13, -3, -32], 2.5],
+        [[24, -5, -29], 2.4],
         [[42, -9, -26], 2.3],
         [[66, -15, -24], 2.2],
       ],
       2.4,
     ),
-    // arteria mesentérica superior: ~12 mm por debajo del celíaco, corre por delante de la aorta; la vena renal
-    // izquierda pasa entre ambas (pinza aortomesentérica)
+    // arteria mesentérica superior: ~12 mm por debajo del celíaco, baja por delante de la aorta; la vena renal
+    // izquierda pasa entre ambas (pinza aortomesentérica, a 13,5 mm entre luces; normal 10–28; antes 8 y la vena
+    // dentro de la aorta)
     artery(
       'sma',
       [
-        [[9.3, -18, -42], 3.3],
-        [[9, -7, -47], 3.2],
-        [[9, -2, -66], 3.0],
-        [[8, -1, -110], 2.6],
-        [[6, 0, -170], 2.2],
+        [[15.5, -17, -42], 3.3],
+        [[15, -6, -48], 3.2],
+        [[15, 4, -62], 3.0],
+        [[14.5, 4.5, -70], 2.9],
+        [[13, 4, -110], 2.6],
+        [[10, 3, -170], 2.2],
       ],
       3.0,
     ),
+    // aorta: apoyada en la cara anterior izquierda del cuerpo vertebral, sin hundirse en él (revisión: su luz entraba
+    // hasta 4,8 mm en la vértebra, que se clasifica antes que los tubos)
     {
       id: 'aorta',
       tube: tube([
-        [[13, -26, 100], 11.5],
-        [[10, -25, 20], 11],
-        [[9, -24, -60], 10.2],
-        [[10, -22, -150], 9.5],
-        [[8, -20, -300], 9],
+        [[17.5, -21.5, 100], 11.5],
+        [[17, -22, 20], 11],
+        [[16.5, -22.5, -60], 10.2],
+        [[14.5, -22, -150], 9.5],
+        [[9.5, -20, -300], 9],
       ]),
       refRadius: 10,
       profileN: 5,
@@ -407,8 +413,11 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       [
         [kw(kL, [0, 8, -5]), 4],
         [hilumVeinL, 4.5],
-        [[40, -19, -62], 5],
-        [[12, -12, -64], 5],
+        // por delante de la aorta y estrechada en la pinza aortomesentérica (r 3), sin tocar la aorta ni la AMS
+        [[40, -17, -63], 4.5],
+        [[27, -7, -63.5], 3.5],
+        [[15, -5.5, -64], 3],
+        [[3, -7.5, -64], 3.5],
         [[-22, -14, -64], 5],
       ],
       5,
@@ -426,11 +435,14 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
   // Vía biliar: colédoco anterolateral a la porta en el ligamento hepatoduodenal,
   // hepáticos derecho e izquierdo por delante de las ramas portales, cístico al cuello.
   const ducts: DuctDef[] = [
+    // colédoco: a la derecha y por delante de la porta; sube medial al cuello de la vesícula (revisión: su luz quedaba a
+    // 1 mm de la bilis, entrando 1,4 mm en la pared del cuello) hasta la confluencia de los hepáticos
     {
       id: 'cbd',
       tube: tube([
         [[-24, 2, -112], 2.8],
         [[-26, 12, -69], 2.8],
+        [[-28.5, 11.5, -50], 2.6],
         [[-36, 8, -39], 2.4],
       ]),
       wallMm: 0.7,

@@ -128,6 +128,39 @@ describe('Fisiología: el VExUS emerge de la señal, no se asigna (guía §5, §
     expect(checked).toBeGreaterThan(4);
   });
 
+  it('AMS en ayunas: trifásica de alta resistencia (IR 0,85–0,9, reflujo protodiastólico breve); el celíaco, de baja', () => {
+    // Antes la AMS tenía el pulso de baja resistencia de la hepática (IR ≈ 0,7 sin reflujo diastólico): el de después de
+    // comer, no el de un examen en ayunas (decisión 69, revisión)
+    const e = run(NORMAL_ADULT, 10);
+    const samples = e.samples.filter((x) => x.t > 3);
+    const dt = e.clock.dt;
+    const beats = new Set(samples.map((x) => x.beatIndex));
+    let checked = 0;
+    for (const b of beats) {
+      const beat = e.rhythm.currentBeat(samples.find((x) => x.beatIndex === b)!.lastR + 1e-6);
+      if (beat.tR < samples[0].t || beat.tR + beat.rr > samples[samples.length - 1].t) continue;
+      const inBeat = samples.filter((x) => x.t >= beat.tR && x.t < beat.tR + beat.rr);
+      const wave = (id: 'sma' | 'celiacTrunk') => {
+        const v = inBeat.map((x) => x.velocities[id]);
+        const peak = Math.max(...v);
+        const edv = v[v.length - 1];
+        return { peak, edv, min: Math.min(...v), ri: (peak - edv) / peak, reversedS: v.filter((x) => x < 0).length * dt };
+      };
+      const sma = wave('sma');
+      expect(sma.ri, `latido ${b}`).toBeGreaterThan(0.85);
+      expect(sma.ri, `latido ${b}`).toBeLessThan(0.92);
+      expect(sma.edv).toBeGreaterThan(0);
+      expect(sma.min).toBeLessThan(-0.1 * sma.peak);
+      expect(sma.reversedS).toBeGreaterThan(0.04);
+      expect(sma.reversedS).toBeLessThan(0.15);
+      const celiac = wave('celiacTrunk');
+      expect(celiac.min).toBeGreaterThan(0);
+      expect(celiac.ri).toBeLessThan(0.75);
+      checked++;
+    }
+    expect(checked).toBeGreaterThan(4);
+  });
+
   it('la apnea espiratoria elimina la variación respiratoria de la VCI sin cambiar la PAD media', () => {
     const apnea = clonePatient(NORMAL_ADULT);
     apnea.respiratoryPattern = 'apnea-expiratory';

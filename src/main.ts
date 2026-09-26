@@ -18,7 +18,7 @@ import { HeartRateDisplay, hudText, renderLines } from './ui/controllers/hud';
 import { bindCine } from './ui/controllers/cine';
 import { bindImageClick } from './ui/controllers/imageClick';
 import { buildLayerMenu } from './ui/controllers/layerMenu';
-import { CutMapView } from './ui/cutMapView';
+import type { CutMapView } from './ui/cutMapView';
 import { bindCollapsible, bindPopover } from './ui/disclosure';
 import { SpectrogramView, drawEcg, drawOverlay } from './ui/displays';
 import { MModeView } from './ui/mModeView';
@@ -110,7 +110,15 @@ const banner = new Banner(sectorWrap);
 // --- Vistas ------------------------------------------------------------------
 const spectrogram = new SpectrogramView(spectrumCanvas);
 const mview = new MModeView(mCanvas);
-const cutMap = new CutMapView(cutCanvas);
+// Mapa del plano (el corte del carril izquierdo) con carga diferida, como el navegador 3D: la imagen no lo necesita
+// para su primer cuadro y el chunk principal no carga su código; si falla, la aplicación sigue sin él.
+let cutMap: CutMapView | null = null;
+void import('./ui/cutMapView')
+  .then(({ CutMapView }) => {
+    cutMap = new CutMapView(cutCanvas);
+    cutMap.setLabels(store.get().debug);
+  })
+  .catch((e: unknown) => errorLog.report('corte', e));
 const panel = new ControlPanel($('panel'), sim, store, dispatch);
 session.equipment.subscribe(() => panel.sync());
 const probeAnimator = new ProbeAnimator(
@@ -262,7 +270,7 @@ const layerMenu = buildLayerMenu($<HTMLElement>('layer-menu'), $<HTMLButtonEleme
 /** Modo alumno: sin nombre del caso, sin rótulos en el corte y sin vasos en el 3D. */
 function applyTeacherMode(teacher: boolean): void {
   labelCases(teacher);
-  cutMap.setLabels(teacher);
+  cutMap?.setLabels(teacher);
   nav?.setStudentMode(!teacher);
   layerMenu.setLocked('vessels', !teacher, 'Visible en modo docente');
 }
@@ -372,7 +380,7 @@ function frame(now: number, dt: number): void {
   }
   drawOverlay(overlay, s);
   nav?.draw();
-  if (store.get().torso && !gpu.lost) cutMap.draw(s, now);
+  if (store.get().torso && !gpu.lost) cutMap?.draw(s, now);
   const t = s.physiology.clock.t;
   // el ECG siempre está a la vista (el espectro, solo con PW; la franja M, con el modo M) y comparte con ellos el
   // eje de tiempo; con el cine llevan el cursor de su cuadro y se desplazan con él (decisión 80)
@@ -414,7 +422,7 @@ function frame(now: number, dt: number): void {
     // Comprobación TS ↔ GLSL en vivo (solo docente): mapa GPU vs mapa del Worker, misma rejilla.
     // La lectura GPU es asíncrona: el mapa devuelto se compara con la instantánea CPU anterior.
     if (store.get().debug && store.get().torso && !gpu.lost) {
-      const cpu = cutMap.lastMap;
+      const cpu = cutMap?.lastMap ?? null;
       const gpuMap = cpu ? s.gpuTissueMap(cpu) : null;
       panel.setEquivalence(gpuMap && eqPrevCpu ? compareTissueGrids(eqPrevCpu.map, gpuMap) : null);
       eqPrevCpu = cpu;

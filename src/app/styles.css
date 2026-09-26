@@ -13,7 +13,7 @@
   --border: #242b36;
   --text: #d8dde5;
   --muted: #8b95a5;
-  --faint: #677181;
+  --faint: #7a8494;
   --accent: #5cc8ff;
   --accent-soft: rgba(92, 200, 255, 0.14);
   --accent-ink: #06121c;
@@ -79,7 +79,7 @@ svg {
   stroke-linejoin: round;
 }
 kbd {
-  font: 11px/16px var(--mono);
+  font: 12px/16px var(--mono);
   color: var(--text);
   background: var(--panel-3);
   border-radius: 4px;
@@ -112,7 +112,7 @@ kbd {
   color: var(--accent);
 }
 .chip {
-  font: 700 11px/16px var(--mono);
+  font: 700 12px/16px var(--mono);
   letter-spacing: 0.08em;
   padding: 0 8px;
   border-radius: 4px;
@@ -291,12 +291,17 @@ button.secondary.on {
   width: 24px;
   height: 24px;
 }
-.rail-toggle {
+.rail-heading {
   flex: 1;
   min-width: 0;
+  margin: 0;
+  font: inherit;
+}
+.rail-toggle {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: calc(100% + 8px);
   height: 32px;
   margin-left: -8px;
   padding: 0 8px;
@@ -374,12 +379,6 @@ button.secondary.on {
 .win-card.current .win-ring {
   background: var(--win);
 }
-/* En pantallas bajas las tarjetas pierden el subtítulo (queda en el tooltip) para dejar sitio al 3D */
-@media (max-height: 860px) {
-  .win-sub {
-    display: none;
-  }
-}
 /* Navegador 3D ≈ 60 % y corte ≈ 40 % del alto restante; el corte se pliega */
 .nav-block {
   flex: 3 1 0;
@@ -429,10 +428,10 @@ button.secondary.on {
   top: 40px;
 }
 .menu-cap {
-  font-size: 11px;
+  font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--faint);
+  color: var(--muted);
   padding: 8px 8px 4px;
 }
 .menu label {
@@ -486,6 +485,20 @@ button.secondary.on {
 }
 .keys kbd + kbd {
   margin-left: 2px;
+}
+/* Pantallas bajas: el carril se compacta (cabeceras y tarjetas) para dejar sitio al 3D y al corte. Va después
+   de las reglas que ajusta: una consulta de medios no suma especificidad. */
+@media (max-height: 860px) {
+  .rail-head {
+    height: 32px;
+  }
+  .win-card {
+    padding: 1px 8px;
+  }
+  .menu.down,
+  .popover {
+    top: 32px;
+  }
 }
 
 /* --- centro: la imagen manda; el ECG es una franja fina y el espectro solo aparece con PW -------- */
@@ -550,7 +563,7 @@ button.secondary.on {
   position: absolute;
   left: 8px;
   bottom: 8px;
-  font-size: 11px;
+  font-size: 12px;
   line-height: 16px;
   color: var(--muted);
   background: rgba(0, 0, 0, 0.5);
@@ -648,7 +661,7 @@ button.secondary.on {
   border-radius: 8px;
   background: var(--accent);
   color: var(--accent-ink);
-  font: 700 10px/16px var(--mono);
+  font: 700 12px/16px var(--mono);
 }
 .console-scroll {
   flex: 1;
@@ -672,28 +685,30 @@ button.secondary.on {
   height: 40px;
   margin-bottom: -4px;
 }
-.section-toggle {
+.section-title {
   flex: 1;
   min-width: 0;
+  margin: 0;
+  font: inherit;
+}
+.section-toggle {
   display: flex;
   align-items: center;
   gap: 8px;
+  width: calc(100% + 8px);
   height: 32px;
   margin-left: -8px;
   padding: 0 8px;
   text-align: left;
-  background: transparent;
-}
-.section-toggle:hover {
-  background: var(--panel-2);
-}
-.section-toggle h3 {
-  margin: 0;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--muted);
+  background: transparent;
+}
+.section-toggle:hover {
+  background: var(--panel-2);
 }
 .section-body {
   display: grid;
@@ -727,7 +742,7 @@ button.secondary.on {
   display: none;
   position: absolute;
   z-index: 6;
-  top: 36px;
+  top: 30px;
   left: 0;
   right: 0;
   padding: 8px 12px;
@@ -741,8 +756,12 @@ button.secondary.on {
 }
 .info:hover + .tip,
 .info:focus-visible + .tip,
-.info.show + .tip {
+.info.show + .tip,
+.tip:hover {
   display: block;
+}
+.info.dismissed + .tip {
+  display: none;
 }
 /* Deslizador: rótulo y valor en una fila, la barra debajo a todo el ancho */
 .control {
@@ -847,8 +866,16 @@ input[type='range'] {
 .tgc {
   display: flex;
   justify-content: space-between;
-  height: 112px;
-  padding: 4px 2px;
+  padding: 4px 2px 0;
+}
+.tgc-band {
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+}
+.tgc-band label {
+  font: 12px/16px var(--mono);
+  color: var(--muted);
 }
 .tgc input {
   writing-mode: vertical-lr;
@@ -883,7 +910,7 @@ input[type='range'] {
   color: var(--accent);
 }
 .debug {
-  font: 11px/1.45 var(--mono);
+  font: 12px/16px var(--mono);
   white-space: pre-wrap;
   color: #b7c3cf;
   background: var(--bg);

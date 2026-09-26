@@ -1,6 +1,6 @@
 import { EQUIPMENT_LIMITS } from '../../app/equipment';
 import { COMPOUND } from '../../ultrasound/compound';
-import { button, note, row, slider } from '../controls';
+import { button, controlId, note, row, slider } from '../controls';
 import type { PanelContext } from './context';
 
 /** Mandos básicos de la imagen 2D (profundidad, ganancia, foco), a mano mientras se busca la ventana. */
@@ -102,16 +102,24 @@ export function buildImageAdvanced(ctx: PanelContext, sec: HTMLElement): void {
   note(sec, 'TGC · superficial → profundo');
   const bank = document.createElement('div');
   bank.className = 'tgc';
+  // cada banda con su número debajo (`<label for>`); el nombre accesible dice cuál es y a qué profundidad
   for (let i = 0; i < 8; i++) {
+    const band = document.createElement('div');
+    band.className = 'tgc-band';
     const inp = document.createElement('input');
     inp.type = 'range';
+    inp.id = controlId(`tgc-${i + 1}`);
     inp.min = '-15';
     inp.max = '15';
     inp.step = '1';
     inp.title = `TGC banda ${i + 1} (${i < 4 ? 'superficial' : 'profunda'})`;
     inp.setAttribute('aria-label', inp.title);
     inp.addEventListener('input', () => ctx.dispatch({ type: 'tgc', band: i, db: Number(inp.value) }));
-    bank.appendChild(inp);
+    const l = document.createElement('label');
+    l.htmlFor = inp.id;
+    l.textContent = String(i + 1);
+    band.append(inp, l);
+    bank.appendChild(band);
     ctx.track({ sync: () => (inp.value = String(s().bmode.tgcDb[i])) });
   }
   sec.appendChild(bank);

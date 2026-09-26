@@ -186,7 +186,7 @@ export class MeasureTab {
       m && m.quality.issue ? `<div>${name}: <b>${qualityText(m.quality.issue)}</b></div>` : null;
     const n = (h ? 1 : 0) + (p ? 1 : 0) + (k ? 1 : 0) + (this.ivcCaliperMm !== null ? 1 : 0);
     this.badge.textContent = String(n);
-    this.badge.style.display = n ? '' : 'none';
+    this.badge.hidden = n === 0;
     const gradeTxt =
       res.grade !== null ? `VExUS ${res.grade}` : res.gradeRange ? `VExUS ${res.gradeRange[0]}–${res.gradeRange[1]}` : 'VExUS —';
     const lines = [

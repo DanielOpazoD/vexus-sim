@@ -14,7 +14,10 @@ export function bindCollapsible(toggle: HTMLButtonElement, block: HTMLElement, o
   toggle.addEventListener('click', () => set(block.classList.contains('collapsed')));
 }
 
-/** El botón abre y cierra `pop` (atributo `hidden`); se cierra al pulsar fuera o con Esc. */
+/**
+ * El botón abre y cierra `pop` (atributo `hidden`); se cierra al pulsar fuera o con Esc. El Esc que la cierra no
+ * sigue hasta los atajos de `window` (no cancela una medición armada).
+ */
 export function bindPopover(toggle: HTMLButtonElement, pop: HTMLElement): void {
   const set = (open: boolean): void => {
     pop.hidden = !open;
@@ -29,6 +32,8 @@ export function bindPopover(toggle: HTMLButtonElement, pop: HTMLElement): void {
     if (!pop.hidden && target && !pop.contains(target) && !toggle.contains(target)) set(false);
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && !pop.hidden) set(false);
+    if (e.key !== 'Escape' || pop.hidden) return;
+    set(false);
+    e.stopPropagation();
   });
 }

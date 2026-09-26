@@ -84,6 +84,21 @@ export class ControlPanel implements PanelContext {
     badge.hidden = true;
     this.tabs.get('medir')!.appendChild(badge);
 
+    // Esc descarta el ⓘ que se esté viendo (WCAG 1.4.13) y, si había uno, no sigue hasta los atajos
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      const shown = [...root.querySelectorAll<HTMLElement>('.info')].filter(
+        (i) =>
+          !i.classList.contains('dismissed') &&
+          (i.classList.contains('show') || i.matches(':hover, :focus-visible') || !!i.nextElementSibling?.matches(':hover')),
+      );
+      for (const i of shown) {
+        i.classList.remove('show');
+        i.classList.add('dismissed');
+      }
+      if (shown.length) e.stopPropagation();
+    });
+
     buildAcquireTab(this, this.panels.get('adquirir')!);
     this.doppler = buildDopplerTab(this, this.panels.get('doppler')!);
     this.measure = new MeasureTab(this, this.panels.get('medir')!, badge);
@@ -141,19 +156,23 @@ export class ControlPanel implements PanelContext {
     s.className = 'section';
     const head = document.createElement('div');
     head.className = 'section-head';
+    // patrón acordeón: el encabezado contiene el botón que pliega (un botón no admite un encabezado dentro)
+    const h = document.createElement('h3');
+    h.className = 'section-title';
     const toggle = document.createElement('button');
     toggle.type = 'button';
     toggle.className = 'section-toggle';
     const chevron = document.createElement('span');
     chevron.className = 'chevron';
     chevron.setAttribute('aria-hidden', 'true');
-    const h = document.createElement('h3');
-    h.textContent = title;
-    toggle.append(chevron, h);
-    head.appendChild(toggle);
+    toggle.append(chevron, title);
+    h.appendChild(toggle);
+    head.appendChild(h);
     if (opts.info) head.append(...infoTip(title, opts.info));
     const body = document.createElement('div');
     body.className = 'section-body';
+    body.id = controlId(`seccion-${title}`);
+    toggle.setAttribute('aria-controls', body.id);
     s.append(head, body);
     parent.appendChild(s);
     bindCollapsible(toggle, s, !opts.collapsed);
@@ -206,7 +225,11 @@ function infoTip(title: string, text: string): [HTMLButtonElement, HTMLElement] 
   b.textContent = 'i';
   b.setAttribute('aria-label', `Ayuda: ${title}`);
   b.setAttribute('aria-describedby', tip.id);
-  b.addEventListener('click', () => b.classList.toggle('show'));
-  b.addEventListener('blur', () => b.classList.remove('show'));
+  b.addEventListener('click', () => {
+    b.classList.remove('dismissed');
+    b.classList.toggle('show');
+  });
+  b.addEventListener('blur', () => b.classList.remove('show', 'dismissed'));
+  b.addEventListener('pointerenter', () => b.classList.remove('dismissed'));
   return [b, tip];
 }

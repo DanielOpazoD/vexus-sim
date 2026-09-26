@@ -64,7 +64,7 @@
             </button>
           </div>
           <div id="layer-menu" class="menu down" hidden></div>
-          <div id="nav-help-pop" class="menu popover" role="dialog" aria-label="Cómo mover la sonda" hidden>
+          <div id="nav-help-pop" class="menu popover" role="region" aria-label="Cómo mover la sonda" hidden>
             <h3>En el 3D</h3>
             <dl>
               <dt>Arrastrar la piel</dt>
@@ -109,9 +109,11 @@
         </section>
         <section class="rail-block cut-block" id="cut-block">
           <div class="rail-head">
-            <button id="cut-toggle" class="rail-toggle" aria-controls="cut-body">
-              <span class="chevron" aria-hidden="true"></span><span class="rail-title">Plano de la imagen</span>
-            </button>
+            <h2 class="rail-heading">
+              <button id="cut-toggle" class="rail-toggle" aria-controls="cut-body">
+                <span class="chevron" aria-hidden="true"></span><span class="rail-title">Plano de la imagen</span>
+              </button>
+            </h2>
           </div>
           <div class="cut-map" id="cut-body"><canvas id="cutmap"></canvas></div>
         </section>

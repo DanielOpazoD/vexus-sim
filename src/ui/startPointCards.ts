@@ -5,15 +5,16 @@ import type { ProbePose } from '../probe/probe';
 type StartPointId = StartPoint['id'];
 
 /**
- * Lo que cada tarjeta dice de su ventana: la estructura VExUS y el abordaje en el nombre, y lo que se ve en
- * una línea. La explicación completa (`hint`) queda en el tooltip; el color es el del anillo del 3D.
+ * La línea de cada tarjeta con lo que muestra su ventana, estructura VExUS primero. El nombre es el `label` del
+ * punto de partida, el mismo que rotula su anillo en el 3D (y el color, el del anillo); la explicación completa
+ * (`hint`) queda en el tooltip.
  */
-const CARD_TEXT: Record<StartPointId, { name: string; sub: string }> = {
-  subxiphoid: { name: 'VCI · subxifoidea', sub: 'Eje largo hasta la aurícula derecha' },
-  intercostal: { name: 'Suprahepáticas · lateral', sub: '8.º espacio intercostal, con la VCI' },
-  flank: { name: 'VCI · flanco coronal', sub: 'Suprahepáticas entrando en la VCI' },
-  portal: { name: 'Porta · lateral', sub: 'Porta principal, VCI por detrás' },
-  renal: { name: 'Riñón · flanco', sub: 'Eje largo; PW en una vena interlobar' },
+const CARD_SUB: Record<StartPointId, string> = {
+  subxiphoid: 'VCI en eje largo hasta la AD',
+  intercostal: 'Suprahepáticas y VCI por el hígado',
+  flank: 'VCI coronal con las suprahepáticas',
+  portal: 'Porta principal con la VCI detrás',
+  renal: 'Riñón en eje largo · interlobares',
 };
 
 /** Radio (mm, sobre la piel) dentro del cual la sonda «está» en una ventana; las dos más próximas distan 24 mm. */
@@ -66,7 +67,6 @@ export class StartPointCards {
     private readonly deps: StartPointCardsDeps,
   ) {
     for (const sp of START_POINTS) {
-      const text = CARD_TEXT[sp.id];
       const card = document.createElement('button');
       card.type = 'button';
       card.className = 'win-card';
@@ -76,10 +76,10 @@ export class StartPointCards {
       ring.className = 'win-ring';
       const name = document.createElement('span');
       name.className = 'win-name';
-      name.textContent = text.name;
+      name.textContent = sp.label;
       const sub = document.createElement('span');
       sub.className = 'win-sub';
-      sub.textContent = text.sub;
+      sub.textContent = CARD_SUB[sp.id];
       card.append(ring, name, sub);
       card.addEventListener('click', () => {
         this.target = sp.id;

@@ -3,6 +3,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
+import { glslMinify } from './tools/build/glslMinify';
 
 /**
  * Niveles de prueba (práctica de EchoTwin): un archivo cuya PRIMERA línea es
@@ -37,6 +38,8 @@ function gitCommit(): string {
 const tier = process.env['VITEST_TIER'] ?? 'fast';
 
 export default defineConfig({
+  // el texto de los shaders sin comentarios ni sangría en el build (tools/build/glslMinify.ts)
+  plugins: [glslMinify()],
   define: {
     __APP_VERSION__: JSON.stringify(PKG.version),
     __GIT_COMMIT__: JSON.stringify(process.env['GITHUB_SHA']?.slice(0, 7) ?? gitCommit()),

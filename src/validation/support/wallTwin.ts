@@ -11,7 +11,7 @@
  *    (`restTexture`) y la de los músculos retroperitoneales (`retroTexture`, decisión 81) y el eco
  *    de interfaz (`interfaceEchoField` con `faceGradient` y la coherencia de curvatura de tubos y costillas),
  *    y el transitorio del campo cercano anclado a (línea, r);
- *  - C: gaussiana axial de σ = max(0,6; 0,26/dr) muestras, ±12, energía unidad;
+ *  - C: gaussiana axial de σ = max(0,6; σ_ax(r)/dr) muestras (`axialSigmaMm`, decisión 84), ±12, energía unidad;
  *  - D: gaussiana lateral de σ = max(0,35; σ_PSF/paso de línea) líneas, ±14, energía unidad, envolvente ×2/√π.
  * El modelo `base` es la pared de antes de la decisión 62: retrodispersión 0,55 / 0,5 / 0,6 (grasa, músculo,
  * cartílago), sin grasa preperitoneal (músculo hasta la cara interna), sin caras de pared ni de costilla y
@@ -22,7 +22,7 @@ import { torsoDepth } from '../../anatomy/primitives';
 import type { AnatomyScene, VesselCaliber } from '../../anatomy/scene';
 import { TISSUES, Tissue, attenuationDbPerCm } from '../../anatomy/tissues';
 import { cross, dot, normalize, type Vec3 } from '../../core/vec3';
-import { lateralSigmaMm } from '../../ultrasound/beamModel';
+import { axialSigmaMm, focalGain, frequencyRatio, lateralSigmaMm } from '../../ultrasound/beamModel';
 import { restTexture } from '../../ultrasound/restTexture';
 import { portalTriadGain } from '../../ultrasound/portalTriads';
 import { retroTexture } from '../../ultrasound/retroTexture';
@@ -175,10 +175,16 @@ export function wallTwin(
   const rowR = (i: number): number => (i + 0.5) * dr;
   const pointAt = (dir: Vec3, r: number): Vec3 => [0, 1, 2].map((a) => frame.center[a] + dir[a] * (g.curvatureRadius + r)) as Vec3;
   const pitch = (r: number): number => (g.curvatureRadius + r) * ((2 * g.halfSector) / (L - 1));
-  const kA = unitKernel(Math.max(0.6, 0.26 / dr), 12);
-  const RA = (kA.length - 1) / 2;
   const i0 = Math.max(0, Math.floor(o.r0 / dr));
   const i1 = Math.min(g.samples - 1, Math.ceil(o.r1 / dr));
+  // C: el pulso de cada fila (se alarga con la bajada de la frecuencia central, decisión 84)
+  const kAx = new Map<number, number[]>();
+  let RA = 0;
+  for (let i = i0; i <= i1; i++) {
+    const k = unitKernel(Math.max(0.6, axialSigmaMm(rowR(i), g.beam) / dr), 12);
+    kAx.set(i, k);
+    RA = Math.max(RA, (k.length - 1) / 2);
+  }
   let RL = 0;
   // ecos parásitos del paciente (decisión 76): pedestal de lóbulos laterales y réplicas de reverberación de la pared
   const cp = clutterParams(scene.wallThickness(), scene.torso.fatMm);
@@ -275,7 +281,8 @@ export function wallTwin(
         fi *= k;
       }
       if (!o.noFaces?.includes(c0.interface)) fr += echoOf(scene, caliber, c0, p, dir, r, se, frame, g);
-      const T = Tat(r);
+      // la transmisión y la ganancia focal de la emisión (decisión 84): el eco, no el transitorio
+      const T = Tat(r) * focalGain(r, g.focusMm, g.beam);
       let outR = fr * T;
       let outI = fi * T;
       if (r < TRANSIENT_SKIP_MM && !o.noTransient) {
@@ -311,16 +318,18 @@ export function wallTwin(
       const reps: Array<[number, number]> = [];
       if (shift > 0 && row >= shift && row - shift <= srcMax && g1 > 0) reps.push([shift, g1]);
       if (shift > 0 && row >= 2 * shift && row - 2 * shift <= srcMax && g2 > 0) reps.push([2 * shift, g2]);
-      for (let q = -RA; q <= RA; q++) {
+      const kA = kAx.get(row)!;
+      const Ri = (kA.length - 1) / 2;
+      for (let q = -Ri; q <= Ri; q++) {
         const b = i + top + q;
         const [fr, fi] = rawAt(a, b);
-        sr += kA[q + RA] * fr;
-        si += kA[q + RA] * fi;
+        sr += kA[q + Ri] * fr;
+        si += kA[q + Ri] * fi;
         for (const [d, gain] of reps) {
           const [rr, ri] = rawAt(a, b - d);
           const gate = reverbGateWeight(Math.hypot(rr, ri));
-          sr += gain * kA[q + RA] * rr * gate;
-          si += gain * kA[q + RA] * ri * gate;
+          sr += gain * kA[q + Ri] * rr * gate;
+          si += gain * kA[q + Ri] * ri * gate;
         }
       }
       axR[a * nR + i] = sr;
@@ -384,7 +393,7 @@ function echoOf(
       const lat = normalize(cross(frame.elevation, dir));
       const kl = dot(lat, cu) ** 2 * fg.curvature;
       const ke = dot(frame.elevation, cu) ** 2 * fg.curvature;
-      curv = curvatureCoherence(lateralSigmaMm(r, g.focusMm, g.beam), se * Math.SQRT1_2, kl, ke, K0);
+      curv = curvatureCoherence(lateralSigmaMm(r, g.focusMm, g.beam), se * Math.SQRT1_2, kl, ke, K0, frequencyRatio(r, g.beam));
     }
   }
   curv *= wallFaceGain(m, face, scene.torso);

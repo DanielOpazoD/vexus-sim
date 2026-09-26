@@ -124,21 +124,35 @@ const steeredOnly = (look: Look, glsl: string): string => (look === 'steered' ? 
 /**
  * PSF lateral de dos vías por número F (`ultrasound/beamModel.ts`: misma fórmula). La comparten la
  * pasada D (su anchura) y la B (la coherencia de curvatura del eco de interfaz, decisión 57). La emisión lleva
- * su λ y su escala (`uBeamTx`): las de recepción y 1 en fundamental; 2λ y 1/√2 en armónica (decisión 77).
+ * su λ y su escala (`uBeamTx`): las de recepción y 1 en fundamental; 2λ y 1/√2 en armónica (decisión 77). Las
+ * dos λ crecen con la profundidad por la bajada de la frecuencia central (decisión 84): λ(r) = λ·(1 + κ·r), con la κ
+ * de emisión y la del eco en `uBeamTx.zw` (el Doppler, 0).
  */
 export const LATERAL_PSF_GLSL = /* glsl */ `
 uniform float uFocus;      // mm
-uniform vec4 uBeam;        // λ·k de recepción (mm), D_tx (mm), D_rx,max (mm), F#_rx,min
-uniform vec2 uBeamTx;      // λ·k de emisión (mm), escala del haz de emisión
-float lateralSigmaMm(float r) {
+uniform vec4 uBeam;        // λ·k de recepción (mm), c·D_tx (cono de emisión, mm), D_rx,max (mm), F#_rx,min
+uniform vec4 uBeamTx;      // λ·k_tx·c de emisión (mm), escala del haz de emisión, κ de emisión y del eco (1/mm)
+// FWHM de los haces de emisión y de recepción de una vía (beamFwhmMm)
+vec2 beamFwhm(float r) {
   float rr = max(1.0, r);
   float F = max(10.0, uFocus);
-  float tx = uBeamTx.y * length(vec2(uBeamTx.x * F / uBeam.y, uBeam.y * abs(rr - F) / F));
+  float tx = uBeamTx.y * length(vec2(uBeamTx.x * (1.0 + uBeamTx.z * rr) * F / uBeam.y, uBeam.y * abs(rr - F) / F));
   float dRx = min(uBeam.z, rr / uBeam.w);
-  float rx = uBeam.x * rr / max(1.0, dRx);
-  float fwhm = inversesqrt(1.0 / (tx * tx) + 1.0 / (rx * rx));
-  return fwhm / 2.3548;
+  return vec2(tx, uBeam.x * (1.0 + uBeamTx.w * rr) * rr / max(1.0, dRx));
 }
+float lateralSigmaMm(float r) {
+  vec2 w = beamFwhm(r);
+  return inversesqrt(1.0 / (w.x * w.x) + 1.0 / (w.y * w.y)) / 2.3548;
+}
+// Ganancia focal de emisión (focalGain): la fracción de la potencia emitida que ve el haz de recepción, s_rx/|s|, en
+// amplitud y relativa a la del foco (solo la pasada B, sobre el eco)
+float focalGain(float r) {
+  vec2 w = beamFwhm(r);
+  vec2 f = beamFwhm(uFocus);
+  return sqrt(w.y * length(f) / (f.y * length(w)));
+}
+// f(r)/f0 del eco: la bajada de la frecuencia central (frequencyRatio)
+float echoFrequency(float r) { return 1.0 / (1.0 + uBeamTx.w * max(r, 0.0)); }
 `;
 
 /**
@@ -550,6 +564,7 @@ vec2 steeredField() {
   float reach = ceil(2.5 * max(0.35, lateralSigmaMm(r) / lineSpacing));
   if ((abs(phiK) - uHalfSector) / (2.0 * uHalfSector / uLinesF) > 0.5 + reach) return vec2(0.0);
   float s = alongLineMm(rho, a, uSteer.z);          // distancia a lo largo del camino dirigido
+  float k2 = uSteer.w * echoFrequency(r);           // la fase de la mirada a la frecuencia del eco (decisión 84)
   float uK = (phiK + uHalfSector) / (2.0 * uHalfSector);
   vec3 dirK = lineDir(alpha + steerBeta(rho, a));   // = lineDir(φ_k + θ): el camino es recto
   ivec2 ts = textureSize(uTrans3, 0);
@@ -600,8 +615,8 @@ vec2 steeredField() {
   // muestra con la fase de la mirada en su punto (σe de la rejilla común: s − r ≤ 0,5 mm)
   vec2 tissue = vec2(0.0);
   if (wTissue >= CURTAIN_MIN_AIR) {
-    vec2 gr = lookPhaseGrad(rho, alpha, a, uSteer.w);
-    tissue = mediumFieldPh(p, dir, s, elevSigma(r), !under, lookPhase(rho, alpha, a, uSteer.w), gr.x * uLateral + gr.y * uAxial);
+    vec2 gr = lookPhaseGrad(rho, alpha, a, k2);
+    tissue = mediumFieldPh(p, dir, s, elevSigma(r), !under, lookPhase(rho, alpha, a, k2), gr.x * uLateral + gr.y * uAxial);
   }
   vec2 air = vec2(0.0);
   int nWall = series ? 2 : 0;
@@ -609,8 +624,8 @@ vec2 steeredField() {
     float d = j == 1 ? ser.y : ser.z;
     float rhoJ = sqrt(uCurvR * uCurvR + d * d + 2.0 * d * uSteer.z);
     float alJ = phiK + uSteer.x - steerBeta(rhoJ, a);
-    vec2 gr = lookPhaseGrad(rhoJ, alJ, a, uSteer.w);
-    vec2 f = wallFieldPh(elem + dirK * d, dirK, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, uSteer.w), gr.x * uLateral + gr.y * uAxial, wD);
+    vec2 gr = lookPhaseGrad(rhoJ, alJ, a, k2);
+    vec2 f = wallFieldPh(elem + dirK * d, dirK, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, k2), gr.x * uLateral + gr.y * uAxial, wD);
     float td = steeredT(phiK, a, min(d, sCap));
     air += f * (j == 1 ? (ser.x + 1.0) * PLEURA_RP * PLEURA_RP * chi * chi * tD * tD / max(td, 1e-6) * gn : (ser.x + 2.0) * td * G * gn);
   }
@@ -653,8 +668,9 @@ vec2 steeredField() {
     if (under && slidingAmplitude(s - sD) * tD * coupling > PLEURA_SERIES_FLOOR) air += slidingField(pD, s - sD, uLookSalt) * tD;
     out2 += air * (fAir * coupling);
   }
-  // la acumulación del armónico (decisión 77) es del eco del tejido, no del transitorio ni del ruido
-  out2 *= harmonicNearGain(s);
+  // la acumulación del armónico (decisión 77) y la ganancia focal (decisión 84) son del eco del tejido, no del
+  // transitorio ni del ruido
+  out2 *= harmonicNearGain(s) * focalGain(s);
   if (s < TRANSIENT_SKIP_MM)
     out2 += scattererField(vec3(uK * 190.0, s * 3.0, 1.0), 0.8, uSeed + 7.0 + uLookSalt) * TRANSIENT_AMPLITUDE * uTransientGain * exp(-s / TRANSIENT_DECAY_MM) * coupling;
   float n1 = hash12b(vUv * 977.0 + uFrame * 1.7);
@@ -884,8 +900,9 @@ void main() {
   // Campo cercano: transitorio del transductor, anclado a la sonda (línea, r), no al tejido. Desde
   // TRANSIENT_SKIP_MM (receiver.ts) su escala es ≤ ruido/10 aquí, antes de la PSF (tras C y D, ≈ ruido/7
   // con 60 mm de profundidad), y no se calcula: un campo de dispersores menos por muestra en casi toda la
-  // profundidad. La acumulación del armónico (decisión 77) es del eco del tejido: antes del transitorio y del ruido.
-  out2 *= harmonicNearGain(r);
+  // profundidad. La acumulación del armónico (decisión 77) y la ganancia focal de la emisión (decisión 84) son del eco
+  // del tejido: antes del transitorio y del ruido.
+  out2 *= harmonicNearGain(r) * focalGain(r);
   if (r < TRANSIENT_SKIP_MM)
     out2 += scattererField(vec3(vUv.x * 190.0, r * 3.0, 1.0), 0.8, uSeed + 7.0) * TRANSIENT_AMPLITUDE * uTransientGain * exp(-r / TRANSIENT_DECAY_MM) * coupling;
   // Ruido del receptor: gaussiano complejo blanco añadido ANTES de la PSF (queda
@@ -914,13 +931,14 @@ export const FRAG_RAWFIELD_STEERED = rawFieldShader('steered');
  * Pasada C: convolución axial gaussiana (pulso) sobre el campo complejo, más las réplicas de reverberación de la
  * pared (decisión 76, `clutter.ts`: `reverbGains`, `reverbGateWeight`): el mismo campo convolucionado, tomado W y 2W
  * texeles enteros más arriba (la réplica aparece más honda), solo de los ecos fuertes y con las ganancias de
- * `uReverb` por la transmisión de ida y vuelta de la línea hasta la pared (`uTrans`, una vez por orden).
+ * `uReverb` por la transmisión de ida y vuelta de la línea hasta la pared (`uTrans`, una vez por orden). El pulso se
+ * alarga con la profundidad (decisión 84, `axialSigmaMm`): σ = max(0,6; uSigmaTexels.x + uSigmaTexels.y·fila).
  */
 export const FRAG_AXIAL = /* glsl */ `#version 300 es
 precision highp float;
 uniform sampler2D uField;
 uniform sampler2D uTrans; // transmisión de ida y vuelta de la mirada (A o0; o3 en las dirigidas), .x
-uniform float uSigmaTexels;
+uniform vec2 uSigmaTexels; // σ axial (texeles) en la fila 0 y su aumento por fila (bajada de la frecuencia, decisión 84)
 uniform vec2 uTexel;
 uniform vec4 uReverb; // desplazamiento W en texeles (entero), ganancias de las réplicas a W y a 2W, fila más honda de sus fuentes
 in vec2 vUv;
@@ -930,8 +948,9 @@ void main() {
   vec2 acc1 = vec2(0.0);
   vec2 acc2 = vec2(0.0);
   float wsum = 0.0;
-  int R = int(ceil(uSigmaTexels * 2.5));
   float row = vUv.y / uTexel.y - 0.5;
+  float sT = max(0.6, uSigmaTexels.x + uSigmaTexels.y * row);
+  int R = int(ceil(sT * 2.5));
   // solo reverbera la pared: la fuente (W o 2W filas más arriba) no pasa de su cara interna (uReverb.w)
   bool rep1 = uReverb.y > 0.0 && uReverb.x > 0.0 && row >= uReverb.x && row - uReverb.x <= uReverb.w;
   bool rep2 = uReverb.z > 0.0 && uReverb.x > 0.0 && row >= 2.0 * uReverb.x && row - 2.0 * uReverb.x <= uReverb.w;
@@ -940,7 +959,7 @@ void main() {
   // anchura del pulso; los ecos coherentes se ensanchan y ganan con ella.
   for (int k = -12; k <= 12; k++) {
     if (k < -R || k > R) continue;
-    float w = exp(-0.5 * pow(float(k) / uSigmaTexels, 2.0));
+    float w = exp(-0.5 * pow(float(k) / sT, 2.0));
     vec2 uv = vUv + vec2(0.0, float(k) * uTexel.y);
     acc += w * texture(uField, uv).rg;
     // solo reverberan los ecos fuertes (caras especulares): umbral suave sobre el módulo del campo en bruto

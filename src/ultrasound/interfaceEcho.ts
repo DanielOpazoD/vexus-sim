@@ -83,9 +83,18 @@ export function roughnessCoherence(cosI: number, sigmaZMm: number, k0: number): 
 /**
  * Coherencia de curvatura de un haz gaussiano de dos vías (σl lateral, σe elevacional) sobre una cara
  * de curvaturas κl y κe en esas direcciones (fase estacionaria): [(1+(2k0σl²κl)²)(1+(2k0σe²κe)²)]^(−1/4).
+ * `lateralFrequency` (f(r)/f0, decisión 84) lleva el término lateral a la frecuencia del eco, que baja con la
+ * profundidad como la σl de `beamModel.ts`; la elevación, sin bajada, sigue a la nominal.
  */
-export function curvatureCoherence(sigmaLatMm: number, sigmaElevMm: number, kappaLat: number, kappaElev: number, k0: number): number {
-  const al = 2 * k0 * sigmaLatMm * sigmaLatMm * kappaLat;
+export function curvatureCoherence(
+  sigmaLatMm: number,
+  sigmaElevMm: number,
+  kappaLat: number,
+  kappaElev: number,
+  k0: number,
+  lateralFrequency = 1,
+): number {
+  const al = 2 * k0 * lateralFrequency * sigmaLatMm * sigmaLatMm * kappaLat;
   const ae = 2 * k0 * sigmaElevMm * sigmaElevMm * kappaElev;
   return ((1 + al * al) * (1 + ae * ae)) ** -0.25;
 }
@@ -196,7 +205,7 @@ float tubeCurvature(Cls c, vec3 n, vec3 dir, float r, float se) {
   float sE = se * 0.70710678;                         // elevSigma es de una vía
   float kl = dot(lat, circ); kl = kl * kl * c.kc;
   float ke = dot(uElev, circ); ke = ke * ke * c.kc;
-  float al = 2.0 * uIfaceK0 * sl * sl * kl;
+  float al = 2.0 * uIfaceK0 * echoFrequency(r) * sl * sl * kl; // lateral a la frecuencia del eco (decisión 84)
   float ae = 2.0 * uIfaceK0 * sE * sE * ke;
   return inversesqrt(sqrt((1.0 + al * al) * (1.0 + ae * ae)));
 }

@@ -91,7 +91,7 @@ import type { Simulator } from '../app/simulator';
 import { AnatomyQuery } from '../anatomy/query';
 import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient } from '../physiology/patientState';
-import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
+import { bmodeBeam, CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import { rng } from './syntheticSpeckle';
 import { emptyGrid } from './support/segmentGrid';
 
@@ -408,16 +408,17 @@ describe('borde blando de la cortina: fracción de aire del haz', () => {
         const th = -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * (i + 0.5)) / CONVEX_C35.lines;
         const dir = lineDirection(fr, th);
         const lat = normalize(cross(fr.elevation, dir));
-        for (const D of [20, 30, 50]) {
-          const sg = curtainEdgeSigmaMm(
-            elevSigmaMm(D, CONVEX_C35.elevationFocusMm) * Math.SQRT1_2,
-            lateralSigmaMm(D, 90, CONVEX_BEAM),
-            fr.elevation[2],
-            lat[2],
-          );
-          expect(edgeWidth1090Mm(sg), `${id} línea ${i} D ${D}`).toBeGreaterThanOrEqual(5);
-          expect(edgeWidth1090Mm(sg), `${id} línea ${i} D ${D}`).toBeLessThanOrEqual(15);
-        }
+        for (const D of [20, 30, 50])
+          for (const harmonic of [false, true]) {
+            const sg = curtainEdgeSigmaMm(
+              elevSigmaMm(D, CONVEX_C35.elevationFocusMm, harmonic) * Math.SQRT1_2,
+              lateralSigmaMm(D, 90, bmodeBeam(CONVEX_C35_PROFILE, { harmonic })),
+              fr.elevation[2],
+              lat[2],
+            );
+            expect(edgeWidth1090Mm(sg), `${id} línea ${i} D ${D}`).toBeGreaterThanOrEqual(5);
+            expect(edgeWidth1090Mm(sg), `${id} línea ${i} D ${D}`).toBeLessThanOrEqual(15);
+          }
       }
     }
     // el borde sigue al descenso de la cortina: 10 mm de respiración tranquila mueven dz 10 mm
@@ -500,13 +501,13 @@ describe('clasificación sin la cortina (gemelo de classifyWith(m, false))', () 
     expect(PLEURA_GLSL).toContain('vec2 f1 = sampleSide(p + uElev * se, se, c, withCurtain, w);');
     expect(FRAG_RAWFIELD).toContain('vec2 tissue = wTissue >= CURTAIN_MIN_AIR ? mediumField(p, dir, r, elevSigma(r), !under) : vec2(0.0);');
     expect(FRAG_RAWFIELD_STEERED).toContain('vec2 f1 = sampleSidePh(p + uElev * se, se, c, ph0, g, withCurtain, w);');
-    expect(FRAG_RAWFIELD_STEERED).toContain('tissue = mediumFieldPh(p, dir, s, elevSigma(r), !under, lookPhase(rho, alpha, a, uSteer.w)');
+    expect(FRAG_RAWFIELD_STEERED).toContain('tissue = mediumFieldPh(p, dir, s, elevSigma(r), !under, lookPhase(rho, alpha, a, k2)');
     expect(ANATOMY_GLSL).toContain('if (classifyWall(m, c, depth, tn)) return c;');
     expect(PLEURA_GLSL).toContain('if (!classifyWall(m, c, depth, tn)) { c.tissue = T_FAT; c.n = tn; }');
     expect(PLEURA_GLSL).toContain('return field + vec2(WALL_COPY_FACE_GAIN * wallFaceEchoFlat(c, m, dir, w), 0.0);');
     expect(FRAG_RAWFIELD).toContain('vec2 f = wallField(pointOnLine(dir0, d), dir0, elevSigma(d), wD);');
     expect(FRAG_RAWFIELD_STEERED).toContain(
-      'vec2 f = wallFieldPh(elem + dirK * d, dirK, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, uSteer.w)',
+      'vec2 f = wallFieldPh(elem + dirK * d, dirK, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, k2)',
     );
   });
 });
@@ -1029,9 +1030,10 @@ describe('banco de la cortina (fidelity.ts): líneas, hígado puro, borde y desl
       expect(c.D).toBeCloseTo(a0.pleura!.D, 4);
       expect(c.dz).toBeCloseTo(a0.pleura!.dz, 4);
       const lat = normalize(cross(frame.elevation, dir));
+      // la PSF lateral de la imagen B (decisión 84), la que usan la pasada B y el banco
       const sg = curtainEdgeSigmaMm(
         elevSigmaMm(c.D, CONVEX_C35.elevationFocusMm) * Math.SQRT1_2,
-        lateralSigmaMm(c.D, 90, CONVEX_BEAM),
+        lateralSigmaMm(c.D, 90, bmodeBeam(CONVEX_C35_PROFILE, { harmonic: false })),
         frame.elevation[2],
         lat[2],
       );

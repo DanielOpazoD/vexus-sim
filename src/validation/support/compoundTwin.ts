@@ -8,13 +8,17 @@
  *  - B: el medio anclado de tres planos en elevación (`speckleSliceFieldPh`; la mirada 0, `lp` null, es
  *    `speckleSliceField` tal cual), mezclados ½|f₀| + ¼(|f₁| + |f₂|) con la fase del plano central;
  *    elevación σe = 1,6·√(1 + ((r − 80)/45)²) como la pasada B; solo moteado (sin tejido, ruido ni ecos);
- *  - C: gaussiana axial de σ = max(0,6; 0,26/dr) muestras, truncada a ±12 y de energía unidad;
+ *  - C: gaussiana axial de σ = max(0,6; σ_ax(r)/dr) muestras (`axialSigmaMm`, que se alarga con la bajada de la
+ *    frecuencia central, decisión 84), truncada a ±12 y de energía unidad;
  *  - D: gaussiana lateral de σ = max(0,35; σ_PSF/paso de línea) líneas (`lateralSigmaMm`), ±14, energía
  *    unidad, y envolvente ×2/√π.
+ * El haz es el de la imagen B en fundamental (`bmodeBeam`) y la fase de mirada va a la frecuencia del eco
+ * (k2·f(r)/f0), como la pasada B.
  * Sin WebGL ni `probe`/`app` (capa `validation`): el marco de la sonda entra como vectores.
  */
 import { add, scale, type Vec3 } from '../../core/vec3';
-import { CONVEX_BEAM, lateralSigmaMm, type BeamParams } from '../../ultrasound/beamModel';
+import { axialSigmaMm, frequencyRatio, lateralSigmaMm, type BeamParams } from '../../ultrasound/beamModel';
+import { bmodeBeam, CONVEX_C35_PROFILE } from '../../ultrasound/transducerProfile';
 import { speckleSliceFieldPh, type SpeckleAnchorState } from '../../ultrasound/speckleField';
 import { lookPhase, lookPhaseGrad } from '../../ultrasound/steering';
 
@@ -42,7 +46,7 @@ export const TWIN_GEOMETRY: TwinGeometry = {
   elevFocusMm: 80,
   elevSigma0Mm: 1.6,
   latticeMm: 0.42,
-  beam: CONVEX_BEAM,
+  beam: bmodeBeam(CONVEX_C35_PROFILE, { harmonic: false }),
 };
 
 /** Marco de la sonda en el mundo: centro de curvatura, ejes y cara (pivote del ancla). */
@@ -103,12 +107,15 @@ export function lookPatchEnvelopes(
   const dPhi = (2 * g.halfSector) / L;
   const pitch = (r: number) => (g.curvatureRadius + r) * ((2 * g.halfSector) / (L - 1));
   const rowR = (i: number) => (i + 0.5) * dr;
-  const kA = unitKernel(Math.max(0.6, 0.26 / dr), AXIAL_MAX);
-  const RA = (kA.length - 1) / 2;
+  const kAx = new Map<number, number[]>();
   const kLat = new Map<number, number[]>();
+  let RA = 0;
   let RL = 0;
   for (let i = patch.i0; i <= patch.i1; i++) {
     const r = rowR(i);
+    const ka = unitKernel(Math.max(0.6, axialSigmaMm(r, g.beam) / dr), AXIAL_MAX);
+    kAx.set(i, ka);
+    RA = Math.max(RA, (ka.length - 1) / 2);
     const k = unitKernel(Math.max(0.35, lateralSigmaMm(r, g.focusMm, g.beam) / pitch(r)), LATERAL_MAX);
     kLat.set(i, k);
     RL = Math.max(RL, (k.length - 1) / 2);
@@ -131,8 +138,9 @@ export function lookPatchEnvelopes(
         const se = elevSigmaMm(r, g);
         let lp = null;
         if (theta !== 0) {
-          const [gx, gz] = lookPhaseGrad(rho, alpha, theta, g.curvatureRadius, k2);
-          lp = { ph0: lookPhase(rho, alpha, theta, g.curvatureRadius, k2), g: add(scale(frame.lateral, gx), scale(frame.axial, gz)) };
+          const k2r = k2 * frequencyRatio(r, g.beam);
+          const [gx, gz] = lookPhaseGrad(rho, alpha, theta, g.curvatureRadius, k2r);
+          lp = { ph0: lookPhase(rho, alpha, theta, g.curvatureRadius, k2r), g: add(scale(frame.lateral, gx), scale(frame.axial, gz)) };
         }
         const f0 = speckleSliceFieldPh(p, g.latticeMm, se, salt, st, lp);
         let k = 1;
@@ -154,10 +162,12 @@ export function lookPatchEnvelopes(
       for (let i = 0; i < nR; i++) {
         let sr = 0;
         let si = 0;
-        for (let q = -RA; q <= RA; q++) {
+        const ka = kAx.get(patch.i0 + i)!;
+        const Ri = (ka.length - 1) / 2;
+        for (let q = -Ri; q <= Ri; q++) {
           const n = a * wR + i + RA + q;
-          sr += kA[q + RA] * re[n];
-          si += kA[q + RA] * im[n];
+          sr += ka[q + Ri] * re[n];
+          si += ka[q + Ri] * im[n];
         }
         axRe[a * nR + i] = sr;
         axIm[a * nR + i] = si;

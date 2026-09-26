@@ -2176,6 +2176,78 @@ tejido tras la pared es pulmón registran la pleura de tipo 3 (antes, ninguna); 
 anterior y no al lado izquierdo; fuera de la lámina el borde es la inserción del diafragma. `organs.test.ts`: la lámina
 conserva su huella. e2e de la pleura y de la cortina (decisión 61) sin cambiar umbrales.
 
+## 72. Hígado con el borde inferior agudo apoyado en la pared, cara visceral cóncava y el tamaño de la revisión
+
+**Contexto.** El dueño (médico, 25-09-2026): «hay que seguir mejorando la fidelidad a todo nivel: hígado 3D, bordes,
+tamaño, textura». La revisión de anatomía normal (`docs/anatomia/revision-normal.md`, § 2 y tabla de brechas) medía un
+craneocaudal de 12,3–12,6 cm en la medioclavicular (normal 14,0 ± 1,7), el borde izquierdo obtuso (107–161°, normal
+30–45°; el derecho, 45–70°) y el caudado sin forma propia. Medido en cortes sagitales (ángulo entre la punta y el tramo
+conexo 12 mm por encima), todo el borde inferior del sano daba 98–141°. Causa: el hígado era la unión suave de dos
+elipsoides cortada por un plano casi horizontal (pendiente 0,2 en y) con 12 mm de redondeo; bajo el ecuador de los
+elipsoides su cara anterior se curvaba hacia atrás (se separaba 5–29 mm de la pared, con «intestino» entre ambos en el
+epigastrio) y el plano cortaba esa curva en ángulo obtuso. Además, el lóbulo derecho envolvía el tronco celíaco y la
+esplénica (100 % y 36 % de su línea central dentro del hígado).
+**Opciones.** (1) Más pendiente en el plano: agudiza la punta, pero la cara sube 30–50 mm por detrás y el hígado deja de
+cubrir el riñón. (2) Un plano de pendiente fija desde la pared unido al de siempre: un solo ángulo para todo el borde y
+el flanco romo. (3) Un borde que depende del ángulo del tronco: los puntos por detrás de la pared anterior tomaban la
+altura del borde del flanco (su proyección radial) y la falda invadía el interior. (4) Hacer del segmento lateral
+izquierdo una cuña entera hasta la cúpula: queda de 11 mm de grueso a la altura de la porta umbilical (debe tener
+40–60). (5) La elegida: una cara cóncava de tres términos sobre una envolvente que llega a la pared.
+**Decisión.** La cara visceral es una superficie z = z_v(x, y), mínimo suave (6 y 8 mm) de tres términos:
+
+- la cara interior, una cuádrica ajustada a la anatomía: −59 sobre el riñón derecho, −54 en el hilio, −66 sobre la
+  vesícula, −48 a −44 en el lóbulo izquierdo junto a la línea media, y subiendo hacia atrás y a la izquierda en el
+  segmento lateral (−41 a −28);
+- la falda anterior: baja hasta el borde inferior en la cara interna de la pared anterior (cúbica en x: −101 en el
+  ángulo anterolateral, −84 en la medioclavicular derecha, −62 en el epigastrio, −49 y −38 hacia el reborde izquierdo) y
+  sube hacia dentro con la cotangente del ángulo del borde por la profundidad bajo la pared (0,75 en el lóbulo derecho,
+  1,6 en el izquierdo, con una transición suave entre x −60 y 10);
+- la falda lateral: baja en el flanco hasta −112 (junto al polo inferior del riñón, como en la vista de Morison) con
+  cotangente 0,75, y sube deprisa por delante y por detrás del flanco.
+
+Los lóbulos pasan a ser la envolvente, más alta y más adelantada (derecho: centro (−70, −8, −42), 184 × 216 × 290 mm;
+izquierdo: (5, 42, −20), 200 × 90 × 170 mm; unión suave de 15 mm, antes 30): la pared recorta la cara anterior y lateral
+hasta el borde y la cúpula la superior. Un recorte posteromedial deja fuera del hígado el pilar derecho, la aorta, el
+tronco celíaco y la esplénica: la región a la izquierda de x −10, del plano que se abre hacia el lóbulo izquierdo por
+delante y por detrás de y 10. La hepatomegalia congestiva baja la cara interior 3 mm y el borde 2,2 mm por cada 1 % de
+tamaño, reduce las pendientes y aumenta el redondeo: la cara interior baja más que el borde, la falda se acorta y el
+borde se redondea. La suprahepática izquierda, su tributaria y la rama del segmento III de la porta pasan a la cuña del
+segmento lateral. Gemelos TS y GLSL; el gradiente de z_v es analítico, así que la normal de la cara visceral es la
+exacta y no la del plano dominante.
+**Consecuencias.**
+
+- Sano: ángulo del borde de 49–57° en el lóbulo derecho y 34–37° junto a la línea media (antes 98–141°), 51–54° en el
+  borde lateral del flanco (corte coronal). El hígado apoya en la pared hasta la punta (≤ 1,5 mm) y el epigastrio ya no
+  tiene intestino entre la pared y el lóbulo izquierdo.
+- Tamaño: 157 mm de la cúpula a la punta en la medioclavicular en el sano (referencia 14,0 ± 1,7 cm) y 161–181 en la
+  congestión grave; lóbulo izquierdo sobre la aorta de 95 × 69 mm (referencia 8,3 ± 1,7 × 5,7 ± 1,5 cm).
+- Congestión grave: bordes romos (78–88° en el lóbulo derecho y la línea media).
+- Vasos: el tronco celíaco, la esplénica y la aorta quedan fuera del hígado (antes 100 %, 36 % y 14 %). Las
+  suprahepáticas y las ramas izquierdas de la porta quedan dentro (≥ 95 %).
+- La cápsula subxifoidea ya no cambia de dueño bajo la pared: el mayor salto de incidencia entre líneas vecinas pasa de
+  29,8° a 0,36°, así que una de las pruebas de la decisión 60 pasa en esa vista.
+- El 3D del navegador, que usa una malla del mismo SDF, muestra la forma: la cara diafragmática contra la pared, el borde
+  inferior oblicuo del flanco derecho al lóbulo izquierdo y el segmento lateral que se afila.
+- Pendiente:
+  - la textura del parénquima (moteado y tríadas portales);
+  - el caudado como lóbulo propio;
+  - el segmento lateral lejos de la línea media da 44–49° (en el límite), porque su punta apoya en la envolvente y no en
+    la pared;
+  - la hepática y el colédoco del hilio siguen dentro del parénquima (no hay grasa hiliar propia).
+    **Verificación.**
+- `liverShape.test.ts` (nuevo):
+  - ángulos del borde en el sano (40–70° el derecho, ≤ 45° junto a la línea media, ≤ 70° el lateral) y en la congestión
+    grave (≥ 75°);
+  - craneocaudal de 140–165 mm en el sano y ≥ 10 % más en la grave;
+  - lóbulo izquierdo sobre la aorta;
+  - vasos dentro y fuera del hígado;
+  - gradiente analítico frente a diferencias finitas en los tres casos.
+- `anatomy.test.ts` y `couinaud.test.ts`: los puntos de la fisura umbilical, de la rama del segmento III y de los
+  segmentos II y III, movidos a la nueva forma.
+- `fidelityScene.test.ts`: la prueba de la decisión 60 en la subxifoidea pasa de `it.fails` a normal (126 pares, 0,36°).
+- `liverContour.test.ts`: la arista pared|unión de los lóbulos de la subxifoidea ya no existe.
+- e2e de equivalencia TS↔GLSL y de normales.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

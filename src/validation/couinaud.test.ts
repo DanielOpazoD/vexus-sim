@@ -22,8 +22,9 @@ describe('Segmentos de Couinaud', () => {
     expect(seg([-110, -30, 10])).toBe(7);
     expect(seg([-20, 30, -45])).toBe(4);
     expect(seg([-30, 20, 0])).toBe(4);
-    expect(seg([60, 30, -45])).toBe(3);
-    expect(seg([40, 10, 0])).toBe(2);
+    // segmento lateral en cuña (decisión 72): III por delante y abajo, II por detrás y arriba, ambos en parénquima
+    expect(seg([40, 66, -38])).toBe(3);
+    expect(seg([40, 20, 0])).toBe(2);
     expect(seg([-25, -8, -20])).toBe(1);
   });
 

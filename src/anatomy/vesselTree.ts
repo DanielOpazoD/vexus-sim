@@ -201,12 +201,13 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       ],
       2.4,
     ),
-    // Izquierda: cisura intersegmentaria izquierda
+    // Izquierda: cisura intersegmentaria izquierda, dentro de la cuña del segmento lateral (decisión 72: su cara visceral
+    // sube hacia atrás a 35°; antes el extremo quedaba a 30 mm bajo ella)
     thin(
       'hvLeft',
       [
-        [[62, 28, -32], 2.0],
-        [[30, 20, -2], 2.8],
+        [[55, 54, -8], 2.0],
+        [[30, 46, 2], 2.8],
         [[0, 6, 26], 3.6],
         [[-15, 6, 39], 4.0],
         [[-22, 3, 43], 4.0],
@@ -216,9 +217,9 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
     thin(
       'hvLeftTributary',
       [
-        [[30, 42, -50], 1.6],
-        [[22, 26, -10], 2.0],
-        [[15, 11, 12], 2.4],
+        [[28, 66, -26], 1.6],
+        [[18, 56, -10], 2.0],
+        [[10, 14, 14], 2.4],
       ],
       2.0,
     ),
@@ -292,8 +293,9 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       'pvLeftLateral',
       [
         [[8, 30, -38], 2.8],
-        [[38, 32, -22], 2.4],
-        [[66, 30, -8], 1.8],
+        [[16, 62, -18], 2.5],
+        [[30, 66, -16], 2.2],
+        [[58, 58, -4], 1.8],
       ],
       2.4,
       0.8,

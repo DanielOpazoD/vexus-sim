@@ -79,10 +79,24 @@ export const SCENE_UNIFORMS: readonly UniformSpec[] = [
   { name: 'uLiverLTaper', type: 'float', doc: 'afilamiento del lóbulo izquierdo', value: (s) => [s.liverLeft.taperX] },
   { name: 'uLiverBlend', type: 'float', doc: 'unión suave de los lóbulos (mm)', value: (s) => [s.liverBlendMm] },
   {
-    name: 'uVisceral',
+    name: 'uVisInnerA',
     type: 'vec3',
-    doc: 'zAtY0, slopeY, edgeRound (la impresión renal sigue a la grasa perirrenal: decisión 68)',
-    value: (s) => [s.visceralPlane.zAtY0, s.visceralPlane.slopeY, s.visceralPlane.edgeRoundMm],
+    doc: 'cara visceral interior c₀, c₁, c₂ (z = c₀ + c₁x + c₂y + …; decisión 72)',
+    value: (s) => [s.visceralFace.inner[0], s.visceralFace.inner[1], s.visceralFace.inner[2]],
+  },
+  {
+    name: 'uVisInnerB',
+    type: 'vec3',
+    doc: 'cara visceral interior c₃, c₄, c₅ (… + c₃x² + c₄xy + c₅y²)',
+    value: (s) => [s.visceralFace.inner[3], s.visceralFace.inner[4], s.visceralFace.inner[5]],
+  },
+  { name: 'uVisAnt', type: 'vec4', doc: 'borde anterior a₀…a₃ (cúbica en x)', value: (s) => [...s.visceralFace.anterior] },
+  { name: 'uVisLat', type: 'vec4', doc: 'borde lateral derecho l₀…l₃ (en y)', value: (s) => [...s.visceralFace.lateral] },
+  {
+    name: 'uVisSlope',
+    type: 'vec4',
+    doc: 'pendiente del borde anterior (lóbulo dcho., izdo.), del lateral y redondeo de la arista (mm)',
+    value: (s) => [s.visceralFace.tipSlope[0], s.visceralFace.tipSlope[1], s.visceralFace.lateralSlope, s.visceralFace.edgeRoundMm],
   },
   {
     name: 'uFissure',

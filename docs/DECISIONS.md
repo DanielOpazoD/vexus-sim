@@ -1312,9 +1312,10 @@ ganchos); `fidelity.test.ts` y `fidelityScene.test.ts`
 grano, G8 y la guarda de `readEnvelope`) con SwiftShader, y las guardas de una mirada con
 `compound: false` sin tocar sus umbrales.
 
-## 59. Reservada: imagen armónica (THI) [Estado: reservada]
+## 59. Reservada: imagen armónica (THI) [Estado: superada por 77]
 
-Número reservado para la armónica, que la decisión 58 dejó después y aparte; la redacta su rama.
+Número reservado para la armónica, que la decisión 58 dejó después y aparte. La armónica entró como decisión 77, con
+otro diseño (1,75/3,5 MHz, efectos por uniforms) y sin el punto de control A del plan: ver allí por qué.
 
 ## 60. Reservada: hígado sin aristas [Estado: reservada]
 
@@ -2399,6 +2400,93 @@ se dibuja).
 - **`interfaceTwin`:** M3 de la porta a 40° pasa de 1,404 a 1,397 (umbral 1,39): el pedestal reparte −24 dB de la
   energía de la vaina en las líneas vecinas. Sin pedestal vuelve a 1,40, y la ganancia coherente no cambia.
 - **GPU (M4):** capturas de la subxifoidea, la intercostal, la vesícula, el flanco y la renal frente a `main`.
+
+## 77. Armónica tisular: el modo B de un equipo moderno, con su haz, su acumulación y su ruido
+
+**Contexto.** Las referencias reales del banco y del juez ciego son de equipos modernos con armónica tisular (THI) y
+composición espacial (la desviación del gris del hígado, 10–16, está medida en ellas), pero el simulador solo formaba la
+imagen en fundamental (`no-harmonics`), sin el conmutador que un alumno encuentra en cualquier consola. La decisión 76
+dejó preparada la bajada de los ecos parásitos con la armónica. Sustituye a la 59, reservada para la armónica en el plan
+de la composición.
+**Opciones.**
+
+- (1) Una armónica como filtro de «imagen limpia» (menos ruido y menos neblina): no es física, y en un equipo la
+  armónica tiene menos penetración, no más.
+- (2) El diseño del plan (la 59): 2,0/4,0 MHz, acumulación ∫D con el foco en una tabla, penumbra armónica por apertura y
+  atenuación exacta por tejido con una salida más en A1 y dos prefijos en A2. Mucho coste en la cadena A para diferencias
+  de menos de 1 dB a 1,75/3,5 MHz.
+- (3) La elegida: los efectos que cambian lo que se ve, todos por uniforms de los programas de siempre.
+
+**Decisión.** Emisión a 1,75 MHz e imagen con el armónico de 3,5 MHz (`ultrasound/harmonic.ts`).
+
+- (a) **Haz.** La fuente armónica va como p1²: la emisión a λ1 = 2λ se estrecha ÷√2 en difracción y en desenfoque, y la
+  recepción es a la frecuencia nominal de la sonda (`BeamParams.lambdaTxMm` y `txScale`, uniform `uBeamTx` de
+  `LATERAL_PSF_GLSL`; `bmodeBeam`, derivado del perfil).
+  - En elevación, lo mismo con la cintura y el rango de Rayleigh de la lente ×2: la σ equivalente de una vía es √2 × la
+    de dos vías del par (`uElevHarmonic`, gemelo `elevSigmaMm(r, F, true)`; sin `pow` de base negativa).
+  - El lóbulo principal lateral queda ~15 % más ancho en el foco a 90 mm (+25–36 % con el foco a 20–40 mm) e igual o más
+    estrecho fuera. La rodaja es 2–7 % más gruesa entre 24 y 136 mm. Lo que gana la armónica son los lóbulos laterales.
+  - Se supone la misma apertura de emisión efectiva de 26 mm a f1; la directividad de los elementos la ensancharía algo.
+- (b) **Ecos parásitos** de la decisión 76: el pedestal y la primera réplica bajan 12 dB; la segunda, 24 dB (por orden).
+- (c) **Transitorio** del transductor: es de banda fundamental y baja 20 dB (`uTransientGain`).
+- (d) **Acumulación:** el armónico crece como 1 − e^(−r/2 mm) y el preajuste lo compensa desde 4 mm (`uHarmonicNear`).
+  - Se aplica al eco del tejido en la pasada B, por el camino recorrido y antes de sumar el transitorio y el ruido, que
+    no son armónicos: solo la piel queda más oscura (~−7 dB a 1 mm, ~−3 dB a 2 mm).
+  - Con 1 − e^(−r/8 mm) compensada desde 10 mm y aplicada en D (la primera versión), las líneas de la pared de la
+    decisión 62 bajaban hasta 6 dB en el gemelo (subxifoidea, nivel de línea +8,0 → +2,2 dB; revisión adversarial).
+    Con 2/4 mm quedan como en fundamental: +4,7 → cuenta una fascia tenue más que la armónica destapa en una grasa más
+    oscura; las demás líneas no bajan.
+- (e) **Ruido** del receptor: sube 3 dB respecto al eco [ESTIMADO].
+  - Las referencias con THI acotan la subida por arriba: con +6 dB la VCI subxifoidea daba una mediana de 10 de gris,
+    fuera de su rango (0,6–9,6); con +3 dB, 7; con 0 dB, 4, como el fundamental.
+  - El centro de la luz no mejora con la armónica, porque lo domina el ruido y no la neblina: lo que limpia la armónica
+    es la neblina junto a las paredes y el campo cercano.
+- (f) **Atenuación:** la ida paga 2·α(f1) y la vuelta α(2·f1). Con el desplazamiento a bajas de `bEffectiveMHz`,
+  2·α(1,25) + α(2,5) ≈ 2·α(2,5): igual con α lineal en f (b = 1), 0,97–0,98 veces en la pared (b 1,05–1,1), ~0,2 dB
+  menos en sus 28 mm. `bEffectiveMHz` no cambia.
+- (g) **Doppler:** el color y el PW siguen en fundamental.
+
+La aplicación arranca en armónica, como un preajuste abdominal moderno; la e2e sigue en fundamental (la física calibrada
+de sus pruebas, `DEFAULT_BMODE.harmonic = false`) y prueba la armónica aparte. El banco y el juez ciego miden en armónica
+salvo `--harmonic false`: la ronda 3 del juez hace de punto de control, en lugar del punto A del plan. En la consola va en
+Avanzado («Armónica (THI)»); el HUD dice «THI 3,5 MHz». Cambiar de modo reinicia el anillo de miradas del compuesto.
+**Consecuencias.** Banco con GPU (M4, composición encendida), de fundamental a armónica:
+
+- el hígado no cambia: media y desviación 96,4/11,6 → 96,6/11,6 en la subxifoidea;
+- el centro de la luz pasa de 4 a 7 de gris en la subxifoidea y de 5 a 7 en la congestión grave;
+- en el flanco pasa de 14 a 19; esas luces son profundas, las domina el ruido y ya estaban fuera de las referencias en
+  fundamental.
+
+En la e2e, el campo cercano (0,5–4 mm: la piel, la grasa y el transitorio) oscurece, el tejido de 40–100 mm no cambia y
+el ruido sube 3 dB en toda la profundidad (también junto a la sonda: no se acumula). A simple vista la diferencia es
+sutil: a 1,75/3,5 MHz el lóbulo principal apenas cambia. Cambian el campo cercano, el transitorio, la neblina y el ruido
+profundo. Coste: nulo, solo uniforms (B gana 4 ranuras; K, 2). `no-harmonics` pasa a `harmonic-simplified`.
+**Verificación.**
+
+- `harmonic.test.ts`:
+  - el haz fundamental bit a bit el de antes;
+  - el haz armónico derivado del perfil (λ de emisión 2λ, ÷√2, principal +10–20 % en el foco a 90 mm y +25–40 % a
+    20 mm, ≤ +2 % fuera);
+  - la σ elevacional armónica frente a su fórmula de dos vías;
+  - la acumulación monótona de 0 a 1, solo en la piel;
+  - el transitorio −20 dB y el ruido +3 dB;
+  - las fórmulas en el GLSL (la acumulación en B antes del transitorio y del ruido; sin `pow` de base negativa), y que
+    el color no lee nada de la armónica;
+  - el comando del equipo;
+  - el cableado en el renderizador real sobre WebGL falso: los uniforms de siempre en fundamental, y los del haz, la
+    elevación, el transitorio, el ruido, la acumulación y los ecos parásitos en armónica.
+- `compound.test.ts`: cambiar de modo reinicia el anillo.
+- `controllers.test.ts`: el HUD.
+- La e2e `harmonicContrast`:
+  - el campo cercano, el tejido, y el ruido con la sonda levantada, en toda la profundidad y solo en las líneas sin
+    contacto (en la subxifoidea un borde de la cara sigue apoyado en el abdomen curvo);
+  - el conmutador con el HUD;
+  - que la aplicación, sin `?e2e`, arranca en armónica.
+- Guardas actualizadas: la huella del main de B (el transitorio lleva su ganancia y el tejido su acumulación) y las
+  ranuras de K (2n + 13).
+- Capturas con GPU lado a lado en la subxifoidea, la intercostal, el flanco y la congestión grave. La revisión
+  adversarial de contexto limpio halló la acumulación que apagaba la pared, el juez que no capturaba en armónica, el
+  anillo sin reiniciar y el `pow` de base negativa; están corregidos.
 
 ## Iteración 2 — informe de cierre (22-09-2026)
 

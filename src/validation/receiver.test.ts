@@ -153,7 +153,7 @@ describe('Transitorio del campo cercano bajo el ruido del receptor', () => {
   it('la pasada B toma las constantes de TS y, antes del corte, suma el mismo transitorio que antes', () => {
     expect(FRAG_RAWFIELD).toContain(RECEIVER_GLSL);
     expect(FRAG_RAWFIELD.replace(/\s+/g, ' ')).toContain(
-      'if (r < TRANSIENT_SKIP_MM) out2 += scattererField(vec3(vUv.x * 190.0, r * 3.0, 1.0), 0.8, uSeed + 7.0) * TRANSIENT_AMPLITUDE * exp(-r / TRANSIENT_DECAY_MM) * coupling;',
+      'if (r < TRANSIENT_SKIP_MM) out2 += scattererField(vec3(vUv.x * 190.0, r * 3.0, 1.0), 0.8, uSeed + 7.0) * TRANSIENT_AMPLITUDE * uTransientGain * exp(-r / TRANSIENT_DECAY_MM) * coupling;',
     );
     const consts = glslConsts(RECEIVER_GLSL);
     // el float32 del shader es el de TS

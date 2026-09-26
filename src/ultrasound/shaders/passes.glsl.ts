@@ -19,6 +19,7 @@ import { WALL_FACE_ECHO_GLSL, WALL_TEXTURE_GLSL } from '../wallTexture';
 import { REST_TEXTURE_GLSL } from '../restTexture';
 import { CLUTTER, SIDELOBE_PHASE_GLSL } from '../clutter';
 import { RECEIVER_GLSL, glslFloat } from '../receiver';
+import { HARMONIC_GLSL } from '../harmonic';
 import { STEERING_GLSL } from '../steering';
 
 export const VERT = /* glsl */ `#version 300 es
@@ -52,13 +53,23 @@ float lineTheta(float u) { return -uHalfSector + 2.0 * uHalfSector * u; }
 vec3 pointOnLine(vec3 dir, float r) { return uCurvC + dir * (uCurvR + r); }
 `;
 
-/** σ elevacional de una vía de la lente (mm) a la distancia r: la usan B y, por la cortina (decisión 61), K. */
+/**
+ * σ elevacional de una vía de la lente (mm) a la distancia r: la usan B y, por la cortina (decisión 61), K. En
+ * armónica (decisión 77, `harmonic.ts`) la emisión va a λ1 = 2λ (cintura y rango de Rayleigh ×2) con la fuente
+ * ∝ p1² (÷√2) y la recepción a λ: la σ equivalente de una vía es √2 × la de dos vías de ese par. Gemelo:
+ * `elevSigmaMm` de `pleura.ts`.
+ */
 const ELEV_SIGMA_GLSL = /* glsl */ `
 uniform float uElevSigma0;  // σ elevacional en el foco de la lente (mm)
 uniform float uElevFocus;   // mm
+uniform float uElevHarmonic; // 1: armónica (decisión 77)
 float elevSigma(float r) {
   float zr = 45.0;
-  return uElevSigma0 * sqrt(1.0 + pow((r - uElevFocus) / zr, 2.0));
+  float x = (r - uElevFocus) / zr;
+  float s = uElevSigma0 * sqrt(1.0 + x * x);
+  if (uElevHarmonic < 0.5) return s;
+  float sT = 1.41421356 * uElevSigma0 * sqrt(1.0 + 0.25 * x * x);
+  return 1.41421356 * s * sT * inversesqrt(s * s + sT * sT);
 }
 `;
 
@@ -109,15 +120,17 @@ const steeredOnly = (look: Look, glsl: string): string => (look === 'steered' ? 
 
 /**
  * PSF lateral de dos vías por número F (`ultrasound/beamModel.ts`: misma fórmula). La comparten la
- * pasada D (su anchura) y la B (la coherencia de curvatura del eco de interfaz, decisión 57).
+ * pasada D (su anchura) y la B (la coherencia de curvatura del eco de interfaz, decisión 57). La emisión lleva
+ * su λ y su escala (`uBeamTx`): las de recepción y 1 en fundamental; 2λ y 1/√2 en armónica (decisión 77).
  */
 export const LATERAL_PSF_GLSL = /* glsl */ `
 uniform float uFocus;      // mm
-uniform vec4 uBeam;        // λ·k (mm), D_tx (mm), D_rx,max (mm), F#_rx,min
+uniform vec4 uBeam;        // λ·k de recepción (mm), D_tx (mm), D_rx,max (mm), F#_rx,min
+uniform vec2 uBeamTx;      // λ·k de emisión (mm), escala del haz de emisión
 float lateralSigmaMm(float r) {
   float rr = max(1.0, r);
   float F = max(10.0, uFocus);
-  float tx = length(vec2(uBeam.x * F / uBeam.y, uBeam.y * abs(rr - F) / F));
+  float tx = uBeamTx.y * length(vec2(uBeamTx.x * F / uBeam.y, uBeam.y * abs(rr - F) / F));
   float dRx = min(uBeam.z, rr / uBeam.w);
   float rx = uBeam.x * rr / max(1.0, dRx);
   float fwhm = inversesqrt(1.0 / (tx * tx) + 1.0 / (rx * rx));
@@ -632,8 +645,10 @@ vec2 steeredField() {
     if (under && slidingAmplitude(s - sD) * tD * coupling > PLEURA_SERIES_FLOOR) air += slidingField(pD, s - sD, uLookSalt) * tD;
     out2 += air * (fAir * coupling);
   }
+  // la acumulación del armónico (decisión 77) es del eco del tejido, no del transitorio ni del ruido
+  out2 *= harmonicNearGain(s);
   if (s < TRANSIENT_SKIP_MM)
-    out2 += scattererField(vec3(uK * 190.0, s * 3.0, 1.0), 0.8, uSeed + 7.0 + uLookSalt) * TRANSIENT_AMPLITUDE * exp(-s / TRANSIENT_DECAY_MM) * coupling;
+    out2 += scattererField(vec3(uK * 190.0, s * 3.0, 1.0), 0.8, uSeed + 7.0 + uLookSalt) * TRANSIENT_AMPLITUDE * uTransientGain * exp(-s / TRANSIENT_DECAY_MM) * coupling;
   float n1 = hash12b(vUv * 977.0 + uFrame * 1.7);
   float n2 = hash12b(vUv * 613.0 + uFrame * 3.1 + 11.0);
   float rad = sqrt(-2.0 * log(max(1e-6, n1)));
@@ -671,7 +686,7 @@ uniform vec2 uAnchorSalt;
 uniform float uAnchorW;
 // Grumos de dispersores por tejido (decisión 56), de 4 en 4 para no gastar una ranura por tejido
 uniform vec4 uTissueClump4[${TISSUE_VEC4}];
-${RECEIVER_GLSL}
+${RECEIVER_GLSL}${HARMONIC_GLSL}
 in vec2 vUv;
 out vec2 oField;
 ${ELEV_SIGMA_GLSL}${LATERAL_PSF_GLSL}
@@ -851,9 +866,10 @@ void main() {
   // Campo cercano: transitorio del transductor, anclado a la sonda (línea, r), no al tejido. Desde
   // TRANSIENT_SKIP_MM (receiver.ts) su escala es ≤ ruido/10 aquí, antes de la PSF (tras C y D, ≈ ruido/7
   // con 60 mm de profundidad), y no se calcula: un campo de dispersores menos por muestra en casi toda la
-  // profundidad.
+  // profundidad. La acumulación del armónico (decisión 77) es del eco del tejido: antes del transitorio y del ruido.
+  out2 *= harmonicNearGain(r);
   if (r < TRANSIENT_SKIP_MM)
-    out2 += scattererField(vec3(vUv.x * 190.0, r * 3.0, 1.0), 0.8, uSeed + 7.0) * TRANSIENT_AMPLITUDE * exp(-r / TRANSIENT_DECAY_MM) * coupling;
+    out2 += scattererField(vec3(vUv.x * 190.0, r * 3.0, 1.0), 0.8, uSeed + 7.0) * TRANSIENT_AMPLITUDE * uTransientGain * exp(-r / TRANSIENT_DECAY_MM) * coupling;
   // Ruido del receptor: gaussiano complejo blanco añadido ANTES de la PSF (queda
   // limitado en banda por la respuesta de recepción) y antes de la detección.
   float n1 = hash12b(vUv * 977.0 + uFrame * 1.7);

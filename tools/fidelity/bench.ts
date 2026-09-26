@@ -7,12 +7,15 @@
  *   npm run fidelity -- --url http://localhost:6609 --out /tmp/fidelity.json
  *   npm run fidelity -- --sweep            # + banco de interfaces con 4 poses más por vista
  *   npm run fidelity -- --compound false   # la imagen de una mirada (composición espacial apagada)
+ *   npm run fidelity -- --harmonic false   # en fundamental (armónica tisular apagada)
  *
  * La composición espacial (decisión 58) está encendida por defecto, como en la aplicación: el banco llena
  * el anillo de miradas antes de medir y cada escena añade el bloque `compound` (por banda: SNR de la mirada
  * 0 y del compuesto, ρ entre miradas frente a la ley, N_eff, fracción oscura, grietas, razón de grano; la
  * costura con parches de 8 × 48) y el acortamiento de la umbra costal (`shadow.umbraShiftMm`). El coste del
  * cuadro sin color es el medio de las tres miradas; con color el compuesto no se forma (K en paso directo).
+ * La armónica tisular (decisión 77) también está encendida por defecto, como en la aplicación; el JSON dice
+ * con cuál se midió (`armonica`).
  *
  * En las vistas con la cortina pulmonar (intercostal y flanco, decisión 61) añade el bloque `pleura`: las
  * métricas de la pleura parietal y la cortina (`pleuraStats`) en apnea espiratoria y en apnea inspiratoria,
@@ -72,6 +75,8 @@ const OUT = args.get('out') ?? 'docs/fidelity/baseline.json';
 const SWEEP = args.get('sweep') === 'true';
 /** Composición espacial (decisión 58): encendida salvo `--compound false`. */
 const COMPOUND_ON = args.get('compound') !== 'false';
+/** Armónica tisular (decisión 77): encendida salvo `--harmonic false`, como en la aplicación. */
+const HARMONIC_ON = args.get('harmonic') !== 'false';
 /** Poses del barrido de interfaces sobre cada vista (`--sweep`). */
 const SWEEP_POSES = [{ rockDeg: 6 }, { rockDeg: -6 }, { tiltDeg: 6 }, { tiltDeg: -6 }];
 /**
@@ -114,6 +119,8 @@ const results: Record<
     msPerFrameColor: number;
     /** Composición espacial encendida durante la medida (decisión 58). */
     compound: boolean;
+    /** Armónica tisular encendida durante la medida (decisión 77). */
+    armonica: boolean;
     stats: Omit<FidelityStats, 'faceSamples'>;
     sweep?: FaceSummary;
     /** Tramos vigilados por el PR 5b sin 10 registros o sin rosario (del barrido, o de la pose de partida). */
@@ -182,6 +189,7 @@ try {
         .first()
         .click();
       await page.evaluate((on) => window.__vexusTest!.setCompound(on), COMPOUND_ON);
+      await page.evaluate((on) => window.__vexusTest!.setHarmonic(on), HARMONIC_ON);
       await page.evaluate((id) => window.__vexusTest!.goToStartPoint(id), view);
       await page.waitForTimeout(SETTLE_S * 1000);
       const fps = await page.evaluate(() =>
@@ -242,6 +250,7 @@ try {
         msPerFrame,
         msPerFrameColor,
         compound: COMPOUND_ON,
+        armonica: HARMONIC_ON,
         stats,
         ...(sweep ? { sweep } : {}),
         escasos,
@@ -347,6 +356,6 @@ const provenance = {
 mkdirSync(dirname(OUT), { recursive: true });
 writeFileSync(
   OUT,
-  `${JSON.stringify({ ...provenance, fecha: new Date().toISOString().slice(0, 10), gpu, url: URL, compuesto: COMPOUND_ON, escenas: roundDeep(results) }, null, 1)}\n`,
+  `${JSON.stringify({ ...provenance, fecha: new Date().toISOString().slice(0, 10), gpu, url: URL, compuesto: COMPOUND_ON, armonica: HARMONIC_ON, escenas: roundDeep(results) }, null, 1)}\n`,
 );
 console.log(`línea base → ${OUT}`);

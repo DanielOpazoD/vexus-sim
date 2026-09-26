@@ -158,6 +158,8 @@ export function compoundEnvelope(
 export interface CompoundFrameInput {
   /** `compoundActive(bmode, color)`: cambiarlo es un cambio de modo y reinicia. */
   active: boolean;
+  /** Armónica tisular (decisión 77): las miradas guardadas son del otro modo y reinicia. */
+  harmonic: boolean;
   /** Profundidad, foco y líneas: cambiar cualquiera reinicia (las miradas guardadas son de otra rejilla). */
   depthMm: number;
   focusMm: number;
@@ -215,7 +217,7 @@ export class CompoundRing {
 
   /** Mirada del cuadro B que se va a formar; una llamada por cuadro. */
   next(f: CompoundFrameInput): CompoundLook {
-    const key = `${f.active ? 1 : 0}|${f.depthMm}|${f.focusMm}|${f.lines}`;
+    const key = `${f.active ? 1 : 0}|${f.harmonic ? 1 : 0}|${f.depthMm}|${f.focusMm}|${f.lines}`;
     const p = this.pose;
     const jumped =
       p !== null &&

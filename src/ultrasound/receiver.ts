@@ -44,9 +44,14 @@ export function transientScale(rMm: number): number {
  */
 export const glslFloat = (x: number): string => (Number.isInteger(x) ? x.toFixed(1) : String(x));
 
-/** Constantes del transitorio para la pasada B (`FRAG_RAWFIELD`). */
+/**
+ * Constantes del transitorio para la pasada B (`FRAG_RAWFIELD`) y su ganancia: 1 en fundamental; en armónica,
+ * el rechazo de su banda (`transientGain` de `harmonic.ts`, decisión 77). El corte TRANSIENT_SKIP_MM es el
+ * del fundamental: con la ganancia < 1 lo omitido es aún menor.
+ */
 export const RECEIVER_GLSL = /* glsl */ `
 const float TRANSIENT_AMPLITUDE = ${glslFloat(TRANSIENT_AMPLITUDE)};
 const float TRANSIENT_DECAY_MM = ${glslFloat(TRANSIENT_DECAY_MM)};
 const float TRANSIENT_SKIP_MM = ${glslFloat(TRANSIENT_SKIP_MM)};
+uniform float uTransientGain;
 `;

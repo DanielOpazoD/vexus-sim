@@ -8,7 +8,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'color-emulated-estimator',
   'triplex-prf-not-shared',
   'no-sidelobes',
-  'no-harmonics',
+  'harmonic-simplified',
   'no-cardiac-tissue-motion',
   'prescribed-ra-contour',
   'uniform-vessel-velocity',

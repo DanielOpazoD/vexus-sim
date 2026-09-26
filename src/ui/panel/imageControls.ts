@@ -53,10 +53,12 @@ export function buildImageBasics(ctx: PanelContext, sec: HTMLElement): void {
 /** Explicación de los mandos avanzados (el ⓘ de su sección). */
 export const IMAGE_ADVANCED_INFO =
   `Composición espacial: tres miradas intercaladas (0° y ±${COMPOUND.steerDeg}°) promediadas; el moteado pierde contraste ` +
-  'con el mismo grano y las sombras se acortan; se apaga con el color. TGC, de superficial a profundo: amplifica ecos y ruido ' +
-  'por igual; no recupera lo que la atenuación extinguió.';
+  'con el mismo grano y las sombras se acortan; se apaga con el color. Armónica (THI): emite a 1,75 MHz y forma la imagen con ' +
+  'el armónico de 3,5 MHz que genera el propio tejido; menos neblina junto a las paredes y menos reverberación y transitorio ' +
+  'en el campo cercano, a cambio de algo más de ruido en profundidad; el color y el PW siguen en fundamental. TGC, de ' +
+  'superficial a profundo: amplifica ecos y ruido por igual; no recupera lo que la atenuación extinguió.';
 
-/** Mandos avanzados de la imagen 2D: rango dinámico, persistencia, composición espacial y TGC de 8 bandas. */
+/** Mandos avanzados de la imagen 2D: rango dinámico, persistencia, composición espacial, armónica y TGC de 8 bandas. */
 export function buildImageAdvanced(ctx: PanelContext, sec: HTMLElement): void {
   const s = ctx.sim;
   const ch = () => undefined;
@@ -97,6 +99,15 @@ export function buildImageAdvanced(ctx: PanelContext, sec: HTMLElement): void {
       'Composición espacial',
       () => ctx.dispatch({ type: 'compound', enabled: !s().bmode.compound }),
       () => s().bmode.compound,
+    ),
+  );
+  // Armónica tisular (decisión 77): el conmutador; solo cambia el modo B
+  ctx.track(
+    button(
+      row(sec),
+      'Armónica (THI)',
+      () => ctx.dispatch({ type: 'harmonic', enabled: !s().bmode.harmonic }),
+      () => s().bmode.harmonic,
     ),
   );
   note(sec, 'TGC · superficial → profundo');

@@ -127,9 +127,16 @@ export const CURTAIN_GAS_KIND = 3;
 export const ELEV_SIGMA0_MM = 1.6;
 export const ELEV_RAYLEIGH_MM = 45;
 
-/** σ elevacional de una vía de la pasada B a la profundidad r (`elevSigma`, mm). */
-export function elevSigmaMm(r: number, elevationFocusMm: number): number {
-  return ELEV_SIGMA0_MM * Math.sqrt(1 + ((r - elevationFocusMm) / ELEV_RAYLEIGH_MM) ** 2);
+/**
+ * σ elevacional de una vía de la pasada B a la profundidad r (`elevSigma`, mm). En armónica (decisión 77) la
+ * emisión va a λ1 = 2λ (cintura y rango de Rayleigh ×2) con la fuente ∝ p1² (÷√2) y la recepción a λ: la σ
+ * equivalente de una vía es √2 × la de dos vías de ese par (en fundamental, la de siempre).
+ */
+export function elevSigmaMm(r: number, elevationFocusMm: number, harmonic = false): number {
+  const s = ELEV_SIGMA0_MM * Math.sqrt(1 + ((r - elevationFocusMm) / ELEV_RAYLEIGH_MM) ** 2);
+  if (!harmonic) return s;
+  const sT = Math.SQRT2 * ELEV_SIGMA0_MM * Math.sqrt(1 + ((r - elevationFocusMm) / (2 * ELEV_RAYLEIGH_MM)) ** 2);
+  return (Math.SQRT2 * s * sT) / Math.sqrt(s * s + sT * sT);
 }
 
 /** Φ(x) con la erf de Abramowitz y Stegun 7.1.26 (error ≤ 1,5·10⁻⁷): la misma cuenta que la GLSL. */
@@ -173,9 +180,10 @@ export function curtainAirFractionAt(
   elevation: Vec3,
   elevationFocusMm: number,
   lateralSigma: (r: number) => number,
+  harmonic = false,
 ): { fAir: number; sigmaMm: number } {
   const lat = normalize(cross(elevation, dir));
-  const sigmaMm = curtainEdgeSigmaMm(elevSigmaMm(D, elevationFocusMm) * Math.SQRT1_2, lateralSigma(D), elevation[2], lat[2]);
+  const sigmaMm = curtainEdgeSigmaMm(elevSigmaMm(D, elevationFocusMm, harmonic) * Math.SQRT1_2, lateralSigma(D), elevation[2], lat[2]);
   return { fAir: curtainAirFraction(dz, sigmaMm), sigmaMm };
 }
 

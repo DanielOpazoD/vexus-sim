@@ -71,7 +71,14 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   núcleo lateral lleva un pedestal gaussiano con una pantalla de fase fija (ISLR −24 dB en el paciente de referencia),
   no el diagrama real de la apertura; la reverberación de la pared es de primer y segundo orden y solo de los ecos
   fuertes (compuerta por módulo del campo, no por la cara que la produce).
-- **Sin imagen armónica** (`no-harmonics`); el conmutador no existe en la consola.
+- **Armónica tisular simplificada** (`harmonic-simplified`, decisión 77):
+  - la acumulación del armónico es una curva fija del campo cercano (1 − e^(−r/2 mm), compensada desde 4 mm), no la
+    integral del haz con el foco;
+  - las líneas A y la cola sucia del gas no cambian con la armónica;
+  - el eje axial conserva la banda del fundamental (inversión de pulso);
+  - la pérdida de conversión se modela como +3 dB de ruido del receptor;
+  - no hay penumbra armónica: las sombras usan la penumbra del cono de la apertura de la decisión 54, como en
+    fundamental, sin pesar el cono de emisión por p1².
 - **Tienen eco de interfaz los vasos, la vesícula, la cápsula hepática, el diafragma, el riñón, la pleura
   parietal y la pared, pero no el gas intestinal** (`interface-echo-scope`, decisiones 57, 61 y 62): el gas
   intestinal no dibuja su cara (PR 7); se ve por su reverberación y su cola sucia. Las capas de la pared, la

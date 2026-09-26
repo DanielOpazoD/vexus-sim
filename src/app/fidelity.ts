@@ -9,6 +9,7 @@ import { VESSEL_META } from '../physiology/vessels';
 import { contactCoupling } from '../probe/contact';
 import { lineDirection, pointOnLine } from '../probe/probe';
 import { lateralFwhmMm, lateralSigmaMm } from '../ultrasound/beamModel';
+import { bmodeBeam } from '../ultrasound/transducerProfile';
 import { effectiveLooks, lookCorrelationLaw, lookWeight } from '../ultrasound/compound';
 import { IFACE_REACH_MM, IFACE_SHIFT_MM } from '../ultrasound/interfaceEcho';
 import { lookWavenumber, steerBeta } from '../ultrasound/steering';
@@ -1787,7 +1788,7 @@ export function fidelityStats(
   const bands = DEPTH_BANDS_MM.filter(([r0]) => r0 < depth).map(([r0, r1]) => {
     const t = envelopeTexture(env, inBand(r0, r1), geom);
     const rMid = Number.isFinite(t.depthMm) ? t.depthMm : (r0 + r1) / 2;
-    return { ...t, r0, r1, beamFwhmMm: lateralFwhmMm(rMid, sim.bmode.focusMm, sim.profile.beam) };
+    return { ...t, r0, r1, beamFwhmMm: lateralFwhmMm(rMid, sim.bmode.focusMm, bmodeBeam(sim.profile, sim.bmode)) };
   });
   const compound = looks ? compoundOf(looks) : undefined;
   if (!img || img.width === 0) return { envelope, bands, ...(compound ? { compound } : {}), display: null };
@@ -1837,7 +1838,7 @@ export function fidelityStats(
       const i = cellAt(x, y);
       if (i < 0 || lumenClear[i] !== 1 || system[i] === 0) return false;
       const r = ((i % nr) + 0.5) * GRID_STEP_MM;
-      return bloodDepth[i] >= LUMEN_CLEARANCE_MM + elevSigmaMm(r, tr.elevationFocusMm);
+      return bloodDepth[i] >= LUMEN_CLEARANCE_MM + elevSigmaMm(r, tr.elevationFocusMm, sim.bmode.harmonic);
     },
     2,
   );
@@ -2475,8 +2476,14 @@ export function curtainLines(sim: Simulator, lines: number): (CurtainLine | null
     const m = mat(point);
     // la normal de la pleura en el mundo (la compresión de la sonda la pone de cara a la línea, decisión 63)
     const nW = normalize(warpNormal(warpAt(point, a.probeCompression), torsoNormal(m, a.scene.torso)));
-    const { fAir, sigmaMm } = curtainAirFractionAt(c.dz, c.D, dir, sim.frame.elevation, tr.elevationFocusMm, (r) =>
-      lateralSigmaMm(r, sim.bmode.focusMm, sim.profile.beam),
+    const { fAir, sigmaMm } = curtainAirFractionAt(
+      c.dz,
+      c.D,
+      dir,
+      sim.frame.elevation,
+      tr.elevationFocusMm,
+      (r) => lateralSigmaMm(r, sim.bmode.focusMm, bmodeBeam(sim.profile, sim.bmode)),
+      sim.bmode.harmonic,
     );
     const cos = Math.abs(dot(nW, dir));
     let shadowed = false;

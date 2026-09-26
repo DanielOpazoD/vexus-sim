@@ -816,3 +816,34 @@ test('color: la misma transmisión que el PW y una ganancia que alcanza el ruido
   expect(r.noiseMax, tag).toBeGreaterThan(0.05);
   expect(errors).toEqual([]);
 });
+
+test('armónica tisular (decisión 77): campo cercano limpio, el mismo tejido y más ruido; el conmutador y el HUD', async ({ page }) => {
+  // cuatro cuadros con lectura de la envolvente (dos modos × contacto y sonda levantada) con SwiftShader
+  test.setTimeout(240_000);
+  const errors = await bootWithoutErrors(page);
+  // la e2e arranca en fundamental, la física calibrada de sus pruebas (la aplicación, en armónica)
+  await expect(page.locator('#hud-tr')).not.toContainText('THI');
+  const r = await page.evaluate(() => window.__vexusTest!.harmonicContrast({ startPoint: 'subxiphoid' }));
+  const tag = JSON.stringify(r);
+  const db = (x: { fundamental: number; harmonic: number }) => 20 * Math.log10(x.harmonic / x.fundamental);
+  // el campo cercano (piel, grasa y transitorio): la acumulación y el rechazo del transitorio lo oscurecen
+  expect(db(r.near), tag).toBeLessThan(-2);
+  // el tejido: la acumulación compensada y la misma atenuación, el mismo nivel
+  expect(Math.abs(db(r.tissue)), tag).toBeLessThan(1.5);
+  // el ruido del receptor solo (sonda levantada), en toda la profundidad: +3 dB respecto al eco (HARMONIC.noiseDb)
+  expect(db(r.noise), tag).toBeGreaterThan(2.3);
+  expect(db(r.noise), tag).toBeLessThan(3.7);
+  // el conmutador de la consola cambia el modo y el HUD lo dice (la sección Avanzado está plegada: fuera del
+  // árbol de accesibilidad, así que se busca por su texto)
+  const toggle = page.locator('button', { hasText: 'Armónica (THI)' });
+  await expect(toggle).toHaveCount(1);
+  await toggle.evaluate((b) => (b as HTMLButtonElement).click());
+  await expect(page.locator('#hud-tr')).toContainText('THI 3,5 MHz');
+  await toggle.evaluate((b) => (b as HTMLButtonElement).click());
+  await expect(page.locator('#hud-tr')).not.toContainText('THI');
+  expect(errors).toEqual([]);
+  // y la aplicación, sin ?e2e, arranca en armónica (main.ts), como un preajuste abdominal moderno
+  await page.goto('/?docente=1');
+  await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: 30_000 });
+  await expect(page.locator('#hud-tr')).toContainText('THI 3,5 MHz');
+});

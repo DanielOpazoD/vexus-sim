@@ -40,7 +40,7 @@ import {
   type TransmissionFrame,
 } from './fidelity';
 import type { RespiratoryPattern } from '../physiology/patientState';
-import { speckleStats, type SpeckleOptions, type SpeckleStats } from './speckle';
+import { speckleStats, type EnvelopeFrame, type SpeckleOptions, type SpeckleStats } from './speckle';
 import type { RenderMeasureOptions, Simulator } from './simulator';
 import { START_POINTS, type StartPoint } from './startPoints';
 
@@ -224,6 +224,19 @@ export interface TestHooks {
   placeGate: (vessels: VesselId[]) => boolean;
   /** Enciende o apaga la composición espacial con el comando del equipo (decisión 58). */
   setCompound: (on: boolean) => void;
+  /** Enciende o apaga la armónica tisular con el comando del equipo (decisión 77). */
+  setHarmonic: (on: boolean) => void;
+  /**
+   * Armónica tisular frente a fundamental (decisión 77) en la mirada 0 y la misma pose: media de la envolvente
+   * en el campo cercano (0,5–4 mm: piel, grasa y transitorio), en el tejido (40–100 mm) y, con la sonda
+   * levantada 10 mm, del ruido del receptor solo: en toda la profundidad (la acumulación del armónico es del eco del
+   * tejido, no del ruido) y en las líneas sin contacto a ≥ 12 líneas de una con contacto (en la subxifoidea un borde de
+   * la cara sigue apoyado en el abdomen curvo, y el lóbulo principal lo reparte unas líneas). Deja el modo como estaba
+   * y la sonda en el punto de partida.
+   */
+  harmonicContrast: (opts: {
+    startPoint: StartPoint['id'];
+  }) => Record<'near' | 'tissue' | 'noise', { fundamental: number; harmonic: number }>;
   /** Estado del anillo de miradas tras el último cuadro (decisión 58). */
   compoundState: () => CompoundState;
   /**
@@ -662,6 +675,57 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       return true;
     },
     setCompound: (on) => dispatch({ type: 'compound', enabled: on }),
+    setHarmonic: (on) => dispatch({ type: 'harmonic', enabled: on }),
+    harmonicContrast: (opts) => {
+      const sim = getSim();
+      const was = sim.bmode.harmonic;
+      return withCompound(sim, dispatch, false, () => {
+        const bandMean = (env: EnvelopeFrame, r0: number, r1: number, useLine: (l: number) => boolean = () => true): number => {
+          const dz = sim.bmode.depthMm / env.samples;
+          let sum = 0;
+          let n = 0;
+          for (let s = 0; s < env.samples; s++) {
+            const r = (s + 0.5) * dz;
+            if (r < r0 || r >= r1) continue;
+            for (let l = 0; l < env.lines; l++) {
+              if (!useLine(l)) continue;
+              sum += env.data[s * env.lines + l];
+              n++;
+            }
+          }
+          if (n === 0) throw new Error('harmonicContrast: ninguna muestra en la banda');
+          return sum / n;
+        };
+        const measure = (harmonic: boolean) => {
+          dispatch({ type: 'harmonic', enabled: harmonic });
+          goTo(sim, opts.startPoint);
+          sim.render();
+          const env = sim.renderer.readEnvelope();
+          const near = bandMean(env, 0.5, 4);
+          const tissue = bandMean(env, 40, 100);
+          sim.setPose({ ...sim.pose, lift: 10 });
+          sim.advance(0.05);
+          sim.render();
+          const lifted = sim.renderer.readEnvelope();
+          const coupled = Array.from({ length: lifted.lines }, (_, l) => contactCoupling(sim.contact, lineAngle(l, sim.transducer)) > 0);
+          const quiet = (l: number) => !coupled.slice(Math.max(0, l - 12), l + 13).some(Boolean);
+          const noise = bandMean(lifted, 0.5, sim.bmode.depthMm, quiet);
+          return { near, tissue, noise };
+        };
+        try {
+          const f = measure(false);
+          const h = measure(true);
+          return {
+            near: { fundamental: f.near, harmonic: h.near },
+            tissue: { fundamental: f.tissue, harmonic: h.tissue },
+            noise: { fundamental: f.noise, harmonic: h.noise },
+          };
+        } finally {
+          dispatch({ type: 'harmonic', enabled: was });
+          goTo(sim, opts.startPoint);
+        }
+      });
+    },
     compoundState: () => getSim().renderer.compoundState(),
     lookCorrelation: (opts) => {
       const c = hooks.fidelity({ compound: true, startPoint: opts.startPoint }).compound;

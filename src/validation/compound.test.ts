@@ -30,6 +30,7 @@ const deg = Math.PI / 180;
 const rot = (v: Vec3, a: number): Vec3 => [v[0] * Math.cos(a) - v[2] * Math.sin(a), v[1], v[0] * Math.sin(a) + v[2] * Math.cos(a)];
 const BASE: CompoundFrameInput = {
   active: true,
+  harmonic: false,
   depthMm: 180,
   focusMm: 90,
   lines: 192,
@@ -116,6 +117,7 @@ describe('anillo de miradas intercaladas', () => {
     ['un cambio de foco', () => ({ ...BASE, focusMm: 70 })],
     ['un cambio de líneas', () => ({ ...BASE, lines: 96 })],
     ['encender el color (cambio de modo)', () => ({ ...BASE, active: false })],
+    ['la armónica tisular (decisión 77): las miradas guardadas son del otro modo', () => ({ ...BASE, harmonic: true })],
   ];
   for (const [name, change] of resetCases)
     it(`se reinicia con ${name} y el primer cuadro tras el reinicio es la mirada 0`, () => {

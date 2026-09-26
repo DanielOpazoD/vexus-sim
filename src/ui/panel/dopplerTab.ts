@@ -1,22 +1,22 @@
 import { EQUIPMENT_LIMITS } from '../../app/equipment';
 import { nyquistVelocityCms, prfFromNyquistCms } from '../../core/units';
-import { button, help, row, slider } from '../controls';
+import { button, controlId, note, row, slider } from '../controls';
 import type { PanelContext } from './context';
 
-/** Subpaneles de Doppler; el panel muestra el que corresponde al modo activo. */
+/** Subpaneles de Doppler; el panel muestra el que corresponde al modo activo (los dos en tríplex). */
 export interface DopplerPanels {
   empty: HTMLElement;
   color: HTMLElement;
   pw: HTMLElement;
 }
 
-/** Pestaña Doppler (contextual): color o PW según el modo; vacía en modo B. */
+/** Pestaña Doppler (contextual): color o PW según el modo; vacía en modo B. Lo avanzado del PW, plegado. */
 export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanels {
   const s = ctx.sim;
   const ch = () => undefined;
   const empty = document.createElement('div');
   empty.className = 'empty';
-  empty.textContent = 'Activa Color o PW en la barra inferior para ver sus controles.';
+  note(empty, 'Doppler apagado: activa Color o PW en la barra inferior (teclas C y P).');
   const r0 = row(empty);
   button(r0, 'Color', () => ctx.store.set({ mode: 'color', tab: 'doppler' }));
   button(r0, 'PW', () => ctx.store.set({ mode: 'pw', tab: 'doppler' }));
@@ -24,7 +24,9 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
 
   const color = document.createElement('div');
   p.appendChild(color);
-  const c = ctx.section(color, 'Doppler color');
+  const c = ctx.section(color, 'Doppler color', {
+    info: 'Clic en la imagen: centra la caja (con PW, en tríplex, coloca la puerta y la caja la acompaña). Escala baja → aliasing; filtro alto → desaparece el flujo lento; el color depende de la orientación del haz.',
+  });
   ctx.track(
     slider(
       c,
@@ -44,7 +46,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
     slider(
       c,
       {
-        label: 'Filtro pared',
+        label: 'Filtro de pared',
         min: 20,
         max: 400,
         step: 10,
@@ -68,7 +70,9 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
       ch,
     ),
   );
-  const cr = row(c);
+  const cr = document.createElement('div');
+  cr.className = 'field-row';
+  c.appendChild(cr);
   ctx.track(
     button(
       cr,
@@ -77,16 +81,22 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
       () => s().color.invert,
     ),
   );
-  ctx.track(button(cr, 'Caja +', () => ctx.dispatch({ type: 'scaleColorBox', factor: 1.15 })));
-  ctx.track(button(cr, 'Caja −', () => ctx.dispatch({ type: 'scaleColorBox', factor: 1 / 1.15 })));
-  help(
-    c,
-    'Clic en la imagen: centra la caja (con PW, en tríplex, coloca la puerta y la caja la acompaña). Escala baja → aliasing; filtro alto → desaparece flujo lento; el color depende de la orientación del haz.',
-  );
+  const box = document.createElement('div');
+  box.className = 'stepper grow';
+  box.setAttribute('role', 'group');
+  box.setAttribute('aria-label', 'Tamaño de la caja de color');
+  const boxLabel = document.createElement('span');
+  boxLabel.textContent = 'Caja';
+  box.appendChild(boxLabel);
+  button(box, '−', () => ctx.dispatch({ type: 'scaleColorBox', factor: 1 / 1.15 })).el.setAttribute('aria-label', 'Achicar la caja');
+  button(box, '+', () => ctx.dispatch({ type: 'scaleColorBox', factor: 1.15 })).el.setAttribute('aria-label', 'Agrandar la caja');
+  cr.appendChild(box);
 
   const pw = document.createElement('div');
   p.appendChild(pw);
-  const w = ctx.section(pw, 'Doppler pulsado');
+  const w = ctx.section(pw, 'Doppler pulsado', {
+    info: 'Clic en la imagen coloca la puerta. El filtro de pared elimina las frecuencias bajas de la señal.',
+  });
   ctx.track(
     slider(
       w,
@@ -121,28 +131,13 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
     slider(
       w,
       {
-        label: 'Filtro pared',
+        label: 'Filtro de pared',
         min: 10,
         max: 300,
         step: 5,
         get: () => s().pw.wallFilterHz,
         set: (v) => ctx.dispatch({ type: 'pw', patch: { wallFilterHz: v } }),
         format: (v) => `${v} Hz`,
-      },
-      ch,
-    ),
-  );
-  ctx.track(
-    slider(
-      w,
-      {
-        label: 'Línea base',
-        min: -0.45,
-        max: 0.45,
-        step: 0.05,
-        get: () => s().pw.baselineShift,
-        set: (v) => ctx.dispatch({ type: 'pw', patch: { baselineShift: v } }),
-        format: (v) => `${(v * 100).toFixed(0)} %`,
       },
       ch,
     ),
@@ -160,11 +155,64 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
       ch,
     ),
   );
+  // Barrido: rótulo, botonera y unidad en una fila
+  const sweepRow = document.createElement('div');
+  sweepRow.className = 'field-row';
+  const sl = document.createElement('span');
+  sl.className = 'grow';
+  sl.id = controlId('barrido');
+  sl.textContent = 'Barrido';
+  sweepRow.appendChild(sl);
+  ctx
+    .segmented<'25' | '50' | '100'>(
+      sweepRow,
+      [
+        ['25', '25'],
+        ['50', '50'],
+        ['100', '100'],
+      ],
+      () => String(s().pw.sweepMmS) as '25' | '50' | '100',
+      (v) => ctx.dispatch({ type: 'pw', patch: { sweepMmS: Number(v) } }),
+    )
+    .setAttribute('aria-labelledby', sl.id);
+  const unit = document.createElement('span');
+  unit.className = 'unit';
+  unit.textContent = 'mm/s';
+  sweepRow.appendChild(unit);
+  w.appendChild(sweepRow);
+  ctx.track(
+    button(
+      row(w),
+      'Invertir espectro',
+      () => ctx.dispatch({ type: 'pw', patch: { invert: !s().pw.invert } }),
+      () => s().pw.invert,
+    ),
+  );
+
+  const adv = ctx.section(pw, 'Avanzado', {
+    collapsed: true,
+    info: 'La corrección angular solo cambia la velocidad rotulada y la línea de base solo la presentación; ninguna de las dos toca la señal.',
+  });
   ctx.track(
     slider(
-      w,
+      adv,
       {
-        label: 'Corr. angular',
+        label: 'Línea de base',
+        min: -0.45,
+        max: 0.45,
+        step: 0.05,
+        get: () => s().pw.baselineShift,
+        set: (v) => ctx.dispatch({ type: 'pw', patch: { baselineShift: v } }),
+        format: (v) => `${(v * 100).toFixed(0)} %`,
+      },
+      ch,
+    ),
+  );
+  ctx.track(
+    slider(
+      adv,
+      {
+        label: 'Corrección angular',
         min: -80,
         max: 80,
         step: 1,
@@ -175,41 +223,11 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
       ch,
     ),
   );
-  const sweepRow = document.createElement('div');
-  sweepRow.className = 'control';
-  const sl = document.createElement('label');
-  sl.textContent = 'Barrido';
-  sweepRow.appendChild(sl);
-  const segHost = document.createElement('div');
-  sweepRow.appendChild(segHost);
-  ctx.segmented<'25' | '50' | '100'>(
-    segHost,
-    [
-      ['25', '25'],
-      ['50', '50'],
-      ['100', '100'],
-    ],
-    () => String(s().pw.sweepMmS) as '25' | '50' | '100',
-    (v) => ctx.dispatch({ type: 'pw', patch: { sweepMmS: Number(v) } }),
-  );
-  const so = document.createElement('output');
-  so.textContent = 'mm/s';
-  sweepRow.appendChild(so);
-  w.appendChild(sweepRow);
-  const pr = row(w);
-  ctx.track(
-    button(
-      pr,
-      'Invertir espectro',
-      () => ctx.dispatch({ type: 'pw', patch: { invert: !s().pw.invert } }),
-      () => s().pw.invert,
-    ),
-  );
   ctx.track(
     slider(
-      w,
+      adv,
       {
-        label: 'Volumen',
+        label: 'Volumen del audio',
         min: 0,
         max: 1,
         step: 0.05,
@@ -219,10 +237,6 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
       },
       ch,
     ),
-  );
-  help(
-    w,
-    'Clic en la imagen coloca la puerta. La corrección angular solo cambia la velocidad rotulada; la línea de base solo la presentación; el filtro de pared elimina frecuencias bajas de la señal.',
   );
   return { empty, color, pw };
 }

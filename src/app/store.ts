@@ -6,7 +6,7 @@ import type { ImagingMode } from './equipment';
  * de él; la UI se suscribe y reacciona. Observable tipado sin dependencias.
  */
 export type { ImagingMode } from './equipment';
-export type PanelTab = 'adquirir' | 'imagen' | 'doppler' | 'medir' | 'docente';
+export type PanelTab = 'adquirir' | 'doppler' | 'medir' | 'docente';
 export type MeasureTool = 'none' | 'caliper' | 'hepatic' | 'portal' | 'renal';
 
 export interface AppState {

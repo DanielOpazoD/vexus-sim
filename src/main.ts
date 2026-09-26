@@ -8,7 +8,7 @@ import { errorLog, errorMessage } from './app/errorLog';
 import { ProbeAnimator } from './app/probeAnimation';
 import { SimulationSession } from './app/session';
 import type { Simulator } from './app/simulator';
-import { Store, type ImagingMode } from './app/store';
+import { Store, type ImagingMode, type PanelTab } from './app/store';
 import { CASES, CASE_IDS, isCaseId } from './cases';
 import { NonFiniteStateError } from './physiology/engine';
 import { Banner } from './ui/controllers/banner';
@@ -176,12 +176,14 @@ function applyMode(mode: ImagingMode): void {
   // la imagen manda: el espectro solo ocupa su franja con el PW encendido
   app.classList.toggle('pw-on', modeHasPw(mode));
 }
-// 2D apaga todo; Color y PW alternan su función y conservan la otra (tríplex, decisión 66)
-modeButtons.B.addEventListener('click', () => store.set({ mode: 'B', tab: store.get().tab === 'doppler' ? 'imagen' : store.get().tab }));
+// 2D apaga todo; Color y PW alternan su función y conservan la otra (tríplex, decisión 66). Sin Doppler, la
+// consola vuelve de «Doppler» a «Adquirir», donde están los mandos de la imagen
+const leaveDoppler = (): PanelTab => (store.get().tab === 'doppler' ? 'adquirir' : store.get().tab);
+modeButtons.B.addEventListener('click', () => store.set({ mode: 'B', tab: leaveDoppler() }));
 for (const key of ['color', 'pw'] as const) {
   modeButtons[key].addEventListener('click', () => {
     const mode = toggleMode(store.get().mode, key);
-    store.set({ mode, tab: mode === 'B' ? (store.get().tab === 'doppler' ? 'imagen' : store.get().tab) : 'doppler' });
+    store.set({ mode, tab: mode === 'B' ? leaveDoppler() : 'doppler' });
   });
 }
 const freezeBtn = $<HTMLButtonElement>('freeze');

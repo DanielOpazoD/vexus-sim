@@ -1,6 +1,6 @@
 import type { EquivalenceReport } from '../app/equivalenceCheck';
 import type { Simulator } from '../app/simulator';
-import type { AppState, PanelTab, Store } from '../app/store';
+import type { AppState, ImagingMode, PanelTab, Store } from '../app/store';
 import { controlId, type Syncable } from './controls';
 import { bindCollapsible } from './disclosure';
 import { buildAcquireTab } from './panel/acquireTab';
@@ -18,6 +18,14 @@ const ICONS: Record<PanelTab, string> = {
 };
 const LABELS: Record<PanelTab, string> = { adquirir: 'Adquirir', doppler: 'Doppler', medir: 'Medir', docente: 'Docente' };
 const TAB_ORDER: PanelTab[] = ['adquirir', 'doppler', 'medir', 'docente'];
+
+/**
+ * La pestaña sigue la intención del modo (botones y teclado): con Color o PW, «Doppler»; al volver a 2D, de
+ * «Doppler» a «Adquirir», donde están los mandos de la imagen; cualquier otra pestaña se queda.
+ */
+export function tabAfterMode(mode: ImagingMode, tab: PanelTab): PanelTab {
+  return mode !== 'B' ? 'doppler' : tab === 'doppler' ? 'adquirir' : tab;
+}
 
 /**
  * Consola derecha por pestañas (guía §16–§17): cada control actúa en su etapa

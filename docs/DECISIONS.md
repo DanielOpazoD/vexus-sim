@@ -2299,6 +2299,41 @@ propios (`bowel-gas-no-shadow`, `no-psoas`). Las pruebas del banco de fidelidad 
 **Verificación.** `restTexture.test.ts`: la grasa es la moda y más brillante que el hígado, hay muscular, mucosa o
 serosa y contenido líquido, los niveles están acotados, la textura está anclada (misma semilla, mismo valor) y el
 shader toma las constantes del módulo. Capturas con GPU real de las ventanas renal, del flanco y de la porta.
+## 75. Interfaz limpia: ventanas VExUS como tarjetas, la imagen manda y consola con divulgación progresiva
+
+**Contexto.** El dueño (médico, 25-09-2026): «mejorar la interfaz visual para que sea más simple, más limpia, más
+esquemática e intuitiva». En capturas a 1600 × 1000 el rótulo del navegador 3D quedaba tapado por sus botones; la ayuda de
+gestos era un bloque fijo; 3D y corte se repartían el carril al 50 %; la pestaña Adquirir mezclaba puntos de partida,
+cuatro deslizadores de sonda, tres de imagen y la respiración con tres bloques de ayuda, e «Imagen» repetía
+profundidad, ganancia y foco; el espectro reservaba ~200 px aunque el PW estuviera apagado, y los modos eran botones
+sueltos aunque el tríplex (decisión 66) enciende dos a la vez.
+**Opciones.** (1) Solo estilo (colores y espaciado): no resolvía la mezcla de la consola ni el espacio perdido. (2) Un
+framework de componentes: dependencia y bundle nuevos para una interfaz pequeña. (3) La elegida: ordenar la interfaz por
+el flujo del examen (ventana → imagen → Doppler → medida) con divulgación progresiva, en el DOM y sin dependencias.
+**Decisión.** Carril izquierdo: las ventanas VExUS (los puntos de partida de la decisión 17) como tarjetas arriba, con el
+color de su anillo del 3D, «estructura · abordaje» y una línea con lo que muestran (el texto largo, en el tooltip); se
+resalta la ventana actual (`src/ui/startPointCards.ts`: la elegida mientras la sonda se desliza y después aquella cuyo
+punto de partida está a ≤ 20 mm de la sonda sobre la piel). «Sonda y abdomen» lleva el rótulo y los iconos (+, −,
+centrar, capas, «?») en su propia fila; la chuleta de gestos y teclado está detrás de «?»; el corte ocupa ~40 % y se
+pliega (`src/ui/disclosure.ts`). Centro: el espectro solo ocupa su franja con PW (clase `pw-on`) y el ECG es una franja de
+40 px; el eje de tiempo compartido sale del ECG. Consola: «Imagen» se funde en «Adquirir» (imagen, sonda, respiración y
+«Avanzado» plegado con rango dinámico, persistencia, composición espacial y TGC); en Doppler, línea de base, corrección
+angular y volumen en «Avanzado» plegado; secciones plegables y un ⓘ por sección (`role="tooltip"` y
+`aria-describedby`) en lugar de bloques de texto; `tabAfterMode` hace que botones y teclado lleven la consola a
+«Doppler» y de vuelta a «Adquirir». Barra inferior: [2D | Color | PW] segmentado (el tríplex, dos segmentos
+encendidos) y Congelar, Audio y Torso 3D como botones secundarios con icono y `aria-pressed`. Estilo: tokens en
+`:root`, rejilla de 8 px, texto de 12/13/14 px, un acento para lo activo, iconos SVG de trazo en línea y foco visible.
+Enmienda la disposición de la decisión 16 y el lugar de los puntos de partida de la 17.
+**Consecuencias.** Sin PW la imagen gana ~160 px de alto a 1600 × 1000 (871 frente a 712); cada mando existe una sola vez
+y el alumno ve las ventanas y su anillo en el 3D sin abrir pestañas. Al ocultar el carril (H) las tarjetas se ocultan con
+él. Con el lienzo del 3D más alto que ancho (corte plegado) el navegador abre su campo vertical para no recortar el
+tronco. El chunk principal pasa de 321,1 a 323,8 kB (presupuesto a 330 kB y total de JS a 1010 kB). Pendiente: recordar
+entre sesiones qué secciones están plegadas.
+**Verificación.** `styles.test.ts` (rejilla de tres columnas y carril oculto sin `display:none`), `startPointCards.test.ts`
+(cada punto de partida es la ventana actual en su pose y el radio es menor que la distancia entre las dos ventanas más
+próximas, 24 mm), `controllers.test.ts` (textos del HUD sin cambios) y la e2e de humo sin tocarla (ids, pestañas
+«Medir» y «Docente», «Suprahepática», «Capturar», «Apnea esp…» y modo alumno ciego); capturas antes y después a
+1600 × 1000 y 1280 × 800.
 
 ## Iteración 2 — informe de cierre (22-09-2026)
 

@@ -37,6 +37,13 @@ describe('Minificado del GLSL en el build (tools/build/glslMinify.ts)', () => {
     expect(minifyGlslBody(['\n  /* a ', ' b */ x = ', ';\n'], ['A', 'B'])).toBe('\nx = ${B};\n');
   });
 
+  it('un comentario de bloque entre dos tokens los separa como un espacio (GLSL: `a/* x */b` es `a b`)', () => {
+    expect(minifyGlslBody(['float/* escala */gain = 1.0;'], [])).toBe('float gain = 1.0;');
+    expect(minifyGlslBody(['x = a /* x */ + b;'], [])).toBe('x = a  + b;');
+    // junto a una interpolación no se sabe qué hay: se separa por si acaso
+    expect(minifyGlslBody(['float ', '/* x */name;'], ['T'])).toBe('float ${T} name;');
+  });
+
   it('en los shaders reales el minificado conserva cada símbolo y cada interpolación', () => {
     const files: string[] = [];
     const walk = (dir: string) => {

@@ -24,6 +24,9 @@
 // 2026-09-25 (quinquies): el build quita los comentarios y la sangría del texto GLSL (`tools/build/glslMinify.ts`):
 // index baja de 312,7 a 284,3 kB y el JS total de 987,8 a 959,4 kB (vite build sobre main 007204e). Los límites no
 // cambian: el margen es para las decisiones 67–74, que suman ~18 kB de GLSL y módulos.
+// 2026-09-26: el build renombra además los identificadores declarados en el texto GLSL (`tools/build/glslMangle.ts`,
+// segunda etapa de `glslMinify.ts`): index baja de 314,9 a 300,2 kB y el JS total de 997,9 a 983,2 kB (vite build
+// sobre main 8bec4d7). Los límites no cambian.
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 

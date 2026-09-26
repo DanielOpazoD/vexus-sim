@@ -38,7 +38,7 @@ function gitCommit(): string {
 const tier = process.env['VITEST_TIER'] ?? 'fast';
 
 export default defineConfig({
-  // el texto de los shaders sin comentarios ni sangría en el build (tools/build/glslMinify.ts)
+  // el texto de los shaders sin comentarios, sangría ni nombres largos en el build (tools/build/glslMinify.ts)
   plugins: [glslMinify()],
   define: {
     __APP_VERSION__: JSON.stringify(PKG.version),

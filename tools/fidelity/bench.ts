@@ -295,6 +295,21 @@ try {
         );
       }
       const f2 = (x: number): string => (Number.isFinite(x) ? x.toFixed(2) : '—');
+      // grano por banda de profundidad (mm, axial × lateral): envolvente lineal frente a la PSF, en dB y en la imagen
+      // mostrada, con el contraste del gris (desviación / media)
+      console.log(
+        ''.padEnd(32),
+        `grano: ${stats.bands
+          .map((b, i) => {
+            const g = d?.liverBands[i];
+            return (
+              `${b.r0}–${b.r1} env ${f2(b.fwhmAxialMm)}×${f2(b.fwhmLateralMm)} (PSF ${f2(b.beamFwhmMm)}, ${b.patches}) ` +
+              `dB ${f2(b.logGrain.axialMm)}×${f2(b.logGrain.lateralMm)}` +
+              (g ? ` imagen ${f2(g.grain.axialMm)}×${f2(g.grain.lateralMm)} (${g.grain.patches}) gris ${f2(g.sd)}/${f2(g.mean)}` : '')
+            );
+          })
+          .join(' · ')}`,
+      );
       if (pleura) {
         const line = (name: string, p: PleuraStats & { caudalMm: number }) =>
           `${name} (descenso ${f2(p.caudalMm)} mm): líneas ${p.lines}/${p.fullLines}/${p.normalLines} · pleura ${f2(p.pleuraSaturatedMm)} mm saturada, pico ${f2(p.pleuraPeakGrey)} · ` +

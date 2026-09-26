@@ -86,3 +86,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [80](DECISIONS.md#L2645) | Cine y modo M: los cuadros adquiridos antes de la conversión de barrido y la franja M en la GPU | vigente |
 | [81](DECISIONS.md#L2728) | Retroperitoneo: psoas, cuadrado lumbar y grasa retroperitoneal alrededor del riñón; Morison y la cápsula con una sola línea | vigente |
 | [82](DECISIONS.md#L2841) | Casos trampa y contexto clínico: viñeta, confusores que marca el alumno, fiabilidad por territorio y mVExUS | vigente |
+| [83](DECISIONS.md#L2942) | Ventanas clásicas que faltaban: transversa epigástrica (VCI y aorta) y suprahepática subcostal | vigente |

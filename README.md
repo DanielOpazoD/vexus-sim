@@ -54,9 +54,10 @@ y ECG (el espectro aparece con el PW y la franja del modo M con el modo M); a la
 pestañas. Abajo, la barra de modos: [2D | M | Color | PW] (Color y PW a la vez es el tríplex), Congelar, Audio y
 Torso 3D.
 
-- **Ventanas**: cada tarjeta desliza la sonda de forma continua hasta su punto de partida con ángulos
-  neutros; la ventana hay que afinarla (nada teletransporta a una vista). La tarjeta de la ventana en
-  la que está la sonda queda resaltada; su nombre y su color son los de su anillo en el 3D.
+- **Ventanas**: cada tarjeta desliza la sonda de forma continua hasta su punto de partida con sus ángulos
+  de partida; la ventana hay que afinarla (nada teletransporta a una vista). La tarjeta de la ventana en
+  la que está la sonda (cerca de su punto y con su giro) queda resaltada; su nombre y su color son los de
+  su anillo en el 3D.
 - **Sonda (navegador 3D)**: arrastrar la piel desliza; arrastrar el marcador azul o la rueda rota;
   ⇧+arrastrar bascula; ⌥+arrastrar inclina; botón derecho orbita; ⌘/Ctrl+rueda hace zoom. También se
   puede arrastrar sobre la imagen y con el teclado (`W A S D` deslizar, `Q E` rotar, `← →` bascular,
@@ -119,7 +120,7 @@ invariantes, sesión, perfil de transductor, matriz de capas), anatomía de una 
 uniforms y módulos de órgano con gemelos TS/GLSL del mismo nombre), producto (versión y commit visibles,
 diagnóstico exportable con tiempo de GPU, release por tag).
 
-Garantías automáticas: equivalencia TS ↔ GLSL en CI (4 ventanas y 50 000 puntos por caso, acuerdo
+Garantías automáticas: equivalencia TS ↔ GLSL en CI (7 ventanas y 50 000 puntos por caso, acuerdo
 exacto), estadística de speckle de Rayleigh en parénquima, cadena completa del alumno por caso (medido =
 verdad, grados 0/3/1), propiedades del motor con fast-check, límites del shader con margen, cobertura
 ≥ 88 % con umbrales, e2e con WebGL real. Guía de trabajo en `CLAUDE.md`, vocabulario en

@@ -47,6 +47,22 @@ function view(id: StartPoint['id'], extra: Partial<ProbePose> = {}): { pose: Pro
   const k = probeContact(pose, tr, torso);
   return { pose, frame: k.frame, k };
 }
+/**
+ * Estructura honda que corta la línea central de cada ventana y cuánto se acerca a la sonda al apretar: lo hondo, casi δ
+ * (`full`, > δ/2); lo que queda dentro del empuje, a medias (`half`, > δ/5: el riñón a ~60 mm de la porta, decisión 69,
+ * y la VSH media a ~90 mm de la subcostal, con 24 mm de hundimiento que el tejido absorbe hasta 175 mm); el riñón justo
+ * bajo la pared del flanco, casi nada (`none`, < 0,3·δ: el empuje se lo lleva). La línea central de la intercostal no
+ * corta vasos (el ligamento venoso) y la de la transversa epigástrica pasa entre la VCI y la aorta hasta la vértebra.
+ */
+const CENTRAL_LANDMARK: Record<StartPoint['id'], { landmark: Tissue; vessel?: RegExp; approach: 'full' | 'half' | 'none' }> = {
+  subxiphoid: { landmark: Tissue.Blood, vessel: /^ivc/, approach: 'full' },
+  epigastric: { landmark: Tissue.Vertebra, approach: 'full' },
+  intercostal: { landmark: Tissue.LigamentumVenosum, approach: 'full' },
+  subcostal: { landmark: Tissue.Blood, vessel: /^hvMiddle$/, approach: 'half' },
+  flank: { landmark: Tissue.Blood, vessel: /^ivc/, approach: 'full' },
+  portal: { landmark: Tissue.RenalCortex, approach: 'half' },
+  renal: { landmark: Tissue.RenalCortex, approach: 'none' },
+};
 /** Profundidad bajo la cara (mm) a la que la línea θ cruza la capa de profundidad radial w, con la compresión k. */
 function levelDepth(frame: ProbeFrame, k: ProbeCompression | null, theta: number, w: number): number {
   for (let d = -2; d <= 160; d += 0.05) if (-torsoDepth(uncompress(pointOnLine(frame, tr, theta, d), k), torso) >= w) return d;
@@ -213,7 +229,8 @@ describe('la sonda comprime el tejido (decisión 63): solo empuja y la pared baj
   it('apretar acerca el campo cercano a la sonda: la cara se hunde δ y lo hondo aparece hasta δ mm menos profundo', () => {
     // δ: 20,0 subxifoidea (tope 26 con 6 mm de hundimiento del talón ya en la pose), 16,0 intercostal (tope),
     // 14,8 flanco y 17,4 renal. La VCI de la subxifoidea de 123 → 107 mm, el ligamento venoso de la intercostal de
-    // 132 → 116,5, la VCI del flanco de 127 → 112,5 y la corteza renal de 39 → 38,5
+    // 132 → 116,5, la VCI del flanco de 127 → 112,5 y la corteza renal de 39 → 38,5; con la decisión 83, 18,6 en la
+    // epigástrica (la vértebra de 134,5 → 117,5) y 24,0 en la subcostal (la VSH media de 90,5 → 81)
     for (const sp of START_POINTS) {
       const { pose, frame, k } = view(sp.id);
       const rigid = probeFrame(pose, torso, tr);
@@ -223,15 +240,13 @@ describe('la sonda comprime el tejido (decisión 63): solo empuja y la pared baj
       const moved = [0, 1, 2].map((a) => rigid.face[a] - frame.face[a]);
       // a lo largo del eje de la sonda: el mismo plano de imagen, con el origen más abajo en la línea central
       for (let a = 0; a < 3; a++) expect(moved[a], sp.id).toBeCloseTo(-rigid.axial[a] * d, 9);
-      // una estructura honda a lo largo de la línea central, con y sin la sonda hundida: la VCI, el ligamento venoso
-      // (la línea central de la intercostal no corta vasos) y la corteza renal
-      // (la línea central de la porta, decisión 69, corta el polo superior del riñón a ~60 mm)
-      const landmark =
-        sp.id === 'intercostal' ? Tissue.LigamentumVenosum : sp.id === 'renal' || sp.id === 'portal' ? Tissue.RenalCortex : Tissue.Blood;
+      // una estructura honda a lo largo de la línea central, con y sin la sonda hundida (una por ventana: una nueva
+      // debe declarar la suya)
+      const { landmark, vessel, approach } = CENTRAL_LANDMARK[sp.id];
       const depthOf = (fr: ProbeFrame, kk: ProbeCompression | null): number => {
         for (let r = 30; r < 180; r += 0.25) {
           const c = scene.classify(uncompress(pointOnLine(fr, tr, 0, r), kk), BASELINE_CALIBER);
-          if (c.tissue === landmark && (landmark !== Tissue.Blood || /^ivc/.test(c.vessel ?? ''))) return r;
+          if (c.tissue === landmark && (!vessel || vessel.test(c.vessel ?? ''))) return r;
         }
         return Number.NaN;
       };
@@ -239,10 +254,8 @@ describe('la sonda comprime el tejido (decisión 63): solo empuja y la pared baj
       const after = depthOf(frame, k);
       const tag = `${sp.id}: ${before.toFixed(1)} → ${after.toFixed(1)} mm (δ ${d.toFixed(1)})`;
       expect(before - after, tag).toBeLessThan(d + 1);
-      // lo hondo se acerca casi δ; el riñón, justo bajo la pared del flanco, se lo lleva el empuje: casi no se acerca
-      if (sp.id === 'renal') expect(Math.abs(before - after), tag).toBeLessThan(0.3 * d);
-      // en la porta el riñón está a ~60 mm, más cerca del empuje que las estructuras hondas: se acerca a medias
-      else if (sp.id === 'portal') expect(before - after, tag).toBeGreaterThan(0.2 * d);
+      if (approach === 'none') expect(Math.abs(before - after), tag).toBeLessThan(0.3 * d);
+      else if (approach === 'half') expect(before - after, tag).toBeGreaterThan(0.2 * d);
       else expect(before - after, tag).toBeGreaterThan(0.5 * d);
     }
   });

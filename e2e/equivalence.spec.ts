@@ -3,7 +3,7 @@ import { expect, test } from '@playwright/test';
 /**
  * Gate de equivalencia TS ↔ GLSL (Fase 0). La anatomía existe dos veces: en
  * TypeScript (medición, PW, corte) y en GLSL (imagen, color). Aquí, con WebGL real
- * (SwiftShader en CI), se comparan en los cuatro puntos de partida de cada caso:
+ * (SwiftShader en CI), se comparan en los siete puntos de partida de cada caso:
  * tejido lejos de bordes, identificador de vaso y velocidad de la sangre, y la cara de
  * interfaz que dibuja cada punto con su distancia (decisión 57). Antes solo se comprobaba
  * a mano en la pestaña Docente y dejó pasar dos divergencias.
@@ -13,7 +13,8 @@ const CASES = ['normal-adult', 'severe-congestion', 'af-moderate-congestion'] as
 test('la anatomía GLSL coincide con la TypeScript en tejido, vaso y velocidad', async ({ page }) => {
   // En el corredor de GitHub (dos núcleos) la prueba ya tardaba 4,0 min con 240 s de plazo; la compresión
   // bajo la sonda (decisión 63) encarece cada clasificación en TS (el mapa mundo→material) y la pasa de 4 min
-  // (600 s: la ventana de la porta, decisión 69, suma un quinto barrido por caso)
+  // (600 s: la ventana de la porta, decisión 69, suma un quinto barrido por caso; la epigástrica y la subcostal,
+  // decisión 83, un sexto y un séptimo)
   test.setTimeout(600_000);
   await page.goto('/?e2e=1');
   await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: 60_000 });
@@ -21,7 +22,7 @@ test('la anatomía GLSL coincide con la TypeScript en tejido, vaso y velocidad',
     await page.selectOption('#case-select', id);
     await expect.poll(() => page.evaluate(() => typeof window.__vexusTest?.equivalenceSweep), { timeout: 30_000 }).toBe('function');
     const report = await page.evaluate(() => window.__vexusTest!.equivalenceSweep());
-    expect(report).toHaveLength(5);
+    expect(report).toHaveLength(7);
     for (const r of report) {
       const tag = `${id}/${r.id}: ${JSON.stringify(r)}`;
       expect(r.interiorAgreement, tag).toBeGreaterThanOrEqual(0.99);
@@ -32,6 +33,10 @@ test('la anatomía GLSL coincide con la TypeScript en tejido, vaso y velocidad',
     expect(report.find((r) => r.id === 'subxiphoid')!.bloodCells).toBeGreaterThan(50);
     expect(report.find((r) => r.id === 'flank')!.bloodCells).toBeGreaterThan(50);
     expect(report.find((r) => r.id === 'portal')!.bloodCells).toBeGreaterThan(50);
+    expect(report.find((r) => r.id === 'subcostal')!.bloodCells).toBeGreaterThan(50);
+    // la transversa epigástrica corta de través la VCI y la aorta: 25 celdas interiores en el sano (66 y 55 en los
+    // congestivos) con el TS como «GPU»
+    expect(report.find((r) => r.id === 'epigastric')!.bloodCells).toBeGreaterThan(15);
     // Volumen (Fase 2): 50 000 puntos de todo el tronco. Lejos de interfaces (≥ 1 mm) las dos
     // anatomías deben coincidir EXACTAMENTE: cambiar en GLSL el redondeo de la fisura umbilical
     // de 3 a 6 mm solo lo detecta esto (1 discrepancia en 18 000; las ventanas daban 100 %).

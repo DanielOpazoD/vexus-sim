@@ -1,6 +1,13 @@
 import type { ProbePose } from '../probe/probe';
 
 /**
+ * Teclas que mueven la sonda (⇧ solo las afina). Las demás no entran en el conjunto de teclas mantenidas: Intro sobre
+ * una tarjeta de ventana, mantenida unos cuadros, hacía que `tick` llamara a `setPose` sin mover nada y ese gesto
+ * «manual» cancelaba el deslizamiento que la propia tarjeta acababa de pedir (decisión 83).
+ */
+const MOVE_KEYS: ReadonlySet<string> = new Set(['a', 'd', 'w', 's', 'q', 'e', 'arrowleft', 'arrowright', 'arrowup', 'arrowdown', 'r', 'f']);
+
+/**
  * Entrada de la sonda (guía §8; base F.5): ratón, trackpad, teclado y táctil
  * producen la misma pose. No hay botones de «vista»: el alumno debe encontrar
  * la ventana desplazando, rotando, basculando e inclinando.
@@ -32,8 +39,9 @@ export class ProbeInput {
     el.addEventListener('contextmenu', (e) => e.preventDefault());
     window.addEventListener('keydown', (e) => {
       if ((e.target as HTMLElement | null)?.tagName === 'INPUT' || (e.target as HTMLElement | null)?.tagName === 'SELECT') return;
-      this.keys.add(e.key.toLowerCase());
-      if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(e.key.toLowerCase())) e.preventDefault();
+      const key = e.key.toLowerCase();
+      if (key === 'shift' || MOVE_KEYS.has(key)) this.keys.add(key);
+      if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', ' '].includes(key)) e.preventDefault();
     });
     window.addEventListener('keyup', (e) => this.keys.delete(e.key.toLowerCase()));
     window.addEventListener('blur', () => this.keys.clear());
@@ -95,9 +103,9 @@ export class ProbeInput {
     else this.setPose({ ...p, yaw: p.yaw + e.deltaY * 0.0015 });
   };
 
-  /** Integra las teclas mantenidas (llamar cada cuadro con dt en segundos). */
+  /** Integra las teclas mantenidas (llamar cada cuadro con dt en segundos); sin una tecla de movimiento no toca la pose. */
   tick(dt: number): void {
-    if (this.keys.size === 0 || !this.live()) return;
+    if (!this.live() || ![...this.keys].some((k) => MOVE_KEYS.has(k))) return;
     const p = { ...this.getPose() };
     const fine = this.keys.has('shift') ? 0.3 : 1;
     const slide = 40 * dt * fine; // mm/s

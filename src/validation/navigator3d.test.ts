@@ -3,7 +3,9 @@ import { HILUM_NOTCH, kidneyLocal } from '../anatomy/organs/kidney';
 import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
+import { START_POINTS } from '../app/startPoints';
 import { CM } from '../ui/navigator3d/common';
+import { LABEL_NEAR_CM, LABEL_STEP_CM, windowLabelPositions } from '../ui/navigator3d/labels';
 import { buildKidneyMesh, buildLiverMesh } from '../ui/navigator3d/organs';
 
 /**
@@ -54,5 +56,22 @@ describe('Mallas 3D por marching cubes sobre el SDF (decisiones 37 y 40)', () =>
     expect(yMaxAt(27, -48) - yMaxAt(15, -48)).toBeGreaterThan(8);
     // por encima de zMax no hay fisura
     expect(Math.abs(yMaxAt(27, -15) - yMaxAt(15, -15))).toBeLessThan(4);
+  });
+});
+
+describe('Rótulos de los anillos de las ventanas en el 3D', () => {
+  it('la epigástrica, a 3,2 cm de la subxifoidea y a su misma altura, sube un rótulo y los demás siguen en su anillo (decisión 83)', () => {
+    // Comprueba la regla en el espacio de la escena (≥ 1,8 cm de altura o ≥ 5 cm entre rótulos), no en la pantalla: con
+    // la cámara por defecto «Porta · lateral» y «Renal» (a 1,9 cm de altura, desde la 69) aún se pisan
+    const at = windowLabelPositions(scene);
+    expect(at).toHaveLength(START_POINTS.length);
+    for (let i = 0; i < at.length; i++)
+      for (let j = i + 1; j < at.length; j++) {
+        const clear =
+          Math.abs(at[i].z - at[j].z) >= LABEL_STEP_CM - 1e-9 || Math.hypot(at[i].x - at[j].x, at[i].y - at[j].y) >= LABEL_NEAR_CM;
+        expect(clear, `${START_POINTS[i].id} / ${START_POINTS[j].id}`).toBe(true);
+      }
+    // solo el de la epigástrica deja la altura de su anillo
+    START_POINTS.forEach((sp, i) => expect(at[i].z, sp.id).toBeCloseTo(sp.z * CM + (sp.id === 'epigastric' ? LABEL_STEP_CM : 0), 9));
   });
 });

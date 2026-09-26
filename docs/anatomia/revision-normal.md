@@ -46,6 +46,13 @@ Listas de comprobación de cada imagen canónica (adulto de complexión media, [
 - **Riñón derecho:** hígado arriba a la izquierda; corteza a 3–6 cm y seno a 5–8 cm; interlobares radiales entre las
   pirámides, casi paralelas al haz en la mitad superficial; arteria sobre la línea base y vena continua bajo ella.
 
+En el simulador cada ventana es un punto de partida, una tarjeta del carril (decisiones 17, 69, 75 y 83): la VCI
+subxifoidea es «Subxifoideo»; la transversa epigástrica, «Epigástrico» (abanicando hacia la cabeza, las suprahepáticas
+llegan a la VCI); la VCI coronal lateral, «Flanco · VCI»; la vena hepática lateral, «Intercostal dcho»; la vena hepática
+subxifoidea, «Subcostal · VSH» (la variante sagital con la VHM, desde debajo del reborde costal: el «conejo» entero pide
+más de los 40° que bascula la sonda); la porta lateral, «Porta · lateral», y el riñón derecho, «Renal». La AD no se ve desde
+el abdomen: queda tras el pulmón (`mediastinum-is-lung`).
+
 Errores frecuentes: efecto cilindro (el corte excéntrico infraestima), confundir la aorta o el caudado con la VCI, medir
 en modo M (la cava se traslada ~2 cm con la respiración), confundir hepática y porta (la porta tiene paredes gruesas
 ecogénicas y va al hilio; la hepática no tiene pared visible y va a la VCI).
@@ -184,5 +191,8 @@ dúplex; GE Vscan Air.
 | Doppler color en bloques                                                     | Resuelto: decisión 70 (estimación continua, grano correlado a la celda de resolución y barra de escala)                                                                                                                                                     |
 | Líneas A solo por lateral                                                    | Resuelto: decisión 71 (pleura y líneas A en todo el hemitórax derecho, también bajo la pared anterior)                                                                                                                                                      |
 | Hígado: tamaño, bordes, textura                                              | Hecho: decisión 72 (CC 15,7 cm en la medioclavicular; borde 34–57° en el sano y romo, 78–88°, en la congestión grave; lóbulo izquierdo 9,5 × 6,9 cm) y 78 (tríadas portales: focos y trazos ecogénicos finos anclados al parénquima). Pendiente: el caudado |
-| Ventanas predeterminadas                                                     | Resuelto en parte: decisiones 69 (porta lateral) y 75 (las ventanas como tarjetas con lo que muestran). Faltan la transversa epigástrica (VCI y aorta sobre la vértebra) y la hepática subxifoidea                                                          |
+| Ventanas predeterminadas                                                     | Resuelto: decisiones 69 (porta lateral), 75 (las ventanas como tarjetas con lo que muestran) y 83 (transversa epigástrica con la VCI y la aorta sobre la vértebra; suprahepática subcostal con la VSH media hasta la VCI)                                   |
 | Luces vasculares demasiado limpias                                           | Resuelto: decisión 76 (lóbulos laterales con la aberración de la pared y reverberación de sus caras); con la armónica (77) bajan 12 dB por orden, como en un equipo                                                                                         |
+| Por encima de la cúpula todo es pulmón: la AD no se ve desde el abdomen      | Pendiente (`mediastinum-is-lung`): desde la subxifoidea y la subcostal la VCI se ve hasta el borde del espejo del pulmón y la AD no; al abanicar la epigástrica hacia la cabeza se pierde la aorta                                                          |
+| Vértebra sin cortical: su cara anterior no brilla                            | Pendiente (`vertebra-no-cortex`): en la transversa epigástrica (decisión 83) el cuerpo vertebral se ve como una cúpula oscura sobre la sombra                                                                                                               |
+| Aorta que no late en modo B                                                  | Pendiente (`aorta-fixed-caliber`): su pulso está en la velocidad (color y PW), no en su pared                                                                                                                                                               |

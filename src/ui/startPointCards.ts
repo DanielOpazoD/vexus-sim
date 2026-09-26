@@ -11,7 +11,9 @@ type StartPointId = StartPoint['id'];
  */
 const CARD_SUB: Record<StartPointId, string> = {
   subxiphoid: 'VCI en eje largo hasta la AD',
+  epigastric: 'VCI y aorta sobre la vértebra',
   intercostal: 'Suprahepáticas y VCI por el hígado',
+  subcostal: 'VSH media hasta la VCI',
   flank: 'VCI coronal con las suprahepáticas',
   portal: 'Porta principal con la VCI detrás',
   renal: 'Riñón en eje largo · interlobares',
@@ -20,6 +22,21 @@ const CARD_SUB: Record<StartPointId, string> = {
 /** Radio (mm, sobre la piel) dentro del cual la sonda «está» en una ventana; las dos más próximas distan 24 mm. */
 export const CURRENT_WINDOW_MM = 20;
 
+/**
+ * Giro máximo (rad) entre la sonda y una ventana para estar en ella. La epigástrica y la subxifoidea (decisión 83) distan
+ * 32 mm sobre la piel y se distinguen por 90° de giro: sin esto, una sonda sagital entre las dos (la VCI en eje largo)
+ * se marcaba «Epigástrico».
+ */
+export const CURRENT_WINDOW_YAW = Math.PI / 4;
+
+/**
+ * Diferencia de giro (rad, 0 … π) por el arco corto. Girar π no da la misma ventana: el marcador queda al otro lado (la
+ * imagen en espejo) y, con basculación o inclinación, el haz apunta a otro sitio. NaN si alguno lo es.
+ */
+export function yawDelta(a: number, b: number): number {
+  return Math.abs(Math.atan2(Math.sin(a - b), Math.cos(a - b)));
+}
+
 /** Distancia (mm) entre la sonda y un punto de partida: cuerda sobre la elipse del tronco y eje craneocaudal. */
 export function startPointDistanceMm(pose: Pick<ProbePose, 'phi' | 'z'>, sp: StartPoint, torso: Pick<Torso, 'a' | 'b'>): number {
   const dx = torso.a * (Math.cos(pose.phi) - Math.cos(sp.phi));
@@ -27,15 +44,20 @@ export function startPointDistanceMm(pose: Pick<ProbePose, 'phi' | 'z'>, sp: Sta
   return Math.hypot(dx, dy, pose.z - sp.z);
 }
 
-/** La ventana en la que está la sonda: el punto de partida más cercano a ≤ `maxMm`, o ninguno. */
+/**
+ * La ventana en la que está la sonda: el punto de partida más cercano a ≤ `maxMm` cuyo giro difiere del de la sonda
+ * menos de `CURRENT_WINDOW_YAW`, o ninguno.
+ */
 export function currentStartPoint(
-  pose: Pick<ProbePose, 'phi' | 'z'>,
+  pose: Pick<ProbePose, 'phi' | 'z' | 'yaw'>,
   torso: Pick<Torso, 'a' | 'b'>,
   maxMm = CURRENT_WINDOW_MM,
 ): StartPointId | null {
   let best: StartPointId | null = null;
   let bestMm = maxMm;
   for (const sp of START_POINTS) {
+    // escrito para que un giro NaN no cuente como ventana
+    if (!(yawDelta(pose.yaw, sp.yaw) < CURRENT_WINDOW_YAW)) continue;
     const d = startPointDistanceMm(pose, sp, torso);
     if (d <= bestMm) {
       best = sp.id;
@@ -56,7 +78,7 @@ export interface StartPointCardsDeps {
 
 /**
  * Ventanas VExUS del carril izquierdo: una tarjeta por punto de partida. Resalta la ventana actual: la elegida
- * mientras la sonda se desliza hacia ella y, después, aquella en cuyo punto de partida está la sonda.
+ * mientras la sonda se desliza hacia ella y, después, aquella en cuyo punto de partida está la sonda, con su giro.
  */
 export class StartPointCards {
   private readonly cards = new Map<StartPointId, HTMLButtonElement>();

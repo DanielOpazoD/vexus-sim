@@ -50,6 +50,29 @@ test('cambia de caso y el HUD lo refleja', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
+test('ventanas (decisión 83): Intro en una tarjeta, mantenida como con el dedo, desliza la sonda hasta su ventana', async ({ page }) => {
+  const errors = await bootWithoutErrors(page);
+  const card = page.locator('.win-card', { hasText: 'Epigástrico' });
+  const readout = page.getByText(/^φ -?\d+° · z -?[\d.]+ cm · acoplamiento/);
+  // la e2e arranca en la pose por defecto (φ 166°, z 0,8 cm), lejos de la epigástrica (φ 90°, z −2 cm)
+  await expect(readout).not.toContainText('φ 90° · z -2.0 cm', { timeout: 30_000 });
+  await card.focus();
+  // Intro mantenida unos cuadros, como con el dedo (≈ 0,1 s son 6 cuadros a 60 fps): antes cualquier tecla mantenida
+  // pasaba por la entrada de la sonda como un gesto manual y cancelaba en el cuadro siguiente el deslizamiento que la
+  // tarjeta acababa de pedir. Con SwiftShader un cuadro tarda casi un segundo: se mantiene hasta que el reloj de la
+  // simulación avanza medio segundo (dos cuadros al menos, a ≤ 0,25 s por cuadro)
+  const status = page.locator('#status');
+  const tOf = (s: string | null) => Number(/t ([\d.]+) s/.exec(s ?? '')?.[1] ?? 0);
+  await page.keyboard.down('Enter');
+  const t0 = tOf(await status.textContent());
+  await expect.poll(async () => tOf(await status.textContent()), { timeout: 60_000 }).toBeGreaterThan(t0 + 0.5);
+  await page.keyboard.up('Enter');
+  await expect(readout).toContainText('φ 90° · z -2.0 cm', { timeout: 60_000 });
+  // llegada: la tarjeta queda resaltada como la ventana en la que está la sonda (su punto y su giro)
+  await expect(card).toHaveAttribute('aria-current', 'true', { timeout: 30_000 });
+  expect(errors).toEqual([]);
+});
+
 test('modos por teclado, pestaña Medir y captura de una medición', async ({ page }) => {
   test.setTimeout(180_000);
   // ?docente: al final se abre la pestaña Docente (en producción la casilla solo aparece así)

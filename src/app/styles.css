@@ -337,13 +337,14 @@ button.secondary.on {
 [aria-expanded='false'] > .chevron {
   transform: rotate(-45deg);
 }
-/* Tarjetas de ventanas: anillo del color del 3D, nombre y lo que muestra */
+/* Tarjetas de ventanas: anillo del color del 3D, nombre y lo que muestra. Siete ventanas (decisión 83): cada tarjeta
+   mide 40 px (dos líneas de 16 px) y 32 px en pantallas bajas, para no quitarle al navegador 3D más de lo necesario */
 .windows-block {
   flex: none;
 }
 .windows {
   display: grid;
-  gap: 2px;
+  gap: 1px;
   padding: 0 8px 8px;
 }
 .win-card {
@@ -353,7 +354,7 @@ button.secondary.on {
   column-gap: 8px;
   align-items: center;
   width: 100%;
-  padding: 4px 8px;
+  padding: 3px 8px;
   text-align: left;
   background: transparent;
   border: 1px solid transparent;
@@ -361,6 +362,11 @@ button.secondary.on {
 }
 .win-card:hover {
   background: var(--panel-2);
+}
+/* Con 1 px entre tarjetas el contorno del foco (1 px fuera) cae sobre la siguiente, que se pinta después: por encima */
+.win-card:focus-visible {
+  position: relative;
+  z-index: 1;
 }
 .win-ring {
   grid-row: 1 / span 2;
@@ -390,6 +396,11 @@ button.secondary.on {
 }
 .win-card.current .win-ring {
   background: var(--win);
+}
+/* Sobre el tinte de la ventana actual el gris de la línea no llega a 4,5:1 con los colores claros (la lima de la
+   subcostal, 4,48:1): en la tarjeta actual lleva el color del texto */
+.win-card.current .win-sub {
+  color: var(--text);
 }
 /* Navegador 3D ≈ 60 % y corte ≈ 40 % del alto restante; el corte se pliega */
 .nav-block {
@@ -505,7 +516,11 @@ button.secondary.on {
     height: 32px;
   }
   .win-card {
-    padding: 1px 8px;
+    padding: 0 8px;
+  }
+  .win-name,
+  .win-sub {
+    line-height: 15px;
   }
   .menu.down,
   .popover {

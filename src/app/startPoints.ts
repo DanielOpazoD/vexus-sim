@@ -1,11 +1,13 @@
 /**
- * «Puntos de partida» (decisión 17): posiciones cutáneas con ángulos casi neutros hacia
- * las que la sonda se DESLIZA; la ventana diagnóstica hay que afinarla. Los consumen la
- * consola (botones) y el navegador 3D (anillos sobre la piel), que antes los duplicaban.
- * φ en el marco anatómico (0 = izquierda del paciente, π/2 = anterior), z en mm.
+ * «Puntos de partida» (decisión 17): posiciones cutáneas con los ángulos de partida de cada
+ * ventana, hacia las que la sonda se DESLIZA; la ventana diagnóstica hay que afinarla (en la
+ * subcostal de la decisión 83 el margen es estrecho: moverla 1 cm, o girarla o abanicarla 5°,
+ * pierde la VSH media en eje largo). Los consumen el carril (tarjetas, decisión 75) y el
+ * navegador 3D (anillos sobre la piel). φ en el marco anatómico (0 = izquierda del paciente,
+ * π/2 = anterior), z en mm.
  */
 export interface StartPoint {
-  id: 'subxiphoid' | 'intercostal' | 'flank' | 'portal' | 'renal';
+  id: 'subxiphoid' | 'epigastric' | 'intercostal' | 'subcostal' | 'flank' | 'portal' | 'renal';
   label: string;
   phi: number;
   z: number;
@@ -34,6 +36,22 @@ export const START_POINTS: readonly StartPoint[] = [
     hint: 'Bajo el xifoides, paramediano derecho, haz basculado hacia la cabeza: VCI en eje largo hasta la aurícula derecha a 10–14 cm; abanicar suavemente hacia la derecha del paciente.',
   },
   {
+    id: 'epigastric',
+    color: '#ff9470',
+    label: 'Epigástrico',
+    // Transversa epigástrica (decisión 83): línea media 2 cm bajo la punta del xifoides, marcador a la derecha del
+    // paciente (a la izquierda de la pantalla) y haz perpendicular. La VCI retrohepática oval a la izquierda con el
+    // hígado (caudado y ligamento venoso) delante, la aorta redonda a la derecha del centro apoyada en la vértebra y el
+    // cuerpo vertebral centrado en la base con su sombra; el cartílago del reborde costal derecho asoma en la esquina
+    // del campo cercano. Deslizando hacia los pies salen de la cara anterior de la aorta el celíaco (1 cm) y la AMS
+    // (2,4 cm); abanicando el haz 26° hacia la cabeza la derecha y la media llegan a la VCI y la izquierda se acerca,
+    // cortadas de través (el «conejo» entero pide más de los 40° que bascula la sonda: `probe-angle-40deg`).
+    phi: Math.PI / 2,
+    z: -20,
+    yaw: -Math.PI / 2,
+    hint: 'Transversa en el epigastrio, bajo el xifoides en la línea media, marcador a la derecha del paciente: vértebra con su sombra al fondo, aorta redonda justo delante y VCI oval a su lado con hígado delante; deslizar hacia los pies para el celíaco y la AMS y abanicar hacia la cabeza para ver llegar las suprahepáticas a la VCI.',
+  },
+  {
     id: 'intercostal',
     color: '#ffc857',
     label: 'Intercostal dcho',
@@ -55,6 +73,26 @@ export const START_POINTS: readonly StartPoint[] = [
     z: 0,
     yaw: -1.15,
     hint: 'Suprahepáticas y VCI por el 8.º espacio intercostal en la línea axilar media: la sonda a lo largo del espacio, marcador hacia la axila, sin costillas en el sector (los bordes, sobre el tórax curvo, no apoyan); la cortina pulmonar entra por el lado craneal y baja con la inspiración.',
+  },
+  {
+    id: 'subcostal',
+    color: '#b4e36a',
+    label: 'Subcostal · VSH',
+    // Suprahepática subxifoidea en su variante sagital (la VCI con la VSH media), desde debajo del reborde costal derecho
+    // (decisión 83): 5,5 cm bajo el xifoides y 1,7 cm a la derecha de la línea media; marcador craneal girado 23° hacia
+    // la izquierda del paciente, basculado 14° y abanicado 23° hacia la derecha: el haz va 21° hacia la cabeza y 13°
+    // hacia la derecha. La VSH media recorre el plano ~5 cm hasta el tronco común y la VCI; la derecha desemboca a su lado
+    // en un tramo corto. La parte craneal de la VCI y la aurícula derecha quedan tras el pulmón que hay sobre la cúpula
+    // (`mediastinum-is-lung`). A 1–2 cm de la VCI la VSH media queda a 40° del haz en espiración (47° en la inspiración
+    // tranquila): la puerta PW del protocolo. Desde la punta del xifoides el haz no llega a la dirección de la VSH media
+    // con la basculación máxima (40°): la corta de través, con las suprahepáticas junto a la VCI (el «conejo»
+    // incompleto que se ve abanicando la epigástrica hacia la cabeza).
+    phi: 1.68,
+    z: -55,
+    yaw: 0.4,
+    rock: 0.25,
+    tilt: -0.4,
+    hint: 'Suprahepática media por debajo del reborde costal derecho, 5 cm bajo el xifoides: marcador craneal algo girado hacia la izquierda del paciente, haz basculado hacia la cabeza y abanicado hacia la derecha del paciente; la VSH media baja hasta el tronco común y la VCI, con la derecha desembocando a su lado; puerta PW en la VSH media a 1–2 cm de la VCI.',
   },
   {
     id: 'flank',

@@ -35,6 +35,9 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'renal-pause-resolution-prf',
   'no-spleen-no-left-ribs',
   'fixed-arterial-resistive-index',
+  'mediastinum-is-lung',
+  'vertebra-no-cortex',
+  'aorta-fixed-caliber',
   'side-plane-skips-tubes',
   'interface-echo-scope',
   'interface-echo-coherent-only',
@@ -66,4 +69,5 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'no-remodelled-ivc',
   'no-stiff-rv-d-reversal',
   'blind-mode-screen-only',
+  'probe-angle-40deg',
 ]);

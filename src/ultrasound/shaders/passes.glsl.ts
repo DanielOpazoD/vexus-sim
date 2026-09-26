@@ -503,9 +503,10 @@ vec2 fieldForPhBase(vec3 m, float se, int tissue, float ph0, vec3 g, vec3 b0, Wa
   if (tissue == T_LIVER) het *= portalTriad(m);
   return f * tissueBack(tissue) * het;
 }
-// con los septos del psoas y del cuadrado (decisión 81) en la dirección de esta mirada; wallFieldPh usa la base
+// con los septos del psoas y del cuadrado (decisión 81) en la dirección de esta mirada (b_0 + g/lookK2, como la pared);
+// wallFieldPh usa la base
 vec2 fieldForPh(vec3 m, float se, int tissue, float ph0, vec3 g, vec3 b0, Warp w) {
-  return fieldForPhBase(m, se, tissue, ph0, g, b0, w) * retroTexture(m, tissue, normalize(b0 + g / uSteer.w), w);
+  return fieldForPhBase(m, se, tissue, ph0, g, b0, w) * retroTexture(m, tissue, normalize(b0 + g / lookK2), w);
 }
 vec2 sampleSidePh(vec3 p, float se, Cls center, float ph0, vec3 g, bool withCurtain, Warp w) {
   vec3 m = toMaterial(p);

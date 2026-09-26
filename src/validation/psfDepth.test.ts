@@ -9,13 +9,12 @@ import {
   axialSigmaMm,
   beamFwhmMm,
   downshiftPerMm,
-  focalGain,
   focalReferenceFwhmMm,
-  frequencyRatio,
   lateralFwhmMm,
   pulseSigmaMm,
   txApertureMm,
 } from '../ultrasound/beamModel';
+import { focalGain, frequencyRatio } from '../ultrasound/beamEcho';
 import {
   FRAG_AXIAL,
   FRAG_COLOR,

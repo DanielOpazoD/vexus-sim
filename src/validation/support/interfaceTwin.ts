@@ -23,7 +23,8 @@
 import { INTERFACES, Interface, LAST_TUBE_INTERFACE } from '../../anatomy/interfaces';
 import { CLUTTER, applyComplexKernel, clutterParams, lateralKernel } from '../../ultrasound/clutter';
 import { TISSUES, Tissue } from '../../anatomy/tissues';
-import { axialSigmaMm, frequencyRatio, lateralFwhmMm } from '../../ultrasound/beamModel';
+import { axialSigmaMm, lateralFwhmMm } from '../../ultrasound/beamModel';
+import { frequencyRatio } from '../../ultrasound/beamEcho';
 import { bmodeBeam, CONVEX_C35_PROFILE } from '../../ultrasound/transducerProfile';
 import { greyOfLevel, levelOfGrey } from '../../ultrasound/greyMap';
 import { IFACE_K_DB, IFACE_SHIFT_MM, curvatureCoherence, faceProfile, interfaceEchoField } from '../../ultrasound/interfaceEcho';

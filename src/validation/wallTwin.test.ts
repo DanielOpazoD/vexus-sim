@@ -13,7 +13,7 @@ import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient } from '../physiology/patientState';
 import { CONVEX_C35, probeFrame } from '../probe/probe';
 import { probeContact } from '../probe/contact';
-import { focalGain } from '../ultrasound/beamModel';
+import { focalGain } from '../ultrasound/beamEcho';
 import { greyOfLevel, levelOfGrey } from '../ultrasound/greyMap';
 import { DISPLAY_MARGIN_PX, DISPLAY_REF_DB, nominalTgcDbPerCm } from '../ultrasound/renderer';
 import { pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';

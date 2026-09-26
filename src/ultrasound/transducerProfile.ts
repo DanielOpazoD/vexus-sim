@@ -65,20 +65,18 @@ export const CONVEX_C35_PROFILE: TransducerProfile = {
  * bajada: es de banda estrecha.
  */
 export function bmodeBeam(profile: TransducerProfile, bmode: { harmonic: boolean }): BeamParams {
-  const { echoBandwidth: bw, kTx, txConeFraction, fNumberTxMin } = profile.bmode;
+  // la emisión apodizada (kTx, txConeFraction, fNumberTxMin), la misma en los dos modos
+  const { echoBandwidth: bw, ...tx } = profile.bmode;
   const alpha = TISSUES[Tissue.Liver].alpha1;
   if (!bmode.harmonic) {
     const k = downshiftPerMm(bw.fundamental, profile.geometry.f0B / 1e6, alpha);
-    return { ...profile.beam, kTx, txConeFraction, fNumberTxMin, downshiftRxPerMm: k, downshiftTxPerMm: k };
+    return { ...profile.beam, ...tx, downshiftRxPerMm: k, downshiftTxPerMm: k };
   }
   const k = downshiftPerMm(bw.harmonic, HARMONIC.rxMHz, alpha);
-  const axialSigma0Mm = pulseSigmaMm(bw.harmonic, bw.fundamental, HARMONIC.rxMHz);
   return {
     ...harmonicBeam(profile.beam),
-    axialSigma0Mm,
-    kTx,
-    txConeFraction,
-    fNumberTxMin,
+    ...tx,
+    axialSigma0Mm: pulseSigmaMm(bw.harmonic, bw.fundamental, HARMONIC.rxMHz),
     downshiftRxPerMm: k,
     downshiftTxPerMm: k / 2,
     // el armónico nace como p1²: fuera del foco su amplitud va como la intensidad de la emisión, no como su raíz

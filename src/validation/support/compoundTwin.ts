@@ -17,7 +17,8 @@
  * Sin WebGL ni `probe`/`app` (capa `validation`): el marco de la sonda entra como vectores.
  */
 import { add, scale, type Vec3 } from '../../core/vec3';
-import { axialSigmaMm, frequencyRatio, lateralSigmaMm, type BeamParams } from '../../ultrasound/beamModel';
+import { axialSigmaMm, lateralSigmaMm, type BeamParams } from '../../ultrasound/beamModel';
+import { frequencyRatio } from '../../ultrasound/beamEcho';
 import { bmodeBeam, CONVEX_C35_PROFILE } from '../../ultrasound/transducerProfile';
 import { speckleSliceFieldPh, type SpeckleAnchorState } from '../../ultrasound/speckleField';
 import { lookPhase, lookPhaseGrad } from '../../ultrasound/steering';

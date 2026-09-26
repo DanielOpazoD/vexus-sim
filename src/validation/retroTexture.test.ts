@@ -112,7 +112,8 @@ describe('Textura de los músculos retroperitoneales (decisión 81)', () => {
       expect(src.indexOf('float wallOrientation(')).toBeLessThan(src.indexOf('float retroTexture('));
     }
     expect(FRAG_RAWFIELD).toContain('return fieldForBase(m, se, tissue, dir, w) * retroTexture(m, tissue, dir, w);');
-    expect(FRAG_RAWFIELD_STEERED).toContain('retroTexture(m, tissue, normalize(b0 + g / uSteer.w), w)');
+    // la dirección de la mirada con el k2 con que se formó su fase (a la frecuencia del eco, decisión 84)
+    expect(FRAG_RAWFIELD_STEERED).toContain('retroTexture(m, tissue, normalize(b0 + g / lookK2), w)');
     // la pared de la serie de la pleura (en un bucle) usa la base, sin la textura del retroperitoneo
     expect(PLEURA_GLSL).toContain('vec2 field = fieldForBase(m, se, c.tissue, normalize(p - uCurvC), w);');
     expect(FRAG_RAWFIELD_STEERED).toContain('vec2 field = fieldForPhBase(m, se, c.tissue, ph0, g, normalize(p - uCurvC), w);');

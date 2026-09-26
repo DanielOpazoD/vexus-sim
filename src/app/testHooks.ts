@@ -23,7 +23,7 @@ import { type ApertureGeometry } from '../ultrasound/aperture';
 import { compareSteeredTransmission } from './steeredParity';
 import { compoundActive, lookTheta } from '../ultrasound/compound';
 import { levelOfGrey } from '../ultrasound/greyMap';
-import { focalGain } from '../ultrasound/beamModel';
+import { focalGain } from '../ultrasound/beamEcho';
 import { bmodeBeam, bmodeTxApertureMm } from '../ultrasound/transducerProfile';
 import { COARSE_DEPTH, COLOR_DISPLAY_THRESHOLD, type CompoundState } from '../ultrasound/renderer';
 import { pixelToBeam } from '../ultrasound/sectorGeometry';

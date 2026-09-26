@@ -1,7 +1,8 @@
 // @tier slow
 import { beforeAll, describe, expect, it } from 'vitest';
 import { Interface } from '../anatomy/interfaces';
-import { axialSigmaMm, beamFwhmMm, frequencyRatio } from '../ultrasound/beamModel';
+import { axialSigmaMm, beamFwhmMm } from '../ultrasound/beamModel';
+import { frequencyRatio } from '../ultrasound/beamEcho';
 import { IFACE_BETA, IFACE_SIGMA_H_MM } from '../ultrasound/interfaceEcho';
 import {
   BACK,

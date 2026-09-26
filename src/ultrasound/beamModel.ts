@@ -110,15 +110,13 @@ const C_MM_US = 1.54;
 /**
  * σ axial en la cara (mm) de un eco de ancho de banda fraccional `bandwidth` a través del filtro de recepción de la
  * imagen (decisión 84): el pulso de dos vías es el espectro del eco por el del filtro, 1/σ² = 1/σ_eco² + 1/σ_filtro²
- * (gaussianas), y σ_z = c/(4π·σ). El filtro sale de calibrar el fundamental: su eco de `fundamentalBandwidth` da
- * `AXIAL_SIGMA_MM`. En armónica el eco es más estrecho y el pulso, más largo (van Wijk y Thijssen 2002).
+ * (gaussianas), y σ_z = c/(4π·σ), con σ_eco = bandwidth·f0/2,355. El filtro sale de calibrar el fundamental: su eco
+ * de `fundamentalBandwidth` da `AXIAL_SIGMA_MM`, así que σ_z² = AXIAL_SIGMA_MM² + (c/4π)²·(1/σ_eco² − 1/σ_eco,fund²).
+ * En armónica el eco es más estrecho y el pulso, más largo (van Wijk y Thijssen 2002).
  */
 export function pulseSigmaMm(bandwidth: number, fundamentalBandwidth: number, f0MHz: number): number {
-  const sigmaOf = (bw: number): number => (bw * f0MHz) / 2.3548;
-  const pulse = C_MM_US / (4 * Math.PI * AXIAL_SIGMA_MM);
-  const invFilter2 = 1 / (pulse * pulse) - 1 / sigmaOf(fundamentalBandwidth) ** 2;
-  const eff = 1 / Math.sqrt(1 / sigmaOf(bandwidth) ** 2 + invFilter2);
-  return C_MM_US / (4 * Math.PI * eff);
+  const k = (C_MM_US * 2.3548) / (4 * Math.PI * f0MHz);
+  return Math.sqrt(AXIAL_SIGMA_MM ** 2 + k * k * (1 / bandwidth ** 2 - 1 / fundamentalBandwidth ** 2));
 }
 
 /** Np por dB de amplitud (1 Np = 20/ln 10 dB). */
@@ -135,11 +133,6 @@ export function downshiftPerMm(bandwidth: number, f0MHz: number, alphaDbPerCmMHz
   return (2 * beta * sigma * sigma) / f0MHz;
 }
 
-/** f(r)/f0 del eco a la profundidad r (mm): 1/(1 + κ·r). */
-export function frequencyRatio(rMm: number, p: BeamParams = CONVEX_BEAM): number {
-  return 1 / (1 + p.downshiftRxPerMm * Math.max(0, rMm));
-}
-
 /**
  * σ axial (mm) a la profundidad r: la del pulso en la cara estirada por la bajada, porque el filtro de seguimiento
  * conserva el ancho de banda fraccional y la banda absoluta se estrecha con la frecuencia central.
@@ -148,10 +141,12 @@ export function axialSigmaMm(rMm: number, p: BeamParams = CONVEX_BEAM): number {
   return p.axialSigma0Mm * (1 + p.downshiftRxPerMm * Math.max(0, rMm));
 }
 
-/** Apertura de emisión (mm) con el foco F: la máxima, o F/F#_tx,min si esa es menor (`fNumberTxMin`). */
+/**
+ * Apertura de emisión (mm) con el foco F: la máxima, o F/F#_tx,min si esa es menor (`fNumberTxMin`; con 0, F/0 = ∞ y
+ * queda la máxima).
+ */
 export function txApertureMm(focusMm: number, p: BeamParams = CONVEX_BEAM): number {
-  const F = Math.max(10, focusMm);
-  return p.fNumberTxMin > 0 ? Math.min(p.apertureTxMm, F / p.fNumberTxMin) : p.apertureTxMm;
+  return Math.min(p.apertureTxMm, Math.max(10, focusMm) / p.fNumberTxMin);
 }
 
 /** FWHM (mm) de los haces de emisión y de recepción de una vía a la profundidad r. */
@@ -177,36 +172,8 @@ export function lateralSigmaMm(rMm: number, focusMm: number, p: BeamParams = CON
 }
 
 /**
- * Ganancia focal (amplitud, decisión 84): cómo cambia con la profundidad el eco de un medio difuso por la concentración
- * de la emisión en el foco. Con haces gaussianos y la potencia fija, la intensidad en el eje va como 1/FWHM
- * (conservación de la energía a través del haz), en la emisión y, por reciprocidad, en la sensibilidad de la
- * recepción; el eco de un medio difuso es ∫|h_tx|²·|h_rx|² a lo ancho del haz, ∝ 1/√(FWHM_tx² + FWHM_rx²), y su
- * amplitud, (FWHM_tx² + FWHM_rx²)^(−¼). En armónica la fuente del armónico es p1²: su intensidad va como la de la
- * emisión al cuadrado, ∝ 1/FWHM_tx² (con la FWHM del haz efectivo, ya /√2 en `txScale`), y la amplitud, como
- * FWHM_tx^(−½)·(FWHM_tx² + FWHM_rx²)^(−¼). Las dos: (FWHM_tx,ref/FWHM_tx)^(n − ½)·√(|FWHM_ref|/|FWHM|), con n
- * (`focalExponent`) ½ y 1 y |FWHM| = √(FWHM_tx² + FWHM_rx²); fuera del foco, donde la emisión es mucho más ancha
- * que la recepción, va como FWHM_tx^(−n) [DERIVADO de haces gaussianos]. La referencia es fija, los haces en el foco
- * con el foco del preajuste (`focalReferenceMm`, el foco por defecto): con él vale 1 en el foco, así que el hígado
- * sigue a media escala en el foco por defecto (decisión 53), y menos por encima y por debajo, la banda algo más clara
- * del foco (Oosterveld, Thijssen y Verhoef 1985, Ultrason Imaging 7:142: la amplitud media del eco culmina en el
- * foco). Con otro foco la banda se mueve con él y su pico cambia con su cintura: más claro con el foco somero y
- * estrecho, más apagado con el hondo y ancho, como la potencia emitida repartida en otra anchura; con un foco hondo el
- * pico se adelanta (a 122 mm con el foco a 140: pasada la apertura máxima la recepción se ensancha con r), con la cima
- * plana (≤ 0,2 dB sobre el valor en el foco). Con la emisión de Hann de la imagen B a F/3,5 da −4,1 dB a 20 mm y −3,9 dB a 150 mm en fundamental, y −5,0 / −4,7 dB en armónica:
- * la emisión a f1 enfoca menos, pero la fuente p1² dobla los dB de la emisión. Contraste: Bottenus 2018 (IEEE TUFFC
- * 65:30) mide 8,2 y 9,6 dB de señal entre la emisión enfocada a 40 mm y la enfocada en cada profundidad, a 10 y 95 mm
- * (sectorial de 19,2 mm a 2,98 MHz); con ese montaje y emisión uniforme el modelo da 10–13 y 7,5 dB (con la de Hann,
- * 7–9 y 3,5 dB). Solo el eco de la imagen B, no el ruido del receptor, el transitorio ni el Doppler.
- */
-export function focalGain(rMm: number, focusMm: number, p: BeamParams = CONVEX_BEAM): number {
-  const ref = focalReferenceFwhmMm(p);
-  const w = beamFwhmMm(rMm, focusMm, p);
-  return Math.pow(ref.tx / w.tx, p.focalExponent - 0.5) * Math.sqrt(Math.hypot(ref.tx, ref.rx) / Math.hypot(w.tx, w.rx));
-}
-
-/**
- * FWHM de la emisión y de la recepción en el foco con el foco del preajuste: la referencia de `focalGain` (uniforms
- * `uFocus.y`, la de la emisión, y `uFocus.w`, √(FWHM_tx² + FWHM_rx²)).
+ * FWHM de la emisión y de la recepción en el foco con el foco del preajuste: la referencia de la ganancia focal
+ * (`focalGain` de `beamEcho.ts`; uniforms `uFocus.y`, la de la emisión, y `uFocus.w`, √(FWHM_tx² + FWHM_rx²)).
  */
 export function focalReferenceFwhmMm(p: BeamParams = CONVEX_BEAM): { tx: number; rx: number } {
   return beamFwhmMm(p.focalReferenceMm, p.focalReferenceMm, p);

@@ -21,6 +21,7 @@ import { bindCollapsible, bindPopover } from './ui/disclosure';
 import { SpectrogramView, drawEcg, drawOverlay } from './ui/displays';
 import { bindKeyboardShortcuts } from './ui/keyboardShortcuts';
 import type { Navigator3D } from './ui/navigator3d';
+import { setPressed } from './ui/controls';
 import { ControlPanel } from './ui/panel';
 import { ProbeInput } from './ui/probeInput';
 import { StartPointCards } from './ui/startPointCards';
@@ -170,9 +171,11 @@ function applyMode(mode: ImagingMode): void {
     sim().pwChain.reset();
     spectrogram.reset();
   }
-  modeButtons.B.classList.toggle('active', mode === 'B');
-  modeButtons.color.classList.toggle('active', modeHasColor(mode));
-  modeButtons.pw.classList.toggle('active', modeHasPw(mode));
+  const on = { B: mode === 'B', color: modeHasColor(mode), pw: modeHasPw(mode) };
+  for (const k of ['B', 'color', 'pw'] as const) {
+    modeButtons[k].classList.toggle('active', on[k]);
+    modeButtons[k].setAttribute('aria-pressed', String(on[k]));
+  }
   // la imagen manda: el espectro solo ocupa su franja con el PW encendido
   app.classList.toggle('pw-on', modeHasPw(mode));
 }
@@ -244,18 +247,14 @@ store.subscribe((st, prev) => {
   if (st.mode !== prev.mode) applyMode(st.mode);
   if (st.frozen !== prev.frozen) {
     sim().frozen = st.frozen;
-    freezeBtn.classList.toggle('on', st.frozen);
-    freezeBtn.textContent = st.frozen ? 'Live' : 'Freeze';
+    setPressed(freezeBtn, st.frozen);
     liveChip.textContent = st.frozen ? 'FREEZE' : 'LIVE';
     liveChip.className = `chip ${st.frozen ? 'freeze' : 'live'}`;
   }
-  if (st.audio !== prev.audio) {
-    audioBtn.classList.toggle('on', st.audio);
-    audioBtn.textContent = st.audio ? 'Audio ●' : 'Audio';
-  }
+  if (st.audio !== prev.audio) setPressed(audioBtn, st.audio);
   if (st.torso !== prev.torso) {
     app.classList.toggle('no-torso', !st.torso);
-    torsoBtn.classList.toggle('on', st.torso);
+    setPressed(torsoBtn, st.torso);
   }
   if (st.caseId !== prev.caseId) {
     const error = session.loadCase(st.caseId);

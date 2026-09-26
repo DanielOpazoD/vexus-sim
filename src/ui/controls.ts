@@ -67,9 +67,7 @@ export function button(
   b.type = 'button';
   b.textContent = label;
   const sync = () => {
-    if (!isOn) return;
-    b.classList.toggle('on', isOn());
-    b.setAttribute('aria-pressed', String(isOn()));
+    if (isOn) setPressed(b, isOn());
   };
   b.addEventListener('click', () => {
     onClick();
@@ -78,6 +76,12 @@ export function button(
   parent.appendChild(b);
   sync();
   return { sync, el: b };
+}
+
+/** Estado de un conmutador (clase `on` y `aria-pressed`) sin tocar su rótulo ni su icono. */
+export function setPressed(b: HTMLButtonElement, on: boolean): void {
+  b.classList.toggle('on', on);
+  b.setAttribute('aria-pressed', String(on));
 }
 
 export function row(parent: HTMLElement): HTMLElement {

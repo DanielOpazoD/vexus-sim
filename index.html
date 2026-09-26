@@ -138,19 +138,36 @@
 
       <aside class="right" id="panel"></aside>
 
-      <footer class="modebar" role="toolbar" aria-label="Modo">
-        <div class="group">
-          <button id="mode-b" class="mode active" title="Modo B (2)">2D</button>
-          <button id="mode-color" class="mode" title="Doppler color (C)">Color</button>
-          <button id="mode-pw" class="mode" title="Doppler pulsado (P)">PW</button>
+      <footer class="modebar" role="toolbar" aria-label="Modo y equipo">
+        <div class="modes" role="group" aria-label="Modo de imagen">
+          <button id="mode-b" class="mode active" title="Modo B (2)" aria-pressed="true">2D</button>
+          <button id="mode-color" class="mode" title="Doppler color (C)" aria-pressed="false">Color</button>
+          <button id="mode-pw" class="mode" title="Doppler pulsado (P); con Color, tríplex" aria-pressed="false">PW</button>
         </div>
         <span id="ctx-chip" class="ctx-chip"></span>
-        <span class="sep"></span>
-        <button id="freeze" class="secondary" title="Congelar (Espacio)">Freeze</button>
-        <button id="audio-toggle" class="secondary">Audio</button>
         <span class="spacer"></span>
-        <button id="torso-toggle" class="secondary on" title="Navegador 3D (H)">Torso 3D</button>
-        <span id="status" class="modebar-status"></span>
+        <button id="freeze" class="secondary" title="Congelar la imagen (Espacio)" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9" />
+            <path d="m9.5 4.5 2.5 2 2.5-2M9.5 19.5l2.5-2 2.5 2" />
+          </svg>
+          Congelar
+        </button>
+        <button id="audio-toggle" class="secondary" title="Audio Doppler" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 9v6h4l5 4V5L8 9H4Z" />
+            <path class="wave" d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11" />
+          </svg>
+          Audio
+        </button>
+        <button id="torso-toggle" class="secondary on" title="Carril izquierdo: ventanas, 3D y corte (H)" aria-pressed="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3 20 7.5v9L12 21l-8-4.5v-9L12 3Z" />
+            <path d="M12 12 20 7.5M12 12v9M12 12 4 7.5" />
+          </svg>
+          Torso 3D
+        </button>
+        <span id="status" class="modebar-status" aria-live="off"></span>
       </footer>
     </div>
     <script type="module" src="/src/main.ts"></script>

@@ -1,8 +1,5 @@
-import { createRequire } from 'node:module';
-import { dirname, join } from 'node:path';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { runInThisContext } from 'node:vm';
-import ts from 'typescript';
 import { describe, expect, it } from 'vitest';
 import {
   GLSL_BUILTINS,
@@ -25,6 +22,7 @@ import {
   type SourceModule,
 } from '../../tools/build/glslMinify';
 import * as PASSES from '../ultrasound/shaders/passes.glsl';
+import { loadShaderGraph } from './support/shaderGraph';
 
 /**
  * Renombrado de identificadores GLSL en el build (`tools/build/glslMangle.ts`, cableado en `glslMinify.ts`). Las
@@ -422,42 +420,6 @@ const regexInterface = (glsl: string): string[] =>
     ),
   ].sort();
 
-/**
- * Evalúa en memoria el grafo de módulos de `entry` (CommonJS con `transpileModule`) con el fuente que da `codeOf`:
- * el original o el transformado por el plugin. Así se montan los programas tal como los monta la app.
- */
-function loadGraph(entry: string, codeOf: (path: string, code: string) => string): Record<string, unknown> {
-  const cache = new Map<string, { exports: Record<string, unknown> }>();
-  const nodeRequire = createRequire(entry);
-  const load = (path: string): Record<string, unknown> => {
-    const hit = cache.get(path);
-    if (hit) return hit.exports;
-    const code = SOURCE_BY_PATH.get(path);
-    if (code === undefined) throw new Error(`sin fuente: ${path}`);
-    const js = ts.transpileModule(codeOf(path, code), {
-      fileName: path,
-      compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022, esModuleInterop: true },
-    }).outputText;
-    const module = { exports: {} as Record<string, unknown> };
-    cache.set(path, module);
-    const require = (spec: string): unknown => {
-      if (!spec.startsWith('.')) return nodeRequire(spec);
-      const base = join(dirname(path), spec);
-      const file = [base, `${base}.ts`, join(base, 'index.ts')].find((f) => SOURCE_BY_PATH.has(f));
-      if (!file) throw new Error(`${path}: no se resuelve ${spec}`);
-      return load(file);
-    };
-    const run = runInThisContext(`(function (require, module, exports) {${js}\n})`, { filename: path }) as (
-      r: typeof require,
-      m: typeof module,
-      e: Record<string, unknown>,
-    ) => void;
-    run(require, module, module.exports);
-    return module.exports;
-  };
-  return load(entry);
-}
-
 describe('Renombrado del GLSL en el build: el fuente real', () => {
   const withGlsl = SOURCES.filter((m) => (CTX.modules.get(m.path)?.templates.length ?? 0) > 0);
 
@@ -485,7 +447,7 @@ describe('Renombrado del GLSL en el build: el fuente real', () => {
     const transform = hook<(code: string, id: string) => { code: string } | null>(plugin.transform);
     for (const m of withGlsl) {
       const out = transform.call({}, m.code, m.path)?.code;
-      expect(out, m.path).toBe(transformWithMangle(m.code, m.path, CTX));
+      expect(out, m.path).toBe(transformWithMangle(m.code, m.path, CTX, { compact: true }));
       if (out === undefined) continue;
       expect(out.split('\n').length, m.path).toBe(m.code.split('\n').length);
       const before = findGlslTemplates(m.code);
@@ -499,12 +461,15 @@ describe('Renombrado del GLSL en el build: el fuente real', () => {
         for (const n of interfaceNames(a)) expect(b.join('\n'), `${m.path} #${i}: ${n}`).toMatch(new RegExp(`\\b${n.split(' ')[1]}\\b`));
       });
     }
-    // con `vite build --watch`, solo la primera etapa: una caché de transformaciones no puede mezclar mapas
+    // con `vite build --watch`, sin renombrado (una caché de transformaciones no puede mezclar mapas); la tercera etapa,
+    // que es local a cada plantilla, sí
     const watch = glslMinify();
     hook<(c: { root: string }) => void>(watch.configResolved)({ root: ROOT });
     hook<() => void>(watch.buildStart).call({ meta: { watchMode: true } });
     const watchTransform = hook<(code: string, id: string) => { code: string } | null>(watch.transform);
-    for (const m of withGlsl.slice(0, 3)) expect(watchTransform.call({}, m.code, m.path)?.code, m.path).toBe(minifyGlslTemplates(m.code));
+    for (const m of withGlsl.slice(0, 3)) {
+      expect(watchTransform.call({}, m.code, m.path)?.code, m.path).toBe(minifyGlslTemplates(m.code, undefined, { compact: true }));
+    }
     // un módulo del proyecto con plantillas que no se analizó (fuera de `src/`, un `.js`) hace fallar el build; las
     // dependencias (three.js trae sus propias plantillas `/* glsl */`) no se tocan
     const stray = 'export const X = /* glsl */ `float someName = 1.0;`;\n';
@@ -523,8 +488,8 @@ describe('Renombrado del GLSL en el build: el fuente real', () => {
 
   it('cada programa del renderer, montado con el fuente transformado, es el original renombrado con el mapa (sin colisiones)', () => {
     const entry = join(ROOT, 'src/ultrasound/shaders/passes.glsl.ts').replace(/\\/g, '/');
-    const original = loadGraph(entry, (_, code) => code);
-    const built = loadGraph(entry, (path, code) => transformWithMangle(code, path, CTX));
+    const original = loadShaderGraph(entry, SOURCE_BY_PATH, (_, code) => code);
+    const built = loadShaderGraph(entry, SOURCE_BY_PATH, (path, code) => transformWithMangle(code, path, CTX));
     const programs = Object.keys(PASSES).filter((k) => String((PASSES as Record<string, unknown>)[k]).startsWith('#version'));
     // solo gl.ts compila shaders y solo el renderer enlaza programas: esta prueba cubre todo lo que llega a la GPU
     const rel = (m: SourceModule): string => m.path.slice(m.path.indexOf('/src/') + 1);

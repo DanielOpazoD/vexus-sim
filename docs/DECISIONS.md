@@ -3056,6 +3056,114 @@ textos que ya no casaban. Todo corregido arriba, salvo la AD que prometen la tar
 de antes y queda declarada. Capturas con GPU (M4) a 1600 × 1000 y 1280 × 800 antes y después, y de las dos ventanas, de
 los cortes hacia los pies y del abanico hacia la cabeza.
 
+## 84. PSF que cambia con la profundidad: bajada de la frecuencia central, pulso de la banda de cada modo, emisión apodizada y banda del foco
+
+**Contexto.** Ronda 3 del juez ciego (26-09-2026, `docs/fidelity/juez-ciego.md`): 21/21 detectadas y la pista número uno
+en las 7 simuladas, «moteado estacionario»: el mismo grano, contraste y brillo a toda profundidad, sin zona focal, sin
+engrosamiento por la bajada de la frecuencia ni estiramiento lateral, bordes igual de borrosos en axial y en lateral. El
+haz de la decisión 38 tenía la PSF lateral en ~1,4 mm de 3 a 9 cm, el pulso fijo (σ 0,26 mm), ninguna bajada de la
+frecuencia central y un foco de emisión que solo entraba en la anchura lateral: mover «Foco» apenas cambiaba la imagen.
+Antes de tocar nada se midió (banco ampliado con el grano de la envolvente en dB y de la imagen mostrada por bandas, y
+los paneles del juez con la misma normalización para reales y simuladas; mm con la escala del recorte simulado, que
+tomó el campo de visión de cada real, ±30 %):
+
+- Simulador (GPU M4, armónica y compuesto, intercostal a 20–60 / 60–100 / 100–140 / 140–180 mm): grano de la imagen
+  0,80 / 0,79 / 0,72 / 0,78 mm en axial y 1,74 / 1,90 / 3,07 / 3,45 mm en lateral; gris 101 / 99 / 96 / 96 con DE
+  12,6 / 13,5 / 14,1 / 11,9. El estiramiento lateral en profundidad sí existía: sigue a la PSF (1,41 → 3,42 mm) y
+  sobrevive a la conversión de barrido (la imagen, 1,0–1,25 × la PSF). Lo que no cambiaba era el eje axial.
+- Paneles del juez (las 7 reales frente a la ronda 3): el grano axial real es más grueso (1,1–1,9 mm frente a 0,8–1,2) y
+  crece hacia lo hondo en 5 de 6 parejas (0,87 → 1,29, 0,91 → 1,14, 0,93 → 1,38 mm); el lateral, 1,4–4,0 frente a
+  1,8–3,4 mm. La hipótesis del juez de una resolución «casi isótropa» no se sostiene: el simulador era MÁS anisótropo que
+  las reales (lateral/axial 1,8–3,2 frente a 1,4–2,9, mediana ~2). Y el contraste del gris (DE/media) real, 0,16–0,31 y
+  creciente con la profundidad, frente a 0,12–0,14 plano en el hígado simulado.
+
+**Opciones.** (1) Solo abrir la PSF lateral con otras aperturas: agranda la anisotropía, que ya pasaba de la real. (2) Un
+filtro de reducción del moteado del equipo (SRI, XRES): el contraste simulado ya es menor que el real, así que lo alejaría
+(punto e, descartado; el grano axial real más grueso con bordes nítidos sugiere un filtro que preserva bordes, pero siete
+paneles JPEG de proceso desconocido no bastan para calibrarlo). (3) La elegida: la física del haz que cambia con la
+profundidad, en TS (`beamModel.ts`, `bmodeBeam` de `transducerProfile.ts`) y en el GLSL con la misma fórmula.
+
+**Decisión.**
+
+- **(a) PSF lateral.** La recepción conserva D_rx ≤ 26 mm y F# ≥ 2,5: es la cuerda útil de un convexo con la
+  directividad del elemento a −3 dB (criterio de Perrot et al. 2021, Ultrasonics 111:106309; para un C5-2 de R 49,6 mm,
+  18 / 27 / 29 mm a 4 / 10 / 14 cm) [DERIVADO]. La emisión de la imagen B va apodizada con una ventana de Hann (FWHM en el
+  foco 2,0·λ·F#, Harris 1978, Proc IEEE 66:51; fuera de él, medio cono) con la apertura min(26 mm, F/2,5), el número F de
+  la recepción [EXTRAPOLACIÓN PROPIA: la apodización de emisión de un equipo no está publicada]. Con la bajada de (b), la
+  PSF de dos vías mide 1,5 mm hasta 6 cm, 1,9 mm en el foco por defecto, 2,2 mm a 10 cm y 3,4–3,8 mm a 15 cm (4,9 mm a 18
+  cm en fundamental), dentro de la resolución característica de 78 convexos abdominales (1,6–3,0 mm, lateral y elevación
+  juntas; Pye y Ellis 2011, J Phys Conf Ser 279:012009) y del peor lateral de 23 convexos en maniquí (2,71 mm; Cilia y
+  Camilleri 2023, Med Phys Int 11:304). El Doppler conserva su haz (`CONVEX_BEAM`).
+- **(b) Bajada de la frecuencia central.** Con un espectro de ida y vuelta gaussiano, df/dr = −2·β·σ_f² (Samimi y
+  Varghese 2015, IEEE TUFFC 62:871; con la atenuación lineal en f la banda no cambia, Narayana y Ophir 1983). Se usa su
+  forma de ancho de banda fraccional constante, f(r) = f0/(1 + κ·r) con κ = 2βσ_f²/f0: la del filtro de seguimiento de
+  los equipos, que baja la frecuencia central, la banda y el corte alto al ritmo del eco (patentes US 4 016 750, 1977, y
+  US 6 516 667, 2003, también en armónica), así que λ(r) = λ·(1 + κr) en las dos vías de la PSF lateral y el pulso axial
+  se alarga en la misma proporción (`axialSigmaMm`, pasada C con σ por fila). β es la del hígado del modelo (0,601
+  dB/cm/MHz; 0,50–0,55 medido en hígado normal, Taylor et al. 1986, Lu et al. 1999), el tejido que compensa la TGC
+  nominal. Banda del eco: 45 % en fundamental (un C5-2 medido centrado en 3,1 MHz con el borde bajo a −6 dB en 2,4 MHz;
+  Deng et al. 2017, IEEE TUFFC 64:164) y 35 % en armónica, el segundo armónico de una emisión en el borde bajo, que se
+  recibe en el alto [EXTRAPOLACIÓN PROPIA]. Queda 3,5 → 2,97 → 2,77 MHz a 10 y 15 cm en fundamental y 3,16 / 3,02 en
+  armónica; la emisión del armónico, a f1, baja la mitad. La armónica, de banda más estrecha, tiene el pulso más largo
+  (σ 0,30 mm frente a 0,26, `pulseSigmaMm`: el filtro de la imagen se calibra con el fundamental; el modo armónico pierde
+  resolución axial en maniquí, van Wijk y Thijssen 2002, Ultrasonics 40:585). La fase de las miradas dirigidas (decisión 58) y la coherencia de curvatura lateral del eco de interfaz (decisión 57) van a la frecuencia del eco.
+- **(c) Banda del foco.** `focalGain`: la intensidad de la emisión en el eje, con la potencia emitida fija, va como
+  1/FWHM_tx, y la amplitud del eco difuso como su raíz mientras la recepción sea más estrecha que la emisión: √(FWHM_ref /
+  FWHM_tx(r; F)), con la referencia fija en la cintura del foco del preajuste (90 mm). Con el foco por defecto vale 1 en el
+  foco (el hígado a media escala de la decisión 53) y −4,8 / −4,3 dB a 20 / 150 mm en fundamental, −2,7 / −2,3 dB en
+  armónica, cuya emisión a f1 enfoca menos; con otro foco la banda se mueve y su pico sigue a su cintura (+1,4 dB con el
+  foco a 50 mm, −2,2 dB a 140 mm). Multiplica el eco del tejido en la pasada B, en las dos miradas, antes del transitorio
+  y del ruido (no el Doppler). La amplitud media del eco culmina en el foco (Oosterveld, Thijssen y Verhoef 1985,
+  Ultrason Imaging 7:142); con emisión uniforme a F/2,1 el modelo da −6 / −5 dB donde Bottenus 2018 (IEEE TUFFC 65:30)
+  mide 8–10 dB entre enfocar en una profundidad y en cada una. En armónica la fuente del armónico va como p1², el doble en
+  dB: el modelo solo lleva la concentración de la energía de la emisión y deja la generación en la acumulación de la
+  decisión 77 (`harmonic-simplified`). El banco compara ecos de distintas profundidades con la corrección de difracción
+  (`envelopeLine` quita la ganancia focal, como el método del maniquí de referencia; Yao, Zagzebski y Madsen 1990,
+  Ultrason Imaging 12:58); la imagen mostrada la conserva.
+- **(d) Conversión de barrido.** Medido, no cambia: con 192 líneas a 1,1–1,5 mm en lo hondo y σ lateral de 1,1–2,1 mm,
+  hay ≥ 1 línea por σ y la bilineal conserva el estiramiento (imagen/PSF 1,0–1,25 en todas las bandas).
+- **(e) Suavizado del moteado:** no (arriba).
+- Sin ranuras de uniforms nuevas en B (126/128, 128/130 con el retroperitoneo): la bajada viaja en `uBeamTx.zw` (antes
+  vec2), la apodización en el cono de `uBeam.y` y en `uBeamTx.x`, y la referencia de la ganancia focal en `uFocus.y`
+  (antes float). La pasada C recibe σ por fila (`uSigmaTexels`, vec2). Gancho `setFocus` (el comando del deslizador).
+
+**Consecuencias.** Banco con GPU (M4, armónica y compuesto), antes → después, intercostal a 20–60 / 60–100 / 100–140 /
+140–180 mm: grano de la imagen 0,80×1,74 / 0,79×1,90 / 0,72×3,07 / 0,78×3,45 → 0,88×1,80 / 0,87×2,01 / 0,86×3,28 /
+0,94×3,80 mm (axial × lateral); PSF 1,41 / 1,57 / 2,46 / 3,42 → 1,46 / 1,76 / 2,62 / 3,71 mm; gris 101 / 99 / 96 / 96 →
+96 / 99 / 94 / 87 y DE 12,6 / 13,5 / 14,1 / 11,9 → 12,2 / 13,6 / 14,8 / 11,6. Subxifoidea: grano 0,81×1,81 / 0,78×1,84 →
+0,90×1,83 / 0,88×2,03 mm; gris 99 / 97 → 95 / 96. En fundamental la banda es más marcada: 101 / 99 / 96 / 96 → 90 / 97 /
+90 / 80. Con el deslizador (fundamental, una mirada, densidad 1): gris a 20–60 / 140–180 mm de 105 / 72 con el foco a 50
+mm, 92 / 82 a 90 y 86 / 91 a 140. Paneles del juez (la misma normalización), hígado a 7–12 cm (pareja 1): axial 0,78–0,89
+→ 0,90–1,06 mm frente a 1,12–1,32 real; lateral 1,81–2,36 → 2,01–2,62 frente a 1,82–1,96; en las seis parejas el axial
+sube un 8–15 % y el lateral un 3–13 %, así que la anisotropía no cambia (2,1–3,0; real ~2) y el contraste (DE/media), 0,12–0,15,
+sigue bajo el real (0,16–0,31). El grano axial real sigue siendo un 20–40 % más grueso y crece más con la profundidad
+(+14–50 % en una ventana de 5–8 cm, +8–13 % aquí); la textura real tiene además heterogeneidad y proceso del equipo que el
+modelo no tiene (moteado estacionario en contraste). Cambios en las calibraciones: el gemelo de las caras (decisión 57)
+no cambia a incidencia normal (porta 1,616 → 1,623, VCI 1,610 → 1,616, cápsula 1,784 → 1,778, Morison 2,163 → 2,186) y
+baja algo en las caras oblicuas, que la PSF más ancha reparte (porta a 40° 1,397 → 1,373, VSH a 40° 1,131 → 1,107); el
+campo cercano de la armónica frente al fundamental pasa de −3,4 a −1,0 dB con GPU porque el fundamental, que enfoca más,
+oscurece también el suyo; el banco de la pared (decisión 62) no cambia (corrección de difracción), pero en la imagen la
+pared queda 2–3 dB (armónica) o 3–5 dB (fundamental) más oscura que el hígado del foco, como con un foco hondo real.
+Coste (GPU M4, carga ~30, antes y después intercalados): cuadro 9,82 → 10,04 ms sin compuesto y 11,04 → 11,19 con él;
+pasada B 3,44 → 3,49 ms. Chunk principal 304,6 → 306,2 kB de 320.
+
+**Verificación.** `psfDepth.test.ts`: la pendiente −2βσ_f² (−0,092 MHz/cm con 60 % de banda y 0,5 dB/cm/MHz), f(r)
+monótona y > 0, el pulso ∝ 1/f(r) y el de la armónica más largo, la PSF lateral 1,4–3 mm a 6–10 cm que crece después y
+no pasa de 5,5 mm a 18 cm, la apertura de emisión min(26, F/2,5) (el Doppler, 26), la ganancia focal (1 en el foco del
+preajuste, su pico en ≤ 6 mm antes del foco elegido, −4 a −6 dB a 2 cm en fundamental y −2 a −3,5 en armónica, la
+potencia fija), el GLSL con las mismas fórmulas y el cableado del renderizador real sobre WebGL falso (cono, referencia,
+σ por fila, en los dos modos y con el foco a 50 y 90 mm). `harmonic.test.ts`, `pleura.test.ts`, `steeredSample.test.ts` y
+`shaderLimits.test.ts` (huella del main de B d2e0f2cd7f45185c → ca057917ce3a1b32: el eco lleva `focalGain`) al día.
+Gemelos B → C → D con el pulso por fila, la PSF de la imagen B y la ganancia focal: `compoundSpeckle.test.ts` (la ley de la
+composición con k2 a la frecuencia del eco; el exceso de decorrelación de los tres planos, artefacto fijado, baja a −0,025
+a 90 mm), `interfaceTwin.test.ts` (la tendencia con la profundidad de una cara normal, con el pulso más largo, frente a
+haces gaussianos coherentes a la frecuencia del eco; M3 de la porta ≥ 1,36, el borde bajo de las paredes reales),
+`wallTwin.test.ts` (métricas con la corrección de difracción) y `fidelityScene.test.ts`. e2e: «foco (decisión 84)» (el
+deslizador mueve la banda: +8 de gris o más a 20–60 mm con el foco a 50 frente a 140 mm, y al revés a 140–180 mm), G4 de
+la composición a media escala en la banda del foco y el campo cercano de la armónica < −0,5 dB (sin acumulación ni
+rechazo del transitorio daría +2,4 dB). Capturas con GPU antes y después de la intercostal, la subxifoidea, el flanco y
+la renal en armónica. Limitación nueva `psf-nominal-tissue`.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

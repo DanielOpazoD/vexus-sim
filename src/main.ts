@@ -2,7 +2,7 @@ import { registerDevtools } from './app/devtools';
 import { caseDisplayLabel, teacherToggleAllowed } from './app/blindMode';
 import { buildDiagnostics, buildLabel, diagnosticsFileName, gpuInfo } from './app/diagnostics';
 import { ErrorBudget } from './app/errorBudget';
-import { modeHasColor, modeHasPw, toggleMode } from './app/equipment';
+import { modeHasColor, modeHasPw, toggleM, toggleMode } from './app/equipment';
 import { compareTissueGrids } from './app/equivalenceCheck';
 import { errorLog, errorMessage } from './app/errorLog';
 import { ProbeAnimator } from './app/probeAnimation';
@@ -15,11 +15,14 @@ import { NonFiniteStateError } from './physiology/engine';
 import { Banner } from './ui/controllers/banner';
 import { bindGpuLifecycle } from './ui/controllers/gpuLifecycle';
 import { HeartRateDisplay, hudText, renderLines } from './ui/controllers/hud';
+import { bindCine } from './ui/controllers/cine';
 import { bindImageClick } from './ui/controllers/imageClick';
 import { buildLayerMenu } from './ui/controllers/layerMenu';
 import { CutMapView } from './ui/cutMapView';
 import { bindCollapsible, bindPopover } from './ui/disclosure';
 import { SpectrogramView, drawEcg, drawOverlay } from './ui/displays';
+import { MModeView } from './ui/mModeView';
+import { traceRight } from './ui/sweep';
 import { bindKeyboardShortcuts } from './ui/keyboardShortcuts';
 import type { Navigator3D } from './ui/navigator3d';
 import { setPressed } from './ui/controls';
@@ -46,6 +49,7 @@ const glCanvas = $<HTMLCanvasElement>('gl');
 const overlay = $<HTMLCanvasElement>('overlay');
 const ecgCanvas = $<HTMLCanvasElement>('ecg');
 const spectrumCanvas = $<HTMLCanvasElement>('spectrum');
+const mCanvas = $<HTMLCanvasElement>('mmode');
 const cutCanvas = $<HTMLCanvasElement>('cutmap');
 const navHost = $<HTMLElement>('nav3d');
 const hud = { tl: $<HTMLElement>('hud-tl'), tr: $<HTMLElement>('hud-tr'), br: $<HTMLElement>('hud-br') };
@@ -105,6 +109,7 @@ const banner = new Banner(sectorWrap);
 
 // --- Vistas ------------------------------------------------------------------
 const spectrogram = new SpectrogramView(spectrumCanvas);
+const mview = new MModeView(mCanvas);
 const cutMap = new CutMapView(cutCanvas);
 const panel = new ControlPanel($('panel'), sim, store, dispatch);
 session.equipment.subscribe(() => panel.sync());
@@ -154,7 +159,13 @@ panel.onResetPatient = () => {
   if (error) banner.show(`No se pudo reiniciar el paciente: ${errorMessage(error)}`, 6000);
   return error;
 };
-const input = new ProbeInput(sectorWrap, () => sim().pose, setPoseManual);
+// con la imagen congelada la sonda no se mueve: la rueda y ← → recorren el cine (decisión 80)
+const input = new ProbeInput(
+  sectorWrap,
+  () => sim().pose,
+  setPoseManual,
+  () => !store.get().frozen,
+);
 // Navegador 3D (three.js, ~560 kB) con carga diferida: la imagen ecográfica no lo necesita
 // para su primer cuadro; si falla, la aplicación sigue sin él.
 let nav: Navigator3D | null = null;
@@ -175,11 +186,18 @@ registerDevtools(sim, () => ({ nav, cutMap, spectrogram }), dispatch);
 session.onSimulatorChanged((next) => {
   nav?.setAnatomy(next.scene);
   spectrogram.reset();
+  mview.reset();
   panel.onSimulatorChanged();
+  cine.sync();
 });
 
 // --- Controles de la barra ----------------------------------------------------
-const modeButtons = { B: $<HTMLButtonElement>('mode-b'), color: $<HTMLButtonElement>('mode-color'), pw: $<HTMLButtonElement>('mode-pw') };
+const modeButtons = {
+  B: $<HTMLButtonElement>('mode-b'),
+  M: $<HTMLButtonElement>('mode-m'),
+  color: $<HTMLButtonElement>('mode-color'),
+  pw: $<HTMLButtonElement>('mode-pw'),
+};
 function applyMode(mode: ImagingMode): void {
   const wasPw = sim().pw.enabled;
   dispatch({ type: 'mode', mode });
@@ -187,16 +205,21 @@ function applyMode(mode: ImagingMode): void {
     sim().pwChain.reset();
     spectrogram.reset();
   }
-  const on = { B: mode === 'B', color: modeHasColor(mode), pw: modeHasPw(mode) };
-  for (const k of ['B', 'color', 'pw'] as const) {
+  const on = { B: mode === 'B', M: mode === 'M', color: modeHasColor(mode), pw: modeHasPw(mode) };
+  for (const k of ['B', 'M', 'color', 'pw'] as const) {
     modeButtons[k].classList.toggle('active', on[k]);
     modeButtons[k].setAttribute('aria-pressed', String(on[k]));
   }
-  // la imagen manda: el espectro solo ocupa su franja con el PW encendido
+  // la imagen manda: el espectro solo ocupa su franja con el PW encendido, y la del modo M con el modo M
   app.classList.toggle('pw-on', modeHasPw(mode));
+  app.classList.toggle('m-on', mode === 'M');
 }
-// 2D apaga todo; Color y PW alternan su función y conservan la otra (tríplex, decisión 66)
+// 2D apaga todo; Color y PW alternan su función y conservan la otra (tríplex, decisión 66); M, el modo M (80)
 modeButtons.B.addEventListener('click', () => store.set({ mode: 'B', tab: tabAfterMode('B', store.get().tab) }));
+modeButtons.M.addEventListener('click', () => {
+  const mode = toggleM(store.get().mode);
+  store.set({ mode, tab: tabAfterMode(mode, store.get().tab) });
+});
 for (const key of ['color', 'pw'] as const) {
   modeButtons[key].addEventListener('click', () => {
     const mode = toggleMode(store.get().mode, key);
@@ -254,13 +277,32 @@ const imageClick = bindImageClick({
   dispatch,
 });
 bindKeyboardShortcuts(store, dispatch);
-const gpu = bindGpuLifecycle(glCanvas, sim, banner);
+// el cine y la franja M eran del renderizador viejo (decisión 80)
+const gpu = bindGpuLifecycle(glCanvas, sim, banner, () => {
+  cine.sync();
+  mview.reset();
+});
+const cine = bindCine({
+  bar: $('cine-bar'),
+  slider: $<HTMLInputElement>('cine'),
+  label: $('cine-time'),
+  freezeButton: freezeBtn,
+  host: sectorWrap,
+  getSim: sim,
+  store,
+});
+// calibres de la VCI en modo M sobre la franja (decisión 80)
+mCanvas.addEventListener('click', (e) => {
+  const p = store.get().tool === 'mmode' ? mview.pick(e.clientX, e.clientY) : null;
+  if (p) panel.addMPoint(p, mview.window());
+});
 
 // --- Estado de UI → sesión -------------------------------------------------------
 store.subscribe((st, prev) => {
   if (st.mode !== prev.mode) applyMode(st.mode);
   if (st.frozen !== prev.frozen) {
     sim().frozen = st.frozen;
+    app.classList.toggle('frozen', st.frozen);
     setPressed(freezeBtn, st.frozen);
     liveChip.textContent = st.frozen ? 'FREEZE' : 'LIVE';
     liveChip.className = `chip ${st.frozen ? 'freeze' : 'live'}`;
@@ -294,7 +336,7 @@ function fitCanvases(): void {
     overlay.width = w;
     overlay.height = h;
   }
-  for (const c of [ecgCanvas, spectrumCanvas, cutCanvas]) {
+  for (const c of [ecgCanvas, spectrumCanvas, mCanvas, cutCanvas]) {
     // el corte se calcula por píxel en CPU: resolución 1× basta
     const k = c === cutCanvas ? 1 : dpr;
     const cw = Math.floor(c.clientWidth * k);
@@ -324,15 +366,22 @@ function frame(now: number, dt: number): void {
   input.tick(dt);
   probeAnimator.tick(dt);
   s.advance(dt);
-  if (!gpu.lost) s.render();
+  if (!gpu.lost) {
+    s.render();
+    cine.tick();
+  }
   drawOverlay(overlay, s);
   nav?.draw();
   if (store.get().torso && !gpu.lost) cutMap.draw(s, now);
   const t = s.physiology.clock.t;
-  // el ECG siempre está a la vista (el espectro, solo con PW) y comparte el eje de tiempo con él
+  // el ECG siempre está a la vista (el espectro, solo con PW; la franja M, con el modo M) y comparte con ellos el
+  // eje de tiempo; con el cine llevan el cursor de su cuadro y se desplazan con él (decisión 80)
   const secondsVisible = ecgCanvas.clientWidth / (s.pw.sweepMmS * 3.2);
-  drawEcg(ecgCanvas, s, secondsVisible, t);
-  spectrogram.draw(s, s.spectral.columns, t, secondsVisible);
+  const cursorT = cine.cursorT();
+  const tRight = traceRight(t, cursorT, secondsVisible);
+  drawEcg(ecgCanvas, s, secondsVisible, tRight, cursorT);
+  spectrogram.draw(s, s.spectral.columns, tRight, secondsVisible, cursorT);
+  if (s.mmode.enabled && !gpu.lost) mview.draw(s.renderer, tRight, secondsVisible, cursorT, panel.mMarks);
   const h = hudText({
     patientLabel: caseDisplayLabel(s.patient.id, store.get().debug),
     frozen: s.frozen,

@@ -49,6 +49,11 @@ describe('HUD', () => {
     expect(t.bottomRight[1]).toMatch(/^PW ±\d+ cm\/s · puerta 4\.0 mm$/);
     expect(t.chip).toMatch(/^±\d+ cm\/s · Puerta 9\.5 cm · 50 mm\/s$/);
   });
+  it('modo M (decisión 80): su barrido en la esquina y en el chip, sin las líneas del Doppler', () => {
+    const m = hudText({ ...base, mode: 'M' });
+    expect(m.bottomRight).toEqual(['M 50 mm/s · resp 0.42']);
+    expect(m.chip).toBe('Modo M · 50 mm/s');
+  });
   it('«CX» cuando la composición espacial se forma (decisión 58), y solo entonces', () => {
     expect(hudText({ ...base, compound: true }).topRight[1]).toBe('18 cm · 3,5 MHz · G 0 dB · RD 60 · CX');
     expect(hudText({ ...base, compound: false }).topRight[1]).not.toContain('CX');

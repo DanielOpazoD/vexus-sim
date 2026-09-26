@@ -7,7 +7,7 @@ import type { ImagingMode } from './equipment';
  */
 export type { ImagingMode } from './equipment';
 export type PanelTab = 'adquirir' | 'doppler' | 'medir' | 'docente';
-export type MeasureTool = 'none' | 'caliper' | 'hepatic' | 'portal' | 'renal';
+export type MeasureTool = 'none' | 'caliper' | 'hepatic' | 'portal' | 'renal' | 'mmode';
 
 export interface AppState {
   mode: ImagingMode;

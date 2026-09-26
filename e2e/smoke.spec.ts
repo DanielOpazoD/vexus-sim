@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { Tissue } from '../src/anatomy/tissues';
 
 /**
  * Humo de extremo a extremo: lo que ninguna prueba unitaria puede ver — que el
@@ -891,4 +892,287 @@ test('armónica tisular (decisión 77): campo cercano limpio, el mismo tejido y 
   await page.goto('/?docente=1');
   await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: 30_000 });
   await expect(page.locator('#hud-tr')).toContainText('THI 3,5 MHz');
+});
+
+/** Imagen mostrada (una muestra de sus píxeles), cuadro del cine en pantalla y cursor del ECG (su x media). */
+async function cineShot(page: Page) {
+  return page.evaluate(() => {
+    const r = window.__vexusTest!.sim().renderer;
+    const d = r.readDisplay();
+    const gray: number[] = [];
+    for (let i = 0; i < d.gray.length; i += 13) gray.push(d.gray[i]);
+    const ecg = document.getElementById('ecg') as HTMLCanvasElement;
+    const px = ecg.getContext('2d')!.getImageData(0, 0, ecg.width, ecg.height).data;
+    const y = Math.floor(ecg.height / 2);
+    let sx = 0;
+    let nx = 0;
+    // el cursor es celeste (#5cc8ff, con su borde suavizado); la traza del ECG es verde y la respiración, azul oscuro
+    for (let x = 0; x < ecg.width; x++) {
+      const i = (y * ecg.width + x) * 4;
+      if (px[i + 2] > 180 && px[i + 1] > 140 && px[i] < 150) {
+        sx += x;
+        nx++;
+      }
+    }
+    return {
+      gray,
+      t: r.cineShownFrame?.t ?? null,
+      tEnd: r.cineCount ? r.cineFrame(r.cineCount - 1).t : null,
+      times: Array.from({ length: r.cineCount }, (_, i) => r.cineFrame(i).t),
+      cursorX: nx ? sx / nx : null,
+      ecgWidth: ecg.width,
+    };
+  });
+}
+
+test('cine (decisión 80): congelar y retroceder ~1 s cambia la imagen y mueve el cursor del ECG; al final, el cuadro congelado', async ({
+  page,
+}) => {
+  test.setTimeout(300_000);
+  const errors = await bootWithoutErrors(page);
+  // el anillo guarda cuadros a ≤ 20 Hz del reloj de la simulación (con SwiftShader, todos: ≤ 0,25 s por cuadro)
+  const span = () =>
+    page.evaluate(() => {
+      const r = window.__vexusTest!.sim().renderer;
+      return r.cineCount > 1 ? r.cineFrame(r.cineCount - 1).t - r.cineFrame(0).t : 0;
+    });
+  await expect.poll(span, { timeout: 120_000 }).toBeGreaterThan(1.6);
+  await page.keyboard.press(' ');
+  await expect(page.locator('#live-chip')).toHaveText('FREEZE');
+  await expect(page.locator('#cine')).toBeVisible();
+  // congelada, el cine está en su último cuadro: el congelado
+  await expect.poll(async () => (await cineShot(page)).t, { timeout: 30_000 }).not.toBeNull();
+  const end = await cineShot(page);
+  expect(end.t, JSON.stringify(end.times)).toBe(end.tEnd);
+  expect(end.cursorX, 'cursor del ECG').not.toBeNull();
+  // ~1 s atrás con ←: el cuadro más cercano a t_final − 1 s
+  const target = end.times.reduce(
+    (best, t, i) => (Math.abs(t - (end.tEnd! - 1)) < Math.abs(end.times[best] - (end.tEnd! - 1)) ? i : best),
+    0,
+  );
+  for (let k = 0; k < end.times.length - 1 - target; k++) await page.keyboard.press('ArrowLeft');
+  await expect.poll(async () => (await cineShot(page)).t, { timeout: 60_000 }).toBe(end.times[target]);
+  await expect(page.locator('#cine-time')).toHaveText(/^−\d,\d\d s$/);
+  const back = await cineShot(page);
+  const tag = JSON.stringify({ end: { t: end.t, x: end.cursorX }, back: { t: back.t, x: back.cursorX }, target, times: end.times });
+  expect(Math.abs(back.t! - (end.tEnd! - 1)), tag).toBeLessThan(0.3);
+  // otra imagen (la respiración y el ruido del receptor cambian en 1 s) y el cursor, ~1 s a la izquierda
+  const mad = back.gray.reduce((a, g, i) => a + Math.abs(g - end.gray[i]), 0) / back.gray.length;
+  expect(mad, tag).toBeGreaterThan(1);
+  const pxPerSec = await page.evaluate(() => {
+    const s = window.__vexusTest!.sim();
+    const ecg = document.getElementById('ecg') as HTMLCanvasElement;
+    return ecg.width / (ecg.clientWidth / (s.pw.sweepMmS * 3.2));
+  });
+  expect(end.cursorX! - back.cursorX!, tag).toBeGreaterThan(0.6 * pxPerSec * (end.t! - back.t!));
+  // Fin: el último cuadro, el de la congelación, idéntico píxel a píxel
+  await page.keyboard.press('End');
+  await expect.poll(async () => (await cineShot(page)).t, { timeout: 60_000 }).toBe(end.t);
+  const again = await cineShot(page);
+  expect(again.gray, tag).toEqual(end.gray);
+  expect(again.cursorX).toBe(end.cursorX);
+  // al descongelar el cine se va y la imagen vuelve a correr
+  await page.keyboard.press(' ');
+  await expect(page.locator('#cine')).toBeHidden();
+  expect(errors).toEqual([]);
+});
+
+test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia con la respiración y el colapso medido coincide con la verdad', async ({
+  page,
+}) => {
+  test.setTimeout(360_000);
+  // más alto: la franja M crece (34 % del alto) y los calibres, de píxeles enteros, son más finos
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  const errors = await bootWithoutErrors(page);
+  // una mirada: con SwiftShader (≤ 4 cuadros por segundo) la composición espacial promedia 0,75 s de cuadros y
+  // suaviza la anchura de la banda (con GPU real, 50 ms)
+  await page.evaluate(() => {
+    window.__vexusTest!.setCompound(false);
+    window.__vexusTest!.goToStartPoint('subxiphoid');
+  });
+  await page.locator('#mode-m').click();
+  await expect(page.locator('#mode-m')).toHaveClass(/active/);
+  await expect(page.locator('#mmode')).toBeVisible();
+  // barrido a 25 mm/s (≥ 2 ciclos respiratorios en la franja) y 13 cm de profundidad (la VCI, a 10–11 cm, más grande)
+  await page.getByRole('button', { name: '25', exact: true }).click();
+  for (let k = 0; k < 5; k++) await page.keyboard.press('[');
+  await expect(page.locator('#hud-tr')).toContainText('13 cm');
+  // la línea M donde la pone el operador (VExUS): a través de la VCI 2 cm por debajo de la desembocadura de las
+  // suprahepáticas (z material 35 mm → 15 mm), según la anatomía de CPU. La más perpendicular del tramo (3,5 cm por
+  // debajo) sobrestima el colapso ~6 puntos: el eco especular de la pared de enfrente, máximo de frente, se come
+  // 1–1,5 mm de la luz (decisión 80, `m-mode-lumen-blooming`)
+  const line = await page.evaluate((blood) => {
+    const s = window.__vexusTest!.sim();
+    const tr = s.transducer;
+    const fr = s.frame;
+    let best: { theta: number; r0: number; r1: number; dz: number } | null = null;
+    for (let i = 0; i < tr.lines; i++) {
+      const theta = -tr.halfSector + (2 * tr.halfSector * i) / (tr.lines - 1);
+      const d = [0, 1, 2].map((k) => fr.axial[k] * Math.cos(theta) + fr.lateral[k] * Math.sin(theta));
+      const n = Math.hypot(d[0], d[1], d[2]);
+      let r0 = -1;
+      let r1 = -1;
+      let z = 0;
+      for (let r = 60; r < s.bmode.depthMm - 5; r += 0.5) {
+        const R = tr.curvatureRadius + r;
+        const q = s.anatomy.classifyWorld(
+          [fr.curvatureCenter[0] + (d[0] / n) * R, fr.curvatureCenter[1] + (d[1] / n) * R, fr.curvatureCenter[2] + (d[2] / n) * R],
+          s.sample,
+        );
+        if ((q.vessel === 'ivcInfra' || q.vessel === 'ivcSupra') && q.tissue === blood) {
+          if (r0 < 0) r0 = r;
+          r1 = r;
+          z = q.material[2];
+        } else if (r0 >= 0) break;
+      }
+      if (r0 >= 0 && (!best || Math.abs(z - 15) < best.dz)) best = { theta, r0, r1, dz: Math.abs(z - 15) };
+    }
+    if (!best) return null;
+    // el punto de la imagen donde el alumno haría clic (píxeles de la ventana)
+    const p = s.renderer.beamToPixel(best.theta, (best.r0 + best.r1) / 2, tr);
+    const c = document.getElementById('gl') as HTMLCanvasElement;
+    const rect = c.getBoundingClientRect();
+    return { ...best, x: rect.left + (p.x * rect.width) / c.width, y: rect.top + (p.y * rect.height) / c.height };
+  }, Tissue.Blood);
+  expect(line, 'ninguna línea cruza la VCI').not.toBeNull();
+  expect(line!.dz, JSON.stringify(line)).toBeLessThan(3);
+  // un clic sobre la imagen coloca la línea M, como la puerta del PW
+  await page.mouse.click(line!.x, line!.y);
+  await expect.poll(() => page.evaluate(() => window.__vexusTest!.sim().mmode.theta)).toBeCloseTo(line!.theta, 2);
+  // la franja cubre un ciclo respiratorio y medio (14/min: 4,3 s; con SwiftShader, ≤ 0,25 s por cuadro): se mide sobre
+  // lo que cubre, y la verdad en el mismo intervalo
+  const sv = await page.evaluate(() => (document.getElementById('mmode') as HTMLCanvasElement).clientWidth / (25 * 3.2));
+  const span = () =>
+    page.evaluate(() => {
+      const m = window.__vexusTest!.sim().renderer.mStrip;
+      return m.count > 1 ? m.time(m.count - 1) - m.time(0) : 0;
+    });
+  await expect.poll(span, { timeout: 200_000 }).toBeGreaterThan(7);
+  await page.keyboard.press(' ');
+  await expect(page.locator('#live-chip')).toHaveText('FREEZE');
+  // la luz de la VCI en la franja que se ve (el lienzo #mmode), en el centro del tramo de cada columna: el núcleo oscuro
+  // (la racha más larga de grises < 50 cerca de la luz) y sus bordes donde el gris cruza la mitad entre la luz y el pico
+  // de la pared (en 3 mm), interpolados: donde el operador pone los calibres, de borde interno a borde interno
+  const band = await page.evaluate(
+    ({ r0, r1, sv }) => {
+      const s = window.__vexusTest!.sim();
+      const m = s.renderer.mStrip;
+      const tR = s.physiology.clock.t;
+      const cv = document.getElementById('mmode') as HTMLCanvasElement;
+      const [W, H, depth] = [cv.width, cv.height, m.depthMm];
+      const img = cv.getContext('2d')!.getImageData(0, 0, W, H).data;
+      const k0 = Math.max(0, Math.floor(((r0 - 12) / depth) * H));
+      const k1 = Math.min(H - 1, Math.ceil(((r1 + 12) / depth) * H));
+      const w3 = Math.round((3 / depth) * H);
+      const samples = s.physiology.samples;
+      const out: { t: number; x: number; top: number; bottom: number; dAp: number }[] = [];
+      // la primera columna cubre un intervalo desconocido: desde la segunda; lejos de la escala del borde derecho
+      for (let i = 1; i < m.count; i++) {
+        const t = m.time(i);
+        const x = Math.floor(((m.time(i - 1) + t) / 2 - (tR - sv)) * (W / sv));
+        if (t > tR || x < 0 || x >= W - 45) continue;
+        const g = Array.from({ length: H }, (_, y) => img[(y * W + x) * 4]);
+        let best = [0, -1];
+        let start = -1;
+        for (let k = k0; k <= k1 + 1; k++) {
+          const dark = k <= k1 && g[k] < 50;
+          if (dark && start < 0) start = k;
+          if (!dark && start >= 0) {
+            if (k - start > best[1] - best[0] + 1) best = [start, k - 1];
+            start = -1;
+          }
+        }
+        const run = g.slice(best[0], best[1] + 1).sort((a, b) => a - b);
+        const lumen = run[Math.floor(run.length / 2)];
+        const edges = [-1, 1].map((dir) => {
+          const from = dir < 0 ? best[0] : best[1];
+          let peak = 0;
+          for (let j = 1; j <= w3; j++) peak = Math.max(peak, g[from + dir * j]);
+          const mid = (lumen + peak) / 2;
+          for (let j = 0; j < w3; j++) {
+            const a = g[from + dir * j];
+            const b = g[from + dir * (j + 1)];
+            if (a < mid && b >= mid) return from + dir * (j + (mid - a) / (b - a));
+          }
+          return from;
+        });
+        let near = samples[0];
+        for (const q of samples) if (Math.abs(q.t - t) < Math.abs(near.t - t)) near = q;
+        // píxel y → profundidad de su centro, (y + ½)/H
+        out.push({ t, x, top: ((edges[0] + 0.5) / H) * depth, bottom: ((edges[1] + 0.5) / H) * depth, dAp: near.ivc.dApMm });
+      }
+      const tL = out[0].t;
+      let max = -Infinity;
+      let min = Infinity;
+      for (const q of samples)
+        if (q.t >= tL && q.t <= tR) {
+          max = Math.max(max, q.ivc.dApMm);
+          min = Math.min(min, q.ivc.dApMm);
+        }
+      return { out, truth: { max, min, ci: (100 * (max - min)) / max }, tR, depth };
+    },
+    { r0: line!.r0, r1: line!.r1, sv },
+  );
+  const w = band.out.map((c) => c.bottom - c.top);
+  const d = band.out.map((c) => c.dAp);
+  const mean = (a: number[]) => a.reduce((x, y) => x + y, 0) / a.length;
+  const [mw, md] = [mean(w), mean(d)];
+  const corr =
+    w.reduce((a, x, i) => a + (x - mw) * (d[i] - md), 0) /
+    Math.sqrt(w.reduce((a, x) => a + (x - mw) ** 2, 0) * d.reduce((a, x) => a + (x - md) ** 2, 0));
+  const iMax = w.indexOf(Math.max(...w));
+  const iMin = w.indexOf(Math.min(...w));
+  const ciBand = (100 * (w[iMax] - w[iMin])) / w[iMax];
+  // la anchura en espiración (el diámetro de la verdad por encima de su mediana) y en inspiración
+  const dMed = [...d].sort((a, b) => a - b)[Math.floor(d.length / 2)];
+  const wOf = (hi: boolean) => mean(w.filter((_, i) => d[i] > dMed === hi));
+  const tag = JSON.stringify({
+    n: w.length,
+    corr,
+    ciBand,
+    truth: band.truth,
+    wMax: w[iMax],
+    wMin: w[iMin],
+    wExp: wOf(true),
+    wIns: wOf(false),
+    line,
+  });
+  test.info().annotations.push({ type: 'modo M', description: tag });
+  test.info().annotations.push({
+    type: 'modo M: t, anchura, dAp',
+    description: JSON.stringify(band.out.map((c, i) => [c.t, w[i], d[i]].map((v) => +v.toFixed(2)))),
+  });
+  // la banda es la VCI en todas las columnas y su anchura sigue a la respiración (el diámetro AP de la verdad)
+  expect(w.length, tag).toBeGreaterThan(12);
+  expect(Math.min(...w), tag).toBeGreaterThan(5);
+  expect(Math.max(...w), tag).toBeLessThan(25);
+  expect(w[iMax] - w[iMin], tag).toBeGreaterThan(2);
+  expect(wOf(true) - wOf(false), tag).toBeGreaterThan(1);
+  expect(corr, tag).toBeGreaterThan(0.6);
+  expect(Math.abs(ciBand - band.truth.ci), tag).toBeLessThanOrEqual(5);
+  // los calibres de la pestaña Medir sobre la franja congelada: de borde a borde en la columna más ancha y en la más
+  // estrecha (píxeles enteros, como un clic)
+  await page.getByRole('tab', { name: 'Medir' }).click();
+  await page.getByRole('button', { name: 'VCI modo M', exact: true }).click();
+  const box = (await page.locator('#mmode').boundingBox())!;
+  const clicked: number[] = [];
+  for (const i of [iMax, iMin]) {
+    const c = band.out[i];
+    // el lienzo tiene densidad 1: su píxel x es el de la ventana
+    const x = Math.round(box.x + c.x + 0.5);
+    for (const r of [c.top, c.bottom]) {
+      const y = Math.round(box.y + (r / band.depth) * box.height);
+      clicked.push(((y - box.y) / box.height) * band.depth);
+      await page.mouse.click(x, y);
+    }
+  }
+  const result = page.locator('.result');
+  await expect(result).toContainText(/VCI modo M: máx \d+,\d · mín \d+,\d mm → colapso \d+ %/);
+  const ci = Number(/colapso (\d+) %/.exec((await result.textContent()) ?? '')![1]);
+  // la aplicación calcula con los píxeles enteros que recibe: el mismo colapso que esos puntos, redondeado
+  const [d1, d2] = [Math.abs(clicked[1] - clicked[0]), Math.abs(clicked[3] - clicked[2])];
+  const ciClicks = (100 * (Math.max(d1, d2) - Math.min(d1, d2))) / Math.max(d1, d2);
+  expect(Math.abs(ci - ciClicks), `${tag} · calibres ${ci} % (puntos ${ciClicks.toFixed(1)} %)`).toBeLessThanOrEqual(0.51);
+  expect(Math.abs(ci - band.truth.ci), `${tag} · calibres ${ci} %`).toBeLessThanOrEqual(5);
+  expect(errors).toEqual([]);
 });

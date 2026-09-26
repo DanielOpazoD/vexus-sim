@@ -1,10 +1,14 @@
 import { ecgX, SweepTimeline } from './sweep';
+import { drawCursor } from './mModeView';
 import { nyquistVelocityCms, wrapToNyquist } from '../core/units';
 import type { Simulator } from '../app/simulator';
 import type { SpectralColumn } from '../doppler/spectral';
 import { velocityFromShiftMmS } from '../core/units';
 
-/** Gráficos vectoriales sobre el sector: regla, marcador, foco, cuadro, puerta. */
+/**
+ * Gráficos vectoriales sobre el sector: regla, marcador, foco, cuadro, puerta y línea M. La regla, el foco y la caja
+ * son los de la imagen en pantalla (con el cine, los de su cuadro: decisión 80).
+ */
 export function drawOverlay(canvas: HTMLCanvasElement, sim: Simulator): void {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
@@ -12,7 +16,8 @@ export function drawOverlay(canvas: HTMLCanvasElement, sim: Simulator): void {
   const H = canvas.height;
   ctx.clearRect(0, 0, W, H);
   const tr = sim.transducer;
-  const depth = sim.bmode.depthMm;
+  const shown = sim.displayed;
+  const depth = shown.bmode.depthMm;
   // Regla de profundidad (cada cm) en el borde derecho del sector
   ctx.strokeStyle = '#9aa7b4';
   ctx.fillStyle = '#9aa7b4';
@@ -36,7 +41,7 @@ export function drawOverlay(canvas: HTMLCanvasElement, sim: Simulator): void {
   ctx.arc(mk.x - 10, mk.y - 6, 5, 0, Math.PI * 2);
   ctx.fill();
   // Foco
-  const fp = sim.renderer.beamToPixel(edgeTheta, sim.bmode.focusMm, tr);
+  const fp = sim.renderer.beamToPixel(edgeTheta, shown.bmode.focusMm, tr);
   ctx.fillStyle = '#e0a33b';
   ctx.beginPath();
   ctx.moveTo(fp.x + 2, fp.y);
@@ -45,8 +50,8 @@ export function drawOverlay(canvas: HTMLCanvasElement, sim: Simulator): void {
   ctx.closePath();
   ctx.fill();
   // Cuadro de color
-  if (sim.color.enabled) {
-    const c = sim.color;
+  if (shown.color.enabled) {
+    const c = shown.color;
     ctx.strokeStyle = '#ffd166';
     ctx.lineWidth = 1.2;
     ctx.beginPath();
@@ -65,6 +70,22 @@ export function drawOverlay(canvas: HTMLCanvasElement, sim: Simulator): void {
     ctx.closePath();
     ctx.stroke();
     drawColorScale(ctx, W, H, sim);
+  }
+  // Línea M (decisión 80): de la cara al fondo, con un asa arriba para arrastrarla
+  if (sim.mmode.enabled) {
+    const a = sim.renderer.beamToPixel(sim.mmode.theta, 0, tr);
+    const b = sim.renderer.beamToPixel(sim.mmode.theta, depth, tr);
+    ctx.strokeStyle = ctx.fillStyle = '#ffc857';
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath();
+    ctx.arc(a.x + (b.x - a.x) * 0.04, a.y + (b.y - a.y) * 0.04, 4, 0, Math.PI * 2);
+    ctx.fill();
   }
   // Cursor PW: línea Doppler, puerta y cursor angular
   if (sim.pw.enabled) {
@@ -107,8 +128,14 @@ export function drawOverlay(canvas: HTMLCanvasElement, sim: Simulator): void {
   }
 }
 
-/** Tira de ECG desplazable, con el mismo reloj que el espectro. */
-export function drawEcg(canvas: HTMLCanvasElement, sim: Simulator, secondsVisible: number, tRight: number): void {
+/** Tira de ECG desplazable, con el mismo reloj que el espectro; con el cine, el cursor de su cuadro (decisión 80). */
+export function drawEcg(
+  canvas: HTMLCanvasElement,
+  sim: Simulator,
+  secondsVisible: number,
+  tRight: number,
+  cursorT: number | null = null,
+): void {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
   const W = canvas.width;
@@ -151,6 +178,7 @@ export function drawEcg(canvas: HTMLCanvasElement, sim: Simulator, secondsVisibl
   ctx.fillStyle = '#6b7a88';
   ctx.font = '10px sans-serif';
   ctx.fillText('ECG · resp', 6, 11);
+  if (cursorT !== null) drawCursor(ctx, ecgX(cursorT, tRight, secondsVisible, W), H);
 }
 
 /** Estado de dibujo del espectrograma (bitmap desplazable). */
@@ -177,7 +205,7 @@ export class SpectrogramView {
    * El eje vertical es la banda [−PRF/2, PRF/2] desplazada por la línea de
    * base; la velocidad rotulada usa la corrección angular del usuario.
    */
-  draw(sim: Simulator, columns: readonly SpectralColumn[], tNow: number, secondsVisible: number): void {
+  draw(sim: Simulator, columns: readonly SpectralColumn[], tNow: number, secondsVisible: number, cursorT: number | null = null): void {
     const ctx = this.canvas.getContext('2d');
     if (!ctx) return;
     const W = this.canvas.width;
@@ -283,6 +311,7 @@ export class SpectrogramView {
       ctx.lineTo(x, H);
       ctx.stroke();
     }
+    if (cursorT !== null) drawCursor(ctx, ecgX(cursorT, this.timeline.rightT, secondsVisible, W), H);
   }
 }
 
@@ -302,13 +331,13 @@ export function colorMapRgb(towardProbe: boolean, mag: number): [number, number,
  * negro en la línea de base y ±Nyquist en cm/s en los extremos (con «Invertir mapa» se intercambian los colores).
  */
 function drawColorScale(ctx: CanvasRenderingContext2D, W: number, H: number, sim: Simulator): void {
-  const nyq = Math.round(nyquistVelocityCms(sim.color.prfHz, sim.transducer.f0Doppler));
+  const nyq = Math.round(nyquistVelocityCms(sim.displayed.color.prfHz, sim.transducer.f0Doppler));
   const s = H / 800;
   const x = Math.round(12 * s);
   const w = Math.max(6, Math.round(9 * s));
   const y0 = Math.round(H * 0.16);
   const h = Math.round(H * 0.22);
-  const inv = sim.color.invert;
+  const inv = sim.displayed.color.invert;
   for (let i = 0; i < h; i++) {
     // i = 0 arriba (+Nyquist, hacia la sonda); h/2 la línea de base
     const v = 1 - (2 * i) / (h - 1);

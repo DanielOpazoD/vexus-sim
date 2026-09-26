@@ -1,21 +1,29 @@
-import { toggleMode, type EquipmentCommand } from '../app/equipment';
+import { toggleM, toggleMode, type EquipmentCommand } from '../app/equipment';
 import type { Store } from '../app/store';
 import { tabAfterMode } from './panel';
 
 /**
- * Atajos de teclado (misma familia que EchoTwin): 2 / C / P modos (C y P alternan su función y
- * conservan la otra: tríplex, decisión 66), Espacio
+ * Atajos de teclado (misma familia que EchoTwin): 2 / M / C / P modos (C y P alternan su función y
+ * conservan la otra: tríplex, decisión 66; M, el modo M, decisión 80), Espacio
  * congela, H oculta el navegador, Esc cancela la herramienta, [ ] profundidad,
- * − + ganancia. Se ignoran cuando el foco está en un control de formulario.
+ * − + ganancia. Se ignoran cuando el foco está en un control de formulario que escribe texto (un deslizador,
+ * como el del cine, no los usa: con él enfocado, Espacio descongela).
  */
 export function bindKeyboardShortcuts(store: Store, dispatch: (cmd: EquipmentCommand) => void): () => void {
   const handler = (e: KeyboardEvent): void => {
-    const tag = (e.target as HTMLElement | null)?.tagName;
-    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+    const el = e.target as HTMLElement | null;
+    const tag = el?.tagName;
+    if ((tag === 'INPUT' && (el as HTMLInputElement).type !== 'range') || tag === 'SELECT' || tag === 'TEXTAREA') return;
     switch (e.key) {
       case '2':
         store.set({ mode: 'B', tab: tabAfterMode('B', store.get().tab) });
         break;
+      case 'm':
+      case 'M': {
+        const mode = toggleM(store.get().mode);
+        store.set({ mode, tab: tabAfterMode(mode, store.get().tab) });
+        break;
+      }
       case 'c':
       case 'C':
       case 'p':

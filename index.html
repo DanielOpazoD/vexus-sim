@@ -99,8 +99,9 @@
               <li><kbd>⇧</kbd> fino</li>
               <li><kbd>[</kbd><kbd>]</kbd> profundidad</li>
               <li><kbd>−</kbd><kbd>+</kbd> ganancia</li>
-              <li><kbd>2</kbd><kbd>C</kbd><kbd>P</kbd> modos</li>
+              <li><kbd>2</kbd><kbd>M</kbd><kbd>C</kbd><kbd>P</kbd> modos</li>
               <li><kbd>Espacio</kbd> congelar</li>
+              <li><kbd>←</kbd><kbd>→</kbd> cine (congelada)</li>
               <li><kbd>H</kbd> carril</li>
               <li><kbd>Esc</kbd> cancelar</li>
             </ul>
@@ -131,10 +132,15 @@
           <div class="disclaimer">
             Simulador educativo con pacientes sintéticos. No utilizar para diagnóstico ni toma de decisiones clínicas.
           </div>
+          <div id="cine-bar" class="cine-bar" hidden>
+            <input type="range" id="cine" min="0" max="0" step="1" value="0" aria-label="Cuadro del cine (← →)" />
+            <span id="cine-time" aria-hidden="true">0,00 s</span>
+          </div>
         </div>
         <div class="traces">
           <canvas id="ecg" class="ecg"></canvas>
           <canvas id="spectrum" class="spectrum"></canvas>
+          <canvas id="mmode" class="mmode" role="img" aria-label="Modo M: profundidad frente a tiempo"></canvas>
         </div>
       </main>
 
@@ -143,6 +149,7 @@
       <footer class="modebar" role="toolbar" aria-label="Modo y equipo">
         <div class="modes" role="group" aria-label="Modo de imagen">
           <button id="mode-b" class="mode active" title="Modo B (2)" aria-pressed="true">2D</button>
+          <button id="mode-m" class="mode" title="Modo M (M): línea M sobre la imagen y su franja" aria-pressed="false">M</button>
           <button id="mode-color" class="mode" title="Doppler color (C)" aria-pressed="false">Color</button>
           <button id="mode-pw" class="mode" title="Doppler pulsado (P); con Color, tríplex" aria-pressed="false">PW</button>
         </div>

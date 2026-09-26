@@ -1,4 +1,6 @@
 import { toggleMode } from '../../app/equipment';
+import { ivcFromCalipers, ivcTruth, type IvcCollapse } from '../../vexus/ivcCollapse';
+import type { MMark } from '../mModeView';
 import type { AppState, MeasureTool } from '../../app/store';
 import { CAPTURE_BEATS, qualityText, type QualityIssue } from '../../doppler/measureQuality';
 import {
@@ -15,7 +17,7 @@ import type { PanelContext } from './context';
 import { patternText, renalText, statusText } from './vexusText';
 
 /**
- * Pestaña Medir: protocolo VExUS (calibrador de VCI, suprahepática, porta y vena
+ * Pestaña Medir: protocolo VExUS (calibrador de VCI, VCI en modo M, suprahepática, porta y vena
  * interlobar sobre el espectro adquirido) y resultado. Guarda las mediciones
  * adquiridas; `clearMeasurements` las borra al cambiar de caso para no mezclar
  * pacientes. Con una medición armada, arriba aparece su tarjeta de captura.
@@ -28,6 +30,9 @@ export class MeasureTab {
   private lastPortal: ObservedPortal | null = null;
   private lastRenal: ObservedRenal | null = null;
   private ivcCaliperMm: number | null = null;
+  /** VCI en modo M (decisión 80): los puntos de los calibres y el resultado con la verdad de su ventana. */
+  private mPoints: MMark[] = [];
+  private ivcM: (IvcCollapse & { truth: IvcCollapse | null }) | null = null;
 
   constructor(
     private readonly ctx: PanelContext,
@@ -41,6 +46,8 @@ export class MeasureTab {
   applyStore(st: AppState): void {
     this.captureCard.hidden = st.tool === 'none';
     this.measureBody.hidden = st.tool !== 'none';
+    // calibres del modo M a medio poner: se descartan al cancelar la herramienta
+    if (st.tool !== 'mmode' && this.mPoints.length < 4) this.mPoints = [];
   }
 
   /**
@@ -48,11 +55,19 @@ export class MeasureTab {
    * antes y el después de una intervención. Devuelve si había alguna.
    */
   clearMeasurements(): boolean {
-    const had = this.lastHepatic !== null || this.lastPortal !== null || this.lastRenal !== null || this.ivcCaliperMm !== null;
+    const had =
+      this.lastHepatic !== null ||
+      this.lastPortal !== null ||
+      this.lastRenal !== null ||
+      this.ivcCaliperMm !== null ||
+      this.ivcM !== null ||
+      this.mPoints.length > 0;
     this.lastHepatic = null;
     this.lastPortal = null;
     this.lastRenal = null;
     this.ivcCaliperMm = null;
+    this.ivcM = null;
+    this.mPoints = [];
     this.ctx.sync();
     this.renderResult();
     return had;
@@ -61,6 +76,33 @@ export class MeasureTab {
   setIvcCaliper(mm: number | null): void {
     this.ivcCaliperMm = mm;
     this.renderResult();
+  }
+
+  /** Calibres del modo M a la vista en la franja (los del último resultado o los que se están poniendo). */
+  get mMarks(): readonly MMark[] {
+    return this.mPoints;
+  }
+
+  /**
+   * Un punto sobre la franja M con la herramienta «VCI modo M» (decisión 80). Cada calibre son dos puntos en el
+   * mismo instante (una vertical: pared anterior y posterior); un calibre de menos de 1 mm (dos clics en el mismo
+   * sitio) se descarta. Con dos calibres se calcula la colapsabilidad y se compara con la verdad del motor en la
+   * ventana que muestra la franja.
+   */
+  addMPoint(p: MMark, window: [number, number]): void {
+    if (this.ctx.store.get().tool !== 'mmode') return;
+    const pts = this.mPoints.length >= 4 ? [] : this.mPoints;
+    const k = pts.length;
+    pts.push(k % 2 ? { t: pts[k - 1].t, r: p.r } : p);
+    const d = (i: number) => Math.abs(pts[i + 1].r - pts[i].r);
+    if (k % 2 && d(k - 1) < 1) pts.length = k - 1;
+    this.mPoints = pts;
+    if (pts.length === 4) {
+      const truth = ivcTruth(this.ctx.sim().physiology.samples, window[0], window[1]);
+      this.ivcM = { ...ivcFromCalipers(d(0), d(2)), truth };
+      this.ctx.store.set({ tool: 'none' });
+      this.renderResult();
+    } else this.renderCapture();
   }
 
   private build(p: HTMLElement): void {
@@ -87,6 +129,7 @@ export class MeasureTab {
       this.ctx.track({ sync: () => (v.textContent = value()) });
     };
     protoRow('VCI diámetro', 'caliper', () => (this.ivcCaliperMm !== null ? `${this.ivcCaliperMm.toFixed(1)} mm` : '—'));
+    protoRow('VCI modo M', 'mmode', () => (this.ivcM ? `${this.ivcM.ciPct.toFixed(0)} %` : '—'));
     // una captura rechazada por la calidad no muestra patrón (el de un espectro de ruido es «grave»)
     const NOT_MEASURABLE = 'no medible';
     protoRow('Suprahepática', 'hepatic', () => {
@@ -124,6 +167,10 @@ export class MeasureTab {
       this.renderCapture();
       return;
     }
+    if (tool === 'mmode') {
+      this.mPoints = [];
+      this.ctx.store.set({ mode: 'M' });
+    }
     this.ctx.store.set({ tool });
     this.renderCapture();
   }
@@ -136,20 +183,24 @@ export class MeasureTab {
     title.textContent =
       tool === 'caliper'
         ? 'Calibrador'
-        : tool === 'hepatic'
-          ? 'Medir suprahepática'
-          : tool === 'portal'
-            ? 'Medir porta'
-            : 'Medir vena interlobar';
+        : tool === 'mmode'
+          ? 'VCI en modo M'
+          : tool === 'hepatic'
+            ? 'Medir suprahepática'
+            : tool === 'portal'
+              ? 'Medir porta'
+              : 'Medir vena interlobar';
     this.captureCard.appendChild(title);
     note(
       this.captureCard,
       tool === 'caliper'
         ? 'Haz clic en dos puntos de la imagen (borde a borde de la VCI, perpendicular al eje). Esc cancela.'
-        : 'Coloca la puerta en el vaso, espera 4 latidos estables y pulsa «Capturar». Se mide sobre el espectro adquirido.',
+        : tool === 'mmode'
+          ? `Congela (Espacio) y marca en la franja M, de pared a pared de la VCI, el diámetro máximo y el mínimo: calibre ${(this.mPoints.length >> 1) + 1} de 2, punto ${(this.mPoints.length % 2) + 1}.`
+          : 'Coloca la puerta en el vaso, espera 4 latidos estables y pulsa «Capturar». Se mide sobre el espectro adquirido.',
     );
     const r = row(this.captureCard);
-    if (tool !== 'caliper') button(r, 'Capturar', () => this.capture(tool)).el.classList.add('primary');
+    if (tool !== 'caliper' && tool !== 'mmode') button(r, 'Capturar', () => this.capture(tool)).el.classList.add('primary');
     button(r, 'Cancelar (Esc)', () => this.ctx.store.set({ tool: 'none' }));
   }
 
@@ -181,22 +232,32 @@ export class MeasureTab {
     const h = usable(this.lastHepatic);
     const p = usable(this.lastPortal);
     const k = usable(this.lastRenal);
+    // sin calibrador en la imagen, el diámetro máximo del modo M
+    const ivcMax = this.ivcCaliperMm ?? this.ivcM?.maxMm ?? null;
     const res: VexusResult = classifyVexusC({
-      ivcMaxDiameterMm: this.ivcCaliperMm,
+      ivcMaxDiameterMm: ivcMax,
       hepatic: h ? h.pattern : 'not-assessed',
       portalPulsatilityFraction: p ? p.pulsatilityFraction : null,
       renal: k ? k.pattern : 'not-assessed',
     });
     const rejected = (m: { quality: { issue: QualityIssue | null } } | null, name: string) =>
       m && m.quality.issue ? `<div>${name}: <b>${qualityText(m.quality.issue)}</b></div>` : null;
-    const n = (h ? 1 : 0) + (p ? 1 : 0) + (k ? 1 : 0) + (this.ivcCaliperMm !== null ? 1 : 0);
+    const n = (h ? 1 : 0) + (p ? 1 : 0) + (k ? 1 : 0) + (this.ivcCaliperMm !== null ? 1 : 0) + (this.ivcM ? 1 : 0);
+    const m = this.ivcM;
+    const mm = (v: number) => v.toFixed(1).replace('.', ',');
+    // la verdad del motor, como las demás, solo con el modo docente
+    const mTruth =
+      m?.truth && this.ctx.store.get().debug
+        ? ` <span class="small">(verdad ${mm(m.truth.maxMm)}/${mm(m.truth.minMm)} mm → ${m.truth.ciPct.toFixed(0)} %)</span>`
+        : '';
     this.badge.textContent = String(n);
     this.badge.hidden = n === 0;
     const gradeTxt =
       res.grade !== null ? `VExUS ${res.grade}` : res.gradeRange ? `VExUS ${res.gradeRange[0]}–${res.gradeRange[1]}` : 'VExUS —';
     const lines = [
       `<div class="grade">${gradeTxt} <span class="small">${statusText(res.status)}</span></div>`,
-      `<div>VCI: ${this.ivcCaliperMm !== null ? this.ivcCaliperMm.toFixed(1) + ' mm' : '—'} ${res.ivcDilated === null ? '' : res.ivcDilated ? '<span class="small">(≥ 20 mm: dilatada)</span>' : '<span class="small">(< 20 mm)</span>'}</div>`,
+      `<div>VCI: ${ivcMax !== null ? ivcMax.toFixed(1) + ' mm' : '—'} ${res.ivcDilated === null ? '' : res.ivcDilated ? '<span class="small">(≥ 20 mm: dilatada)</span>' : '<span class="small">(< 20 mm)</span>'}</div>`,
+      m ? `<div>VCI modo M: máx ${mm(m.maxMm)} · mín ${mm(m.minMm)} mm → colapso <b>${m.ciPct.toFixed(0)} %</b>${mTruth}</div>` : '',
       rejected(this.lastHepatic, 'VSH') ??
         (h
           ? `<div>VSH: S ${h.sPeak.toFixed(1)} · D ${h.dPeak.toFixed(1)} · A ${h.aPeak.toFixed(1)} cm/s → <b>${patternText(h.pattern)}</b> <span class="small">(${h.beats} latidos)</span></div>`

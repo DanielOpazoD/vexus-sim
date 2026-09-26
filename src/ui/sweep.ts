@@ -46,3 +46,17 @@ export class SweepTimeline {
 export function ecgX(t: number, tRight: number, secondsVisible: number, W: number): number {
   return ((t - (tRight - secondsVisible)) / secondsVisible) * W;
 }
+
+/** Instante del píxel x de las franjas (inversa de `ecgX`). */
+export function ecgT(x: number, tRight: number, secondsVisible: number, W: number): number {
+  return tRight - secondsVisible + (x / W) * secondsVisible;
+}
+
+/**
+ * Borde derecho (instante) de las franjas de ECG, espectro y modo M. En vivo, el ahora; con el cine en un
+ * cuadro más viejo que lo que cabe, las franjas se desplazan con él y su cursor queda a una décima del borde
+ * izquierdo (decisión 80).
+ */
+export function traceRight(tNow: number, cursorT: number | null, secondsVisible: number): number {
+  return cursorT === null ? tNow : Math.min(tNow, cursorT + 0.9 * secondsVisible);
+}

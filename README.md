@@ -50,8 +50,9 @@ Firefox). Única dependencia de producción: three.js (navegador 3D); todo lo de
 La pantalla tiene tres columnas: a la izquierda las **ventanas VExUS** (una tarjeta por punto de
 partida), el **navegador 3D** («Sonda y abdomen») y el **corte ecográfico** plegable (mapa de las
 estructuras que atraviesa el plano, con rótulos en modo docente); en el centro la **imagen** con HUD
-y ECG (el espectro aparece con el PW); a la derecha la **consola** por pestañas. Abajo, la barra de
-modos: [2D | Color | PW] (Color y PW a la vez es el tríplex), Congelar, Audio y Torso 3D.
+y ECG (el espectro aparece con el PW y la franja del modo M con el modo M); a la derecha la **consola** por
+pestañas. Abajo, la barra de modos: [2D | M | Color | PW] (Color y PW a la vez es el tríplex), Congelar, Audio y
+Torso 3D.
 
 - **Ventanas**: cada tarjeta desliza la sonda de forma continua hasta su punto de partida con ángulos
   neutros; la ventana hay que afinarla (nada teletransporta a una vista). La tarjeta de la ventana en
@@ -68,9 +69,14 @@ modos: [2D | Color | PW] (Color y PW a la vez es el tríplex), Congelar, Audio y
   (solo con la casilla activada: intervenciones —bolo, diurético y PEEP— sobre la aurícula de lazo cerrado,
   «Reiniciar paciente», verdad fisiológica y estado de la adquisición). Las explicaciones
   están detrás del ⓘ de cada sección.
-- **Modos**: `2` B, `C` Color (clic en la imagen centra la caja), `P` PW (clic coloca la puerta),
-  `Espacio` congela, `H` oculta el carril izquierdo, `[ ]` profundidad, `− +` ganancia, `Esc` cancela una
-  herramienta. Cada control actúa en su etapa física: la corrección angular solo cambia el rótulo, la
+- **Modos**: `2` B, `M` modo M (clic en la imagen coloca la línea M, que también se arrastra; su franja
+  profundidad × tiempo va debajo del ECG, con el barrido en la sección «Modo M» de Adquirir), `C` Color (clic en la
+  imagen centra la caja), `P` PW (clic coloca la puerta), `Espacio` congela, `H` oculta el carril izquierdo, `[ ]`
+  profundidad, `− +` ganancia, `Esc` cancela una herramienta.
+- **Cine** (`src/ui/controllers/cine.ts`): con la imagen congelada, el deslizador bajo la imagen, `← →` (Inicio y Fin)
+  y la rueda sobre la imagen recorren los últimos 6 s de cuadros; el cursor del ECG marca el cuadro mostrado y el
+  calibrador mide sobre él. En Medir, «VCI modo M»: con la franja congelada, dos calibres de pared a pared (diámetro
+  máximo y mínimo) dan la colapsabilidad. Cada control actúa en su etapa física: la corrección angular solo cambia el rótulo, la
   línea de base solo la presentación, el filtro de pared elimina frecuencias bajas de la IQ.
 
 ## Estructura

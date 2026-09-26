@@ -83,3 +83,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [77](DECISIONS.md#L2404) | Armónica tisular: el modo B de un equipo moderno, con su haz, su acumulación y su ruido | vigente |
 | [78](DECISIONS.md#L2491) | Tríadas portales finas: el hígado deja de ser un moteado uniforme | vigente |
 | [79](DECISIONS.md#L2560) | Aurícula de lazo cerrado en la media e intervenciones docentes: bolo, diurético y PEEP | vigente |
+| [80](DECISIONS.md#L2645) | Cine y modo M: los cuadros adquiridos antes de la conversión de barrido y la franja M en la GPU | vigente |

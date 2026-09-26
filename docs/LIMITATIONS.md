@@ -210,6 +210,17 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   cubrirían 280–715 ms, con estela respiratoria de varios mm; el compuesto se apaga y la textura del
   hígado vuelve a la de una mirada (desviación del gris ≈ 12 → 16 [ESTIMADO]), como en varios equipos. El
   PW lo conserva. Componer con color exige una métrica de estela y otra decisión.
+- **El modo M toma una columna por cuadro de imagen** (`m-mode-frame-rate`, decisión 80): la franja copia la
+  línea M de la envolvente de cada cuadro B (16 ms a 60 Hz; con SwiftShader, hasta 250 ms), compuesta como la
+  imagen (con la composición espacial, la media de los tres últimos cuadros: 50 ms a 60 Hz, 0,75 s con SwiftShader),
+  y no una línea dedicada a ~1 kHz como un equipo. Basta para la VCI y la respiración; no resuelve el movimiento de
+  una válvula ni el latido fino de una pared.
+- **De frente, el eco de la pared de enfrente estrecha la luz de la VCI en el modo M** (`m-mode-lumen-blooming`,
+  decisión 80): con la línea M casi perpendicular a la VCI (≥ 84°) el eco especular de la pared posterior, máximo de
+  frente, se come 1–1,5 mm de la luz en la presentación logarítmica y la colapsabilidad medida de borde interno a
+  borde interno sale ~6 puntos por encima de la verdad del motor en el sano (37 frente a 31 %); con la línea
+  2 cm por debajo de la desembocadura de las suprahepáticas (~80°), ±2 puntos. La cuerda geométrica de la luz a lo
+  largo de la línea sigue a la verdad (31,3 frente a 31,0 %).
 
 ## Doppler
 

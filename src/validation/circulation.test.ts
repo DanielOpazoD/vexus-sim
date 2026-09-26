@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AnatomyScene } from '../anatomy/scene';
-import { AF_MODERATE_CONGESTION, CASES, NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
+import { AF_MODERATE_CONGESTION, CASES, CIRRHOSIS_PULMONARY_HYPERTENSION, NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import {
   BOLUS_TAU_S,
   Circulation,
@@ -362,7 +362,10 @@ describe('Forma de onda auricular con la carga del lazo', () => {
 
 describe('Lazo del motor en el punto de los casos', () => {
   it('la curva de retorno venoso sale de la red: Pmsf 10–25 mmHg, R_RV ≈ 1,2–1,4 mmHg·min/L, C ≈ 110–130 mL/mmHg', () => {
-    for (const p of CASES) {
+    // la cirrosis (resistencia intrahepática ≥ 2, decisión 82) va aparte, abajo: su porta está en el camino del retorno
+    const withoutPortalHypertension = CASES.filter((c) => c.liver.sinusoidalResistance < 2);
+    expect(withoutPortalHypertension.length).toBe(CASES.length - 1);
+    for (const p of withoutPortalHypertension) {
       const k = engineFor(p).circulation.loop;
       expect(k.pmsf0).toBeGreaterThan(p.rapMeanMmHg + 4);
       expect(k.pmsf0).toBeLessThan(25);
@@ -372,6 +375,20 @@ describe('Lazo del motor en el punto de los casos', () => {
       expect(k.complianceMlPerMmHg).toBeGreaterThan(100);
       expect(k.complianceMlPerMmHg).toBeLessThan(140);
     }
+  });
+
+  it('cirrosis (decisión 82): la resistencia intrahepática entra en el retorno venoso y sube la Pmsf y la R_RV', () => {
+    // El lecho esplácnico, con la mayor parte de la distensibilidad, drena por el hígado: con la resistencia ×5 su presión
+    // sube (hipertensión portal) y con ella la Pmsf (media ponderada) y la resistencia al retorno. Medido: Pmsf₀ 28,1
+    // frente a 24,2 mmHg y R_RV 2,32 frente a 1,37 mmHg·min/L del mismo corazón sin cirrosis; la distensibilidad no cambia
+    const rvr = (k: LoopParams) => (k.rvr * 1000) / 60;
+    const cir = engineFor(CIRRHOSIS_PULMONARY_HYPERTENSION).circulation.loop;
+    const heart = engineFor(SEVERE_CONGESTION).circulation.loop;
+    expect(cir.pmsf0).toBeGreaterThan(heart.pmsf0 + 2);
+    expect(cir.pmsf0).toBeLessThan(30);
+    expect(rvr(cir)).toBeGreaterThan(rvr(heart) + 0.4);
+    expect(rvr(cir)).toBeLessThan(2.5);
+    expect(Math.abs(cir.complianceMlPerMmHg - heart.complianceMlPerMmHg)).toBeLessThan(5);
   });
 
   it('el sano está en la pendiente de Starling y la congestión grave en la meseta', () => {

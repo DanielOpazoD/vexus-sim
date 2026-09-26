@@ -5,7 +5,15 @@ import { acousticWindowWeight } from '../app/gateTransmission';
 import { START_POINTS } from '../app/startPoints';
 import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene } from '../anatomy/scene';
-import { AF_MODERATE_CONGESTION, NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
+import {
+  ABDOMINAL_HYPERTENSION,
+  AF_MODERATE_CONGESTION,
+  CIRRHOSIS_PULMONARY_HYPERTENSION,
+  MECHANICAL_VENTILATION,
+  NORMAL_ADULT,
+  SEVERE_CONGESTION,
+  TRICUSPID_REGURGITATION,
+} from '../cases';
 import type { Vec3 } from '../core/vec3';
 import { PwDopplerChain } from '../doppler/pwChain';
 import type { GateGeometry } from '../doppler/sampleVolume';
@@ -342,5 +350,66 @@ describe('Cadena completa del alumno: puerta → espectro → medición → grad
     expect(low.issue).toBe('aliasing');
     const high = hepaticCaptures(NORMAL_ADULT, 'apnea-expiratory', 9, false, 5000).captures.at(-1)!;
     expect(high).toEqual(expect.objectContaining({ pattern: 'normal', issue: null }));
+  });
+});
+
+/**
+ * Casos trampa (decisión 82) por la cadena del alumno: en apnea espiratoria, la técnica que se enseña, lo medido da la
+ * discordancia de cada trampa (grado 0 con la PAD alta, 2 y 1 sin congestión, 3 con la porta leve) y ninguna captura de
+ * la VSH con el visto bueno de la calidad es falsa. Con el ventilador ciclando no es así: queda como limitación.
+ */
+describe('Casos trampa por la cadena del alumno (decisión 82)', () => {
+  for (const [base, expectedGrade] of [
+    [ABDOMINAL_HYPERTENSION, 0],
+    [TRICUSPID_REGURGITATION, 2],
+    [MECHANICAL_VENTILATION, 1],
+    [CIRRHOSIS_PULMONARY_HYPERTENSION, 3],
+  ] as const) {
+    it(`${base.label}: en apnea lo medido coincide con la verdad y da grado ${expectedGrade}`, () => {
+      const { truth, hepatic, portal, renal } = examine(base);
+      for (const [name, m] of [
+        ['hepática', hepatic],
+        ['portal', portal],
+        ['renal', renal],
+      ] as const) {
+        expect(m, `medición ${name}`).not.toBeNull();
+        expect(m!.quality.issue, `calidad ${name}`).toBeNull();
+      }
+      expect(hepatic!.pattern).toBe(truth.hepaticPattern);
+      // lo que cuenta para el grado es si la porta es grave; cerca del 30 % la envolvente puede dar la clase vecina (la
+      // PIA: verdad 25–26 %, medida 29–31 %)
+      expect(classifyPortal(portal!.pulsatilityFraction) === 'severe').toBe(classifyPortal(truth.portalPF) === 'severe');
+      expect(Math.abs(portal!.pulsatilityFraction - truth.portalPF)).toBeLessThan(10);
+      expect(renal!.pattern === 'monophasic').toBe(truth.renalPattern === 'monophasic');
+      const grade = classifyVexusC({
+        ivcMaxDiameterMm: truth.ivcMaxMm,
+        hepatic: hepatic!.pattern,
+        portalPulsatilityFraction: portal!.pulsatilityFraction,
+        renal: renal!.pattern,
+      });
+      expect(grade.grade).toBe(expectedGrade);
+    });
+
+    it(`${base.label}: en apnea cada captura de la VSH es no medible o verdadera, y casi todas medibles`, () => {
+      const { captures, truth } = hepaticCaptures(base, 'apnea-expiratory', 26, true);
+      const tag = JSON.stringify(captures);
+      expect(captures.length, tag).toBeGreaterThan(8);
+      expect(
+        captures.filter((c) => c.issue === null && c.pattern !== truth.hepaticPattern),
+        tag,
+      ).toEqual([]);
+      expect(captures.filter((c) => c.issue === null).length / captures.length, tag).toBeGreaterThanOrEqual(0.8);
+    });
+  }
+
+  // Limitación `ppv-hepatic-capture-false-reversal`: con el ventilador ciclando la puerta fija ve otro vaso en la
+  // insuflación y la calidad no siempre lo rechaza. Medido en 10 semillas del caso: en 5, 1–2 de 10 capturas con el
+  // visto bueno leen una S invertida con la verdad normal; con la de la prueba, 2. La prueba afirma la limitación: cuando
+  // la calidad la rechace fallará y habrá que retirarla (aquí y en docs/LIMITATIONS.md).
+  it('limitación conocida: con el ventilador ciclando alguna captura de la VSH con el visto bueno lee una S invertida falsa', () => {
+    const base = { ...MECHANICAL_VENTILATION, seed: MECHANICAL_VENTILATION.seed + 4 };
+    const { captures, truth } = hepaticCaptures(base, 'quiet', 26, true);
+    expect(truth.hepaticPattern).toBe('normal');
+    expect(captures.filter((c) => c.issue === null && c.pattern === 'severe').length, JSON.stringify(captures)).toBeGreaterThan(0);
   });
 });

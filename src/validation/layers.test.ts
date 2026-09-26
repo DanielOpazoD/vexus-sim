@@ -67,13 +67,15 @@ const dep = (a: string, b: string) => edges.get(a)?.has(b) ?? false;
  * Dependencias PERMITIDAS de cada capa (Fase 1): matriz completa, no reglas sueltas. Una capa
  * nueva o una dependencia nueva hay que declararlas aquí y en docs/ARCHITECTURE.md.
  * Nota: `doppler → vexus` es deliberado (la medición produce patrones con las reglas puras de
- * VExUS); `doppler` ya NO depende de `audio` (sumidero inyectado, `AudioSink`).
+ * VExUS); `doppler` ya NO depende de `audio` (sumidero inyectado, `AudioSink`). `cases → vexus` también
+ * (decisión 82): los confusores reales de cada caso (`cases/teaching.ts`) usan el tipo `VexusContext` del
+ * clasificador, para que renombrar un confusor rompa la compilación y no el caso.
  */
 const ALLOWED: Record<string, readonly string[]> = {
   core: [],
   physiology: ['core'],
   anatomy: ['core', 'physiology'],
-  cases: ['physiology'],
+  cases: ['physiology', 'vexus'],
   vexus: ['core', 'physiology'],
   probe: ['core', 'anatomy'],
   audio: ['core'],

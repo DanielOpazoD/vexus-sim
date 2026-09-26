@@ -44,3 +44,24 @@ describe('Carga diferida: el chunk principal no importa los módulos diferidos',
     expect(dynamic).toBeGreaterThan(0);
   });
 });
+
+/**
+ * Notas del docente (decisión 82): los confusores reales y la explicación de las trampas (`cases/teaching.ts`) solo
+ * viajan con la pestaña Docente, que ya es diferida (arriba). Si otro módulo del chunk principal los importara, el JS
+ * que descarga el alumno llevaría las trampas y las casillas que debe marcar.
+ */
+describe('Notas del docente: solo con la pestaña Docente (decisión 82)', () => {
+  const files = appSources(SRC).map((p) => ({ path: relative(SRC, p), text: readFileSync(p, 'utf8') }));
+  /** Módulos de la aplicación que importan (no solo como tipo) una ruta que cumple `target`. */
+  const importers = (target: RegExp): string[] =>
+    files
+      .filter((f) =>
+        [...f.text.matchAll(/^\s*import\s+(type\s+)?[^;]*?from\s+['"]([^'"]+)['"]/gms)].some((m) => !m[1] && target.test(m[2])),
+      )
+      .map((f) => f.path);
+
+  it('`cases/teaching` solo lo importa `app/teacherNotes`, y a este solo la pestaña Docente', () => {
+    expect(importers(/\/cases\/teaching$|^\.\/teaching$/)).toEqual(['app/teacherNotes.ts']);
+    expect(importers(/\/teacherNotes$/)).toEqual(['ui/panel/teacherTab.ts']);
+  });
+});

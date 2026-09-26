@@ -53,4 +53,17 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'probe-compression-in-plane',
   'm-mode-frame-rate',
   'm-mode-lumen-blooming',
+  // confusores de los casos trampa (decisión 82)
+  'iah-no-renal-compression',
+  'iah-collapsed-ivc-velocity',
+  'ppv-hepatic-capture-false-reversal',
+  'ivc-law-steep',
+  'cirrhosis-hepatic-not-flattened',
+  'no-ascites',
+  'small-liver-fixed-vessels',
+  'no-athlete-physiology',
+  'no-eskd-physiology',
+  'no-remodelled-ivc',
+  'no-stiff-rv-d-reversal',
+  'blind-mode-screen-only',
 ]);

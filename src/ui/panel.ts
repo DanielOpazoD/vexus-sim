@@ -164,9 +164,12 @@ export class ControlPanel implements PanelContext {
     return this.teacherLoad;
   }
 
-  /** Borra las mediciones adquiridas y el aviso de la última intervención (cambio de caso o reinicio). */
+  /**
+   * Borra las mediciones adquiridas y el aviso de la última intervención (cambio de caso o reinicio); con otro caso,
+   * también el contexto clínico marcado, y la viñeta y las notas del docente pasan a las suyas (decisión 82).
+   */
   onSimulatorChanged(): void {
-    this.measure.clearMeasurements();
+    this.measure.onSimulatorChanged();
     this.teacher?.onSimulatorChanged();
   }
 

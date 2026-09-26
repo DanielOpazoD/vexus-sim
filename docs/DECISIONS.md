@@ -2838,6 +2838,107 @@ decisión 68 las quería fundidas en una).
   entera con SwiftShader; capturas con GPU (M4) de las ventanas renal y del flanco, adulto sano y congestión grave,
   frente a `main`, y de dos vistas del flanco con el psoas.
 
+## 82. Casos trampa y contexto clínico: viñeta, confusores que marca el alumno, fiabilidad por territorio y mVExUS
+
+**Contexto.** Sirve a los objetivos 4 (fidelidad fisiológica y clínica: los confusores y los casos trampa de la
+literatura revisada), 5 (enseñar a obtener y a interpretar: contexto clínico y fiabilidad por territorio, modo ciego) y 8
+(honestidad: lo que el modelo no hace, declarado) de `docs/MISION.md`. El dueño (médico, 26-09-2026) compartió 19
+artículos de POCUS y VExUS (Koratala 2022 y 2026, Leyba 2026, Martin 2025, Kidney360 2022, Clin Kidney J 2024, Med Clin N
+Am 2025 y otros). Los tres casos enseñaban el protocolo con pacientes que no engañan: el grado de la verdad seguía a la
+PAD (0/3/1 con 5/18/13 mmHg). La literatura describe discordancias que el motor ya produce —la presión intraabdominal
+(PIA) alta da una VCI pequeña con la PAD alta; la insuficiencia tricuspídea (IT) grave, una S invertida sin congestión;
+la ventilación con presión positiva, una VCI dilatada sin PAD alta; la cirrosis, una porta que no sigue a la PAD— y otras
+que el operador solo puede tener en cuenta (ERC terminal, deportista, FA, sin ECG). El clasificador ya tenía
+`classifyVexusC(input, ctx)`, la VCI a ±2 mm del corte y `classifyModifiedVexus`, el mVExUS sin riñón (Martin 2025: AUC
+0,85 frente a 0,87 para PAD > 12 mmHg, κ 0,85).
+**Opciones.** (1) Meter el contexto en el `PatientState`: mezclaría la verdad latente con lo que sabe el operador. (2)
+Aplicar el contexto real del caso al grado sin que el alumno lo marque: no enseñaría a reconocer el confusor. (3) Quitar
+del grado todo el territorio que un confusor puede falsear, en cualquier sentido (la primera versión): con «Deportista» un
+estudio normal pasaba de 1 a 1–2, y con «Cirrosis» se perdía una S invertida verdadera, justo la lección de no quedarse
+con la porta. (4) La elegida: casos con la fisiología que ya existe, casillas que marca el alumno, y cada confusor quita
+solo el hallazgo hacia el que sesga.
+**Decisión.** Cuatro casos trampa en `src/cases/index.ts`, cada uno un caso de referencia con solo lo que crea el
+confusor (semillas 20260924–27; el id nombra lo que dice la viñeta, no la trampa, porque el valor de la opción está en el
+DOM del alumno): `abdominal-hypertension` (la congestión grave, con su IT funcional de 0,7, con PIA 16 y PAD 14),
+`tricuspid-regurgitation` (el sano con IT 0,9, PAD 8 y VD 0,7), `mechanical-ventilation` (el sano con presión positiva,
+PEEP 10, FR 16 y PAD 7) y `cirrhosis-pulmonary-hypertension` (la congestión grave con la resistencia intrahepática ×5 y la
+distensibilidad 0,6). Los parámetros de partida se afinaron con la verdad del motor en respiración tranquila y en apnea
+espiratoria, y con capturas como las de la pestaña Medir, porque perdían la trampa: IT 0,8 con PAD 7 daba una S de
+−4 cm/s y una VCI de 22,2 mm, junto a dos umbrales; con PAD 5 la ventilada medía 18,9 mm en la pausa espiratoria (grado
+0); la porta del cirrótico salía al 53 % en apnea con la distensibilidad 0,4 y, con la resistencia ×4, la envolvente del
+alumno (que sobrestima 5–13 puntos la PF de una porta lenta) leía 46–54 %; con PIA 20 la VCI de 8,5 mm llevaba la
+retrohepática a 5,4 m/s, y el hígado de 0,9 perdía un cuarto de las ramas procedurales (30 de ≥ 40). Contexto clínico
+fuera del `PatientState`, en dos registros por audiencia: `src/cases/vignettes.ts` (la viñeta: historia, ventilador,
+presión vesical, ECG; sin el diagnóstico ni el grado) y `src/cases/teaching.ts` (los confusores reales, `VexusContext`, y
+la explicación de la trampa). La viñeta la da `caseVignette` (`src/app/blindMode.ts`); las notas del docente,
+`caseTeacherNotes` (`src/app/teacherNotes.ts`), que solo importa la pestaña Docente, cargada en su propio chunk en modo
+docente: el JS del alumno no lleva las respuestas (`codeSplitting.test.ts`). `cases → vexus` entra en la matriz de capas
+por ese tipo. Clasificador: cada confusor quita solo el hallazgo que puede falsear (`Discount`): la ERC el riñón grave y
+el deportista la porta grave (dan falsos positivos: el hallazgo normal sigue contando), la cirrosis la porta siempre y la
+suprahepática si no está invertida (la aplana, no la invierte); el deportista avisa además de la VCI grande, y el aviso de
+la ventilación dice que la VCI varía poco. Pestaña Medir: «Contexto clínico» antes del protocolo, con la viñeta y un grupo
+de siete casillas (`fieldset` con leyenda: ERC avanzada o diálisis, Cirrosis, Fibrilación auricular, Sin ECG, Ventilación
+con presión positiva, Presión intraabdominal alta, Deportista), sin marcar al empezar y borradas al cambiar de caso (no al
+reiniciar el mismo paciente ni al intervenir: la historia no cambia); el resultado usa `classifyVexusC` con lo marcado y
+añade un aviso por confusor con su territorio y su motivo, «no fiable» en la línea del hallazgo que deja de contar, la
+nota de la VCI a ±2 mm del corte y la línea «mVExUS (sin riñón)»; cuando no falta ninguna medida el estado dice
+«intervalo por el contexto» o, si sale un grado, «con el contexto»; el grado se anuncia en una región `aria-live` de la
+pestaña, fuera del cuerpo de la medida que el calibrador armado oculta, y la clase portal pasa al español. Pestaña Docente:
+«Caso y trampa» con el nombre, los confusores reales y la trampa, y la verdad con el grado que da el contexto del caso; al
+apagar el modo docente se vacían las notas, el estado del lazo (PAD, gasto e IT del caso) y la verdad, también en el DOM
+oculto. Rótulos en `src/ui/panel/vexusText.ts` (`CONTEXT_LABELS`, un `Record` sobre todas las claves de `VexusContext`).
+**Consecuencias.** Verdad del motor (tranquila/apnea espiratoria, 6–18 s). PIA alta: VCI 14,4/15,5 mm con la PAD media
+13,0/14,0 mmHg, S −7,5/−7,3 cm/s, PF 27/26 %, renal continuo → grado 0; con «Presión intraabdominal alta», 0–2. Sin la
+PIA, el mismo corazón da 29,3/29,6 mm y grado 3; sin la IT funcional, la suprahepática queda en S < D (13,1/15,3 cm/s) y
+el intervalo en 0–1. IT grave: PAD media 7,0/8,0, VCI 24,3/25,2 mm, S −7,9/−8,2, PF 33/34 %, renal continuo → grado 2; sin
+la IT, suprahepática normal y grado 1. Ventilación: VCI 26,4/23,0 mm con la PAD transmural en 7,7 mmHg (el sano, 8,7),
+S/D 1,6/1,8, PF 35/17 %, renal continuo → grado 1; el mismo corazón con el mismo llenado respirando solo (PAD 4,1) tiene
+la VCI de 15,7/16,7 mm y grado 0. Cirrosis: PF 32/35 % frente a 69/76 % sin cirrosis, gradiente portal 15,9/14,9 mmHg
+(4,4/4,0), S −7,3/−6,8, renal monofásico → grado 3, y con «Cirrosis» sigue en 3 (la porta deja de contar); su lazo
+cerrado es otro, porque la resistencia intrahepática queda en el camino del retorno venoso: Pmsf₀ 28,1 frente a 24,2 mmHg
+y R_RV 2,32 frente a 1,37 mmHg·min/L. Cadena del alumno en apnea (puerta con ventana acústica, capturas cada 2 s como la
+pestaña Medir): todas las capturas de la VSH verdaderas en las cuatro trampas, y la porta al 23–31 % en la PIA, 34–40 %
+en la IT, 17–22 % con el ventilador y 34–42 % en la cirrosis. Con el ventilador ciclando, 5 de 10 semillas dan 1–2 de
+10 capturas de la VSH con el visto bueno y una S invertida falsa: el texto de la trampa manda medir en la pausa
+espiratoria. El alumno ve «Paciente A–G». Límites nuevos: `iah-no-renal-compression`, `iah-collapsed-ivc-velocity` (con
+PIA 16 la retrohepática llega a 2,9 m/s con respiración tranquila, 3,4 en apnea inspiratoria y 5,3 tras un diurético de
+1 L; la propiedad de las intervenciones solo le exige ahí < 8 m/s), `ppv-hepatic-capture-false-reversal`, `ivc-law-steep`
+(el sano con PAD 6/7/8 mmHg mide 20,1/22,2/24,0 mm), `cirrhosis-hepatic-not-flattened`, `no-ascites`,
+`small-liver-fixed-vessels`, `no-athlete-physiology`, `no-eskd-physiology`, `no-remodelled-ivc`, `no-stiff-rv-d-reversal`
+y `blind-mode-screen-only` (los nombres de los casos y su `PatientState` siguen en el JS principal, y las opciones de los
+casos de referencia nombran el diagnóstico).
+Tamaño (vite build sobre 50f8390): el chunk principal pasa de 310,4 a 318,1 kB, el de la pestaña Docente de 7,8 a 12,2 kB
+y el JS total de 947,5 a 959,6 kB, dentro del presupuesto (quedan 1,9 kB en el principal). Pendiente: una casilla para la
+IT grave (hoy se interpreta sin ella) y el contexto que cambian las intervenciones (una PEEP aplicada no marca la
+ventilación).
+**Verificación.** `traps.test.ts` (lenta): cada trampa con respiración tranquila y en apnea da su discordancia y sus
+controles la deshacen (sin la PIA, sin la IT, el mismo llenado sin ventilador y el corazón sin cirrosis); con los
+parámetros de partida fallan 5 de las 8 pruebas y la PIA 20 rompe la propiedad de las intervenciones (5,6 m/s).
+`examChain.test.ts` (lenta): en apnea, la cadena del alumno da el grado de cada trampa (0/2/1/3) y cada captura de la VSH
+es no medible o verdadera; otra prueba afirma la S invertida falsa con el ventilador ciclando (la limitación).
+`vexusContext.test.ts`: la ERC y el deportista no quitan un hallazgo normal, la cirrosis no quita una S invertida.
+`cases.test.ts`: viñeta y notas para cada caso, semillas y nombres únicos, viñetas cortas, trampas con explicación,
+confusores del clasificador y coherentes con la fisiología (FA con el ritmo, ventilación con el modo, PIA ≥ 12 mmHg de la
+WSACS, cirrosis con la resistencia ≥ 2, ningún «sin ECG»). `blindMode.test.ts`: ninguna viñeta nombra el grado, la
+congestión, la trampa o la PAD, y las notas son `null` para el alumno. `codeSplitting.test.ts`: `cases/teaching` solo lo
+importa `app/teacherNotes`, y a este solo la pestaña Docente (falla si otro módulo del chunk principal lo importa).
+`contextUi.test.ts`, con un DOM falso (`src/validation/support/fakeDom.ts`): el orden de las secciones, las siete
+casillas sin marcar, los avisos y las líneas «no fiable» según el sentido de cada confusor, el intervalo 0–2 en lugar del
+grado 0 con la PIA, el estado y la región viva, la nota de ±2 mm, el mVExUS, qué borra lo marcado (otro caso sí;
+reiniciar, intervenir o «Borrar mediciones», no) y la pestaña Docente vaciada al apagar el modo; mata las mutaciones sin
+borrar el contexto al cambiar de caso, sin sincronizar las casillas, sin pasar el contexto al grado y sin vaciar el lazo.
+`interventions.test.ts`: la propiedad recorre también las trampas y otra prueba afirma la velocidad de la retrohepática
+con la PIA. `circulation.test.ts`: el sobre del lazo en el punto del caso (Pmsf 10–25 mmHg, R_RV 1,1–1,5) vale para los
+seis casos sin cirrosis, y la cirrosis sube la Pmsf₀ y la R_RV frente al mismo corazón. e2e «casos trampa»: el alumno lee
+la viñeta, marca «Presión intraabdominal alta» y ve el aviso, sin la trampa en la pantalla ni en el DOM y sin su
+explicación en ningún JS que haya descargado; otro caso desmarca; el docente ve las notas, el lazo y la verdad, que salen
+del DOM al volver al modo alumno. Revisión adversarial de contexto limpio, en dos rondas: halló la prueba del lazo en
+rojo, la S invertida falsa con el ventilador, la exclusión sin sentido, la S invertida de la PIA heredada de la IT (que no
+prueba la congestión: la trampa la presenta como discordancia), los valores del docente en el DOM oculto, la ley de la VCI,
+las respuestas en el JS del alumno, cifras medidas con otras semillas, «intervalo» para un grado único y el anuncio del
+grado dentro de la pestaña oculta; todo corregido o declarado arriba (los nombres de los casos en el JS principal, en
+`blind-mode-screen-only`).
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

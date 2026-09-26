@@ -2,7 +2,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { AnatomyScene } from '../anatomy/scene';
-import { AF_MODERATE_CONGESTION, CASES, NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
+import { ABDOMINAL_HYPERTENSION, AF_MODERATE_CONGESTION, CASES, NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import type { Intervention } from '../physiology/circulation';
 import { PhysiologyEngine, nonFiniteFields } from '../physiology/engine';
 import { clonePatient, type PatientState, type RespiratoryPattern } from '../physiology/patientState';
@@ -264,8 +264,8 @@ describe('Estabilidad del lazo en los límites de las intervenciones', () => {
       fc.record({ kind: fc.constant('diuresis' as const), volumeMl: fc.double({ min: 1, max: 3000, noNaN: true }) }),
       fc.record({ kind: fc.constant('peep' as const), cmH2O: fc.double({ min: 0, max: 20, noNaN: true }) }),
     );
-    // los tres casos y sus variantes con PEEP de caso y ventilación mecánica (un caso con PEEP bajaba la PAD a
-    // −0,6 mmHg al quitársela tras el diurético máximo)
+    // los casos (los tres de referencia y las trampas de la decisión 82) y sus variantes con PEEP de caso y ventilación
+    // mecánica (un caso con PEEP bajaba la PAD a −0,6 mmHg al quitársela tras el diurético máximo)
     const caseArb = fc
       .record({
         base: fc.constantFrom(...CASES),
@@ -289,6 +289,7 @@ describe('Estabilidad del lazo en los límites de las intervenciones', () => {
           let dMin = Infinity;
           let dMax = -Infinity;
           let vMax = 0;
+          let vIvcSupra = 0;
           let rapMin = Infinity;
           let fillingMax = -Infinity;
           const bad = new Set<string>();
@@ -297,7 +298,9 @@ describe('Estabilidad del lazo en los límites de las intervenciones', () => {
             for (const f of nonFiniteFields(s)) bad.add(f);
             dMin = Math.min(dMin, s.ivc.dApMm);
             dMax = Math.max(dMax, s.ivc.dApMm);
-            for (const v of Object.values(s.velocities)) vMax = Math.max(vMax, Math.abs(v));
+            for (const [id, v] of Object.entries(s.velocities))
+              if (id === 'ivcSupra') vIvcSupra = Math.max(vIvcSupra, Math.abs(v));
+              else vMax = Math.max(vMax, Math.abs(v));
             rapMin = Math.min(rapMin, e.circulation.state.rapMeanMmHg);
             fillingMax = Math.max(fillingMax, e.circulation.state.fillingRapMmHg);
           }
@@ -305,15 +308,33 @@ describe('Estabilidad del lazo en los límites de las intervenciones', () => {
           expect(dMin).toBeGreaterThan(1);
           expect(dMax).toBeLessThan(45);
           // cordura numérica, la misma cota que properties.test.ts (el límite fisiológico de 2 m/s en la VCI
-          // colapsada es `no-thoracic-waterfall`)
+          // colapsada es `no-thoracic-waterfall`). Con la presión intraabdominal alta la VCI retrohepática la supera
+          // (`iah-collapsed-ivc-velocity`, el `it.fails` de abajo): ahí solo se exige que no se dispare
           expect(vMax).toBeLessThan(3000);
+          expect(vIvcSupra).toBeLessThan(base.intraAbdominalPressureMmHg >= 12 ? 8000 : 3000);
           // en cada paso los líquidos dejan la PAD en el dominio probado del modelo: ≥ 2 mmHg con cualquier PEEP y el
           // llenado ≤ 30
           expect(rapMin).toBeGreaterThan(2 - 1e-6);
           expect(fillingMax).toBeLessThan(30 + 1e-6);
         },
       ),
-      { seed: 20260926, numRuns: 20 },
+      { seed: 20260926, numRuns: 30 },
     );
+  });
+
+  // Limitación `iah-collapsed-ivc-velocity` (decisión 82), hallada por la propiedad de arriba: con la presión
+  // intraabdominal por encima de la PAD la VCI abdominal se colapsa y, como es un solo compartimento
+  // (`ivc-single-compartment`), su tramo retrohepático se estrecha con ella y lleva además el caudal de las
+  // suprahepáticas: 2,9 m/s con respiración tranquila, 3,4 en apnea inspiratoria y 5,3 tras un diurético de 1 L. La prueba
+  // afirma la limitación (y no un `it.fails`, que pasaría con cualquier error): cuando el tramo retrohepático tenga su
+  // calibre propio fallará y habrá que retirarla, aquí y en docs/LIMITATIONS.md.
+  it('limitación conocida: con la presión intraabdominal alta y un diurético la VCI retrohepática supera 3 m/s', () => {
+    const e = engineFor(ABDOMINAL_HYPERTENSION);
+    runTo(e, 1);
+    expect(e.intervene({ kind: 'diuresis', volumeMl: 1000 })).not.toBeNull();
+    let v = 0;
+    while (e.clock.t < 61) v = Math.max(v, Math.abs(e.step().velocities.ivcSupra));
+    expect(v).toBeGreaterThan(3000);
+    expect(v).toBeLessThan(8000); // la cota de cordura de la propiedad
   });
 });

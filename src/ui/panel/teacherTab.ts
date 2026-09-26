@@ -1,13 +1,14 @@
+import { caseTeacherNotes, type CaseTeacherNotes } from '../../app/teacherNotes';
 import type { EquivalenceReport } from '../../app/equivalenceCheck';
 import { FRAME_PASSES } from '../../ultrasound/passGraph';
 import { errorLog, errorMessage } from '../../app/errorLog';
 import { TISSUES } from '../../anatomy/tissues';
 import { FLUID_TIME_ACCELERATION, type AppliedIntervention, type Intervention } from '../../physiology/circulation';
-import { classifyVexusC } from '../../vexus/classification';
+import { classifyModifiedVexus, classifyVexusC } from '../../vexus/classification';
 import { measurePhysiologyTruth } from '../../vexus/measurements';
 import { button, controlId, note, row } from '../controls';
 import type { PanelContext } from './context';
-import { patternText, renalText } from './vexusText';
+import { contextText, gradeValueText, patternText, renalText } from './vexusText';
 
 /** Niveles de PEEP de la botonera (cmH₂O). */
 type PeepLevel = '0' | '5' | '10' | '15';
@@ -38,9 +39,29 @@ export function elapsedText(i: AppliedIntervention, t: number): string {
   return `hace ${s.toFixed(0)} s (≈ ${((s * FLUID_TIME_ACCELERATION) / 60).toFixed(0)} min clínicos)`;
 }
 
+/**
+ * Bloque «Caso y trampa» del docente (decisión 82): el nombre del caso, sus confusores reales (las casillas que el
+ * alumno debería marcar en «Medir») y por qué engaña. Sin notas (modo alumno) queda vacío: ni en el DOM oculto.
+ */
+export function renderCaseNotes(el: HTMLElement, notes: CaseTeacherNotes | null): void {
+  el.textContent = '';
+  if (!notes) return;
+  const name = document.createElement('div');
+  name.className = 'case-name';
+  name.textContent = notes.label;
+  const context = document.createElement('div');
+  context.textContent = `Contexto real: ${contextText(notes.context)}`;
+  const trap = document.createElement('p');
+  trap.textContent = notes.trap ?? 'Caso de referencia, sin trampa.';
+  el.append(name, context, trap);
+}
+
 /** Pestaña Docente: verdad fisiológica, intervenciones y estado de la adquisición (solo con la casilla activada). */
 export class TeacherTab {
   private debugEl!: HTMLElement;
+  private caseEl!: HTMLElement;
+  /** Caso y modo de lo que solo ve el docente, ya pintado (se repinta solo si cambian). */
+  private caseKey = '';
   /** Valores del estado del lazo (una fila por magnitud). */
   private loopRows!: Record<'rap' | 'co' | 'volume' | 'peep' | 'tr' | 'last', HTMLElement>;
   private announceEl!: HTMLElement;
@@ -65,6 +86,14 @@ export class TeacherTab {
   }
 
   private build(p: HTMLElement): void {
+    const caseSec = this.ctx.section(p, 'Caso y trampa', {
+      info:
+        'El nombre del caso, los confusores que tiene de verdad (las casillas que el alumno debería marcar en «Medir») y por ' +
+        'qué engaña. El alumno solo ve la viñeta; esto no llega a su pantalla ni a su DOM.',
+    });
+    this.caseEl = document.createElement('div');
+    this.caseEl.className = 'case-notes';
+    caseSec.appendChild(this.caseEl);
     this.buildInterventions(p);
     const sec = this.ctx.section(p, 'Verdad fisiológica y adquisición');
     note(sec, 'Oculto al alumno; la verdad del caso y lo adquirido se calculan por separado.');
@@ -75,6 +104,7 @@ export class TeacherTab {
       info: 'Versión, commit, navegador, GPU, caso, equipo y últimos errores en un JSON para adjuntar a un informe. Sin datos del usuario.',
     });
     button(row(diag), 'Descargar diagnóstico', () => this.onExportDiagnostics());
+    this.ctx.track({ sync: () => this.applyTeacherMode() });
   }
 
   /**
@@ -169,10 +199,32 @@ export class TeacherTab {
     this.renderLoop();
   }
 
-  /** Cambio de caso o reinicio: el aviso de la intervención anterior ya no vale. */
+  /** Cambio de caso o reinicio: el aviso de la intervención anterior ya no vale y las notas pasan al caso nuevo. */
   onSimulatorChanged(): void {
     this.clearAnnouncement();
     this.renderLoop();
+    this.applyTeacherMode();
+  }
+
+  /**
+   * Lo que solo ve el docente, según el modo (decisión 82): con él, las notas del caso; al apagarlo, las notas, el estado
+   * del lazo (PAD, gasto e IT del caso), el anuncio y la verdad se vacían, también en el DOM oculto de la pestaña. Se
+   * repinta solo al cambiar de caso o de modo.
+   */
+  private applyTeacherMode(): void {
+    const teacher = this.ctx.store.get().debug;
+    const id = this.ctx.sim().patient.id;
+    const key = `${id}|${teacher}`;
+    if (key === this.caseKey) return;
+    this.caseKey = key;
+    renderCaseNotes(this.caseEl, caseTeacherNotes(id, teacher));
+    if (teacher) {
+      this.renderLoop();
+      return;
+    }
+    this.clearAnnouncement();
+    this.debugEl.textContent = '';
+    for (const el of Object.values(this.loopRows)) el.textContent = '';
   }
 
   private apply(i: Intervention): void {
@@ -199,8 +251,9 @@ export class TeacherTab {
     this.announceEl.textContent = '';
   }
 
-  /** Estado del lazo cerrado frente al caso y la última intervención con el tiempo transcurrido. */
+  /** Estado del lazo cerrado frente al caso y la última intervención con el tiempo transcurrido (solo en modo docente). */
   private renderLoop(): void {
+    if (!this.ctx.store.get().debug) return;
     const e = this.ctx.sim().physiology;
     const c = e.circulation;
     const s = c.state;
@@ -227,19 +280,18 @@ export class TeacherTab {
     if (t > 8) {
       try {
         const m = measurePhysiologyTruth(sim.physiology, { fromT: t - 6, toT: t });
-        const g = classifyVexusC({
-          ivcMaxDiameterMm: m.ivcMaxMm,
-          hepatic: m.hepaticPattern,
-          portalPulsatilityFraction: m.portalPF,
-          renal: m.renalPattern,
-        });
+        const veins = { ivcMaxDiameterMm: m.ivcMaxMm, hepatic: m.hepaticPattern, portalPulsatilityFraction: m.portalPF };
+        const g = classifyVexusC({ ...veins, renal: m.renalPattern });
+        // el grado que da la verdad con los confusores reales del caso marcados (decisión 82)
+        const context = caseTeacherNotes(sim.patient.id, true)?.context ?? {};
+        const gc = classifyVexusC({ ...veins, renal: m.renalPattern }, context);
         truth =
           `VERDAD FISIOLÓGICA (últimos 6 s)\n` +
           `  VCI AP máx/mín ${m.ivcMaxMm.toFixed(1)}/${m.ivcMinMm.toFixed(1)} mm → colapso ${(m.ivcCollapse * 100).toFixed(0)} %\n` +
           `  VSH S/D/A ${m.hvS.toFixed(1)}/${m.hvD.toFixed(1)}/${m.hvA.toFixed(1)} cm/s → ${patternText(m.hepaticPattern)}\n` +
           `  Porta ${m.pvMax.toFixed(1)}/${m.pvMin.toFixed(1)} cm/s → PF ${m.portalPF.toFixed(0)} %\n` +
           `  V. interlobar S/D/mín ${m.rvS.toFixed(1)}/${m.rvD.toFixed(1)}/${m.rvMin.toFixed(1)} cm/s → ${renalText(m.renalPattern)}\n` +
-          `  Grado C de referencia: ${g.grade ?? (g.gradeRange ? g.gradeRange.join('–') : '—')}\n`;
+          `  Grado C de referencia: ${gradeValueText(g)} · con el contexto del caso: ${gradeValueText(gc)} (mVExUS ${gradeValueText(classifyModifiedVexus(veins, context))})\n`;
       } catch (e) {
         truth = `VERDAD FISIOLÓGICA: — (${errorMessage(e)})\n`;
       }

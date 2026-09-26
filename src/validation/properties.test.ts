@@ -93,9 +93,11 @@ describe('Propiedades del motor fisiológico (fast-check)', () => {
 
   // Limitación conocida `prescribed-ra-contour` (hallada por fast-check): con la aurícula muy
   // rígida y PAD media ≈ 0 el contorno prescrito oscila hasta −11 mmHg y la VCI suprahepática
-  // (un solo compartimento) supera 2 m/s. `it.fails` documenta el contraejemplo: cuando el
-  // modelo auricular lo resuelva, esta prueba empezará a «pasar» y avisará para retirarla.
-  it.fails('contraejemplo conocido (hipovolemia + PAD ≈ 0, sin cascada torácica): la VCI supera 2 m/s', () => {
+  // (un solo compartimento) supera 2 m/s. Este primer contraejemplo ya no la supera desde la pared
+  // viscoelástica de la VCI (decisión 73): la luz no se cierra dentro de un latido. El segundo
+  // (`it.fails`, abajo) sigue documentando la limitación: cuando el modelo auricular la resuelva,
+  // empezará a «pasar» y avisará para retirarla.
+  it('contraejemplo (hipovolemia + PAD ≈ 0, sin cascada torácica): con la pared viscoelástica la VCI no supera 2 m/s', () => {
     const p = {
       ...clonePatient(NORMAL_ADULT),
       heartRateBpm: 40,

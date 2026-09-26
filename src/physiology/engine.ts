@@ -4,7 +4,7 @@ import { validatePatient } from './patientState';
 import { RespiratoryModel, type RespiratorySample } from './respiratory';
 import { RhythmGenerator, gauss } from './rhythm';
 import { RightAtriumModel } from './rightAtrium';
-import { VenousNetwork, defaultNetworkParams, hvRadiusScaleFromPressure, type NetworkOutputs } from './venousNetwork';
+import { VenousNetwork, defaultNetworkParams, hvRadiusScaleFromPressure, ivcPtmFromDiameter, type NetworkOutputs } from './venousNetwork';
 import { HV_FLOW_SHARE, INTERLOBAR_FLOW_SHARE, PV_FLOW_SHARE, VESSEL_IDS, type VesselAreas, type VesselId } from './vessels';
 
 /**
@@ -69,6 +69,13 @@ export function nonFiniteFields(s: PhysiologySample): string[] {
   return bad;
 }
 
+/**
+ * Constante de tiempo de la pared de la VCI (s, decisión 73): la pared venosa es viscoelástica (Voigt, η/E) y su
+ * posición sigue al diámetro de equilibrio elástico del volumen con este retraso, así que las ondas cardíacas (1–4 Hz)
+ * mueven la pared mucho menos que la respiración (0,2–0,3 Hz) [EXTRAPOLACIÓN PROPIA].
+ */
+export const IVC_WALL_TAU_S = 0.2;
+
 export class PhysiologyEngine {
   readonly clock: SimulationClock;
   readonly patient: PatientState;
@@ -81,6 +88,8 @@ export class PhysiologyEngine {
   private history: PhysiologySample[] = [];
   private historySeconds: number;
   private current: PhysiologySample;
+  /** Área de la luz de la VCI que marca su pared (mm²): sigue a la del volumen con la constante de la pared (decisión 73). */
+  private ivcWallAreaMm2: number;
 
   constructor(patient: PatientState, areas: VesselAreas, opts: { dt?: number; historySeconds?: number } = {}) {
     validatePatient(patient);
@@ -118,6 +127,7 @@ export class PhysiologyEngine {
       pIvcTransmural: pIvc - pAbd0,
     });
     this.warmUp();
+    this.ivcWallAreaMm2 = this.network.last.ivcAreaMm2;
     this.current = this.sampleFrom(this.network.last, 0);
     this.history.push(this.current);
   }
@@ -174,6 +184,7 @@ export class PhysiologyEngine {
     const plExp = this.respiratory.pleuralAtEndExpiration();
     const pRa = this.rightAtrium.pressure(t, resp.pleuralMmHg, plExp);
     const out = this.network.step(this.clock.dt, this.arterialPulse(t), pRa, resp.abdominalMmHg);
+    this.ivcWallAreaMm2 += (out.ivcAreaMm2 - this.ivcWallAreaMm2) * (1 - Math.exp(-this.clock.dt / IVC_WALL_TAU_S));
     const next = this.sampleFrom(out, t, resp, pRa);
     // Guardia NaN: un estado no finito se detiene aquí, con los campos culpables, en vez
     // de viajar en silencio a la GPU, al espectro y a la medición.
@@ -200,8 +211,8 @@ export class PhysiologyEngine {
     const beat = this.rhythm.currentBeat(t);
     // Sección elíptica de la VCI: más aplanada (AP < lateral) a baja presión
     // transmural; tiende a circular al distenderse (B.2, [EXTRAPOLACIÓN PROPIA]).
-    const flatness = 0.2 * (1 - sigmoid((out.pIvcTransmural - 4) / 3));
-    const dEq = out.ivcDiameterEqMm;
+    const dEq = 2 * Math.sqrt(this.ivcWallAreaMm2 / Math.PI);
+    const flatness = 0.2 * (1 - sigmoid((ivcPtmFromDiameter(dEq, this.network.k) - 4) / 3));
     const dAp = dEq * (1 - flatness);
     const dLat = dEq / (1 - flatness);
     // Dilatación de las suprahepáticas con la presión hepática: A ∝ 1 + 0,12·(P − 7) →
@@ -218,11 +229,11 @@ export class PhysiologyEngine {
       switch (id) {
         case 'ivcSupra':
           q = out.qIvcToRa + qHv;
-          areaScale = out.ivcAreaMm2 / this.areas.ivcSupra;
+          areaScale = this.ivcWallAreaMm2 / this.areas.ivcSupra;
           break;
         case 'ivcInfra':
           q = out.qLowerBody;
-          areaScale = out.ivcAreaMm2 / this.areas.ivcInfra;
+          areaScale = this.ivcWallAreaMm2 / this.areas.ivcInfra;
           break;
         case 'hvRight':
         case 'hvRightAnterior':

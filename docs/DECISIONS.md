@@ -2252,6 +2252,32 @@ exacta y no la del plano dominante.
 - `liverContour.test.ts`: la arista pared|unión de los lóbulos de la subxifoidea ya no existe.
 - e2e de equivalencia TS↔GLSL y de normales.
 
+## 73. Pared viscoelástica de la VCI: el latido la mueve la mitad y la respiración igual
+
+**Contexto.** El dueño (25-09-2026): «vena cava además demasiado pulsátil». El diámetro AP de la VCI salía del volumen
+de su compartimento por la ley de tubo elástica, sin retraso: con cada latido las ondas de la aurícula movían la pared
+2,9 mm (16 %) en el sano con respiración tranquila, 2,4 mm (12 %) en apnea, 3,5 mm (11 %) en la congestión grave y
+1,8 mm (6 %) en la moderada, que en la imagen se ve como una VCI que late. La pared venosa real es viscoelástica y el
+latido la mueve poco (~1 mm; en la plétora apenas); la respiración, que es 5–6 veces más lenta, la mueve entera. Un
+intento anterior (resistencia e inercia en el tramo de la VCI) cambiaba la media del diámetro y los caudales, y con ellos
+los grados de la verdad y de la cadena.
+**Decisión.** La pared de la VCI es un elemento de Voigt de primer orden: el área de la luz que marca la pared sigue al
+área del volumen de la red con τ = 0,2 s (`IVC_WALL_TAU_S`). Es la que se ve y se mide: diámetros AP, lateral y
+equivalente, aplanamiento (con la presión transmural de ese diámetro), escala del tubo en la GPU y velocidad de la VCI
+(caudal entre esa área). La red sigue usando su volumen elástico para las presiones y los caudales.
+**Consecuencias.** Latido de la pared en respiración tranquila: 1,2 mm (7 %) en el sano, 1,4 mm (5 %) en la congestión
+grave y 0,6 mm (2 %) en la moderada. La respiración no cambia: 24 %, 3 % y 7 %, con la misma media (17,74 frente a
+17,68 mm en el sano). Pared y volumen se separan hasta un 14 % del diámetro en los colapsos rápidos del sano (5 % en la
+congestión grave): `ivc-wall-lag-not-in-network`. Los grados y la cadena del alumno no cambian. El primer contraejemplo
+de `prescribed-ra-contour` (hipovolemia con PAD ≈ 0: la VCI superaba 2 m/s) ya no la supera, porque la luz no se cierra
+dentro de un latido; el segundo sigue ahí. El banco de fidelidad deja fuera las líneas en las que el pulmón tras la
+pleura es más fino que el paso de la marcha de A0 (`lung-sliver-caval-hiatus`: entre el diafragma y la VCI
+supradiafragmática queda a veces una lámina de 0,3 mm y la GPU pone el espejo 25 mm más hondo; es la costura aislada que
+admite la e2e).
+**Verificación.** `physiology.test.ts`: latido ≤ 1,5 mm en el sano y en la grave, colapsabilidad respiratoria > 20 % en
+el sano y < 6 % en la grave, y media de la pared igual a la del volumen (< 0,2 mm). `properties.test.ts`: el primer
+contraejemplo pasa a prueba normal. `fidelityScene.test.ts` con la guarda nueva del banco.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

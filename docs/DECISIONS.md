@@ -1980,10 +1980,13 @@ elipsoides: cuesta más uniforms y deja cinturas entre ellos. (3) La elegida: un
 una línea media curva, unida con mezcla suave.
 **Decisión.** `organs/gallbladder.ts`: la luz es una cadena de cinco nodos (fondo 12 mm, cuerpo 14,5, infundíbulo 11,
 bolsa de Hartmann 8, cuello 4,5) con `smoothMin` de 6 mm entre tramos (`gbSegment`, gemelo GLSL con el mismo orden de
-operaciones; uniforms `uGbNodes[5]` y `uGbExtra` = mezcla y pared, las mismas 6 ranuras que antes). El fondo queda
-anteroinferolateral contra el peritoneo de la pared anterior (2–6 mm según el hábito), la bolsa de Hartmann cuelga
-por debajo del infundíbulo y del cuello, y el cuello se dobla en «S» (> 40°) hacia el hilio; 35,5 mL y ~8 cm. La pared
-pasa a 1,8 mm. La cápsula hepática que toca la pared de la vesícula en su fosa no dibuja su cara
+operaciones; uniforms `uGbNodes[5]` y `uGbExtra` = mezcla y pared, las mismas 6 ranuras que antes). En GLSL, la cadena y
+el hígado (`gallbladderSdf`, `liverSdf`) tienen una sobrecarga sin normal para los usos que no la necesitan (las
+diferencias centrales de `faceGradient` y `liverInner`), y el elipsoide orientado de la decisión 41
+(`sdOrientedEllipsoid`) desaparece. El fondo queda anteroinferolateral contra el peritoneo de la pared anterior (a 3,4 mm
+en el adulto normal, 2,4 en la congestión grave y 0,4 en la FA con congestión moderada, de pared más gruesa), la bolsa
+de Hartmann cuelga por debajo del infundíbulo y del cuello, y el cuello se dobla en «S» (> 40°) hacia el hilio; 35,5 mL
+y ~8 cm. La pared pasa a 1,8 mm. La cápsula hepática que toca la pared de la vesícula en su fosa no dibuja su cara
 (`GALLBLADDER_CONTACT_MM` = 1 mm, como Morison con la grasa perirrenal): la pared vesicular es una sola línea. La VHM
 nace en el parénquima de IVb/V por encima de la fosa (a ≥ 5 mm de la pared con su calibre máximo) y el cístico sale de
 la punta del cuello y baja hacia dentro hasta el colédoco. El navegador 3D dibuja la vesícula con la misma distancia.

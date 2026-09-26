@@ -482,8 +482,8 @@ Cls classify(vec3 m) { return classifyWith(m, true); }
 // −faceSdf('liverSurface') de TS: margen hacia dentro del parénquima (hígado, cúpula y pared), la
 // misma cantidad que decide la cápsula en classify
 float liverInner(vec3 m) {
-  vec3 ln; float dLiverBase; vec3 dn;
-  float dLiver = liverSdf(m, ln, dLiverBase);
+  float dLiverBase; vec3 dn;
+  float dLiver = liverSdf(m, dLiverBase);
   return min(-dLiver, min(sdDome(m, dn) - DIAPHRAGM_MM, -torsoDepth(m) - (uWall.x + uWall.y + uWall.z)));
 }
 
@@ -502,9 +502,9 @@ vec3 kidneyOuterGradient(vec3 m) {
   return uKidU[k] * g.x + uKidV[k] * g.y + uKidW[k] * g.z;
 }
 
-// Distancias de la cúpula y de la vesícula sin su normal (el gradiente numérico de faceGradient)
+// Distancia de la cúpula sin su normal (el gradiente numérico de faceGradient; la vesícula tiene su sobrecarga
+// gallbladderSdf(m), sin normal)
 float domeSd(vec3 m) { vec3 n; return sdDome(m, n); }
-float gallbladderSd(vec3 m) { vec3 n; return gallbladderSdf(m, n); }
 
 // Gradiente de la distancia de la cara que dibuja una muestra (decisión 57): xyz es su dirección, la
 // normal de la cara, y w su norma, que pasa ifd (el valor de esa distancia) a distancia por la normal,
@@ -530,9 +530,9 @@ vec4 faceGradient(Cls c, vec3 m) {
              domeSd(m + h.yxy) - domeSd(m - h.yxy),
              domeSd(m + h.yyx) - domeSd(m - h.yyx));
   } else if (c.iface == IF_GALLBLADDER) {
-    g = vec3(gallbladderSd(m + h.xyy) - gallbladderSd(m - h.xyy),
-             gallbladderSd(m + h.yxy) - gallbladderSd(m - h.yxy),
-             gallbladderSd(m + h.yyx) - gallbladderSd(m - h.yyx));
+    g = vec3(gallbladderSdf(m + h.xyy) - gallbladderSdf(m - h.xyy),
+             gallbladderSdf(m + h.yxy) - gallbladderSdf(m - h.yxy),
+             gallbladderSdf(m + h.yyx) - gallbladderSdf(m - h.yyx));
   } else if (c.iface >= IF_FIRST_WALL && c.iface <= IF_LAST_WALL) {
     // capas de la pared (decisión 62): la distancia de su capa (wallFaceSd)
     g = vec3(wallFaceSd(m + h.xyy, c.iface) - wallFaceSd(m - h.xyy, c.iface),

@@ -81,7 +81,11 @@ export function liverSdf(m: Vec3, s: LiverShape): number {
   return smoothMax(dBase, -umbilicalFissureSdf(m, dBase, s.umbilicalFissure), s.umbilicalFissure.roundMm);
 }
 
-/** Gemelo GLSL; `n` es la normal de la superficie que manda y `dBase` el hígado sin fisura. */
+/**
+ * Gemelo GLSL; `n` es la normal de la superficie que manda y `dBase` el hígado sin fisura. La sobrecarga sin `n`
+ * da la misma distancia, con los mismos términos y en el mismo orden, sin las normales de la impresión renal ni de
+ * la fosa vesicular: la de `liverInner`, cuyo gradiente numérico da la cara de la cápsula (`faceGradient`).
+ */
 export const LIVER_GLSL = /* glsl */ `
 const float RENAL_IMPRESSION_ROUND_MM = ${RENAL_IMPRESSION.roundMm.toFixed(3)};
 const float GALLBLADDER_FOSSA_ROUND_MM = ${GALLBLADDER_FOSSA_ROUND_MM.toFixed(3)};
@@ -110,5 +114,19 @@ float liverSdf(vec3 m, out vec3 n, out float dBase) {
   float d5 = smoothMax(d4, -umbilicalFissureSdf(m, d4), FISSURE_ROUND_MM);
   if (d5 > d4 + 1e-3 && abs(m.x - uFissure.x) > uFissure.y - 1.0) n = vec3(sign(m.x - uFissure.x), 0.0, 0.0);
   return d5;
+}
+
+float liverSdf(vec3 m, out float dBase) {
+  vec3 ln;
+  float dR = sdEllipsoid(m, uLiverC, uLiverR, uLiverTaper, ln);
+  float dL = sdEllipsoid(m, uLiverLC, uLiverLR, uLiverLTaper, ln);
+  float d = smoothMin(dR, dL, uLiverBlend);
+  float d2 = smoothMax(d, -visceralPlaneDistance(m), uVisceral.z);
+  float dk = kidneyOuterSdf(kidneyLocal(m, 0), uKidR[0]) - uVisceral.w;
+  float d3 = smoothMax(d2, -dk, RENAL_IMPRESSION_ROUND_MM);
+  float dg = gallbladderSdf(m) - uGbExtra.y;
+  float d4 = smoothMax(d3, -dg, GALLBLADDER_FOSSA_ROUND_MM);
+  dBase = d4;
+  return smoothMax(d4, -umbilicalFissureSdf(m, d4), FISSURE_ROUND_MM);
 }
 `;

@@ -86,8 +86,9 @@ export function gallbladderSdf(m: Vec3, g: GallbladderShape): number {
 }
 
 /**
- * Gemelo GLSL, con la normal: el gradiente del tramo más cercano (la cara la dibuja `faceGradient` con
- * diferencias centrales de esta misma distancia). Mismas operaciones y en el mismo orden que el TS.
+ * Gemelo GLSL. Con la normal (el gradiente del tramo más cercano; la de `classify`) y, en sobrecarga sin ella, solo
+ * la distancia: la usan las diferencias centrales de `faceGradient` (la cara de la luz) y la fosa del hígado de
+ * `liverInner`, que antes calculaban y tiraban la normal de cada tramo. Mismas operaciones y en el mismo orden que el TS.
  */
 export const GALLBLADDER_GLSL = /* glsl */ `
 float gbSegment(vec3 m, vec4 a, vec4 b, out vec3 g) {
@@ -101,6 +102,14 @@ float gbSegment(vec3 m, vec4 a, vec4 b, out vec3 g) {
   return dist - (a.w + (b.w - a.w) * s);
 }
 
+float gbSegment(vec3 m, vec4 a, vec4 b) {
+  vec3 ab = b.xyz - a.xyz;
+  vec3 ap = m - a.xyz;
+  float len2 = dot(ab, ab);
+  float s = clamp(dot(ap, ab) / len2, 0.0, 1.0);
+  return length(ap - ab * s) - (a.w + (b.w - a.w) * s);
+}
+
 float gallbladderSdf(vec3 m, out vec3 n) {
   vec3 g;
   float d = gbSegment(m, uGbNodes[0], uGbNodes[1], n);
@@ -111,6 +120,12 @@ float gallbladderSdf(vec3 m, out vec3 n) {
     d = smoothMin(d, di, uGbExtra.x);
   }
   n = normalize(n);
+  return d;
+}
+
+float gallbladderSdf(vec3 m) {
+  float d = gbSegment(m, uGbNodes[0], uGbNodes[1]);
+  for (int i = 1; i < ${GALLBLADDER_NODES - 1}; i++) d = smoothMin(d, gbSegment(m, uGbNodes[i], uGbNodes[i + 1]), uGbExtra.x);
   return d;
 }
 `;

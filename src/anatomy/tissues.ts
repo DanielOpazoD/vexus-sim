@@ -131,7 +131,19 @@ export const TISSUES: TissueProps[] = [
   // Medical Imaging, tabla de atenuaciones): la de IT'IS para cortical pura (4,7) dejaba pasar ~25 dB
   // tras una costilla y el tejido seguía visible dentro de la sombra (decisión 54).
   { name: 'hueso cortical', c: 3515, rho: 1908, alpha1: 20, b: 1, backscatter: 0.9, gas: false, bone: true },
-  { name: 'intestino (pared/contenido)', c: 1570, rho: 1050, alpha1: 0.7, b: 1, backscatter: 0.9, gas: false, bone: false },
+  // el «resto» del abdomen (asas, mesenterio, grasa retroperitoneal): el nivel lo da su textura (decisión 74,
+  // `ultrasound/restTexture.ts`), granulosa por los grumos
+  {
+    name: 'intestino (pared/contenido)',
+    c: 1570,
+    rho: 1050,
+    alpha1: 0.7,
+    b: 1,
+    backscatter: 1.0,
+    gas: false,
+    bone: false,
+    speckleClump: 0.5,
+  },
   { name: 'gas intestinal', c: 343, rho: 1.16, alpha1: 0.0034, b: 2, backscatter: 0, gas: true, bone: false },
   { name: 'líquido (bilis/ascitis)', c: 1482, rho: 994, alpha1: 0.0022, b: 1, backscatter: 0.002, gas: false, bone: false },
   { name: 'pared arterial', c: 1586, rho: 1079, alpha1: 0.7, b: 1, backscatter: 1.8, gas: false, bone: false },

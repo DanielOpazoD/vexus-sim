@@ -2120,6 +2120,36 @@ vesícula (cada conducto por separado); `physiology.test.ts`: la AMS trifásica 
 y el celíaco de baja resistencia; `cases.test.ts` (tipo de los vasos nuevos); equivalencia TS↔GLSL (e2e); capturas con
 GPU (M4) antes y después en la subxifoidea, el flanco, la congestión grave y una transversa epigástrica.
 
+## 70. Doppler color sin bloques: estimación continua, grano correlado a la celda de resolución y barra de escala
+
+**Contexto.** El dueño (médico, 25-09-2026): «color doppler de mala calidad en vasos». En las capturas el color de las
+suprahepáticas y la VCI eran bloques de color uniforme con escalones que seguían la rejilla (θ, r); la prueba ciega
+(ronda 2) lo señalaba como rasgo sintético. Causa: la pasada F estimaba un valor por celda (una línea de color × un
+paquete axial de 1 mm) con `floor(vUv·uCells)` y el mismo ruido para toda la celda: bloques de 3–4 × 2–3 téxeles con
+valor idéntico que la interpolación bilineal solo difuminaba en su borde. Referencias (revisión con fuentes, 25-09):
+en un equipo el color no muestra celdas; el relleno es moteado con manchas de 1,5–4 mm (el tamaño de la celda de
+resolución) que cambian en cada cuadro de color, con huecos ocasionales, y el ruido nunca es independiente por píxel de
+pantalla (Evans, Jensen y Nielsen 2011; patentes de BK, GE y Acuson sobre suavizado y persistencia); todos los equipos
+muestran la barra de escala con ±Nyquist.
+**Opciones.** (1) Suavizar la textura de celdas (mediana o bilineal más ancha): borra el mosaico pero deja el relleno
+uniforme. (2) Simular la IQ por paquete en cada celda: más fiel, pero cuesta ~12 muestras de tiempo lento por celda y
+cuadro. (3) La elegida: estimación continua por téxel con el mismo modelo de potencias y fases, y los términos
+aleatorios (ruido del estimador, moteado de la sangre, fase de Kasai) como campos gaussianos correlados a la celda de
+resolución.
+**Decisión.** `FRAG_COLOR`: la posición de cada téxel es la suya (no el centro de su celda); `colorGauss` da normales en
+los nodos de la retícula de resolución (una línea de color × un paquete axial, `uCells`) interpoladas con suavizado y
+renormalizadas a varianza 1, con semilla por cuadro de color; la potencia de la sangre se multiplica por un moteado
+exponencial de media 1 (dispersores de Rayleigh), así que el relleno queda moteado y con huecos donde el moteado cae
+bajo el umbral; el ruido complejo del estimador y el de la fase de Kasai salen de campos del mismo tipo. La calibración
+de potencias no cambia (moteado y ruido de media y varianza iguales). `drawOverlay` dibuja la barra del mapa con
+±Nyquist en cm/s junto a la caja (`colorMapRgb`, el mismo mapa que la conversión de barrido).
+**Consecuencias.** El color de un vaso se ve moteado, con el centro más claro por el perfil de velocidades, bordes
+irregulares y un grano que cambia en cada cuadro, sin mosaico de celdas. Pendientes: persistencia propia del color
+(hoy la da la persistencia de la imagen compuesta), destello por movimiento del tejido y mapa de varianza.
+**Verificación.** e2e «color realista»: sobre las suprahepáticas del flanco, < 5 % de pares de téxeles vecinos con
+color idénticos (antes, la mayoría), correlación de la potencia a 1 téxel > 0,5 y menor a 4 téxeles; las e2e de color
+existentes (transmisión igual al PW, ruido a 0 y +24 dB, tríplex, sin contacto) sin cambiar sus umbrales.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

@@ -1281,6 +1281,17 @@ export class UltrasoundRenderer {
     return COLOR_W * COLOR_H;
   }
 
+  /** Campo del último cuadro de color (RGBA: frecuencia, potencia, fracción de sangre). Solo pruebas: lectura bloqueante. */
+  readColorField(): { width: number; height: number; data: Float32Array } {
+    const gl = this.gl;
+    const px = new Float32Array(COLOR_W * COLOR_H * 4);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.tColor.fbo);
+    gl.readBuffer(gl.COLOR_ATTACHMENT0);
+    gl.readPixels(0, 0, COLOR_W, COLOR_H, gl.RGBA, gl.FLOAT, px);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return { width: COLOR_W, height: COLOR_H, data: px };
+  }
+
   colorCellsAbove(threshold = COLOR_DISPLAY_THRESHOLD): number {
     const gl = this.gl;
     const px = new Float32Array(COLOR_W * COLOR_H * 4);

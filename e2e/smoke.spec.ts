@@ -725,6 +725,32 @@ test('tríplex (decisión 66): el color sigue en pantalla con el PW, la puerta n
   expect(errors).toEqual([]);
 });
 
+test('color realista (decisión 70): sin bloques de celda, grano correlado y relleno moteado', async ({ page }) => {
+  // Antes el estimador daba un valor constante por celda (línea de color × paquete de 1 mm), de 3–4 × 2–3 téxeles: la
+  // mayoría de los pares vecinos con color eran IDÉNTICOS y el vaso se veía en bloques. Ahora cada téxel se estima en su
+  // sitio y el ruido y el moteado de la sangre están correlados a la celda de resolución: vecinos parecidos pero no
+  // iguales, y la correlación cae con la distancia (un grano de tamaño finito).
+  test.setTimeout(240_000);
+  const errors = await bootWithoutErrors(page);
+  await page
+    .locator('button', { hasText: /Apnea\s*esp/ })
+    .first()
+    .click();
+  await page.evaluate(() => window.__vexusTest!.goToStartPoint('flank'));
+  await page.locator('#mode-color').click();
+  const r = await page.evaluate(() => {
+    const T = window.__vexusTest!;
+    const cells = T.colorOnVessel(['hvRight', 'hvMiddle', 'ivcInfra', 'ivcSupra']);
+    return { cells, ...T.colorTexture() };
+  });
+  const tag = JSON.stringify(r);
+  expect(r.cells!, tag).toBeGreaterThan(50);
+  expect(r.identicalPairs, tag).toBeLessThan(0.05);
+  expect(r.corr1, tag).toBeGreaterThan(0.5);
+  expect(r.corr4, tag).toBeLessThan(r.corr1 - 0.1);
+  expect(errors).toEqual([]);
+});
+
 test('modo alumno ciego: sin diagnóstico en pantalla; el docente lo ve con ?docente', async ({ page }) => {
   // Guía §17. Nombres clínicos de los casos (no deben aparecer en modo alumno).
   // Arranca la aplicación dos veces: con SwiftShader cada arranque compila los 16 programas (decisión 58) y

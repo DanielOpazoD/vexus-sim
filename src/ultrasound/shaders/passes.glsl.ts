@@ -1012,12 +1012,33 @@ float wallResp(float f) {
   float x = f * f / (f * f + uWallHz * uWallHz);
   return x * x * x * x;
 }
+// Normales en los nodos de la retícula de resolución del color (una línea de color × un paquete axial), dos por nodo
+vec2 colorGaussAt(vec2 q, float seed) {
+  float a = hash12(q * 0.917 + vec2(seed * 1.37, seed * 0.61) + 0.5);
+  float b = hash12(q * 1.713 + vec2(seed * 2.11, seed * 1.29) + 7.3);
+  float rad = sqrt(-2.0 * log(max(1e-6, a)));
+  return rad * vec2(cos(6.2831853 * b), sin(6.2831853 * b));
+}
+// Campo gaussiano correlado a la escala de la celda de resolución (decisión 70): normales en los nodos interpolados con
+// suavizado y renormalizados a varianza 1. El grano del color (manchas de ~2 líneas × ~2 mm, 1,5–4 mm) sale de aquí; con
+// ruido independiente por celda se veía el mosaico de la rejilla, y por téxel sería nieve de pantalla.
+vec2 colorGauss(vec2 g, float seed) {
+  vec2 i = floor(g);
+  vec2 f = fract(g);
+  vec2 w = f * f * (3.0 - 2.0 * f);
+  vec2 n = mix(mix(colorGaussAt(i, seed), colorGaussAt(i + vec2(1.0, 0.0), seed), w.x),
+               mix(colorGaussAt(i + vec2(0.0, 1.0), seed), colorGaussAt(i + vec2(1.0, 1.0), seed), w.x), w.y);
+  vec2 v = 1.0 - w;
+  return n / sqrt((v.x * v.x + w.x * w.x) * (v.y * v.y + w.y * w.y));
+}
 void main() {
-  // El estimador trabaja por celda (una línea de color × un paquete axial), no por
-  // píxel: de ahí el mosaico grueso del color real. La conversión de barrido interpola.
-  vec2 cell = (floor(vUv * uCells) + 0.5) / uCells;
-  float theta = mix(uBox.x, uBox.y, cell.x);
-  float r = mix(uBox.z, uBox.w, cell.y);
+  // Estimación continua en cada téxel (decisión 70): la resolución la ponen el volumen de muestra (las submuestras
+  // lateral y elevacional) y el grano correlado del ruido y del moteado de la sangre, no una rejilla de celdas
+  // constantes (antes, «floor(vUv·uCells)»: bloques de 3–4 × 2–3 téxeles que la prueba ciega reconocía).
+  float theta = mix(uBox.x, uBox.y, vUv.x);
+  float r = mix(uBox.z, uBox.w, vUv.y);
+  // posición en la retícula de resolución (líneas de color × paquetes axiales) y semilla del cuadro de color
+  vec2 grid = vUv * uCells;
   vec3 dir = lineDir(theta);
   vec3 bhat = -dir;
   vec3 p = pointOnLine(dir, r);
@@ -1059,26 +1080,25 @@ void main() {
   float rho = exp(-2.0 * pow(3.14159265 * sigF / uPrf, 2.0));
   // Potencias en unidades de sangre (amplitud de sangre = 1 a transmisión 1).
   float Ac = 0.9 / 0.008; // clutter tisular ≈ +41 dB respecto a sangre
-  float Pb = bf * T * T * wallResp(fdB);
+  // Moteado de la sangre (decisión 70): potencia exponencial de media 1 (dispersores de Rayleigh), correlada a la celda
+  // de resolución y renovada en cada cuadro (la sangre avanza); da el relleno moteado y los huecos del color real
+  vec2 sp = colorGauss(grid, uFrame + 17.0);
+  float speckle = 0.5 * dot(sp, sp);
+  float Pb = bf * T * T * wallResp(fdB) * speckle;
   float Pc = (1.0 - bf) * Ac * Ac * T * T * wallResp(fdT);
   float Pn = 3.2e-4; // suelo de ruido Doppler ≈ −35 dB re sangre a T=1 ([EXTRAPOLACIÓN PROPIA])
   float phB = 6.2831853 * fdB / uPrf;
   float phT = 6.2831853 * fdT / uPrf;
   vec2 R1 = Pb * rho * vec2(cos(phB), sin(phB)) + Pc * vec2(cos(phT), sin(phT));
-  // Ruido del estimador: ∝ sqrt(P_total·P_n / ensemble)
-  float n1 = hash12(cell * 811.0 + uFrame * 2.3);
-  float n2 = hash12(cell * 457.0 + uFrame * 5.9 + 3.0);
-  float rad = sqrt(-2.0 * log(max(1e-6, n1)));
+  // Ruido del estimador: ∝ sqrt(P_total·P_n / ensemble), complejo gaussiano correlado a la celda de resolución
   float sigma = sqrt((Pb + Pc + Pn) * Pn / uEnsemble);
-  R1 += sigma * rad * vec2(cos(6.2831853 * n2), sin(6.2831853 * n2));
+  R1 += sigma * colorGauss(grid, uFrame * 1.0 + 3.0);
   // Varianza de fase de Kasai con N pares: σφ² ≈ (1 − ρ²) / (2·N·ρ²), ponderada por
   // la fracción de sangre (el clutter residual es coherente). Es el moteado de
   // velocidad dentro del vaso y el mosaico en el borde del aliasing.
   float wB = Pb * rho / max(1e-9, Pb * rho + Pc);
   float sigPh = wB * sqrt((1.0 - rho * rho) / (2.0 * uEnsemble * max(1e-3, rho * rho)));
-  float n3 = hash12(cell * 613.0 + uFrame * 3.7 + 7.0);
-  float n4 = hash12(cell * 271.0 + uFrame * 1.9 + 11.0);
-  float g = sqrt(-2.0 * log(max(1e-6, n3))) * cos(6.2831853 * n4);
+  float g = colorGauss(grid, uFrame + 29.0).x;
   float ph = atan(R1.y, R1.x) + sigPh * g;
   ph = mod(ph + 3.14159265, 6.2831853) - 3.14159265;
   float fEst = uPrf * ph / 6.2831853;

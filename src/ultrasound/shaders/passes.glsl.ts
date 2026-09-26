@@ -129,13 +129,13 @@ const steeredOnly = (look: Look, glsl: string): string => (look === 'steered' ? 
  * de emisión y la del eco en `uBeamTx.zw` (el Doppler, 0).
  */
 export const LATERAL_PSF_GLSL = /* glsl */ `
-uniform float uFocus;      // mm
+uniform vec2 uFocus;       // foco (mm) y FWHM de la emisión en el foco del preajuste (mm, referencia de focalGain)
 uniform vec4 uBeam;        // λ·k de recepción (mm), c·D_tx (cono de emisión, mm), D_rx,max (mm), F#_rx,min
 uniform vec4 uBeamTx;      // λ·k_tx·c de emisión (mm), escala del haz de emisión, κ de emisión y del eco (1/mm)
 // FWHM de los haces de emisión y de recepción de una vía (beamFwhmMm)
 vec2 beamFwhm(float r) {
   float rr = max(1.0, r);
-  float F = max(10.0, uFocus);
+  float F = max(10.0, uFocus.x);
   float tx = uBeamTx.y * length(vec2(uBeamTx.x * (1.0 + uBeamTx.z * rr) * F / uBeam.y, uBeam.y * abs(rr - F) / F));
   float dRx = min(uBeam.z, rr / uBeam.w);
   return vec2(tx, uBeam.x * (1.0 + uBeamTx.w * rr) * rr / max(1.0, dRx));
@@ -144,13 +144,9 @@ float lateralSigmaMm(float r) {
   vec2 w = beamFwhm(r);
   return inversesqrt(1.0 / (w.x * w.x) + 1.0 / (w.y * w.y)) / 2.3548;
 }
-// Ganancia focal de emisión (focalGain): la fracción de la potencia emitida que ve el haz de recepción, s_rx/|s|, en
-// amplitud y relativa a la del foco (solo la pasada B, sobre el eco)
-float focalGain(float r) {
-  vec2 w = beamFwhm(r);
-  vec2 f = beamFwhm(uFocus);
-  return sqrt(w.y * length(f) / (f.y * length(w)));
-}
+// Ganancia focal de la emisión (focalGain): la intensidad en el eje, ∝ 1/FWHM_tx, en amplitud y relativa a la del
+// foco del preajuste (solo la pasada B, sobre el eco)
+float focalGain(float r) { return sqrt(uFocus.y / beamFwhm(r).x); }
 // f(r)/f0 del eco: la bajada de la frecuencia central (frequencyRatio)
 float echoFrequency(float r) { return 1.0 / (1.0 + uBeamTx.w * max(r, 0.0)); }
 `;

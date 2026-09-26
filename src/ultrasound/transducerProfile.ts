@@ -21,7 +21,7 @@ export interface TransducerProfile {
    * fundamental y el del segundo armónico en armónica), que fija cuánto baja la frecuencia central con la
    * profundidad, y la apodización de la emisión (`kTx`, `txConeFraction` de `BeamParams`).
    */
-  bmode: { echoBandwidth: { fundamental: number; harmonic: number }; kTx: number; txConeFraction: number };
+  bmode: { echoBandwidth: { fundamental: number; harmonic: number }; kTx: number; txConeFraction: number; fNumberTxMin: number };
   /** Frecuencia efectiva a la que se atenúa la imagen B (la banda baja por atenuación), MHz. */
   bEffectiveMHz: number;
   /** Frecuencia efectiva a la que se atenúa la puerta PW, MHz. */
@@ -43,9 +43,11 @@ export const CONVEX_C35_PROFILE: TransducerProfile = {
     // recibe en su borde alto, más estrecho (el modo armónico pierde resolución axial en maniquí: van Wijk y Thijssen
     // 2002, Ultrasonics 40:585) [EXTRAPOLACIÓN PROPIA]
     echoBandwidth: { fundamental: 0.45, harmonic: 0.35 },
-    // apodización de Hann de la emisión (beamModel.ts) [EXTRAPOLACIÓN PROPIA]
+    // apodización de Hann de la emisión (beamModel.ts) [EXTRAPOLACIÓN PROPIA] y el número F mínimo de la recepción,
+    // que sale de la directividad del elemento y vale igual para emitir
     kTx: 2.0,
     txConeFraction: 0.5,
+    fNumberTxMin: 2.5,
   },
   // Frecuencia efectiva de penetración de un convexo «3,5 MHz» (banda 2–5 MHz, desplazamiento
   // a bajas por atenuación) [EXTRAPOLACIÓN PROPIA]
@@ -63,13 +65,21 @@ export const CONVEX_C35_PROFILE: TransducerProfile = {
  * bajada: es de banda estrecha.
  */
 export function bmodeBeam(profile: TransducerProfile, bmode: { harmonic: boolean }): BeamParams {
-  const { echoBandwidth: bw, kTx, txConeFraction } = profile.bmode;
+  const { echoBandwidth: bw, kTx, txConeFraction, fNumberTxMin } = profile.bmode;
   const alpha = TISSUES[Tissue.Liver].alpha1;
   if (!bmode.harmonic) {
     const k = downshiftPerMm(bw.fundamental, profile.geometry.f0B / 1e6, alpha);
-    return { ...profile.beam, kTx, txConeFraction, downshiftRxPerMm: k, downshiftTxPerMm: k };
+    return { ...profile.beam, kTx, txConeFraction, fNumberTxMin, downshiftRxPerMm: k, downshiftTxPerMm: k };
   }
   const k = downshiftPerMm(bw.harmonic, HARMONIC.rxMHz, alpha);
   const axialSigma0Mm = pulseSigmaMm(bw.harmonic, bw.fundamental, HARMONIC.rxMHz);
-  return { ...harmonicBeam(profile.beam), axialSigma0Mm, kTx, txConeFraction, downshiftRxPerMm: k, downshiftTxPerMm: k / 2 };
+  return {
+    ...harmonicBeam(profile.beam),
+    axialSigma0Mm,
+    kTx,
+    txConeFraction,
+    fNumberTxMin,
+    downshiftRxPerMm: k,
+    downshiftTxPerMm: k / 2,
+  };
 }

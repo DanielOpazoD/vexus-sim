@@ -1,8 +1,8 @@
 // @tier slow
 import { beforeAll, describe, expect, it } from 'vitest';
 import { Interface } from '../anatomy/interfaces';
-import { CONVEX_BEAM } from '../ultrasound/beamModel';
-import { IFACE_BETA } from '../ultrasound/interfaceEcho';
+import { axialSigmaMm, beamFwhmMm, frequencyRatio } from '../ultrasound/beamModel';
+import { IFACE_BETA, IFACE_SIGMA_H_MM } from '../ultrasound/interfaceEcho';
 import {
   BACK,
   LINES,
@@ -24,6 +24,7 @@ import {
   summarize,
   thetaOf,
   grayOf,
+  TWIN_BEAM,
   type BenchLine,
   type BenchOpts,
   type BinSummary,
@@ -196,18 +197,20 @@ function wallsAndMirror(R: Pick<Record<CaseId, CaseResult>, 'hv80' | 'ivc' | 'di
 /**
  * Referencia física de la tendencia con la profundidad de una cara plana normal: haces gaussianos
  * coherentes de `beamModel` (emisión de foco fijo con z_R = k0·w0²/2, recepción de fase plana y anchura
- * dinámica; la elevación no cambia con r en esta comparación). Devuelve |∫a_t·a_r·e^{iφ}|/√∫a_t²a_r².
+ * dinámica; la elevación no cambia con r en esta comparación), con el haz de la imagen B del gemelo (decisión 84:
+ * la cintura de la emisión apodizada y k0 y la recepción a la frecuencia del eco en r). Devuelve
+ * |∫a_t·a_r·e^{iφ}|/√∫a_t²a_r².
  */
 function gaussianBeamFace(r: number, focus = 90): number {
-  const P = CONVEX_BEAM;
-  const k0 = (2 * Math.PI) / P.lambdaMm;
+  const P = TWIN_BEAM;
+  const k0 = ((2 * Math.PI) / P.lambdaMm) * frequencyRatio(r, P);
   const w = (fwhm: number) => fwhm / 1.6651; // amplitud exp(−x²/w²)
-  const w0 = w((P.k * P.lambdaMm * focus) / P.apertureTxMm);
+  const w0 = w(beamFwhmMm(focus, focus, P).tx);
   const zR = (k0 * w0 * w0) / 2;
   const z = r - focus;
   const wt = w0 * Math.sqrt(1 + (z / zR) ** 2);
   const invR = z / (z * z + zR * zR);
-  const wr = w((P.k * P.lambdaMm * r) / Math.max(1, Math.min(P.apertureRxMaxMm, r / P.fNumberRxMin)));
+  const wr = w(beamFwhmMm(r, focus, P).rx);
   const L = 6 * Math.max(wt, wr);
   const N = 6000;
   const dx = (2 * L) / N;
@@ -262,13 +265,20 @@ describe('Gemelo B→C→D de los ecos de interfaz (decisión 57)', () => {
     // la cara dentro de una muestra, que quita su rizado (±0,35 dB)
     const dr = 240 / 1024;
     const peak = (r: number) => mean([0, 1, 2, 3].map((j) => arcPeak(240, r + (j / 4) * dr, 1, true, 0.01, 4)));
-    const ref80 = gaussianBeamFace(80);
+    // el pulso se alarga con la bajada de la frecuencia (decisión 84): el pico de una cara (el perfil de σh por el pulso
+    // de energía unidad) baja como √σa/√(σa² + σh²), y la envolvente RMS del moteado no cambia
+    const axial = (r: number) => {
+      const sa = axialSigmaMm(r, TWIN_BEAM);
+      return Math.sqrt(sa) / Math.hypot(sa, IFACE_SIGMA_H_MM);
+    };
+    const ref80 = gaussianBeamFace(80) * axial(80);
     const twin80 = peak(80);
     for (const r of [20, 40, 60, 100, 120, 150, 180]) {
       const twin = db(peak(r) / twin80);
-      const phys = db(gaussianBeamFace(r) / ref80);
+      const phys = db((gaussianBeamFace(r) * axial(r)) / ref80);
       // el cociente con el moteado es el del pico: la envolvente RMS del hígado no depende de r
-      expect(Math.abs(db(lateralCoherentGain(r) / lateralCoherentGain(80)) - twin), `${r} mm`).toBeLessThan(0.1);
+      const coherent = db((lateralCoherentGain(r) * axial(r)) / (lateralCoherentGain(80) * axial(80)));
+      expect(Math.abs(coherent - twin), `${r} mm: gemelo ${twin.toFixed(2)}, ganancia coherente ${coherent.toFixed(2)}`).toBeLessThan(0.1);
       expect(Math.abs(twin - phys), `${r} mm: gemelo ${twin.toFixed(2)}, haces ${phys.toFixed(2)}`).toBeLessThanOrEqual(
         r >= 40 && r <= 120 ? 1.5 : 2.5,
       );
@@ -295,10 +305,13 @@ describe('Gemelo B→C→D de los ecos de interfaz (decisión 57)', () => {
   });
 
   it('M3: la porta (vaina de Glisson) brilla en los tres tramos y supera a la VSH fuera de la normal', () => {
-    // (1,39: el pedestal de lóbulos laterales de la decisión 76 reparte −24 dB de la energía de la vaina en las líneas
-    // vecinas y el cociente cresta/hígado baja de 1,404 a 1,397 a 40°; sin pedestal vuelve a 1,40. La ganancia
-    // coherente de una cara continua no cambia: la pantalla de fase es antisimétrica, `clutter.test.ts`)
-    for (const from of [0, 20, 40] as const) expect(bin(R.portal, from).ratio, `${from}°`).toBeGreaterThanOrEqual(1.39);
+    // (el pedestal de lóbulos laterales de la decisión 76 reparte −24 dB de la energía de la vaina en las líneas
+    // vecinas y el cociente cresta/hígado bajó de 1,404 a 1,397 a 40°; sin pedestal vuelve a 1,40. La ganancia
+    // coherente de una cara continua no cambia: la pantalla de fase es antisimétrica, `clutter.test.ts`. Con la PSF
+    // de la decisión 84, más ancha a 80 mm por la bajada de la frecuencia y la emisión apodizada, y el pulso más
+    // largo, el eco de una cara oblicua se reparte más: 1,397 → 1,373 a 40° y 1,439 → 1,417 a 20°, sin cambio a 0–20°
+    // de incidencia normal (1,616 → 1,623). 1,36 es el borde bajo de las paredes de las referencias reales)
+    for (const from of [0, 20, 40] as const) expect(bin(R.portal, from).ratio, `${from}°`).toBeGreaterThanOrEqual(1.36);
     expect(bin(R.portal, 20).dDb - bin(R.hv80, 20).dDb).toBeGreaterThanOrEqual(5);
     expect(bin(R.portal, 40).dDb - bin(R.hv80, 40).dDb).toBeGreaterThanOrEqual(5);
     expect(bin(R.portal, 0).dDb).toBeGreaterThanOrEqual(bin(R.hv80, 0).dDb);

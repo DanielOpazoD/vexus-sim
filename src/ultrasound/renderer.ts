@@ -11,7 +11,7 @@ import type { TransducerProfile } from './transducerProfile';
 import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
 import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
 import { GREY_CURVE, greyOfLevel } from './greyMap';
-import { axialSigmaMm } from './beamModel';
+import { axialSigmaMm, focalReferenceFwhmMm, txApertureMm } from './beamModel';
 import { ANCHOR_SALT_STEP, ElevationAnchor } from './speckleField';
 import { interfaceUniforms } from './interfaceEcho';
 import {
@@ -1286,9 +1286,10 @@ export class UltrasoundRenderer {
    */
   private setLateralPsfUniforms(p: GLProgram, inputs: FrameInputs): void {
     const b = bmodeBeam(this.profile, inputs.bmode);
-    p.f('uFocus', inputs.bmode.focusMm);
-    // la apodización de la emisión va en su apertura: el cono c·D y, en el foco, (kTx·λ_tx·c)·F/(c·D) = kTx·λ_tx·F/D
-    const cone = b.txConeFraction * b.apertureTxMm;
+    p.v2('uFocus', inputs.bmode.focusMm, focalReferenceFwhmMm(b));
+    // la apodización de la emisión va en su apertura: el cono c·D y, en el foco, (kTx·λ_tx·c)·F/(c·D) = kTx·λ_tx·F/D,
+    // con la apertura de emisión de ese foco (`txApertureMm`: F/F#_tx,min si es menor que la máxima)
+    const cone = b.txConeFraction * txApertureMm(inputs.bmode.focusMm, b);
     p.v4('uBeam', b.k * b.lambdaMm, cone, b.apertureRxMaxMm, b.fNumberRxMin);
     p.v4('uBeamTx', b.kTx * b.lambdaTxMm * b.txConeFraction, b.txScale, b.downshiftTxPerMm, b.downshiftRxPerMm);
   }

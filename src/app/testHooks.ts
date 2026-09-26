@@ -23,6 +23,8 @@ import { type ApertureGeometry } from '../ultrasound/aperture';
 import { compareSteeredTransmission } from './steeredParity';
 import { compoundActive, lookTheta } from '../ultrasound/compound';
 import { levelOfGrey } from '../ultrasound/greyMap';
+import { focalGain } from '../ultrasound/beamModel';
+import { bmodeBeam } from '../ultrasound/transducerProfile';
 import { COARSE_DEPTH, COLOR_DISPLAY_THRESHOLD, type CompoundState } from '../ultrasound/renderer';
 import { pixelToBeam } from '../ultrasound/sectorGeometry';
 import {
@@ -229,6 +231,8 @@ export interface TestHooks {
   setCompound: (on: boolean) => void;
   /** Enciende o apaga la armónica tisular con el comando del equipo (decisión 77). */
   setHarmonic: (on: boolean) => void;
+  /** Pone el foco de la emisión (mm) con el comando del equipo, como el deslizador «Foco» (decisión 84). */
+  setFocus: (mm: number) => void;
   /**
    * Tríadas portales (decisión 78): el factor de la GPU (`queryTriads`, el GLSL de la pasada B) frente al gemelo TS en
    * puntos materiales pegados a las tríadas de medio hígado (su centro, dentro de la luz y de la vaina, en el borde,
@@ -237,7 +241,8 @@ export interface TestHooks {
   triadParity: () => { points: number; inSheath: number; inLumen: number; maxAbs: number };
   /**
    * Armónica tisular frente a fundamental (decisión 77) en la mirada 0 y la misma pose: media de la envolvente
-   * en el campo cercano (0,5–4 mm: piel, grasa y transitorio), en el tejido (40–100 mm) y, con la sonda
+   * en el campo cercano (0,5–4 mm: piel, grasa y transitorio), en el tejido (40–100 mm, sin la ganancia focal de la
+   * emisión de cada modo, `focalGain`, decisión 84: el nivel del tejido que compara la acumulación) y, con la sonda
    * levantada 10 mm, del ruido del receptor solo: en toda la profundidad (la acumulación del armónico es del eco del
    * tejido, no del ruido) y en las líneas sin contacto a ≥ 12 líneas de una con contacto (en la subxifoidea un borde de
    * la cara sigue apoyado en el abdomen curvo, y el lóbulo principal lo reparte unas líneas). Deja el modo como estaba
@@ -698,6 +703,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
     },
     setCompound: (on) => dispatch({ type: 'compound', enabled: on }),
     setHarmonic: (on) => dispatch({ type: 'harmonic', enabled: on }),
+    setFocus: (mm) => dispatch({ type: 'bmode', patch: { focusMm: mm } }),
     triadParity: () => {
       const pts: number[] = [];
       for (let cx = -14; cx <= 4; cx++)
@@ -734,16 +740,23 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       const sim = getSim();
       const was = sim.bmode.harmonic;
       return withCompound(sim, dispatch, false, () => {
-        const bandMean = (env: EnvelopeFrame, r0: number, r1: number, useLine: (l: number) => boolean = () => true): number => {
+        const bandMean = (
+          env: EnvelopeFrame,
+          r0: number,
+          r1: number,
+          useLine: (l: number) => boolean = () => true,
+          gainAt: (r: number) => number = () => 1,
+        ): number => {
           const dz = sim.bmode.depthMm / env.samples;
           let sum = 0;
           let n = 0;
           for (let s = 0; s < env.samples; s++) {
             const r = (s + 0.5) * dz;
             if (r < r0 || r >= r1) continue;
+            const g = gainAt(r);
             for (let l = 0; l < env.lines; l++) {
               if (!useLine(l)) continue;
-              sum += env.data[s * env.lines + l];
+              sum += env.data[s * env.lines + l] / g;
               n++;
             }
           }
@@ -756,7 +769,9 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
           sim.render();
           const env = sim.renderer.readEnvelope();
           const near = bandMean(env, 0.5, 4);
-          const tissue = bandMean(env, 40, 100);
+          // a 40–100 mm no hay transitorio ni pesa el ruido: el eco del tejido sin la ganancia focal de su modo
+          const beam = bmodeBeam(sim.profile, sim.bmode);
+          const tissue = bandMean(env, 40, 100, undefined, (r) => focalGain(r, sim.bmode.focusMm, beam));
           sim.setPose({ ...sim.pose, lift: 10 });
           sim.advance(0.05);
           sim.render();

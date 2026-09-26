@@ -44,7 +44,13 @@ export interface BeamParams {
   lambdaTxMm: number;
   /** Escala del haz de emisión: 1 en fundamental; 1/√2 en armónica (la fuente va como p1²). */
   txScale: number;
+  /** Apertura de emisión máxima (mm). */
   apertureTxMm: number;
+  /**
+   * Número F mínimo de la emisión: la apertura de emisión es min(D_tx, F/F#_tx), como la de recepción, por la
+   * directividad del elemento. 0: sin límite (la apertura máxima a cualquier foco, el Doppler de la decisión 38).
+   */
+  fNumberTxMin: number;
   apertureRxMaxMm: number;
   fNumberRxMin: number;
   /** Factor de apodización de recepción sobre λ·F# (1 = apertura uniforme). */
@@ -59,6 +65,11 @@ export interface BeamParams {
   downshiftRxPerMm: number;
   /** Ídem del pulso emitido a la profundidad r. */
   downshiftTxPerMm: number;
+  /**
+   * Foco (mm) con que el preajuste deja el hígado a media escala (decisión 53): la referencia fija de la ganancia focal,
+   * el foco por defecto del equipo (`DEFAULT_BMODE.focusMm`).
+   */
+  focalReferenceMm: number;
 }
 
 export const CONVEX_BEAM: BeamParams = {
@@ -66,6 +77,7 @@ export const CONVEX_BEAM: BeamParams = {
   lambdaTxMm: 1540 / 3.5e3,
   txScale: 1,
   apertureTxMm: 26,
+  fNumberTxMin: 0,
   apertureRxMaxMm: 26,
   fNumberRxMin: 2.5,
   k: 1.3,
@@ -74,6 +86,7 @@ export const CONVEX_BEAM: BeamParams = {
   txConeFraction: 1,
   downshiftRxPerMm: 0,
   downshiftTxPerMm: 0,
+  focalReferenceMm: 90,
 };
 
 /**
@@ -128,12 +141,18 @@ export function axialSigmaMm(rMm: number, p: BeamParams = CONVEX_BEAM): number {
   return p.axialSigma0Mm * (1 + p.downshiftRxPerMm * Math.max(0, rMm));
 }
 
+/** Apertura de emisión (mm) con el foco F: la máxima, o F/F#_tx,min si esa es menor (`fNumberTxMin`). */
+export function txApertureMm(focusMm: number, p: BeamParams = CONVEX_BEAM): number {
+  const F = Math.max(10, focusMm);
+  return p.fNumberTxMin > 0 ? Math.min(p.apertureTxMm, F / p.fNumberTxMin) : p.apertureTxMm;
+}
+
 /** FWHM (mm) de los haces de emisión y de recepción de una vía a la profundidad r. */
 export function beamFwhmMm(rMm: number, focusMm: number, p: BeamParams = CONVEX_BEAM): { tx: number; rx: number } {
   const r = Math.max(1, rMm);
   const F = Math.max(10, focusMm);
   const lambdaTx = p.lambdaTxMm * (1 + p.downshiftTxPerMm * r);
-  const D = p.apertureTxMm;
+  const D = txApertureMm(F, p);
   const tx = p.txScale * Math.hypot((p.kTx * lambdaTx * F) / D, (p.txConeFraction * D * Math.abs(r - F)) / F);
   const dRx = Math.min(p.apertureRxMaxMm, r / p.fNumberRxMin);
   const rx = (p.k * p.lambdaMm * (1 + p.downshiftRxPerMm * r) * r) / Math.max(1, dRx);
@@ -151,23 +170,31 @@ export function lateralSigmaMm(rMm: number, focusMm: number, p: BeamParams = CON
 }
 
 /**
- * Ganancia focal de la emisión (amplitud, decisión 84). El eco de un medio difuso es la potencia emitida que cae
- * dentro del haz de recepción, ∫ I_tx·I_rx dx: con la intensidad de emisión de potencia fija (∝ 1/FWHM_tx) y la
- * sensibilidad de recepción de pico fijo es s_rx/√(s_rx² + s_tx²), la fracción de la emisión que ve el haz de
- * recepción. En el foco la emisión es estrecha y la fracción, máxima: allí vale 1, así que el preajuste de la
- * decisión 53 (el hígado a media escala) sigue en el foco por defecto; fuera de él baja, más cuanto más fuerte es
- * el enfoque, y mover el foco mueve la banda más clara (Oosterveld, Thijssen y Verhoef 1985, Ultrason Imaging 7:142:
- * la amplitud media del eco culmina en el foco). Con emisión uniforme a F/2,1 el modelo da −10 / −8 dB a 30 mm
- * antes y 55 mm después del foco donde Bottenus 2018 (IEEE TUFFC 65:30) mide −8,2 / −9,6 dB frente a enfocar en
- * cada profundidad; con la emisión de Hann de la imagen B es más suave. Solo el eco de la imagen B, no el ruido ni
- * el Doppler.
+ * Ganancia focal de la emisión (amplitud, decisión 84): la intensidad de la emisión en el eje frente a la profundidad.
+ * Con la potencia emitida fija, la intensidad en el eje va como 1/FWHM_tx (conservación de la energía a través del
+ * haz), y la amplitud del eco de un medio difuso, como su raíz mientras el haz de recepción sea más estrecho que el de
+ * emisión (fuera del foco, donde manda la emisión; en el foco las dos son parecidas y la banda sale algo exagerada):
+ * √(FWHM_ref/FWHM_tx(r; F)). La referencia es fija, la cintura de la emisión con el foco del preajuste
+ * (`focalReferenceMm`, el foco por defecto): con él vale 1 en el foco, así que el hígado sigue a media escala en el
+ * foco por defecto (decisión 53), y menos por encima y por debajo, la banda algo más clara del foco (Oosterveld,
+ * Thijssen y Verhoef 1985, Ultrason Imaging 7:142: la amplitud media del eco culmina en el foco). Con otro foco la
+ * banda se mueve con él y su pico cambia con su cintura: más claro con el foco somero y estrecho, más apagado con el
+ * hondo y ancho, como la potencia emitida repartida en otra anchura. Con la emisión de Hann de la imagen B a F/3,5 da
+ * −4,8 dB a 20 mm y −4,3 dB a 150 mm en fundamental, y −2,7 / −2,3 dB en armónica, cuya emisión a f1 enfoca menos.
+ * Con emisión uniforme a F/2,1 daría −6 / −5 dB a 30 mm antes y 55 mm después del foco, donde Bottenus 2018 (IEEE
+ * TUFFC 65:30) mide 8–10 dB entre enfocar la emisión en una profundidad y en cada una: sin la recepción, el modelo
+ * queda por debajo. En armónica el armónico nace como p1², así que su fuente va como la intensidad y no como su raíz:
+ * el modelo solo lleva la concentración de la energía de la emisión y deja la dependencia de la generación con la
+ * profundidad en la acumulación de la decisión 77, que el preajuste compensa desde 4 mm (`harmonic-simplified`). Solo
+ * el eco de la imagen B, no el ruido del receptor, el transitorio ni el Doppler.
  */
 export function focalGain(rMm: number, focusMm: number, p: BeamParams = CONVEX_BEAM): number {
-  const fraction = (r: number): number => {
-    const { tx, rx } = beamFwhmMm(r, focusMm, p);
-    return rx / Math.hypot(tx, rx);
-  };
-  return Math.sqrt(fraction(rMm) / fraction(focusMm));
+  return Math.sqrt(focalReferenceFwhmMm(p) / beamFwhmMm(rMm, focusMm, p).tx);
+}
+
+/** FWHM de la emisión en su foco con el foco del preajuste: la referencia de `focalGain` (uniform `uFocus.y`). */
+export function focalReferenceFwhmMm(p: BeamParams = CONVEX_BEAM): number {
+  return beamFwhmMm(p.focalReferenceMm, p.focalReferenceMm, p).tx;
 }
 
 /**

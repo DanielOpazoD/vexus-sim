@@ -70,7 +70,7 @@ describe('Armónica tisular (decisión 77): haz y modelo', () => {
     // pulso de su banda: decisión 84); el Doppler no lo lee y conserva el del perfil
     const bF = bmodeBeam(CONVEX_C35_PROFILE, { harmonic: false });
     const bH = bmodeBeam(CONVEX_C35_PROFILE, { harmonic: true });
-    const imaging = { kTx: 0, txConeFraction: 0, downshiftRxPerMm: 0, downshiftTxPerMm: 0, axialSigma0Mm: 0 };
+    const imaging = { kTx: 0, txConeFraction: 0, fNumberTxMin: 0, downshiftRxPerMm: 0, downshiftTxPerMm: 0, axialSigma0Mm: 0 };
     expect({ ...bF, ...imaging }).toEqual({ ...CONVEX_C35_PROFILE.beam, ...imaging });
     expect({ ...bH, ...imaging }).toEqual({ ...h, ...imaging });
     expect(bF.axialSigma0Mm).toBe(CONVEX_C35_PROFILE.beam.axialSigma0Mm);

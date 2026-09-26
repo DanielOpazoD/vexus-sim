@@ -8,7 +8,7 @@ import { dot, normalize, type Vec3 } from '../core/vec3';
 import { VESSEL_META } from '../physiology/vessels';
 import { contactCoupling } from '../probe/contact';
 import { lineDirection, pointOnLine } from '../probe/probe';
-import { lateralFwhmMm, lateralSigmaMm } from '../ultrasound/beamModel';
+import { focalGain, lateralFwhmMm, lateralSigmaMm } from '../ultrasound/beamModel';
 import { bmodeBeam } from '../ultrasound/transducerProfile';
 import { effectiveLooks, lookCorrelationLaw, lookWeight } from '../ultrasound/compound';
 import { IFACE_REACH_MM, IFACE_SHIFT_MM } from '../ultrasound/interfaceEcho';
@@ -670,11 +670,22 @@ function* stepsMm(r0: number, r1: number, step: number): Generator<number> {
  * usuario ni su techo). La envolvente de la GPU lleva la atenuación de ida y vuelta (~3 dB/cm en el
  * hígado a 2,5 MHz) y el banco compara cada cara con el hígado a 3–10 mm: sin quitar la tendencia, el
  * mismo eco medía ~4 dB distinto con la referencia encima (pared) o debajo (cápsula), la línea pleural
- * ~3 dB de menos y la costura contaba huecos del moteado de un diafragma sin costura.
+ * ~3 dB de menos y la costura contaba huecos del moteado de un diafragma sin costura. `beamGain` (amplitud)
+ * quita además la ganancia focal de la emisión (`focalGain`, decisión 84): es la corrección de difracción con que
+ * el método del maniquí de referencia compara ecos de distintas profundidades (Yao, Zagzebski y Madsen 1990,
+ * Ultrason Imaging 12:58); la imagen mostrada la conserva.
  */
-export function envelopeLine(env: EnvelopeFrame, depthMm: number, tgcDbPerCm: number): (u: number, r: number) => number {
+export function envelopeLine(
+  env: EnvelopeFrame,
+  depthMm: number,
+  tgcDbPerCm: number,
+  beamGain: (r: number) => number = () => 1,
+): (u: number, r: number) => number {
   const dr = depthMm / env.samples;
-  const gain = Float64Array.from({ length: env.samples }, (_, v) => Math.pow(10, (tgcDbPerCm * ((v + 0.5) * dr)) / 200));
+  const gain = Float64Array.from(
+    { length: env.samples },
+    (_, v) => Math.pow(10, (tgcDbPerCm * ((v + 0.5) * dr)) / 200) / beamGain((v + 0.5) * dr),
+  );
   return (u, r) => {
     const x = Math.min(env.samples - 1, Math.max(0, r / dr - 0.5));
     const v = Math.min(env.samples - 2, Math.floor(x));
@@ -2116,8 +2127,9 @@ export function fidelityStats(
     if (x < 0 || y < 0 || x >= img.width || y >= img.height) return Number.NaN;
     return img.gray[y * img.width + x];
   };
-  // la envolvente sin la atenuación del hígado: la cara y su referencia, a la misma escala
-  const envAt = envelopeLine(env, depth, nominalTgcDbPerCm(fB));
+  // la envolvente sin la atenuación del hígado ni la ganancia focal: la cara y su referencia, a la misma escala
+  const beam = bmodeBeam(sim.profile, sim.bmode);
+  const envAt = envelopeLine(env, depth, nominalTgcDbPerCm(fB), (r) => focalGain(r, sim.bmode.focusMm, beam));
   const faceLine = (u: number): FaceLine => ({
     env: (r) => envAt(u, r),
     gray: (r) => grayAt(u, r),
@@ -2702,7 +2714,8 @@ export function pleuraStats(
   const dTheta = (2 * tr.halfSector) / lines;
   const thetaOf = (u: number): number => -tr.halfSector + dTheta * (u + 0.5);
   const dr = depth / env.samples;
-  const envAt = envelopeLine(env, depth, nominalTgcDbPerCm(sim.profile.bEffectiveMHz));
+  const beam = bmodeBeam(sim.profile, sim.bmode);
+  const envAt = envelopeLine(env, depth, nominalTgcDbPerCm(sim.profile.bEffectiveMHz), (r) => focalGain(r, sim.bmode.focusMm, beam));
   const db = (x: number): number => 20 * Math.log10(Math.max(x, 1e-12));
   const withAir = curtain.filter((c): c is CurtainLine => c !== null && c.fAir >= CURTAIN_MIN_AIR);
   // la cortina entera, fuera de la sombra de las costillas (bajo una costilla la pleura está en sombra)

@@ -13,13 +13,14 @@ import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient } from '../physiology/patientState';
 import { CONVEX_C35, probeFrame } from '../probe/probe';
 import { probeContact } from '../probe/contact';
+import { focalGain } from '../ultrasound/beamModel';
 import { greyOfLevel, levelOfGrey } from '../ultrasound/greyMap';
 import { DISPLAY_MARGIN_PX, DISPLAY_REF_DB, nominalTgcDbPerCm } from '../ultrasound/renderer';
 import { pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
 import { ElevationAnchor, type SpeckleAnchorState } from '../ultrasound/speckleField';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import { fatSeptum, muscleStriation, wallOrientation } from '../ultrasound/wallTexture';
-import type { TwinFrame } from './support/compoundTwin';
+import { TWIN_GEOMETRY as G, type TwinFrame } from './support/compoundTwin';
 import { B_MHZ, normalFrame, wallTwin, type WallModel, type WallTwinOut } from './support/wallTwin';
 
 /**
@@ -81,7 +82,11 @@ const median = (a: readonly number[]): number => {
 /** Métricas del banco de la pared sobre un parche del gemelo (definiciones de `wallStatsOf`). */
 function metrics(o: WallTwinOut): Metrics {
   const nR = o.i1 - o.i0 + 1;
-  const dB = (i: number, jj: number): number => 20 * Math.log10(Math.max(o.env[i * o.nL + jj], 1e-12)) + (TGC * o.rowR(o.i0 + i)) / 10;
+  // compensada como en el banco (`envelopeLine`): la atenuación nominal y la ganancia focal de la emisión (decisión 84)
+  const dB = (i: number, jj: number): number => {
+    const r = o.rowR(o.i0 + i);
+    return 20 * Math.log10(Math.max(o.env[i * o.nL + jj], 1e-12)) + (TGC * r) / 10 - 20 * Math.log10(focalGain(r, G.focusMm, G.beam));
+  };
   // hígado de referencia: sin hueso ni pulmón delante, 5 mm bajo la pared
   const liver: number[] = [];
   for (let jj = 0; jj < o.nL; jj++) {

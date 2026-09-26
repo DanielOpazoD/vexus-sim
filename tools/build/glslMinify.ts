@@ -3,12 +3,13 @@ import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import type * as TS from 'typescript';
 import type { Plugin } from 'vite';
+import { compactGlslParts, type CompactMode } from './glslCompact';
 import { buildMangleMap, mangleGlslParts, type GlslAnalysis, type MangleMap } from './glslMangle';
 
 /**
  * Minificado del GLSL en el build: el texto de los shaders viaja en el chunk principal dentro de las plantillas
- * `/* glsl *\/ \`…\``, con sus comentarios, su sangría y sus nombres largos (el presupuesto lo cuenta entero). En el
- * build, en dos etapas:
+ * `/* glsl *\/ \`…\``, con sus comentarios, su sangría, sus nombres largos y sus espacios (el presupuesto lo cuenta
+ * entero). En el build, en tres etapas:
  *
  * 1. Comentarios y sangría: se quitan los comentarios (`//` y `/* *\/`; uno de bloque entre dos tokens deja un espacio)
  *    y la sangría de esas plantillas; se conservan los saltos de línea (las directivas `#define` y `#if` los necesitan y
@@ -41,8 +42,26 @@ import { buildMangleMap, mangleGlslParts, type GlslAnalysis, type MangleMap } fr
  *    módulos ajenos a los de GLSL: esa es la garantía de `glslMangle.test.ts`, que monta los programas reales con el
  *    fuente transformado y comprueba que cada uno es el original renombrado con el mapa (mismo texto salvo los
  *    nombres, sin colisiones y con los mismos uniforms y entradas/salidas); un nombre así la hace fallar.
- *    Para depurar un shader del build con sus nombres: `glslMinify({ mangle: false })` en `vite.config.ts`. Con
- *    `vite build --watch` solo se aplica la primera etapa (la caché de transformaciones mezclaría mapas).
+ * 3. Espacios (`glslCompact.ts`): entre dos trozos de código se quita todo el blanco salvo un espacio donde pegados se
+ *    leerían con otros tokens (identificador o número junto a identificador o número; `- -`, `+ +`, `< <`, `= =`,
+ *    `/ /`…; `0x1e -5`), con dos léxicos que tienen que estar de acuerdo: el de C (Mesa) y el de ANGLE (Chrome, Firefox,
+ *    Safari). Las líneas se juntan salvo las directivas, que se copian tal cual en su propia línea (el salto que las
+ *    precede y el que las cierra se quedan). Lo que sigue a una interpolación hasta el final de su línea, y la primera
+ *    línea de cada plantilla, se copian tal cual con su salto (el texto interpolado puede abrir una directiva o un
+ *    comentario `//` que sigan en esa línea); junto a una interpolación o a un extremo de la plantilla el blanco se
+ *    queda, como espacio o como salto; cada ~1000 caracteres se conserva un salto que ya había, para que un error de
+ *    compilación siga siendo legible. En el módulo, los saltos que pierde la plantilla vuelven como blanco de JS: delante
+ *    de cada expresión `${…}` los que le faltan para seguir en su línea del fuente, y el resto tras el acento grave de
+ *    cierre (el minificado del JS los quita). Así el módulo conserva su número de líneas y el mapa de fuentes línea a
+ *    línea sigue valiendo para todo el JS; si lo que sigue al acento no admite un salto delante (`as`, `!`…), la
+ *    plantilla se compacta sin juntar líneas. `glslCompact.test.ts` monta los programas reales con y sin la etapa y
+ *    exige los mismos tokens con los dos léxicos, las mismas directivas, cada una en su línea, y el mismo número de
+ *    salidas de color: el código que lea el texto de un shader al ejecutar (`fragmentOutputCount`) no puede contar con
+ *    sus saltos de línea.
+ *
+ * Para depurar un shader del build: `glslMinify({ mangle: false })` deja los nombres y `glslMinify({ compact: false })`
+ * los espacios y los saltos de línea. Con `vite build --watch` no se renombra (la caché de transformaciones mezclaría
+ * mapas de compilaciones distintas); la primera y la tercera etapa, locales a cada plantilla, sí se aplican.
  *
  * Las pruebas (vitest) y el servidor de desarrollo ven el fuente tal cual; la e2e prueba los shaders minificados.
  */
@@ -231,9 +250,13 @@ export function findGlslTemplates(code: string): GlslTemplate[] {
  * Sin comentarios: los trozos estáticos que quedan (unidos cuando la interpolación que los separaba caía dentro de un
  * comentario) y las expresiones que sobreviven entre ellos.
  */
-export function stripGlslComments(statics: readonly string[], exprs: readonly string[]): { parts: string[]; exprs: string[] } {
+export function stripGlslComments(
+  statics: readonly string[],
+  exprs: readonly string[],
+): { parts: string[]; exprs: string[]; indices: number[] } {
   const parts: string[] = [];
   const kept: string[] = [];
+  const indices: number[] = [];
   let buf = '';
   let lineComment = false;
   let blockComment = false;
@@ -282,43 +305,114 @@ export function stripGlslComments(statics: readonly string[], exprs: readonly st
     if (p < exprs.length && !lineComment && !blockComment) {
       parts.push(buf);
       kept.push(exprs[p]);
+      indices.push(p);
       buf = '';
     }
   }
   parts.push(buf);
-  return { parts, exprs: kept };
+  return { parts, exprs: kept, indices };
 }
 
 /**
- * Minifica el cuerpo de una plantilla GLSL: quita comentarios y sangría (los saltos de línea se quedan) y, con un
- * mapa, renombra. Devuelve el texto que va entre los acentos graves, con las interpolaciones que sobreviven.
+ * Minifica el cuerpo de una plantilla GLSL: quita comentarios y sangría (los saltos de línea se quedan), con un mapa
+ * renombra y, con `compact`, quita el blanco que no separa nada (`join` junta además las líneas). Devuelve el texto
+ * que va entre los acentos graves, con las interpolaciones que sobreviven.
  */
-export function minifyGlslBody(statics: readonly string[], exprs: readonly string[], mangle?: MangleMap): string {
+export function minifyGlslBody(statics: readonly string[], exprs: readonly string[], mangle?: MangleMap, compact?: CompactMode): string {
   const stripped = stripGlslComments(statics, exprs);
-  const parts = mangle ? mangleGlslParts(stripped.parts, mangle) : stripped.parts;
+  const renamed = mangle ? mangleGlslParts(stripped.parts, mangle) : stripped.parts;
+  // sangría y espacios al final de cada línea (sin mover las interpolaciones: los trozos se recortan por líneas)
+  const trimmed = trimLines(renamed);
+  const parts = compact ? compactGlslParts(trimmed, compact) : trimmed;
   let out = parts[0];
-  for (let i = 0; i < stripped.exprs.length; i++) out += '${' + stripped.exprs[i] + '}' + parts[i + 1];
-  // sangría y espacios al final de cada línea
-  return out
-    .split('\n')
-    .map((l) => l.trim())
-    .join('\n');
+  for (let i = 0; i < stripped.exprs.length; i++) {
+    // con las líneas juntas, cada expresión `${…}` vuelve a su línea del fuente: los saltos que le faltan van delante de
+    // ella, dentro de `${` (blanco de JS), y el mapa de fuentes línea a línea sigue valiendo para su código
+    const pad =
+      compact === 'join' ? '\n'.repeat(Math.max(0, newlinesBefore(statics, exprs, stripped.indices[i]) - countNewlines(out))) : '';
+    out += '${' + pad + stripped.exprs[i] + '}' + parts[i + 1];
+  }
+  return out;
 }
 
-function applyTemplates(code: string, templates: readonly GlslTemplate[], mangle?: MangleMap): string {
+/** Saltos de línea del fuente de una plantilla antes de su expresión `index`. */
+function newlinesBefore(statics: readonly string[], exprs: readonly string[], index: number): number {
+  let n = 0;
+  for (let q = 0; q <= index; q++) n += countNewlines(statics[q]);
+  for (let q = 0; q < index; q++) n += countNewlines(exprs[q]);
+  return n;
+}
+
+/**
+ * Quita la sangría y los espacios finales de cada línea de una plantilla partida en trozos: lo mismo que recortar
+ * cada línea del texto unido, pero sin tocar las interpolaciones (una línea puede empezar en un trozo y seguir en otro).
+ */
+function trimLines(parts: readonly string[]): string[] {
+  return parts.map((s, p) =>
+    s
+      .split('\n')
+      .map((l, k, lines) => {
+        // el principio de una línea se recorta si empieza en este trozo (k > 0, o el primer trozo); el final, si acaba en él
+        const startsHere = k > 0 || p === 0;
+        const endsHere = k < lines.length - 1 || p === parts.length - 1;
+        let t = l;
+        if (startsHere) t = t.replace(/^\s+/, '');
+        if (endsHere) t = t.replace(/\s+$/, '');
+        return t;
+      })
+      .join('\n'),
+  );
+}
+
+/**
+ * ¿Se pueden llevar detrás del acento grave de cierre los saltos de línea que la plantilla pierde al juntar líneas? Sí
+ * si lo que sigue en su línea es nada, un comentario de línea o `;` `,` `)` `]` `}`: ahí un salto no cambia cómo se lee
+ * el JS (delante de `as`, `!` o `++`, por ejemplo, sí cambiaría).
+ */
+function newlinesFitAfter(code: string, closing: number): boolean {
+  let i = closing + 1;
+  while (code[i] === ' ' || code[i] === '\t') i++;
+  const c = code[i];
+  return c === undefined || c === '\n' || c === '\r' || ';,)]}'.includes(c) || code.startsWith('//', i);
+}
+
+function applyTemplates(code: string, templates: readonly GlslTemplate[], mangle?: MangleMap, compact = false): string {
   let out = '';
   let last = 0;
   for (const t of templates) {
-    out += code.slice(last, t.start) + minifyGlslBody(t.statics, t.exprs, mangle);
+    out += code.slice(last, t.start);
     last = t.end;
+    if (!compact) {
+      out += minifyGlslBody(t.statics, t.exprs, mangle);
+      continue;
+    }
+    // las líneas que se juntan vuelven como saltos tras el acento grave: el módulo conserva su número de líneas y el mapa
+    // de fuentes línea a línea sigue valiendo; si no caben ahí, se compacta sin juntar líneas
+    const join = newlinesFitAfter(code, t.end);
+    const body = minifyGlslBody(t.statics, t.exprs, mangle, join ? 'join' : 'lines');
+    out += body;
+    if (join) {
+      const lost = countNewlines(code.slice(t.start, t.end)) - countNewlines(body);
+      out += '`' + '\n'.repeat(Math.max(0, lost));
+      last = t.end + 1;
+    }
   }
   return out + code.slice(last);
 }
 
-/** Minifica (y, con un mapa, renombra) todas las plantillas `/* glsl *\/` de un módulo; el número de líneas no cambia. */
-export function minifyGlslTemplates(code: string, mangle?: MangleMap): string {
+const countNewlines = (s: string): number => {
+  let n = 0;
+  for (let i = s.indexOf('\n'); i >= 0; i = s.indexOf('\n', i + 1)) n++;
+  return n;
+};
+
+/**
+ * Minifica (y, con un mapa, renombra; con `compact`, compacta) todas las plantillas `/* glsl *\/` de un módulo; el
+ * número de líneas del módulo no cambia.
+ */
+export function minifyGlslTemplates(code: string, mangle?: MangleMap, options: { compact?: boolean } = {}): string {
   const templates = findGlslTemplates(code);
-  return templates.length === 0 ? code : applyTemplates(code, templates, mangle);
+  return templates.length === 0 ? code : applyTemplates(code, templates, mangle, options.compact);
 }
 
 /** Un módulo fuente: ruta y contenido. */
@@ -411,10 +505,12 @@ export function prepareGlslMangle(sources: readonly SourceModule[]): GlslMangleC
  * Minifica y renombra las plantillas de un módulo con el mapa del bundle. Un módulo con plantillas GLSL que no se
  * leyó al preparar el mapa, o que cambió desde entonces, dejaría shaders inconsistentes: se lanza.
  */
-export function transformWithMangle(code: string, id: string, ctx: GlslMangleContext): string {
+export function transformWithMangle(code: string, id: string, ctx: GlslMangleContext, options: { compact?: boolean } = {}): string {
   const path = normalizePath(id.split('?')[0]);
   const known = ctx.modules.get(path);
-  if (known && known.code === code) return known.templates.length === 0 ? code : applyTemplates(code, known.templates, ctx.map);
+  if (known && known.code === code) {
+    return known.templates.length === 0 ? code : applyTemplates(code, known.templates, ctx.map, options.compact);
+  }
   if (findGlslTemplates(code).length > 0) {
     throw new Error(`glslMinify: ${path} tiene plantillas GLSL y no es el módulo con que se calculó el renombrado`);
   }
@@ -428,11 +524,12 @@ function lineMap(code: string, id: string): { version: number; sources: string[]
 }
 
 /**
- * Plugin de Vite: solo en el build y solo en los módulos de `src/` con plantillas GLSL. `mangle: false` deja solo la
- * primera etapa (comentarios y sangría).
+ * Plugin de Vite: solo en el build y solo en los módulos de `src/` con plantillas GLSL. Para depurar, `mangle: false`
+ * deja los nombres y `compact: false` los espacios y los saltos de línea.
  */
-export function glslMinify(options: { mangle?: boolean } = {}): Plugin {
+export function glslMinify(options: { mangle?: boolean; compact?: boolean } = {}): Plugin {
   const mangle = options.mangle ?? true;
+  const compact = options.compact ?? true;
   let root = process.cwd();
   let ctx: GlslMangleContext | null = null;
   return {
@@ -455,8 +552,8 @@ export function glslMinify(options: { mangle?: boolean } = {}): Plugin {
       let out: string;
       // con el renombrado, un módulo del proyecto con plantillas que no se analizó (fuera de `src/`, un `.js`) hace fallar
       // el build: sus shaders no casarían con los demás
-      if (ctx) out = transformWithMangle(code, id, ctx);
-      else if (/[\\/]src[\\/].*\.ts$/.test(file)) out = minifyGlslTemplates(code);
+      if (ctx) out = transformWithMangle(code, id, ctx, { compact });
+      else if (/[\\/]src[\\/].*\.ts$/.test(file)) out = minifyGlslTemplates(code, undefined, { compact });
       else return null;
       if (out === code) return null;
       return { code: out, map: lineMap(out, id) };

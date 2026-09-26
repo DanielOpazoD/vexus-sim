@@ -158,7 +158,9 @@ export function fragmentOutputCount(frag: string): number {
   let max = -1;
   for (const m of frag.matchAll(/layout\s*\(\s*location\s*=\s*(\d+)\s*\)\s*out\b/g)) max = Math.max(max, Number(m[1]));
   if (max >= 0) return max + 1;
-  return /^\s*out\s+(?:(?:lowp|mediump|highp)\s+)?\w+\s+\w+\s*;/m.test(frag) ? 1 : 0;
+  // una `out` global empieza sentencia (a principio de línea o tras `;` o `}`: el build junta líneas del GLSL, ver
+  // `tools/build/glslCompact.ts`); la de un parámetro va tras `(` o `,` y no acaba en `;`
+  return /(?:^|[;}])\s*out\s+(?:(?:lowp|mediump|highp)\s+)?\w+\s+\w+\s*;/m.test(frag) ? 1 : 0;
 }
 
 export function createTexture(

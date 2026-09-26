@@ -31,6 +31,10 @@
 // modo docente: index baja de 326,2 a 319,3 kB con la aurícula de lazo cerrado (decisión 79, vite build sobre
 // 22c8547). El JS total cuenta lo que puede descargar un usuario: los ganchos de prueba (`testHooks`, solo con `?e2e`
 // o en desarrollo, 56 kB) salen del total y conservan su límite por chunk. Los límites no cambian.
+// 2026-09-26: el build quita además los espacios y los saltos de línea que no separan nada del texto GLSL
+// (`tools/build/glslCompact.ts`, tercera etapa de `glslMinify.ts`): index baja de 318,0 a 304,6 kB y el JS total de 953,1
+// a 939,6 kB (vite build sobre main 8e83d9a). Los límites no cambian: el margen es para el retroperitoneo y los casos
+// trampa.
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 

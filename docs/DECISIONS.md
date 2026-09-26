@@ -2278,6 +2278,28 @@ admite la e2e).
 el sano y < 6 % en la grave, y media de la pared igual a la del volumen (< 0,2 mm). `properties.test.ts`: el primer
 contraejemplo pasa a prueba normal. `fidelityScene.test.ts` con la guarda nueva del banco.
 
+## 74. El resto del abdomen deja de parecer hígado: asas con su firma y grasa mesentérica
+
+**Contexto.** El dueño (25-09-2026): «pésima representación ecográfica del riñón». Parte del problema no era el riñón:
+todo lo que la anatomía no modela como órgano (asas intestinales, mesenterio y epiplón, grasa retroperitoneal) es un
+solo tejido, el «resto», con retrodispersión 0,9 y el moteado del parénquima, así que en la ventana renal el riñón
+aparecía rodeado de algo igual al hígado. Lo mismo pasaba en la ventana de la porta (≈ 46 % de «resto») y bajo la VCI del
+flanco. En la ecografía real, alrededor del riñón y del hilio se ven asas con la firma intestinal (capas de la pared
+de 2–4 mm, contenido líquido o con gas) y grasa mesentérica y retroperitoneal hiperecoica y granulosa.
+**Decisión.** Un factor de la amplitud de retrodispersión del intestino, anclado al material (`restTexture`, gemelo
+GLSL en la pasada B y en el gemelo de la pared): el nivel de un ruido de valor suave de dos octavas (celda de 16 mm)
+separa las asas de la grasa; hacia dentro del borde, con la distancia aproximada t = (n − umbral)·celda, van la serosa
+brillante (0,6 mm, 1,8), la muscular hipoecoica (2,2 mm, 0,38), la mucosa brillante (0,6 mm, 2,2) y la luz, con
+contenido líquido (0,12) o mixto con gas (2,0) según un segundo ruido de 5 mm; entre las asas, grasa mesentérica a
+1,35. El tejido pasa a retrodispersión 1 (el nivel lo da la textura) y a moteado con grumos (0,5).
+**Consecuencias.** Alrededor del riñón, bajo el hígado en la ventana de la porta y en el flanco se ven asas en anillo y
+en banda con su pared en capas y grasa más brillante y granulosa que el hígado: el hígado y el riñón se distinguen de
+lo que los rodea. Sin la sombra ni la reverberación del gas (la transmisión no cambia) y sin psoas ni cuadrado lumbar
+propios (`bowel-gas-no-shadow`, `no-psoas`). Las pruebas del banco de fidelidad y de los gemelos no cambian.
+**Verificación.** `restTexture.test.ts`: la grasa es la moda y más brillante que el hígado, hay muscular, mucosa o
+serosa y contenido líquido, los niveles están acotados, la textura está anclada (misma semilla, mismo valor) y el
+shader toma las constantes del módulo. Capturas con GPU real de las ventanas renal, del flanco y de la porta.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

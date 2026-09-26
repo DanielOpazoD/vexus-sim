@@ -31,6 +31,11 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   todo lo que no es corazón ni vaso, así que entre el diafragma y la VCI supradiafragmática (que en realidad está en el
   pericardio) queda a veces una lámina de décimas de milímetro; la marcha de la pasada A no la ve y en esa línea pone el
   espejo del diafragma detrás de la VCI (una costura aislada). El banco de fidelidad excluye esas líneas.
+- **El gas intestinal no da sombra** (`bowel-gas-no-shadow`): el contenido de las asas del «resto» (decisión 74) es una
+  textura de retrodispersión; el gas brilla pero no refleja ni reverbera ni deja sombra sucia detrás (las bolsas de gas
+  de la anatomía sí lo hacen, pero no hay ninguna en los casos de referencia).
+- **Sin psoas ni cuadrado lumbar** (`no-psoas`): por detrás del riñón y junto a la columna el «resto» lleva la textura
+  de asas y grasa; los músculos retroperitoneales (hipoecoicos y estriados) no están modelados.
 - **Sin cascada torácica de la VCI** (`no-thoracic-waterfall`): la unión cavoauricular transmite
   cualquier caída de la PAD; no existe la meseta de Guyton por colapso de la VCI en la entrada
   torácica. Hallado por fast-check: con hipovolemia (volumen 0,6) y PAD media ≈ 0 la VCI se vacía

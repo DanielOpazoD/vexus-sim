@@ -22,6 +22,7 @@ import type { AnatomyScene, VesselCaliber } from '../../anatomy/scene';
 import { TISSUES, Tissue, attenuationDbPerCm } from '../../anatomy/tissues';
 import { cross, dot, normalize, type Vec3 } from '../../core/vec3';
 import { lateralSigmaMm } from '../../ultrasound/beamModel';
+import { restTexture } from '../../ultrasound/restTexture';
 import {
   IFACE_MIN_COS,
   IFACE_REACH_MM,
@@ -217,6 +218,7 @@ export function wallTwin(
           gain *= Math.pow(10, heterogeneityDb(m, seedF) / 20);
         if (o.model === 'wall' && !o.noTexture && (tissue === Tissue.Fat || tissue === Tissue.Muscle))
           gain *= wallTexture(m, tissue, normalize(m.map((x, k) => x - frame.center[k]) as Vec3), scene.torso);
+        if (tissue === Tissue.Bowel) gain *= restTexture(m, seedF);
         return [f[0] * gain, f[1] * gain];
       };
       const side = (sgn: number): [number, number] => {

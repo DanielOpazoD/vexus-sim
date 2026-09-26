@@ -77,3 +77,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [71](DECISIONS.md#L2153) | Pleura y líneas A en todo el hemitórax derecho, también bajo la pared anterior | vigente |
 | [72](DECISIONS.md#L2179) | Hígado con el borde inferior agudo apoyado en la pared, cara visceral cóncava y el tamaño de la revisión | vigente |
 | [73](DECISIONS.md#L2255) | Pared viscoelástica de la VCI: el latido la mueve la mitad y la respiración igual | vigente |
+| [74](DECISIONS.md#L2281) | El resto del abdomen deja de parecer hígado: asas con su firma y grasa mesentérica | vigente |

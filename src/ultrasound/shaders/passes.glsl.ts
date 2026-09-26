@@ -16,6 +16,7 @@ import {
 } from '../pleura';
 import { SPECKLE_LOOK_GLSL, SPECKLE_TISSUE_GLSL } from '../speckleField';
 import { WALL_FACE_ECHO_GLSL, WALL_TEXTURE_GLSL } from '../wallTexture';
+import { REST_TEXTURE_GLSL } from '../restTexture';
 import { RECEIVER_GLSL, glslFloat } from '../receiver';
 import { STEERING_GLSL } from '../steering';
 
@@ -463,6 +464,8 @@ vec2 fieldForPh(vec3 m, float se, int tissue, float ph0, vec3 g, vec3 b0, Warp w
   if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX) het = hetGain(m);
   // textura de la pared (decisión 62) con la dirección de esta mirada: b_k = b_0 + g/k2 (g = k2·(b_k − b_0))
   if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, normalize(b0 + g / uSteer.w), w);
+  // el resto del abdomen: asas y grasa mesentérica (decisión 74, restTexture.ts)
+  if (tissue == T_BOWEL) het *= restTexture(m);
   return f * tissueBack(tissue) * het;
 }
 vec2 sampleSidePh(vec3 p, float se, Cls center, float ph0, vec3 g, bool withCurtain, Warp w) {
@@ -673,6 +676,7 @@ out vec2 oField;
 ${ELEV_SIGMA_GLSL}${LATERAL_PSF_GLSL}
 ${SPECKLE_TISSUE_GLSL}
 ${WALL_TEXTURE_GLSL}
+${REST_TEXTURE_GLSL}
 ${INTERFACE_ECHO_GLSL}
 ${WALL_FACE_ECHO_GLSL}
 
@@ -711,6 +715,8 @@ vec2 fieldFor(vec3 m, float se, int tissue, vec3 dir, Warp w) {
   // material; dir, la dirección del haz de la mirada 0 en el punto del mundo (la radial desde el centro de
   // curvatura) y w, la jacobiana de la compresión de la sonda (decisión 63) que lleva la lámina al mundo
   if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, dir, w);
+  // el resto del abdomen: asas y grasa mesentérica (decisión 74, restTexture.ts)
+  if (tissue == T_BOWEL) het *= restTexture(m);
   return f * tissueBack(tissue) * het;
 }
 

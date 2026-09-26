@@ -2299,6 +2299,7 @@ propios (`bowel-gas-no-shadow`, `no-psoas`). Las pruebas del banco de fidelidad 
 **Verificación.** `restTexture.test.ts`: la grasa es la moda y más brillante que el hígado, hay muscular, mucosa o
 serosa y contenido líquido, los niveles están acotados, la textura está anclada (misma semilla, mismo valor) y el
 shader toma las constantes del módulo. Capturas con GPU real de las ventanas renal, del flanco y de la porta.
+
 ## 75. Interfaz limpia: ventanas VExUS como tarjetas, la imagen manda y consola con divulgación progresiva
 
 **Contexto.** El dueño (médico, 25-09-2026): «mejorar la interfaz visual para que sea más simple, más limpia, más
@@ -2328,7 +2329,7 @@ los puntos de partida de la 17.
 **Consecuencias.** Sin PW la imagen gana ~160 px de alto a 1600 × 1000 (871 frente a 712); cada mando existe una sola vez
 y el alumno ve las ventanas y su anillo en el 3D sin abrir pestañas. Al ocultar el carril (H) las tarjetas se ocultan con
 él. Con el lienzo del 3D más alto que ancho (corte plegado) el navegador abre su campo vertical para no recortar el
-tronco. El chunk principal pasa de 321,1 a 324,4 kB (presupuesto a 330 kB y total de JS a 1010 kB). A 1280 × 720 (la
+tronco. El chunk principal crece 3,4 kB (con el GLSL minificado de main queda en 304,7 de 320 kB y el JS total en 985,9 de 1000 kB: los presupuestos no cambian). A 1280 × 720 (la
 e2e) el lienzo de la imagen pasa de 700 × 434 a 712 × 591 px sin PW; con GPU real las métricas de las e2e que leen la
 imagen mostrada no cambian (gris del hígado 96 → 96, DE 15,36 → 15,36; compuesto por bandas 11,8 → 11,4–11,7). Pendiente: recordar
 entre sesiones qué secciones están plegadas.

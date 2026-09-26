@@ -21,17 +21,41 @@ export function buildWindowMarks(a: AnatomyScene): THREE.Group {
     sp.scale.multiplyScalar(1.5);
     g.add(sp);
   }
-  for (const m of marks) {
+  const labels = windowLabelPositions(a);
+  marks.forEach((m, i) => {
     const p = surfaceAt(a, m.phi, m.z, 1.01);
-    const n = new THREE.Vector3(Math.cos(m.phi) / a.torso.a, Math.sin(m.phi) / a.torso.b, 0).normalize();
+    const n = skinNormal(a, m.phi);
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.12, 8, 24), new THREE.MeshBasicMaterial({ color: m.color }));
     ring.position.copy(p);
     ring.lookAt(p.clone().add(n));
     const sprite = labelSprite(m.label, m.color);
-    sprite.position.copy(p.clone().add(n.multiplyScalar(2.8)));
+    sprite.position.copy(labels[i]);
     g.add(ring, sprite);
-  }
+  });
   return g;
+}
+
+/** Alto (cm) que ocupa un rótulo y distancia (cm) por debajo de la cual dos rótulos a la misma altura se pisan. */
+export const LABEL_STEP_CM = 1.8;
+export const LABEL_NEAR_CM = 5;
+
+const skinNormal = (a: AnatomyScene, phi: number) => new THREE.Vector3(Math.cos(phi) / a.torso.a, Math.sin(phi) / a.torso.b, 0).normalize();
+
+/**
+ * Posición (cm) del rótulo de cada punto de partida, en su orden: 2,8 cm fuera de la piel sobre su anillo, salvo que
+ * pise uno ya colocado (a menos de `LABEL_NEAR_CM` y casi a la misma altura): entonces sube hacia la cabeza un rótulo
+ * cada vez. La epigástrica y la subxifoidea (decisión 83) están a 3,2 cm, a la misma altura: sin esto sus nombres se
+ * tapaban.
+ */
+export function windowLabelPositions(a: AnatomyScene): THREE.Vector3[] {
+  const placed: THREE.Vector3[] = [];
+  for (const m of START_POINTS) {
+    const at = surfaceAt(a, m.phi, m.z, 1.01).add(skinNormal(a, m.phi).multiplyScalar(2.8));
+    while (placed.some((q) => Math.abs(q.z - at.z) < LABEL_STEP_CM && Math.hypot(q.x - at.x, q.y - at.y) < LABEL_NEAR_CM))
+      at.z += LABEL_STEP_CM;
+    placed.push(at);
+  }
+  return placed;
 }
 
 export function labelSprite(text: string, color: string): THREE.Sprite {

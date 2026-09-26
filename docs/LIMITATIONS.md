@@ -81,6 +81,23 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   tiene riñón y vasos; todas las costillas son derechas (`rightOnly`), así que una ventana izquierda
   no muestra sombras costales. El corte del shader (`sdRib`, `x > 15 mm`) supone que todas lo son:
   `shaderLimits.test.ts` falla si se añade una costilla izquierda sin llevar `rightOnly` al GLSL.
+- **Por encima de la cúpula todo es pulmón** (`mediastinum-is-lung`): lo que no es corazón ni vaso por encima del
+  diafragma es pulmón, y la aurícula derecha, una esfera de 30 mm de radio, no apoya en él (su polo inferior, z 65, queda
+  por encima del ápice de la cúpula, 55). Desde el abdomen el haz se refleja en ese pulmón (su espejo) antes de llegar a
+  lo que hay detrás: la aurícula no se ve desde la subxifoidea ni desde la subcostal (0 de 669 y 0 de 303 muestras en el
+  plano, a 1 mm en 61 líneas), aunque la pista y la tarjeta de la subxifoidea la prometen, y la VCI se ve hasta el borde
+  de ese espejo; al abanicar la transversa epigástrica 26° hacia la cabeza (decisión 83) la aorta, que por encima de la
+  cúpula va rodeada de pulmón, desaparece entera (0 de 103). Un paciente real muestra por ahí el corazón y el mediastino
+  posterior. Arreglarlo es apoyar el corazón en el centro tendinoso y dar al mediastino su tejido, en TS y en GLSL;
+  `startPoints.test.ts` lo vigila con un canario.
+- **La vértebra no tiene cortical** (`vertebra-no-cortex`): el cuerpo vertebral es un cilindro de 34 mm de hueso sin
+  cara (decisión 69; las costillas la tienen desde la 62). En la transversa epigástrica (decisión 83) su cara anterior
+  no da la línea curva brillante de un equipo: el cuerpo se ve como una cúpula oscura sobre la sombra, que con el arco
+  posterior es un rectángulo. La sombra sí sale de la física (116 dB en sus primeros 10 mm).
+- **La aorta no late en modo B** (`aorta-fixed-caliber`): su calibre es fijo; el pulso arterial está en su velocidad
+  (color y PW), no en su pared. En la transversa epigástrica (decisión 83) no se ve el latido de 1–4 mm que ayuda a
+  distinguirla de la VCI: se reconoce por su pared más gruesa y brillante, su sección redonda, su sitio sobre la vértebra,
+  sus ramas y el Doppler.
 - **El índice de resistencia arterial es fijo** (`fixed-arterial-resistive-index`): el pulso arterial
   es multiplicativo y el mismo en todos los casos, así que el IR renal (0,53) y el hepático (0,63) no
   cambian entre casos; además el pulso sube 130–170 ms antes de la R. Medir el IR hoy no enseñaría
@@ -182,10 +199,18 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   < 0); la pared entera (con las costillas y los cartílagos, que en realidad no ceden) se empuja como un bloque y el
   tejido de debajo absorbe el empuje en max(32 mm, 6×) con una caída [ESTIMADO]. Consecuencia: todo el campo cercano
   se acerca a la sonda (lo hondo aparece hasta 15–20 mm menos profundo que con el tronco rígido, como al apretar en
-  un examen). Sin histéresis ni viscoelasticidad (la deformación sigue a la pose en el mismo cuadro) y sin velocidad
-  del tejido por el movimiento de la sonda (el Doppler no ve el arrastre). Los gemelos de imagen de la pared, la
-  pleura y el contorno del hígado (`wallTwin`, `pleuraTwin`, `liverContour`) siguen sobre el tronco rígido con el
+  un examen), y lo que queda dentro del alcance se acorta a lo largo de la línea, también una arteria que en realidad no
+  cede: en la transversa epigástrica (decisión 83) la luz de la aorta mide 21 × 18 mm (21 de alto sin compresión) y la
+  de la VCI 20 × 13 (16). Sin histéresis ni viscoelasticidad (la deformación sigue a la pose en el mismo cuadro) y sin
+  velocidad del tejido por el movimiento de la sonda (el Doppler no ve el arrastre). Los gemelos de imagen de la pared,
+  la pleura y el contorno del hígado (`wallTwin`, `pleuraTwin`, `liverContour`) siguen sobre el tronco rígido con el
   marco de la pose sin hundir.
+- **La sonda no bascula ni se inclina más de 40°** (`probe-angle-40deg`): `clampPose` limita la basculación y la
+  inclinación a ±0,7 rad. El «conejo» subxifoideo (las tres suprahepáticas en abanico hasta la VCI), que en un paciente
+  sale con la sonda casi plana bajo el xifoides y el haz muy basculado hacia la cabeza, aquí no se forma entero:
+  abanicando la transversa epigástrica 26° hacia la cabeza (decisión 83) las suprahepáticas se acercan a la VCI cortadas
+  de través (la derecha y la media a 1 y 3 mm; la izquierda a 9 mm y con un tercio tras el pulmón), y la VSH media en eje
+  largo, con un ángulo Doppler útil, se busca desde debajo del reborde costal (la subcostal).
 - **La compresión solo mueve el tejido a lo largo de las líneas de la cara** (`probe-compression-in-plane`,
   decisión 63): es radial en el plano de la cara (el tejido no se desliza ni se cizalla de lado: el hígado, casi
   incompresible, se comprime a lo largo de la línea hasta un 20 % bajo la pared y a lo ancho se abre hasta 1,4× en

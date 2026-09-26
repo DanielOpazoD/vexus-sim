@@ -2939,6 +2939,123 @@ las respuestas en el JS del alumno, cifras medidas con otras semillas, «interva
 grado dentro de la pestaña oculta; todo corregido o declarado arriba (los nombres de los casos en el JS principal, en
 `blind-mode-screen-only`).
 
+## 83. Ventanas clásicas que faltaban: transversa epigástrica (VCI y aorta) y suprahepática subcostal
+
+**Contexto.** El dueño (médico): «ventanas predeterminadas para que se vean las estructuras clásicas», siguiendo las
+habituales y preferidas de VExUS de la revisión (`docs/anatomia/revision-normal.md`, sección 1). Las decisiones 69 (porta
+lateral) y 75 (las ventanas como tarjetas) dejaron cinco puntos de partida y la tabla de brechas (sección 10) seguía
+pidiendo dos: la transversa epigástrica (vértebra con su sombra en el centro de la base, aorta redonda ≤ 2,5 cm justo
+delante y a la derecha del centro de la pantalla, VCI oval a la izquierda con hígado delante; hacia caudal el celíaco y la
+AMS, hacia craneal las suprahepáticas en la VCI) y la suprahepática subxifoidea (subxifoidea sagital o subcostal
+oblicua: VCI, VHM y AD, o las tres suprahepáticas convergiendo; PW de la VHM a 1–2 cm de la VCI).
+**Opciones.** Para la suprahepática: (1) el «conejo» desde la punta del xifoides (transversa con el haz 26° hacia la
+cabeza): las suprahepáticas se acercan a la VCI (a 1, 3 y 9 mm) pero cortadas de través, la media solo recorre 11 mm
+del plano y no hay punto de su luz a 1–2 cm de la VCI donde poner la puerta; el abanico de las tres es casi coronal y la
+sonda no bascula más de 40° (`clampPose`). (2) La subxifoidea sagital desde el punto de la subxifoidea de la VCI: su plano
+corta el tronco común y la izquierda, no la media, y otro punto de partida a menos de 20 mm del suyo haría ambigua la
+ventana actual (decisión 75) y taparía los anillos del 3D. (3) La elegida: la variante sagital (la VCI con la VHM) desde
+debajo del reborde costal, con la VSH media en eje largo. Para la transversa: a la altura del celíaco (z −30) el celíaco
+queda en el plano de partida y la lista lo pide hacia caudal; a z −40…−50 delante de la VCI están la porta y el colédoco
+en lugar del hígado (47 % de hígado a z −40 frente a 87 %). Para el carril: dos columnas de tarjetas (93 px por línea:
+recortaban nombres y subtítulos) o solo el nombre en pantallas bajas (quitaba lo que muestra cada ventana, el sentido de
+la 75) frente a compactar las tarjetas (la elegida).
+**Decisión.** Dos puntos de partida nuevos en `src/app/startPoints.ts`, en el carril tras la ventana de su territorio. Las
+poses salen de búsquedas en CPU sobre la escena TS (la misma anatomía que dibuja la GPU) con el marco efectivo de la sonda
+hundida y el tejido material (`probeContact` + `uncompress`, como la aplicación): un barrido de la transversa en la línea
+media de z +10 a −80 y rejillas de ~40 000 poses (φ, z, giro, basculación e inclinación) para la suprahepática, con la
+anatomía de la lista como condición y el ángulo de la VSH media a 1–2 cm de la VCI como objetivo, en espiración y en el
+máximo descenso del diafragma de la respiración tranquila.
+
+- **«Epigástrico»** (`epigastric`, anillo coral): línea media 2 cm bajo la punta del xifoides (φ π/2, z −20), transversa
+  con el marcador a la derecha del paciente (giro −90°: su derecha a la izquierda de la pantalla) y el haz perpendicular.
+- **«Subcostal · VSH»** (`subcostal`, anillo lima): 1,7 cm a la derecha de la línea media y 5,5 cm bajo el xifoides (φ
+  1,68, z −55), bajo el reborde costal; marcador craneal girado 23° hacia la izquierda del paciente (0,4 rad), basculado
+  14° y abanicado 23° hacia la derecha: el haz va 21° hacia la cabeza y 13° hacia la derecha. El margen es estrecho:
+  moverla 1 cm, o girarla o abanicarla 5°, pierde la VSH media en eje largo.
+
+Cada una lleva su línea en la tarjeta (`startPointCards.ts`). La ventana actual pide además el giro: el de la sonda a
+menos de 45° del de la ventana por el arco corto (`CURRENT_WINDOW_YAW`, `yawDelta`); girada 180° no es la ventana (el
+marcador al otro lado da la imagen en espejo y, con basculación o inclinación, otro plano: la subcostal girada corta la
+aorta, la AMS y la vena renal izquierda). Sin el giro, una sonda sagital entre la subxifoidea y la epigástrica, a 15 y 17
+mm, se marcaba «Epigástrico». La animación de la tarjeta (`probeAnimation.ts`) gira por el arco corto y termina en la pose
+exacta cuando también la basculación, la inclinación y la separación han llegado: antes miraba solo φ, z y el giro, y
+volver a pulsar la tarjeta tras abanicar (lo que pide la pista de la epigástrica) dejaba la inclinación en 0,42. La
+entrada de teclado de la sonda (`probeInput.ts`) solo cuenta como mantenidas las teclas que la mueven: Intro sobre una
+tarjeta, mantenida unos cuadros, llamaba a `setPose` sin mover nada y ese gesto «manual» cancelaba el deslizamiento que
+la tarjeta acababa de pedir, así que con el teclado las tarjetas no llevaban a ninguna parte. Tarjetas de 40 px (dos
+líneas de 16 px, relleno 3 px) y de 32 px en pantallas bajas (15 px, sin relleno), con 1 px entre ellas; el contorno del
+foco, que cae en ese píxel, se pinta por encima de la tarjeta siguiente; en la tarjeta actual la línea lleva el color
+del texto: el gris sobre el tinte de la ventana quedaba en 4,48:1 con la lima y en 4,497 con el verde de la subxifoidea
+(`styles.css`). En el 3D, `windowLabelPositions` (`navigator3d/labels.ts`) sube hacia la cabeza el rótulo que pisaría
+uno ya colocado: el de la epigástrica, a 3,2 cm de la subxifoidea y a su altura, queda 1,8 cm por encima de su anillo.
+La estructura honda de la línea central que usa la prueba de la compresión pasa a una tabla por ventana
+(`CENTRAL_LANDMARK`, exhaustiva: una ventana nueva declara la suya).
+**Consecuencias.** Lo que se ve se cuenta sin lo que queda tras el gas o el hueso de su línea (espejo o sombra).
+Transversa epigástrica (adulto sano, 61 líneas a 1 mm): acoplamiento 1,00 con 18,6 mm de hundimiento; la vértebra
+centrada (x 0,0 mm) con la cara a 118 mm y 116 dB de sombra en sus primeros 10 mm; la aorta a 17 mm a la derecha del
+centro, 21 × 18 mm y a 2 mm de la vértebra; la VCI a 22 mm a la izquierda, 20 × 13 mm, con 87 % de hígado en los 15 mm de
+delante (el caudado y la lámina del ligamento venoso); las dos enteras a la vista; el cartílago del reborde costal
+derecho en la esquina del campo cercano, sin hueso. La compresión de la sonda (63) acorta en profundidad también la aorta
+(21 de alto sin ella; `probe-compression-kinematic`) y la VCI (16): su forma oval se mide frente a la aorta (1,51 frente
+a 1,18 de ancho/alto). Deslizando hacia los pies: la esplénica desde 4 mm; el celíaco a 10 mm (z −30), con su luz a 1 mm
+de la aórtica y 8,3 mm por delante de su techo; la AMS a 24 mm (z −44), pegada a la aorta, y 1 cm más abajo separada 6 mm
+y con el centro 8,7 mm por delante; la vena renal izquierda entre ambas desde 40 mm. Abanicando 26° hacia la cabeza la
+derecha y la media quedan a 1 y 3 mm de la VCI y la izquierda a 9, con un tercio tras el pulmón (sin abanicar, a 63 y
+27 mm; la izquierda fuera); la aorta, que por encima de la cúpula va rodeada de pulmón, desaparece entera (0 de 103
+muestras). Subcostal: acoplamiento 0,89 con 24 mm de hundimiento; la VSH media, entera a la vista, desemboca en el plano (a
+1 mm del tronco común y de la VCI) y lo recorre 53 mm, bajando de derecha a izquierda de la pantalla hacia la desembocadura
+(centroides a −29 y −62 mm); la derecha desemboca a su lado en un tramo corto (37 muestras); de la VCI se ven 94 de 215
+muestras y de la AD ninguna. A 1–2 cm de la VCI la VSH media queda a 40° del haz en espiración y a 47° en la inspiración
+tranquila, con peso de ventana 0,048 y 0,036 (la atenuación de 10 cm a 2,5 MHz; una sombra lo bajaría de 10⁻³), y la
+puerta del operador (`bestGateOnVessel`) a 42° y 50°, a 27 y 56 mm de la VCI. Por encima de la cúpula todo es pulmón y la
+AD no apoya en el diafragma (`mediastinum-is-lung`): no se ve desde la subcostal (0 de 303 muestras en el plano) ni desde
+la subxifoidea de la VCI (0 de 669), cuya tarjeta y pista la prometen desde antes; esta decisión no toca las cinco
+ventanas que ya había. Con GPU (M4) las dos imágenes muestran lo que promete la lista: la VCI oval junto a la aorta
+redonda sobre la vértebra y la sombra, el celíaco y después la AMS con la vena renal izquierda en la pinza; la VSH media
+que baja al tronco común y a la VCI, con la vesícula y el riñón en el lado caudal y el espejo del pulmón en el craneal.
+Carril, con GPU: a 1600 × 1000 el bloque de las ventanas ocupa 335 px (267 con cinco), el lienzo del 3D 306 (346) y el
+corte 190 (218); a 1280 × 800, 271 (229), 232 (257) y 144 (161); ningún texto recortado y ninguno bajo 12 px. Las
+ventanas más próximas siguen a 24 mm (flanco e intercostal); las nuevas quedan a 32 y 38 mm de la subxifoidea y a 39 mm
+entre sí. La equivalencia TS ↔ GLSL de la e2e barre siete ventanas por caso; la epigástrica tiene 25 celdas interiores de
+sangre en el sano (66 y 55 en los congestivos) y su comprobación de dientes pide más de 15. El banco de fidelidad
+conserva sus cuatro vistas (como con la porta, 69). Con el retroperitoneo (decisión 81) las pruebas de las ventanas dan
+las mismas cifras: la grasa retroperitoneal rodea la aorta y la VCI conserva el hígado delante. Limitaciones nuevas: el mediastino de pulmón (`mediastinum-is-lung`), la vértebra
+sin cortical (`vertebra-no-cortex`: su cara anterior no brilla y el cuerpo se ve como una cúpula oscura sobre la sombra,
+pendiente desde la 69), la aorta que no late en modo B (`aorta-fixed-caliber`) y la sonda que no pasa de 40°
+(`probe-angle-40deg`, el «conejo» incompleto). Pendiente: apoyar el corazón en el centro tendinoso y dar al mediastino su
+tejido (la tarjeta y la pista de la subxifoidea prometen la AD), la cortical vertebral y los rótulos «Porta · lateral» y
+«Renal», que se pisan en la vista del 3D (desde la 69, a 1,9 cm de altura entre sí).
+**Verificación.** `startPoints.test.ts`, sobre lo visible: la epigástrica con la vértebra centrada (±5 mm), > 20 mm por
+detrás de la aorta y de la VCI y con la cara a 10–14 cm, su sombra (> 60 dB), la aorta a la derecha del centro (5–35 mm),
+apoyada (< 5 mm) y redonda (≤ 25 mm, ancho/alto < 1,3), la VCI a la izquierda y más aplanada que la aorta (+0,15), las
+dos enteras a la vista, con hígado delante (> 70 %), sin hueso; hacia los pies el celíaco antes que la AMS, las dos
+saliendo de la aorta (< 3 mm, por delante de su techo) y la AMS separada 1 cm más abajo; hacia la cabeza dos
+suprahepáticas a < 5 mm de la VCI y las tres a < 12 (a > 20 sin abanicar). La subcostal con la VCI y el tronco común a la
+vista, la VSH media en el plano > 45 mm hasta ellos y la derecha desembocando, sin hueso, y la desembocadura a la izquierda
+de la VSH media (con el marcador al revés todo lo demás se cumple igual); la VSH media a 1–2 cm de la VCI y la puerta del
+operador a ≤ 60° y con ventana (≥ 0,02) en espiración y respirando. Un canario de `mediastinum-is-lung`: la AD que cortan
+la subxifoidea y la subcostal y la aorta de la epigástrica abanicada, cortadas y ocultas. `startPointCards.test.ts` (cada
+ventana es la actual en su pose; entre la subxifoidea y la epigástrica decide el giro; a 45°, girada 180° o con un giro
+NaN no hay ventana), `probeAnimation.test.ts` (de cada ventana a cada ventana termina en la pose exacta; deshace el
+abanico; de +172° a −90° gira 98°; un gesto la cancela), `compression.test.ts` (tabla exhaustiva), `styles.test.ts`
+(tarjetas de 40 y 32 px; la lista de las siete ≤ 290 y ≤ 230 px; texto ≥ 12 px; ≥ 4,5:1 en la tarjeta actual con el color
+de cada ventana; el foco por encima), `navigator3d.test.ts` (la regla de los rótulos en la escena, no en pantalla, y solo
+sube el de la epigástrica), la e2e de equivalencia con siete ventanas y una e2e nueva: Intro mantenida sobre la tarjeta
+«Epigástrico» mientras el reloj de la simulación avanza medio segundo lleva la sonda desde la pose por defecto hasta
+φ 90°, z −2 cm y la deja resaltada. Mutaciones que las pruebas matan: la entrada de teclado de antes (en la e2e la sonda
+se queda en φ 166°, z 0,8 cm), el marcador a la izquierda (la aorta a −17 mm y el abanico, hacia los pies), la
+epigástrica a z −40 (47 % de hígado y el celíaco por encima), 2 cm a la derecha (la vértebra a 6,3 mm), la subcostal
+girada 5° (la VSH media a 7,7 mm de la VCI, sin puerta), sin abanicar (sin VSH media) o con el marcador al revés (la
+desembocadura a +62 mm), la animación de antes (3 de sus 4 pruebas: el abanico se queda y el giro da la vuelta larga) y
+la tarjeta actual sin su regla de color (4,497:1). Dos revisiones adversariales de contexto limpio. La primera halló la AD que se prometía y no se ve, la
+ventana actual sin giro, la animación que no deshacía el abanico, el contraste, una prueba de rótulos que no podía fallar
+(ahora dice lo que comprueba: la regla en la escena, no la pantalla), textos que exageraban y la VCI «oval» solo por la
+compresión. La segunda, que la ventana actual aceptaba la sonda girada 180°, que el teclado no llevaba a ninguna ventana,
+que las pruebas de la subcostal no veían el marcador al revés, la aorta perdida al abanicar sin declarar, el foco tapado y
+textos que ya no casaban. Todo corregido arriba, salvo la AD que prometen la tarjeta y la pista de la subxifoidea, que es
+de antes y queda declarada. Capturas con GPU (M4) a 1600 × 1000 y 1280 × 800 antes y después, y de las dos ventanas, de
+los cortes hacia los pies y del abanico hacia la cabeza.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

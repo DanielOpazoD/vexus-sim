@@ -19,6 +19,10 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   umbilical y lámina del ligamento venoso; sin caudado propio ni grasa hiliar (la hepática y el colédoco del hilio van
   por el parénquima); los segmentos de Couinaud son una partición por planos de los vasos (metadatos
   del 3D, no una malla segmentada); los ángulos de las venas y conductos son plausibles, no medidos.
+- **Lámina en el borde de la impresión renal** (`morison-rim-sliver`): el redondeo del borde de la impresión renal (8 mm)
+  con la cara visceral en cuña (decisión 72) deja en algún punto, detrás del polo superior y junto a la pared posterior,
+  una lámina de «intestino» o de hígado de ~1 mm contra la grasa perirrenal gruesa, con dos líneas paralelas (2 de ~150
+  pasos en los rayos desde el riñón; ninguno en las vistas renal y del flanco).
 - **Sin cascada torácica de la VCI** (`no-thoracic-waterfall`): la unión cavoauricular transmite
   cualquier caída de la PAD; no existe la meseta de Guyton por colapso de la VCI en la entrada
   torácica. Hallado por fast-check: con hipovolemia (volumen 0,6) y PAD media ≈ 0 la VCI se vacía

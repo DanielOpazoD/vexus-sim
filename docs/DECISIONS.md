@@ -2226,6 +2226,10 @@ exacta y no la del plano dominante.
   suprahepáticas y las ramas izquierdas de la porta quedan dentro (≥ 95 %).
 - La cápsula subxifoidea ya no cambia de dueño bajo la pared: el mayor salto de incidencia entre líneas vecinas pasa de
   29,8° a 0,36°, así que una de las pruebas de la decisión 60 pasa en esa vista.
+- Morison (decisión 68): el redondeo del borde de la impresión renal con la cara nueva deja láminas de «intestino» de
+  hasta ~0,6 mm contra la grasa gruesa; `MORISON_CONTACT_MM` pasa de 0,2 a 0,8 mm (una sola línea también ahí). Quedan
+  dos pasos con doble línea en los rayos desde el riñón, detrás del polo superior (`morison-rim-sliver`), ninguno en
+  las vistas.
 - El 3D del navegador, que usa una malla del mismo SDF, muestra la forma: la cara diafragmática contra la pared, el borde
   inferior oblicuo del flanco derecho al lóbulo izquierdo y el segmento lateral que se afila.
 - Pendiente:

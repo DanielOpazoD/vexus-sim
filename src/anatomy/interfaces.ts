@@ -88,9 +88,11 @@ export function hasCurvatureCoherence(i: Interface): boolean {
 }
 /**
  * Cápsula hepática y grasa perirrenal a ≤ esto (mm) son la misma cara (Morison): la dibuja la grasa,
- * que es su única dueña. La cápsula toca la grasa en la impresión renal (distancia mediana 0,003 mm).
+ * que es su única dueña. La cápsula toca la grasa en la impresión renal (distancia mediana 0,003 mm); en el redondeo
+ * de la impresión con la cara visceral en cuña (decisión 72) quedan láminas de «intestino» de hasta ~0,6 mm contra
+ * grasa gruesa, que con 0,2 mm daban dos líneas paralelas.
  */
-export const MORISON_CONTACT_MM = 0.2;
+export const MORISON_CONTACT_MM = 0.8;
 /**
  * La cápsula hepática a ≤ esto (mm) de una grasa perirrenal fina (≤ `PERIRENAL.faceMaxMm`, que siempre dibuja su cara
  * externa) tampoco dibuja la suya (revisión de la decisión 68): entre ambas solo queda una lámina de «intestino» (el

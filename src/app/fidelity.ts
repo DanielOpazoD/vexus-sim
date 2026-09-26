@@ -2004,6 +2004,13 @@ export function fidelityStats(
     }
     return hit;
   };
+  /** Grosor (mm, hasta `coarseStep`) del pulmón que empieza en la profundidad r de la línea u. */
+  const lungRunMm = (u: number, r: number): number => {
+    const isLung = (q: number) => sim.anatomy.classifyWorld(pointOnLine(sim.frame, tr, thetaOf(u), q), sim.sample).tissue === Tissue.Lung;
+    let d = 0.05;
+    while (d < coarseStep && isLung(r + d)) d += 0.05;
+    return d;
+  };
   /** Cruce exacto con el pulmón entre dos profundidades de la línea recta (bisección). */
   const pleuraCrossing = (u: number, rOut: number, rIn: number): number => {
     let lo = rOut;
@@ -2122,6 +2129,9 @@ export function fidelityStats(
         const wall = link ? link.wall : nextWall++;
         curLine.set(spec.kind, [...(curLine.get(spec.kind) ?? []), { rb, wall, used: false }]);
         const rTarget = pleura ? pleuraCrossing(u, rCell - GRID_STEP_MM, rCell) : (k + hit) * GRID_STEP_MM;
+        // una lámina de pulmón más fina que el paso de la marcha de A0 (la que queda entre el diafragma y la VCI
+        // supradiafragmática, `lung-sliver-caval-hiatus`) no la ve la GPU: su espejo está en otro sitio
+        if (pleura && lungRunMm(u, rTarget) < coarseStep) continue;
         const cos = faceCosine(u, pleura ? rTarget : rCell, spec.face);
         if (cos === null) continue;
         // la cápsula con el peritoneo en su ventana es la línea de los dos (decisión 62): ventana desde el

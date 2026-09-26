@@ -11,7 +11,7 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   la pelvis son procedurales (decisiones 37, 43 y 68), sin cálices diferenciados.
 - **La presión de aurícula derecha es un contorno prescrito** (`prescribed-ra-contour`): media del
   caso + ondas a/c/x/v/y + onda sistólica por insuficiencia tricuspídea. No hay lazo cerrado; las
-  amplitudes (3,4 / 5,2·VD / 1,8 / 2,4 / 9·IT² mmHg) son de calibración, no medidas. Hallado por fast-check: con la aurícula muy rígida (compliancia 0,3) y PAD media ≈ 0 el contorno oscila hasta −11 mmHg y la VCI suprahepática supera 2 m/s (`properties.test.ts`, `it.fails`).
+  amplitudes (3,4 / 5,2·VD / 1,8 / 2,4 / 9·IT² mmHg) son de calibración, no medidas. Hallado por fast-check: con la aurícula muy rígida (compliancia 0,3) y PAD media ≈ 0 el contorno oscila hasta −11 mmHg y la VCI suprahepática supera 2 m/s (`properties.test.ts`, `it.fails`; el primer contraejemplo, de hipovolemia, ya no la supera con la pared viscoelástica de la decisión 73).
 - **Velocidad uniforme a lo largo de cada tubo** (`uniform-vessel-velocity`): el caudal local escala
   con el área; no hay conservación explícita en bifurcaciones.
 - **El hígado es una forma procedural** (`procedural-liver-shape`): elipsoides recortados por pared,
@@ -23,6 +23,14 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   con la cara visceral en cuña (decisión 72) deja en algún punto, detrás del polo superior y junto a la pared posterior,
   una lámina de «intestino» o de hígado de ~1 mm contra la grasa perirrenal gruesa, con dos líneas paralelas (2 de ~150
   pasos en los rayos desde el riñón; ninguno en las vistas renal y del flanco).
+- **La viscosidad de la pared de la VCI no está en la red** (`ivc-wall-lag-not-in-network`): la luz que se ve y se
+  mide sigue al volumen de la red con τ = 0,2 s (decisión 73), pero la red calcula presiones y caudales con su volumen
+  elástico; los dos diámetros se separan hasta un 14 % en los colapsos rápidos del sano (5 % en la congestión grave),
+  con la misma media.
+- **Lámina de pulmón en el hiato de la cava** (`lung-sliver-caval-hiatus`): por encima del diafragma el pulmón llena
+  todo lo que no es corazón ni vaso, así que entre el diafragma y la VCI supradiafragmática (que en realidad está en el
+  pericardio) queda a veces una lámina de décimas de milímetro; la marcha de la pasada A no la ve y en esa línea pone el
+  espejo del diafragma detrás de la VCI (una costura aislada). El banco de fidelidad excluye esas líneas.
 - **Sin cascada torácica de la VCI** (`no-thoracic-waterfall`): la unión cavoauricular transmite
   cualquier caída de la PAD; no existe la meseta de Guyton por colapso de la VCI en la entrada
   torácica. Hallado por fast-check: con hipovolemia (volumen 0,6) y PAD media ≈ 0 la VCI se vacía

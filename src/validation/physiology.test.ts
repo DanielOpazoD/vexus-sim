@@ -194,3 +194,52 @@ describe('Fisiología: el VExUS emerge de la señal, no se asigna (guía §5, §
     expect(a.sample.lastR).not.toBe(b.sample.lastR);
   });
 });
+
+describe('Pared viscoelástica de la VCI (decisión 73)', () => {
+  /** Componentes del diámetro AP en respiración tranquila: respiratoria (media de un latido) y cardíaca (residuo). */
+  const components = (patient: PatientState): { resp: number; card: number; max: number; meanWall: number; meanVol: number } => {
+    const scene = new AnatomyScene(patient);
+    const e = new PhysiologyEngine(patient, scene.vesselAreas(), { historySeconds: 20 });
+    const d: number[] = [];
+    let meanWall = 0;
+    let meanVol = 0;
+    for (let t = 0; t < 18; t += e.clock.dt) {
+      const s = e.step();
+      if (t < 6) continue;
+      d.push(s.ivc.dApMm);
+      meanWall += s.ivc.dEqMm;
+      meanVol += e.network.last.ivcDiameterEqMm;
+    }
+    const w = Math.max(1, Math.round(e.sample.rr / e.clock.dt));
+    const smooth = d.map((_, i) => {
+      let a = 0;
+      let n = 0;
+      for (let j = Math.max(0, i - (w >> 1)); j < Math.min(d.length, i + (w >> 1)); j++) {
+        a += d[j];
+        n++;
+      }
+      return a / n;
+    });
+    const inner = smooth.slice(w, smooth.length - w);
+    const resid = d.map((x, i) => x - smooth[i]).slice(w, d.length - w);
+    return {
+      resp: Math.max(...inner) - Math.min(...inner),
+      card: Math.max(...resid) - Math.min(...resid),
+      max: Math.max(...d),
+      meanWall: meanWall / d.length,
+      meanVol: meanVol / d.length,
+    };
+  };
+
+  it('el latido mueve la pared ≤ 1,5 mm (antes 2,9 en el sano y 3,5 en la congestión grave) y la respiración no cambia', () => {
+    const n = components(NORMAL_ADULT);
+    const g = components(SEVERE_CONGESTION);
+    expect(n.card).toBeLessThanOrEqual(1.5);
+    expect(g.card).toBeLessThanOrEqual(1.5);
+    // la colapsabilidad respiratoria del sano sigue en ≈ 24 % y la plétora casi fija (≈ 3 %)
+    expect(n.resp / n.max).toBeGreaterThan(0.2);
+    expect(g.resp / g.max).toBeLessThan(0.06);
+    // la pared sigue al volumen: misma media
+    for (const c of [n, g]) expect(Math.abs(c.meanWall - c.meanVol)).toBeLessThan(0.2);
+  });
+});

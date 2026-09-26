@@ -45,6 +45,9 @@ describe('Módulos de órgano', () => {
     expect(lungCurtainDistance([-100, 0, 10], 1, 0)).toBeNull();
     expect(lungCurtainDistance([-100, 0, 10], 1, 30)).toBeCloseTo(1, 9);
     expect(lungCurtainDistance([-100, 0, 10], LUNG_CURTAIN.thicknessMm + 1, 30)).toBeNull();
-    expect(lungCurtainDistance([0, 0, 10], 1, 30)).toBeNull();
+    // fuera del hemitórax derecho (decisión 71: la huella llega a la línea media, delante y detrás)
+    expect(lungCurtainDistance([20, 0, 10], 1, 30)).toBeNull();
+    // la lámina que baja sobre el hígado sigue solo en el receso lateral y posterior (la pleura anterior no la necesita)
+    expect(lungCurtainDistance([-60, 90, 10], 1, 30)).toBeNull();
   });
 });

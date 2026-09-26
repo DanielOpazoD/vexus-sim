@@ -58,6 +58,7 @@ import {
   FRAG_SCANCONVERT,
   FRAG_TISSUEMAP,
   FRAG_QUERY,
+  FRAG_TRIAD_QUERY,
   FRAG_TRANS_HITS,
   FRAG_TRANS_PREFIX,
   FRAG_TRANS_PREFIX_STEERED,
@@ -306,6 +307,7 @@ export class UltrasoundRenderer {
   private pBlit: GLProgram;
   private pMap: GLProgram;
   private pQuery: GLProgram | null = null;
+  private pTriadQuery: GLProgram | null = null;
   /** Tiempo de GPU por pasada (asíncrono; null sin la extensión). */
   private readonly timer: GpuPassTimer<PassId>;
   private sceneValues: SceneUniformValues = [];
@@ -514,6 +516,7 @@ export class UltrasoundRenderer {
     ])
       p.dispose();
     this.pQuery?.dispose();
+    this.pTriadQuery?.dispose();
     this.timer.dispose();
     for (const t of [
       this.tHits,
@@ -1306,6 +1309,36 @@ export class UltrasoundRenderer {
       }
     }
     return normal ? { tissue, vessel, velocity, iface, ifd, normal, gradNorm } : { tissue, vessel, velocity, iface, ifd };
+  }
+
+  /**
+   * Factor de las tríadas portales (`portalTriad`, decisión 78) en puntos MATERIALES (x, y, z por punto), con el GLSL
+   * de la pasada B. Solo pruebas: programa propio y lectura bloqueante.
+   */
+  queryTriads(points: Float32Array): Float32Array {
+    const gl = this.gl;
+    const n = Math.floor(points.length / 3);
+    const W = 256;
+    const H = Math.max(1, Math.ceil(n / W));
+    const data = new Float32Array(W * H * 4);
+    for (let i = 0; i < n; i++) data.set([points[i * 3], points[i * 3 + 1], points[i * 3 + 2], 1], i * 4);
+    const pts = createTexture(gl, W, H, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, W, H, gl.RGBA, gl.FLOAT, data);
+    const target = createTarget(gl, W, H, [{ internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.NEAREST }]);
+    this.pTriadQuery ??= GLProgram.link(gl, VERT, FRAG_TRIAD_QUERY, 'triadQuery');
+    bindTarget(gl, target);
+    this.pTriadQuery.use();
+    this.pTriadQuery.tex('uPoints', 0, pts);
+    drawFullscreen(gl);
+    const out = new Float32Array(W * H * 4);
+    gl.readBuffer(gl.COLOR_ATTACHMENT0);
+    gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, out);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    deleteTarget(gl, target);
+    gl.deleteTexture(pts);
+    const g = new Float32Array(n);
+    for (let i = 0; i < n; i++) g[i] = out[i * 4];
+    return g;
   }
 
   /**

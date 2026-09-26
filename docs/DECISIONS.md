@@ -2488,6 +2488,75 @@ profundo. Coste: nulo, solo uniforms (B gana 4 ranuras; K, 2). `no-harmonics` pa
   adversarial de contexto limpio halló la acumulación que apagaba la pared, el juez que no capturaba en armónica, el
   anillo sin reiniciar y el `pow` de base negativa; están corregidos.
 
+## 78. Tríadas portales finas: el hígado deja de ser un moteado uniforme
+
+**Contexto.** El juez ciego (ronda 2) distinguía el hígado simulado por su textura: un moteado de Rayleigh de un solo
+grano, con una heterogeneidad lenta de 1,15 dB, frente al de las referencias reales. En estas se ven puntos y trazos
+ecogénicos de 1–5 mm, a veces con una luz diminuta: las tríadas portales finas, con la vaina fibrosa de Glisson. Salen
+unas 0,2–0,3 por cm² en las capturas de la revisión: el Toshiba Aplio con el hígado y el riñón, y el de Morison. El
+árbol de tubos llega hasta las ramas de 4.º orden (~1 mm de radio), con el tope de `MAX_TUBES`; por debajo no había
+nada.
+**Opciones.**
+
+- (1) Más tubos: el tope de 128 tubos y el coste de la clasificación por tubo lo impiden.
+- (2) Grumos en el hígado, el mecanismo de la grasa (decisión 56): da estadística K isótropa, sin la forma alargada ni la
+  luz.
+- (3) Subir la heterogeneidad: moteado a escala de centímetros, no focos.
+- (4) La elegida: segmentos procedurales anclados, con vaina y luz, orientados como el árbol.
+
+**Decisión.** Módulo `ultrasound/portalTriads.ts`.
+
+- **Geometría:** una tríada como mucho por célula de 12 mm (probabilidad 0,7), con el centro en cualquier punto de la
+  célula.
+  - Un segmento de semilongitud 1,5–4,5 mm, orientado del hilio hacia fuera (la bifurcación portal de
+    `vesselTree.ts`) con un giro aleatorio de peso 0,7.
+  - Una vaina de radio 0,5–1,2 mm que multiplica la amplitud de retrodispersión del hígado por 4–9, distinta en cada
+    tríada.
+  - Una luz del 0–60 % del radio con la sangre (0,05), y bordes suaves de 0,12 mm.
+  - Un hash ENTERO de los índices de la célula (PCG3D, Jarzynski y Olano 2020), con un número por parámetro y sales
+    fijas: es anatomía del paciente, no depende de la semilla del moteado, no hierve y persiste al mover la sonda, y
+    da las mismas tríadas bit a bit en TS y en cualquier GPU. La primera versión usaba el hash de coma flotante del
+    moteado, amplificado por `fract(k·h)`: el gemelo y la GPU daban otras tríadas en el 67 % de los puntos junto a
+    una, dos GPU conformes (con y sin FMA) discrepaban en el 11 % y las células espejo compartían números
+    (revisión adversarial).
+- **Búsqueda:** cada tríada cabe en media célula alrededor de su centro, así que en cada punto bastan las 8 células más
+  cercanas. Si dos se tocan, gana la vaina más brillante y la luz se impone a cualquier vaina, sin depender del orden.
+- **Pasada B:** el factor multiplica la retrodispersión de `T_LIVER` en `fieldFor` y en `fieldForPh`, en cada plano de
+  elevación, así que el grosor de corte las funde como a los vasos. Gemelo TS en `wallTwin`.
+
+La densidad y el brillo se ajustaron con capturas de GPU frente a las referencias. Con células de 8 mm y ganancia 3
+salía un «cielo estrellado» (un patrón de hepatitis aguda). Con tríadas finas de 0,35–0,8 mm el volumen parcial las
+borraba.
+**Consecuencias.**
+
+- **Imagen:** el hígado muestra focos brillantes y trazos dispersos (segmentos de 3–9 mm; en un corte de 3 mm se ven
+  de ~5 mm de mediana), unas tres de cada cuatro con el centro oscuro: 0,25–0,35 por cm² en un corte de 3 mm, y un
+  ~0,8 % del volumen del hígado es vaina.
+- **Estadística:** la SNR del moteado del hígado baja ~0,05 (GPU, M4, mirada 0: subxifoidea 2,06 → 2,00, intercostal
+  1,87 → 1,82, flanco 1,88 → 1,84), hacia la estadística algo pre-Rayleigh del hígado real, y sigue dentro de la guarda
+  (1,6–2,25).
+- **Coste:** 8 hashes por muestra de hígado y plano, más 3 por célula con tríada; sin uniforms nuevos.
+- **Limitación `portal-triads-diffuse`:** son dispersores difusos brillantes, sin eco especular, sin Doppler y sin unirse
+  al árbol; la misma densidad en todo el hígado.
+
+**Verificación.**
+
+`portalTriads.test.ts`:
+
+- las 8 células vecinas dan lo mismo que las 64, en puntos al azar y pegados a tríadas;
+- el hash: enteros de 32 bits, números de 24 bits exactos en float32, sin simetría entre células espejo y sin
+  correlación entre parámetros;
+- la vaina, la luz y un perfil radial sin saltos;
+- en la anatomía real: 0,4–1,2 % del volumen, 0,2–0,5 por cm² en un corte de 3 mm y orientadas hacia el hilio
+  (|cos| medio > 0,6);
+- la misma fórmula y las constantes de TS en los dos programas de la pasada B, aplicada solo al hígado.
+
+La e2e `triadParity` (equivalencia) evalúa el GLSL de la pasada B en la GPU (`queryTriads`, un programa de consulta) en
+25 584 puntos materiales pegados a las tríadas de medio hígado y al azar, y lo compara con el gemelo: diferencia máxima
+3,4·10⁻⁴ con Metal (M4), por debajo de 0,005 con SwiftShader.
+
+Capturas con GPU de la intercostal, la subxifoidea y la renal, con y sin tríadas.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

@@ -80,3 +80,16 @@ test('la anatomía GLSL coincide con la TypeScript en tejido, vaso y velocidad',
     expect(shell.distanceMaxErr, stag).toBeLessThan(0.02); // SwiftShader: 0,0033 mm; GPU real (M4): 2e-5
   }
 });
+
+test('las tríadas portales de la GPU son las del gemelo TS, punto a punto (decisión 78)', async ({ page }) => {
+  await page.goto('/?e2e=1');
+  await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: 60_000 });
+  await expect.poll(() => page.evaluate(() => typeof window.__vexusTest?.triadParity), { timeout: 30_000 }).toBe('function');
+  const r = await page.evaluate(() => window.__vexusTest!.triadParity());
+  const tag = JSON.stringify(r);
+  // el hash entero da las mismas tríadas; solo difiere la geometría en float32 (bordes suaves de 0,12 mm)
+  expect(r.points, tag).toBeGreaterThan(10_000);
+  expect(r.inSheath, tag).toBeGreaterThan(2_000);
+  expect(r.inLumen, tag).toBeGreaterThan(200);
+  expect(r.maxAbs, tag).toBeLessThan(0.005);
+});

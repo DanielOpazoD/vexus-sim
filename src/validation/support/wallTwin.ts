@@ -23,6 +23,7 @@ import { TISSUES, Tissue, attenuationDbPerCm } from '../../anatomy/tissues';
 import { cross, dot, normalize, type Vec3 } from '../../core/vec3';
 import { lateralSigmaMm } from '../../ultrasound/beamModel';
 import { restTexture } from '../../ultrasound/restTexture';
+import { portalTriadGain } from '../../ultrasound/portalTriads';
 import { CLUTTER, applyComplexKernel, clutterParams, lateralKernel, reverbGains, reverbGateWeight } from '../../ultrasound/clutter';
 import {
   IFACE_MIN_COS,
@@ -240,6 +241,7 @@ export function wallTwin(
         if (o.model === 'wall' && !o.noTexture && (tissue === Tissue.Fat || tissue === Tissue.Muscle))
           gain *= wallTexture(m, tissue, normalize(m.map((x, k) => x - frame.center[k]) as Vec3), scene.torso);
         if (tissue === Tissue.Bowel) gain *= restTexture(m, seedF);
+        if (tissue === Tissue.Liver) gain *= portalTriadGain(m);
         return [f[0] * gain, f[1] * gain];
       };
       const side = (sgn: number): [number, number] => {

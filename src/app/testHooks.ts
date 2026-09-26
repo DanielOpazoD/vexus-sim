@@ -41,6 +41,7 @@ import {
 } from './fidelity';
 import type { RespiratoryPattern } from '../physiology/patientState';
 import { speckleStats, type EnvelopeFrame, type SpeckleOptions, type SpeckleStats } from './speckle';
+import { portalTriadGain, triadOfCell } from '../ultrasound/portalTriads';
 import type { RenderMeasureOptions, Simulator } from './simulator';
 import { START_POINTS, type StartPoint } from './startPoints';
 
@@ -226,6 +227,12 @@ export interface TestHooks {
   setCompound: (on: boolean) => void;
   /** Enciende o apaga la armónica tisular con el comando del equipo (decisión 77). */
   setHarmonic: (on: boolean) => void;
+  /**
+   * Tríadas portales (decisión 78): el factor de la GPU (`queryTriads`, el GLSL de la pasada B) frente al gemelo TS en
+   * puntos materiales pegados a las tríadas de medio hígado (su centro, dentro de la luz y de la vaina, en el borde,
+   * junto a sus extremos y fuera) y al azar. Cuántos puntos caen en una vaina o en una luz y la mayor diferencia.
+   */
+  triadParity: () => { points: number; inSheath: number; inLumen: number; maxAbs: number };
   /**
    * Armónica tisular frente a fundamental (decisión 77) en la mirada 0 y la misma pose: media de la envolvente
    * en el campo cercano (0,5–4 mm: piel, grasa y transitorio), en el tejido (40–100 mm) y, con la sonda
@@ -676,6 +683,38 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
     },
     setCompound: (on) => dispatch({ type: 'compound', enabled: on }),
     setHarmonic: (on) => dispatch({ type: 'harmonic', enabled: on }),
+    triadParity: () => {
+      const pts: number[] = [];
+      for (let cx = -14; cx <= 4; cx++)
+        for (let cy = -8; cy <= 8; cy++)
+          for (let cz = -9; cz <= 2; cz++) {
+            const t = triadOfCell([cx, cy, cz]);
+            if (!t) continue;
+            // una perpendicular al eje de la tríada
+            const a: Vec3 = Math.abs(t.dir[0]) < 0.9 ? [1, 0, 0] : [0, 1, 0];
+            const n: Vec3 = [t.dir[1] * a[2] - t.dir[2] * a[1], t.dir[2] * a[0] - t.dir[0] * a[2], t.dir[0] * a[1] - t.dir[1] * a[0]];
+            const nl = Math.hypot(n[0], n[1], n[2]);
+            for (const k of [0, 0.3, 0.8, 1, 1.1, 1.6]) pts.push(...t.center.map((c, i) => c + (n[i] / nl) * k * t.radius));
+            for (const s of [-0.9, 0.9]) pts.push(...t.center.map((c, i) => c + t.dir[i] * s * t.halfLength));
+          }
+      // y al azar en la misma caja (congruencial de 32 bits con Math.imul: exacto)
+      let seed = 12345;
+      const rnd = () => (seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) / 4294967296;
+      for (let i = 0; i < 4000; i++) pts.push(-168 + 228 * rnd(), -96 + 204 * rnd(), -108 + 144 * rnd());
+      const flat = Float32Array.from(pts);
+      const gpu = getSim().renderer.queryTriads(flat);
+      let maxAbs = 0;
+      let inSheath = 0;
+      let inLumen = 0;
+      for (let i = 0; i < gpu.length; i++) {
+        // el gemelo con los mismos puntos que recibe la GPU (float32)
+        const ts = portalTriadGain([flat[i * 3], flat[i * 3 + 1], flat[i * 3 + 2]]);
+        maxAbs = Math.max(maxAbs, Math.abs(gpu[i] - ts));
+        if (ts > 1.5) inSheath++;
+        if (ts < 0.5) inLumen++;
+      }
+      return { points: gpu.length, inSheath, inLumen, maxAbs };
+    },
     harmonicContrast: (opts) => {
       const sim = getSim();
       const was = sim.bmode.harmonic;

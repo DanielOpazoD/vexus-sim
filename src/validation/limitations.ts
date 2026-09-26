@@ -28,6 +28,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'respiratory-clutter-masks-slow-flow',
   'gate-placement-ignores-shadows',
   'speckle-statistics-uncalibrated',
+  'portal-triads-diffuse',
   'left-handed-anatomy-frame',
   'renal-pause-resolution-prf',
   'no-spleen-no-left-ribs',

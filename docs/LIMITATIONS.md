@@ -128,6 +128,9 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   central está a más de σe + 0,5 mm de una interfaz, los laterales heredan su tejido sin clasificar
   (decisión 24), pero la `bd` del hígado no cuenta los tubos: junto a un vaso fuera del plano, el 1–5 %
   de los píxeles de hígado no ve su borde en elevación.
+- **Tríadas portales difusas** (`portal-triads-diffuse`, decisión 78): las tríadas portales finas son dispersores
+  brillantes difusos anclados, sin eco especular, sin Doppler y sin unirse al árbol de tubos; la misma densidad en
+  todo el hígado (sin los cambios de la hepatitis o la fibrosis).
 - **Estadística de speckle sin calibrar** (`speckle-statistics-uncalibrated`): no se ha medido
   célula de speckle, SNR local ni asimetría contra clips reales; los cambios de la decisión 19
   se validaron solo por inspección. Sí se comprueba en la e2e que la envolvente del parénquima

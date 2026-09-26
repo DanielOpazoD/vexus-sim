@@ -955,8 +955,8 @@ export type FaceNormalRow = FaceGeometry | FaceNormalSubset;
 /**
  * Puntos del plano a 0,02–0,4 mm de cada cara (rejilla de líneas × 0,5 mm y, cerca de la cara, pasos de
  * 0,05 mm) en un tejido que la dibuja: la luz y la pared del tubo, la cápsula hepática, el diafragma y el
- * pulmón bajo la cúpula (no la cortina), la cápsula renal y la grasa perirrenal, la bilis y la pared
- * vesicular. En cada uno, |n·∇| entre la normal de la GPU y el gradiente de `faceSdf` en el marco
+ * pulmón bajo la cúpula (no la cortina), la cápsula renal y la mitad interna de la grasa perirrenal, la mitad
+ * externa de la grasa que dibuja su cara (Morison), la bilis y la pared vesicular. En cada uno, |n·∇| entre la normal de la GPU y el gradiente de `faceSdf` en el marco
  * material (diferencias centrales de 0,02 mm). Una fila por cara y otra por subconjunto
  * (`FACE_NORMAL_SUBSETS`).
  */
@@ -983,7 +983,10 @@ export function faceNormalStats(sim: Simulator): Record<FaceNormalRow, FaceNorma
         return t === Tissue.Diaphragm || (t === Tissue.Lung && Math.abs(c.boundaryDistance + d) < 1e-9) ? t : null;
       }
       case 'kidneyOuter':
-        return t === Tissue.RenalCapsule || t === Tissue.PerirenalFat ? t : null;
+        // la mitad externa de la grasa dibuja su propia cara (`perirenalOuter`)
+        return t === Tissue.RenalCapsule || (t === Tissue.PerirenalFat && c.interface !== Interface.PerirenalFat) ? t : null;
+      case 'perirenalOuter':
+        return t === Tissue.PerirenalFat && c.interface === Interface.PerirenalFat ? t : null;
       case 'gallbladder':
         return !tube && (t === Tissue.Fluid || t === Tissue.BileDuctWall) ? t : null;
     }

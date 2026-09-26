@@ -11,12 +11,13 @@ import { VESSEL_META, type VesselId } from '../physiology/vessels';
  * Dueños de cada cara (las muestras que la conocen):
  *  - luz de un vaso o conducto y de la vesícula: la pared y la luz (dos lados, la misma consulta), salvo
  *    dentro de la aurícula derecha, donde la VCI entra y no hay pared que dibujar;
- *  - cápsula hepática: la cápsula, salvo junto al diafragma (cara del diafragma) o a la grasa
- *    perirrenal (cara de Morison, de la grasa);
+ *  - cápsula hepática: la cápsula, salvo junto al diafragma (cara del diafragma), a la grasa perirrenal o a
+ *    una lámina de una grasa fina (cara de Morison, de la grasa) o a la pared vesicular (decisión 67);
  *  - cara hepática del diafragma: la mitad abdominal del diafragma (la pleural la dibuja el espejo
  *    exacto de la pasada A);
  *  - cápsula renal externa: la cápsula renal y la mitad interna de la grasa perirrenal (dos lados);
- *  - cara externa de la grasa perirrenal (Morison): la mitad externa de la grasa;
+ *  - cara externa de la grasa perirrenal (Morison): la mitad externa de la grasa, donde es fina o donde apoya
+ *    el hígado (decisión 68);
  *  - pleura parietal bajo la pared (decisión 61): no sale de `classify`; la dibuja la pasada B desde el
  *    cruce exacto de A0, del lado de la pared (su dueña), con la serie de reverberaciones;
  *  - capas de la pared (decisión 62, `organs/wall.ts`): cada muestra de piel, grasa, músculo o grasa
@@ -90,6 +91,13 @@ export function hasCurvatureCoherence(i: Interface): boolean {
  * que es su única dueña. La cápsula toca la grasa en la impresión renal (distancia mediana 0,003 mm).
  */
 export const MORISON_CONTACT_MM = 0.2;
+/**
+ * La cápsula hepática a ≤ esto (mm) de una grasa perirrenal fina (≤ `PERIRENAL.faceMaxMm`, que siempre dibuja su cara
+ * externa) tampoco dibuja la suya (revisión de la decisión 68): entre ambas solo queda una lámina de «intestino» (el
+ * receso de Morison, de 1,2–3 mm en el borde de la impresión renal) y serían dos líneas paralelas (el 11–14 % de los
+ * pasos hígado–grasa de los rayos desde el riñón). Contra la grasa gruesa, que solo la dibuja en contacto, la cápsula sí.
+ */
+export const MORISON_SLIVER_MM = 3.5;
 /**
  * La cápsula hepática que toca la pared de la vesícula (en su fosa) no dibuja su cara: la pared vesicular es una
  * sola línea ecogénica (decisión 67). Holgura sobre la cara externa de la pared, por el redondeo del borde de la fosa.

@@ -107,7 +107,7 @@ float liverSdf(vec3 m, out vec3 n, out float dBase) {
   float d2 = smoothMax(d, -visceralPlaneDistance(m), uVisceral.z);
   if (d2 > d + 1e-3) n = normalize(vec3(0.0, -uVisceral.y, -1.0));
   vec3 kn;
-  float dk = kidneyOuter(m, 0, kn) - perirenalThicknessMm(kidneyLocal(m, 0), uKidR[0]) + RENAL_IMPRESSION_OVERLAP_MM;
+  float dk = kidneyOuter(m, 0, kn) - perirenalThicknessMm(kidneyLocal(m, 0), 0) + RENAL_IMPRESSION_OVERLAP_MM;
   float d3 = smoothMax(d2, -dk, RENAL_IMPRESSION_ROUND_MM);
   if (d3 > d2 + 1e-3) n = -kn;
   vec3 gn;
@@ -126,7 +126,7 @@ float liverSdf(vec3 m, out float dBase) {
   float dL = sdEllipsoid(m, uLiverLC, uLiverLR, uLiverLTaper, ln);
   float d = smoothMin(dR, dL, uLiverBlend);
   float d2 = smoothMax(d, -visceralPlaneDistance(m), uVisceral.z);
-  float dk = kidneyOuterSdf(kidneyLocal(m, 0), uKidR[0]) - perirenalThicknessMm(kidneyLocal(m, 0), uKidR[0]) + RENAL_IMPRESSION_OVERLAP_MM;
+  float dk = kidneyOuterSdf(kidneyLocal(m, 0), uKidR[0]) - perirenalThicknessMm(kidneyLocal(m, 0), 0) + RENAL_IMPRESSION_OVERLAP_MM;
   float d3 = smoothMax(d2, -dk, RENAL_IMPRESSION_ROUND_MM);
   float dg = gallbladderSdf(m) - uGbExtra.y;
   float d4 = smoothMax(d3, -dg, GALLBLADDER_FOSSA_ROUND_MM);

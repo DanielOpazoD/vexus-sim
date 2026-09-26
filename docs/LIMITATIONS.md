@@ -7,8 +7,8 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 ## Anatomía y fisiología
 
 - **Solo el riñón derecho tiene vasos interlobares** (`no-left-interlobar-vessels`): el izquierdo
-  tiene arteria y vena renal pero no vasos intrarrenales; las 16 pirámides, el seno y la pelvis son
-  procedurales (decisiones 37 y 43), sin cálices diferenciados.
+  tiene arteria y vena renal pero no vasos intrarrenales; las 14 pirámides, el seno (con un dedo hacia cada papila) y
+  la pelvis son procedurales (decisiones 37, 43 y 68), sin cálices diferenciados.
 - **La presión de aurícula derecha es un contorno prescrito** (`prescribed-ra-contour`): media del
   caso + ondas a/c/x/v/y + onda sistólica por insuficiencia tricuspídea. No hay lazo cerrado; las
   amplitudes (3,4 / 5,2·VD / 1,8 / 2,4 / 9·IT² mmHg) son de calibración, no medidas. Hallado por fast-check: con la aurícula muy rígida (compliancia 0,3) y PAD media ≈ 0 el contorno oscila hasta −11 mmHg y la VCI suprahepática supera 2 m/s (`properties.test.ts`, `it.fails`).

@@ -26,6 +26,7 @@ import {
   LAST_WALL_INTERFACE,
   GALLBLADDER_CONTACT_MM,
   MORISON_CONTACT_MM,
+  MORISON_SLIVER_MM,
 } from '../interfaces';
 import { COMPRESSION_GLSL, PROBE_COMPRESSION } from '../compression';
 import { ORGAN_MODULES } from '../organs';
@@ -67,6 +68,7 @@ ${INTERFACE_DEFINES}
 #define IF_FIRST_WALL ${FIRST_WALL_INTERFACE}
 #define IF_LAST_WALL ${LAST_WALL_INTERFACE}
 #define MORISON_CONTACT_MM ${MORISON_CONTACT_MM.toFixed(3)}
+#define MORISON_SLIVER_MM ${MORISON_SLIVER_MM.toFixed(3)}
 #define GALLBLADDER_CONTACT_MM ${GALLBLADDER_CONTACT_MM.toFixed(3)}
 #define FACE_GRAD_EPS ${FACE_GRADIENT_EPS_MM.toFixed(3)}
 #define DIAPHRAGM_MM ${DIAPHRAGM_THICKNESS_MM.toFixed(3)}
@@ -414,15 +416,17 @@ Cls classifyWith(vec3 m, bool withCurtain) {
   float dGb = gallbladderSdf(m, gn);
   if (dGb < 0.0) { c.tissue = T_FLUID; c.bd = -dGb; c.n = gn; c.iface = IF_GALLBLADDER; c.ifd = -dGb; return c; }
   if (dGb < uGbExtra.y) { c.tissue = T_BILEWALL; c.bd = min(dGb, uGbExtra.y - dGb); c.n = gn; c.iface = IF_GALLBLADDER; c.ifd = dGb; return c; }
-  // Riñones; dPeri = distancia a la cara externa de la grasa perirrenal (la cápsula hepática que la
-  // toca no dibuja su cara: Morison es de la grasa)
+  // Riñones; dPeri = distancia a la cara externa de la grasa perirrenal y periThin, si esa grasa es fina (la cápsula
+  // hepática que la toca, o que está a una lámina de una fina, no dibuja su cara: Morison es de la grasa)
   float dPeri = 1e3;
+  bool periThin = false;
+  bool thickFat = false;
   for (int k = 0; k < 2; k++) {
     if (distance(m, uKidC[k]) > uKidR[k].x + uKidExtra.y + 2.0) continue;
     float inner; float dOuter;
     int region = kidneyQuery(m, k, inner, dOuter);
-    float fat = perirenalThicknessMm(kidneyLocal(m, k), uKidR[k]);
-    dPeri = min(dPeri, dOuter - fat);
+    float fat = perirenalThicknessMm(kidneyLocal(m, k), k);
+    if (dOuter - fat < dPeri) { dPeri = dOuter - fat; periThin = fat <= PERI.z; }
     vec3 kn;
     kidneyOuter(m, k, kn);
     if (dOuter < 0.0) {
@@ -438,33 +442,44 @@ Cls classifyWith(vec3 m, bool withCurtain) {
       c.tissue = T_PERIRENAL; c.bd = min(dOuter, fat - dOuter); c.n = kn;
       // mitad externa: cara hígado/grasa; mitad interna: la de la cápsula renal (dos lados); fina, una sola línea
       bool outerFace = dOuter > 0.5 * fat;
-      // la cara externa solo donde la grasa es fina (Morison); donde es gruesa se funde sin línea
-      if (!outerFace) { c.iface = IF_RENAL_CAPSULE; c.ifd = dOuter; }
-      else if (fat <= PERI.z) { c.iface = IF_PERIRENAL; c.ifd = fat - dOuter; }
-      return c;
+      c.iface = outerFace ? IF_PERIRENAL : IF_RENAL_CAPSULE;
+      c.ifd = outerFace ? fat - dOuter : dOuter;
+      if (!outerFace || fat <= PERI.z) return c;
+      // grasa gruesa: su cara externa solo si apoya el hígado (se decide con liverSdf, tras el bucle)
+      thickFat = true;
+      break;
     }
   }
   vec3 ln; float dLiverBase;
   float dLiver = liverSdf(m, ln, dLiverBase);
+  // la mitad externa de la grasa gruesa dibuja su cara solo contra el hígado (Morison, a ≤ MORISON_CONTACT_MM de ella);
+  // si no, se funde sin línea con la grasa retroperitoneal
+  if (thickFat) {
+    if (dLiver > c.ifd + MORISON_CONTACT_MM) { c.iface = IF_NONE; c.ifd = 1e3; }
+    return c;
+  }
   if (dLiver >= 0.0 && dLiverBase < 0.0) {
     c.tissue = T_LIG_TERES; c.bd = min(-dLiverBase, dLiver); c.n = ln; return c;
   }
   if (dLiver < 0.0) {
     float dDia = dDome - DIAPHRAGM_MM;
     float inner = min(-dLiver, min(dDia, -depth - wall));
+    // la frontera real del hígado en Morison es la cara externa de la grasa (la impresión renal la solapa 1 mm)
+    float bd = min(inner, dPeri);
     c.n = (inner == -dLiver) ? ln : ((inner == dDia) ? dn : tn);
     if (inner < CAPSULE_MM) {
-      c.tissue = T_CAPSULE; c.bd = inner;
-      // la cara hacia el diafragma es del diafragma; la de Morison, de la grasa perirrenal; la de la fosa
-      // vesicular, de la pared de la vesícula (una sola línea)
-      bool other = inner == dDia || dPeri <= inner + MORISON_CONTACT_MM || dGb - uGbExtra.y <= inner + GALLBLADDER_CONTACT_MM;
+      c.tissue = T_CAPSULE; c.bd = bd;
+      // la cara hacia el diafragma es del diafragma; la de Morison, de la grasa perirrenal (en contacto, o a una lámina
+      // de una grasa fina); la de la fosa vesicular, de la pared de la vesícula (una sola línea)
+      bool morison = dPeri <= inner + (periThin ? MORISON_SLIVER_MM : MORISON_CONTACT_MM);
+      bool other = inner == dDia || morison || dGb - uGbExtra.y <= inner + GALLBLADDER_CONTACT_MM;
       if (!other) { c.iface = IF_LIVER_CAPSULE; c.ifd = inner; }
       return c;
     }
     // lámina del ligamento venoso (misma fórmula que ligamentumVenosumSdf)
     float dLv = ligamentumVenosumSdf(m);
-    if (dLv < 0.0 && inner > 2.0) { c.tissue = T_LIG_VENOSUM; c.bd = min(-dLv, inner); c.n = uLigVen.xyz; return c; }
-    c.tissue = T_LIVER; c.bd = inner; return c;
+    if (dLv < 0.0 && inner > 2.0) { c.tissue = T_LIG_VENOSUM; c.bd = min(-dLv, bd); c.n = uLigVen.xyz; return c; }
+    c.tissue = T_LIVER; c.bd = bd; return c;
   }
   // Intestino: distancia a las interfaces que ganan antes (misma fórmula que scene.classify)
   float bdBowel = min(min(BOWEL_BD_CAP_MM, dDome - DIAPHRAGM_MM), min(dGb - uGbExtra.y, dRa));
@@ -504,6 +519,21 @@ vec3 kidneyOuterGradient(vec3 m) {
   return uKidU[k] * g.x + uKidV[k] * g.y + uKidW[k] * g.z;
 }
 
+// Cara externa de la grasa perirrenal más cercana (el menor perirenalOuterSdf, como faceSdf('perirenalOuter') de TS):
+// la superficie es el contorno menos el grosor local, no el contorno: su propio gradiente por diferencias centrales en
+// el marco local, devuelto en el mundo (antes, el del contorno renal: 9° de error en el p90 y 15,9° en el máximo)
+vec3 perirenalOuterGradient(vec3 m) {
+  vec3 q0 = kidneyLocal(m, 0);
+  vec3 q1 = kidneyLocal(m, 1);
+  int k = perirenalOuterSdf(q0, 0) <= perirenalOuterSdf(q1, 1) ? 0 : 1;
+  vec3 q = k == 0 ? q0 : q1;
+  vec2 h = vec2(FACE_GRAD_EPS, 0.0);
+  vec3 g = vec3(perirenalOuterSdf(q + h.xyy, k) - perirenalOuterSdf(q - h.xyy, k),
+                perirenalOuterSdf(q + h.yxy, k) - perirenalOuterSdf(q - h.yxy, k),
+                perirenalOuterSdf(q + h.yyx, k) - perirenalOuterSdf(q - h.yyx, k));
+  return uKidU[k] * g.x + uKidV[k] * g.y + uKidW[k] * g.z;
+}
+
 // Distancia de la cúpula sin su normal (el gradiente numérico de faceGradient; la vesícula tiene su sobrecarga
 // gallbladderSdf(m), sin normal)
 float domeSd(vec3 m) { vec3 n; return sdDome(m, n); }
@@ -511,12 +541,12 @@ float domeSd(vec3 m) { vec3 n; return sdDome(m, n); }
 // Gradiente de la distancia de la cara que dibuja una muestra (decisión 57): xyz es su dirección, la
 // normal de la cara, y w su norma, que pasa ifd (el valor de esa distancia) a distancia por la normal,
 // ifd/w. En los tubos, el gradiente analítico de tubeQuery (c.n sin normalizar: 1/apScale en las paredes
-// AP de la VCI). En la cápsula hepática, el contorno renal, el diafragma y la vesícula, diferencias
-// centrales de FACE_GRAD_EPS mm (las del banco) de la misma distancia que decide la clasificación: allí
-// c.n es la de una de las superficies que funde liverSdf, la del elipsoide sin escotadura hiliar (e2e de
-// normales del PR 5a: p05 de 0,45 en la impresión renal, p01 de 0,61 junto al hilio) o la de la altura
-// de la cúpula, y la norma de la distancia se aparta de 1 en las fusiones, junto al hilio y lejos de la
-// pleura. Cuesta 6–8 evaluaciones: la pasada B solo lo pide en las muestras al alcance de su cara.
+// AP de la VCI). En la cápsula hepática, el contorno renal, la cara externa de la grasa perirrenal, el diafragma y
+// la vesícula, diferencias centrales de FACE_GRAD_EPS mm (las del banco) de la misma distancia que decide la
+// clasificación: allí c.n es la de una de las superficies que funde liverSdf, la del elipsoide sin escotadura hiliar
+// (e2e de normales del PR 5a: p05 de 0,45 en la impresión renal, p01 de 0,61 junto al hilio), la del contorno renal
+// en la grasa o la de la altura de la cúpula, y la norma de la distancia se aparta de 1 en las fusiones, junto al
+// hilio y lejos de la pleura. Cuesta 6–8 evaluaciones: la pasada B solo lo pide en las muestras al alcance de su cara.
 // Gemelo TS: AnatomyScene.faceGradient.
 vec4 faceGradient(Cls c, vec3 m) {
   vec2 h = vec2(FACE_GRAD_EPS, 0.0);
@@ -525,6 +555,8 @@ vec4 faceGradient(Cls c, vec3 m) {
     g = vec3(liverInner(m + h.xyy) - liverInner(m - h.xyy),
              liverInner(m + h.yxy) - liverInner(m - h.yxy),
              liverInner(m + h.yyx) - liverInner(m - h.yyx));
+  } else if (c.iface == IF_PERIRENAL) {
+    g = perirenalOuterGradient(m);
   } else if (c.tissue == T_RENAL_CAPSULE || c.tissue == T_PERIRENAL) {
     g = kidneyOuterGradient(m);
   } else if (c.tissue == T_DIAPHRAGM) {

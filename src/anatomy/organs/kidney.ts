@@ -35,10 +35,11 @@ export type KidneyRegion = 'cortex' | 'medulla' | 'sinus' | 'pelvis';
 export interface KidneyHit {
   /** Distancia con signo al contorno externo (mm, negativa dentro). */
   dOuter: number;
-  /** Distancia con signo al seno (negativa dentro del seno). */
+  /** Distancia con signo al seno (negativa dentro del seno); +∞ fuera del riñón (`dOuter ≥ 0`), donde no se evalúa. */
   dSinus: number;
+  /** Fuera del riñón, `cortex` (no se evalúa). */
   region: KidneyRegion;
-  /** Distancia a la interfaz más cercana dentro del riñón (mm). */
+  /** Distancia a la interfaz más cercana dentro del riñón (mm); fuera, −dOuter. */
   inner: number;
 }
 
@@ -65,7 +66,11 @@ export function kidneyWorld(q: Vec3, k: Kidney): Vec3 {
  * comparten, y las tablas del shader (pirámides, dedos del seno) salen de ellos. */
 export const KIDNEY_RADII: Vec3 = [54, 27, 23];
 export const KIDNEY_SINUS = { radii: [30, 12, 10] as Vec3, offsetV: 4 };
-/** Corteza sobre la base de cada pirámide (mm): corteza de 7–8 mm y parénquima de 15–16 (revisión 25-09). */
+/**
+ * Profundidad bajo la cápsula del centro de la base de cada pirámide, por su eje (mm): corteza de 7–8 mm y parénquima de
+ * 15–16 (revisión 25-09). El casquete redondeado de la base, que llegaba a 3 mm de la cápsula, lo corta la unión
+ * corticomedular (`MEDULLA_MIN_DEPTH_MM`).
+ */
 export const RENAL_CORTEX_MM = 7.5;
 
 /** Pirámide medular (decisión 68): cono redondeado con la papila (vértice) hacia el seno y la base hacia la corteza. */
@@ -131,10 +136,11 @@ export const PYRAMIDS: readonly RenalPyramid[] = buildPyramids();
 /**
  * Grasa perirrenal (decisión 68): grosor variable, fina (≈ 1 mm) en la cara anterolateral que apoya en el hígado
  * (Morison) y gruesa detrás, hacia el hilio y en los polos (hasta 9 mm). Antes era una capa de 4 mm constante cuyas
- * dos caras dibujaban una doble línea concéntrica perfecta alrededor del riñón. Su cara externa (la de Morison contra el
- * hígado, o la del bazo o el intestino) solo se dibuja donde la grasa es fina (≤ `faceMaxMm`): allí se funde con la de
- * la cápsula en una sola línea; donde es gruesa (detrás, hacia el hilio, en los polos) se confunde con la grasa
- * retroperitoneal sin línea, como en un equipo.
+ * dos caras dibujaban una doble línea concéntrica perfecta alrededor del riñón. Su cara externa se dibuja donde la grasa
+ * es fina (≤ `faceMaxMm`: la de Morison, la del bazo o la del intestino), fundida con la de la cápsula en una sola línea,
+ * y, aunque sea gruesa, donde apoya el hígado (Morison, a ≤ `MORISON_CONTACT_MM`: la cápsula hepática le cede la cara);
+ * donde es gruesa y no la toca el hígado (detrás, hacia el hilio, en los polos) se confunde con la grasa retroperitoneal
+ * sin línea, como en un equipo.
  */
 export const PERIRENAL = { minMm: 1, maxMm: 9, faceMaxMm: 2.5 } as const;
 
@@ -154,24 +160,27 @@ export function softRamp(x: number, w: number): number {
 const PERIRENAL_SOFT = 0.15;
 
 /**
- * Grosor de la grasa perirrenal (mm) en la dirección del punto local q de un riñón de semiejes r: suave (C1) en la
- * dirección, para que la impresión renal del hígado, que la sigue, no tenga aristas.
+ * Grosor de la grasa perirrenal (mm) en la dirección del punto local q del riñón k: suave (C1) en la dirección, para que
+ * la impresión renal del hígado, que la sigue, no tenga aristas. Fina delante: en el riñón derecho +w es anterior, y el
+ * izquierdo es especular (su w apunta hacia atrás, `k.w·ŷ < 0`), así que allí la anterior es −w (antes se leía +w en
+ * los dos y el izquierdo tenía la grasa gruesa delante, 8,2 mm, y fina detrás, 1,2).
  */
-export function perirenalThicknessMm(q: Vec3, r: Vec3): number {
+export function perirenalThicknessMm(q: Vec3, k: Kidney): number {
+  const r = k.radii;
   const nu = q[0] / r[0];
   const nv = q[1] / r[1];
-  const nw = q[2] / r[2];
+  const nw = (k.w[1] < 0 ? -q[2] : q[2]) / r[2];
   const l = Math.sqrt(nu * nu + nv * nv + nw * nw);
   const s = l > 0 ? 1 / l : 0;
   const w = PERIRENAL_SOFT;
-  const k = 0.8 * softRamp(-nw * s, w) + 0.5 * softRamp(nv * s, w) + 2 * softRamp(Math.sqrt(nu * nu * s * s + w * w * 0.01) - 0.6, w * 0.5);
-  const kc = 1 - softRamp(1 - softRamp(k, w), w);
+  const a = 0.8 * softRamp(-nw * s, w) + 0.5 * softRamp(nv * s, w) + 2 * softRamp(Math.sqrt(nu * nu * s * s + w * w * 0.01) - 0.6, w * 0.5);
+  const kc = 1 - softRamp(1 - softRamp(a, w), w);
   return PERIRENAL.minMm + (PERIRENAL.maxMm - PERIRENAL.minMm) * kc;
 }
 
 /** Distancia con signo a la cara externa de la grasa perirrenal (marco local): el contorno menos el grosor local. */
 export function perirenalOuterSdf(q: Vec3, k: Kidney): number {
-  return kidneyOuterSdf(q, k) - perirenalThicknessMm(q, k.radii);
+  return kidneyOuterSdf(q, k) - perirenalThicknessMm(q, k);
 }
 
 /**
@@ -258,12 +267,20 @@ export function kidneySinusSdf(q: Vec3, k: Kidney): number {
   return d;
 }
 
-/** Profundidad mínima bajo la cápsula para la médula (mm): las pirámides nunca llegan a la superficie. */
-export const MEDULLA_MIN_DEPTH_MM = 3;
+/**
+ * Unión corticomedular (mm bajo la cápsula): la médula empieza a esta profundidad. Corta el casquete de la base de cada
+ * pirámide (su centro está a `RENAL_CORTEX_MM`) en una base ancha que sigue al contorno, como la línea arcuata: la
+ * corteza mide ≥ 7 mm sobre toda pirámide. Con 3 mm, el casquete (de radio `baseR`, 5,2–7,4 mm) llegaba a 3 mm de la
+ * cápsula: 3,9 mm de corteza en la mediana (revisión adversarial de la decisión 68).
+ */
+export const MEDULLA_MIN_DEPTH_MM = 7;
 
+/** Regiones del riñón en p. Fuera de él (`dOuter ≥ 0`) no se evalúan el seno ni las pirámides: `dSinus` = +∞. */
 export function kidneyQuery(p: Vec3, k: Kidney): KidneyHit {
   const q = kidneyLocal(p, k);
   const dOuter = kidneyOuterSdf(q, k);
+  // fuera no hay regiones: la grasa perirrenal y su entorno (a < 65 mm del centro) no pagan los 14 dedos del seno
+  if (dOuter >= 0) return { dOuter, dSinus: Infinity, region: 'cortex', inner: -dOuter };
   const dSinus = kidneySinusSdf(q, k);
   if (dSinus < 0) {
     // Pelvis: hendidura de orina colapsada en el seno, hacia el hilio
@@ -337,21 +354,21 @@ float softRamp(float x, float w) {
   return 2.0 * w * t * t * t * (1.0 - 0.5 * t);
 }
 
-// Grosor de la grasa perirrenal (decisión 68): fina anterolateral (Morison), gruesa detrás, al hilio y en los polos;
-// suave (C1) para que la impresión renal del hígado no tenga aristas
-float perirenalThicknessMm(vec3 q, vec3 r) {
-  vec3 n = q / r;
+// Grosor de la grasa perirrenal del riñón k (decisión 68): fina anterolateral (Morison), gruesa detrás, al hilio y en los
+// polos; suave (C1) para que la impresión renal del hígado no tenga aristas. El riñón izquierdo es especular: su anterior es −w
+float perirenalThicknessMm(vec3 q, int k) {
+  vec3 n = vec3(q.x, q.y, uKidW[k].y < 0.0 ? -q.z : q.z) / uKidR[k];
   float l = length(n);
   float s = l > 0.0 ? 1.0 / l : 0.0;
   float w = PERI_SOFT;
-  float k = 0.8 * softRamp(-n.z * s, w) + 0.5 * softRamp(n.y * s, w) + 2.0 * softRamp(sqrt(n.x * n.x * s * s + w * w * 0.01) - 0.6, w * 0.5);
-  float kc = 1.0 - softRamp(1.0 - softRamp(k, w), w);
+  float a = 0.8 * softRamp(-n.z * s, w) + 0.5 * softRamp(n.y * s, w) + 2.0 * softRamp(sqrt(n.x * n.x * s * s + w * w * 0.01) - 0.6, w * 0.5);
+  float kc = 1.0 - softRamp(1.0 - softRamp(a, w), w);
   return PERI.x + (PERI.y - PERI.x) * kc;
 }
 
 // Cara externa de la grasa perirrenal del riñón k (marco local)
 float perirenalOuterSdf(vec3 q, int k) {
-  return kidneyOuterSdf(q, uKidR[k]) - perirenalThicknessMm(q, uKidR[k]);
+  return kidneyOuterSdf(q, uKidR[k]) - perirenalThicknessMm(q, k);
 }
 
 // Seno: elipsoide + canal del hilio + dedos hacia las papilas (cálices)
@@ -368,6 +385,7 @@ float kidneySinusSdf(vec3 q, int k) {
 int kidneyQuery(vec3 p, int k, out float inner, out float dOuter) {
   vec3 q = kidneyLocal(p, k);
   dOuter = kidneyOuterSdf(q, uKidR[k]);
+  if (dOuter >= 0.0) { inner = -dOuter; return 0; }
   float dSinus = kidneySinusSdf(q, k);
   if (dSinus < 0.0) {
     vec4 sn = uKidSinus[k];

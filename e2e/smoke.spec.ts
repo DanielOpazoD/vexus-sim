@@ -302,6 +302,8 @@ test('las normales de la GPU coinciden con el gradiente de la distancia de TS en
   //  - cápsula hepática: `liverSdf` elegía la normal de una de sus superficies (p05 0,45–0,98).
   //    Las dos pasan al gradiente numérico de su distancia con el paso del banco (0,02 mm): el mismo
   //    cálculo que la CPU, salvo float32.
+  // La cara externa de la grasa perirrenal (Morison, `perirenalOuter`) usaba el gradiente del contorno renal (p01 0,965
+  // en la ventana renal, revisión de la decisión 68): ahora el de su propia distancia.
   // Cúpula y vesícula ya daban ≥ 0,99 en p01 (ahora también usan el gradiente numérico). Un fallo de
   // cableado, de marco o de signo hundiría la mediana; las caras que 5b corrige se exigen ahora en p01 (la
   // VCI también en p05 ≥ 0,99). La norma, en p95 ≤ 0,01 (el gemelo TS da ≤ 5e-5; float32 y las uniones de
@@ -321,10 +323,19 @@ test('las normales de la GPU coinciden con el gradiente de la distancia de TS en
     // la vesícula no corta ningún plano de partida: flanco abanicado 18° hacia delante
     { startPoint: 'flank', pose: { tiltDeg: 18 } },
   ] as const;
-  const faces = ['tube', 'liverSurface', 'dome', 'kidneyOuter', 'gallbladder'] as const;
+  const faces = ['tube', 'liverSurface', 'dome', 'kidneyOuter', 'perirenalOuter', 'gallbladder'] as const;
   // subconjuntos (`FACE_NORMAL_SUBSETS`): se muestrean aparte y no cambian la fila de su cara
   const subsets = ['tubeIvc', 'tubeIvcBody', 'kidneyOuterNotchFree', 'kidneyOuterNotch'] as const;
-  const gated = ['tube', 'liverSurface', 'dome', 'kidneyOuter', 'kidneyOuterNotchFree', 'gallbladder', 'tubeIvcBody'] as const;
+  const gated = [
+    'tube',
+    'liverSurface',
+    'dome',
+    'kidneyOuter',
+    'kidneyOuterNotchFree',
+    'perirenalOuter',
+    'gallbladder',
+    'tubeIvcBody',
+  ] as const;
   const seen = new Map<string, number>();
   for (const view of views) {
     const r = await page.evaluate((v) => window.__vexusTest!.faceNormals(v), view);
@@ -342,7 +353,16 @@ test('las normales de la GPU coinciden con el gradiente de la distancia de TS en
       if ((faces as readonly string[]).includes(row)) expect(f.p50, tag).toBeGreaterThanOrEqual(0.99);
       if (row === 'tube') expect(f.p05, tag).toBeGreaterThanOrEqual(0.98);
       if (row === 'tubeIvc' || row === 'tubeIvcBody') expect(f.p05, tag).toBeGreaterThanOrEqual(0.99);
-      const exact = ['liverSurface', 'dome', 'gallbladder', 'kidneyOuter', 'kidneyOuterNotchFree', 'kidneyOuterNotch', 'tubeIvcBody'];
+      const exact = [
+        'liverSurface',
+        'dome',
+        'gallbladder',
+        'kidneyOuter',
+        'kidneyOuterNotchFree',
+        'kidneyOuterNotch',
+        'perirenalOuter',
+        'tubeIvcBody',
+      ];
       if (exact.includes(row)) expect(f.p01, tag).toBeGreaterThanOrEqual(0.98);
       if ((gated as readonly string[]).includes(row)) expect(f.normErrP95, tag).toBeLessThanOrEqual(0.01);
     }

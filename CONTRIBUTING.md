@@ -50,6 +50,12 @@ npm run calibrate
 y se comprueba que los observables de referencia (S/D, PF, VCI, patrón renal, grado) siguen en
 sus rangos; los nuevos valores van al informe de la decisión.
 
+## Misión
+
+`docs/MISION.md` fija la misión, los objetivos medibles y el orden de los criterios cuando chocan (causalidad y
+honestidad antes que apariencia; seguridad del mensaje clínico; evidencia; las dos preguntas del experto). Cada PR dice
+a qué objetivo sirve; un cambio que no sirve a ninguno no entra.
+
 ## Reglas del proyecto (resumen de `docs/DECISIONS.md`)
 
 1. **Nada asigna un grado VExUS**: emerge de la señal adquirida. Un PR que «pinte» un patrón se

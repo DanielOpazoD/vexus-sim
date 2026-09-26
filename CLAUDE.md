@@ -1,7 +1,8 @@
 # Guía para agentes y colaboradores
 
 Simulador VExUS: cadena causal fisiología → anatomía → sonda → imagen → Doppler → medición →
-grado. Lee primero `README.md`, `docs/ARCHITECTURE.md`, `docs/GLOSSARY.md` y `docs/TESTING.md`.
+grado. Lee primero `docs/MISION.md` (misión, objetivos y criterios para decidir: todo cambio sirve a un objetivo),
+después `README.md`, `docs/ARCHITECTURE.md`, `docs/GLOSSARY.md` y `docs/TESTING.md`.
 
 ## Antes de terminar un cambio
 

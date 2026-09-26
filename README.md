@@ -14,6 +14,11 @@ gobernada por una presión auricular derecha con forma fisiológica (ondas a/c/x
 insuficiencia tricuspídea, función del VD, respiración). El grado se calcula después, y por
 separado para la verdad del caso y para lo que el alumno adquirió.
 
+**Misión:** un gemelo digital ecográfico de la congestión venosa en el que el médico aprende VExUS obteniendo las
+señales, no solo reconociéndolas, y puede equivocarse como con un paciente real. Los objetivos medibles (causalidad,
+fidelidad ecográfica, anatómica y clínica, enseñar a obtener, interfaz simple, rendimiento y honestidad) y los
+criterios para decidir están en [`docs/MISION.md`](docs/MISION.md).
+
 > **Aviso.** No es un dispositivo médico. Los pacientes son sintéticos y muchos parámetros
 > están marcados como `EXTRAPOLATION / NEEDS_CALIBRATION` (ver
 > [`docs/APPROXIMATIONS.md`](docs/APPROXIMATIONS.md)). La base científica está en el informe

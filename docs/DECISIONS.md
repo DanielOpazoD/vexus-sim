@@ -2339,6 +2339,67 @@ próximas, 24 mm), `controllers.test.ts` (textos del HUD sin cambios) y la e2e d
 «Medir» y «Docente», «Suprahepática», «Capturar», «Apnea esp…» y modo alumno ciego); capturas antes y después a
 1600 × 1000 y 1280 × 800.
 
+## 76. Ecos parásitos del modo fundamental: lóbulos laterales con la aberración de la pared y reverberación de sus caras
+
+**Contexto.** El dueño aprobó (26-09-2026) el plan de fidelidad cuyo primer punto es lo que el juez ciego de la ronda
+2 señalaba como delator: entre otras cosas, «luces sin ruido» (vasos y vesícula negros puros). La PSF lateral era solo
+el lóbulo principal gaussiano (`no-sidelobes`) y la pared no reverberaba: en un ecógrafo real el modo fundamental ensucia
+las luces con la neblina de los lóbulos laterales, que la aberración de fase de la grasa y el músculo sube por encima del
+ideal de la apertura, y con la reverberación de las caras brillantes de la pared entre ellas y la sonda (el artefacto
+clásico de la parte anterior de la vesícula, que puede imitar barro).
+**Opciones.** (1) Un suelo de ruido más alto: es uniforme y no depende de lo que rodea a la luz. (2) Un pedestal
+gaussiano positivo en el núcleo lateral: suma de forma coherente sobre un reflector continuo y sube ~1 dB los ecos
+especulares calibrados (β, las cocientes de cápsula, Morison y pared). (3) Una pantalla de fase aleatoria cualquiera:
+su paseo aleatorio es un sesgo fijo que depende de la anchura del haz (de −2,4 % a +3,5 % en un reflector continuo; β del
+gemelo −0,2 dB). (4) Réplicas del campo entero bajo la pared: copian el moteado y las estrías del músculo dentro de la
+vesícula. (5) Las elegidas.
+**Decisión.** (a) Lóbulos laterales: el núcleo de la pasada D suma al lóbulo principal real un pedestal de σ 7 veces la
+del principal con una pantalla de fase fija ANTISIMÉTRICA (la aberración: `SIDELOBE_PHASES`, φ(−k) = φ(k) + π, φ(0) =
+π/2, generador congruencial, la misma tabla en TS y GLSL): sobre un reflector continuo los pares ±k se cancelan y el
+término central queda en cuadratura, así que el eco especular no cambia (≤ 0,5 % para σ de 0,35 a 3 líneas), mientras
+su energía lleva a las luces el moteado de lo que las rodea. La amplitud sale de las sumas discretas del núcleo
+(a² = ISLR·c²·Σg_m²/Σg_p²), así que la energía del pedestal es ISLR −24 dB exacta a cualquier anchura (la fórmula
+continua se quedaba 2 dB corta con σ 0,35); c es el acoplamiento de la línea de destino: una línea sin contacto no lo
+recibe. (b) Reverberación: la pasada C suma al campo dos réplicas del propio campo tomadas W (el grosor de la pared) y 2W
+filas enteras más arriba, que aparecen más hondas, a −50 y −62 dB sobre su fuente. Solo reverbera la pared: la fuente
+está a lo sumo a W + 3 mm (su cara interna) y pasa un umbral suave sobre el módulo del campo en bruto (1,5–3,5), que en
+la práctica solo abren la piel, las fascias, el peritoneo y las costillas (5 puntos de partida × 2 casos: la fuente más
+honda a 30–44 mm). Cada orden paga su viaje extra por la pared: la transmisión de ida y vuelta de la línea hasta W,
+una vez por orden (textura de A de la mirada del cuadro). Tras una costilla o un gas es ~0 y no hay réplica en la
+sombra, y con la TGC nominal, que compensa el camino extra, en pantalla quedan a −50 y −62 dB de su fuente. (c) Los dos
+crecen con la grasa subcutánea (+0,35 dB por mm sobre 14 mm) y la armónica tisular (decisión 77) los baja 12 dB; en las
+réplicas, por orden (la segunda, dos rebotes, paga el doble de las dos cosas). Módulo `ultrasound/clutter.ts`
+(parámetros, núcleo complejo, ganancias de las réplicas y compuerta), usado por los gemelos de CPU (`wallTwin`,
+`interfaceTwin`, la prueba del receptor) y reflejado en `FRAG_AXIAL`/`FRAG_LATERAL`.
+**Consecuencias.** Las luces de los vasos del hígado y de la VCI llevan una neblina tenue junto a sus bordes; la parte
+anterior de la vesícula, réplicas débiles de la pared. En el tejido bajo la pared las réplicas quedan a −50/−57 dB rms
+(gemelo, con transmisión) y el pedestal no cambia el nivel incoherente. Una línea sin contacto sigue oscura y las
+sombras costales no se encienden. Bajo la pleura de la cortina las réplicas suman unos −40 dB a la serie de
+reverberaciones de la pared (decisión 61), que ya copia la pared: doble cuenta despreciable (`APPROXIMATIONS.md`).
+Coste: la pasada D recorre 25–57 líneas donde el pedestal lo pide (antes 5–9); ~0,2–0,3 ms por cuadro en el M4, medido
+con la máquina cargada. Limitaciones: `no-sidelobes` pasa a «sin lóbulos de rejilla ni en elevación»; la reverberación es
+de primer y segundo orden, de la pared entera y no de cada cara por su profundidad (el múltiplo costilla–sonda, a 2z, no
+se dibuja).
+**Verificación.**
+
+- **`clutter.test.ts`:**
+  - la pantalla de fase antisimétrica;
+  - el núcleo de energía unidad, que sin pedestal o sin contacto es la gaussiana de siempre;
+  - la energía del pedestal igual a ISLR·c² en el núcleo discreto (σ 0,35–3, c 1 y 0,5);
+  - un reflector continuo cambia ≤ 0,5 %, y una luz junto a un moteado brillante recibe 0,3–1 veces la ISLR (≥ 10
+    veces lo que deja la gaussiana sola);
+  - la grasa y la armónica por orden;
+  - las réplicas pagan la transmisión de la pared por orden y respetan la compuerta;
+  - las mismas fórmulas, constantes y tabla (7 decimales) en las pasadas C y D.
+- **Gemelo `wallTwin`:** ahora calcula B también por encima del parche, de donde salen las fuentes (antes las perdía
+  en silencio). La comparación entre modelos de pared vuelve a ser bit a bit, sin réplicas. Una prueba nueva, con
+  transmisión y réplicas en la subxifoidea y en el flanco de partida, exige que el hígado bajo la pared cambie ≤ −45 dB
+  rms y que la sombra costal quede < 3 % de la media del hígado. Sin la transmisión de la pared da −43 dB y el eco de la
+  costilla se copiaba en su sombra, a 10–40 % de la media: lo halló la revisión adversarial.
+- **`interfaceTwin`:** M3 de la porta a 40° pasa de 1,404 a 1,397 (umbral 1,39): el pedestal reparte −24 dB de la
+  energía de la vaina en las líneas vecinas. Sin pedestal vuelve a 1,40, y la ganancia coherente no cambia.
+- **GPU (M4):** capturas de la subxifoidea, la intercostal, la vesícula, el flanco y la renal frente a `main`.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

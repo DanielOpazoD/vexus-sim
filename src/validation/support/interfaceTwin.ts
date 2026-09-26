@@ -18,6 +18,7 @@
  * (`sigmaL`) son las del PR 0 de las decisiones 60 y 64 (`capsuleTwin.test.ts`).
  */
 import { INTERFACES, Interface, LAST_TUBE_INTERFACE } from '../../anatomy/interfaces';
+import { CLUTTER, applyComplexKernel, clutterParams, lateralKernel } from '../../ultrasound/clutter';
 import { TISSUES, Tissue } from '../../anatomy/tissues';
 import { AXIAL_SIGMA_MM, lateralFwhmMm } from '../../ultrasound/beamModel';
 import { greyOfLevel, levelOfGrey } from '../../ultrasound/greyMap';
@@ -48,18 +49,18 @@ export const posOn = (th: number, r: number): V2 => [(RC + r) * Math.sin(th), (R
 export const linePitch = (r: number, lines = LINES): number => (RC + r) * ((2 * HALF) / (lines - 1));
 export const latSigmaMm = (r: number, focus = FOCUS): number => lateralFwhmMm(r, focus) / 2.3548;
 
-/** Ganancia coherente de la pasada D para un reflector continuo (Σw/√Σw²), como FRAG_LATERAL. */
+/**
+ * Ecos parásitos de la escena 2D (decisión 76): el pedestal de lóbulos laterales del paciente de referencia (sin
+ * réplicas de reverberación: la escena 2D no tiene pared).
+ */
+export const TWIN_CLUTTER = clutterParams(0, CLUTTER.fatRefMm);
+
+/** Ganancia coherente de la pasada D para un reflector continuo (|Σw|/√Σ|w|²), como FRAG_LATERAL. */
 export function lateralCoherentGain(r: number, focus = FOCUS, lines = LINES): number {
   const sT = Math.max(0.35, latSigmaMm(r, focus) / linePitch(r, lines));
-  const R = Math.min(14, Math.ceil(sT * 2.5));
-  let s1 = 0;
-  let s2 = 0;
-  for (let k = -R; k <= R; k++) {
-    const w = Math.exp(-0.5 * (k / sT) ** 2);
-    s1 += w;
-    s2 += w * w;
-  }
-  return s1 / Math.sqrt(s2);
+  const w = lateralKernel(sT, TWIN_CLUTTER);
+  const [sr, si] = w.reduce(([a, b], [x, y]) => [a + x, b + y], [0, 0]);
+  return Math.hypot(sr, si);
 }
 
 /** Clasificación de un punto de la escena 2D. */
@@ -242,18 +243,13 @@ export function simulate(scene: Scene, o: SimOpts): SimOut {
   for (let v = 0; v < nv; v++) {
     const r = (v + v0 + 0.5) * dr;
     const sT = Math.max(0.35, latSigmaMm(r, focus) / linePitch(r, L));
-    const RL = Math.min(14, Math.ceil(sT * 2.5));
-    const wL = Array.from({ length: 2 * RL + 1 }, (_, k) => Math.exp(-0.5 * ((k - RL) / sT) ** 2));
-    const nL = Math.hypot(...wL);
+    const wL = lateralKernel(sT, TWIN_CLUTTER);
     for (let u = 0; u < L; u++) {
-      let re = 0;
-      let im = 0;
-      for (let k = -RL; k <= RL; k++) {
+      const [re, im] = applyComplexKernel(wL, (k) => {
         const j = (v * L + Math.min(L - 1, Math.max(0, u + k))) * 2;
-        re += wL[k + RL] * ax[j];
-        im += wL[k + RL] * ax[j + 1];
-      }
-      env[v * L + u] = (Math.hypot(re, im) / nL) * 1.1283792;
+        return [ax[j], ax[j + 1]];
+      });
+      env[v * L + u] = Math.hypot(re, im) * 1.1283792;
     }
   }
   return { env, v0, nv, dr, lines: L, cls, reflected };

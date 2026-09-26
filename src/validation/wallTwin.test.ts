@@ -261,8 +261,10 @@ describe('pared realista con el gemelo de la imagen (decisión 62)', () => {
       const opts = { j0: 60, j1: 131, r0: WALL_MM + 4, r1: 130 };
       const aT = wallTwin(scene, caliber, f, st, { model: 'wall', ...opts });
       const bT = wallTwin(scene, caliber, f, st, { model: 'base', ...opts });
-      const a0 = wallTwin(scene, caliber, f, st, { model: 'wall', noTransmission: true, ...opts });
-      const b0 = wallTwin(scene, caliber, f, st, { model: 'base', noTransmission: true, ...opts });
+      // sin transmisión ni los ecos parásitos de la decisión 76, que llevan la pared debajo (las réplicas se miden abajo)
+      const clean = { noTransmission: true, noReverb: true, noPedestal: true };
+      const a0 = wallTwin(scene, caliber, f, st, { model: 'wall', ...clean, ...opts });
+      const b0 = wallTwin(scene, caliber, f, st, { model: 'base', ...clean, ...opts });
       const now: number[] = [];
       const before: number[] = [];
       for (let k = 0; k < a0.env.length; k++) {
@@ -286,6 +288,47 @@ describe('pared realista con el gemelo de la imagen (decisión 62)', () => {
       const gainDb = 20 * Math.log10(sNow.mean / sBefore.mean);
       expect(gainDb, Tissue[tissue]).toBeGreaterThan(0);
       expect(gainDb, Tissue[tissue]).toBeLessThan(0.8);
+    }
+  });
+
+  it('la reverberación de la pared (decisión 76), con la transmisión: ≤ −45 dB bajo la pared y ningún fantasma en la sombra costal', () => {
+    // el flanco de partida: costillas dentro de la pared, con su sombra; las réplicas pagan la transmisión hasta W
+    const sp = START_POINTS.find((x) => x.id === 'flank')!;
+    const pf = probeFrame({ phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 }, scene.torso, CONVEX_C35);
+    const flank: TwinFrame = { center: pf.curvatureCenter, axial: pf.axial, lateral: pf.lateral, elevation: pf.elevation, face: pf.face };
+    for (const f of [VIEWS.subxiphoid, flank]) {
+      const st = anchorOf(f);
+      const opts = { j0: 40, j1: 151, r0: 0, r1: 110 };
+      const a = wallTwin(scene, caliber, f, st, { model: 'wall', ...opts });
+      const b = wallTwin(scene, caliber, f, st, { model: 'wall', noReverb: true, ...opts });
+      let d2 = 0;
+      let b2 = 0;
+      let sum = 0;
+      let n = 0;
+      for (let k = 0; k < a.env.length; k++) {
+        const tk: Tissue = a.tissue[k];
+        if (a.rowR(a.i0 + Math.floor(k / a.nL)) < WALL_MM + 6 || tk !== Tissue.Liver) continue;
+        d2 += (a.env[k] - b.env[k]) ** 2;
+        b2 += b.env[k] ** 2;
+        sum += b.env[k];
+        n++;
+      }
+      expect(n).toBeGreaterThan(5000);
+      expect(10 * Math.log10(d2 / b2)).toBeLessThan(-45);
+      // sombra (envolvente sin réplicas < 2 % de la media del hígado) bajo la pared: las réplicas no la encienden
+      let shadowA = 0;
+      let shadowB = 0;
+      let shadowN = 0;
+      for (let k = 0; k < a.env.length; k++) {
+        const tk: Tissue = a.tissue[k];
+        if (a.rowR(a.i0 + Math.floor(k / a.nL)) < WALL_MM + 6 || b.env[k] >= 0.02 * (sum / n) || tk === Tissue.Lung) continue;
+        shadowA = Math.max(shadowA, a.env[k]);
+        shadowB = Math.max(shadowB, b.env[k]);
+        shadowN++;
+      }
+      if (f === flank) expect(shadowN, 'la sombra costal del flanco').toBeGreaterThan(200);
+      // sin la transmisión de la pared, el eco de la costilla se copiaba en su propia sombra a 10–40 % de la media
+      expect(shadowA / (sum / n), `sombra: ${shadowB.toExponential(2)} sin réplicas`).toBeLessThan(0.03);
     }
   });
 });

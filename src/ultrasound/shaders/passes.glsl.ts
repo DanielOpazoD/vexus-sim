@@ -17,6 +17,7 @@ import {
 import { SPECKLE_LOOK_GLSL, SPECKLE_TISSUE_GLSL } from '../speckleField';
 import { WALL_FACE_ECHO_GLSL, WALL_TEXTURE_GLSL } from '../wallTexture';
 import { REST_TEXTURE_GLSL } from '../restTexture';
+import { CLUTTER, SIDELOBE_PHASE_GLSL } from '../clutter';
 import { RECEIVER_GLSL, glslFloat } from '../receiver';
 import { STEERING_GLSL } from '../steering';
 
@@ -875,27 +876,47 @@ export const FRAG_RAWFIELD = rawFieldShader('look0');
 /** Pasada B de las miradas ±θ: la rama dirigida sobre el mismo preludio. */
 export const FRAG_RAWFIELD_STEERED = rawFieldShader('steered');
 
-/** Pasada C: convolución axial gaussiana (pulso) sobre el campo complejo. */
+/**
+ * Pasada C: convolución axial gaussiana (pulso) sobre el campo complejo, más las réplicas de reverberación de la
+ * pared (decisión 76, `clutter.ts`: `reverbGains`, `reverbGateWeight`): el mismo campo convolucionado, tomado W y 2W
+ * texeles enteros más arriba (la réplica aparece más honda), solo de los ecos fuertes y con las ganancias de
+ * `uReverb` por la transmisión de ida y vuelta de la línea hasta la pared (`uTrans`, una vez por orden).
+ */
 export const FRAG_AXIAL = /* glsl */ `#version 300 es
 precision highp float;
 uniform sampler2D uField;
+uniform sampler2D uTrans; // transmisión de ida y vuelta de la mirada (A o0; o3 en las dirigidas), .x
 uniform float uSigmaTexels;
 uniform vec2 uTexel;
+uniform vec4 uReverb; // desplazamiento W en texeles (entero), ganancias de las réplicas a W y a 2W, fila más honda de sus fuentes
 in vec2 vUv;
 out vec2 oField;
 void main() {
   vec2 acc = vec2(0.0);
+  vec2 acc1 = vec2(0.0);
+  vec2 acc2 = vec2(0.0);
   float wsum = 0.0;
   int R = int(ceil(uSigmaTexels * 2.5));
+  float row = vUv.y / uTexel.y - 0.5;
+  // solo reverbera la pared: la fuente (W o 2W filas más arriba) no pasa de su cara interna (uReverb.w)
+  bool rep1 = uReverb.y > 0.0 && uReverb.x > 0.0 && row >= uReverb.x && row - uReverb.x <= uReverb.w;
+  bool rep2 = uReverb.z > 0.0 && uReverb.x > 0.0 && row >= 2.0 * uReverb.x && row - 2.0 * uReverb.x <= uReverb.w;
+  vec2 d1 = vec2(0.0, uReverb.x * uTexel.y);
   // Núcleo de energía unitaria (Σw² = 1): el nivel incoherente no depende de la
   // anchura del pulso; los ecos coherentes se ensanchan y ganan con ella.
   for (int k = -12; k <= 12; k++) {
     if (k < -R || k > R) continue;
     float w = exp(-0.5 * pow(float(k) / uSigmaTexels, 2.0));
-    acc += w * texture(uField, vUv + vec2(0.0, float(k) * uTexel.y)).rg;
+    vec2 uv = vUv + vec2(0.0, float(k) * uTexel.y);
+    acc += w * texture(uField, uv).rg;
+    // solo reverberan los ecos fuertes (caras especulares): umbral suave sobre el módulo del campo en bruto
+    if (rep1) { vec2 f1 = texture(uField, uv - d1).rg; acc1 += w * f1 * smoothstep(${CLUTTER.reverbGate[0].toFixed(3)}, ${CLUTTER.reverbGate[1].toFixed(3)}, length(f1)); }
+    if (rep2) { vec2 f2 = texture(uField, uv - 2.0 * d1).rg; acc2 += w * f2 * smoothstep(${CLUTTER.reverbGate[0].toFixed(3)}, ${CLUTTER.reverbGate[1].toFixed(3)}, length(f2)); }
     wsum += w * w;
   }
-  oField = acc / sqrt(wsum);
+  // cada orden paga su viaje extra por la pared: tras una costilla o un gas no hay réplica en la sombra
+  float tW = rep1 || rep2 ? texture(uTrans, vec2(vUv.x, uReverb.x * uTexel.y)).x : 0.0;
+  oField = (acc + uReverb.y * tW * acc1 + uReverb.z * tW * tW * acc2) / sqrt(wsum);
 }
 `;
 
@@ -911,24 +932,44 @@ uniform float uDepth;
 uniform float uCurvR;
 uniform float uHalfSector;
 uniform float uLinesF;
+uniform vec2 uSidelobe; // energía del pedestal de lóbulos laterales (ISLR, lineal) y su anchura (× σ del principal); decisión 76
+uniform sampler2D uCoupling; // 1D: acoplamiento por línea (una línea sin contacto no recibe lóbulos laterales)
 in vec2 vUv;
 out float oEnv;
 ${LATERAL_PSF_GLSL}
+// pantalla de fase del pedestal (clutter.ts: SIDELOBE_PHASES), indexada por k + ${CLUTTER.lateralMaxLines}
+${SIDELOBE_PHASE_GLSL}
 void main() {
   float r = vUv.y * uDepth;
   float sigmaMm = lateralSigmaMm(r);
   float lineSpacing = (uCurvR + r) * (2.0 * uHalfSector / (uLinesF - 1.0));
   float sigmaTex = max(0.35, sigmaMm / lineSpacing);
-  vec2 acc = vec2(0.0);
-  float wsum = 0.0;
-  int R = int(ceil(sigmaTex * 2.5));
-  for (int k = -14; k <= 14; k++) {
+  float sigmaPed = sigmaTex * uSidelobe.y;
+  float coupling = texture(uCoupling, vec2(vUv.x, 0.5)).r;
+  bool pedOn = uSidelobe.x > 0.0 && coupling > 0.0;
+  int R = min(${CLUTTER.lateralMaxLines}, int(ceil(max(sigmaTex * 2.5, pedOn ? sigmaPed * 2.5 : 0.0))));
+  // el principal (real) y el pedestal (con su fase) por separado: la amplitud del pedestal sale de las sumas
+  // discretas (a² = ISLR·c²·Σgm²/Σgp²) y la energía del núcleo, de Σ|w|² = Σgm² + a²Σgp² + 2aΣgm·gp·cos φ
+  vec2 accM = vec2(0.0);
+  vec2 accP = vec2(0.0);
+  float sm = 0.0;
+  float sp = 0.0;
+  float cx = 0.0;
+  for (int k = -${CLUTTER.lateralMaxLines}; k <= ${CLUTTER.lateralMaxLines}; k++) {
     if (k < -R || k > R) continue;
-    float w = exp(-0.5 * pow(float(k) / sigmaTex, 2.0));
-    acc += w * texture(uField, vUv + vec2(float(k) * uTexel.x, 0.0)).rg;
-    wsum += w * w;
+    float kf = float(k);
+    float gm = exp(-0.5 * pow(kf / sigmaTex, 2.0));
+    float gp = pedOn ? exp(-0.5 * pow(kf / sigmaPed, 2.0)) : 0.0;
+    vec2 ph = PED_PHASE[k + ${CLUTTER.lateralMaxLines}];
+    vec2 f = texture(uField, vUv + vec2(kf * uTexel.x, 0.0)).rg;
+    accM += gm * f;
+    accP += gp * vec2(ph.x * f.x - ph.y * f.y, ph.x * f.y + ph.y * f.x);
+    sm += gm * gm;
+    sp += gp * gp;
+    cx += gm * gp * ph.x;
   }
-  vec2 f = acc / sqrt(wsum);
+  float amp = pedOn ? coupling * sqrt(uSidelobe.x * sm / sp) : 0.0;
+  vec2 f = (accM + amp * accP) * inversesqrt(sm + amp * amp * sp + 2.0 * amp * cx);
   // Envolvente calibrada: E|z| de una gaussiana compleja unitaria es √π/2, así
   // que ×2/√π deja mean(envolvente) = amplitud de retrodispersión.
   oEnv = length(f) * 1.1283792;

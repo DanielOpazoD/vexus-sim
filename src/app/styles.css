@@ -670,6 +670,7 @@ button.secondary.on {
   align-items: center;
   gap: 4px;
   height: 40px;
+  margin-bottom: -4px;
 }
 .section-toggle {
   flex: 1;
@@ -696,8 +697,8 @@ button.secondary.on {
 }
 .section-body {
   display: grid;
-  gap: 12px;
-  padding: 4px 0 16px;
+  gap: 8px;
+  padding-bottom: 16px;
 }
 .section.collapsed .section-body {
   display: none;
@@ -748,7 +749,7 @@ button.secondary.on {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  gap: 4px 8px;
+  gap: 2px 8px;
 }
 .control label {
   color: var(--muted);

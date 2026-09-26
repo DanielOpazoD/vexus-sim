@@ -90,7 +90,7 @@ function track(
 
 describe('Volumen de muestra: la puerta no recuerda la geometría anterior', () => {
   it('tronco portal con respiración tranquila: la sangre sigue a una siembra nueva durante dos respiraciones', () => {
-    const samples = track('flank', ['pvRight', 'pvTrunk'], 9);
+    const samples = track('portal', ['pvTrunk'], 9);
     const meanAbs = samples.reduce((a, x) => a + Math.abs(x.history - x.fresh), 0) / samples.length;
     expect(meanAbs).toBeLessThan(0.05); // medido 0,017 (antes 0,6)
     // en cada fin de espiración, la puerta con historia tiene la sangre de una siembra nueva

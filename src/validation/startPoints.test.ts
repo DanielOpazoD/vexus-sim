@@ -53,6 +53,23 @@ const byId = (id: StartPoint['id']) => START_POINTS.find((s) => s.id === id)!;
 const samples = (s: Sweep, id: string) => s.vessels.get(id) ?? 0;
 
 describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', () => {
+  it('porta lateral (decisión 69): porta principal y derecha en el plano, VCI detrás, sin costillas y con ángulo Doppler útil', () => {
+    const s = sweep(byId('portal'), 170);
+    expect(s.coupling).toBeGreaterThan(0.75);
+    expect(samples(s, 'pvTrunk') + samples(s, 'pvRight')).toBeGreaterThan(40);
+    expect(samples(s, 'ivcInfra') + samples(s, 'ivcSupra')).toBeGreaterThan(20);
+    expect(s.tissues.get(Tissue.Bone) ?? 0).toBe(0);
+    // la puerta sobre la porta con el haz a ≤ 60° de su eje
+    const sp = byId('portal');
+    const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
+    const contact = probeContact(pose, CONVEX_C35, scene.torso);
+    const engine = new PhysiologyEngine(clonePatient(NORMAL_ADULT), scene.vesselAreas(), { historySeconds: 2 });
+    const anatomy = new AnatomyQuery(scene);
+    const g = bestGateOnVessel(anatomy, contact.frame, CONVEX_C35, engine.sample, ['pvTrunk'], 165);
+    expect(g).not.toBeNull();
+    expect(g!.cosAngle).toBeGreaterThanOrEqual(0.5);
+  });
+
   it('subxifoideo: VCI en eje largo (infra + supra) a través del hígado, con acoplamiento útil', () => {
     const s = sweep(byId('subxiphoid'), 160);
     expect(s.coupling).toBeGreaterThan(0.5);

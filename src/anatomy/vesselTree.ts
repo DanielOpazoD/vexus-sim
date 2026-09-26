@@ -107,12 +107,19 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
 
   const vessels: VesselDef[] = [
     {
+      // Decisión 69: «S» sagital suave (Li 2021; Joshi 2009): desde la AD baja y se aleja de la pared ~13–15 mm hasta
+      // el nivel renal, con la lordosis por delante en L3; por encima del hígado queda 13–26 mm por delante de la aorta.
+      // Antes era un único tramo recto de 320 mm (z −300…20) que solo se curvaba en sus últimos 40 mm.
       id: 'ivcInfra',
       tube: tube(
         [
-          [[-22, -16, -300], 9.5],
-          [[-22, -16, 20], 10],
-          [[-21, -14, 35], 10],
+          [[-14, -16, -300], 9.5],
+          [[-18, -14, -170], 9.5],
+          [[-21, -12, -115], 9.5],
+          [[-22, -17, -64], 9.8],
+          [[-22, -15, -20], 10],
+          [[-21, -11, 15], 10],
+          [[-20, -8, 35], 10],
         ],
         0.8,
       ),
@@ -122,12 +129,14 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       wallMm: 0.8,
     },
     {
+      // la confluencia de las suprahepáticas y el embudo que se ensancha hacia la AD en los últimos 1–3 cm (28 × 18 mm)
       id: 'ivcSupra',
       tube: tube(
         [
-          [[-21, -14, 35], 10],
-          [[-20, -12, 55], 10],
-          [[-16, 2, 75], 10.5],
+          [[-20, -8, 35], 10],
+          [[-19, -5, 47], 10.3],
+          [[-17, -1, 60], 11.5],
+          [[-16, 2, 75], 12.5],
         ],
         0.8,
       ),
@@ -147,8 +156,8 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
         [[-135, 12, -65], 2.4],
         [[-105, -4, -28], 3.6],
         [[-68, -18, 10], 4.8],
-        [[-38, -16, 32], 5.6],
-        [[-26, -16, 38], 6.0],
+        [[-38, -11, 32], 5.6],
+        [[-27, -9, 39], 6.0],
       ],
       5.6,
     ),
@@ -177,9 +186,9 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       [
         [[-57, 31, -38], 2.0],
         [[-40, 24, -25], 3.2],
-        [[-30, 4, 12], 4.0],
-        [[-24, -2, 36], 4.4],
-        [[-23, -6, 42], 4.4],
+        [[-30, 5, 12], 4.0],
+        [[-25, 5, 34], 4.4],
+        [[-22, 3, 43], 4.4],
       ],
       4.5,
     ),
@@ -198,9 +207,9 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       [
         [[62, 28, -32], 2.0],
         [[30, 20, -2], 2.8],
-        [[0, 2, 26], 3.6],
-        [[-16, -2, 40], 4.0],
-        [[-23, -6, 42], 4.0],
+        [[0, 6, 26], 3.6],
+        [[-15, 6, 39], 4.0],
+        [[-22, 3, 43], 4.0],
       ],
       4.2,
     ),
@@ -217,18 +226,21 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
     thin(
       'hvCommonTrunk',
       [
-        [[-23, -6, 42], 6.0],
-        [[-21, -14, 50], 6.4],
+        [[-22, 3, 43], 6.0],
+        [[-20, -1, 50], 6.4],
       ],
       6,
       0.6,
     ),
     // Porta: tronco (11 mm) oblicuo hacia el hilio, bifurcación en la porta hepatis
+    // Decisión 69: nace en la confluencia esplenoportal detrás del cuello del páncreas, por delante de la AMS, y sube
+    // oblicua a la derecha por delante de la VCI (con el hiato de Winslow entre ambas). Antes nacía dentro de la aorta.
     portal(
       'pvTrunk',
       [
-        [[8, -22, -107], 5.5],
-        [[-12, -8, -72], 5.5],
+        [[-3, 6, -100], 5.5],
+        [[-14, 4, -75], 5.5],
+        [[-26, 2, -56], 5.5],
         [[-34, 0, -45], 5.5],
       ],
       5.5,
@@ -296,21 +308,67 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       2,
       0.8,
     ),
+    // Decisión 69: hepática común desde el tronco celíaco (T12) hacia la derecha y propia por delante y a la izquierda
+    // de la porta hasta el hilio; antes salía de la aorta 40 mm por debajo de las arterias renales. Sube a la izquierda
+    // del colédoco y cruza el hilio por delante de la confluencia de los hepáticos y por encima del cístico (revisión:
+    // cruzaba el cístico, −0,8 mm entre luces, y el colédoco, −2,8; y corría pegada al hepático derecho)
     artery(
       'hepaticArtery',
       [
-        [[10, -14, -102], 2.4],
-        [[-14, 0, -67], 2.4],
-        [[-32, 6, -42], 2.1],
-        [[-70, 10, -27], 1.7],
+        [[13, -3, -32], 2.6],
+        [[-6, -1, -38], 2.5],
+        [[-18, 8, -49], 2.4],
+        [[-24.5, 14.5, -45], 2.3],
+        [[-33, 14.5, -38], 2.1],
+        [[-70, 16, -27], 1.7],
       ],
       2.4,
     ),
+    // tronco celíaco: desde la cara anterior de la aorta hasta su bifurcación («gaviota»), por delante de ella
+    artery(
+      'celiacTrunk',
+      [
+        [[15.5, -14, -30], 3.3],
+        [[14.5, -7.5, -31], 3.2],
+        [[13, -3, -32], 3.0],
+      ],
+      3.2,
+    ),
+    artery(
+      'splenicArtery',
+      [
+        [[13, -3, -32], 2.5],
+        [[24, -5, -29], 2.4],
+        [[42, -9, -26], 2.3],
+        [[66, -15, -24], 2.2],
+      ],
+      2.4,
+    ),
+    // arteria mesentérica superior: ~12 mm por debajo del celíaco, baja por delante de la aorta; la vena renal
+    // izquierda pasa entre ambas (pinza aortomesentérica, a 13,5 mm entre luces; normal 10–28; antes 8 y la vena
+    // dentro de la aorta)
+    artery(
+      'sma',
+      [
+        [[15.5, -17, -42], 3.3],
+        [[15, -6, -48], 3.2],
+        [[15, 4, -62], 3.0],
+        [[14.5, 4.5, -70], 2.9],
+        [[13, 4, -110], 2.6],
+        [[10, 3, -170], 2.2],
+      ],
+      3.0,
+    ),
+    // aorta: apoyada en la cara anterior izquierda del cuerpo vertebral, sin hundirse en él (revisión: su luz entraba
+    // hasta 4,8 mm en la vértebra, que se clasifica antes que los tubos)
     {
       id: 'aorta',
       tube: tube([
-        [[12, -24, 100], 11],
-        [[12, -24, -300], 10],
+        [[17.5, -21.5, 100], 11.5],
+        [[17, -22, 20], 11],
+        [[16.5, -22.5, -60], 10.2],
+        [[14.5, -22, -150], 9.5],
+        [[9.5, -20, -300], 9],
       ]),
       refRadius: 10,
       profileN: 5,
@@ -355,8 +413,11 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       [
         [kw(kL, [0, 8, -5]), 4],
         [hilumVeinL, 4.5],
-        [[40, -19, -62], 5],
-        [[12, -12, -64], 5],
+        // por delante de la aorta y estrechada en la pinza aortomesentérica (r 3), sin tocar la aorta ni la AMS
+        [[40, -17, -63], 4.5],
+        [[27, -7, -63.5], 3.5],
+        [[15, -5.5, -64], 3],
+        [[3, -7.5, -64], 3.5],
         [[-22, -14, -64], 5],
       ],
       5,
@@ -374,11 +435,14 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
   // Vía biliar: colédoco anterolateral a la porta en el ligamento hepatoduodenal,
   // hepáticos derecho e izquierdo por delante de las ramas portales, cístico al cuello.
   const ducts: DuctDef[] = [
+    // colédoco: a la derecha y por delante de la porta; sube medial al cuello de la vesícula (revisión: su luz quedaba a
+    // 1 mm de la bilis, entrando 1,4 mm en la pared del cuello) hasta la confluencia de los hepáticos
     {
       id: 'cbd',
       tube: tube([
-        [[4, -10, -112], 2.8],
-        [[-16, 4, -69], 2.8],
+        [[-24, 2, -112], 2.8],
+        [[-26, 12, -69], 2.8],
+        [[-28.5, 11.5, -50], 2.6],
         [[-36, 8, -39], 2.4],
       ]),
       wallMm: 0.7,
@@ -408,8 +472,8 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       tube: tube([
         [[-36.2, 12.6, -45.5], 1.4],
         [[-31, 10, -46.5], 1.3],
-        [[-27, 7.2, -51.5], 1.3],
-        [[-25.5, 6, -56], 1.3],
+        [[-28, 9, -51], 1.3],
+        [[-28, 11, -57], 1.3],
       ]),
       wallMm: 0.6,
     },

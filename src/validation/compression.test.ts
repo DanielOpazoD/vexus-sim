@@ -225,7 +225,9 @@ describe('la sonda comprime el tejido (decisión 63): solo empuja y la pared baj
       for (let a = 0; a < 3; a++) expect(moved[a], sp.id).toBeCloseTo(-rigid.axial[a] * d, 9);
       // una estructura honda a lo largo de la línea central, con y sin la sonda hundida: la VCI, el ligamento venoso
       // (la línea central de la intercostal no corta vasos) y la corteza renal
-      const landmark = sp.id === 'intercostal' ? Tissue.LigamentumVenosum : sp.id === 'renal' ? Tissue.RenalCortex : Tissue.Blood;
+      // (la línea central de la porta, decisión 69, corta el polo superior del riñón a ~60 mm)
+      const landmark =
+        sp.id === 'intercostal' ? Tissue.LigamentumVenosum : sp.id === 'renal' || sp.id === 'portal' ? Tissue.RenalCortex : Tissue.Blood;
       const depthOf = (fr: ProbeFrame, kk: ProbeCompression | null): number => {
         for (let r = 30; r < 180; r += 0.25) {
           const c = scene.classify(uncompress(pointOnLine(fr, tr, 0, r), kk), BASELINE_CALIBER);
@@ -239,6 +241,8 @@ describe('la sonda comprime el tejido (decisión 63): solo empuja y la pared baj
       expect(before - after, tag).toBeLessThan(d + 1);
       // lo hondo se acerca casi δ; el riñón, justo bajo la pared del flanco, se lo lleva el empuje: casi no se acerca
       if (sp.id === 'renal') expect(Math.abs(before - after), tag).toBeLessThan(0.3 * d);
+      // en la porta el riñón está a ~60 mm, más cerca del empuje que las estructuras hondas: se acerca a medias
+      else if (sp.id === 'portal') expect(before - after, tag).toBeGreaterThan(0.2 * d);
       else expect(before - after, tag).toBeGreaterThan(0.5 * d);
     }
   });

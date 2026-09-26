@@ -2059,6 +2059,67 @@ gruesa sí la recorta la salida barata y su norma queda bajo la cota) y `faceNor
 GPU con el gradiente del contorno daba p01 0,965 en la ventana renal), también en la e2e de normales; equivalencia
 TS↔GLSL (e2e); capturas con GPU (M4) de la vista renal antes y después.
 
+## 69. VCI con curva sagital y embudo, por delante de la aorta; ramas viscerales de la aorta; hilio hepático reordenado
+
+**Contexto.** El dueño (médico, 25-09-2026): «vena cava inferior demasiado recta; no está clara la relación con la
+aorta». En el modelo, la VCI infrahepática era un único tramo recto de 320 mm (z −300…20) a 8 mm por delante de la
+aorta, que solo se curvaba en sus últimos 40 mm; la aorta, un cilindro recto sin ramas. Una auditoría de choques entre
+vasos halló además tres errores anatómicos: el tronco portal nacía DENTRO de la aorta (11,5 mm de solape en
+(8, −22, −107)) y cruzaba la vena renal izquierda; la arteria hepática salía de la aorta 40 mm por debajo de las
+arterias renales (el celíaco está en T12, por encima de ellas); el colédoco atravesaba la porta. Referencias (revisión con
+fuentes, 25-09): la VCI dibuja una «S» sagital suave, más honda hacia caudal y con un embudo de 1–3 cm hacia la AD (28 ×
+18 mm); en T11–T12 queda 10–25 mm por delante de la aorta y ~30 mm en la unión cavoatrial; en L1–L2, casi a la par y a
+~31 mm lateral; la aorta se estrecha de ~22 a ~18 mm, apoyada en la cara anterior izquierda de las vértebras; el tronco
+celíaco («gaviota») y la AMS ~1 cm más abajo salen de su cara anterior y la vena renal izquierda pasa entre la AMS y la
+aorta; la porta nace detrás del cuello del páncreas y sube oblicua por delante de la VCI con el hiato de Winslow entre
+ambas; el colédoco va a la derecha y por delante de la porta y la hepática propia a la izquierda (Li 2021; Joshi 2009;
+Kot 2021; Radiopaedia; POCUS101).
+**Opciones.** (1) Curvar solo la VCI: la porta, el colédoco y la hepática seguirían chocando. (2) La elegida: rehacer a la
+vez la VCI, la confluencia de las suprahepáticas, la aorta con sus ramas, el tronco portal, el colédoco y la hepática,
+con una auditoría de holguras entre tubos.
+**Decisión.** `vesselTree.ts`: la VCI infrahepática pasa por siete nodos (lordosis por delante en L3, nivel renal,
+infrahepático, retrohepático, confluencia) y sube hacia delante 19 mm desde el nivel renal hasta la AD; la
+suprahepática gana un nodo y un embudo (radio 10 → 12,5 mm). La confluencia de las suprahepáticas (derecha y tronco
+común media–izquierda) se lleva a la pared de la nueva VCI. La aorta se curva y se afila (11,5 → 9 mm de radio),
+apoyada en la cara anterior izquierda del cuerpo vertebral sin hundirse en él. Vasos nuevos (`VESSEL_IDS`, sistema
+`visceralArtery`): `celiacTrunk` (T12, de la cara anterior de la aorta a su bifurcación), `splenicArtery` y `sma` (12 mm
+más abajo, por delante de la aorta; la vena renal izquierda pasa entre ambas, estrechada a 3 mm de radio en la pinza,
+con 13,5 mm entre las luces), con caudales ilustrativos: 0,6 y 0,3 L/min con el pulso de baja resistencia el celíaco y
+la esplénica; la AMS, 0,25 L/min con el suyo de ayunas, trifásico de alta resistencia (reflujo protodiastólico de
+~0,1 s, IR 0,88). La hepática común sale del celíaco hacia la derecha y la propia sube por delante y a la izquierda de
+la porta y cruza el hilio por delante de la confluencia de los hepáticos y por encima del cístico; el tronco portal
+nace en la confluencia (−3, 6, −100) y pasa ≥ 10 mm por delante de la VCI; el colédoco va a la derecha y por delante
+de la porta y sube medial al cuello de la vesícula, con el cístico hasta él. Punto
+de partida nuevo, «Porta · lateral» (`portal`): la ventana preferida de la porta en VExUS, entre la axilar media y la
+posterior y más caudal que la de las suprahepáticas, con la porta principal en el plano a < 60° del haz y la VCI detrás
+(el plano del flanco, que va a la VCI, ya no corta el tronco portal); las pruebas de la cadena del alumno y del volumen de
+muestra miden allí la porta principal (la que recomienda VExUS; con respiración tranquila se desliza por su eje).
+**Consecuencias.** En la subxifoidea la VCI tiene el embudo y la confluencia de las hepáticas; en la transversa
+epigástrica la VCI oval queda junto a la aorta redonda y del techo de la aorta sale el celíaco con la esplénica (la
+«gaviota»); en la coronal del flanco, la VCI y la aorta corren paralelas («doble cañón»). La ventana «Porta · lateral» es
+sobre todo «resto» (46 % del sector en el adulto normal; 41–43 % en los congestivos), hígado (22 %), grasa y músculo de
+la pared (16 %), el riñón con su grasa (6 %), la VCI (2,3 %) y el tronco portal (1,7 %): la línea central cruza el
+riñón, y la porta queda en un lado del sector. Una revisión adversarial halló que el colédoco entraba 1,4 mm en la
+pared del cuello vesicular, que la vena renal izquierda tenía 3,45 mm de su luz dentro de la aorta (8 mm entre las luces
+de la pinza, normal 10–28), que la aorta se hundía hasta 4,8 mm en la vértebra (el 9 % de su luz se clasificaba como
+vértebra), que la hepática chocaba con el cístico y con el colédoco y que la AMS tenía el pulso de después de comer:
+corregidos. Siguen tocándose en la porta hepatis, como en la realidad, el tronco portal con el colédoco (−0,5 mm entre
+paredes) y con el cístico (−0,9), la rama izquierda de la porta con la hepática (−1,8) y el colédoco con los hepáticos
+y el cístico que desembocan en él; la arteria renal derecha entra 1,2 mm en el cuerpo vertebral al cruzar la línea media. Con el cuerpo
+vertebral del modelo (un cilindro de 34 mm sin cortical) la aorta queda a 33–38 mm de la VCI entre centros (la
+referencia da ~31 en L1–L2). Pendiente: la pulsatilidad cardíaca de la VCI del sano (decisión aparte) y el cuerpo
+vertebral sin cortical, cuya sombra es un rectángulo.
+**Verificación.** `anatomy.test.ts`: la VCI sube hacia delante más de 15 mm entre el nivel renal y la AD sin saltos,
+queda a más de 10 mm por delante de la aorta en el segmento retrohepático y a más de 20 mm cerca de la AD, a la par en
+el nivel renal y a más de 25 mm lateral; embudo; celíaco por encima de la AMS y esta de las renales; la hepática nace
+del celíaco; la porta a más de 10 mm por delante de la VCI y a más de 2 mm de la aorta, la VCI y la vena renal
+izquierda; holguras ≥ 0 entre las paredes de la vena renal izquierda y la aorta, de la vena renal izquierda y la AMS,
+del cístico y la hepática y de la hepática y el colédoco; 10–28 mm entre las luces de la pinza aortomesentérica, con
+la vena más estrecha allí que en el hilio; la aorta fuera de la vértebra (con su pared); solo el cístico toca la
+vesícula (cada conducto por separado); `physiology.test.ts`: la AMS trifásica de ayunas (IR 0,85–0,92, reflujo breve)
+y el celíaco de baja resistencia; `cases.test.ts` (tipo de los vasos nuevos); equivalencia TS↔GLSL (e2e); capturas con
+GPU (M4) antes y después en la subxifoidea, el flanco, la congestión grave y una transversa epigástrica.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

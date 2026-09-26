@@ -173,6 +173,8 @@ function applyMode(mode: ImagingMode): void {
   modeButtons.B.classList.toggle('active', mode === 'B');
   modeButtons.color.classList.toggle('active', modeHasColor(mode));
   modeButtons.pw.classList.toggle('active', modeHasPw(mode));
+  // la imagen manda: el espectro solo ocupa su franja con el PW encendido
+  app.classList.toggle('pw-on', modeHasPw(mode));
 }
 // 2D apaga todo; Color y PW alternan su función y conservan la otra (tríplex, decisión 66)
 modeButtons.B.addEventListener('click', () => store.set({ mode: 'B', tab: store.get().tab === 'doppler' ? 'imagen' : store.get().tab }));
@@ -312,7 +314,8 @@ function frame(now: number, dt: number): void {
   nav?.draw();
   if (store.get().torso && !gpu.lost) cutMap.draw(s, now);
   const t = s.physiology.clock.t;
-  const secondsVisible = spectrumCanvas.clientWidth / (s.pw.sweepMmS * 3.2);
+  // el ECG siempre está a la vista (el espectro, solo con PW) y comparte el eje de tiempo con él
+  const secondsVisible = ecgCanvas.clientWidth / (s.pw.sweepMmS * 3.2);
   drawEcg(ecgCanvas, s, secondsVisible, t);
   spectrogram.draw(s, s.spectral.columns, t, secondsVisible);
   const h = hudText({

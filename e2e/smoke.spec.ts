@@ -757,7 +757,7 @@ test('modo alumno ciego: sin diagnóstico en pantalla; el docente lo ve con ?doc
   // Arranca la aplicación dos veces: con SwiftShader cada arranque compila los 16 programas (decisión 58) y
   // con la máquina cargada los dos no caben en los 90 s por omisión (fallaba igual en main).
   test.setTimeout(240_000);
-  const diagnoses = ['Adulto sano', 'Congestión venosa', 'congestión moderada', 'fallo derecho'];
+  const diagnoses = ['Adulto sano', 'Congestión venosa', 'congestión moderada', 'fallo derecho', 'Trampa', 'sin congestión', 'casi normal'];
   const errors = await bootWithoutErrors(page);
   await expect(page.locator('#debug-toggle')).toBeHidden();
   await page.selectOption('#case-select', 'severe-congestion');
@@ -765,7 +765,7 @@ test('modo alumno ciego: sin diagnóstico en pantalla; el docente lo ve con ?doc
   const body = await page.locator('body').innerText();
   for (const d of diagnoses) expect(body, d).not.toContain(d);
   const options = await page.locator('#case-select option').allTextContents();
-  expect(options).toEqual(['Paciente A', 'Paciente B', 'Paciente C']);
+  expect(options).toEqual(['Paciente A', 'Paciente B', 'Paciente C', 'Paciente D', 'Paciente E', 'Paciente F', 'Paciente G']);
   await expect(page.locator('#cutmap')).toHaveAttribute('data-labels', '0');
   await expect(page.locator('#layer-vessels')).toBeDisabled();
   expect(errors).toEqual([]);
@@ -777,6 +777,77 @@ test('modo alumno ciego: sin diagnóstico en pantalla; el docente lo ve con ?doc
   await expect(page.locator('#hud-tl')).toContainText('Congestión venosa grave');
   await expect(page.locator('#cutmap')).toHaveAttribute('data-labels', '1');
   await expect(page.locator('#layer-vessels')).toBeEnabled();
+  expect(errors2).toEqual([]);
+});
+
+test('casos trampa (decisión 82): el alumno lee la viñeta, marca el contexto y ve el aviso; la trampa es del docente', async ({ page }) => {
+  // Dos arranques (alumno y docente), como el modo ciego: con SwiftShader cada uno compila los programas
+  test.setTimeout(240_000);
+  const errors = await bootWithoutErrors(page);
+  await page.selectOption('#case-select', 'abdominal-hypertension');
+  await expect(page.locator('#hud-tl')).toContainText('Paciente D', { timeout: 30_000 });
+  // `force`: con render por software el hilo principal no deja a los elementos «estables»
+  await page.getByRole('tab', { name: 'Medir' }).click({ force: true });
+  // la viñeta del caso, con lo que el operador sabe
+  await expect(page.locator('.vignette')).toContainText('Presión vesical 16 mmHg');
+  const iap = page.getByRole('checkbox', { name: 'Presión intraabdominal alta' });
+  await expect(iap).not.toBeChecked();
+  await expect(page.getByRole('group', { name: 'Confusores del paciente' }).getByRole('checkbox')).toHaveCount(7);
+  // modo alumno: ni el nombre del caso ni la trampa en pantalla ni en el DOM; las explicaciones de las trampas tampoco en
+  // ningún JS que haya descargado (viajan con la pestaña Docente, que no se carga). El nombre de los casos sí va en el JS
+  // principal, como el de siempre (`blind-mode-screen-only`)
+  const student = await page.locator('body').innerText();
+  for (const leak of ['Trampa', 'Grado 0 falso', 'Contexto real']) expect(student, leak).not.toContain(leak);
+  const html = await page.content();
+  for (const leak of ['Trampa ·', 'Grado 0 falso', 'Contexto real']) expect(html, leak).not.toContain(leak);
+  const scripts = await page.evaluate(() => [
+    ...new Set([
+      ...[...document.querySelectorAll<HTMLScriptElement>('script[src]')].map((sc) => sc.src),
+      ...performance
+        .getEntriesByType('resource')
+        .map((e) => e.name)
+        .filter((n) => /\.js(\?|$)/.test(n)),
+    ]),
+  ]);
+  expect(
+    scripts.some((src) => /\/index-[^/]+\.js/.test(src)),
+    JSON.stringify(scripts),
+  ).toBe(true);
+  expect(
+    scripts.some((src) => /teacherTab/.test(src)),
+    JSON.stringify(scripts),
+  ).toBe(false);
+  for (const src of scripts) {
+    const js = await (await page.request.get(src)).text();
+    for (const leak of ['Grado 0 falso', 'La porta subestima', 'Sobreestima: VExUS 2']) expect(js, `${src}: ${leak}`).not.toContain(leak);
+  }
+  await iap.check({ force: true });
+  await expect(page.locator('.result')).toContainText('presión intraabdominal alta: la VCI puede ser pequeña con la PAD alta');
+  await expect(page.locator('.result')).toContainText('mVExUS (sin riñón)');
+  // otro caso: la casilla se desmarca, el aviso se va y la viñeta es la suya
+  await page.selectOption('#case-select', 'normal-adult');
+  await expect(page.locator('.vignette')).toContainText('taller de ecografía', { timeout: 30_000 });
+  await expect(iap).not.toBeChecked();
+  await expect(page.locator('.result')).not.toContainText('presión intraabdominal alta');
+  expect(errors).toEqual([]);
+
+  // Docente: el nombre del caso, su contexto real y la trampa
+  const errors2 = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  // al marcar «Docente» la consola abre su pestaña
+  await page.locator('#debug-toggle').check({ force: true });
+  await page.selectOption('#case-select', 'abdominal-hypertension');
+  const notes = page.locator('.case-notes');
+  await expect(notes).toContainText('Trampa · PIA alta con fallo derecho', { timeout: 30_000 });
+  await expect(notes).toContainText('Contexto real: Presión intraabdominal alta');
+  await expect(notes).toContainText('Grado 0 falso');
+  await expect(page.locator('.loop-state')).toContainText('caso 14.0');
+  await expect(page.locator('.debug')).toContainText('VERDAD FISIOLÓGICA', { timeout: 30_000 });
+  // y al volver al modo alumno las notas, el estado del lazo y la verdad salen también del DOM
+  await page.locator('#debug-toggle').uncheck({ force: true });
+  await expect(notes).toHaveText('');
+  await expect(page.locator('.loop-state')).not.toContainText('caso');
+  const after = await page.content();
+  for (const leak of ['Grado 0 falso', 'VERDAD FISIOLÓGICA']) expect(after, leak).not.toContain(leak);
   expect(errors2).toEqual([]);
 });
 

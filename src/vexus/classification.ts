@@ -14,9 +14,11 @@
  * hace inaplicable PF. S = D se registra como frontera y se incluye en «leve».
  *
  * Esta función SOLO recibe observables. No conoce el PatientState. El contexto clínico que el operador conoce (historia,
- * ECG, ventilador: `VexusContext`) puede volver poco fiable un territorio o la puerta de la VCI; entonces el territorio
- * cuenta como no evaluado para el intervalo de grados y el resultado lleva el aviso con su motivo (decisión 79, revisión
- * de la literatura de VExUS del 26-09-2026).
+ * ECG, ventilador: `VexusContext`) puede volver poco fiable un hallazgo o la puerta de la VCI; entonces el territorio
+ * cuenta como no evaluado para el intervalo de grados y el resultado lleva el aviso con su motivo. Solo deja de contar el
+ * hallazgo que el confusor puede falsear, según hacia dónde sesga (`Discount`): el riñón normal de una ERC o la porta
+ * normal de un deportista siguen contando, y la S invertida de un cirrótico también (decisión 82, revisión de la
+ * literatura de VExUS del 26-09-2026).
  */
 export type HepaticPattern = 'normal' | 'mild' | 'severe' | 'not-assessed';
 export type RenalPattern = 'continuous' | 'biphasic' | 'monophasic' | 'reversal-out-of-scheme' | 'not-assessed';
@@ -55,11 +57,25 @@ export interface VexusResult {
 /** Territorios del VExUS: la puerta de la VCI y las tres venas. */
 export type Territory = 'ivc' | 'hepatic' | 'portal' | 'renal';
 
-/** Aviso de fiabilidad: `excluded` = el territorio cuenta como no evaluado para el intervalo de grados. */
+/**
+ * Qué hallazgo de un territorio deja de contar para el grado, según hacia dónde sesga el confusor: `severe`, solo el
+ * grave (el confusor da falsos positivos: la ERC con el riñón, el deportista con la porta; el hallazgo normal sigue
+ * siendo fiable); `not-severe`, solo el que no es grave (el confusor puede ocultar la congestión: la cirrosis aplana la
+ * suprahepática, pero no invierte la S); `any`, cualquiera (la cirrosis con la porta, que puede errar en los dos
+ * sentidos).
+ */
+export type Discount = 'severe' | 'not-severe' | 'any';
+
+/**
+ * Aviso de fiabilidad por el contexto. `discounts`: qué hallazgos del territorio puede quitar el confusor (sin él, solo
+ * avisa). `excluded`: que quitó el hallazgo medido y el territorio cuenta como no evaluado para el intervalo de grados;
+ * solo lo decide `classifyVexusC`, con el hallazgo (`contextWarnings`, sin hallazgos, lo deja en `false`).
+ */
 export interface ReliabilityWarning {
   territory: Territory;
   reason: string;
   excluded: boolean;
+  discounts?: Discount;
 }
 
 /**
@@ -67,53 +83,48 @@ export interface ReliabilityWarning {
  * contexto, la clasificación es la de siempre.
  */
 export interface VexusContext {
-  /** Enfermedad renal crónica avanzada o en diálisis: el Doppler intrarrenal no es fiable (bifásico sin congestión). */
+  /** Enfermedad renal crónica avanzada o en diálisis: el Doppler intrarrenal puede alterarse sin congestión. */
   advancedCkd?: boolean;
-  /** Cirrosis o hipertensión portal: la porta y la suprahepática dejan de seguir a la PAD. */
+  /** Cirrosis o hipertensión portal: la porta deja de seguir a la PAD y la suprahepática se aplana. */
   cirrhosis?: boolean;
   /** Sin ECG simultáneo: S y D se rotulan mal. */
   noEcg?: boolean;
   /** Fibrilación auricular: la onda S se reduce sin congestión. */
   atrialFibrillation?: boolean;
-  /** Ventilación con presión positiva: VCI dilatada y poco colapsable sin PAD alta; su tabla frente a la PAD no vale. */
+  /** Ventilación con presión positiva: VCI dilatada y poco variable sin PAD alta; su tabla frente a la PAD no vale. */
   positivePressureVentilation?: boolean;
   /** Presión intraabdominal elevada o ascitis a tensión: la VCI puede ser pequeña con la PAD alta (grado 0 falso). */
   raisedIntraAbdominalPressure?: boolean;
-  /** Deportista: la porta puede ser pulsátil en reposo sin congestión. */
+  /** Deportista: la porta puede ser pulsátil en reposo y la VCI grande sin congestión. */
   athlete?: boolean;
 }
 
 /**
  * Avisos por contexto [LITERATURA, revisión del 26-09-2026: Koratala 2022 y 2026; Leyba 2026; Martin 2025; Kidney360
- * 2022; Clin Kidney J 2024; Med Clin N Am 2025]. Excluyen el territorio (cuenta como no evaluado) la ERC avanzada
- * (renal), la cirrosis (porta y suprahepática) y el deportista (porta); la FA, la falta de ECG y la ventilación solo
- * avisan. La presión intraabdominal alta se trata aparte: una VCI < 20 mm no cierra en grado 0.
+ * 2022; Clin Kidney J 2024; Med Clin N Am 2025]. Pueden quitar un hallazgo (`discounts`, ver `Discount`) la ERC
+ * avanzada (el riñón grave), la cirrosis (la porta siempre; la suprahepática si no está invertida) y el deportista (la
+ * porta grave); la FA, la falta de ECG, la ventilación y la VCI del deportista solo avisan. La presión intraabdominal
+ * alta se trata aparte: una VCI < 20 mm no cierra en grado 0.
  */
 export function contextWarnings(ctx: VexusContext = {}): ReliabilityWarning[] {
   const w: ReliabilityWarning[] = [];
+  const discount = (territory: Territory, reason: string, discounts: Discount) => w.push({ territory, reason, excluded: false, discounts });
+  const warn = (territory: Territory, reason: string) => w.push({ territory, reason, excluded: false });
   if (ctx.advancedCkd)
-    w.push({
-      territory: 'renal',
-      reason: 'ERC avanzada o diálisis: el patrón intrarrenal puede ser bifásico sin congestión',
-      excluded: true,
-    });
+    discount('renal', 'ERC avanzada o diálisis: el patrón intrarrenal puede ser bifásico o monofásico sin congestión', 'severe');
   if (ctx.cirrhosis) {
-    w.push({ territory: 'portal', reason: 'cirrosis: la pulsatilidad portal no sigue a la PAD', excluded: true });
-    w.push({ territory: 'hepatic', reason: 'cirrosis: el parénquima rígido aplana la onda suprahepática', excluded: true });
+    discount('portal', 'cirrosis: la pulsatilidad portal no sigue a la PAD', 'any');
+    discount('hepatic', 'cirrosis: el parénquima rígido aplana la onda suprahepática y puede ocultar la congestión', 'not-severe');
   }
-  if (ctx.athlete)
-    w.push({ territory: 'portal', reason: 'deportista: la porta puede ser pulsátil en reposo sin congestión', excluded: true });
-  if (ctx.noEcg) w.push({ territory: 'hepatic', reason: 'sin ECG: S y D se rotulan sin referencia', excluded: false });
-  if (ctx.atrialFibrillation)
-    w.push({ territory: 'hepatic', reason: 'fibrilación auricular: la onda S se reduce sin congestión', excluded: false });
+  if (ctx.athlete) {
+    discount('portal', 'deportista: la porta puede ser pulsátil en reposo sin congestión', 'severe');
+    warn('ivc', 'deportista: la VCI puede estar dilatada sin PAD alta');
+  }
+  if (ctx.noEcg) warn('hepatic', 'sin ECG: S y D se rotulan sin referencia');
+  if (ctx.atrialFibrillation) warn('hepatic', 'fibrilación auricular: la onda S se reduce sin congestión');
   if (ctx.positivePressureVentilation)
-    w.push({
-      territory: 'ivc',
-      reason: 'ventilación con presión positiva: la VCI está dilatada y colapsa poco sin PAD alta',
-      excluded: false,
-    });
-  if (ctx.raisedIntraAbdominalPressure)
-    w.push({ territory: 'ivc', reason: 'presión intraabdominal alta: la VCI puede ser pequeña con la PAD alta', excluded: false });
+    warn('ivc', 'ventilación con presión positiva: la VCI está dilatada y varía poco (se distiende en la insuflación) sin PAD alta');
+  if (ctx.raisedIntraAbdominalPressure) warn('ivc', 'presión intraabdominal alta: la VCI puede ser pequeña con la PAD alta');
   return w;
 }
 
@@ -140,10 +151,22 @@ export function classifyVexusC(input: VexusInputs, ctx: VexusContext = {}): Vexu
   const portalNearThreshold = pf !== null && Number.isFinite(pf) && (Math.abs(pf - PF_MILD) <= 1 || Math.abs(pf - PF_SEVERE) <= 1);
   const ivc = input.ivcMaxDiameterMm;
   const ivcNearThreshold = ivc !== null && Number.isFinite(ivc) && Math.abs(ivc - IVC_THRESHOLD_MM) <= IVC_NEAR_THRESHOLD_MM;
-  const warnings = contextWarnings(ctx);
+  // cada confusor quita solo el hallazgo que puede falsear (`Discount`); un territorio sin medir ya cuenta como no
+  // evaluado, y la VCI nunca se quita (la presión intraabdominal abre el intervalo más abajo)
+  const assessed = {
+    hepatic: hepaticClass !== 'not-assessed',
+    portal: portalClass !== 'not-assessed' && portalClass !== 'not-applicable',
+    renal: renalClass !== 'not-assessed' && renalClass !== 'reversal-out-of-scheme',
+  };
+  const severe = { hepatic: hepaticClass === 'severe', portal: portalClass === 'severe', renal: renalClass === 'monophasic' };
+  const discounted = (w: ReliabilityWarning): boolean => {
+    if (!w.discounts || w.territory === 'ivc' || !assessed[w.territory]) return false;
+    return w.discounts === 'any' || (w.discounts === 'severe') === severe[w.territory];
+  };
+  const warnings = contextWarnings(ctx).map((w) => ({ ...w, excluded: discounted(w) }));
   const excluded = new Set(warnings.filter((w) => w.excluded).map((w) => w.territory));
 
-  // un territorio excluido por el contexto cuenta como no evaluado para el intervalo (su clase se sigue informando)
+  // un hallazgo que el contexto quita cuenta como no evaluado para el intervalo (su clase se sigue informando)
   let severeCount = 0;
   let missingCount = 0;
   if (excluded.has('hepatic')) missingCount++;
@@ -178,7 +201,7 @@ export function classifyVexusC(input: VexusInputs, ctx: VexusContext = {}): Vexu
 }
 
 /**
- * VExUS modificado sin riñón (mVExUS; Martin 2025, Ultrasound J): la VCI y las dos venas hepáticas. Con la VCI ≥ 20 mm,
+ * VExUS modificado sin riñón (mVExUS; Martin 2025, Ultrasound J): la VCI, la suprahepática y la porta. Con la VCI ≥ 20 mm,
  * 0 patrones graves → 1, 1 → 2, 2 → 3. Frente a la PAD > 12 mmHg: AUC 0,85 (tradicional 0,87) y concordancia κ 0,85.
  * Útil sin ventana renal o con el territorio renal poco fiable.
  */

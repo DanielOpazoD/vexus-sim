@@ -110,7 +110,9 @@ pera con pared, VCI, suprahepáticas, porta con pared periportal ∝ calibre, v�
 cápsula, pirámides, seno y pelvis) → sonda 6DOF con acoplamiento y pared blanda → modo B en GPU (PSF con
 número F, grafo de pasadas validado) → color por celdas con varianza de Kasai y cadencia física → PW
 con volumen de muestra 3D, espectro y audio → medición del alumno (envolvente por percentil de banda
-contigua) → VExUS C. Tres casos con el mismo motor (sano, congestión grave, FA con congestión moderada).
+contigua) → VExUS C con el contexto clínico que marca el alumno. Siete casos con el mismo motor: tres de
+referencia (sano, congestión grave, FA con congestión moderada) y cuatro trampa con viñeta (presión intraabdominal
+alta, IT grave con PAD casi normal, ventilación mecánica y cirrosis con fallo derecho; decisión 82).
 
 Bases estructurales (v0.5.0): modelo de dominio (metadatos de vasos, equipo por comandos con
 invariantes, sesión, perfil de transductor, matriz de capas), anatomía de una sola fuente (esquema de

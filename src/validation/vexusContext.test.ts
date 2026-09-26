@@ -2,13 +2,14 @@ import { describe, expect, it } from 'vitest';
 import { IVC_NEAR_THRESHOLD_MM, IVC_THRESHOLD_MM, classifyModifiedVexus, classifyVexusC, contextWarnings } from '../vexus/classification';
 
 /**
- * Fiabilidad por el contexto clínico, VCI cerca del umbral y mVExUS (decisión 79; revisión de la literatura de VExUS
- * del 26-09-2026): un territorio que el contexto vuelve poco fiable cuenta como no evaluado para el intervalo de
- * grados, y el resultado dice por qué.
+ * Fiabilidad por el contexto clínico, VCI cerca del umbral y mVExUS (decisión 82; revisión de la literatura de VExUS
+ * del 26-09-2026): el hallazgo que el contexto puede falsear cuenta como no evaluado para el intervalo de grados, y el
+ * resultado dice por qué. Solo ese: el confusor que da falsos positivos no quita un hallazgo normal, y el que oculta la
+ * congestión no quita uno grave.
  */
 const congested = { ivcMaxDiameterMm: 26, hepatic: 'severe', portalPulsatilityFraction: 70, renal: 'monophasic' } as const;
 
-describe('VExUS con el contexto clínico (decisión 79)', () => {
+describe('VExUS con el contexto clínico (decisión 82)', () => {
   it('sin contexto, la clasificación de siempre y sin avisos', () => {
     const r = classifyVexusC(congested);
     expect(r.grade).toBe(3);
@@ -16,28 +17,62 @@ describe('VExUS con el contexto clínico (decisión 79)', () => {
     expect(classifyVexusC(congested, {})).toEqual(r);
   });
 
-  it('ERC avanzada: el territorio renal no cuenta, y un patrón monofásico no basta para el grado 3', () => {
+  it('ERC avanzada: un patrón renal monofásico no cuenta y no basta para el grado 3; el continuo sí cuenta', () => {
     const renalOnly = { ivcMaxDiameterMm: 24, hepatic: 'mild', portalPulsatilityFraction: 60, renal: 'monophasic' } as const;
     expect(classifyVexusC(renalOnly).grade).toBe(3);
     const r = classifyVexusC(renalOnly, { advancedCkd: true });
     expect(r.gradeRange).toEqual([2, 3]);
     expect(r.grade).toBeNull();
     expect(r.renalClass).toBe('monophasic'); // se informa lo observado
-    expect(r.warnings).toEqual([expect.objectContaining({ territory: 'renal', excluded: true })]);
+    expect(r.warnings).toEqual([expect.objectContaining({ territory: 'renal', excluded: true, discounts: 'severe' })]);
+    // la ERC da falsos positivos: un riñón continuo sigue siendo un hallazgo fiable y el grado no se abre
+    const normal = { ivcMaxDiameterMm: 24, hepatic: 'normal', portalPulsatilityFraction: 20, renal: 'continuous' } as const;
+    const n = classifyVexusC(normal, { advancedCkd: true });
+    expect(n.grade).toBe(1);
+    expect(n.status).toBe('complete');
+    expect(n.warnings).toEqual([expect.objectContaining({ territory: 'renal', excluded: false })]);
   });
 
-  it('cirrosis: porta y suprahepática no cuentan; solo el riñón decide', () => {
+  it('cirrosis: la porta no cuenta en ningún sentido; la suprahepática solo si no está invertida', () => {
+    // la cirrosis aplana la suprahepática, no invierte la S: la S invertida y el riñón grave siguen dando el grado 3
     const r = classifyVexusC(congested, { cirrhosis: true });
-    expect(r.gradeRange).toEqual([2, 3]);
+    expect(r.grade).toBe(3);
+    expect(r.status).toBe('incomplete');
+    expect(r.warnings.filter((w) => w.excluded).map((w) => w.territory)).toEqual(['portal']);
     expect(r.warnings.map((w) => w.territory).sort()).toEqual(['hepatic', 'portal']);
+    // una suprahepática normal puede ocultar la congestión: no cuenta y el grado queda en el intervalo que da el riñón
+    const flat = classifyVexusC({ ...congested, hepatic: 'normal' }, { cirrhosis: true });
+    expect(flat.gradeRange).toEqual([2, 3]);
+    expect(
+      flat.warnings
+        .filter((w) => w.excluded)
+        .map((w) => w.territory)
+        .sort(),
+    ).toEqual(['hepatic', 'portal']);
+    // y una porta normal tampoco es fiable: ni sube ni baja el grado
+    expect(
+      classifyVexusC({ ivcMaxDiameterMm: 24, hepatic: 'severe', portalPulsatilityFraction: 20, renal: 'continuous' }, { cirrhosis: true })
+        .gradeRange,
+    ).toEqual([2, 3]);
   });
 
-  it('deportista: la porta pulsátil no sube el grado por sí sola', () => {
+  it('deportista: la porta pulsátil no sube el grado por sí sola; la porta normal sigue contando', () => {
     const r = classifyVexusC(
       { ivcMaxDiameterMm: 21, hepatic: 'normal', portalPulsatilityFraction: 55, renal: 'continuous' },
       { athlete: true },
     );
     expect(r.gradeRange).toEqual([1, 2]);
+    const n = classifyVexusC(
+      { ivcMaxDiameterMm: 24, hepatic: 'normal', portalPulsatilityFraction: 20, renal: 'continuous' },
+      { athlete: true },
+    );
+    expect(n.grade).toBe(1);
+    expect(n.status).toBe('complete');
+    // y la VCI grande del deportista avisa, sin quitar la puerta
+    expect(n.warnings.map((w) => [w.territory, w.excluded])).toEqual([
+      ['portal', false],
+      ['ivc', false],
+    ]);
   });
 
   it('FA, sin ECG o con ventilación: avisan pero no quitan el territorio', () => {
@@ -77,7 +112,7 @@ describe('VExUS con el contexto clínico (decisión 79)', () => {
       raisedIntraAbdominalPressure: true,
       athlete: true,
     });
-    expect(all.length).toBe(8);
+    expect(all.length).toBe(9);
     for (const w of all) expect(w.reason.length).toBeGreaterThan(20);
   });
 });

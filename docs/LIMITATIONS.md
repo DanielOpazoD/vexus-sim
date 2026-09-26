@@ -86,6 +86,50 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   cambian entre casos; además el pulso sube 130–170 ms antes de la R. Medir el IR hoy no enseñaría
   nada.
 
+### Confusores de los casos trampa (decisión 82)
+
+- **La presión intraabdominal no comprime la vena renal ni el riñón** (`iah-no-renal-compression`): la PIA sube la
+  presión de los compartimentos del abdomen y colapsa la VCI, pero ni la resistencia de la vena renal ni el parénquima
+  cambian. En el caso de la PIA el Doppler intrarrenal sale continuo y la porta al 25–27 %, sin calibrar frente al
+  patrón real de la hipertensión intraabdominal.
+- **La VCI retrohepática se colapsa con la abdominal** (`iah-collapsed-ivc-velocity`): con la PIA por encima de la
+  PAD, el tramo retrohepático, que en el modelo comparte el calibre del compartimento abdominal (`ivc-single-compartment`),
+  se estrecha con él y lleva además el caudal de las suprahepáticas: con PIA 16 y PAD 14, 2,9 m/s con respiración
+  tranquila, 3,4 en apnea inspiratoria y 5,3 tras un diurético de 1 L (con PIA 20, 5,4 m/s sin intervenir). Hallado por
+  la propiedad de las intervenciones (`interventions.test.ts`, que lo afirma en una prueba aparte y solo exige < 8 m/s a
+  esa vena con la PIA); por eso el caso usa PIA 16 y no 20.
+- **Con el ventilador ciclando, la calidad no siempre rechaza la VSH de otro vaso**
+  (`ppv-hepatic-capture-false-reversal`): con presión positiva y respiración «tranquila», en la insuflación la puerta fija
+  ve otro vaso; casi todas las capturas salen no medibles, pero en 5 de 10 semillas del caso de la ventilación 1–2 de 10
+  capturas con el visto bueno leen una S invertida con la verdad normal (`examChain.test.ts` lo afirma). En la pausa
+  espiratoria, la técnica que enseña el caso, todas son verdaderas.
+- **La VCI se dilata antes que en la tabla de la ASE** (`ivc-law-steep`): la ley de tubo de la VCI da al sano con PAD
+  6/7/8 mmHg 20,1/22,2/24,0 mm con 27/23/20 % de colapso, que la tabla leería como una PAD intermedia (8) la primera y
+  de 15 las otras dos. Por eso la trampa de la
+  IT (PAD 8) y la de la ventilación (PAD 7) abren la puerta del VExUS con la PAD baja; en la clínica la VCI de una IT
+  grave o de un ventilado también puede estar dilatada, pero con este modelo no hace falta.
+- **La cirrosis no aplana la suprahepática** (`cirrhosis-hepatic-not-flattened`): la cirrosis del modelo es la
+  resistencia intrahepática y la distensibilidad sinusoidal; las suprahepáticas no se estrechan ni pierden las ondas,
+  así que en el caso trampa conservan la S invertida del fallo derecho (en el cirrótico pueden salir planas). Tampoco
+  hay circulación hiperdinámica (gasto alto con resistencias bajas): el caso trampa tiene el gasto del corazón que
+  falla (4,4 L/min).
+- **Sin ascitis ni líquido libre** (`no-ascites`): el peritoneo no tiene líquido; las viñetas lo respetan (la PIA es
+  posoperatoria y la ascitis del cirrótico está controlada).
+- **Un hígado pequeño no encoge sus venas** (`small-liver-fixed-vessels`): las venas principales son las del avatar;
+  con el hígado a 0,9 sus puntas quedan junto a la cápsula y el árbol procedural pierde un cuarto de sus ramas (30 de
+  ≥ 40), así que la cirrosis del caso trampa tiene el tamaño normal.
+- **Sin fisiología de deportista** (`no-athlete-physiology`): «Deportista» es solo contexto. La bradicardia sola (FC 45,
+  PAD 4) no da la porta pulsátil del deportista (PF 27 %, S/D 2,0) ni el corazón grande.
+- **Sin fisiología de ERC terminal** (`no-eskd-physiology`): «ERC avanzada o diálisis» es solo contexto. El riñón del
+  modelo no tiene el parénquima que da un patrón intrarrenal alterado sin congestión (en la serie de hemodiálisis
+  revisada, el Doppler renal no fue evaluable en un 37 % antes de la sesión) ni el volumen que se acumula entre
+  sesiones.
+- **Sin VCI remodelada** (`no-remodelled-ivc`): la VCI sigue siempre a la presión; la VCI crónicamente dilatada de la
+  hipertensión pulmonar, que no baja al descongestionar, no existe.
+- **Sin D invertida del VD rígido** (`no-stiff-rv-d-reversal`): una aurícula poco distensible (0,35) con el VD a 0,6 da
+  una onda A de −21 cm/s y la porta al 59 %, no la D invertida de los latidos postinspiratorios; el contorno auricular es
+  prescrito (`prescribed-ra-contour`).
+
 ## Marco de coordenadas
 
 - **El marco anatómico es levógiro** (`left-handed-anatomy-frame`): x = izquierda del paciente,
@@ -279,3 +323,12 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   la reclasificación solo alcanza a un cuarto fijo de la población. Rotarla y reponer la población
   sin más introduce saltos bruscos de amplitud de pared y tejido (30–40 dB sobre la sangre) que el
   filtro de pared no quita: hace falta un control de población con transiciones lentas.
+
+## Enseñanza
+
+- **El modo ciego es de pantalla, no de código** (`blind-mode-screen-only`, decisión 82): el alumno no ve el nombre del
+  caso, sus confusores reales ni la trampa en la pantalla ni en el DOM, y las explicaciones de las trampas con los
+  confusores reales solo viajan en el chunk de la pestaña Docente, que su navegador no descarga. Pero el JS principal
+  lleva el registro de casos con la verdad latente (el `PatientState`: la PAD, la PIA, la IT…) y sus nombres para el
+  modo docente, y los valores de las opciones del selector de los casos de referencia (`severe-congestion`,
+  `af-moderate-congestion`) nombran el diagnóstico: quien lea el código o el DOM puede saber el caso.

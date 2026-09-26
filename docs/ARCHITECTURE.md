@@ -21,6 +21,7 @@ falla la suite, incluidos los dinámicos y los de efecto lateral:
 core ← physiology ← anatomy ← probe ← ultrasound
              ↑  ↖ cases          ↖
            vexus ← doppler (+ anatomy)      audio (solo core)
+             ↖ cases (el tipo del contexto clínico)
 app (orquesta todo el motor) ← ui (vistas; hoy aún ven el Simulator concreto) ← main
 ```
 
@@ -31,7 +32,11 @@ importa.
 
 El Doppler no conoce Web Audio: la app le inyecta un `AudioSink` (`DopplerAudio` en el navegador,
 `SILENT_AUDIO` en pruebas). Los vasos se clasifican por `VESSEL_META` (sistema, tipo, ley de
-calibre), nunca por el prefijo de su identificador; los casos salen de un único registro.
+calibre), nunca por el prefijo de su identificador; los casos salen de un único registro. El contexto
+clínico va fuera del `PatientState` (decisión 82), en dos registros por audiencia: la viñeta, que ve el
+alumno (`src/cases/vignettes.ts`, por `src/app/blindMode.ts`), y los confusores reales con la explicación
+de la trampa (`src/cases/teaching.ts`), que solo llegan por `src/app/teacherNotes.ts` a la pestaña
+Docente, diferida: el JS del alumno no los lleva (`src/validation/codeSplitting.test.ts`).
 
 ## Un reloj
 

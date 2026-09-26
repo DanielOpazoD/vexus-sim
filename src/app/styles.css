@@ -991,6 +991,73 @@ input[type='range'] {
   font-size: 12px;
   font-weight: 400;
 }
+/* Solo para lectores de pantalla (el resumen del grado en `aria-live`) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+/* Contexto clínico en el resultado (decisión 82): avisos por confusor y territorios que dejan de contar */
+.result .ctx-warn {
+  font-size: 12px;
+  line-height: 16px;
+}
+.result .ctx-warn b,
+.result .unreliable {
+  color: var(--warn);
+}
+/* Contexto clínico de la pestaña Medir: la viñeta del caso y una casilla por confusor */
+.vignette {
+  margin: 0;
+  line-height: 18px;
+}
+.checks {
+  display: grid;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.checks legend {
+  margin-bottom: 4px;
+  padding: 0;
+  font-size: 12px;
+  line-height: 16px;
+  color: var(--muted);
+}
+.checks label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  cursor: pointer;
+}
+.checks input {
+  flex: none;
+  margin: 0;
+  accent-color: var(--accent);
+}
+/* Notas del caso en la pestaña Docente: nombre, confusores reales y trampa */
+.case-notes {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  line-height: 16px;
+}
+.case-notes .case-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+.case-notes p {
+  margin: 0;
+  color: var(--muted);
+}
 .error {
   color: var(--bad);
   padding: 24px;

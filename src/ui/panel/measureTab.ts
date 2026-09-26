@@ -1,3 +1,4 @@
+import { caseVignette } from '../../app/blindMode';
 import { toggleMode } from '../../app/equipment';
 import { ivcFromCalipers, ivcTruth, type IvcCollapse } from '../../vexus/ivcCollapse';
 import type { MMark } from '../mModeView';
@@ -11,21 +12,39 @@ import {
   type ObservedPortal,
   type ObservedRenal,
 } from '../../doppler/spectralMeasure';
-import { classifyVexusC, type VexusResult } from '../../vexus/classification';
+import { classifyModifiedVexus, classifyVexusC, type Territory, type VexusContext, type VexusResult } from '../../vexus/classification';
 import { button, note, row } from '../controls';
 import type { PanelContext } from './context';
-import { patternText, renalText, statusText } from './vexusText';
+import {
+  CONTEXT_FLAGS,
+  CONTEXT_LABELS,
+  contextResultLines,
+  excludedTerritories,
+  gradeValueText,
+  patternText,
+  portalText,
+  renalText,
+  resultStatusText,
+  type ContextFlag,
+} from './vexusText';
 
 /**
- * Pestaña Medir: protocolo VExUS (calibrador de VCI, VCI en modo M, suprahepática, porta y vena
- * interlobar sobre el espectro adquirido) y resultado. Guarda las mediciones
- * adquiridas; `clearMeasurements` las borra al cambiar de caso para no mezclar
- * pacientes. Con una medición armada, arriba aparece su tarjeta de captura.
+ * Pestaña Medir: contexto clínico del caso (viñeta y confusores que marca el alumno, decisión 82), protocolo VExUS
+ * (calibrador de VCI, VCI en modo M, suprahepática, porta y vena interlobar sobre el espectro adquirido) y resultado.
+ * Guarda las mediciones adquiridas; `clearMeasurements` las borra al cambiar de caso para no mezclar pacientes, y el
+ * contexto marcado se borra con el caso. Con una medición armada, arriba aparece su tarjeta de captura.
  */
 export class MeasureTab {
   private captureCard!: HTMLElement;
   private measureBody!: HTMLElement;
   private resultEl!: HTMLElement;
+  /**
+   * Resumen del grado para los lectores de pantalla (`aria-live`): cambia al medir o al marcar un confusor. Va en la
+   * pestaña pero fuera del cuerpo de la medida: con el calibrador armado ese cuerpo está oculto y un cambio dentro de un
+   * subárbol oculto no se anuncia. (Con el calibrador de ⌘/Ctrl desde otra pestaña, la pestaña entera está oculta: se ve
+   * el contador de la pestaña.)
+   */
+  private liveEl!: HTMLElement;
   private lastHepatic: ObservedHepatic | null = null;
   private lastPortal: ObservedPortal | null = null;
   private lastRenal: ObservedRenal | null = null;
@@ -33,6 +52,11 @@ export class MeasureTab {
   /** VCI en modo M (decisión 80): los puntos de los calibres y el resultado con la verdad de su ventana. */
   private mPoints: MMark[] = [];
   private ivcM: (IvcCollapse & { truth: IvcCollapse | null }) | null = null;
+  /** Confusores marcados por el alumno (decisión 82): empiezan sin marcar y se borran al cambiar de caso. */
+  private context: VexusContext = {};
+  /** Caso de la viñeta y del contexto marcado. */
+  private caseId = '';
+  private vignetteEl!: HTMLElement;
 
   constructor(
     private readonly ctx: PanelContext,
@@ -73,6 +97,21 @@ export class MeasureTab {
     return had;
   }
 
+  /**
+   * El simulador cambió (caso nuevo o «Reiniciar paciente»): se borran las mediciones; con otro caso, además, el
+   * contexto marcado y la viñeta pasan a los suyos. Reiniciar el mismo paciente o intervenir no cambia su historia: lo
+   * marcado sigue.
+   */
+  onSimulatorChanged(): void {
+    const id = this.ctx.sim().patient.id;
+    if (id !== this.caseId) {
+      this.caseId = id;
+      this.context = {};
+      this.vignetteEl.textContent = caseVignette(id);
+    }
+    this.clearMeasurements(); // sincroniza las casillas y vuelve a pintar el resultado
+  }
+
   setIvcCaliper(mm: number | null): void {
     this.ivcCaliperMm = mm;
     this.renderResult();
@@ -109,9 +148,14 @@ export class MeasureTab {
     this.captureCard = document.createElement('div');
     this.captureCard.className = 'callout';
     p.appendChild(this.captureCard);
+    this.liveEl = document.createElement('div');
+    this.liveEl.className = 'sr-only';
+    this.liveEl.setAttribute('aria-live', 'polite');
+    p.appendChild(this.liveEl);
     this.measureBody = document.createElement('div');
     p.appendChild(this.measureBody);
 
+    this.buildContext(this.measureBody);
     const proto = this.ctx.section(this.measureBody, 'Protocolo VExUS', {
       info: 'Suprahepática, porta y vena interlobar se miden sobre el espectro PW adquirido (últimos 7 s, ventanas S/D ancladas al ECG); la VCI, con el calibrador sobre la imagen. Pulsa una fila para medirla.',
     });
@@ -156,6 +200,50 @@ export class MeasureTab {
       this.ctx.store.set({ tool: 'none' });
       this.clearMeasurements();
     });
+    this.renderResult();
+  }
+
+  /**
+   * «Contexto clínico» (decisión 82): la viñeta del caso, que ve también el alumno, y una casilla por confusor. Lo
+   * marcado entra en el grado (`classifyVexusC` con el contexto): un territorio poco fiable cuenta como no evaluado y
+   * el resultado dice por qué.
+   */
+  private buildContext(parent: HTMLElement): void {
+    const sec = this.ctx.section(parent, 'Contexto clínico', {
+      info:
+        'Lo que sabes del paciente antes de medir. Marca los confusores que tenga: cada uno quita solo el hallazgo que ' +
+        'puede falsear, que cuenta como no evaluado (el grado pasa a intervalo): la ERC avanzada o la diálisis un riñón ' +
+        'grave, el deportista una porta grave, y la cirrosis la porta siempre y la suprahepática si no está invertida. La ' +
+        'FA, la falta de ECG y la ventilación con presión positiva solo avisan; con la presión intraabdominal alta una ' +
+        'VCI < 20 mm no cierra el grado en 0. El mVExUS es el grado sin el riñón (Martin 2025).',
+    });
+    this.caseId = this.ctx.sim().patient.id;
+    this.vignetteEl = document.createElement('p');
+    this.vignetteEl.className = 'vignette';
+    this.vignetteEl.textContent = caseVignette(this.caseId);
+    sec.appendChild(this.vignetteEl);
+    const group = document.createElement('fieldset');
+    group.className = 'checks';
+    const legend = document.createElement('legend');
+    legend.textContent = 'Confusores del paciente';
+    group.appendChild(legend);
+    for (const flag of CONTEXT_FLAGS) {
+      const label = document.createElement('label');
+      const box = document.createElement('input');
+      box.type = 'checkbox';
+      box.addEventListener('change', () => this.setContextFlag(flag, box.checked));
+      label.append(box, document.createTextNode(CONTEXT_LABELS[flag]));
+      group.appendChild(label);
+      this.ctx.track({ sync: () => (box.checked = this.context[flag] === true) });
+    }
+    sec.appendChild(group);
+  }
+
+  private setContextFlag(flag: ContextFlag, on: boolean): void {
+    const next = { ...this.context };
+    if (on) next[flag] = true;
+    else delete next[flag];
+    this.context = next;
     this.renderResult();
   }
 
@@ -234,44 +322,61 @@ export class MeasureTab {
     const k = usable(this.lastRenal);
     // sin calibrador en la imagen, el diámetro máximo del modo M
     const ivcMax = this.ivcCaliperMm ?? this.ivcM?.maxMm ?? null;
-    const res: VexusResult = classifyVexusC({
+    // el contexto marcado entra en el grado: un territorio poco fiable cuenta como no evaluado (decisión 82)
+    const veins = {
       ivcMaxDiameterMm: ivcMax,
       hepatic: h ? h.pattern : 'not-assessed',
       portalPulsatilityFraction: p ? p.pulsatilityFraction : null,
-      renal: k ? k.pattern : 'not-assessed',
-    });
+    } as const;
+    const res: VexusResult = classifyVexusC({ ...veins, renal: k ? k.pattern : 'not-assessed' }, this.context);
+    const modified = classifyModifiedVexus(veins, this.context);
+    const excluded = excludedTerritories(res);
+    // una línea por territorio, marcada si el contexto la vuelve poco fiable
+    const line = (t: Territory, inner: string) =>
+      `<div>${inner}${excluded.has(t) ? ' <span class="small unreliable">· no fiable</span>' : ''}</div>`;
     const rejected = (m: { quality: { issue: QualityIssue | null } } | null, name: string) =>
-      m && m.quality.issue ? `<div>${name}: <b>${qualityText(m.quality.issue)}</b></div>` : null;
+      m && m.quality.issue ? `${name}: <b>${qualityText(m.quality.issue)}</b>` : null;
     const n = (h ? 1 : 0) + (p ? 1 : 0) + (k ? 1 : 0) + (this.ivcCaliperMm !== null ? 1 : 0) + (this.ivcM ? 1 : 0);
-    const m = this.ivcM;
+    const mM = this.ivcM;
     const mm = (v: number) => v.toFixed(1).replace('.', ',');
     // la verdad del motor, como las demás, solo con el modo docente
     const mTruth =
-      m?.truth && this.ctx.store.get().debug
-        ? ` <span class="small">(verdad ${mm(m.truth.maxMm)}/${mm(m.truth.minMm)} mm → ${m.truth.ciPct.toFixed(0)} %)</span>`
+      mM?.truth && this.ctx.store.get().debug
+        ? ` <span class="small">(verdad ${mm(mM.truth.maxMm)}/${mm(mM.truth.minMm)} mm → ${mM.truth.ciPct.toFixed(0)} %)</span>`
         : '';
     this.badge.textContent = String(n);
     this.badge.hidden = n === 0;
-    const gradeTxt =
-      res.grade !== null ? `VExUS ${res.grade}` : res.gradeRange ? `VExUS ${res.gradeRange[0]}–${res.gradeRange[1]}` : 'VExUS —';
     const lines = [
-      `<div class="grade">${gradeTxt} <span class="small">${statusText(res.status)}</span></div>`,
+      `<div class="grade">VExUS ${gradeValueText(res)} <span class="small">${resultStatusText(res)}</span></div>`,
       `<div>VCI: ${ivcMax !== null ? ivcMax.toFixed(1) + ' mm' : '—'} ${res.ivcDilated === null ? '' : res.ivcDilated ? '<span class="small">(≥ 20 mm: dilatada)</span>' : '<span class="small">(< 20 mm)</span>'}</div>`,
-      m ? `<div>VCI modo M: máx ${mm(m.maxMm)} · mín ${mm(m.minMm)} mm → colapso <b>${m.ciPct.toFixed(0)} %</b>${mTruth}</div>` : '',
-      rejected(this.lastHepatic, 'VSH') ??
-        (h
-          ? `<div>VSH: S ${h.sPeak.toFixed(1)} · D ${h.dPeak.toFixed(1)} · A ${h.aPeak.toFixed(1)} cm/s → <b>${patternText(h.pattern)}</b> <span class="small">(${h.beats} latidos)</span></div>`
-          : '<div>VSH: —</div>'),
-      rejected(this.lastPortal, 'Porta') ??
-        (p
-          ? `<div>Porta: ${p.vMax.toFixed(1)}/${p.vMin.toFixed(1)} cm/s → PF <b>${Number.isFinite(p.pulsatilityFraction) ? p.pulsatilityFraction.toFixed(0) + ' %' : 'n/a'}</b> <span class="small">(${res.portalClass}${res.portalNearThreshold ? ', próximo al umbral' : ''})</span></div>`
-          : '<div>Porta: —</div>'),
-      rejected(this.lastRenal, 'Renal') ??
-        (k
-          ? `<div>Renal: S ${k.sPeak.toFixed(1)} · D ${k.dPeak.toFixed(1)} · mín ${k.vMin.toFixed(1)} cm/s → <b>${renalText(k.pattern)}</b> <span class="small">(${k.beats} latidos)</span></div>`
-          : '<div class="small">Renal: no evaluado; el clasificador devuelve el intervalo compatible.</div>'),
+      mM ? `<div>VCI modo M: máx ${mm(mM.maxMm)} · mín ${mm(mM.minMm)} mm → colapso <b>${mM.ciPct.toFixed(0)} %</b>${mTruth}</div>` : '',
+      line(
+        'hepatic',
+        rejected(this.lastHepatic, 'VSH') ??
+          (h
+            ? `VSH: S ${h.sPeak.toFixed(1)} · D ${h.dPeak.toFixed(1)} · A ${h.aPeak.toFixed(1)} cm/s → <b>${patternText(h.pattern)}</b> <span class="small">(${h.beats} latidos)</span>`
+            : 'VSH: —'),
+      ),
+      line(
+        'portal',
+        rejected(this.lastPortal, 'Porta') ??
+          (p
+            ? `Porta: ${p.vMax.toFixed(1)}/${p.vMin.toFixed(1)} cm/s → PF <b>${Number.isFinite(p.pulsatilityFraction) ? p.pulsatilityFraction.toFixed(0) + ' %' : 'n/a'}</b> <span class="small">(${portalText(res.portalClass)}${res.portalNearThreshold ? ', próximo al umbral' : ''})</span>`
+            : 'Porta: —'),
+      ),
+      line(
+        'renal',
+        rejected(this.lastRenal, 'Renal') ??
+          (k
+            ? `Renal: S ${k.sPeak.toFixed(1)} · D ${k.dPeak.toFixed(1)} · mín ${k.vMin.toFixed(1)} cm/s → <b>${renalText(k.pattern)}</b> <span class="small">(${k.beats} latidos)</span>`
+            : '<span class="small">Renal: no evaluado; el clasificador devuelve el intervalo compatible.</span>'),
+      ),
+      ...contextResultLines(res, modified),
     ];
     this.resultEl.innerHTML = lines.join(''); // texto generado por el programa a partir de números
+    // el lector de pantalla oye el grado nuevo al medir o al marcar un confusor, no cada repintado
+    const summary = `VExUS ${gradeValueText(res)}, ${resultStatusText(res)}`;
+    if (this.liveEl.textContent !== summary) this.liveEl.textContent = summary;
     this.ctx.sync();
   }
 }

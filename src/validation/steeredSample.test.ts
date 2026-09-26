@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { add, cross, dot, length, normalize, scale, sub, type Vec3 } from '../core/vec3';
 import { CONVEX_C35 } from '../probe/probe';
-import { CONVEX_BEAM, lateralSigmaMm } from '../ultrasound/beamModel';
+import { lateralSigmaMm } from '../ultrasound/beamModel';
 import { COMPOUND } from '../ultrasound/compound';
 import { FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED, FRAG_TRANSMISSION_STEERED, STEERED_FIELD_GLSL } from '../ultrasound/shaders/passes.glsl';
 import { lookCoverage, steeredSample, type SteeredSampleCell, type SteeredSampleImage } from '../ultrasound/steering';
 import { COARSE_DEPTH } from '../ultrasound/renderer';
+import { bmodeBeam, CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import { PLEURA_STEER_GUESS_MM, aLineOrder, pleuraCapMm, pleuraSeriesDepths } from '../ultrasound/pleura';
 import { rng } from './syntheticSpeckle';
 
@@ -25,7 +26,8 @@ const IMG: SteeredSampleImage = {
   halfSector: CONVEX_C35.halfSector,
   lines: CONVEX_C35.lines,
   depthMm: DEPTH,
-  lateralSigmaMm: (r) => lateralSigmaMm(r, 90, CONVEX_BEAM),
+  // la PSF lateral de la imagen B en fundamental (decisión 84), la de la pasada D
+  lateralSigmaMm: (r) => lateralSigmaMm(r, 90, bmodeBeam(CONVEX_C35_PROFILE, { harmonic: false })),
   coarseRows: COARSE_DEPTH,
 };
 const R = IMG.curvatureRadius;

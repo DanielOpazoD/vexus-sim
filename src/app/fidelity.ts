@@ -8,7 +8,7 @@ import { dot, normalize, type Vec3 } from '../core/vec3';
 import { VESSEL_META } from '../physiology/vessels';
 import { contactCoupling } from '../probe/contact';
 import { lineDirection, pointOnLine } from '../probe/probe';
-import { focalGain, lateralFwhmMm, lateralSigmaMm } from '../ultrasound/beamModel';
+import { focalGain, frequencyRatio, lateralFwhmMm, lateralSigmaMm } from '../ultrasound/beamModel';
 import { bmodeBeam } from '../ultrasound/transducerProfile';
 import { effectiveLooks, lookCorrelationLaw, lookWeight } from '../ultrasound/compound';
 import { IFACE_REACH_MM, IFACE_SHIFT_MM } from '../ultrasound/interfaceEcho';
@@ -1226,11 +1226,16 @@ export function lookCorrelations(
   depthMm: number,
   tgcDbPerCm: number,
   patch: { axial: number; lateral: number } = TEXTURE_PATCH,
+  beamGain: (r: number) => number = () => 1,
 ): { patches: number; pairs: number[] } {
   const n = looks.length;
   const { lines, samples } = looks[0];
   const dr = depthMm / samples;
-  const gain2 = Float64Array.from({ length: samples }, (_, v) => Math.pow(10, (tgcDbPerCm * ((v + 0.5) * dr)) / 100));
+  // la intensidad a la misma escala en la profundidad: sin la atenuación nominal ni la ganancia focal (`envelopeLine`)
+  const gain2 = Float64Array.from(
+    { length: samples },
+    (_, v) => Math.pow(10, (tgcDbPerCm * ((v + 0.5) * dr)) / 100) / beamGain((v + 0.5) * dr) ** 2,
+  );
   const acc = new Float64Array((n * (n - 1)) / 2);
   let patches = 0;
   const I = looks.map(() => new Float64Array(patch.axial * patch.lateral));
@@ -1888,6 +1893,7 @@ export function fidelityStats(
   /** Composición espacial por banda y en la costura (`CompoundBand`, `SeamStats`). */
   function compoundOf(lf: LookFrames): CompoundStats {
     const k2 = lookWavenumber(sim.profile.beam);
+    const beam = bmodeBeam(sim.profile, sim.bmode);
     const R = tr.curvatureRadius;
     const n = lf.thetas.length;
     const out: CompoundBand[] = [];
@@ -1898,14 +1904,16 @@ export function fidelityStats(
       const c = envelopeTexture(env, mask, geom);
       const per = lf.envelopes.map((e) => envelopeTexture(e, mask, geom));
       const m0 = maskedMean(lf.envelopes[0], mask);
-      const corr = lookCorrelations(lf.envelopes, mask, depth, tgcNominal);
-      // la ley de cada par con la diferencia de dirección de sus haces en el punto (β de cada mirada) y la
-      // σ del grano lateral medido de la mirada 0
+      const corr = lookCorrelations(lf.envelopes, mask, depth, tgcNominal, TEXTURE_PATCH, (r) => focalGain(r, sim.bmode.focusMm, beam));
+      // la ley de cada par con la diferencia de dirección de sus haces en el punto (β de cada mirada), la σ del grano
+      // lateral medido de la mirada 0 y k2 a la frecuencia del eco en la banda (la de la fase de la pasada B, decisión 84)
       const sigma = per[0].fwhmLateralMm / 2.3548;
-      const rho = R + (Number.isFinite(per[0].depthMm) ? per[0].depthMm : (r0 + r1) / 2);
+      const rMid = Number.isFinite(per[0].depthMm) ? per[0].depthMm : (r0 + r1) / 2;
+      const rho = R + rMid;
       const beta = lf.thetas.map((th) => steerBeta(rho, th, R));
+      const k2r = k2 * frequencyRatio(rMid, beam);
       const laws: number[] = [];
-      for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) laws.push(lookCorrelationLaw(beta[a] - beta[b], sigma, k2));
+      for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) laws.push(lookCorrelationLaw(beta[a] - beta[b], sigma, k2r));
       out.push({
         r0,
         r1,

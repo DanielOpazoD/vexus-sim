@@ -138,7 +138,7 @@ function echoAt(c: Cls, cosI: number, r: number, o: SimOpts, focus: number): num
   if (o.unitS) return cosI < 0.05 ? 0 : o.unitS.beta * faceProfile(delta, INTERFACES[c.face].twoSided);
   const curv =
     c.face <= LAST_TUBE_INTERFACE
-      ? curvatureCoherence(latSigmaMm(r, focus), elevSigma(r) / Math.SQRT2, c.kl ?? 0, c.ke ?? 0, K0, frequencyRatio(r, TWIN_BEAM))
+      ? curvatureCoherence(latSigmaMm(r, focus), elevSigma(r) / Math.SQRT2, c.kl ?? 0, c.ke ?? 0, K0 * frequencyRatio(r, TWIN_BEAM))
       : 1;
   return interfaceEchoField(c.face, cosI, curv, delta, K0, o.kDb ?? IFACE_K_DB);
 }

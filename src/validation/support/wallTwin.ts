@@ -393,7 +393,7 @@ function echoOf(
       const lat = normalize(cross(frame.elevation, dir));
       const kl = dot(lat, cu) ** 2 * fg.curvature;
       const ke = dot(frame.elevation, cu) ** 2 * fg.curvature;
-      curv = curvatureCoherence(lateralSigmaMm(r, g.focusMm, g.beam), se * Math.SQRT1_2, kl, ke, K0, frequencyRatio(r, g.beam));
+      curv = curvatureCoherence(lateralSigmaMm(r, g.focusMm, g.beam), se * Math.SQRT1_2, kl, ke, K0 * frequencyRatio(r, g.beam));
     }
   }
   curv *= wallFaceGain(m, face, scene.torso);

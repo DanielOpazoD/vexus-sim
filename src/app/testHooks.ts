@@ -24,7 +24,7 @@ import { compareSteeredTransmission } from './steeredParity';
 import { compoundActive, lookTheta } from '../ultrasound/compound';
 import { levelOfGrey } from '../ultrasound/greyMap';
 import { focalGain } from '../ultrasound/beamModel';
-import { bmodeBeam } from '../ultrasound/transducerProfile';
+import { bmodeBeam, bmodeTxApertureMm } from '../ultrasound/transducerProfile';
 import { COARSE_DEPTH, COLOR_DISPLAY_THRESHOLD, type CompoundState } from '../ultrasound/renderer';
 import { pixelToBeam } from '../ultrasound/sectorGeometry';
 import {
@@ -882,7 +882,7 @@ function steeredParity(sim: Simulator, look: number, every: number): ReturnType<
     lines: gpu.lines,
     halfSector: tr.halfSector,
     curvatureRadius: tr.curvatureRadius,
-    apertureTxMm: beam.apertureTxMm,
+    apertureTxMm: bmodeTxApertureMm(sim.profile, sim.bmode),
     apertureRxMaxMm: beam.apertureRxMaxMm,
     fNumberRxMin: beam.fNumberRxMin,
   };

@@ -1,6 +1,6 @@
 import { TISSUES, Tissue } from '../anatomy/tissues';
 import { CONVEX_C35, type Transducer } from '../probe/probe';
-import { CONVEX_BEAM, downshiftPerMm, pulseSigmaMm, type BeamParams } from './beamModel';
+import { CONVEX_BEAM, downshiftPerMm, pulseSigmaMm, txApertureMm, type BeamParams } from './beamModel';
 import { COMPOUND, type CompoundParams } from './compound';
 import { HARMONIC, harmonicBeam } from './harmonic';
 
@@ -81,5 +81,16 @@ export function bmodeBeam(profile: TransducerProfile, bmode: { harmonic: boolean
     fNumberTxMin,
     downshiftRxPerMm: k,
     downshiftTxPerMm: k / 2,
+    // el armónico nace como p1²: fuera del foco su amplitud va como la intensidad de la emisión, no como su raíz
+    focalExponent: 1,
   };
+}
+
+/**
+ * Apertura de emisión (mm) de la imagen B con el foco del equipo: la de `bmodeBeam` a ese foco (`txApertureMm`, F/2,5
+ * con el foco somero). La lleva la penumbra de la pasada A (`uAperture.x`) y su gemelo; el Doppler, de un solo rayo,
+ * no la usa.
+ */
+export function bmodeTxApertureMm(profile: TransducerProfile, bmode: { harmonic: boolean; focusMm: number }): number {
+  return txApertureMm(bmode.focusMm, bmodeBeam(profile, bmode));
 }

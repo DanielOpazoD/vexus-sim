@@ -31,7 +31,7 @@ import { RECEIVER_NOISE } from './receiver';
 import { ELEV_SIGMA0_MM } from './pleura';
 import { CLUTTER, clutterParams, type ClutterParams } from './clutter';
 import { harmonicNearUniform, noiseGain, transientGain } from './harmonic';
-import { bmodeBeam } from './transducerProfile';
+import { bmodeBeam, bmodeTxApertureMm } from './transducerProfile';
 import { FRAME_PASSES, type PassId } from './passGraph';
 import { CompoundRing, compoundActive, lookTheta, type CompoundLook } from './compound';
 import { CINE_FRAMES, CineRing, persistenceReplay } from './cine';
@@ -1213,7 +1213,8 @@ export class UltrasoundRenderer {
     p.tex('uPre0', 0, this.tPre.textures[0]);
     p.tex('uPre1', 1, this.tPre.textures[1]);
     p.tex('uHits0', 2, this.tHits.textures[0]);
-    p.v3('uAperture', [beam.apertureTxMm, beam.apertureRxMaxMm, beam.fNumberRxMin]);
+    // la emisión de la imagen B a su foco (decisión 84: F/2,5 con el foco somero)
+    p.v3('uAperture', [bmodeTxApertureMm(this.profile, inputs.bmode), beam.apertureRxMaxMm, beam.fNumberRxMin]);
     if (steered) {
       // el prefijo de la mirada del cuadro, que A2 acaba de escribir con su programa dirigido
       p.tex('uPreSteer', 3, this.tPre.textures[2]);
@@ -1286,7 +1287,9 @@ export class UltrasoundRenderer {
    */
   private setLateralPsfUniforms(p: GLProgram, inputs: FrameInputs): void {
     const b = bmodeBeam(this.profile, inputs.bmode);
-    p.v2('uFocus', inputs.bmode.focusMm, focalReferenceFwhmMm(b));
+    // focalGain: (y/FWHM_tx)^z·√(w/|FWHM|), con las FWHM del foco del preajuste
+    const ref = focalReferenceFwhmMm(b);
+    p.v4('uFocus', inputs.bmode.focusMm, ref.tx, b.focalExponent - 0.5, Math.hypot(ref.tx, ref.rx));
     // la apodización de la emisión va en su apertura: el cono c·D y, en el foco, (kTx·λ_tx·c)·F/(c·D) = kTx·λ_tx·F/D,
     // con la apertura de emisión de ese foco (`txApertureMm`: F/F#_tx,min si es menor que la máxima)
     const cone = b.txConeFraction * txApertureMm(inputs.bmode.focusMm, b);

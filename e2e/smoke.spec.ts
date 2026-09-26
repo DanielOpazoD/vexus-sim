@@ -337,7 +337,7 @@ test('foco (decisión 84): la banda del foco es algo más clara y se mueve con e
     expect(band(bands, 20), tag).toBeTruthy();
     expect(band(bands, 140), tag).toBeTruthy();
   }
-  // modelo: +5,8 dB a 40 mm con el foco a 50 frente a 140 mm, y +5,4 dB a 160 mm al revés
+  // modelo: +4,9 dB a 40 mm con el foco a 50 frente a 140 mm, y +4,6 dB a 160 mm al revés
   expect(band(shallowFocus, 20)!.p50 - band(deepFocus, 20)!.p50, tag).toBeGreaterThanOrEqual(8);
   expect(band(deepFocus, 140)!.p50 - band(shallowFocus, 140)!.p50, tag).toBeGreaterThanOrEqual(8);
   expect(errors).toEqual([]);
@@ -998,11 +998,10 @@ test('armónica tisular (decisión 77): campo cercano limpio, el mismo tejido y 
   const r = await page.evaluate(() => window.__vexusTest!.harmonicContrast({ startPoint: 'subxiphoid' }));
   const tag = JSON.stringify(r);
   const db = (x: { fundamental: number; harmonic: number }) => 20 * Math.log10(x.harmonic / x.fundamental);
-  // el campo cercano (piel, grasa y transitorio): la acumulación y el rechazo del transitorio lo oscurecen. Con la
-  // ganancia focal de la emisión (decisión 84), el fundamental, que enfoca más (3,5 MHz frente a la emisión a f1),
-  // oscurece también su propio campo cercano (−5,6 frente a −3,2 dB a 2 mm): con GPU real −3,4 → −1,0 dB. Sin
-  // acumulación ni rechazo del transitorio la armónica quedaría +2,4 dB por encima
-  expect(db(r.near), tag).toBeLessThan(-0.5);
+  // el campo cercano (piel, grasa y transitorio): la acumulación y el rechazo del transitorio lo oscurecen, y la
+  // ganancia focal de la emisión (decisión 84), algo más en armónica, cuya fuente es p1² (−6,5 frente a −4,9 dB a
+  // 2 mm con el foco por defecto). Sin acumulación ni rechazo del transitorio la armónica quedaría por encima
+  expect(db(r.near), tag).toBeLessThan(-2);
   // el tejido (sin la ganancia focal de cada modo): la acumulación compensada y la misma atenuación, el mismo nivel
   expect(Math.abs(db(r.tissue)), tag).toBeLessThan(1.5);
   // el ruido del receptor solo (sonda levantada), en toda la profundidad: +3 dB respecto al eco (HARMONIC.noiseDb)

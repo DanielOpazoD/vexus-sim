@@ -9,6 +9,7 @@ import { clonePatient } from '../physiology/patientState';
 import { pointOnLine } from '../probe/probe';
 import { type ApertureGeometry } from '../ultrasound/aperture';
 import { CONVEX_BEAM } from '../ultrasound/beamModel';
+import { bmodeTxApertureMm } from '../ultrasound/transducerProfile';
 import { COMPOUND_STEER_RANGE_DEG, lookTheta } from '../ultrasound/compound';
 import { GAS_DB_PER_CM, type SegmentGrid } from '../ultrasound/transmission';
 import { GRID_GEOMETRY as G, emptyGrid } from './support/segmentGrid';
@@ -113,7 +114,8 @@ function viewGrid(view: StartPoint['id']): { grid: SegmentGrid; ap: ApertureGeom
     lines: grid.lines,
     halfSector: tr.halfSector,
     curvatureRadius: tr.curvatureRadius,
-    apertureTxMm: b.apertureTxMm,
+    // la emisión de la imagen B a su foco (decisión 84), la de la pasada A
+    apertureTxMm: bmodeTxApertureMm(sim.profile, sim.bmode),
     apertureRxMaxMm: b.apertureRxMaxMm,
     fNumberRxMin: b.fNumberRxMin,
   };

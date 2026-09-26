@@ -129,7 +129,7 @@ const steeredOnly = (look: Look, glsl: string): string => (look === 'steered' ? 
  * de emisión y la del eco en `uBeamTx.zw` (el Doppler, 0).
  */
 export const LATERAL_PSF_GLSL = /* glsl */ `
-uniform vec2 uFocus;       // foco (mm) y FWHM de la emisión en el foco del preajuste (mm, referencia de focalGain)
+uniform vec4 uFocus;       // foco (mm) y, del foco del preajuste, FWHM_tx (mm), n − ½ y √(FWHM_tx² + FWHM_rx²) (mm)
 uniform vec4 uBeam;        // λ·k de recepción (mm), c·D_tx (cono de emisión, mm), D_rx,max (mm), F#_rx,min
 uniform vec4 uBeamTx;      // λ·k_tx·c de emisión (mm), escala del haz de emisión, κ de emisión y del eco (1/mm)
 // FWHM de los haces de emisión y de recepción de una vía (beamFwhmMm)
@@ -144,9 +144,12 @@ float lateralSigmaMm(float r) {
   vec2 w = beamFwhm(r);
   return inversesqrt(1.0 / (w.x * w.x) + 1.0 / (w.y * w.y)) / 2.3548;
 }
-// Ganancia focal de la emisión (focalGain): la intensidad en el eje, ∝ 1/FWHM_tx, en amplitud y relativa a la del
-// foco del preajuste (solo la pasada B, sobre el eco)
-float focalGain(float r) { return sqrt(uFocus.y / beamFwhm(r).x); }
+// Ganancia focal (focalGain): el eco difuso de haces gaussianos de potencia fija, (FWHM_tx² + FWHM_rx²)^(−¼), por
+// FWHM_tx^(½ − n) (n ½ en fundamental y 1 en armónica), relativo al del foco del preajuste (solo la pasada B, sobre el eco)
+float focalGain(float r) {
+  vec2 w = beamFwhm(r);
+  return pow(uFocus.y / w.x, uFocus.z) * sqrt(uFocus.w / length(w));
+}
 // f(r)/f0 del eco: la bajada de la frecuencia central (frequencyRatio)
 float echoFrequency(float r) { return 1.0 / (1.0 + uBeamTx.w * max(r, 0.0)); }
 `;
@@ -483,6 +486,9 @@ ${SPECKLE_LOOK_GLSL}
 ${STEERING_GLSL}
 const int PLEURA_STEER_ITERATIONS = ${PLEURA_STEER_ITERATIONS};
 const float PLEURA_STEER_GUESS_MM = ${glslFloat(PLEURA_STEER_GUESS_MM)};
+// Número de onda de ida y vuelta con que steeredField forma la fase de la mirada de la muestra (k2 a la frecuencia del
+// eco, decisión 84): g = lookK2·(b_k − b_0), así que la dirección de la mirada es b_0 + g/lookK2
+float lookK2;
 // fieldFor y sampleSide con la fase de la mirada por nodo (speckleField.ts, variantes …Ph); b0, la dirección de la
 // mirada 0 en el punto del mundo (la radial desde el centro de curvatura); w, la jacobiana de la compresión
 vec2 fieldForPhBase(vec3 m, float se, int tissue, float ph0, vec3 g, vec3 b0, Warp w) {
@@ -490,7 +496,7 @@ vec2 fieldForPhBase(vec3 m, float se, int tissue, float ph0, vec3 g, vec3 b0, Wa
   float het = 1.0;
   if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX || tissue == T_PSOAS || tissue == T_QUADRATUS) het = hetGain(m);
   // textura de la pared (decisión 62) con la dirección de esta mirada: b_k = b_0 + g/k2 (g = k2·(b_k − b_0))
-  if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, normalize(b0 + g / uSteer.w), w);
+  if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, normalize(b0 + g / lookK2), w);
   // el resto del abdomen: asas y grasa mesentérica (decisión 74, restTexture.ts)
   if (tissue == T_BOWEL) het *= restTexture(m);
   // tríadas portales finas del hígado (decisión 78, portalTriads.ts)
@@ -561,6 +567,7 @@ vec2 steeredField() {
   if ((abs(phiK) - uHalfSector) / (2.0 * uHalfSector / uLinesF) > 0.5 + reach) return vec2(0.0);
   float s = alongLineMm(rho, a, uSteer.z);          // distancia a lo largo del camino dirigido
   float k2 = uSteer.w * echoFrequency(r);           // la fase de la mirada a la frecuencia del eco (decisión 84)
+  lookK2 = k2;
   float uK = (phiK + uHalfSector) / (2.0 * uHalfSector);
   vec3 dirK = lineDir(alpha + steerBeta(rho, a));   // = lineDir(φ_k + θ): el camino es recto
   ivec2 ts = textureSize(uTrans3, 0);

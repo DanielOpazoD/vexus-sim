@@ -67,10 +67,18 @@ describe('Armónica tisular (decisión 77): haz y modelo', () => {
     // fuera del foco manda el desenfoque (÷√2) o la recepción: igual o más estrecho
     for (const r of [20, 45, 150, 200]) expect(ratio(r)).toBeLessThan(1.02);
     // el haz de la imagen B sigue al conmutador (con la emisión apodizada, la bajada de la frecuencia y, en armónica, el
-    // pulso de su banda: decisión 84); el Doppler no lo lee y conserva el del perfil
+    // pulso de su banda y la ganancia focal de la fuente p1²: decisión 84); el Doppler no lo lee y conserva el del perfil
     const bF = bmodeBeam(CONVEX_C35_PROFILE, { harmonic: false });
     const bH = bmodeBeam(CONVEX_C35_PROFILE, { harmonic: true });
-    const imaging = { kTx: 0, txConeFraction: 0, fNumberTxMin: 0, downshiftRxPerMm: 0, downshiftTxPerMm: 0, axialSigma0Mm: 0 };
+    const imaging = {
+      kTx: 0,
+      txConeFraction: 0,
+      fNumberTxMin: 0,
+      downshiftRxPerMm: 0,
+      downshiftTxPerMm: 0,
+      axialSigma0Mm: 0,
+      focalExponent: 0,
+    };
     expect({ ...bF, ...imaging }).toEqual({ ...CONVEX_C35_PROFILE.beam, ...imaging });
     expect({ ...bH, ...imaging }).toEqual({ ...h, ...imaging });
     expect(bF.axialSigma0Mm).toBe(CONVEX_C35_PROFILE.beam.axialSigma0Mm);
@@ -78,6 +86,10 @@ describe('Armónica tisular (decisión 77): haz y modelo', () => {
     // la emisión del armónico baja con la mitad de la pendiente de su eco (la de f1)
     expect(bH.downshiftTxPerMm).toBeCloseTo(bH.downshiftRxPerMm / 2, 15);
     expect(bF.downshiftTxPerMm).toBe(bF.downshiftRxPerMm);
+    // fuera del foco la amplitud del eco va como la raíz de la intensidad de la emisión en fundamental y como ella
+    // misma en armónica (el armónico nace como p1²)
+    expect(bF.focalExponent).toBe(0.5);
+    expect(bH.focalExponent).toBe(1);
   });
 
   it('elevación: la de siempre en fundamental; en armónica, √2 × la de dos vías del par f1² · 2f1', () => {

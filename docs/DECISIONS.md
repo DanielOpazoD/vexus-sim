@@ -3106,26 +3106,31 @@ profundidad, en TS (`beamModel.ts`, `bmodeBeam` de `transducerProfile.ts`) y en 
   recibe en el alto [EXTRAPOLACIÓN PROPIA]. Queda 3,5 → 2,97 → 2,77 MHz a 10 y 15 cm en fundamental y 3,16 / 3,02 en
   armónica; la emisión del armónico, a f1, baja la mitad. La armónica, de banda más estrecha, tiene el pulso más largo
   (σ 0,30 mm frente a 0,26, `pulseSigmaMm`: el filtro de la imagen se calibra con el fundamental; el modo armónico pierde
-  resolución axial en maniquí, van Wijk y Thijssen 2002, Ultrasonics 40:585). La fase de las miradas dirigidas (decisión 58) y la coherencia de curvatura lateral del eco de interfaz (decisión 57) van a la frecuencia del eco.
-- **(c) Banda del foco.** `focalGain`: la intensidad de la emisión en el eje, con la potencia emitida fija, va como
-  1/FWHM_tx, y la amplitud del eco difuso como su raíz mientras la recepción sea más estrecha que la emisión: √(FWHM_ref /
-  FWHM_tx(r; F)), con la referencia fija en la cintura del foco del preajuste (90 mm). Con el foco por defecto vale 1 en el
-  foco (el hígado a media escala de la decisión 53) y −4,8 / −4,3 dB a 20 / 150 mm en fundamental, −2,7 / −2,3 dB en
-  armónica, cuya emisión a f1 enfoca menos; con otro foco la banda se mueve y su pico sigue a su cintura (+1,4 dB con el
-  foco a 50 mm, −2,2 dB a 140 mm). Multiplica el eco del tejido en la pasada B, en las dos miradas, antes del transitorio
-  y del ruido (no el Doppler). La amplitud media del eco culmina en el foco (Oosterveld, Thijssen y Verhoef 1985,
-  Ultrason Imaging 7:142); con emisión uniforme a F/2,1 el modelo da −6 / −5 dB donde Bottenus 2018 (IEEE TUFFC 65:30)
-  mide 8–10 dB entre enfocar en una profundidad y en cada una. En armónica la fuente del armónico va como p1², el doble en
-  dB: el modelo solo lleva la concentración de la energía de la emisión y deja la generación en la acumulación de la
-  decisión 77 (`harmonic-simplified`). El banco compara ecos de distintas profundidades con la corrección de difracción
-  (`envelopeLine` quita la ganancia focal, como el método del maniquí de referencia; Yao, Zagzebski y Madsen 1990,
-  Ultrason Imaging 12:58); la imagen mostrada la conserva.
+  resolución axial en maniquí, van Wijk y Thijssen 2002, Ultrasonics 40:585). La fase de las miradas dirigidas (decisión 58, y con ella la dirección con que la textura de la pared ve cada mirada) y la coherencia de curvatura del eco de interfaz (decisión 57, lateral y elevacional) van a la frecuencia del eco; la rugosidad fina (Ament) conserva el k0 nominal con que se ajustaron sus σz.
+- **(c) Banda del foco.** `focalGain`, la ganancia de haces gaussianos de potencia fija: la intensidad en el eje va
+  como 1/FWHM en la emisión y, por reciprocidad, en la sensibilidad de la recepción, y el eco de un medio difuso,
+  ∫|h_tx|²·|h_rx|² a lo ancho del haz, como 1/√(FWHM_tx² + FWHM_rx²); en armónica el armónico nace como p1² y su
+  intensidad va como la de la emisión al cuadrado. En amplitud, (FWHM_tx,ref/FWHM_tx)^(n − ½)·√(|FWHM_ref|/|FWHM|),
+  n = ½ en fundamental y 1 en armónica, con la referencia fija en los haces del foco del preajuste (90 mm) [DERIVADO].
+  Con el foco por defecto vale 1 en el foco (el hígado a media escala de la decisión 53) y −4,1 / −3,9 dB a 20 / 150 mm
+  en fundamental, −5,0 / −4,7 dB en armónica; con otro foco la banda se mueve y su pico sigue a su cintura (+1,7 dB con
+  el foco a 50 mm y −2,2 dB a 140 mm en fundamental, +3,0 y −4,1 dB en armónica), con la cima plana y algo antes de un
+  foco hondo (a 122 mm con el foco a 140: pasada la apertura máxima, la recepción se ensancha con r). Multiplica el eco
+  en la pasada B, en las dos miradas, antes del transitorio y del ruido (no el Doppler): las líneas A del gas y la serie
+  de la pleura la toman a la profundidad mostrada (la imagen de un reflector plano) y las réplicas de la pared de la
+  pasada C (decisión 76), a la de su eco de origen. La amplitud media del eco culmina en el foco (Oosterveld, Thijssen y
+  Verhoef 1985, Ultrason Imaging 7:142); en el montaje de Bottenus 2018 (IEEE TUFFC 65:30; sectorial de 19,2 mm a 2,98
+  MHz con el foco de emisión a 40 mm) la señal cae 8,2 y 9,6 dB a 10 y 95 mm frente a enfocar en cada profundidad, y el
+  modelo, con emisión uniforme, da 10–13 y 7,5 dB. La penumbra de la pasada A (decisión 54) usa la apertura de emisión
+  del foco. El banco compara ecos de distintas profundidades con la corrección de difracción (`envelopeLine` quita la
+  ganancia focal, como el método del maniquí de referencia; Yao, Zagzebski y Madsen 1990, Ultrason Imaging 12:58); la
+  imagen mostrada la conserva.
 - **(d) Conversión de barrido.** Medido, no cambia: con 192 líneas a 1,1–1,5 mm en lo hondo y σ lateral de 1,1–2,1 mm,
   hay ≥ 1 línea por σ y la bilineal conserva el estiramiento (imagen/PSF 1,0–1,25 en todas las bandas).
 - **(e) Suavizado del moteado:** no (arriba).
 - Sin ranuras de uniforms nuevas en B (126/128, 128/130 con el retroperitoneo): la bajada viaja en `uBeamTx.zw` (antes
-  vec2), la apodización en el cono de `uBeam.y` y en `uBeamTx.x`, y la referencia de la ganancia focal en `uFocus.y`
-  (antes float). La pasada C recibe σ por fila (`uSigmaTexels`, vec2). Gancho `setFocus` (el comando del deslizador).
+  vec2), la apodización en el cono de `uBeam.y` y en `uBeamTx.x`, y la referencia y el exponente de la ganancia focal
+  en `uFocus.yzw` (antes float). La pasada C recibe σ por fila (`uSigmaTexels`, vec2). Gancho `setFocus` (el comando del deslizador).
 
 **Consecuencias.** Banco con GPU (M4, armónica y compuesto), antes → después, intercostal a 20–60 / 60–100 / 100–140 /
 140–180 mm: grano de la imagen 0,80×1,74 / 0,79×1,90 / 0,72×3,07 / 0,78×3,45 → 0,88×1,80 / 0,87×2,01 / 0,86×3,28 /
@@ -3150,18 +3155,19 @@ pasada B 3,44 → 3,49 ms. Chunk principal 304,6 → 306,2 kB de 320.
 **Verificación.** `psfDepth.test.ts`: la pendiente −2βσ_f² (−0,092 MHz/cm con 60 % de banda y 0,5 dB/cm/MHz), f(r)
 monótona y > 0, el pulso ∝ 1/f(r) y el de la armónica más largo, la PSF lateral 1,4–3 mm a 6–10 cm que crece después y
 no pasa de 5,5 mm a 18 cm, la apertura de emisión min(26, F/2,5) (el Doppler, 26), la ganancia focal (1 en el foco del
-preajuste, su pico en ≤ 6 mm antes del foco elegido, −4 a −6 dB a 2 cm en fundamental y −2 a −3,5 en armónica, la
-potencia fija), el GLSL con las mismas fórmulas y el cableado del renderizador real sobre WebGL falso (cono, referencia,
-σ por fila, en los dos modos y con el foco a 50 y 90 mm). `harmonic.test.ts`, `pleura.test.ts`, `steeredSample.test.ts` y
+preajuste, la integral de los haces gaussianos en los dos modos, su pico a ≤ 15 % antes del foco elegido, −3,5 a −5 dB a
+2 cm en fundamental y más en armónica, la potencia fija), el GLSL con las mismas fórmulas y el cableado del renderizador real sobre WebGL falso (cono, referencia,
+σ por fila, la penumbra de A, en los dos modos y con el foco a 50 y 90 mm). `harmonic.test.ts`, `pleura.test.ts`, `steeredSample.test.ts` y
 `shaderLimits.test.ts` (huella del main de B d2e0f2cd7f45185c → ca057917ce3a1b32: el eco lleva `focalGain`) al día.
 Gemelos B → C → D con el pulso por fila, la PSF de la imagen B y la ganancia focal: `compoundSpeckle.test.ts` (la ley de la
 composición con k2 a la frecuencia del eco; el exceso de decorrelación de los tres planos, artefacto fijado, baja a −0,025
 a 90 mm), `interfaceTwin.test.ts` (la tendencia con la profundidad de una cara normal, con el pulso más largo, frente a
 haces gaussianos coherentes a la frecuencia del eco; M3 de la porta ≥ 1,36, el borde bajo de las paredes reales),
-`wallTwin.test.ts` (métricas con la corrección de difracción) y `fidelityScene.test.ts`. e2e: «foco (decisión 84)» (el
-deslizador mueve la banda: +8 de gris o más a 20–60 mm con el foco a 50 frente a 140 mm, y al revés a 140–180 mm), G4 de
-la composición a media escala en la banda del foco y el campo cercano de la armónica < −0,5 dB (sin acumulación ni
-rechazo del transitorio daría +2,4 dB). Capturas con GPU antes y después de la intercostal, la subxifoidea, el flanco y
+`wallTwin.test.ts` (métricas con la corrección de difracción), `pleuraTwin.test.ts` (la PSF, el pulso y la ganancia
+focal de la imagen B; sus niveles, con la corrección de difracción) y `fidelityScene.test.ts`; `interfaceEcho.test.ts`
+con la anchura del eco del pulso a 80 mm (0,77 mm). e2e: «foco (decisión 84)» (el deslizador mueve la banda: +8 de gris
+o más a 20–60 mm con el foco a 50 frente a 140 mm, y al revés a 140–180 mm), G4 de la composición a media escala en la
+banda del foco y el campo cercano de la armónica < −2 dB, como antes. Capturas con GPU antes y después de la intercostal, la subxifoidea, el flanco y
 la renal en armónica. Limitación nueva `psf-nominal-tissue`.
 
 ## Iteración 2 — informe de cierre (22-09-2026)

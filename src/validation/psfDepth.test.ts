@@ -22,8 +22,10 @@ import {
   FRAG_LATERAL,
   FRAG_RAWFIELD,
   FRAG_RAWFIELD_STEERED,
+  FRAG_TRANSMISSION,
   LATERAL_PSF_GLSL,
 } from '../ultrasound/shaders/passes.glsl';
+import { INTERFACE_ECHO_GLSL } from '../ultrasound/interfaceEcho';
 import { bmodeBeam, CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import { DEFAULT_BMODE } from '../ultrasound/renderer';
 import { recordingGl } from './support/recordingGl';
@@ -123,19 +125,45 @@ describe('ganancia focal de la emisión (decisión 84)', () => {
           const g = focalGain(r, F, b);
           if (g > best) [best, at] = [g, r];
         }
-        // el pico queda a pocos mm antes del foco (la λ de la emisión baja con el camino: la cintura crece con r)
+        // el pico queda antes del foco: la λ de la emisión baja con el camino y, con un foco hondo, la recepción (con su
+        // apertura máxima desde 65 mm) se ensancha con r (a 122 mm con el foco a 140); la cima es plana, ≤ 0,2 dB sobre
+        // el valor en el foco
         expect(at - F, `foco ${F}`).toBeLessThanOrEqual(0);
-        expect(at - F, `foco ${F}`).toBeGreaterThanOrEqual(-6);
-        expect(best / focalGain(F, F, b), `foco ${F}`).toBeLessThan(1.01);
+        expect(at - F, `foco ${F}`).toBeGreaterThanOrEqual(-0.15 * F);
+        expect(best / focalGain(F, F, b), `foco ${F}`).toBeLessThan(1.025);
       }
     }
   });
 
-  it('una banda algo más clara: −4 a −6 dB a 2 cm en fundamental y −2 a −3,5 en armónica, con el foco por defecto', () => {
-    expect(db(focalGain(20, 90, FUND))).toBeLessThan(-4);
-    expect(db(focalGain(20, 90, FUND))).toBeGreaterThan(-6);
-    expect(db(focalGain(20, 90, THI))).toBeLessThan(-2);
-    expect(db(focalGain(20, 90, THI))).toBeGreaterThan(-3.5);
+  it('es el eco difuso de haces gaussianos de potencia fija: ∫ I_tx·I_rx a lo ancho, con la fuente p1² en armónica', () => {
+    // intensidades gaussianas de FWHM w con la potencia fija (pico ∝ 1/w); en armónica la del armónico va como la de
+    // la emisión al cuadrado (pico ∝ 1/w_tx², con la FWHM del haz efectivo, la del modelo)
+    const echo2 = (w: { tx: number; rx: number }, harmonic: boolean): number => {
+      const g = (x: number, fw: number) => Math.exp((-4 * Math.LN2 * x * x) / (fw * fw));
+      const peakTx = harmonic ? 1 / (w.tx * w.tx) : 1 / w.tx;
+      let sum = 0;
+      for (let x = -80; x <= 80; x += 0.01) sum += peakTx * g(x, w.tx) * (1 / w.rx) * g(x, w.rx) * 0.01;
+      return sum;
+    };
+    for (const [b, harmonic] of [
+      [FUND, false],
+      [THI, true],
+    ] as const) {
+      const ref = echo2(focalReferenceFwhmMm(b), harmonic);
+      for (const F of [50, 90, 140])
+        for (const r of [5, 30, 60, 90, 120, 170]) {
+          const want = Math.sqrt(echo2(beamFwhmMm(r, F, b), harmonic) / ref);
+          expect(focalGain(r, F, b), `${harmonic ? 'THI' : 'fund'} F ${F} r ${r}`).toBeCloseTo(want, 6);
+        }
+    }
+  });
+
+  it('una banda algo más clara: −3,5 a −5 dB a 2 cm en fundamental y más en armónica, con el foco por defecto', () => {
+    expect(db(focalGain(20, 90, FUND))).toBeLessThan(-3.5);
+    expect(db(focalGain(20, 90, FUND))).toBeGreaterThan(-5);
+    // en armónica la fuente p1² dobla los dB de la emisión, aunque la emisión a f1 enfoque menos
+    expect(db(focalGain(20, 90, THI))).toBeLessThan(db(focalGain(20, 90, FUND)) - 0.5);
+    expect(db(focalGain(20, 90, THI))).toBeGreaterThan(-6);
     // alrededor del foco (70–110 mm), a menos de 1,5 dB: el hígado a media escala (decisión 53)
     for (const b of [FUND, THI]) for (const r of [70, 90, 110]) expect(db(focalGain(r, 90, b))).toBeGreaterThan(-1.5);
   });
@@ -163,11 +191,18 @@ describe('ganancia focal de la emisión (decisión 84)', () => {
       'float tx = uBeamTx.y * length(vec2(uBeamTx.x * (1.0 + uBeamTx.z * rr) * F / uBeam.y, uBeam.y * abs(rr - F) / F));',
     );
     expect(psf).toContain('return vec2(tx, uBeam.x * (1.0 + uBeamTx.w * rr) * rr / max(1.0, dRx));');
-    expect(psf).toContain('uniform vec2 uFocus;');
+    expect(psf).toContain('uniform vec4 uFocus;');
     expect(psf).toContain('float F = max(10.0, uFocus.x);');
-    expect(psf).toContain('float focalGain(float r) { return sqrt(uFocus.y / beamFwhm(r).x); }');
+    expect(psf).toContain(
+      'float focalGain(float r) { vec2 w = beamFwhm(r); return pow(uFocus.y / w.x, uFocus.z) * sqrt(uFocus.w / length(w)); }',
+    );
     expect(psf).toContain('float echoFrequency(float r) { return 1.0 / (1.0 + uBeamTx.w * max(r, 0.0)); }');
     expect(flat(FRAG_AXIAL)).toContain('float sT = max(0.6, uSigmaTexels.x + uSigmaTexels.y * row);');
+    // la coherencia de curvatura de las caras, con el número de onda del eco en el lateral y en la elevación
+    const iface = flat(INTERFACE_ECHO_GLSL);
+    expect(iface).toContain('float k = uIfaceK0 * echoFrequency(r);');
+    expect(iface).toContain('float al = 2.0 * k * sl * sl * kl;');
+    expect(iface).toContain('float ae = 2.0 * k * sE * sE * ke;');
     // la ganancia focal va al eco de la pasada B, en las dos miradas; D y el color no la llevan
     expect(FRAG_RAWFIELD).toContain('out2 *= harmonicNearGain(r) * focalGain(r);');
     expect(FRAG_RAWFIELD_STEERED).toContain('out2 *= harmonicNearGain(s) * focalGain(s);');
@@ -186,21 +221,34 @@ describe('cableado en el renderizador (WebGL falso, decisión 84)', () => {
     sim.render();
     const by = (frag: string) => rec.draws.find((x) => x.frag === frag)!.uniforms;
     expect(rec.misuse).toEqual([]);
-    return { raw: by(FRAG_RAWFIELD), axial: by(FRAG_AXIAL), lateral: by(FRAG_LATERAL), depth: sim.bmode.depthMm };
+    return {
+      trans: by(FRAG_TRANSMISSION),
+      raw: by(FRAG_RAWFIELD),
+      axial: by(FRAG_AXIAL),
+      lateral: by(FRAG_LATERAL),
+      depth: sim.bmode.depthMm,
+    };
   }
 
-  it('el cono de la emisión sigue a la apertura del foco y el pulso a la profundidad de cada fila', () => {
+  it('el cono y la penumbra de la emisión siguen a la apertura del foco y el pulso a la profundidad de cada fila', () => {
     for (const harmonic of [false, true]) {
       const b = harmonic ? THI : FUND;
       for (const F of [50, 90]) {
         const f = frameAt(F, harmonic);
         for (const u of [f.raw, f.lateral]) {
-          // el foco y la cintura de la emisión con el foco del preajuste, la referencia fija de la ganancia focal
-          expect(u.uFocus).toEqual([F, focalReferenceFwhmMm(b)]);
+          // el foco y, con el foco del preajuste, las FWHM de referencia de la ganancia focal y el exponente n − ½
+          const ref = focalReferenceFwhmMm(b);
+          expect(u.uFocus[0]).toBe(F);
+          expect(u.uFocus[1]).toBeCloseTo(ref.tx, 12);
+          expect(u.uFocus[2]).toBe(harmonic ? 0.5 : 0);
+          expect(u.uFocus[3]).toBeCloseTo(Math.hypot(ref.tx, ref.rx), 12);
           expect(u.uBeam[1]).toBeCloseTo(b.txConeFraction * txApertureMm(F, b), 12);
           expect(u.uBeamTx[0]).toBeCloseTo(b.kTx * b.lambdaTxMm * b.txConeFraction, 12);
           expect(u.uBeamTx[3]).toBeCloseTo(b.downshiftRxPerMm, 15);
         }
+        // la penumbra de la pasada A, con la apertura de la emisión de ese foco (20 mm con el foco a 50)
+        expect(f.trans.uAperture[0]).toBeCloseTo(txApertureMm(F, b), 12);
+        expect(f.trans.uAperture.slice(1)).toEqual([b.apertureRxMaxMm, b.fNumberRxMin]);
         // σ de la fila i = x + y·i, en texeles: la de axialSigmaMm en el centro de cada fila
         const dz = f.depth / 1024;
         const [x, y] = f.axial.uSigmaTexels;

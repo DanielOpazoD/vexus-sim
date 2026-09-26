@@ -10,15 +10,19 @@
  * planos (`anchoredSliceField`), los grumos y la heterogeneidad (`speckleField.ts`), el eco de las caras
  * (`interfaceEchoField`) y todo el modelo de la pleura (`pleura.ts`: línea pleural y réplicas, serie de la
  * pared, deslizamiento y fracción de aire). La transmisión es la analítica de las capas a la frecuencia B
- * efectiva; bajo la pleura, la del tejido de detrás (lo que la GPU aproxima con ΔL). C, D y la envolvente,
- * como `interfaceTwin.ts`; G, el gris con la compensación nominal del equipo y el hígado puro a 100.
+ * efectiva; bajo la pleura, la del tejido de detrás (lo que la GPU aproxima con ΔL). La PSF es la de la imagen B en
+ * fundamental (decisión 84, `bmodeBeam`): C con el pulso de cada fila (`axialSigmaMm`), D con la PSF lateral que baja
+ * con la frecuencia del eco, y el eco (no el ruido) con la ganancia focal de la emisión (`focalGain`), como la pasada B;
+ * G, el gris con la compensación nominal del equipo y el hígado puro a 100. `levelDbAt`, el nivel a la misma escala del
+ * banco: sin la atenuación nominal ni la ganancia focal (`envelopeLine`).
  * Lo usa `pleuraTwin.test.ts` (lento) para las métricas del banco de la decisión 61 antes de la GPU.
  */
 import { Interface } from '../../anatomy/interfaces';
 import { WALL as WALL_LAYERS, preperitonealMm } from '../../anatomy/organs/wall';
 import { TISSUES, Tissue, attenuationDbPerCm } from '../../anatomy/tissues';
 import type { Vec3 } from '../../core/vec3';
-import { lateralFwhmMm } from '../../ultrasound/beamModel';
+import { axialSigmaMm, focalGain, lateralFwhmMm } from '../../ultrasound/beamModel';
+import { bmodeBeam, CONVEX_C35_PROFILE } from '../../ultrasound/transducerProfile';
 import { greyOfLevel, levelOfGrey } from '../../ultrasound/greyMap';
 import { interfaceEchoField } from '../../ultrasound/interfaceEcho';
 import {
@@ -92,7 +96,9 @@ function flatWallFace(y: number): [Interface, number] | null {
 
 export const thetaOf = (u: number): number => -HALF + (2 * HALF * (u + 0.5)) / LINES;
 const linePitch = (r: number): number => (RC + r) * ((2 * HALF) / (LINES - 1));
-const latSigmaMm = (r: number): number => lateralFwhmMm(r, FOCUS) / 2.3548;
+/** Haz de la imagen B en fundamental (decisión 84), el de la pasada B y la D con el foco por defecto. */
+const BEAM = bmodeBeam(CONVEX_C35_PROFILE, { harmonic: false });
+const latSigmaMm = (r: number): number => lateralFwhmMm(r, FOCUS, BEAM) / 2.3548;
 /** Distancia de la línea θ a la pleura (plano y = 28 mm bajo la cara). */
 export const pleuraDepth = (th: number): number => (RC + WALL[2]) / Math.cos(th) - RC;
 /** Posición lateral (mm) del cruce de la línea θ con la pleura: la z anatómica de este gemelo. */
@@ -275,22 +281,24 @@ export function simulatePleura(o: PleuraTwinOpts): PleuraTwinOut {
         re += fAir * ar;
         im += fAir * ai;
       }
+      // la ganancia focal de la emisión (decisión 84) es del eco, no del ruido
+      const fg = focalGain(r, FOCUS, BEAM);
       // ruido del receptor, nuevo en cada cuadro
       const n1 = Math.max(1e-12, noise());
       const n2 = noise();
       const rad = Math.sqrt(-2 * Math.log(n1)) * RECEIVER_NOISE;
       const i = v * LINES + u;
-      raw[i * 2] = re + rad * Math.cos(2 * Math.PI * n2);
-      raw[i * 2 + 1] = im + rad * Math.sin(2 * Math.PI * n2);
+      raw[i * 2] = re * fg + rad * Math.cos(2 * Math.PI * n2);
+      raw[i * 2 + 1] = im * fg + rad * Math.sin(2 * Math.PI * n2);
     }
   }
-  // C: axial, energía unidad
-  const sAx = Math.max(0.6, 0.26 / dr);
-  const RA = Math.min(12, Math.ceil(sAx * 2.5));
-  const wA = Array.from({ length: 2 * RA + 1 }, (_, k) => Math.exp(-0.5 * ((k - RA) / sAx) ** 2));
-  const nA = Math.hypot(...wA);
+  // C: axial, energía unidad, con el pulso de cada fila
   const ax = new Float32Array(raw.length);
-  for (let v = 0; v < nv; v++)
+  for (let v = 0; v < nv; v++) {
+    const sAx = Math.max(0.6, axialSigmaMm((v + 0.5) * dr, BEAM) / dr);
+    const RA = Math.min(12, Math.ceil(sAx * 2.5));
+    const wA = Array.from({ length: 2 * RA + 1 }, (_, k) => Math.exp(-0.5 * ((k - RA) / sAx) ** 2));
+    const nA = Math.hypot(...wA);
     for (let u = 0; u < LINES; u++) {
       let re = 0;
       let im = 0;
@@ -302,6 +310,7 @@ export function simulatePleura(o: PleuraTwinOpts): PleuraTwinOut {
       ax[(v * LINES + u) * 2] = re / nA;
       ax[(v * LINES + u) * 2 + 1] = im / nA;
     }
+  }
   // D: lateral por profundidad y envolvente
   const env = new Float32Array(nv * LINES);
   for (let v = 0; v < nv; v++) {
@@ -324,14 +333,17 @@ export function simulatePleura(o: PleuraTwinOpts): PleuraTwinOut {
   return { env, nv, dr, depth, D: Ds, fAir: fAirs };
 }
 
-/** Mediana de la envolvente del hígado puro con transmisión 1 (la referencia del gris 100). */
+/**
+ * Mediana de la envolvente del hígado puro con transmisión 1 y sin la ganancia focal (la referencia del gris 100: el
+ * hígado a media escala en el foco, decisión 53).
+ */
 export function liverReference(seed = 1): number {
   const o = simulatePleura({ edgeMm: Infinity, seed });
   const vals: number[] = [];
   for (let v = 0; v < o.nv; v++) {
     const r = (v + 0.5) * o.dr;
     if (r < 60 || r > 120) continue;
-    for (let u = 30; u < LINES - 30; u++) vals.push(o.env[v * LINES + u] / transmission(thetaOf(u), r));
+    for (let u = 30; u < LINES - 30; u++) vals.push(o.env[v * LINES + u] / transmission(thetaOf(u), r) / focalGain(r, FOCUS, BEAM));
   }
   vals.sort((x, y) => x - y);
   return vals[vals.length >> 1];
@@ -344,10 +356,13 @@ export function greyAt(env: number, r: number, liverMed: number): number {
   return 255 * greyOfLevel(Math.min(1, Math.max(0, y)));
 }
 
-/** Nivel mostrado en dB (sin recortar) de la envolvente, sobre la mediana del hígado puro. */
+/**
+ * Nivel en dB (sin recortar) de la envolvente sobre la mediana del hígado puro, a la misma escala del banco
+ * (`envelopeLine`): con la compensación nominal y sin la ganancia focal de la emisión (decisión 84).
+ */
 export function levelDbAt(env: number, r: number, liverMed: number): number {
   const comp = Math.min(TGC_CAP_DB, 2 * attenuationDbPerCm(Tissue.Liver, F_B) * (r / 10));
-  return 20 * Math.log10(Math.max(env, 1e-12) / liverMed) + comp;
+  return 20 * Math.log10(Math.max(env, 1e-12) / liverMed / focalGain(r, FOCUS, BEAM)) + comp;
 }
 
 /** Envolvente de la línea u a la profundidad r, interpolada entre muestras. */

@@ -1,29 +1,12 @@
 import { caseDisplayLabel } from '../../app/blindMode';
-import { START_POINTS, type StartPoint } from '../../app/startPoints';
 import type { RespiratoryPattern } from '../../physiology/patientState';
 import { button, help, row, slider } from '../controls';
 import { imageBasics } from './imageTab';
 import type { PanelContext } from './context';
 
-/** Pestaña Adquirir: puntos de partida, sonda (ángulos y presión), caso y respiración. */
-export function buildAcquireTab(ctx: PanelContext, p: HTMLElement, onStartPoint: (sp: StartPoint) => void): void {
+/** Pestaña Adquirir: sonda (ángulos y presión), caso y respiración; las ventanas están en el carril izquierdo. */
+export function buildAcquireTab(ctx: PanelContext, p: HTMLElement): void {
   const s = ctx.sim;
-  const start = ctx.section(p, 'Puntos de partida');
-  const grid = document.createElement('div');
-  grid.className = 'tool-grid';
-  for (const sp of START_POINTS) {
-    const b = document.createElement('button');
-    b.textContent = sp.label;
-    b.title = sp.hint;
-    b.addEventListener('click', () => onStartPoint(sp));
-    grid.appendChild(b);
-  }
-  start.appendChild(grid);
-  help(
-    start,
-    'La sonda se desliza de forma continua hasta la posición cutánea de partida con ángulos neutros; la ventana diagnóstica hay que afinarla a mano (guía §8).',
-  );
-
   const probe = ctx.section(p, 'Sonda');
   const deg = (v: number) => `${v.toFixed(0)}°`;
   ctx.track(

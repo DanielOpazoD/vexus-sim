@@ -17,11 +17,13 @@ import { HeartRateDisplay, hudText, renderLines } from './ui/controllers/hud';
 import { bindImageClick } from './ui/controllers/imageClick';
 import { buildLayerMenu } from './ui/controllers/layerMenu';
 import { CutMapView } from './ui/cutMapView';
+import { bindCollapsible, bindPopover } from './ui/disclosure';
 import { SpectrogramView, drawEcg, drawOverlay } from './ui/displays';
 import { bindKeyboardShortcuts } from './ui/keyboardShortcuts';
 import type { Navigator3D } from './ui/navigator3d';
 import { ControlPanel } from './ui/panel';
 import { ProbeInput } from './ui/probeInput';
+import { StartPointCards } from './ui/startPointCards';
 import { compoundActive } from './ultrasound/compound';
 
 /**
@@ -103,7 +105,15 @@ function setPoseManual(p: Parameters<Simulator['setPose']>[0]): void {
   probeAnimator.cancel(); // cualquier gesto manual cancela la animación
   sim().setPose(p);
 }
-panel.onStartPoint = (sp) => probeAnimator.goTo(sp);
+// Carril izquierdo: ventanas VExUS (la sonda se desliza hasta su punto de partida), ayuda y corte plegable
+const windows = new StartPointCards($('start-points'), {
+  onPick: (sp) => probeAnimator.goTo(sp),
+  getPose: () => sim().pose,
+  getTorso: () => sim().scene.torso,
+  animating: () => probeAnimator.active,
+});
+bindPopover($<HTMLButtonElement>('nav-help'), $('nav-help-pop'));
+bindCollapsible($<HTMLButtonElement>('cut-toggle'), $('cut-block'));
 let lastFps = 0;
 panel.onExportDiagnostics = () => {
   const s = sim();
@@ -343,6 +353,7 @@ function frame(now: number, dt: number): void {
     }
     panel.renderDebug();
     panel.sync(); // la pose y el acoplamiento cambian con el ratón; el equipo avisa por su cuenta
+    windows.sync();
   }
 }
 

@@ -239,7 +239,7 @@ button.secondary.on {
   background: var(--accent-soft);
 }
 
-/* --- carril izquierdo: navegador 3D + corte -------------------------------- */
+/* --- carril izquierdo: ventanas, navegador 3D y corte --------------------- */
 .left {
   grid-column: 1;
   background: var(--panel);
@@ -256,23 +256,137 @@ button.secondary.on {
   visibility: hidden;
   border-right: none;
 }
-.rail-collapse {
-  position: absolute;
-  left: 6px;
-  top: 6px;
-  z-index: 3;
-  padding: 0 6px;
-  font-size: 12px;
-  opacity: 0.8;
-}
-.torso-wrap {
-  flex: 1;
-  min-height: 200px;
+.rail-block {
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  border-bottom: 1px solid var(--border);
+}
+.rail-block:last-child {
+  border-bottom: 0;
+}
+/* Cabecera de bloque: rótulo a la izquierda, herramientas compactas a la derecha, sin solaparse */
+.rail-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 40px;
+  padding: 0 8px 0 16px;
+}
+.rail-title {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.rail-head .icon-btn {
+  width: 24px;
+  height: 24px;
+}
+.rail-toggle {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  margin-left: -8px;
+  padding: 0 8px;
+  text-align: left;
+  background: transparent;
+}
+.rail-toggle:hover {
+  background: var(--panel-2);
+}
+/* Chevrón de los plegables (abierto ▾, plegado ▸) */
+.chevron {
+  flex: none;
+  width: 6px;
+  height: 6px;
+  margin: 0 2px;
+  border-right: 1.5px solid var(--muted);
+  border-bottom: 1.5px solid var(--muted);
+  transform: translateY(-2px) rotate(45deg);
+  transition: transform 0.15s;
+}
+[aria-expanded='false'] > .chevron {
+  transform: rotate(-45deg);
+}
+/* Tarjetas de ventanas: anillo del color del 3D, nombre y lo que muestra */
+.windows-block {
+  flex: none;
+}
+.windows {
+  display: grid;
+  gap: 2px;
+  padding: 0 8px 8px;
+}
+.win-card {
+  --win: var(--accent);
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr);
+  column-gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 4px 8px;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+.win-card:hover {
+  background: var(--panel-2);
+}
+.win-ring {
+  grid-row: 1 / span 2;
+  justify-self: center;
+  width: 12px;
+  height: 12px;
+  border: 2.5px solid var(--win);
+  border-radius: 50%;
+}
+.win-name,
+.win-sub {
+  line-height: 16px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.win-name {
+  font-weight: 600;
+}
+.win-sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+.win-card.current {
+  background: color-mix(in srgb, var(--win) 13%, transparent);
+  border-color: color-mix(in srgb, var(--win) 50%, transparent);
+}
+.win-card.current .win-ring {
+  background: var(--win);
+}
+/* En pantallas bajas las tarjetas pierden el subtítulo (queda en el tooltip) para dejar sitio al 3D */
+@media (max-height: 860px) {
+  .win-sub {
+    display: none;
+  }
+}
+/* Navegador 3D ≈ 60 % y corte ≈ 40 % del alto restante; el corte se pliega */
+.nav-block {
+  flex: 3 1 0;
+  position: relative;
 }
 .torso-3d {
-  flex: 1 1 50%;
+  flex: 1;
   min-height: 0;
   position: relative;
 }
@@ -281,75 +395,45 @@ button.secondary.on {
   height: 100% !important;
   display: block;
 }
+.cut-block {
+  flex: 2 1 0;
+}
+.cut-block.collapsed {
+  flex: none;
+}
+.cut-block.collapsed .cut-map {
+  display: none;
+}
 .cut-map {
-  flex: 1 1 50%;
+  flex: 1;
   min-height: 0;
-  position: relative;
   background: #0f1319;
-  border-top: 1px solid rgba(255, 255, 255, 0.16);
 }
 .cut-map canvas {
   width: 100%;
   height: 100%;
   display: block;
 }
-.torso-caption {
-  position: absolute;
-  left: 30px;
-  top: 8px;
-  z-index: 2;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-  background: rgba(0, 0, 0, 0.45);
-  padding: 1px 6px;
-  border-radius: 3px;
-  pointer-events: none;
-}
-.cut-map .torso-caption {
-  left: 8px;
-}
-.torso-tools {
-  position: absolute;
-  right: 6px;
-  top: 6px;
-  z-index: 2;
-  display: flex;
-  gap: 4px;
-}
-.torso-tools button {
-  padding: 2px 8px;
-  font-size: 12px;
-  background: rgba(18, 22, 28, 0.85);
-}
-.torso-help {
-  font-size: 10.5px;
-  line-height: 1.4;
-  color: var(--muted);
-  padding: 6px 10px;
-  border-top: 1px solid var(--border);
-}
 .menu {
   position: absolute;
   z-index: 5;
-  background: var(--panel);
+  background: var(--panel-2);
   border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 6px;
-  min-width: 190px;
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55);
+  border-radius: 8px;
+  padding: 8px;
+  min-width: 184px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.55);
 }
 .menu.down {
-  right: 6px;
-  top: 34px;
+  right: 8px;
+  top: 40px;
 }
 .menu-cap {
-  font-size: 10px;
+  font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: var(--muted);
-  padding: 6px 8px 2px;
+  color: var(--faint);
+  padding: 8px 8px 4px;
 }
 .menu label {
   display: flex;
@@ -360,7 +444,48 @@ button.secondary.on {
   cursor: pointer;
 }
 .menu label:hover {
-  background: var(--panel-2);
+  background: var(--panel-3);
+}
+/* Ayuda de gestos y teclado detrás de «?» */
+.popover {
+  left: 8px;
+  right: 8px;
+  top: 40px;
+  padding: 8px 16px 12px;
+  font-size: 12px;
+  line-height: 16px;
+}
+.popover h3 {
+  margin: 8px 0 4px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+}
+.popover dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 8px;
+  margin: 0;
+}
+.popover dt {
+  white-space: nowrap;
+}
+.popover dd {
+  margin: 0;
+  color: var(--muted);
+}
+.keys {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.keys kbd + kbd {
+  margin-left: 2px;
 }
 
 /* --- centro: imagen -------------------------------------------------------- */

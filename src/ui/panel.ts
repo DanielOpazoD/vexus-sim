@@ -1,7 +1,6 @@
 import type { EquivalenceReport } from '../app/equivalenceCheck';
 import type { Simulator } from '../app/simulator';
 import type { AppState, PanelTab, Store } from '../app/store';
-import type { StartPoint } from '../app/startPoints';
 import type { Syncable } from './controls';
 import { buildAcquireTab } from './panel/acquireTab';
 import { modeHasColor, modeHasPw, type EquipmentCommand } from '../app/equipment';
@@ -33,7 +32,6 @@ export class ControlPanel implements PanelContext {
   private doppler: DopplerPanels;
   private measure: MeasureTab;
   private teacher: TeacherTab;
-  onStartPoint: (p: StartPoint) => void = () => undefined;
   set onExportDiagnostics(f: () => void) {
     this.teacher.onExportDiagnostics = f;
   }
@@ -70,7 +68,7 @@ export class ControlPanel implements PanelContext {
     badge.style.display = 'none';
     this.tabs.get('medir')!.appendChild(badge);
 
-    buildAcquireTab(this, this.panels.get('adquirir')!, (sp) => this.onStartPoint(sp));
+    buildAcquireTab(this, this.panels.get('adquirir')!);
     buildImageTab(this, this.panels.get('imagen')!);
     this.doppler = buildDopplerTab(this, this.panels.get('doppler')!);
     this.measure = new MeasureTab(this, this.panels.get('medir')!, badge);

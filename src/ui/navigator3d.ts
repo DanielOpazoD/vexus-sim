@@ -31,6 +31,9 @@ export interface Navigator3DOptions {
   getCaliber: () => VesselCaliber;
 }
 
+/** Campo de visión vertical de la cámara (grados) en un lienzo apaisado o cuadrado. */
+const FOV_DEG = 35;
+
 export interface NavigatorLayers {
   skin: boolean;
   skeleton: boolean;
@@ -97,7 +100,7 @@ export class Navigator3D {
     host.appendChild(this.renderer.domElement);
     this.renderer.domElement.style.touchAction = 'none';
     this.renderer.domElement.style.display = 'block';
-    this.camera = new THREE.PerspectiveCamera(35, 1, 1, 400);
+    this.camera = new THREE.PerspectiveCamera(FOV_DEG, 1, 1, 400);
     this.scene.add(new THREE.HemisphereLight(0xe8eef5, 0x1a1f28, 1.0));
     const key = new THREE.DirectionalLight(0xffffff, 1.4);
     key.position.set(-30, 40, 25);
@@ -329,6 +332,9 @@ export class Navigator3D {
       this.renderer.domElement.style.width = '100%';
       this.renderer.domElement.style.height = '100%';
       this.camera.aspect = w / h;
+      // En un lienzo más alto que ancho (el corte plegado) se abre el campo vertical para conservar el ancho
+      // visible de un lienzo cuadrado: el tronco no se recorta por los lados
+      this.camera.fov = w >= h ? FOV_DEG : (2 * Math.atan(Math.tan((FOV_DEG * Math.PI) / 360) * (h / w)) * 180) / Math.PI;
       this.camera.updateProjectionMatrix();
       this.dirty = true;
     }

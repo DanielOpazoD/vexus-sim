@@ -50,7 +50,7 @@ modos: [2D | Color | PW] (Color y PW a la vez es el tríplex), Congelar, Audio y
 
 - **Ventanas**: cada tarjeta desliza la sonda de forma continua hasta su punto de partida con ángulos
   neutros; la ventana hay que afinarla (nada teletransporta a una vista). La tarjeta de la ventana en
-  la que está la sonda queda resaltada, con el color de su anillo en el 3D.
+  la que está la sonda queda resaltada; su nombre y su color son los de su anillo en el 3D.
 - **Sonda (navegador 3D)**: arrastrar la piel desliza; arrastrar el marcador azul o la rueda rota;
   ⇧+arrastrar bascula; ⌥+arrastrar inclina; botón derecho orbita; ⌘/Ctrl+rueda hace zoom. También se
   puede arrastrar sobre la imagen y con el teclado (`W A S D` deslizar, `Q E` rotar, `← →` bascular,

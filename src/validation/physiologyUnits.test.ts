@@ -145,11 +145,19 @@ describe('Respiración', () => {
       expect(i.diaphragmCaudalMm).toBe(30);
       expect(i.diaphragmVelocityMmS).toBe(0);
     }
-    // PEEP: solo cuenta en ventilación con presión positiva (40 % transmitido)
+    // PEEP: 40 % a la pleura en los dos modos; con respiración espontánea es una CPAP (decisión 79; antes se
+    // ignoraba y la PEEP no tenía ningún efecto, `peep-no-hemodynamic-effect`)
     const pp = new RespiratoryModel({ ...clonePatient(NORMAL_ADULT), ventilation: 'positive-pressure', peepCmH2O: 10 });
     expect(pp.pleuralAtEndExpiration() - m.pleuralAtEndExpiration()).toBeCloseTo(10 * 0.73556 * 0.4, 6);
-    const spontPeep = new RespiratoryModel({ ...clonePatient(NORMAL_ADULT), peepCmH2O: 10 });
-    expect(spontPeep.pleuralAtEndExpiration()).toBe(m.pleuralAtEndExpiration());
+    const cpap = new RespiratoryModel({ ...clonePatient(NORMAL_ADULT), peepCmH2O: 10 });
+    expect(cpap.pleuralAtEndExpiration() - m.pleuralAtEndExpiration()).toBeCloseTo(10 * 0.73556 * 0.4, 6);
+    // la inspiración espontánea sigue bajando la pleural (la oscilación no cambia con la CPAP)
+    for (const t of [0.3 * T, 0.5 * T, 0.8 * T]) {
+      expect(cpap.sample(t).pleuralMmHg - m.sample(t).pleuralMmHg).toBeCloseTo(10 * 0.73556 * 0.4, 9);
+    }
+    // el motor cambia la PEEP en marcha (intervención): la pleural la sigue
+    cpap.peepCmH2O = 0;
+    expect(cpap.pleuralAtEndExpiration()).toBe(m.pleuralAtEndExpiration());
   });
 });
 

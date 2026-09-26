@@ -1,3 +1,4 @@
+import type { AppliedIntervention, LoopState } from '../physiology/circulation';
 import type { EquipmentSettings } from './simulator';
 import type { ErrorEntry } from './errorLog';
 
@@ -19,6 +20,8 @@ export interface DiagnosticsInput {
   /** Tiempo de GPU del cuadro y por pasada si el navegador los separa (ms); null sin temporizadores. */
   gpuMs: { frameMs: number; perPass: Readonly<Record<string, number>> | null } | null;
   equipment: EquipmentSettings;
+  /** Lazo cerrado de la PAD (decisión 79): su estado y las intervenciones docentes aplicadas. */
+  circulation?: { state: LoopState; interventions: readonly AppliedIntervention[] };
   errors: readonly ErrorEntry[];
 }
 

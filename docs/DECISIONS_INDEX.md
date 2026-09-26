@@ -82,3 +82,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [76](DECISIONS.md#L2343) | Ecos parásitos del modo fundamental: lóbulos laterales con la aberración de la pared y reverberación de sus caras | vigente |
 | [77](DECISIONS.md#L2404) | Armónica tisular: el modo B de un equipo moderno, con su haz, su acumulación y su ruido | vigente |
 | [78](DECISIONS.md#L2491) | Tríadas portales finas: el hígado deja de ser un moteado uniforme | vigente |
+| [79](DECISIONS.md#L2560) | Aurícula de lazo cerrado en la media e intervenciones docentes: bolo, diurético y PEEP | vigente |

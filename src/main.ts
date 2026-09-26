@@ -140,6 +140,7 @@ panel.onExportDiagnostics = () => {
     fps: lastFps,
     gpuMs: s.renderer.gpuTimings(),
     equipment: s.equipment,
+    circulation: { state: s.physiology.circulation.state, interventions: [...s.physiology.circulation.interventions] },
     errors: errorLog.recent(50),
   });
   const a = document.createElement('a');
@@ -147,6 +148,11 @@ panel.onExportDiagnostics = () => {
   a.download = diagnosticsFileName(d);
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+panel.onResetPatient = () => {
+  const error = session.reloadCase();
+  if (error) banner.show(`No se pudo reiniciar el paciente: ${errorMessage(error)}`, 6000);
+  return error;
 };
 const input = new ProbeInput(sectorWrap, () => sim().pose, setPoseManual);
 // Navegador 3D (three.js, ~560 kB) con carga diferida: la imagen ecográfica no lo necesita

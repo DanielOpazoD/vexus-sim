@@ -9,9 +9,29 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **Solo el riñón derecho tiene vasos interlobares** (`no-left-interlobar-vessels`): el izquierdo
   tiene arteria y vena renal pero no vasos intrarrenales; las 14 pirámides, el seno (con un dedo hacia cada papila) y
   la pelvis son procedurales (decisiones 37, 43 y 68), sin cálices diferenciados.
-- **La presión de aurícula derecha es un contorno prescrito** (`prescribed-ra-contour`): media del
-  caso + ondas a/c/x/v/y + onda sistólica por insuficiencia tricuspídea. No hay lazo cerrado; las
-  amplitudes (3,4 / 5,2·VD / 1,8 / 2,4 / 9·IT² mmHg) son de calibración, no medidas. Hallado por fast-check: con la aurícula muy rígida (compliancia 0,3) y PAD media ≈ 0 el contorno oscila hasta −11 mmHg y la VCI suprahepática supera 2 m/s (`properties.test.ts`, `it.fails`; el primer contraejemplo, de hipovolemia, ya no la supera con la pared viscoelástica de la decisión 73).
+- **La forma de onda de la aurícula derecha es un contorno prescrito** (`prescribed-ra-contour`): ondas a/c/x/v/y +
+  onda sistólica por insuficiencia tricuspídea, gaussianas centradas por latido sobre la media. La media sale del lazo
+  cerrado (decisión 79) y la rigidez auricular y la IT siguen al llenado, pero las ondas no salen de una cámara con
+  volumen y válvulas; las amplitudes (3,4 / 5,2·VD / 1,8 / 2,4 / 9·IT² mmHg) son de calibración, no medidas. Hallado por
+  fast-check: con la aurícula muy rígida (compliancia 0,3) y PAD media ≈ 0 el contorno oscila hasta −11 mmHg y la VCI
+  suprahepática supera 2 m/s (`properties.test.ts`, `it.fails`; el primer contraejemplo, de hipovolemia, ya no la supera
+  con la pared viscoelástica de la decisión 73).
+- **El lazo cerrado es solo de la media** (`mean-closed-loop`, decisión 79): la PAD media es el cruce de dos curvas en
+  cada paso (casi estático), linealizadas en el punto del caso; no hay cámaras ni válvulas y las ondas no realimentan la
+  media. La curva de Starling se aplana pero no desciende (sin interdependencia ventricular). La IT funcional dependiente
+  de la carga (IT₀·(Ptm/Ptm₀)³) no está calibrada y responde con fuerza en los dos sentidos: con +250 mL la FA moderada
+  queda en el umbral de la S invertida (grado 3 en 7 de 9 ventanas, 2 en las otras); el sano con +1500 mL pasa de 0,05 a
+  0,44 (S < D) y la congestión grave con −1000 mL de 0,70 a 0,17 (grado 1, o 0 en apnea inspiratoria). Sobre latidos
+  enteros el retorno venoso de la red sigue al gasto del lazo a ≤ 2 puntos, también en los transitorios; en ventanas fijas
+  que no son un número entero de latidos oscila de una a otra (±8–17 % en la congestión grave, ya en main), por el
+  aliasing de las ondas grandes.
+- **Sin reflejos autónomos** (`no-autonomic-reflexes`): ni barorreflejo ni venoconstricción. La presión arterial de la
+  red sigue al gasto con la resistencia constante (108 mmHg tras 500 mL en el sano, 67 con PEEP 15), la frecuencia no
+  cambia y la PEEP no sube la presión abdominal ni la Pmsf, así que el gasto cae más que en la clínica (−19 % con PEEP
+  10 en el sano) y la PAD sube menos; hipovolemia más PEEP alta lo hunde (el sano con −500 mL y PEEP 15: 2 L/min y PAM
+  43 mmHg) y ese flujo bajo da Doppler de aspecto congestivo que un paciente con reflejos no tendría (con respiración
+  tranquila, vena interlobar bifásica y PF 34 % con la VCI de 13 mm, grado 0). El bolo es volumen estresado íntegro, sin
+  paso al intersticio.
 - **Velocidad uniforme a lo largo de cada tubo** (`uniform-vessel-velocity`): el caudal local escala
   con el área; no hay conservación explícita en bifurcaciones.
 - **El hígado es una forma procedural** (`procedural-liver-shape`): elipsoides recortados por pared,
@@ -40,7 +60,9 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   cualquier caída de la PAD; no existe la meseta de Guyton por colapso de la VCI en la entrada
   torácica. Hallado por fast-check: con hipovolemia (volumen 0,6) y PAD media ≈ 0 la VCI se vacía
   hacia la aurícula a > 100 mL/s y su velocidad supera 2 m/s (`properties.test.ts`, `it.fails`).
-  Sí existe el resistor de Starling por debajo de 8 mm y un lumen residual de 3 mm.
+  Sí existe el resistor de Starling por debajo de 8 mm y un lumen residual de 3 mm. El diurético del sano (decisión 79)
+  llega a ella: con −500 mL (PAD 2,3) la VCI baja a 6 mm en la inspiración y pasa por ella a 2,8 m/s; por eso los
+  líquidos no bajan el llenado de 2 mmHg.
 - **La VCI es un solo compartimento abdominal** (`ivc-single-compartment`): su diámetro observado
   usa la presión del compartimento entero, no la del segmento a 2 cm de la confluencia; la pulsación
   cardíaca del calibre está amortiguada.
@@ -50,9 +72,6 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   tiene riñón y vasos; todas las costillas son derechas (`rightOnly`), así que una ventana izquierda
   no muestra sombras costales. El corte del shader (`sdRib`, `x > 15 mm`) supone que todas lo son:
   `shaderLimits.test.ts` falla si se añade una costilla izquierda sin llevar `rightOnly` al GLSL.
-- **La PEEP no tiene efecto hemodinámico** (`peep-no-hemodynamic-effect`): se transmite un 40 % a la
-  pleura, pero la PAD se prescribe respecto a la pleural de fin de espiración y la PEEP se cancela;
-  con 0, 5 o 15 cmH₂O la PAD, la VCI y los caudales son idénticos. Solo cambia el modo ventilatorio.
 - **El índice de resistencia arterial es fijo** (`fixed-arterial-resistive-index`): el pulso arterial
   es multiplicativo y el mismo en todos los casos, así que el IR renal (0,53) y el hepático (0,63) no
   cambian entre casos; además el pulso sube 130–170 ms antes de la R. Medir el IR hoy no enseñaría

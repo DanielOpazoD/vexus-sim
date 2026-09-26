@@ -1,4 +1,4 @@
-import { findCase, type CaseId } from '../cases';
+import { findCase, isCaseId, type CaseId } from '../cases';
 import { C_RECONSTRUCTION_MM_S } from '../core/units';
 import { clonePatient } from '../physiology/patientState';
 import { EquipmentController } from './equipment';
@@ -39,8 +39,21 @@ export class SimulationSession {
 
   /** Cambia de caso; devuelve el error si no se pudo (el caso anterior sigue activo). */
   loadCase(id: CaseId): unknown {
+    if (this.current.patient.id === id) return null;
+    return this.rebuild(id);
+  }
+
+  /**
+   * «Reiniciar paciente» (decisión 79): vuelve a cargar el caso actual desde su definición, sin las intervenciones
+   * ni la respiración cambiada; la sonda y el equipo se conservan, como en un cambio de caso.
+   */
+  reloadCase(): unknown {
+    const id = this.current.patient.id;
+    return isCaseId(id) ? this.rebuild(id) : new Error(`caso desconocido: ${id}`);
+  }
+
+  private rebuild(id: CaseId): unknown {
     const prev = this.current;
-    if (prev.patient.id === id) return null;
     let next: Simulator;
     try {
       next = new Simulator(clonePatient(findCase(id)), this.canvas, prev.audio, prev.renderer);

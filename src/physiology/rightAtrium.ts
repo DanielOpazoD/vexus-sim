@@ -1,3 +1,4 @@
+import type { AtrialLoad } from './circulation';
 import type { PatientState } from './patientState';
 import { gauss, type Beat, type RhythmGenerator } from './rhythm';
 
@@ -8,6 +9,10 @@ import { gauss, type Beat, type RhythmGenerator } from './rhythm';
  *
  * Cada latido aporta ondas gaussianas centradas en sus eventos mecánicos; la
  * suma de un latido se centra numéricamente para conservar la media declarada.
+ * La media P̄_AD, la rigidez auricular y la IT salen del lazo cerrado (`circulation.ts`,
+ * decisión 79): sin intervenciones son las del caso. La media se lee en cada paso; las
+ * amplitudes de cada latido (rigidez e IT) se congelan al entrar en juego (0,5 s antes de su
+ * R), así que el centrado del latido sigue valiendo aunque el lazo cambie.
  *
  * Mecanismos representados (D.6, matriz de confusores):
  *  - onda a ∝ contracción auricular;
@@ -34,10 +39,20 @@ export interface RaWaveParams {
   trSigma: number;
 }
 
-export function raWaveParams(p: PatientState): RaWaveParams {
-  const tr = p.tricuspidRegurgitation;
+/** La carga del caso sin intervenciones: su PAD media y su IT. */
+export function caseAtrialLoad(p: PatientState): AtrialLoad {
+  return { rapMeanMmHg: p.rapMeanMmHg, fillingRapMmHg: p.rapMeanMmHg, tricuspidRegurgitation: p.tricuspidRegurgitation };
+}
+
+/**
+ * Amplitudes y anchuras de las ondas. La rigidez auricular crece con el llenado por volumen (`fillingRapMmHg`,
+ * que no incluye lo que la PEEP sube la PAD: la PEEP comprime la aurícula, no la llena) y la IT es la efectiva
+ * del lazo; con la carga del caso, los valores calibrados de siempre.
+ */
+export function raWaveParams(p: PatientState, load: AtrialLoad = caseAtrialLoad(p)): RaWaveParams {
+  const tr = load.tricuspidRegurgitation;
   const stiffness = 1 / Math.max(0.15, p.raCompliance);
-  const pressureGain = 1 + 0.04 * Math.max(0, p.rapMeanMmHg - 5);
+  const pressureGain = 1 + 0.04 * Math.max(0, load.fillingRapMmHg - 5);
   const g = stiffness * pressureGain;
   return {
     aAmp: 3.4 * g,
@@ -68,14 +83,27 @@ function beatWave(t: number, b: Beat, w: RaWaveParams): number {
 }
 
 export class RightAtriumModel {
-  private params: RaWaveParams;
-  private meanCache = new Map<number, number>();
+  /** Parámetros de cada latido (congelados al entrar en juego) y su media sobre el RR. */
+  private beatCache = new Map<number, { params: RaWaveParams; mean: number | null }>();
 
   constructor(
     private readonly patient: PatientState,
     private readonly rhythm: RhythmGenerator,
-  ) {
-    this.params = raWaveParams(patient);
+    /** Carga vigente (lazo cerrado); por omisión, la del caso. */
+    private readonly load: () => AtrialLoad = () => caseAtrialLoad(patient),
+  ) {}
+
+  private entry(b: Beat): { params: RaWaveParams; mean: number | null } {
+    let e = this.beatCache.get(b.index);
+    if (!e) {
+      e = { params: raWaveParams(this.patient, this.load()), mean: null };
+      this.beatCache.set(b.index, e);
+      if (this.beatCache.size > 256) {
+        const first = this.beatCache.keys().next().value;
+        if (first !== undefined) this.beatCache.delete(first);
+      }
+    }
+    return e;
   }
 
   /**
@@ -83,22 +111,16 @@ export class RightAtriumModel {
    * soporte temporal dividida por rr. Así la suma de latidos consecutivos
    * conserva la media declarada aunque las gaussianas se solapen.
    */
-  private beatMean(b: Beat): number {
-    const cached = this.meanCache.get(b.index);
-    if (cached !== undefined) return cached;
+  private beatMean(b: Beat, e: { params: RaWaveParams; mean: number | null }): number {
+    if (e.mean !== null) return e.mean;
     const t0 = b.tR - 0.5;
     const t1 = b.tR + 1.6;
     const n = 420;
     const h = (t1 - t0) / n;
     let acc = 0;
-    for (let i = 0; i < n; i++) acc += beatWave(t0 + (i + 0.5) * h, b, this.params);
-    const m = (acc * h) / b.rr;
-    this.meanCache.set(b.index, m);
-    if (this.meanCache.size > 256) {
-      const first = this.meanCache.keys().next().value;
-      if (first !== undefined) this.meanCache.delete(first);
-    }
-    return m;
+    for (let i = 0; i < n; i++) acc += beatWave(t0 + (i + 0.5) * h, b, e.params);
+    e.mean = (acc * h) / b.rr;
+    return e.mean;
   }
 
   /** Componente cardíaca centrada (media ≈ 0) de la presión de AD, mmHg. */
@@ -108,14 +130,18 @@ export class RightAtriumModel {
     // conserva la media declarada ciclo a ciclo.
     let v = 0;
     for (const b of this.rhythm.beatsAround(t)) {
-      if (t >= b.tR - 0.5 && t <= b.tR + 1.6) v += beatWave(t, b, this.params);
-      if (t >= b.tR && t < b.tR + b.rr) v -= this.beatMean(b);
+      const inSupport = t >= b.tR - 0.5 && t <= b.tR + 1.6;
+      const inRr = t >= b.tR && t < b.tR + b.rr;
+      if (!inSupport && !inRr) continue;
+      const e = this.entry(b);
+      if (inSupport) v += beatWave(t, b, e.params);
+      if (inRr) v -= this.beatMean(b, e);
     }
     return v;
   }
 
-  /** Presión de AD total: media del paciente + ondas + modulación pleural. */
+  /** Presión de AD total: media del lazo + ondas + modulación pleural. */
   pressure(t: number, pleuralMmHg: number, pleuralEndExp: number): number {
-    return this.patient.rapMeanMmHg + this.cardiacComponent(t) + (pleuralMmHg - pleuralEndExp);
+    return this.load().rapMeanMmHg + this.cardiacComponent(t) + (pleuralMmHg - pleuralEndExp);
   }
 }

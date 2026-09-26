@@ -1,4 +1,5 @@
 import { SimulationClock } from '../core/clock';
+import { Circulation, circulationBaseline, type AppliedIntervention, type Intervention } from './circulation';
 import type { PatientState } from './patientState';
 import { validatePatient } from './patientState';
 import { RespiratoryModel, type RespiratorySample } from './respiratory';
@@ -82,6 +83,8 @@ export class PhysiologyEngine {
   readonly rhythm: RhythmGenerator;
   readonly respiratory: RespiratoryModel;
   readonly rightAtrium: RightAtriumModel;
+  /** Lazo cerrado de la media (decisión 79): PAD, gasto e intervenciones. */
+  readonly circulation: Circulation;
   readonly network: VenousNetwork;
   readonly areas: VesselAreas;
   /** Historial reciente (para ECG, mediciones y clasificación). */
@@ -90,6 +93,8 @@ export class PhysiologyEngine {
   private current: PhysiologySample;
   /** Área de la luz de la VCI que marca su pared (mm²): sigue a la del volumen con la constante de la pared (decisión 73). */
   private ivcWallAreaMm2: number;
+  /** Pmsf del lazo en el paso anterior: su cambio es el volumen que entra o sale de la red (decisión 79). */
+  private lastPmsf: number;
 
   constructor(patient: PatientState, areas: VesselAreas, opts: { dt?: number; historySeconds?: number } = {}) {
     validatePatient(patient);
@@ -99,7 +104,8 @@ export class PhysiologyEngine {
     this.historySeconds = opts.historySeconds ?? 12;
     this.rhythm = new RhythmGenerator(patient, patient.seed ^ 0x51a7);
     this.respiratory = new RespiratoryModel(patient);
-    this.rightAtrium = new RightAtriumModel(patient, this.rhythm);
+    this.circulation = new Circulation(patient, this.respiratory.pleuralAtEndExpiration());
+    this.rightAtrium = new RightAtriumModel(patient, this.rhythm, () => this.circulation.atrialLoad);
     const rap = patient.rapMeanMmHg;
     const pAbd0 = patient.intraAbdominalPressureMmHg;
     const k = defaultNetworkParams(patient);
@@ -127,6 +133,9 @@ export class PhysiologyEngine {
       pIvcTransmural: pIvc - pAbd0,
     });
     this.warmUp();
+    // punto de trabajo del lazo: la red ya en su régimen medio (fin de espiración, sin ondas)
+    this.circulation.calibrate(circulationBaseline(this.network, pAbd0));
+    this.lastPmsf = this.circulation.state.pmsfMmHg;
     this.ivcWallAreaMm2 = this.network.last.ivcAreaMm2;
     this.current = this.sampleFrom(this.network.last, 0);
     this.history.push(this.current);
@@ -176,14 +185,31 @@ export class PhysiologyEngine {
     return v;
   }
 
+  /**
+   * Intervención docente (decisión 79) desde el instante actual: bolo o diurético (volumen estresado, con la
+   * cinética acelerada de `circulation.ts`) o PEEP. Devuelve lo aplicado (los líquidos se recortan al límite
+   * acumulado; null si ya no cabe nada).
+   */
+  intervene(i: Intervention): AppliedIntervention | null {
+    return this.circulation.intervene(i, this.clock.t);
+  }
+
   /** Ejecuta un paso de integración y devuelve la muestra nueva. */
   step(): PhysiologySample {
     this.clock.advance();
     const t = this.clock.t;
+    const loop = this.circulation.update(t);
+    // el volumen de un bolo o de un diurético entra o sale de los compartimentos de la red, no solo por sus bordes: sin
+    // esto la red se llenaba desde la arteria en tiempo real mientras la PAD subía al ritmo acelerado, y sus caudales
+    // iban 10–40 s al revés que el gasto del lazo (−13 % de retorno venoso tras 500 mL en el sano)
+    const dPmsf = loop.pmsfMmHg - this.lastPmsf;
+    this.lastPmsf = loop.pmsfMmHg;
+    if (dPmsf !== 0) this.network.shiftVenousPressures(dPmsf);
+    this.respiratory.peepCmH2O = loop.peepCmH2O;
     const resp = this.respiratory.sample(t);
     const plExp = this.respiratory.pleuralAtEndExpiration();
     const pRa = this.rightAtrium.pressure(t, resp.pleuralMmHg, plExp);
-    const out = this.network.step(this.clock.dt, this.arterialPulse(t), pRa, resp.abdominalMmHg);
+    const out = this.network.step(this.clock.dt, this.arterialPulse(t), pRa, resp.abdominalMmHg, loop.arterialMeanMmHg);
     this.ivcWallAreaMm2 += (out.ivcAreaMm2 - this.ivcWallAreaMm2) * (1 - Math.exp(-this.clock.dt / IVC_WALL_TAU_S));
     const next = this.sampleFrom(out, t, resp, pRa);
     // Guardia NaN: un estado no finito se detiene aquí, con los campos culpables, en vez

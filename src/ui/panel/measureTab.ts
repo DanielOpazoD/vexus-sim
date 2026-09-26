@@ -43,14 +43,19 @@ export class MeasureTab {
     this.measureBody.hidden = st.tool !== 'none';
   }
 
-  /** Borra toda medición adquirida (cambio de caso o «Borrar»): nunca se mezclan pacientes. */
-  clearMeasurements(): void {
+  /**
+   * Borra toda medición adquirida (cambio de caso, intervención docente o «Borrar»): nunca se mezclan pacientes ni el
+   * antes y el después de una intervención. Devuelve si había alguna.
+   */
+  clearMeasurements(): boolean {
+    const had = this.lastHepatic !== null || this.lastPortal !== null || this.lastRenal !== null || this.ivcCaliperMm !== null;
     this.lastHepatic = null;
     this.lastPortal = null;
     this.lastRenal = null;
     this.ivcCaliperMm = null;
     this.ctx.sync();
     this.renderResult();
+    return had;
   }
 
   setIvcCaliper(mm: number | null): void {

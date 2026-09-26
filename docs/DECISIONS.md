@@ -2557,6 +2557,91 @@ La e2e `triadParity` (equivalencia) evalúa el GLSL de la pasada B en la GPU (`q
 
 Capturas con GPU de la intercostal, la subxifoidea y la renal, con y sin tríadas.
 
+## 79. Aurícula de lazo cerrado en la media e intervenciones docentes: bolo, diurético y PEEP
+
+**Contexto.** El dueño (médico, 26-09-2026): «adelante con todas tus propuestas». La PAD era un contorno prescrito
+(`prescribed-ra-contour`): la media del caso más las ondas, sin relación con el volumen ni con la presión torácica, así
+que no había forma de enseñar qué hacen un bolo, un diurético o la PEEP sobre la VCI, los Doppler y el grado. La PEEP
+se cancelaba al prescribir la PAD respecto a la pleural de fin de espiración (`peep-no-hemodynamic-effect`: con 0, 5 o
+15 cmH₂O todo era idéntico) y con respiración espontánea ni siquiera llegaba a la pleura.
+**Opciones.** (1) Un modelo de cámaras (aurícula y ventrículo con volumen y válvulas, tipo CircAdapt): la forma de onda
+saldría sola, pero habría que recalibrar los tres casos, cuyos patrones (grados 0/3/1) salen hoy de las ondas
+calibradas. (2) Cerrar el lazo con la red tal cual, que se alimenta de una arteria a presión fija: su retorno venoso
+apenas depende de la PAD (−0,88 mL/s por mmHg, 15 veces menos que la curva de Guyton de abajo) y no conserva el
+volumen, así que un bolo no tendría dónde ir. (3) La elegida: lazo cerrado en la media y forma de onda calibrada.
+**Decisión.** `src/physiology/circulation.ts`. La PAD media de fin de espiración es el cruce del retorno venoso
+RV = (Pmsf − PAD)/R_RV con una curva de Frank–Starling del VD sobre la presión transmural, GC = f_A·GCmáx·(1 − e^(−Ptm/k)).
+La curva de retorno venoso sale de la red en el punto de trabajo del caso, tras el calentamiento: Pmsf₀ es la media de
+las presiones de sus compartimentos (esplácnico, hígado, cuerpo inferior, VCI, riñón y una arteria de 1,5 mL/mmHg)
+ponderada por su distensibilidad local, la presión a la que se igualarían sin flujo, y R_RV = (Pmsf₀ − PAD₀)/GC₀, con GC₀
+el caudal de la red a la aurícula: Pmsf₀ 10,5/24,2/18,7 mmHg, R_RV 1,22/1,37/1,27 mmHg·min/L y distensibilidad
+128/111/113 mL/mmHg en el sano, la congestión grave y la FA. La curva de Starling pasa por el punto del caso con la
+pendiente 61 mL·FC·fVD·(1 − 0,7·IT)/(Ptm + 2): 5,5 mL/s por mmHg en el sano, en la pendiente (S·R_RV = 0,40), 2,0 en la FA
+(0,15) y 0,6 en la grave, en la meseta (0,05). Sin intervenciones el lazo devuelve la PAD del caso tal cual: la
+trayectoria de los tres casos es idéntica bit a bit a la de main (respiración tranquila, apnea y profunda, 20 s). La
+presión arterial de la red sigue al gasto con su resistencia constante (PAM = PAD + GC·RVS), y el volumen que el lazo
+infunde o retira entra en los compartimentos de la red, no solo por sus bordes (`VenousNetwork.shiftVenousPressures`):
+en cada paso el cambio de la Pmsf sube o baja la presión de todos ellos, con la ley no lineal del hígado y de la VCI (el
+hígado rígido no se llena de más). Así los caudales de la red siguen al gasto del lazo desde el primer latido: en bloques
+de latidos enteros, tras 500 mL en el sano, +7/+5 % … +20/+18 % (red/lazo, apnea). Sin esa entrada la red se llenaba
+desde la arteria en tiempo real mientras la PAD subía al ritmo acelerado, y su retorno venoso iba 10–40 s al revés que
+el gasto (−13 % tras un bolo en el sano, −30 % en la grave; +9 % tras un diurético).
+
+Intervenciones (`PhysiologyEngine.intervene`, API pura): bolo y diurético/ultrafiltración cambian el volumen estresado
+con una cinética de primer orden en tiempo docente acelerado ×30 (1 s simulado ≈ 30 s clínicos): τ 10 s el bolo (5 min
+clínicos; 95 % a los 30 s) y 40 s el diurético (20 min; 95 % a los 2 min). La PEEP (una CPAP si respira solo:
+`respiratory.ts` la aplica ya en los dos modos) sube la pleural un 40 % y la poscarga del VD un 1,5 % por cmH₂O, que
+deprime más al VD desacoplado (Ees/Ea = 2·fVD), con τ 3 s sin acelerar. Los líquidos se recortan al dominio probado del
+modelo (el de `properties.test.ts`): la PAD no baja de 2 mmHg con ninguna PEEP de la intervención (el límite se calcula
+con PEEP 0; con la del caso, un caso con PEEP 15 llegaba a −0,6 mmHg al quitársela) y el llenado no pasa de 30 (el sano
+admite −563 mL), dentro de −1000/+1500 mL. La holgura de cada sentido cuenta todo lo que aún no ha llegado en ese
+sentido, así que un bolo rápido tras un diurético lento no cruza el límite de paso; las dosis se suman en un acumulador
+por constante de tiempo, y el coste por paso no crece con los clics (antes, 0,77 s por segundo simulado tras 5000). La
+forma de onda es la de siempre, con la carga del lazo: la media en cada paso y, congeladas por latido, la rigidez
+auricular, que sigue al llenado por volumen (la PAD con la PEEP del caso), y la IT
+funcional, IT₀·(Ptm_V/Ptm₀)³, que también: la PEEP comprime la aurícula pero no la llena, y baja la precarga del VD pero
+sube su poscarga, así que no cambia ni la rigidez ni la IT. El exponente 3 dice que el orificio crece más deprisa que el
+anillo al agotarse la reserva de coaptación; con 2 la grave quedaba tras el diurético en el umbral de la S invertida
+(IT 0,45) y el patrón cambiaba de una ventana a otra. Pestaña Docente: bolo de 250 y 500 mL, diurético −500 mL y PEEP
+0/5/10/15 cmH₂O, con el estado frente al caso (PAD media, gasto, volumen en curso y pedido, PEEP, IT) y el tiempo desde la
+última intervención con su equivalente clínico; un líquido sin sitio marca su botón con `aria-disabled` (sigue enfocable:
+con `disabled` el foco caía al cuerpo de la página) y lo aplicado o recortado se anuncia (`role="status"`, que se vacía y
+se reescribe para que un mensaje repetido se vuelva a leer). Cada intervención borra las mediciones de «Medir»: el grado
+del alumno no mezcla el antes y el después. «Reiniciar paciente» recarga el caso (`SimulationSession.reloadCase`, como un
+cambio de caso: se borran las mediciones), anuncia el error si no pudo, y el aviso de la intervención anterior se borra
+al cambiar de caso. El diagnóstico exportable lleva el estado del lazo y las intervenciones.
+**Consecuencias.** A los 120 s, con respiración tranquila. Sano: +500 mL →
+PAD 5 → 7,9 mmHg, VCI 18,1/12,6 → 24,5/20,1 mm (colapso 30 → 18 %), gasto +18 % (responde a volumen) y grado 0 → 1 con los
+tres Doppler normales; con 250 mL, VCI 21,3 mm y grado 1. −500 mL → PAD 2,5, VCI 11,1/6,6 mm (41 %), gasto −21 %. PEEP
+5/10/15 → PAD 5,5/6,1/6,6, colapso 29/27/26 %, gasto −10/−19/−29 %. Congestión grave: −500 mL → PAD 14,0, IT 0,70 → 0,38,
+S −7 → +6 cm/s (S < D), PF 73 → 33 %, renal monofásico → bifásico: grado 3 → 2 a los 30 s y → 1 desde los 60 s, con el
+gasto −4 %; +250/+500 mL → PAD 20,2/22,3 con el gasto +2/+3 % (meseta), IT 0,93/1, S −19/−21 cm/s y PF 122/150 %; PEEP 10
+→ PAD 18,6, PF 84 %, grado 3. FA: −500 mL → PAD 9,4, grado 1 con la suprahepática normal; +250 mL → IT 0,49 y S ≈ −3 cm/s,
+en el umbral de la inversión (grado 3 en 7 de 9 ventanas de 8 s, 2 en las otras); PEEP 15 deja la PF en 48–52 % (grado
+1–2). Sin barorreflejo, la PAM de la red llega a 108 mmHg con 500 mL en el sano y el gasto cae con la PEEP más que en la
+clínica; con −500 mL y PEEP 15 el sano queda en 2 L/min y, con respiración tranquila, la vena interlobar sale bifásica y
+la PF en 34 % con la VCI de 13 mm. Revisión adversarial de contexto limpio: la trayectoria sin intervenciones es idéntica a
+main y 12 420 entradas al azar no dieron ningún NaN; halló la red a contracorriente en los transitorios, el límite con la
+PEEP del caso, el coste de los clics, el reinicio que anunciaba éxito con error, el aviso obsoleto tras cambiar de caso,
+el foco perdido y dos mutaciones que ninguna prueba mataba; todo corregido arriba. Limitaciones: `prescribed-ra-contour` pasa a decir que lo prescrito es la forma de onda; se retira
+`peep-no-hemodynamic-effect`; nuevas `mean-closed-loop` y `no-autonomic-reflexes`; `no-thoracic-waterfall` añade que el
+diurético del sano llega a ella (VCI de 6 mm en la inspiración, a 2,8 m/s). Enmienda la «PAD impuesta como condición de
+contorno» de la hoja consolidada: la PAD del caso es ahora el punto de trabajo del lazo.
+**Verificación.** `circulation.test.ts` (rápida): la curva de Starling pasa por el punto y con la pendiente del caso,
+creciente y cóncava; el cruce es monótono con el volumen, la pleural y la poscarga, y la meseta pasa casi toda la Pmsf a
+la PAD; sin intervenciones, la PAD, la IT y la onda son las del caso; cinética exacta de las dosis y de la PEEP sin saltos;
+límites y su recorte (también de paso y con 400 clics alternos), el límite con PEEP de caso, la onda de cada latido
+congelada aunque cambie la carga y la rigidez con el llenado y no con la PAD. `interventions.test.ts` (lenta): los tres
+casos con la PAD, la VCI y el grado de main; bolo, diurético y PEEP con los números de arriba, el patrón de la grave
+sostenido de 80 a 160 s, la PEEP sin mejorar la congestión ni cambiar las ondas; el retorno de la red con el gasto del
+lazo desde el primer bloque de latidos (bolo y diurético, sano y grave); fast-check con secuencias de intervenciones en
+los tres casos y sus variantes con PEEP de caso y ventilación mecánica, en los cuatro patrones respiratorios (finito, VCI
+acotada, < 3 m/s, PAD ≥ 2 y llenado ≤ 30 en cada paso). e2e «intervenciones docentes» (botones, estado, teclado, reinicio
+y cambio de caso en el simulador vivo). Mutaciones que las pruebas matan: sin la IT dependiente de la carga (exponente 0;
+la S de la grave se queda en −8 cm/s), sin la entrada de volumen en la red (las cuatro pruebas de «la red sigue al
+lazo»), con la onda leída en vivo y no congelada por latido, con la rigidez de la PAD y no del llenado (en la unitaria y
+en el motor), con el límite inferior calculado con la PEEP del caso y con la holgura sobre el total neto.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

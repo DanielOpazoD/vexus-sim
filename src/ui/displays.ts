@@ -1,5 +1,5 @@
 import { ecgX, SweepTimeline } from './sweep';
-import { wrapToNyquist } from '../core/units';
+import { nyquistVelocityCms, wrapToNyquist } from '../core/units';
 import type { Simulator } from '../app/simulator';
 import type { SpectralColumn } from '../doppler/spectral';
 import { velocityFromShiftMmS } from '../core/units';
@@ -64,6 +64,7 @@ export function drawOverlay(canvas: HTMLCanvasElement, sim: Simulator): void {
     }
     ctx.closePath();
     ctx.stroke();
+    drawColorScale(ctx, W, H, sim);
   }
   // Cursor PW: línea Doppler, puerta y cursor angular
   if (sim.pw.enabled) {
@@ -283,4 +284,45 @@ export class SpectrogramView {
       ctx.stroke();
     }
   }
+}
+
+/**
+ * Mapa del color de la conversión de barrido (FRAG_SCANCONVERT): hacia la sonda de rojo oscuro a amarillo, desde la
+ * sonda de azul a celeste, negro en cero. `mag` ∈ [0, 1] es |f| / Nyquist.
+ */
+export function colorMapRgb(towardProbe: boolean, mag: number): [number, number, number] {
+  const m = Math.min(1, Math.max(0, mag));
+  const a: [number, number, number] = towardProbe ? [0.55, 0.05, 0] : [0, 0.1, 0.6];
+  const b: [number, number, number] = towardProbe ? [1, 0.95, 0.35] : [0.35, 0.95, 1];
+  return [0, 1, 2].map((k) => Math.round(255 * (a[k] + (b[k] - a[k]) * m))) as [number, number, number];
+}
+
+/**
+ * Barra de escala del color (decisión 70), como en los equipos: arriba el flujo hacia la sonda, abajo el que se aleja,
+ * negro en la línea de base y ±Nyquist en cm/s en los extremos (con «Invertir mapa» se intercambian los colores).
+ */
+function drawColorScale(ctx: CanvasRenderingContext2D, W: number, H: number, sim: Simulator): void {
+  const nyq = Math.round(nyquistVelocityCms(sim.color.prfHz, sim.transducer.f0Doppler));
+  const s = H / 800;
+  const x = Math.round(12 * s);
+  const w = Math.max(6, Math.round(9 * s));
+  const y0 = Math.round(H * 0.16);
+  const h = Math.round(H * 0.22);
+  const inv = sim.color.invert;
+  for (let i = 0; i < h; i++) {
+    // i = 0 arriba (+Nyquist, hacia la sonda); h/2 la línea de base
+    const v = 1 - (2 * i) / (h - 1);
+    const toward = v >= 0 !== inv;
+    const [r, g, b] = Math.abs(v) < 0.02 ? [0, 0, 0] : colorMapRgb(toward, Math.abs(v));
+    ctx.fillStyle = `rgb(${r},${g},${b})`;
+    ctx.fillRect(x, y0 + i, w, 1);
+  }
+  ctx.strokeStyle = '#6b7684';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x - 0.5, y0 - 0.5, w + 1, h + 1);
+  ctx.fillStyle = '#c9d2dc';
+  ctx.font = `${Math.round(11 * s)}px sans-serif`;
+  ctx.fillText(`+${nyq}`, x + w + 4, y0 + Math.round(9 * s));
+  ctx.fillText(`−${nyq}`, x + w + 4, y0 + h);
+  ctx.fillText('cm/s', x + w + 4, y0 + Math.round(h / 2 + 4 * s));
 }

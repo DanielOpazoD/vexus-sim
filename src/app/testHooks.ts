@@ -23,7 +23,7 @@ import { type ApertureGeometry } from '../ultrasound/aperture';
 import { compareSteeredTransmission } from './steeredParity';
 import { compoundActive, lookTheta } from '../ultrasound/compound';
 import { levelOfGrey } from '../ultrasound/greyMap';
-import { COARSE_DEPTH, type CompoundState } from '../ultrasound/renderer';
+import { COARSE_DEPTH, COLOR_DISPLAY_THRESHOLD, type CompoundState } from '../ultrasound/renderer';
 import { pixelToBeam } from '../ultrasound/sectorGeometry';
 import {
   CURTAIN_LIVER_MAX_AIR,
@@ -185,6 +185,11 @@ export interface TestHooks {
   };
   /** Coloca la puerta PW en (θ, r) como un clic del alumno. */
   placeGateAt: (theta: number, r: number) => void;
+  /**
+   * Textura del color tras forzar un cuadro (decisión 70): fracción de pares de téxeles vecinos con potencia visible y
+   * valor IDÉNTICO (el estimador por celdas daba bloques constantes) y correlación lateral de la potencia a 1 y 4 téxeles.
+   */
+  colorTexture: () => { visible: number; identicalPairs: number; corr1: number; corr4: number };
   /** Fracción de las celdas de la caja de color visibles tras forzar un cuadro (0–1). */
   colorCellFraction: () => number;
   /** Fija la ganancia de color (dB) como el deslizador. */
@@ -504,6 +509,47 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       };
     },
     placeGateAt: (theta, r) => dispatch({ type: 'placeGate', theta, r }),
+    colorTexture: () => {
+      const sim = getSim();
+      renderColorFrame(sim);
+      const { width: w, height: h, data } = sim.renderer.readColorField();
+      const p = (x: number, y: number) => data[(y * w + x) * 4 + 1];
+      let visible = 0;
+      let pairs = 0;
+      let identical = 0;
+      for (let y = 0; y < h; y++)
+        for (let x = 0; x + 1 < w; x++) {
+          if (p(x, y) > COLOR_DISPLAY_THRESHOLD) visible++;
+          if (p(x, y) > COLOR_DISPLAY_THRESHOLD && p(x + 1, y) > COLOR_DISPLAY_THRESHOLD) {
+            pairs++;
+            if (p(x, y) === p(x + 1, y)) identical++;
+          }
+        }
+      // correlación de Pearson de la potencia (en dB) entre téxeles separados lateralmente, sobre los que tienen color
+      const corr = (lag: number): number => {
+        const a: number[] = [];
+        const b: number[] = [];
+        for (let y = 0; y < h; y++)
+          for (let x = 0; x + lag < w; x++)
+            if (p(x, y) > COLOR_DISPLAY_THRESHOLD && p(x + lag, y) > COLOR_DISPLAY_THRESHOLD) {
+              a.push(Math.log10(p(x, y)));
+              b.push(Math.log10(p(x + lag, y)));
+            }
+        if (a.length < 20) return Number.NaN;
+        const ma = a.reduce((s, v) => s + v, 0) / a.length;
+        const mb = b.reduce((s, v) => s + v, 0) / b.length;
+        let sab = 0;
+        let saa = 0;
+        let sbb = 0;
+        for (let i = 0; i < a.length; i++) {
+          sab += (a[i] - ma) * (b[i] - mb);
+          saa += (a[i] - ma) ** 2;
+          sbb += (b[i] - mb) ** 2;
+        }
+        return sab / Math.sqrt(Math.max(1e-12, saa * sbb));
+      };
+      return { visible: visible / (w * h), identicalPairs: pairs ? identical / pairs : Number.NaN, corr1: corr(1), corr4: corr(4) };
+    },
     colorCellFraction: () => {
       const sim = getSim();
       return renderColorFrame(sim) / sim.renderer.colorCellCount;

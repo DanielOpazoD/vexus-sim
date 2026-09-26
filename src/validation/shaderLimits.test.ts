@@ -279,14 +279,16 @@ describe('Límites del shader con margen para crecer', () => {
   // las capas de la pared en las copias (decisión 62, `wallFaceEchoFlat`). Después (→ la de abajo), la compresión
   // de la sonda (decisión 63): la incidencia de la pleura sale de su normal llevada al mundo por la jacobiana
   // (`warpAt` en la pleura, solo en las líneas con cortina) y wallField recibe esa jacobiana; sin compresión
-  // (uCompC.w = 0) las cuentas son las de antes.
+  // (uCompC.w = 0) las cuentas son las de antes. Después (1b85e5e856534fd1 → la de abajo), el transitorio lleva
+  // su ganancia (`uTransientGain`, decisión 77): 1 en fundamental, el rechazo de su banda en armónica; y el eco del
+  // tejido, la acumulación del armónico (`harmonicNearGain`, 1 en fundamental) antes del transitorio y del ruido.
   it('el main de los programas de la mirada 0 es, letra a letra, el de antes de la composición', () => {
     const mainOf = (src: string): string => src.slice(src.lastIndexOf('\nvoid main() {'));
     const print = (src: string): string => createHash('sha256').update(mainOf(src)).digest('hex').slice(0, 16);
     expect(Object.fromEntries(LOOK_PAIRS.map((p) => [p.name, print(p.look0)]))).toEqual({
       FRAG_TRANS_PREFIX: 'f6b08093f699bc04',
       FRAG_TRANSMISSION: '668efb9a2b5c7008',
-      FRAG_RAWFIELD: '1b85e5e856534fd1',
+      FRAG_RAWFIELD: 'd2e0f2cd7f45185c',
     });
     // y el resto de B es el mismo texto en los dos programas: solo cambian sus entradas y su main
     const inputs0 = 'uniform sampler2D uTrans0;\nuniform sampler2D uTrans1;\n';
@@ -301,9 +303,9 @@ describe('Límites del shader con margen para crecer', () => {
     const n = COMPOUND.order.length;
     const k = uniformSlots(FRAG_COMPOUND);
     expect(k.arrays).toEqual([`uLookSteer[${n}]`, `uLookValid[${n}]`]);
-    // 2 arrays de n, 4 de la rejilla y, por la cortina de la mirada 0 (decisión 61), 3 ejes, 2 de la lente y 2 de
-    // la PSF lateral
-    expect(k.slots).toBe(2 * n + 11);
+    // 2 arrays de n, 4 de la rejilla y, por la cortina de la mirada 0 (decisión 61), 3 ejes, 3 de la lente (con
+    // la armónica, decisión 77) y 3 de la PSF lateral (con la emisión)
+    expect(k.slots).toBe(2 * n + 13);
     // con el identificador GLSL en lugar del número interpolado, el recuento no adivina el tamaño
     expect(() => uniformSlots(FRAG_COMPOUND.replace(`uLookSteer[${n}]`, 'uLookSteer[COMPOUND_LOOKS]'))).toThrow(/sin resolver/);
   });

@@ -19,6 +19,8 @@ const args = new Map<string, string>();
 for (let i = 2; i < process.argv.length; i += 2) args.set(process.argv[i].replace(/^--/, ''), process.argv[i + 1] ?? '');
 const URL = args.get('url') ?? 'http://localhost:6600';
 const OUT = args.get('out') ?? 'test-results/fidelity-blind';
+/** Armónica tisular (decisión 77): encendida salvo `--harmonic false`, como en la aplicación y en las referencias. */
+const HARMONIC_ON = args.get('harmonic') !== 'false';
 
 type Case = 'normal-adult' | 'severe-congestion';
 type View = 'subxiphoid' | 'intercostal' | 'flank' | 'renal';
@@ -112,10 +114,14 @@ async function captureScene(browser: Browser, scene: Pair['sim']['scene']): Prom
     .locator('button', { hasText: /Apnea\s*esp/ })
     .first()
     .click();
-  await page.evaluate((id) => {
-    window.__vexusTest!.goToStartPoint(id);
-    window.__vexusTest!.advance(0.5);
-  }, view);
+  await page.evaluate(
+    ([id, harmonic]) => {
+      window.__vexusTest!.setHarmonic(harmonic);
+      window.__vexusTest!.goToStartPoint(id);
+      window.__vexusTest!.advance(0.5);
+    },
+    [view, HARMONIC_ON] as const,
+  );
   await page.waitForTimeout(2500); // persistencia y cuadros en tiempo real
   const png = await page.locator('#gl').screenshot();
   const size = await page.evaluate(() => {

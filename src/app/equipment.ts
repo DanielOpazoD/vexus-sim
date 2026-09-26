@@ -42,6 +42,8 @@ export type EquipmentCommand =
    * (`compoundActive`); el conmutador se conserva al abrir y cerrar el color.
    */
   | { type: 'compound'; enabled: boolean }
+  /** Armónica tisular (decisión 77): el conmutador del equipo; solo cambia el modo B. */
+  | { type: 'harmonic'; enabled: boolean }
   /** Centra la caja de color en (θ, r) conservando su tamaño. */
   | { type: 'centerColorBox'; theta: number; r: number }
   /** Escala la caja de color alrededor de su centro. */
@@ -168,6 +170,9 @@ export function reduceEquipment(e: EquipmentSettings, cmd: EquipmentCommand, ctx
       break;
     case 'compound':
       next = { ...e, bmode: { ...e.bmode, compound: cmd.enabled } };
+      break;
+    case 'harmonic':
+      next = { ...e, bmode: { ...e.bmode, harmonic: cmd.enabled } };
       break;
     case 'tgc': {
       const tgcDb = [...e.bmode.tgcDb];

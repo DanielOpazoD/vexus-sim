@@ -24,6 +24,7 @@ describe('HUD', () => {
     gainDb: 0,
     dynamicRangeDb: 60,
     compound: false,
+    harmonic: false,
     mode: 'B',
     color: { prfHz: 2000, wallFilterHz: 60, frameHz: 8.2 },
     pw: { prfHz: 2600, gateMm: 4, depthMm: 95, sweepMmS: 50 },
@@ -51,6 +52,10 @@ describe('HUD', () => {
   it('«CX» cuando la composición espacial se forma (decisión 58), y solo entonces', () => {
     expect(hudText({ ...base, compound: true }).topRight[1]).toBe('18 cm · 3,5 MHz · G 0 dB · RD 60 · CX');
     expect(hudText({ ...base, compound: false }).topRight[1]).not.toContain('CX');
+  });
+  it('«THI» delante de la frecuencia con la armónica tisular (decisión 77)', () => {
+    expect(hudText({ ...base, harmonic: true, compound: true }).topRight[1]).toBe('18 cm · THI 3,5 MHz · G 0 dB · RD 60 · CX');
+    expect(hudText(base).topRight[1]).not.toContain('THI');
   });
   it('la FC mostrada se suaviza (media móvil) y arranca en el primer valor', () => {
     const hr = new HeartRateDisplay();

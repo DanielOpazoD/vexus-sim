@@ -1,6 +1,7 @@
 import { CONVEX_C35, type Transducer } from '../probe/probe';
 import { CONVEX_BEAM, type BeamParams } from './beamModel';
 import { COMPOUND, type CompoundParams } from './compound';
+import { harmonicBeam } from './harmonic';
 
 /**
  * Perfil completo de un transductor (Fase 1): geometría de la sonda, modelo del haz y las
@@ -36,3 +37,11 @@ export const CONVEX_C35_PROFILE: TransducerProfile = {
   colorLineSpacingRad: (1.0 * Math.PI) / 180,
   compound: COMPOUND,
 };
+
+/**
+ * Haz de la imagen B con los ajustes del equipo: el del perfil en fundamental; en armónica (decisión 77), el
+ * armónico (`harmonicBeam`). El Doppler (color y PW) usa siempre `profile.beam`.
+ */
+export function bmodeBeam(profile: TransducerProfile, bmode: { harmonic: boolean }): BeamParams {
+  return bmode.harmonic ? harmonicBeam(profile.beam) : profile.beam;
+}

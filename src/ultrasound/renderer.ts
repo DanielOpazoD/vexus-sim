@@ -30,6 +30,8 @@ import { GpuPassTimer, summarizeGpuTimings, type GpuFrameTimings } from './gpuTi
 import { RECEIVER_NOISE } from './receiver';
 import { ELEV_SIGMA0_MM } from './pleura';
 import { CLUTTER, clutterParams, type ClutterParams } from './clutter';
+import { harmonicNearUniform, noiseGain, transientGain } from './harmonic';
+import { bmodeBeam } from './transducerProfile';
 import { FRAME_PASSES, type PassId } from './passGraph';
 import { CompoundRing, compoundActive, lookTheta, type CompoundLook } from './compound';
 import { lookWavenumber } from './steering';
@@ -80,6 +82,11 @@ export interface BModeSettings {
    * en lineal. Solo se forma con el color apagado (`compoundActive`).
    */
   compound: boolean;
+  /**
+   * Armónica tisular (decisión 77, `harmonic.ts`): emisión a 1,75 MHz e imagen con el armónico de 3,5 MHz.
+   * Solo cambia el modo B; el color y el PW siguen en fundamental.
+   */
+  harmonic: boolean;
 }
 
 /** Imagen mostrada leída de la GPU (`readDisplay`): gris 0–255, fila 0 arriba. */
@@ -114,6 +121,9 @@ export const DEFAULT_BMODE: BModeSettings = {
   dynamicRangeDb: 70,
   persistence: 0.35,
   compound: true,
+  // La física calibrada de las pruebas es la del fundamental; la aplicación arranca en armónica
+  // (decisión 77, `main.ts`), como un equipo abdominal moderno, salvo en la e2e.
+  harmonic: false,
 };
 
 /**
@@ -743,6 +753,7 @@ export class UltrasoundRenderer {
     this.lookActive = compoundActive(inputs.bmode, inputs.color);
     this.look = this.ring.next({
       active: this.lookActive,
+      harmonic: inputs.bmode.harmonic,
       depthMm: inputs.bmode.depthMm,
       focusMm: inputs.bmode.focusMm,
       lines: this.lines,
@@ -964,8 +975,12 @@ export class UltrasoundRenderer {
     p.f('uLattice', 0.42);
     p.f('uElevSigma0', ELEV_SIGMA0_MM);
     p.f('uElevFocus', tr.elevationFocusMm);
-    // Ruido del receptor (receiver.ts): la misma escala con la que el shader omite el transitorio
-    p.f('uNoise', RECEIVER_NOISE);
+    p.f('uElevHarmonic', inputs.bmode.harmonic ? 1 : 0);
+    // Ruido del receptor (receiver.ts): la misma escala con la que el shader omite el transitorio; en armónica
+    // (decisión 77) sube respecto al eco y el transitorio, de banda fundamental, se rechaza
+    p.f('uNoise', RECEIVER_NOISE * noiseGain(inputs.bmode.harmonic));
+    p.f('uTransientGain', transientGain(inputs.bmode.harmonic));
+    p.v2('uHarmonicNear', ...harmonicNearUniform(inputs.bmode.harmonic));
     p.f('uFrame', this.frameCount);
     const an = this.speckleAnchor.update(inputs.frame.face, inputs.frame.elevation);
     this.lastAnchorWeight = an.w;
@@ -984,16 +999,20 @@ export class UltrasoundRenderer {
   }
 
   /** Ecos parásitos del modo (decisión 76): de la pared del paciente de la escena y del modo de imagen. */
-  private clutterFor(_inputs: FrameInputs): ClutterParams {
+  private clutterFor(inputs: FrameInputs): ClutterParams {
     const t = this.currentScene.torso;
-    return clutterParams(this.currentScene.wallThickness(), t.fatMm);
+    return clutterParams(this.currentScene.wallThickness(), t.fatMm, inputs.bmode.harmonic);
   }
 
-  /** PSF lateral de dos vías (`LATERAL_PSF_GLSL`): la pasada D y el eco de interfaz de la B. */
+  /**
+   * PSF lateral de dos vías (`LATERAL_PSF_GLSL`): la pasada D y el eco de interfaz de la B, con el haz del modo
+   * B (el armónico en armónica, decisión 77).
+   */
   private setLateralPsfUniforms(p: GLProgram, inputs: FrameInputs): void {
-    const b = this.profile.beam;
+    const b = bmodeBeam(this.profile, inputs.bmode);
     p.f('uFocus', inputs.bmode.focusMm);
     p.v4('uBeam', b.k * b.lambdaMm, b.apertureTxMm, b.apertureRxMaxMm, b.fNumberRxMin);
+    p.v2('uBeamTx', b.k * b.lambdaTxMm, b.txScale);
   }
 
   // C — convolución axial (pulso ≈ 2 ciclos a 3,5 MHz → σ = AXIAL_SIGMA_MM, 0,26 mm)
@@ -1064,6 +1083,7 @@ export class UltrasoundRenderer {
     this.pCompound.v3('uElev', inputs.frame.elevation);
     this.pCompound.f('uElevSigma0', ELEV_SIGMA0_MM);
     this.pCompound.f('uElevFocus', tr.elevationFocusMm);
+    this.pCompound.f('uElevHarmonic', inputs.bmode.harmonic ? 1 : 0);
     this.setLateralPsfUniforms(this.pCompound, inputs);
     drawFullscreen(gl);
   }

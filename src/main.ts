@@ -94,9 +94,12 @@ const sim = (): Simulator => session.sim;
 const dispatch = session.equipment.dispatch.bind(session.equipment);
 // La app arranca en la ventana subxifoidea, la primera del protocolo VExUS, y no en la pose por defecto del
 // simulador (sobre las costillas del flanco). La e2e conserva la pose por defecto: sus pruebas la suponen.
+// También arranca en armónica tisular (decisión 77), el modo B de un equipo abdominal moderno; la e2e sigue en
+// fundamental, la física calibrada de sus pruebas, y prueba la armónica aparte.
 if (!new URLSearchParams(location.search).has('e2e')) {
   const first = START_POINTS[0];
   sim().setPose({ ...sim().pose, phi: first.phi, z: first.z, yaw: first.yaw, rock: first.rock ?? 0, tilt: first.tilt ?? 0 });
+  dispatch({ type: 'harmonic', enabled: true });
 }
 const banner = new Banner(sectorWrap);
 
@@ -335,6 +338,7 @@ function frame(now: number, dt: number): void {
     gainDb: s.bmode.gainDb,
     dynamicRangeDb: s.bmode.dynamicRangeDb,
     compound: compoundActive(s.bmode, s.color),
+    harmonic: s.bmode.harmonic,
     mode: store.get().mode,
     color: { prfHz: s.color.prfHz, wallFilterHz: s.color.wallFilterHz, frameHz: s.colorTiming.frameHz },
     pw: { prfHz: s.pw.prfHz, gateMm: s.pw.gateMm, depthMm: s.pw.depthMm, sweepMmS: s.pw.sweepMmS },

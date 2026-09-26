@@ -9,6 +9,7 @@ import type { ProbePose } from '../probe/probe';
  *  Arrastre der./⌥      basculación (horizontal) e inclinación (vertical)
  *  Rueda                rotación (yaw); ⇧+rueda: presión/separación
  *  Teclas: A/D W/S deslizar · Q/E rotar · ←/→ bascular · ↑/↓ inclinar · R/F presión
+ * Con la imagen congelada (`live` falso) no mueve la sonda: la rueda y ← → recorren el cine (decisión 80).
  */
 export class ProbeInput {
   private dragging: 'slide' | 'angle' | null = null;
@@ -21,6 +22,7 @@ export class ProbeInput {
     private readonly el: HTMLElement,
     private readonly getPose: () => ProbePose,
     private readonly setPose: (p: ProbePose) => void,
+    private readonly live: () => boolean = () => true,
   ) {
     el.addEventListener('pointerdown', this.onDown);
     window.addEventListener('pointermove', this.onMove);
@@ -38,6 +40,7 @@ export class ProbeInput {
   }
 
   private onDown = (e: PointerEvent): void => {
+    if (!this.live()) return;
     if (e.pointerType === 'touch') {
       this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
       this.el.setPointerCapture(e.pointerId);
@@ -50,6 +53,8 @@ export class ProbeInput {
   };
 
   private onMove = (e: PointerEvent): void => {
+    // un arrastre que empezó antes de congelar tampoco mueve la sonda congelada
+    if (!this.live()) return;
     if (e.pointerType === 'touch') {
       const prev = this.touches.get(e.pointerId);
       if (!prev) return;
@@ -83,6 +88,7 @@ export class ProbeInput {
   };
 
   private onWheel = (e: WheelEvent): void => {
+    if (!this.live()) return;
     e.preventDefault();
     const p = this.getPose();
     if (e.shiftKey) this.setPose({ ...p, lift: p.lift + e.deltaY * 0.01 });
@@ -91,7 +97,7 @@ export class ProbeInput {
 
   /** Integra las teclas mantenidas (llamar cada cuadro con dt en segundos). */
   tick(dt: number): void {
-    if (this.keys.size === 0) return;
+    if (this.keys.size === 0 || !this.live()) return;
     const p = { ...this.getPose() };
     const fine = this.keys.has('shift') ? 0.3 : 1;
     const slide = 40 * dt * fine; // mm/s

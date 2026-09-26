@@ -273,6 +273,8 @@ export interface TestHooks {
    * mirada 0 lanza; devuelve si lanzó, el mensaje y la mirada del último cuadro.
    */
   envelopeGuard: (opts: { startPoint: StartPoint['id'] }) => { threw: boolean; message: string; look: number };
+  /** El simulador vivo (cambia al cambiar de caso): el cine y la franja del modo M se leen de él (decisión 80). */
+  sim: () => Simulator;
 }
 
 /** Opciones de `frameCostMs`. */
@@ -524,7 +526,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       return {
         color: sim.color.enabled,
         pw: sim.pw.enabled,
-        gateInBox: gateInColorBox({ bmode: sim.bmode, color: sim.color, pw: sim.pw }),
+        gateInBox: gateInColorBox(sim),
         frameHz: sim.colorTiming.frameHz,
         gate: { theta: sim.pw.theta, r: sim.pw.depthMm },
         box: { theta: (sim.color.theta0 + sim.color.theta1) / 2, r: (sim.color.r0 + sim.color.r1) / 2 },
@@ -804,6 +806,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
         }
       });
     },
+    sim: getSim,
   };
   return hooks;
 }

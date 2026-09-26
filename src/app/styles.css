@@ -24,6 +24,8 @@
   --rail-w: 288px;
   --panel-w: 280px;
   --spectrum-h: clamp(144px, 24vh, 224px);
+  /* la franja del modo M, más alta: se mide sobre ella (decisión 80) */
+  --mmode-h: clamp(176px, 34vh, 400px);
   --font: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
   --mono: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
   color-scheme: dark;
@@ -602,8 +604,40 @@ button.secondary.on {
 .app.pw-on .traces {
   grid-template-rows: 40px var(--spectrum-h);
 }
-.app:not(.pw-on) .spectrum {
+.app.m-on .traces {
+  grid-template-rows: 40px var(--mmode-h);
+}
+.app:not(.pw-on) .spectrum,
+.app:not(.m-on) .mmode {
   display: none;
+}
+/* cine (decisión 80): deslizador bajo la imagen con la imagen congelada; el aviso y el HUD de abajo le dejan sitio */
+.cine-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  width: min(420px, 60%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px;
+  background: rgba(0, 0, 0, 0.6);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.cine-bar input {
+  flex: 1;
+  accent-color: var(--accent);
+}
+.cine-bar span {
+  min-width: 56px;
+  text-align: right;
+  font: 12px/16px var(--mono);
+}
+.app.frozen .disclaimer,
+.app.frozen .hud-br {
+  bottom: 52px;
 }
 .traces canvas {
   width: 100%;
@@ -973,7 +1007,7 @@ input[type='range'] {
   background: var(--panel);
   border-top: 1px solid var(--border);
 }
-/* [2D | Color | PW]: Color y PW pueden estar activos a la vez (tríplex) */
+/* [2D | M | Color | PW]: Color y PW pueden estar activos a la vez (tríplex); M los excluye */
 .modes {
   display: inline-flex;
   gap: 2px;

@@ -2642,6 +2642,89 @@ la S de la grave se queda en −8 cm/s), sin la entrada de volumen en la red (la
 lazo»), con la onda leída en vivo y no congelada por latido, con la rigidez de la PAD y no del llenado (en la unitaria y
 en el motor), con el límite inferior calculado con la PEEP del caso y con la holgura sobre el total neto.
 
+## 80. Cine y modo M: los cuadros adquiridos antes de la conversión de barrido y la franja M en la GPU
+
+**Contexto.** El dueño (médico, 26-09-2026): «adelante con todas tus propuestas», que el simulador se comporte como un
+ecógrafo en dos funciones que faltaban. «Congelar» solo detenía la imagen: no se podía volver a los cuadros anteriores
+ni medir sobre ellos, como en el cine de un equipo; y no había modo M, con el que VExUS mide la colapsabilidad de la
+VCI.
+**Opciones.** Cine: (1) guardar la imagen mostrada (RGBA a tamaño del lienzo, 3–14 MB por cuadro: 6 s no caben en 64
+MB); (2) leer cada cuadro a la CPU (`readPixels`, 50–90 ms, invariante 7); (3) la elegida: la envolvente compuesta y el
+campo de color en la GPU, antes de la conversión de barrido, y la misma pasada G para verlos. Modo M: (1) leer la
+columna de cada cuadro con un PBO y una valla: medido con GPU real, el `getBufferSubData` de Chrome es un viaje síncrono
+al proceso de la GPU y bloqueaba el hilo 59 ms (p95) y hasta 86 ms por cuadro, y con uso READ avisa en cada valla hasta
+agotar los 256 mensajes de WebGL del contexto; (2) dibujar la franja dentro del lienzo de la imagen (cambia la
+disposición, el HUD y los clics); (3) la elegida: la franja en la GPU, copiada a su lienzo con `drawImage` (de GPU a GPU
+con el Canvas2D acelerado de Chrome: 0,1 ms en el hilo, 0,3 como máximo con densidad 2; sin aceleración, Chrome la copia
+por la CPU y el modo M baja de 60 a 41 fps).
+**Decisión.** Cine: `CineRing` (`src/ultrasound/cine.ts`) guarda como mucho 20 cuadros por segundo del reloj de la
+simulación (todos si llegan menos: el color, SwiftShader) en un anillo de 120, 6 s: tras la presentación,
+`blitFramebuffer` copia la envolvente compuesta (`tEnv`, R32F) a una capa R16F de una textura de capas y, si el cuadro
+muestra color, el campo de color a una capa RG16F (`tColor`, de RGBA32F), con las instantáneas inmutables de sus ajustes
+(profundidad, ganancia, TGC, rango, persistencia; caja, PRF e inversión del color). Otra profundidad empieza el anillo;
+el cambio de caso y la pérdida de contexto lo vacían. Al congelar, el último cuadro dibujado entra si la cadencia lo
+había saltado (`cineSeal`), así que el final del cine es el cuadro congelado. `showCine(i)` devuelve su capa a `tEnv` y
+`tColor` y dibuja G con sus ajustes; los anteriores que aún pesan en la persistencia (`persistenceReplay`: p^k·255 ≥ ½,
+6 con 0,35 y 28 con 0,8) se funden en el mismo destino con la mezcla de la GPU, (1 − p^k)·G + p^k·destino: la de la
+pasada P tras los k cuadros dibujados desde el guardado anterior. El cuadro se ve como se vio. El último es la propia
+historia de la persistencia, que el cine no toca: el cuadro congelado píxel a píxel; al descongelar vuelve a la pantalla
+(sin esperar al color) y la imagen sigue sin salto. Si el lienzo cambia con la imagen congelada (la historia se pierde),
+la historia pasa a ser el cuadro mostrado. `readDisplay` lee lo que está en pantalla. Interfaz
+(`src/ui/controllers/cine.ts`): con la imagen congelada, un deslizador bajo la imagen con el instante del cuadro («−1,25
+s»), ← → Inicio Fin y la rueda sobre la imagen; congelada, la sonda no se mueve (la rueda y las flechas son del cine, y
+un arrastre empezado antes tampoco la mueve), el clic solo mide (la puerta, la línea M y la caja se quedan como en la
+imagen) y el Espacio descongela también con el deslizador enfocado, que devuelve el foco a «Congelar». Al restaurar un
+contexto WebGL perdido, el cine y la franja M (del renderizador viejo) se vacían. El ECG, el espectro y la franja M
+llevan un cursor en el cuadro mostrado y se desplazan con él cuando queda fuera de su ventana (`traceRight`: a una
+décima del borde); la regla, el foco y la caja de color son los del cuadro (`Simulator.displayed`) y el calibrador de la
+VCI mide sobre él (`display` es la geometría de su profundidad). Modo M: `ImagingMode` gana `'M'` (barra [2D | M | Color
+| PW], tecla M; excluye Color y PW, y M otra vez vuelve a 2D) y el estado del equipo `mmode` {enabled, theta} con el
+comando `placeMLine` (acotado al sector). La línea M, discontinua y amarilla, se coloca con un clic sobre la imagen,
+como la puerta del PW, o se arrastra desde ella (a ≤ 10 px, antes que la sonda; no con un modificador, ni sobre el
+deslizador del cine, ni congelada). En cada cuadro `FRAG_MLINE` copia esa línea de `tEnv`, con el mapa de grises de G
+(`DISPLAY_GREY_GLSL`, una sola fuente para los dos), a una columna R8 de un anillo de 2048 (la «textura que se
+desplaza»; `MColumnRing`, `src/ultrasound/mmode.ts`); `FRAG_MSTRIP` pinta la franja con el eje de tiempo del ECG (cada
+píxel, la columna que cubre su instante: `pixelSlots`) en una esquina del lienzo de la imagen, la vista
+(`src/ui/mModeView.ts`) la copia a `#mmode` y `represent` devuelve la imagen a la pantalla en el mismo cuadro; nada
+vuelve a la CPU. Un cuadro sin modo M corta la franja (al volver, el barrido empieza de nuevo) y un hueco del reloj de
+más de 0,5 s entre dos columnas queda en negro: la columna siguiente no lo rellena. La franja ocupa el sitio del
+espectro, más alta (34 % del alto: se mide sobre ella), con la escala de profundidad, los calibres y el cursor del cine.
+El barrido 25/50/100 mm/s es el del PW y el ECG, también en la sección «Modo M» de Adquirir (`tabAfterMode` lleva de
+Doppler a Adquirir). Medir: «VCI modo M», dos calibres verticales sobre la franja (de pared a pared en el máximo y en el
+mínimo, en cualquier orden; uno de menos de 1 mm se descarta) → máximo, mínimo y colapso (máx − mín)/máx
+(`src/vexus/ivcCollapse.ts`); con el modo docente, junto a la verdad: el diámetro AP de la VCI del motor (`sample.ivc`)
+en la ventana que muestra la franja, latido incluido; y la pestaña Docente da el colapso de la verdad de 6 s. Sin
+calibrador en la imagen, el máximo del modo M es el diámetro de la VCI del grado.
+**Consecuencias.** Memoria de GPU: 54,6 MB para el cine (120 × (384 + 60) kB) y 1 MB para la franja M. Coste con GPU
+real (M4, 1600 × 1000, densidad 1 y 2; entre paréntesis, con la máquina muy cargada): cada toma del cine 0,02–0,03 ms de
+GPU (0,07) y ~0 de CPU, a ≤ 20 Hz: ~0,01 ms por cuadro en vivo; la franja M, un dibujo de 1 × 512 píxeles por cuadro y
+otro de su tamaño en pantalla con la copia, ~0,05 ms de GPU y ≤ 0,1 ms de CPU (60 fps en los dos modos); mostrar un
+cuadro del cine, 1–2,4 ms (10). El chunk principal y el JS total crecen 13,4 kB (se quita `debugRead`, sin uso desde la
+iteración 1, y dos lecturas de prueba repetidas se funden): sobre main 00fad81 (decisiones 76 y 77), 322,9 de 320 kB y
+1005,1 de 1000 kB; los presupuestos no se suben: cabe cuando entre el renombrado de identificadores del GLSL. La
+colapsabilidad medida en la franja de borde interno a borde interno coincide con la verdad (±2 puntos) con la línea 2 cm
+por debajo de la desembocadura de las suprahepáticas (~80° con la VCI), pero casi de frente (≥ 84°) el eco especular de
+la pared de enfrente se come 1–1,5 mm de la luz y sale ~6 puntos por encima (`m-mode-lumen-blooming`); la franja toma
+una columna por cuadro de imagen, compuesta como la imagen (`m-mode-frame-rate`). La vista de la franja tiene ahora la
+misma x por instante que el ECG (sin el resto de `SweepTimeline`). Hallazgo aparte: el mapa de tejidos del modo docente
+(`tissueMap`) lee con el mismo PBO de uso READ y el mismo `getBufferSubData` síncrono (4 Hz).
+**Verificación.** `cineMode.test.ts` (anillo y cadencia del cine, instante del cuadro, repetición de la persistencia,
+eje de las franjas con el cursor, columna de la línea M y de cada píxel de la franja, colapsabilidad y su verdad en el
+sano), `equipment.test.ts` (modo M: exclusión, alternancia y línea acotada), `controllers.test.ts` (HUD del modo M) y
+dos e2e de `smoke.spec.ts`: «cine (decisión 80)» (retroceder ~1 s cambia la imagen y mueve el cursor del ECG; Fin da el
+cuadro congelado idéntico) y «modo M (decisión 80)» (una mirada; línea M sobre la VCI subxifoidea 2 cm por debajo de las
+suprahepáticas con un clic; en la franja que se ve, la banda sigue al diámetro de la verdad, r 0,94, y el colapso de sus
+bordes y el de los calibres de Medir quedan a ±5 puntos de la verdad: 32–33 frente a 30,4 %). Con GPU real, la cuerda de
+la luz a lo largo de esa línea da 28,8 frente a 30,3 % y la franja 31,5 %. Capturas con GPU real del cine en 2D, en
+color y en tríplex y del modo M en vivo, congelado con los calibres y con el cine. Revisión adversarial de contexto
+limpio: la franja unía los dos tramos al volver al modo M (una VCI inmóvil fabricada sobre la superficie de medida), la
+línea M se movía congelada y robaba el deslizador, el cine quedaba colgado tras restaurar el contexto, la persistencia
+repetida pesaba cada cuadro guardado como uno dibujado; todo corregido. Queda abierto de la revisión: la línea M y los
+calibres de la franja solo se colocan con el puntero (el cine sí se recorre con el teclado) y `#mmode` es `role="img"`
+aunque recibe clics. Hallazgo aparte, anterior a este cambio: tras restaurar el contexto, `rebuildRenderer` libera
+objetos del contexto perdido (unos 127 avisos de WebGL por restauración en modo M, 7 de este cambio, que agotan los 256
+mensajes del contexto).
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

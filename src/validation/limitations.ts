@@ -51,4 +51,6 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'speckle-anchor-orientation',
   'probe-compression-kinematic',
   'probe-compression-in-plane',
+  'm-mode-frame-rate',
+  'm-mode-lumen-blooming',
 ]);

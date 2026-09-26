@@ -34,6 +34,8 @@ import { harmonicNearUniform, noiseGain, transientGain } from './harmonic';
 import { bmodeBeam } from './transducerProfile';
 import { FRAME_PASSES, type PassId } from './passGraph';
 import { CompoundRing, compoundActive, lookTheta, type CompoundLook } from './compound';
+import { CINE_FRAMES, CineRing, persistenceReplay } from './cine';
+import { M_COLUMNS, M_SAMPLES, MColumnRing, mLineU } from './mmode';
 import { lookWavenumber } from './steering';
 import type { SegmentGrid } from './transmission';
 import {
@@ -52,6 +54,8 @@ import {
   FRAG_COLOR,
   FRAG_COMPOUND,
   FRAG_LATERAL,
+  FRAG_MLINE,
+  FRAG_MSTRIP,
   FRAG_PERSIST,
   FRAG_RAWFIELD,
   FRAG_RAWFIELD_STEERED,
@@ -207,6 +211,21 @@ export interface FrameInputs {
   /** Actualizar el cuadro de color en este fotograma (cadencia propia del equipo). */
   updateColor: boolean;
   seed: number;
+  /** Modo M (decisión 80): ángulo de la línea M, que el cuadro copia a la franja; sin él, nada. */
+  mline?: number;
+}
+
+/**
+ * Cuadro del cine (decisión 80): su instante, los ajustes con que se formó y se mostró (instantáneas inmutables
+ * del equipo) y el cuadro de color que pintó G (con él, su capa de color está en el anillo).
+ */
+export interface CineFrame {
+  t: number;
+  /** Cuadro dibujado (`frameCount`): entre dos guardados puede haber varios, y la persistencia los pesa todos. */
+  n: number;
+  bmode: BModeSettings;
+  color: ColorSettings;
+  colorFrame: { box: [number, number, number, number]; prf: number } | null;
 }
 
 /**
@@ -306,6 +325,8 @@ export class UltrasoundRenderer {
   private pPersist: GLProgram;
   private pBlit: GLProgram;
   private pMap: GLProgram;
+  private pMLine: GLProgram;
+  private pMStrip: GLProgram;
   private pQuery: GLProgram | null = null;
   private pTriadQuery: GLProgram | null = null;
   /** Tiempo de GPU por pasada (asíncrono; null sin la extensión). */
@@ -376,6 +397,31 @@ export class UltrasoundRenderer {
   private lastColorFrame: { box: [number, number, number, number]; prf: number } | null = null;
   /** Geometría de presentación del último cuadro (px). */
   display: SectorLayout = { apexX: 0, apexY: 0, scale: 1, width: 1, height: 1 };
+  /**
+   * Cine (decisión 80): anillo de cuadros en la GPU antes de la conversión de barrido, en dos texturas de capas
+   * que se crean con el primer cuadro que las usa: la envolvente compuesta (R16F) y el campo de color (RG16F).
+   */
+  private readonly cine = new CineRing<CineFrame>();
+  private cineEnv: WebGLTexture | null = null;
+  private cineColor: WebGLTexture | null = null;
+  private cineFbo: WebGLFramebuffer | null = null;
+  /** Último cuadro dibujado en vivo y si la historia de la persistencia es aún la suya (tamaño del lienzo). */
+  private lastFrame: CineFrame | null = null;
+  private liveValid = false;
+  /** Cuadro del cine en pantalla (índice y tamaño del lienzo): null en vivo. */
+  private cineShown: { index: number; w: number; h: number } | null = null;
+  /** Destino que muestra la pantalla (el que lee `readDisplay`). */
+  private presented: RenderTarget | null = null;
+  /** `tEnv` y `tColor` tienen aún el último cuadro en vivo (el cine no los ha reescrito). */
+  private envIsLive = false;
+  /**
+   * Modo M (decisión 80): la franja en la GPU, un anillo de columnas (R8, ranura × fila) con sus instantes, y la
+   * ranura de cada píxel de la franja en pantalla (R32F, se sube en cada dibujo).
+   */
+  readonly mStrip = new MColumnRing();
+  private tMStrip: RenderTarget | null = null;
+  private mSlots = new Float32Array(0);
+  private mSlotsTex: WebGLTexture | null = null;
 
   /** Número de líneas del sector (viene del transductor; fija el ancho de las texturas). */
   readonly lines: number;
@@ -423,6 +469,8 @@ export class UltrasoundRenderer {
       persist: FRAG_PERSIST,
       blit: FRAG_BLIT,
       tissuemap: FRAG_TISSUEMAP,
+      mline: FRAG_MLINE,
+      mstrip: FRAG_MSTRIP,
     });
     this.pTransHits = p.transmissionHits;
     this.pTransSeg = p.transmissionSegments;
@@ -437,6 +485,8 @@ export class UltrasoundRenderer {
     this.pPersist = p.persist;
     this.pBlit = p.blit;
     this.pMap = p.tissuemap;
+    this.pMLine = p.mline;
+    this.pMStrip = p.mstrip;
     const f = { internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.LINEAR };
     const f2 = { internal: gl.RG32F, format: gl.RG, type: gl.FLOAT, filter: gl.LINEAR };
     const f1 = { internal: gl.R32F, format: gl.RED, type: gl.FLOAT, filter: gl.LINEAR };
@@ -466,8 +516,9 @@ export class UltrasoundRenderer {
   /**
    * Cambia de paciente conservando programas y destinos: los shaders no dependen de la escena
    * (solo sus uniforms y la textura de datos), así que el cambio de caso deja de recompilar
-   * sus 16 programas (con diez eran ≈ 200 ms con GPU y muchos segundos con SwiftShader). Se descarta todo lo
-   * que pertenecía al paciente anterior: uniforms en caché, persistencia, color y mapa de tejidos.
+   * sus 18 programas (con diez eran ≈ 200 ms con GPU y muchos segundos con SwiftShader). Se descarta todo lo
+   * que pertenecía al paciente anterior: uniforms en caché, persistencia, color, mapa de tejidos, cine y
+   * columnas del modo M en vuelo.
    */
   setScene(scene: AnatomyScene): void {
     const gl = this.gl;
@@ -485,6 +536,11 @@ export class UltrasoundRenderer {
     if (this.mapPending) gl.deleteSync(this.mapPending.sync);
     this.mapPending = null;
     this.mapLast = null;
+    this.cine.clear();
+    this.lastFrame = null;
+    this.liveValid = false;
+    this.cineShown = null;
+    this.mStrip.clear();
     if (this.tPersist)
       for (const t of this.tPersist) {
         bindTarget(gl, t);
@@ -513,6 +569,8 @@ export class UltrasoundRenderer {
       this.pPersist,
       this.pBlit,
       this.pMap,
+      this.pMLine,
+      this.pMStrip,
     ])
       p.dispose();
     this.pQuery?.dispose();
@@ -541,6 +599,16 @@ export class UltrasoundRenderer {
     this.mapPbo = null;
     for (const pair of this.repeatTargets.values()) for (const t of pair) deleteTarget(gl, t);
     this.repeatTargets.clear();
+    gl.deleteTexture(this.cineEnv);
+    gl.deleteTexture(this.cineColor);
+    gl.deleteFramebuffer(this.cineFbo);
+    this.cineEnv = this.cineColor = this.cineFbo = null;
+    this.cine.clear();
+    if (this.tMStrip) deleteTarget(gl, this.tMStrip);
+    gl.deleteTexture(this.mSlotsTex);
+    this.tMStrip = this.mSlotsTex = null;
+    this.mSlots = new Float32Array(0);
+    this.mStrip.clear();
   }
 
   /** Datos estáticos de la escena (nodos, cabeceras de tubos, tejidos). */
@@ -731,6 +799,8 @@ export class UltrasoundRenderer {
     const f = { internal: gl.RGBA8, format: gl.RGBA, type: gl.UNSIGNED_BYTE, filter: gl.LINEAR };
     this.tScan = createTarget(gl, w, h, [f]);
     this.tPersist = [createTarget(gl, w, h, [f]), createTarget(gl, w, h, [f])];
+    // la historia de la persistencia (el cuadro congelado) se perdió con el tamaño anterior
+    this.liveValid = false;
   }
 
   /**
@@ -776,6 +846,209 @@ export class UltrasoundRenderer {
       if (rep !== null && rep.pass === pass.id) this.drawRepeats(pass.id, rep.targets, rep.times);
       this.timer.end();
     }
+    this.afterFrame(inputs);
+  }
+
+  /**
+   * Tomas del cuadro para el cine y el modo M (decisión 80), tras la presentación y fuera del grafo (no forman la
+   * imagen): el cine guarda la envolvente compuesta y el color que convirtió G (≤ `CINE_RATE_HZ`); con el modo M,
+   * se copia la columna de su línea.
+   */
+  private afterFrame(inputs: FrameInputs): void {
+    const c = inputs.color;
+    const frame: CineFrame = {
+      t: inputs.sample.t,
+      n: this.frameCount,
+      bmode: inputs.bmode,
+      color: c,
+      colorFrame: c.enabled ? this.lastColorFrame : null,
+    };
+    this.lastFrame = frame;
+    this.liveValid = true;
+    this.envIsLive = true;
+    this.cineShown = null;
+    const n = this.cine.count;
+    // otra profundidad: la geometría de los cuadros guardados ya no es la de la pantalla
+    if (n && this.cine.at(n - 1).bmode.depthMm !== inputs.bmode.depthMm) this.cine.clear();
+    if (this.cine.due(frame.t)) this.cineStore(frame);
+    // sin modo M la franja se interrumpe: al volver, el barrido empieza de nuevo (sin unir los dos tramos)
+    if (inputs.mline !== undefined) this.mCapture(inputs, inputs.mline);
+    else if (this.mStrip.count) this.mStrip.clear();
+  }
+
+  /** Guarda en el anillo la envolvente (y el color, si se ve) que tienen ahora `tEnv` y `tColor`. */
+  private cineStore(frame: CineFrame): void {
+    const gl = this.gl;
+    const slot = this.cine.push(frame.t, frame);
+    this.cineEnv ??= this.cineLayers(gl.R16F, this.lines, FINE_DEPTH);
+    this.blitLayer(this.cineEnv, slot, this.tEnv, true);
+    if (frame.colorFrame) {
+      this.cineColor ??= this.cineLayers(gl.RG16F, COLOR_W, COLOR_H);
+      this.blitLayer(this.cineColor, slot, this.tColor, true);
+    }
+  }
+
+  /** Textura de capas del anillo (una por cuadro): R16F y RG16F son destinos con EXT_color_buffer_float. */
+  private cineLayers(internal: number, w: number, h: number): WebGLTexture {
+    const gl = this.gl;
+    const t = gl.createTexture();
+    this.cineFbo ??= gl.createFramebuffer();
+    if (!t || !this.cineFbo) throw new Error('cine: sin textura o FBO');
+    gl.bindTexture(gl.TEXTURE_2D_ARRAY, t);
+    gl.texStorage3D(gl.TEXTURE_2D_ARRAY, 1, internal, w, h, CINE_FRAMES);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+    gl.texParameteri(gl.TEXTURE_2D_ARRAY, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    return t;
+  }
+
+  /**
+   * Copia exacta, con la conversión de formato de la GPU (R32F ↔ R16F, RGBA32F ↔ RG16F), entre el destino `t` y la
+   * capa `slot` del anillo: hacia la capa (`store`) o de vuelta a `t`, donde la lee G.
+   */
+  private blitLayer(layers: WebGLTexture, slot: number, t: RenderTarget, store: boolean): void {
+    const gl = this.gl;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, this.cineFbo);
+    gl.framebufferTextureLayer(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, layers, 0, slot);
+    if (store) this.blit(t.fbo, this.cineFbo, t.width, t.height);
+    else {
+      this.blit(this.cineFbo, t.fbo, t.width, t.height);
+      this.envIsLive = false;
+    }
+  }
+
+  /** Copia exacta de w × h píxeles entre dos FBO (con la conversión de formato de la GPU). */
+  private blit(from: WebGLFramebuffer | null, to: WebGLFramebuffer | null, w: number, h: number): void {
+    const gl = this.gl;
+    gl.bindFramebuffer(gl.READ_FRAMEBUFFER, from);
+    gl.bindFramebuffer(gl.DRAW_FRAMEBUFFER, to);
+    gl.blitFramebuffer(0, 0, w, h, 0, 0, w, h, gl.COLOR_BUFFER_BIT, gl.NEAREST);
+  }
+
+  /** Cuadros del cine guardados (decisión 80). */
+  get cineCount(): number {
+    return this.cine.count;
+  }
+
+  /** Cuadro i del cine (0 = el más viejo): su instante y sus ajustes. */
+  cineFrame(i: number): CineFrame {
+    return this.cine.at(i);
+  }
+
+  /** Cuadro del cine en pantalla, o null en vivo. */
+  get cineShownFrame(): CineFrame | null {
+    return this.cineShown ? this.cine.at(this.cineShown.index) : null;
+  }
+
+  /**
+   * Al congelar (decisión 80): el último cuadro dibujado entra en el anillo si la cadencia lo había saltado, para
+   * que el final del cine sea el cuadro congelado (su envolvente y su color siguen en `tEnv` y `tColor`).
+   */
+  cineSeal(): void {
+    const n = this.cine.count;
+    if (this.lastFrame && this.envIsLive && (!n || this.cine.at(n - 1) !== this.lastFrame)) this.cineStore(this.lastFrame);
+  }
+
+  /**
+   * Muestra el cuadro `index` del cine (0 = el más viejo; decisión 80). La envolvente y el color guardados vuelven
+   * a la pasada G con los ajustes de su cuadro, y los anteriores que aún pesan en la persistencia
+   * (`persistenceReplay`) se funden en el mismo destino con la mezcla de la GPU, (1 − p^k)·G + p^k·destino: la de la
+   * pasada P tras los k cuadros dibujados desde el guardado anterior. El cuadro se ve como se vio. El último, mientras
+   * la historia de la persistencia siga intacta, es ella misma: el cuadro exacto de la congelación; si el lienzo
+   * cambió (la historia se perdió), la historia pasa a ser el cuadro mostrado, para que al descongelar la imagen siga
+   * desde él. Con el mismo cuadro y el mismo lienzo no dibuja nada.
+   */
+  showCine(index: number): void {
+    const n = this.cine.count;
+    const W = this.canvas.width;
+    const H = this.canvas.height;
+    const i = Math.min(n - 1, Math.max(0, Math.round(index)));
+    const shown = this.cineShown;
+    if (!n || (shown && shown.index === i && shown.w === W && shown.h === H)) return;
+    const live = this.tPersist?.[this.persistIndex];
+    const last = this.lastFrame;
+    if (i === n - 1 && this.liveValid && last && this.cine.at(i) === last && live && live.width === W && live.height === H) {
+      this.display = sectorLayout(W, H, this.profile.geometry, last.bmode.depthMm, DISPLAY_MARGIN_PX);
+      this.present(live);
+    } else {
+      const gl = this.gl;
+      const first = Math.max(0, i - persistenceReplay(this.cine.at(i).bmode.persistence));
+      for (let j = first; j <= i; j++) {
+        const f = this.cine.at(j);
+        const slot = this.cine.slot(j);
+        this.blitLayer(this.cineEnv!, slot, this.tEnv, false);
+        if (f.colorFrame) this.blitLayer(this.cineColor!, slot, this.tColor, false);
+        if (j > first) {
+          gl.enable(gl.BLEND);
+          gl.blendColor(0, 0, 0, 1 - f.bmode.persistence ** Math.max(1, f.n - this.cine.at(j - 1).n));
+          gl.blendFuncSeparate(gl.CONSTANT_ALPHA, gl.ONE_MINUS_CONSTANT_ALPHA, gl.ONE, gl.ZERO);
+        }
+        this.scanConvert(f.bmode, f.color, f.colorFrame, this.profile.geometry);
+        gl.disable(gl.BLEND);
+      }
+      this.present(this.tScan!);
+      if (!this.liveValid) this.blit(this.tScan!.fbo, this.tPersist![this.persistIndex].fbo, W, H);
+    }
+    this.cineShown = { index: i, w: W, h: H };
+  }
+
+  /**
+   * Al descongelar (decisión 80): si en pantalla había un cuadro viejo del cine, la historia de la persistencia (el
+   * cuadro congelado) vuelve a la pantalla ya, sin esperar al primer cuadro en vivo (con color, hasta su cadencia).
+   */
+  cineExit(): void {
+    const live = this.tPersist?.[this.persistIndex];
+    if (this.cineShown && live && this.presented !== live) this.present(live);
+    this.cineShown = null;
+  }
+
+  /**
+   * Modo M (decisión 80): copia la línea θ de la envolvente mostrada, con el mapa de grises del cuadro, a su columna
+   * del anillo de la franja (la «textura que se desplaza»): un dibujo de 1 × M_SAMPLES píxeles, sin lecturas.
+   */
+  private mCapture(inputs: FrameInputs, theta: number): void {
+    const gl = this.gl;
+    const slot = this.mStrip.push(inputs.sample.t, inputs.bmode.depthMm);
+    const f = { internal: gl.R8, format: gl.RED, type: gl.UNSIGNED_BYTE, filter: gl.NEAREST };
+    this.tMStrip ??= createTarget(gl, M_COLUMNS, M_SAMPLES, [f]);
+    bindTarget(gl, this.tMStrip);
+    gl.viewport(slot, 0, 1, M_SAMPLES);
+    const p = this.pMLine;
+    p.use();
+    p.tex('uEnv', 0, this.tEnv.textures[0]);
+    p.f('uU', mLineU(theta, inputs.transducer.halfSector));
+    this.setGreyUniforms(p, inputs.bmode);
+    drawFullscreen(gl);
+  }
+
+  /**
+   * Modo M (decisión 80): la franja (profundidad × tiempo, con el eje de tiempo de las franjas) en los W × H píxeles
+   * de abajo a la izquierda del lienzo. La vista la copia a su lienzo con `drawImage` (en la GPU) y `represent`
+   * devuelve la imagen a la pantalla en el mismo cuadro: nada vuelve a la CPU.
+   */
+  drawMStrip(tRight: number, secondsVisible: number, W: number, H: number): void {
+    const gl = this.gl;
+    if (this.mSlots.length !== W) {
+      this.mSlots = new Float32Array(W);
+      gl.deleteTexture(this.mSlotsTex);
+      this.mSlotsTex = createTexture(gl, W, 1, gl.R32F, gl.RED, gl.FLOAT, gl.NEAREST);
+    }
+    this.mStrip.pixelSlots(tRight, secondsVisible, W, this.mSlots);
+    if (!this.tMStrip) this.mSlots.fill(-1);
+    gl.bindTexture(gl.TEXTURE_2D, this.mSlotsTex);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, W, 1, gl.RED, gl.FLOAT, this.mSlots);
+    bindTarget(gl, null, W, H);
+    const p = this.pMStrip;
+    p.use();
+    // sin franja todavía, cualquier textura: ningún píxel la lee
+    p.tex('uStrip', 0, (this.tMStrip ?? this.tEnv).textures[0]);
+    p.tex('uSlots', 1, this.mSlotsTex!);
+    p.f('uH', H);
+    drawFullscreen(gl);
+  }
+
+  /** La imagen en pantalla otra vez: tras usar el lienzo para la franja M (decisión 80). */
+  represent(): void {
+    if (this.presented) this.present(this.presented);
   }
 
   /**
@@ -1130,41 +1403,49 @@ export class UltrasoundRenderer {
 
   // G — conversión de barrido + mapa de grises + superposición del color
   private passScanConvert(inputs: FrameInputs): void {
+    this.scanConvert(inputs.bmode, inputs.color, this.lastColorFrame, inputs.transducer);
+  }
+
+  /** G con unos ajustes y un cuadro de color: los del cuadro en vivo o los de uno del cine (decisión 80). */
+  private scanConvert(b: BModeSettings, c: ColorSettings, cf: CineFrame['colorFrame'], tr: Transducer): void {
     const gl = this.gl;
-    const tr = inputs.transducer;
-    const depth = inputs.bmode.depthMm;
-    const c = inputs.color;
     this.ensureDisplayTargets();
     const W = this.canvas.width;
     const H = this.canvas.height;
-    this.display = sectorLayout(W, H, tr, depth, DISPLAY_MARGIN_PX);
+    this.display = sectorLayout(W, H, tr, b.depthMm, DISPLAY_MARGIN_PX);
     const { apexX, apexY, scale } = this.display;
+    const p = this.pScan;
     bindTarget(gl, this.tScan);
-    this.pScan.use();
-    this.pScan.tex('uEnv', 0, this.tEnv.textures[0]);
-    this.pScan.tex('uColor', 1, this.tColor.textures[0]);
-    this.pScan.v2('uCanvas', W, H);
-    this.pScan.v2('uApex', apexX, apexY);
-    this.pScan.f('uScale', scale);
-    this.pScan.f('uCurvR', tr.curvatureRadius);
-    this.pScan.f('uHalfSector', tr.halfSector);
-    this.pScan.f('uDepth', depth);
-    this.pScan.f('uGainDb', inputs.bmode.gainDb);
-    this.pScan.f('uRefDb', DISPLAY_REF_DB);
-    // Curva nominal: compensa la atenuación de ida y vuelta del hígado a la frecuencia B.
-    this.pScan.f('uNominalTgcDbPerCm', nominalTgcDbPerCm(this.profile.bEffectiveMHz));
-    this.pScan.f('uTgcCapDb', TGC_CAP_DB);
-    this.pScan.f('uDynRange', inputs.bmode.dynamicRangeDb);
-    this.pScan.f('uGreyCurve', GREY_CURVE);
-    this.pScan.fv('uTgc', inputs.bmode.tgcDb);
-    this.pScan.i('uColorOn', c.enabled && this.lastColorFrame ? 1 : 0);
-    const lb = this.lastColorFrame?.box ?? [0, 0, 0, 0];
-    this.pScan.v4('uBox', lb[0], lb[1], lb[2], lb[3]);
-    this.pScan.f('uPrf', this.lastColorFrame?.prf ?? c.prfHz);
-    this.pScan.f('uColorThreshold', COLOR_DISPLAY_THRESHOLD);
-    this.pScan.f('uColorPriority', COLOR_PRIORITY_GREY);
-    this.pScan.i('uColorInvert', c.invert ? 1 : 0);
+    p.use();
+    p.tex('uEnv', 0, this.tEnv.textures[0]);
+    p.tex('uColor', 1, this.tColor.textures[0]);
+    p.v2('uCanvas', W, H);
+    p.v2('uApex', apexX, apexY);
+    p.f('uScale', scale);
+    p.f('uCurvR', tr.curvatureRadius);
+    p.f('uHalfSector', tr.halfSector);
+    this.setGreyUniforms(p, b);
+    p.i('uColorOn', c.enabled && cf ? 1 : 0);
+    const lb = cf?.box ?? [0, 0, 0, 0];
+    p.v4('uBox', lb[0], lb[1], lb[2], lb[3]);
+    p.f('uPrf', cf?.prf ?? c.prfHz);
+    p.f('uColorThreshold', COLOR_DISPLAY_THRESHOLD);
+    p.f('uColorPriority', COLOR_PRIORITY_GREY);
+    p.i('uColorInvert', c.invert ? 1 : 0);
     drawFullscreen(gl);
+  }
+
+  /** Mapa de grises de la presentación (`DISPLAY_GREY_GLSL`): lo comparten G y la línea M. */
+  private setGreyUniforms(p: GLProgram, b: BModeSettings): void {
+    p.f('uDepth', b.depthMm);
+    p.f('uGainDb', b.gainDb);
+    p.f('uRefDb', DISPLAY_REF_DB);
+    // Curva nominal: compensa la atenuación de ida y vuelta del hígado a la frecuencia B.
+    p.f('uNominalTgcDbPerCm', nominalTgcDbPerCm(this.profile.bEffectiveMHz));
+    p.f('uTgcCapDb', TGC_CAP_DB);
+    p.f('uDynRange', b.dynamicRangeDb);
+    p.f('uGreyCurve', GREY_CURVE);
+    p.fv('uTgc', b.tgcDb);
   }
 
   // Persistencia (ping-pong): mezcla el cuadro con la historia
@@ -1183,11 +1464,17 @@ export class UltrasoundRenderer {
 
   // Presentación: la historia recién escrita, a pantalla
   private passPresent(): void {
+    this.present(this.tPersist![this.persistIndex]);
+  }
+
+  /** Un destino a pantalla (volteado): el cuadro en vivo o uno del cine; `readDisplay` lee el último. */
+  private present(t: RenderTarget): void {
     const gl = this.gl;
     bindTarget(gl, null, this.canvas.width, this.canvas.height);
     this.pBlit.use();
-    this.pBlit.tex('uTex', 0, this.tPersist![this.persistIndex].textures[0]);
+    this.pBlit.tex('uTex', 0, t.textures[0]);
     drawFullscreen(gl);
+    this.presented = t;
   }
 
   /** Convierte píxel de pantalla → (θ rad, r mm) o null fuera del sector. */
@@ -1362,12 +1649,7 @@ export class UltrasoundRenderer {
   }
 
   colorCellsAbove(threshold = COLOR_DISPLAY_THRESHOLD): number {
-    const gl = this.gl;
-    const px = new Float32Array(COLOR_W * COLOR_H * 4);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.tColor.fbo);
-    gl.readBuffer(gl.COLOR_ATTACHMENT0);
-    gl.readPixels(0, 0, COLOR_W, COLOR_H, gl.RGBA, gl.FLOAT, px);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    const px = this.readColorField().data;
     let n = 0;
     for (let i = 0; i < COLOR_W * COLOR_H; i++) if (px[i * 4 + 1] > threshold) n++;
     return n;
@@ -1439,14 +1721,9 @@ export class UltrasoundRenderer {
 
   /** Lectura bloqueante de un destino R32F (solo pruebas). */
   private readR32F(t: RenderTarget): EnvelopeRead {
-    const gl = this.gl;
     const W = t.width;
     const H = t.height;
-    const rgba = new Float32Array(W * H * 4);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, t.fbo);
-    gl.readBuffer(gl.COLOR_ATTACHMENT0);
-    gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, rgba);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    const rgba = this.readRgba(t, 0);
     const data = new Float32Array(W * H);
     for (let i = 0; i < W * H; i++) data[i] = rgba[i * 4];
     return { lines: W, samples: H, data };
@@ -1557,13 +1834,14 @@ export class UltrasoundRenderer {
   }
 
   /**
-   * Imagen mostrada del último cuadro (tras la curva de grises y la persistencia, sin color
-   * encima si la caja está apagada): gris 0–255 por píxel del lienzo, fila 0 arriba, en las
-   * coordenadas de `display`. Solo pruebas y banco de fidelidad: lectura GPU→CPU bloqueante.
+   * Imagen mostrada (tras la curva de grises y la persistencia, sin color encima si la caja está apagada): la
+   * del último cuadro o, con la imagen congelada, la del cuadro del cine en pantalla (decisión 80). Gris 0–255
+   * por píxel del lienzo, fila 0 arriba, en las coordenadas de `display`. Solo pruebas y banco de fidelidad:
+   * lectura GPU→CPU bloqueante.
    */
   readDisplay(): DisplayFrame {
     const gl = this.gl;
-    const target = this.tPersist?.[this.persistIndex];
+    const target = this.presented ?? this.tPersist?.[this.persistIndex];
     if (!target) return { width: 0, height: 0, gray: new Uint8Array(0) };
     const { width, height } = target;
     const rgba = new Uint8Array(width * height * 4);
@@ -1576,28 +1854,5 @@ export class UltrasoundRenderer {
     const gray = new Uint8Array(width * height);
     for (let i = 0; i < width * height; i++) gray[i] = rgba[i * 4];
     return { width, height, gray };
-  }
-
-  /**
-   * Lectura de depuración de una textura intermedia (fila `row` de 0..1 de la
-   * profundidad; devuelve `n` muestras a lo largo de la línea `line` 0..1).
-   */
-  debugRead(which: 'trans0' | 'trans1' | 'raw' | 'env' | 'color', line: number, samples: number): Float32Array {
-    const gl = this.gl;
-    const target =
-      which === 'trans0' || which === 'trans1' ? this.tTrans : which === 'raw' ? this.tRaw : which === 'env' ? this.tEnv : this.tColor;
-    const attachment = which === 'trans1' ? 1 : 0;
-    gl.bindFramebuffer(gl.FRAMEBUFFER, target.fbo);
-    gl.readBuffer(gl.COLOR_ATTACHMENT0 + attachment);
-    const x = Math.min(target.width - 1, Math.max(0, Math.round(line * (target.width - 1))));
-    const out = new Float32Array(samples * 4);
-    const px = new Float32Array(4);
-    for (let i = 0; i < samples; i++) {
-      const y = Math.min(target.height - 1, Math.round((i / Math.max(1, samples - 1)) * (target.height - 1)));
-      gl.readPixels(x, y, 1, 1, gl.RGBA, gl.FLOAT, px);
-      out.set(px, i * 4);
-    }
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    return out;
   }
 }

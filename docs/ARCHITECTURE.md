@@ -65,8 +65,19 @@ input.tick(dt) / animación de punto de partida     gestos y teclas → pose
 sim.advance(dt)                     n pasos: fisiología → (si PW) puerta + IQ → filtro → STFT → audio
 sim.render()                        GPU: A transmisión → B campo+eco de interfaz+ruido → C/D PSF unitaria+envolvente → K composición → F color → G barrido → persistencia
                                     (tabla FRAME_PASSES de ultrasound/passGraph.ts, validada; tiempo de GPU por pasada)
-overlay, navegador 3D, corte, ECG, espectrograma, HUD, consola   vistas
+                                    y, fuera del grafo, las tomas del cine y de la línea M (decisión 80)
+cine.tick()                         con la imagen congelada: el cuadro elegido del cine, por G (una vez por cuadro elegido)
+overlay, navegador 3D, corte, ECG, espectrograma, franja M, HUD, consola   vistas
 ```
+
+Cine y modo M (decisión 80): tras la presentación, `render` guarda en un anillo de la GPU (`CineRing`,
+`src/ultrasound/cine.ts`; ≤ 20 Hz, 6 s) la envolvente compuesta y el campo de color del cuadro, antes de la
+conversión de barrido, con sus ajustes; `showCine` los devuelve a `tEnv`/`tColor`, dibuja G con esos ajustes y funde
+la persistencia en el mismo destino con la mezcla de la GPU (el último cuadro es la propia historia de la
+persistencia). Con el modo M, cada cuadro copia su línea de `tEnv` con los grises de G a una columna de un anillo R8
+(`MColumnRing`, `src/ultrasound/mmode.ts`); la vista de la franja (`src/ui/mModeView.ts`) la hace dibujar en una esquina
+del lienzo de la imagen, la copia a su lienzo con `drawImage` y devuelve la imagen a la pantalla (`represent`): nada
+vuelve a la CPU (un `getBufferSubData` de Chrome es síncrono aunque la valla esté cumplida).
 
 Composición espacial (decisión 58): cada cuadro B forma una mirada, en el orden 0, +θ, −θ, que lleva el
 anillo `CompoundRing` de `src/ultrasound/compound.ts` dentro del renderizador. A2, A y B tienen dos

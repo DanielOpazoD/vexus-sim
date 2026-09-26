@@ -43,10 +43,10 @@ export function hudText(v: HudInput): HudText {
       `${(v.depthMm / 10).toFixed(0)} cm · ${v.harmonic ? 'THI ' : ''}${mhz(v.transducerMHz)} MHz · G ${v.gainDb} dB · RD ${v.dynamicRangeDb}` +
         (v.compound ? ' · CX' : ''),
     ],
-    // en tríplex (decisión 66) las dos líneas: la del color y la del PW
+    // en tríplex (decisión 66) las dos líneas: la del color y la del PW; en modo M (decisión 80), su barrido
     bottomRight:
-      v.mode === 'B'
-        ? [`resp ${v.respVolume.toFixed(2)}`]
+      v.mode === 'B' || v.mode === 'M'
+        ? [(v.mode === 'M' ? `M ${v.pw.sweepMmS} mm/s · ` : '') + `resp ${v.respVolume.toFixed(2)}`]
         : [
             ...(modeHasColor(v.mode)
               ? [`Color ±${nyq(v.color.prfHz)} cm/s · WF ${v.color.wallFilterHz} Hz · ${v.color.frameHz.toFixed(0)} Hz`]
@@ -54,6 +54,7 @@ export function hudText(v: HudInput): HudText {
             ...(modeHasPw(v.mode) ? [`PW ±${nyq(v.pw.prfHz)} cm/s · puerta ${v.pw.gateMm.toFixed(1)} mm`] : []),
           ],
     chip: [
+      ...(v.mode === 'M' ? [`Modo M · ${v.pw.sweepMmS} mm/s`] : []),
       ...(modeHasColor(v.mode) ? [`±${nyq(v.color.prfHz)} cm/s`] : []),
       ...(modeHasPw(v.mode) ? [`Puerta ${(v.pw.depthMm / 10).toFixed(1)} cm · ${v.pw.sweepMmS} mm/s`] : []),
     ].join(' · '),

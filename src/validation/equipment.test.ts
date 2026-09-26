@@ -9,6 +9,7 @@ import {
   modeHasPw,
   normalizeEquipment,
   reduceEquipment,
+  toggleM,
   toggleMode,
   type EquipmentContext,
   type ImagingMode,
@@ -195,6 +196,37 @@ describe('Tríplex (decisión 66)', () => {
     // reducir la profundidad arrastra las dos y la puerta sigue dentro
     e = reduceEquipment(e, { type: 'bmode', patch: { depthMm: 60 } }, ctx);
     expect(gateInColorBox(e)).toBe(true);
+    expect(normalizeEquipment(e, ctx)).toEqual(e);
+  });
+});
+
+describe('Modo M (decisión 80)', () => {
+  it('M excluye Color y PW; pulsar M otra vez vuelve a 2D; Color o PW desde M encienden solo esa función', () => {
+    expect(toggleM('B')).toBe('M');
+    expect(toggleM('M')).toBe('B');
+    expect(toggleM('triplex')).toBe('M');
+    expect(toggleMode('M', 'color')).toBe('color');
+    expect(toggleMode('M', 'pw')).toBe('pw');
+    expect(modeHasColor('M') || modeHasPw('M')).toBe(false);
+    let e = reduceEquipment(base(), { type: 'mode', mode: 'triplex' }, ctx);
+    e = reduceEquipment(e, { type: 'mode', mode: 'M' }, ctx);
+    expect([e.mmode.enabled, e.color.enabled, e.pw.enabled]).toEqual([true, false, false]);
+    e = reduceEquipment(e, { type: 'mode', mode: 'color' }, ctx);
+    expect([e.mmode.enabled, e.color.enabled]).toEqual([false, true]);
+  });
+
+  it('la línea M se coloca en su ángulo y no sale del sector; normalizar es idempotente', () => {
+    let e = reduceEquipment(base(), { type: 'mode', mode: 'M' }, ctx);
+    expect(e.mmode.theta).toBe(0);
+    e = reduceEquipment(e, { type: 'placeMLine', theta: -0.2 }, ctx);
+    expect(e.mmode.theta).toBe(-0.2);
+    e = reduceEquipment(e, { type: 'placeMLine', theta: 5 }, ctx);
+    expect(e.mmode.theta).toBe(ctx.halfSectorRad);
+    // la línea se conserva al salir y volver al modo M, y el resto del equipo no la toca
+    e = reduceEquipment(e, { type: 'mode', mode: 'B' }, ctx);
+    e = reduceEquipment(e, { type: 'stepDepth', deltaMm: -40 }, ctx);
+    e = reduceEquipment(e, { type: 'mode', mode: 'M' }, ctx);
+    expect(e.mmode).toEqual({ enabled: true, theta: ctx.halfSectorRad });
     expect(normalizeEquipment(e, ctx)).toEqual(e);
   });
 });

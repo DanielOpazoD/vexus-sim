@@ -22,6 +22,7 @@ import { CLUTTER, SIDELOBE_PHASE_GLSL } from '../clutter';
 import { RECEIVER_GLSL, glslFloat } from '../receiver';
 import { HARMONIC_GLSL } from '../harmonic';
 import { STEERING_GLSL } from '../steering';
+import { M_SAMPLES } from '../mmode';
 
 export const VERT = /* glsl */ `#version 300 es
 precision highp float;
@@ -1176,6 +1177,36 @@ void main() {
 }
 `;
 
+/**
+ * Mapa de grises de la presentación (una sola fuente para la pasada G y la línea M, decisión 80): envolvente →
+ * gris mostrado (0–1) a la profundidad r (mm).
+ */
+const DISPLAY_GREY_GLSL = /* glsl */ `
+uniform float uDepth;
+uniform float uGainDb;
+uniform float uRefDb;
+uniform float uNominalTgcDbPerCm; // compensación nominal del equipo (tejido de referencia)
+uniform float uTgcCapDb;          // techo de compensación nominal + TGC
+uniform float uDynRange;
+uniform float uGreyCurve;
+uniform float uTgc[8];
+float tgcAt(float r) {
+  float x = clamp(r / uDepth, 0.0, 0.9999) * 7.0;
+  int i = int(floor(x));
+  float f = x - float(i);
+  return mix(uTgc[i], uTgc[i + 1], f);
+}
+float displayGrey(float env, float r) {
+  // TGC nominal + TGC del usuario: amplifican ecos y ruido por igual (E.2/E.4).
+  float comp = min(uTgcCapDb, tgcAt(r) + uNominalTgcDbPerCm * (r / 10.0));
+  float db = 20.0 * (log(max(env, 1e-7)) / 2.302585093) + uGainDb + comp + uRefDb;
+  float y = clamp((db + uDynRange) / uDynRange, 0.0, 1.0);
+  // Mapa «clínico»: expansión exponencial del extremo brillante (la desviación
+  // del gris crece con el nivel en imágenes reales; EchoTwin decisión 90).
+  return (exp(y * log(1.0 + uGreyCurve)) - 1.0) / uGreyCurve;
+}
+`;
+
 /** Pasada G: conversión de barrido + mapeo de grises + superposición de color. */
 export const FRAG_SCANCONVERT = /* glsl */ `#version 300 es
 precision highp float;
@@ -1186,14 +1217,6 @@ uniform vec2 uApex;        // px: centro de curvatura en pantalla
 uniform float uScale;      // px por mm
 uniform float uCurvR;
 uniform float uHalfSector;
-uniform float uDepth;
-uniform float uGainDb;
-uniform float uRefDb;
-uniform float uNominalTgcDbPerCm; // compensación nominal del equipo (tejido de referencia)
-uniform float uTgcCapDb;          // techo de compensación nominal + TGC
-uniform float uDynRange;
-uniform float uGreyCurve;
-uniform float uTgc[8];
 uniform int uColorOn;
 uniform vec4 uBox;         // theta0, theta1, r0, r1
 uniform float uPrf;
@@ -1202,12 +1225,7 @@ uniform float uColorPriority;
 uniform int uColorInvert;
 in vec2 vUv;
 out vec4 oColor;
-float tgcAt(float r) {
-  float x = clamp(r / uDepth, 0.0, 0.9999) * 7.0;
-  int i = int(floor(x));
-  float f = x - float(i);
-  return mix(uTgc[i], uTgc[i + 1], f);
-}
+${DISPLAY_GREY_GLSL}
 void main() {
   vec2 px = vUv * uCanvas;
   vec2 d = (px - uApex) / uScale;  // mm, y hacia abajo
@@ -1216,14 +1234,7 @@ void main() {
   float r = rho - uCurvR;
   if (r < 0.0 || r > uDepth || abs(theta) > uHalfSector) { oColor = vec4(0.0, 0.0, 0.0, 1.0); return; }
   vec2 uv = vec2((theta + uHalfSector) / (2.0 * uHalfSector), r / uDepth);
-  float env = texture(uEnv, uv).r;
-  // TGC nominal + TGC del usuario: amplifican ecos y ruido por igual (E.2/E.4).
-  float comp = min(uTgcCapDb, tgcAt(r) + uNominalTgcDbPerCm * (r / 10.0));
-  float db = 20.0 * (log(max(env, 1e-7)) / 2.302585093) + uGainDb + comp + uRefDb;
-  float y = clamp((db + uDynRange) / uDynRange, 0.0, 1.0);
-  // Mapa «clínico»: expansión exponencial del extremo brillante (la desviación
-  // del gris crece con el nivel en imágenes reales; EchoTwin decisión 90).
-  float g = (exp(y * log(1.0 + uGreyCurve)) - 1.0) / uGreyCurve;
+  float g = displayGrey(texture(uEnv, uv).r, r);
   vec3 col = vec3(g);
   if (uColorOn == 1 && theta >= uBox.x && theta <= uBox.y && r >= uBox.z && r <= uBox.w) {
     vec2 cuv = vec2((theta - uBox.x) / (uBox.y - uBox.x), (r - uBox.z) / (uBox.w - uBox.z));
@@ -1262,6 +1273,41 @@ uniform sampler2D uTex;
 in vec2 vUv;
 out vec4 oColor;
 void main() { oColor = texture(uTex, vec2(vUv.x, 1.0 - vUv.y)); }
+`;
+
+/**
+ * Línea M (decisión 80): la columna de la envolvente mostrada (la que convierte G) en la línea θ, con su mapa de
+ * grises, en M_SAMPLES filas de la cara (fila 0) al fondo del sector: una columna del anillo de la franja.
+ */
+export const FRAG_MLINE = /* glsl */ `#version 300 es
+precision highp float;
+uniform sampler2D uEnv;
+uniform float uU; // coordenada u de la línea M (mLineU)
+out vec4 oColor;
+${DISPLAY_GREY_GLSL}
+void main() {
+  float v = gl_FragCoord.y / ${M_SAMPLES}.0;
+  float g = displayGrey(texture(uEnv, vec2(uU, v)).r, v * uDepth);
+  oColor = vec4(g, g, g, 1.0);
+}
+`;
+
+/**
+ * Franja del modo M (decisión 80) en pantalla: cada píxel toma la columna del anillo que cubre su instante (uSlots,
+ * −1 sin columna: negro) y la fila de su profundidad, con la cara arriba.
+ */
+export const FRAG_MSTRIP = /* glsl */ `#version 300 es
+precision highp float;
+uniform sampler2D uStrip; // anillo de columnas (ranura × fila)
+uniform sampler2D uSlots; // ranura por píxel de la franja
+uniform float uH;         // alto de la franja (px)
+out vec4 oColor;
+void main() {
+  float s = texelFetch(uSlots, ivec2(gl_FragCoord.x, 0), 0).r;
+  int row = min(${M_SAMPLES - 1}, int((1.0 - gl_FragCoord.y / uH) * ${M_SAMPLES}.0));
+  float g = s < 0.0 ? 0.0 : texelFetch(uStrip, ivec2(int(s), row), 0).r;
+  oColor = vec4(g, g, g, 1.0);
+}
 `;
 
 /**

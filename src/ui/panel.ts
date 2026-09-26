@@ -9,6 +9,7 @@ import { modeHasColor, modeHasPw, type EquipmentCommand } from '../app/equipment
 import type { PanelContext, SectionOptions } from './panel/context';
 import { buildDopplerTab, type DopplerPanels } from './panel/dopplerTab';
 import { MeasureTab } from './panel/measureTab';
+import type { MMark } from './mModeView';
 import type { TeacherTab } from './panel/teacherTab';
 
 const ICONS: Record<PanelTab, string> = {
@@ -21,11 +22,12 @@ const LABELS: Record<PanelTab, string> = { adquirir: 'Adquirir', doppler: 'Doppl
 const TAB_ORDER: PanelTab[] = ['adquirir', 'doppler', 'medir', 'docente'];
 
 /**
- * La pestaña sigue la intención del modo (botones y teclado): con Color o PW, «Doppler»; al volver a 2D, de
- * «Doppler» a «Adquirir», donde están los mandos de la imagen; cualquier otra pestaña se queda.
+ * La pestaña sigue la intención del modo (botones y teclado): con Color o PW, «Doppler»; al volver a 2D o al modo
+ * M (decisión 80), de «Doppler» a «Adquirir», donde están los mandos de la imagen (y los del modo M); cualquier otra
+ * pestaña se queda.
  */
 export function tabAfterMode(mode: ImagingMode, tab: PanelTab): PanelTab {
-  return mode !== 'B' ? 'doppler' : tab === 'doppler' ? 'adquirir' : tab;
+  return modeHasColor(mode) || modeHasPw(mode) ? 'doppler' : tab === 'doppler' ? 'adquirir' : tab;
 }
 
 /**
@@ -40,6 +42,7 @@ export class ControlPanel implements PanelContext {
   private tabs = new Map<PanelTab, HTMLButtonElement>();
   private panels = new Map<PanelTab, HTMLElement>();
   private doppler: DopplerPanels;
+  private mSection: HTMLElement;
   private measure: MeasureTab;
   /** La pestaña Docente se carga la primera vez que se activa el modo docente (`loadTeacher`): el alumno no la descarga. */
   private teacher: TeacherTab | null = null;
@@ -110,7 +113,7 @@ export class ControlPanel implements PanelContext {
       if (shown.length) e.stopPropagation();
     });
 
-    buildAcquireTab(this, this.panels.get('adquirir')!);
+    this.mSection = buildAcquireTab(this, this.panels.get('adquirir')!);
     this.doppler = buildDopplerTab(this, this.panels.get('doppler')!);
     this.measure = new MeasureTab(this, this.panels.get('medir')!, badge);
     this.applyStore(store.get());
@@ -125,9 +128,10 @@ export class ControlPanel implements PanelContext {
     for (const [id, p] of this.panels) p.hidden = id !== st.tab;
     this.tabs.get('docente')!.hidden = !st.debug;
     if (st.debug) void this.loadTeacher();
-    this.doppler.empty.hidden = st.mode !== 'B';
+    this.doppler.empty.hidden = modeHasColor(st.mode) || modeHasPw(st.mode);
     this.doppler.color.hidden = !modeHasColor(st.mode);
     this.doppler.pw.hidden = !modeHasPw(st.mode);
+    this.mSection.hidden = st.mode !== 'M';
     this.measure.applyStore(st);
     this.sync();
   }
@@ -168,6 +172,15 @@ export class ControlPanel implements PanelContext {
 
   setIvcCaliper(mm: number | null): void {
     this.measure.setIvcCaliper(mm);
+  }
+
+  /** Modo M (decisión 80): calibres a la vista en la franja y un punto nuevo sobre ella. */
+  get mMarks(): readonly MMark[] {
+    return this.measure.mMarks;
+  }
+
+  addMPoint(p: MMark, window: [number, number]): void {
+    this.measure.addMPoint(p, window);
   }
 
   renderResult(): void {

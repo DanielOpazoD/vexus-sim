@@ -2,15 +2,21 @@ import { caseDisplayLabel } from '../../app/blindMode';
 import type { RespiratoryPattern } from '../../physiology/patientState';
 import { button, note, row, slider } from '../controls';
 import type { PanelContext } from './context';
+import { sweepRow } from './dopplerTab';
 import { buildImageAdvanced, buildImageBasics, IMAGE_ADVANCED_INFO } from './imageControls';
 
 /**
  * Pestaña Adquirir: lo que se toca mientras se busca y se sostiene la ventana — la imagen (profundidad,
  * ganancia, foco), la sonda (ángulos y presión) y la respiración —, con los mandos avanzados de la imagen
- * plegados. Las ventanas (puntos de partida) están en el carril izquierdo.
+ * plegados; arriba, con el modo M, su barrido (decisión 80). Las ventanas (puntos de partida) están en el carril
+ * izquierdo. Devuelve la sección del modo M, que el panel muestra solo en ese modo.
  */
-export function buildAcquireTab(ctx: PanelContext, p: HTMLElement): void {
+export function buildAcquireTab(ctx: PanelContext, p: HTMLElement): HTMLElement {
   const s = ctx.sim;
+  const m = ctx.section(p, 'Modo M', {
+    info: 'Arrastra la línea M sobre la imagen o haz clic donde la quieras: cada cuadro copia esa línea, con los grises de la imagen, a la franja de abajo. La colapsabilidad de la VCI se mide en Medir.',
+  });
+  sweepRow(ctx, m);
   buildImageBasics(ctx, ctx.section(p, 'Imagen', { info: 'También con el teclado: [ ] profundidad · − + ganancia.' }));
 
   const probe = ctx.section(p, 'Sonda', {
@@ -105,4 +111,5 @@ export function buildAcquireTab(ctx: PanelContext, p: HTMLElement): void {
     .classList.add('grid2');
 
   buildImageAdvanced(ctx, ctx.section(p, 'Avanzado', { collapsed: true, info: IMAGE_ADVANCED_INFO }));
+  return m.parentElement!;
 }

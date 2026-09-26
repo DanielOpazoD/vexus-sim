@@ -10,6 +10,37 @@ export interface DopplerPanels {
   pw: HTMLElement;
 }
 
+/**
+ * Barrido de las franjas (25/50/100 mm/s): rótulo, botonera y unidad en una fila. Uno solo para el espectro, el
+ * ECG y el modo M (decisión 80), que comparten el eje de tiempo.
+ */
+export function sweepRow(ctx: PanelContext, parent: HTMLElement): void {
+  const r = document.createElement('div');
+  r.className = 'field-row';
+  const sl = document.createElement('span');
+  sl.className = 'grow';
+  sl.id = controlId('barrido');
+  sl.textContent = 'Barrido';
+  r.appendChild(sl);
+  ctx
+    .segmented<'25' | '50' | '100'>(
+      r,
+      [
+        ['25', '25'],
+        ['50', '50'],
+        ['100', '100'],
+      ],
+      () => String(ctx.sim().pw.sweepMmS) as '25' | '50' | '100',
+      (v) => ctx.dispatch({ type: 'pw', patch: { sweepMmS: Number(v) } }),
+    )
+    .setAttribute('aria-labelledby', sl.id);
+  const unit = document.createElement('span');
+  unit.className = 'unit';
+  unit.textContent = 'mm/s';
+  r.appendChild(unit);
+  parent.appendChild(r);
+}
+
 /** Pestaña Doppler (contextual): color o PW según el modo; vacía en modo B. Lo avanzado del PW, plegado. */
 export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanels {
   const s = ctx.sim;
@@ -155,31 +186,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
       ch,
     ),
   );
-  // Barrido: rótulo, botonera y unidad en una fila
-  const sweepRow = document.createElement('div');
-  sweepRow.className = 'field-row';
-  const sl = document.createElement('span');
-  sl.className = 'grow';
-  sl.id = controlId('barrido');
-  sl.textContent = 'Barrido';
-  sweepRow.appendChild(sl);
-  ctx
-    .segmented<'25' | '50' | '100'>(
-      sweepRow,
-      [
-        ['25', '25'],
-        ['50', '50'],
-        ['100', '100'],
-      ],
-      () => String(s().pw.sweepMmS) as '25' | '50' | '100',
-      (v) => ctx.dispatch({ type: 'pw', patch: { sweepMmS: Number(v) } }),
-    )
-    .setAttribute('aria-labelledby', sl.id);
-  const unit = document.createElement('span');
-  unit.className = 'unit';
-  unit.textContent = 'mm/s';
-  sweepRow.appendChild(unit);
-  w.appendChild(sweepRow);
+  sweepRow(ctx, w);
   ctx.track(
     button(
       row(w),

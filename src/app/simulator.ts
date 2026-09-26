@@ -72,10 +72,17 @@ export const DEFAULT_PW: PwSettings = {
   sweepMmS: 50,
 };
 
+/** Modo M (decisión 80): encendido y ángulo de la línea M (rad, el de las líneas del sector). */
+export interface MModeSettings {
+  enabled: boolean;
+  theta: number;
+}
+
 export interface EquipmentSettings {
   bmode: BModeSettings;
   color: ColorSettings;
   pw: PwSettings;
+  mmode: MModeSettings;
 }
 
 /**
@@ -96,6 +103,7 @@ export function defaultEquipment(): EquipmentSettings {
     bmode: { ...DEFAULT_BMODE, tgcDb: [...DEFAULT_BMODE.tgcDb] },
     color: { ...DEFAULT_COLOR },
     pw: { ...DEFAULT_PW },
+    mmode: { enabled: false, theta: 0 },
   };
 }
 
@@ -169,6 +177,16 @@ export class Simulator {
   }
   get pw(): Readonly<PwSettings> {
     return this.equipment.pw;
+  }
+  get mmode(): Readonly<MModeSettings> {
+    return this.equipment.mmode;
+  }
+  /**
+   * Ajustes de la imagen en pantalla: los del equipo o, con un cuadro del cine a la vista (decisión 80), los
+   * de ese cuadro (profundidad, foco y caja de color con que se formó).
+   */
+  get displayed(): { bmode: Readonly<BModeSettings>; color: Readonly<ColorSettings> } {
+    return (this.frozen && this.renderer.cineShownFrame) || this.equipment;
   }
   get spectral(): PwDopplerChain['spectral'] {
     return this.pwChain.spectral;
@@ -332,6 +350,7 @@ export class Simulator {
         color: this.color,
         updateColor,
         seed: this.patient.seed,
+        mline: this.mmode.enabled ? this.mmode.theta : undefined,
       },
       measure?.repeat,
     );

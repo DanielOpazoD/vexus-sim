@@ -320,8 +320,8 @@ describe('Uniforms y GLSL del eco de interfaz', () => {
     expect(FRAG_RAWFIELD).toContain('return field + vec2(interfaceEcho(c, m, dir, r, se, w), 0.0);');
     expect(FRAG_RAWFIELD).not.toMatch(/uSpecGain|pow\(cosI, 4\.0\)/);
     // β se midió con estas pasadas C y D: si cambian, hay que re-derivarlo (interfaceTwin.test.ts). El pedestal de
-    // lóbulos laterales de la decisión 76 tiene fase aleatoria: su suma coherente sobre un reflector continuo promedia
-    // cero y β no cambia (la ganancia coherente del gemelo, `lateralCoherentGain`, ya lo incluye)
+    // lóbulos laterales de la decisión 76 lleva una fase antisimétrica: sobre un reflector continuo sus pares ±k se
+    // cancelan y β no cambia (≤ 0,5 %, `clutter.test.ts`; la ganancia coherente del gemelo, `lateralCoherentGain`, lo incluye)
     expect(FRAG_AXIAL).toContain('k <= 12');
     expect(FRAG_LATERAL).toContain('max(0.35,');
     expect(FRAG_LATERAL).toContain(`k <= ${CLUTTER.lateralMaxLines}`);

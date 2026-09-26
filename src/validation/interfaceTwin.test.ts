@@ -295,7 +295,9 @@ describe('Gemelo B→C→D de los ecos de interfaz (decisión 57)', () => {
   });
 
   it('M3: la porta (vaina de Glisson) brilla en los tres tramos y supera a la VSH fuera de la normal', () => {
-    // (1,39: el pedestal de lóbulos laterales de la decisión 76 resta ~0,2 % a la ganancia coherente de una cara continua)
+    // (1,39: el pedestal de lóbulos laterales de la decisión 76 reparte −24 dB de la energía de la vaina en las líneas
+    // vecinas y el cociente cresta/hígado baja de 1,404 a 1,397 a 40°; sin pedestal vuelve a 1,40. La ganancia
+    // coherente de una cara continua no cambia: la pantalla de fase es antisimétrica, `clutter.test.ts`)
     for (const from of [0, 20, 40] as const) expect(bin(R.portal, from).ratio, `${from}°`).toBeGreaterThanOrEqual(1.39);
     expect(bin(R.portal, 20).dDb - bin(R.hv80, 20).dDb).toBeGreaterThanOrEqual(5);
     expect(bin(R.portal, 40).dDb - bin(R.hv80, 40).dDb).toBeGreaterThanOrEqual(5);

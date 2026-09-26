@@ -125,7 +125,7 @@ describe('Transitorio del campo cercano bajo el ruido del receptor', () => {
   it('tras la PSF (C y D) lo omitido llega a ≈ ruido/7 a 60 mm y ruido/8 a 90 mm: el suelo sube ≤ 0,1 dB', () => {
     // el gemelo filtra como las pasadas C y D (topes del núcleo y σ mínimas)
     expect(FRAG_AXIAL).toContain('for (int k = -12; k <= 12; k++)');
-    expect(FRAG_AXIAL).toContain('oField = (acc + uReverb.y * acc1 + uReverb.z * acc2) / sqrt(wsum);');
+    expect(FRAG_AXIAL).toContain('oField = (acc + uReverb.y * tW * acc1 + uReverb.z * tW * tW * acc2) / sqrt(wsum);');
     expect(FRAG_LATERAL).toContain(`for (int k = -${CLUTTER.lateralMaxLines}; k <= ${CLUTTER.lateralMaxLines}; k++)`);
     expect(FRAG_LATERAL).toContain('max(0.35, sigmaMm / lineSpacing)');
     // la profundidad mínima del equipo (60 mm) es el peor caso: más muestras por celda axial del transitorio

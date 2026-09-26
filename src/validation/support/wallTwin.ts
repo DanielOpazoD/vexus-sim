@@ -23,7 +23,7 @@ import { TISSUES, Tissue, attenuationDbPerCm } from '../../anatomy/tissues';
 import { cross, dot, normalize, type Vec3 } from '../../core/vec3';
 import { lateralSigmaMm } from '../../ultrasound/beamModel';
 import { restTexture } from '../../ultrasound/restTexture';
-import { applyComplexKernel, clutterParams, lateralKernel, reverbGateWeight } from '../../ultrasound/clutter';
+import { CLUTTER, applyComplexKernel, clutterParams, lateralKernel, reverbGains, reverbGateWeight } from '../../ultrasound/clutter';
 import {
   IFACE_MIN_COS,
   IFACE_REACH_MM,
@@ -77,6 +77,13 @@ export interface WallTwinOpts {
   noTexture?: boolean;
   /** Caras que no se dibujan (el resto, como en la GPU): las pruebas de qué eco mide cada puerta del banco. */
   noFaces?: readonly Interface[];
+  /** Sin las réplicas de reverberación de la pared (decisión 76): para comparar el campo de B bit a bit. */
+  noReverb?: boolean;
+  /**
+   * Sin el pedestal de lóbulos laterales (decisión 76): llega a ±40 líneas, hasta los bordes del sector, donde los
+   * modelos de pared difieren a la misma profundidad; para comparar el campo de B bit a bit.
+   */
+  noPedestal?: boolean;
 }
 
 export interface WallTwinOut {
@@ -165,14 +172,23 @@ export function wallTwin(
   const cp = clutterParams(scene.wallThickness(), scene.torso.fatMm);
   const kLat = new Map<number, Array<[number, number]>>();
   for (let i = i0; i <= i1; i++) {
-    const k = lateralKernel(Math.max(0.35, lateralSigmaMm(rowR(i), g.focusMm, g.beam) / pitch(rowR(i))), cp);
+    const k = lateralKernel(
+      Math.max(0.35, lateralSigmaMm(rowR(i), g.focusMm, g.beam) / pitch(rowR(i))),
+      o.noPedestal ? { ...cp, sidelobeIslr: 0 } : cp,
+    );
     kLat.set(i, k);
     RL = Math.max(RL, (k.length - 1) / 2);
   }
   const nL = o.j1 - o.j0 + 1;
   const nR = i1 - i0 + 1;
   const wL = nL + 2 * RL;
-  const wR = nR + 2 * RA;
+  // B se calcula también por encima del parche: las fuentes de las réplicas de reverberación de C están W y 2W filas
+  // más arriba (con la pared, que es de donde salen)
+  const shift = o.noReverb ? 0 : Math.round(cp.wallMm / dr);
+  const srcMax = shift + Math.round(CLUTTER.reverbSourceMarginMm / dr);
+  const top = RA + 2 * shift;
+  const wR = nR + top + RA;
+  const tWall = new Float64Array(wL);
   const re = new Float64Array(wL * wR);
   const im = new Float64Array(wL * wR);
   const tissueOut = new Uint8Array(nL * nR);
@@ -208,8 +224,10 @@ export function wallTwin(
       return Tc[k] * (1 - f) + Tc[k + 1] * f;
     };
     const lineU = (j + 0.5) / L;
+    tWall[a] = Tat(cp.wallMm);
     for (let b = 0; b < wR; b++) {
-      const i = i0 - RA + b;
+      const i = i0 - top + b;
+      if (i < 0) continue; // por encima de la imagen: campo nulo, como el borde de la textura con la réplica apagada
       const r = rowR(i);
       const p = pointAt(dir, r);
       const se = elevSigmaMm(r, g);
@@ -254,32 +272,33 @@ export function wallTwin(
       }
       re[a * wR + b] = outR;
       im[a * wR + b] = outI;
-      const inPatch = a >= RL && a < RL + nL && b >= RA && b < RA + nR;
+      const inPatch = a >= RL && a < RL + nL && b >= top && b < top + nR;
       if (inPatch) {
-        tissueOut[(b - RA) * nL + (a - RL)] = c0.tissue;
-        faceOut[(b - RA) * nL + (a - RL)] = c0.interface;
+        tissueOut[(b - top) * nL + (a - RL)] = c0.tissue;
+        faceOut[(b - top) * nL + (a - RL)] = c0.interface;
       }
     }
   }
-  // C (con las réplicas de reverberación de FRAG_AXIAL: el campo desplazado W y 2W filas enteras hacia arriba, con la
-  // compuerta de los ecos fuertes; la fila fuente debe estar en el parche calculado)
-  const shift = Math.round(cp.wallMm / dr);
+  // C (con las réplicas de reverberación de FRAG_AXIAL: el campo tomado W y 2W filas enteras más arriba, con la
+  // compuerta de los ecos fuertes y la transmisión de ida y vuelta de la línea hasta la pared, una vez por orden)
   const axR = new Float64Array(wL * nR);
   const axI = new Float64Array(wL * nR);
   const rawAt = (a: number, b: number): [number, number] => {
+    if (b < 0 || b >= wR) throw new Error(`wallTwin: fila ${b} fuera del campo calculado`);
     const n = a * wR + b;
-    return b >= 0 && b < wR ? [re[n], im[n]] : [0, 0];
+    return [re[n], im[n]];
   };
   for (let a = 0; a < wL; a++)
     for (let i = 0; i < nR; i++) {
       let sr = 0;
       let si = 0;
       const row = i0 + i;
+      const [g1, g2] = reverbGains(cp, tWall[a]);
       const reps: Array<[number, number]> = [];
-      if (shift > 0 && row >= shift && cp.reverb[0] > 0) reps.push([shift, cp.reverb[0]]);
-      if (shift > 0 && row >= 2 * shift && cp.reverb[1] > 0) reps.push([2 * shift, cp.reverb[1]]);
+      if (shift > 0 && row >= shift && row - shift <= srcMax && g1 > 0) reps.push([shift, g1]);
+      if (shift > 0 && row >= 2 * shift && row - 2 * shift <= srcMax && g2 > 0) reps.push([2 * shift, g2]);
       for (let q = -RA; q <= RA; q++) {
-        const b = i + RA + q;
+        const b = i + top + q;
         const [fr, fi] = rawAt(a, b);
         sr += kA[q + RA] * fr;
         si += kA[q + RA] * fi;

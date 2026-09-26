@@ -29,7 +29,7 @@ import {
 import { GpuPassTimer, summarizeGpuTimings, type GpuFrameTimings } from './gpuTimer';
 import { RECEIVER_NOISE } from './receiver';
 import { ELEV_SIGMA0_MM } from './pleura';
-import { clutterParams, type ClutterParams } from './clutter';
+import { CLUTTER, clutterParams, type ClutterParams } from './clutter';
 import { FRAME_PASSES, type PassId } from './passGraph';
 import { CompoundRing, compoundActive, lookTheta, type CompoundLook } from './compound';
 import { lookWavenumber } from './steering';
@@ -1006,9 +1006,12 @@ export class UltrasoundRenderer {
     const dz = depth / FINE_DEPTH;
     this.pAxial.f('uSigmaTexels', Math.max(0.6, AXIAL_SIGMA_MM / dz));
     this.pAxial.v2('uTexel', 1 / this.lines, 1 / FINE_DEPTH);
-    // réplicas de reverberación de la pared (decisión 76): desplazamiento entero en texeles
+    // réplicas de reverberación de la pared (decisión 76): desplazamiento entero en texeles; cada orden paga la
+    // transmisión de ida y vuelta de la línea hasta la pared, la del camino de la mirada del cuadro
     const cp = this.clutterFor(inputs);
-    this.pAxial.v3('uReverb', [Math.round(cp.wallMm / dz), cp.reverb[0], cp.reverb[1]]);
+    const w = Math.round(cp.wallMm / dz);
+    this.pAxial.v4('uReverb', w, cp.reverb[0], cp.reverb[1], w + Math.round(CLUTTER.reverbSourceMarginMm / dz));
+    this.pAxial.tex('uTrans', 1, this.tTrans.textures[this.steeredLook() ? 3 : 0]);
     drawFullscreen(gl);
   }
 
@@ -1027,7 +1030,7 @@ export class UltrasoundRenderer {
     this.pLateral.f('uHalfSector', tr.halfSector);
     this.pLateral.f('uLinesF', this.lines);
     const cp = this.clutterFor(inputs);
-    this.pLateral.v2('uSidelobe', cp.sidelobeAmp, cp.sidelobeWidth);
+    this.pLateral.v2('uSidelobe', cp.sidelobeIslr, cp.sidelobeWidth);
     this.pLateral.tex('uCoupling', 1, this.couplingTex);
     this.setLateralPsfUniforms(this.pLateral, inputs);
     drawFullscreen(gl);

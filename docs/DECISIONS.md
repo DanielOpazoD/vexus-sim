@@ -3133,7 +3133,8 @@ y en el GLSL con la misma fórmula.
   vec2), la apodización en el cono de `uBeam.y` y en `uBeamTx.x`, y la referencia y el exponente de la ganancia focal
   en `uFocus.yzw` (antes float). La pasada C recibe σ por fila (`uSigmaTexels`, vec2). Gancho `setFocus` (el comando del deslizador).
 
-**Consecuencias.** Banco con GPU (M4), antes (`main` c6c81ad) → después, en armónica y con el compuesto, intercostal a
+**Consecuencias.** Banco con GPU (M4), antes (`main` c6c81ad; hasta 59fb7b1 nada toca la imagen) → después, en
+armónica y con el compuesto, intercostal a
 20–60 / 60–100 / 100–140 / 140–180 mm: grano de la imagen 0,80×1,74 / 0,79×1,90 / 0,74×3,27 / 0,82×3,63 → 0,88×1,79 /
 0,88×2,01 / 0,83×3,10 / 0,90×3,59 mm (axial × lateral; 4–20 ventanas por banda, las hondas ruidosas); PSF 1,41 / 1,57 /
 2,46 / 3,42 → 1,46 / 1,76 / 2,62 / 3,71 mm; gris 101 / 99 / 96 / 96 → 92 / 98 / 90 / 79 y DE 12,6 / 13,5 / 14,1 / 11,9 →
@@ -3159,9 +3160,9 @@ la composición no cambia (N_eff 1,48–1,70 a 20–60 mm, como antes). La media
 foco) y el perfil en profundidad deja de ser plano (−0,25 → +0,43 dB/cm en la subxifoidea, cuyo hígado sube hacia el
 foco); G4 (media escala en la banda del foco: 98) y el hígado de la e2e (92, > 85) se cumplen. Coste (GPU M4, carga
 8–28, antes y después intercalados): cuadro 9,59 → 9,70 ms sin compuesto y 10,57 → 10,69 con él; pasada B 3,28 → 3,34
-ms. Arranque con SwiftShader (carga 8–10, tres rondas intercaladas): 73,5 / 53,8 / 35,3 → 65,0 / 51,6 / 34,7 s. Chunk
-principal 318,1 → 319,7 kB de 320 (los gemelos en TS de la ganancia focal y de la bajada, en `beamEcho.ts`, quedan fuera
-de él).
+ms. Arranque con SwiftShader frente a 59fb7b1 (carga 5–10, tres rondas intercaladas): 42,4 / 27,3 / 26,5 → 26,3 / 25,1 /
+35,3 s, sin tendencia. Chunk principal 313,8 → 315,4 kB de 320 sobre 59fb7b1 (los gemelos en TS de la ganancia focal y
+de la bajada, en `beamEcho.ts`, quedan fuera de él).
 
 **Verificación.** `psfDepth.test.ts`: la pendiente −2βσ_f² (−0,092 MHz/cm con 60 % de banda y 0,5 dB/cm/MHz), f(r)
 monótona y > 0, el pulso ∝ 1/f(r) y el de la armónica más largo, la PSF lateral 1,4–3 mm a 6–10 cm que crece después y

@@ -82,8 +82,11 @@ test('la anatomía GLSL coincide con la TypeScript en tejido, vaso y velocidad',
 });
 
 test('las tríadas portales de la GPU son las del gemelo TS, punto a punto (decisión 78)', async ({ page }) => {
+  // arranca la aplicación (SwiftShader compila todos los programas: 50–60 s con carga) y luego compila el programa de
+  // consulta: los 90 s por defecto no bastan con la máquina cargada
+  test.setTimeout(240_000);
   await page.goto('/?e2e=1');
-  await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: 60_000 });
+  await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: 120_000 });
   await expect.poll(() => page.evaluate(() => typeof window.__vexusTest?.triadParity), { timeout: 30_000 }).toBe('function');
   const r = await page.evaluate(() => window.__vexusTest!.triadParity());
   const tag = JSON.stringify(r);

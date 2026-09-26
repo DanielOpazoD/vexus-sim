@@ -167,11 +167,12 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       ],
       2.8,
     ),
-    // Media: cisura lobar principal (línea de Cantlie), desde la fosa vesicular
+    // Media: cisura lobar principal (línea de Cantlie), desde el parénquima de IVb/V por encima de la fosa
+    // vesicular (decisión 67: antes nacía en la fosa y su primer tramo cruzaba la luz de la vesícula)
     thin(
       'hvMiddle',
       [
-        [[-50, 40, -70], 2.0],
+        [[-57, 31, -38], 2.0],
         [[-40, 24, -25], 3.2],
         [[-30, 4, 12], 4.0],
         [[-24, -2, 36], 4.4],
@@ -397,12 +398,15 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       ]),
       wallMm: 0.6,
     },
+    // cístico: sale de la punta del cuello de la vesícula y baja hacia dentro hasta el colédoco (decisión 67:
+    // antes acababa a 40 mm del cuello, en la vesícula de la decisión 41)
     {
       id: 'cysticDuct',
       tube: tube([
-        [[-13, 2, -75], 1.3],
-        [[-16, 24, -69], 1.3],
-        [[-20, 38, -65], 1.4],
+        [[-36.2, 12.6, -45.5], 1.4],
+        [[-31, 10, -46.5], 1.3],
+        [[-27, 7.2, -51.5], 1.3],
+        [[-25.5, 6, -56], 1.3],
       ]),
       wallMm: 0.6,
     },

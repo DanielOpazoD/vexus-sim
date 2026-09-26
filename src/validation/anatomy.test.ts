@@ -16,6 +16,8 @@ import { BRANCH_MAX_RADIUS_SCALE } from '../anatomy/vesselTree';
 describe('Anatomía implícita (base B)', () => {
   const scene = new AnatomyScene(NORMAL_ADULT);
   const cls = (p: [number, number, number]) => scene.classify(p, BASELINE_CALIBER);
+  type V = [number, number, number];
+  const sdf = (face: FaceGeometry) => (p: V) => scene.faceSdf(p, BASELINE_CALIBER, face);
 
   it('clasifica puntos de referencia', () => {
     expect(cls([0, 200, 0]).tissue).toBe(Tissue.Air);
@@ -52,24 +54,107 @@ describe('Anatomía implícita (base B)', () => {
       expect(scene.liverSdf(p)).toBeGreaterThanOrEqual(scene.liverBaseSdf(p) - 1e-9);
   });
 
-  it('vesícula en pera: fondo ancho anteroinferior, cuello estrecho hacia el hilio, pared ecogénica y fosa en el hígado', () => {
+  it('vesícula en pera curvada (decisión 67): fondo anteroinferolateral, cuello en «S» hacia el hilio, 30–50 mL', () => {
     const gb = scene.gallbladder;
-    const along = (t: number, off: [number, number, number] = [0, 0, 0]): [number, number, number] => [
-      gb.center[0] + gb.u[0] * t + gb.v[0] * off[1] + gb.w[0] * off[2],
-      gb.center[1] + gb.u[1] * t + gb.v[1] * off[1] + gb.w[1] * off[2],
-      gb.center[2] + gb.u[2] * t + gb.v[2] * off[1] + gb.w[2] * off[2],
-    ];
-    // el eje u va del fondo (−u, anteroinferior) al cuello (+u, posterosuperior, hacia el hilio)
-    expect(gb.u[1]).toBeLessThan(0);
-    expect(gb.u[2]).toBeGreaterThan(0);
-    expect(cls(along(0)).tissue).toBe(Tissue.Fluid);
-    // a 30 mm del centro hacia el fondo, a 9 mm del eje sigue habiendo bilis; hacia el cuello ya no
-    expect(cls(along(-30, [0, 9, 0])).tissue).toBe(Tissue.Fluid);
-    expect(cls(along(30, [0, 9, 0])).tissue).not.toBe(Tissue.Fluid);
-    // pared ecogénica de 1,5 mm alrededor de la luz, y hígado detrás (fosa vesicular)
-    expect(cls(along(0, [0, 11.7, 0])).tissue).toBe(Tissue.BileDuctWall);
-    expect(cls(along(0, [0, 11 + 1.5 + 4, 0])).tissue).toBe(Tissue.Liver);
-    expect(scene.gallbladderWallMm).toBeCloseTo(1.5, 6);
+    const [fundus, body, infundibulum, hartmann, neck] = gb.nodes;
+    // el fondo es más bajo, más anterior y más lateral (derecha = −x) que el cuello
+    expect(fundus.p[2]).toBeLessThan(neck.p[2]);
+    expect(fundus.p[1]).toBeGreaterThan(neck.p[1]);
+    expect(fundus.p[0]).toBeLessThan(neck.p[0]);
+    // cuerpo ancho y cuello estrecho; la bolsa de Hartmann cuelga por debajo del infundíbulo y del cuello
+    expect(body.r).toBeGreaterThan(2.5 * neck.r);
+    expect(hartmann.p[2]).toBeLessThan(Math.min(infundibulum.p[2], neck.p[2]));
+    // el cuello se dobla: > 40° entre el tramo de Hartmann y el del cuello
+    const dir = (a: V, b: V): V => {
+      const d: V = [b[0] - a[0], b[1] - a[1], b[2] - a[2]];
+      const l = Math.hypot(...d);
+      return [d[0] / l, d[1] / l, d[2] / l];
+    };
+    const d1 = dir(infundibulum.p, hartmann.p);
+    const d2 = dir(hartmann.p, neck.p);
+    expect((Math.acos(d1[0] * d2[0] + d1[1] * d2[1] + d1[2] * d2[2]) * 180) / Math.PI).toBeGreaterThan(40);
+    // volumen y tamaño de una vesícula normal en ayunas (7–10 cm × ≤ 4 cm; 30–50 mL)
+    const lo = [0, 1, 2].map((k) => Math.min(...gb.nodes.map((n) => n.p[k] - n.r)));
+    const hi = [0, 1, 2].map((k) => Math.max(...gb.nodes.map((n) => n.p[k] + n.r)));
+    const axis = dir(neck.p, fundus.p);
+    let lumen = 0;
+    let aMin = Infinity;
+    let aMax = -Infinity;
+    for (let x = lo[0]; x <= hi[0]; x++)
+      for (let y = lo[1]; y <= hi[1]; y++)
+        for (let z = lo[2]; z <= hi[2]; z++) {
+          if (sdf('gallbladder')([x, y, z])! >= 0) continue;
+          lumen++;
+          const a = x * axis[0] + y * axis[1] + z * axis[2];
+          aMin = Math.min(aMin, a);
+          aMax = Math.max(aMax, a);
+        }
+    expect(lumen / 1000).toBeGreaterThan(30);
+    expect(lumen / 1000).toBeLessThan(50);
+    expect(aMax - aMin).toBeGreaterThan(70);
+    expect(aMax - aMin).toBeLessThan(100);
+    expect(2 * body.r).toBeLessThanOrEqual(40);
+    // bilis en el cuerpo y en el cuello; pared ecogénica alrededor de la luz
+    expect(cls([...body.p] as V).tissue).toBe(Tissue.Fluid);
+    expect(cls([...neck.p] as V).tissue).toBe(Tissue.Fluid);
+    expect(scene.gallbladderWallMm).toBeLessThan(3);
+  });
+
+  it('pared vesicular única (decisión 67): la cápsula hepática de la fosa no dibuja su propia cara', () => {
+    // desde el cuerpo hacia arriba (craneal) se cruza la luz, la pared y entra en el hígado por la fosa: la única
+    // cara especular es la de la luz; la cápsula pegada a la pared no dibuja otra línea paralela
+    const body = scene.gallbladder.nodes[1].p;
+    const faces = new Set<Interface>();
+    let reachedLiver = false;
+    for (let t = 0; t < 40; t += 0.05) {
+      const c = cls([body[0], body[1], body[2] + t]);
+      if (c.interface !== Interface.None && c.interfaceDistance < 0.5) faces.add(c.interface);
+      if (c.tissue === Tissue.Liver) {
+        reachedLiver = true;
+        break;
+      }
+    }
+    expect(reachedLiver).toBe(true);
+    expect([...faces]).toEqual([Interface.GallbladderLumen]);
+  });
+
+  it('ningún vaso ni conducto atraviesa la luz o la pared de la vesícula (decisión 67)', () => {
+    // Antes la suprahepática media nacía en la fosa y cruzaba 34 mm de la luz (726 mm³, hasta 5,4 mm dentro): la
+    // vena se dibujaba con flujo dentro de la bilis. Solo el cístico toca el cuello, donde nace.
+    for (const p of CASES) {
+      const sc = new AnatomyScene(p);
+      const gb = sc.gallbladder;
+      const lo = [0, 1, 2].map((k) => Math.min(...gb.nodes.map((n) => n.p[k] - n.r)) - 3);
+      const hi = [0, 1, 2].map((k) => Math.max(...gb.nodes.map((n) => n.p[k] + n.r)) + 3);
+      const inside = new Map<string, number>();
+      for (let x = lo[0]; x <= hi[0]; x++)
+        for (let y = lo[1]; y <= hi[1]; y++)
+          for (let z = lo[2]; z <= hi[2]; z++) {
+            const m: V = [x, y, z];
+            if (sc.faceSdf(m, BASELINE_CALIBER, 'gallbladder')! >= sc.gallbladderWallMm) continue;
+            const t = sc.faceTube(m, BASELINE_CALIBER);
+            if (!t) continue;
+            const id = t.vessel ?? 'conducto';
+            inside.set(id, (inside.get(id) ?? 0) + 1);
+          }
+      const vessels = [...inside].filter(([id]) => id !== 'conducto');
+      expect(vessels, p.id).toEqual([]);
+      // el cístico solo entra en la punta del cuello
+      expect(inside.get('conducto') ?? 0, p.id).toBeLessThan(60);
+    }
+    // la suprahepática media corre por encima de la fosa, a ≥ 5 mm de la pared aun con el calibre máximo
+    const hvm = scene.vessels.find((v) => v.id === 'hvMiddle')!;
+    const sMax = BRANCH_MAX_RADIUS_SCALE[VESSEL_META.hvMiddle.caliber];
+    let clearance = Infinity;
+    const nodes = hvm.tube.nodes;
+    for (let i = 0; i < nodes.length - 1; i++)
+      for (let k = 0; k <= 40; k++) {
+        const t = k / 40;
+        const q: V = [0, 1, 2].map((j) => nodes[i].p[j] + (nodes[i + 1].p[j] - nodes[i].p[j]) * t) as V;
+        const r = (nodes[i].r + (nodes[i + 1].r - nodes[i].r) * t) * sMax;
+        clearance = Math.min(clearance, sdf('gallbladder')(q)! - scene.gallbladderWallMm - r);
+      }
+    expect(clearance).toBeGreaterThan(5);
   });
 
   it('los vasos tienen pared distinta de la luz y la porta tiene pared ecogénica', () => {
@@ -488,7 +573,7 @@ describe('Caras geométricas del banco de interfaces (faceSdf)', () => {
     expect(sdf('kidneyOuter')(scene.kidneyRight.center)!).toBeLessThan(0);
     expect(sdf('kidneyOuter')(scene.kidneyLeft.center)!).toBeLessThan(0);
     expect(sdf('kidneyOuter')([-60, 20, -10])!).toBeGreaterThan(0);
-    expect(sdf('gallbladder')(scene.gallbladder.center)!).toBeLessThan(0);
+    expect(sdf('gallbladder')(scene.gallbladder.nodes[1].p)!).toBeLessThan(0);
     expect(sdf('gallbladder')([-60, 20, -10])!).toBeGreaterThan(0);
     expect(sdf('liverSurface')([-60, 20, -10])!).toBeLessThan(0);
     expect(sdf('liverSurface')([0, 75, -120])!).toBeGreaterThan(0); // músculo de la pared
@@ -507,8 +592,10 @@ describe('Caras geométricas del banco de interfaces (faceSdf)', () => {
       const g = grad(sdf(face), crossing(face, p0, d, tMax));
       expect(Math.abs(Math.hypot(...g) - 1), `${face} desde ${p0.join(',')}`).toBeLessThan(1e-3);
     }
-    // la vesícula es un elipsoide afilado (pera): la aproximación de distancia se aparta ≤ 1 %
-    const gb = grad(sdf('gallbladder'), crossing('gallbladder', [...scene.gallbladder.center], [...scene.gallbladder.v], 30));
+    // la vesícula es una cadena de conos redondeados: en el cuerpo, la distancia se aparta ≤ 1 % (el radio
+    // crece solo 2,5 mm en los 20 mm del fondo al cuerpo)
+    const gbBody = scene.gallbladder.nodes[1].p;
+    const gb = grad(sdf('gallbladder'), crossing('gallbladder', [gbBody[0], gbBody[1], gbBody[2]], [0, 0, 1], 30));
     expect(Math.abs(Math.hypot(...gb) - 1)).toBeLessThan(0.01);
   });
 
@@ -574,10 +661,11 @@ describe('Caras de interfaz en classify (decisión 57)', () => {
     const cbdCls = cls(mid(cbd.tube.nodes));
     expect(cbdCls.tissue).toBe(Tissue.Fluid);
     expect(cbdCls.interface).toBe(Interface.DuctLumen);
-    const gb = cls([...scene.gallbladder.center]);
+    const gbBody = scene.gallbladder.nodes[1].p;
+    const gb = cls([gbBody[0], gbBody[1], gbBody[2]]);
     expect(gb.tissue).toBe(Tissue.Fluid);
     expect(gb.interface).toBe(Interface.GallbladderLumen);
-    expect(gb.interfaceDistance).toBeCloseTo(-sdf('gallbladder', [...scene.gallbladder.center]), 9);
+    expect(gb.interfaceDistance).toBeCloseTo(-sdf('gallbladder', [gbBody[0], gbBody[1], gbBody[2]]), 9);
   });
 
   it('diafragma: la mitad abdominal dibuja la cara hepática a 2,5 − dDome; la pleural, ninguna', () => {

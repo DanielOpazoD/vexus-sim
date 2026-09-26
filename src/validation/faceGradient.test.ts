@@ -334,5 +334,9 @@ describe('Eco de interfaz en la distancia por la normal (|∇| de la cara)', () 
     expect(echo).toContain('return interfaceProfileEcho(c.iface, cosI, curv, c.ifd / (fg.w * cosI));');
     expect(echo).toContain('float kl = dot(lat, circ); kl = kl * kl * c.kc;');
     expect(FRAG_QUERY).toContain('o2 = faceGradient(c, m);');
+    // las diferencias centrales de la vesícula y de la cápsula usan las sobrecargas sin normal (decisión 67)
+    expect(glsl).toContain('g = vec3(gallbladderSdf(m + h.xyy) - gallbladderSdf(m - h.xyy),');
+    expect(glsl).toContain('float dLiver = liverSdf(m, dLiverBase);');
+    expect(glsl).toContain('float dg = gallbladderSdf(m) - uGbExtra.y;');
   });
 });

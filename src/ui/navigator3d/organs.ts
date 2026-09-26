@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js';
 import { kidneyLocal, kidneyOuterSdf, type Kidney } from '../../anatomy/organs/kidney';
-import { diaphragmHeight, sdOrientedEllipsoid, torsoDepth } from '../../anatomy/primitives';
+import { gallbladderSdf } from '../../anatomy/organs/gallbladder';
+import { diaphragmHeight, torsoDepth } from '../../anatomy/primitives';
 import { COUINAUD_LABEL, couinaudPlanes, couinaudSegment, type CouinaudSegment } from '../../anatomy/couinaud';
 import type { AnatomyScene } from '../../anatomy/scene';
 import { DIAPHRAGM_THICKNESS_MM } from '../../anatomy/tissues';
@@ -180,14 +181,15 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
       }),
     ),
   );
-  // Vesícula en pera: marching cubes sobre el mismo elipsoide orientado (fondo + cuello)
-  const gbE = a.gallbladder;
-  const gbR = Math.max(...gbE.radii) * 1.6 + 4;
+  // Vesícula en pera curvada: marching cubes sobre la MISMA distancia que la imagen (fondo, cuerpo, cuello en «S»)
+  const gbN = a.gallbladder.nodes;
+  const gbLo = [0, 1, 2].map((k) => Math.min(...gbN.map((n) => n.p[k] - n.r)) - 4) as [number, number, number];
+  const gbHi = [0, 1, 2].map((k) => Math.max(...gbN.map((n) => n.p[k] + n.r)) + 4) as [number, number, number];
   const gb = meshFromSdf(
-    (p) => sdOrientedEllipsoid(p, gbE),
-    [gbE.center[0] - gbR, gbE.center[1] - gbR, gbE.center[2] - gbR],
-    [gbE.center[0] + gbR, gbE.center[1] + gbR, gbE.center[2] + gbR],
-    36,
+    (p) => gallbladderSdf(p, a.gallbladder),
+    gbLo,
+    gbHi,
+    40,
     new THREE.MeshStandardMaterial({ color: 0x3fb08f, roughness: 0.5, transparent: true, opacity: 0.85 }),
   );
   const ra = new THREE.Mesh(

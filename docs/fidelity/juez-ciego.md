@@ -66,3 +66,27 @@ Segunda ronda (25-09-2026, `main` 92f1ae8, tras las decisiones 58–63): 7/7 par
 geometría profunda (vasos elípticos con halo simétrico, VCI de bordes paralelos, cápsula renal de
 doble línea, pelvis recortada), el brillo de borde que no depende de la incidencia, el grano igual a
 toda profundidad y las luces sin ruido. La pareja mejor puntuada (3/7) fue la pared con costillas.
+
+Tercera ronda (26-09-2026, rama del retroperitoneo 75cfbaf sobre `main` 8e83d9a, tras las decisiones 76–81, en
+armónica): las mismas 7 reales de la ronda 2 (sin descargar nada) frente a capturas nuevas con la misma normalización
+(`scratchpad/gb/blind3.mts`). 7/7 parejas (confianza 96–98 %, todas en «< 1 s») y 14/14 sueltas. Realismo de las
+simuladas 2,57 (parejas) y 2,43 (sueltas) frente a 5,71 de las reales; nota global 2/7. Sube el realismo (1,9 →
+2,4–2,6), sobre todo el hígado (la pareja 1 llega a 3–4), pero no la detección. Pistas, por peso:
+
+1. **Moteado estacionario** (las 7): mismo grano, contraste y brillo a toda profundidad; sin zona focal, sin
+   engrosamiento por la bajada de frecuencia ni estiramiento lateral por la divergencia de las líneas de la convexa;
+   resolución casi isótropa (bordes de vaso igual de borrosos en axial y lateral) cuando la real es ~0,5 mm axial
+   frente a 1–3 mm lateral; «sal y pimienta» sin el suavizado del equipo.
+2. **Interfaces como trazos** de brillo y grosor constantes que siguen brillando oblicuas y salen del órgano: sin la
+   caída especular fuera de la perpendicular, sin componente difusa ni fragmentación por rugosidad, sin grosor ligado
+   al haz.
+3. **Anatomía de primitivas**: venas que acaban en círculo («piruleta»), focos de tríada como elipses sueltas sin luz,
+   VCI de paredes paralelas y calibre constante, riñón con la cápsula abierta, seno igual al moteado pero más brillante,
+   pirámides como hendiduras regulares, zonas negras de borde curvo sin correlato.
+4. **Faltan los artefactos del líquido y del hueso**: refuerzo posterior bajo la VCI y los vasos, sombras de borde por
+   refracción, relleno de las luces pequeñas por el grosor de corte, sombras costales que no se abren con el abanico.
+5. **Una sola escala de textura**: sin heterogeneidad de milímetros a centímetros ni textura propia por tejido (grasa
+   con septos, músculo con fibras, corteza frente a seno), ni firma del equipo (suavizado o estrías de líneas).
+
+Defecto del diseño: las parejas 1 y 7, 2 y 3, y 4 y 5 comparten escena simulada (el juez lo notó; no le hizo falta). En
+la ronda 4 cada pareja tendrá su propia escena (ventana, pose o caso distintos).

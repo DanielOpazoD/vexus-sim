@@ -6,6 +6,7 @@ import { modeHasColor, modeHasPw, toggleMode } from './app/equipment';
 import { compareTissueGrids } from './app/equivalenceCheck';
 import { errorLog, errorMessage } from './app/errorLog';
 import { ProbeAnimator } from './app/probeAnimation';
+import { START_POINTS } from './app/startPoints';
 import { SimulationSession } from './app/session';
 import type { Simulator } from './app/simulator';
 import { Store, type ImagingMode } from './app/store';
@@ -91,6 +92,12 @@ try {
 }
 const sim = (): Simulator => session.sim;
 const dispatch = session.equipment.dispatch.bind(session.equipment);
+// La app arranca en la ventana subxifoidea, la primera del protocolo VExUS, y no en la pose por defecto del
+// simulador (sobre las costillas del flanco). La e2e conserva la pose por defecto: sus pruebas la suponen.
+if (!new URLSearchParams(location.search).has('e2e')) {
+  const first = START_POINTS[0];
+  sim().setPose({ ...sim().pose, phi: first.phi, z: first.z, yaw: first.yaw, rock: first.rock ?? 0, tilt: first.tilt ?? 0 });
+}
 const banner = new Banner(sectorWrap);
 
 // --- Vistas ------------------------------------------------------------------

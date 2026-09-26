@@ -3081,7 +3081,8 @@ tomó el campo de visión de cada real, ±30 %):
 filtro de reducción del moteado del equipo (SRI, XRES): el contraste simulado ya es menor que el real, así que lo alejaría
 (punto e, descartado; el grano axial real más grueso con bordes nítidos sugiere un filtro que preserva bordes, pero siete
 paneles JPEG de proceso desconocido no bastan para calibrarlo). (3) La elegida: la física del haz que cambia con la
-profundidad, en TS (`beamModel.ts`, `bmodeBeam` de `transducerProfile.ts`) y en el GLSL con la misma fórmula.
+profundidad, en TS (`beamModel.ts`, `bmodeBeam` de `transducerProfile.ts` y, para el banco y los gemelos, `beamEcho.ts`)
+y en el GLSL con la misma fórmula.
 
 **Decisión.**
 
@@ -3132,43 +3133,60 @@ profundidad, en TS (`beamModel.ts`, `bmodeBeam` de `transducerProfile.ts`) y en 
   vec2), la apodización en el cono de `uBeam.y` y en `uBeamTx.x`, y la referencia y el exponente de la ganancia focal
   en `uFocus.yzw` (antes float). La pasada C recibe σ por fila (`uSigmaTexels`, vec2). Gancho `setFocus` (el comando del deslizador).
 
-**Consecuencias.** Banco con GPU (M4, armónica y compuesto), antes → después, intercostal a 20–60 / 60–100 / 100–140 /
-140–180 mm: grano de la imagen 0,80×1,74 / 0,79×1,90 / 0,72×3,07 / 0,78×3,45 → 0,88×1,80 / 0,87×2,01 / 0,86×3,28 /
-0,94×3,80 mm (axial × lateral); PSF 1,41 / 1,57 / 2,46 / 3,42 → 1,46 / 1,76 / 2,62 / 3,71 mm; gris 101 / 99 / 96 / 96 →
-96 / 99 / 94 / 87 y DE 12,6 / 13,5 / 14,1 / 11,9 → 12,2 / 13,6 / 14,8 / 11,6. Subxifoidea: grano 0,81×1,81 / 0,78×1,84 →
-0,90×1,83 / 0,88×2,03 mm; gris 99 / 97 → 95 / 96. En fundamental la banda es más marcada: 101 / 99 / 96 / 96 → 90 / 97 /
-90 / 80. Con el deslizador (fundamental, una mirada, densidad 1): gris a 20–60 / 140–180 mm de 105 / 72 con el foco a 50
-mm, 92 / 82 a 90 y 86 / 91 a 140. Paneles del juez (la misma normalización), hígado a 7–12 cm (pareja 1): axial 0,78–0,89
-→ 0,90–1,06 mm frente a 1,12–1,32 real; lateral 1,81–2,36 → 2,01–2,62 frente a 1,82–1,96; en las seis parejas el axial
-sube un 8–15 % y el lateral un 3–13 %, así que la anisotropía no cambia (2,1–3,0; real ~2) y el contraste (DE/media), 0,12–0,15,
-sigue bajo el real (0,16–0,31). El grano axial real sigue siendo un 20–40 % más grueso y crece más con la profundidad
-(+14–50 % en una ventana de 5–8 cm, +8–13 % aquí); la textura real tiene además heterogeneidad y proceso del equipo que el
-modelo no tiene (moteado estacionario en contraste). Cambios en las calibraciones: el gemelo de las caras (decisión 57)
-no cambia a incidencia normal (porta 1,616 → 1,623, VCI 1,610 → 1,616, cápsula 1,784 → 1,778, Morison 2,163 → 2,186) y
-baja algo en las caras oblicuas, que la PSF más ancha reparte (porta a 40° 1,397 → 1,373, VSH a 40° 1,131 → 1,107); el
-campo cercano de la armónica frente al fundamental pasa de −3,4 a −1,0 dB con GPU porque el fundamental, que enfoca más,
-oscurece también el suyo; el banco de la pared (decisión 62) no cambia (corrección de difracción), pero en la imagen la
-pared queda 2–3 dB (armónica) o 3–5 dB (fundamental) más oscura que el hígado del foco, como con un foco hondo real.
-Coste (GPU M4, carga ~30, antes y después intercalados): cuadro 9,82 → 10,04 ms sin compuesto y 11,04 → 11,19 con él;
-pasada B 3,44 → 3,49 ms. Chunk principal 304,6 → 306,2 kB de 320.
+**Consecuencias.** Banco con GPU (M4), antes (`main` c6c81ad) → después, en armónica y con el compuesto, intercostal a
+20–60 / 60–100 / 100–140 / 140–180 mm: grano de la imagen 0,80×1,74 / 0,79×1,90 / 0,74×3,27 / 0,82×3,63 → 0,88×1,79 /
+0,88×2,01 / 0,83×3,10 / 0,90×3,59 mm (axial × lateral; 4–20 ventanas por banda, las hondas ruidosas); PSF 1,41 / 1,57 /
+2,46 / 3,42 → 1,46 / 1,76 / 2,62 / 3,71 mm; gris 101 / 99 / 96 / 96 → 92 / 98 / 90 / 79 y DE 12,6 / 13,5 / 14,1 / 11,9 →
+11,7 / 13,6 / 15,1 / 11,4. Subxifoidea: grano 0,81×1,81 / 0,78×1,84 → 0,91×1,83 / 0,88×2,03 mm; gris 99 / 97 → 91 / 96.
+En fundamental, gris 101 / 99 / 96 / 96 → 93 / 98 / 90 / 82. Con el deslizador (fundamental, una mirada, densidad 1),
+gris a 20–60 / 60–100 / 100–140 / 140–180 mm: 104 / 94 / 82 / 75 con el foco a 50 mm, 92 / 98 / 94 / 86 a 90 y 88 / 88 /
+94 / 88 a 140 (antes, 101 / 99 / 95 / 95 con cualquier foco). Paneles del juez (la misma normalización), pareja 1
+(hígado con vena hepática): axial 0,80–0,94 → 0,90–1,06 mm frente a 1,12–1,32 real; lateral 1,83–2,41 → 2,01–2,62 frente
+a 1,82–1,96. En las seis parejas con hígado o riñón el axial sube un 4–14 % y el lateral un 0–14 %: la anisotropía no
+cambia (lateral/axial 1,8–3,1 frente a 1,4–2,6 real) y el contraste (DE/media), 0,12–0,22, sigue bajo el real
+(0,16–0,31). El grano axial real sigue más grueso en cuatro de las seis (hasta un 40–65 % en el riñón) y crece de arriba
+abajo del panel (+14–48 % en cuatro de cinco), cuando el simulado apenas cambia (−20 a +17 %); la textura real tiene
+además heterogeneidad y proceso del equipo que el modelo no tiene. La banda del foco se ve: en armónica el hígado a 14–18
+cm queda 17 grises (−5,5 dB) bajo el del foco y la pared del campo cercano de la pareja 6, 70 → 55 de media frente a 79
+real, porque la TGC nominal no compensa la banda (`psf-nominal-tissue`). El campo cercano de la armónica frente al
+fundamental, con GPU, −3,4 → −4,7 dB (el tejido, +0,1 → −0,1 dB; el ruido, +3,2 dB). Calibraciones: el gemelo de las
+caras (decisión 57) cambia poco a incidencia normal (porta 1,616 → 1,639, VCI 1,610 → 1,645, VSH 1,512 → 1,541, cápsula
+1,784 → 1,778, Morison 2,163 → 2,186, diafragma 2,140 → 2,146) y baja algo en las caras oblicuas, que la PSF más ancha
+reparte (porta a 40° 1,397 → 1,373, VSH a 40° 1,131 → 1,107). Con GPU (banco completo, fundamental y compuesto) las
+paredes de vaso a 0–20° se mueven ±0,05 (subxifoidea 1,44 → 1,40), Morison 2,26 → 2,35 (ya sobre 2,2 desde la decisión
+81), las líneas de la pared (+4–14 dB sobre el hígado) se mueven ≤ 1,5 dB, la neblina de la cortina baja 6–7 grises y
+la composición no cambia (N_eff 1,48–1,70 a 20–60 mm, como antes). La mediana del hígado entero baja 5–12 grises (98–104 → 86–95: el hígado fuera del
+foco) y el perfil en profundidad deja de ser plano (−0,25 → +0,43 dB/cm en la subxifoidea, cuyo hígado sube hacia el
+foco); G4 (media escala en la banda del foco: 98) y el hígado de la e2e (92, > 85) se cumplen. Coste (GPU M4, carga
+8–28, antes y después intercalados): cuadro 9,59 → 9,70 ms sin compuesto y 10,57 → 10,69 con él; pasada B 3,28 → 3,34
+ms. Arranque con SwiftShader (carga 8–10, tres rondas intercaladas): 73,5 / 53,8 / 35,3 → 65,0 / 51,6 / 34,7 s. Chunk
+principal 318,1 → 319,7 kB de 320 (los gemelos en TS de la ganancia focal y de la bajada, en `beamEcho.ts`, quedan fuera
+de él).
 
 **Verificación.** `psfDepth.test.ts`: la pendiente −2βσ_f² (−0,092 MHz/cm con 60 % de banda y 0,5 dB/cm/MHz), f(r)
 monótona y > 0, el pulso ∝ 1/f(r) y el de la armónica más largo, la PSF lateral 1,4–3 mm a 6–10 cm que crece después y
 no pasa de 5,5 mm a 18 cm, la apertura de emisión min(26, F/2,5) (el Doppler, 26), la ganancia focal (1 en el foco del
 preajuste, la integral de los haces gaussianos en los dos modos, su pico a ≤ 15 % antes del foco elegido, −3,5 a −5 dB a
-2 cm en fundamental y más en armónica, la potencia fija), el GLSL con las mismas fórmulas y el cableado del renderizador real sobre WebGL falso (cono, referencia,
-σ por fila, la penumbra de A, en los dos modos y con el foco a 50 y 90 mm). `harmonic.test.ts`, `pleura.test.ts`, `steeredSample.test.ts` y
-`shaderLimits.test.ts` (huella del main de B d2e0f2cd7f45185c → ca057917ce3a1b32: el eco lleva `focalGain`) al día.
-Gemelos B → C → D con el pulso por fila, la PSF de la imagen B y la ganancia focal: `compoundSpeckle.test.ts` (la ley de la
-composición con k2 a la frecuencia del eco; el exceso de decorrelación de los tres planos, artefacto fijado, baja a −0,025
-a 90 mm), `interfaceTwin.test.ts` (la tendencia con la profundidad de una cara normal, con el pulso más largo, frente a
-haces gaussianos coherentes a la frecuencia del eco; M3 de la porta ≥ 1,36, el borde bajo de las paredes reales),
-`wallTwin.test.ts` (métricas con la corrección de difracción), `pleuraTwin.test.ts` (la PSF, el pulso y la ganancia
-focal de la imagen B; sus niveles, con la corrección de difracción) y `fidelityScene.test.ts`; `interfaceEcho.test.ts`
-con la anchura del eco del pulso a 80 mm (0,77 mm). e2e: «foco (decisión 84)» (el deslizador mueve la banda: +8 de gris
-o más a 20–60 mm con el foco a 50 frente a 140 mm, y al revés a 140–180 mm), G4 de la composición a media escala en la
-banda del foco y el campo cercano de la armónica < −2 dB, como antes. Capturas con GPU antes y después de la intercostal, la subxifoidea, el flanco y
-la renal en armónica. Limitación nueva `psf-nominal-tissue`.
+2 cm en fundamental y más en armónica, la potencia fija), el GLSL con las mismas fórmulas (también la coherencia de
+curvatura de las caras) y el cableado del renderizador real sobre WebGL falso (cono, referencia y exponente, σ por fila,
+la penumbra de A, en los dos modos y con el foco a 50 y 90 mm). `harmonic.test.ts`, `pleura.test.ts`,
+`steeredSample.test.ts`, `retroTexture.test.ts` (la dirección de la mirada con el k2 de su fase) y `shaderLimits.test.ts`
+(huella del main de B d2e0f2cd7f45185c → ca057917ce3a1b32: el eco lleva `focalGain`) al día. Gemelos B → C → D con el
+pulso por fila, la PSF de la imagen B y la ganancia focal: `compoundSpeckle.test.ts` (la ley de la composición con k2 a la
+frecuencia del eco; el exceso de decorrelación de los tres planos, artefacto fijado, baja a −0,025 a 90 mm),
+`interfaceTwin.test.ts` (la tendencia con la profundidad de una cara normal, con el pulso más largo, frente a haces
+gaussianos coherentes a la frecuencia del eco; M3 de la porta ≥ 1,36, el borde bajo de las paredes reales),
+`wallTwin.test.ts` (métricas con la corrección de difracción), `pleuraTwin.test.ts` (la PSF, el pulso y la ganancia focal
+de la imagen B; sus niveles, con la corrección de difracción) y `fidelityScene.test.ts`; `interfaceEcho.test.ts` con la
+anchura del eco del pulso a 80 mm (0,77 mm). e2e: «foco (decisión 84)» (el deslizador mueve la banda: +8 de gris o más a
+20–60 mm con el foco a 50 frente a 140 mm, y al revés a 140–180 mm), G4 de la composición a media escala en la banda del
+foco y el campo cercano de la armónica < −2 dB, como antes. Capturas con GPU antes y después de la intercostal, la
+subxifoidea, el flanco y la renal en armónica y en fundamental, y de la intercostal con el foco a 50 y a 140 mm.
+Revisión adversarial de contexto limpio: la ganancia focal de la armónica iba como la raíz (corregido: la fuente p1²), la
+textura de la pared y la del psoas en las miradas dirigidas con el k2 nominal, la ley del compuesto del banco con el k2
+nominal, el gemelo de la pleura sin la PSF nueva y la penumbra de A con la apertura fija (corregidos); la rugosidad con el
+k0 nominal y las reverberaciones, documentadas; la recepción en la ganancia focal, añadida. Limitación nueva
+`psf-nominal-tissue`.
 
 ## Iteración 2 — informe de cierre (22-09-2026)
 

@@ -162,9 +162,10 @@ test('el speckle del parénquima hepático tiene estadística de Rayleigh', asyn
 });
 
 test('el banco de fidelidad mide el moteado del hígado despejado como un campo ideal', async ({ page }) => {
-  // Banco de fidelidad (decisión 52). Con GPU real (M4) la subxifoidea del sano da SNR 1,93,
-  // fracción oscura 0,065, grietas 0,07, grano axial 0,69 mm, lateral 0,95–1,05 × la PSF y lóbulos
-  // < 0,06; la imagen mostrada, hígado en 144 de gris (mediana). Un defecto del moteado (intensidad,
+  // Banco de fidelidad (decisión 52). Con GPU real (M4) la subxifoidea del sano da SNR 1,77,
+  // fracción oscura 0,07, grietas 0,05, grano axial 0,77 mm (0,70 antes del pulso que se alarga con la profundidad,
+  // decisión 84), lateral 0,93–1,08 × la PSF y lóbulos < 0,03; la imagen mostrada, hígado en 92 de gris (mediana). Un
+  // defecto del moteado (intensidad,
   // magnitudes antes del haz, retícula periódica), una sombra dentro de la máscara o una lectura de
   // la imagen al revés lo sacan de estas bandas (src/validation/fidelity*.test.ts).
   test.setTimeout(240_000);
@@ -192,8 +193,9 @@ test('el banco de fidelidad mide el moteado del hígado despejado como un campo 
     expect(b.fwhmLateralMm / b.beamFwhmMm, JSON.stringify(b)).toBeLessThan(1.25);
   }
   // la imagen mostrada se lee con la orientación correcta (la máscara del hígado cae en hígado) y el
-  // preajuste abdominal (decisión 53) deja el hígado a media escala: mediana 99–103, desviación 16
-  // con GPU real; la luz, casi negra
+  // preajuste abdominal (decisión 53) deja el hígado a media escala: mediana 92, desviación 16 con GPU real (97
+  // antes de la banda del foco de la decisión 84, que deja algo más oscuro el hígado somero de la subxifoidea); la
+  // luz, casi negra
   const d = s.display!;
   const dtag = JSON.stringify({ liver: d.liver, lumen: d.lumen });
   expect(d.liver.pixels, dtag).toBeGreaterThan(1000);
@@ -318,8 +320,8 @@ test('foco (decisión 84): la banda del foco es algo más clara y se mueve con e
   // La intensidad de la emisión en el eje culmina en el foco (`focalGain`, con la potencia emitida fija y la referencia
   // en el foco del preajuste): con el foco somero se aclara el hígado somero y se oscurece el hondo, y al revés.
   // Ventana intercostal (hígado hasta 18 cm), fundamental y una mirada. Con GPU real (M4, densidad 1), gris del hígado
-  // puro a 20–60 / 60–100 / 100–140 / 140–180 mm: 105 / 90 / 79 / 72 con el foco a 50 mm, 92 / 97 / 94 / 82 con el de
-  // por defecto (90 mm) y 86 / 87 / 90 / 91 a 140 mm.
+  // puro a 20–60 / 60–100 / 100–140 / 140–180 mm: 104 / 94 / 82 / 75 con el foco a 50 mm, 92 / 98 / 94 / 86 con el de
+  // por defecto (90 mm) y 88 / 88 / 94 / 88 a 140 mm (antes, 101 / 99 / 95 / 95 con cualquier foco).
   test.setTimeout(300_000);
   const errors = await bootWithoutErrors(page);
   const bandsAt = (focusMm: number) =>

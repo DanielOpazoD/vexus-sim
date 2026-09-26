@@ -169,7 +169,10 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   con la otra regla); ninguna de las dos es la ley de un eco especular. La σ elevacional de la lente no lleva la bajada
   (la coherencia de curvatura de las caras usa el número de onda del eco con esa σ fija) y la rugosidad fina (Ament),
   el k0 nominal con que se ajustaron sus σz. La penumbra de la pasada A promedia la apertura de emisión sin la
-  apodización de Hann. El Doppler (color y PW) conserva el haz sin bajada ni apodización.
+  apodización de Hann. La TGC nominal compensa la atenuación, no la banda del foco: con el foco por defecto el hígado a
+  14–18 cm queda 4–5 dB bajo el del foco en fundamental y 4–7 dB en armónica, y los primeros 2 cm, 4–5 y 5–6,5 dB,
+  como en un equipo sin tocar su TGC (el preajuste y el operador la corrigen en parte). El Doppler (color y PW) conserva el haz sin
+  bajada ni apodización.
 - **Lóbulos laterales simplificados, sin lóbulos de rejilla ni en elevación** (`no-sidelobes`): desde la decisión 76 el
   núcleo lateral lleva un pedestal gaussiano con una pantalla de fase fija (ISLR −24 dB en el paciente de referencia),
   no el diagrama real de la apertura; la reverberación de la pared es de primer y segundo orden y solo de los ecos

@@ -81,3 +81,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [75](DECISIONS.md#L2304) | Interfaz limpia: ventanas VExUS como tarjetas, la imagen manda y consola con divulgación progresiva | vigente |
 | [76](DECISIONS.md#L2343) | Ecos parásitos del modo fundamental: lóbulos laterales con la aberración de la pared y reverberación de sus caras | vigente |
 | [77](DECISIONS.md#L2404) | Armónica tisular: el modo B de un equipo moderno, con su haz, su acumulación y su ruido | vigente |
+| [78](DECISIONS.md#L2491) | Tríadas portales finas: el hígado deja de ser un moteado uniforme | vigente |

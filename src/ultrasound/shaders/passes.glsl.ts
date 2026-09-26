@@ -17,6 +17,7 @@ import {
 import { SPECKLE_LOOK_GLSL, SPECKLE_TISSUE_GLSL } from '../speckleField';
 import { WALL_FACE_ECHO_GLSL, WALL_TEXTURE_GLSL } from '../wallTexture';
 import { REST_TEXTURE_GLSL } from '../restTexture';
+import { PORTAL_TRIADS_GLSL } from '../portalTriads';
 import { CLUTTER, SIDELOBE_PHASE_GLSL } from '../clutter';
 import { RECEIVER_GLSL, glslFloat } from '../receiver';
 import { HARMONIC_GLSL } from '../harmonic';
@@ -480,6 +481,8 @@ vec2 fieldForPh(vec3 m, float se, int tissue, float ph0, vec3 g, vec3 b0, Warp w
   if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, normalize(b0 + g / uSteer.w), w);
   // el resto del abdomen: asas y grasa mesentérica (decisión 74, restTexture.ts)
   if (tissue == T_BOWEL) het *= restTexture(m);
+  // tríadas portales finas del hígado (decisión 78, portalTriads.ts)
+  if (tissue == T_LIVER) het *= portalTriad(m);
   return f * tissueBack(tissue) * het;
 }
 vec2 sampleSidePh(vec3 p, float se, Cls center, float ph0, vec3 g, bool withCurtain, Warp w) {
@@ -693,6 +696,7 @@ ${ELEV_SIGMA_GLSL}${LATERAL_PSF_GLSL}
 ${SPECKLE_TISSUE_GLSL}
 ${WALL_TEXTURE_GLSL}
 ${REST_TEXTURE_GLSL}
+${PORTAL_TRIADS_GLSL}
 ${INTERFACE_ECHO_GLSL}
 ${WALL_FACE_ECHO_GLSL}
 
@@ -733,6 +737,8 @@ vec2 fieldFor(vec3 m, float se, int tissue, vec3 dir, Warp w) {
   if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, dir, w);
   // el resto del abdomen: asas y grasa mesentérica (decisión 74, restTexture.ts)
   if (tissue == T_BOWEL) het *= restTexture(m);
+  // tríadas portales finas del hígado (decisión 78, portalTriads.ts)
+  if (tissue == T_LIVER) het *= portalTriad(m);
   return f * tissueBack(tissue) * het;
 }
 
@@ -1307,5 +1313,22 @@ void main() {
   o0 = vec4(float(c.tissue), float(c.vessel), c.bd, c.ifd);
   o1 = vec4(v, float(c.iface));
   o2 = faceGradient(c, m);
+}
+`;
+
+/**
+ * Consulta de las tríadas portales (solo pruebas, decisión 78): el factor de `portalTriad` en puntos MATERIALES de
+ * `uPoints`, con el mismo GLSL que la pasada B. La e2e lo compara punto a punto con el gemelo TS (`triadParity`): el
+ * hash entero da las mismas tríadas en cualquier GPU y en TS.
+ */
+export const FRAG_TRIAD_QUERY = /* glsl */ `#version 300 es
+precision highp float;
+precision highp int;
+${PORTAL_TRIADS_GLSL}
+uniform sampler2D uPoints;
+out vec4 o0;
+void main() {
+  vec3 m = texelFetch(uPoints, ivec2(gl_FragCoord.xy), 0).xyz;
+  o0 = vec4(portalTriad(m), 0.0, 0.0, 1.0);
 }
 `;

@@ -79,3 +79,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [73](DECISIONS.md#L2255) | Pared viscoelástica de la VCI: el latido la mueve la mitad y la respiración igual | vigente |
 | [74](DECISIONS.md#L2281) | El resto del abdomen deja de parecer hígado: asas con su firma y grasa mesentérica | vigente |
 | [75](DECISIONS.md#L2303) | Interfaz limpia: ventanas VExUS como tarjetas, la imagen manda y consola con divulgación progresiva | vigente |
+| [76](DECISIONS.md#L2342) | Ecos parásitos del modo fundamental: lóbulos laterales con la aberración de la pared y reverberación de sus caras | vigente |

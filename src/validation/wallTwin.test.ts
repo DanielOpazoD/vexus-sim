@@ -268,8 +268,10 @@ describe('pared realista con el gemelo de la imagen (decisión 62)', () => {
       for (let k = 0; k < a0.env.length; k++) {
         const tk: Tissue = a0.tissue[k];
         if (tk !== tissue || a0.rowR(a0.i0 + Math.floor(k / a0.nL)) < WALL_MM + 6) continue;
-        // sin transmisión, bit a bit el mismo campo (la textura y las caras nuevas son solo de la pared)
-        expect(a0.env[k]).toBe(b0.env[k]);
+        // sin transmisión, el mismo campo (la textura y las caras nuevas son solo de la pared): lo único que la pared
+        // lleva debajo es su reverberación (decisión 76), a −50 dB bajo sus ecos: ≤ 1 % de la envolvente media del
+        // tejido (≈ 1 sin transmisión), también en los puntos oscuros del moteado
+        expect(Math.abs(a0.env[k] - b0.env[k])).toBeLessThanOrEqual(0.01);
         now.push(aT.env[k]);
         before.push(bT.env[k]);
       }

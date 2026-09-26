@@ -23,6 +23,7 @@ import { TISSUES, Tissue, attenuationDbPerCm } from '../../anatomy/tissues';
 import { cross, dot, normalize, type Vec3 } from '../../core/vec3';
 import { lateralSigmaMm } from '../../ultrasound/beamModel';
 import { restTexture } from '../../ultrasound/restTexture';
+import { applyComplexKernel, clutterParams, lateralKernel, reverbGateWeight } from '../../ultrasound/clutter';
 import {
   IFACE_MIN_COS,
   IFACE_REACH_MM,
@@ -160,9 +161,11 @@ export function wallTwin(
   const i0 = Math.max(0, Math.floor(o.r0 / dr));
   const i1 = Math.min(g.samples - 1, Math.ceil(o.r1 / dr));
   let RL = 0;
-  const kLat = new Map<number, number[]>();
+  // ecos parásitos del paciente (decisión 76): pedestal de lóbulos laterales y réplicas de reverberación de la pared
+  const cp = clutterParams(scene.wallThickness(), scene.torso.fatMm);
+  const kLat = new Map<number, Array<[number, number]>>();
   for (let i = i0; i <= i1; i++) {
-    const k = unitKernel(Math.max(0.35, lateralSigmaMm(rowR(i), g.focusMm, g.beam) / pitch(rowR(i))), 14);
+    const k = lateralKernel(Math.max(0.35, lateralSigmaMm(rowR(i), g.focusMm, g.beam) / pitch(rowR(i))), cp);
     kLat.set(i, k);
     RL = Math.max(RL, (k.length - 1) / 2);
   }
@@ -258,17 +261,34 @@ export function wallTwin(
       }
     }
   }
-  // C
+  // C (con las réplicas de reverberación de FRAG_AXIAL: el campo desplazado W y 2W filas enteras hacia arriba, con la
+  // compuerta de los ecos fuertes; la fila fuente debe estar en el parche calculado)
+  const shift = Math.round(cp.wallMm / dr);
   const axR = new Float64Array(wL * nR);
   const axI = new Float64Array(wL * nR);
+  const rawAt = (a: number, b: number): [number, number] => {
+    const n = a * wR + b;
+    return b >= 0 && b < wR ? [re[n], im[n]] : [0, 0];
+  };
   for (let a = 0; a < wL; a++)
     for (let i = 0; i < nR; i++) {
       let sr = 0;
       let si = 0;
+      const row = i0 + i;
+      const reps: Array<[number, number]> = [];
+      if (shift > 0 && row >= shift && cp.reverb[0] > 0) reps.push([shift, cp.reverb[0]]);
+      if (shift > 0 && row >= 2 * shift && cp.reverb[1] > 0) reps.push([2 * shift, cp.reverb[1]]);
       for (let q = -RA; q <= RA; q++) {
-        const n = a * wR + i + RA + q;
-        sr += kA[q + RA] * re[n];
-        si += kA[q + RA] * im[n];
+        const b = i + RA + q;
+        const [fr, fi] = rawAt(a, b);
+        sr += kA[q + RA] * fr;
+        si += kA[q + RA] * fi;
+        for (const [d, gain] of reps) {
+          const [rr, ri] = rawAt(a, b - d);
+          const gate = reverbGateWeight(Math.hypot(rr, ri));
+          sr += gain * kA[q + RA] * rr * gate;
+          si += gain * kA[q + RA] * ri * gate;
+        }
       }
       axR[a * nR + i] = sr;
       axI[a * nR + i] = si;
@@ -277,15 +297,11 @@ export function wallTwin(
   const env = new Float64Array(nL * nR);
   for (let i = 0; i < nR; i++) {
     const kl = kLat.get(i0 + i)!;
-    const R = (kl.length - 1) / 2;
     for (let jj = 0; jj < nL; jj++) {
-      let sr = 0;
-      let si = 0;
-      for (let q = -R; q <= R; q++) {
+      const [sr, si] = applyComplexKernel(kl, (q) => {
         const n = (jj + RL + q) * nR + i;
-        sr += kl[q + R] * axR[n];
-        si += kl[q + R] * axI[n];
-      }
+        return [axR[n], axI[n]];
+      });
       env[i * nL + jj] = Math.hypot(sr, si) * 1.1283792;
     }
   }

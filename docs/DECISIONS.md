@@ -2339,6 +2339,42 @@ próximas, 24 mm), `controllers.test.ts` (textos del HUD sin cambios) y la e2e d
 «Medir» y «Docente», «Suprahepática», «Capturar», «Apnea esp…» y modo alumno ciego); capturas antes y después a
 1600 × 1000 y 1280 × 800.
 
+## 76. Ecos parásitos del modo fundamental: lóbulos laterales con la aberración de la pared y reverberación de sus caras
+
+**Contexto.** El dueño aprobó (26-09-2026) el plan de fidelidad cuyo primer punto es lo que el juez ciego de la ronda
+2 señalaba como delator: entre otras cosas, «luces sin ruido» (vasos y vesícula negros puros). La PSF lateral era solo
+el lóbulo principal gaussiano (`no-sidelobes`) y la pared no reverberaba: en un ecógrafo real el modo fundamental ensucia
+las luces con la neblina de los lóbulos laterales, que la aberración de fase de la grasa y el músculo sube por encima del
+ideal de la apertura, y con la reverberación de las caras brillantes de la pared entre ellas y la sonda (el artefacto
+clásico de la parte anterior de la vesícula, que puede imitar barro).
+**Opciones.** (1) Un suelo de ruido más alto: es uniforme y no depende de lo que rodea a la luz. (2) Un pedestal
+gaussiano positivo en el núcleo lateral: suma de forma coherente sobre un reflector continuo y sube ~1 dB los ecos
+especulares calibrados (β, las cocientes de cápsula, Morison y pared). (3) Réplicas del campo entero bajo la pared:
+copian el moteado y las estrías del músculo dentro de la vesícula. (4) Las elegidas.
+**Decisión.** (a) Lóbulos laterales: el núcleo de la pasada D suma al lóbulo principal real un pedestal de σ 7 veces la
+del principal, con energía integrada ISLR −24 dB en el paciente de referencia y una pantalla de fase fija (la aberración:
+`SIDELOBE_PHASES`, generador congruencial, la misma tabla en TS y GLSL). Su suma coherente sobre un reflector continuo
+promedia cero (la ganancia de una cara continua cambia < 3 %), pero su energía lleva a las luces el moteado de lo que las
+rodea. Una línea sin contacto no lo recibe (se escala con el acoplamiento de la línea de destino). (b) Reverberación: la
+pasada C suma al campo dos réplicas del propio campo desplazadas hacia arriba el grosor de la pared (W) y 2W filas
+enteras, a −50 y −62 dB, solo de los ecos fuertes (umbral suave sobre el módulo del campo en bruto: 1,5–3,5, frente al
+0,89 medio del moteado hepático): las fascias, el peritoneo y las caras brillantes de más abajo, ancladas a la sonda.
+(c) Los dos crecen con la grasa subcutánea (+0,35 dB por mm sobre 14 mm) y la armónica tisular (decisión 77) los baja
+12 dB. Módulo `ultrasound/clutter.ts` (parámetros, núcleo complejo, réplicas y compuerta), usado por los gemelos de CPU
+(`wallTwin`, `interfaceTwin`, la prueba del receptor) y reflejado en `FRAG_AXIAL`/`FRAG_LATERAL`.
+**Consecuencias.** Las luces de los vasos del hígado y de la VCI llevan una neblina tenue junto a sus bordes; la parte
+anterior de la vesícula, réplicas débiles de su pared anterior; el campo lejano bajo caras brillantes, ecos fantasma muy
+tenues. En el tejido no cambia nada visible (el pedestal no cambia el nivel incoherente y las réplicas quedan bajo el
+moteado). Una línea sin contacto sigue oscura. Coste: la pasada D recorre hasta ±40 líneas donde el pedestal lo pide.
+Limitaciones: `no-sidelobes` pasa a «sin lóbulos de rejilla ni en elevación»; la reverberación es de primer y segundo orden
+y su compuerta es por módulo, no por la cara que la produce.
+**Verificación.** `clutter.test.ts`: núcleo de energía unidad, energía del pedestal ≈ ISLR, ganancia coherente de una
+cara continua < 3 %, sin pedestal en una línea sin contacto, más grasa más ecos parásitos, −12 dB con armónica, réplicas
+a W y 2W con la compuerta, y las mismas constantes y la misma pantalla de fase en las pasadas C y D. Los gemelos
+actualizados (`wallTwin.test.ts`: la reverberación de la pared es lo único que llega al tejido de debajo, ≤ 1 % de la
+envolvente media; `interfaceTwin.test.ts`: la porta a 40° queda en 1,399). Capturas con GPU (M4) de la subxifoidea, la
+intercostal, la vesícula y la renal frente a `main`.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

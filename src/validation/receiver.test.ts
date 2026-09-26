@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CLUTTER, applyComplexKernel, clutterParams, lateralKernel } from '../ultrasound/clutter';
 import {
   RECEIVER_GLSL,
   RECEIVER_NOISE,
@@ -66,7 +67,8 @@ function omittedVsNoise(depthMm: number, seed: number): { summed: number; axial:
       }
       return [re, im] as const;
     });
-    const wL = unitKernel(Math.max(0.35, latSigmaMm(r, focus) / linePitch(r)), 14);
+    // D con el pedestal de lóbulos laterales del paciente de referencia (decisión 76)
+    const wL = lateralKernel(Math.max(0.35, latSigmaMm(r, focus) / linePitch(r)), clutterParams(28, CLUTTER.fatRefMm));
     const RL = (wL.length - 1) / 2;
     let p0 = 0;
     let p1 = 0;
@@ -76,12 +78,7 @@ function omittedVsNoise(depthMm: number, seed: number): { summed: number; axial:
       const [a, b] = raw[v * LINES + u];
       p0 += a * a + b * b;
       p1 += ax[u][0] ** 2 + ax[u][1] ** 2;
-      let re = 0;
-      let im = 0;
-      for (let k = -RL; k <= RL; k++) {
-        re += wL[k + RL] * ax[u + k][0];
-        im += wL[k + RL] * ax[u + k][1];
-      }
+      const [re, im] = applyComplexKernel(wL, (k) => [ax[u + k][0], ax[u + k][1]]);
       p2 += re * re + im * im;
       n++;
     }
@@ -128,8 +125,8 @@ describe('Transitorio del campo cercano bajo el ruido del receptor', () => {
   it('tras la PSF (C y D) lo omitido llega a ≈ ruido/7 a 60 mm y ruido/8 a 90 mm: el suelo sube ≤ 0,1 dB', () => {
     // el gemelo filtra como las pasadas C y D (topes del núcleo y σ mínimas)
     expect(FRAG_AXIAL).toContain('for (int k = -12; k <= 12; k++)');
-    expect(FRAG_AXIAL).toContain('oField = acc / sqrt(wsum);');
-    expect(FRAG_LATERAL).toContain('for (int k = -14; k <= 14; k++)');
+    expect(FRAG_AXIAL).toContain('oField = (acc + uReverb.y * acc1 + uReverb.z * acc2) / sqrt(wsum);');
+    expect(FRAG_LATERAL).toContain(`for (int k = -${CLUTTER.lateralMaxLines}; k <= ${CLUTTER.lateralMaxLines}; k++)`);
     expect(FRAG_LATERAL).toContain('max(0.35, sigmaMm / lineSpacing)');
     // la profundidad mínima del equipo (60 mm) es el peor caso: más muestras por celda axial del transitorio
     for (const [depth, bound] of [

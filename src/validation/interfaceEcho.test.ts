@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { CLUTTER } from '../ultrasound/clutter';
 import {
   INTERFACES,
   INTERFACE_COUNT,
@@ -318,9 +319,11 @@ describe('Uniforms y GLSL del eco de interfaz', () => {
     // la muestra de la imagen (decisión 61: `mediumField`, una vez y fuera de bucles)
     expect(FRAG_RAWFIELD).toContain('return field + vec2(interfaceEcho(c, m, dir, r, se, w), 0.0);');
     expect(FRAG_RAWFIELD).not.toMatch(/uSpecGain|pow\(cosI, 4\.0\)/);
-    // β se midió con estas pasadas C y D: si cambian, hay que re-derivarlo (interfaceTwin.test.ts)
+    // β se midió con estas pasadas C y D: si cambian, hay que re-derivarlo (interfaceTwin.test.ts). El pedestal de
+    // lóbulos laterales de la decisión 76 tiene fase aleatoria: su suma coherente sobre un reflector continuo promedia
+    // cero y β no cambia (la ganancia coherente del gemelo, `lateralCoherentGain`, ya lo incluye)
     expect(FRAG_AXIAL).toContain('k <= 12');
     expect(FRAG_LATERAL).toContain('max(0.35,');
-    expect(FRAG_LATERAL).toContain('k <= 14');
+    expect(FRAG_LATERAL).toContain(`k <= ${CLUTTER.lateralMaxLines}`);
   });
 });

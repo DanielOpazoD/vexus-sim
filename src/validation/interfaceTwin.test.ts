@@ -295,7 +295,8 @@ describe('Gemelo B→C→D de los ecos de interfaz (decisión 57)', () => {
   });
 
   it('M3: la porta (vaina de Glisson) brilla en los tres tramos y supera a la VSH fuera de la normal', () => {
-    for (const from of [0, 20, 40] as const) expect(bin(R.portal, from).ratio, `${from}°`).toBeGreaterThanOrEqual(1.4);
+    // (1,39: el pedestal de lóbulos laterales de la decisión 76 resta ~0,2 % a la ganancia coherente de una cara continua)
+    for (const from of [0, 20, 40] as const) expect(bin(R.portal, from).ratio, `${from}°`).toBeGreaterThanOrEqual(1.39);
     expect(bin(R.portal, 20).dDb - bin(R.hv80, 20).dDb).toBeGreaterThanOrEqual(5);
     expect(bin(R.portal, 40).dDb - bin(R.hv80, 40).dDb).toBeGreaterThanOrEqual(5);
     expect(bin(R.portal, 0).dDb).toBeGreaterThanOrEqual(bin(R.hv80, 0).dDb);

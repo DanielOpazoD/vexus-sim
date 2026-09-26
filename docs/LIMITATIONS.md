@@ -67,8 +67,10 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 
 ## Imagen
 
-- **Sin lóbulos laterales ni de rejilla** (`no-sidelobes`); una luz vascular no recibe ecos de
-  reflectores fuera del eje salvo por el grosor de corte.
+- **Lóbulos laterales simplificados, sin lóbulos de rejilla ni en elevación** (`no-sidelobes`): desde la decisión 76 el
+  núcleo lateral lleva un pedestal gaussiano con una pantalla de fase fija (ISLR −24 dB en el paciente de referencia),
+  no el diagrama real de la apertura; la reverberación de la pared es de primer y segundo orden y solo de los ecos
+  fuertes (compuerta por módulo del campo, no por la cara que la produce).
 - **Sin imagen armónica** (`no-harmonics`); el conmutador no existe en la consola.
 - **Tienen eco de interfaz los vasos, la vesícula, la cápsula hepática, el diafragma, el riñón, la pleura
   parietal y la pared, pero no el gas intestinal** (`interface-echo-scope`, decisiones 57, 61 y 62): el gas

@@ -19,6 +19,10 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Cambiado
 
+- La pestaña Docente (verdad fisiológica, intervenciones y diagnóstico) se descarga la primera vez que se activa el modo
+  docente: el alumno no la carga y el chunk principal baja ~7 kB. El JS total del presupuesto del bundle cuenta lo que
+  puede descargar un usuario; los ganchos de prueba (`?e2e`) quedan fuera. Una prueba vigila que ningún `import`
+  estático vuelva a meter en el chunk principal los módulos diferidos.
 - Build aún más ligero: los nombres propios del texto de los shaders (funciones, variables, constantes, macros y structs) se publican con una o dos letras, con el mismo mapa en todos los programas; los uniforms, las entradas y salidas y todo lo que nombra el código JS conservan su nombre. El chunk principal baja de 314,9 a 300,2 kB y el JS total de 997,9 a 983,2 kB; el fuente no cambia y una prueba comprueba que cada programa del build es el original con los nombres cambiados.
 - Hígado con tríadas portales (78): el parénquima deja de ser un moteado uniforme. Salen dispersos focos brillantes y trazos cortos, la mayoría con el centro oscuro: las ramas portales finas con su vaina fibrosa, orientadas hacia el hilio y ancladas al tejido (no hierven al mover la sonda).
 - Armónica tisular (77): la imagen arranca en armónica tisular (THI, emisión a 1,75 MHz e imagen a 3,5 MHz), como un equipo abdominal moderno. El campo cercano sale más limpio (sin el transitorio del transductor, con la piel y la grasa algo más oscuras), baja la neblina de los lóbulos laterales y de la reverberación de la pared, y hay algo más de ruido en profundidad; el tejido no cambia. Se apaga en Adquirir → Avanzado → «Armónica (THI)», y el HUD lo indica («THI 3,5 MHz»). El color y el PW no cambian.

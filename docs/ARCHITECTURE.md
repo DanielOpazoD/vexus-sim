@@ -95,11 +95,17 @@ hígado por marching cubes sobre el mismo SDF, grupo espejo por el marco levógi
 `src/ui/cutMapView.ts` + `src/ui/cutMapWorker.ts` (mapa de tejidos del plano calculado en un Worker
 con `AnatomyQuery`, decisión 25), `src/ui/displays.ts` (overlay, ECG, espectrograma),
 `src/ui/panel.ts` (compone la consola; cada pestaña vive en `src/ui/panel/*` sobre la interfaz
-`PanelContext`, con secciones plegables), `src/ui/startPointCards.ts` (ventanas VExUS del carril izquierdo),
+`PanelContext`, con secciones plegables; la pestaña Docente se carga con `import()` la primera vez que se activa el
+modo docente, así que el alumno no descarga su código), `src/ui/startPointCards.ts` (ventanas VExUS del carril izquierdo),
 `src/ui/disclosure.ts` (plegables y ventanas emergentes), `src/ui/navigator3d/*` (constructores de geometría puros: cuerpo, órganos, tubos,
 rótulos, sonda), `src/ui/probeInput.ts` (gestos y teclado sobre la imagen),
 `src/app/store.ts` (estado de UI). Toda vista lee del `Simulator`; ninguna escribe en él salvo la
 pose de la sonda y los ajustes del equipo.
+
+Carga diferida: el chunk principal no importa de forma estática los ganchos de prueba (`?e2e` o desarrollo), el
+navegador 3D (three.js, tras el primer cuadro) ni la pestaña Docente (`codeSplitting.test.ts`). El presupuesto del
+bundle (`tools/ci/bundle-budget.ts`) cuenta en el JS total lo que puede descargar un usuario: los ganchos de prueba
+quedan fuera, con su límite por chunk.
 
 ## Anatomía compartida CPU/GPU
 

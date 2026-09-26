@@ -27,6 +27,10 @@
 // 2026-09-26: el build renombra además los identificadores declarados en el texto GLSL (`tools/build/glslMangle.ts`,
 // segunda etapa de `glslMinify.ts`): index baja de 314,9 a 300,2 kB y el JS total de 997,9 a 983,2 kB (vite build
 // sobre main 8bec4d7). Los límites no cambian.
+// 2026-09-26: la pestaña Docente (verdad, intervenciones y diagnóstico) pasa a su propio chunk, que solo se carga en
+// modo docente: index baja de 326,2 a 319,3 kB con la aurícula de lazo cerrado (decisión 79, vite build sobre
+// 22c8547). El JS total cuenta lo que puede descargar un usuario: los ganchos de prueba (`testHooks`, solo con `?e2e`
+// o en desarrollo, 56 kB) salen del total y conservan su límite por chunk. Los límites no cambian.
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -38,6 +42,8 @@ const BUDGETS: Array<[RegExp, number]> = [
   [/\.js$/, 120 * KB], // cualquier otro chunk
 ];
 const TOTAL_JS_BUDGET = 1000 * KB;
+/** Chunks que un usuario nunca descarga (solo `?e2e` o desarrollo): fuera del total, con su límite por chunk. */
+const TEST_ONLY = /^testHooks-.*\.js$/;
 
 const dir = join(process.cwd(), 'dist', 'assets');
 let files: string[];
@@ -53,12 +59,17 @@ const rows: string[][] = [];
 for (const f of files) {
   if (f.endsWith('.map')) continue;
   const size = statSync(join(dir, f)).size;
-  if (f.endsWith('.js')) totalJs += size;
+  if (f.endsWith('.js') && !TEST_ONLY.test(f)) totalJs += size;
   const budget = BUDGETS.find(([re]) => re.test(f));
   const max = budget ? budget[1] : Infinity;
   const ok = size <= max;
   if (!ok) over = true;
-  rows.push([f, `${(size / KB).toFixed(1)} kB`, Number.isFinite(max) ? `${(max / KB).toFixed(0)} kB` : '—', ok ? 'ok' : 'OVER']);
+  rows.push([
+    TEST_ONLY.test(f) ? `${f} (solo pruebas)` : f,
+    `${(size / KB).toFixed(1)} kB`,
+    Number.isFinite(max) ? `${(max / KB).toFixed(0)} kB` : '—',
+    ok ? 'ok' : 'OVER',
+  ]);
 }
 const w = rows.reduce((m, r) => Math.max(m, r[0].length), 10);
 for (const r of rows) console.log(`${r[0].padEnd(w)}  ${r[1].padStart(10)}  ${r[2].padStart(8)}  ${r[3]}`);

@@ -40,9 +40,15 @@ export enum Tissue {
   RenalCapsule = 25,
   /** Pelvis renal: orina, anecoica, en el centro del seno. */
   RenalPelvis = 26,
+  /** Psoas mayor (decisión 81): músculo retroperitoneal junto a la columna, hipoecoico y estriado. */
+  Psoas = 27,
+  /** Cuadrado lumbar (decisión 81): lámina muscular contra la pared posterior, lateral al psoas. */
+  QuadratusLumborum = 28,
+  /** Grasa retroperitoneal (decisión 81): pararrenal y perivascular, detrás del peritoneo parietal posterior. */
+  RetroperitonealFat = 29,
 }
 
-export const TISSUE_COUNT = 27;
+export const TISSUE_COUNT = 30;
 
 /**
  * Nombre de cada tejido en GLSL (`#define T_… índice`). Se genera desde aquí
@@ -77,13 +83,19 @@ export const TISSUE_GLSL_NAME: Record<Tissue, string> = {
   [Tissue.LigamentumVenosum]: 'T_LIG_VENOSUM',
   [Tissue.RenalCapsule]: 'T_RENAL_CAPSULE',
   [Tissue.RenalPelvis]: 'T_RENAL_PELVIS',
+  [Tissue.Psoas]: 'T_PSOAS',
+  [Tissue.QuadratusLumborum]: 'T_QUADRATUS',
+  [Tissue.RetroperitonealFat]: 'T_RETROFAT',
 };
 
 /** Lámina diafragmática bajo la cúpula (mm); la misma en TS, GLSL y el navegador 3D. */
 export const DIAPHRAGM_THICKNESS_MM = 2.5;
 /** Cápsula hepática (mm) al borde del parénquima. */
 export const LIVER_CAPSULE_MM = 0.8;
-/** Tope de la distancia a la frontera del intestino (el «resto» de la clasificación), mm. */
+/**
+ * Tope de la distancia a la frontera del «resto» de la clasificación (intestino y, desde la decisión 81, psoas, cuadrado
+ * lumbar y grasa retroperitoneal), mm.
+ */
 export const BOWEL_BD_CAP_MM = 5;
 
 export interface TissueProps {
@@ -131,8 +143,8 @@ export const TISSUES: TissueProps[] = [
   // Medical Imaging, tabla de atenuaciones): la de IT'IS para cortical pura (4,7) dejaba pasar ~25 dB
   // tras una costilla y el tejido seguía visible dentro de la sombra (decisión 54).
   { name: 'hueso cortical', c: 3515, rho: 1908, alpha1: 20, b: 1, backscatter: 0.9, gas: false, bone: true },
-  // el «resto» del abdomen (asas, mesenterio, grasa retroperitoneal): el nivel lo da su textura (decisión 74,
-  // `ultrasound/restTexture.ts`), granulosa por los grumos
+  // el «resto» del abdomen (asas, mesenterio; la grasa retroperitoneal es un tejido propio desde la decisión 81): el
+  // nivel lo da su textura (decisión 74, `ultrasound/restTexture.ts`), granulosa por los grumos
   {
     name: 'intestino (pared/contenido)',
     c: 1570,
@@ -169,6 +181,12 @@ export const TISSUES: TissueProps[] = [
   // difusa de 0,6 mm, más tenue (decisión 68: con 2,4 brillaba igual a cualquier incidencia, como un trazo)
   { name: 'cápsula renal', c: 1600, rho: 1100, alpha1: 0.8, b: 1, backscatter: 1.4, gas: false, bone: false },
   { name: 'pelvis renal (orina)', c: 1482, rho: 994, alpha1: 0.0022, b: 1, backscatter: 0.002, gas: false, bone: false },
+  // Retroperitoneo (decisión 81): el psoas y el cuadrado lumbar son músculo estriado (IT'IS, como el de la pared), hipoecoico
+  // entre los septos de sus fascículos, que añade `ultrasound/retroTexture.ts`; la grasa retroperitoneal, ecogénica y
+  // granulosa como la perirrenal [ESTIMADO]
+  { name: 'psoas', c: 1588, rho: 1090, alpha1: 0.617, b: 1.083, backscatter: 0.35, gas: false, bone: false },
+  { name: 'cuadrado lumbar', c: 1588, rho: 1090, alpha1: 0.617, b: 1.083, backscatter: 0.35, gas: false, bone: false },
+  { name: 'grasa retroperitoneal', c: 1450, rho: 920, alpha1: 0.45, b: 1.1, backscatter: 1.4, gas: false, bone: false, speckleClump: 0.8 },
 ];
 
 /** Impedancia acústica Z = ρc en MRayl. */

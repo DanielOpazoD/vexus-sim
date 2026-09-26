@@ -240,15 +240,11 @@ describe('Eco de interfaz en la distancia por la normal (|∇| de la cara)', () 
         }
         seen.set(c.interface, s);
       }
-      // todas las caras que no son tubos aparecen, y las que la salida barata recorta tienen muestras
-      for (const f of [
-        Interface.LiverCapsule,
-        Interface.DiaphragmLiver,
-        Interface.RenalCapsule,
-        Interface.PerirenalFat,
-        Interface.GallbladderLumen,
-      ])
+      // todas las caras que no son tubos aparecen, y las que la salida barata recorta tienen muestras; la de la grasa
+      // perirrenal, desde la decisión 81, solo donde es gruesa y apoya el hígado (la fina dibuja la de la cápsula renal)
+      for (const f of [Interface.LiverCapsule, Interface.DiaphragmLiver, Interface.RenalCapsule, Interface.GallbladderLumen])
         expect(seen.get(f)?.near ?? 0, Interface[f]).toBeGreaterThan(200);
+      expect(seen.get(Interface.PerirenalFat)?.near ?? 0).toBeGreaterThan(100);
       for (const f of [Interface.RenalCapsule, Interface.GallbladderLumen])
         expect(seen.get(f)?.dropped ?? 0, Interface[f]).toBeGreaterThan(100);
       // la cara externa de la grasa perirrenal (decisión 68): donde es gruesa y apoya el hígado su mitad externa llega a

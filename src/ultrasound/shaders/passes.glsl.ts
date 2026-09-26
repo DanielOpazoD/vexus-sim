@@ -18,6 +18,7 @@ import { SPECKLE_LOOK_GLSL, SPECKLE_TISSUE_GLSL } from '../speckleField';
 import { WALL_FACE_ECHO_GLSL, WALL_TEXTURE_GLSL } from '../wallTexture';
 import { REST_TEXTURE_GLSL } from '../restTexture';
 import { PORTAL_TRIADS_GLSL } from '../portalTriads';
+import { RETRO_TEXTURE_GLSL } from '../retroTexture';
 import { CLUTTER, SIDELOBE_PHASE_GLSL } from '../clutter';
 import { RECEIVER_GLSL, glslFloat } from '../receiver';
 import { HARMONIC_GLSL } from '../harmonic';
@@ -474,10 +475,10 @@ const int PLEURA_STEER_ITERATIONS = ${PLEURA_STEER_ITERATIONS};
 const float PLEURA_STEER_GUESS_MM = ${glslFloat(PLEURA_STEER_GUESS_MM)};
 // fieldFor y sampleSide con la fase de la mirada por nodo (speckleField.ts, variantes …Ph); b0, la dirección de la
 // mirada 0 en el punto del mundo (la radial desde el centro de curvatura); w, la jacobiana de la compresión
-vec2 fieldForPh(vec3 m, float se, int tissue, float ph0, vec3 g, vec3 b0, Warp w) {
+vec2 fieldForPhBase(vec3 m, float se, int tissue, float ph0, vec3 g, vec3 b0, Warp w) {
   vec2 f = speckleFieldPh(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP, ph0, g);
   float het = 1.0;
-  if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX) het = hetGain(m);
+  if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX || tissue == T_PSOAS || tissue == T_QUADRATUS) het = hetGain(m);
   // textura de la pared (decisión 62) con la dirección de esta mirada: b_k = b_0 + g/k2 (g = k2·(b_k − b_0))
   if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, normalize(b0 + g / uSteer.w), w);
   // el resto del abdomen: asas y grasa mesentérica (decisión 74, restTexture.ts)
@@ -486,11 +487,14 @@ vec2 fieldForPh(vec3 m, float se, int tissue, float ph0, vec3 g, vec3 b0, Warp w
   if (tissue == T_LIVER) het *= portalTriad(m);
   return f * tissueBack(tissue) * het;
 }
+// con los septos del psoas y del cuadrado (decisión 81) en la dirección de esta mirada; wallFieldPh usa la base
+vec2 fieldForPh(vec3 m, float se, int tissue, float ph0, vec3 g, vec3 b0, Warp w) {
+  return fieldForPhBase(m, se, tissue, ph0, g, b0, w) * retroTexture(m, tissue, normalize(b0 + g / uSteer.w), w);
+}
 vec2 sampleSidePh(vec3 p, float se, Cls center, float ph0, vec3 g, bool withCurtain, Warp w) {
   vec3 m = toMaterial(p);
-  if (center.bd > se + 0.5) return fieldForPh(m, se, center.tissue, ph0, g, normalize(p - uCurvC), w);
-  Cls c = classifyWith(m, withCurtain);
-  return fieldForPh(m, se, c.tissue, ph0, g, normalize(p - uCurvC), w);
+  int t = center.bd > se + 0.5 ? center.tissue : classifyWith(m, withCurtain).tissue;
+  return fieldForPh(m, se, t, ph0, g, normalize(p - uCurvC), w);
 }
 // h2 de A0 de la línea cuyo cruce de la pleura está en el camino de φ_k (punto fijo) y sD, su distancia en él
 vec4 steeredPleura(float phiK, float a, int line0, out float sD) {
@@ -531,7 +535,7 @@ vec2 wallFieldPh(vec3 p, vec3 dir, float se, float ph0, vec3 g, Warp w) {
   float depth;
   vec3 tn;
   if (!classifyWall(m, c, depth, tn)) { c.tissue = T_FAT; c.n = tn; }
-  vec2 field = fieldForPh(m, se, c.tissue, ph0, g, normalize(p - uCurvC), w);
+  vec2 field = fieldForPhBase(m, se, c.tissue, ph0, g, normalize(p - uCurvC), w);
   float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
   if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
   return field + vec2(WALL_COPY_FACE_GAIN * wallFaceEchoFlat(c, m, dir, w), 0.0);
@@ -698,6 +702,7 @@ ${SPECKLE_TISSUE_GLSL}
 ${WALL_TEXTURE_GLSL}
 ${REST_TEXTURE_GLSL}
 ${PORTAL_TRIADS_GLSL}
+${RETRO_TEXTURE_GLSL}
 ${INTERFACE_ECHO_GLSL}
 ${WALL_FACE_ECHO_GLSL}
 
@@ -727,11 +732,11 @@ vec2 speckleField(vec3 m, float h, float se, float salt) {
 
 // Campo de dispersores de un punto material con clasificación conocida. Cada tejido es otra
 // población: su propia semilla (el moteado no continúa a través de un borde).
-vec2 fieldFor(vec3 m, float se, int tissue, vec3 dir, Warp w) {
+vec2 fieldForBase(vec3 m, float se, int tissue, vec3 dir, Warp w) {
   vec2 f = speckleField(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP);
   // Heterogeneidad lenta y continua del parénquima (desviación 1,15 dB a ~1,6 ciclos/cm) [EXTRAPOLACIÓN PROPIA]
   float het = 1.0;
-  if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX) het = hetGain(m);
+  if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX || tissue == T_PSOAS || tissue == T_QUADRATUS) het = hetGain(m);
   // Textura de la pared (decisión 62, wallTexture.ts): septos de la grasa y estrías del músculo, anclados al
   // material; dir, la dirección del haz de la mirada 0 en el punto del mundo (la radial desde el centro de
   // curvatura) y w, la jacobiana de la compresión de la sonda (decisión 63) que lleva la lámina al mundo
@@ -742,15 +747,21 @@ vec2 fieldFor(vec3 m, float se, int tissue, vec3 dir, Warp w) {
   if (tissue == T_LIVER) het *= portalTriad(m);
   return f * tissueBack(tissue) * het;
 }
+// Con los septos de los fascículos del psoas y del cuadrado lumbar (decisión 81, retroTexture.ts): la muestra del medio
+// y sus planos de elevación. La pared que copia la serie de la pleura (wallField, en un bucle) usa fieldForBase: allí no
+// hay músculos retroperitoneales y el JIT de SwiftShader se dispara con código pesado en un bucle
+vec2 fieldFor(vec3 m, float se, int tissue, vec3 dir, Warp w) {
+  return fieldForBase(m, se, tissue, dir, w) * retroTexture(m, tissue, dir, w);
+}
 
 // Plano lateral en elevación: si el plano central está lejos de toda interfaz
 // (bd > desplazamiento), el tejido es el mismo y se ahorra la clasificación. Bajo la pleura de la
-// cortina (decisión 61) el tejido es el de detrás de la lámina de pulmón (withCurtain = false).
+// cortina (decisión 61) el tejido es el de detrás de la lámina de pulmón (withCurtain = false). Una sola
+// llamada a fieldFor (se inlinea una vez por plano, no dos).
 vec2 sampleSide(vec3 p, float se, Cls center, bool withCurtain, Warp w) {
   vec3 m = toMaterial(p);
-  if (center.bd > se + 0.5) return fieldFor(m, se, center.tissue, normalize(p - uCurvC), w);
-  Cls c = classifyWith(m, withCurtain);
-  return fieldFor(m, se, c.tissue, normalize(p - uCurvC), w);
+  int t = center.bd > se + 0.5 ? center.tissue : classifyWith(m, withCurtain).tissue;
+  return fieldFor(m, se, t, normalize(p - uCurvC), w);
 }
 ${PLEURA_GLSL}
 ${look === 'steered' ? STEERED_RAW_MAIN_GLSL : LOOK0_RAW_MAIN_GLSL}`;

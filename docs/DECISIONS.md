@@ -2725,6 +2725,119 @@ aunque recibe clics. Hallazgo aparte, anterior a este cambio: tras restaurar el 
 objetos del contexto perdido (unos 127 avisos de WebGL por restauración en modo M, 7 de este cambio, que agotan los 256
 mensajes del contexto).
 
+## 81. Retroperitoneo: psoas, cuadrado lumbar y grasa retroperitoneal alrededor del riñón; Morison y la cápsula con una sola línea
+
+**Contexto.** Sirve a los objetivos 3 (fidelidad anatómica) y 2 (fidelidad ecográfica) de `docs/MISION.md`. La ventana
+renal seguía siendo sintética a primera vista para un juez ciego: todo lo que no era órgano
+modelado era el «resto» con la textura de asas de la decisión 74, también detrás y por dentro del riñón, junto a la
+columna y entre la VCI y la aorta (limitación `no-psoas`, brecha de `docs/anatomia/revision-normal.md`). En rayos desde el
+centro del riñón derecho (1152 direcciones), el primer tejido tras su grasa perirrenal era intestino en 758, el 66 %
+(detrás, 137; por dentro, 135 de 148), y en la ventana renal el anillo de 0–8 mm alrededor de la grasa perirrenal
+tenía 328 muestras de asas y ninguna de grasa. En la anatomía seccional (Gray; Radiopaedia; Meyers, radiología del
+retroperitoneo) el riñón está en el espacio perirrenal y lo rodean la grasa pararrenal (anterior y posterior) y, detrás,
+el psoas (medial), el cuadrado lumbar y la aponeurosis del transverso; las asas (duodeno, colon ascendente) quedan delante.
+Además, la cápsula del lado cercano del riñón y Morison eran dos líneas paralelas: la grasa perirrenal fina (≤ 2,5 mm)
+dibujaba su cara externa y la de la cápsula renal a 1–1,6 mm (vista renal), que el pulso de 3,5 MHz resuelve (la
+decisión 68 las quería fundidas en una).
+**Opciones.**
+
+- (1) Cambiar solo la textura del «resto» junto al riñón: sin músculos y con una frontera arbitraria.
+- (2) Anatomía de mallas o de tablas de TC: dependencia nueva y sin gemelo GLSL barato.
+- (3) Caras de interfaz para las fascias (del psoas, la renal posterior): cada cara suma una ranura a `uIface` (el
+  programa dirigido de B queda en 130 de 130 con los tejidos nuevos) y una rama de `faceGradient`; el borde ya lo marca
+  el contraste músculo/grasa (≈ 12 dB). Descartado.
+- (4) Mover el riñón hacia delante para que el cuadrado pase entre él y la pared: cambia los vasos renales, Morison, la
+  impresión renal, la ventana renal y sus pruebas.
+- (5) La elegida: un módulo de órgano con SDF simples y gemelo GLSL, tres tejidos y la textura de fascículos.
+
+**Decisión.**
+
+- **Módulo `anatomy/organs/retroperitoneum.ts`** (TS y GLSL con los mismos nombres, simétrico en x; niveles vertebrales
+  [ESTIMADO]: T12–L1 en z ≈ −45, L1 −63, L2 −97, L3 −131, L4 −165, L5 −200, S1 −232):
+  - **Psoas:** cuatro conos redondeados por (|x|, y, z, r) = (22, −52, −45, 5) → (30, −45,5, −97, 12) → (37, −41, −131, 16) → (40, −39, −165, 18) → (51, −30, −240, 15): pegado a los cuerpos vertebrales, por delante de las transversas y
+    detrás de la VCI y de la aorta, se separa hacia fuera y adelante. Sección por lado 1,8 cm² en L1, 4,7 en L2, 8,1 en L3
+    y 10,2 en L4: 16 cm² los dos en L3, un adulto medio (~12–15 en la mujer y ~20 en el varón, por encima de los cortes de
+    sarcopenia de ~10 y ~19 cm² [LITERATURA, orden de magnitud]). La primera versión, con 6,2 cm² por lado en L3, era la
+    de un varón sarcopénico (revisión adversarial).
+  - **Cuadrado lumbar:** lámina contra la cara interna de la pared posterior (y < −30), de la punta de las transversas
+    (|x| 41) a 72–94 mm (más ancha abajo), de la 12.ª costilla (z −45) a la cresta (−190), con 8 mm arriba y 14 hacia L3
+    [ESTIMADO sobre las guías del bloqueo del cuadrado lumbar]: 2,7–6,4 cm² en L2–L4. La pared posterior del modelo mide
+    28 mm y la grasa perirrenal gruesa de detrás del riñón llega a ella: allí el músculo le deja sitio (la grasa se clasifica antes).
+  - **Compartimento retroperitoneal:** detrás del peritoneo parietal posterior, y < y_peri(|x|, z): −4 mm por delante de
+    los grandes vasos y del riñón (|x| ≤ 70), bajando con un smoothstep hasta −45 mm en la pared lateral (|x| 132, detrás
+    de la línea axilar posterior), y bajo los riñones (z de −150 a −200) solo la gotera paravertebral (y < −30).
+  - **En `classify`** (TS) y **`classifyWith`** (GLSL), tras el hígado: psoas, cuadrado, grasa retroperitoneal y, fuera,
+    el «resto» de asas. Su distancia a la frontera es una cota inferior: las pseudodistancias de la pared, del borde
+    lateral del cuadrado y del compartimento van divididas por la norma máxima de su gradiente (la profundidad radial bajo
+    la pared, hasta 1,21 en la franja del cuadrado; el borde anterior del compartimento, 1,87), la del psoas (conos
+    redondeados) sobrestima < 1 %, y cuenta la columna. La grasa perirrenal, que se clasifica antes, es la que le quita
+    sitio al cuadrado; su término en la distancia del cuadrado solo la deja fuera de ella.
+- **Tejidos 27–29** al final de la tabla (`T_PSOAS`, `T_QUADRATUS`, `T_RETROFAT`): el músculo con la c, ρ y α de IT'IS y la
+  retrodispersión del músculo de la pared entre estrías (0,35) con la heterogeneidad lenta; la grasa, 1,4 con grumos 0,8,
+  como la perirrenal [ESTIMADO]. `TISSUE_VEC4` pasa de 7 a 8: la pasada B, de 126 a 128 ranuras (130 el programa
+  dirigido, el tope de `shaderLimits.test.ts`).
+- **Textura `ultrasound/retroTexture.ts`** (gemelo en `wallTwin`): septos del perimisio entre haces de fascículos, un
+  Voronoi 2D de 4 mm en la sección perpendicular al eje de cada músculo (la cuerda del psoas, a ≤ 3° de cada tramo; las
+  fibras del cuadrado, que suben hacia dentro 0,25 mm por mm), extruido a lo largo de él con tramos de ~10 mm (~50 %
+  encendidos), σ 0,2 mm y retrodispersión 3 (×8,6 sobre el músculo), con el brillo de lámina de la pared
+  (ε + (1 − ε)·|cosθ|⁴) [ESTIMADO]: en eje largo, líneas finas a lo largo del músculo; en sección, puntos y trazos. Va
+  en cada plano de elevación (`fieldFor`, `fieldForPh`), no en la pared que copia la serie de la pleura (`wallField`
+  usa `fieldForBase`: está en un bucle y el JIT de SwiftShader se dispara con código pesado en un bucle), y `sampleSide`
+  llama una sola vez a `fieldFor`.
+- **Cápsula y Morison:** la grasa perirrenal fina dibuja entera la cara de la cápsula renal; solo la mitad externa de la
+  gruesa dibuja la suya, y solo contra el hígado (decisión 68). La cápsula hepática le sigue cediendo la suya junto a una
+  grasa fina (`MORISON_SLIVER_MM`): Morison es una sola línea, la de la cápsula renal, y el lado cercano del riñón
+  también. Contra la grasa retroperitoneal, además, no hay salto de impedancia (grasa con grasa).
+
+**Consecuencias.**
+
+- **Imagen:** en la ventana renal el riñón queda rodeado de grasa ecogénica y granulosa, con las asas solo por delante y
+  en el campo lejano (duodeno, colon); su lado cercano y Morison tienen una sola línea. En el flanco, entre la VCI y la
+  aorta hay grasa en lugar de asas; en la porta, grasa alrededor del riñón. El psoas y el cuadrado se ven en las vistas
+  transversas y más posteriores del flanco (hipoecoicos, con estrías finas) y no en el plano de la ventana renal: va por
+  el hilio hacia la VCI y los deja 20–33 mm por detrás, como en la anatomía (la vena renal va por delante del psoas).
+- **Cifras:** tras la grasa perirrenal, intestino en 0 de 1152 direcciones (antes 758) y grasa retroperitoneal en 663 (el cuadrado lumbar en 95);
+  en el anillo de la ventana renal, 328 muestras de grasa y ninguna de asas (antes 328 de asas; la congestión grave, 182
+  → 0). Márgenes en el adulto de referencia: el psoas a ≥ 8,3 mm del riñón, 0,6 de su grasa (el polo inferior apoya en
+  él), 8,9 del hígado, 7,3 de la VCI, 2,3 de la pared aórtica y 0,8 de la vértebra; el cuadrado a ≥ 6,2 del riñón, 2 del
+  hígado y 1,5 de la columna.
+- **Coste:** `classify` en CPU igual en todo el tronco (200 000 puntos: 1018 → 1019 ms) y algo menos en la ventana renal
+  (486 → 416 ms). La textura solo la pagan las muestras de psoas y cuadrado. El texto GLSL de los programas que clasifican
+  crece un 4–5 % (`classifyWith`: tres copias en B, dos en A0), y `sampleSide` pasa de dos llamadas a `fieldFor` a una.
+  Con SwiftShader y la máquina compartida (carga 10–19), el primer cuadro llega en 60–96 s en `main` y en 55–90 s en la
+  rama (arranques en frío y en caliente alternados), y la pareja de la e2e «equivalencia + arranca» dura lo mismo en las
+  dos (2,3 + 1,3 min): sin diferencia medible. Ranuras de uniforms de B: 126 → 128 (130 el programa dirigido, el tope).
+- **Presupuesto:** con el GLSL de nombres cortos del build (#94), el chunk principal pasa de 304,6 a 310,8 kB (320) y el
+  JS total de 939,6 a 947,9 kB (1000).
+- **Limitaciones:** `no-psoas` desaparece; queda `simplified-retroperitoneum` (sólidos lisos, sin pilares del diafragma,
+  ilíaco ni suprarrenales, el cuadrado que cede su sitio al riñón y, en la hepatomegalia de la congestión grave, el hígado
+  que ocupa el origen del psoas en T12–L1, hasta 12 mm). Contra la grasa gruesa, Morison sigue teniendo dos caras reales a
+  ≥ 2,5 mm (la de la grasa con el hígado y la de la cápsula), como en la 68.
+
+**Verificación.**
+
+- `retroperitoneum.test.ts`: el psoas junto a los cuerpos vertebrales de T12 a la pelvis, lateral al cuerpo y medial al
+  riñón, detrás de la VCI y delante de las transversas, con la sección creciente y en su orden de magnitud; el cuadrado
+  contra la pared, lateral y posterior al psoas, de 10–15 mm de grosor, sin nada en la pared anterior y cediendo su sitio a
+  la grasa del riñón; los márgenes a riñón, grasa perirrenal, hígado, VCI, aorta y columna en el adulto de referencia; en
+  los tres casos, nada retroperitoneal dentro del hígado, la columna o la grasa perirrenal; tras la grasa perirrenal
+  nunca asas; el compartimento (grasa delante de los grandes vasos y entre la VCI y la aorta, asas delante); la distancia a
+  la frontera como cota inferior (moverse 0,95·bd en 14 direcciones no cambia el tejido); los tejidos nuevos y el gemelo
+  GLSL con las constantes del módulo.
+- `retroTexture.test.ts`: 1 fuera del psoas y del cuadrado; septos perpendiculares al eje, a ~4 mm y continuos a lo largo
+  de él; de frente brillan y de canto no; el psoas queda por debajo del hígado (≤ −2 dB) y de la grasa que lo rodea;
+  anclada; en B, en la muestra del medio y en sus planos y nunca en la pared de la serie.
+- `shaderLimits.test.ts`: `fascicleSeptum` fuera de todo bucle (el detector ve la regresión si la pared de la serie usa
+  `fieldFor`); las ranuras de B y el recuento de tejidos.
+- `startPoints.test.ts` (renal): además del riñón y la interlobar, el hígado junto al polo superior y, a 8 mm de la grasa
+  perirrenal, grasa retroperitoneal y ninguna asa.
+- `anatomy.test.ts`: la grasa fina dibuja la cápsula renal y el hígado junto a ella no dibuja la suya; Morison con una
+  línea y una sola, también donde la grasa es fina (lámina de asas o de grasa retroperitoneal de ≤ 3 mm), con pasos de
+  los dos grosores; `faceGradient.test.ts` con menos muestras de la cara de la grasa (solo la gruesa contra el hígado).
+- e2e `equivalence.spec.ts` (TS ↔ GLSL en 50 000 puntos, la cáscara de caras, con la grasa perirrenal en ella) y la suite
+  entera con SwiftShader; capturas con GPU (M4) de las ventanas renal y del flanco, adulto sano y congestión grave,
+  frente a `main`, y de dos vistas del flanco con el psoas.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

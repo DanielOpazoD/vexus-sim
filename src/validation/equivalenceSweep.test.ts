@@ -76,6 +76,10 @@ describe('Gates de equivalencia TS ↔ GLSL (lógica)', () => {
     expect(v.interfacePoints).toBeGreaterThan(20);
     expect(v.interfaceAgreement).toBe(1);
     expect(v.interfaceDistanceMaxErr).toBeLessThan(1e-4); // float32
+    // los puntos interiores por tejido suman los interiores, y el retroperitoneo (decisión 81) está en la muestra
+    expect(Object.values(v.byTissue).reduce((a, b) => a + b, 0)).toBe(v.interiorPoints);
+    expect(v.byTissue.Psoas ?? 0).toBeGreaterThan(0);
+    expect(v.byTissue.RetroperitonealFat ?? 0).toBeGreaterThan(20);
   });
 
   it('un defecto localizado (hígado → cápsula en una esfera de 25 mm) lo detecta el volumen', () => {

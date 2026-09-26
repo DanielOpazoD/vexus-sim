@@ -136,11 +136,11 @@ export const PYRAMIDS: readonly RenalPyramid[] = buildPyramids();
 /**
  * Grasa perirrenal (decisión 68): grosor variable, fina (≈ 1 mm) en la cara anterolateral que apoya en el hígado
  * (Morison) y gruesa detrás, hacia el hilio y en los polos (hasta 9 mm). Antes era una capa de 4 mm constante cuyas
- * dos caras dibujaban una doble línea concéntrica perfecta alrededor del riñón. Su cara externa se dibuja donde la grasa
- * es fina (≤ `faceMaxMm`: la de Morison, la del bazo o la del intestino), fundida con la de la cápsula en una sola línea,
- * y, aunque sea gruesa, donde apoya el hígado (Morison, a ≤ `MORISON_CONTACT_MM`: la cápsula hepática le cede la cara);
- * donde es gruesa y no la toca el hígado (detrás, hacia el hilio, en los polos) se confunde con la grasa retroperitoneal
- * sin línea, como en un equipo.
+ * dos caras dibujaban una doble línea concéntrica perfecta alrededor del riñón. Donde es fina (≤ `faceMaxMm`) toda ella
+ * dibuja la cara de la cápsula renal: sus dos caras, a 1–2,5 mm, se ven como una sola línea (decisión 81; antes su mitad
+ * externa dibujaba la suya y salían dos líneas paralelas). Donde es gruesa, su cara externa solo se dibuja donde apoya
+ * el hígado (Morison, a ≤ `MORISON_CONTACT_MM`: la cápsula hepática le cede la cara); si no (detrás, hacia el hilio, en
+ * los polos) se confunde con la grasa retroperitoneal sin línea, como en un equipo.
  */
 export const PERIRENAL = { minMm: 1, maxMm: 9, faceMaxMm: 2.5 } as const;
 

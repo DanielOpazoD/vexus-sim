@@ -43,6 +43,9 @@ const TISSUE_COLOR: Record<number, [number, number, number]> = {
   [Tissue.LigamentumVenosum]: [245, 235, 190],
   [Tissue.RenalCapsule]: [235, 225, 210],
   [Tissue.RenalPelvis]: [70, 200, 190],
+  [Tissue.Psoas]: [165, 80, 95],
+  [Tissue.QuadratusLumborum]: [140, 75, 105],
+  [Tissue.RetroperitonealFat]: [220, 196, 128],
 };
 const TISSUE_LABEL: Record<number, string> = {
   [Tissue.Liver]: 'hígado',
@@ -61,6 +64,9 @@ const TISSUE_LABEL: Record<number, string> = {
   [Tissue.Cartilage]: 'cartílago',
   [Tissue.RenalCortex]: 'riñón',
   [Tissue.RenalSinus]: 'seno renal',
+  [Tissue.Psoas]: 'psoas',
+  [Tissue.QuadratusLumborum]: 'cuadrado lumbar',
+  [Tissue.RetroperitonealFat]: 'retroperitoneo',
 };
 const SYSTEM_COLOR: Record<VesselSystem, [number, number, number]> = {
   ivc: [60, 120, 230],

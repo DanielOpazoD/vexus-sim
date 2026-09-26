@@ -7,7 +7,8 @@
  *    los centros de fila (la textura de la GPU). Sin la penumbra de la apertura ni el espejo: en la pared no
  *    hay espejo, y la penumbra solo cambia lo que hay detrás de una costilla;
  *  - B: el medio anclado de tres planos (`speckleSliceField`), la retrodispersión de `TISSUES`, la
- *    heterogeneidad, los grumos, la textura de la pared (`wallTexture`, con la dirección de la línea) y el eco
+ *    heterogeneidad, los grumos, la textura de la pared (`wallTexture`, con la dirección de la línea), la del «resto»
+ *    (`restTexture`) y la de los músculos retroperitoneales (`retroTexture`, decisión 81) y el eco
  *    de interfaz (`interfaceEchoField` con `faceGradient` y la coherencia de curvatura de tubos y costillas),
  *    y el transitorio del campo cercano anclado a (línea, r);
  *  - C: gaussiana axial de σ = max(0,6; 0,26/dr) muestras, ±12, energía unidad;
@@ -24,6 +25,7 @@ import { cross, dot, normalize, type Vec3 } from '../../core/vec3';
 import { lateralSigmaMm } from '../../ultrasound/beamModel';
 import { restTexture } from '../../ultrasound/restTexture';
 import { portalTriadGain } from '../../ultrasound/portalTriads';
+import { retroTexture } from '../../ultrasound/retroTexture';
 import { CLUTTER, applyComplexKernel, clutterParams, lateralKernel, reverbGains, reverbGateWeight } from '../../ultrasound/clutter';
 import {
   IFACE_MIN_COS,
@@ -51,6 +53,15 @@ export type WallModel = 'wall' | 'base';
 
 /** Retrodispersión de la pared antes de la decisión 62. */
 const BASE_BACK: Partial<Record<Tissue, number>> = { [Tissue.Fat]: 0.55, [Tissue.Muscle]: 0.5, [Tissue.Cartilage]: 0.6 };
+/** Tejidos con la heterogeneidad lenta del parénquima (`hetGain` de `fieldFor`). */
+const HET_TISSUES: ReadonlySet<Tissue> = new Set([
+  Tissue.Liver,
+  Tissue.Muscle,
+  Tissue.Bowel,
+  Tissue.RenalCortex,
+  Tissue.Psoas,
+  Tissue.QuadratusLumborum,
+]);
 /** Muestras gruesas de la pasada A (`COARSE_DEPTH` del renderizador). */
 const COARSE = 160;
 /** Frecuencia B efectiva del convexo (MHz, `CONVEX_C35_PROFILE`). */
@@ -236,12 +247,13 @@ export function wallTwin(
       const fieldFor = (m: Vec3, tissue: Tissue): [number, number] => {
         const f = speckleSliceField(m, g.latticeMm, se, seedF + tissue * TISSUE_SALT_STEP, st);
         let gain = back(tissue);
-        if (tissue === Tissue.Liver || tissue === Tissue.Muscle || tissue === Tissue.Bowel || tissue === Tissue.RenalCortex)
-          gain *= Math.pow(10, heterogeneityDb(m, seedF) / 20);
+        if (HET_TISSUES.has(tissue)) gain *= Math.pow(10, heterogeneityDb(m, seedF) / 20);
+        const beam = normalize(m.map((x, k) => x - frame.center[k]) as Vec3);
         if (o.model === 'wall' && !o.noTexture && (tissue === Tissue.Fat || tissue === Tissue.Muscle))
-          gain *= wallTexture(m, tissue, normalize(m.map((x, k) => x - frame.center[k]) as Vec3), scene.torso);
+          gain *= wallTexture(m, tissue, beam, scene.torso);
         if (tissue === Tissue.Bowel) gain *= restTexture(m, seedF);
         if (tissue === Tissue.Liver) gain *= portalTriadGain(m);
+        gain *= retroTexture(m, tissue, beam);
         return [f[0] * gain, f[1] * gain];
       };
       const side = (sgn: number): [number, number] => {

@@ -41,7 +41,8 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   del 3D, no una malla segmentada); los ángulos de las venas y conductos son plausibles, no medidos.
 - **Lámina en el borde de la impresión renal** (`morison-rim-sliver`): el redondeo del borde de la impresión renal (8 mm)
   con la cara visceral en cuña (decisión 72) deja en algún punto, detrás del polo superior y junto a la pared posterior,
-  una lámina de «intestino» o de hígado de ~1 mm contra la grasa perirrenal gruesa, con dos líneas paralelas (2 de ~150
+  una lámina de grasa retroperitoneal (antes de la decisión 81, «intestino») o de hígado de ~1 mm contra la grasa
+  perirrenal gruesa, con dos líneas paralelas (2 de ~150
   pasos en los rayos desde el riñón; ninguno en las vistas renal y del flanco).
 - **La viscosidad de la pared de la VCI no está en la red** (`ivc-wall-lag-not-in-network`): la luz que se ve y se
   mide sigue al volumen de la red con τ = 0,2 s (decisión 73), pero la red calcula presiones y caudales con su volumen
@@ -54,8 +55,16 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **El gas intestinal no da sombra** (`bowel-gas-no-shadow`): el contenido de las asas del «resto» (decisión 74) es una
   textura de retrodispersión; el gas brilla pero no refleja ni reverbera ni deja sombra sucia detrás (las bolsas de gas
   de la anatomía sí lo hacen, pero no hay ninguna en los casos de referencia).
-- **Sin psoas ni cuadrado lumbar** (`no-psoas`): por detrás del riñón y junto a la columna el «resto» lleva la textura
-  de asas y grasa; los músculos retroperitoneales (hipoecoicos y estriados) no están modelados.
+- **Retroperitoneo simplificado** (`simplified-retroperitoneum`): el psoas (cuatro conos redondeados) y el cuadrado
+  lumbar (una lámina contra la pared) son sólidos lisos y simétricos (decisión 81), sin los pilares del diafragma, el
+  ilíaco ni las suprarrenales, y sus fascias no tienen cara (el borde lo da el contraste músculo/grasa). La pared
+  posterior del modelo mide 28 mm y el riñón apoya en ella: el cuadrado le deja sitio en lugar de pasar entre ambos. El
+  peritoneo parietal posterior es una superficie suave, sin recesos, y el duodeno y el colon ascendente son el «resto»
+  con la textura de asas. Los músculos se mueven con la respiración con el peso del campo de desplazamiento (en el psoas,
+  de ~0,1 junto a la columna a 1 en su parte lateral e inferior; en el cuadrado, ≤ 0,6), en lugar de quedarse quietos
+  bajo el riñón que se desliza. En la hepatomegalia de la congestión grave el hígado ocupa el origen del psoas en
+  T12–L1 (hasta 12 mm) y el borde superior del cuadrado (hasta 7 mm): se clasifica antes. La textura de sus fascículos no
+  tiene prueba de paridad numérica entre la GPU y su gemelo TS (sí la clasificación).
 - **Sin cascada torácica de la VCI** (`no-thoracic-waterfall`): la unión cavoauricular transmite
   cualquier caída de la PAD; no existe la meseta de Guyton por colapso de la VCI en la entrada
   torácica. Hallado por fast-check: con hipovolemia (volumen 0,6) y PAD media ≈ 0 la VCI se vacía

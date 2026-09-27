@@ -289,6 +289,10 @@ describe('Eco de interfaz en la distancia por la normal (|∇| de la cara)', () 
             const face = faceGeometryOf(c.interface);
             if (!face || c.interfaceDistance < 0.02 || c.interfaceDistance > 0.5) continue;
             const t0 = face === 'tube' ? scene.faceTube(m, caliber)! : null;
+            // la distancia al tubo se curva con 1/ρ (ρ, la distancia al eje, con un pico en él): la diferencia central de
+            // referencia yerra ≈ (h/ρ)²/6 y en la luz de las puntas afiladas de 0,3–0,5 mm (decisión 87) pasaba de 1e-3 con
+            // ρ < 0,26 mm (el analítico, frente a h = 0,001 mm, queda en 3e-6)
+            if (t0 && t0.hit.r + t0.hit.d < 15 * FACE_GRADIENT_EPS_MM) continue;
             const same = (p: V) => {
               const t = scene.faceTube(p, caliber);
               // (las ramas procedurales comparten el id de su madre: dos hermanas con el mismo id y segmento se distinguen

@@ -32,6 +32,15 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Cambiado
 
+- Riñón y venas sin primitivas (87): las pirámides son conos oscuros con la base hacia la corteza y la punta en el seno
+  (antes, bandas bajo la corteza a las que el cáliz se comía la punta), con los vasos arcuatos en el borde de su base; el
+  seno es grasa ecogénica en lóbulos, más brillante y heterogénea que el hígado; la grasa perirrenal y la retroperitoneal
+  son más ecogénicas, así que el contorno del riñón se cierra a cualquier incidencia, con la línea de la cápsula encima
+  de frente; la cápsula ya no cruza la boca del hilio y la vena renal nace en el borde medial del seno (antes, una columna
+  negra desde el centro del seno que cruzaba el contorno); las interlobares se afilan hacia la corteza (antes, tres
+  hendiduras negras). En el hígado, las ramas finales de las venas y las madres sin hijas se afilan hasta apagarse en
+  lugar de acabar en una tapa redonda. Los patrones y la calidad del Doppler renal no cambian (en el sano, la D se mueve un
+  escalón de velocidad).
 - Artefactos del líquido (86): detrás de la vesícula aparecen las sombras de borde por refracción, en el eco del haz
   enfocado cuyos rayos desvía la bilis (bordes a −4 dB de media y hasta −9 dB a 2–4 cm de ella, a los lados de la banda
   del refuerzo, sin foco en su centro), contrastadas con un banco de ondas 2D; tras los vasos y la aurícula derecha, que

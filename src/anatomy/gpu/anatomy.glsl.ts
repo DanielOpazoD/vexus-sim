@@ -443,21 +443,31 @@ Cls classifyWith(vec3 m, bool withCurtain) {
     vec3 kn;
     kidneyOuter(m, k, kn);
     if (dOuter < 0.0) {
+      // 4: los vasos arcuatos (decisión 87), pared arterial sin luz
+      c.tissue = region == 4 ? T_ARTERYWALL : (region == 3 ? T_RENAL_PELVIS : (region == 2 ? T_RENAL_SINUS : (region == 1 ? T_RENAL_MEDULLA : T_RENAL_CORTEX)));
+      c.bd = min(inner, -dOuter - RENAL_CAPSULE_MM); c.n = kn;
+      // la cápsula, salvo en la boca del hilio: dentro del canal del seno su grasa sigue en la perirrenal (decisión 87), y
+      // el mismo canal decide la cara de la grasa de fuera
       if (-dOuter < RENAL_CAPSULE_MM) {
-        c.tissue = T_RENAL_CAPSULE; c.bd = min(-dOuter, RENAL_CAPSULE_MM + dOuter); c.n = kn;
-        c.iface = IF_RENAL_CAPSULE; c.ifd = -dOuter;
-        return c;
+        float hcIn = hilumChannelSdf(kidneyLocal(m, k), k);
+        if (hcIn > 0.0) {
+          c.tissue = T_RENAL_CAPSULE; c.bd = min(min(-dOuter, RENAL_CAPSULE_MM + dOuter), min(inner, hcIn));
+          c.iface = IF_RENAL_CAPSULE; c.ifd = -dOuter;
+          return c;
+        }
+        c.bd = min(inner, -hcIn);
       }
-      c.tissue = region == 3 ? T_RENAL_PELVIS : (region == 2 ? T_RENAL_SINUS : (region == 1 ? T_RENAL_MEDULLA : T_RENAL_CORTEX));
-      c.bd = inner; c.n = kn; return c;
+      return c;
     }
     if (dOuter < fat) {
-      c.tissue = T_PERIRENAL; c.bd = min(dOuter, fat - dOuter); c.n = kn;
+      // frente a la boca del hilio, sin cápsula que dibujar (decisión 87): el cambio de dueño de la cara cuenta en bd
+      float hc = hilumChannelSdf(kidneyLocal(m, k), k);
+      c.tissue = T_PERIRENAL; c.bd = min(min(dOuter, fat - dOuter), abs(hc)); c.n = kn;
       // mitad externa de la gruesa: la cara de Morison; la interna y toda la fina (decisión 81: sus dos caras, a 1–2,5 mm,
       // eran dos líneas paralelas), la de la cápsula renal
       bool outerFace = dOuter > 0.5 * fat && fat > PERI.z;
-      c.iface = outerFace ? IF_PERIRENAL : IF_RENAL_CAPSULE;
-      c.ifd = outerFace ? fat - dOuter : dOuter;
+      c.iface = outerFace ? IF_PERIRENAL : (hc > 0.0 ? IF_RENAL_CAPSULE : IF_NONE);
+      c.ifd = outerFace ? fat - dOuter : (hc > 0.0 ? dOuter : 1e3);
       if (!outerFace) return c;
       // grasa gruesa: su cara externa solo si apoya el hígado (se decide con liverSdf, tras el bucle)
       thickFat = true;

@@ -8,7 +8,14 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 
 - **Solo el riñón derecho tiene vasos interlobares** (`no-left-interlobar-vessels`): el izquierdo
   tiene arteria y vena renal pero no vasos intrarrenales; las 14 pirámides, el seno (con un dedo hacia cada papila) y
-  la pelvis son procedurales (decisiones 37, 43 y 68), sin cálices diferenciados.
+  la pelvis son procedurales (decisiones 37, 43, 68 y 87), sin cálices diferenciados. La vena renal es un solo tubo que
+  nace en el borde medial del seno y resume las segmentarias que la forman en el hilio; dentro del seno solo hay las
+  interlobares derechas y el extremo de la arteria renal. Sin pirámides en la cara medial (el seno está desplazado hacia
+  el hilio y allí el parénquima no deja sitio): la médula es el 6 % del volumen del parénquima, el 16 % del corte coronal.
+- **Vasos arcuatos sin luz ni eco especular** (`arcuate-no-lumen`, decisión 87): los arcuatos son un anillo de pared
+  arterial en el borde de la base de cada pirámide (1,2 × 2,5 mm de sección), un dispersor difuso: sin luz, sin Doppler,
+  sin la reflexión de sus paredes de frente (que en un equipo los hace focos brillantes) y sin unirse a las interlobares.
+  En la imagen quedan a +3–6 dB sobre la corteza, más tenues que en una ecografía real.
 - **La forma de onda de la aurícula derecha es un contorno prescrito** (`prescribed-ra-contour`): ondas a/c/x/v/y +
   onda sistólica por insuficiencia tricuspídea, gaussianas centradas por latido sobre la media. La media sale del lazo
   cerrado (decisión 79) y la rigidez auricular y la IT siguen al llenado, pero las ondas no salen de una cámara con

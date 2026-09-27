@@ -90,3 +90,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [84](DECISIONS.md#L3189) | PSF que cambia con la profundidad: bajada de la frecuencia central, pulso de la banda de cada modo, emisión apodizada y banda del foco | vigente |
 | [85](DECISIONS.md#L3322) | Corazón y mediastino: la AD recibe la VCI sobre el diafragma, el VD delante tras el xifoides, pericardio y tejido del mediastino en lugar de pulmón | vigente |
 | [86](DECISIONS.md#L3464) | Artefactos del líquido: el refuerzo posterior es el de la atenuación, la refracción de las luces deja sombras de borde en el haz enfocado y la penumbra costal lleva la apodización de la emisión | vigente |
+| [87](DECISIONS.md#L3633) | Riñón y venas sin primitivas: pirámides en cono con sus arcuatos, seno en lóbulos, contorno cerrado por la grasa, hilio sin cápsula y extremos venosos que se afilan | vigente |

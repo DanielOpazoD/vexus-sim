@@ -20,6 +20,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'uniform-vessel-velocity',
   'procedural-liver-shape',
   'no-left-interlobar-vessels',
+  'arcuate-no-lumen',
   'ivc-single-compartment',
   'morison-rim-sliver',
   'ivc-wall-lag-not-in-network',

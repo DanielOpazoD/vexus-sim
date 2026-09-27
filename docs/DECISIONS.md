@@ -3630,6 +3630,142 @@ la subcostal (≤ 0,01 dB, empates ≤ 1 % de sus muestras), la dirigida ya lo h
 de la vesícula de la subcostal, en las muestras sin gas ni hueso al alcance de la penumbra, el borde baja de −4 dB y
 1,5 dB más que el centro, que no pasa de +1 dB.
 
+## 87. Riñón y venas sin primitivas: pirámides en cono con sus arcuatos, seno en lóbulos, contorno cerrado por la grasa, hilio sin cápsula y extremos venosos que se afilan
+
+**Contexto.** Sirve a los objetivos 3 (fidelidad anatómica) y 2 (fidelidad ecográfica) de `docs/MISION.md`. Ronda 3 del
+juez ciego (26-09-2026): 21/21 detectadas, realismo 2,4–2,6 y la pista n.º 3, «anatomía de primitivas». En las parejas
+renales: «la cápsula no cierra», «el seno es el mismo moteado, solo más brillante», «las pirámides son tres hendiduras
+verticales oscuras equidistantes», «el grano es igual dentro y fuera del órgano» y «la columna oscura central (la pelvis)
+cruza el contorno como pintada encima»; en el hígado, «una vena recta que acaba en un círculo, como una piruleta». Antes
+de tocar nada se midió: mapas de tejidos y de caras de la ventana renal con la compresión de la sonda, cortes en el marco
+del riñón, capturas con GPU real (M4, armónica y compuesto) y el gris mostrado por tejido, clasificado píxel a píxel con
+la anatomía TS (`scratchpad/kid/`):
+
+- Las «tres hendiduras» no eran pirámides: eran los tres pares interlobares de las columnas de Bertin laterales (vena de
+  1,3–1,95 mm de radio, arteria de 0,95–1,35, a w = ±1,8 mm) en el plano (w de 0,5 a 2,2 mm en el lado lateral). Las
+  pirámides eran bandas: por su eje, 4,3–6,3 mm de médula en la fila lateral, 0–1,4 en la anterior y la posterior (dos sin
+  médula visible) y 2,8–5 en los polos, porque el dedo del seno (el cáliz, 3,5 mm de radio) pasaba 4 mm de la papila y se
+  comía la punta del cono. Médula: el 3,4 % del volumen del parénquima y el 10,6 % del corte coronal.
+- La «columna negra» no era la pelvis (en el plano de la ventana renal no hay una sola muestra de pelvis): era la vena
+  renal, de 8–9 mm, desde el centro del seno (v = 8 mm) hasta fuera del hilio, en el plano de v = 7 a 34 mm (el plano pasa
+  por w = 3,4–5,6 mm en el hilio y el eje de la vena por w = 5). Y la cápsula (tejido y cara) cruzaba la boca del hilio,
+  donde la grasa del seno sigue en la perirrenal.
+- Contorno: la cara de la cápsula rodea el riñón, pero su eco especular (decisión 65) se apaga, como debe, a incidencia
+  rasante en los polos, y el tejido de alrededor no cerraba el contorno. Gris mostrado (sano, ventana renal): hígado 97,8,
+  corteza 84,3 (índice hepatorrenal 1,16), médula 68,3, seno 119,3 ± 16,8 (1,22 veces el hígado y 1,3 veces su
+  desviación), grasa perirrenal 111,3 y retroperitoneal 108,6. En la referencia real de la pareja 2 (`sueltas/img06`,
+  rectángulos a mano): hígado 70,9 ± 9,7, corteza 57,4 (0,81 veces el hígado), seno 156 ± 31 (2,2 veces el hígado y 3,2
+  veces su desviación) y la banda de grasa de Morison 180 ± 40 (2,5 veces). Son equipos, ganancias y curvas de grises
+  distintas: los cocientes de gris dan la dirección (el seno y la grasa muy por encima del hígado, la corteza por debajo),
+  no un número que igualar.
+- La «piruleta»: las 56–60 ramas procedurales acababan con 0,9 mm y una tapa esférica (el suelo `max(0,9; 0,6·r0)`: 19–20
+  eran tubos uniformes de 0,9 mm); 6 de las 11 madres (las dos portales derechas, las suprahepáticas anterior y posterior
+  derechas, la tributaria izquierda y la VSH derecha) no tenían hijas en su extremo y acababan en tapas de 1,6–2,4 mm, y
+  las otras 5 en una bola de 1,6–2 mm de la que salían hijas de 1,0–1,24. La de la pareja 1 es sobre todo una confluencia:
+  la tributaria de la VSH media, en el plano, llega a la media cortada de través (su nodo central está en el eje de la
+  media, r 2,8 frente a 3,77 mm).
+
+**Opciones.** (1) Tejidos nuevos (papila, arcuatos, grasa del seno) o caras nuevas (arcuatos especulares): la decisión 85
+llevó `TISSUE_COUNT` a 32, el tope de las tablas por tejido de 4 en 4 (uno más son dos ranuras de B), y la pasada B está en
+130/130 ranuras, así que ni tejido ni cara ni uniform. (2) Pintar el contorno con una banda de brillo constante: la pista
+de las rondas 1 y 2 («brillo de borde que no depende de la incidencia»). (3) La elegida: la geometría en el módulo del
+riñón (TS y GLSL), tejidos existentes para lo nuevo, los niveles de retrodispersión, una textura de lóbulos en el gancho de
+textura retroperitoneal de B y el afilado de los extremos en el árbol vascular.
+
+**Decisión.**
+
+- **Pirámides en cono** (`organs/kidney.ts`): la papila a 2 mm del seno (antes 3) y el dedo del cáliz de 2,2 mm de radio
+  hasta 1 mm antes de la papila (antes 3,5 mm hasta 0,5 mm después), que la ahueca 1,2 mm; bases de 5,6–8,9 mm de radio
+  (antes 5,2–7,4) y el seno más plano de delante atrás (semieje 10 → 8 mm: 15 mm de parénquima delante y detrás, 15–16 en
+  la revisión del 25-09). Siguen bajo ≥ 7 mm de corteza (decisión 68). De la papila a la base: 8,9–10,7 mm en la fila
+  lateral, 8,6–9,0 en las oblicuas y 16 en los polos (compuestas, se funden con la última lateral); las anteriores y
+  posteriores, 5,8–7 mm, siguen más anchas que altas. Entre dos vecinas queda una columna de corteza de ≥ 2 mm. Médula
+  visible por su eje: 8,1–10,1 mm en la fila lateral, 4,8–6,3 en la anterior y la posterior, 7,5–8,2 en las oblicuas y 15,1
+  en los polos; el 6 % del volumen del parénquima y el 16,4 % del corte coronal. La médula pasa de 0,42 a 0,28 (−8,2 dB
+  bajo la corteza) [ESTIMADO]: hipoecoica, no negra.
+- **Vasos arcuatos** (`ARCUATE`): un anillo en el borde de la base de cada pirámide, a ≤ 0,6 mm de la unión
+  corticomedular y ≤ 2,5 mm dentro del cono, clasificado como pared arterial (`Tissue.ArteryWall`, sin luz ni vaso), la
+  región 4 del `kidneyQuery` GLSL [EXTRAPOLACIÓN PROPIA: la sección del anillo]. En el corte por el eje de una pirámide, dos
+  focos en las esquinas de su base (Emamian 1993; Radiopaedia; revisión del 25-09).
+- **Cotas de `inner`** (revisión adversarial): la seudodistancia del cono redondeado sobrestima la real hasta
+  √(1 + pendiente²), 1,52 en las pirámides anteriores y posteriores, así que las distancias de los conos van por
+  `PYRAMID_BD` = 0,6589 (la misma constante en la GLSL); y la corteza cuenta la cápsula (−dOuter − 0,6 mm, antes −dOuter).
+- **Hilio**: dentro del canal del seno (`hilumChannelSdf`, con su gemelo GLSL) no hay cápsula, ni tejido ni cara, y la
+  grasa perirrenal frente a él no dibuja la cara de la cápsula (grasa con grasa): el mismo canal decide las dos mitades de
+  la cara, y la distancia a la frontera cuenta ese cambio de dueño.
+- **Vena renal**: nace en el borde medial del seno (v = 15 mm, `RENAL_VEIN_SINUS_V`) con 2 mm de radio y se ensancha hasta
+  4,5 mm en el hilio (antes 4 mm desde el centro del seno), un tubo que resume las segmentarias que la forman en el hilio
+  [EXTRAPOLACIÓN PROPIA]; el `refRadius` no cambia. Las interlobares se afilan hacia la unión corticomedular, donde se
+  hacen arcuatas: la vena 1,95 → 1,4 → 0,7 mm (antes 1,3 en su extremo), la arteria 1,35 → 1,0 → 0,5 (antes 0,95)
+  [EXTRAPOLACIÓN PROPIA]. Su `refRadius` (el área y la velocidad) no cambia y la puerta de la cadena del alumno sigue junto
+  al seno (`interlobarVein2`, θ = 0,127 rad, r = 55,5 mm, v = −6,4 a −7 mm), a 1,45 / 1,41 / 1,32 mm de la pared (antes
+  1,47 / 1,43 / 1,35) en el sano, la congestión grave y la FA.
+- **Ecogenicidad** (`tissues.ts`) [ESTIMADO]: grasa perirrenal 1,5 → 2,4 y retroperitoneal 1,4 → 2,0; seno 2,3 → 4,5 (+13 dB
+  sobre el hígado y +5,5 sobre la grasa perirrenal: lo más ecogénico del riñón) en lóbulos (`SINUS_TEXTURE`:
+  0,615·exp(4·(n − 0,5)) de un ruido de valor anclado de 3 mm con sal fija; la desviación de n es 0,186, así que da 6,4 dB
+  de desviación, y 0,615 = 1/√E[·²] en 2·10⁶ puntos deja la potencia media en 1). Los lóbulos van en `retroTexture` de la
+  pasada B y su gemelo TS, el gancho de los músculos retroperitoneales, en la muestra del medio y en sus planos de
+  elevación y fuera del bucle de la pleura; con la potencia media en 1, la retrodispersión de la tabla es la del seno
+  también en la puerta PW, que no lleva la textura. La corteza sigue en 0,72. El contorno se cierra por contraste a
+  cualquier incidencia (la corteza a −2,9 dB del hígado, la grasa perirrenal a +7,6) y la línea especular de la cápsula
+  sigue encima, de frente. El mediastino de la decisión 85 (1,0) queda menos ecogénico que la grasa retroperitoneal.
+- **Extremos venosos** (`vesselTree.ts`, `BRANCH_TIP_RADIUS_MM` = 0,3 mm) [EXTRAPOLACIÓN PROPIA]: las ramas procedurales
+  sin hijas (las de 4.º orden, las laterales y las de 3.º orden cuyas hijas no caben) se afilan hasta 0,3 mm, por debajo de
+  la resolución (PSF de 1–3 mm, rodaja de 3–5 mm), y se apagan en la imagen; la madre se afila en su último tramo hasta el
+  radio con que nacen sus hijas (0,62·r, la unión en «Y» sin bola) o, sin hijas, hasta 0,3 mm (`buildHepaticBranches`
+  devuelve también `parents`), y sus ramas laterales no nacen más gruesas que ella (≤ 0,8 de su radio). Mismo `refRadius`:
+  las áreas y las velocidades no cambian, y las ramas siguen fuera de `vesselById` y de `vesselAreas` (invariante 3).
+
+**Consecuencias.**
+
+- Imagen (M4, armónica y compuesto, apnea espiratoria; `scratchpad/kid/shots-final2`, con los recortes y la normalización
+  del juez frente a las reales de las parejas 1–3 y frente a `main`): el riñón es un óvalo oscuro cerrado por grasa
+  ecogénica, con el seno en lóbulos brillantes, pirámides oscuras con la punta hacia el seno y las interlobares como trazos
+  tenues junto al seno; la vena renal solo asoma en el hilio. Gris mostrado en el sano: hígado 97,6, corteza 84,1 (índice
+  hepatorrenal 1,16, normal 1,0–1,25), médula 58,9 (antes 68,3), seno 134,1 ± 27,7 (1,37 veces el hígado y 2,1 veces su
+  desviación; antes 1,22 y 1,3), grasa perirrenal 127,9 (antes 111,3) y retroperitoneal 119,7 (108,6); en la congestión
+  grave, médula 69,7 → 60,1, seno 119,6 → 134,3 y grasa perirrenal 113,6 → 130,3. En el barrido de la ventana (61 líneas
+  cada 2 mm): médula 58 → 89 muestras y vena renal dentro del contorno 17 → 3.
+- Hígado: las puntas se afilan y se apagan. En la pareja 1 la tributaria de la VSH media se desvanece hacia la periferia
+  (en el plano, 757 → 701 píxeles de luz y sus ramas 352 → 258), pero su confluencia con la media cortada de través, que
+  no cambia, sigue ahí: es anatomía real, no una tapa.
+- Cotas (`scratchpad/kid/review/bdcheck.mts`: puntos del riñón movidos 0,95·bd en 50 direcciones): corteza ↔ médula
+  0,49 → 0,86 de la distancia real, anillo 0,82–0,90, corteza → cápsula 0,01 → sin fallos; el seno baja de 0,72 a 0,56
+  (la seudodistancia del elipsoide, más alargado) y la pelvis sigue en 0,59. En los planos de elevación (se = 2,14 mm)
+  ninguna muestra reutilizada cambia de tejido (54 de 49 180 en `main`, por la cápsula).
+- Doppler renal: la cadena del alumno (`examChain.test.ts`) da los mismos patrones y la misma calidad en los tres casos; en
+  el sano el pico D baja un escalón de velocidad (26,7 → 26,0 cm/s) y el resto de medidas, las de la VSH y las de la porta
+  son idénticas. `npm run calibrate` da la misma salida byte a byte.
+- Coste: el bucle de las pirámides se evalúa en 0,6 mm más de corteza (la franja del anillo) y el de los dos riñones de
+  `classifyWith` gana una distancia al canal del hilio (una longitud) en la grasa perirrenal y en la franja de la cápsula;
+  nada pesado dentro de un bucle. Arranque con SwiftShader (tres rondas alternadas, carga 5–10, antes del rebase): 33,6 /
+  28,4 / 29,8 s en `main` frente a 32,9 / 29,8 / 29,8 s. Índice del build 321,7 → 323,4 kB (325), sin subir el presupuesto.
+- Limitaciones: nueva `arcuate-no-lumen` (los arcuatos son difusos y tenues, +3–6 dB sobre la corteza, sin la reflexión de
+  sus paredes); `no-left-interlobar-vessels` añade la vena renal de un solo tubo y la falta de pirámides en la cara medial
+  (el seno está desplazado hacia el hilio). Quedan: la médula en el 6 % del volumen del parénquima (el de un adulto es
+  mayor), las pirámides anteriores y posteriores más anchas que altas, las sombras de borde de los polos, la doble línea
+  real de Morison contra la grasa gruesa (decisión 81) y la confluencia de la VSH media de la pareja 1.
+
+**Verificación.** `anatomy.test.ts`: pirámides con médula desde ≤ 3 mm de la papila y ≥ 8 mm (fila lateral) o ≥ 4,5 mm
+por su eje, ≥ 15 % de médula en el parénquima del corte coronal, el anillo de los arcuatos en cada pirámide de los dos
+riñones (pared arterial sin vaso, a ≤ 0,6 mm de la unión) y corteza en las columnas de Bertin, el radio del canal del hilio
+igual en los dos riñones (la GPU usa el del derecho), el hilio sin cápsula ni cara por el eje del canal y la cápsula en
+todo el resto del contorno coronal, la vena renal fuera del centro del seno y < 0,2 cm³ dentro del contorno (0,08; 0,71
+en `main`), el orden de ecogenicidad médula < corteza < hígado < grasa perirrenal < seno (una guarda: ya se cumplía); el
+árbol hepático sin bolas en los siete casos (cada extremo periférico se afila a 0,3 mm o sigue en hijas tan gruesas como
+él, y ninguna rama nace más gruesa que el vaso del que sale). Las pruebas de antes siguen (decisión 68). `retroTexture.test.ts`:
+los lóbulos (anclados y sin dirección; en 200 000 puntos al azar, potencia media 1 ± 5 % y 5,8–7 dB de desviación; en los
+dos senos, potencia 1 ± 10 %; correlados a 0,5 mm e independientes a tres células; el seno ≥ 12 dB sobre el hígado y ≥ 4
+dB sobre la grasa perirrenal) y su GLSL con las constantes del módulo en los dos programas de B. `startPoints.test.ts`
+(renal): médula > 70 muestras y la vena renal < 8 dentro del contorno. `faceGradient.test.ts`: la referencia de
+diferencias centrales yerra ≈ (h/ρ)²/6 junto al eje de las puntas afiladas, así que excluye ρ < 0,3 mm (el analítico,
+frente a h = 0,001 mm, queda en 3·10⁻⁶). e2e completa con SwiftShader (equivalencia TS ↔ GLSL en tejido, vaso, velocidad y
+caras) y capturas con GPU antes y después. Revisión adversarial de contexto limpio sobre el primer commit: la textura del
+seno sin normalizar (su potencia media era 2,7, no 1, y la prueba pasaba por los puntos que tocaban), la cota de `inner`
+con la seudodistancia de los conos, una rama lateral más gruesa que su madre afilada, bolas de 1,6–2 mm en las madres con
+hijas, dos pirámides casi fundidas, la cara de la grasa y la cápsula que cambiaban de dueño en sitios distintos en el
+borde de la boca del hilio, y cifras y comentarios desajustados: corregidos.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

@@ -172,12 +172,17 @@ export const TISSUES: TissueProps[] = [
   // cartílago hialino: homogéneo e hipoecoico (≈ 0,15), con el pericondrio como cara (decisión 62)
   { name: 'cartílago costal', c: 1640, rho: 1100, alpha1: 0.9, b: 1, backscatter: 0.15, gas: false, bone: false },
   // Riñón (IT'IS: c 1560, ρ 1066, α 0,7·f^1,0). Corteza iso/ligeramente hipoecoica al hígado;
-  // médula (pirámides) hipoecoica pero no negra, tenue en el adulto (−4,6 dB bajo la corteza; decisión 68); seno =
-  // grasa + vasos, marcadamente ecogénico (E.3, B.5).
+  // médula (pirámides) hipoecoica pero no negra: −8,2 dB bajo la corteza (decisión 87; −4,6 en la 68, con las pirámides
+  // cortadas por el cáliz no se veían) [ESTIMADO]; seno = grasa + vasos, marcadamente ecogénico (E.3, B.5), lo más
+  // ecogénico del riñón: 4,5, +13 dB sobre el hígado y +5,5 sobre la grasa perirrenal [ESTIMADO, decisión 87], en lóbulos de
+  // potencia media 1 (`ultrasound/retroTexture.ts`)
   { name: 'corteza renal', c: 1560, rho: 1066, alpha1: 0.7, b: 1, backscatter: 0.72, gas: false, bone: false },
-  { name: 'médula renal', c: 1560, rho: 1066, alpha1: 0.6, b: 1, backscatter: 0.42, gas: false, bone: false },
-  { name: 'seno renal', c: 1480, rho: 950, alpha1: 0.5, b: 1.1, backscatter: 2.3, gas: false, bone: false, speckleClump: 1.0 },
-  { name: 'grasa perirrenal', c: 1450, rho: 920, alpha1: 0.45, b: 1.1, backscatter: 1.5, gas: false, bone: false, speckleClump: 0.8 },
+  { name: 'médula renal', c: 1560, rho: 1066, alpha1: 0.6, b: 1, backscatter: 0.28, gas: false, bone: false },
+  { name: 'seno renal', c: 1480, rho: 950, alpha1: 0.5, b: 1.1, backscatter: 4.5, gas: false, bone: false, speckleClump: 1.0 },
+  // grasa perirrenal: ecogénica, con tabiques fibrosos (decisión 87: 1,5 → 2,4; en las referencias reales del juez la banda de
+  // Morison y la grasa alrededor del riñón están a 2,5 veces el gris del hígado, la corteza a 0,8) [ESTIMADO]; cierra el
+  // contorno del riñón por contraste a cualquier incidencia, con la línea especular de la cápsula encima de frente
+  { name: 'grasa perirrenal', c: 1450, rho: 920, alpha1: 0.45, b: 1.1, backscatter: 2.4, gas: false, bone: false, speckleClump: 0.8 },
   { name: 'pared de vía biliar', c: 1586, rho: 1079, alpha1: 0.7, b: 1, backscatter: 2.4, gas: false, bone: false },
   // Vértebra: mismas propiedades que el hueso cortical; tejido aparte solo para rotular «columna»
   { name: 'vértebra', c: 3515, rho: 1908, alpha1: 20, b: 1, backscatter: 0.9, gas: false, bone: true },
@@ -193,13 +198,13 @@ export const TISSUES: TissueProps[] = [
   { name: 'pelvis renal (orina)', c: 1482, rho: 994, alpha1: 0.0022, b: 1, backscatter: 0.002, gas: false, bone: false },
   // Retroperitoneo (decisión 81): el psoas y el cuadrado lumbar son músculo estriado (IT'IS, como el de la pared), hipoecoico
   // entre los septos de sus fascículos, que añade `ultrasound/retroTexture.ts`; la grasa retroperitoneal, ecogénica y
-  // granulosa como la perirrenal [ESTIMADO]
+  // granulosa como la perirrenal, algo menos brillante (decisión 87: 1,4 → 2,0) [ESTIMADO]
   { name: 'psoas', c: 1588, rho: 1090, alpha1: 0.617, b: 1.083, backscatter: 0.35, gas: false, bone: false },
   { name: 'cuadrado lumbar', c: 1588, rho: 1090, alpha1: 0.617, b: 1.083, backscatter: 0.35, gas: false, bone: false },
-  { name: 'grasa retroperitoneal', c: 1450, rho: 920, alpha1: 0.45, b: 1.1, backscatter: 1.4, gas: false, bone: false, speckleClump: 0.8 },
+  { name: 'grasa retroperitoneal', c: 1450, rho: 920, alpha1: 0.45, b: 1.1, backscatter: 2.0, gas: false, bone: false, speckleClump: 0.8 },
   // Corazón (decisión 85): el miocardio es músculo estriado cardíaco (IT'IS «heart muscle»: c 1561, ρ 1081; atenuación de
   // Duck 1990, 0,52 dB/cm/MHz), hipoecoico frente al hígado [ESTIMADO 0,4]; el mediastino, grasa con tabiques de tejido
-  // conectivo, algo menos ecogénica que la retroperitoneal y granulosa [ESTIMADO]
+  // conectivo, menos ecogénica que la retroperitoneal (2,0 desde la decisión 87) y granulosa [ESTIMADO]
   { name: 'miocardio', c: 1561, rho: 1081, alpha1: 0.52, b: 1.1, backscatter: 0.4, gas: false, bone: false },
   { name: 'mediastino', c: 1460, rho: 940, alpha1: 0.5, b: 1.1, backscatter: 1.0, gas: false, bone: false, speckleClump: 0.6 },
 ];

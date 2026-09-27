@@ -30,7 +30,8 @@ export interface Kidney {
   hilumRadius: number;
 }
 
-export type KidneyRegion = 'cortex' | 'medulla' | 'sinus' | 'pelvis';
+/** `arcuate`: los vasos arcuatos del borde de la base de cada pirámide (decisión 87). */
+export type KidneyRegion = 'cortex' | 'medulla' | 'sinus' | 'pelvis' | 'arcuate';
 
 export interface KidneyHit {
   /** Distancia con signo al contorno externo (mm, negativa dentro). */
@@ -65,7 +66,7 @@ export function kidneyWorld(q: Vec3, k: Kidney): Vec3 {
 /** Semiejes del riñón adulto de referencia (mm) y del seno con su desplazamiento hacia el hilio: los dos riñones los
  * comparten, y las tablas del shader (pirámides, dedos del seno) salen de ellos. */
 export const KIDNEY_RADII: Vec3 = [54, 27, 23];
-export const KIDNEY_SINUS = { radii: [30, 12, 10] as Vec3, offsetV: 4 };
+export const KIDNEY_SINUS = { radii: [30, 12, 8] as Vec3, offsetV: 4 };
 /**
  * Profundidad bajo la cápsula del centro de la base de cada pirámide, por su eje (mm): corteza de 7–8 mm y parénquima de
  * 15–16 (revisión 25-09). El casquete redondeado de la base, que llegaba a 3 mm de la cápsula, lo corta la unión
@@ -86,25 +87,33 @@ export interface RenalPyramid {
  * algo distintos (un riñón adulto muestra 6–8 en un corte; no son triángulos idénticos ni equidistantes). La fila
  * lateral deja libres las columnas de Bertin de las interlobares (`BERTIN_COLUMNS_U`, a intervalos desiguales). (θ, u) es la posición en la
  * superficie del seno: θ alrededor del eje largo (0 hacia el hilio, π lateral, π/2 anterior); `baseR`, el radio de
- * la base. Antes eran 16 cuñas finas que se veían como rayas oscuras verticales.
+ * la base. Antes eran 16 cuñas finas que se veían como rayas oscuras verticales. Decisión 87: bases de 5,6–8,9 mm de
+ * radio (antes 5,2–7,4) y la papila a 2 mm del seno: conos con la base hacia la corteza y el vértice hacia el seno, de
+ * 8,9–10,7 mm de la papila a la base en la fila lateral, 8,6–9,0 en las oblicuas y 16 en los polos (compuestas, se funden
+ * con la última lateral); las de las filas anterior y posterior, con 15 mm de parénquima, miden 5,8–7 mm y siguen siendo
+ * más anchas que altas. Entre dos pirámides vecinas queda una columna de corteza de ≥ 2 mm.
  */
 const PYRAMID_SPECS: ReadonlyArray<{ theta: number; u: number; baseR: number }> = [
-  { theta: Math.PI + 0.05, u: -39, baseR: 6.8 },
-  { theta: Math.PI - 0.04, u: -15, baseR: 7.4 },
-  { theta: Math.PI + 0.03, u: 10, baseR: 6.4 },
-  { theta: Math.PI - 0.06, u: 37, baseR: 7.0 },
-  { theta: Math.PI / 2 + 0.1, u: -25, baseR: 6.0 },
-  { theta: Math.PI / 2 - 0.05, u: 1, baseR: 6.6 },
-  { theta: Math.PI / 2 + 0.02, u: 26, baseR: 5.6 },
-  { theta: (3 * Math.PI) / 2 - 0.08, u: -24, baseR: 6.2 },
-  { theta: (3 * Math.PI) / 2 + 0.04, u: -1, baseR: 6.8 },
-  { theta: (3 * Math.PI) / 2 - 0.02, u: 25, baseR: 5.8 },
-  { theta: (3 * Math.PI) / 4, u: -2, baseR: 5.4 },
-  { theta: (5 * Math.PI) / 4, u: 22, baseR: 5.2 },
+  { theta: Math.PI + 0.05, u: -39, baseR: 8.2 },
+  { theta: Math.PI - 0.04, u: -15, baseR: 8.9 },
+  { theta: Math.PI + 0.03, u: 10, baseR: 7.7 },
+  { theta: Math.PI - 0.06, u: 37, baseR: 8.4 },
+  { theta: Math.PI / 2 + 0.1, u: -25, baseR: 7.2 },
+  { theta: Math.PI / 2 - 0.05, u: 1, baseR: 7.9 },
+  { theta: Math.PI / 2 + 0.02, u: 26, baseR: 6.7 },
+  { theta: (3 * Math.PI) / 2 - 0.08, u: -24, baseR: 7.4 },
+  { theta: (3 * Math.PI) / 2 + 0.04, u: -1, baseR: 8.2 },
+  { theta: (3 * Math.PI) / 2 - 0.02, u: 25, baseR: 6.4 },
+  { theta: (3 * Math.PI) / 4, u: -2, baseR: 6.5 },
+  { theta: (5 * Math.PI) / 4, u: 20, baseR: 5.6 },
 ];
 
-/** La papila empieza a esta distancia de la superficie del seno (mm): el cáliz (un dedo del seno) la envuelve. */
-const PAPILLA_OFFSET_MM = 3;
+/**
+ * La papila empieza a esta distancia de la superficie del seno (mm): el cáliz menor (un dedo del seno) le hace de copa. Con 3
+ * mm y un dedo de 3,5 mm de radio que pasaba 4 mm de la papila, el cáliz se comía la mitad de la pirámide, que quedaba como
+ * una banda de ~5 mm de alto bajo la corteza y no como un cono (decisión 87).
+ */
+const PAPILLA_OFFSET_MM = 2;
 
 function buildPyramids(): RenalPyramid[] {
   const [ru, rv, rw] = KIDNEY_RADII;
@@ -126,12 +135,28 @@ function buildPyramids(): RenalPyramid[] {
     cone(s, [uo, rv * fo * Math.cos(p.theta), rw * fo * Math.sin(p.theta)], p.baseR);
   }
   // pirámides compuestas de los polos, hacia ±u
-  cone([su * 0.97, KIDNEY_SINUS.offsetV, 0], [ru, -2, 0], 7.2);
-  cone([-su * 0.97, KIDNEY_SINUS.offsetV, 0], [-ru, -2, 1], 6.8);
+  cone([su * 0.97, KIDNEY_SINUS.offsetV, 0], [ru, -2, 0], 8.6);
+  cone([-su * 0.97, KIDNEY_SINUS.offsetV, 0], [-ru, -2, 1], 8.2);
   return out;
 }
 
 export const PYRAMIDS: readonly RenalPyramid[] = buildPyramids();
+
+/**
+ * Factor de las cotas que salen de los conos de las pirámides (decisión 87, revisión adversarial): la seudodistancia de
+ * `sdRoundCone` sobrestima la real hasta √(1 + pendiente²) en el flanco del cono (1,52 en las pirámides anteriores y
+ * posteriores, más anchas que altas); `inner` la multiplica por su inversa, redondeada hacia abajo a cuatro decimales (el
+ * mismo número en la GLSL), para que siga siendo una cota inferior.
+ */
+export const PYRAMID_BD =
+  Math.floor(
+    1e4 /
+      Math.max(
+        ...PYRAMIDS.map((p) =>
+          Math.hypot(1, (p.baseR - p.apexR) / Math.hypot(p.base[0] - p.apex[0], p.base[1] - p.apex[1], p.base[2] - p.apex[2])),
+        ),
+      ),
+  ) / 1e4;
 
 /**
  * Grasa perirrenal (decisión 68): grosor variable, fina (≈ 1 mm) en la cara anterolateral que apoya en el hígado
@@ -207,8 +232,12 @@ export function sdRoundCone(q: Vec3, a: Vec3, b: Vec3, ra: number, rb: number): 
   return Math.sqrt(dx * dx + dy * dy + dz * dz) - (ra + (rb - ra) * s);
 }
 
-/** Dedos del seno hacia cada papila (cálices envueltos en grasa): borde digitado, no un óvalo liso. */
-export const SINUS_FINGER = { backMm: 2, reachMm: 3.5, radiusMm: 3.5, blendMm: 3 } as const;
+/**
+ * Dedos del seno hacia cada papila (infundíbulo y cáliz menor envueltos en grasa): borde digitado, no un óvalo liso. El
+ * dedo llega a 1 mm de la papila y su punta redondeada la ahueca 1,2 mm (decisión 87: antes, con 3,5 mm de radio y 4 mm
+ * más allá de la papila, se comía la punta de la pirámide).
+ */
+export const SINUS_FINGER = { backMm: 3, reachMm: 1, radiusMm: 2.2, blendMm: 2.5 } as const;
 
 /** Columnas de Bertin del plano coronal lateral (entre las pirámides laterales, a intervalos desiguales): posiciones u. */
 export const BERTIN_COLUMNS_U = [-27, -2.5, 23.5] as const;
@@ -255,13 +284,19 @@ export const SINUS_FINGERS: ReadonlyArray<{ a: Vec3; b: Vec3 }> = PYRAMIDS.map((
   };
 });
 
+/**
+ * Distancia con signo al canal del hilio (marco local): la cápsula desde el centro del seno hasta la cara medial (+v). Es
+ * la parte del seno que llega al contorno: allí la grasa del seno sigue en la perirrenal sin cápsula (decisión 87).
+ */
+export function hilumChannelSdf(q: Vec3, k: Kidney): number {
+  const t = Math.min(Math.max(q[1] - k.sinusOffset, 0), k.radii[1]);
+  return Math.hypot(q[0], q[1] - k.sinusOffset - t, q[2]) - k.hilumRadius;
+}
+
 /** Distancia con signo al seno (elipsoide + canal del hilio + dedos hacia las papilas), marco local. */
 export function kidneySinusSdf(q: Vec3, k: Kidney): number {
   const qs: Vec3 = [q[0], q[1] - k.sinusOffset, q[2]];
-  let d = sdEllipsoidLocal(qs, k.sinusRadii);
-  // Canal del hilio: cápsula desde el centro del seno hacia la cara medial (+v)
-  const t = Math.min(Math.max(q[1] - k.sinusOffset, 0), k.radii[1]);
-  d = Math.min(d, Math.hypot(q[0], q[1] - k.sinusOffset - t, q[2]) - k.hilumRadius);
+  let d = Math.min(sdEllipsoidLocal(qs, k.sinusRadii), hilumChannelSdf(q, k));
   for (const f of SINUS_FINGERS)
     d = smoothMin(d, sdRoundCone(q, f.a, f.b, SINUS_FINGER.radiusMm, SINUS_FINGER.radiusMm), SINUS_FINGER.blendMm);
   return d;
@@ -270,12 +305,26 @@ export function kidneySinusSdf(q: Vec3, k: Kidney): number {
 /**
  * Unión corticomedular (mm bajo la cápsula): la médula empieza a esta profundidad. Corta el casquete de la base de cada
  * pirámide (su centro está a `RENAL_CORTEX_MM`) en una base ancha que sigue al contorno, como la línea arcuata: la
- * corteza mide ≥ 7 mm sobre toda pirámide. Con 3 mm, el casquete (de radio `baseR`, 5,2–7,4 mm) llegaba a 3 mm de la
- * cápsula: 3,9 mm de corteza en la mediana (revisión adversarial de la decisión 68).
+ * corteza mide ≥ 7 mm sobre toda pirámide. Con 3 mm, el casquete (de radio `baseR`, entonces 5,2–7,4 mm) llegaba a 3 mm
+ * de la cápsula: 3,9 mm de corteza en la mediana (revisión adversarial de la decisión 68).
  */
 export const MEDULLA_MIN_DEPTH_MM = 7;
 
-/** Regiones del riñón en p. Fuera de él (`dOuter ≥ 0`) no se evalúan el seno ni las pirámides: `dSinus` = +∞. */
+/**
+ * Vasos arcuatos (decisión 87): las arterias y venas arcuatas corren por la unión corticomedular sobre la base de cada
+ * pirámide, donde acaban las interlobares de las columnas de Bertin, y a 3,5 MHz se ven como ecos brillantes en la base de
+ * las pirámides (Emamian 1993; Radiopaedia; revisión 25-09). Son un anillo en el borde de la base: a ≤ `halfMm` de la unión
+ * (`MEDULLA_MIN_DEPTH_MM`) y a ≤ `rimMm` dentro del cono, que se clasifica como pared arterial, sin luz ni flujo
+ * [EXTRAPOLACIÓN PROPIA: sección del anillo; limitación `arcuate-no-lumen`]. En el corte que pasa por el eje de una pirámide,
+ * dos focos en las esquinas de su base; en uno oblicuo, un arco corto.
+ */
+export const ARCUATE = { halfMm: 0.6, rimMm: 2.5 } as const;
+
+/**
+ * Regiones del riñón en p. Fuera de él (`dOuter ≥ 0`) no se evalúan el seno ni las pirámides: `dSinus` = +∞. `inner` acota
+ * por debajo la distancia a la región vecina, el anillo de los arcuatos incluido: las distancias de los conos van por
+ * `PYRAMID_BD`. La cápsula (los primeros `RENAL_CAPSULE_MM`) la resta quien clasifica.
+ */
 export function kidneyQuery(p: Vec3, k: Kidney): KidneyHit {
   const q = kidneyLocal(p, k);
   const dOuter = kidneyOuterSdf(q, k);
@@ -289,15 +338,25 @@ export function kidneyQuery(p: Vec3, k: Kidney): KidneyHit {
     if (dPelvis < 0) return { dOuter, dSinus, region: 'pelvis', inner: Math.min(-dPelvis, -dOuter) };
     return { dOuter, dSinus, region: 'sinus', inner: Math.min(-dSinus, -dOuter, dPelvis) };
   }
-  // Pirámides: conos redondeados de la papila a la base, por debajo de la corteza
+  // Pirámides (conos redondeados de la papila a la base, bajo la corteza) y el anillo de los arcuatos en el borde de su base
   const depth = -dOuter - MEDULLA_MIN_DEPTH_MM;
-  if (depth > 0) {
+  const A = ARCUATE;
+  if (depth > -A.halfMm) {
     let dMed = 1e3;
     for (const pyr of PYRAMIDS) dMed = Math.min(dMed, sdRoundCone(q, pyr.apex, pyr.base, pyr.apexR, pyr.baseR));
-    if (dMed < 0) return { dOuter, dSinus, region: 'medulla', inner: Math.min(-dMed, dSinus, depth) };
-    return { dOuter, dSinus, region: 'cortex', inner: Math.min(-dOuter, dSinus, dMed) };
+    const g = PYRAMID_BD;
+    if (dMed >= 0) return { dOuter, dSinus, region: 'cortex', inner: Math.min(-dOuter, dSinus, dMed * g) };
+    // dentro del cono: el anillo (lejos de la unión menos de halfMm y del borde menos de rimMm), la médula bajo la unión o
+    // la corteza sobre el centro de la base; `toRing` acota la distancia al anillo desde fuera de él
+    const ringDepth = A.halfMm - Math.abs(depth);
+    const ringRim = A.rimMm + dMed;
+    if (ringDepth > 0 && ringRim > 0)
+      return { dOuter, dSinus, region: 'arcuate', inner: Math.min(ringDepth, ringRim * g, -dMed * g, dSinus) };
+    const toRing = Math.max(-ringDepth, -ringRim * g);
+    if (depth > 0) return { dOuter, dSinus, region: 'medulla', inner: Math.min(-dMed * g, dSinus, depth, toRing) };
+    return { dOuter, dSinus, region: 'cortex', inner: Math.min(-dOuter, dSinus, -depth, toRing) };
   }
-  return { dOuter, dSinus, region: 'cortex', inner: Math.min(-dOuter, dSinus, -depth) };
+  return { dOuter, dSinus, region: 'cortex', inner: Math.min(-dOuter, dSinus, -depth - A.halfMm) };
 }
 
 const f4 = (v: number) => v.toFixed(4);
@@ -308,12 +367,13 @@ const vec4 PYRB[N_PYR] = vec4[N_PYR](${PYRAMIDS.map((p) => `vec4(${vec3s(p.base)
 const vec3 FINGA[N_PYR] = vec3[N_PYR](${SINUS_FINGERS.map((f) => vec3s(f.a)).join(', ')});
 const vec3 FINGB[N_PYR] = vec3[N_PYR](${SINUS_FINGERS.map((f) => vec3s(f.b)).join(', ')});
 const vec4 FINGER = vec4(${f4(SINUS_FINGER.radiusMm)}, ${f4(SINUS_FINGER.blendMm)}, ${f4(MEDULLA_MIN_DEPTH_MM)}, 0.0);
+const vec3 ARC = vec3(${f4(ARCUATE.halfMm)}, ${f4(ARCUATE.rimMm)}, ${f4(PYRAMID_BD)});
 const vec3 PERI = vec3(${f4(PERIRENAL.minMm)}, ${f4(PERIRENAL.maxMm)}, ${f4(PERIRENAL.faceMaxMm)});
 const float PERI_SOFT = ${f4(PERIRENAL_SOFT)};`;
 const PELVIS = `const vec4 PELVIS = vec4(${RENAL_PELVIS.radii[0].toFixed(1)}, ${RENAL_PELVIS.radii[1].toFixed(1)}, ${RENAL_PELVIS.radii[2].toFixed(1)}, ${RENAL_PELVIS.offsetV.toFixed(1)}); const float RENAL_CAPSULE_MM = ${RENAL_CAPSULE_MM.toFixed(2)};`;
 const NOTCH = `const vec4 NOTCH = vec4(${HILUM_NOTCH.radii[0].toFixed(1)}, ${HILUM_NOTCH.radii[1].toFixed(1)}, ${HILUM_NOTCH.radii[2].toFixed(1)}, ${HILUM_NOTCH.offsetV.toFixed(1)}); const float NOTCH_ROUND = ${HILUM_NOTCH.roundMm.toFixed(1)};`;
 
-/** Gemelo GLSL: `kidneyQuery` devuelve la región (0 corteza, 1 médula, 2 seno, 3 pelvis). */
+/** Gemelo GLSL: `kidneyQuery` devuelve la región (0 corteza, 1 médula, 2 seno, 3 pelvis, 4 arcuatos). */
 export const KIDNEY_GLSL = /* glsl */ `
 vec3 kidneyLocal(vec3 p, int k) {
   vec3 d = p - uKidC[k];
@@ -371,17 +431,21 @@ float perirenalOuterSdf(vec3 q, int k) {
   return kidneyOuterSdf(q, uKidR[k]) - perirenalThicknessMm(q, k);
 }
 
+// Canal del hilio: cápsula desde el centro del seno hasta la cara medial (+v)
+float hilumChannelSdf(vec3 q, int k) {
+  float t = clamp(q.y - uKidSinus[k].w, 0.0, uKidR[k].y);
+  return length(vec3(q.x, q.y - uKidSinus[k].w - t, q.z)) - uKidExtra.x;
+}
+
 // Seno: elipsoide + canal del hilio + dedos hacia las papilas (cálices)
 float kidneySinusSdf(vec3 q, int k) {
   vec4 sn = uKidSinus[k];
-  float d = sdEllipsoidLocal(vec3(q.x, q.y - sn.w, q.z), sn.xyz);
-  float t = clamp(q.y - sn.w, 0.0, uKidR[k].y);
-  d = min(d, length(vec3(q.x, q.y - sn.w - t, q.z)) - uKidExtra.x);
+  float d = min(sdEllipsoidLocal(vec3(q.x, q.y - sn.w, q.z), sn.xyz), hilumChannelSdf(q, k));
   for (int i = 0; i < N_PYR; i++) d = smoothMin(d, sdRoundCone(q, FINGA[i], FINGB[i], FINGER.x, FINGER.x), FINGER.y);
   return d;
 }
 
-// Región interna: 0 corteza, 1 médula, 2 seno, 3 pelvis; devuelve la distancia interna mínima
+// Región interna: 0 corteza, 1 médula, 2 seno, 3 pelvis, 4 arcuatos (decisión 87); devuelve la distancia interna mínima
 int kidneyQuery(vec3 p, int k, out float inner, out float dOuter) {
   vec3 q = kidneyLocal(p, k);
   dOuter = kidneyOuterSdf(q, uKidR[k]);
@@ -394,13 +458,20 @@ int kidneyQuery(vec3 p, int k, out float inner, out float dOuter) {
     inner = min(min(-dSinus, -dOuter), dPelvis); return 2;
   }
   float depth = -dOuter - FINGER.z;
-  if (depth > 0.0) {
+  if (depth > -ARC.x) {
     float dMed = 1e3;
     for (int i = 0; i < N_PYR; i++) dMed = min(dMed, sdRoundCone(q, PYRA[i].xyz, PYRB[i].xyz, PYRA[i].w, PYRB[i].w));
-    if (dMed < 0.0) { inner = min(min(-dMed, dSinus), depth); return 1; }
-    inner = min(min(-dOuter, dSinus), dMed); return 0;
+    if (dMed >= 0.0) { inner = min(min(-dOuter, dSinus), dMed * ARC.z); return 0; }
+    // anillo de los arcuatos en el borde de la base, médula bajo la unión o corteza sobre el centro de la base (las
+    // distancias de los conos, por PYRAMID_BD)
+    float ringDepth = ARC.x - abs(depth);
+    float ringRim = ARC.y + dMed;
+    if (ringDepth > 0.0 && ringRim > 0.0) { inner = min(min(ringDepth, ringRim * ARC.z), min(-dMed * ARC.z, dSinus)); return 4; }
+    float toRing = max(-ringDepth, -ringRim * ARC.z);
+    if (depth > 0.0) { inner = min(min(-dMed * ARC.z, dSinus), min(depth, toRing)); return 1; }
+    inner = min(min(-dOuter, dSinus), min(-depth, toRing)); return 0;
   }
-  inner = min(min(-dOuter, dSinus), -depth);
+  inner = min(min(-dOuter, dSinus), -depth - ARC.x);
   return 0;
 }
 `;

@@ -14,8 +14,9 @@ import { wallOrientation } from './wallTexture';
  * de ruido por septo) y el brillo de lámina de la pared (`wallOrientation`: ε + (1 − ε)·|cosθ|⁴). Eje: la cuerda del
  * psoas (de T12 a la pelvis, a ≤ 5° de cada tramo, sin costuras entre tramos) y, en el cuadrado, sus fibras
  * iliocostales (de la cresta ilíaca hacia arriba y adentro). Es un factor de la amplitud de la pasada B evaluado en cada
- * plano de elevación, como el de la pared (decisión 62); 1 en el resto de tejidos. Gemelos: estas funciones (TS) y
- * `RETRO_TEXTURE_GLSL`.
+ * plano de elevación, como el de la pared (decisión 62); desde la decisión 87 también los lóbulos del seno renal (grasa
+ * retroperitoneal que sigue en la perirrenal por el hilio, `sinusLobules`); 1 en el resto de tejidos. Gemelos: estas
+ * funciones (TS) y `RETRO_TEXTURE_GLSL`.
  */
 export const RETRO_TEXTURE = {
   /** Célula de la sección (mm): haces de fascículos de 2–5 mm (a 8–15 cm se ven los septos gruesos, no el perimisio fino). */
@@ -30,6 +31,24 @@ export const RETRO_TEXTURE = {
   /** Fibras del cuadrado: |x| que ganan hacia dentro por mm hacia arriba. */
   quadratusSlant: 0.25,
 } as const;
+
+/**
+ * Seno renal (decisión 87): grasa en lóbulos de milímetros con tabiques fibrosos, vasos segmentarios y cálices colapsados,
+ * ecogénica y heterogénea («lo más ecogénico, heterogéneo»: revisión 25-09, Radiopaedia). Factor log-normal anclado de un
+ * ruido de valor, `norm`·exp(a·(n − 0,5)) en células de `cellMm`, con sal fija (anatomía, no moteado): la desviación de n es
+ * 0,186, así que a = 4 da 6,4 dB de desviación, y `norm` = 1/√E[exp(2a(n − 0,5))] (2·10⁶ puntos) deja la potencia media en
+ * 1 (la amplitud media, en 0,79): la retrodispersión de `TISSUES` es la media del seno en la imagen y en la puerta PW, que
+ * no lleva la textura [ESTIMADO: la heterogeneidad, sobre las referencias reales del juez ciego, donde la desviación del
+ * gris del seno es 3 veces la del hígado]. Encima van los grumos del tejido (decisión 56). Antes era el moteado del hígado
+ * más brillante.
+ */
+export const SINUS_TEXTURE = { cellMm: 3, gain: 4, salt: 57.3, norm: 0.615 } as const;
+
+/** Factor de amplitud de los lóbulos del seno renal en el punto material `m` (potencia media 1). */
+export function sinusLobules(m: Vec3): number {
+  const S = SINUS_TEXTURE;
+  return S.norm * Math.exp(S.gain * (valueNoise([m[0] / S.cellMm, m[1] / S.cellMm, m[2] / S.cellMm], S.salt) - 0.5));
+}
 
 const SALT = { u: 23.9, v: 47.3, mask: 91.1 } as const;
 
@@ -103,10 +122,11 @@ export function fascicleSeptum(m: Vec3, tissue: Tissue): [number, number, number
 
 /**
  * Factor de amplitud de la textura de los músculos retroperitoneales en el punto material `m` del tejido `tissue`, con el
- * haz en la dirección `dir` (unitaria, del mundo): 1 + (G·brillo − 1)·peso, con G la ganancia del septo sobre el músculo.
- * 1 fuera del psoas y del cuadrado lumbar. La normal del septo pasa al mundo por la jacobiana de la compresión (`warp`).
+ * haz en la dirección `dir` (unitaria, del mundo): 1 + (G·brillo − 1)·peso, con G la ganancia del septo sobre el músculo; en
+ * el seno renal, sus lóbulos (`sinusLobules`). 1 fuera del psoas, del cuadrado lumbar y del seno. La normal del septo pasa al mundo por la jacobiana de la compresión (`warp`).
  */
 export function retroTexture(m: Vec3, tissue: Tissue, dir: Vec3, warp: Warp = IDENTITY_WARP): number {
+  if (tissue === Tissue.RenalSinus) return sinusLobules(m);
   if (tissue !== Tissue.Psoas && tissue !== Tissue.QuadratusLumborum) return 1;
   const s = fascicleSeptum(m, tissue);
   const g = RETRO_TEXTURE.septumBack / TISSUES[tissue].backscatter;
@@ -126,6 +146,7 @@ export const RETRO_TEXTURE_GLSL = /* glsl */ `
 const vec4 RT_A = vec4(${f4(RETRO_TEXTURE.fascicleMm)}, ${f4(RETRO_TEXTURE.septumSigmaMm)}, ${f4(RETRO_TEXTURE.septumBack)}, ${f4(RETRO_TEXTURE.segmentMm)});
 const vec3 RT_B = vec3(${f4(RETRO_TEXTURE.mask[0])}, ${f4(RETRO_TEXTURE.mask[1])}, ${f4(RETRO_TEXTURE.quadratusSlant)});
 const vec3 RT_CHORD = vec3(${chord.map(f4).join(', ')});
+const vec4 RT_S = vec4(${f4(SINUS_TEXTURE.cellMm)}, ${f4(SINUS_TEXTURE.gain)}, ${f4(SINUS_TEXTURE.salt)}, ${f4(SINUS_TEXTURE.norm)});
 vec3 retroMuscleAxis(vec3 m, int tissue) {
   float sx = m.x < 0.0 ? -1.0 : 1.0;
   return tissue == T_PSOAS ? vec3(sx * RT_CHORD.x, RT_CHORD.yz) : normalize(vec3(-sx * RT_B.z, 0.0, 1.0));
@@ -161,6 +182,8 @@ vec4 fascicleSeptum(vec3 m, int tissue) {
   return vec4(g.x * e1 + g.y * e2, mask * exp(-0.5 * x * x));
 }
 float retroTexture(vec3 m, int tissue, vec3 dir, Warp w) {
+  // lóbulos del seno renal (decisión 87, sinusLobules)
+  if (tissue == T_RENAL_SINUS) return RT_S.w * exp(RT_S.y * (valueNoise(m / RT_S.x, RT_S.z) - 0.5));
   if (tissue != T_PSOAS && tissue != T_QUADRATUS) return 1.0;
   vec4 s = fascicleSeptum(m, tissue);
   return 1.0 + (RT_A.z / tissueBack(tissue) * wallOrientation(normalize(warpNormal(w, s.xyz)), dir) - 1.0) * s.w;

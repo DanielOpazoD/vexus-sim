@@ -4,17 +4,19 @@ import { uncompress } from '../anatomy/compression';
 import { START_POINTS } from '../app/startPoints';
 import { AnatomyScene, BASELINE_CALIBER, wallThicknessMm, type FaceGeometry } from '../anatomy/scene';
 import { Interface } from '../anatomy/interfaces';
-import { Tissue } from '../anatomy/tissues';
+import { TISSUES, Tissue } from '../anatomy/tissues';
 import { CASES, NORMAL_ADULT } from '../cases';
 import { SimulationClock } from '../core/clock';
 import { PhysiologyEngine } from '../physiology/engine';
 import { contactCoupling, probeContact } from '../probe/contact';
 import { CONVEX_C35, lineDirection, pointOnLine, probeFrame, skinSoftness, type ProbePose } from '../probe/probe';
 import {
+  ARCUATE,
   MEDULLA_MIN_DEPTH_MM,
   PERIRENAL,
   PYRAMIDS,
   RENAL_IMPRESSION_OVERLAP_MM,
+  hilumChannelSdf,
   kidneyLocal,
   kidneyOuterSdf,
   kidneyQuery,
@@ -27,7 +29,7 @@ import { sdEllipsoidLocal, sdSpine, tubeQuery } from '../anatomy/primitives';
 import { HEART_WALLS, domeFloor, heartChambers, ivcAtrium } from '../anatomy/organs/heart';
 import { renalPatternFromPeaks } from '../vexus/classification';
 import { VESSEL_META } from '../physiology/vessels';
-import { BRANCH_MAX_RADIUS_SCALE } from '../anatomy/vesselTree';
+import { BRANCH_MAX_RADIUS_SCALE, BRANCH_TIP_RADIUS_MM, RENAL_VEIN_SINUS_V } from '../anatomy/vesselTree';
 
 describe('Anatomía implícita (base B)', () => {
   const scene = new AnatomyScene(NORMAL_ADULT);
@@ -486,6 +488,113 @@ describe('Anatomía implícita (base B)', () => {
     }
   });
 
+  // Decisión 87 (juez ciego, ronda 3): «pirámides como tres hendiduras oscuras» (eran las interlobares; las pirámides, bandas
+  // de 4–6 mm que el cáliz se comía), «la cápsula no cierra», «el seno es el mismo moteado más brillante» y «una columna
+  // negra que cruza el contorno» (la vena renal desde el centro del seno, no la pelvis, que no está en el plano)
+  it('riñón (decisión 87): conos de médula hasta el seno, arcuatos en su base, hilio sin cápsula y sin columna negra', () => {
+    const k = scene.kidneyRight;
+    const region = (q: V) => kidneyQuery(kidneyWorld(q, k), k).region;
+    // pirámides: por su eje, la médula visible empieza a ≤ 3 mm de la papila (el cáliz la ahueca, no se la come) y mide
+    // ≥ 8 mm en la fila lateral (antes 4,3–6,3), ≥ 4,5 mm en las demás (antes 0–1,4 en la anterior y la posterior)
+    PYRAMIDS.forEach((p, i) => {
+      const d: V = [p.base[0] - p.apex[0], p.base[1] - p.apex[1], p.base[2] - p.apex[2]];
+      const L = Math.hypot(...d);
+      let first = NaN;
+      let last = NaN;
+      for (let t = -3; t <= L + 3; t += 0.05) {
+        if (region([p.apex[0] + (d[0] * t) / L, p.apex[1] + (d[1] * t) / L, p.apex[2] + (d[2] * t) / L]) !== 'medulla') continue;
+        if (Number.isNaN(first)) first = t;
+        last = t;
+      }
+      expect(first, `pirámide ${i}`).toBeLessThan(3);
+      expect(last - first, `pirámide ${i}`).toBeGreaterThan(i < 4 ? 8 : 4.5);
+    });
+    // la médula es ≥ 15 % del parénquima del corte coronal (antes 10,6 %) y sigue bajo ≥ 7 mm de corteza (decisión 68)
+    let med = 0;
+    let par = 0;
+    for (let u = -56; u <= 56; u += 0.5)
+      for (let v = -29; v <= 29; v += 0.5) {
+        const kh = kidneyQuery(kidneyWorld([u, v, 0], k), k);
+        if (kh.dOuter >= 0) continue;
+        const r = kh.region;
+        if (r === 'medulla') med++;
+        if (r === 'medulla' || r === 'cortex' || r === 'arcuate') par++;
+      }
+    expect(med / par).toBeGreaterThan(0.15);
+    // arcuatos: pared arterial en el borde de la base de cada pirámide de los dos riñones (el izquierdo, especular), a ≤
+    // halfMm de la unión corticomedular (se busca alrededor de la base, en el marco del cono: la unión es curva y el eje de
+    // las pirámides se abre en abanico)
+    for (const kk of [scene.kidneyRight, scene.kidneyLeft])
+      PYRAMIDS.forEach((p, i) => {
+        const n: V = [p.base[0] - p.apex[0], p.base[1] - p.apex[1], p.base[2] - p.apex[2]];
+        const l = Math.hypot(...n);
+        const a: V = [n[0] / l, n[1] / l, n[2] / l];
+        const h = Math.abs(a[0]) < 0.9 ? ([1, 0, 0] as V) : ([0, 1, 0] as V);
+        const c1: V = [a[1] * h[2] - a[2] * h[1], a[2] * h[0] - a[0] * h[2], a[0] * h[1] - a[1] * h[0]];
+        const l1 = Math.hypot(...c1);
+        const e1: V = [c1[0] / l1, c1[1] / l1, c1[2] / l1];
+        const e2: V = [a[1] * e1[2] - a[2] * e1[1], a[2] * e1[0] - a[0] * e1[2], a[0] * e1[1] - a[1] * e1[0]];
+        let arc = 0;
+        for (let f = 0; f < 16; f++) {
+          const ph = (2 * Math.PI * f) / 16;
+          const e: V = [0, 1, 2].map((j) => Math.cos(ph) * e1[j] + Math.sin(ph) * e2[j]) as V;
+          for (let t = 0; t <= p.baseR + 1; t += 0.25)
+            for (let sa = -4; sa <= 3; sa += 0.25) {
+              const q: V = [0, 1, 2].map((j) => p.base[j] + e[j] * t + a[j] * sa) as V;
+              const kh = kidneyQuery(kidneyWorld(q, kk), kk);
+              if (kh.region !== 'arcuate') continue;
+              // la clasificación lo da como pared arterial (sin luz ni vaso)
+              if (arc++ === 0) expect(cls(kidneyWorld(q, kk))).toMatchObject({ tissue: Tissue.ArteryWall, vessel: null });
+              expect(Math.abs(-kh.dOuter - MEDULLA_MIN_DEPTH_MM), `pirámide ${i}`).toBeLessThan(ARCUATE.halfMm + 1e-9);
+            }
+        }
+        expect(arc, `pirámide ${i}`).toBeGreaterThan(20);
+      });
+    // …y no en las columnas de Bertin: a la profundidad de la unión, entre dos pirámides laterales, corteza
+    expect(region([-2.8, -20, 0])).toBe('cortex');
+    // el radio del canal del hilio de la GPU es el del riñón derecho (`uKidExtra.x`): los dos riñones deben compartirlo
+    expect(scene.kidneyLeft.hilumRadius).toBe(scene.kidneyRight.hilumRadius);
+    // hilio: por el eje del canal del seno, del seno a la grasa perirrenal sin cápsula ni cara (antes la cápsula cruzaba la
+    // boca del hilio); fuera del canal, el contorno sí tiene su cápsula
+    const seq: string[] = [];
+    for (let v = 8; v <= 34; v += 0.1) {
+      const c = cls(kidneyWorld([0, v, -1], k));
+      if (c.tissue === Tissue.PerirenalFat) expect(c.interface, `v ${v.toFixed(1)}`).toBe(Interface.None);
+      if (seq[seq.length - 1] !== Tissue[c.tissue]) seq.push(Tissue[c.tissue]);
+    }
+    expect(seq).not.toContain('RenalCapsule');
+    expect(seq).toContain('PerirenalFat');
+    expect(hilumChannelSdf([0, 20, -1], k)).toBeLessThan(0);
+    // cierre del contorno: en el corte coronal, todo rayo del centro que no sale por el hilio cruza la cápsula renal
+    for (let a = 0; a < 72; a++) {
+      const th = (2 * Math.PI * a) / 72;
+      const dir: V = [Math.cos(th), Math.sin(th), 0];
+      let r = 0;
+      while (kidneyOuterSdf([dir[0] * r, dir[1] * r, 0], k) < 0) r += 0.05;
+      const q: V = [dir[0] * (r - 0.3), dir[1] * (r - 0.3), 0];
+      if (hilumChannelSdf(q, k) < 0) continue;
+      expect(cls(kidneyWorld(q, k)).tissue, `${a * 5}°`).toBe(Tissue.RenalCapsule);
+    }
+    // sin columna negra: la vena renal nace en el borde medial del seno (en su antiguo nodo, el centro del seno, hay grasa
+    // del seno) y dentro del contorno del riñón ocupa < 0,2 cm³ (0,08; antes 0,71)
+    expect(cls(kidneyWorld([0, 8, 5], k)).tissue).toBe(Tissue.RenalSinus);
+    expect(RENAL_VEIN_SINUS_V).toBeGreaterThan(k.sinusOffset + k.sinusRadii[1] - 2);
+    let vein = 0;
+    for (let u = -10; u <= 10; u += 0.5)
+      for (let v = 0; v <= 30; v += 0.5)
+        for (let w = -5; w <= 15; w += 0.5) {
+          const m = kidneyWorld([u, v, w], k);
+          if (kidneyQuery(m, k).dOuter < 0 && cls(m).vessel === 'renalVeinRight') vein += 0.125;
+        }
+    expect(vein).toBeLessThan(200);
+    // ecogenicidad (revisión 25-09): médula < corteza < hígado < grasa perirrenal < seno
+    const b = (t: Tissue) => TISSUES[t].backscatter;
+    expect(b(Tissue.RenalMedulla)).toBeLessThan(b(Tissue.RenalCortex));
+    expect(b(Tissue.RenalCortex)).toBeLessThan(b(Tissue.Liver));
+    expect(b(Tissue.Liver)).toBeLessThan(b(Tissue.PerirenalFat));
+    expect(b(Tissue.PerirenalFat)).toBeLessThan(b(Tissue.RenalSinus));
+  });
+
   it('riñón derecho: seno ecogénico, pirámides, corteza, grasa perirrenal e interlobares', () => {
     const k = scene.kidneyRight;
     // pelvis anecoica en el centro del seno; seno ecogénico alrededor; cápsula fina en la superficie
@@ -570,7 +679,9 @@ describe('Anatomía implícita (base B)', () => {
       expect(scene.vesselById.get(b.id)!.flowFactor).toBeUndefined();
       expect(b.flowFactor!).toBeGreaterThan(0.5);
       expect(b.flowFactor!).toBeLessThan(1);
-      expect(b.tube.nodes[0].r).toBeGreaterThanOrEqual(0.9);
+      // el origen (el nodo más grueso) conserva ≥ 0,6 mm (0,9 salvo las laterales de las madres afiladas, que no nacen más
+      // gruesas que ellas); el extremo sigue en sus hijas o se afila (decisión 87)
+      expect(Math.max(b.tube.nodes[0].r, b.tube.nodes[1].r)).toBeGreaterThanOrEqual(0.6);
     }
     // determinista: misma escena → mismas ramas
     const again = new AnatomyScene(NORMAL_ADULT).vessels.filter((v) => v.flowFactor !== undefined);
@@ -586,6 +697,56 @@ describe('Anatomía implícita (base B)', () => {
     expect(c.tissue).toBe(Tissue.Blood);
     expect(c.vessel).toBe(b0.id);
     expect(c.flowFactor).toBeLessThan(1);
+  });
+
+  // Decisión 87: el juez ciego (ronda 3) veía «una vena recta que acaba en un círculo, como una piruleta»: todas las ramas
+  // terminaban con 0,9 mm y una tapa esférica, y seis madres (la VSH derecha con 2,4 mm) sin hijas en su extremo, con una
+  // de 2–2,4 mm. Ahora cada extremo periférico del árbol hepático o sigue en hijas casi tan gruesas como él (la unión en «Y»,
+  // sin bola) o se afila hasta BRANCH_TIP_RADIUS_MM.
+  it('ningún extremo periférico del árbol hepático acaba en una tapa: se afila o sigue en sus hijas (decisión 87)', () => {
+    for (const p of CASES) {
+      const sc = new AnatomyScene(p);
+      const hepatic = sc.vessels.filter((v) => ['hepaticVein', 'portal'].includes(VESSEL_META[v.id].system));
+      const bad: string[] = [];
+      let tapered = 0;
+      for (const v of hepatic) {
+        const n = v.tube.nodes;
+        // extremo periférico: las suprahepáticas (y sus ramas) van de la periferia a la cava; la porta, al revés
+        const tip = VESSEL_META[v.id].system === 'hepaticVein' ? n[0] : n[n.length - 1];
+        const kids = hepatic.filter(
+          (b) =>
+            b !== v &&
+            b.flowFactor !== undefined &&
+            b.tube.nodes.some((k) => Math.hypot(k.p[0] - tip.p[0], k.p[1] - tip.p[1], k.p[2] - tip.p[2]) < 1e-6),
+        );
+        if (tip.r <= BRANCH_TIP_RADIUS_MM + 1e-9) tapered++;
+        else if (kids.length === 0) {
+          // los troncos que no llegan a la periferia del modelo (la porta principal y la izquierda, la VSH común…) se
+          // continúan en otra rama madre por su nodo: no son extremos
+          const cont = sc.vessels.some(
+            (o) =>
+              o !== v &&
+              o.flowFactor === undefined &&
+              o.tube.nodes.some((k) => Math.hypot(k.p[0] - tip.p[0], k.p[1] - tip.p[1], k.p[2] - tip.p[2]) < 1e-6),
+          );
+          if (!cont) bad.push(`${p.id} ${v.id}${v.flowFactor === undefined ? '' : '*'}: tapa de ${tip.r.toFixed(2)} mm`);
+        } else {
+          // sin bola: las hijas nacen tan gruesas como el extremo que continúan (la unión en «Y»)
+          const r0 = Math.max(...kids.map((b) => Math.max(b.tube.nodes[0].r, b.tube.nodes[1].r)));
+          if (r0 < tip.r - 1e-9) bad.push(`${p.id} ${v.id}: hijas de ${r0.toFixed(2)} en un extremo de ${tip.r.toFixed(2)} mm`);
+        }
+      }
+      // y ninguna rama nace más gruesa que el vaso del que sale: su esfera de origen cabe en la luz de otro tubo del mismo
+      // id (la madre o la rama que continúa); antes la lateral de una madre afilada salía con 0,9 mm donde esta medía 0,81
+      for (const b of hepatic.filter((x) => x.flowFactor !== undefined)) {
+        const [n0, n1] = b.tube.nodes;
+        const o = n0.r >= n1.r ? n0 : n1;
+        const inside = Math.min(...hepatic.filter((v) => v !== b && v.id === b.id).map((v) => tubeQuery(o.p, v.tube, 1).d + o.r));
+        if (inside > 1e-6) bad.push(`${p.id} ${b.id}*: nace ${inside.toFixed(2)} mm más gruesa que su madre`);
+      }
+      expect(bad).toEqual([]);
+      expect(tapered, p.id).toBeGreaterThan(40);
+    }
   });
 
   // Antes la contención solo se comprobaba en los extremos: en la congestión grave una rama de

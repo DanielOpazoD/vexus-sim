@@ -28,12 +28,14 @@ import {
   KIDNEY_SINUS,
   PERIRENAL,
   RENAL_CAPSULE_MM,
+  hilumChannelSdf,
   kidneyLocal,
   kidneyOuterSdf,
   kidneyQuery,
   perirenalOuterSdf,
   perirenalThicknessMm,
   type Kidney,
+  type KidneyRegion,
 } from './organs/kidney';
 import { LIVER_BLEND_MM, liverBaseSdf, liverLobes, liverSdf, visceralFaceDistance, type VisceralFace } from './organs/liver';
 import { buildHepaticBranches, buildVesselTree, wallThicknessMm, type DuctDef, type VesselDef } from './vesselTree';
@@ -304,16 +306,15 @@ export class AnatomyScene {
       });
     }
     ({ vessels: this.vessels, ducts: this.ducts } = buildVesselTree(this.kidneyRight, this.kidneyLeft));
-    // Ramas de 3.º–4.º orden confinadas al hígado (el SDF ya conoce riñón y vesícula)
-    this.vessels = [
-      ...this.vessels,
-      ...buildHepaticBranches(
-        this.vessels,
-        (m) => -this.liverInteriorMargin(m),
-        7,
-        (m) => Math.min(this.liverInteriorMargin(m), this.ligamentumVenosumSdf(m)),
-      ),
-    ];
+    // Ramas de 3.º–4.º orden confinadas al hígado (el SDF ya conoce riñón y vesícula); las madres sin hijas en su extremo,
+    // afiladas (decisión 87)
+    const { branches, parents } = buildHepaticBranches(
+      this.vessels,
+      (m) => -this.liverInteriorMargin(m),
+      7,
+      (m) => Math.min(this.liverInteriorMargin(m), this.ligamentumVenosumSdf(m)),
+    );
+    this.vessels = [...parents, ...branches];
     // Solo los vasos «madre»: las ramas procedurales comparten id y no deben sustituirlos
     this.vesselById = new Map(this.vessels.filter((v) => v.flowFactor === undefined).map((v) => [v.id, v]));
     this.tubeBounds = [
@@ -766,26 +767,26 @@ export class AnatomyScene {
         periThin = fat <= PERIRENAL.faceMaxMm;
       }
       if (kh.dOuter < 0) {
-        // cápsula fibrosa: línea brillante que separa la corteza de la grasa perirrenal
+        // cápsula fibrosa: línea brillante que separa la corteza de la grasa perirrenal, salvo en la boca del hilio: dentro
+        // del canal del seno su grasa sigue en la perirrenal (decisión 87: antes la cápsula la cruzaba). El mismo canal
+        // decide la cara de la grasa de fuera, así que las dos mitades de la cara cambian de dueño en el mismo sitio, y la
+        // distancia a la frontera lo cuenta
+        let bd = Math.min(kh.inner, -kh.dOuter - RENAL_CAPSULE_MM);
         if (-kh.dOuter < RENAL_CAPSULE_MM) {
-          const cls: Classification = {
-            ...NONE,
-            tissue: Tissue.RenalCapsule,
-            boundaryDistance: Math.min(-kh.dOuter, RENAL_CAPSULE_MM + kh.dOuter),
-            interface: Interface.RenalCapsule,
-            interfaceDistance: -kh.dOuter,
-          };
-          return { cls, dPeriMm, periThin };
+          const hc = hilumChannelSdf(kidneyLocal(m, k), k);
+          if (hc > 0) {
+            const cls: Classification = {
+              ...NONE,
+              tissue: Tissue.RenalCapsule,
+              boundaryDistance: Math.min(-kh.dOuter, RENAL_CAPSULE_MM + kh.dOuter, kh.inner, hc),
+              interface: Interface.RenalCapsule,
+              interfaceDistance: -kh.dOuter,
+            };
+            return { cls, dPeriMm, periThin };
+          }
+          bd = Math.min(kh.inner, -hc);
         }
-        const tissue =
-          kh.region === 'pelvis'
-            ? Tissue.RenalPelvis
-            : kh.region === 'sinus'
-              ? Tissue.RenalSinus
-              : kh.region === 'medulla'
-                ? Tissue.RenalMedulla
-                : Tissue.RenalCortex;
-        return { cls: { ...NONE, tissue, boundaryDistance: kh.inner }, dPeriMm, periThin };
+        return { cls: { ...NONE, tissue: KIDNEY_TISSUE[kh.region], boundaryDistance: bd }, dPeriMm, periThin };
       }
       // Grasa perirrenal (fascia de Gerota) de grosor variable (decisión 68) hasta la impresión renal del hígado: en
       // el receso de Morison la cápsula hepática apoya directamente sobre ella, sin hueco.
@@ -796,13 +797,16 @@ export class AnatomyScene {
         // mitad interna, y toda la fina (decisión 81), la de la cápsula renal: las dos caras de la fina, a 1–2,5 mm, eran dos
         // líneas paralelas (frente al hígado, la grasa retroperitoneal o el intestino); ahora son una, y en Morison la
         // cápsula hepática le sigue cediendo la suya
+        // Frente a la boca del hilio (el canal del seno) no hay cápsula que dibujar: grasa con grasa (decisión 87); la
+        // distancia a la frontera cuenta el cambio de dueño de la cara
         const outerFace = kh.dOuter > 0.5 * fat && fat > PERIRENAL.faceMaxMm;
         const ifd = outerFace ? fat - kh.dOuter : kh.dOuter;
-        const face = !outerFace || this.liverSdf(m) <= ifd + MORISON_CONTACT_MM;
+        const hc = hilumChannelSdf(kidneyLocal(m, k), k);
+        const face = outerFace ? this.liverSdf(m) <= ifd + MORISON_CONTACT_MM : hc > 0;
         const cls: Classification = {
           ...NONE,
           tissue: Tissue.PerirenalFat,
-          boundaryDistance: Math.min(kh.dOuter, fat - kh.dOuter),
+          boundaryDistance: Math.min(kh.dOuter, fat - kh.dOuter, Math.abs(hc)),
           interface: face ? (outerFace ? Interface.PerirenalFat : Interface.RenalCapsule) : Interface.None,
           interfaceDistance: face ? ifd : NONE.interfaceDistance,
         };
@@ -865,6 +869,15 @@ export class AnatomyScene {
     return { ...NONE, tissue: Tissue.Liver, boundaryDistance: bd };
   }
 }
+
+/** Tejido de cada región del riñón; los vasos arcuatos (decisión 87) son pared arterial sin luz. */
+const KIDNEY_TISSUE: Readonly<Record<KidneyRegion, Tissue>> = {
+  pelvis: Tissue.RenalPelvis,
+  sinus: Tissue.RenalSinus,
+  medulla: Tissue.RenalMedulla,
+  arcuate: Tissue.ArteryWall,
+  cortex: Tissue.RenalCortex,
+};
 
 /** Clasificación «nada» (aire fuera del cuerpo): base de todas las demás. */
 const NONE: Classification = Object.freeze({

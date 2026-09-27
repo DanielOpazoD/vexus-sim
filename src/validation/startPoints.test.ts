@@ -11,7 +11,7 @@ import { clonePatient, type RespiratoryPattern } from '../physiology/patientStat
 import { uncompress } from '../anatomy/compression';
 import { domeFloor } from '../anatomy/organs/heart';
 import { heartChamber } from '../anatomy/organs/heartChamber';
-import { kidneyLocal, perirenalOuterSdf } from '../anatomy/organs/kidney';
+import { kidneyLocal, kidneyOuterSdf, perirenalOuterSdf } from '../anatomy/organs/kidney';
 import { contactCoupling, probeContact } from '../probe/contact';
 import { CONVEX_C35, lineDirection, pointOnLine, type ProbePose } from '../probe/probe';
 import { rayAttenuationDb } from '../ultrasound/transmission';
@@ -549,7 +549,8 @@ describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', 
     const s = sweep(byId('renal'), 160);
     expect(s.coupling).toBeGreaterThan(0.5);
     expect(s.tissues.get(Tissue.RenalCortex) ?? 0).toBeGreaterThan(150);
-    expect(s.tissues.get(Tissue.RenalMedulla) ?? 0).toBeGreaterThan(25); // pirámides discretas (decisión 43)
+    // pirámides discretas (decisión 43) en cono hasta el seno (decisión 87: 58 → 89 muestras)
+    expect(s.tissues.get(Tissue.RenalMedulla) ?? 0).toBeGreaterThan(70);
     expect(s.tissues.get(Tissue.RenalSinus) ?? 0).toBeGreaterThan(40);
     expect([...s.vessels.keys()].some((v) => /interlobar|renalVein/i.test(v))).toBe(true);
     // el hígado junto al polo superior (Morison)
@@ -574,5 +575,16 @@ describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', 
     const tag = JSON.stringify(Object.fromEntries([...ring].map(([t, n]) => [Tissue[t], n])));
     expect(ring.get(Tissue.Bowel) ?? 0, tag).toBe(0);
     expect(ring.get(Tissue.RetroperitonealFat) ?? 0, tag).toBeGreaterThan(200);
+    // decisión 87: sin la columna negra que cruzaba el contorno (la vena renal desde el centro del seno: 17 muestras dentro
+    // del riñón); la vena nace en el borde medial del seno y el plano solo la corta en el hilio
+    let veinInside = 0;
+    for (let i = 0; i < 61; i++) {
+      const theta = -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * i) / 60;
+      for (let r = 2; r < 160; r += 2) {
+        const m = uncompress(pointOnLine(contact.frame, CONVEX_C35, theta, r), contact);
+        if (kidneyOuterSdf(kidneyLocal(m, k), k) < 0 && scene.classify(m, BASELINE_CALIBER).vessel === 'renalVeinRight') veinInside++;
+      }
+    }
+    expect(veinInside).toBeLessThan(8);
   });
 });

@@ -22,6 +22,14 @@ export interface VesselDef {
   flowFactor?: number;
 }
 
+/**
+ * Origen de la vena renal en el seno (decisión 87): la vena se forma en el hilio con 2–3 segmentarias de 4–6 mm; un solo
+ * tubo que nace en el borde medial del seno (v, mm, marco del riñón) con `RENAL_VEIN_SINUS_R` y se ensancha hasta el hilio
+ * las resume [EXTRAPOLACIÓN PROPIA]. En el seno solo queda su grasa, sin sistema colector ni columna negra.
+ */
+export const RENAL_VEIN_SINUS_V = 15;
+export const RENAL_VEIN_SINUS_R = 2;
+
 /** Conducto biliar: tubo sin flujo, luz anecoica y pared ecogénica. */
 export interface DuctDef {
   id: 'cbd' | 'rightHepaticDuct' | 'leftHepaticDuct' | 'cysticDuct';
@@ -82,12 +90,15 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
   // Interlobares (decisión 68): por la columna de Bertin desde el seno hasta la base de las pirámides (unión
   // corticomedular, donde se hacen arcuatas), con una leve curva propia y hondura distinta en cada columna; antes
   // llegaban a 3 mm de la cápsula y eran tres rayas rectas, paralelas y equidistantes
+  // (decisión 87) se afilan hacia la unión, donde se hacen arcuatas de 1–1,5 mm [EXTRAPOLACIÓN PROPIA: los radios]: el tramo
+  // de la columna ya no es una hendidura negra de 2,6 mm hasta la base de las pirámides; la puerta PW de la cadena del
+  // alumno queda junto al seno, donde miden lo mismo que antes (el `refRadius`, que da el área y la velocidad, no cambia)
   const interlobarVein = (id: VesselId, u: number, bow: number, outer: number): VesselDef =>
     thin(
       id,
       [
-        [kw(kR, [u * 1.12 + 0.4 * bow, outer, 1.8]), 1.3],
-        [kw(kR, [u * 1.05 + bow, (outer - 6) / 2, 1.8]), 1.65],
+        [kw(kR, [u * 1.12 + 0.4 * bow, outer, 1.8]), 0.7],
+        [kw(kR, [u * 1.05 + bow, (outer - 6) / 2, 1.8]), 1.4],
         [kw(kR, [u, -6, 1.8]), 1.95],
       ],
       1.7,
@@ -98,8 +109,8 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       id,
       [
         [kw(kR, [u, -6, -1.8]), 1.35],
-        [kw(kR, [u * 1.05 + bow, (outer - 6) / 2, -1.8]), 1.15],
-        [kw(kR, [u * 1.12 + 0.4 * bow, outer, -1.8]), 0.95],
+        [kw(kR, [u * 1.05 + bow, (outer - 6) / 2, -1.8]), 1.0],
+        [kw(kR, [u * 1.12 + 0.4 * bow, outer, -1.8]), 0.5],
       ],
       1.15,
       0.4,
@@ -392,10 +403,12 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       ],
       2.5,
     ),
+    // la vena renal se forma en el hilio con las segmentarias: nace en el borde medial del seno con 4 mm de diámetro y se
+    // ensancha hasta el hilio (decisión 87; antes, 8 mm desde el centro del seno: una columna negra que cruzaba el contorno)
     thin(
       'renalVeinRight',
       [
-        [kw(kR, [0, 8, 5]), 4],
+        [kw(kR, [0, RENAL_VEIN_SINUS_V, 5]), RENAL_VEIN_SINUS_R],
         [hilumVeinR, 4.5],
         [[-40, -20, -70], 4.5],
         [[-22, -16, -66], 4.5],
@@ -416,7 +429,7 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
     thin(
       'renalVeinLeft',
       [
-        [kw(kL, [0, 8, -5]), 4],
+        [kw(kL, [0, RENAL_VEIN_SINUS_V, -5]), RENAL_VEIN_SINUS_R],
         [hilumVeinL, 4.5],
         // por delante de la aorta y estrechada en la pinza aortomesentérica (r 3), sin tocar la aorta ni la AMS
         [[40, -17, -63], 4.5],
@@ -507,6 +520,14 @@ export function wallThicknessMm(def: Pick<VesselDef, 'wallTissue' | 'wallMm'>, l
 export const BRANCH_MAX_RADIUS_SCALE: Record<CaliberLaw, number> = { hepaticVein: 1.8, portal: 1.2, ivc: 1, fixed: 1 };
 
 /**
+ * Radio (mm) del extremo de una rama terminal (decisión 87): la luz se afila por debajo de la resolución (0,3 mm frente a
+ * una PSF de 1–3 mm y una rodaja de 3–5 mm) y la rama se apaga en la imagen, como una vena real hacia la periferia
+ * [EXTRAPOLACIÓN PROPIA: el radio y el afilado lineal]. Antes todas acababan con 0,9 mm y una tapa esférica: una vena recta
+ * que termina en un círculo («piruleta», juez ciego, ronda 3).
+ */
+export const BRANCH_TIP_RADIUS_MM = 0.3;
+
+/**
  * Ramas hepáticas de 3.º y 4.º orden, procedurales y deterministas (semilla fija:
  * el avatar es el mismo para todos los casos). Cada rama de 2.º orden (portal o
  * suprahepática) emite dos hijas por bifurcación con ángulo 30–45° alrededor de un
@@ -519,6 +540,11 @@ export const BRANCH_MAX_RADIUS_SCALE: Record<CaliberLaw, number> = { hepaticVein
  * fisiológico de su madre (misma velocidad × `flowFactor`) y su tejido de pared:
  * manguito periportal ecogénico en la porta, pared fina en las suprahepáticas
  * (B.1–B.3; densidad de ramas [EXTRAPOLACIÓN PROPIA] de un hígado adulto).
+ *
+ * Ningún extremo periférico acaba en una bola mayor que lo que lo continúa (decisión 87): las ramas sin hijas se afilan
+ * hasta `BRANCH_TIP_RADIUS_MM`, y la madre también, hasta el radio de sus hijas o, si no caben (junto a la cápsula), hasta
+ * ese mismo radio: `parents` es `vessels` con las madres afiladas en su último tramo, con el mismo `refRadius` (las áreas
+ * y las velocidades no cambian).
  */
 export function buildHepaticBranches(
   vessels: readonly VesselDef[],
@@ -526,9 +552,10 @@ export function buildHepaticBranches(
   seed = 7,
   /** Holgura para la pared de la rama (mm, positiva dentro): por defecto −liverSdf; la escena añade las fisuras. */
   clearance: (m: Vec3) => number = (m) => -liverSdf(m),
-): VesselDef[] {
+): { branches: VesselDef[]; parents: VesselDef[] } {
   const rng = new SeededRandom(seed);
   const out: VesselDef[] = [];
+  const tapered = new Map<VesselDef, VesselDef>();
   /** Ramas madre: [id, ¿extremo periférico es el PRIMER nodo? (suprahepáticas: sí)] */
   const parents: Array<[VesselId, boolean]> = [
     ['pvRightAnterior', false],
@@ -594,7 +621,8 @@ export function buildHepaticBranches(
       const axis = normalize(cross(dir, rnd));
       const angle = ((k === 0 ? 1 : -1) * ((30 + 15 * rng.float()) * Math.PI)) / 180;
       const len0 = Math.min(40, Math.max(22, 0.7 * segLen)) * (0.9 + 0.2 * rng.float());
-      const rEnd = Math.max(0.9, r0 * 0.6);
+      // la rama de 4.º orden (y la lateral) no tiene hijas: su extremo se afila hasta apagarse
+      const rEnd = depth >= 2 ? BRANCH_TIP_RADIUS_MM : Math.max(0.9, r0 * 0.6);
       const wall = { wallTissue: parent.wallTissue, wallMm: Math.max(0.4, parent.wallMm * 0.7) };
       const sMax = BRANCH_MAX_RADIUS_SCALE[VESSEL_META[parent.id].caliber];
       const fits = (end: Vec3) => segmentFits(origin, end, r0, rEnd, wall, sMax);
@@ -622,7 +650,10 @@ export function buildHepaticBranches(
         ...wall,
         flowFactor: factor,
       });
+      const before = out.length;
       grow(parent, fit.end, d2, rEnd, fit.len, factor * 0.85, depth + 1, peripheralFirst);
+      // sin hijas que quepan también es terminal: su extremo se afila (más fina, sigue cabiendo)
+      if (out.length === before) nodes[peripheralFirst ? 0 : 1].r = BRANCH_TIP_RADIUS_MM;
     }
   };
   for (const [id, peripheralFirst] of parents) {
@@ -632,14 +663,22 @@ export function buildHepaticBranches(
     const tip = peripheralFirst ? nodes[0] : nodes[nodes.length - 1];
     const prev = peripheralFirst ? nodes[1] : nodes[nodes.length - 2];
     const dir = normalize(sub(tip.p, prev.p));
+    const before = out.length;
     grow(parent, tip.p, dir, tip.r * 0.62, dist(tip.p, prev.p), 0.85, 1, peripheralFirst);
-    // y ramas laterales a lo largo del último segmento (a 1/3 y 2/3), como las que
-    // nacen a lo largo de un vaso real; cada una vuelve a bifurcarse una vez
+    // el extremo de la madre no acaba en una bola mayor que lo que la continúa (decisión 87): con hijas, su último tramo se
+    // afila hasta el radio con que nacen (0,62·r, la unión en «Y»); sin ellas (junto a la cápsula), hasta
+    // BRANCH_TIP_RADIUS_MM, en vez de acabar en una tapa de 1,6–2,4 mm
+    const tipR = out.length > before ? tip.r * 0.62 : BRANCH_TIP_RADIUS_MM;
+    const n2 = nodes.map((n) => ({ ...n }));
+    n2[peripheralFirst ? 0 : n2.length - 1].r = tipR;
+    tapered.set(parent, { ...parent, tube: { ...parent.tube, nodes: n2 } });
+    // y ramas laterales a lo largo del último segmento (a 1/3 y 2/3), como las que nacen a lo largo de un vaso real; cada
+    // una vuelve a bifurcarse una vez. No nacen más gruesas que la madre en ese punto (≤ 0,8 de su radio, afilado)
     for (const f of [0.35, 0.7]) {
       const at: Vec3 = add(prev.p, scale(sub(tip.p, prev.p), f));
-      const rAt = prev.r + (tip.r - prev.r) * f;
-      grow(parent, at, dir, Math.max(0.9, rAt * 0.5), dist(tip.p, prev.p) * 0.6, 0.85, 2, peripheralFirst);
+      const rAt = prev.r + (tipR - prev.r) * f;
+      grow(parent, at, dir, Math.min(Math.max(0.9, rAt * 0.5), 0.8 * rAt), dist(tip.p, prev.p) * 0.6, 0.85, 2, peripheralFirst);
     }
   }
-  return out;
+  return { branches: out, parents: vessels.map((v) => tapered.get(v) ?? v) };
 }

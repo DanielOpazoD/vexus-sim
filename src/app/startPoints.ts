@@ -134,6 +134,6 @@ export const START_POINTS: readonly StartPoint[] = [
     z: -85,
     yaw: -0.3,
     tilt: -0.4,
-    hint: 'Riñón derecho en eje largo por el flanco (línea axilar posterior): hígado como ventana, cápsula, corteza, pirámides y seno con la pelvis; puerta PW en un vaso interlobar.',
+    hint: 'Riñón derecho en eje largo por el flanco (línea axilar posterior): hígado como ventana, cápsula, corteza, pirámides y seno ecogénico (la pelvis, colapsada; la vena renal sale por el hilio); puerta PW en un vaso interlobar.',
   },
 ];

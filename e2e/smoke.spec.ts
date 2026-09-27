@@ -913,10 +913,20 @@ test('color realista (decisión 70): sin bloques de celda, grano correlado y rel
   const r = await page.evaluate(() => {
     const T = window.__vexusTest!;
     const cells = T.colorOnVessel(['hvRight', 'hvMiddle', 'ivcInfra', 'ivcSupra']);
-    return { cells, ...T.colorTexture() };
+    // El flujo venoso es pulsátil: donde se invierte (onda a) cruza el cero y, durante un cuadro de color, las cuatro
+    // venas pueden quedar bajo el filtro de pared y el campo vacío, como parpadea el color en un equipo (medido: la
+    // fracción con color sigue al latido, ~5 cuadros por ciclo a 6,2 Hz, con mínimos de 0 a 0,009). Se analiza el
+    // cuadro con más color de un latido y medio (8 cuadros): antes se tomaba un instante suelto y fallaba 1 de cada 5.
+    let best = T.colorTexture();
+    for (let i = 1; i < 8; i++) {
+      const t = T.colorTexture();
+      if (t.visible > best.visible) best = t;
+    }
+    return { cells, ...best };
   });
   const tag = JSON.stringify(r);
   expect(r.cells!, tag).toBeGreaterThan(50);
+  expect(r.visible, tag).toBeGreaterThan(0.005);
   expect(r.identicalPairs, tag).toBeLessThan(0.05);
   expect(r.corr1, tag).toBeGreaterThan(0.5);
   expect(r.corr4, tag).toBeLessThan(r.corr1 - 0.1);

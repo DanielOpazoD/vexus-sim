@@ -157,7 +157,12 @@ describe('Gemelo de la cápsula oblicua: escenas y métricas del contorno (PR 0 
     const t = faceTrace(o, sc.faceR, liverMed, faceThetas(sc.faceR, 25, 75)!);
     expect(t.n).toBeGreaterThan(500);
     expect(t.gap).toBe(0);
-    expect(t.cv).toBeLessThan(0.02);
+    // decisión 65: las facetas modulan la cresta aun de frente y sin moteado (CV 0,15), sin cortarla; el eco de la
+    // 57, una cresta constante
+    expect(t.cv).toBeGreaterThan(0.05);
+    expect(t.cv).toBeLessThan(0.3);
+    const flat = simulate(sc, { model: 'echo', r0: 10, r1: 90, seed: 1, speckleGain: 0, noFacets: true });
+    expect(faceTrace(flat, sc.faceR, liverMed, faceThetas(sc.faceR, 25, 75)!).cv).toBeLessThan(0.02);
     // σ_L de líneas pintadas: constante o con tendencia lenta, 0; ±3 dB con periodo de 40 líneas, ~2 dB
     const painted = (peak: (u: number) => number, n = 60): BenchLine[] =>
       Array.from({ length: n }, (_, u) => ({ u, inc: 5, ratio: 2, dDb: 12, peakEnvDb: peak(u), rb: 30, rLumen: 30.5, pitchMm: 0.6 }));
@@ -193,14 +198,16 @@ describe('Gemelo de la cápsula oblicua: escenas y métricas del contorno (PR 0 
     for (const x of repo.sigmaL) expect(x).toBeGreaterThan(0.5);
   });
 
-  it('hoy, la cápsula a 0° brilla sin huecos: cociente 1,86 ± 0,05 (la guarda de 0–20° de la decisión 64)', () => {
-    expect(Math.abs(S[0].ratio - 1.86)).toBeLessThanOrEqual(0.05);
+  it('hoy, la cápsula a 0° brilla sin huecos: cociente 1,97 ± 0,05 (la guarda de 0–20° de la decisión 64)', () => {
+    // 1,86 hasta la decisión 65, que estrecha su lóbulo (s 0,25 → 0,2) y conserva la energía: de frente, más brillante
+    expect(Math.abs(S[0].ratio - 1.97)).toBeLessThanOrEqual(0.05);
     expect(S[0].gapFrac).toBe(0);
     expect(S[0].traceGap).toBe(0);
     // escena del repositorio a 0–20°: 1,81 sin huecos; rosario 0,200 sin compuesto (solo informado)
     const s0 = summarize(repo.straight)[0];
     expect(s0.ratio).toBeGreaterThanOrEqual(1.4);
-    expect(s0.gapFrac).toBe(0);
+    // con las facetas de la decisión 65, alguna línea a 15–20° cae bajo +6 dB (0,04; antes 0)
+    expect(s0.gapFrac).toBeLessThanOrEqual(0.05);
     expect(mean(repo.beading)).toBeLessThan(0.3);
   });
 
@@ -256,7 +263,8 @@ describe('Gemelo de la cápsula oblicua: escenas y métricas del contorno (PR 0 
     expect(b40.gapFrac).toBeLessThanOrEqual(0.35);
   });
 
-  it.fails('61: σ_L de la cápsula a 0–20° (media de 8 semillas) ≥ 1,6 dB: la línea deja de verse dibujada (hoy 1,30)', () => {
+  // hecho por la decisión 65 (las facetas modulan la cresta a escala del haz: 1,30 → ≥ 1,6 dB)
+  it('61: σ_L de la cápsula a 0–20° (media de 8 semillas) ≥ 1,6 dB: la línea deja de verse dibujada (antes 1,30)', () => {
     expect(repo.sigmaL.every(Number.isFinite)).toBe(true);
     expect(mean(repo.sigmaL)).toBeGreaterThanOrEqual(1.6);
   });

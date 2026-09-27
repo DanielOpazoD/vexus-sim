@@ -390,7 +390,7 @@ describe('cortical costal: solo la cara que mira a la sonda (decisión 62)', () 
     // con la regla, nada (≥ 30 dB bajo la anterior, sea cual sea la transmisión)
     expect(backLit).toBe(0);
     // gemelo GLSL de la regla, en el eco de interfaz de los dos programas de B
-    expect(INTERFACE_ECHO_GLSL).toContain('if (c.iface == IF_RIB && dot(fg.xyz, dir) > 0.0) return 0.0;');
+    expect(INTERFACE_ECHO_GLSL).toContain('if (c.iface == IF_RIB && dot(fg.xyz, dir) > 0.0) return vec2(0.0);');
     for (const src of [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED]) expect(src).toContain(INTERFACE_ECHO_GLSL);
     // el cartílago transmite: su cara profunda sí se ve
     expect(faceLitFromProbe(Interface.Perichondrium, [0, 0, 1], [0, 0, 1])).toBe(true);
@@ -515,11 +515,13 @@ describe('gemelo GLSL (organs/wall.ts y wallTexture.ts)', () => {
     );
     expect(FRAG_RAWFIELD_STEERED).toContain('vec2 f0 = fieldForPh(m, se, c.tissue, ph0, g, normalize(p - uCurvC), w);');
     // la textura va antes del eco de interfaz (que usa wallFaceGain) en los dos programas
+    for (const src of [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED]) expect(src.indexOf('float wallFaceGain(')).toBeGreaterThan(0);
     for (const src of [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED])
-      expect(src.indexOf('float wallFaceGain(')).toBeLessThan(src.indexOf('float interfaceEcho('));
+      expect(src.indexOf('float wallFaceGain(')).toBeLessThan(src.indexOf('vec2 interfaceEcho('));
     const echo = INTERFACE_ECHO_GLSL.replace(/\s+/g, ' ');
     expect(echo).toContain('c.iface <= IF_LAST_TUBE || c.iface == IF_RIB || c.iface == IF_PERICHONDRIUM ? tubeCurvature(');
-    expect(echo).toContain('if (c.iface >= IF_FIRST_WALL && c.iface <= IF_LAST_WALL) curv *= wallFaceGain(m, c.iface);');
+    // la variación anclada de la pared multiplica la especular de la faceta y la difusa (decisión 65)
+    expect(echo).toContain('float gain = c.iface >= IF_FIRST_WALL && c.iface <= IF_LAST_WALL ? wallFaceGain(m, c.iface) : 1.0;');
     expect(FRAG_RAWFIELD).toContain(`uIface[${INTERFACE_COUNT}]`);
     // tablas del GLSL con el tamaño interpolado
     expect(WALL_TEXTURE_GLSL).toContain(`const float WT_FACE_VAR[${WALL_TEXTURE.faceVariation.length}]`);

@@ -406,6 +406,69 @@ function benchOnTwinUncached(id: StartPoint['id'], bo: BenchOpts) {
   return fidelityStats(sim, env, { width: W, height: H, gray }).display!;
 }
 
+/**
+ * La cara interna de la pared (`Interface.Peritoneum`) en la ventana renal, línea a línea (decisión 65): el exceso de
+ * potencia de la envolvente a ±0,6 mm del cruce (el final del tramo de muestras de la cara: su dueño es la grasa de la
+ * pared) sobre la del tejido a 1,5–4 mm a cada lado (dB; ~0 si no hay línea), según lo que hay detrás (el primer
+ * tejido que no es la grasa de la pared): grasa retroperitoneal o perirrenal, o el hígado.
+ */
+function renalWallFace(noFacets: boolean): { fat: number[]; liver: number[] } {
+  const sp = START_POINTS.find((s) => s.id === 'renal')!;
+  const pose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
+  const frame = probeFrame(pose, scene.torso, CONVEX_C35);
+  const f: TwinFrame = {
+    center: frame.curvatureCenter,
+    axial: frame.axial,
+    lateral: frame.lateral,
+    elevation: frame.elevation,
+    face: frame.face,
+  };
+  const o = wallTwin(scene, caliber, f, anchorOf(f), { model: 'wall', j0: 0, j1: CONVEX_C35.lines - 1, r0: 0, r1: 60, noFacets });
+  const nR = o.i1 - o.i0 + 1;
+  const pow = (i: number, jj: number): number => o.env[i * o.nL + jj] ** 2;
+  const out = { fat: [] as number[], liver: [] as number[] };
+  const n = (mm: number) => Math.round(mm / o.dr);
+  for (let jj = 0; jj < o.nL; jj++) {
+    let a = -1;
+    let b = -1;
+    for (let i = 0; i < nR; i++) {
+      if (o.face[i * o.nL + jj] === Number(Interface.Peritoneum)) {
+        if (a < 0) a = i;
+        b = i;
+      } else if (a >= 0) break;
+    }
+    if (a < 0 || b + n(4) >= nR || b - n(4) < 0) continue;
+    let across: Tissue | undefined;
+    for (let i = b + 1; i < nR && across === undefined; i++) {
+      const tt: Tissue = o.tissue[i * o.nL + jj];
+      if (tt !== Tissue.Fat) across = tt;
+    }
+    let line = 0;
+    let nl = 0;
+    let bg = 0;
+    let nb = 0;
+    for (let k = -n(4); k <= n(4); k++) {
+      const d = Math.abs(k) * o.dr;
+      if (d <= 0.6) {
+        line += pow(b + k, jj);
+        nl++;
+      } else if (d >= 1.5) {
+        bg += pow(b + k, jj);
+        nb++;
+      }
+    }
+    const excess = 10 * Math.log10(line / nl / (bg / nb));
+    if (across === Tissue.RetroperitonealFat || across === Tissue.PerirenalFat) out.fat.push(excess);
+    else if (across === Tissue.LiverCapsule || across === Tissue.Liver) out.liver.push(excess);
+  }
+  return out;
+}
+const mean = (a: readonly number[]): number => a.reduce((x, y) => x + y, 0) / a.length;
+const summary = (x: { fat: number[]; liver: number[] }) => ({
+  fat: `${x.fat.length} líneas, mediana ${median(x.fat).toFixed(1)} dB, media ${mean(x.fat).toFixed(1)}`,
+  liver: `${x.liver.length} líneas, mediana ${median(x.liver).toFixed(1)} dB, media ${mean(x.liver).toFixed(1)}`,
+});
+
 describe('banco de la pared de la GPU (display.wall) sobre el gemelo en las poses de partida', () => {
   it('subxifoidea y flanco: líneas, lóbulos oscuros, septos, estrías y cortical en las metas', () => {
     for (const id of ['subxiphoid', 'flank'] as const) {
@@ -436,10 +499,31 @@ describe('banco de la pared de la GPU (display.wall) sobre el gemelo en las pose
       const msg = `${id}: ${JSON.stringify({ lineLevelDb: w.lineLevelDb, lineSaturated: w.lineSaturated, lineCv: w.lineCv })}`;
       expect(w.lineLevelDb, msg).toBeGreaterThanOrEqual(4);
       expect(w.lineLevelDb, msg).toBeLessThanOrEqual(16);
-      expect(w.lineSaturated, msg).toBeLessThanOrEqual(0.01);
+      // ≤ 2 % como la e2e (decisión 65: con las facetas y la difusa, algún pico de fascia llega al blanco, 1 de 94 en la
+      // subxifoidea; lo que se vigila es la línea blanca y uniforme de la primera versión de la 62)
+      expect(w.lineSaturated, msg).toBeLessThanOrEqual(0.02);
       expect(w.lineCv, msg).toBeGreaterThanOrEqual(0.3);
       if (id === 'flank') expect(w.ribPeakDb - w.lineLevelDb, msg).toBeGreaterThanOrEqual(6);
     }
+  });
+
+  it('decisión 65: en la ventana renal la cara interna de la pared se apaga donde hay grasa detrás y sigue contra el hígado', () => {
+    // detrás del peritoneo parietal posterior (el compartimento retroperitoneal) no hay peritoneo: la grasa extraperitoneal
+    // de la pared sigue en la retroperitoneal y su R_ef baja a la de una fascia (0,03); contra el área desnuda del hígado
+    // el salto grasa/hígado sigue ahí. Línea a línea, el exceso de potencia en el cruce sobre el tejido de alrededor,
+    // frente al eco de la decisión 57 (gemelo, 26-09-2026): grasa −0,4 → −6,4 dB en 91 líneas, hígado 2,7 → 2,1 dB en
+    // 65. La primera versión apagaba también las del hígado (la ganancia solo miraba el compartimento)
+    const after = renalWallFace(false);
+    const before = renalWallFace(true);
+    const msg = JSON.stringify({ after: summary(after), before: summary(before) });
+    expect(after.fat.length, msg).toBeGreaterThanOrEqual(60);
+    expect(after.liver.length, msg).toBeGreaterThanOrEqual(30);
+    // grasa con grasa: ya no hay línea (nada sobre el tejido de alrededor) y cae ≥ 4 dB
+    expect(median(after.fat), msg).toBeLessThan(0);
+    expect(median(after.fat), msg).toBeLessThan(median(before.fat) - 4);
+    // contra el hígado: la misma línea que con el eco de la 57, a ±1,5 dB, sobre el tejido de alrededor
+    expect(Math.abs(median(after.liver) - median(before.liver)), msg).toBeLessThan(1.5);
+    expect(median(after.liver), msg).toBeGreaterThan(0.5);
   });
 
   it('septos y estrías del banco: sin textura, con las caras, < 1,5 dB (no cuentan la falda de las fascias)', () => {

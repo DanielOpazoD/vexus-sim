@@ -468,7 +468,45 @@ moteado) y la curva de grises del equipo es desconocida; la cresta se trazó a m
 de un ápice estimado (±5–10°). Por eso no son puertas; el CVc no tiene techo (premiaría suavizar la
 línea, antipatrón §23 de la guía), y el rosario no se compara con ellas: el de la referencia necesita un
 rango dinámico supuesto (dominios distintos). Falta una referencia de la cápsula de Glisson (3–5
-capturas), requisito de la modulación de R_ef (decisión 65).
+capturas); la modulación de R_ef (decisión 65) se hizo sin ella, con la física de dos escalas y las de Morison.
+
+### Modulación de R_ef de las caras (decisión 65): facetas, χ(0) y componente difusa
+
+La especular de cada cara que sale de `classify` es la de una faceta de normal inclinada por un campo anclado
+(σ_t = max(tan 5°, 0,5·s), célula de 3 mm) con su lóbulo propio y la rugosidad fina de frente, χ(0); en media por
+muestra es el lóbulo del conjunto de la decisión 57. Se suma la componente difusa (Lambert, sobre el fasor del
+moteado), y la cara interna de la pared con grasa detrás baja a una fascia. El gemelo 2D (`interfaceTwin.test.ts`, sin
+compuesto, con la PSF de la decisión 84) da a 0–20° VSH 1,54, VCI 1,60–1,71 y Morison 2,0–2,1 (M1–M3 sin cambios) y
+fija lo que cambia: con cuatro semillas la cápsula cae 10,5 dB de 0–20° a 20–40° y se rompe (huecos 0,34), frente a
+9,4 dB y 0,25 con el eco de la 57 y la misma tabla, y en la cápsula en espiral el CV de la traza entre líneas es
+0,16 / 0,27 / 0,48 a 0° / 10° / 20° (con el eco de la 57, 0,09 / 0,12 / 0,22). El gemelo de la pared
+(`wallTwin.test.ts`) mantiene sus metas con la difusa (líneas a +4,6–8,4 dB, cortical +17,8 dB, sin picos saturados)
+y, en la ventana renal, la cara interna de la pared con grasa detrás deja de ser una línea (−0,4 → −6,4 dB sobre el
+tejido de alrededor, 91 líneas) mientras la de contra el hígado sigue (2,7 → 2,1 dB, 65 líneas).
+
+Banco con GPU (M4, armónica y compuesto, `--sweep`, 26-09-2026), antes (`main` d1f3600, con la PSF de la decisión 84)
+→ después; cociente (registros), huecos h y rosario r:
+
+| Escena                  | VCI 0–20°                                     | Peritoneo 0–20°           | Peritoneo 20–40° | Morison 0–20°             | Morison 20–40° | Morison CVc 0–20° / 20–40° |
+| ----------------------- | --------------------------------------------- | ------------------------- | ---------------- | ------------------------- | -------------- | -------------------------- |
+| Sano, subxifoidea       | 1,39 (107) h 0,04 r 0,15 → 1,30 h 0,38 r 0,27 | 1,85 r 0,12 → 1,95 r 0,12 | —                | —                         | —              | —                          |
+| Sano, intercostal       | —                                             | 1,79 r 0,13 → 1,83 r 0,16 | 1,84 → 1,49      | —                         | —              | —                          |
+| Sano, flanco            | 1,40 (51) h 0,20 r 0,15 → 1,36 h 0,36 r 0,18  | 1,84 → 1,89               | 1,69 → 1,50      | 2,28 r 0,14 → 2,08 r 0,23 | 1,89 → 1,62    | 0,01 / 0,04 → 0,09 / 0,13  |
+| Sano, renal             | 1,41 (9) h 0,11 r 0,20 → 1,52 h 0 r 0,28      | —                         | 1,53 → 1,33      | 2,32 r 0,11 → 2,13 r 0,14 | 2,02 → 1,45    | 0,01 / 0,03 → 0,04 / 0,16  |
+| Congestión, subxifoidea | 1,57 r 0,12 → 1,58 h 0,04 r 0,14              | 1,82 → 1,91               | —                | —                         | —              | —                          |
+| Congestión, intercostal | 1,72 r 0,10 → 1,75 r 0,14                     | 1,81 → 1,88               | 1,84 → 1,59      | —                         | —              | —                          |
+| Congestión, flanco      | 1,57 h 0,11 r 0,16 → 1,54 h 0,17 r 0,22       | 1,84 → 1,88               | 1,63 → 1,51      | 2,19 r 0,11 → 2,01 r 0,35 | 1,96 → 1,64    | 0,01 / 0,06 → 0,14 / 0,12  |
+| Congestión, renal       | 1,54 h 0,03 r 0,23 → 1,48 h 0,17 r 0,25       | 1,73 → 1,81               | 1,55 → 1,39      | 2,25 r 0,14 → 2,09 r 0,16 | 1,99 → 1,54    | 0,01 / 0,04 → 0,03 / 0,16  |
+
+Referencias reales: pared 1,36–2,1, rosario 0,23–0,38, Morison en [1,6; 2,2] y CVc 0,03–0,08 (0–20°) y 0,10–0,14
+(20–40°). Morison vuelve a su banda (con la PSF de la 84 estaba en 2,19–2,32). El peritoneo a 20–40° de la renal es el
+de las líneas contra el hígado (la métrica pide la cápsula debajo; las de grasa con grasa no entran). La VCI del sano
+en la subxifoidea queda bajo 1,36 y la del flanco en el borde: su mediana cuenta ahora los tramos sin eco entre los
+brillantes (36–38 % de huecos), como en las VCI reales del juez, y la PSF suma las facetas en amplitud (la imagen sigue
+su amplitud media, 0,4–1,6 dB bajo el lóbulo a 10–20° si las promediara del todo). Sin cambios: VSH a 40–60°
+1,06–1,15, porta a 20–40° 1,26–1,35, el hígado (gris 86–95, desviación 9–14, SNR) y las líneas de la pared (5–6 dentro,
+sin picos saturados; la renal, +13,4–13,6 → +10,7–11,3 dB). El contraste de Morison a 40–60° frente al de 0–20° sube
+de 0,23–0,27 a 0,31–0,35 (referencias 0,53–0,82: allí manda su banda de grasa).
 
 ### Pleura parietal y cortina pulmonar (decisión 61): métricas informadas y referencias
 

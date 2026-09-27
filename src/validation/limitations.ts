@@ -40,7 +40,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'aorta-fixed-caliber',
   'side-plane-skips-tubes',
   'interface-echo-scope',
-  'interface-echo-coherent-only',
+  'interface-echo-two-scale',
   'interface-curvature-tubes-only',
   'speckle-line-aliasing',
   'psf-nominal-tissue',

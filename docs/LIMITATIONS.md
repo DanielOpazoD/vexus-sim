@@ -193,11 +193,21 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   cortical costal y el pericondrio la dibujan desde la decisión 62; en las copias de la pared bajo la pleura
   (la serie de la decisión 61) las capas llevan un eco analítico de cara plana paralela a la piel, sin la
   cortical ni el pericondrio.
-- **El eco de interfaz es solo la parte coherente de una cara lisa** (`interface-echo-coherent-only`):
-  sin destellos ni parte difusa de las superficies rugosas (la pleura del diafragma da solo su parte
-  coherente, −28,7 dB a 0°, y la parietal −8,9 dB), una cara por estructura y sin signo, sin la cara pared/hígado (misma impedancia) ni la de
-  cápsula renal/corteza, y sin interferencia de capa fina. Su nivel sale de K = 55 dB, un valor derivado
-  de un plano liso (± 6 dB) que se calibra con GPU dentro de [53; 57] dB.
+- **El eco de interfaz es un modelo de dos escalas simplificado** (`interface-echo-two-scale`, decisiones 57 y 65):
+  las facetas son un ruido de valor anclado (σ_t = max(tan 5°, 0,5·s), célula de 3 mm) y no una rugosidad medida, y
+  se evalúan en el plano central de la rodaja (la rodaja de 3–5 mm promediaría parte de la fragmentación); su fase es
+  la 0 común de la cara, así que la PSF suma las facetas vecinas en amplitud y la imagen sigue su amplitud media, que a
+  10–20° queda hasta 1–4 dB bajo el lóbulo del conjunto (la media de la potencia por muestra sí lo conserva); el ruido
+  de la GPU (float32) y el del gemelo (float64) coinciden en estadística, no punto a punto. La componente difusa es una
+  capa fina sobre el fasor del moteado del tejido de la muestra (refuerza su grano en lugar de sumar uno independiente:
+  hasta +2,8 dB de potencia cuando iguala al moteado) con la ley de Lambert y κ_d calibrado [ESTIMADO]; el grosor de la línea
+  no depende de la inclinación de la cara en elevación (la rodaja la ensancharía). La cara interna de la pared baja a
+  una fascia con grasa detrás; contra la columna no se descarta (desde las ventanas abdominales está en la sombra del
+  hueso). La pleura del diafragma y la parietal, y las copias de la pared bajo la pleura, dan solo su parte
+  coherente del conjunto (−28,7 dB a 0° la del diafragma, −8,9 dB la parietal), sin facetas ni difusa. Una cara por
+  estructura y sin signo, sin la cara pared/hígado (misma impedancia) ni la de cápsula renal/corteza, y sin
+  interferencia de capa fina. Su nivel sale de K = 55 dB, un valor derivado de un plano liso (± 6 dB) que se calibra
+  con GPU dentro de [53; 57] dB.
 - **La coherencia de curvatura solo la tienen los tubos y las costillas** (`interface-curvature-tubes-only`;
   las costillas desde la decisión 62, con la curvatura de su sección elíptica): vesícula, riñón, cúpula y las
   capas de la pared son localmente planos para el eco. Sin la curvatura elevacional del riñón, Morison salía

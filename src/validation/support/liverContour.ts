@@ -12,9 +12,10 @@
  *  - Dueño de la cara: la cúpula si su cara está a ≤ 0,2 mm de la del hígado (`DOME_OWNER_MM`, la igualdad
  *    exacta del min duro con margen de rejilla), Morison si la grasa perirrenal la toca y la cápsula en el
  *    resto. Cuando la decisión 60 dé el peso continuo de dueño (ifw), el nivel se multiplicará aquí por él.
- *  - Nivel previsto del eco (dB sobre el moteado): el lóbulo coherente de la decisión 57 con los parámetros
- *    de producción de cada cara (`facetLobe`·`roughnessCoherence` relativos a la incidencia normal) sobre el
- *    pico medido con GPU a < 15° (cápsula 19 dB, cúpula 17 dB). Visible desde +6 dB, como el banco.
+ *  - Nivel previsto del eco (dB sobre el moteado): el lóbulo del conjunto con los parámetros de producción de
+ *    cada cara (`facetLobe` relativo a la incidencia normal; desde la decisión 65 la rugosidad fina es la de frente,
+ *    χ(0), y se cancela: es la media sobre las facetas) sobre el pico medido con GPU a < 15° (cápsula 19 dB,
+ *    cúpula 17 dB). Visible desde +6 dB, como el banco.
  *  - Oculto: línea desacoplada (< 0,5) o con pulmón o gas intestinal antes del vértice.
  *
  * Métricas: aristas 3D (la normal gira > 8° entre vértices a 0,5 mm), extremos de los tramos visibles de la
@@ -41,7 +42,7 @@ import type { Vec3 } from '../../core/vec3';
 import type { ProbeCompression } from '../../anatomy/compression';
 import { contactCoupling, probeContact } from '../../probe/contact';
 import { CONVEX_C35, lineDirection, pointOnLine, probeFrame, type ProbeFrame, type ProbePose } from '../../probe/probe';
-import { facetLobe, roughnessCoherence } from '../../ultrasound/interfaceEcho';
+import { facetLobe } from '../../ultrasound/interfaceEcho';
 import { FACE_GRADIENT_EPS_MM } from '../../anatomy/interfaces';
 
 export const CONTOUR_DEPTH_MM = 180;
@@ -56,9 +57,12 @@ export const VISIBLE_DB = 6;
 export const FADE_FROM_DB = 15;
 /** La cara es de la cúpula si su distancia supera a la del hígado en ≤ esto (mm). */
 export const DOME_OWNER_MM = 0.2;
-/** Pico del eco sobre el moteado a < 15° medido con GPU (decisión 57): cápsula y cúpula (dB). */
-export const PEAK_DB = { capsule: 19, dome: 17 } as const;
-const K0 = (2 * Math.PI) / (1540 / 3.5e3);
+/**
+ * Pico del eco sobre el moteado a < 15° medido con GPU (decisión 57): cápsula y cúpula (dB). La cápsula, 19 dB con
+ * s 0,25; con la s 0,2 de la decisión 65 la amplitud de incidencia normal sube 20·log10(0,25/0,2) = +1,9 dB
+ * (A_i ∝ 1/s; χ y la media sobre las facetas no cambian de frente) [ESTIMADO, sin medir de nuevo con GPU].
+ */
+export const PEAK_DB = { capsule: 21, dome: 17 } as const;
 
 export type ContourCase = 'normal' | 'severe';
 export type ContourLabel =
@@ -161,13 +165,14 @@ export function liverTerms(s: AnatomyScene, m: Vec3): LiverTerms {
   return { inner: t[0], label, dDiaphragm, hardGap: t[1] - t[0] };
 }
 
-/** Nivel previsto del eco de la cara (dB sobre el moteado) con incidencia cosI: lóbulo de la decisión 57. */
+/**
+ * Nivel previsto del eco de la cara (dB sobre el moteado) con incidencia cosI: la media sobre las facetas de la
+ * decisión 65, el lóbulo del conjunto con χ(0) (hasta ella, χ(θ), que subía a la cara oblicua).
+ */
 export function faceLevelDb(cosI: number, owner: 'capsule' | 'dome'): number {
   if (cosI < 0.05) return -60;
   const p = INTERFACES[owner === 'dome' ? Interface.DiaphragmLiver : Interface.LiverCapsule];
-  const rel =
-    (facetLobe(cosI, p.slopeRms) * roughnessCoherence(cosI, p.roughnessMm, K0)) /
-    (facetLobe(1, p.slopeRms) * roughnessCoherence(1, p.roughnessMm, K0));
+  const rel = facetLobe(cosI, p.slopeRms) / facetLobe(1, p.slopeRms);
   return Math.max(-60, PEAK_DB[owner] + 20 * Math.log10(rel));
 }
 

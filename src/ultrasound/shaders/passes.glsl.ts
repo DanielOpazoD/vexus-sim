@@ -544,7 +544,9 @@ vec2 mediumFieldPh(vec3 p, vec3 dir, float r, float se, bool withCurtain, float 
   vec2 field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
   float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
   if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
-  return field + vec2(interfaceEcho(c, m, dir, r, se, w), 0.0);
+  // eco de interfaz (decisiones 57 y 65), como mediumField: la difusa sobre el fasor de esta mirada
+  vec2 e = interfaceEcho(c, m, dir, r, se, w);
+  return field * (1.0 + e.y / max(length(field), 1e-6)) + vec2(e.x, 0.0);
 }
 vec2 wallFieldPh(vec3 p, vec3 dir, float se, float ph0, vec3 g, Warp w) {
   vec3 m = toMaterial(p);

@@ -240,9 +240,10 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     sides: [Tissue.LiverCapsule, Tissue.Muscle],
     floor: 0.03,
     roughnessMm: 0.03,
-    slopeRms: 0.25,
+    slopeRms: 0.2,
     twoSided: false,
-    source: 'capa de colágeno sub-resolución, 2Γ₁·sen(kt) ≈ 0,02–0,045 [ESTIMADO]; continua hasta el borde del sector',
+    source:
+      'capa de colágeno sub-resolución, 2Γ₁·sen(kt) ≈ 0,02–0,045 [ESTIMADO]; s 0,2 (decisión 65; antes 0,25, «continua hasta el borde del sector»: el lóbulo ancho la dibujaba como un trazo a 20–40°; bajo la pared la línea que llega al borde es la del peritoneo, rugoso, con su componente difusa) [ESTIMADO]',
   },
   [Interface.DiaphragmLiver]: {
     name: 'cara hepática del diafragma',
@@ -266,20 +267,21 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     name: 'cápsula renal',
     sides: [Tissue.PerirenalFat, Tissue.RenalCapsule],
     floor: 0,
-    roughnessMm: 0.05,
-    slopeRms: 0.25,
+    roughnessMm: 0.06,
+    slopeRms: 0.2,
     twoSided: true,
     source:
-      'Fresnel grasa perirrenal / cápsula renal (TISSUES); s 0,25 (antes 0,21) para dejar Morison en [1,6; 2,2]: es la cara que da su pico (riesgo 4 del plan) [ESTIMADO]',
+      'Fresnel grasa perirrenal / cápsula renal (TISSUES); es la cara que da el pico de Morison, en [1,6; 2,2] [ESTIMADO]: s 0,2 y σz 0,06 (decisión 65; antes 0,25 y 0,05, con la s de mando del nivel: su lóbulo ancho y χ(θ) la dejaban a +18 dB a 20–40°, la «U» del contorno profundo del riñón; ahora el nivel lo fija χ(0) y el lóbulo, el ángulo)',
   },
   [Interface.PerirenalFat]: {
     name: 'grasa perirrenal (Morison)',
     sides: [Tissue.Liver, Tissue.PerirenalFat],
     floor: 0,
-    roughnessMm: 0.05,
-    slopeRms: 0.3,
+    roughnessMm: 0.06,
+    slopeRms: 0.2,
     twoSided: false,
-    source: 'Fresnel hígado / grasa (TISSUES); s ancha [ESTIMADO] (no mueve el pico de Morison, que es la cápsula renal, 4 dB más fuerte)',
+    source:
+      'Fresnel hígado / grasa (TISSUES); s 0,2 y σz 0,06 como la cápsula renal (decisión 65; antes 0,3 y 0,05: +12 dB a 40–60°, el brazo de la «U» que sale del riñón) [ESTIMADO]; no mueve el pico de Morison, que es la cápsula renal',
   },
   [Interface.PleuraWall]: {
     name: 'pleura parietal (pared / pulmón de la cortina)',

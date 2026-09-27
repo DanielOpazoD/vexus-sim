@@ -16,7 +16,11 @@ import { VESSEL_IDS, VESSEL_META } from '../physiology/vessels';
 import { CONVEX_C35 } from '../probe/probe';
 import { CONVEX_BEAM, axialSigmaMm, lateralSigmaMm } from '../ultrasound/beamModel';
 import { bmodeBeam, CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
+import { RETRO_FAT, quadratusSdf, retroFatSdf } from '../anatomy/organs/retroperitoneum';
+import { sdDiaphragm } from '../anatomy/primitives';
+import { DIAPHRAGM_THICKNESS_MM } from '../anatomy/tissues';
 import {
+  FACET,
   IFACE_BETA,
   IFACE_K_DB,
   IFACE_K_RANGE_DB,
@@ -25,17 +29,31 @@ import {
   IFACE_SIGMA_H_MM,
   IFACE_SLOPE_REF,
   INTERFACE_ECHO_GLSL,
+  IFACE_DIFFUSE_PER_A,
+  RETRO_PERITONEUM_GAIN,
+  VALUE_NOISE_SD,
+  WALL_ACROSS_MM,
+  addInterfaceEcho,
   curvatureCoherence,
+  diffuseEchoField,
   faceProfile,
+  faceSiteGain,
+  fatAcrossWall,
+  facetCosine,
+  facetEchoField,
   facetLobe,
+  facetSlope,
+  facetTilt,
+  facetTiltRms,
   interfaceAmplitude,
   interfaceEchoField,
   interfaceUniforms,
   reflectionCosine,
   roughnessCoherence,
 } from '../ultrasound/interfaceEcho';
-import { FRAG_AXIAL, FRAG_LATERAL, FRAG_RAWFIELD, LATERAL_PSF_GLSL } from '../ultrasound/shaders/passes.glsl';
-import { scattererField } from '../ultrasound/speckleField';
+import { PLEURA_GLSL } from '../ultrasound/pleura';
+import { FRAG_AXIAL, FRAG_LATERAL, FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED, LATERAL_PSF_GLSL } from '../ultrasound/shaders/passes.glsl';
+import { scattererField, valueNoise } from '../ultrasound/speckleField';
 
 /**
  * Eco de interfaz (decisión 57): la tabla de caras, cada factor del modelo contra su valor analítico y
@@ -322,7 +340,8 @@ describe('Uniforms y GLSL del eco de interfaz', () => {
     expect(FRAG_RAWFIELD).toContain(LATERAL_PSF_GLSL);
     expect(FRAG_LATERAL).toContain(LATERAL_PSF_GLSL);
     // la muestra de la imagen (decisión 61: `mediumField`, una vez y fuera de bucles)
-    expect(FRAG_RAWFIELD).toContain('return field + vec2(interfaceEcho(c, m, dir, r, se, w), 0.0);');
+    expect(FRAG_RAWFIELD).toContain('vec2 e = interfaceEcho(c, m, dir, r, se, w);');
+    expect(FRAG_RAWFIELD).toContain('return field * (1.0 + e.y / max(length(field), 1e-6)) + vec2(e.x, 0.0);');
     expect(FRAG_RAWFIELD).not.toMatch(/uSpecGain|pow\(cosI, 4\.0\)/);
     // β se midió con estas pasadas C y D: si cambian, hay que re-derivarlo (interfaceTwin.test.ts). El pedestal de
     // lóbulos laterales de la decisión 76 lleva una fase antisimétrica: sobre un reflector continuo sus pares ±k se
@@ -330,5 +349,268 @@ describe('Uniforms y GLSL del eco de interfaz', () => {
     expect(FRAG_AXIAL).toContain('k <= 12');
     expect(FRAG_LATERAL).toContain('max(0.35,');
     expect(FRAG_LATERAL).toContain(`k <= ${CLUTTER.lateralMaxLines}`);
+  });
+});
+
+/**
+ * Decisión 65: la especular de la faceta (normal inclinada por un campo anclado, lóbulo propio s_f y χ(0)) y la
+ * componente difusa. Todas estas pruebas fallan con el eco de la decisión 57 (no hay facetas, ni difusa, y χ es
+ * la de la incidencia media).
+ */
+describe('Facetas y componente difusa de las caras (decisión 65)', () => {
+  let seed = 4242;
+  const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const randomPoint = (): [number, number, number] => [400 * rnd() - 200, 400 * rnd() - 200, 400 * rnd() - 200];
+  const unit = (v: number[]) => v.map((x) => x / Math.hypot(...v));
+  /** Rayo a θ grados de la normal n = +y, en el plano xy. */
+  const rayAt = (deg: number) => [Math.sin((deg * Math.PI) / 180), -Math.cos((deg * Math.PI) / 180), 0];
+
+  it('VALUE_NOISE_SD es la desviación del ruido de valor en un punto al azar (normaliza σ_t)', () => {
+    let s1 = 0;
+    let s2 = 0;
+    const n = 60_000;
+    for (let i = 0; i < n; i++) {
+      const v = valueNoise(randomPoint(), 57.3) - 0.5;
+      s1 += v;
+      s2 += v * v;
+    }
+    const sd = Math.sqrt(s2 / n - (s1 / n) ** 2);
+    expect(Math.abs(sd / VALUE_NOISE_SD - 1)).toBeLessThan(0.03);
+  });
+
+  it('la inclinación: media nula, σ_t de la cara por componente, componentes y caras independientes, anclada y correlada 1,5–3 mm', () => {
+    const n = 20_000;
+    const acc = [0, 0, 0];
+    const acc2 = [0, 0, 0];
+    let xy = 0;
+    let faces = 0;
+    for (let i = 0; i < n; i++) {
+      const m = randomPoint();
+      const t = facetTilt(m, Interface.RenalCapsule);
+      for (let k = 0; k < 3; k++) {
+        acc[k] += t[k];
+        acc2[k] += t[k] * t[k];
+      }
+      xy += t[0] * t[1];
+      faces += t[0] * facetTilt(m, Interface.LiverCapsule)[0];
+      // anclada: la misma en el mismo punto material
+      if (i < 50) expect(facetTilt(m, Interface.RenalCapsule)).toEqual(t);
+    }
+    const st = facetTiltRms(INTERFACES[Interface.RenalCapsule].slopeRms);
+    const rms2 = st ** 2;
+    for (let k = 0; k < 3; k++) {
+      expect(Math.abs(acc[k] / n)).toBeLessThan(0.05 * st);
+      expect(Math.abs(Math.sqrt(acc2[k] / n) / st - 1)).toBeLessThan(0.06);
+    }
+    expect(Math.abs(xy / n / rms2)).toBeLessThan(0.05);
+    expect(Math.abs(faces / n / (st * facetTiltRms(INTERFACES[Interface.LiverCapsule].slopeRms)))).toBeLessThan(0.05);
+    // correlación a media célula (1,5 mm) y a una célula (3 mm): unos milímetros, del orden del haz lateral
+    const corr = (lag: number) => {
+      let c = 0;
+      for (let i = 0; i < 5000; i++) {
+        const m = randomPoint();
+        c += facetTilt(m, Interface.IvcLumen)[2] * facetTilt([m[0] + lag, m[1], m[2]], Interface.IvcLumen)[2];
+      }
+      return c / 5000 / facetTiltRms(INTERFACES[Interface.IvcLumen].slopeRms) ** 2;
+    };
+    expect(corr(FACET.cellMm / 2)).toBeGreaterThan(0.5);
+    expect(corr(FACET.cellMm / 2)).toBeLessThan(0.85);
+    expect(corr(FACET.cellMm)).toBeLessThan(0.3);
+    // unos grados en las caras lisas (3–6°) y la misma fracción de su pendiente en las anchas (≤ 14°): la faceta
+    // conserva 0,87 de la pendiente (0,78 la VSH, la más lisa), así que la media sobre las inclinaciones es el lóbulo del
+    // conjunto. La GLSL no acota s_f² = s² − σ_t²: una cara con s ≤ tan 5° daría NaN, y esta prueba la para (s_f ≥ 0,6·s)
+    const deg = (x: number) => (Math.atan(x) * 180) / Math.PI;
+    expect(deg(FACET.tiltMin)).toBeGreaterThanOrEqual(3);
+    expect(deg(FACET.tiltMin)).toBeLessThanOrEqual(6);
+    for (const id of [Interface.VeinLumen, Interface.IvcLumen, Interface.LiverCapsule, Interface.RibCortex])
+      expect(deg(facetTiltRms(INTERFACES[id].slopeRms)), Interface[id]).toBeLessThanOrEqual(6.5);
+    for (let i = 1; i < INTERFACE_COUNT; i++) {
+      const id: Interface = i;
+      const sl = INTERFACES[id].slopeRms;
+      expect(deg(facetTiltRms(sl)), Interface[id]).toBeLessThanOrEqual(14);
+      expect(sl, Interface[id]).toBeGreaterThan(1.25 * FACET.tiltMin);
+      expect(facetSlope(sl) / sl, Interface[id]).toBeGreaterThanOrEqual(0.6);
+    }
+  });
+
+  it('facetCosine usa solo la parte tangente de la inclinación y es |d·n| sin inclinación', () => {
+    const n = unit([0.3, 1, -0.2]);
+    const d = unit([0.5, -1, 0.1]);
+    const dn = Math.abs(n[0] * d[0] + n[1] * d[1] + n[2] * d[2]);
+    expect(facetCosine(n, d, [0, 0, 0])).toBeCloseTo(dn, 12);
+    // una inclinación paralela a la normal no cambia nada
+    expect(
+      facetCosine(
+        n,
+        d,
+        n.map((x) => 0.3 * x),
+      ),
+    ).toBeCloseTo(dn, 12);
+  });
+
+  it('en media sobre las facetas la potencia es la del lóbulo del conjunto con χ(0): K y R_ef no cambian en media', () => {
+    const points = Array.from({ length: 6000 }, randomPoint);
+    for (const id of [Interface.VeinLumen, Interface.IvcLumen, Interface.LiverCapsule, Interface.PortalLumen, Interface.DeepFascia]) {
+      const p = INTERFACES[id];
+      expect(facetSlope(p.slopeRms), Interface[id]).toBeGreaterThan(0.1);
+      for (const deg of [0, 5, 10, 15, 20]) {
+        const d = rayAt(deg);
+        let e2 = 0;
+        for (const m of points) {
+          const e = facetEchoField(id, facetCosine([0, 1, 0], d, facetTilt(m, id)), 1, 0, K0);
+          e2 += e * e;
+        }
+        const c = cosDeg(deg);
+        const ensemble =
+          interfaceAmplitude(id) *
+          (facetLobe(c, p.slopeRms) / (IFACE_SLOPE_REF / p.slopeRms)) *
+          roughnessCoherence(1, p.roughnessMm, K0) *
+          faceProfile(0, p.twoSided);
+        const err = 10 * Math.log10(e2 / points.length) - db(ensemble);
+        expect(Math.abs(err), `${Interface[id]} a ${deg}°: ${err.toFixed(2)} dB`).toBeLessThan(1);
+      }
+    }
+  });
+
+  it('la línea se fragmenta más cuanto más oblicua: el CV de la especular sobre las facetas crece con la incidencia', () => {
+    const points = Array.from({ length: 4000 }, randomPoint);
+    const cv = (id: Interface, deg: number) => {
+      const v = points.map((m) => facetEchoField(id, facetCosine([0, 1, 0], rayAt(deg), facetTilt(m, id)), 1, 0, K0));
+      const mu = v.reduce((a, b) => a + b, 0) / v.length;
+      return Math.sqrt(v.reduce((a, b) => a + (b - mu) ** 2, 0) / v.length) / mu;
+    };
+    for (const id of [Interface.VeinLumen, Interface.LiverCapsule, Interface.RenalCapsule]) {
+      const c = [0, 10, 20, 30].map((deg) => cv(id, deg));
+      // de frente, casi continua (≤ 0,35); lejos de la normal, fragmentada (≥ 0,6 a 20–30°)
+      expect(c[0], Interface[id]).toBeLessThan(0.35);
+      expect(c[1], Interface[id]).toBeGreaterThan(c[0]);
+      expect(c[2], Interface[id]).toBeGreaterThan(c[1]);
+      expect(Math.max(c[2], c[3]), Interface[id]).toBeGreaterThan(0.6);
+    }
+  });
+
+  it('χ(0): una cara rugosa ya no gana brillo oblicua (con χ(θ), la fascia perdía solo 1 dB de 0° a 30°)', () => {
+    const id = Interface.DeepFascia;
+    const p = INTERFACES[id];
+    const mean = (deg: number) => facetLobe(cosDeg(deg), p.slopeRms) * roughnessCoherence(1, p.roughnessMm, K0);
+    const old = (deg: number) => facetLobe(cosDeg(deg), p.slopeRms) * roughnessCoherence(cosDeg(deg), p.roughnessMm, K0);
+    // el modelo de la 57 a 30°: el lóbulo baja y χ(θ) sube casi lo mismo
+    expect(db(old(30) / old(0))).toBeGreaterThan(-1.5);
+    // el de la 65 (la media sobre las facetas): el lóbulo solo
+    expect(db(mean(30) / mean(0))).toBeLessThan(-5);
+    // y la especular de la faceta no lee cosθ en su χ
+    expect(INTERFACE_ECHO_GLSL).toContain('faceEcho(c.iface, cosF, min(1.0 - 4.0 * FACET_TILT2 * P.z, 1.0 - FACET_RHO2), 1.0, curv, g)');
+  });
+
+  it('la difusa: κ_d·R_ef·√(1 − χ(0)²)·cosθ con el perfil de la cara de pico 1, incoherente y más débil que la especular de frente', () => {
+    for (const id of [Interface.IvcLumen, Interface.LiverCapsule, Interface.RenalCapsule, Interface.DeepFascia, Interface.Peritoneum]) {
+      const p = INTERFACES[id];
+      const x = Math.fround(2 * K0 * p.roughnessMm);
+      const want = FACET.diffuse * interfaceReflectivity(id) * Math.sqrt(1 - Math.exp(-x * x));
+      const shift = p.twoSided ? 0 : IFACE_SHIFT_MM;
+      expect(diffuseEchoField(id, 1, shift, K0)).toBeCloseTo(want, 9);
+      // Lambert en amplitud
+      expect(diffuseEchoField(id, 0.5, shift, K0)).toBeCloseTo(0.5 * want, 9);
+      // el perfil de la cara: fuera de su alcance, nada
+      expect(diffuseEchoField(id, 1, shift + IFACE_REACH_MM + 1e-6, K0)).toBe(0);
+    }
+    expect(diffuseEchoField(Interface.None, 1, 0, K0)).toBe(0);
+    // de frente, en el pico de su perfil, la difusa por muestra queda 21–32 dB bajo la especular en las caras lisas
+    // (vasos, cápsula hepática: su nivel en la imagen, en el gemelo, interfaceTwin.test.ts), 11 dB en la cápsula renal
+    // (σz 0,06) y es comparable en las fascias y el peritoneo, cuya rugosidad deja ~1 % de energía coherente. La
+    // rugosidad fina la reparte, así que una fascia (σz 0,075) tiene 2–3 veces más difusa que la cápsula por unidad de R_ef
+    const peak = (id: Interface) => (INTERFACES[id].twoSided ? 0 : IFACE_SHIFT_MM);
+    const margin = (id: Interface) => db(facetEchoField(id, 1, 1, peak(id), K0) / diffuseEchoField(id, 1, peak(id), K0));
+    for (const id of [Interface.VeinLumen, Interface.IvcLumen, Interface.LiverCapsule])
+      expect(margin(id), Interface[id]).toBeGreaterThan(20);
+    expect(margin(Interface.RenalCapsule)).toBeGreaterThan(10);
+    for (const id of [Interface.DeepFascia, Interface.Transversalis, Interface.Peritoneum])
+      expect(Math.abs(margin(id)), Interface[id]).toBeLessThan(8);
+    // escala con K como la especular (la GLSL la saca del uniform A)
+    expect(diffuseEchoField(Interface.DeepFascia, 1, peak(Interface.DeepFascia), K0, IFACE_K_DB + 6)).toBeCloseTo(
+      diffuseEchoField(Interface.DeepFascia, 1, peak(Interface.DeepFascia), K0) * 10 ** (6 / 20),
+      9,
+    );
+    const perR = (id: Interface) => diffuseEchoField(id, 1, peak(id), K0) / interfaceReflectivity(id);
+    expect(perR(Interface.DeepFascia) / perR(Interface.LiverCapsule)).toBeGreaterThan(1.3);
+    expect(perR(Interface.DeepFascia) / perR(Interface.IvcLumen)).toBeGreaterThan(1.8);
+    // la suma de la muestra: la especular real y la difusa sobre el fasor unidad del moteado
+    const f: [number, number] = [0.3, -0.4];
+    const [re, im] = addInterfaceEcho(f, 2, 1.5);
+    expect(re).toBeCloseTo(0.3 * (1 + 1.5 / 0.5) + 2, 12);
+    expect(im).toBeCloseTo(-0.4 * (1 + 1.5 / 0.5), 12);
+    expect(addInterfaceEcho([0, 0], 2, 1.5)).toEqual([2, 0]);
+  });
+
+  it('la cara interna de la pared con grasa detrás (grasa con grasa) baja a una fascia; contra un órgano o fuera, no', () => {
+    // la pared posterolateral de la ventana renal: dentro del compartimento, lejos de la cúpula y del cuadrado lumbar
+    const scene = new AnatomyScene(NORMAL_ADULT);
+    const inside: [number, number, number] = [-(RETRO_FAT.xLateral - 20), RETRO_FAT.yLateral - 5, -85];
+    const outside: [number, number, number] = [-40, 60, -20];
+    expect(retroFatSdf(inside)).toBeLessThan(0);
+    expect(retroFatSdf(outside)).toBeGreaterThan(0);
+    expect(sdDiaphragm(inside, scene.diaphragm, scene.torso)).toBeGreaterThan(DIAPHRAGM_THICKNESS_MM + WALL_ACROSS_MM);
+    expect(quadratusSdf(inside, 0, 1e3)).toBeGreaterThan(0);
+    // lo que toca la pared: la grasa (el hígado lejos) o el hígado a menos del margen (su área desnuda)
+    const fat = { liverSdf: () => 10, diaphragm: scene.diaphragm, torso: scene.torso };
+    const liver = { ...fat, liverSdf: () => WALL_ACROSS_MM - 0.1 };
+    expect(fatAcrossWall(inside, fat)).toBe(true);
+    expect(faceSiteGain(Interface.Peritoneum, inside, fat)).toBe(RETRO_PERITONEUM_GAIN);
+    expect(RETRO_PERITONEUM_GAIN * interfaceReflectivity(Interface.Peritoneum)).toBeCloseTo(0.03, 9);
+    expect(faceSiteGain(Interface.Peritoneum, inside, liver)).toBe(1);
+    expect(faceSiteGain(Interface.Peritoneum, outside, fat)).toBe(1);
+    for (const id of [Interface.Transversalis, Interface.LiverCapsule, Interface.RenalCapsule])
+      expect(faceSiteGain(id, inside, fat)).toBe(1);
+    // la cúpula (diafragma o pulmón) y el cuadrado lumbar contra la pared también la dejan como está
+    const dome: [number, number, number] = [inside[0], inside[1], inside[2]];
+    for (let z = inside[2]; z < 200 && sdDiaphragm(dome, scene.diaphragm, scene.torso) > DIAPHRAGM_THICKNESS_MM; z += 1) dome[2] = z;
+    if (retroFatSdf(dome) < 0) expect(fatAcrossWall(dome, fat)).toBe(false);
+  });
+
+  it('GLSL: las constantes interpoladas, la faceta, la difusa y su suma en los dos programas de B', () => {
+    const echo = INTERFACE_ECHO_GLSL.replace(/\s+/g, ' ');
+    expect(echo).toContain(`#define FACET_CELL ${FACET.cellMm.toFixed(4)}`);
+    expect(echo).toContain(`#define FACET_GAIN ${(1 / VALUE_NOISE_SD).toFixed(6)}`);
+    expect(echo).toContain(`#define FACET_TILT2 ${(FACET.tiltMin * FACET.tiltMin).toFixed(8)}`);
+    expect(echo).toContain(`#define FACET_RHO2 ${(FACET.tiltRatio * FACET.tiltRatio).toFixed(8)}`);
+    expect(echo).toContain(`#define IFACE_DIFFUSE ${IFACE_DIFFUSE_PER_A.toPrecision(6)}`);
+    expect(echo).toContain(`#define IFACE_RETRO_PERITONEUM ${RETRO_PERITONEUM_GAIN.toFixed(6)}`);
+    expect(echo).toContain(`#define IFACE_ACROSS ${WALL_ACROSS_MM.toFixed(4)}`);
+    // la difusa de la GLSL sale del uniform (P.x·2s, sin tabla): κ_d·R_ef en todas las caras, en float32
+    const u = interfaceUniforms(K0);
+    for (let i = 1; i < INTERFACE_COUNT; i++) {
+      const id: Interface = i;
+      const glsl = Math.fround(IFACE_DIFFUSE_PER_A) * u[4 * i] * (1 / Math.sqrt(u[4 * i + 2]));
+      expect(glsl / (FACET.diffuse * interfaceReflectivity(id)), Interface[id]).toBeCloseTo(1, 5);
+    }
+    // la faceta: las mismas sales y la misma normalización que el gemelo
+    expect(echo).toContain('float s = FACET_SALT + float(face) * FACET_SALT_F;');
+    expect(echo).toContain(
+      'return (vec3(valueNoise(q, s), valueNoise(q, s + FACET_SALT_C), valueNoise(q, s + 2.0 * FACET_SALT_C)) - 0.5) * (FACET_GAIN * st);',
+    );
+    expect(echo).toContain('vec3 nf = fg.xyz + t - dot(t, fg.xyz) * fg.xyz;');
+    expect(echo).toContain('float cosF = abs(dot(nf, dir)) * inversesqrt(dot(nf, nf));');
+    // σ_t = max(tan 5°, ρ·s) con s² = 1/(4·P.z): la inclinación y el lóbulo propio de la faceta
+    expect(echo).toContain('vec3 t = facetTilt(m, c.iface, sqrt(max(FACET_TILT2, 0.25 * FACET_RHO2 / P.z)));');
+    expect(echo).toContain(
+      'return vec2(faceEcho(c.iface, cosF, min(1.0 - 4.0 * FACET_TILT2 * P.z, 1.0 - FACET_RHO2), 1.0, curv, g), IFACE_DIFFUSE * P.x * inversesqrt(P.z) * sqrt(max(0.0, 1.0 - exp(-P.y * P.y))) * cosI * g);',
+    );
+    expect(echo).toContain(
+      'return cosL < IFACE_MIN_COS ? 0.0 : P.x * inversesqrt(kf) * exp(-(1.0 - c2) / c2 * P.z / kf) / c2 * exp(-0.5 * x * x) * curv * g * (0.39894228 / IFACE_SIGMA_H);',
+    );
+    expect(echo).toContain('float g = faceShape(c.iface, c.ifd / (fg.w * cosI)) * gain;');
+    // el eco de la 57 (pleuras y copias de la pared, en su bucle): el mismo cálculo con kf 1, χ(θ) y sin la difusa
+    expect(echo).toContain('return faceEcho(id, cosI, 1.0, cosI, curv, faceShape(id, delta));');
+    // la cara interna de la pared con grasa detrás (fatAcrossWall): las mismas condiciones que el gemelo
+    expect(echo).toContain(
+      'if (c.iface == IF_PERITONEUM && retroFatSdf(m) < 0.0 && liverSdf(m, dB) > IFACE_ACROSS && domeSd(m) > DIAPHRAGM_MM + IFACE_ACROSS && quadratusSdf(m, 0.0, 1e3) > 0.0) gain *= IFACE_RETRO_PERITONEUM;',
+    );
+    // la mirada 0 (mediumField) y las dirigidas (mediumFieldPh) suman igual; las pleuras y las copias de la pared, no
+    for (const src of [PLEURA_GLSL, FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED])
+      expect(src).toContain('return field * (1.0 + e.y / max(length(field), 1e-6)) + vec2(e.x, 0.0);');
+    // el programa dirigido lleva las dos (mediumField del preludio y mediumFieldPh de su rama), la mirada 0 una
+    expect(FRAG_RAWFIELD_STEERED.split('vec2 e = interfaceEcho(c, m, dir, r, se, w);').length - 1).toBe(2);
+    expect(FRAG_RAWFIELD.split('vec2 e = interfaceEcho(c, m, dir, r, se, w);').length - 1).toBe(1);
+    expect(echo).toContain('return interfaceProfileEcho(IF_PLEURA, sqrt(max(0.0, 0.5 * (1.0 - dot(d0, dR)))), 1.0, delta);');
   });
 });

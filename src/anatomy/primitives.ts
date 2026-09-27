@@ -27,6 +27,142 @@ export interface Tube {
   nodes: TubeNode[];
   /** Factor del semieje anteroposterior respecto al lateral (1 = circular). */
   apScale: number;
+  /**
+   * Forma orgánica (decisión 90): la sección anisótropa y el radio modulado a lo largo del eje. La pone la escena a las
+   * suprahepáticas y a la porta (`tubeShapeClassOf`); sin ella, un tubo es circular y de radio lineal (o la elipse de
+   * `apScale`, la VCI, cuyo calibre va en sus nodos).
+   */
+  shape?: TubeShape;
+}
+
+/**
+ * Forma orgánica de un tubo (decisión 90). Los vasos del modelo eran cadenas de cápsulas de sección circular y radio
+ * lineal entre nodos: el juez ciego (ronda 4) veía «vasos pequeños como círculos perfectos» y «venas de cuerpo redondo con
+ * un cono recto». Dos cosas, ancladas al tubo (salen de un hash entero de su índice en la lista de la GPU, `seed`: vasos y
+ * después conductos, el H2.w de la textura de escena), el mismo resultado en TS y en GLSL (que recibe la sección hecha en
+ * el téxel H4 de la cabecera del tubo, `tubeShapeTexel`, y calcula el ruido con el mismo hash):
+ *  - **Sección anisótropa**: la distancia al eje es la de una métrica elíptica fija en el marco material,
+ *    f(d) = c·√(|d|² + κ·(d·ŵ)²) con c = (1 + κ)^(−1/4), que conserva el área: la sección perpendicular al eje es una
+ *    elipse de semiejes r·(1 + κ)^(±1/4) orientada por la proyección de ŵ, que gira con el vaso sin saltos en los codos
+ *    (f no depende de la tangente del segmento) y solo se redondea donde el vaso se curva hacia ŵ. ŵ es la parte de un
+ *    vector del hash perpendicular al primer segmento del tubo. κ en reposo se divide por el cuadrado de la dilatación: la
+ *    vena distendida por la congestión se redondea, como la VCI (ley de tubo colapsable; Shapiro 1977)
+ *    [EXTRAPOLACIÓN PROPIA: los rangos de κ].
+ *  - **Radio modulado a lo largo del eje**: r = r_lineal·(1 + amp·N(s)), N un ruido de valor en la longitud de arco desde
+ *    el primer nodo (celda de `TUBE_SHAPE.latticeMm`, fundido smoothstep, valores en [−1, 1]) [EXTRAPOLACIÓN PROPIA: la
+ *    amplitud y la correlación].
+ */
+export interface TubeShape {
+  /** Índice del tubo en la lista de la GPU (vasos y luego conductos): la semilla del hash. */
+  seed: number;
+  /** Dirección ŵ de la anisotropía (unitaria, marco material). */
+  w: Vec3;
+  /** Anisotropía κ en reposo (escala de radio ≤ 1). */
+  kappa: number;
+  /** Amplitud relativa del ruido del radio a lo largo del eje. */
+  amp: number;
+}
+
+/** Clase de forma de un vaso: la porta (pared gruesa) o las suprahepáticas (`tubeShapeClassOf`). */
+export type TubeShapeClass = 'portal' | 'vein';
+
+/**
+ * Parámetros de la forma (decisión 90) [EXTRAPOLACIÓN PROPIA]: por clase, κ mínima y máxima en reposo (semiejes en
+ * cociente 1/√(1 + κ): suprahepáticas, de pared fina, 0,91–0,73; porta, de pared gruesa, 0,95–0,85) y la amplitud del
+ * ruido del radio (porta 5 %, suprahepáticas 6 %; desviación típica ≈ 0,45 de la amplitud); celda del ruido de 30 mm
+ * (correlación de 1–3 cm); sal del hash.
+ */
+export const TUBE_SHAPE = {
+  latticeMm: 30,
+  salt: 0x68e31da4,
+  /**
+   * Más allá de esta distancia a la luz lineal (más amp·r) la GPU no evalúa el ruido: ninguna pared es tan gruesa (la
+   * periportal llega a 1,4 mm), así que el tubo no clasifica la muestra con o sin él (`tubeQuery` de la GLSL; TS da
+   * siempre la distancia con ruido).
+   */
+  noiseReachMm: 1.5,
+  classes: {
+    portal: { kappa: [0.1, 0.4], amp: 0.05 },
+    vein: { kappa: [0.2, 0.9], amp: 0.06 },
+  },
+} as const satisfies {
+  latticeMm: number;
+  salt: number;
+  noiseReachMm: number;
+  classes: Record<TubeShapeClass, { kappa: readonly [number, number]; amp: number }>;
+};
+
+/** Hash entero de 32 bits («lowbias32», C. Wellons): gemelo exacto de `tubeHash` (GLSL, `uint`). */
+export function tubeHash(x: number): number {
+  x ^= x >>> 16;
+  x = Math.imul(x, 0x7feb352d);
+  x ^= x >>> 15;
+  x = Math.imul(x, 0x846ca68b);
+  x ^= x >>> 16;
+  return x >>> 0;
+}
+
+/** Hash del tubo `seed` con la clave `k` (las celdas del ruido; 0xffff, los parámetros de la sección). */
+const tubeKey = (seed: number, k: number): number => tubeHash(((seed << 16) ^ k ^ TUBE_SHAPE.salt) >>> 0);
+/** Uniforme en [0, 1) con los 24 bits altos: exacto en float32. */
+const tubeUnit = (h: number): number => (h >>> 8) / 16777216;
+
+/**
+ * Forma del tubo `seed` de una clase, cuyo primer segmento es `axis0` (el vector del primer nodo al segundo). ŵ es la parte
+ * perpendicular a `axis0` de un vector del hash (sus componentes, (2b − 255)/255 con b un byte, nunca son 0, así que no es
+ * paralelo a un eje), y κ, un byte más del mismo hash. La GPU la recibe hecha (`tubeShapeTexel`).
+ */
+export function tubeShapeOf(seed: number, cls: TubeShapeClass, axis0: Vec3): TubeShape {
+  const c = TUBE_SHAPE.classes[cls];
+  const h = tubeKey(seed, 0xffff);
+  const v: Vec3 = [((h & 255) * 2) / 255 - 1, (((h >>> 8) & 255) * 2) / 255 - 1, (((h >>> 16) & 255) * 2) / 255 - 1];
+  const la = Math.hypot(axis0[0], axis0[1], axis0[2]);
+  const t: Vec3 = [axis0[0] / la, axis0[1] / la, axis0[2] / la];
+  const vt = v[0] * t[0] + v[1] * t[1] + v[2] * t[2];
+  const w: Vec3 = [v[0] - t[0] * vt, v[1] - t[1] * vt, v[2] - t[2] * vt];
+  const l = Math.hypot(w[0], w[1], w[2]);
+  return { seed, w: [w[0] / l, w[1] / l, w[2] / l], kappa: c.kappa[0] + (c.kappa[1] - c.kappa[0]) * ((h >>> 24) / 255), amp: c.amp };
+}
+
+/**
+ * Mayor radio de la luz sobre el radio lineal de sus nodos que puede dar la forma de una clase con la escala de radio
+ * `radiusScale`: (1 + amp)·(1 + κ_máx/s²)^(1/4) con s = max(1, escala). La contención de las ramas procedurales la cuenta.
+ */
+export function tubeShapeMaxFactor(cls: TubeShapeClass, radiusScale: number): number {
+  const c = TUBE_SHAPE.classes[cls];
+  const s = Math.max(1, radiusScale);
+  return (1 + c.amp) * Math.pow(1 + c.kappa[1] / (s * s), 0.25);
+}
+
+/** Métrica de la sección con la escala de radio del instante: wt = ŵ·√κ_ef y c = (1 + κ_ef)^(−1/4), κ_ef = κ/max(1, s)². */
+function shapeMetric(shape: TubeShape, radiusScale: number): { wt: Vec3; c: number } {
+  const s = Math.max(1, radiusScale);
+  const k = shape.kappa / (s * s);
+  const q = Math.sqrt(k);
+  return { wt: [shape.w[0] * q, shape.w[1] * q, shape.w[2] * q], c: Math.pow(1 + k, -0.25) };
+}
+
+/**
+ * Téxel H4 de la cabecera del tubo en la textura de escena (decisión 90): (wt, amplitud del ruido del radio) con la escala de
+ * radio del instante; la GPU saca c = (1 + |wt|²)^(−1/4) y lee la semilla del ruido en H2.w. Ceros sin forma (la VCI).
+ */
+export function tubeShapeTexel(shape: TubeShape | undefined, radiusScale: number): [number, number, number, number] {
+  if (!shape) return [0, 0, 0, 0];
+  const { wt } = shapeMetric(shape, radiusScale);
+  return [wt[0], wt[1], wt[2], shape.amp];
+}
+
+/**
+ * Ruido de valor del radio a lo largo del eje del tubo `seed` en la longitud de arco `arcMm` (≥ 0): su valor en [−1, 1] y
+ * su derivada (1/mm). Gemelo de `tubeNoise` (GLSL).
+ */
+export function tubeNoise(seed: number, arcMm: number): [number, number] {
+  const x = arcMm / TUBE_SHAPE.latticeMm;
+  const c = Math.floor(x);
+  const f = x - c;
+  const v0 = tubeUnit(tubeKey(seed, c)) * 2 - 1;
+  const v1 = tubeUnit(tubeKey(seed, c + 1)) * 2 - 1;
+  return [v0 + (v1 - v0) * f * f * (3 - 2 * f), ((v1 - v0) * 6 * f * (1 - f)) / TUBE_SHAPE.latticeMm];
 }
 
 export interface Sphere {
@@ -201,15 +337,36 @@ export interface TubeHit {
   /** Índice del segmento y parámetro a lo largo de él. */
   segment: number;
   s: number;
+  /** Longitud de arco (mm) del punto del eje más cercano desde el primer nodo: la del ruido del radio (decisión 90). */
+  arc: number;
+}
+
+/**
+ * Peso del radio del nodo final a lo largo del segmento: lineal (s) o, en la sección elíptica de la VCI, smoothstep, con
+ * pendiente nula en los nodos: el calibre de la VCI (decisión 90) ondula sin quiebros en sus paredes.
+ */
+function radiusWeight(s: number, apScale: number): number {
+  return apScale !== 1 ? s * s * (3 - 2 * s) : s;
 }
 
 /**
  * Distancia a una cadena de cápsulas con radio interpolado y sección elíptica
- * (semieje AP = r·apScale). `radiusScale` multiplica los radios (fisiología).
+ * (semieje AP = r·apScale). `radiusScale` multiplica los radios (fisiología). Con forma (decisión 90, `Tube.shape`),
+ * la distancia al eje es la de la métrica elíptica del tubo y el radio lleva el ruido a lo largo del eje; el segmento
+ * se elige sin ese ruido (continuo en la longitud de arco, así que en las uniones no hay escalón) y se aplica una vez,
+ * como en la GLSL.
  */
 export function tubeQuery(p: Vec3, tube: Tube, radiusScale = 1): TubeHit {
-  let best: TubeHit | null = null;
   const nodes = tube.nodes;
+  const shape = tube.apScale === 1 && tube.shape ? shapeMetric(tube.shape, radiusScale) : null;
+  let bestD = Infinity;
+  let bestDist = 0;
+  let bestR = 1;
+  let bestI = 0;
+  let bestS = 0;
+  let bestArc = 0;
+  let bestT: Vec3 = [0, 0, 1];
+  let arc = 0;
   for (let i = 0; i < nodes.length - 1; i++) {
     const a = nodes[i].p;
     const b = nodes[i + 1].p;
@@ -220,6 +377,7 @@ export function tubeQuery(p: Vec3, tube: Tube, radiusScale = 1): TubeHit {
     const apy = p[1] - a[1];
     const apz = p[2] - a[2];
     const len2 = abx * abx + aby * aby + abz * abz;
+    const len = Math.sqrt(len2);
     let s = len2 > 0 ? (apx * abx + apy * aby + apz * abz) / len2 : 0;
     s = s < 0 ? 0 : s > 1 ? 1 : s;
     const cx = a[0] + abx * s;
@@ -235,33 +393,37 @@ export function tubeQuery(p: Vec3, tube: Tube, radiusScale = 1): TubeHit {
     // los extremos del segmento) se conserva: sin ella el tubo no tenía tapa.
     let dist: number;
     if (tube.apScale !== 1) {
-      const len = Math.sqrt(len2) || 1;
-      const tx = abx / len;
-      const ty = aby / len;
-      const tz = abz / len;
+      const l = len || 1;
+      const tx = abx / l;
+      const ty = aby / l;
+      const tz = abz / l;
       const along = dx * tx + dy * ty + dz * tz;
       const px = dx - tx * along;
       const py = (dy - ty * along) / tube.apScale;
       const pz = dz - tz * along;
       dist = Math.sqrt(px * px + py * py + pz * pz + along * along);
+    } else if (shape) {
+      const q = dx * shape.wt[0] + dy * shape.wt[1] + dz * shape.wt[2];
+      dist = shape.c * Math.sqrt(dx * dx + dy * dy + dz * dz + q * q);
     } else {
       dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
-    const r = (nodes[i].r + (nodes[i + 1].r - nodes[i].r) * s) * radiusScale;
+    const r = (nodes[i].r + (nodes[i + 1].r - nodes[i].r) * radiusWeight(s, tube.apScale)) * radiusScale;
     const d = dist - r;
-    if (!best || d < best.d) {
-      const len = Math.sqrt(len2) || 1;
-      best = {
-        d,
-        rho: dist / Math.max(1e-6, r),
-        tangent: [abx / len, aby / len, abz / len],
-        r,
-        segment: i,
-        s,
-      };
+    if (d < bestD) {
+      const l = len || 1;
+      bestD = d;
+      bestDist = dist;
+      bestR = r;
+      bestI = i;
+      bestS = s;
+      bestArc = arc + s * len;
+      bestT = [abx / l, aby / l, abz / l];
     }
+    arc += len;
   }
-  return best as TubeHit;
+  const r = shape && tube.shape!.amp > 0 ? bestR * (1 + tube.shape!.amp * tubeNoise(tube.shape!.seed, bestArc)[0]) : bestR;
+  return { d: bestDist - r, rho: bestDist / Math.max(1e-6, r), tangent: bestT, r, segment: bestI, s: bestS, arc: bestArc };
 }
 
 /**
@@ -271,8 +433,10 @@ export function tubeQuery(p: Vec3, tube: Tube, radiusScale = 1): TubeHit {
  * veces la componente AP, así que su norma es 1/apScale en las paredes anterior y posterior: la pasada B
  * divide por ella `ifd` (el valor de sd) para tener la distancia por la normal. Dentro del segmento se
  * resta el crecimiento del radio a lo largo del eje. La curvatura de la cara en su dirección
- * circunferencial ĉ (normal a la cara y al eje) es |S·ĉ|²/(r·|∇dist|), con S = diag(1, 1/apScale, 1):
- * 1/r en la sección circular, apScale/r en las paredes AP y 1/(apScale²·r) en las laterales.
+ * circunferencial ĉ (normal a la cara y al eje) es ĉᵀQĉ/(r·|∇dist|), con Q la matriz de la métrica de la sección
+ * (dist = √(dᵀQd) en el plano de la sección): S² = diag(1, 1/apScale², 1) en la VCI (1/r en la sección circular,
+ * apScale/r en las paredes AP y 1/(apScale²·r) en las laterales) y c²·(I + wt·wtᵀ) con la forma de la decisión 90. Con
+ * forma, el crecimiento del radio a lo largo del eje incluye el del ruido (r·amp·N′).
  */
 export function tubeFaceGradient(p: Vec3, tube: Tube, radiusScale: number, hit: TubeHit): { gradient: Vec3; curvature: number } {
   const a = tube.nodes[hit.segment];
@@ -281,33 +445,54 @@ export function tubeFaceGradient(p: Vec3, tube: Tube, radiusScale: number, hit: 
   const len = Math.hypot(ab[0], ab[1], ab[2]) || 1;
   const tg: Vec3 = [ab[0] / len, ab[1] / len, ab[2] / len];
   const s = hit.s;
+  const inside = s > 0 && s < 1;
   const d: Vec3 = [p[0] - (a.p[0] + ab[0] * s), p[1] - (a.p[1] + ab[1] * s), p[2] - (a.p[2] + ab[2] * s)];
   const dot = (x: Vec3, y: Vec3) => x[0] * y[0] + x[1] * y[1] + x[2] * y[2];
-  let dist: number;
-  let g: Vec3;
   const ap = tube.apScale;
+  const shape = ap === 1 && tube.shape ? shapeMetric(tube.shape, radiusScale) : null;
+  let dist: number;
+  // gradiente de dist (sin la parte del radio)
+  let gd: Vec3;
   if (ap !== 1) {
     const along = dot(d, tg);
     const perp: Vec3 = [d[0] - tg[0] * along, (d[1] - tg[1] * along) / ap, d[2] - tg[2] * along];
     dist = Math.hypot(perp[0], perp[1], perp[2], along);
     const q: Vec3 = [perp[0], perp[1] / ap, perp[2]];
     const qt = dot(q, tg);
-    g = [q[0] - tg[0] * qt + tg[0] * along, q[1] - tg[1] * qt + tg[1] * along, q[2] - tg[2] * qt + tg[2] * along];
+    const inv = 1 / Math.max(dist, 1e-6);
+    gd = [(q[0] - tg[0] * qt + tg[0] * along) * inv, (q[1] - tg[1] * qt + tg[1] * along) * inv, (q[2] - tg[2] * qt + tg[2] * along) * inv];
+  } else if (shape) {
+    // f = c·√(|d|² + q²), q = d·wt: ∇_d f = c·(d + q·wt)/√(…); dentro del segmento el punto del eje se mueve con p y el
+    // gradiente queda en el plano de la sección (en la tapa, el nodo está fijo)
+    const q = dot(d, shape.wt);
+    const F = Math.sqrt(dot(d, d) + q * q);
+    dist = shape.c * F;
+    const k = shape.c / Math.max(F, 1e-6);
+    gd = [(d[0] + q * shape.wt[0]) * k, (d[1] + q * shape.wt[1]) * k, (d[2] + q * shape.wt[2]) * k];
+    if (inside) {
+      const t = dot(gd, tg);
+      gd = [gd[0] - tg[0] * t, gd[1] - tg[1] * t, gd[2] - tg[2] * t];
+    }
   } else {
     dist = Math.hypot(d[0], d[1], d[2]);
-    g = d;
+    const inv = 1 / Math.max(dist, 1e-6);
+    gd = [d[0] * inv, d[1] * inv, d[2] * inv];
   }
-  const r = (a.r + (b.r - a.r) * s) * radiusScale;
-  const taper = s > 0 && s < 1 ? (radiusScale * (b.r - a.r)) / len : 0;
-  const inv = 1 / Math.max(dist, 1e-6);
-  const gn: Vec3 = [g[0] * inv - tg[0] * taper, g[1] * inv - tg[1] * taper, g[2] * inv - tg[2] * taper];
+  const rLin = (a.r + (b.r - a.r) * radiusWeight(s, ap)) * radiusScale;
+  const [n, dn] = shape && tube.shape!.amp > 0 ? tubeNoise(tube.shape!.seed, hit.arc) : [0, 0];
+  const amp = shape ? tube.shape!.amp : 0;
+  const r = rLin * (1 + amp * n);
+  const dw = ap !== 1 ? 6 * s * (1 - s) : 1;
+  const taper = inside ? ((radiusScale * (b.r - a.r) * dw) / len) * (1 + amp * n) + rLin * amp * dn : 0;
+  const gn: Vec3 = [gd[0] - tg[0] * taper, gd[1] - tg[1] * taper, gd[2] - tg[2] * taper];
   const gradient: Vec3 = dist > 0 && dot(gn, gn) > 0 ? gn : [0, 1, 0];
   let curvature = 1 / r;
-  const c: Vec3 = [g[1] * tg[2] - g[2] * tg[1], g[2] * tg[0] - g[0] * tg[2], g[0] * tg[1] - g[1] * tg[0]];
+  const c: Vec3 = [gd[1] * tg[2] - gd[2] * tg[1], gd[2] * tg[0] - gd[0] * tg[2], gd[0] * tg[1] - gd[1] * tg[0]];
   const cl = Math.hypot(c[0], c[1], c[2]);
-  if (ap !== 1 && dist > 0 && cl > 1e-6) {
-    const cy = c[1] / cl;
-    curvature = ((1 + cy * cy * (1 / (ap * ap) - 1)) * dist) / (r * Math.hypot(g[0], g[1], g[2]));
+  if ((ap !== 1 || shape) && dist > 0 && cl > 1e-6) {
+    const ch: Vec3 = [c[0] / cl, c[1] / cl, c[2] / cl];
+    const cq = shape ? shape.c * shape.c * (1 + dot(ch, shape.wt) ** 2) : 1 + ch[1] * ch[1] * (1 / (ap * ap) - 1);
+    curvature = cq / (r * Math.hypot(gd[0], gd[1], gd[2]));
   }
   return { gradient, curvature };
 }

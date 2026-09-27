@@ -179,9 +179,13 @@ describe('e2e de normales con los gradientes del PR 5b (sin GPU)', () => {
   it('subxifoidea y flanco: la VCI con el gradiente de la sección elíptica coincide con el de faceSdf', () => {
     // el gemelo `tubeFaceGradient` es el de la GLSL: el gradiente de la sección y el afilamiento, sin normalizar
     const glsl = ANATOMY_GLSL.replace(/\s+/g, ' ');
-    expect(glsl).toContain('vec3 q = perp; q.y /= apScale; g = q - tg * dot(q, tg) + tg * along;');
-    expect(glsl).toContain('float taper = s > 0.0 && s < 1.0 ? rs * (b.w - a.w) * inversesqrt(len2) : 0.0;');
-    expect(glsl).toContain('vec3 gn = g / max(dist, 1e-6) - tg * taper;');
+    // (la sección elíptica escala dos veces la componente AP; decisión 90: el radio de la VCI es smoothstep entre nodos y
+    // la cara es la del tubo que gana, `tubeFace`)
+    expect(glsl).toContain('q.y /= apScale; gd = (q - tg * dot(q, tg) + tg * along) / max(dist, 1e-6);');
+    expect(glsl).toContain(
+      'float taper = inside ? rs * (b.w - a.w) * (apScale != 1.0 ? 6.0 * s * (1.0 - s) : 1.0) / max(len, 1e-6) * (1.0 + amp * nz) + rLin * amp * dN : 0.0;',
+    );
+    expect(glsl).toContain('vec3 gn = gd - tg * taper;');
     expect(glsl).toContain('n = dist > 0.0 && dot(gn, gn) > 0.0 ? gn : vec3(0.0, 1.0, 0.0);');
     // y el resto de caras usan el gradiente de su distancia con el paso del banco
     expect(glsl).toContain('vec3 kidneyOuterGradient(vec3 m)');

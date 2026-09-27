@@ -32,6 +32,13 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Cambiado
 
+- Vasos orgánicos (90): las suprahepáticas y la porta cortadas de través son óvalos (antes, círculos perfectos) y su
+  calibre ondula unos pocos por ciento a lo largo del vaso; una vena distendida por la congestión se redondea. La VCI se
+  curva también en el plano coronal y su calibre cambia con suavidad por debajo del sitio donde se mide (antes, en el
+  flanco, dos rectas paralelas de borde a borde), y en la subxifoidea se estrecha hacia caudal al apartarse del plano. La
+  suprahepática derecha se abre en embudo al entrar en la VCI y la media se curva y es más tubular (antes, un cono recto).
+  El diámetro de la VCI en su sitio de medida, las áreas de la fisiología, `npm run calibrate` y los patrones y grados de
+  la cadena del alumno no cambian; el cuadro cuesta ~0,4 ms más.
 - Textura del hígado y ruido del receptor (89). El parénquima hepático deja de ser un moteado de granos redondos
   iguales: una pequeña fracción de dispersores más fuertes por debajo de la resolución da destellos sueltos y la
   estadística algo pre-Rayleigh del hígado real (m de Nakagami 0,85 en ventanas de tres pulsos, frente a 0,81 del hígado

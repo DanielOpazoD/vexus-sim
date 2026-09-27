@@ -3973,6 +3973,126 @@ no seguía el orden de float32 del GLSL; `pow` en la ganancia de las tríadas (a
 (ahora `texelFetch`); la ley especular de las tríadas sin la compresión ni el espejo (documentada); texto roto o viejo en
 APPROXIMATIONS, ARCHITECTURE y comentarios: corregidos.
 
+## 90. Vasos orgánicos: sección elíptica y radio que ondula en las venas del hígado, y una VCI que se curva y cambia de calibre sin tocar el sitio de medida
+
+**Contexto.** Sirve a los objetivos 3 (fidelidad anatómica) y 2 (fidelidad ecográfica) de `docs/MISION.md`, con el 4 como
+restricción: el diámetro de la VCI es la medida de VExUS. Ronda 4 del juez ciego (27-09-2026, 21/21 detectadas): la pista
+n.º 1 es la **geometría de primitivas**. La VCI del flanco en la congestión grave (pareja 5, la peor, 1/7) es «un tubo recto
+horizontal de paredes paralelas de borde a borde y calibre exactamente constante, la geometría de un maniquí»; en la
+subxifoidea, «una banda curva de paredes perfectamente paralelas y líneas de brillo constante»; los vasos pequeños, «círculos
+perfectos», y las suprahepáticas de la subcostal (pareja 7), «un cuerpo redondo más un cono recto». Antes de tocar nada se
+midió con la anatomía TS en el marco de la captura (lienzo 1744 × 1542, 18 cm, compresión de la sonda y calibre del caso en
+apnea espiratoria; `scratchpad/vasc/measure.mts`):
+
+- Flanco, congestión grave, recorte del juez (z −68…16 de la VCI infrahepática): anchura de la luz 30,1–30,8 mm (CV 0,6 %) y
+  cada pared a 0,09 mm de su recta de mínimos cuadrados. La VCI del modelo era casi recta en el plano coronal (x −22 a −20
+  entre z −64 y 35) y de radio constante (9,8–10 mm), y el plano del flanco la sigue: dos rectas paralelas.
+- Subxifoidea, sano (z −47…33): CV 3,2 % y cada pared a 0,14–0,16 mm de una parábola: la «S» sagital de la decisión 69 sin
+  nada más.
+- Subcostal, congestión grave: la VSH media, un tramo recto de 43 mm con el radio lineal (3,2 → 4,0 mm, ×1,6), que sale del
+  plano hacia su extremo: un cono.
+- Todas las secciones eran círculos (solo la VCI tenía sección elíptica, la de `apScale`), y todos los radios, lineales
+  entre nodos.
+
+**Opciones.** (1) Solo datos: más nodos en todos los vasos. Poligonales con quiebros en las paredes; y la VCI, cuya esfera
+envolvente contiene casi todo el abdomen, es un tubo que consulta casi cada muestra: con 8 segmentos en lugar de 6 el cuadro
+de la subxifoidea subía 0,3 ms (Metal, M4). (2) Deformar el espacio de todos los tubos con un campo de desplazamiento
+suave: la deformación cambia los calibres hasta un 2πA/L (10–30 % con 1–2 mm de amplitud y 4–6 cm de onda), también en el
+sitio de medida de la VCI. (3) La elegida: una forma procedural anclada en las venas del hígado (sección y radio), en TS y en
+la GLSL, y la VCI con su recorrido y su calibre en sus nodos, sin tocar su sitio de medida.
+
+**Decisión.**
+
+- **Forma de las venas del hígado** (`anatomy/primitives.ts`: `TubeShape`, `TUBE_SHAPE`, `tubeShapeOf`, `tubeNoise`,
+  `tubeShapeTexel`; su gemelo en `tubeQuery` de `anatomy/gpu/anatomy.glsl.ts`). La distancia al eje es la de una métrica
+  elíptica fija en el marco material, f(d) = c·√(|d|² + κ(d·ŵ)²) con c = (1 + κ)^(−1/4): la sección es una elipse de
+  semiejes r·(1 + κ)^(±1/4), de área conservada, que no salta en los codos (f no depende de la tangente del segmento). ŵ es
+  la parte perpendicular al primer segmento de un vector de un hash entero del índice del tubo (lowbias32, el mismo en TS y
+  en la GLSL), y κ sale del mismo hash: suprahepáticas 0,2–0,9 (cociente de ejes 0,91–0,73) y porta, de pared gruesa,
+  0,1–0,4 (0,95–0,85); κ medio 0,43 [EXTRAPOLACIÓN PROPIA: los rangos]. κ se divide por el cuadrado de la dilatación del
+  instante: la vena distendida se redondea (ley de tubo colapsable; Shapiro 1977), y en la congestión grave (×1,6) el cociente
+  queda en 0,94–0,86. El radio ondula a lo largo del eje, r = r_lineal·(1 + amp·N(s)), con N un ruido de valor de la longitud
+  de arco (celda de 30 mm, fundido smoothstep, valores en [−1, 1], correlación de 1–3 cm) y amp 6 % en las suprahepáticas y 5
+  % en la porta [EXTRAPOLACIÓN PROPIA]. Lo llevan las suprahepáticas y las ramas portales con sus ramas procedurales.
+- **Sin forma** (`tubeShapeClassOf` en `anatomy/vesselTree.ts`): la VCI (su elipse es la de la fisiología), las arterias
+  (redondas por la presión), las venas renales (la izquierda cruza la pinza aortomesentérica con milímetros de holgura), las
+  interlobares (1–2 mm, junto a su arteria) y los conductos biliares; y los dos vasos que llevan las puertas PW del protocolo
+  en la cadena del alumno (`PW_GATE_VESSELS`: la suprahepática derecha desde la intercostal y el tronco portal), porque la
+  lectura de una captura depende de la realización del moteado espectral y de la luz junto a la puerta: con la forma también
+  en ellos la puerta intercostal se movía 3 mm, la cadena cambiaba de lectura (la renal leía «bifásico» en el sano o en la FA:
+  la prueba comparte el generador del volumen de muestra entre territorios) y la limitación
+  `ppv-hepatic-capture-false-reversal` dejaba de reproducirse con la puerta del operador.
+- **La GPU**: la forma del instante viaja en un quinto téxel de la cabecera de cada tubo (H4 = (ŵ·√κ_ef, amp), escrito por
+  cuadro con la dilatación; `TUBE_HEADER_TEXELS`, `NODE_BASE` 512 → 640 téxeles), sin ranuras de uniforms. En el bucle de
+  tubos de `classifyWith`, `tubeQuery` solo da la distancia: elige el segmento sin el ruido (continuo en la longitud de arco,
+  sin escalón en las uniones) y aplica el ruido una vez, en él, y solo con la muestra a menos de 1,5 mm (+ amp·r) de la luz:
+  más allá ninguna pared la alcanza (la periportal llega a 1,4 mm) y el tubo no la clasifica. La cara del tubo que gana
+  (`tubeFace`: su eje, el gradiente analítico con el crecimiento del radio por el ruido y la curvatura ĉᵀQĉ/(r·|∇f|), la de
+  la elipse) se calcula una vez y fuera de los bucles. El bucle de segmentos lee cada nodo una vez y da las vueltas del tubo
+  (no la cota constante): con la cota constante y un cuerpo tan corto, el JIT de SwiftShader lo desenrollaba en cada copia
+  de `classify` y el arranque de la e2e pasaba de 55 a 111 s con la máquina cargada. TS da siempre la distancia con ruido
+  (`tubeQuery`, `tubeFaceGradient`).
+- **VCI** (`vesselTree.ts`, 6 segmentos como antes): por debajo de su sitio de medida el eje se curva también en el plano
+  coronal (1,6 mm hacia la derecha del paciente a z −36 frente a la cuerda entre el nivel renal y z 10; sube por la derecha
+  de la columna, detrás del hígado, y se inclina hacia delante y hacia dentro hasta la aurícula: Gray; PMC8405820) y el
+  calibre ondula: 9,75 mm en el nivel renal (9,8 antes: la arteria renal derecha pasa por detrás), 9,3 a z −36 (−7 %) y 10,5
+  a z −6 (+5 %) [EXTRAPOLACIÓN PROPIA: la curva y la ondulación; la TC de 200 adultos sanos no halla diferencias de calibre
+  entre el nivel renal y 2 cm bajo la AD, AP 16,3 frente a 16,9 mm: PMC9789330]. En la sección elíptica el radio entre nodos
+  es smoothstep (pendiente nula en los nodos): sin quiebros en las paredes (con 6 segmentos y el radio lineal la pared lateral
+  de la VCI dilatada se doblaba 17° en un nodo). Quiebros del eje ≤ 5,2° en z −36…10 y ≤ 7,2° en la «S» de la decisión 69. El
+  sitio de medida no cambia: radio 10 mm de z 10 a 35 (la línea M de la e2e, a z 15) y 10–10,2 hasta z 47 (la unión con la AD
+  a 1–2 cm); el `refRadius` y el `apScale`, tampoco.
+- **Confluencias**: la suprahepática derecha se abre en embudo en su ostium (6,0 → 8,0 mm en su nodo dentro de la VCI, 13–14
+  mm de diámetro en la pared de la cava; VHD ~15 mm en la desembocadura, Joshi 2009) con un nodo nuevo en su eje (el mismo
+  recorrido); la media se curva 3 mm en el plano de la subcostal y es más tubular (3,2 → 3,8 → 4,0 mm) y se abre en el tronco
+  común (4,4 → 5,2), y su tributaria desemboca en el eje curvado [EXTRAPOLACIÓN PROPIA: los perfiles].
+- **Contención de las ramas procedurales**: su recorrido debe caber con el mayor saliente de su forma
+  (`tubeShapeMaxFactor`, (1 + amp)·(1 + κ_máx/s²)^(1/4); `branchShapeMax`); las 60/58 ramas de los siete casos no cambian.
+
+**Consecuencias.**
+
+- Recortes del juez con la anatomía TS: flanco grave, anchura de la VCI 28,3–32,3 mm (CV 0,6 → 4,0 %) y cada pared a 0,53 y
+  0,75 mm de su recta (antes 0,09); subxifoidea sana, CV 3,2 → 8,9 % (la anchura baja de 13,7 a 11,5 mm hacia caudal, donde
+  la VCI se aparta del plano sagital: el efecto cilindro de siempre) y paredes a 0,19–0,26 mm de su parábola (antes
+  0,14–0,16); subxifoidea grave, CV 1,7 → 5,3 %. Capturas con GPU real (Metal, armónica y compuesto, apnea espiratoria) antes y
+  después, y los recortes del juez junto a sus reales: `scratchpad/vasc/caps-final/` (flanco grave, subxifoidea sana y grave,
+  subcostal grave). La VCI del flanco deja de ser dos rectas paralelas (se curva y cambia de calibre con suavidad); la de la
+  subxifoidea se estrecha hacia caudal; la VSH media de la subcostal se dobla; las venas del hígado cortadas de través son
+  óvalos.
+- Calibración intacta: `npm run calibrate` da la misma salida byte a byte (áreas de la fisiología por `refRadius` y
+  `apScale`); la cadena del alumno (`examChain.test.ts`, 7 casos × 3 territorios) da las mismas puertas y 20 de 21 lecturas
+  idénticas bit a bit; la del tronco portal de la cirrosis cambia un escalón de velocidad de la envolvente (vMáx 13,6 ↔
+  12,2 cm/s, FP 40 ↔ 33 %, verdad 32–35 %) según la realización del moteado espectral (con la cadena aislada, main da 33 % y
+  esta rama 40 %; con la de la prueba, al revés), sin cambiar el grado. La lectura renal aislada es idéntica en las 12
+  realizaciones probadas por caso. La velocidad sigue uniforme por vaso (decisión 6): en el eje de una vena con forma, la
+  misma en todo su recorrido. La VCI dilatada de la congestión grave ya tocaba la porta y la arteria renal derecha: su trazado
+  nuevo no empeora ninguna holgura (tronco portal −4,36 → −3,89 mm, rama derecha −2,03 → −1,43, izquierda −1,63 → −0,84,
+  arteria renal −4,87 → −4,82).
+- Equivalencia TS ↔ GLSL con GPU real (Metal): acuerdo de tejido y de vaso 1 en 50 000 puntos de cada caso, velocidad a
+  ≤ 10⁻⁶, distancia de cara ≤ 2,3·10⁻⁵ mm, cáscara de caras con acuerdo 1 (error ≤ 1,2·10⁻⁴ mm) y normales de los tubos con
+  p01 = 1 (norma p95 ≤ 1,2·10⁻⁴).
+- Coste (Metal, M4, medianas de 8 rondas alternas con la máquina cargada): subxifoidea 8,69 → 9,09 ms, flanco 10,43 → 10,87,
+  subcostal ~11,7 → ~12,1 (+0,35–0,45 ms, ~+4 %). La primera versión (el hash de la forma en cada consulta, la cara de todos
+  los tubos consultados y la VCI en 8 segmentos) costaba +1,1 ms. Arranque con SwiftShader (tres rondas alternas, carga
+  10–16, mínimos): 39,0 s en main y 36,7 s en la rama. Índice del build 323,4 → 327,4 kB: presupuesto de 325 a 330 kB.
+- Limitación nueva `procedural-vessel-shape`. Quedan: las fillets de las confluencias (la unión de dos tubos sigue siendo la
+  de sus cápsulas, con el embudo de la suprahepática derecha como única transición), la vena hepática inferior derecha
+  accesoria (una variante frecuente que el flanco vería entrar en la VCI retrohepática), la vesícula cortada de través (un
+  círculo, en la subcostal) y la forma de las arterias y de los vasos de las puertas PW.
+
+**Verificación.** `vesselShape.test.ts`: la forma anclada de cada vaso (semilla = su índice en la lista de la GPU, ŵ unitaria
+y perpendicular al primer segmento, κ en su rango; sin forma la VCI, las arterias, la cadena renal, los conductos y los vasos
+de las puertas PW), la sección elíptica de área conservada con sus curvaturas a/b² y b/a² y la vena distendida que se
+redondea, el ruido (acotado, continuo con derivada nula en las celdas, correlado a 5 mm e independiente a tres celdas), el
+gradiente analítico frente al numérico en todos los segmentos y tapas de las venas con forma (|n·∇| > 0,9999, norma a
+< 10⁻⁴), la velocidad uniforme en el eje de la VSH media, la GLSL con las constantes del módulo y la forma en H4, el alcance
+del ruido frente a la pared más gruesa, el sitio de medida de la VCI (10 mm de z 10 a 35 y 10–10,2 hasta 47), su calibre
+que ondula ±4–7 % sin quiebros y su eje que se curva en el plano coronal (> 1 mm; falla con la VCI de main), el embudo de la
+VSH derecha dentro de la VCI y las holguras de la VCI dilatada. `anatomy.test.ts`: la contención de las ramas con el saliente
+de su forma, la pared lateral de la VCI con su calibre nuevo y la esfera de origen de las ramas con los radios de sus nodos.
+`faceNormals.test.ts` y `faceGradient.test.ts` con la GLSL nueva. e2e completa con SwiftShader (equivalencia, normales,
+modo M) y revisión adversarial de contexto limpio: REVISIÓN.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

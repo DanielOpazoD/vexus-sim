@@ -2,8 +2,30 @@ import { SeededRandom } from '../core/random';
 import { add, cross, dist, normalize, rotateAxis, scale, sub, type Vec3 } from '../core/vec3';
 import { VESSEL_META, type CaliberLaw, type VesselId } from '../physiology/vessels';
 import { BERTIN_COLUMNS_U, kidneyWorld, type Kidney } from './organs/kidney';
-import type { Tube } from './primitives';
+import { tubeShapeMaxFactor, type Tube, type TubeShapeClass } from './primitives';
 import { Tissue } from './tissues';
+
+/**
+ * Vasos que llevan las puertas PW del protocolo en la cadena del alumno (`examChain.test.ts`): la suprahepática derecha
+ * desde la intercostal y el tronco portal desde la ventana portal (las interlobares no llevan forma). Conservan su sección
+ * circular y su radio lineal (decisión 90): la lectura de una captura depende de la realización del moteado espectral y la
+ * de la puerta, así que cualquier cambio de su luz junto a la puerta cambiaría lo que el alumno mide.
+ */
+export const PW_GATE_VESSELS: readonly VesselId[] = ['hvRight', 'pvTrunk'];
+
+/**
+ * Clase de la forma orgánica de un vaso (decisión 90) según su sistema: las suprahepáticas y la porta con sus ramas, los
+ * vasos del parénquima hepático que el juez ciego veía como círculos y conos, salvo los de las puertas PW del protocolo
+ * (`PW_GATE_VESSELS`). Sin forma: la VCI (su sección es la elipse de la fisiología y su calibre va en sus nodos), las
+ * arterias (redondas por la presión), las venas renales (la izquierda cruza la pinza aortomesentérica con holguras de
+ * milímetros) y los vasos interlobares (1–2 mm, bajo la resolución, con la puerta PW de la cadena renal junto a la arteria).
+ * Los conductos biliares tampoco la llevan.
+ */
+export function tubeShapeClassOf(id: VesselId): TubeShapeClass | null {
+  if (PW_GATE_VESSELS.includes(id)) return null;
+  const system = VESSEL_META[id].system;
+  return system === 'hepaticVein' ? 'vein' : system === 'portal' ? 'portal' : null;
+}
 
 export interface VesselDef {
   id: VesselId;
@@ -121,15 +143,26 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       // Decisión 69: «S» sagital suave (Li 2021; Joshi 2009): desde la AD baja y se aleja de la pared ~13–15 mm hasta
       // el nivel renal, con la lordosis por delante en L3; por encima del hígado queda 13–26 mm por delante de la aorta.
       // Antes era un único tramo recto de 320 mm (z −300…20) que solo se curvaba en sus últimos 40 mm.
+      // Decisión 90: el tramo que ven la subxifoidea y el flanco (z −64…10) deja de ser una banda de paredes paralelas y
+      // calibre constante (el juez ciego, ronda 4: «un tubo recto de paredes paralelas de borde a borde, la geometría de un
+      // maniquí»). La VCI sube por la derecha de la columna, detrás del hígado, y se inclina hacia delante y hacia dentro
+      // hasta la aurícula (Gray; Insights Imaging 2021, PMC8405820): en el plano coronal el tramo retrohepático se curva
+      // 1,6 mm hacia la derecha del paciente antes de volver hacia la línea media, y el calibre ondula −7 % / +5 % con 3 cm
+      // de correlación, smoothstep entre nodos (sin quiebros en las paredes: `radiusWeight`) (la TC de 200 adultos sanos no
+      // halla diferencias entre el nivel renal y 2 cm bajo la AD, AP 16,3 frente a 16,9 mm: PMC9789330) [EXTRAPOLACIÓN
+      // PROPIA: la curva y la ondulación]. Se conservan el sitio de medida (radio 10 mm de z 10 a 35, la línea M de la e2e a z
+      // 15, y 10–10,2 hasta z 47: 1–2 cm bajo la unión con la AD y ~2 cm bajo la confluencia de las suprahepáticas), el eje
+      // sagital de la decisión 69 y el nivel renal (9,75 mm: la arteria renal derecha pasa por detrás y la porta por delante,
+      // y la VCI dilatada de la congestión grave ya las tocaba: ninguna holgura empeora).
       id: 'ivcInfra',
       tube: tube(
         [
           [[-14, -16, -300], 9.5],
-          [[-18, -14, -170], 9.5],
           [[-21, -12, -115], 9.5],
-          [[-22, -17, -64], 9.8],
-          [[-22, -15, -20], 10],
-          [[-21, -11, 15], 10],
+          [[-22, -17, -64], 9.75],
+          [[-23.3, -16.3, -36], 9.3],
+          [[-22.7, -13.7, -6], 10.5],
+          [[-21.15, -11.6, 10], 10],
           [[-20, -8, 35], 10],
         ],
         0.8,
@@ -163,7 +196,10 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
     // desembocadura 8–10 mm; B.2); la congestión los dilata vía `hvRadiusScale` hasta
     // ~1,6× (≈ 15 mm de diámetro a 19 mmHg), como en la plétora real.
     // Derecha: plano intersegmentario del lóbulo derecho, entra en la cava por su cara
-    // posterolateral derecha 1 cm por debajo del tronco común.
+    // posterolateral derecha 1 cm por debajo del tronco común. Decisión 90: su ostium se abre en embudo (VHD de ~15 mm en
+    // la desembocadura, Joshi 2009; 13–14 mm en la pared de la VCI del modelo): el abombamiento de la confluencia, en
+    // lugar de un cilindro que entra recto en la cava [EXTRAPOLACIÓN PROPIA: el perfil del embudo]. Mismo recorrido (el
+    // nodo nuevo está en el eje de antes) y mismo `refRadius`.
     thin(
       'hvRight',
       [
@@ -171,7 +207,8 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
         [[-105, -4, -28], 3.6],
         [[-68, -18, 10], 4.8],
         [[-38, -11, 32], 5.6],
-        [[-27, -9, 39], 6.0],
+        [[-31.4, -9.8, 36.2], 5.9],
+        [[-27, -9, 39], 8.0],
       ],
       5.6,
     ),
@@ -195,14 +232,18 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
     ),
     // Media: cisura lobar principal (línea de Cantlie), desde el parénquima de IVb/V por encima de la fosa
     // vesicular (decisión 67: antes nacía en la fosa y su primer tramo cruzaba la luz de la vesícula)
+    // Decisión 90: su tramo más largo (43 mm, antes recto con el radio lineal: «un cono recto», juez ciego, ronda 4) se curva
+    // 3 mm en el plano de la subcostal y es más tubular (3,2 → 3,8 → 4,0 mm), y se abre en embudo en el tronco común (4,4 →
+    // 5,2) [EXTRAPOLACIÓN PROPIA: la curva y el perfil]; mismo `refRadius`
     thin(
       'hvMiddle',
       [
         [[-57, 31, -38], 2.0],
         [[-40, 24, -25], 3.2],
+        [[-33.8, 17.1, -5.8], 3.8],
         [[-30, 5, 12], 4.0],
         [[-25, 5, 34], 4.4],
-        [[-22, 3, 43], 4.4],
+        [[-22, 3, 43], 5.2],
       ],
       4.5,
     ),
@@ -211,7 +252,8 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       [
         [[-75, 30, -20], 2.0],
         [[-50, 20, -8], 2.4],
-        [[-33, 10, 1], 2.8],
+        // desemboca en el eje de la media (decisión 90: la curva desplazó 3 mm su eje a z 1)
+        [[-32.3, 12.5, 1], 2.8],
       ],
       2.4,
     ),
@@ -520,6 +562,15 @@ export function wallThicknessMm(def: Pick<VesselDef, 'wallTissue' | 'wallMm'>, l
 export const BRANCH_MAX_RADIUS_SCALE: Record<CaliberLaw, number> = { hepaticVein: 1.8, portal: 1.2, ivc: 1, fixed: 1 };
 
 /**
+ * Mayor saliente de la luz de una rama de `parent` sobre su radio lineal con la escala de radio `sMax` (decisión 90): el de
+ * la forma orgánica de su clase (`tubeShapeMaxFactor`), que la contención de las ramas cuenta; 1 sin forma (la VCI).
+ */
+export function branchShapeMax(parent: Pick<VesselDef, 'id'>, sMax: number): number {
+  const cls = tubeShapeClassOf(parent.id);
+  return cls ? tubeShapeMaxFactor(cls, sMax) : 1;
+}
+
+/**
  * Radio (mm) del extremo de una rama terminal (decisión 87): la luz se afila por debajo de la resolución (0,3 mm frente a
  * una PSF de 1–3 mm y una rodaja de 3–5 mm) y la rama se apaga en la imagen, como una vena real hacia la periferia
  * [EXTRAPOLACIÓN PROPIA: el radio y el afilado lineal]. Antes todas acababan con 0,9 mm y una tapa esférica: una vena recta
@@ -572,8 +623,9 @@ export function buildHepaticBranches(
   ];
   /**
    * ¿Cabe la rama entera con el calibre más dilatado? Se recorre cada 0,5 mm desde que sale de la luz
-   * de la madre: la luz (r·S_máx) más la pared debe quedar dentro del parénquima y fuera de las
-   * fisuras. Antes solo se miraban los extremos y una rama del caso grave cruzaba la fisura umbilical.
+   * de la madre: la luz (r·S_máx, con el mayor saliente de su forma orgánica, decisión 90) más la pared debe quedar
+   * dentro del parénquima y fuera de las fisuras. Antes solo se miraban los extremos y una rama del caso grave cruzaba la
+   * fisura umbilical.
    */
   const segmentFits = (
     origin: Vec3,
@@ -582,13 +634,14 @@ export function buildHepaticBranches(
     rEnd: number,
     wall: Pick<VesselDef, 'wallTissue' | 'wallMm'>,
     sMax: number,
+    shapeMax: number,
   ): boolean => {
     const len = dist(origin, end);
     const n = Math.max(1, Math.ceil(2 * len));
     for (let k = 0; k <= n; k++) {
       const t = k / n;
       if (t * len < r0 * sMax) continue;
-      const r = (r0 + (rEnd - r0) * t) * sMax;
+      const r = (r0 + (rEnd - r0) * t) * sMax * shapeMax;
       if (clearance(add(origin, scale(sub(end, origin), t))) < r + wallThicknessMm(wall, r)) return false;
     }
     return true;
@@ -625,7 +678,7 @@ export function buildHepaticBranches(
       const rEnd = depth >= 2 ? BRANCH_TIP_RADIUS_MM : Math.max(0.9, r0 * 0.6);
       const wall = { wallTissue: parent.wallTissue, wallMm: Math.max(0.4, parent.wallMm * 0.7) };
       const sMax = BRANCH_MAX_RADIUS_SCALE[VESSEL_META[parent.id].caliber];
-      const fits = (end: Vec3) => segmentFits(origin, end, r0, rEnd, wall, sMax);
+      const fits = (end: Vec3) => segmentFits(origin, end, r0, rEnd, wall, sMax, branchShapeMax(parent, sMax));
       let d2 = normalize(rotateAxis(dir, axis, angle));
       let fit = fitInside(origin, d2, len0, fits);
       if (!fit || fit.len < 12) {

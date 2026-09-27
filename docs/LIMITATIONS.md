@@ -46,6 +46,13 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   umbilical y lámina del ligamento venoso; sin caudado propio ni grasa hiliar (la hepática y el colédoco del hilio van
   por el parénquima); los segmentos de Couinaud son una partición por planos de los vasos (metadatos
   del 3D, no una malla segmentada); los ángulos de las venas y conductos son plausibles, no medidos.
+- **La forma de los vasos es procedural** (`procedural-vessel-shape`, decisión 90): las venas del hígado tienen una sección
+  elíptica y un radio que ondula ±5–6 % a lo largo del eje, de un hash anclado a cada tubo, no de una TC; las uniones son
+  las de dos cadenas de cápsulas (sin fillets: solo el embudo del ostium de la suprahepática derecha suaviza una
+  confluencia); la VCI lleva su recorrido y su calibre en 6 segmentos (quiebros del eje de ≤ 5° en el tramo que se ve); las
+  arterias, las venas renales, las interlobares, los conductos y los dos vasos de las puertas PW de la cadena del alumno (la
+  suprahepática derecha y el tronco portal) siguen siendo tubos circulares de radio lineal; y el modelo no tiene variantes
+  como la vena hepática inferior derecha accesoria.
 - **Lámina en el borde de la impresión renal** (`morison-rim-sliver`): el redondeo del borde de la impresión renal (8 mm)
   con la cara visceral en cuña (decisión 72) deja en algún punto, detrás del polo superior y junto a la pared posterior,
   una lámina de grasa retroperitoneal (antes de la decisión 81, «intestino») o de hígado de ~1 mm contra la grasa

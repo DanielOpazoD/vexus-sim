@@ -1509,19 +1509,30 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
   const corr =
     w.reduce((a, x, i) => a + (x - mw) * (d[i] - md), 0) /
     Math.sqrt(w.reduce((a, x) => a + (x - mw) ** 2, 0) * d.reduce((a, x) => a + (x - md) ** 2, 0));
-  // Dónde pone el operador los calibres: en el máximo y el mínimo de la envolvente de la banda, no en una columna suelta
-  // que el moteado de la pared ensancha o estrecha. El máximo y el mínimo se buscan en la mediana de cada columna con sus
-  // dos vecinas (las de los extremos de la franja no tienen dos y no se eligen) y se mide la columna que da esa mediana.
-  // En CI una sola columna ensanchada 1,9 mm sobre sus vecinas (anchura 13,99 frente a 12,89 y 12,11, sin que la verdad
-  // cambiara: 18,08 → 17,04 → 16,53 mm) llevaba la colapsabilidad a 38 % frente a 30 de la verdad; el reintento, sin
-  // ella, daba 32,6. Las cotas (±5 puntos de la verdad, aquí y con los calibres) no cambian.
-  const inner = w.map((_, i) => i).slice(1, -1);
-  const med3 = (i: number) => [w[i - 1], w[i], w[i + 1]].sort((a, b) => a - b)[1];
-  // la columna que se mide es la de la mediana (la elegida o una vecina): nunca la ensanchada o estrechada suelta
-  const medianColumn = (i: number) => [i - 1, i, i + 1].find((k) => w[k] === med3(i))!;
-  const iMax = medianColumn(inner.reduce((best, i) => (med3(i) > med3(best) ? i : best), inner[0]));
-  const iMin = medianColumn(inner.reduce((best, i) => (med3(i) < med3(best) ? i : best), inner[0]));
-  const ciBand = (100 * (w[iMax] - w[iMin])) / w[iMax];
+  // Dónde pone el operador los calibres: en el máximo y el mínimo de la ENVOLVENTE de la banda, no en una columna suelta.
+  // Cada columna de la franja es un cuadro, así que cuántas hay en 7 s depende de los fps (27 en el corredor, cientos con
+  // GPU real) y los extremos de columnas sueltas son extremos del ruido: en CI la anchura de una columna se aparta
+  // ±0,35–0,5 mm de la recta que la une a la verdad (anchura = 0,73–0,77 × dAp − 0,5–1,0 mm; una llegó a 1,96), y la
+  // colapsabilidad de las dos columnas extremas salió 32,5–38,2 % frente a 30,4 de la verdad en cuatro ejecuciones.
+  // La envolvente es la media de los bordes en ±0,3 s de simulación alrededor de cada columna (≈ 3 columnas en el
+  // corredor; ±7 % del ciclo respiratorio de 4,3 s, que apenas achata el máximo y el mínimo), independiente de los fps:
+  // sobre esas cuatro ejecuciones da 28,3–30,8 %. (La mediana de las tres rebajaba el máximo: 26,3–31,1.) Las cotas
+  // (±5 puntos de la verdad, aquí y con los calibres) no cambian.
+  const HALF_WINDOW_S = 0.3;
+  const t0 = band.out[0].t;
+  const tEnd = band.out[band.out.length - 1].t;
+  const around = (i: number) => band.out.filter((c) => Math.abs(c.t - band.out[i].t) <= HALF_WINDOW_S);
+  const env = band.out.map((_, i) => {
+    const win = around(i);
+    const top = mean(win.map((c) => c.top));
+    const bottom = mean(win.map((c) => c.bottom));
+    return { top, bottom, width: bottom - top, columns: win.length };
+  });
+  // solo columnas con la ventana entera dentro de la franja
+  const inner = band.out.map((_, i) => i).filter((i) => band.out[i].t - HALF_WINDOW_S >= t0 && band.out[i].t + HALF_WINDOW_S <= tEnd);
+  const iMax = inner.reduce((best, i) => (env[i].width > env[best].width ? i : best), inner[0]);
+  const iMin = inner.reduce((best, i) => (env[i].width < env[best].width ? i : best), inner[0]);
+  const ciBand = (100 * (env[iMax].width - env[iMin].width)) / env[iMax].width;
   // la anchura en espiración (el diámetro de la verdad por encima de su mediana) y en inspiración
   const dMed = [...d].sort((a, b) => a - b)[Math.floor(d.length / 2)];
   const wOf = (hi: boolean) => mean(w.filter((_, i) => d[i] > dMed === hi));
@@ -1530,8 +1541,8 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
     corr,
     ciBand,
     truth: band.truth,
-    wMax: w[iMax],
-    wMin: w[iMin],
+    wMax: env[iMax],
+    wMin: env[iMin],
     wExp: wOf(true),
     wIns: wOf(false),
     line,
@@ -1545,12 +1556,14 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
   expect(w.length, tag).toBeGreaterThan(12);
   expect(Math.min(...w), tag).toBeGreaterThan(5);
   expect(Math.max(...w), tag).toBeLessThan(25);
-  expect(w[iMax] - w[iMin], tag).toBeGreaterThan(2);
+  expect(env[iMax].width - env[iMin].width, tag).toBeGreaterThan(2);
+  expect(env[iMax].columns, tag).toBeGreaterThanOrEqual(2);
+  expect(env[iMin].columns, tag).toBeGreaterThanOrEqual(2);
   expect(wOf(true) - wOf(false), tag).toBeGreaterThan(1);
   expect(corr, tag).toBeGreaterThan(0.6);
   expect(Math.abs(ciBand - band.truth.ci), tag).toBeLessThanOrEqual(5);
-  // los calibres de la pestaña Medir sobre la franja congelada: de borde a borde en la columna más ancha y en la más
-  // estrecha (píxeles enteros, como un clic)
+  // los calibres de la pestaña Medir sobre la franja congelada: de borde a borde de la envolvente en la columna más ancha
+  // y en la más estrecha (píxeles enteros, como un clic)
   await page.getByRole('tab', { name: 'Medir' }).click();
   await page.getByRole('button', { name: 'VCI modo M', exact: true }).click();
   const box = (await page.locator('#mmode').boundingBox())!;
@@ -1559,7 +1572,7 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
     const c = band.out[i];
     // el lienzo tiene densidad 1: su píxel x es el de la ventana
     const x = Math.round(box.x + c.x + 0.5);
-    for (const r of [c.top, c.bottom]) {
+    for (const r of [env[i].top, env[i].bottom]) {
       const y = Math.round(box.y + (r / band.depth) * box.height);
       clicked.push(((y - box.y) / box.height) * band.depth);
       await page.mouse.click(x, y);

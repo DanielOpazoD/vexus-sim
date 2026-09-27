@@ -60,9 +60,11 @@ export enum Interface {
   RibCortex = 20,
   /** Pericondrio del cartílago costal (lo dibuja el cartílago). */
   Perichondrium = 21,
+  /** Pericardio junto al epicardio (decisión 85): lo dibuja la capa del pericardio (un lado). */
+  Pericardium = 22,
 }
 
-export const INTERFACE_COUNT = 22;
+export const INTERFACE_COUNT = 23;
 /** Las caras de tubo van primero (ids ≤ esta): solo ellas llevan coherencia de curvatura. */
 export const LAST_TUBE_INTERFACE = Interface.DuctLumen;
 /** Caras de las capas de la pared (decisión 62): ids consecutivos de `SkinFat` a `Peritoneum`. */
@@ -137,6 +139,7 @@ export const INTERFACE_GLSL_NAME: Record<Interface, string> = {
   [Interface.Peritoneum]: 'IF_PERITONEUM',
   [Interface.RibCortex]: 'IF_RIB',
   [Interface.Perichondrium]: 'IF_PERICHONDRIUM',
+  [Interface.Pericardium]: 'IF_PERICARDIUM',
 };
 
 /** Propiedades de una cara lisa (tabla de la decisión 57). */
@@ -376,6 +379,18 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     twoSided: false,
     source:
       'Fresnel cartílago / músculo 0,021 (TISSUES); lámina densa de colágeno: suelo 0,025, σz 0,06 y s 0,3 como las fascias [ESTIMADO]: su eco especular (K·|R|·Λ·χ a 2,5 MHz) queda en 9,8 dB a 0° y 5,9 a 30°; con el suelo 0,06, σz 0,03 y s 0,2 (25,8 y 10,6), en la subxifoidea los cortes de los cartílagos del reborde eran una cadena de rizos blancos (capturas con GPU, 25-09-2026)',
+  },
+  [Interface.Pericardium]: {
+    name: 'pericardio',
+    sides: [Tissue.Mediastinum, Tissue.Myocardium],
+    floor: 0.15,
+    roughnessMm: 0.06,
+    slopeRms: 0.2,
+    twoSided: false,
+    // pericardio fibroso: colágeno denso (Z ≈ 1,85–2,0, Duck 1990) contra grasa, Γ ≈ 0,15–0,19; el Fresnel mediastino/miocardio
+    // es 0,10. σz y s, los de las cápsulas de la decisión 65: +22,7 dB a 0°, +16,6 a 20° y −10,9 a 40° (K = 55 dB), con la
+    // difusa a +10,9 dB sobre el moteado del hígado, como la cápsula renal
+    source: 'pericardio fibroso (colágeno / grasa, Duck 1990): suelo 0,15 [LITERATURA aprox.]; σz 0,06, s 0,2 [ESTIMADO]',
   },
 };
 

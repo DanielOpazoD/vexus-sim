@@ -902,6 +902,9 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
           expect(got.gasKind).toBe(1);
         }
     }
+    // 50 líneas (79 antes de la decisión 85: las que llegan a la cúpula bajo el corazón o junto al mediastino posterior
+    // siguen por el pericardio, la aurícula o el mediastino en lugar de reflejarse; subxifoidea 52 → 42, flanco 21 → 2,
+    // intercostal 6 → 6)
     expect(mirrors).toBeGreaterThan(40);
   });
 

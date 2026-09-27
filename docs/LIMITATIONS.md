@@ -48,10 +48,6 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   mide sigue al volumen de la red con τ = 0,2 s (decisión 73), pero la red calcula presiones y caudales con su volumen
   elástico; los dos diámetros se separan hasta un 14 % en los colapsos rápidos del sano (5 % en la congestión grave),
   con la misma media.
-- **Lámina de pulmón en el hiato de la cava** (`lung-sliver-caval-hiatus`): por encima del diafragma el pulmón llena
-  todo lo que no es corazón ni vaso, así que entre el diafragma y la VCI supradiafragmática (que en realidad está en el
-  pericardio) queda a veces una lámina de décimas de milímetro; la marcha de la pasada A no la ve y en esa línea pone el
-  espejo del diafragma detrás de la VCI (una costura aislada). El banco de fidelidad excluye esas líneas.
 - **El gas intestinal no da sombra** (`bowel-gas-no-shadow`): el contenido de las asas del «resto» (decisión 74) es una
   textura de retrodispersión; el gas brilla pero no refleja ni reverbera ni deja sombra sucia detrás (las bolsas de gas
   de la anatomía sí lo hacen, pero no hay ninguna en los casos de referencia).
@@ -76,20 +72,34 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   usa la presión del compartimento entero, no la del segmento a 2 cm de la confluencia; la pulsación
   cardíaca del calibre está amortiguada.
 - **Sin movimiento cardíaco transmitido a hígado/cava** (`no-cardiac-tissue-motion`); la
-  respiración es el único movimiento tisular.
+  respiración es el único movimiento tisular, y el corazón (decisión 85) no late.
 - **Sin bazo ni costillas izquierdas** (`no-spleen-no-left-ribs`): el hipocondrio izquierdo solo
   tiene riñón y vasos; todas las costillas son derechas (`rightOnly`), así que una ventana izquierda
   no muestra sombras costales. El corte del shader (`sdRib`, `x > 15 mm`) supone que todas lo son:
   `shaderLimits.test.ts` falla si se añade una costilla izquierda sin llevar `rightOnly` al GLSL.
-- **Por encima de la cúpula todo es pulmón** (`mediastinum-is-lung`): lo que no es corazón ni vaso por encima del
-  diafragma es pulmón, y la aurícula derecha, una esfera de 30 mm de radio, no apoya en él (su polo inferior, z 65, queda
-  por encima del ápice de la cúpula, 55). Desde el abdomen el haz se refleja en ese pulmón (su espejo) antes de llegar a
-  lo que hay detrás: la aurícula no se ve desde la subxifoidea ni desde la subcostal (0 de 669 y 0 de 303 muestras en el
-  plano, a 1 mm en 61 líneas), aunque la pista y la tarjeta de la subxifoidea la prometen, y la VCI se ve hasta el borde
-  de ese espejo; al abanicar la transversa epigástrica 26° hacia la cabeza (decisión 83) la aorta, que por encima de la
-  cúpula va rodeada de pulmón, desaparece entera (0 de 103). Un paciente real muestra por ahí el corazón y el mediastino
-  posterior. Arreglarlo es apoyar el corazón en el centro tendinoso y dar al mediastino su tejido, en TS y en GLSL;
-  `startPoints.test.ts` lo vigila con un canario.
+- **El corazón es un esquema estático** (`schematic-static-heart`, decisión 85): cuatro elipsoides con su miocardio, los
+  tabiques y los orificios auriculoventriculares abiertos, sin valvas, sin grandes vasos de la base (vena cava superior,
+  raíz aórtica, tronco pulmonar), sin seno coronario ni venas pulmonares; el pericardio es la capa de 1,5 mm del tejido del
+  mediastino que dibuja su cara (no un tejido propio: el 33.º tejido costaría dos ranuras de uniforms de la pasada B), y el
+  esófago y la ácigos son parte de ese tejido. No late (`no-cardiac-tissue-motion`) y es el mismo en todos los casos: la AD
+  no se dilata con la congestión ni con la insuficiencia tricuspídea grave (la fisiología no tiene volumen auricular del que
+  sacarlo). Sus cavidades no tienen flujo en el color ni en el PW, salvo el chorro de la VCI que entra en la AD (la luz de su
+  tubo). Con la VCI dilatada de la congestión (×1,57) el embudo que no cabe en la aurícula se recorta en su suelo (a 5 mm de
+  la cúpula) y contra el tabique interauricular: un borde de 1–5 mm donde gana el corazón. El suelo del corazón es la
+  distancia al plano tangente de la cúpula con su pendiente limitada a 2 (`heartFloor`): en el pliegue entre las hemicúpulas
+  la pared inferior del VI queda hasta 2,2 mm más gruesa, y junto al borde de una hemicúpula (su altura sube con tangente
+  vertical) el suelo no es una distancia. El tórax del modelo es poco profundo (106 mm de la cara anterior de la vértebra a
+  la pared anterior): el VD toca la pared anterior y la AI, la aorta, sin grasa entre ellos; el VD basal y la AI quedan en el
+  límite inferior de la ASE.
+- **El espejo del pulmón junto al mediastino tiene una normal aproximada** (`mediastinal-mirror-normal-approx`, decisión 85):
+  donde el haz llega al pulmón desde el mediastino (detrás de la aorta en la epigástrica abanicada, detrás de la AD en la
+  subxifoidea) la pasada A refleja en el cruce exacto (decisión 57) con la normal del elipsoide de la cámara más cercana o de
+  la columna del mediastino posterior (o la de su tapa), sin la unión suave de su frontera ni la pendiente de la grasa junto a
+  la cúpula; con la normal de la cúpula de antes el camino reflejado se perdía y el pulmón salía como una zona negra entera.
+  Quedan parches oscuros donde el camino reflejado, casi rasante, sigue hacia la columna o vuelve al pulmón. La norma de la
+  normal del pericardio en la GPU es 1 (la de la distancia aproximada del elipsoide se aparta un 1,1 % en la mediana y un
+  6,5 % en p95: ≤ 0,6 dB en su eco). El gemelo de la pasada A en TS (`transmissionHitsLine`, en las pruebas) sigue
+  reflejando con la de la cúpula.
 - **La vértebra no tiene cortical** (`vertebra-no-cortex`): el cuerpo vertebral es un cilindro de 34 mm de hueso sin
   cara (decisión 69; las costillas la tienen desde la 62). En la transversa epigástrica (decisión 83) su cara anterior
   no da la línea curva brillante de un equipo: el cuerpo se ve como una cúpula oscura sobre la sombra, que con el arco

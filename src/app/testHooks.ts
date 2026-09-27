@@ -1169,6 +1169,9 @@ export function faceNormalStats(sim: Simulator): Record<FaceNormalRow, FaceNorma
         return t === Tissue.PerirenalFat && c.interface === Interface.PerirenalFat ? t : null;
       case 'gallbladder':
         return !tube && (t === Tissue.Fluid || t === Tissue.BileDuctWall) ? t : null;
+      case 'pericardium':
+        // la capa del pericardio (decisión 85): su cara es de un lado
+        return c.interface === Interface.Pericardium ? t : null;
     }
   };
   type Candidate = { p: Vec3; m: Vec3 };

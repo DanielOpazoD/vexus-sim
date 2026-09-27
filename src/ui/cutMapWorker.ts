@@ -1,7 +1,11 @@
 /// <reference lib="webworker" />
 import type { ProbeCompression } from '../anatomy/compression';
 import { AnatomyQuery } from '../anatomy/query';
+import { domeFloor } from '../anatomy/organs/heart';
+import { HEART_CHAMBER_IDS, heartChamber } from '../anatomy/organs/heartChamber';
 import { AnatomyScene } from '../anatomy/scene';
+import { Tissue } from '../anatomy/tissues';
+import type { Vec3 } from '../core/vec3';
 import type { PhysiologySample } from '../physiology/engine';
 import type { PatientState } from '../physiology/patientState';
 import { pointOnLine, type ProbeFrame, type Transducer } from '../probe/probe';
@@ -37,7 +41,10 @@ export interface CutMapResponse {
   width: number;
   height: number;
   tissue: Uint8Array;
-  /** Índice de vaso en `scene.vessels` o −1. */
+  /**
+   * Índice de vaso en `scene.vessels` o −1; en la sangre de una cavidad del corazón (decisión 85), −2 − su índice en
+   * `HEART_CHAMBER_IDS` (VI, VD, AD, AI).
+   */
   vessel: Int8Array;
 }
 
@@ -49,6 +56,13 @@ export interface CutMapError {
 }
 
 let query: AnatomyQuery | null = null;
+
+/** Código de la cavidad del corazón que contiene un punto material (−2 − su índice), o −1. */
+function chamberCode(m: Vec3): number {
+  const sc = query!.scene;
+  const ch = heartChamber(m, domeFloor(m, sc.diaphragm, sc.torso));
+  return ch ? -2 - HEART_CHAMBER_IDS.indexOf(ch) : -1;
+}
 let vesselIndex = new Map<string, number>();
 
 const post = (m: CutMapResponse | CutMapError, transfer: Transferable[] = []) => (self as unknown as Worker).postMessage(m, transfer);
@@ -79,7 +93,7 @@ self.onmessage = (ev: MessageEvent<CutMapInit | CutMapRequest>) => {
         const c = query.classifyWorld(p, sample);
         const i = v * width + u;
         tissue[i] = c.tissue;
-        vessel[i] = c.vessel ? (vesselIndex.get(c.vessel) ?? -1) : -1;
+        vessel[i] = c.vessel ? (vesselIndex.get(c.vessel) ?? -1) : c.tissue === Tissue.Blood ? chamberCode(c.material) : -1;
       }
     }
     post({ type: 'map', id: msg.id, width, height, tissue, vessel }, [tissue.buffer, vessel.buffer]);

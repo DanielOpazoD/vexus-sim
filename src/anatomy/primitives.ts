@@ -81,14 +81,22 @@ export function diaphragmHeight(x: number, y: number, d: Diaphragm, torso: Torso
   return Math.max(edge, zr, zl);
 }
 
-/** Distancia con signo al diafragma: negativa en el tórax (por encima). */
-export function sdDiaphragm(p: Vec3, d: Diaphragm, torso: Torso): number {
+/**
+ * Distancia con signo al diafragma (negativa en el tórax) y la pendiente √(1 + |∇z|²) que la divide (la de diferencias
+ * centrales de 0,5 mm; en el borde de una hemicúpula, cuya altura sube con tangente vertical, se dispara).
+ */
+export function sdDiaphragmSlope(p: Vec3, d: Diaphragm, torso: Torso): [number, number] {
   const zd = diaphragmHeight(p[0], p[1], d, torso);
   const h = 0.5;
   const gx = (diaphragmHeight(p[0] + h, p[1], d, torso) - diaphragmHeight(p[0] - h, p[1], d, torso)) / (2 * h);
   const gy = (diaphragmHeight(p[0], p[1] + h, d, torso) - diaphragmHeight(p[0], p[1] - h, d, torso)) / (2 * h);
   const slope = Math.sqrt(1 + gx * gx + gy * gy);
-  return (zd - p[2]) / slope;
+  return [(zd - p[2]) / slope, slope];
+}
+
+/** Distancia con signo al diafragma: negativa en el tórax (por encima). */
+export function sdDiaphragm(p: Vec3, d: Diaphragm, torso: Torso): number {
+  return sdDiaphragmSlope(p, d, torso)[0];
 }
 
 export interface CylinderZ {

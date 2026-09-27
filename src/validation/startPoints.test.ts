@@ -9,8 +9,8 @@ import { NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient, type RespiratoryPattern } from '../physiology/patientState';
 import { uncompress } from '../anatomy/compression';
+import { domeFloor } from '../anatomy/organs/heart';
 import { heartChamber } from '../anatomy/organs/heartChamber';
-import { sdDiaphragm } from '../anatomy/primitives';
 import { kidneyLocal, perirenalOuterSdf } from '../anatomy/organs/kidney';
 import { contactCoupling, probeContact } from '../probe/contact';
 import { CONVEX_C35, lineDirection, pointOnLine, type ProbePose } from '../probe/probe';
@@ -104,7 +104,7 @@ function screenMap(pose: ProbePose, depthMm: number): ScreenMap {
       tissues[i][r] = q.tissue;
       const s = { x: -(R0 + r) * Math.sin(th), y: (R0 + r) * Math.cos(th), line: i, r };
       // la sangre sin vaso es la de una cavidad del corazón (decisión 85)
-      const chamber = !q.vessel && q.tissue === Tissue.Blood ? heartChamber(mat, sdDiaphragm(mat, scene.diaphragm, scene.torso)) : null;
+      const chamber = !q.vessel && q.tissue === Tissue.Blood ? heartChamber(mat, domeFloor(mat, scene.diaphragm, scene.torso)) : null;
       const keys: Array<string | Tissue> = q.vessel ? [q.vessel, q.tissue] : chamber ? [chamber, q.tissue] : [q.tissue];
       for (const key of keys) {
         (cut.get(key) ?? cut.set(key, []).get(key)!).push(s);

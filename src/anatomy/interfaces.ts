@@ -383,11 +383,14 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
   [Interface.Pericardium]: {
     name: 'pericardio',
     sides: [Tissue.Mediastinum, Tissue.Myocardium],
-    floor: 0.1,
-    roughnessMm: 0.05,
-    slopeRms: 0.3,
+    floor: 0.15,
+    roughnessMm: 0.06,
+    slopeRms: 0.2,
     twoSided: false,
-    source: 'Fresnel 0,10 (TISSUES); pericardio fibroso: suelo 0,1, σz 0,05, s 0,3 [ESTIMADO]',
+    // pericardio fibroso: colágeno denso (Z ≈ 1,85–2,0, Duck 1990) contra grasa, Γ ≈ 0,15–0,19; el Fresnel mediastino/miocardio
+    // es 0,10. σz y s, los de las cápsulas de la decisión 65: +22,7 dB a 0°, +16,6 a 20° y −10,9 a 40° (K = 55 dB), con la
+    // difusa a +10,9 dB sobre el moteado del hígado, como la cápsula renal
+    source: 'pericardio fibroso (colágeno / grasa, Duck 1990): suelo 0,15 [LITERATURA aprox.]; σz 0,06, s 0,2 [ESTIMADO]',
   },
 };
 

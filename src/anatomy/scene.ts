@@ -6,6 +6,7 @@ import {
   orthonormalBasis,
   sdSpine,
   sdDiaphragm,
+  sdDiaphragmSlope,
   sdRib,
   sdSphere,
   smoothMax,
@@ -47,7 +48,7 @@ import {
   type LigamentumVenosum,
   type UmbilicalFissure,
 } from './organs/liverLigaments';
-import { heartOuterSdf, ivcAtrium, thorax } from './organs/heart';
+import { domeFloor, heartFloor, heartOuterSdf, ivcAtrium, thorax } from './organs/heart';
 import { inLungCurtain, inLungRecess, lungCurtainDistance, lungCurtainEdgeMm } from './organs/lungCurtain';
 import { retroperitoneum } from './organs/retroperitoneum';
 import {
@@ -445,11 +446,12 @@ export class AnatomyScene {
     const curtain = withCurtain ? this.classifyLungCurtain(m, -depth - wall.wallMm, caliber.diaphragmCaudalMm) : null;
     if (curtain) return curtain;
     const tube = this.classifyTubes(m, caliber);
-    const dDome = sdDiaphragm(m, this.diaphragm, this.torso);
+    const [dDome, slope] = sdDiaphragmSlope(m, this.diaphragm, this.torso);
+    const floor = heartFloor(dDome, slope);
     // la VCI que entra en la aurícula derecha (decisión 85): dentro de ella no hay pared que dibujar (antes daba un eco de
     // pared brillante y seguía como un anillo dentro de la cavidad): su pared es sangre de la aurícula y su luz conserva el
     // flujo sin cara; fuera de la aurícula, por encima de su suelo, no hay VCI (gana el corazón)
-    const ivc = tube?.interface === Interface.IvcLumen ? ivcAtrium(m, dDome) : null;
+    const ivc = tube?.interface === Interface.IvcLumen ? ivcAtrium(m, floor) : null;
     if (tube && ivc && ivc.cavity < 0) {
       if (tube.tissue === Tissue.Blood)
         return {
@@ -463,9 +465,11 @@ export class AnatomyScene {
     if (tube && !ivc?.outside) return ivc ? { ...tube, boundaryDistance: Math.min(tube.boundaryDistance, ivc.cut) } : tube;
     if (dDome < 0) {
       // tórax (decisión 85): el corazón en su saco, el mediastino o el pulmón; la capa del pericardio dibuja su cara
-      const t = thorax(m, dDome);
+      const t = thorax(m, dDome, floor);
       const face = t.ifd < NONE.interfaceDistance ? { interface: Interface.Pericardium, interfaceDistance: t.ifd } : {};
-      return { ...NONE, tissue: t.tissue, boundaryDistance: t.bd, ...face };
+      // su distancia a la frontera cuenta también la columna y la pared (como el retroperitoneo)
+      const bd = Math.min(t.bd, sdSpine(m, this.spine), -depth - wall.wallMm);
+      return { ...NONE, tissue: t.tissue, boundaryDistance: bd, ...face };
     }
     if (dDome < DIAPHRAGM_THICKNESS_MM) {
       // la mitad abdominal dibuja la cara hepática; la pleural la dibuja el espejo exacto de la pasada A
@@ -553,7 +557,7 @@ export class AnatomyScene {
       case 'gallbladder':
         return gallbladderSdf(m, this.gallbladder);
       case 'pericardium':
-        return heartOuterSdf(m, sdDiaphragm(m, this.diaphragm, this.torso));
+        return heartOuterSdf(m, domeFloor(m, this.diaphragm, this.torso));
     }
   }
 

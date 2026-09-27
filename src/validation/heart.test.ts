@@ -7,6 +7,8 @@ import {
   HEART_WALLS,
   IVC_ORIFICE_MM,
   MEDIASTINUM,
+  domeFloor,
+  heartChambers,
   heartOuterSdf,
   ivcAtrium,
   thorax,
@@ -25,6 +27,9 @@ import type { Vec3 } from '../core/vec3';
 const scene = new AnatomyScene(NORMAL_ADULT);
 const cls = (m: Vec3, cal: VesselCaliber = BASELINE_CALIBER) => scene.classify(m, cal);
 const dome = (m: Vec3) => sdDiaphragm(m, scene.diaphragm, scene.torso);
+/** El suelo del corazón (`heartFloor`): la distancia a la cúpula con su pendiente limitada a 2. */
+const floorOf = (m: Vec3) => domeFloor(m, scene.diaphragm, scene.torso);
+const WALL4 = [HEART_WALLS.lv, HEART_WALLS.rv, HEART_WALLS.ra, HEART_WALLS.la] as const;
 
 /** Muestras de cada cavidad (sangre de `classify` sin vaso) en una rejilla de 1,5 mm del tórax. */
 const STEP = 1.5;
@@ -35,7 +40,7 @@ for (let x = -60; x < 90; x += STEP)
       const m: Vec3 = [x, y, z];
       const c = cls(m);
       if (c.tissue !== Tissue.Blood || c.vessel) continue;
-      const ch = heartChamber(m, dome(m));
+      const ch = heartChamber(m, floorOf(m));
       if (ch) chambers.get(ch)!.push(m);
     }
 const centroid = (pts: Vec3[]): Vec3 => [0, 1, 2].map((k) => pts.reduce((a, p) => a + p[k], 0) / pts.length) as Vec3;
@@ -122,7 +127,7 @@ describe('Corazón y mediastino (decisión 85)', () => {
         if (-torsoDepth([x, y, zd], scene.torso) - scene.wallThickness() < 5) continue;
         // ¿hay corazón en la vertical, a menos de 20 mm de la cúpula?
         let above = false;
-        for (let dz = 1; dz <= 20 && !above; dz += 1) above = heartOuterSdf([x, y, zd + dz], dome([x, y, zd + dz])) < 0;
+        for (let dz = 1; dz <= 20 && !above; dz += 1) above = heartOuterSdf([x, y, zd + dz], floorOf([x, y, zd + dz])) < 0;
         if (!above) continue;
         columns++;
         for (const dz of [0.3, 1, 2, 4])
@@ -146,7 +151,7 @@ describe('Corazón y mediastino (decisión 85)', () => {
       const m: Vec3 = [lv[0] + edge + s, lv[1], lv[2]];
       const c = cls(m);
       expect(c.tissue, `${tag} a +${s.toFixed(1)}`).toBe(Tissue.Mediastinum);
-      const d = heartOuterSdf(m, dome(m));
+      const d = heartOuterSdf(m, floorOf(m));
       if (d < HEART_WALLS.pericardium - 0.05) {
         faced++;
         expect(c.interface).toBe(Interface.Pericardium);
@@ -160,7 +165,7 @@ describe('Corazón y mediastino (decisión 85)', () => {
   });
 
   it('mediastino alrededor de la aorta torácica y del saco; los pulmones a los lados y detrás', () => {
-    // la aorta por encima de la cúpula: a 3 mm de su pared, a los lados y (bajo la AI, que se le apoya delante desde z ~80)
+    // la aorta por encima de la cúpula: a 3 mm de su pared, a los lados y (bajo la AI, que se le apoya delante desde z ~65)
     // delante, tejido del mediastino (antes, pulmón)
     const aorta = scene.vessels.find((v) => v.id === 'aorta')!.tube.nodes[0].p;
     let around = 0;
@@ -171,7 +176,7 @@ describe('Corazón y mediastino (decisión 85)', () => {
         [-1, 0],
       ] as const) {
         const m: Vec3 = [aorta[0] + dx * 16, aorta[1] + dy * 16, z];
-        if (dome(m) >= 0 || (dy > 0 && z > 70)) continue;
+        if (dome(m) >= 0 || (dy > 0 && z >= 70)) continue;
         around++;
         expect(Tissue[cls(m).tissue], JSON.stringify(m)).toBe('Mediastinum');
       }
@@ -200,7 +205,7 @@ describe('Corazón y mediastino (decisión 85)', () => {
       const d = dome(m);
       if (d >= 0) continue;
       shell++;
-      expect(Tissue[thorax(m, d).tissue], m.map((v) => v.toFixed(1)).join(', ')).toBe('Lung');
+      expect(Tissue[thorax(m, d, floorOf(m)).tissue], m.map((v) => v.toFixed(1)).join(', ')).toBe('Lung');
     }
     expect(shell).toBeGreaterThan(3000);
   });
@@ -226,29 +231,122 @@ describe('Corazón y mediastino (decisión 85)', () => {
       tag,
     ).toEqual([Tissue.Blood]);
     // el orificio: la AD empieza a pocos milímetros de la cúpula
-    const floor = ivcAtrium(top, dome(top));
+    const floor = ivcAtrium(top, floorOf(top));
     expect(floor.cavity).toBeLessThan(0);
     expect(IVC_ORIFICE_MM).toBeLessThan(6);
   });
 
-  it('con la VCI dilatada de la congestión (×1,57) su embudo no atraviesa paredes ni tabiques: fuera de la AD gana el corazón', () => {
+  it('con la VCI dilatada de la congestión (×1,57) su embudo no atraviesa paredes ni tabiques ni entra en la AI: gana el corazón', () => {
     const cal: VesselCaliber = { ...BASELINE_CALIBER, radiusScale: (id) => (id.startsWith('ivc') ? 1.57 : 1), ivcApScale: 0.99 };
-    let outside = 0;
-    for (let x = -44.5; x <= 10; x += 1)
-      for (let y = -29.5; y <= 25; y += 1)
-        for (let z = 50; z <= 85; z += 1) {
+    // por encima del suelo de la aurícula, donde la VCI toca el corazón, el tejido es el del corazón (`thorax`): la luz y la
+    // pared de la VCI solo cambian a sangre dentro de la cavidad tallada de la AD; fuera de ella (tabiques, AI, VI) la VCI
+    // no existe
+    let above = 0;
+    let heart = 0;
+    let inLa = 0;
+    for (let x = -44.5; x <= 30; x += 1)
+      for (let y = -29.5; y <= 30; y += 1)
+        for (let z = 50; z <= 100; z += 1) {
           const m: Vec3 = [x, y, z];
           const t = scene.faceTube(m, cal);
           if (!t || t.vessel !== 'ivcSupra') continue;
-          const a = ivcAtrium(m, dome(m));
-          if (!a.outside) continue;
-          outside++;
+          const f = floorOf(m);
+          if (f >= -IVC_ORIFICE_MM) continue;
+          above++;
           const c = cls(m, cal);
-          expect(c.vessel, JSON.stringify(m)).toBeNull();
-          expect([Tissue.Myocardium, Tissue.Mediastinum, Tissue.Blood, Tissue.Lung], JSON.stringify(m)).toContain(c.tissue);
-          if (c.tissue === Tissue.Blood) expect(heartChamber(m, dome(m)), JSON.stringify(m)).not.toBeNull();
+          const tag = JSON.stringify(m);
+          expect(Tissue[c.tissue], tag).toBe(Tissue[thorax(m, dome(m), f).tissue]);
+          if (heartChambers(m)[2] >= 0) {
+            heart++;
+            expect(c.vessel, tag).toBeNull();
+            expect(ivcAtrium(m, f).outside, tag).toBe(true);
+            if (heartChamber(m, f) === 'la') inLa++;
+          }
         }
-    expect(outside).toBeGreaterThan(100);
+    expect(above).toBeGreaterThan(1000);
+    // la VCI de la congestión llega a los tabiques y a la AI (antes su luz, con flujo, entraba en ella)
+    expect(heart).toBeGreaterThan(100);
+    expect(inLa).toBeGreaterThan(10);
+  });
+
+  it('el suelo del corazón sigue a la cúpula sin cortinas: lejos de ella, dentro de una cavidad, solo hay sangre', () => {
+    // la distancia de verdad a la cúpula (la superficie z = altura del diafragma, en una rejilla de 0,5 mm): un punto está a
+    // más de r de ella si queda por encima de max(altura + √(r² − ρ²)) en el disco de radio r (ρ, distancia horizontal)
+    const H = (x: number, y: number) => diaphragmHeight(x, y, scene.diaphragm, scene.torso);
+    const G = 0.5;
+    const hCache = new Map<string, number>();
+    const hAt = (x: number, y: number) => {
+      const k = `${x},${y}`;
+      let v = hCache.get(k);
+      if (v === undefined) hCache.set(k, (v = H(x, y)));
+      return v;
+    };
+    const zFar = (x: number, y: number, r: number) => {
+      let z = -1e9;
+      for (let dx = -r; dx <= r; dx += G)
+        for (let dy = -r; dy <= r; dy += G) {
+          const rho2 = dx * dx + dy * dy;
+          if (rho2 <= r * r) z = Math.max(z, hAt(x + dx, y + dy) + Math.sqrt(r * r - rho2));
+        }
+      return z;
+    };
+    let tested = 0;
+    const bad: string[] = [];
+    // (fuera de x = y = 0, donde las costillas de `sdRib` tienen una singularidad)
+    for (let x = -49.5; x <= 76; x += 2)
+      for (let y = -23.5; y <= 80; y += 2) {
+        if (-torsoDepth([x, y, H(x, y)], scene.torso) - scene.wallThickness() < 3) continue;
+        // 3 mm de margen: el suelo es la distancia al plano tangente, que en el pliegue entre las hemicúpulas (convexas)
+        // se queda hasta 2,2 mm corta (la pared inferior del VI, algo más gruesa); antes, las cortinas llegaban a 27 mm
+        const zf = WALL4.map((w) => zFar(x, y, w + HEART_WALLS.pericardium + 3));
+        for (let z = Math.min(...zf); z < 80; z += 1) {
+          const m: Vec3 = [x, y, z];
+          const c = heartChambers(m);
+          // dentro de la cavidad tallada i (sin el recorte) y a más de su pared + pericardio + 3 mm de la cúpula
+          const i = [0, 1, 2, 3].find((k) => c[k] < 0 && z > zf[k]);
+          if (i === undefined) continue;
+          tested++;
+          const q = cls(m);
+          if (q.tissue !== Tissue.Blood) bad.push(`${JSON.stringify(m)} ${Tissue[q.tissue]}`);
+        }
+      }
+    expect(tested).toBeGreaterThan(2000);
+    expect(bad, bad.slice(0, 6).join(' · ')).toEqual([]);
+    // la cortina de miocardio que partía el VD sobre el borde de la hemicúpula (revisión de la decisión 85)
+    for (const m of [
+      [4, 60.5, 45],
+      [10, 53.5, 52],
+    ] as Vec3[])
+      expect(Tissue[cls(m).tissue], JSON.stringify(m)).toBe('Blood');
+  });
+
+  it('la mitral y la tricúspide son orificios abiertos: la AI se abre en el VI y la AD en el VD', () => {
+    const p = HEART_WALLS.pericardium;
+    let mitral = 0;
+    let tricuspid = 0;
+    const span = [
+      [1e9, -1e9],
+      [1e9, -1e9],
+      [1e9, -1e9],
+    ];
+    for (let x = -40; x <= 50; x += 1)
+      for (let y = -20; y <= 60; y += 1)
+        for (let z = 40; z <= 100; z += 1) {
+          const m: Vec3 = [x, y, z];
+          const f = floorOf(m);
+          if (dome(m) >= 0) continue;
+          const c = heartChambers(m).map((v, k) => Math.max(v, f + p + WALL4[k]));
+          if (cls(m).tissue !== Tissue.Blood) continue;
+          if (c[0] < 0 && c[3] < 0) {
+            mitral++;
+            for (let k = 0; k < 3; k++) span[k] = [Math.min(span[k][0], m[k]), Math.max(span[k][1], m[k])];
+          }
+          if (c[1] < 0 && c[2] < 0) tricuspid++;
+        }
+    // mm³ de sangre compartida por las dos cavidades y la anchura del orificio mitral (el esquema: 14–20 mm)
+    expect(mitral).toBeGreaterThan(500);
+    expect(Math.max(span[0][1] - span[0][0], span[1][1] - span[1][0]), JSON.stringify(span)).toBeGreaterThanOrEqual(14);
+    expect(tricuspid).toBeGreaterThan(500);
   });
 
   it('la geometría es la misma en todos los casos (un esquema estático)', () => {
@@ -271,7 +369,12 @@ describe('Corazón y mediastino (decisión 85)', () => {
       expect(ANATOMY_GLSL).toMatch(new RegExp(`#define ${name} \\d+`));
     // classify: el tórax en vez del pulmón y la VCI que entra en la aurícula
     expect(ANATOMY_GLSL).toContain('c.tissue = thorax(m, dDome, c.bd, ifd, c.n);');
-    expect(ANATOMY_GLSL).toContain('ivc = ivcAtrium(m, dDome);');
+    expect(ANATOMY_GLSL).toContain('c.bd = min(c.bd, min(dSpine, -depth - wall));');
+    // el suelo del corazón: la pendiente de la cúpula (−1/n.z) limitada a 2, en la VCI y en thorax (que la saca de n)
+    expect(ANATOMY_GLSL).toContain('ivc = ivcAtrium(m, dDome * max(1.0, -0.5 / dn.z));');
+    expect(HEART_GLSL).toContain('float hF = dDome * max(1.0, -0.5 / n.z);');
+    // una sola llamada a epiNormal (se alinea en cada clasificación)
+    expect(HEART_GLSL.split('epiNormal(').length - 1).toBe(2);
     expect(ANATOMY_GLSL).not.toContain('uRA');
   });
 });

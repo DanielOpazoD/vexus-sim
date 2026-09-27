@@ -1,5 +1,5 @@
 import type { Vec3 } from '../../core/vec3';
-import { sdEllipsoidLocal, smoothMin } from '../primitives';
+import { sdDiaphragmSlope, sdEllipsoidLocal, smoothMin, type Diaphragm, type Torso } from '../primitives';
 import { Tissue } from '../tissues';
 
 /**
@@ -12,19 +12,21 @@ import { Tissue } from '../tissues';
  *   (atrás, arriba y a la derecha) a la punta (delante, abajo y a la izquierda: 45° a la izquierda del plano sagital y
  *   29° hacia abajo); la AD y la AI alineadas con el tronco. El VD es una media luna: su elipsoide sin lo que queda a
  *   menos del tabique interventricular del VI; la AD, sin lo que queda a menos del tabique interauricular de la AI y del
- *   auriculoventricular del VI. Tricúspide y mitral son orificios abiertos (las cavidades se solapan), sin valvas.
+ *   auriculoventricular del VI. La AI apoya en la base del VI. Tricúspide y mitral son orificios abiertos (las cavidades se
+ *   solapan: la mitral, de 14–20 mm), sin valvas.
  * - El miocardio de cada cámara rodea su cavidad; el pericardio es la capa de 1,5 mm que envuelve el miocardio y dibuja
  *   la cara pericárdica (`Interface.Pericardium`, de un lado). Sobre la cúpula el saco apoya en el diafragma: cavidades y
- *   miocardio se recortan a su pared y al pericardio por encima de ella (la cara inferior del corazón es plana).
- * - Mediastino: 5 mm de grasa alrededor del saco, 15 mm más junto a la cúpula (la grasa de los ángulos cardiofrénicos),
- *   unida de forma suave a la columna del mediastino posterior (aorta torácica, esófago y ácigos, que no se modelan aparte)
- *   desde la cúpula.
+ *   miocardio se recortan a su pared y al pericardio por encima del suelo (`heartFloor`; la cara inferior es plana).
+ * - Mediastino: 5 mm de grasa alrededor del saco, 15 mm más junto a la cúpula alrededor de los ventrículos (la grasa de los
+ *   ángulos cardiofrénicos), unida de forma suave a la columna del mediastino posterior (aorta torácica, esófago y ácigos,
+ *   que no se modelan aparte) desde la cúpula.
  * - La VCI cruza el diafragma por el hiato de la cava (z 53, T8) y entra en el suelo de la AD (`ivcAtrium`).
  *
  * Cifras [ESTIMADO] sobre valores publicados de un adulto (ASE/EACVI 2015: AD ≤ 53 × 44 mm; VD basal 25–41 mm y pared libre
  * 3–5 mm; VI telediastólico 42–58 mm con pared de 6–10 mm; AI 27–40 mm AP), con la geometría de un esquema de elipsoides
  * encajado en el tórax del modelo (poco profundo: 106 mm de la cara anterior de la vértebra a la pared anterior), no de una
- * malla segmentada. Las constantes del shader salen de aquí.
+ * malla segmentada: el VD basal (23–27 mm en el plano de cuatro cámaras) y la AI (27 mm AP) quedan en el límite inferior.
+ * Las constantes del shader salen de aquí.
  */
 
 /** Ejes del marco de los ventrículos (filas de la base): largo (base → punta), septal (VI → VD) y el tercero. */
@@ -44,7 +46,7 @@ export const HEART_CAVITIES = {
   lv: { c: [0, 0, 0] as Vec3, r: [37, 21, 21] as Vec3 },
   rv: { c: [-9, 27, -10] as Vec3, r: [40, 22, 32] as Vec3 },
   ra: { c: [-22, 6, 70] as Vec3, r: [22, 21, 30] as Vec3 },
-  la: { c: [2, 4, 98] as Vec3, r: [24, 13, 23] as Vec3 },
+  la: { c: [13, 5, 83] as Vec3, r: [24, 14, 23] as Vec3 },
 } as const;
 
 /**
@@ -87,6 +89,23 @@ const CAV = HEART_CAVITIES;
 const MED = MEDIASTINUM;
 const WALL4 = [W.lv, W.rv, W.ra, W.la] as const;
 
+/**
+ * Distancia al suelo del corazón (mm, negativa por encima de la cúpula): la del diafragma con su pendiente limitada a 2,
+ * dDome·max(1, pendiente/2) = (z_cúpula − z)/min(pendiente, 2). En el borde de una hemicúpula, donde su altura sube con
+ * tangente vertical, `sdDiaphragm` casi se anula en toda la columna de encima y el recorte del corazón y la grasa de la
+ * cúpula levantaban allí cortinas de miocardio en las cavidades y aletas de grasa en el pulmón; con la pendiente de hasta 2
+ * (63°) la distancia es la del plano tangente, la misma que antes en la cúpula lisa.
+ */
+export function heartFloor(dDome: number, slope: number): number {
+  return dDome * Math.max(1, slope / 2);
+}
+
+/** `heartFloor` en el punto m (TS: la cara del pericardio, el corte y el navegador 3D). */
+export function domeFloor(m: Vec3, d: Diaphragm, torso: Torso): number {
+  const [dDome, slope] = sdDiaphragmSlope(m, d, torso);
+  return heartFloor(dDome, slope);
+}
+
 /** Coordenadas de un punto en el marco de los ventrículos. */
 export function heartFrame(m: Vec3): Vec3 {
   const d: Vec3 = [m[0] - HEART_ORIGIN[0], m[1] - HEART_ORIGIN[1], m[2] - HEART_ORIGIN[2]];
@@ -112,14 +131,15 @@ export function raSdf(m: Vec3): number {
 }
 
 /**
- * La VCI junto a la aurícula (en `classify`, tras hallar el tubo de la VCI; `dDome` = `sdDiaphragm`): la cavidad de la AD
- * recortada por la cúpula (sin los tabiques, lejos de la VCI) y si el punto está fuera de la aurícula a más de
- * `IVC_ORIFICE_MM` sobre la cúpula, donde la VCI no existe. `cut` es la distancia (cota) a las dos fronteras que eso crea.
+ * La VCI junto a la aurícula (en `classify`, tras hallar el tubo de la VCI; `floor` = `heartFloor`): la cavidad de la AD,
+ * con sus tabiques tallados y recortada por la cúpula, y si el punto está fuera de ella a más de `IVC_ORIFICE_MM` sobre la
+ * cúpula, donde la VCI no existe (gana el corazón: la VCI dilatada no borra el tabique interauricular ni entra en la AI).
+ * `cut` es la distancia (cota) a las dos fronteras que eso crea.
  */
-export function ivcAtrium(m: Vec3, dDome: number): { cavity: number; outside: boolean; cut: number } {
-  const ra = raSdf(m);
-  const cavity = Math.max(ra, dDome + W.pericardium + W.ra);
-  return { cavity, outside: ra >= 0 && dDome < -IVC_ORIFICE_MM, cut: Math.min(cavity, Math.max(-ra, dDome + IVC_ORIFICE_MM)) };
+export function ivcAtrium(m: Vec3, floor: number): { cavity: number; outside: boolean; cut: number } {
+  const ra = heartChambers(m)[2];
+  const cavity = Math.max(ra, floor + W.pericardium + W.ra);
+  return { cavity, outside: ra >= 0 && floor < -IVC_ORIFICE_MM, cut: Math.min(cavity, Math.max(-ra, floor + IVC_ORIFICE_MM)) };
 }
 
 /**
@@ -143,13 +163,15 @@ export interface ThoraxClass {
 }
 
 /**
- * Tórax, por encima de la cúpula (`dDome` = `sdDiaphragm` < 0): sangre de una cavidad, miocardio, pericardio o grasa del
- * mediastino (los dos, `Tissue.Mediastinum`), o pulmón. Cavidades y miocardio se recortan por encima de la cúpula a su pared
- * y al pericardio; el saco (miocardio y pericardio) no. La capa del pericardio dibuja su cara (de un lado) a la distancia
- * del epicardio recortado. La distancia a la frontera no cuenta los tubos (como en el hígado); la de la grasa, dividida por
- * la pendiente de su margen junto a la cúpula, sigue siendo una cota.
+ * Tórax, por encima de la cúpula (`dDome` = `sdDiaphragm` < 0; `floor` = `heartFloor`): sangre de una cavidad, miocardio,
+ * pericardio o grasa del mediastino (los dos, `Tissue.Mediastinum`), o pulmón. Cavidades y miocardio se recortan por encima
+ * del suelo a su pared y al pericardio; el saco (miocardio y pericardio) no. La capa del pericardio dibuja su cara (de un
+ * lado) a la distancia del epicardio recortado. La grasa de los ángulos cardiofrénicos solo rodea los ventrículos (junto a
+ * las aurículas y la VCI, el pulmón baja hasta el saco). La distancia a la frontera no cuenta los tubos (como en el hígado)
+ * y es una cota salvo junto al borde de una hemicúpula (el suelo no es allí una distancia); `classify` le suma la columna
+ * y la pared.
  */
-export function thorax(m: Vec3, dDome: number): ThoraxClass {
+export function thorax(m: Vec3, dDome: number, floor: number): ThoraxClass {
   const b = MED.bound;
   const out = Math.hypot(m[0] - b.c[0], m[1] - b.c[1], m[2] - b.c[2]) - b.r;
   if (out > 0) return { tissue: Tissue.Lung, bd: Math.min(-dDome, out), ifd: 1e3 };
@@ -158,16 +180,17 @@ export function thorax(m: Vec3, dDome: number): ThoraxClass {
   let cav = 1e3;
   let epi = 1e3;
   for (let i = 0; i < 4; i++) {
-    cav = Math.min(cav, Math.max(c[i], dDome + p + WALL4[i]));
+    cav = Math.min(cav, Math.max(c[i], floor + p + WALL4[i]));
     epi = Math.min(epi, c[i] - WALL4[i]);
   }
   if (cav < 0) return { tissue: Tissue.Blood, bd: -cav, ifd: 1e3 };
   // el epicardio, recortado a la capa del pericardio sobre la cúpula
-  const epiC = Math.max(epi, dDome + p);
+  const epiC = Math.max(epi, floor + p);
   if (epiC < 0) return { tissue: Tissue.Myocardium, bd: Math.min(-epiC, cav), ifd: 1e3 };
   if (epi < p) return { tissue: Tissue.Mediastinum, bd: Math.min(epiC, -dDome), ifd: epiC };
-  const pad = MED.padMm * Math.min(1, Math.max(0, 1 + dDome / MED.padHeightMm));
-  const fat = (epi - p - MED.fatMm - pad) / (1 + MED.padMm / MED.padHeightMm);
+  const pad = MED.padMm * Math.min(1, Math.max(0, 1 + floor / MED.padHeightMm));
+  const fe = Math.min(c[0] - W.lv - pad, c[1] - W.rv - pad, c[2] - W.ra, c[3] - W.la);
+  const fat = (fe - p - MED.fatMm) / (1 + MED.padMm / MED.padHeightMm);
   // la columna del mediastino posterior: elipse en (x, y) cortada por arriba en `top`
   const k = MED.column;
   const column = Math.max(sdEllipsoidLocal([m[0] - k.x, m[1] - k.y, 0], [k.ax, k.ay, 1e3]), m[2] - k.top);
@@ -177,12 +200,12 @@ export function thorax(m: Vec3, dDome: number): ThoraxClass {
 }
 
 /**
- * Epicardio recortado por la cúpula (mm, negativa dentro del miocardio y las cavidades): la cara del pericardio (`faceSdf`)
- * y la malla del navegador 3D. Solo TS.
+ * Epicardio recortado por el suelo (mm, negativa dentro del miocardio y las cavidades; `floor` = `heartFloor`): la cara
+ * del pericardio (`faceSdf`) y la malla del navegador 3D. Solo TS.
  */
-export function heartOuterSdf(m: Vec3, dDome: number): number {
+export function heartOuterSdf(m: Vec3, floor: number): number {
   const c = heartChambers(m);
-  return Math.max(Math.min(c[0] - W.lv, c[1] - W.rv, c[2] - W.ra, c[3] - W.la), dDome + W.pericardium);
+  return Math.max(Math.min(c[0] - W.lv, c[1] - W.rv, c[2] - W.ra, c[3] - W.la), floor + W.pericardium);
 }
 
 const vec = (v: readonly number[]): string => `vec${v.length}(${v.map((x) => x.toFixed(4)).join(',')})`;
@@ -203,11 +226,12 @@ const V4 = [
 
 /**
  * Gemelo GLSL (usa `sdEllipsoidLocal` y `smoothMin` de la anatomía; las constantes, en `HV` y `HW` con el orden de `V3` y
- * `V4`): `thorax` devuelve el tejido (T_BLOOD, T_MYOCARDIUM, T_MEDIASTINUM o T_LUNG), su distancia a la frontera en `bd` y
- * la de la cara del pericardio en `ifd` (1e3 sin ella); en la capa del pericardio deja en `n` la normal del epicardio (la
- * del elipsoide de la cámara más cercana, o la de la cúpula que trae `n` donde el saco apoya en ella), y en el pulmón cuya
- * frontera más cercana es la del mediastino, la de esa frontera (el espejo de la pasada A). La matriz lleva los ejes en
- * columnas: (m − O)·B da las coordenadas del marco.
+ * `V4`): `thorax` recibe en `n` la normal de la cúpula (de ella saca el suelo, `heartFloor`) y devuelve el tejido (T_BLOOD,
+ * T_MYOCARDIUM, T_MEDIASTINUM o T_LUNG), su distancia a la frontera en `bd` y la de la cara del pericardio en `ifd` (1e3 sin
+ * ella); en la capa del pericardio deja en `n` la normal del epicardio (la del elipsoide de la cámara más cercana, o la de
+ * la cúpula donde el saco apoya en ella), y en el pulmón cuya frontera más cercana es la del mediastino, la de esa frontera
+ * (el espejo de la pasada A). Una sola llamada a `epiNormal`. La matriz lleva los ejes en columnas: (m − O)·B da las
+ * coordenadas del marco.
  */
 export const HEART_GLSL = /* glsl */ `
 const vec3 HV[${V3.length}] = vec3[${V3.length}](${V3.map(vec).join(',')});
@@ -216,12 +240,6 @@ const mat3 HB = mat3(HV[1], HV[2], HV[3]);
 vec3 heartFrame(vec3 m) { return (m - HV[0]) * HB; }
 vec3 raFrame(vec3 m) { vec3 d = m - HV[7]; return vec3(d.x, d.y * HW[5].z - d.z * HW[5].w, d.y * HW[5].w + d.z * HW[5].z); }
 float raSdf(vec3 m) { return sdEllipsoidLocal(raFrame(m), HV[8]); }
-// (cavidad de la AD recortada, fuera de la aurícula a más de IVC_ORIFICE_MM sobre la cúpula (1/0), cota de sus fronteras)
-vec3 ivcAtrium(vec3 m, float dDome) {
-  float ra = raSdf(m);
-  float cavity = max(ra, dDome + HW[1].w + HW[0].z);
-  return vec3(cavity, ra >= 0.0 && dDome < -HW[5].y ? 1.0 : 0.0, min(cavity, max(-ra, dDome + HW[5].y)));
-}
 // normal del epicardio: la del elipsoide de la cámara más cercana (e: epicardio de cada una; VI y VD del marco al tronco; la
 // AD, con la inversa de la rotación de raFrame)
 vec3 epiNormal(vec3 m, vec4 e, float epi) {
@@ -236,39 +254,49 @@ vec4 heartChambers(vec3 m) {
   float la = sdEllipsoidLocal(m - HV[9], HV[10]);
   return vec4(lv, max(sdEllipsoidLocal(q - HV[5], HV[6]), HW[1].x - lv), max(raSdf(m), max(HW[1].y - la, HW[1].z - lv)), la);
 }
+// (cavidad de la AD tallada y recortada por el suelo hF, fuera de ella a más de IVC_ORIFICE_MM sobre él (1/0), cota de sus
+// fronteras)
+vec3 ivcAtrium(vec3 m, float hF) {
+  float ra = heartChambers(m).z;
+  float cavity = max(ra, hF + HW[1].w + HW[0].z);
+  return vec3(cavity, ra >= 0.0 && hF < -HW[5].y ? 1.0 : 0.0, min(cavity, max(-ra, hF + HW[5].y)));
+}
 int thorax(vec3 m, float dDome, out float bd, out float ifd, inout vec3 n) {
   ifd = 1e3;
+  // el suelo del corazón (heartFloor): la pendiente de la cúpula sale de su normal (n.z = −1/pendiente), limitada a 2
+  float hF = dDome * max(1.0, -0.5 / n.z);
   float outside = distance(m, HW[4].xyz) - HW[4].w;
   bd = min(-dDome, outside);
   if (outside > 0.0) return T_LUNG;
   vec4 c = heartChambers(m);
   float p = HW[1].w;
-  vec4 cc = max(c, vec4(dDome + p) + HW[0]);
+  vec4 cc = max(c, vec4(hF + p) + HW[0]);
   float cav = min(min(cc.x, cc.y), min(cc.z, cc.w));
   vec4 e = c - HW[0];
   float epi = min(min(e.x, e.y), min(e.z, e.w));
   bd = -cav;
   if (cav < 0.0) return T_BLOOD;
-  float epiC = max(epi, dDome + p);
+  float epiC = max(epi, hF + p);
   bd = min(-epiC, cav);
   if (epiC < 0.0) return T_MYOCARDIUM;
-  if (epi < p) {
-    bd = min(epiC, -dDome);
-    ifd = epiC;
-    // la normal del epicardio; donde el saco apoya en la cúpula, la de ella (la que trae n)
-    if (epi > dDome + p) n = epiNormal(m, e, epi);
-    return T_MEDIASTINUM;
-  }
-  float fat = (epi - p - HW[2].x - HW[2].z * clamp(1.0 + dDome / HW[2].w, 0.0, 1.0)) / (1.0 + HW[2].z / HW[2].w);
+  // la grasa: alrededor del saco y, junto a los ventrículos, la de los ángulos cardiofrénicos sobre la cúpula
+  vec4 f = e - vec4(vec2(HW[2].z * clamp(1.0 + hF / HW[2].w, 0.0, 1.0)), 0.0, 0.0);
+  float fe = min(min(f.x, f.y), min(f.z, f.w));
+  float fat = (fe - p - HW[2].x) / (1.0 + HW[2].z / HW[2].w);
   // la columna del mediastino posterior: elipse en (x, y) cortada por arriba
-  float column = max(sdEllipsoidLocal(vec3(m.xy - HW[3].xy, 0.0), vec3(HW[3].zw, 1e3)), m.z - HW[5].x);
+  vec2 q = m.xy - HW[3].xy;
+  float ell = sdEllipsoidLocal(vec3(q, 0.0), vec3(HW[3].zw, 1e3));
+  float column = max(ell, m.z - HW[5].x);
   float med = smoothMin(fat, column, HW[2].y);
-  bd = min(-med, min(epiC, -dDome));
-  if (med < 0.0) return T_MEDIASTINUM;
-  bd = min(med, -dDome);
-  // el pulmón que se alcanza desde el mediastino (su frontera más cerca que la cúpula): la normal de esa frontera, la del saco
-  // o la de la columna, para el espejo de la pasada A (con la de la cúpula el camino reflejado se perdía: una zona negra)
-  if (med < -dDome) n = fat < column ? epiNormal(m, e, epi) : normalize(vec3((m.xy - HW[3].xy) / (HW[3].zw * HW[3].zw), 0.0));
-  return T_LUNG;
+  bool sac = epi < p;
+  bd = sac ? min(epiC, -dDome) : med < 0.0 ? min(-med, min(epiC, -dDome)) : min(med, -dDome);
+  if (sac) ifd = epiC;
+  // la normal: en el saco, la del epicardio (donde apoya en la cúpula, la de ella, la que trae n); en el pulmón que se
+  // alcanza desde el mediastino (su frontera, más cerca que la cúpula), la de esa frontera, la del saco o la de la columna
+  // (su tapa, +z), para el espejo de la pasada A: con la de la cúpula el camino reflejado se perdía (una zona negra)
+  bool mirror = !sac && med >= 0.0 && med < -dDome;
+  if (mirror && fat >= column) n = m.z - HW[5].x > ell ? vec3(0.0, 0.0, 1.0) : normalize(vec3(q / (HW[3].zw * HW[3].zw), 0.0));
+  else if (sac ? epi > hF + p : mirror) n = epiNormal(m, sac ? e : f, sac ? epi : fe);
+  return sac || med < 0.0 ? T_MEDIASTINUM : T_LUNG;
 }
 `;

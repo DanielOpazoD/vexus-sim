@@ -389,7 +389,7 @@ Cls classifyWith(vec3 m, bool withCurtain) {
   vec3 ivc = vec3(1e3, 0.0, 1e3);
   if (bestT >= 0) {
     h1 = sceneTexel(bestT * 4 + 1);
-    if (int(h1.w + 0.5) == IF_IVC) ivc = ivcAtrium(m, dDome);
+    if (int(h1.w + 0.5) == IF_IVC) ivc = ivcAtrium(m, dDome * max(1.0, -0.5 / dn.z));
   }
   if (bestT >= 0 && ivc.y < 0.5) {
     int iface = int(h1.w + 0.5);
@@ -414,6 +414,8 @@ Cls classifyWith(vec3 m, bool withCurtain) {
     float ifd;
     c.n = dn;
     c.tissue = thorax(m, dDome, c.bd, ifd, c.n);
+    // su distancia a la frontera cuenta también la columna y la pared (como el retroperitoneo)
+    c.bd = min(c.bd, min(dSpine, -depth - wall));
     if (ifd < 1e3) { c.iface = IF_PERICARDIUM; c.ifd = ifd; }
     return c;
   }

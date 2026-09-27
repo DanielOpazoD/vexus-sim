@@ -35,13 +35,18 @@
 // (`tools/build/glslCompact.ts`, tercera etapa de `glslMinify.ts`): index baja de 318,0 a 304,6 kB y el JS total de 953,1
 // a 939,6 kB (vite build sobre main 8e83d9a). Los límites no cambian: el margen es para el retroperitoneo y los casos
 // trampa.
+// 2026-09-26: el corazón y el mediastino (decisión 85) llevan index de 317,1 a 320,8 kB (vite build sobre main e37f5d2): el
+// módulo de órgano con su gemelo GLSL (~2 kB de texto en todas las pasadas que clasifican), las filas de los dos tejidos y de
+// la cara del pericardio, la VCI que entra en la aurícula y el suelo del corazón en `classify`. Ya descuenta la documentación
+// de los uniforms de la escena, que viajaba en el bundle solo para acabar como comentario del GLSL (−2,1 kB, ahora
+// comentarios del TS), y los motivos largos de la fila del pericardio y de su gemelo solo GPU. index sube a 325 kB.
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const KB = 1024;
 const BUDGETS: Array<[RegExp, number]> = [
   [/three.*\.js$/, 700 * KB],
-  [/index-.*\.js$/, 320 * KB],
+  [/index-.*\.js$/, 325 * KB],
   [/\.css$/, 20 * KB],
   [/\.js$/, 120 * KB], // cualquier otro chunk
 ];

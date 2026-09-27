@@ -2,8 +2,8 @@ import * as THREE from 'three';
 import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js';
 import { kidneyLocal, kidneyOuterSdf, type Kidney } from '../../anatomy/organs/kidney';
 import { gallbladderSdf } from '../../anatomy/organs/gallbladder';
-import { heartOuterSdf } from '../../anatomy/organs/heart';
-import { diaphragmHeight, sdDiaphragm, torsoDepth } from '../../anatomy/primitives';
+import { domeFloor, heartOuterSdf } from '../../anatomy/organs/heart';
+import { diaphragmHeight, torsoDepth } from '../../anatomy/primitives';
 import { COUINAUD_LABEL, couinaudPlanes, couinaudSegment, type CouinaudSegment } from '../../anatomy/couinaud';
 import type { AnatomyScene } from '../../anatomy/scene';
 import { DIAPHRAGM_THICKNESS_MM } from '../../anatomy/tissues';
@@ -195,7 +195,7 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
   );
   // Corazón (decisión 85): el epicardio recortado por la cúpula, con la MISMA distancia que la imagen
   const heart = meshFromSdf(
-    (p) => heartOuterSdf(p, sdDiaphragm(p, a.diaphragm, a.torso)),
+    (p) => heartOuterSdf(p, domeFloor(p, a.diaphragm, a.torso)),
     [-50, -20, 5],
     [80, 80, 122],
     44,

@@ -23,8 +23,8 @@ import {
   perirenalThicknessMm,
   sdRoundCone,
 } from '../anatomy/organs/kidney';
-import { sdDiaphragm, sdEllipsoidLocal, sdSpine, tubeQuery } from '../anatomy/primitives';
-import { ivcAtrium } from '../anatomy/organs/heart';
+import { sdEllipsoidLocal, sdSpine, tubeQuery } from '../anatomy/primitives';
+import { HEART_WALLS, domeFloor, heartChambers, ivcAtrium } from '../anatomy/organs/heart';
 import { renalPatternFromPeaks } from '../vexus/classification';
 import { VESSEL_META } from '../physiology/vessels';
 import { BRANCH_MAX_RADIUS_SCALE } from '../anatomy/vesselTree';
@@ -1133,7 +1133,7 @@ describe('Caras de interfaz en classify (decisión 57)', () => {
     // que dentro de la cavidad de la AD la luz sigue siendo la VCI (el chorro que entra) y la pared es sangre de la aurícula,
     // sin cara (antes, un eco de pared a +13–14 dB y un anillo de pared dentro de la cavidad negra); fuera de la aurícula, a
     // más de IVC_ORIFICE_MM sobre la cúpula, no hay VCI
-    const atrium = (p: V) => ivcAtrium(p, sdDiaphragm(p, scene.diaphragm, scene.torso));
+    const atrium = (p: V) => ivcAtrium(p, domeFloor(p, scene.diaphragm, scene.torso));
     const supra = scene.vessels.find((v) => v.id === 'ivcSupra')!;
     const last = supra.tube.nodes[supra.tube.nodes.length - 1].p;
     const hiatus = supra.tube.nodes[supra.tube.nodes.length - 3].p;
@@ -1169,15 +1169,19 @@ describe('Caras de interfaz en classify (decisión 57)', () => {
             tubeBelow++;
             expect(c.interface, tag).toBe(Interface.IvcLumen);
           } else {
+            // fuera de la AD tallada: con el calibre del sano, solo la tapa del embudo junto al tabique interauricular (el
+            // limbo de la fosa oval, a 4 mm de la AI), que sigue siendo tabique
             trimmed++;
             expect(c.vessel, tag).toBeNull();
+            expect(Tissue[c.tissue], tag).toBe('Myocardium');
+            expect(heartChambers(p)[3], tag).toBeLessThan(HEART_WALLS.ias);
           }
         }
-    expect(lumenInRa).toBeGreaterThan(200);
-    expect(wallInRa).toBeGreaterThan(20);
-    expect(tubeBelow).toBeGreaterThan(200);
-    // con el calibre del sano el embudo cabe en la aurícula: no se recorta nada
-    expect(trimmed).toBe(0);
+    const tag = JSON.stringify({ lumenInRa, wallInRa, tubeBelow, trimmed });
+    expect(lumenInRa, tag).toBeGreaterThan(200);
+    expect(wallInRa, tag).toBeGreaterThan(20);
+    expect(tubeBelow, tag).toBeGreaterThan(200);
+    expect(trimmed, tag).toBeLessThan(0.25 * lumenInRa);
   });
 
   it('hígado, intestino y pulmón no dibujan cara; el músculo de la pared, la de su capa (decisión 62)', () => {

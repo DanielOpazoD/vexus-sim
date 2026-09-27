@@ -381,7 +381,10 @@ test('las normales de la GPU coinciden con el gradiente de la distancia de TS en
     // la vesícula no corta ningún plano de partida: flanco abanicado 18° hacia delante
     { startPoint: 'flank', pose: { tiltDeg: 18 } },
   ] as const;
-  const faces = ['tube', 'liverSurface', 'dome', 'kidneyOuter', 'perirenalOuter', 'gallbladder'] as const;
+  // el pericardio (decisión 85), desde la subxifoidea: la normal del elipsoide de la cámara más cercana (o la de la cúpula
+  // donde el saco apoya) frente al gradiente del epicardio recortado; sin la puerta de la norma (la GPU da 1 y la distancia
+  // aproximada del elipsoide, |∇| a 1,1 % en la mediana y 6,5 % en p95 del gemelo TS: ≤ 0,6 dB en su eco)
+  const faces = ['tube', 'liverSurface', 'dome', 'kidneyOuter', 'perirenalOuter', 'gallbladder', 'pericardium'] as const;
   // subconjuntos (`FACE_NORMAL_SUBSETS`): se muestrean aparte y no cambian la fila de su cara
   const subsets = ['tubeIvc', 'tubeIvcBody', 'kidneyOuterNotchFree', 'kidneyOuterNotch'] as const;
   const gated = [

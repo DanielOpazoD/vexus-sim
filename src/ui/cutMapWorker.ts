@@ -1,8 +1,8 @@
 /// <reference lib="webworker" />
 import type { ProbeCompression } from '../anatomy/compression';
 import { AnatomyQuery } from '../anatomy/query';
+import { domeFloor } from '../anatomy/organs/heart';
 import { HEART_CHAMBER_IDS, heartChamber } from '../anatomy/organs/heartChamber';
-import { sdDiaphragm } from '../anatomy/primitives';
 import { AnatomyScene } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
 import type { Vec3 } from '../core/vec3';
@@ -60,7 +60,7 @@ let query: AnatomyQuery | null = null;
 /** Código de la cavidad del corazón que contiene un punto material (−2 − su índice), o −1. */
 function chamberCode(m: Vec3): number {
   const sc = query!.scene;
-  const ch = heartChamber(m, sdDiaphragm(m, sc.diaphragm, sc.torso));
+  const ch = heartChamber(m, domeFloor(m, sc.diaphragm, sc.torso));
   return ch ? -2 - HEART_CHAMBER_IDS.indexOf(ch) : -1;
 }
 let vesselIndex = new Map<string, number>();

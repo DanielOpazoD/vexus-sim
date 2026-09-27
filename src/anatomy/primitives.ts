@@ -33,6 +33,12 @@ export interface Tube {
    * `apScale`, la VCI, cuyo calibre va en sus nodos).
    */
   shape?: TubeShape;
+  /**
+   * Radio entre nodos con smoothstep (pendiente nula en ellos) en lugar de lineal: la VCI infrahepática (decisión 90), cuyo
+   * calibre ondula sin quiebros en sus paredes. Explícito, no deducido de la sección elíptica. La GPU lo recibe como
+   * H4.w = −1 (`tubeShapeTexel`), así que un tubo no lleva a la vez `shape` y `smoothRadius`.
+   */
+  smoothRadius?: boolean;
 }
 
 /**
@@ -42,11 +48,13 @@ export interface Tube {
  * después conductos, el H2.w de la textura de escena), el mismo resultado en TS y en GLSL (que recibe la sección hecha en
  * el téxel H4 de la cabecera del tubo, `tubeShapeTexel`, y calcula el ruido con el mismo hash):
  *  - **Sección anisótropa**: la distancia al eje es la de una métrica elíptica fija en el marco material,
- *    f(d) = c·√(|d|² + κ·(d·ŵ)²) con c = (1 + κ)^(−1/4), que conserva el área: la sección perpendicular al eje es una
- *    elipse de semiejes r·(1 + κ)^(±1/4) orientada por la proyección de ŵ, que gira con el vaso sin saltos en los codos
- *    (f no depende de la tangente del segmento) y solo se redondea donde el vaso se curva hacia ŵ. ŵ es la parte de un
- *    vector del hash perpendicular al primer segmento del tubo. κ en reposo se divide por el cuadrado de la dilatación: la
- *    vena distendida por la congestión se redondea, como la VCI (ley de tubo colapsable; Shapiro 1977)
+ *    f(d) = c·√(|d|² + κ·(d·ŵ)²) con c = (1 + κ)^(−1/4). En un segmento perpendicular a ŵ la sección es una elipse de
+ *    semiejes r·(1 + κ)^(±1/4) y de área πr²; la orientación sigue a la proyección de ŵ y gira con el vaso sin saltos en
+ *    los codos (f no depende de la tangente del segmento). Donde el segmento se inclina hacia ŵ (ŵ·t ≠ 0) la sección se
+ *    redondea y crece: área × √(1 + κ)/√(1 + κ·(1 − (ŵ·t)²)). ŵ es la parte de un vector del hash perpendicular a la cuerda
+ *    del tubo (del primer nodo al último), así que ese factor queda ≤ 1,04 en los tubos del modelo (con ŵ perpendicular al
+ *    primer segmento llegaba a 1,14 en el codo de una rama portal). κ en reposo se divide por el cuadrado de la dilatación:
+ *    la vena distendida por la congestión se redondea, como la VCI (ley de tubo colapsable; Shapiro 1977)
  *    [EXTRAPOLACIÓN PROPIA: los rangos de κ].
  *  - **Radio modulado a lo largo del eje**: r = r_lineal·(1 + amp·N(s)), N un ruido de valor en la longitud de arco desde
  *    el primer nodo (celda de `TUBE_SHAPE.latticeMm`, fundido smoothstep, valores en [−1, 1]) [EXTRAPOLACIÓN PROPIA: la
@@ -108,16 +116,18 @@ const tubeKey = (seed: number, k: number): number => tubeHash(((seed << 16) ^ k 
 const tubeUnit = (h: number): number => (h >>> 8) / 16777216;
 
 /**
- * Forma del tubo `seed` de una clase, cuyo primer segmento es `axis0` (el vector del primer nodo al segundo). ŵ es la parte
- * perpendicular a `axis0` de un vector del hash (sus componentes, (2b − 255)/255 con b un byte, nunca son 0, así que no es
- * paralelo a un eje), y κ, un byte más del mismo hash. La GPU la recibe hecha (`tubeShapeTexel`).
+ * Forma del tubo `seed` de una clase con los nodos `nodes`. ŵ es la parte perpendicular a la cuerda del tubo (del primer
+ * nodo al último) de un vector del hash (sus componentes, (2b − 255)/255 con b un byte, nunca son 0, así que no es paralelo
+ * a un eje), y κ, un byte más del mismo hash. La GPU la recibe hecha (`tubeShapeTexel`).
  */
-export function tubeShapeOf(seed: number, cls: TubeShapeClass, axis0: Vec3): TubeShape {
+export function tubeShapeOf(seed: number, cls: TubeShapeClass, nodes: readonly TubeNode[]): TubeShape {
   const c = TUBE_SHAPE.classes[cls];
   const h = tubeKey(seed, 0xffff);
   const v: Vec3 = [((h & 255) * 2) / 255 - 1, (((h >>> 8) & 255) * 2) / 255 - 1, (((h >>> 16) & 255) * 2) / 255 - 1];
-  const la = Math.hypot(axis0[0], axis0[1], axis0[2]);
-  const t: Vec3 = [axis0[0] / la, axis0[1] / la, axis0[2] / la];
+  const [p0, p1] = [nodes[0].p, nodes[nodes.length - 1].p];
+  const axis: Vec3 = [p1[0] - p0[0], p1[1] - p0[1], p1[2] - p0[2]];
+  const la = Math.hypot(axis[0], axis[1], axis[2]);
+  const t: Vec3 = [axis[0] / la, axis[1] / la, axis[2] / la];
   const vt = v[0] * t[0] + v[1] * t[1] + v[2] * t[2];
   const w: Vec3 = [v[0] - t[0] * vt, v[1] - t[1] * vt, v[2] - t[2] * vt];
   const l = Math.hypot(w[0], w[1], w[2]);
@@ -144,10 +154,13 @@ function shapeMetric(shape: TubeShape, radiusScale: number): { wt: Vec3; c: numb
 
 /**
  * Téxel H4 de la cabecera del tubo en la textura de escena (decisión 90): (wt, amplitud del ruido del radio) con la escala de
- * radio del instante; la GPU saca c = (1 + |wt|²)^(−1/4) y lee la semilla del ruido en H2.w. Ceros sin forma (la VCI).
+ * radio del instante; la GPU saca c = (1 + |wt|²)^(−1/4) y lee la semilla del ruido en H2.w. Sin forma, ceros, y con
+ * `smoothRadius` (la VCI infrahepática) (0, 0, 0, −1): la amplitud negativa es la marca del radio smoothstep.
  */
-export function tubeShapeTexel(shape: TubeShape | undefined, radiusScale: number): [number, number, number, number] {
-  if (!shape) return [0, 0, 0, 0];
+export function tubeShapeTexel(tube: Pick<Tube, 'shape' | 'smoothRadius'>, radiusScale: number): [number, number, number, number] {
+  const { shape } = tube;
+  if (shape && tube.smoothRadius) throw new Error('Un tubo con forma orgánica no lleva radio smoothstep (téxel H4)');
+  if (!shape) return [0, 0, 0, tube.smoothRadius ? -1 : 0];
   const { wt } = shapeMetric(shape, radiusScale);
   return [wt[0], wt[1], wt[2], shape.amp];
 }
@@ -342,23 +355,24 @@ export interface TubeHit {
 }
 
 /**
- * Peso del radio del nodo final a lo largo del segmento: lineal (s) o, en la sección elíptica de la VCI, smoothstep, con
- * pendiente nula en los nodos: el calibre de la VCI (decisión 90) ondula sin quiebros en sus paredes.
+ * Peso del radio del nodo final a lo largo del segmento: lineal (s) o, con `Tube.smoothRadius` (la VCI infrahepática),
+ * smoothstep, con pendiente nula en los nodos: su calibre (decisión 90) ondula sin quiebros en sus paredes.
  */
-function radiusWeight(s: number, apScale: number): number {
-  return apScale !== 1 ? s * s * (3 - 2 * s) : s;
+function radiusWeight(s: number, smooth: boolean): number {
+  return smooth ? s * s * (3 - 2 * s) : s;
 }
 
 /**
  * Distancia a una cadena de cápsulas con radio interpolado y sección elíptica
  * (semieje AP = r·apScale). `radiusScale` multiplica los radios (fisiología). Con forma (decisión 90, `Tube.shape`),
- * la distancia al eje es la de la métrica elíptica del tubo y el radio lleva el ruido a lo largo del eje; el segmento
- * se elige sin ese ruido (continuo en la longitud de arco, así que en las uniones no hay escalón) y se aplica una vez,
- * como en la GLSL.
+ * la distancia al eje es la de la métrica elíptica del tubo (si su sección no es la de `apScale`) y el radio lleva el
+ * ruido a lo largo del eje; el segmento se elige sin ese ruido (continuo en la longitud de arco, así que en las uniones no
+ * hay escalón) y se aplica una vez, como en la GLSL (que lo aplica con cualquier `apScale`, igual que aquí).
  */
 export function tubeQuery(p: Vec3, tube: Tube, radiusScale = 1): TubeHit {
   const nodes = tube.nodes;
   const shape = tube.apScale === 1 && tube.shape ? shapeMetric(tube.shape, radiusScale) : null;
+  const smooth = tube.smoothRadius === true;
   let bestD = Infinity;
   let bestDist = 0;
   let bestR = 1;
@@ -408,7 +422,7 @@ export function tubeQuery(p: Vec3, tube: Tube, radiusScale = 1): TubeHit {
     } else {
       dist = Math.sqrt(dx * dx + dy * dy + dz * dz);
     }
-    const r = (nodes[i].r + (nodes[i + 1].r - nodes[i].r) * radiusWeight(s, tube.apScale)) * radiusScale;
+    const r = (nodes[i].r + (nodes[i + 1].r - nodes[i].r) * radiusWeight(s, smooth)) * radiusScale;
     const d = dist - r;
     if (d < bestD) {
       const l = len || 1;
@@ -422,7 +436,8 @@ export function tubeQuery(p: Vec3, tube: Tube, radiusScale = 1): TubeHit {
     }
     arc += len;
   }
-  const r = shape && tube.shape!.amp > 0 ? bestR * (1 + tube.shape!.amp * tubeNoise(tube.shape!.seed, bestArc)[0]) : bestR;
+  const amp = tube.shape?.amp ?? 0;
+  const r = amp > 0 ? bestR * (1 + amp * tubeNoise(tube.shape!.seed, bestArc)[0]) : bestR;
   return { d: bestDist - r, rho: bestDist / Math.max(1e-6, r), tangent: bestT, r, segment: bestI, s: bestS, arc: bestArc };
 }
 
@@ -478,11 +493,12 @@ export function tubeFaceGradient(p: Vec3, tube: Tube, radiusScale: number, hit: 
     const inv = 1 / Math.max(dist, 1e-6);
     gd = [d[0] * inv, d[1] * inv, d[2] * inv];
   }
-  const rLin = (a.r + (b.r - a.r) * radiusWeight(s, ap)) * radiusScale;
-  const [n, dn] = shape && tube.shape!.amp > 0 ? tubeNoise(tube.shape!.seed, hit.arc) : [0, 0];
-  const amp = shape ? tube.shape!.amp : 0;
+  const smooth = tube.smoothRadius === true;
+  const rLin = (a.r + (b.r - a.r) * radiusWeight(s, smooth)) * radiusScale;
+  const amp = tube.shape?.amp ?? 0;
+  const [n, dn] = amp > 0 ? tubeNoise(tube.shape!.seed, hit.arc) : [0, 0];
   const r = rLin * (1 + amp * n);
-  const dw = ap !== 1 ? 6 * s * (1 - s) : 1;
+  const dw = smooth ? 6 * s * (1 - s) : 1;
   const taper = inside ? ((radiusScale * (b.r - a.r) * dw) / len) * (1 + amp * n) + rLin * amp * dn : 0;
   const gn: Vec3 = [gd[0] - tg[0] * taper, gd[1] - tg[1] * taper, gd[2] - tg[2] * taper];
   const gradient: Vec3 = dist > 0 && dot(gn, gn) > 0 ? gn : [0, 1, 0];

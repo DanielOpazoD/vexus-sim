@@ -651,8 +651,9 @@ export class UltrasoundRenderer {
       this.headerAll.set([0, t.refRadius, t.profileN, i], (h + 2) * 4);
       const b = s.tubeBounds[i];
       this.headerAll.set([b.center[0], b.center[1], b.center[2], b.r], (h + 3) * 4);
-      // H4: la forma orgánica (decisión 90) con la escala de radio 1; por cuadro, con la del instante
-      this.headerAll.set(tubeShapeTexel(t.tube.shape, 1), (h + 4) * 4);
+      // H4: la forma orgánica (decisión 90) con la escala de radio 1 (por cuadro, con la del instante) o la marca del radio
+      // smoothstep de la VCI infrahepática
+      this.headerAll.set(tubeShapeTexel(t.tube, 1), (h + 4) * 4);
       if (t.tube.nodes.length - 1 > MAX_TUBE_SEGMENTS)
         throw new Error(`Tubo con ${t.tube.nodes.length - 1} segmentos (máximo del shader ${MAX_TUBE_SEGMENTS})`);
       for (const node of t.tube.nodes) {
@@ -750,7 +751,7 @@ export class UltrasoundRenderer {
         this.sceneData[dst + 8] = inputs.sample.velocities[v.id] * (v.flowFactor ?? 1);
         this.sceneData[dst + 9] = v.refRadius * scale;
         // H4: la forma orgánica con la dilatación del instante (la vena distendida se redondea, decisión 90)
-        if (v.tube.shape) this.sceneData.set(tubeShapeTexel(v.tube.shape, scale), dst + 16);
+        if (v.tube.shape) this.sceneData.set(tubeShapeTexel(v.tube, scale), dst + 16);
       }
       kept++;
     }

@@ -14,7 +14,7 @@
  *     H2 = (u_ref mm/s, r_ref mm, exponente del perfil, índice original del tubo: la semilla del ruido de su radio)
  *     H3 = esfera envolvente (cx, cy, cz, R)
  *     H4 = forma orgánica del instante (decisión 90, `tubeShapeTexel`): (wt = ŵ·√κ_ef, amplitud del ruido del radio);
- *          0 en la VCI
+ *          0 sin forma y (0, 0, 0, −1) con el radio smoothstep entre nodos (la VCI infrahepática, `Tube.smoothRadius`)
  *   nodos desde NODE_BASE = MAX_TUBES·5: (x, y, z, r)
  *   tabla de la compresión de la sonda desde COMPRESSION_BASE = NODE_BASE + MAX_NODES (decisión 63,
  *   `anatomy/compression.ts`): un téxel por nodo de la cara, (s₀ mm, s_D mm, D mm, R mm)
@@ -256,9 +256,10 @@ float tubeQuery(vec3 p, int t, out float rho, out float rLoc, out int seg, out f
   float apScale = h0.z;
   float rs = h0.w;
   // la forma orgánica del instante (H4, decisión 90): la métrica de la sección (wt = h4.xyz, cK = (1 + |wt|²)^(−1/4)) y la
-  // amplitud del ruido del radio (h4.w); 0 en la VCI
+  // amplitud del ruido del radio (h4.w); sin forma, 0, y −1 con el radio smoothstep (la VCI infrahepática)
   vec4 h4 = sceneTexel(t * TUBE_HDR + 4);
   float cK = inversesqrt(sqrt(1.0 + dot(h4.xyz, h4.xyz)));
+  bool smoothR = h4.w < 0.0;
   // cada nodo se lee una vez: el extremo b de un segmento es el origen a del siguiente. El número de vueltas es el del tubo:
   // con la cota constante y un cuerpo tan corto, el JIT de SwiftShader desenrollaba el bucle dentro de cada copia de
   // classify y el arranque de la e2e se duplicaba (decisión 90)
@@ -284,14 +285,14 @@ float tubeQuery(vec3 p, int t, out float rho, out float rLoc, out int seg, out f
       float q = dot(d, h4.xyz);
       dist = cK * sqrt(dot(d, d) + q * q);
     }
-    // el radio entre nodos: lineal, y en la VCI (sección elíptica) smoothstep, sin quiebros (decisión 90)
-    float r = (a.w + (b.w - a.w) * (apScale != 1.0 ? s * s * (3.0 - 2.0 * s) : s)) * rs;
+    // el radio entre nodos: lineal, y en la VCI infrahepática smoothstep, sin quiebros (decisión 90)
+    float r = (a.w + (b.w - a.w) * (smoothR ? s * s * (3.0 - 2.0 * s) : s)) * rs;
     float len = sqrt(len2);
     if (dist - r < best) { best = dist - r; seg = i; segS = s; segArc = arc + s * len; bDist = dist; bR = r; }
     arc += len;
     a = b;
   }
-  // el ruido del radio a lo largo del eje (sin él en la VCI: amp 0)
+  // el ruido del radio a lo largo del eje (sin él en los tubos sin forma: amp ≤ 0)
   float dN;
   bool near = bDist - bR < ${TUBE_SHAPE.noiseReachMm.toFixed(4)} + h4.w * bR;
   float r = bR * (1.0 + (h4.w > 0.0 && near ? h4.w * tubeNoise(uint(sceneTexel(t * TUBE_HDR + 2).w + 0.5), segArc, dN) : 0.0));
@@ -313,7 +314,8 @@ void tubeFace(vec3 p, int t, int seg, float s, float arc, out vec3 tangent, out 
   float rs = h0.w;
   vec4 h4 = sceneTexel(t * TUBE_HDR + 4);
   vec3 wt = h4.xyz;
-  float amp = h4.w;
+  float amp = max(h4.w, 0.0);
+  bool smoothR = h4.w < 0.0;
   float cK = inversesqrt(sqrt(1.0 + dot(wt, wt)));
   vec4 a = sceneTexel(NODE_BASE + start + seg);
   vec4 b = sceneTexel(NODE_BASE + start + seg + 1);
@@ -323,7 +325,7 @@ void tubeFace(vec3 p, int t, int seg, float s, float arc, out vec3 tangent, out 
   vec3 d = p - a.xyz - ab * s;
   float dN = 0.0;
   float nz = amp > 0.0 ? tubeNoise(uint(sceneTexel(t * TUBE_HDR + 2).w + 0.5), arc, dN) : 0.0;
-  float rLin = (a.w + (b.w - a.w) * (apScale != 1.0 ? s * s * (3.0 - 2.0 * s) : s)) * rs;
+  float rLin = (a.w + (b.w - a.w) * (smoothR ? s * s * (3.0 - 2.0 * s) : s)) * rs;
   float r = rLin * (1.0 + amp * nz);
   bool inside = s > 0.0 && s < 1.0;
   vec3 gd;
@@ -345,7 +347,7 @@ void tubeFace(vec3 p, int t, int seg, float s, float arc, out vec3 tangent, out 
     gd = cK * (d + q * wt) / max(F, 1e-6);
     if (inside) gd -= tg * dot(gd, tg);
   }
-  float taper = inside ? rs * (b.w - a.w) * (apScale != 1.0 ? 6.0 * s * (1.0 - s) : 1.0) / max(len, 1e-6) * (1.0 + amp * nz) + rLin * amp * dN : 0.0;
+  float taper = inside ? rs * (b.w - a.w) * (smoothR ? 6.0 * s * (1.0 - s) : 1.0) / max(len, 1e-6) * (1.0 + amp * nz) + rLin * amp * dN : 0.0;
   vec3 gn = gd - tg * taper;
   tangent = tg;
   n = dist > 0.0 && dot(gn, gn) > 0.0 ? gn : vec3(0.0, 1.0, 0.0);

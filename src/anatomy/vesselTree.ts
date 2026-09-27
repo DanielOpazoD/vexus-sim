@@ -143,30 +143,36 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       // Decisión 69: «S» sagital suave (Li 2021; Joshi 2009): desde la AD baja y se aleja de la pared ~13–15 mm hasta
       // el nivel renal, con la lordosis por delante en L3; por encima del hígado queda 13–26 mm por delante de la aorta.
       // Antes era un único tramo recto de 320 mm (z −300…20) que solo se curvaba en sus últimos 40 mm.
-      // Decisión 90: el tramo que ven la subxifoidea y el flanco (z −64…10) deja de ser una banda de paredes paralelas y
-      // calibre constante (el juez ciego, ronda 4: «un tubo recto de paredes paralelas de borde a borde, la geometría de un
-      // maniquí»). La VCI sube por la derecha de la columna, detrás del hígado, y se inclina hacia delante y hacia dentro
-      // hasta la aurícula (Gray; Insights Imaging 2021, PMC8405820): en el plano coronal el tramo retrohepático se curva
-      // 1,6 mm hacia la derecha del paciente antes de volver hacia la línea media, y el calibre ondula −7 % / +5 % con 3 cm
-      // de correlación, smoothstep entre nodos (sin quiebros en las paredes: `radiusWeight`) (la TC de 200 adultos sanos no
-      // halla diferencias entre el nivel renal y 2 cm bajo la AD, AP 16,3 frente a 16,9 mm: PMC9789330) [EXTRAPOLACIÓN
-      // PROPIA: la curva y la ondulación]. Se conservan el sitio de medida (radio 10 mm de z 10 a 35, la línea M de la e2e a z
-      // 15, y 10–10,2 hasta z 47: 1–2 cm bajo la unión con la AD y ~2 cm bajo la confluencia de las suprahepáticas), el eje
-      // sagital de la decisión 69 y el nivel renal (9,75 mm: la arteria renal derecha pasa por detrás y la porta por delante,
-      // y la VCI dilatada de la congestión grave ya las tocaba: ninguna holgura empeora).
+      // Decisión 90: el tramo que ven el flanco y el extremo caudal de la subxifoidea (z −64…−14) deja de ser una banda de
+      // paredes paralelas y calibre constante (el juez ciego, ronda 4: «un tubo recto de paredes paralelas de borde a borde,
+      // la geometría de un maniquí»). La VCI sube por la derecha de la columna, detrás del hígado, y se inclina hacia delante
+      // y hacia dentro hasta la aurícula (Gray; Insights Imaging 2021, PMC8405820): en el plano coronal el tramo
+      // retrohepático se curva 1 mm hacia la derecha del paciente antes de volver hacia la línea media, y el calibre se
+      // estrecha un 7 % a z −40, donde la porta le pasa por delante, y vuelve a su radio de referencia a z −14, smoothstep
+      // entre nodos (sin quiebros en las paredes: `smoothRadius`) (la TC de 200 adultos sanos no halla diferencias entre el
+      // nivel renal y 2 cm bajo la AD, AP 16,3 frente a 16,9 mm: PMC9789330) [EXTRAPOLACIÓN PROPIA: la curva y la
+      // cintura]. De z −14 a 35 el radio es el de referencia (10 mm): la VCI que puede medir el alumno, desde 1–2 cm bajo la
+      // confluencia de las suprahepáticas hasta la línea M «más perpendicular» de la e2e (z ≈ 0), da en la imagen el
+      // diámetro de la fisiología (±2 %; una ondulación del +5 % a z −6 lo inflaba un 6 %: la revisión adversarial). Se
+      // conservan el eje sagital de la decisión 69 (a ≤ 0,6 mm), la unión con la supradiafragmática y el nivel renal (9,75 mm:
+      // la arteria renal derecha pasa por detrás y la porta por delante, y la VCI dilatada de la congestión grave ya las
+      // tocaba: ninguna holgura empeora).
       id: 'ivcInfra',
-      tube: tube(
-        [
-          [[-14, -16, -300], 9.5],
-          [[-21, -12, -115], 9.5],
-          [[-22, -17, -64], 9.75],
-          [[-23.3, -16.3, -36], 9.3],
-          [[-22.7, -13.7, -6], 10.5],
-          [[-21.15, -11.6, 10], 10],
-          [[-20, -8, 35], 10],
-        ],
-        0.8,
-      ),
+      tube: {
+        ...tube(
+          [
+            [[-14, -16, -300], 9.5],
+            [[-21, -12, -115], 9.5],
+            [[-22, -17, -64], 9.75],
+            [[-22.8, -16.5, -40], 9.3],
+            [[-21.5, -14.9, -14], 10],
+            [[-21, -11, 15], 10],
+            [[-20, -8, 35], 10],
+          ],
+          0.8,
+        ),
+        smoothRadius: true,
+      },
       refRadius: 10,
       profileN: 5,
       wallTissue: Tissue.VesselWallThin,
@@ -196,10 +202,7 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
     // desembocadura 8–10 mm; B.2); la congestión los dilata vía `hvRadiusScale` hasta
     // ~1,6× (≈ 15 mm de diámetro a 19 mmHg), como en la plétora real.
     // Derecha: plano intersegmentario del lóbulo derecho, entra en la cava por su cara
-    // posterolateral derecha 1 cm por debajo del tronco común. Decisión 90: su ostium se abre en embudo (VHD de ~15 mm en
-    // la desembocadura, Joshi 2009; 13–14 mm en la pared de la VCI del modelo): el abombamiento de la confluencia, en
-    // lugar de un cilindro que entra recto en la cava [EXTRAPOLACIÓN PROPIA: el perfil del embudo]. Mismo recorrido (el
-    // nodo nuevo está en el eje de antes) y mismo `refRadius`.
+    // posterolateral derecha 1 cm por debajo del tronco común.
     thin(
       'hvRight',
       [
@@ -207,8 +210,7 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
         [[-105, -4, -28], 3.6],
         [[-68, -18, 10], 4.8],
         [[-38, -11, 32], 5.6],
-        [[-31.4, -9.8, 36.2], 5.9],
-        [[-27, -9, 39], 8.0],
+        [[-27, -9, 39], 6.0],
       ],
       5.6,
     ),

@@ -320,9 +320,7 @@ export class AnatomyScene {
     // de la textura de escena, la del ruido de su radio) y su clase, la de su sistema
     this.vessels = [...parents, ...branches].map((v, i) => {
       const cls = tubeShapeClassOf(v.id);
-      const [n0, n1] = v.tube.nodes;
-      const axis0: Vec3 = [n1.p[0] - n0.p[0], n1.p[1] - n0.p[1], n1.p[2] - n0.p[2]];
-      return cls ? { ...v, tube: { ...v.tube, shape: tubeShapeOf(i, cls, axis0) } } : v;
+      return cls ? { ...v, tube: { ...v.tube, shape: tubeShapeOf(i, cls, v.tube.nodes) } } : v;
     });
     this.ducts = tree.ducts;
     // Solo los vasos «madre»: las ramas procedurales comparten id y no deben sustituirlos

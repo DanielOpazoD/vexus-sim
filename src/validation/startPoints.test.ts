@@ -9,6 +9,8 @@ import { NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient, type RespiratoryPattern } from '../physiology/patientState';
 import { uncompress } from '../anatomy/compression';
+import { heartChamber } from '../anatomy/organs/heartChamber';
+import { sdDiaphragm } from '../anatomy/primitives';
 import { kidneyLocal, perirenalOuterSdf } from '../anatomy/organs/kidney';
 import { contactCoupling, probeContact } from '../probe/contact';
 import { CONVEX_C35, lineDirection, pointOnLine, type ProbePose } from '../probe/probe';
@@ -68,9 +70,9 @@ interface ScreenSample {
 interface ScreenMap {
   coupling: number;
   /**
-   * Muestras VISIBLES de la luz de un vaso (por id), de la aurícula derecha (`RIGHT_ATRIUM`) o de un tejido (por su
-   * número), 1 mm de paso en 61 líneas: las que no tienen gas (pulmón, gas intestinal) ni hueso antes en su línea. Detrás
-   * del pulmón la imagen es su espejo y detrás del hueso, su sombra: lo que haya ahí no lo ve el alumno.
+   * Muestras VISIBLES de la luz de un vaso (por id), de una cavidad del corazón (`'ra'`, `'rv'`, `'lv'`, `'la'`, decisión 85)
+   * o de un tejido (por su número), 1 mm de paso en 61 líneas: las que no tienen gas (pulmón, gas intestinal) ni hueso antes
+   * en su línea. Detrás del pulmón la imagen es su espejo y detrás del hueso, su sombra: lo que haya ahí no lo ve el alumno.
    */
   of: (...keys: Array<string | Tissue>) => ScreenSample[];
   /** Todas las muestras, visibles o no (lo que corta el plano). */
@@ -81,7 +83,6 @@ interface ScreenMap {
   at: (x: number, y: number) => ReturnType<AnatomyScene['classify']>;
 }
 const MAP_LINES = 61;
-const RIGHT_ATRIUM = 'rightAtrium';
 function screenMap(pose: ProbePose, depthMm: number): ScreenMap {
   const contact = probeContact(pose, CONVEX_C35, scene.torso);
   const R0 = CONVEX_C35.curvatureRadius;
@@ -98,11 +99,13 @@ function screenMap(pose: ProbePose, depthMm: number): ScreenMap {
     let entered = false;
     let blocked = false;
     for (let r = 1; r < depthMm; r++) {
-      const q = scene.classify(uncompress(pointOnLine(contact.frame, CONVEX_C35, th, r), contact), BASELINE_CALIBER);
+      const mat = uncompress(pointOnLine(contact.frame, CONVEX_C35, th, r), contact);
+      const q = scene.classify(mat, BASELINE_CALIBER);
       tissues[i][r] = q.tissue;
       const s = { x: -(R0 + r) * Math.sin(th), y: (R0 + r) * Math.cos(th), line: i, r };
-      // la sangre sin vaso es la de la aurícula derecha
-      const keys = q.vessel ? [q.vessel, q.tissue] : q.tissue === Tissue.Blood ? [RIGHT_ATRIUM, q.tissue] : [q.tissue];
+      // la sangre sin vaso es la de una cavidad del corazón (decisión 85)
+      const chamber = !q.vessel && q.tissue === Tissue.Blood ? heartChamber(mat, sdDiaphragm(mat, scene.diaphragm, scene.torso)) : null;
+      const keys: Array<string | Tissue> = q.vessel ? [q.vessel, q.tissue] : chamber ? [chamber, q.tissue] : [q.tissue];
       for (const key of keys) {
         (cut.get(key) ?? cut.set(key, []).get(key)!).push(s);
         if (!blocked) (seen.get(key) ?? seen.set(key, []).get(key)!).push(s);
@@ -394,8 +397,8 @@ describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', 
     });
     expect(m.coupling, tag).toBeGreaterThan(0.85);
     expect(m.of(Tissue.Bone), tag).toHaveLength(0);
-    // la VCI a la vista (94 de 215 muestras: su parte craneal queda tras el pulmón que hay sobre la cúpula) con el tronco
-    // común (28)
+    // la VCI a la vista (161 muestras, entera desde la decisión 85: antes, 94 de 215, su parte craneal tras el pulmón de
+    // encima de la cúpula) con el tronco común (28)
     expect(ivc.length, tag).toBeGreaterThan(60);
     expect(m.of('hvCommonTrunk').length, tag).toBeGreaterThan(15);
     // la VSH media desemboca en el plano (a < 3 mm del tronco común o de la VCI) y lo recorre ≥ 4,5 cm, entera a la vista
@@ -470,26 +473,76 @@ describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', 
     }
   });
 
-  it('limitación `mediastinum-is-lung` (canario): la AD que cortan la subxifoidea y la subcostal y la aorta de la epigástrica abanicada quedan tras el pulmón', () => {
-    // Por encima de la cúpula todo lo que no es corazón ni vaso es pulmón y la esfera de la AD no apoya en el diafragma:
-    // desde el abdomen el haz se refleja en ese pulmón (su espejo) antes de llegar a la aurícula, y la aorta, que por
-    // encima de la cúpula va rodeada de pulmón, se pierde al abanicar la epigástrica hacia la cabeza. Si esto falla, la
-    // limitación está (en parte) resuelta: hay que actualizar docs/LIMITATIONS.md, la tarjeta y la pista de la
-    // subxifoidea (prometen la AD) y la de la subcostal (que ya no la promete).
-    const hidden = (pose: ProbePose, key: string) => {
-      const m = screenMap(pose, 170);
-      return { cut: m.all(key).length, seen: m.of(key).length };
-    };
-    const cases = {
-      subxifoidea: hidden(poseOf(byId('subxiphoid')), RIGHT_ATRIUM),
-      subcostal: hidden(poseOf(byId('subcostal')), RIGHT_ATRIUM),
-      epigastricaAbanicada: hidden({ ...poseOf(byId('epigastric')), tilt: 0.45 }, 'aorta'),
-    };
-    const tag = JSON.stringify(cases);
-    for (const c of Object.values(cases)) {
-      expect(c.cut, tag).toBeGreaterThan(50);
-      expect(c.seen, tag).toBe(0);
+  it('subxifoidea (decisión 85): la VCI entra en la AD, a la vista a 10–15 cm en el lado craneal', () => {
+    // Antes, por encima de la cúpula todo era pulmón y la esfera de la AD no apoyaba en el diafragma: la AD quedaba tras el
+    // espejo del pulmón (0 de 669 muestras a la vista) y la VCI se veía hasta el borde de ese espejo
+    const m = screenMap(poseOf(byId('subxiphoid')), 170);
+    const [ra, ivc] = [m.of('ra'), m.of(...IVC)];
+    const [cRa, cIvc] = [centroid(ra), centroid(ivc)];
+    const tag = JSON.stringify({
+      ad: `${ra.length}/${m.all('ra').length}`,
+      vci: `${ivc.length}/${m.all(...IVC).length}`,
+      xAd: +cRa.x.toFixed(1),
+      xVci: +cIvc.x.toFixed(1),
+      hondoAd: +(cRa.y - CONVEX_C35.curvatureRadius).toFixed(1),
+      unión: +gapMm(ra, ivc).toFixed(2),
+    });
+    // la AD a la vista (casi entera) y la VCI entera
+    expect(ra.length, tag).toBeGreaterThan(150);
+    expect(ra.length, tag).toBeGreaterThan(0.8 * m.all('ra').length);
+    expect(ivc.length, tag).toBe(m.all(...IVC).length);
+    // la luz de la VCI llega a la cavidad de la aurícula (sin pared de por medio) por el lado craneal de la pantalla (el
+    // marcador craneal a la izquierda), a la profundidad que promete la pista
+    expect(gapMm(ra, ivc), tag).toBeLessThan(1.5);
+    expect(cRa.x, tag).toBeLessThan(cIvc.x - 20);
+    expect(cRa.y - CONVEX_C35.curvatureRadius, tag).toBeGreaterThan(100);
+    expect(cRa.y - CONVEX_C35.curvatureRadius, tag).toBeLessThan(150);
+    // en cada línea que llega a la aurícula sin cruzar la VCI, entre el hígado y la aurícula están el diafragma y el
+    // pericardio (tejido del mediastino), sin pulmón
+    const ivcLines = new Set(ivc.map((s) => s.line));
+    const raLines = [...new Set(ra.map((s) => s.line))].filter((l) => !ivcLines.has(l));
+    expect(raLines.length, tag).toBeGreaterThanOrEqual(4);
+    for (const l of raLines) {
+      const first = Math.min(...ra.filter((s) => s.line === l).map((s) => s.r));
+      const before = Array.from({ length: first - 1 }, (_, k) => m.tissueAt(l, k + 1));
+      const fromLiver = before.slice(before.lastIndexOf(Tissue.Liver) + 1);
+      expect(fromLiver, `línea ${l}: ${tag}`).toContain(Tissue.Diaphragm);
+      expect(fromLiver, `línea ${l}: ${tag}`).toContain(Tissue.Mediastinum);
+      expect(fromLiver, `línea ${l}: ${tag}`).not.toContain(Tissue.Lung);
     }
+  });
+
+  it('subcostal (decisión 85): más allá de la VSH media y de la VCI, la aurícula derecha a la vista', () => {
+    const m = screenMap(poseOf(byId('subcostal')), 165);
+    const [ra, mhv, ivc] = [m.of('ra'), m.of('hvMiddle'), m.of(...IVC)];
+    const tag = JSON.stringify({ ad: `${ra.length}/${m.all('ra').length}`, vci: `${ivc.length}/${m.all(...IVC).length}` });
+    expect(ra.length, tag).toBeGreaterThan(60);
+    // la VCI entera a la vista (antes, 94 de 215: su parte craneal quedaba tras el pulmón de encima de la cúpula)
+    expect(ivc.length, tag).toBe(m.all(...IVC).length);
+    // la aurícula, en el extremo craneal (a la izquierda de la pantalla), más allá de la desembocadura de la VSH media
+    expect(centroid(ra).x, tag).toBeLessThan(centroid(mhv).x - 30);
+    expect(gapMm(ra, ivc), tag).toBeLessThan(1.5);
+  });
+
+  it('epigástrica abanicada hacia la cabeza (decisión 85): la aorta sigue entera a la vista, en el mediastino', () => {
+    // antes, por encima de la cúpula la aorta iba rodeada de pulmón y el abanico de 26° la perdía entera (0 de 103)
+    const m = screenMap({ ...poseOf(byId('epigastric')), tilt: 0.45 }, 170);
+    const aorta = m.of('aorta');
+    const c = centroid(aorta);
+    const tag = JSON.stringify({ aorta: `${aorta.length}/${m.all('aorta').length}`, x: +c.x.toFixed(1), y: +c.y.toFixed(1) });
+    expect(aorta.length, tag).toBeGreaterThan(80);
+    expect(aorta.length, tag).toBe(m.all('aorta').length);
+    // delante de la aorta, entre ella y el hígado, tejido del mediastino (no pulmón)
+    const lastLiver = (line: number) => {
+      for (let r = Math.min(...aorta.filter((s) => s.line === line).map((s) => s.r)); r > 0; r--)
+        if (m.tissueAt(line, r) === Tissue.Liver) return r;
+      return 0;
+    };
+    const central = aorta.reduce((a, b) => (Math.abs(b.x - c.x) < Math.abs(a.x - c.x) ? b : a)).line;
+    const top = Math.min(...aorta.filter((s) => s.line === central).map((s) => s.r));
+    const front = Array.from({ length: top - lastLiver(central) - 1 }, (_, k) => m.tissueAt(central, lastLiver(central) + 1 + k));
+    expect(front, tag).toContain(Tissue.Mediastinum);
+    expect(front, tag).not.toContain(Tissue.Lung);
   });
 
   it('renal: corteza, médula y seno del riñón derecho con un vaso interlobar, el hígado y grasa alrededor', () => {

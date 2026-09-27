@@ -8,7 +8,8 @@ import type { PhysiologySample } from '../../physiology/engine';
 
 /**
  * Esquema ÚNICO de los uniforms de la anatomía (Fase 2): cada entrada declara nombre, tipo,
- * tamaño, documentación y cómo se obtiene su valor de la escena y del instante. De aquí salen
+ * tamaño y cómo se obtiene su valor de la escena y del instante, con su documentación en un comentario (decisión 85:
+ * antes era un campo que viajaba en el bundle, ~2 kB, solo para acabar como comentario en el GLSL). De aquí salen
  * a la vez las declaraciones GLSL (`SCENE_UNIFORMS_GLSL`, incluidas en `ANATOMY_GLSL`) y la
  * subida desde el renderer (`evaluateSceneUniforms` + `uploadSceneUniforms`). Antes había que
  * escribir cada nombre dos veces (≈ 85 líneas en el renderer) y un olvido fallaba en silencio.
@@ -31,7 +32,6 @@ interface UniformSpec {
   type: GlslType;
   /** Tamaño del array GLSL (sin él, escalar/vector simple). */
   count?: number;
-  doc: string;
   value: (s: AnatomyScene, c: UniformContext) => ArrayLike<number>;
 }
 
@@ -39,75 +39,86 @@ const pad = (values: number[][], count: number, filler: number[]): number[] =>
   Array.from({ length: count }, (_, i) => values[i] ?? filler).flat();
 
 export const SCENE_UNIFORMS: readonly UniformSpec[] = [
-  { name: 'uTorso', type: 'vec4', doc: 'a, b, zMin, zMax', value: (s) => [s.torso.a, s.torso.b, s.torso.zMin, s.torso.zMax] },
+  /** a, b, zMin, zMax */
+  { name: 'uTorso', type: 'vec4', value: (s) => [s.torso.a, s.torso.b, s.torso.zMin, s.torso.zMax] },
   {
     name: 'uWall',
     type: 'vec4',
-    doc: 'piel, grasa, músculo (con la grasa preperitoneal), grasa preperitoneal (mm)',
+    // piel, grasa, músculo (con la grasa preperitoneal), grasa preperitoneal (mm)
     value: (s) => [s.torso.skinMm, s.torso.fatMm, s.torso.muscleMm, s.torso.preperitonealMm],
   },
   {
     name: 'uDomeR',
     type: 'vec4',
-    doc: 'hemicúpula derecha: x0, y0, rx, ry',
+    // hemicúpula derecha: x0, y0, rx, ry
     value: (s) => [s.diaphragm.right.x0, s.diaphragm.right.y0, s.diaphragm.right.rx, s.diaphragm.right.ry],
   },
   {
     name: 'uDomeL',
     type: 'vec4',
-    doc: 'hemicúpula izquierda',
+    // hemicúpula izquierda
     value: (s) => [s.diaphragm.left.x0, s.diaphragm.left.y0, s.diaphragm.left.rx, s.diaphragm.left.ry],
   },
   {
     name: 'uDiaphragm',
     type: 'vec4',
-    doc: 'apexR, apexL, edgeZ, edgeRise',
+    // apexR, apexL, edgeZ, edgeRise
     value: (s) => [s.diaphragm.right.apex, s.diaphragm.left.apex, s.diaphragm.edgeZ, s.diaphragm.edgeRise],
   },
-  { name: 'uSpine', type: 'vec3', doc: 'x0, y0, r (cuerpo vertebral)', value: (s) => [s.spine.x0, s.spine.y0, s.spine.r] },
+  /** x0, y0, r (cuerpo vertebral) */
+  { name: 'uSpine', type: 'vec3', value: (s) => [s.spine.x0, s.spine.y0, s.spine.r] },
   {
     name: 'uSpineArch',
     type: 'vec4',
-    doc: 'semiancho, y0, y1 del arco posterior, 0',
+    // semiancho, y0, y1 del arco posterior, 0
     value: (s) => [s.spine.archHalfWidth, s.spine.archY0, s.spine.archY1, 0],
   },
-  { name: 'uLiverC', type: 'vec3', doc: 'centro del lóbulo derecho', value: (s) => s.liver.center },
-  { name: 'uLiverR', type: 'vec3', doc: 'semiejes del lóbulo derecho', value: (s) => s.liver.radii },
-  { name: 'uLiverTaper', type: 'float', doc: 'afilamiento en +x del lóbulo derecho', value: (s) => [s.liver.taperX] },
-  { name: 'uLiverLC', type: 'vec3', doc: 'centro del lóbulo izquierdo', value: (s) => s.liverLeft.center },
-  { name: 'uLiverLR', type: 'vec3', doc: 'semiejes del lóbulo izquierdo', value: (s) => s.liverLeft.radii },
-  { name: 'uLiverLTaper', type: 'float', doc: 'afilamiento del lóbulo izquierdo', value: (s) => [s.liverLeft.taperX] },
-  { name: 'uLiverBlend', type: 'float', doc: 'unión suave de los lóbulos (mm)', value: (s) => [s.liverBlendMm] },
+  /** centro del lóbulo derecho */
+  { name: 'uLiverC', type: 'vec3', value: (s) => s.liver.center },
+  /** semiejes del lóbulo derecho */
+  { name: 'uLiverR', type: 'vec3', value: (s) => s.liver.radii },
+  /** afilamiento en +x del lóbulo derecho */
+  { name: 'uLiverTaper', type: 'float', value: (s) => [s.liver.taperX] },
+  /** centro del lóbulo izquierdo */
+  { name: 'uLiverLC', type: 'vec3', value: (s) => s.liverLeft.center },
+  /** semiejes del lóbulo izquierdo */
+  { name: 'uLiverLR', type: 'vec3', value: (s) => s.liverLeft.radii },
+  /** afilamiento del lóbulo izquierdo */
+  { name: 'uLiverLTaper', type: 'float', value: (s) => [s.liverLeft.taperX] },
+  /** unión suave de los lóbulos (mm) */
+  { name: 'uLiverBlend', type: 'float', value: (s) => [s.liverBlendMm] },
   {
     name: 'uVisInnerA',
     type: 'vec3',
-    doc: 'cara visceral interior c₀, c₁, c₂ (z = c₀ + c₁x + c₂y + …; decisión 72)',
+    // cara visceral interior c₀, c₁, c₂ (z = c₀ + c₁x + c₂y + …; decisión 72)
     value: (s) => [s.visceralFace.inner[0], s.visceralFace.inner[1], s.visceralFace.inner[2]],
   },
   {
     name: 'uVisInnerB',
     type: 'vec3',
-    doc: 'cara visceral interior c₃, c₄, c₅ (… + c₃x² + c₄xy + c₅y²)',
+    // cara visceral interior c₃, c₄, c₅ (… + c₃x² + c₄xy + c₅y²)
     value: (s) => [s.visceralFace.inner[3], s.visceralFace.inner[4], s.visceralFace.inner[5]],
   },
-  { name: 'uVisAnt', type: 'vec4', doc: 'borde anterior a₀…a₃ (cúbica en x)', value: (s) => [...s.visceralFace.anterior] },
-  { name: 'uVisLat', type: 'vec4', doc: 'borde lateral derecho l₀…l₃ (en y)', value: (s) => [...s.visceralFace.lateral] },
+  /** borde anterior a₀…a₃ (cúbica en x) */
+  { name: 'uVisAnt', type: 'vec4', value: (s) => [...s.visceralFace.anterior] },
+  /** borde lateral derecho l₀…l₃ (en y) */
+  { name: 'uVisLat', type: 'vec4', value: (s) => [...s.visceralFace.lateral] },
   {
     name: 'uVisSlope',
     type: 'vec4',
-    doc: 'pendiente del borde anterior (lóbulo dcho., izdo.), del lateral y redondeo de la arista (mm)',
+    // pendiente del borde anterior (lóbulo dcho., izdo.), del lateral y redondeo de la arista (mm)
     value: (s) => [s.visceralFace.tipSlope[0], s.visceralFace.tipSlope[1], s.visceralFace.lateralSlope, s.visceralFace.edgeRoundMm],
   },
   {
     name: 'uFissure',
     type: 'vec4',
-    doc: 'fisura umbilical: x, semiancho, profundidad, zMax',
+    // fisura umbilical: x, semiancho, profundidad, zMax
     value: (s) => [s.umbilicalFissure.x, s.umbilicalFissure.halfWidth, s.umbilicalFissure.depthMm, s.umbilicalFissure.zMax],
   },
   {
     name: 'uLigVen',
     type: 'vec4',
-    doc: 'plano del ligamento venoso: normal.xyz, n·a',
+    // plano del ligamento venoso: normal.xyz, n·a
     value: (s) => {
       const lv = s.ligamentumVenosumPlane();
       return [...lv.normal, lv.normal[0] * lv.point[0] + lv.normal[1] * lv.point[1] + lv.normal[2] * lv.point[2]];
@@ -116,28 +127,27 @@ export const SCENE_UNIFORMS: readonly UniformSpec[] = [
   {
     name: 'uLigVenBox',
     type: 'vec4',
-    doc: 'caja del ligamento venoso: xMin, xMax, zMin, zMax',
+    // caja del ligamento venoso: xMin, xMax, zMin, zMax
     value: (s) => [s.ligamentumVenosum.xMin, s.ligamentumVenosum.xMax, s.ligamentumVenosum.zMin, s.ligamentumVenosum.zMax],
   },
   {
     name: 'uGbNodes',
     type: 'vec4',
     count: GALLBLADDER_NODES,
-    doc: 'línea media de la luz vesicular, del fondo al cuello: centro, radio',
+    // línea media de la luz vesicular, del fondo al cuello: centro, radio
     value: (s) => s.gallbladder.nodes.flatMap((n) => [...n.p, n.r]),
   },
   {
     name: 'uGbExtra',
     type: 'vec2',
-    doc: 'radio de la unión suave entre tramos, espesor de pared (mm)',
+    // radio de la unión suave entre tramos, espesor de pared (mm)
     value: (s) => [s.gallbladder.blendMm, s.gallbladderWallMm],
   },
-  { name: 'uRA', type: 'vec4', doc: 'aurícula derecha: centro, radio', value: (s) => [...s.rightAtrium.center, s.rightAtrium.r] },
   {
     name: 'uGas',
     type: 'vec4',
     count: MAX_GAS,
-    doc: 'bolsas de gas: centro, radio (relleno lejos)',
+    // bolsas de gas: centro, radio (relleno lejos)
     value: (s) =>
       pad(
         s.gasPockets.slice(0, MAX_GAS).map((g) => [...g.center, g.r]),
@@ -149,7 +159,7 @@ export const SCENE_UNIFORMS: readonly UniformSpec[] = [
     name: 'uRibs',
     type: 'vec4',
     count: MAX_RIBS,
-    doc: 'costillas: zAnterior, tilt, halfWidth, halfThickness',
+    // costillas: zAnterior, tilt, halfWidth, halfThickness
     value: (s) =>
       pad(
         s.ribs.slice(0, MAX_RIBS).map((r) => [r.zAnterior, r.tilt, r.halfWidth, r.halfThickness]),
@@ -160,70 +170,76 @@ export const SCENE_UNIFORMS: readonly UniformSpec[] = [
   {
     name: 'uRibParams',
     type: 'vec2',
-    doc: 'escala, cartilageFromPhi',
+    // escala, cartilageFromPhi
     value: (s) => [s.ribs[0]?.scale ?? 0.85, s.ribs[0]?.cartilageFromPhi ?? 9],
   },
   {
     name: 'uKidC',
     type: 'vec3',
     count: 2,
-    doc: 'centros de los riñones (dcho, izq)',
+    // centros de los riñones (dcho, izq)
     value: (s) => [...s.kidneyRight.center, ...s.kidneyLeft.center],
   },
-  { name: 'uKidR', type: 'vec3', count: 2, doc: 'semiejes de los riñones', value: (s) => [...s.kidneyRight.radii, ...s.kidneyLeft.radii] },
-  { name: 'uKidU', type: 'vec3', count: 2, doc: 'eje largo de cada riñón', value: (s) => [...s.kidneyRight.u, ...s.kidneyLeft.u] },
-  { name: 'uKidV', type: 'vec3', count: 2, doc: 'eje hacia el hilio', value: (s) => [...s.kidneyRight.v, ...s.kidneyLeft.v] },
-  { name: 'uKidW', type: 'vec3', count: 2, doc: 'tercer eje', value: (s) => [...s.kidneyRight.w, ...s.kidneyLeft.w] },
+  /** semiejes de los riñones */
+  { name: 'uKidR', type: 'vec3', count: 2, value: (s) => [...s.kidneyRight.radii, ...s.kidneyLeft.radii] },
+  /** eje largo de cada riñón */
+  { name: 'uKidU', type: 'vec3', count: 2, value: (s) => [...s.kidneyRight.u, ...s.kidneyLeft.u] },
+  /** eje hacia el hilio */
+  { name: 'uKidV', type: 'vec3', count: 2, value: (s) => [...s.kidneyRight.v, ...s.kidneyLeft.v] },
+  /** tercer eje */
+  { name: 'uKidW', type: 'vec3', count: 2, value: (s) => [...s.kidneyRight.w, ...s.kidneyLeft.w] },
   {
     name: 'uKidSinus',
     type: 'vec4',
     count: 2,
-    doc: 'seno: semiejes xyz, desplazamiento',
+    // seno: semiejes xyz, desplazamiento
     value: (s) => [...s.kidneyRight.sinusRadii, s.kidneyRight.sinusOffset, ...s.kidneyLeft.sinusRadii, s.kidneyLeft.sinusOffset],
   },
   {
     name: 'uKidExtra',
     type: 'vec2',
-    doc: 'radio del hilio, grosor máximo de la grasa perirrenal (mm; el local lo da perirenalThicknessMm)',
+    // radio del hilio, grosor máximo de la grasa perirrenal (mm; el local lo da perirenalThicknessMm)
     value: (s) => [s.kidneyRight.hilumRadius, PERIRENAL.maxMm],
   },
-  { name: 'uTubeCount', type: 'int', doc: 'tubos en la lista del cuadro', value: (_s, c) => [c.tubeCount] },
+  /** tubos en la lista del cuadro */
+  { name: 'uTubeCount', type: 'int', value: (_s, c) => [c.tubeCount] },
   {
     name: 'uResp',
     type: 'vec4',
-    doc: 'descenso diafragmático (mm), dirección xyz',
+    // descenso diafragmático (mm), dirección xyz
     value: (_s, c) => [c.sample.resp.diaphragmCaudalMm, ...RespiratoryDeformation.direction],
   },
-  { name: 'uRespVel', type: 'float', doc: 'velocidad del diafragma (mm/s)', value: (_s, c) => [c.sample.resp.diaphragmVelocityMmS] },
+  /** velocidad del diafragma (mm/s) */
+  { name: 'uRespVel', type: 'float', value: (_s, c) => [c.sample.resp.diaphragmVelocityMmS] },
   {
     name: 'uCompC',
     type: 'vec4',
-    doc: 'compresión de la sonda (decisión 63): centro de curvatura de la cara, radio + alcance (0 = sin compresión)',
+    // compresión de la sonda (decisión 63): centro de curvatura de la cara, radio + alcance (0 = sin compresión)
     value: (_s, c) => (c.compression ? [...c.compression.center, c.compression.radiusMm + c.compression.reachMm] : [0, 0, 0, 0]),
   },
   {
     name: 'uCompAx',
     type: 'vec4',
-    doc: 'eje axial de la sonda, sen del semiángulo de la cara (la tabla por nodo, con el radio, va en uSceneTex, COMP_BASE)',
+    // eje axial de la sonda, sen del semiángulo de la cara (la tabla por nodo, con el radio, va en uSceneTex, COMP_BASE)
     value: (_s, c) => (c.compression ? [...c.compression.axial, Math.sin(c.compression.halfAngle)] : [0, 0, 1, 1]),
   },
   {
     name: 'uCompLat',
     type: 'vec4',
-    doc: 'eje lateral de la sonda, media huella elevacional (mm)',
+    // eje lateral de la sonda, media huella elevacional (mm)
     value: (_s, c) => (c.compression ? [...c.compression.lateral, c.compression.halfElevationMm] : [1, 0, 0, 0]),
   },
   {
     name: 'uCurtain',
     type: 'vec4',
-    doc: 'cortina pulmonar: borde caudal z, espesor, xMax, yMax',
+    // cortina pulmonar: borde caudal z, espesor, xMax, yMax
     value: (_s, c) => [LUNG_CURTAIN.z0 - c.sample.resp.diaphragmCaudalMm, LUNG_CURTAIN.thicknessMm, LUNG_CURTAIN.xMax, LUNG_CURTAIN.yMax],
   },
 ];
 
 /** Declaraciones GLSL generadas del esquema (más el sampler de la textura de escena). */
 export const SCENE_UNIFORMS_GLSL = [
-  ...SCENE_UNIFORMS.map((u) => `uniform ${u.type} ${u.name}${u.count ? `[${u.count}]` : ''}; // ${u.doc}`),
+  ...SCENE_UNIFORMS.map((u) => `uniform ${u.type} ${u.name}${u.count ? `[${u.count}]` : ''};`),
   'uniform sampler2D uSceneTex; // cabeceras y nodos de los tubos',
 ].join('\n');
 

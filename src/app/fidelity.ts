@@ -2297,8 +2297,8 @@ export function fidelityStats(
         const wall = link ? link.wall : nextWall++;
         curLine.set(spec.kind, [...(curLine.get(spec.kind) ?? []), { rb, wall, used: false }]);
         const rTarget = pleura ? pleuraCrossing(u, rCell - GRID_STEP_MM, rCell) : (k + hit) * GRID_STEP_MM;
-        // una lámina de pulmón más fina que el paso de la marcha de A0 (la que queda entre el diafragma y la VCI
-        // supradiafragmática, `lung-sliver-caval-hiatus`) no la ve la GPU: su espejo está en otro sitio
+        // una lámina de pulmón más fina que el paso de la marcha de A0 no la ve la GPU: su espejo está en otro sitio (la que
+        // quedaba entre el diafragma y la VCI supradiafragmática desapareció con el mediastino de la decisión 85)
         if (pleura && lungRunMm(u, rTarget) < coarseStep) continue;
         const cos = faceCosine(u, pleura ? rTarget : rCell, spec.face);
         if (cos === null) continue;

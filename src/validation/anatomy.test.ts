@@ -23,7 +23,8 @@ import {
   perirenalThicknessMm,
   sdRoundCone,
 } from '../anatomy/organs/kidney';
-import { sdEllipsoidLocal, sdSpine, tubeQuery } from '../anatomy/primitives';
+import { sdDiaphragm, sdEllipsoidLocal, sdSpine, tubeQuery } from '../anatomy/primitives';
+import { ivcAtrium } from '../anatomy/organs/heart';
 import { renalPatternFromPeaks } from '../vexus/classification';
 import { VESSEL_META } from '../physiology/vessels';
 import { BRANCH_MAX_RADIUS_SCALE } from '../anatomy/vesselTree';
@@ -46,7 +47,8 @@ describe('Anatomía implícita (base B)', () => {
     // no hay arco costal por detrás de la columna: lo que hay ahí es vértebra, no costilla
     expect(cls([-30, -70, 5]).tissue).toBe(Tissue.Vertebra);
     expect(cls([-30, -70, 5]).tissue).not.toBe(Tissue.Bone);
-    expect(cls([-55, -5, 70]).tissue).toBe(Tissue.Lung);
+    // el pulmón derecho, lateral a la aurícula y a la grasa del ángulo cardiofrénico (decisión 85)
+    expect(cls([-75, -5, 70]).tissue).toBe(Tissue.Lung);
     expect(cls([12, -24, 0]).vessel).toBe('aorta');
     expect(cls([-14, 4, -75]).vessel).toBe('pvTrunk');
   });
@@ -205,10 +207,10 @@ describe('Anatomía implícita (base B)', () => {
       throw new Error(`${id} no llega a z ${z}`);
     };
     const ivcAt = (z: number) => axisAt(z >= 35 ? 'ivcSupra' : 'ivcInfra', z);
-    // la VCI no es recta: entre el nivel renal y la AD sube hacia delante más de 15 mm, sin saltos
-    expect(ivcAt(70)[1] - ivcAt(-60)[1]).toBeGreaterThan(15);
+    // la VCI no es recta: entre el nivel renal y la AD (su orificio, decisión 85) sube hacia delante más de 15 mm, sin saltos
+    expect(ivcAt(60)[1] - ivcAt(-60)[1]).toBeGreaterThan(15);
     let prev = ivcAt(-60)[1];
-    for (let z = -50; z <= 70; z += 10) {
+    for (let z = -50; z <= 60; z += 10) {
       const y = ivcAt(z)[1];
       expect(y - prev, `z ${z}`).toBeGreaterThan(-1.5);
       expect(y - prev, `z ${z}`).toBeLessThan(6);
@@ -1126,47 +1128,63 @@ describe('Caras de interfaz en classify (decisión 57)', () => {
     expect(doubledRays, doubled.join(', ')).toBeLessThanOrEqual(2);
   });
 
-  it('la VCI que entra en la aurícula no dibuja su cara dentro de ella; por debajo, sí', () => {
-    // el último nodo de la VCI suprahepática está a ~24 mm del centro de la aurícula (r 30): ~13 mm de tubo
-    // y su tapa quedan dentro. classify prueba los tubos antes que la aurícula, así que su pared y su luz
-    // se clasifican ahí; la cara no (antes, un eco de pared a +13–14 dB sobre el hígado en la cavidad negra)
-    const ra = scene.rightAtrium;
-    const inRa = (p: V) => Math.hypot(p[0] - ra.center[0], p[1] - ra.center[1], p[2] - ra.center[2]) < ra.r;
+  it('la VCI que entra en la aurícula (decisión 85): dentro de ella ni pared ni cara, la luz con su flujo; por debajo, su cara', () => {
+    // el embudo de la VCI suprahepática entra por el suelo de la aurícula: classify prueba los tubos antes que el tórax, así
+    // que dentro de la cavidad de la AD la luz sigue siendo la VCI (el chorro que entra) y la pared es sangre de la aurícula,
+    // sin cara (antes, un eco de pared a +13–14 dB y un anillo de pared dentro de la cavidad negra); fuera de la aurícula, a
+    // más de IVC_ORIFICE_MM sobre la cúpula, no hay VCI
+    const atrium = (p: V) => ivcAtrium(p, sdDiaphragm(p, scene.diaphragm, scene.torso));
     const supra = scene.vessels.find((v) => v.id === 'ivcSupra')!;
     const last = supra.tube.nodes[supra.tube.nodes.length - 1].p;
-    const prev = supra.tube.nodes[supra.tube.nodes.length - 2].p;
-    expect(inRa(last)).toBe(true);
-    expect(inRa(prev)).toBe(false);
-    let tubeInRa = 0;
+    const hiatus = supra.tube.nodes[supra.tube.nodes.length - 3].p;
+    expect(atrium(last).cavity).toBeLessThan(0);
+    expect(atrium(hiatus).cavity).toBeGreaterThan(0);
+    let lumenInRa = 0;
+    let wallInRa = 0;
     let tubeBelow = 0;
+    let trimmed = 0;
     for (let x = -14; x <= 14; x += 0.5)
       for (let y = -14; y <= 14; y += 0.5)
-        for (const f of [0.6, 0.8, 1, 1.1]) {
-          const p: V = along(prev, [last[0] - prev[0], last[1] - prev[1], last[2] - prev[2]], f);
+        for (const f of [-0.4, 0, 0.3, 0.6, 0.8, 1, 1.1]) {
+          const p: V = along(hiatus, [last[0] - hiatus[0], last[1] - hiatus[1], last[2] - hiatus[2]], f);
           p[0] += x;
           p[1] += y;
           const c = cls(p);
-          if (scene.faceSdf(p, BASELINE_CALIBER, 'tube') === null) continue;
-          if (inRa(p)) {
-            tubeInRa++;
-            expect(c.interface, `${p.map((v) => v.toFixed(1)).join(', ')}`).toBe(Interface.None);
+          const t = scene.faceTube(p, BASELINE_CALIBER);
+          if (!t || t.vessel !== 'ivcSupra') continue;
+          const tag = `${p.map((v) => v.toFixed(1)).join(', ')}`;
+          const a = atrium(p);
+          if (a.cavity < 0) {
+            expect(c.interface, tag).toBe(Interface.None);
             expect(c.interfaceDistance).toBe(1e3);
-            // el tubo sigue clasificando su tejido: solo se quita la cara
-            expect([Tissue.Blood, Tissue.VesselWallThin]).toContain(c.tissue);
-          } else if (c.tissue === Tissue.Blood || c.tissue === Tissue.VesselWallThin) {
+            expect(c.tissue, tag).toBe(Tissue.Blood);
+            if (t.hit.d < 0) {
+              lumenInRa++;
+              expect(c.vessel, tag).toBe('ivcSupra');
+            } else {
+              wallInRa++;
+              expect(c.vessel, tag).toBeNull();
+            }
+          } else if (!a.outside) {
             tubeBelow++;
-            expect(c.interface).toBe(Interface.IvcLumen);
+            expect(c.interface, tag).toBe(Interface.IvcLumen);
+          } else {
+            trimmed++;
+            expect(c.vessel, tag).toBeNull();
           }
         }
-    expect(tubeInRa).toBeGreaterThan(200);
+    expect(lumenInRa).toBeGreaterThan(200);
+    expect(wallInRa).toBeGreaterThan(20);
     expect(tubeBelow).toBeGreaterThan(200);
+    // con el calibre del sano el embudo cabe en la aurícula: no se recorta nada
+    expect(trimmed).toBe(0);
   });
 
   it('hígado, intestino y pulmón no dibujan cara; el músculo de la pared, la de su capa (decisión 62)', () => {
     for (const [p, t] of [
       [[-60, 20, -10], Tissue.Liver],
       [[40, 40, -120], Tissue.Bowel],
-      [[-55, -5, 70], Tissue.Lung],
+      [[-75, -5, 70], Tissue.Lung],
     ] as [V, Tissue][]) {
       expect(cls(p).tissue).toBe(t);
       expect(cls(p).interface, Tissue[t]).toBe(Interface.None);

@@ -88,3 +88,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [82](DECISIONS.md#L2971) | Casos trampa y contexto clínico: viñeta, confusores que marca el alumno, fiabilidad por territorio y mVExUS | vigente |
 | [83](DECISIONS.md#L3072) | Ventanas clásicas que faltaban: transversa epigástrica (VCI y aorta) y suprahepática subcostal | vigente |
 | [84](DECISIONS.md#L3189) | PSF que cambia con la profundidad: bajada de la frecuencia central, pulso de la banda de cada modo, emisión apodizada y banda del foco | vigente |
+| [85](DECISIONS.md#L3322) | Corazón y mediastino: la AD recibe la VCI sobre el diafragma, el VD delante tras el xifoides, pericardio y tejido del mediastino en lugar de pulmón | vigente |

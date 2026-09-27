@@ -129,14 +129,17 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       wallMm: 0.8,
     },
     {
-      // la confluencia de las suprahepáticas y el embudo que se ensancha hacia la AD en los últimos 1–3 cm (28 × 18 mm)
+      // la confluencia de las suprahepáticas, el estrechamiento en el hiato de la cava del diafragma (z 53) y el embudo que se
+      // abre en el suelo de la AD (decisión 85; antes, un embudo que se ensanchaba sin cintura y seguía 20 mm dentro de una
+      // aurícula que no apoyaba en el diafragma)
       id: 'ivcSupra',
       tube: tube(
         [
           [[-20, -8, 35], 10],
-          [[-19, -5, 47], 10.3],
-          [[-17, -1, 60], 11.5],
-          [[-16, 2, 75], 12.5],
+          [[-19, -5, 47], 10.2],
+          [[-18.1, -3.2, 53], 9.2],
+          [[-17.4, -1.8, 58], 12],
+          [[-16.9, -0.6, 64], 12.5],
         ],
         0.8,
       ),

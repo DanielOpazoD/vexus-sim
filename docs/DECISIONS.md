@@ -3319,6 +3319,103 @@ nominal, el gemelo de la pleura sin la PSF nueva y la penumbra de A con la apert
 k0 nominal y las reverberaciones, documentadas; la recepción en la ganancia focal, añadida. Limitación nueva
 `psf-nominal-tissue`.
 
+## 85. Corazón y mediastino: la AD recibe la VCI sobre el diafragma, el VD delante tras el xifoides, pericardio y tejido del mediastino en lugar de pulmón
+
+**Contexto.** Por encima de la cúpula todo lo que no era corazón ni vaso era pulmón, y la aurícula derecha, una esfera de
+30 mm de radio centrada en (−15, 15, 95), no apoyaba en el diafragma: su polo inferior (z 65) quedaba 10 mm por encima del
+ápice de la cúpula (55) (`mediastinum-is-lung`, decisión 83). Desde el abdomen el haz se reflejaba en ese pulmón (su espejo,
+decisión 57) antes de llegar a lo que había detrás: a 1 mm en 61 líneas, la AD no se veía desde la subxifoidea ni desde la
+subcostal (0 de 669 y 0 de 303 muestras en el plano) aunque la tarjeta y la pista de la subxifoidea la prometen; la VCI se
+veía hasta el borde del espejo (de la suprahepática, 109 de 255 muestras en la subxifoidea y 92 de 213 en la subcostal), y
+al abanicar la epigástrica 26° hacia la cabeza la aorta, rodeada de pulmón por encima de la cúpula, desaparecía entera (0
+de 103). Entre el diafragma y la VCI supradiafragmática quedaba además una lámina de pulmón de décimas de milímetro
+(`lung-sliver-caval-hiatus`). La ronda 3 del juez ciego señaló en la subxifoidea «una zona oscura con un borde curvo y sin
+correlato anatómico» y «VCI de paredes paralelas y calibre constante». Para VExUS la zona importa: la VCI se mide a 1–2 cm
+de la unión con la AD y la subxifoidea en eje largo muestra la VCI entrando en la aurícula con la VHM desembocando cerca
+(`docs/anatomia/revision-normal.md`, sección 1). Un paciente real muestra ahí el corazón y el mediastino posterior.
+**Opciones.** (1) Solo bajar la esfera hasta la cúpula: seguiría rodeada de pulmón por delante y por detrás, su espejo
+taparía media aurícula y la aorta seguiría perdida. (2) Una malla segmentada de TC: fiel, pero decenas de kB de datos y de
+GLSL cuando al chunk principal le quedaban ~4,6 kB y la pasada B está en 130 ranuras de uniforms. (3) El pericardio como
+tercer tejido nuevo: con 33 tejidos `TISSUE_VEC4` pasa de 8 a 9 y la pasada B gana dos ranuras (`uTissueBack4`,
+`uTissueClump4`). (4) La elegida: un esquema de cuatro elipsoides con su miocardio, tabiques y recorte por la cúpula; el
+pericardio como la capa de 1,5 mm del tejido del mediastino que dibuja su cara; el mediastino, grasa alrededor del saco unida
+a la columna del mediastino posterior; constantes en el GLSL y ninguna ranura nueva.
+**Decisión.** Módulo de órgano `anatomy/organs/heart.ts` (TS y GLSL con los mismos nombres; las constantes del shader salen
+del TS en dos arrays, `HV` y `HW`), marco levógiro (x = izquierda del paciente):
+
+- **Cavidades** (sangre anecoica): VI y VD en el marco de los ventrículos, con el eje largo 45° a la izquierda del plano
+  sagital y 29° hacia abajo, de la base (atrás, arriba, a la derecha) a la punta (delante, abajo, a la izquierda, x > 50);
+  el VI centrado en (39, 30, 50) con semiejes 37 × 21 × 21 mm. El VD es una media luna: su elipsoide (40 × 22 × 32 mm) menos
+  lo que queda a menos de 9 mm de la cavidad del VI (el tabique interventricular), delante y a la derecha del VI y apoyado
+  en la vertiente anterior del diafragma, detrás del xifoides. La AD, un elipsoide de 22 × 21 × 30 mm centrado en
+  (−22, 6, 70) e inclinado 25° hacia delante por arriba (`RA_TILT`): su suelo, atrás, recibe la VCI y su parte alta queda
+  delante y a la derecha de la AI; menos lo que queda a menos de 4 mm de la AI (tabique interauricular) y de 6 mm del VI
+  (tabique auriculoventricular). La AI (24 × 13 × 23 mm, centrada en (2, 4, 98)), la más posterior, delante de la aorta.
+  Tricúspide y mitral son orificios abiertos donde las cavidades se solapan, sin valvas. Volúmenes (rejilla de 1,5 mm): VI
+  63 mL, VD 42, AD 34, AI 30; la AD mide 45 mm craneocaudales y 42 mm laterolaterales (ASE/EACVI 2015: ≤ 53 y ≤ 44 mm).
+- **Miocardio** (tejido nuevo `Myocardium`: IT'IS «heart muscle», c 1561 m/s y ρ 1081 kg/m³, 0,52 dB/cm/MHz de Duck 1990;
+  retrodispersión 0,4 de la del hígado, hipoecoico [ESTIMADO]): pared libre del VD 4 mm, de la AD 2, de la AI 2,5, del VI 8 y
+  tabique interventricular 9 mm.
+- **Apoyo en el diafragma:** el corazón solo existe por encima de la cúpula (`sdDiaphragm` < 0) y sus cavidades y su
+  miocardio se recortan a su pared y al pericardio por encima de ella: la cara inferior apoya plana en el centro tendinoso
+  y en la hemicúpula izquierda.
+- **Pericardio:** la capa de 1,5 mm que envuelve el miocardio (y la que queda entre la cúpula y el miocardio recortado) es
+  tejido del mediastino que dibuja la cara nueva `Interface.Pericardium`, de un lado (Fresnel mediastino/miocardio 0,10;
+  suelo 0,1 por el colágeno del pericardio fibroso, σz 0,05 mm y s 0,3 [ESTIMADO]: con K = 55 dB queda ~+22 dB sobre el
+  moteado del hígado a incidencia normal, como el diafragma y bajo la pleura). Su normal en la GPU es la del elipsoide de la
+  cámara más cercana (o la de la cúpula donde apoya); en TS, el gradiente numérico de su distancia (`faceSdf('pericardium')`:
+  el epicardio recortado).
+- **Mediastino** (tejido nuevo `Mediastinum`: grasa con tabiques conectivos, c 1460, ρ 940, 0,5 dB/cm/MHz, retrodispersión
+  1,0 con grumos 0,6 [ESTIMADO]): 5 mm de grasa alrededor del saco, 15 mm más junto a la cúpula (la grasa de los ángulos
+  cardiofrénicos, que se anula a 20 mm por encima: sin ella quedaba pulmón entre el corazón y el diafragma), unida de forma
+  suave (16 mm) a la columna del mediastino posterior, un cilindro elíptico en z desde la cúpula hasta z 130 (centro (6, −18),
+  semiejes 27 × 16 mm) alrededor de la aorta torácica, el esófago y la ácigos, que no se modelan aparte. El resto del tórax
+  sigue siendo pulmón, a los lados y detrás. Una esfera de descarte (centro (22, 16, 60), radio 94 mm; el tejido que no es
+  pulmón llega a 90,3 mm) evita evaluar el corazón en el pulmón lateral.
+- **VCI:** la suprahepática gana un nodo en el hiato de la cava (z 53, T8) con un 10 % de cintura (radio 10,2 → 9,2 mm) y
+  se abre en el suelo de la AD (12 y 12,5 mm; antes se ensanchaba sin cintura y seguía 20 mm dentro de la esfera). El radio
+  en el sitio de medida (1–2 cm caudal a la unión, z 37–47) no cambia (10–10,2 mm). Dentro de la cavidad de la AD su pared es
+  sangre de la aurícula (antes, un anillo de pared dentro de la cavidad negra) y su luz conserva el flujo, sin cara; fuera de
+  la aurícula, a más de 5 mm sobre la cúpula (`IVC_ORIFICE_MM`: el suelo de la aurícula), la VCI no existe y gana el corazón,
+  así su embudo no atraviesa paredes ni tabiques cuando la congestión la dilata (×1,57 en los casos). `classify` calcula la
+  cúpula una vez antes de los tubos (en la GPU, la misma llamada, antes).
+- **Presupuestos:** la pasada B sigue en 130 ranuras (se va `uRA`, entra la fila del pericardio en `uIface`); `TISSUE_VEC4`
+  sigue en 8 (32 tejidos llenan sus ranuras). El chunk principal crece 3,1 kB (315,4 → 318,5 kB de 320): la documentación de
+  los uniforms de la escena, que viajaba en el bundle (~2,1 kB) solo para acabar como comentario del GLSL, pasa a comentarios
+  del TS.
+- **Docente y 3D:** colores y rótulos del miocardio, del mediastino y de cada cavidad (AD y VD en azul, VI y AI en rojo)
+  en el corte; en el 3D, la malla del epicardio (la misma distancia que la imagen) en lugar de la esfera.
+
+**Consecuencias.** Muestras visibles / cortadas a 1 mm en 61 líneas (sano): subxifoidea, AD 0/669 → 228/270, con su centro a
+10,4 cm y la luz de la VCI a 1 mm de su cavidad, y la VCI entera (suprahepática 109/255 → 196/196); subcostal, AD 0/303 →
+86/140 más allá de la VSH media y la VCI entera (suprahepática 92/213 → 161/161); epigástrica abanicada 26°, aorta 0/103 →
+103/103, en el mediastino. En la subxifoidea, entre el hígado y la aurícula están el diafragma y el pericardio, sin pulmón;
+en su plano ya no hay espejo del pulmón, así que el banco de fidelidad y la e2e de los ecos de interfaz miden el diafragma
+en la subxifoidea abanicada 25° hacia la derecha del paciente (18 registros en el gemelo, como los 17 de antes). Las líneas
+de la prueba del espejo del diafragma de la decisión 61 bajan de más de 40 a 34 (la subxifoidea ya no se refleja bajo el
+corazón). La lámina de pulmón del hiato desaparece (ninguna muestra de pulmón a ≤ 2 mm de la pared de la VCI
+supradiafragmática en los siete casos a lo largo de 6 s): se retiran `mediastinum-is-lung` y `lung-sliver-caval-hiatus`.
+Limitaciones nuevas: `schematic-static-heart` (esquema estático e igual en todos los casos, sin valvas ni grandes vasos,
+cavidades sin flujo salvo el chorro de la VCI, el embudo recortado en la congestión, el VD que llega a la pared anterior y la
+AI que toca la aorta en un tórax poco profundo) y `mediastinal-mirror-dome-normal` (el pulmón que se alcanza desde el
+mediastino se refleja con la normal de la cúpula). La AD no sigue el volumen auricular de la fisiología porque no lo hay
+(la aurícula del modelo es una presión, decisión 79): queda declarada. Pendientes: valvas y grandes vasos, la cortical
+vertebral y las ventanas cardíacas propias (subcostal de cuatro cámaras).
+**Verificación.** `heart.test.ts`: las cuatro cavidades en su sitio en el marco levógiro (AD a la derecha, VI a la izquierda,
+VD delante, AI la más posterior y craneal y, a su altura, la AD delante y a la derecha; la punta en x > 50 y por debajo del
+centro del VI), los tamaños de la ASE y las paredes (la del VD, de 3 a 5,5 mm en la anatomía, seguida del pericardio), el
+apoyo en el diafragma (ninguna muestra de pulmón a 0,3–4 mm por encima de la cúpula bajo la huella del corazón), el
+pericardio (1,5 mm de mediastino con su cara de un lado a la distancia del epicardio; ni el miocardio ni la sangre la
+dibujan), el mediastino alrededor de la aorta y los pulmones a los lados y detrás, la esfera de descarte (su cáscara
+interior de 3 mm es pulmón), la cintura de la VCI en el hiato y su luz continua hasta la cavidad, la VCI dilatada (×1,57)
+recortada fuera de la aurícula sin atravesar paredes ni tabiques, la misma geometría en todos los casos y el GLSL con las
+constantes del módulo. `anatomy.test.ts` (la VCI dentro de la aurícula: luz con flujo y sin cara, pared de sangre, nada
+recortado en el sano). `startPoints.test.ts`: el canario sustituido por pruebas de lo que se ve (arriba). `organs.test.ts`
+(gemelos por nombre; `raNormal`, solo GPU), `shaderLimits.test.ts` (130 ranuras), `wall.test.ts` (23 caras, 32 tejidos),
+`fidelityScene.test.ts` (el diafragma en la subxifoidea abanicada). e2e: equivalencia TS ↔ GLSL en las siete ventanas de tres
+casos y en 50 000 puntos del tronco (con el corazón y el mediastino dentro), ecos de interfaz con la vista abanicada y la
+suite completa (abajo).
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

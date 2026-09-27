@@ -451,13 +451,17 @@ test('ecos de interfaz: paredes y cápsula brillan y el espejo diafragmático no
   // 125 mm en el flanco) y curvas, y la coherencia de curvatura las deja en +6–10 dB (GPU); sin eco
   // de interfaz, el moteado solo daba ~3,5 dB
   const tubePeaks: number[] = [];
-  for (const startPoint of ['subxiphoid', 'intercostal', 'flank'] as const) {
-    const s = await page.evaluate(
-      (id) => window.__vexusTest!.fidelity({ startPoint: id, display: true, samples: true, compound: false }),
-      startPoint,
-    );
+  // el diafragma con el pulmón encima: desde la decisión 85 el corazón apoya en la cúpula del plano de la subxifoidea; abanicada
+  // 25° hacia la derecha del paciente, el plano pasa lateral a la aurícula (18 registros en el gemelo)
+  for (const view of [
+    { startPoint: 'subxiphoid' },
+    { startPoint: 'intercostal' },
+    { startPoint: 'flank' },
+    { startPoint: 'subxiphoid', pose: { tiltDeg: -25 } },
+  ] as const) {
+    const s = await page.evaluate((v) => window.__vexusTest!.fidelity({ ...v, display: true, samples: true, compound: false }), view);
     const d = s.display!;
-    const tag = `${startPoint}: ${JSON.stringify({ lumen: d.lumen, capsule: d.capsule, peritoneum: d.peritoneum, walls: d.wallSystems, diaphragm: d.diaphragm, saturated: d.faceSaturated })}`;
+    const tag = `${JSON.stringify(view)}: ${JSON.stringify({ lumen: d.lumen, capsule: d.capsule, peritoneum: d.peritoneum, walls: d.wallSystems, diaphragm: d.diaphragm, saturated: d.faceSaturated })}`;
     // la imagen sigue en su sitio: hígado a media escala y el centro de la luz casi negro
     expect(d.liver.p50, tag).toBeGreaterThan(85);
     expect(d.liver.p50, tag).toBeLessThan(120);
@@ -484,9 +488,9 @@ test('ecos de interfaz: paredes y cápsula brillan y el espejo diafragmático no
         tubePeaks.push(r.peakDb);
     for (const bin of d.diaphragm.filter((b) => b.walls >= 5)) {
       seen.diaphragm++;
-      // ≤ 2 % de costuras; una aislada solo en un tramo de ≥ 15 registros (17 en la subxifoidea desde la decisión 69, donde
-      // una sola ya es el 6 %: con GPU real la misma vista da 0 costuras; con SwiftShader, una por un valle del moteado del
-      // espejo justo tras la línea). En un tramo más corto, ninguna, como antes
+      // ≤ 2 % de costuras; una aislada solo en un tramo de ≥ 15 registros (17 en la subxifoidea desde la decisión 69 y 16 en
+      // la abanicada a la derecha desde la 85, donde una sola ya es el 6 %: con GPU real la misma vista da 0 costuras; con
+      // SwiftShader, una por un valle del moteado del espejo justo tras la línea). En un tramo más corto, ninguna, como antes
       const seams = Math.round(bin.seamFraction * bin.walls);
       expect(seams, tag).toBeLessThanOrEqual(bin.walls >= 15 ? Math.max(1, Math.floor(0.02 * bin.walls)) : Math.floor(0.02 * bin.walls));
       // el desfase del espejo sobre el suelo del banco (su emulación en CPU del espejo de la GPU): a

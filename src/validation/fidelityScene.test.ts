@@ -55,12 +55,18 @@ const FACE_GRAY = 200;
  * riñón (hasta la 62 lo hacía la intercostal de las capturas; ahora sus seis costillas óseas cortan las líneas del
  * banco en su cortical, `shadowAt`, y el hepatorrenal queda detrás de ellas).
  */
-type Plane = StartPoint['id'] | 'intercostalCapture' | 'morison';
+type Plane = StartPoint['id'] | 'intercostalCapture' | 'morison' | 'subxiphoidRight';
 const frames = new Map<Plane, ReturnType<typeof probeFrame>>();
 const planes = new Map<Plane, { sim: Simulator; env: EnvelopeFrame; img: DisplayFrame; gain: Float32Array }>();
 
 function poseOf(id: Plane): Pick<StartPoint, 'phi' | 'z' | 'yaw' | 'rock' | 'tilt'> {
   if (id === 'intercostalCapture') return CAPTURE_POSES.intercostal!;
+  // el diafragma con el pulmón encima (espejo): desde la decisión 85 el corazón apoya en la cúpula del plano de la
+  // subxifoidea; abanicada 25° hacia la derecha del paciente, el plano pasa lateral a la aurícula (18 registros)
+  if (id === 'subxiphoidRight') {
+    const sx = START_POINTS.find((s) => s.id === 'subxiphoid')!;
+    return { ...sx, tilt: (sx.tilt ?? 0) - (25 * Math.PI) / 180 };
+  }
   if (id === 'morison') {
     const flank = START_POINTS.find((s) => s.id === 'flank')!;
     return { ...flank, tilt: (flank.tilt ?? 0) - (20 * Math.PI) / 180 };
@@ -126,6 +132,7 @@ const intercostalCapture = measure('intercostalCapture');
 const morison = measure('morison');
 // la VCI del flanco en eje largo: el centro de la luz
 const flank = measure('flank');
+const subxiphoidRight = measure('subxiphoidRight');
 
 /**
  * En la ventana intercostal la cortina pulmonar entra por el lado craneal (decisión 61): en espiración, con la pose
@@ -189,10 +196,11 @@ describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
   });
 
   it('el banco de interfaces encuentra la porta, la cápsula, el diafragma y Morison con su cara pintada', () => {
-    const all = [subxiphoid, intercostal, renal, morison].map((s) => s.display!);
+    const all = [subxiphoid, intercostal, renal, morison, subxiphoidRight].map((s) => s.display!);
     const walls = (pick: (d: (typeof all)[number]) => { walls: number; ratio: number }[]) =>
       all.flatMap((d) => pick(d)).filter((b) => b.walls > 0);
-    // subxifoidea: porta y diafragma; subxifoidea e intercostal: la cápsula bajo la pared, que desde la
+    // subxifoidea: porta; la subxifoidea abanicada a la derecha, el diafragma con el pulmón encima (en la de partida apoya
+    // el corazón desde la decisión 85); subxifoidea e intercostal: la cápsula bajo la pared, que desde la
     // decisión 62 tiene el peritoneo parietal en la ventana del pico (`peritoneum`); el flanco inclinado 20°
     // hacia atrás: Morison (hígado → grasa perirrenal → cápsula renal). La ventana renal ve el riñón por detrás
     // y el hígado debajo: allí Morison va en el otro orden y el banco no lo cuenta.
@@ -212,7 +220,7 @@ describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
     ])
       expect(b.ratio).toBeCloseTo(FACE_GRAY / 100, 5);
     // sin la transmisión de la GPU no hay espejo con el que comparar: el desfase es NaN, no un 0 falso
-    for (const b of subxiphoid.display!.diaphragm.filter((x) => x.walls > 0)) expect(b.mirrorOffsetMm).toBeNaN();
+    for (const b of subxiphoidRight.display!.diaphragm.filter((x) => x.walls > 0)) expect(b.mirrorOffsetMm).toBeNaN();
     expect(subxiphoid.faceSamples!.length).toBeGreaterThan(100);
   });
 
@@ -245,8 +253,8 @@ describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
 
   it('la incidencia del diafragma es la de la normal de la cúpula en el cruce exacto con la pleura', () => {
     // normal geométrica de la superficie z = altura(x, y) de la cúpula, sin pasar por `faceSdf`
-    const frame = frames.get('subxiphoid')!;
-    const samples = subxiphoid.faceSamples!.filter((f) => f.kind === 'diaphragm');
+    const frame = frames.get('subxiphoidRight')!;
+    const samples = subxiphoidRight.faceSamples!.filter((f) => f.kind === 'diaphragm');
     expect(samples.length).toBeGreaterThan(5);
     for (const f of samples) {
       const theta = thetaOf(f.u);
@@ -286,15 +294,15 @@ describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
     // GPU que coloca el espejo así mide justo ese suelo, y una que lo deja en el centro del segmento (la
     // marcha gruesa de antes) se aparta hasta un paso y no pasa la puerta de 0,05 mm del banco.
     const step = DEPTH / COARSE_DEPTH;
-    const samples = subxiphoid.faceSamples!.filter((f) => f.kind === 'diaphragm');
+    const samples = subxiphoidRight.faceSamples!.filter((f) => f.kind === 'diaphragm');
     expect(samples.length).toBeGreaterThan(5);
     for (const f of samples) {
       expect(f.mirrorFloorMm, `línea ${f.u}`).toBeGreaterThanOrEqual(0);
       expect(f.mirrorFloorMm, `línea ${f.u}`).toBeLessThan(0.01);
     }
     // transmisión de la GPU simulada, sin penumbra: el espejo de A0 (bisección) o el de la marcha gruesa
-    const { sim, env, img } = planes.get('subxiphoid')!;
-    const frame = frames.get('subxiphoid')!;
+    const { sim, env, img } = planes.get('subxiphoidRight')!;
+    const frame = frames.get('subxiphoidRight')!;
     const withMirror = (exact: boolean): TransmissionFrame => {
       const n = G.lines * COARSE_DEPTH;
       const tx: TransmissionFrame = {

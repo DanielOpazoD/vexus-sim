@@ -902,7 +902,9 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
           expect(got.gasKind).toBe(1);
         }
     }
-    expect(mirrors).toBeGreaterThan(40);
+    // 34 líneas: desde la decisión 85 las de la subxifoidea que llegan a la cúpula bajo el corazón siguen por el pericardio
+    // y la aurícula en lugar de reflejarse (antes, más de 40)
+    expect(mirrors).toBeGreaterThan(30);
   });
 
   it('A1 marca el pulmón de la cortina con 3 y los gemelos de A2 no lo toman por un impacto de gas', () => {

@@ -380,32 +380,43 @@ Cls classifyWith(vec3 m, bool withCurtain) {
     float wallMm = int(hw.y + 0.5) == T_WALL_PORTAL ? clamp(0.24 * rl, 0.5, 1.4) : hw.x;
     if (sd < wallMm && sd < bestD) { bestD = sd; bestT = t; bRho = rho; bTan = tg; bR = rl; bN = nn; bKc = kk; }
   }
-  // la aurícula derecha se mide antes que los tubos: dentro de ella no hay cara de tubo
   vec3 sn;
-  float dRa = sdSphere(m, uRA, sn);
+  vec3 dn;
+  float dDome = sdDome(m, dn);
+  // la VCI que entra en la aurícula derecha (decisión 85, heart.ts): dentro de ella no hay pared (su pared es sangre de la
+  // aurícula) ni cara; fuera de la aurícula, por encima de su suelo, no hay VCI (gana el corazón)
+  vec4 h1 = vec4(0.0);
+  vec3 ivc = vec3(1e3, 0.0, 1e3);
   if (bestT >= 0) {
-    vec4 h1 = sceneTexel(bestT * 4 + 1);
+    h1 = sceneTexel(bestT * 4 + 1);
+    if (int(h1.w + 0.5) == IF_IVC) ivc = ivcAtrium(m, dDome);
+  }
+  if (bestT >= 0 && ivc.y < 0.5) {
+    int iface = int(h1.w + 0.5);
     vec4 h2 = sceneTexel(bestT * 4 + 2);
     int wallT = int(h1.y + 0.5);
     int lumenT = int(h1.z + 0.5);
-    int iface = int(h1.w + 0.5);
     bool duct = iface == IF_DUCT;
     c.n = bN; c.rho = bRho; c.tangent = bTan; c.kc = bKc;
     c.uRef = h2.x; c.rRef = h2.y; c.profN = h2.z;
-    // la cara de la luz: la pared y la luz (sangre o bilis) conocen la misma, a |bestD|; dentro de la
-    // aurícula no hay pared que dibujar (el tramo de la VCI que entra en ella, con su tapa)
-    bool inRa = dRa < 0.0;
+    // la cara de la luz: la pared y la luz (sangre o bilis) conocen la misma, a |bestD|
+    bool inRa = ivc.x < 0.0;
     c.iface = inRa ? IF_NONE : iface; c.ifd = inRa ? 1e3 : abs(bestD);
-    if (bestD < 0.0) { c.tissue = lumenT; c.bd = -bestD; c.vessel = duct ? -1 : int(h2.w + 0.5); return c; }
+    // la VCI: la frontera cuenta la cavidad de la aurícula y, fuera de ella, el suelo por encima del cual no existe
+    float cut = inRa ? -ivc.x : ivc.z;
+    if (bestD < 0.0) { c.tissue = lumenT; c.bd = min(-bestD, cut); c.vessel = duct ? -1 : int(h2.w + 0.5); return c; }
+    if (inRa) { c.tissue = T_BLOOD; c.bd = -ivc.x; return c; }
     float wallBest = wallT == T_WALL_PORTAL ? clamp(0.24 * bR, 0.5, 1.4) : h1.x;
-    c.tissue = wallT; c.bd = min(bestD, wallBest - bestD); return c;
+    c.tissue = wallT; c.bd = min(min(bestD, wallBest - bestD), cut); return c;
   }
-  // Aurícula derecha (dRa, antes de los tubos)
-  if (dRa < 0.0) { c.tissue = T_BLOOD; c.bd = -dRa; c.n = sn; return c; }
-  // Tórax y diafragma
-  vec3 dn;
-  float dDome = sdDome(m, dn);
-  if (dDome < 0.0) { c.tissue = T_LUNG; c.bd = -dDome; c.n = dn; return c; }
+  // Tórax (corazón, pericardio, mediastino o pulmón: heart.ts, decisión 85) y diafragma
+  if (dDome < 0.0) {
+    float ifd;
+    c.n = dn;
+    c.tissue = thorax(m, dDome, c.bd, ifd, c.n);
+    if (ifd < 1e3) { c.iface = IF_PERICARDIUM; c.ifd = ifd; }
+    return c;
+  }
   if (dDome < DIAPHRAGM_MM) {
     c.tissue = T_DIAPHRAGM; c.bd = min(dDome, DIAPHRAGM_MM - dDome); c.n = dn;
     // la mitad abdominal dibuja la cara hepática; la pleural la dibuja el espejo exacto de la pasada A
@@ -483,7 +494,7 @@ Cls classifyWith(vec3 m, bool withCurtain) {
     c.tissue = T_LIVER; c.bd = bd; return c;
   }
   // Intestino: distancia a las interfaces que ganan antes (misma fórmula que scene.classify)
-  float bdBowel = min(min(BOWEL_BD_CAP_MM, dDome - DIAPHRAGM_MM), min(dGb - uGbExtra.y, dRa));
+  float bdBowel = min(min(BOWEL_BD_CAP_MM, dDome - DIAPHRAGM_MM), dGb - uGbExtra.y);
   bdBowel = min(bdBowel, min(dLiverBase, -depth - wall));
   for (int k = 0; k < 2; k++) bdBowel = min(bdBowel, perirenalOuterSdf(kidneyLocal(m, k), k));
   for (int i = 0; i < MAX_GAS; i++) {

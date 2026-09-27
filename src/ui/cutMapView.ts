@@ -46,6 +46,8 @@ const TISSUE_COLOR: Record<number, [number, number, number]> = {
   [Tissue.Psoas]: [165, 80, 95],
   [Tissue.QuadratusLumborum]: [140, 75, 105],
   [Tissue.RetroperitonealFat]: [220, 196, 128],
+  [Tissue.Myocardium]: [150, 62, 78],
+  [Tissue.Mediastinum]: [196, 170, 112],
 };
 const TISSUE_LABEL: Record<number, string> = {
   [Tissue.Liver]: 'hígado',
@@ -67,7 +69,16 @@ const TISSUE_LABEL: Record<number, string> = {
   [Tissue.Psoas]: 'psoas',
   [Tissue.QuadratusLumborum]: 'cuadrado lumbar',
   [Tissue.RetroperitonealFat]: 'retroperitoneo',
+  [Tissue.Myocardium]: 'miocardio',
+  [Tissue.Mediastinum]: 'mediastino',
 };
+/** Cavidades del corazón (decisión 85), en el orden de `HEART_CHAMBER_IDS`: rótulo y color (derechas azules, izquierdas rojas). */
+const CHAMBER: ReadonlyArray<{ label: string; color: [number, number, number] }> = [
+  { label: 'VI', color: [205, 70, 70] },
+  { label: 'VD', color: [70, 105, 215] },
+  { label: 'AD', color: [70, 105, 215] },
+  { label: 'AI', color: [205, 70, 70] },
+];
 const SYSTEM_COLOR: Record<VesselSystem, [number, number, number]> = {
   ivc: [60, 120, 230],
   hepaticVein: [120, 180, 255],
@@ -279,6 +290,9 @@ export class CutMapView {
           c = vesselColor(id);
           key = `v:${id}`;
           label = VESSEL_LABEL[id];
+        } else if (vi <= -2 && t === BLOOD_ID && CHAMBER[-2 - vi]) {
+          ({ color: c, label } = CHAMBER[-2 - vi]);
+          key = `c:${label}`;
         } else {
           c = TISSUE_COLOR[t] ?? [100, 100, 100];
           if (TISSUE_LABEL[t]) {

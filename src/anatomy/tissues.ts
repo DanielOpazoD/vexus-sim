@@ -46,9 +46,17 @@ export enum Tissue {
   QuadratusLumborum = 28,
   /** Grasa retroperitoneal (decisión 81): pararrenal y perivascular, detrás del peritoneo parietal posterior. */
   RetroperitonealFat = 29,
+  /** Miocardio (decisión 85): paredes de las cámaras y tabiques, músculo hipoecoico. */
+  Myocardium = 30,
+  /**
+   * Mediastino (decisión 85): grasa y tejido conectivo alrededor del corazón y en el mediastino posterior; su capa de
+   * 1,5 mm junto al miocardio es el pericardio, que dibuja la cara pericárdica.
+   */
+  Mediastinum = 31,
 }
 
-export const TISSUE_COUNT = 30;
+/** 32 llena las ranuras de 4 en 4 de las tablas por tejido (`TISSUE_VEC4` = 8): un tejido más cuesta dos en la pasada B. */
+export const TISSUE_COUNT = 32;
 
 /**
  * Nombre de cada tejido en GLSL (`#define T_… índice`). Se genera desde aquí
@@ -86,6 +94,8 @@ export const TISSUE_GLSL_NAME: Record<Tissue, string> = {
   [Tissue.Psoas]: 'T_PSOAS',
   [Tissue.QuadratusLumborum]: 'T_QUADRATUS',
   [Tissue.RetroperitonealFat]: 'T_RETROFAT',
+  [Tissue.Myocardium]: 'T_MYOCARDIUM',
+  [Tissue.Mediastinum]: 'T_MEDIASTINUM',
 };
 
 /** Lámina diafragmática bajo la cúpula (mm); la misma en TS, GLSL y el navegador 3D. */
@@ -187,6 +197,11 @@ export const TISSUES: TissueProps[] = [
   { name: 'psoas', c: 1588, rho: 1090, alpha1: 0.617, b: 1.083, backscatter: 0.35, gas: false, bone: false },
   { name: 'cuadrado lumbar', c: 1588, rho: 1090, alpha1: 0.617, b: 1.083, backscatter: 0.35, gas: false, bone: false },
   { name: 'grasa retroperitoneal', c: 1450, rho: 920, alpha1: 0.45, b: 1.1, backscatter: 1.4, gas: false, bone: false, speckleClump: 0.8 },
+  // Corazón (decisión 85): el miocardio es músculo estriado cardíaco (IT'IS «heart muscle»: c 1561, ρ 1081; atenuación de
+  // Duck 1990, 0,52 dB/cm/MHz), hipoecoico frente al hígado [ESTIMADO 0,4]; el mediastino, grasa con tabiques de tejido
+  // conectivo, algo menos ecogénica que la retroperitoneal y granulosa [ESTIMADO]
+  { name: 'miocardio', c: 1561, rho: 1081, alpha1: 0.52, b: 1.1, backscatter: 0.4, gas: false, bone: false },
+  { name: 'mediastino', c: 1460, rho: 940, alpha1: 0.5, b: 1.1, backscatter: 1.0, gas: false, bone: false, speckleClump: 0.6 },
 ];
 
 /** Impedancia acústica Z = ρc en MRayl. */

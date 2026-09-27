@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js';
 import { kidneyLocal, kidneyOuterSdf, type Kidney } from '../../anatomy/organs/kidney';
 import { gallbladderSdf } from '../../anatomy/organs/gallbladder';
-import { diaphragmHeight, torsoDepth } from '../../anatomy/primitives';
+import { heartOuterSdf } from '../../anatomy/organs/heart';
+import { diaphragmHeight, sdDiaphragm, torsoDepth } from '../../anatomy/primitives';
 import { COUINAUD_LABEL, couinaudPlanes, couinaudSegment, type CouinaudSegment } from '../../anatomy/couinaud';
 import type { AnatomyScene } from '../../anatomy/scene';
 import { DIAPHRAGM_THICKNESS_MM } from '../../anatomy/tissues';
@@ -192,12 +193,15 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
     40,
     new THREE.MeshStandardMaterial({ color: 0x3fb08f, roughness: 0.5, transparent: true, opacity: 0.85 }),
   );
-  const ra = new THREE.Mesh(
-    new THREE.SphereGeometry(a.rightAtrium.r * CM, 24, 16),
+  // Corazón (decisión 85): el epicardio recortado por la cúpula, con la MISMA distancia que la imagen
+  const heart = meshFromSdf(
+    (p) => heartOuterSdf(p, sdDiaphragm(p, a.diaphragm, a.torso)),
+    [-50, -20, 5],
+    [80, 80, 122],
+    44,
     new THREE.MeshStandardMaterial({ color: 0xb04848, roughness: 0.6, transparent: true, opacity: 0.45, depthWrite: false }),
   );
-  ra.position.set(a.rightAtrium.center[0] * CM, a.rightAtrium.center[1] * CM, a.rightAtrium.center[2] * CM);
-  g.add(gb, ra);
+  g.add(gb, heart);
   // Riñones: judía con hilio por marching cubes sobre el MISMO SDF; seno como elipsoide interior
   for (const k of [a.kidneyRight, a.kidneyLeft]) {
     const basis = new THREE.Matrix4().makeBasis(new THREE.Vector3(...k.u), new THREE.Vector3(...k.v), new THREE.Vector3(...k.w));

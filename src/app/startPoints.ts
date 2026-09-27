@@ -82,8 +82,8 @@ export const START_POINTS: readonly StartPoint[] = [
     // (decisión 83): 5,5 cm bajo el xifoides y 1,7 cm a la derecha de la línea media; marcador craneal girado 23° hacia
     // la izquierda del paciente, basculado 14° y abanicado 23° hacia la derecha: el haz va 21° hacia la cabeza y 13°
     // hacia la derecha. La VSH media recorre el plano ~5 cm hasta el tronco común y la VCI; la derecha desemboca a su lado
-    // en un tramo corto. La parte craneal de la VCI y la aurícula derecha quedan tras el pulmón que hay sobre la cúpula
-    // (`mediastinum-is-lung`). A 1–2 cm de la VCI la VSH media queda a 40° del haz en espiración (47° en la inspiración
+    // en un tramo corto; más allá, la VCI entera y la aurícula derecha, que apoya en la cúpula (decisión 85: antes quedaban
+    // tras el pulmón que había sobre ella). A 1–2 cm de la VCI la VSH media queda a 40° del haz en espiración (47° en la inspiración
     // tranquila): la puerta PW del protocolo. Desde la punta del xifoides el haz no llega a la dirección de la VSH media
     // con la basculación máxima (40°): la corta de través, con las suprahepáticas junto a la VCI (el «conejo»
     // incompleto que se ve abanicando la epigástrica hacia la cabeza).

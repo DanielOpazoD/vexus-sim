@@ -47,6 +47,7 @@ import {
   type LigamentumVenosum,
   type UmbilicalFissure,
 } from './organs/liverLigaments';
+import { heartOuterSdf, ivcAtrium, thorax } from './organs/heart';
 import { inLungCurtain, inLungRecess, lungCurtainDistance, lungCurtainEdgeMm } from './organs/lungCurtain';
 import { retroperitoneum } from './organs/retroperitoneum';
 import {
@@ -123,10 +124,19 @@ export interface Classification {
  *  - `dome`: la superficie pleural del diafragma (su cara hepática es paralela);
  *  - `kidneyOuter`: el contorno externo del riñón (cápsula renal);
  *  - `perirenalOuter`: la cara externa de la grasa perirrenal (Morison), el contorno menos su grosor local;
- *  - `gallbladder`: la luz vesicular.
+ *  - `gallbladder`: la luz vesicular;
+ *  - `pericardium`: el epicardio recortado por la cúpula (decisión 85), la cara interna de la capa del pericardio.
  */
-export type FaceGeometry = 'tube' | 'liverSurface' | 'dome' | 'kidneyOuter' | 'perirenalOuter' | 'gallbladder';
-export const FACE_GEOMETRIES: readonly FaceGeometry[] = ['tube', 'liverSurface', 'dome', 'kidneyOuter', 'perirenalOuter', 'gallbladder'];
+export type FaceGeometry = 'tube' | 'liverSurface' | 'dome' | 'kidneyOuter' | 'perirenalOuter' | 'gallbladder' | 'pericardium';
+export const FACE_GEOMETRIES: readonly FaceGeometry[] = [
+  'tube',
+  'liverSurface',
+  'dome',
+  'kidneyOuter',
+  'perirenalOuter',
+  'gallbladder',
+  'pericardium',
+];
 
 /**
  * Geometría cuya distancia (`faceSdf`) da la cara de interfaz `i`, o null sin cara (o las pleuras: la del
@@ -142,6 +152,7 @@ export function faceGeometryOf(i: Interface): FaceGeometry | null {
   if (i === Interface.LiverCapsule) return 'liverSurface';
   if (i === Interface.DiaphragmLiver) return 'dome';
   if (i === Interface.PerirenalFat) return 'perirenalOuter';
+  if (i === Interface.Pericardium) return 'pericardium';
   return 'kidneyOuter';
 }
 
@@ -216,7 +227,6 @@ export class AnatomyScene {
   readonly gallbladder: GallbladderShape;
   /** Pared vesicular (mm), ecogénica, entre la luz anecoica y la fosa. */
   readonly gallbladderWallMm = GALLBLADDER_WALL_MM;
-  readonly rightAtrium: Sphere;
   readonly kidneyRight: Kidney;
   readonly kidneyLeft: Kidney;
   /** Bolsas de gas intestinal (confusor; vacío en el avatar de referencia). */
@@ -251,7 +261,6 @@ export class AnatomyScene {
     this.umbilicalFissure = UMBILICAL_FISSURE;
     this.ligamentumVenosum = LIGAMENTUM_VENOSUM;
     this.gallbladder = gallbladderBody();
-    this.rightAtrium = { kind: 'sphere', center: [-15, 15, 95], r: 30 };
     // Riñones: eje largo con el polo superior medial y posterior; hilio anteromedial.
     const bR = orthonormalBasis([0.22, -0.18, 1], [1, 0.25, 0]);
     const bL = orthonormalBasis([-0.22, -0.18, 1], [-1, 0.25, 0]);
@@ -418,8 +427,8 @@ export class AnatomyScene {
    * Clasifica un punto MATERIAL. `caliber` aporta las escalas de radio que
    * dicta la fisiología en este instante. Orden de prioridad (el primero que
    * contiene el punto gana): pared → costillas → columna → cortina pulmonar → vasos y conductos →
-   * aurícula derecha → tórax/diafragma → vesícula → riñones → hígado → gas → psoas → cuadrado lumbar →
-   * grasa retroperitoneal → intestino (decisión 81). Cada paso es un método propio; el mismo orden vive en GLSL
+   * tórax (corazón, pericardio, mediastino o pulmón, decisión 85) / diafragma → vesícula → riñones → hígado → gas →
+   * psoas → cuadrado lumbar → grasa retroperitoneal → intestino (decisión 81). Cada paso es un método propio; el mismo orden vive en GLSL
    * (`classifyWith`).
    *
    * `withCurtain = false` es la variante sin la cortina pulmonar (decisión 61): lo que hay detrás de la
@@ -435,14 +444,29 @@ export class AnatomyScene {
     if (wall.final) return wall.cls;
     const curtain = withCurtain ? this.classifyLungCurtain(m, -depth - wall.wallMm, caliber.diaphragmCaudalMm) : null;
     if (curtain) return curtain;
-    const dRa = sdSphere(m, this.rightAtrium);
     const tube = this.classifyTubes(m, caliber);
-    // dentro de la aurícula no hay pared que dibujar: el tramo de la VCI que entra en ella (con su tapa)
-    // no tiene cara (antes daba un eco de pared brillante dentro de la cavidad negra)
-    if (tube) return dRa < 0 ? { ...tube, interface: Interface.None, interfaceDistance: NONE.interfaceDistance } : tube;
-    if (dRa < 0) return { ...NONE, tissue: Tissue.Blood, boundaryDistance: -dRa };
     const dDome = sdDiaphragm(m, this.diaphragm, this.torso);
-    if (dDome < 0) return { ...NONE, tissue: Tissue.Lung, boundaryDistance: -dDome };
+    // la VCI que entra en la aurícula derecha (decisión 85): dentro de ella no hay pared que dibujar (antes daba un eco de
+    // pared brillante y seguía como un anillo dentro de la cavidad): su pared es sangre de la aurícula y su luz conserva el
+    // flujo sin cara; fuera de la aurícula, por encima de su suelo, no hay VCI (gana el corazón)
+    const ivc = tube?.interface === Interface.IvcLumen ? ivcAtrium(m, dDome) : null;
+    if (tube && ivc && ivc.cavity < 0) {
+      if (tube.tissue === Tissue.Blood)
+        return {
+          ...tube,
+          boundaryDistance: Math.min(tube.boundaryDistance, -ivc.cavity),
+          interface: Interface.None,
+          interfaceDistance: NONE.interfaceDistance,
+        };
+      return { ...NONE, tissue: Tissue.Blood, boundaryDistance: -ivc.cavity };
+    }
+    if (tube && !ivc?.outside) return ivc ? { ...tube, boundaryDistance: Math.min(tube.boundaryDistance, ivc.cut) } : tube;
+    if (dDome < 0) {
+      // tórax (decisión 85): el corazón en su saco, el mediastino o el pulmón; la capa del pericardio dibuja su cara
+      const t = thorax(m, dDome);
+      const face = t.ifd < NONE.interfaceDistance ? { interface: Interface.Pericardium, interfaceDistance: t.ifd } : {};
+      return { ...NONE, tissue: t.tissue, boundaryDistance: t.bd, ...face };
+    }
     if (dDome < DIAPHRAGM_THICKNESS_MM) {
       // la mitad abdominal dibuja la cara hepática; la pleural la dibuja el espejo exacto de la pasada A
       const liverFace = dDome > 0.5 * DIAPHRAGM_THICKNESS_MM;
@@ -469,14 +493,13 @@ export class AnatomyScene {
     const liver = this.classifyLiver(m, dDome, -depth - wall.wallMm, kidney, dGb - this.gallbladderWallMm);
     if (liver) return liver;
     // Intestino: el «resto». Su distancia a la frontera es la de las interfaces que ganan antes
-    // (diafragma, vesícula, aurícula, hígado, pared, grasa perirrenal, gas); como en el hígado, no
+    // (diafragma, vesícula, hígado, pared, grasa perirrenal, gas; el corazón queda por encima del diafragma); como en el hígado, no
     // cuenta la de los tubos. Con 5 mm fijos el gate volumétrico daba por interior un punto pegado
     // al diafragma que float32 clasificaba al otro lado (CI de #39: Bowel→Diaphragm, 1 de 44 826).
     let bd = Math.min(
       BOWEL_BD_CAP_MM,
       dDome - DIAPHRAGM_THICKNESS_MM,
       dGb - this.gallbladderWallMm,
-      dRa,
       this.liverBaseSdf(m),
       -depth - wall.wallMm,
     );
@@ -502,7 +525,8 @@ export class AnatomyScene {
    *  - `dome`: `sdDiaphragm`;
    *  - `kidneyOuter`: el menor `dOuter` de los dos riñones;
    *  - `perirenalOuter`: el menor `perirenalOuterSdf` de los dos riñones (`dOuter` − grosor local de la grasa);
-   *  - `gallbladder`: `gallbladderSdf`.
+   *  - `gallbladder`: `gallbladderSdf`;
+   *  - `pericardium`: `heartOuterSdf` (el epicardio recortado por la cúpula).
    * Solo banco de fidelidad y pruebas: la clasificación no la llama.
    */
   faceSdf(m: Vec3, caliber: VesselCaliber, face: FaceGeometry): number | null {
@@ -528,6 +552,8 @@ export class AnatomyScene {
         );
       case 'gallbladder':
         return gallbladderSdf(m, this.gallbladder);
+      case 'pericardium':
+        return heartOuterSdf(m, sdDiaphragm(m, this.diaphragm, this.torso));
     }
   }
 

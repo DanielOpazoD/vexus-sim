@@ -86,8 +86,9 @@ const ALLOWED: Record<string, readonly string[]> = {
   // validation: el registro de limitaciones y los gemelos que solo usan las pruebas (`validation/support`,
   // p. ej. el de los ecos de interfaz, sobre el motor de imagen, y el contorno del hígado de las vistas de
   // las capturas, que necesita la sonda, los casos y las poses de partida de `app/startPoints`); las pruebas
-  // no cuentan como capa
-  validation: ['core', 'anatomy', 'ultrasound', 'probe', 'cases', 'app'],
+  // no cuentan como capa. La cadena del alumno por la ruta de la aplicación (`support/studentChain.ts`, decisión 93)
+  // necesita además la fisiología y la captura del Doppler
+  validation: ['core', 'physiology', 'anatomy', 'ultrasound', 'probe', 'doppler', 'cases', 'app'],
   main: ['core', 'physiology', 'anatomy', 'cases', 'probe', 'ultrasound', 'doppler', 'audio', 'vexus', 'app', 'ui'],
 };
 

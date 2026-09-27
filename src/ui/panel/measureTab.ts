@@ -3,15 +3,11 @@ import { toggleMode } from '../../app/equipment';
 import { ivcFromCalipers, ivcTruth, type IvcCollapse } from '../../vexus/ivcCollapse';
 import type { MMark } from '../mModeView';
 import type { AppState, MeasureTool } from '../../app/store';
-import { CAPTURE_BEATS, qualityText, type QualityIssue } from '../../doppler/measureQuality';
-import {
-  measureObservedHepatic,
-  measureObservedPortal,
-  measureObservedRenal,
-  type ObservedHepatic,
-  type ObservedPortal,
-  type ObservedRenal,
-} from '../../doppler/spectralMeasure';
+import { captureProtocolVessel } from '../../doppler/capture';
+import { qualityText, type MeasurementQuality } from '../../doppler/measureQuality';
+import type { ObservedHepatic, ObservedPortal, ObservedRenal } from '../../doppler/spectralMeasure';
+import type { ProtocolVessel } from '../../doppler/vesselIdentity';
+import { captureOverlay, type CaptureOverlay } from '../captureOverlay';
 import { classifyModifiedVexus, classifyVexusC, type Territory, type VexusContext, type VexusResult } from '../../vexus/classification';
 import { button, note, row } from '../controls';
 import type { PanelContext } from './context';
@@ -48,6 +44,8 @@ export class MeasureTab {
   private lastHepatic: ObservedHepatic | null = null;
   private lastPortal: ObservedPortal | null = null;
   private lastRenal: ObservedRenal | null = null;
+  /** Lo medido en la última captura, dibujado sobre el espectro (decisión 93). */
+  private lastOverlay: CaptureOverlay | null = null;
   private ivcCaliperMm: number | null = null;
   /** VCI en modo M (decisión 80): los puntos de los calibres y el resultado con la verdad de su ventana. */
   private mPoints: MMark[] = [];
@@ -80,6 +78,7 @@ export class MeasureTab {
    */
   clearMeasurements(): boolean {
     const had =
+      this.lastOverlay !== null ||
       this.lastHepatic !== null ||
       this.lastPortal !== null ||
       this.lastRenal !== null ||
@@ -89,6 +88,7 @@ export class MeasureTab {
     this.lastHepatic = null;
     this.lastPortal = null;
     this.lastRenal = null;
+    this.lastOverlay = null;
     this.ivcCaliperMm = null;
     this.ivcM = null;
     this.mPoints = [];
@@ -115,6 +115,11 @@ export class MeasureTab {
   setIvcCaliper(mm: number | null): void {
     this.ivcCaliperMm = mm;
     this.renderResult();
+  }
+
+  /** Trazado de la última captura sobre el espectro (null sin captura o tras borrar). */
+  get captureOverlay(): CaptureOverlay | null {
+    return this.lastOverlay;
   }
 
   /** Calibres del modo M a la vista en la franja (los del último resultado o los que se están poniendo). */
@@ -294,21 +299,28 @@ export class MeasureTab {
 
   /** Captura la medición armada sobre el espectro adquirido. */
   capture(kind: MeasureTool): void {
+    if (kind !== 'hepatic' && kind !== 'portal' && kind !== 'renal') return;
     const sim = this.ctx.sim();
     const tNow = sim.physiology.clock.t;
-    // los últimos latidos completos del espectro guardado (7 s), como captura un equipo
-    const beats = sim.physiology.rhythm.beatsBetween(tNow - 7, tNow).slice(-CAPTURE_BEATS);
     const opts = {
       f0Hz: sim.transducer.f0Doppler,
       angleCorrectionRad: sim.pw.angleCorrection,
       invert: sim.pw.invert,
       fftSize: sim.spectral.fftSize,
       wallFilterHz: sim.pw.wallFilterHz,
+      gainDb: sim.pw.gainDb,
     };
-    const recent = sim.spectral.columns.filter((c) => c.t > tNow - 7);
-    if (kind === 'hepatic') this.lastHepatic = measureObservedHepatic(recent, beats, opts);
-    else if (kind === 'portal') this.lastPortal = measureObservedPortal(recent, beats, opts);
-    else if (kind === 'renal') this.lastRenal = measureObservedRenal(recent, beats, opts);
+    // los últimos latidos completos del espectro guardado (7 s), como captura un equipo, y la identidad del vaso
+    const cap = <K extends ProtocolVessel>(k: K) =>
+      captureProtocolVessel(k, sim.spectral.columns, sim.physiology.rhythm, tNow, opts, sim.gateTrack);
+    const m =
+      kind === 'hepatic'
+        ? (this.lastHepatic = cap('hepatic'))
+        : kind === 'portal'
+          ? (this.lastPortal = cap('portal'))
+          : (this.lastRenal = cap('renal'));
+    const cols = sim.spectral.columns;
+    this.lastOverlay = m && cols.length ? captureOverlay(kind, m, opts, cols[cols.length - 1].prfHz, sim.pw.baselineShift) : null;
     this.ctx.store.set({ tool: 'none' });
     this.renderResult();
   }
@@ -334,8 +346,8 @@ export class MeasureTab {
     // una línea por territorio, marcada si el contexto la vuelve poco fiable
     const line = (t: Territory, inner: string) =>
       `<div>${inner}${excluded.has(t) ? ' <span class="small unreliable">· no fiable</span>' : ''}</div>`;
-    const rejected = (m: { quality: { issue: QualityIssue | null } } | null, name: string) =>
-      m && m.quality.issue ? `${name}: <b>${qualityText(m.quality.issue)}</b>` : null;
+    const rejected = (m: { quality: MeasurementQuality } | null, name: string) =>
+      m && m.quality.issue ? `${name}: <b>${qualityText(m.quality)}</b>` : null;
     const n = (h ? 1 : 0) + (p ? 1 : 0) + (k ? 1 : 0) + (this.ivcCaliperMm !== null ? 1 : 0) + (this.ivcM ? 1 : 0);
     const mM = this.ivcM;
     const mm = (v: number) => v.toFixed(1).replace('.', ',');

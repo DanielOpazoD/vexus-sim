@@ -388,7 +388,7 @@ function frame(now: number, dt: number): void {
   const cursorT = cine.cursorT();
   const tRight = traceRight(t, cursorT, secondsVisible);
   drawEcg(ecgCanvas, s, secondsVisible, tRight, cursorT);
-  spectrogram.draw(s, s.spectral.columns, tRight, secondsVisible, cursorT);
+  spectrogram.draw(s, s.spectral.columns, tRight, secondsVisible, cursorT, panel.captureOverlay);
   if (s.mmode.enabled && !gpu.lost) mview.draw(s.renderer, tRight, secondsVisible, cursorT, panel.mMarks);
   const h = hudText({
     patientLabel: caseDisplayLabel(s.patient.id, store.get().debug),

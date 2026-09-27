@@ -49,13 +49,18 @@
 // funciones GLSL generadas de sus tablas, en todas las pasadas que clasifican), el gradiente de la capa con su pendiente,
 // la interpolación de la transmisión que no cruza la entrada en un hueso en B y D, la ventana de la difusa de la cortical
 // y sus gemelos TS. index sube a 335 kB.
+// 2026-09-27: la medición Doppler que no depende de la escala (decisión 93) lleva index de 333,7 a 341,9 kB (vite build
+// sobre main a386e5e): la envolvente unilateral de semiplano fijo y la traza de la porta con sus huecos, la energía
+// unilateral y el mínimo sostenido de la interlobar, el aliasing fuerte con el ruido del receptor, la ruta única de la
+// captura, la identidad del vaso con sus mensajes, las marcas de cada medición y el trazado sobre el espectro. index sube
+// a 343 kB.
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const KB = 1024;
 const BUDGETS: Array<[RegExp, number]> = [
   [/three.*\.js$/, 700 * KB],
-  [/index-.*\.js$/, 335 * KB],
+  [/index-.*\.js$/, 343 * KB],
   [/\.css$/, 20 * KB],
   [/\.js$/, 120 * KB], // cualquier otro chunk
 ];

@@ -99,8 +99,10 @@ const dispatch = session.equipment.dispatch.bind(session.equipment);
 // La app arranca en la ventana subxifoidea, la primera del protocolo VExUS, y no en la pose por defecto del
 // simulador (sobre las costillas del flanco). La e2e conserva la pose por defecto: sus pruebas la suponen.
 // También arranca en armónica tisular (decisión 77), el modo B de un equipo abdominal moderno; la e2e sigue en
-// fundamental, la física calibrada de sus pruebas, y prueba la armónica aparte.
-if (!new URLSearchParams(location.search).has('e2e')) {
+// fundamental, la física calibrada de sus pruebas, y prueba la armónica aparte. Con `?e2e=app`, la e2e carga sus
+// ganchos y arranca como el usuario (subxifoidea y armónica): así prueba también la configuración que se ve.
+const e2eMode = new URLSearchParams(location.search).get('e2e');
+if (e2eMode === null || e2eMode === 'app') {
   const first = START_POINTS[0];
   sim().setPose({ ...sim().pose, phi: first.phi, z: first.z, yaw: first.yaw, rock: first.rock ?? 0, tilt: first.tilt ?? 0 });
   dispatch({ type: 'harmonic', enabled: true });
@@ -190,7 +192,12 @@ void import('./ui/navigator3d')
     nav.setStudentMode(!store.get().debug);
   })
   .catch((e: unknown) => errorLog.report('navegador3d', e));
-registerDevtools(sim, () => ({ nav, cutMap, spectrogram }), dispatch);
+registerDevtools(
+  sim,
+  () => ({ nav, cutMap, spectrogram }),
+  dispatch,
+  () => loopFrames,
+);
 session.onSimulatorChanged((next) => {
   nav?.setAnatomy(next.scene);
   spectrogram.reset();
@@ -363,6 +370,8 @@ let last = performance.now();
 let frames = 0;
 let frameTime = 0;
 let lastStatus = 0;
+/** Cuadros completos del bucle (nunca se reinicia): la e2e espera cuadros, no segundos (`framesRendered`). */
+let loopFrames = 0;
 const errorBudget = new ErrorBudget();
 let loopDegraded = false;
 const heartRate = new HeartRateDisplay();
@@ -431,6 +440,7 @@ function frame(now: number, dt: number): void {
     panel.sync(); // la pose y el acoplamiento cambian con el ratón; el equipo avisa por su cuenta
     windows.sync();
   }
+  loopFrames++;
 }
 
 function loop(now: number): void {

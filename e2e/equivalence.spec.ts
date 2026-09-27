@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { BOOT_MS, budget } from './support';
 
 /**
  * Gate de equivalencia TS ↔ GLSL (Fase 0). La anatomía existe dos veces: en
@@ -14,10 +15,10 @@ test('la anatomía GLSL coincide con la TypeScript en tejido, vaso y velocidad',
   // En el corredor de GitHub (dos núcleos) la prueba ya tardaba 4,0 min con 240 s de plazo; la compresión
   // bajo la sonda (decisión 63) encarece cada clasificación en TS (el mapa mundo→material) y la pasa de 4 min
   // (600 s: la ventana de la porta, decisión 69, suma un quinto barrido por caso; la epigástrica y la subcostal,
-  // decisión 83, un sexto y un séptimo)
-  test.setTimeout(600_000);
+  // decisión 83, un sexto y un séptimo), más el arranque (la compilación con SwiftShader, `BOOT_MS`)
+  budget(600_000);
   await page.goto('/?e2e=1');
-  await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: 60_000 });
+  await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: BOOT_MS });
   for (const id of CASES) {
     await page.selectOption('#case-select', id);
     await expect.poll(() => page.evaluate(() => typeof window.__vexusTest?.equivalenceSweep), { timeout: 30_000 }).toBe('function');
@@ -96,11 +97,11 @@ test('la anatomía GLSL coincide con la TypeScript en tejido, vaso y velocidad',
 });
 
 test('las tríadas portales de la GPU son las del gemelo TS, punto a punto (decisión 78)', async ({ page }) => {
-  // arranca la aplicación (SwiftShader compila todos los programas: 50–60 s con carga) y luego compila el programa de
-  // consulta: los 90 s por defecto no bastan con la máquina cargada
-  test.setTimeout(240_000);
+  // arranca la aplicación (SwiftShader compila todos los programas, `BOOT_MS`) y luego compila el programa de consulta
+  // (42–66 s en total en el corredor de GitHub con dos trabajadores)
+  budget(120_000);
   await page.goto('/?e2e=1');
-  await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: 120_000 });
+  await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: BOOT_MS });
   await expect.poll(() => page.evaluate(() => typeof window.__vexusTest?.triadParity), { timeout: 30_000 }).toBe('function');
   const r = await page.evaluate(() => window.__vexusTest!.triadParity());
   const tag = JSON.stringify(r);

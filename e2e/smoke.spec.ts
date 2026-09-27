@@ -1,80 +1,137 @@
 import { expect, test, type Page } from '@playwright/test';
 import { Tissue } from '../src/anatomy/tissues';
+import { BOOT_MS, annotateLoopPace, bootWithoutErrors, budget, simTime, withinFrames, withinSimSeconds } from './support';
 
 /**
  * Humo de extremo a extremo: lo que ninguna prueba unitaria puede ver — que el
  * módulo arranca en el navegador, que WebGL2 renderiza cuadros, que la UI está
- * cableada (caso, modos, medición) y que no hay errores de consola.
+ * cableada (caso, modos, medición) y que no hay errores de consola. Las esperas son en
+ * cuadros del bucle o en tiempo de simulación (`e2e/support.ts`); los plazos de cada
+ * prueba son un arranque (`BOOT_MS`, la compilación con SwiftShader) más su trabajo.
  */
-async function bootWithoutErrors(page: Page, query = '?e2e=1'): Promise<string[]> {
-  const errors: string[] = [];
-  page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
-  page.on('console', (m) => {
-    if (m.type() === 'error') errors.push(`console: ${m.text()}`);
-  });
-  // ?e2e expone ganchos de prueba estables (window.__vexusTest); nada más cambia
-  await page.goto(`/${query}`);
-  await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: 30_000 });
-  // los ganchos de prueba se cargan de forma diferida (import dinámico)
-  await expect.poll(() => page.evaluate(() => typeof window.__vexusTest), { timeout: 30_000 }).toBe('object');
-  return errors;
-}
+annotateLoopPace();
+
+/** Texto de un elemento, o su ausencia, para los mensajes de error. */
+const textOf = async (page: Page, sel: string): Promise<string> => (await page.locator(sel).textContent()) ?? '';
+
+/** `true` si el elemento contiene `text`; si no, lo que contiene (para el mensaje de `withinFrames`). */
+const contains = (page: Page, sel: string, text: string | RegExp) => async (): Promise<true | string> => {
+  const s = await textOf(page, sel);
+  return (typeof text === 'string' ? s.includes(text) : text.test(s)) || `${sel} = «${s}»`;
+};
 
 test('arranca, renderiza cuadros y no emite errores', async ({ page }) => {
+  budget(60_000);
   const errors = await bootWithoutErrors(page);
-  // El reloj de simulación avanza: con SwiftShader un cuadro puede tardar segundos
-  // (el bucle limita dt a 0,25 s por cuadro), así que se espera a que t cambie en
-  // vez de fijar un plazo; los fps redondeados pueden ser 0 y no se exigen.
-  const tOf = (s: string | null) => Number(/t ([\d.]+) s/.exec(s ?? '')?.[1] ?? 0);
-  const t1 = tOf(await page.locator('#status').textContent());
-  await expect.poll(async () => tOf(await page.locator('#status').textContent()), { timeout: 30_000 }).toBeGreaterThan(t1);
+  // El reloj de simulación avanza con los cuadros (≤ 0,25 s por cuadro): en tres cuadros, algo; los fps redondeados
+  // pueden ser 0 con SwiftShader y no se exigen
+  const t1 = await simTime(page);
+  await withinFrames(page, 3, 'el reloj de la simulación avanza', async () => (await simTime(page)) > t1 || `t = ${t1} s`);
   expect(errors).toEqual([]);
 });
 
 test('cambia de caso y el HUD lo refleja', async ({ page }) => {
+  budget(90_000);
   const errors = await bootWithoutErrors(page);
   // Si el HUD no cambia, el mensaje dice por qué: caso vivo, selector, avisos y errores de consola
   // (en CI el paso a FA falló dos veces sin más pista que «esperaba FA»).
-  const hudOr = async (sel: string, text: string) => {
-    const hud = (await page.locator(sel).textContent()) ?? '';
-    if (hud.includes(text)) return 'ok';
+  const hudOr = (sel: string, text: string) => async (): Promise<true | string> => {
+    const hud = await textOf(page, sel);
+    if (hud.includes(text)) return true;
     const banner = await page.locator('.banner').allTextContents();
     const value = await page.locator('#case-select').inputValue();
     return `hud=${hud} · selector=${value} · avisos=${JSON.stringify(banner)} · errores=${JSON.stringify(errors)}`;
   };
+  // el HUD se escribe en cada cuadro: el caso nuevo se ve en el cuadro siguiente al cambio (dos, por si el cambio
+  // llega a mitad de uno)
   await page.selectOption('#case-select', 'severe-congestion');
   // modo alumno: el caso se rotula «Paciente B», nunca con su diagnóstico
-  await expect.poll(() => hudOr('#hud-tl', 'Paciente B'), { timeout: 30_000 }).toBe('ok');
+  await withinFrames(page, 2, 'HUD con «Paciente B»', hudOr('#hud-tl', 'Paciente B'));
   await page.selectOption('#case-select', 'af-moderate-congestion');
-  await expect.poll(() => hudOr('#hud-tr', 'FA'), { timeout: 30_000 }).toBe('ok');
+  await withinFrames(page, 2, 'HUD con «FA»', hudOr('#hud-tr', 'FA'));
+  expect(errors).toEqual([]);
+});
+
+test('lo que ve el usuario (?e2e=app): subxifoidea en armónica con composición, hígado a media escala y la VCI negra', async ({ page }) => {
+  // El resto de la e2e arranca en la pose por defecto y en fundamental (`?e2e=1`, la física calibrada de sus pruebas);
+  // la aplicación arranca en la ventana subxifoidea, en armónica y con la composición espacial (main.ts). Aquí, esa
+  // configuración con los ganchos cargados: la imagen que abre el alumno, medida como el banco (decisiones 52 y 58).
+  // Con SwiftShader (local, 27-09): hígado mediana 91, desviación 15,1; luz 7.
+  budget(120_000);
+  const errors = await bootWithoutErrors(page, '?e2e=app');
+  await withinFrames(page, 2, 'HUD en armónica con composición', contains(page, '#hud-tr', /THI 3,5 MHz[\s\S]*CX/));
+  await withinFrames(page, 20, 'la tarjeta subxifoidea resaltada', async () => {
+    const cur = await page.locator('.win-card[aria-current="true"]').allTextContents();
+    return (cur.length === 1 && cur[0].includes('Subxifoideo')) || `resaltadas: ${JSON.stringify(cur)}`;
+  });
+  const s = await page.evaluate(() => {
+    const T = window.__vexusTest!;
+    const sim = T.sim();
+    // sin `startPoint`: la pose en que arrancó la aplicación; `compound: true` es el conmutador tal como está
+    const f = T.fidelity({ compound: sim.bmode.compound, display: true });
+    return { harmonic: sim.bmode.harmonic, compound: sim.bmode.compound, liver: f.display!.liver, lumen: f.display!.lumen };
+  });
+  const tag = JSON.stringify(s);
+  expect(s.harmonic, tag).toBe(true);
+  expect(s.compound, tag).toBe(true);
+  // las bandas de la imagen mostrada de las pruebas en fundamental (banco, G4 del compuesto): hígado a media escala con
+  // la desviación de un equipo, y la luz de la VCI casi negra
+  expect(s.liver.pixels, tag).toBeGreaterThan(1000);
+  expect(s.liver.p50, tag).toBeGreaterThan(85);
+  expect(s.liver.p50, tag).toBeLessThan(120);
+  expect(s.liver.sd, tag).toBeGreaterThanOrEqual(12.5);
+  expect(s.liver.sd, tag).toBeLessThanOrEqual(17.5);
+  expect(s.lumen.pixels, tag).toBeGreaterThan(500);
+  expect(s.lumen.p50, tag).toBeLessThan(30);
+  // y el Doppler pulsado se abre desde ahí, con el reloj en marcha
+  await page.keyboard.press('p');
+  await withinFrames(page, 2, 'HUD con «PW»', contains(page, '#hud-br', 'PW'));
+  const t1 = await simTime(page);
+  await withinFrames(page, 3, 'el reloj de la simulación avanza', async () => (await simTime(page)) > t1 || `t = ${t1} s`);
   expect(errors).toEqual([]);
 });
 
 test('ventanas (decisión 83): Intro en una tarjeta, mantenida como con el dedo, desliza la sonda hasta su ventana', async ({ page }) => {
+  budget(90_000);
   const errors = await bootWithoutErrors(page);
   const card = page.locator('.win-card', { hasText: 'Epigástrico' });
   const readout = page.getByText(/^φ -?\d+° · z -?[\d.]+ cm · acoplamiento/);
-  // la e2e arranca en la pose por defecto (φ 166°, z 0,8 cm), lejos de la epigástrica (φ 90°, z −2 cm)
-  await expect(readout).not.toContainText('φ 90° · z -2.0 cm', { timeout: 30_000 });
+  const readoutIs = (want: string, yes: boolean) => async (): Promise<true | string> => {
+    const s = (await readout.textContent()) ?? '';
+    return s.includes(want) === yes || `lectura «${s}»`;
+  };
+  // la e2e arranca en la pose por defecto (φ 166°, z 0,8 cm), lejos de la epigástrica (φ 90°, z −2 cm); la lectura se
+  // escribe con la cadencia de 250 ms del panel
+  await withinFrames(page, 20, 'la sonda empieza lejos de la epigástrica', readoutIs('φ 90° · z -2.0 cm', false));
   await card.focus();
   // Intro mantenida unos cuadros, como con el dedo (≈ 0,1 s son 6 cuadros a 60 fps): antes cualquier tecla mantenida
   // pasaba por la entrada de la sonda como un gesto manual y cancelaba en el cuadro siguiente el deslizamiento que la
   // tarjeta acababa de pedir. Con SwiftShader un cuadro tarda casi un segundo: se mantiene hasta que el reloj de la
   // simulación avanza medio segundo (dos cuadros al menos, a ≤ 0,25 s por cuadro)
-  const status = page.locator('#status');
-  const tOf = (s: string | null) => Number(/t ([\d.]+) s/.exec(s ?? '')?.[1] ?? 0);
   await page.keyboard.down('Enter');
-  const t0 = tOf(await status.textContent());
-  await expect.poll(async () => tOf(await status.textContent()), { timeout: 60_000 }).toBeGreaterThan(t0 + 0.5);
+  const t0 = await simTime(page);
+  await withinFrames(
+    page,
+    10,
+    'Intro mantenida medio segundo de simulación',
+    async () => (await simTime(page)) > t0 + 0.5 || 'reloj parado',
+  );
   await page.keyboard.up('Enter');
-  await expect(readout).toContainText('φ 90° · z -2.0 cm', { timeout: 60_000 });
+  // el deslizamiento acerca la pose con una constante de 0,3 s (`ProbeAnimator`): de 76° de distancia a < 0,2° en
+  // ~1,8 s de simulación; se le dan 4, más la cadencia del panel
+  await withinSimSeconds(page, 4, 'la sonda llega a la epigástrica', readoutIs('φ 90° · z -2.0 cm', true));
   // llegada: la tarjeta queda resaltada como la ventana en la que está la sonda (su punto y su giro)
-  await expect(card).toHaveAttribute('aria-current', 'true', { timeout: 30_000 });
+  await withinFrames(
+    page,
+    20,
+    'la tarjeta resaltada',
+    async () => (await card.getAttribute('aria-current')) === 'true' || 'sin aria-current',
+  );
   expect(errors).toEqual([]);
 });
 
 test('modos por teclado, pestaña Medir y captura de una medición', async ({ page }) => {
-  test.setTimeout(180_000);
+  budget(180_000);
   // ?docente: al final se abre la pestaña Docente (en producción la casilla solo aparece así)
   const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
   // Técnica del operador: apnea espiratoria (pestaña Adquirir) antes de medir la suprahepática
@@ -84,17 +141,17 @@ test('modos por teclado, pestaña Medir y captura de una medición', async ({ pa
     .click();
   await page.keyboard.press('p');
   await expect(page.locator('#mode-pw')).toHaveClass(/active/);
-  await expect(page.locator('#hud-br')).toContainText('PW');
+  // el HUD se escribe en cada cuadro
+  await withinFrames(page, 2, 'HUD con «PW»', contains(page, '#hud-br', 'PW'));
   const capture = async () => {
     await page.getByRole('tab', { name: 'Medir' }).click();
     await page.getByRole('button', { name: 'Suprahepática', exact: true }).click();
     await page.getByRole('button', { name: 'Capturar' }).click();
   };
   // Ventana intercostal (la del protocolo) y la puerta sobre la suprahepática en un punto sin
-  // sombras (técnica del operador); 7 s de espectro sin renderizar: con SwiftShader el reloj avanza
-  // despacio y 2,5 s no daban latidos completos. Antes la puerta caía en la sombra de la cortina
-  // pulmonar y se «medía» el ruido; ahora sería no medible. Medido con GPU: banda 28 dB sobre el
-  // suelo (desde la pose inicial la VSH queda a 11 cm con −32 dB y solo 15 dB de banda).
+  // sombras (técnica del operador); 7 s de espectro sin renderizar (`advance`: tiempo de simulación, no de reloj).
+  // Antes la puerta caía en la sombra de la cortina pulmonar y se «medía» el ruido; ahora sería no medible. Medido con
+  // GPU: banda 28 dB sobre el suelo (desde la pose inicial la VSH queda a 11 cm con −32 dB y solo 15 dB de banda).
   expect(
     await page.evaluate(() => {
       window.__vexusTest!.goToStartPoint('intercostal');
@@ -115,17 +172,25 @@ test('modos por teclado, pestaña Medir y captura de una medición', async ({ pa
   // y la fila del protocolo no muestra el patrón de esa captura (el de un espectro de ruido es «grave»)
   const hepaticRow = page.locator('.control').filter({ has: page.getByRole('button', { name: 'Suprahepática', exact: true }) });
   await expect(hepaticRow.locator('output')).toHaveText('no medible');
-  // Docente: el panel de depuración existe y se actualiza (la verdad fisiológica
-  // necesita t > 8 s de simulación, inalcanzable con SwiftShader en CI; se prueba en local).
+  // Docente: el panel de depuración existe y se actualiza, y con más de 8 s de simulación (los dos `advance` de 7 s)
+  // muestra la verdad fisiológica de los últimos 6 s con su grado. Antes la prueba lo daba por «inalcanzable con
+  // SwiftShader»: el reloj de la simulación no depende de los fps.
   // `force`: con render por software el hilo principal no deja al elemento «estable».
   await page.locator('#debug-toggle').check({ force: true });
   await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
-  await expect(page.locator('.debug')).toContainText(/t [\d.]+ s · latido/, { timeout: 30_000 });
+  expect(await simTime(page)).toBeGreaterThan(8);
+  await withinFrames(
+    page,
+    20,
+    'panel docente con el reloj y la verdad',
+    contains(page, '.debug', /t [\d.]+ s · latido[\s\S]*VERDAD FISIOLÓGICA \(últimos 6 s\)[\s\S]*Grado C de referencia: /),
+  );
   expect(errors).toEqual([]);
 });
 
 test('sobrevive a la pérdida del contexto WebGL: avisa, se recupera y el reloj sigue', async ({ page }) => {
-  test.setTimeout(180_000);
+  // la recuperación vuelve a compilar todos los programas: dos arranques
+  budget(60_000, 2);
   const errors = await bootWithoutErrors(page);
   await page.evaluate(() => {
     const gl = (document.getElementById('gl') as HTMLCanvasElement).getContext('webgl2')!;
@@ -133,12 +198,13 @@ test('sobrevive a la pérdida del contexto WebGL: avisa, se recupera y el reloj 
     (window as unknown as { __lc: WEBGL_lose_context }).__lc = ext;
     ext.loseContext();
   });
+  // el evento de pérdida llega del proceso de la GPU, sin cuadros de por medio
   await expect(page.locator('.banner')).toContainText('Contexto GPU perdido', { timeout: 30_000 });
   await page.evaluate(() => (window as unknown as { __lc: WEBGL_lose_context }).__lc.restoreContext());
-  await expect(page.locator('.banner')).toHaveCount(0, { timeout: 60_000 });
-  const tOf = (s: string | null) => Number(/t ([\d.]+) s/.exec(s ?? '')?.[1] ?? 0);
-  const t1 = tOf(await page.locator('#status').textContent());
-  await expect.poll(async () => tOf(await page.locator('#status').textContent()), { timeout: 60_000 }).toBeGreaterThan(t1);
+  // recompila los programas, como al arrancar
+  await expect(page.locator('.banner')).toHaveCount(0, { timeout: BOOT_MS });
+  const t1 = await simTime(page);
+  await withinFrames(page, 3, 'el reloj sigue tras recuperar el contexto', async () => (await simTime(page)) > t1 || `t = ${t1} s`);
   expect(errors).toEqual([]);
 });
 
@@ -154,7 +220,7 @@ test('el speckle del parénquima hepático tiene la estadística del hígado: ca
   // 0,99–1,03, |Re f| 1,35–1,39 y la caja de 3 × 5 de speckle.test.ts 2,93–3,20: siguen fuera.
   // Tres cuadros completos + lectura de la envolvente con SwiftShader: ~6 s cada uno en local y
   // ~3× en el runner de CI (agotó los 90 s por defecto).
-  test.setTimeout(240_000);
+  budget(240_000);
   const errors = await bootWithoutErrors(page);
   for (const startPoint of ['subxiphoid', 'intercostal', 'flank'] as const) {
     // guarda de una mirada (decisión 58): compuesto apagado, umbrales de siempre
@@ -181,7 +247,7 @@ test('el banco de fidelidad mide el moteado del hígado despejado: el de un camp
   // PSF. Los defectos, con la textura en el gemelo: la intensidad da SNR 0,78–0,87, |Re f| 1,24–1,29 con oscuros 0,19–0,20
   // y grietas 0,29–0,41, y suavizar la envolvente 2,09–2,20 (binomial [¼ ½ ¼]²) o 2,42–2,59 (caja de 3 × 5): SNR 1,45–1,9
   // (antes 1,75–2,1), oscuros 0,05–0,11 y grietas < 0,25 los dejan fuera.
-  test.setTimeout(240_000);
+  budget(240_000);
   const errors = await bootWithoutErrors(page);
   // guarda de una mirada (decisión 58): compuesto apagado, umbrales de siempre
   const s = await page.evaluate(() => window.__vexusTest!.fidelity({ startPoint: 'subxiphoid', display: true, compound: false }));
@@ -235,7 +301,7 @@ test('composición espacial: más SNR con el mismo grano, sin huecos, y la mirad
   // (SwiftShader 1,03, GPU 0,97–1,03: dentro del ± 10 % de G1);
   // cada mirada ×0,84–0,88 (SwiftShader 1,57–1,67). La fracción oscura del compuesto, 0,007–0,018 (GPU 0,007–0,025),
   // sigue bajo G2 y separa el compuesto de una mirada (0,07–0,10).
-  test.setTimeout(240_000);
+  budget(240_000);
   const errors = await bootWithoutErrors(page);
   // la subxifoidea basculada 10° menos: con la sonda que solo empuja (decisión 63) la punta de la de partida (26°)
   // no apoya más allá de +18° y lo hondo sube ~16 mm; en la rejilla de la e2e le quedaba 1 parche compuesto de
@@ -352,7 +418,7 @@ test('foco (decisión 84): la banda del foco es algo más clara y se mueve con e
   // Ventana intercostal (hígado hasta 18 cm), fundamental y una mirada. Con GPU real (M4, densidad 1), gris del hígado
   // puro a 20–60 / 60–100 / 100–140 / 140–180 mm: 104 / 94 / 82 / 75 con el foco a 50 mm, 92 / 98 / 94 / 86 con el de
   // por defecto (90 mm) y 88 / 88 / 94 / 88 a 140 mm (antes, 101 / 99 / 95 / 95 con cualquier foco).
-  test.setTimeout(300_000);
+  budget(300_000);
   const errors = await bootWithoutErrors(page);
   const bandsAt = (focusMm: number) =>
     page.evaluate((f) => {
@@ -396,7 +462,7 @@ test('las normales de la GPU coinciden con el gradiente de la distancia de TS en
   // cableado, de marco o de signo hundiría la mediana; las caras que 5b corrige se exigen ahora en p01 (la
   // VCI también en p05 ≥ 0,99). La norma, en p95 ≤ 0,01 (el gemelo TS da ≤ 5e-5; float32 y las uniones de
   // tubos dan el resto; una GPU sin la norma da ≥ 0,1 en la VCI de la subxifoidea, faceNormals.test.ts).
-  test.setTimeout(240_000);
+  budget(240_000);
   const errors = await bootWithoutErrors(page);
   // apnea espiratoria: los planos cortan la anatomía en la misma posición que el gemelo de TS
   await page
@@ -473,7 +539,7 @@ test('ecos de interfaz: paredes y cápsula brillan y el espejo diafragmático no
   // decisión 62 la cápsula bajo la pared tiene encima la grasa preperitoneal y el peritoneo parietal, a
   // 0,7 mm: el banco mide esa línea como `peritoneum` (gemelo 1,82–1,83 a 0–20°; la cápsula sola, sin el
   // peritoneo, 1,48–1,79: `wallTwin.test.ts`), con techo para que no se blanquee.
-  test.setTimeout(300_000);
+  budget(300_000);
   const errors = await bootWithoutErrors(page);
   await page
     .locator('button', { hasText: /Apnea\s*esp/ })
@@ -552,7 +618,7 @@ test('pleura parietal: la línea pleural brilla y bajo ella hay neblina con lín
   // camino volvía a la pared y salía al gel (neblina ≈ 0 de gris) y no había eco de la pleura parietal. El
   // gemelo B → C → D (pleuraTwin.test.ts) da la línea pleural saturada, la neblina a 0,68 × el hígado y la
   // línea A de orden 2 +44 dB sobre ella; aquí, umbrales holgados (lo exacto lo mide el banco con GPU).
-  test.setTimeout(300_000);
+  budget(300_000);
   const errors = await bootWithoutErrors(page);
   const s = await page.evaluate(() =>
     window.__vexusTest!.pleura({ startPoint: 'intercostal', respiration: 'apnea-inspiratory', compound: false }),
@@ -585,7 +651,7 @@ test('pared (decisión 62): líneas brillantes, grasa hipoecoica con septos, mú
   // las líneas a incidencia normal a +6,4–9,2 dB del hígado, sin picos saturados (SwiftShader: 6,6–11,3 dB, 0 %);
   // antes, ninguna línea dentro de la pared, y con las caras de σz 0,05 (GPU real) líneas blancas saturadas.
   // Umbrales con margen: las metas del README se miden con GPU real.
-  test.setTimeout(300_000);
+  budget(300_000);
   const errors = await bootWithoutErrors(page);
   await page
     .locator('button', { hasText: /Apnea\s*esp/ })
@@ -631,7 +697,7 @@ test('la pasada A en cuatro etapas da la misma transmisión de un solo rayo que 
   // main) y la suma difería 0,06–0,27 dB desde ahí; con el corte, 0 de 30 y ≤ 5·10⁻⁵ dB.
   // La subcostal, por la cara de la vesícula: con Ψ̃ sumada como r_k·Σe/(R + r) − Σe·r/(R + r), su primera fila dejaba en
   // la GPU un residuo de redondeo y la imagen se separaba de los gemelos 0,01–0,12 dB (decisión 86).
-  test.setTimeout(240_000);
+  budget(240_000);
   const errors = await bootWithoutErrors(page);
   for (const startPoint of ['subxiphoid', 'flank', 'subcostal'] as const) {
     const r = await page.evaluate(
@@ -722,7 +788,7 @@ test('el moteado del hígado persiste al inclinar la sonda medio grado y se renu
   // cambiaba todo el moteado (gemelo: correlación −0,01); en un equipo el grano se conserva un grosor
   // de corte y se renueva cuando el plano ya atraviesa otro tejido. La correlación se toma sin la
   // tendencia de profundidad (gemelo: 0,95 / 0,86 / 0,06 con 0,5° / 2° de giro / 8°).
-  test.setTimeout(240_000);
+  budget(240_000);
   const errors = await bootWithoutErrors(page);
   // apnea espiratoria: entre cuadros solo se mueve la sonda
   await page
@@ -751,7 +817,7 @@ test('el fundido del ancla del moteado no da saltos: la textura y la correlació
   // Decisión 55: girar la sonda 1° por cuadro pasa el umbral de reanclaje; durante los cuadros del
   // fundido (peso < 1) la GPU mezcla dos medios. La SNR del hígado no debe cambiar y cada cuadro debe
   // parecerse al anterior (un fundido mal cableado daría un destello o un salto de grano).
-  test.setTimeout(240_000);
+  budget(240_000);
   const errors = await bootWithoutErrors(page);
   await page
     .locator('button', { hasText: /Apnea\s*esp/ })
@@ -805,7 +871,7 @@ test('el fundido del ancla del moteado no da saltos: la textura y la correlació
 test('sin contacto no hay Doppler: el color y el espectro se apagan al levantar la sonda', async ({ page }) => {
   // Invariante de §23 de la guía. Medido con GPU real: color 1 346 celdas en contacto y 0 levantada;
   // PW 23 dB sobre el suelo en contacto y 7,5 dB (el valor del ruido puro) levantada.
-  test.setTimeout(240_000);
+  budget(240_000);
   const errors = await bootWithoutErrors(page);
   await page
     .locator('button', { hasText: /Apnea\s*esp/ })
@@ -817,9 +883,17 @@ test('sin contacto no hay Doppler: el color y el espectro se apagan al levantar 
     const veins = ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'] as const;
     T.goToStartPoint('renal');
     document.querySelector<HTMLButtonElement>('#mode-color')!.click();
-    out.colorContact = T.colorOnVessel([...veins]);
+    // El flujo venoso cruza el cero con el latido (onda a) y un cuadro de color suelto puede quedar vacío, como parpadea
+    // el color en un equipo (decisión 70, #113): en contacto, el cuadro con más color de un latido y medio (8 cuadros de
+    // color); levantada, ninguno de los 8 tiene color. El instante del ciclo en que corre la prueba depende del reloj.
+    const first = T.colorOnVessel([...veins]);
+    let contact = first ?? 0;
+    for (let i = 1; i < 8; i++) contact = Math.max(contact, T.colorCells());
+    out.colorContact = first === null ? null : contact;
     T.liftProbe(10);
-    out.colorLifted = T.colorCells();
+    let lifted = 0;
+    for (let i = 0; i < 8; i++) lifted = Math.max(lifted, T.colorCells());
+    out.colorLifted = lifted;
     T.liftProbe(0);
     // PW con el color encendido: el tríplex (decisión 66); el espectro se mide igual
     document.querySelector<HTMLButtonElement>('#mode-pw')!.click();
@@ -841,7 +915,7 @@ test('sin contacto no hay Doppler: el color y el espectro se apagan al levantar 
 });
 
 test('tríplex (decisión 66): el color sigue en pantalla con el PW, la puerta nace en la caja y la caja la acompaña', async ({ page }) => {
-  test.setTimeout(240_000);
+  budget(240_000);
   const errors = await bootWithoutErrors(page);
   await page
     .locator('button', { hasText: /Apnea\s*esp/ })
@@ -858,8 +932,8 @@ test('tríplex (decisión 66): el color sigue en pantalla con el PW, la puerta n
   await page.locator('#mode-pw').click();
   await expect(page.locator('#mode-color')).toHaveClass(/active/);
   await expect(page.locator('#mode-pw')).toHaveClass(/active/);
-  await expect(page.locator('#hud-br')).toContainText('Color');
-  await expect(page.locator('#hud-br')).toContainText('PW');
+  // el HUD se escribe en cada cuadro
+  await withinFrames(page, 2, 'HUD con «Color» y «PW»', contains(page, '#hud-br', /Color[\s\S]*PW|PW[\s\S]*Color/));
   const r = await page.evaluate(() => {
     const T = window.__vexusTest!;
     // al abrir el PW la puerta saltó al centro de la caja
@@ -868,10 +942,15 @@ test('tríplex (decisión 66): el color sigue en pantalla con el PW, la puerta n
     T.placeGateAt(-0.35, 60);
     const followed = T.modeState();
     const veins = ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'] as const;
-    const color = T.colorOnVessel([...veins]);
+    // el cuadro con más color de un latido y medio (8 cuadros de color): el flujo venoso cruza el cero con el latido
+    const first = T.colorOnVessel([...veins]);
+    let color = first ?? 0;
+    for (let i = 1; i < 8; i++) color = Math.max(color, T.colorCells());
     const gate = T.placeGate([...veins]);
     T.advance(3);
-    return { entered, followed, color, gate, pw: T.pwBandOverFloorDb(2), cells: T.colorCells(), state: T.modeState() };
+    let cells = 0;
+    for (let i = 0; i < 8; i++) cells = Math.max(cells, T.colorCells());
+    return { entered, followed, color: first === null ? null : color, gate, pw: T.pwBandOverFloorDb(2), cells, state: T.modeState() };
   });
   const tag = JSON.stringify({ colorOnly, ...r });
   expect(colorOnly.color && !colorOnly.pw, tag).toBe(true);
@@ -902,7 +981,7 @@ test('color realista (decisión 70): sin bloques de celda, grano correlado y rel
   // mayoría de los pares vecinos con color eran IDÉNTICOS y el vaso se veía en bloques. Ahora cada téxel se estima en su
   // sitio y el ruido y el moteado de la sangre están correlados a la celda de resolución: vecinos parecidos pero no
   // iguales, y la correlación cae con la distancia (un grano de tamaño finito).
-  test.setTimeout(240_000);
+  budget(240_000);
   const errors = await bootWithoutErrors(page);
   await page
     .locator('button', { hasText: /Apnea\s*esp/ })
@@ -912,17 +991,21 @@ test('color realista (decisión 70): sin bloques de celda, grano correlado y rel
   await page.locator('#mode-color').click();
   const r = await page.evaluate(() => {
     const T = window.__vexusTest!;
-    const cells = T.colorOnVessel(['hvRight', 'hvMiddle', 'ivcInfra', 'ivcSupra']);
+    const first = T.colorOnVessel(['hvRight', 'hvMiddle', 'ivcInfra', 'ivcSupra']);
     // El flujo venoso es pulsátil: donde se invierte (onda a) cruza el cero y, durante un cuadro de color, las cuatro
     // venas pueden quedar bajo el filtro de pared y el campo vacío, como parpadea el color en un equipo (medido: la
     // fracción con color sigue al latido, ~5 cuadros por ciclo a 6,2 Hz, con mínimos de 0 a 0,009). Se analiza el
     // cuadro con más color de un latido y medio (8 cuadros): antes se tomaba un instante suelto y fallaba 1 de cada 5.
+    // Lo mismo para las celdas sobre el vaso: las del cuadro con más celdas (antes, las del cuadro suelto de
+    // `colorOnVessel`, que en CI dio 0 celdas en la inversión del flujo)
     let best = T.colorTexture();
+    let cells = Math.max(first ?? 0, best.cells);
     for (let i = 1; i < 8; i++) {
       const t = T.colorTexture();
       if (t.visible > best.visible) best = t;
+      cells = Math.max(cells, t.cells);
     }
-    return { cells, ...best };
+    return { ...best, cells: first === null ? null : cells };
   });
   const tag = JSON.stringify(r);
   expect(r.cells!, tag).toBeGreaterThan(50);
@@ -935,14 +1018,13 @@ test('color realista (decisión 70): sin bloques de celda, grano correlado y rel
 
 test('modo alumno ciego: sin diagnóstico en pantalla; el docente lo ve con ?docente', async ({ page }) => {
   // Guía §17. Nombres clínicos de los casos (no deben aparecer en modo alumno).
-  // Arranca la aplicación dos veces: con SwiftShader cada arranque compila los 16 programas (decisión 58) y
-  // con la máquina cargada los dos no caben en los 90 s por omisión (fallaba igual en main).
-  test.setTimeout(240_000);
+  // Arranca la aplicación dos veces: con SwiftShader cada arranque compila los 16 programas (decisión 58)
+  budget(120_000, 2);
   const diagnoses = ['Adulto sano', 'Congestión venosa', 'congestión moderada', 'fallo derecho', 'Trampa', 'sin congestión', 'casi normal'];
   const errors = await bootWithoutErrors(page);
   await expect(page.locator('#debug-toggle')).toBeHidden();
   await page.selectOption('#case-select', 'severe-congestion');
-  await expect(page.locator('#hud-tl')).toContainText('Paciente B');
+  await withinFrames(page, 2, 'HUD con «Paciente B»', contains(page, '#hud-tl', 'Paciente B'));
   const body = await page.locator('body').innerText();
   for (const d of diagnoses) expect(body, d).not.toContain(d);
   const options = await page.locator('#case-select option').allTextContents();
@@ -955,7 +1037,7 @@ test('modo alumno ciego: sin diagnóstico en pantalla; el docente lo ve con ?doc
   const errors2 = await bootWithoutErrors(page, '?e2e=1&docente=1');
   await page.locator('#debug-toggle').check();
   await page.selectOption('#case-select', 'severe-congestion');
-  await expect(page.locator('#hud-tl')).toContainText('Congestión venosa grave');
+  await withinFrames(page, 2, 'HUD con el nombre del caso', contains(page, '#hud-tl', 'Congestión venosa grave'));
   await expect(page.locator('#cutmap')).toHaveAttribute('data-labels', '1');
   await expect(page.locator('#layer-vessels')).toBeEnabled();
   expect(errors2).toEqual([]);
@@ -963,10 +1045,10 @@ test('modo alumno ciego: sin diagnóstico en pantalla; el docente lo ve con ?doc
 
 test('casos trampa (decisión 82): el alumno lee la viñeta, marca el contexto y ve el aviso; la trampa es del docente', async ({ page }) => {
   // Dos arranques (alumno y docente), como el modo ciego: con SwiftShader cada uno compila los programas
-  test.setTimeout(240_000);
+  budget(120_000, 2);
   const errors = await bootWithoutErrors(page);
   await page.selectOption('#case-select', 'abdominal-hypertension');
-  await expect(page.locator('#hud-tl')).toContainText('Paciente D', { timeout: 30_000 });
+  await withinFrames(page, 2, 'HUD con «Paciente D»', contains(page, '#hud-tl', 'Paciente D'));
   // `force`: con render por software el hilo principal no deja a los elementos «estables»
   await page.getByRole('tab', { name: 'Medir' }).click({ force: true });
   // la viñeta del caso, con lo que el operador sabe
@@ -1007,7 +1089,7 @@ test('casos trampa (decisión 82): el alumno lee la viñeta, marca el contexto y
   await expect(page.locator('.result')).toContainText('mVExUS (sin riñón)');
   // otro caso: la casilla se desmarca, el aviso se va y la viñeta es la suya
   await page.selectOption('#case-select', 'normal-adult');
-  await expect(page.locator('.vignette')).toContainText('taller de ecografía', { timeout: 30_000 });
+  await expect(page.locator('.vignette')).toContainText('taller de ecografía');
   await expect(iap).not.toBeChecked();
   await expect(page.locator('.result')).not.toContainText('presión intraabdominal alta');
   expect(errors).toEqual([]);
@@ -1018,11 +1100,15 @@ test('casos trampa (decisión 82): el alumno lee la viñeta, marca el contexto y
   await page.locator('#debug-toggle').check({ force: true });
   await page.selectOption('#case-select', 'abdominal-hypertension');
   const notes = page.locator('.case-notes');
-  await expect(notes).toContainText('Trampa · PIA alta con fallo derecho', { timeout: 30_000 });
+  // las notas, la viñeta y el lazo cambian con el caso en el mismo evento (sin esperar cuadros)
+  await expect(notes).toContainText('Trampa · PIA alta con fallo derecho');
   await expect(notes).toContainText('Contexto real: Presión intraabdominal alta');
   await expect(notes).toContainText('Grado 0 falso');
-  await expect(page.locator('.loop-state')).toContainText('caso 14.0');
-  await expect(page.locator('.debug')).toContainText('VERDAD FISIOLÓGICA', { timeout: 30_000 });
+  // el panel docente se escribe con la cadencia de 250 ms; la verdad fisiológica pide más de 8 s de simulación
+  // (`advance`: tiempo de simulación sin dibujar, no de reloj)
+  await withinFrames(page, 20, 'estado del lazo del caso', contains(page, '.loop-state', 'caso 14.0'));
+  await page.evaluate(() => window.__vexusTest!.advance(9));
+  await withinFrames(page, 20, 'verdad fisiológica en el panel', contains(page, '.debug', 'VERDAD FISIOLÓGICA (últimos 6 s)'));
   // y al volver al modo alumno las notas, el estado del lazo y la verdad salen también del DOM
   await page.locator('#debug-toggle').uncheck({ force: true });
   await expect(notes).toHaveText('');
@@ -1035,7 +1121,7 @@ test('casos trampa (decisión 82): el alumno lee la viñeta, marca el contexto y
 test('intervenciones docentes (decisión 79): bolo y PEEP mueven el lazo del simulador vivo y «Reiniciar paciente» vuelve al caso', async ({
   page,
 }) => {
-  test.setTimeout(180_000);
+  budget(180_000);
   const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
   // `force`: con render por software el hilo principal no deja a los elementos «estables»
   await page.locator('#debug-toggle').check({ force: true });
@@ -1048,18 +1134,22 @@ test('intervenciones docentes (decisión 79): bolo y PEEP mueven el lazo del sim
   // 30 s de simulación sin renderizar (tiempo docente acelerado: el bolo llega en ~30 s): la PAD sube ~3 mmHg
   await page.evaluate(() => window.__vexusTest!.advance(30));
   expect((await loop()).rapMeanMmHg).toBeGreaterThan(7);
-  await expect(page.locator('.loop-state')).toContainText(/bolo de 500 mL, hace \d+ s/, { timeout: 30_000 });
+  await withinFrames(page, 20, 'el bolo en el estado del lazo', contains(page, '.loop-state', /bolo de 500 mL, hace \d+ s/));
   const peep = page.getByRole('group', { name: 'PEEP' });
   await peep.getByRole('button', { name: '10', exact: true }).click({ force: true });
   expect(await loop()).toMatchObject({ peepTargetCmH2O: 10, interventions: 2 });
   await expect(peep.getByRole('button', { name: '10', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Reiniciar paciente', exact: true }).click({ force: true });
-  await expect
-    .poll(loop, { timeout: 30_000 })
-    .toMatchObject({ caseId: 'normal-adult', rapMeanMmHg: 5, fluidTargetMl: 0, peepTargetCmH2O: 0, interventions: 0 });
+  await expect.poll(loop).toMatchObject({ caseId: 'normal-adult', rapMeanMmHg: 5, fluidTargetMl: 0, peepTargetCmH2O: 0, interventions: 0 });
   await expect(page.getByRole('status').filter({ hasText: 'Paciente reiniciado' })).toBeVisible();
-  await expect(peep.getByRole('button', { name: '0', exact: true })).toHaveAttribute('aria-pressed', 'true', { timeout: 30_000 });
-  await expect(page.locator('.loop-state dd').last()).toHaveText('ninguna', { timeout: 30_000 });
+  await withinFrames(page, 20, 'PEEP 0 pulsado', async () => {
+    const v = await peep.getByRole('button', { name: '0', exact: true }).getAttribute('aria-pressed');
+    return v === 'true' || `aria-pressed=${v}`;
+  });
+  await withinFrames(page, 20, 'sin intervenciones en el lazo', async () => {
+    const v = await page.locator('.loop-state dd').last().textContent();
+    return v === 'ninguna' || `última intervención «${v}»`;
+  });
   // con el teclado: el sano admite −563 mL; el segundo diurético se recorta y el botón queda no disponible sin perder el foco
   const diuretic = page.getByRole('button', { name: 'Diurético −500 mL', exact: true });
   await diuretic.focus();
@@ -1072,7 +1162,7 @@ test('intervenciones docentes (decisión 79): bolo y PEEP mueven el lazo del sim
   await expect(page.getByRole('status').filter({ hasText: 'Sin efecto' })).toBeVisible();
   // otro caso: el aviso de la intervención anterior desaparece
   await page.selectOption('#case-select', 'severe-congestion');
-  await expect.poll(loop, { timeout: 30_000 }).toMatchObject({ caseId: 'severe-congestion', interventions: 0 });
+  await expect.poll(loop).toMatchObject({ caseId: 'severe-congestion', interventions: 0 });
   await expect(page.getByRole('status')).toHaveText('');
   expect(errors).toEqual([]);
 });
@@ -1087,7 +1177,7 @@ test('color: la misma transmisión que el PW y una ganancia que alcanza el ruido
   // CPU, 40 fases de la respiración tranquila: |color − PW| ≤ 0,88 dB y, en el mismo punto, ≤ 0,77 dB; la
   // e2e llegó a medir 1,16 dB (1 de cada ~6 corridas pasaba de 1 dB, la cota de antes). Ruido puro 0 % de
   // celdas a 0 dB y 64 % a +24 dB (antes el máximo del deslizador no mostraba ruido nunca).
-  test.setTimeout(240_000);
+  budget(240_000);
   const errors = await bootWithoutErrors(page);
   const r = await page.evaluate(() => {
     const T = window.__vexusTest!;
@@ -1116,11 +1206,17 @@ test('color: la misma transmisión que el PW y una ganancia que alcanza el ruido
 });
 
 test('armónica tisular (decisión 77): campo cercano limpio, el mismo tejido y más ruido; el conmutador y el HUD', async ({ page }) => {
-  // cuatro cuadros con lectura de la envolvente (dos modos × contacto y sonda levantada) con SwiftShader
-  test.setTimeout(240_000);
+  // cuatro cuadros con lectura de la envolvente (dos modos × contacto y sonda levantada) con SwiftShader, y un segundo
+  // arranque sin ?e2e
+  budget(240_000, 2);
   const errors = await bootWithoutErrors(page);
   // la e2e arranca en fundamental, la física calibrada de sus pruebas (la aplicación, en armónica)
-  await expect(page.locator('#hud-tr')).not.toContainText('THI');
+  await withinFrames(
+    page,
+    2,
+    'HUD sin THI',
+    async () => !(await textOf(page, '#hud-tr')).includes('THI') || (await textOf(page, '#hud-tr')),
+  );
   const r = await page.evaluate(() => window.__vexusTest!.harmonicContrast({ startPoint: 'subxiphoid' }));
   const tag = JSON.stringify(r);
   const db = (x: { fundamental: number; harmonic: number }) => 20 * Math.log10(x.harmonic / x.fundamental);
@@ -1138,13 +1234,19 @@ test('armónica tisular (decisión 77): campo cercano limpio, el mismo tejido y 
   const toggle = page.locator('button', { hasText: 'Armónica (THI)' });
   await expect(toggle).toHaveCount(1);
   await toggle.evaluate((b) => (b as HTMLButtonElement).click());
-  await expect(page.locator('#hud-tr')).toContainText('THI 3,5 MHz');
+  await withinFrames(page, 2, 'HUD con THI', contains(page, '#hud-tr', 'THI 3,5 MHz'));
   await toggle.evaluate((b) => (b as HTMLButtonElement).click());
-  await expect(page.locator('#hud-tr')).not.toContainText('THI');
+  await withinFrames(
+    page,
+    2,
+    'HUD sin THI',
+    async () => !(await textOf(page, '#hud-tr')).includes('THI') || (await textOf(page, '#hud-tr')),
+  );
   expect(errors).toEqual([]);
-  // y la aplicación, sin ?e2e, arranca en armónica (main.ts), como un preajuste abdominal moderno
+  // y la aplicación, sin ?e2e (sin ganchos: se espera a su primer cuadro, dominado por la compilación), arranca en
+  // armónica (main.ts), como un preajuste abdominal moderno; el HUD se escribe en el mismo cuadro que el estado
   await page.goto('/?docente=1');
-  await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: 30_000 });
+  await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: BOOT_MS });
   await expect(page.locator('#hud-tr')).toContainText('THI 3,5 MHz');
 });
 
@@ -1182,7 +1284,7 @@ async function cineShot(page: Page) {
 test('cine (decisión 80): congelar y retroceder ~1 s cambia la imagen y mueve el cursor del ECG; al final, el cuadro congelado', async ({
   page,
 }) => {
-  test.setTimeout(300_000);
+  budget(300_000);
   const errors = await bootWithoutErrors(page);
   // el anillo guarda cuadros a ≤ 20 Hz del reloj de la simulación (con SwiftShader, todos: ≤ 0,25 s por cuadro)
   const span = () =>
@@ -1190,12 +1292,20 @@ test('cine (decisión 80): congelar y retroceder ~1 s cambia la imagen y mueve e
       const r = window.__vexusTest!.sim().renderer;
       return r.cineCount > 1 ? r.cineFrame(r.cineCount - 1).t - r.cineFrame(0).t : 0;
     });
-  await expect.poll(span, { timeout: 120_000 }).toBeGreaterThan(1.6);
+  await withinSimSeconds(page, 4, 'el cine guarda más de 1,6 s', async () => {
+    const x = await span();
+    return x > 1.6 || `${x.toFixed(2)} s guardados`;
+  });
+  // El cuadro del cine en pantalla (su instante): se lee sin tocar la GPU. `cineShot` lee la imagen con readPixels, que
+  // espera a que la GPU acabe lo pendiente (con SwiftShader, hasta 35 s en CI): antes se sondeaba con él y una sola
+  // lectura agotaba el plazo de 30 s con el valor de antes del primer cuadro congelado (null)
+  const shownT = () => page.evaluate(() => window.__vexusTest!.sim().renderer.cineShownFrame?.t ?? null);
   await page.keyboard.press(' ');
-  await expect(page.locator('#live-chip')).toHaveText('FREEZE');
+  // el rótulo y el cine se dibujan en el cuadro siguiente
+  await withinFrames(page, 2, 'FREEZE', async () => (await textOf(page, '#live-chip')) === 'FREEZE' || (await textOf(page, '#live-chip')));
   await expect(page.locator('#cine')).toBeVisible();
   // congelada, el cine está en su último cuadro: el congelado
-  await expect.poll(async () => (await cineShot(page)).t, { timeout: 30_000 }).not.toBeNull();
+  await withinFrames(page, 2, 'el cine muestra un cuadro', async () => (await shownT()) !== null || 'ninguno');
   const end = await cineShot(page);
   expect(end.t, JSON.stringify(end.times)).toBe(end.tEnd);
   expect(end.cursorX, 'cursor del ECG').not.toBeNull();
@@ -1205,8 +1315,11 @@ test('cine (decisión 80): congelar y retroceder ~1 s cambia la imagen y mueve e
     0,
   );
   for (let k = 0; k < end.times.length - 1 - target; k++) await page.keyboard.press('ArrowLeft');
-  await expect.poll(async () => (await cineShot(page)).t, { timeout: 60_000 }).toBe(end.times[target]);
-  await expect(page.locator('#cine-time')).toHaveText(/^−\d,\d\d s$/);
+  await withinFrames(page, 2, 'el cine ~1 s atrás', async () => {
+    const t = await shownT();
+    return t === end.times[target] || `cuadro en ${t} s (se esperaba ${end.times[target]} s)`;
+  });
+  await withinFrames(page, 2, 'el instante del cuadro', contains(page, '#cine-time', /^−\d,\d\d s$/));
   const back = await cineShot(page);
   const tag = JSON.stringify({ end: { t: end.t, x: end.cursorX }, back: { t: back.t, x: back.cursorX }, target, times: end.times });
   expect(Math.abs(back.t! - (end.tEnd! - 1)), tag).toBeLessThan(0.3);
@@ -1221,7 +1334,10 @@ test('cine (decisión 80): congelar y retroceder ~1 s cambia la imagen y mueve e
   expect(end.cursorX! - back.cursorX!, tag).toBeGreaterThan(0.6 * pxPerSec * (end.t! - back.t!));
   // Fin: el último cuadro, el de la congelación, idéntico píxel a píxel
   await page.keyboard.press('End');
-  await expect.poll(async () => (await cineShot(page)).t, { timeout: 60_000 }).toBe(end.t);
+  await withinFrames(page, 2, 'el cine en el último cuadro', async () => {
+    const t = await shownT();
+    return t === end.t || `cuadro en ${t} s (se esperaba ${end.t} s)`;
+  });
   const again = await cineShot(page);
   expect(again.gray, tag).toEqual(end.gray);
   expect(again.cursorX).toBe(end.cursorX);
@@ -1234,7 +1350,7 @@ test('cine (decisión 80): congelar y retroceder ~1 s cambia la imagen y mueve e
 test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia con la respiración y el colapso medido coincide con la verdad', async ({
   page,
 }) => {
-  test.setTimeout(360_000);
+  budget(360_000);
   // más alto: la franja M crece (34 % del alto) y los calibres, de píxeles enteros, son más finos
   await page.setViewportSize({ width: 1280, height: 1000 });
   const errors = await bootWithoutErrors(page);
@@ -1250,7 +1366,7 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
   // barrido a 25 mm/s (≥ 2 ciclos respiratorios en la franja) y 13 cm de profundidad (la VCI, a 10–11 cm, más grande)
   await page.getByRole('button', { name: '25', exact: true }).click();
   for (let k = 0; k < 5; k++) await page.keyboard.press('[');
-  await expect(page.locator('#hud-tr')).toContainText('13 cm');
+  await withinFrames(page, 2, 'HUD con 13 cm', contains(page, '#hud-tr', '13 cm'));
   // la línea M donde la pone el operador (VExUS): a través de la VCI 2 cm por debajo de la desembocadura de las
   // suprahepáticas (z material 35 mm → 15 mm), según la anatomía de CPU. La más perpendicular del tramo (3,5 cm por
   // debajo) sobrestima el colapso ~6 puntos: el eco especular de la pared de enfrente, máximo de frente, se come
@@ -1301,9 +1417,12 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
       const m = window.__vexusTest!.sim().renderer.mStrip;
       return m.count > 1 ? m.time(m.count - 1) - m.time(0) : 0;
     });
-  await expect.poll(span, { timeout: 200_000 }).toBeGreaterThan(7);
+  await withinSimSeconds(page, 10, 'la franja M cubre más de 7 s', async () => {
+    const x = await span();
+    return x > 7 || `${x.toFixed(2)} s en la franja`;
+  });
   await page.keyboard.press(' ');
-  await expect(page.locator('#live-chip')).toHaveText('FREEZE');
+  await withinFrames(page, 2, 'FREEZE', async () => (await textOf(page, '#live-chip')) === 'FREEZE' || (await textOf(page, '#live-chip')));
   // la luz de la VCI en la franja que se ve (el lienzo #mmode), en el centro del tramo de cada columna: el núcleo oscuro
   // (la racha más larga de grises < 50 cerca de la luz) y sus bordes donde el gris cruza la mitad entre la luz y el pico
   // de la pared (en 3 mm), interpolados: donde el operador pone los calibres, de borde interno a borde interno

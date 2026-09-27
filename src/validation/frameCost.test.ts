@@ -37,7 +37,17 @@ function rig() {
     sim.equipment = next;
   });
   const dispatch = (cmd: EquipmentCommand): void => equipment.dispatch(cmd);
-  return { fake, sim, equipment, dispatch, hooks: createTestHooks(() => sim, dispatch) };
+  return {
+    fake,
+    sim,
+    equipment,
+    dispatch,
+    hooks: createTestHooks(
+      () => sim,
+      dispatch,
+      () => 0,
+    ),
+  };
 }
 
 describe('frameCostMs: el coste del cuadro con color y por pasada', () => {

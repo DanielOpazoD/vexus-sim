@@ -46,18 +46,19 @@ jobs:
           path: dist
           retention-days: 7
 
-  # En paralelo con `check` (no depende de él): el tiempo total de CI es el del más lento
-  # Repartida en dos fragmentos en paralelo: con la pared, la pleura y la composición la e2e pasó de 25 min
-  # en un solo corredor (dos núcleos, SwiftShader) y el trabajo se cancelaba por tiempo.
+  # En paralelo con `check` (no depende de él): el tiempo total de CI es el del más lento.
+  # Repartida en cuatro fragmentos, cada uno con un solo trabajador (playwright.config.ts): SwiftShader usa todos los
+  # núcleos del corredor en cada cuadro, y con dos trabajadores por corredor las pruebas se disputaban la CPU, tardaban
+  # el doble y agotaban sus plazos a días alternos (79 % de ejecuciones de main en rojo, septiembre de 2026).
   e2e:
-    name: extremo a extremo (Chromium + SwiftShader) ${{ matrix.shard }}/2
+    name: extremo a extremo (Chromium + SwiftShader) ${{ matrix.shard }}/4
     runs-on: ubuntu-latest
-    # el fragmento con la equivalencia (4–5 min con la compresión) ronda los 21 min; con un reintento, más
-    timeout-minutes: 35
+    # un fragmento ronda los 10–15 min (la equivalencia sola, 3–6); con un reintento, más
+    timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2]
+        shard: [1, 2, 3, 4]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -79,7 +80,14 @@ jobs:
       - if: steps.pw-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
       - run: npx vite build
-      - run: npm run e2e -- --shard=${{ matrix.shard }}/2
+      - run: npm run e2e -- --shard=${{ matrix.shard }}/4
+      - name: Guardar los tiempos (duración, arranque y ritmo del bucle de cada prueba)
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: e2e-tiempos-${{ matrix.shard }}
+          path: e2e-results.json
+          retention-days: 14
       - name: Guardar el informe si falla
         if: failure()
         uses: actions/upload-artifact@v7
@@ -89,3 +97,37 @@ jobs:
             playwright-report
             test-results
           retention-days: 7
+
+  # El veredicto que protege main (regla de la rama): verde solo si `check` y los cuatro fragmentos de la e2e lo están.
+  # Un solo nombre estable aunque cambie el número de fragmentos; `always()` para que un trabajo cancelado o fallido
+  # dé rojo y no «omitido».
+  veredicto:
+    name: CI verde (check + e2e)
+    if: always()
+    needs: [check, e2e]
+    runs-on: ubuntu-latest
+    steps:
+      - name: check y los fragmentos de la e2e, en verde
+        run: |
+          echo "check: ${{ needs.check.result }} · e2e: ${{ needs.e2e.result }}"
+          test "${{ needs.check.result }}" = success
+          test "${{ needs.e2e.result }}" = success
+
+  # TEMPORAL (se retira antes de fusionar): arranque repetido en un corredor limpio con y sin caché de programas grande
+  sonda-arranque:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx vite build
+      - run: nproc
+      - run: npx tsx tools/ci/boot-probe.mts . "" 3
+      - run: npx tsx tools/ci/boot-probe.mts . "--gpu-program-cache-size-kb=200000" 3
+      - run: npx tsx tools/ci/boot-probe.mts . "" 3
+      - run: npx tsx tools/ci/boot-probe.mts . "--gpu-program-cache-size-kb=200000" 3

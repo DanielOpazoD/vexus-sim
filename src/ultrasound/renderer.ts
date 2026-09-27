@@ -45,9 +45,11 @@ import {
   MAX_TUBES,
   MAX_TUBE_SEGMENTS,
   NODE_BASE,
+  TUBE_HEADER_TEXELS,
   SCENE_TEX_H,
   SCENE_TEX_W,
 } from '../anatomy/gpu/anatomy.glsl';
+import { tubeShapeTexel } from '../anatomy/primitives';
 import { evaluateSceneUniforms, uploadSceneUniforms, type SceneUniformValues } from '../anatomy/gpu/sceneUniforms';
 import {
   FRAG_AXIAL,
@@ -383,8 +385,8 @@ export class UltrasoundRenderer {
   /** Textura de datos de la escena (cabeceras de tubos + nodos, decisión 24). */
   private sceneTex: WebGLTexture;
   private sceneData = new Float32Array(SCENE_TEX_W * SCENE_TEX_H * 4);
-  /** Cabeceras de TODOS los tubos (4 texels cada una); por cuadro se suben solo las del plano. */
-  private headerAll = new Float32Array(MAX_TUBES * 16);
+  /** Cabeceras de TODOS los tubos (`TUBE_HEADER_TEXELS` texels cada una); por cuadro se suben solo las del plano. */
+  private headerAll = new Float32Array(MAX_TUBES * TUBE_HEADER_TEXELS * 4);
   private tubeCount = 0;
   private tubeCountTotal = 0;
   /** Tablas por tejido de 4 en 4 (`TISSUE_VEC4` vec4; el relleno tras el último tejido queda a 0). */
@@ -640,7 +642,7 @@ export class UltrasoundRenderer {
     if (this.tubeCountTotal > MAX_TUBES) throw new Error('Demasiados tubos para el shader');
     let n = 0;
     tubes.forEach((t, i) => {
-      const h = i * 4;
+      const h = i * TUBE_HEADER_TEXELS;
       // H2.w = índice original del tubo (el shader lo devuelve como `vessel` aunque las
       // cabeceras se compacten por cuadro)
       this.headerAll.set([n, t.tube.nodes.length, t.tube.apScale, 1], h * 4);
@@ -649,6 +651,9 @@ export class UltrasoundRenderer {
       this.headerAll.set([0, t.refRadius, t.profileN, i], (h + 2) * 4);
       const b = s.tubeBounds[i];
       this.headerAll.set([b.center[0], b.center[1], b.center[2], b.r], (h + 3) * 4);
+      // H4: la forma orgánica (decisión 90) con la escala de radio 1 (por cuadro, con la del instante) o la marca del radio
+      // smoothstep de la VCI infrahepática
+      this.headerAll.set(tubeShapeTexel(t.tube, 1), (h + 4) * 4);
       if (t.tube.nodes.length - 1 > MAX_TUBE_SEGMENTS)
         throw new Error(`Tubo con ${t.tube.nodes.length - 1} segmentos (máximo del shader ${MAX_TUBE_SEGMENTS})`);
       for (const node of t.tube.nodes) {
@@ -734,9 +739,10 @@ export class UltrasoundRenderer {
         (b.center[1] - fr.face[1]) * fr.elevation[1] +
         (b.center[2] - fr.face[2]) * fr.elevation[2];
       if (!allTubes && Math.abs(d) > b.r + 12) continue;
-      const src = i * 16;
-      const dst = kept * 16;
-      this.sceneData.set(this.headerAll.subarray(src, src + 16), dst);
+      const size = TUBE_HEADER_TEXELS * 4;
+      const src = i * size;
+      const dst = kept * size;
+      this.sceneData.set(this.headerAll.subarray(src, src + size), dst);
       if (i < s.vessels.length) {
         const v = s.vessels[i];
         const scale = inputs.caliber.radiusScale(v.id);
@@ -744,6 +750,8 @@ export class UltrasoundRenderer {
         this.sceneData[dst + 3] = scale;
         this.sceneData[dst + 8] = inputs.sample.velocities[v.id] * (v.flowFactor ?? 1);
         this.sceneData[dst + 9] = v.refRadius * scale;
+        // H4: la forma orgánica con la dilatación del instante (la vena distendida se redondea, decisión 90)
+        if (v.tube.shape) this.sceneData.set(tubeShapeTexel(v.tube, scale), dst + 16);
       }
       kept++;
     }

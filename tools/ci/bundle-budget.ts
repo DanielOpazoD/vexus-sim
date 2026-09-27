@@ -40,13 +40,17 @@
 // la cara del pericardio, la VCI que entra en la aurícula y el suelo del corazón en `classify`. Ya descuenta la documentación
 // de los uniforms de la escena, que viajaba en el bundle solo para acabar como comentario del GLSL (−2,1 kB, ahora
 // comentarios del TS), y los motivos largos de la fila del pericardio y de su gemelo solo GPU. index sube a 325 kB.
+// 2026-09-27: los vasos orgánicos (decisión 90) llevan index de 324,9 a 329,2 kB (vite build sobre main 281945d): la forma de
+// las venas del hígado en la GLSL de la anatomía (el ruido del radio con su hash, la métrica de la sección y la cara del tubo
+// que gana, `tubeFace`: ~1,6 kB de GLSL minificado) y ~2,5 kB de su gemelo TS, de la VCI y del quinto téxel de las cabeceras
+// de los tubos. index sube a 330 kB.
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const KB = 1024;
 const BUDGETS: Array<[RegExp, number]> = [
   [/three.*\.js$/, 700 * KB],
-  [/index-.*\.js$/, 325 * KB],
+  [/index-.*\.js$/, 330 * KB],
   [/\.css$/, 20 * KB],
   [/\.js$/, 120 * KB], // cualquier otro chunk
 ];

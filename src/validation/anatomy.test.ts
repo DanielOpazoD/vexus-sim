@@ -29,7 +29,7 @@ import { sdEllipsoidLocal, sdSpine, tubeQuery } from '../anatomy/primitives';
 import { HEART_WALLS, domeFloor, heartChambers, ivcAtrium } from '../anatomy/organs/heart';
 import { renalPatternFromPeaks } from '../vexus/classification';
 import { VESSEL_META } from '../physiology/vessels';
-import { BRANCH_MAX_RADIUS_SCALE, BRANCH_TIP_RADIUS_MM, RENAL_VEIN_SINUS_V } from '../anatomy/vesselTree';
+import { BRANCH_MAX_RADIUS_SCALE, BRANCH_TIP_RADIUS_MM, RENAL_VEIN_SINUS_V, branchShapeMax } from '../anatomy/vesselTree';
 
 describe('Anatomía implícita (base B)', () => {
   const scene = new AnatomyScene(NORMAL_ADULT);
@@ -737,12 +737,15 @@ describe('Anatomía implícita (base B)', () => {
         }
       }
       // y ninguna rama nace más gruesa que el vaso del que sale: su esfera de origen cabe en la luz de otro tubo del mismo
-      // id (la madre o la rama que continúa); antes la lateral de una madre afilada salía con 0,9 mm donde esta medía 0,81
+      // id (la madre o la rama que continúa); antes la lateral de una madre afilada salía con 0,9 mm donde esta medía 0,81.
+      // Con la luz que se dibuja: la forma orgánica de la madre (decisión 90: su sección elíptica y el ruido de su radio) la
+      // estrecha unas centésimas donde nace la hija (medido: ≤ 0,036 mm, en 4–7 ramas por caso), muy por debajo de la
+      // resolución (PSF de 1–3 mm)
       for (const b of hepatic.filter((x) => x.flowFactor !== undefined)) {
         const [n0, n1] = b.tube.nodes;
         const o = n0.r >= n1.r ? n0 : n1;
         const inside = Math.min(...hepatic.filter((v) => v !== b && v.id === b.id).map((v) => tubeQuery(o.p, v.tube, 1).d + o.r));
-        if (inside > 1e-6) bad.push(`${p.id} ${b.id}*: nace ${inside.toFixed(2)} mm más gruesa que su madre`);
+        if (inside > 0.05) bad.push(`${p.id} ${b.id}*: nace ${inside.toFixed(2)} mm más gruesa que su madre`);
       }
       expect(bad).toEqual([]);
       expect(tapered, p.id).toBeGreaterThan(40);
@@ -763,13 +766,15 @@ describe('Anatomía implícita (base B)', () => {
         // el origen es el nodo más grueso: su primer radio queda dentro de la luz de la madre
         const [o, e] = n0.r >= n1.r ? [n0, n1] : [n1, n0];
         const sMax = BRANCH_MAX_RADIUS_SCALE[VESSEL_META[b.id].caliber];
+        // con el mayor saliente de su forma orgánica (decisión 90)
+        const shapeMax = branchShapeMax(b, sMax);
         const len = Math.hypot(e.p[0] - o.p[0], e.p[1] - o.p[1], e.p[2] - o.p[2]);
         const n = Math.ceil(2 * len);
         for (let k = 0; k <= n; k++) {
           const t = k / n;
           if (t * len < o.r * sMax) continue;
           const q: [number, number, number] = [0, 1, 2].map((j) => o.p[j] + (e.p[j] - o.p[j]) * t) as [number, number, number];
-          const r = (o.r + (e.r - o.r) * t) * sMax;
+          const r = (o.r + (e.r - o.r) * t) * sMax * shapeMax;
           const margin = Math.min(sc.liverInteriorMargin(q), sc.ligamentumVenosumSdf(q));
           if (margin < r + wallThicknessMm(b, r)) {
             bad.push(`${p.id} #${i} ${b.id} t=${t.toFixed(2)}: margen ${margin.toFixed(2)} < ${(r + wallThicknessMm(b, r)).toFixed(2)}`);

@@ -419,7 +419,8 @@ describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', 
     // acústica (la transmisión hasta la puerta) y en el máximo descenso del diafragma de la respiración tranquila (8 s).
     // A 8–10 cm la atenuación ida y vuelta de la pared y el hígado a 2,5 MHz ya la deja en 0,036–0,072; una costilla o
     // el pulmón en el camino la bajan de 10⁻³ (hueso 106 dB en 1 cm, gas 60 dB/cm): ≥ 0,02 es una ventana sin sombra.
-    // Medido: a 1–2 cm de la VCI, 40° (espiración) y 47° (inspiración tranquila); la puerta del operador, 42° y 50°.
+    // Medido: a 1–2 cm de la VCI, 32° (espiración) y 47° (inspiración tranquila); la puerta del operador, 34° y 56° (antes de
+    // que la VSH media se curvara en este plano, decisión 90: 40°, 47°, 42° y 50°).
     const pose = poseOf(byId('subcostal'));
     const R = CONVEX_C35.curvatureRadius;
     const screen = (th: number, r: number) => [(R + r) * Math.sin(th), (R + r) * Math.cos(th)] as const;

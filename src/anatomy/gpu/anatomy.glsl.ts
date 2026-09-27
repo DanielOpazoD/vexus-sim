@@ -7,12 +7,15 @@
  * `anatomy.test.ts` fija la versión TS.
  *
  * Disposición de la textura (índice lineal i → texel (i & 255, i >> 8)):
- *   tubo t (lista COMPACTA del cuadro: solo los que cortan la losa del plano), cabecera en 4 texels desde t·4:
+ *   tubo t (lista COMPACTA del cuadro: solo los que cortan la losa del plano), cabecera en TUBE_HEADER_TEXELS (5) texels
+ *   desde t·5:
  *     H0 = (inicio de nodos, n.º nodos, apScale, escala de radio)
  *     H1 = (espesor de pared mm, tejido de pared, tejido de la luz, cara de la luz: `Interface`, decisión 57)
- *     H2 = (u_ref mm/s, r_ref mm, exponente del perfil, índice original del tubo)
+ *     H2 = (u_ref mm/s, r_ref mm, exponente del perfil, índice original del tubo: la semilla del ruido de su radio)
  *     H3 = esfera envolvente (cx, cy, cz, R)
- *   nodos desde NODE_BASE = MAX_TUBES·4: (x, y, z, r)
+ *     H4 = forma orgánica del instante (decisión 90, `tubeShapeTexel`): (wt = ŵ·√κ_ef, amplitud del ruido del radio);
+ *          0 sin forma y (0, 0, 0, −1) con el radio smoothstep entre nodos (la VCI infrahepática, `Tube.smoothRadius`)
+ *   nodos desde NODE_BASE = MAX_TUBES·5: (x, y, z, r)
  *   tabla de la compresión de la sonda desde COMPRESSION_BASE = NODE_BASE + MAX_NODES (decisión 63,
  *   `anatomy/compression.ts`): un téxel por nodo de la cara, (s₀ mm, s_D mm, D mm, R mm)
  */
@@ -30,15 +33,18 @@ import {
 } from '../interfaces';
 import { COMPRESSION_GLSL, PROBE_COMPRESSION } from '../compression';
 import { ORGAN_MODULES } from '../organs';
-import { RIB_ANTERIOR_END } from '../primitives';
+import { RIB_ANTERIOR_END, TUBE_SHAPE } from '../primitives';
 import { MAX_GAS, MAX_RIBS, SCENE_UNIFORMS_GLSL } from './sceneUniforms';
 
 export const MAX_TUBES = 128;
 export const MAX_NODES = 640;
-export const NODE_BASE = MAX_TUBES * 4;
+/** Texels de la cabecera de cada tubo (H0–H4; H4, la forma orgánica, desde la decisión 90). */
+export const TUBE_HEADER_TEXELS = 5;
+export const NODE_BASE = MAX_TUBES * TUBE_HEADER_TEXELS;
 export const SCENE_TEX_W = 256;
 /** Segmentos por tubo que recorre el shader (`tubeQuery`): un tubo con más nodos se truncaría. */
 export const MAX_TUBE_SEGMENTS = 8;
+
 /** Primer téxel de la tabla de compresión de la sonda (decisión 63): tras los nodos de los tubos. */
 export const COMPRESSION_BASE = NODE_BASE + MAX_NODES;
 export const SCENE_TEX_H = Math.ceil((COMPRESSION_BASE + PROBE_COMPRESSION.nodes) / SCENE_TEX_W);
@@ -58,6 +64,7 @@ export const ANATOMY_GLSL = /* glsl */ `
 #define SCENE_TEX_W ${SCENE_TEX_W}
 #define MAX_TUBE_SEGMENTS ${MAX_TUBE_SEGMENTS}
 #define NODE_BASE ${NODE_BASE}
+#define TUBE_HDR ${TUBE_HEADER_TEXELS}
 #define COMP_BASE ${NODE_BASE + MAX_NODES}
 #define MAX_GAS ${MAX_GAS}
 #define MAX_RIBS ${MAX_RIBS}
@@ -222,70 +229,136 @@ float sdRib(vec3 p, vec4 rib, out bool cartilage, out vec3 n) {
   return q * min(rib.w, rib.z);
 }
 
-// Consulta de tubo: distancia con signo, rho, tangente, radio local, gradiente de la distancia (SIN
-// normalizar: su norma pasa ifd a distancia por la normal) y curvatura circunferencial de la cara.
-// Gemelos TS: tubeQuery y tubeFaceGradient (anatomy/primitives.ts).
-float tubeQuery(vec3 p, int t, out float rho, out vec3 tangent, out float rLoc, out vec3 n, out float kc) {
-  vec4 h0 = sceneTexel(t * 4);
+// Ruido del radio a lo largo del eje de un tubo (decisión 90; gemelos TS tubeHash, tubeNoise en anatomy/primitives.ts): hash
+// entero de la semilla del tubo (su índice original, H2.w) y de la celda de la longitud de arco
+uint tubeHash(uint x) { x ^= x >> 16u; x *= 0x7feb352du; x ^= x >> 15u; x *= 0x846ca68bu; x ^= x >> 16u; return x; }
+float tubeCell(uint seed, float c) { return float(tubeHash((seed << 16u) ^ uint(c) ^ ${TUBE_SHAPE.salt >>> 0}u) >> 8u) / 8388608.0 - 1.0; }
+float tubeNoise(uint seed, float arc, out float dN) {
+  float x = arc / ${TUBE_SHAPE.latticeMm.toFixed(4)};
+  float c = floor(x);
+  float f = x - c;
+  float v0 = tubeCell(seed, c);
+  float v1 = tubeCell(seed, c + 1.0);
+  dN = (v1 - v0) * 6.0 * f * (1.0 - f) / ${TUBE_SHAPE.latticeMm.toFixed(4)};
+  return v0 + (v1 - v0) * f * f * (3.0 - 2.0 * f);
+}
+
+// Consulta de tubo, la del bucle de tubos de classifyWith: distancia con signo, rho y radio local, y el mejor segmento
+// (índice, parámetro y longitud de arco) para su cara. El segmento se elige por la distancia sin el ruido del radio
+// (continuo en la longitud de arco) y el ruido se aplica una vez, en él, y solo con la muestra a menos de 1,5 mm (+ amp·r,
+// el ruido máximo) de la luz lineal: más allá ninguna pared la alcanza (ninguna pasa de ese grosor), así que el tubo no la
+// clasifica y su distancia solo sirve para descartarlo. La cara, tubeFace, solo la del tubo que gana y fuera de los
+// bucles (decisión 90). Gemelos TS: tubeQuery y tubeFaceGradient (anatomy/primitives.ts), con la distancia siempre con ruido.
+float tubeQuery(vec3 p, int t, out float rho, out float rLoc, out int seg, out float segS, out float segArc) {
+  vec4 h0 = sceneTexel(t * TUBE_HDR);
   int start = int(h0.x + 0.5);
   int count = int(h0.y + 0.5);
   float apScale = h0.z;
   float rs = h0.w;
-  float best = 1e9;
-  rho = 10.0; tangent = vec3(0.0, 0.0, 1.0); rLoc = 1.0; n = vec3(0.0, 1.0, 0.0); kc = 1.0;
-  for (int i = 0; i < MAX_TUBE_SEGMENTS; i++) {
-    if (i >= count - 1) break;
-    vec4 a = sceneTexel(NODE_BASE + start + i);
+  // la forma orgánica del instante (H4, decisión 90): la métrica de la sección (wt = h4.xyz, cK = (1 + |wt|²)^(−1/4)) y la
+  // amplitud del ruido del radio (h4.w); sin forma, 0, y −1 con el radio smoothstep (la VCI infrahepática)
+  vec4 h4 = sceneTexel(t * TUBE_HDR + 4);
+  float cK = inversesqrt(sqrt(1.0 + dot(h4.xyz, h4.xyz)));
+  bool smoothR = h4.w < 0.0;
+  // cada nodo se lee una vez: el extremo b de un segmento es el origen a del siguiente. El número de vueltas es el del tubo:
+  // con la cota constante y un cuerpo tan corto, el JIT de SwiftShader desenrollaba el bucle dentro de cada copia de
+  // classify y el arranque de la e2e se duplicaba (decisión 90)
+  vec4 a = sceneTexel(NODE_BASE + start);
+  float best = 1e9; float arc = 0.0; float bDist = 1.0; float bR = 1.0;
+  seg = 0; segS = 0.0; segArc = 0.0;
+  int segments = min(count - 1, MAX_TUBE_SEGMENTS);
+  for (int i = 0; i < segments; i++) {
     vec4 b = sceneTexel(NODE_BASE + start + i + 1);
     vec3 ab = b.xyz - a.xyz;
-    vec3 ap = p - a.xyz;
     float len2 = dot(ab, ab);
-    float s = len2 > 0.0 ? clamp(dot(ap, ab) / len2, 0.0, 1.0) : 0.0;
-    vec3 c = a.xyz + ab * s;
-    vec3 d = p - c;
-    vec3 tg = normalize(ab);
+    float s = len2 > 0.0 ? clamp(dot(p - a.xyz, ab) / len2, 0.0, 1.0) : 0.0;
+    vec3 d = p - a.xyz - ab * s;
     float dist;
-    // g = gradiente de dist × dist: la normal de la cara es el gradiente de sd = dist − r(s)
-    vec3 g;
     if (apScale != 1.0) {
       // Sección elíptica: se escala la componente perpendicular; la axial se conserva (tapa)
+      vec3 tg = ab * inversesqrt(len2);
       float along = dot(d, tg);
       vec3 perp = d - tg * along;
       perp.y /= apScale;
       dist = sqrt(dot(perp, perp) + along * along);
-      // el gradiente escala la componente AP DOS veces (no una, como d/dist): la normal del cuerpo de
-      // la VCI se apartaba 6–10° del gradiente (e2e de normales del PR 5a)
-      vec3 q = perp;
-      q.y /= apScale;
-      g = q - tg * dot(q, tg) + tg * along;
     } else {
-      dist = length(d);
-      g = d;
+      float q = dot(d, h4.xyz);
+      dist = cK * sqrt(dot(d, d) + q * q);
     }
-    float r = (a.w + (b.w - a.w) * s) * rs;
-    float sd = dist - r;
-    if (sd < best) {
-      best = sd;
-      rho = dist / max(1e-6, r);
-      tangent = tg;
-      rLoc = r;
-      // dentro del segmento el radio crece con s: ∇r = rs·(b.w − a.w)/|ab| a lo largo del eje
-      float taper = s > 0.0 && s < 1.0 ? rs * (b.w - a.w) * inversesqrt(len2) : 0.0;
-      vec3 gn = g / max(dist, 1e-6) - tg * taper;
-      n = dist > 0.0 && dot(gn, gn) > 0.0 ? gn : vec3(0.0, 1.0, 0.0);
-      // curvatura circunferencial de la cara: 1/r en la sección circular; en la elíptica, |S·ĉ|²/(r·|∇dist|)
-      // con ĉ normal a la cara y al eje y S = diag(1, 1/apScale, 1): apScale/r en las paredes AP y
-      // 1/(apScale²·r) en las laterales (con 1/r la pared lateral de una VCI aplanada salía 2 dB brillante)
-      kc = 1.0 / r;
-      vec3 cc = cross(g, tg);
-      float cl = length(cc);
-      if (apScale != 1.0 && dist > 0.0 && cl > 1e-6) {
-        float cy = cc.y / cl;
-        kc = (1.0 + cy * cy * (1.0 / (apScale * apScale) - 1.0)) * dist / (r * length(g));
-      }
-    }
+    // el radio entre nodos: lineal, y en la VCI infrahepática smoothstep, sin quiebros (decisión 90)
+    float r = (a.w + (b.w - a.w) * (smoothR ? s * s * (3.0 - 2.0 * s) : s)) * rs;
+    float len = sqrt(len2);
+    if (dist - r < best) { best = dist - r; seg = i; segS = s; segArc = arc + s * len; bDist = dist; bR = r; }
+    arc += len;
+    a = b;
   }
-  return best;
+  // el ruido del radio a lo largo del eje (sin él en los tubos sin forma: amp ≤ 0)
+  float dN;
+  bool near = bDist - bR < ${TUBE_SHAPE.noiseReachMm.toFixed(4)} + h4.w * bR;
+  float r = bR * (1.0 + (h4.w > 0.0 && near ? h4.w * tubeNoise(uint(sceneTexel(t * TUBE_HDR + 2).w + 0.5), segArc, dN) : 0.0));
+  rho = bDist / max(1e-6, r);
+  rLoc = r;
+  return bDist - r;
+}
+
+// Cara del tubo t en su segmento seg (parámetro s, longitud de arco arc), la del que gana en classifyWith: su eje (la
+// tangente del flujo), el gradiente de su distancia (SIN normalizar: su norma pasa ifd a distancia por la normal; dentro
+// del segmento el radio crece con s y con el ruido: ∇r a lo largo del eje) y la curvatura circunferencial de la cara,
+// ĉᵀQĉ/(r·|∇dist|) con ĉ normal a la cara y al eje y Q la métrica de la sección: en la VCI S² = diag(1, 1/apScale², 1)
+// (apScale/r en las paredes AP y 1/(apScale²·r) en las laterales; con 1/r la pared lateral de una VCI aplanada salía 2 dB
+// brillante); con la forma, cK²·(I + wt·wtᵀ). Gemelo TS: tubeFaceGradient.
+void tubeFace(vec3 p, int t, int seg, float s, float arc, out vec3 tangent, out vec3 n, out float kc) {
+  vec4 h0 = sceneTexel(t * TUBE_HDR);
+  int start = int(h0.x + 0.5);
+  float apScale = h0.z;
+  float rs = h0.w;
+  vec4 h4 = sceneTexel(t * TUBE_HDR + 4);
+  vec3 wt = h4.xyz;
+  float amp = max(h4.w, 0.0);
+  bool smoothR = h4.w < 0.0;
+  float cK = inversesqrt(sqrt(1.0 + dot(wt, wt)));
+  vec4 a = sceneTexel(NODE_BASE + start + seg);
+  vec4 b = sceneTexel(NODE_BASE + start + seg + 1);
+  vec3 ab = b.xyz - a.xyz;
+  float len = length(ab);
+  vec3 tg = ab / max(len, 1e-6);
+  vec3 d = p - a.xyz - ab * s;
+  float dN = 0.0;
+  float nz = amp > 0.0 ? tubeNoise(uint(sceneTexel(t * TUBE_HDR + 2).w + 0.5), arc, dN) : 0.0;
+  float rLin = (a.w + (b.w - a.w) * (smoothR ? s * s * (3.0 - 2.0 * s) : s)) * rs;
+  float r = rLin * (1.0 + amp * nz);
+  bool inside = s > 0.0 && s < 1.0;
+  vec3 gd;
+  float dist;
+  float cq;
+  if (apScale != 1.0) {
+    // el gradiente escala la componente AP DOS veces (no una, como d/dist): la normal del cuerpo de
+    // la VCI se apartaba 6–10° del gradiente (e2e de normales del PR 5a)
+    float along = dot(d, tg);
+    vec3 q = d - tg * along;
+    q.y /= apScale;
+    dist = sqrt(dot(q, q) + along * along);
+    q.y /= apScale;
+    gd = (q - tg * dot(q, tg) + tg * along) / max(dist, 1e-6);
+  } else {
+    float q = dot(d, wt);
+    float F = sqrt(dot(d, d) + q * q);
+    dist = cK * F;
+    gd = cK * (d + q * wt) / max(F, 1e-6);
+    if (inside) gd -= tg * dot(gd, tg);
+  }
+  float taper = inside ? rs * (b.w - a.w) * (smoothR ? 6.0 * s * (1.0 - s) : 1.0) / max(len, 1e-6) * (1.0 + amp * nz) + rLin * amp * dN : 0.0;
+  vec3 gn = gd - tg * taper;
+  tangent = tg;
+  n = dist > 0.0 && dot(gn, gn) > 0.0 ? gn : vec3(0.0, 1.0, 0.0);
+  kc = 1.0 / r;
+  vec3 cc = cross(gd, tg);
+  float cl = length(cc);
+  if (dist > 0.0 && cl > 1e-6) {
+    vec3 ch = cc / cl;
+    cq = apScale != 1.0 ? 1.0 + ch.y * ch.y * (1.0 / (apScale * apScale) - 1.0) : cK * cK * (1.0 + dot(ch, wt) * dot(ch, wt));
+    kc = cq / (r * length(gd));
+  }
 }
 
 // Módulos de órgano (anatomy/organs/*): gemelos GLSL de sus funciones TS
@@ -368,18 +441,21 @@ Cls classifyWith(vec3 m, bool withCurtain) {
     if (dCurtain >= 0.0) { c.tissue = T_LUNG; c.bd = dCurtain; c.n = torsoNormal(m); return c; }
   }
   // Vasos y conductos (descarte por esfera envolvente)
-  int bestT = -1; float bestD = 1e9; float bRho; vec3 bTan; float bR; vec3 bN; float bKc;
+  int bestT = -1; float bestD = 1e9; float bRho; float bR; int bSeg = 0; float bSegS = 0.0; float bSegArc = 0.0;
   for (int t = 0; t < MAX_TUBES; t++) {
     if (t >= uTubeCount) break;
-    vec4 bs = sceneTexel(t * 4 + 3);
+    vec4 bs = sceneTexel(t * TUBE_HDR + 3);
     if (distance(m, bs.xyz) > bs.w) continue;
-    float rho; vec3 tg; float rl; vec3 nn; float kk;
-    float sd = tubeQuery(m, t, rho, tg, rl, nn, kk);
-    vec4 hw = sceneTexel(t * 4 + 1);
+    float rho; float rl; int sg; float ss; float sa;
+    float sd = tubeQuery(m, t, rho, rl, sg, ss, sa);
+    vec4 hw = sceneTexel(t * TUBE_HDR + 1);
     // pared periportal proporcional al calibre local (misma fórmula que wallThicknessMm)
     float wallMm = int(hw.y + 0.5) == T_WALL_PORTAL ? clamp(0.24 * rl, 0.5, 1.4) : hw.x;
-    if (sd < wallMm && sd < bestD) { bestD = sd; bestT = t; bRho = rho; bTan = tg; bR = rl; bN = nn; bKc = kk; }
+    if (sd < wallMm && sd < bestD) { bestD = sd; bestT = t; bRho = rho; bR = rl; bSeg = sg; bSegS = ss; bSegArc = sa; }
   }
+  // la cara del tubo que gana (eje, gradiente y curvatura), una vez y fuera del bucle (decisión 90)
+  vec3 bTan = vec3(0.0, 0.0, 1.0); vec3 bN = vec3(0.0, 1.0, 0.0); float bKc = 1.0;
+  if (bestT >= 0) tubeFace(m, bestT, bSeg, bSegS, bSegArc, bTan, bN, bKc);
   vec3 sn;
   vec3 dn;
   float dDome = sdDome(m, dn);
@@ -388,12 +464,12 @@ Cls classifyWith(vec3 m, bool withCurtain) {
   vec4 h1 = vec4(0.0);
   vec3 ivc = vec3(1e3, 0.0, 1e3);
   if (bestT >= 0) {
-    h1 = sceneTexel(bestT * 4 + 1);
+    h1 = sceneTexel(bestT * TUBE_HDR + 1);
     if (int(h1.w + 0.5) == IF_IVC) ivc = ivcAtrium(m, dDome * max(1.0, -0.5 / dn.z));
   }
   if (bestT >= 0 && ivc.y < 0.5) {
     int iface = int(h1.w + 0.5);
-    vec4 h2 = sceneTexel(bestT * 4 + 2);
+    vec4 h2 = sceneTexel(bestT * TUBE_HDR + 2);
     int wallT = int(h1.y + 0.5);
     int lumenT = int(h1.z + 0.5);
     bool duct = iface == IF_DUCT;

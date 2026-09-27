@@ -335,7 +335,10 @@ describe('Eco de interfaz en la distancia por la normal (|∇| de la cara)', () 
   it('GLSL: el gradiente sin normalizar de los tubos, la norma de las diferencias centrales y δ con |∇|', () => {
     const glsl = ANATOMY_GLSL.replace(/\s+/g, ' ');
     expect(glsl).toContain('n = dist > 0.0 && dot(gn, gn) > 0.0 ? gn : vec3(0.0, 1.0, 0.0);');
-    expect(glsl).toContain('kc = (1.0 + cy * cy * (1.0 / (apScale * apScale) - 1.0)) * dist / (r * length(g));');
+    // la curvatura: ĉᵀQĉ/(r·|∇dist|) con la métrica de la sección (la elipse de la VCI o la forma de la decisión 90)
+    expect(glsl).toContain(
+      'cq = apScale != 1.0 ? 1.0 + ch.y * ch.y * (1.0 / (apScale * apScale) - 1.0) : cK * cK * (1.0 + dot(ch, wt) * dot(ch, wt)); kc = cq / (r * length(gd));',
+    );
     expect(glsl).toContain('vec4 faceGradient(Cls c, vec3 m)');
     expect(glsl).toContain('if (lg > 0.0) return vec4(g / lg, lg / (2.0 * FACE_GRAD_EPS));');
     expect(glsl).toContain('return l > 0.0 ? vec4(c.n / l, l) : vec4(0.0, 1.0, 0.0, 1.0);');

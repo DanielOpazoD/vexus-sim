@@ -13,6 +13,7 @@ import {
   torsoDepth,
   tubeFaceGradient,
   tubeQuery,
+  tubeShapeOf,
   type Spine,
   type Diaphragm,
   type Ellipsoid,
@@ -38,7 +39,7 @@ import {
   type KidneyRegion,
 } from './organs/kidney';
 import { LIVER_BLEND_MM, liverBaseSdf, liverLobes, liverSdf, visceralFaceDistance, type VisceralFace } from './organs/liver';
-import { buildHepaticBranches, buildVesselTree, wallThicknessMm, type DuctDef, type VesselDef } from './vesselTree';
+import { buildHepaticBranches, buildVesselTree, tubeShapeClassOf, wallThicknessMm, type DuctDef, type VesselDef } from './vesselTree';
 
 export { wallThicknessMm };
 import {
@@ -305,7 +306,8 @@ export class AnatomyScene {
         rightOnly: true,
       });
     }
-    ({ vessels: this.vessels, ducts: this.ducts } = buildVesselTree(this.kidneyRight, this.kidneyLeft));
+    const tree = buildVesselTree(this.kidneyRight, this.kidneyLeft);
+    this.vessels = tree.vessels;
     // Ramas de 3.º–4.º orden confinadas al hígado (el SDF ya conoce riñón y vesícula); las madres sin hijas en su extremo,
     // afiladas (decisión 87)
     const { branches, parents } = buildHepaticBranches(
@@ -314,7 +316,13 @@ export class AnatomyScene {
       7,
       (m) => Math.min(this.liverInteriorMargin(m), this.ligamentumVenosumSdf(m)),
     );
-    this.vessels = [...parents, ...branches];
+    // la forma orgánica de las suprahepáticas y la porta (decisión 90): su semilla es su índice en la lista de la GPU (el H2.w
+    // de la textura de escena, la del ruido de su radio) y su clase, la de su sistema
+    this.vessels = [...parents, ...branches].map((v, i) => {
+      const cls = tubeShapeClassOf(v.id);
+      return cls ? { ...v, tube: { ...v.tube, shape: tubeShapeOf(i, cls, v.tube.nodes) } } : v;
+    });
+    this.ducts = tree.ducts;
     // Solo los vasos «madre»: las ramas procedurales comparten id y no deben sustituirlos
     this.vesselById = new Map(this.vessels.filter((v) => v.flowFactor === undefined).map((v) => [v.id, v]));
     this.tubeBounds = [

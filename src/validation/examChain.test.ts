@@ -254,6 +254,19 @@ describe('Cadena completa del alumno: puerta → espectro → medición → grad
     });
   }
 
+  // La otra ventana hepática del protocolo: la VSH media desde la subcostal (decisión 83), que se curva en su plano (decisión
+  // 90: el haz la corta a 32° a 1–2 cm de la VCI en espiración, antes 40°). Una cadena aparte de la de los tres territorios
+  // (cada `examine` tiene su propio moteado espectral: sumarla a ellos cambiaría sus lecturas). Medido: S/D y patrón como la
+  // verdad en los tres casos, también antes de la decisión 90
+  for (const base of [NORMAL_ADULT, SEVERE_CONGESTION, AF_MODERATE_CONGESTION]) {
+    it(`${base.label}: la VSH media desde la subcostal, en apnea, da el patrón de la verdad`, () => {
+      const { truth, hepatic } = examine(base, 'apnea-expiratory', [{ kind: 'hepatic', window: 'subcostal', vessels: ['hvMiddle'] }]);
+      expect(hepatic, 'medición hepática').not.toBeNull();
+      expect(hepatic!.quality.issue, 'calidad hepática').toBeNull();
+      expect(hepatic!.pattern).toBe(truth.hepaticPattern);
+    });
+  }
+
   // Con respiración tranquila el tronco portal (más grueso que la puerta) nunca sale de ella: la
   // medición debe coincidir con la de apnea. Antes el volumen de muestra perdía la sangre en la
   // primera inspiración y no la recuperaba: PF 167 % en el sano y 136 % en el grave.

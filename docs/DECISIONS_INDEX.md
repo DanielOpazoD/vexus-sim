@@ -93,3 +93,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [87](DECISIONS.md#L3633) | Riñón y venas sin primitivas: pirámides en cono con sus arcuatos, seno en lóbulos, contorno cerrado por la grasa, hilio sin cápsula y extremos venosos que se afilan | vigente |
 | [88](DECISIONS.md#L3769) | Reservada: costillas y capas de la pared | reservada |
 | [89](DECISIONS.md#L3773) | Textura del parénquima y ruido del receptor: dispersores fuertes por debajo de la resolución, densidad de dispersores a escala de milímetros, tríadas en parte especulares y ruido por línea tras la PSF lateral | vigente |
+| [90](DECISIONS.md#L3976) | Vasos orgánicos: sección elíptica y radio que ondula en las venas del hígado, y una VCI que se curva y cambia de calibre sin tocar el sitio de medida | vigente |

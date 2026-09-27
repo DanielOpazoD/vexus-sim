@@ -4322,6 +4322,10 @@ la consulta, la cara y el bucle de tubos de la GLSL sobre la textura del renderi
 cos ≥ 0,99999998), el alcance del ruido, la disposición de la textura, los gradientes analíticos, la salida de
 `npm run calibrate` y la cadena del alumno.
 
+## 91. Reservada: decisión de una rama en paralelo [Estado: reservada]
+
+Número reservado para la rama que se integra en paralelo a la 92; la redacta su rama.
+
 ## 92. Columna con cortical y discos: lo que había tras la VCI en la subxifoidea era la sombra de un cuerpo vertebral sin cara, no pulmón
 
 **Contexto.** Sirve a los objetivos 2 (fidelidad ecográfica) y 3 (fidelidad anatómica) de `docs/MISION.md`. En las rondas
@@ -4364,13 +4368,16 @@ física de la costal y los discos (el navegador 3D ya dibujaba vértebras separa
 **Decisión.**
 
 - **Cuerpos elípticos con discos** (`anatomy/primitives.ts`: `SPINE_SHAPE`, `spineEllipseSd`, `spineSlabSd`, `spineArchSd`,
-  `spineBodySd`, `sdSpine`, `sdSpineDisc`; gemelos GLSL `spineBodyParts`, `spineBodySd`, `spineArchSd` con las constantes
-  interpoladas): la sección del cuerpo es una elipse de semiejes r·1,1765 y r/1,1765 con el r 17 de la escena, 40 × 29 mm
-  [LITERATURA aprox.: Panjabi y cols., Spine 1991;16:888 y 1992;17:299, platillos de T11–L1 de 37–42 × 29–33 mm], la misma
-  área que el círculo, así que el peso respiratorio (`respiratoryWeight`, que usa r) no cambia. Cuerpos de 24 mm cada 31
-  (discos de 7 mm; en la unión toracolumbar, cuerpos de 22–25 y discos de 5–8) con el de T12 centrado en z −20: el plano de la
-  transversa epigástrica lo corta por la mitad, el celíaco queda en T12, la mesentérica superior en L1 y las renales en L1–L2
-  [ESTIMADO]; el borde del platillo, redondeado 1,5 mm. El arco posterior sigue siendo una caja continua.
+  `spineBodySd`, `spineDistances`, `sdSpine`, `sdSpineDisc`; gemelos GLSL `spineBodyParts`, `spineBodySd`, `spineArchSd` con
+  las constantes interpoladas): la sección del cuerpo es una elipse de semiejes r·1,1765 y r/1,1765 con el r 17 de la escena,
+  40 × 28,9 mm [LITERATURA aprox.: Panjabi y cols., Spine 1991;16:888 y 1992;17:299, platillos de T11–L1 de 37–42 × 29–33 mm:
+  el fondo queda en su borde inferior], la misma área que el círculo; r conserva su valor, así que el peso respiratorio
+  (`respiratoryWeight`, que solo usa r) no cambia. Cuerpos de 24 mm cada 31 (discos de 7 mm; en la unión toracolumbar,
+  cuerpos de 22–25 y discos de 5–8) con el de T12 centrado en z −20: el plano de la transversa epigástrica lo corta por la
+  mitad, el celíaco queda en T12, la mesentérica superior en L1 y las renales en L1–L2 [ESTIMADO]; el borde del platillo,
+  redondeado 1,5 mm. El disco es el cilindro de los cuerpos fuera del hueso de un cuerpo: los dos llenan el cilindro, también
+  en el borde redondeado (con el corte recto del disco quedaba ahí un surco de hasta 0,375 mm con el tejido vecino, pulmón
+  junto a T11–T12: lo halló la revisión). El arco posterior sigue siendo una caja continua.
 - **Clasificación** (`AnatomyScene.classify`, GLSL `classifyWith`, mismo orden): tras la pared, el hueso (vértebra), el disco
   (el tejido del cartílago, que pasa a llamarse «cartílago»: el costal y el fibrocartílago del disco [EXTRAPOLACIÓN PROPIA]) y
   el resto (`classifyInside`, la clasificación de antes). Al final, en la muestra de fuera del hueso (`withSpineFace`): su
@@ -4387,8 +4394,8 @@ física de la costal y los discos (el navegador 3D ya dibujaba vértebras separa
   GLSL: la cápsula o el diafragma también pueden dibujarla; TS: `faceSdf('spine')`).
 - La vértebra pierde su retrodispersión propia (0,9 → 0), como el hueso de las costillas en la 88.
 - **Psoas** (`organs/retroperitoneum.ts`): con el cuerpo 3 mm más ancho el psoas, pegado a su costado, entraba 2 mm en el
-  hueso; el nodo de T12–L1 pasa de x 22 a 24 y el de L2 de (30, −45,5; r 12) a (32, −46,5; r 11), a ≥ 0,5 mm del hueso y
-  fuera de la grasa perirrenal.
+  hueso; el nodo de T12–L1 pasa de x 22 a 25 y el de L2 de (30, −45,5; r 12) a (31,4, −46,5; r 10,5): en una rejilla de 0,1 mm
+  queda a 0,78 mm del hueso y a 0,61 de la grasa perirrenal (en `main`, 0,50 y 0,47), también en la congestión grave.
 - **3D**: los cuerpos de la imagen (elípticos, de 24 mm cada 31) en lugar de cilindros de 22 mm cada 28 que la imagen no tenía.
 
 **Consecuencias.** Con GPU (M4, armónica y compuesto, apnea espiratoria; `main` a386e5e → rama):
@@ -4403,9 +4410,15 @@ física de la costal y los discos (el navegador 3D ya dibujaba vértebras separa
 - **Epigástrica**: la cara anterior del cuerpo brilla en su vértice («la sonrisa»: +2,0…+6,4 → +14…+35 dB en las líneas
   u88–u104, a 0–24°); los hombros del arco siguen oscuros. **Intercostal**: el borde redondo del cuerpo, de +2,2 / +1,6 / −5,1
   a +15,0 / +34,5 / +20,7 dB (u132–u140, a 8–30°). Renal: 3 líneas con cara, a > 45°.
-- **Nada más cambia**: banco de fidelidad (M4, las ocho escenas): gris y SNR del hígado, grano y las caras (VCI, VSH, peritoneo,
-  cápsula, Morison) iguales dentro del ruido; la sombra de la subxifoidea tiene ahora las columnas de los discos (su perfil,
-  −52 → −57…−42 dB) y la de la renal se queda sin «núcleo» (los discos cortan la tirada de ≥ 7 líneas bajo la vértebra).
+- **Lo que no cambia**: banco de fidelidad (M4, las ocho escenas): gris y SNR del hígado, grano y las caras (VCI, VSH,
+  peritoneo, cápsula, Morison) iguales dentro del ruido; la sombra de la subxifoidea tiene ahora las columnas de los discos
+  (su perfil, −52 → −57…−42 dB) y la de la renal se queda sin «núcleo» (los discos cortan la tirada de ≥ 7 líneas bajo la
+  vértebra). Un efecto de lado: la luz de la arteria renal derecha entraba 1,2 mm en el cilindro de antes, donde era hueso;
+  ahora pasa a 1,3 mm del cuerpo. La VCI queda a ≥ 8 mm de la columna: el sitio de medida, su diámetro y la AD no cambian.
+- **Lo que sigue oscuro**: las caras del cuerpo a más de ~30–35° de incidencia (la mitad izquierda de la columna de la
+  subxifoidea, el costado del cuerpo en la intercostal) y el arco posterior, una caja sin cortical (acaban en él 21 de las 192
+  líneas de la intercostal y 28 de la epigástrica, los «hombros» de la sombra), siguen siendo un borde de tejido contra la
+  sombra, sin línea, como en `main` (la cortical de la costal tampoco brilla allí; la del arco, `spine-schematic`).
 - **Equivalencia TS ↔ GLSL** con Metal: volumen de 50 000 puntos 1,000 (1739 de vértebra y 162 de disco), cáscara de las caras
   1,000 (1518 puntos de la cortical vertebral; |Δifd| ≤ 1·10⁻⁴ mm) y barrido de las siete ventanas 1,000; normales de la
   cara de la GPU frente al gradiente de TS, p01 0,99999996 en la subxifoidea, la intercostal y la renal, norma p95 ≤ 2·10⁻⁴.
@@ -4425,14 +4438,24 @@ física de la costal y los discos (el navegador 3D ya dibujaba vértebras separa
 **Verificación.** `spine.test.ts` (fallan en `main`: el cuerpo de 34 × 34 mm, solo vértebra a lo largo del eje, ninguna cara,
 retrodispersión 0,9, la frontera del hígado junto a la columna por encima de su distancia en 134 de 142 muestras, 0 líneas con
 cara y 0 con disco en la subxifoidea): la sección y los niveles con sus rangos anatómicos, el área del círculo y el plano de la
-epigástrica en el centro de un cuerpo; la clasificación (hueso sin moteado, disco, la cara delante del cuerpo y en el
-platillo, no en el arco ni más allá de `SPINE_FACE_MM`); la frontera del hígado en la subxifoidea; el gradiente, la norma, la
-curvatura y el eje de la cara; su eco según la incidencia (el de la costal, −10 dB a 20°, −40 dB a 35°, sin la cara de detrás
-ni difusa más allá del ángulo crítico); la subxifoidea del juez (≥ 20 líneas con la cara a < 30° y ≥ 3 grupos de líneas por los
-discos); la GLSL con sus constantes y la regla. Al día: `wall.test.ts` (24 caras, la vértebra sin moteado, la regla de la cara
-posterior en la GLSL), `interfaceEcho.test.ts` (la ventana de la difusa), `startPoints.test.ts` (el disco del fondo de la
-intercostal no es una costilla), `retroperitoneum.test.ts` (el psoas) y la e2e de las normales (fila `spine`, exigida en p01).
-e2e completa con SwiftShader (equivalencia TS ↔ GLSL, paridad de la transmisión, espejo, normales, banco).
+epigástrica en el centro de un cuerpo; cuerpos y discos llenan el cilindro junto al borde del platillo; la clasificación
+(hueso sin moteado, disco, la cara delante del cuerpo y en el platillo, no en el arco ni más allá de `SPINE_FACE_MM`); las
+reglas de la cara en un anillo de muestras a lo largo de la columna (el gas no la dibuja, el tejido más cerca del arco
+tampoco, la cara más cercana gana —la cápsula y la mitad abdominal del diafragma conservan la suya— y la frontera cuenta el
+hueso y el disco: cada una de las cuatro reglas y el corte recto del disco, quitados uno a uno, hacen fallar una prueba); la
+frontera del hígado en la subxifoidea; el gradiente, la norma, la curvatura y el eje de la cara; su eco según la incidencia (el
+de la costal, −10 dB a 20°, −40 dB a 35°, sin la cara de detrás ni difusa más allá del ángulo crítico); la subxifoidea del juez
+(≥ 20 líneas con la cara a < 30° y ≥ 3 grupos de líneas por los discos); la GLSL con sus constantes, sus fórmulas y la regla.
+Al día: `wall.test.ts` (24 caras, la vértebra sin moteado, la regla de la cara posterior en la GLSL), `interfaceEcho.test.ts`
+(la ventana de la difusa), `startPoints.test.ts` (el disco del fondo de la intercostal no es una costilla),
+`retroperitoneum.test.ts` (el psoas lateral al semieje del cuerpo y, en una rejilla de 0,2 mm, a > 0,5 mm del hueso y > 0,3
+de la grasa perirrenal), `shaderLimits.test.ts` (127 y 129 ranuras), la e2e de equivalencia (≥ 1000 puntos de vértebra, ≥ 100
+de cartílago —en `main`, 49, el costal— y la cara vertebral en la cáscara) y la de las normales (fila `spine`, exigida en p01;
+la muestra que dibuja la cortical ya no cuenta en la fila de su tejido: el diafragma junto a la columna de la intercostal la
+hacía fallar). E2E_RESULTADO Revisión adversarial de contexto limpio: encontró la e2e de las normales en rojo (arriba), las
+reglas de la cara sin prueba que las fijara, el surco del borde del platillo, el psoas a 0,17 mm del hueso y dentro de la grasa
+perirrenal en una rejilla fina, cifras y afirmaciones de la documentación que no cuadraban y detalles de coste (la columna
+calculada dos veces en TS, una normal de la vértebra que nadie usaba y era NaN en su eje); todo corregido arriba.
 
 ## Iteración 2 — informe de cierre (22-09-2026)
 

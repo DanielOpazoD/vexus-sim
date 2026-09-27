@@ -209,10 +209,10 @@ describe('Límites del shader con margen para crecer', () => {
       expect(perTissue, `${name} declara una tabla de un float por tejido`).toEqual([]);
     }
     expect(FRAGMENT_SHADERS.map(([name]) => name)).toEqual(expect.arrayContaining(LOOK_PAIRS.map((p) => `${p.name}_STEERED`)));
-    // la pasada B cuenta sus arrays de tejidos, de caras y de escena: 126 ranuras y 128 en su programa dirigido (114 y
+    // la pasada B cuenta sus arrays de tejidos, de caras y de escena: 127 ranuras y 129 en su programa dirigido (114 y
     // 116 con las caras de la pared, decisión 62; la armónica, decisión 77, y los tejidos del retroperitoneo, decisión 81,
     // con TISSUE_VEC4 de 7 a 8, llevaban al tope de 130; el ruido del receptor, que pasa a C, libera uNoise y uFrame:
-    // decisión 89)
+    // decisión 89; la fila de la cortical vertebral en uIface suma una, decisión 92: queda una bajo el tope)
     const raw = uniformSlots(FRAG_RAWFIELD);
     const rawSteered = uniformSlots(FRAG_RAWFIELD_STEERED);
     expect(raw.arrays).toContain(`uTissueBack4[${TISSUE_VEC4}]`);

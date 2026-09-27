@@ -361,14 +361,27 @@ export function spineBodySd(p: Vec3, sp: Spine): number {
   return smoothMax(spineEllipseSd(p, sp), spineSlabSd(p[2]), SPINE_SHAPE.rimMm);
 }
 
-/** Distancia con signo al hueso de la columna (cuerpos ∪ arco posterior); negativa en hueso. */
-export function sdSpine(p: Vec3, sp: Spine): number {
-  return Math.min(spineBodySd(p, sp), spineArchSd(p, sp));
+/**
+ * Distancias con signo de la columna en p (decisión 92; negativas dentro): a los cuerpos (`spineBodySd`), al hueso (cuerpos ∪
+ * arco posterior) y al disco intervertebral, el cilindro de los cuerpos fuera del hueso de un cuerpo: cuerpos y discos
+ * llenan el cilindro, también en el borde redondeado del platillo (con el corte recto del disco quedaba ahí un surco de
+ * hasta 0,375 mm que tomaba el tejido vecino, pulmón junto a T11–T12). `classify` las calcula una vez; gemelo del bloque
+ * de la columna de `classifyWith` (GLSL).
+ */
+export function spineDistances(p: Vec3, sp: Spine): { body: number; bone: number; disc: number } {
+  const e = spineEllipseSd(p, sp);
+  const body = smoothMax(e, spineSlabSd(p[2]), SPINE_SHAPE.rimMm);
+  return { body, bone: Math.min(body, spineArchSd(p, sp)), disc: Math.max(e, -body) };
 }
 
-/** Disco intervertebral (decisión 92): dentro del cilindro de los cuerpos y entre dos de ellos (negativa dentro). */
+/** Distancia con signo al hueso de la columna (cuerpos ∪ arco posterior); negativa en hueso. */
+export function sdSpine(p: Vec3, sp: Spine): number {
+  return spineDistances(p, sp).bone;
+}
+
+/** Disco intervertebral (decisión 92, `spineDistances`): negativa dentro. */
 export function sdSpineDisc(p: Vec3, sp: Spine): number {
-  return Math.max(spineEllipseSd(p, sp), -spineSlabSd(p[2]));
+  return spineDistances(p, sp).disc;
 }
 
 /**
@@ -383,7 +396,10 @@ export function spineFaceCurvature(p: Vec3, sp: Spine): number {
   const b = sp.r / SPINE_SHAPE.aspect;
   const kx = (p[0] - sp.x0) / a;
   const ky = (p[1] - sp.y0) / b;
-  const q = Math.hypot(a * ky, b * kx) / Math.max(Math.hypot(kx, ky), 1e-6);
+  const k = Math.hypot(kx, ky);
+  // (en el eje no hay dirección: dentro del hueso, sin cara)
+  if (k < 1e-6) return 0;
+  const q = Math.hypot(a * ky, b * kx) / k;
   return (a * b) / (q * q * q);
 }
 

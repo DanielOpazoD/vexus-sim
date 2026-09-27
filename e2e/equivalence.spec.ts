@@ -51,6 +51,9 @@ test('la anatomía GLSL coincide con la TypeScript en tejido, vaso y velocidad',
     // y el corazón y el mediastino (decisión 85): ~300 y ~700 puntos interiores por caso con la CPU
     expect(vol.byTissue.Myocardium ?? 0, vtag).toBeGreaterThan(100);
     expect(vol.byTissue.Mediastinum ?? 0, vtag).toBeGreaterThan(300);
+    // y la columna con sus discos (decisión 92): ~1700 puntos de vértebra y ~160 de cartílago (en main, 49: el costal)
+    expect(vol.byTissue.Vertebra ?? 0, vtag).toBeGreaterThan(1000);
+    expect(vol.byTissue.Cartilage ?? 0, vtag).toBeGreaterThan(100);
     expect(vol.bloodPoints, vtag).toBeGreaterThan(300);
     expect(vol.vesselAgreement, vtag).toBe(1);
     expect(vol.velocityP95RelErr, vtag).toBeLessThan(1e-3);
@@ -88,6 +91,8 @@ test('la anatomía GLSL coincide con la TypeScript en tejido, vaso y velocidad',
       'Perichondrium',
       // el pericardio (decisión 85): la subxifoidea, la subcostal y el flanco lo cruzan
       'Pericardium',
+      // la cortical vertebral (decisión 92): la subxifoidea, la epigástrica, la intercostal y la renal
+      'VertebraCortex',
     ])
       expect(shell.byInterface[face] ?? 0, stag).toBeGreaterThan(50);
     expect(shell.agreement, stag).toBeGreaterThanOrEqual(0.999);

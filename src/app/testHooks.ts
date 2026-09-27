@@ -1198,6 +1198,9 @@ export function faceNormalStats(sim: Simulator): Record<FaceNormalRow, FaceNorma
     const c = scene.classify(m, caliber);
     const t = c.tissue;
     const tube = sdf(m, 'tube') !== null;
+    // junto a un cuerpo vertebral la muestra dibuja su cortical (decisión 92) y no la cara de su tejido: su eco usa la normal
+    // de la columna (la primera rama de `faceGradient`); el diafragma junto a la columna de la intercostal, por ejemplo
+    if (c.interface === Interface.VertebraCortex && face !== 'spine') return null;
     switch (face) {
       case 'tube':
         return tube && TUBE_TISSUES.has(t) ? t : null;

@@ -225,7 +225,9 @@ float spineFaceCurvature(vec3 m) {
   if (d.y > d.x) return 0.0;
   vec2 r = spineRadii();
   vec2 k = (m.xy - uSpine.xy) / r;
-  float q = length(vec2(r.x * k.y, r.y * k.x)) / max(length(k), 1e-6);
+  float kl = length(k);
+  if (kl < 1e-6) return 0.0;
+  float q = length(vec2(r.x * k.y, r.y * k.x)) / kl;
   return r.x * r.y / (q * q * q);
 }
 
@@ -626,9 +628,9 @@ Cls classifyWith(vec3 m, bool withCurtain) {
   vec2 sb = spineBodyParts(m);
   float dBody = smoothMax(sb.x, sb.y, SPINE_RIM);
   float dSpine = min(dBody, spineArchSd(m));
-  // (la normal del hueso no la usa nadie: no dibuja cara, la dibuja el tejido de fuera)
-  if (dSpine < 0.0) { c.tissue = T_VERTEBRA; c.bd = -dSpine; c.n = normalize(vec3(m.xy - uSpine.xy, 0.0)); return c; }
-  float dDisc = max(sb.x, -sb.y);
+  if (dSpine < 0.0) { c.tissue = T_VERTEBRA; c.bd = -dSpine; return c; }
+  // el disco: el cilindro de los cuerpos fuera del hueso de un cuerpo (spineDistances de TS), también en el borde redondeado
+  float dDisc = max(sb.x, -dBody);
   if (dDisc < 0.0) { c.tissue = T_CARTILAGE; c.bd = -dDisc; } else classifyInside(m, withCurtain, depth, tn, dSpine, c);
   // la cortical de los cuerpos en el tejido de fuera del hueso (withSpineFace de TS): su distancia a la frontera cuenta el
   // hueso y el disco, y si no es gas, el cuerpo es el hueso más cercano y la cara es la más cercana de las suyas, la dibuja

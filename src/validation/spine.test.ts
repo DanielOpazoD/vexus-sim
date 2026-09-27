@@ -16,6 +16,7 @@ import {
   sdSpineDisc,
   spineArchSd,
   spineBodySd,
+  spineDistances,
   spineEllipseSd,
   spineFaceCurvature,
   spineSlabSd,
@@ -74,7 +75,7 @@ describe('columna: cuerpos elípticos con discos (decisión 92)', () => {
     // Panjabi 1991/1992: platillos de T11–L1 de 37–42 mm de ancho y 29–33 de fondo; antes, un círculo de 34 × 34
     expect(width).toBeGreaterThan(37);
     expect(width).toBeLessThan(42);
-    expect(depth).toBeGreaterThan(27.5);
+    expect(depth).toBeGreaterThan(28.5);
     expect(depth).toBeLessThan(33);
     expect(width / depth).toBeGreaterThan(1.25);
     expect((Math.PI * width * depth) / 4).toBeCloseTo(Math.PI * sp.r * sp.r, -1);
@@ -103,6 +104,22 @@ describe('columna: cuerpos elípticos con discos (decisión 92)', () => {
       expect(r.len, JSON.stringify(r)).toBeGreaterThan(lo);
       expect(r.len, JSON.stringify(r)).toBeLessThan(hi);
     }
+    // cuerpos y discos llenan el cilindro, también junto al borde redondeado del platillo (con el corte recto del disco quedaba
+    // un surco de hasta 0,375 mm con el tejido vecino: pulmón junto a T11–T12)
+    const a = sp.r * SPINE_SHAPE.aspect;
+    const b = sp.r / SPINE_SHAPE.aspect;
+    let rim = 0;
+    for (let k = -3; k <= 3; k++)
+      for (const edge of [-1, 1])
+        for (let dz = -1.5; dz <= 1.5; dz += 0.1)
+          for (let t = 0; t < 2 * Math.PI; t += 0.1)
+            for (const f of [0.97, 0.99, 0.999]) {
+              const m: Vec3 = [sp.x0 + f * a * Math.cos(t), sp.y0 + f * b * Math.sin(t), z0Mm + k * levelMm + edge * (bodyMm / 2) + dz];
+              if (spineArchSd(m, sp) < 0) continue;
+              rim++;
+              expect([Tissue.Vertebra, Tissue.Cartilage], `${m.map((x) => x.toFixed(2)).join(', ')}`).toContain(cls(m).tissue);
+            }
+    expect(rim).toBeGreaterThan(10_000);
     // el hueso es la unión de los cuerpos (borde del platillo redondeado) y el arco; el disco, el cilindro entre dos cuerpos
     for (const m of [
       [0, -46, z0Mm],
@@ -110,7 +127,7 @@ describe('columna: cuerpos elípticos con discos (decisión 92)', () => {
       [30, -70, z0Mm + levelMm / 2],
     ] as Vec3[]) {
       expect(sdSpine(m, sp)).toBeCloseTo(Math.min(spineBodySd(m, sp), spineArchSd(m, sp)), 12);
-      expect(sdSpineDisc(m, sp)).toBeCloseTo(Math.max(spineEllipseSd(m, sp), -spineSlabSd(m[2])), 12);
+      expect(sdSpineDisc(m, sp)).toBeCloseTo(Math.max(spineEllipseSd(m, sp), -spineBodySd(m, sp)), 12);
     }
   });
 
@@ -141,6 +158,47 @@ describe('columna: cuerpos elípticos con discos (decisión 92)', () => {
     const arch: Vec3 = [sp.archHalfWidth + 0.5, 0.5 * (sp.archY0 + sp.archY1), z0];
     expect(spineArchSd(arch, sp)).toBeCloseTo(0.5, 6);
     expect(cls(arch).interface).not.toBe(Interface.VertebraCortex);
+  });
+
+  it('las reglas de la cara: el gas y el tejido más cerca del arco no la dibujan, la cara más cercana gana y la frontera cuenta el disco', () => {
+    // un anillo de muestras a 0,2–1 mm del cilindro de los cuerpos, a lo largo de la columna (tórax y abdomen)
+    const a = sp.r * SPINE_SHAPE.aspect;
+    const b = sp.r / SPINE_SHAPE.aspect;
+    const n = { gas: 0, arch: 0, kept: 0, face: 0 };
+    for (let z = -200; z <= 150; z += 1.7)
+      for (let t = 0; t < 2 * Math.PI; t += 0.05)
+        for (const off of [0.2, 0.6, 1]) {
+          const m: Vec3 = [sp.x0 + (a + off) * Math.cos(t), sp.y0 + (b + off) * Math.sin(t), z];
+          const d = spineDistances(m, sp);
+          if (d.bone <= 0 || d.disc < 0 || d.body >= SPINE_FACE_MM) continue;
+          const c = cls(m);
+          const tag = `${Tissue[c.tissue]} ${Interface[c.interface]} en (${m.map((x) => x.toFixed(2)).join(', ')}): cuerpo ${d.body}`;
+          // la frontera cuenta el hueso, en todas
+          expect(c.boundaryDistance, tag).toBeLessThanOrEqual(d.bone + 1e-12);
+          if (TISSUES[c.tissue].gas) {
+            n.gas++;
+            expect(c.interface, tag).not.toBe(Interface.VertebraCortex);
+          } else if (d.body > d.bone) {
+            // más cerca del arco (una caja sin cara) que del cuerpo
+            n.arch++;
+            expect(c.interface, tag).not.toBe(Interface.VertebraCortex);
+          } else if (c.interface === Interface.VertebraCortex) {
+            n.face++;
+            expect(c.interfaceDistance, tag).toBe(d.body);
+          } else {
+            // conserva su cara, más cercana que la del cuerpo (la cápsula hepática, la mitad abdominal del diafragma)
+            n.kept++;
+            expect(c.interfaceDistance, tag).toBeLessThan(d.body);
+          }
+        }
+    expect(n.gas, JSON.stringify(n)).toBeGreaterThan(100);
+    expect(n.arch, JSON.stringify(n)).toBeGreaterThan(100);
+    expect(n.kept, JSON.stringify(n)).toBeGreaterThan(20);
+    expect(n.face, JSON.stringify(n)).toBeGreaterThan(1000);
+    // a 0,5 mm delante de un disco, la frontera está a ≤ 0,5 mm (el disco es otro tejido)
+    const beside: Vec3 = [0, -46 + b + 0.5, SPINE_SHAPE.z0Mm + SPINE_SHAPE.levelMm / 2];
+    expect(sdSpineDisc(beside, sp)).toBeCloseTo(0.5, 2);
+    expect(cls(beside).boundaryDistance).toBeLessThanOrEqual(sdSpineDisc(beside, sp) + 1e-9);
   });
 
   it('la distancia a la frontera del tejido junto a la columna cuenta el hueso (antes el hígado que recorta no la contaba)', () => {
@@ -266,6 +324,14 @@ describe('columna: cuerpos elípticos con discos (decisión 92)', () => {
     expect(glsl).toContain(`#define SPINE_RIM ${SPINE_SHAPE.rimMm.toFixed(3)}`);
     expect(glsl).toContain(`#define SPINE_FACE_MM ${SPINE_FACE_MM.toFixed(3)}`);
     expect(glsl).toContain(`#define ${INTERFACE_GLSL_NAME[Interface.VertebraCortex]} ${Interface.VertebraCortex}`);
+    // los gemelos de primitives.ts: el cilindro elíptico, los cuerpos en z, el disco que llena el cilindro y la curvatura
+    expect(glsl).toContain('vec2 spineRadii() { return vec2(uSpine.z * SPINE_ASPECT, uSpine.z / SPINE_ASPECT); }');
+    expect(glsl).toContain(
+      'return vec2(sdEllipsoidLocal(vec3(m.xy - uSpine.xy, 0.0), vec3(spineRadii(), 1e3)), abs(t - SPINE_LEVEL * floor(t / SPINE_LEVEL + 0.5)) - 0.5 * SPINE_BODY);',
+    );
+    expect(glsl).toContain('if (d.y > d.x) return 0.0;');
+    expect(glsl).toContain('float q = length(vec2(r.x * k.y, r.y * k.x)) / kl; return r.x * r.y / (q * q * q);');
+    expect(glsl).toContain('float dDisc = max(sb.x, -dBody);');
     expect(glsl).toContain('float dBody = smoothMax(sb.x, sb.y, SPINE_RIM); float dSpine = min(dBody, spineArchSd(m));');
     expect(glsl).toContain(
       'if (dDisc < 0.0) { c.tissue = T_CARTILAGE; c.bd = -dDisc; } else classifyInside(m, withCurtain, depth, tn, dSpine, c);',

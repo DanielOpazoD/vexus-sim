@@ -94,4 +94,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [88](DECISIONS.md#L3769) | Costillas opacas y sin disco, y pared con relieve: lo que entra en el hueso no vuelve, la difusa de la cortical se apaga en el ángulo crítico y las capas dejan de ser arcos concéntricos | vigente |
 | [89](DECISIONS.md#L3961) | Textura del parénquima y ruido del receptor: dispersores fuertes por debajo de la resolución, densidad de dispersores a escala de milímetros, tríadas en parte especulares y ruido por línea tras la PSF lateral | vigente |
 | [90](DECISIONS.md#L4164) | Vasos orgánicos: sección elíptica y radio que ondula en las venas del hígado, y una VCI que se curva y cambia de calibre sin tocar el sitio de medida | vigente |
-| [92](DECISIONS.md#L4325) | Columna con cortical y discos: lo que había tras la VCI en la subxifoidea era la sombra de un cuerpo vertebral sin cara, no pulmón | vigente |
+| [91](DECISIONS.md#L4325) | Reservada: decisión de una rama en paralelo | reservada |
+| [92](DECISIONS.md#L4329) | Columna con cortical y discos: lo que había tras la VCI en la subxifoidea era la sombra de un cuerpo vertebral sin cara, no pulmón | vigente |

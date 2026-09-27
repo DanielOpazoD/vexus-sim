@@ -123,7 +123,10 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   anteriores eran dos barras blancas horizontales), sin canal ni forámenes: tras un disco el haz llega a la caja y se
   apaga, sin la línea del complejo posterior (el ligamento longitudinal posterior y la duramadre) de un equipo. No hay
   pilares del diafragma: en la subxifoidea, entre la VCI y la columna hay hígado. La cortical de los cuerpos tiene la
-  física de la costal (s 0,15, σz 0,045) [ESTIMADO]: brilla a < 30° de incidencia y se apaga a > 35°.
+  física de la costal (s 0,15, σz 0,045) [ESTIMADO]: brilla a < 30° de incidencia y se apaga a > 35°, así que donde el haz
+  toca el cuerpo más oblicuo (la mitad izquierda de la columna de la subxifoidea, el costado del cuerpo en la intercostal) y
+  en la caja del arco (21 de las 192 líneas de la intercostal, 28 de la epigástrica) el tejido sigue acabando en la sombra sin
+  línea que lo explique.
 - **La aorta no late en modo B** (`aorta-fixed-caliber`): su calibre es fijo; el pulso arterial está en su velocidad
   (color y PW), no en su pared. En la transversa epigástrica (decisión 83) no se ve el latido de 1–4 mm que ayuda a
   distinguirla de la VCI: se reconoce por su pared más gruesa y brillante, su sección redonda, su sitio sobre la vértebra,

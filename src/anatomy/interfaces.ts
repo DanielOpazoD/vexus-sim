@@ -128,7 +128,7 @@ export const GALLBLADDER_CONTACT_MM = 1.0;
  * Muestras de fuera del hueso a menos de esto (mm) de un cuerpo vertebral dibujan su cortical (decisión 92) si es la cara
  * más cercana de las suyas: el alcance del perfil de una cara de un lado (desplazamiento 2,5σh más 3,5σh, 0,84 mm) por la
  * cota de la norma del gradiente de la salida barata del eco (1,5), redondeado hacia arriba; más lejos la cara no
- * devolvería eco y la muestra conserva la suya. `interfaceEcho.test.ts` fija la desigualdad.
+ * devolvería eco y la muestra conserva la suya. `spine.test.ts` fija la desigualdad.
  */
 export const SPINE_FACE_MM = 1.3;
 /**

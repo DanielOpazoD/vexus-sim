@@ -37,10 +37,13 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
   sin cortical que el haz tocaba de refilón. Los cuerpos tienen ahora su sección real (40 × 29 mm, antes un círculo de 34)
   y su cortical, que brilla según la incidencia como la de las costillas: en la subxifoidea, una línea brillante bajo el
   hígado (+17–20 dB sobre él) que se apaga hacia el centro de la imagen, donde el haz la toca más oblicuo; en la
-  transversa epigástrica, la «sonrisa» del vértice del cuerpo; en la intercostal, el borde redondo del cuerpo al fondo. Entre
-  los cuerpos, los discos: la línea se corta y la sombra deja pasar columnas grises a lo largo del haz. El psoas se aparta
-  2 mm con el costado del cuerpo. El 3D dibuja las mismas vértebras. Las medidas, las ventanas VExUS y el coste del cuadro
-  no cambian.
+  transversa epigástrica, la «sonrisa» del vértice del cuerpo; en la intercostal, un arco corto del borde del cuerpo. Entre
+  los cuerpos, los discos: la línea se corta y la sombra deja pasar columnas grises a lo largo del haz. Donde el haz toca el
+  cuerpo muy oblicuo (a más de ~30°: la mitad izquierda de la columna de la subxifoidea, el costado del cuerpo en la
+  intercostal) y en el arco posterior, una caja sin cortical (los «hombros» de la sombra de la epigástrica, buena parte de la
+  mancha de la intercostal), el tejido sigue acabando en la sombra sin línea (`spine-schematic`). El psoas se aparta 1,5–3 mm
+  con el costado del cuerpo. El 3D dibuja las mismas vértebras. Las medidas, las ventanas VExUS y el coste del cuadro no
+  cambian.
 - Vasos orgánicos (90): las suprahepáticas y la porta cortadas de través son óvalos (antes, círculos perfectos) y su
   calibre ondula unos pocos por ciento a lo largo del vaso; una vena distendida por la congestión se redondea. La VCI se
   curva también en el plano coronal y se estrecha con suavidad por debajo de donde se mide (antes, en el flanco, dos

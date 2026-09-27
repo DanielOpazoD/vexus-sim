@@ -5,9 +5,8 @@ import {
   diaphragmHeight,
   orthonormalBasis,
   sdSpine,
-  sdSpineDisc,
-  spineArchSd,
   spineBodySd,
+  spineDistances,
   spineFaceCurvature,
   sdDiaphragm,
   sdDiaphragmSlope,
@@ -479,21 +478,18 @@ export class AnatomyScene {
     if (wall.final) return wall.cls;
     // la columna (decisión 92): el hueso de los cuerpos y del arco, el disco entre dos cuerpos y, en el tejido blando de
     // alrededor, la cara de su cortical
-    const dBody = spineBodySd(m, this.spine);
-    const dSpine = Math.min(dBody, spineArchSd(m, this.spine));
-    if (dSpine < 0) return { ...NONE, tissue: Tissue.Vertebra, boundaryDistance: -dSpine };
-    const dDisc = sdSpineDisc(m, this.spine);
+    const d = spineDistances(m, this.spine);
+    if (d.bone < 0) return { ...NONE, tissue: Tissue.Vertebra, boundaryDistance: -d.bone };
     const c: Classification =
-      dDisc < 0
-        ? { ...NONE, tissue: Tissue.Cartilage, boundaryDistance: -dDisc }
+      d.disc < 0
+        ? { ...NONE, tissue: Tissue.Cartilage, boundaryDistance: -d.disc }
         : this.classifyInside(m, caliber, withCurtain, depth, wall.wallMm);
-    return withSpineFace(c, dSpine, dBody, dDisc);
+    return withSpineFace(c, d.bone, d.body, d.disc);
   }
 
   /** `classify` dentro de la cavidad y fuera de la columna: cortina, tubos, tórax, diafragma y vísceras. */
   private classifyInside(m: Vec3, caliber: VesselCaliber, withCurtain: boolean, depth: number, wallMm: number): Classification {
-    const wall = { wallMm };
-    const curtain = withCurtain ? this.classifyLungCurtain(m, -depth - wall.wallMm, caliber.diaphragmCaudalMm) : null;
+    const curtain = withCurtain ? this.classifyLungCurtain(m, -depth - wallMm, caliber.diaphragmCaudalMm) : null;
     if (curtain) return curtain;
     const tube = this.classifyTubes(m, caliber);
     const [dDome, slope] = sdDiaphragmSlope(m, this.diaphragm, this.torso);
@@ -518,7 +514,7 @@ export class AnatomyScene {
       const t = thorax(m, dDome, floor);
       const face = t.ifd < NONE.interfaceDistance ? { interface: Interface.Pericardium, interfaceDistance: t.ifd } : {};
       // su distancia a la frontera cuenta también la columna y la pared (como el retroperitoneo)
-      const bd = Math.min(t.bd, sdSpine(m, this.spine), -depth - wall.wallMm);
+      const bd = Math.min(t.bd, sdSpine(m, this.spine), -depth - wallMm);
       return { ...NONE, tissue: t.tissue, boundaryDistance: bd, ...face };
     }
     if (dDome < DIAPHRAGM_THICKNESS_MM) {
@@ -544,19 +540,13 @@ export class AnatomyScene {
       };
     const kidney = this.classifyKidneys(m);
     if (kidney.cls) return kidney.cls;
-    const liver = this.classifyLiver(m, dDome, -depth - wall.wallMm, kidney, dGb - this.gallbladderWallMm);
+    const liver = this.classifyLiver(m, dDome, -depth - wallMm, kidney, dGb - this.gallbladderWallMm);
     if (liver) return liver;
     // Intestino: el «resto». Su distancia a la frontera es la de las interfaces que ganan antes
     // (diafragma, vesícula, hígado, pared, grasa perirrenal, gas; el corazón queda por encima del diafragma); como en el hígado, no
     // cuenta la de los tubos. Con 5 mm fijos el gate volumétrico daba por interior un punto pegado
     // al diafragma que float32 clasificaba al otro lado (CI de #39: Bowel→Diaphragm, 1 de 44 826).
-    let bd = Math.min(
-      BOWEL_BD_CAP_MM,
-      dDome - DIAPHRAGM_THICKNESS_MM,
-      dGb - this.gallbladderWallMm,
-      this.liverBaseSdf(m),
-      -depth - wall.wallMm,
-    );
+    let bd = Math.min(BOWEL_BD_CAP_MM, dDome - DIAPHRAGM_THICKNESS_MM, dGb - this.gallbladderWallMm, this.liverBaseSdf(m), -depth - wallMm);
     for (const k of [this.kidneyRight, this.kidneyLeft]) bd = Math.min(bd, perirenalOuterSdf(kidneyLocal(m, k), k));
     for (const g of this.gasPockets) {
       const dg = sdSphere(m, g);
@@ -565,7 +555,7 @@ export class AnatomyScene {
     }
     // detrás del peritoneo parietal posterior, el retroperitoneo (decisión 81): psoas, cuadrado lumbar y grasa; delante, el
     // intestino. Su distancia a la frontera cuenta también la columna, que se clasifica antes (el psoas la bordea)
-    const [tissue, dRetro] = retroperitoneum(m, -depth - wall.wallMm, kidney.dPeriMm);
+    const [tissue, dRetro] = retroperitoneum(m, -depth - wallMm, kidney.dPeriMm);
     return { ...NONE, tissue, boundaryDistance: Math.max(0, Math.min(bd, dRetro, sdSpine(m, this.spine))) };
   }
 
@@ -580,7 +570,8 @@ export class AnatomyScene {
    *  - `kidneyOuter`: el menor `dOuter` de los dos riñones;
    *  - `perirenalOuter`: el menor `perirenalOuterSdf` de los dos riñones (`dOuter` − grosor local de la grasa);
    *  - `gallbladder`: `gallbladderSdf`;
-   *  - `pericardium`: `heartOuterSdf` (el epicardio recortado por la cúpula).
+   *  - `pericardium`: `heartOuterSdf` (el epicardio recortado por la cúpula);
+   *  - `spine`: `spineBodySd` (los cuerpos vertebrales, decisión 92).
    * Solo banco de fidelidad y pruebas: la clasificación no la llama.
    */
   faceSdf(m: Vec3, caliber: VesselCaliber, face: FaceGeometry): number | null {
@@ -958,7 +949,7 @@ const NONE: Classification = Object.freeze({
  * ≥ 0), a `dBody` de los cuerpos (`spineBodySd`) y a `dDisc` del disco (`sdSpineDisc`, negativa dentro): su distancia a
  * la frontera cuenta el hueso y el disco (antes el hígado que la columna recorta no la contaba) y, si no es gas, está a
  * menos de `SPINE_FACE_MM` de un cuerpo y el cuerpo es el hueso más cercano (el arco posterior, una caja, no dibuja
- * cara: `spine-posterior-box`), dibuja la cara de la cortical cuando es la más cercana de las suyas (el reparto de
+ * cara: `spine-schematic`), dibuja la cara de la cortical cuando es la más cercana de las suyas (el reparto de
  * dueños de la decisión 57: una cara por muestra). Gemelo del final de `classifyWith` (GLSL).
  */
 function withSpineFace(c: Classification, dSpine: number, dBody: number, dDisc: number): Classification {

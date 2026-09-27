@@ -49,6 +49,14 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
   correlaciona a lo largo de ella, así que las luces de los vasos se ven con el ruido fino de un equipo y no con
   pinceladas a lo ancho. El estiramiento lateral del moteado hondo es el de la PSF (decisión 84) y no cambia. Las
   guardas del moteado de la e2e y los objetivos de la composición del banco se desplazan con lo que predice el gemelo.
+- Costillas opacas y pared con relieve (88): bajo una costilla ya no asoma nada (antes, la pleura y el peritoneo cruzaban
+  su sombra como una línea gris, porque el borde fino de la costilla dejaba pasar parte del haz y los lóbulos laterales
+  traían la pleura de al lado); la sombra empieza en la cortical, sin el disco gris del hueso, y se estrecha con la
+  profundidad como en la física. La costilla es un arco brillante en su cresta (la difusa de la cortical se apaga más
+  allá del ángulo crítico, 27°) y cada una tiene su sección. Las capas de la pared ondulan y cambian de espesor a lo
+  largo del corte (la grasa ±11 %, los planos del músculo se acercan y se separan, y con un músculo fino se funden): ya no son arcos
+  concéntricos y equidistantes. En la intercostal el músculo queda algo más oscuro (la parte del haz que roza las
+  costillas en elevación ya no devuelve moteado del hueso).
 - Riñón y venas sin primitivas (87): las pirámides son conos oscuros con la base hacia la corteza y la punta en el seno
   (antes, bandas bajo la corteza a las que el cáliz se comía la punta), con los vasos arcuatos en el borde de su base; el
   seno es grasa ecogénica en lóbulos, más brillante y heterogénea que el hígado; la grasa perirrenal y la retroperitoneal

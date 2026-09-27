@@ -270,7 +270,8 @@ describe('refracción en las luces líquidas (decisión 86)', () => {
     for (const src of [FRAG_TRANS_PREFIX, FRAG_TRANS_PREFIX_STEERED]) {
       expect(src).toContain('if (g.x < 0.0 && !entered) continue;');
       expect(src).toContain('psi += e * float(k - s);');
-      expect(src).toContain('o1 = vec4(step * psi, pa, 0.0, 0.0);');
+      // y en .z, lo que cobra el hueso (decisión 88: la fracción del haz que sobrevive a los huesos, que lee la pasada D)
+      expect(src).toContain('o1 = vec4(step * psi, pa, boneDb, 0.0);');
     }
     expect(STEERED_PREFIX_GLSL).toContain('float e = g.y * scale / (uCurvR + rS);');
     expect(STEERED_PREFIX_GLSL).toContain('psi += e * float(k - s);');
@@ -279,8 +280,9 @@ describe('refracción en las luces líquidas (decisión 86)', () => {
     expect(FRAG_TRANS_PREFIX_STEERED).toContain('o3 = extra;');
     // A: la ganancia multiplica la transmisión con apertura de la imagen (o0.x y o3.x), nunca el rayo único del Doppler
     for (const src of [FRAG_TRANSMISSION, FRAG_TRANSMISSION_STEERED]) {
-      expect(src).toContain('float T = apertureTransmission(line, k, r, step, single) * refractionGain(uPre1, 0, 1, line, k, r);');
-      expect(src).toContain('o2 = vec4(single, 0.0, 0.0, 0.0);');
+      expect(src).toContain('float Tap = apertureTransmission(line, k, r, step, single);');
+      expect(src).toContain('float T = Tap * refractionGain(uPre1, 0, 1, line, k, r);');
+      expect(src).toContain('o2 = vec4(single, 0.0, clamp(Tap / max(noBone, 1e-30), 0.0, 1.0), 0.0);');
       expect(src).toContain('uniform vec4 uAperture;');
       expect(src).toContain('uniform vec4 uRefr;');
       expect(src).toContain('uniform vec2 uRefrK;');

@@ -64,7 +64,8 @@ import {
   wallArc,
   wallDepths,
   wallFace,
-  wallFaceSd,
+  wallFaceGradient,
+  type WallDepths,
 } from './organs/wall';
 
 export type { DuctDef, VesselDef } from './vesselTree';
@@ -145,8 +146,8 @@ export const FACE_GEOMETRIES: readonly FaceGeometry[] = [
 /**
  * Geometría cuya distancia (`faceSdf`) da la cara de interfaz `i`, o null sin cara (o las pleuras: la del
  * espejo y la parietal, que no salen de `classify`). Las caras de la pared y de las costillas (decisión 62)
- * tampoco tienen geometría de `faceSdf`: su distancia es la de su capa (`wallFaceSd`) o la de su costilla
- * (`ribSd`), y `faceGradient` las trata aparte.
+ * tampoco tienen geometría de `faceSdf`: su distancia es la de su capa (`wallFaceSd`, con el gradiente de
+ * `wallFaceGradient`) o la de su costilla (`ribSd`), y `faceGradient` las trata aparte.
  */
 export function faceGeometryOf(i: Interface): FaceGeometry | null {
   if (i === Interface.None || i === Interface.Pleura || i === Interface.PleuraWall || isWallLayerInterface(i) || isRibInterface(i))
@@ -198,6 +199,21 @@ export function tubeBoundingSphere(t: Tube, marginMm: number): { center: Vec3; r
   for (const n of t.nodes) r = Math.max(r, Math.hypot(n.p[0] - c[0], n.p[1] - c[1], n.p[2] - c[2]) + n.r * 1.6);
   return { center: c, r: r + marginMm };
 }
+
+/**
+ * Sección de las costillas derechas 5.ª–10.ª en su cuerpo lateral (decisión 88): semialtura craneocaudal y semiespesor
+ * radial (mm). Antes las seis eran la misma elipse de 12 × 6,4 mm y en la imagen eran cúpulas idénticas. El cuerpo de
+ * una costilla es una lámina aplanada, más alta que gruesa: las medias (7.ª–8.ª) las más altas, la 9.ª y la 10.ª más
+ * bajas y finas hacia el reborde [ESTIMADO: alturas de 10–15 mm y espesores de 5–7 mm en la línea axilar media].
+ */
+export const RIB_SECTIONS: ReadonlyArray<{ halfWidth: number; halfThickness: number }> = [
+  { halfWidth: 6.8, halfThickness: 3.0 },
+  { halfWidth: 7.3, halfThickness: 3.2 },
+  { halfWidth: 6.9, halfThickness: 3.5 },
+  { halfWidth: 6.2, halfThickness: 3.3 },
+  { halfWidth: 5.5, halfThickness: 3.0 },
+  { halfWidth: 4.8, halfThickness: 2.7 },
+];
 
 /** Ascenso posterior del arco costal (mm) según el número de costilla: 60 mm la 5.ª, +6 mm por costilla. */
 export function ribTiltMm(ribNo: number): number {
@@ -297,8 +313,7 @@ export class AnatomyScene {
       this.ribs.push({
         zAnterior: anterior[i],
         tilt: ribTiltMm(5 + i),
-        halfWidth: 6,
-        halfThickness: 3.2,
+        ...RIB_SECTIONS[i],
         scale: 0.85,
         // cartílago a ±45° de la línea media: la unión costocondral en la línea medioclavicular (x ≈ 96 mm en la
         // elipse de la costilla, 136 × 89 mm), la del reborde costal de las costillas 7–10 (decisión 62)
@@ -594,7 +609,12 @@ export class AnatomyScene {
     if (face === undefined) {
       // las caras de la pared y de las costillas (decisión 62) no tienen geometría de faceSdf
       const iface = this.classify(m, caliber).interface;
-      if (isWallLayerInterface(iface)) return this.numericGradient(m, (p) => wallFaceSd(p, iface, this.torso), 0);
+      if (isWallLayerInterface(iface)) {
+        // la pendiente de la capa (decisión 88), como la GPU: tres evaluaciones de su profundidad
+        const g = wallFaceGradient(m, iface, this.torso);
+        const l = Math.hypot(g[0], g[1], g[2]);
+        return { normal: [g[0] / l, g[1] / l, g[2] / l], norm: l, curvature: 0 };
+      }
       if (isRibInterface(iface)) {
         const rib = this.ribs[nearestRib(m, this.ribs, this.torso, this.spine)];
         const g = this.numericGradient(m, (p) => ribSd(p, rib, this.torso, this.spine), ribCurvature(m, rib, this.torso));
@@ -642,8 +662,15 @@ export class AnatomyScene {
     const skin = torso.skinMm;
     const wall = skin + torso.fatMm + torso.muscleMm;
     // la cara de la capa más cercana; la distancia a la frontera cuenta la costilla más cercana (|∇| ≤ 1,1)
-    const layer = (tissue: Tissue, bd: number, u: number, ribD: number, ribAny: number): { final: true; cls: Classification } => {
-      const [face, dist] = wallFace(d, u, m[2], ribD, torso);
+    const layer = (
+      tissue: Tissue,
+      bd: number,
+      u: number,
+      ribD: number,
+      ribAny: number,
+      w?: WallDepths,
+    ): { final: true; cls: Classification } => {
+      const [face, dist] = wallFace(d, u, m[2], ribD, torso, w);
       const boundaryDistance = Math.min(bd, ribAny / 1.1);
       return { final: true, cls: { ...NONE, tissue, boundaryDistance, interface: face, interfaceDistance: dist } };
     };
@@ -671,10 +698,10 @@ export class AnatomyScene {
     // las coordenadas de la pared solo dentro de ella: fascia profunda y transversalis onduladas en (u, z)
     const u = wallArc(m, torso);
     const w = wallDepths(torso, u, m[2]);
-    if (d < w.fascia) return layer(Tissue.Fat, Math.min(d - skin, w.fascia - d), u, ribD, ribAny);
-    if (d < w.transversalis) return layer(Tissue.Muscle, Math.min(d - w.fascia, w.transversalis - d), u, ribD, ribAny);
+    if (d < w.fascia) return layer(Tissue.Fat, Math.min(d - skin, w.fascia - d), u, ribD, ribAny, w);
+    if (d < w.transversalis) return layer(Tissue.Muscle, Math.min(d - w.fascia, w.transversalis - d), u, ribD, ribAny, w);
     // grasa preperitoneal (extraperitoneal) entre la transversalis y el peritoneo parietal
-    return layer(Tissue.Fat, Math.min(d - w.transversalis, wall - d), u, ribD, ribAny);
+    return layer(Tissue.Fat, Math.min(d - w.transversalis, wall - d), u, ribD, ribAny, w);
   }
 
   /** Lámina de pulmón en el receso costofrénico derecho (lateral y posterior), bajo la pared. */

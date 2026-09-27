@@ -113,7 +113,8 @@ export interface TestHooks {
   }) => Record<FaceNormalRow, FaceNormalStats>;
   /**
    * Caras de la pared y de las costillas (decisión 62): la cara, la normal y la norma del gradiente de la GPU
-   * (`faceGradient`: `wallFaceSd`, `ribSd`) frente a las de TS (`AnatomyScene.faceGradient`) en los puntos del
+   * (`faceGradient`: `wallFaceGradient`, con la pendiente de la capa, y `ribSd`) frente a las de TS
+   * (`AnatomyScene.faceGradient`) en los puntos del
    * plano a 0,02–0,4 mm de la cara que dibujan según la CPU. Ver `WallNormalStats`.
    */
   wallNormals: (opts: { startPoint: StartPoint['id'] }) => WallNormalStats;

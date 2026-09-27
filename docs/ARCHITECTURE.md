@@ -93,7 +93,8 @@ mirada 0 de siempre y además la de esa mirada, y B solo la dirigida, en la reji
 `src/ultrasound/steering.ts`; prefijo y penumbra dirigidos en `src/ultrasound/transmission.ts` y
 `src/ultrasound/aperture.ts`; fase por nodo en `src/ultrasound/speckleField.ts`). D escribe la envolvente
 en la ranura de su mirada (`envLooks`, tres destinos R32F: una historia externa del grafo, como la de la
-persistencia) y la pasada K (`FRAG_COMPOUND`) compone las ranuras válidas en `env`, la que convierte G;
+persistencia; lee además de A la fracción del haz de cada línea que sobrevive a los huesos, que apaga su pedestal de
+lóbulos laterales bajo una costilla, decisión 88) y la pasada K (`FRAG_COMPOUND`) compone las ranuras válidas en `env`, la que convierte G;
 con una sola mirada válida (compuesto apagado, color encendido o el cuadro tras un reinicio) es un paso
 directo exacto. Las pruebas leen la fuente explícita: `readEnvelope({ source: 'look0' | 'compound' })`,
 `readLookEnvelope(ranura)` y `readTransmission({ look })`.

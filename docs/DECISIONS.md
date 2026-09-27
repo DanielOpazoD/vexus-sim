@@ -3766,9 +3766,196 @@ con la seudodistancia de los conos, una rama lateral más gruesa que su madre af
 hijas, dos pirámides casi fundidas, la cara de la grasa y la cápsula que cambiaban de dueño en sitios distintos en el
 borde de la boca del hilio, y cifras y comentarios desajustados: corregidos.
 
-## 88. Reservada: costillas y capas de la pared [Estado: reservada]
+## 88. Costillas opacas y sin disco, y pared con relieve: lo que entra en el hueso no vuelve, la difusa de la cortical se apaga en el ángulo crítico y las capas dejan de ser arcos concéntricos
 
-Número reservado para la rama en curso de las costillas y la pared; la redacta su rama.
+**Contexto.** Sirve a los objetivos 2 (fidelidad ecográfica) y 3 (fidelidad anatómica) de `docs/MISION.md`. Ronda 4 del
+juez ciego (27-09-2026, `main` 0e03756), pareja 6 (campo cercano del flanco con la sonda 12 mm más craneal): los dos
+jueces vieron «una línea brillante que cruza la parte inferior de la costilla izquierda, dentro de su sombra» (un error
+de oclusión), y la pista n.º 1 incluía «costillas idénticas en cúpula con el disco del hueso distinto de su sombra» y
+«arcos de pared equidistantes». Antes de tocar nada se midió (`scratchpad/rib/`): el mapa de tejidos y caras de la CPU
+por línea en el marco y el contacto de la captura, capturas con GPU real (M4, Metal, armónica y compuesto, apnea
+espiratoria; `main` d49aa52) del flanco con y sin el desplazamiento y de la intercostal, y la envolvente, el gris y las
+transmisiones de la pasada A por línea:
+
+- La línea era la cara del peritoneo (decisión 62) con la pleura parietal de la cortina (decisiones 61 y 71) a 28,4–28,9
+  mm, justo bajo la costilla (el hueso acaba a 27,2–27,9 mm y el pulmón empieza a 29,2). Bajo la costilla izquierda de
+  la pareja quedaba a −10/−18 dB del hígado en el centro (gris 18–39) y subía a +10/+37 dB en sus bordes. Dos fugas: (a)
+  el hueso dejaba pasar demasiado: 6 dB de entrada y 10 dB por mm a 2,5 MHz dan −67/−79 dB de ida y vuelta por el centro
+  de una costilla frente a una pleura +50/+55 dB sobre el hígado, y −16/−26 dB por las cuerdas de 1–2 mm de sus bordes;
+  (b) el pedestal de lóbulos laterales de la pasada D (decisión 76) llevaba a las líneas tapadas la pleura y el
+  peritoneo de las vecinas, −10/−18 dB. Con solo el hueso opaco la línea seguía (el pedestal); con el pedestal apagado
+  bajo el hueso, desaparecía. Las réplicas de la reverberación de C (decisión 76) no intervenían: su transmisión hasta
+  la pared es ≈ 0 bajo una costilla.
+- El «disco» era el moteado del propio hueso (retrodispersión 0,9) bajo la cortical: una media luna a −9/−12 dB del
+  hígado (gris 27–36) entre el arco y la sombra. La componente difusa de la cara de la cortical (decisión 65: Lambert,
+  cos θ) seguía a +16 dB sobre el hígado a 60° de incidencia y dibujaba el contorno de media costilla. Las seis
+  costillas eran la misma elipse de 12 × 6,4 mm.
+- La sombra central que se estrecha con la profundidad es física: un banco de ondas 2D (espectro angular, 3,5 MHz,
+  emisión de 26 mm con Hann y foco a 90 mm, recepción dinámica F/2,5, costilla elíptica opaca de 12 × 6,4 mm con la cara
+  anterior a 21,5 mm; `scratchpad/rib/ribwave.mts`) da un núcleo bajo −20 dB de ±3,5–4 mm a 29–40 mm y de ±2,5 mm a
+  60–100 mm, mientras la anchura a −6 dB crece de ±5,5 a ±7,5 mm y el centro sube de −42 a −28 dB a 100 mm: la
+  difracción y la apertura finita rellenan el borde, y el compuesto rellena más. El defecto era otro: la transparencia
+  parcial de las cuerdas finas.
+- Las ondas de la pared (`wallWave`) medían 2π veces lo documentado (`wallWavenumber` devuelve ≈ 1/λ): 57–400 mm. En el
+  sector las capas apenas se movían: en la escena de la pareja, σ de la fascia profunda 0,25 mm, del plano oblicuo 0,36,
+  y separaciones entre caras vecinas con un CV de 0,02–0,09.
+
+**Opciones.** (1) Tapar el síntoma: quitar la pleura y el peritoneo bajo las costillas en `classify`, o recortar el
+brillo bajo el hueso en la presentación: una cara que existe desaparecería por geometría y no por física, y la próxima
+cara bajo un hueso volvería a fugarse. (2) Subir la absorción del hueso (dB/mm): el borde de una costilla es una cuerda
+de milímetros; para apagar la pleura por una cuerda de 1 mm harían falta ~60 dB/mm, un número sin significado. (3) La
+elegida: el hueso opaco a la entrada, la interpolación de B que no mezcla a través de esa entrada, los especulares con
+el rayo central y el pedestal con la sombra de su línea; en las costillas, sin moteado propio, con la difusa de la
+cortical limitada por el ángulo crítico y con una sección por costilla; en la pared, un relieve fino y otro lento con
+sus longitudes de onda reales. La compresión de la sonda (decisión 63) no cambia: empuja la pared como un bloque, así
+que el relieve, material, se conserva bajo la sonda (la grasa real, más blanda, se aplanaría algo:
+`wall-generic-layers`).
+
+**Decisión.**
+
+- **Oclusión** (`ultrasound/transmission.ts`, `shaders/passes.glsl.ts`):
+  - `BONE_ENTRY_DB` 6 → 100 dB [ESTIMADO]: lo que entra en el hueso no vuelve a formar imagen. Más allá de 26,9° (c 3515
+    frente a 1588 m/s) la onda longitudinal se refleja entera; lo que entra se convierte en transversal, se absorbe y se
+    dispersa en la esponjosa, y la cortical curva aberra el frente de onda. La sombra se rellena en profundidad por la
+    penumbra de la apertura (los rayos que pasan junto a la costilla, decisiones 54 y 86), no a través del hueso. La
+    misma regla en A2, sus gemelos (`rayAttenuationDb`, `prefixDb`, `steeredPrefixDb`) y la puerta PW.
+  - `transmissionLerp` / `transLerp`: la pasada B lee la transmisión de A lineal en profundidad entre los centros de
+    fila, como el filtrado de textura de antes, salvo a través de la entrada en un hueso (una caída de más de 15 dB entre
+    dos filas, `BONE_STEP_DB`: el gas cobra 6,75–9 dB por fila, 7,9–10,5 con la apertura; la entrada en el hueso, 100 dB
+    en el rayo de la línea y 20–35 en la apertura de las líneas del borde de una costilla), donde lo de delante conserva
+    la de su fila. Interpolando, la cortical (el tejido blando de delante, decisión 62) perdía hasta 10 dB según dónde
+    cayera la costilla en la rejilla de 1,1 mm. En las miradas dirigidas, también sobre la pleura de la cortina.
+  - Los ecos especulares (la especular de las caras, la pleura del diafragma y la parietal de la cortina) llevan a lo
+    sumo la transmisión del rayo central (`min(T_apertura, T_rayo)`): su camino de vuelta es el espejo del de ida y bajo
+    un hueso uno de los dos lo cruza; la penumbra de la apertura los encendía bajo el borde de una costilla. El moteado
+    y la difusa siguen con la de la apertura. `mediumField` y su variante dirigida devuelven la especular aparte.
+  - Pasada D: el pedestal de cada línea se escala con la fracción de su haz que sobrevive a los huesos, la transmisión
+    con apertura (sin la refracción de las luces, que desvía la energía y no la quita; con la penumbra del gas) sobre la
+    del rayo sin lo que cobra el hueso, en dB (A2 publica en o1.z los dB del hueso; A, en o2.z la de la mirada 0 y en
+    o2.w la de la dirigida, ≤ 1): una línea tapada por una costilla no recibe lóbulos laterales bajo ella, como una sin
+    contacto (decisión 76). D lee `trans` (grafo de pasadas); ningún uniform nuevo en B.
+- **Costillas**:
+  - El hueso cortical pasa de retrodispersión 0,9 a 0 (`tissues.ts`): lo que devuelve una costilla es el eco de su
+    cortical anterior. La vértebra, sin cara (`vertebra-no-cortex`), conserva el suyo.
+  - La difusa de la cortical cae con la transmisión de energía de la onda longitudinal en la cara, que la cruza de ida y
+    de vuelta: T_E(θ)/T_E(0), T_E = 4·Z₁Z₂·cosθ·cosθ_t/(Z₂cosθ + Z₁cosθ_t)² con las impedancias de `TISSUES` (−2 dB a 20°,
+    −8,6 a 26°), y 0 desde el ángulo crítico (`boneDiffuseWindow`, `BONE_CRITICAL_SIN`, `BONE_IMPEDANCE_RATIO`), sin la
+    onda transversal, que entra hasta ~60° pero se atenúa en la cortical [EXTRAPOLACIÓN PROPIA]: la difusa de un hueso
+    es la energía que la onda que entra devuelve desde la microestructura de la cortical, no una capa de Lambert sobre
+    una cara lisa. El arco queda en la cresta.
+  - Una sección por costilla (`RIB_SECTIONS`, semialtura × semiespesor): 6,8 × 3,0 / 7,3 × 3,2 / 6,9 × 3,5 / 6,2 × 3,3 /
+    5,5 × 3,0 / 4,8 × 2,7 mm de la 5.ª a la 10.ª [ESTIMADO: alturas de 10–15 mm y espesores de 5–7 mm en la línea axilar
+    media]; `ribSearchMarginMm` sigue valiendo (semiespesor ≤ 3,5 mm).
+- **Pared** (`organs/wall.ts`, TS y GLSL):
+  - Relieve fino (`wallWave`): tres senos oblicuos por cara, de 6,5–25 mm en direcciones a 60° (una a ≤ 30° de u y otra
+    de z: la cara ondula en cualquier plano de corte), con pesos 0,25 / 0,35 / 0,40 y longitudes, direcciones y fases
+    propias; ±0,35 mm los planos, ±0,5 Scarpa y la fascia profunda, y la transversalis 0,25·(grasa preperitoneal − 1).
+  - Relieve lento (`wallSwell`): dos senos de 24–52 mm que cambian el espesor de la grasa subcutánea (±11 %, ±2 mm como
+    mucho: la fascia sube y baja hasta ±1,5–2 mm en 2–5 cm y el músculo absorbe el cambio), la fracción de Scarpa (±0,06)
+    y el reparto del músculo entre sus vientres (±0,06, cada plano por su lado) [ESTIMADO]. Un plano a menos de
+    `planeMinMm` de la cara de encima (el otro plano o, si este se ha fundido con la fascia, la fascia) se funde con
+    ella y deja de dibujar su cara; en los siete casos los planos no bajan de 1,07 mm entre sí, así que solo pasa con un
+    músculo más fino. Piel y peritoneo no ondulan.
+  - Cada término lleva un armónico entero fijo del perímetro (el del tronco de referencia: periódico en la vuelta; con
+    otro tronco la longitud de onda cambia con el perímetro) y la GLSL solo calcula 2π/P; la documentación de
+    `wallWavenumber` dice ahora que su λ es una escala (la longitud de onda es 2π·λ). Inclinación de Scarpa, la fascia y
+    los planos sobre la piel: 6–9° de mediana, 15–23° en el p99 y 31–37° como mucho en los siete casos; |∇| de su
+    distancia ≤ 1,48 (barrido de 0,5° × 0,5 mm), bajo la cota de la salida barata del eco (1,5). Con 20–30 mm de grasa
+    llegaría a 1,50–1,61 aun con el tope de ±2 mm: la salida barata cortaría el perfil del eco a 3,3 σ en lugar de 3,5
+    (−47 dB), sin efecto a la vista.
+  - El gradiente de una cara de la pared es el de su capa con su pendiente (`wallFaceGradient`, TS y GLSL): −∇τ −
+    ∂f/∂u·∇u − ∂f/∂z·ẑ, con ∇u analítico (`wallArcGradient`) y la pendiente por diferencias hacia delante
+    (`wallFaceSlope`): tres evaluaciones de su profundidad en lugar de las seis de `wallFaceSd`; lo usa `faceGradient`,
+    fuera de bucles. Las copias de la pared de la serie de la pleura (decisión 61, `wallFaceEchoFlat`), en su bucle,
+    siguen con la normal de la piel: con la pendiente de la capa el bucle subía la compilación de B con SwiftShader ~3 s
+    (medido con `scratchpad/rib/swcompile.mts`), y sin ella el eco de cada cruce queda a ≤ 1,3 dB del completo.
+  - Coste en la pasada B (la pared se evalúa en la clasificación de cada plano de elevación, en su textura y en el
+    gradiente de su cara): además de los armónicos fijos y del gradiente con tres evaluaciones, `wallFace` recibe las
+    profundidades que la clasificación ya tiene.
+- **Banco** (`app/fidelity.ts`, W7): en cada línea del haz, la línea de la pared hallada en el perfil se busca en la
+  cara de la pared más cercana a ±2,5 mm (`WALL_FACE_SEARCH_MM`) y su pico, a ±0,6 mm de esa cara. Con la profundidad de
+  la mediana, la ventana medía el moteado de al lado de una cara que el relieve (y ya las ondas de antes, ±1,2 mm)
+  apartaba de ella.
+
+**Consecuencias.**
+
+- Oclusión (M4, flanco con dz +12, la escena de la pareja; `main` 281945d → la rama rebasada; `scratchpad/rib/informe-88`,
+  con el recorte y la normalización del juez junto a la real): bajo las tres costillas, de la cara posterior a 4 mm más
+  abajo, la mediana pasa de −26,7 / −25,4 / −7,4 dB del hígado (gris 5 / 7 / 47; máximos +18 / +12 / +37 dB) a −42,8 /
+  −44,8 / −43,7 dB (gris 0), el suelo de ruido; en el flanco sin desplazar, de −27,5 / −21,8 / −1,6 a −44,6 / −46,3 /
+  −45,0 dB. La línea de la pleura y el peritoneo entra solo por el borde de cada costilla y se apaga en 1–2 mm (+34 dB
+  del hígado en la línea del borde, y 25 → 11 → −7 → −28 dB en las líneas a 0,5 / 1,1 / 1,6 / 2,2 mm de él); el banco de
+  ondas da −14 dB a 1 mm dentro del borde y 1,2 mm bajo la costilla: el cono de la apertura con el tope especular del
+  rayo central apaga el borde algo más deprisa que la onda.
+- Costillas: dentro del hueso, de −9/−12 dB (gris 27–36) a −36/−45 dB (gris 0): no hay disco, la sombra empieza en la
+  cortical. La cortical sigue a +31–38 dB del hígado (antes +29–35) y su arco queda en la cresta. Sombras (negro en
+  pantalla, gris ≤ 12): la costilla central (13,0 mm de hueso a 24 mm; antes 14,0) 10,9 / 9,9 mm a 28 / 40 mm (antes
+  11,4 / 11,1), y la derecha (11,4 mm; antes 14,0) 8,7 / 6,8 / 3,5 mm a 28 / 40 / 52 mm, cerrada hacia 54 mm (antes 10,3
+  / 8,0 / 6,2 y hacia 62): más estrechas que la costilla y cada vez más, como en el banco de ondas.
+- Pared (escena de la pareja, clasificación de la CPU de la captura, líneas sin hueso): σ de la fascia profunda 0,25 →
+  0,90 mm y del plano oblicuo 0,36 → 0,97; el CV de la separación entre caras vecinas, de 0,02–0,09 a 0,05–0,21
+  (0,08–0,24 → 0,10–0,26 en la intercostal).
+- Banco de fidelidad (M4, las ocho escenas, `main` 281945d → rama): W7, con la definición nueva, +9,0–13,1 dB en `main`
+  y +8,3–13,0 en la rama, sin picos saturados (CV 0,61–1,00); con la de antes, `main` da 0,9 dB en la intercostal de la
+  congestión grave y 4,4 en su flanco (fuera de la meta de +6–14: medía el moteado junto a la cara). W1 (líneas
+  dentro): 5 / 5 / 5 / 6 / 5 / 7 / 6 / 6 → 3 / 5 / 5 / 5 / 3 / 7 / 6 / 4 (sano: subxifoidea, intercostal, flanco, renal;
+  después la congestión grave): ≥ 3 en las vistas de la meta, la subxifoidea en el borde; la mediana lateral del perfil
+  emborrona las caras que ondulan, que W7 encuentra a +8,3–13,0 dB. W4: cortical del flanco +23,3 → +23,6 dB (76 → 70
+  líneas) y +21,6 → +24,0 en la congestión grave. G7 (acortamiento de la umbra por el compuesto, meta 1,5–8 mm): 0,85 /
+  0,59 → 7,49 / 7,40 mm en los flancos (la umbra de la mirada 0 acaba a 28,8 mm tras la cara del hueso en lugar de
+  24,8, y la del compuesto a 21,3 en lugar de 24,0): `main` no la cumplía. Hígado p50 igual (±1 gris); SNR de la
+  envolvente ±0,004 salvo la subxifoidea (1,980 → 2,017, el relieve) y el flanco (1,984 → 1,944: las secciones nuevas
+  cambian qué parches son hígado puro). El músculo de la intercostal baja de 62 a 52 de gris (0,67 → 0,56 del hígado,
+  −3,6 dB; 65 → 55 en la congestión grave): los planos de elevación del haz (±2–3 mm a esa profundidad) entran en el
+  borde de las costillas 8.ª y 9.ª, que ya no dan moteado, y la 8.ª es 0,4 mm más alta; con la sección de antes y el
+  hueso a 0,9, 59 (el resto no lo separan las variantes: la pared sin relieve o la entrada de 6 dB dan 52; medido sobre
+  `main` d49aa52). Es la dirección de la física (la parte del haz que da en la costilla no devuelve eco del músculo),
+  sin el eco de volumen parcial de su cortical: `interface-echo-two-scale`.
+- Coste (M4, Metal, `main` d49aa52 y la rama alternadas, 4–6 rondas, mediana; `scratchpad/gb/cost.mts`): la pasada B
+  +0,7 ms en la intercostal y +0,3 en el flanco; el cuadro de la mirada 0, +0,5 / +0,3 ms, y con el compuesto +1,1 /
+  +0,4 ms: la meta W6 de la decisión 62 (≤ +0,6 ms) queda superada con el compuesto en la intercostal, donde la pared
+  llena el campo cercano. Casi todo es el relieve (con sus funciones a cero, B queda 0,1–0,3 ms bajo `main`); los
+  armónicos fijos, el gradiente con tres evaluaciones y las profundidades compartidas le quitan ~0,15 ms. Compilación
+  de B con SwiftShader (`scratchpad/rib/swcompile.mts`: compilar, enlazar y primer dibujo, rondas alternadas): el
+  programa de la mirada 0 tarda como en `main` (11–14 s) con las copias de la pared con la normal de la piel, y ~3 s
+  más con la pendiente de la capa en su bucle, que por eso no la llevan. Arranque de la aplicación con SwiftShader
+  (`scratchpad/gb/boottime.mts`): sin diferencia fuera del ruido (±10 s con la carga de la máquina). `npm run
+calibrate` da la misma salida byte a byte. Índice del build 324,9 → 329,5 kB sobre `main` 281945d: el presupuesto
+  sube de 325 a 330 kB (`tools/ci/bundle-budget.ts`, con su nota).
+- Limitaciones: `vertebra-no-cortex` (la banda de su superficie, 0–0,9 mm), `no-sidelobes` (el pedestal apagado bajo un
+  hueso), `interface-echo-scope` (las copias sin el relieve), `interface-echo-two-scale` (los planos de elevación en una
+  costilla), `wall-generic-layers` (secciones, relieve, estrías y |∇| con mucha grasa) y `lumen-refraction-only` (el
+  relieve desenfocaría). Quedan: la pleura que entra 1–2 mm bajo el borde de una costilla (la penumbra, física), el eco
+  de volumen parcial de las costillas en elevación, la aberración de la pared y las capas de un solo hábito.
+
+**Verificación.** `transmission.test.ts`: el hueso opaco (la cuerda más fina deja la pleura, +50 dB, bajo el negro, −30
+dB), la interpolación de B sin mezclar a través de la entrada (el gemelo TS frente a la lineal; el umbral por encima de
+la caída del gas por fila a 24 cm y por debajo de la de las líneas del borde de una costilla; la GLSL de B y D con
+ella), los especulares con el rayo central y el pedestal de D apagado bajo un hueso (la GLSL de A2, A, B y D).
+`interfaceEcho.test.ts`: la ventana de la difusa de la cortical frente a T_E(θ)/T_E(0) con las impedancias de `TISSUES`
+(−2,0 dB a 20°, < −8 a 26°, 0 desde θ_c, las demás caras sin ella) y sus `#define` en la GLSL. `wall.test.ts`: cada
+costilla con su sección, aplanada y en los rangos anatómicos, y el hueso sin moteado; el relieve (inclinación de 5–11°
+de mediana y < 28° en el p99, |∇| < 1,5 en los siete casos; la fascia sube y baja ≥ 2 mm a lo largo del flanco y el CV
+de la separación entre caras > 0,1; dos planos a < 1 mm se funden; las derivadas analíticas y de la pendiente frente a
+las numéricas; el gradiente de las caras internas con la pendiente de su capa frente al de diferencias centrales de su
+distancia, en dirección > 0,999 y en norma ±1 %; el eco plano de las copias a ≤ 1,5 dB del completo; la GLSL con los
+armónicos enteros de la tabla y el tope de la grasa). `wallTwin.test.ts` (el gemelo A → B → C → D sobre la anatomía
+real): bajo una costilla, lejos de su borde, nada entre su cara posterior y 3 mm más abajo pasa de −30 dB del hígado
+(falla en `main`: −14 dB); el banco de la pared sigue con las cifras del gemelo (la cara interna contra grasa cae 3,8 dB
+con el relieve, umbral 3,5: la transversalis inclinada entra en la ventana del fondo; sin sus muestras cae 6,4 dB, como
+en `main`, pero ese fondo aparta también las líneas contra el hígado que la prueba compara). `shaderLimits.test.ts`
+(huellas de A2, A y B), `passGraph.test.ts` (D lee `trans`), `steeredSample.test.ts` (la regla de la entrada también
+en la rama dirigida de la cortina), `pleura.test.ts`, `refraction.test.ts` y `aperture.test.ts`, al día. e2e completa
+con SwiftShader (equivalencia TS ↔ GLSL, paridad de la transmisión, pared) y capturas con GPU antes y después.
+Revisión adversarial de contexto limpio sobre el primer commit: la regla de la entrada en el hueso faltaba en las
+miradas dirigidas sobre la pleura de la cortina (la cortical perdía allí 0–20 dB según la rejilla); el pedestal se
+apagaba también con la refracción de las luces (hasta 7,7 dB tras la vesícula) y el rayo sin hueso se calculaba en
+lineal (se anulaba tras mucho gas); la ventana de la difusa era cos²θ_t, el doble del exponente de la transmisión de
+energía; el umbral de 40 dB no retenía las líneas del borde de una costilla (20–35 dB en la apertura); el bucle de las
+copias con la pendiente de la capa pesaba en la compilación de SwiftShader; |∇| pasaba de 1,5 con más grasa; el plano
+profundo se comparaba con el superficial aunque este se hubiera fundido con la fascia; pruebas tautológicas, el umbral
+renal sin medida y cifras y comentarios desajustados: corregidos. Al rebasar sobre la decisión 89, D enlazaba `uShadow`
+en la misma unidad de textura que su `uRxNoise`: pasa a la 3.
 
 ## 89. Textura del parénquima y ruido del receptor: dispersores fuertes por debajo de la resolución, densidad de dispersores a escala de milímetros, tríadas en parte especulares y ruido por línea tras la PSF lateral
 

@@ -495,8 +495,9 @@ export class UltrasoundRenderer {
     const f1 = { internal: gl.R32F, format: gl.RED, type: gl.FLOAT, filter: gl.LINEAR };
     // impactos y segmentos se leen con texelFetch (NEAREST: nunca interpolar profundidades de impacto);
     // la transmisión final: 0 = (ida y vuelta con apertura, impactos), 1 = (dirección, tipo de gas),
-    // 2 = un solo rayo (color y PW), 3 = la mirada dirigida del cuadro (decisión 58; su .x se interpola
-    // como la 0); la suma A2, además, el prefijo de esa mirada (2 y 3)
+    // 2 = un solo rayo (color y PW; en .z y .w, la fracción del haz que sobrevive a los huesos de la mirada 0 y de la
+    // dirigida, que lee D para su pedestal, decisión 88), 3 = la mirada dirigida del cuadro (decisión 58; su .x se
+    // interpola como la 0); la suma A2, además, el prefijo de esa mirada (2 y 3)
     const fn = { internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.NEAREST };
     // A0: espejo e impactos (0 y 1) y la pleura parietal de cada línea (2, decisión 61), que lee la pasada B
     this.tHits = createTarget(gl, LINES, 1, [fn, fn, fn]);
@@ -1355,6 +1356,9 @@ export class UltrasoundRenderer {
     const cp = this.clutterFor(inputs);
     this.pLateral.v2('uSidelobe', cp.sidelobeIslr, cp.sidelobeWidth);
     this.pLateral.tex('uCoupling', 1, this.couplingTex);
+    // la fracción del haz de cada línea que sobrevive a los huesos (A o2: .z la mirada 0, .w la dirigida; decisión 88)
+    this.pLateral.tex('uShadow', 3, this.tTrans.textures[2]);
+    this.pLateral.i('uShadowCh', this.steeredLook() ? 3 : 2);
     this.setLateralPsfUniforms(this.pLateral, inputs);
     drawFullscreen(gl);
   }

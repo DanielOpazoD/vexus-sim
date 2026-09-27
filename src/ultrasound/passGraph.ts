@@ -69,8 +69,9 @@ export const FRAME_PASSES: readonly PassSpec[] = [
   // C lee la transmisión hasta la pared para las réplicas de su reverberación (decisión 76)
   { id: 'axial', label: 'C', reads: ['raw', 'trans'], writes: 'axial', cadence: 'frame' },
   // D escribe la envolvente de la mirada del cuadro en su ranura del anillo; K compone las válidas (paso
-  // directo exacto con una sola mirada: compuesto apagado)
-  { id: 'lateral', label: 'D', reads: ['axial'], writes: 'envLooks', cadence: 'frame' },
+  // directo exacto con una sola mirada: compuesto apagado). D lee de A la fracción del haz que sobrevive a los
+  // huesos: bajo una costilla la línea no recibe lóbulos laterales (decisión 88)
+  { id: 'lateral', label: 'D', reads: ['axial', 'trans'], writes: 'envLooks', cadence: 'frame' },
   { id: 'compound', label: 'K', reads: ['envLooks', 'transHits'], writes: 'env', cadence: 'frame' },
   { id: 'color', label: 'F', reads: ['scene', 'trans'], writes: 'color', cadence: 'color' },
   { id: 'scanConvert', label: 'G', reads: ['env', 'color'], writes: 'scan', cadence: 'frame' },

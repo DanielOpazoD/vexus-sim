@@ -1,7 +1,7 @@
 import { INTERFACES, INTERFACE_COUNT, Interface, interfaceReflectivity } from '../anatomy/interfaces';
 import { quadratusSdf, retroFatSdf } from '../anatomy/organs/retroperitoneum';
 import { sdDiaphragm, type Diaphragm, type Torso } from '../anatomy/primitives';
-import { DIAPHRAGM_THICKNESS_MM } from '../anatomy/tissues';
+import { DIAPHRAGM_THICKNESS_MM, TISSUES, Tissue } from '../anatomy/tissues';
 import type { Vec3 } from '../core/vec3';
 import { valueNoise } from './speckleField';
 
@@ -322,6 +322,33 @@ export function facetEchoField(id: Interface, cosF: number, curv: number, delta:
 }
 
 /**
+ * Seno del ángulo crítico de la onda longitudinal del tejido blando al hueso cortical, c_músculo/c_hueso (TISSUES:
+ * 1588/3515, 26,9°): más oblicua, se refleja entera y nada entra en la cortical (decisión 88).
+ */
+export const BONE_CRITICAL_SIN = TISSUES[Tissue.Muscle].c / TISSUES[Tissue.Bone].c;
+/** Cociente de impedancias Z_músculo/Z_hueso (TISSUES: 0,258), el de la transmisión en la cara de la cortical. */
+export const BONE_IMPEDANCE_RATIO =
+  (TISSUES[Tissue.Muscle].c * TISSUES[Tissue.Muscle].rho) / (TISSUES[Tissue.Bone].c * TISSUES[Tissue.Bone].rho);
+
+/**
+ * Ventana de la componente difusa de la cortical costal con la incidencia (decisión 88): la difusa de un hueso es la
+ * energía que la onda que entra devuelve desde la microestructura de la cortical (periostio, conductos de Havers), no
+ * una capa de Lambert encima de una cara lisa, así que su amplitud (ida y vuelta) sigue a la transmisión de energía de la
+ * onda longitudinal en la cara, T_E(θ)/T_E(0), con T_E = 4·Z₁Z₂·cosθ·cosθ_t/(Z₂cosθ + Z₁cosθ_t)² (dos fluidos): −2 dB a
+ * 20°, −8,6 a 26° y 0 en el ángulo crítico y más allá. Sin la onda transversal, que entra hasta ~60° pero se atenúa en la
+ * cortical [EXTRAPOLACIÓN PROPIA]. Con la ley de Lambert sola la difusa seguía a +16 dB sobre el hígado a 60° y dibujaba
+ * el contorno de media costilla: un disco. 1 en el resto de caras.
+ */
+export function boneDiffuseWindow(face: Interface, cosI: number): number {
+  if (face !== Interface.RibCortex) return 1;
+  const ct2 = 1 - (1 - cosI * cosI) / (BONE_CRITICAL_SIN * BONE_CRITICAL_SIN);
+  if (ct2 <= 0) return 0;
+  const ct = Math.sqrt(ct2);
+  const z = BONE_IMPEDANCE_RATIO;
+  return (cosI * ct * (1 + z) * (1 + z)) / ((cosI + z * ct) * (cosI + z * ct));
+}
+
+/**
  * Amplitud de la componente difusa de la cara `id` en la muestra (gemelo de la difusa de `interfaceEcho` en la GLSL):
  * κ_d·R_ef·√(1 − χ(0)²)·cosθ·exp(−d²/2σh²), con el perfil de la cara normalizado a 1 en su centro. La pasada B la
  * suma con el fasor unidad del moteado de la muestra (incoherente con la especular). La GLSL la saca del uniform A
@@ -336,7 +363,13 @@ export function diffuseEchoField(id: Interface, cosI: number, delta: number, k0:
   const incoherent = Math.sqrt(Math.max(0, 1 - Math.exp(-x * x)));
   const k = 10 ** ((kDb - IFACE_K_DB) / 20);
   return (
-    k * FACET.diffuse * interfaceReflectivity(id) * incoherent * cosI * Math.exp((-0.5 * d * d) / (IFACE_SIGMA_H_MM * IFACE_SIGMA_H_MM))
+    k *
+    FACET.diffuse *
+    interfaceReflectivity(id) *
+    incoherent *
+    cosI *
+    boneDiffuseWindow(id, cosI) *
+    Math.exp((-0.5 * d * d) / (IFACE_SIGMA_H_MM * IFACE_SIGMA_H_MM))
   );
 }
 
@@ -387,6 +420,8 @@ uniform float uIfaceK0;                 // 2π/λ (1/mm)
 #define IFACE_DIFFUSE ${IFACE_DIFFUSE_PER_A.toPrecision(6)}
 #define IFACE_RETRO_PERITONEUM ${RETRO_PERITONEUM_GAIN.toFixed(6)}
 #define IFACE_ACROSS ${WALL_ACROSS_MM.toFixed(4)}
+#define BONE_CRITICAL_SIN2 ${(BONE_CRITICAL_SIN * BONE_CRITICAL_SIN).toFixed(8)}
+#define BONE_Z_RATIO ${BONE_IMPEDANCE_RATIO.toFixed(8)}
 // Inclinación de la faceta en el punto material: tres ruidos de valor anclados, de desviación st por componente
 vec3 facetTilt(vec3 m, int face, float st) {
   vec3 q = m / FACET_CELL;
@@ -465,9 +500,13 @@ vec2 interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w) {
   float cosF = abs(dot(nf, dir)) * inversesqrt(dot(nf, nf));
   // su lóbulo propio (s_f² = s² − σ_t², σ_t = max(tan 5°, ρ·s): kf = (s_f/s)²) en cosF con la rugosidad fina de frente,
   // χ(0); la difusa: κ_d·R_ef = IFACE_DIFFUSE·P.x·2s por √(1 − χ(0)²), la energía que la rugosidad fina saca de la
-  // coherente, con Lambert (cosI)
+  // coherente, con Lambert (cosI) y, en la cortical costal, la transmisión de la onda longitudinal en la cara, 0 desde el
+  // ángulo crítico (boneDiffuseWindow, decisión 88)
+  float ctw = sqrt(max(0.0, 1.0 - (1.0 - cosI * cosI) / BONE_CRITICAL_SIN2));
+  float zw = cosI + BONE_Z_RATIO * ctw;
+  float wd = c.iface == IF_RIB ? cosI * ctw * (1.0 + BONE_Z_RATIO) * (1.0 + BONE_Z_RATIO) / (zw * zw) : 1.0;
   return vec2(faceEcho(c.iface, cosF, min(1.0 - 4.0 * FACET_TILT2 * P.z, 1.0 - FACET_RHO2), 1.0, curv, g),
-              IFACE_DIFFUSE * P.x * inversesqrt(P.z) * sqrt(max(0.0, 1.0 - exp(-P.y * P.y))) * cosI * g);
+              IFACE_DIFFUSE * P.x * inversesqrt(P.z) * sqrt(max(0.0, 1.0 - exp(-P.y * P.y))) * cosI * wd * g);
 }
 // Pleura: su eco se centra en el cruce exacto del espejo de la pasada A (no sale de classify), una vez
 // por línea; el coseno sale de la reflexión (reflectionCosine)

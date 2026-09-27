@@ -409,8 +409,9 @@ vec2 slidingField(vec3 pD, float h, float salt) {
 // lo de detrás de la lámina), tres planos de elevación (¼ ½ ¼, fasor del central), grumos (decisión 56) y eco de
 // interfaz (decisión 57: coherente, fase 0 común a la cara, antes de la transmisión). Una llamada por programa y
 // fuera de bucles: faceGradient, en el eco, es el código más pesado de B. La jacobiana de la compresión de la
-// sonda en p (decisión 63) lleva al mundo la incidencia del eco y de la textura de la pared, en los tres planos.
-vec2 mediumField(vec3 p, vec3 dir, float r, float se, bool withCurtain) {
+// sonda en p (decisión 63) lleva al mundo la incidencia del eco y de la textura de la pared, en los tres planos. La
+// especular va aparte (spec): la pasada B la multiplica por la transmisión del rayo central (decisión 88).
+vec2 mediumField(vec3 p, vec3 dir, float r, float se, bool withCurtain, out float spec) {
   vec3 m = toMaterial(p);
   Warp w = warpAt(p);
   Cls c = classifyWith(m, withCurtain);
@@ -426,7 +427,8 @@ vec2 mediumField(vec3 p, vec3 dir, float r, float se, bool withCurtain) {
   // eco de interfaz (decisiones 57 y 65): la especular, real (fase 0 común a la cara), y la difusa sobre el fasor
   // unidad del moteado de la muestra (incoherente, anclada)
   vec2 e = interfaceEcho(c, m, dir, r, se, w);
-  return field * (1.0 + e.y / max(length(field), 1e-6)) + vec2(e.x, 0.0);
+  spec = e.x;
+  return field * (1.0 + e.y / max(length(field), 1e-6));
 }
 // La pared que copia la serie (decisión 61) en p, con el camino en dir: el prefijo de la pared de classify (piel,
 // costillas y las capas de la decisión 62, sin órganos ni tubos: la muestra está antes de la pleura), moteado

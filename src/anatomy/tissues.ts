@@ -151,8 +151,12 @@ export const TISSUES: TissueProps[] = [
   // Hueso: c y ρ de IT'IS; la atenuación efectiva de una costilla (cortical + esponjosa, con su
   // dispersión) es la de las tablas clínicas, 13–26 dB/cm a 1 MHz (Bushberg, Essential Physics of
   // Medical Imaging, tabla de atenuaciones): la de IT'IS para cortical pura (4,7) dejaba pasar ~25 dB
-  // tras una costilla y el tejido seguía visible dentro de la sombra (decisión 54).
-  { name: 'hueso cortical', c: 3515, rho: 1908, alpha1: 20, b: 1, backscatter: 0.9, gas: false, bone: true },
+  // tras una costilla y el tejido seguía visible dentro de la sombra (decisión 54). Sin retrodispersión propia
+  // (decisión 88): lo que devuelve una costilla es el eco de su cortical anterior, la cara que dibuja el tejido blando de
+  // delante (decisión 62); lo que entra en el hueso no vuelve a formar imagen, y con 0,9 su moteado dibujaba bajo la
+  // cortical una media luna gris (el disco de la costilla, distinto de su sombra). La vértebra, sin cara de cortical, la
+  // conserva (su banda de superficie es lo que queda de su eco: `vertebra-no-cortex`).
+  { name: 'hueso cortical', c: 3515, rho: 1908, alpha1: 20, b: 1, backscatter: 0, gas: false, bone: true },
   // el «resto» del abdomen (asas, mesenterio; la grasa retroperitoneal es un tejido propio desde la decisión 81): el
   // nivel lo da su textura (decisión 74, `ultrasound/restTexture.ts`), granulosa por los grumos
   {

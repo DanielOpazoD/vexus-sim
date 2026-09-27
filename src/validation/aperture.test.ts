@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Tissue } from '../anatomy/tissues';
 import { APERTURE_GLSL, APERTURE_TAPS, STEERED_APERTURE_GLSL, refractionBeam, type ApertureGeometry } from '../ultrasound/aperture';
+import { BONE_ENTRY_DB } from '../ultrasound/transmission';
 import { apertureTapPosition, apertureTapWeight, apertureTransmission, steeredApertureTransmission } from '../ultrasound/transmissionTwin';
 import { CONVEX_BEAM } from '../ultrasound/beamModel';
 import { COMPOUND, lookTheta } from '../ultrasound/compound';
@@ -165,7 +166,7 @@ describe('penumbra y refuerzo de las miradas dirigidas (decisión 58)', () => {
         for (let s = 0; s <= k; s++) {
           const i = l * rib.rows + s;
           if (rib.bone[i] && !bone) {
-            d += 6;
+            d += BONE_ENTRY_DB;
             bone = true;
           }
           d += rib.db[i];

@@ -17,15 +17,24 @@ import { ORGAN_MODULES } from '../anatomy/organs';
 import {
   WALL,
   WALL_GLSL,
+  WALL_SWELL_TERMS,
+  WALL_WAVE_TERMS,
   preperitonealMm,
   ribSearchDepth,
   ribCurvature,
   ribTangent,
   wallArc,
+  wallArcGradient,
   wallDepths,
+  wallFaceDepth,
+  wallFace,
+  wallFaceSd,
+  wallFaceSlope,
+  wallFatMm,
   wallPerimeter,
   wallPlaneDepth,
   wallPlaneGap,
+  wallSwell,
   wallWave,
 } from '../anatomy/organs/wall';
 import {
@@ -38,9 +47,9 @@ import {
   torsoSkinPoint,
 } from '../anatomy/primitives';
 import { AnatomyScene, BASELINE_CALIBER, faceGeometryOf } from '../anatomy/scene';
-import { TISSUE_COUNT, Tissue } from '../anatomy/tissues';
+import { TISSUES, TISSUE_COUNT, Tissue } from '../anatomy/tissues';
 import { START_POINTS } from '../app/startPoints';
-import { NORMAL_ADULT } from '../cases';
+import { CASES, NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
 import { CONVEX_C35, lineDirection, pointOnLine, probeFrame } from '../probe/probe';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
@@ -130,7 +139,10 @@ describe('capas de la pared (decisión 62)', () => {
   it('las ondas son periódicas en la vuelta: sin costura donde u salta de +P/2 a −P/2 (línea media posterior)', () => {
     const P = wallPerimeter(t);
     for (let k = 0; k < 5; k++)
-      for (const z of [-80, 0, 35]) expect(Math.abs(wallWave(P / 2, z, k, t) - wallWave(-P / 2, z, k, t))).toBeLessThan(1e-9);
+      for (const z of [-80, 0, 35]) {
+        expect(Math.abs(wallWave(P / 2, z, k, t) - wallWave(-P / 2, z, k, t))).toBeLessThan(1e-9);
+        if (k < 4) expect(Math.abs(wallSwell(P / 2, z, k, t) - wallSwell(-P / 2, z, k, t))).toBeLessThan(1e-9);
+      }
     // la fascia profunda a ambos lados del corte, a 0,001 mm
     const left = wallDepths(t, wallArc([0.001, -104, 10], t), 10).fascia;
     const right = wallDepths(t, wallArc([-0.001, -104, 10], t), 10).fascia;
@@ -303,17 +315,211 @@ describe('capas de la pared (decisión 62)', () => {
           for (const rib of scene.ribs) expect(sdRib(at((phiDeg * Math.PI) / 180, z, d), rib, t, scene.spine).d).toBeGreaterThan(0);
   });
 
-  it('faceGradient de las caras de la pared: la normal de la piel y |∇| ≤ 1,1 (la métrica radial de las capas)', () => {
-    for (const d of [2.1, t.skinMm + t.fatMm - 0.2]) {
-      const m = at(FLANK, -14, d);
-      const g = scene.faceGradient(m, BASELINE_CALIBER)!;
-      const n = torsoNormal(m, t);
-      expect(Math.abs(g.normal[0] * n[0] + g.normal[1] * n[1] + g.normal[2] * n[2])).toBeGreaterThan(0.99);
-      expect(g.norm).toBeGreaterThan(0.99);
-      expect(g.norm).toBeLessThan(1.1);
-    }
+  it('faceGradient de las caras de la pared: la normal de la piel inclinada por el relieve de la capa y |∇| bajo la cota', () => {
+    let checked = 0;
+    // la piel no ondula: su normal es la de la piel y |∇| ≤ 1,1 (la métrica radial de las capas)
+    const skin = scene.faceGradient(at(FLANK, -14, 2.1), BASELINE_CALIBER)!;
+    const n0 = torsoNormal(at(FLANK, -14, 2.1), t);
+    expect(Math.abs(skin.normal[0] * n0[0] + skin.normal[1] * n0[1] + skin.normal[2] * n0[2])).toBeGreaterThan(0.99);
+    expect(skin.norm).toBeGreaterThan(0.99);
+    expect(skin.norm).toBeLessThan(1.1);
+    // las caras internas (decisión 88): el gradiente con la pendiente de la capa (`wallFaceGradient`, tres evaluaciones,
+    // el de `faceGradient` y el de la copia de la serie) es el de la distancia de la capa por diferencias centrales
+    // (seis), en dirección y en norma
+    for (const face of [Interface.Scarpa, Interface.DeepFascia, Interface.ObliquePlane, Interface.TransversusPlane])
+      for (const z of [-40, -14, 12]) {
+        const u = wallArc(at(FLANK, z, 0), t);
+        const m = at(FLANK, z, wallFaceDepth(u, z, face, t) + 0.1);
+        if (cls(m).interface !== face) continue;
+        const g = scene.faceGradient(m, BASELINE_CALIBER)!;
+        const h = 1e-3;
+        const a = [0, 1, 2].map((k) => {
+          const p: Vec3 = [...m];
+          const q: Vec3 = [...m];
+          p[k] += h;
+          q[k] -= h;
+          return (wallFaceSd(p, face, t) - wallFaceSd(q, face, t)) / (2 * h);
+        }) as Vec3;
+        const la = Math.hypot(...a);
+        const tag = `${Interface[face]} z ${z}`;
+        expect(Math.abs(g.normal[0] * a[0] + g.normal[1] * a[1] + g.normal[2] * a[2]) / la, tag).toBeGreaterThan(0.999);
+        expect(Math.abs(g.norm / la - 1), tag).toBeLessThan(0.01);
+        expect(g.norm).toBeLessThan(IFACE_GRADIENT_MAX);
+        checked++;
+      }
+    expect(checked).toBeGreaterThanOrEqual(8);
     // las caras de pared y de costilla no tienen geometría de faceSdf (se tratan aparte)
     for (const f of [...WALL_FACES, Interface.RibCortex, Interface.Perichondrium]) expect(faceGeometryOf(f)).toBeNull();
+  });
+});
+
+describe('costillas (decisión 88)', () => {
+  it('cada costilla con su sección, aplanada y en los rangos anatómicos; el hueso no tiene moteado propio', () => {
+    const sections = scene.ribs.map((r) => `${r.halfWidth}/${r.halfThickness}`);
+    expect(new Set(sections).size).toBe(scene.ribs.length);
+    for (const r of scene.ribs) {
+      // altura de 10–15 mm, espesor de 5–7 mm: más alta que gruesa
+      expect(2 * r.halfWidth).toBeGreaterThanOrEqual(9.5);
+      expect(2 * r.halfWidth).toBeLessThanOrEqual(15);
+      expect(2 * r.halfThickness).toBeGreaterThanOrEqual(5);
+      expect(2 * r.halfThickness).toBeLessThanOrEqual(7.2);
+      expect(r.halfWidth).toBeGreaterThan(r.halfThickness);
+      // la búsqueda de costillas sigue siendo conservadora con la más gruesa (≤ 4,2 mm en la métrica radial)
+      expect(r.halfThickness / r.scale).toBeLessThan(WALL.ribSearchMarginMm / 1.9);
+    }
+    // el eco de una costilla es su cortical (la cara del tejido blando de delante); el hueso no dibuja moteado
+    expect(TISSUES[Tissue.Bone].backscatter).toBe(0);
+    // la vértebra, sin cara de cortical, conserva la banda de su superficie
+    expect(TISSUES[Tissue.Vertebra].backscatter).toBeGreaterThan(0);
+  });
+});
+
+describe('relieve de las capas de la pared (decisión 88)', () => {
+  /** Inclinación (°) de la cara `face` sobre la piel y |∇| de su distancia en (φ, z), con el gradiente numérico. */
+  const tilt = (sc: AnatomyScene, face: Interface, phi: number, z: number): [number, number] => {
+    const tt = sc.torso;
+    const skin = torsoSkinPoint(phi, z, tt);
+    const n = torsoNormal(skin, tt);
+    const d = wallFaceDepth(wallArc(skin, tt), z, face, tt);
+    const m: Vec3 = [skin[0] - n[0] * d, skin[1] - n[1] * d, z];
+    const h = 0.02;
+    const g = [0, 1, 2].map((k) => {
+      const a: Vec3 = [...m];
+      const b: Vec3 = [...m];
+      a[k] += h;
+      b[k] -= h;
+      return (wallFaceSd(a, face, tt) - wallFaceSd(b, face, tt)) / (2 * h);
+    });
+    const gn = Math.hypot(...g);
+    return [(Math.acos(Math.min(1, Math.abs(g[0] * n[0] + g[1] * n[1] + g[2] * n[2]) / gn)) * 180) / Math.PI, gn];
+  };
+  const inner = [Interface.Scarpa, Interface.DeepFascia, Interface.ObliquePlane, Interface.TransversusPlane];
+
+  it('las caras internas se inclinan sobre la piel 6–9° de mediana (≤ 23° en el 1 % más inclinado) y |∇| queda bajo la cota de la salida barata en todos los casos', () => {
+    for (const c of CASES) {
+      const sc = new AnatomyScene(c);
+      for (const face of [...inner, Interface.Transversalis]) {
+        const ang: number[] = [];
+        let maxNorm = 0;
+        for (let phiDeg = 0; phiDeg < 360; phiDeg += 2.5)
+          for (let z = -150; z <= 100; z += 2.5) {
+            const [a, gn] = tilt(sc, face, (phiDeg * Math.PI) / 180, z);
+            ang.push(a);
+            maxNorm = Math.max(maxNorm, gn);
+          }
+        ang.sort((x, y) => x - y);
+        const msg = `${c.id} ${Interface[face]}`;
+        expect(maxNorm, msg).toBeLessThan(IFACE_GRADIENT_MAX);
+        if (face === Interface.Transversalis) continue;
+        expect(ang[ang.length >> 1], msg).toBeGreaterThan(5);
+        expect(ang[ang.length >> 1], msg).toBeLessThan(11);
+        expect(ang[Math.floor(ang.length * 0.99)], msg).toBeLessThan(28);
+      }
+    }
+  });
+
+  it('no son curvas de nivel: a lo largo del flanco la fascia sube y baja ≥ 2 mm y la separación entre caras vecinas cambia', () => {
+    const u0 = wallArc(at(FLANK, 0, 0), t);
+    for (const z of [-40, -8, 20]) {
+      const fascia: number[] = [];
+      const gap: number[] = [];
+      for (let du = -30; du <= 30; du += 1) {
+        const w = wallDepths(t, u0 + du, z);
+        fascia.push(w.fascia);
+        gap.push(wallPlaneDepth(u0 + du, z, 0, t, w) - w.fascia);
+        // la piel y el peritoneo no ondulan: el espesor de la pared no cambia
+        expect(w.skin).toBe(t.skinMm);
+        expect(w.peritoneum).toBe(t.skinMm + t.fatMm + t.muscleMm);
+      }
+      expect(Math.max(...fascia) - Math.min(...fascia), `z ${z}`).toBeGreaterThan(2);
+      const mean = gap.reduce((a, b) => a + b, 0) / gap.length;
+      const sd = Math.sqrt(gap.reduce((a, b) => a + (b - mean) ** 2, 0) / gap.length);
+      expect(sd / mean, `z ${z}`).toBeGreaterThan(0.1);
+    }
+  });
+
+  it('el relieve lento de la grasa tiene un tope: ±11 % hasta 18 mm de grasa, ±2 mm con más (|∇| acotado)', () => {
+    const u0 = wallArc(at(FLANK, 0, 0), t);
+    for (const fat of [14, 18, 30]) {
+      const th = { ...t, fatMm: fat };
+      let mx = 0;
+      for (let du = -300; du <= 300; du += 0.5)
+        for (const z of [-60, -20, 20]) mx = Math.max(mx, Math.abs(wallFatMm(th, u0 + du, z) - fat));
+      const cap = Math.min(WALL.fatSwell * fat, WALL.fatSwellMaxMm);
+      expect(mx, `${fat} mm`).toBeLessThanOrEqual(cap + 1e-9);
+      expect(mx, `${fat} mm`).toBeGreaterThan(0.7 * cap);
+    }
+  });
+
+  it('dos planos a menos de planeMinMm se funden: el profundo deja de dibujar su cara', () => {
+    // con el adulto de referencia los planos no bajan de ~1,6 mm; con un músculo fino el reparto los junta a tramos
+    const thin = { ...t, muscleMm: 5.5 };
+    const u0 = wallArc(at(FLANK, 0, 0), t);
+    let fused = 0;
+    let apart = 0;
+    for (let du = -100; du <= 100; du += 0.5)
+      for (const z of [-60, -20, 20]) {
+        const w = wallDepths(thin, u0 + du, z);
+        const p0 = wallPlaneDepth(u0 + du, z, 0, thin, w);
+        const p1 = wallPlaneDepth(u0 + du, z, 1, thin, w);
+        if (wallPlaneGap(p0, 0, w) < WALL.planeMinMm || wallPlaneGap(p1, 1, w) < WALL.planeMinMm) continue;
+        const [face] = wallFace(p1, u0 + du, z, 1e3, thin);
+        if (p1 - p0 < WALL.planeMinMm) {
+          fused++;
+          expect(face).not.toBe(Interface.TransversusPlane);
+        } else if (Math.abs(p1 - p0) > 2) {
+          apart++;
+          expect(face).toBe(Interface.TransversusPlane);
+        }
+      }
+    expect(fused).toBeGreaterThan(10);
+    expect(apart).toBeGreaterThan(10);
+  });
+
+  it('las derivadas del relieve: ∇u analítico y la pendiente de cada cara, como las numéricas', () => {
+    for (const p of [at(FLANK, -14, 5), at(Math.PI * 0.56, -20, 12), at(Math.PI * 0.88, 8, 27), at(Math.PI * 1.3, 30, 20)] as Vec3[]) {
+      const g = wallArcGradient(p, t);
+      const h = 1e-4;
+      for (let k = 0; k < 2; k++) {
+        const a: Vec3 = [...p];
+        const b: Vec3 = [...p];
+        a[k] += h;
+        b[k] -= h;
+        expect(g[k]).toBeCloseTo((wallArc(a, t) - wallArc(b, t)) / (2 * h), 5);
+      }
+      expect(g[2]).toBe(0);
+      const u = wallArc(p, t);
+      for (const face of inner) {
+        const [fu, fz] = wallFaceSlope(u, p[2], face, t);
+        const k = 1e-3;
+        expect(fu).toBeCloseTo((wallFaceDepth(u + k, p[2], face, t) - wallFaceDepth(u - k, p[2], face, t)) / (2 * k), 1);
+        expect(fz).toBeCloseTo((wallFaceDepth(u, p[2] + k, face, t) - wallFaceDepth(u, p[2] - k, face, t)) / (2 * k), 1);
+      }
+    }
+  });
+
+  it('la GLSL: un relieve por cara con los términos de la tabla, la fascia con el espesor de grasa del relieve lento', () => {
+    for (let k = 0; k < 5; k++) expect(WALL_GLSL).toContain(`float wallWave${k}(float u, float z, float iP) { return `);
+    for (let k = 0; k < 4; k++) expect(WALL_GLSL).toContain(`float wallSwell${k}(float u, float z, float iP) { return `);
+    // cada término, con su armónico entero del perímetro (sin costura; el mismo en TS y en GLSL, sin redondeo en la GPU)
+    // o sin componente en u
+    for (const terms of [...WALL_WAVE_TERMS, ...WALL_SWELL_TERMS])
+      for (const r of terms) {
+        expect(Number.isInteger(r.harmonic)).toBe(true);
+        expect(WALL_GLSL).toContain(`${r.kz.toFixed(6)} * z + ${r.phase.toFixed(6)})`);
+        if (r.harmonic !== 0) expect(WALL_GLSL).toContain(`${r.harmonic.toFixed(1)} * iP * u + `);
+      }
+    expect(WALL_GLSL).toContain('float fat = uWall.y + min(WALL_FAT_SWELL * uWall.y, WALL_FAT_SWELL_MAX_MM) * wallSwell3(u, z, iP);');
+    expect(WALL_GLSL).toContain(`#define WALL_FAT_SWELL ${WALL.fatSwell.toFixed(4)}`);
+    expect(WALL_GLSL).toContain(`#define WALL_FAT_SWELL_MAX_MM ${WALL.fatSwellMaxMm.toFixed(4)}`);
+    // la longitud de onda a lo largo de u de cada término, P/|n|: de 6,8 a 168 mm, ninguna de media vuelta o más
+    const P = wallPerimeter(t);
+    const lambdasU = WALL_WAVE_TERMS.flat()
+      .concat(WALL_SWELL_TERMS.flat())
+      .filter((r) => r.harmonic !== 0)
+      .map((r) => P / Math.abs(r.harmonic));
+    expect(Math.min(...lambdasU)).toBeGreaterThan(6);
+    expect(Math.max(...lambdasU)).toBeLessThan(P / 2);
   });
 });
 
@@ -415,10 +621,11 @@ describe('eco de cara plana de las copias de la pared (serie de la pleura, decis
     }
   });
 
-  it('wallFaceEchoFlat da el eco de interfaceEcho (con faceGradient) a ±0,5 dB por cara, sin la ondulación a ±0,05', () => {
+  it('wallFaceEchoFlat da el eco de interfaceEcho (con faceGradient) a ±1,5 dB por cara, sin relieve a ±0,05', () => {
     // la energía del eco de cada cruce de cara a lo largo de líneas normales y oblicuas (hasta 20°): el eco
-    // completo, con la normal y la norma numéricas de la cara (las de la GPU fuera de bucles), frente al de
-    // cara plana (normal y norma de la profundidad radial), que va en el bucle de la serie
+    // completo, con la normal y la norma de la cara (las de la GPU fuera de bucles, con la pendiente de su capa), frente
+    // al de cara plana (normal y norma de la profundidad radial), que va en el bucle de la serie. Con el relieve de la
+    // decisión 88 las caras internas se inclinan 6–9° de mediana: ≤ 1,3 dB (antes ≤ 0,5)
     const K0 = (2 * Math.PI) / (1540 / 2500);
     const worst = new Map<Interface, number>();
     for (const [phi, z, tiltDeg] of [
@@ -454,7 +661,7 @@ describe('eco de cara plana de las copias de la pared (serie de la pleura, decis
     }
     // todas las caras vistas (el recto no tiene planos: los dan el flanco y las oblicuas)
     expect([...worst.keys()].sort()).toEqual([...WALL_FACES].sort());
-    for (const [f, db] of worst) expect(db, Interface[f]).toBeLessThan(0.5);
+    for (const [f, db] of worst) expect(db, Interface[f]).toBeLessThan(1.5);
     expect(worst.get(Interface.SkinFat)!).toBeLessThan(0.05);
     expect(worst.get(Interface.Peritoneum)!).toBeLessThan(0.05);
     // sin la cortical ni el pericondrio (cilindros: no son planos paralelos a la piel)
@@ -463,9 +670,11 @@ describe('eco de cara plana de las copias de la pared (serie de la pleura, decis
   });
 
   it('la GLSL: el mismo gradiente y el eco de cara plana en la pared que copia la serie, sin faceGradient', () => {
-    expect(WALL_FACE_ECHO_GLSL).toContain(
-      'vec2 g = p.xy / r * (1.0 - 1.0 / rho) + r / (rho * rho * rho) * p.xy / (uTorso.xy * uTorso.xy);',
-    );
+    // la normal plana de la copia es la profundidad radial de la anatomía (torsoDepthGrad, que también usa el gradiente
+    // de las caras con la pendiente de su capa, fuera de bucles)
+    expect(WALL_GLSL).toContain('vec2 g = p.xy / r * (1.0 - 1.0 / rho) + r / (rho * rho * rho) * p.xy / (uTorso.xy * uTorso.xy);');
+    expect(WALL_GLSL).toContain('return -(torsoDepthGrad(m) + sl.x * wallArcGradient(m) + vec3(0.0, 0.0, sl.y));');
+    expect(WALL_FACE_ECHO_GLSL).toContain('vec3 g = warpNormal(w, torsoDepthGrad(m));');
     expect(WALL_FACE_ECHO_GLSL).toContain('return interfaceProfileEcho(c.iface, cosI, wallFaceGain(m, c.iface), c.ifd / (gl * cosI));');
     expect(WALL_FACE_ECHO_GLSL.replace(/\/\/.*$/gm, '')).not.toContain('faceGradient');
     for (const src of [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED]) {

@@ -50,7 +50,7 @@ export interface PrefixSample {
 
 /**
  * Gemelo de A2 (`FRAG_TRANS_PREFIX`) de la mirada 0: suma de los segmentos de la línea hasta la fila k
- * inclusive, con las reglas de `rayAttenuationDb` (gel previo sin pérdidas, hueso 6 dB al entrar una vez);
+ * inclusive, con las reglas de `rayAttenuationDb` (gel previo sin pérdidas, hueso `BONE_ENTRY_DB` al entrar una vez);
  * el espejo se publica desde la fila cuyo final más el alcance del eco pleural pasa su cruce exacto.
  */
 export function prefixDb(g: SegmentGrid, line: number, k: number): PrefixSample {
@@ -137,7 +137,7 @@ export function mirrorLookaheadRows(stepMm: number): number {
  * nueva: el camino de la mirada θ que llega a (línea j, fila k) cruza la fila s cerca de la línea
  * j + (β(ρ_k) − β(ρ_s))/dφ, y de ella toma el segmento (la línea más cercana). Cada segmento radial se
  * multiplica por ds/dρ = ρ/√(ρ² − a²) (≤ 1,007: el camino cruza la corona en oblicuo). Mismas reglas que
- * A2: gel previo sin pérdidas, hueso 6 dB al entrar una vez, MIRROR_DB en el espejo. Primer gas y primer
+ * A2: gel previo sin pérdidas, hueso `BONE_ENTRY_DB` al entrar una vez, MIRROR_DB en el espejo. Primer gas y primer
  * hueso, de las marcas de A1 a lo largo del camino.
  *
  * Espejo: al llegar a una fila igual o posterior al segmento del espejo de la línea atravesada, el camino

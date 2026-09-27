@@ -225,7 +225,8 @@ const SAMPLERS: Record<PassId, { srcs: readonly string[]; samplers: Record<strin
     samplers: { uTrans0: 'trans', uTrans1: 'trans', uTrans2: 'trans', uTrans3: 'trans', uHits2: 'transHits' },
   },
   axial: { srcs: [FRAG_AXIAL], samplers: { uField: 'raw', uTrans: 'trans' } },
-  lateral: { srcs: [FRAG_LATERAL], samplers: { uField: 'axial', uRxNoise: 'axial' } },
+  // y la fracción del haz que sobrevive a los huesos (A o2, decisión 88)
+  lateral: { srcs: [FRAG_LATERAL], samplers: { uField: 'axial', uRxNoise: 'axial', uShadow: 'trans' } },
   // y la pleura de A0 (la cortina de la mirada 0, decisión 61)
   compound: { srcs: [FRAG_COMPOUND], samplers: { uLook0: 'envLooks', uLook1: 'envLooks', uLook2: 'envLooks', uHits2: 'transHits' } },
   color: { srcs: [FRAG_COLOR], samplers: { uTrans0: 'trans' } },

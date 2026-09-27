@@ -19,13 +19,15 @@ import { sdRoundCone } from './kidney';
  * de las transversas y pegado al cuerpo vertebral, se separa de él y avanza hacia fuera y adelante hasta el estrecho
  * superior de la pelvis. Radio por nivel desde el área de sección publicada [LITERATURA, orden de magnitud: la de los
  * dos psoas en L3 del adulto sano, ~12–15 cm² en la mujer y ~20 en el varón, con cortes de sarcopenia de ~10 y ~19 cm²]
- * y [ESTIMADO] para cada nodo: 5 mm en T12–L1, 12 en L2, 16 en L3, 18 en L4 y 15 en S1 (por lado, 1,8 cm² en L1, 8,0 en
- * L3 y 10,2 en L4: un adulto medio). Entre el cuerpo vertebral (radio 17 en el modelo) y la aorta o la VCI por delante y
- * las transversas (el arco, de y −58 a −78) por detrás.
+ * y [ESTIMADO] para cada nodo: 5 mm en T12–L1, 11 en L2, 16 en L3, 18 en L4 y 15 en S1 (por lado, 1,8 cm² en L1, 8,0 en
+ * L3 y 10,2 en L4: un adulto medio). Entre el cuerpo vertebral (40 × 29 mm en el modelo desde la decisión 92: con su
+ * costado, a 20 mm de la línea media y antes a 17, el nodo de T12–L1 se aparta 2 mm y el de L2, 2 mm y 1 mm hacia atrás con
+ * 1 mm menos de radio, sin tocar la grasa perirrenal) y la aorta o la VCI por delante y las transversas (el arco, de y −58
+ * a −78) por detrás.
  */
 export const PSOAS_NODES: ReadonlyArray<readonly [number, number, number, number]> = [
-  [22, -52, -45, 5],
-  [30, -45.5, -97, 12],
+  [24, -52, -45, 5],
+  [32, -46.5, -97, 11],
   [37, -41, -131, 16],
   [40, -39, -165, 18],
   [51, -30, -240, 15],

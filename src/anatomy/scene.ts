@@ -5,6 +5,10 @@ import {
   diaphragmHeight,
   orthonormalBasis,
   sdSpine,
+  sdSpineDisc,
+  spineArchSd,
+  spineBodySd,
+  spineFaceCurvature,
   sdDiaphragm,
   sdDiaphragmSlope,
   sdRib,
@@ -77,6 +81,7 @@ import {
   GALLBLADDER_CONTACT_MM,
   MORISON_CONTACT_MM,
   MORISON_SLIVER_MM,
+  SPINE_FACE_MM,
   interfaceOfVessel,
   isRibInterface,
   isWallLayerInterface,
@@ -130,9 +135,10 @@ export interface Classification {
  *  - `kidneyOuter`: el contorno externo del riñón (cápsula renal);
  *  - `perirenalOuter`: la cara externa de la grasa perirrenal (Morison), el contorno menos su grosor local;
  *  - `gallbladder`: la luz vesicular;
- *  - `pericardium`: el epicardio recortado por la cúpula (decisión 85), la cara interna de la capa del pericardio.
+ *  - `pericardium`: el epicardio recortado por la cúpula (decisión 85), la cara interna de la capa del pericardio;
+ *  - `spine`: los cuerpos vertebrales (`spineBodySd`, decisión 92), su cortical.
  */
-export type FaceGeometry = 'tube' | 'liverSurface' | 'dome' | 'kidneyOuter' | 'perirenalOuter' | 'gallbladder' | 'pericardium';
+export type FaceGeometry = 'tube' | 'liverSurface' | 'dome' | 'kidneyOuter' | 'perirenalOuter' | 'gallbladder' | 'pericardium' | 'spine';
 export const FACE_GEOMETRIES: readonly FaceGeometry[] = [
   'tube',
   'liverSurface',
@@ -141,6 +147,7 @@ export const FACE_GEOMETRIES: readonly FaceGeometry[] = [
   'perirenalOuter',
   'gallbladder',
   'pericardium',
+  'spine',
 ];
 
 /**
@@ -158,6 +165,7 @@ export function faceGeometryOf(i: Interface): FaceGeometry | null {
   if (i === Interface.DiaphragmLiver) return 'dome';
   if (i === Interface.PerirenalFat) return 'perirenalOuter';
   if (i === Interface.Pericardium) return 'pericardium';
+  if (i === Interface.VertebraCortex) return 'spine';
   return 'kidneyOuter';
 }
 
@@ -272,9 +280,9 @@ export class AnatomyScene {
       edgeZ: -50,
       edgeRise: 50,
     };
-    // Columna: cuerpo vertebral de 36 mm justo por detrás de cava y aorta (su cara
-    // posterior queda ≈ 5 cm de la piel dorsal, como en un adulto); arco posterior con
-    // apófisis transversas de 40 mm a cada lado. Las costillas terminan en ellas.
+    // Columna: cuerpos vertebrales justo por detrás de cava y aorta, de sección elíptica de 40 × 29 mm (la del círculo de
+    // radio 17, `SPINE_SHAPE`, decisión 92) y con los discos entre ellos (su cara posterior queda ≈ 5 cm de la piel dorsal,
+    // como en un adulto); arco posterior con apófisis transversas de 40 mm a cada lado. Las costillas terminan en ellas.
     this.spine = { kind: 'cylinderZ', x0: 0, y0: -46, r: 17, archHalfWidth: 40, archY0: -78, archY1: -58 };
     // Hígado y vesícula: geometría en sus módulos de órgano (organs/liver, organs/gallbladder)
     ({ liver: this.liver, liverLeft: this.liverLeft, visceralFace: this.visceralFace } = liverLobes(patient.liver.sizeFactor));
@@ -451,7 +459,7 @@ export class AnatomyScene {
   /**
    * Clasifica un punto MATERIAL. `caliber` aporta las escalas de radio que
    * dicta la fisiología en este instante. Orden de prioridad (el primero que
-   * contiene el punto gana): pared → costillas → columna → cortina pulmonar → vasos y conductos →
+   * contiene el punto gana): pared → costillas → columna (hueso y disco, decisión 92) → cortina pulmonar → vasos y conductos →
    * tórax (corazón, pericardio, mediastino o pulmón, decisión 85) / diafragma → vesícula → riñones → hígado → gas →
    * psoas → cuadrado lumbar → grasa retroperitoneal → intestino (decisión 81). Cada paso es un método propio; el mismo orden vive en GLSL
    * (`classifyWith`).
@@ -460,6 +468,8 @@ export class AnatomyScene {
    * lámina de pulmón, igual que `classify` en todos los demás puntos. La usan el tejido que se ve en
    * parte a través del borde blando de la cortina y su transmisión (gemelo GLSL `classifyWith(m, false)`).
    * La clasificación sigue siendo binaria: la fracción de aire del haz es de la imagen, no de la anatomía.
+   * Fuera del hueso, el tejido que no es gas a menos de `SPINE_FACE_MM` de él dibuja la cortical de la columna si es la
+   * cara más cercana de las suyas, y su distancia a la frontera cuenta el hueso (`withSpineFace`).
    */
   classify(m: Vec3, caliber: VesselCaliber, withCurtain = true): Classification {
     const torso = this.torso;
@@ -467,6 +477,22 @@ export class AnatomyScene {
     if (m[2] < torso.zMin || m[2] > torso.zMax || depth > 0) return NONE;
     const wall = this.classifyWall(m, -depth);
     if (wall.final) return wall.cls;
+    // la columna (decisión 92): el hueso de los cuerpos y del arco, el disco entre dos cuerpos y, en el tejido blando de
+    // alrededor, la cara de su cortical
+    const dBody = spineBodySd(m, this.spine);
+    const dSpine = Math.min(dBody, spineArchSd(m, this.spine));
+    if (dSpine < 0) return { ...NONE, tissue: Tissue.Vertebra, boundaryDistance: -dSpine };
+    const dDisc = sdSpineDisc(m, this.spine);
+    const c: Classification =
+      dDisc < 0
+        ? { ...NONE, tissue: Tissue.Cartilage, boundaryDistance: -dDisc }
+        : this.classifyInside(m, caliber, withCurtain, depth, wall.wallMm);
+    return withSpineFace(c, dSpine, dBody, dDisc);
+  }
+
+  /** `classify` dentro de la cavidad y fuera de la columna: cortina, tubos, tórax, diafragma y vísceras. */
+  private classifyInside(m: Vec3, caliber: VesselCaliber, withCurtain: boolean, depth: number, wallMm: number): Classification {
+    const wall = { wallMm };
     const curtain = withCurtain ? this.classifyLungCurtain(m, -depth - wall.wallMm, caliber.diaphragmCaudalMm) : null;
     if (curtain) return curtain;
     const tube = this.classifyTubes(m, caliber);
@@ -582,6 +608,8 @@ export class AnatomyScene {
         return gallbladderSdf(m, this.gallbladder);
       case 'pericardium':
         return heartOuterSdf(m, domeFloor(m, this.diaphragm, this.torso));
+      case 'spine':
+        return spineBodySd(m, this.spine);
     }
   }
 
@@ -631,6 +659,9 @@ export class AnatomyScene {
       return { normal: [gradient[0] / norm, gradient[1] / norm, gradient[2] / norm], norm, curvature, axis: best.hit.tangent };
     }
     const geometry = face;
+    // la columna (decisión 92): el costado de los cuerpos es un cilindro en z, con la curvatura de su elipse
+    if (geometry === 'spine')
+      return { ...this.numericGradient(m, (p) => spineBodySd(p, this.spine), spineFaceCurvature(m, this.spine)), axis: [0, 0, 1] };
     return this.numericGradient(m, (p) => this.faceSdf(p, caliber, geometry)!, 0);
   }
 
@@ -652,7 +683,7 @@ export class AnatomyScene {
 
   /**
    * Capas parietales y costillas (decisión 62, módulo `organs/wall`). `final` = el punto está en piel,
-   * grasa subcutánea, costilla/cartílago, músculo, grasa preperitoneal o columna (no hay nada más que
+   * grasa subcutánea, costilla/cartílago, músculo o grasa preperitoneal (no hay nada más que
    * mirar); si no, devuelve el espesor total de la pared para recortar el hígado. Cada muestra de las capas
    * dibuja la cara de la capa más cercana (`wallFace`); junto a una costilla ósea, su cortical; el cartílago,
    * su pericondrio. El hueso no dibuja cara (su cortical la dibuja el tejido blando de fuera).
@@ -690,11 +721,7 @@ export class AnatomyScene {
         ribAny = Math.min(ribAny, r.d);
         if (!r.cartilage) ribD = Math.min(ribD, r.d);
       }
-    if (d >= wall) {
-      const dSpine = sdSpine(m, this.spine);
-      if (dSpine < 0) return { final: true, cls: { ...NONE, tissue: Tissue.Vertebra, boundaryDistance: -dSpine } };
-      return { final: false, wallMm: wall };
-    }
+    if (d >= wall) return { final: false, wallMm: wall };
     // las coordenadas de la pared solo dentro de ella: fascia profunda y transversalis onduladas en (u, z)
     const u = wallArc(m, torso);
     const w = wallDepths(torso, u, m[2]);
@@ -925,6 +952,22 @@ const NONE: Classification = Object.freeze({
   vesselHit: null,
   flowFactor: 1,
 });
+
+/**
+ * La cortical de los cuerpos vertebrales en una muestra de fuera del hueso (decisión 92), a `dSpine` de él (`sdSpine`
+ * ≥ 0), a `dBody` de los cuerpos (`spineBodySd`) y a `dDisc` del disco (`sdSpineDisc`, negativa dentro): su distancia a
+ * la frontera cuenta el hueso y el disco (antes el hígado que la columna recorta no la contaba) y, si no es gas, está a
+ * menos de `SPINE_FACE_MM` de un cuerpo y el cuerpo es el hueso más cercano (el arco posterior, una caja, no dibuja
+ * cara: `spine-posterior-box`), dibuja la cara de la cortical cuando es la más cercana de las suyas (el reparto de
+ * dueños de la decisión 57: una cara por muestra). Gemelo del final de `classifyWith` (GLSL).
+ */
+function withSpineFace(c: Classification, dSpine: number, dBody: number, dDisc: number): Classification {
+  const gas = c.tissue === Tissue.Lung || c.tissue === Tissue.BowelGas || c.tissue === Tissue.Air;
+  const bd = Math.min(c.boundaryDistance, dSpine, Math.abs(dDisc));
+  if (!gas && dBody === dSpine && dBody < SPINE_FACE_MM && dBody < c.interfaceDistance)
+    return { ...c, boundaryDistance: bd, interface: Interface.VertebraCortex, interfaceDistance: dBody };
+  return bd < c.boundaryDistance ? { ...c, boundaryDistance: bd } : c;
+}
 
 /** Escalas de calibre que la fisiología impone a la anatomía en un instante. */
 export interface VesselCaliber {

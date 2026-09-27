@@ -369,8 +369,8 @@ describe('costillas (decisión 88)', () => {
     }
     // el eco de una costilla es su cortical (la cara del tejido blando de delante); el hueso no dibuja moteado
     expect(TISSUES[Tissue.Bone].backscatter).toBe(0);
-    // la vértebra, sin cara de cortical, conserva la banda de su superficie
-    expect(TISSUES[Tissue.Vertebra].backscatter).toBeGreaterThan(0);
+    // la vértebra tampoco, desde que tiene su cortical (decisión 92)
+    expect(TISSUES[Tissue.Vertebra].backscatter).toBe(0);
   });
 });
 
@@ -526,8 +526,8 @@ describe('relieve de las capas de la pared (decisión 88)', () => {
 describe('caras nuevas en la tabla de la decisión 57', () => {
   it('cada cara de la pared y de la costilla tiene su fila, su nombre GLSL, su fuente y un solo tipo de dueño', () => {
     // tras la pleura parietal de la decisión 61 (12): nueve caras de la pared y las costillas, 13–21; después, el pericardio
-    // (decisión 85)
-    expect(INTERFACE_COUNT).toBe(23);
+    // (decisión 85) y la cortical vertebral (decisión 92)
+    expect(INTERFACE_COUNT).toBe(24);
     expect(Interface.SkinFat).toBe(Interface.PleuraWall + 1);
     expect(Object.keys(INTERFACES)).toHaveLength(INTERFACE_COUNT);
     for (const f of [...WALL_FACES, Interface.RibCortex, Interface.Perichondrium]) {
@@ -596,8 +596,10 @@ describe('cortical costal: solo la cara que mira a la sonda (decisión 62)', () 
     expect(20 * Math.log10(backUnlit / front)).toBeGreaterThan(-3);
     // con la regla, nada (≥ 30 dB bajo la anterior, sea cual sea la transmisión)
     expect(backLit).toBe(0);
-    // gemelo GLSL de la regla, en el eco de interfaz de los dos programas de B
-    expect(INTERFACE_ECHO_GLSL).toContain('if (c.iface == IF_RIB && dot(fg.xyz, dir) > 0.0) return vec2(0.0);');
+    // gemelo GLSL de la regla, en el eco de interfaz de los dos programas de B (la cortical costal y, desde la decisión 92,
+    // la vertebral)
+    expect(INTERFACE_ECHO_GLSL).toContain('bool bone = c.iface == IF_RIB || c.iface == IF_VERTEBRA;');
+    expect(INTERFACE_ECHO_GLSL).toContain('if (bone && dot(fg.xyz, dir) > 0.0) return vec2(0.0);');
     for (const src of [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED]) expect(src).toContain(INTERFACE_ECHO_GLSL);
     // el cartílago transmite: su cara profunda sí se ve
     expect(faceLitFromProbe(Interface.Perichondrium, [0, 0, 1], [0, 0, 1])).toBe(true);
@@ -729,7 +731,7 @@ describe('gemelo GLSL (organs/wall.ts y wallTexture.ts)', () => {
     for (const src of [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED])
       expect(src.indexOf('float wallFaceGain(')).toBeLessThan(src.indexOf('vec2 interfaceEcho('));
     const echo = INTERFACE_ECHO_GLSL.replace(/\s+/g, ' ');
-    expect(echo).toContain('c.iface <= IF_LAST_TUBE || c.iface == IF_RIB || c.iface == IF_PERICHONDRIUM ? tubeCurvature(');
+    expect(echo).toContain('c.iface <= IF_LAST_TUBE || bone || c.iface == IF_PERICHONDRIUM ? tubeCurvature(');
     // la variación anclada de la pared multiplica la especular de la faceta y la difusa (decisión 65)
     expect(echo).toContain('float gain = c.iface >= IF_FIRST_WALL && c.iface <= IF_LAST_WALL ? wallFaceGain(m, c.iface) : 1.0;');
     expect(FRAG_RAWFIELD).toContain(`uIface[${INTERFACE_COUNT}]`);

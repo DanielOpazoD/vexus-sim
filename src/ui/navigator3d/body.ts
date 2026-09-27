@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
+import { SPINE_SHAPE } from '../../anatomy/primitives';
 import { ribTiltMm, type AnatomyScene } from '../../anatomy/scene';
 import { CM, surfaceAt, torsoScale } from './common';
 
@@ -102,8 +103,11 @@ export function buildSkeleton(a: AnatomyScene): THREE.Group {
   const xiphoid = new THREE.Mesh(new RoundedBoxGeometry(1.5, 0.5, 3, 3, 0.3), cartilage);
   xiphoid.position.set(0, yFront - 0.4, 1.5);
   g.add(sternum, xiphoid);
-  for (let z = -240; z <= 280; z += 28) {
-    const body = new THREE.Mesh(new THREE.CylinderGeometry(a.spine.r * CM, a.spine.r * CM, 2.2, 20), bone);
+  // los cuerpos vertebrales de la imagen (decisión 92): sección elíptica, uno cada `levelMm` con el disco entre ellos
+  const { aspect, levelMm, bodyMm, z0Mm } = SPINE_SHAPE;
+  for (let z = z0Mm - levelMm * Math.floor((z0Mm + 240) / levelMm); z <= 280; z += levelMm) {
+    const body = new THREE.Mesh(new THREE.CylinderGeometry(a.spine.r * CM, a.spine.r * CM, bodyMm * CM, 20), bone);
+    body.scale.set(aspect, 1, 1 / aspect);
     body.rotation.x = Math.PI / 2;
     body.position.set(a.spine.x0 * CM, a.spine.y0 * CM, z * CM);
     // arco posterior con apófisis transversas (misma caja que el SDF)

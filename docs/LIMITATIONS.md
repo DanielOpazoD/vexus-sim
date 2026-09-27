@@ -116,14 +116,14 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   normal del pericardio en la GPU es 1 (la de la distancia aproximada del elipsoide se aparta un 1,1 % en la mediana y un
   6,5 % en p95: ≤ 0,6 dB en su eco). El gemelo de la pasada A en TS (`transmissionHitsLine`, en las pruebas) sigue
   reflejando con la de la cúpula.
-- **La vértebra no tiene cortical** (`vertebra-no-cortex`): el cuerpo vertebral es un cilindro de 34 mm de hueso sin
-  cara (decisión 69; las costillas la tienen desde la 62). En la transversa epigástrica (decisión 83) su cara anterior
-  no da la línea curva brillante de un equipo: el cuerpo se ve como una cúpula oscura sobre la sombra, que con el arco
-  posterior es un rectángulo. La sombra sí sale de la física (la entrada en el hueso, 100 dB desde la decisión 88, y 10 dB
-  por mm a 2,5 MHz): la banda de su superficie, lo único que dibuja su borde, es el moteado del hueso hasta el centro
-  de su primera fila de la pasada A, 0–0,9 mm según dónde cae su cara en la rejilla (mediana 0,4 mm; antes, con 6 dB de
-  entrada, una banda de unos milímetros que se apagaba poco a poco). Su tejido conserva la retrodispersión (0,9) que el
-  hueso de las costillas, con cortical, perdió en la decisión 88.
+- **La columna es un esquema** (`spine-schematic`, decisión 92): recta (sin lordosis ni cifosis), de cuerpos iguales de
+  sección elíptica (40 × 29 mm) sin cintura ni rebordes salientes, con niveles uniformes (cuerpos de 24 mm y discos de 7
+  cada 31 mm) cuya altura es [ESTIMADO]. El disco lleva las propiedades del cartílago costal (un solo tejido). El arco
+  posterior es una caja continua, sin cortical (no dibuja cara: con ella, en la transversa epigástrica, sus caras
+  anteriores eran dos barras blancas horizontales), sin canal ni forámenes: tras un disco el haz llega a la caja y se
+  apaga, sin la línea del complejo posterior (el ligamento longitudinal posterior y la duramadre) de un equipo. No hay
+  pilares del diafragma: en la subxifoidea, entre la VCI y la columna hay hígado. La cortical de los cuerpos tiene la
+  física de la costal (s 0,15, σz 0,045) [ESTIMADO]: brilla a < 30° de incidencia y se apaga a > 35°.
 - **La aorta no late en modo B** (`aorta-fixed-caliber`): su calibre es fijo; el pulso arterial está en su velocidad
   (color y PW), no en su pared. En la transversa epigástrica (decisión 83) no se ve el latido de 1–4 mm que ayuda a
   distinguirla de la VCI: se reconoce por su pared más gruesa y brillante, su sección redonda, su sitio sobre la vértebra,
@@ -262,7 +262,7 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **Tienen eco de interfaz los vasos, la vesícula, la cápsula hepática, el diafragma, el riñón, la pleura
   parietal y la pared, pero no el gas intestinal** (`interface-echo-scope`, decisiones 57, 61 y 62): el gas
   intestinal no dibuja su cara (PR 7); se ve por su reverberación y su cola sucia. Las capas de la pared, la
-  cortical costal y el pericondrio la dibujan desde la decisión 62; en las copias de la pared bajo la pleura
+  cortical costal y el pericondrio la dibujan desde la decisión 62, y la cortical de los cuerpos vertebrales desde la 92; en las copias de la pared bajo la pleura
   (la serie de la decisión 61) las capas llevan un eco analítico de cara plana paralela a la piel, sin la cortical ni el
   pericondrio y sin el relieve de la decisión 88 (el eco de cada cruce queda a ≤ 1,3 dB del completo: con la pendiente
   de la capa el bucle de la serie subía ~3 s la compilación de B con SwiftShader).
@@ -285,9 +285,9 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   de la cortical sale del plano central; un equipo vería ahí el eco de volumen parcial de la cortical, y la sombra de esa
   parte del haz más abajo (la transmisión es la del plano central). El músculo de la intercostal queda 3,6 dB más oscuro
   que antes de la decisión 88, ~2,5 dB por esto.
-- **La coherencia de curvatura solo la tienen los tubos y las costillas** (`interface-curvature-tubes-only`;
-  las costillas desde la decisión 62, con la curvatura de su sección elíptica): vesícula, riñón, cúpula y las
-  capas de la pared son localmente planos para el eco. Sin la curvatura elevacional del riñón, Morison salía
+- **La coherencia de curvatura solo la tienen los tubos, las costillas y los cuerpos vertebrales** (`interface-curvature-tubes-only`;
+  las costillas desde la decisión 62, con la curvatura de su sección elíptica, y el costado de los cuerpos desde la 92):
+  vesícula, riñón, cúpula y las capas de la pared son localmente planos para el eco. Sin la curvatura elevacional del riñón, Morison salía
   ~1,5 dB más brillante que en el diseño (gemelo: 2,23 frente a 2,08 sobre el hígado a 0–20°); la s de la
   cápsula renal, la cara que da su pico, pasa de 0,21 a 0,25 y lo deja en 2,17.
 - **La pared es genérica** (`wall-generic-layers`, decisión 62): el mismo modelo de tres músculos con dos

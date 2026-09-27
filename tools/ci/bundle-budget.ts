@@ -49,13 +49,16 @@
 // funciones GLSL generadas de sus tablas, en todas las pasadas que clasifican), el gradiente de la capa con su pendiente,
 // la interpolación de la transmisión que no cruza la entrada en un hueso en B y D, la ventana de la difusa de la cortical
 // y sus gemelos TS. index sube a 335 kB.
+// 2026-09-27: la columna con cortical y discos (decisión 92) lleva index de 333,7 a 336,1 kB (vite build sobre main
+// a386e5e): la GLSL de los cuerpos elípticos, el disco y la cara de su cortical en todas las pasadas que clasifican, su
+// gradiente y su curvatura en el eco, y sus gemelos TS. index sube a 337 kB.
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const KB = 1024;
 const BUDGETS: Array<[RegExp, number]> = [
   [/three.*\.js$/, 700 * KB],
-  [/index-.*\.js$/, 335 * KB],
+  [/index-.*\.js$/, 337 * KB],
   [/\.css$/, 20 * KB],
   [/\.js$/, 120 * KB], // cualquier otro chunk
 ];

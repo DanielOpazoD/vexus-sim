@@ -4322,6 +4322,118 @@ la consulta, la cara y el bucle de tubos de la GLSL sobre la textura del renderi
 cos ≥ 0,99999998), el alcance del ruido, la disposición de la textura, los gradientes analíticos, la salida de
 `npm run calibrate` y la cadena del alumno.
 
+## 92. Columna con cortical y discos: lo que había tras la VCI en la subxifoidea era la sombra de un cuerpo vertebral sin cara, no pulmón
+
+**Contexto.** Sirve a los objetivos 2 (fidelidad ecográfica) y 3 (fidelidad anatómica) de `docs/MISION.md`. En las rondas
+3, 4 y 5 del juez ciego, en la subxifoidea en eje largo (`normal-adult/subxiphoid`, recorte [880, 500, 520] de la captura
+de 1440 × 900 con DPR 2, armónica, apnea espiratoria), bajo y a la derecha de la VCI «el tejido termina en un arco liso y
+blando contra una zona negra», «sin eco de interfaz, sin espejo y sin reverberación»: «no es una sombra, porque no sigue las
+líneas del haz, ni un órgano, porque no tiene interfaz». Sobrevivió a la decisión 85 (corazón y mediastino), que la
+atribuyó al pulmón de encima de la cúpula. Antes de tocar nada se midió (`scratchpad/mirror/`, GPU real: M4, Metal,
+armónica y compuesto, apnea espiratoria, `main` a386e5e): por línea, las salidas de A0 (espejo, gas, hueso, dirección
+reflejada), la clasificación de TS a lo largo del camino que sigue la pasada B (recto hasta el espejo, reflejado después),
+la transmisión de A y la envolvente compuesta, con el mapa de tejidos en la geometría exacta de la captura
+(`probe.mts`, `overlay.mts`):
+
+- **No era pulmón.** El recorte cubre θ 0…−34° y r 66–144 mm; en ninguna de sus líneas hay pulmón, cúpula ni espejo (el
+  espejo solo aparece con θ > 0, detrás de la AD y del mediastino). La zona negra es, píxel a píxel, **la columna**: 100 de
+  las 192 líneas (las de θ < 0) llegan con hígado delante al cuerpo vertebral a 122–135 mm, y la entrada en el hueso (100
+  dB, decisión 88) deja la sombra limpia a −31/−35 dB del hígado, el suelo de ruido. El arco es la cara del cuerpo, un
+  cilindro de 34 mm que el plano corta por su costado (x ≈ −13): el haz la toca a 44–50° (mediana 45°, en el marco de la
+  sonda hundida), el cuerpo no tenía cortical (`vertebra-no-cortex`) y su borde solo lo dibujaba la banda de su propio
+  moteado (pico −0,7…+4,7 dB sobre el hígado de 4–14 mm por encima), ablandada por la penumbra de la apertura y por la
+  rodaja, que corta oblicua esa cara. Y era una sombra sin bordes a lo largo del haz porque el cilindro era continuo:
+  sin discos, 11 cm de hueso liso de borde a borde del sector.
+- **El diafragma y el pulmón de esa vista.** Con θ > 0 (líneas 98–167) el haz llega al pulmón de detrás del corazón y del
+  mediastino a 42–58°: el eco de la pleura (el lóbulo de s 0,21) queda allí > 40 dB bajo el de frente, como debe, y el espejo
+  (decisión 57, con la normal de la frontera del mediastino de la 85) dibuja la imagen del mediastino y del hígado, no un
+  vacío. Solo las líneas 152–167, en el borde izquierdo y fuera del recorte, devuelven el camino reflejado al pulmón y quedan
+  en franjas oscuras (`mediastinal-mirror-normal-approx`, sin cambios).
+- **La misma columna sin cara** en la intercostal (51 líneas: la mancha oscura de borde curvo del ángulo inferior, la «zona
+  negra de borde curvo sin correlato» de la ronda 3), en la epigástrica (63: la cúpula oscura sobre la sombra, declarada en
+  la decisión 83) y en la renal (17). El flanco, la subcostal y la portal no la ven.
+
+**Opciones.** (1) Aclarar la sombra o pintar su borde: prohibido (§23, criterio 1). (2) Solo la cortical de la costilla sobre
+el cilindro de 34 mm: a 44–50° su lóbulo (s 0,15) queda > 40 dB bajo el de frente y la difusa del hueso es 0 más allá del
+ángulo crítico (26,9°, decisión 88): el recorte no cambiaría. (3) Una cortical rugosa (s ≈ 0,5) que brillara a 45–60°:
+pendientes de 25–35° a la escala del haz no son un cuerpo vertebral. (4) El disco como tejido nuevo: con 33 tejidos
+`TISSUE_VEC4` pasa de 8 a 9 y el programa dirigido de B, de 129 a 131 ranuras (tope 130). (5) El pilar derecho del
+diafragma entre la VCI y la columna: otro órgano, pendiente. (6) La elegida: la sección real del cuerpo, su cortical con la
+física de la costal y los discos (el navegador 3D ya dibujaba vértebras separadas cada 28 mm; la imagen, un cilindro).
+
+**Decisión.**
+
+- **Cuerpos elípticos con discos** (`anatomy/primitives.ts`: `SPINE_SHAPE`, `spineEllipseSd`, `spineSlabSd`, `spineArchSd`,
+  `spineBodySd`, `sdSpine`, `sdSpineDisc`; gemelos GLSL `spineBodyParts`, `spineBodySd`, `spineArchSd` con las constantes
+  interpoladas): la sección del cuerpo es una elipse de semiejes r·1,1765 y r/1,1765 con el r 17 de la escena, 40 × 29 mm
+  [LITERATURA aprox.: Panjabi y cols., Spine 1991;16:888 y 1992;17:299, platillos de T11–L1 de 37–42 × 29–33 mm], la misma
+  área que el círculo, así que el peso respiratorio (`respiratoryWeight`, que usa r) no cambia. Cuerpos de 24 mm cada 31
+  (discos de 7 mm; en la unión toracolumbar, cuerpos de 22–25 y discos de 5–8) con el de T12 centrado en z −20: el plano de la
+  transversa epigástrica lo corta por la mitad, el celíaco queda en T12, la mesentérica superior en L1 y las renales en L1–L2
+  [ESTIMADO]; el borde del platillo, redondeado 1,5 mm. El arco posterior sigue siendo una caja continua.
+- **Clasificación** (`AnatomyScene.classify`, GLSL `classifyWith`, mismo orden): tras la pared, el hueso (vértebra), el disco
+  (el tejido del cartílago, que pasa a llamarse «cartílago»: el costal y el fibrocartílago del disco [EXTRAPOLACIÓN PROPIA]) y
+  el resto (`classifyInside`, la clasificación de antes). Al final, en la muestra de fuera del hueso (`withSpineFace`): su
+  distancia a la frontera cuenta el hueso y el disco (antes el hígado que la columna recorta no la contaba: en la
+  subxifoidea, 134 de 142 muestras de hígado a 1,5–3 mm del hueso la tenían mayor, hasta 2,1 mm), y si no es gas, está a
+  menos de `SPINE_FACE_MM` (1,3 mm: el alcance de una cara de un lado, 0,84 mm, por la cota de |∇| de la salida barata) de un
+  cuerpo, el cuerpo es el hueso más cercano y la cara es la más cercana de las suyas, dibuja la cara nueva
+  `Interface.VertebraCortex` (`IF_VERTEBRA`, 23; `INTERFACE_COUNT` 24) a la distancia del cuerpo. El arco no dibuja cara:
+  una caja con cortical pintaba dos barras blancas horizontales a los lados del cuerpo en la epigástrica (capturas).
+- **La cara** tiene la física de la cortical costal (decisiones 62 y 88): Fresnel músculo/hueso 0,59, σz 0,045 y s 0,15; se
+  ilumina solo desde fuera (`faceLitFromProbe`), su difusa se apaga en el ángulo crítico (`boneDiffuseWindow`; las dos reglas
+  con `isBoneCortex`) y lleva la coherencia de curvatura del costado del cuerpo (la curvatura de la elipse, `spineFaceCurvature`,
+  con el eje en z; 0 en los platillos). Su gradiente es el numérico de `spineBodySd` (`faceGradient`, la primera rama de la
+  GLSL: la cápsula o el diafragma también pueden dibujarla; TS: `faceSdf('spine')`).
+- La vértebra pierde su retrodispersión propia (0,9 → 0), como el hueso de las costillas en la 88.
+- **Psoas** (`organs/retroperitoneum.ts`): con el cuerpo 3 mm más ancho el psoas, pegado a su costado, entraba 2 mm en el
+  hueso; el nodo de T12–L1 pasa de x 22 a 24 y el de L2 de (30, −45,5; r 12) a (32, −46,5; r 11), a ≥ 0,5 mm del hueso y
+  fuera de la grasa perirrenal.
+- **3D**: los cuerpos de la imagen (elípticos, de 24 mm cada 31) en lugar de cilindros de 22 mm cada 28 que la imagen no tenía.
+
+**Consecuencias.** Con GPU (M4, armónica y compuesto, apnea espiratoria; `main` a386e5e → rama):
+
+- **Subxifoidea (el recorte del juez)**: el haz toca el costado anterolateral de los cuerpos a 24–36° (mediana 26°; antes
+  44–50°) y 43 de 97 líneas tienen la cara (34 a < 30°; antes, 0). Pico de la envolvente sobre el hígado de 4–14 mm por
+  encima: +3,7 / −0,7 / +4,7 → +19,9 / +20,4 / +17,0 dB en las líneas de la derecha (u30, u36, u42) y −0,7 / −0,2 → +4,2 /
+  +0,3 dB junto a θ 0 (u84, u90), donde la incidencia pasa de 30°. La sombra de debajo no cambia (−31/−35 dB). Once líneas
+  llegan a un disco antes que al hueso: en la sombra quedan columnas del disco a −23/−26 dB del hígado, frente a −34/−36 de la
+  sombra vecina, con los bordes a lo largo del haz; la línea brillante se corta en cada disco. La congestión grave, igual
+  (43 líneas con cara, 35 a < 30°).
+- **Epigástrica**: la cara anterior del cuerpo brilla en su vértice («la sonrisa»: +2,0…+6,4 → +14…+35 dB en las líneas
+  u88–u104, a 0–24°); los hombros del arco siguen oscuros. **Intercostal**: el borde redondo del cuerpo, de +2,2 / +1,6 / −5,1
+  a +15,0 / +34,5 / +20,7 dB (u132–u140, a 8–30°). Renal: 3 líneas con cara, a > 45°.
+- **Nada más cambia**: banco de fidelidad (M4, las ocho escenas): gris y SNR del hígado, grano y las caras (VCI, VSH, peritoneo,
+  cápsula, Morison) iguales dentro del ruido; la sombra de la subxifoidea tiene ahora las columnas de los discos (su perfil,
+  −52 → −57…−42 dB) y la de la renal se queda sin «núcleo» (los discos cortan la tirada de ≥ 7 líneas bajo la vértebra).
+- **Equivalencia TS ↔ GLSL** con Metal: volumen de 50 000 puntos 1,000 (1739 de vértebra y 162 de disco), cáscara de las caras
+  1,000 (1518 puntos de la cortical vertebral; |Δifd| ≤ 1·10⁻⁴ mm) y barrido de las siete ventanas 1,000; normales de la
+  cara de la GPU frente al gradiente de TS, p01 0,99999996 en la subxifoidea, la intercostal y la renal, norma p95 ≤ 2·10⁻⁴.
+- **Coste** (M4, cuatro rondas alternas, medianas): cuadro de la subxifoidea 9,34 → 9,30 ms, epigástrica 11,18 → 11,41,
+  intercostal 12,97 → 12,90, renal 10,55 → 10,62 (sano); 9,35 → 9,69, 11,50 → 11,83, 12,67 → 12,99, 10,57 → 10,35 (grave):
+  dentro del ruido (±1 ms). Arranque con SwiftShader (`scratchpad/gb/boottime.mts`, seis rondas alternas, carga 3–5): 27,8–28,2 s
+  en `main` y 26,9–28,1 en la rama, mediana 27,9 s en los dos.
+- **Presupuestos**: la pasada B, de 126 a 127 ranuras en la mirada 0 y de 128 a 129 en la dirigida (la fila de la cara en
+  `uIface`; tope 130). Índice 333,7 → 336,1 kB (vite build sobre `main` a386e5e: la GLSL de la columna y de su cara en todas
+  las pasadas que clasifican y sus gemelos TS): el presupuesto sube de 335 a 337 kB (`tools/ci/bundle-budget.ts`, con su nota).
+- **Limitaciones**: se retira `vertebra-no-cortex`; nueva `spine-schematic` (columna recta de cuerpos elípticos iguales, sin
+  cintura, lordosis ni cifosis y con niveles uniformes; arco posterior en caja continua, sin cortical, canal ni forámenes, así
+  que tras el disco no se ve el complejo posterior; sin pilares del diafragma entre la VCI y la columna; el disco con las
+  propiedades del cartílago costal). Pendientes: el pilar derecho del diafragma detrás de la VCI, el complejo posterior tras
+  los discos y el espejo del pulmón junto al mediastino (las franjas oscuras del borde izquierdo de la subxifoidea).
+
+**Verificación.** `spine.test.ts` (fallan en `main`: el cuerpo de 34 × 34 mm, solo vértebra a lo largo del eje, ninguna cara,
+retrodispersión 0,9, la frontera del hígado junto a la columna por encima de su distancia en 134 de 142 muestras, 0 líneas con
+cara y 0 con disco en la subxifoidea): la sección y los niveles con sus rangos anatómicos, el área del círculo y el plano de la
+epigástrica en el centro de un cuerpo; la clasificación (hueso sin moteado, disco, la cara delante del cuerpo y en el
+platillo, no en el arco ni más allá de `SPINE_FACE_MM`); la frontera del hígado en la subxifoidea; el gradiente, la norma, la
+curvatura y el eje de la cara; su eco según la incidencia (el de la costal, −10 dB a 20°, −40 dB a 35°, sin la cara de detrás
+ni difusa más allá del ángulo crítico); la subxifoidea del juez (≥ 20 líneas con la cara a < 30° y ≥ 3 grupos de líneas por los
+discos); la GLSL con sus constantes y la regla. Al día: `wall.test.ts` (24 caras, la vértebra sin moteado, la regla de la cara
+posterior en la GLSL), `interfaceEcho.test.ts` (la ventana de la difusa), `startPoints.test.ts` (el disco del fondo de la
+intercostal no es una costilla), `retroperitoneum.test.ts` (el psoas) y la e2e de las normales (fila `spine`, exigida en p01).
+e2e completa con SwiftShader (equivalencia TS ↔ GLSL, paridad de la transmisión, espejo, normales, banco).
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

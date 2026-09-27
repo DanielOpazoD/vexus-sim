@@ -32,6 +32,15 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Cambiado
 
+- Columna con cortical y discos (92). La zona negra de borde curvo y liso bajo la VCI de la subxifoidea, que los jueces
+  ciegos no sabían explicar («ni una sombra ni un órgano»), no era pulmón: era la sombra del cuerpo vertebral, un cilindro
+  sin cortical que el haz tocaba de refilón. Los cuerpos tienen ahora su sección real (40 × 29 mm, antes un círculo de 34)
+  y su cortical, que brilla según la incidencia como la de las costillas: en la subxifoidea, una línea brillante bajo el
+  hígado (+17–20 dB sobre él) que se apaga hacia el centro de la imagen, donde el haz la toca más oblicuo; en la
+  transversa epigástrica, la «sonrisa» del vértice del cuerpo; en la intercostal, el borde redondo del cuerpo al fondo. Entre
+  los cuerpos, los discos: la línea se corta y la sombra deja pasar columnas grises a lo largo del haz. El psoas se aparta
+  2 mm con el costado del cuerpo. El 3D dibuja las mismas vértebras. Las medidas, las ventanas VExUS y el coste del cuadro
+  no cambian.
 - Vasos orgánicos (90): las suprahepáticas y la porta cortadas de través son óvalos (antes, círculos perfectos) y su
   calibre ondula unos pocos por ciento a lo largo del vaso; una vena distendida por la congestión se redondea. La VCI se
   curva también en el plano coronal y se estrecha con suavidad por debajo de donde se mide (antes, en el flanco, dos

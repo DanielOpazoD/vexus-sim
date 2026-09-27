@@ -1218,6 +1218,9 @@ export function faceNormalStats(sim: Simulator): Record<FaceNormalRow, FaceNorma
       case 'pericardium':
         // la capa del pericardio (decisión 85): su cara es de un lado
         return c.interface === Interface.Pericardium ? t : null;
+      case 'spine':
+        // el tejido blando (o el disco) que dibuja la cortical de la columna (decisión 92), de un lado
+        return c.interface === Interface.VertebraCortex ? t : null;
     }
   };
   type Candidate = { p: Vec3; m: Vec3 };

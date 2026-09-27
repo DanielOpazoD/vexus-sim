@@ -154,8 +154,8 @@ export const TISSUES: TissueProps[] = [
   // tras una costilla y el tejido seguía visible dentro de la sombra (decisión 54). Sin retrodispersión propia
   // (decisión 88): lo que devuelve una costilla es el eco de su cortical anterior, la cara que dibuja el tejido blando de
   // delante (decisión 62); lo que entra en el hueso no vuelve a formar imagen, y con 0,9 su moteado dibujaba bajo la
-  // cortical una media luna gris (el disco de la costilla, distinto de su sombra). La vértebra, sin cara de cortical, la
-  // conserva (su banda de superficie es lo que queda de su eco: `vertebra-no-cortex`).
+  // cortical una media luna gris (el disco de la costilla, distinto de su sombra). La vértebra, con su cortical desde la
+  // decisión 92, tampoco la tiene.
   { name: 'hueso cortical', c: 3515, rho: 1908, alpha1: 20, b: 1, backscatter: 0, gas: false, bone: true },
   // el «resto» del abdomen (asas, mesenterio; la grasa retroperitoneal es un tejido propio desde la decisión 81): el
   // nivel lo da su textura (decisión 74, `ultrasound/restTexture.ts`), granulosa por los grumos
@@ -173,8 +173,9 @@ export const TISSUES: TissueProps[] = [
   { name: 'gas intestinal', c: 343, rho: 1.16, alpha1: 0.0034, b: 2, backscatter: 0, gas: true, bone: false },
   { name: 'líquido (bilis/ascitis)', c: 1482, rho: 994, alpha1: 0.0022, b: 1, backscatter: 0.002, gas: false, bone: false },
   { name: 'pared arterial', c: 1586, rho: 1079, alpha1: 0.7, b: 1, backscatter: 1.8, gas: false, bone: false },
-  // cartílago hialino: homogéneo e hipoecoico (≈ 0,15), con el pericondrio como cara (decisión 62)
-  { name: 'cartílago costal', c: 1640, rho: 1100, alpha1: 0.9, b: 1, backscatter: 0.15, gas: false, bone: false },
+  // cartílago hialino: homogéneo e hipoecoico (≈ 0,15), con el pericondrio como cara (decisión 62); también el disco
+  // intervertebral (decisión 92: fibrocartílago, hipoecoico, c de 1550–1650 m/s) [EXTRAPOLACIÓN PROPIA]
+  { name: 'cartílago', c: 1640, rho: 1100, alpha1: 0.9, b: 1, backscatter: 0.15, gas: false, bone: false },
   // Riñón (IT'IS: c 1560, ρ 1066, α 0,7·f^1,0). Corteza iso/ligeramente hipoecoica al hígado;
   // médula (pirámides) hipoecoica pero no negra: −8,2 dB bajo la corteza (decisión 87; −4,6 en la 68, con las pirámides
   // cortadas por el cáliz no se veían) [ESTIMADO]; seno = grasa + vasos, marcadamente ecogénico (E.3, B.5), lo más
@@ -188,8 +189,10 @@ export const TISSUES: TissueProps[] = [
   // contorno del riñón por contraste a cualquier incidencia, con la línea especular de la cápsula encima de frente
   { name: 'grasa perirrenal', c: 1450, rho: 920, alpha1: 0.45, b: 1.1, backscatter: 2.4, gas: false, bone: false, speckleClump: 0.8 },
   { name: 'pared de vía biliar', c: 1586, rho: 1079, alpha1: 0.7, b: 1, backscatter: 2.4, gas: false, bone: false },
-  // Vértebra: mismas propiedades que el hueso cortical; tejido aparte solo para rotular «columna»
-  { name: 'vértebra', c: 3515, rho: 1908, alpha1: 20, b: 1, backscatter: 0.9, gas: false, bone: true },
+  // Vértebra: mismas propiedades que el hueso cortical, sin retrodispersión propia (decisión 92: lo que devuelve es el
+  // eco de su cortical, la cara que dibuja el tejido de fuera; con 0,9, su moteado era la única línea de su borde);
+  // tejido aparte solo para rotular «columna»
+  { name: 'vértebra', c: 3515, rho: 1908, alpha1: 20, b: 1, backscatter: 0, gas: false, bone: true },
   // Ligamento redondo: grasa + tejido fibroso, marcadamente ecogénico (foco brillante en el
   // corte transversal del lóbulo izquierdo, a veces con sombra) [E.3].
   { name: 'ligamento redondo (grasa)', c: 1470, rho: 950, alpha1: 0.6, b: 1.1, backscatter: 2.2, gas: false, bone: false },

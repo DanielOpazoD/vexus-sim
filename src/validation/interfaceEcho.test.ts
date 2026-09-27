@@ -636,7 +636,7 @@ describe('Facetas y componente difusa de las caras (decisión 65)', () => {
     expect(echo).toContain(`#define BONE_CRITICAL_SIN2 ${(BONE_CRITICAL_SIN * BONE_CRITICAL_SIN).toFixed(8)}`);
     expect(echo).toContain(`#define BONE_Z_RATIO ${BONE_IMPEDANCE_RATIO.toFixed(8)}`);
     expect(echo).toContain('float ctw = sqrt(max(0.0, 1.0 - (1.0 - cosI * cosI) / BONE_CRITICAL_SIN2));');
-    expect(echo).toContain('float wd = c.iface == IF_RIB ? cosI * ctw * (1.0 + BONE_Z_RATIO) * (1.0 + BONE_Z_RATIO) / (zw * zw) : 1.0;');
+    expect(echo).toContain('float wd = bone ? cosI * ctw * (1.0 + BONE_Z_RATIO) * (1.0 + BONE_Z_RATIO) / (zw * zw) : 1.0;');
     expect(echo).toContain(
       'return cosL < IFACE_MIN_COS ? 0.0 : P.x * inversesqrt(kf) * exp(-(1.0 - c2) / c2 * P.z / kf) / c2 * exp(-0.5 * x * x) * curv * g * (0.39894228 / IFACE_SIGMA_H);',
     );

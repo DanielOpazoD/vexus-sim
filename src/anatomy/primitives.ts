@@ -256,10 +256,11 @@ export interface CylinderZ {
 }
 
 /**
- * Columna: cuerpo vertebral (cilindro) + arco posterior con apófisis transversas
- * (caja de semiancho `archHalfWidth`, entre `archY0` y `archY1`, por detrás del
- * cuerpo). Las costillas se articulan con las apófisis transversas: no existen por
- * detrás de la columna (`sdRib` las excluye en |x| < archHalfWidth + margen).
+ * Columna: cuerpos vertebrales (`SPINE_SHAPE`: sección elíptica de la misma área que el círculo de radio `r`, con los
+ * discos entre ellos, decisión 92) + arco posterior con apófisis transversas (caja de semiancho `archHalfWidth`, entre
+ * `archY0` y `archY1`, por detrás del cuerpo, continua: láminas imbricadas). Las costillas se articulan con las
+ * apófisis transversas: no existen por detrás de la columna (`sdRib` las excluye en |x| < archHalfWidth + margen). `r`
+ * es también el radio del peso respiratorio (`respiratoryWeight`), que no depende de la forma del cuerpo.
  */
 export interface Spine extends CylinderZ {
   archHalfWidth: number;
@@ -322,20 +323,68 @@ export function sdSphere(p: Vec3, s: Sphere): number {
   return Math.hypot(p[0] - s.center[0], p[1] - s.center[1], p[2] - s.center[2]) - s.r;
 }
 
-export function sdCylinderZ(p: Vec3, c: CylinderZ): number {
-  return Math.hypot(p[0] - c.x0, p[1] - c.y0) - c.r;
+/**
+ * Cuerpos vertebrales y discos (decisión 92) [LITERATURA aprox.: Panjabi y cols., Spine 1991;16:888 y 1992;17:299, platillos
+ * de T11–L1 de 37–42 mm de ancho y 29–33 de fondo, cuerpos de 22–25 mm de alto y discos de 5–8 mm en la unión
+ * toracolumbar]. La sección es una elipse de semiejes r·`aspect` (transverso) y r/`aspect` (anteroposterior), la misma
+ * área que el círculo de radio r de la escena: 40 × 29 mm con r 17 (antes un círculo de 34 mm, más estrecho y más hondo
+ * que un cuerpo real, cuya cara anterolateral quedaba a 44–58° del haz de la subxifoidea en lugar de 26–36°). Cuerpos de
+ * `bodyMm` cada `levelMm`, el de T12 centrado en `z0Mm` (el plano de la transversa epigástrica lo corta por la mitad; el
+ * celíaco queda en T12, la mesentérica superior en L1 y las renales en L1–L2) [ESTIMADO], con el borde del platillo
+ * (anillo apofisario) redondeado con `rimMm`. Entre dos cuerpos, el disco intervertebral (`sdSpineDisc`).
+ */
+export const SPINE_SHAPE = { aspect: 1.1765, levelMm: 31, bodyMm: 24, z0Mm: -20, rimMm: 1.5 } as const;
+
+/** Distancia (la aproximada de `sdEllipsoidLocal`, |∇| = 1 en la cara) al cilindro elíptico de los cuerpos, sin discos. */
+export function spineEllipseSd(p: Vec3, sp: Spine): number {
+  const k = SPINE_SHAPE.aspect;
+  return sdEllipsoidLocal([p[0] - sp.x0, p[1] - sp.y0, 0], [sp.r * k, sp.r / k, 1e3]);
 }
 
-/** Distancia con signo a la columna (cuerpo ∪ arco posterior); negativa en hueso. */
-export function sdSpine(p: Vec3, sp: Spine): number {
-  const body = sdCylinderZ(p, sp);
+/** Distancia en z a los cuerpos vertebrales: negativa dentro de un cuerpo, positiva en un disco (mm). */
+export function spineSlabSd(z: number): number {
+  const { levelMm, bodyMm, z0Mm } = SPINE_SHAPE;
+  const t = z - z0Mm;
+  return Math.abs(t - levelMm * Math.floor(t / levelMm + 0.5)) - 0.5 * bodyMm;
+}
+
+/** Distancia con signo a la caja del arco posterior (con las apófisis transversas). */
+export function spineArchSd(p: Vec3, sp: Spine): number {
   const dx = Math.abs(p[0] - sp.x0) - sp.archHalfWidth;
   const cy = 0.5 * (sp.archY0 + sp.archY1);
   const dy = Math.abs(p[1] - cy) - 0.5 * (sp.archY1 - sp.archY0);
-  const ox = Math.max(dx, 0);
-  const oy = Math.max(dy, 0);
-  const arch = Math.hypot(ox, oy) + Math.min(Math.max(dx, dy), 0);
-  return Math.min(body, arch);
+  return Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) + Math.min(Math.max(dx, dy), 0);
+}
+
+/** Distancia con signo a los cuerpos vertebrales (el borde del platillo redondeado): la cara de su cortical. */
+export function spineBodySd(p: Vec3, sp: Spine): number {
+  return smoothMax(spineEllipseSd(p, sp), spineSlabSd(p[2]), SPINE_SHAPE.rimMm);
+}
+
+/** Distancia con signo al hueso de la columna (cuerpos ∪ arco posterior); negativa en hueso. */
+export function sdSpine(p: Vec3, sp: Spine): number {
+  return Math.min(spineBodySd(p, sp), spineArchSd(p, sp));
+}
+
+/** Disco intervertebral (decisión 92): dentro del cilindro de los cuerpos y entre dos de ellos (negativa dentro). */
+export function sdSpineDisc(p: Vec3, sp: Spine): number {
+  return Math.max(spineEllipseSd(p, sp), -spineSlabSd(p[2]));
+}
+
+/**
+ * Curvatura (1/mm) de la cara de un cuerpo vertebral más cercana a p: la de la elipse en su costado
+ * (ab/(a²·sen²t + b²·cos²t)^(3/2), con t el ángulo paramétrico de p), 0 en los platillos (planos). El eje del
+ * cilindro es z. Gemelo de `spineFaceCurvature` (GLSL): la coherencia de curvatura de su eco (decisión 57).
+ */
+export function spineFaceCurvature(p: Vec3, sp: Spine): number {
+  const e = spineEllipseSd(p, sp);
+  if (spineSlabSd(p[2]) > e) return 0;
+  const a = sp.r * SPINE_SHAPE.aspect;
+  const b = sp.r / SPINE_SHAPE.aspect;
+  const kx = (p[0] - sp.x0) / a;
+  const ky = (p[1] - sp.y0) / b;
+  const q = Math.hypot(a * ky, b * kx) / Math.max(Math.hypot(kx, ky), 1e-6);
+  return (a * b) / (q * q * q);
 }
 
 export interface TubeHit {

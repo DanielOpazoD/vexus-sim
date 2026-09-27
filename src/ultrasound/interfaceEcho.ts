@@ -1,4 +1,4 @@
-import { INTERFACES, INTERFACE_COUNT, Interface, interfaceReflectivity } from '../anatomy/interfaces';
+import { INTERFACES, INTERFACE_COUNT, Interface, interfaceReflectivity, isBoneCortex } from '../anatomy/interfaces';
 import { quadratusSdf, retroFatSdf } from '../anatomy/organs/retroperitoneum';
 import { sdDiaphragm, type Diaphragm, type Torso } from '../anatomy/primitives';
 import { DIAPHRAGM_THICKNESS_MM, TISSUES, Tissue } from '../anatomy/tissues';
@@ -232,7 +232,8 @@ export function interfaceUniforms(k0: number, kDb = IFACE_K_DB): Float32Array {
 }
 
 /**
- * ¿Llega el haz a la cara desde el lado de fuera? Solo cuenta para la cortical costal (decisión 62): su cara
+ * ¿Llega el haz a la cara desde el lado de fuera? Solo cuenta para la cortical de un hueso, la costal (decisión 62) y
+ * la de la columna (decisión 92): su cara
  * posterior (la normal exterior, el gradiente de `ribSd`, apunta lejos de la sonda: `normal·dir > 0`) solo se
  * alcanza a través del hueso, que la apaga (−60 dB o más ida y vuelta); los rayos del borde de la apertura que
  * rodean la costilla siguen hacia dentro y nunca la iluminan desde fuera, así que la transmisión con apertura
@@ -240,7 +241,7 @@ export function interfaceUniforms(k0: number, kDb = IFACE_K_DB): Float32Array {
  * El cartílago transmite: su cara profunda sí se ve. Gemelo de la condición de `interfaceEcho` (GLSL).
  */
 export function faceLitFromProbe(face: Interface, normal: readonly number[], dir: readonly number[]): boolean {
-  return face !== Interface.RibCortex || normal[0] * dir[0] + normal[1] * dir[1] + normal[2] * dir[2] <= 0;
+  return !isBoneCortex(face) || normal[0] * dir[0] + normal[1] * dir[1] + normal[2] * dir[2] <= 0;
 }
 
 /** Uniforms del último (k0, K) pedido: el gemelo evalúa el eco en cientos de miles de muestras. */
@@ -331,7 +332,8 @@ export const BONE_IMPEDANCE_RATIO =
   (TISSUES[Tissue.Muscle].c * TISSUES[Tissue.Muscle].rho) / (TISSUES[Tissue.Bone].c * TISSUES[Tissue.Bone].rho);
 
 /**
- * Ventana de la componente difusa de la cortical costal con la incidencia (decisión 88): la difusa de un hueso es la
+ * Ventana de la componente difusa de la cortical de un hueso con la incidencia (decisión 88; la costal y, desde la 92,
+ * la de la columna): la difusa de un hueso es la
  * energía que la onda que entra devuelve desde la microestructura de la cortical (periostio, conductos de Havers), no
  * una capa de Lambert encima de una cara lisa, así que su amplitud (ida y vuelta) sigue a la transmisión de energía de la
  * onda longitudinal en la cara, T_E(θ)/T_E(0), con T_E = 4·Z₁Z₂·cosθ·cosθ_t/(Z₂cosθ + Z₁cosθ_t)² (dos fluidos): −2 dB a
@@ -340,7 +342,7 @@ export const BONE_IMPEDANCE_RATIO =
  * el contorno de media costilla: un disco. 1 en el resto de caras.
  */
 export function boneDiffuseWindow(face: Interface, cosI: number): number {
-  if (face !== Interface.RibCortex) return 1;
+  if (!isBoneCortex(face)) return 1;
   const ct2 = 1 - (1 - cosI * cosI) / (BONE_CRITICAL_SIN * BONE_CRITICAL_SIN);
   if (ct2 <= 0) return 0;
   const ct = Math.sqrt(ct2);
@@ -397,7 +399,7 @@ export function reflectionCosine(d0: readonly number[], dR: readonly number[]): 
 export const IFACE_DIFFUSE_PER_A = FACET.diffuse / (2 * IFACE_BETA * 10 ** (IFACE_K_DB / 20) * IFACE_SLOPE_REF);
 
 /**
- * Pasada B: eco de interfaz de una muestra (necesita `Cls`, `faceGradient`, `liverSdf`, `domeSd`, `retroFatSdf`,
+ * Pasada B: eco de interfaz de una muestra (necesita `Cls`, `faceGradient`, `spineFaceCurvature`, `liverSdf`, `domeSd`, `retroFatSdf`,
  * `quadratusSdf` y `uElev` de la anatomía y del haz, `lateralSigmaMm` de `LATERAL_PSF_GLSL`, `wallFaceGain` de
  * `WALL_TEXTURE_GLSL` y `valueNoise` de `SPECKLE_TISSUE_GLSL`). `se` es la σ elevacional de UNA vía (`elevSigma`).
  */
@@ -479,12 +481,16 @@ vec2 interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w) {
   vec3 gw = warpNormal(w, fg.xyz * fg.w);
   float gn = length(gw);
   fg = vec4(gw / max(gn, 1e-9), gn);
-  // la cara posterior de una costilla ósea solo se alcanza a través del hueso (faceLitFromProbe, decisión 62)
-  if (c.iface == IF_RIB && dot(fg.xyz, dir) > 0.0) return vec2(0.0);
+  // la cara posterior de una costilla ósea, o de la columna (decisión 92), solo se alcanza a través del hueso
+  // (faceLitFromProbe, decisión 62)
+  bool bone = c.iface == IF_RIB || c.iface == IF_VERTEBRA;
+  if (bone && dot(fg.xyz, dir) > 0.0) return vec2(0.0);
   float cosI = abs(dot(fg.xyz, dir));
   if (cosI < IFACE_MIN_COS) return vec2(0.0);
-  // tubos y costillas (decisión 62): cilindros con la curvatura de su sección en c.kc y su eje en c.tangent
-  float curv = c.iface <= IF_LAST_TUBE || c.iface == IF_RIB || c.iface == IF_PERICHONDRIUM ? tubeCurvature(c, fg.xyz, dir, r, se) : 1.0;
+  // tubos, costillas (decisión 62) y el costado de los cuerpos vertebrales (decisión 92, eje z): cilindros con la
+  // curvatura de su sección en c.kc y su eje en c.tangent
+  if (c.iface == IF_VERTEBRA) { c.tangent = vec3(0.0, 0.0, 1.0); c.kc = spineFaceCurvature(m); }
+  float curv = c.iface <= IF_LAST_TUBE || bone || c.iface == IF_PERICHONDRIUM ? tubeCurvature(c, fg.xyz, dir, r, se) : 1.0;
   // las caras de la pared: la variación anclada de su reflectividad a lo largo de la cara (wallTexture.ts)
   float gain = c.iface >= IF_FIRST_WALL && c.iface <= IF_LAST_WALL ? wallFaceGain(m, c.iface) : 1.0;
   // la cara interna de la pared con grasa detrás (fatAcrossWall, decisión 65): dentro del compartimento retroperitoneal y
@@ -504,7 +510,7 @@ vec2 interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w) {
   // ángulo crítico (boneDiffuseWindow, decisión 88)
   float ctw = sqrt(max(0.0, 1.0 - (1.0 - cosI * cosI) / BONE_CRITICAL_SIN2));
   float zw = cosI + BONE_Z_RATIO * ctw;
-  float wd = c.iface == IF_RIB ? cosI * ctw * (1.0 + BONE_Z_RATIO) * (1.0 + BONE_Z_RATIO) / (zw * zw) : 1.0;
+  float wd = bone ? cosI * ctw * (1.0 + BONE_Z_RATIO) * (1.0 + BONE_Z_RATIO) / (zw * zw) : 1.0;
   return vec2(faceEcho(c.iface, cosF, min(1.0 - 4.0 * FACET_TILT2 * P.z, 1.0 - FACET_RHO2), 1.0, curv, g),
               IFACE_DIFFUSE * P.x * inversesqrt(P.z) * sqrt(max(0.0, 1.0 - exp(-P.y * P.y))) * cosI * wd * g);
 }

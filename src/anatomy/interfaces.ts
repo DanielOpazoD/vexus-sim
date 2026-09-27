@@ -24,7 +24,9 @@ import { VESSEL_META, type VesselId } from '../physiology/vessels';
  *    preperitoneal dibuja la cara de su capa más cercana (dermis/grasa, Scarpa, fascia profunda, los dos
  *    planos intermusculares, transversalis: dos lados; peritoneo parietal: la grasa preperitoneal, un lado);
  *  - cortical costal: el tejido blando de la pared junto a la costilla ósea (un lado: el hueso atenúa su
- *    propio interior); pericondrio: el cartílago (un lado, también su cara profunda).
+ *    propio interior); pericondrio: el cartílago (un lado, también su cara profunda);
+ *  - cortical vertebral (decisión 92): el tejido blando (o el disco) a menos de `SPINE_FACE_MM` de un cuerpo
+ *    vertebral, si el cuerpo es el hueso más cercano y su cara la más cercana de las suyas (un lado).
  * No se dibujan la cara pared/hígado (misma impedancia) ni cápsula renal/corteza, ni hay capa fina.
  */
 export enum Interface {
@@ -62,9 +64,14 @@ export enum Interface {
   Perichondrium = 21,
   /** Pericardio junto al epicardio (decisión 85): lo dibuja la capa del pericardio (un lado). */
   Pericardium = 22,
+  /**
+   * Cortical de los cuerpos vertebrales (decisión 92): su cara anterior y lateral y sus platillos (el arco posterior, una
+   * caja, no dibuja cara). La dibuja el tejido blando de fuera del hueso (un lado), también el disco junto a los platillos.
+   */
+  VertebraCortex = 23,
 }
 
-export const INTERFACE_COUNT = 23;
+export const INTERFACE_COUNT = 24;
 /** Las caras de tubo van primero (ids ≤ esta): solo ellas llevan coherencia de curvatura. */
 export const LAST_TUBE_INTERFACE = Interface.DuctLumen;
 /** Caras de las capas de la pared (decisión 62): ids consecutivos de `SkinFat` a `Peritoneum`. */
@@ -82,11 +89,20 @@ export function isRibInterface(i: Interface): boolean {
 }
 
 /**
+ * Cortical de un hueso (costilla o columna, decisión 92): la cara que solo se ilumina desde fuera y cuya difusa se apaga
+ * en el ángulo crítico (decisión 88).
+ */
+export function isBoneCortex(i: Interface): boolean {
+  return i === Interface.RibCortex || i === Interface.VertebraCortex;
+}
+
+/**
  * Caras con coherencia de curvatura (decisión 57): las de tubo y, desde la decisión 62, las de costilla (un
- * cilindro de sección elíptica, con la curvatura de su sección, `ribCurvature`).
+ * cilindro de sección elíptica, con la curvatura de su sección, `ribCurvature`); desde la 92, la de la columna (el
+ * costado de los cuerpos, cilindros en z: `spineFaceCurvature`, 0 en los platillos y el arco).
  */
 export function hasCurvatureCoherence(i: Interface): boolean {
-  return (i !== Interface.None && i <= LAST_TUBE_INTERFACE) || isRibInterface(i);
+  return (i !== Interface.None && i <= LAST_TUBE_INTERFACE) || isRibInterface(i) || i === Interface.VertebraCortex;
 }
 /**
  * Cápsula hepática y grasa perirrenal a ≤ esto (mm) son la misma cara (Morison): la dibuja la grasa,
@@ -108,6 +124,13 @@ export const MORISON_SLIVER_MM = 3.5;
  * sola línea ecogénica (decisión 67). Holgura sobre la cara externa de la pared, por el redondeo del borde de la fosa.
  */
 export const GALLBLADDER_CONTACT_MM = 1.0;
+/**
+ * Muestras de fuera del hueso a menos de esto (mm) de un cuerpo vertebral dibujan su cortical (decisión 92) si es la cara
+ * más cercana de las suyas: el alcance del perfil de una cara de un lado (desplazamiento 2,5σh más 3,5σh, 0,84 mm) por la
+ * cota de la norma del gradiente de la salida barata del eco (1,5), redondeado hacia arriba; más lejos la cara no
+ * devolvería eco y la muestra conserva la suya. `interfaceEcho.test.ts` fija la desigualdad.
+ */
+export const SPINE_FACE_MM = 1.3;
 /**
  * Paso (mm) de las diferencias centrales con que la GPU saca el gradiente (normal y norma) de la cápsula
  * hepática, el contorno renal, el diafragma y la vesícula (`faceGradient`), el mismo que el gradiente de
@@ -140,6 +163,7 @@ export const INTERFACE_GLSL_NAME: Record<Interface, string> = {
   [Interface.RibCortex]: 'IF_RIB',
   [Interface.Perichondrium]: 'IF_PERICHONDRIUM',
   [Interface.Pericardium]: 'IF_PERICARDIUM',
+  [Interface.VertebraCortex]: 'IF_VERTEBRA',
 };
 
 /** Propiedades de una cara lisa (tabla de la decisión 57). */
@@ -391,6 +415,17 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     // es 0,10. σz y s, los de las cápsulas de la decisión 65: +22,7 dB a 0°, +16,6 a 20° y −10,9 a 40° (K = 55 dB), con la
     // difusa a +10,9 dB sobre el moteado del hígado, como la cápsula renal
     source: 'pericardio fibroso (colágeno / grasa, Duck 1990): suelo 0,15 [LITERATURA aprox.]; σz 0,06, s 0,2 [ESTIMADO]',
+  },
+  // la misma física que la cortical costal (decisiones 62 y 88): Fresnel tejido blando / hueso, con su lóbulo, su difusa
+  // limitada por el ángulo crítico y la coherencia de curvatura del costado del cuerpo (decisión 92)
+  [Interface.VertebraCortex]: {
+    name: 'cortical vertebral',
+    sides: [Tissue.Muscle, Tissue.Vertebra],
+    floor: 0,
+    roughnessMm: 0.045,
+    slopeRms: 0.15,
+    twoSided: false,
+    source: 'Fresnel músculo / hueso 0,59 (TISSUES); σz y s de la cortical costal [ESTIMADO]',
   },
 };
 

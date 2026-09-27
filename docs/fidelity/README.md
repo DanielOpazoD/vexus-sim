@@ -690,7 +690,7 @@ cúpula, en el pulmón.
 
 ### Costillas y relieve de la pared (decisión 88): oclusión, sombras y qué cambia en el banco
 
-Medido con GPU (M4, Metal, armónica y compuesto, apnea espiratoria; `main` 281945d → la rama rebasada) sobre la rejilla
+Medido con GPU (M4, Metal, armónica y compuesto, apnea espiratoria; `main` 281945d → la rama sobre 281945d, antes de la decisión 90) sobre la rejilla
 del plano (línea × 0,18 mm: el tejido y la cara de la CPU en el marco y el contacto de la captura, la envolvente compuesta
 y el gris mostrado, `scratchpad/rib/occl.mts`, `shadow.mts` y `faces.mts`). La escena de la pareja 6 de la ronda 4 es el
 flanco con la sonda 12 mm más craneal; la real de esa pareja no tiene costillas, así que su recorte solo sirve para la

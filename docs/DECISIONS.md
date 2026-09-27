@@ -3879,7 +3879,7 @@ que el relieve, material, se conserva bajo la sonda (la grasa real, más blanda,
 
 **Consecuencias.**
 
-- Oclusión (M4, flanco con dz +12, la escena de la pareja; `main` 281945d → la rama rebasada; `scratchpad/rib/informe-88`,
+- Oclusión (M4, flanco con dz +12, la escena de la pareja; `main` 281945d → la rama sobre 281945d, antes de la decisión 90; `scratchpad/rib/informe-88`,
   con el recorte y la normalización del juez junto a la real): bajo las tres costillas, de la cara posterior a 4 mm más
   abajo, la mediana pasa de −26,7 / −25,4 / −7,4 dB del hígado (gris 5 / 7 / 47; máximos +18 / +12 / +37 dB) a −42,8 /
   −44,8 / −43,7 dB (gris 0), el suelo de ruido; en el flanco sin desplazar, de −27,5 / −21,8 / −1,6 a −44,6 / −46,3 /
@@ -3920,8 +3920,9 @@ que el relieve, material, se conserva bajo la sonda (la grasa real, más blanda,
   programa de la mirada 0 tarda como en `main` (11–14 s) con las copias de la pared con la normal de la piel, y ~3 s
   más con la pendiente de la capa en su bucle, que por eso no la llevan. Arranque de la aplicación con SwiftShader
   (`scratchpad/gb/boottime.mts`): sin diferencia fuera del ruido (±10 s con la carga de la máquina). `npm run
-calibrate` da la misma salida byte a byte. Índice del build 324,9 → 329,5 kB sobre `main` 281945d: el presupuesto
-  sube de 325 a 330 kB (`tools/ci/bundle-budget.ts`, con su nota).
+calibrate` da la misma salida byte a byte. Índice del build 324,9 → 329,5 kB sobre `main` 281945d; integrada tras la
+  decisión 90, 329,2 → 333,7 kB sobre `main` c2133e1: el presupuesto sube de 330 a 335 kB (`tools/ci/bundle-budget.ts`,
+  con su nota).
 - Limitaciones: `vertebra-no-cortex` (la banda de su superficie, 0–0,9 mm), `no-sidelobes` (el pedestal apagado bajo un
   hueso), `interface-echo-scope` (las copias sin el relieve), `interface-echo-two-scale` (los planos de elevación en una
   costilla), `wall-generic-layers` (secciones, relieve, estrías y |∇| con mucha grasa) y `lumen-refraction-only` (el

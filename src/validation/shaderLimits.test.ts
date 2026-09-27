@@ -299,14 +299,17 @@ describe('Límites del shader con margen para crecer', () => {
   // los huesos (la de la apertura sin la refracción, sobre el rayo sin hueso en dB; la lee D para el pedestal); B lee la
   // transmisión con `transLerp` (sin mezclar a través de la entrada en un hueso) y multiplica los ecos especulares por
   // la del rayo central y el moteado por la de la apertura. Lejos de todo hueso las cuentas son las de antes (la
-  // interpolación manual es la de la textura).
+  // interpolación manual es la de la textura). Cambio deliberado de A y B (decisión 91: b74ad63b06607c12 →
+  // 8e60c30b337d5edd y 216992881d08e42d → 7b55056efdc584d6): A publica en o2.w la transmisión de los ecos especulares de
+  // la mirada (los pares de la apertura mezclados con ella) y B la usa en lugar de la del rayo central fuera de la
+  // cortina. Lejos de todo obstáculo es la del rayo, la de antes.
   it('el main de los programas de la mirada 0 es, letra a letra, el de antes de la composición', () => {
     const mainOf = (src: string): string => src.slice(src.lastIndexOf('\nvoid main() {'));
     const print = (src: string): string => createHash('sha256').update(mainOf(src)).digest('hex').slice(0, 16);
     expect(Object.fromEntries(LOOK_PAIRS.map((p) => [p.name, print(p.look0)]))).toEqual({
       FRAG_TRANS_PREFIX: '012de03287743344',
-      FRAG_TRANSMISSION: 'b74ad63b06607c12',
-      FRAG_RAWFIELD: '216992881d08e42d',
+      FRAG_TRANSMISSION: '8e60c30b337d5edd',
+      FRAG_RAWFIELD: '7b55056efdc584d6',
     });
     // y el resto de B es el mismo texto en los dos programas: solo cambian sus entradas y su main
     const inputs0 = 'uniform sampler2D uTrans0;\nuniform sampler2D uTrans1;\n';

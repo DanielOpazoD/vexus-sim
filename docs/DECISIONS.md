@@ -4322,6 +4322,132 @@ la consulta, la cara y el bucle de tubos de la GLSL sobre la textura del renderi
 cos ≥ 0,99999998), el alcance del ruido, la disposición de la textura, los gradientes analíticos, la salida de
 `npm run calibrate` y la cadena del alumno.
 
+## 91. Costuras y peine: la penumbra es la integral exacta de su cono, los ecos especulares llevan la transmisión de sus pares en la apertura y la mirada dirigida refleja su propio camino en el espejo
+
+**Contexto.** Sirve al objetivo 2 (fidelidad ecográfica) con el 1 (causalidad) como criterio de `docs/MISION.md`: un
+artefacto sin causa física. Ronda 5 del juez ciego (27-09-2026, `main` 6c0ba5b), pista n.º 1 de los dos jueces, «costuras y
+peines»: en la VCI del flanco de la congestión grave (pareja 5) dos costuras verticales con la textura cambiando de golpe
+por encima y por debajo de la VCI y la pared anterior rota en una de ellas («una sombra real seguiría el haz a través de la
+luz»); en la subcostal de la congestión grave (pareja 7), en el borde izquierdo, una banda diagonal de estrías
+horizontales «en peine», ni paralelas a una cara (reverberación) ni radiales (colas de cometa). Antes de tocar nada se
+reprodujo con GPU real (M4, Metal, armónica y compuesto, apnea espiratoria, las escenas y recortes de
+`scratchpad/gb/blind5.mts`) y se leyeron en (línea, profundidad) la envolvente del compuesto y de cada mirada, las
+transmisiones de A, el campo de B y los impactos de A0 (`scratchpad/seam/cap.mts`):
+
+- **Costuras del flanco.** Caen en las líneas de la sombra de la tercera costilla (hueso en las líneas 77–99, a 21–24 mm).
+  La transmisión con apertura de A iba a escalones: a 80 mm, −38,6 / −47,1 / −47,1 / −44,1 / −44,0 / −55,5 dB en las
+  líneas 80–85 de la mirada 0, no monótona y con saltos de 5–13 dB que seguían toda la profundidad; el cono se promediaba
+  con nueve tomas en líneas enteras (decisiones 54 y 86), y cada toma que cruzaba el borde de la costilla movía la media
+  su peso (hasta 0,22 con la ventana de Hann), en una línea y otra vez al abrirse el cono en profundidad. Y los ecos
+  especulares llevaban a lo sumo la transmisión del rayo central (decisión 88), −140/−180 dB en las líneas cuyo rayo cruza
+  el hueso: la pared anterior de la VCI, a 107 mm, 85 mm bajo la costilla, desaparecía en esas líneas con bordes de una
+  línea (gris 19–30 frente a 60–71 al lado), y en el compuesto cada mirada la rompía en otro sitio (la costilla a ±8
+  líneas en las dirigidas).
+- **Bisección.** Con el hueso transparente en A1 (el mismo moteado, `scratchpad/seam/p_nobone.py`) no queda ninguna
+  costura: son de la sombra, no de la VCI. El cociente de la envolvente con y sin hueso aísla la sombra de cada mirada: en `main`, bandas
+  verticales en toda la profundidad y la pared en negro. Con 99 tomas la transmisión se vuelve continua (la sombra deja de
+  ir a bandas, la pared sigue rota); con la especular por la apertura, la pared vuelve (la textura sigue a bandas); con las
+  dos, las tres miradas quedan suaves. No eran las uniones de nodos de la VCI (decisión 90: sin hueso siguen ahí y no hay
+  costura), ni la compresión de la sonda (su tabla cambia 0,07–0,09 mm entre nodos en esas líneas y no alcanza los 145 mm),
+  ni el pedestal de D (igual al apagarlo), ni la conversión de barrido (las costuras ya están en la envolvente), ni el
+  acoplamiento (1 en todas esas líneas).
+- **Historia.** c2133e1 (decisión 90, antes de la 88): la pared de la VCI entera y la sombra suave; 6c0ba5b (88): pared
+  rota y costuras. El hueso opaco (100 dB a la entrada) hizo que las tomas tapadas pesaran 0 exacto, y el tope del rayo
+  central apagó la especular hasta el fondo.
+- **Peine de la subcostal.** Es de la mirada +7° (la 0 no llega: el borde de la cara no apoya, acoplamiento 0 desde la
+  línea 178; la −7° sale del arreglo): sus caminos por las líneas 174–181 cruzan el pulmón en el espejo de la línea 174, a s = 32,2 mm, y más allá la
+  pasada B dibujaba el tejido a lo largo de la reflejada de esa línea para todos los caminos (decisión 58: «el espejo no se
+  dirige tras la reflexión»). Apagando el espejo de la mirada dirigida el peine desaparece; apagando su cortina, no; sin
+  la fase de la mirada tras el espejo, tampoco. Con el propio camino reflejado (dirK en la normal de la pleura) desaparece.
+  El gemelo de la geometría (`steeredSample`) lo explica: con una sola dirección reflejada, el giro del haz de una línea a
+  otra no llega a lo reflejado y el mapa de la imagen al tejido lleva una dirección de la imagen casi entera a la elevación,
+  donde la retícula del moteado va comprimida hasta el grosor de corte (decisión 55): 0,031 mm de tejido fuera de la
+  elevación por mm de imagen, un estiramiento ×30 (las estrías), frente a 0,35 con el propio reflejado. Está desde que
+  existe la vista (99ed6d5, decisión 83, más débil) y se ve bien desde la decisión 85 (88346eb), que cambió lo que hay
+  detrás del diafragma.
+
+**Opciones.** Para la penumbra: (1) más tomas (99): continua a trozos y cara con los conos anchos; (2) la elegida, la
+integral exacta. Para los especulares: (1) el rayo central de la decisión 88 (la pared rota); (2) la de la apertura, la del
+moteado: la pleura volvería a asomar bajo el borde de una costilla, lo que la 88 corrigió; (3) los pares puros de espejo:
+con una costilla junto a la línea, los pares tienen un lado en el hueso hasta el fondo, y la pared quedaría rota en las
+líneas del borde (≈ 0 frente a 0,12 en el centro a 107 mm); (4) la elegida, los pares con el reparto de las facetas.
+Para el peine: (1) apagar el espejo en las miradas dirigidas: dejarían de ver tras el borde del pulmón, que el compuesto
+real sí ve; (2) la elegida, el propio camino reflejado.
+
+**Decisión.**
+
+- **Penumbra** (`ultrasound/aperture.ts`: `apW`, `apCones`, `apEcho` de `APERTURE_GLSL`; gemelos `apertureWindowIntegral`,
+  `apertureCones` y `apertureEcho` de `transmissionTwin.ts`). La media de cada cono es la integral exacta de su ventana
+  (la de Hann de la emisión, cos²(π·x/(2h)), y la uniforme de la recepción) sobre la transmisión de ida de las líneas,
+  constante en la anchura de cada una ([l − ½, l + ½]), con la del borde fuera del arreglo: continua en el semiancho (la
+  profundidad) y en el centro, y un cono más estrecho que una línea es el rayo de su línea. Un solo bucle por los dos
+  conos, del centro hacia fuera con la línea y su simétrica (≤ 37 vueltas, dos lecturas cada una) en lugar de 18 tomas.
+  Sin redondeos: la paridad de la GPU con los gemelos (`steeredParity.ts`) deja de desplazar las tomas y marca el empate de
+  la transmisión con apertura desde la mitad de lo que admite la e2e (`TIE_APERTURE_DB`, 5·10⁻³ dB): cada muestra integra
+  todas las líneas de su cono y un empate del camino de una vecina la mueve lo que esa línea pesa (con el umbral del prefijo,
+  0,3–0,9 % de empates en las cuatro vistas; ahora 0,08–0,51 %, antes 0,2–0,6 %).
+- **Ecos especulares.** A calcula en el mismo bucle la transmisión de los pares (el rayo de emisión que cruza el obstáculo
+  en u vuelve de una cara lisa por −u: media de T(u)·T(−u) con la ventana de emisión dentro de la recepción) y la mezcla
+  con la de la apertura en ρ = min(1, k·s·r/D) (`specularPairSpread`): las facetas de la cara (pendiente rms s, el lóbulo de
+  Kirchhoff de `INTERFACES`) desvían lo reflejado con rms 2s, que cruza el obstáculo a τ = 2s·(r − r₀) de −u, y τ frente al
+  semiancho del cono da 4s·r/D, sin r₀. Con la cara más lisa de la tabla (`SPECULAR_PAIR_SLOPE` = 0,14, las venas) y
+  k = 3 (`SPECULAR_PAIR_FIT`, ajustado a la suma doble con el núcleo gaussiano de los pares: 0,6 dB rms y 5 dB en el peor
+  punto, la línea del borde junto a la costilla, sobre cuatro costillas de 5–17 mm a 20–45 mm y de 3 a 130 mm bajo ellas; k 2
+  daba 1,1 dB rms y 4, 0,65; la regla del rayo central, 39 dB rms), ρ vale ≈ 0,45 en la pleura bajo una costilla y 1 desde
+  62 mm con los 26 mm del convexo. A la publica en o2.w (la de la mirada del cuadro: la dirigida escribe encima su
+  fracción del haz que sobrevive a los huesos y su especular, `o2.zw`; D lee siempre o2.z y pierde `uShadowCh`), y B la usa
+  en las dos miradas en lugar del rayo central (`Ts = min(T, tSpec)`) fuera de la cortina; la cortina (decisión 61)
+  conserva el rayo central de su línea. Lejos de todo obstáculo es la del rayo, la de antes. El color y el PW siguen con su
+  rayo único (o2.x).
+- **Espejo de la mirada dirigida** (`STEERED_FIELD_GLSL` de `shaders/passes.glsl.ts`, gemelo `steeredSample` de
+  `steering.ts`). Tras el espejo, la muestra sigue el propio camino reflejado, dirK reflejada en la normal de la pleura (que
+  sale de la reflexión de la línea del espejo, dR − d0 ∥ n, como ya hacía el eco de la pleura), en lugar de la reflejada de
+  la línea del espejo. La transmisión del camino reflejado sigue siendo la de esa línea (A2).
+
+**Consecuencias.**
+
+- **Flanco, congestión grave** (GPU, antes → después; `scratchpad/seam/caps`, recortes y paneles del juez): la
+  transmisión con apertura de la mirada 0 a 80 mm en las líneas 80–85, −41,1 / −43,0 / −44,4 / −46,0 / −47,7 / −49,3 dB
+  (monótona, 1,4–1,9 dB por línea); la pared anterior de la VCI bajo la costilla, gris 69–80 continuo (antes 19–30 con
+  bordes de una línea; sin hueso, 134–150): se atenúa como el moteado, sin hueco. La sombra aislada (cociente con la línea
+  base sin hueso) es un cuenco suave en las tres miradas. Por debajo de la VCI queda una rampa de la sombra de ~12 dB en
+  ~10 líneas y la textura propia del tejido (la línea base sin hueso tiene sus mismos bordes: un vaso en 80–86 a 56 mm y la
+  pared de la aorta a 154 mm).
+- **Subcostal, congestión grave:** sin el peine; la banda del borde, lo que solo ve la mirada +7° tras el pulmón (en el
+  compuesto, un tercio de ella: la 0 es negra ahí, como en un compuesto real), queda con el moteado de lo reflejado. El
+  estiramiento que queda (0,35 mm/mm en el gemelo) es el de la retícula comprimida en la elevación de la sonda y no en la
+  del corte reflejado (`mirror-slice-elevation-axis`, también en la mirada 0 con una pleura oblicua).
+- **Banco de fidelidad** (M4, las ocho escenas, `main` a386e5e frente a la rama): cambian solo las sombras de costillas y
+  de gas. G7, el acortamiento de la umbra por el compuesto, 7,49 → 4,69 mm en el flanco del sano y 7,40 → 5,14 en el de la
+  congestión grave (meta 1,5–8 mm): la umbra de la mirada 0 acaba 1–2,4 mm antes (28,8 → 26,4 y 27,8 mm), la del
+  compuesto casi igual. La pared anterior de la VCI del flanco sube 0,8 dB en el sano (pico 4,26 → 5,07 dB) y su hueco más
+  largo baja de 5,3 a 4,3 mm en la congestión grave. El hígado (gris, SNR, grano, oscuros, grietas) y las demás paredes,
+  dentro del ruido de la medida; el diafragma a 40–60° de la subxifoidea del sano, con dos registros (escaso, sin puerta),
+  pasa de 0 a 1 hueco.
+- **Coste** (M4, Metal, `scratchpad/gb/cost.mts` en puertos propios, `main` y la rama alternados, carga 25): la pasada A
+  +0,01–0,04 ms (0,04–0,09 → 0,06–0,12 ms); el cuadro, dentro del ruido (flanco 10,15/10,10 → 10,23/10,12 ms; con el
+  compuesto 10,65/10,60 → 10,59/10,60). Índice del build 333,7 → 334,4 kB (presupuesto de 335). `npm run calibrate` da la
+  misma salida byte a byte.
+- **Limitaciones**: nuevas `specular-pair-single-slope` (una sola pendiente de facetas, los dos límites de la suma doble,
+  incidencia normal) y `mirror-slice-elevation-axis` (tras un espejo el moteado sigue comprimido en la elevación de la
+  sonda).
+
+**Verificación.** `aperture.test.ts`: cada cono es la integral exacta de su ventana (frente a la regla del punto medio
+muy fina, en el borde del arreglo y con conos más estrechos que una línea; la GLSL con las mismas cuentas y sin tomas); la
+penumbra es continua: entre líneas vecinas no cambia más que lo que pesa una línea en la ventana del cono más estrecho
+(0,60 de esa cota; con las nueve tomas, 2,8) y en profundidad menos de 0,01 por cuarto de milímetro (con las tomas, saltos
+de 0,2); los especulares, la del rayo lejos de todo obstáculo, bajo −40 dB tres milímetros bajo la costilla y lejos de su
+borde, la de la apertura desde D/(k·s), continuos a través de las líneas de la costilla en profundidad (la regla del rayo
+central, 0 hasta el fondo y más de 3 veces la cota) y a 0,6 dB rms de la suma doble (la regla del rayo central, 39); la
+pendiente de la cara más lisa, fijada. `steeredSample.test.ts`: tras el espejo la muestra sigue su propio reflejado, y el
+mapa de la imagen al tejido con la geometría medida de la subcostal no se degenera (≥ 0,25 mm/mm fuera de la elevación;
+falla en `main` con 0,031). `steeredParity.test.ts`: el margen del redondeo sin las tomas del cono y, con el redondeo
+desplazado, la apertura y la especular de las muestras no marcadas a menos que su umbral. La e2e de la paridad de la
+transmisión compara también la especular de la GPU (o2.w, `readTransmission`) con su gemelo en la mirada 0 (la subxifoidea,
+el flanco con sus costillas y la subcostal) y en la dirigida, a menos de 0,01 dB. `transmission.test.ts`, `pleura.test.ts`,
+`refraction.test.ts` y `shaderLimits.test.ts` (huellas de A y B), al día. Capturas con GPU antes y después, las de la
+bisección y las de la historia (`scratchpad/seam/caps`, `scratchpad/seam/hist`).
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

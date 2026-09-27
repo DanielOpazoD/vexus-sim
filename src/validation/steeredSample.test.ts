@@ -106,7 +106,7 @@ describe('rama dirigida de la pasada B: geometría (decisión 58)', () => {
     }
   });
 
-  it('con ±θ la muestra está en el camino dirigido del elemento φ_k y, tras el espejo, sigue el reflejado desde el cruce del camino', () => {
+  it('con ±θ la muestra está en el camino dirigido del elemento φ_k y, tras el espejo, sigue su propio reflejado desde su cruce', () => {
     const rnd = rng(581);
     let checkedMirror = 0;
     for (let t = 0; t < 4000; t++) {
@@ -115,7 +115,8 @@ describe('rama dirigida de la pasada B: geometría (decisión 58)', () => {
       const v = rnd();
       const ml = Math.floor(rnd() * L);
       const dM = lineDir(lineTheta((ml + 0.5) / L));
-      const dR = reflect(dM, pleuraNormal(rnd, dM));
+      const n = pleuraNormal(rnd, dM);
+      const dR = reflect(dM, n);
       const sMirror = rnd() < 0.6 ? 150 * rnd() : -1;
       const got = steeredSample(
         FRAME,
@@ -133,9 +134,11 @@ describe('rama dirigida de la pasada B: geometría (decisión 58)', () => {
       expect(near(onPath, sample)).toBeLessThan(1e-9);
       if (sMirror >= 0 && got.s > sMirror) {
         checkedMirror++;
+        // la dirección del propio camino reflejada en la pleura, cuya normal sale de la línea del espejo (decisión 91)
+        const dRK = reflect(got.dirK, n);
         const cross0 = add(got.element, scale(got.dirK, sMirror));
-        expect(near(got.point, add(cross0, scale(dR, got.s - sMirror)))).toBeLessThan(1e-9);
-        expect(near(got.dir, dR)).toBeLessThan(1e-12);
+        expect(near(got.point, add(cross0, scale(dRK, got.s - sMirror)))).toBeLessThan(1e-9);
+        expect(near(got.dir, dRK)).toBeLessThan(1e-12);
         expect(got.mirrorLine).toBe(ml);
       } else {
         expect(near(got.point, sample)).toBeLessThan(1e-9);
@@ -143,6 +146,33 @@ describe('rama dirigida de la pasada B: geometría (decisión 58)', () => {
       }
     }
     expect(checkedMirror).toBeGreaterThan(500);
+  });
+
+  it('tras el espejo el mapa de la imagen al tejido no se degenera: ningún desplazamiento de la imagen cae casi entero en la elevación (el peine, decisión 91)', () => {
+    // La geometría medida con GPU en el borde de la subcostal de la congestión grave (+7°): los caminos de las líneas
+    // 174–181 cruzan el pulmón en el espejo de la línea 174 a s = 32,2 mm, cuya reflejada sale del plano (axial 0,316,
+    // lateral −0,817, elevación 0,482). La retícula del moteado va comprimida en elevación hasta el grosor de corte
+    // (decisión 55): si una dirección de la imagen lleva el punto casi solo en elevación, el moteado se estira a lo largo
+    // de ella en estrías. Con la reflejada de la línea del espejo para todos los caminos, el giro del haz de una línea a
+    // otra no llegaba a lo reflejado: 0,031 mm de tejido fuera de la elevación por mm de imagen (las estrías horizontales
+    // del peine de la ronda 5 del juez ciego); con el propio camino reflejado, 0,35.
+    const ml = 174;
+    const dR = normalize(add(add(scale(LATERAL, -0.817), scale(ELEV, 0.482)), scale(AXIAL, 0.316)));
+    const c = cell(32.2, 1, ml, 32.2, (l) => (l === ml ? dR : [0, 0, 1]));
+    let worst = Infinity;
+    for (const line of [174, 176, 178, 180])
+      for (const r of [100, 120, 140]) {
+        const at = (l: number, rr: number) => steeredSample(FRAME, IMG, TH, (l + 0.5) / L, rr / DEPTH, c).point;
+        const p = at(line, r);
+        const spacing = (R + r) * ((2 * H) / (L - 1));
+        const dl = scale(sub(at(line + 1, r), p), 1 / spacing);
+        const dd = sub(at(line, r + 1), p);
+        for (let a = 0; a < Math.PI; a += Math.PI / 360) {
+          const v = add(scale(dl, Math.cos(a)), scale(dd, Math.sin(a)));
+          worst = Math.min(worst, length(sub(v, scale(ELEV, dot(v, ELEV)))));
+        }
+      }
+    expect(worst).toBeGreaterThan(0.25);
   });
 
   it('la pleura se dibuja con la incidencia de la mirada: su coseno es |dirK·n| con la normal de la línea del espejo', () => {
@@ -267,13 +297,17 @@ describe('rama dirigida de la pasada B: geometría (decisión 58)', () => {
       'float rhoJ = sqrt(uCurvR * uCurvR + d * d + 2.0 * d * uSteer.z);',
       'vec2 f = wallFieldPh(elem + dirK * d, dirK, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, k2), gr.x * uLateral + gr.y * uAxial, wD);',
       'vec2 e = interfaceEcho(c, m, dir, r, se, w);',
-      // la especular aparte (decisión 88): los ecos especulares con la transmisión del rayo central del camino
+      // la especular aparte (decisión 88): los ecos especulares con la transmisión de sus pares en la apertura (decisión 91)
       'spec = e.x;',
       'return field * (1.0 + e.y / max(length(field), 1e-6));',
       'vec3 dn = dRefl - dMirror;',
-      'spec += pleuraEcho(s - sMirror, dirK, ln > 1e-6 ? reflect(dirK, dn / ln) : dirK);',
+      'vec3 dReflK = ln > 1e-6 ? reflect(dirK, dn / ln) : dirK;',
+      'dir = dReflK;',
+      'if (sMirror >= 0.0) spec += pleuraEcho(s - sMirror, dirK, dReflK);',
       'float tAp = transLerp(uTrans3, 0, tc.x, r);',
       'float tRay = transLerp(uTrans2, 1, tc.x, r);',
+      'float tSpec = transLerp(uTrans2, 3, tc.x, r);',
+      'Ts = min(tAp, tSpec);',
       'tissue = (tissue * T + vec2(spec * Ts, 0.0)) * coupling;',
       'if (sGas > 0.0 && s > sGas) {',
       'float sg = max(sGas - dr, 0.0);',

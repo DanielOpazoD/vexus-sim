@@ -145,6 +145,8 @@ export interface TestHooks {
      * gemelos sobre los segmentos de la GPU, y las muestras en empate de redondeo: en la mirada 0 también.
      */
     apertureMaxDiffDb?: number;
+    /** El peor desacuerdo de la transmisión de los ecos especulares de A (dB; A o2.w, decisión 91) con sus gemelos. */
+    specularMaxDiffDb?: number;
     /** Muestras de la transmisión de la imagen comparadas en la mirada 0 (sin los empates), el denominador de `ambiguous`. */
     apertureSamples?: number;
     ambiguous?: number;
@@ -547,6 +549,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
             samples: gpu.samples,
             prefixDb: Array.from(gpu.single, (x) => -20 * Math.log10(Math.max(x, 1e-12))),
             aperture: gpu.aperture,
+            specular: gpu.specular,
           },
           every,
           undefined,
@@ -559,6 +562,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
           truncatedLines,
           worst,
           apertureMaxDiffDb: imaging.apertureMaxDiffDb,
+          specularMaxDiffDb: imaging.specularMaxDiffDb,
           apertureSamples: imaging.samples,
           ambiguous: imaging.ambiguous,
           worstAperture: imaging.worstAperture,
@@ -948,7 +952,7 @@ function steeredParity(sim: Simulator, look: number, every: number): ReturnType<
     grid,
     ap,
     gpu.theta,
-    { lines: gpu.lines, samples: gpu.samples, prefixDb: gpu.prefixDb!, aperture: gpu.aperture },
+    { lines: gpu.lines, samples: gpu.samples, prefixDb: gpu.prefixDb!, aperture: gpu.aperture, specular: gpu.specular },
     every,
   );
   return { ...parity, truncatedLines: 0 };

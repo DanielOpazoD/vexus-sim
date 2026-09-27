@@ -122,6 +122,14 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Costuras y peine (91). Bajo la sombra de una costilla la textura cambiaba a saltos en costuras verticales que seguían
+  hasta el fondo, y la pared de la VCI, 8 cm más abajo, se rompía con bordes verticales: la penumbra de la apertura se
+  promediaba con nueve tomas en líneas enteras y los ecos especulares llevaban la transmisión del rayo central en toda
+  la profundidad. Ahora la penumbra es la integral exacta de su cono (continua entre líneas y en profundidad) y los
+  especulares, la de sus pares en la apertura con lo que las facetas de la cara reparten lo reflejado: junto a la
+  costilla se apagan como antes y en profundidad se atenúan como el moteado, sin hueco. En el borde de la subcostal, la
+  mirada dirigida dibujaba tras el pulmón el tejido a lo largo de la dirección reflejada de una sola línea y lo estiraba
+  en estrías horizontales («peine»); ahora sigue su propio camino reflejado.
 - Las costillas derechas eran cartílago en todo su arco anterolateral y posterior (la regla del cartílago costal suponía el lado izquierdo): la ventana intercostal no veía costillas óseas, ni su cortical ni su sombra. Ahora el cartílago es solo el arco anterior, hasta la línea medioclavicular, y lateral a él la costilla es hueso con cortical brillante y sombra limpia; las costillas 8.ª–10.ª acaban en el reborde costal en lugar de cruzar la línea media, y la ventana subxifoidea queda libre de cartílago. La vista intercostal de partida, que con costillas óseas cruzaba seis sombras, va ahora a lo largo del 8.º espacio intercostal en la línea axilar media (marcador hacia la axila): una costilla asoma en un borde con su sombra, el resto muestra el hígado, las suprahepáticas y la VCI con la respiración tranquila, y la cortina pulmonar baja sobre ellas en inspiración profunda (62).
 - La calidad de la captura renal decía «el vaso entra y sale de la puerta» en la congestión grave en apnea cuando la causa era el plegado: a 2600 Hz la onda D roza el Nyquist y deja su ventana sin sangre. Ahora dice aliasing (suba la escala). Además, el latido renal se juzga en su ventana diastólica y debe repetirse igual que los demás latidos (mediana de los otros: con 4 latidos, un reparto 2/2 ya no pasa). Con respiración, la precisión de las capturas aceptadas sube del 70 % al 88 % (49).
 - Costura negra entre el diafragma y su imagen especular: el espejo quedaba en el centro de la primera celda gruesa de pulmón, hasta 1,1 mm dentro, y el camino reflejado cruzaba pulmón. Ahora la pasada A lo coloca en el cruce exacto (≤ 0,009 mm), la pleura dibuja su eco allí y las líneas A salen de la pleura exacta (57).

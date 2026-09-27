@@ -281,6 +281,11 @@ export interface TransmissionRead {
   single: Float32Array;
   aperture: Float32Array;
   mirrorHit: Float32Array;
+  /**
+   * La de los ecos especulares (A o2.w, decisión 91): la de la mirada del cuadro, así que la de la mirada 0 solo tras un
+   * cuadro suyo (si no, falta).
+   */
+  specular?: Float32Array;
   /** Mirada (índice del anillo) y su θ (rad). */
   look: number;
   theta: number;
@@ -1356,9 +1361,8 @@ export class UltrasoundRenderer {
     const cp = this.clutterFor(inputs);
     this.pLateral.v2('uSidelobe', cp.sidelobeIslr, cp.sidelobeWidth);
     this.pLateral.tex('uCoupling', 1, this.couplingTex);
-    // la fracción del haz de cada línea que sobrevive a los huesos (A o2: .z la mirada 0, .w la dirigida; decisión 88)
+    // la fracción del haz de cada línea de la mirada del cuadro que sobrevive a los huesos (A o2.z; decisiones 88 y 91)
     this.pLateral.tex('uShadow', 3, this.tTrans.textures[2]);
-    this.pLateral.i('uShadowCh', this.steeredLook() ? 3 : 2);
     this.setLateralPsfUniforms(this.pLateral, inputs);
     drawFullscreen(gl);
   }
@@ -1789,31 +1793,37 @@ export class UltrasoundRenderer {
       const single = new Float32Array(n);
       const aperture = new Float32Array(n);
       const mirrorHit = new Float32Array(n);
+      const specular = new Float32Array(n);
       for (let i = 0; i < n; i++) {
         single[i] = a2[i * 4];
         aperture[i] = a0[i * 4];
         mirrorHit[i] = a0[i * 4 + 3];
+        specular[i] = a2[i * 4 + 3];
       }
-      return { lines: W, samples: H, single, aperture, mirrorHit, look: 0, theta: 0 };
+      const own = this.look === null || this.look.index === 0;
+      return { lines: W, samples: H, single, aperture, mirrorHit, look: 0, theta: 0, ...(own ? { specular } : {}) };
     }
     const last = this.look;
     if (last === null || last.index !== look)
       throw new Error(`readTransmission: la mirada ${look} no es la del último cuadro (mirada ${last?.index ?? '—'})`);
     const pre = this.readRgba(this.tPre, 2);
     const a3 = this.readRgba(this.tTrans, 3);
+    const a2 = this.readRgba(this.tTrans, 2);
     const single = new Float32Array(n);
     const aperture = new Float32Array(n);
     const mirrorHit = new Float32Array(n);
     const prefixDb = new Float32Array(n);
     const sGas = new Float32Array(n);
+    const specular = new Float32Array(n);
     for (let i = 0; i < n; i++) {
       prefixDb[i] = pre[i * 4];
       single[i] = Math.pow(10, -pre[i * 4] / 20);
       aperture[i] = a3[i * 4];
       sGas[i] = a3[i * 4 + 1];
       mirrorHit[i] = a3[i * 4 + 3];
+      specular[i] = a2[i * 4 + 3];
     }
-    return { lines: W, samples: H, single, aperture, mirrorHit, look, theta: last.theta, prefixDb, sGas };
+    return { lines: W, samples: H, single, aperture, mirrorHit, look, theta: last.theta, prefixDb, sGas, specular };
   }
 
   /**

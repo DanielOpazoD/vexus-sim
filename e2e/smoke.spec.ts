@@ -415,6 +415,8 @@ test('composición espacial: más SNR con el mismo grano, sin huecos, y la mirad
   expect(parity.ambiguous!, ptag).toBeLessThanOrEqual(0.01 * parity.samples);
   expect(parity.maxDiffDb, ptag).toBeLessThan(0.01);
   expect(parity.apertureMaxDiffDb!, ptag).toBeLessThan(0.01);
+  // y la de sus ecos especulares (A o2.w, decisión 91): sus pares en la apertura mezclados con ella
+  expect(parity.specularMaxDiffDb!, ptag).toBeLessThan(0.01);
   // una guarda de una mirada no puede medir en silencio una envolvente de otro cuadro
   const guard = await page.evaluate(() => window.__vexusTest!.envelopeGuard({ startPoint: 'subxiphoid' }));
   expect(guard.look, JSON.stringify(guard)).not.toBe(0);
@@ -719,10 +721,12 @@ test('la pasada A en cuatro etapas da la misma transmisión de un solo rayo que 
     expect(r.lines, tag).toBeGreaterThan(5);
     expect(r.samples, tag).toBeGreaterThan(500);
     expect(r.maxDiffDb, tag).toBeLessThan(0.01);
-    // la transmisión de la imagen (penumbra con la emisión apodizada y refracción de las luces, decisiones 54 y 86) frente
-    // a sus gemelos sobre los segmentos de la GPU, sin las muestras en empate de redondeo de las tomas del cono
+    // la transmisión de la imagen (penumbra con la emisión apodizada y refracción de las luces, decisiones 54, 86 y 91)
+    // frente a sus gemelos sobre los segmentos de la GPU, sin las muestras en empate de redondeo de los tramos de la
+    // refracción, y la de los ecos especulares (A o2.w, decisión 91: bajo las costillas del flanco, sus pares)
     expect(r.apertureSamples!, tag).toBeGreaterThan(500);
     expect(r.apertureMaxDiffDb!, tag).toBeLessThan(0.01);
+    expect(r.specularMaxDiffDb!, tag).toBeLessThan(0.01);
     expect(r.ambiguous!, tag).toBeLessThanOrEqual(0.01 * r.apertureSamples!);
   }
   // Decisión 86: detrás de la vesícula (subcostal) la bilis, más lenta que el hígado, es una lente convergente: los rayos

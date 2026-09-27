@@ -200,8 +200,8 @@ export interface SteeredSample {
 /**
  * Gemelo en TS de la geometría de `STEERED_FIELD_GLSL` (rama dirigida de la pasada B, decisión 58): la
  * muestra (u, v) de la rejilla común, el elemento φ_k del camino que pasa por ella, el punto que clasifica
- * (antes del espejo, la propia muestra; después, el camino reflejado de la línea del espejo desde el cruce
- * del camino), la incidencia de la pleura, dónde se lee la transmisión de la reverberación y el alcance
+ * (antes del espejo, la propia muestra; después, el propio camino reflejado en la normal de la pleura de la línea del
+ * espejo, desde su cruce: decisión 91), la incidencia de la pleura, dónde se lee la transmisión de la reverberación y el alcance
  * fuera del arreglo. Mismas expresiones que el GLSL (`steeredSample.test.ts` las fija línea a línea); con
  * θ = 0 da la geometría de la mirada 0 de `FRAG_RAWFIELD`.
  */
@@ -236,21 +236,20 @@ export function steeredSample(
   const mirrorLine = mirror ? Math.min(Math.max(code - 1, 0), img.lines - 1) : -1;
   const dRefl = mirror ? normalize(cell.reflectedDir(mirrorLine)) : dirK;
   const dMirror = mirror ? lineDir(lineTheta((mirrorLine + 0.5) / img.lines)) : dirK;
+  // la dirección reflejada del propio camino: dirK reflejada en la normal de la pleura, que sale de la reflexión de la
+  // línea del espejo (dR − d0 ∥ n; decisión 91)
+  const dn = sub(dRefl, dMirror);
+  const ln = length(dn);
+  const n = scale(dn, 1 / ln);
+  const reflectedK = ln > 1e-6 ? sub(dirK, scale(n, 2 * dot(dirK, n))) : dirK;
   let point: Vec3;
   let dir = dirK;
   if (mirror && s > cell.sMirror) {
-    dir = dRefl;
+    dir = reflectedK;
     point = add(add(element, scale(dirK, cell.sMirror)), scale(dir, s - cell.sMirror));
   } else point = add(frame.center, scale(lineDir(alpha), rho));
   let pleura: SteeredSample['pleura'] = null;
-  if (mirror) {
-    // la normal de la pleura sale de la reflexión de la línea del espejo (dR − d0 ∥ n)
-    const dn = sub(dRefl, dMirror);
-    const ln = length(dn);
-    const n = scale(dn, 1 / ln);
-    const dR = ln > 1e-6 ? sub(dirK, scale(n, 2 * dot(dirK, n))) : dirK;
-    pleura = { delta: s - cell.sMirror, cos: Math.sqrt(Math.max(0, 0.5 * (1 - dot(dirK, dR)))) };
-  }
+  if (mirror) pleura = { delta: s - cell.sMirror, cos: Math.sqrt(Math.max(0, 0.5 * (1 - dot(dirK, reflectedK)))) };
   let reverb: SteeredSample['reverb'] = null;
   if (cell.sGas > 0 && s > cell.sGas) {
     const sg = Math.max(cell.sGas - img.depthMm / 1024, 0);

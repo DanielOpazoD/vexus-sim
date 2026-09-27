@@ -443,7 +443,8 @@ ${steeredOnly(look, STEERED_TRANSMISSION_DECL_GLSL)}void main() {
   float single = pow(10.0, -c0.x / 20.0);
   // la penumbra de la apertura (decisión 54) y la refracción en las luces (decisión 86): del haz de la imagen, no del
   // rayo único del color y del PW
-  float Tap = apertureTransmission(line, k, r, step, single);
+  float spec;
+  float Tap = apertureTransmission(line, k, r, step, single, spec);
   float T = Tap * refractionGain(uPre1, 0, 1, line, k, r);
   o0 = vec4(T, c0.yzw);
   // la dirección de la línea, la reflejada desde la fila que publica el espejo (A2 o0.w), y el tipo de gas de A0
@@ -452,9 +453,10 @@ ${steeredOnly(look, STEERED_TRANSMISSION_DECL_GLSL)}void main() {
   // la fracción del haz que llega a r pese a los huesos (decisión 88): la transmisión con apertura (sin la refracción de
   // las luces, que desvía la energía y no la quita) frente a la del rayo sin lo que cobra el hueso (A2 o1.z), en dB (tras
   // el gas el rayo baja de 1e-38); 1 lejos de todo hueso. La pasada D apaga con ella los lóbulos laterales de una línea
-  // que una costilla tapa, como los de una línea sin contacto (decisión 76)
+  // que una costilla tapa, como los de una línea sin contacto (decisión 76). En .w, la transmisión de los ecos especulares
+  // de la mirada (la de sus pares en la apertura, decisión 91); en .x, el rayo único del color y del PW
   float noBone = pow(10.0, -(c0.x - texelFetch(uPre1, ivec2(line, k), 0).z) / 20.0);
-  o2 = vec4(single, 0.0, clamp(Tap / max(noBone, 1e-30), 0.0, 1.0), 0.0);
+  o2 = vec4(single, 0.0, clamp(Tap / max(noBone, 1e-30), 0.0, 1.0), spec);
 ${steeredOnly(look, STEERED_TRANSMISSION_MAIN_GLSL)}}
 `;
 }
@@ -473,13 +475,15 @@ const STEERED_TRANSMISSION_MAIN_GLSL = /* glsl */ `  vec4 ps = texelFetch(uPreSt
   vec4 px = texelFetch(uPreSteerX, ivec2(line, k), 0);
   float s = alongLineMm(uCurvR + r, uSteer.y, uSteer.z);
   float singleK = pow(10.0, -ps.x / 20.0);
-  float TkAp = steeredApertureTransmission(line, k, s, singleK);
+  float specK;
+  float TkAp = steeredApertureTransmission(line, k, s, singleK, specK);
   float Tk = TkAp * refractionGain(uPreSteerX, 2, 3, line, k, r);
-  // el rayo único de la mirada: la pasada B acota con él la transmisión sin la lámina de la cortina (decisión 61); y
-  // la fracción de su haz que sobrevive a los huesos, frente al rayo de la mirada 0 sin ellos (el camino dirigido cruza
-  // los mismos tejidos blandos, decisión 88)
+  // el rayo único de la mirada: la pasada B acota con él la transmisión sin la lámina de la cortina (decisión 61); y,
+  // como en la mirada 0, la fracción de su haz que sobrevive a los huesos, frente al rayo de la mirada 0 sin ellos (el
+  // camino dirigido cruza los mismos tejidos blandos, decisión 88), y la de sus especulares (decisión 91): D y B leen las
+  // de la mirada del cuadro en o2.z y o2.w
   o2.y = singleK;
-  o2.w = clamp(TkAp / max(noBone, 1e-30), 0.0, 1.0);
+  o2.zw = vec2(clamp(TkAp / max(noBone, 1e-30), 0.0, 1.0), specK);
   o3 = vec4(Tk, ps.y, px.x + 4.0 * (px.y + 1.0), ps.w);
 `;
 
@@ -629,9 +633,15 @@ vec2 steeredField() {
     dRefl = normalize(texelFetch(uTrans1, ivec2(ml, ts.y - 1), 0).xyz);
     dMirror = lineDir(lineTheta((float(ml) + 0.5) / uLinesF));
   }
+  // la del propio camino: dirK reflejada en la normal de la pleura, que sale de la de la línea del espejo (dR − d0 ∥ n).
+  // Con la de esa línea para todos los caminos que la cruzan, el giro del haz de una línea a otra no llegaba a lo
+  // reflejado y el mapa de la imagen al tejido se degeneraba en una dirección: el peine (decisión 91)
+  vec3 dn = dRefl - dMirror;
+  float ln = length(dn);
+  vec3 dReflK = ln > 1e-6 ? reflect(dirK, dn / ln) : dirK;
   vec3 p;
   if (sMirror >= 0.0 && s > sMirror) {
-    dir = dRefl;
+    dir = dReflK;
     p = uCurvC + uCurvR * lineDir(phiK) + dirK * sMirror + dir * (s - sMirror);
   } else {
     p = pointOnLine(lineDir(alpha), r);
@@ -677,18 +687,14 @@ vec2 steeredField() {
   }
   vec2 out2 = vec2(0.0);
   if (wTissue >= CURTAIN_MIN_AIR) {
-    if (sMirror >= 0.0) {
-      // la normal de la pleura sale de la reflexión de la línea del espejo (dR − d0 ∥ n)
-      vec3 dn = dRefl - dMirror;
-      float ln = length(dn);
-      spec += pleuraEcho(s - sMirror, dirK, ln > 1e-6 ? reflect(dirK, dn / ln) : dirK);
-    }
+    if (sMirror >= 0.0) spec += pleuraEcho(s - sMirror, dirK, dReflK);
     float dr = uDepth / 1024.0;
     float gain = pow(10.0, h2.z / 20.0);
     // la transmisión de la mirada 0 (arriba): el moteado y la difusa con la de la apertura; los especulares, a lo sumo
-    // la del rayo central del camino (decisión 88)
+    // la de sus pares en la apertura del camino (decisiones 88 y 91); la cortina, con el rayo central del camino
     float tAp = transLerp(uTrans3, 0, tc.x, r);
     float tRay = transLerp(uTrans2, 1, tc.x, r);
+    float tSpec = transLerp(uTrans2, 3, tc.x, r);
     float T, Ts;
     if (curtain && under) {
       T = min(min(tAp, tRay) * gain, tD);
@@ -699,7 +705,7 @@ vec2 steeredField() {
       Ts = steeredT(phiK, a, sCap, true);
     } else {
       T = tAp;
-      Ts = min(tAp, tRay);
+      Ts = min(tAp, tSpec);
     }
     tissue = (tissue * T + vec2(spec * Ts, 0.0)) * coupling;
     if (sGas > 0.0 && s > sGas) {
@@ -922,15 +928,17 @@ void main() {
     // cortina: sobre la pleura, sin el gas de su fila; bajo ella, sin el de la lámina (ΔL de la línea), con el
     // rayo único de la línea por tope (el cono de la apertura mezcla líneas con otra lámina) y ≤ la de la pleura.
     // El moteado y la difusa llevan la de la apertura (su penumbra rellena la sombra de una costilla en profundidad);
-    // los ecos especulares, a lo sumo la del rayo central: su camino de vuelta es el espejo del de ida, y bajo un
-    // hueso uno de los dos lo cruza (decisión 88)
+    // los ecos especulares, a lo sumo la de sus pares en la apertura (A o2.w): el camino de vuelta es el espejo del de ida
+    // y, bajo un hueso, uno de los dos lo cruza junto a él (decisión 88); más hondo las facetas de la cara reparten lo
+    // reflejado por toda la apertura (decisión 91)
     float gain = pow(10.0, h2.z / 20.0);
     float rT = curtain && !under ? min(r, rCap) : r;
     float tAp = transLerp(uTrans0, 0, tc.x, rT);
     float tRay = transLerp(uTrans2, 0, tc.x, rT);
+    float tSpec = transLerp(uTrans2, 3, tc.x, rT);
     // (bajo la cortina, el tope ya lleva el rayo central, compensado de la lámina de gas como el de la apertura)
     float T = curtain && under ? min(min(tAp, tRay) * gain, tD) : tAp;
-    float Ts = curtain && under ? T : min(T, tRay);
+    float Ts = curtain && under ? T : min(T, tSpec);
     tissue = (tissue * T + vec2(spec * Ts, 0.0)) * coupling;
     // Reverberación tras gas: A-lines a múltiplos de la profundidad del reflector.
     float gasHit = t0.y;
@@ -1056,10 +1064,9 @@ uniform float uHalfSector;
 uniform float uLinesF;
 uniform vec2 uSidelobe; // energía del pedestal de lóbulos laterales (ISLR, lineal) y su anchura (× σ del principal); decisión 76
 uniform sampler2D uCoupling; // 1D: acoplamiento por línea (una línea sin contacto no recibe lóbulos laterales)
-// A o2 (decisión 88): la fracción del haz de la línea que llega a cada profundidad pese a los huesos, en .z (mirada 0) o
-// .w (la dirigida del cuadro): una línea tapada por una costilla no recibe lóbulos laterales bajo ella
+// A o2.z (decisión 88): la fracción del haz de la línea de la mirada del cuadro que llega a cada profundidad pese a los
+// huesos: una línea tapada por una costilla no recibe lóbulos laterales bajo ella
 uniform sampler2D uShadow;
-uniform int uShadowCh;
 in vec2 vUv;
 out float oEnv;
 ${LATERAL_PSF_GLSL}${TRANSMISSION_LERP_GLSL}
@@ -1072,7 +1079,7 @@ void main() {
   float sigmaTex = max(0.35, sigmaMm / lineSpacing);
   float sigmaPed = sigmaTex * uSidelobe.y;
   // el pedestal es de la línea de destino: sin contacto, o bajo una costilla que tapa su haz, no lo hay (decisiones 76 y 88)
-  float coupling = texture(uCoupling, vec2(vUv.x, 0.5)).r * transLerp(uShadow, uShadowCh, int(gl_FragCoord.x), r);
+  float coupling = texture(uCoupling, vec2(vUv.x, 0.5)).r * transLerp(uShadow, 2, int(gl_FragCoord.x), r);
   bool pedOn = uSidelobe.x > 0.0 && coupling > 0.0;
   int R = min(${CLUTTER.lateralMaxLines}, int(ceil(max(sigmaTex * 2.5, pedOn ? sigmaPed * 2.5 : 0.0))));
   // el principal (real) y el pedestal (con su fase) por separado: la amplitud del pedestal sale de las sumas

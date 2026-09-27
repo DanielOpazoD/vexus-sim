@@ -106,18 +106,25 @@ describe('Atenuación a lo largo del rayo', () => {
     expect(FRAG_RAWFIELD_STEERED).toContain('float tAp = transLerp(uTrans3, 0, tc.x, r);');
   });
 
-  it('decisión 88: los ecos especulares llevan la transmisión del rayo central; el moteado, la de la apertura', () => {
+  it('decisiones 88 y 91: los ecos especulares llevan la transmisión de sus pares en la apertura; el moteado, la de la apertura', () => {
     // bajo una costilla el cono de la apertura rellena la sombra del moteado en profundidad (decisión 54), pero el camino
-    // de vuelta de un eco especular es el espejo del de ida: con uno de los dos cruzando el hueso, la pleura y las
-    // fascias no vuelven (la línea de la pareja 6 del juez ciego, ronda 4)
-    for (const [src, ray] of [
-      [FRAG_RAWFIELD, 'transLerp(uTrans2, 0, tc.x, rT)'],
-      [FRAG_RAWFIELD_STEERED, 'transLerp(uTrans2, 1, tc.x, r)'],
+    // de vuelta de un eco especular es el espejo del de ida: junto al hueso, con uno de los dos cruzándolo, la pleura y las
+    // fascias no vuelven (la línea de la pareja 6 del juez ciego, ronda 4); más hondo las facetas de la cara reparten lo
+    // reflejado por toda la apertura (decisión 91: con el rayo central, la pared de la VCI se rompía 8 cm bajo la costilla).
+    // A publica la de la mirada del cuadro en o2.w (`apertureEcho`); B la lee en las dos miradas
+    for (const [src, ray, spec] of [
+      [FRAG_RAWFIELD, 'transLerp(uTrans2, 0, tc.x, rT)', 'transLerp(uTrans2, 3, tc.x, rT)'],
+      [FRAG_RAWFIELD_STEERED, 'transLerp(uTrans2, 1, tc.x, r)', 'transLerp(uTrans2, 3, tc.x, r)'],
     ] as const) {
       expect(src).toContain(`float tRay = ${ray};`);
+      expect(src).toContain(`float tSpec = ${spec};`);
       expect(src).toContain('tissue = (tissue * T + vec2(spec * Ts, 0.0)) * coupling;');
     }
-    expect(FRAG_RAWFIELD).toContain('float Ts = curtain && under ? T : min(T, tRay);');
+    expect(FRAG_RAWFIELD).toContain('float Ts = curtain && under ? T : min(T, tSpec);');
+    expect(FRAG_RAWFIELD_STEERED).toContain('Ts = min(tAp, tSpec);');
+    expect(FRAG_TRANSMISSION).toContain('o2 = vec4(single, 0.0, clamp(Tap / max(noBone, 1e-30), 0.0, 1.0), spec);');
+    expect(FRAG_TRANSMISSION_STEERED).toContain('float TkAp = steeredApertureTransmission(line, k, s, singleK, specK);');
+    expect(FRAG_TRANSMISSION_STEERED).toContain('o2.zw = vec2(clamp(TkAp / max(noBone, 1e-30), 0.0, 1.0), specK);');
     expect(FRAG_RAWFIELD).toContain('spec += pleuraEcho(r - mirrorHit, dir0, normalize(t1.xyz));');
     // la pleura parietal de la cortina, también: tD, a lo sumo la del rayo central
     expect(FRAG_RAWFIELD).toContain(
@@ -132,15 +139,17 @@ describe('Atenuación a lo largo del rayo', () => {
     expect(FRAG_TRANS_PREFIX).toContain('o1 = vec4(step * psi, pa, boneDb, 0.0);');
     // (la de la apertura sin la refracción de las luces, que desvía la energía y no la quita; el rayo sin hueso en dB)
     for (const src of [FRAG_TRANSMISSION, FRAG_TRANSMISSION_STEERED]) {
-      expect(src).toContain('float Tap = apertureTransmission(line, k, r, step, single);');
+      expect(src).toContain('float Tap = apertureTransmission(line, k, r, step, single, spec);');
       expect(src).toContain('float noBone = pow(10.0, -(c0.x - texelFetch(uPre1, ivec2(line, k), 0).z) / 20.0);');
-      expect(src).toContain('o2 = vec4(single, 0.0, clamp(Tap / max(noBone, 1e-30), 0.0, 1.0), 0.0);');
+      expect(src).toContain('o2 = vec4(single, 0.0, clamp(Tap / max(noBone, 1e-30), 0.0, 1.0), spec);');
     }
-    expect(FRAG_TRANSMISSION_STEERED).toContain('o2.w = clamp(TkAp / max(noBone, 1e-30), 0.0, 1.0);');
+    // la de la mirada del cuadro en o2.z: la dirigida la escribe encima de la de la mirada 0 (decisión 91)
+    expect(FRAG_TRANSMISSION_STEERED).toContain('o2.zw = vec2(clamp(TkAp / max(noBone, 1e-30), 0.0, 1.0), specK);');
     // D: el acoplamiento de la línea de destino por esa fracción, como una línea sin contacto (decisión 76)
     expect(FRAG_LATERAL).toContain(
-      'float coupling = texture(uCoupling, vec2(vUv.x, 0.5)).r * transLerp(uShadow, uShadowCh, int(gl_FragCoord.x), r);',
+      'float coupling = texture(uCoupling, vec2(vUv.x, 0.5)).r * transLerp(uShadow, 2, int(gl_FragCoord.x), r);',
     );
+    expect(FRAG_LATERAL).not.toContain('uShadowCh');
   });
 
   it('el gas atenúa 60 dB/cm sin absorción añadida y la transmisión es 10^(−dB/20)', () => {

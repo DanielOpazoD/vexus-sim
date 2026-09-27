@@ -3,12 +3,11 @@ import { describe, expect, it } from 'vitest';
 import { TISSUES, Tissue, attenuationDbPerCm } from '../anatomy/tissues';
 import { Simulator } from '../app/simulator';
 import { START_POINTS, type StartPoint } from '../app/startPoints';
-import { STEERED_TIE_LINES, compareSteeredTransmission, steeredTransmissionTwin } from '../app/steeredParity';
+import { STEERED_TIE_LINES, TIE_APERTURE_DB, compareSteeredTransmission, steeredTransmissionTwin } from '../app/steeredParity';
 import { NORMAL_ADULT } from '../cases';
 import { clonePatient } from '../physiology/patientState';
 import { pointOnLine } from '../probe/probe';
 import { refractionBeam, type ApertureGeometry } from '../ultrasound/aperture';
-import { CONVEX_BEAM } from '../ultrasound/beamModel';
 import { bmodeBeam, bmodeTxApertureMm } from '../ultrasound/transducerProfile';
 import { COMPOUND_STEER_RANGE_DEG, lookTheta } from '../ultrasound/compound';
 import { GAS_DB_PER_CM, lumenExcessPerMm, type SegmentGrid } from '../ultrasound/transmission';
@@ -25,29 +24,24 @@ import { recordingGl } from './support/recordingGl';
 const f = Math.fround;
 
 /**
- * Error de float32 de los argumentos de los redondeos dirigidos, emulando el GLSL operación a operación
- * (`STEERED_PREFIX_GLSL`: línea del camino en cada fila; `STEERED_APERTURE_GLSL`: tomas del cono) frente a
- * float64 (los gemelos). Uniforms en float32; asin y sqrt correctamente redondeados.
+ * Error de float32 del argumento del redondeo dirigido, emulando el GLSL operación a operación
+ * (`STEERED_PREFIX_GLSL`: línea del camino en cada fila) frente a float64 (los gemelos). Uniforms en float32; asin y
+ * sqrt correctamente redondeados. El cono de la penumbra (`STEERED_APERTURE_GLSL`) ya no redondea: es la integral exacta
+ * de su ventana sobre las líneas (decisión 91).
  */
-function float32RoundingError(theta: number): { path: number; cone: number } {
+function float32RoundingError(theta: number): { path: number } {
   const R = G.curvatureRadius;
   const H = G.halfSector;
   const L = G.lines;
-  const { apertureTxMm: D, apertureRxMaxMm: Drx, fNumberRxMin: F } = CONVEX_BEAM;
   const step64 = G.depthMm / G.rows;
   const dPhi64 = (2 * H) / L;
   const a64 = R * Math.sin(theta);
-  const rc64 = R * Math.cos(theta);
   const step = f(f(G.depthMm) / f(G.rows));
   const dPhi = f(f(2 * f(H)) / f(L));
   const a = f(a64);
-  const rc = f(rc64);
   const R32 = f(R);
   const asin32 = (x: number) => f(Math.asin(x));
-  const along32 = (rho: number) => f(f(Math.sqrt(Math.max(f(f(rho * rho) - f(a * a)), 0))) - rc);
-  const along64 = (rho: number) => Math.sqrt(rho * rho - a64 * a64) - rc64;
   let path = 0;
-  let cone = 0;
   for (let k = 0; k < G.rows; k++) {
     // l = floor(float(line) + (betaK − asin(a/ρ))/dPhi + 0,5)
     const betaK = asin32(f(a / f(R32 + f(f(k + 0.5) * step))));
@@ -58,28 +52,8 @@ function float32RoundingError(theta: number): { path: number; cone: number } {
         const arg64 = line + (betaK64 - Math.asin(a64 / (R + (s + 0.5) * step64))) / dPhi64 + 0.5;
         path = Math.max(path, Math.abs(f(f(line + x) + 0.5) - arg64));
       }
-    // tomas: floor(2·halfLines·t + 0,5) con t = (j + ½)/9 − ½ (decisión 86), con el obstáculo en cualquier fila anterior
-    const s32 = along32(f(R32 + f(f(k + 0.5) * step)));
-    const s64 = along64(R + (k + 0.5) * step64);
-    for (let o = 0; o < k; o++) {
-      const so32 = along32(f(R32 + f(f(o + 0.5) * step)));
-      const so64 = along64(R + (o + 0.5) * step64);
-      const sp32 = f(f(rc + so32) * dPhi);
-      const sh32 = f(1 - f(so32 / s32));
-      const sp64 = (rc64 + so64) * dPhi64;
-      const sh64 = 1 - so64 / s64;
-      const halves: Array<[number, number]> = [
-        [f(f(f(0.5 * D) * sh32) / sp32), (0.5 * D * sh64) / sp64],
-        [f(f(f(0.5 * f(Math.min(Drx, f(s32 / F)))) * sh32) / sp32), (0.5 * Math.min(Drx, s64 / F) * sh64) / sp64],
-      ];
-      for (let j = 0; j < 9; j++) {
-        const t32 = f(f(f(j + 0.5) / 9) - 0.5);
-        const t64 = (j + 0.5) / 9 - 0.5;
-        for (const [h32, h64] of halves) cone = Math.max(cone, Math.abs(f(f(f(2 * h32) * t32) + 0.5) - (2 * h64 * t64 + 0.5)));
-      }
-    }
   }
-  return { path, cone };
+  return { path };
 }
 
 /** A1 de la vista en CPU (sin espejo): el tejido del centro de cada segmento con las reglas de la pasada A. */
@@ -132,24 +106,25 @@ function gpuLike(grid: SegmentGrid, ap: ApertureGeometry, theta: number, bias: n
   const n = grid.lines * grid.rows;
   const prefixDb = new Float64Array(n);
   const aperture = new Float64Array(n);
+  const specular = new Float64Array(n);
   for (let l = 0; l < grid.lines; l += 8)
     for (let k = 0; k < grid.rows; k++) {
       prefixDb[k * grid.lines + l] = t.db(l, k);
       aperture[k * grid.lines + l] = t.aperture(l, k);
+      specular[k * grid.lines + l] = t.specular(l, k);
     }
-  return { lines: grid.lines, samples: grid.rows, prefixDb, aperture };
+  return { lines: grid.lines, samples: grid.rows, prefixDb, aperture, specular };
 }
 
 const VIEWS: Array<StartPoint['id']> = ['subxiphoid', 'intercostal', 'flank', 'renal'];
 
 describe('paridad de la mirada dirigida: empates de redondeo (G8, decisión 58)', () => {
-  it('el margen cubre dos veces el error de float32 de los redondeos de A2 y A en todo el rango de θ', () => {
+  it('el margen cubre dos veces el error de float32 del redondeo de A2 en todo el rango de θ', () => {
     for (const deg of [COMPOUND_STEER_RANGE_DEG[0], 7, COMPOUND_STEER_RANGE_DEG[1]])
       for (const sign of [1, -1]) {
         const e = float32RoundingError((sign * deg * Math.PI) / 180);
-        const tag = `θ ${sign * deg}°: línea del camino ${e.path.toExponential(2)}, tomas ${e.cone.toExponential(2)} líneas`;
+        const tag = `θ ${sign * deg}°: línea del camino ${e.path.toExponential(2)} líneas`;
         expect(e.path, tag).toBeLessThanOrEqual(STEERED_TIE_LINES / 2);
-        expect(e.cone, tag).toBeLessThanOrEqual(STEERED_TIE_LINES / 2);
       }
   });
 
@@ -163,7 +138,7 @@ describe('paridad de la mirada dirigida: empates de redondeo (G8, decisión 58)'
     return g;
   };
 
-  it('un redondeo desplazado dentro del margen solo cambia muestras marcadas como empate', () => {
+  it('un redondeo desplazado dentro del margen solo cambia muestras marcadas como empate (la apertura, menos que su umbral)', () => {
     for (const view of ['subxiphoid', 'flank'] as const) {
       const { grid, ap } = gridOf(view);
       for (const look of [1, 2])
@@ -173,7 +148,11 @@ describe('paridad de la mirada dirigida: empates de redondeo (G8, decisión 58)'
           const tag = `${view}, mirada ${look}, redondeo ${bias}: ${JSON.stringify(p)}`;
           expect(p.samples, tag).toBeGreaterThan(2000);
           expect(p.maxDiffDb, tag).toBe(0);
-          expect(p.apertureMaxDiffDb, tag).toBe(0);
+          // la transmisión con apertura integra todas las líneas de su cono (decisión 91): un empate de una vecina la mueve
+          // lo que esa línea pesa, y solo se marca desde la mitad de la tolerancia de la e2e
+          expect(p.apertureMaxDiffDb, tag).toBeLessThanOrEqual(TIE_APERTURE_DB);
+          // y la de los especulares (A o2.w, decisión 91), con el mismo umbral
+          expect(p.specularMaxDiffDb, tag).toBeLessThanOrEqual(TIE_APERTURE_DB);
         }
     }
   });
@@ -186,6 +165,7 @@ describe('paridad de la mirada dirigida: empates de redondeo (G8, decisión 58)'
         const p = compareSteeredTransmission(grid, ap, th, gpuLike(grid, ap, th, 0), 8);
         const tag = `${view}, mirada ${look}: ${p.ambiguous} empates en ${p.samples + p.ambiguous} muestras`;
         expect(p.maxDiffDb, tag).toBe(0);
+        expect(p.specularMaxDiffDb, tag).toBe(0);
         // 0,04–0,31 % hasta la decisión 62; la vista intercostal por el 8.º espacio ve la vértebra al fondo
         // (14–16 cm), con fronteras hueso/tejido donde el redondeo decide: 0,40 y 0,64 % (13 de sus 22 empates
         // de la mirada 2 están a 154–169 mm)

@@ -966,8 +966,10 @@ describe('la rama de la cortina de la pasada B (mirada 0)', () => {
       'float rT = curtain && !under ? min(r, rCap) : r;',
       'float tAp = transLerp(uTrans0, 0, tc.x, rT);',
       'float tRay = transLerp(uTrans2, 0, tc.x, rT);',
+      // (fuera de la cortina, los especulares con la de sus pares en la apertura: decisión 91)
+      'float tSpec = transLerp(uTrans2, 3, tc.x, rT);',
       'float T = curtain && under ? min(min(tAp, tRay) * gain, tD) : tAp;',
-      'float Ts = curtain && under ? T : min(T, tRay);',
+      'float Ts = curtain && under ? T : min(T, tSpec);',
       'tissue = (tissue * T + vec2(spec * Ts, 0.0)) * coupling;',
       'float k = aLineOrder(r, D);',
       'air += vec2(seriesPow(G, k - 1.0) * tD * interfaceProfileEcho(IF_PLEURA_WALL, cosI, 1.0, k * D - r), 0.0);',

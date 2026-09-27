@@ -280,9 +280,9 @@ describe('refracción en las luces líquidas (decisión 86)', () => {
     expect(FRAG_TRANS_PREFIX_STEERED).toContain('o3 = extra;');
     // A: la ganancia multiplica la transmisión con apertura de la imagen (o0.x y o3.x), nunca el rayo único del Doppler
     for (const src of [FRAG_TRANSMISSION, FRAG_TRANSMISSION_STEERED]) {
-      expect(src).toContain('float Tap = apertureTransmission(line, k, r, step, single);');
+      expect(src).toContain('float Tap = apertureTransmission(line, k, r, step, single, spec);');
       expect(src).toContain('float T = Tap * refractionGain(uPre1, 0, 1, line, k, r);');
-      expect(src).toContain('o2 = vec4(single, 0.0, clamp(Tap / max(noBone, 1e-30), 0.0, 1.0), 0.0);');
+      expect(src).toContain('o2 = vec4(single, 0.0, clamp(Tap / max(noBone, 1e-30), 0.0, 1.0), spec);');
       expect(src).toContain('uniform vec4 uAperture;');
       expect(src).toContain('uniform vec4 uRefr;');
       expect(src).toContain('uniform vec2 uRefrK;');

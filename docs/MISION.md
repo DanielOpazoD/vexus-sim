@@ -35,7 +35,9 @@ Cada objetivo dice qué significa, cómo se mide y dónde está hoy.
    - Se mide con el juez ciego (`docs/fidelity/juez-ciego.md`), el banco de fidelidad (`npm run fidelity`) y la
      equivalencia TS ↔ GLSL.
    - Rondas 1 y 2: 7/7 parejas detectadas y nota global 2/7. Ronda 3 (26-09-2026, tras las decisiones 76–81): 7/7 y
-     14/14; el realismo de las simuladas sube de 1,9 a 2,4–2,6, frente a 5,7 de las reales, y la nota sigue en 2/7.
+     14/14; el realismo de las simuladas sube de 1,9 a 2,4–2,6, frente a 5,7 de las reales, y la nota sigue en 2/7. Ronda 4
+     (tras 65 y 84–87, con escenas distintas): 21/21, pero las sueltas simuladas llegan a 3,1 (reales 6,4) y una
+     «requirió estudio».
    - Meta a medio plazo: nota ≥ 4/7, que el juez necesite estudio para detectarlo. Meta final: 7/7, indistinguible.
 3. **Fidelidad anatómica.** Anatomía y ecografía normales según `docs/anatomia/revision-normal.md`. Cada ventana
    VExUS muestra sus estructuras clásicas, y su lista de comprobación es una prueba (`startPoints.test.ts`).

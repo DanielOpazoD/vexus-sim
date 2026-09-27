@@ -90,3 +90,20 @@ simuladas 2,57 (parejas) y 2,43 (sueltas) frente a 5,71 de las reales; nota glob
 
 Defecto del diseño: las parejas 1 y 7, 2 y 3, y 4 y 5 comparten escena simulada (el juez lo notó; no le hizo falta). En
 la ronda 4 cada pareja tendrá su propia escena (ventana, pose o caso distintos).
+
+Cuarta ronda (27-09-2026, `main` 0e03756, tras las decisiones 65 y 84–87: interfaces según la incidencia, PSF con la
+profundidad, corazón y mediastino, artefactos del líquido, riñón y venas), en armónica, con una escena propia por pareja
+(`scratchpad/gb/blind4.mts`: riñón del caso con FA desplazado, VCI ancha por el flanco, pared desplazada y
+suprahepáticas anchas por la subcostal). 7/7 parejas (confianza 90–98 %, todas en «< 1 s»; nota 2,29) y 14/14
+sueltas, pero el realismo de las sueltas simuladas sube de 2,43 a 3,14 (reales 6,43): la suprahepática ancha
+subcostal «requirió estudio» (60 %, realismo 5) y el hígado intercostal quedó en 75 % (realismo 4). La VCI del
+flanco, un tubo recto de paredes paralelas, fue la peor (1/7). Pistas, por peso:
+
+1. **Geometría de primitivas**: VCI como tubo recto de calibre constante, vasos pequeños circulares perfectos,
+   costillas idénticas en cúpula con el disco del hueso distinto de su sombra, arcos de pared equidistantes.
+2. **Una línea brillante dentro de la sombra de una costilla** (los dos jueces, pareja 6): error de oclusión.
+3. **Interfaces aún como trazos** cerca de la perpendicular (cápsula renal, paredes de la VCI).
+4. **Moteado «empedrado»**: granos redondos iguales, sin los destellos aislados del tejido real; y **luces con
+   textura ordenada** (pinceladas) en lugar de ruido electrónico casi blanco.
+5. Lo que convenció de las reales: brillo de pared según el ángulo, refuerzo bajo la VCI, estrías de líneas de
+   barrido, procesado de equipo moderno y detalles anatómicos finos.

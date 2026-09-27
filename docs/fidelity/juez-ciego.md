@@ -107,3 +107,18 @@ flanco, un tubo recto de paredes paralelas, fue la peor (1/7). Pistas, por peso:
    textura ordenada** (pinceladas) en lugar de ruido electrónico casi blanco.
 5. Lo que convenció de las reales: brillo de pared según el ángulo, refuerzo bajo la VCI, estrías de líneas de
    barrido, procesado de equipo moderno y detalles anatómicos finos.
+
+Quinta ronda (27-09-2026, `main` 6c0ba5b, tras las decisiones 88–90: costillas opacas y pared con relieve, textura del
+parénquima y ruido del receptor, vasos orgánicos), con la pared de la pareja 6 por la subcostal, sin costillas como su
+real (`scratchpad/gb/blind5.mts`). 7/7 parejas (confianza 82–94 %; nota 2,57, la pared 4) y 14/14 sueltas; el realismo
+de las sueltas simuladas sigue subiendo: 1,9 → 2,43 → 3,14 → 3,43 (reales 6,71), con dos que «requirieron estudio» al
+65 % (el hígado intercostal y la pared subcostal, realismo 5). Pistas nuevas y persistentes:
+
+1. **Costuras y peines**: dos costuras verticales en la textura de la VCI del flanco, con la pared quebrada en ellas, y
+   un peine de estrías horizontales en el borde de la subcostal; no siguen la geometría del haz.
+2. **Tras el diafragma**: en la subxifoidea el tejido termina en un arco liso contra una zona negra, sin eco de
+   interfaz ni espejo.
+3. **Grano uniforme** en todo el campo y **paredes capilares** (grosor y brillo constantes) cerca de la perpendicular.
+4. **Luces**: ruido uniforme, sin reverberación bajo la pared anterior ni refuerzo visible.
+5. **Firma del equipo**: las siete simuladas comparten una firma y las reales vienen de equipos distintos (reducción de
+   moteado, estrías de líneas, ganancia baja).

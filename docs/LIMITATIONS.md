@@ -119,7 +119,11 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **La vértebra no tiene cortical** (`vertebra-no-cortex`): el cuerpo vertebral es un cilindro de 34 mm de hueso sin
   cara (decisión 69; las costillas la tienen desde la 62). En la transversa epigástrica (decisión 83) su cara anterior
   no da la línea curva brillante de un equipo: el cuerpo se ve como una cúpula oscura sobre la sombra, que con el arco
-  posterior es un rectángulo. La sombra sí sale de la física (116 dB en sus primeros 10 mm).
+  posterior es un rectángulo. La sombra sí sale de la física (la entrada en el hueso, 100 dB desde la decisión 88, y 10 dB
+  por mm a 2,5 MHz): la banda de su superficie, lo único que dibuja su borde, es el moteado del hueso hasta el centro
+  de su primera fila de la pasada A, 0–0,9 mm según dónde cae su cara en la rejilla (mediana 0,4 mm; antes, con 6 dB de
+  entrada, una banda de unos milímetros que se apagaba poco a poco). Su tejido conserva la retrodispersión (0,9) que el
+  hueso de las costillas, con cortical, perdió en la decisión 88.
 - **La aorta no late en modo B** (`aorta-fixed-caliber`): su calibre es fijo; el pulso arterial está en su velocidad
   (color y PW), no en su pared. En la transversa epigástrica (decisión 83) no se ve el latido de 1–4 mm que ayuda a
   distinguirla de la VCI: se reconoce por su pared más gruesa y brillante, su sección redonda, su sitio sobre la vértebra,
@@ -203,7 +207,8 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   la perirrenal, la retroperitoneal y la del seno renal), el músculo, el miocardio y el mediastino (decisión 85), el riñón
   y la orina de la pelvis (rodeada de grasa de su misma c) no refractan, y la sangre de las cámaras del corazón refracta
   frente a la c del hígado aunque la rodeen el miocardio (1561 m/s) y la grasa del mediastino (1460): no hay sombras de borde en los polos del riñón por su grasa, ni aberración de la pared
-  abdominal (la ondulación de sus fascias, ±1,2 mm, desenfocaría de verdad y cambiaría la calibración de toda la imagen),
+  abdominal (el relieve de sus fascias, ±0,5 mm en 6,5–25 mm y ±1,5–2 mm en 2–5 cm desde la decisión 88, desenfocaría de
+  verdad y cambiaría la calibración de toda la imagen),
   ni el desdoblamiento de los rectos. Las paredes de los vasos tienen la c del hígado: no refractan por sí mismas, así que
   las sombras de borde de los vasos son solo las de la sangre (≤ 0,5 dB: no se ven). Un vaso rodeado de grasa (la VCI
   retroperitoneal, la aorta, las renales: 1578 frente a 1450 m/s) sería de verdad una lente divergente del 8 %; aquí
@@ -232,7 +237,11 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **Lóbulos laterales simplificados, sin lóbulos de rejilla ni en elevación** (`no-sidelobes`): desde la decisión 76 el
   núcleo lateral lleva un pedestal gaussiano con una pantalla de fase fija (ISLR −24 dB en el paciente de referencia),
   no el diagrama real de la apertura; la reverberación de la pared es de primer y segundo orden y solo de los ecos
-  fuertes (compuerta por módulo del campo, no por la cara que la produce).
+  fuertes (compuerta por módulo del campo, no por la cara que la produce). Desde la decisión 88 el pedestal de una línea
+  se apaga con la fracción de su haz que sobrevive a los huesos (la de su transmisión con apertura frente a la de su
+  rayo sin hueso, sin la refracción de las luces): bajo una costilla sus lóbulos laterales pierden lo mismo que el principal. Los lóbulos reales que
+  pasan junto a la costilla seguirían trayendo algo de la pleura vecina; en las imágenes reales (el «signo del
+  murciélago») la pleura no sigue bajo la costilla, y sin el apagado se veía a −10/−18 dB del hígado.
 - **Ruido del receptor por línea, sin recepción en paralelo** (`receiver-noise-per-line`, decisión 89): el ruido es
   independiente entre líneas (cada línea, un disparo) y limitado en banda a lo largo de ella; muchos equipos forman 2–4
   líneas por disparo (recepción en paralelo), que comparten el ruido de los canales y lo correlacionan por grupos. Sin la
@@ -254,8 +263,9 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   parietal y la pared, pero no el gas intestinal** (`interface-echo-scope`, decisiones 57, 61 y 62): el gas
   intestinal no dibuja su cara (PR 7); se ve por su reverberación y su cola sucia. Las capas de la pared, la
   cortical costal y el pericondrio la dibujan desde la decisión 62; en las copias de la pared bajo la pleura
-  (la serie de la decisión 61) las capas llevan un eco analítico de cara plana paralela a la piel, sin la
-  cortical ni el pericondrio.
+  (la serie de la decisión 61) las capas llevan un eco analítico de cara plana paralela a la piel, sin la cortical ni el
+  pericondrio y sin el relieve de la decisión 88 (el eco de cada cruce queda a ≤ 1,3 dB del completo: con la pendiente
+  de la capa el bucle de la serie subía ~3 s la compilación de B con SwiftShader).
 - **El eco de interfaz es un modelo de dos escalas simplificado** (`interface-echo-two-scale`, decisiones 57 y 65):
   las facetas son un ruido de valor anclado (σ_t = max(tan 5°, 0,5·s), célula de 3 mm) y no una rugosidad medida, y
   se evalúan en el plano central de la rodaja (la rodaja de 3–5 mm promediaría parte de la fragmentación); su fase es
@@ -270,7 +280,11 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   coherente del conjunto (−28,7 dB a 0° la del diafragma, −8,9 dB la parietal), sin facetas ni difusa. Una cara por
   estructura y sin signo, sin la cara pared/hígado (misma impedancia) ni la de cápsula renal/corteza, y sin
   interferencia de capa fina. Su nivel sale de K = 55 dB, un valor derivado de un plano liso (± 6 dB) que se calibra
-  con GPU dentro de [53; 57] dB.
+  con GPU dentro de [53; 57] dB. Los planos de elevación que entran en una costilla (en la intercostal, el borde de la
+  8.ª y la 9.ª a ±2–3 mm del plano) no devuelven nada: el hueso no tiene retrodispersión propia (decisión 88) y la cara
+  de la cortical sale del plano central; un equipo vería ahí el eco de volumen parcial de la cortical, y la sombra de esa
+  parte del haz más abajo (la transmisión es la del plano central). El músculo de la intercostal queda 3,6 dB más oscuro
+  que antes de la decisión 88, ~2,5 dB por esto.
 - **La coherencia de curvatura solo la tienen los tubos y las costillas** (`interface-curvature-tubes-only`;
   las costillas desde la decisión 62, con la curvatura de su sección elíptica): vesícula, riñón, cúpula y las
   capas de la pared son localmente planos para el eco. Sin la curvatura elevacional del riñón, Morison salía
@@ -284,7 +298,16 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   quedan ~1,5× más largas. La textura tiene una costura en la línea media posterior, sobre la columna. El
   cartílago costal va de la línea media anterior a ±45° en todas las costillas (un ángulo común, no la unión
   costocondral de cada una), más los últimos 25 mm antes del extremo de las que acaban en el reborde costal, y
-  el reborde es una recta desde el xifoides; las costillas 11.ª y 12.ª no existen.
+  el reborde es una recta desde el xifoides; las costillas 11.ª y 12.ª no existen. Cada costilla tiene su sección
+  (decisión 88: de 9,6 × 5,4 a 14,6 × 6,4 mm [ESTIMADO]), pero constante a lo largo de su cuerpo, sin el surco
+  costal ni la torsión. El relieve de las capas (decisión 88) es una suma de senos anclados (tres de 6,5–25 mm y dos
+  lentos de 24–52 mm por cara) [ESTIMADO], no un mapa medido: sus caras se inclinan sobre la piel 6–9° de mediana,
+  15–23° en el p99 y hasta 31–37°; con más de 20 mm de grasa, |∇| de la fascia y del plano oblicuo pasa de la cota de
+  la salida barata del eco (1,5; 1,54 a 24 mm, 1,61 a 30), que corta entonces el perfil del eco a 3,3 σ (−47 dB).
+  Las estrías del músculo siguen a la fascia, pero su
+  normal no lleva la pendiente de ese relieve (a la mediana de 7° su ganancia cambia < 3 %; en el 1 % más inclinado,
+  ~20 %). Con la sonda apretada (decisión 63) la pared se empuja como un bloque y conserva el relieve: la grasa real,
+  más blanda, se aplanaría algo bajo la sonda.
 - **La compresión de la sonda es cinemática, no elástica** (`probe-compression-kinematic`, decisión 63): no hay
   rigideces ni fuerza. La sonda se hunde a lo largo de su eje lo que haga falta para que apoye toda la cara, con un
   tope de presión [ESTIMADO] que depende solo de la blandura de la pared (no de la fuerza del usuario, salvo lift

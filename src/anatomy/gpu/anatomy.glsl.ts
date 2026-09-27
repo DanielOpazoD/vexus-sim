@@ -408,7 +408,7 @@ bool classifyWall(vec3 m, out Cls c, out float depth, out vec3 tn) {
     c.bd = d < wd.y ? min(d - skin, wd.y - d) : (d < wd.z ? min(d - wd.y, wd.z - d) : min(d - wd.z, wall - d));
     c.bd = min(c.bd, ribAny / 1.1);
     c.n = tn;
-    vec2 wf = wallFace(d, u, m.z, ribD);
+    vec2 wf = wallFace(d, u, m.z, ribD, wd);
     c.iface = int(wf.x + 0.5); c.ifd = wf.y;
     if (c.iface == IF_RIB) { c.tangent = ribTangent(m, uRibs[ribI]); c.kc = ribCurvature(m, uRibs[ribI]); }
     return true;
@@ -672,10 +672,9 @@ vec4 faceGradient(Cls c, vec3 m) {
              gallbladderSdf(m + h.yxy) - gallbladderSdf(m - h.yxy),
              gallbladderSdf(m + h.yyx) - gallbladderSdf(m - h.yyx));
   } else if (c.iface >= IF_FIRST_WALL && c.iface <= IF_LAST_WALL) {
-    // capas de la pared (decisión 62): la distancia de su capa (wallFaceSd)
-    g = vec3(wallFaceSd(m + h.xyy, c.iface) - wallFaceSd(m - h.xyy, c.iface),
-             wallFaceSd(m + h.yxy, c.iface) - wallFaceSd(m - h.yxy, c.iface),
-             wallFaceSd(m + h.yyx, c.iface) - wallFaceSd(m - h.yyx, c.iface));
+    // capas de la pared (decisión 62): el gradiente de la distancia de su capa con su pendiente (wallFaceGradient,
+    // decisión 88: tres evaluaciones de su profundidad en lugar de las seis de wallFaceSd), en la escala de las demás
+    g = wallFaceGradient(m, c.iface) * (2.0 * FACE_GRAD_EPS);
   } else if (c.iface == IF_RIB || c.iface == IF_PERICHONDRIUM) {
     // cortical o pericondrio: la distancia de la costilla más cercana (ribSd)
     int k = nearestRib(m);

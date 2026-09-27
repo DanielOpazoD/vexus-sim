@@ -7,18 +7,31 @@ import { CONVEX_C35, pointOnLine, pointOnSteeredLine, probeFrame } from '../prob
 import { COMPOUND, lookTheta } from '../ultrasound/compound';
 import { IFACE_REACH_MM } from '../ultrasound/interfaceEcho';
 import { COARSE_DEPTH } from '../ultrasound/renderer';
-import { FRAG_RAWFIELD, FRAG_TRANS_HITS, FRAG_TRANS_PREFIX } from '../ultrasound/shaders/passes.glsl';
+import { glslFloat } from '../ultrasound/receiver';
+import {
+  FRAG_LATERAL,
+  FRAG_RAWFIELD,
+  FRAG_RAWFIELD_STEERED,
+  FRAG_TRANSMISSION,
+  FRAG_TRANSMISSION_STEERED,
+  FRAG_TRANS_HITS,
+  FRAG_TRANS_PREFIX,
+  FRAG_TRANS_PREFIX_STEERED,
+} from '../ultrasound/shaders/passes.glsl';
 import { alongLineMm, lookCoverage, steerBeta } from '../ultrasound/steering';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import {
   BONE_ENTRY_DB,
+  BONE_STEP_RATIO,
   GAS_DB_PER_CM,
   MIRROR_BISECTION_STEPS,
   MIRROR_DB,
   STEERED_PREFIX_GLSL,
+  TRANSMISSION_LERP_GLSL,
   mirrorCrossing,
   rayAttenuationDb,
   rayTransmission,
+  transmissionLerp,
 } from '../ultrasound/transmission';
 import { mirrorLookaheadRows, prefixDb, steeredPrefixDb } from '../ultrasound/transmissionTwin';
 import { GRID_GEOMETRY, emptyGrid, gridLineAngle, segmentGridFromScene, setMirror } from './support/segmentGrid';
@@ -40,6 +53,94 @@ describe('Atenuación a lo largo del rayo', () => {
     // una segunda costilla tras tejido blando no vuelve a cobrar la entrada (igual que la GPU)
     const two = rayAttenuationDb([Tissue.Bone, Tissue.Muscle, Tissue.Bone], 2.5, f);
     expect(two).toBeCloseTo(BONE_ENTRY_DB + 2 * alphaStep + 2 * attenuationDbPerCm(Tissue.Muscle, f) * 0.25, 9);
+  });
+
+  it('decisión 88: el hueso es opaco para la imagen: la cuerda más fina deja detrás lo más brillante (la pleura, +50 dB) bajo el ruido', () => {
+    // la pleura parietal queda ~50 dB sobre el hígado y el negro de la imagen, ~30 dB bajo él: detrás de un hueso la
+    // transmisión de ida y vuelta tiene que bajar de −80 dB con cualquier cuerda; antes, una cuerda de 1 mm dejaba −16 dB
+    const pleuraOverLiverDb = 50;
+    const blackUnderLiverDb = 30;
+    for (const chordMm of [0.2, 1, 6.4]) {
+      const steps = Math.max(1, Math.round(chordMm / 0.1));
+      const db = rayAttenuationDb([Tissue.Muscle, ...Array<Tissue>(steps).fill(Tissue.Bone), Tissue.Fat], 0.1, f);
+      expect(db, `${chordMm} mm`).toBeGreaterThan(pleuraOverLiverDb + blackUnderLiverDb);
+    }
+    // la vértebra es el mismo hueso
+    expect(rayAttenuationDb([Tissue.Vertebra], 0.1, f)).toBeGreaterThan(pleuraOverLiverDb + blackUnderLiverDb);
+    // la A2 de la GPU cobra la misma constante (antes un 6.0 escrito a mano) en la mirada 0 y en la dirigida
+    for (const src of [FRAG_TRANS_PREFIX, FRAG_TRANS_PREFIX_STEERED])
+      expect(src).toContain(
+        `if (g.z > 0.5 && !boneEntered) { attenDb += ${BONE_ENTRY_DB.toFixed(1)}; boneDb += ${BONE_ENTRY_DB.toFixed(1)}; boneEntered = true; }`,
+      );
+  });
+
+  it('decisión 88: la pasada B interpola entre filas salvo a través de la entrada en un hueso', () => {
+    const n = 160;
+    const depth = 180;
+    const step = depth / n;
+    // tejido blando: la interpolación lineal de la textura, igual que antes
+    const soft = (k: number) => Math.pow(10, -(0.3 * k) / 20);
+    for (const r of [10.3, 50.7, 120.01])
+      expect(transmissionLerp(soft, n, depth, r)).toBeCloseTo(
+        soft(Math.floor(r / step - 0.5)) +
+          (soft(Math.floor(r / step - 0.5) + 1) - soft(Math.floor(r / step - 0.5))) * (r / step - 0.5 - Math.floor(r / step - 0.5)),
+        12,
+      );
+    // primera fila de hueso en k = 20: por encima de su centro (el tejido blando con la cara de la cortical, y el hueso
+    // hasta ahí) conserva la transmisión de la fila 19; desde su centro, la del hueso
+    const bone = (k: number) => (k < 20 ? soft(k) : soft(k) * Math.pow(10, -BONE_ENTRY_DB / 20));
+    for (const frac of [0.01, 0.3, 0.7, 0.99]) expect(transmissionLerp(bone, n, depth, (19.5 + frac) * step)).toBe(soft(19));
+    expect(transmissionLerp(bone, n, depth, 20.5 * step)).toBeCloseTo(bone(20), 20);
+    // sin la regla, a mitad de camino la cortical perdía 6 dB y a 0,9 de la fila, 20 dB
+    const plain = (x: number) => soft(19) * (1 - x) + bone(20) * x;
+    expect(20 * Math.log10(plain(0.9) / soft(19))).toBeLessThan(-19);
+    // el umbral no lo cruza el gas (6,75 dB por fila a 18 cm y 9 a 24 cm; la transmisión con apertura, hasta 7,9 y 10,5)
+    // ni la penumbra; sí la entrada en el hueso de las líneas del borde de una costilla, que el cono rodea en parte
+    // (20–35 dB en el gemelo de la apertura)
+    for (const gasDb of [6.75, 9, 10.5]) expect(Math.pow(10, -gasDb / 20)).toBeGreaterThan(BONE_STEP_RATIO);
+    expect(Math.pow(10, -19.7 / 20)).toBeLessThan(BONE_STEP_RATIO);
+    // la GLSL es la misma cuenta, y la pasada B la usa en las dos miradas para la transmisión de la muestra
+    expect(TRANSMISSION_LERP_GLSL).toContain(`return b < a * ${glslFloat(BONE_STEP_RATIO)} ? a : a + (b - a) * (x - float(k));`);
+    expect(FRAG_RAWFIELD).toContain(TRANSMISSION_LERP_GLSL);
+    expect(FRAG_RAWFIELD).toContain('float tAp = transLerp(uTrans0, 0, tc.x, rT);');
+    expect(FRAG_RAWFIELD_STEERED).toContain('float tAp = transLerp(uTrans3, 0, tc.x, r);');
+  });
+
+  it('decisión 88: los ecos especulares llevan la transmisión del rayo central; el moteado, la de la apertura', () => {
+    // bajo una costilla el cono de la apertura rellena la sombra del moteado en profundidad (decisión 54), pero el camino
+    // de vuelta de un eco especular es el espejo del de ida: con uno de los dos cruzando el hueso, la pleura y las
+    // fascias no vuelven (la línea de la pareja 6 del juez ciego, ronda 4)
+    for (const [src, ray] of [
+      [FRAG_RAWFIELD, 'transLerp(uTrans2, 0, tc.x, rT)'],
+      [FRAG_RAWFIELD_STEERED, 'transLerp(uTrans2, 1, tc.x, r)'],
+    ] as const) {
+      expect(src).toContain(`float tRay = ${ray};`);
+      expect(src).toContain('tissue = (tissue * T + vec2(spec * Ts, 0.0)) * coupling;');
+    }
+    expect(FRAG_RAWFIELD).toContain('float Ts = curtain && under ? T : min(T, tRay);');
+    expect(FRAG_RAWFIELD).toContain('spec += pleuraEcho(r - mirrorHit, dir0, normalize(t1.xyz));');
+    // la pleura parietal de la cortina, también: tD, a lo sumo la del rayo central
+    expect(FRAG_RAWFIELD).toContain(
+      'float tD = curtain ? min(texture(uTrans0, vec2(vUv.x, rCap / uDepth)).x, texture(uTrans2, vec2(vUv.x, rCap / uDepth)).x) : 0.0;',
+    );
+    expect(FRAG_RAWFIELD_STEERED).toContain('float tD = curtain ? steeredT(phiK, a, sCap, true) : 0.0;');
+  });
+
+  it('decisión 88: la pasada D apaga el pedestal de una línea tapada por un hueso con la fracción de su haz que sobrevive', () => {
+    // A: la transmisión con apertura sobre la del rayo sin lo que cobra el hueso (A2 o1.z); 1 lejos de todo hueso
+    expect(FRAG_TRANS_PREFIX).toContain('if (g.z > 0.5) boneDb += abs(g.x);');
+    expect(FRAG_TRANS_PREFIX).toContain('o1 = vec4(step * psi, pa, boneDb, 0.0);');
+    // (la de la apertura sin la refracción de las luces, que desvía la energía y no la quita; el rayo sin hueso en dB)
+    for (const src of [FRAG_TRANSMISSION, FRAG_TRANSMISSION_STEERED]) {
+      expect(src).toContain('float Tap = apertureTransmission(line, k, r, step, single);');
+      expect(src).toContain('float noBone = pow(10.0, -(c0.x - texelFetch(uPre1, ivec2(line, k), 0).z) / 20.0);');
+      expect(src).toContain('o2 = vec4(single, 0.0, clamp(Tap / max(noBone, 1e-30), 0.0, 1.0), 0.0);');
+    }
+    expect(FRAG_TRANSMISSION_STEERED).toContain('o2.w = clamp(TkAp / max(noBone, 1e-30), 0.0, 1.0);');
+    // D: el acoplamiento de la línea de destino por esa fracción, como una línea sin contacto (decisión 76)
+    expect(FRAG_LATERAL).toContain(
+      'float coupling = texture(uCoupling, vec2(vUv.x, 0.5)).r * transLerp(uShadow, uShadowCh, int(gl_FragCoord.x), r);',
+    );
   });
 
   it('el gas atenúa 60 dB/cm sin absorción añadida y la transmisión es 10^(−dB/20)', () => {

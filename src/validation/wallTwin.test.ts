@@ -296,6 +296,55 @@ describe('pared realista con el gemelo de la imagen (decisión 62)', () => {
     }
   });
 
+  it('decisión 88: bajo una costilla no queda ninguna cara (la línea que el juez ciego vio cruzar la costilla)', () => {
+    // el flanco 12 mm más craneal, la pose de la pareja 6 de la ronda 4: en las líneas que cruzan hueso, lejos de su borde
+    // (≥ 6 líneas: la PSF lateral lleva ahí la del tejido de al lado), nada entre la cara profunda de la costilla y 3 mm
+    // más abajo (la transversalis, el peritoneo o la pleura) pasa de −30 dB del hígado, el negro de la imagen. Antes, con 6
+    // dB de entrada, la cuerda fina del borde dejaba −16/−26 dB y el pedestal de la decisión 76 llevaba el peritoneo y la
+    // pleura de las líneas vecinas a −10/−18 dB dentro de la sombra
+    const sp = START_POINTS.find((x) => x.id === 'flank')!;
+    const pf = probeFrame(
+      { phi: sp.phi, z: sp.z + 12, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 },
+      scene.torso,
+      CONVEX_C35,
+    );
+    const f: TwinFrame = { center: pf.curvatureCenter, axial: pf.axial, lateral: pf.lateral, elevation: pf.elevation, face: pf.face };
+    const o = wallTwin(scene, caliber, f, anchorOf(f), { model: 'wall', j0: 20, j1: 171, r0: 0, r1: 60 });
+    const nR = o.i1 - o.i0 + 1;
+    // lejos del borde de la costilla: a 3–5 líneas la PSF lateral aún lleva la cápsula de la línea vecina a −20 dB (la
+    // borrosidad del borde, física); a ≥ 6 líneas (~3 mm), no
+    const EDGE = 6;
+    // el hígado de referencia, sin hueso delante
+    const liver: number[] = [];
+    const boneEnd = new Int32Array(o.nL).fill(-1);
+    const tissueAt = (i: number, jj: number): Tissue => o.tissue[i * o.nL + jj];
+    for (let jj = 0; jj < o.nL; jj++) {
+      for (let i = 0; i < nR; i++) if (tissueAt(i, jj) === Tissue.Bone) boneEnd[jj] = i;
+      if (boneEnd[jj] >= 0) continue;
+      for (let i = 0; i < nR; i++) if (tissueAt(i, jj) === Tissue.Liver) liver.push(o.env[i * o.nL + jj]);
+    }
+    const ref = mean(liver);
+    let lines = 0;
+    let worst = -Infinity;
+    let where = '';
+    for (let jj = EDGE; jj < o.nL - EDGE; jj++) {
+      let interior = true;
+      for (let d = -EDGE; d <= EDGE; d++) if (boneEnd[jj + d] < 0) interior = false;
+      if (!interior) continue;
+      lines++;
+      for (let i = boneEnd[jj] + 1; i <= Math.min(nR - 1, boneEnd[jj] + Math.round(3 / o.dr)); i++) {
+        const e = 20 * Math.log10(o.env[i * o.nL + jj] / ref);
+        if (e > worst) {
+          worst = e;
+          where = `línea ${o.j0 + jj}, ${o.rowR(o.i0 + i).toFixed(2)} mm, ${Tissue[o.tissue[i * o.nL + jj]]}`;
+        }
+      }
+    }
+    expect(liver.length).toBeGreaterThan(2000);
+    expect(lines, 'líneas bajo las costillas').toBeGreaterThan(20);
+    expect(worst, where).toBeLessThan(-30);
+  });
+
   it('la reverberación de la pared (decisión 76), con la transmisión: ≤ −45 dB bajo la pared y ningún fantasma en la sombra costal', () => {
     // el flanco de partida: costillas dentro de la pared, con su sombra; las réplicas pagan la transmisión hasta W
     const sp = START_POINTS.find((x) => x.id === 'flank')!;
@@ -320,13 +369,31 @@ describe('pared realista con el gemelo de la imagen (decisión 62)', () => {
       }
       expect(n).toBeGreaterThan(5000);
       expect(10 * Math.log10(d2 / b2)).toBeLessThan(-45);
-      // sombra (envolvente sin réplicas < 2 % de la media del hígado) bajo la pared: las réplicas no la encienden
+      // sombra (envolvente sin réplicas < 2 % de la media del hígado en su entorno de ±3 líneas y ±1 mm) bajo la pared: las
+      // réplicas no la encienden. Un nulo del moteado del hígado (una muestra suelta bajo el 2 %) no es sombra: la réplica
+      // de −50 dB de la pared lo levantaba al 3,3 % en la subxifoidea, que no tiene costillas (decisión 88, con el relieve
+      // nuevo de las capas)
+      const rows = a.i1 - a.i0 + 1;
+      const box = Math.round(1 / a.dr);
+      const dark = (k: number): boolean => {
+        const i = Math.floor(k / a.nL);
+        const j = k % a.nL;
+        let s = 0;
+        let c = 0;
+        for (let di = -box; di <= box; di++)
+          for (let dj = -3; dj <= 3; dj++) {
+            if (i + di < 0 || i + di >= rows || j + dj < 0 || j + dj >= a.nL) continue;
+            s += b.env[(i + di) * a.nL + j + dj];
+            c++;
+          }
+        return s / c < 0.02 * (sum / n);
+      };
       let shadowA = 0;
       let shadowB = 0;
       let shadowN = 0;
       for (let k = 0; k < a.env.length; k++) {
         const tk: Tissue = a.tissue[k];
-        if (a.rowR(a.i0 + Math.floor(k / a.nL)) < WALL_MM + 6 || b.env[k] >= 0.02 * (sum / n) || tk === Tissue.Lung) continue;
+        if (a.rowR(a.i0 + Math.floor(k / a.nL)) < WALL_MM + 6 || b.env[k] >= 0.02 * (sum / n) || tk === Tissue.Lung || !dark(k)) continue;
         shadowA = Math.max(shadowA, a.env[k]);
         shadowB = Math.max(shadowB, b.env[k]);
         shadowN++;
@@ -512,15 +579,20 @@ describe('banco de la pared de la GPU (display.wall) sobre el gemelo en las pose
     // de la pared sigue en la retroperitoneal y su R_ef baja a la de una fascia (0,03); contra el área desnuda del hígado
     // el salto grasa/hígado sigue ahí. Línea a línea, el exceso de potencia en el cruce sobre el tejido de alrededor,
     // frente al eco de la decisión 57 (gemelo, 26-09-2026): grasa −0,4 → −6,4 dB en 91 líneas, hígado 2,7 → 2,1 dB en
-    // 65. La primera versión apagaba también las del hígado (la ganancia solo miraba el compartimento)
+    // 65. La primera versión apagaba también las del hígado (la ganancia solo miraba el compartimento). Con el relieve
+    // de las capas de la decisión 88 la transversalis, a ~2 mm, se inclina dentro de la ventana del fondo (1,5–4 mm) y
+    // su eco cambia de un modelo de eco al otro: el contraste es −0,2 → −4,0 dB, la línea sigue sin estar (< 0) y cae
+    // ≥ 3,5 dB. Sin las muestras a ≤ 1 mm de la transversalis en el fondo cae 6,4 dB (3,8 → −2,6), como en main (6,0):
+    // no es la cara del peritoneo la que cambia; pero ese fondo aparta también las líneas contra el hígado (7,4 → 3,7 dB),
+    // que la ventana de siempre, con la transversalis dentro, compara a ±1,5 dB
     const after = renalWallFace(false);
     const before = renalWallFace(true);
     const msg = JSON.stringify({ after: summary(after), before: summary(before) });
     expect(after.fat.length, msg).toBeGreaterThanOrEqual(60);
     expect(after.liver.length, msg).toBeGreaterThanOrEqual(30);
-    // grasa con grasa: ya no hay línea (nada sobre el tejido de alrededor) y cae ≥ 4 dB
+    // grasa con grasa: ya no hay línea (nada sobre el tejido de alrededor) y cae ≥ 3,5 dB
     expect(median(after.fat), msg).toBeLessThan(0);
-    expect(median(after.fat), msg).toBeLessThan(median(before.fat) - 4);
+    expect(median(after.fat), msg).toBeLessThan(median(before.fat) - 3.5);
     // contra el hígado: la misma línea que con el eco de la 57, a ±1,5 dB, sobre el tejido de alrededor
     expect(Math.abs(median(after.liver) - median(before.liver)), msg).toBeLessThan(1.5);
     expect(median(after.liver), msg).toBeGreaterThan(0.5);

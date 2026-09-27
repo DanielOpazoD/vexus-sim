@@ -3,9 +3,11 @@
  * (`AnatomyScene`), para la pared (decisión 62). Lo usa `wallTwin.test.ts` y el script de calibración. Usa
  * las funciones de producción:
  *  - A: la suma de A2 por segmentos gruesos (paso profundidad/160, el tejido del punto medio, 2·α·paso,
- *    hueso +6 dB al entrar, el gel antes de la piel sin pérdidas) y su interpolación lineal en amplitud entre
- *    los centros de fila (la textura de la GPU). Sin la penumbra de la apertura ni el espejo: en la pared no
- *    hay espejo, y la penumbra solo cambia lo que hay detrás de una costilla;
+ *    la entrada en el hueso, `BONE_ENTRY_DB`, el gel antes de la piel sin pérdidas) y su interpolación lineal en
+ *    amplitud entre los centros de fila, sin mezclar a través de la entrada en un hueso (`transmissionLerp`, la de la
+ *    pasada B). Sin la penumbra de la apertura ni el espejo: en la pared no hay espejo, y la penumbra solo cambia lo
+ *    que hay detrás de una costilla (sin ella, la transmisión de la apertura es la del rayo central, así que la de los
+ *    ecos especulares de la decisión 88 es la misma);
  *  - B: el medio anclado de tres planos (`speckleSliceField`, con los dispersores fuertes del tejido), la retrodispersión
  *    de `TISSUES`, la heterogeneidad, la densidad de dispersores y las tríadas del hígado con el haz de la línea (decisión
  *    89), los grumos, la textura de la pared (`wallTexture`, con la dirección de la línea), la del «resto»
@@ -56,7 +58,7 @@ import {
   strongScatter,
   type SpeckleAnchorState,
 } from '../../ultrasound/speckleField';
-import { BONE_ENTRY_DB, GAS_DB_PER_CM } from '../../ultrasound/transmission';
+import { BONE_ENTRY_DB, GAS_DB_PER_CM, transmissionLerp } from '../../ultrasound/transmission';
 import { wallFaceGain, wallTexture } from '../../ultrasound/wallTexture';
 import { TWIN_GEOMETRY, elevSigmaMm, type TwinFrame, type TwinGeometry } from './compoundTwin';
 
@@ -202,11 +204,10 @@ export function wallTwin(
   // ecos parásitos del paciente (decisión 76): pedestal de lóbulos laterales y réplicas de reverberación de la pared
   const cp = clutterParams(scene.wallThickness(), scene.torso.fatMm);
   const kLat = new Map<number, Array<[number, number]>>();
+  const latSigma = (i: number): number => Math.max(0.35, lateralSigmaMm(rowR(i), g.focusMm, g.beam) / pitch(rowR(i)));
+  const cpLat = o.noPedestal ? { ...cp, sidelobeIslr: 0 } : cp;
   for (let i = i0; i <= i1; i++) {
-    const k = lateralKernel(
-      Math.max(0.35, lateralSigmaMm(rowR(i), g.focusMm, g.beam) / pitch(rowR(i))),
-      o.noPedestal ? { ...cp, sidelobeIslr: 0 } : cp,
-    );
+    const k = lateralKernel(latSigma(i), cpLat);
     kLat.set(i, k);
     RL = Math.max(RL, (k.length - 1) / 2);
   }
@@ -220,6 +221,9 @@ export function wallTwin(
   const top = RA + 2 * shift;
   const wR = nR + top + RA;
   const tWall = new Float64Array(wL);
+  // la fracción del haz de cada línea que sobrevive a los huesos (A o2.z, decisión 88): sin la penumbra de la apertura,
+  // el rayo frente al mismo rayo sin lo que cobra el hueso; la pasada D apaga con ella el pedestal de la línea
+  const shadowAt: Array<(r: number) => number> = [];
   const re = new Float64Array(wL * wR);
   const im = new Float64Array(wL * wR);
   const tissueOut = new Uint8Array(nL * nR);
@@ -230,30 +234,33 @@ export function wallTwin(
     const dir = dirOf(j);
     // A: prefijo grueso de un rayo, en amplitud en los centros de fila
     const Tc = new Float64Array(COARSE);
+    const shadow = new Float64Array(COARSE);
     let db = 0;
+    let boneDb = 0;
     let entered = false;
     let bone = false;
     for (let s = 0; s < COARSE; s++) {
       const t = classifyModel(scene, caliber, pointAt(dir, (s + 0.5) * coarseStep), o.model).tissue;
       if (t === Tissue.Air && !entered) {
         Tc[s] = 1;
+        shadow[s] = 1;
         continue;
       }
       entered = true;
       if (TISSUES[t].bone && !bone) {
         db += BONE_ENTRY_DB;
+        boneDb += BONE_ENTRY_DB;
         bone = true;
       }
-      db += TISSUES[t].gas ? (GAS_DB_PER_CM * coarseStep) / 10 : (2 * attenuationDbPerCm(t, B_MHZ) * coarseStep) / 10;
+      const segDb = TISSUES[t].gas ? (GAS_DB_PER_CM * coarseStep) / 10 : (2 * attenuationDbPerCm(t, B_MHZ) * coarseStep) / 10;
+      db += segDb;
+      if (TISSUES[t].bone) boneDb += segDb;
       Tc[s] = Math.pow(10, -db / 20);
+      shadow[s] = Math.pow(10, -boneDb / 20);
     }
-    const Tat = (r: number): number => {
-      if (o.noTransmission) return 1;
-      const x = Math.min(COARSE - 1, Math.max(0, r / coarseStep - 0.5));
-      const k = Math.min(COARSE - 2, Math.floor(x));
-      const f = x - k;
-      return Tc[k] * (1 - f) + Tc[k + 1] * f;
-    };
+    shadowAt[a] = (r) => transmissionLerp((k) => shadow[k], COARSE, g.depthMm, r);
+    // la de la pasada B: lineal entre filas salvo a través de la entrada en un hueso (decisión 88)
+    const Tat = (r: number): number => (o.noTransmission ? 1 : transmissionLerp((k) => Tc[k], COARSE, g.depthMm, r));
     const lineU = (j + 0.5) / L;
     tWall[a] = Tat(cp.wallMm);
     for (let b = 0; b < wR; b++) {
@@ -356,11 +363,13 @@ export function wallTwin(
       axR[a * nR + i] = sr;
       axI[a * nR + i] = si;
     }
-  // D
+  // D (el pedestal de la línea de destino, con la fracción de su haz que sobrevive a los huesos: decisión 88)
   const env = new Float64Array(nL * nR);
   for (let i = 0; i < nR; i++) {
-    const kl = kLat.get(i0 + i)!;
+    const kRow = kLat.get(i0 + i)!;
     for (let jj = 0; jj < nL; jj++) {
+      const sh = o.noTransmission ? 1 : shadowAt[jj + RL](rowR(i0 + i));
+      const kl = sh === 1 ? kRow : lateralKernel(latSigma(i0 + i), cpLat, sh);
       const [sr, si] = applyComplexKernel(kl, (q) => {
         const n = (jj + RL + q) * nR + i;
         return [axR[n], axI[n]];

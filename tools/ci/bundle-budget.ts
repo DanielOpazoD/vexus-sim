@@ -44,13 +44,18 @@
 // las venas del hígado en la GLSL de la anatomía (el ruido del radio con su hash, la métrica de la sección y la cara del tubo
 // que gana, `tubeFace`: ~1,6 kB de GLSL minificado) y ~2,5 kB de su gemelo TS, de la VCI y del quinto téxel de las cabeceras
 // de los tubos. index sube a 330 kB.
+// 2026-09-27: las costillas opacas y la pared con relieve (decisión 88) llevan index de 329,2 a 333,7 kB (vite build
+// sobre main c2133e1, tras los vasos orgánicos de la 90): el relieve fino y lento de las caras de la pared (nueve
+// funciones GLSL generadas de sus tablas, en todas las pasadas que clasifican), el gradiente de la capa con su pendiente,
+// la interpolación de la transmisión que no cruza la entrada en un hueso en B y D, la ventana de la difusa de la cortical
+// y sus gemelos TS. index sube a 335 kB.
 import { readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const KB = 1024;
 const BUDGETS: Array<[RegExp, number]> = [
   [/three.*\.js$/, 700 * KB],
-  [/index-.*\.js$/, 330 * KB],
+  [/index-.*\.js$/, 335 * KB],
   [/\.css$/, 20 * KB],
   [/\.js$/, 120 * KB], // cualquier otro chunk
 ];

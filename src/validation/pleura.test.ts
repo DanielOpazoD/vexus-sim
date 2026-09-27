@@ -498,7 +498,9 @@ describe('clasificación sin la cortina (gemelo de classifyWith(m, false))', () 
     // cara plana de sus capas (wallFaceEchoFlat, sin faceGradient) y, pasada la cara interna, la capa más honda
     expect(PLEURA_GLSL).toContain('Cls c = classifyWith(m, withCurtain);');
     expect(PLEURA_GLSL).toContain('vec2 f1 = sampleSide(p + uElev * se, se, c, withCurtain, w);');
-    expect(FRAG_RAWFIELD).toContain('vec2 tissue = wTissue >= CURTAIN_MIN_AIR ? mediumField(p, dir, r, elevSigma(r), !under) : vec2(0.0);');
+    expect(FRAG_RAWFIELD).toContain(
+      'vec2 tissue = wTissue >= CURTAIN_MIN_AIR ? mediumField(p, dir, r, elevSigma(r), !under, spec) : vec2(0.0);',
+    );
     expect(FRAG_RAWFIELD_STEERED).toContain('vec2 f1 = sampleSidePh(p + uElev * se, se, c, ph0, g, withCurtain, w);');
     expect(FRAG_RAWFIELD_STEERED).toContain('tissue = mediumFieldPh(p, dir, s, elevSigma(r), !under, lookPhase(rho, alpha, a, k2)');
     expect(ANATOMY_GLSL).toContain('if (classifyWall(m, c, depth, tn)) return c;');
@@ -959,9 +961,14 @@ describe('la rama de la cortina de la pasada B (mirada 0)', () => {
       'vec4 h2 = texelFetch(uHits2, ivec2(tc.x, 0), 0);',
       'float fAir = D > 0.0 ? curtainAirFraction(h2.y, D, dir0) : 0.0;',
       'float rCap = pleuraCapMm(max(D, 0.0), uDepth / float(ts.y));',
-      'float tD = curtain ? texture(uTrans0, vec2(vUv.x, rCap / uDepth)).x : 0.0;',
-      'float tFree = min(t0.x, texture(uTrans2, vUv).x) * gain;',
-      'float T = (curtain ? (under ? min(tFree, tD) : texture(uTrans0, vec2(vUv.x, min(r, rCap) / uDepth)).x) : t0.x) * coupling;',
+      // la pleura es especular: a lo sumo la transmisión del rayo central (decisión 88)
+      'float tD = curtain ? min(texture(uTrans0, vec2(vUv.x, rCap / uDepth)).x, texture(uTrans2, vec2(vUv.x, rCap / uDepth)).x) : 0.0;',
+      'float rT = curtain && !under ? min(r, rCap) : r;',
+      'float tAp = transLerp(uTrans0, 0, tc.x, rT);',
+      'float tRay = transLerp(uTrans2, 0, tc.x, rT);',
+      'float T = curtain && under ? min(min(tAp, tRay) * gain, tD) : tAp;',
+      'float Ts = curtain && under ? T : min(T, tRay);',
+      'tissue = (tissue * T + vec2(spec * Ts, 0.0)) * coupling;',
       'float k = aLineOrder(r, D);',
       'air += vec2(seriesPow(G, k - 1.0) * tD * interfaceProfileEcho(IF_PLEURA_WALL, cosI, 1.0, k * D - r), 0.0);',
       'vec3 ser = under ? pleuraSeriesDepths(r, D) : vec3(0.0);',

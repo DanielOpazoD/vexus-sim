@@ -91,6 +91,6 @@ Generado por `npm run docs:index` — no editar a mano.
 | [85](DECISIONS.md#L3322) | Corazón y mediastino: la AD recibe la VCI sobre el diafragma, el VD delante tras el xifoides, pericardio y tejido del mediastino en lugar de pulmón | vigente |
 | [86](DECISIONS.md#L3464) | Artefactos del líquido: el refuerzo posterior es el de la atenuación, la refracción de las luces deja sombras de borde en el haz enfocado y la penumbra costal lleva la apodización de la emisión | vigente |
 | [87](DECISIONS.md#L3633) | Riñón y venas sin primitivas: pirámides en cono con sus arcuatos, seno en lóbulos, contorno cerrado por la grasa, hilio sin cápsula y extremos venosos que se afilan | vigente |
-| [88](DECISIONS.md#L3769) | Reservada: costillas y capas de la pared | reservada |
-| [89](DECISIONS.md#L3773) | Textura del parénquima y ruido del receptor: dispersores fuertes por debajo de la resolución, densidad de dispersores a escala de milímetros, tríadas en parte especulares y ruido por línea tras la PSF lateral | vigente |
-| [90](DECISIONS.md#L3976) | Vasos orgánicos: sección elíptica y radio que ondula en las venas del hígado, y una VCI que se curva y cambia de calibre sin tocar el sitio de medida | vigente |
+| [88](DECISIONS.md#L3769) | Costillas opacas y sin disco, y pared con relieve: lo que entra en el hueso no vuelve, la difusa de la cortical se apaga en el ángulo crítico y las capas dejan de ser arcos concéntricos | vigente |
+| [89](DECISIONS.md#L3960) | Textura del parénquima y ruido del receptor: dispersores fuertes por debajo de la resolución, densidad de dispersores a escala de milímetros, tríadas en parte especulares y ruido por línea tras la PSF lateral | vigente |
+| [90](DECISIONS.md#L4163) | Vasos orgánicos: sección elíptica y radio que ondula en las venas del hígado, y una VCI que se curva y cambia de calibre sin tocar el sitio de medida | vigente |

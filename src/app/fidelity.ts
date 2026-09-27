@@ -1,5 +1,5 @@
 import { TISSUES, Tissue, attenuationDbPerCm } from '../anatomy/tissues';
-import { Interface } from '../anatomy/interfaces';
+import { Interface, isWallLayerInterface } from '../anatomy/interfaces';
 import { WALL, wallArc, wallDepths } from '../anatomy/organs/wall';
 import { torsoDepth, torsoNormal } from '../anatomy/primitives';
 import type { FaceGeometry } from '../anatomy/scene';
@@ -1470,6 +1470,13 @@ export const WALL_PROFILE_LINES = 17;
 export const WALL_INTERIOR_MM = 1;
 /** Las capas se miden en las líneas a menos de esto (°) de la normal a la piel. */
 export const WALL_LAYER_DEG = 15;
+/**
+ * Alcance (mm) de la búsqueda de la cara de la pared de una línea del perfil en cada línea del haz (decisión 88): el
+ * relieve de las capas la mueve ±1–2 mm respecto a la profundidad de la mediana. Se toma la cara más cercana: donde dos
+ * caras vecinas se acercan (los planos, a ≥ 1,1 mm; la transversalis y el peritoneo, a ~1,8) puede ser la de al lado,
+ * que también es una línea de la pared.
+ */
+export const WALL_FACE_SEARCH_MM = 2.5;
 
 export interface BrightLines {
   /** Número de líneas distintas. */
@@ -2535,13 +2542,25 @@ function wallStatsOf(
           rL = r;
           break;
         }
+      if (rL < 0) continue;
+      // la cara de la pared más cercana en esta línea (decisión 88): el relieve de las capas la aparta ±1–2 mm de la
+      // profundidad de la mediana del perfil, y la ventana de ±0,6 mm sobre esa profundidad medía el moteado de al lado
+      let rF = -1;
+      for (let dd = 0; dd <= WALL_FACE_SEARCH_MM && rF < 0; dd += 0.05)
+        for (const r of dd === 0 ? [rL] : [rL - dd, rL + dd]) {
+          const c = scene.classify(toMaterial(pointOnLine(sim.frame, tr, theta, r)), caliber);
+          if (isWallLayerInterface(c.interface) && c.interfaceDistance < 0.1) {
+            rF = r;
+            break;
+          }
+        }
       // sin hueso en la ventana del pico ni en el eco de su cortical, que dibuja el tejido blando a menos de
       // `ribFacePriorityMm` de la costilla (decisión 62): con la pared comprimida (decisión 63) la capa hallada a
       // ~1 mm sobre una costilla era su cortical, +26 dB, y se contaba como línea de la pared saturada
-      if (rL < 0 || (boneAtLine[u] >= 0 && boneAtLine[u] < rL + 0.6 + WALL.ribFacePriorityMm)) continue;
+      if (rF < 0 || (boneAtLine[u] >= 0 && boneAtLine[u] < rF + 0.6 + WALL.ribFacePriorityMm)) continue;
       let pk = -Infinity;
       let gy = 0;
-      for (let r = rL - 0.6; r <= rL + 0.6; r += 0.05) {
+      for (let r = rF - 0.6; r <= rF + 0.6; r += 0.05) {
         pk = Math.max(pk, dB(u, r));
         gy = Math.max(gy, grayAt(u, r) || 0);
       }

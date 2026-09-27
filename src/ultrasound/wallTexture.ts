@@ -224,11 +224,12 @@ export function wallFaceGain(m: Vec3, face: Interface, t: Torso): number {
 /**
  * Eco de cara plana de una capa de la pared (`wallFaceEchoFlat` de la pasada B): el de las copias de la pared
  * que suma la serie de la pleura (decisión 61), en un bucle donde `faceGradient` no puede ir (el JIT de
- * SwiftShader). Las capas son casi paralelas a la piel: la normal y la norma del gradiente son las de la
- * profundidad radial (`torsoDepthGradient`), sin la ondulación de la capa (≤ 0,15 de pendiente: < 1 dB en el
- * lóbulo de s 0,3); sin la cortical costal ni el pericondrio (0 en cualquier otra cara). `ifd`, la distancia de
- * la cara en la muestra (`interfaceDistance`); `dir`, la dirección unitaria del camino; `warp`, la jacobiana de la
- * compresión de la sonda (decisión 63), que lleva el gradiente al mundo.
+ * SwiftShader). La normal y la norma del gradiente son las de la profundidad radial (`torsoDepthGradient`), sin el
+ * relieve de la capa (decisión 88: su pendiente de 6–9° de mediana deja el eco de cada cruce a ≤ 1,3 dB del completo;
+ * con la pendiente de la capa, tres evaluaciones de su profundidad, el bucle subía la compilación de B con SwiftShader
+ * ~3 s); sin la cortical costal ni el pericondrio (0 en cualquier otra cara). `ifd`, la distancia de la cara en la
+ * muestra (`interfaceDistance`); `dir`, la dirección unitaria del camino; `warp`, la jacobiana de la compresión de la
+ * sonda (decisión 63), que lleva el gradiente al mundo.
  */
 export function wallFaceEchoFlat(
   face: Interface,
@@ -364,19 +365,12 @@ float wallTexture(vec3 m, int tissue, vec3 dir, Warp w) {
 
 /**
  * Gemelo GLSL de `wallFaceEchoFlat` (pasada B, detrás de `INTERFACE_ECHO_GLSL`: usa uIface, interfaceProfileEcho,
- * wallFaceGain y uTorso). `torsoDepthGrad` es el gemelo de `torsoDepthGradient`.
+ * wallFaceGain y `torsoDepthGrad` de la anatomía, el gemelo de `torsoDepthGradient`).
  */
 export const WALL_FACE_ECHO_GLSL = /* glsl */ `
-vec3 torsoDepthGrad(vec3 p) {
-  float r = length(p.xy);
-  if (r < 1e-6) return vec3(0.0, 1.0, 0.0);
-  float rho = length(p.xy / uTorso.xy);
-  vec2 g = p.xy / r * (1.0 - 1.0 / rho) + r / (rho * rho * rho) * p.xy / (uTorso.xy * uTorso.xy);
-  return vec3(g, 0.0);
-}
-// Eco de cara plana de una capa de la pared: las copias de la serie de la pleura (decisión 61), en su bucle
-// y sin faceGradient; normal y norma de la profundidad radial llevadas al mundo por la compresión (w), sin
-// costillas ni pericondrio
+// Eco de cara plana de una capa de la pared: las copias de la serie de la pleura (decisión 61), en su bucle y sin
+// faceGradient; normal y norma de la profundidad radial (sin el relieve de la capa, decisión 88) llevadas al mundo por
+// la compresión (w), sin costillas ni pericondrio
 float wallFaceEchoFlat(Cls c, vec3 m, vec3 dir, Warp w) {
   if (c.iface < IF_FIRST_WALL || c.iface > IF_LAST_WALL) return 0.0;
   if (c.ifd > (uIface[c.iface].w > 0.5 ? IFACE_REACH : IFACE_SHIFT + IFACE_REACH) * IFACE_GRAD_MAX * warpBound(w)) return 0.0;

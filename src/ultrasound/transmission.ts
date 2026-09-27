@@ -5,21 +5,74 @@ import { CURTAIN_CONTIGUOUS_SEGMENTS, CURTAIN_GAS_KIND, CURTAIN_RECORD_MM } from
 import { glslFloat } from './receiver';
 
 /**
+ * Entrada en el hueso (decisión 88): lo que un rayo que cruza una costilla o una vértebra, por fina que sea la cuerda,
+ * pierde de la onda que forma la imagen. Antes eran 6 dB (la reflexión en la cara) más la absorción, 10 dB por mm a
+ * 2,5 MHz: el borde de una costilla, con 1–2 mm de cuerda, dejaba pasar −16/−26 dB de ida y vuelta, y el centro −70/−80
+ * dB, así que la pleura (+50 dB sobre el hígado) y el peritoneo seguían a la vista dentro de la sombra (el juez ciego
+ * de la ronda 4, pareja 6: «una línea brillante cruza la parte inferior de la costilla»). Lo que entra en el hueso no
+ * vuelve a formar imagen: más allá de ~27° de incidencia la onda longitudinal se refleja entera (c 3515 frente a 1588
+ * m/s), lo que entra se convierte en transversal, se absorbe y se dispersa en la esponjosa, y la cortical curva
+ * aberra el frente de onda varios ciclos. 100 dB [ESTIMADO] deja cualquier eco detrás de un hueso, también la pleura,
+ * bajo el ruido del receptor; lo que rellena la sombra en profundidad es la penumbra de la apertura (los rayos que
+ * pasan junto a la costilla, decisión 54), no el hueso.
+ */
+export const BONE_ENTRY_DB = 100;
+/**
+ * Caída de la transmisión de ida y vuelta entre dos filas de la pasada A que solo da la entrada en un hueso (15 dB). El
+ * gas cobra 6,75 dB por fila a 18 cm de profundidad y 9 a 24 cm (la de la apertura, hasta 7,9 y 10,5), la refracción y
+ * la penumbra cambian < 1 dB de una fila a la siguiente; la entrada en el hueso, 100 dB en el rayo de la línea y, en la
+ * transmisión con apertura de las líneas del borde de una costilla, que el cono rodea en parte, 20–35 dB. La pasada B no
+ * interpola a través de ella (`TRANSMISSION_LERP_GLSL`, decisión 88): lo que queda por encima del centro de la primera
+ * fila de hueso (el tejido blando delante de la costilla, con la cara de su cortical) conserva la transmisión de su fila.
+ * Interpolando, la cortical perdía hasta 10 dB según dónde cayera la costilla en la rejilla de 1,1 mm.
+ */
+export const BONE_STEP_DB = 15;
+export const BONE_STEP_RATIO = Math.pow(10, -BONE_STEP_DB / 20);
+
+/**
+ * Transmisión de la pasada A que lee la pasada B a la profundidad r (mm) en una columna de su textura (una línea):
+ * lineal entre los centros de fila, como el filtrado lineal de la textura que leía antes, salvo a través de la entrada
+ * en un hueso (`BONE_STEP_RATIO`), donde la fila de arriba llega sin mezclar hasta el centro de la de abajo (decisión
+ * 88). `row(k)` es el valor de la fila k de las `n` (fila k centrada en (k + ½)·profundidad/n). Gemelo de `transLerp`
+ * (`TRANSMISSION_LERP_GLSL`).
+ */
+export function transmissionLerp(row: (k: number) => number, n: number, depthMm: number, r: number): number {
+  const x = Math.min(n - 1, Math.max(0, (r / depthMm) * n - 0.5));
+  const k = Math.min(n - 2, Math.floor(x));
+  const a = row(k);
+  const b = row(k + 1);
+  return b < a * BONE_STEP_RATIO ? a : a + (b - a) * (x - k);
+}
+
+/**
+ * `transmissionLerp` en GLSL para la pasada B (necesita uDepth): el canal `ch` de la textura `t` de la pasada A en la
+ * columna `line` a la profundidad r.
+ */
+export const TRANSMISSION_LERP_GLSL = /* glsl */ `
+float transLerp(sampler2D t, int ch, int line, float r) {
+  int n = textureSize(t, 0).y;
+  float x = clamp(r / uDepth * float(n) - 0.5, 0.0, float(n - 1));
+  int k = min(int(x), n - 2);
+  float a = texelFetch(t, ivec2(line, k), 0)[ch];
+  float b = texelFetch(t, ivec2(line, k + 1), 0)[ch];
+  return b < a * ${glslFloat(BONE_STEP_RATIO)} ? a : a + (b - a) * (x - float(k));
+}
+`;
+export const GAS_DB_PER_CM = 60;
+/** Pérdida del espejo diafragmático (dB ida y vuelta): la del segmento del espejo en A1. */
+export const MIRROR_DB = 0.5;
+
+/**
  * Regla de atenuación ida y vuelta a lo largo de un rayo, la MISMA que aplica la
  * pasada A en GLSL (`FRAG_TRANSMISSION`): el gel previo a la piel no atenúa; el gas
- * atenúa 60 dB/cm y no suma absorción; el hueso cobra 6 dB una sola vez al entrar
- * (reflexión en la interfaz) más su absorción por paso; el resto, 2·α(f)·paso.
+ * atenúa 60 dB/cm y no suma absorción; el hueso cobra `BONE_ENTRY_DB` una sola vez al entrar
+ * más su absorción por paso; el resto, 2·α(f)·paso.
  * La usan la puerta PW (transmisión hasta la muestra) y sus pruebas; el shader la
  * reproduce. Única diferencia deliberada: la pasada A refleja el rayo en el primer
  * pulmón del tórax (espejo diafragmático, en el cruce exacto: `mirrorCrossing`) y sigue; la puerta
  * PW no sigue rayos reflejados. El pulmón de la cortina (decisión 61) no refleja: el rayo sigue recto
  * y paga su gas, como aquí.
  */
-export const BONE_ENTRY_DB = 6;
-export const GAS_DB_PER_CM = 60;
-/** Pérdida del espejo diafragmático (dB ida y vuelta): la del segmento del espejo en A1. */
-export const MIRROR_DB = 0.5;
-
 export function rayAttenuationDb(tissues: Iterable<Tissue>, stepMm: number, fMHz: number): number {
   let db = 0;
   let entered = false;

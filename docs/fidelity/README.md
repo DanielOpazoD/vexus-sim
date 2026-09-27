@@ -591,7 +591,8 @@ escena y resume en una línea «pared: …»:
 - **Nivel de las líneas** (capturas con GPU, 25-09-2026: con las caras de σz 0,05 las fascias y el peritoneo
   eran líneas blancas, uniformes y saturadas, tan brillantes como la pleura y la cortical). En cada línea de la
   pared hallada en el perfil (0,5 mm → peritoneo − 1 mm) y cada línea del haz a < 25° de la normal a la piel,
-  el pico de la envolvente compensada a ±0,6 mm de la profundidad de esa capa (sin hueso delante):
+  el pico de la envolvente compensada a ±0,6 mm de esa capa (desde la decisión 88, de la cara de la pared más cercana a
+  ±2,5 mm de su profundidad en el perfil: el relieve aparta las caras de la mediana; sin hueso delante):
   `lineLevelDb`, su mediana sobre el hígado; `lineSaturated`, la fracción de esos picos con gris ≥ 250 en la
   imagen; y `lineCv`, la mediana por línea de la pared del coeficiente de variación del pico (lineal) a lo
   largo de ella (con ≥ 5 líneas del haz).
@@ -686,6 +687,55 @@ es el de la atenuación (1,92 dB por cm de sangre). Bajo la VCI de la subxifoide
 (congestión grave) de delante a detrás, pero la banda del foco, que la TGC nominal no compensa, le quita 1,8–2,2 dB entre
 87–93 y 120–124 mm: el gris sube 2 y 9 niveles. En el flanco la VCI apoya en la grasa retroperitoneal y por encima de la
 cúpula, en el pulmón.
+
+### Costillas y relieve de la pared (decisión 88): oclusión, sombras y qué cambia en el banco
+
+Medido con GPU (M4, Metal, armónica y compuesto, apnea espiratoria; `main` 281945d → la rama rebasada) sobre la rejilla
+del plano (línea × 0,18 mm: el tejido y la cara de la CPU en el marco y el contacto de la captura, la envolvente compuesta
+y el gris mostrado, `scratchpad/rib/occl.mts`, `shadow.mts` y `faces.mts`). La escena de la pareja 6 de la ronda 4 es el
+flanco con la sonda 12 mm más craneal; la real de esa pareja no tiene costillas, así que su recorte solo sirve para la
+pared.
+
+| Medida                                                                                | `main`                             | Rama                           |
+| ------------------------------------------------------------------------------------- | ---------------------------------- | ------------------------------ |
+| Bajo cada costilla (de su cara posterior a 4 mm más abajo), mediana, dB del hígado    | −26,7 / −25,4 / −7,4 (gris 5/7/47) | −42,8 / −44,8 / −43,7 (gris 0) |
+| Ídem, máximo en las líneas a ≥ 1,1 mm del borde de la costilla                        | +7,1 / −0,2 / +28,0 dB             | −9,2 / −9,1 / +11,4 dB         |
+| Dentro del hueso, desde 1 mm bajo su cara anterior (el «disco»)                       | −9/−12 dB, gris 27–36              | −36/−45 dB, gris 0             |
+| Cortical (1,5 mm sobre la cara anterior), mediana por costilla                        | +28,6–35,4 dB                      | +31,3–37,7 dB                  |
+| Sombra negra (gris ≤ 12) de la costilla central a 28 / 40 mm (hueso a 24 mm)          | 11,4 / 11,1 mm (14,0)              | 10,9 / 9,9 mm (13,0)           |
+| Ídem, la derecha a 28 / 40 / 52 mm, y dónde se cierra                                 | 10,3 / 8,0 / 6,2 mm, ~62 (14,0)    | 8,7 / 6,8 / 3,5 mm, ~54 (11,4) |
+| σ de la profundidad de la fascia profunda / del plano oblicuo en las líneas sin hueso | 0,25 / 0,36 mm                     | 0,90 / 0,97 mm                 |
+| CV de la separación entre caras vecinas (flanco con dz +12 / intercostal)             | 0,02–0,09 / 0,08–0,24              | 0,05–0,21 / 0,10–0,26          |
+
+El banco de ondas 2D de una costilla opaca (`scratchpad/rib/ribwave.mts`, la emisión y la recepción del modo B) da bajo
+ella un núcleo a < −20 dB de ±3,5–4 mm a 29–40 mm y de ±2,5 mm a 60–100 mm, y −14 dB a 1 mm dentro del borde, 1,2 mm bajo
+la costilla: la sombra más estrecha que la costilla y cada vez más, y la línea de la pleura que entra 1–2 mm por su borde,
+son físicas. En la rama, +34 dB en la línea del borde y 25 → 11 → −7 → −28 dB a 0,5 / 1,1 / 1,6 / 2,2 mm de él: el cono de
+la apertura con el tope especular del rayo central apaga el borde algo más deprisa que la onda.
+
+Banco (`npm run fidelity`, las ocho escenas; `main` 281945d → rama):
+
+- **W7** mide ahora el pico de cada línea de la pared en la cara de la pared más cercana a ±2,5 mm de la profundidad del
+  perfil (`WALL_FACE_SEARCH_MM`), a ±0,6 mm de ella: con la ventana sobre la profundidad de la mediana, el relieve (y ya
+  las ondas de antes, ±1,2 mm) dejaba la ventana en el moteado de al lado. Con la definición nueva `main` da +9,0–13,1 dB
+  y la rama +8,3–13,0, sin picos saturados (CV 0,61–1,00); con la de antes, `main` da 0,9 dB en la intercostal de la
+  congestión grave y 4,4 en su flanco.
+- **W1**: 5 / 5 / 5 / 6 / 5 / 7 / 6 / 6 → 3 / 5 / 5 / 5 / 3 / 7 / 6 / 4 líneas dentro (sano: subxifoidea, intercostal,
+  flanco, renal; después la congestión grave). La meta (≥ 3) se cumple; la subxifoidea queda en el borde: la mediana
+  lateral de 17 líneas emborrona las caras que ondulan (que W7 encuentra a +8,3–13,0 dB).
+- **W4**: la cortical del flanco +23,3 → +23,6 dB (76 → 70 líneas) y +21,6 → +24,0 en la congestión grave.
+- **G7** (1,5–8 mm): 0,85 / 0,59 → 7,49 / 7,40 mm en los flancos. La umbra de la mirada 0 acaba a 28,8 mm tras la cara
+  del hueso (antes 24,8: la cuerda fina del borde la rellenaba) y la del compuesto a 21,3 (antes 24,0).
+- **W5**: hígado p50 igual (±1 gris); SNR de la envolvente ±0,004 salvo la subxifoidea (1,980 → 2,017, el relieve) y el
+  flanco (1,984 → 1,944: las secciones nuevas de las costillas cambian qué parches son hígado puro).
+- **Músculo de la intercostal**: 62 → 52 de gris (−3,6 dB; 65 → 55 en la congestión grave): los planos de elevación del
+  haz entran en el borde de las costillas 8.ª y 9.ª, que ya no dan moteado, y la 8.ª es 0,4 mm más alta (con la sección
+  de antes y el hueso a 0,9, 59; medido sobre `main` d49aa52).
+- **W6** (sobre `main` d49aa52, con `scratchpad/gb/cost.mts`: `main` y la rama alternadas, 4–6 rondas, mediana; el
+  `msPerFrame` del banco varía ±2 ms entre corridas con la máquina cargada): la pasada B +0,7 ms en la intercostal y +0,3
+  en el flanco; el cuadro de la mirada 0, +0,5 y +0,3 ms; con el compuesto, +1,1 y +0,4 ms. La meta (≤ +0,6 ms) se
+  cumple salvo con el compuesto en la intercostal, donde la pared ocupa todo el campo cercano. Casi todo es el relieve:
+  con sus funciones a cero, la pasada B queda 0,1–0,3 ms bajo `main`.
 
 ### Textura del parénquima y ruido del receptor (decisión 89): estadística frente a la literatura y a los paneles reales
 

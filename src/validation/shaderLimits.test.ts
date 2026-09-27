@@ -293,13 +293,20 @@ describe('Límites del shader con margen para crecer', () => {
   // enfocado cuyos rayos desvían las luces). Sin luces cerca, la ganancia es 1 exacto y la dirección, la de antes.
   // Cambio deliberado de B (decisión 89, ca057917ce3a1b32 → 4235cc350e2f0fe9): el ruido del receptor sale de su main (lo
   // generan C y D por línea, tras la PSF lateral) y sus comentarios lo dicen; el resto del main hace las mismas cuentas.
+  // Cambio deliberado de A2, A y B (decisión 88: 76fe4b3e1120d986 → 012de03287743344, ca285e5d0b7eddf8 →
+  // b74ad63b06607c12 y 4235cc350e2f0fe9 → 216992881d08e42d): A2 cobra la entrada en el hueso con `BONE_ENTRY_DB` (antes
+  // un 6.0 escrito a mano) y lleva en o1.z lo que cobra el hueso; A publica en o2.z la fracción del haz que sobrevive a
+  // los huesos (la de la apertura sin la refracción, sobre el rayo sin hueso en dB; la lee D para el pedestal); B lee la
+  // transmisión con `transLerp` (sin mezclar a través de la entrada en un hueso) y multiplica los ecos especulares por
+  // la del rayo central y el moteado por la de la apertura. Lejos de todo hueso las cuentas son las de antes (la
+  // interpolación manual es la de la textura).
   it('el main de los programas de la mirada 0 es, letra a letra, el de antes de la composición', () => {
     const mainOf = (src: string): string => src.slice(src.lastIndexOf('\nvoid main() {'));
     const print = (src: string): string => createHash('sha256').update(mainOf(src)).digest('hex').slice(0, 16);
     expect(Object.fromEntries(LOOK_PAIRS.map((p) => [p.name, print(p.look0)]))).toEqual({
-      FRAG_TRANS_PREFIX: '76fe4b3e1120d986',
-      FRAG_TRANSMISSION: 'ca285e5d0b7eddf8',
-      FRAG_RAWFIELD: '4235cc350e2f0fe9',
+      FRAG_TRANS_PREFIX: '012de03287743344',
+      FRAG_TRANSMISSION: 'b74ad63b06607c12',
+      FRAG_RAWFIELD: '216992881d08e42d',
     });
     // y el resto de B es el mismo texto en los dos programas: solo cambian sus entradas y su main
     const inputs0 = 'uniform sampler2D uTrans0;\nuniform sampler2D uTrans1;\n';

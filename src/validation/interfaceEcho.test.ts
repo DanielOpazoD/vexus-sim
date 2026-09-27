@@ -18,8 +18,10 @@ import { CONVEX_BEAM, axialSigmaMm, lateralSigmaMm } from '../ultrasound/beamMod
 import { bmodeBeam, CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import { RETRO_FAT, quadratusSdf, retroFatSdf } from '../anatomy/organs/retroperitoneum';
 import { sdDiaphragm } from '../anatomy/primitives';
-import { DIAPHRAGM_THICKNESS_MM } from '../anatomy/tissues';
+import { DIAPHRAGM_THICKNESS_MM, TISSUES } from '../anatomy/tissues';
 import {
+  BONE_CRITICAL_SIN,
+  BONE_IMPEDANCE_RATIO,
   FACET,
   IFACE_BETA,
   IFACE_K_DB,
@@ -34,6 +36,7 @@ import {
   VALUE_NOISE_SD,
   WALL_ACROSS_MM,
   addInterfaceEcho,
+  boneDiffuseWindow,
   curvatureCoherence,
   diffuseEchoField,
   faceProfile,
@@ -341,7 +344,9 @@ describe('Uniforms y GLSL del eco de interfaz', () => {
     expect(FRAG_LATERAL).toContain(LATERAL_PSF_GLSL);
     // la muestra de la imagen (decisión 61: `mediumField`, una vez y fuera de bucles)
     expect(FRAG_RAWFIELD).toContain('vec2 e = interfaceEcho(c, m, dir, r, se, w);');
-    expect(FRAG_RAWFIELD).toContain('return field * (1.0 + e.y / max(length(field), 1e-6)) + vec2(e.x, 0.0);');
+    // la especular va aparte (decisión 88): la pasada B la multiplica por la transmisión del rayo central
+    expect(FRAG_RAWFIELD).toContain('spec = e.x;');
+    expect(FRAG_RAWFIELD).toContain('return field * (1.0 + e.y / max(length(field), 1e-6));');
     expect(FRAG_RAWFIELD).not.toMatch(/uSpecGain|pow\(cosI, 4\.0\)/);
     // β se midió con estas pasadas C y D: si cambian, hay que re-derivarlo (interfaceTwin.test.ts). El pedestal de
     // lóbulos laterales de la decisión 76 lleva una fase antisimétrica: sobre un reflector continuo sus pares ±k se
@@ -542,6 +547,38 @@ describe('Facetas y componente difusa de las caras (decisión 65)', () => {
     expect(addInterfaceEcho([0, 0], 2, 1.5)).toEqual([2, 0]);
   });
 
+  it('decisión 88: la difusa de la cortical costal cae con la transmisión de la onda longitudinal y se apaga en el ángulo crítico', () => {
+    // el ángulo crítico músculo → hueso de TISSUES: 26,9°
+    expect((Math.asin(BONE_CRITICAL_SIN) * 180) / Math.PI).toBeCloseTo(26.9, 1);
+    const cos = (deg: number) => Math.cos((deg * Math.PI) / 180);
+    const shift = IFACE_SHIFT_MM;
+    const rib = (deg: number) => diffuseEchoField(Interface.RibCortex, cos(deg), shift, K0);
+    // la transmisión de energía de dos fluidos con las impedancias de TISSUES, T_E(θ)/T_E(0), sobre Lambert: de frente,
+    // 1; a 20°, −2 dB; a 26°, −8,6 dB; desde el ángulo crítico, nada
+    const tE = (deg: number): number => {
+      const z1 = TISSUES[Tissue.Muscle].c * TISSUES[Tissue.Muscle].rho;
+      const z2 = TISSUES[Tissue.Bone].c * TISSUES[Tissue.Bone].rho;
+      const st = Math.sin((deg * Math.PI) / 180) / BONE_CRITICAL_SIN;
+      if (st >= 1) return 0;
+      const ct = Math.sqrt(1 - st * st);
+      return (4 * z1 * z2 * cos(deg) * ct) / (z2 * cos(deg) + z1 * ct) ** 2;
+    };
+    expect(boneDiffuseWindow(Interface.RibCortex, 1)).toBe(1);
+    for (const deg of [10, 20, 25, 26, 26.8])
+      expect(boneDiffuseWindow(Interface.RibCortex, cos(deg)), `${deg}°`).toBeCloseTo(tE(deg) / tE(0), 9);
+    expect(db(rib(20) / (cos(20) * rib(0)))).toBeCloseTo(-2.04, 1);
+    expect(db(rib(26) / (cos(26) * rib(0)))).toBeLessThan(-8);
+    for (const deg of [27, 40, 60, 80]) expect(rib(deg), `${deg}°`).toBe(0);
+    // con Lambert solo seguía a más de la mitad de su valor de frente a 60°: dibujaba el contorno de la costilla
+    expect(cos(60) * rib(0)).toBeGreaterThan(0.45 * rib(0));
+    // el resto de caras no cambia, tampoco el pericondrio (el cartílago transmite)
+    for (const id of [Interface.DeepFascia, Interface.Perichondrium, Interface.LiverCapsule])
+      expect(diffuseEchoField(id, cos(60), INTERFACES[id].twoSided ? 0 : shift, K0), Interface[id]).toBeCloseTo(
+        0.5 * diffuseEchoField(id, 1, INTERFACES[id].twoSided ? 0 : shift, K0),
+        9,
+      );
+  });
+
   it('la cara interna de la pared con grasa detrás (grasa con grasa) baja a una fascia; contra un órgano o fuera, no', () => {
     // la pared posterolateral de la ventana renal: dentro del compartimento, lejos de la cúpula y del cuadrado lumbar
     const scene = new AnatomyScene(NORMAL_ADULT);
@@ -593,8 +630,13 @@ describe('Facetas y componente difusa de las caras (decisión 65)', () => {
     // σ_t = max(tan 5°, ρ·s) con s² = 1/(4·P.z): la inclinación y el lóbulo propio de la faceta
     expect(echo).toContain('vec3 t = facetTilt(m, c.iface, sqrt(max(FACET_TILT2, 0.25 * FACET_RHO2 / P.z)));');
     expect(echo).toContain(
-      'return vec2(faceEcho(c.iface, cosF, min(1.0 - 4.0 * FACET_TILT2 * P.z, 1.0 - FACET_RHO2), 1.0, curv, g), IFACE_DIFFUSE * P.x * inversesqrt(P.z) * sqrt(max(0.0, 1.0 - exp(-P.y * P.y))) * cosI * g);',
+      'return vec2(faceEcho(c.iface, cosF, min(1.0 - 4.0 * FACET_TILT2 * P.z, 1.0 - FACET_RHO2), 1.0, curv, g), IFACE_DIFFUSE * P.x * inversesqrt(P.z) * sqrt(max(0.0, 1.0 - exp(-P.y * P.y))) * cosI * wd * g);',
     );
+    // la ventana del ángulo crítico de la cortical costal (decisión 88): la de `boneDiffuseWindow`
+    expect(echo).toContain(`#define BONE_CRITICAL_SIN2 ${(BONE_CRITICAL_SIN * BONE_CRITICAL_SIN).toFixed(8)}`);
+    expect(echo).toContain(`#define BONE_Z_RATIO ${BONE_IMPEDANCE_RATIO.toFixed(8)}`);
+    expect(echo).toContain('float ctw = sqrt(max(0.0, 1.0 - (1.0 - cosI * cosI) / BONE_CRITICAL_SIN2));');
+    expect(echo).toContain('float wd = c.iface == IF_RIB ? cosI * ctw * (1.0 + BONE_Z_RATIO) * (1.0 + BONE_Z_RATIO) / (zw * zw) : 1.0;');
     expect(echo).toContain(
       'return cosL < IFACE_MIN_COS ? 0.0 : P.x * inversesqrt(kf) * exp(-(1.0 - c2) / c2 * P.z / kf) / c2 * exp(-0.5 * x * x) * curv * g * (0.39894228 / IFACE_SIGMA_H);',
     );
@@ -605,9 +647,12 @@ describe('Facetas y componente difusa de las caras (decisión 65)', () => {
     expect(echo).toContain(
       'if (c.iface == IF_PERITONEUM && retroFatSdf(m) < 0.0 && liverSdf(m, dB) > IFACE_ACROSS && domeSd(m) > DIAPHRAGM_MM + IFACE_ACROSS && quadratusSdf(m, 0.0, 1e3) > 0.0) gain *= IFACE_RETRO_PERITONEUM;',
     );
-    // la mirada 0 (mediumField) y las dirigidas (mediumFieldPh) suman igual; las pleuras y las copias de la pared, no
-    for (const src of [PLEURA_GLSL, FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED])
-      expect(src).toContain('return field * (1.0 + e.y / max(length(field), 1e-6)) + vec2(e.x, 0.0);');
+    // la mirada 0 (mediumField) y las dirigidas (mediumFieldPh) suman igual, con la especular aparte (decisión 88); las
+    // pleuras y las copias de la pared, no
+    for (const src of [PLEURA_GLSL, FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED]) {
+      expect(src).toContain('spec = e.x;');
+      expect(src).toContain('return field * (1.0 + e.y / max(length(field), 1e-6));');
+    }
     // el programa dirigido lleva las dos (mediumField del preludio y mediumFieldPh de su rama), la mirada 0 una
     expect(FRAG_RAWFIELD_STEERED.split('vec2 e = interfaceEcho(c, m, dir, r, se, w);').length - 1).toBe(2);
     expect(FRAG_RAWFIELD.split('vec2 e = interfaceEcho(c, m, dir, r, se, w);').length - 1).toBe(1);

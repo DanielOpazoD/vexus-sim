@@ -26,7 +26,18 @@ export interface OrganModule {
 }
 
 export const ORGAN_MODULES: readonly OrganModule[] = [
-  { id: 'wall', exports: wall, glsl: wall.WALL_GLSL },
+  {
+    id: 'wall',
+    exports: wall,
+    glsl: wall.WALL_GLSL,
+    // el relieve de las caras (decisión 88): una función GLSL por cara, generada de las tablas de sus términos
+    gpuOnly: Object.fromEntries<string>([
+      ...[0, 1, 2, 3, 4].map((k): [string, string] => [`wallWave${k}`, `wallWave(u, z, ${k}, t) de TS, generada de WALL_WAVE_TERMS[${k}]`]),
+      ...[0, 1, 2, 3].map((k): [string, string] => [`wallSwell${k}`, `wallSwell(u, z, ${k}, t) de TS, generada de WALL_SWELL_TERMS[${k}]`]),
+      // el gradiente de la profundidad del tronco, que usan wallFaceGradient y el eco de las copias de la pared
+      ['torsoDepthGrad', 'torsoDepthGradient de anatomy/primitives'],
+    ]),
+  },
   {
     id: 'kidney',
     exports: kidney,

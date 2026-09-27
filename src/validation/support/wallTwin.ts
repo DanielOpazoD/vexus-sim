@@ -6,8 +6,9 @@
  *    hueso +6 dB al entrar, el gel antes de la piel sin pérdidas) y su interpolación lineal en amplitud entre
  *    los centros de fila (la textura de la GPU). Sin la penumbra de la apertura ni el espejo: en la pared no
  *    hay espejo, y la penumbra solo cambia lo que hay detrás de una costilla;
- *  - B: el medio anclado de tres planos (`speckleSliceField`), la retrodispersión de `TISSUES`, la
- *    heterogeneidad, los grumos, la textura de la pared (`wallTexture`, con la dirección de la línea), la del «resto»
+ *  - B: el medio anclado de tres planos (`speckleSliceField`, con los dispersores fuertes del tejido), la retrodispersión
+ *    de `TISSUES`, la heterogeneidad, la densidad de dispersores y las tríadas del hígado con el haz de la línea (decisión
+ *    89), los grumos, la textura de la pared (`wallTexture`, con la dirección de la línea), la del «resto»
  *    (`restTexture`) y la de los músculos retroperitoneales (`retroTexture`, decisión 81) y el eco
  *    de interfaz (la especular de la faceta, `facetEchoField`, con `faceGradient`, el campo de inclinación anclado y la
  *    coherencia de curvatura de tubos y costillas, y la difusa sobre el fasor del moteado: decisión 65), y el
@@ -48,9 +49,11 @@ import { TRANSIENT_AMPLITUDE, TRANSIENT_DECAY_MM, TRANSIENT_SKIP_MM } from '../.
 import {
   TISSUE_SALT_STEP,
   anchoredClumpGain,
+  densityGain,
   heterogeneityDb,
   scattererField,
   speckleSliceField,
+  strongScatter,
   type SpeckleAnchorState,
 } from '../../ultrasound/speckleField';
 import { BONE_ENTRY_DB, GAS_DB_PER_CM } from '../../ultrasound/transmission';
@@ -261,14 +264,15 @@ export function wallTwin(
       const se = elevSigmaMm(r, g);
       const c0 = classifyModel(scene, caliber, p, o.model);
       const fieldFor = (m: Vec3, tissue: Tissue): [number, number] => {
-        const f = speckleSliceField(m, g.latticeMm, se, seedF + tissue * TISSUE_SALT_STEP, st);
+        // con los dispersores fuertes del tejido (decisión 89): nodos de la misma retícula
+        const f = speckleSliceField(m, g.latticeMm, se, seedF + tissue * TISSUE_SALT_STEP, st, strongScatter(tissue));
         let gain = back(tissue);
         if (HET_TISSUES.has(tissue)) gain *= Math.pow(10, heterogeneityDb(m, seedF) / 20);
         const beam = normalize(m.map((x, k) => x - frame.center[k]) as Vec3);
         if (o.model === 'wall' && !o.noTexture && (tissue === Tissue.Fat || tissue === Tissue.Muscle))
           gain *= wallTexture(m, tissue, beam, scene.torso);
         if (tissue === Tissue.Bowel) gain *= restTexture(m, seedF);
-        if (tissue === Tissue.Liver) gain *= portalTriadGain(m);
+        if (tissue === Tissue.Liver) gain *= portalTriadGain(m, beam);
         gain *= retroTexture(m, tissue, beam);
         return [f[0] * gain, f[1] * gain];
       };
@@ -290,6 +294,10 @@ export function wallTwin(
         fr *= k;
         fi *= k;
       }
+      // densidad de dispersores del plano central (decisión 89), como mediumField: 1 fuera del hígado
+      const dg = densityGain(p, seedF, c0.tissue);
+      fr *= dg;
+      fi *= dg;
       if (!o.noFaces?.includes(c0.interface)) {
         const [spec, diff] = echoOf(scene, caliber, c0, p, dir, r, se, frame, g, o.noFacets ?? false);
         [fr, fi] = addInterfaceEcho([fr, fi], spec, diff);

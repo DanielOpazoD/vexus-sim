@@ -370,10 +370,12 @@ describe('fase de mirada por nodo (decisión 58)', () => {
   });
 
   it('el GLSL de la mirada lleva la misma fórmula que el gemelo', () => {
-    expect(SPECKLE_LOOK_GLSL).toContain('float p = 6.2831853 * b + ph;');
     expect(SPECKLE_LOOK_GLSL).toContain('float base = ph0 - dot(gh, fr);');
-    expect(SPECKLE_LOOK_GLSL).toContain('vec2 v111 = latticeValuePh(c0 + vec3(1, 1, 1), salt, base + gh.x + gh.y + gh.z);');
-    expect(SPECKLE_LOOK_GLSL).toContain('return scattererFieldPh(q, h, salt, ph0, g - e * dot(g, e));');
-    expect(SPECKLE_LOOK_GLSL).toContain('uSeed + salt + uAnchorSalt.y, uAnchorE1, uAnchorP1, ph0, g');
+    expect(SPECKLE_LOOK_GLSL).toContain('vec2 v111 = latticeValuePh(c0 + vec3(1, 1, 1), salt, base + gh.x + gh.y + gh.z, s);');
+    expect(SPECKLE_LOOK_GLSL).toContain('return scattererFieldPh(q, h, salt, ph0, g - e * dot(g, e), s);');
+    expect(SPECKLE_LOOK_GLSL).toContain('uSeed + salt + uAnchorSalt.y, uAnchorE1, uAnchorP1, ph0, g, s');
+    // los nodos fuertes de la mirada son los de la mirada 0 (decisión 89): la misma elección y el mismo reparto de la fase
+    expect(SPECKLE_LOOK_GLSL).toContain('bool strong = b >= 1.0 - s.x;');
+    expect(SPECKLE_LOOK_GLSL).toContain('float p = 6.2831853 * (strong ? (b - (1.0 - s.x)) / s.x : b / (1.0 - s.x)) + ph;');
   });
 });

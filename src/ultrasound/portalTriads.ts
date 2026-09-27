@@ -25,6 +25,14 @@ import type { Vec3 } from '../core/vec3';
  * [ESTIMADO: densidad, tamaño y brillo, calibrados con capturas de GPU frente a las referencias reales de la revisión
  * (el hígado del Toshiba Aplio y el de Morison: 0,2–0,3 focos por cm²) y con la pared periportal de los tubos
  * (retrodispersión 2,6).] Gemelos: `portalTriadGain` (TS: el gemelo de la pared) y `PORTAL_TRIADS_GLSL` (pasada B).
+ *
+ * Eco de la vaina (decisión 89; la ronda 4 del juez las vio como «elipses lisas sin moteado dentro, todas del mismo
+ * brillo»): el brillo de cada tríada tiene cola (muchas tenues y pocas brillantes: la ganancia va con el cuadrado de su
+ * número) y es en parte especular: la vaina es un cilindro fibroso, que refleja hacia la sonda cuando el haz
+ * le llega de través y apenas cuando lo recorre a lo largo, así que su exceso de brillo (G − 1) va por
+ * ε + (1 − ε)·(1 − (d·b)²)², la ley |cos θ|⁴ de las láminas de la pared (decisión 62) con θ entre el haz b y la normal
+ * de la vaina más alineada con él [EXTRAPOLACIÓN PROPIA]. La vaina sigue multiplicando el moteado del hígado (y sus
+ * dispersores fuertes): su eco está modulado por el moteado.
  */
 export const PORTAL_TRIADS = {
   /** Célula (mm): una tríada como mucho por célula. */
@@ -37,8 +45,13 @@ export const PORTAL_TRIADS = {
   radiusMm: [0.5, 1.2] as const,
   /** Radio de la luz sobre el de la vaina (0: tríada maciza; una luz por debajo de `edgeMm` no se dibuja). */
   lumenFraction: [0, 0.6] as const,
-  /** Amplitud de retrodispersión de la vaina (de una tríada a otra, entre estos dos) sobre la del hígado. */
-  sheathGain: [4, 9] as const,
+  /**
+   * Amplitud de retrodispersión de la vaina de través (de una tríada a otra, entre estos dos) sobre la del hígado,
+   * repartida con el cuadrado del número de la tríada (la mediana a un cuarto del intervalo): `sheathGainAt`.
+   */
+  sheathGain: [3, 10] as const,
+  /** Fracción del exceso de brillo de la vaina que queda cuando el haz la recorre a lo largo (ε de la ley |cos θ|⁴). */
+  specularFloor: 0.35,
   /** Amplitud de la luz (sangre) sobre la del hígado. */
   lumenGain: 0.05,
   /** Peso del giro aleatorio de la dirección frente a la radial desde el hilio. */
@@ -101,7 +114,22 @@ export interface Triad {
   radius: number;
   /** Radio de la luz (mm): 0 si la tríada es maciza o su luz no llega a `edgeMm`. */
   lumen: number;
+  /** Ganancia de la vaina con el haz de través (la máxima). */
   gain: number;
+}
+
+/**
+ * Haz con que la consulta de las tríadas (`FRAG_TRIAD_QUERY`, la e2e de paridad) evalúa su brillo: una dirección
+ * cualquiera, fija, que no es un eje (las tríadas se ven en todas sus orientaciones).
+ */
+export const TRIAD_QUERY_BEAM: Vec3 = [0.3, -0.4, -0.8660254];
+
+/** Ganancia de la vaina con el haz b (unitario): 1 + (G − 1)·(ε + (1 − ε)·(1 − (d·b)²)²). */
+export function sheathGainAt(t: Triad, b: Vec3): number {
+  const c = t.dir[0] * b[0] + t.dir[1] * b[1] + t.dir[2] * b[2];
+  const s2 = 1 - c * c;
+  const eps = PORTAL_TRIADS.specularFloor;
+  return 1 + (t.gain - 1) * (eps + (1 - eps) * s2 * s2);
 }
 
 /**
@@ -117,7 +145,8 @@ export function triadOfCell(c: Vec3): Triad | null {
   const halfLength = mix(P.halfLengthMm[0], P.halfLengthMm[1], r[4]);
   const radius = mix(P.radiusMm[0], P.radiusMm[1], r[5]);
   const lumenRaw = radius * mix(P.lumenFraction[0], P.lumenFraction[1], r[6]);
-  const gain = mix(P.sheathGain[0], P.sheathGain[1], r[7]);
+  // el cuadrado del número (la cola), en float32 como la GPU: r·r exacto, no pow (exp2·log2 en muchas GPU)
+  const gain = mix(P.sheathGain[0], P.sheathGain[1], r[7] * r[7]);
   const rad = [center[0] - P.hilum[0], center[1] - P.hilum[1], center[2] - P.hilum[2]];
   const rl = Math.hypot(rad[0], rad[1], rad[2]) || 1;
   const j = [r[8] * 2 - 1, r[9] * 2 - 1, r[10] * 2 - 1];
@@ -127,12 +156,12 @@ export function triadOfCell(c: Vec3): Triad | null {
 }
 
 /**
- * Factor de la amplitud de retrodispersión del hígado en el punto material m: la ganancia de su vaina en la vaina de una
- * tríada, `lumenGain` en su luz y 1 fuera, con bordes suaves; donde dos se tocan, la vaina más brillante y la luz
- * (sangre) por encima de cualquier vaina. `cells` = 1 recorre las 8 células vecinas (lo que hace la GPU); con 2 (las
- * 64), la prueba de que bastan las 8.
+ * Factor de la amplitud de retrodispersión del hígado en el punto material m con el haz b: la ganancia de su vaina en la
+ * vaina de una tríada (`sheathGainAt`), `lumenGain` en su luz y 1 fuera, con bordes suaves; donde dos se tocan, la vaina
+ * más brillante y la luz (sangre) por encima de cualquier vaina. `cells` = 1 recorre las 8 células vecinas (lo que hace
+ * la GPU); con 2 (las 64), la prueba de que bastan las 8.
  */
-export function portalTriadGain(m: Vec3, cells: 1 | 2 = 1): number {
+export function portalTriadGain(m: Vec3, b: Vec3 = TRIAD_QUERY_BEAM, cells: 1 | 2 = 1): number {
   const P = PORTAL_TRIADS;
   const C = P.cellMm;
   const base = [Math.floor(m[0] / C - 0.5), Math.floor(m[1] / C - 0.5), Math.floor(m[2] / C - 0.5)];
@@ -149,7 +178,7 @@ export function portalTriadGain(m: Vec3, cells: 1 | 2 = 1): number {
         const s = Math.min(t.halfLength, Math.max(-t.halfLength, v[0] * t.dir[0] + v[1] * t.dir[1] + v[2] * t.dir[2]));
         const dist = Math.hypot(v[0] - t.dir[0] * s, v[1] - t.dir[1] * s, v[2] - t.dir[2] * s);
         if (dist > t.radius + P.edgeMm) continue;
-        sheath = Math.max(sheath, 1 + (t.gain - 1) * (1 - smooth(t.radius - P.edgeMm, t.radius + P.edgeMm, dist)));
+        sheath = Math.max(sheath, 1 + (sheathGainAt(t, b) - 1) * (1 - smooth(t.radius - P.edgeMm, t.radius + P.edgeMm, dist)));
         if (t.lumen > 0) lumen = Math.max(lumen, 1 - smooth(t.lumen - P.edgeMm, t.lumen + P.edgeMm, dist));
       }
   return sheath + (P.lumenGain - sheath) * lumen;
@@ -166,6 +195,7 @@ const vec2 TRIAD_HALF_LEN = vec2(${f4(PORTAL_TRIADS.halfLengthMm[0])}, ${f4(PORT
 const vec2 TRIAD_RADIUS = vec2(${f4(PORTAL_TRIADS.radiusMm[0])}, ${f4(PORTAL_TRIADS.radiusMm[1])});
 const vec2 TRIAD_LUMEN = vec2(${f4(PORTAL_TRIADS.lumenFraction[0])}, ${f4(PORTAL_TRIADS.lumenFraction[1])});
 const vec2 TRIAD_GAIN = vec2(${f4(PORTAL_TRIADS.sheathGain[0])}, ${f4(PORTAL_TRIADS.sheathGain[1])});
+const float TRIAD_SPEC_FLOOR = ${f4(PORTAL_TRIADS.specularFloor)};
 const float TRIAD_LUMEN_GAIN = ${f4(PORTAL_TRIADS.lumenGain)};
 const float TRIAD_JITTER = ${f4(PORTAL_TRIADS.directionJitter)};
 const vec3 TRIAD_HILUM = vec3(${PORTAL_TRIADS.hilum.map(f4).join(', ')});
@@ -180,7 +210,8 @@ uvec3 triadPcg(uvec3 v) {
   return v;
 }
 vec3 triadUnit(uvec3 h) { return vec3(h >> 8u) / 16777216.0; }
-float portalTriad(vec3 m) {
+// beam: el haz en el punto (unitario): la vaina es en parte especular (sheathGainAt)
+float portalTriad(vec3 m, vec3 beam) {
   vec3 base = floor(m / TRIAD_CELL - 0.5);
   float sheath = 1.0;
   float lumen = 0.0;
@@ -196,13 +227,16 @@ float portalTriad(vec3 m) {
     float L = mix(TRIAD_HALF_LEN.x, TRIAD_HALF_LEN.y, r2.y);
     float R = mix(TRIAD_RADIUS.x, TRIAD_RADIUS.y, r2.z);
     float Rl = R * mix(TRIAD_LUMEN.x, TRIAD_LUMEN.y, r3.x);
-    float G = mix(TRIAD_GAIN.x, TRIAD_GAIN.y, r3.y);
+    float G = mix(TRIAD_GAIN.x, TRIAD_GAIN.y, r3.y * r3.y);
     vec3 d = normalize(normalize(ctr - TRIAD_HILUM) + TRIAD_JITTER * (vec3(r3.z, r4.x, r4.y) * 2.0 - 1.0));
     vec3 v = m - ctr;
     float s = clamp(dot(v, d), -L, L);
     float dist = length(v - d * s);
     if (dist > R + TRIAD_EDGE) continue;
-    sheath = max(sheath, 1.0 + (G - 1.0) * (1.0 - smoothstep(R - TRIAD_EDGE, R + TRIAD_EDGE, dist)));
+    float cb = dot(d, beam);
+    float s2 = 1.0 - cb * cb;
+    float Gb = (G - 1.0) * (TRIAD_SPEC_FLOOR + (1.0 - TRIAD_SPEC_FLOOR) * s2 * s2);
+    sheath = max(sheath, 1.0 + Gb * (1.0 - smoothstep(R - TRIAD_EDGE, R + TRIAD_EDGE, dist)));
     if (Rl > TRIAD_EDGE) lumen = max(lumen, 1.0 - smoothstep(Rl - TRIAD_EDGE, Rl + TRIAD_EDGE, dist));
   }
   return mix(sheath, TRIAD_LUMEN_GAIN, lumen);

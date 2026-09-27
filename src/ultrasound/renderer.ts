@@ -27,7 +27,7 @@ import {
   type TargetFormat,
 } from './gl';
 import { GpuPassTimer, summarizeGpuTimings, type GpuFrameTimings } from './gpuTimer';
-import { RECEIVER_NOISE } from './receiver';
+import { RECEIVER_NOISE, RECEIVER_NOISE_FRAMES } from './receiver';
 import { ELEV_SIGMA0_MM } from './pleura';
 import { CLUTTER, clutterParams, type ClutterParams } from './clutter';
 import { harmonicNearUniform, noiseGain, transientGain } from './harmonic';
@@ -502,7 +502,8 @@ export class UltrasoundRenderer {
     this.tPre = createTarget(gl, LINES, COARSE_DEPTH, [fn, fn, fn, fn]);
     this.tTrans = createTarget(gl, LINES, COARSE_DEPTH, [f, fn, f, f]);
     this.tRaw = createTarget(gl, LINES, FINE_DEPTH, [f2]);
-    this.tAxial = createTarget(gl, LINES, FINE_DEPTH, [f2]);
+    // C deja el campo y, en su segundo adjunto, el ruido del receptor de cada línea (decisión 89)
+    this.tAxial = createTarget(gl, LINES, FINE_DEPTH, [f2, f2]);
     // anillo de miradas: K las lee con texelFetch, en la misma celda
     const f1n = { internal: gl.R32F, format: gl.RED, type: gl.FLOAT, filter: gl.NEAREST };
     this.tEnvLooks = profile.compound.order.map(() => createTarget(gl, LINES, FINE_DEPTH, [f1n]));
@@ -808,8 +809,9 @@ export class UltrasoundRenderer {
    * Un cuadro de imagen. Pasadas, en orden (la nomenclatura A–H es la de
    * ARCHITECTURE.md y de `shaders/passes.glsl.ts`):
    *   A transmisión (marcha por rayos, atenuación, gas, hueso, espejo) →
-   *   B campo complejo crudo (dispersores + eco de interfaz + ruido) →
-   *   C convolución axial → D convolución lateral + envolvente →
+   *   B campo complejo crudo (dispersores + eco de interfaz) →
+   *   C convolución axial (y el ruido del receptor de cada línea, decisión 89) →
+   *   D convolución lateral + ruido de la línea + envolvente →
    *   K composición espacial (media de las miradas del anillo; paso directo exacto con una) →
    *   F color (cadencia propia) → G conversión de barrido + mapa de grises →
    *   persistencia → presentación. (E está reservada; H es el mapa de tejidos
@@ -1260,12 +1262,9 @@ export class UltrasoundRenderer {
     p.f('uElevSigma0', ELEV_SIGMA0_MM);
     p.f('uElevFocus', tr.elevationFocusMm);
     p.f('uElevHarmonic', inputs.bmode.harmonic ? 1 : 0);
-    // Ruido del receptor (receiver.ts): la misma escala con la que el shader omite el transitorio; en armónica
-    // (decisión 77) sube respecto al eco y el transitorio, de banda fundamental, se rechaza
-    p.f('uNoise', RECEIVER_NOISE * noiseGain(inputs.bmode.harmonic));
+    // el transitorio, de banda fundamental, se rechaza en armónica (decisión 77); el ruido del receptor va en C y D
     p.f('uTransientGain', transientGain(inputs.bmode.harmonic));
     p.v2('uHarmonicNear', ...harmonicNearUniform(inputs.bmode.harmonic));
-    p.f('uFrame', this.frameCount);
     const an = this.speckleAnchor.update(inputs.frame.face, inputs.frame.elevation);
     this.lastAnchorWeight = an.w;
     p.v3('uAnchorE0', an.a.e);
@@ -1323,6 +1322,10 @@ export class UltrasoundRenderer {
     const w = Math.round(cp.wallMm / dz);
     this.pAxial.v4('uReverb', w, cp.reverb[0], cp.reverb[1], w + Math.round(CLUTTER.reverbSourceMarginMm / dz));
     this.pAxial.tex('uTrans', 1, this.tTrans.textures[this.steeredLook() ? 3 : 0]);
+    // Ruido del receptor de cada línea (decisión 89, receiver.ts): la escala con la que B omite el transitorio; en
+    // armónica (decisión 77) sube respecto al eco. Nuevo en cada cuadro (cada mirada es otro disparo)
+    this.pAxial.f('uNoise', RECEIVER_NOISE * noiseGain(inputs.bmode.harmonic));
+    this.pAxial.f('uFrame', this.frameCount % RECEIVER_NOISE_FRAMES);
     drawFullscreen(gl);
   }
 
@@ -1335,6 +1338,7 @@ export class UltrasoundRenderer {
     bindTarget(gl, this.tEnvLooks[this.look?.index ?? 0]);
     this.pLateral.use();
     this.pLateral.tex('uField', 0, this.tAxial.textures[0]);
+    this.pLateral.tex('uRxNoise', 2, this.tAxial.textures[1]);
     this.pLateral.v2('uTexel', 1 / this.lines, 1 / FINE_DEPTH);
     this.pLateral.f('uDepth', depth);
     this.pLateral.f('uCurvR', tr.curvatureRadius);

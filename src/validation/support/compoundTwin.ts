@@ -7,7 +7,8 @@
  * decisión 58 (`design-thi/steered-subframes/sim.ts`, en 2D) y aquí usa las funciones de producción:
  *  - B: el medio anclado de tres planos en elevación (`speckleSliceFieldPh`; la mirada 0, `lp` null, es
  *    `speckleSliceField` tal cual), mezclados ½|f₀| + ¼(|f₁| + |f₂|) con la fase del plano central;
- *    elevación σe = 1,6·√(1 + ((r − 80)/45)²) como la pasada B; solo moteado (sin tejido, ruido ni ecos);
+ *    elevación σe = 1,6·√(1 + ((r − 80)/45)²) como la pasada B; solo moteado (sin tejido, ruido ni ecos) y, si se
+ *    pide, la textura del hígado de la decisión 89 (nodos fuertes y densidad de dispersores, `TwinTexture`);
  *  - C: gaussiana axial de σ = max(0,6; σ_ax(r)/dr) muestras (`axialSigmaMm`, que se alarga con la bajada de la
  *    frecuencia central, decisión 84), truncada a ±12 y de energía unidad;
  *  - D: gaussiana lateral de σ = max(0,35; σ_PSF/paso de línea) líneas (`lateralSigmaMm`), ±14, energía
@@ -20,7 +21,8 @@ import { add, scale, type Vec3 } from '../../core/vec3';
 import { axialSigmaMm, lateralSigmaMm, type BeamParams } from '../../ultrasound/beamModel';
 import { frequencyRatio } from '../../ultrasound/beamEcho';
 import { bmodeBeam, CONVEX_C35_PROFILE } from '../../ultrasound/transducerProfile';
-import { speckleSliceFieldPh, type SpeckleAnchorState } from '../../ultrasound/speckleField';
+import { Tissue } from '../../anatomy/tissues';
+import { densityGain, NO_STRONG, speckleSliceFieldPh, type SpeckleAnchorState, type StrongScatter } from '../../ultrasound/speckleField';
 import { lookPhase, lookPhaseGrad } from '../../ultrasound/steering';
 
 /** Geometría de la imagen: la de la aplicación por defecto (convexo de 192 líneas a 18 cm, foco 90 mm). */
@@ -87,11 +89,22 @@ export const elevSigmaMm = (r: number, g: TwinGeometry = TWIN_GEOMETRY): number 
   g.elevSigma0Mm * Math.sqrt(1 + ((r - g.elevFocusMm) / 45) ** 2);
 
 /**
+ * Textura del parénquima de la decisión 89 en el gemelo: los nodos fuertes de la retícula (`strongScatter`, en los tres
+ * planos) y la densidad de dispersores del hígado (`densityGain` con la semilla `densitySeed`, sobre el campo mezclado del
+ * plano central, como la pasada B; null, sin ella). Sin textura, el moteado difuso de siempre.
+ */
+export interface TwinTexture {
+  strong: StrongScatter;
+  densitySeed: number | null;
+}
+
+/**
  * Envolvente de las miradas `thetas` (rad, en el elemento) en el parche, índice (i − i0)·nL + (j − j0).
  * `st` es el ancla del medio; `salt`, la sal del campo (otra sal, otra realización); `k2`, el número de
  * onda de ida y vuelta de la fase de mirada (`lookWavenumber`). `planes` = 3 es la pasada B; 1 deja solo
  * el plano central (campo coherente, sin la mezcla de magnitudes: la referencia de la ley de
- * decorrelación).
+ * decorrelación). `texture`, la del hígado (decisión 89); sin ella, el moteado difuso. `detect`, el detector tras D (la
+ * envolvente por defecto; la intensidad o |Re f| para los defectos que buscan las guardas).
  */
 export function lookPatchEnvelopes(
   frame: TwinFrame,
@@ -102,7 +115,10 @@ export function lookPatchEnvelopes(
   k2: number,
   planes: 1 | 3 = 3,
   g: TwinGeometry = TWIN_GEOMETRY,
+  texture: TwinTexture | null = null,
+  detect: (re: number, im: number) => number = (re, im) => Math.hypot(re, im) * 1.1283792,
 ): Float64Array[] {
+  const strong = texture?.strong ?? NO_STRONG;
   const L = g.lines;
   const dr = g.depthMm / g.samples;
   const dPhi = (2 * g.halfSector) / L;
@@ -143,15 +159,16 @@ export function lookPatchEnvelopes(
           const [gx, gz] = lookPhaseGrad(rho, alpha, theta, g.curvatureRadius, k2r);
           lp = { ph0: lookPhase(rho, alpha, theta, g.curvatureRadius, k2r), g: add(scale(frame.lateral, gx), scale(frame.axial, gz)) };
         }
-        const f0 = speckleSliceFieldPh(p, g.latticeMm, se, salt, st, lp);
+        const f0 = speckleSliceFieldPh(p, g.latticeMm, se, salt, st, lp, strong);
         let k = 1;
         if (planes === 3) {
-          const f1 = speckleSliceFieldPh(add(p, scale(frame.elevation, se)), g.latticeMm, se, salt, st, lp);
-          const f2 = speckleSliceFieldPh(add(p, scale(frame.elevation, -se)), g.latticeMm, se, salt, st, lp);
+          const f1 = speckleSliceFieldPh(add(p, scale(frame.elevation, se)), g.latticeMm, se, salt, st, lp, strong);
+          const f2 = speckleSliceFieldPh(add(p, scale(frame.elevation, -se)), g.latticeMm, se, salt, st, lp, strong);
           const m0 = Math.hypot(f0[0], f0[1]);
           const mag = 0.5 * m0 + 0.25 * (Math.hypot(f1[0], f1[1]) + Math.hypot(f2[0], f2[1]));
           k = m0 > 1e-6 ? mag / m0 : 1;
         }
+        if (texture && texture.densitySeed !== null) k *= densityGain(p, texture.densitySeed, Tissue.Liver);
         re[a * wR + b] = f0[0] * k;
         im[a * wR + b] = f0[1] * k;
       }
@@ -186,7 +203,7 @@ export function lookPatchEnvelopes(
           sr += kl[q + R] * axRe[n];
           si += kl[q + R] * axIm[n];
         }
-        env[i * nL + j] = Math.hypot(sr, si) * 1.1283792;
+        env[i * nL + j] = detect(sr, si);
       }
     }
     return env;

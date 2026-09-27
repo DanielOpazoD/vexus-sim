@@ -17,10 +17,10 @@ import {
 import { SPECKLE_LOOK_GLSL, SPECKLE_TISSUE_GLSL } from '../speckleField';
 import { WALL_FACE_ECHO_GLSL, WALL_TEXTURE_GLSL } from '../wallTexture';
 import { REST_TEXTURE_GLSL } from '../restTexture';
-import { PORTAL_TRIADS_GLSL } from '../portalTriads';
+import { PORTAL_TRIADS_GLSL, TRIAD_QUERY_BEAM } from '../portalTriads';
 import { RETRO_TEXTURE_GLSL } from '../retroTexture';
 import { CLUTTER, SIDELOBE_PHASE_GLSL } from '../clutter';
-import { RECEIVER_GLSL, glslFloat } from '../receiver';
+import { RECEIVER_GLSL, RECEIVER_NOISE_GLSL, glslFloat } from '../receiver';
 import { HARMONIC_GLSL } from '../harmonic';
 import { STEERING_GLSL } from '../steering';
 import { M_SAMPLES } from '../mmode';
@@ -505,15 +505,16 @@ float lookK2;
 // fieldFor y sampleSide con la fase de la mirada por nodo (speckleField.ts, variantes …Ph); b0, la dirección de la
 // mirada 0 en el punto del mundo (la radial desde el centro de curvatura); w, la jacobiana de la compresión
 vec2 fieldForPhBase(vec3 m, float se, int tissue, float ph0, vec3 g, vec3 b0, Warp w) {
-  vec2 f = speckleFieldPh(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP, ph0, g);
+  vec2 f = speckleFieldPh(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP, ph0, g, strongScatter(tissue));
   float het = 1.0;
   if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX || tissue == T_PSOAS || tissue == T_QUADRATUS) het = hetGain(m);
   // textura de la pared (decisión 62) con la dirección de esta mirada: b_k = b_0 + g/k2 (g = k2·(b_k − b_0))
   if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, normalize(b0 + g / lookK2), w);
   // el resto del abdomen: asas y grasa mesentérica (decisión 74, restTexture.ts)
   if (tissue == T_BOWEL) het *= restTexture(m);
-  // tríadas portales finas del hígado (decisión 78, portalTriads.ts)
-  if (tissue == T_LIVER) het *= portalTriad(m);
+  // tríadas portales finas del hígado (decisión 78, portalTriads.ts), con el brillo de su vaina según esta mirada
+  // (decisión 89)
+  if (tissue == T_LIVER) het *= portalTriad(m, normalize(b0 + g / lookK2));
   return f * tissueBack(tissue) * het;
 }
 // con los septos del psoas y del cuadrado (decisión 81) en la dirección de esta mirada (b_0 + g/lookK2, como la pared);
@@ -557,6 +558,8 @@ vec2 mediumFieldPh(vec3 p, vec3 dir, float r, float se, bool withCurtain, float 
   vec2 field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
   float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
   if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
+  // densidad de dispersores (decisión 89), del material: la misma en todas las miradas
+  field *= densityGain(m, c.tissue);
   // eco de interfaz (decisiones 57 y 65), como mediumField: la difusa sobre el fasor de esta mirada
   vec2 e = interfaceEcho(c, m, dir, r, se, w);
   return field * (1.0 + e.y / max(length(field), 1e-6)) + vec2(e.x, 0.0);
@@ -688,14 +691,11 @@ vec2 steeredField() {
     out2 += air * (fAir * coupling);
   }
   // la acumulación del armónico (decisión 77) y la ganancia focal (decisión 84) son del eco del tejido, no del
-  // transitorio ni del ruido
+  // transitorio (el ruido del receptor lo suma la pasada D tras la PSF lateral: decisión 89)
   out2 *= harmonicNearGain(s) * focalGain(s);
   if (s < TRANSIENT_SKIP_MM)
     out2 += scattererField(vec3(uK * 190.0, s * 3.0, 1.0), 0.8, uSeed + 7.0 + uLookSalt) * TRANSIENT_AMPLITUDE * uTransientGain * exp(-s / TRANSIENT_DECAY_MM) * coupling;
-  float n1 = hash12b(vUv * 977.0 + uFrame * 1.7);
-  float n2 = hash12b(vUv * 613.0 + uFrame * 3.1 + 11.0);
-  float rad = sqrt(-2.0 * log(max(1e-6, n1)));
-  return out2 + uNoise * rad * vec2(cos(6.2831853 * n2), sin(6.2831853 * n2));
+  return out2;
 }
 `;
 
@@ -718,8 +718,6 @@ ${TISSUE_BACK_GLSL}
 ${look === 'steered' ? STEERED_RAW_INPUTS_GLSL : LOOK0_RAW_INPUTS_GLSL}
 uniform float uSeed;
 uniform float uLattice;     // paso de retícula (mm)
-uniform float uNoise;
-uniform float uFrame;
 // Ancla del medio de dispersores (speckleField.ts): vigente (0) y anterior (1), peso del fundido
 uniform vec3 uAnchorE0;
 uniform vec3 uAnchorP0;
@@ -741,26 +739,25 @@ ${RETRO_TEXTURE_GLSL}
 ${INTERFACE_ECHO_GLSL}
 ${WALL_FACE_ECHO_GLSL}
 
-float hash12b(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
-
 // Campo de dispersores con la célula ELEVACIONAL igual al grosor de corte: la
 // coordenada material a lo largo del eje del ancla se comprime para que la
 // textura se decorrele al inclinar la sonda un grosor de corte, no una célula
 // de 0,4 mm (idea de EchoTwin, decisión 99; Chen/Fowlkes/Carson/Rubin 1997).
 // El eje y el pivote son un ancla fija, no la normal actual ni el origen del
 // mundo: el medio no cambia al girar la sonda (decisión 55, speckleField.ts).
-vec2 scattererFieldSlice(vec3 m, float h, float sliceHalfMm, float salt, vec3 e, vec3 pivot) {
+vec2 scattererFieldSlice(vec3 m, float h, float sliceHalfMm, float salt, vec3 e, vec3 pivot, vec3 s) {
   float across = dot(m - pivot, e);
   vec3 q = m - e * (across * (1.0 - h / max(h, 2.0 * sliceHalfMm)));
-  return scattererField(q, h, salt);
+  return scattererFieldS(q, h, salt, s);
 }
 
 // Medio anclado: fuera del fundido, una sola ancla; durante el fundido,
-// √w·A + √(1−w)·B con semillas distintas (sigue siendo gaussiano).
-vec2 speckleField(vec3 m, float h, float se, float salt) {
-  vec2 fa = scattererFieldSlice(m, h, se, uSeed + salt + uAnchorSalt.x, uAnchorE0, uAnchorP0);
+// √w·A + √(1−w)·B con semillas distintas (sigue siendo gaussiano). s: los dispersores fuertes del tejido (decisión 89),
+// nodos de la misma retícula, así que se anclan y se funden con ella.
+vec2 speckleField(vec3 m, float h, float se, float salt, vec3 s) {
+  vec2 fa = scattererFieldSlice(m, h, se, uSeed + salt + uAnchorSalt.x, uAnchorE0, uAnchorP0, s);
   if (uAnchorW >= 1.0) return fa;
-  vec2 fb = scattererFieldSlice(m, h, se, uSeed + salt + uAnchorSalt.y, uAnchorE1, uAnchorP1);
+  vec2 fb = scattererFieldSlice(m, h, se, uSeed + salt + uAnchorSalt.y, uAnchorE1, uAnchorP1, s);
   return sqrt(uAnchorW) * fa + sqrt(1.0 - uAnchorW) * fb;
 }
 
@@ -768,7 +765,7 @@ vec2 speckleField(vec3 m, float h, float se, float salt) {
 // Campo de dispersores de un punto material con clasificación conocida. Cada tejido es otra
 // población: su propia semilla (el moteado no continúa a través de un borde).
 vec2 fieldForBase(vec3 m, float se, int tissue, vec3 dir, Warp w) {
-  vec2 f = speckleField(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP);
+  vec2 f = speckleField(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP, strongScatter(tissue));
   // Heterogeneidad lenta y continua del parénquima (desviación 1,15 dB a ~1,6 ciclos/cm) [EXTRAPOLACIÓN PROPIA]
   float het = 1.0;
   if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX || tissue == T_PSOAS || tissue == T_QUADRATUS) het = hetGain(m);
@@ -778,8 +775,9 @@ vec2 fieldForBase(vec3 m, float se, int tissue, vec3 dir, Warp w) {
   if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, dir, w);
   // el resto del abdomen: asas y grasa mesentérica (decisión 74, restTexture.ts)
   if (tissue == T_BOWEL) het *= restTexture(m);
-  // tríadas portales finas del hígado (decisión 78, portalTriads.ts)
-  if (tissue == T_LIVER) het *= portalTriad(m);
+  // tríadas portales finas del hígado (decisión 78, portalTriads.ts), con el brillo de su vaina según la incidencia del
+  // haz (decisión 89: en parte especular)
+  if (tissue == T_LIVER) het *= portalTriad(m, dir);
   return f * tissueBack(tissue) * het;
 }
 // Con los septos de los fascículos del psoas y del cuadrado lumbar (decisión 81, retroTexture.ts): la muestra del medio
@@ -920,16 +918,11 @@ void main() {
   // TRANSIENT_SKIP_MM (receiver.ts) su escala es ≤ ruido/10 aquí, antes de la PSF (tras C y D, ≈ ruido/7
   // con 60 mm de profundidad), y no se calcula: un campo de dispersores menos por muestra en casi toda la
   // profundidad. La acumulación del armónico (decisión 77) y la ganancia focal de la emisión (decisión 84) son del eco
-  // del tejido: antes del transitorio y del ruido.
+  // del tejido: antes del transitorio (el ruido del receptor lo suman C y D, decisión 89).
   out2 *= harmonicNearGain(r) * focalGain(r);
   if (r < TRANSIENT_SKIP_MM)
     out2 += scattererField(vec3(vUv.x * 190.0, r * 3.0, 1.0), 0.8, uSeed + 7.0) * TRANSIENT_AMPLITUDE * uTransientGain * exp(-r / TRANSIENT_DECAY_MM) * coupling;
-  // Ruido del receptor: gaussiano complejo blanco añadido ANTES de la PSF (queda
-  // limitado en banda por la respuesta de recepción) y antes de la detección.
-  float n1 = hash12b(vUv * 977.0 + uFrame * 1.7);
-  float n2 = hash12b(vUv * 613.0 + uFrame * 3.1 + 11.0);
-  float rad = sqrt(-2.0 * log(max(1e-6, n1)));
-  out2 += uNoise * rad * vec2(cos(6.2831853 * n2), sin(6.2831853 * n2));
+  // El ruido del receptor no va aquí: nace en los canales, detrás del haz, y lo suman C y D por línea (decisión 89)
   oField = out2;
 }
 `;
@@ -952,6 +945,8 @@ export const FRAG_RAWFIELD_STEERED = rawFieldShader('steered');
  * texeles enteros más arriba (la réplica aparece más honda), solo de los ecos fuertes y con las ganancias de
  * `uReverb` por la transmisión de ida y vuelta de la línea hasta la pared (`uTrans`, una vez por orden). El pulso se
  * alarga con la profundidad (decisión 84, `axialSigmaMm`): σ = max(0,6; uSigmaTexels.x + uSigmaTexels.y·fila).
+ * En su segunda salida, el ruido del receptor de la línea (decisión 89, `receiver.ts`): blanco por muestra y cuadro,
+ * filtrado con el mismo núcleo (el filtro de recepción), sin pasar por la PSF lateral: la pasada D lo suma en su línea.
  */
 export const FRAG_AXIAL = /* glsl */ `#version 300 es
 precision highp float;
@@ -960,12 +955,16 @@ uniform sampler2D uTrans; // transmisión de ida y vuelta de la mirada (A o0; o3
 uniform vec2 uSigmaTexels; // σ axial (texeles) en la fila 0 y su aumento por fila (bajada de la frecuencia, decisión 84)
 uniform vec2 uTexel;
 uniform vec4 uReverb; // desplazamiento W en texeles (entero), ganancias de las réplicas a W y a 2W, fila más honda de sus fuentes
+${RECEIVER_NOISE_GLSL}
 in vec2 vUv;
-out vec2 oField;
+layout(location = 0) out vec2 oField;
+layout(location = 1) out vec2 oNoise; // ruido del receptor de la línea, limitado en banda axial (decisión 89)
 void main() {
   vec2 acc = vec2(0.0);
   vec2 acc1 = vec2(0.0);
   vec2 acc2 = vec2(0.0);
+  vec2 accN = vec2(0.0);
+  vec2 cell = floor(gl_FragCoord.xy);
   float wsum = 0.0;
   float row = vUv.y / uTexel.y - 0.5;
   float sT = max(0.6, uSigmaTexels.x + uSigmaTexels.y * row);
@@ -984,21 +983,24 @@ void main() {
     // solo reverberan los ecos fuertes (caras especulares): umbral suave sobre el módulo del campo en bruto
     if (rep1) { vec2 f1 = texture(uField, uv - d1).rg; acc1 += w * f1 * smoothstep(${CLUTTER.reverbGate[0].toFixed(3)}, ${CLUTTER.reverbGate[1].toFixed(3)}, length(f1)); }
     if (rep2) { vec2 f2 = texture(uField, uv - 2.0 * d1).rg; acc2 += w * f2 * smoothstep(${CLUTTER.reverbGate[0].toFixed(3)}, ${CLUTTER.reverbGate[1].toFixed(3)}, length(f2)); }
+    accN += w * receiverNoise(cell + vec2(0.0, float(k)));
     wsum += w * w;
   }
   // cada orden paga su viaje extra por la pared: tras una costilla o un gas no hay réplica en la sombra
   float tW = rep1 || rep2 ? texture(uTrans, vec2(vUv.x, uReverb.x * uTexel.y)).x : 0.0;
   oField = (acc + uReverb.y * tW * acc1 + uReverb.z * tW * tW * acc2) / sqrt(wsum);
+  oNoise = accN * (uNoise / sqrt(wsum));
 }
 `;
 
 /**
- * Pasada D: convolución lateral con anchura dependiente de profundidad y foco,
- * ruido electrónico y detección de envolvente.
+ * Pasada D: convolución lateral con anchura dependiente de profundidad y foco, ruido del receptor de la línea
+ * (la segunda salida de C, ya limitado en banda axial; decisión 89) y detección de envolvente.
  */
 export const FRAG_LATERAL = /* glsl */ `#version 300 es
 precision highp float;
 uniform sampler2D uField;
+uniform sampler2D uRxNoise; // ruido del receptor de cada línea (C, decisión 89): no pasa por la PSF lateral
 uniform vec2 uTexel;
 uniform float uDepth;
 uniform float uCurvR;
@@ -1042,6 +1044,10 @@ void main() {
   }
   float amp = pedOn ? coupling * sqrt(uSidelobe.x * sm / sp) : 0.0;
   vec2 f = (accM + amp * accP) * inversesqrt(sm + amp * amp * sp + 2.0 * amp * cx);
+  // Ruido del receptor (decisión 89): el de ESTA línea, tras la PSF lateral y antes de la detección. Nace en los
+  // canales, detrás del transductor, y cada línea es otro disparo: no se correlaciona entre líneas. Su texel exacto (D
+  // escribe la rejilla de C, LINES × FINE_DEPTH): sin filtrado ni interpolación
+  f += texelFetch(uRxNoise, ivec2(gl_FragCoord.xy), 0).rg;
   // Envolvente calibrada: E|z| de una gaussiana compleja unitaria es √π/2, así
   // que ×2/√π deja mean(envolvente) = amplitud de retrodispersión.
   oEnv = length(f) * 1.1283792;
@@ -1424,6 +1430,6 @@ uniform sampler2D uPoints;
 out vec4 o0;
 void main() {
   vec3 m = texelFetch(uPoints, ivec2(gl_FragCoord.xy), 0).xyz;
-  o0 = vec4(portalTriad(m), 0.0, 0.0, 1.0);
+  o0 = vec4(portalTriad(m, vec3(${TRIAD_QUERY_BEAM.map((x) => x.toString()).join(', ')})), 0.0, 0.0, 1.0);
 }
 `;

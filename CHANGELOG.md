@@ -32,6 +32,15 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Cambiado
 
+- Textura del hígado y ruido del receptor (89). El parénquima hepático deja de ser un moteado de granos redondos
+  iguales: una pequeña fracción de dispersores más fuertes por debajo de la resolución da destellos sueltos y la
+  estadística algo pre-Rayleigh del hígado real (m de Nakagami 0,85 en ventanas de tres pulsos, frente a 0,81 del hígado
+  sano a 3,5 MHz), y la densidad de dispersores varía a escala de milímetros (textura sobre la textura), con el gris
+  medio del hígado donde estaba. Las tríadas portales tienen un brillo variable, con cola, y más de través al haz que a lo
+  largo de él. El ruido del receptor ya no pasa por la PSF lateral: es independiente de una línea a otra y solo se
+  correlaciona a lo largo de ella, así que las luces de los vasos se ven con el ruido fino de un equipo y no con
+  pinceladas a lo ancho. El estiramiento lateral del moteado hondo es el de la PSF (decisión 84) y no cambia. Las
+  guardas del moteado de la e2e y los objetivos de la composición del banco se desplazan con lo que predice el gemelo.
 - Riñón y venas sin primitivas (87): las pirámides son conos oscuros con la base hacia la corteza y la punta en el seno
   (antes, bandas bajo la corteza a las que el cáliz se comía la punta), con los vasos arcuatos en el borde de su base; el
   seno es grasa ecogénica en lóbulos, más brillante y heterogénea que el hígado; la grasa perirrenal y la retroperitoneal

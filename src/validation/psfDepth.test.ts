@@ -24,6 +24,7 @@ import {
   FRAG_TRANSMISSION,
   LATERAL_PSF_GLSL,
 } from '../ultrasound/shaders/passes.glsl';
+import { refractionBeam } from '../ultrasound/aperture';
 import { INTERFACE_ECHO_GLSL } from '../ultrasound/interfaceEcho';
 import { bmodeBeam, CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import { DEFAULT_BMODE } from '../ultrasound/renderer';
@@ -245,9 +246,15 @@ describe('cableado en el renderizador (WebGL falso, decisión 84)', () => {
           expect(u.uBeamTx[0]).toBeCloseTo(b.kTx * b.lambdaTxMm * b.txConeFraction, 12);
           expect(u.uBeamTx[3]).toBeCloseTo(b.downshiftRxPerMm, 15);
         }
-        // la penumbra de la pasada A, con la apertura de la emisión de ese foco (20 mm con el foco a 50)
+        // la penumbra de la pasada A, con la apertura de la emisión de ese foco (20 mm con el foco a 50), y su refracción de
+        // las luces (decisión 86), con el foco, las manchas y la difracción del haz de ese modo
         expect(f.trans.uAperture[0]).toBeCloseTo(txApertureMm(F, b), 12);
-        expect(f.trans.uAperture.slice(1)).toEqual([b.apertureRxMaxMm, b.fNumberRxMin]);
+        expect(f.trans.uAperture.slice(1, 3)).toEqual([b.apertureRxMaxMm, b.fNumberRxMin]);
+        const refr = refractionBeam(b, F);
+        expect(f.trans.uAperture[3]).toBeCloseTo(refr.cRxMm, 6);
+        [F, refr.txScale, refr.cTxMm, refr.diffractionMm].forEach((v, i) => expect(f.trans.uRefr[i]).toBeCloseTo(v, 6));
+        [refr.kappaTx, refr.kappaRx].forEach((v, i) => expect(f.trans.uRefrK[i]).toBeCloseTo(v, 9));
+        expect(refr.txScale).toBe(harmonic ? Math.SQRT1_2 : 1);
         // σ de la fila i = x + y·i, en texeles: la de axialSigmaMm en el centro de cada fila
         const dz = f.depth / 1024;
         const [x, y] = f.axial.uSigmaTexels;

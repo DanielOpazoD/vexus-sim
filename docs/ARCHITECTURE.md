@@ -104,6 +104,16 @@ los dos programas de B. En las líneas con cortina, B suma la línea pleural, la
 pared remuestreada en el mismo camino y el deslizamiento, con la fracción de aire del borde blando, y el
 tejido de detrás con `classifyWith(m, false)`; gemelos y constantes en `src/ultrasound/pleura.ts`.
 
+Refracción de las luces (decisión 86): A1 escribe en su canal .y el camino de más de su segmento en una luz líquida (la
+sangre y la bilis frente a la c del hígado; el aire lleva el dB en negativo), A2 acumula Ψ̃ y su pendiente a lo largo de
+cada camino (o1.xy en la mirada 0, o3.zw en la dirigida; la dirección reflejada del espejo y el tipo de gas los pone A en
+su o1 desde A0) y A forma el eco del haz enfocado cuyos rayos desvía esa pantalla de fase, el solape de los conos de
+emisión y de recepción (`REFRACTION_GLSL` de `src/ultrasound/aperture.ts`, contrastado con el banco de ondas
+`tools/fidelity/refraction-wave.ts`): la ganancia multiplica la transmisión de la imagen, no el rayo único del color y del
+PW. Los gemelos de A2 y A (prefijos, penumbra y refracción) viven en `src/ultrasound/transmissionTwin.ts`, que solo
+importan las pruebas y los ganchos de prueba (la paridad con la GPU, `src/app/steeredParity.ts`): así el chunk
+principal lleva la GLSL y no los gemelos.
+
 ## Disposición y vistas (`src/ui`)
 
 Rejilla de tres columnas (decisión 16): `src/ui/navigator3d.ts` (three.js, procedural, malla del

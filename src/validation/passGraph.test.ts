@@ -210,7 +210,14 @@ const SAMPLERS: Record<PassId, { srcs: readonly string[]; samplers: Record<strin
   },
   transmission: {
     srcs: [FRAG_TRANSMISSION, FRAG_TRANSMISSION_STEERED],
-    samplers: { uPre0: 'transPrefix', uPre1: 'transPrefix', uPreSteer: 'transPrefix', uPreSteerX: 'transPrefix', uHits0: 'transHits' },
+    samplers: {
+      uPre0: 'transPrefix',
+      uPre1: 'transPrefix',
+      uPreSteer: 'transPrefix',
+      uPreSteerX: 'transPrefix',
+      uHits0: 'transHits',
+      uHits1: 'transHits',
+    },
   },
   // la pleura parietal de A0 (uHits2, decisión 61) en los dos programas de B
   rawField: {

@@ -69,15 +69,14 @@ import {
   GAS_DB_PER_CM,
   MIRROR_BISECTION_STEPS,
   STEERED_PREFIX_GLSL,
-  lineHits,
   mirrorCrossing,
   pleuraCrossingLine,
   segmentDb,
-  steeredPrefixDb,
   transmissionHitsLine,
   type HitsLine,
   type HitsLineQuery,
 } from '../ultrasound/transmission';
+import { lineHits, steeredPrefixDb } from '../ultrasound/transmissionTwin';
 import {
   CURTAIN_FULL_AIR,
   CURTAIN_LIVER_MAX_AIR,

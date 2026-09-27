@@ -1,15 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import { Tissue } from '../anatomy/tissues';
-import {
-  APERTURE_GLSL,
-  STEERED_APERTURE_GLSL,
-  apertureTransmission,
-  steeredApertureTransmission,
-  type ApertureGeometry,
-} from '../ultrasound/aperture';
+import { APERTURE_GLSL, APERTURE_TAPS, STEERED_APERTURE_GLSL, refractionBeam, type ApertureGeometry } from '../ultrasound/aperture';
+import { apertureTapPosition, apertureTapWeight, apertureTransmission, steeredApertureTransmission } from '../ultrasound/transmissionTwin';
 import { CONVEX_BEAM } from '../ultrasound/beamModel';
 import { COMPOUND, lookTheta } from '../ultrasound/compound';
-import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
+import { CONVEX_C35_PROFILE, bmodeBeam } from '../ultrasound/transducerProfile';
 import { GRID_GEOMETRY, lookTransmission, segmentGridFromScene } from './support/segmentGrid';
 
 /**
@@ -25,6 +20,7 @@ const GEOM: ApertureGeometry = {
   apertureTxMm: CONVEX_BEAM.apertureTxMm,
   apertureRxMaxMm: CONVEX_BEAM.apertureRxMaxMm,
   fNumberRxMin: CONVEX_BEAM.fNumberRxMin,
+  refraction: refractionBeam(bmodeBeam(CONVEX_C35_PROFILE, { harmonic: false }), 90),
 };
 const RIB = { from: 86, to: 105, depthMm: 25 };
 const onRib = (l: number): boolean => l >= RIB.from && l <= RIB.to;
@@ -55,6 +51,49 @@ describe('penumbra de la apertura', () => {
     const deep = db(T(Math.round(center), 150));
     expect(deep).toBeGreaterThan(shallow);
     expect(deep).toBeLessThan(-6); // sigue siendo sombra, rellena solo en parte
+  });
+
+  it('la emisión va con su ventana de Hann y la recepción uniforme, en el punto medio de cada tramo (decisión 86)', () => {
+    const t = Array.from({ length: APERTURE_TAPS }, (_, j) => apertureTapPosition(j));
+    // tramos iguales: del centro del primero al del último, simétricos y sin tomas en los bordes (pesarían 0)
+    expect(t[0]).toBeCloseTo(-0.5 + 0.5 / APERTURE_TAPS, 12);
+    for (let j = 0; j < APERTURE_TAPS; j++) expect(t[j] + t[APERTURE_TAPS - 1 - j]).toBeCloseTo(0, 12);
+    const hann = Array.from({ length: APERTURE_TAPS }, (_, j) => apertureTapWeight(j, true));
+    // la regla del punto medio integra cos² exactamente: la media de la ventana es ½
+    expect(hann.reduce((a, b) => a + b, 0) / APERTURE_TAPS).toBeCloseTo(0.5, 12);
+    expect(Math.max(...hann)).toBe(hann[(APERTURE_TAPS - 1) / 2]);
+    expect(hann[0]).toBeGreaterThan(0);
+    for (let j = 0; j < APERTURE_TAPS; j++) expect(apertureTapWeight(j, false)).toBe(1);
+    // la GLSL usa las mismas tomas y pesos
+    expect(APERTURE_GLSL).toContain('float t = (float(j) + 0.5) / float(AP_TAPS) - 0.5;');
+    expect(APERTURE_GLSL).toContain('float w = mix(1.0, c * c, hann);');
+    expect(APERTURE_GLSL).toContain('return apConeMean(uPre0, line, k, halfTx, 1.0) * apConeMean(uPre0, line, k, halfRx, 0.0);');
+  });
+
+  it('con la emisión apodizada la costilla deja su sombra más honda en profundidad que con la uniforme', () => {
+    // la misma cuenta que el gemelo con la emisión uniforme (la penumbra de antes de la decisión 86)
+    const uniformTx = (line: number, r: number): number => {
+      const dTheta = (2 * GEOM.halfSector) / GEOM.lines;
+      const ro = RIB.depthMm;
+      const spacing = (GEOM.curvatureRadius + ro) * dTheta;
+      const shrink = 1 - ro / r;
+      const mean = (half: number) => {
+        let sum = 0;
+        for (let j = 0; j < APERTURE_TAPS; j++) sum += oneWay(r)(line + Math.floor(2 * half * apertureTapPosition(j) + 0.5));
+        return sum / APERTURE_TAPS;
+      };
+      return (
+        mean((0.5 * GEOM.apertureTxMm * shrink) / spacing) *
+        mean((0.5 * Math.min(GEOM.apertureRxMaxMm, r / GEOM.fNumberRxMin) * shrink) / spacing)
+      );
+    };
+    const center = Math.round((RIB.from + RIB.to) / 2);
+    for (const r of [60, 90, 150]) {
+      // el borde de la apertura, que la ventana apenas usa, ya no rellena el centro de la sombra como su centro
+      expect(db(T(center, r)), `${r} mm`).toBeLessThan(db(uniformTx(center, r)) - 3);
+      // lejos de la costilla, igual: sin obstáculo en el cono no hay nada que pesar
+      expect(T(center + 60, r)).toBe(1);
+    }
   });
 
   it('el borde de la sombra es una rampa del ancho del cono, no un escalón de una línea', () => {
@@ -158,9 +197,11 @@ describe('penumbra y refuerzo de las miradas dirigidas (decisión 58)', () => {
     };
     const u0 = umbraEnd('look0');
     const uc = umbraEnd('compound');
-    // el gemelo del juez 1 (rib-cliff.ts): de 26–28 a 22–24 mm tras la cara de la costilla
-    expect(u0).toBeGreaterThan(24);
-    expect(u0).toBeLessThan(29);
+    // el gemelo del juez 1 (rib-cliff.ts) daba de 26–28 (mirada 0) a 22–24 mm (compuesto) tras la cara de la costilla con
+    // la emisión uniforme; con su ventana de Hann (decisión 86) la umbra dura más: 34,6 mm en la mirada 0 y 31,1 con el
+    // compuesto
+    expect(u0).toBeGreaterThan(30);
+    expect(u0).toBeLessThan(39);
     expect(u0 - uc).toBeGreaterThanOrEqual(2);
     expect(u0 - uc).toBeLessThanOrEqual(6);
     // núcleo: mediana de 10 a 40 mm tras la cara sobre el suelo de ruido de la GPU (K6: 22,6 dB bajo el
@@ -175,7 +216,10 @@ describe('penumbra y refuerzo de las miradas dirigidas (decisión 58)', () => {
   });
 
   it('refuerzo tras un vaso de 12 mm a 60 mm: el borde se ensancha en profundidad y el pico apenas baja', () => {
+    // la geometría del compuesto sobre el refuerzo de la atenuación: sin el camino de más de la luz, cuya refracción
+    // (decisión 86, 0,2–0,6 dB tras un vaso) se prueba aparte (`refraction.test.ts`)
     const vessel = segmentGridFromScene((x, z) => (Math.hypot(x, z - 60) < 6 ? Tissue.Blood : Tissue.Liver), F);
+    vessel.excess.fill(0);
     const span = Array.from({ length: 61 }, (_, i) => 66 + i);
     const edge = (d: readonly number[], r: number) => {
       const p = span.map((l) => d[l]);
@@ -210,11 +254,15 @@ describe('penumbra y refuerzo de las miradas dirigidas (decisión 58)', () => {
   });
 
   it('el GLSL dirigido es el cono de la pasada A con el prefijo dirigido y el radio R·cos θ', () => {
-    expect(STEERED_APERTURE_GLSL).toContain('return pow(10.0, -texelFetch(uPreSteer, ivec2(l, k), 0).x / 40.0);');
+    // el cono es el de la mirada 0 (`apConeMean`, con su ventana de emisión) sobre el prefijo dirigido
+    expect(STEERED_APERTURE_GLSL).toContain(
+      'return apConeMean(uPreSteer, line, k, halfTx, 1.0) * apConeMean(uPreSteer, line, k, halfRx, 0.0);',
+    );
+    expect(APERTURE_GLSL).toContain('sum += w * pow(10.0, -texelFetch(pre, ivec2(l, k), 0).x / 40.0);');
     expect(STEERED_APERTURE_GLSL).toContain('float maxHalf = (0.5 * uAperture.x) / (rc * dTheta);');
     expect(STEERED_APERTURE_GLSL).toContain('float halfRx = 0.5 * min(uAperture.y, s / uAperture.z) * shrink / spacing;');
-    // usa las tomas y la búsqueda de APERTURE_GLSL, que va delante
-    expect(STEERED_APERTURE_GLSL).toContain('AP_TAPS');
+    // usa la búsqueda y el cono de APERTURE_GLSL, que va delante
+    expect(STEERED_APERTURE_GLSL).toContain('AP_SEARCH');
     expect(APERTURE_GLSL).toContain('const int AP_TAPS');
     expect(STEERED_APERTURE_GLSL).not.toMatch(/APERTURE_TAPS|APERTURE_SEARCH_LINES/);
   });

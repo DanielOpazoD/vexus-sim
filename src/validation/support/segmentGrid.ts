@@ -6,8 +6,9 @@
  * (z = ρ·cos α − R), como los diseños de la decisión 58 (`design-thi/psf-diversity/shadow.ts`).
  */
 import { TISSUES, Tissue, attenuationDbPerCm } from '../../anatomy/tissues';
-import { type ApertureGeometry, steeredApertureTransmission } from '../../ultrasound/aperture';
-import { GAS_DB_PER_CM, MIRROR_DB, type SegmentGrid, lineHits, steeredPrefixDb } from '../../ultrasound/transmission';
+import { type ApertureGeometry } from '../../ultrasound/aperture';
+import { GAS_DB_PER_CM, MIRROR_DB, type SegmentGrid, lumenExcessPerMm } from '../../ultrasound/transmission';
+import { lineHits, refractionGain, steeredApertureTransmission, steeredPrefixDb } from '../../ultrasound/transmissionTwin';
 
 /** Geometría de la pasada A: la de la aplicación por defecto (192 líneas, 160 filas en 18 cm). */
 export interface GridGeometry {
@@ -33,6 +34,7 @@ export function emptyGrid(g: GridGeometry = GRID_GEOMETRY): SegmentGrid {
     stepMm: g.depthMm / g.rows,
     db: new Float64Array(n),
     air: new Uint8Array(n),
+    excess: new Float64Array(n),
     bone: new Uint8Array(n),
     gas: new Uint8Array(n),
     mirrorSeg: new Int32Array(g.lines).fill(-1),
@@ -60,6 +62,7 @@ export function segmentGridFromScene(
       const i = l * g.rows + s;
       grid.db[i] = p.gas ? GAS_DB_PER_CM * (step / 10) : 2 * attenuationDbPerCm(t, fMHz) * (step / 10);
       grid.air[i] = t === Tissue.Air ? 1 : 0;
+      grid.excess[i] = lumenExcessPerMm(t) * step;
       grid.bone[i] = p.bone ? 1 : 0;
       grid.gas[i] = t === Tissue.Lung ? 1 : p.gas ? 2 : 0;
     }
@@ -98,5 +101,10 @@ export function lookTransmission(grid: SegmentGrid, ap: ApertureGeometry, theta:
     return o >= 0 ? o : Infinity;
   };
   const r = (k + 0.5) * grid.stepMm;
-  return Float64Array.from({ length: grid.lines }, (_, l) => steeredApertureTransmission(ap, theta, l, r, oneWay, obstacle));
+  // con la refracción en las luces del camino de cada mirada (decisión 86), como la pasada A; la pendiente de Ψ̃, la del
+  // camino (en la mirada 0, igual a la de las filas k y k − 1 de la GPU salvo el redondeo)
+  return Float64Array.from(
+    { length: grid.lines },
+    (_, l) => steeredApertureTransmission(ap, theta, l, r, oneWay, obstacle) * refractionGain(ap, grid.stepMm, l, k, (m) => pre[m]),
+  );
 }

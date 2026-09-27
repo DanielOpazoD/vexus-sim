@@ -587,16 +587,20 @@ test('pared (decisión 62): líneas brillantes, grasa hipoecoica con septos, mú
   expect(errors).toEqual([]);
 });
 
-test('la pasada A en cuatro etapas da la misma transmisión de un solo rayo que el modelo de CPU', async ({ page }) => {
+test('la pasada A en cuatro etapas da la misma transmisión de un solo rayo que el modelo de CPU; la de la imagen, la de sus gemelos', async ({
+  page,
+}) => {
   // Decisión 54: impactos por línea, segmentos y suma acumulada reproducen `rayAttenuationDb` en los
   // mismos puntos (las líneas con espejo no: la CPU no sigue el rayo reflejado). Con GPU real,
   // ≤ 0,0001 dB en cuatro ventanas; el color y el PW comparten este modelo (decisión 50). Cada línea se
   // compara hasta su primer segmento ambiguo (otro tejido a ±0,02 mm): en SwiftShader un segmento en el
   // borde de una cápsula o del intestino caía del otro lado en 33 de 50 fases respiratorias (también en
   // main) y la suma difería 0,06–0,27 dB desde ahí; con el corte, 0 de 30 y ≤ 5·10⁻⁵ dB.
+  // La subcostal, por la cara de la vesícula: con Ψ̃ sumada como r_k·Σe/(R + r) − Σe·r/(R + r), su primera fila dejaba en
+  // la GPU un residuo de redondeo y la imagen se separaba de los gemelos 0,01–0,12 dB (decisión 86).
   test.setTimeout(240_000);
   const errors = await bootWithoutErrors(page);
-  for (const startPoint of ['subxiphoid', 'flank'] as const) {
+  for (const startPoint of ['subxiphoid', 'flank', 'subcostal'] as const) {
     const r = await page.evaluate(
       (id) => window.__vexusTest!.transmissionParity({ startPoint: id, every: 8, compound: false }),
       startPoint,
@@ -605,7 +609,77 @@ test('la pasada A en cuatro etapas da la misma transmisión de un solo rayo que 
     expect(r.lines, tag).toBeGreaterThan(5);
     expect(r.samples, tag).toBeGreaterThan(500);
     expect(r.maxDiffDb, tag).toBeLessThan(0.01);
+    // la transmisión de la imagen (penumbra con la emisión apodizada y refracción de las luces, decisiones 54 y 86) frente
+    // a sus gemelos sobre los segmentos de la GPU, sin las muestras en empate de redondeo de las tomas del cono
+    expect(r.apertureSamples!, tag).toBeGreaterThan(500);
+    expect(r.apertureMaxDiffDb!, tag).toBeLessThan(0.01);
+    expect(r.ambiguous!, tag).toBeLessThanOrEqual(0.01 * r.apertureSamples!);
   }
+  // Decisión 86: detrás de la vesícula (subcostal) la bilis, más lenta que el hígado, es una lente convergente: los rayos
+  // del haz enfocado que cruzan su borde se desvían y dejan de solaparse, así que el borde deja una sombra, y el centro,
+  // sin foco, algo menos. La ganancia es la transmisión de la imagen sobre la del rayo único, en las muestras sin gas ni
+  // hueso de A0 al alcance de la penumbra (±40 líneas por encima): ahí solo queda la refracción.
+  const gb = await page.evaluate(() => {
+    const T = window.__vexusTest!;
+    T.setCompound(false);
+    T.goToStartPoint('subcostal');
+    const sim = T.sim();
+    sim.render();
+    const t = sim.renderer.readTransmission();
+    const g = sim.renderer.readSegments(sim.bmode.depthMm);
+    const rows = g.rows;
+    const bile = 0.05 * g.stepMm; // la bilis deja 0,08 mm por segmento; la sangre, 0,006
+    const onGb: number[] = [];
+    let exit = 0;
+    for (let l = 0; l < g.lines; l++) {
+      let n = 0;
+      for (let s = 0; s < rows; s++)
+        if (g.excess[l * rows + s] > bile) {
+          n++;
+          exit = Math.max(exit, s);
+        }
+      if (n * g.stepMm >= 8) onGb.push(l);
+    }
+    if (onGb.length < 2) return { lines: onGb.length, edgeSamples: 0, centerSamples: 0, edgeMinDb: 0, centerMeanDb: 0, centerMaxDb: 0 };
+    const l0 = onGb[0];
+    const l1 = onGb[onGb.length - 1];
+    const gainDb = (l: number, k: number) => 20 * Math.log10(t.aperture[k * t.lines + l] / t.single[k * t.lines + l]);
+    const penumbra = (l: number, k: number) => {
+      for (let m = Math.max(0, l - 40); m <= Math.min(g.lines - 1, l + 40); m++) {
+        const gas = g.hitGasSeg![m];
+        const bone = g.hitBoneSeg![m];
+        if ((gas >= 0 && gas < k) || (bone >= 0 && bone < k)) return true;
+      }
+      return false;
+    };
+    let edgeMinDb = 0;
+    let centerMaxDb = -99;
+    let centerSum = 0;
+    let edgeSamples = 0;
+    let centerSamples = 0;
+    for (let k = exit + Math.round(20 / g.stepMm); k <= Math.min(rows - 1, exit + Math.round(40 / g.stepMm)); k++)
+      for (let l = Math.max(0, l0 - 6); l <= Math.min(g.lines - 1, l1 + 6); l++) {
+        if (penumbra(l, k)) continue;
+        if (Math.abs(l - l0) <= 6 || Math.abs(l - l1) <= 6) {
+          edgeMinDb = Math.min(edgeMinDb, gainDb(l, k));
+          edgeSamples++;
+        }
+        if (Math.abs(l - (l0 + l1) / 2) <= (l1 - l0) / 6) {
+          centerMaxDb = Math.max(centerMaxDb, gainDb(l, k));
+          centerSum += gainDb(l, k);
+          centerSamples++;
+        }
+      }
+    return { lines: onGb.length, edgeSamples, centerSamples, edgeMinDb, centerMeanDb: centerSum / centerSamples, centerMaxDb };
+  });
+  const gtag = JSON.stringify(gb);
+  expect(gb.lines, gtag).toBeGreaterThan(10);
+  expect(gb.edgeSamples, gtag).toBeGreaterThan(50);
+  expect(gb.centerSamples, gtag).toBeGreaterThan(20);
+  // el banco de ondas da −7 a −9 dB en el borde y de −3 a +1 en el centro; el modelo, algo menos hondo en el borde
+  expect(gb.edgeMinDb, gtag).toBeLessThan(-4);
+  expect(gb.edgeMinDb, gtag).toBeLessThan(gb.centerMeanDb - 1.5);
+  expect(gb.centerMaxDb, gtag).toBeLessThan(1);
   expect(errors).toEqual([]);
 });
 

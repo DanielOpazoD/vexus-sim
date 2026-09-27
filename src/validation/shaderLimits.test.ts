@@ -233,8 +233,9 @@ describe('Límites del shader con margen para crecer', () => {
     for (const [name, src] of FRAGMENT_SHADERS) expect(samplersOf(src).length, name).toBeLessThanOrEqual(16);
     expect(samplersOf(FRAG_RAWFIELD)).toEqual(['uSceneTex', 'uCoupling', 'uTrans0', 'uTrans1', 'uHits2', 'uTrans2']);
     expect(samplersOf(FRAG_RAWFIELD_STEERED)).toEqual(['uSceneTex', 'uCoupling', 'uTrans1', 'uTrans3', 'uHits2', 'uTrans2']);
-    expect(samplersOf(FRAG_TRANSMISSION)).toEqual(['uCoupling', 'uPre0', 'uPre1', 'uHits0']);
-    expect(samplersOf(FRAG_TRANSMISSION_STEERED)).toEqual(['uCoupling', 'uPre0', 'uPre1', 'uHits0', 'uPreSteer', 'uPreSteerX']);
+    // A lee de A0 la dirección reflejada del espejo (uHits1) desde que A2 o1 lleva la refracción (decisión 86)
+    expect(samplersOf(FRAG_TRANSMISSION)).toEqual(['uCoupling', 'uPre0', 'uPre1', 'uHits0', 'uHits1']);
+    expect(samplersOf(FRAG_TRANSMISSION_STEERED)).toEqual(['uCoupling', 'uPre0', 'uPre1', 'uHits0', 'uHits1', 'uPreSteer', 'uPreSteerX']);
     expect(samplersOf(FRAG_TRANS_PREFIX_STEERED)).toEqual(samplersOf(FRAG_TRANS_PREFIX));
     expect(samplersOf(FRAG_COMPOUND)).toEqual([...COMPOUND.order.map((_, i) => `uLook${i}`), 'uHits2']);
   });
@@ -284,13 +285,17 @@ describe('Límites del shader con margen para crecer', () => {
   // su ganancia (`uTransientGain`, decisión 77): 1 en fundamental, el rechazo de su banda en armónica; y el eco del
   // tejido, la acumulación del armónico (`harmonicNearGain`, 1 en fundamental) antes del transitorio y del ruido.
   // Después (d2e0f2cd7f45185c → la de abajo), el eco del tejido lleva además la ganancia focal de la emisión
-  // (`focalGain`, decisión 84) en el mismo punto: 1 en el foco.
+  // (`focalGain`, decisión 84) en el mismo punto: 1 en el foco. Cambio deliberado de A2 y A (decisión 86, f6b08093f699bc04
+  // → 76fe4b3e1120d986 y 668efb9a2b5c7008 → ca285e5d0b7eddf8): A1 lleva el aire con el dB en negativo y en .y el camino
+  // de más de las luces; A2 acumula en o1 Ψ̃ (la refracción) y su pendiente en lugar de la dirección y el tipo de gas, que
+  // ahora pone A desde A0, y A multiplica su transmisión con apertura por la ganancia de la refracción (el eco del haz
+  // enfocado cuyos rayos desvían las luces). Sin luces cerca, la ganancia es 1 exacto y la dirección, la de antes.
   it('el main de los programas de la mirada 0 es, letra a letra, el de antes de la composición', () => {
     const mainOf = (src: string): string => src.slice(src.lastIndexOf('\nvoid main() {'));
     const print = (src: string): string => createHash('sha256').update(mainOf(src)).digest('hex').slice(0, 16);
     expect(Object.fromEntries(LOOK_PAIRS.map((p) => [p.name, print(p.look0)]))).toEqual({
-      FRAG_TRANS_PREFIX: 'f6b08093f699bc04',
-      FRAG_TRANSMISSION: '668efb9a2b5c7008',
+      FRAG_TRANS_PREFIX: '76fe4b3e1120d986',
+      FRAG_TRANSMISSION: 'ca285e5d0b7eddf8',
       FRAG_RAWFIELD: 'ca057917ce3a1b32',
     });
     // y el resto de B es el mismo texto en los dos programas: solo cambian sus entradas y su main

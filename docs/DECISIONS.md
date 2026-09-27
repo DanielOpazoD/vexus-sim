@@ -3461,6 +3461,175 @@ suite completa: 28 pruebas en verde (22,6 min con SwiftShader y un trabajador). 
 en la AI, las cortinas del borde de las hemicúpulas, la mitral cerrada, la distancia a la frontera sin la columna ni la
 pared, la normal de la tapa de la columna y cifras de la documentación que no cuadraban; todo corregido arriba.
 
+## 86. Artefactos del líquido: el refuerzo posterior es el de la atenuación, la refracción de las luces deja sombras de borde en el haz enfocado y la penumbra costal lleva la apodización de la emisión
+
+**Contexto.** Sirve al objetivo 2 (fidelidad ecográfica) y al 8 (honestidad). Pista n.º 4 de la ronda 3 del juez ciego
+(21/21 detectadas): faltan el refuerzo posterior bajo la VCI y los vasos (el juez esperaba 3–5 dB tras 2 cm de sangre a
+3,5 MHz), las sombras de borde por refracción de las estructuras líquidas redondas, el relleno de las luces pequeñas por
+el grosor de corte y las sombras costales que se abren con el abanico. Antes de tocar nada se midió con GPU (M4, Metal,
+armónica y compuesto, apnea espiratoria; `main` e37f5d2), en cada vista y por luz: el refuerzo bajo cada vaso frente al
+hígado de al lado a la misma profundidad (la TGC y la ganancia focal se cancelan) en la transmisión de la pasada A, en la
+envolvente compuesta y en el gris mostrado; el relleno del centro de cada luz frente al hígado vecino; y la anchura y la
+hondura de las sombras costales del flanco a varias profundidades. Resultados:
+
+- **El refuerzo ya sale bien de la atenuación.** El rayo único de la pasada A da exactamente 2·L·(α_hígado − α_sangre) a
+  la frecuencia efectiva de 2,5 MHz (decisión 21): 1,92 dB por cm de sangre, lo que da la literatura a la frecuencia del
+  eco a esa profundidad (~3 MHz: 2·(0,5 − 0,18)·3 = 1,92 dB/cm). Suprahepática de 12 mm +2,3 dB, de 19 mm +3,4 dB. La TGC
+  y la recepción solo dependen de la profundidad (no normalizan por líneas), la envolvente y el gris lo siguen dentro del
+  ruido del moteado (+1,0–2,9 dB; +3–11 grises) y el compuesto lo deja igual (decisión 58). Lo que el juez no ve tiene
+  otras causas: (1) **la banda del foco**: en la subxifoidea y la epigástrica, en eje largo, detrás de la VCI hay hígado
+  (su tramo abdominal) y la transmisión compensada sube de delante a detrás +2,3 dB en el sano y +4,2 en la congestión
+  grave (14,5 y 25 mm de sangre), pero ese hígado está a 120–124 mm y el de delante a 87–93 mm, y la TGC nominal no
+  compensa la banda del foco (decisión 84, `psf-nominal-tissue`: −1,8 y −2,2 dB entre esas profundidades con el foco a
+  90 mm): el gris solo sube 2 y 9 niveles; (2) donde la VCI no tiene hígado detrás, su pared posterior toca el pulmón de
+  encima de la cúpula (`mediastinum-is-lung`) o la vértebra, y en el flanco apoya en la grasa retroperitoneal, ya
+  brillante (con +5,6 y +7,1 dB de refuerzo encima); (3) las suprahepáticas de 6–19 mm dan 1–3,4 dB, 4–11 grises con el
+  rango de 70 dB (≈ 3,5–4 grises por dB en el gris del hígado) bajo un moteado de desviación ~12; (4) la vesícula no sale
+  en ninguna ventana VExUS salvo la subcostal (con asas detrás). Un preajuste cuya curva de TGC aplane la banda del foco
+  por defecto, como hace el operador, lo dejaría ver; cambia toda la imagen y va aparte (abajo, pendiente). En la única referencia real limpia (pareja 7, `img13`: una vena ancha con hígado detrás) la
+  zona de debajo sale +28,6 grises sobre la de al lado a la misma profundidad (29 de gris: ×2), unos 6–11 dB con un mapa
+  de grises desconocido: más de lo que da la atenuación a 3–3,5 MHz (2–4 dB para 1–2 cm de sangre). No se infla la
+  atenuación para una sola imagen: el tejido de detrás puede no ser el mismo hígado y la TGC del operador no se conoce.
+- **No había refracción**: la transmisión va por rayos rectos. La sangre (1578 m/s frente a 1586 del hígado) refracta
+  poco; la bilis de la tabla (1482 m/s), mucho.
+- **Las sombras costales no se abrían con el abanico**: la penumbra (decisión 54) promediaba la emisión sin su
+  apodización de Hann (limitación declarada en la 84): el borde de la apertura rellenaba el centro de la sombra como el
+  centro. Bajo la costilla del flanco (13,7 mm a 22 mm) el núcleo a −12 dB medía 18 mm a 62 mm y 13 mm a 82 mm, donde el
+  abanico da 20 y 24 mm, y desaparecía a −20 dB desde 62 mm.
+- **Las luces pequeñas no son negras puras**: las de 2–4 mm quedan a −2/−15 dB del hígado (grises 40–90 frente a 60–100),
+  las de 5–7 mm a −7/−38 dB según vayan en eje largo (el grosor de corte las rellena) o de través, y las grandes a
+  −31/−38 dB (grises 3–15). La física del haz elevacional (la potencia de dos vías fuera de la luz, erfc(√2·h/σ₁) con h la
+  semialtura de la luz) da −9, −15 y −27 dB a 3, 4 y 6 mm en eje largo a 5 cm; las referencias reales, un vaso de ~3 mm a
+  −14 grises del hígado (`img11`), uno de 4–5 mm en 8 frente a 46 y las luces grandes en 2–5 frente a 29–41
+  (`img13`, `img09`). Coinciden; no se cambia.
+
+**Opciones.** (1) Pintar un realce bajo los vasos o sombras en sus bordes: prohibido (§23, criterio 1). (2) Pérdida de
+Fresnel a incidencia rasante en cada cruce: con la sangre solo actúa a < 2° de la tangente, por debajo de una línea, y no
+explica la sombra de la vesícula. (3) Coherencia de fase sobre el cono de la apertura: es la respuesta de un blanco
+puntual, no el eco de un moteado. (4) Transporte de la energía de los rayos de una onda plana por la pantalla de fase de
+las luces (la primera versión de esta decisión): da el foco de los libros tras el centro de la vesícula (+2,2 dB con GPU)
+y bordes de −23 a −27 dB en el gemelo, pero es la energía de una onda plana, no el eco de moteado de un haz enfocado. La
+revisión adversarial montó un banco de ondas 2D (espectro angular en pasos partidos, 3,5 MHz, con la emisión y la
+recepción de este haz, métrica ∫I_tx·I_rx; `tools/fidelity/refraction-wave.ts`): tras la vesícula da −8,4 / −8,9 dB en el
+borde a 20 / 40 mm, en una sombra de 6–8 mm centrada en él, −0,6 / −2,0 dB en el centro (ningún foco con el foco del
+equipo a 90 mm; +1,0 dB con él a 150) y −0,2 a −0,5 dB tras un vaso, donde la onda plana daba −1,2 a −6,6. (5) La
+elegida: el eco del haz enfocado cuyos rayos desvía la pantalla de fase, en la pasada A.
+
+**Decisión.**
+
+- **(a) Refracción de las luces** (`transmission.ts`, `aperture.ts`, `transmissionTwin.ts`): A1 escribe en su canal .y el
+  camino de más de su segmento en una luz líquida, paso·(c_hígado/c − 1) (sangre 0,51 %, bilis de la tabla 7,0 %; el
+  aire pasa al signo del dB). A2 acumula Ψ̃_l(k) = Σ_{s≤k} e_s·(r_k − r_s)/(R + r_s) y su pendiente Σ_{s<k} e_s/(R + r_s)
+  a lo largo de cada camino: o1.xy en la mirada 0 (la dirección reflejada del espejo y el tipo de gas, que iban ahí, los
+  pone A desde A0) y o3.zw en la dirigida. Se suma término a término con la distancia en filas enteras, e_s·(k − s)·paso:
+  todos ≥ 0 y el de la fila k, 0 exacto (la forma r_k·Σe/(R + r) − Σe·r/(R + r) se cancelaba; abajo, la paridad). Lente delgada paraxial: el rayo radial que
+  cruza la luz en la línea m aterriza desplazado Δ = (Ψ̃_{m+1} − Ψ̃_{m−1})/(2·dφ) mm. La pasada A forma el eco medio de un
+  moteado, E = ∫I_tx·I_rx, con 7 tramos de cada apertura: la emisión (26 mm con su ventana de Hann y foco F; su tramo t
+  cruza la luz a t·D_tx·(1 − (r − D)/F) de la línea y, sin la luz, aterriza a t·D_tx·(1 − r/F)) y la recepción (uniforme,
+  de min(26, r/2,5) mm, enfocada en la muestra: cruza a t·D_rx·D/r). Cada tramo lleva el desplazamiento medio de sus rayos
+  (el gradiente medio de Ψ̃ entre las líneas donde sus bordes cruzan la luz) y es una mancha gaussiana del ancho de
+  difracción de su haz (el del modelo del haz, σ = FWHM/(2,355·√2) [DERIVADO]) ensanchada por la difracción de lo
+  refractado, σ² += 0,07·λ·D por haz [AJUSTADO al banco de ondas]. La ganancia de amplitud de ida y vuelta es √(E/E0).
+  D, la distancia de la luz a la muestra, es Ψ̃ sobre la pendiente de su camino, acumulada sin restar filas (en la
+  dirigida, los caminos de las filas k y k − 1 cruzan líneas distintas y la diferencia de sus Ψ̃ sale ≤ 0 en el 0,8–3,5 %
+  de las muestras tras una luz de las seis vistas; en la mirada 0, la resta en float32 movía D un 3·10⁻⁵ y con él el
+  redondeo de los tramos) o, fuera de la luz, la de la vecina con luz más cercana, de una en una hasta ±8 líneas y de
+  cuatro en cuatro hasta ±32 (los conos cruzan la luz hasta a ±26 líneas; cortar en ±8 dejaba un escalón radial de
+  0,6–1,2 dB tras la vesícula); sin luz ahí, la ganancia es 1 exacto. En armónica la emisión va a f/2 con la escala 1/√2
+  de su haz (decisión 77) en su mancha, en su cono y en su difracción (λ_tx·escala², la de la fundamental). Multiplica la
+  transmisión con apertura de la imagen (o0.x en la mirada 0, o3.x en la dirigida), no el rayo único del color y del PW.
+  Frente al banco de ondas, en sus nueve casos (vesícula de 29 mm a 20, 40 y 60 mm y con el foco a 50, 90 y 150 mm; vasos
+  de 10, 20 y 30 mm; `refraction.test.ts`): la c de la difracción se ajustó sobre esos mismos perfiles, así que su error
+  medio, 0,51 dB, es el residuo del ajuste (casi plano entre c = 0,03 y 0,15; con c = 0, 0,71 dB), no una validación; el
+  borde de la vesícula sale 1,1–2,4 dB menos hondo y con su mínimo 1–2 mm dentro de la luz, su centro hasta 1,6 dB más
+  oscuro (puntos sueltos de sus perfiles, hasta 2,7–3,9 dB), y los vasos a ≤ 0,5 dB. El banco es de fundamental: la
+  armónica no está contrastada. La física del
+  artefacto: Sommer, Filly y Minton 1979 (AJR 132:973) y Robinson, Wilson y Kossoff 1981 (J Clin Ultrasound 9:181)
+  atribuyen las sombras de borde a la refracción en los bordes curvos de las estructuras líquidas.
+- **(b) Penumbra con la emisión apodizada**: el cono de la emisión pesa sus 9 tomas con la ventana de Hann de la emisión
+  de la imagen B (decisión 84), cos²(πt), y la recepción, casi uniforme (k 1,3 frente a 1,21), pesa 1; las tomas van al
+  punto medio de cada tramo (con la de Hann, las de los bordes pesarían 0). Un solo `apConeMean` sobre el prefijo de la
+  mirada para las dos.
+- **(c) El refuerzo no se toca**: sale de la atenuación, como antes. Tras el centro de una luz la refracción no suma
+  foco: el haz, desenfocado por la lente, pierde algo (banco: −2,6 a +1,0 dB según el foco).
+- **(d) El relleno de las luces no se toca** (arriba).
+- **(e) Los gemelos de TS de A2 y A** (`prefixDb`, `steeredPrefixDb`, `refractionPsi`, `apertureTransmission`,
+  `steeredApertureTransmission`, `refractionGain`) pasan a `transmissionTwin.ts`, que solo importan los ganchos de prueba
+  y las pruebas: vivían en módulos del chunk principal (su GLSL) y el chunk los llevaba (2,6 kB). La paridad de la
+  mirada 0 compara ahora también su transmisión de la imagen con sus gemelos sobre los segmentos de la GPU
+  (`look0TransmissionTwin`, con el primer gas y el primer hueso de A0, como la GLSL), como la dirigida; las dos dicen dónde
+  está su peor muestra (`worstAperture`) y la de la mirada 0, cuántas compara (`apertureSamples`, el denominador de sus
+  empates).
+
+La revisión adversarial de contexto limpio encontró, además de lo de (4): la D de las miradas dirigidas tomada de dos
+caminos distintos (arreglado en (a)); una sombra de borde de los vasos que era un artefacto de discretización de la onda
+plana (desaparece con el haz enfocado); la derivación de la constante de difracción, mal apoyada (ahora ajustada al
+banco); la paridad sin la bilis y con el obstáculo de A1 en lugar del de A0, y el denominador de sus empates (arreglados;
+la e2e lleva la subcostal); y riesgos que quedan declarados (abajo y en `refraction-paraxial`). Una segunda pasada sobre
+el modelo nuevo encontró la resta de filas de la D de la mirada 0 (ahora acumulada en A2), el escalón del corte de la
+búsqueda (ampliada), la difracción de la emisión armónica sin su escala (escalada) y la escalera de A1 como causa del
+centro oscuro (pendiente, abajo).
+
+**Consecuencias.** Con GPU (M4, armónica y compuesto; `main` 88346eb → rama):
+
+- **Vesícula** (subcostal, a 20–40 mm bajo la bilis): la refracción de A deja los bordes a −4,2 dB de media (mínimo −9,2)
+  y el centro a −0,9 dB (máximo −0,1); la envolvente del centro sobre la del borde pasa de 2,1 a 4,8 dB y el gris, de
+  105 / 113 (borde / centro) a 91 / 110: dos sombras de borde a los lados de la banda del refuerzo, sin foco. (La onda
+  plana daba −8,5 / +2,2 dB y 82 / 122.) Con la c de la bilis a 37 °C la sombra sería más estrecha (abajo).
+- **Vasos**: sin sombras de borde visibles. La refracción queda en −0,1 a −0,8 dB en el borde de los vasos de las seis
+  vistas (−0,1 / −0,2 / −0,6 dB tras las suprahepáticas de 12 y 20 mm y un tramo oblicuo de 22 mm), como en el banco
+  (−0,2 a −0,5 dB) y en las referencias reales, sin sombras de borde tras las venas (`img11`, `img13`); el refuerzo del
+  centro, el de la atenuación (+2,4 / +3,5 dB tras las de 12 / 20 mm, como en `main`).
+- **Corazón** (decisión 85): bajo la aurícula derecha de la subxifoidea (41 mm de sangre en su centro, pared honda a
+  132 mm) el rayo único sube lo que da la atenuación, 1,8–1,9 dB por cm de sangre frente al miocardio o al hígado (7–8 dB);
+  la refracción deja en sus paredes laterales como mucho −1,5 dB (media −0,2) a 10–30 mm y nada en su centro (gemelo
+  sobre los segmentos de A1 de la GPU). Al lado y detrás hay pulmón y mediastino: no hay una referencia limpia a la misma
+  profundidad para medirlo en la imagen.
+- **Sombras costales** (flanco, costilla de 13,7 mm a 22 mm): el núcleo a 62 / 82 / 142 mm pasa de 19,9 / 17,1 / 8,8 a
+  32,7 / 27,4 / 15,8 dB bajo el hígado; a 82 mm su anchura a −12 dB pasa de 13,2 a 22,8 mm (el abanico: 23,7) y a −20 dB,
+  de 0 a 12,3 mm. Gemelo (costilla de 12 mm a 18 mm): la umbra (−40 dB) acaba a 34,6 mm tras la cara en la mirada 0
+  (26–28 antes) y a 31,1 con el compuesto.
+- **Coste**: la refracción busca la luz (hasta 30 téxeles) y, cerca de una, lee 28 más y hace 56 exponenciales por
+  fragmento de A en cada mirada (sin clasificar); A lee además la dirección reflejada de A0 en las líneas con espejo.
+  Con GPU (M4, frente a `main` 88346eb, dos rondas intercaladas) la pasada A pasa de 0,05–0,07 a 0,06–0,08 ms y el
+  cuadro, de 10,40–10,42 a 10,48–10,53 ms en la subcostal y de 7,75–7,77 a 7,81–7,83 en la subxifoidea (con compuesto,
+  10,95 → 11,03–11,05 y 8,18–8,20 → 8,23–8,26). Arranque con SwiftShader frente a `main` 88346eb (carga 3–7, seis rondas
+  intercaladas): 31,4 / 26,6 / 24,4 / 26,9 / 24,2 / 24,1 → 35,7 / 25,2 / 24,5 / 24,6 / 24,6 / 24,6 s, sin tendencia
+  (medianas 25,4 y 24,6 s; la primera ronda es la del calentamiento). Chunk principal 320,8 → 321,7 kB de 325 (la GLSL y
+  los uniforms nuevos; los gemelos fuera quitan 2,6 kB); los ganchos de prueba, 58,7 → 63,5 kB de 120.
+- **Paridad con la GPU** (Metal; seis vistas, las tres miradas): la transmisión de la imagen queda a ≤ 9·10⁻⁵ dB de sus
+  gemelos. Con Ψ̃ sumada como r_k·Σe/(R + r) − Σe·r/(R + r), la GPU (con FMA) dejaba un residuo de ±10⁻⁹ mm en la primera
+  fila de la vesícula donde el gemelo da 0, la distancia a la luz saltaba de 0 a un paso y la imagen se separaba
+  0,01–0,12 dB en su cara (la e2e, sin la subcostal, no lo veía; ahora la lleva).
+- **Limitaciones** nuevas: `lumen-refraction-only`, `refraction-paraxial`, `fluid-sound-speed-20c` y `lumen-fill-three-planes`;
+  se borra de `psf-nominal-tissue` la penumbra sin apodización.
+- **Pendiente**: la fracción de luz de cada segmento en A1: la cuerda de las luces va en segmentos enteros de 1,125 mm y
+  sus escalones en Ψ̃ se leen como bordes de lente, que oscurecen el centro de la vesícula (según la revisión, −2,2 dB en
+  el banco plano frente a −0,8 con la fracción exacta, y el error medio de 0,51 a 0,39 dB sin reajustar c) y lo ondulan
+  ±1 dB entre líneas; la curva de TGC del preajuste que aplane la banda del foco por defecto (el hígado a 14–18 cm, 4–7 dB bajo
+  el del foco en armónica, y el campo cercano, 5 dB): expondría el refuerzo de detrás de la VCI y aclararía el campo
+  cercano de la pareja 6 del juez, pero cambia el gris de toda la imagen y sus puertas; el corazón y el mediastino
+  (decisión 85) cambiarán lo que hay detrás de la VCI por encima de la cúpula; la c de la bilis a 37 °C, con la
+  calibración del eco de su cara; y el borde de la vesícula, 1,1–2,4 dB menos hondo que en el banco también con la
+  cuerda exacta (la suma incoherente de los rayos).
+
+**Verificación.** `refraction.test.ts`: el camino de más de las luces sale de la c de TISSUES (sangre y bilis, nada más);
+sin luces la ganancia es 1 exacto, también en los bordes del sector; Ψ̃ de la mirada 0 es la del prefijo dirigido con θ =
+0 bit a bit, su pendiente es la del camino y da la distancia a la luz; Ψ̃ es 0 exacto en la primera fila de cada luz y,
+en las miradas dirigidas, la distancia con la pendiente del camino queda entre 0 y r en todas las muestras (la diferencia
+de filas sale ≤ 0 en algunas); frente al banco de ondas, sus nueve casos (el borde de la vesícula a ≤ 2,5 dB del banco
+en su mínimo y en el borde, su centro sin foco y a ≤ 3,5 dB, los vasos a > −1,2 dB; error medio < 0,8 dB); en el sector,
+la vesícula oscurece sus bordes (−4 a −12 dB) más que su centro, su sombra decae fuera sin el escalón del corte de la
+búsqueda, una vena queda a > −1,5 dB y más allá del alcance de la búsqueda la ganancia es 1 exacto; la GLSL de A1, A2 y
+A con las mismas constantes. `psfDepth.test.ts`: los uniforms de la refracción de A con el haz de cada modo. `aperture.test.ts`: las tomas en el punto medio y
+la ventana de Hann (media ½), la sombra más honda en profundidad que con la emisión uniforme (> 3 dB a 60–150 mm), la
+umbra y el refuerzo de las miradas dirigidas (este, sin la refracción, que se prueba aparte). `steeredParity.test.ts` con
+las tomas nuevas y el camino de más; `shaderLimits.test.ts`, las huellas de A2 y A. e2e: la paridad de la mirada 0
+compara también la transmisión de la imagen con sus gemelos sobre los segmentos de la GPU en la subxifoidea, el flanco y
+la subcostal (≤ 0,01 dB, empates ≤ 1 % de sus muestras), la dirigida ya lo hacía (G8, ahora con la refracción), y detrás
+de la vesícula de la subcostal, en las muestras sin gas ni hueso al alcance de la penumbra, el borde baja de −4 dB y
+1,5 dB más que el centro, que no pasa de +1 dB.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

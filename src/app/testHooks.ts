@@ -19,8 +19,8 @@ import { TISSUES, Tissue } from '../anatomy/tissues';
 import type { Vec3 } from '../core/vec3';
 import { FRAME_PASSES, type PassId } from '../ultrasound/passGraph';
 import { rayAttenuationDb } from '../ultrasound/transmission';
-import { type ApertureGeometry } from '../ultrasound/aperture';
-import { compareSteeredTransmission } from './steeredParity';
+import { refractionBeam, type ApertureGeometry } from '../ultrasound/aperture';
+import { compareSteeredTransmission, look0TransmissionTwin } from './steeredParity';
 import { compoundActive, lookTheta } from '../ultrasound/compound';
 import { levelOfGrey } from '../ultrasound/greyMap';
 import { focalGain } from '../ultrasound/beamEcho';
@@ -138,13 +138,20 @@ export interface TestHooks {
     lines: number;
     samples: number;
     maxDiffDb: number;
-    /** Solo miradas dirigidas: el peor desacuerdo de la transmisión con apertura (dB) y las muestras en empate. */
+    /**
+     * El peor desacuerdo de la transmisión con apertura de A (dB; con la refracción de las luces, decisión 86) con sus
+     * gemelos sobre los segmentos de la GPU, y las muestras en empate de redondeo: en la mirada 0 también.
+     */
     apertureMaxDiffDb?: number;
+    /** Muestras de la transmisión de la imagen comparadas en la mirada 0 (sin los empates), el denominador de `ambiguous`. */
+    apertureSamples?: number;
     ambiguous?: number;
     /** Líneas cortadas en su primer segmento de tejido ambiguo (otro tejido a ±`ambiguityMm` del centro). */
     truncatedLines: number;
     /** Dónde está el peor desacuerdo (diagnóstico del mensaje de la e2e). */
     worst: { line: number; depthMm: number; cpuDb: number; gpuDb: number; tissue: string } | null;
+    /** Dónde está el peor desacuerdo de la transmisión con apertura. */
+    worstAperture?: { line: number; depthMm: number; tsDb: number; gpuDb: number } | null;
   };
   /**
    * Persistencia del moteado al mover la sonda (decisión 55): correlación de la envolvente en el
@@ -507,7 +514,44 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
             }
           }
         }
-        return { lines, samples, maxDiffDb, truncatedLines, worst };
+        // la transmisión de la imagen (penumbra y refracción, decisiones 54 y 86) frente a sus gemelos sobre los segmentos
+        // de A0/A1 de la GPU, como en las miradas dirigidas
+        const grid = sim.renderer.readSegments(depth);
+        const beam = sim.profile.beam;
+        const ap: ApertureGeometry = {
+          lines: gpu.lines,
+          halfSector: tr.halfSector,
+          curvatureRadius: tr.curvatureRadius,
+          apertureTxMm: bmodeTxApertureMm(sim.profile, sim.bmode),
+          apertureRxMaxMm: beam.apertureRxMaxMm,
+          fNumberRxMin: beam.fNumberRxMin,
+          refraction: refractionBeam(bmodeBeam(sim.profile, sim.bmode), sim.bmode.focusMm),
+        };
+        const imaging = compareSteeredTransmission(
+          grid,
+          ap,
+          0,
+          {
+            lines: gpu.lines,
+            samples: gpu.samples,
+            prefixDb: Array.from(gpu.single, (x) => -20 * Math.log10(Math.max(x, 1e-12))),
+            aperture: gpu.aperture,
+          },
+          every,
+          undefined,
+          (b) => look0TransmissionTwin(grid, ap, b),
+        );
+        return {
+          lines,
+          samples,
+          maxDiffDb,
+          truncatedLines,
+          worst,
+          apertureMaxDiffDb: imaging.apertureMaxDiffDb,
+          apertureSamples: imaging.samples,
+          ambiguous: imaging.ambiguous,
+          worstAperture: imaging.worstAperture,
+        };
       }),
     colorOnVessel: (vessels) => {
       const sim = getSim();
@@ -885,6 +929,7 @@ function steeredParity(sim: Simulator, look: number, every: number): ReturnType<
     apertureTxMm: bmodeTxApertureMm(sim.profile, sim.bmode),
     apertureRxMaxMm: beam.apertureRxMaxMm,
     fNumberRxMin: beam.fNumberRxMin,
+    refraction: refractionBeam(bmodeBeam(sim.profile, sim.bmode), sim.bmode.focusMm),
   };
   const parity = compareSteeredTransmission(
     grid,

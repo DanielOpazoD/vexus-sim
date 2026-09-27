@@ -17,12 +17,10 @@ import {
   MIRROR_DB,
   STEERED_PREFIX_GLSL,
   mirrorCrossing,
-  mirrorLookaheadRows,
-  prefixDb,
   rayAttenuationDb,
   rayTransmission,
-  steeredPrefixDb,
 } from '../ultrasound/transmission';
+import { mirrorLookaheadRows, prefixDb, steeredPrefixDb } from '../ultrasound/transmissionTwin';
 import { GRID_GEOMETRY, emptyGrid, gridLineAngle, segmentGridFromScene, setMirror } from './support/segmentGrid';
 
 /** Regla de atenuación compartida por la puerta PW y la pasada A (GLSL). */

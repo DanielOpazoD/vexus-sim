@@ -7,11 +7,11 @@ import { STEERED_TIE_LINES, compareSteeredTransmission, steeredTransmissionTwin 
 import { NORMAL_ADULT } from '../cases';
 import { clonePatient } from '../physiology/patientState';
 import { pointOnLine } from '../probe/probe';
-import { type ApertureGeometry } from '../ultrasound/aperture';
+import { refractionBeam, type ApertureGeometry } from '../ultrasound/aperture';
 import { CONVEX_BEAM } from '../ultrasound/beamModel';
-import { bmodeTxApertureMm } from '../ultrasound/transducerProfile';
+import { bmodeBeam, bmodeTxApertureMm } from '../ultrasound/transducerProfile';
 import { COMPOUND_STEER_RANGE_DEG, lookTheta } from '../ultrasound/compound';
-import { GAS_DB_PER_CM, type SegmentGrid } from '../ultrasound/transmission';
+import { GAS_DB_PER_CM, lumenExcessPerMm, type SegmentGrid } from '../ultrasound/transmission';
 import { GRID_GEOMETRY as G, emptyGrid } from './support/segmentGrid';
 import { recordingGl } from './support/recordingGl';
 
@@ -58,7 +58,7 @@ function float32RoundingError(theta: number): { path: number; cone: number } {
         const arg64 = line + (betaK64 - Math.asin(a64 / (R + (s + 0.5) * step64))) / dPhi64 + 0.5;
         path = Math.max(path, Math.abs(f(f(line + x) + 0.5) - arg64));
       }
-    // tomas: floor(halfLines·(2j/8 − 1) + 0,5), con el obstáculo en cualquier fila anterior
+    // tomas: floor(2·halfLines·t + 0,5) con t = (j + ½)/9 − ½ (decisión 86), con el obstáculo en cualquier fila anterior
     const s32 = along32(f(R32 + f(f(k + 0.5) * step)));
     const s64 = along64(R + (k + 0.5) * step64);
     for (let o = 0; o < k; o++) {
@@ -73,8 +73,9 @@ function float32RoundingError(theta: number): { path: number; cone: number } {
         [f(f(f(0.5 * f(Math.min(Drx, f(s32 / F)))) * sh32) / sp32), (0.5 * Math.min(Drx, s64 / F) * sh64) / sp64],
       ];
       for (let j = 0; j < 9; j++) {
-        const t = (2 * j) / 8 - 1;
-        for (const [h32, h64] of halves) cone = Math.max(cone, Math.abs(f(f(h32 * t) + 0.5) - (h64 * t + 0.5)));
+        const t32 = f(f(f(j + 0.5) / 9) - 0.5);
+        const t64 = (j + 0.5) / 9 - 0.5;
+        for (const [h32, h64] of halves) cone = Math.max(cone, Math.abs(f(f(f(2 * h32) * t32) + 0.5) - (2 * h64 * t64 + 0.5)));
       }
     }
   }
@@ -105,6 +106,8 @@ function viewGrid(view: StartPoint['id']): { grid: SegmentGrid; ap: ApertureGeom
       const i = l * grid.rows + s;
       grid.db[i] = p.gas ? GAS_DB_PER_CM * (grid.stepMm / 10) : 2 * attenuationDbPerCm(t, fMHz) * (grid.stepMm / 10);
       grid.air[i] = t === Tissue.Air ? 1 : 0;
+      // el camino de más de las luces (decisión 86), como A1
+      grid.excess[i] = lumenExcessPerMm(t) * grid.stepMm;
       grid.bone[i] = p.bone ? 1 : 0;
       grid.gas[i] = t === Tissue.Lung ? 1 : p.gas ? 2 : 0;
     }
@@ -118,6 +121,7 @@ function viewGrid(view: StartPoint['id']): { grid: SegmentGrid; ap: ApertureGeom
     apertureTxMm: bmodeTxApertureMm(sim.profile, sim.bmode),
     apertureRxMaxMm: b.apertureRxMaxMm,
     fNumberRxMin: b.fNumberRxMin,
+    refraction: refractionBeam(bmodeBeam(sim.profile, sim.bmode), sim.bmode.focusMm),
   };
   return { grid, ap };
 }

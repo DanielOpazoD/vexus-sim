@@ -1614,6 +1614,8 @@ export const CURTAIN_LIVER_MAX_AIR = 0.01;
  * Pérdida por la penumbra de la apertura (dB, transmisión con apertura frente a la de un solo rayo)
  * a partir de la cual el hígado ya no es «puro»: junto a una costilla el cono queda tapado en parte
  * aunque la línea no lo esté (decisión 54), y ese tejido más oscuro es física, no el nivel del hígado.
+ * Desde la decisión 86 la transmisión con apertura lleva también la refracción de las luces: la máscara deja
+ * fuera el hígado de sus sombras de borde (y el de detrás de la vesícula, algo más oscuro).
  */
 const MAX_PENUMBRA_DB = 0.5;
 

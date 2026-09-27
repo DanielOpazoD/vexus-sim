@@ -649,6 +649,38 @@ pleura como arcos paralelos a la cara bajo las líneas acopladas en las cuatro v
 la punta de la subxifoidea, oscuros (sin acoplar) con una transición de unas 12 líneas, sin capas dobladas en las que
 se ven; el talón de la subxifoidea, empujado 24 mm, sin cuña.
 
+### Artefactos del líquido (decisión 86): refuerzo, sombras de borde, relleno de las luces y sombras costales
+
+Medido con GPU (M4, Metal, armónica y compuesto, apnea espiratoria; `main` 88346eb → la rama; las costillas y las luces pequeñas, frente a e37f5d2) sobre la rejilla del plano
+(línea × 0,5 mm: el tejido y el vaso de la GPU, la envolvente compuesta, el gris mostrado y las transmisiones de la
+pasada A): el refuerzo bajo cada luz con hígado detrás frente al hígado a 8–20 mm de su borde y a la misma profundidad (la
+TGC y la ganancia focal se cancelan), a 10–40 mm bajo la luz; la sombra de borde, la refracción de A (la transmisión con
+apertura sobre la del rayo único, sin hueso ni gas cerca) en las líneas del borde lateral; el relleno del 40 % central de
+la luz frente al hígado vecino; y las sombras costales del flanco por su perfil lateral. Las referencias reales son los
+recortes de la prueba ciega (mismo gris del panel; la escala en dB de un equipo real no se conoce).
+
+| Medida                                                                              | `main`                     | Rama                         | Referencia real                                                     |
+| ----------------------------------------------------------------------------------- | -------------------------- | ---------------------------- | ------------------------------------------------------------------- |
+| Refuerzo tras la suprahepática de 12 mm (intercostal): rayo único / imagen, dB      | +2,4 / +2,4                | +2,4 / +2,4                  | —                                                                   |
+| Ídem, envolvente dB / gris                                                          | +1,3 / +4,3                | +1,3 / +4,3                  | —                                                                   |
+| Refuerzo tras la de 19 mm (congestión grave): imagen dB / gris                      | +3,5 / +4,0                | +3,5 / +4,9                  | `img13`: +28,6 grises bajo una vena ancha (29 → 58)                 |
+| Sombra de borde (refracción mínima a 10–40 mm): venas de 12 / 19 / 22 mm (oblicua)  | 0 / 0 / 0                  | −0,1 / −0,2 / −0,6 dB        | sin sombras de borde visibles tras las venas (`img11`, `img13`)     |
+| Vesícula (subcostal, 20–40 mm bajo la bilis): refracción en el borde / en el centro | 0 / 0                      | −4,2 (mínimo −9,2) / −0,9 dB | sin vesícula entre las referencias                                  |
+| Ídem: envolvente del centro sobre el borde; gris del borde / del centro             | 2,1 dB; 105 / 113          | 4,8 dB; 91 / 110             | —                                                                   |
+| Luces de 2–4 / 5–7 mm / grandes, bajo el hígado                                     | −2/−15; −7/−38; −31/−38 dB | igual                        | ~3 mm −14 grises; 4–5 mm 8 frente a 46; VCI 5 frente a 41 (`img09`) |
+| Costilla del flanco (13,7 mm a 22 mm): núcleo a 62 / 82 / 142 mm bajo el hígado     | 19,9 / 17,1 / 8,8 dB       | 32,7 / 27,4 / 15,8 dB        | sin costillas entre las referencias                                 |
+| Ídem: anchura a −12 dB / −20 dB a 82 mm (el abanico: 23,7 mm)                       | 13,2 / 0 mm                | 22,8 / 12,3 mm               | —                                                                   |
+
+En fundamental las mismas cifras a ±0,5 dB. La refracción es la del eco del haz enfocado, contrastada con un banco de
+ondas 2D con este haz (`tools/fidelity/refraction-wave.ts`): tras la vesícula da −8,4 / −8,9 dB en el borde a 20 / 40 mm y
+−0,6 / −2,0 dB en el centro, y el gemelo en la misma geometría −6,1 / −6,7 y −2,2 / −3,5; tras los vasos, −0,2 a −0,5 dB
+(gemelo: −0,1 a −0,8). La primera versión de la rama (energía de una onda plana) daba en la vesícula −8,5 / +2,2 dB con
+GPU y −23 / −27 dB en el borde del gemelo, y sombras de −1,6 a −3,8 dB tras las venas. El refuerzo no cambia de modelo:
+es el de la atenuación (1,92 dB por cm de sangre). Bajo la VCI de la subxifoidea en eje largo hay hígado y la transmisión compensada sube +2,3 dB (sano) y +4,2 dB
+(congestión grave) de delante a detrás, pero la banda del foco, que la TGC nominal no compensa, le quita 1,8–2,2 dB entre
+87–93 y 120–124 mm: el gris sube 2 y 9 niveles. En el flanco la VCI apoya en la grasa retroperitoneal y por encima de la
+cúpula, en el pulmón.
+
 ## Línea base (23-09-2026, árbol `src/` 4de3821, tras el preajuste abdominal; M4 con Metal, densidad 2)
 
 | Escena                  | SNR  | Oscuros | Grietas | Grano axial / lateral ÷ PSF | Hígado p05/p50/p95 | Desviación | Luz | dB/cm | Pared 0–20° | Pared 20–40° | cps | ms sin / con color |

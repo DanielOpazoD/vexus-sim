@@ -1,10 +1,10 @@
 import { TISSUE_COUNT } from '../../anatomy/tissues';
 import { C_RECONSTRUCTION_MM_S } from '../../core/units';
 import { ANATOMY_GLSL } from '../../anatomy/gpu/anatomy.glsl';
-import { APERTURE_GLSL, STEERED_APERTURE_GLSL } from '../aperture';
+import { APERTURE_GLSL, REFRACTION_GLSL, STEERED_APERTURE_GLSL } from '../aperture';
 import { COMPOUND, COMPOUND_GLSL } from '../compound';
 import { IFACE_REACH_MM, INTERFACE_ECHO_GLSL } from '../interfaceEcho';
-import { GAS_DB_PER_CM, MIRROR_BISECTION_STEPS, STEERED_PREFIX_GLSL } from '../transmission';
+import { GAS_DB_PER_CM, MIRROR_BISECTION_STEPS, STEERED_PREFIX_GLSL, lumenExcessGlsl } from '../transmission';
 import {
   CURTAIN_AIR_GLSL,
   CURTAIN_CONTIGUOUS_SEGMENTS,
@@ -296,7 +296,9 @@ uniform sampler2D uHits0;
 uniform sampler2D uHits1;
 uniform sampler2D uHits2;
 in vec2 vUv;
-out vec4 oSeg; // (dB ida y vuelta del segmento, es aire, es hueso, tipo de gas: 0 no, 1 pulmón, 2 otro, 3 cortina)
+// (dB ida y vuelta del segmento, negativo en el aire; camino de más en una luz líquida, decisión 86; es hueso; tipo de
+// gas: 0 no, 1 pulmón, 2 otro, 3 cortina)
+out vec4 oSeg;
 void main() {
   int line = int(gl_FragCoord.x);
   int s = int(gl_FragCoord.y);
@@ -321,7 +323,7 @@ void main() {
   // .w: marca de gas para el prefijo dirigido (decisión 58), como A0: 1 pulmón, 2 otro gas, 3 cortina (61)
   float lung = !reflected && float(s) <= curtainLast ? ${glslFloat(CURTAIN_GAS_KIND)} : 1.0;
   float gas = flag > 0.5 && flag < 1.5 ? (c.tissue == T_LUNG ? lung : 2.0) : 0.0;
-  oSeg = vec4(db, c.tissue == T_AIR ? 1.0 : 0.0, flag > 1.5 ? 1.0 : 0.0, gas);
+  oSeg = vec4(c.tissue == T_AIR ? -db : db, ${lumenExcessGlsl('c.tissue')} * step, flag > 1.5 ? 1.0 : 0.0, gas);
 }
 `;
 
@@ -342,33 +344,38 @@ uniform sampler2D uHits0;
 uniform sampler2D uHits1;
 in vec2 vUv;
 layout(location = 0) out vec4 o0; // (dB ida y vuelta de un rayo, gasHit, boneHit, mirrorHit)
-layout(location = 1) out vec4 o1; // (dirección, tipo de gas)
+layout(location = 1) out vec4 o1; // (Ψ̃ de la refracción en las luces y su pendiente, decisión 86; 0, 0)
 ${steeredOnly(look, STEERED_PREFIX_DECL_GLSL)}void main() {
   int line = int(gl_FragCoord.x);
   int k = int(gl_FragCoord.y);
-  float attenDb = 0.0;
+  float step = uDepth / uCoarseN;
+  float attenDb = 0.0, psi = 0.0, pa = 0.0;
   bool entered = false;
   bool boneEntered = false;
   for (int s = 0; s < 512; s++) {
     if (s > k) break;
     vec4 g = texelFetch(uSeg, ivec2(line, s), 0);
-    if (g.y > 0.5 && !entered) continue;
+    if (g.x < 0.0 && !entered) continue;
     entered = true;
     if (g.z > 0.5 && !boneEntered) { attenDb += 6.0; boneEntered = true; }
-    attenDb += g.x;
+    attenDb += abs(g.x);
+    // Ψ̃ de la refracción en las luces y su pendiente (decisión 86, refractionPsi): Σe·(k − s)/(R + r) y Σ_{s<k} e/(R + r),
+    // términos ≥ 0 sin cancelación
+    float e = g.y / (uCurvR + (float(s) + 0.5) * step);
+    psi += e * float(k - s);
+    if (s < k) pa += e;
   }
   vec4 h0 = texelFetch(uHits0, ivec2(line, 0), 0);
   vec4 h1 = texelFetch(uHits1, ivec2(line, 0), 0);
-  float step = uDepth / uCoarseN;
   float kf = float(k);
   // Espejo desde la fila que contiene su r exacta menos el alcance del eco pleural: la pasada B refleja
   // solo r > mirrorHit y centra ahí el eco (decisión 57). Las A-lines, a múltiplos de la pleura exacta.
   float mirrorHit = h0.x >= 0.0 && h1.w < (kf + 1.0) * step + ${IFACE_REACH_MM.toFixed(4)} ? h1.w : -1.0;
   float gasHit = h0.y >= 0.0 && h0.y <= kf ? (h0.y == h0.x ? h1.w : (h0.y + 0.5) * step) : -1.0;
   float boneHit = h0.z >= 0.0 && h0.z <= kf ? (h0.z + 0.5) * step : -1.0;
-  vec3 dir = mirrorHit >= 0.0 ? h1.xyz : lineDir(lineTheta(vUv.x));
   o0 = vec4(attenDb, gasHit, boneHit, mirrorHit);
-  o1 = vec4(dir, gasHit >= 0.0 ? h0.w : 0.0);
+  // la dirección (la reflejada tras el espejo) y el tipo de gas los pone la pasada A desde A0 (decisión 86)
+  o1 = vec4(step * psi, pa, 0.0, 0.0);
 ${steeredOnly(look, STEERED_PREFIX_MAIN_GLSL)}}
 `;
 }
@@ -376,7 +383,7 @@ ${steeredOnly(look, STEERED_PREFIX_MAIN_GLSL)}}
 /** Declaraciones que A2 añade en su programa dirigido (decisión 58). */
 const STEERED_PREFIX_DECL_GLSL = /* glsl */ `${STEER_GLSL}
 // Mirada dirigida del cuadro (decisión 58), a lo largo de su camino: (dB, sGas, sBone, sMirror) y
-// (tipo de gas, línea del espejo, 0, 0); −1 sin impacto
+// (tipo de gas, línea del espejo, Ψ̃ del camino y su pendiente: decisión 86); −1 sin impacto
 layout(location = 2) out vec4 o2;
 layout(location = 3) out vec4 o3;
 ${STEERING_GLSL}
@@ -384,9 +391,9 @@ ${STEERED_PREFIX_GLSL}
 `;
 
 /** Final del main de A2 en su programa dirigido: el prefijo de la mirada del cuadro. */
-const STEERED_PREFIX_MAIN_GLSL = /* glsl */ `  vec2 extra;
+const STEERED_PREFIX_MAIN_GLSL = /* glsl */ `  vec4 extra;
   o2 = steeredPrefix(line, k, extra);
-  o3 = vec4(extra, 0.0, 0.0);
+  o3 = extra;
 `;
 
 /** A2 de la mirada 0: el de antes de la composición, sin nada de la dirigida (decisión 58). */
@@ -409,23 +416,29 @@ uniform float uCoarseN;
 uniform sampler2D uPre0;
 uniform sampler2D uPre1;
 uniform sampler2D uHits0;
-uniform vec3 uAperture; // D de emisión (mm), D de recepción máxima (mm), F# de recepción mínimo
+uniform sampler2D uHits1;
+uniform vec4 uAperture; // D de emisión (mm), D de recepción máxima (mm), F# de recepción mínimo, cRx de la refracción
+uniform vec4 uRefr;     // refracción (decisión 86): foco (mm), escala de la emisión, cTx, difracción
+uniform vec2 uRefrK;    // bajada de la frecuencia de la emisión y de la recepción (1/mm)
 in vec2 vUv;
 layout(location = 0) out vec4 o0;
 layout(location = 1) out vec4 o1;
 layout(location = 2) out vec4 o2;
-${APERTURE_GLSL}
+${APERTURE_GLSL}${REFRACTION_GLSL}
 ${steeredOnly(look, STEERED_TRANSMISSION_DECL_GLSL)}void main() {
   int line = int(gl_FragCoord.x);
   int k = int(gl_FragCoord.y);
   vec4 c0 = texelFetch(uPre0, ivec2(line, k), 0);
-  vec4 c1 = texelFetch(uPre1, ivec2(line, k), 0);
   float step = uDepth / uCoarseN;
   float r = (float(k) + 0.5) * step;
   float single = pow(10.0, -c0.x / 20.0);
-  float T = apertureTransmission(line, k, r, step, single);
+  // la penumbra de la apertura (decisión 54) y la refracción en las luces (decisión 86): del haz de la imagen, no del
+  // rayo único del color y del PW
+  float T = apertureTransmission(line, k, r, step, single) * refractionGain(uPre1, 0, 1, line, k, r);
   o0 = vec4(T, c0.yzw);
-  o1 = c1;
+  // la dirección de la línea, la reflejada desde la fila que publica el espejo (A2 o0.w), y el tipo de gas de A0
+  vec3 dir = c0.w >= 0.0 ? texelFetch(uHits1, ivec2(line, 0), 0).xyz : lineDir(lineTheta(vUv.x));
+  o1 = vec4(dir, c0.y >= 0.0 ? texelFetch(uHits0, ivec2(line, 0), 0).w : 0.0);
   o2 = vec4(single, 0.0, 0.0, 0.0);
 ${steeredOnly(look, STEERED_TRANSMISSION_MAIN_GLSL)}}
 `;
@@ -433,7 +446,7 @@ ${steeredOnly(look, STEERED_TRANSMISSION_MAIN_GLSL)}}
 
 /** Declaraciones que A añade en su programa dirigido (van detrás de `APERTURE_GLSL`: usan AP_TAPS). */
 const STEERED_TRANSMISSION_DECL_GLSL = /* glsl */ `uniform sampler2D uPreSteer;  // A2 o2: prefijo de la mirada dirigida del cuadro (decisión 58)
-uniform sampler2D uPreSteerX; // A2 o3: (tipo de gas, línea del espejo) de esa mirada
+uniform sampler2D uPreSteerX; // A2 o3: (tipo de gas, línea del espejo, Ψ̃, pendiente de Ψ̃) de esa mirada
 ${STEER_GLSL}
 layout(location = 3) out vec4 o3;
 ${STEERING_GLSL}
@@ -445,7 +458,7 @@ const STEERED_TRANSMISSION_MAIN_GLSL = /* glsl */ `  vec4 ps = texelFetch(uPreSt
   vec4 px = texelFetch(uPreSteerX, ivec2(line, k), 0);
   float s = alongLineMm(uCurvR + r, uSteer.y, uSteer.z);
   float singleK = pow(10.0, -ps.x / 20.0);
-  float Tk = steeredApertureTransmission(line, k, s, singleK);
+  float Tk = steeredApertureTransmission(line, k, s, singleK) * refractionGain(uPreSteerX, 2, 3, line, k, r);
   // el rayo único de la mirada: la pasada B acota con él la transmisión sin la lámina de la cortina (decisión 61)
   o2.y = singleK;
   o3 = vec4(Tk, ps.y, px.x + 4.0 * (px.y + 1.0), ps.w);

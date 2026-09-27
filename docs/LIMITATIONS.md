@@ -178,11 +178,41 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   réplicas de la pared de la decisión 76, a la de su eco de origen (1,7 y 3,4 dB más oscuras a 2W y 3W con W 25 mm que
   con la otra regla); ninguna de las dos es la ley de un eco especular. La σ elevacional de la lente no lleva la bajada
   (la coherencia de curvatura de las caras usa el número de onda del eco con esa σ fija) y la rugosidad fina (Ament),
-  el k0 nominal con que se ajustaron sus σz. La penumbra de la pasada A promedia la apertura de emisión sin la
-  apodización de Hann. La TGC nominal compensa la atenuación, no la banda del foco: con el foco por defecto el hígado a
+  el k0 nominal con que se ajustaron sus σz. La TGC nominal compensa la atenuación, no la banda del foco: con el foco por defecto el hígado a
   14–18 cm queda 4–5 dB bajo el del foco en fundamental y 4–7 dB en armónica, y los primeros 2 cm, 4–5 y 5–6,5 dB,
   como en un equipo sin tocar su TGC (el preajuste y el operador la corrigen en parte). El Doppler (color y PW) conserva el haz sin
   bajada ni apodización.
+- **Solo refractan las luces líquidas** (`lumen-refraction-only`, decisión 86): la pantalla de fase de la refracción es la
+  de la sangre y la bilis (la vesícula y los conductos) frente a la c del hígado que las rodea. La grasa (la de la pared,
+  la perirrenal, la retroperitoneal y la del seno renal), el músculo, el miocardio y el mediastino (decisión 85), el riñón
+  y la orina de la pelvis (rodeada de grasa de su misma c) no refractan, y la sangre de las cámaras del corazón refracta
+  frente a la c del hígado aunque la rodeen el miocardio (1561 m/s) y la grasa del mediastino (1460): no hay sombras de borde en los polos del riñón por su grasa, ni aberración de la pared
+  abdominal (la ondulación de sus fascias, ±1,2 mm, desenfocaría de verdad y cambiaría la calibración de toda la imagen),
+  ni el desdoblamiento de los rectos. Las paredes de los vasos tienen la c del hígado: no refractan por sí mismas, así que
+  las sombras de borde de los vasos son solo las de la sangre (≤ 0,5 dB: no se ven). Un vaso rodeado de grasa (la VCI
+  retroperitoneal, la aorta, las renales: 1578 frente a 1450 m/s) sería de verdad una lente divergente del 8 %; aquí
+  refracta como si lo rodeara hígado.
+- **Refracción de lente delgada paraxial** (`refraction-paraxial`, decisión 86): la desviación de cada rayo es el gradiente
+  lateral de su camino de más, acumulado en línea recta, en el plano de imagen (no en elevación); el eco no se desplaza
+  (solo cambia su energía), no hay pérdida de Fresnel ni reflexión total a incidencia rasante y el color y el PW no la
+  llevan (su rayo es el único). En los bordes de la vesícula la desviación (~40°) sale del dominio paraxial. El eco del
+  haz enfocado es la suma incoherente de 7 tramos de cada apertura con manchas gaussianas (y una difracción de lo
+  refractado ajustada al banco de ondas, que es de fundamental: la armónica no está contrastada): frente a él, el borde
+  de la vesícula sale 1,1–2,4 dB menos hondo y con su mínimo 1–2 mm dentro de la luz, y su centro hasta 1,6 dB más oscuro,
+  sobre todo por la escalera de A1 (la cuerda de la luz va en segmentos enteros de 1,125 mm y sus escalones se leen como
+  bordes de lente; tras la vesícula ondulan la ganancia ±1 dB entre líneas). Todos los rayos cruzan la luz a la distancia
+  D de la línea de la muestra (o de la vecina con luz más cercana: de una en una hasta ±8 líneas y de cuatro en cuatro
+  hasta ±32; más lejos, 1 exacto), y con dos luces en la misma línea se suman sus caminos de más como si fueran una sola
+  lente a la distancia de su centroide. La refracción y la penumbra se multiplican como si fueran independientes (un rayo
+  que cruza una costilla o gas y se desvía cuenta con su energía entera). Tras el primer gas el gradiente de Ψ̃ suma luces
+  que ya no reciben eco (sin efecto: ahí no hay transmisión); junto al borde del espejo del pulmón compara un camino
+  reflejado con uno recto, y ese efecto no está medido.
+- **La bilis y la orina, a 20 °C** (`fluid-sound-speed-20c`): TISSUES da 1482 m/s al líquido de la vesícula y de los
+  conductos y a la orina de la pelvis, el agua a 20 °C; a 37 °C el agua va a ~1524 m/s (Del Grosso y Mader 1972, J Acoust
+  Soc Am 52:1442) y la bilis, algo por encima. El desajuste con el hígado sale del 7,0 % en lugar del ~4 %: la refracción
+  de la vesícula (decisión 86) es ~1,7 veces la real, con sombras de borde más anchas y hondas (gemelo: −22 dB a 4 cm), y
+  la cara de la luz de la vesícula refleja con R 0,075 en lugar de ~0,061. Cambiarla toca la calibración del eco de esa
+  cara (`interfaceEcho.test.ts`, decisiones 57 y 65).
 - **Lóbulos laterales simplificados, sin lóbulos de rejilla ni en elevación** (`no-sidelobes`): desde la decisión 76 el
   núcleo lateral lleva un pedestal gaussiano con una pantalla de fase fija (ISLR −24 dB en el paciente de referencia),
   no el diagrama real de la apertura; la reverberación de la pared es de primer y segundo orden y solo de los ecos
@@ -260,6 +290,11 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   allá de ±21° (el tórax lateral, de 69 mm de radio en la sección) y la punta de la subxifoidea basculada más allá de
   +18°. La dirección de la sangre no se gira con la jacobiana (los vasos se mueven poco; los superficiales no
   existen).
+- **El grosor de corte rellena las luces con tres planos** (`lumen-fill-three-planes`, decisión 86): la pasada B mezcla el
+  moteado del plano central con el de dos planos a ±σe, así que una luz rellena a unos −6 dB si su semialtura en elevación
+  es menor que σe y nada si es mayor, en lugar de la potencia del haz elevacional fuera de la luz, erfc(√2·h/σ₁): −9 / −15 /
+  −27 dB a 3 / 4 / 6 mm en eje largo a 5 cm. Medido con GPU, las luces de 2–4 mm quedan a −2/−15 dB del hígado y las de
+  5–7 mm a −7/−38 dB según su orientación y dónde caen los planos, dentro de lo que dan la física y las referencias reales.
 - **Los planos laterales de elevación se saltan los vasos** (`side-plane-skips-tubes`): si el plano
   central está a más de σe + 0,5 mm de una interfaz, los laterales heredan su tejido sin clasificar
   (decisión 24), pero la `bd` del hígado no cuenta los tubos: junto a un vaso fuera del plano, el 1–5 %

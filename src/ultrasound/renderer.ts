@@ -31,6 +31,7 @@ import { RECEIVER_NOISE } from './receiver';
 import { ELEV_SIGMA0_MM } from './pleura';
 import { CLUTTER, clutterParams, type ClutterParams } from './clutter';
 import { harmonicNearUniform, noiseGain, transientGain } from './harmonic';
+import { refractionBeam } from './aperture';
 import { bmodeBeam, bmodeTxApertureMm } from './transducerProfile';
 import { FRAME_PASSES, type PassId } from './passGraph';
 import { CompoundRing, compoundActive, lookTheta, type CompoundLook } from './compound';
@@ -1213,8 +1214,14 @@ export class UltrasoundRenderer {
     p.tex('uPre0', 0, this.tPre.textures[0]);
     p.tex('uPre1', 1, this.tPre.textures[1]);
     p.tex('uHits0', 2, this.tHits.textures[0]);
-    // la emisión de la imagen B a su foco (decisión 84: F/2,5 con el foco somero)
-    p.v3('uAperture', [bmodeTxApertureMm(this.profile, inputs.bmode), beam.apertureRxMaxMm, beam.fNumberRxMin]);
+    // la dirección reflejada del espejo, que A pone en su o1 (decisión 86: A2 o1 lleva la refracción)
+    p.tex('uHits1', 5, this.tHits.textures[1]);
+    // la emisión de la imagen B a su foco (decisión 84: F/2,5 con el foco somero) y su haz en la refracción de las luces
+    // (decisión 86)
+    const refr = refractionBeam(bmodeBeam(this.profile, inputs.bmode), inputs.bmode.focusMm);
+    p.v4('uAperture', bmodeTxApertureMm(this.profile, inputs.bmode), beam.apertureRxMaxMm, beam.fNumberRxMin, refr.cRxMm);
+    p.v4('uRefr', refr.focusMm, refr.txScale, refr.cTxMm, refr.diffractionMm);
+    p.v2('uRefrK', refr.kappaTx, refr.kappaRx);
     if (steered) {
       // el prefijo de la mirada del cuadro, que A2 acaba de escribir con su programa dirigido
       p.tex('uPreSteer', 3, this.tPre.textures[2]);
@@ -1811,24 +1818,31 @@ export class UltrasoundRenderer {
       stepMm: depthMm / H,
       db: new Float64Array(n),
       air: new Uint8Array(n),
+      excess: new Float64Array(n),
       bone: new Uint8Array(n),
       gas: new Uint8Array(n),
       mirrorSeg: new Int32Array(W),
       mirrorR: new Float64Array(W),
+      hitGasSeg: new Int32Array(W),
+      hitBoneSeg: new Int32Array(W),
     };
-    // la textura va por filas (fila s, línea l); la rejilla, por línea (l·rows + s)
+    // la textura va por filas (fila s, línea l); la rejilla, por línea (l·rows + s). El aire lleva el dB en negativo y
+    // .y, el camino de más de las luces (decisión 86)
     for (let s = 0; s < H; s++)
       for (let l = 0; l < W; l++) {
         const t = (s * W + l) * 4;
         const i = l * H + s;
-        grid.db[i] = seg[t];
-        grid.air[i] = seg[t + 1] > 0.5 ? 1 : 0;
+        grid.db[i] = Math.abs(seg[t]);
+        grid.air[i] = seg[t] < 0 ? 1 : 0;
+        grid.excess[i] = seg[t + 1];
         grid.bone[i] = seg[t + 2] > 0.5 ? 1 : 0;
         grid.gas[i] = Math.round(seg[t + 3]);
       }
     for (let l = 0; l < W; l++) {
       grid.mirrorSeg[l] = Math.round(h0[l * 4]);
       grid.mirrorR[l] = h0[l * 4] >= 0 ? h1[l * 4 + 3] : -1;
+      grid.hitGasSeg![l] = Math.round(h0[l * 4 + 1]);
+      grid.hitBoneSeg![l] = Math.round(h0[l * 4 + 2]);
     }
     return grid;
   }

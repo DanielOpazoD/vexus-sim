@@ -32,6 +32,15 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Cambiado
 
+- Artefactos del líquido (86): detrás de la vesícula aparecen las sombras de borde por refracción, en el eco del haz
+  enfocado cuyos rayos desvía la bilis (bordes a −4 dB de media y hasta −9 dB a 2–4 cm de ella, a los lados de la banda
+  del refuerzo, sin foco en su centro), contrastadas con un banco de ondas 2D; tras los vasos y la aurícula derecha, que
+  la sangre apenas refracta, no se ven (≤ 0,8 dB en los vasos y 1,5 en la aurícula), como en las referencias reales.
+  Las sombras costales conservan su núcleo oscuro en profundidad y se abren con el abanico (la penumbra lleva la
+  apodización de la emisión). El refuerzo posterior ya salía de la atenuación y no cambia: bajo la VCI en eje largo la
+  banda del foco, que la TGC nominal no compensa, se come la mayor parte (+2,3 dB de refuerzo, −1,8 dB de foco en el
+  sano), y donde no hay hígado detrás está el pulmón, la vértebra o la grasa retroperitoneal. El color y el PW no
+  cambian.
 - Ecos de interfaz como en un ecógrafo y no como trazos (65): cada cara refleja con facetas de normal inclinada por un
   campo liso anclado al tejido (unos grados, correlación de 1,5–3 mm), así que la línea brilla de frente con tramos más y
   menos intensos y, al inclinarse, se rompe y se apaga en lugar de seguir como un alambre; la rugosidad fina de las

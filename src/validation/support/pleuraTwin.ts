@@ -14,7 +14,9 @@
  * pared, deslizamiento y fracción de aire). La transmisión es la analítica de las capas a la frecuencia B
  * efectiva; bajo la pleura, la del tejido de detrás (lo que la GPU aproxima con ΔL). La PSF es la de la imagen B en
  * fundamental (decisión 84, `bmodeBeam`): C con el pulso de cada fila (`axialSigmaMm`), D con la PSF lateral que baja
- * con la frecuencia del eco, y el eco (no el ruido) con la ganancia focal de la emisión (`focalGain`), como la pasada B;
+ * con la frecuencia del eco, y el eco (no el ruido) con la ganancia focal de la emisión (`focalGain`), como la pasada B.
+ * El hígado lleva sus dispersores fuertes y la densidad de dispersores (decisión 89, `strongScatter`, `densityGain`), y el
+ * ruido del receptor se suma por línea tras D, filtrado solo con el núcleo axial de C (decisión 89), como la GPU;
  * G, el gris con la compensación nominal del equipo y el hígado puro a 100. `levelDbAt`, el nivel a la misma escala del
  * banco: sin la atenuación nominal ni la ganancia focal (`envelopeLine`).
  * Lo usa `pleuraTwin.test.ts` (lento) para las métricas del banco de la decisión 61 antes de la GPU.
@@ -50,7 +52,9 @@ import {
   TISSUE_SALT_STEP,
   anchoredClumpGain,
   anchoredSliceField,
+  densityGain,
   heterogeneityDb,
+  strongScatter,
   type SpeckleAnchor,
 } from '../../ultrasound/speckleField';
 
@@ -218,10 +222,13 @@ export function simulatePleura(o: PleuraTwinOpts): PleuraTwinOut {
     if (t === Tissue.Liver || t === Tissue.Muscle) g *= 10 ** (heterogeneityDb(m, salt) / 20);
     const clump = TISSUES[t].speckleClump ?? 0;
     if (clump > 0) g *= anchoredClumpGain(m, se, clump, salt, t * TISSUE_SALT_STEP, st);
-    const f0 = anchoredSliceField(m, LATTICE, se, s, anchor);
+    // densidad de dispersores del plano central (decisión 89): 1 fuera del hígado
+    g *= densityGain(m, salt, t);
+    const strong = strongScatter(t);
+    const f0 = anchoredSliceField(m, LATTICE, se, s, anchor, strong);
     if (!planes) return [f0[0] * g, f0[1] * g];
-    const f1 = anchoredSliceField([m[0] + e[0] * se, m[1] + e[1] * se, m[2] + e[2] * se], LATTICE, se, s, anchor);
-    const f2 = anchoredSliceField([m[0] - e[0] * se, m[1] - e[1] * se, m[2] - e[2] * se], LATTICE, se, s, anchor);
+    const f1 = anchoredSliceField([m[0] + e[0] * se, m[1] + e[1] * se, m[2] + e[2] * se], LATTICE, se, s, anchor, strong);
+    const f2 = anchoredSliceField([m[0] - e[0] * se, m[1] - e[1] * se, m[2] - e[2] * se], LATTICE, se, s, anchor, strong);
     const l0 = Math.hypot(f0[0], f0[1]);
     const side = 0.5 * l0 + 0.25 * (Math.hypot(f1[0], f1[1]) + Math.hypot(f2[0], f2[1]));
     return l0 > 1e-6 ? [(f0[0] * side * g) / l0, (f0[1] * side * g) / l0] : [0, 0];
@@ -246,6 +253,7 @@ export function simulatePleura(o: PleuraTwinOpts): PleuraTwinOut {
   };
   const nv = FINE;
   const raw = new Float32Array(nv * LINES * 2);
+  const rawNoise = new Float32Array(nv * LINES * 2);
   const Ds = new Float64Array(LINES);
   const fAirs = new Float64Array(LINES);
   for (let u = 0; u < LINES; u++) {
@@ -304,17 +312,21 @@ export function simulatePleura(o: PleuraTwinOpts): PleuraTwinOut {
       }
       // la ganancia focal de la emisión (decisión 84) es del eco, no del ruido
       const fg = focalGain(r, FOCUS, BEAM);
-      // ruido del receptor, nuevo en cada cuadro
+      const i = v * LINES + u;
+      raw[i * 2] = re * fg;
+      raw[i * 2 + 1] = im * fg;
+      // ruido del receptor de la línea, nuevo en cada cuadro: blanco aquí, lo filtra el núcleo axial de C y D lo suma
+      // tras la PSF lateral (decisión 89)
       const n1 = Math.max(1e-12, noise());
       const n2 = noise();
       const rad = Math.sqrt(-2 * Math.log(n1)) * RECEIVER_NOISE;
-      const i = v * LINES + u;
-      raw[i * 2] = re * fg + rad * Math.cos(2 * Math.PI * n2);
-      raw[i * 2 + 1] = im * fg + rad * Math.sin(2 * Math.PI * n2);
+      rawNoise[i * 2] = rad * Math.cos(2 * Math.PI * n2);
+      rawNoise[i * 2 + 1] = rad * Math.sin(2 * Math.PI * n2);
     }
   }
-  // C: axial, energía unidad, con el pulso de cada fila
+  // C: axial, energía unidad, con el pulso de cada fila; el ruido de cada línea, con el mismo núcleo
   const ax = new Float32Array(raw.length);
+  const axNoise = new Float32Array(raw.length);
   for (let v = 0; v < nv; v++) {
     const sAx = Math.max(0.6, axialSigmaMm((v + 0.5) * dr, BEAM) / dr);
     const RA = Math.min(12, Math.ceil(sAx * 2.5));
@@ -323,13 +335,19 @@ export function simulatePleura(o: PleuraTwinOpts): PleuraTwinOut {
     for (let u = 0; u < LINES; u++) {
       let re = 0;
       let im = 0;
+      let nr = 0;
+      let ni = 0;
       for (let k = -RA; k <= RA; k++) {
         const j = (Math.min(nv - 1, Math.max(0, v + k)) * LINES + u) * 2;
         re += wA[k + RA] * raw[j];
         im += wA[k + RA] * raw[j + 1];
+        nr += wA[k + RA] * rawNoise[j];
+        ni += wA[k + RA] * rawNoise[j + 1];
       }
       ax[(v * LINES + u) * 2] = re / nA;
       ax[(v * LINES + u) * 2 + 1] = im / nA;
+      axNoise[(v * LINES + u) * 2] = nr / nA;
+      axNoise[(v * LINES + u) * 2 + 1] = ni / nA;
     }
   }
   // D: lateral por profundidad y envolvente
@@ -348,7 +366,8 @@ export function simulatePleura(o: PleuraTwinOpts): PleuraTwinOut {
         re += wL[k + RL] * ax[j];
         im += wL[k + RL] * ax[j + 1];
       }
-      env[v * LINES + u] = (Math.hypot(re, im) / nL) * 1.1283792;
+      const n = (v * LINES + u) * 2;
+      env[v * LINES + u] = Math.hypot(re / nL + axNoise[n], im / nL + axNoise[n + 1]) * 1.1283792;
     }
   }
   return { env, nv, dr, depth, D: Ds, fAir: fAirs };

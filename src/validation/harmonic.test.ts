@@ -153,7 +153,8 @@ describe('Armónica tisular (decisión 77): haz y modelo', () => {
       expect(frag).toContain('TRANSIENT_AMPLITUDE * uTransientGain * exp(');
       expect(frag).not.toMatch(/TRANSIENT_AMPLITUDE \* exp\(/);
     }
-    // la acumulación va en la pasada B, al eco del tejido y antes del transitorio y del ruido (no en D)
+    // la acumulación va en la pasada B, al eco del tejido y antes del transitorio (no en D); el ruido del receptor no
+    // está en B: lo suman C y D por línea, tras la PSF lateral (decisión 89), así que tampoco lleva la acumulación
     for (const [frag, v] of [
       [FRAG_RAWFIELD, 'r'],
       [FRAG_RAWFIELD_STEERED, 's'],
@@ -162,8 +163,10 @@ describe('Armónica tisular (decisión 77): haz y modelo', () => {
       const at = frag.lastIndexOf(`out2 *= harmonicNearGain(${v}) * focalGain(${v});`);
       expect(at).toBeGreaterThan(0);
       expect(frag.indexOf('TRANSIENT_AMPLITUDE * uTransientGain', at)).toBeGreaterThan(at);
-      expect(frag.indexOf('uNoise * rad', at)).toBeGreaterThan(at);
+      expect(frag).not.toMatch(/\buNoise\b/);
     }
+    expect(FRAG_AXIAL).toMatch(/\buNoise\b/);
+    expect(FRAG_AXIAL).not.toMatch(/harmonicNearGain|uHarmonicNear|focalGain/);
     expect(FRAG_LATERAL).not.toMatch(/harmonicNearGain|uHarmonicNear/);
     expect(FRAG_COLOR).not.toMatch(/uBeamTx|uElevHarmonic|uTransientGain|uHarmonicNear/);
   });
@@ -209,7 +212,8 @@ describe('Armónica tisular en el renderizador (WebGL falso)', () => {
     expect(f.raw.uElevHarmonic).toEqual([0]);
     expect(f.k.uElevHarmonic).toEqual([0]);
     expect(f.raw.uTransientGain).toEqual([1]);
-    expect(f.raw.uNoise).toEqual([RECEIVER_NOISE]);
+    expect(f.axial.uNoise).toEqual([RECEIVER_NOISE]);
+    expect(f.raw.uNoise).toBeUndefined();
     expect(f.raw.uHarmonicNear).toEqual([0, 0]);
     expect(f.lateral.uHarmonicNear).toBeUndefined();
     // armónica
@@ -232,7 +236,7 @@ describe('Armónica tisular en el renderizador (WebGL falso)', () => {
     expect(h.raw.uElevHarmonic).toEqual([1]);
     expect(h.k.uElevHarmonic).toEqual([1]);
     expect(db(h.raw.uTransientGain[0])).toBeCloseTo(HARMONIC.fundamentalRejectionDb, 9);
-    expect(db(h.raw.uNoise[0] / RECEIVER_NOISE)).toBeCloseTo(HARMONIC.noiseDb, 9);
+    expect(db(h.axial.uNoise[0] / RECEIVER_NOISE)).toBeCloseTo(HARMONIC.noiseDb, 9);
     expect(h.raw.uHarmonicNear).toEqual([HARMONIC.buildUpMm, HARMONIC.buildUpRefMm]);
     // ecos parásitos (decisión 76): pedestal y réplicas bajan lo mismo; el desplazamiento no cambia
     expect(10 * Math.log10(f.lateral.uSidelobe[0] / h.lateral.uSidelobe[0])).toBeCloseTo(CLUTTER.harmonicReductionDb, 9);

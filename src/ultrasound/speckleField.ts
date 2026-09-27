@@ -1,4 +1,6 @@
 import type { Vec3 } from '../core/vec3';
+import { TISSUE_GLSL_NAME, Tissue } from '../anatomy/tissues';
+import { glslFloat } from './receiver';
 
 /**
  * Medio de dispersores anclado (decisión 55). El moteado sale de un campo complejo en una retícula
@@ -117,11 +119,40 @@ export function hash13(p: Vec3): number {
   return fract(f32(f32(x + y) * z));
 }
 
-function latticeValue(c: Vec3, salt: number): [number, number] {
+// ——— Dispersores fuertes (decisión 89) ———
+
+/**
+ * (p, a, k) de `latticeValueS` (anatomía GLSL): una fracción p de los nodos de la retícula lleva la amplitud ×a y el
+ * resto ×k. (0, 1, 1) es el nodo de siempre, bit a bit.
+ */
+export type StrongScatter = readonly [number, number, number];
+export const NO_STRONG: StrongScatter = [0, 1, 1];
+
+/**
+ * El nodo fuerte (o no) según su hash de fase b: [factor de amplitud, fracción de vuelta de su fase]. Son fuertes los
+ * nodos con b ≥ 1 − p (b es uniforme: la fracción es p) y la fase de cada grupo se reparte en toda la vuelta,
+ * (b − 1 + p)/p en los fuertes y b/(1 − p) en el resto, así que ninguno de los dos grupos tiene fase preferida ni depende
+ * de la amplitud (el otro hash). Los bits finos de b no sirven para elegir: `hash13` sale de la parte fraccionaria de un
+ * producto de ~5·10³ y en float32 solo tiene ~2⁻¹¹ de resolución (con fract(991·b) < p la fase de los fuertes se
+ * agrupaba: resultante media 0,48). Se eligen por arriba porque b = 0 exacto se repite (~0,04 % de los nodos): por
+ * abajo caería entero en los fuertes. Con p = 0, b/(1 − 0) = b: el nodo de siempre, bit a bit.
+ */
+export function strongNode(b: number, s: StrongScatter): [number, number] {
+  const q = f32(1 - f32(s[0]));
+  return b >= q ? [s[1], f32(f32(b - q) / f32(s[0]))] : [s[2], f32(b / q)];
+}
+
+/** Factor de amplitud del nodo con hash de fase b (`strongNode`). */
+export function strongFactor(b: number, s: StrongScatter): number {
+  return strongNode(b, s)[0];
+}
+
+function latticeValue(c: Vec3, salt: number, s: StrongScatter = NO_STRONG): [number, number] {
   const a = hash13([c[0] + salt, c[1], c[2]]);
   const b = hash13([c[0], c[1] + salt + 17.1, c[2]]);
-  const r = Math.sqrt(-2 * Math.log(Math.max(1e-6, a)));
-  const ph = 6.2831853 * b;
+  const [k, turn] = strongNode(b, s);
+  const r = Math.sqrt(-2 * Math.log(Math.max(1e-6, a))) * k;
+  const ph = 6.2831853 * turn;
   return [r * Math.cos(ph), r * Math.sin(ph)];
 }
 
@@ -130,15 +161,18 @@ const mix2 = (a: [number, number], b: [number, number], t: number): [number, num
   a[1] + (b[1] - a[1]) * t,
 ];
 
-/** `scattererField`: interpolación con fundido smoothstep del campo complejo de la retícula de paso h. */
-export function scattererField(m: Vec3, h: number, salt: number): [number, number] {
+/**
+ * `scattererField` (`scattererFieldS` con `strong`): interpolación con fundido smoothstep del campo complejo de la
+ * retícula de paso h; `strong`, los dispersores fuertes del tejido (decisión 89).
+ */
+export function scattererField(m: Vec3, h: number, salt: number, strong: StrongScatter = NO_STRONG): [number, number] {
   const q: Vec3 = [m[0] / h, m[1] / h, m[2] / h];
   const c: Vec3 = [Math.floor(q[0]), Math.floor(q[1]), Math.floor(q[2])];
   const s = [0, 1, 2].map((i) => {
     const t = q[i] - c[i];
     return t * t * (3 - 2 * t);
   });
-  const L = (dx: number, dy: number, dz: number) => latticeValue([c[0] + dx, c[1] + dy, c[2] + dz], salt);
+  const L = (dx: number, dy: number, dz: number) => latticeValue([c[0] + dx, c[1] + dy, c[2] + dz], salt, strong);
   const x00 = mix2(L(0, 0, 0), L(1, 0, 0), s[0]);
   const x10 = mix2(L(0, 1, 0), L(1, 1, 0), s[0]);
   const x01 = mix2(L(0, 0, 1), L(1, 0, 1), s[0]);
@@ -147,18 +181,37 @@ export function scattererField(m: Vec3, h: number, salt: number): [number, numbe
 }
 
 /** `scattererFieldSlice`: la coordenada elevacional, medida desde el pivote del ancla, se comprime a h/(2·σe). */
-export function anchoredSliceField(m: Vec3, h: number, sliceHalfMm: number, salt: number, anchor: SpeckleAnchor): [number, number] {
+export function anchoredSliceField(
+  m: Vec3,
+  h: number,
+  sliceHalfMm: number,
+  salt: number,
+  anchor: SpeckleAnchor,
+  strong: StrongScatter = NO_STRONG,
+): [number, number] {
   const e = anchor.e;
   const across = dot([m[0] - anchor.p[0], m[1] - anchor.p[1], m[2] - anchor.p[2]], e);
   const shrink = across * (1 - h / Math.max(h, 2 * sliceHalfMm));
-  return scattererField([m[0] - e[0] * shrink, m[1] - e[1] * shrink, m[2] - e[2] * shrink], h, salt + anchor.parity * ANCHOR_SALT_STEP);
+  return scattererField(
+    [m[0] - e[0] * shrink, m[1] - e[1] * shrink, m[2] - e[2] * shrink],
+    h,
+    salt + anchor.parity * ANCHOR_SALT_STEP,
+    strong,
+  );
 }
 
-/** Campo del medio con el fundido entre anclas (`speckleField` de la pasada B). */
-export function speckleSliceField(m: Vec3, h: number, sliceHalfMm: number, salt: number, st: SpeckleAnchorState): [number, number] {
-  const fa = anchoredSliceField(m, h, sliceHalfMm, salt, st.a);
+/** Campo del medio con el fundido entre anclas (`speckleField` de la pasada B); `strong`, los dispersores fuertes del tejido. */
+export function speckleSliceField(
+  m: Vec3,
+  h: number,
+  sliceHalfMm: number,
+  salt: number,
+  st: SpeckleAnchorState,
+  strong: StrongScatter = NO_STRONG,
+): [number, number] {
+  const fa = anchoredSliceField(m, h, sliceHalfMm, salt, st.a, strong);
   if (st.w >= 1) return fa;
-  const fb = anchoredSliceField(m, h, sliceHalfMm, salt, st.b);
+  const fb = anchoredSliceField(m, h, sliceHalfMm, salt, st.b, strong);
   const wa = Math.sqrt(st.w);
   const wb = Math.sqrt(1 - st.w);
   return [wa * fa[0] + wb * fb[0], wa * fa[1] + wb * fb[1]];
@@ -183,12 +236,13 @@ export interface LookPhase {
   g: Vec3;
 }
 
-/** `latticeValue` con la fase de mirada sumada a la del nodo: con ph = 0, idéntico bit a bit. */
-export function latticeValuePh(c: Vec3, salt: number, ph: number): [number, number] {
+/** `latticeValue` con la fase de mirada sumada a la del nodo: con ph = 0, idéntico bit a bit. Los nodos fuertes son los mismos. */
+export function latticeValuePh(c: Vec3, salt: number, ph: number, strong: StrongScatter = NO_STRONG): [number, number] {
   const a = hash13([c[0] + salt, c[1], c[2]]);
   const b = hash13([c[0], c[1] + salt + 17.1, c[2]]);
-  const r = Math.sqrt(-2 * Math.log(Math.max(1e-6, a)));
-  const p = 6.2831853 * b + ph;
+  const [k, turn] = strongNode(b, strong);
+  const r = Math.sqrt(-2 * Math.log(Math.max(1e-6, a))) * k;
+  const p = 6.2831853 * turn + ph;
   return [r * Math.cos(p), r * Math.sin(p)];
 }
 
@@ -197,8 +251,14 @@ export function latticeValuePh(c: Vec3, salt: number, ph: number): [number, numb
  * base + (g·h)·d con base = ph0 − (g·h)·(m/h − c), para no restar coordenadas grandes. Sin fase
  * (`lp` null) es `scattererField`; con ph0 = 0 y g = 0 da lo mismo bit a bit.
  */
-export function scattererFieldPh(m: Vec3, h: number, salt: number, lp: LookPhase | null): [number, number] {
-  if (lp === null) return scattererField(m, h, salt);
+export function scattererFieldPh(
+  m: Vec3,
+  h: number,
+  salt: number,
+  lp: LookPhase | null,
+  strong: StrongScatter = NO_STRONG,
+): [number, number] {
+  if (lp === null) return scattererField(m, h, salt, strong);
   const q: Vec3 = [m[0] / h, m[1] / h, m[2] / h];
   const c: Vec3 = [Math.floor(q[0]), Math.floor(q[1]), Math.floor(q[2])];
   const fr = [q[0] - c[0], q[1] - c[1], q[2] - c[2]];
@@ -206,7 +266,7 @@ export function scattererFieldPh(m: Vec3, h: number, salt: number, lp: LookPhase
   const gh: Vec3 = [lp.g[0] * h, lp.g[1] * h, lp.g[2] * h];
   const base = lp.ph0 - (gh[0] * fr[0] + gh[1] * fr[1] + gh[2] * fr[2]);
   const L = (dx: number, dy: number, dz: number) =>
-    latticeValuePh([c[0] + dx, c[1] + dy, c[2] + dz], salt, base + gh[0] * dx + gh[1] * dy + gh[2] * dz);
+    latticeValuePh([c[0] + dx, c[1] + dy, c[2] + dz], salt, base + gh[0] * dx + gh[1] * dy + gh[2] * dz, strong);
   const x00 = mix2(L(0, 0, 0), L(1, 0, 0), s[0]);
   const x10 = mix2(L(0, 1, 0), L(1, 1, 0), s[0]);
   const x01 = mix2(L(0, 0, 1), L(1, 0, 1), s[0]);
@@ -222,17 +282,21 @@ export function anchoredSliceFieldPh(
   salt: number,
   anchor: SpeckleAnchor,
   lp: LookPhase | null,
+  strong: StrongScatter = NO_STRONG,
 ): [number, number] {
-  if (lp === null) return anchoredSliceField(m, h, sliceHalfMm, salt, anchor);
+  if (lp === null) return anchoredSliceField(m, h, sliceHalfMm, salt, anchor, strong);
   const e = anchor.e;
   const across = dot([m[0] - anchor.p[0], m[1] - anchor.p[1], m[2] - anchor.p[2]], e);
   const shrink = across * (1 - h / Math.max(h, 2 * sliceHalfMm));
   const ge = dot(lp.g, e);
   const gPerp: Vec3 = [lp.g[0] - e[0] * ge, lp.g[1] - e[1] * ge, lp.g[2] - e[2] * ge];
-  return scattererFieldPh([m[0] - e[0] * shrink, m[1] - e[1] * shrink, m[2] - e[2] * shrink], h, salt + anchor.parity * ANCHOR_SALT_STEP, {
-    ph0: lp.ph0,
-    g: gPerp,
-  });
+  return scattererFieldPh(
+    [m[0] - e[0] * shrink, m[1] - e[1] * shrink, m[2] - e[2] * shrink],
+    h,
+    salt + anchor.parity * ANCHOR_SALT_STEP,
+    { ph0: lp.ph0, g: gPerp },
+    strong,
+  );
 }
 
 /** `speckleSliceField` de una mirada (con el fundido entre anclas). Sin fase es `speckleSliceField`. */
@@ -243,11 +307,12 @@ export function speckleSliceFieldPh(
   salt: number,
   st: SpeckleAnchorState,
   lp: LookPhase | null,
+  strong: StrongScatter = NO_STRONG,
 ): [number, number] {
-  if (lp === null) return speckleSliceField(m, h, sliceHalfMm, salt, st);
-  const fa = anchoredSliceFieldPh(m, h, sliceHalfMm, salt, st.a, lp);
+  if (lp === null) return speckleSliceField(m, h, sliceHalfMm, salt, st, strong);
+  const fa = anchoredSliceFieldPh(m, h, sliceHalfMm, salt, st.a, lp, strong);
   if (st.w >= 1) return fa;
-  const fb = anchoredSliceFieldPh(m, h, sliceHalfMm, salt, st.b, lp);
+  const fb = anchoredSliceFieldPh(m, h, sliceHalfMm, salt, st.b, lp, strong);
   const wa = Math.sqrt(st.w);
   const wb = Math.sqrt(1 - st.w);
   return [wa * fa[0] + wb * fb[0], wa * fa[1] + wb * fb[1]];
@@ -260,43 +325,44 @@ export function speckleSliceFieldPh(
  * (`STEERING_GLSL`), con g = gx·uLateral + gz·uAxial.
  */
 export const SPECKLE_LOOK_GLSL = /* glsl */ `
-vec2 latticeValuePh(vec3 cell, float salt, float ph) {
+vec2 latticeValuePh(vec3 cell, float salt, float ph, vec3 s) {
   float a = hash13(cell + vec3(salt, 0.0, 0.0));
   float b = hash13(cell + vec3(0.0, salt + 17.1, 0.0));
-  float r = sqrt(-2.0 * log(max(1e-6, a)));
-  float p = 6.2831853 * b + ph;
+  bool strong = b >= 1.0 - s.x;
+  float r = sqrt(-2.0 * log(max(1e-6, a))) * (strong ? s.y : s.z);
+  float p = 6.2831853 * (strong ? (b - (1.0 - s.x)) / s.x : b / (1.0 - s.x)) + ph;
   return r * vec2(cos(p), sin(p));
 }
-vec2 scattererFieldPh(vec3 m, float h, float salt, float ph0, vec3 g) {
+vec2 scattererFieldPh(vec3 m, float h, float salt, float ph0, vec3 g, vec3 s) {
   vec3 q = m / h;
   vec3 c0 = floor(q);
   vec3 fr = q - c0;
   vec3 f = fr * fr * (3.0 - 2.0 * fr);
   vec3 gh = g * h;
   float base = ph0 - dot(gh, fr);
-  vec2 v000 = latticeValuePh(c0, salt, base);
-  vec2 v100 = latticeValuePh(c0 + vec3(1, 0, 0), salt, base + gh.x);
-  vec2 v010 = latticeValuePh(c0 + vec3(0, 1, 0), salt, base + gh.y);
-  vec2 v110 = latticeValuePh(c0 + vec3(1, 1, 0), salt, base + gh.x + gh.y);
-  vec2 v001 = latticeValuePh(c0 + vec3(0, 0, 1), salt, base + gh.z);
-  vec2 v101 = latticeValuePh(c0 + vec3(1, 0, 1), salt, base + gh.x + gh.z);
-  vec2 v011 = latticeValuePh(c0 + vec3(0, 1, 1), salt, base + gh.y + gh.z);
-  vec2 v111 = latticeValuePh(c0 + vec3(1, 1, 1), salt, base + gh.x + gh.y + gh.z);
+  vec2 v000 = latticeValuePh(c0, salt, base, s);
+  vec2 v100 = latticeValuePh(c0 + vec3(1, 0, 0), salt, base + gh.x, s);
+  vec2 v010 = latticeValuePh(c0 + vec3(0, 1, 0), salt, base + gh.y, s);
+  vec2 v110 = latticeValuePh(c0 + vec3(1, 1, 0), salt, base + gh.x + gh.y, s);
+  vec2 v001 = latticeValuePh(c0 + vec3(0, 0, 1), salt, base + gh.z, s);
+  vec2 v101 = latticeValuePh(c0 + vec3(1, 0, 1), salt, base + gh.x + gh.z, s);
+  vec2 v011 = latticeValuePh(c0 + vec3(0, 1, 1), salt, base + gh.y + gh.z, s);
+  vec2 v111 = latticeValuePh(c0 + vec3(1, 1, 1), salt, base + gh.x + gh.y + gh.z, s);
   vec2 x00 = mix(v000, v100, f.x);
   vec2 x10 = mix(v010, v110, f.x);
   vec2 x01 = mix(v001, v101, f.x);
   vec2 x11 = mix(v011, v111, f.x);
   return mix(mix(x00, x10, f.y), mix(x01, x11, f.y), f.z);
 }
-vec2 scattererFieldSlicePh(vec3 m, float h, float sliceHalfMm, float salt, vec3 e, vec3 pivot, float ph0, vec3 g) {
+vec2 scattererFieldSlicePh(vec3 m, float h, float sliceHalfMm, float salt, vec3 e, vec3 pivot, float ph0, vec3 g, vec3 s) {
   float across = dot(m - pivot, e);
   vec3 q = m - e * (across * (1.0 - h / max(h, 2.0 * sliceHalfMm)));
-  return scattererFieldPh(q, h, salt, ph0, g - e * dot(g, e));
+  return scattererFieldPh(q, h, salt, ph0, g - e * dot(g, e), s);
 }
-vec2 speckleFieldPh(vec3 m, float h, float se, float salt, float ph0, vec3 g) {
-  vec2 fa = scattererFieldSlicePh(m, h, se, uSeed + salt + uAnchorSalt.x, uAnchorE0, uAnchorP0, ph0, g);
+vec2 speckleFieldPh(vec3 m, float h, float se, float salt, float ph0, vec3 g, vec3 s) {
+  vec2 fa = scattererFieldSlicePh(m, h, se, uSeed + salt + uAnchorSalt.x, uAnchorE0, uAnchorP0, ph0, g, s);
   if (uAnchorW >= 1.0) return fa;
-  vec2 fb = scattererFieldSlicePh(m, h, se, uSeed + salt + uAnchorSalt.y, uAnchorE1, uAnchorP1, ph0, g);
+  vec2 fb = scattererFieldSlicePh(m, h, se, uSeed + salt + uAnchorSalt.y, uAnchorE1, uAnchorP1, ph0, g, s);
   return sqrt(uAnchorW) * fa + sqrt(1.0 - uAnchorW) * fb;
 }
 `;
@@ -373,15 +439,89 @@ export function anchoredClumpGain(m: Vec3, sliceHalfMm: number, clump: number, s
   return Math.sqrt(st.w * ga * ga + (1 - st.w) * gb * gb);
 }
 
+// ——— Dispersores fuertes y densidad de dispersores del parénquima (decisión 89) ———
+
+/**
+ * Población de dispersores fuertes de un tejido: la fracción de los nodos de la retícula del moteado (0,42 mm) que son
+ * reflectores sub-resolución más fuertes que el resto, su amplitud relativa (×`gain` frente a los demás) y el nivel de
+ * todos los nodos (`level`), que devuelve la mediana de la envolvente del tejido a la del moteado difuso.
+ */
+export interface StrongScatterers {
+  fraction: number;
+  gain: number;
+  level: number;
+}
+/**
+ * El hígado real no es un moteado de Rayleigh de un solo grano: su retrodispersión la dominan las estructuras
+ * conectivas de los espacios porta (vaina de Glisson, paredes de vénulas y conductillos), con una separación media de
+ * ~1 mm (Fellingham y Sommer 1984, IEEE Trans Sonics Ultrason 31:418) y tamaños que siguen el árbol (muchas pequeñas,
+ * pocas grandes). Esa cola de dispersores fuertes da una envolvente pre-Rayleigh (distribución K, Jakeman y Pusey 1976;
+ * Tuthill, Sperry y Parker 1988, Ultrason Imaging 10:81; m de Nakagami < 1, Shankar 2000, IEEE TUFFC 47:727) y los
+ * «destellos aislados» del parénquima real. Dos niveles de un espectro continuo: las tríadas grandes (decisión 78) y
+ * estos nodos fuertes por debajo de la resolución. Fracción y ganancia [EXTRAPOLACIÓN PROPIA], calibradas con los
+ * paneles reales del juez ciego (asimetría del gris, cola brillante y destellos por cm², `docs/fidelity/README.md`).
+ */
+export const STRONG_SCATTERERS: Partial<Record<Tissue, StrongScatterers>> = {
+  [Tissue.Liver]: { fraction: 0.012, gain: 4.5, level: 0.946 },
+};
+
+/**
+ * (p, a, k) de un tejido para `latticeValueS`: los nodos fuertes llevan la amplitud gain·level y los corrientes level.
+ * Cada muestra de la envolvente es la suma coherente de ~15 nodos, así que la población fuerte no solo alarga la cola:
+ * también levanta la muestra típica, y con level = 1 la mediana de la envolvente del hígado subía +0,48 dB (gemelo B → C →
+ * D de la mirada 0, 16 realizaciones a 20, 45, 90 y 150 mm; +0,44 a +0,52 por profundidad). level = 10^(−0,48/20) la
+ * devuelve a la del moteado difuso (±0,05 dB por profundidad, `parenchymaTextureTwin.test.ts`): el hígado queda a media
+ * escala (decisión 53) y todo lo que el banco mide frente a su mediana (paredes, cápsula, Morison, líneas de la pared,
+ * deslizamiento) queda donde estaba. La potencia media sube level²·(1 − p + p·gain²), +0,42 dB en el hígado. Normalizar
+ * la potencia media, en cambio, bajaba la mediana ~1,3 dB (4–5 grises con GPU).
+ */
+export function strongScatter(t: Tissue): StrongScatter {
+  const s = STRONG_SCATTERERS[t];
+  return s ? [s.fraction, s.gain * s.level, s.level] : NO_STRONG;
+}
+
+/**
+ * Variación de la densidad de dispersores a escala de milímetros (la textura sobre la textura: lobulillos y territorios
+ * de espacios porta): un factor de amplitud 10^(x/20) con x un ruido de valor continuo simétrico en dB (mediana 0 dB, DE
+ * 0,185·escala = 2,2 dB), además de la heterogeneidad lenta de 6,25 mm. Como los dispersores fuertes, conserva la mediana
+ * del tejido (la potencia media sube +0,55 dB). Anclada al material como la heterogeneidad (no se decorrela al abanicar
+ * ni hierve) y del plano central, como los grumos (un factor para los tres planos). Célula y escala [EXTRAPOLACIÓN
+ * PROPIA], calibradas con la heterogeneidad por escalas de los paneles reales del juez ciego (`docs/fidelity/README.md`).
+ */
+export const DENSITY = { cellMm: 4, scaleDb: 12, salt: 41 } as const;
+/** Tejidos con la variación de densidad de dispersores (decisión 89). */
+export const DENSITY_TISSUES: readonly Tissue[] = [Tissue.Liver];
+
+/** Variación de la densidad de dispersores (dB) en el punto material m, antes de normalizar. */
+export function densityDb(m: Vec3, seed: number): number {
+  return (valueNoise([m[0] / DENSITY.cellMm, m[1] / DENSITY.cellMm, m[2] / DENSITY.cellMm], seed + DENSITY.salt) - 0.5) * DENSITY.scaleDb;
+}
+
+/** Factor de amplitud de la densidad de dispersores (`densityGain` de la pasada B): 1 fuera de `DENSITY_TISSUES`. */
+export function densityGain(m: Vec3, seed: number, t: Tissue): number {
+  return DENSITY_TISSUES.includes(t) ? Math.pow(10, densityDb(m, seed) / 20) : 1;
+}
+
+const glslVec3 = (v: StrongScatter): string => `vec3(${v.map((x) => glslFloat(x)).join(', ')})`;
+
 /**
  * Gemelo GLSL del moteado por tejido para la pasada B (`fieldFor`): mismas fórmulas que
- * `valueNoise`, `heterogeneityDb` y `clumpGain`. Necesita `hash13` (anatomía) y `uSeed`.
+ * `valueNoise`, `heterogeneityDb`, `clumpGain`, `strongScatter` y `densityGain`. Necesita `hash13` (anatomía),
+ * los `T_…` de los tejidos y `uSeed`.
  */
 export const SPECKLE_TISSUE_GLSL = /* glsl */ `
 const float TISSUE_SALT_STEP = ${TISSUE_SALT_STEP.toFixed(4)};
 const float HET_CELL_MM = ${HET_CELL_MM.toFixed(4)};
 const float HET_SCALE_DB = ${HET_SCALE_DB.toFixed(4)};
 const float CLUMP_CELL_MM = ${CLUMP_CELL_MM.toFixed(4)};
+// dispersores fuertes del tejido (decisión 89): (p, a, k) de latticeValueS
+vec3 strongScatter(int t) {
+${Object.keys(STRONG_SCATTERERS)
+  .map((k): Tissue => Number(k))
+  .map((t) => `  if (t == ${TISSUE_GLSL_NAME[t]}) return ${glslVec3(strongScatter(t))};`)
+  .join('\n')}
+  return vec3(0.0, 1.0, 1.0);
+}
 float valueNoise(vec3 q, float salt) {
   vec3 c = floor(q);
   vec3 s = q - c;
@@ -411,5 +551,10 @@ float anchoredClump(vec3 m, float se, float clump, float salt) {
   if (uAnchorW >= 1.0) return ga;
   float gb = clumpAt(m, se, clump, salt + uAnchorSalt.y, uAnchorE1, uAnchorP1);
   return sqrt(uAnchorW * ga * ga + (1.0 - uAnchorW) * gb * gb);
+}
+// densidad de dispersores a escala de milímetros (decisión 89), del plano central: 1 fuera de sus tejidos
+float densityGain(vec3 m, int t) {
+  if (${DENSITY_TISSUES.map((t) => `t != ${TISSUE_GLSL_NAME[t]}`).join(' && ')}) return 1.0;
+  return pow(10.0, (valueNoise(m / ${glslFloat(DENSITY.cellMm)}, uSeed + ${glslFloat(DENSITY.salt)}) - 0.5) * ${glslFloat(DENSITY.scaleDb)} / 20.0);
 }
 `;

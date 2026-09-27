@@ -3766,6 +3766,213 @@ con la seudodistancia de los conos, una rama lateral más gruesa que su madre af
 hijas, dos pirámides casi fundidas, la cara de la grasa y la cápsula que cambiaban de dueño en sitios distintos en el
 borde de la boca del hilio, y cifras y comentarios desajustados: corregidos.
 
+## 88. Reservada: costillas y capas de la pared [Estado: reservada]
+
+Número reservado para la rama en curso de las costillas y la pared; la redacta su rama.
+
+## 89. Textura del parénquima y ruido del receptor: dispersores fuertes por debajo de la resolución, densidad de dispersores a escala de milímetros, tríadas en parte especulares y ruido por línea tras la PSF lateral
+
+**Contexto.** Sirve al objetivo 2 (fidelidad ecográfica) y al 8 (honestidad). Rondas 3 y 4 del juez ciego (21/21 detectadas):
+moteado «empedrado», de granos redondos iguales en brillo y tamaño y sin los destellos aislados del tejido real; luces
+«con pinceladas» en lugar del ruido electrónico casi blanco; moteado «arrastrado en una dirección, como un desenfoque de
+movimiento» en lo hondo y fuera del eje; y focos de tríada como elipses lisas iguales. Antes de tocar nada se midió con GPU
+(M4, Metal, armónica y compuesto, apnea espiratoria, siete escenas de las cuatro ventanas de las capturas y de las parejas;
+`scratchpad/tex/gpu.mts`) y sobre los paneles del juez con la normalización de la ronda 4 frente a las siete reales
+(`panels.mts`, `cmp.mts`):
+
+- **Envolvente de la mirada 0 en hígado despejado.** El m de Nakagami en ventanas de 2,7 mm (unas tres longitudes de
+  pulso, como la imagen paramétrica), dividido por el del mismo estimador sobre un moteado de Rayleigh sintético con el
+  grano medido: 0,99 (0,91–1,14). Un moteado difuso. El hígado humano sano da 0,81 (0,76–0,88) a 3,5 MHz, y ~1 los
+  maniquíes de dispersores difusos con el mismo estimador (Wan et al. 2017, PLoS One 12:e0181789: 30 voluntarios, vista
+  intercostal derecha; el m baja de 1,00 a 2 MHz a 0,81 a 3,5 MHz y lo atribuyen a los dispersores coherentes). En parches
+  de 8 × 15 mm, SNR 1,79 (1,66–1,93) y m 0,83 (0,56–1,04): la cola la ponían ya las tríadas y la heterogeneidad lenta.
+- **Imagen mostrada** (hígado despejado a resolución completa): asimetría del gris −0,01 (−0,11 a 0,14), un 0,33 % de
+  píxeles con z robusta > 3 (mediana y 1,4826·MAD del recuadro de 8 mm sin su plano), 0,61 destellos por cm² (máximos
+  locales en 1 mm con z > 3) y 0,30 de textura sobre la textura (DE de las medias de bloques de 4 mm sobre la DE dentro de
+  ellos).
+- **Paneles del juez** (hígado, parejas 1, 4, 5 y 7): reales, asimetría 0,46–0,67, z > 3 en el 1,3–2,1 %, 1,4–2,6
+  destellos por cm² y 0,46–0,55 de heterogeneidad a 3 mm; simuladas, 0,04–0,22, 0,30–0,84 %, 0,3–0,7 y 0,41–0,51. La DE
+  del gris es la misma (~15 niveles; el CV real es mayor porque los operadores bajaron la ganancia). En la z agregada la real
+  tiene la cola brillante más larga (q99 3,84 frente a 2,87; q999 6,8 frente a 4,4) y la oscura más corta (q01 −2,02 frente
+  a −2,31). Los píxeles de la cola real están sobre estructuras de milímetros, trazos cortos casi perpendiculares al haz
+  (septos y paredes de los espacios porta), no sobre puntos sueltos.
+- **Luces.** El ruido del receptor se sumaba en la pasada B y la PSF lateral de D lo correlacionaba entre líneas. En la
+  envolvente de la luz (VCI y suprahepáticas de la subxifoidea, la subcostal y la intercostal, restando la media local),
+  correlación 0,37 (0,25–0,52) con la línea vecina frente a 0,25 a 0,5 mm en profundidad; en la imagen, autocovarianza de
+  1,58 × 0,72 mm (a lo ancho × en profundidad) y 0,39 a 1 mm a lo ancho. En los paneles reales, 1,11 × 0,75 mm y 0,14.
+- **Estiramiento.** El eje mayor de la autocovarianza del grano mostrado queda a 1–6° (mediana por banda) de la dirección
+  lateral local, también fuera del eje (|θ| ≥ 15°), y su alargamiento sigue a la PSF: 2,0–2,2 a 20–60 mm, 2,3–2,6 a 60–100,
+  3,0–3,5 a 100–140 y 3,7–4,8 a 140–180. El grano mostrado es el de la envolvente, el compuesto el de la mirada 0 y la
+  escena está quieta: no lo añaden la composición, la persistencia ni la conversión de barrido. Es la PSF lateral, y en las
+  luces, el ruido filtrado por ella.
+
+**Opciones.**
+
+- (1) Un filtro de reducción del moteado o de realce del equipo: la cola oscura corta de las reales lo sugiere, pero es
+  cosmético (§23) y ya se descartó en la decisión 84 (e).
+- (2) Los grumos de la decisión 56 en el hígado: células duras de 1,2 mm, del orden de la PSF, que se ven como ecos
+  sueltos y no como dispersores por debajo de la resolución.
+- (3) Pocos dispersores muy fuertes (el 0,6 % de los nodos, ×10): m 0,68–0,95, fuera de la banda de la literatura en
+  varias bandas, y un «cielo estrellado» de puntos iguales, que es un signo de hepatitis aguda: enseñaría una
+  interpretación falsa (criterio 2; la decisión 78 ya lo vio con las tríadas).
+- (4) Septos especulares en las fronteras de la densidad (láminas de σ 0,15 mm en el nivel medio del ruido de la densidad,
+  con brillo |cos θ|⁴): con ×25 igualan las colas de los paneles reales (asimetría 0,69, z > 3 2,2 %, q99 3,94) pero
+  dibujan un rayado regular de trazos brillantes por todo el hígado; con ×5 no se ven. Las métricas de cola se pueden
+  igualar con una textura falsa: descartado, y queda como pendiente con un eco coherente y una población escasa.
+- (5) Para el ruido: dejarlo en B (física equivocada) o una pasada nueva que lo genere (otro destino en el grafo). Elegido:
+  en C, sin pasada nueva.
+- (6) Para el estiramiento: estrechar la PSF sin evidencia nueva (es la de la decisión 84). No se toca: se mide y se informa.
+
+**Decisión.**
+
+- **(a) Dispersores fuertes** (`STRONG_SCATTERERS`, `strongScatter` y `strongNode` en `speckleField.ts`; `latticeValueS`
+  en la anatomía GLSL; `latticeValuePh` de las miradas dirigidas). El 1,2 % de los nodos de la retícula del moteado del
+  hígado (0,42 mm) son reflectores sub-resolución de amplitud ×4,5 sobre los demás: los de hash de fase b ≥ 1 − p, con la
+  fase de cada grupo repartida en toda la vuelta ((b − 1 + p)/p y b/(1 − p)).
+  - Nivel: cada muestra de la envolvente es la suma coherente de ~15 nodos, así que los fuertes no solo alargan la cola:
+    también levantan la muestra típica. Con los demás nodos intactos, la mediana de la envolvente del hígado subía
+    +0,48 dB (gemelo de la mirada 0, 16 realizaciones a 20, 45, 90 y 150 mm; +0,44 a +0,52 por profundidad) y con ella el
+    gris del hígado y todo lo que el banco mide frente a él (la revisión adversarial lo encontró). Todos los nodos van a
+    level = 0,946 (−0,48 dB): la mediana vuelve a la del moteado difuso (−0,03 a +0,06 dB por profundidad) y el hígado a
+    media escala (decisión 53); la potencia media sube +0,42 dB. Normalizar la potencia media, en cambio, la bajaba ~1,3 dB.
+  - Son nodos de la misma retícula anclada: se anclan, se funden y se decorrelan como el moteado (decisión 55). Son los
+    mismos en las tres miradas, cuya fase solo gira la de cada nodo (decisión 58), y los tres planos de elevación los
+    promedian como al grosor de corte.
+  - Los bits finos de b no sirven para elegirlos: `hash13` sale de la parte fraccionaria de un producto de ~5·10³ y en
+    float32 tiene ~2⁻¹¹ de resolución (con fract(991·b) < p la fase de los fuertes se agrupaba, resultante 0,48). Se eligen
+    por arriba porque b = 0 exacto se repite en el ~0,04 % de los nodos.
+  - Fracción y ganancia [EXTRAPOLACIÓN PROPIA], calibradas para el m de Wan et al.; el mecanismo, el de la literatura: una
+    cola de dispersores fuertes da una envolvente pre-Rayleigh (distribución K, Jakeman y Pusey 1976; Tuthill, Sperry y
+    Parker 1988, Ultrason Imaging 10:81; m < 1, Shankar 2000, IEEE TUFFC 47:727). En el hígado la dominan las estructuras
+    conectivas de los espacios porta, separadas ~1 mm (Fellingham y Sommer 1984, IEEE Trans Sonics Ultrason 31:418).
+- **(b) Densidad de dispersores** (`DENSITY`, `densityGain`). Un factor de amplitud 10^(x/20) con x un ruido de valor
+  anclado al material, de célula 4 mm y escala 12 dB (DE 2,2 dB, mediana 0 dB), solo en el hígado. Va sobre el campo
+  mezclado del plano central, como los grumos (`mediumField`, `mediumFieldPh`), y se suma a la heterogeneidad lenta de
+  6,25 mm. Célula y escala [EXTRAPOLACIÓN PROPIA], calibradas con la heterogeneidad por escalas de los paneles reales.
+- **(c) Tríadas** (`portalTriads.ts`, `sheathGainAt`). La ganancia de través va en [3, 10] con el cuadrado de su número
+  (mediana 4,75 y media 5,3, frente a uniforme en [4, 9]; r·r exacto en la GPU, no `pow`). Es en parte especular: el
+  exceso (G − 1) va por ε + (1 − ε)·(1 − (d·b)²)², ε 0,35, la ley |cos θ|⁴ de las láminas de la pared con el haz de cada
+  mirada [EXTRAPOLACIÓN PROPIA]: la dirección radial desde el centro de curvatura, como la textura de la pared, sin la
+  jacobiana de la compresión de la sonda ni la dirección reflejada en el espejo del diafragma (`portal-triads-diffuse`).
+  La vaina sigue multiplicando el moteado del hígado, así que su eco está modulado por él. La consulta de la e2e de
+  paridad usa un haz fijo (`TRIAD_QUERY_BEAM`).
+- **(d) Ruido del receptor** (`receiver.ts`, `RECEIVER_NOISE_GLSL`). Sale de B: nace en los canales, detrás del
+  transductor, y cada línea es otro disparo.
+  - La pasada C lo genera por muestra (línea, fila) y cuadro: un complejo de componentes uniformes de varianza 1 (dos
+    hashes por toma, sin logaritmos ni senos en el bucle). Lo filtra con su núcleo axial de energía unidad (el filtro de
+    recepción, que con 7–25 tomas lo deja casi gaussiano) y lo escribe en su segundo adjunto (RG32F).
+  - La pasada D lo suma en su línea tras la PSF lateral y antes de la detección, con su texel exacto (`texelFetch`: D
+    escribe la rejilla de C). Su nivel no cambia: con núcleos de energía unidad, el ruido blanco conserva la varianza.
+    Pero no es gaussiano del todo: la curtosis en exceso por componente, −1,2·Σw⁴, va de −0,09 a −0,42 según la
+    profundidad seleccionada (−0,24 a −0,31 con 18 cm), así que la mediana de su envolvente queda 1,5–4,5 % sobre la de
+    Rayleigh con la misma potencia: el suelo de ruido, hasta +0,4 dB con 24 cm (revisión adversarial).
+  - B pierde `uNoise`, `uFrame` y `hash12b`: 126 ranuras de uniforms y 128 en el programa dirigido (antes 128 y 130). El
+    índice del cuadro va módulo 4096 (`RECEIVER_NOISE_FRAMES`) para que el hash no pierda bits en una sesión larga.
+- **(e) Estiramiento.** Sin cambios en la PSF (arriba). Con el foco a 130 mm en lugar de 90, el grano a 140–180 mm apenas
+  cambia (3,23 → 3,16 mm; la PSF del modelo a 140 mm, 3,15 → 3,13 mm): en armónica la emisión a 1,75 MHz es ancha y lo
+  hondo lo fija la apertura de recepción de 26 mm (decisión 84), no el foco.
+- **(f) Guardas y objetivos del moteado con la textura.** Las métricas de la envolvente de la e2e y del banco (SNR por
+  parche, fracción oscura, grietas, grano como FWHM de la autocovarianza normalizada por la varianza del parche,
+  desviación del gris) se definieron para un moteado difuso (decisiones 52 y 58), y el hígado ya no lo es a propósito.
+  Sus bandas se desplazan con lo que predice el gemelo B → C → D de la composición con y sin la textura
+  (`parenchymaTextureTwin.test.ts`: la subxifoidea del sano a 20, 45, 90 y 150 mm, 8 realizaciones con las mismas sales),
+  comprobado con GPU (M4) y SwiftShader:
+  - SNR de la mirada 0 ×0,84–0,88 (1,99–2,01 → 1,69–1,75 en parches de 48 × 16; GPU 1,58–1,77; SwiftShader 1,58–1,65)
+    y ×0,90–0,93 en los de 16 × 8 de la guarda de Rayleigh (2,08–2,11 → 1,91–1,95; SwiftShader 1,67–1,85): bandas
+    1,45–1,9 (antes 1,75–2,1) y 1,5–2,1 (antes 1,6–2,25), suelos y techos. Los defectos, con la textura en el gemelo: la
+    intensidad da 0,78–0,87 y 0,99–1,03; |Re f|, 1,24–1,29 y 1,35–1,39, con oscuros 0,19–0,20; suavizar la envolvente,
+    2,09–2,20 (binomial [¼ ½ ¼]²) o 2,42–2,59 y 2,93–3,20 (la caja de 3 × 5 de `speckle.test.ts`): todos fuera, y la
+    prueba lo exige. Las magnitudes sumadas antes del haz (≈ 9) también.
+  - Compuesto ×0,75–0,80 (2,57–3,08 → 2,06–2,33; GPU 1,86–2,15; SwiftShader 1,91–2,02): la composición promedia el
+    moteado, no la textura, que es la misma en las tres miradas, así que N_eff baja (1,61–2,29 → 1,27–1,57) y SNRc/SNR0
+    sigue a √N_eff (÷ √N_eff: 1,03–1,08 en el gemelo, 1,03 con SwiftShader, 0,97–1,03 con GPU; G1 admite ± 10 %). G1 pasa
+    a 1,7 en 20–60 y 140–180 mm y a 1,6 en 60–140 (antes 2,1 y 2,0); cada mirada, K5, a 1,45–1,9 (antes 1,75–2,1).
+  - Fracción oscura de la mirada 0 +0,01 (0,074–0,078; GPU 0,068–0,096; SwiftShader 0,085–0,089): 0,05–0,11 (antes
+    0,05–0,09). La del compuesto, 0,007–0,018 (GPU 0,007–0,025): G2 (≤ 0,035) no cambia y es la que separa el compuesto de
+    una mirada.
+  - Grietas: las zonas de menos densidad quedan bajo 0,3 × la media del parche y se unen (mirada 0 0,07–0,13 en el
+    gemelo, 0,14–0,22 con SwiftShader; el valor absoluto de un campo real da 0,30–0,39 sin textura): < 0,25 (antes
+    < 0,12). En el compuesto, con un 1–2 % de muestras oscuras, una sola zona alargada da 0,13 con SwiftShader (0 en otra
+    corrida de la misma vista; gemelo 0–0,06; GPU 0): G3 pasa a ≤ 0,2 (antes ≤ 0,04) y ya no separa el compuesto de una
+    mirada (0,14–0,22): lo hace G2.
+  - Grano: la densidad, de 4 mm, añade un pedestal ancho a la autocovarianza. El grano medido crece +11–13 % en
+    profundidad y +6–15 % a lo ancho en la mirada 0 (SwiftShader: axial 0,83–0,85 mm, lateral 1,10–1,17 × la PSF), más en
+    el compuesto (lateral 1,08–1,17 × la PSF; SwiftShader 1,12–1,26; GPU 1,19–1,22 en las bandas con ≥ 5 parches, las que
+    se miden, y 1,02–1,41 con menos), y la razón compuesto ÷ mirada 0 sube
+    a 1,03–1,10 (SwiftShader 1,10–1,12). K2 pasa a 0,5–1,0 mm (antes 0,5–0,9), K1 a 0,8–1,4 (antes 0,8–1,25) y la razón
+    de grano a ≤ 1,15 con ≥ 10 parches y ≤ 1,2 con menos (antes 1,1 y 1,15): un suavizado del compuesto con la textura da
+    1,31–1,59 a lo ancho.
+  - Desviación del gris: la del log de la envolvente crece ×1,19–1,27 en el compuesto y ×1,08–1,10 en la mirada 0. G4
+    pasa a 12,5–17,5 (antes 10,5–14,0; GPU 13,6–17,0 por banda, SwiftShader 15,2–15,7), dentro de lo real: 10–16 en las
+    referencias (decisión 58) y 10,9–17,0 en los paneles reales del juez (los simulados, 11,4–14,0, antes 10,9–12,7). θ
+    no se recalibra: se calibró con el moteado difuso para absorber el exceso de N_eff de la mezcla de planos, que no
+    cambia; la regla «mediana de 12–13» valía para el moteado difuso. La desviación del gris de una mirada en la imagen de
+    la e2e, 18,3 con SwiftShader (antes 16 con GPU): < 21 (antes < 19, ×1,10 del gemelo).
+  - Costuras del diafragma (e2e «ecos de interfaz»): los valles de −15 dB bajo la mediana del hígado son más probables
+    en las células de poca densidad, también en el espejo tras la línea pleural. En la subxifoidea abanicada (23 registros
+    a 40–60°) `main` da 0 costuras en dos corridas y la rama 1, 1 y 1 en tres y 2 en la e2e: se admiten 2 en un tramo de
+    ≥ 15 registros (antes 1). La guarda directa de la costura de verdad, el espejo dentro del pulmón, es el desfase del
+    espejo (≤ 0,05 mm), que no cambia.
+
+**Consecuencias.**
+
+- **Parénquima** (GPU M4, armónica y compuesto, apnea espiratoria, siete escenas; `scratchpad/tex/gpu.mts`, antes →
+  después): m en ventanas de 2,7 mm ÷ el de Rayleigh 0,99 → 0,86 (Wan et al., 0,81 con 0,76–0,88), envolvente > 3 × la
+  media del parche 0,57 → 1,16 % (Rayleigh 0,085 %); en la imagen mostrada, asimetría del gris −0,01 → 0,17, píxeles con
+  z > 3 0,33 → 0,48 %, destellos 0,61 → 1,16 por cm² y textura sobre la textura 0,30 → 0,41, con el gris medio del hígado
+  en 94 → 94 (media escala). En los paneles del juez (parejas 1, 4, 5 y 7) la heterogeneidad a 3 mm pasa de 0,41–0,51 a
+  0,50–0,62 (reales 0,46–0,55), pero la cola brillante apenas se mueve (asimetría 0,04–0,22 → 0,09–0,20, reales
+  0,46–0,67): la ponen trazos especulares de milímetros que el modelo no tiene (opción 4).
+- **Luces**: la correlación de la envolvente con la línea vecina baja de 0,37 a 0,04 y la de 0,5 mm en profundidad queda
+  en 0,26 (antes 0,25); en la imagen, la autocovarianza de la luz pasa de 1,58 × 0,72 a 1,27 × 0,74 mm y la correlación a
+  1 mm a lo ancho de 0,39 a 0,23 (paneles: 1,72 × 0,71 → 1,43 × 0,79 y 0,39 → 0,24; reales 1,11 × 0,75 y 0,14). El nivel
+  del ruido no cambia (la mediana de la luz del banco, 7–20, igual).
+- **Banco** (`npm run fidelity`, M4, 2 casos × 4 vistas, `main` d49aa52 frente a la rama): mediana del gris del hígado
+  93–95 → 92–94 (la renal del sano, 86 → 83, con 400 píxeles de hígado); interfaces dentro del ruido de la medida
+  (peritoneo a 0–20° 1,76–1,98 → 1,74–2,07, pared anterior de la VCI a 0–20° 1,25–1,76 → 1,18–1,82, cápsula renal
+  2,08–2,16 → 2,07–2,19); pared: grasa ÷ hígado, septos, estrías y cortical costal iguales (≤ 0,2 dB) y las líneas de la
+  pared a −0,5…+0,9 dB de las de `main` (la renal, −1,5); luz igual. Con level = 1 (el primer commit) la mediana subía
+  a 94–97 y las líneas de la pared bajaban 0,1–0,6 dB: el nivel de (a) lo corrige. Las métricas del moteado se mueven
+  como predice el gemelo (f).
+- **Coste** (M4 con Metal, subxifoidea, `frameCostMs(40, { repeatPass, repeatCount: 4 })` intercalado con `main`, carga
+  7–12): B 3,22–3,23 → 3,37–3,40 ms (los nodos fuertes y la densidad: una comparación y un ruido de valor por muestra de
+  hígado), C 0,09–0,10 → 0,12 ms (dos hashes por toma), D 0,27–0,28 → 0,30 ms (una lectura más); el cuadro, 7,95–8,48 →
+  8,11–8,58 ms sin compuesto y 8,48–9,30 → 8,65–9,44 con él. Arranque con SwiftShader (tres rondas alternadas, carga
+  10–12): 41,8 / 34,8 / 43,6 s en `main` frente a 40,4 / 42,0 / 44,4 s. Sin uniforms nuevos en B (libera dos) y ningún
+  bucle nuevo.
+- **Limitaciones**: nuevas `strong-scatterers-lattice` (nodos puntuales de dos niveles, sin septos alargados ni
+  especulares, misma fracción en todo el hígado) y `receiver-noise-per-line` (sin recepción en paralelo); reescritas
+  `speckle-statistics-uncalibrated` y `portal-triads-diffuse`.
+- **Pendiente**: la cola brillante de los paneles reales (trazos especulares de milímetros: un eco coherente de cara y una
+  población escasa, no una textura); el grano lateral hondo (1,9–2,2 mm reales frente a 2,6–3,4, la PSF de la decisión
+  84); el ruido de las luces hondas, más claro que en las reales (mediana 13–23 frente a 5–7); la recepción en paralelo.
+
+**Verificación.** Gemelos (fallan en `main`): `parenchymaTexture.test.ts` (los nodos fuertes solo en el hígado, ×4,5
+sobre los corrientes, todos a −0,48 dB y +0,42 dB de potencia media; la fracción pedida ±5 % sin depender de la
+amplitud, con la fase de cada grupo uniforme y sin agruparse por octantes; sin ellos, el nodo de siempre bit a bit, y en
+cada mirada los mismos nodos; anclados como el moteado: 0,5° de inclinación los conserva igual; m en ventanas de tres
+pulsos ÷ el del moteado difuso 0,74–0,92 (0,85); la densidad solo en el hígado, simétrica en dB, con DE 2,2 dB, y
+continua; sus GLSL con las constantes de TS en float32 exacto, aplicados una vez en las dos mallas de B y en la pleura y
+no en la pared), `parenchymaTextureTwin.test.ts` (lento: la mediana de la envolvente, la del moteado difuso a ±0,1 dB;
+las bandas de (f) en el gemelo de la composición; y que la intensidad, |Re f| y los suavizados de la mirada 0 y del
+compuesto siguen fuera de ellas), `receiver.test.ts` (el ruido por muestra de media 0 y varianza 1 por componente,
+blanco entre líneas, filas y cuadros; con el núcleo axial de C, la misma varianza, la correlación del pulso a lo largo
+de la línea y ninguna entre líneas; en C y D, no en B), `portalTriads.test.ts` (la ganancia de través con cola, la
+mediana a un cuarto del intervalo; 1 + ε·(G − 1) a lo largo del haz y monótona entre los dos; la consulta de la e2e con
+un haz fijo y unitario), `speckleField.test.ts`, `pleuraTwin.test.ts` y `wallTwin.test.ts` (sus gemelos con la textura
+del hígado y el ruido por línea: el deslizamiento a SLIDING_DB y la pared no cambian), `passGraph.test.ts` (C con dos
+adjuntos; D lee el del ruido), `shaderLimits.test.ts` (B en 126 y 128 ranuras; huella nueva del programa de la mirada 0)
+y `harmonic.test.ts` (la ganancia del ruido de la armónica, ahora en C). e2e completa con SwiftShader (28 pruebas; las
+que fallaron por el plazo con la máquina cargada, repetidas solas). Capturas con GPU (M4, armónica y compuesto) de las
+ventanas intercostal, subxifoidea, renal y subcostal antes y después, y paneles del juez frente a las reales. Revisión
+adversarial de contexto limpio sobre el primer commit, sin defectos bloqueantes: la mediana de la envolvente del hígado
+subía +0,48 dB con los nodos corrientes intactos (el nivel de (a)); el techo de K1 lo rompía el banco en bandas de menos
+de 5 parches (se miden las de ≥ 5); las guardas de una mirada solo movían el suelo y citaban los defectos del moteado
+difuso (techos nuevos y los defectos con la textura en el gemelo); la curtosis del ruido, mal citada; el gemelo del ruido
+no seguía el orden de float32 del GLSL; `pow` en la ganancia de las tríadas (ahora r·r) y el ruido leído con `texture`
+(ahora `texelFetch`); la ley especular de las tríadas sin la compresión ni el espejo (documentada); texto roto o viejo en
+APPROXIMATIONS, ARCHITECTURE y comentarios: corregidos.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

@@ -68,7 +68,7 @@ menú de capas) reciben funciones de acceso, no variables globales.
 ```
 input.tick(dt) / animación de punto de partida     gestos y teclas → pose
 sim.advance(dt)                     n pasos: fisiología → (si PW) puerta + IQ → filtro → STFT → audio
-sim.render()                        GPU: A transmisión → B campo+eco de interfaz+ruido → C/D PSF unitaria+envolvente → K composición → F color → G barrido → persistencia
+sim.render()                        GPU: A transmisión → B campo+eco de interfaz → C/D PSF unitaria+ruido del receptor por línea+envolvente → K composición → F color → G barrido → persistencia
                                     (tabla FRAME_PASSES de ultrasound/passGraph.ts, validada; tiempo de GPU por pasada)
                                     y, fuera del grafo, las tomas del cine y de la línea M (decisión 80)
 cine.tick()                         con la imagen congelada: el cuadro elegido del cine, por G (una vez por cuadro elegido)

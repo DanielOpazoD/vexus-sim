@@ -3,14 +3,17 @@ import { CLUTTER, applyComplexKernel, clutterParams, lateralKernel } from '../ul
 import {
   RECEIVER_GLSL,
   RECEIVER_NOISE,
+  RECEIVER_NOISE_FRAMES,
+  RECEIVER_NOISE_GLSL,
   TRANSIENT_AMPLITUDE,
   TRANSIENT_DECAY_MM,
   TRANSIENT_SKIP_MM,
   glslFloat,
+  receiverNoiseSample,
   transientScale,
 } from '../ultrasound/receiver';
 import { AXIAL_SIGMA_MM } from '../ultrasound/beamModel';
-import { FRAG_AXIAL, FRAG_LATERAL, FRAG_RAWFIELD } from '../ultrasound/shaders/passes.glsl';
+import { FRAG_AXIAL, FRAG_LATERAL, FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED } from '../ultrasound/shaders/passes.glsl';
 import { scattererField } from '../ultrasound/speckleField';
 import { FINE, LINES, latSigmaMm, linePitch } from './support/interfaceTwin';
 
@@ -170,5 +173,147 @@ describe('Transitorio del campo cercano bajo el ruido del receptor', () => {
     expect(consts.get('TRANSIENT_DECAY_MM')).toMatch(/\./);
     expect(glslFloat(4)).toBe('4.0');
     expect(glslFloat(0.35)).toBe('0.35');
+  });
+});
+
+/**
+ * Ruido del receptor (decisión 89): electrónico, nace en los canales detrás del transductor. Cada línea es otro disparo:
+ * independiente de sus vecinas, limitado en banda solo a lo largo de la línea por el filtro de recepción (el núcleo
+ * axial de C), y la pasada D lo suma tras la PSF lateral. Antes se sumaba en B y la PSF lateral lo correlacionaba entre
+ * líneas: pinceladas a lo ancho en las luces (juez ciego, ronda 4).
+ */
+describe('Ruido del receptor por línea (decisión 89)', () => {
+  /** Muestras (línea, fila) del ruido de C sin filtrar, en un cuadro. */
+  const white = (lines: number, rows: number, frame: number): Float64Array[] => {
+    const re = new Float64Array(lines * rows);
+    const im = new Float64Array(lines * rows);
+    for (let u = 0; u < lines; u++)
+      for (let v = 0; v < rows; v++) {
+        const [a, b] = receiverNoiseSample(u, v, frame);
+        re[u * rows + v] = a;
+        im[u * rows + v] = b;
+      }
+    return [re, im];
+  };
+  const corr = (x: Float64Array, y: Float64Array): number => {
+    let sxy = 0;
+    let sxx = 0;
+    let syy = 0;
+    for (let i = 0; i < x.length; i++) {
+      sxy += x[i] * y[i];
+      sxx += x[i] * x[i];
+      syy += y[i] * y[i];
+    }
+    return sxy / Math.sqrt(sxx * syy);
+  };
+
+  it('cada muestra es un complejo de media 0 y varianza 1 por componente, blanco entre líneas, filas y cuadros', () => {
+    const L = 192;
+    const R = 512;
+    const [re, im] = white(L, R, 17);
+    let m = 0;
+    let v2 = 0;
+    for (const a of [...re, ...im]) {
+      m += a;
+      v2 += a * a;
+    }
+    const n = 2 * L * R;
+    expect(Math.abs(m / n)).toBeLessThan(0.01);
+    expect(Math.abs(v2 / n - 1)).toBeLessThan(0.02);
+    // vecinas: línea, fila, entre componentes y el cuadro siguiente
+    const shift = (a: Float64Array, du: number, dv: number): [Float64Array, Float64Array] => {
+      const x: number[] = [];
+      const y: number[] = [];
+      for (let u = 0; u + du < L; u++)
+        for (let v = 0; v + dv < R; v++) {
+          x.push(a[u * R + v]);
+          y.push(a[(u + du) * R + v + dv]);
+        }
+      return [Float64Array.from(x), Float64Array.from(y)];
+    };
+    expect(Math.abs(corr(...shift(re, 1, 0)))).toBeLessThan(0.01);
+    expect(Math.abs(corr(...shift(re, 0, 1)))).toBeLessThan(0.01);
+    expect(Math.abs(corr(re, im))).toBeLessThan(0.01);
+    expect(Math.abs(corr(re, white(L, R, 18)[0]))).toBeLessThan(0.01);
+  });
+
+  it('con el núcleo axial de C: la varianza no cambia, correlaciona a lo largo de la línea como el pulso y nada entre líneas', () => {
+    // σ 1,5 filas (el pulso de ~0,26 mm con 180 mm de profundidad seleccionada), núcleo de energía unidad como C
+    const sigma = 1.5;
+    const RA = Math.ceil(2.5 * sigma);
+    const w = Array.from({ length: 2 * RA + 1 }, (_, k) => Math.exp(-0.5 * ((k - RA) / sigma) ** 2));
+    const nw = Math.hypot(...w);
+    const L = 192;
+    const R = 400;
+    const [re, im] = white(L, R + 2 * RA, 5);
+    const fr = new Float64Array(L * R);
+    const fi = new Float64Array(L * R);
+    for (let u = 0; u < L; u++)
+      for (let v = 0; v < R; v++) {
+        let a = 0;
+        let b = 0;
+        for (let k = -RA; k <= RA; k++) {
+          a += w[k + RA] * re[u * (R + 2 * RA) + v + RA + k];
+          b += w[k + RA] * im[u * (R + 2 * RA) + v + RA + k];
+        }
+        fr[u * R + v] = a / nw;
+        fi[u * R + v] = b / nw;
+      }
+    let v2 = 0;
+    let env = 0;
+    let k4 = 0;
+    for (let i = 0; i < fr.length; i++) {
+      v2 += fr[i] ** 2 + fi[i] ** 2;
+      env += Math.hypot(fr[i], fi[i]);
+      k4 += fr[i] ** 4;
+    }
+    const n = fr.length;
+    expect(Math.abs(v2 / (2 * n) - 1)).toBeLessThan(0.02);
+    // la envolvente media es la de un Rayleigh de σ 1 (√(π/2)) a ±2 %: el nivel del ruido en pantalla no cambia
+    expect(Math.abs(env / n / Math.sqrt(Math.PI / 2) - 1)).toBeLessThan(0.02);
+    // casi gaussiana: curtosis en exceso por componente de una suma de uniformes con estos pesos (−1,2·Σw⁴/(Σw²)²)
+    const excess = k4 / n / (v2 / (2 * n)) ** 2 - 3;
+    const expected = (-1.2 * w.reduce((a, x) => a + x ** 4, 0)) / nw ** 4;
+    expect(Math.abs(excess - expected)).toBeLessThan(0.1); // el error de la curtosis estimada con ~2·10⁴ muestras independientes, ~0,04
+    expect(excess).toBeGreaterThan(-0.5);
+    const lag = (du: number, dv: number): number => {
+      const x: number[] = [];
+      const y: number[] = [];
+      for (let u = 0; u + du < L; u++)
+        for (let v = 0; v + dv < R; v++) {
+          x.push(fr[u * R + v]);
+          y.push(fr[(u + du) * R + v + dv]);
+        }
+      return corr(Float64Array.from(x), Float64Array.from(y));
+    };
+    // a lo largo de la línea, la autocorrelación del núcleo: exp(−1/(4σ²)) a una fila
+    expect(lag(0, 1)).toBeCloseTo(Math.exp(-1 / (4 * sigma * sigma)), 1);
+    // entre líneas, nada (antes, la PSF lateral: ~0,5 a una línea en la envolvente de la luz de la VCI)
+    expect(Math.abs(lag(1, 0))).toBeLessThan(0.02);
+  });
+
+  it('va en C y en D, no en B: blanco por muestra, el núcleo axial de C y la suma tras la PSF lateral de D', () => {
+    for (const frag of [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED]) {
+      expect(frag).not.toMatch(/\buNoise\b|\buFrame\b|hash12b/);
+    }
+    expect(FRAG_AXIAL).toContain(RECEIVER_NOISE_GLSL);
+    expect(FRAG_AXIAL).toContain('accN += w * receiverNoise(cell + vec2(0.0, float(k)));');
+    expect(FRAG_AXIAL).toContain('oNoise = accN * (uNoise / sqrt(wsum));');
+    // D: tras normalizar la suma lateral y antes de la envolvente, el ruido de SU línea (sin núcleo lateral)
+    const flat = FRAG_LATERAL.replace(/\s+/g, ' ');
+    const at = flat.indexOf('vec2 f = (accM + amp * accP) * inversesqrt(sm + amp * amp * sp + 2.0 * amp * cx);');
+    const add = flat.indexOf('f += texelFetch(uRxNoise, ivec2(gl_FragCoord.xy), 0).rg;');
+    const det = flat.indexOf('oEnv = length(f) * 1.1283792;');
+    expect(at).toBeGreaterThan(0);
+    expect(add).toBeGreaterThan(at);
+    expect(det).toBeGreaterThan(add);
+    expect(flat.match(/uRxNoise/g)).toHaveLength(2); // la declaración y la lectura de su texel, fuera del bucle
+    // las escalas del hash son las del gemelo, en float32
+    expect(RECEIVER_NOISE_GLSL).toContain(`cell * vec2(${glslFloat(977 / 192)}, ${glslFloat(977 / 1024)}) + uFrame * 1.7`);
+    expect(RECEIVER_NOISE_GLSL).toContain(`cell * vec2(${glslFloat(613 / 192)}, ${glslFloat(613 / 1024)}) + uFrame * 3.1 + 11.0`);
+    expect(RECEIVER_NOISE_GLSL).toContain(`return ${glslFloat(Math.sqrt(12))} * (vec2(a, b) - 0.5);`);
+    // el índice del cuadro va módulo RECEIVER_NOISE_FRAMES: sin perder bits del hash en una sesión larga
+    expect(Math.fround(RECEIVER_NOISE_FRAMES * 3.1) % 1).toBeCloseTo((RECEIVER_NOISE_FRAMES * 3.1) % 1, 2);
+    expect(RECEIVER_NOISE_FRAMES).toBeLessThanOrEqual(8192);
   });
 });

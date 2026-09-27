@@ -421,6 +421,8 @@ vec2 mediumField(vec3 p, vec3 dir, float r, float se, bool withCurtain) {
   vec2 field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
   float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
   if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
+  // densidad de dispersores a escala de milímetros (decisión 89), del plano central como los grumos
+  field *= densityGain(m, c.tissue);
   // eco de interfaz (decisiones 57 y 65): la especular, real (fase 0 común a la cara), y la difusa sobre el fasor
   // unidad del moteado de la muestra (incoherente, anclada)
   vec2 e = interfaceEcho(c, m, dir, r, se, w);

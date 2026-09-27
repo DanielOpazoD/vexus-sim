@@ -636,30 +636,34 @@ float hash13(vec3 p) {
   return fract((p.x + p.y) * p.z);
 }
 
-vec2 latticeValue(vec3 cell, float salt) {
+// Nodo de la retícula: Gaussiana aproximada (Box–Muller) para estadística de speckle plenamente desarrollada. Con
+// s = (p, a, k) (dispersores fuertes, decisión 89, speckleField.ts) los nodos con b ≥ 1 − p llevan la amplitud ×a y el
+// resto ×k, y la fase de cada grupo se reparte en toda la vuelta ((b − 1 + p)/p y b/(1 − p)); s = (0, 1, 1) es el nodo de
+// siempre, bit a bit.
+vec2 latticeValueS(vec3 cell, float salt, vec3 s) {
   float a = hash13(cell + vec3(salt, 0.0, 0.0));
   float b = hash13(cell + vec3(0.0, salt + 17.1, 0.0));
-  // Gaussiana aproximada (Box–Muller) para estadística de speckle plenamente desarrollada.
-  float r = sqrt(-2.0 * log(max(1e-6, a)));
-  float ph = 6.2831853 * b;
+  bool strong = b >= 1.0 - s.x;
+  float r = sqrt(-2.0 * log(max(1e-6, a))) * (strong ? s.y : s.z);
+  float ph = 6.2831853 * (strong ? (b - (1.0 - s.x)) / s.x : b / (1.0 - s.x));
   return r * vec2(cos(ph), sin(ph));
 }
 
 // Interpolación trilineal del campo complejo en una retícula de paso h (mm), con fundido
 // smoothstep (derivada nula en los nodos, como el ruido de valor clásico).
-vec2 scattererField(vec3 m, float h, float salt) {
+vec2 scattererFieldS(vec3 m, float h, float salt, vec3 s) {
   vec3 q = m / h;
   vec3 c0 = floor(q);
   vec3 f = q - c0;
   f = f * f * (3.0 - 2.0 * f);
-  vec2 v000 = latticeValue(c0 + vec3(0,0,0), salt);
-  vec2 v100 = latticeValue(c0 + vec3(1,0,0), salt);
-  vec2 v010 = latticeValue(c0 + vec3(0,1,0), salt);
-  vec2 v110 = latticeValue(c0 + vec3(1,1,0), salt);
-  vec2 v001 = latticeValue(c0 + vec3(0,0,1), salt);
-  vec2 v101 = latticeValue(c0 + vec3(1,0,1), salt);
-  vec2 v011 = latticeValue(c0 + vec3(0,1,1), salt);
-  vec2 v111 = latticeValue(c0 + vec3(1,1,1), salt);
+  vec2 v000 = latticeValueS(c0 + vec3(0,0,0), salt, s);
+  vec2 v100 = latticeValueS(c0 + vec3(1,0,0), salt, s);
+  vec2 v010 = latticeValueS(c0 + vec3(0,1,0), salt, s);
+  vec2 v110 = latticeValueS(c0 + vec3(1,1,0), salt, s);
+  vec2 v001 = latticeValueS(c0 + vec3(0,0,1), salt, s);
+  vec2 v101 = latticeValueS(c0 + vec3(1,0,1), salt, s);
+  vec2 v011 = latticeValueS(c0 + vec3(0,1,1), salt, s);
+  vec2 v111 = latticeValueS(c0 + vec3(1,1,1), salt, s);
   vec2 x00 = mix(v000, v100, f.x);
   vec2 x10 = mix(v010, v110, f.x);
   vec2 x01 = mix(v001, v101, f.x);
@@ -668,4 +672,5 @@ vec2 scattererField(vec3 m, float h, float salt) {
   vec2 y1 = mix(x01, x11, f.y);
   return mix(y0, y1, f.z);
 }
+vec2 scattererField(vec3 m, float h, float salt) { return scattererFieldS(m, h, salt, vec3(0.0, 1.0, 1.0)); }
 `;

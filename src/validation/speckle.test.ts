@@ -6,11 +6,13 @@ import { detect, psf as gaussPsf, whiteField as white } from './syntheticSpeckle
  * El estimador del speckle (guarda de imagen de la e2e) sobre campos sintéticos con la misma
  * geometría que el renderizador (192 líneas × 1024 muestras, pulso σ ≈ 1,5 muestras, haz σ ≈ 1
  * línea): debe dar Rayleigh con una envolvente coherente y salirse de la banda de la e2e
- * [1,6; 2,25] con los defectos que rompen el speckle.
+ * [1,5; 2,1] con los defectos que rompen el speckle. La banda es la del hígado con su textura (decisión 89: algo
+ * pre-Rayleigh, SNR ×0,90–0,93 en estos parches; antes [1,6; 2,25]); los mismos defectos sobre el hígado texturado, en
+ * `parenchymaTextureTwin.test.ts`.
  */
 const LINES = 192;
 const SAMPLES = 1024;
-const BAND = [1.6, 2.25] as const;
+const BAND = [1.5, 2.1] as const;
 
 const G = { lines: LINES, samples: SAMPLES };
 const whiteField = (seed: number): Float32Array => white(G, seed);

@@ -14,7 +14,13 @@ import type { Simulator } from './simulator';
  * 16 muestras en una sola línea abarca ~4 células de speckle axiales y la desviación sale
  * sesgada a la baja (SNR ≈ 2,5 sobre la misma imagen); parches grandes mezclan la TGC, el foco
  * y la heterogeneidad lenta del parénquima (SNR < 1,7). 16 × 8 (≈ 2,8 mm × 8 líneas a 18 cm)
- * queda en 1,7–2,05 en los cuatro puntos de partida.
+ * quedaba en 1,7–2,05 en los cuatro puntos de partida.
+ *
+ * Desde la decisión 89 el hígado no es un moteado de Rayleigh a propósito: sus dispersores fuertes por debajo de la
+ * resolución y la densidad de dispersores a escala de milímetros lo dejan algo pre-Rayleigh (m de Nakagami 0,85 en
+ * ventanas de tres pulsos, como el hígado sano in vivo) y la SNR de estos parches baja ×0,90–0,93 (gemelo: 2,08–2,11 →
+ * 1,91–1,95; con SwiftShader, 1,67–1,85; la banda de la e2e, 1,5–2,1). RAYLEIGH_SNR sigue siendo la referencia del
+ * moteado difuso.
  */
 export const RAYLEIGH_SNR = Math.sqrt(Math.PI / (4 - Math.PI));
 

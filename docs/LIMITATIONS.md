@@ -224,6 +224,13 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   núcleo lateral lleva un pedestal gaussiano con una pantalla de fase fija (ISLR −24 dB en el paciente de referencia),
   no el diagrama real de la apertura; la reverberación de la pared es de primer y segundo orden y solo de los ecos
   fuertes (compuerta por módulo del campo, no por la cara que la produce).
+- **Ruido del receptor por línea, sin recepción en paralelo** (`receiver-noise-per-line`, decisión 89): el ruido es
+  independiente entre líneas (cada línea, un disparo) y limitado en banda a lo largo de ella; muchos equipos forman 2–4
+  líneas por disparo (recepción en paralelo), que comparten el ruido de los canales y lo correlacionan por grupos. Sin la
+  cuantización del ADC ni el ruido de fase; componentes uniformes que el filtro de recepción deja casi gaussianas
+  (curtosis en exceso −0,09 a −0,42 por componente según la profundidad seleccionada: la mediana de su envolvente queda
+  1,5–4,5 % sobre la de Rayleigh de la misma potencia, el suelo de ruido hasta +0,4 dB con 24 cm); el índice del cuadro
+  se repite cada 4096 cuadros (~68 s a 60 cps).
 - **Armónica tisular simplificada** (`harmonic-simplified`, decisión 77):
   - la acumulación del armónico es una curva fija del campo cercano (1 − e^(−r/2 mm), compensada desde 4 mm), no la
     integral del haz con el foco (la ganancia focal de la decisión 84 sí lleva la fuente p1²: la intensidad de la
@@ -306,14 +313,29 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   central está a más de σe + 0,5 mm de una interfaz, los laterales heredan su tejido sin clasificar
   (decisión 24), pero la `bd` del hígado no cuenta los tubos: junto a un vaso fuera del plano, el 1–5 %
   de los píxeles de hígado no ve su borde en elevación.
-- **Tríadas portales difusas** (`portal-triads-diffuse`, decisión 78): las tríadas portales finas son dispersores
-  brillantes difusos anclados, sin eco especular, sin Doppler y sin unirse al árbol de tubos; la misma densidad en
-  todo el hígado (sin los cambios de la hepatitis o la fibrosis).
-- **Estadística de speckle sin calibrar** (`speckle-statistics-uncalibrated`): no se ha medido
-  célula de speckle, SNR local ni asimetría contra clips reales; los cambios de la decisión 19
-  se validaron solo por inspección. Sí se comprueba en la e2e que la envolvente del parénquima
-  hepático de una mirada (compuesto apagado) tiene la SNR teórica de Rayleigh (1,7–2,05 medido,
-  banda 1,6–2,25): eso descarta defectos de detección, no calibra textura frente a un equipo real.
+- **Tríadas portales difusas** (`portal-triads-diffuse`, decisiones 78 y 89): las tríadas portales finas son dispersores
+  brillantes anclados que multiplican el moteado del hígado. Desde la decisión 89 su brillo tiene cola y es en parte
+  especular (más de través que a lo largo del haz, con la ley |cos θ|⁴ sobre el exceso de retrodispersión de la vaina),
+  pero no dibujan un eco coherente de cara (la línea fina de una pared especular); la ley usa la dirección radial del
+  haz, sin la jacobiana de la compresión de la sonda ni la dirección reflejada en el espejo del diafragma; sin Doppler y
+  sin unirse al árbol de tubos; la misma densidad en todo el hígado (sin los cambios de la hepatitis o la fibrosis).
+- **Dispersores fuertes puntuales y solo en el hígado** (`strong-scatterers-lattice`, decisión 89): los dispersores
+  fuertes son nodos de la retícula del moteado de 0,42 mm: puntuales e isótropos, sin la forma alargada de los septos ni
+  su especularidad, con dos niveles de amplitud (los fuertes ×4,5 sobre los corrientes, más la dispersión de Rayleigh de
+  cada nodo) en lugar del espectro continuo de tamaños del árbol portal, y la misma fracción en todo el hígado (la
+  esteatosis y la fibrosis, que cambian el m de Nakagami, no la mueven). La corteza renal, el músculo y el resto de los
+  tejidos siguen siendo de Rayleigh. La densidad de dispersores a escala de milímetros es un ruido de valor, sin la
+  arquitectura lobulillar. En los paneles del juez la cola brillante real la ponen trazos especulares de milímetros
+  (septos y paredes) que el modelo no tiene: una población de septos en las fronteras de la densidad la igualaba, pero
+  con un rayado regular, y se descartó.
+- **Estadística de speckle calibrada solo en parte** (`speckle-statistics-uncalibrated`): la envolvente del hígado sigue
+  el m de Nakagami del hígado sano en ventanas de tres pulsos (Wan et al. 2017; decisión 89) y la imagen mostrada se
+  compara con los paneles reales del juez ciego, pero no con clips de RF de un equipo: la forma de la cola en pantalla
+  depende del proceso del equipo (reducción de moteado, realce de bordes), que el simulador no tiene, y los paneles reales
+  tienen la cola oscura más corta. La e2e exige que la envolvente del parénquima hepático de una mirada (compuesto apagado)
+  quede en la banda de un moteado algo pre-Rayleigh, con la SNR de parche de 1,5–2,1: descarta defectos de detección
+  (con la textura del hígado, la intensidad da 1,0, |Re f| 1,35–1,39 y un suavizado 2,9–3,2; las magnitudes sumadas antes
+  del haz, ≈ 9), no calibra la textura frente a un equipo real.
 - **El moteado se submuestrea en las líneas** (`speckle-line-aliasing`): 192 líneas quedan a 0,5–1,5 mm
   (de 20 a 180 mm) frente a un grano lateral de 1,5 mm hasta 6 cm, 1,9 mm en el foco y 3,5–4,9 mm a 15–18 cm (la PSF
   de la decisión 84), así que en el foco hay ~2 líneas por grano y la pasada D convoluciona un campo muestreado de

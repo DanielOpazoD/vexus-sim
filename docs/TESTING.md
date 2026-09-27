@@ -105,8 +105,10 @@ un gancho que midiera «la envolvente» sin decir cuál cambiaría de significad
 ## Qué no está cubierto todavía
 
 - Estadística de speckle frente a clips reales (`speckle-statistics-uncalibrated`); la e2e solo
-  exige la SNR teórica de Rayleigh en parénquima (`app/speckle.ts`). El banco de fidelidad mide la
-  textura de segundo orden y la imagen mostrada contra imágenes reales de referencia, pero a mano y
+  exige la banda de un moteado algo pre-Rayleigh en el parénquima (`app/speckle.ts`) y los gemelos, el m de
+  Nakagami del hígado sano de la literatura (`parenchymaTexture.test.ts`, decisión 89) y el desplazamiento de las
+  bandas de las guardas del moteado con esa textura (`parenchymaTextureTwin.test.ts`). El banco de fidelidad
+  mide la textura de segundo orden y la imagen mostrada contra imágenes reales de referencia, pero a mano y
   sin umbrales en CI.
 - Imagen de referencia (golden) del modo B y del color.
 - Rendimiento por cuadro medido en CI (solo presupuesto de bundle).

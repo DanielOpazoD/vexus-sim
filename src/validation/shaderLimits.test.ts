@@ -209,9 +209,10 @@ describe('Límites del shader con margen para crecer', () => {
       expect(perTissue, `${name} declara una tabla de un float por tejido`).toEqual([]);
     }
     expect(FRAGMENT_SHADERS.map(([name]) => name)).toEqual(expect.arrayContaining(LOOK_PAIRS.map((p) => `${p.name}_STEERED`)));
-    // la pasada B cuenta sus arrays de tejidos, de caras y de escena: 128 ranuras y 130 en su programa dirigido (114 y
+    // la pasada B cuenta sus arrays de tejidos, de caras y de escena: 126 ranuras y 128 en su programa dirigido (114 y
     // 116 con las caras de la pared, decisión 62; la armónica, decisión 77, y los tejidos del retroperitoneo, decisión 81,
-    // con TISSUE_VEC4 de 7 a 8, llevan al tope de 130)
+    // con TISSUE_VEC4 de 7 a 8, llevaban al tope de 130; el ruido del receptor, que pasa a C, libera uNoise y uFrame:
+    // decisión 89)
     const raw = uniformSlots(FRAG_RAWFIELD);
     const rawSteered = uniformSlots(FRAG_RAWFIELD_STEERED);
     expect(raw.arrays).toContain(`uTissueBack4[${TISSUE_VEC4}]`);
@@ -290,13 +291,15 @@ describe('Límites del shader con margen para crecer', () => {
   // de más de las luces; A2 acumula en o1 Ψ̃ (la refracción) y su pendiente en lugar de la dirección y el tipo de gas, que
   // ahora pone A desde A0, y A multiplica su transmisión con apertura por la ganancia de la refracción (el eco del haz
   // enfocado cuyos rayos desvían las luces). Sin luces cerca, la ganancia es 1 exacto y la dirección, la de antes.
+  // Cambio deliberado de B (decisión 89, ca057917ce3a1b32 → 4235cc350e2f0fe9): el ruido del receptor sale de su main (lo
+  // generan C y D por línea, tras la PSF lateral) y sus comentarios lo dicen; el resto del main hace las mismas cuentas.
   it('el main de los programas de la mirada 0 es, letra a letra, el de antes de la composición', () => {
     const mainOf = (src: string): string => src.slice(src.lastIndexOf('\nvoid main() {'));
     const print = (src: string): string => createHash('sha256').update(mainOf(src)).digest('hex').slice(0, 16);
     expect(Object.fromEntries(LOOK_PAIRS.map((p) => [p.name, print(p.look0)]))).toEqual({
       FRAG_TRANS_PREFIX: '76fe4b3e1120d986',
       FRAG_TRANSMISSION: 'ca285e5d0b7eddf8',
-      FRAG_RAWFIELD: 'ca057917ce3a1b32',
+      FRAG_RAWFIELD: '4235cc350e2f0fe9',
     });
     // y el resto de B es el mismo texto en los dos programas: solo cambian sus entradas y su main
     const inputs0 = 'uniform sampler2D uTrans0;\nuniform sampler2D uTrans1;\n';

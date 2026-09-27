@@ -438,12 +438,12 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 
 ## Doppler
 
-- **El aliasing fuerte no se detecta en la captura** (`severe-aliasing-not-detected`): el control
-  de calidad detecta el plegado moderado (la sangre toca a la vez los dos bordes de la banda con un
-  hueco de ruido entre ambos), pero con la escala más de ~2 veces por debajo de la velocidad el
-  flujo llena toda la banda, no queda hueco y se lee a velocidades plausibles: la congestión grave a
-  PRF 700 (Nyquist 11 cm/s) sale «leve» con el visto bueno. Lo detectará la retroalimentación
-  docente (que conoce la verdad).
+- **El aliasing extremo de la porta se lee como «sin flujo»** (`severe-aliasing-not-detected`, decisiones 49 y 93): la
+  calidad reconoce el plegado moderado (la sangre toca los dos bordes de la banda con un hueco entre ambos) y, desde la
+  decisión 93, el fuerte (la sangre plegada varias veces llena la mitad exterior de la banda ≥ 3 dB sobre el ruido del
+  receptor). Pero con la escala a ±4–6 cm/s la banda del filtro de pared (62,5 Hz con el filtro a 25 Hz) es media banda y
+  la porta, débil, no llega a llenar el resto (tampoco la suprahepática del sano a ±4): la captura dice «no hay flujo en
+  la puerta» en vez de «suba la escala». Nunca da un valor.
 - **Con respiración, el clutter del tejido tapa el flujo venoso lento en el espectro**
   (`respiratory-clutter-masks-slow-flow`): el tejido que se mueve a 10–30 mm/s da un clutter 60–70 dB
   sobre el ruido a 30–100 Hz, por encima de un filtro de pared de 25 Hz; con la ventana de la FFT
@@ -459,9 +459,9 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **La colocación anatómica de la puerta ignora las sombras** (`gate-placement-ignores-shadows`):
   sin peso, `bestGateOnVessel` evita la confluencia con la VCI pero no mira la transmisión y desde
   algunos puntos de partida elige un punto en la sombra de una costilla o de la cortina pulmonar.
-  Los ganchos de la e2e y la prueba de respiración le pasan `acousticWindowWeight`; las pruebas de
-  la cadena del alumno en apnea siguen con la técnica anatómica y una transmisión fija de −10 dB.
-  En la app la puerta la pone el alumno.
+  Los ganchos de la e2e, las pruebas de escala y la de respiración le pasan `acousticWindowWeight`; las pruebas de la
+  cadena del alumno en apnea siguen con la técnica anatómica, ya con la transmisión real hasta la puerta (decisión 93;
+  antes, una copia de la puerta con −10 dB fijos). En la app la puerta la pone el alumno.
 - **La resolución de las pausas renales depende de la PRF** (`renal-pause-resolution-prf`): la
   verdad cuenta como interrupción una pausa de ≥ 20 ms (decisión 26), lo que resuelve el espectro de
   128 muestras a ~4 kHz. A 1,5–2,6 kHz la captura pierde pausas de 20–30 ms; a 6 kHz ve las de 10 ms.
@@ -478,6 +478,16 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   puerta de 4 mm); el operador debe usar apnea espiratoria o un segmento más grueso, como en la
   práctica. Hasta la 0.5.0 también lo sufrían vasos más gruesos que la puerta (tronco portal: PF
   167 % en el sano) por un defecto del volumen de muestra, ya corregido.
+- **La traza de la porta está ajustada sobre la propia cadena** (`portal-trace-tuned-on-chain`, decisión 93): el promedio
+  móvil de 60 ms, los cuantiles 0,03/0,97 de Vmín/Vmáx y el hueco de 60 Hz de la banda se eligieron en una rejilla sobre
+  168 capturas de la cadena del alumno y se validaron con otras seis semillas (a ≤ 10 puntos de la verdad de los latidos
+  medidos: 99–100 % de las aceptadas; de la de 7 s: 94,6–98,3 %), no contra el trazado automático de un equipo real ni
+  contra clips. Con respiración tranquila la porta del sano sale a
+  menudo «intermitente» a ±40–±60: su banda, a −32 dB, pierde la traza en algún latido.
+- **Cuatro latidos no bastan en la FA** (`af-capture-beat-sampling`, decisiones 49 y 93): la captura mide los 4 últimos
+  latidos completos, y en la FA la PF portal cambia de un latido a otro (12–47 % en una misma captura de la cadena del
+  alumno, con respiración). La mediana de esos 4 puede quedar a más de 10 puntos de la de los ~11 latidos de 7 s (26 frente
+  a 41 %): la medición sigue a la verdad de sus latidos, pero el alumno debería promediar más latidos, como en la clínica.
 - **Los vasos finos vuelven a la puerta con menos sangre de la real** (`thin-vessel-sample-volume-lag`):
   cuando una interlobar sale de la puerta con la respiración y vuelve, su región queda con menos
   dispersores (30–45 % de sangre frente al 69 % de una siembra nueva en fin de espiración); además
@@ -486,6 +496,13 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   filtro de pared no quita: hace falta un control de población con transiciones lentas.
 
 ## Enseñanza
+
+- **La identidad del vaso la da el modelo, no la imagen** (`vessel-identity-from-model`, decisión 93): una captura cuya
+  puerta estaba sobre otro sistema vascular que el de su fila se rechaza como «vaso equivocado» con el vaso que había; el
+  simulador lo sabe por la sangre del volumen de muestra, como lo sabría un supervisor, no un ecógrafo. Decide el sistema
+  que domina la sangre de la puerta en los 7 s de la captura: una puerta a caballo entre dos vasos se atribuye al que más
+  pesa, y la fila renal admite la arteria interlobar (la medición elige el lado de la vena), así que una puerta centrada
+  en la arteria no se rechaza.
 
 - **El modo ciego es de pantalla, no de código** (`blind-mode-screen-only`, decisión 82): el alumno no ve el nombre del
   caso, sus confusores reales ni la trampa en la pantalla ni en el DOM, y las explicaciones de las trampas con los

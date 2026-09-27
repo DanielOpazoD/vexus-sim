@@ -122,6 +122,23 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- La PF portal que medía el alumno dependía de la escala del PW (93): en el sano (verdad 13–20 %) salía 100 % a ±20 cm/s,
+  111–114 % a ±40 (la escala por defecto), 79–95 % a ±60 y 18–24 % a ±80, y en el grave 133 % (verdad 75 %), todo con el
+  visto bueno de la calidad: una porta «grave» en un sano. La traza tomaba el semiplano dominante columna a columna y,
+  con la banda débil de un vaso profundo, el clutter junto a la línea de base o su imagen hundían Vmín a 0 o por debajo.
+  Ahora la porta se lee en su semiplano anterógrado fijo con una envolvente que no cuenta lo simétrico (clutter,
+  transitorios del filtro de pared, imagen), los huecos de la señal no son pausas y Vmáx/Vmín son cuantiles robustos de
+  la traza: en 168 capturas de los 7 casos a las 4 escalas, con y sin apnea, el 98 % de las aceptadas queda a ≤ 10
+  puntos de la verdad de 7 s (antes, el 28 %), todas frente a la de sus latidos, y ninguna es «grave» con la verdad
+  normal (antes, 26). La interlobar a ±60–±80 ya
+  no lee el clutter del riñón como flujo sistólico (la vena monofásica del grave salía «continua»). Con la escala muy
+  baja la captura dice «aliasing: suba la escala» en vez de «no hay flujo»; con el pico de la porta en el Nyquist
+  (recortado o plegado al otro lado, que se leía como porta invertida), también; y con el filtro de pared tan alto que el
+  valle cae en su banda, «baje el filtro de pared» en vez de una PF menor. Tras «Capturar», el espectro muestra la traza
+  automática, los latidos analizados y dónde se leyó cada valor (S/D/A, Vmáx/Vmín o S/D/mín), también congelado y en el
+  cine. Una captura con la puerta sobre otro vaso que el de su fila se rechaza: «vaso equivocado, la puerta está en la
+  porta». La prueba de la cadena del alumno usaba una copia de la puerta con la transmisión fija en −10 dB y solo la PRF
+  máxima; ahora recorre la ruta de la aplicación.
 - Las costillas derechas eran cartílago en todo su arco anterolateral y posterior (la regla del cartílago costal suponía el lado izquierdo): la ventana intercostal no veía costillas óseas, ni su cortical ni su sombra. Ahora el cartílago es solo el arco anterior, hasta la línea medioclavicular, y lateral a él la costilla es hueso con cortical brillante y sombra limpia; las costillas 8.ª–10.ª acaban en el reborde costal en lugar de cruzar la línea media, y la ventana subxifoidea queda libre de cartílago. La vista intercostal de partida, que con costillas óseas cruzaba seis sombras, va ahora a lo largo del 8.º espacio intercostal en la línea axilar media (marcador hacia la axila): una costilla asoma en un borde con su sombra, el resto muestra el hígado, las suprahepáticas y la VCI con la respiración tranquila, y la cortina pulmonar baja sobre ellas en inspiración profunda (62).
 - La calidad de la captura renal decía «el vaso entra y sale de la puerta» en la congestión grave en apnea cuando la causa era el plegado: a 2600 Hz la onda D roza el Nyquist y deja su ventana sin sangre. Ahora dice aliasing (suba la escala). Además, el latido renal se juzga en su ventana diastólica y debe repetirse igual que los demás latidos (mediana de los otros: con 4 latidos, un reparto 2/2 ya no pasa). Con respiración, la precisión de las capturas aceptadas sube del 70 % al 88 % (49).
 - Costura negra entre el diafragma y su imagen especular: el espejo quedaba en el centro de la primera celda gruesa de pulmón, hasta 1,1 mm dentro, y el camino reflejado cruzaba pulmón. Ahora la pasada A lo coloca en el cruce exacto (≤ 0,009 mm), la pleura dibuja su eco allí y las líneas A salen de la pleura exacta (57).

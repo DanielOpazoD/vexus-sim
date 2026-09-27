@@ -112,22 +112,3 @@ jobs:
           echo "check: ${{ needs.check.result }} · e2e: ${{ needs.e2e.result }}"
           test "${{ needs.check.result }}" = success
           test "${{ needs.e2e.result }}" = success
-
-  # TEMPORAL (se retira antes de fusionar): arranque repetido en un corredor limpio con y sin caché de programas grande
-  sonda-arranque:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
-      - run: npx playwright install --with-deps chromium
-      - run: npx vite build
-      - run: nproc
-      - run: npx tsx tools/ci/boot-probe.mts . "" 3
-      - run: npx tsx tools/ci/boot-probe.mts . "--gpu-program-cache-size-kb=200000" 3
-      - run: npx tsx tools/ci/boot-probe.mts . "" 3
-      - run: npx tsx tools/ci/boot-probe.mts . "--gpu-program-cache-size-kb=200000" 3

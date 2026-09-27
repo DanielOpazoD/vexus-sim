@@ -5,7 +5,7 @@ import { glslFloat } from './receiver';
 /**
  * Medio de dispersores anclado (decisión 55). El moteado sale de un campo complejo en una retícula
  * de 0,42 mm cuya coordenada elevacional se comprime hasta el grosor de corte, para que la textura
- * se decorrele al inclinar la sonda un grosor de corte y no una célula (decisión 99 de EchoTwin).
+ * se decorrele al inclinar la sonda un grosor de corte y no una célula (decisión 19, idea tomada de EchoTwin).
  * Esa compresión necesita un eje y un pivote. Antes eran la normal ACTUAL del plano y el origen del
  * mundo: el medio cambiaba al girar la sonda, y a 100 mm del origen un giro de 0,5° desplazaba el
  * campo 0,9 mm (correlación 0,16 con 0,5° y 0,02 con 1°, cuando un equipo conserva el moteado).

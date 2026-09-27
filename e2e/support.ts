@@ -9,10 +9,10 @@ import { expect, test, type Page } from '@playwright/test';
  */
 
 /**
- * Plazo del arranque hasta los primeros cuadros. Lo domina la compilación de los programas GLSL con SwiftShader:
- * 12–15 s de carga del módulo y 25–45 s hasta el primer cuadro en el corredor de GitHub con dos trabajadores
- * (27-09-2026; 18,6 s en total a mediados de septiembre, antes de las decisiones 84–90). El plazo solo detecta un
- * arranque colgado: da ×3 sobre lo medido.
+ * Plazo del arranque hasta los primeros cuadros. Lo domina la compilación de los programas GLSL con SwiftShader: en el
+ * corredor de GitHub, 23–26 s con una sola página (una caché de programas mayor, `--gpu-program-cache-size-kb`, no lo
+ * cambia) y 15–35 s por prueba con un trabajador por corredor; con dos trabajadores eran 40–60 s (27-09-2026; 18,6 s a
+ * mediados de septiembre, antes de las decisiones 84–90). El plazo solo detecta un arranque colgado: ×5 sobre lo medido.
  */
 export const BOOT_MS = 180_000;
 

@@ -1493,8 +1493,16 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
   const corr =
     w.reduce((a, x, i) => a + (x - mw) * (d[i] - md), 0) /
     Math.sqrt(w.reduce((a, x) => a + (x - mw) ** 2, 0) * d.reduce((a, x) => a + (x - md) ** 2, 0));
-  const iMax = w.indexOf(Math.max(...w));
-  const iMin = w.indexOf(Math.min(...w));
+  // Dónde pone el operador los calibres: en el máximo y el mínimo de la envolvente de la banda, no en una columna suelta
+  // que el moteado de la pared ensancha o estrecha. Se eligen por la mediana de cada columna con sus vecinas y se mide
+  // la anchura de la columna elegida. En CI una sola columna ensanchada 1,9 mm sobre sus vecinas (anchura 13,99 frente
+  // a 12,89 y 12,11, sin que la verdad cambiara: 18,08 → 17,04 → 16,53 mm) llevaba la colapsabilidad a 38 % frente a
+  // 30 de la verdad; el reintento, sin ella, daba 32,6.
+  // (las columnas de los extremos de la franja no tienen dos vecinas y no se eligen)
+  const inner = w.map((_, i) => i).slice(1, -1);
+  const med3 = (i: number) => [w[i - 1], w[i], w[i + 1]].sort((a, b) => a - b)[1];
+  const iMax = inner.reduce((best, i) => (med3(i) > med3(best) ? i : best), inner[0]);
+  const iMin = inner.reduce((best, i) => (med3(i) < med3(best) ? i : best), inner[0]);
   const ciBand = (100 * (w[iMax] - w[iMin])) / w[iMax];
   // la anchura en espiración (el diámetro de la verdad por encima de su mediana) y en inspiración
   const dMed = [...d].sort((a, b) => a - b)[Math.floor(d.length / 2)];

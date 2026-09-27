@@ -780,7 +780,7 @@ ${WALL_FACE_ECHO_GLSL}
 // Campo de dispersores con la célula ELEVACIONAL igual al grosor de corte: la
 // coordenada material a lo largo del eje del ancla se comprime para que la
 // textura se decorrele al inclinar la sonda un grosor de corte, no una célula
-// de 0,4 mm (idea de EchoTwin, decisión 99; Chen/Fowlkes/Carson/Rubin 1997).
+// de 0,4 mm (decisión 19, idea tomada de EchoTwin; Chen/Fowlkes/Carson/Rubin 1997).
 // El eje y el pivote son un ancla fija, no la normal actual ni el origen del
 // mundo: el medio no cambia al girar la sonda (decisión 55, speckleField.ts).
 vec2 scattererFieldSlice(vec3 m, float h, float sliceHalfMm, float salt, vec3 e, vec3 pivot, vec3 s) {

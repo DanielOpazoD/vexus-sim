@@ -42,7 +42,8 @@ npm run dev        # http://localhost:6600
 | `npm run check`      | formato + lint (con tipos) + tipos + todas las pruebas con cobertura + build + presupuesto |
 | `npm run e2e`        | extremo a extremo en Chromium (arranque, medición, pérdida de GPU, equivalencia TS ↔ GLSL) |
 
-Requiere Node ≥ 22 y un navegador con WebGL2 + `EXT_color_buffer_float` (Chrome, Safari 17+,
+Requiere Node 24 (la versión de `.nvmrc`, la que usan la CI y el desarrollo; `engines` admite ≥ 22, sin
+probar) y un navegador con WebGL2 + `EXT_color_buffer_float` (Chrome, Safari 17+,
 Firefox). Única dependencia de producción: three.js (navegador 3D); todo lo demás es procedural. El audio Doppler se activa con el botón «Audio» (política de reproducción del navegador).
 
 ## Cómo se usa

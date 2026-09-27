@@ -8,13 +8,19 @@ main ──●──●──●──●──●──●──►   siempre v
          ●──●──     ●──●      ramas cortas: feat/…, fix/…, docs/…, chore/…
 ```
 
-- **`main`** es la única rama larga. Cada commit de `main` pasa `npm run check` (lo ejecuta
-  también CI en `.github/workflows/ci.yml`). No se empuja directamente a `main`.
+- **`main`** es la única rama larga. Cada commit de `main` pasa `npm run check` y la e2e (CI en
+  `.github/workflows/ci.yml`). No se empuja directamente a `main`.
 - **Ramas de trabajo** cortas (uno o pocos días) con prefijo por intención: `feat/`, `fix/`,
   `docs/`, `chore/`, `perf/`, `test/`. Ejemplo: `feat/rinon-izquierdo-interlobares`.
 - **Pull request** por cada rama, con la plantilla (`.github/pull_request_template.md`): qué
   cambia, número de decisión, cómo se verificó. Se integra con _squash_ o _merge_ normal, nunca
-  con historia reescrita de `main`.
+  con historia reescrita de `main`, y **solo con la CI en verde**: el check «CI verde (check + e2e)»
+  (el trabajo `check` y los cuatro fragmentos de la e2e). Una prueba que solo pasa al reintentarla
+  hace fallar la ejecución (`failOnFlakyTests`): no es verde. Una corrida local no sustituye a la CI.
+- **Comentario de verificación**: enlaza la ejecución real de la CI sobre el último commit del PR
+  (`gh pr checks <n>` da el enlace de cada check) y dice qué más se miró (navegador, cifras). «Verde
+  en local» o «la CI está rota» no bastan: si la CI falla, se arregla o se explica la causa antes de
+  fusionar.
 - **Etiquetas** `vN.N.N` en `main` al cerrar una iteración (`docs/DECISIONS.md` lleva el informe
   de cierre correspondiente; `CHANGELOG.md` lo resume).
 
@@ -39,7 +45,9 @@ chore(ci): workflow con npm run check
 npm run check
 ```
 
-Ejecuta lint, tipos, **todas** las pruebas (rápidas y lentas), build y presupuesto de bundle.
+Ejecuta lint, tipos, **todas** las pruebas (rápidas y lentas), build y presupuesto de bundle
+(en local ~2–5 min con la máquina libre; en la CI de GitHub, 6–15 min el trabajo `check` y 10–20 la ejecución
+entera con la e2e).
 No se acepta `npm run check | grep …`: el código de salida es lo que cuenta. Si el cambio toca
 la anatomía, también:
 
@@ -79,7 +87,14 @@ a qué objetivo sirve; un cambio que no sirve a ninguno no entra.
   suite rápida y entra en `test:slow` / `test:all`.
 - Sin WebGL ni DOM en los tests unitarios: todo lo físico se prueba en TypeScript puro. Lo que solo
   el navegador puede ver (arranque, render, cableado de la UI) va en `e2e/` (Playwright, `npm run
-e2e`; CI lo ejecuta tras `check`).
+e2e`; CI lo ejecuta en paralelo con `check`, en cuatro fragmentos de un trabajador con SwiftShader).
+- En la e2e se espera en cuadros del bucle o en tiempo de simulación (`withinFrames`,
+  `withinSimSeconds` y el gancho `framesRendered`, `e2e/support.ts`), nunca «n segundos de reloj»:
+  con SwiftShader un cuadro tarda de décimas a varios segundos según el corredor. Los plazos en
+  milisegundos son el del arranque (`BOOT_MS`, dominado por la compilación) y el de cada prueba
+  (`budget`: arranques + trabajo medido en el corredor, con margen), que solo detectan un cuelgue.
+- `?e2e=1` arranca con la pose por defecto y en fundamental (la física calibrada de las pruebas);
+  `?e2e=app`, como el usuario (subxifoidea, armónica y composición), también con los ganchos.
 - Los umbrales de una aserción se justifican en un comentario (qué observable, de dónde sale).
 
 ## Estilo

@@ -180,6 +180,7 @@ export class CutMapView {
   /** Registra el fallo, descarta el Worker y programa un reintento con espera creciente (1 s → 30 s). */
   private fail(error: unknown, nowMs: number): void {
     errorLog.report('corte', error);
+    this.watchdog.stop();
     this.failures++;
     this.retryAt = nowMs + Math.min(30_000, 1000 * 2 ** (this.failures - 1));
     this.worker?.terminate();
@@ -212,6 +213,7 @@ export class CutMapView {
       if (this.pendingInputs?.id === ev.data.id) this.mapInputs = this.pendingInputs;
       this.mapDirty = true;
       this.pending = false;
+      this.watchdog.stop();
       this.failures = 0;
     };
     this.worker.onerror = (ev) => {
@@ -230,7 +232,8 @@ export class CutMapView {
   /** Pide un mapa nuevo a ≤ `hz` veces por segundo y dibuja el último recibido. */
   draw(sim: Simulator, nowMs: number, hz = 8): void {
     // Vigilante: una petición sin respuesta en 3 s de hilo principal en marcha cuenta como caída del Worker
-    if (this.pending && this.watchdog.expired(nowMs)) this.fail(new Error('el Worker del corte no responde (3 s)'), nowMs);
+    if (this.pending && this.watchdog.expired(nowMs))
+      this.fail(new Error('el Worker del corte no responde (3 s de hilo principal)'), nowMs);
     const worker = this.ensureWorker(sim, nowMs);
     if (worker && !this.pending && nowMs - this.lastUpdate >= 1000 / hz) {
       this.lastUpdate = nowMs;

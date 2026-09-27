@@ -5,6 +5,7 @@ import {
   bootWithoutErrors,
   budget,
   checkAfterEach,
+  stashLoggedErrors,
   clockRuns,
   expectLoggedErrors,
   simTime,
@@ -1261,6 +1262,7 @@ test('armónica tisular (decisión 77): campo cercano limpio, el mismo tejido y 
   expect(errors).toEqual([]);
   // y la aplicación, sin ?e2e (sin ganchos: se espera a su primer cuadro, dominado por la compilación), arranca en
   // armónica (main.ts), como un preajuste abdominal moderno; el HUD se escribe en el mismo cuadro que el estado
+  await stashLoggedErrors(page);
   await page.goto('/?docente=1');
   await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: BOOT_MS });
   await expect(page.locator('#hud-tr')).toContainText('THI 3,5 MHz');
@@ -1519,6 +1521,7 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
   // sobre esas cuatro ejecuciones da 28,3–30,8 %. (La mediana de las tres rebajaba el máximo: 26,3–31,1.) Las cotas
   // (±5 puntos de la verdad, aquí y con los calibres) no cambian.
   const HALF_WINDOW_S = 0.3;
+  const median = (a: number[]) => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)];
   const t0 = band.out[0].t;
   const tEnd = band.out[band.out.length - 1].t;
   const around = (i: number) => band.out.filter((c) => Math.abs(c.t - band.out[i].t) <= HALF_WINDOW_S);
@@ -1533,6 +1536,17 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
   const iMax = inner.reduce((best, i) => (env[i].width > env[best].width ? i : best), inner[0]);
   const iMin = inner.reduce((best, i) => (env[i].width < env[best].width ? i : best), inner[0]);
   const ciBand = (100 * (env[iMax].width - env[iMin].width)) / env[iMax].width;
+  // Lo que la envolvente deja de ver, columna a columna: el ruido de cada columna respecto a la recta que une su anchura
+  // con la verdad (en CI, mediana del desvío absoluto 0,24–0,35 mm; techo 0,6). Una columna mal escrita o con el borde
+  // saltando por el moteado de la pared lo sube.
+  const slope = w.reduce((a, x, i) => a + (x - mw) * (d[i] - md), 0) / d.reduce((a, x) => a + (x - md) ** 2, 0);
+  const residual = median(w.map((x, i) => Math.abs(x - (mw + slope * (d[i] - md)))));
+  // informativo: la verdad con la misma envolvente (sus extremos en ±0,3 s) — en CI la banda la supera en 3–5 puntos
+  // (la anchura de la banda es ~0,73 × dAp − 0,7 mm, ver el informe del PR); la cota sigue siendo la verdad continua
+  const dEnv = band.out.map((_, i) => mean(around(i).map((c) => c.dAp)));
+  const jMax = inner.reduce((best, i) => (dEnv[i] > dEnv[best] ? i : best), inner[0]);
+  const jMin = inner.reduce((best, i) => (dEnv[i] < dEnv[best] ? i : best), inner[0]);
+  const ciTruthEnv = (100 * (dEnv[jMax] - dEnv[jMin])) / dEnv[jMax];
   // la anchura en espiración (el diámetro de la verdad por encima de su mediana) y en inspiración
   const dMed = [...d].sort((a, b) => a - b)[Math.floor(d.length / 2)];
   const wOf = (hi: boolean) => mean(w.filter((_, i) => d[i] > dMed === hi));
@@ -1540,6 +1554,9 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
     n: w.length,
     corr,
     ciBand,
+    ciTruthEnv,
+    residual,
+    slope,
     truth: band.truth,
     wMax: env[iMax],
     wMin: env[iMin],
@@ -1561,6 +1578,7 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
   expect(env[iMin].columns, tag).toBeGreaterThanOrEqual(2);
   expect(wOf(true) - wOf(false), tag).toBeGreaterThan(1);
   expect(corr, tag).toBeGreaterThan(0.6);
+  expect(residual, tag).toBeLessThan(0.6);
   expect(Math.abs(ciBand - band.truth.ci), tag).toBeLessThanOrEqual(5);
   // los calibres de la pestaña Medir sobre la franja congelada: de borde a borde de la envolvente en la columna más ancha
   // y en la más estrecha (píxeles enteros, como un clic)

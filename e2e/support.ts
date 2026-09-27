@@ -12,10 +12,10 @@ import { expect, test, type Page } from '@playwright/test';
  * Plazo del arranque hasta los primeros cuadros. Lo domina la compilación de los programas GLSL con SwiftShader: en el
  * corredor de GitHub, 23–26 s con una sola página (una caché de programas mayor, `--gpu-program-cache-size-kb`, no lo
  * cambia) y 15–35 s por prueba con un trabajador por corredor; con dos trabajadores eran 40–60 s (27-09-2026; 18,6 s a
- * mediados de septiembre, antes de las decisiones 84–90). En un Mac con varias e2e a la vez (carga 20–60) pasa de 120 s
- * y llegó a agotar 180. El plazo solo detecta un arranque colgado.
+ * mediados de septiembre, antes de las decisiones 84–90): en CI, 180 s. En un Mac con varias e2e a la vez (carga 20–60)
+ * pasa de 120 s y llegó a agotar 180: en local, 300. El plazo solo detecta un arranque colgado.
  */
-export const BOOT_MS = 300_000;
+export const BOOT_MS = process.env.CI ? 180_000 : 300_000;
 
 /** Plazo de una prueba: `boots` arranques más `workMs` de trabajo (medido en el corredor, con margen ×2 o más). */
 export function budget(workMs: number, boots = 1): void {
@@ -41,6 +41,8 @@ export async function bootWithoutErrors(page: Page, query = '?e2e=1'): Promise<s
   page.on('console', (m) => {
     if (m.type() === 'error') errors.push(`console: ${m.text()}`);
   });
+  // el registro de errores de la página anterior (una prueba con dos arranques) se guarda antes de dejarla
+  await stashLoggedErrors(page);
   const t0 = Date.now();
   await page.goto(`/${query}`);
   // los ganchos se cargan de forma diferida (import dinámico); el arranque acaba con dos cuadros del bucle
@@ -60,11 +62,12 @@ export async function bootWithoutErrors(page: Page, query = '?e2e=1'): Promise<s
 }
 
 /**
- * Un cuadro del bucle no tarda más de ~15 s en el corredor (medido: 0,5–12 s de media, con los ganchos dibujando): si en
- * `STALL_MS` no se completa ninguno, el bucle está colgado o lanza en cada cuadro (un cuadro que lanza no cuenta), y
- * la espera falla con ese motivo en vez de agotar el plazo de la prueba.
+ * Si en `STALL_MS` no se completa ningún cuadro, el bucle está colgado o lanza en cada cuadro (un cuadro que lanza no
+ * cuenta), y la espera falla con ese motivo en vez de agotar el plazo de la prueba. Un cuadro normal tarda 0,5–12 s en
+ * el corredor, pero el primero tras recuperar el contexto recompila los programas, como el arranque (en un Mac cargado
+ * pasó de 90 s): el mismo plazo que el arranque.
  */
-const STALL_MS = 90_000;
+const STALL_MS = BOOT_MS;
 
 /**
  * Espera a que `check` se cumpla (devuelve `true`, o una descripción del estado para el mensaje de error) con un
@@ -104,10 +107,15 @@ export async function withinSimSeconds(page: Page, seconds: number, what: string
     const t0 = await simTime(page);
     let fSeen = await framesRendered(page);
     let seenAt = Date.now();
+    let tSeen = t0;
+    let fAtT = fSeen;
     for (;;) {
       if ((await check()) === true) return;
       const t = await simTime(page);
       if (t < t0) throw new Error(`${what}: el reloj de la simulación volvió atrás (${t0} → ${t} s): ¿otro simulador?`);
+      // la imagen congelada completa cuadros sin mover el reloj: la espera no acabaría nunca
+      if (t !== tSeen) [tSeen, fAtT] = [t, await framesRendered(page)];
+      else if ((await framesRendered(page)) - fAtT >= 20) throw new Error(`${what}: el reloj no avanza en 20 cuadros (¿imagen congelada?)`);
       if (t >= t0 + seconds) {
         const last = await check();
         if (last === true) return;
@@ -136,6 +144,16 @@ export async function clockRuns(page: Page, what: string, frames = 3): Promise<v
 }
 
 const allowedLogged = new WeakMap<Page, RegExp[]>();
+const stashedLogged = new WeakMap<Page, string[]>();
+
+/**
+ * Guarda el registro de errores de la página actual antes de dejarla (otro arranque u otra dirección): `checkAfterEach`
+ * lo exige vacío junto con el de la última página.
+ */
+export async function stashLoggedErrors(page: Page): Promise<void> {
+  const logged = await page.evaluate(() => window.__vexusTest?.loggedErrors() ?? null).catch(() => null);
+  if (logged) stashedLogged.set(page, [...(stashedLogged.get(page) ?? []), ...logged]);
+}
 
 /** Entradas del registro de errores de la aplicación que esta prueba provoca a propósito (p. ej. el contexto perdido). */
 export function expectLoggedErrors(page: Page, patterns: RegExp[]): void {
@@ -160,10 +178,10 @@ export function checkAfterEach(): void {
       description: `arranque ${(p.bootMs / 1000).toFixed(1)} s; después ${n ?? '?'} cuadros en ${dt.toFixed(1)} s${n ? ` (${(dt / n).toFixed(2)} s/cuadro)` : ''}`,
     });
     if (info.status !== info.expectedStatus) return;
-    const logged = await page.evaluate(() => window.__vexusTest?.loggedErrors() ?? null);
+    const logged = [...(stashedLogged.get(page) ?? []), ...((await page.evaluate(() => window.__vexusTest?.loggedErrors() ?? null)) ?? [])];
     const allowed = allowedLogged.get(page) ?? [];
     expect(
-      (logged ?? []).filter((e) => !allowed.some((r) => r.test(e))),
+      logged.filter((e) => !allowed.some((r) => r.test(e))),
       'registro de errores de la aplicación (errorLog)',
     ).toEqual([]);
   });

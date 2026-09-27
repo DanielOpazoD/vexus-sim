@@ -5,9 +5,9 @@ describe('Vigilante de las peticiones al Worker del corte', () => {
   it('a 60 fps, la petición sin respuesta caduca pasados 3 s, como antes', () => {
     const w = new RequestWatchdog(3000);
     w.start(0);
-    // 174 cuadros: 2,9 s; 13 más: 3,12 s
-    for (let i = 1; i <= 174; i++) expect(w.expired((i * 1000) / 60)).toBe(false);
-    expect(w.expired((187 * 1000) / 60)).toBe(true);
+    // 180 cuadros: 3 s justos, aún no; el 181, sí
+    for (let i = 1; i <= 180; i++) expect(w.expired((i * 1000) / 60)).toBe(false);
+    expect(w.expired((181 * 1000) / 60)).toBe(true);
   });
 
   it('un hilo principal ocupado no cuenta: un cuadro de 20 s suma 250 ms (la respuesta esperaba en la cola)', () => {
@@ -18,7 +18,7 @@ describe('Vigilante de las peticiones al Worker del corte', () => {
     expect(w.expired(23_000)).toBe(false);
   });
 
-  it('un Worker colgado sigue caducando aunque cada cuadro tarde segundos: 3000 / 250 = 12 cuadros', () => {
+  it('un Worker colgado sigue caducando aunque cada cuadro tarde segundos: en la comprobación 13 (12 × 250 ms = 3 s justos)', () => {
     const w = new RequestWatchdog(3000);
     w.start(0);
     const seen: boolean[] = [];

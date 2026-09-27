@@ -11,7 +11,7 @@ import type { TransducerProfile } from './transducerProfile';
 import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
 import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
 import { GREY_CURVE, greyOfLevel } from './greyMap';
-import { AXIAL_SIGMA_MM } from './beamModel';
+import { axialSigmaMm, focalReferenceFwhmMm, txApertureMm } from './beamModel';
 import { ANCHOR_SALT_STEP, ElevationAnchor } from './speckleField';
 import { interfaceUniforms } from './interfaceEcho';
 import {
@@ -31,7 +31,7 @@ import { RECEIVER_NOISE } from './receiver';
 import { ELEV_SIGMA0_MM } from './pleura';
 import { CLUTTER, clutterParams, type ClutterParams } from './clutter';
 import { harmonicNearUniform, noiseGain, transientGain } from './harmonic';
-import { bmodeBeam } from './transducerProfile';
+import { bmodeBeam, bmodeTxApertureMm } from './transducerProfile';
 import { FRAME_PASSES, type PassId } from './passGraph';
 import { CompoundRing, compoundActive, lookTheta, type CompoundLook } from './compound';
 import { CINE_FRAMES, CineRing, persistenceReplay } from './cine';
@@ -1213,7 +1213,8 @@ export class UltrasoundRenderer {
     p.tex('uPre0', 0, this.tPre.textures[0]);
     p.tex('uPre1', 1, this.tPre.textures[1]);
     p.tex('uHits0', 2, this.tHits.textures[0]);
-    p.v3('uAperture', [beam.apertureTxMm, beam.apertureRxMaxMm, beam.fNumberRxMin]);
+    // la emisión de la imagen B a su foco (decisión 84: F/2,5 con el foco somero)
+    p.v3('uAperture', [bmodeTxApertureMm(this.profile, inputs.bmode), beam.apertureRxMaxMm, beam.fNumberRxMin]);
     if (steered) {
       // el prefijo de la mirada del cuadro, que A2 acaba de escribir con su programa dirigido
       p.tex('uPreSteer', 3, this.tPre.textures[2]);
@@ -1286,12 +1287,18 @@ export class UltrasoundRenderer {
    */
   private setLateralPsfUniforms(p: GLProgram, inputs: FrameInputs): void {
     const b = bmodeBeam(this.profile, inputs.bmode);
-    p.f('uFocus', inputs.bmode.focusMm);
-    p.v4('uBeam', b.k * b.lambdaMm, b.apertureTxMm, b.apertureRxMaxMm, b.fNumberRxMin);
-    p.v2('uBeamTx', b.k * b.lambdaTxMm, b.txScale);
+    // focalGain: (y/FWHM_tx)^z·√(w/|FWHM|), con las FWHM del foco del preajuste
+    const ref = focalReferenceFwhmMm(b);
+    p.v4('uFocus', inputs.bmode.focusMm, ref.tx, b.focalExponent - 0.5, Math.hypot(ref.tx, ref.rx));
+    // la apodización de la emisión va en su apertura: el cono c·D y, en el foco, (kTx·λ_tx·c)·F/(c·D) = kTx·λ_tx·F/D,
+    // con la apertura de emisión de ese foco (`txApertureMm`: F/F#_tx,min si es menor que la máxima)
+    const cone = b.txConeFraction * txApertureMm(inputs.bmode.focusMm, b);
+    p.v4('uBeam', b.k * b.lambdaMm, cone, b.apertureRxMaxMm, b.fNumberRxMin);
+    p.v4('uBeamTx', b.kTx * b.lambdaTxMm * b.txConeFraction, b.txScale, b.downshiftTxPerMm, b.downshiftRxPerMm);
   }
 
-  // C — convolución axial (pulso ≈ 2 ciclos a 3,5 MHz → σ = AXIAL_SIGMA_MM, 0,26 mm)
+  // C — convolución axial (pulso ≈ 2 ciclos a 3,5 MHz en la cara, σ 0,26 mm, que se alarga con la bajada de la
+  // frecuencia central: `axialSigmaMm`, decisión 84). σ en la fila i = x + y·i, con la fila i en (i + ½)·dz
   private passAxial(inputs: FrameInputs): void {
     const gl = this.gl;
     const depth = inputs.bmode.depthMm;
@@ -1299,7 +1306,9 @@ export class UltrasoundRenderer {
     this.pAxial.use();
     this.pAxial.tex('uField', 0, this.tRaw.textures[0]);
     const dz = depth / FINE_DEPTH;
-    this.pAxial.f('uSigmaTexels', Math.max(0.6, AXIAL_SIGMA_MM / dz));
+    const beam = bmodeBeam(this.profile, inputs.bmode);
+    const s0 = axialSigmaMm(0.5 * dz, beam) / dz;
+    this.pAxial.v2('uSigmaTexels', s0, axialSigmaMm(1.5 * dz, beam) / dz - s0);
     this.pAxial.v2('uTexel', 1 / this.lines, 1 / FINE_DEPTH);
     // réplicas de reverberación de la pared (decisión 76): desplazamiento entero en texeles; cada orden paga la
     // transmisión de ida y vuelta de la línea hasta la pared, la del camino de la mirada del cuadro

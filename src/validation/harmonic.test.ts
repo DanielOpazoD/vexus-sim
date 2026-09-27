@@ -66,9 +66,30 @@ describe('Armónica tisular (decisión 77): haz y modelo', () => {
     expect(ratio(20, 20)).toBeLessThan(1.4);
     // fuera del foco manda el desenfoque (÷√2) o la recepción: igual o más estrecho
     for (const r of [20, 45, 150, 200]) expect(ratio(r)).toBeLessThan(1.02);
-    // el haz de la imagen B sigue al conmutador; el Doppler no lo lee
-    expect(bmodeBeam(CONVEX_C35_PROFILE, { harmonic: false })).toBe(CONVEX_C35_PROFILE.beam);
-    expect(bmodeBeam(CONVEX_C35_PROFILE, { harmonic: true })).toEqual(h);
+    // el haz de la imagen B sigue al conmutador (con la emisión apodizada, la bajada de la frecuencia y, en armónica, el
+    // pulso de su banda y la ganancia focal de la fuente p1²: decisión 84); el Doppler no lo lee y conserva el del perfil
+    const bF = bmodeBeam(CONVEX_C35_PROFILE, { harmonic: false });
+    const bH = bmodeBeam(CONVEX_C35_PROFILE, { harmonic: true });
+    const imaging = {
+      kTx: 0,
+      txConeFraction: 0,
+      fNumberTxMin: 0,
+      downshiftRxPerMm: 0,
+      downshiftTxPerMm: 0,
+      axialSigma0Mm: 0,
+      focalExponent: 0,
+    };
+    expect({ ...bF, ...imaging }).toEqual({ ...CONVEX_C35_PROFILE.beam, ...imaging });
+    expect({ ...bH, ...imaging }).toEqual({ ...h, ...imaging });
+    expect(bF.axialSigma0Mm).toBe(CONVEX_C35_PROFILE.beam.axialSigma0Mm);
+    expect(bH.axialSigma0Mm).toBeGreaterThan(bF.axialSigma0Mm);
+    // la emisión del armónico baja con la mitad de la pendiente de su eco (la de f1)
+    expect(bH.downshiftTxPerMm).toBeCloseTo(bH.downshiftRxPerMm / 2, 15);
+    expect(bF.downshiftTxPerMm).toBe(bF.downshiftRxPerMm);
+    // fuera del foco la amplitud del eco va como la raíz de la intensidad de la emisión en fundamental y como ella
+    // misma en armónica (el armónico nace como p1²)
+    expect(bF.focalExponent).toBe(0.5);
+    expect(bH.focalExponent).toBe(1);
   });
 
   it('elevación: la de siempre en fundamental; en armónica, √2 × la de dos vías del par f1² · 2f1', () => {
@@ -115,7 +136,10 @@ describe('Armónica tisular (decisión 77): haz y modelo', () => {
 
   it('el GLSL lleva las mismas fórmulas; el color no lee el haz armónico', () => {
     const flat = (s: string) => s.replace(/\s+/g, ' ');
-    expect(flat(LATERAL_PSF_GLSL)).toContain('float tx = uBeamTx.y * length(vec2(uBeamTx.x * F / uBeam.y, uBeam.y * abs(rr - F) / F));');
+    expect(flat(LATERAL_PSF_GLSL)).toContain(
+      'float tx = uBeamTx.y * length(vec2(uBeamTx.x * (1.0 + uBeamTx.z * rr) * F / uBeam.y, uBeam.y * abs(rr - F) / F));',
+    );
+    expect(flat(LATERAL_PSF_GLSL)).toContain('return vec2(tx, uBeam.x * (1.0 + uBeamTx.w * rr) * rr / max(1.0, dRx));');
     for (const frag of [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED, FRAG_COMPOUND]) {
       expect(flat(frag)).toContain('if (uElevHarmonic < 0.5) return s;');
       // sin pow de base negativa (indefinido en GLSL ES 3.00): (r − F)/(2zR) al cuadrado es 0,25·x²
@@ -135,7 +159,7 @@ describe('Armónica tisular (decisión 77): haz y modelo', () => {
       [FRAG_RAWFIELD_STEERED, 's'],
     ] as const) {
       expect(frag).toContain(HARMONIC_GLSL);
-      const at = frag.lastIndexOf(`out2 *= harmonicNearGain(${v});`);
+      const at = frag.lastIndexOf(`out2 *= harmonicNearGain(${v}) * focalGain(${v});`);
       expect(at).toBeGreaterThan(0);
       expect(frag.indexOf('TRANSIENT_AMPLITUDE * uTransientGain', at)).toBeGreaterThan(at);
       expect(frag.indexOf('uNoise * rad', at)).toBeGreaterThan(at);
@@ -174,11 +198,13 @@ describe('Armónica tisular en el renderizador (WebGL falso)', () => {
   it('fundamental: los uniforms de siempre; armónica: haz, elevación, transitorio, ruido, acumulación y ecos parásitos', () => {
     const f = frameWith(false);
     const h = frameWith(true);
-    const b = CONVEX_BEAM;
-    // fundamental: la emisión es la recepción, sin acumulación, transitorio entero y el ruido de siempre
+    const b = bmodeBeam(CONVEX_C35_PROFILE, { harmonic: false });
+    // fundamental: la emisión a la λ de la recepción, sin acumulación, transitorio entero y el ruido de siempre; la
+    // apodización de la emisión va en el cono c·D y la bajada de la frecuencia en uBeamTx.zw (decisión 84)
     for (const u of [f.raw, f.lateral, f.k]) {
-      expect(u.uBeamTx).toEqual([b.k * b.lambdaMm, 1]);
-      expect(u.uBeam[0]).toBe(b.k * b.lambdaMm);
+      expect(u.uBeamTx[0]).toBeCloseTo(b.kTx * b.lambdaMm * b.txConeFraction, 12);
+      expect(u.uBeamTx.slice(1)).toEqual([1, b.downshiftTxPerMm, b.downshiftRxPerMm]);
+      expect(u.uBeam).toEqual([b.k * b.lambdaMm, b.txConeFraction * b.apertureTxMm, b.apertureRxMaxMm, b.fNumberRxMin]);
     }
     expect(f.raw.uElevHarmonic).toEqual([0]);
     expect(f.k.uElevHarmonic).toEqual([0]);
@@ -187,12 +213,22 @@ describe('Armónica tisular en el renderizador (WebGL falso)', () => {
     expect(f.raw.uHarmonicNear).toEqual([0, 0]);
     expect(f.lateral.uHarmonicNear).toBeUndefined();
     // armónica
-    const hb = harmonicBeam(b);
+    const hb = bmodeBeam(CONVEX_C35_PROFILE, { harmonic: true });
     for (const u of [h.raw, h.lateral, h.k]) {
-      expect(u.uBeamTx[0]).toBeCloseTo(hb.k * hb.lambdaTxMm, 12);
-      expect(u.uBeamTx[1]).toBe(Math.SQRT1_2);
+      expect(u.uBeamTx[0]).toBeCloseTo(hb.kTx * hb.lambdaTxMm * hb.txConeFraction, 12);
+      expect(u.uBeamTx.slice(1)).toEqual([Math.SQRT1_2, hb.downshiftTxPerMm, hb.downshiftRxPerMm]);
       expect(u.uBeam[0]).toBeCloseTo(hb.k * hb.lambdaMm, 12);
     }
+    // el pulso de la pasada C: el de cada modo, alargado con la profundidad a la pendiente de su eco
+    const dz = f.raw.uDepth[0] / 1024;
+    for (const [u, beam] of [
+      [f.axial, b],
+      [h.axial, hb],
+    ] as const) {
+      expect(u.uSigmaTexels[0]).toBeCloseTo((beam.axialSigma0Mm * (1 + 0.5 * dz * beam.downshiftRxPerMm)) / dz, 9);
+      expect(u.uSigmaTexels[1]).toBeCloseTo(beam.axialSigma0Mm * beam.downshiftRxPerMm, 9);
+    }
+    expect(h.axial.uSigmaTexels[0]).toBeGreaterThan(f.axial.uSigmaTexels[0]);
     expect(h.raw.uElevHarmonic).toEqual([1]);
     expect(h.k.uElevHarmonic).toEqual([1]);
     expect(db(h.raw.uTransientGain[0])).toBeCloseTo(HARMONIC.fundamentalRejectionDb, 9);

@@ -5,10 +5,13 @@
  *  - B: el medio anclado de tres planos de `speckleField.ts` (`anchoredSliceField`) y el eco de
  *    `interfaceEcho.ts` (`interfaceEchoField`, gemelo exacto de la GLSL, con `curvatureCoherence` en las
  *    caras de tubo); el espejo de A0 en el cruce exacto (`mirrorCrossing`) y la pleura desde él;
- *  - C: gaussiana axial de σ = max(0,6; AXIAL_SIGMA_MM/dr) muestras, truncada a ±12 y de energía unidad;
- *  - D: gaussiana lateral de σ = max(0,35; σ_PSF/paso de línea) líneas (`lateralFwhmMm`), ±14, energía
- *    unidad, y envolvente ×2/√π;
+ *  - C: gaussiana axial de σ = max(0,6; σ_ax(r)/dr) muestras (`axialSigmaMm`, que se alarga con la bajada de la
+ *    frecuencia central, decisión 84), truncada a ±12 y de energía unidad;
+ *  - D: gaussiana lateral de σ = max(0,35; σ_PSF/paso de línea) líneas (`lateralFwhmMm` con el haz de la imagen B en
+ *    fundamental, `bmodeBeam`), ±14, energía unidad, y envolvente ×2/√π;
  *  - G: gris de `greyMap.ts` con el hígado a 100 y 70 dB de rango.
+ * Sin la ganancia focal de la emisión (decisión 84): multiplica por igual el eco y el moteado de su profundidad, y este
+ * gemelo compara caras a varias profundidades con el hígado a 80 mm.
  * El modelo `today` es la regla de antes (spec·cos⁴ en la muestra con bd < max(cosθ; 0,15)·dr, con el
  * espejo en el centro de la primera celda gruesa de pulmón): la prueba de regresión la usa.
  * La curvatura de cada cara entra con sus κ lateral y elevacional analíticos (la escena los da).
@@ -20,7 +23,9 @@
 import { INTERFACES, Interface, LAST_TUBE_INTERFACE } from '../../anatomy/interfaces';
 import { CLUTTER, applyComplexKernel, clutterParams, lateralKernel } from '../../ultrasound/clutter';
 import { TISSUES, Tissue } from '../../anatomy/tissues';
-import { AXIAL_SIGMA_MM, lateralFwhmMm } from '../../ultrasound/beamModel';
+import { axialSigmaMm, lateralFwhmMm } from '../../ultrasound/beamModel';
+import { frequencyRatio } from '../../ultrasound/beamEcho';
+import { bmodeBeam, CONVEX_C35_PROFILE } from '../../ultrasound/transducerProfile';
 import { greyOfLevel, levelOfGrey } from '../../ultrasound/greyMap';
 import { IFACE_K_DB, IFACE_SHIFT_MM, curvatureCoherence, faceProfile, interfaceEchoField } from '../../ultrasound/interfaceEcho';
 import { anchoredSliceField, hash13, type SpeckleAnchor } from '../../ultrasound/speckleField';
@@ -47,7 +52,9 @@ export const thetaOf = (u: number, lines = LINES): number => -HALF + (2 * HALF *
 export const lineDir = (th: number): V2 => [Math.sin(th), Math.cos(th)];
 export const posOn = (th: number, r: number): V2 => [(RC + r) * Math.sin(th), (RC + r) * Math.cos(th) - RC];
 export const linePitch = (r: number, lines = LINES): number => (RC + r) * ((2 * HALF) / (lines - 1));
-export const latSigmaMm = (r: number, focus = FOCUS): number => lateralFwhmMm(r, focus) / 2.3548;
+/** Haz de la imagen B en fundamental (con la bajada de la frecuencia central, decisión 84). */
+export const TWIN_BEAM = bmodeBeam(CONVEX_C35_PROFILE, { harmonic: false });
+export const latSigmaMm = (r: number, focus = FOCUS): number => lateralFwhmMm(r, focus, TWIN_BEAM) / 2.3548;
 
 /**
  * Ecos parásitos de la escena 2D (decisión 76): el pedestal de lóbulos laterales del paciente de referencia (sin
@@ -131,7 +138,9 @@ function echoAt(c: Cls, cosI: number, r: number, o: SimOpts, focus: number): num
   const delta = c.ifd / Math.max(cosI, 1e-9);
   if (o.unitS) return cosI < 0.05 ? 0 : o.unitS.beta * faceProfile(delta, INTERFACES[c.face].twoSided);
   const curv =
-    c.face <= LAST_TUBE_INTERFACE ? curvatureCoherence(latSigmaMm(r, focus), elevSigma(r) / Math.SQRT2, c.kl ?? 0, c.ke ?? 0, K0) : 1;
+    c.face <= LAST_TUBE_INTERFACE
+      ? curvatureCoherence(latSigmaMm(r, focus), elevSigma(r) / Math.SQRT2, c.kl ?? 0, c.ke ?? 0, K0 * frequencyRatio(r, TWIN_BEAM))
+      : 1;
   return interfaceEchoField(c.face, cosI, curv, delta, K0, o.kDb ?? IFACE_K_DB);
 }
 
@@ -220,13 +229,13 @@ export function simulate(scene: Scene, o: SimOpts): SimOut {
       reflected[i] = refl ? 1 : 0;
     }
   }
-  // C: axial, energía unidad
-  const sAx = Math.max(0.6, AXIAL_SIGMA_MM / dr);
-  const RA = Math.min(12, Math.ceil(sAx * 2.5));
-  const wA = Array.from({ length: 2 * RA + 1 }, (_, k) => Math.exp(-0.5 * ((k - RA) / sAx) ** 2));
-  const nA = Math.hypot(...wA);
+  // C: axial, energía unidad, con el pulso de cada fila
   const ax = new Float32Array(raw.length);
-  for (let v = 0; v < nv; v++)
+  for (let v = 0; v < nv; v++) {
+    const sAx = Math.max(0.6, axialSigmaMm((v + v0 + 0.5) * dr, TWIN_BEAM) / dr);
+    const RA = Math.min(12, Math.ceil(sAx * 2.5));
+    const wA = Array.from({ length: 2 * RA + 1 }, (_, k) => Math.exp(-0.5 * ((k - RA) / sAx) ** 2));
+    const nA = Math.hypot(...wA);
     for (let u = 0; u < L; u++) {
       let re = 0;
       let im = 0;
@@ -238,6 +247,7 @@ export function simulate(scene: Scene, o: SimOpts): SimOut {
       ax[(v * L + u) * 2] = re / nA;
       ax[(v * L + u) * 2 + 1] = im / nA;
     }
+  }
   // D: lateral por profundidad y envolvente
   const env = new Float32Array(nv * L);
   for (let v = 0; v < nv; v++) {

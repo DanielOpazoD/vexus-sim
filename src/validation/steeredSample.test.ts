@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { add, cross, dot, length, normalize, scale, sub, type Vec3 } from '../core/vec3';
 import { CONVEX_C35 } from '../probe/probe';
-import { CONVEX_BEAM, lateralSigmaMm } from '../ultrasound/beamModel';
+import { lateralSigmaMm } from '../ultrasound/beamModel';
 import { COMPOUND } from '../ultrasound/compound';
 import { FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED, FRAG_TRANSMISSION_STEERED, STEERED_FIELD_GLSL } from '../ultrasound/shaders/passes.glsl';
 import { lookCoverage, steeredSample, type SteeredSampleCell, type SteeredSampleImage } from '../ultrasound/steering';
 import { COARSE_DEPTH } from '../ultrasound/renderer';
+import { bmodeBeam, CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import { PLEURA_STEER_GUESS_MM, aLineOrder, pleuraCapMm, pleuraSeriesDepths } from '../ultrasound/pleura';
 import { rng } from './syntheticSpeckle';
 
@@ -25,7 +26,8 @@ const IMG: SteeredSampleImage = {
   halfSector: CONVEX_C35.halfSector,
   lines: CONVEX_C35.lines,
   depthMm: DEPTH,
-  lateralSigmaMm: (r) => lateralSigmaMm(r, 90, CONVEX_BEAM),
+  // la PSF lateral de la imagen B en fundamental (decisión 84), la de la pasada D
+  lateralSigmaMm: (r) => lateralSigmaMm(r, 90, bmodeBeam(CONVEX_C35_PROFILE, { harmonic: false })),
   coarseRows: COARSE_DEPTH,
 };
 const R = IMG.curvatureRadius;
@@ -259,9 +261,11 @@ describe('rama dirigida de la pasada B: geometría (decisión 58)', () => {
       'if (sMirror >= 0.0 && s > sMirror) {',
       'p = uCurvC + uCurvR * lineDir(phiK) + dirK * sMirror + dir * (s - sMirror);',
       'p = pointOnLine(lineDir(alpha), r);',
-      'tissue = mediumFieldPh(p, dir, s, elevSigma(r), !under, lookPhase(rho, alpha, a, uSteer.w), gr.x * uLateral + gr.y * uAxial);',
+      // la fase de la mirada a la frecuencia del eco, que baja con la profundidad (decisión 84)
+      'float k2 = uSteer.w * echoFrequency(r);',
+      'tissue = mediumFieldPh(p, dir, s, elevSigma(r), !under, lookPhase(rho, alpha, a, k2), gr.x * uLateral + gr.y * uAxial);',
       'float rhoJ = sqrt(uCurvR * uCurvR + d * d + 2.0 * d * uSteer.z);',
-      'vec2 f = wallFieldPh(elem + dirK * d, dirK, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, uSteer.w), gr.x * uLateral + gr.y * uAxial, wD);',
+      'vec2 f = wallFieldPh(elem + dirK * d, dirK, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, k2), gr.x * uLateral + gr.y * uAxial, wD);',
       'return field + vec2(interfaceEcho(c, m, dir, r, se, w), 0.0);',
       'vec3 dn = dRefl - dMirror;',
       'tissue += vec2(pleuraEcho(s - sMirror, dirK, ln > 1e-6 ? reflect(dirK, dn / ln) : dirK), 0.0);',

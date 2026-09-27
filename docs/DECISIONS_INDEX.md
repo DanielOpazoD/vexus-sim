@@ -87,3 +87,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [81](DECISIONS.md#L2728) | Retroperitoneo: psoas, cuadrado lumbar y grasa retroperitoneal alrededor del riñón; Morison y la cápsula con una sola línea | vigente |
 | [82](DECISIONS.md#L2841) | Casos trampa y contexto clínico: viñeta, confusores que marca el alumno, fiabilidad por territorio y mVExUS | vigente |
 | [83](DECISIONS.md#L2942) | Ventanas clásicas que faltaban: transversa epigástrica (VCI y aorta) y suprahepática subcostal | vigente |
+| [84](DECISIONS.md#L3059) | PSF que cambia con la profundidad: bajada de la frecuencia central, pulso de la banda de cada modo, emisión apodizada y banda del foco | vigente |

@@ -511,7 +511,7 @@ describe('gemelo GLSL (organs/wall.ts y wallTexture.ts)', () => {
     expect(FRAG_RAWFIELD).toContain('if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, dir, w);');
     expect(FRAG_RAWFIELD).toContain('vec2 f0 = fieldFor(m, se, c.tissue, normalize(p - uCurvC), w);');
     expect(FRAG_RAWFIELD_STEERED).toContain(
-      'if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, normalize(b0 + g / uSteer.w), w);',
+      'if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, normalize(b0 + g / lookK2), w);',
     );
     expect(FRAG_RAWFIELD_STEERED).toContain('vec2 f0 = fieldForPh(m, se, c.tissue, ph0, g, normalize(p - uCurvC), w);');
     // la textura va antes del eco de interfaz (que usa wallFaceGain) en los dos programas

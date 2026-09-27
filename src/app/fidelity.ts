@@ -9,6 +9,7 @@ import { VESSEL_META } from '../physiology/vessels';
 import { contactCoupling } from '../probe/contact';
 import { lineDirection, pointOnLine } from '../probe/probe';
 import { lateralFwhmMm, lateralSigmaMm } from '../ultrasound/beamModel';
+import { focalGain, frequencyRatio } from '../ultrasound/beamEcho';
 import { bmodeBeam } from '../ultrasound/transducerProfile';
 import { effectiveLooks, lookCorrelationLaw, lookWeight } from '../ultrasound/compound';
 import { IFACE_REACH_MM, IFACE_SHIFT_MM } from '../ultrasound/interfaceEcho';
@@ -224,6 +225,134 @@ export function envelopeTexture(
     darkFraction: dark / (P * AX * LAT),
     crackIndex: Number.isFinite(grainAx) && Number.isFinite(grainLat) ? (dark ? darkLong / dark : 0) : Number.NaN,
   };
+}
+
+/** Grano (FWHM de la autocovarianza, mm) a lo largo del haz y a través de él, y cuántas ventanas lo miden. */
+export interface GrainMm {
+  patches: number;
+  axialMm: number;
+  lateralMm: number;
+}
+
+/**
+ * Grano de la envolvente comprimida (20·log10): los mismos parches y la misma autocovarianza que `envelopeTexture`,
+ * sobre el nivel en dB. Es la textura que queda tras la compresión logarítmica del equipo; la de la envolvente lineal
+ * es la de la PSF (Wagner, Smith y Sandrik 1983, IEEE Trans Sonics Ultrason 30:156).
+ */
+export function logEnvelopeGrain(
+  env: EnvelopeFrame,
+  inside: (line: number, sample: number) => boolean,
+  geom: EnvelopeGeometry,
+  patch: { axial: number; lateral: number } = TEXTURE_PATCH,
+): GrainMm {
+  const data = new Float32Array(env.data.length);
+  for (let i = 0; i < data.length; i++) data[i] = 20 * Math.log10(Math.max(env.data[i], 1e-7));
+  const t = envelopeTexture({ ...env, data }, inside, geom, patch);
+  return { patches: t.patches, axialMm: t.fwhmAxialMm, lateralMm: t.fwhmLateralMm };
+}
+
+/** Ventana del grano de la imagen mostrada (mm): a lo largo del haz × a través de él. */
+export const DISPLAY_GRAIN_WINDOW_MM = { axial: 8, lateral: 12 } as const;
+
+/** Vértice del sector en píxeles y píxeles por mm de la imagen mostrada (`SectorLayout`). */
+export interface DisplayAxes {
+  apexX: number;
+  apexY: number;
+  scale: number;
+}
+
+/**
+ * Grano de la imagen mostrada (FWHM de la autocovarianza del gris, mm) en los ejes locales del haz: ventanas de `win`
+ * mm con el centro en una rejilla de medio lado menor, remuestreadas (bilineal, un píxel por paso) a lo largo del radio
+ * desde el vértice del sector (axial) y de su perpendicular (lateral); solo cuentan las ventanas con todas sus muestras
+ * (cada tres) dentro de `inside`. La autocovarianza se normaliza por ventana y se promedia, como en `envelopeTexture`.
+ * Mide lo que ve el ojo: la PSF, la conversión de barrido entre líneas que divergen y la compresión, juntas.
+ */
+export function displayGrain(
+  img: DisplayFrame,
+  inside: (x: number, y: number) => boolean,
+  axes: DisplayAxes,
+  win: { axial: number; lateral: number } = DISPLAY_GRAIN_WINDOW_MM,
+): GrainMm {
+  const na = Math.max(8, Math.round(win.axial * axes.scale));
+  const nl = Math.max(8, Math.round(win.lateral * axes.scale));
+  const lagA = Math.floor(na / 2);
+  const lagL = Math.floor(nl / 2);
+  const accA = new Float64Array(lagA + 1);
+  const accL = new Float64Array(lagL + 1);
+  const stride = Math.max(4, Math.round(Math.min(na, nl) / 2));
+  const reach = Math.ceil(Math.hypot(na, nl) / 2);
+  const v = new Float64Array(na * nl);
+  const bilinear = (x: number, y: number): number => {
+    const x0 = Math.floor(x);
+    const y0 = Math.floor(y);
+    const fx = x - x0;
+    const fy = y - y0;
+    const g = (xx: number, yy: number): number => img.gray[yy * img.width + xx];
+    return (g(x0, y0) * (1 - fx) + g(x0 + 1, y0) * fx) * (1 - fy) + (g(x0, y0 + 1) * (1 - fx) + g(x0 + 1, y0 + 1) * fx) * fy;
+  };
+  let windows = 0;
+  for (let cy = reach; cy < img.height - reach - 1; cy += stride)
+    for (let cx = reach; cx < img.width - reach - 1; cx += stride) {
+      if (!inside(cx, cy)) continue;
+      const dx = cx - axes.apexX;
+      const dy = cy - axes.apexY;
+      const rho = Math.hypot(dx, dy);
+      if (rho < 1) continue;
+      const ax = dx / rho;
+      const ay = dy / rho;
+      // lateral: perpendicular al radio
+      const lx = -ay;
+      const ly = ax;
+      const at = (i: number, j: number): [number, number] => {
+        const a = i - (na - 1) / 2;
+        const l = j - (nl - 1) / 2;
+        return [cx + a * ax + l * lx, cy + a * ay + l * ly];
+      };
+      let ok = true;
+      for (let i = 0; ok && i < na; i += 3)
+        for (let j = 0; ok && j < nl; j += 3) {
+          const [x, y] = at(i, j);
+          if (!inside(Math.round(x), Math.round(y))) ok = false;
+        }
+      for (const [i, j] of [
+        [na - 1, 0],
+        [0, nl - 1],
+        [na - 1, nl - 1],
+      ] as const) {
+        const [x, y] = at(i, j);
+        if (ok && !inside(Math.round(x), Math.round(y))) ok = false;
+      }
+      if (!ok) continue;
+      let m = 0;
+      for (let i = 0; i < na; i++)
+        for (let j = 0; j < nl; j++) {
+          const [x, y] = at(i, j);
+          const g = bilinear(x, y);
+          v[i * nl + j] = g;
+          m += g;
+        }
+      m /= na * nl;
+      let variance = 0;
+      for (let k = 0; k < na * nl; k++) variance += (v[k] - m) ** 2;
+      variance /= na * nl;
+      if (!(variance > 0)) continue;
+      for (let l = 0; l <= lagA; l++) {
+        let c = 0;
+        for (let i = 0; i + l < na; i++) for (let j = 0; j < nl; j++) c += (v[i * nl + j] - m) * (v[(i + l) * nl + j] - m);
+        accA[l] += c / ((na - l) * nl) / variance;
+      }
+      for (let l = 0; l <= lagL; l++) {
+        let c = 0;
+        for (let i = 0; i < na; i++) for (let j = 0; j + l < nl; j++) c += (v[i * nl + j] - m) * (v[i * nl + j + l] - m);
+        accL[l] += c / (na * (nl - l)) / variance;
+      }
+      windows++;
+    }
+  if (!windows) return { patches: 0, axialMm: Number.NaN, lateralMm: Number.NaN };
+  const acfA = Array.from(accA, (a) => a / windows);
+  const acfL = Array.from(accL, (a) => a / windows);
+  return { patches: windows, axialMm: (2 * halfWidth(acfA)) / axes.scale, lateralMm: (2 * halfWidth(acfL)) / axes.scale };
 }
 
 /** Mediana (NaN si vacío). */
@@ -542,11 +671,22 @@ function* stepsMm(r0: number, r1: number, step: number): Generator<number> {
  * usuario ni su techo). La envolvente de la GPU lleva la atenuación de ida y vuelta (~3 dB/cm en el
  * hígado a 2,5 MHz) y el banco compara cada cara con el hígado a 3–10 mm: sin quitar la tendencia, el
  * mismo eco medía ~4 dB distinto con la referencia encima (pared) o debajo (cápsula), la línea pleural
- * ~3 dB de menos y la costura contaba huecos del moteado de un diafragma sin costura.
+ * ~3 dB de menos y la costura contaba huecos del moteado de un diafragma sin costura. `beamGain` (amplitud)
+ * quita además la ganancia focal de la emisión (`focalGain`, decisión 84): es la corrección de difracción con que
+ * el método del maniquí de referencia compara ecos de distintas profundidades (Yao, Zagzebski y Madsen 1990,
+ * Ultrason Imaging 12:58); la imagen mostrada la conserva.
  */
-export function envelopeLine(env: EnvelopeFrame, depthMm: number, tgcDbPerCm: number): (u: number, r: number) => number {
+export function envelopeLine(
+  env: EnvelopeFrame,
+  depthMm: number,
+  tgcDbPerCm: number,
+  beamGain: (r: number) => number = () => 1,
+): (u: number, r: number) => number {
   const dr = depthMm / env.samples;
-  const gain = Float64Array.from({ length: env.samples }, (_, v) => Math.pow(10, (tgcDbPerCm * ((v + 0.5) * dr)) / 200));
+  const gain = Float64Array.from(
+    { length: env.samples },
+    (_, v) => Math.pow(10, (tgcDbPerCm * ((v + 0.5) * dr)) / 200) / beamGain((v + 0.5) * dr),
+  );
   return (u, r) => {
     const x = Math.min(env.samples - 1, Math.max(0, r / dr - 0.5));
     const v = Math.min(env.samples - 2, Math.floor(x));
@@ -1087,11 +1227,16 @@ export function lookCorrelations(
   depthMm: number,
   tgcDbPerCm: number,
   patch: { axial: number; lateral: number } = TEXTURE_PATCH,
+  beamGain: (r: number) => number = () => 1,
 ): { patches: number; pairs: number[] } {
   const n = looks.length;
   const { lines, samples } = looks[0];
   const dr = depthMm / samples;
-  const gain2 = Float64Array.from({ length: samples }, (_, v) => Math.pow(10, (tgcDbPerCm * ((v + 0.5) * dr)) / 100));
+  // la intensidad a la misma escala en la profundidad: sin la atenuación nominal ni la ganancia focal (`envelopeLine`)
+  const gain2 = Float64Array.from(
+    { length: samples },
+    (_, v) => Math.pow(10, (tgcDbPerCm * ((v + 0.5) * dr)) / 100) / beamGain((v + 0.5) * dr) ** 2,
+  );
   const acc = new Float64Array((n * (n - 1)) / 2);
   let patches = 0;
   const I = looks.map(() => new Float64Array(patch.axial * patch.lateral));
@@ -1232,6 +1377,8 @@ export interface FidelityBand extends EnvelopeTexture {
   r1: number;
   /** FWHM lateral de la PSF de dos vías a la profundidad media de la banda (`beamModel.ts`). */
   beamFwhmMm: number;
+  /** Grano de la envolvente en dB en los mismos parches (`logEnvelopeGrain`). */
+  logGrain: GrainMm;
 }
 
 export interface FidelityStats {
@@ -1246,8 +1393,11 @@ export interface FidelityStats {
    */
   display: {
     liver: DisplayStats;
-    /** El mismo hígado puro por bandas de profundidad (`DEPTH_BANDS_MM`). */
-    liverBands: (DisplayStats & { r0: number; r1: number })[];
+    /**
+     * El mismo hígado puro por bandas de profundidad (`DEPTH_BANDS_MM`), con el grano del gris (`displayGrain`) en el
+     * hígado despejado de la banda, puro o no.
+     */
+    liverBands: (DisplayStats & { r0: number; r1: number; grain: GrainMm })[];
     /**
      * El centro de la luz: sangre de VCI, suprahepáticas y porta a ≥ 1,5 mm de su pared en el plano y a ≥ 1,5 mm
      * más la σ elevacional en 3D (toda la rodaja es sangre). La mediana debe quedar casi negra.
@@ -1744,6 +1894,7 @@ export function fidelityStats(
   /** Composición espacial por banda y en la costura (`CompoundBand`, `SeamStats`). */
   function compoundOf(lf: LookFrames): CompoundStats {
     const k2 = lookWavenumber(sim.profile.beam);
+    const beam = bmodeBeam(sim.profile, sim.bmode);
     const R = tr.curvatureRadius;
     const n = lf.thetas.length;
     const out: CompoundBand[] = [];
@@ -1754,14 +1905,16 @@ export function fidelityStats(
       const c = envelopeTexture(env, mask, geom);
       const per = lf.envelopes.map((e) => envelopeTexture(e, mask, geom));
       const m0 = maskedMean(lf.envelopes[0], mask);
-      const corr = lookCorrelations(lf.envelopes, mask, depth, tgcNominal);
-      // la ley de cada par con la diferencia de dirección de sus haces en el punto (β de cada mirada) y la
-      // σ del grano lateral medido de la mirada 0
+      const corr = lookCorrelations(lf.envelopes, mask, depth, tgcNominal, TEXTURE_PATCH, (r) => focalGain(r, sim.bmode.focusMm, beam));
+      // la ley de cada par con la diferencia de dirección de sus haces en el punto (β de cada mirada), la σ del grano
+      // lateral medido de la mirada 0 y k2 a la frecuencia del eco en la banda (la de la fase de la pasada B, decisión 84)
       const sigma = per[0].fwhmLateralMm / 2.3548;
-      const rho = R + (Number.isFinite(per[0].depthMm) ? per[0].depthMm : (r0 + r1) / 2);
+      const rMid = Number.isFinite(per[0].depthMm) ? per[0].depthMm : (r0 + r1) / 2;
+      const rho = R + rMid;
       const beta = lf.thetas.map((th) => steerBeta(rho, th, R));
+      const k2r = k2 * frequencyRatio(rMid, beam);
       const laws: number[] = [];
-      for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) laws.push(lookCorrelationLaw(beta[a] - beta[b], sigma, k2));
+      for (let a = 0; a < n; a++) for (let b = a + 1; b < n; b++) laws.push(lookCorrelationLaw(beta[a] - beta[b], sigma, k2r));
       out.push({
         r0,
         r1,
@@ -1788,7 +1941,13 @@ export function fidelityStats(
   const bands = DEPTH_BANDS_MM.filter(([r0]) => r0 < depth).map(([r0, r1]) => {
     const t = envelopeTexture(env, inBand(r0, r1), geom);
     const rMid = Number.isFinite(t.depthMm) ? t.depthMm : (r0 + r1) / 2;
-    return { ...t, r0, r1, beamFwhmMm: lateralFwhmMm(rMid, sim.bmode.focusMm, bmodeBeam(sim.profile, sim.bmode)) };
+    return {
+      ...t,
+      r0,
+      r1,
+      beamFwhmMm: lateralFwhmMm(rMid, sim.bmode.focusMm, bmodeBeam(sim.profile, sim.bmode)),
+      logGrain: logEnvelopeGrain(env, inBand(r0, r1), geom),
+    };
   });
   const compound = looks ? compoundOf(looks) : undefined;
   if (!img || img.width === 0) return { envelope, bands, ...(compound ? { compound } : {}), display: null };
@@ -1804,19 +1963,26 @@ export function fidelityStats(
     const i = cellOf(u, b.r);
     return i >= 0 && dispClear[i] === 1 && lookRegion[i] === nLooks ? b.r : null;
   };
+  /**
+   * Profundidad del píxel si cae en hígado despejado, aunque no sea puro: el grano (`displayGrain`) no depende del
+   * nivel, que la ventana normaliza, y el hígado puro no llega a lo hondo (tras cada vaso el camino ya no lo es).
+   */
+  const clearLiverDepth = (x: number, y: number): number | null => {
+    const b = pixelToBeam(layout, tr, depth, x, y);
+    if (!b) return null;
+    const u = Math.round((b.theta + tr.halfSector) / dTheta - 0.5);
+    if (u < 0 || u >= lines || b.r >= clearUntil[u] || !outOfPenumbra(u, b.r)) return null;
+    const i = cellOf(u, b.r);
+    return i >= 0 && dispClear[i] === 1 && lookRegion[i] === nLooks ? b.r : null;
+  };
   const liver = displayStats(img, (x, y) => pureLiverDepth(x, y) !== null, 2);
-  const liverBands = DEPTH_BANDS_MM.filter(([r0]) => r0 < depth).map(([r0, r1]) => ({
-    r0,
-    r1,
-    ...displayStats(
-      img,
-      (x, y) => {
-        const r = pureLiverDepth(x, y);
-        return r !== null && r >= r0 && r < r1;
-      },
-      2,
-    ),
-  }));
+  const liverBands = DEPTH_BANDS_MM.filter(([r0]) => r0 < depth).map(([r0, r1]) => {
+    const within = (at: (x: number, y: number) => number | null) => (x: number, y: number) => {
+      const r = at(x, y);
+      return r !== null && r >= r0 && r < r1;
+    };
+    return { r0, r1, ...displayStats(img, within(pureLiverDepth), 2), grain: displayGrain(img, within(clearLiverDepth), layout) };
+  });
   const profile = depthProfile(img, pureLiverDepth, sim.bmode.dynamicRangeDb);
   // centro de la luz: sangre de las venas del banco (VCI, suprahepáticas y porta) a ≥ 1,5 mm de su pared en el
   // plano y, en 3D, a ≥ 1,5 mm + la σ elevacional del haz, sin sombra delante (decisión 62). La rodaja entera es
@@ -1970,8 +2136,9 @@ export function fidelityStats(
     if (x < 0 || y < 0 || x >= img.width || y >= img.height) return Number.NaN;
     return img.gray[y * img.width + x];
   };
-  // la envolvente sin la atenuación del hígado: la cara y su referencia, a la misma escala
-  const envAt = envelopeLine(env, depth, nominalTgcDbPerCm(fB));
+  // la envolvente sin la atenuación del hígado ni la ganancia focal: la cara y su referencia, a la misma escala
+  const beam = bmodeBeam(sim.profile, sim.bmode);
+  const envAt = envelopeLine(env, depth, nominalTgcDbPerCm(fB), (r) => focalGain(r, sim.bmode.focusMm, beam));
   const faceLine = (u: number): FaceLine => ({
     env: (r) => envAt(u, r),
     gray: (r) => grayAt(u, r),
@@ -2556,7 +2723,8 @@ export function pleuraStats(
   const dTheta = (2 * tr.halfSector) / lines;
   const thetaOf = (u: number): number => -tr.halfSector + dTheta * (u + 0.5);
   const dr = depth / env.samples;
-  const envAt = envelopeLine(env, depth, nominalTgcDbPerCm(sim.profile.bEffectiveMHz));
+  const beam = bmodeBeam(sim.profile, sim.bmode);
+  const envAt = envelopeLine(env, depth, nominalTgcDbPerCm(sim.profile.bEffectiveMHz), (r) => focalGain(r, sim.bmode.focusMm, beam));
   const db = (x: number): number => 20 * Math.log10(Math.max(x, 1e-12));
   const withAir = curtain.filter((c): c is CurtainLine => c !== null && c.fAir >= CURTAIN_MIN_AIR);
   // la cortina entera, fuera de la sombra de las costillas (bajo una costilla la pleura está en sombra)

@@ -6,6 +6,7 @@ import { START_POINTS } from '../app/startPoints';
 import { NORMAL_ADULT } from '../cases';
 import { CONVEX_C35, probeFrame } from '../probe/probe';
 import { CONVEX_BEAM } from '../ultrasound/beamModel';
+import { frequencyRatio } from '../ultrasound/beamEcho';
 import { COMPOUND, lookTheta } from '../ultrasound/compound';
 import { ElevationAnchor } from '../ultrasound/speckleField';
 import { lookWavenumber, steerBeta } from '../ultrasound/steering';
@@ -24,13 +25,16 @@ import {
  * su media lineal. A 20, 45, 90 y 150 mm (parches de 32 líneas × 144 muestras, 8 realizaciones):
  *
  *  - Mecanismo (campo coherente de un plano): la decorrelación entre miradas sigue la ley gaussiana de la
- *    PSF, ρ_I = exp(−(k2·2·sin(β/2)·σ)²/2), con σ el grano lateral medido de la mirada 0 / 2,355.
+ *    PSF, ρ_I = exp(−(k2·2·sin(β/2)·σ)²/2), con σ el grano lateral medido de la mirada 0 / 2,355 y k2 a la
+ *    frecuencia del eco en el parche, que baja con la profundidad (decisión 84).
  *  - Pasada B (tres planos, ½|f₀| + ¼(|f₁| + |f₂|)): la mezcla de magnitudes, no lineal y por muestra
  *    ANTES de la PSF, decorrela las miradas más que la ley: la rampa de fase de la mirada entre nodos de
  *    la retícula (≈ 1,1 rad por celda a 20 mm) cambia las magnitudes crudas a escala de la retícula, no de
  *    la PSF. Es un artefacto del modelo, no de la física del compuesto (una suma coherente en elevación
  *    seguiría la ley, como el plano único). Medido: ρ − ley de −0,05 a −0,11 y N_eff +4–12 % sobre la ley.
- *    Se fija ese artefacto: ρ(0,±) − ley en [−0,13; −0,03], ρ(0,±) de tres planos al menos 0,03 por debajo
+ *    Con la bajada de la frecuencia de la decisión 84, k2 baja con la profundidad y la rampa de fase entre nodos
+ *    también: a 90 mm el exceso queda en −0,025 a −0,05. Se fija ese artefacto: ρ(0,±) − ley en [−0,13; −0,02],
+ *    ρ(0,±) de tres planos al menos 0,03 por debajo
  *    del de un plano con las mismas realizaciones (la causa es la mezcla), N_eff entre la ley y +15 %; el
  *    grano del compuesto igual al de la mirada 0 (0,9–1,1: no es un filtro de suavizado, §23) y la
  *    fracción oscura ≤ 0,035 (Rayleigh: 0,068). ρ(−,+) solo se informa (aliasing de línea,
@@ -93,8 +97,10 @@ function band(r: number, planes: 1 | 3): BandStats {
   }
   const sigma = mean(look0.map((t) => t.fwhmLateralMm)) / 2.355;
   const beta = steerBeta(G.curvatureRadius + r, TH, G.curvatureRadius);
-  const law1 = lookCorrelationLaw(beta, sigma, K2);
-  const law2 = lookCorrelationLaw(2 * beta, sigma, K2);
+  // la fase de la mirada va a la frecuencia del eco (decisión 84): el gemelo, como la pasada B, usa k2·f(r)/f0
+  const k2r = K2 * frequencyRatio(r, G.beam);
+  const law1 = lookCorrelationLaw(beta, sigma, k2r);
+  const law2 = lookCorrelationLaw(2 * beta, sigma, k2r);
   const [rho0p, rho0m, rhoPm] = [mean(rho.p), mean(rho.m), mean(rho.pm)];
   return {
     rho0p,
@@ -138,7 +144,7 @@ describe('composición espacial en el gemelo B → C → D (decisión 58)', () =
       const one = coherent.get(r)!;
       const ctx = `a ${r} mm: ρ(0,+) ${b.rho0p.toFixed(3)}, ρ(0,−) ${b.rho0m.toFixed(3)}, ley ${b.law1.toFixed(3)}, un plano ${one.rho0p.toFixed(3)}/${one.rho0m.toFixed(3)}, ρ(−,+) ${b.rhoPm.toFixed(3)} (ley ${b.law2.toFixed(3)})`;
       for (const rho of [b.rho0p, b.rho0m]) {
-        expect(rho - b.law1, ctx).toBeLessThanOrEqual(-0.03);
+        expect(rho - b.law1, ctx).toBeLessThanOrEqual(-0.02);
         expect(rho - b.law1, ctx).toBeGreaterThanOrEqual(-0.13);
       }
       // la causa es la mezcla de los tres planos: con las mismas realizaciones y miradas, un plano no la tiene

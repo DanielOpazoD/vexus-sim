@@ -43,6 +43,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'interface-echo-coherent-only',
   'interface-curvature-tubes-only',
   'speckle-line-aliasing',
+  'psf-nominal-tissue',
   'compound-off-in-color',
   'pleura-series-same-line',
   'no-lung-comet-tails',

@@ -4,11 +4,13 @@ import {
   clearanceMask,
   contourStats,
   depthProfile,
+  displayGrain,
   displayStats,
   echoWidthMm,
   envelopeLine,
   envelopeTexture,
   halfWidth,
+  logEnvelopeGrain,
   lookCorrelations,
   measureFaceLine,
   RAYLEIGH_DARK_FRACTION,
@@ -109,6 +111,20 @@ describe('banco de fidelidad: textura de la envolvente', () => {
     expect(Number.isFinite(t.crackIndex)).toBe(true);
   });
 
+  it('el grano de la envolvente en dB sigue a la PSF y es algo más fino que el de la lineal', () => {
+    // la compresión logarítmica quita peso a los picos del moteado: la autocovarianza del nivel en dB cae antes
+    // (con estas semillas, 0,78 y 0,83 veces la de la envolvente lineal)
+    const g = logEnvelopeGrain(detect(G, field, Math.hypot), everywhere, GEOM);
+    expect(g.patches).toBe(ideal.patches);
+    for (const [log, lin] of [
+      [g.axialMm, ideal.fwhmAxialMm],
+      [g.lateralMm, ideal.fwhmLateralMm],
+    ]) {
+      expect(log / lin).toBeGreaterThan(0.7);
+      expect(log / lin).toBeLessThan(0.95);
+    }
+  });
+
   it('semianchura y lóbulo secundario de una autocovarianza', () => {
     expect(halfWidth([1, 0.8, 0.4])).toBeCloseTo(1.75, 10);
     expect(halfWidth([1, 0.9, 0.7])).toBeNaN();
@@ -163,6 +179,58 @@ describe('banco de fidelidad: imagen mostrada', () => {
     expect(p.slopeDbPerCm).toBeLessThan(0.45);
     expect(p.bands[0].db).toBeGreaterThan(-31);
     expect(p.bands[0].db).toBeLessThan(-29);
+  });
+
+  it('el grano de la imagen se mide en los ejes locales del haz (radio desde el vértice y su perpendicular)', () => {
+    // textura gaussiana anisótropa: ruido blanco filtrado con σ 2 px a lo largo de un eje y 5 px a lo largo del otro;
+    // la autocovarianza de un ruido filtrado con σ es exp(−l²/4σ²): FWHM = 4σ·√ln2 = 3,33σ
+    const W = 400;
+    const H = 400;
+    const texture = (sx: number, sy: number, seed: number): Uint8Array => {
+      const rnd = new SeededRandom(seed);
+      const white = Float64Array.from({ length: W * H }, () => rnd.gaussian());
+      const blur = (src: Float64Array, s: number, horizontal: boolean): Float64Array => {
+        const R = Math.ceil(3 * s);
+        const w = Array.from({ length: 2 * R + 1 }, (_, k) => Math.exp(-0.5 * ((k - R) / s) ** 2));
+        const out = new Float64Array(W * H);
+        for (let y = 0; y < H; y++)
+          for (let x = 0; x < W; x++) {
+            let a = 0;
+            for (let k = -R; k <= R; k++) {
+              const xx = horizontal ? Math.min(W - 1, Math.max(0, x + k)) : x;
+              const yy = horizontal ? y : Math.min(H - 1, Math.max(0, y + k));
+              a += w[k + R] * src[yy * W + xx];
+            }
+            out[y * W + x] = a;
+          }
+        return out;
+      };
+      const f = blur(blur(white, sx, true), sy, false);
+      const sd = Math.sqrt(f.reduce((a, x) => a + x * x, 0) / f.length);
+      return Uint8Array.from(f, (x) => Math.max(0, Math.min(255, Math.round(128 + (30 * x) / sd))));
+    };
+    const scale = 5; // px/mm
+    const img: DisplayFrame = { width: W, height: H, gray: texture(5, 2, 3) };
+    const fwhm = (sigmaPx: number): number => (4 * sigmaPx * Math.sqrt(Math.log(2))) / scale;
+    // vértice muy por encima: el haz baja en vertical (axial = y, lateral = x)
+    const down = displayGrain(img, () => true, { apexX: W / 2, apexY: -1e6, scale });
+    expect(down.patches).toBeGreaterThan(100);
+    expect(down.axialMm / fwhm(2)).toBeGreaterThan(0.9);
+    expect(down.axialMm / fwhm(2)).toBeLessThan(1.12);
+    expect(down.lateralMm / fwhm(5)).toBeGreaterThan(0.88);
+    expect(down.lateralMm / fwhm(5)).toBeLessThan(1.1);
+    // vértice a la izquierda: el haz va en horizontal y los ejes se cambian
+    const side = displayGrain(img, () => true, { apexX: -1e6, apexY: H / 2, scale });
+    expect(side.axialMm / fwhm(5)).toBeGreaterThan(0.88);
+    expect(side.lateralMm / fwhm(2)).toBeLessThan(1.12);
+    // solo las ventanas de dentro: con la mitad derecha isótropa y fuera, la medida es la de la izquierda
+    const mixed: DisplayFrame = { width: W, height: H, gray: Uint8Array.from(img.gray) };
+    const iso = texture(2, 2, 5);
+    for (let y = 0; y < H; y++) for (let x = W / 2; x < W; x++) mixed.gray[y * W + x] = iso[y * W + x];
+    const left = displayGrain(mixed, (x) => x < W / 2, { apexX: W / 2, apexY: -1e6, scale });
+    expect(left.patches).toBeGreaterThan(20);
+    expect(left.lateralMm / fwhm(5)).toBeGreaterThan(0.85);
+    expect(displayGrain(mixed, () => false, { apexX: W / 2, apexY: -1e6, scale }).axialMm).toBeNaN();
   });
 
   it('la curva de grises y su inversa son la misma función', () => {

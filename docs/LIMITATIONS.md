@@ -156,15 +156,34 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 
 ## Imagen
 
+- **PSF de un tejido de referencia** (`psf-nominal-tissue`, decisión 84): la bajada de la frecuencia central, la PSF
+  lateral que se ensancha y el pulso que se alarga siguen la profundidad con la atenuación del hígado, como el filtro
+  de seguimiento del equipo, no el camino real: bajo la vesícula, la VCI o el riñón la PSF es la del hígado a esa
+  profundidad (el eco real, menos atenuado, tendría más frecuencia). La atenuación sigue a su frecuencia efectiva fija
+  de 2,5 MHz (decisión 21), no a la central que baja. La ganancia focal es la de haces gaussianos de potencia fija en
+  azimut (la emisión y la recepción): sin el foco de la lente de elevación (fijo, que se supone en el preajuste), sin el
+  desplazamiento del foco de una apertura de número de Fresnel bajo, sin la aberración de la pared que ensancha el foco
+  en el paciente y sin los varios focos de emisión de un equipo. Las líneas A del gas y la serie de la pleura la toman a
+  la profundidad mostrada (la imagen de un reflector plano: la copia n es la emisión a n veces su profundidad) y las
+  réplicas de la pared de la decisión 76, a la de su eco de origen (1,7 y 3,4 dB más oscuras a 2W y 3W con W 25 mm que
+  con la otra regla); ninguna de las dos es la ley de un eco especular. La σ elevacional de la lente no lleva la bajada
+  (la coherencia de curvatura de las caras usa el número de onda del eco con esa σ fija) y la rugosidad fina (Ament),
+  el k0 nominal con que se ajustaron sus σz. La penumbra de la pasada A promedia la apertura de emisión sin la
+  apodización de Hann. La TGC nominal compensa la atenuación, no la banda del foco: con el foco por defecto el hígado a
+  14–18 cm queda 4–5 dB bajo el del foco en fundamental y 4–7 dB en armónica, y los primeros 2 cm, 4–5 y 5–6,5 dB,
+  como en un equipo sin tocar su TGC (el preajuste y el operador la corrigen en parte). El Doppler (color y PW) conserva el haz sin
+  bajada ni apodización.
 - **Lóbulos laterales simplificados, sin lóbulos de rejilla ni en elevación** (`no-sidelobes`): desde la decisión 76 el
   núcleo lateral lleva un pedestal gaussiano con una pantalla de fase fija (ISLR −24 dB en el paciente de referencia),
   no el diagrama real de la apertura; la reverberación de la pared es de primer y segundo orden y solo de los ecos
   fuertes (compuerta por módulo del campo, no por la cara que la produce).
 - **Armónica tisular simplificada** (`harmonic-simplified`, decisión 77):
   - la acumulación del armónico es una curva fija del campo cercano (1 − e^(−r/2 mm), compensada desde 4 mm), no la
-    integral del haz con el foco;
+    integral del haz con el foco (la ganancia focal de la decisión 84 sí lleva la fuente p1²: la intensidad de la
+    emisión a f1 en el eje, no su raíz);
   - las líneas A y la cola sucia del gas no cambian con la armónica;
-  - el eje axial conserva la banda del fundamental (inversión de pulso);
+  - el pulso de la armónica es el de su banda (35 % frente al 45 % del fundamental, decisión 84), sin distinguir la
+    inversión de pulso del filtrado;
   - la pérdida de conversión se modela como +3 dB de ruido del receptor;
   - no hay penumbra armónica: las sombras usan la penumbra del cono de la apertura de la decisión 54, como en
     fundamental, sin pesar el cono de emisión por p1².
@@ -234,8 +253,9 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   hepático de una mirada (compuesto apagado) tiene la SNR teórica de Rayleigh (1,7–2,05 medido,
   banda 1,6–2,25): eso descarta defectos de detección, no calibra textura frente a un equipo real.
 - **El moteado se submuestrea en las líneas** (`speckle-line-aliasing`): 192 líneas quedan a 0,5–1,5 mm
-  (de 20 a 180 mm) frente a un grano lateral de 1,4 mm hasta el foco y 3–4 mm a 15–18 cm, así que en el
-  foco apenas hay 1,5 líneas por grano y la pasada D convoluciona un campo muestreado de menos. Mecer la sonda media línea cambia el moteado más que en un equipo (gemelo del
+  (de 20 a 180 mm) frente a un grano lateral de 1,5 mm hasta 6 cm, 1,9 mm en el foco y 3,5–4,9 mm a 15–18 cm (la PSF
+  de la decisión 84), así que en el foco hay ~2 líneas por grano y la pasada D convoluciona un campo muestreado de
+  menos. Mecer la sonda media línea cambia el moteado más que en un equipo (gemelo del
   diseño de la decisión 58: correlación 0,45–0,53 / 0,05–0,13 / −0,03 a −0,01 a 45 / 90 / 150 mm): el
   hígado «hierve» al deslizar la sonda. La composición espacial lo esquiva entre miradas (se forman en la
   rejilla común), pero el par (−,+) puede correlacionar de más, así que su ρ se informa sin puerta. El

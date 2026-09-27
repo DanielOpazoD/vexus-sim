@@ -162,9 +162,10 @@ test('el speckle del parénquima hepático tiene estadística de Rayleigh', asyn
 });
 
 test('el banco de fidelidad mide el moteado del hígado despejado como un campo ideal', async ({ page }) => {
-  // Banco de fidelidad (decisión 52). Con GPU real (M4) la subxifoidea del sano da SNR 1,93,
-  // fracción oscura 0,065, grietas 0,07, grano axial 0,69 mm, lateral 0,95–1,05 × la PSF y lóbulos
-  // < 0,06; la imagen mostrada, hígado en 144 de gris (mediana). Un defecto del moteado (intensidad,
+  // Banco de fidelidad (decisión 52). Con GPU real (M4) la subxifoidea del sano da SNR 1,77,
+  // fracción oscura 0,07, grietas 0,05, grano axial 0,77 mm (0,70 antes del pulso que se alarga con la profundidad,
+  // decisión 84), lateral 0,93–1,08 × la PSF y lóbulos < 0,03; la imagen mostrada, hígado en 92 de gris (mediana). Un
+  // defecto del moteado (intensidad,
   // magnitudes antes del haz, retícula periódica), una sombra dentro de la máscara o una lectura de
   // la imagen al revés lo sacan de estas bandas (src/validation/fidelity*.test.ts).
   test.setTimeout(240_000);
@@ -192,8 +193,9 @@ test('el banco de fidelidad mide el moteado del hígado despejado como un campo 
     expect(b.fwhmLateralMm / b.beamFwhmMm, JSON.stringify(b)).toBeLessThan(1.25);
   }
   // la imagen mostrada se lee con la orientación correcta (la máscara del hígado cae en hígado) y el
-  // preajuste abdominal (decisión 53) deja el hígado a media escala: mediana 99–103, desviación 16
-  // con GPU real; la luz, casi negra
+  // preajuste abdominal (decisión 53) deja el hígado a media escala: mediana 92, desviación 16 con GPU real (97
+  // antes de la banda del foco de la decisión 84, que deja algo más oscuro el hígado somero de la subxifoidea); la
+  // luz, casi negra
   const d = s.display!;
   const dtag = JSON.stringify({ liver: d.liver, lumen: d.lumen });
   expect(d.liver.pixels, dtag).toBeGreaterThan(1000);
@@ -277,11 +279,14 @@ test('composición espacial: más SNR con el mismo grano, sin huecos, y la mirad
   }
   // G4: el gris del hígado puro, a media escala y con la desviación de un equipo (15–17 con una mirada). El
   // banco lo mide por banda con ≥ 1000 píxeles a densidad 2; con el lienzo de la e2e (densidad 1) puede no
-  // haber bandas tan llenas: entonces, el hígado puro entero
+  // haber bandas tan llenas: entonces, el hígado puro entero. La media escala es la del foco por defecto (decisión
+  // 84: la emisión enfocada deja fuera del foco el hígado algo más oscuro), en la banda que lo contiene si llega a
+  // 1000 píxeles
   const d = s.display!;
   expect(d.liver.pixels, JSON.stringify(d.liver)).toBeGreaterThan(1000);
-  expect(d.liver.p50, JSON.stringify(d.liver)).toBeGreaterThanOrEqual(90);
-  expect(d.liver.p50, JSON.stringify(d.liver)).toBeLessThanOrEqual(110);
+  const atFocus = d.liverBands.find((b) => b.r0 <= 90 && 90 < b.r1 && b.pixels >= 1000) ?? d.liver;
+  expect(atFocus.p50, JSON.stringify(atFocus)).toBeGreaterThanOrEqual(90);
+  expect(atFocus.p50, JSON.stringify(atFocus)).toBeLessThanOrEqual(110);
   for (const b of d.liverBands)
     test.info().annotations.push({
       type: `gris ${b.r0}–${b.r1} mm`,
@@ -308,6 +313,35 @@ test('composición espacial: más SNR con el mismo grano, sin huecos, y la mirad
   expect(guard.look, JSON.stringify(guard)).not.toBe(0);
   expect(guard.threw, JSON.stringify(guard)).toBe(true);
   expect(guard.message).toMatch(/la mirada 0 no es del último cuadro/);
+  expect(errors).toEqual([]);
+});
+
+test('foco (decisión 84): la banda del foco es algo más clara y se mueve con el deslizador', async ({ page }) => {
+  // La intensidad de la emisión en el eje culmina en el foco (`focalGain`, con la potencia emitida fija y la referencia
+  // en el foco del preajuste): con el foco somero se aclara el hígado somero y se oscurece el hondo, y al revés.
+  // Ventana intercostal (hígado hasta 18 cm), fundamental y una mirada. Con GPU real (M4, densidad 1), gris del hígado
+  // puro a 20–60 / 60–100 / 100–140 / 140–180 mm: 104 / 94 / 82 / 75 con el foco a 50 mm, 92 / 98 / 94 / 86 con el de
+  // por defecto (90 mm) y 88 / 88 / 94 / 88 a 140 mm (antes, 101 / 99 / 95 / 95 con cualquier foco).
+  test.setTimeout(300_000);
+  const errors = await bootWithoutErrors(page);
+  const bandsAt = (focusMm: number) =>
+    page.evaluate((f) => {
+      window.__vexusTest!.setFocus(f);
+      const s = window.__vexusTest!.fidelity({ startPoint: 'intercostal', display: true, compound: false });
+      return s.display!.liverBands.map((b) => ({ r0: b.r0, p50: b.p50, pixels: b.pixels }));
+    }, focusMm);
+  const shallowFocus = await bandsAt(50);
+  const deepFocus = await bandsAt(140);
+  await page.evaluate(() => window.__vexusTest!.setFocus(90));
+  const tag = JSON.stringify({ shallowFocus, deepFocus });
+  const band = (bands: typeof shallowFocus, r0: number) => bands.find((b) => b.r0 === r0 && b.pixels >= 300);
+  for (const bands of [shallowFocus, deepFocus]) {
+    expect(band(bands, 20), tag).toBeTruthy();
+    expect(band(bands, 140), tag).toBeTruthy();
+  }
+  // modelo: +4,9 dB a 40 mm con el foco a 50 frente a 140 mm, y +4,6 dB a 160 mm al revés
+  expect(band(shallowFocus, 20)!.p50 - band(deepFocus, 20)!.p50, tag).toBeGreaterThanOrEqual(8);
+  expect(band(deepFocus, 140)!.p50 - band(shallowFocus, 140)!.p50, tag).toBeGreaterThanOrEqual(8);
   expect(errors).toEqual([]);
 });
 
@@ -966,9 +1000,11 @@ test('armónica tisular (decisión 77): campo cercano limpio, el mismo tejido y 
   const r = await page.evaluate(() => window.__vexusTest!.harmonicContrast({ startPoint: 'subxiphoid' }));
   const tag = JSON.stringify(r);
   const db = (x: { fundamental: number; harmonic: number }) => 20 * Math.log10(x.harmonic / x.fundamental);
-  // el campo cercano (piel, grasa y transitorio): la acumulación y el rechazo del transitorio lo oscurecen
+  // el campo cercano (piel, grasa y transitorio): la acumulación y el rechazo del transitorio lo oscurecen, y la
+  // ganancia focal de la emisión (decisión 84), algo más en armónica, cuya fuente es p1² (−6,5 frente a −4,9 dB a
+  // 2 mm con el foco por defecto). Sin acumulación ni rechazo del transitorio la armónica quedaría por encima
   expect(db(r.near), tag).toBeLessThan(-2);
-  // el tejido: la acumulación compensada y la misma atenuación, el mismo nivel
+  // el tejido (sin la ganancia focal de cada modo): la acumulación compensada y la misma atenuación, el mismo nivel
   expect(Math.abs(db(r.tissue)), tag).toBeLessThan(1.5);
   // el ruido del receptor solo (sonda levantada), en toda la profundidad: +3 dB respecto al eco (HARMONIC.noiseDb)
   expect(db(r.noise), tag).toBeGreaterThan(2.3);

@@ -17,7 +17,7 @@ import { probeContact } from '../probe/contact';
 import { lateralFwhmMm } from '../ultrasound/beamModel';
 import { COARSE_DEPTH, DISPLAY_MARGIN_PX, type DisplayFrame } from '../ultrasound/renderer';
 import { pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
-import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
+import { bmodeBeam, CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import { mirrorCrossing } from '../ultrasound/transmission';
 import { detect, psf, whiteField } from './syntheticSpeckle';
 import { CAPTURE_POSES } from './support/liverContour';
@@ -151,7 +151,10 @@ describe('banco de fidelidad sobre la anatomía del sano, sin GPU', () => {
       expect(s.envelope.crackIndex).toBeLessThan(0.1);
     }
     const band = subxiphoid.bands.find((b) => b.patches > 5)!;
-    expect(band.beamFwhmMm).toBeCloseTo(lateralFwhmMm(band.depthMm, FOCUS, CONVEX_C35_PROFILE.beam), 10);
+    // la PSF de la imagen B (decisión 84: emisión apodizada y bajada de la frecuencia), no la del Doppler
+    const bmode = bmodeBeam(CONVEX_C35_PROFILE, { harmonic: false });
+    expect(band.beamFwhmMm).toBeCloseTo(lateralFwhmMm(band.depthMm, FOCUS, bmode), 10);
+    expect(band.beamFwhmMm).toBeGreaterThan(lateralFwhmMm(band.depthMm, FOCUS, CONVEX_C35_PROFILE.beam));
   });
 
   it('la máscara de la imagen cae en hígado puro y el perfil plano no tiene pendiente', () => {

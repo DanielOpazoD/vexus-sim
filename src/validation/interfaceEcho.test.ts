@@ -14,7 +14,8 @@ import { Tissue } from '../anatomy/tissues';
 import { NORMAL_ADULT } from '../cases';
 import { VESSEL_IDS, VESSEL_META } from '../physiology/vessels';
 import { CONVEX_C35 } from '../probe/probe';
-import { AXIAL_SIGMA_MM, CONVEX_BEAM, lateralSigmaMm } from '../ultrasound/beamModel';
+import { CONVEX_BEAM, axialSigmaMm, lateralSigmaMm } from '../ultrasound/beamModel';
+import { bmodeBeam, CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import {
   IFACE_BETA,
   IFACE_K_DB,
@@ -189,9 +190,11 @@ describe('Factores del eco de interfaz', () => {
   });
 
   it('una línea con el moteado del repositorio y el pulso de C: el cociente eco/moteado no depende de dr', () => {
-    // pasada C: gaussiana de σ = max(0,6; AXIAL_SIGMA_MM/dr) muestras, truncada a ±12 y de energía unidad
+    // pasada C: gaussiana de σ = max(0,6; σ_pulso/dr) muestras, truncada a ±12 y de energía unidad, con el pulso del
+    // fundamental a la profundidad de la cara (80 mm: el de la cara estirado por la bajada, decisión 84)
+    const sigmaPulse = axialSigmaMm(80, bmodeBeam(CONVEX_C35_PROFILE, { harmonic: false }));
     const kernel = (dr: number) => {
-      const s = Math.max(0.6, AXIAL_SIGMA_MM / dr);
+      const s = Math.max(0.6, sigmaPulse / dr);
       const R = Math.min(12, Math.ceil(2.5 * s));
       const w = Array.from({ length: 2 * R + 1 }, (_, k) => Math.exp(-0.5 * ((k - R) / s) ** 2));
       const n = Math.hypot(...w);
@@ -235,8 +238,10 @@ describe('Factores del eco de interfaz', () => {
         widths.push((xh - xl) * dr);
       }
       ratios.push(db(peaks.reduce((a, b) => a + b) / peaks.length / Math.sqrt(s2 / n)));
-      // anchura del eco: 2,355·√(σ_pulso² + σh²) = 0,695 mm
-      if (depth === 180) expect(Math.abs(widths.reduce((a, b) => a + b) / widths.length / 0.695 - 1)).toBeLessThan(0.05);
+      // anchura del eco: 2,355·√(σ_pulso² + σh²) = 0,77 mm
+      const width = 2.3548 * Math.hypot(sigmaPulse, IFACE_SIGMA_H_MM);
+      expect(width).toBeCloseTo(0.773, 2);
+      if (depth === 180) expect(Math.abs(widths.reduce((a, b) => a + b) / widths.length / width - 1)).toBeLessThan(0.05);
     }
     for (const r of ratios) expect(Math.abs(r - ratios[1]), ratios.map((x) => x.toFixed(2)).join(' / ')).toBeLessThan(0.5);
   });

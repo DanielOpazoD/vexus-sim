@@ -35,7 +35,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'no-spleen-no-left-ribs',
   'fixed-arterial-resistive-index',
   'schematic-static-heart',
-  'mediastinal-mirror-dome-normal',
+  'mediastinal-mirror-normal-approx',
   'vertebra-no-cortex',
   'aorta-fixed-caliber',
   'side-plane-skips-tubes',

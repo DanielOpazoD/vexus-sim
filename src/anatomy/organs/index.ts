@@ -46,8 +46,8 @@ export const ORGAN_MODULES: readonly OrganModule[] = [
     exports: heart,
     glsl: heart.HEART_GLSL,
     gpuOnly: {
-      raNormal:
-        'normal del epicardio de la AD para el eco del pericardio (la GPU la toma de c.n); TS usa el gradiente numérico de `faceSdf`',
+      epiNormal:
+        'normal del epicardio para el eco del pericardio y de la frontera del mediastino para el espejo del pulmón (la GPU la deja en c.n); TS usa el gradiente numérico de `faceSdf`',
     },
   },
 ];

@@ -3383,6 +3383,9 @@ del TS en dos arrays, `HV` y `HW`), marco levógiro (x = izquierda del paciente)
   sigue en 8 (32 tejidos llenan sus ranuras). El chunk principal crece 3,1 kB (315,4 → 318,5 kB de 320): la documentación de
   los uniforms de la escena, que viajaba en el bundle (~2,1 kB) solo para acabar como comentario del GLSL, pasa a comentarios
   del TS.
+- **Espejo:** el pulmón cuya frontera más cercana es la del mediastino (y no la cúpula) deja en `c.n` la normal de esa
+  frontera, la del elipsoide de la cámara más cercana o la de la columna, para el espejo de la pasada A (`epiNormal`, solo
+  GPU, la misma que la del pericardio).
 - **Docente y 3D:** colores y rótulos del miocardio, del mediastino y de cada cavidad (AD y VD en azul, VI y AI en rojo)
   en el corte; en el 3D, la malla del epicardio (la misma distancia que la imagen) en lugar de la esfera.
 
@@ -3397,8 +3400,10 @@ corazón). La lámina de pulmón del hiato desaparece (ninguna muestra de pulmó
 supradiafragmática en los siete casos a lo largo de 6 s): se retiran `mediastinum-is-lung` y `lung-sliver-caval-hiatus`.
 Limitaciones nuevas: `schematic-static-heart` (esquema estático e igual en todos los casos, sin valvas ni grandes vasos,
 cavidades sin flujo salvo el chorro de la VCI, el embudo recortado en la congestión, el VD que llega a la pared anterior y la
-AI que toca la aorta en un tórax poco profundo) y `mediastinal-mirror-dome-normal` (el pulmón que se alcanza desde el
-mediastino se refleja con la normal de la cúpula). La AD no sigue el volumen auricular de la fisiología porque no lo hay
+AI que toca la aorta en un tórax poco profundo) y `mediastinal-mirror-normal-approx` (el pulmón que se alcanza desde el
+mediastino se refleja con la normal de la cámara más cercana o de la columna: con la de la cúpula, como el resto del pulmón,
+el camino reflejado se perdía y detrás de la aorta de la epigástrica abanicada salía una zona negra, como un derrame, en las
+capturas con GPU). La AD no sigue el volumen auricular de la fisiología porque no lo hay
 (la aurícula del modelo es una presión, decisión 79): queda declarada. Pendientes: valvas y grandes vasos, la cortical
 vertebral y las ventanas cardíacas propias (subcostal de cuatro cámaras).
 **Verificación.** `heart.test.ts`: las cuatro cavidades en su sitio en el marco levógiro (AD a la derecha, VI a la izquierda,
@@ -3411,7 +3416,7 @@ interior de 3 mm es pulmón), la cintura de la VCI en el hiato y su luz continua
 recortada fuera de la aurícula sin atravesar paredes ni tabiques, la misma geometría en todos los casos y el GLSL con las
 constantes del módulo. `anatomy.test.ts` (la VCI dentro de la aurícula: luz con flujo y sin cara, pared de sangre, nada
 recortado en el sano). `startPoints.test.ts`: el canario sustituido por pruebas de lo que se ve (arriba). `organs.test.ts`
-(gemelos por nombre; `raNormal`, solo GPU), `shaderLimits.test.ts` (130 ranuras), `wall.test.ts` (23 caras, 32 tejidos),
+(gemelos por nombre; `epiNormal`, solo GPU), `shaderLimits.test.ts` (130 ranuras), `wall.test.ts` (23 caras, 32 tejidos),
 `fidelityScene.test.ts` (el diafragma en la subxifoidea abanicada). e2e: equivalencia TS ↔ GLSL en las siete ventanas de tres
 casos y en 50 000 puntos del tronco (con el corazón y el mediastino dentro), ecos de interfaz con la vista abanicada y la
 suite completa (abajo).

@@ -87,10 +87,12 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   tubo). Con la VCI dilatada de la congestión (×1,57) el embudo que no cabe en la aurícula se recorta en su suelo (a 5 mm de
   la cúpula): un borde de 1–5 mm donde gana el corazón. El tórax del modelo es poco profundo (106 mm de la cara anterior de
   la vértebra a la pared anterior): el VD toca la pared anterior y la AI, la aorta, sin grasa entre ellos.
-- **El espejo del pulmón junto al mediastino usa la normal de la cúpula** (`mediastinal-mirror-dome-normal`, decisión 85):
-  la pasada A refleja en el cruce exacto con cualquier pulmón del tórax (decisión 57), pero con la normal de la cúpula
-  también donde el haz llega al pulmón desde el mediastino (la pleura mediastínica, detrás de la AD en la subxifoidea a
-  13–15 cm): la posición del espejo es la del cruce, su orientación no.
+- **El espejo del pulmón junto al mediastino tiene una normal aproximada** (`mediastinal-mirror-normal-approx`, decisión 85):
+  donde el haz llega al pulmón desde el mediastino (detrás de la aorta en la epigástrica abanicada, detrás de la AD en la
+  subxifoidea) la pasada A refleja en el cruce exacto (decisión 57) con la normal del elipsoide de la cámara más cercana o de
+  la columna del mediastino posterior, sin la unión suave de su frontera ni la pendiente de la grasa junto a la cúpula; con
+  la normal de la cúpula de antes el camino reflejado se perdía y el pulmón salía como una zona negra. El gemelo de la pasada
+  A en TS (`transmissionHitsLine`, en las pruebas) sigue reflejando con la de la cúpula.
 - **La vértebra no tiene cortical** (`vertebra-no-cortex`): el cuerpo vertebral es un cilindro de 34 mm de hueso sin
   cara (decisión 69; las costillas la tienen desde la 62). En la transversa epigástrica (decisión 83) su cara anterior
   no da la línea curva brillante de un equipo: el cuerpo se ve como una cúpula oscura sobre la sombra, que con el arco

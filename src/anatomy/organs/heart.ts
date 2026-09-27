@@ -205,8 +205,9 @@ const V4 = [
  * Gemelo GLSL (usa `sdEllipsoidLocal` y `smoothMin` de la anatomía; las constantes, en `HV` y `HW` con el orden de `V3` y
  * `V4`): `thorax` devuelve el tejido (T_BLOOD, T_MYOCARDIUM, T_MEDIASTINUM o T_LUNG), su distancia a la frontera en `bd` y
  * la de la cara del pericardio en `ifd` (1e3 sin ella); en la capa del pericardio deja en `n` la normal del epicardio (la
- * del elipsoide de la cámara más cercana, o la de la cúpula que trae `n` donde el saco apoya en ella). La matriz lleva los
- * ejes en columnas: (m − O)·B da las coordenadas del marco.
+ * del elipsoide de la cámara más cercana, o la de la cúpula que trae `n` donde el saco apoya en ella), y en el pulmón cuya
+ * frontera más cercana es la del mediastino, la de esa frontera (el espejo de la pasada A). La matriz lleva los ejes en
+ * columnas: (m − O)·B da las coordenadas del marco.
  */
 export const HEART_GLSL = /* glsl */ `
 const vec3 HV[${V3.length}] = vec3[${V3.length}](${V3.map(vec).join(',')});
@@ -221,8 +222,14 @@ vec3 ivcAtrium(vec3 m, float dDome) {
   float cavity = max(ra, dDome + HW[1].w + HW[0].z);
   return vec3(cavity, ra >= 0.0 && dDome < -HW[5].y ? 1.0 : 0.0, min(cavity, max(-ra, dDome + HW[5].y)));
 }
-// del marco de la AD al tronco (la inversa de la rotación de raFrame)
-vec3 raNormal(vec3 g) { return vec3(g.x, g.y * HW[5].z + g.z * HW[5].w, g.z * HW[5].z - g.y * HW[5].w); }
+// normal del epicardio: la del elipsoide de la cámara más cercana (e: epicardio de cada una; VI y VD del marco al tronco; la
+// AD, con la inversa de la rotación de raFrame)
+vec3 epiNormal(vec3 m, vec4 e, float epi) {
+  vec3 q = heartFrame(m);
+  vec3 g = raFrame(m) / (HV[8] * HV[8]);
+  return normalize(epi == e.x ? HB * (q / (HV[4] * HV[4])) : epi == e.y ? HB * ((q - HV[5]) / (HV[6] * HV[6]))
+    : epi == e.z ? vec3(g.x, g.y * HW[5].z + g.z * HW[5].w, g.z * HW[5].z - g.y * HW[5].w) : (m - HV[9]) / (HV[10] * HV[10]));
+}
 vec4 heartChambers(vec3 m) {
   vec3 q = heartFrame(m);
   float lv = sdEllipsoidLocal(q, HV[4]);
@@ -248,12 +255,8 @@ int thorax(vec3 m, float dDome, out float bd, out float ifd, inout vec3 n) {
   if (epi < p) {
     bd = min(epiC, -dDome);
     ifd = epiC;
-    // normal del epicardio: la del elipsoide de la cámara más cercana (VI y VD, del marco al tronco); recortado, la de la cúpula
-    if (epi > dDome + p) {
-      vec3 q = heartFrame(m);
-      n = normalize(epi == e.x ? HB * (q / (HV[4] * HV[4])) : epi == e.y ? HB * ((q - HV[5]) / (HV[6] * HV[6]))
-        : epi == e.z ? raNormal(raFrame(m) / (HV[8] * HV[8])) : (m - HV[9]) / (HV[10] * HV[10]));
-    }
+    // la normal del epicardio; donde el saco apoya en la cúpula, la de ella (la que trae n)
+    if (epi > dDome + p) n = epiNormal(m, e, epi);
     return T_MEDIASTINUM;
   }
   float fat = (epi - p - HW[2].x - HW[2].z * clamp(1.0 + dDome / HW[2].w, 0.0, 1.0)) / (1.0 + HW[2].z / HW[2].w);
@@ -263,6 +266,9 @@ int thorax(vec3 m, float dDome, out float bd, out float ifd, inout vec3 n) {
   bd = min(-med, min(epiC, -dDome));
   if (med < 0.0) return T_MEDIASTINUM;
   bd = min(med, -dDome);
+  // el pulmón que se alcanza desde el mediastino (su frontera más cerca que la cúpula): la normal de esa frontera, la del saco
+  // o la de la columna, para el espejo de la pasada A (con la de la cúpula el camino reflejado se perdía: una zona negra)
+  if (med < -dDome) n = fat < column ? epiNormal(m, e, epi) : normalize(vec3((m.xy - HW[3].xy) / (HW[3].zw * HW[3].zw), 0.0));
   return T_LUNG;
 }
 `;

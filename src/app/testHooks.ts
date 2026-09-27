@@ -1,5 +1,6 @@
 import { VESSEL_META, type VesselId } from '../physiology/vessels';
 import { gateInColorBox, type EquipmentCommand } from './equipment';
+import { errorLog } from './errorLog';
 import {
   equivalenceSweep,
   interfaceShellEquivalence,
@@ -295,6 +296,8 @@ export interface TestHooks {
    * tarda de décimas a varios segundos según el corredor, y lo que la interfaz promete (el HUD, el cine) es por cuadro.
    */
   framesRendered: () => number;
+  /** El registro de errores de la aplicación (`errorLog`, «origen: mensaje»): lo que un `catch` informó sin llegar a la consola. */
+  loggedErrors: () => string[];
 }
 
 /** Opciones de `frameCostMs`. */
@@ -875,6 +878,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
     },
     sim: getSim,
     framesRendered: loopFrames,
+    loggedErrors: () => errorLog.recent(Number.MAX_SAFE_INTEGER).map((e) => `${e.source}: ${e.message}`),
   };
   return hooks;
 }

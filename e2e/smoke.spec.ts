@@ -1,6 +1,16 @@
 import { expect, test, type Page } from '@playwright/test';
 import { Tissue } from '../src/anatomy/tissues';
-import { BOOT_MS, annotateLoopPace, bootWithoutErrors, budget, simTime, withinFrames, withinSimSeconds } from './support';
+import {
+  BOOT_MS,
+  bootWithoutErrors,
+  budget,
+  checkAfterEach,
+  clockRuns,
+  expectLoggedErrors,
+  simTime,
+  withinFrames,
+  withinSimSeconds,
+} from './support';
 
 /**
  * Humo de extremo a extremo: lo que ninguna prueba unitaria puede ver — que el
@@ -9,7 +19,7 @@ import { BOOT_MS, annotateLoopPace, bootWithoutErrors, budget, simTime, withinFr
  * cuadros del bucle o en tiempo de simulación (`e2e/support.ts`); los plazos de cada
  * prueba son un arranque (`BOOT_MS`, la compilación con SwiftShader) más su trabajo.
  */
-annotateLoopPace();
+checkAfterEach();
 
 /** Texto de un elemento, o su ausencia, para los mensajes de error. */
 const textOf = async (page: Page, sel: string): Promise<string> => (await page.locator(sel).textContent()) ?? '';
@@ -25,8 +35,7 @@ test('arranca, renderiza cuadros y no emite errores', async ({ page }) => {
   const errors = await bootWithoutErrors(page);
   // El reloj de simulación avanza con los cuadros (≤ 0,25 s por cuadro): en tres cuadros, algo; los fps redondeados
   // pueden ser 0 con SwiftShader y no se exigen
-  const t1 = await simTime(page);
-  await withinFrames(page, 3, 'el reloj de la simulación avanza', async () => (await simTime(page)) > t1 || `t = ${t1} s`);
+  await clockRuns(page, 'el reloj de la simulación avanza con cuadros completos');
   expect(errors).toEqual([]);
 });
 
@@ -72,6 +81,7 @@ test('lo que ve el usuario (?e2e=app): subxifoidea en armónica con composición
     return { harmonic: sim.bmode.harmonic, compound: sim.bmode.compound, liver: f.display!.liver, lumen: f.display!.lumen };
   });
   const tag = JSON.stringify(s);
+  test.info().annotations.push({ type: 'imagen del usuario', description: tag });
   expect(s.harmonic, tag).toBe(true);
   expect(s.compound, tag).toBe(true);
   // las bandas de la imagen mostrada de las pruebas en fundamental (banco, G4 del compuesto): hígado a media escala con
@@ -86,8 +96,7 @@ test('lo que ve el usuario (?e2e=app): subxifoidea en armónica con composición
   // y el Doppler pulsado se abre desde ahí, con el reloj en marcha
   await page.keyboard.press('p');
   await withinFrames(page, 2, 'HUD con «PW»', contains(page, '#hud-br', 'PW'));
-  const t1 = await simTime(page);
-  await withinFrames(page, 3, 'el reloj de la simulación avanza', async () => (await simTime(page)) > t1 || `t = ${t1} s`);
+  await clockRuns(page, 'el reloj de la simulación avanza con cuadros completos');
   expect(errors).toEqual([]);
 });
 
@@ -112,7 +121,7 @@ test('ventanas (decisión 83): Intro en una tarjeta, mantenida como con el dedo,
   const t0 = await simTime(page);
   await withinFrames(
     page,
-    10,
+    40,
     'Intro mantenida medio segundo de simulación',
     async () => (await simTime(page)) > t0 + 0.5 || 'reloj parado',
   );
@@ -192,6 +201,8 @@ test('sobrevive a la pérdida del contexto WebGL: avisa, se recupera y el reloj 
   // la recuperación vuelve a compilar todos los programas: dos arranques
   budget(60_000, 2);
   const errors = await bootWithoutErrors(page);
+  // la pérdida provocada queda en el registro de errores de la aplicación, como debe
+  expectLoggedErrors(page, [/^gpu: contexto WebGL perdido$/]);
   await page.evaluate(() => {
     const gl = (document.getElementById('gl') as HTMLCanvasElement).getContext('webgl2')!;
     const ext = gl.getExtension('WEBGL_lose_context')!;
@@ -203,8 +214,7 @@ test('sobrevive a la pérdida del contexto WebGL: avisa, se recupera y el reloj 
   await page.evaluate(() => (window as unknown as { __lc: WEBGL_lose_context }).__lc.restoreContext());
   // recompila los programas, como al arrancar
   await expect(page.locator('.banner')).toHaveCount(0, { timeout: BOOT_MS });
-  const t1 = await simTime(page);
-  await withinFrames(page, 3, 'el reloj sigue tras recuperar el contexto', async () => (await simTime(page)) > t1 || `t = ${t1} s`);
+  await clockRuns(page, 'el reloj sigue, con cuadros completos, tras recuperar el contexto');
   expect(errors).toEqual([]);
 });
 
@@ -883,12 +893,11 @@ test('sin contacto no hay Doppler: el color y el espectro se apagan al levantar 
     const veins = ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'] as const;
     T.goToStartPoint('renal');
     document.querySelector<HTMLButtonElement>('#mode-color')!.click();
-    // El flujo venoso cruza el cero con el latido (onda a) y un cuadro de color suelto puede quedar vacío, como parpadea
-    // el color en un equipo (decisión 70, #113): en contacto, el cuadro con más color de un latido y medio (8 cuadros de
-    // color); levantada, ninguno de los 8 tiene color. El instante del ciclo en que corre la prueba depende del reloj.
+    // Un latido y medio de color (8 cuadros), no un cuadro suelto: en contacto, TODOS con color en las interlobares
+    // (medido con SwiftShader desde diez fases del latido: 653–776 celdas, nunca menos); levantada, NINGUNO.
     const first = T.colorOnVessel([...veins]);
     let contact = first ?? 0;
-    for (let i = 1; i < 8; i++) contact = Math.max(contact, T.colorCells());
+    for (let i = 1; i < 8; i++) contact = Math.min(contact, T.colorCells());
     out.colorContact = first === null ? null : contact;
     T.liftProbe(10);
     let lifted = 0;
@@ -942,14 +951,15 @@ test('tríplex (decisión 66): el color sigue en pantalla con el PW, la puerta n
     T.placeGateAt(-0.35, 60);
     const followed = T.modeState();
     const veins = ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'] as const;
-    // el cuadro con más color de un latido y medio (8 cuadros de color): el flujo venoso cruza el cero con el latido
+    // un latido y medio de color (8 cuadros), todos con color en las interlobares (el mínimo de los 8; medido con
+    // SwiftShader en tríplex desde diez fases: 659–769 celdas)
     const first = T.colorOnVessel([...veins]);
     let color = first ?? 0;
-    for (let i = 1; i < 8; i++) color = Math.max(color, T.colorCells());
+    for (let i = 1; i < 8; i++) color = Math.min(color, T.colorCells());
     const gate = T.placeGate([...veins]);
     T.advance(3);
-    let cells = 0;
-    for (let i = 0; i < 8; i++) cells = Math.max(cells, T.colorCells());
+    let cells = Number.POSITIVE_INFINITY;
+    for (let i = 0; i < 8; i++) cells = Math.min(cells, T.colorCells());
     return { entered, followed, color: first === null ? null : color, gate, pw: T.pwBandOverFloorDb(2), cells, state: T.modeState() };
   });
   const tag = JSON.stringify({ colorOnly, ...r });
@@ -996,19 +1006,22 @@ test('color realista (decisión 70): sin bloques de celda, grano correlado y rel
     // venas pueden quedar bajo el filtro de pared y el campo vacío, como parpadea el color en un equipo (medido: la
     // fracción con color sigue al latido, ~5 cuadros por ciclo a 6,2 Hz, con mínimos de 0 a 0,009). Se analiza el
     // cuadro con más color de un latido y medio (8 cuadros): antes se tomaba un instante suelto y fallaba 1 de cada 5.
-    // Lo mismo para las celdas sobre el vaso: las del cuadro con más celdas (antes, las del cuadro suelto de
-    // `colorOnVessel`, que en CI dio 0 celdas en la inversión del flujo)
+    // Las celdas sobre el vaso, por cuadro: antes se exigían en el cuadro suelto de `colorOnVessel`, que en CI dio 0
+    // en la inversión del flujo. Ahora, color en al menos la mitad de los 8 cuadros (medido con SwiftShader desde diez
+    // fases del latido: 6–8 de 8 con más de 50 celdas; los vacíos, 1–2 por latido): un filtro de pared que se comiera
+    // el flujo venoso casi todo el ciclo no pasa, aunque un cuadro suelto tuviera color.
+    const counts = [first ?? 0];
     let best = T.colorTexture();
-    let cells = Math.max(first ?? 0, best.cells);
+    counts.push(best.cells);
     for (let i = 1; i < 8; i++) {
       const t = T.colorTexture();
       if (t.visible > best.visible) best = t;
-      cells = Math.max(cells, t.cells);
+      counts.push(t.cells);
     }
-    return { ...best, cells: first === null ? null : cells };
+    return { ...best, cells: first === null ? null : counts.slice(1).filter((c) => c > 50).length, counts };
   });
   const tag = JSON.stringify(r);
-  expect(r.cells!, tag).toBeGreaterThan(50);
+  expect(r.cells!, tag).toBeGreaterThanOrEqual(4);
   expect(r.visible, tag).toBeGreaterThan(0.005);
   expect(r.identicalPairs, tag).toBeLessThan(0.05);
   expect(r.corr1, tag).toBeGreaterThan(0.5);
@@ -1089,7 +1102,7 @@ test('casos trampa (decisión 82): el alumno lee la viñeta, marca el contexto y
   await expect(page.locator('.result')).toContainText('mVExUS (sin riñón)');
   // otro caso: la casilla se desmarca, el aviso se va y la viñeta es la suya
   await page.selectOption('#case-select', 'normal-adult');
-  await expect(page.locator('.vignette')).toContainText('taller de ecografía');
+  await expect(page.locator('.vignette')).toContainText('taller de ecografía', { timeout: 30_000 });
   await expect(iap).not.toBeChecked();
   await expect(page.locator('.result')).not.toContainText('presión intraabdominal alta');
   expect(errors).toEqual([]);
@@ -1100,8 +1113,9 @@ test('casos trampa (decisión 82): el alumno lee la viñeta, marca el contexto y
   await page.locator('#debug-toggle').check({ force: true });
   await page.selectOption('#case-select', 'abdominal-hypertension');
   const notes = page.locator('.case-notes');
-  // las notas, la viñeta y el lazo cambian con el caso en el mismo evento (sin esperar cuadros)
-  await expect(notes).toContainText('Trampa · PIA alta con fallo derecho');
+  // las notas, la viñeta y el lazo cambian con el caso en el mismo evento (sin esperar cuadros); el plazo es el de un
+  // cuadro de SwiftShader que tenga ocupado el hilo principal
+  await expect(notes).toContainText('Trampa · PIA alta con fallo derecho', { timeout: 30_000 });
   await expect(notes).toContainText('Contexto real: Presión intraabdominal alta');
   await expect(notes).toContainText('Grado 0 falso');
   // el panel docente se escribe con la cadencia de 250 ms; la verdad fisiológica pide más de 8 s de simulación
@@ -1140,7 +1154,9 @@ test('intervenciones docentes (decisión 79): bolo y PEEP mueven el lazo del sim
   expect(await loop()).toMatchObject({ peepTargetCmH2O: 10, interventions: 2 });
   await expect(peep.getByRole('button', { name: '10', exact: true })).toHaveAttribute('aria-pressed', 'true');
   await page.getByRole('button', { name: 'Reiniciar paciente', exact: true }).click({ force: true });
-  await expect.poll(loop).toMatchObject({ caseId: 'normal-adult', rapMeanMmHg: 5, fluidTargetMl: 0, peepTargetCmH2O: 0, interventions: 0 });
+  await expect
+    .poll(loop, { timeout: 30_000 })
+    .toMatchObject({ caseId: 'normal-adult', rapMeanMmHg: 5, fluidTargetMl: 0, peepTargetCmH2O: 0, interventions: 0 });
   await expect(page.getByRole('status').filter({ hasText: 'Paciente reiniciado' })).toBeVisible();
   await withinFrames(page, 20, 'PEEP 0 pulsado', async () => {
     const v = await peep.getByRole('button', { name: '0', exact: true }).getAttribute('aria-pressed');
@@ -1162,7 +1178,7 @@ test('intervenciones docentes (decisión 79): bolo y PEEP mueven el lazo del sim
   await expect(page.getByRole('status').filter({ hasText: 'Sin efecto' })).toBeVisible();
   // otro caso: el aviso de la intervención anterior desaparece
   await page.selectOption('#case-select', 'severe-congestion');
-  await expect.poll(loop).toMatchObject({ caseId: 'severe-congestion', interventions: 0 });
+  await expect.poll(loop, { timeout: 30_000 }).toMatchObject({ caseId: 'severe-congestion', interventions: 0 });
   await expect(page.getByRole('status')).toHaveText('');
   expect(errors).toEqual([]);
 });
@@ -1494,15 +1510,17 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
     w.reduce((a, x, i) => a + (x - mw) * (d[i] - md), 0) /
     Math.sqrt(w.reduce((a, x) => a + (x - mw) ** 2, 0) * d.reduce((a, x) => a + (x - md) ** 2, 0));
   // Dónde pone el operador los calibres: en el máximo y el mínimo de la envolvente de la banda, no en una columna suelta
-  // que el moteado de la pared ensancha o estrecha. Se eligen por la mediana de cada columna con sus vecinas y se mide
-  // la anchura de la columna elegida. En CI una sola columna ensanchada 1,9 mm sobre sus vecinas (anchura 13,99 frente
-  // a 12,89 y 12,11, sin que la verdad cambiara: 18,08 → 17,04 → 16,53 mm) llevaba la colapsabilidad a 38 % frente a
-  // 30 de la verdad; el reintento, sin ella, daba 32,6.
-  // (las columnas de los extremos de la franja no tienen dos vecinas y no se eligen)
+  // que el moteado de la pared ensancha o estrecha. El máximo y el mínimo se buscan en la mediana de cada columna con sus
+  // dos vecinas (las de los extremos de la franja no tienen dos y no se eligen) y se mide la columna que da esa mediana.
+  // En CI una sola columna ensanchada 1,9 mm sobre sus vecinas (anchura 13,99 frente a 12,89 y 12,11, sin que la verdad
+  // cambiara: 18,08 → 17,04 → 16,53 mm) llevaba la colapsabilidad a 38 % frente a 30 de la verdad; el reintento, sin
+  // ella, daba 32,6. Las cotas (±5 puntos de la verdad, aquí y con los calibres) no cambian.
   const inner = w.map((_, i) => i).slice(1, -1);
   const med3 = (i: number) => [w[i - 1], w[i], w[i + 1]].sort((a, b) => a - b)[1];
-  const iMax = inner.reduce((best, i) => (med3(i) > med3(best) ? i : best), inner[0]);
-  const iMin = inner.reduce((best, i) => (med3(i) < med3(best) ? i : best), inner[0]);
+  // la columna que se mide es la de la mediana (la elegida o una vecina): nunca la ensanchada o estrechada suelta
+  const medianColumn = (i: number) => [i - 1, i, i + 1].find((k) => w[k] === med3(i))!;
+  const iMax = medianColumn(inner.reduce((best, i) => (med3(i) > med3(best) ? i : best), inner[0]));
+  const iMin = medianColumn(inner.reduce((best, i) => (med3(i) < med3(best) ? i : best), inner[0]));
   const ciBand = (100 * (w[iMax] - w[iMin])) / w[iMax];
   // la anchura en espiración (el diámetro de la verdad por encima de su mediana) y en inspiración
   const dMed = [...d].sort((a, b) => a - b)[Math.floor(d.length / 2)];

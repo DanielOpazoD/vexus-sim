@@ -4353,6 +4353,14 @@ la transmisión de A y la envolvente compuesta, con el mapa de tejidos en la geo
   (decisión 57, con la normal de la frontera del mediastino de la 85) dibuja la imagen del mediastino y del hígado, no un
   vacío. Solo las líneas 152–167, en el borde izquierdo y fuera del recorte, devuelven el camino reflejado al pulmón y quedan
   en franjas oscuras (`mediastinal-mirror-normal-approx`, sin cambios).
+- **El borde radial en θ ≈ 0** (un panel de evaluación de `main` lo atribuyó a que el espejo se decide línea a línea, sí o no,
+  sin la anchura del haz) separa las líneas que llegan antes al pulmón de detrás del corazón (espejo: la imagen del mediastino)
+  de las que llegan antes al cuerpo vertebral (su sombra): lo negro de la derecha es hueso, no un espejo que falta. Su anchura
+  10–90 % en la envolvente es de 2,5 mm a 140 mm de profundidad, frente a una FWHM lateral del haz de 3,0 mm: la PSF lateral de
+  la pasada D ya mezcla las líneas vecinas como lo haría un haz que cae a medias en el pulmón. El espejo por línea sí deja
+  franjas donde el camino reflejado vuelve al pulmón o al hueso a < 15 mm (en la subxifoidea, 10 de las 71 líneas con espejo: la
+  97, justo en la transición, y las 148–167 del borde izquierdo; en la intercostal, 23 de 29, hacia la columna y el pulmón del
+  receso): ahí un espejo ponderado por la fracción del cono que se refleja sería lo físico (pendiente).
 - **La misma columna sin cara** en la intercostal (51 líneas: la mancha oscura de borde curvo del ángulo inferior, la «zona
   negra de borde curvo sin correlato» de la ronda 3), en la epigástrica (63: la cúpula oscura sobre la sombra, declarada en
   la decisión 83) y en la renal (17). El flanco, la subcostal y la portal no la ven.
@@ -4434,6 +4442,18 @@ física de la costal y los discos (el navegador 3D ya dibujaba vértebras separa
   que tras el disco no se ve el complejo posterior; sin pilares del diafragma entre la VCI y la columna; el disco con las
   propiedades del cartílago costal). Pendientes: el pilar derecho del diafragma detrás de la VCI, el complejo posterior tras
   los discos y el espejo del pulmón junto al mediastino (las franjas oscuras del borde izquierdo de la subxifoidea).
+- **La cara diafragma/pulmón, medida y fuera de esta decisión.** Un panel de evaluación de `main` la vio «nunca brillante».
+  Con GPU, en la rama (pico en ±2 mm del cruce del espejo frente al hígado de 4–14 mm por encima de la misma línea): +6–11 dB
+  a 10–30° de incidencia, +0–5 dB a 40–90° (subxifoidea, subcostal, flanco e intercostal, en sus poses y basculadas 25°), la
+  incidencia de casi toda la cúpula en esas vistas. La imagen en espejo del hígado sí está, a −1–5 dB del hígado de encima, pero
+  sin línea que la separe se lee como hígado que sigue. La causa: la pleura es la única cara rugosa sin su difusa (decisión 65;
+  σz 0,09 deja χ(0) ≈ 0,04 y el resto de la energía no va a ninguna parte). Probada con la ley de las demás caras: +12–15 dB a
+  40–60° (el gemelo, de 0–2 a 12–14 dB) pero +3–8 a 60–70°, el diafragma saturado sube a 2,9 % (tope 2 %) y, sobre todo, la
+  cúpula oblicua se vuelve un trazo brillante de cuentas, una por línea (el cruce de cada línea con un perfil de 0,14 mm y un
+  salto de 1–2 mm de una línea a la siguiente), incluso sin composición. Hace falta repartir el eco de cada línea en
+  profundidad con su paso lateral, y eso toca la ventana de A2 que publica el espejo y los gemelos de la transmisión que
+  reescribe la decisión 91: queda para después de ella. También se confirmó que la intercostal deslizada 15 mm hacia craneal
+  (las dos apneas) no tiene líneas A bajo la pleura de la cortina (decisión 61).
 
 **Verificación.** `spine.test.ts` (fallan en `main`: el cuerpo de 34 × 34 mm, solo vértebra a lo largo del eje, ninguna cara,
 retrodispersión 0,9, la frontera del hígado junto a la columna por encima de su distancia en 134 de 142 muestras, 0 líneas con
@@ -4452,7 +4472,7 @@ Al día: `wall.test.ts` (24 caras, la vértebra sin moteado, la regla de la cara
 de la grasa perirrenal), `shaderLimits.test.ts` (127 y 129 ranuras), la e2e de equivalencia (≥ 1000 puntos de vértebra, ≥ 100
 de cartílago —en `main`, 49, el costal— y la cara vertebral en la cáscara) y la de las normales (fila `spine`, exigida en p01;
 la muestra que dibuja la cortical ya no cuenta en la fila de su tejido: el diafragma junto a la columna de la intercostal la
-hacía fallar). E2E_RESULTADO Revisión adversarial de contexto limpio: encontró la e2e de las normales en rojo (arriba), las
+hacía fallar). La e2e completa (M4, SwiftShader, 27-09-2026 por la tarde, con otras sesiones compilando SwiftShader: carga 11–40 y el arranque de `main` y de la rama a 88–161 s, frente a 28 s por la mañana) con el tope por prueba subido a 300 s: 26 de 28; de las dos que agotaron el tiempo arrancando, «intervenciones docentes» pasa sola y «modo alumno ciego» (dos arranques con su tope propio de 240 s) no cabe a esa carga (por la mañana, 1,2 min). Revisión adversarial de contexto limpio: encontró la e2e de las normales en rojo (arriba), las
 reglas de la cara sin prueba que las fijara, el surco del borde del platillo, el psoas a 0,17 mm del hueso y dentro de la grasa
 perirrenal en una rejilla fina, cifras y afirmaciones de la documentación que no cuadraban y detalles de coste (la columna
 calculada dos veces en TS, una normal de la vértebra que nadie usaba y era NaN en su eje); todo corregido arriba.

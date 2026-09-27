@@ -307,7 +307,7 @@ describe('rama dirigida de la pasada B: geometría (decisión 58)', () => {
       'float tAp = transLerp(uTrans3, 0, tc.x, r);',
       'float tRay = transLerp(uTrans2, 1, tc.x, r);',
       'float tSpec = transLerp(uTrans2, 3, tc.x, r);',
-      'Ts = min(tAp, tSpec);',
+      'Ts = min(tAp, curtain ? tRay : tSpec);',
       'tissue = (tissue * T + vec2(spec * Ts, 0.0)) * coupling;',
       'if (sGas > 0.0 && s > sGas) {',
       'float sg = max(sGas - dr, 0.0);',

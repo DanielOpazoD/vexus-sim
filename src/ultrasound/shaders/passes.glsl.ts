@@ -461,7 +461,7 @@ ${steeredOnly(look, STEERED_TRANSMISSION_MAIN_GLSL)}}
 `;
 }
 
-/** Declaraciones que A añade en su programa dirigido (van detrás de `APERTURE_GLSL`: usan AP_TAPS). */
+/** Declaraciones que A añade en su programa dirigido (van detrás de `APERTURE_GLSL`: usan AP_SEARCH, `apCones` y `apEcho`). */
 const STEERED_TRANSMISSION_DECL_GLSL = /* glsl */ `uniform sampler2D uPreSteer;  // A2 o2: prefijo de la mirada dirigida del cuadro (decisión 58)
 uniform sampler2D uPreSteerX; // A2 o3: (tipo de gas, línea del espejo, Ψ̃, pendiente de Ψ̃) de esa mirada
 ${STEER_GLSL}
@@ -504,9 +504,9 @@ export const FRAG_TRANSMISSION_STEERED = transmissionShader('steered');
  *  - la reverberación, a múltiplos del primer gas de la mirada a lo largo de su camino, y la cola sucia y
  *    el transitorio, anclados a (línea dirigida, distancia del camino) con la sal de la mirada: cada
  *    mirada es otro disparo y no comparte artefactos;
- *  - tras el espejo diafragmático: el camino sigue la dirección reflejada de la línea cuyo espejo cruza,
- *    desde su propio cruce, con la fase del potencial directo (aproximaciones declaradas); la pleura dibuja
- *    su eco con el coseno de esta mirada;
+ *  - tras el espejo diafragmático: el camino sigue su propio reflejado en la normal de la pleura de la línea
+ *    cuyo espejo cruza (decisión 91), desde su propio cruce, con la fase del potencial directo (aproximaciones
+ *    declaradas); la pleura dibuja su eco con el coseno de esta mirada;
  *  - la pleura parietal y la cortina (decisión 61), con el mismo modelo que la mirada 0 a lo largo del camino
  *    dirigido: su cruce sD es el de la línea que el camino corta a la profundidad de la pleura (punto fijo
  *    sobre A0 h2), la serie remuestrea la pared en el propio camino con la fase de la mirada y el
@@ -564,7 +564,7 @@ vec4 steeredPleura(float phiK, float a, int line0, out float sD) {
   return h;
 }
 // A o3 (sin acoplamiento) en el punto del camino a la distancia x y, con ray, a lo sumo la del rayo central del camino
-// (A o2.y: la de los ecos especulares, decisión 88)
+// (A o2.y: la de la pleura de la cortina y sus especulares, decisiones 61 y 88)
 float steeredT(float phiK, float a, float x, bool ray) {
   float rho = sqrt(uCurvR * uCurvR + x * x + 2.0 * x * uSteer.z);
   float al = phiK + uSteer.x - steerBeta(rho, a);
@@ -705,7 +705,7 @@ vec2 steeredField() {
       Ts = steeredT(phiK, a, sCap, true);
     } else {
       T = tAp;
-      Ts = min(tAp, tSpec);
+      Ts = min(tAp, curtain ? tRay : tSpec);
     }
     tissue = (tissue * T + vec2(spec * Ts, 0.0)) * coupling;
     if (sGas > 0.0 && s > sGas) {
@@ -930,7 +930,7 @@ void main() {
     // El moteado y la difusa llevan la de la apertura (su penumbra rellena la sombra de una costilla en profundidad);
     // los ecos especulares, a lo sumo la de sus pares en la apertura (A o2.w): el camino de vuelta es el espejo del de ida
     // y, bajo un hueso, uno de los dos lo cruza junto a él (decisión 88); más hondo las facetas de la cara reparten lo
-    // reflejado por toda la apertura (decisión 91)
+    // reflejado por toda la apertura (decisión 91). En las líneas de la cortina, la del rayo central, con su lámina (61)
     float gain = pow(10.0, h2.z / 20.0);
     float rT = curtain && !under ? min(r, rCap) : r;
     float tAp = transLerp(uTrans0, 0, tc.x, rT);
@@ -938,7 +938,7 @@ void main() {
     float tSpec = transLerp(uTrans2, 3, tc.x, rT);
     // (bajo la cortina, el tope ya lleva el rayo central, compensado de la lámina de gas como el de la apertura)
     float T = curtain && under ? min(min(tAp, tRay) * gain, tD) : tAp;
-    float Ts = curtain && under ? T : min(T, tSpec);
+    float Ts = curtain ? (under ? T : min(T, tRay)) : min(T, tSpec);
     tissue = (tissue * T + vec2(spec * Ts, 0.0)) * coupling;
     // Reverberación tras gas: A-lines a múltiplos de la profundidad del reflector.
     float gasHit = t0.y;

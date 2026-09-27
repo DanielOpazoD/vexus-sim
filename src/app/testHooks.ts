@@ -147,8 +147,12 @@ export interface TestHooks {
     apertureMaxDiffDb?: number;
     /** El peor desacuerdo de la transmisión de los ecos especulares de A (dB; A o2.w, decisión 91) con sus gemelos. */
     specularMaxDiffDb?: number;
-    /** Muestras de la transmisión de la imagen comparadas en la mirada 0 (sin los empates), el denominador de `ambiguous`. */
+    /**
+     * Muestras (sin los empates) en las que se comparó la transmisión con apertura, el denominador de `ambiguous`, y la de
+     * los especulares: cada una donde ella misma (la del gemelo o la de la GPU) pasa de −60 dB (decisión 91).
+     */
     apertureSamples?: number;
+    specularSamples?: number;
     ambiguous?: number;
     /** Líneas cortadas en su primer segmento de tejido ambiguo (otro tejido a ±`ambiguityMm` del centro). */
     truncatedLines: number;
@@ -563,7 +567,8 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
           worst,
           apertureMaxDiffDb: imaging.apertureMaxDiffDb,
           specularMaxDiffDb: imaging.specularMaxDiffDb,
-          apertureSamples: imaging.samples,
+          apertureSamples: imaging.apertureSamples,
+          specularSamples: imaging.specularSamples,
           ambiguous: imaging.ambiguous,
           worstAperture: imaging.worstAperture,
         };

@@ -245,8 +245,10 @@ export function apertureWindowIntegral(lo: number, hi: number, h: number, c: num
   const a = Math.min(c, Math.max(-c, lo));
   const b = Math.min(c, Math.max(-c, hi));
   if (!hann) return b - a;
-  const q = Math.PI / Math.max(h, 1e-4);
-  return 0.5 * (b - a) + (Math.sin(q * b) - Math.sin(q * a)) / (2 * q);
+  // desde el borde más cercano (`apG`): ∫ de sin²(π·t/(2h)) de 0 a y, sin la cancelación de la primitiva donde la ventana
+  // casi no pesa
+  const g = (y: number) => 0.5 * y - (h * Math.sin((Math.PI * y) / h)) / (2 * Math.PI);
+  return a >= 0 ? g(h - a) - g(h - b) : b <= 0 ? g(h + b) - g(h + a) : h - g(h - b) - g(h + a);
 }
 
 /** Medias de la transmisión de ida sobre los conos de la pasada A (`apCones`, decisión 91). */
@@ -265,7 +267,10 @@ export interface ApertureCones {
  * su simétrica pesan lo mismo; la central, una vez. Continua en los semianchos y sin redondeos: un cono más estrecho que
  * una línea es el rayo de la línea.
  */
-export function apertureCones(lines: number, line: number, hTx: number, hRx: number, oneWay: (l: number) => number): ApertureCones {
+export function apertureCones(lines: number, line: number, hTxIn: number, hRxIn: number, oneWay: (l: number) => number): ApertureCones {
+  // un cono de anchura nula (1 − r₀/r redondeado a 0 junto al obstáculo) es el rayo de su línea
+  const hTx = Math.max(hTxIn, 1e-4);
+  const hRx = Math.max(hRxIn, 1e-4);
   const hP = Math.min(hTx, hRx);
   const hM = Math.max(hTx, hRx);
   const at = (l: number) => oneWay(Math.min(lines - 1, Math.max(0, l)));
@@ -314,7 +319,8 @@ export function apertureEcho(
 ): ApertureEcho {
   const single = oneWay(line) ** 2;
   const dTheta = (2 * geom.halfSector) / geom.lines;
-  const maxHalf = (0.5 * geom.apertureTxMm) / (geom.curvatureRadius * dTheta);
+  // el obstáculo se busca hasta el mayor de los dos conos: con el foco somero la emisión es más estrecha que la recepción
+  const maxHalf = (0.5 * Math.max(geom.apertureTxMm, geom.apertureRxMaxMm)) / (geom.curvatureRadius * dTheta);
   let ro = Infinity;
   for (let d = -APERTURE_SEARCH_LINES; d <= APERTURE_SEARCH_LINES; d++) {
     if (d < -Math.ceil(maxHalf) || d > Math.ceil(maxHalf)) continue;

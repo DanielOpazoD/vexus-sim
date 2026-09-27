@@ -415,7 +415,10 @@ test('composición espacial: más SNR con el mismo grano, sin huecos, y la mirad
   expect(parity.ambiguous!, ptag).toBeLessThanOrEqual(0.01 * parity.samples);
   expect(parity.maxDiffDb, ptag).toBeLessThan(0.01);
   expect(parity.apertureMaxDiffDb!, ptag).toBeLessThan(0.01);
-  // y la de sus ecos especulares (A o2.w, decisión 91): sus pares en la apertura mezclados con ella
+  // y la de sus ecos especulares (A o2.w, decisión 91): sus pares en la apertura mezclados con ella. Cada canal se
+  // compara donde él mismo pasa de −60 dB: no puede quedar en 0 porque no se comparó nada
+  expect(parity.apertureSamples!, ptag).toBeGreaterThan(500);
+  expect(parity.specularSamples!, ptag).toBeGreaterThan(500);
   expect(parity.specularMaxDiffDb!, ptag).toBeLessThan(0.01);
   // una guarda de una mirada no puede medir en silencio una envolvente de otro cuadro
   const guard = await page.evaluate(() => window.__vexusTest!.envelopeGuard({ startPoint: 'subxiphoid' }));
@@ -725,6 +728,7 @@ test('la pasada A en cuatro etapas da la misma transmisión de un solo rayo que 
     // frente a sus gemelos sobre los segmentos de la GPU, sin las muestras en empate de redondeo de los tramos de la
     // refracción, y la de los ecos especulares (A o2.w, decisión 91: bajo las costillas del flanco, sus pares)
     expect(r.apertureSamples!, tag).toBeGreaterThan(500);
+    expect(r.specularSamples!, tag).toBeGreaterThan(500);
     expect(r.apertureMaxDiffDb!, tag).toBeLessThan(0.01);
     expect(r.specularMaxDiffDb!, tag).toBeLessThan(0.01);
     expect(r.ambiguous!, tag).toBeLessThanOrEqual(0.01 * r.apertureSamples!);

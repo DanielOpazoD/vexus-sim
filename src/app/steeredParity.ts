@@ -152,7 +152,11 @@ export interface SteeredGpuRead {
 
 export interface SteeredParity {
   lines: number;
+  /** Muestras sin empate en las que se comparó al menos un canal. */
   samples: number;
+  /** Las que compararon la transmisión con apertura y la de los especulares (alguno de los dos lados sobre −60 dB). */
+  apertureSamples: number;
+  specularSamples: number;
   maxDiffDb: number;
   apertureMaxDiffDb: number;
   /** El peor desacuerdo de la transmisión de los especulares (dB, decisión 91); 0 si la GPU no la dio. */
@@ -164,9 +168,12 @@ export interface SteeredParity {
 }
 
 /**
- * Compara, cada `every` líneas y en todas las filas, el prefijo y la transmisión con apertura de la GPU con
- * los gemelos sobre los mismos segmentos. Se saltan las muestras con los dos prefijos bajo −60 dB. `twinOf` da los
- * gemelos con un desplazamiento del redondeo: por omisión, los de la mirada θ; la mirada 0 pasa `look0TransmissionTwin`.
+ * Compara, cada `every` líneas y en todas las filas, el prefijo, la transmisión con apertura y (si la GPU la dio) la de
+ * los especulares con los gemelos sobre los mismos segmentos. Cada canal se compara donde él mismo (el del gemelo o el
+ * de la GPU) está sobre −60 dB: la penumbra y los pares de la apertura viven justo bajo el borde de los huesos, donde el
+ * prefijo de la línea ya está bajo −60 dB (decisión 91). Una muestra en un empate de alguno de sus canales comparados
+ * se cuenta aparte y no entra en ningún máximo. `twinOf` da los gemelos con un desplazamiento del redondeo: por
+ * omisión, los de la mirada θ; la mirada 0 pasa `look0TransmissionTwin`.
  */
 export function compareSteeredTransmission(
   grid: SegmentGrid,
@@ -181,8 +188,12 @@ export function compareSteeredTransmission(
   const lo = twinOf(-tieLines);
   const hi = twinOf(tieLines);
   const db = (x: number) => -20 * Math.log10(Math.max(x, 1e-12));
+  // un canal cambia con el redondeo si alguno de los dos desplazamientos lo saca de su umbral
+  const moves = (v: number, a: number, b: number, tol: number) => Math.abs(a - v) > tol || Math.abs(b - v) > tol;
   let lines = 0;
   let samples = 0;
+  let apertureSamples = 0;
+  let specularSamples = 0;
   let ambiguous = 0;
   let maxDiffDb = 0;
   let apertureMaxDiffDb = 0;
@@ -195,36 +206,51 @@ export function compareSteeredTransmission(
       const i = k * gpu.lines + u;
       const tsDb = exact.db(u, k);
       const gpuDb = gpu.prefixDb[i];
-      if (tsDb > 60 && gpuDb > 60) continue;
       const tsAp = db(exact.aperture(u, k));
       const gpuAp = db(gpu.aperture[i]);
-      const tsSpec = gpu.specular ? db(exact.specular(u, k)) : 0;
+      const tsSpec = gpu.specular ? db(exact.specular(u, k)) : Infinity;
+      const gpuSpec = gpu.specular ? db(gpu.specular[i]) : Infinity;
+      const cmpDb = tsDb <= 60 || gpuDb <= 60;
+      const cmpAp = tsAp < 60 || gpuAp < 60;
+      const cmpSpec = tsSpec < 60 || gpuSpec < 60;
+      if (!cmpDb && !cmpAp && !cmpSpec) continue;
       const tie =
-        Math.abs(lo.db(u, k) - tsDb) > TIE_DB ||
-        Math.abs(hi.db(u, k) - tsDb) > TIE_DB ||
-        Math.abs(db(lo.aperture(u, k)) - tsAp) > TIE_APERTURE_DB ||
-        Math.abs(db(hi.aperture(u, k)) - tsAp) > TIE_APERTURE_DB ||
-        (gpu.specular !== undefined &&
-          (Math.abs(db(lo.specular(u, k)) - tsSpec) > TIE_APERTURE_DB || Math.abs(db(hi.specular(u, k)) - tsSpec) > TIE_APERTURE_DB));
+        (cmpDb && moves(tsDb, lo.db(u, k), hi.db(u, k), TIE_DB)) ||
+        (cmpAp && moves(tsAp, db(lo.aperture(u, k)), db(hi.aperture(u, k)), TIE_APERTURE_DB)) ||
+        (cmpSpec && moves(tsSpec, db(lo.specular(u, k)), db(hi.specular(u, k)), TIE_APERTURE_DB));
       if (tie) {
         ambiguous++;
         continue;
       }
       samples++;
-      const diff = Math.abs(tsDb - gpuDb);
-      if (diff > maxDiffDb) {
-        maxDiffDb = diff;
-        worst = { line: u, depthMm: (k + 0.5) * grid.stepMm, cpuDb: tsDb, gpuDb, tissue: 'prefijo dirigido' };
+      const depthMm = (k + 0.5) * grid.stepMm;
+      if (cmpDb && Math.abs(tsDb - gpuDb) > maxDiffDb) {
+        maxDiffDb = Math.abs(tsDb - gpuDb);
+        worst = { line: u, depthMm, cpuDb: tsDb, gpuDb, tissue: 'prefijo dirigido' };
       }
-      if ((tsAp < 60 || gpuAp < 60) && Math.abs(tsAp - gpuAp) > apertureMaxDiffDb) {
-        apertureMaxDiffDb = Math.abs(tsAp - gpuAp);
-        worstAperture = { line: u, depthMm: (k + 0.5) * grid.stepMm, tsDb: tsAp, gpuDb: gpuAp };
+      if (cmpAp) {
+        apertureSamples++;
+        if (Math.abs(tsAp - gpuAp) > apertureMaxDiffDb) {
+          apertureMaxDiffDb = Math.abs(tsAp - gpuAp);
+          worstAperture = { line: u, depthMm, tsDb: tsAp, gpuDb: gpuAp };
+        }
       }
-      if (gpu.specular) {
-        const gpuSpec = db(gpu.specular[i]);
-        if (tsSpec < 60 || gpuSpec < 60) specularMaxDiffDb = Math.max(specularMaxDiffDb, Math.abs(tsSpec - gpuSpec));
+      if (cmpSpec) {
+        specularSamples++;
+        specularMaxDiffDb = Math.max(specularMaxDiffDb, Math.abs(tsSpec - gpuSpec));
       }
     }
   }
-  return { lines, samples, maxDiffDb, apertureMaxDiffDb, specularMaxDiffDb, ambiguous, worst, worstAperture };
+  return {
+    lines,
+    samples,
+    apertureSamples,
+    specularSamples,
+    maxDiffDb,
+    apertureMaxDiffDb,
+    specularMaxDiffDb,
+    ambiguous,
+    worst,
+    worstAperture,
+  };
 }

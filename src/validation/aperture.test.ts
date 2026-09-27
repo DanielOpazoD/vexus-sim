@@ -3,6 +3,7 @@ import { Tissue } from '../anatomy/tissues';
 import { INTERFACES, Interface } from '../anatomy/interfaces';
 import {
   APERTURE_GLSL,
+  APERTURE_SEARCH_LINES,
   SPECULAR_PAIR_FIT,
   SPECULAR_PAIR_SLOPE,
   STEERED_APERTURE_GLSL,
@@ -19,7 +20,8 @@ import {
   steeredApertureTransmission,
 } from '../ultrasound/transmissionTwin';
 import { CONVEX_BEAM } from '../ultrasound/beamModel';
-import { COMPOUND, lookTheta } from '../ultrasound/compound';
+import { COMPOUND, COMPOUND_STEER_RANGE_DEG, lookTheta } from '../ultrasound/compound';
+import { CONVEX_C35 } from '../probe/probe';
 import { CONVEX_C35_PROFILE, bmodeBeam } from '../ultrasound/transducerProfile';
 import { GRID_GEOMETRY, lookTransmission, segmentGridFromScene } from './support/segmentGrid';
 
@@ -121,9 +123,20 @@ describe('penumbra de la apertura', () => {
     expect(narrow.tx).toBe(tLine[77]);
     expect(narrow.rx).toBe(tLine[77]);
     expect(narrow.pair).toBeCloseTo(tLine[77] ** 2, 15);
+    // y uno de anchura nula (1 − r₀/r redondeado a 0 junto al obstáculo; revisión de la decisión 91), también: no 0
+    for (const h of [0, 1e-9]) {
+      const zero = apertureCones(GEOM.lines, 77, h, h, oneWayAt);
+      expect(zero.tx, `h ${h}`).toBe(tLine[77]);
+      expect(zero.rx, `h ${h}`).toBe(tLine[77]);
+      expect(zero.pair, `h ${h}`).toBeCloseTo(tLine[77] ** 2, 15);
+    }
     // la GLSL hace las mismas cuentas
-    expect(APERTURE_GLSL).toContain('float q = 3.14159265 / max(h, 1e-4);');
-    expect(APERTURE_GLSL).toContain('return mix(b - a, 0.5 * (b - a) + (sin(q * b) - sin(q * a)) / (2.0 * q), hann);');
+    expect(APERTURE_GLSL).toContain('float apG(float y, float h) { return 0.5 * y - h * sin(3.14159265 * y / h) / 6.2831853; }');
+    expect(APERTURE_GLSL).toContain(
+      'return a >= 0.0 ? apG(h - a, h) - apG(h - b, h) : b <= 0.0 ? apG(h + b, h) - apG(h + a, h) : h - apG(h - b, h) - apG(h + a, h);',
+    );
+    expect(APERTURE_GLSL).toContain('hTx = max(hTx, 1e-4);');
+    expect(APERTURE_GLSL).toContain('hRx = max(hRx, 1e-4);');
     expect(APERTURE_GLSL).toContain(
       'vec3 w = f * vec3(apW(lo, lo + 1.0, hTx, hTx, 1.0), apW(lo, lo + 1.0, hRx, hRx, 0.0), apW(lo, lo + 1.0, hTx, hP, 1.0));',
     );
@@ -215,6 +228,76 @@ describe('penumbra de la apertura', () => {
     const iMin = profile.indexOf(min);
     for (let i = 1; i <= iMin; i++) expect(profile[i]).toBeLessThanOrEqual(profile[i - 1] + 1e-12);
   });
+
+  it('en float32, el peso de la última loncha de la ventana de Hann sale de su borde (apG) sin la cancelación de la primitiva', () => {
+    // Revisión de la decisión 91: con 0,5·(b − a) + (sin(q·b) − sin(q·a))/(2q), la última loncha parcial de un cono (peso
+    // ~10⁻⁵) es la resta de dos senos ≈ 1 dividida por 2q, pequeño: 6–12 % de error en float32 con seno correctamente
+    // redondeado, que domina la media de los pares bajo la costilla (5·10⁻³ dB, la mitad de la tolerancia de la e2e).
+    // Desde el borde, ∫ sin²(π·t/(2h)) de 0 a y, el seno es de un ángulo pequeño: ≤ 0,34 %
+    const f = Math.fround;
+    const sin32 = (x: number) => f(Math.sin(f(x)));
+    const g32 = (y: number, h: number) => f(f(0.5 * y) - f(f(h * sin32(f(f(3.14159265 * y) / h))) / f(6.2831853)));
+    const primitive32 = (a: number, b: number, h: number) => {
+      const q = f(f(3.14159265) / h);
+      return f(f(0.5 * f(b - a)) + f(f(sin32(f(q * b)) - sin32(f(q * a))) / f(2 * q)));
+    };
+    let worstNow = 0;
+    let worstBefore = 0;
+    for (const h of [20.67, 27.66, 34.67]) {
+      const lo = Math.round(h) - 0.5;
+      const exact = apertureWindowIntegral(lo, lo + 1, h, h, true);
+      expect(exact, `h ${h}`).toBeLessThan(1e-4);
+      worstNow = Math.max(worstNow, Math.abs(f(g32(f(h - lo), h) - g32(0, h)) - exact) / exact);
+      worstBefore = Math.max(worstBefore, Math.abs(primitive32(lo, h, h) - exact) / exact);
+    }
+    expect(worstNow).toBeLessThan(5e-3);
+    expect(worstBefore).toBeGreaterThan(5e-2);
+  });
+
+  it('con el foco somero (emisión de 8–12 mm) el obstáculo se busca hasta la recepción, más ancha: la penumbra sigue continua', () => {
+    // Revisión de la decisión 91: la búsqueda llegaba solo a D_tx/2. Con el foco a 20–30 mm la emisión mide 8–12 mm y la
+    // recepción hasta 26: una costilla dentro de la recepción pero fuera de la búsqueda no contaba, y al entrar en ella la
+    // transmisión saltaba de la del rayo a la del cono (un borde de una línea a 11 líneas de la costilla)
+    const dTheta = (2 * GEOM.halfSector) / GEOM.lines;
+    for (const dTx of [8, 10, 12]) {
+      const g = { ...GEOM, apertureTxMm: dTx };
+      const wTx = Math.ceil((0.5 * dTx) / (GEOM.curvatureRadius * dTheta));
+      const now = (l: number, r: number) => apertureTransmission(g, l, r, oneWay(r), obstacle);
+      const before = (l: number, r: number) =>
+        apertureTransmission(g, l, r, oneWay(r), (m) => (Math.abs(m - l) <= wTx ? obstacle(m) : Infinity));
+      // el paso entre líneas vecinas frente a lo que pesa una línea en las dos ventanas: 1/h_tx la de Hann y 1/(2h_rx) la uniforme
+      const worst = (f: (l: number, r: number) => number) => {
+        let w = 0;
+        for (let r = 40; r <= 170; r += 5) {
+          const spacing = (GEOM.curvatureRadius + RIB.depthMm) * dTheta;
+          const shrink = 1 - RIB.depthMm / r;
+          const hTx = (0.5 * dTx * shrink) / spacing;
+          const hRx = (0.5 * Math.min(GEOM.apertureRxMaxMm, r / GEOM.fNumberRxMin) * shrink) / spacing;
+          for (let l = 40; l < 150; l++) w = Math.max(w, Math.abs(f(l + 1, r) - f(l, r)) / (1 / hTx + 1 / (2 * hRx)));
+        }
+        return w;
+      };
+      expect(worst(now), `D_tx ${dTx} mm`).toBeLessThanOrEqual(0.7);
+      if (dTx <= 10) expect(worst(before), `D_tx ${dTx} mm, búsqueda de la emisión`).toBeGreaterThan(1.2);
+    }
+  });
+
+  it('la búsqueda del obstáculo y la integral de los conos (AP_SEARCH) cubren el mayor cono de todas las miradas', () => {
+    // el cono más ancho es la mayor de las aperturas a la cara, D/2 / (R·cos θ·dθ) líneas (el obstáculo en la cara y el
+    // punto en el fondo): con la mirada más dirigida del rango del compuesto, en fundamental y en armónica
+    const dTheta = (2 * CONVEX_C35.halfSector) / CONVEX_C35.lines;
+    let widest = 0;
+    for (const harmonic of [false, true]) {
+      const b = bmodeBeam(CONVEX_C35_PROFILE, { harmonic });
+      for (const deg of [0, ...COMPOUND_STEER_RANGE_DEG]) {
+        const rc = CONVEX_C35.curvatureRadius * Math.cos((deg * Math.PI) / 180);
+        widest = Math.max(widest, (0.5 * Math.max(b.apertureTxMm, b.apertureRxMaxMm)) / (rc * dTheta));
+      }
+    }
+    // 35,4 líneas con 8°: el bucle llega a la línea 40, cuyo intervalo empieza en 39,5
+    expect(widest).toBeGreaterThan(35);
+    expect(Math.ceil(widest)).toBeLessThanOrEqual(APERTURE_SEARCH_LINES - 2);
+  });
 });
 
 /**
@@ -249,6 +332,34 @@ describe('transmisión de los ecos especulares (decisión 91)', () => {
     expect(specularPairSpread(rFull + 0.1, GEOM.apertureTxMm)).toBe(1);
     for (let l = 60; l <= 130; l += 3)
       for (const r of [70, 110, 160]) expect(E(l, r).specular, `línea ${l}, ${r} mm`).toBeCloseTo(E(l, r).diffuse, 14);
+  });
+
+  it('dentro del borde de la costilla, donde los pares no llegan, es ρ por la de la apertura: se apaga en 1–2 mm, no en una línea', () => {
+    // Revisión de la decisión 91: la regla del rayo central (88) apagaba del todo la especular de toda línea cuyo rayo
+    // cruza el hueso. Ahora, en las primeras líneas dentro del borde, los pares (u por un lado, −u por el hueso) no
+    // devuelven nada y queda la parte que las facetas reparten, ρ·T_ap: −22/−35 dB a 0,26/0,79 mm dentro del borde, 6 mm
+    // bajo la costilla; el banco de ondas de la decisión 88 da −14 dB a 1 mm dentro y 1,2 mm bajo ella
+    const spacing = (GEOM.curvatureRadius + RIB.depthMm) * ((2 * GEOM.halfSector) / GEOM.lines);
+    for (const dr of [6, 10]) {
+      const r = RIB.depthMm + dr;
+      const rho = specularPairSpread(r, GEOM.apertureTxMm);
+      expect(rho, `${r} mm`).toBeGreaterThan(0.4);
+      expect(rho, `${r} mm`).toBeLessThan(0.6);
+      const inside: number[] = [];
+      for (let l = RIB.from; l <= RIB.from + 5; l++) {
+        const e = E(l, r);
+        const tag = `línea ${l} (${((l - RIB.from + 0.5) * spacing).toFixed(2)} mm dentro), ${r} mm`;
+        // los pares, 0: la especular es ρ·T_ap, por debajo de la difusa y por encima de la regla del rayo central (0)
+        expect(e.specular, tag).toBeCloseTo(rho * e.diffuse, 14);
+        expect(centralRay(l, r), tag).toBe(0);
+        inside.push(db(e.specular));
+      }
+      // del borde hacia dentro baja, y a 2,4 mm ya no se ve
+      expect(inside[0], `${r} mm`).toBeGreaterThan(-25);
+      expect(inside[0], `${r} mm`).toBeLessThan(-15);
+      for (let i = 1; i < inside.length; i++) expect(inside[i]).toBeLessThanOrEqual(inside[i - 1]);
+      expect(inside[4], `${r} mm`).toBeLessThan(-40);
+    }
   });
 
   it('en profundidad la especular es continua a través de las líneas de la costilla: sin el hueco de la pared de la VCI', () => {
@@ -480,7 +591,8 @@ describe('penumbra y refuerzo de las miradas dirigidas (decisión 58)', () => {
     // dirigido, a la distancia del camino
     expect(STEERED_APERTURE_GLSL).toContain('return apEcho(apCones(uPreSteer, line, k, halfTx, halfRx), s, spec);');
     expect(APERTURE_GLSL).toContain('float a = pow(10.0, -texelFetch(pre, ivec2(clamp(line + d, 0, last), k), 0).x / 40.0);');
-    expect(STEERED_APERTURE_GLSL).toContain('float maxHalf = (0.5 * uAperture.x) / (rc * dTheta);');
+    expect(STEERED_APERTURE_GLSL).toContain('float maxHalf = (0.5 * max(uAperture.x, uAperture.y)) / (rc * dTheta);');
+    expect(APERTURE_GLSL).toContain('float maxHalf = (0.5 * max(uAperture.x, uAperture.y)) / (uCurvR * dTheta);');
     expect(STEERED_APERTURE_GLSL).toContain('float halfRx = 0.5 * min(uAperture.y, s / uAperture.z) * shrink / spacing;');
     // usa la búsqueda y el cono de APERTURE_GLSL, que va delante
     expect(STEERED_APERTURE_GLSL).toContain('AP_SEARCH');

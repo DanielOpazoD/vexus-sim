@@ -4382,6 +4382,12 @@ real sí ve; (2) la elegida, el propio camino reflejado.
   constante en la anchura de cada una ([l − ½, l + ½]), con la del borde fuera del arreglo: continua en el semiancho (la
   profundidad) y en el centro, y un cono más estrecho que una línea es el rayo de su línea. Un solo bucle por los dos
   conos, del centro hacia fuera con la línea y su simétrica (≤ 37 vueltas, dos lecturas cada una) en lugar de 18 tomas.
+  La ventana de Hann se integra desde su borde más cercano (`apG`: ∫ sin² de 0 a y), sin la cancelación de la primitiva en
+  float32 (la última loncha parcial de un cono, de peso ~10⁻⁵, salía con un 6–12 % de error y movía los pares 5·10⁻³ dB);
+  un cono de anchura nula (1 − r₀/r redondeado a 0) es el rayo de su línea; y el obstáculo se busca hasta el mayor de los
+  dos conos, `max(D_tx, D_rx)`/2 en la cara (con el foco a 20–30 mm la emisión mide 8–12 mm y la recepción hasta 26: una
+  costilla dentro de la recepción y fuera de la búsqueda no contaba, y al entrar en ella la transmisión saltaba hasta
+  2,5 dB en una línea). `APERTURE_SEARCH_LINES` (40) cubre el mayor cono de todas las miradas, 35,4 líneas con 8°.
   Sin redondeos: la paridad de la GPU con los gemelos (`steeredParity.ts`) deja de desplazar las tomas y marca el empate de
   la transmisión con apertura desde la mitad de lo que admite la e2e (`TIE_APERTURE_DB`, 5·10⁻³ dB): cada muestra integra
   todas las líneas de su cono y un empate del camino de una vecina la mueve lo que esa línea pesa (con el umbral del prefijo,
@@ -4392,13 +4398,17 @@ real sí ve; (2) la elegida, el propio camino reflejado.
   Kirchhoff de `INTERFACES`) desvían lo reflejado con rms 2s, que cruza el obstáculo a τ = 2s·(r − r₀) de −u, y τ frente al
   semiancho del cono da 4s·r/D, sin r₀. Con la cara más lisa de la tabla (`SPECULAR_PAIR_SLOPE` = 0,14, las venas) y
   k = 3 (`SPECULAR_PAIR_FIT`, ajustado a la suma doble con el núcleo gaussiano de los pares: 0,6 dB rms y 5 dB en el peor
-  punto, la línea del borde junto a la costilla, sobre cuatro costillas de 5–17 mm a 20–45 mm y de 3 a 130 mm bajo ellas; k 2
-  daba 1,1 dB rms y 4, 0,65; la regla del rayo central, 39 dB rms), ρ vale ≈ 0,45 en la pleura bajo una costilla y 1 desde
+  punto, la línea del borde junto a la costilla, sobre cuatro costillas de 5–17 mm a 20–45 mm y hasta 130 mm de
+  profundidad, 3–110 mm bajo ellas; k 2 daba 1,0–1,1 dB rms y 4, 0,65; la regla del rayo central, 39 dB rms), ρ vale ≈ 0,45 en la pleura bajo una costilla y 1 desde
   62 mm con los 26 mm del convexo. A la publica en o2.w (la de la mirada del cuadro: la dirigida escribe encima su
   fracción del haz que sobrevive a los huesos y su especular, `o2.zw`; D lee siempre o2.z y pierde `uShadowCh`), y B la usa
-  en las dos miradas en lugar del rayo central (`Ts = min(T, tSpec)`) fuera de la cortina; la cortina (decisión 61)
-  conserva el rayo central de su línea. Lejos de todo obstáculo es la del rayo, la de antes. El color y el PW siguen con su
-  rayo único (o2.x).
+  en las dos miradas en lugar del rayo central en las líneas sin cortina (`min(T, tSpec)`); en las de la cortina
+  (decisión 61), sobre la pleura y bajo ella, las dos miradas conservan el rayo central de su línea, con su lámina de
+  pulmón. Lejos de todo obstáculo es la del rayo, la de antes. El color y el PW siguen con su rayo único (o2.x). Junto al
+  borde de una costilla, en las primeras líneas dentro de él, los pares valen 0 (el lado −u cruza el hueso) y queda
+  ρ·T_apertura: la penumbra de la especular, que la regla del rayo central apagaba del todo (en el gemelo, 6 mm bajo la
+  costilla de `aperture.test.ts`, −22 / −35 dB a 0,26 / 0,79 mm dentro del borde; el banco de ondas de la decisión 88 da
+  −14 dB a 1 mm dentro y 1,2 mm bajo ella). Lejos del borde, bajo −40 dB como antes.
 - **Espejo de la mirada dirigida** (`STEERED_FIELD_GLSL` de `shaders/passes.glsl.ts`, gemelo `steeredSample` de
   `steering.ts`). Tras el espejo, la muestra sigue el propio camino reflejado, dirK reflejada en la normal de la pleura (que
   sale de la reflexión de la línea del espejo, dR − d0 ∥ n, como ya hacía el eco de la pleura), en lugar de la reflejada de
@@ -4417,6 +4427,28 @@ real sí ve; (2) la elegida, el propio camino reflejado.
   compuesto, un tercio de ella: la 0 es negra ahí, como en un compuesto real), queda con el moteado de lo reflejado. El
   estiramiento que queda (0,35 mm/mm en el gemelo) es el de la retícula comprimida en la elevación de la sonda y no en la
   del corte reflejado (`mirror-slice-elevation-axis`, también en la mirada 0 con una pleura oblicua).
+- **Borde de las costillas** (la oclusión de la decisión 88 con GPU, `main` a386e5e → rama, flanco del sano con y sin dz
+  +12, `scratchpad/seam/rib`): bajo las costillas, de la cara posterior a 4 mm más abajo, la mediana sigue en el suelo de
+  ruido (−39,8 / −46,2 / −44,2 → −40,5 / −45,3 / −43,7 dB del hígado con dz +12; −42,7 / −46,6 / −45,7 → −42,5 / −45,1 /
+  −45,0 sin él; gris 0). La línea del borde no cambia; en las 1–4 de dentro de él, el pico bajo el hueso sube hasta 7 dB
+  en unos bordes y queda a ±1,5 dB en otros (en el borde izquierdo de la primera costilla con dz +12, −9,2 / −22,4 / −33,0
+  → −4,3 / −15,3 / −28,0 dB a 1,0 / 1,6 / 2,1 mm de la línea del borde; gris 46 / 14 / 0 → 58 / 26 / 7): es la penumbra de
+  la especular, ρ·T_apertura, más cerca del banco de ondas de la 88 (−14 dB a 1 mm dentro del borde) que el tope del rayo
+  central. Desde 2,5 mm, como antes (≤ −40 dB, gris 0); con 3 líneas de margen en cada borde, el máximo pasa de −22,0 /
+  −13,9 / −26,4 a −16,3 / −15,0 / −25,2 dB (gris ≤ 37).
+- **Contraste con la evaluación física del panel** (sobre `main` a386e5e: un peine de ~2 mm solo con el compuesto en la
+  subcostal del sano, atribuido a que A2 dirigida toma la línea más cercana en cada fila; y la pared de la VCI que
+  desaparece en la cola de la sombra de una costilla, atribuida a `Ts = min(T, tRay)`), medido con GPU (`scratchpad/seam/m7`):
+  - Peine: es el mismo de la pareja 7. Las líneas 174–184 de la mirada +7° cruzan el espejo del pulmón a s = 31–32 mm
+    también en el sano. La transmisión de A en la banda no lleva modulación periódica (espectro del cociente con su media
+    de ±4 mm, periodos de 2,25–6 mm: −33,2 dB en `main`, −34,5 en la apertura y −34,7 en la especular en la rama): el
+    rayo único de A2 sí salta ±6 dB entre filas a lo largo de un borde de gas (línea 180, 38–65 mm), pero el cono lo
+    integra y B solo usa el rayo único en las líneas de la cortina. Las estrías son del mapa de la imagen al tejido tras
+    el espejo: la correlación horizontal del gris a 3 mm en la banda pasa de 0,51 / 0,49 (fundamental / armónica, sano)
+    y 0,42 / 0,58 (congestión grave) a 0,05 / 0,01 y 0,13 / 0,13, la del hígado de la misma captura (0,04; 0,11–0,13).
+  - Pared: por línea, el pico de la pared frente a la mediana del tejido de 3–12 mm por encima, en las 47 líneas de la
+    cola de la sombra cuya pared se ve (≥ +6 dB) con el hueso transparente: bajo +6 dB, 43 % (sin compuesto) y 26 % (con
+    él) en `main`, 0 % y 4 % en la rama, con la mediana a la de sin hueso (13,1 frente a 12,8 dB).
 - **Banco de fidelidad** (M4, las ocho escenas, `main` a386e5e frente a la rama): cambian solo las sombras de costillas y
   de gas. G7, el acortamiento de la umbra por el compuesto, 7,49 → 4,69 mm en el flanco del sano y 7,40 → 5,14 en el de la
   congestión grave (meta 1,5–8 mm): la umbra de la mirada 0 acaba 1–2,4 mm antes (28,8 → 26,4 y 27,8 mm), la del
@@ -4426,8 +4458,8 @@ real sí ve; (2) la elegida, el propio camino reflejado.
   pasa de 0 a 1 hueco.
 - **Coste** (M4, Metal, `scratchpad/gb/cost.mts` en puertos propios, `main` y la rama alternados, carga 25): la pasada A
   +0,01–0,04 ms (0,04–0,09 → 0,06–0,12 ms); el cuadro, dentro del ruido (flanco 10,15/10,10 → 10,23/10,12 ms; con el
-  compuesto 10,65/10,60 → 10,59/10,60). Índice del build 333,7 → 334,4 kB (presupuesto de 335). `npm run calibrate` da la
-  misma salida byte a byte.
+  compuesto 10,65/10,60 → 10,59/10,60; medido antes de la revisión, que no cambia las vueltas del bucle con el foco por
+  omisión). Índice del build 333,7 → 334,7 kB (presupuesto de 335). `npm run calibrate` da la misma salida byte a byte.
 - **Limitaciones**: nuevas `specular-pair-single-slope` (una sola pendiente de facetas, los dos límites de la suma doble,
   incidencia normal) y `mirror-slice-elevation-axis` (tras un espejo el moteado sigue comprimido en la elevación de la
   sonda).
@@ -4447,6 +4479,21 @@ transmisión compara también la especular de la GPU (o2.w, `readTransmission`) 
 el flanco con sus costillas y la subcostal) y en la dirigida, a menos de 0,01 dB. `transmission.test.ts`, `pleura.test.ts`,
 `refraction.test.ts` y `shaderLimits.test.ts` (huellas de A y B), al día. Capturas con GPU antes y después, las de la
 bisección y las de la historia (`scratchpad/seam/caps`, `scratchpad/seam/hist`).
+
+Revisión adversarial de contexto limpio (sobre el primer commit de la rama), corregida: (1) B daba a las líneas de la
+cortina, sobre la pleura, la de los pares en la mirada 0 y el rayo central en la dirigida; ahora las dos, el rayo central
+(pines de `transmission.test.ts`, `pleura.test.ts` y `steeredSample.test.ts`). (2) El texto decía que junto a la costilla
+los especulares se apagaban como antes; no en las líneas de dentro del borde (arriba, «Borde de las costillas»). (3)
+`aperture.test.ts` prueba ahora esas líneas: la especular es ρ·T_apertura (los pares, 0), por encima de la regla del rayo
+central y bajo −40 dB a 2,4 mm del borde. (4) La búsqueda del obstáculo llegaba solo a D_tx/2: con el foco somero, un
+borde de hasta 2,5 dB en una línea; la prueba de continuidad con D_tx 8–12 mm falla con la búsqueda de antes (1,2–1,4
+veces la cota por línea) y pasa con la de ahora (≤ 0,56). (5) La paridad saltaba las muestras con los dos prefijos bajo −60
+dB, justo donde viven la penumbra y los pares, y podía pasar sin comparar nada: cada canal se compara donde él mismo pasa de
+−60 dB, la paridad cuenta sus muestras (`apertureSamples`, `specularSamples`, > 500 en la e2e) y `steeredParity.test.ts`
+comprueba que una GPU que apagara la apertura o la especular bajo el borde del hueso ya no pasa; y la ventana de Hann se
+integra desde su borde (`apG`: 6–12 % → ≤ 0,34 % de error en float32 en la última loncha, `aperture.test.ts`). (6) Un cono
+de anchura nula daba 0 y no el rayo de su línea. (7) Prueba del margen de `APERTURE_SEARCH_LINES` (35,4 de 40 líneas con
+8°). (8) Comentarios desfasados de `passes.glsl.ts`, `pleura.ts` e `interfaceEcho.test.ts`.
 
 ## Iteración 2 — informe de cierre (22-09-2026)
 

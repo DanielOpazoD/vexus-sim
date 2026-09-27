@@ -119,7 +119,8 @@ Penumbra y ecos especulares (decisión 91): A integra la ventana de cada cono de
 líneas (la integral exacta, sin tomas) y publica, además de la transmisión de la imagen (o0.x, o3.x en la dirigida), la de
 los ecos especulares de la mirada del cuadro en o2.w (los pares de la apertura, T(u)·T(−u), mezclados con ella según lo que
 las facetas reparten lo reflejado) y su fracción del haz que sobrevive a los huesos en o2.z, que lee D; o2.x es el rayo
-único del color y del PW. B multiplica por o2.w los ecos especulares fuera de la cortina.
+único del color y del PW. B multiplica por o2.w los ecos especulares de las líneas sin cortina; en las de la cortina
+(decisión 61), por el rayo central de la línea, con su lámina.
 
 ## Disposición y vistas (`src/ui`)
 

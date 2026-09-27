@@ -147,6 +147,8 @@ describe('paridad de la mirada dirigida: empates de redondeo (G8, decisión 58)'
           const p = compareSteeredTransmission(grid, ap, th, gpuLike(grid, ap, th, bias), 8);
           const tag = `${view}, mirada ${look}, redondeo ${bias}: ${JSON.stringify(p)}`;
           expect(p.samples, tag).toBeGreaterThan(2000);
+          expect(p.apertureSamples, tag).toBeGreaterThan(2000);
+          expect(p.specularSamples, tag).toBeGreaterThan(2000);
           expect(p.maxDiffDb, tag).toBe(0);
           // la transmisión con apertura integra todas las líneas de su cono (decisión 91): un empate de una vecina la mueve
           // lo que esa línea pesa, y solo se marca desde la mitad de la tolerancia de la e2e
@@ -171,6 +173,30 @@ describe('paridad de la mirada dirigida: empates de redondeo (G8, decisión 58)'
         // de la mirada 2 están a 154–169 mm)
         expect(p.ambiguous, tag).toBeLessThanOrEqual(0.0075 * p.samples);
       }
+    }
+  });
+
+  it('compara la penumbra y los especulares bajo el borde de los huesos, donde el prefijo de la línea ya pasa de −60 dB', () => {
+    // Revisión de la decisión 91: la paridad saltaba las muestras con los dos prefijos bajo −60 dB, justo donde viven la
+    // penumbra y los pares de la apertura (luz de las líneas vecinas al borde de una costilla). Una GPU que los apagara
+    // ahí pasaba con 0 dB de desacuerdo. Cada canal se compara ahora donde él mismo pasa de −60 dB.
+    const { grid, ap } = gridOf('flank');
+    const th = lookTheta(1);
+    const twin = steeredTransmissionTwin(grid, ap, th, 0);
+    for (const channel of ['aperture', 'specular'] as const) {
+      const g = gpuLike(grid, ap, th, 0);
+      let hidden = 0;
+      for (let l = 0; l < grid.lines; l += 8)
+        for (let k = 0; k < grid.rows; k++)
+          if (twin.db(l, k) > 60 && -20 * Math.log10(twin[channel](l, k)) < 40) {
+            g[channel][k * grid.lines + l] = 1e-12;
+            hidden++;
+          }
+      const p = compareSteeredTransmission(grid, ap, th, g, 8);
+      const tag = `${channel}: ${hidden} muestras apagadas bajo el hueso; ${JSON.stringify(p)}`;
+      expect(hidden, tag).toBeGreaterThan(20);
+      expect(p.maxDiffDb, tag).toBe(0);
+      expect(channel === 'aperture' ? p.apertureMaxDiffDb : p.specularMaxDiffDb, tag).toBeGreaterThan(100);
     }
   });
 });

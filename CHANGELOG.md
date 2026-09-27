@@ -126,8 +126,9 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
   hasta el fondo, y la pared de la VCI, 8 cm más abajo, se rompía con bordes verticales: la penumbra de la apertura se
   promediaba con nueve tomas en líneas enteras y los ecos especulares llevaban la transmisión del rayo central en toda
   la profundidad. Ahora la penumbra es la integral exacta de su cono (continua entre líneas y en profundidad) y los
-  especulares, la de sus pares en la apertura con lo que las facetas de la cara reparten lo reflejado: junto a la
-  costilla se apagan como antes y en profundidad se atenúan como el moteado, sin hueco. En el borde de la subcostal, la
+  especulares, la de sus pares en la apertura con lo que las facetas de la cara reparten lo reflejado: bajo la costilla,
+  lejos de su borde, se apagan como antes (en las 1–4 líneas de dentro del borde queda su penumbra, hasta 7 dB más que
+  con el rayo central) y en profundidad se atenúan como el moteado, sin hueco. En el borde de la subcostal, la
   mirada dirigida dibujaba tras el pulmón el tejido a lo largo de la dirección reflejada de una sola línea y lo estiraba
   en estrías horizontales («peine»); ahora sigue su propio camino reflejado.
 - Las costillas derechas eran cartílago en todo su arco anterolateral y posterior (la regla del cartílago costal suponía el lado izquierdo): la ventana intercostal no veía costillas óseas, ni su cortical ni su sombra. Ahora el cartílago es solo el arco anterior, hasta la línea medioclavicular, y lateral a él la costilla es hueso con cortical brillante y sombra limpia; las costillas 8.ª–10.ª acaban en el reborde costal en lugar de cruzar la línea media, y la ventana subxifoidea queda libre de cartílago. La vista intercostal de partida, que con costillas óseas cruzaba seis sombras, va ahora a lo largo del 8.º espacio intercostal en la línea axilar media (marcador hacia la axila): una costilla asoma en un borde con su sombra, el resto muestra el hígado, las suprahepáticas y la VCI con la respiración tranquila, y la cortina pulmonar baja sobre ellas en inspiración profunda (62).

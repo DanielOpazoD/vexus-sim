@@ -375,7 +375,8 @@ float curtainSteerWeight(float r, float D, float fAir) { return D > 0.0 && fAir 
  * `scattererField`, `uSeed`, `uElev` y `uCurtain`). Lleva `CURTAIN_AIR_GLSL` (y con él `uHits2`).
  */
 export const PLEURA_GLSL = /* glsl */ `${CURTAIN_AIR_GLSL}
-uniform sampler2D uTrans2; // A o2: rayo único (x la mirada 0, y la dirigida): tope de la transmisión sin la lámina
+uniform sampler2D uTrans2; // A o2: rayo único (x la mirada 0, y la dirigida): tope de la transmisión sin la lámina; z la
+                           // fracción del haz que sobrevive a los huesos y w la de los especulares (decisiones 88 y 91)
 const float PLEURA_RP = ${glslFloat(PLEURA_RP)};
 const float PLEURA_RT = ${glslFloat(PLEURA_RT)};
 const float CURTAIN_Z0 = ${glslFloat(LUNG_CURTAIN.z0)};
@@ -410,7 +411,8 @@ vec2 slidingField(vec3 pD, float h, float salt) {
 // interfaz (decisión 57: coherente, fase 0 común a la cara, antes de la transmisión). Una llamada por programa y
 // fuera de bucles: faceGradient, en el eco, es el código más pesado de B. La jacobiana de la compresión de la
 // sonda en p (decisión 63) lleva al mundo la incidencia del eco y de la textura de la pared, en los tres planos. La
-// especular va aparte (spec): la pasada B la multiplica por la transmisión del rayo central (decisión 88).
+// especular va aparte (spec): la pasada B la multiplica por la de sus pares en la apertura (A o2.w, decisión 91; en las
+// líneas de la cortina, por la del rayo central, decisión 88).
 vec2 mediumField(vec3 p, vec3 dir, float r, float se, bool withCurtain, out float spec) {
   vec3 m = toMaterial(p);
   Warp w = warpAt(p);

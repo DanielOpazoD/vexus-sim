@@ -120,8 +120,9 @@ describe('Atenuación a lo largo del rayo', () => {
       expect(src).toContain(`float tSpec = ${spec};`);
       expect(src).toContain('tissue = (tissue * T + vec2(spec * Ts, 0.0)) * coupling;');
     }
-    expect(FRAG_RAWFIELD).toContain('float Ts = curtain && under ? T : min(T, tSpec);');
-    expect(FRAG_RAWFIELD_STEERED).toContain('Ts = min(tAp, tSpec);');
+    // en las líneas de la cortina (decisión 61), la del rayo central en las dos miradas: su lámina es de la línea
+    expect(FRAG_RAWFIELD).toContain('float Ts = curtain ? (under ? T : min(T, tRay)) : min(T, tSpec);');
+    expect(FRAG_RAWFIELD_STEERED).toContain('Ts = min(tAp, curtain ? tRay : tSpec);');
     expect(FRAG_TRANSMISSION).toContain('o2 = vec4(single, 0.0, clamp(Tap / max(noBone, 1e-30), 0.0, 1.0), spec);');
     expect(FRAG_TRANSMISSION_STEERED).toContain('float TkAp = steeredApertureTransmission(line, k, s, singleK, specK);');
     expect(FRAG_TRANSMISSION_STEERED).toContain('o2.zw = vec2(clamp(TkAp / max(noBone, 1e-30), 0.0, 1.0), specK);');

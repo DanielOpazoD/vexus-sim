@@ -1,5 +1,6 @@
 import { VESSEL_META, type VesselId } from '../physiology/vessels';
 import { gateInColorBox, type EquipmentCommand } from './equipment';
+import { errorLog } from './errorLog';
 import {
   equivalenceSweep,
   interfaceShellEquivalence,
@@ -198,9 +199,10 @@ export interface TestHooks {
   placeGateAt: (theta: number, r: number) => void;
   /**
    * Textura del color tras forzar un cuadro (decisión 70): fracción de pares de téxeles vecinos con potencia visible y
-   * valor IDÉNTICO (el estimador por celdas daba bloques constantes) y correlación lateral de la potencia a 1 y 4 téxeles.
+   * valor IDÉNTICO (el estimador por celdas daba bloques constantes) y correlación lateral de la potencia a 1 y 4 téxeles;
+   * `cells`, las celdas con color de ese cuadro (como `colorCells`).
    */
-  colorTexture: () => { visible: number; identicalPairs: number; corr1: number; corr4: number };
+  colorTexture: () => { cells: number; visible: number; identicalPairs: number; corr1: number; corr4: number };
   /** Fracción de las celdas de la caja de color visibles tras forzar un cuadro (0–1). */
   colorCellFraction: () => number;
   /** Fija la ganancia de color (dB) como el deslizador. */
@@ -288,6 +290,14 @@ export interface TestHooks {
   envelopeGuard: (opts: { startPoint: StartPoint['id'] }) => { threw: boolean; message: string; look: number };
   /** El simulador vivo (cambia al cambiar de caso): el cine y la franja del modo M se leen de él (decisión 80). */
   sim: () => Simulator;
+  /**
+   * Cuadros que el bucle de la aplicación ha completado desde el arranque (no se reinicia con el caso; los que dibujan
+   * los ganchos no cuentan). La e2e espera «n cuadros» en vez de un plazo en segundos: con SwiftShader un cuadro
+   * tarda de décimas a varios segundos según el corredor, y lo que la interfaz promete (el HUD, el cine) es por cuadro.
+   */
+  framesRendered: () => number;
+  /** El registro de errores de la aplicación (`errorLog`, «origen: mensaje»): lo que un `catch` informó sin llegar a la consola. */
+  loggedErrors: () => string[];
 }
 
 /** Opciones de `frameCostMs`. */
@@ -327,7 +337,7 @@ export function frameMeasureOptions(opts: FrameCostOptions = {}): RenderMeasureO
   return { forceColor, repeat: { pass: repeatPass, times } };
 }
 
-export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: EquipmentCommand) => void): TestHooks {
+export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: EquipmentCommand) => void, loopFrames: () => number): TestHooks {
   const hooks: TestHooks = {
     equivalenceSweep: () => equivalenceSweep(getSim()),
     volumeEquivalence: (n) => volumeEquivalence(getSim(), n),
@@ -585,7 +595,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
     placeGateAt: (theta, r) => dispatch({ type: 'placeGate', theta, r }),
     colorTexture: () => {
       const sim = getSim();
-      renderColorFrame(sim);
+      const cells = renderColorFrame(sim);
       const { width: w, height: h, data } = sim.renderer.readColorField();
       const p = (x: number, y: number) => data[(y * w + x) * 4 + 1];
       let visible = 0;
@@ -622,7 +632,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
         }
         return sab / Math.sqrt(Math.max(1e-12, saa * sbb));
       };
-      return { visible: visible / (w * h), identicalPairs: pairs ? identical / pairs : Number.NaN, corr1: corr(1), corr4: corr(4) };
+      return { cells, visible: visible / (w * h), identicalPairs: pairs ? identical / pairs : Number.NaN, corr1: corr(1), corr4: corr(4) };
     },
     colorCellFraction: () => {
       const sim = getSim();
@@ -867,6 +877,8 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       });
     },
     sim: getSim,
+    framesRendered: loopFrames,
+    loggedErrors: () => errorLog.recent(Number.MAX_SAFE_INTEGER).map((e) => `${e.source}: ${e.message}`),
   };
   return hooks;
 }

@@ -6,6 +6,7 @@ import { VESSEL_META, type VesselId, type VesselSystem } from '../physiology/ves
 import { beamToPixel, pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
 import type { CutMapError, CutMapInit, CutMapRequest, CutMapResponse } from './cutMapWorker';
 import { errorLog } from '../app/errorLog';
+import { RequestWatchdog } from './requestWatchdog';
 
 /**
  * «Corte ecográfico · plano de la imagen»: mapa a color de las estructuras que
@@ -130,7 +131,10 @@ const VESSEL_LABEL: Record<VesselId, string> = {
 /** Tejido «sangre» como número (el mapa del Worker es un Uint8Array). */
 const BLOOD_ID: number = Tissue.Blood;
 
-/** Tiempo máximo de una petición al Worker antes de darlo por caído (ms). */
+/**
+ * Tiempo máximo de una petición al Worker antes de darlo por caído (ms), con el hilo principal en marcha
+ * (`RequestWatchdog`: a lo sumo 250 ms por cuadro, así que un cuadro largo no cuenta entero).
+ */
 const WORKER_TIMEOUT_MS = 3000;
 
 export class CutMapView {
@@ -141,7 +145,7 @@ export class CutMapView {
   private worker: Worker | null = null;
   private workerPatient: string | null = null;
   private pending = false;
-  private pendingSince = 0;
+  private readonly watchdog = new RequestWatchdog(WORKER_TIMEOUT_MS);
   /** Fallos consecutivos del Worker (error, caída o tiempo agotado) y próximo reintento. */
   private failures = 0;
   private retryAt = 0;
@@ -176,6 +180,7 @@ export class CutMapView {
   /** Registra el fallo, descarta el Worker y programa un reintento con espera creciente (1 s → 30 s). */
   private fail(error: unknown, nowMs: number): void {
     errorLog.report('corte', error);
+    this.watchdog.stop();
     this.failures++;
     this.retryAt = nowMs + Math.min(30_000, 1000 * 2 ** (this.failures - 1));
     this.worker?.terminate();
@@ -208,6 +213,7 @@ export class CutMapView {
       if (this.pendingInputs?.id === ev.data.id) this.mapInputs = this.pendingInputs;
       this.mapDirty = true;
       this.pending = false;
+      this.watchdog.stop();
       this.failures = 0;
     };
     this.worker.onerror = (ev) => {
@@ -225,13 +231,14 @@ export class CutMapView {
 
   /** Pide un mapa nuevo a ≤ `hz` veces por segundo y dibuja el último recibido. */
   draw(sim: Simulator, nowMs: number, hz = 8): void {
-    // Vigilante: una petición sin respuesta en 3 s cuenta como caída del Worker
-    if (this.pending && nowMs - this.pendingSince > WORKER_TIMEOUT_MS) this.fail(new Error('el Worker del corte no responde (3 s)'), nowMs);
+    // Vigilante: una petición sin respuesta en 3 s de hilo principal en marcha cuenta como caída del Worker
+    if (this.pending && this.watchdog.expired(nowMs))
+      this.fail(new Error('el Worker del corte no responde (3 s de hilo principal)'), nowMs);
     const worker = this.ensureWorker(sim, nowMs);
     if (worker && !this.pending && nowMs - this.lastUpdate >= 1000 / hz) {
       this.lastUpdate = nowMs;
       this.pending = true;
-      this.pendingSince = nowMs;
+      this.watchdog.start(nowMs);
       const s = sim.sample;
       const req: CutMapRequest = {
         type: 'map',

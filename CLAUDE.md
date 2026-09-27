@@ -7,8 +7,14 @@ después `README.md`, `docs/ARCHITECTURE.md`, `docs/GLOSSARY.md` y `docs/TESTING
 ## Antes de terminar un cambio
 
 - `npm run check > /tmp/check.log 2>&1; echo EXIT $?` — nunca `npm run check | grep`: cuenta el
-  código de salida. Tarda ~2–5 min (incluye pruebas lentas con cobertura).
-- `npm run e2e` si tocas GPU, UI, medición o anatomía (necesita `vite build` antes).
+  código de salida. En local tarda ~2–5 min con la máquina libre; en la CI de GitHub la ejecución entera (check +
+  e2e) tarda 10–20 min y el trabajo `check` solo, 6–15. Lánzalo en segundo plano y espera el `EXIT`.
+- `npm run e2e` si tocas GPU, UI, medición o anatomía (necesita `vite build` antes). En CI va en cuatro
+  fragmentos de un trabajador con SwiftShader; sus esperas son en cuadros o en tiempo de simulación
+  (`e2e/support.ts`), nunca en segundos de reloj.
+- **La CI decide la fusión**: el check requerido de `main` es «CI verde (check + e2e)» y una prueba que solo
+  pasa al reintentarla cuenta como fallo. El comentario de verificación del PR enlaza la ejecución real
+  (`gh pr checks <n>`), no una corrida local.
 - Decisión nueva → `docs/DECISIONS.md` con la plantilla de `CONTRIBUTING.md` y `npm run docs:index`.
 - Aproximación o limitación nueva → `docs/APPROXIMATIONS.md` / `docs/LIMITATIONS.md`
   (las limitaciones con id en `src/validation/limitations.ts`).
@@ -34,4 +40,5 @@ después `README.md`, `docs/ARCHITECTURE.md`, `docs/GLOSSARY.md` y `docs/TESTING
 ## Flujo de trabajo
 
 Ramas `feat/…`, `fix/…`, `test/…`, `docs/…`; Conventional Commits en español; PR con descripción
-de qué cambia y cómo se verificó; squash-merge con CI verde (check + e2e).
+de qué cambia y cómo se verificó (con el enlace a la ejecución de CI); squash-merge solo con la CI en verde
+(«CI verde (check + e2e)»: `check` y los cuatro fragmentos de la e2e).

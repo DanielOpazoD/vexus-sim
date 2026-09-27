@@ -14,9 +14,17 @@ export default defineConfig({
   // desiguales (la equivalencia, una prueba; el humo, el resto). Con un trabajador por fragmento el orden no
   // importa (cada prueba abre su página). En local, por archivo como siempre.
   fullyParallel: !!process.env.CI,
+  // Un trabajador por corredor: SwiftShader reparte cada cuadro entre todos los núcleos, y con dos trabajadores (el
+  // valor por omisión en los 4 vCPU del corredor) las dos páginas se los disputaban: los mismos cuadros tardaban el
+  // doble y variaban tanto que las pruebas agotaban sus plazos a días alternos. El paralelismo lo dan los fragmentos.
+  workers: process.env.CI ? 1 : undefined,
+  // Un reintento para diagnosticar (¿falla siempre o a veces?), pero una prueba que solo pasa al reintentarla hace
+  // fallar la ejecución: la CI decide la fusión y una prueba inestable no es verde (docs/MISION.md, objetivo 8).
   retries: process.env.CI ? 1 : 0,
+  failOnFlakyTests: !!process.env.CI,
   // en CI: anotaciones de GitHub + lista con la duración de cada prueba (para ver qué encarece la e2e)
-  reporter: process.env.CI ? [['github'], ['list']] : 'list',
+  // y el JSON con las anotaciones de cada prueba (arranque y ritmo del bucle, e2e/support.ts), que ci.yml guarda siempre
+  reporter: process.env.CI ? [['github'], ['list'], ['json', { outputFile: 'e2e-results.json' }]] : 'list',
   use: {
     baseURL: 'http://localhost:6609',
     trace: 'retain-on-failure',

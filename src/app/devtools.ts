@@ -22,10 +22,15 @@ declare global {
   }
 }
 
-export function registerDevtools(getSim: () => Simulator, getViews: () => DevViews, dispatch: (cmd: EquipmentCommand) => void): void {
+export function registerDevtools(
+  getSim: () => Simulator,
+  getViews: () => DevViews,
+  dispatch: (cmd: EquipmentCommand) => void,
+  loopFrames: () => number,
+): void {
   if (import.meta.env.DEV || new URLSearchParams(location.search).has('e2e')) {
     // Carga diferida: el código de prueba no entra en el bundle principal
-    void import('./testHooks').then((m) => (window.__vexusTest = m.createTestHooks(getSim, dispatch)));
+    void import('./testHooks').then((m) => (window.__vexusTest = m.createTestHooks(getSim, dispatch, loopFrames)));
   }
   if (!import.meta.env.DEV) return;
   window.__sim = getSim;

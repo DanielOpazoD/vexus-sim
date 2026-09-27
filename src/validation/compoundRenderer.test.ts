@@ -365,7 +365,17 @@ describe('ganchos de prueba con el compuesto (WebGL falso)', () => {
     });
     const dispatch = (cmd: EquipmentCommand): void => equipment.dispatch(cmd);
     const lateralDraws = () => rec.draws.filter((d) => d.frag === FRAG_LATERAL).length;
-    return { rec, sim, dispatch, hooks: createTestHooks(() => sim, dispatch), lateralDraws };
+    return {
+      rec,
+      sim,
+      dispatch,
+      hooks: createTestHooks(
+        () => sim,
+        dispatch,
+        () => 0,
+      ),
+      lateralDraws,
+    };
   }
 
   it('fidelity con el compuesto llena el anillo, asienta la persistencia y devuelve la composición', () => {

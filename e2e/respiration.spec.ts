@@ -65,6 +65,14 @@ test('respiración apagada: referencia estable, corazón y flujo activos, config
       return Math.max(...values) - Math.min(...values);
     }),
   ).toBeGreaterThan(0.9);
+  // Avanzar fisiología sin renderizar deja un hueco real en la franja M: no acredita un ciclo adquirido.
+  await page.getByRole('tab', { name: 'Medir' }).click();
+  await page.getByRole('button', { name: 'VCI modo M', exact: true }).click();
+  const freshBox = (await page.locator('#mmode').boundingBox())!;
+  for (const dx of [50, 100]) for (const dy of [40, 70]) await page.mouse.click(freshBox.x + dx, freshBox.y + dy);
+  await expect(page.locator('.result')).toContainText('sin ciclo respiratorio completo');
+  await expect(page.locator('.result')).not.toContainText('colapso');
+  await page.getByRole('tab', { name: 'Adquirir' }).click();
   await page.getByRole('button', { name: 'Desactivar respiración', exact: true }).click();
   await expect(page.getByRole('button', { name: 'Activar respiración', exact: true })).toBeVisible();
   expect(

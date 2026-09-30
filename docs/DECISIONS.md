@@ -4689,6 +4689,8 @@ en main).
 
 ## 95. Respiración apagada al iniciar la sesión, con referencia explícita y ciclo observado para colapsabilidad (30-09-2026)
 
+El modo M requiere un ciclo en el último tramo continuo realmente adquirido (intervalos de columnas ≤M_MAX_GAP_S); la fase del motor por sí sola no acredita imágenes ausentes, huecos ni la historia de una línea anterior. Si el ciclo no cabe en pantalla, reducir el barrido.
+
 Petición de Daniel: anatomía detallada con respiración apagada por defecto y configuración accesible. La sesión usa
 apnea espiratoria (fase 0, volumen y velocidad diafragmática 0); las definiciones originales de los casos siguen intactas
 para bancos. Cambiar/reiniciar paciente vuelve a esa referencia. «Configurar respiración» y el botón activar/desactivar

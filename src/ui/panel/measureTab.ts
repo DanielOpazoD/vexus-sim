@@ -1,6 +1,7 @@
 import { caseVignette } from '../../app/blindMode';
 import { errorLog } from '../../app/errorLog';
 import { toggleMode } from '../../app/equipment';
+import { M_MAX_GAP_S } from '../../ultrasound/mmode';
 import { ivcFromCalipers, ivcPixelInterval, ivcTruth, hasRespiratoryCycle, type IvcCollapse } from '../../vexus/ivcCollapse';
 import type { MMark } from '../mModeView';
 import type { AppState, MeasureTool } from '../../app/store';
@@ -146,9 +147,18 @@ export class MeasureTab {
     if (k % 2 && d(k - 1) < 1) pts.length = k - 1;
     this.#mPoints = pts;
     if (pts.length === 4) {
-      const samples = this.#ctx.sim().physiology.samples;
-      const respiratoryCycle = hasRespiratoryCycle(samples, window[0], window[1]);
-      const truth = respiratoryCycle ? ivcTruth(samples, window[0], window[1]) : null;
+      const sim = this.#ctx.sim();
+      const samples = sim.physiology.samples;
+      const strip = sim.renderer.mStrip;
+      // Solo el último tramo continuo adquirido: una línea recién cambiada o un hueco no hereda ciclos del motor.
+      let last = strip.count - 1;
+      while (last >= 0 && strip.time(last) > window[1]) last--;
+      let first = last;
+      while (first > 0 && strip.time(first) - strip.time(first - 1) <= M_MAX_GAP_S) first--;
+      const from = last >= 0 ? Math.max(window[0], strip.time(first)) : Infinity;
+      const to = last >= 0 ? strip.time(last) : -Infinity;
+      const respiratoryCycle = hasRespiratoryCycle(samples, from, to);
+      const truth = respiratoryCycle ? ivcTruth(samples, from, to) : null;
       const measured = ivcFromCalipers(d(0), d(2));
       this.#ivcM = {
         ...measured,
@@ -412,7 +422,7 @@ export class MeasureTab {
       `<div>VCI: ${ivcMax !== null ? ivcMax.toFixed(1) + ' mm' : '—'} ${res.ivcDilated === null ? '' : res.ivcDilated ? '<span class="small">(≥ 20 mm: dilatada)</span>' : '<span class="small">(< 20 mm)</span>'}</div>`,
       mM
         ? !mM.respiratoryCycle
-          ? '<div>VCI modo M: sin ciclo respiratorio completo. Activa la respiración, espera un ciclo y repite los calibres.</div>'
+          ? '<div>VCI modo M: sin ciclo respiratorio completo. Activa la respiración y adquiere un ciclo completo; reduce el barrido si no cabe. Repite los calibres.</div>'
           : `<div>VCI modo M: máx ${mm(mM.maxMm)} · mín ${mm(mM.minMm)} mm → colapso <b>${mM.ciPct.toFixed(0)} %</b>${mTruth}<div class="small">Resolución: ${mM.pixels.map(mm).join('–')} %; excluye pared y error físico.</div></div>`
         : '',
       line(

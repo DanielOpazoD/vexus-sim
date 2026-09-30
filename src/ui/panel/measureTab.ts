@@ -43,9 +43,9 @@ export class MeasureTab {
    * el contador de la pestaña.)
    */
   #liveEl!: HTMLElement;
-  #lastHepatic: ObservedHepatic | null = null;
-  #lastPortal: ObservedPortal | null = null;
-  #lastRenal: ObservedRenal | null = null;
+  private lastHepatic: ObservedHepatic | null = null;
+  private lastPortal: ObservedPortal | null = null;
+  private lastRenal: ObservedRenal | null = null;
   #ivcCaliperMm: number | null = null;
   /** VCI en modo M (decisión 80): los puntos de los calibres y el resultado con la verdad de su ventana. */
   #mPoints: MMark[] = [];
@@ -79,15 +79,15 @@ export class MeasureTab {
    */
   clearMeasurements(): boolean {
     const had =
-      this.#lastHepatic !== null ||
-      this.#lastPortal !== null ||
-      this.#lastRenal !== null ||
+      this.lastHepatic !== null ||
+      this.lastPortal !== null ||
+      this.lastRenal !== null ||
       this.#ivcCaliperMm !== null ||
       this.#ivcM !== null ||
       this.#mPoints.length > 0;
-    this.#lastHepatic = null;
-    this.#lastPortal = null;
-    this.#lastRenal = null;
+    this.lastHepatic = null;
+    this.lastPortal = null;
+    this.lastRenal = null;
     this.#ivcCaliperMm = null;
     this.#ivcM = null;
     this.#mPoints = [];
@@ -181,17 +181,17 @@ export class MeasureTab {
     // una captura rechazada por la calidad no muestra patrón (el de un espectro de ruido es «grave»)
     const NOT_MEASURABLE = 'no medible';
     protoRow('Suprahepática', 'hepatic', () => {
-      const h = this.#lastHepatic;
+      const h = this.lastHepatic;
       return h ? (h.quality.issue ? NOT_MEASURABLE : patternText(h.pattern)) : '—';
     });
     protoRow('Porta PF', 'portal', () => {
-      const p = this.#lastPortal;
+      const p = this.lastPortal;
       if (!p) return '—';
       if (p.quality.issue) return NOT_MEASURABLE;
       return Number.isFinite(p.pulsatilityFraction) ? `${p.pulsatilityFraction.toFixed(0)} %` : 'no aplicable';
     });
     protoRow('Renal', 'renal', () => {
-      const k = this.#lastRenal;
+      const k = this.lastRenal;
       return k ? (k.quality.issue ? NOT_MEASURABLE : renalText(k.pattern)) : '—';
     });
 
@@ -333,9 +333,9 @@ export class MeasureTab {
       wallFilterHz: sim.pw.wallFilterHz,
     };
     const recent = sim.spectral.columns.filter((c) => c.t > tNow - 7);
-    if (kind === 'hepatic') this.#lastHepatic = measureObservedHepatic(recent, beats, opts);
-    else if (kind === 'portal') this.#lastPortal = measureObservedPortal(recent, beats, opts);
-    else if (kind === 'renal') this.#lastRenal = measureObservedRenal(recent, beats, opts);
+    if (kind === 'hepatic') this.lastHepatic = measureObservedHepatic(recent, beats, opts);
+    else if (kind === 'portal') this.lastPortal = measureObservedPortal(recent, beats, opts);
+    else if (kind === 'renal') this.lastRenal = measureObservedRenal(recent, beats, opts);
     this.#ctx.store.set({ tool: 'none' });
     this.renderResult();
   }
@@ -344,9 +344,9 @@ export class MeasureTab {
     if (!this.#resultEl) return;
     // una captura sin calidad no entra en el grado («no medible» nunca es normal)
     const usable = <T extends { quality: { issue: unknown } }>(m: T | null) => (m && m.quality.issue === null ? m : null);
-    const h = usable(this.#lastHepatic);
-    const p = usable(this.#lastPortal);
-    const k = usable(this.#lastRenal);
+    const h = usable(this.lastHepatic);
+    const p = usable(this.lastPortal);
+    const k = usable(this.lastRenal);
     // sin calibrador en la imagen, el diámetro máximo del modo M
     const ivcMax = this.#ivcCaliperMm ?? this.#ivcM?.maxMm ?? null;
     // el contexto marcado entra en el grado: un territorio poco fiable cuenta como no evaluado (decisión 82)
@@ -381,21 +381,21 @@ export class MeasureTab {
         : '',
       line(
         'hepatic',
-        rejected(this.#lastHepatic, 'VSH') ??
+        rejected(this.lastHepatic, 'VSH') ??
           (h
             ? `VSH: S ${h.sPeak.toFixed(1)} · D ${h.dPeak.toFixed(1)} · A ${h.aPeak.toFixed(1)} cm/s → <b>${patternText(h.pattern)}</b> <span class="small">(${h.beats} latidos)</span>`
             : 'VSH: —'),
       ),
       line(
         'portal',
-        rejected(this.#lastPortal, 'Porta') ??
+        rejected(this.lastPortal, 'Porta') ??
           (p
             ? `Porta: ${p.vMax.toFixed(1)}/${p.vMin.toFixed(1)} cm/s → PF <b>${Number.isFinite(p.pulsatilityFraction) ? p.pulsatilityFraction.toFixed(0) + ' %' : 'n/a'}</b> <span class="small">(${portalText(res.portalClass)}${res.portalNearThreshold ? ', próximo al umbral' : ''})</span>`
             : 'Porta: —'),
       ),
       line(
         'renal',
-        rejected(this.#lastRenal, 'Renal') ??
+        rejected(this.lastRenal, 'Renal') ??
           (k
             ? `Renal: S ${k.sPeak.toFixed(1)} · D ${k.dPeak.toFixed(1)} · mín ${k.vMin.toFixed(1)} cm/s → <b>${renalText(k.pattern)}</b> <span class="small">(${k.beats} latidos)</span>`
             : '<span class="small">Renal: no evaluado; el clasificador devuelve el intervalo compatible.</span>'),

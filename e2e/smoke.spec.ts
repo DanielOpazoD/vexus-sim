@@ -1589,7 +1589,7 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
   expect(residual, tag).toBeLessThan(0.6);
   expect(Math.abs(ciBand - band.truth.ci), tag).toBeLessThanOrEqual(5);
   // los calibres de la pestaña Medir sobre la franja congelada: de borde a borde de la envolvente en la columna más ancha
-  // y en la más estrecha (píxeles enteros, como un clic)
+  // y en la más estrecha, con clics enteros accesibles al alumno. Su incertidumbre de resolución es visible.
   await page.getByRole('tab', { name: 'Medir' }).click();
   await page.getByRole('button', { name: 'VCI modo M', exact: true }).click();
   const box = (await page.locator('#mmode').boundingBox())!;
@@ -1607,10 +1607,16 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
   const result = page.locator('.result');
   await expect(result).toContainText(/VCI modo M: máx \d+,\d · mín \d+,\d mm → colapso \d+ %/);
   const ci = Number(/colapso (\d+) %/.exec((await result.textContent()) ?? '')![1]);
-  // la aplicación calcula con los píxeles enteros que recibe: el mismo colapso que esos puntos, redondeado
+  // Separar calibración UI, redondeo de presentación y error físico. La tolerancia física sigue en ±5 puntos.
   const [d1, d2] = [Math.abs(clicked[1] - clicked[0]), Math.abs(clicked[3] - clicked[2])];
   const ciClicks = (100 * (Math.max(d1, d2) - Math.min(d1, d2))) / Math.max(d1, d2);
   expect(Math.abs(ci - ciClicks), `${tag} · calibres ${ci} % (puntos ${ciClicks.toFixed(1)} %)`).toBeLessThanOrEqual(0.51);
-  expect(Math.abs(ci - band.truth.ci), `${tag} · calibres ${ci} %`).toBeLessThanOrEqual(5);
+  const interval = /Resolución: ([\d.]+)–([\d.]+) %/.exec((await result.textContent()) ?? '')!;
+  expect(interval, 'La incertidumbre de los clics debe ser visible al alumno').not.toBeNull();
+  const [lo, hi] = [Number(interval[1]), Number(interval[2])];
+  // ±0,05 exclusivamente por mostrar el intervalo con un decimal. La banda mantiene su gate físico ±5 arriba.
+  expect(ciBand).toBeGreaterThanOrEqual(lo - 0.05);
+  expect(ciBand).toBeLessThanOrEqual(hi + 0.05);
+  expect(Math.max(lo - band.truth.ci, band.truth.ci - hi, 0), tag).toBeLessThanOrEqual(5);
   expect(errors).toEqual([]);
 });

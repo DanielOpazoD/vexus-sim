@@ -446,8 +446,11 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   decisión 80): con la línea M casi perpendicular a la VCI (≥ 84°) el eco especular de la pared posterior, máximo de
   frente, se come 1–1,5 mm de la luz en la presentación logarítmica y la colapsabilidad medida de borde interno a
   borde interno sale ~6 puntos por encima de la verdad del motor en el sano (37 frente a 31 %); con la línea
-  2 cm por debajo de la desembocadura de las suprahepáticas (~80°), ±2 puntos. La cuerda geométrica de la luz a lo
-  largo de la línea sigue a la verdad (31,3 frente a 31,0 %).
+  2 cm por debajo de la desembocadura de las suprahepáticas (~80°), no se sostiene una garantía de ±2 puntos.
+  En la CI de `a3a5b1a` la envolvente dio 27,90 % frente a 30,42 % del motor; redondear por separado los cuatro
+  clics a píxeles CSS enteros redujo la medida a 25 %. La prueba separa ahora transformación de coordenadas,
+  redondeo de presentación y error físico de la envolvente (límite de software ±5 puntos, no precisión clínica
+  validada). La cuerda geométrica de la luz a lo largo de la línea sigue a la verdad (31,3 frente a 31,0 %).
 
 ## Doppler
 

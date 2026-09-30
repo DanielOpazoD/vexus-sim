@@ -1024,7 +1024,7 @@ export class UltrasoundRenderer {
    */
   private mCapture(inputs: FrameInputs, theta: number): void {
     const gl = this.gl;
-    const slot = this.mStrip.push(inputs.sample.t, inputs.bmode.depthMm);
+    const slot = this.mStrip.push(inputs.sample.t, inputs.bmode.depthMm, theta);
     const f = { internal: gl.R8, format: gl.RED, type: gl.UNSIGNED_BYTE, filter: gl.NEAREST };
     this.tMStrip ??= createTarget(gl, M_COLUMNS, M_SAMPLES, [f]);
     bindTarget(gl, this.tMStrip);

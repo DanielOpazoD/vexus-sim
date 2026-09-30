@@ -22,6 +22,14 @@ export function ivcFromCalipers(d1: number, d2: number): IvcCollapse {
   return { maxMm, minMm, ciPct: collapsibilityIndex(maxMm, minMm) };
 }
 
+/** Intervalo por cuantización: cada borde ±medio píxel CSS; no incluye selección de pared ni error físico. */
+export function ivcPixelInterval(maxMm: number, minMm: number, pixelMm: number): [number, number] {
+  return [
+    Math.max(0, collapsibilityIndex(maxMm - pixelMm, minMm + pixelMm)),
+    collapsibilityIndex(maxMm + pixelMm, Math.max(0, minMm - pixelMm)),
+  ];
+}
+
 /** Verdad en [t0, t1] (null sin muestras en la ventana). */
 export function ivcTruth(samples: readonly PhysiologySample[], t0: number, t1: number): IvcCollapse | null {
   let maxMm = -Infinity;

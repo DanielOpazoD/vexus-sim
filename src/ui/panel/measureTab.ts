@@ -1,6 +1,6 @@
 import { caseVignette } from '../../app/blindMode';
 import { toggleMode } from '../../app/equipment';
-import { ivcFromCalipers, ivcTruth, type IvcCollapse } from '../../vexus/ivcCollapse';
+import { ivcFromCalipers, ivcPixelInterval, ivcTruth, type IvcCollapse } from '../../vexus/ivcCollapse';
 import type { MMark } from '../mModeView';
 import type { AppState, MeasureTool } from '../../app/store';
 import { CAPTURE_BEATS, qualityText, type QualityIssue } from '../../doppler/measureQuality';
@@ -51,7 +51,7 @@ export class MeasureTab {
   private ivcCaliperMm: number | null = null;
   /** VCI en modo M (decisión 80): los puntos de los calibres y el resultado con la verdad de su ventana. */
   private mPoints: MMark[] = [];
-  private ivcM: (IvcCollapse & { truth: IvcCollapse | null }) | null = null;
+  private ivcM: (IvcCollapse & { truth: IvcCollapse | null; pixels: [number, number] }) | null = null;
   /** Confusores marcados por el alumno (decisión 82): empiezan sin marcar y se borran al cambiar de caso. */
   private context: VexusContext = {};
   /** Caso de la viñeta y del contexto marcado. */
@@ -138,7 +138,12 @@ export class MeasureTab {
     this.mPoints = pts;
     if (pts.length === 4) {
       const truth = ivcTruth(this.ctx.sim().physiology.samples, window[0], window[1]);
-      this.ivcM = { ...ivcFromCalipers(d(0), d(2)), truth };
+      const measured = ivcFromCalipers(d(0), d(2));
+      this.ivcM = {
+        ...measured,
+        truth,
+        pixels: ivcPixelInterval(measured.maxMm, measured.minMm, Math.max(...pts.map((p) => p.pixelMm ?? 0))),
+      };
       this.ctx.store.set({ tool: 'none' });
       this.renderResult();
     } else this.renderCapture();
@@ -282,10 +287,10 @@ export class MeasureTab {
     note(
       this.captureCard,
       tool === 'caliper'
-        ? 'Haz clic en dos puntos de la imagen (borde a borde de la VCI, perpendicular al eje). Esc cancela.'
+        ? 'VCI: marca ambas paredes perpendicular al eje. Esc cancela.'
         : tool === 'mmode'
-          ? `Congela (Espacio) y marca en la franja M, de pared a pared de la VCI, el diámetro máximo y el mínimo: calibre ${(this.mPoints.length >> 1) + 1} de 2, punto ${(this.mPoints.length % 2) + 1}.`
-          : 'Coloca la puerta en el vaso, espera 4 latidos estables y pulsa «Capturar». Se mide sobre el espectro adquirido.',
+          ? `Congela (Espacio). VCI en M: ambas paredes en máx./mín. Calibre ${(this.mPoints.length >> 1) + 1}/2, punto ${(this.mPoints.length % 2) + 1}/2.`
+          : 'Puerta en el vaso: espera 4 latidos estables y pulsa «Capturar». Se mide el espectro adquirido.',
     );
     const r = row(this.captureCard);
     if (tool !== 'caliper' && tool !== 'mmode') button(r, 'Capturar', () => this.capture(tool)).el.classList.add('primary');
@@ -349,7 +354,9 @@ export class MeasureTab {
     const lines = [
       `<div class="grade">VExUS ${gradeValueText(res)} <span class="small">${resultStatusText(res)}</span></div>`,
       `<div>VCI: ${ivcMax !== null ? ivcMax.toFixed(1) + ' mm' : '—'} ${res.ivcDilated === null ? '' : res.ivcDilated ? '<span class="small">(≥ 20 mm: dilatada)</span>' : '<span class="small">(< 20 mm)</span>'}</div>`,
-      mM ? `<div>VCI modo M: máx ${mm(mM.maxMm)} · mín ${mm(mM.minMm)} mm → colapso <b>${mM.ciPct.toFixed(0)} %</b>${mTruth}</div>` : '',
+      mM
+        ? `<div>VCI modo M: máx ${mm(mM.maxMm)} · mín ${mm(mM.minMm)} mm → colapso <b>${mM.ciPct.toFixed(0)} %</b>${mTruth}<div class="small">Resolución: ${mM.pixels.map((v) => v.toFixed(1)).join('–')} %; excluye pared y error físico.</div></div>`
+        : '',
       line(
         'hepatic',
         rejected(this.lastHepatic, 'VSH') ??

@@ -21,7 +21,7 @@ export function mLineU(theta: number, halfSector: number): number {
 
 /**
  * Instantes de las columnas del anillo de la franja M: la columna i (0 = la más vieja) está en la ranura
- * `slot(i)` de la textura y cubre (t de la anterior, t]. Una profundidad distinta o un reloj que vuelve atrás
+ * `slot(i)` de la textura y cubre (t de la anterior, t]. Una profundidad o línea distinta, o un reloj que vuelve atrás,
  * empiezan una franja nueva; el mismo instante (reloj quieto) reescribe la última columna. `version` cambia con
  * cada columna para que la vista sepa cuándo volver a dibujar.
  */
@@ -30,6 +30,7 @@ export class MColumnRing {
   private head = 0;
   count = 0;
   depthMm = 0;
+  private theta = 0;
   version = 0;
 
   constructor(readonly capacity = M_COLUMNS) {
@@ -37,10 +38,11 @@ export class MColumnRing {
   }
 
   /** Ranura de la columna del instante t. */
-  push(t: number, depthMm: number): number {
+  push(t: number, depthMm: number, theta = 0): number {
     const last = this.count ? this.times[this.slot(this.count - 1)] : Number.NaN;
-    if (this.count && (depthMm !== this.depthMm || t < last)) this.count = 0;
+    if (this.count && (depthMm !== this.depthMm || theta !== this.theta || t < last)) this.count = 0;
     this.depthMm = depthMm;
+    this.theta = theta;
     this.version++;
     if (t === last && this.count) return this.slot(this.count - 1);
     const slot = this.head;

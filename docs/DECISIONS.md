@@ -4495,6 +4495,30 @@ integra desde su borde (`apG`: 6–12 % → ≤ 0,34 % de error en float32 en la
 de anchura nula daba 0 y no el rayo de su línea. (7) Prueba del margen de `APERTURE_SEARCH_LINES` (35,4 de 40 líneas con
 8°). (8) Comentarios desfasados de `passes.glsl.ts`, `pleura.ts` e `interfaceEcho.test.ts`.
 
+## 94. Contrato de adquisición y medición M con incertidumbre de resolución (30-09-2026)
+
+**Contexto.** En `main` a3a5b1a, E2E4 falló y pasó al reintentar: envolvente 27,900 % frente a verdad 30,420 %;
+los cuatro clics redondeados por separado dieron 25 %. `failOnFlakyTests` detectó correctamente el fallo.
+Además, cambiar la línea M conservaba columnas de la línea anterior bajo la nueva guía.
+
+**Opciones.** Ampliar tolerancia, ignorar reintentos o modificar la fisiología ocultaría la causa. Se separan
+adquisición, conversión CSS → mm y redondeo de presentación, conservando el límite físico de software ±5 puntos.
+
+**Decisión.** El anillo M inicia una franja nueva cuando cambia θ, incluso en pausa. La e2e mantiene clics enteros
+accesibles al alumno y comprueba por separado la conversión y presentación (±0,51 puntos por redondeo entero),
+el intervalo de cuantización mostrado y el error físico de la banda respecto a la verdad (±5, sin ampliación).
+El intervalo propaga ±medio píxel CSS por borde, sin verdad oculta; no incluye selección de pared ni error físico.
+Una tentativa subpíxel falló porque el navegador cuantiza los eventos; se descartó en vez de falsear la UI.
+
+**Consecuencias.** Una nueva línea necesita adquirir nuevas columnas; lo anterior queda negro en lugar de
+atribuirlo al nuevo rayo. No hay lecturas GPU por cuadro ni texturas adicionales. Se retira la promesa documental
+de ±2 puntos: estos límites son gates de software, no precisión clínica validada. El blooming y la cadencia
+por cuadro siguen pendientes; esta corrección no calibra el modelo físico.
+
+**Verificación.** Regresión pura de cuantización a alturas CSS 180/340/680/1000, cambio de línea con reloj congelado y slots temporales; e2e de la cadena
+GPU → banda → clics → calibres mantiene correlación, residual y límite físico. Resultados completos y CI se
+registran en el PR, no se presupone que un reintento verde sea éxito.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

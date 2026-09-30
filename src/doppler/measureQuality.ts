@@ -46,7 +46,7 @@ export interface MeasurementQuality {
   bloodColumns: number;
   /** Primer problema encontrado, o null si la captura es medible. */
   issue: QualityIssue | null;
-  /** Con 'wrong-vessel' (decisión 93): la fila y el sistema vascular que dominaba la puerta. */
+  /** Con 'wrong-vessel' (decisión 94): la fila y el sistema vascular que dominaba la puerta. */
   wrongVessel?: { kind: ProtocolVessel; found: VesselSystem };
 }
 
@@ -68,14 +68,14 @@ export interface QualityOptions {
    */
   phaseWindow?: (b: Beat) => readonly [number, number];
   /**
-   * Presencia de flujo por columna medida por la propia medición (la porta, decisión 93: la columna tiene traza
+   * Presencia de flujo por columna medida por la propia medición (la porta, decisión 94: la columna tiene traza
    * unilateral en su semiplano). Sin ella, `bloodInColumn`: con el clutter simétrico de la respiración contado
    * como sangre, un latido sin traza de la porta «valía».
    */
   present?: (c: SpectralColumn) => boolean;
   /**
    * Ruido del receptor por bin (dB, `receiverNoiseDb` con la ganancia del equipo). Con él se reconoce el aliasing fuerte
-   * (decisión 93): con la escala muy por debajo de la velocidad la sangre se pliega varias veces, se reparte por toda
+   * (decisión 94): con la escala muy por debajo de la velocidad la sangre se pliega varias veces, se reparte por toda
    * la banda y no deja banda que detectar; la captura decía «no hay flujo» o «entra y sale de la puerta». Sin él (una
    * prueba sin equipo) no se comprueba.
    */
@@ -121,7 +121,7 @@ const WRAP_GAP = 0.15;
 /** Por debajo de esta fracción de D, una onda es casi nula y su signo no cuenta. */
 const S_SIGN_FRACTION = 0.25;
 /**
- * Aliasing fuerte (decisión 93): mediana, sobre las columnas de la captura, de la potencia media en la mitad exterior de
+ * Aliasing fuerte (decisión 94): mediana, sobre las columnas de la captura, de la potencia media en la mitad exterior de
  * la banda (|f| > PRF/4) sobre el ruido del receptor. Medido en la cadena del alumno en apnea: la sangre plegada deja
  * 3–21 dB (±6–14 cm/s en los tres territorios); la puerta fuera del vaso, con el clutter del tejido que respira,
  * −0,2 a +0,3 dB. Solo cambia el motivo de una captura que ya no era medible («no hay flujo» o «intermitente»).

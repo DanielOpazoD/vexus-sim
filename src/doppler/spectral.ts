@@ -230,12 +230,12 @@ export function columnBandEnvelopes(col: SpectralColumn, fftSize: number, floorD
  * Un bin es flujo de SU semiplano solo si supera a su espejo (el bin de la frecuencia opuesta) en
  * este margen (dB). El flujo es unilateral; el clutter del tejido que respira o late, los
  * transitorios del filtro de pared (una rampa de amplitud es simétrica) y la imagen especular son
- * simétricos respecto a la línea de base (decisión 93).
+ * simétricos respecto a la línea de base (decisión 94).
  */
 export const MIRROR_MARGIN_DB = 6;
 
 /**
- * Envolvente de flujo en un semiplano FIJO (decisión 93), en Hz ≥ 0, o NaN si en ese semiplano no hay
+ * Envolvente de flujo en un semiplano FIJO (decisión 94), en Hz ≥ 0, o NaN si en ese semiplano no hay
  * flujo. Como la traza un equipo sobre un vaso de dirección conocida:
  *  - solo cuentan los bins a |f| ≥ `fMinHz` (fuera de la banda del filtro de pared), significativos
  *    (> suelo + 6 dB) y unilaterales (≥ MIRROR_MARGIN_DB sobre su espejo): el clutter y los

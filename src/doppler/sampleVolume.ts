@@ -140,7 +140,7 @@ const NOISE_STD = 0.0004;
 /**
  * Potencia media por bin (dB) del ruido del receptor en el espectrograma con la ganancia espectral `gainDb`: ruido
  * complejo de desviación NOISE_STD por componente, ventana de Hann de `fftSize` muestras sin normalizar,
- * E|X_k|² = 2σ²·Σw². El equipo conoce su propio ruido; la calidad lo usa para reconocer el aliasing fuerte (decisión 93).
+ * E|X_k|² = 2σ²·Σw². El equipo conoce su propio ruido; la calidad lo usa para reconocer el aliasing fuerte (decisión 94).
  */
 export function receiverNoiseDb(gainDb: number, fftSize: number): number {
   const w = hannWindow(fftSize);

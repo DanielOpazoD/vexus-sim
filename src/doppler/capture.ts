@@ -14,7 +14,7 @@ import {
 import { wrongGateVessel, type GateVesselSample, type ProtocolVessel } from './vesselIdentity';
 
 /** Segundos de espectro que toma una captura (los que guarda el equipo a la vista). */
-export const CAPTURE_SECONDS = 7;
+const CAPTURE_SECONDS = 7;
 /**
  * Tras un cambio de escala (PRF) el filtro de pared cambia de coeficientes con el clutter del tejido 40–60 dB sobre la
  * sangre dentro: su transitorio es una línea vertical de banda ancha. La captura descarta esta cola (≈ 5 constantes de
@@ -58,13 +58,8 @@ export function captureProtocolVessel<K extends ProtocolVessel>(
   const t0 = tNow - CAPTURE_SECONDS;
   const beats = rhythm.beatsBetween(t0, tNow).slice(-CAPTURE_BEATS);
   const columns = captureColumns(spectrum, t0);
-  const m = (
-    kind === 'hepatic'
-      ? measureObservedHepatic(columns, beats, opts)
-      : kind === 'portal'
-        ? measureObservedPortal(columns, beats, opts)
-        : measureObservedRenal(columns, beats, opts)
-  ) as CaptureResult[K] | null;
+  const measure = kind === 'hepatic' ? measureObservedHepatic : kind === 'portal' ? measureObservedPortal : measureObservedRenal;
+  const m = measure(columns, beats, opts) as CaptureResult[K] | null;
   if (!m) return null;
   // la identidad se juzga en los latidos medidos, no en los 7 s: la puerta pudo estar antes en otro vaso
   const last = beats[beats.length - 1];

@@ -97,3 +97,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [91](DECISIONS.md#L4325) | Costuras y peine: la penumbra es la integral exacta de su cono, los ecos especulares llevan la transmisión de sus pares en la apertura y la mirada dirigida refleja su propio camino en el espejo | vigente |
 | [92](DECISIONS.md#L4498) | Contrato de adquisición y medición M con incertidumbre de resolución (30-09-2026) | vigente |
 | [93](DECISIONS.md#L4527) | Preparar el análisis PW al armar la medición (30-09-2026) | vigente |
+| [94](DECISIONS.md#L4553) | La medición Doppler del alumno no depende de la escala: porta en su semiplano fijo, envolvente unilateral, aliasing fuerte, identidad del vaso y lo medido a la vista | vigente |

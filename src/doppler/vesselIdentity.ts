@@ -2,7 +2,7 @@ import { VESSEL_META, type VesselId, type VesselSystem } from '../physiology/ves
 import type { GateComposition } from './sampleVolume';
 
 /**
- * Identidad del vaso de la puerta (decisión 93). La fila del protocolo dice qué vaso se mide y la medición lee su onda
+ * Identidad del vaso de la puerta (decisión 94). La fila del protocolo dice qué vaso se mide y la medición lee su onda
  * con las reglas de ESE vaso (S/D de la suprahepática, PF de la porta, continuidad de la interlobar): medida sobre otro
  * vaso, una porta daba «leve (S<D)» en la fila de la suprahepática, una suprahepática «PF 117 %, grave» en la de la
  * porta y «bifásico» en la renal, todo con el visto bueno de la calidad. Un equipo no sabe qué vaso hay bajo la
@@ -30,13 +30,6 @@ export const VESSEL_SYSTEM_TEXT: Record<VesselSystem, string> = {
   renalVein: 'la vena renal',
   interlobarArtery: 'una arteria interlobar',
   interlobarVein: 'una vena interlobar',
-};
-
-/** Qué vaso mide cada fila, para el mensaje. */
-export const PROTOCOL_VESSEL_TEXT: Record<ProtocolVessel, string> = {
-  hepatic: 'una suprahepática',
-  portal: 'la porta',
-  renal: 'una vena interlobar',
 };
 
 /** Una muestra de la composición del volumen de muestra: peso de sangre de cada vaso (fracción del peso del haz). */
@@ -85,5 +78,8 @@ export function wrongGateVessel(kind: ProtocolVessel, track: readonly GateVessel
 
 /** Texto para el alumno: dónde está la puerta y qué mide la fila. */
 export function wrongVesselText(kind: ProtocolVessel, found: VesselSystem): string {
-  return `no medible: vaso equivocado, la puerta está en ${VESSEL_SYSTEM_TEXT[found]} (esta fila mide ${PROTOCOL_VESSEL_TEXT[kind]}: recoloque la puerta)`;
+  // El primer sistema es el vaso venoso del protocolo; los siguientes son
+  // acompañantes admitidos en la puerta. Compartir esta definición evita que
+  // el mensaje y la validación discrepen al modificar el protocolo.
+  return `no medible: vaso equivocado, la puerta está en ${VESSEL_SYSTEM_TEXT[found]} (esta fila mide ${VESSEL_SYSTEM_TEXT[EXPECTED[kind][0]]}: recoloque la puerta)`;
 }

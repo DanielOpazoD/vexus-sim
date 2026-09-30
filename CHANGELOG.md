@@ -133,7 +133,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
   con el rayo central) y en profundidad se atenúan como el moteado, sin hueco. En el borde de la subcostal, la
   mirada dirigida dibujaba tras el pulmón el tejido a lo largo de la dirección reflejada de una sola línea y lo estiraba
   en estrías horizontales («peine»); ahora sigue su propio camino reflejado.
-- La PF portal que medía el alumno dependía de la escala del PW (93): en el sano (verdad 13–20 %) salía 100 % a ±20 cm/s,
+- La PF portal que medía el alumno dependía de la escala del PW (94): en el sano (verdad 13–20 %) salía 100 % a ±20 cm/s,
   111–114 % a ±40 (la escala por defecto), 79–95 % a ±60 y 18–24 % a ±80, y en el grave 133 % (verdad 75 %), todo con el
   visto bueno de la calidad: una porta «grave» en un sano. La traza tomaba el semiplano dominante columna a columna y,
   con la banda débil de un vaso profundo, el clutter junto a la línea de base o su imagen hundían Vmín a 0 o por debajo.

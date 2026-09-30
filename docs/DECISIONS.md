@@ -4638,7 +4638,7 @@ pulsátil y una suprahepática se confunden justo cuando importa). Para el alias
    actual: cambiar línea de base, inversión o barrido reconstruye el bitmap desde las columnas, incluso congelado;
    redimensionar o rebobinar el cine también lo reconstruye. Lo que sale de la banda se pliega como el espectro.
    La captura pinta las anotaciones en el mismo evento que publica el resultado, sin esperar la siguiente pasada GPU.
-   Calidad, dirección e identidad juzgan los latidos efectivamente medidos; los anteriores no contaminan ese veredicto. «Borrar mediciones», el cambio de caso y el PW apagado o reiniciado lo quitan.
+   La cobertura de adquisición ≥90 % del ciclo se aplica a los tres territorios antes de medir o inferir dirección. Los latidos parciales por PRF/settling no contaminan identidad; todos los adquiridos cuentan para calidad, aunque pierdan la señal al principio, interior o final. «Borrar mediciones», el cambio de caso y el PW apagado o reiniciado lo quitan.
 
 **Consecuencias.** La PF del alumno por la ruta de la aplicación, 7 casos × apnea y respiración tranquila × 3 semillas × ±20,
 ±40, ±60 y ±80 cm/s (`examChainScale.test.ts`, 168 capturas):

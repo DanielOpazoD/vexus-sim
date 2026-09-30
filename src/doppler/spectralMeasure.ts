@@ -280,7 +280,16 @@ const extreme = (trace: readonly { t: number; vScreen: number }[], w: TimeWindow
     TRACE_Q,
   );
 
+/** Latidos con adquisición suficiente, aun si su señal es solo ruido. */
+function acquiredBeats(columns: readonly SpectralColumn[], beats: Beat[]): Beat[] {
+  return beats.filter((b) => {
+    const inBeat = columns.filter((c) => c.t >= b.tR && c.t < b.tR + b.rr);
+    return inBeat.length > 0 && inBeat[inBeat.length - 1].t - inBeat[0].t >= BEAT_COVERAGE * b.rr;
+  });
+}
+
 export function measureObservedHepatic(columns: readonly SpectralColumn[], beats: Beat[], opts: MeasureOptions): ObservedHepatic | null {
+  beats = acquiredBeats(columns, beats);
   const trace = observedTrace(columns, opts);
   if (trace.length < 10) return null;
   // Sentido anterógrado: signo mediano de la onda D (diástole temprana).
@@ -452,10 +461,7 @@ export function portalTrace(
 export function measureObservedPortal(columns: readonly SpectralColumn[], beats: Beat[], opts: MeasureOptions): ObservedPortal | null {
   if (columns.length < 10) return null;
   // La dirección tampoco puede heredar el peso de un latido parcial anterior al cambio de PRF.
-  beats = beats.filter((b) => {
-    const inBeat = columns.filter((c) => c.t >= b.tR && c.t < b.tR + b.rr);
-    return inBeat.length > 0 && inBeat[inBeat.length - 1].t - inBeat[0].t >= BEAT_COVERAGE * b.rr;
-  });
+  beats = acquiredBeats(columns, beats);
   const span: [number, number] | undefined = beats.length
     ? [beats[0].tR, beats[beats.length - 1].tR + beats[beats.length - 1].rr]
     : undefined;
@@ -496,9 +502,9 @@ export function measureObservedPortal(columns: readonly SpectralColumn[], beats:
     mark(marks, inBeat, [b.tR, b.tR + b.rr], vmax, anterogradeSign, 'Vmáx');
     mark(marks, inBeat, [b.tR, b.tR + b.rr], vmin, anterogradeSign, 'Vmín');
   }
-  // Conserva los latidos interiores sin traza: no selecciona solo los buenos para juzgar calidad.
+  // Conserva TODOS los latidos adquiridos sin traza, incluidos los extremos: no selecciona solo los buenos.
   // un flujo «invertido» más allá de medio Nyquist es el pico plegado, no una porta hepatófuga (que crece desde la base)
-  const effective = measured.length ? beats.filter((b) => b.tR >= measured[0].tR && b.tR <= measured[measured.length - 1].tR) : beats;
+  const effective = beats;
   const inEffective = (p: { t: number }) => effective.some((b) => p.t >= b.tR && p.t < b.tR + b.rr);
   const wrapped = trace.some((p) => inEffective(p) && p.vScreen * anterogradeSign < -PORTAL_WRAP_NYQUIST * nyquistCms);
   const present = new Set(trace.filter((p) => Number.isFinite(p.vScreen)).map((p) => p.t));
@@ -620,6 +626,7 @@ export function renalFloorCms(columns: readonly SpectralColumn[], opts: MeasureO
 }
 
 export function measureObservedRenal(columns: readonly SpectralColumn[], beats: Beat[], opts: MeasureOptions): ObservedRenal | null {
+  beats = acquiredBeats(columns, beats);
   const tr = observedSideTraces(columns, opts);
   if (tr.t.length < 10) return null;
   const at = (side: number[]) => tr.t.map((t, i) => ({ t, vScreen: side[i] }));
@@ -640,7 +647,10 @@ export function measureObservedRenal(columns: readonly SpectralColumn[], beats: 
   const rp = sdRatio(pos);
   const rn = sdRatio(neg);
   const MIN_SIGNAL = 2 * Math.max(1, beats.length); // cm/s acumulados: por debajo, el lado está vacío
-  const energy = sideEnergyDb(columns, opts);
+  const energy = sideEnergyDb(
+    columns.filter((c) => beats.some((b) => c.t >= b.tR && c.t < b.tR + b.rr)),
+    opts,
+  );
   let veinSign: 1 | -1;
   if (rp.total < MIN_SIGNAL) veinSign = -1;
   else if (rn.total < MIN_SIGNAL) veinSign = 1;

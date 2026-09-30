@@ -45,13 +45,9 @@ async function expectTransformed(page: Page, before: Awaited<ReturnType<typeof s
               const ny = (after.invert ? fraction : 1 - fraction) * after.h;
               if (nx < 80 || nx > after.w - 80 || ny < 35 || ny > after.h - 25) continue;
               checked++;
-              let amber = false;
-              for (let dx = -2; dx <= 2; dx++)
-                for (let dy = -2; dy <= 2; dy++) {
-                  const i = (Math.round(ny + dy) * after.w + Math.round(nx + dx)) * 4;
-                  if (d[i] > 225 && d[i + 1] > 180 && d[i + 1] < 235 && d[i + 2] < 150) amber = true;
-                }
-              if (amber) found++;
+              // Coordenadas del camino realmente dibujado: texto/marcas pueden cubrir su color después del stroke.
+              // Se compara con el camino de la nueva presentación, no con la señal ni su transform de producción.
+              if (after.points.some(([ax, ay]) => Math.abs(ax - nx) <= 2 && Math.abs(ay - ny) <= 2)) found++;
             }
             let bitmapChecked = 0,
               bitmapFound = 0;
@@ -76,16 +72,20 @@ async function expectTransformed(page: Page, before: Awaited<ReturnType<typeof s
           },
           { before, after },
         );
-        return result.checked >= 15 && result.bitmapChecked >= 30
-          ? Math.min(result.found / result.checked, result.bitmapFound / result.bitmapChecked)
-          : 0;
+        const ratio =
+          result.checked >= 15 && result.bitmapChecked >= 30
+            ? Math.min(result.found / result.checked, result.bitmapFound / result.bitmapChecked)
+            : 0;
+        return ratio;
       },
       { timeout: 30_000 },
     )
     .toBeGreaterThan(0.85);
 }
 
-test('captura congelada conserva alineación al invertir, desplazar baseline, redimensionar y cambiar barrido', async ({ page }) => {
+test('captura congelada conserva alineación al invertir, desplazar baseline, redimensionar, retroceder cine y cambiar barrido', async ({
+  page,
+}) => {
   test.setTimeout(180_000);
   const errors = await bootWithoutErrors(page, '?e2e=1');
   await page
@@ -99,7 +99,11 @@ test('captura congelada conserva alineación al invertir, desplazar baseline, re
       return window.__vexusTest!.placeGate(['pvTrunk']);
     }),
   ).toBe(true);
-  await page.evaluate(() => window.__vexusTest!.advance(8));
+  await page.evaluate(() => {
+    window.__vexusTest!.advance(3);
+    window.__vexusTest!.sim().render(); // Cuadro intermedio real para recorrer el historial congelado.
+    window.__vexusTest!.advance(5);
+  });
   await page.locator('#freeze').click();
   await expect(page.locator('#freeze')).toHaveAttribute('aria-pressed', 'true');
   expect(await page.evaluate(() => window.__vexusTest!.sim().frozen)).toBe(true);
@@ -146,8 +150,32 @@ test('captura congelada conserva alineación al invertir, desplazar baseline, re
     input.dispatchEvent(new Event('input', { bubbles: true }));
   });
   await expectTransformed(page, initial);
+  const beforeCine = await snapshot(page);
+  const selectedT = await page.locator('#cine').evaluate((el) => {
+    const r = window.__vexusTest!.sim().renderer;
+    const target = 3;
+    let closest = 0;
+    for (let i = 1; i < r.cineCount; i++) if (Math.abs(r.cineFrame(i).t - target) < Math.abs(r.cineFrame(closest).t - target)) closest = i;
+    const input = el as HTMLInputElement;
+    input.value = String(closest);
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    return r.cineFrame(closest).t;
+  });
+  await expect.poll(() => page.evaluate(() => window.__vexusTest!.sim().renderer.cineShownFrame?.t)).toBe(selectedT);
+  await expectTransformed(page, beforeCine);
+  const latestT = await page.locator('#cine').evaluate((el) => {
+    const input = el as HTMLInputElement;
+    input.value = input.max;
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+    const r = window.__vexusTest!.sim().renderer;
+    return r.cineFrame(r.cineCount - 1).t;
+  });
+  await expect.poll(() => page.evaluate(() => window.__vexusTest!.sim().renderer.cineShownFrame?.t)).toBe(latestT);
+  await expectTransformed(page, beforeCine);
   await page.setViewportSize({ width: 1068, height: 800 });
   await expectTransformed(page, initial);
+  // El resize se aplica en RAF: no tomar la referencia durante una transición de dimensiones.
+  await page.evaluate(() => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))));
   const beforeSweep = await snapshot(page);
   await page.getByRole('group', { name: 'Barrido', exact: true }).getByRole('button', { name: '100', exact: true }).click();
   await expectTransformed(page, beforeSweep);

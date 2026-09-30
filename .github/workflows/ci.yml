@@ -20,7 +20,9 @@ jobs:
   check:
     name: lint · tipos · tests · build · presupuesto
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Cobertura completa observada ~18 min local; CI agotó20 min antes de build.
+    # Margen operativo para terminar todos los gates, sin modificar timeouts de pruebas ni umbrales.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

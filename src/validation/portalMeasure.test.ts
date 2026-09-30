@@ -18,7 +18,18 @@ const PRF = 2600;
 const DT = 16 / PRF;
 const DF = PRF / N;
 const NOISE_DB = -48;
-const beats: Beat[] = Array.from({ length: 6 }, (_, i) => ({ tR: 0.4 + i * 0.8, rr: 0.8 }) as Beat);
+const beats: Beat[] = Array.from(
+  { length: 6 },
+  (_, i) =>
+    ({
+      tR: 0.4 + i * 0.8,
+      rr: 0.8,
+      tX: 0.56 + i * 0.8,
+      tV: 0.75 + i * 0.8,
+      tY: 0.86 + i * 0.8,
+      tAtrialContraction: 0.29 + i * 0.8,
+    }) as Beat,
+);
 
 function rng(seed: number): () => number {
   let s = seed >>> 0;
@@ -173,9 +184,9 @@ describe('La porta que la escala o el filtro de pared no dejan medir (revisión 
     expect(measureObservedPortal(cols, beats, opts)!.quality.issue).toBeNull();
   });
 
-  it('un latido interior sin traza sigue contando para rechazar la captura', () => {
+  it.each([0, 2, 5])('un latido sin traza en posición %i sigue contando para rechazar la captura', (lostIndex) => {
     const cols = portalColumns({ top: pulsatile, snrDb: 40 });
-    const lost = beats[2];
+    const lost = beats[lostIndex];
     for (const c of cols) if (c.t >= lost.tR && c.t < lost.tR + lost.rr) c.powerDb.fill(NOISE_DB);
     const m = measureObservedPortal(cols, beats, opts)!;
     expect(m.measuredBeats).not.toContainEqual(lost);
@@ -259,8 +270,8 @@ describe('Identidad del vaso de la puerta (decisión 94)', () => {
 });
 
 describe('Columnas de la captura (decisión 94)', () => {
-  it('la identidad usa los tres latidos medidos tras cambiar PRF, no el latido parcial previo', () => {
-    const cols = portalColumns({ top: pulsatile, snrDb: 30 }).map((c) => (c.t < 2.3 ? { ...c, prfHz: 3900 } : c));
+  it.each(['portal', 'hepatic', 'renal'] as const)('la identidad %s usa tres latidos tras PRF, no el parcial con S/D', (kind) => {
+    const cols = portalColumns({ top: pulsatile, snrDb: 30 }).map((c) => (c.t < 2.14 ? { ...c, prfHz: 3900 } : c));
     const rhythm = { beatsBetween: (a: number, b: number) => beats.filter((x) => x.tR >= a && x.tR + x.rr <= b) };
     const tNow = cols[cols.length - 1].t;
     for (const wrongNow of [false, true]) {
@@ -268,14 +279,16 @@ describe('Columnas de la captura (decisión 94)', () => {
         const t = i * 0.02;
         const old = t < 2.79;
         const wrong = old ? !wrongNow : wrongNow;
-        return { t, vessels: wrong ? { hvRight: old ? 1 : 0.02 } : { pvTrunk: old ? 1 : 0.02 } };
+        const correct = kind === 'portal' ? 'pvTrunk' : kind === 'hepatic' ? 'hvRight' : 'interlobarVein2';
+        const other = kind === 'portal' ? 'hvRight' : 'pvTrunk';
+        return { t, vessels: { [wrong ? other : correct]: old ? 1 : 0.02 } };
       });
-      const m = captureProtocolVessel('portal', cols, rhythm, tNow, opts, track)!;
+      const m = captureProtocolVessel(kind, cols, rhythm, tNow, opts, track)!;
       expect(m.measuredBeats).toHaveLength(3);
       expect(m.measuredBeats[0].tR).toBeGreaterThanOrEqual(2.8);
       expect(m.quality.issue).toBe(wrongNow ? 'wrong-vessel' : null);
       // La ventana solicitada daría el veredicto contrario por el peso del vaso antiguo.
-      expect(wrongGateVessel('portal', track, 2, 5.2)).toBe(wrongNow ? null : 'hepaticVein');
+      expect(wrongGateVessel(kind, track, 2, 5.2)).toBe(wrongNow ? null : kind === 'portal' ? 'hepaticVein' : 'portal');
     }
   });
 

@@ -344,7 +344,7 @@ describe('Uniforms y GLSL del eco de interfaz', () => {
     expect(FRAG_LATERAL).toContain(LATERAL_PSF_GLSL);
     // la muestra de la imagen (decisión 61: `mediumField`, una vez y fuera de bucles)
     expect(FRAG_RAWFIELD).toContain('vec2 e = interfaceEcho(c, m, dir, r, se, w);');
-    // la especular va aparte (decisión 88): la pasada B la multiplica por la transmisión del rayo central
+    // la especular va aparte (decisión 88): la pasada B la multiplica por la de sus pares en la apertura (decisión 91)
     expect(FRAG_RAWFIELD).toContain('spec = e.x;');
     expect(FRAG_RAWFIELD).toContain('return field * (1.0 + e.y / max(length(field), 1e-6));');
     expect(FRAG_RAWFIELD).not.toMatch(/uSpecGain|pow\(cosI, 4\.0\)/);

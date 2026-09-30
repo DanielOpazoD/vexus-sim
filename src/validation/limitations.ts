@@ -8,6 +8,8 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'color-emulated-estimator',
   'triplex-prf-not-shared',
   'no-sidelobes',
+  'specular-pair-single-slope',
+  'mirror-slice-elevation-axis',
   'lumen-refraction-only',
   'refraction-paraxial',
   'fluid-sound-speed-20c',

@@ -242,6 +242,19 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   rayo sin hueso, sin la refracción de las luces): bajo una costilla sus lóbulos laterales pierden lo mismo que el principal. Los lóbulos reales que
   pasan junto a la costilla seguirían trayendo algo de la pleura vecina; en las imágenes reales (el «signo del
   murciélago») la pleura no sigue bajo la costilla, y sin el apagado se veía a −10/−18 dB del hígado.
+- **La transmisión de los ecos especulares, con una sola pendiente de facetas** (`specular-pair-single-slope`, decisión
+  91): la de los pares de la apertura (el rayo de emisión por u vuelve por −u) se mezcla con la de la apertura en
+  ρ = min(1, 3·s·r/D) con la pendiente de la cara más lisa de la tabla (s 0,14) para todas: una cara más rugosa llegaría
+  antes a la de la apertura. Es la mezcla de los dos límites de la suma doble con el lóbulo gaussiano de las facetas, no
+  la suma (0,6 dB rms, 5 dB en la línea del borde de una costilla junto a ella); los pares son los de incidencia normal (una
+  cara oblicua devuelve los rayos desplazados, y su lóbulo ya cae con la incidencia) y el obstáculo se concentra a una
+  profundidad, como en la penumbra.
+- **Tras un espejo, el moteado sigue comprimido en la elevación de la sonda** (`mirror-slice-elevation-axis`, decisiones
+  55, 57, 58 y 91): más allá del espejo, la muestra está en el camino reflejado, pero la retícula del moteado se comprime
+  hasta el grosor de corte a lo largo del eje de elevación del ancla, no del corte reflejado. Con una pleura cuya normal sale
+  del plano (el borde de la subcostal), el moteado reflejado se estira en las direcciones de la imagen que el espejo lleva
+  hacia esa elevación: en el gemelo de la mirada dirigida, 0,35 mm de tejido fuera de la elevación por mm de imagen en la
+  peor dirección (antes de la decisión 91, con la reflejada de la línea del espejo para todos los caminos, 0,031: el peine).
 - **Ruido del receptor por línea, sin recepción en paralelo** (`receiver-noise-per-line`, decisión 89): el ruido es
   independiente entre líneas (cada línea, un disparo) y limitado en banda a lo largo de ella; muchos equipos forman 2–4
   líneas por disparo (recepción en paralelo), que comparten el ruido de los canales y lo correlacionan por grupos. Sin la

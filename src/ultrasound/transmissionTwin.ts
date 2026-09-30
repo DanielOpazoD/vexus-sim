@@ -2,11 +2,11 @@ import { CURTAIN_GAS_KIND } from './pleura';
 import { IFACE_REACH_MM } from './interfaceEcho';
 import {
   APERTURE_SEARCH_LINES,
-  APERTURE_TAPS,
   REFRACTION_SEARCH_FAR,
   REFRACTION_SEARCH_LINES,
   REFRACTION_SEARCH_STRIDE,
   REFRACTION_TAPS,
+  specularPairSpread,
   type ApertureGeometry,
 } from './aperture';
 import { alongLineMm, steerBeta, steeredElement } from './steering';
@@ -237,38 +237,90 @@ export function steeredPrefixDb(
 }
 
 /**
- * Posición de la toma j en el cono, en fracciones de su anchura (−½…½): el centro de cada uno de los
- * `APERTURE_TAPS` tramos iguales (regla del punto medio), también en los extremos (decisión 86; antes las tomas
- * iban de borde a borde y, con la ventana de Hann, las de los extremos pesarían 0).
+ * ∫ de la ventana de un cono de semiancho h (líneas) en [lo, hi] recortado a ±c (`apW` de `APERTURE_GLSL`, decisión 91): la
+ * de Hann de la emisión, cos²(π·x/(2h)), con la que va apodizada (decisión 86: su primitiva, x/2 + h·sin(π·x/h)/(2π)), o la
+ * uniforme de la recepción (casi uniforme: k = 1,3 frente a 1,21).
  */
-export const apertureTapPosition = (j: number): number => (j + 0.5) / APERTURE_TAPS - 0.5;
+export function apertureWindowIntegral(lo: number, hi: number, h: number, c: number, hann: boolean): number {
+  const a = Math.min(c, Math.max(-c, lo));
+  const b = Math.min(c, Math.max(-c, hi));
+  if (!hann) return b - a;
+  // desde el borde más cercano (`apG`): ∫ de sin²(π·t/(2h)) de 0 a y, sin la cancelación de la primitiva donde la ventana
+  // casi no pesa
+  const g = (y: number) => 0.5 * y - (h * Math.sin((Math.PI * y) / h)) / (2 * Math.PI);
+  return a >= 0 ? g(h - a) - g(h - b) : b <= 0 ? g(h + b) - g(h + a) : h - g(h - b) - g(h + a);
+}
+
+/** Medias de la transmisión de ida sobre los conos de la pasada A (`apCones`, decisión 91). */
+export interface ApertureCones {
+  /** Cono de emisión, con su ventana de Hann. */
+  tx: number;
+  /** Cono de recepción, uniforme. */
+  rx: number;
+  /** Pares especulares: el rayo de emisión por u vuelve por −u (la ventana de emisión dentro de la recepción). */
+  pair: number;
+}
 
 /**
- * Peso de la toma en la emisión (decisión 86): la ventana de Hann con que va apodizada la emisión de la imagen B
- * (decisión 84, `beamModel.ts`), cos²(π·t). La recepción es casi uniforme (k = 1,3 frente a 1,21 de la uniforme) y
- * pesa 1. Antes la penumbra promediaba la emisión sin su apodización: el borde de la apertura, que la ventana apenas
- * usa, rellenaba la sombra de una costilla en profundidad como el centro.
+ * Gemelo de `apCones`: la integral exacta de cada ventana sobre la transmisión de ida de las líneas (`oneWay`), constante
+ * en la anchura de cada una ([l − ½, l + ½]); fuera del arreglo, la del borde (como `texelFetch` con clamp). La línea d y
+ * su simétrica pesan lo mismo; la central, una vez. Continua en los semianchos y sin redondeos: un cono más estrecho que
+ * una línea es el rayo de la línea.
  */
-export const apertureTapWeight = (j: number, hann: boolean): number => (hann ? Math.cos(Math.PI * apertureTapPosition(j)) ** 2 : 1);
+export function apertureCones(lines: number, line: number, hTxIn: number, hRxIn: number, oneWay: (l: number) => number): ApertureCones {
+  // un cono de anchura nula (1 − r₀/r redondeado a 0 junto al obstáculo) es el rayo de su línea
+  const hTx = Math.max(hTxIn, 1e-4);
+  const hRx = Math.max(hRxIn, 1e-4);
+  const hP = Math.min(hTx, hRx);
+  const hM = Math.max(hTx, hRx);
+  const at = (l: number) => oneWay(Math.min(lines - 1, Math.max(0, l)));
+  const sum = [0, 0, 0];
+  const ws = [0, 0, 0];
+  for (let d = 0; d <= APERTURE_SEARCH_LINES; d++) {
+    const lo = d - 0.5;
+    if (lo >= hM) break;
+    const a = at(line + d);
+    const b = d === 0 ? a : at(line - d);
+    const f = d === 0 ? 0.5 : 1;
+    const w = [
+      apertureWindowIntegral(lo, lo + 1, hTx, hTx, true),
+      apertureWindowIntegral(lo, lo + 1, hRx, hRx, false),
+      apertureWindowIntegral(lo, lo + 1, hTx, hP, true),
+    ].map((x) => f * x);
+    const v = [a + b, a + b, 2 * a * b];
+    for (let i = 0; i < 3; i++) {
+      sum[i] += w[i] * v[i];
+      ws[i] += 2 * w[i];
+    }
+  }
+  const [tx, rx, pair] = sum.map((x, i) => x / Math.max(ws[i], 1e-30));
+  return { tx, rx, pair };
+}
+
+/** Transmisiones de amplitud ida y vuelta de la pasada A en (línea, r): la del moteado y la difusa, y la de los especulares. */
+export interface ApertureEcho {
+  diffuse: number;
+  specular: number;
+}
 
 /**
- * Transmisión de amplitud ida y vuelta con apertura en (línea, profundidad r).
+ * Transmisión de amplitud ida y vuelta con apertura en (línea, profundidad r) (`apertureTransmission` de `APERTURE_GLSL`):
+ * la del moteado y de la difusa, el producto de las medias de los conos, y la de los ecos especulares, la de los pares
+ * mezclada con ella en ρ = `specularPairSpread` (decisión 91). Sin obstáculo por encima de r, las dos son la del rayo.
  * `oneWay(l)`: transmisión de ida de un rayo por la línea l hasta r (0–1).
  * `firstObstacleMm(l)`: profundidad del primer gas o hueso de la línea l (Infinity si no hay).
- * `roundBias` (líneas; 0 en el gemelo) desplaza el redondeo de las tomas del cono: la paridad con la GPU
- * (`steeredParity.ts`) lo usa para reconocer las muestras en empate de redondeo.
  */
-export function apertureTransmission(
+export function apertureEcho(
   geom: ApertureGeometry,
   line: number,
   r: number,
   oneWay: (l: number) => number,
   firstObstacleMm: (l: number) => number,
-  roundBias = 0,
-): number {
+): ApertureEcho {
   const single = oneWay(line) ** 2;
   const dTheta = (2 * geom.halfSector) / geom.lines;
-  const maxHalf = (0.5 * geom.apertureTxMm) / (geom.curvatureRadius * dTheta);
+  // el obstáculo se busca hasta el mayor de los dos conos: con el foco somero la emisión es más estrecha que la recepción
+  const maxHalf = (0.5 * Math.max(geom.apertureTxMm, geom.apertureRxMaxMm)) / (geom.curvatureRadius * dTheta);
   let ro = Infinity;
   for (let d = -APERTURE_SEARCH_LINES; d <= APERTURE_SEARCH_LINES; d++) {
     if (d < -Math.ceil(maxHalf) || d > Math.ceil(maxHalf)) continue;
@@ -277,25 +329,25 @@ export function apertureTransmission(
     const o = firstObstacleMm(l);
     if (o < r) ro = Math.min(ro, o);
   }
-  if (!Number.isFinite(ro)) return single;
+  if (!Number.isFinite(ro)) return { diffuse: single, specular: single };
   const spacing = (geom.curvatureRadius + ro) * dTheta;
   const shrink = 1 - ro / r;
   const halfTx = (0.5 * geom.apertureTxMm * shrink) / spacing;
   const halfRx = (0.5 * Math.min(geom.apertureRxMaxMm, r / geom.fNumberRxMin) * shrink) / spacing;
-  // la emisión con su apodización de Hann y la recepción uniforme (decisión 86), en el punto medio de cada tramo
-  const coneMean = (halfLines: number, hann: boolean): number => {
-    let sum = 0;
-    let ws = 0;
-    for (let j = 0; j < APERTURE_TAPS; j++) {
-      const off = 2 * halfLines * apertureTapPosition(j);
-      const l = Math.min(geom.lines - 1, Math.max(0, line + Math.floor(off + 0.5 + roundBias)));
-      const w = apertureTapWeight(j, hann);
-      sum += w * oneWay(l);
-      ws += w;
-    }
-    return sum / ws;
-  };
-  return coneMean(halfTx, true) * coneMean(halfRx, false);
+  const c = apertureCones(geom.lines, line, halfTx, halfRx, oneWay);
+  const diffuse = c.tx * c.rx;
+  return { diffuse, specular: c.pair + (diffuse - c.pair) * specularPairSpread(r, geom.apertureTxMm) };
+}
+
+/** La del moteado y de la difusa de `apertureEcho` (la penumbra de la decisión 54). */
+export function apertureTransmission(
+  geom: ApertureGeometry,
+  line: number,
+  r: number,
+  oneWay: (l: number) => number,
+  firstObstacleMm: (l: number) => number,
+): number {
+  return apertureEcho(geom, line, r, oneWay, firstObstacleMm).diffuse;
 }
 
 /**
@@ -304,11 +356,26 @@ export function apertureTransmission(
  * llega a la línea l de la rejilla común en la fila del punto es la del elemento φ_l − θ + β(ρ): el
  * cono se toma sobre esas líneas (recentrado en el cruce del camino dirigido con el obstáculo), con el
  * paso entre ellas a la distancia s del camino, (R·cos θ + s)·dφ, y las distancias a lo largo del camino.
- * Es `apertureTransmission` con radio efectivo R·cos θ (la búsqueda del obstáculo, D/2 en la cara, se
+ * Es `apertureEcho` con radio efectivo R·cos θ (la búsqueda del obstáculo, D/2 en la cara, se
  * ensancha con él) y r → s(ρ). `oneWay(l)` y `firstObstacleMm(l)` son los del camino dirigido que llega
  * a la línea l (el prefijo dirigido de A2: `steeredPrefixDb`), con el obstáculo a lo largo del camino.
- * Con θ = 0 es exactamente `apertureTransmission`.
+ * Con θ = 0 es exactamente `apertureEcho`.
  */
+export function steeredApertureEcho(
+  geom: ApertureGeometry,
+  theta: number,
+  line: number,
+  r: number,
+  oneWay: (l: number) => number,
+  firstObstacleMm: (l: number) => number,
+): ApertureEcho {
+  if (theta === 0) return apertureEcho(geom, line, r, oneWay, firstObstacleMm);
+  const R = geom.curvatureRadius;
+  const steered: ApertureGeometry = { ...geom, curvatureRadius: R * Math.cos(theta) };
+  return apertureEcho(steered, line, alongLineMm(R + r, theta, R), oneWay, firstObstacleMm);
+}
+
+/** La del moteado y de la difusa de `steeredApertureEcho`. */
 export function steeredApertureTransmission(
   geom: ApertureGeometry,
   theta: number,
@@ -316,12 +383,8 @@ export function steeredApertureTransmission(
   r: number,
   oneWay: (l: number) => number,
   firstObstacleMm: (l: number) => number,
-  roundBias = 0,
 ): number {
-  if (theta === 0) return apertureTransmission(geom, line, r, oneWay, firstObstacleMm, roundBias);
-  const R = geom.curvatureRadius;
-  const steered: ApertureGeometry = { ...geom, curvatureRadius: R * Math.cos(theta) };
-  return apertureTransmission(steered, line, alongLineMm(R + r, theta, R), oneWay, firstObstacleMm, roundBias);
+  return steeredApertureEcho(geom, theta, line, r, oneWay, firstObstacleMm).diffuse;
 }
 
 /**

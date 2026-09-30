@@ -1,3 +1,4 @@
+import { INTERFACES, Interface } from '../anatomy/interfaces';
 import { type BeamParams } from './beamModel';
 import { glslFloat } from './receiver';
 
@@ -11,17 +12,72 @@ import { glslFloat } from './receiver';
  * de ida y vuelta, el producto de la media de emisión (D fija) por la de recepción (apertura
  * dinámica D = min(D_máx, r/F#)). Sin obstáculo por encima de r, un solo rayo.
  *
+ * La media es la integral exacta de la ventana de cada cono sobre la transmisión de las líneas, constante en la anchura
+ * de cada una ([l − ½, l + ½]; decisión 91): una función continua del semiancho del cono (la profundidad) y de su
+ * centro. Con nueve tomas en líneas enteras (decisiones 54 y 86) la media saltaba cada vez que una toma cruzaba el borde
+ * de una costilla: bajo el hueso opaco de la decisión 88, escalones de 5–13 dB entre líneas vecinas que seguían toda la
+ * profundidad (las costuras de la VCI del flanco en la ronda 5 del juez ciego) y otros en profundidad al abrirse el cono.
+ *
  * Consecuencias: bajo una costilla ancha junto a la sonda la sombra es completa; más hondo el cono
  * se estrecha menos que la costilla deja de cubrirlo y la sombra se rellena; su borde es una rampa
  * del ancho del cono, no un escalón de una línea.
  *
- * Gemelos: `apertureTransmission` (TS, pruebas) y `APERTURE_GLSL` (pasada A), misma fórmula.
+ * Ecos especulares (decisión 91, que corrige la regla del rayo central de la decisión 88). El rayo de emisión que cruza
+ * el obstáculo en u vuelve de una cara lisa por el simétrico −u (incidencia normal), así que su transmisión es la de los
+ * pares, media de T(u)·T(−u) con la ventana de emisión dentro de la recepción: junto al obstáculo, con el cono más
+ * estrecho que una línea, la del rayo central; bajo una costilla, casi nula si uno de los dos lados la cruza. Pero las
+ * caras no son espejos: sus facetas (pendiente rms s, el lóbulo de Kirchhoff de `INTERFACES`) desvían lo reflejado con
+ * rms 2s, que cruza el obstáculo a τ = 2s·(r − r₀) de −u, y τ frente al semiancho del cono, D·(r − r₀)/(2r), da 4s·r/D:
+ * no depende de r₀. Cuando τ pasa del ancho del cono, cada rayo de emisión vuelve por toda la recepción y la transmisión
+ * de la especular es la de la apertura, la del moteado. La suma doble exacta (emisión × recepción × núcleo gaussiano de
+ * los pares) cuesta el cuadrado del cono; se mezclan sus dos límites, los pares y la apertura, con
+ * ρ = min(1, k·s·r/D), k = `SPECULAR_PAIR_FIT`, y la s más lisa de las caras (`SPECULAR_PAIR_SLOPE`): con los 26 mm del
+ * convexo, ρ ≈ 0,45 en la pleura bajo una costilla y 1 desde 62 mm. Frente a la suma doble, sobre costillas de 5–17 mm a
+ * 20–45 mm y hasta 130 mm de profundidad (3–110 mm bajo ellas), 0,6 dB rms y 5 dB en el peor punto (la línea del borde,
+ * junto a la costilla); la regla del rayo central, 39 dB rms (`aperture.test.ts`). Bajo el borde de una costilla, junto a
+ * ella, los pares de una línea dentro del hueso valen 0 y queda ρ·T_apertura: la fuga de la penumbra que la decisión 88
+ * apagaba del todo, y que su banco de ondas sí da (−14 dB a 1 mm dentro del borde). La regla del rayo central apagaba en
+ * toda la profundidad el eco especular de las líneas cuyo rayo cruzaba el hueso: la pared anterior de la VCI, 8 cm bajo una
+ * costilla, se rompía con bordes verticales en las líneas de la costilla de cada mirada. Las líneas de la cortina pulmonar
+ * (decisión 61) conservan el rayo central, con su lámina de pulmón por línea.
+ *
+ * Gemelos: `apertureEcho` (TS, `transmissionTwin.ts`) y `APERTURE_GLSL` (pasada A), misma fórmula.
  */
 
-/** Tomas por cono (la media se toma en líneas enteras, como la GPU con `texelFetch`). */
-export const APERTURE_TAPS = 9;
-/** Líneas a cada lado donde se busca el obstáculo (cubre el cono máximo, D/2 en la cara). */
+/**
+ * Líneas a cada lado donde se busca el obstáculo y hasta donde llega la integral de los conos: cubre el cono máximo, el de
+ * la mayor de las aperturas de emisión y de recepción, D/2 en la cara (`aperture.test.ts` exige el margen, también con la
+ * mirada más dirigida).
+ */
 export const APERTURE_SEARCH_LINES = 40;
+
+/**
+ * Pendiente rms de la cara más lisa de `INTERFACES` (sin `Interface.None`): la que mantiene los pares especulares hasta
+ * más hondo. Con una s por cara, la mezcla dependería de la cara, que la pasada A no conoce (limitación
+ * `specular-pair-single-slope`).
+ */
+export const SPECULAR_PAIR_SLOPE = Math.min(
+  ...Object.values(INTERFACES)
+    .filter((p) => p !== INTERFACES[Interface.None])
+    .map((p) => p.slopeRms),
+);
+
+/**
+ * k de la mezcla de los pares y la apertura en la transmisión especular, ρ = min(1, k·s·r/D) [AJUSTADO a la suma doble
+ * con el núcleo gaussiano de los pares, `aperture.test.ts`: k 2 → 1,0–1,1 dB rms, 3 → 0,6, 4 → 0,65].
+ */
+export const SPECULAR_PAIR_FIT = 3;
+/** k·s de la mezcla (1/mm·mm de apertura), redondeado como lo escribe la GLSL. */
+const SPECULAR_PAIR_RATE = Number((SPECULAR_PAIR_FIT * SPECULAR_PAIR_SLOPE).toFixed(6));
+
+/**
+ * Fracción ρ de la transmisión especular que es la de la apertura (el resto, la de los pares): crece con el reparto de
+ * lo reflejado por las facetas frente al cono, τ/h = 4s·r/D, hasta 1. `r`: la distancia del punto a la cara a lo largo
+ * del camino; `apertureMm`: la apertura de emisión.
+ */
+export function specularPairSpread(r: number, apertureMm: number): number {
+  return Math.min(1, (SPECULAR_PAIR_RATE * r) / apertureMm);
+}
 
 /**
  * Refracción en las luces (decisión 86): el eco de moteado de un haz enfocado cuyos rayos desvía la pantalla de fase de
@@ -176,28 +232,55 @@ export interface ApertureGeometry {
 /**
  * La misma fórmula en GLSL para la pasada A (`FRAG_TRANSMISSION`): lee la atenuación ida y vuelta
  * de un rayo (uPre0.x, dB) y los primeros impactos por línea (uHits0: gas en .y, hueso en .z, en
- * segmentos gruesos). Necesita uLinesF, uHalfSector, uCurvR, uCoarseN y uAperture.
+ * segmentos gruesos). Necesita uLinesF, uHalfSector, uCurvR, uCoarseN y uAperture. Devuelve la transmisión del moteado
+ * y de la difusa (la de la apertura) y, en `spec`, la de los ecos especulares (decisión 91).
  */
 export const APERTURE_GLSL = /* glsl */ `
-const int AP_TAPS = ${APERTURE_TAPS};
 const int AP_SEARCH = ${APERTURE_SEARCH_LINES};
-// Media de la transmisión de ida sobre el cono (pre: el prefijo de A2 de la mirada, dB en .x), en el punto medio de
-// cada tramo; la emisión con la ventana de Hann (hann = 1) y la recepción uniforme (decisión 86)
-float apConeMean(sampler2D pre, int line, int k, float halfLines, float hann) {
-  float sum = 0.0, ws = 0.0;
-  for (int j = 0; j < AP_TAPS; j++) {
-    float t = (float(j) + 0.5) / float(AP_TAPS) - 0.5;
-    float c = cos(3.14159265 * t);
-    float w = mix(1.0, c * c, hann);
-    int l = clamp(line + int(floor(2.0 * halfLines * t + 0.5)), 0, int(uLinesF) - 1);
-    sum += w * pow(10.0, -texelFetch(pre, ivec2(l, k), 0).x / 40.0);
-    ws += w;
-  }
-  return sum / ws;
+// ∫ de sin²(π·t/(2h)) de 0 a y: la ventana de Hann medida desde su borde, sin la cancelación de su primitiva donde casi no
+// pesa (en float32, hasta un 12 % de error en la última loncha de un cono)
+float apG(float y, float h) { return 0.5 * y - h * sin(3.14159265 * y / h) / 6.2831853; }
+// ∫ de la ventana de un cono de semiancho h (líneas) en [lo, hi] recortado a ±c: la de Hann de la emisión, cos²(π·x/(2h))
+// (hann = 1), desde el borde más cercano, o la uniforme de la recepción (decisión 86)
+float apW(float lo, float hi, float h, float c, float hann) {
+  float a = clamp(lo, -c, c), b = clamp(hi, -c, c);
+  if (hann < 0.5) return b - a;
+  return a >= 0.0 ? apG(h - a, h) - apG(h - b, h) : b <= 0.0 ? apG(h + b, h) - apG(h + a, h) : h - apG(h - b, h) - apG(h + a, h);
 }
-float apertureTransmission(int line, int k, float r, float step, float single) {
+// Medias de la transmisión de ida (pre: el prefijo de la mirada, dB ida y vuelta en .x) sobre el cono de emisión (x, con su
+// ventana de Hann), el de recepción (y, uniforme) y los pares especulares (z: el rayo de emisión por u vuelve por −u, la
+// ventana de emisión dentro de la recepción): la integral exacta con la transmisión de cada línea constante en su anchura,
+// [l − ½, l + ½] (decisión 91). La línea d y su simétrica pesan lo mismo; la central, una vez
+vec3 apCones(sampler2D pre, int line, int k, float hTx, float hRx) {
+  // un cono de anchura nula (1 − r₀/r redondeado a 0 junto al obstáculo) es el rayo de su línea
+  hTx = max(hTx, 1e-4);
+  hRx = max(hRx, 1e-4);
+  float hP = min(hTx, hRx);
+  float hM = max(hTx, hRx);
+  int last = int(uLinesF) - 1;
+  vec3 sum = vec3(0.0), ws = vec3(0.0);
+  for (int d = 0; d <= AP_SEARCH; d++) {
+    float lo = float(d) - 0.5;
+    if (lo >= hM) break;
+    float a = pow(10.0, -texelFetch(pre, ivec2(clamp(line + d, 0, last), k), 0).x / 40.0);
+    float b = d == 0 ? a : pow(10.0, -texelFetch(pre, ivec2(clamp(line - d, 0, last), k), 0).x / 40.0);
+    float f = d == 0 ? 0.5 : 1.0;
+    vec3 w = f * vec3(apW(lo, lo + 1.0, hTx, hTx, 1.0), apW(lo, lo + 1.0, hRx, hRx, 0.0), apW(lo, lo + 1.0, hTx, hP, 1.0));
+    sum += w * vec3(a + b, a + b, 2.0 * a * b);
+    ws += 2.0 * w;
+  }
+  return sum / max(ws, vec3(1e-30));
+}
+// La del moteado (x·y) y, en spec, la de los especulares: los pares mezclados con la de la apertura en ρ = min(1, k·s·r/D)
+// (specularPairSpread: las facetas de la cara reparten lo reflejado; r, la distancia del punto a la cara a lo largo del camino)
+float apEcho(vec3 c, float r, out float spec) {
+  float t = c.x * c.y;
+  spec = mix(c.z, t, min(1.0, ${glslFloat(SPECULAR_PAIR_RATE)} * r / uAperture.x));
+  return t;
+}
+float apertureTransmission(int line, int k, float r, float step, float single, out float spec) {
   float dTheta = 2.0 * uHalfSector / uLinesF;
-  float maxHalf = (0.5 * uAperture.x) / (uCurvR * dTheta);
+  float maxHalf = (0.5 * max(uAperture.x, uAperture.y)) / (uCurvR * dTheta);
   int W = int(ceil(maxHalf));
   float ro = 1e9;
   for (int d = -AP_SEARCH; d <= AP_SEARCH; d++) {
@@ -211,27 +294,28 @@ float apertureTransmission(int line, int k, float r, float step, float single) {
       if (rr < r) ro = min(ro, rr);
     }
   }
+  spec = single;
   if (ro > 1e8) return single;
   float spacing = (uCurvR + ro) * dTheta;
   float shrink = 1.0 - ro / r;
   float halfTx = 0.5 * uAperture.x * shrink / spacing;
   float halfRx = 0.5 * min(uAperture.y, r / uAperture.z) * shrink / spacing;
-  return apConeMean(uPre0, line, k, halfTx, 1.0) * apConeMean(uPre0, line, k, halfRx, 0.0);
+  return apEcho(apCones(uPre0, line, k, halfTx, halfRx), r, spec);
 }
 `;
 
 /**
  * `steeredApertureTransmission` en GLSL para la pasada A (etapa 2 de la decisión 58). Va detrás de
- * `APERTURE_GLSL` (usa AP_SEARCH y su `apConeMean`). Lee el prefijo dirigido de A2 (`uPreSteer`: dB ida y vuelta,
+ * `APERTURE_GLSL` (usa AP_SEARCH, `apCones` y `apEcho`). Lee el prefijo dirigido de A2 (`uPreSteer`: dB ida y vuelta,
  * y primer gas y primer hueso a lo largo del camino, −1 sin ellos) en la fila k de cada línea vecina y
  * necesita uLinesF, uHalfSector, uAperture y uSteer (θ, R·sin θ, R·cos θ, k2). `s` es la distancia a lo
- * largo del camino hasta el punto y `single`, la transmisión de su propio rayo dirigido.
+ * largo del camino hasta el punto y `single`, la transmisión de su propio rayo dirigido; `spec`, la de sus especulares.
  */
 export const STEERED_APERTURE_GLSL = /* glsl */ `
-float steeredApertureTransmission(int line, int k, float s, float single) {
+float steeredApertureTransmission(int line, int k, float s, float single, out float spec) {
   float dTheta = 2.0 * uHalfSector / uLinesF;
   float rc = uSteer.z;
-  float maxHalf = (0.5 * uAperture.x) / (rc * dTheta);
+  float maxHalf = (0.5 * max(uAperture.x, uAperture.y)) / (rc * dTheta);
   int W = int(ceil(maxHalf));
   float so = 1e9;
   for (int d = -AP_SEARCH; d <= AP_SEARCH; d++) {
@@ -242,11 +326,12 @@ float steeredApertureTransmission(int line, int k, float s, float single) {
     float o = h.y >= 0.0 ? (h.z >= 0.0 ? min(h.y, h.z) : h.y) : h.z;
     if (o >= 0.0 && o < s) so = min(so, o);
   }
+  spec = single;
   if (so > 1e8) return single;
   float spacing = (rc + so) * dTheta;
   float shrink = 1.0 - so / s;
   float halfTx = 0.5 * uAperture.x * shrink / spacing;
   float halfRx = 0.5 * min(uAperture.y, s / uAperture.z) * shrink / spacing;
-  return apConeMean(uPreSteer, line, k, halfTx, 1.0) * apConeMean(uPreSteer, line, k, halfRx, 0.0);
+  return apEcho(apCones(uPreSteer, line, k, halfTx, halfRx), s, spec);
 }
 `;

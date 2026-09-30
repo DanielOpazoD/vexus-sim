@@ -145,8 +145,14 @@ export interface TestHooks {
      * gemelos sobre los segmentos de la GPU, y las muestras en empate de redondeo: en la mirada 0 también.
      */
     apertureMaxDiffDb?: number;
-    /** Muestras de la transmisión de la imagen comparadas en la mirada 0 (sin los empates), el denominador de `ambiguous`. */
+    /** El peor desacuerdo de la transmisión de los ecos especulares de A (dB; A o2.w, decisión 91) con sus gemelos. */
+    specularMaxDiffDb?: number;
+    /**
+     * Muestras (sin los empates) en las que se comparó la transmisión con apertura, el denominador de `ambiguous`, y la de
+     * los especulares: cada una donde ella misma (la del gemelo o la de la GPU) pasa de −60 dB (decisión 91).
+     */
     apertureSamples?: number;
+    specularSamples?: number;
     ambiguous?: number;
     /** Líneas cortadas en su primer segmento de tejido ambiguo (otro tejido a ±`ambiguityMm` del centro). */
     truncatedLines: number;
@@ -547,6 +553,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
             samples: gpu.samples,
             prefixDb: Array.from(gpu.single, (x) => -20 * Math.log10(Math.max(x, 1e-12))),
             aperture: gpu.aperture,
+            specular: gpu.specular,
           },
           every,
           undefined,
@@ -559,7 +566,9 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
           truncatedLines,
           worst,
           apertureMaxDiffDb: imaging.apertureMaxDiffDb,
-          apertureSamples: imaging.samples,
+          specularMaxDiffDb: imaging.specularMaxDiffDb,
+          apertureSamples: imaging.apertureSamples,
+          specularSamples: imaging.specularSamples,
           ambiguous: imaging.ambiguous,
           worstAperture: imaging.worstAperture,
         };
@@ -948,7 +957,7 @@ function steeredParity(sim: Simulator, look: number, every: number): ReturnType<
     grid,
     ap,
     gpu.theta,
-    { lines: gpu.lines, samples: gpu.samples, prefixDb: gpu.prefixDb!, aperture: gpu.aperture },
+    { lines: gpu.lines, samples: gpu.samples, prefixDb: gpu.prefixDb!, aperture: gpu.aperture, specular: gpu.specular },
     every,
   );
   return { ...parity, truncatedLines: 0 };

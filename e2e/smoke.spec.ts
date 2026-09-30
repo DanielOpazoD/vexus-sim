@@ -225,6 +225,7 @@ test('modos por teclado, pestaña Medir y captura de una medición', async ({ pa
     }),
   ).toBe(true);
   await page.evaluate(() => window.__vexusTest!.advance(7));
+  await expect(page.locator('.result')).toContainText('VSH: —');
   expect(await capture()).toMatch(/VSH: S -?\d+\.\d · D -?\d+\.\d/);
   // Un valor numérico con el visto bueno de la calidad: «VSH: —» o «no medible» no pasan
   await expect(page.locator('.result')).toContainText(/VSH: S -?\d+\.\d · D -?\d+\.\d/);

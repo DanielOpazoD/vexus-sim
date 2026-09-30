@@ -38,25 +38,25 @@ export function tabAfterMode(mode: ImagingMode, tab: PanelTab): PanelTab {
  * plegado, y las explicaciones largas detrás del ⓘ de la sección.
  */
 export class ControlPanel implements PanelContext {
-  private syncables: Syncable[] = [];
-  private tabs = new Map<PanelTab, HTMLButtonElement>();
-  private panels = new Map<PanelTab, HTMLElement>();
-  private doppler: DopplerPanels;
-  private mSection: HTMLElement;
-  private measure: MeasureTab;
+  #syncables: Syncable[] = [];
+  #tabs = new Map<PanelTab, HTMLButtonElement>();
+  #panels = new Map<PanelTab, HTMLElement>();
+  #doppler: DopplerPanels;
+  #mSection: HTMLElement;
+  #measure: MeasureTab;
   /** La pestaña Docente se carga la primera vez que se activa el modo docente (`loadTeacher`): el alumno no la descarga. */
-  private teacher: TeacherTab | null = null;
-  private teacherLoad: Promise<void> | null = null;
-  private exportDiagnostics: (() => void) | null = null;
-  private resetPatient: (() => unknown) | null = null;
-  private equivalence: EquivalenceReport | null = null;
+  #teacher: TeacherTab | null = null;
+  #teacherLoad: Promise<void> | null = null;
+  #exportDiagnostics: (() => void) | null = null;
+  #resetPatient: (() => unknown) | null = null;
+  #equivalence: EquivalenceReport | null = null;
   set onExportDiagnostics(f: () => void) {
-    this.exportDiagnostics = f;
-    if (this.teacher) this.teacher.onExportDiagnostics = f;
+    this.#exportDiagnostics = f;
+    if (this.#teacher) this.#teacher.onExportDiagnostics = f;
   }
   set onResetPatient(f: () => unknown) {
-    this.resetPatient = f;
-    if (this.teacher) this.teacher.onResetPatient = f;
+    this.#resetPatient = f;
+    if (this.#teacher) this.#teacher.onResetPatient = f;
   }
 
   constructor(
@@ -83,7 +83,7 @@ export class ControlPanel implements PanelContext {
       b.innerHTML = `${ICONS[id]}<span>${LABELS[id]}</span>`; // iconos estáticos del programa
       b.addEventListener('click', () => this.store.set({ tab: id }));
       bar.appendChild(b);
-      this.tabs.set(id, b);
+      this.#tabs.set(id, b);
       const p = document.createElement('div');
       p.className = 'tab-panel';
       p.id = `tabpanel-${id}`;
@@ -91,12 +91,12 @@ export class ControlPanel implements PanelContext {
       p.setAttribute('aria-labelledby', b.id);
       p.hidden = true;
       scroll.appendChild(p);
-      this.panels.set(id, p);
+      this.#panels.set(id, p);
     }
     const badge = document.createElement('span');
     badge.className = 'tab-badge';
     badge.hidden = true;
-    this.tabs.get('medir')!.appendChild(badge);
+    this.#tabs.get('medir')!.appendChild(badge);
 
     // Esc descarta el ⓘ que se esté viendo (WCAG 1.4.13) y, si había uno, no sigue hasta los atajos
     document.addEventListener('keydown', (e) => {
@@ -113,31 +113,31 @@ export class ControlPanel implements PanelContext {
       if (shown.length) e.stopPropagation();
     });
 
-    this.mSection = buildAcquireTab(this, this.panels.get('adquirir')!);
-    this.doppler = buildDopplerTab(this, this.panels.get('doppler')!);
-    this.measure = new MeasureTab(this, this.panels.get('medir')!, badge);
-    this.applyStore(store.get());
-    store.subscribe((st) => this.applyStore(st));
+    this.#mSection = buildAcquireTab(this, this.#panels.get('adquirir')!);
+    this.#doppler = buildDopplerTab(this, this.#panels.get('doppler')!);
+    this.#measure = new MeasureTab(this, this.#panels.get('medir')!, badge);
+    this.#applyStore(store.get());
+    store.subscribe((st) => this.#applyStore(st));
   }
 
-  private applyStore(st: AppState): void {
-    for (const [id, b] of this.tabs) {
+  #applyStore(st: AppState): void {
+    for (const [id, b] of this.#tabs) {
       b.classList.toggle('active', id === st.tab);
       b.setAttribute('aria-selected', String(id === st.tab));
     }
-    for (const [id, p] of this.panels) p.hidden = id !== st.tab;
-    this.tabs.get('docente')!.hidden = !st.debug;
-    if (st.debug) void this.loadTeacher();
-    this.doppler.empty.hidden = modeHasColor(st.mode) || modeHasPw(st.mode);
-    this.doppler.color.hidden = !modeHasColor(st.mode);
-    this.doppler.pw.hidden = !modeHasPw(st.mode);
-    this.mSection.hidden = st.mode !== 'M';
-    this.measure.applyStore(st);
+    for (const [id, p] of this.#panels) p.hidden = id !== st.tab;
+    this.#tabs.get('docente')!.hidden = !st.debug;
+    if (st.debug) void this.#loadTeacher();
+    this.#doppler.empty.hidden = modeHasColor(st.mode) || modeHasPw(st.mode);
+    this.#doppler.color.hidden = !modeHasColor(st.mode);
+    this.#doppler.pw.hidden = !modeHasPw(st.mode);
+    this.#mSection.hidden = st.mode !== 'M';
+    this.#measure.applyStore(st);
     this.sync();
   }
 
   sync(): void {
-    for (const s of this.syncables) s.sync();
+    for (const s of this.#syncables) s.sync();
   }
 
   /**
@@ -145,23 +145,23 @@ export class ControlPanel implements PanelContext {
    * se ve en modo docente, así que el alumno no descarga su código. Si la carga falla, lo dice en la pestaña y en el
    * registro de errores.
    */
-  private loadTeacher(): Promise<void> {
-    this.teacherLoad ??= import('./panel/teacherTab')
+  #loadTeacher(): Promise<void> {
+    this.#teacherLoad ??= import('./panel/teacherTab')
       .then(({ TeacherTab }) => {
-        const t = new TeacherTab(this, this.panels.get('docente')!);
+        const t = new TeacherTab(this, this.#panels.get('docente')!);
         // una intervención cambia al paciente: las mediciones de antes no entran en el grado de después
-        t.onIntervention = () => this.measure.clearMeasurements();
-        if (this.exportDiagnostics) t.onExportDiagnostics = this.exportDiagnostics;
-        if (this.resetPatient) t.onResetPatient = this.resetPatient;
-        t.equivalence = this.equivalence;
-        this.teacher = t;
+        t.onIntervention = () => this.#measure.clearMeasurements();
+        if (this.#exportDiagnostics) t.onExportDiagnostics = this.#exportDiagnostics;
+        if (this.#resetPatient) t.onResetPatient = this.#resetPatient;
+        t.equivalence = this.#equivalence;
+        this.#teacher = t;
         this.sync();
       })
       .catch((e: unknown) => {
         errorLog.report('ui', e);
-        note(this.panels.get('docente')!, `No se pudo cargar la pestaña Docente: ${errorMessage(e)}`).setAttribute('role', 'alert');
+        note(this.#panels.get('docente')!, `No se pudo cargar la pestaña Docente: ${errorMessage(e)}`).setAttribute('role', 'alert');
       });
-    return this.teacherLoad;
+    return this.#teacherLoad;
   }
 
   /**
@@ -169,38 +169,38 @@ export class ControlPanel implements PanelContext {
    * también el contexto clínico marcado, y la viñeta y las notas del docente pasan a las suyas (decisión 82).
    */
   onSimulatorChanged(): void {
-    this.measure.onSimulatorChanged();
-    this.teacher?.onSimulatorChanged();
+    this.#measure.onSimulatorChanged();
+    this.#teacher?.onSimulatorChanged();
   }
 
   setIvcCaliper(mm: number | null): void {
-    this.measure.setIvcCaliper(mm);
+    this.#measure.setIvcCaliper(mm);
   }
 
   /** Modo M (decisión 80): calibres a la vista en la franja y un punto nuevo sobre ella. */
   get mMarks(): readonly MMark[] {
-    return this.measure.mMarks;
+    return this.#measure.mMarks;
   }
 
   addMPoint(p: MMark, window: [number, number]): void {
-    this.measure.addMPoint(p, window);
+    this.#measure.addMPoint(p, window);
   }
 
   renderResult(): void {
-    this.measure.renderResult();
+    this.#measure.renderResult();
   }
 
   renderDebug(): void {
-    this.teacher?.renderDebug();
+    this.#teacher?.renderDebug();
   }
 
   setEquivalence(report: EquivalenceReport | null): void {
-    this.equivalence = report;
-    if (this.teacher) this.teacher.equivalence = report;
+    this.#equivalence = report;
+    if (this.#teacher) this.#teacher.equivalence = report;
   }
 
   track<T extends Syncable>(s: T): T {
-    this.syncables.push(s);
+    this.#syncables.push(s);
     return s;
   }
 

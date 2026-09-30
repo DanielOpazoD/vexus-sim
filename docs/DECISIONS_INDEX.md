@@ -96,3 +96,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [90](DECISIONS.md#L4164) | Vasos orgánicos: sección elíptica y radio que ondula en las venas del hígado, y una VCI que se curva y cambia de calibre sin tocar el sitio de medida | vigente |
 | [91](DECISIONS.md#L4325) | Costuras y peine: la penumbra es la integral exacta de su cono, los ecos especulares llevan la transmisión de sus pares en la apertura y la mirada dirigida refleja su propio camino en el espejo | vigente |
 | [92](DECISIONS.md#L4498) | Contrato de adquisición y medición M con incertidumbre de resolución (30-09-2026) | vigente |
+| [93](DECISIONS.md#L4527) | Preparar el análisis PW al armar la medición (30-09-2026) | vigente |

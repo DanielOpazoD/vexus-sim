@@ -1,4 +1,5 @@
 import { median, robustExtremeInWindow, type TimeWindow } from '../core/series';
+export { CAPTURE_BEATS, qualityText } from './qualityMessages';
 import { velocityFromShiftMmS } from '../core/units';
 import type { Beat } from '../physiology/rhythm';
 import { beatWindows, systolicPeak } from '../vexus/measurements';

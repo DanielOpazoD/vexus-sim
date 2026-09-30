@@ -4524,6 +4524,32 @@ registran en el PR, no se presupone que un reintento verde sea éxito.
 Extremos numéricos y ancho decreciente al mejorar resolución; e2e con distinta altura por extremo, calibre de
 un píxel y congelación durante drag. La captura adjunta muestra el intervalo visible al alumno.
 
+## 93. Preparar el análisis PW al armar la medición (30-09-2026)
+
+**Problema.** El alumno descargaba el análisis espectral antes de necesitarlo. El principal estaba a 11 bytes
+del presupuesto de 335 KiB en el build de la decisión 92.
+
+**Decisión.** Preparar un único módulo al armar Suprahepática, Porta o Renal. Mientras llega, el botón dice
+«Preparando medición…» y está deshabilitado; un fallo avisa y queda en el registro. Una vez preparado,
+Capturar sigue siendo síncrono: lee la adquisición y el equipo en el turno del clic, sin guardar una captura
+pendiente que pueda pertenecer a otro paciente. Abrir Medir, usar los calibres o arrancar no pide el módulo.
+
+El grupo Rolldown no incluye dependencias recursivamente: incluirlas hacía que el principal importara el grupo
+estáticamente y lo precargara. Los campos y métodos internos de Panel, Medir y Docente usan privacidad nativa
+ES2022; el minificador puede compactarlos sin renombrar la API pública. No se cambian shaders ni algoritmos.
+Los rótulos de calidad quedan separados del algoritmo y las exportaciones anteriores siguen disponibles.
+
+**Medición.** Frente al build de 9682afd: principal 343.029 → 332.740 bytes (−10.289); total JS de producción,
+incluidos Worker y módulos diferidos, 1.015.776 → 1.015.330 (−446). Se conserva la exclusión preexistente de
+testHooks y todos los límites. Es mejora de descarga inicial, no una reducción sustancial del peso total ni
+una mejora demostrada de FPS. No se prolonga el bloque con minificación manual de literales.
+
+**Tradeoff y verificación.** La primera medición PW espera una descarga de ~9,5 KiB; Docente también carga
+ese grupo porque comparte ventanas de análisis. La e2e sin ganchos demora la descarga y exige cero solicitudes
+al arrancar/abrir Medir, una al armar y resultado inmediato en el mismo turno del clic preparado. El humo
+existente conserva la captura de señal válida y la de falta de contacto en la cadena real. Checks y CI se
+registran en el PR; estos cambios no calibran fisiología ni realismo.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

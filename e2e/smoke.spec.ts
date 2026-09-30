@@ -156,7 +156,21 @@ test('modos por teclado, pestaña Medir y captura de una medición', async ({ pa
   const capture = async () => {
     await page.getByRole('tab', { name: 'Medir' }).click();
     await page.getByRole('button', { name: 'Suprahepática', exact: true }).click();
-    await page.getByRole('button', { name: 'Capturar' }).click();
+    await page.getByRole('button', { name: 'Capturar' }).evaluate((button) => {
+      // Después del handler real, dentro del mismo evento de mouse: la captura no
+      // espera otra descarga ni puede leer otro paciente en un turno posterior.
+      button.addEventListener(
+        'click',
+        () => {
+          button.setAttribute('data-capture-result', document.querySelector('.result')?.textContent ?? '');
+        },
+        { once: true },
+      );
+    });
+    const button = page.getByRole('button', { name: 'Capturar' });
+    const handle = await button.elementHandle();
+    await button.click();
+    return handle!.getAttribute('data-capture-result');
   };
   // Ventana intercostal (la del protocolo) y la puerta sobre la suprahepática en un punto sin
   // sombras (técnica del operador); 7 s de espectro sin renderizar (`advance`: tiempo de simulación, no de reloj).
@@ -169,7 +183,7 @@ test('modos por teclado, pestaña Medir y captura de una medición', async ({ pa
     }),
   ).toBe(true);
   await page.evaluate(() => window.__vexusTest!.advance(7));
-  await capture();
+  expect(await capture()).toMatch(/VSH: S -?\d+\.\d · D -?\d+\.\d/);
   // Un valor numérico con el visto bueno de la calidad: «VSH: —» o «no medible» no pasan
   await expect(page.locator('.result')).toContainText(/VSH: S -?\d+\.\d · D -?\d+\.\d/);
   // Sin contacto no hay flujo en la puerta: la captura es no medible, con el motivo

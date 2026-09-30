@@ -71,7 +71,7 @@ const PHASE_COVERAGE = 0.8;
 const PHASE_REPRODUCIBILITY = 0.15;
 
 /** Latidos de una captura: los últimos completos de sus 7 s de espectro (4 caben a 45 lpm). */
-export const CAPTURE_BEATS = 4;
+export { CAPTURE_BEATS, qualityText } from './qualityMessages';
 /** Fracción del latido que deben cubrir las columnas del espectro para juzgarlo. */
 const BEAT_COVERAGE = 0.9;
 /**
@@ -245,20 +245,4 @@ export function assessQuality(
   else if (waves && wavesInconsistent(waves.s, waves.d)) issue = 'inconsistent';
   else if (validBeats < MIN_VALID_BEATS) issue = 'few-beats';
   return { beats: coveredBeats, validBeats, edgeEnergyFraction, wrappedBeats, bloodColumns, issue };
-}
-
-/** Texto para el alumno: qué pasó y cómo corregirlo. */
-export function qualityText(issue: QualityIssue): string {
-  switch (issue) {
-    case 'no-signal':
-      return 'no medible: no hay flujo en la puerta (¿está sobre el vaso? ¿hay sombra o poco contacto?)';
-    case 'intermittent':
-      return 'no medible: el flujo no se repite de un latido a otro (el vaso entra y sale de la puerta: pida apnea o agrande la puerta)';
-    case 'inconsistent':
-      return 'no medible: la onda cambia de un latido a otro (otro vaso entra a ratos en la puerta: recoloque la puerta; si respira, pida apnea)';
-    case 'aliasing':
-      return 'no medible: aliasing (suba la escala o baje la línea de base)';
-    case 'few-beats':
-      return 'no medible: pocos latidos (espere 4 latidos completos con la puerta quieta)';
-  }
 }

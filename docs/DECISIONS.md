@@ -4687,6 +4687,24 @@ correcta y lo que difiere es el muestreo del ritmo (`af-capture-beat-sampling`);
 los latidos medidos y da también la de 7 s. Queda: una porta invertida en toda la captura se lee como anterógrada (como
 en main).
 
+## 95. Respiración apagada al iniciar la sesión, con referencia explícita y ciclo observado para colapsabilidad (30-09-2026)
+
+Petición de Daniel: anatomía detallada con respiración apagada por defecto y configuración accesible. La sesión usa
+apnea espiratoria (fase 0, volumen y velocidad diafragmática 0); las definiciones originales de los casos siguen intactas
+para bancos. Cambiar/reiniciar paciente vuelve a esa referencia. «Configurar respiración» y el botón activar/desactivar
+permiten respiración tranquila, profunda y las dos pausas. Una pausa no congela el reloj, corazón, circulación, ECG o PW:
+las presiones corresponden a la maniobra y la PEEP vigente, no se ocultan artefactos cambiando solo la imagen.
+
+Cada muestra registra si hay ciclo y su fase sostenida. M conserva los calibres y el diámetro, pero no presenta máx/mín
+ni colapsabilidad respiratoria sin un ciclo completo observado en la franja. El docente muestra el diámetro actual y
+«no aplicable» en esa situación. La validez se deriva exclusivamente del registro respiratorio visible, nunca de extremos
+ocultos de diámetro. No se suman segmentos separados por pausa: fase recorrida ≥1 (1e-9 solo redondeo), extremos de volumen
+normalizado ≤0.05/≥0.95, sin saltos mayores a 1/8 de ciclo. Son criterios de cobertura del software, no precisión clínica.
+
+Pruebas: referencia espiratoria/inspiratoria estable, ciclo parcial/completo y muestreo insuficiente; E2E del control real,
+reloj/ECG/flujo durante pausa y rechazo de colapsabilidad sin ciclo. El ejercicio M conserva los gates ±5 y ahora activa
+respiración mediante el botón, de forma explícita.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

@@ -11,6 +11,13 @@ import { Simulator, defaultEquipment } from './simulator';
  * se construye antes de tocar nada; si falla, sigue el anterior y se devuelve el error. El
  * renderizador (programas GLSL compilados) pasa al simulador nuevo con su escena.
  */
+/** La aplicación arranca en la referencia espiratoria; los casos conservan su patrón original para los bancos. */
+function sessionPatient(id: CaseId) {
+  const patient = clonePatient(findCase(id));
+  patient.respiratoryPattern = 'apnea-expiratory';
+  return patient;
+}
+
 type Listener = (next: Simulator, prev: Simulator) => void;
 
 export class SimulationSession {
@@ -22,7 +29,7 @@ export class SimulationSession {
     private readonly canvas: HTMLCanvasElement,
     firstCase: CaseId,
   ) {
-    this.current = new Simulator(clonePatient(findCase(firstCase)), canvas);
+    this.current = new Simulator(sessionPatient(firstCase), canvas);
     this.equipment = new EquipmentController(defaultEquipment(), {
       halfSectorRad: this.current.transducer.halfSector,
       cMmS: C_RECONSTRUCTION_MM_S,
@@ -45,7 +52,7 @@ export class SimulationSession {
 
   /**
    * «Reiniciar paciente» (decisión 79): vuelve a cargar el caso actual desde su definición, sin las intervenciones
-   * ni la respiración cambiada; la sonda y el equipo se conservan, como en un cambio de caso.
+   * ni la respiración cambiada (vuelve a la referencia espiratoria); la sonda y el equipo se conservan, como en un cambio de caso.
    */
   reloadCase(): unknown {
     const id = this.current.patient.id;
@@ -56,7 +63,7 @@ export class SimulationSession {
     const prev = this.current;
     let next: Simulator;
     try {
-      next = new Simulator(clonePatient(findCase(id)), this.canvas, prev.audio, prev.renderer);
+      next = new Simulator(sessionPatient(id), this.canvas, prev.audio, prev.renderer);
     } catch (e) {
       errorLog.report('caso', e);
       // si llegó a cambiarse la escena del renderizador compartido, vuelve a la del caso anterior

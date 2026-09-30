@@ -90,11 +90,28 @@ export function buildAcquireTab(ctx: PanelContext, p: HTMLElement): HTMLElement 
   });
   ctx.track(button(row(probe), 'Reiniciar sonda', () => s().setPose({ ...s().pose, yaw: 0, rock: 0, tilt: 0, lift: 0 })));
 
-  const resp = ctx.section(p, 'Respiración', { info: 'La maniobra cambia presiones y movimiento; no reinicia el ciclo cardíaco.' });
+  const resp = ctx.section(p, 'Configurar respiración', {
+    info: 'Apagada: referencia de fin de espiración. Las maniobras cambian presiones y movimiento; el corazón, el flujo y el reloj continúan.',
+  });
+  const breathing = () => s().patient.respiratoryPattern === 'quiet' || s().patient.respiratoryPattern === 'deep';
+  const toggle = button(
+    row(resp),
+    'Activar respiración',
+    () => {
+      s().patient.respiratoryPattern = breathing() ? 'apnea-expiratory' : 'quiet';
+    },
+    breathing,
+  );
+  ctx.track(toggle);
+  ctx.track({
+    sync: () => {
+      toggle.el.textContent = breathing() ? 'Desactivar respiración' : 'Activar respiración';
+    },
+  });
   const info = note(resp);
   ctx.track({
     sync: () =>
-      (info.textContent = `${caseDisplayLabel(s().patient.id, ctx.store.get().debug)} · FC ${s().patient.heartRateBpm} lpm · resp ${s().patient.respiratoryRateMin}/min`),
+      (info.textContent = `${caseDisplayLabel(s().patient.id, ctx.store.get().debug)} · FC ${s().patient.heartRateBpm} lpm · ${breathing() ? `resp ${s().patient.respiratoryRateMin}/min` : s().patient.respiratoryPattern === 'apnea-inspiratory' ? 'pausa inspiratoria' : 'apagada · fin de espiración'}`),
   });
   ctx
     .segmented<RespiratoryPattern>(

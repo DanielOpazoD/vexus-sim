@@ -98,3 +98,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [92](DECISIONS.md#L4498) | Contrato de adquisición y medición M con incertidumbre de resolución (30-09-2026) | vigente |
 | [93](DECISIONS.md#L4527) | Preparar el análisis PW al armar la medición (30-09-2026) | vigente |
 | [94](DECISIONS.md#L4553) | La medición Doppler del alumno no depende de la escala: porta en su semiplano fijo, envolvente unilateral, aliasing fuerte, identidad del vaso y lo medido a la vista | vigente |
+| [95](DECISIONS.md#L4690) | Respiración apagada al iniciar la sesión, con referencia explícita y ciclo observado para colapsabilidad (30-09-2026) | vigente |

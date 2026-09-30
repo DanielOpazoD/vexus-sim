@@ -5,6 +5,7 @@ import { errorLog, errorMessage } from '../../app/errorLog';
 import { TISSUES } from '../../anatomy/tissues';
 import { FLUID_TIME_ACCELERATION, type AppliedIntervention, type Intervention } from '../../physiology/circulation';
 import { classifyModifiedVexus, classifyVexusC } from '../../vexus/classification';
+import { hasRespiratoryCycle } from '../../vexus/ivcCollapse';
 import { measurePhysiologyTruth } from '../../vexus/measurements';
 import { button, controlId, note, row } from '../controls';
 import type { PanelContext } from './context';
@@ -287,7 +288,9 @@ export class TeacherTab {
         const gc = classifyVexusC({ ...veins, renal: m.renalPattern }, context);
         truth =
           `VERDAD FISIOLÓGICA (últimos 6 s)\n` +
-          `  VCI AP máx/mín ${m.ivcMaxMm.toFixed(1)}/${m.ivcMinMm.toFixed(1)} mm → colapso ${(m.ivcCollapse * 100).toFixed(0)} %\n` +
+          (hasRespiratoryCycle(sim.physiology.samples, t - 6, t)
+            ? `  VCI AP máx/mín ${m.ivcMaxMm.toFixed(1)}/${m.ivcMinMm.toFixed(1)} mm → colapso ${(m.ivcCollapse * 100).toFixed(0)} %\n`
+            : `  VCI AP actual ${s.ivc.dApMm.toFixed(1)} mm · colapsabilidad respiratoria no aplicable: sin ciclo completo\n`) +
           `  VSH S/D/A ${m.hvS.toFixed(1)}/${m.hvD.toFixed(1)}/${m.hvA.toFixed(1)} cm/s → ${patternText(m.hepaticPattern)}\n` +
           `  Porta ${m.pvMax.toFixed(1)}/${m.pvMin.toFixed(1)} cm/s → PF ${m.portalPF.toFixed(0)} %\n` +
           `  V. interlobar S/D/mín ${m.rvS.toFixed(1)}/${m.rvD.toFixed(1)}/${m.rvMin.toFixed(1)} cm/s → ${renalText(m.renalPattern)}\n` +

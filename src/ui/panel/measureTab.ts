@@ -1,7 +1,7 @@
 import { caseVignette } from '../../app/blindMode';
 import { errorLog } from '../../app/errorLog';
 import { toggleMode } from '../../app/equipment';
-import { ivcFromCalipers, ivcPixelInterval, ivcTruth, type IvcCollapse } from '../../vexus/ivcCollapse';
+import { ivcFromCalipers, ivcPixelInterval, ivcTruth, hasRespiratoryCycle, type IvcCollapse } from '../../vexus/ivcCollapse';
 import type { MMark } from '../mModeView';
 import type { AppState, MeasureTool } from '../../app/store';
 import type { MeasurementQuality } from '../../doppler/measureQuality';
@@ -52,7 +52,7 @@ export class MeasureTab {
   #ivcCaliperMm: number | null = null;
   /** VCI en modo M (decisión 80): los puntos de los calibres y el resultado con la verdad de su ventana. */
   #mPoints: MMark[] = [];
-  #ivcM: (IvcCollapse & { truth: IvcCollapse | null; pixels: [number, number] }) | null = null;
+  #ivcM: (IvcCollapse & { truth: IvcCollapse | null; pixels: [number, number]; respiratoryCycle: boolean }) | null = null;
   /** Confusores marcados por el alumno (decisión 82): empiezan sin marcar y se borran al cambiar de caso. */
   #context: VexusContext = {};
   /** Caso de la viñeta y del contexto marcado. */
@@ -146,11 +146,14 @@ export class MeasureTab {
     if (k % 2 && d(k - 1) < 1) pts.length = k - 1;
     this.#mPoints = pts;
     if (pts.length === 4) {
-      const truth = ivcTruth(this.#ctx.sim().physiology.samples, window[0], window[1]);
+      const samples = this.#ctx.sim().physiology.samples;
+      const respiratoryCycle = hasRespiratoryCycle(samples, window[0], window[1]);
+      const truth = respiratoryCycle ? ivcTruth(samples, window[0], window[1]) : null;
       const measured = ivcFromCalipers(d(0), d(2));
       this.#ivcM = {
         ...measured,
         truth,
+        respiratoryCycle,
         pixels: ivcPixelInterval(measured.maxMm, measured.minMm, Math.max(...pts.map((p) => p.pixelMm ?? 0))),
       };
       this.#ctx.store.set({ tool: 'none' });
@@ -187,7 +190,9 @@ export class MeasureTab {
       this.#ctx.track({ sync: () => (v.textContent = value()) });
     };
     protoRow('VCI diámetro', 'caliper', () => (this.#ivcCaliperMm !== null ? `${this.#ivcCaliperMm.toFixed(1)} mm` : '—'));
-    protoRow('VCI modo M', 'mmode', () => (this.#ivcM ? `${this.#ivcM.ciPct.toFixed(0)} %` : '—'));
+    protoRow('VCI modo M', 'mmode', () =>
+      this.#ivcM ? (this.#ivcM.respiratoryCycle ? `${this.#ivcM.ciPct.toFixed(0)} %` : 'sin ciclo respiratorio') : '—',
+    );
     // una captura rechazada por la calidad no muestra patrón (el de un espectro de ruido es «grave»)
     const NOT_MEASURABLE = 'no medible';
     protoRow('Suprahepática', 'hepatic', () => {
@@ -406,7 +411,9 @@ export class MeasureTab {
       `<div class="grade">VExUS ${gradeValueText(res)} <span class="small">${resultStatusText(res)}</span></div>`,
       `<div>VCI: ${ivcMax !== null ? ivcMax.toFixed(1) + ' mm' : '—'} ${res.ivcDilated === null ? '' : res.ivcDilated ? '<span class="small">(≥ 20 mm: dilatada)</span>' : '<span class="small">(< 20 mm)</span>'}</div>`,
       mM
-        ? `<div>VCI modo M: máx ${mm(mM.maxMm)} · mín ${mm(mM.minMm)} mm → colapso <b>${mM.ciPct.toFixed(0)} %</b>${mTruth}<div class="small">Resolución: ${mM.pixels.map(mm).join('–')} %; excluye pared y error físico.</div></div>`
+        ? !mM.respiratoryCycle
+          ? '<div>VCI modo M: sin ciclo respiratorio completo. Activa la respiración, espera un ciclo y repite los calibres.</div>'
+          : `<div>VCI modo M: máx ${mm(mM.maxMm)} · mín ${mm(mM.minMm)} mm → colapso <b>${mM.ciPct.toFixed(0)} %</b>${mTruth}<div class="small">Resolución: ${mM.pixels.map(mm).join('–')} %; excluye pared y error físico.</div></div>`
         : '',
       line(
         'hepatic',

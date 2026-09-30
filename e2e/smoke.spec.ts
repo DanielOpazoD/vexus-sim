@@ -1453,6 +1453,8 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
   // más alto: la franja M crece (34 % del alto) y los calibres, de píxeles enteros, son más finos
   await page.setViewportSize({ width: 1280, height: 1000 });
   const errors = await bootWithoutErrors(page);
+  // La sesión arranca con respiración apagada; este ejercicio evalúa un ciclo respiratorio adquirido.
+  await page.getByRole('button', { name: 'Activar respiración', exact: true }).click();
   // una mirada: con SwiftShader (≤ 4 cuadros por segundo) la composición espacial promedia 0,75 s de cuadros y
   // suaviza la anchura de la banda (con GPU real, 50 ms)
   await page.evaluate(() => {

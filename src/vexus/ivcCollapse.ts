@@ -41,3 +41,40 @@ export function ivcTruth(samples: readonly PhysiologySample[], t0: number, t1: n
   }
   return Number.isFinite(maxMm) ? { maxMm, minMm, ciPct: collapsibilityIndex(maxMm, minMm) } : null;
 }
+
+/** Un ciclo observado continuo en la ventana, desde la señal respiratoria, no desde diámetros ocultos. */
+export function hasRespiratoryCycle(
+  samples: readonly { t: number; resp: { cycling: boolean; phase: number; volume: number } }[],
+  t0: number,
+  t1: number,
+): boolean {
+  let previous: number | null = null;
+  let travel = 0;
+  let min = 1;
+  let max = 0;
+  for (const s of samples) {
+    if (s.t < t0 || s.t > t1) continue;
+    if (!s.resp.cycling) {
+      previous = null;
+      travel = 0;
+      min = 1;
+      max = 0;
+      continue;
+    }
+    if (previous !== null) {
+      const step = (s.resp.phase - previous + 1) % 1;
+      // Un salto mayor a 1/8 de ciclo no acredita cobertura continua.
+      if (step > 0.125) {
+        travel = 0;
+        min = 1;
+        max = 0;
+      } else travel += step;
+    }
+    previous = s.resp.phase;
+    min = Math.min(min, s.resp.volume);
+    max = Math.max(max, s.resp.volume);
+    // 1e-9 solo absorbe redondeo de fase; 0.05/0.95 cubren los extremos del trazado normalizado.
+    if (travel >= 1 - 1e-9 && min <= 0.05 && max >= 0.95) return true;
+  }
+  return false;
+}

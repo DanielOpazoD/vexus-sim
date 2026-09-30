@@ -4495,7 +4495,7 @@ integra desde su borde (`apG`: 6–12 % → ≤ 0,34 % de error en float32 en la
 de anchura nula daba 0 y no el rayo de su línea. (7) Prueba del margen de `APERTURE_SEARCH_LINES` (35,4 de 40 líneas con
 8°). (8) Comentarios desfasados de `passes.glsl.ts`, `pleura.ts` e `interfaceEcho.test.ts`.
 
-## 94. Contrato de adquisición y medición M con incertidumbre de resolución (30-09-2026)
+## 92. Contrato de adquisición y medición M con incertidumbre de resolución (30-09-2026)
 
 **Contexto.** En `main` a3a5b1a, E2E4 falló y pasó al reintentar: envolvente 27,900 % frente a verdad 30,420 %;
 los cuatro clics redondeados por separado dieron 25 %. `failOnFlakyTests` detectó correctamente el fallo.

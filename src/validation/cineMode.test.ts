@@ -198,6 +198,23 @@ describe('Modo M: línea y columna', () => {
 });
 
 describe('Colapsabilidad de la VCI (modo M)', () => {
+  it('los extremos numéricos se acercan a la medida cuando mejora la resolución', () => {
+    const coarse = ivcPixelInterval(20, 15, 0.5);
+    const fine = ivcPixelInterval(20, 15, 0.25);
+    expect(coarse[0]).toBeCloseTo(20.5128205128, 8);
+    expect(coarse[1]).toBeCloseTo(29.2682926829, 8);
+    expect(fine[0]).toBeCloseTo(22.7848101266, 8);
+    expect(fine[1]).toBeCloseTo(27.1604938272, 8);
+    expect(fine[1] - fine[0]).toBeLessThan(coarse[1] - coarse[0]);
+    expect(ivcPixelInterval(20, 15, 0)).toEqual([25, 25]);
+  });
+
+  it('un diámetro de un píxel no resuelve colapso: intervalo finito 0..100, sin NaN', () => {
+    const pixel = 240 / 176;
+    expect(ivcPixelInterval(pixel, pixel, pixel)).toEqual([0, 100]);
+    expect(ivcPixelInterval(1.1, 1, pixel)).toEqual([0, 100]);
+  });
+
   it('el intervalo de resolución contiene los bordes antes de redondear a distintas alturas CSS', () => {
     const edges = [100.1487343567918, 112.60165389685285, 101.44323725227518, 110.42177219725097];
     const ideal = ivcFromCalipers(edges[1] - edges[0], edges[3] - edges[2]);

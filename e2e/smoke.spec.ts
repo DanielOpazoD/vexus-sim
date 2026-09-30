@@ -1435,6 +1435,16 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
   // un clic sobre la imagen coloca la línea M, como la puerta del PW
   await page.mouse.click(line!.x, line!.y);
   await expect.poll(() => page.evaluate(() => window.__vexusTest!.sim().mmode.theta)).toBeCloseTo(line!.theta, 2);
+  // Un drag iniciado antes de congelar no puede mover la guía sobre una adquisición congelada.
+  const heldTheta = await page.evaluate(() => window.__vexusTest!.sim().mmode.theta);
+  await page.mouse.move(line!.x, line!.y);
+  await page.mouse.down();
+  await page.keyboard.press(' ');
+  await withinFrames(page, 2, 'FREEZE durante drag M', async () => (await textOf(page, '#live-chip')) === 'FREEZE' || 'aún no congelado');
+  await page.mouse.move(line!.x + 50, line!.y);
+  expect(await page.evaluate(() => window.__vexusTest!.sim().mmode.theta)).toBe(heldTheta);
+  await page.mouse.up();
+  await page.keyboard.press(' ');
   // la franja cubre un ciclo respiratorio y medio (14/min: 4,3 s; con SwiftShader, ≤ 0,25 s por cuadro): se mide sobre
   // lo que cubre, y la verdad en el mismo intervalo
   const sv = await page.evaluate(() => (document.getElementById('mmode') as HTMLCanvasElement).clientWidth / (25 * 3.2));
@@ -1594,13 +1604,18 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
   await page.getByRole('button', { name: 'VCI modo M', exact: true }).click();
   const box = (await page.locator('#mmode').boundingBox())!;
   const clicked: number[] = [];
+  const pixels: number[] = [];
   for (const i of [iMax, iMin]) {
     const c = band.out[i];
     // el lienzo tiene densidad 1: su píxel x es el de la ventana
     const x = Math.round(box.x + c.x + 0.5);
     for (const r of [env[i].top, env[i].bottom]) {
-      const y = Math.round(box.y + (r / band.depth) * box.height);
-      clicked.push(((y - box.y) / box.height) * band.depth);
+      // El segundo extremo tiene peor resolución: verifica que no se pierden sus metadatos al fijar t.
+      await page.locator('#mmode').evaluate((el, h) => (el.style.height = `${h}px`), clicked.length % 2 ? box.height / 2 : box.height);
+      const pointBox = (await page.locator('#mmode').boundingBox())!;
+      const y = Math.round(pointBox.y + (r / band.depth) * pointBox.height);
+      clicked.push(((y - pointBox.y) / pointBox.height) * band.depth);
+      pixels.push(band.depth / pointBox.height);
       await page.mouse.click(x, y);
     }
   }
@@ -1611,12 +1626,27 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
   const [d1, d2] = [Math.abs(clicked[1] - clicked[0]), Math.abs(clicked[3] - clicked[2])];
   const ciClicks = (100 * (Math.max(d1, d2) - Math.min(d1, d2))) / Math.max(d1, d2);
   expect(Math.abs(ci - ciClicks), `${tag} · calibres ${ci} % (puntos ${ciClicks.toFixed(1)} %)`).toBeLessThanOrEqual(0.51);
-  const interval = /Resolución: ([\d.]+)–([\d.]+) %/.exec((await result.textContent()) ?? '')!;
+  const interval = /Resolución: ([\d,]+)–([\d,]+) %/.exec((await result.textContent()) ?? '')!;
   expect(interval, 'La incertidumbre de los clics debe ser visible al alumno').not.toBeNull();
-  const [lo, hi] = [Number(interval[1]), Number(interval[2])];
+  const [lo, hi] = [Number(interval[1].replace(',', '.')), Number(interval[2].replace(',', '.'))];
+  const pixel = Math.max(...pixels);
+  const max = Math.max(d1, d2);
+  const min = Math.min(d1, d2);
+  expect(lo).toBeCloseTo(Math.max(0, (100 * (max - pixel - min - pixel)) / (max - pixel)), 1);
+  expect(hi).toBeCloseTo((100 * (max + pixel - Math.max(0, min - pixel))) / (max + pixel), 1);
   // ±0,05 exclusivamente por mostrar el intervalo con un decimal. La banda mantiene su gate físico ±5 arriba.
   expect(ciBand).toBeGreaterThanOrEqual(lo - 0.05);
   expect(ciBand).toBeLessThanOrEqual(hi + 0.05);
   expect(Math.max(lo - band.truth.ci, band.truth.ci - hi, 0), tag).toBeLessThanOrEqual(5);
+  await test.info().attach('VCI M: resolución distinta por extremo', { body: await page.screenshot(), contentType: 'image/png' });
+  // Un calibre de un píxel a baja altura CSS supera el mínimo de 1 mm, pero no resuelve colapso.
+  await page.getByRole('button', { name: 'VCI modo M', exact: true }).click();
+  await page.locator('#mmode').evaluate((el) => (el.style.height = '80px'));
+  const smallBox = (await page.locator('#mmode').boundingBox())!;
+  for (const dx of [40, 80]) {
+    for (const dy of [40, 41]) await page.mouse.click(Math.round(smallBox.x + dx), Math.round(smallBox.y + dy));
+  }
+  await expect(result).toContainText('Resolución: 0,0–100,0 %');
+  await expect(result).not.toContainText('NaN');
   expect(errors).toEqual([]);
 });

@@ -132,7 +132,7 @@ export class MeasureTab {
     if (this.ctx.store.get().tool !== 'mmode') return;
     const pts = this.mPoints.length >= 4 ? [] : this.mPoints;
     const k = pts.length;
-    pts.push(k % 2 ? { t: pts[k - 1].t, r: p.r } : p);
+    pts.push(k % 2 ? { ...p, t: pts[k - 1].t } : p);
     const d = (i: number) => Math.abs(pts[i + 1].r - pts[i].r);
     if (k % 2 && d(k - 1) < 1) pts.length = k - 1;
     this.mPoints = pts;
@@ -289,7 +289,7 @@ export class MeasureTab {
       tool === 'caliper'
         ? 'VCI: marca ambas paredes perpendicular al eje. Esc cancela.'
         : tool === 'mmode'
-          ? `Congela (Espacio). VCI en M: ambas paredes en máx./mín. Calibre ${(this.mPoints.length >> 1) + 1}/2, punto ${(this.mPoints.length % 2) + 1}/2.`
+          ? `Espacio congela. VCI M: paredes máx./mín. Calibre ${(this.mPoints.length >> 1) + 1}/2, punto ${(this.mPoints.length % 2) + 1}/2.`
           : 'Puerta en el vaso: espera 4 latidos estables y pulsa «Capturar». Se mide el espectro adquirido.',
     );
     const r = row(this.captureCard);
@@ -355,7 +355,7 @@ export class MeasureTab {
       `<div class="grade">VExUS ${gradeValueText(res)} <span class="small">${resultStatusText(res)}</span></div>`,
       `<div>VCI: ${ivcMax !== null ? ivcMax.toFixed(1) + ' mm' : '—'} ${res.ivcDilated === null ? '' : res.ivcDilated ? '<span class="small">(≥ 20 mm: dilatada)</span>' : '<span class="small">(< 20 mm)</span>'}</div>`,
       mM
-        ? `<div>VCI modo M: máx ${mm(mM.maxMm)} · mín ${mm(mM.minMm)} mm → colapso <b>${mM.ciPct.toFixed(0)} %</b>${mTruth}<div class="small">Resolución: ${mM.pixels.map((v) => v.toFixed(1)).join('–')} %; excluye pared y error físico.</div></div>`
+        ? `<div>VCI modo M: máx ${mm(mM.maxMm)} · mín ${mm(mM.minMm)} mm → colapso <b>${mM.ciPct.toFixed(0)} %</b>${mTruth}<div class="small">Resolución: ${mM.pixels.map(mm).join('–')} %; excluye pared y error físico.</div></div>`
         : '',
       line(
         'hepatic',

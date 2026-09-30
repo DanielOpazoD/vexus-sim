@@ -4509,6 +4509,9 @@ accesibles al alumno y comprueba por separado la conversión y presentación (±
 el intervalo de cuantización mostrado y el error físico de la banda respecto a la verdad (±5, sin ampliación).
 El intervalo propaga ±medio píxel CSS por borde, sin verdad oculta; no incluye selección de pared ni error físico.
 Una tentativa subpíxel falló porque el navegador cuantiza los eventos; se descartó en vez de falsear la UI.
+Se conserva la resolución de ambos extremos al fijar el tiempo del par; si cambia tamaño/zoom, se usa la peor
+resolución. Un diámetro cuyo intervalo incluye cero da 0–100 %, sin NaN. Un drag iniciado antes de congelar
+queda bloqueado durante la pausa para conservar la guía de la adquisición congelada.
 
 **Consecuencias.** Una nueva línea necesita adquirir nuevas columnas; lo anterior queda negro en lugar de
 atribuirlo al nuevo rayo. No hay lecturas GPU por cuadro ni texturas adicionales. Se retira la promesa documental
@@ -4518,6 +4521,8 @@ por cuadro siguen pendientes; esta corrección no calibra el modelo físico.
 **Verificación.** Regresión pura de cuantización a alturas CSS 180/340/680/1000, cambio de línea con reloj congelado y slots temporales; e2e de la cadena
 GPU → banda → clics → calibres mantiene correlación, residual y límite físico. Resultados completos y CI se
 registran en el PR, no se presupone que un reintento verde sea éxito.
+Extremos numéricos y ancho decreciente al mejorar resolución; e2e con distinta altura por extremo, calibre de
+un píxel y congelación durante drag. La captura adjunta muestra el intervalo visible al alumno.
 
 ## Iteración 2 — informe de cierre (22-09-2026)
 

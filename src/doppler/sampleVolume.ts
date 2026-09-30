@@ -1,3 +1,4 @@
+import { hannWindow } from '../core/fft';
 import { SeededRandom } from '../core/random';
 import type { Vec3 } from '../core/vec3';
 import { dopplerShiftHz } from '../core/units';
@@ -135,6 +136,18 @@ function startAmpRamp(s: Scatterer, target: number): void {
 }
 /** Ruido electrónico relativo a la sangre a transmisión 1 ([EXTRAPOLACIÓN PROPIA]). */
 const NOISE_STD = 0.0004;
+
+/**
+ * Potencia media por bin (dB) del ruido del receptor en el espectrograma con la ganancia espectral `gainDb`: ruido
+ * complejo de desviación NOISE_STD por componente, ventana de Hann de `fftSize` muestras sin normalizar,
+ * E|X_k|² = 2σ²·Σw². El equipo conoce su propio ruido; la calidad lo usa para reconocer el aliasing fuerte (decisión 93).
+ */
+export function receiverNoiseDb(gainDb: number, fftSize: number): number {
+  const w = hannWindow(fftSize);
+  let sw2 = 0;
+  for (const x of w) sw2 += x * x;
+  return 10 * Math.log10(2 * NOISE_STD * NOISE_STD * sw2) + gainDb;
+}
 
 export class SampleVolumeIQ {
   private scatterers: Scatterer[] = [];

@@ -4,6 +4,7 @@ import { nyquistVelocityCms, wrapToNyquist } from '../core/units';
 import type { Simulator } from '../app/simulator';
 import type { SpectralColumn } from '../doppler/spectral';
 import { velocityFromShiftMmS } from '../core/units';
+import { overlayOnSpectrum, spectrumRowOf, type CaptureOverlay } from './captureOverlay';
 
 /**
  * Gráficos vectoriales sobre el sector: regla, marcador, foco, cuadro, puerta y línea M. La regla, el foco y la caja
@@ -205,7 +206,14 @@ export class SpectrogramView {
    * El eje vertical es la banda [−PRF/2, PRF/2] desplazada por la línea de
    * base; la velocidad rotulada usa la corrección angular del usuario.
    */
-  draw(sim: Simulator, columns: readonly SpectralColumn[], tNow: number, secondsVisible: number, cursorT: number | null = null): void {
+  draw(
+    sim: Simulator,
+    columns: readonly SpectralColumn[],
+    tNow: number,
+    secondsVisible: number,
+    cursorT: number | null = null,
+    capture: CaptureOverlay | null = null,
+  ): void {
     const ctx = this.canvas.getContext('2d');
     if (!ctx) return;
     const W = this.canvas.width;
@@ -311,8 +319,64 @@ export class SpectrogramView {
       ctx.lineTo(x, H);
       ctx.stroke();
     }
+    if (capture && overlayOnSpectrum(capture, columns))
+      drawCaptureOverlay(ctx, capture, (t) => ecgX(t, this.timeline.rightT, secondsVisible, W), H);
     if (cursorT !== null) drawCursor(ctx, ecgX(cursorT, this.timeline.rightT, secondsVisible, W), H);
   }
+}
+
+/**
+ * Lo medido en la última captura sobre el espectro (decisión 94): los latidos analizados (corchetes arriba), la traza
+ * automática y, si la captura vale, sus marcas. La traza de una captura rechazada va en otro color.
+ */
+function drawCaptureOverlay(ctx: CanvasRenderingContext2D, o: CaptureOverlay, xOf: (t: number) => number, H: number): void {
+  const yOf = (f: number) => spectrumRowOf(f, o.prfHz, o.display, H);
+  ctx.save();
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = 'rgba(92,200,255,0.8)';
+  for (const [t0, t1] of o.beats) {
+    const x0 = xOf(t0);
+    const x1 = xOf(t1);
+    ctx.beginPath();
+    ctx.moveTo(x0 + 1, 22);
+    ctx.lineTo(x0 + 1, 16);
+    ctx.lineTo(x1 - 1, 16);
+    ctx.lineTo(x1 - 1, 22);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = o.accepted ? '#ffd166' : '#ff8a8a';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  let pen = false;
+  let lastY = 0;
+  for (const p of o.trace) {
+    if (!Number.isFinite(p.fHz)) {
+      pen = false;
+      continue;
+    }
+    const x = xOf(p.t);
+    const y = yOf(p.fHz);
+    // donde la traza se pliega por la línea de base salta de un borde al otro: no se une
+    if (pen && Math.abs(y - lastY) < H / 2) ctx.lineTo(x, y);
+    else ctx.moveTo(x, y);
+    pen = true;
+    lastY = y;
+  }
+  ctx.stroke();
+  if (o.accepted) {
+    ctx.font = '10px sans-serif';
+    for (const m of o.marks) {
+      const x = xOf(m.t);
+      const y = yOf(m.fHz);
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(x, y, 3, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.fillStyle = '#ffd166';
+      ctx.fillText(m.label, x + 4, y < 14 ? y + 12 : y - 4);
+    }
+  }
+  ctx.restore();
 }
 
 /**

@@ -4550,6 +4550,139 @@ al arrancar/abrir Medir, una al armar y resultado inmediato en el mismo turno de
 existente conserva la captura de señal válida y la de falta de contacto en la cadena real. Checks y CI se
 registran en el PR; estos cambios no calibran fisiología ni realismo.
 
+## 94. La medición Doppler del alumno no depende de la escala: porta en su semiplano fijo, envolvente unilateral, aliasing fuerte, identidad del vaso y lo medido a la vista
+
+**Recuperación (30-09-2026).** Procede del PR120 (6eb4113), sobre la decisión93 de carga diferida. Las cifras del banco de168 capturas y seis semillas son evidencia histórica interna de esa rama, no mediciones del SHA recuperado ni validación clínica externa. Presupuestos intactos: se retira el aumento heredado del PR original. Resultados de la recuperación y corrección de overlay se registran en el nuevo PR.
+
+**Contexto.** Sirve a los objetivos 1 (causalidad: lo que mide el alumno coincide con la verdad) y 5 (enseñar a obtener) de
+`docs/MISION.md`, bajo el criterio 2 (seguridad del mensaje clínico). Un clínico independiente del panel de evaluación
+(27-09-2026, main a386e5e; `scratchpad/eval/clinico/`) midió en la app la PF portal del sano, con verdad 13–20 %: 100 % a
+±20 cm/s, 111–114 % a ±40 (la escala por defecto), 79–95 % a ±60 y 18–24 % a ±80; el grave, 133 % frente a 75 %; la FA, 60
+frente a 32; la trampa de la IT, 77 frente a 35; la de la VPP, 80 frente a 17. Todas con el visto bueno de la calidad: una
+porta «grave» en un sano. Además, (2) tras «Capturar» no se veía qué se había medido, (3) la fila «Suprahepática» sobre la
+porta daba «leve (S<D)», la fila «Porta» sobre la suprahepática «PF 117 %, grave» y la «Renal» sobre la suprahepática
+«bifásico», y (4) las pruebas no lo veían: `examChain.test.ts` medía a la PRF máxima con una copia de `updateGate` de
+transmisión fija 0,3 (−10 dB), en contra del «pipeline real» de `docs/TESTING.md`. Por la ruta real la porta está a −29 a
+−32 dB y su banda queda 6–18 dB sobre el suelo. Volcando el espectro columna a columna (`scratchpad/pf/analyze.mts`):
+
+- la traza tomaba el semiplano dominante columna a columna (`spectralMeasure.ts:247-270` en main). En las columnas con la
+  banda débil ganaban el clutter simétrico junto a la línea de base (el tejido que late o respira, los transitorios del
+  filtro de pared) o su imagen, y la traza cambiaba de signo: Vmín −1,9 a −3,8 cm/s y PF > 100 %;
+- la banda era la «contigua a la línea de base» (`columnBandEnvelopes`): un bin de ruido o de clutter junto a la base abría
+  la banda y los 3 bins vacíos que lo separan del flujo portal (casi en pistón, 5–20 cm/s) la cerraban. La envolvente caía a
+  2–6 cm/s en columnas sueltas y el cuantil 0,97 del mínimo la recogía;
+- una columna sin banda valía 0 cm/s: una caída de señal se leía como una pausa;
+- a ±80 (PRF 5200) la interlobar tenía el mismo defecto: el clutter simétrico del riñón llega a ±12 cm/s, sobre el filtro
+  de pared, y la vena monofásica del grave «fluía» en sístole («continua» con el visto bueno), y un hueco de una sola columna
+  hacía «bifásico» al sano (7 de 49 capturas aceptadas con un patrón falso en el barrido de 7 casos × 3 semillas);
+- con la escala muy por debajo de la velocidad (±4–14 cm/s) la sangre se plegaba varias veces, llenaba la banda sin dejar
+  banda que detectar y la calidad decía «no hay flujo» o «intermitente» (limitación `severe-aliasing-not-detected`).
+
+**Opciones.** Subir el margen de detección (pierde la porta débil entera); suavizar el espectro más en todos los vasos
+(borra la S del sano y las pausas renales de 20 ms); medir la porta sobre la media espectral en lugar de la envolvente (la
+VExUS se define sobre la velocidad máxima del trazado); exigir apnea y la escala alta para la porta (el alumno no puede
+equivocarse como en un equipo, objetivo 5); para la identidad, adivinar el vaso por la forma de la onda (una porta
+pulsátil y una suprahepática se confunden justo cuando importa). Para el aliasing fuerte, un umbral sobre la potencia total
+(la puerta fuera del vaso con clutter también la tiene).
+
+**Decisión.**
+
+1. **Porta en su semiplano anterógrado fijo** (`portalTrace`, `measureObservedPortal`): el semiplano del flujo es el de más
+   energía unilateral en toda la captura, como la vena en la interlobar; si está vacío en una columna y el contrario tiene
+   flujo unilateral, la porta se invierte ahí y la traza es negativa (la PF > 100 % de una porta hepatófuga sigue
+   existiendo). Una columna sin flujo trazable es un hueco (NaN), no 0; la mediana temporal de 5 columnas ignora los
+   huecos y un promedio móvil de 60 ms quita el temblor del moteado espectral (±3 cm/s sobre una porta de 15 cm/s: por sí
+   solo, una PF de ~35 %; a ±20 hay ~10 espectros independientes por segundo). Vmáx y Vmín son los cuantiles 0,97 y 0,03 de
+   la traza de cada latido cubierto por el espectro (≥ 90 %, como en la calidad) con traza en ≥ 50 % de sus columnas; la
+   PF, la mediana por latido. El sentido del flujo se toma de las columnas de los latidos medidos (la puerta pudo estar antes
+   en otro vaso: con la suprahepática 3 s antes, la porta salía «hacia atrás», Vmáx negativa y una PF «no aplicable» con el
+   visto bueno), y un latido con Vmáx ≤ 0 no se mide.
+2. **Envolvente unilateral** (`halfPlaneEnvelopeHz`, `spectral.ts`): cuentan los bins fuera de la banda del filtro de pared,
+   significativos y ≥ 6 dB sobre su espejo (`MIRROR_MARGIN_DB`: el flujo es unilateral; el clutter, los transitorios y la
+   imagen, simétricos); la banda crece desde el bin de más potencia hacia los dos lados tolerando un hueco de 60 Hz
+   (`BAND_GAP_HZ`, 3 bins a 2600 Hz: a 1300 Hz el bin mide 10 Hz y el moteado parte la banda), y la envolvente es el
+   percentil 92 % de la potencia sobre el espejo. Ventana, cuantiles y hueco se eligieron en una rejilla sobre 168 capturas
+   volcadas de la cadena del alumno y se validaron con otras tres semillas [EXTRAPOLACIÓN PROPIA]. La interlobar usa la
+   misma envolvente en cada semiplano (`observedSideTraces`); `sideEnergyDb` cuenta solo la energía unilateral (el clutter
+   simétrico acercaba la vena a su arteria: 4 dB en vez de 20); el mínimo de la vena es el que se sostiene ≥ 20 ms
+   (`RENAL_GAP_MIN_S`, la pausa que cuenta la verdad). La suprahepática no cambia: su medición ya era estable con la escala
+   (100 de 100 capturas aceptadas con el patrón de la verdad).
+3. **La calidad juzga lo trazado** (`QualityOptions.present`): en la porta y la interlobar una columna tiene sangre si tiene
+   traza unilateral; con `bloodInColumn`, el clutter simétrico de la respiración «era» sangre. **Aliasing fuerte**
+   (`outerBandExcessDb`): si la captura ya no era medible por «no hay flujo» o «intermitente» y la mediana de la potencia
+   media en la mitad exterior de la banda (|f| > PRF/4) está ≥ 3 dB sobre el ruido del receptor (`receiverNoiseDb`, que el
+   equipo conoce: 2σ²·Σw², −48,1 dB a ganancia 0), el motivo es aliasing, «suba la escala». Medido: sangre plegada en
+   apnea (±6–14 cm/s), 3–21 dB; puerta 25 mm más honda, fuera del vaso, −0,2 a +0,3 dB. En la porta, además, es aliasing
+   el Vmáx de un latido ≥ 0,85 del Nyquist (el pico se recorta y la PF baja: la FA a ±15–16 salía 25 % con verdad 36 %) y
+   la traza «invertida» más allá de medio Nyquist (el pico plegado al otro lado: una porta hepatófuga crece desde la base;
+   la cirrosis a ±14 salía 171–202 % con verdad 35 %). **Filtro de pared** (`wall-filter`, «baje el filtro de pared»): si
+   Vmín queda en la banda de transición del filtro (hasta 1,5 veces el corte y un bin) o la traza se hunde en un hueco de ≥
+   40 ms desde ella, el valle está por debajo del corte y la PF saldría menor: con el filtro a 300 Hz el grave (verdad 76
+   %) daba 30–46 % y la FA 21–25 %, aceptadas. Con el filtro por defecto (25 Hz) no se dispara en ninguna captura.
+4. **Una sola ruta de captura** (`doppler/capture.ts`, `captureProtocolVessel`): la de «Capturar» y la de las pruebas. Toma
+   los 4 últimos latidos completos de los últimos 7 s de espectro con la PRF actual y descarta 0,1 s tras un cambio de escala
+   (`captureColumns`, `WALL_SETTLE_S`: el transitorio del filtro de pared con el clutter dentro). La geometría de la puerta es
+   `pwGate` (`app/pwGate.ts`), la de `Simulator.updateGate`, que la prueba ya no copia.
+5. **Identidad del vaso** (`doppler/vesselIdentity.ts`): el simulador registra en cada actualización de la puerta la sangre
+   de cada vaso del volumen de muestra (`Simulator.gateTrack`, los últimos 10 s). Si en los latidos medidos domina otro
+   sistema que el de la fila (la
+   interlobar admite su arteria), la captura se rechaza antes que por cualquier otro motivo: «no medible: vaso equivocado,
+   la puerta está en la porta (esta fila mide una suprahepática: recoloque la puerta)». Sin sangre en la puerta no hay
+   veredicto y la calidad dice por qué. Un equipo no sabe qué vaso hay bajo la puerta: es el supervisor junto al alumno.
+6. **Lo medido a la vista** (`ui/captureOverlay.ts`, `SpectrogramView.draw`): tras «Capturar», el espectro dibuja la traza
+   automática (ámbar; roja si la captura no vale), los latidos analizados (corchetes arriba) y, si la captura vale, las
+   marcas donde se leyó cada valor (S/D/A en la suprahepática, Vmáx/Vmín en la porta, S/D/mín en la interlobar;
+   `CaptureMark`). Se guarda en Hz físicos con la PRF, la línea de base y la inversión con que se pintaron sus columnas (el
+   espectrograma es un mapa de bits que no se repinta), así que sigue sobre su espectro congelado y en el cine; lo que sale
+   de la banda se pliega como el espectro. «Borrar mediciones», el cambio de caso y el PW apagado o reiniciado lo quitan.
+
+**Consecuencias.** La PF del alumno por la ruta de la aplicación, 7 casos × apnea y respiración tranquila × 3 semillas × ±20,
+±40, ±60 y ±80 cm/s (`examChainScale.test.ts`, 168 capturas):
+
+|                               | Aceptadas | \|PF − verdad\| ≤ 10, verdad de los latidos medidos | … verdad de 7 s               | «Grave» con verdad < 30 % |
+| ----------------------------- | --------- | --------------------------------------------------- | ----------------------------- | ------------------------- |
+| main a386e5e                  | 109       | —                                                   | 31 (28,4 %; error medio 44,8) | 26                        |
+| con la decisión, semillas 0–2 | 115       | 115 (100 %)                                         | 113 (98,3 %)                  | 0                         |
+| semillas 3–5                  | 118       | 117 (99,2 %)                                        | 116 (98,3 %)                  | 0                         |
+| semillas 6–8                  | 111       | 111 (100 %)                                         | 105 (94,6 %)                  | 0                         |
+
+La verdad de 7 s es la de la prueba en main (que no da los latidos medidos); la de los latidos medidos compara la medición
+con lo que midió. La diferencia está en la FA con respiración: su PF cambia de un latido a otro (12–47 % en una captura) y
+4 latidos pueden quedar a > 10 puntos de 7 s (26 frente a 41 %; limitación `af-capture-beat-sampling`). Error medio frente
+a la verdad de los latidos medidos: 2,3–2,5 puntos. Mediana de las capturas aceptadas en apnea a ±20/±40/±60/±80
+(semillas 0–2, verdad de 7 s; a ±20 el sano y el grave son aliasing): sano —/16/17/14 (13), grave —/70/73/73 (76), FA 33/32/32/32 (35), PIA 24/28/26/26 (26), IT 35/37/35/33 (35), VPP 19/19/17/18
+(17), cirrosis 38/35/35/35 (35). Las rechazadas: a ±20, aliasing (25); con respiración a ±40–±80, «intermitente» (28). La interlobar no da ningún patrón falso aceptado (0 de 51 en el barrido; en main, 7 de 49) y la suprahepática sigue igual. Con respiración
+tranquila más capturas son no medibles: el sano a ±40 es «intermitente» (algún latido sin traza: pida apnea), la
+interlobar pasa a menudo de «intermitente» a «no hay flujo» (la vena ocupa < 20 % de las columnas una vez que el clutter no
+cuenta; el texto de «no hay flujo» añade «si respira, pida apnea»), y a ±20 la porta y la interlobar del grave dicen
+aliasing. El alumno ve dónde se midió. Queda el aliasing extremo de la porta a ±4–6 cm/s (la banda del filtro de pared, 62,5
+Hz, es media banda: «no hay flujo»). La cadena del alumno pasa a la transmisión real y a la captura de la app; las pruebas
+lentas crecen ~4 min de CPU en dos archivos que corren en paralelo. El build histórico de la rama original crecía 8,2 kB (333,7 → 341,9 kB sobre a386e5e). En esta recuperación se conserva el presupuesto de335 KiB y se mide el total incluyendo todos los módulos diferidos; no se arrastra el aumento a343 KiB.
+
+**Verificación.** Primero la prueba que falla: `examChainScale.test.ts` (PF de la porta, las 4 escalas, 7 casos, apnea y
+respiración, 3 semillas; ≥ 95 % a ≤ 10 puntos, ninguna «grave» con verdad < 30 %, ≥ 80 % medibles en apnea a ±40–±80) falla
+en main en los 8 casos; `examChainScalePatterns.test.ts` (suprahepática e interlobar a las 4 escalas, y la interlobar en apnea
+a ±60–±80 con sesiones nuevas y 3 semillas) falla en main en 5 casos por patrones renales falsos aceptados. Las dos pasan con
+la decisión, como el caso de cerca del Nyquist (±10–16) y del filtro de pared a 300 Hz en la cirrosis, el grave y la FA,
+que en main acepta PF falsas. `portalMeasure.test.ts` (sintéticos): la envolvente ignora el clutter simétrico y el bin
+suelto; el pico recortado y el plegado son aliasing, el valle en el filtro de pared no se mide y el sentido se toma de los
+latidos medidos (las cuatro fallan con esas guardas quitadas); la PF de una banda débil con clutter y caídas de señal sigue a la limpia (falla con la medición de main); el mismo flujo alejándose o
+invertido da la misma PF; una porta que se invierte da PF > 100 %; el ruido del receptor de la cadena; la sangre plegada que
+llena la banda es aliasing y el ruido solo, «no hay flujo»; la identidad del vaso y su mensaje; las columnas de la captura;
+la fila de cada frecuencia en el espectrograma y la traza en Hz físicos. `examChain.test.ts` por la ruta real (`support/
+studentChain.ts`). e2e «lo medido a la vista sobre el espectro y el vaso equivocado»: la fila «Suprahepática» sobre el tronco
+portal dice «vaso equivocado, la puerta está en la porta», la fila «Porta» mide y su traza se ve en el espectro, también
+congelado. `npm run calibrate` idéntico a main. Revisión adversarial de contexto limpio sobre el diff: el pico recortado o
+plegado cerca del Nyquist aceptado (cirrosis a ±14: 171–202 %), el filtro de pared alto que convertía el grave en leve, el
+sentido del flujo tomado de los 7 s y no de los latidos (PF «no aplicable» aceptada), la identidad juzgada en 7 s y un
+registro de la puerta más corto que la captura a 60 fps, el trazado que no seguía a su espectro tras invertir o mover la
+línea de base ni se plegaba como él y quedaba tras apagar el PW, latidos a medias en la mediana, y cifras de la
+documentación que no cuadraban; todo corregido. También señaló la FA con respiración y otras semillas, 16 frente a 40 %
+con el visto bueno: frente a la verdad de sus 4 latidos (27, 12, 21 y 40 %, medidos 17, 12, 15 y 37 %) la medición es
+correcta y lo que difiere es el muestreo del ritmo (`af-capture-beat-sampling`); la prueba compara ahora con la verdad de
+los latidos medidos y da también la de 7 s. Queda: una porta invertida en toda la captura se lee como anterógrada (como
+en main).
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

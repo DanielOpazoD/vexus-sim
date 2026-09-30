@@ -61,7 +61,7 @@ export default defineConfig({
             {
               name: 'pwMeasurements',
               includeDependenciesRecursively: false,
-              test: /src[\\/](?:doppler[\\/](?:spectralMeasure|measureQuality|qualityMessages)|vexus[\\/]measurements)\.ts$/,
+              test: /src[\\/](?:doppler[\\/](?:capture|spectralMeasure|measureQuality|qualityMessages)|vexus[\\/]measurements)\.ts$/,
             },
           ],
         },

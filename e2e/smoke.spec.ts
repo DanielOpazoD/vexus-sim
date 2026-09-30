@@ -140,6 +140,48 @@ test('ventanas (decisión 83): Intro en una tarjeta, mantenida como con el dedo,
   expect(errors).toEqual([]);
 });
 
+test('lo medido a la vista sobre el espectro y el vaso equivocado (decisión 94)', async ({ page }) => {
+  test.setTimeout(180_000);
+  const errors = await bootWithoutErrors(page, '?e2e=1');
+  await page
+    .locator('button', { hasText: /Apnea\s*esp/ })
+    .first()
+    .click();
+  await page.keyboard.press('p');
+  const capture = async (row: string) => {
+    await page.getByRole('tab', { name: 'Medir' }).click();
+    await page.getByRole('button', { name: row, exact: true }).click();
+    await page.getByRole('button', { name: 'Capturar' }).click();
+  };
+  // píxeles del trazado de la captura (ámbar, #ffd166) en el espectro: el mapa de grises del espectro no llega a ese tono
+  const tracePixels = () =>
+    page.evaluate(() => {
+      const c = document.getElementById('spectrum') as HTMLCanvasElement;
+      const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) if (d[i] > 225 && d[i + 1] > 180 && d[i + 1] < 235 && d[i + 2] < 150) n++;
+      return n;
+    });
+  // la fila «Suprahepática» con la puerta en el tronco portal: rechazada, con dónde está la puerta
+  expect(
+    await page.evaluate(() => {
+      window.__vexusTest!.goToStartPoint('portal');
+      return window.__vexusTest!.placeGate(['pvTrunk']);
+    }),
+  ).toBe(true);
+  await page.evaluate(() => window.__vexusTest!.advance(8));
+  await capture('Suprahepática');
+  await expect(page.locator('.result')).toContainText('VSH: no medible: vaso equivocado, la puerta está en la porta');
+  // la fila de la porta sobre el mismo vaso sí mide, y su traza queda dibujada sobre el espectro
+  await capture('Porta PF');
+  await expect(page.locator('.result')).toContainText(/Porta: \d+\.\d\/\d+\.\d cm\/s → PF \d+ %/);
+  await expect.poll(tracePixels, { timeout: 30_000 }).toBeGreaterThan(30);
+  // congelado sigue a la vista
+  await page.locator('#freeze').click();
+  await expect.poll(tracePixels, { timeout: 30_000 }).toBeGreaterThan(30);
+  expect(errors).toEqual([]);
+});
+
 test('modos por teclado, pestaña Medir y captura de una medición', async ({ page }) => {
   budget(180_000);
   // ?docente: al final se abre la pestaña Docente (en producción la casilla solo aparece así)
@@ -240,9 +282,9 @@ test('el speckle del parénquima hepático tiene la estadística del hígado: ca
   // tiene SNR = 1,91. Detectar intensidad (1,0), sumar magnitudes antes del haz (≈ 9) o suavizar
   // la envolvente (≈ 3,7) salen de la banda (src/validation/speckle.test.ts). Desde la decisión 89 el hígado es algo
   // pre-Rayleigh a propósito (sus dispersores fuertes y la densidad de 4 mm, como el hígado sano in vivo): en estos
-  // parches de 16 × 8 la SNR baja ×0,90–0,93 (`parenchymaTextureTwin.test.ts`: 2,08–2,11 → 1,91–1,95; SwiftShader
+  // parches de 16 × 8 la SNR baja ×0,90–0,94 (`parenchymaTextureTwin.test.ts`: 2,08–2,11 → 1,91–1,95; SwiftShader
   // 1,67–1,85, antes 1,82–2,00 con GPU) y la banda con ella, de 1,6–2,25 a 1,5–2,1. Con la textura, la intensidad da
-  // 0,99–1,03, |Re f| 1,35–1,39 y la caja de 3 × 5 de speckle.test.ts 2,93–3,20: siguen fuera.
+  // 0,99–1,03, |Re f| 1,35–1,39 y la caja de 3 × 5 de speckle.test.ts 2,94–3,20: siguen fuera.
   // Tres cuadros completos + lectura de la envolvente con SwiftShader: ~6 s cada uno en local y
   // ~3× en el runner de CI (agotó los 90 s por defecto).
   budget(240_000);
@@ -261,7 +303,7 @@ test('el speckle del parénquima hepático tiene la estadística del hígado: ca
 test('el banco de fidelidad mide el moteado del hígado despejado: el de un campo ideal con la textura del hígado', async ({ page }) => {
   // Banco de fidelidad (decisión 52). Con GPU real (M4) la subxifoidea del sano daba SNR 1,77,
   // fracción oscura 0,07, grietas 0,05, grano axial 0,77 mm (0,70 antes del pulso que se alarga con la profundidad,
-  // decisión 84), lateral 0,93–1,08 × la PSF y lóbulos < 0,03; la imagen mostrada, hígado en 92 de gris (mediana). Un
+  // decisión 84), lateral 0,94–1,08 × la PSF y lóbulos < 0,03; la imagen mostrada, hígado en 92 de gris (mediana). Un
   // defecto del moteado (intensidad,
   // magnitudes antes del haz, retícula periódica), una sombra dentro de la máscara o una lectura de
   // la imagen al revés lo sacan de estas bandas (src/validation/fidelity*.test.ts). Desde la decisión 89 el hígado lleva

@@ -9,6 +9,7 @@ import { modeHasColor, modeHasPw, type EquipmentCommand } from '../app/equipment
 import type { PanelContext, SectionOptions } from './panel/context';
 import { buildDopplerTab, type DopplerPanels } from './panel/dopplerTab';
 import { MeasureTab } from './panel/measureTab';
+import type { CaptureOverlay } from './captureOverlay';
 import type { MMark } from './mModeView';
 import type { TeacherTab } from './panel/teacherTab';
 
@@ -175,6 +176,11 @@ export class ControlPanel implements PanelContext {
 
   setIvcCaliper(mm: number | null): void {
     this.#measure.setIvcCaliper(mm);
+  }
+
+  /** Lo medido en la última captura PW, para el espectro (decisión 94). */
+  get captureOverlay(): CaptureOverlay | null {
+    return this.#measure.captureOverlay;
   }
 
   /** Modo M (decisión 80): calibres a la vista en la franja y un punto nuevo sobre ella. */

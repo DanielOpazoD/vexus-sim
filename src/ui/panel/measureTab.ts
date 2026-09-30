@@ -294,13 +294,18 @@ export class MeasureTab {
     );
     const r = row(this.#captureCard);
     if (tool !== 'caliper' && tool !== 'mmode') {
-      const b = button(r, this.#observations ? 'Capturar' : 'Preparando medición…', () => this.capture(tool)).el;
+      const b = button(r, '', () => this.capture(tool)).el;
       b.classList.add('primary');
-      b.disabled = !this.#observations;
-      if (this.#loadFailed)
-        note(this.#captureCard, 'No se pudo preparar la medición. Revisa la conexión y recarga.').setAttribute('role', 'alert');
+      this.#updateCaptureButton(b);
     }
     button(r, 'Cancelar (Esc)', () => this.#ctx.store.set({ tool: 'none' }));
+  }
+
+  #updateCaptureButton(b: HTMLButtonElement): void {
+    b.textContent = this.#observations ? 'Capturar' : 'Preparando medición…';
+    b.disabled = !this.#observations;
+    if (this.#loadFailed)
+      note(this.#captureCard, 'No se pudo preparar la medición. Revisa la conexión y recarga.').setAttribute('role', 'alert');
   }
 
   /** Se prepara al armar PW; la captura sigue siendo síncrona sobre el espectro del clic, sin carrera de paciente/equipo. */
@@ -314,7 +319,14 @@ export class MeasureTab {
         this.#loadFailed = true;
         errorLog.report('ui', e);
       })
-      .finally(() => this.#renderCapture());
+      .finally(() => {
+        const tool = this.#ctx.store.get().tool;
+        if (tool !== 'hepatic' && tool !== 'portal' && tool !== 'renal') return;
+        // Actualizar en sitio: Cancelar puede tener el foco y la herramienta pudo cambiar durante la descarga.
+        const b = this.#captureCard.querySelector<HTMLButtonElement>('button.primary');
+        if (!b) return;
+        this.#updateCaptureButton(b);
+      });
   }
 
   /** Captura la medición armada sobre el espectro adquirido. */

@@ -4541,11 +4541,11 @@ Los rótulos de calidad quedan separados del algoritmo y las exportaciones anter
 
 **Medición.** Frente al build de 9682afd: principal 343.029 → 332.908 bytes (−10.121); total JS de producción,
 incluidos Worker y módulos diferidos, 1.015.776 → 1.015.498 (−278). Se conserva la exclusión preexistente de
-testHooks y todos los límites. Es mejora de descarga inicial, no una reducción sustancial del peso total ni
+testHooks y todos los límites. Cifras medidas en2a290ab, antes del ajuste de foco y favicon; el tamaño final se registra en el PR. Es mejora de descarga inicial, no una reducción sustancial del peso total ni
 una mejora demostrada de FPS. No se prolonga el bloque con minificación manual de literales.
 
 **Tradeoff y verificación.** La primera medición PW espera una descarga de ~9,5 KiB; Docente también carga
-ese grupo porque comparte ventanas de análisis. La e2e sin ganchos demora la descarga y exige cero solicitudes
+ese grupo porque comparte ventanas de análisis. Al completar se actualiza solo el botón PW en sitio: se conserva el foco de Cancelar y no se reconstruye M/calibrador elegidos entretanto. Un favicon SVG legítimo evita el404 basal en Chrome visible, sin filtrar errores de consola. La e2e sin ganchos demora la descarga y exige cero solicitudes
 al arrancar/abrir Medir, una al armar y resultado inmediato en el mismo turno del clic preparado. El humo
 existente conserva la captura de señal válida y la de falta de contacto en la cadena real. Checks y CI se
 registran en el PR; estos cambios no calibran fisiología ni realismo.

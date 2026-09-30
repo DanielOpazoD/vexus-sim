@@ -4535,12 +4535,12 @@ Capturar sigue siendo síncrono: lee la adquisición y el equipo en el turno del
 pendiente que pueda pertenecer a otro paciente. Abrir Medir, usar los calibres o arrancar no pide el módulo.
 
 El grupo Rolldown no incluye dependencias recursivamente: incluirlas hacía que el principal importara el grupo
-estáticamente y lo precargara. Los campos y métodos internos de Panel, Medir y Docente usan privacidad nativa
+estáticamente y lo precargara. La mayor parte del estado interno y los métodos de Panel, Medir y Docente usan privacidad nativa
 ES2022; el minificador puede compactarlos sin renombrar la API pública. No se cambian shaders ni algoritmos.
 Los rótulos de calidad quedan separados del algoritmo y las exportaciones anteriores siguen disponibles.
 
-**Medición.** Frente al build de 9682afd: principal 343.029 → 332.740 bytes (−10.289); total JS de producción,
-incluidos Worker y módulos diferidos, 1.015.776 → 1.015.330 (−446). Se conserva la exclusión preexistente de
+**Medición.** Frente al build de 9682afd: principal 343.029 → 332.908 bytes (−10.121); total JS de producción,
+incluidos Worker y módulos diferidos, 1.015.776 → 1.015.498 (−278). Se conserva la exclusión preexistente de
 testHooks y todos los límites. Es mejora de descarga inicial, no una reducción sustancial del peso total ni
 una mejora demostrada de FPS. No se prolonga el bloque con minificación manual de literales.
 

@@ -32,7 +32,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Cambiado
 
-- Análisis PW diferido al armar una medición (93): botón de preparación mientras se descarga, captura síncrona después. Principal −10.289 bytes; total JS −446 bytes, con límites intactos. Privacidad nativa de las pestañas conserva la API pública.
+- Análisis PW diferido al armar una medición (93): botón de preparación mientras se descarga, captura síncrona después. Principal −10.121 bytes; total JS −278 bytes, con límites intactos. Privacidad nativa de las pestañas conserva la API pública.
 
 - Vasos orgánicos (90): las suprahepáticas y la porta cortadas de través son óvalos (antes, círculos perfectos) y su
   calibre ondula unos pocos por ciento a lo largo del vaso; una vena distendida por la congestión se redondea. La VCI se

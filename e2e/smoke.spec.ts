@@ -170,7 +170,7 @@ test('modos por teclado, pestaña Medir y captura de una medición', async ({ pa
     const button = page.getByRole('button', { name: 'Capturar' });
     const handle = await button.elementHandle();
     await button.click();
-    return handle!.getAttribute('data-capture-result');
+    return handle.getAttribute('data-capture-result');
   };
   // Ventana intercostal (la del protocolo) y la puerta sobre la suprahepática en un punto sin
   // sombras (técnica del operador); 7 s de espectro sin renderizar (`advance`: tiempo de simulación, no de reloj).

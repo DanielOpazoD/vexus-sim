@@ -141,7 +141,8 @@ test('ventanas (decisión 83): Intro en una tarjeta, mantenida como con el dedo,
 });
 
 test('lo medido a la vista sobre el espectro y el vaso equivocado (decisión 94)', async ({ page }) => {
-  test.setTimeout(180_000);
+  // CI observó operaciones GPU de20–46s: plazo operativo de arranque+trabajo, no tolerancia de señal.
+  budget(120_000);
   const errors = await bootWithoutErrors(page, '?e2e=1');
   await page
     .locator('button', { hasText: /Apnea\s*esp/ })
@@ -191,10 +192,16 @@ test('lo medido a la vista sobre el espectro y el vaso equivocado (decisión 94)
   // la fila de la porta sobre el mismo vaso sí mide, y su traza queda dibujada sobre el espectro
   await capture('Porta PF');
   await expect(page.locator('.result')).toContainText(/Porta: \d+\.\d\/\d+\.\d cm\/s → PF \d+ %/);
-  await expect.poll(tracePixels, { timeout: 30_000 }).toBeGreaterThan(30);
+  await withinFrames(page, 3, 'traza de captura >30 píxeles', async () => {
+    const n = await tracePixels();
+    return n > 30 || `traza: ${n} píxeles`;
+  });
   // congelado sigue a la vista
   await page.locator('#freeze').click();
-  await expect.poll(tracePixels, { timeout: 30_000 }).toBeGreaterThan(30);
+  await withinFrames(page, 3, 'traza de captura >30 píxeles', async () => {
+    const n = await tracePixels();
+    return n > 30 || `traza: ${n} píxeles`;
+  });
   expect(errors).toEqual([]);
 });
 

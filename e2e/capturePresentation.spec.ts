@@ -99,10 +99,14 @@ test('captura congelada conserva alineación al invertir, desplazar baseline, re
       return window.__vexusTest!.placeGate(['pvTrunk']);
     }),
   ).toBe(true);
-  await page.evaluate(() => {
+  const cineTarget = await page.evaluate(() => {
+    // Arranque/controles lentos: el reloj puede preceder la adquisición por varios segundos.
+    window.__vexusTest!.advance(8);
     window.__vexusTest!.advance(3);
     window.__vexusTest!.sim().render(); // Cuadro intermedio real para recorrer el historial congelado.
+    const t = window.__vexusTest!.sim().physiology.clock.t;
     window.__vexusTest!.advance(5);
+    return t;
   });
   await page.locator('#freeze').click();
   await expect(page.locator('#freeze')).toHaveAttribute('aria-pressed', 'true');
@@ -151,16 +155,16 @@ test('captura congelada conserva alineación al invertir, desplazar baseline, re
   });
   await expectTransformed(page, initial);
   const beforeCine = await snapshot(page);
-  const selectedT = await page.locator('#cine').evaluate((el) => {
+  // El arranque y los clicks también avanzan el reloj: 3 s absolutos pueden preceder al espectro capturado.
+  const selectedT = await page.locator('#cine').evaluate((el, target) => {
     const r = window.__vexusTest!.sim().renderer;
-    const target = 3;
     let closest = 0;
     for (let i = 1; i < r.cineCount; i++) if (Math.abs(r.cineFrame(i).t - target) < Math.abs(r.cineFrame(closest).t - target)) closest = i;
     const input = el as HTMLInputElement;
     input.value = String(closest);
     input.dispatchEvent(new Event('input', { bubbles: true }));
     return r.cineFrame(closest).t;
-  });
+  }, cineTarget);
   await expect.poll(() => page.evaluate(() => window.__vexusTest!.sim().renderer.cineShownFrame?.t)).toBe(selectedT);
   await expectTransformed(page, beforeCine);
   const latestT = await page.locator('#cine').evaluate((el) => {

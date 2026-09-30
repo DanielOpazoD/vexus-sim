@@ -173,9 +173,21 @@ describe('La porta que la escala o el filtro de pared no dejan medir (revisión 
     expect(measureObservedPortal(cols, beats, opts)!.quality.issue).toBeNull();
   });
 
+  it('un latido interior sin traza sigue contando para rechazar la captura', () => {
+    const cols = portalColumns({ top: pulsatile, snrDb: 40 });
+    const lost = beats[2];
+    for (const c of cols) if (c.t >= lost.tR && c.t < lost.tR + lost.rr) c.powerDb.fill(NOISE_DB);
+    const m = measureObservedPortal(cols, beats, opts)!;
+    expect(m.measuredBeats).not.toContainEqual(lost);
+    expect(m.measuredBeats.length).toBeGreaterThanOrEqual(3);
+    expect(m.quality.beats).toBe(beats.length);
+    expect(m.quality.validBeats).toBeLessThan(m.quality.beats);
+    expect(m.quality.issue).toBe('intermittent');
+  });
+
   it('el sentido del flujo se toma de los latidos medidos, no de lo que vio antes la puerta', () => {
     // los primeros 1,5 s la puerta veía un flujo fuerte alejándose (otro vaso); después, la porta hacia la sonda
-    const other = portalColumns({ top: () => 30, sign: -1, snrDb: 35 }, 21);
+    const other = portalColumns({ top: () => 44, sign: -1, snrDb: 35 }, 21);
     const portal = portalColumns({ top: pulsatile, snrDb: 25 }, 22);
     const cols = portal.map((c, i) => (c.t < 1.5 ? other[i] : c));
     const late = beats.filter((b) => b.tR > 1.5);
@@ -183,6 +195,7 @@ describe('La porta que la escala o el filtro de pared no dejan medir (revisión 
     expect(m.anterogradeSign).toBe(1);
     expect(m.vMax).toBeGreaterThan(0);
     expect(Number.isFinite(m.pulsatilityFraction)).toBe(true);
+    expect(m.quality.issue).toBeNull();
   });
 });
 
@@ -246,6 +259,26 @@ describe('Identidad del vaso de la puerta (decisión 94)', () => {
 });
 
 describe('Columnas de la captura (decisión 94)', () => {
+  it('la identidad usa los tres latidos medidos tras cambiar PRF, no el latido parcial previo', () => {
+    const cols = portalColumns({ top: pulsatile, snrDb: 30 }).map((c) => (c.t < 2.3 ? { ...c, prfHz: 3900 } : c));
+    const rhythm = { beatsBetween: (a: number, b: number) => beats.filter((x) => x.tR >= a && x.tR + x.rr <= b) };
+    const tNow = cols[cols.length - 1].t;
+    for (const wrongNow of [false, true]) {
+      const track = Array.from({ length: 270 }, (_, i) => {
+        const t = i * 0.02;
+        const old = t < 2.79;
+        const wrong = old ? !wrongNow : wrongNow;
+        return { t, vessels: wrong ? { hvRight: old ? 1 : 0.02 } : { pvTrunk: old ? 1 : 0.02 } };
+      });
+      const m = captureProtocolVessel('portal', cols, rhythm, tNow, opts, track)!;
+      expect(m.measuredBeats).toHaveLength(3);
+      expect(m.measuredBeats[0].tR).toBeGreaterThanOrEqual(2.8);
+      expect(m.quality.issue).toBe(wrongNow ? 'wrong-vessel' : null);
+      // La ventana solicitada daría el veredicto contrario por el peso del vaso antiguo.
+      expect(wrongGateVessel('portal', track, 2, 5.2)).toBe(wrongNow ? null : 'hepaticVein');
+    }
+  });
+
   it('solo las de la PRF actual y sin el transitorio del filtro de pared tras el cambio', () => {
     const col = (t: number, prfHz: number): SpectralColumn => ({ t, prfHz, powerDb: new Float32Array(N) });
     const spectrum = [
@@ -282,9 +315,9 @@ describe('Trazado de la captura sobre el espectro (decisión 94)', () => {
 
   it('la traza se guarda en Hz físicos: la misma captura invertida o corregida en ángulo cae en las mismas filas', () => {
     const cols = portalColumns({ top: pulsatile, snrDb: 30 });
-    const a = captureOverlay('portal', measureObservedPortal(cols, beats, opts)!, opts, PRF);
+    const a = captureOverlay(measureObservedPortal(cols, beats, opts)!, opts, PRF);
     const inv = { ...opts, invert: true, angleCorrectionRad: 0.6 };
-    const b = captureOverlay('portal', measureObservedPortal(cols, beats, inv)!, inv, PRF);
+    const b = captureOverlay(measureObservedPortal(cols, beats, inv)!, inv, PRF);
     const fa = a.trace.map((p) => p.fHz).filter(Number.isFinite);
     const fb = b.trace.map((p) => p.fHz).filter(Number.isFinite);
     expect(fb.length).toBe(fa.length);

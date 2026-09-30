@@ -122,6 +122,7 @@ void import('./ui/cutMapView')
   })
   .catch((e: unknown) => errorLog.report('corte', e));
 const panel = new ControlPanel($('panel'), sim, store, dispatch);
+panel.onCapture = () => drawTraces(sim());
 session.equipment.subscribe(() => panel.sync());
 const probeAnimator = new ProbeAnimator(
   () => sim().pose,
@@ -377,6 +378,19 @@ let loopDegraded = false;
 const heartRate = new HeartRateDisplay();
 let eqPrevCpu: CutMapView['lastMap'] = null;
 
+/** Una referencia de presentación para historial y captura; también se publica al pulsar Capturar. */
+function drawTraces(s: Simulator): void {
+  const t = s.physiology.clock.t;
+  // el ECG siempre está a la vista (el espectro, solo con PW; la franja M, con el modo M) y comparte con ellos el
+  // eje de tiempo; con el cine llevan el cursor de su cuadro y se desplazan con él (decisión 80)
+  const secondsVisible = ecgCanvas.clientWidth / (s.pw.sweepMmS * 3.2);
+  const cursorT = cine.cursorT();
+  const tRight = traceRight(t, cursorT, secondsVisible);
+  drawEcg(ecgCanvas, s, secondsVisible, tRight, cursorT);
+  spectrogram.draw(s, s.spectral.columns, tRight, secondsVisible, cursorT, panel.captureOverlay);
+  if (s.mmode.enabled && !gpu.lost) mview.draw(s.renderer, tRight, secondsVisible, cursorT, panel.mMarks);
+}
+
 function frame(now: number, dt: number): void {
   const s = sim();
   fitCanvases();
@@ -391,14 +405,7 @@ function frame(now: number, dt: number): void {
   nav?.draw();
   if (store.get().torso && !gpu.lost) cutMap?.draw(s, now);
   const t = s.physiology.clock.t;
-  // el ECG siempre está a la vista (el espectro, solo con PW; la franja M, con el modo M) y comparte con ellos el
-  // eje de tiempo; con el cine llevan el cursor de su cuadro y se desplazan con él (decisión 80)
-  const secondsVisible = ecgCanvas.clientWidth / (s.pw.sweepMmS * 3.2);
-  const cursorT = cine.cursorT();
-  const tRight = traceRight(t, cursorT, secondsVisible);
-  drawEcg(ecgCanvas, s, secondsVisible, tRight, cursorT);
-  spectrogram.draw(s, s.spectral.columns, tRight, secondsVisible, cursorT, panel.captureOverlay);
-  if (s.mmode.enabled && !gpu.lost) mview.draw(s.renderer, tRight, secondsVisible, cursorT, panel.mMarks);
+  drawTraces(s);
   const h = hudText({
     patientLabel: caseDisplayLabel(s.patient.id, store.get().debug),
     frozen: s.frozen,

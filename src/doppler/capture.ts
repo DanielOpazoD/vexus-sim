@@ -60,12 +60,11 @@ export function captureProtocolVessel<K extends ProtocolVessel>(
   const columns = captureColumns(spectrum, t0);
   const measure = kind === 'hepatic' ? measureObservedHepatic : kind === 'portal' ? measureObservedPortal : measureObservedRenal;
   const m = measure(columns, beats, opts) as CaptureResult[K] | null;
-  if (!m) return null;
+  if (!m || !m.measuredBeats.length) return m;
   // la identidad se juzga en los latidos medidos, no en los 7 s: la puerta pudo estar antes en otro vaso
-  const last = beats[beats.length - 1];
-  const found = beats.length
-    ? wrongGateVessel(kind, gateTrack, beats[0].tR, last.tR + last.rr)
-    : wrongGateVessel(kind, gateTrack, t0, tNow);
+  const effective = m.measuredBeats;
+  const last = effective.at(-1)!;
+  const found = wrongGateVessel(kind, gateTrack, effective[0].tR, last.tR + last.rr);
   if (found === null) return m;
   return { ...m, quality: { ...m.quality, issue: 'wrong-vessel', wrongVessel: { kind, found } } };
 }

@@ -39,6 +39,7 @@ export function tabAfterMode(mode: ImagingMode, tab: PanelTab): PanelTab {
  * plegado, y las explicaciones largas detrás del ⓘ de la sección.
  */
 export class ControlPanel implements PanelContext {
+  onCapture?: () => void;
   #syncables: Syncable[] = [];
   #tabs = new Map<PanelTab, HTMLButtonElement>();
   #panels = new Map<PanelTab, HTMLElement>();

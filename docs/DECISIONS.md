@@ -4552,10 +4552,12 @@ registran en el PR; estos cambios no calibran fisiología ni realismo.
 
 ## 94. La medición Doppler del alumno no depende de la escala: porta en su semiplano fijo, envolvente unilateral, aliasing fuerte, identidad del vaso y lo medido a la vista
 
-**Recuperación (30-09-2026).** Procede del PR120 (6eb4113), sobre la decisión93 de carga diferida. Las cifras del banco de168 capturas y seis semillas son evidencia histórica interna de esa rama, no mediciones del SHA recuperado ni validación clínica externa. Presupuestos intactos: se retira el aumento heredado del PR original. Resultados de la recuperación y corrección de overlay se registran en el nuevo PR.
+**Recuperación (30-09-2026).** Procede del PR120 (6eb4113), sobre la decisión93 de carga diferida. Las cifras del banco de168 capturas y seis semillas son evidencia histórica interna de esa rama, no mediciones del SHA recuperado ni validación clínica externa. Se retira el aumento heredado del PR original. Tras corregir presentación y ventana efectiva, se autoriza un aumento acotado de4 KiB solo del totalJS (1.024.000→1.028.096B, ~0,4%) para las correcciones y controles respiratorios. Límites porchunk, conteo y exclusiones permanecen intactos; el bloque cardíaco requiere presupuesto separado. Resultados de la recuperación y corrección de overlay se registran en el nuevo PR.
+
+**Corrección de ventana efectiva.** En la porta, calidad e identidad se juzgan entre el primer y último latido medido; se conservan los latidos interiores sin traza para no seleccionar solo los buenos. Un cambio dePRF no atribuye a la captura el peso de un latido parcial previo. Con respiración tranquila, la referencia sana puede conservar solo dos latidos trazables y se rechaza por pocos latidos, sin entrar al grado.
 
 **Contexto.** Sirve a los objetivos 1 (causalidad: lo que mide el alumno coincide con la verdad) y 5 (enseñar a obtener) de
-`docs/MISION.md`, bajo el criterio 2 (seguridad del mensaje clínico). Un clínico independiente del panel de evaluación
+`docs/MISION.md`, bajo el criterio 2 (seguridad del mensaje clínico). Un agente evaluador en rol clínico, separado del panel de evaluación
 (27-09-2026, main a386e5e; `scratchpad/eval/clinico/`) midió en la app la PF portal del sano, con verdad 13–20 %: 100 % a
 ±20 cm/s, 111–114 % a ±40 (la escala por defecto), 79–95 % a ±60 y 18–24 % a ±80; el grave, 133 % frente a 75 %; la FA, 60
 frente a 32; la trampa de la IT, 77 frente a 35; la de la VPP, 80 frente a 17. Todas con el visto bueno de la calidad: una
@@ -4632,9 +4634,11 @@ pulsátil y una suprahepática se confunden justo cuando importa). Para el alias
 6. **Lo medido a la vista** (`ui/captureOverlay.ts`, `SpectrogramView.draw`): tras «Capturar», el espectro dibuja la traza
    automática (ámbar; roja si la captura no vale), los latidos analizados (corchetes arriba) y, si la captura vale, las
    marcas donde se leyó cada valor (S/D/A en la suprahepática, Vmáx/Vmín en la porta, S/D/mín en la interlobar;
-   `CaptureMark`). Se guarda en Hz físicos con la PRF, la línea de base y la inversión con que se pintaron sus columnas (el
-   espectrograma es un mapa de bits que no se repinta), así que sigue sobre su espectro congelado y en el cine; lo que sale
-   de la banda se pliega como el espectro. «Borrar mediciones», el cambio de caso y el PW apagado o reiniciado lo quitan.
+   `CaptureMark`). Se guarda en Hz físicos con la PRF de sus columnas. Historial y traza usan la misma presentación
+   actual: cambiar línea de base, inversión o barrido reconstruye el bitmap desde las columnas, incluso congelado;
+   redimensionar o rebobinar el cine también lo reconstruye. Lo que sale de la banda se pliega como el espectro.
+   La captura pinta las anotaciones en el mismo evento que publica el resultado, sin esperar la siguiente pasada GPU.
+   Calidad, dirección e identidad juzgan los latidos efectivamente medidos; los anteriores no contaminan ese veredicto. «Borrar mediciones», el cambio de caso y el PW apagado o reiniciado lo quitan.
 
 **Consecuencias.** La PF del alumno por la ruta de la aplicación, 7 casos × apnea y respiración tranquila × 3 semillas × ±20,
 ±40, ±60 y ±80 cm/s (`examChainScale.test.ts`, 168 capturas):

@@ -363,9 +363,10 @@ export class MeasureTab {
           ? (this.lastPortal = cap('portal'))
           : (this.lastRenal = cap('renal'));
     const cols = sim.spectral.columns;
-    this.#lastOverlay = m && cols.length ? captureOverlay(kind, m, opts, cols[cols.length - 1].prfHz, sim.pw.baselineShift) : null;
+    this.#lastOverlay = m && cols.length ? captureOverlay(m, opts, cols[cols.length - 1].prfHz) : null;
     this.#ctx.store.set({ tool: 'none' });
     this.renderResult();
+    this.#ctx.onCapture?.();
   }
 
   renderResult(): void {

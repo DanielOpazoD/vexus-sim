@@ -171,16 +171,21 @@ describe('Cadena completa del alumno: puerta → espectro → medición → grad
 
   // Con respiración tranquila el tronco portal (más grueso que la puerta) nunca sale de ella. Antes el volumen de muestra
   // perdía la sangre en la primera inspiración y no la recuperaba: PF 167 % en el sano y 136 % en el grave. Con la
-  // transmisión real (decisión 93: −32 dB, no −10) la banda del sano es débil y la calidad puede rechazar la captura
+  // transmisión real (decisión 94: −32 dB, no −10) la banda del sano es débil y la calidad puede rechazar la captura
   // (algún latido sin traza: «pida apnea»); si la acepta, la PF es la de la verdad. Medido con esta semilla: el sano,
-  // «intermitente»; el grave, aceptado y a < 12 puntos. Las escalas y las semillas las cubre `examChainScale.test.ts`.
+  // «pocos latidos» (dos trazables en su ventana efectiva); el grave, aceptado y a < 12 puntos. Las escalas y las semillas las cubre `examChainScale.test.ts`.
   for (const base of [NORMAL_ADULT, SEVERE_CONGESTION]) {
     it(`${base.label}: la PF portal con respiración tranquila es no medible o coincide con la verdad`, () => {
       const portalOnly = TERRITORIES.filter((t) => t.kind === 'portal');
       const { truth, portal } = examine(base, 'quiet', portalOnly);
       expect(portal, 'medición portal').not.toBeNull();
       if (portal!.quality.issue !== null) {
-        expect(portal!.quality.issue).toBe('intermittent');
+        if (portal!.quality.issue === 'few-beats') {
+          // La ventana efectiva ya no incluye los latidos anteriores sin traza: solo quedan dos válidos.
+          expect(portal!.quality.beats).toBe(2);
+          expect(portal!.quality.validBeats).toBe(2);
+          expect(portal!.measuredBeats).toHaveLength(2);
+        } else expect(portal!.quality.issue).toBe('intermittent');
         return;
       }
       expect(classifyPortal(portal!.pulsatilityFraction)).toBe(classifyPortal(truth.portalPF));

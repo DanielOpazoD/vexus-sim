@@ -422,7 +422,7 @@ export function portalTrace(
   const smoothed = smoothSpectrum(columns);
   const floors = captureNoiseFloorsDb(smoothed);
   const inWindow = directionWindow ? columns.filter((c) => c.t >= directionWindow[0] && c.t <= directionWindow[1]) : columns;
-  const energy = sideEnergyDb(inWindow.length ? inWindow : columns, opts);
+  const energy = sideEnergyDb(inWindow, opts);
   // semiplano físico del flujo anterógrado (+ = hacia la sonda) y su signo de pantalla
   const phys: 1 | -1 = energy.pos >= energy.neg ? 1 : -1;
   const screen = opts.invert ? -1 : 1;
@@ -451,20 +451,24 @@ export function portalTrace(
 
 export function measureObservedPortal(columns: readonly SpectralColumn[], beats: Beat[], opts: MeasureOptions): ObservedPortal | null {
   if (columns.length < 10) return null;
+  // La dirección tampoco puede heredar el peso de un latido parcial anterior al cambio de PRF.
+  beats = beats.filter((b) => {
+    const inBeat = columns.filter((c) => c.t >= b.tR && c.t < b.tR + b.rr);
+    return inBeat.length > 0 && inBeat[inBeat.length - 1].t - inBeat[0].t >= BEAT_COVERAGE * b.rr;
+  });
   const span: [number, number] | undefined = beats.length
     ? [beats[0].tR, beats[beats.length - 1].tR + beats[beats.length - 1].rr]
     : undefined;
   const { trace, anterogradeSign } = portalTrace(columns, opts, span);
-  const prf = columns[columns.length - 1].prfHz;
+  const latest = columns.at(-1)!;
+  const prf = latest.prfHz;
   const cmsOf = (hz: number) => Math.abs(velocityFromShiftMmS(hz, opts.f0Hz, opts.angleCorrectionRad) / 10);
   const nyquistCms = cmsOf(prf / 2);
   const wallHz = opts.wallFilterHz ?? 25;
-  const binHz = prf / columns[columns.length - 1].powerDb.length;
+  const binHz = prf / latest.powerDb.length;
   // por debajo, la traza no es fiable: la banda de transición del filtro de pared (4.º orden: −1 dB a ~1,3 veces el corte)
   // se come la parte lenta del perfil, y Vmín se leería en su borde
-  const floorCms = cmsOf(
-    Math.max(flowBandMinHz(wallHz, prf, columns[columns.length - 1].powerDb.length), WALL_TRANSITION * wallHz) + binHz,
-  );
+  const floorCms = cmsOf(Math.max(flowBandMinHz(wallHz, prf, latest.powerDb.length), WALL_TRANSITION * wallHz) + binHz);
   const maxs: number[] = [];
   const mins: number[] = [];
   const pfs: number[] = [];
@@ -474,8 +478,7 @@ export function measureObservedPortal(columns: readonly SpectralColumn[], beats:
   let wallCut = false;
   for (const b of beats) {
     const inBeat = trace.filter((p) => p.t >= b.tR && p.t < b.tR + b.rr);
-    // un latido a medias (PW recién encendido o la escala recién cambiada) no se mide, como en la calidad
-    if (!inBeat.length || inBeat[inBeat.length - 1].t - inBeat[0].t < BEAT_COVERAGE * b.rr) continue;
+    // portalTrace conserva una muestra por columna: la cobertura se verificó antes de elegir la dirección.
     const oriented = inBeat.map((p) => p.vScreen * anterogradeSign);
     const v = oriented.filter(Number.isFinite);
     if (v.length < PORTAL_TRACE_COVERAGE * inBeat.length) continue;
@@ -493,12 +496,15 @@ export function measureObservedPortal(columns: readonly SpectralColumn[], beats:
     mark(marks, inBeat, [b.tR, b.tR + b.rr], vmax, anterogradeSign, 'Vmáx');
     mark(marks, inBeat, [b.tR, b.tR + b.rr], vmin, anterogradeSign, 'Vmín');
   }
+  // Conserva los latidos interiores sin traza: no selecciona solo los buenos para juzgar calidad.
   // un flujo «invertido» más allá de medio Nyquist es el pico plegado, no una porta hepatófuga (que crece desde la base)
-  const wrapped = trace.some((p) => p.vScreen * anterogradeSign < -PORTAL_WRAP_NYQUIST * nyquistCms);
+  const effective = measured.length ? beats.filter((b) => b.tR >= measured[0].tR && b.tR <= measured[measured.length - 1].tR) : beats;
+  const inEffective = (p: { t: number }) => effective.some((b) => p.t >= b.tR && p.t < b.tR + b.rr);
+  const wrapped = trace.some((p) => inEffective(p) && p.vScreen * anterogradeSign < -PORTAL_WRAP_NYQUIST * nyquistCms);
   const present = new Set(trace.filter((p) => Number.isFinite(p.vScreen)).map((p) => p.t));
   // la calidad juzga lo mismo que se trazó: una columna vale si tiene traza (el clutter simétrico no es flujo). Sin ningún
   // latido trazable la captura se devuelve igual, con su motivo (con aliasing fuerte, «suba la escala»), no en blanco
-  const quality = qualityOf(columns, beats, opts, 'both', undefined, undefined, (c) => present.has(c.t));
+  const quality = qualityOf(columns.filter(inEffective), effective, opts, 'both', undefined, undefined, (c) => present.has(c.t));
   if (clipped || wrapped) quality.issue = 'aliasing';
   else if (wallCut && (quality.issue === null || quality.issue === 'intermittent')) quality.issue = 'wall-filter';
   if (!maxs.length && quality.issue === null) quality.issue = 'few-beats';

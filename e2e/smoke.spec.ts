@@ -151,7 +151,23 @@ test('lo medido a la vista sobre el espectro y el vaso equivocado (decisión 94)
   const capture = async (row: string) => {
     await page.getByRole('tab', { name: 'Medir' }).click();
     await page.getByRole('button', { name: row, exact: true }).click();
-    await page.getByRole('button', { name: 'Capturar' }).click();
+    const button = page.getByRole('button', { name: 'Capturar' });
+    await button.evaluate((el) => {
+      el.addEventListener(
+        'click',
+        () => {
+          const c = document.getElementById('spectrum') as HTMLCanvasElement;
+          const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+          let n = 0;
+          for (let i = 0; i < d.length; i += 4) if (d[i] > 225 && d[i + 1] > 180 && d[i + 1] < 235 && d[i + 2] < 150) n++;
+          el.setAttribute('data-capture-trace', String(n));
+        },
+        { once: true },
+      );
+    });
+    const handle = await button.elementHandle();
+    await button.click();
+    if (row === 'Porta PF') expect(Number(await handle.getAttribute('data-capture-trace'))).toBeGreaterThan(30);
   };
   // píxeles del trazado de la captura (ámbar, #ffd166) en el espectro: el mapa de grises del espectro no llega a ese tono
   const tracePixels = () =>

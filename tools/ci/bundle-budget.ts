@@ -59,7 +59,9 @@ const BUDGETS: Array<[RegExp, number]> = [
   [/\.css$/, 20 * KB],
   [/\.js$/, 120 * KB], // cualquier otro chunk
 ];
-const TOTAL_JS_BUDGET = 1000 * KB;
+// 30-09-2026: +4 KiB aprobados para corregir captura/presentación PW y añadir controles respiratorios.
+// Coste acotado (~0,4 %); todos los chunks de producción y Workers siguen incluidos.
+const TOTAL_JS_BUDGET = 1004 * KB;
 /** Chunks que un usuario nunca descarga (solo `?e2e` o desarrollo): fuera del total, con su límite por chunk. */
 const TEST_ONLY = /^testHooks-.*\.js$/;
 

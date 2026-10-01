@@ -4788,3 +4788,15 @@ estadística de speckle contra clips reales; casos de la matriz G.2; arritmias.
 **Consecuencias.** Solo seis pares y cartílago séptimo funcionales por ahora; la caja completa y el diafragma forman el siguiente bloque. El diagnóstico denso expone superposición con tejidos previos, sin resolverla mediante precedencia de B-mode. El total JS cuenta ahora también testHooks, además de todos los chunks/Workers; permanecen 335 KiB por raíz y 1.040.384 bytes totales. Compactación/renombrado compartido de shaders de Three con contratos de binding conservados; tabla de marching cubes en nibbles sin pérdida. La procedencia acústica queda íntegra en `interfaceSources.ts`, fuera de los workers que no la consultan.
 
 **Verificación.** Pruebas focales y gate TS/GLSL volumétrico y de interfaces del campo de referencia pasaron antes del último ajuste de build. La tabla codificada se compara elemento a elemento con los 4.096 índices originales y rechaza cambios de dominio. Los gates completos y capturas del build final se registran en `anatomy/TORSO_PROGRESS.md`; no se declara validación clínica ni rendimiento Metal por ejecución cloud.
+
+## 99. Borde 3D del diafragma en la pared corporal compartida
+
+**Contexto.** La malla existente tomaba una elipse XY heredada incluso con el perfil corporal de referencia. En 96 ángulos del adulto normal, 21 extremos quedaban fuera de la pared interna; el residuo máximo de profundidad era 83,13 mm.
+
+**Opciones.** Retocar radios por preset mantendría un segundo dominio corporal. Una nueva superficie no resolvería la divergencia del diafragma existente ni aportaría las piezas fuente faltantes.
+
+**Decisión.** `diaphragmRim.ts` encuentra el borde de la misma altura `diaphragmHeight` sobre la pared interna definida por `torsoDepth + wallMm = 0`. `navigator3d/organs.ts` conserva la malla y su winding, pero usa ese borde y el centro Y corporal para su dominio radial.
+
+**Consecuencias.** El borde visual acompaña el cuerpo legacy y de referencia. No cambia campos acústicos TS/GLSL, órganos, poses ni presets. Las cúpulas siguen estimadas; tendón, pilares, hiatos e inserciones anatómicas permanecen limitados por las fuentes pendientes. El error de discretización de la malla no equivale al residuo numérico de su borde.
+
+**Verificación.** Tres pruebas físicas cubren ambos campos, los tres casos, profundidad interna, superficie y winding. El muestreo anterior incumple el límite de 0,0001 mm; el residuo nuevo máximo del adulto normal de referencia es 0,000000270 mm. Método y límites en `anatomy/DIAPHRAGM_BOUNDARY.md`. Se requieren gates completos y E2E del build final antes de cerrar el cambio.

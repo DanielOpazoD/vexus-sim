@@ -296,7 +296,7 @@ export interface Rib {
    * (con π/4: ±45°, hasta la línea medioclavicular); NaN = todo hueso.
    */
   cartilageFromPhi: number;
-  /** Solo en el lado derecho del paciente (x < 0)? */
+  /** Registro derecho únicamente; false refleja el arco para representar un par bilateral. */
   rightOnly: boolean;
 }
 
@@ -573,8 +573,10 @@ export function ribAnteriorEndX(rib: Pick<Rib, 'zAnterior'>): number {
 
 /** Distancia con signo a una costilla (negativa dentro del hueso). */
 export function sdRib(p: Vec3, rib: Rib, torso: Torso, spine?: Spine): { d: number; cartilage: boolean } {
+  // Un registro describe el arco derecho y su reflejo izquierdo cuando es bilateral.
+  if (!rib.rightOnly) p = [-Math.abs(p[0]), p[1], p[2]];
   const phi = torsoPhi(p[0], p[1], torso);
-  if (rib.rightOnly && p[0] > ribAnteriorEndX(rib)) return { d: 1e3, cartilage: false };
+  if (p[1] > 0 && p[0] > ribAnteriorEndX(rib)) return { d: 1e3, cartilage: false };
   // El arco costal termina en la apófisis transversa: nada por detrás de la columna
   if (spine && p[1] < spine.y0 && Math.abs(p[0] - spine.x0) < spine.archHalfWidth + 6) return { d: 1e3, cartilage: false };
   // radio local de la costilla a lo largo de su elipse escalada
@@ -596,7 +598,7 @@ export function sdRib(p: Vec3, rib: Rib, torso: Torso, spine?: Spine): { d: numb
   const cartilage =
     Number.isFinite(rib.cartilageFromPhi) &&
     (Math.abs(phi - Math.PI / 2) < Math.PI / 2 - rib.cartilageFromPhi ||
-      (rib.rightOnly && p[1] > 0 && p[0] > ribAnteriorEndX(rib) - RIB_ANTERIOR_END.cartilageTailMm));
+      (p[1] > 0 && p[0] > ribAnteriorEndX(rib) - RIB_ANTERIOR_END.cartilageTailMm));
   return { d, cartilage };
 }
 

@@ -285,7 +285,7 @@ describe('capas de la pared (decisión 62)', () => {
     expect(ANATOMY_GLSL).toContain(
       `cartilage = abs(phi - 1.5707963) < 1.5707963 - uRibParams.y || (p.y > 0.0 && p.x > endX - ${RIB_ANTERIOR_END.cartilageTailMm.toFixed(4)});`,
     );
-    expect(ANATOMY_GLSL).toContain('if (p.x > endX) return 1e3;');
+    expect(ANATOMY_GLSL).toContain('if (p.y > 0.0 && p.x > endX) return 1e3;');
     expect(ribs.every((r) => r.cartilageFromPhi === Math.PI / 4)).toBe(true);
   });
 

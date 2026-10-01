@@ -15,6 +15,7 @@ import type { PhysiologySample } from '../../physiology/engine';
  * escribir cada nombre dos veces (≈ 85 líneas en el renderer) y un olvido fallaba en silencio.
  */
 export const MAX_GAS = 6;
+/** Seis registros bilaterales (pares 5–10); no doce evaluaciones por punto. */
 export const MAX_RIBS = 6;
 
 type GlslType = 'float' | 'int' | 'vec2' | 'vec3' | 'vec4';

@@ -4707,6 +4707,25 @@ Pruebas: referencia espiratoria/inspiratoria estable, ciclo parcial/completo y m
 reloj/ECG/flujo durante pausa y rechazo de colapsabilidad sin ciclo. El ejercicio M conserva los gates ±5 y ahora activa
 respiración mediante el botón, de forma explícita.
 
+## 96. Registro costal compartido entre anatomía acústica y navegador (01-10-2026)
+
+Problema: el navegador ilustraba nueve pares (3–11), mientras CPU/GPU solo contenían seis costillas derechas (5–10).
+La vista 3D prometía obstáculos que la adquisición izquierda no encontraba. Este bloque representa los mismos seis
+pares bilaterales en las tres rutas, sin ampliar el bucle GPU ni el número de uniforms: un registro por par, reflejado en x.
+El shader y TS comparten extremo anterior, cartílago, sección elíptica e inclinación; se conserva la normal del lado real.
+
+El límite anterior del reborde se aplica solo a y > 0: antes cortaba también el arco posterior de 8–10 antes de llegar a la columna.
+
+El navegador construye la superficie elíptica directamente de esos parámetros en mm y convierte a cm una sola vez.
+No usa la escala estética longitudinal de la piel para desplazar huesos. Material óseo/cartilaginoso se deriva del mismo
+clasificador; desaparecen arcos decorativos inexistentes y tubos circulares de diámetro uniforme. Las separaciones se
+miden entre superficies, no entre anillos equidistantes.
+
+Alcance deliberado: pares 5–10, con dimensiones estimadas existentes. No se afirma caja completa de doce pares ni
+hiperrealismo anatómico; completar pares, articulaciones y asimetrías exige landmarks/registro y comparación externa.
+Las pruebas contrastan vértices 3D contra el campo TS en ambos lados, espacios libres y el gate TS/GLSL existente.
+No se alteran clasificación VExUS, mediciones, presupuesto ni umbrales físicos.
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

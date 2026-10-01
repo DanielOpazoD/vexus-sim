@@ -400,9 +400,8 @@ describe('Límites del shader con margen para crecer', () => {
     expect(loopBodies(g).some((b) => reaches(g, b, 'faceGradient'))).toBe(true);
   });
 
-  // El GLSL de las costillas (`sdRib`) corta en x > 15 mm sin mirar `rightOnly`: todas deben serlo
-  // hasta que el corte viaje como dato (`no-spleen-no-left-ribs`).
-  it('todas las costillas son derechas, como supone el corte del shader', () => {
-    for (const c of CASES) for (const rib of new AnatomyScene(c).ribs) expect(rib.rightOnly, c.id).toBe(true);
+  // El shader refleja el registro derecho: cada registro debe ser bilateral.
+  it('todos los registros costales son pares, como supone el shader', () => {
+    for (const c of CASES) for (const rib of new AnatomyScene(c).ribs) expect(rib.rightOnly, c.id).toBe(false);
   });
 });

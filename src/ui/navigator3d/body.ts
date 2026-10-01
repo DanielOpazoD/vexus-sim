@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
-import { ribTiltMm, type AnatomyScene } from '../../anatomy/scene';
+import type { AnatomyScene } from '../../anatomy/scene';
+import { ribAnteriorEndX, sdRib, type Rib } from '../../anatomy/primitives';
 import { CM, surfaceAt, torsoScale } from './common';
 
 /** Piel superelíptica del tronco (misma elipse que `torsoDepth`) y esqueleto procedural. */
@@ -67,35 +68,53 @@ export function buildSkin(a: AnatomyScene): THREE.Mesh {
   return mesh;
 }
 
+/** Superficie elíptica del mismo campo costal que consulta el haz. No extiende arcos decorativos. */
+export function costalGeometry(a: AnatomyScene, rib: Rib, side: number): THREE.BufferGeometry {
+  const positions: number[] = [];
+  const indices: number[] = [];
+  const materials: number[] = [];
+  const rings = 64,
+    segments = 12;
+  const front = Math.acos(Math.max(-1, Math.min(1, (ribAnteriorEndX(rib) - rib.halfThickness - 0.01) / (a.torso.a * rib.scale))));
+  for (let i = 0; i <= rings; i++) {
+    const phi = front + ((Math.PI * 1.5 - front) * i) / rings;
+    const x = a.torso.a * rib.scale * Math.cos(phi);
+    const y = a.torso.b * rib.scale * Math.sin(phi);
+    if (y < a.spine.y0 && Math.abs(x - a.spine.x0) < a.spine.archHalfWidth + 6 + rib.halfThickness) break;
+    const z = rib.zAnterior + rib.tilt * (0.5 - 0.5 * Math.sin(phi));
+    const radius = Math.hypot(x, y);
+    for (let j = 0; j <= segments; j++) {
+      const angle = (2 * Math.PI * j) / segments;
+      const radial = 1 + (rib.halfThickness * Math.cos(angle)) / radius;
+      positions.push(-side * x * radial * CM, y * radial * CM, (z + rib.halfWidth * Math.sin(angle)) * CM);
+    }
+    materials.push(sdRib([x, y, z], rib, a.torso, a.spine).cartilage ? 1 : 0);
+    if (i === 0) continue;
+    for (let j = 0; j < segments; j++) {
+      const k = i * (segments + 1) + j,
+        prev = k - segments - 1;
+      if (side < 0) indices.push(prev, k, prev + 1, prev + 1, k, k + 1);
+      else indices.push(prev, prev + 1, k, prev + 1, k + 1, k);
+    }
+  }
+  const geometry = new THREE.BufferGeometry();
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setIndex(indices);
+  for (let i = 1; i < materials.length; i++) geometry.addGroup((i - 1) * segments * 6, segments * 6, materials[i]);
+  geometry.computeVertexNormals();
+  return geometry;
+}
+
 export function buildSkeleton(a: AnatomyScene): THREE.Group {
   const g = new THREE.Group();
   const bone = new THREE.MeshStandardMaterial({ color: 0xe9e2d2, roughness: 0.55 });
   const cartilage = new THREE.MeshStandardMaterial({ color: 0xcfd9e6, roughness: 0.5, transparent: true, opacity: 0.85 });
-  // Costillas 3–11 de ambos lados. Las derechas 5–10 siguen exactamente la ley de
-  // scene.ribs (zAnterior + ribTiltMm·(0,5 − 0,5·sen φ), escala 0,85); el resto la extiende.
-  const anterior = [80, 60, 40, 20, 0, -25, -50, -75, -100];
-  anterior.forEach((zAnt, k) => {
-    const ribNo = k + 3;
-    for (const side of [-1, 1]) {
-      const pts: THREE.Vector3[] = [];
-      const cart: THREE.Vector3[] = [];
-      const phiFront = ribNo <= 7 ? 0.5 * Math.PI + 0.1 : 0.5 * Math.PI + 0.25 + (ribNo - 7) * 0.12;
-      for (let i = 0; i <= 44; i++) {
-        const phR = phiFront + ((1.5 * Math.PI - 0.12 - phiFront) * i) / 44; // anterior → posterior, lado derecho
-        const ph = side < 0 ? phR : Math.PI - phR;
-        const zr = zAnt + ribTiltMm(ribNo) * (0.5 - 0.5 * Math.sin(phR));
-        const p = surfaceAt(a, ph, zr, 0.85);
-        // el arco termina en la apófisis transversa (mismo criterio que el SDF)
-        if (p.y / CM < a.spine.y0 && Math.abs(p.x / CM - a.spine.x0) < a.spine.archHalfWidth + 6) break;
-        pts.push(p);
-        if (ribNo <= 7 && phR < 0.5 * Math.PI + 0.45) cart.push(p);
-      }
-      const r = ribNo >= 11 ? 0.35 : 0.5;
-      g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 48, r, 8, false), bone));
-      if (cart.length >= 3)
-        g.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(cart), 12, r * 1.05, 8, false), cartilage));
+  // Solo costillas que existen en la anatomía acústica; unidades mm → cm, sin escala estética del torso.
+  for (const rib of a.ribs)
+    for (const side of rib.rightOnly ? [-1] : [-1, 1]) {
+      const geometry = costalGeometry(a, rib, side);
+      g.add(new THREE.Mesh(geometry, [bone, cartilage]));
     }
-  });
   const yFront = a.torso.b * 0.85 * CM;
   const sternum = new THREE.Mesh(new RoundedBoxGeometry(3.2, 0.9, 11, 3, 0.4), bone);
   sternum.position.set(0, yFront - 0.2, 8.5);

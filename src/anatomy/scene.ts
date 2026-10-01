@@ -304,7 +304,7 @@ export class AnatomyScene {
     };
     this.gasPockets = [];
     this.ribs = [];
-    // Costillas derechas 5–10: el 7.º cartílago llega al esternón a la altura del xifoides (z 0).
+    // Pares costales 5–10: el 7.º cartílago llega al esternón a la altura del xifoides (z 0).
     // Oblicuidad creciente hacia abajo: la cabeza de la 5.ª está en T5 (≈ 6 cm sobre su
     // extremo anterior) y la de la 10.ª en T10, a la altura del xifoides (≈ 9 cm sobre el
     // reborde) — `ribTiltMm`, la misma ley que dibuja el navegador 3D.
@@ -318,7 +318,7 @@ export class AnatomyScene {
         // cartílago a ±45° de la línea media: la unión costocondral en la línea medioclavicular (x ≈ 96 mm en la
         // elipse de la costilla, 136 × 89 mm), la del reborde costal de las costillas 7–10 (decisión 62)
         cartilageFromPhi: Math.PI / 4,
-        rightOnly: true,
+        rightOnly: false,
       });
     }
     const tree = buildVesselTree(this.kidneyRight, this.kidneyLeft);

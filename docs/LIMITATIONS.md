@@ -89,10 +89,11 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   cardíaca del calibre está amortiguada.
 - **Sin movimiento cardíaco transmitido a hígado/cava** (`no-cardiac-tissue-motion`); la
   respiración es el único movimiento tisular, y el corazón (decisión 85) no late.
-- **Sin bazo ni costillas izquierdas** (`no-spleen-no-left-ribs`): el hipocondrio izquierdo solo
-  tiene riñón y vasos; todas las costillas son derechas (`rightOnly`), así que una ventana izquierda
-  no muestra sombras costales. El corte del shader (`sdRib`, `x > 15 mm`) supone que todas lo son:
-  `shaderLimits.test.ts` falla si se añade una costilla izquierda sin llevar `rightOnly` al GLSL.
+- **Sin bazo y caja torácica incompleta** (`no-spleen-no-left-ribs`, identificador histórico): existen los pares
+  5–10 en CPU, GPU y navegador 3D. Las superficies 3D se detienen con margen de un semiespesor en los extremos para no atravesar el corte SDF; no tienen tapas ni articulaciones detalladas. Los pares 1–4 y 11–12 no están modelados ni se dibujan como decoración.
+  El lado izquierdo refleja el registro derecho; no representa asimetrías individuales. Sección, inclinación y separación
+  siguen parámetros adultos estimados, sin registro CT/atlas ni validación antropométrica independiente. El cartílago
+  anterior y el final en apófisis transversa son aproximaciones; los arcos no tienen articulaciones costovertebrales detalladas.
 - **El corazón es un esquema estático** (`schematic-static-heart`, decisión 85): cuatro elipsoides con su miocardio, los
   tabiques y los orificios auriculoventriculares abiertos, sin valvas, sin grandes vasos de la base (vena cava superior,
   raíz aórtica, tronco pulmonar), sin seno coronario ni venas pulmonares; el pericardio es la capa de 1,5 mm del tejido del

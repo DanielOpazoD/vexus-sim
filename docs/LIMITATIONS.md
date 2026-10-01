@@ -527,3 +527,11 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   lleva el registro de casos con la verdad latente (el `PatientState`: la PAD, la PIA, la IT…) y sus nombres para el
   modo docente, y los valores de las opciones del selector de los casos de referencia (`severe-congestion`,
   `af-moderate-congestion`) nombran el diagnóstico: quien lea el código o el DOM puede saber el caso.
+
+## Adulto de referencia en revisión (`?reference=1`)
+
+- `reference-thorax-incomplete`: el campo actual conserva seis pares 5–10, columna procedural desplazada y esternón visual heredado. Los 24 OBJ costales están hashverificados, pero todavía no representan doce pares funcionales ni articulaciones completas. El diafragma existente tiene dos cúpulas aproximadas; su arquitectura, tendón, pilares, hiatos e inserciones deben revisarse con el tórax completo. [Plan y estado](anatomy/TORSO_PROGRESS.md).
+- `reference-skeletal-organ-overlap`: un muestreo denso del esqueleto sin compresión contra los tejidos originales detecta intersecciones con hígado y cinco muestras sanguíneas en la sexta costilla. La precedencia de hueso en el clasificador no elimina este defecto geométrico. No se movieron órganos ni se ensancharon ventanas para ocultarlo. La superficie del séptimo cartílago queda a un mínimo muestreado de 0,39 mm de la piel externa: también necesita reconciliarse con el espesor cutáneo. [Medición](anatomy/reference-relationships-report.json).
+- `reference-cartilage-seventh-only`: solo el séptimo cartílago bilateral tiene secciones medidas en los OBJ incluidos; los otros cartílagos siguen pendientes. Las 16 elipses interpoladas tienen residual de superficie RMS 0,94 mm, p95 2,10 mm, máximo 3,15 mm. Promedio bilateral, extremos cerrados y sección elíptica son aproximaciones; pasar CPU/GLSL no constituye validación clínica.
+
+- `reference-diaphragm-incomplete`: el campo actual comparte dos cúpulas asimétricas e inserción periférica continua entre TS/GLSL, pero no distingue tendón central, pilares ni hiatos. La malla 3D de borde todavía muestrea la elipse previa y no la piel radial de referencia. Respiración coherente entre consumidores no acredita contactos anatómicos bajo movimiento; véase `anatomy/DIAPHRAGM_AUDIT.md`.

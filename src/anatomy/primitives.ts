@@ -1,3 +1,4 @@
+import { referenceCartilage } from './referenceCartilage';
 import { bodyDepth, bodyGradient, bodySection } from './referenceBody';
 import type { Vec3 } from '../core/vec3';
 
@@ -199,7 +200,7 @@ export interface Dome {
 }
 
 /**
- * Diafragma completo: dos hemicúpulas (la derecha, más alta, con el hígado debajo) sobre
+ * Campo diafragmático de dos hemicúpulas (la derecha, más alta, con el hígado debajo) sobre
  * la línea de inserción costal. z = 0 en el xifoides: la inserción está a 0 en la línea
  * media anterior y desciende a −50 mm en los flancos y la espalda (10.º–12.º arcos).
  */
@@ -287,6 +288,8 @@ export interface Torso {
 }
 
 export interface Rib {
+  /** Only the source seventh cartilage has measured sections. */
+  sourceCartilage?: boolean;
   /** Altura z del arco costal en la línea anterior (φ = π/2) en mm. */
   zAnterior: number;
   /** Semiejes, centro Y y término coseno del ajuste costal de referencia. */
@@ -604,6 +607,14 @@ export function ribCentre(phi: number, rib: Rib, t: Torso): Vec3 {
 }
 /** Distancia con signo a una costilla (negativa dentro del hueso). */
 export function sdRib(p: Vec3, rib: Rib, torso: Torso, spine?: Spine): { d: number; cartilage: boolean } {
+  const bone = sdRibBone(p, rib, torso, spine);
+  if (rib.sourceCartilage) {
+    const cart = referenceCartilage(p);
+    if (cart.d < bone.d) return { d: cart.d, cartilage: true };
+  }
+  return bone;
+}
+function sdRibBone(p: Vec3, rib: Rib, torso: Torso, spine?: Spine): { d: number; cartilage: boolean } {
   // Un registro describe el arco derecho y su reflejo izquierdo cuando es bilateral.
   if (!rib.rightOnly) p = [-Math.abs(p[0]), p[1], p[2]];
   const [a, b, y, c] = ribShape(rib, torso);

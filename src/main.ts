@@ -1,10 +1,10 @@
-import { loadReferenceBody } from './anatomy/referenceBody';
+import { loadReferenceBody } from './anatomy/loadReferenceBody';
 
 // No scene or worker exists until the reference field has loaded successfully.
 // An explicit legacy torso remains available for comparisons and regression fixtures.
 async function start(): Promise<void> {
   try {
-    if (new URLSearchParams(location.search).get('torso') !== 'legacy') await loadReferenceBody();
+    if (new URLSearchParams(location.search).get('reference') === '1') await loadReferenceBody();
     await import('./bootstrap');
   } catch (error) {
     const message = document.createElement('div');

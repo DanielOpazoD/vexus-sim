@@ -1,14 +1,7 @@
+import { loadReferenceBody } from '../anatomy/loadReferenceBody';
 import { readFileSync } from 'node:fs';
 import { describe, expect, it, vi } from 'vitest';
-import {
-  bodyDepth,
-  bodyGradient,
-  bodySection,
-  setReferenceBody,
-  validateReferenceBody,
-  loadReferenceBody,
-  referenceBody,
-} from '../anatomy/referenceBody';
+import { bodyDepth, bodyGradient, bodySection, setReferenceBody, validateReferenceBody, referenceBody } from '../anatomy/referenceBody';
 import { torsoDepth, torsoSkinPoint, torsoNormal, sdRib, type Torso } from '../anatomy/primitives';
 import { NORMAL_ADULT } from '../cases';
 import { AnatomyScene } from '../anatomy/scene';

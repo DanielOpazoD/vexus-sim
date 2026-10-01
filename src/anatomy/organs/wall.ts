@@ -1,3 +1,4 @@
+import { referenceCartilage } from '../referenceCartilage';
 import type { Vec3 } from '../../core/vec3';
 import { Interface } from '../interfaces';
 import { sdRib, ribShape, torsoDepth, torsoDepthGradient, type Rib, type Spine, type Torso } from '../primitives';
@@ -87,7 +88,8 @@ export const WALL = {
  * dentro de una (`ribSearchMarginMm`). Así la grasa subcutánea no corta las costillas y no se paga su bucle
  * en toda la grasa.
  */
-export function ribSearchDepth(t: Pick<Torso, 'a' | 'b' | 'y0'>, ribScale: number): number {
+export function ribSearchDepth(t: Pick<Torso, 'a' | 'b' | 'y0' | 'profile'>, ribScale: number): number {
+  if (t.profile) return 0; // El atlas no deriva su profundidad costal de una elipse escalada.
   return (1 - ribScale) * Math.min(t.a, t.b) - WALL.ribSearchMarginMm;
 }
 
@@ -110,7 +112,7 @@ export interface WallDepths {
 }
 
 /** Perímetro de la piel (mm): 2π·M·(1 − ε²/16), el de la serie de `wallArc` (841 mm en el tronco de referencia). */
-export function wallPerimeter(t: Pick<Torso, 'a' | 'b' | 'y0'>): number {
+export function wallPerimeter(t: Pick<Torso, 'a' | 'b' | 'y0' | 'profile'>): number {
   const a2 = t.a * t.a;
   const b2 = t.b * t.b;
   const e = (a2 - b2) / (a2 + b2);
@@ -124,7 +126,7 @@ export function wallPerimeter(t: Pick<Torso, 'a' | 'b' | 'y0'>): number {
  * gradiente de la GPU daba un eco espurio (lo halló la prueba de la salida barata de `faceGradient.test.ts`). Hasta la
  * decisión 88 se documentaba λ como la longitud de onda: las ondas de las capas medían 2π veces lo escrito (57–400 mm).
  */
-export function wallWavenumber(lambda: number, t: Pick<Torso, 'a' | 'b' | 'y0'>): number {
+export function wallWavenumber(lambda: number, t: Pick<Torso, 'a' | 'b' | 'y0' | 'profile'>): number {
   const P = wallPerimeter(t);
   return (2 * Math.PI * Math.floor(P / (2 * Math.PI * lambda) + 0.5)) / P;
 }
@@ -193,7 +195,7 @@ export const WALL_SWELL_TERMS: readonly (readonly ReliefTerm[])[] = [0, 1, 2, 3]
   reliefTerms([24 + 3 * k, 37 + 5 * k], [0.4 + 1.7 * k, 2 + 1.1 * k], [0.3 + 1.3 * k, 1.1 + 0.9 * k], [0.55, 0.45]),
 );
 
-function relief(terms: readonly ReliefTerm[], u: number, z: number, t: Pick<Torso, 'a' | 'b' | 'y0'>): number {
+function relief(terms: readonly ReliefTerm[], u: number, z: number, t: Pick<Torso, 'a' | 'b' | 'y0' | 'profile'>): number {
   const iP = (2 * Math.PI) / wallPerimeter(t);
   let s = 0;
   for (const r of terms) s += r.weight * Math.sin(r.harmonic * iP * u + r.kz * z + r.phase);
@@ -201,12 +203,12 @@ function relief(terms: readonly ReliefTerm[], u: number, z: number, t: Pick<Tors
 }
 
 /** Relieve fino de la cara k de la pared en (u, z) (mm de arco y craneocaudal), amplitud ≤ 1, periódico en u. */
-export function wallWave(u: number, z: number, k: number, t: Pick<Torso, 'a' | 'b' | 'y0'>): number {
+export function wallWave(u: number, z: number, k: number, t: Pick<Torso, 'a' | 'b' | 'y0' | 'profile'>): number {
   return relief(WALL_WAVE_TERMS[k], u, z, t);
 }
 
 /** Relieve lento de la cara k de la pared en (u, z), amplitud ≤ 1, periódico en u (decisión 88). */
-export function wallSwell(u: number, z: number, k: number, t: Pick<Torso, 'a' | 'b' | 'y0'>): number {
+export function wallSwell(u: number, z: number, k: number, t: Pick<Torso, 'a' | 'b' | 'y0' | 'profile'>): number {
   return relief(WALL_SWELL_TERMS[k], u, z, t);
 }
 
@@ -237,7 +239,7 @@ const smooth = (e0: number, e1: number, x: number): number => {
  * signo. Serie de ∫√(a²cos²τ + b²sin²τ)dτ hasta ε³ (ε = (a² − b²)/(a² + b²)): |du/ds| = 1 a ±0,5 % en el
  * tronco de 160 × 105 mm (el cuarto de perímetro sale 210,4 mm, el de Ramanujan).
  */
-export function wallArc(m: Vec3, t: Pick<Torso, 'a' | 'b' | 'y0'>): number {
+export function wallArc(m: Vec3, t: Pick<Torso, 'a' | 'b' | 'y0' | 'profile'>): number {
   const tau = Math.atan2(m[0] / t.a, (m[1] - (t.y0 ?? 0)) / t.b);
   const a2 = t.a * t.a;
   const b2 = t.b * t.b;
@@ -352,7 +354,7 @@ export function wallFaceSd(m: Vec3, face: Interface, t: Torso): number {
  * eco de cara de las copias de la pared (decisión 88) para llevar la pendiente de cada capa a su normal sin
  * `faceGradient`.
  */
-export function wallArcGradient(m: Vec3, t: Pick<Torso, 'a' | 'b' | 'y0'>): Vec3 {
+export function wallArcGradient(m: Vec3, t: Pick<Torso, 'a' | 'b' | 'y0' | 'profile'>): Vec3 {
   const X = m[0] / t.a;
   const Y = (m[1] - (t.y0 ?? 0)) / t.b;
   const q = X * X + Y * Y;
@@ -420,6 +422,7 @@ export function nearestRib(m: Vec3, ribs: readonly Rib[], t: Torso, spine: Spine
  * altura que sube hacia atrás). Es la tangente que usa la coherencia de curvatura del eco de su cara.
  */
 export function ribTangent(p: Vec3, rib: Rib, t: Torso): Vec3 {
+  if (rib.sourceCartilage && sdRib(p, rib, t).cartilage) return referenceCartilage(p).tangent;
   const [a, b, y, c] = ribShape(rib, t);
   const mirror = !rib.rightOnly && p[0] > 0 ? -1 : 1;
   const phi = Math.atan2((p[1] - y) / b, (p[0] * mirror) / a);
@@ -434,6 +437,7 @@ export function ribTangent(p: Vec3, rib: Rib, t: Torso): Vec3 {
  * cresta que mira a la piel, halfThickness/halfWidth² (0,089/mm: radio de 11 mm).
  */
 export function ribCurvature(p: Vec3, rib: Rib, t: Torso): number {
+  if (rib.sourceCartilage && sdRib(p, rib, t).cartilage) return referenceCartilage(p).curvature;
   const [ax, by, y, c0] = ribShape(rib, t);
   const x = !rib.rightOnly ? -Math.abs(p[0]) : p[0];
   const dy = p[1] - y;
@@ -478,7 +482,7 @@ export const WALL_GLSL = /* glsl */ `
 #define WALL_PLANE_MIN_MM ${WALL.planeMinMm.toFixed(4)}
 #define WALL_RIB_PRIORITY_MM ${WALL.ribFacePriorityMm.toFixed(4)}
 #define WALL_RIB_SEARCH_MARGIN_MM ${WALL.ribSearchMarginMm.toFixed(4)}
-float ribSearchDepth() { return (1.0 - uRibParams.x) * min(uTorso.x, uTorso.y) - WALL_RIB_SEARCH_MARGIN_MM; }
+float ribSearchDepth() { if (uReferenceBody == 1) return 0.0; return (1.0 - uRibParams.x) * min(uTorso.x, uTorso.y) - WALL_RIB_SEARCH_MARGIN_MM; }
 float wallArc(vec3 m) {
   float tau = atan(m.x / uTorso.x, (m.y - uTorsoY) / uTorso.y);
   float a2 = uTorso.x * uTorso.x;
@@ -618,13 +622,15 @@ int nearestRib(vec3 m) {
   return best;
 }
 vec3 ribTangent(vec3 p, int k) {
-  vec4 rib = uRibs[k], s = uRibShape[k];
+  if (ribEndData(k).z > 0.5) { bool cart; vec3 n; sdRib(p, k, cart, n); if (cart) { vec3 tangent; float curvature; referenceCartilage(p, tangent, curvature); return tangent; } }
+  vec4 rib = uRibs[k], s = ribShapeData(k);
   float mirror = p.x > 0.0 ? -1.0 : 1.0;
   float phi = atan((p.y - s.z) / s.y, -abs(p.x) / s.x);
   return normalize(vec3(-s.x * sin(phi) * mirror, s.y * cos(phi), -0.5 * rib.y * cos(phi) - s.w * sin(phi)));
 }
 float ribCurvature(vec3 p, int k) {
-  vec4 rib = uRibs[k], s = uRibShape[k];
+  if (ribEndData(k).z > 0.5) { bool cart; vec3 n; sdRib(p, k, cart, n); if (cart) { vec3 tangent; float curvature; referenceCartilage(p, tangent, curvature); return curvature; } }
+  vec4 rib = uRibs[k], s = ribShapeData(k);
   vec2 xy = vec2(-abs(p.x), p.y - s.z);
   float rho = length(xy / s.xy);
   float dRadial = rho > 0.0 ? length(xy) * (1.0 - 1.0 / rho) : -min(s.x, s.y);

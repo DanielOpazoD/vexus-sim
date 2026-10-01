@@ -1,6 +1,8 @@
 # Adulto de referencia: registro funcional en revisión
 
-Base: #130, 2128d82c924b5491788e1e429b4854d6a21ae135. **WIP no listo para integrar**. La rama actualmente carga el campo de referencia por defecto; `?torso=legacy` permite comparación; no usar este prototipo como anatomía clínicamente validada.
+Estado vigente y alcance completo: [TORSO_PROGRESS.md](TORSO_PROGRESS.md); referencia opt-in `?reference=1`.
+
+Base: #130, 2128d82c924b5491788e1e429b4854d6a21ae135. **WIP no listo para integrar**. Estado del WIP original, superado por el saneamiento cloud: la rama cargaba el campo por defecto; `?torso=legacy` permite comparación; no usar este prototipo como anatomía clínicamente validada.
 
 ## Fuente y registro único
 

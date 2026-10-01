@@ -171,28 +171,6 @@ export const SCENE_UNIFORMS: readonly UniformSpec[] = [
       ),
   },
   {
-    name: 'uRibEnds',
-    type: 'vec4',
-    count: MAX_RIBS,
-    value: (s) =>
-      pad(
-        s.ribs.map((r) => [r.anteriorEndX ?? Math.min(15, 15 + 1.53 * r.zAnterior), r.shape ? 1 : 0, 0, 0]),
-        MAX_RIBS,
-        [15, 0, 0, 0],
-      ),
-  },
-  {
-    name: 'uRibShape',
-    type: 'vec4',
-    count: MAX_RIBS,
-    value: (s) =>
-      pad(
-        s.ribs.map((r) => r.shape ?? [s.torso.a * r.scale, s.torso.b * r.scale, s.torso.y0 ?? 0, 0]),
-        MAX_RIBS,
-        [1, 1, 0, 0],
-      ),
-  },
-  {
     name: 'uRibParams',
     type: 'vec2',
     // escala, cartilageFromPhi

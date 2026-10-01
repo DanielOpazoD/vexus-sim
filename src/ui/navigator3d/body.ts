@@ -1,3 +1,5 @@
+import { referenceCartilage } from '../../anatomy/referenceCartilage';
+import { meshFromSdf } from './organs';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import type { AnatomyScene } from '../../anatomy/scene';
@@ -113,6 +115,8 @@ export function buildSkeleton(a: AnatomyScene): THREE.Group {
       const geometry = costalGeometry(a, rib, side);
       g.add(new THREE.Mesh(geometry, [bone, cartilage]));
     }
+  if (a.ribs.some((r) => r.sourceCartilage))
+    g.add(meshFromSdf((p) => referenceCartilage(p).d, [-115, 45, -70], [115, 105, 30], 96, cartilage));
   // Anclaje distal conservado: la piel y la columna se registran alrededor de él.
   const yFront = 8.925;
   const sternum = new THREE.Mesh(new RoundedBoxGeometry(3.2, 0.9, 11, 3, 0.4), bone);

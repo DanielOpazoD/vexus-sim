@@ -16,11 +16,6 @@ export function validateReferenceBody(values: Float32Array): Float32Array {
 export function setReferenceBody(values?: Float32Array): void {
   referenceBody = values ? validateReferenceBody(values) : undefined;
 }
-export async function loadReferenceBody(): Promise<void> {
-  const response = await fetch(new URL('./reference-body.bin', import.meta.url));
-  if (!response.ok) throw new Error(`Referencia corporal: HTTP ${response.status}`);
-  setReferenceBody(new Float32Array(await response.arrayBuffer()));
-}
 /** Radio, derivadas en φ/z, centro Y y su derivada; clamping explícito fuera de los cortes fuente. */
 export function bodySection(phi: number, z: number, data: Float32Array): [number, number, number, number, number] {
   const zz = Math.max(0, Math.min(BODY_ROWS - 1, (z + 160) / 40));

@@ -2,11 +2,13 @@
 
 **Incomplete draft; do not merge/deploy.** User requested migration from the Mac; no further local implementation or heavy testing is authorized during setup.
 
+Estado vigente y alcance completo: [TORSO_PROGRESS.md](TORSO_PROGRESS.md); referencia opt-in `?reference=1`.
+
 Base: #130 / branch `feat/costal-registration`, commit2128d82c924b5491788e1e429b4854d6a21ae135. Work branch `feat/reference-torso`. Original PR119/120 and prior125–130 untouched.
 
 ## Preserved implementation
 
-BodyParts3D-derived skin field (8×65 Float32,2080bytes), reflected LPS→LAS and anchored to distal xiphoid; fixed vertebral offset; shared six costal pairs5–10, source curve fits and observed anterior bone endpoints. CPU/GLSL/contact/3D/cut-map worker share the field. Loader is transactional and the composition root moved to bootstrap.ts without logic loss. Root coverage exclusion follows the same browser-only composition code; thresholds unchanged. The application currently loads reference geometry by default; `?torso=legacy` is an explicit comparison fixture. Two existing legacy costal tests use that explicit fixture; new source-field tests cover mesh/reflection/parity/acquisition.
+BodyParts3D-derived skin field (8×65 Float32,2080bytes), reflected LPS→LAS and anchored to distal xiphoid; fixed vertebral offset; shared six costal pairs5–10, source curve fits and observed anterior bone endpoints. CPU/GLSL/contact/3D/cut-map worker share the field. Loader is transactional and the composition root moved to bootstrap.ts without logic loss. Root coverage exclusion follows the same browser-only composition code; thresholds unchanged. Historical WIP state (superseded by cloud fixes): the application loaded reference geometry by default; `?torso=legacy` is an explicit comparison fixture. Two existing legacy costal tests use that explicit fixture; new source-field tests cover mesh/reflection/parity/acquisition.
 
 Preset recalibration is offline against fixed model landmarks, actual contact and unblocked bone/lung rays; no organ or rib was displaced to recover windows. Start points are selected by scene's torso profile. Subxiphoid, flank and renal captures now recover useful vessels/renal anatomy. The ray report explains the regression at old UI poses: source subxiphoid plane offset25–27mm vs old1–3mm; renal offset~38mm. Old values are not the same world trajectory after changing skin.
 

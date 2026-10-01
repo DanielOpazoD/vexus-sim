@@ -1,0 +1,146 @@
+[
+  {
+    "id": "FJ3334",
+    "name": "right first rib",
+    "sha256": "ecef0080744a8422b72b4f52229bd68945692cdef7d6fe2a57043b2155c49d17",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3336",
+    "name": "right second rib",
+    "sha256": "e9f527453bb2a48764ac7243d0b9b23e37fb2a85e92cee445972a1a770a5eaa4",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3338",
+    "name": "right third rib",
+    "sha256": "69dbbcfc72d592aa862621612e7ad1151ada3fa06c5ce51e24731015561ad7ac",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3340",
+    "name": "right fourth rib",
+    "sha256": "b9bc6bbb160fd579ed246c3eb145b39f82866dc2dfeebe798f0dba5a2e352597",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3228",
+    "name": "left first rib",
+    "sha256": "eb534d19462226e26b91234544f99abe118878a25c125f2a8839341e6769252b",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3229",
+    "name": "left second rib",
+    "sha256": "b752f038ceba8430f3872897ce69495d7dd74ed8e19c21d3f75d0bc0b156d84f",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3230",
+    "name": "left third rib",
+    "sha256": "8b42d241c711fe9765b1239be33fcab6b865ab4619b5d05fa98ea245b6075d5c",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3342",
+    "name": "right fifth rib",
+    "sha256": "11d403618e4114a5edcd8f2fa4e90ef4e6427b04f4cd3962c59462694b55c443",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3232",
+    "name": "left fifth rib",
+    "sha256": "6fa730aea273685148d3e9d3f52fe450acec4c13d6e3b1b6865e0e9532283abb",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3231",
+    "name": "left fourth rib",
+    "sha256": "28b852d4813703c5654d0405168e22bf0032632d47b9667b4b16e60ed89a425b",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3344",
+    "name": "right sixth rib",
+    "sha256": "67f1f42fea1c289adaf4929716534bad7dfdd136ca0057f05de83d6e20c8f0a8",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3233",
+    "name": "left sixth rib",
+    "sha256": "2a0f1e32b8410b6396bea7ae342a16ae1ac1b77042e70d7e98cabeb7dcf3dfb9",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3346",
+    "name": "right seventh rib",
+    "sha256": "91aa56e034fbe6f413c0f15b76d725a1f8efd115aa2900beda6edf43a3ab0c43",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3234",
+    "name": "left seventh rib",
+    "sha256": "638a766f20b64d02095efa845b5ea316624a376acb44c7e4a6d533d4da6ef4db",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3347",
+    "name": "right eighth rib",
+    "sha256": "43a1591cf1e123ca01f64297a7ce008d679a5f5f26421cc5b69e2232da89d743",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3235",
+    "name": "left eighth rib",
+    "sha256": "81a7215ef6ed923bbad6f07208bbc0ee26ddbaae3b1423f624cae465012d9144",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3348",
+    "name": "right ninth rib",
+    "sha256": "7d3a969b778da18eb38b1a64d92e2b90e1730fcb0d7b2bfacd125ff4826876d0",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3236",
+    "name": "left ninth rib",
+    "sha256": "3dc292292b9f2bd5e226ac100d3a8db76cba8eb1d9d09533a6e5e871f023e2a8",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3330",
+    "name": "right tenth rib",
+    "sha256": "0f688dd4e0d20a8328b4763c0acc7582a9beac8fe5c7ce58586db99c6e366945",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3225",
+    "name": "left tenth rib",
+    "sha256": "daa25aba7fba3ff691d61cd239f8d49debc84ff871a351051c1d57a192b91dfd",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3331",
+    "name": "right eleventh rib",
+    "sha256": "761d6d8713c31d4b9f795c4875da9fc750c913907386489568fdebea15af49c3",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3226",
+    "name": "left eleventh rib",
+    "sha256": "4bb9d52fdb2c15cb459c2bd08fd58082cdb39d15903cde675313762ea2287fc8",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3332",
+    "name": "right twelfth rib",
+    "sha256": "ece92488a9293cde2d8a8275cee8232326b377811afba888f6147d7217e04e07",
+    "matchesManifest": true
+  },
+  {
+    "id": "FJ3227",
+    "name": "left twelfth rib",
+    "sha256": "83e04b8b6f91e4de57e7b380a2f2c7d6f0bbf284ce76710ca89aa82fb376bd4e",
+    "matchesManifest": true
+  }
+]

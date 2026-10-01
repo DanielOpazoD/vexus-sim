@@ -1,3 +1,5 @@
+import { CARTILAGE_GLSL } from './referenceCartilage.glsl';
+import { CARTILAGE_ROWS } from '../referenceCartilageData';
 /**
  * Fragmento GLSL compartido: la misma anatomía implícita que `anatomy/scene.ts`,
  * evaluada en la GPU a partir de los mismos datos declarativos. Los tubos
@@ -48,7 +50,9 @@ export const MAX_TUBE_SEGMENTS = 8;
 /** Primer téxel de la tabla de compresión de la sonda (decisión 63): tras los nodos de los tubos. */
 export const COMPRESSION_BASE = NODE_BASE + MAX_NODES;
 export const BODY_BASE = COMPRESSION_BASE + PROBE_COMPRESSION.nodes;
-export const SCENE_TEX_H = Math.ceil((BODY_BASE + 130) / SCENE_TEX_W);
+export const RIB_BASE = BODY_BASE + 130;
+export const CARTILAGE_BASE = RIB_BASE + MAX_RIBS * 2;
+export const SCENE_TEX_H = Math.ceil((CARTILAGE_BASE + CARTILAGE_ROWS.length) / SCENE_TEX_W);
 export { MAX_GAS, MAX_RIBS } from './sceneUniforms';
 
 const TISSUE_DEFINES = Object.entries(TISSUE_GLSL_NAME)
@@ -103,6 +107,8 @@ struct Cls {
 
 vec4 sceneTexel(int i) { return texelFetch(uSceneTex, ivec2(i % SCENE_TEX_W, i / SCENE_TEX_W), 0); }
 
+vec4 ribShapeData(int k) { return sceneTexel(${RIB_BASE} + k * 2); }
+vec4 ribEndData(int k) { return sceneTexel(${RIB_BASE} + k * 2 + 1); }
 float bodyValue(int i) { return sceneTexel(${BODY_BASE} + i / 4)[i % 4]; }
 vec4 bodyInfo(float phi, float z, out float dc) {
   float zz = clamp((z + 160.0) / 40.0, 0.0, 7.0);
@@ -231,17 +237,19 @@ float sdSphere(vec3 p, vec4 s, out vec3 n) {
   return l - s.w;
 }
 
+${CARTILAGE_GLSL(CARTILAGE_BASE)}
+
 // Costilla: devuelve distancia y si es cartílago (φ anterior)
-float sdRib(vec3 p, int k, out bool cartilage, out vec3 n) {
-  vec4 rib = uRibs[k], shape = uRibShape[k];
+float sdRibBone(vec3 p, int k, out bool cartilage, out vec3 n) {
+  vec4 rib = uRibs[k], shape = ribShapeData(k);
   float mirror = p.x > 0.0 ? -1.0 : 1.0;
   p.x = -abs(p.x);
   vec2 xy = vec2(p.x, p.y - shape.z);
   vec2 uv = xy / shape.xy;
   float rho = length(uv);
   float phi = atan(uv.y, uv.x);
-  float endX = uRibEnds[k].x;
-  cartilage = uRibEnds[k].y < 0.5 && (abs(phi - 1.5707963) < 1.5707963 - uRibParams.y || (xy.y > 0.0 && p.x > endX - ${RIB_ANTERIOR_END.cartilageTailMm.toFixed(4)}));
+  float endX = ribEndData(k).x;
+  cartilage = ribEndData(k).y < 0.5 && (abs(phi - 1.5707963) < 1.5707963 - uRibParams.y || (xy.y > 0.0 && p.x > endX - ${RIB_ANTERIOR_END.cartilageTailMm.toFixed(4)}));
   if ((xy.y > 0.0 && p.x > endX) || (p.y < uSpine.y && abs(p.x - uSpine.x) < uSpineArch.x + 6.0)) return 1e3;
   float radius = length(xy);
   float dRadial = rho > 0.0 ? radius * (1.0 - 1.0 / rho) : -min(shape.x, shape.y);
@@ -255,6 +263,24 @@ float sdRib(vec3 p, int k, out bool cartilage, out vec3 n) {
   gradient.x *= mirror;
   n = length(gradient) > 1e-6 ? normalize(gradient) : vec3(0,1,0);
   return (length(q) - 1.0) * min(rib.w, rib.z);
+}
+
+float sdRib(vec3 p, int k, out bool cartilage, out vec3 n) {
+  float d = sdRibBone(p, k, cartilage, n);
+  if (ribEndData(k).z > 0.5) {
+    vec3 tangent; float curvature;
+    float cd = referenceCartilage(p, tangent, curvature);
+    if (cd < d) {
+      cartilage = true;
+      if (cd < 0.0) {
+      vec3 ex = vec3(0.001,0,0), ey = vec3(0,0.001,0), ez = vec3(0,0,0.001);
+      vec3 gradient = vec3(referenceCartilage(p+ex,tangent,curvature)-referenceCartilage(p-ex,tangent,curvature), referenceCartilage(p+ey,tangent,curvature)-referenceCartilage(p-ey,tangent,curvature), referenceCartilage(p+ez,tangent,curvature)-referenceCartilage(p-ez,tangent,curvature));
+      n = length(gradient) > 1e-6 ? normalize(gradient) : vec3(0,1,0);
+      }
+      return cd;
+    }
+  }
+  return d;
 }
 
 // Ruido del radio a lo largo del eje de un tubo (decisión 90; gemelos TS tubeHash, tubeNoise en anatomy/primitives.ts): hash

@@ -4776,3 +4776,15 @@ elipsoides (sin fosa vesicular ni impresión renal).
 
 Siguiente iteración: riñones + interlobares + componente renal; IQ por celda para color; medición de
 estadística de speckle contra clips reales; casos de la matriz G.2; arritmias.
+
+## 98. Recuperar el campo torácico como referencia opt-in y mantener el presupuesto completo
+
+**Contexto.** El WIP cd44d3c fallaba seis pruebas rápidas: import.meta en el grafo CommonJS, matriz de bootstrap, 142 uniforms frente a 130 y expresión textual del extremo. La E2E completa carecía de pericondrio. El checkpoint se recuperó por adjunto oficial y sus 39 archivos coincidieron con el manifiesto.
+
+**Opciones.** Relajar gates o ampliar un arco óseo como cartílago sin fuente ocultaría defectos. La carga predeterminada del WIP tampoco estaba autorizada para una referencia incompleta.
+
+**Decisión.** Carga de bytes en `loadReferenceBody.ts`, matemáticas puras separadas; `main → anatomy/bootstrap` como composición explícita. `?reference=1` activa el campo. Forma/extremos y las secciones medidas del séptimo cartílago comparten la textura de escena existente, sin nuevo sampler ni aumento de su asignación de 24.576 bytes. El límite de 130 uniforms permanece. La cota de búsqueda heredada de la elipse no excluye cartílago fuente superficial.
+
+**Consecuencias.** Solo seis pares y cartílago séptimo funcionales por ahora; la caja completa y el diafragma forman el siguiente bloque. El diagnóstico denso expone superposición con tejidos previos, sin resolverla mediante precedencia de B-mode. El total JS cuenta ahora también testHooks, además de todos los chunks/Workers; permanecen 335 KiB por raíz y 1.040.384 bytes totales. Compactación/renombrado compartido de shaders de Three con contratos de binding conservados; tabla de marching cubes en nibbles sin pérdida. La procedencia acústica queda íntegra en `interfaceSources.ts`, fuera de los workers que no la consultan.
+
+**Verificación.** Pruebas focales y gate TS/GLSL volumétrico y de interfaces del campo de referencia pasaron antes del último ajuste de build. La tabla codificada se compara elemento a elemento con los 4.096 índices originales y rechaza cambios de dominio. Los gates completos y capturas del build final se registran en `anatomy/TORSO_PROGRESS.md`; no se declara validación clínica ni rendimiento Metal por ejecución cloud.

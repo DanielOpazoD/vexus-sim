@@ -5,6 +5,10 @@
  * resuelve, se borra de aquí y del documento en el mismo cambio.
  */
 export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
+  'reference-thorax-incomplete',
+  'reference-diaphragm-incomplete',
+  'reference-skeletal-organ-overlap',
+  'reference-cartilage-seventh-only',
   'color-emulated-estimator',
   'triplex-prf-not-shared',
   'no-sidelobes',

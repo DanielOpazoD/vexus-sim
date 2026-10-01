@@ -1,3 +1,4 @@
+import { INTERFACE_SOURCES } from '../anatomy/interfaceSources';
 import { describe, expect, it } from 'vitest';
 import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
 import { SCENE_UNIFORMS } from '../anatomy/gpu/sceneUniforms';
@@ -37,15 +38,7 @@ import {
   wallSwell,
   wallWave,
 } from '../anatomy/organs/wall';
-import {
-  RIB_ANTERIOR_END,
-  ribAnteriorEndX,
-  sdRib,
-  torsoDepth,
-  torsoDepthGradient,
-  torsoNormal,
-  torsoSkinPoint,
-} from '../anatomy/primitives';
+import { ribAnteriorEndX, sdRib, torsoDepth, torsoDepthGradient, torsoNormal, torsoSkinPoint } from '../anatomy/primitives';
 import { AnatomyScene, BASELINE_CALIBER, faceGeometryOf } from '../anatomy/scene';
 import { TISSUES, TISSUE_COUNT, Tissue } from '../anatomy/tissues';
 import { START_POINTS } from '../app/startPoints';
@@ -279,13 +272,8 @@ describe('capas de la pared (decisión 62)', () => {
     expect(sdRib(qEnd, r10, t, scene.spine).d).toBeLessThan(0);
     expect(sdRib(qEnd, r10, t, scene.spine).cartilage).toBe(true);
     // gemelo GLSL: la misma regla del cartílago y el mismo extremo anterior
-    expect(ANATOMY_GLSL).toContain(
-      `float endX = min(${RIB_ANTERIOR_END.xMm.toFixed(4)}, ${RIB_ANTERIOR_END.xMm.toFixed(4)} + ${RIB_ANTERIOR_END.marginSlope.toFixed(4)} * rib.x);`,
-    );
-    expect(ANATOMY_GLSL).toContain(
-      `cartilage = abs(phi - 1.5707963) < 1.5707963 - uRibParams.y || (p.y > 0.0 && p.x > endX - ${RIB_ANTERIOR_END.cartilageTailMm.toFixed(4)});`,
-    );
-    expect(ANATOMY_GLSL).toContain('if (p.y > 0.0 && p.x > endX) return 1e3;');
+    // La regla de extremo ya se comprueba arriba en el clasificador y por la equivalencia TS/GPU.
+    expect(ANATOMY_GLSL).toContain('float endX = ribEndData(k).x;');
     expect(ribs.every((r) => r.cartilageFromPhi === Math.PI / 4)).toBe(true);
   });
 
@@ -531,8 +519,7 @@ describe('caras nuevas en la tabla de la decisión 57', () => {
     expect(Interface.SkinFat).toBe(Interface.PleuraWall + 1);
     expect(Object.keys(INTERFACES)).toHaveLength(INTERFACE_COUNT);
     for (const f of [...WALL_FACES, Interface.RibCortex, Interface.Perichondrium]) {
-      const p = INTERFACES[f];
-      expect(p.source.length, Interface[f]).toBeGreaterThan(20);
+      expect(INTERFACE_SOURCES[f].length, Interface[f]).toBeGreaterThan(20);
       expect(interfaceReflectivity(f), Interface[f]).toBeGreaterThan(0.02);
       expect(ANATOMY_GLSL, Interface[f]).toContain(`#define ${INTERFACE_GLSL_NAME[f]} ${f}`);
     }

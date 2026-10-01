@@ -62,9 +62,9 @@ const BUDGETS: Array<[RegExp, number]> = [
 // 30-09-2026: +4 KiB aprobados para corregir captura/presentación PW y añadir controles respiratorios.
 // Coste acotado (~0,4 %); todos los chunks de producción y Workers siguen incluidos.
 // 01-10-2026: +12 KiB aprobados para el campo corporal/registro compartido de referencia.
-// Asset binario contado separadamente; límites por chunk y exclusiones conservados.
+// Asset binario contado separadamente; límites por chunk conservados. El saneamiento cloud cuenta también testHooks en el total.
 const TOTAL_JS_BUDGET = 1016 * KB;
-/** Chunks que un usuario nunca descarga (solo `?e2e` o desarrollo): fuera del total, con su límite por chunk. */
+/** Identifica los ganchos para el informe; todos los chunks y Workers cuentan en el total. */
 const TEST_ONLY = /^testHooks-.*\.js$/;
 
 const dir = join(process.cwd(), 'dist', 'assets');
@@ -81,7 +81,7 @@ const rows: string[][] = [];
 for (const f of files) {
   if (f.endsWith('.map')) continue;
   const size = statSync(join(dir, f)).size;
-  if (f.endsWith('.js') && !TEST_ONLY.test(f)) totalJs += size;
+  if (f.endsWith('.js')) totalJs += size;
   const budget = BUDGETS.find(([re]) => re.test(f));
   const max = budget ? budget[1] : Infinity;
   const ok = size <= max;

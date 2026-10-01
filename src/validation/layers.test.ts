@@ -83,13 +83,14 @@ const ALLOWED: Record<string, readonly string[]> = {
   ultrasound: ['core', 'physiology', 'anatomy', 'probe'],
   app: ['core', 'physiology', 'anatomy', 'cases', 'probe', 'ultrasound', 'doppler', 'audio', 'vexus'],
   ui: ['core', 'physiology', 'anatomy', 'cases', 'probe', 'ultrasound', 'doppler', 'vexus', 'app'],
+  main: ['anatomy', 'bootstrap'],
   // validation: el registro de limitaciones y los gemelos que solo usan las pruebas (`validation/support`,
   // p. ej. el de los ecos de interfaz, sobre el motor de imagen, y el contorno del hígado de las vistas de
   // las capturas, que necesita la sonda, los casos y las poses de partida de `app/startPoints`); las pruebas
   // no cuentan como capa. La cadena del alumno por la ruta de la aplicación (`support/studentChain.ts`, decisión 93)
   // necesita además la fisiología y la captura del Doppler
   validation: ['core', 'physiology', 'anatomy', 'ultrasound', 'probe', 'doppler', 'cases', 'app'],
-  main: ['core', 'physiology', 'anatomy', 'cases', 'probe', 'ultrasound', 'doppler', 'audio', 'vexus', 'app', 'ui'],
+  bootstrap: ['core', 'physiology', 'anatomy', 'cases', 'probe', 'ultrasound', 'doppler', 'audio', 'vexus', 'app', 'ui'],
 };
 
 describe('Fronteras entre capas (docs/ARCHITECTURE.md)', () => {
@@ -104,7 +105,7 @@ describe('Fronteras entre capas (docs/ARCHITECTURE.md)', () => {
   });
   it('el motor no importa ui, app ni las utilidades de prueba', () => {
     for (const layer of ENGINE) {
-      for (const bad of ['ui', 'app', 'main', 'validation']) {
+      for (const bad of ['ui', 'app', 'main', 'bootstrap', 'validation']) {
         expect(dep(layer, bad), `${layer} → ${bad}: ${examples.get(`${layer}>${bad}`) ?? ''}`).toBe(false);
       }
     }

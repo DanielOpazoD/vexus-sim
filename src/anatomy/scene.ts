@@ -346,6 +346,7 @@ export class AnatomyScene {
               ];
               const [ax, by, z0, zs, zc] = fits[i];
               return {
+                sourceCartilage: i === 2,
                 anteriorEndX: [-73.81375, -83.74975, -99.7938, -111.442, -114.311, -111.3965][i],
                 zAnterior: z0 + zs,
                 tilt: -2 * zs,

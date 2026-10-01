@@ -1,3 +1,4 @@
+import { CARTILAGE_ROWS } from '../anatomy/referenceCartilageData';
 import type { AnatomyScene, VesselCaliber } from '../anatomy/scene';
 import { VESSEL_META } from '../physiology/vessels';
 import { Tissue } from '../anatomy/tissues';
@@ -41,6 +42,8 @@ import { lookWavenumber } from './steering';
 import type { SegmentGrid } from './transmission';
 import {
   BODY_BASE,
+  RIB_BASE,
+  CARTILAGE_BASE,
   COMPRESSION_BASE,
   MAX_NODES,
   MAX_TUBES,
@@ -50,7 +53,7 @@ import {
   SCENE_TEX_H,
   SCENE_TEX_W,
 } from '../anatomy/gpu/anatomy.glsl';
-import { tubeShapeTexel } from '../anatomy/primitives';
+import { ribAnteriorEndX, ribShape, tubeShapeTexel } from '../anatomy/primitives';
 import { evaluateSceneUniforms, uploadSceneUniforms, type SceneUniformValues } from '../anatomy/gpu/sceneUniforms';
 import {
   FRAG_AXIAL,
@@ -646,6 +649,11 @@ export class UltrasoundRenderer {
       })),
     ];
     if (s.torso.profile) this.sceneData.set(s.torso.profile, BODY_BASE * 4);
+    s.ribs.forEach((r, i) => {
+      this.sceneData.set(ribShape(r, s.torso), (RIB_BASE + i * 2) * 4);
+      this.sceneData.set([ribAnteriorEndX(r), r.shape ? 1 : 0, r.sourceCartilage ? 1 : 0, 0], (RIB_BASE + i * 2 + 1) * 4);
+    });
+    if (s.torso.profile) CARTILAGE_ROWS.forEach((row, i) => this.sceneData.set(row, (CARTILAGE_BASE + i) * 4));
     this.tubeCountTotal = tubes.length;
     if (this.tubeCountTotal > MAX_TUBES) throw new Error('Demasiados tubos para el shader');
     let n = 0;

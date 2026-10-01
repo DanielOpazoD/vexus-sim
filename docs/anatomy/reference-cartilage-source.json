@@ -1,0 +1,49 @@
+{
+  "license": "BodyParts3D, \u00a9 DBCLS, CC BY 4.0",
+  "source": [
+    {
+      "element": "FJ3345",
+      "sha256": "a4d22796f4ffc6f9ad1b7d620c917be1638244864eca62aec60bd11033ed3041",
+      "usedVertices": 1538,
+      "discardedUnusedVertices": 0
+    },
+    {
+      "element": "FJ3255",
+      "sha256": "97e69ede580a6e81cc42bb54fb22d4752719b61c5fced8ccccfb18ce64996676",
+      "usedVertices": 1367,
+      "discardedUnusedVertices": 0
+    }
+  ],
+  "registration": {
+    "sourceOriginLpsMm": [-0.3152345, -205.92635, 1164.5735],
+    "targetXiphoidLasMm": [0, 85.25, 0]
+  },
+  "method": "16 original triangle-plane intersections; bounding ellipses in Y/Z; averaged reflected right and left; linear interpolation; closed source X endpoints",
+  "scope": "seventh cartilage only; no inferred cartilage for pairs 5,6,8,9,10",
+  "x0": -108.2722345,
+  "x1": -4.6923955,
+  "rows": [
+    [57.63785, -51.72999, 1.83394, 4.44073],
+    [58.12648, -50.36294, 7.83746, 10.3726],
+    [66.34576, -51.89572, 5.35061, 9.9943],
+    [71.9124, -51.91142, 4.15486, 9.61368],
+    [75.72865, -51.37561, 4.23166, 9.55141],
+    [78.49555, -50.33335, 4.81881, 9.62795],
+    [81.01327, -48.66635, 4.97093, 9.85257],
+    [83.3956, -45.69725, 5.03132, 10.57957],
+    [85.15369, -39.41788, 5.05021, 13.25548],
+    [86.0309, -29.20075, 5.33287, 17.26641],
+    [86.67694, -22.15216, 5.34157, 15.85879],
+    [87.15318, -18.71448, 5.19428, 10.59626],
+    [87.38065, -10.78662, 4.97074, 9.87667],
+    [87.76445, -1.38064, 4.63037, 10.67981],
+    [88.40919, 10.42071, 3.9193, 11.22938],
+    [87.11823, 19.32366, 1.96758, 0.47214]
+  ],
+  "surfaceResidualMm": {
+    "rms": 0.9421423564948899,
+    "p95": 2.096217923932949,
+    "max": 3.145376338085743
+  },
+  "clinicalValidation": false
+}

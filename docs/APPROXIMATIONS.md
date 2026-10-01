@@ -81,3 +81,9 @@ citadas) es la referencia.
 - Cirrosis: solo resistencia/complianza sinusoidal; sin nodularidad ni colaterales.
 - Movimiento cardíaco transmitido a hígado/cava; modo M.
 - Validación perceptual ciega (H, 11.2).
+
+## Campo de referencia opt-in
+
+El registro mm/LAS se mantiene anclado al xifoides sin escalarlo para ajustar órganos. El séptimo cartílago usa 16 secciones de intersecciones triángulo/plano de BodyParts3D, promediadas tras la reflexión bilateral; elipse en Y/Z, interpolación lineal y recorte en los extremos observados. El residual está en `anatomy/reference-cartilage-source.json`. El pericondrio conserva las propiedades acústicas aproximadas anteriores; no se recalibraron contra un atlas. El clasificador CPU, GLSL, Worker y la malla 3D usan el mismo campo, pero la rejilla de marching cubes aproxima su superficie.
+
+Los controles respiratorios siguen OFF al iniciar. La deformación existente no valida articulaciones costovertebrales, deslizamiento pleural ni ausencia de interpenetración durante todo el ciclo del tórax completo. Esos gates deben completarse antes de promover la referencia a predeterminada.

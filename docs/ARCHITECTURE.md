@@ -22,7 +22,7 @@ core ← physiology ← anatomy ← probe ← ultrasound
              ↑  ↖ cases          ↖
            vexus ← doppler (+ anatomy)      audio (solo core)
              ↖ cases (el tipo del contexto clínico)
-app (orquesta todo el motor) ← ui (vistas; hoy aún ven el Simulator concreto) ← main
+app (orquesta todo el motor) ← ui (vistas; hoy aún ven el Simulator concreto) ← bootstrap ← main
 ```
 
 Las utilidades que solo usan las pruebas (`src/validation/support/`, como el gemelo de los ecos de
@@ -58,12 +58,14 @@ con `SimulationSession.reloadCase`.
 
 ## Composición
 
-`src/main.ts` solo compone: `SimulationSession` (`app/session.ts`) es dueña del `Simulator` vivo y
+`src/main.ts` carga el asset solo con `?reference=1` y después importa `src/bootstrap.ts`, la raíz de composición del navegador. El estado y las matemáticas de `anatomy/referenceBody.ts` no importan el cargador ni la UI. La matriz permite `main → anatomy/bootstrap`; `bootstrap` recibe las mismas dependencias de composición que antes tenía `main`, y ninguna capa del motor puede importar `bootstrap`.
+
+`src/bootstrap.ts` solo compone: `SimulationSession` (`app/session.ts`) es dueña del `Simulator` vivo y
 del `EquipmentController` (`app/equipment.ts`, estado del ecógrafo por comandos con invariantes);
 las vistas y controladores (`ui/controllers/*`: HUD, clic en la imagen, pérdida de GPU, avisos,
 menú de capas) reciben funciones de acceso, no variables globales.
 
-## Flujo por cuadro (`src/main.ts` → `Simulator`)
+## Flujo por cuadro (`src/bootstrap.ts` → `Simulator`)
 
 ```
 input.tick(dt) / animación de punto de partida     gestos y teclas → pose

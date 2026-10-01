@@ -10,6 +10,8 @@ export interface Registration {
 }
 
 export function validateRegistration(r: Registration): number {
+  if (r.axes.length !== 3 || r.axes.some((row) => row.length !== 3) || r.sourceOrigin.length !== 3 || r.targetOriginMm.length !== 3)
+    throw new Error('El registro requiere tres dimensiones');
   const values = [...r.axes.flat(), ...r.sourceOrigin, ...r.targetOriginMm];
   if (!values.every(Number.isFinite) || !['mm', 'cm'].includes(r.sourceUnit)) throw new Error('Registro no finito o unidad desconocida');
   for (let a = 0; a < 3; a++)
@@ -23,13 +25,14 @@ export function validateRegistration(r: Registration): number {
 
 export function registeredPoint(p: Triple, r: Registration): Triple {
   validateRegistration(r);
-  if (!p.every(Number.isFinite)) throw new Error('Vértice no finito');
+  if (p.length !== 3 || !p.every(Number.isFinite)) throw new Error('Vértice no finito o de dimensión inválida');
   const scale = r.sourceUnit === 'cm' ? 10 : 1;
   return r.axes.map((row, a) => row.reduce((sum, v, i) => sum + v * (p[i] - r.sourceOrigin[i]) * scale, r.targetOriginMm[a])) as Triple;
 }
 
 export function registeredNormal(n: Triple, r: Registration): Triple {
   validateRegistration(r);
+  if (n.length !== 3 || !n.every(Number.isFinite)) throw new Error('Normal no finita o de dimensión inválida');
   const q = r.axes.map((row) => row.reduce((sum, v, i) => sum + v * n[i], 0)) as Triple;
   const len = Math.hypot(...q);
   if (!Number.isFinite(len) || len === 0) throw new Error('Normal no resoluble');

@@ -54,6 +54,7 @@ describe('registro común externo, sin dimensiones clínicas implícitas', () =>
       }),
     ).toThrow();
     expect(() => registeredPoint([NaN, 0, 0], r)).toThrow();
+    expect(() => registeredPoint([1, 2, 3, 4] as unknown as [number, number, number], r)).toThrow();
     expect(() => registeredNormal([0, 0, 0], r)).toThrow();
   });
 });

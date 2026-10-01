@@ -55,13 +55,15 @@ import { join } from 'node:path';
 const KB = 1024;
 const BUDGETS: Array<[RegExp, number]> = [
   [/three.*\.js$/, 700 * KB],
-  [/index-.*\.js$/, 335 * KB],
+  [/^(index|bootstrap)-.*\.js$/, 335 * KB],
   [/\.css$/, 20 * KB],
   [/\.js$/, 120 * KB], // cualquier otro chunk
 ];
 // 30-09-2026: +4 KiB aprobados para corregir captura/presentación PW y añadir controles respiratorios.
 // Coste acotado (~0,4 %); todos los chunks de producción y Workers siguen incluidos.
-const TOTAL_JS_BUDGET = 1004 * KB;
+// 01-10-2026: +12 KiB aprobados para el campo corporal/registro compartido de referencia.
+// Asset binario contado separadamente; límites por chunk y exclusiones conservados.
+const TOTAL_JS_BUDGET = 1016 * KB;
 /** Chunks que un usuario nunca descarga (solo `?e2e` o desarrollo): fuera del total, con su límite por chunk. */
 const TEST_ONLY = /^testHooks-.*\.js$/;
 

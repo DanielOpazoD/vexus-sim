@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import type { AnatomyScene } from '../../anatomy/scene';
-import { ribAnteriorEndX, sdRib, type Rib } from '../../anatomy/primitives';
-import { CM, surfaceAt, torsoScale } from './common';
+import { ribAnteriorEndX, ribCentre, ribShape, torsoSkinPoint, sdRib, type Rib } from '../../anatomy/primitives';
+import { CM, surfaceAt } from './common';
 
 /** Piel superelíptica del tronco (misma elipse que `torsoDepth`) y esqueleto procedural. */
 export function buildSkin(a: AnatomyScene): THREE.Mesh {
@@ -15,12 +15,11 @@ export function buildSkin(a: AnatomyScene): THREE.Mesh {
   const idx: number[] = [];
   for (let j = 0; j <= nZ; j++) {
     const z = z0 + ((z1 - z0) * j) / nZ;
-    const sc = torsoScale(z);
     for (let i = 0; i <= nT; i++) {
       const th = (i / nT) * Math.PI * 2;
       // La piel usa la misma elipse que el modelo acústico (torsoDepth): así la
       // sonda apoya exactamente donde la ve el haz.
-      pos.push(t.a * sc * Math.cos(th) * CM, t.b * sc * Math.sin(th) * (Math.sin(th) < 0 ? 0.95 : 1) * CM, z * CM);
+      pos.push(...torsoSkinPoint(th, z, t).map((v) => v * CM));
     }
   }
   for (let j = 0; j < nZ; j++)
@@ -75,18 +74,17 @@ export function costalGeometry(a: AnatomyScene, rib: Rib, side: number): THREE.B
   const materials: number[] = [];
   const rings = 64,
     segments = 12;
-  const front = Math.acos(Math.max(-1, Math.min(1, (ribAnteriorEndX(rib) - rib.halfThickness - 0.01) / (a.torso.a * rib.scale))));
+  const [aX, , y0] = ribShape(rib, a.torso);
+  const front = Math.acos(Math.max(-1, Math.min(1, (ribAnteriorEndX(rib) - rib.halfThickness - 0.01) / aX)));
   for (let i = 0; i <= rings; i++) {
     const phi = front + ((Math.PI * 1.5 - front) * i) / rings;
-    const x = a.torso.a * rib.scale * Math.cos(phi);
-    const y = a.torso.b * rib.scale * Math.sin(phi);
+    const [x, y, z] = ribCentre(phi, rib, a.torso);
     if (y < a.spine.y0 && Math.abs(x - a.spine.x0) < a.spine.archHalfWidth + 6 + rib.halfThickness) break;
-    const z = rib.zAnterior + rib.tilt * (0.5 - 0.5 * Math.sin(phi));
-    const radius = Math.hypot(x, y);
+    const radius = Math.hypot(x, y - y0);
     for (let j = 0; j <= segments; j++) {
       const angle = (2 * Math.PI * j) / segments;
       const radial = 1 + (rib.halfThickness * Math.cos(angle)) / radius;
-      positions.push(-side * x * radial * CM, y * radial * CM, (z + rib.halfWidth * Math.sin(angle)) * CM);
+      positions.push(-side * x * radial * CM, (y0 + (y - y0) * radial) * CM, (z + rib.halfWidth * Math.sin(angle)) * CM);
     }
     materials.push(sdRib([x, y, z], rib, a.torso, a.spine).cartilage ? 1 : 0);
     if (i === 0) continue;
@@ -115,7 +113,8 @@ export function buildSkeleton(a: AnatomyScene): THREE.Group {
       const geometry = costalGeometry(a, rib, side);
       g.add(new THREE.Mesh(geometry, [bone, cartilage]));
     }
-  const yFront = a.torso.b * 0.85 * CM;
+  // Anclaje distal conservado: la piel y la columna se registran alrededor de él.
+  const yFront = 8.925;
   const sternum = new THREE.Mesh(new RoundedBoxGeometry(3.2, 0.9, 11, 3, 0.4), bone);
   sternum.position.set(0, yFront - 0.2, 8.5);
   const xiphoid = new THREE.Mesh(new RoundedBoxGeometry(1.5, 0.5, 3, 3, 0.3), cartilage);

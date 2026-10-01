@@ -47,7 +47,8 @@ export const MAX_TUBE_SEGMENTS = 8;
 
 /** Primer téxel de la tabla de compresión de la sonda (decisión 63): tras los nodos de los tubos. */
 export const COMPRESSION_BASE = NODE_BASE + MAX_NODES;
-export const SCENE_TEX_H = Math.ceil((COMPRESSION_BASE + PROBE_COMPRESSION.nodes) / SCENE_TEX_W);
+export const BODY_BASE = COMPRESSION_BASE + PROBE_COMPRESSION.nodes;
+export const SCENE_TEX_H = Math.ceil((BODY_BASE + 130) / SCENE_TEX_W);
 export { MAX_GAS, MAX_RIBS } from './sceneUniforms';
 
 const TISSUE_DEFINES = Object.entries(TISSUE_GLSL_NAME)
@@ -102,7 +103,31 @@ struct Cls {
 
 vec4 sceneTexel(int i) { return texelFetch(uSceneTex, ivec2(i % SCENE_TEX_W, i / SCENE_TEX_W), 0); }
 
+float bodyValue(int i) { return sceneTexel(${BODY_BASE} + i / 4)[i % 4]; }
+vec4 bodyInfo(float phi, float z, out float dc) {
+  float zz = clamp((z + 160.0) / 40.0, 0.0, 7.0);
+  int row = min(6, int(floor(zz))); float f = zz - float(row);
+  float angle = fract(phi / 6.28318530718) * 64.0;
+  int i = int(floor(angle)), j = (i + 1) % 64; float g = fract(angle);
+  float a = bodyValue(row * 65 + 1 + i), b = bodyValue(row * 65 + 1 + j);
+  float c = bodyValue((row + 1) * 65 + 1 + i), d = bodyValue((row + 1) * 65 + 1 + j);
+  float r0 = mix(a, b, g), r1 = mix(c, d, g);
+  float cy0 = bodyValue(row * 65), cy1 = bodyValue((row + 1) * 65);
+  bool inside = z >= -160.0 && z <= 120.0;
+  dc = inside ? (cy1 - cy0) / 40.0 : 0.0;
+  return vec4(mix(r0, r1, f), mix(b - a, d - c, f) * 64.0 / 6.28318530718, inside ? (r1 - r0) / 40.0 : 0.0, mix(cy0, cy1, f));
+}
+vec3 bodyGradient(vec3 p) {
+  float dc; vec4 centre = bodyInfo(0.0, p.z, dc);
+  vec2 xy = vec2(p.x, p.y - centre.w); float radius = length(xy);
+  if (radius < 1e-6) return vec3(0,1,0);
+  vec4 info = bodyInfo(atan(xy.y, xy.x), p.z, dc);
+  vec2 gradient = xy / radius + info.y * vec2(xy.y, -xy.x) / (radius * radius);
+  return vec3(gradient, -info.z - dc * gradient.y);
+}
 float torsoDepth(vec3 p) {
+  if (uReferenceBody == 1) { float dc; vec4 centre = bodyInfo(0.0, p.z, dc); vec2 xy = vec2(p.x, p.y - centre.w); return length(xy) - bodyInfo(atan(xy.y, xy.x), p.z, dc).x; }
+  p.y -= uTorsoY;
   float u = p.x / uTorso.x;
   float v = p.y / uTorso.y;
   float rho = sqrt(u * u + v * v);
@@ -111,6 +136,8 @@ float torsoDepth(vec3 p) {
 }
 
 vec3 torsoNormal(vec3 p) {
+  if (uReferenceBody == 1) return normalize(bodyGradient(p));
+  p.y -= uTorsoY;
   vec2 n = vec2(p.x / (uTorso.x * uTorso.x), p.y / (uTorso.y * uTorso.y));
   float l = length(n);
   return l > 0.0 ? vec3(n / l, 0.0) : vec3(0.0, 1.0, 0.0);
@@ -151,7 +178,7 @@ float domeLift(float x, float y, vec4 dome) {
 // Altura del diafragma: inserción costal (0 en el xifoides, −50 en flancos y espalda) +
 // la hemicúpula más alta (misma construcción que primitives.diaphragmHeight)
 float domeHeight(float x, float y) {
-  float phi = atan(y / uTorso.y, x / uTorso.x);
+  float phi = atan((y - uTorsoY) / uTorso.y, x / uTorso.x);
   float edge = uDiaphragm.z + uDiaphragm.w * pow(max(0.0, sin(phi)), 1.5);
   float zr = edge + max(0.0, uDiaphragm.x - edge) * domeLift(x, y, uDomeR);
   float zl = edge + max(0.0, uDiaphragm.y - edge) * domeLift(x, y, uDomeL);
@@ -205,30 +232,29 @@ float sdSphere(vec3 p, vec4 s, out vec3 n) {
 }
 
 // Costilla: devuelve distancia y si es cartílago (φ anterior)
-float sdRib(vec3 p, vec4 rib, out bool cartilage, out vec3 n) {
-  vec3 original = p;
-  p.x = -abs(p.x); // pares bilaterales, mismo registro y corte que sdRib TS
-  float phi = atan(p.y / uTorso.y, p.x / uTorso.x);
-  // extremo anterior: el esternón (5.ª–7.ª) o el reborde costal (8.ª–10.ª; primitives.ribAnteriorEndX)
-  float endX = min(${RIB_ANTERIOR_END.xMm.toFixed(4)}, ${RIB_ANTERIOR_END.xMm.toFixed(4)} + ${RIB_ANTERIOR_END.marginSlope.toFixed(4)} * rib.x);
-  // cartílago: el arco anterior y los últimos mm antes del extremo (primitives.sdRib, decisión 62)
-  cartilage = abs(phi - 1.5707963) < 1.5707963 - uRibParams.y || (p.y > 0.0 && p.x > endX - ${RIB_ANTERIOR_END.cartilageTailMm.toFixed(4)});
-  if (p.y > 0.0 && p.x > endX) return 1e3;
-  // el arco costal termina en la apófisis transversa: nada por detrás de la columna
-  if (p.y < uSpine.y && abs(p.x - uSpine.x) < uSpineArch.x + 6.0) return 1e3;
-  float sc = uRibParams.x;
-  float u = p.x / (uTorso.x * sc);
-  float v = p.y / (uTorso.y * sc);
-  float rho = sqrt(u * u + v * v);
-  float localR = rho > 0.0 ? length(p.xy) / rho : 1.0;
-  float dRadial = (rho - 1.0) * localR;
-  float zRib = rib.x + rib.y * (0.5 - 0.5 * sin(phi));
+float sdRib(vec3 p, int k, out bool cartilage, out vec3 n) {
+  vec4 rib = uRibs[k], shape = uRibShape[k];
+  float mirror = p.x > 0.0 ? -1.0 : 1.0;
+  p.x = -abs(p.x);
+  vec2 xy = vec2(p.x, p.y - shape.z);
+  vec2 uv = xy / shape.xy;
+  float rho = length(uv);
+  float phi = atan(uv.y, uv.x);
+  float endX = uRibEnds[k].x;
+  cartilage = uRibEnds[k].y < 0.5 && (abs(phi - 1.5707963) < 1.5707963 - uRibParams.y || (xy.y > 0.0 && p.x > endX - ${RIB_ANTERIOR_END.cartilageTailMm.toFixed(4)}));
+  if ((xy.y > 0.0 && p.x > endX) || (p.y < uSpine.y && abs(p.x - uSpine.x) < uSpineArch.x + 6.0)) return 1e3;
+  float radius = length(xy);
+  float dRadial = rho > 0.0 ? radius * (1.0 - 1.0 / rho) : -min(shape.x, shape.y);
+  float zRib = rib.x + rib.y * (0.5 - 0.5 * sin(phi)) + shape.w * cos(phi);
   float dz = p.z - zRib;
-  float qx = abs(dRadial) / rib.w;
-  float qz = abs(dz) / rib.z;
-  float q = sqrt(qx * qx + qz * qz) - 1.0;
-  n = normalize(vec3(torsoNormal(original).xy * sign(dRadial) * qx, qz * sign(dz)) + vec3(1e-4));
-  return q * min(rib.w, rib.z);
+  vec2 q = vec2(dRadial / rib.w, dz / rib.z);
+  vec2 gr = rho > 1e-6 ? xy / max(radius, 1e-6) * (1.0 - 1.0 / rho) + radius * xy / (shape.xy * shape.xy * rho * rho * rho) : vec2(0,1);
+  vec2 gp = vec2(-xy.y, xy.x) / (shape.x * shape.y * max(rho * rho, 1e-6));
+  float zp = -0.5 * rib.y * cos(phi) - shape.w * sin(phi);
+  vec3 gradient = vec3(dRadial / (rib.w * rib.w) * gr - dz / (rib.z * rib.z) * zp * gp, dz / (rib.z * rib.z));
+  gradient.x *= mirror;
+  n = length(gradient) > 1e-6 ? normalize(gradient) : vec3(0,1,0);
+  return (length(q) - 1.0) * min(rib.w, rib.z);
 }
 
 // Ruido del radio a lo largo del eje de un tubo (decisión 90; gemelos TS tubeHash, tubeNoise en anatomy/primitives.ts): hash
@@ -391,10 +417,10 @@ bool classifyWall(vec3 m, out Cls c, out float depth, out vec3 tn) {
   if (d >= ribSearchDepth()) {
     for (int i = 0; i < MAX_RIBS; i++) {
       bool cart; vec3 rn;
-      float rd = sdRib(m, uRibs[i], cart, rn);
+      float rd = sdRib(m, i, cart, rn);
       if (rd < 0.0) {
         c.tissue = cart ? T_CARTILAGE : T_BONE; c.bd = -rd; c.n = rn;
-        if (cart) { c.iface = IF_PERICHONDRIUM; c.ifd = -rd; c.tangent = ribTangent(m, uRibs[i]); c.kc = ribCurvature(m, uRibs[i]); }
+        if (cart) { c.iface = IF_PERICHONDRIUM; c.ifd = -rd; c.tangent = ribTangent(m, i); c.kc = ribCurvature(m, i); }
         return true;
       }
       ribAny = min(ribAny, rd);
@@ -412,7 +438,7 @@ bool classifyWall(vec3 m, out Cls c, out float depth, out vec3 tn) {
     c.n = tn;
     vec2 wf = wallFace(d, u, m.z, ribD, wd);
     c.iface = int(wf.x + 0.5); c.ifd = wf.y;
-    if (c.iface == IF_RIB) { c.tangent = ribTangent(m, uRibs[ribI]); c.kc = ribCurvature(m, uRibs[ribI]); }
+    if (c.iface == IF_RIB) { c.tangent = ribTangent(m, ribI); c.kc = ribCurvature(m, ribI); }
     return true;
   }
   return false;

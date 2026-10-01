@@ -4726,6 +4726,23 @@ hiperrealismo anatómico; completar pares, articulaciones y asimetrías exige la
 Las pruebas contrastan vértices 3D contra el campo TS en ambos lados, espacios libres y el gate TS/GLSL existente.
 No se alteran clasificación VExUS, mediciones, presupuesto ni umbrales físicos.
 
+## 97. Registro corporal de referencia y recalibración de ventanas — WIP (01-10-2026)
+
+Campo cutáneo derivado de BodyParts3D, único registro mm/LAS a la punta xifoidea; gradiente/contacto,
+clasificador TS/GLSL, malla y worker comparten la geometría. Radios polares LPS reflejados al destino,
+sectores no observados interpolados explícitamente, sin dimensiones clínicas inventadas.
+Curvas costales fuente para seis pares5–10 y primitiva vertebral desplazada por landmarkT9; no caja
+completa ni columna/esternón fuente completos. Los presets se recalibran offline por landmarks,
+trayectorias y contacto: no desplazan órganos para forzar imágenes ni usan verdad en medición del alumno.
+
+Root main→bootstrap conserva lógica y cobertura E2E; límite de raíz335KiB sigue siendo el mismo.
+TotalJS máximo1016KiB (+12KiB autorizado); binario geométrico2080bytes contado separadamente.
+No cambia umbral clínico/físico, exclusión de JS de producción ni flaky gate.
+
+**No listo**: referencia sin cartílago fuente funcional; gate Perichondrium rojo. El traslado cloud
+preserva este defecto y todas las aproximaciones. Detalle, provenance y estado en
+[REFERENCE_TORSO.md](anatomy/REFERENCE_TORSO.md) y [CLOUD_HANDOFF.md](anatomy/CLOUD_HANDOFF.md).
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con

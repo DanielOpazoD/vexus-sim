@@ -1,7 +1,7 @@
 import { bestGateOnVessel, type GatePlacement } from '../../app/gatePlacement';
 import { acousticWindowWeight } from '../../app/gateTransmission';
 import { pwGate } from '../../app/pwGate';
-import { START_POINTS, type StartPoint } from '../../app/startPoints';
+import { startPointsFor, type StartPoint } from '../../app/startPoints';
 import { AnatomyQuery } from '../../anatomy/query';
 import { AnatomyScene } from '../../anatomy/scene';
 import { captureProtocolVessel, type CaptureResult } from '../../doppler/capture';
@@ -47,7 +47,7 @@ export function openSession(base: PatientState, respiratoryPattern: RespiratoryP
 
 /** La sonda en un punto de partida con su compresión (decisión 63), como `goToStartPoint`. */
 export function probeAt(session: ChainSession, window: StartPoint['id']): ProbeContact {
-  const sp = START_POINTS.find((s) => s.id === window)!;
+  const sp = startPointsFor(session.scene.torso).find((s) => s.id === window)!;
   const pose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
   const contact = probeContact(pose, TR, session.scene.torso);
   session.anatomy.setProbeCompression(contact);

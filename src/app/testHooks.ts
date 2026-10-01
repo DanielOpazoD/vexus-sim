@@ -46,7 +46,7 @@ import type { RespiratoryPattern } from '../physiology/patientState';
 import { speckleStats, type EnvelopeFrame, type SpeckleOptions, type SpeckleStats } from './speckle';
 import { portalTriadGain, triadOfCell } from '../ultrasound/portalTriads';
 import type { RenderMeasureOptions, Simulator } from './simulator';
-import { START_POINTS, type StartPoint } from './startPoints';
+import { startPointsFor, type StartPoint } from './startPoints';
 
 /**
  * Ganchos de prueba estables (e2e). Se cargan con `import()` dinámico solo en desarrollo o
@@ -1379,7 +1379,7 @@ function offsetPose(sim: Simulator, pose: { rockDeg?: number; tiltDeg?: number }
 
 /** Coloca la sonda en un punto de partida (sin animación) y avanza lo justo para que el marco la siga. */
 function goTo(sim: Simulator, id: StartPoint['id']): void {
-  const sp = START_POINTS.find((p) => p.id === id)!;
+  const sp = startPointsFor(sim.scene.torso).find((p) => p.id === id)!;
   sim.setPose({ phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 });
   sim.advance(0.05);
 }

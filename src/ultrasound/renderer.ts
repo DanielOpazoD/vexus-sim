@@ -40,6 +40,7 @@ import { M_COLUMNS, M_SAMPLES, MColumnRing, mLineU } from './mmode';
 import { lookWavenumber } from './steering';
 import type { SegmentGrid } from './transmission';
 import {
+  BODY_BASE,
   COMPRESSION_BASE,
   MAX_NODES,
   MAX_TUBES,
@@ -644,6 +645,7 @@ export class UltrasoundRenderer {
         profileN: 2,
       })),
     ];
+    if (s.torso.profile) this.sceneData.set(s.torso.profile, BODY_BASE * 4);
     this.tubeCountTotal = tubes.length;
     if (this.tubeCountTotal > MAX_TUBES) throw new Error('Demasiados tubos para el shader');
     let n = 0;

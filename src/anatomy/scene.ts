@@ -1,3 +1,4 @@
+import { referenceBody } from './referenceBody';
 import { smoothstep, type Vec3 } from '../core/vec3';
 import type { PatientState } from '../physiology/patientState';
 import { VESSEL_META, type VesselAreas, type VesselId } from '../physiology/vessels';
@@ -223,6 +224,7 @@ export function ribTiltMm(ribNo: number): number {
 export class AnatomyScene {
   readonly torso: Torso;
   readonly ribs: Rib[];
+  private spineReferenceOffset = 0;
   readonly diaphragm: Diaphragm;
   readonly spine: Spine;
   /** Lóbulo derecho (voluminoso) y lóbulo izquierdo (aplanado); su unión suave es el hígado. */
@@ -263,6 +265,11 @@ export class AnatomyScene {
     // Tronco 32 × 21 cm (adulto de IMC 25): la VCI queda a ≈ 12–13 cm del xifoides
     // la grasa preperitoneal es la parte más honda del espesor muscular del hábito (decisión 62)
     this.torso = { a: 160, b: 105, zMin: -300, zMax: 300, skinMm: 2, fatMm: fat, muscleMm: muscle, preperitonealMm: preperitonealMm(fat) };
+    if (referenceBody) {
+      this.torso.profile = referenceBody;
+      this.torso.y0 = -21.106195;
+      this.spineReferenceOffset = -14.02345;
+    }
     // Referencia craneocaudal: z = 0 en la punta del xifoides (T9–T10). Cúpula derecha
     // en T8–T9 (+45 mm), reborde costal en la línea medioclavicular ≈ −80 mm, unión
     // cavoauricular ≈ +55 mm, hilio hepático ≈ −45 mm (T12–L1) [B.5].
@@ -275,7 +282,15 @@ export class AnatomyScene {
     // Columna: cuerpo vertebral de 36 mm justo por detrás de cava y aorta (su cara
     // posterior queda ≈ 5 cm de la piel dorsal, como en un adulto); arco posterior con
     // apófisis transversas de 40 mm a cada lado. Las costillas terminan en ellas.
-    this.spine = { kind: 'cylinderZ', x0: 0, y0: -46, r: 17, archHalfWidth: 40, archY0: -78, archY1: -58 };
+    this.spine = {
+      kind: 'cylinderZ',
+      x0: 0,
+      y0: -46 + this.spineReferenceOffset,
+      r: 17,
+      archHalfWidth: 40,
+      archY0: -78 + this.spineReferenceOffset,
+      archY1: -58 + this.spineReferenceOffset,
+    };
     // Hígado y vesícula: geometría en sus módulos de órgano (organs/liver, organs/gallbladder)
     ({ liver: this.liver, liverLeft: this.liverLeft, visceralFace: this.visceralFace } = liverLobes(patient.liver.sizeFactor));
     this.umbilicalFissure = UMBILICAL_FISSURE;
@@ -319,6 +334,25 @@ export class AnatomyScene {
         // elipse de la costilla, 136 × 89 mm), la del reborde costal de las costillas 7–10 (decisión 62)
         cartilageFromPhi: Math.PI / 4,
         rightOnly: false,
+        ...(referenceBody
+          ? (() => {
+              const fits = [
+                [130.4834, 94.9904, 65.7365, -59.7209, -8.0953],
+                [137.7828, 97.5788, 38.4969, -61.9549, -17.9881],
+                [141.0403, 95.6343, 14.077, -61.518, -28.6725],
+                [135.4493, 92.9929, -15.3098, -64.415, -36.956],
+                [130.3215, 92.0187, -26.6004, -60.331, -64.7095],
+                [125.2486, 88.2511, -19.8121, -42.4553, -105.6423],
+              ];
+              const [ax, by, z0, zs, zc] = fits[i];
+              return {
+                anteriorEndX: [-73.81375, -83.74975, -99.7938, -111.442, -114.311, -111.3965][i],
+                zAnterior: z0 + zs,
+                tilt: -2 * zs,
+                shape: [ax, by, -21.106195, -zc] as [number, number, number, number],
+              };
+            })()
+          : {}),
       });
     }
     const tree = buildVesselTree(this.kidneyRight, this.kidneyLeft);

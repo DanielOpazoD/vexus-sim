@@ -81,6 +81,7 @@ export default defineConfig({
       exclude: [
         'src/**/*.test.ts',
         'src/main.ts',
+        'src/bootstrap.ts', // misma raíz de composición trasladada desde main; cubierta por E2E
         'src/ui/**',
         'src/ultrasound/renderer.ts',
         'src/ultrasound/gl.ts',

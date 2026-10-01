@@ -1,3 +1,4 @@
+import { bodyDepth, bodyGradient, bodySection } from './referenceBody';
 import type { Vec3 } from '../core/vec3';
 
 /**
@@ -269,6 +270,10 @@ export interface Spine extends CylinderZ {
 
 /** Elipse del tronco (sección transversal) y sus capas parietales. */
 export interface Torso {
+  /** Centro anteroposterior del registro común (mm); 0 en fixtures antiguos. */
+  y0?: number;
+  /** Perfil polar del adulto de referencia; ausente en el modelo previo. */
+  profile?: Float32Array;
   a: number; // semieje x (mm)
   b: number; // semieje y (mm)
   zMin: number;
@@ -284,6 +289,10 @@ export interface Torso {
 export interface Rib {
   /** Altura z del arco costal en la línea anterior (φ = π/2) en mm. */
   zAnterior: number;
+  /** Semiejes, centro Y y término coseno del ajuste costal de referencia. */
+  shape?: [number, number, number, number];
+  /** Extremo óseo anterior medido en la fuente; no prolongarlo como cartílago inventado. */
+  anteriorEndX?: number;
   /** Inclinación: cuánto sube el arco al ir hacia posterior (mm). */
   tilt: number;
   /** Semiancho craneocaudal (mm) y semiespesor radial (mm). */
@@ -515,16 +524,18 @@ export function tubeFaceGradient(p: Vec3, tube: Tube, radiusScale: number, hit: 
 
 /** Ángulo alrededor del tronco: 0 = lado izquierdo del paciente (+x), π/2 = anterior (+y). */
 export function torsoPhi(x: number, y: number, t: Torso): number {
-  return Math.atan2(y / t.b, x / t.a);
+  return Math.atan2((y - (t.y0 ?? 0)) / t.b, x / t.a);
 }
 
 /** Distancia radial (mm, aproximada) desde la piel: negativa dentro del cuerpo. */
 export function torsoDepth(p: Vec3, t: Torso): number {
+  if (t.profile) return bodyDepth(p, t.profile);
+  const y = p[1] - (t.y0 ?? 0);
   const u = p[0] / t.a;
-  const v = p[1] / t.b;
+  const v = y / t.b;
   const rho = Math.sqrt(u * u + v * v);
   // Escala local aproximada de la elipse en esa dirección
-  const localR = rho > 0 ? Math.hypot(p[0], p[1]) / rho : Math.min(t.a, t.b);
+  const localR = rho > 0 ? Math.hypot(p[0], y) / rho : Math.min(t.a, t.b);
   return (rho - 1) * localR;
 }
 
@@ -534,6 +545,8 @@ export function torsoDepth(p: Vec3, t: Torso): number {
  * caras de las capas de la pared sin su ondulación (el eco de cara plana de la serie de la pleura, decisión 62).
  */
 export function torsoDepthGradient(p: Vec3, t: Torso): Vec3 {
+  if (t.profile) return bodyGradient(p, t.profile);
+  p = [p[0], p[1] - (t.y0 ?? 0), p[2]];
   const r = Math.hypot(p[0], p[1]);
   if (r < 1e-6) return [0, 1, 0];
   const rho = Math.hypot(p[0] / t.a, p[1] / t.b);
@@ -544,6 +557,12 @@ export function torsoDepthGradient(p: Vec3, t: Torso): Vec3 {
 
 /** Normal exterior aproximada de la piel en el punto. */
 export function torsoNormal(p: Vec3, t: Torso): Vec3 {
+  if (t.profile) {
+    const g = bodyGradient(p, t.profile);
+    const n = Math.hypot(...g);
+    return g.map((v) => v / n) as Vec3;
+  }
+  p = [p[0], p[1] - (t.y0 ?? 0), p[2]];
   const nx = p[0] / (t.a * t.a);
   const ny = p[1] / (t.b * t.b);
   const n = Math.hypot(nx, ny) || 1;
@@ -552,7 +571,11 @@ export function torsoNormal(p: Vec3, t: Torso): Vec3 {
 
 /** Punto de la piel para un ángulo φ y altura z. */
 export function torsoSkinPoint(phi: number, z: number, t: Torso): Vec3 {
-  return [t.a * Math.cos(phi), t.b * Math.sin(phi), z];
+  if (t.profile) {
+    const [r, , , cy] = bodySection(phi, z, t.profile);
+    return [r * Math.cos(phi), cy + r * Math.sin(phi), z];
+  }
+  return [t.a * Math.cos(phi), (t.y0 ?? 0) + t.b * Math.sin(phi), z];
 }
 
 /**
@@ -567,26 +590,35 @@ export function torsoSkinPoint(phi: number, z: number, t: Torso): Vec3 {
 export const RIB_ANTERIOR_END = { xMm: 15, marginSlope: 1.53, cartilageTailMm: 25 } as const;
 
 /** x máxima (mm) de la costilla: su extremo anterior (`RIB_ANTERIOR_END`). */
-export function ribAnteriorEndX(rib: Pick<Rib, 'zAnterior'>): number {
-  return Math.min(RIB_ANTERIOR_END.xMm, RIB_ANTERIOR_END.xMm + RIB_ANTERIOR_END.marginSlope * rib.zAnterior);
+export function ribAnteriorEndX(rib: Pick<Rib, 'zAnterior' | 'anteriorEndX'>): number {
+  return rib.anteriorEndX ?? Math.min(RIB_ANTERIOR_END.xMm, RIB_ANTERIOR_END.xMm + RIB_ANTERIOR_END.marginSlope * rib.zAnterior);
 }
 
+/** Parámetros en el mismo marco físico que la piel y la columna. */
+export function ribShape(rib: Rib, t: Torso): [number, number, number, number] {
+  return rib.shape ?? [t.a * rib.scale, t.b * rib.scale, t.y0 ?? 0, 0];
+}
+export function ribCentre(phi: number, rib: Rib, t: Torso): Vec3 {
+  const [a, b, y, c] = ribShape(rib, t);
+  return [a * Math.cos(phi), y + b * Math.sin(phi), rib.zAnterior + rib.tilt * (0.5 - 0.5 * Math.sin(phi)) + c * Math.cos(phi)];
+}
 /** Distancia con signo a una costilla (negativa dentro del hueso). */
 export function sdRib(p: Vec3, rib: Rib, torso: Torso, spine?: Spine): { d: number; cartilage: boolean } {
   // Un registro describe el arco derecho y su reflejo izquierdo cuando es bilateral.
   if (!rib.rightOnly) p = [-Math.abs(p[0]), p[1], p[2]];
-  const phi = torsoPhi(p[0], p[1], torso);
-  if (p[1] > 0 && p[0] > ribAnteriorEndX(rib)) return { d: 1e3, cartilage: false };
+  const [a, b, y, c] = ribShape(rib, torso);
+  const phi = Math.atan2((p[1] - y) / b, p[0] / a);
+  if (p[1] > y && p[0] > ribAnteriorEndX(rib)) return { d: 1e3, cartilage: false };
   // El arco costal termina en la apófisis transversa: nada por detrás de la columna
   if (spine && p[1] < spine.y0 && Math.abs(p[0] - spine.x0) < spine.archHalfWidth + 6) return { d: 1e3, cartilage: false };
   // radio local de la costilla a lo largo de su elipse escalada
-  const u = p[0] / (torso.a * rib.scale);
-  const v = p[1] / (torso.b * rib.scale);
+  const u = p[0] / a;
+  const v = (p[1] - y) / b;
   const rho = Math.sqrt(u * u + v * v);
-  const localR = rho > 0 ? Math.hypot(p[0], p[1]) / rho : 1;
+  const localR = rho > 0 ? Math.hypot(p[0], p[1] - y) / rho : 1;
   const dRadial = (rho - 1) * localR;
   // altura del arco: más alto hacia posterior (φ → −π/2)
-  const zRib = rib.zAnterior + rib.tilt * (0.5 - 0.5 * Math.sin(phi));
+  const zRib = rib.zAnterior + rib.tilt * (0.5 - 0.5 * Math.sin(phi)) + c * Math.cos(phi);
   const dz = p[2] - zRib;
   const qx = Math.abs(dRadial) / rib.halfThickness;
   const qz = Math.abs(dz) / rib.halfWidth;
@@ -596,9 +628,10 @@ export function sdRib(p: Vec3, rib: Rib, torso: Torso, spine?: Spine): { d: numb
   // dos lados (antes `φ > cartilageFromPhi`, que en las costillas derechas, φ ∈ (π/2, π], hacía cartílago todo
   // el arco anterolateral: la ventana intercostal sin cortical ni sombra; decisión 62)
   const cartilage =
+    !rib.shape &&
     Number.isFinite(rib.cartilageFromPhi) &&
     (Math.abs(phi - Math.PI / 2) < Math.PI / 2 - rib.cartilageFromPhi ||
-      (p[1] > 0 && p[0] > ribAnteriorEndX(rib) - RIB_ANTERIOR_END.cartilageTailMm));
+      (p[1] > y && p[0] > ribAnteriorEndX(rib) - RIB_ANTERIOR_END.cartilageTailMm));
   return { d, cartilage };
 }
 

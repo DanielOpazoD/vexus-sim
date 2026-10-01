@@ -1,5 +1,6 @@
 import * as THREE from 'three';
-import { START_POINTS } from '../../app/startPoints';
+import { startPointsFor } from '../../app/startPoints';
+import { torsoNormal, torsoSkinPoint } from '../../anatomy/primitives';
 import type { AnatomyScene } from '../../anatomy/scene';
 import type { Vec3 } from '../../core/vec3';
 import { CM, surfaceAt } from './common';
@@ -7,7 +8,7 @@ import { CM, surfaceAt } from './common';
 /** Rótulos (sprites de lienzo) y anillos de los puntos de partida sobre la piel. */
 export function buildWindowMarks(a: AnatomyScene): THREE.Group {
   const g = new THREE.Group();
-  const marks = START_POINTS;
+  const marks = startPointsFor(a.torso);
   // Orientación del paciente: cabeza, pies, derecha e izquierda
   const orient: Array<[string, Vec3]> = [
     ['cabeza', [0, 12, 52]],
@@ -24,7 +25,7 @@ export function buildWindowMarks(a: AnatomyScene): THREE.Group {
   const labels = windowLabelPositions(a);
   marks.forEach((m, i) => {
     const p = surfaceAt(a, m.phi, m.z, 1.01);
-    const n = skinNormal(a, m.phi);
+    const n = skinNormal(a, m.phi, m.z);
     const ring = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.12, 8, 24), new THREE.MeshBasicMaterial({ color: m.color }));
     ring.position.copy(p);
     ring.lookAt(p.clone().add(n));
@@ -39,7 +40,7 @@ export function buildWindowMarks(a: AnatomyScene): THREE.Group {
 export const LABEL_STEP_CM = 1.8;
 export const LABEL_NEAR_CM = 5;
 
-const skinNormal = (a: AnatomyScene, phi: number) => new THREE.Vector3(Math.cos(phi) / a.torso.a, Math.sin(phi) / a.torso.b, 0).normalize();
+const skinNormal = (a: AnatomyScene, phi: number, z: number) => new THREE.Vector3(...torsoNormal(torsoSkinPoint(phi, z, a.torso), a.torso));
 
 /**
  * Posición (cm) del rótulo de cada punto de partida, en su orden: 2,8 cm fuera de la piel sobre su anillo, salvo que
@@ -49,8 +50,8 @@ const skinNormal = (a: AnatomyScene, phi: number) => new THREE.Vector3(Math.cos(
  */
 export function windowLabelPositions(a: AnatomyScene): THREE.Vector3[] {
   const placed: THREE.Vector3[] = [];
-  for (const m of START_POINTS) {
-    const at = surfaceAt(a, m.phi, m.z, 1.01).add(skinNormal(a, m.phi).multiplyScalar(2.8));
+  for (const m of startPointsFor(a.torso)) {
+    const at = surfaceAt(a, m.phi, m.z, 1.01).add(skinNormal(a, m.phi, m.z).multiplyScalar(2.8));
     while (placed.some((q) => Math.abs(q.z - at.z) < LABEL_STEP_CM && Math.hypot(q.x - at.x, q.y - at.y) < LABEL_NEAR_CM))
       at.z += LABEL_STEP_CM;
     placed.push(at);

@@ -100,3 +100,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [94](DECISIONS.md#L4553) | La medición Doppler del alumno no depende de la escala: porta en su semiplano fijo, envolvente unilateral, aliasing fuerte, identidad del vaso y lo medido a la vista | vigente |
 | [95](DECISIONS.md#L4690) | Respiración apagada al iniciar la sesión, con referencia explícita y ciclo observado para colapsabilidad (30-09-2026) | vigente |
 | [96](DECISIONS.md#L4710) | Registro costal compartido entre anatomía acústica y navegador (01-10-2026) | vigente |
+| [97](DECISIONS.md#L4729) | Registro corporal de referencia y recalibración de ventanas — WIP (01-10-2026) | vigente |

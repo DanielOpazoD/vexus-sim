@@ -1,4 +1,4 @@
-import { START_POINTS } from './startPoints';
+import { startPointsFor } from './startPoints';
 import type { Simulator } from './simulator';
 import { Interface } from '../anatomy/interfaces';
 import { Tissue } from '../anatomy/tissues';
@@ -56,7 +56,7 @@ const NO_FACE: number = Interface.None;
 export function equivalenceSweep(sim: Simulator): EquivalencePoseReport[] {
   const tr = sim.transducer;
   const out: EquivalencePoseReport[] = [];
-  for (const sp of START_POINTS) {
+  for (const sp of startPointsFor(sim.scene.torso)) {
     const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
     // el marco efectivo (la sonda hundida) y su compresión: los del simulador en esa pose (decisión 63)
     const k = probeContact(pose, tr, sim.scene.torso);
@@ -315,7 +315,7 @@ export function interfaceShellEquivalence(sim: Simulator, lines = 48, stepMm = 0
   const disagreements: string[] = [];
   const nCoarse = Math.floor(DEPTH_MM / COARSE_MM);
   const perCell = Math.round(COARSE_MM / stepMm);
-  for (const sp of START_POINTS) {
+  for (const sp of startPointsFor(sim.scene.torso)) {
     const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
     // el marco efectivo (la sonda hundida) y su compresión: los del simulador en esa pose (decisión 63)
     const k = probeContact(pose, tr, sim.scene.torso);

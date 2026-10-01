@@ -1,3 +1,4 @@
+import { referenceBody } from '../anatomy/referenceBody';
 import type { Simulator } from '../app/simulator';
 import type { PhysiologySample } from '../physiology/engine';
 import type { ProbeFrame } from '../probe/probe';
@@ -201,7 +202,7 @@ export class CutMapView {
     }
     this.workerPatient = key;
     this.pending = false;
-    const init: CutMapInit = { type: 'init', patient: sim.patient };
+    const init: CutMapInit = { type: 'init', referenceProfile: referenceBody, patient: sim.patient };
     this.worker.postMessage(init);
     this.worker.onmessage = (ev: MessageEvent<CutMapResponse | CutMapError>) => {
       if (ev.data.type === 'error') {

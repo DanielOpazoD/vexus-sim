@@ -41,6 +41,8 @@ const pad = (values: number[][], count: number, filler: number[]): number[] =>
 
 export const SCENE_UNIFORMS: readonly UniformSpec[] = [
   /** a, b, zMin, zMax */
+  { name: 'uReferenceBody', type: 'int', value: (s) => [s.torso.profile ? 1 : 0] },
+  { name: 'uTorsoY', type: 'float', value: (s) => [s.torso.y0 ?? 0] },
   { name: 'uTorso', type: 'vec4', value: (s) => [s.torso.a, s.torso.b, s.torso.zMin, s.torso.zMax] },
   {
     name: 'uWall',
@@ -166,6 +168,28 @@ export const SCENE_UNIFORMS: readonly UniformSpec[] = [
         s.ribs.slice(0, MAX_RIBS).map((r) => [r.zAnterior, r.tilt, r.halfWidth, r.halfThickness]),
         MAX_RIBS,
         [9999, 0, 1, 1],
+      ),
+  },
+  {
+    name: 'uRibEnds',
+    type: 'vec4',
+    count: MAX_RIBS,
+    value: (s) =>
+      pad(
+        s.ribs.map((r) => [r.anteriorEndX ?? Math.min(15, 15 + 1.53 * r.zAnterior), r.shape ? 1 : 0, 0, 0]),
+        MAX_RIBS,
+        [15, 0, 0, 0],
+      ),
+  },
+  {
+    name: 'uRibShape',
+    type: 'vec4',
+    count: MAX_RIBS,
+    value: (s) =>
+      pad(
+        s.ribs.map((r) => r.shape ?? [s.torso.a * r.scale, s.torso.b * r.scale, s.torso.y0 ?? 0, 0]),
+        MAX_RIBS,
+        [1, 1, 0, 0],
       ),
   },
   {

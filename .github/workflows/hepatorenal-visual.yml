@@ -7,6 +7,7 @@ on:
       - 'src/ultrasound/retroTexture.ts'
       - 'tools/fidelity/hepatorenalMeasurements.ts'
       - 'tools/fidelity/hepatorenalPose.ts'
+      - 'tools/fidelity/captureBMode.ts'
       - 'src/anatomy/gpu/anatomy.glsl.ts'
       - 'src/anatomy/interfaces.ts'
       - 'src/anatomy/tissues.ts'

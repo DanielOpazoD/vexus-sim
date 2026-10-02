@@ -1,5 +1,4 @@
 import { C_RECONSTRUCTION_MM_S, nyquistVelocityCms } from '../core/units';
-import { apertureAngleSigmaRad, lateralSigmaMm } from '../ultrasound/beamModel';
 import { colorTiming, pwDutyCycle, type ColorTiming } from '../ultrasound/colorTiming';
 import { CONVEX_C35_PROFILE, type TransducerProfile } from '../ultrasound/transducerProfile';
 import type { ProbeCompression } from '../anatomy/compression';
@@ -9,21 +8,13 @@ import { DopplerAudio } from '../audio/dopplerAudio';
 import { dopplerShiftHz } from '../core/units';
 import type { Vec3 } from '../core/vec3';
 import { PwDopplerChain } from '../doppler/pwChain';
-import { gateTransmission } from './gateTransmission';
+import { pwGate, type PwGateInfo } from './pwGate';
+import type { GateVesselSample } from '../doppler/vesselIdentity';
 import type { GateGeometry } from '../doppler/sampleVolume';
 import { PhysiologyEngine, type PhysiologySample } from '../physiology/engine';
 import type { PatientState } from '../physiology/patientState';
 import { probeContact, type ProbeContact } from '../probe/contact';
-import {
-  clampPose,
-  defaultPose,
-  lineDirection,
-  pointOnLine,
-  probeVelocity,
-  type ProbeFrame,
-  type ProbePose,
-  type Transducer,
-} from '../probe/probe';
+import { clampPose, defaultPose, probeVelocity, type ProbeFrame, type ProbePose, type Transducer } from '../probe/probe';
 import {
   DEFAULT_BMODE,
   DEFAULT_COLOR,
@@ -33,6 +24,12 @@ import {
   type GpuPointQuery,
   type PassRepeat,
 } from '../ultrasound/renderer';
+
+/**
+ * Segundos de composición de la puerta que se guardan: más que los 7 s de una captura. Por tiempo, no por número: la
+ * puerta se actualiza en cada cuadro (60 por segundo) y cada 8 pasos.
+ */
+const GATE_TRACK_SECONDS = 10;
 
 /** Misma pose, campo a campo (el contacto se reutiliza con la sonda quieta). */
 function samePose(a: ProbePose, b: ProbePose): boolean {
@@ -144,7 +141,9 @@ export class Simulator {
   private lastColorUpdate = -1;
   private lastGate: GateGeometry | null = null;
   /** Información de la puerta para la UI/depuración. */
-  gateInfo: { world: Vec3; transmission: number; beamAngleToFlowDeg: number | null; vessel: string | null } | null = null;
+  gateInfo: PwGateInfo | null = null;
+  /** Sangre de cada vaso en el volumen de muestra en cada actualización de la puerta (identidad del vaso, decisión 93). */
+  readonly gateTrack: GateVesselSample[] = [];
 
   /** Salida de audio del navegador; la cadena PW solo ve su interfaz `AudioSink`. */
   readonly audio: DopplerAudio;
@@ -261,47 +260,17 @@ export class Simulator {
     if (pw.enabled) this.pwChain.flush();
   }
 
-  /** Geometría de la puerta a partir del cursor PW y la pose actual. */
+  /** Geometría de la puerta a partir del cursor PW y la pose actual (`pwGate`, la misma que la cadena del alumno). */
   private updateGate(s: PhysiologySample): void {
-    const fr = this.lastFrame;
-    const tr = this.transducer;
-    const pw = this.pw;
-    const dir = lineDirection(fr, pw.theta);
-    const center = pointOnLine(fr, tr, pw.theta, pw.depthMm);
-    const c = Math.cos(pw.theta);
-    const sn = Math.sin(pw.theta);
-    const lateral: Vec3 = [
-      fr.lateral[0] * c - fr.axial[0] * sn,
-      fr.lateral[1] * c - fr.axial[1] * sn,
-      fr.lateral[2] * c - fr.axial[2] * sn,
-    ];
-    const r = pw.depthMm;
-    // Anchura lateral del volumen de muestra = PSF de dos vías (mismo modelo que la imagen)
-    const latSigma = lateralSigmaMm(r, this.bmode.focusMm, this.profile.beam) * 1.2;
-    const elevSigma = 1.6 * Math.sqrt(1 + ((r - tr.elevationFocusMm) / 45) ** 2);
-    const transmission = gateTransmission(this.anatomy, fr, tr, this.lastContact, pw.theta, r, s, this.profile.dopplerEffectiveMHz);
-    const gate: GateGeometry = {
-      center,
-      beamDir: dir,
-      lateral,
-      elevation: fr.elevation,
-      lengthMm: pw.gateMm,
-      lateralSigmaMm: latSigma,
-      elevationSigmaMm: elevSigma,
-      pulseSigmaMm: 0.5,
-      apertureAngleSigmaRad: apertureAngleSigmaRad(r, this.profile.beam),
-      transmission,
-    };
+    const { gate, info } = pwGate(this.anatomy, this.lastFrame, this.lastContact, this.profile, this.bmode.focusMm, this.pw, s);
     this.pwChain.setGate(gate, s);
     this.lastGate = gate;
-    const q = this.anatomy.classifyWorld(center, s);
-    let angle: number | null = null;
-    if (q.vesselHit) {
-      const t = q.vesselHit.tangent;
-      const cosA = Math.abs(t[0] * dir[0] + t[1] * dir[1] + t[2] * dir[2]);
-      angle = (Math.acos(Math.min(1, cosA)) * 180) / Math.PI;
-    }
-    this.gateInfo = { world: center, transmission, beamAngleToFlowDeg: angle, vessel: q.vessel };
+    this.gateInfo = info;
+    // la sangre que ve la puerta, para la identidad del vaso de una captura (decisión 93)
+    this.gateTrack.push({ t: s.t, vessels: this.pwChain.sampleVolume.lastComposition.vessels });
+    let old = 0;
+    while (old < this.gateTrack.length && this.gateTrack[old].t < s.t - GATE_TRACK_SECONDS) old++;
+    if (old > 0) this.gateTrack.splice(0, old);
   }
 
   /**

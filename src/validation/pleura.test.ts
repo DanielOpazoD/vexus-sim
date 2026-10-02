@@ -1,3 +1,4 @@
+import { INTERFACE_SOURCES } from '../anatomy/interfaceSources';
 import { describe, expect, it } from 'vitest';
 import {
   FIRST_WALL_INTERFACE,
@@ -114,8 +115,8 @@ describe('la cara de la pleura parietal (decisión 61)', () => {
     expect(p.twoSided).toBe(false);
     expect(p.slopeRms).toBeGreaterThanOrEqual(0.1);
     expect(p.slopeRms).toBeLessThanOrEqual(0.15);
-    expect(p.source).toMatch(/Lee 2017/);
-    expect(p.source).toMatch(/ESTIMADO/);
+    expect(INTERFACE_SOURCES[Interface.PleuraWall]).toMatch(/Lee 2017/);
+    expect(INTERFACE_SOURCES[Interface.PleuraWall]).toMatch(/ESTIMADO/);
     expect(INTERFACE_GLSL_NAME[Interface.PleuraWall]).toBe('IF_PLEURA_WALL');
     // el uniform de la pasada B lleva su fila: (A, 2·k0·σz, 1/(4s²), un lado)
     const u = interfaceUniforms(K0);

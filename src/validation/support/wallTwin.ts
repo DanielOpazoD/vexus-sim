@@ -278,7 +278,7 @@ export function wallTwin(
         const beam = normalize(m.map((x, k) => x - frame.center[k]) as Vec3);
         if (o.model === 'wall' && !o.noTexture && (tissue === Tissue.Fat || tissue === Tissue.Muscle))
           gain *= wallTexture(m, tissue, beam, scene.torso);
-        if (tissue === Tissue.Bowel) gain *= restTexture(m, seedF);
+        if (tissue === Tissue.Bowel) gain *= restTexture(m, scene.bowelRadii);
         if (tissue === Tissue.Liver) gain *= portalTriadGain(m, beam);
         gain *= retroTexture(m, tissue, beam);
         return [f[0] * gain, f[1] * gain];

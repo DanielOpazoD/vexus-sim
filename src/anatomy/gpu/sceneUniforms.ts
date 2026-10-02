@@ -14,7 +14,7 @@ import type { PhysiologySample } from '../../physiology/engine';
  * subida desde el renderer (`evaluateSceneUniforms` + `uploadSceneUniforms`). Antes había que
  * escribir cada nombre dos veces (≈ 85 líneas en el renderer) y un olvido fallaba en silencio.
  */
-export const MAX_GAS = 6;
+/** Seis registros bilaterales (pares 5–10); no doce evaluaciones por punto. */
 export const MAX_RIBS = 6;
 
 type GlslType = 'float' | 'int' | 'vec2' | 'vec3' | 'vec4';
@@ -40,6 +40,8 @@ const pad = (values: number[][], count: number, filler: number[]): number[] =>
 
 export const SCENE_UNIFORMS: readonly UniformSpec[] = [
   /** a, b, zMin, zMax */
+  { name: 'uReferenceBody', type: 'int', value: (s) => [s.torso.profile ? 1 : 0] },
+  { name: 'uTorsoY', type: 'float', value: (s) => [s.torso.y0 ?? 0] },
   { name: 'uTorso', type: 'vec4', value: (s) => [s.torso.a, s.torso.b, s.torso.zMin, s.torso.zMax] },
   {
     name: 'uWall',
@@ -142,18 +144,6 @@ export const SCENE_UNIFORMS: readonly UniformSpec[] = [
     type: 'vec2',
     // radio de la unión suave entre tramos, espesor de pared (mm)
     value: (s) => [s.gallbladder.blendMm, s.gallbladderWallMm],
-  },
-  {
-    name: 'uGas',
-    type: 'vec4',
-    count: MAX_GAS,
-    // bolsas de gas: centro, radio (relleno lejos)
-    value: (s) =>
-      pad(
-        s.gasPockets.slice(0, MAX_GAS).map((g) => [...g.center, g.r]),
-        MAX_GAS,
-        [0, 0, 9999, 0],
-      ),
   },
   {
     name: 'uRibs',

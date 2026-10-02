@@ -1,3 +1,4 @@
+import * as bowel from './bowel';
 import * as gallbladder from './gallbladder';
 import * as heart from './heart';
 import * as kidney from './kidney';
@@ -26,6 +27,7 @@ export interface OrganModule {
 }
 
 export const ORGAN_MODULES: readonly OrganModule[] = [
+  { id: 'bowel', exports: bowel, glsl: bowel.BOWEL_GLSL },
   {
     id: 'wall',
     exports: wall,
@@ -60,4 +62,17 @@ export const ORGAN_MODULES: readonly OrganModule[] = [
     // TS usa el gradiente numérico de `faceSdf`
     gpuOnly: { epiNormal: 'normal en c.n; TS: gradiente de faceSdf' },
   },
+];
+
+/** Solo fuentes GLSL en producción: el registro de validación no debe retener namespaces TS completos. */
+export const ORGAN_GLSL = [
+  bowel.BOWEL_GLSL,
+  wall.WALL_GLSL,
+  kidney.KIDNEY_GLSL,
+  liverLigaments.LIVER_LIGAMENTS_GLSL,
+  lungCurtain.LUNG_CURTAIN_GLSL,
+  gallbladder.GALLBLADDER_GLSL,
+  liver.LIVER_GLSL,
+  retroperitoneum.RETROPERITONEUM_GLSL,
+  heart.HEART_GLSL,
 ];

@@ -1,3 +1,5 @@
+import { BOWEL_NODES, BOWEL_BOUNDS, BOWEL_GROUPS, BOWEL_ARC } from '../anatomy/organs/bowel';
+import { CARTILAGE_ROWS } from '../anatomy/referenceCartilageData';
 import type { AnatomyScene, VesselCaliber } from '../anatomy/scene';
 import { VESSEL_META } from '../physiology/vessels';
 import { Tissue } from '../anatomy/tissues';
@@ -40,7 +42,11 @@ import { M_COLUMNS, M_SAMPLES, MColumnRing, mLineU } from './mmode';
 import { lookWavenumber } from './steering';
 import type { SegmentGrid } from './transmission';
 import {
+  BODY_BASE,
+  RIB_BASE,
+  CARTILAGE_BASE,
   COMPRESSION_BASE,
+  BOWEL_BASE,
   MAX_NODES,
   MAX_TUBES,
   MAX_TUBE_SEGMENTS,
@@ -49,7 +55,7 @@ import {
   SCENE_TEX_H,
   SCENE_TEX_W,
 } from '../anatomy/gpu/anatomy.glsl';
-import { tubeShapeTexel } from '../anatomy/primitives';
+import { ribAnteriorEndX, ribShape, tubeShapeTexel } from '../anatomy/primitives';
 import { evaluateSceneUniforms, uploadSceneUniforms, type SceneUniformValues } from '../anatomy/gpu/sceneUniforms';
 import {
   FRAG_AXIAL,
@@ -644,6 +650,15 @@ export class UltrasoundRenderer {
         profileN: 2,
       })),
     ];
+    if (s.torso.profile) this.sceneData.set(s.torso.profile, BODY_BASE * 4);
+    s.ribs.forEach((r, i) => {
+      this.sceneData.set(ribShape(r, s.torso), (RIB_BASE + i * 2) * 4);
+      this.sceneData.set([ribAnteriorEndX(r), r.shape ? 1 : 0, r.sourceCartilage ? 1 : 0, 0], (RIB_BASE + i * 2 + 1) * 4);
+    });
+    if (s.torso.profile) CARTILAGE_ROWS.forEach((row, i) => this.sceneData.set(row, (CARTILAGE_BASE + i) * 4));
+    BOWEL_BOUNDS.forEach((row, i) => this.sceneData.set(row, (BOWEL_BASE + i) * 4));
+    BOWEL_NODES.forEach((p, i) => this.sceneData.set([...p, BOWEL_ARC[i]], (BOWEL_BASE + BOWEL_GROUPS + i) * 4));
+    s.bowelRadii.forEach((r, i) => this.sceneData.set([r, 0, 0, 0], (BOWEL_BASE + BOWEL_GROUPS + BOWEL_NODES.length + i) * 4));
     this.tubeCountTotal = tubes.length;
     if (this.tubeCountTotal > MAX_TUBES) throw new Error('Demasiados tubos para el shader');
     let n = 0;
@@ -709,9 +724,12 @@ export class UltrasoundRenderer {
    * nodo, (s₀, s_D, D, R). Se sube la fila entera que la contiene (los nodos de tubo de esa fila no cambian).
    */
   private uploadCompressionTable(k: ProbeCompression): void {
+    this.currentScene.bowelRadii.forEach((r, i) =>
+      this.sceneData.set([r, 0, 0, 0], (BOWEL_BASE + BOWEL_GROUPS + BOWEL_NODES.length + i) * 4),
+    );
     k.nodes.forEach((n, i) => this.sceneData.set([n[0], n[1], n[2], k.radiusMm], (COMPRESSION_BASE + i) * 4));
     const row0 = Math.floor(COMPRESSION_BASE / SCENE_TEX_W);
-    const row1 = Math.floor((COMPRESSION_BASE + k.nodes.length - 1) / SCENE_TEX_W);
+    const row1 = Math.floor((BOWEL_BASE + BOWEL_GROUPS + 2 * BOWEL_NODES.length - 1) / SCENE_TEX_W);
     const gl = this.gl;
     gl.bindTexture(gl.TEXTURE_2D, this.sceneTex);
     gl.texSubImage2D(
@@ -1024,7 +1042,7 @@ export class UltrasoundRenderer {
    */
   private mCapture(inputs: FrameInputs, theta: number): void {
     const gl = this.gl;
-    const slot = this.mStrip.push(inputs.sample.t, inputs.bmode.depthMm);
+    const slot = this.mStrip.push(inputs.sample.t, inputs.bmode.depthMm, theta);
     const f = { internal: gl.R8, format: gl.RED, type: gl.UNSIGNED_BYTE, filter: gl.NEAREST };
     this.tMStrip ??= createTarget(gl, M_COLUMNS, M_SAMPLES, [f]);
     bindTarget(gl, this.tMStrip);
@@ -1279,7 +1297,7 @@ export class UltrasoundRenderer {
     // el transitorio, de banda fundamental, se rechaza en armónica (decisión 77); el ruido del receptor va en C y D
     p.f('uTransientGain', transientGain(inputs.bmode.harmonic));
     p.v2('uHarmonicNear', ...harmonicNearUniform(inputs.bmode.harmonic));
-    const an = this.speckleAnchor.update(inputs.frame.face, inputs.frame.elevation);
+    const an = this.speckleAnchor.update(inputs.frame.face, inputs.frame.elevation, inputs.sample.t);
     this.lastAnchorWeight = an.w;
     p.v3('uAnchorE0', an.a.e);
     p.v3('uAnchorP0', an.a.p);

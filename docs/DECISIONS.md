@@ -4495,6 +4495,254 @@ integra desde su borde (`apG`: 6–12 % → ≤ 0,34 % de error en float32 en la
 de anchura nula daba 0 y no el rayo de su línea. (7) Prueba del margen de `APERTURE_SEARCH_LINES` (35,4 de 40 líneas con
 8°). (8) Comentarios desfasados de `passes.glsl.ts`, `pleura.ts` e `interfaceEcho.test.ts`.
 
+## 92. Contrato de adquisición y medición M con incertidumbre de resolución (30-09-2026)
+
+**Contexto.** En `main` a3a5b1a, E2E4 falló y pasó al reintentar: envolvente 27,900 % frente a verdad 30,420 %;
+los cuatro clics redondeados por separado dieron 25 %. `failOnFlakyTests` detectó correctamente el fallo.
+Además, cambiar la línea M conservaba columnas de la línea anterior bajo la nueva guía.
+
+**Opciones.** Ampliar tolerancia, ignorar reintentos o modificar la fisiología ocultaría la causa. Se separan
+adquisición, conversión CSS → mm y redondeo de presentación, conservando el límite físico de software ±5 puntos.
+
+**Decisión.** El anillo M inicia una franja nueva cuando cambia θ, incluso en pausa. La e2e mantiene clics enteros
+accesibles al alumno y comprueba por separado la conversión y presentación (±0,51 puntos por redondeo entero),
+el intervalo de cuantización mostrado y el error físico de la banda respecto a la verdad (±5, sin ampliación).
+El intervalo propaga ±medio píxel CSS por borde, sin verdad oculta; no incluye selección de pared ni error físico.
+Una tentativa subpíxel falló porque el navegador cuantiza los eventos; se descartó en vez de falsear la UI.
+Se conserva la resolución de ambos extremos al fijar el tiempo del par; si cambia tamaño/zoom, se usa la peor
+resolución. Un diámetro cuyo intervalo incluye cero da 0–100 %, sin NaN. Un drag iniciado antes de congelar
+queda bloqueado durante la pausa para conservar la guía de la adquisición congelada.
+
+**Consecuencias.** Una nueva línea necesita adquirir nuevas columnas; lo anterior queda negro en lugar de
+atribuirlo al nuevo rayo. No hay lecturas GPU por cuadro ni texturas adicionales. Se retira la promesa documental
+de ±2 puntos: estos límites son gates de software, no precisión clínica validada. El blooming y la cadencia
+por cuadro siguen pendientes; esta corrección no calibra el modelo físico.
+
+**Verificación.** Regresión pura de cuantización a alturas CSS 180/340/680/1000, cambio de línea con reloj congelado y slots temporales; e2e de la cadena
+GPU → banda → clics → calibres mantiene correlación, residual y límite físico. Resultados completos y CI se
+registran en el PR, no se presupone que un reintento verde sea éxito.
+Extremos numéricos y ancho decreciente al mejorar resolución; e2e con distinta altura por extremo, calibre de
+un píxel y congelación durante drag. La captura adjunta muestra el intervalo visible al alumno.
+
+## 93. Preparar el análisis PW al armar la medición (30-09-2026)
+
+**Problema.** El alumno descargaba el análisis espectral antes de necesitarlo. El principal estaba a 11 bytes
+del presupuesto de 335 KiB en el build de la decisión 92.
+
+**Decisión.** Preparar un único módulo al armar Suprahepática, Porta o Renal. Mientras llega, el botón dice
+«Preparando medición…» y está deshabilitado; un fallo avisa y queda en el registro. Una vez preparado,
+Capturar sigue siendo síncrono: lee la adquisición y el equipo en el turno del clic, sin guardar una captura
+pendiente que pueda pertenecer a otro paciente. Abrir Medir, usar los calibres o arrancar no pide el módulo.
+
+El grupo Rolldown no incluye dependencias recursivamente: incluirlas hacía que el principal importara el grupo
+estáticamente y lo precargara. La mayor parte del estado interno y los métodos de Panel, Medir y Docente usan privacidad nativa
+ES2022; el minificador puede compactarlos sin renombrar la API pública. No se cambian shaders ni algoritmos.
+Los rótulos de calidad quedan separados del algoritmo y las exportaciones anteriores siguen disponibles.
+
+**Medición.** Frente al build de 9682afd: principal 343.029 → 332.908 bytes (−10.121); total JS de producción,
+incluidos Worker y módulos diferidos, 1.015.776 → 1.015.498 (−278). Se conserva la exclusión preexistente de
+testHooks y todos los límites. Cifras medidas en2a290ab, antes del ajuste de foco y favicon; el tamaño final se registra en el PR. Es mejora de descarga inicial, no una reducción sustancial del peso total ni
+una mejora demostrada de FPS. No se prolonga el bloque con minificación manual de literales.
+
+**Tradeoff y verificación.** La primera medición PW espera una descarga de ~9,5 KiB; Docente también carga
+ese grupo porque comparte ventanas de análisis. Al completar se actualiza solo el botón PW en sitio: se conserva el foco de Cancelar y no se reconstruye M/calibrador elegidos entretanto. Un favicon SVG legítimo evita el404 basal en Chrome visible, sin filtrar errores de consola. La e2e sin ganchos demora la descarga y exige cero solicitudes
+al arrancar/abrir Medir, una al armar y resultado inmediato en el mismo turno del clic preparado. El humo
+existente conserva la captura de señal válida y la de falta de contacto en la cadena real. Checks y CI se
+registran en el PR; estos cambios no calibran fisiología ni realismo.
+
+## 94. La medición Doppler del alumno no depende de la escala: porta en su semiplano fijo, envolvente unilateral, aliasing fuerte, identidad del vaso y lo medido a la vista
+
+**Recuperación (30-09-2026).** Procede del PR120 (6eb4113), sobre la decisión93 de carga diferida. Las cifras del banco de168 capturas y seis semillas son evidencia histórica interna de esa rama, no mediciones del SHA recuperado ni validación clínica externa. Se retira el aumento heredado del PR original. Tras corregir presentación y ventana efectiva, se autoriza un aumento acotado de4 KiB solo del totalJS (1.024.000→1.028.096B, ~0,4%) para las correcciones y controles respiratorios. Límites porchunk, conteo y exclusiones permanecen intactos; el bloque cardíaco requiere presupuesto separado. Resultados de la recuperación y corrección de overlay se registran en el nuevo PR.
+
+**Corrección de ventana efectiva.** En la porta, calidad e identidad se juzgan entre el primer y último latido medido; se conservan los latidos interiores sin traza para no seleccionar solo los buenos. Un cambio dePRF no atribuye a la captura el peso de un latido parcial previo. Con respiración tranquila, la referencia sana puede conservar solo dos latidos trazables y se rechaza por pocos latidos, sin entrar al grado.
+
+**Contexto.** Sirve a los objetivos 1 (causalidad: lo que mide el alumno coincide con la verdad) y 5 (enseñar a obtener) de
+`docs/MISION.md`, bajo el criterio 2 (seguridad del mensaje clínico). Un agente evaluador en rol clínico, separado del panel de evaluación
+(27-09-2026, main a386e5e; `scratchpad/eval/clinico/`) midió en la app la PF portal del sano, con verdad 13–20 %: 100 % a
+±20 cm/s, 111–114 % a ±40 (la escala por defecto), 79–95 % a ±60 y 18–24 % a ±80; el grave, 133 % frente a 75 %; la FA, 60
+frente a 32; la trampa de la IT, 77 frente a 35; la de la VPP, 80 frente a 17. Todas con el visto bueno de la calidad: una
+porta «grave» en un sano. Además, (2) tras «Capturar» no se veía qué se había medido, (3) la fila «Suprahepática» sobre la
+porta daba «leve (S<D)», la fila «Porta» sobre la suprahepática «PF 117 %, grave» y la «Renal» sobre la suprahepática
+«bifásico», y (4) las pruebas no lo veían: `examChain.test.ts` medía a la PRF máxima con una copia de `updateGate` de
+transmisión fija 0,3 (−10 dB), en contra del «pipeline real» de `docs/TESTING.md`. Por la ruta real la porta está a −29 a
+−32 dB y su banda queda 6–18 dB sobre el suelo. Volcando el espectro columna a columna (`scratchpad/pf/analyze.mts`):
+
+- la traza tomaba el semiplano dominante columna a columna (`spectralMeasure.ts:247-270` en main). En las columnas con la
+  banda débil ganaban el clutter simétrico junto a la línea de base (el tejido que late o respira, los transitorios del
+  filtro de pared) o su imagen, y la traza cambiaba de signo: Vmín −1,9 a −3,8 cm/s y PF > 100 %;
+- la banda era la «contigua a la línea de base» (`columnBandEnvelopes`): un bin de ruido o de clutter junto a la base abría
+  la banda y los 3 bins vacíos que lo separan del flujo portal (casi en pistón, 5–20 cm/s) la cerraban. La envolvente caía a
+  2–6 cm/s en columnas sueltas y el cuantil 0,97 del mínimo la recogía;
+- una columna sin banda valía 0 cm/s: una caída de señal se leía como una pausa;
+- a ±80 (PRF 5200) la interlobar tenía el mismo defecto: el clutter simétrico del riñón llega a ±12 cm/s, sobre el filtro
+  de pared, y la vena monofásica del grave «fluía» en sístole («continua» con el visto bueno), y un hueco de una sola columna
+  hacía «bifásico» al sano (7 de 49 capturas aceptadas con un patrón falso en el barrido de 7 casos × 3 semillas);
+- con la escala muy por debajo de la velocidad (±4–14 cm/s) la sangre se plegaba varias veces, llenaba la banda sin dejar
+  banda que detectar y la calidad decía «no hay flujo» o «intermitente» (limitación `severe-aliasing-not-detected`).
+
+**Opciones.** Subir el margen de detección (pierde la porta débil entera); suavizar el espectro más en todos los vasos
+(borra la S del sano y las pausas renales de 20 ms); medir la porta sobre la media espectral en lugar de la envolvente (la
+VExUS se define sobre la velocidad máxima del trazado); exigir apnea y la escala alta para la porta (el alumno no puede
+equivocarse como en un equipo, objetivo 5); para la identidad, adivinar el vaso por la forma de la onda (una porta
+pulsátil y una suprahepática se confunden justo cuando importa). Para el aliasing fuerte, un umbral sobre la potencia total
+(la puerta fuera del vaso con clutter también la tiene).
+
+**Decisión.**
+
+1. **Porta en su semiplano anterógrado fijo** (`portalTrace`, `measureObservedPortal`): el semiplano del flujo es el de más
+   energía unilateral en toda la captura, como la vena en la interlobar; si está vacío en una columna y el contrario tiene
+   flujo unilateral, la porta se invierte ahí y la traza es negativa (la PF > 100 % de una porta hepatófuga sigue
+   existiendo). Una columna sin flujo trazable es un hueco (NaN), no 0; la mediana temporal de 5 columnas ignora los
+   huecos y un promedio móvil de 60 ms quita el temblor del moteado espectral (±3 cm/s sobre una porta de 15 cm/s: por sí
+   solo, una PF de ~35 %; a ±20 hay ~10 espectros independientes por segundo). Vmáx y Vmín son los cuantiles 0,97 y 0,03 de
+   la traza de cada latido cubierto por el espectro (≥ 90 %, como en la calidad) con traza en ≥ 50 % de sus columnas; la
+   PF, la mediana por latido. El sentido del flujo se toma de las columnas de los latidos medidos (la puerta pudo estar antes
+   en otro vaso: con la suprahepática 3 s antes, la porta salía «hacia atrás», Vmáx negativa y una PF «no aplicable» con el
+   visto bueno), y un latido con Vmáx ≤ 0 no se mide.
+2. **Envolvente unilateral** (`halfPlaneEnvelopeHz`, `spectral.ts`): cuentan los bins fuera de la banda del filtro de pared,
+   significativos y ≥ 6 dB sobre su espejo (`MIRROR_MARGIN_DB`: el flujo es unilateral; el clutter, los transitorios y la
+   imagen, simétricos); la banda crece desde el bin de más potencia hacia los dos lados tolerando un hueco de 60 Hz
+   (`BAND_GAP_HZ`, 3 bins a 2600 Hz: a 1300 Hz el bin mide 10 Hz y el moteado parte la banda), y la envolvente es el
+   percentil 92 % de la potencia sobre el espejo. Ventana, cuantiles y hueco se eligieron en una rejilla sobre 168 capturas
+   volcadas de la cadena del alumno y se validaron con otras tres semillas [EXTRAPOLACIÓN PROPIA]. La interlobar usa la
+   misma envolvente en cada semiplano (`observedSideTraces`); `sideEnergyDb` cuenta solo la energía unilateral (el clutter
+   simétrico acercaba la vena a su arteria: 4 dB en vez de 20); el mínimo de la vena es el que se sostiene ≥ 20 ms
+   (`RENAL_GAP_MIN_S`, la pausa que cuenta la verdad). La suprahepática no cambia: su medición ya era estable con la escala
+   (100 de 100 capturas aceptadas con el patrón de la verdad).
+3. **La calidad juzga lo trazado** (`QualityOptions.present`): en la porta y la interlobar una columna tiene sangre si tiene
+   traza unilateral; con `bloodInColumn`, el clutter simétrico de la respiración «era» sangre. **Aliasing fuerte**
+   (`outerBandExcessDb`): si la captura ya no era medible por «no hay flujo» o «intermitente» y la mediana de la potencia
+   media en la mitad exterior de la banda (|f| > PRF/4) está ≥ 3 dB sobre el ruido del receptor (`receiverNoiseDb`, que el
+   equipo conoce: 2σ²·Σw², −48,1 dB a ganancia 0), el motivo es aliasing, «suba la escala». Medido: sangre plegada en
+   apnea (±6–14 cm/s), 3–21 dB; puerta 25 mm más honda, fuera del vaso, −0,2 a +0,3 dB. En la porta, además, es aliasing
+   el Vmáx de un latido ≥ 0,85 del Nyquist (el pico se recorta y la PF baja: la FA a ±15–16 salía 25 % con verdad 36 %) y
+   la traza «invertida» más allá de medio Nyquist (el pico plegado al otro lado: una porta hepatófuga crece desde la base;
+   la cirrosis a ±14 salía 171–202 % con verdad 35 %). **Filtro de pared** (`wall-filter`, «baje el filtro de pared»): si
+   Vmín queda en la banda de transición del filtro (hasta 1,5 veces el corte y un bin) o la traza se hunde en un hueco de ≥
+   40 ms desde ella, el valle está por debajo del corte y la PF saldría menor: con el filtro a 300 Hz el grave (verdad 76
+   %) daba 30–46 % y la FA 21–25 %, aceptadas. Con el filtro por defecto (25 Hz) no se dispara en ninguna captura.
+4. **Una sola ruta de captura** (`doppler/capture.ts`, `captureProtocolVessel`): la de «Capturar» y la de las pruebas. Toma
+   los 4 últimos latidos completos de los últimos 7 s de espectro con la PRF actual y descarta 0,1 s tras un cambio de escala
+   (`captureColumns`, `WALL_SETTLE_S`: el transitorio del filtro de pared con el clutter dentro). La geometría de la puerta es
+   `pwGate` (`app/pwGate.ts`), la de `Simulator.updateGate`, que la prueba ya no copia.
+5. **Identidad del vaso** (`doppler/vesselIdentity.ts`): el simulador registra en cada actualización de la puerta la sangre
+   de cada vaso del volumen de muestra (`Simulator.gateTrack`, los últimos 10 s). Si en los latidos medidos domina otro
+   sistema que el de la fila (la
+   interlobar admite su arteria), la captura se rechaza antes que por cualquier otro motivo: «no medible: vaso equivocado,
+   la puerta está en la porta (esta fila mide una suprahepática: recoloque la puerta)». Sin sangre en la puerta no hay
+   veredicto y la calidad dice por qué. Un equipo no sabe qué vaso hay bajo la puerta: es el supervisor junto al alumno.
+6. **Lo medido a la vista** (`ui/captureOverlay.ts`, `SpectrogramView.draw`): tras «Capturar», el espectro dibuja la traza
+   automática (ámbar; roja si la captura no vale), los latidos analizados (corchetes arriba) y, si la captura vale, las
+   marcas donde se leyó cada valor (S/D/A en la suprahepática, Vmáx/Vmín en la porta, S/D/mín en la interlobar;
+   `CaptureMark`). Se guarda en Hz físicos con la PRF de sus columnas. Historial y traza usan la misma presentación
+   actual: cambiar línea de base, inversión o barrido reconstruye el bitmap desde las columnas, incluso congelado;
+   redimensionar o rebobinar el cine también lo reconstruye. Lo que sale de la banda se pliega como el espectro.
+   La captura pinta las anotaciones en el mismo evento que publica el resultado, sin esperar la siguiente pasada GPU.
+   La cobertura de adquisición ≥90 % del ciclo se aplica a los tres territorios antes de medir o inferir dirección. Los latidos parciales por PRF/settling no contaminan identidad; todos los adquiridos cuentan para calidad, aunque pierdan la señal al principio, interior o final. «Borrar mediciones», el cambio de caso y el PW apagado o reiniciado lo quitan.
+
+**Consecuencias.** La PF del alumno por la ruta de la aplicación, 7 casos × apnea y respiración tranquila × 3 semillas × ±20,
+±40, ±60 y ±80 cm/s (`examChainScale.test.ts`, 168 capturas):
+
+|                               | Aceptadas | \|PF − verdad\| ≤ 10, verdad de los latidos medidos | … verdad de 7 s               | «Grave» con verdad < 30 % |
+| ----------------------------- | --------- | --------------------------------------------------- | ----------------------------- | ------------------------- |
+| main a386e5e                  | 109       | —                                                   | 31 (28,4 %; error medio 44,8) | 26                        |
+| con la decisión, semillas 0–2 | 115       | 115 (100 %)                                         | 113 (98,3 %)                  | 0                         |
+| semillas 3–5                  | 118       | 117 (99,2 %)                                        | 116 (98,3 %)                  | 0                         |
+| semillas 6–8                  | 111       | 111 (100 %)                                         | 105 (94,6 %)                  | 0                         |
+
+La verdad de 7 s es la de la prueba en main (que no da los latidos medidos); la de los latidos medidos compara la medición
+con lo que midió. La diferencia está en la FA con respiración: su PF cambia de un latido a otro (12–47 % en una captura) y
+4 latidos pueden quedar a > 10 puntos de 7 s (26 frente a 41 %; limitación `af-capture-beat-sampling`). Error medio frente
+a la verdad de los latidos medidos: 2,3–2,5 puntos. Mediana de las capturas aceptadas en apnea a ±20/±40/±60/±80
+(semillas 0–2, verdad de 7 s; a ±20 el sano y el grave son aliasing): sano —/16/17/14 (13), grave —/70/73/73 (76), FA 33/32/32/32 (35), PIA 24/28/26/26 (26), IT 35/37/35/33 (35), VPP 19/19/17/18
+(17), cirrosis 38/35/35/35 (35). Las rechazadas: a ±20, aliasing (25); con respiración a ±40–±80, «intermitente» (28). La interlobar no da ningún patrón falso aceptado (0 de 51 en el barrido; en main, 7 de 49) y la suprahepática sigue igual. Con respiración
+tranquila más capturas son no medibles: el sano a ±40 es «intermitente» (algún latido sin traza: pida apnea), la
+interlobar pasa a menudo de «intermitente» a «no hay flujo» (la vena ocupa < 20 % de las columnas una vez que el clutter no
+cuenta; el texto de «no hay flujo» añade «si respira, pida apnea»), y a ±20 la porta y la interlobar del grave dicen
+aliasing. El alumno ve dónde se midió. Queda el aliasing extremo de la porta a ±4–6 cm/s (la banda del filtro de pared, 62,5
+Hz, es media banda: «no hay flujo»). La cadena del alumno pasa a la transmisión real y a la captura de la app; las pruebas
+lentas crecen ~4 min de CPU en dos archivos que corren en paralelo. El build histórico de la rama original crecía 8,2 kB (333,7 → 341,9 kB sobre a386e5e). En esta recuperación se conserva el presupuesto de335 KiB y se mide el total incluyendo todos los módulos diferidos; no se arrastra el aumento a343 KiB.
+
+**Verificación.** Primero la prueba que falla: `examChainScale.test.ts` (PF de la porta, las 4 escalas, 7 casos, apnea y
+respiración, 3 semillas; ≥ 95 % a ≤ 10 puntos, ninguna «grave» con verdad < 30 %, ≥ 80 % medibles en apnea a ±40–±80) falla
+en main en los 8 casos; `examChainScalePatterns.test.ts` (suprahepática e interlobar a las 4 escalas, y la interlobar en apnea
+a ±60–±80 con sesiones nuevas y 3 semillas) falla en main en 5 casos por patrones renales falsos aceptados. Las dos pasan con
+la decisión, como el caso de cerca del Nyquist (±10–16) y del filtro de pared a 300 Hz en la cirrosis, el grave y la FA,
+que en main acepta PF falsas. `portalMeasure.test.ts` (sintéticos): la envolvente ignora el clutter simétrico y el bin
+suelto; el pico recortado y el plegado son aliasing, el valle en el filtro de pared no se mide y el sentido se toma de los
+latidos medidos (las cuatro fallan con esas guardas quitadas); la PF de una banda débil con clutter y caídas de señal sigue a la limpia (falla con la medición de main); el mismo flujo alejándose o
+invertido da la misma PF; una porta que se invierte da PF > 100 %; el ruido del receptor de la cadena; la sangre plegada que
+llena la banda es aliasing y el ruido solo, «no hay flujo»; la identidad del vaso y su mensaje; las columnas de la captura;
+la fila de cada frecuencia en el espectrograma y la traza en Hz físicos. `examChain.test.ts` por la ruta real (`support/
+studentChain.ts`). e2e «lo medido a la vista sobre el espectro y el vaso equivocado»: la fila «Suprahepática» sobre el tronco
+portal dice «vaso equivocado, la puerta está en la porta», la fila «Porta» mide y su traza se ve en el espectro, también
+congelado. `npm run calibrate` idéntico a main. Revisión adversarial de contexto limpio sobre el diff: el pico recortado o
+plegado cerca del Nyquist aceptado (cirrosis a ±14: 171–202 %), el filtro de pared alto que convertía el grave en leve, el
+sentido del flujo tomado de los 7 s y no de los latidos (PF «no aplicable» aceptada), la identidad juzgada en 7 s y un
+registro de la puerta más corto que la captura a 60 fps, el trazado que no seguía a su espectro tras invertir o mover la
+línea de base ni se plegaba como él y quedaba tras apagar el PW, latidos a medias en la mediana, y cifras de la
+documentación que no cuadraban; todo corregido. También señaló la FA con respiración y otras semillas, 16 frente a 40 %
+con el visto bueno: frente a la verdad de sus 4 latidos (27, 12, 21 y 40 %, medidos 17, 12, 15 y 37 %) la medición es
+correcta y lo que difiere es el muestreo del ritmo (`af-capture-beat-sampling`); la prueba compara ahora con la verdad de
+los latidos medidos y da también la de 7 s. Queda: una porta invertida en toda la captura se lee como anterógrada (como
+en main).
+
+## 95. Respiración apagada al iniciar la sesión, con referencia explícita y ciclo observado para colapsabilidad (30-09-2026)
+
+El modo M requiere un ciclo en el último tramo continuo realmente adquirido (intervalos de columnas ≤M_MAX_GAP_S); la fase del motor por sí sola no acredita imágenes ausentes, huecos ni la historia de una línea anterior. Si el ciclo no cabe en pantalla, reducir el barrido.
+
+Petición de Daniel: anatomía detallada con respiración apagada por defecto y configuración accesible. La sesión usa
+apnea espiratoria (fase 0, volumen y velocidad diafragmática 0); las definiciones originales de los casos siguen intactas
+para bancos. Cambiar/reiniciar paciente vuelve a esa referencia. «Configurar respiración» y el botón activar/desactivar
+permiten respiración tranquila, profunda y las dos pausas. Una pausa no congela el reloj, corazón, circulación, ECG o PW:
+las presiones corresponden a la maniobra y la PEEP vigente, no se ocultan artefactos cambiando solo la imagen.
+
+Cada muestra registra si hay ciclo y su fase sostenida. M conserva los calibres y el diámetro, pero no presenta máx/mín
+ni colapsabilidad respiratoria sin un ciclo completo observado en la franja. El docente muestra el diámetro actual y
+«no aplicable» en esa situación. La validez se deriva exclusivamente del registro respiratorio visible, nunca de extremos
+ocultos de diámetro. No se suman segmentos separados por pausa: fase recorrida ≥1 (1e-9 solo redondeo), extremos de volumen
+normalizado ≤0.05/≥0.95, sin saltos mayores a 1/8 de ciclo. Son criterios de cobertura del software, no precisión clínica.
+
+Pruebas: referencia espiratoria/inspiratoria estable, ciclo parcial/completo y muestreo insuficiente; E2E del control real,
+reloj/ECG/flujo durante pausa y rechazo de colapsabilidad sin ciclo. El ejercicio M conserva los gates ±5 y ahora activa
+respiración mediante el botón, de forma explícita.
+
+## 96. Registro costal compartido entre anatomía acústica y navegador (01-10-2026)
+
+Problema: el navegador ilustraba nueve pares (3–11), mientras CPU/GPU solo contenían seis costillas derechas (5–10).
+La vista 3D prometía obstáculos que la adquisición izquierda no encontraba. Este bloque representa los mismos seis
+pares bilaterales en las tres rutas, sin ampliar el bucle GPU ni el número de uniforms: un registro por par, reflejado en x.
+El shader y TS comparten extremo anterior, cartílago, sección elíptica e inclinación; se conserva la normal del lado real.
+
+El límite anterior del reborde se aplica solo a y > 0: antes cortaba también el arco posterior de 8–10 antes de llegar a la columna.
+
+El navegador construye la superficie elíptica directamente de esos parámetros en mm y convierte a cm una sola vez.
+No usa la escala estética longitudinal de la piel para desplazar huesos. Material óseo/cartilaginoso se deriva del mismo
+clasificador; desaparecen arcos decorativos inexistentes y tubos circulares de diámetro uniforme. Las separaciones se
+miden entre superficies, no entre anillos equidistantes.
+
+Alcance deliberado: pares 5–10, con dimensiones estimadas existentes. No se afirma caja completa de doce pares ni
+hiperrealismo anatómico; completar pares, articulaciones y asimetrías exige landmarks/registro y comparación externa.
+Las pruebas contrastan vértices 3D contra el campo TS en ambos lados, espacios libres y el gate TS/GLSL existente.
+No se alteran clasificación VExUS, mediciones, presupuesto ni umbrales físicos.
+
+## 97. Registro corporal de referencia y recalibración de ventanas — WIP (01-10-2026)
+
+Campo cutáneo derivado de BodyParts3D, único registro mm/LAS a la punta xifoidea; gradiente/contacto,
+clasificador TS/GLSL, malla y worker comparten la geometría. Radios polares LPS reflejados al destino,
+sectores no observados interpolados explícitamente, sin dimensiones clínicas inventadas.
+Curvas costales fuente para seis pares5–10 y primitiva vertebral desplazada por landmarkT9; no caja
+completa ni columna/esternón fuente completos. Los presets se recalibran offline por landmarks,
+trayectorias y contacto: no desplazan órganos para forzar imágenes ni usan verdad en medición del alumno.
+
+Root main→bootstrap conserva lógica y cobertura E2E; límite de raíz335KiB sigue siendo el mismo.
+TotalJS máximo1016KiB (+12KiB autorizado); binario geométrico2080bytes contado separadamente.
+No cambia umbral clínico/físico, exclusión de JS de producción ni flaky gate.
+
+**No listo**: referencia sin cartílago fuente funcional; gate Perichondrium rojo. El traslado cloud
+preserva este defecto y todas las aproximaciones. Detalle, provenance y estado en
+[REFERENCE_TORSO.md](anatomy/REFERENCE_TORSO.md) y [CLOUD_HANDOFF.md](anatomy/CLOUD_HANDOFF.md).
+
 ## Iteración 2 — informe de cierre (22-09-2026)
 
 Construido: corrección de lateralidad y campo profundo (21–22); anatomía nueva (hígado en cuña con
@@ -4528,3 +4776,99 @@ elipsoides (sin fosa vesicular ni impresión renal).
 
 Siguiente iteración: riñones + interlobares + componente renal; IQ por celda para color; medición de
 estadística de speckle contra clips reales; casos de la matriz G.2; arritmias.
+
+## 98. Recuperar el campo torácico como referencia opt-in y mantener el presupuesto completo
+
+**Contexto.** El WIP cd44d3c fallaba seis pruebas rápidas: import.meta en el grafo CommonJS, matriz de bootstrap, 142 uniforms frente a 130 y expresión textual del extremo. La E2E completa carecía de pericondrio. El checkpoint se recuperó por adjunto oficial y sus 39 archivos coincidieron con el manifiesto.
+
+**Opciones.** Relajar gates o ampliar un arco óseo como cartílago sin fuente ocultaría defectos. La carga predeterminada del WIP tampoco estaba autorizada para una referencia incompleta.
+
+**Decisión.** Carga de bytes en `loadReferenceBody.ts`, matemáticas puras separadas; `main → anatomy/bootstrap` como composición explícita. `?reference=1` activa el campo. Forma/extremos y las secciones medidas del séptimo cartílago comparten la textura de escena existente, sin nuevo sampler ni aumento de su asignación de 24.576 bytes. El límite de 130 uniforms permanece. La cota de búsqueda heredada de la elipse no excluye cartílago fuente superficial.
+
+**Consecuencias.** Solo seis pares y cartílago séptimo funcionales por ahora; la caja completa y el diafragma forman el siguiente bloque. El diagnóstico denso expone superposición con tejidos previos, sin resolverla mediante precedencia de B-mode. El total JS cuenta ahora también testHooks, además de todos los chunks/Workers; permanecen 335 KiB por raíz y 1.040.384 bytes totales. Compactación/renombrado compartido de shaders de Three con contratos de binding conservados; tabla de marching cubes en nibbles sin pérdida. La procedencia acústica queda íntegra en `interfaceSources.ts`, fuera de los workers que no la consultan.
+
+**Verificación.** Pruebas focales y gate TS/GLSL volumétrico y de interfaces del campo de referencia pasaron antes del último ajuste de build. La tabla codificada se compara elemento a elemento con los 4.096 índices originales y rechaza cambios de dominio. Los gates completos y capturas del build final se registran en `anatomy/TORSO_PROGRESS.md`; no se declara validación clínica ni rendimiento Metal por ejecución cloud.
+
+## 99. Borde 3D del diafragma en la pared corporal compartida
+
+**Contexto.** La malla existente tomaba una elipse XY heredada incluso con el perfil corporal de referencia. En 96 ángulos del adulto normal, 21 extremos quedaban fuera de la pared interna; el residuo máximo de profundidad era 83,13 mm.
+
+**Opciones.** Retocar radios por preset mantendría un segundo dominio corporal. Una nueva superficie no resolvería la divergencia del diafragma existente ni aportaría las piezas fuente faltantes.
+
+**Decisión.** `diaphragmRim.ts` encuentra el borde de la misma altura `diaphragmHeight` sobre la pared interna definida por `torsoDepth + wallMm = 0`. `navigator3d/organs.ts` conserva la malla y su winding, pero usa ese borde y el centro Y corporal para su dominio radial.
+
+**Consecuencias.** El borde visual acompaña el cuerpo legacy y de referencia. No cambia campos acústicos TS/GLSL, órganos, poses ni presets. Las cúpulas siguen estimadas; tendón, pilares, hiatos e inserciones anatómicas permanecen limitados por las fuentes pendientes. El error de discretización de la malla no equivale al residuo numérico de su borde.
+
+**Verificación.** Tres pruebas físicas cubren ambos campos, los tres casos, profundidad interna, superficie y winding. El muestreo anterior incumple el límite de 0,0001 mm; el residuo nuevo máximo del adulto normal de referencia es 0,000000270 mm. Método y límites en `anatomy/DIAPHRAGM_BOUNDARY.md`. Se requieren gates completos y E2E del build final antes de cerrar el cambio.
+
+## 100. Fundido del moteado gobernado por tiempo de simulación
+
+**Contexto.** `ElevationAnchor` consumía ocho llamadas de render por transición. Dos pruebas nuevas fallaron en la base: repetir el mismo instante cambiaba el peso, y a igual tiempo los pesos diferían entre 15, 30 y 60 FPS. Repetir la pasada B para medir rendimiento también consumía transición.
+
+**Opciones.** Conservar el contador o usar tiempo de pared mantiene dependencia de la presentación o rompe el reloj único. Cambiar los dispersores y su distribución no es necesario para corregir este defecto temporal.
+
+**Decisión.** `ElevationAnchor.update` exige tiempo de simulación y el renderer pasa `sample.t`. La transición dura 8/60 s [EXTRAPOLACIÓN PROPIA: equivalencia de duración con ocho cuadros a 60 Hz, no constante biológica]. Empieza con peso cero, mantiene los dos medios distintos hasta terminar y libera el anterior con peso uno. Repetir el instante no avanza el fundido. Un reloj reiniciado descarta la historia; tiempos no finitos o negativos se rechazan antes de mutarla. El gancho de prueba de fundido avanza explícitamente el reloj.
+
+**Consecuencias.** El progreso de un fundido ya iniciado deja de depender del número de renders y de repeticiones de pasada. No se afirma invariancia de toda una trayectoria muestreada: detectar el cruce de 6 grados y los saltos entre poses sigue dependiendo de las poses disponibles en cada cuadro. Tampoco se cambia la composición espacial, la PSF, la distribución de dispersores ni la calibración clínica. Con el reloj pausado la transición permanece fija.
+
+**Verificación.** Regresión roja antes del cambio y verde después en `speckleTime.test.ts`; pruebas de 15/30/60 FPS, repetición del instante, reinicio, salto de pose, extremos e entradas inválidas. `compoundRenderer.test.ts` comprueba el reloj en los uniforms reales de B y repeticiones de esa pasada sobre WebGL falso. Se conservan las guardas estadísticas y de correlación del medio. Check completo, presupuesto y E2E del build final deben verificarse antes de publicar y sus resultados constar en el PR.
+
+## 101. Asas intestinales con pared, luz y gas físicos
+
+**Contexto.** El usuario señaló que las asas eran poco convincentes. El «resto» intraperitoneal se clasificaba como intestino y una textura dependiente de la semilla inventaba sus bordes y contenido brillante. Ese brillo no creaba gas acústico ni una luz anatómica; el cambio de semilla podía cambiar la aparente anatomía.
+
+**Opciones.** Retocar el ruido mantiene la desconexión entre corte, imagen y transmisión. Un modelo digestivo completo, con motilidad, histología detallada y mesenterio vascular, excede esta iteración. Se elige un segmento yeyunoileal continuo representativo, explícitamente estimado, con un contrato común TS/GLSL.
+
+**Decisión.** `organs/bowel.ts` define un eje de 51 nodos, radio exterior 10 mm y pared 2 mm. El campo une cápsulas y usa siete esferas conservadoras para descartar grupos de ocho segmentos. Se almacena después del cartílago en la textura de escena, sin mover los registros anteriores. Pared intestinal, líquido, gas y grasa mesentérica son clasificaciones diferentes. Dos interfaces dibujan serosa/grasa y mucosa/luz; muscular, submucosa y mucosa tienen un perfil intramural estimado, filtrado por las PSF de la cadena. El gas está recortado por la luz y activa los mecanismos de transmisión y reverberación existentes. Se eliminan las bolsas esféricas vacías y la textura que inventaba asas. El navegador ilustra el mismo eje con una malla suavizada. Parámetros y límites en `anatomy/BOWEL_MODEL.md`.
+
+**Consecuencias.** La apariencia intestinal se corresponde con geometría, contenido y transmisión en lugar de depender de la semilla. No equivale a reconstruir todo el intestino ni a validar hiperrealismo clínico. Sin peristalsis, pliegues mucosos individualizados o dinámica de fluidos. La discretización del eje, el contenido y el perfil acústico necesitan revisión de imágenes por expertos. El usuario autorizó +8 KiB al presupuesto JS total, de 1016 a 1024 KiB; el contador recorre ahora todo `dist`, incluido el worklet raíz omitido antes. No se elevan límites por chunk, timeouts, retries ni umbrales de fidelidad. La textura de datos pasa de seis a siete filas (una fila de 4 KiB), preservando offsets previos.
+
+**Verificación.** Guardas de pared/luz/gas, contención y relaciones con órganos en siete casos y ambos cuerpos, correspondencia de normales, datos de GPU y presupuesto recursivo. E2E dirigida a puntos intestinales y capturas de la imagen; comparación antes/después y coste en el mismo runner con SHAs exactos. Las pruebas antiguas de compartimentos distinguen ahora mesenterio de pared real, sin relajar sus distancias o protección renal. Se registran las corridas completas y los límites visuales del SHA final en el PR antes de cerrar.
+
+## 102. Pliegues, calibre variable y respuesta intestinal local a la compresión
+
+**Contexto.** La revisión de las capturas del bloque 101 mostró luces demasiado uniformes. El usuario autorizó implementar personalmente pliegues, variación de calibre y deformación local, manteniendo el modelo actual y sin delegar el trabajo.
+
+**Opciones.** Un relieve de textura no modifica la luz, la transmisión ni la geometría vista desde otra orientación. Una simulación biomecánica con conservación de volumen y transporte de contenido requiere parámetros todavía no disponibles. Se elige un campo anatómico cuasiestático explícitamente estimado y verificable.
+
+**Decisión.** El eje existente conserva su registro. Su abscisa curvilínea gobierna radios de reposo entre 7,6 y 10 mm, interpolados suavemente entre nodos, y crestas mucosas redondeadas de hasta 1,2 mm con periodo estimado de 8 mm. Las crestas avanzan hacia la luz, sin ondular la serosa. Serosa y luz son uniones independientes: ninguna cápsula añade líquido fuera de la pared. Los gradientes analíticos incluyen pendientes del radio y pliegue; se conserva su norma para calcular el eco, sin llamarlos distancias euclídeas. El paso geométrico usa una cota conservadora de dos para esos campos.
+
+La carga de contacto existente se muestrea en los nodos del eje de reposo y reduce localmente el radio, hasta un 18 %, con respuesta reversible. Es una ley fenomenológica, no módulo elástico, presión intraluminal ni conservación de volumen. La escena guarda sus propios radios en Float32; la GPU recibe esos mismos valores tras cambiar el contacto, sin lecturas GPU→CPU ni nuevo sampler. Las bolsas de gas siguen estáticas y recortadas por la luz que cambia. No se introduce reloj de pared ni motilidad automática.
+
+**Consecuencias.** Pared, líquido, gas y normales responden a un campo común. Los 2 mm de pared son radiales nominales fuera de crestas; no se interpretan como umbral clínico. La carga se evalúa sobre el eje de referencia, sin seguimiento respiratorio individual, y la contracción local es radial: no reproduce el aplanamiento anisótropo ni la redistribución de contenido. El navegador refleja el calibre de reposo; no anima esa respuesta local ni resuelve los pliegues internos. Mantiene el límite de 1024 KiB: se separan las fuentes GLSL del registro de validación para que producción no retenga namespaces y textos de prueba innecesarios; una regresión exige exactamente las mismas fuentes y orden.
+
+**Verificación.** Regresiones de cresta/luz, variación de calibre, derivadas numéricas, contención, compresión con el contacto real, restitución e independencia entre escenas. Se conserva el muestreo de relaciones con órganos en los siete casos y ambos cuerpos, adaptado al radio físico nuevo. Paridad CPU/GPU y presión/liberación en ambos cuerpos, capturas originales antes/después en dos planos y bajo presión, check completo y presupuesto del SHA final. Los resultados efectivos se registran en el PR; este texto no sustituye esos resultados ni revisión clínica humana. Fuentes y límites en `anatomy/BOWEL_MODEL.md`.
+
+## 103. Interfaz cortical vertebral y sombra sin moteado óseo
+
+**Contexto.** Tras fusionar el PR138 en su rama base, el usuario pidió un nuevo PR personal para el realismo ecográfico de la columna. El modelo conservaba retrodispersión interna y ninguna cara cortical vertebral; su línea visible dependía del primer vóxel anterior al bloqueo óseo.
+
+**Decisión.** Se añade una interfaz exterior del cuerpo cilíndrico existente, solo donde es la superficie ósea más cercana de la unión cuerpo/arco. Su distancia y normal analítica proceden del mismo campo TS/GLSL. La muestra de tejido no cambia: gana la cortical solo cuando está fuera del hueso, a menos de 5 mm de su superficie, y la muestra peri vertebral no posee otra interfaz. Aire, pulmón, gas intestinal y hueso no la emiten. La cara posterior no se ilumina desde dentro del hueso. La curvatura del cuerpo es 1/r, con eje craneocaudal. El primer comparador visual reveló dos barras brillantes al reflejar las caras planas del arco rectangular provisional. Se excluye ese oclusor de la interfaz ecográfica: su geometría no permite presentarlo como cortical anatómica. El arco mantiene la sombra previa hasta sustituirlo por anatomía posterior real.
+
+El eco usa Fresnel músculo/hueso, sin suelo artificial, con rugosidad y pendiente estimadas de la cortical costal. Comparte el perfil normalizado, filtro por resolución, facetas y ventana angular de transmisión longitudinal existentes. La retrodispersión vertebral se pone a cero dentro de este modelo opaco, igual que en costillas; no se afirma que el hueso real carezca de dispersión. La pérdida por entrada y atenuación no se aumenta. Véase `anatomy/VERTEBRAL_CORTEX.md` para fuente primaria y límites.
+
+**Tamaño.** Se extiende el renombrado existente de bindings GLSL a los tags estáticos de tejidos e interfaces, cambiando juntos definiciones y consumidores y probando restitución exacta del texto. El perfil corporal binario ya existente deja de incrustarse como base64 en el JavaScript: se descarga por URL con hash al activar referencia. Mantiene sus 2080 bytes idénticos y añade un límite específico de ese tamaño; todo JS, incluidos ganchos y Workers, sigue dentro del presupuesto previo de 1024 KiB. El binario se informa aparte, sin presentarlo como ahorro de todos esos bytes en la descarga total. No se elevan límites existentes ni se suprime ningún contenido educativo.
+
+**Verificación.** Pruebas de propiedad exterior/interior, normales, curvatura, iluminación frontal, ventana angular y sombra; paridad dirigida CPU/GPU con ambos cuerpos; carga del perfil de referencia; check completo y capturas comparadas con la base exacta. Los resultados efectivos del SHA final se registran en el PR. Geometría vertebral segmentada y revisión clínica siguen pendientes.
+
+## 104. Apariencia hepatorrenal normal y comparación a profundidad compartida
+
+**Contexto.** El usuario pidió un hígado normal, sin esteatosis ni otros signos patológicos, y aportó tres referencias. La medición basal en fundamental mostró razones de gris hepático/corteza de 1,040 y 1,091 en dos cuerpos; no justificaba cambiar su ecogenicidad relativa. La inspección encontró textura macroscópica gruesa, una banda grasa perirrenal demasiado dominante y ventanas que cortaban parte del eje renal.
+
+**Decisión.** Se preservan amplitudes de hígado (1) y corteza (0,72), velocidades, impedancias, atenuación, fisiología y geometría de órganos. La variación material de densidad hepática usa célula de 3 mm y escala de 11 dB, frente a 4 mm y 12 dB: mantiene heterogeneidad continua y dispersores complejos con su PSF, sin desenfoque de pantalla. La grasa perirrenal reduce amplitud difusa de 2,4 a 1,8 y agrupación de 0,8 a 0,5; la grasa retroperitoneal adyacente comparte esa agrupación para conservar continuidad estadística; su grosor, interfaz especular, seno brillante y médula hipoecoica permanecen. Son ajustes estimados de apariencia, no parámetros histológicos validados.
+
+Se añade la ventana Hepatorrenal en ambos registros, manteniendo los otros puntos y el arranque. Sus poses se seleccionan por cobertura anatómica transhepática, longitud renal y ausencia de recorte en bordes, no por la razón de grises obtenida. El plano debe afinarse según las sombras costales. El carril conserva tamaño de texto y tarjetas, con desplazamiento interno limitado a los mismos 290/230 px para no quitar espacio al navegador. Las pruebas E2E incorporan las dos adquisiciones hepatorrenales y la ventana adicional a los barridos existentes: se reparten en cinco fragmentos, sin aumentar límites por prueba ni reducir cobertura.
+
+**Verificación.** El comparador usa PNG originales y máscaras anatómicas independientes del brillo. Empareja bandas de 5 mm, excluye vasos/seno/médula/interfaces/sombras y líneas mal acopladas, informa saturación y devuelve ausencia de medida cuando no hay corteza suficiente. No convierte grises de referencias externas a dB ni llama diagnóstico al cociente. La primera captura basal quedó incompleta por timeout de screenshot tras cargar fuentes; las tres capturas conservadas orientaron la revisión. Esa corrida era fundamental pese a una nota que decía armónica: el comparador posterior activa la armónica explícitamente, sincroniza la cola GPU y guarda resultados parciales. Las imágenes finales y los resultados efectivos de CPU/GPU, tests y presupuesto se registran en el PR.
+
+**Límites.** Revisión visual y medidas sintéticas no equivalen a validación clínica. La ecogenicidad depende de ajustes, profundidad y camino acústico; una razón aislada no excluye esteatosis. Los modelos de vasos y riñón siguen siendo aproximados, no segmentaciones de un paciente. Fuentes y protocolo en `anatomy/NORMAL_HEPATORENAL.md`.
+
+## 105. Gradiente vesicular analítico y norma física del eco
+
+**Contexto.** El PR140 dejó en verde la apariencia hepatorrenal. La revisión de la vesícula encontró una normal de clasificación tomada del segmento ganador, aunque su distancia usa una unión suave; además, el término de pendiente de radio se prolongaba sobre las tapas. El eco visible ya usaba diferencias centrales de la distancia completa: no se atribuye retrospectivamente todo artefacto de brillo a la normal aproximada.
+
+**Decisión.** Se deriva cada tramo con el radio constante cuando la proyección está fuera de sus extremos y se propaga el gradiente de la unión polinómica con sus mismos pesos. Se conserva el gradiente sin normalizar, porque su norma convierte la seudodistancia en grosor del eco. TS y GLSL implementan la misma derivada; `faceGradient` reutiliza el resultado de clasificación en vez de seis evaluaciones vesiculares desplazadas. La distancia, forma, nodos, pared de 1,8 mm, impedancias, atenuación, amplitudes y fisiología permanecen. Las primitivas vectoriales compartidas evitan duplicar aritmética y mantienen el presupuesto existente.
+
+**Verificación.** Comparación independiente frente a diferencias de 0,00001 mm, casos de tapas y flancos, integración en las caras de la escena, paridad dirigida CPU/GPU en ambos cuerpos, calibración fisiológica, suite completa y captura comparativa en ventanas seleccionadas solo por geometría. La guarda numérica de las demás caras y los controles vasculares no se relajan. Los resultados efectivos, presupuesto y coste del SHA final se registran en el PR.
+
+**Límites.** La forma conserva las transiciones geométricas originales; donde la derivada matemática no es única no se inventa una normal clínica. La exactitud de la derivada no valida la morfología de un paciente ni garantiza una diferencia perceptible en toda imagen. Las capturas y los tiempos son de SwiftShader; no prueban rendimiento en dispositivos reales. No se agregan cálculos, barro, inflamación ni patología biliar.

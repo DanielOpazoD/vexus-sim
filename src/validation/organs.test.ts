@@ -1,12 +1,42 @@
+import { tokenizeGlsl, glslDeclarations } from '../../tools/build/glslMangle';
 import { describe, expect, it } from 'vitest';
 import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
-import { ORGAN_MODULES } from '../anatomy/organs';
+import { ORGAN_MODULES, ORGAN_GLSL } from '../anatomy/organs';
 import { HILUM_NOTCH, PYRAMIDS, RENAL_CAPSULE_MM } from '../anatomy/organs/kidney';
 import { LUNG_CURTAIN, lungCurtainDistance } from '../anatomy/organs/lungCurtain';
 import { LIGAMENTUM_VENOSUM, ligamentumVenosumSdf, umbilicalFissureSdf, UMBILICAL_FISSURE } from '../anatomy/organs/liverLigaments';
 
 /** Módulos de órgano (decisión 46): gemelos TS/GLSL juntos y con el mismo nombre. */
 describe('Módulos de órgano', () => {
+  it('las normales vec3 del clasificador no se redeclaran en el mismo bloque', () => {
+    const duplicates = (source: string): string[] => {
+      const text = source.slice(source.indexOf('Cls classifyTissue(')).replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '');
+      let depth = 0,
+        top = '';
+      for (const char of text.slice(text.indexOf('{'))) {
+        if (char === '{') {
+          depth++;
+          continue;
+        }
+        if (char === '}') {
+          if (--depth === 0) break;
+          continue;
+        }
+        if (depth === 1) top += char;
+      }
+      const names = glslDeclarations(tokenizeGlsl([top]), new Set(['Cls']))
+        .filter((d) => d.kind === 'variable' && d.type === 'vec3')
+        .map((d) => d.name);
+      return names.filter((n, i) => names.indexOf(n) !== i);
+    };
+    expect(duplicates(ANATOMY_GLSL)).toEqual([]);
+    // Mutación del fallo real observado por Chromium: ln ya pertenecía a la normal hepática.
+    expect(duplicates(ANATOMY_GLSL.replaceAll('bowelLumenNormal', 'ln'))).toContain('ln');
+  });
+
+  it('fuentes de producción coinciden exactamente con el registro de validación', () => {
+    expect(ORGAN_GLSL).toEqual(ORGAN_MODULES.map((o) => o.glsl));
+  });
   for (const o of ORGAN_MODULES) {
     it(`${o.id}: cada función GLSL tiene su gemela TS exportada y el shader la incluye`, () => {
       const fns = [...o.glsl.matchAll(/^\s*(?:float|vec[234]|bool|int)\s+(\w+)\s*\(/gm)].map((m) => m[1]);

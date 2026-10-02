@@ -1,46 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { REST_TEXTURE, REST_TEXTURE_GLSL, restTexture } from '../ultrasound/restTexture';
-import type { Vec3 } from '../core/vec3';
+import { REST_TEXTURE, REST_TEXTURE_GLSL, bowelWallProfile, restTexture } from '../ultrasound/restTexture';
+import { BOWEL_WALL_MM, BOWEL_REST_RADII } from '../anatomy/organs/bowel';
 
-/**
- * Textura del resto del abdomen (decisión 74): asas con la firma intestinal (serosa brillante, muscular hipoecoica,
- * mucosa brillante, contenido líquido o mixto) en grasa mesentérica hiperecoica, anclada al material.
- */
-describe('Textura del resto del abdomen (decisión 74)', () => {
-  // rejilla de puntos del abdomen (mm) con la semilla de la escena de referencia
-  const seed = 11;
-  const pts: Vec3[] = [];
-  for (let x = -120; x <= 120; x += 7) for (let y = -60; y <= 60; y += 7) for (let z = -160; z <= -40; z += 7) pts.push([x, y, z]);
-  const v = pts.map((m) => restTexture(m, seed));
-
-  it('grasa hiperecoica entre las asas, paredes hipoecoicas y mucosa brillante; niveles acotados', () => {
-    const R = REST_TEXTURE;
-    const frac = (f: (x: number) => boolean) => v.filter(f).length / v.length;
-    // la grasa mesentérica (el nivel de fondo) es la moda y es más brillante que el hígado (= 1)
-    expect(frac((x) => Math.abs(x - R.fatBack) < 1e-6)).toBeGreaterThan(0.3);
-    expect(R.fatBack).toBeGreaterThan(1.2);
-    // hay muscular (hipoecoica), mucosa o serosa (brillantes) y contenido líquido (casi anecoico)
-    expect(frac((x) => x < 0.5)).toBeGreaterThan(0.05);
-    expect(frac((x) => x > 1.9)).toBeGreaterThan(0.02);
-    for (const x of v) {
-      expect(x).toBeGreaterThanOrEqual(R.contentDark - 1e-9);
-      expect(x).toBeLessThanOrEqual(Math.max(R.serosaBack, R.mucosaBack, R.contentBright) + 1e-9);
+describe('pared intestinal ligada a la geometría, no al ruido', () => {
+  it('muscular y mucosa hipoecoicas, submucosa ecogénica; todas dentro de la pared física', () => {
+    expect(bowelWallProfile(0.3)).toBe(REST_TEXTURE.muscularisBack);
+    expect(bowelWallProfile(0.875)).toBe(REST_TEXTURE.submucosaBack);
+    expect(bowelWallProfile(1.6)).toBeCloseTo(REST_TEXTURE.mucosaBack, 12);
+    expect(REST_TEXTURE.submucosaEndMm + REST_TEXTURE.edgeMm).toBeLessThan(BOWEL_WALL_MM);
+    for (let d = 0; d <= BOWEL_WALL_MM; d += 0.01) {
+      expect(bowelWallProfile(d)).toBeGreaterThanOrEqual(0.38);
+      expect(bowelWallProfile(d)).toBeLessThanOrEqual(2.2);
     }
-    // la media del resto queda por encima del hígado: el riñón y la porta ya no parecen rodeados de hígado
-    expect(v.reduce((a, b) => a + b, 0) / v.length).toBeGreaterThan(1.05);
   });
-
-  it('anclada: el mismo punto da el mismo valor; otra semilla, otra realización', () => {
-    const m: Vec3 = [-40, 10, -90];
-    expect(restTexture(m, seed)).toBe(restTexture(m, seed));
-    const other = pts.map((p) => restTexture(p, seed + 100));
-    expect(other.some((x, i) => Math.abs(x - v[i]) > 0.2)).toBe(true);
+  it('usa la distancia real del eje continuo y conserva exactamente la misma anatomía entre repeticiones', () => {
+    const t = 80 / 125,
+      r = BOWEL_REST_RADII[0] + (BOWEL_REST_RADII[1] - BOWEL_REST_RADII[0]) * t * t * (3 - 2 * t);
+    for (const d of [0.3, 0.875, 1.6]) expect(restTexture([-48 + r - d, 22, -250])).toBeCloseTo(bowelWallProfile(d), 8);
   });
-
-  it('el shader toma las constantes del módulo', () => {
-    expect(REST_TEXTURE_GLSL).toContain(`REST_LOOP_CELL_MM = ${REST_TEXTURE.loopCellMm.toFixed(4)}`);
-    expect(REST_TEXTURE_GLSL).toContain(`REST_THRESHOLD = ${REST_TEXTURE.threshold.toFixed(4)}`);
-    expect(REST_TEXTURE_GLSL).toContain(`${REST_TEXTURE.fatBack.toFixed(4)}, ${REST_TEXTURE.serosaBack.toFixed(4)}`);
-    expect(REST_TEXTURE_GLSL).toContain('uSeed + 41.0');
+  it('el shader comparte parámetros y no genera asas con uSeed ni valueNoise', () => {
+    expect(REST_TEXTURE_GLSL).toContain('bowelWallProfile(-bowelSdf(m))');
+    expect(REST_TEXTURE_GLSL).not.toMatch(/uSeed|valueNoise/);
+    expect(REST_TEXTURE_GLSL).toContain(REST_TEXTURE.submucosaBack.toFixed(3));
   });
 });

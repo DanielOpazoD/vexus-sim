@@ -62,9 +62,14 @@ export enum Interface {
   Perichondrium = 21,
   /** Pericardio junto al epicardio (decisión 85): lo dibuja la capa del pericardio (un lado). */
   Pericardium = 22,
+  BowelLumen = 23,
+  BowelSerosa = 24,
+  VertebralCortex = 25,
 }
 
-export const INTERFACE_COUNT = 23;
+export const INTERFACE_COUNT = 26;
+/** Banda material conservadora para la cortical; el perfil efectivo mide menos de 1 mm. */
+export const VERTEBRAL_FIELD_REACH_MM = 5;
 /** Las caras de tubo van primero (ids ≤ esta): solo ellas llevan coherencia de curvatura. */
 export const LAST_TUBE_INTERFACE = Interface.DuctLumen;
 /** Caras de las capas de la pared (decisión 62): ids consecutivos de `SkinFat` a `Peritoneum`. */
@@ -85,8 +90,11 @@ export function isRibInterface(i: Interface): boolean {
  * Caras con coherencia de curvatura (decisión 57): las de tubo y, desde la decisión 62, las de costilla (un
  * cilindro de sección elíptica, con la curvatura de su sección, `ribCurvature`).
  */
+export function isBowelInterface(i: Interface): boolean {
+  return i === Interface.BowelLumen || i === Interface.BowelSerosa;
+}
 export function hasCurvatureCoherence(i: Interface): boolean {
-  return (i !== Interface.None && i <= LAST_TUBE_INTERFACE) || isRibInterface(i);
+  return (i !== Interface.None && i <= LAST_TUBE_INTERFACE) || isRibInterface(i) || isBowelInterface(i) || i === Interface.VertebralCortex;
 }
 /**
  * Cápsula hepática y grasa perirrenal a ≤ esto (mm) son la misma cara (Morison): la dibuja la grasa,
@@ -140,6 +148,9 @@ export const INTERFACE_GLSL_NAME: Record<Interface, string> = {
   [Interface.RibCortex]: 'IF_RIB',
   [Interface.Perichondrium]: 'IF_PERICHONDRIUM',
   [Interface.Pericardium]: 'IF_PERICARDIUM',
+  [Interface.BowelLumen]: 'IF_BOWEL_LUMEN',
+  [Interface.BowelSerosa]: 'IF_BOWEL_SEROSA',
+  [Interface.VertebralCortex]: 'IF_VERTEBRAL_CORTEX',
 };
 
 /** Propiedades de una cara lisa (tabla de la decisión 57). */
@@ -161,18 +172,8 @@ export interface InterfaceProps {
    * desplaza 2,5σh dentro del dueño para no perder la mitad que cae fuera.
    */
   twoSided: boolean;
-  /** Etiqueta de la fuente de los números. */
-  source: string;
 }
 
-/** Lámina de colágeno dentro de la grasa (fascias de la pared, decisión 62). */
-const FASCIA_IN_FAT = 'capa fina de colágeno en grasa: 2Γ·sen(kt), Γ colágeno (Z ≈ 1,85, Duck 1990) / grasa ≈ 0,17';
-/** Nivel de las caras de la pared (decisión 62): la rugosidad efectiva deja su parte coherente en el de las referencias. */
-const WALL_ROUGH =
-  'rugosidad efectiva σz 0,075 mm y s 0,3 de una fascia ondulada a la escala del haz (volumen parcial en la rodaja): en la imagen sus líneas quedan a +6–14 dB sobre el hígado (mediana por vista a incidencia normal, gemelo 6,4–13,7 dB y ≤ 0,2 % de píxeles saturados), gris-blancas, bajo la pleura y la cortical, como las de las referencias; con σz 0,05, +15–29 dB y cinco líneas saturadas cruzando el flanco (capturas con GPU, 25-09-2026); con 0,10, al nivel del hígado; lisa (0,03), +30–40 dB y su falda llenaba el músculo [ESTIMADO]';
-/** Plano intermuscular de la pared lateral (decisión 62). */
-const INTERMUSCULAR = 'fascia con grasa entre dos músculos: 2Γ·sen(kt) con Γ grasa/músculo 0,14 y t ≈ 0,03 mm ≈ 0,08 [ESTIMADO]';
-const WALL = 'Z de TISSUES (IT’IS); suelo por la pared vascular (IT’IS «blood vessel wall», |R| ≈ 0,024) [LITERATURA aprox.]';
 /** Tabla de caras, en el orden del enum (la del plan de la decisión 57). */
 export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
   [Interface.None]: {
@@ -182,7 +183,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0,
     slopeRms: 1,
     twoSided: true,
-    source: '—',
   },
   [Interface.VeinLumen]: {
     name: 'luz venosa (pared fina)',
@@ -191,7 +191,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.02,
     slopeRms: 0.14,
     twoSided: true,
-    source: `${WALL}; s de la VSH, brillante solo a ±12° [ESTIMADO]`,
   },
   [Interface.IvcLumen]: {
     name: 'luz de la VCI',
@@ -200,7 +199,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.02,
     slopeRms: 0.18,
     twoSided: true,
-    source: `${WALL}; pared más gruesa y ondulada [ESTIMADO]`,
   },
   [Interface.PortalLumen]: {
     name: 'luz portal (vaina de Glisson)',
@@ -209,7 +207,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.03,
     slopeRms: 0.25,
     twoSided: true,
-    source: 'colágeno de tipo tendón con grasa, Z ≈ 1,85 (Duck 1990) [LITERATURA aprox.]; visible hasta ~25° [ESTIMADO]',
   },
   [Interface.ArteryLumen]: {
     name: 'luz arterial',
@@ -218,7 +215,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.02,
     slopeRms: 0.21,
     twoSided: true,
-    source: 'pared arterial con elastina y colágeno [ESTIMADO]',
   },
   [Interface.DuctLumen]: {
     name: 'luz biliar',
@@ -227,7 +223,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.02,
     slopeRms: 0.21,
     twoSided: true,
-    source: 'Fresnel pared biliar / bilis (TISSUES)',
   },
   [Interface.GallbladderLumen]: {
     name: 'luz vesicular',
@@ -236,7 +231,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.03,
     slopeRms: 0.21,
     twoSided: true,
-    source: 'Fresnel pared vesicular / bilis (TISSUES)',
   },
   [Interface.LiverCapsule]: {
     name: 'cápsula hepática',
@@ -245,8 +239,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.03,
     slopeRms: 0.2,
     twoSided: false,
-    source:
-      'capa de colágeno sub-resolución, 2Γ₁·sen(kt) ≈ 0,02–0,045 [ESTIMADO]; s 0,2 (decisión 65; antes 0,25, «continua hasta el borde del sector»: el lóbulo ancho la dibujaba como un trazo a 20–40°; bajo la pared la línea que llega al borde es la del peritoneo, rugoso, con su componente difusa) [ESTIMADO]',
   },
   [Interface.DiaphragmLiver]: {
     name: 'cara hepática del diafragma',
@@ -255,7 +247,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.03,
     slopeRms: 0.21,
     twoSided: false,
-    source: 'fascia diafragmática [ESTIMADO]',
   },
   [Interface.Pleura]: {
     name: 'pleura (diafragma / pulmón)',
@@ -264,7 +255,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.09,
     slopeRms: 0.21,
     twoSided: true,
-    source: 'Fresnel tejido / gas; σz es el mando de nivel de su parte coherente, en [0,085; 0,095] [ESTIMADO]',
   },
   [Interface.RenalCapsule]: {
     name: 'cápsula renal',
@@ -273,8 +263,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.06,
     slopeRms: 0.2,
     twoSided: true,
-    source:
-      'Fresnel grasa perirrenal / cápsula renal (TISSUES); es la cara que da el pico de Morison, en [1,6; 2,2] [ESTIMADO]: s 0,2 y σz 0,06 (decisión 65; antes 0,25 y 0,05, con la s de mando del nivel: su lóbulo ancho y χ(θ) la dejaban a +18 dB a 20–40°, la «U» del contorno profundo del riñón; ahora el nivel lo fija χ(0) y el lóbulo, el ángulo)',
   },
   [Interface.PerirenalFat]: {
     name: 'grasa perirrenal (Morison)',
@@ -283,8 +271,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.06,
     slopeRms: 0.2,
     twoSided: false,
-    source:
-      'Fresnel hígado / grasa (TISSUES); s 0,2 y σz 0,06 como la cápsula renal (decisión 65; antes 0,3 y 0,05: +12 dB a 40–60°, el brazo de la «U» que sale del riñón) [ESTIMADO]; no mueve el pico de Morison, que es la cápsula renal',
   },
   [Interface.PleuraWall]: {
     name: 'pleura parietal (pared / pulmón de la cortina)',
@@ -293,8 +279,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.05,
     slopeRms: 0.15,
     twoSided: false,
-    source:
-      'Fresnel músculo / gas (TISSUES), |R| ≈ 0,9995; s 0,15 [ESTIMADO 0,10–0,15]: la línea pleural es la más brillante cerca de la normal y se apaga en los bordes del sector (Lee 2017, J Med Ultrasound 25:101, fig. 5B; PMC10132878 fig. 2A); σz 0,05 mm [ESTIMADO, calibrable 0,04–0,07]: su parte coherente (−8,9 dB a 0°) la satura 1,2–1,3 mm a 0–15° con K = 55 dB (gemelo) y es la reflexión coherente de cada rebote de la serie bajo la pleura; de un lado: la dibuja el músculo (la pared es su dueña, decisión 61)',
   },
   [Interface.SkinFat]: {
     name: 'dermis / grasa subcutánea',
@@ -303,7 +287,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.075,
     slopeRms: 0.35,
     twoSided: true,
-    source: 'Fresnel piel / grasa 0,146 (TISSUES); cara ondulada (papilas, folículos): s 0,35 y σz 0,075 [ESTIMADO]',
   },
   [Interface.Scarpa]: {
     name: 'fascia de Scarpa (capa membranosa)',
@@ -312,7 +295,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.075,
     slopeRms: 0.3,
     twoSided: true,
-    source: `${FASCIA_IN_FAT}; t 0,05–0,1 mm daría 0,2–0,3, 0,07 por su irregularidad y ${WALL_ROUGH} (PMC7441131)`,
   },
   [Interface.DeepFascia]: {
     name: 'fascia profunda (vaina anterior del recto, aponeurosis del oblicuo externo)',
@@ -321,7 +303,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.075,
     slopeRms: 0.3,
     twoSided: true,
-    source: `Fresnel grasa / músculo 0,138 (TISSUES); ${WALL_ROUGH}`,
   },
   [Interface.ObliquePlane]: {
     name: 'plano entre los oblicuos externo e interno',
@@ -330,7 +311,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.075,
     slopeRms: 0.3,
     twoSided: true,
-    source: `${INTERMUSCULAR}; ${WALL_ROUGH}`,
   },
   [Interface.TransversusPlane]: {
     name: 'plano entre el oblicuo interno y el transverso',
@@ -339,7 +319,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.075,
     slopeRms: 0.3,
     twoSided: true,
-    source: `${INTERMUSCULAR}; ${WALL_ROUGH}`,
   },
   [Interface.Transversalis]: {
     name: 'fascia transversalis (músculo / grasa preperitoneal)',
@@ -348,7 +327,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.075,
     slopeRms: 0.3,
     twoSided: true,
-    source: `Fresnel músculo / grasa 0,138 (TISSUES); ${WALL_ROUGH}`,
   },
   [Interface.Peritoneum]: {
     name: 'peritoneo parietal (grasa preperitoneal / víscera)',
@@ -357,8 +335,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.08,
     slopeRms: 0.4,
     twoSided: false,
-    source:
-      'Fresnel grasa / hígado 0,132 (TISSUES); cara irregular por los lóbulos de la grasa preperitoneal (σz 0,08, s 0,4) [ESTIMADO]: junto al hígado su eco y el de la cápsula quedan a 0,7 mm y se ven como una línea, calibrada en el rango de la cápsula de la decisión 57 (gemelo 1,82–1,83 a 0–20°; con σz 0,06, 1,88–1,97; con σz 0,04 y s 0,3, 2,24–2,40)',
   },
   [Interface.RibCortex]: {
     name: 'cortical costal',
@@ -367,8 +343,14 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.045,
     slopeRms: 0.15,
     twoSided: false,
-    source:
-      'Fresnel músculo / hueso 0,59 (TISSUES, IT’IS); s 0,15 y σz 0,045 (periostio y cortical algo irregulares a 3,5 MHz) [ESTIMADO]: su parte coherente queda bajo la de la pleura parietal (σz 0,05, |R| ≈ 1), la cara más brillante de la tabla (decisión 61); coherencia de curvatura de su sección',
+  },
+  [Interface.VertebralCortex]: {
+    name: 'cortical vertebral',
+    sides: [Tissue.Muscle, Tissue.Vertebra],
+    floor: 0,
+    roughnessMm: 0.045,
+    slopeRms: 0.15,
+    twoSided: false,
   },
   [Interface.Perichondrium]: {
     name: 'pericondrio',
@@ -377,8 +359,6 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.06,
     slopeRms: 0.3,
     twoSided: false,
-    source:
-      'Fresnel cartílago / músculo 0,021 (TISSUES); lámina densa de colágeno: suelo 0,025, σz 0,06 y s 0,3 como las fascias [ESTIMADO]: su eco especular (K·|R|·Λ·χ a 2,5 MHz) queda en 9,8 dB a 0° y 5,9 a 30°; con el suelo 0,06, σz 0,03 y s 0,2 (25,8 y 10,6), en la subxifoidea los cortes de los cartílagos del reborde eran una cadena de rizos blancos (capturas con GPU, 25-09-2026)',
   },
   [Interface.Pericardium]: {
     name: 'pericardio',
@@ -387,10 +367,23 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.06,
     slopeRms: 0.2,
     twoSided: false,
-    // pericardio fibroso: colágeno denso (Z ≈ 1,85–2,0, Duck 1990) contra grasa, Γ ≈ 0,15–0,19; el Fresnel mediastino/miocardio
-    // es 0,10. σz y s, los de las cápsulas de la decisión 65: +22,7 dB a 0°, +16,6 a 20° y −10,9 a 40° (K = 55 dB), con la
-    // difusa a +10,9 dB sobre el moteado del hígado, como la cápsula renal
-    source: 'pericardio fibroso (colágeno / grasa, Duck 1990): suelo 0,15 [LITERATURA aprox.]; σz 0,06, s 0,2 [ESTIMADO]',
+  },
+  // Interfaces intestinales: Fresnel, rugosidad y pendiente estimadas para revisión visual.
+  [Interface.BowelLumen]: {
+    name: 'interfaz mucosa-luz intestinal',
+    sides: [Tissue.Bowel, Tissue.Fluid],
+    floor: 0,
+    roughnessMm: 0.035,
+    slopeRms: 0.28,
+    twoSided: true,
+  },
+  [Interface.BowelSerosa]: {
+    name: 'serosa-grasa mesentérica',
+    sides: [Tissue.Bowel, Tissue.MesentericFat],
+    floor: 0,
+    roughnessMm: 0.06,
+    slopeRms: 0.28,
+    twoSided: true,
   },
 };
 

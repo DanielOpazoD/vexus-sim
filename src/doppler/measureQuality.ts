@@ -1,6 +1,8 @@
 import { median } from '../core/series';
 import type { Beat } from '../physiology/rhythm';
+import type { VesselSystem } from '../physiology/vessels';
 import { captureNoiseFloorsDb, noiseFloorDb, type SpectralColumn } from './spectral';
+import type { ProtocolVessel } from './vesselIdentity';
 
 /**
  * Control de calidad de una captura PW (base de conocimiento A.4: «no medible» nunca es
@@ -30,7 +32,7 @@ import { captureNoiseFloorsDb, noiseFloorDb, type SpectralColumn } from './spect
  *    dirección entre latidos y D es anterógrada en todo grado VExUS; una onda casi nula
  *    (|x| < 25 % de D) no cuenta.
  */
-export type QualityIssue = 'no-signal' | 'intermittent' | 'aliasing' | 'inconsistent' | 'few-beats';
+export type QualityIssue = 'no-signal' | 'intermittent' | 'aliasing' | 'inconsistent' | 'few-beats' | 'wrong-vessel' | 'wall-filter';
 
 export interface MeasurementQuality {
   /** Latidos cubiertos por el espectro en la ventana y cuántos tienen sangre suficiente. */
@@ -44,6 +46,8 @@ export interface MeasurementQuality {
   bloodColumns: number;
   /** Primer problema encontrado, o null si la captura es medible. */
   issue: QualityIssue | null;
+  /** Con 'wrong-vessel' (decisión 94): la fila y el sistema vascular que dominaba la puerta. */
+  wrongVessel?: { kind: ProtocolVessel; found: VesselSystem };
 }
 
 export interface QualityOptions {
@@ -63,6 +67,19 @@ export interface QualityOptions {
    * de la puerta (hallazgo C10 de la revisión externa).
    */
   phaseWindow?: (b: Beat) => readonly [number, number];
+  /**
+   * Presencia de flujo por columna medida por la propia medición (la porta, decisión 94: la columna tiene traza
+   * unilateral en su semiplano). Sin ella, `bloodInColumn`: con el clutter simétrico de la respiración contado
+   * como sangre, un latido sin traza de la porta «valía».
+   */
+  present?: (c: SpectralColumn) => boolean;
+  /**
+   * Ruido del receptor por bin (dB, `receiverNoiseDb` con la ganancia del equipo). Con él se reconoce el aliasing fuerte
+   * (decisión 94): con la escala muy por debajo de la velocidad la sangre se pliega varias veces, se reparte por toda
+   * la banda y no deja banda que detectar; la captura decía «no hay flujo» o «entra y sale de la puerta». Sin él (una
+   * prueba sin equipo) no se comprueba.
+   */
+  receiverNoiseDb?: number;
 }
 
 /** Cobertura de la ventana de fase con sangre para que el latido valga. */
@@ -71,7 +88,7 @@ const PHASE_COVERAGE = 0.8;
 const PHASE_REPRODUCIBILITY = 0.15;
 
 /** Latidos de una captura: los últimos completos de sus 7 s de espectro (4 caben a 45 lpm). */
-export const CAPTURE_BEATS = 4;
+export { CAPTURE_BEATS, qualityText } from './qualityMessages';
 /** Fracción del latido que deben cubrir las columnas del espectro para juzgarlo. */
 const BEAT_COVERAGE = 0.9;
 /**
@@ -103,6 +120,31 @@ const WRAP_COLUMNS = 3;
 const WRAP_GAP = 0.15;
 /** Por debajo de esta fracción de D, una onda es casi nula y su signo no cuenta. */
 const S_SIGN_FRACTION = 0.25;
+/**
+ * Aliasing fuerte (decisión 94): mediana, sobre las columnas de la captura, de la potencia media en la mitad exterior de
+ * la banda (|f| > PRF/4) sobre el ruido del receptor. Medido en la cadena del alumno en apnea: la sangre plegada deja
+ * 3–21 dB (±6–14 cm/s en los tres territorios); la puerta fuera del vaso, con el clutter del tejido que respira,
+ * −0,2 a +0,3 dB. Solo cambia el motivo de una captura que ya no era medible («no hay flujo» o «intermitente»).
+ */
+const SEVERE_ALIAS_OUTER_DB = 3;
+/** Borde de la mitad exterior de la banda (fracción de la PRF). */
+const OUTER_BAND = 0.25;
+
+/** Mediana de la potencia media de |f| > OUTER_BAND·PRF sobre el ruido del receptor (dB). */
+export function outerBandExcessDb(columns: readonly SpectralColumn[], receiverNoiseDb: number): number {
+  const ex = columns.map((c) => {
+    const N = c.powerDb.length;
+    let s = 0;
+    let n = 0;
+    for (let k = 0; k < N; k++) {
+      if (Math.abs(((k - N / 2) / N) * c.prfHz) <= OUTER_BAND * c.prfHz) continue;
+      s += Math.pow(10, c.powerDb[k] / 10);
+      n++;
+    }
+    return n ? 10 * Math.log10(s / n) - receiverNoiseDb : Number.NaN;
+  });
+  return median(ex.filter(Number.isFinite));
+}
 
 /**
  * ¿La onda de la suprahepática no se reproduce? `s` y `d` son los picos por latido, orientados por
@@ -199,10 +241,11 @@ export function assessQuality(
     const w = opts.phaseWindow?.(b);
     for (const c of inBeat) {
       const r = bloodInColumn(c, opts, floorOf.get(c));
-      if (r.present) withBlood++;
+      const present = opts.present ? opts.present(c) : r.present;
+      if (present) withBlood++;
       if (w && c.t >= w[0] && c.t <= w[1]) {
         inPhase++;
-        if (r.present) phaseBlood++;
+        if (present) phaseBlood++;
       }
       if (r.wrapped) wrappedColumns++;
       energy += r.energy;
@@ -244,21 +287,12 @@ export function assessQuality(
   else if (validBeats < coveredBeats) issue = 'intermittent';
   else if (waves && wavesInconsistent(waves.s, waves.d)) issue = 'inconsistent';
   else if (validBeats < MIN_VALID_BEATS) issue = 'few-beats';
+  // la sangre plegada varias veces llena la banda sin dejar banda que detectar: es aliasing, no «sin flujo»
+  if (
+    (issue === 'no-signal' || issue === 'intermittent') &&
+    opts.receiverNoiseDb !== undefined &&
+    outerBandExcessDb(columns, opts.receiverNoiseDb) >= SEVERE_ALIAS_OUTER_DB
+  )
+    issue = 'aliasing';
   return { beats: coveredBeats, validBeats, edgeEnergyFraction, wrappedBeats, bloodColumns, issue };
-}
-
-/** Texto para el alumno: qué pasó y cómo corregirlo. */
-export function qualityText(issue: QualityIssue): string {
-  switch (issue) {
-    case 'no-signal':
-      return 'no medible: no hay flujo en la puerta (¿está sobre el vaso? ¿hay sombra o poco contacto?)';
-    case 'intermittent':
-      return 'no medible: el flujo no se repite de un latido a otro (el vaso entra y sale de la puerta: pida apnea o agrande la puerta)';
-    case 'inconsistent':
-      return 'no medible: la onda cambia de un latido a otro (otro vaso entra a ratos en la puerta: recoloque la puerta; si respira, pida apnea)';
-    case 'aliasing':
-      return 'no medible: aliasing (suba la escala o baje la línea de base)';
-    case 'few-beats':
-      return 'no medible: pocos latidos (espere 4 latidos completos con la puerta quieta)';
-  }
 }

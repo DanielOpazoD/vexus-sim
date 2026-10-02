@@ -1,3 +1,4 @@
+import type { Torso } from '../anatomy/primitives';
 /**
  * «Puntos de partida» (decisión 17): posiciones cutáneas con los ángulos de partida de cada
  * ventana, hacia las que la sonda se DESLIZA; la ventana diagnóstica hay que afinarla (en la
@@ -7,7 +8,7 @@
  * π/2 = anterior), z en mm.
  */
 export interface StartPoint {
-  id: 'subxiphoid' | 'epigastric' | 'intercostal' | 'subcostal' | 'flank' | 'portal' | 'renal';
+  id: 'subxiphoid' | 'epigastric' | 'intercostal' | 'subcostal' | 'flank' | 'portal' | 'renal' | 'hepatorenal';
   label: string;
   phi: number;
   z: number;
@@ -137,4 +138,83 @@ export const START_POINTS: readonly StartPoint[] = [
     tilt: -0.4,
     hint: 'Riñón derecho en eje largo por el flanco (línea axilar posterior): hígado como ventana, cápsula, corteza, pirámides y seno ecogénico (la pelvis, colapsada; la vena renal sale por el hilio); puerta PW en un vaso interlobar.',
   },
+  {
+    id: 'hepatorenal',
+    label: 'Hepatorrenal',
+    color: '#e8bf79',
+    phi: 3.2,
+    z: -80,
+    yaw: -0.1,
+    tilt: -0.4,
+    rock: 0.1,
+    hint: 'Hígado y riñón derecho en eje largo: compara parénquima hepático y corteza renal a igual profundidad, sin incluir vasos, pirámides ni seno. Afina el espacio intercostal para despejar sombras.',
+  },
 ];
+
+/** Offline landmark/ray calibration of the shared BodyParts3D-derived torso; see REFERENCE_TORSO.md. */
+const REFERENCE_POSES = {
+  hepatorenal: { phi: 3.2, z: -80, yaw: 0, tilt: -0.4, rock: -0.2 },
+  subxiphoid: {
+    phi: 1.65,
+    z: -15,
+    yaw: 0.02476,
+    rock: 0.591491,
+    tilt: -0.055956,
+  },
+  epigastric: {
+    phi: 1.55,
+    z: -35,
+    yaw: -1.606158,
+    rock: 0.198376,
+    tilt: 0.266738,
+  },
+  intercostal: {
+    phi: 3.0,
+    z: -50,
+    yaw: 0.991606,
+    rock: 0.326097,
+    tilt: -0.445188,
+  },
+  subcostal: {
+    phi: 1.65,
+    z: -60,
+    yaw: 0.697698,
+    rock: 0.323154,
+    tilt: -0.502037,
+  },
+  flank: {
+    phi: 3.0,
+    z: -20,
+    yaw: -0.041424,
+    rock: 0.142559,
+    tilt: 0.166586,
+  },
+  portal: {
+    phi: 3.3,
+    z: -55,
+    yaw: 0.107927,
+    rock: -0.309003,
+    tilt: 0.133669,
+  },
+  renal: {
+    phi: 3.25,
+    z: -105,
+    yaw: -0.044027,
+    rock: 0.188128,
+    tilt: -0.353448,
+  },
+} satisfies Record<StartPoint['id'], Pick<StartPoint, 'phi' | 'z' | 'yaw' | 'rock' | 'tilt'>>;
+const REFERENCE_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
+  ...sp,
+  ...REFERENCE_POSES[sp.id],
+  hint:
+    sp.id === 'intercostal'
+      ? 'Ventana intercostal derecha del adulto de referencia: marcador oblicuo hacia la axila; afinar entre las superficies costales para ver la VSH derecha.'
+      : sp.id === 'renal'
+        ? 'Ventana renal derecha del adulto de referencia: desde el flanco, afinar el eje largo y colocar la puerta en una vena interlobar visible.'
+        : sp.hint,
+}));
+/** Scene-specific presets; legacy tests/torso retain their own poses. */
+export function startPointsFor(torso: Pick<Torso, 'a' | 'b' | 'profile'>): readonly StartPoint[] {
+  return torso.profile ? REFERENCE_POINTS : START_POINTS;
+}

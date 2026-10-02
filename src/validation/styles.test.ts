@@ -71,7 +71,7 @@ function px(decls: string, prop: string): number {
 }
 
 describe('Carril: las tarjetas de las ventanas (decisiones 75 y 83)', () => {
-  it('las siete tarjetas miden 40 px (32 en pantallas bajas) y la lista deja al navegador 3D su sitio', () => {
+  it('las tarjetas conservan su tamaño y el carril desplazable no crece: miden 40 px (32 en pantallas bajas) y la lista deja al navegador 3D su sitio', () => {
     const n = START_POINTS.length;
     const gap = px(rule('.windows'), 'gap');
     // dos líneas, el relleno vertical y el borde de 1 px
@@ -82,8 +82,9 @@ describe('Carril: las tarjetas de las ventanas (decisiones 75 y 83)', () => {
     expect(low).toBe(32);
     // Con GPU a 1600 × 1000 y 1280 × 800 el lienzo del 3D queda en 306 y 232 px (346 y 257 con las cinco ventanas de
     // la decisión 75): una ventana más pide rehacer el carril, no apretarlo más
-    expect(n * tall + (n - 1) * gap).toBeLessThanOrEqual(290);
-    expect(n * low + (n - 1) * gap).toBeLessThanOrEqual(230);
+    expect(rule('.windows')).toMatch(/overflow-y:\s*auto/);
+    expect(Math.min(n * tall + (n - 1) * gap, px(rule('.windows'), 'max-height'))).toBeLessThanOrEqual(290);
+    expect(Math.min(n * low + (n - 1) * gap, px(mediaRule('(max-height: 860px)', '.windows'), 'max-height'))).toBeLessThanOrEqual(230);
     // texto de 12 px o más (objetivo 6 de la misión)
     expect(px(ownRule('.win-sub'), 'font-size')).toBeGreaterThanOrEqual(12);
     // el contorno del foco, que sobresale al hueco de 1 px, se pinta por encima de la tarjeta siguiente

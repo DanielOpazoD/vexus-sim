@@ -140,6 +140,71 @@ test('ventanas (decisión 83): Intro en una tarjeta, mantenida como con el dedo,
   expect(errors).toEqual([]);
 });
 
+test('lo medido a la vista sobre el espectro y el vaso equivocado (decisión 94)', async ({ page }) => {
+  // CI observó operaciones GPU de20–46s: plazo operativo de arranque+trabajo, no tolerancia de señal.
+  budget(120_000);
+  const errors = await bootWithoutErrors(page, '?e2e=1');
+  await page
+    .locator('button', { hasText: /Apnea\s*esp/ })
+    .first()
+    .click();
+  await page.keyboard.press('p');
+  const capture = async (row: string) => {
+    await page.getByRole('tab', { name: 'Medir' }).click();
+    await page.getByRole('button', { name: row, exact: true }).click();
+    const button = page.getByRole('button', { name: 'Capturar' });
+    await button.evaluate((el) => {
+      el.addEventListener(
+        'click',
+        () => {
+          const c = document.getElementById('spectrum') as HTMLCanvasElement;
+          const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+          let n = 0;
+          for (let i = 0; i < d.length; i += 4) if (d[i] > 225 && d[i + 1] > 180 && d[i + 1] < 235 && d[i + 2] < 150) n++;
+          el.setAttribute('data-capture-trace', String(n));
+        },
+        { once: true },
+      );
+    });
+    const handle = await button.elementHandle();
+    await button.click();
+    if (row === 'Porta PF') expect(Number(await handle.getAttribute('data-capture-trace'))).toBeGreaterThan(30);
+  };
+  // píxeles del trazado de la captura (ámbar, #ffd166) en el espectro: el mapa de grises del espectro no llega a ese tono
+  const tracePixels = () =>
+    page.evaluate(() => {
+      const c = document.getElementById('spectrum') as HTMLCanvasElement;
+      const d = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+      let n = 0;
+      for (let i = 0; i < d.length; i += 4) if (d[i] > 225 && d[i + 1] > 180 && d[i + 1] < 235 && d[i + 2] < 150) n++;
+      return n;
+    });
+  // la fila «Suprahepática» con la puerta en el tronco portal: rechazada, con dónde está la puerta
+  expect(
+    await page.evaluate(() => {
+      window.__vexusTest!.goToStartPoint('portal');
+      return window.__vexusTest!.placeGate(['pvTrunk']);
+    }),
+  ).toBe(true);
+  await page.evaluate(() => window.__vexusTest!.advance(8));
+  await capture('Suprahepática');
+  await expect(page.locator('.result')).toContainText('VSH: no medible: vaso equivocado, la puerta está en la porta');
+  // la fila de la porta sobre el mismo vaso sí mide, y su traza queda dibujada sobre el espectro
+  await capture('Porta PF');
+  await expect(page.locator('.result')).toContainText(/Porta: \d+\.\d\/\d+\.\d cm\/s → PF \d+ %/);
+  await withinFrames(page, 3, 'traza de captura >30 píxeles', async () => {
+    const n = await tracePixels();
+    return n > 30 || `traza: ${n} píxeles`;
+  });
+  // congelado sigue a la vista
+  await page.locator('#freeze').click();
+  await withinFrames(page, 3, 'traza de captura >30 píxeles', async () => {
+    const n = await tracePixels();
+    return n > 30 || `traza: ${n} píxeles`;
+  });
+  expect(errors).toEqual([]);
+});
+
 test('modos por teclado, pestaña Medir y captura de una medición', async ({ page }) => {
   budget(180_000);
   // ?docente: al final se abre la pestaña Docente (en producción la casilla solo aparece así)
@@ -156,7 +221,21 @@ test('modos por teclado, pestaña Medir y captura de una medición', async ({ pa
   const capture = async () => {
     await page.getByRole('tab', { name: 'Medir' }).click();
     await page.getByRole('button', { name: 'Suprahepática', exact: true }).click();
-    await page.getByRole('button', { name: 'Capturar' }).click();
+    await page.getByRole('button', { name: 'Capturar' }).evaluate((button) => {
+      // Después del handler real, dentro del mismo evento de mouse: la captura no
+      // espera otra descarga ni puede leer otro paciente en un turno posterior.
+      button.addEventListener(
+        'click',
+        () => {
+          button.setAttribute('data-capture-result', document.querySelector('.result')?.textContent ?? '');
+        },
+        { once: true },
+      );
+    });
+    const button = page.getByRole('button', { name: 'Capturar' });
+    const handle = await button.elementHandle();
+    await button.click();
+    return handle.getAttribute('data-capture-result');
   };
   // Ventana intercostal (la del protocolo) y la puerta sobre la suprahepática en un punto sin
   // sombras (técnica del operador); 7 s de espectro sin renderizar (`advance`: tiempo de simulación, no de reloj).
@@ -169,7 +248,8 @@ test('modos por teclado, pestaña Medir y captura de una medición', async ({ pa
     }),
   ).toBe(true);
   await page.evaluate(() => window.__vexusTest!.advance(7));
-  await capture();
+  await expect(page.locator('.result')).toContainText('VSH: —');
+  expect(await capture()).toMatch(/VSH: S -?\d+\.\d · D -?\d+\.\d/);
   // Un valor numérico con el visto bueno de la calidad: «VSH: —» o «no medible» no pasan
   await expect(page.locator('.result')).toContainText(/VSH: S -?\d+\.\d · D -?\d+\.\d/);
   // Sin contacto no hay flujo en la puerta: la captura es no medible, con el motivo
@@ -226,9 +306,9 @@ test('el speckle del parénquima hepático tiene la estadística del hígado: ca
   // tiene SNR = 1,91. Detectar intensidad (1,0), sumar magnitudes antes del haz (≈ 9) o suavizar
   // la envolvente (≈ 3,7) salen de la banda (src/validation/speckle.test.ts). Desde la decisión 89 el hígado es algo
   // pre-Rayleigh a propósito (sus dispersores fuertes y la densidad de 4 mm, como el hígado sano in vivo): en estos
-  // parches de 16 × 8 la SNR baja ×0,90–0,93 (`parenchymaTextureTwin.test.ts`: 2,08–2,11 → 1,91–1,95; SwiftShader
+  // parches de 16 × 8 la SNR baja ×0,90–0,94 (`parenchymaTextureTwin.test.ts`: 2,08–2,11 → 1,91–1,95; SwiftShader
   // 1,67–1,85, antes 1,82–2,00 con GPU) y la banda con ella, de 1,6–2,25 a 1,5–2,1. Con la textura, la intensidad da
-  // 0,99–1,03, |Re f| 1,35–1,39 y la caja de 3 × 5 de speckle.test.ts 2,93–3,20: siguen fuera.
+  // 0,99–1,03, |Re f| 1,35–1,39 y la caja de 3 × 5 de speckle.test.ts 2,94–3,20: siguen fuera.
   // Tres cuadros completos + lectura de la envolvente con SwiftShader: ~6 s cada uno en local y
   // ~3× en el runner de CI (agotó los 90 s por defecto).
   budget(240_000);
@@ -247,7 +327,7 @@ test('el speckle del parénquima hepático tiene la estadística del hígado: ca
 test('el banco de fidelidad mide el moteado del hígado despejado: el de un campo ideal con la textura del hígado', async ({ page }) => {
   // Banco de fidelidad (decisión 52). Con GPU real (M4) la subxifoidea del sano daba SNR 1,77,
   // fracción oscura 0,07, grietas 0,05, grano axial 0,77 mm (0,70 antes del pulso que se alarga con la profundidad,
-  // decisión 84), lateral 0,93–1,08 × la PSF y lóbulos < 0,03; la imagen mostrada, hígado en 92 de gris (mediana). Un
+  // decisión 84), lateral 0,94–1,08 × la PSF y lóbulos < 0,03; la imagen mostrada, hígado en 92 de gris (mediana). Un
   // defecto del moteado (intensidad,
   // magnitudes antes del haz, retícula periódica), una sombra dentro de la máscara o una lectura de
   // la imagen al revés lo sacan de estas bandas (src/validation/fidelity*.test.ts). Desde la decisión 89 el hígado lleva
@@ -854,8 +934,7 @@ test('el fundido del ancla del moteado no da saltos: la textura y la correlació
   // Lo que el fundido le cuesta a la correlación con el cuadro anterior, de sus pesos: el medio de un cuadro es
   // √w·N + √(1 − w)·V (N el ancla nueva, V la anterior; `SpeckleAnchor`). Si el fundido sigue, las dos anclas son
   // las mismas: ρ = √(w₀·w) + √((1 − w₀)(1 − w)) ≈ 0,99. Si empieza uno (w baja), la nueva del cuadro anterior es
-  // la vieja de este: ρ = √(w₀)·√(1 − w) (√(8/9) tras un cuadro sin fundido; 8/9 en el enlace de dos fundidos
-  // seguidos). La envolvente de un moteado de Rayleigh correlaciona ≈ ρ² (0,876 y 0,770, Monte Carlo; ρ² da
+  // la vieja de este: ρ = √(w₀)·√(1 − w). La transición temporal empieza en w=0 y termina en w=1. La envolvente de un moteado de Rayleigh correlaciona ≈ ρ² (0,876 y 0,770, Monte Carlo; ρ² da
   // 0,889 y 0,790, algo más exigente).
   const fade = frames.map((f, i) => {
     const w0 = i === 0 ? 1 : frames[i - 1].w;
@@ -877,7 +956,7 @@ test('el fundido del ancla del moteado no da saltos: la textura y la correlació
   frames.forEach((f, i) => {
     expect(f.snr / snr0, tag).toBeGreaterThan(0.85);
     expect(f.snr / snr0, tag).toBeLessThan(1.15);
-    // el ancla no cambia más de 1/9 del medio entre dos cuadros (ρ² ≥ (8/9)²): reanclar a mitad de un fundido
+    // Se conserva la guarda previa de correlación para este barrido a 60 Hz; reanclar a mitad de un fundido
     // soltaba de golpe el medio viejo (w 0,44 → 0,11: ρ² = 0,39; en GPU, correlación 0,65)
     expect(fade[i], `cuadro ${i}: ${tag}`).toBeGreaterThan(0.78);
     // el fundido no baja la correlación con el cuadro anterior más de lo que cuesta (hígado puro, intercostal en
@@ -1192,6 +1271,38 @@ test('intervenciones docentes (decisión 79): bolo y PEEP mueven el lazo del sim
   expect(errors).toEqual([]);
 });
 
+test('el anuncio docente no mueve Reiniciar paciente entre apuntar y hacer clic', async ({ page }) => {
+  budget(60_000);
+  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  await page.locator('#debug-toggle').check({ force: true });
+  await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
+  const reset = page.getByRole('button', { name: 'Reiniciar paciente', exact: true });
+  await reset.scrollIntoViewIfNeeded();
+  // El handler vacía el anuncio y lo repone 50 ms después. Medir en el mismo turno observa la región vacía,
+  // sin sustituir el timer ni el bucle: el clic real conserva las coordenadas a las que el usuario apuntó.
+  const aimedAt = await page
+    .getByRole('group', { name: 'PEEP' })
+    .getByRole('button', { name: '10', exact: true })
+    .evaluate((b) => {
+      (b as HTMLButtonElement).click();
+      const reset = [...document.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Reiniciar paciente')!;
+      const r = reset.getBoundingClientRect();
+      return { x: r.x, y: r.y, width: r.width, height: r.height };
+    });
+  await expect(page.getByRole('status').filter({ hasText: 'PEEP a 10 cmH₂O.' })).toBeVisible();
+  expect(await reset.boundingBox(), 'el anuncio no desplaza el botón ya apuntado').toEqual(aimedAt);
+  await page.mouse.click(aimedAt.x + aimedAt.width / 2, aimedAt.y + aimedAt.height / 2);
+  expect(await page.evaluate(() => window.__vexusTest!.circulation())).toMatchObject({
+    caseId: 'normal-adult',
+    rapMeanMmHg: 5,
+    fluidTargetMl: 0,
+    peepTargetCmH2O: 0,
+    interventions: 0,
+  });
+  await expect(page.getByRole('status').filter({ hasText: 'Paciente reiniciado' })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test('color: la misma transmisión que el PW y una ganancia que alcanza el ruido del equipo', async ({ page }) => {
   // El modelo, en el mismo punto: el téxel de la pasada A que lee el color en la puerta (convertido a la
   // frecuencia Doppler y con el acoplamiento que muestrea el color) frente al mismo téxel en la CPU, a ≤ 0,1 dB
@@ -1380,6 +1491,8 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
   // más alto: la franja M crece (34 % del alto) y los calibres, de píxeles enteros, son más finos
   await page.setViewportSize({ width: 1280, height: 1000 });
   const errors = await bootWithoutErrors(page);
+  // La sesión arranca con respiración apagada; este ejercicio evalúa un ciclo respiratorio adquirido.
+  await page.getByRole('button', { name: 'Activar respiración', exact: true }).click();
   // una mirada: con SwiftShader (≤ 4 cuadros por segundo) la composición espacial promedia 0,75 s de cuadros y
   // suaviza la anchura de la banda (con GPU real, 50 ms)
   await page.evaluate(() => {
@@ -1435,6 +1548,16 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
   // un clic sobre la imagen coloca la línea M, como la puerta del PW
   await page.mouse.click(line!.x, line!.y);
   await expect.poll(() => page.evaluate(() => window.__vexusTest!.sim().mmode.theta)).toBeCloseTo(line!.theta, 2);
+  // Un drag iniciado antes de congelar no puede mover la guía sobre una adquisición congelada.
+  const heldTheta = await page.evaluate(() => window.__vexusTest!.sim().mmode.theta);
+  await page.mouse.move(line!.x, line!.y);
+  await page.mouse.down();
+  await page.keyboard.press(' ');
+  await withinFrames(page, 2, 'FREEZE durante drag M', async () => (await textOf(page, '#live-chip')) === 'FREEZE' || 'aún no congelado');
+  await page.mouse.move(line!.x + 50, line!.y);
+  expect(await page.evaluate(() => window.__vexusTest!.sim().mmode.theta)).toBe(heldTheta);
+  await page.mouse.up();
+  await page.keyboard.press(' ');
   // la franja cubre un ciclo respiratorio y medio (14/min: 4,3 s; con SwiftShader, ≤ 0,25 s por cuadro): se mide sobre
   // lo que cubre, y la verdad en el mismo intervalo
   const sv = await page.evaluate(() => (document.getElementById('mmode') as HTMLCanvasElement).clientWidth / (25 * 3.2));
@@ -1589,28 +1712,54 @@ test('modo M (decisión 80): línea M sobre la VCI subxifoidea; su banda cambia 
   expect(residual, tag).toBeLessThan(0.6);
   expect(Math.abs(ciBand - band.truth.ci), tag).toBeLessThanOrEqual(5);
   // los calibres de la pestaña Medir sobre la franja congelada: de borde a borde de la envolvente en la columna más ancha
-  // y en la más estrecha (píxeles enteros, como un clic)
+  // y en la más estrecha, con clics enteros accesibles al alumno. Su incertidumbre de resolución es visible.
   await page.getByRole('tab', { name: 'Medir' }).click();
   await page.getByRole('button', { name: 'VCI modo M', exact: true }).click();
   const box = (await page.locator('#mmode').boundingBox())!;
   const clicked: number[] = [];
+  const pixels: number[] = [];
   for (const i of [iMax, iMin]) {
     const c = band.out[i];
     // el lienzo tiene densidad 1: su píxel x es el de la ventana
     const x = Math.round(box.x + c.x + 0.5);
     for (const r of [env[i].top, env[i].bottom]) {
-      const y = Math.round(box.y + (r / band.depth) * box.height);
-      clicked.push(((y - box.y) / box.height) * band.depth);
+      // El segundo extremo tiene peor resolución: verifica que no se pierden sus metadatos al fijar t.
+      await page.locator('#mmode').evaluate((el, h) => (el.style.height = `${h}px`), clicked.length % 2 ? box.height / 2 : box.height);
+      const pointBox = (await page.locator('#mmode').boundingBox())!;
+      const y = Math.round(pointBox.y + (r / band.depth) * pointBox.height);
+      clicked.push(((y - pointBox.y) / pointBox.height) * band.depth);
+      pixels.push(band.depth / pointBox.height);
       await page.mouse.click(x, y);
     }
   }
   const result = page.locator('.result');
   await expect(result).toContainText(/VCI modo M: máx \d+,\d · mín \d+,\d mm → colapso \d+ %/);
   const ci = Number(/colapso (\d+) %/.exec((await result.textContent()) ?? '')![1]);
-  // la aplicación calcula con los píxeles enteros que recibe: el mismo colapso que esos puntos, redondeado
+  // Separar calibración UI, redondeo de presentación y error físico. La tolerancia física sigue en ±5 puntos.
   const [d1, d2] = [Math.abs(clicked[1] - clicked[0]), Math.abs(clicked[3] - clicked[2])];
   const ciClicks = (100 * (Math.max(d1, d2) - Math.min(d1, d2))) / Math.max(d1, d2);
   expect(Math.abs(ci - ciClicks), `${tag} · calibres ${ci} % (puntos ${ciClicks.toFixed(1)} %)`).toBeLessThanOrEqual(0.51);
-  expect(Math.abs(ci - band.truth.ci), `${tag} · calibres ${ci} %`).toBeLessThanOrEqual(5);
+  const interval = /Resolución: ([\d,]+)–([\d,]+) %/.exec((await result.textContent()) ?? '')!;
+  expect(interval, 'La incertidumbre de los clics debe ser visible al alumno').not.toBeNull();
+  const [lo, hi] = [Number(interval[1].replace(',', '.')), Number(interval[2].replace(',', '.'))];
+  const pixel = Math.max(...pixels);
+  const max = Math.max(d1, d2);
+  const min = Math.min(d1, d2);
+  expect(lo).toBeCloseTo(Math.max(0, (100 * (max - pixel - min - pixel)) / (max - pixel)), 1);
+  expect(hi).toBeCloseTo((100 * (max + pixel - Math.max(0, min - pixel))) / (max + pixel), 1);
+  // ±0,05 exclusivamente por mostrar el intervalo con un decimal. La banda mantiene su gate físico ±5 arriba.
+  expect(ciBand).toBeGreaterThanOrEqual(lo - 0.05);
+  expect(ciBand).toBeLessThanOrEqual(hi + 0.05);
+  expect(Math.max(lo - band.truth.ci, band.truth.ci - hi, 0), tag).toBeLessThanOrEqual(5);
+  await test.info().attach('VCI M: resolución distinta por extremo', { body: await page.screenshot(), contentType: 'image/png' });
+  // Un calibre de un píxel a baja altura CSS supera el mínimo de 1 mm, pero no resuelve colapso.
+  await page.getByRole('button', { name: 'VCI modo M', exact: true }).click();
+  await page.locator('#mmode').evaluate((el) => (el.style.height = '80px'));
+  const smallBox = (await page.locator('#mmode').boundingBox())!;
+  for (const dx of [40, 80]) {
+    for (const dy of [40, 41]) await page.mouse.click(Math.round(smallBox.x + dx), Math.round(smallBox.y + dy));
+  }
+  await expect(result).toContainText('Resolución: 0,0–100,0 %');
+  await expect(result).not.toContainText('NaN');
   expect(errors).toEqual([]);
 });

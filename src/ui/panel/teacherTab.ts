@@ -5,6 +5,7 @@ import { errorLog, errorMessage } from '../../app/errorLog';
 import { TISSUES } from '../../anatomy/tissues';
 import { FLUID_TIME_ACCELERATION, type AppliedIntervention, type Intervention } from '../../physiology/circulation';
 import { classifyModifiedVexus, classifyVexusC } from '../../vexus/classification';
+import { hasRespiratoryCycle } from '../../vexus/ivcCollapse';
 import { measurePhysiologyTruth } from '../../vexus/measurements';
 import { button, controlId, note, row } from '../controls';
 import type { PanelContext } from './context';
@@ -58,13 +59,13 @@ export function renderCaseNotes(el: HTMLElement, notes: CaseTeacherNotes | null)
 
 /** Pestaña Docente: verdad fisiológica, intervenciones y estado de la adquisición (solo con la casilla activada). */
 export class TeacherTab {
-  private debugEl!: HTMLElement;
-  private caseEl!: HTMLElement;
+  #debugEl!: HTMLElement;
+  #caseEl!: HTMLElement;
   /** Caso y modo de lo que solo ve el docente, ya pintado (se repinta solo si cambian). */
-  private caseKey = '';
+  #caseKey = '';
   /** Valores del estado del lazo (una fila por magnitud). */
-  private loopRows!: Record<'rap' | 'co' | 'volume' | 'peep' | 'tr' | 'last', HTMLElement>;
-  private announceEl!: HTMLElement;
+  #loopRows!: Record<'rap' | 'co' | 'volume' | 'peep' | 'tr' | 'last', HTMLElement>;
+  #announceEl!: HTMLElement;
   /** Informe de equivalencia TS ↔ GLSL (lo alimenta el bucle principal a baja cadencia). */
   equivalence: EquivalenceReport | null = null;
   /** Descarga del diagnóstico (versión, GPU, caso, equipo, errores); la conecta `main.ts`. */
@@ -76,44 +77,44 @@ export class TeacherTab {
   onResetPatient: () => unknown = () => null;
   /** Tras una intervención aplicada: borra las mediciones del alumno y dice si había alguna; lo conecta el panel. */
   onIntervention: () => boolean = () => false;
-  private announceTimer: ReturnType<typeof setTimeout> | null = null;
+  #announceTimer: ReturnType<typeof setTimeout> | null = null;
 
-  constructor(
-    private readonly ctx: PanelContext,
-    host: HTMLElement,
-  ) {
-    this.build(host);
+  readonly #ctx: PanelContext;
+
+  constructor(ctx: PanelContext, host: HTMLElement) {
+    this.#ctx = ctx;
+    this.#build(host);
   }
 
-  private build(p: HTMLElement): void {
-    const caseSec = this.ctx.section(p, 'Caso y trampa', {
+  #build(p: HTMLElement): void {
+    const caseSec = this.#ctx.section(p, 'Caso y trampa', {
       info:
         'El nombre del caso, los confusores que tiene de verdad (las casillas que el alumno debería marcar en «Medir») y por ' +
         'qué engaña. El alumno solo ve la viñeta; esto no llega a su pantalla ni a su DOM.',
     });
-    this.caseEl = document.createElement('div');
-    this.caseEl.className = 'case-notes';
-    caseSec.appendChild(this.caseEl);
-    this.buildInterventions(p);
-    const sec = this.ctx.section(p, 'Verdad fisiológica y adquisición');
+    this.#caseEl = document.createElement('div');
+    this.#caseEl.className = 'case-notes';
+    caseSec.appendChild(this.#caseEl);
+    this.#buildInterventions(p);
+    const sec = this.#ctx.section(p, 'Verdad fisiológica y adquisición');
     note(sec, 'Oculto al alumno; la verdad del caso y lo adquirido se calculan por separado.');
-    this.debugEl = document.createElement('div');
-    this.debugEl.className = 'debug';
-    sec.appendChild(this.debugEl);
-    const diag = this.ctx.section(p, 'Diagnóstico', {
+    this.#debugEl = document.createElement('div');
+    this.#debugEl.className = 'debug';
+    sec.appendChild(this.#debugEl);
+    const diag = this.#ctx.section(p, 'Diagnóstico', {
       info: 'Versión, commit, navegador, GPU, caso, equipo y últimos errores en un JSON para adjuntar a un informe. Sin datos del usuario.',
     });
     button(row(diag), 'Descargar diagnóstico', () => this.onExportDiagnostics());
-    this.ctx.track({ sync: () => this.applyTeacherMode() });
+    this.#ctx.track({ sync: () => this.#applyTeacherMode() });
   }
 
   /**
    * Intervenciones sobre el lazo cerrado (decisión 79): bolo, diurético y PEEP con el estado y el tiempo
    * transcurrido; «Reiniciar paciente» vuelve al caso. Solo existe en la pestaña Docente (oculta al alumno).
    */
-  private buildInterventions(p: HTMLElement): void {
-    const sim = this.ctx.sim;
-    const sec = this.ctx.section(p, 'Intervenciones', {
+  #buildInterventions(p: HTMLElement): void {
+    const sim = this.#ctx.sim;
+    const sec = this.#ctx.section(p, 'Intervenciones', {
       info:
         `La PAD media sale del cruce del retorno venoso con la curva de Starling del VD; las ondas conservan su forma. ` +
         `Líquidos en tiempo docente acelerado ×${FLUID_TIME_ACCELERATION} (1 s ≈ ${FLUID_TIME_ACCELERATION} s clínicos): el bolo ` +
@@ -123,25 +124,25 @@ export class TeacherTab {
     const fluids = row(sec);
     const fluidButtons: Array<{ el: HTMLButtonElement; sign: 1 | -1 }> = [
       {
-        el: button(fluids, `Bolo ${FLUID_STEP_ML.bolusSmall} mL`, () => this.apply({ kind: 'bolus', volumeMl: FLUID_STEP_ML.bolusSmall }))
+        el: button(fluids, `Bolo ${FLUID_STEP_ML.bolusSmall} mL`, () => this.#apply({ kind: 'bolus', volumeMl: FLUID_STEP_ML.bolusSmall }))
           .el,
         sign: 1,
       },
       {
-        el: button(fluids, `Bolo ${FLUID_STEP_ML.bolusLarge} mL`, () => this.apply({ kind: 'bolus', volumeMl: FLUID_STEP_ML.bolusLarge }))
+        el: button(fluids, `Bolo ${FLUID_STEP_ML.bolusLarge} mL`, () => this.#apply({ kind: 'bolus', volumeMl: FLUID_STEP_ML.bolusLarge }))
           .el,
         sign: 1,
       },
       {
         el: button(fluids, `Diurético −${FLUID_STEP_ML.diuresis} mL`, () =>
-          this.apply({ kind: 'diuresis', volumeMl: FLUID_STEP_ML.diuresis }),
+          this.#apply({ kind: 'diuresis', volumeMl: FLUID_STEP_ML.diuresis }),
         ).el,
         sign: -1,
       },
     ];
     // sin sitio en ese sentido (límite del volumen o del llenado del caso) el botón se marca como no disponible, sin
     // `disabled`: con el teclado el foco se quedaría en el cuerpo de la página. Un clic entonces solo explica por qué
-    this.ctx.track({
+    this.#ctx.track({
       sync: () => {
         const c = sim().physiology.circulation;
         for (const b of fluidButtons) b.el.setAttribute('aria-disabled', String(c.fluidRoom(b.sign) < 1));
@@ -155,7 +156,7 @@ export class TeacherTab {
     peepLabel.textContent = 'PEEP (cmH₂O)';
     peepRow.appendChild(peepLabel);
     // una PEEP pedida fuera de la botonera (por la API) no enciende ningún botón
-    this.ctx
+    this.#ctx
       .segmented<PeepLevel | 'otra'>(
         peepRow,
         PEEP_LEVELS.map((v) => [v, v]),
@@ -164,11 +165,18 @@ export class TeacherTab {
           return (PEEP_LEVELS as string[]).includes(target) ? (target as PeepLevel) : 'otra';
         },
         (v) => {
-          if (v !== 'otra') this.apply({ kind: 'peep', cmH2O: Number(v) });
+          if (v !== 'otra') this.#apply({ kind: 'peep', cmH2O: Number(v) });
         },
       )
       .setAttribute('aria-labelledby', peepLabel.id);
     sec.appendChild(peepRow);
+    // Los controles quedan antes de los valores y anuncios variables: al reaparecer el status no mueve el clic de reinicio.
+    button(row(sec), 'Reiniciar paciente', () => {
+      const error = this.onResetPatient();
+      this.#announce(error ? `No se pudo reiniciar el paciente: ${errorMessage(error)}` : 'Paciente reiniciado: vuelve al caso.');
+      this.#ctx.sync();
+      this.#renderLoop();
+    });
     const dl = document.createElement('dl');
     dl.className = 'loop-state';
     const field = (label: string) => {
@@ -178,7 +186,7 @@ export class TeacherTab {
       dl.append(dt, dd);
       return dd;
     };
-    this.loopRows = {
+    this.#loopRows = {
       rap: field('PAD media'),
       co: field('Gasto'),
       volume: field('Volumen'),
@@ -188,22 +196,16 @@ export class TeacherTab {
     };
     sec.appendChild(dl);
     // anuncio de lo aplicado para los lectores de pantalla (el estado numérico cambia 4 veces por segundo y no se anuncia)
-    this.announceEl = note(sec);
-    this.announceEl.setAttribute('role', 'status');
-    button(row(sec), 'Reiniciar paciente', () => {
-      const error = this.onResetPatient();
-      this.announce(error ? `No se pudo reiniciar el paciente: ${errorMessage(error)}` : 'Paciente reiniciado: vuelve al caso.');
-      this.ctx.sync();
-      this.renderLoop();
-    });
-    this.renderLoop();
+    this.#announceEl = note(sec);
+    this.#announceEl.setAttribute('role', 'status');
+    this.#renderLoop();
   }
 
   /** Cambio de caso o reinicio: el aviso de la intervención anterior ya no vale y las notas pasan al caso nuevo. */
   onSimulatorChanged(): void {
-    this.clearAnnouncement();
-    this.renderLoop();
-    this.applyTeacherMode();
+    this.#clearAnnouncement();
+    this.#renderLoop();
+    this.#applyTeacherMode();
   }
 
   /**
@@ -211,57 +213,57 @@ export class TeacherTab {
    * del lazo (PAD, gasto e IT del caso), el anuncio y la verdad se vacían, también en el DOM oculto de la pestaña. Se
    * repinta solo al cambiar de caso o de modo.
    */
-  private applyTeacherMode(): void {
-    const teacher = this.ctx.store.get().debug;
-    const id = this.ctx.sim().patient.id;
+  #applyTeacherMode(): void {
+    const teacher = this.#ctx.store.get().debug;
+    const id = this.#ctx.sim().patient.id;
     const key = `${id}|${teacher}`;
-    if (key === this.caseKey) return;
-    this.caseKey = key;
-    renderCaseNotes(this.caseEl, caseTeacherNotes(id, teacher));
+    if (key === this.#caseKey) return;
+    this.#caseKey = key;
+    renderCaseNotes(this.#caseEl, caseTeacherNotes(id, teacher));
     if (teacher) {
-      this.renderLoop();
+      this.#renderLoop();
       return;
     }
-    this.clearAnnouncement();
-    this.debugEl.textContent = '';
-    for (const el of Object.values(this.loopRows)) el.textContent = '';
+    this.#clearAnnouncement();
+    this.#debugEl.textContent = '';
+    for (const el of Object.values(this.#loopRows)) el.textContent = '';
   }
 
-  private apply(i: Intervention): void {
-    const applied = this.ctx.sim().physiology.intervene(i);
+  #apply(i: Intervention): void {
+    const applied = this.#ctx.sim().physiology.intervene(i);
     let text = announcement(i, applied);
     if (applied && this.onIntervention()) text += ' Mediciones borradas: el grado no mezcla el antes y el después.';
-    this.announce(text);
-    this.ctx.sync();
-    this.renderLoop();
+    this.#announce(text);
+    this.#ctx.sync();
+    this.#renderLoop();
   }
 
   /** Mensaje en la región `role="status"`: se vacía y se escribe un instante después, para que se lea aunque se repita. */
-  private announce(text: string): void {
-    this.clearAnnouncement();
-    this.announceTimer = setTimeout(() => {
-      this.announceEl.textContent = text;
-      this.announceTimer = null;
+  #announce(text: string): void {
+    this.#clearAnnouncement();
+    this.#announceTimer = setTimeout(() => {
+      this.#announceEl.textContent = text;
+      this.#announceTimer = null;
     }, 50);
   }
 
-  private clearAnnouncement(): void {
-    if (this.announceTimer !== null) clearTimeout(this.announceTimer);
-    this.announceTimer = null;
-    this.announceEl.textContent = '';
+  #clearAnnouncement(): void {
+    if (this.#announceTimer !== null) clearTimeout(this.#announceTimer);
+    this.#announceTimer = null;
+    this.#announceEl.textContent = '';
   }
 
   /** Estado del lazo cerrado frente al caso y la última intervención con el tiempo transcurrido (solo en modo docente). */
-  private renderLoop(): void {
-    if (!this.ctx.store.get().debug) return;
-    const e = this.ctx.sim().physiology;
+  #renderLoop(): void {
+    if (!this.#ctx.store.get().debug) return;
+    const e = this.#ctx.sim().physiology;
     const c = e.circulation;
     const s = c.state;
     const k = c.loop;
     const lpm = (mlS: number) => ((mlS * 60) / 1000).toFixed(1);
     const sign = (v: number) => (Math.round(v) === 0 ? '0' : `${v < 0 ? '−' : '+'}${Math.abs(Math.round(v))}`);
     const last = c.interventions[c.interventions.length - 1];
-    const r = this.loopRows;
+    const r = this.#loopRows;
     r.rap.textContent = `${s.rapMeanMmHg.toFixed(1)} mmHg · caso ${k.rap0.toFixed(1)}`;
     r.co.textContent = `${lpm(s.cardiacOutputMlS)} L/min · caso ${lpm(k.co0)}`;
     r.volume.textContent = `${sign(s.fluidDeltaMl)} de ${sign(s.fluidTargetMl)} mL`;
@@ -271,9 +273,9 @@ export class TeacherTab {
   }
 
   renderDebug(): void {
-    if (!this.ctx.store.get().debug || this.ctx.store.get().tab !== 'docente') return;
-    this.renderLoop();
-    const sim = this.ctx.sim();
+    if (!this.#ctx.store.get().debug || this.#ctx.store.get().tab !== 'docente') return;
+    this.#renderLoop();
+    const sim = this.#ctx.sim();
     const s = sim.sample;
     const t = sim.physiology.clock.t;
     let truth = 'VERDAD FISIOLÓGICA: acumulando historial…\n';
@@ -287,7 +289,9 @@ export class TeacherTab {
         const gc = classifyVexusC({ ...veins, renal: m.renalPattern }, context);
         truth =
           `VERDAD FISIOLÓGICA (últimos 6 s)\n` +
-          `  VCI AP máx/mín ${m.ivcMaxMm.toFixed(1)}/${m.ivcMinMm.toFixed(1)} mm → colapso ${(m.ivcCollapse * 100).toFixed(0)} %\n` +
+          (hasRespiratoryCycle(sim.physiology.samples, t - 6, t)
+            ? `  VCI AP máx/mín ${m.ivcMaxMm.toFixed(1)}/${m.ivcMinMm.toFixed(1)} mm → colapso ${(m.ivcCollapse * 100).toFixed(0)} %\n`
+            : `  VCI AP actual ${s.ivc.dApMm.toFixed(1)} mm · colapsabilidad respiratoria no aplicable: sin ciclo completo\n`) +
           `  VSH S/D/A ${m.hvS.toFixed(1)}/${m.hvD.toFixed(1)}/${m.hvA.toFixed(1)} cm/s → ${patternText(m.hepaticPattern)}\n` +
           `  Porta ${m.pvMax.toFixed(1)}/${m.pvMin.toFixed(1)} cm/s → PF ${m.portalPF.toFixed(0)} %\n` +
           `  V. interlobar S/D/mín ${m.rvS.toFixed(1)}/${m.rvD.toFixed(1)}/${m.rvMin.toFixed(1)} cm/s → ${renalText(m.renalPattern)}\n` +
@@ -326,7 +330,7 @@ export class TeacherTab {
         errs.map((e) => `  [${e.source}] ${e.message}${e.count > 1 ? ` ×${e.count}` : ''}`).join('\n') +
         '\n'
       : '';
-    this.debugEl.textContent =
+    this.#debugEl.textContent =
       errTxt +
       eqTxt +
       gpuTxt +

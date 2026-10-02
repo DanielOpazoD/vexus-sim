@@ -95,3 +95,17 @@ Generado por `npm run docs:index` — no editar a mano.
 | [89](DECISIONS.md#L3961) | Textura del parénquima y ruido del receptor: dispersores fuertes por debajo de la resolución, densidad de dispersores a escala de milímetros, tríadas en parte especulares y ruido por línea tras la PSF lateral | vigente |
 | [90](DECISIONS.md#L4164) | Vasos orgánicos: sección elíptica y radio que ondula en las venas del hígado, y una VCI que se curva y cambia de calibre sin tocar el sitio de medida | vigente |
 | [91](DECISIONS.md#L4325) | Costuras y peine: la penumbra es la integral exacta de su cono, los ecos especulares llevan la transmisión de sus pares en la apertura y la mirada dirigida refleja su propio camino en el espejo | vigente |
+| [92](DECISIONS.md#L4498) | Contrato de adquisición y medición M con incertidumbre de resolución (30-09-2026) | vigente |
+| [93](DECISIONS.md#L4527) | Preparar el análisis PW al armar la medición (30-09-2026) | vigente |
+| [94](DECISIONS.md#L4553) | La medición Doppler del alumno no depende de la escala: porta en su semiplano fijo, envolvente unilateral, aliasing fuerte, identidad del vaso y lo medido a la vista | vigente |
+| [95](DECISIONS.md#L4690) | Respiración apagada al iniciar la sesión, con referencia explícita y ciclo observado para colapsabilidad (30-09-2026) | vigente |
+| [96](DECISIONS.md#L4710) | Registro costal compartido entre anatomía acústica y navegador (01-10-2026) | vigente |
+| [97](DECISIONS.md#L4729) | Registro corporal de referencia y recalibración de ventanas — WIP (01-10-2026) | vigente |
+| [98](DECISIONS.md#L4780) | Recuperar el campo torácico como referencia opt-in y mantener el presupuesto completo | vigente |
+| [99](DECISIONS.md#L4792) | Borde 3D del diafragma en la pared corporal compartida | vigente |
+| [100](DECISIONS.md#L4804) | Fundido del moteado gobernado por tiempo de simulación | vigente |
+| [101](DECISIONS.md#L4816) | Asas intestinales con pared, luz y gas físicos | vigente |
+| [102](DECISIONS.md#L4828) | Pliegues, calibre variable y respuesta intestinal local a la compresión | vigente |
+| [103](DECISIONS.md#L4842) | Interfaz cortical vertebral y sombra sin moteado óseo | vigente |
+| [104](DECISIONS.md#L4854) | Apariencia hepatorrenal normal y comparación a profundidad compartida | vigente |
+| [105](DECISIONS.md#L4866) | Gradiente vesicular analítico y norma física del eco | vigente |

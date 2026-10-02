@@ -1,3 +1,4 @@
+import { IDENTITY_WARP, warpNormal, type Warp } from '../anatomy/compression';
 import { INTERFACES, INTERFACE_COUNT, Interface, interfaceReflectivity } from '../anatomy/interfaces';
 import { quadratusSdf, retroFatSdf } from '../anatomy/organs/retroperitoneum';
 import { sdDiaphragm, type Diaphragm, type Torso } from '../anatomy/primitives';
@@ -240,7 +241,10 @@ export function interfaceUniforms(k0: number, kDb = IFACE_K_DB): Float32Array {
  * El cartílago transmite: su cara profunda sí se ve. Gemelo de la condición de `interfaceEcho` (GLSL).
  */
 export function faceLitFromProbe(face: Interface, normal: readonly number[], dir: readonly number[]): boolean {
-  return face !== Interface.RibCortex || normal[0] * dir[0] + normal[1] * dir[1] + normal[2] * dir[2] <= 0;
+  return (
+    (face !== Interface.RibCortex && face !== Interface.VertebralCortex) ||
+    normal[0] * dir[0] + normal[1] * dir[1] + normal[2] * dir[2] <= 0
+  );
 }
 
 /** Uniforms del último (k0, K) pedido: el gemelo evalúa el eco en cientos de miles de muestras. */
@@ -288,13 +292,22 @@ export function facetTilt(m: Vec3, face: Interface): Vec3 {
 
 /**
  * Coseno de incidencia sobre la faceta: |n_f·dir|/|n_f| con n_f = n + τ − (τ·n)·n (la inclinación sin su
- * componente normal); n y dir unitarios.
+ * componente normal). n es material y dir del mundo, ambos unitarios. La faceta completa se
+ * transporta mediante Jᵀ antes de medir la incidencia; inclinar la normal ya transformada mezcla marcos.
  */
-export function facetCosine(n: readonly number[], dir: readonly number[], tilt: readonly number[]): number {
+export function facetCosine(n: readonly number[], dir: readonly number[], tilt: readonly number[], w: Warp = IDENTITY_WARP): number {
   const tn = tilt[0] * n[0] + tilt[1] * n[1] + tilt[2] * n[2];
-  const f = [n[0] + tilt[0] - tn * n[0], n[1] + tilt[1] - tn * n[1], n[2] + tilt[2] - tn * n[2]];
+  const f = warpNormal(w, [n[0] + tilt[0] - tn * n[0], n[1] + tilt[1] - tn * n[1], n[2] + tilt[2] - tn * n[2]]);
   return Math.abs(f[0] * dir[0] + f[1] * dir[1] + f[2] * dir[2]) / Math.hypot(f[0], f[1], f[2]);
 }
+
+/** Núcleo compartido por el renderer y la prueba WebGL: n y t materiales, dir del mundo. */
+export const FACET_COSINE_GLSL = /* glsl */ `
+float facetCosine(vec3 n, vec3 dir, vec3 t, Warp w) {
+  vec3 f = warpNormal(w, n + t - dot(t, n) * n);
+  return abs(dot(f, dir)) * inversesqrt(dot(f, f));
+}
+`;
 
 /** Pendiente propia de la faceta: s_f² = s² − σ_t² (la media sobre las inclinaciones da el lóbulo de s). */
 export function facetSlope(s: number): number {
@@ -340,7 +353,7 @@ export const BONE_IMPEDANCE_RATIO =
  * el contorno de media costilla: un disco. 1 en el resto de caras.
  */
 export function boneDiffuseWindow(face: Interface, cosI: number): number {
-  if (face !== Interface.RibCortex) return 1;
+  if (face !== Interface.RibCortex && face !== Interface.VertebralCortex) return 1;
   const ct2 = 1 - (1 - cosI * cosI) / (BONE_CRITICAL_SIN * BONE_CRITICAL_SIN);
   if (ct2 <= 0) return 0;
   const ct = Math.sqrt(ct2);
@@ -402,6 +415,7 @@ export const IFACE_DIFFUSE_PER_A = FACET.diffuse / (2 * IFACE_BETA * 10 ** (IFAC
  * `WALL_TEXTURE_GLSL` y `valueNoise` de `SPECKLE_TISSUE_GLSL`). `se` es la σ elevacional de UNA vía (`elevSigma`).
  */
 export const INTERFACE_ECHO_GLSL = /* glsl */ `
+${FACET_COSINE_GLSL}
 uniform vec4 uIface[${INTERFACE_COUNT}]; // (A, 2·k0·σz, 1/(4s²), dos lados) — interfaceEcho.ts
 uniform float uIfaceK0;                 // 2π/λ (1/mm)
 #define IFACE_SIGMA_H ${IFACE_SIGMA_H_MM.toFixed(4)}
@@ -476,15 +490,16 @@ vec2 interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w) {
   float gBound = (c.iface <= IF_LAST_TUBE ? length(c.n) : IFACE_GRAD_MAX) * warpBound(w);
   if (c.ifd > (uIface[c.iface].w > 0.5 ? IFACE_REACH : IFACE_SHIFT + IFACE_REACH) * gBound) return vec2(0.0);
   vec4 fg = faceGradient(c, m);
+  vec3 nm = fg.xyz; // normal material: la inclinación anclada pertenece a este marco
   vec3 gw = warpNormal(w, fg.xyz * fg.w);
   float gn = length(gw);
   fg = vec4(gw / max(gn, 1e-9), gn);
   // la cara posterior de una costilla ósea solo se alcanza a través del hueso (faceLitFromProbe, decisión 62)
-  if (c.iface == IF_RIB && dot(fg.xyz, dir) > 0.0) return vec2(0.0);
+  if ((c.iface == IF_RIB || c.iface == IF_VERTEBRAL_CORTEX) && dot(fg.xyz, dir) > 0.0) return vec2(0.0);
   float cosI = abs(dot(fg.xyz, dir));
   if (cosI < IFACE_MIN_COS) return vec2(0.0);
   // tubos y costillas (decisión 62): cilindros con la curvatura de su sección en c.kc y su eje en c.tangent
-  float curv = c.iface <= IF_LAST_TUBE || c.iface == IF_RIB || c.iface == IF_PERICHONDRIUM ? tubeCurvature(c, fg.xyz, dir, r, se) : 1.0;
+  float curv = c.iface <= IF_LAST_TUBE || c.iface == IF_RIB || c.iface == IF_VERTEBRAL_CORTEX || c.iface == IF_PERICHONDRIUM || c.iface == IF_BOWEL_LUMEN || c.iface == IF_BOWEL_SEROSA ? tubeCurvature(c, fg.xyz, dir, r, se) : 1.0;
   // las caras de la pared: la variación anclada de su reflectividad a lo largo de la cara (wallTexture.ts)
   float gain = c.iface >= IF_FIRST_WALL && c.iface <= IF_LAST_WALL ? wallFaceGain(m, c.iface) : 1.0;
   // la cara interna de la pared con grasa detrás (fatAcrossWall, decisión 65): dentro del compartimento retroperitoneal y
@@ -496,15 +511,14 @@ vec2 interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w) {
   // la faceta (decisión 65): la normal inclinada por el campo anclado, sin su componente normal
   vec4 P = uIface[c.iface];
   vec3 t = facetTilt(m, c.iface, sqrt(max(FACET_TILT2, 0.25 * FACET_RHO2 / P.z)));
-  vec3 nf = fg.xyz + t - dot(t, fg.xyz) * fg.xyz;
-  float cosF = abs(dot(nf, dir)) * inversesqrt(dot(nf, nf));
+  float cosF = facetCosine(nm, dir, t, w);
   // su lóbulo propio (s_f² = s² − σ_t², σ_t = max(tan 5°, ρ·s): kf = (s_f/s)²) en cosF con la rugosidad fina de frente,
   // χ(0); la difusa: κ_d·R_ef = IFACE_DIFFUSE·P.x·2s por √(1 − χ(0)²), la energía que la rugosidad fina saca de la
   // coherente, con Lambert (cosI) y, en la cortical costal, la transmisión de la onda longitudinal en la cara, 0 desde el
   // ángulo crítico (boneDiffuseWindow, decisión 88)
   float ctw = sqrt(max(0.0, 1.0 - (1.0 - cosI * cosI) / BONE_CRITICAL_SIN2));
   float zw = cosI + BONE_Z_RATIO * ctw;
-  float wd = c.iface == IF_RIB ? cosI * ctw * (1.0 + BONE_Z_RATIO) * (1.0 + BONE_Z_RATIO) / (zw * zw) : 1.0;
+  float wd = (c.iface == IF_RIB || c.iface == IF_VERTEBRAL_CORTEX) ? cosI * ctw * (1.0 + BONE_Z_RATIO) * (1.0 + BONE_Z_RATIO) / (zw * zw) : 1.0;
   return vec2(faceEcho(c.iface, cosF, min(1.0 - 4.0 * FACET_TILT2 * P.z, 1.0 - FACET_RHO2), 1.0, curv, g),
               IFACE_DIFFUSE * P.x * inversesqrt(P.z) * sqrt(max(0.0, 1.0 - exp(-P.y * P.y))) * cosI * wd * g);
 }

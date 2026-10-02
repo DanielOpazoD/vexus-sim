@@ -1,9 +1,11 @@
+import { BOWEL_NODES, BOWEL_REST_RADII } from '../../anatomy/organs/bowel';
 import * as THREE from 'three';
 import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js';
 import { kidneyLocal, kidneyOuterSdf, type Kidney } from '../../anatomy/organs/kidney';
 import { gallbladderSdf } from '../../anatomy/organs/gallbladder';
 import { domeFloor, heartOuterSdf } from '../../anatomy/organs/heart';
 import { diaphragmHeight, torsoDepth } from '../../anatomy/primitives';
+import { diaphragmRim } from '../../anatomy/diaphragmRim';
 import { COUINAUD_LABEL, couinaudPlanes, couinaudSegment, type CouinaudSegment } from '../../anatomy/couinaud';
 import type { AnatomyScene } from '../../anatomy/scene';
 import { DIAPHRAGM_THICKNESS_MM } from '../../anatomy/tissues';
@@ -144,6 +146,13 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
   const g = new THREE.Group();
   const liver = buildLiverMesh(a);
   g.add(liver, buildCouinaudLabels(a, liver));
+  const bowel = variableTube(
+    { kind: 'tube', nodes: BOWEL_NODES.map((p, i) => ({ p, r: BOWEL_REST_RADII[i] })).filter(({ p }) => p[2] > -240), apScale: 1 },
+    0xcda08b,
+    0.85,
+  );
+  bowel.name = 'Asas yeyunoileales';
+  g.add(bowel);
   // Diafragma: superficie paramétrica sobre toda la sección del tronco (misma
   // diaphragmHeight que el clasificador: dos hemicúpulas sobre la inserción costal)
   const nR = 20;
@@ -151,12 +160,13 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
   const pos: number[] = [];
   const idx: number[] = [];
   const wall = a.wallThickness();
+  const cy = a.torso.y0 ?? 0;
+  const rim = Array.from({ length: nA + 1 }, (_, i) => diaphragmRim((i / nA) * Math.PI * 2, a.diaphragm, a.torso, wall));
   for (let j = 0; j <= nR; j++) {
     const rho = j / nR;
     for (let i = 0; i <= nA; i++) {
-      const ang = (i / nA) * Math.PI * 2;
-      const x = (a.torso.a - wall - 1) * rho * Math.cos(ang);
-      const y = (a.torso.b - wall - 1) * rho * Math.sin(ang);
+      const x = rim[i][0] * rho;
+      const y = cy + (rim[i][1] - cy) * rho;
       pos.push(x * CM, y * CM, diaphragmHeight(x, y, a.diaphragm, a.torso) * CM);
     }
   }

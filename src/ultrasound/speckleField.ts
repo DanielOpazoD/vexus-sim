@@ -15,7 +15,7 @@ import { glslFloat } from './receiver';
  * (gemelo: 0,95 con 0,5° de inclinación, 0,83 con 1°, 0,11 con 4°). Con la normal apartada α del
  * ancla, la célula elevacional se adelgaza (|dq/dn| = √(sin²α + k²cos²α), k ≈ 0,13): a 20° la
  * persistencia con 0,5° cae a 0,3–0,65 y la SNR sube un 11–17 %; a 5,5° sigue en 0,93 y +3–9 %. Así
- * que pasados REANCHOR_DEG el ancla se renueva con un fundido de CROSSFADE_FRAMES cuadros entre los dos medios,
+ * que pasados REANCHOR_DEG el ancla se renueva con un fundido de CROSSFADE_SECONDS segundos entre los dos medios,
  * con semillas distintas: la suma √w·A + √(1−w)·B de dos campos gaussianos independientes sigue
  * siendo gaussiana, así que la estadística de Rayleigh no cambia durante el fundido. Un salto de
  * pose (el teletransporte de los ganchos de prueba) y el cambio de paciente reinician el ancla sin
@@ -26,8 +26,8 @@ import { glslFloat } from './receiver';
 
 /** Ángulo entre la normal del plano y la del ancla a partir del cual se renueva el ancla. */
 export const REANCHOR_DEG = 6;
-/** Cuadros del fundido entre el ancla vieja y la nueva. */
-export const CROSSFADE_FRAMES = 8;
+/** Duración de transición [EXTRAPOLACIÓN PROPIA]: ocho cuadros a 60 Hz, ahora en tiempo de simulación. */
+export const CROSSFADE_SECONDS = 8 / 60;
 /** Entre dos cuadros, un desplazamiento o un giro mayores son un salto de pose: el ancla se reinicia. */
 export const JUMP_MM = 15;
 export const JUMP_DEG = 10;
@@ -59,46 +59,50 @@ const dist = (a: Vec3, b: Vec3): number => Math.hypot(a[0] - b[0], a[1] - b[1], 
 
 /**
  * Ancla del medio de dispersores. `update` se llama una vez por cuadro renderizado con la cara y la
- * normal del plano; devuelve las dos anclas y el peso del fundido que usa la pasada B.
+ * normal del plano y el tiempo del reloj único; devuelve las dos anclas y el peso del fundido que usa la pasada B.
  */
 export class ElevationAnchor {
   private a: SpeckleAnchor | null = null;
   private b: SpeckleAnchor | null = null;
-  private fadeLeft = 0;
+  private fadeStart: number | null = null;
+  private lastTime = 0;
   private last: { face: Vec3; e: Vec3 } | null = null;
 
   /** Olvida el ancla: el siguiente cuadro fija una nueva (cambio de paciente). */
   reset(): void {
     this.a = null;
     this.b = null;
-    this.fadeLeft = 0;
+    this.fadeStart = null;
+    this.lastTime = 0;
     this.last = null;
   }
 
-  update(face: Vec3, elevation: Vec3): SpeckleAnchorState {
+  update(face: Vec3, elevation: Vec3, timeSeconds: number): SpeckleAnchorState {
+    if (!Number.isFinite(timeSeconds) || timeSeconds < 0) throw new Error('Tiempo de moteado inválido');
+    if (timeSeconds < this.lastTime) this.reset();
+    const advancing = timeSeconds > this.lastTime;
+    this.lastTime = timeSeconds;
     const here = (parity: 0 | 1): SpeckleAnchor => ({ e: [...elevation], p: [...face], parity });
     const jumped = this.last !== null && (dist(face, this.last.face) > JUMP_MM || axisAngleDeg(elevation, this.last.e) > JUMP_DEG);
     this.last = { face: [...face], e: [...elevation] };
     if (this.a === null || jumped) {
       this.a = here(0);
       this.b = this.a;
-      this.fadeLeft = 0;
-    } else if (this.fadeLeft === 0 && axisAngleDeg(elevation, this.a.e) > REANCHOR_DEG) {
-      // no se reancla a mitad de un fundido: descartar de golpe el medio más viejo era un salto de
-      // grano (en GPU, a 1°/cuadro, correlación 0,65 con el cuadro anterior); se espera a que acabe
+      this.fadeStart = null;
+    } else if (advancing && this.fadeStart === null && axisAngleDeg(elevation, this.a.e) > REANCHOR_DEG) {
+      // No se sustituye el medio viejo a mitad del fundido. En el instante inicial w=0:
+      // repetir una pasada o renderizar con el reloj pausado no consume transición.
       this.b = this.a;
       this.a = here(this.a.parity === 0 ? 1 : 0);
-      this.fadeLeft = CROSSFADE_FRAMES;
+      this.fadeStart = timeSeconds;
     }
-    const out: SpeckleAnchorState = { a: this.a, b: this.b ?? this.a, w: 1 };
-    if (this.fadeLeft > 0) {
-      out.w = 1 - this.fadeLeft / (CROSSFADE_FRAMES + 1);
-      this.fadeLeft--;
-      // el medio viejo se suelta DESPUÉS del último cuadro del fundido: soltarlo antes sumaba el
-      // mismo medio dos veces con w = 8/9 (√w + √(1−w) = 1,28: un destello de +2 dB en la GPU)
-      if (this.fadeLeft === 0) this.b = this.a;
+    const elapsed = this.fadeStart === null ? CROSSFADE_SECONDS : timeSeconds - this.fadeStart;
+    const w = elapsed >= CROSSFADE_SECONDS - 1e-12 ? 1 : elapsed / CROSSFADE_SECONDS;
+    if (w === 1) {
+      this.fadeStart = null;
+      this.b = this.a;
     }
-    return out;
+    return { a: this.a, b: this.b ?? this.a, w };
   }
 }
 
@@ -483,12 +487,13 @@ export function strongScatter(t: Tissue): StrongScatter {
 /**
  * Variación de la densidad de dispersores a escala de milímetros (la textura sobre la textura: lobulillos y territorios
  * de espacios porta): un factor de amplitud 10^(x/20) con x un ruido de valor continuo simétrico en dB (mediana 0 dB, DE
- * 0,185·escala = 2,2 dB), además de la heterogeneidad lenta de 6,25 mm. Como los dispersores fuertes, conserva la mediana
- * del tejido (la potencia media sube +0,55 dB). Anclada al material como la heterogeneidad (no se decorrela al abanicar
+ * 0,185·escala ≈ 2,04 dB), además de la heterogeneidad lenta de 6,25 mm. Como los dispersores fuertes, conserva la mediana
+ * del tejido (la potencia media sube aproximadamente +0,5 dB). Anclada al material como la heterogeneidad (no se decorrela al abanicar
  * ni hierve) y del plano central, como los grumos (un factor para los tres planos). Célula y escala [EXTRAPOLACIÓN
- * PROPIA], calibradas con la heterogeneidad por escalas de los paneles reales del juez ciego (`docs/fidelity/README.md`).
+ * PROPIA]; ajuste de apariencia normal en la decisión 104, con las guardas estadísticas de `docs/fidelity/README.md`.
  */
-export const DENSITY = { cellMm: 4, scaleDb: 12, salt: 41 } as const;
+// Decisión 104: relieve fino del hígado normal; se conserva el campo complejo, la PSF y la mediana.
+export const DENSITY = { cellMm: 3, scaleDb: 11, salt: 41 } as const;
 /** Tejidos con la variación de densidad de dispersores (decisión 89). */
 export const DENSITY_TISSUES: readonly Tissue[] = [Tissue.Liver];
 

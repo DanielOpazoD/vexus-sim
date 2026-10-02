@@ -18,7 +18,7 @@ import {
  */
 const H = 0.42;
 const SEED = (1234 % 1000) / 7;
-const anchor: SpeckleAnchorState = new ElevationAnchor().update([0, 0, 0], [0, 0, 1]);
+const anchor: SpeckleAnchorState = new ElevationAnchor().update([0, 0, 0], [0, 0, 1], 0);
 const field = (m: Vec3, tissue: Tissue) => speckleSliceField(m, H, 2, SEED + tissue * TISSUE_SALT_STEP, anchor);
 
 /** Puntos separados 1,5 mm (> célula de grumo y de retícula): muestras casi independientes. */
@@ -120,7 +120,7 @@ describe('moteado por tejido (decisión 56)', () => {
   it('los grumos del seno siguen al medio anclado: inclinar medio grado no los hace parpadear', () => {
     // plano a 100 mm de la sonda, inclinado 0,5° alrededor de un eje del plano: los puntos se mueven
     // en elevación 0,87 mm a esa profundidad, menos que el grosor de corte
-    const st = new ElevationAnchor().update([0, 0, 0], [0, 0, 1]);
+    const st = new ElevationAnchor().update([0, 0, 0], [0, 0, 1], 0);
     const tilt = (0.5 * Math.PI) / 180;
     const base: Vec3[] = [];
     for (let i = 0; i < 60; i++) for (let j = 0; j < 60; j++) base.push([-30 + i, 100, -30 + j]);

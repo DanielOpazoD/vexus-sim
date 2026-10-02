@@ -21,6 +21,26 @@ describe('Clasificación VExUS C (base A.1, guía §6/§21)', () => {
     expect(classifyPortal(Number.NaN)).toBe('not-applicable');
   });
 
+  it('PF conserva los límites matemáticos y rechaza velocidades no finitas', () => {
+    for (const [vMin, pf] of [
+      [16, 20],
+      [14, 30],
+      [10, 50],
+      [-5, 125],
+    ]) {
+      expect(portalPulsatilityFraction(20, vMin)).toBe(pf);
+    }
+    for (const [vMax, vMin] of [
+      [0, 0],
+      [Infinity, 10],
+      [20, Infinity],
+      [20, -Infinity],
+      [20, Number.NaN],
+    ]) {
+      expect(portalPulsatilityFraction(vMax, vMin)).toBeNaN();
+    }
+  });
+
   it('umbral portal 50 % inclusivo y 30 % inclusivo en leve', () => {
     expect(classifyPortal(29.9)).toBe('normal');
     expect(classifyPortal(30)).toBe('mild');

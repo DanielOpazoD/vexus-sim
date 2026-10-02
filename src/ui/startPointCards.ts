@@ -1,5 +1,5 @@
-import type { Torso } from '../anatomy/primitives';
-import { START_POINTS, type StartPoint } from '../app/startPoints';
+import { torsoSkinPoint, type Torso } from '../anatomy/primitives';
+import { startPointsFor, type StartPoint } from '../app/startPoints';
 import type { ProbePose } from '../probe/probe';
 
 type StartPointId = StartPoint['id'];
@@ -17,6 +17,7 @@ const CARD_SUB: Record<StartPointId, string> = {
   flank: 'VCI coronal con las suprahepáticas',
   portal: 'Porta principal con la VCI detrás',
   renal: 'Riñón en eje largo · interlobares',
+  hepatorenal: 'Hígado, corteza y plano de Morison',
 };
 
 /** Radio (mm, sobre la piel) dentro del cual la sonda «está» en una ventana; las dos más próximas distan 24 mm. */
@@ -38,7 +39,17 @@ export function yawDelta(a: number, b: number): number {
 }
 
 /** Distancia (mm) entre la sonda y un punto de partida: cuerda sobre la elipse del tronco y eje craneocaudal. */
-export function startPointDistanceMm(pose: Pick<ProbePose, 'phi' | 'z'>, sp: StartPoint, torso: Pick<Torso, 'a' | 'b'>): number {
+export function startPointDistanceMm(
+  pose: Pick<ProbePose, 'phi' | 'z'>,
+  sp: StartPoint,
+  torso: Pick<Torso, 'a' | 'b' | 'profile'>,
+): number {
+  if (torso.profile) {
+    const t = { ...torso, zMin: -300, zMax: 300, skinMm: 2, fatMm: 0, muscleMm: 0, preperitonealMm: 0 };
+    const a = torsoSkinPoint(pose.phi, pose.z, t),
+      b = torsoSkinPoint(sp.phi, sp.z, t);
+    return Math.hypot(a[0] - b[0], a[1] - b[1], a[2] - b[2]);
+  }
   const dx = torso.a * (Math.cos(pose.phi) - Math.cos(sp.phi));
   const dy = torso.b * (Math.sin(pose.phi) - Math.sin(sp.phi));
   return Math.hypot(dx, dy, pose.z - sp.z);
@@ -50,12 +61,12 @@ export function startPointDistanceMm(pose: Pick<ProbePose, 'phi' | 'z'>, sp: Sta
  */
 export function currentStartPoint(
   pose: Pick<ProbePose, 'phi' | 'z' | 'yaw'>,
-  torso: Pick<Torso, 'a' | 'b'>,
+  torso: Pick<Torso, 'a' | 'b' | 'profile'>,
   maxMm = CURRENT_WINDOW_MM,
 ): StartPointId | null {
   let best: StartPointId | null = null;
   let bestMm = maxMm;
-  for (const sp of START_POINTS) {
+  for (const sp of startPointsFor(torso)) {
     // escrito para que un giro NaN no cuente como ventana
     if (!(yawDelta(pose.yaw, sp.yaw) < CURRENT_WINDOW_YAW)) continue;
     const d = startPointDistanceMm(pose, sp, torso);
@@ -71,7 +82,7 @@ export interface StartPointCardsDeps {
   /** Lleva la sonda al punto de partida (se desliza: decisión 17). */
   onPick: (sp: StartPoint) => void;
   getPose: () => ProbePose;
-  getTorso: () => Pick<Torso, 'a' | 'b'>;
+  getTorso: () => Pick<Torso, 'a' | 'b' | 'profile'>;
   /** La sonda se está deslizando hacia la ventana elegida. */
   animating: () => boolean;
 }
@@ -88,7 +99,7 @@ export class StartPointCards {
     host: HTMLElement,
     private readonly deps: StartPointCardsDeps,
   ) {
-    for (const sp of START_POINTS) {
+    for (const sp of startPointsFor(deps.getTorso())) {
       const card = document.createElement('button');
       card.type = 'button';
       card.className = 'win-card';

@@ -96,6 +96,27 @@ function firstCrossing(depthAt: (r: number) => number, w: number, r0: number, r1
  * `torsoDepth` = 0), analítica. null si la línea no entra.
  */
 function skinEntry(E: Vec3, dir: Vec3, t: Torso, r0: number, r1: number): number | null {
+  if (t.profile) {
+    const depth = (r: number) => torsoDepth([E[0] + dir[0] * r, E[1] + dir[1] * r, E[2] + dir[2] * r], t);
+    if (depth(r0) <= 0) return r0;
+    let lo = r0;
+    for (let r = r0 + 1; lo < r1; r += 1) {
+      const hi0 = Math.min(r, r1);
+      if (depth(hi0) <= 0) {
+        let hi = hi0;
+        for (let j = 0; j < 20; j++) {
+          const mid = (lo + hi) / 2;
+          if (depth(mid) <= 0) hi = mid;
+          else lo = mid;
+        }
+        return (lo + hi) / 2;
+      }
+      lo = hi0;
+    }
+    return null;
+  }
+
+  E = [E[0], E[1] - (t.y0 ?? 0), E[2]];
   const ia = 1 / (t.a * t.a);
   const ib = 1 / (t.b * t.b);
   const A = dir[0] * dir[0] * ia + dir[1] * dir[1] * ib;

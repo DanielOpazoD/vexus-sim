@@ -274,13 +274,12 @@ describe('Eco de interfaz en la distancia por la normal (|∇| de la cara)', () 
       }
     });
 
-    it('faceGradient da el gradiente numérico de faceSdf fuera de los tubos y el analítico en ellos', () => {
+    it('faceGradient coincide con su geometría: analítico en tubos/vesícula y numérico en las otras caras', () => {
       // los puntos de la banda del eco (0,02–0,5 mm) de cada cara en una rejilla del tronco; en un tubo, la
       // diferencia central de referencia solo vale si sus dos puntos siguen en el mismo segmento del mismo
       // tubo (si no, salta a otro tubo o sale de la pared: las uniones y el borde externo de la pared)
-      const worst = { tube: 0, numeric: 0 };
-      const count = { tube: 0, numeric: 0 };
-      const h = FACE_GRADIENT_EPS_MM;
+      const worst = { tube: 0, gallbladder: 0, numeric: 0 };
+      const count = { tube: 0, gallbladder: 0, numeric: 0 };
       for (let x = -120; x <= 110; x += 2.3)
         for (let y = -80; y <= 80; y += 2.3)
           for (let z = -150; z <= 90; z += 7.9) {
@@ -288,6 +287,7 @@ describe('Eco de interfaz en la distancia por la normal (|∇| de la cara)', () 
             const c = scene.classify(m, caliber);
             const face = faceGeometryOf(c.interface);
             if (!face || c.interfaceDistance < 0.02 || c.interfaceDistance > 0.5) continue;
+            const h = face === 'gallbladder' ? 1e-5 : FACE_GRADIENT_EPS_MM;
             const t0 = face === 'tube' ? scene.faceTube(m, caliber)! : null;
             // la distancia al tubo se curva con 1/ρ (ρ, la distancia al eje, con un pico en él): la diferencia central de
             // referencia yerra ≈ (h/ρ)²/6 y en la luz de las puntas afiladas de 0,3–0,5 mm (decisión 87) pasaba de 1e-3 con
@@ -320,7 +320,7 @@ describe('Eco de interfaz en la distancia por la normal (|∇| de la cara)', () 
             if (!ok) continue;
             const g = scene.faceGradient(m, caliber)!;
             const err = Math.abs(g.norm / Math.hypot(...num) - 1);
-            const key = face === 'tube' ? 'tube' : 'numeric';
+            const key = face === 'tube' || face === 'gallbladder' ? face : 'numeric';
             worst[key] = Math.max(worst[key], err);
             count[key]++;
           }
@@ -329,6 +329,8 @@ describe('Eco de interfaz en la distancia por la normal (|∇| de la cara)', () 
       // fuera de los tubos es el mismo cálculo; en ellos, el analítico frente a diferencias de 0,02 mm
       expect(worst.numeric).toBeLessThan(1e-12);
       expect(worst.tube).toBeLessThan(1e-3);
+      expect(count.gallbladder).toBeGreaterThan(10);
+      expect(worst.gallbladder).toBeLessThan(1e-5);
     });
   });
 
@@ -354,8 +356,8 @@ describe('Eco de interfaz en la distancia por la normal (|∇| de la cara)', () 
     expect(echo).toContain('return vec2(faceEcho(c.iface, cosF, min(1.0 - 4.0 * FACET_TILT2 * P.z, 1.0 - FACET_RHO2), 1.0, curv, g),');
     expect(echo).toContain('float kl = dot(lat, circ); kl = kl * kl * c.kc;');
     expect(FRAG_QUERY).toContain('o2 = faceGradient(c, m);');
-    // las diferencias centrales de la vesícula y de la cápsula usan las sobrecargas sin normal (decisión 67)
-    expect(glsl).toContain('g = vec3(gallbladderSdf(m + h.xyy) - gallbladderSdf(m - h.xyy),');
+    // La vesícula usa el gradiente analítico; la fosa hepática conserva la sobrecarga escalar.
+    expect(glsl).not.toContain('gallbladderSdf(m + h.xyy)');
     expect(glsl).toContain('float dLiver = liverSdf(m, dLiverBase);');
     expect(glsl).toContain('float dg = gallbladderSdf(m) - uGbExtra.y;');
   });

@@ -7,7 +7,7 @@ import { CONVEX_C35, lineAngle } from '../probe/probe';
 import { ecgT, ecgX, traceRight } from '../ui/sweep';
 import { CINE_FRAMES, CINE_RATE_HZ, CineRing, persistenceReplay } from '../ultrasound/cine';
 import { M_MAX_GAP_S, MColumnRing, mLineU } from '../ultrasound/mmode';
-import { collapsibilityIndex, ivcFromCalipers, ivcTruth } from '../vexus/ivcCollapse';
+import { collapsibilityIndex, ivcFromCalipers, ivcPixelInterval, ivcTruth } from '../vexus/ivcCollapse';
 
 /**
  * Cine y modo M (decisión 80): la lógica pura que la e2e no puede recorrer caso a caso — el anillo del cine y su
@@ -142,6 +142,20 @@ describe('Modo M: línea y columna', () => {
     expect(ring.count).toBe(0);
   });
 
+  it('cambiar la línea M inicia otra adquisición, incluso con el reloj congelado', () => {
+    const ring = new MColumnRing(4);
+    ring.push(1, 130, -0.15);
+    ring.push(1.25, 130, -0.15);
+    expect(ring.count).toBe(2);
+    ring.push(1.25, 130, 0.1);
+    expect(ring.count).toBe(1);
+    expect(ring.time(0)).toBe(1.25);
+    expect(Array.from(ring.pixelSlots(1.25, 0.5, 10))).toEqual(Array(10).fill(-1));
+    ring.push(1.5, 130, 0.1);
+    expect(ring.count).toBe(2);
+    expect(Array.from(ring.pixelSlots(1.5, 0.25, 10))).toEqual(Array(10).fill(ring.slot(1)));
+  });
+
   it('cada píxel de la franja toma la columna que cubre su instante (t de la anterior, t]; sin columna, −1', () => {
     const ring = new MColumnRing(8);
     // columnas cada 0,25 s de t = 1 a 2,75 (irregular en la última)
@@ -184,6 +198,36 @@ describe('Modo M: línea y columna', () => {
 });
 
 describe('Colapsabilidad de la VCI (modo M)', () => {
+  it('los extremos numéricos se acercan a la medida cuando mejora la resolución', () => {
+    const coarse = ivcPixelInterval(20, 15, 0.5);
+    const fine = ivcPixelInterval(20, 15, 0.25);
+    expect(coarse[0]).toBeCloseTo(20.5128205128, 8);
+    expect(coarse[1]).toBeCloseTo(29.2682926829, 8);
+    expect(fine[0]).toBeCloseTo(22.7848101266, 8);
+    expect(fine[1]).toBeCloseTo(27.1604938272, 8);
+    expect(fine[1] - fine[0]).toBeLessThan(coarse[1] - coarse[0]);
+    expect(ivcPixelInterval(20, 15, 0)).toEqual([25, 25]);
+  });
+
+  it('un diámetro de un píxel no resuelve colapso: intervalo finito 0..100, sin NaN', () => {
+    const pixel = 240 / 176;
+    expect(ivcPixelInterval(pixel, pixel, pixel)).toEqual([0, 100]);
+    expect(ivcPixelInterval(1.1, 1, pixel)).toEqual([0, 100]);
+  });
+
+  it('el intervalo de resolución contiene los bordes antes de redondear a distintas alturas CSS', () => {
+    const edges = [100.1487343567918, 112.60165389685285, 101.44323725227518, 110.42177219725097];
+    const ideal = ivcFromCalipers(edges[1] - edges[0], edges[3] - edges[2]);
+    for (const height of [180, 340, 680, 1000]) {
+      const pixel = 130 / height;
+      const snapped = edges.map((r) => Math.round(r / pixel) * pixel);
+      const m = ivcFromCalipers(snapped[1] - snapped[0], snapped[3] - snapped[2]);
+      const [lo, hi] = ivcPixelInterval(m.maxMm, m.minMm, pixel);
+      expect(ideal.ciPct).toBeGreaterThanOrEqual(lo);
+      expect(ideal.ciPct).toBeLessThanOrEqual(hi);
+    }
+  });
+
   it('índice (máx − mín)/máx con dos calibres en cualquier orden', () => {
     expect(collapsibilityIndex(20, 15)).toBeCloseTo(25, 12);
     expect(collapsibilityIndex(0, 0)).toBeNaN();

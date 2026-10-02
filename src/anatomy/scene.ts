@@ -1,4 +1,6 @@
-import { smoothstep, type Vec3 } from '../core/vec3';
+import { BOWEL_FIELD_REACH_MM, BOWEL_WALL_MM, bowelQuery, bowelGasSdf, bowelRadii } from './organs/bowel';
+import { referenceBody } from './referenceBody';
+import { smoothstep, scale, type Vec3 } from '../core/vec3';
 import type { PatientState } from '../physiology/patientState';
 import { VESSEL_META, type VesselAreas, type VesselId } from '../physiology/vessels';
 import {
@@ -8,7 +10,6 @@ import {
   sdDiaphragm,
   sdDiaphragmSlope,
   sdRib,
-  sdSphere,
   smoothMax,
   torsoDepth,
   tubeFaceGradient,
@@ -18,12 +19,11 @@ import {
   type Diaphragm,
   type Ellipsoid,
   type Rib,
-  type Sphere,
   type Torso,
   type Tube,
   type TubeHit,
 } from './primitives';
-import { GALLBLADDER_WALL_MM, gallbladderBody, gallbladderSdf, type GallbladderShape } from './organs/gallbladder';
+import { GALLBLADDER_WALL_MM, gallbladderBody, gallbladderGradient, gallbladderSdf, type GallbladderShape } from './organs/gallbladder';
 import {
   KIDNEY_RADII,
   KIDNEY_SINUS,
@@ -71,6 +71,7 @@ import {
 export type { DuctDef, VesselDef } from './vesselTree';
 import { BOWEL_BD_CAP_MM, DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, Tissue } from './tissues';
 import {
+  VERTEBRAL_FIELD_REACH_MM,
   FACE_GRADIENT_EPS_MM,
   Interface,
   LAST_TUBE_INTERFACE,
@@ -79,6 +80,7 @@ import {
   MORISON_SLIVER_MM,
   interfaceOfVessel,
   isRibInterface,
+  isBowelInterface,
   isWallLayerInterface,
 } from './interfaces';
 
@@ -150,7 +152,15 @@ export const FACE_GEOMETRIES: readonly FaceGeometry[] = [
  * `wallFaceGradient`) o la de su costilla (`ribSd`), y `faceGradient` las trata aparte.
  */
 export function faceGeometryOf(i: Interface): FaceGeometry | null {
-  if (i === Interface.None || i === Interface.Pleura || i === Interface.PleuraWall || isWallLayerInterface(i) || isRibInterface(i))
+  if (
+    i === Interface.None ||
+    i === Interface.Pleura ||
+    i === Interface.PleuraWall ||
+    isWallLayerInterface(i) ||
+    isRibInterface(i) ||
+    isBowelInterface(i) ||
+    i === Interface.VertebralCortex
+  )
     return null;
   if (i <= LAST_TUBE_INTERFACE) return 'tube';
   if (i === Interface.GallbladderLumen) return 'gallbladder';
@@ -221,8 +231,10 @@ export function ribTiltMm(ribNo: number): number {
 }
 
 export class AnatomyScene {
+  bowelRadii = bowelRadii(null);
   readonly torso: Torso;
   readonly ribs: Rib[];
+  private spineReferenceOffset = 0;
   readonly diaphragm: Diaphragm;
   readonly spine: Spine;
   /** Lóbulo derecho (voluminoso) y lóbulo izquierdo (aplanado); su unión suave es el hígado. */
@@ -249,8 +261,6 @@ export class AnatomyScene {
   readonly gallbladderWallMm = GALLBLADDER_WALL_MM;
   readonly kidneyRight: Kidney;
   readonly kidneyLeft: Kidney;
-  /** Bolsas de gas intestinal (confusor; vacío en el avatar de referencia). */
-  readonly gasPockets: Sphere[];
   vessels: VesselDef[];
   readonly ducts: DuctDef[];
   readonly vesselById: Map<VesselId, VesselDef>;
@@ -263,6 +273,11 @@ export class AnatomyScene {
     // Tronco 32 × 21 cm (adulto de IMC 25): la VCI queda a ≈ 12–13 cm del xifoides
     // la grasa preperitoneal es la parte más honda del espesor muscular del hábito (decisión 62)
     this.torso = { a: 160, b: 105, zMin: -300, zMax: 300, skinMm: 2, fatMm: fat, muscleMm: muscle, preperitonealMm: preperitonealMm(fat) };
+    if (referenceBody) {
+      this.torso.profile = referenceBody;
+      this.torso.y0 = -21.106195;
+      this.spineReferenceOffset = -14.02345;
+    }
     // Referencia craneocaudal: z = 0 en la punta del xifoides (T9–T10). Cúpula derecha
     // en T8–T9 (+45 mm), reborde costal en la línea medioclavicular ≈ −80 mm, unión
     // cavoauricular ≈ +55 mm, hilio hepático ≈ −45 mm (T12–L1) [B.5].
@@ -275,7 +290,15 @@ export class AnatomyScene {
     // Columna: cuerpo vertebral de 36 mm justo por detrás de cava y aorta (su cara
     // posterior queda ≈ 5 cm de la piel dorsal, como en un adulto); arco posterior con
     // apófisis transversas de 40 mm a cada lado. Las costillas terminan en ellas.
-    this.spine = { kind: 'cylinderZ', x0: 0, y0: -46, r: 17, archHalfWidth: 40, archY0: -78, archY1: -58 };
+    this.spine = {
+      kind: 'cylinderZ',
+      x0: 0,
+      y0: -46 + this.spineReferenceOffset,
+      r: 17,
+      archHalfWidth: 40,
+      archY0: -78 + this.spineReferenceOffset,
+      archY1: -58 + this.spineReferenceOffset,
+    };
     // Hígado y vesícula: geometría en sus módulos de órgano (organs/liver, organs/gallbladder)
     ({ liver: this.liver, liverLeft: this.liverLeft, visceralFace: this.visceralFace } = liverLobes(patient.liver.sizeFactor));
     this.umbilicalFissure = UMBILICAL_FISSURE;
@@ -302,9 +325,8 @@ export class AnatomyScene {
       sinusOffset: KIDNEY_SINUS.offsetV,
       hilumRadius: 7,
     };
-    this.gasPockets = [];
     this.ribs = [];
-    // Costillas derechas 5–10: el 7.º cartílago llega al esternón a la altura del xifoides (z 0).
+    // Pares costales 5–10: el 7.º cartílago llega al esternón a la altura del xifoides (z 0).
     // Oblicuidad creciente hacia abajo: la cabeza de la 5.ª está en T5 (≈ 6 cm sobre su
     // extremo anterior) y la de la 10.ª en T10, a la altura del xifoides (≈ 9 cm sobre el
     // reborde) — `ribTiltMm`, la misma ley que dibuja el navegador 3D.
@@ -318,7 +340,27 @@ export class AnatomyScene {
         // cartílago a ±45° de la línea media: la unión costocondral en la línea medioclavicular (x ≈ 96 mm en la
         // elipse de la costilla, 136 × 89 mm), la del reborde costal de las costillas 7–10 (decisión 62)
         cartilageFromPhi: Math.PI / 4,
-        rightOnly: true,
+        rightOnly: false,
+        ...(referenceBody
+          ? (() => {
+              const fits = [
+                [130.4834, 94.9904, 65.7365, -59.7209, -8.0953],
+                [137.7828, 97.5788, 38.4969, -61.9549, -17.9881],
+                [141.0403, 95.6343, 14.077, -61.518, -28.6725],
+                [135.4493, 92.9929, -15.3098, -64.415, -36.956],
+                [130.3215, 92.0187, -26.6004, -60.331, -64.7095],
+                [125.2486, 88.2511, -19.8121, -42.4553, -105.6423],
+              ];
+              const [ax, by, z0, zs, zc] = fits[i];
+              return {
+                sourceCartilage: i === 2,
+                anteriorEndX: [-73.81375, -83.74975, -99.7938, -111.442, -114.311, -111.3965][i],
+                zAnterior: z0 + zs,
+                tilt: -2 * zs,
+                shape: [ax, by, -21.106195, -zc] as [number, number, number, number],
+              };
+            })()
+          : {}),
       });
     }
     const tree = buildVesselTree(this.kidneyRight, this.kidneyLeft);
@@ -462,6 +504,21 @@ export class AnatomyScene {
    * La clasificación sigue siendo binaria: la fracción de aire del haz es de la imagen, no de la anatomía.
    */
   classify(m: Vec3, caliber: VesselCaliber, withCurtain = true): Classification {
+    const c = this.classifyTissue(m, caliber, withCurtain);
+    // La cortical pertenece al tejido de fuera; nunca al hueso ni al gas.
+    if (
+      c.interface !== Interface.None ||
+      ![Tissue.RetroperitonealFat, Tissue.Psoas, Tissue.QuadratusLumborum, Tissue.Mediastinum].includes(c.tissue)
+    )
+      return c;
+    // El arco rectangular es solo un oclusor provisional, no una cortical anatómica.
+    const d = Math.hypot(m[0] - this.spine.x0, m[1] - this.spine.y0) - this.spine.r;
+    if (d >= 0 && d < VERTEBRAL_FIELD_REACH_MM && d <= sdSpine(m, this.spine) + 1e-5 && d < c.interfaceDistance)
+      return { ...c, interface: Interface.VertebralCortex, interfaceDistance: d };
+    return c;
+  }
+
+  private classifyTissue(m: Vec3, caliber: VesselCaliber, withCurtain: boolean): Classification {
     const torso = this.torso;
     const depth = torsoDepth(m, torso);
     if (m[2] < torso.zMin || m[2] > torso.zMax || depth > 0) return NONE;
@@ -532,15 +589,29 @@ export class AnatomyScene {
       -depth - wall.wallMm,
     );
     for (const k of [this.kidneyRight, this.kidneyLeft]) bd = Math.min(bd, perirenalOuterSdf(kidneyLocal(m, k), k));
-    for (const g of this.gasPockets) {
-      const dg = sdSphere(m, g);
-      if (dg < 0) return { ...NONE, tissue: Tissue.BowelGas, boundaryDistance: -dg };
-      bd = Math.min(bd, dg);
-    }
     // detrás del peritoneo parietal posterior, el retroperitoneo (decisión 81): psoas, cuadrado lumbar y grasa; delante, el
     // intestino. Su distancia a la frontera cuenta también la columna, que se clasifica antes (el psoas la bordea)
     const [tissue, dRetro] = retroperitoneum(m, -depth - wall.wallMm, kidney.dPeriMm);
-    return { ...NONE, tissue, boundaryDistance: Math.max(0, Math.min(bd, dRetro, sdSpine(m, this.spine))) };
+    bd = Math.max(0, Math.min(bd, dRetro, sdSpine(m, this.spine)));
+    if (tissue !== Tissue.Bowel) return { ...NONE, tissue, boundaryDistance: bd };
+    const q = bowelQuery(m, this.bowelRadii),
+      dl = q.lumen;
+    if (q.d >= BOWEL_FIELD_REACH_MM) return { ...NONE, tissue: Tissue.MesentericFat, boundaryDistance: Math.min(bd, q.d / 2) };
+    const iface = Math.abs(q.d) < Math.abs(dl) ? Interface.BowelSerosa : Interface.BowelLumen;
+    const face = {
+      interface: iface,
+      interfaceDistance: Math.abs(iface === Interface.BowelSerosa ? q.d : dl),
+      boundaryNormal: iface === Interface.BowelSerosa ? q.normal : q.lumenNormal,
+    };
+    if (q.d >= 0) return { ...NONE, ...face, tissue: Tissue.MesentericFat, boundaryDistance: Math.min(bd, q.d / 2) };
+    if (dl >= 0) return { ...NONE, ...face, tissue: Tissue.Bowel, boundaryDistance: Math.min(bd, -q.d / 2, dl / 2) };
+    const dg = bowelGasSdf(m, dl);
+    return {
+      ...NONE,
+      ...(dg < 0 ? {} : face),
+      tissue: dg < 0 ? Tissue.BowelGas : Tissue.Fluid,
+      boundaryDistance: Math.min(bd, -dl / 2, Math.abs(dg) / 2),
+    };
   }
 
   /**
@@ -609,6 +680,23 @@ export class AnatomyScene {
     if (face === undefined) {
       // las caras de la pared y de las costillas (decisión 62) no tienen geometría de faceSdf
       const iface = this.classify(m, caliber).interface;
+      if (iface === Interface.VertebralCortex) {
+        const x = m[0] - this.spine.x0,
+          y = m[1] - this.spine.y0,
+          r = Math.hypot(x, y);
+        return { normal: [x / r, y / r, 0], norm: 1, curvature: 1 / this.spine.r, axis: [0, 0, 1] };
+      }
+      if (isBowelInterface(iface)) {
+        const q = bowelQuery(m, this.bowelRadii),
+          n = iface === Interface.BowelSerosa ? q.normal : q.lumenNormal,
+          norm = Math.hypot(...n);
+        return {
+          normal: n.map((x) => x / norm) as Vec3,
+          norm,
+          axis: q.axis,
+          curvature: 1 / (iface === Interface.BowelSerosa ? q.radius : q.radius - BOWEL_WALL_MM),
+        };
+      }
       if (isWallLayerInterface(iface)) {
         // la pendiente de la capa (decisión 88), como la GPU: tres evaluaciones de su profundidad
         const g = wallFaceGradient(m, iface, this.torso);
@@ -623,6 +711,11 @@ export class AnatomyScene {
       face = faceGeometryOf(iface);
     }
     if (face === null) return null;
+    if (face === 'gallbladder') {
+      const g = gallbladderGradient(m, this.gallbladder);
+      const norm = Math.hypot(...g);
+      return { normal: norm > 0 ? scale(g, 1 / norm) : [0, 1, 0], norm: norm || 1, curvature: 0 };
+    }
     if (face === 'tube') {
       const best = this.bestTube(m, caliber);
       if (!best) return null;

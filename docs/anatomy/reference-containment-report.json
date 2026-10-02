@@ -1,0 +1,41 @@
+{
+  "method": "8mm deterministic grid of baseline visible organ tissue vs new uncompressed skin; screening, not surface-distance or clinical validation",
+  "report": {
+    "Blood": {
+      "points": 765,
+      "outside": 0,
+      "worstMm": -23.406040632707715,
+      "worstPoint": [-128, 8, -56]
+    },
+    "RenalCortex": {
+      "points": 420,
+      "outside": 0,
+      "worstMm": -38.84776665419402,
+      "worstPoint": [104, -40, -88]
+    },
+    "RenalMedulla": {
+      "points": 25,
+      "outside": 0,
+      "worstMm": -46.313069295700444,
+      "worstPoint": [96, -40, -88]
+    },
+    "Fluid": {
+      "points": 78,
+      "outside": 0,
+      "worstMm": -28.858227470509746,
+      "worstPoint": [-80, 56, -88]
+    },
+    "RenalSinus": {
+      "points": 46,
+      "outside": 0,
+      "worstMm": -61.54201355669785,
+      "worstPoint": [-80, -40, -88]
+    },
+    "Liver": {
+      "points": 3331,
+      "outside": 0,
+      "worstMm": -12.308416941429186,
+      "worstPoint": [-120, 32, -104]
+    }
+  }
+}

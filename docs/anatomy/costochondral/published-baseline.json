@@ -1,0 +1,423 @@
+{
+  "method": "Published CPU fields on all original used vertices/face centroids and complete sampled bilateral contact bands. Approximate field values are not exact Euclidean distances.",
+  "runtimeChanged": false,
+  "sourceSha256": {
+    "FJ2810": "50fb17d0b3559b8b6c5481dbe7f877d25726e576564da615c45b2dd7654e315d",
+    "FJ3346": "91aa56e034fbe6f413c0f15b76d725a1f8efd115aa2900beda6edf43a3ab0c43",
+    "FJ3345": "a4d22796f4ffc6f9ad1b7d620c917be1638244864eca62aec60bd11033ed3041",
+    "FJ3234": "638a766f20b64d02095efa845b5ea316624a376acb44c7e4a6d533d4da6ef4db",
+    "FJ3255": "97e69ede580a6e81cc42bb54fb22d4752719b61c5fced8ccccfb18ce64996676"
+  },
+  "rows": [
+    {
+      "id": "FJ3346",
+      "side": "right",
+      "tissue": "bone",
+      "ownApproximateField": {
+        "samples": 15090,
+        "farFieldSentinelSamples": 4495,
+        "absoluteApproximateFieldExcludingSentinelMm": {
+          "count": 10595,
+          "min": 0.0002223170963686627,
+          "rms": 7.339665088885941,
+          "p95": 13.315113211442691,
+          "max": 15.476338928460095
+        }
+      },
+      "contactBands": [
+        {
+          "maxExactSourceDistanceMm": 0.03,
+          "ownApproximateField": {
+            "samples": 44,
+            "farFieldSentinelSamples": 0,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 44,
+              "min": 0.9023405756078514,
+              "rms": 7.7751675864165435,
+              "p95": 12.915732923027726,
+              "max": 13.071951572354962
+            }
+          },
+          "otherApproximateField": {
+            "samples": 44,
+            "farFieldSentinelSamples": 0,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 44,
+              "min": 0.02100726164577681,
+              "rms": 1.3933716486957934,
+              "p95": 2.846407504125358,
+              "max": 2.9402274127071673
+            }
+          }
+        },
+        {
+          "maxExactSourceDistanceMm": 0.1,
+          "ownApproximateField": {
+            "samples": 82,
+            "farFieldSentinelSamples": 0,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 82,
+              "min": 0.9023405756078514,
+              "rms": 8.220172893904607,
+              "p95": 13.071573482532555,
+              "max": 13.25498034604459
+            }
+          },
+          "otherApproximateField": {
+            "samples": 82,
+            "farFieldSentinelSamples": 0,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 82,
+              "min": 0.02100726164577681,
+              "rms": 1.4926814581530565,
+              "p95": 2.9285338298989636,
+              "max": 3.0193556476519916
+            }
+          }
+        },
+        {
+          "maxExactSourceDistanceMm": 0.5,
+          "ownApproximateField": {
+            "samples": 223,
+            "farFieldSentinelSamples": 0,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 223,
+              "min": 0.6196489866193591,
+              "rms": 8.347120720098482,
+              "p95": 13.246362998320762,
+              "max": 13.432901493990935
+            }
+          },
+          "otherApproximateField": {
+            "samples": 223,
+            "farFieldSentinelSamples": 0,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 223,
+              "min": 0.02100726164577681,
+              "rms": 1.8269440437187454,
+              "p95": 3.347423572156716,
+              "max": 3.5058566985834285
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "FJ3345",
+      "bodyProfileComparison": {
+        "runtimeFrontMinusOriginalOuterYmm": {
+          "count": 3988,
+          "min": -2.5547848124414827,
+          "rms": 0.8532917065259352,
+          "p95": 0.4984759039052497,
+          "max": 0.7628147816182604
+        },
+        "runtimeBodyFieldMm": {
+          "count": 3988,
+          "min": -27.978786294453784,
+          "rms": 15.066835779272468,
+          "p95": -2.6077592240283707,
+          "max": -0.05775690516753684
+        },
+        "runtimeSkinMm": 2,
+        "samplesWithinRuntimeRadialSkin": 109,
+        "zClampingApplied": false
+      },
+      "side": "right",
+      "tissue": "cartilage",
+      "ownApproximateField": {
+        "samples": 3988,
+        "farFieldSentinelSamples": 0,
+        "absoluteApproximateFieldExcludingSentinelMm": {
+          "count": 3988,
+          "min": 0.000008278144799895327,
+          "rms": 0.8860343835484276,
+          "p95": 1.9981902804071061,
+          "max": 3.1453763380857422
+        }
+      },
+      "contactBands": [
+        {
+          "maxExactSourceDistanceMm": 0.03,
+          "ownApproximateField": {
+            "samples": 50,
+            "farFieldSentinelSamples": 0,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 50,
+              "min": 0.0018830103821669915,
+              "rms": 1.1896464794788049,
+              "p95": 2.824803512430263,
+              "max": 2.981270980324005
+            }
+          },
+          "otherApproximateField": {
+            "samples": 50,
+            "farFieldSentinelSamples": 0,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 50,
+              "min": 1.1242152456209817,
+              "rms": 7.2773634015161495,
+              "p95": 12.243289155594367,
+              "max": 12.959360678109439
+            }
+          }
+        },
+        {
+          "maxExactSourceDistanceMm": 0.1,
+          "ownApproximateField": {
+            "samples": 95,
+            "farFieldSentinelSamples": 0,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 95,
+              "min": 0.0018830103821669915,
+              "rms": 1.448609618894959,
+              "p95": 2.9344915131970177,
+              "max": 3.0436443546576797
+            }
+          },
+          "otherApproximateField": {
+            "samples": 95,
+            "farFieldSentinelSamples": 0,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 95,
+              "min": 0.7891011626304885,
+              "rms": 7.0450942319643035,
+              "p95": 12.999972589408628,
+              "max": 13.228911081108272
+            }
+          }
+        },
+        {
+          "maxExactSourceDistanceMm": 0.5,
+          "ownApproximateField": {
+            "samples": 197,
+            "farFieldSentinelSamples": 0,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 197,
+              "min": 0.0018830103821669915,
+              "rms": 1.529674214137092,
+              "p95": 2.963751404347713,
+              "max": 3.1453763380857422
+            }
+          },
+          "otherApproximateField": {
+            "samples": 197,
+            "farFieldSentinelSamples": 0,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 197,
+              "min": 0.7891011626304885,
+              "rms": 7.712980378800363,
+              "p95": 13.371312904237513,
+              "max": 13.40205831400314
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "FJ3234",
+      "side": "left",
+      "tissue": "bone",
+      "ownApproximateField": {
+        "samples": 15086,
+        "farFieldSentinelSamples": 4775,
+        "absoluteApproximateFieldExcludingSentinelMm": {
+          "count": 10311,
+          "min": 0.003731300027557838,
+          "rms": 7.425711820963625,
+          "p95": 13.25527138003052,
+          "max": 15.274314903122258
+        }
+      },
+      "contactBands": [
+        {
+          "maxExactSourceDistanceMm": 0.03,
+          "ownApproximateField": {
+            "samples": 38,
+            "farFieldSentinelSamples": 2,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 36,
+              "min": 1.7476782671652011,
+              "rms": 8.668461927366835,
+              "p95": 12.61724684292695,
+              "max": 12.706246756808433
+            }
+          },
+          "otherApproximateField": {
+            "samples": 38,
+            "farFieldSentinelSamples": 0,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 38,
+              "min": 0.007771706263590989,
+              "rms": 1.0774260469346373,
+              "p95": 2.10883605882647,
+              "max": 2.271199666691152
+            }
+          }
+        },
+        {
+          "maxExactSourceDistanceMm": 0.1,
+          "ownApproximateField": {
+            "samples": 82,
+            "farFieldSentinelSamples": 4,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 78,
+              "min": 0.6189028308611769,
+              "rms": 8.351663491788381,
+              "p95": 12.655757793875514,
+              "max": 12.798584979940694
+            }
+          },
+          "otherApproximateField": {
+            "samples": 82,
+            "farFieldSentinelSamples": 0,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 82,
+              "min": 0.007771706263590989,
+              "rms": 1.342846385395867,
+              "p95": 2.441661445303748,
+              "max": 2.660497533510849
+            }
+          }
+        },
+        {
+          "maxExactSourceDistanceMm": 0.5,
+          "ownApproximateField": {
+            "samples": 227,
+            "farFieldSentinelSamples": 22,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 205,
+              "min": 0.290541704645797,
+              "rms": 8.42144108012662,
+              "p95": 12.872548856930454,
+              "max": 13.031765141542685
+            }
+          },
+          "otherApproximateField": {
+            "samples": 227,
+            "farFieldSentinelSamples": 0,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 227,
+              "min": 0.007771706263590989,
+              "rms": 1.6862787978446354,
+              "p95": 2.9779824890490754,
+              "max": 3.207653614553457
+            }
+          }
+        }
+      ]
+    },
+    {
+      "id": "FJ3255",
+      "bodyProfileComparison": {
+        "runtimeFrontMinusOriginalOuterYmm": {
+          "count": 3681,
+          "min": -2.4660492781758734,
+          "rms": 0.8595478800702744,
+          "p95": 0.46712212684330723,
+          "max": 0.7324246614366956
+        },
+        "runtimeBodyFieldMm": {
+          "count": 3681,
+          "min": -27.90562378915355,
+          "rms": 15.029937058047858,
+          "p95": -2.6824773628245566,
+          "max": -0.10907183935127307
+        },
+        "runtimeSkinMm": 2,
+        "samplesWithinRuntimeRadialSkin": 94,
+        "zClampingApplied": false
+      },
+      "side": "left",
+      "tissue": "cartilage",
+      "ownApproximateField": {
+        "samples": 3681,
+        "farFieldSentinelSamples": 0,
+        "absoluteApproximateFieldExcludingSentinelMm": {
+          "count": 3681,
+          "min": 0.0005467866858648108,
+          "rms": 0.8186602803978684,
+          "p95": 1.7201616615580164,
+          "max": 2.846086551053878
+        }
+      },
+      "contactBands": [
+        {
+          "maxExactSourceDistanceMm": 0.03,
+          "ownApproximateField": {
+            "samples": 33,
+            "farFieldSentinelSamples": 0,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 33,
+              "min": 0.028000000000005798,
+              "rms": 1.2694105534019273,
+              "p95": 2.486165333611766,
+              "max": 2.7176388541374594
+            }
+          },
+          "otherApproximateField": {
+            "samples": 33,
+            "farFieldSentinelSamples": 0,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 33,
+              "min": 1.3276061548969937,
+              "rms": 8.268371586522724,
+              "p95": 11.918580106595492,
+              "max": 12.747811562444394
+            }
+          }
+        },
+        {
+          "maxExactSourceDistanceMm": 0.1,
+          "ownApproximateField": {
+            "samples": 61,
+            "farFieldSentinelSamples": 0,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 61,
+              "min": 0.028000000000005798,
+              "rms": 1.139929815821455,
+              "p95": 2.4193276624988287,
+              "max": 2.7176388541374594
+            }
+          },
+          "otherApproximateField": {
+            "samples": 61,
+            "farFieldSentinelSamples": 1,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 60,
+              "min": 0.5811401723455009,
+              "rms": 8.718466616309017,
+              "p95": 12.607150949175697,
+              "max": 12.747811562444394
+            }
+          }
+        },
+        {
+          "maxExactSourceDistanceMm": 0.5,
+          "ownApproximateField": {
+            "samples": 150,
+            "farFieldSentinelSamples": 0,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 150,
+              "min": 0.01884286638005051,
+              "rms": 1.4118716652094827,
+              "p95": 2.6309413220275717,
+              "max": 2.846086551053878
+            }
+          },
+          "otherApproximateField": {
+            "samples": 150,
+            "farFieldSentinelSamples": 8,
+            "absoluteApproximateFieldExcludingSentinelMm": {
+              "count": 142,
+              "min": 0.536522569685743,
+              "rms": 8.1663780627178,
+              "p95": 12.569376978521637,
+              "max": 12.791855411149438
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -4,6 +4,9 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 import { glslMinify } from './tools/build/glslMinify';
+import { threeGlslCompact } from './tools/build/threeGlslCompact';
+import { glslUniformNames } from './tools/build/glslUniformNames';
+import { marchingTable } from './tools/build/marchingTable';
 
 /**
  * Niveles de prueba (práctica de EchoTwin): un archivo cuya PRIMERA línea es
@@ -38,8 +41,10 @@ function gitCommit(): string {
 const tier = process.env['VITEST_TIER'] ?? 'fast';
 
 export default defineConfig({
+  // Source modules expose tagged GLSL to the token-preserving compactor; no vendor fork.
+  resolve: { alias: [{ find: /^three$/, replacement: join(ROOT, 'node_modules/three/src/Three.js') }] },
   // el texto de los shaders sin comentarios, sangría, nombres largos ni espacios de más en el build (tools/build/glslMinify.ts)
-  plugins: [glslMinify()],
+  plugins: [glslMinify(), glslUniformNames(), threeGlslCompact(), marchingTable()],
   define: {
     __APP_VERSION__: JSON.stringify(PKG.version),
     __GIT_COMMIT__: JSON.stringify(process.env['GITHUB_SHA']?.slice(0, 7) ?? gitCommit()),
@@ -51,7 +56,22 @@ export default defineConfig({
     sourcemap: true,
     // three.js en su propio chunk: el presupuesto (tools/ci/bundle-budget.ts) lo mide aparte.
     // Rolldown (Vite 8) no admite la forma objeto de manualChunks: grupo por ruta del módulo.
-    rolldownOptions: { output: { codeSplitting: { groups: [{ name: 'three', test: /node_modules[\\/]three[\\/]/ }] } } },
+    rolldownOptions: {
+      output: {
+        codeSplitting: {
+          groups: [
+            { name: 'three', test: /node_modules[\\/]three[\\/]/ },
+            // Análisis PW y ventanas compartidas con Docente: una descarga, sin duplicar wrappers/imports.
+            // Sigue dentro del total JS. Docente carga también este grupo al mostrar la verdad fisiológica.
+            {
+              name: 'pwMeasurements',
+              includeDependenciesRecursively: false,
+              test: /src[\\/](?:doppler[\\/](?:capture|spectralMeasure|measureQuality|qualityMessages)|vexus[\\/]measurements)\.ts$/,
+            },
+          ],
+        },
+      },
+    },
   },
   test: {
     include: tier === 'slow' ? SLOW : ['src/**/*.test.ts'],
@@ -66,6 +86,7 @@ export default defineConfig({
       exclude: [
         'src/**/*.test.ts',
         'src/main.ts',
+        'src/bootstrap.ts', // misma raíz de composición trasladada desde main; cubierta por E2E
         'src/ui/**',
         'src/ultrasound/renderer.ts',
         'src/ultrasound/gl.ts',

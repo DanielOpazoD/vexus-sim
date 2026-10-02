@@ -337,12 +337,15 @@ button.secondary.on {
 [aria-expanded='false'] > .chevron {
   transform: rotate(-45deg);
 }
-/* Tarjetas de ventanas: anillo del color del 3D, nombre y lo que muestra. Siete ventanas (decisión 83): cada tarjeta
+/* Tarjetas de ventanas: anillo del color del 3D, nombre y lo que muestra. Ventanas con lista desplazable (decisión 104): cada tarjeta
    mide 40 px (dos líneas de 16 px) y 32 px en pantallas bajas, para no quitarle al navegador 3D más de lo necesario */
 .windows-block {
   flex: none;
 }
 .windows {
+  max-height: 290px;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
   display: grid;
   gap: 1px;
   padding: 0 8px 8px;
@@ -512,6 +515,9 @@ button.secondary.on {
 /* Pantallas bajas: el carril se compacta (cabeceras y tarjetas) para dejar sitio al 3D y al corte. Va después
    de las reglas que ajusta: una consulta de medios no suma especificidad. */
 @media (max-height: 860px) {
+  .windows {
+    max-height: 230px;
+  }
   .rail-head {
     height: 32px;
   }

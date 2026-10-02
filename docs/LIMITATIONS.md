@@ -64,15 +64,16 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   mide sigue al volumen de la red con τ = 0,2 s (decisión 73), pero la red calcula presiones y caudales con su volumen
   elástico; los dos diámetros se separan hasta un 14 % en los colapsos rápidos del sano (5 % en la congestión grave),
   con la misma media.
-- **El gas intestinal no da sombra** (`bowel-gas-no-shadow`): el contenido de las asas del «resto» (decisión 74) es una
-  textura de retrodispersión; el gas brilla pero no refleja ni reverbera ni deja sombra sucia detrás (las bolsas de gas
-  de la anatomía sí lo hacen, pero no hay ninguna en los casos de referencia).
+- **Segmento intestinal representativo y estático** (`bowel-segment-static`): eje estimado, no atlas ni reconstrucción
+  de todo el tubo digestivo; sin duodeno o colon individualizados o mesenterio vascularizado; pliegues estimados, sin
+  peristalsis o desplazamiento de gas/líquido. Contracción radial local estimada, sin aplanamiento anisótropo ni conservación de volumen. Pared y reflectividad por capas estimadas, pendientes de comparación
+  clínica. El gas intraluminal participa en transmisión y reverberación; no se interpreta el muestreo como validación
+  clínica. La malla 3D suaviza el eje y no representa su mucosa. El cuerpo de referencia se extrapola fuera de −160..120 mm.
 - **Retroperitoneo simplificado** (`simplified-retroperitoneum`): el psoas (cuatro conos redondeados) y el cuadrado
   lumbar (una lámina contra la pared) son sólidos lisos y simétricos (decisión 81), sin los pilares del diafragma, el
   ilíaco ni las suprarrenales, y sus fascias no tienen cara (el borde lo da el contraste músculo/grasa). La pared
   posterior del modelo mide 28 mm y el riñón apoya en ella: el cuadrado le deja sitio en lugar de pasar entre ambos. El
-  peritoneo parietal posterior es una superficie suave, sin recesos, y el duodeno y el colon ascendente son el «resto»
-  con la textura de asas. Los músculos se mueven con la respiración con el peso del campo de desplazamiento (en el psoas,
+  peritoneo parietal posterior es una superficie suave, sin recesos, y el duodeno y el colon ascendente no tienen todavía geometría individual. Los músculos se mueven con la respiración con el peso del campo de desplazamiento (en el psoas,
   de ~0,1 junto a la columna a 1 en su parte lateral e inferior; en el cuadrado, ≤ 0,6), en lugar de quedarse quietos
   bajo el riñón que se desliza. En la hepatomegalia de la congestión grave el hígado ocupa el origen del psoas en
   T12–L1 (hasta 12 mm) y el borde superior del cuadrado (hasta 7 mm): se clasifica antes. La textura de sus fascículos no
@@ -89,10 +90,11 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   cardíaca del calibre está amortiguada.
 - **Sin movimiento cardíaco transmitido a hígado/cava** (`no-cardiac-tissue-motion`); la
   respiración es el único movimiento tisular, y el corazón (decisión 85) no late.
-- **Sin bazo ni costillas izquierdas** (`no-spleen-no-left-ribs`): el hipocondrio izquierdo solo
-  tiene riñón y vasos; todas las costillas son derechas (`rightOnly`), así que una ventana izquierda
-  no muestra sombras costales. El corte del shader (`sdRib`, `x > 15 mm`) supone que todas lo son:
-  `shaderLimits.test.ts` falla si se añade una costilla izquierda sin llevar `rightOnly` al GLSL.
+- **Sin bazo y caja torácica incompleta** (`no-spleen-no-left-ribs`, identificador histórico): existen los pares
+  5–10 en CPU, GPU y navegador 3D. Las superficies 3D se detienen con margen de un semiespesor en los extremos para no atravesar el corte SDF; no tienen tapas ni articulaciones detalladas. Los pares 1–4 y 11–12 no están modelados ni se dibujan como decoración.
+  El lado izquierdo refleja el registro derecho; no representa asimetrías individuales. Sección, inclinación y separación
+  siguen parámetros adultos estimados, sin registro CT/atlas ni validación antropométrica independiente. El cartílago
+  anterior y el final en apófisis transversa son aproximaciones; los arcos no tienen articulaciones costovertebrales detalladas.
 - **El corazón es un esquema estático** (`schematic-static-heart`, decisión 85): cuatro elipsoides con su miocardio, los
   tabiques y los orificios auriculoventriculares abiertos, sin valvas, sin grandes vasos de la base (vena cava superior,
   raíz aórtica, tronco pulmonar), sin seno coronario ni venas pulmonares; el pericardio es la capa de 1,5 mm del tejido del
@@ -116,14 +118,13 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   normal del pericardio en la GPU es 1 (la de la distancia aproximada del elipsoide se aparta un 1,1 % en la mediana y un
   6,5 % en p95: ≤ 0,6 dB en su eco). El gemelo de la pasada A en TS (`transmissionHitsLine`, en las pruebas) sigue
   reflejando con la de la cúpula.
-- **La vértebra no tiene cortical** (`vertebra-no-cortex`): el cuerpo vertebral es un cilindro de 34 mm de hueso sin
-  cara (decisión 69; las costillas la tienen desde la 62). En la transversa epigástrica (decisión 83) su cara anterior
-  no da la línea curva brillante de un equipo: el cuerpo se ve como una cúpula oscura sobre la sombra, que con el arco
-  posterior es un rectángulo. La sombra sí sale de la física (la entrada en el hueso, 100 dB desde la decisión 88, y 10 dB
-  por mm a 2,5 MHz): la banda de su superficie, lo único que dibuja su borde, es el moteado del hueso hasta el centro
-  de su primera fila de la pasada A, 0–0,9 mm según dónde cae su cara en la rejilla (mediana 0,4 mm; antes, con 6 dB de
-  entrada, una banda de unos milímetros que se apagaba poco a poco). Su tejido conserva la retrodispersión (0,9) que el
-  hueso de las costillas, con cortical, perdió en la decisión 88.
+- **Columna continua y opaca simplificada** (`vertebra-continuous-geometry`, decisión 103): la superficie vertebral
+  ya genera un eco cortical propio, dependiente de incidencia, y se elimina el moteado de su interior. La geometría sigue
+  siendo cilindro y arco rectangular continuos: sin cuerpos segmentados, discos, canal, pedículos ni apófisis anatómicas.
+  La rugosidad/pendiente se extrapolan de la cortical costal; no se han calibrado frente a clips vertebrales. La sombra
+  conserva el modelo óseo opaco previo (100 dB de entrada); no resuelve corteza/esponjosa ni señales RF intravertebrales.
+  No permite entrenamiento de punción neuraxial ni evaluación de densidad ósea. El arco rectangular sigue aportando oclusión, pero no emite
+  cortical: sus superficies planas producían barras artificiales. Solo el cuerpo cilíndrico tiene normal analítica y eco propio.
 - **La aorta no late en modo B** (`aorta-fixed-caliber`): su calibre es fijo; el pulso arterial está en su velocidad
   (color y PW), no en su pared. En la transversa epigástrica (decisión 83) no se ve el latido de 1–4 mm que ayuda a
   distinguirla de la VCI: se reconoce por su pared más gruesa y brillante, su sección redonda, su sitio sobre la vértebra,
@@ -446,17 +447,20 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   decisión 80): con la línea M casi perpendicular a la VCI (≥ 84°) el eco especular de la pared posterior, máximo de
   frente, se come 1–1,5 mm de la luz en la presentación logarítmica y la colapsabilidad medida de borde interno a
   borde interno sale ~6 puntos por encima de la verdad del motor en el sano (37 frente a 31 %); con la línea
-  2 cm por debajo de la desembocadura de las suprahepáticas (~80°), ±2 puntos. La cuerda geométrica de la luz a lo
-  largo de la línea sigue a la verdad (31,3 frente a 31,0 %).
+  2 cm por debajo de la desembocadura de las suprahepáticas (~80°), no se sostiene una garantía de ±2 puntos.
+  En la CI de `a3a5b1a` la envolvente dio 27,90 % frente a 30,42 % del motor; redondear por separado los cuatro
+  clics a píxeles CSS enteros redujo la medida a 25 %. La prueba separa ahora transformación de coordenadas,
+  redondeo de presentación y error físico de la envolvente (límite de software ±5 puntos, no precisión clínica
+  validada). La cuerda geométrica de la luz a lo largo de la línea sigue a la verdad (31,3 frente a 31,0 %).
 
 ## Doppler
 
-- **El aliasing fuerte no se detecta en la captura** (`severe-aliasing-not-detected`): el control
-  de calidad detecta el plegado moderado (la sangre toca a la vez los dos bordes de la banda con un
-  hueco de ruido entre ambos), pero con la escala más de ~2 veces por debajo de la velocidad el
-  flujo llena toda la banda, no queda hueco y se lee a velocidades plausibles: la congestión grave a
-  PRF 700 (Nyquist 11 cm/s) sale «leve» con el visto bueno. Lo detectará la retroalimentación
-  docente (que conoce la verdad).
+- **El aliasing extremo de la porta se lee como «sin flujo»** (`severe-aliasing-not-detected`, decisiones 49 y 94): la
+  calidad reconoce el plegado moderado (la sangre toca los dos bordes de la banda con un hueco entre ambos) y, desde la
+  decisión 94, el fuerte (la sangre plegada varias veces llena la mitad exterior de la banda ≥ 3 dB sobre el ruido del
+  receptor). Pero con la escala a ±4–6 cm/s la banda del filtro de pared (62,5 Hz con el filtro a 25 Hz) es media banda y
+  la porta, débil, no llega a llenar el resto (tampoco la suprahepática del sano a ±4): la captura dice «no hay flujo en
+  la puerta» en vez de «suba la escala». Nunca da un valor.
 - **Con respiración, el clutter del tejido tapa el flujo venoso lento en el espectro**
   (`respiratory-clutter-masks-slow-flow`): el tejido que se mueve a 10–30 mm/s da un clutter 60–70 dB
   sobre el ruido a 30–100 Hz, por encima de un filtro de pared de 25 Hz; con la ventana de la FFT
@@ -472,9 +476,9 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **La colocación anatómica de la puerta ignora las sombras** (`gate-placement-ignores-shadows`):
   sin peso, `bestGateOnVessel` evita la confluencia con la VCI pero no mira la transmisión y desde
   algunos puntos de partida elige un punto en la sombra de una costilla o de la cortina pulmonar.
-  Los ganchos de la e2e y la prueba de respiración le pasan `acousticWindowWeight`; las pruebas de
-  la cadena del alumno en apnea siguen con la técnica anatómica y una transmisión fija de −10 dB.
-  En la app la puerta la pone el alumno.
+  Los ganchos de la e2e, las pruebas de escala y la de respiración le pasan `acousticWindowWeight`; las pruebas de la
+  cadena del alumno en apnea siguen con la técnica anatómica, ya con la transmisión real hasta la puerta (decisión 94;
+  antes, una copia de la puerta con −10 dB fijos). En la app la puerta la pone el alumno.
 - **La resolución de las pausas renales depende de la PRF** (`renal-pause-resolution-prf`): la
   verdad cuenta como interrupción una pausa de ≥ 20 ms (decisión 26), lo que resuelve el espectro de
   128 muestras a ~4 kHz. A 1,5–2,6 kHz la captura pierde pausas de 20–30 ms; a 6 kHz ve las de 10 ms.
@@ -491,6 +495,16 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   puerta de 4 mm); el operador debe usar apnea espiratoria o un segmento más grueso, como en la
   práctica. Hasta la 0.5.0 también lo sufrían vasos más gruesos que la puerta (tronco portal: PF
   167 % en el sano) por un defecto del volumen de muestra, ya corregido.
+- **La traza de la porta está ajustada sobre la propia cadena** (`portal-trace-tuned-on-chain`, decisión 94): el promedio
+  móvil de 60 ms, los cuantiles 0,03/0,97 de Vmín/Vmáx y el hueco de 60 Hz de la banda se eligieron en una rejilla sobre
+  168 capturas de la cadena del alumno y se validaron con otras seis semillas (a ≤ 10 puntos de la verdad de los latidos
+  medidos: 99–100 % de las aceptadas; de la de 7 s: 94,6–98,3 %), no contra el trazado automático de un equipo real ni
+  contra clips. Con respiración tranquila la porta del sano sale a
+  menudo «intermitente» a ±40–±60: su banda, a −32 dB, pierde la traza en algún latido.
+- **Cuatro latidos no bastan en la FA** (`af-capture-beat-sampling`, decisiones 49 y 94): la captura mide los 4 últimos
+  latidos completos, y en la FA la PF portal cambia de un latido a otro (12–47 % en una misma captura de la cadena del
+  alumno, con respiración). La mediana de esos 4 puede quedar a más de 10 puntos de la de los ~11 latidos de 7 s (26 frente
+  a 41 %): la medición sigue a la verdad de sus latidos, pero el alumno debería promediar más latidos, como en la clínica.
 - **Los vasos finos vuelven a la puerta con menos sangre de la real** (`thin-vessel-sample-volume-lag`):
   cuando una interlobar sale de la puerta con la respiración y vuelve, su región queda con menos
   dispersores (30–45 % de sangre frente al 69 % de una siembra nueva en fin de espiración); además
@@ -500,9 +514,24 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 
 ## Enseñanza
 
+- **La identidad del vaso la da el modelo, no la imagen** (`vessel-identity-from-model`, decisión 94): una captura cuya
+  puerta estaba sobre otro sistema vascular que el de su fila se rechaza como «vaso equivocado» con el vaso que había; el
+  simulador lo sabe por la sangre del volumen de muestra, como lo sabría un supervisor, no un ecógrafo. Decide el sistema
+  que domina la sangre de la puerta en los 7 s de la captura: una puerta a caballo entre dos vasos se atribuye al que más
+  pesa, y la fila renal admite la arteria interlobar (la medición elige el lado de la vena), así que una puerta centrada
+  en la arteria no se rechaza.
+
 - **El modo ciego es de pantalla, no de código** (`blind-mode-screen-only`, decisión 82): el alumno no ve el nombre del
   caso, sus confusores reales ni la trampa en la pantalla ni en el DOM, y las explicaciones de las trampas con los
   confusores reales solo viajan en el chunk de la pestaña Docente, que su navegador no descarga. Pero el JS principal
   lleva el registro de casos con la verdad latente (el `PatientState`: la PAD, la PIA, la IT…) y sus nombres para el
   modo docente, y los valores de las opciones del selector de los casos de referencia (`severe-congestion`,
   `af-moderate-congestion`) nombran el diagnóstico: quien lea el código o el DOM puede saber el caso.
+
+## Adulto de referencia en revisión (`?reference=1`)
+
+- `reference-thorax-incomplete`: el campo actual conserva seis pares 5–10, columna procedural desplazada y esternón visual heredado. Los 24 OBJ costales están hashverificados, pero todavía no representan doce pares funcionales ni articulaciones completas. El diafragma existente tiene dos cúpulas aproximadas; su arquitectura, tendón, pilares, hiatos e inserciones deben revisarse con el tórax completo. [Plan y estado](anatomy/TORSO_PROGRESS.md).
+- `reference-skeletal-organ-overlap`: un muestreo denso del esqueleto sin compresión contra los tejidos originales detecta intersecciones con hígado y cinco muestras sanguíneas en la sexta costilla. La precedencia de hueso en el clasificador no elimina este defecto geométrico. No se movieron órganos ni se ensancharon ventanas para ocultarlo. La superficie del séptimo cartílago queda a un mínimo muestreado de 0,39 mm de la piel externa: también necesita reconciliarse con el espesor cutáneo. [Medición](anatomy/reference-relationships-report.json).
+- `reference-cartilage-seventh-only`: solo el séptimo cartílago bilateral tiene secciones medidas en los OBJ incluidos; los otros cartílagos siguen pendientes. Las 16 elipses interpoladas tienen residual de superficie RMS 0,94 mm, p95 2,10 mm, máximo 3,15 mm. Promedio bilateral, extremos cerrados y sección elíptica son aproximaciones; pasar CPU/GLSL no constituye validación clínica.
+
+- `reference-diaphragm-incomplete`: el campo actual comparte dos cúpulas asimétricas e inserción periférica continua entre TS/GLSL, pero no distingue tendón central, pilares ni hiatos. El borde 3D sigue ahora la pared interna del campo corporal compartido; esto no reconstruye las inserciones anatómicas por pieza. Respiración coherente entre consumidores no acredita contactos anatómicos bajo movimiento; véase `anatomy/DIAPHRAGM_AUDIT.md`.

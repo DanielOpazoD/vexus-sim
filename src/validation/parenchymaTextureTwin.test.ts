@@ -47,7 +47,7 @@ const fr = probeFrame(
   CONVEX_C35,
 );
 const FRAME = { center: fr.curvatureCenter, axial: fr.axial, lateral: fr.lateral, elevation: fr.elevation, face: fr.face };
-const ST = new ElevationAnchor().update(fr.face, fr.elevation);
+const ST = new ElevationAnchor().update(fr.face, fr.elevation, 0);
 const GEOM = { depthMm: G.depthMm, halfSector: G.halfSector, curvatureRadius: G.curvatureRadius };
 
 interface Stats {

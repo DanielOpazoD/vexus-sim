@@ -1,0 +1,23 @@
+{
+  "method": "Minimum distance between original OBJ vertices (upper bound on exact surface gap); no geometric changes, no clinical validation",
+  "parts": [
+    {
+      "side": "right",
+      "boneId": "FJ3346",
+      "cartilageId": "FJ3345",
+      "minimumVertexDistanceMm": 0.013453624047076684,
+      "boneSourceVertexLpsMm": [-100.542, -174.338, 1122.36],
+      "cartilageSourceVertexLpsMm": [-100.542, -174.347, 1122.35],
+      "cartilageSha256": "a4d22796f4ffc6f9ad1b7d620c917be1638244864eca62aec60bd11033ed3041"
+    },
+    {
+      "side": "left",
+      "boneId": "FJ3234",
+      "cartilageId": "FJ3255",
+      "minimumVertexDistanceMm": 0.03008321791297418,
+      "boneSourceVertexLpsMm": [107.217, -176.119, 1107.93],
+      "cartilageSourceVertexLpsMm": [107.205, -176.1, 1107.91],
+      "cartilageSha256": "97e69ede580a6e81cc42bb54fb22d4752719b61c5fced8ccccfb18ce64996676"
+    }
+  ]
+}

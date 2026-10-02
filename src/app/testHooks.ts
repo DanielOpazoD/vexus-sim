@@ -1,3 +1,4 @@
+import { BOWEL_NODES, BOWEL_GAS } from '../anatomy/organs/bowel';
 import { VESSEL_META, type VesselId } from '../physiology/vessels';
 import { gateInColorBox, type EquipmentCommand } from './equipment';
 import { errorLog } from './errorLog';
@@ -46,7 +47,7 @@ import type { RespiratoryPattern } from '../physiology/patientState';
 import { speckleStats, type EnvelopeFrame, type SpeckleOptions, type SpeckleStats } from './speckle';
 import { portalTriadGain, triadOfCell } from '../ultrasound/portalTriads';
 import type { RenderMeasureOptions, Simulator } from './simulator';
-import { START_POINTS, type StartPoint } from './startPoints';
+import { startPointsFor, type StartPoint } from './startPoints';
 
 /**
  * Ganchos de prueba estables (e2e). Se cargan con `import()` dinámico solo en desarrollo o
@@ -54,7 +55,25 @@ import { START_POINTS, type StartPoint } from './startPoints';
  * que abre el alumno.
  */
 export interface TestHooks {
+  corticalSamples: (points: Vec3[]) => {
+    spine: { x0: number; y0: number; r: number; archHalfWidth: number; archY0: number; archY1: number };
+    rows: number[][];
+  };
   equivalenceSweep: () => EquivalencePoseReport[];
+  /** Paridad dirigida a pared, luz, gas y serosa intestinales; solo pruebas. */
+  bowelEquivalence: () => {
+    samples: number;
+    interior: number;
+    agreement: number;
+    gas: number;
+    fluid: number;
+    wall: number;
+    faces: number;
+    faceAgreement: number;
+    maxDistanceError: number;
+    normalMinDot: number;
+    radii: number[];
+  };
   /** Equivalencia TS ↔ GLSL en `n` puntos aleatorios de todo el tronco. */
   volumeEquivalence: (n?: number) => VolumeEquivalenceReport;
   /** Equivalencia de la cara de interfaz y su distancia a 0,01–0,6 mm de cada cara, en los planos de partida. */
@@ -345,7 +364,89 @@ export function frameMeasureOptions(opts: FrameCostOptions = {}): RenderMeasureO
 
 export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: EquipmentCommand) => void, loopFrames: () => number): TestHooks {
   const hooks: TestHooks = {
+    corticalSamples: (points) => {
+      const sim = getSim(),
+        sample = sim.sample;
+      if (!points.length) return { spine: sim.scene.spine, rows: [] };
+      const world = new Float32Array(points.flatMap((p) => sim.anatomy.deformation.toWorld(p, sample.resp)));
+      const gpu = sim.gpuQuery(world, sim.frame, true, { normals: true });
+      const rows = points.map((_, i) => {
+        const c = sim.anatomy.classifyWorld([world[3 * i], world[3 * i + 1], world[3 * i + 2]], sample);
+        const g = sim.scene.faceGradient(c.material, sim.anatomy.caliberFor(sample));
+        return [
+          c.tissue,
+          c.interface,
+          c.interfaceDistance,
+          ...(g?.normal ?? [0, 0, 0]),
+          g?.norm ?? 0,
+          gpu.tissue[i],
+          gpu.iface[i],
+          gpu.ifd[i],
+          ...Array.from(gpu.normal!.subarray(3 * i, 3 * i + 3)),
+          gpu.gradNorm![i],
+        ];
+      });
+      return { spine: sim.scene.spine, rows };
+    },
     equivalenceSweep: () => equivalenceSweep(getSim()),
+    bowelEquivalence: () => {
+      const sim = getSim(),
+        sample = sim.sample,
+        points: Vec3[] = [];
+      for (const p of BOWEL_NODES.filter((p) => p[2] > -235))
+        for (const r of [7, 8.5, 9.5, 10.5, 13])
+          for (let j = 0; j < 6; j++) {
+            const q: Vec3 = [p[0] + 0.137, p[1] + 0.073, p[2] + 0.191];
+            q[j % 3] += r * (j < 3 ? 1 : -1);
+            points.push(q);
+          }
+      for (const g of BOWEL_GAS)
+        for (let x = -8; x <= 8; x += 2)
+          for (let y = -4; y <= 4; y += 2)
+            for (let z = -8; z <= 8; z += 2) points.push([g.center[0] + x + 0.137, g.center[1] + y + 0.073, g.center[2] + z + 0.191]);
+      const world = new Float32Array(points.flatMap((p) => sim.anatomy.deformation.toWorld(p, sample.resp)));
+      const gpu = sim.gpuQuery(world, sim.frame, true, { normals: true });
+      let interior = 0,
+        same = 0,
+        gas = 0,
+        fluid = 0,
+        wall = 0,
+        faces = 0,
+        sameFace = 0,
+        maxDistanceError = 0,
+        normalMinDot = 1;
+      for (let i = 0; i < points.length; i++) {
+        const q = sim.anatomy.classifyWorld([world[i * 3], world[i * 3 + 1], world[i * 3 + 2]], sample);
+        if (q.boundaryDistance < 0.05) continue;
+        interior++;
+        if (Number(q.tissue) === gpu.tissue[i]) same++;
+        if (q.tissue === Tissue.BowelGas) gas++;
+        if (q.tissue === Tissue.Fluid) fluid++;
+        if (q.tissue === Tissue.Bowel) wall++;
+        if (q.interface !== Interface.BowelLumen && q.interface !== Interface.BowelSerosa) continue;
+        faces++;
+        if (Number(q.interface) === gpu.iface[i]) sameFace++;
+        maxDistanceError = Math.max(maxDistanceError, Math.abs(q.interfaceDistance - gpu.ifd[i]));
+        const n = sim.scene.faceGradient(q.material, sim.anatomy.caliberFor(sample))!.normal;
+        normalMinDot = Math.min(
+          normalMinDot,
+          Math.abs(n[0] * gpu.normal![i * 3] + n[1] * gpu.normal![i * 3 + 1] + n[2] * gpu.normal![i * 3 + 2]),
+        );
+      }
+      return {
+        samples: points.length,
+        interior,
+        agreement: same / interior,
+        gas,
+        fluid,
+        wall,
+        faces,
+        faceAgreement: sameFace / faces,
+        maxDistanceError,
+        normalMinDot,
+        radii: Array.from(sim.scene.bowelRadii),
+      };
+    },
     volumeEquivalence: (n) => volumeEquivalence(getSim(), n),
     interfaceShell: () => interfaceShellEquivalence(getSim()),
     speckle: (opts) => {
@@ -1054,7 +1155,8 @@ function crossfade(
   let levelDb = 0;
   for (let f = 0; f < opts.frames; f++) {
     pose.yaw += (opts.stepDeg * Math.PI) / 180;
-    const env = envelopeAt(sim, pose, opts.compound, 1);
+    // El fundido consume tiempo de simulación, no llamadas de render.
+    const env = envelopeAt(sim, pose, opts.compound, 1, 1 / 60);
     const mask = liverMask(sim, env);
     const d = detrended(env, mask).filter(Number.isFinite);
     const mean = d.reduce((s, v) => s + v, 0) / d.length;
@@ -1379,7 +1481,7 @@ function offsetPose(sim: Simulator, pose: { rockDeg?: number; tiltDeg?: number }
 
 /** Coloca la sonda en un punto de partida (sin animación) y avanza lo justo para que el marco la siga. */
 function goTo(sim: Simulator, id: StartPoint['id']): void {
-  const sp = START_POINTS.find((p) => p.id === id)!;
+  const sp = startPointsFor(sim.scene.torso).find((p) => p.id === id)!;
   sim.setPose({ phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 });
   sim.advance(0.05);
 }
@@ -1409,9 +1511,15 @@ function windowWeight(sim: Simulator): (theta: number, r: number) => number {
  * mirada 0 tras un cuadro o, con `compound`, la compuesta tras `frames` cuadros (una mirada cada uno; con N,
  * todas las miradas son de esta pose). Si el anillo no queda lleno, lanza.
  */
-function envelopeAt(sim: Simulator, pose: ProbePose, compound = false, frames = 1): { lines: number; samples: number; data: Float32Array } {
+function envelopeAt(
+  sim: Simulator,
+  pose: ProbePose,
+  compound = false,
+  frames = 1,
+  elapsedSeconds = 1.5 * sim.physiology.clock.dt,
+): { lines: number; samples: number; data: Float32Array } {
   sim.setPose(pose);
-  sim.advance(1.5 * sim.physiology.clock.dt);
+  sim.advance(elapsedSeconds);
   for (let i = 0; i < frames; i++) sim.render();
   if (!compound) return sim.renderer.readEnvelope();
   const st = sim.renderer.compoundState();

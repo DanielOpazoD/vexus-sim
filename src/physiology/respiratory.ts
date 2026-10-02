@@ -15,7 +15,9 @@ import type { PatientState } from './patientState';
  * NEEDS_CALIBRATION.
  */
 export interface RespiratorySample {
-  /** Fase 0–1 del ciclo respiratorio. */
+  /** Hay un ciclo activo (la pausa sostiene la referencia espiratoria o inspiratoria). */
+  cycling: boolean;
+  /** Fase 0–1 del ciclo respiratorio; en pausa es la fase sostenida. */
   phase: number;
   /** Fracción de volumen inspirado 0–1. */
   volume: number;
@@ -101,7 +103,8 @@ export class RespiratoryModel {
       (spontaneous ? PLEURAL_SWING_SPONT_MMHG : PLEURAL_SWING_PPV_MMHG) * volume;
     const abdominal = p.intraAbdominalPressureMmHg + (spontaneous ? ABDOMINAL_SWING_SPONT_MMHG : ABDOMINAL_SWING_PPV_MMHG) * volume;
     return {
-      phase,
+      cycling: pattern === 'quiet' || pattern === 'deep',
+      phase: pattern === 'apnea-expiratory' ? 0 : pattern === 'apnea-inspiratory' ? 0.4 : phase,
       volume,
       volumeRate,
       pleuralMmHg: pleural,

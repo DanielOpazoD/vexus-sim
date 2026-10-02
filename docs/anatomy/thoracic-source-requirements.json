@@ -1,0 +1,364 @@
+{
+  "sourceArchive": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+  "httpCheck": {
+    "status": 403,
+    "host": "dbarchive.biosciencedbc.jp",
+    "dateUtc": "2026-10-01T20:13:48Z",
+    "method": "HEAD via existing proxy",
+    "permissionsChanged": false
+  },
+  "note": "Resolved official labels and ZIP index from the checkpoint. Availability is local only; missing assets were not downloaded or synthesized. Existing seventh cartilage and T9/T10 only. Floating ribs 11/12 must not acquire fabricated sternal cartilage.",
+  "parts": [
+    {
+      "id": "FJ3333",
+      "fma": "FMA7875",
+      "name": "right first costal cartilage",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3333.obj",
+        "method": 8,
+        "compressedBytes": 14807,
+        "bytes": 45599,
+        "offset": 56594733
+      }
+    },
+    {
+      "id": "FJ3335",
+      "fma": "FMA7886",
+      "name": "right second costal cartilage",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3335.obj",
+        "method": 8,
+        "compressedBytes": 13707,
+        "bytes": 42019,
+        "offset": 56671639
+      }
+    },
+    {
+      "id": "FJ3337",
+      "fma": "FMA7913",
+      "name": "right third costal cartilage",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3337.obj",
+        "method": 8,
+        "compressedBytes": 13674,
+        "bytes": 42128,
+        "offset": 56792346
+      }
+    },
+    {
+      "id": "FJ3339",
+      "fma": "FMA7976",
+      "name": "right fourth costal cartilage",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3339.obj",
+        "method": 8,
+        "compressedBytes": 14327,
+        "bytes": 43628,
+        "offset": 56941345
+      }
+    },
+    {
+      "id": "FJ3239",
+      "fma": "FMA8005",
+      "name": "left first costal cartilage",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3239.obj",
+        "method": 8,
+        "compressedBytes": 14132,
+        "bytes": 42790,
+        "offset": 53676679
+      }
+    },
+    {
+      "id": "FJ3242",
+      "fma": "FMA8031",
+      "name": "left second costal cartilage",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3242.obj",
+        "method": 8,
+        "compressedBytes": 12133,
+        "bytes": 36200,
+        "offset": 53726651
+      }
+    },
+    {
+      "id": "FJ3245",
+      "fma": "FMA8058",
+      "name": "left third costal cartilage",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3245.obj",
+        "method": 8,
+        "compressedBytes": 12341,
+        "bytes": 36602,
+        "offset": 53771851
+      }
+    },
+    {
+      "id": "FJ3341",
+      "fma": "FMA8070",
+      "name": "right fifth costal cartilage",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3341.obj",
+        "method": 8,
+        "compressedBytes": 23602,
+        "bytes": 73177,
+        "offset": 57120559
+      }
+    },
+    {
+      "id": "FJ3251",
+      "fma": "FMA8112",
+      "name": "left fifth costal cartilage",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3251.obj",
+        "method": 8,
+        "compressedBytes": 21823,
+        "bytes": 66532,
+        "offset": 53856356
+      }
+    },
+    {
+      "id": "FJ3248",
+      "fma": "FMA8167",
+      "name": "left fourth costal cartilage",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3248.obj",
+        "method": 8,
+        "compressedBytes": 13621,
+        "bytes": 40725,
+        "offset": 53814837
+      }
+    },
+    {
+      "id": "FJ3343",
+      "fma": "FMA8194",
+      "name": "right sixth costal cartilage",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3343.obj",
+        "method": 8,
+        "compressedBytes": 32006,
+        "bytes": 103505,
+        "offset": 57325463
+      }
+    },
+    {
+      "id": "FJ3254",
+      "fma": "FMA8221",
+      "name": "left sixth costal cartilage",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3254.obj",
+        "method": 8,
+        "compressedBytes": 29541,
+        "bytes": 91695,
+        "offset": 53906454
+      }
+    },
+    {
+      "id": "FJ3345",
+      "fma": "FMA8248",
+      "name": "right seventh costal cartilage",
+      "localAvailable": true,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3345.obj",
+        "method": 8,
+        "compressedBytes": 51318,
+        "bytes": 167567,
+        "offset": 57549623
+      }
+    },
+    {
+      "id": "FJ3255",
+      "fma": "FMA8275",
+      "name": "left seventh costal cartilage",
+      "localAvailable": true,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3255.obj",
+        "method": 8,
+        "compressedBytes": 46948,
+        "bytes": 150879,
+        "offset": 53936058
+      }
+    },
+    {
+      "id": "FJ3158",
+      "fma": "FMA9165",
+      "name": "first thoracic vertebra",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3158.obj",
+        "method": 8,
+        "compressedBytes": 36905,
+        "bytes": 114179,
+        "offset": 48598992
+      }
+    },
+    {
+      "id": "FJ3160",
+      "fma": "FMA9187",
+      "name": "second thoracic vertebra",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3160.obj",
+        "method": 8,
+        "compressedBytes": 40578,
+        "bytes": 126576,
+        "offset": 48703327
+      }
+    },
+    {
+      "id": "FJ3163",
+      "fma": "FMA9209",
+      "name": "third thoracic vertebra",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3163.obj",
+        "method": 8,
+        "compressedBytes": 41855,
+        "bytes": 130540,
+        "offset": 48856235
+      }
+    },
+    {
+      "id": "FJ3166",
+      "fma": "FMA9248",
+      "name": "fourth thoracic vertebra",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3166.obj",
+        "method": 8,
+        "compressedBytes": 43048,
+        "bytes": 133882,
+        "offset": 49022057
+      }
+    },
+    {
+      "id": "FJ3169",
+      "fma": "FMA9922",
+      "name": "fifth thoracic vertebra",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3169.obj",
+        "method": 8,
+        "compressedBytes": 47123,
+        "bytes": 147917,
+        "offset": 49194436
+      }
+    },
+    {
+      "id": "FJ3171",
+      "fma": "FMA9945",
+      "name": "sixth thoracic vertebra",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3171.obj",
+        "method": 8,
+        "compressedBytes": 47679,
+        "bytes": 149094,
+        "offset": 49292728
+      }
+    },
+    {
+      "id": "FJ3173",
+      "fma": "FMA9968",
+      "name": "seventh thoracic vertebra",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3173.obj",
+        "method": 8,
+        "compressedBytes": 53423,
+        "bytes": 167619,
+        "offset": 49382763
+      }
+    },
+    {
+      "id": "FJ3174",
+      "fma": "FMA9991",
+      "name": "eighth thoracic vertebra",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3174.obj",
+        "method": 8,
+        "compressedBytes": 50349,
+        "bytes": 157446,
+        "offset": 49436249
+      }
+    },
+    {
+      "id": "FJ3175",
+      "fma": "FMA10014",
+      "name": "ninth thoracic vertebra",
+      "localAvailable": true,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3175.obj",
+        "method": 8,
+        "compressedBytes": 53107,
+        "bytes": 166121,
+        "offset": 49486661
+      }
+    },
+    {
+      "id": "FJ3154",
+      "fma": "FMA10037",
+      "name": "tenth thoracic vertebra",
+      "localAvailable": true,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3154.obj",
+        "method": 8,
+        "compressedBytes": 57598,
+        "bytes": 181677,
+        "offset": 48365120
+      }
+    },
+    {
+      "id": "FJ3155",
+      "fma": "FMA10059",
+      "name": "eleventh thoracic vertebra",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3155.obj",
+        "method": 8,
+        "compressedBytes": 56679,
+        "bytes": 178073,
+        "offset": 48422781
+      }
+    },
+    {
+      "id": "FJ3156",
+      "fma": "FMA10081",
+      "name": "twelfth thoracic vertebra",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3156.obj",
+        "method": 8,
+        "compressedBytes": 57886,
+        "bytes": 181657,
+        "offset": 48479523
+      }
+    },
+    {
+      "id": "FJ3131",
+      "fma": "FMA13295",
+      "name": "diaphragm",
+      "localAvailable": false,
+      "archiveEntry": {
+        "name": "partof_BP3D_4.0_obj_99/FJ3131.obj",
+        "method": 8,
+        "compressedBytes": 1330257,
+        "bytes": 4828614,
+        "offset": 46713301
+      }
+    }
+  ]
+}

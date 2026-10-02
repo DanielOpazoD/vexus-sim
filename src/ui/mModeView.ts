@@ -5,6 +5,7 @@ import { ecgT, ecgX } from './sweep';
 export interface MMark {
   t: number;
   r: number;
+  pixelMm?: number;
 }
 
 /**
@@ -76,7 +77,7 @@ export class MModeView {
     const fy = (clientY - rect.top) / rect.height;
     if (!(fx >= 0 && fx <= 1 && fy >= 0 && fy <= 1)) return null;
     const v = this.view;
-    return { t: ecgT(fx, v.tRight, v.secondsVisible, 1), r: fy * v.depthMm };
+    return { t: ecgT(fx, v.tRight, v.secondsVisible, 1), r: fy * v.depthMm, pixelMm: v.depthMm / rect.height };
   }
 
   /** Ventana de tiempo que muestra la franja. */

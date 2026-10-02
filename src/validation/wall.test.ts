@@ -1,3 +1,4 @@
+import { INTERFACE_SOURCES } from '../anatomy/interfaceSources';
 import { describe, expect, it } from 'vitest';
 import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
 import { SCENE_UNIFORMS } from '../anatomy/gpu/sceneUniforms';
@@ -37,15 +38,7 @@ import {
   wallSwell,
   wallWave,
 } from '../anatomy/organs/wall';
-import {
-  RIB_ANTERIOR_END,
-  ribAnteriorEndX,
-  sdRib,
-  torsoDepth,
-  torsoDepthGradient,
-  torsoNormal,
-  torsoSkinPoint,
-} from '../anatomy/primitives';
+import { ribAnteriorEndX, sdRib, torsoDepth, torsoDepthGradient, torsoNormal, torsoSkinPoint } from '../anatomy/primitives';
 import { AnatomyScene, BASELINE_CALIBER, faceGeometryOf } from '../anatomy/scene';
 import { TISSUES, TISSUE_COUNT, Tissue } from '../anatomy/tissues';
 import { START_POINTS } from '../app/startPoints';
@@ -279,13 +272,8 @@ describe('capas de la pared (decisión 62)', () => {
     expect(sdRib(qEnd, r10, t, scene.spine).d).toBeLessThan(0);
     expect(sdRib(qEnd, r10, t, scene.spine).cartilage).toBe(true);
     // gemelo GLSL: la misma regla del cartílago y el mismo extremo anterior
-    expect(ANATOMY_GLSL).toContain(
-      `float endX = min(${RIB_ANTERIOR_END.xMm.toFixed(4)}, ${RIB_ANTERIOR_END.xMm.toFixed(4)} + ${RIB_ANTERIOR_END.marginSlope.toFixed(4)} * rib.x);`,
-    );
-    expect(ANATOMY_GLSL).toContain(
-      `cartilage = abs(phi - 1.5707963) < 1.5707963 - uRibParams.y || (p.y > 0.0 && p.x > endX - ${RIB_ANTERIOR_END.cartilageTailMm.toFixed(4)});`,
-    );
-    expect(ANATOMY_GLSL).toContain('if (p.x > endX) return 1e3;');
+    // La regla de extremo ya se comprueba arriba en el clasificador y por la equivalencia TS/GPU.
+    expect(ANATOMY_GLSL).toContain('float endX = ribEndData(k).x;');
     expect(ribs.every((r) => r.cartilageFromPhi === Math.PI / 4)).toBe(true);
   });
 
@@ -369,8 +357,8 @@ describe('costillas (decisión 88)', () => {
     }
     // el eco de una costilla es su cortical (la cara del tejido blando de delante); el hueso no dibuja moteado
     expect(TISSUES[Tissue.Bone].backscatter).toBe(0);
-    // la vértebra, sin cara de cortical, conserva la banda de su superficie
-    expect(TISSUES[Tissue.Vertebra].backscatter).toBeGreaterThan(0);
+    // la vértebra también tiene ahora su cara cortical exterior
+    expect(TISSUES[Tissue.Vertebra].backscatter).toBe(0);
   });
 });
 
@@ -527,12 +515,11 @@ describe('caras nuevas en la tabla de la decisión 57', () => {
   it('cada cara de la pared y de la costilla tiene su fila, su nombre GLSL, su fuente y un solo tipo de dueño', () => {
     // tras la pleura parietal de la decisión 61 (12): nueve caras de la pared y las costillas, 13–21; después, el pericardio
     // (decisión 85)
-    expect(INTERFACE_COUNT).toBe(23);
+    expect(INTERFACE_COUNT).toBe(26); // cortical vertebral, sin cambiar las caras de pared
     expect(Interface.SkinFat).toBe(Interface.PleuraWall + 1);
     expect(Object.keys(INTERFACES)).toHaveLength(INTERFACE_COUNT);
     for (const f of [...WALL_FACES, Interface.RibCortex, Interface.Perichondrium]) {
-      const p = INTERFACES[f];
-      expect(p.source.length, Interface[f]).toBeGreaterThan(20);
+      expect(INTERFACE_SOURCES[f].length, Interface[f]).toBeGreaterThan(20);
       expect(interfaceReflectivity(f), Interface[f]).toBeGreaterThan(0.02);
       expect(ANATOMY_GLSL, Interface[f]).toContain(`#define ${INTERFACE_GLSL_NAME[f]} ${f}`);
     }
@@ -597,7 +584,9 @@ describe('cortical costal: solo la cara que mira a la sonda (decisión 62)', () 
     // con la regla, nada (≥ 30 dB bajo la anterior, sea cual sea la transmisión)
     expect(backLit).toBe(0);
     // gemelo GLSL de la regla, en el eco de interfaz de los dos programas de B
-    expect(INTERFACE_ECHO_GLSL).toContain('if (c.iface == IF_RIB && dot(fg.xyz, dir) > 0.0) return vec2(0.0);');
+    expect(INTERFACE_ECHO_GLSL).toContain(
+      'if ((c.iface == IF_RIB || c.iface == IF_VERTEBRAL_CORTEX) && dot(fg.xyz, dir) > 0.0) return vec2(0.0);',
+    );
     for (const src of [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED]) expect(src).toContain(INTERFACE_ECHO_GLSL);
     // el cartílago transmite: su cara profunda sí se ve
     expect(faceLitFromProbe(Interface.Perichondrium, [0, 0, 1], [0, 0, 1])).toBe(true);
@@ -729,7 +718,9 @@ describe('gemelo GLSL (organs/wall.ts y wallTexture.ts)', () => {
     for (const src of [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED])
       expect(src.indexOf('float wallFaceGain(')).toBeLessThan(src.indexOf('vec2 interfaceEcho('));
     const echo = INTERFACE_ECHO_GLSL.replace(/\s+/g, ' ');
-    expect(echo).toContain('c.iface <= IF_LAST_TUBE || c.iface == IF_RIB || c.iface == IF_PERICHONDRIUM ? tubeCurvature(');
+    expect(echo).toContain(
+      'c.iface <= IF_LAST_TUBE || c.iface == IF_RIB || c.iface == IF_VERTEBRAL_CORTEX || c.iface == IF_PERICHONDRIUM || c.iface == IF_BOWEL_LUMEN || c.iface == IF_BOWEL_SEROSA ? tubeCurvature(',
+    );
     // la variación anclada de la pared multiplica la especular de la faceta y la difusa (decisión 65)
     expect(echo).toContain('float gain = c.iface >= IF_FIRST_WALL && c.iface <= IF_LAST_WALL ? wallFaceGain(m, c.iface) : 1.0;');
     expect(FRAG_RAWFIELD).toContain(`uIface[${INTERFACE_COUNT}]`);
@@ -738,7 +729,7 @@ describe('gemelo GLSL (organs/wall.ts y wallTexture.ts)', () => {
     expect(WALL_TEXTURE.faceVariation.length).toBe(LAST_WALL_INTERFACE - FIRST_WALL_INTERFACE + 1);
     // los tejidos de la decisión 81 (psoas, cuadrado lumbar, grasa retroperitoneal) y de la 85 (miocardio y mediastino) van al
     // final: no mueven índices
-    expect(TISSUE_COUNT).toBe(32);
+    expect(TISSUE_COUNT).toBe(33); // grasa mesentérica añadida sin renumerar tejidos previos
   });
 });
 

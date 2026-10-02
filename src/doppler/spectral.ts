@@ -169,6 +169,12 @@ export function peakFrequency(col: SpectralColumn, fftSize: number): number {
  */
 const SIGNIFICANT_DB = 6;
 const BAND_GAP_BINS = 3;
+/**
+ * Hueco tolerado en la banda de `halfPlaneEnvelopeHz` (Hz): 3 bins a la PRF por defecto (2600 Hz). A PRF 1300 la
+ * ventana de la FFT dura 98 ms, el bin mide 10 Hz y el moteado espectral parte la banda de la porta en dos; con 3 bins
+ * la envolvente saltaba de una parte a otra y la PF de la cirrosis (verdad 35 %) salía 42–50 %.
+ */
+const BAND_GAP_HZ = 60;
 
 /** Envolventes de ambos semiplanos (Hz, ≥ 0) y energía de sus bandas contiguas. */
 export interface BandEnvelopes {
@@ -218,6 +224,95 @@ export function columnBandEnvelopes(col: SpectralColumn, fftSize: number, floorD
   const pos = band(1);
   const neg = band(-1);
   return { posHz: pos.hz, negHz: neg.hz, ePos: pos.total, eNeg: neg.total, detected: true };
+}
+
+/**
+ * Un bin es flujo de SU semiplano solo si supera a su espejo (el bin de la frecuencia opuesta) en
+ * este margen (dB). El flujo es unilateral; el clutter del tejido que respira o late, los
+ * transitorios del filtro de pared (una rampa de amplitud es simétrica) y la imagen especular son
+ * simétricos respecto a la línea de base (decisión 94).
+ */
+export const MIRROR_MARGIN_DB = 6;
+
+/**
+ * Envolvente de flujo en un semiplano FIJO (decisión 94), en Hz ≥ 0, o NaN si en ese semiplano no hay
+ * flujo. Como la traza un equipo sobre un vaso de dirección conocida:
+ *  - solo cuentan los bins a |f| ≥ `fMinHz` (fuera de la banda del filtro de pared), significativos
+ *    (> suelo + 6 dB) y unilaterales (≥ MIRROR_MARGIN_DB sobre su espejo): el clutter y los
+ *    transitorios junto a la línea de base no son flujo;
+ *  - la banda crece desde el bin de más potencia hacia los dos lados, tolerando BAND_GAP_BINS − 1 bins
+ *    vacíos. Con la banda «contigua a la línea de base» de `columnBandEnvelopes`, un bin de ruido o de
+ *    clutter junto a la base abría la banda y el hueco que lo separa del flujo la cerraba: con una señal
+ *    débil (la porta a 10–14 cm de profundidad, −30 dB), la envolvente caía a 2–6 cm/s en columnas
+ *    sueltas y la PF salía 80–110 % con una verdad de 13 %;
+ *  - la envolvente es la frecuencia a la que la potencia acumulada (menos la del espejo) alcanza `pct`.
+ * Exige un bin a ≥ suelo + `detectDb` en la banda y dos bins seguidos significativos.
+ */
+export function halfPlaneEnvelopeHz(
+  col: SpectralColumn,
+  fftSize: number,
+  floorDb: number,
+  sign: 1 | -1,
+  fMinHz: number,
+  detectDb = 12,
+  pct = 0.92,
+): number {
+  const N = fftSize;
+  const half = N >> 1;
+  const df = col.prfHz / N;
+  const floorLin = Math.pow(10, floorDb / 10);
+  const sigLin = floorLin * Math.pow(10, SIGNIFICANT_DB / 10);
+  const detLin = floorLin * Math.pow(10, detectDb / 10);
+  const mirrorRatio = Math.pow(10, MIRROR_MARGIN_DB / 10);
+  const j0 = Math.max(1, Math.ceil(fMinHz / df - 1e-9));
+  // hueco tolerado en Hz, no en bins: a PRF baja el bin es más estrecho y el moteado espectral parte la banda
+  const gapBins = Math.max(BAND_GAP_BINS, Math.ceil(BAND_GAP_HZ / df));
+  const nj = half - j0;
+  if (nj <= 0) return Number.NaN;
+  // potencia de flujo unilateral de cada bin (lineal, sobre el suelo y sobre su espejo) o 0
+  const p = new Float64Array(nj);
+  const lin = new Float64Array(nj);
+  let best = -1;
+  for (let i = 0; i < nj; i++) {
+    const j = j0 + i;
+    lin[i] = Math.pow(10, col.powerDb[half + sign * j] / 10);
+    const mirror = Math.pow(10, col.powerDb[half - sign * j] / 10);
+    if (lin[i] > sigLin && lin[i] > mirrorRatio * mirror) p[i] = lin[i] - Math.max(floorLin, mirror);
+    if (p[i] > 0 && (best < 0 || p[i] > p[best])) best = i;
+  }
+  if (best < 0) return Number.NaN;
+  // banda: crece desde el pico mientras no haya BAND_GAP_BINS bins vacíos seguidos
+  let lo = best;
+  for (let i = best - 1, gap = 0; i >= 0; i--) {
+    if (p[i] > 0) {
+      lo = i;
+      gap = 0;
+    } else if (++gap >= gapBins) break;
+  }
+  let hi = best;
+  for (let i = best + 1, gap = 0; i < nj; i++) {
+    if (p[i] > 0) {
+      hi = i;
+      gap = 0;
+    } else if (++gap >= gapBins) break;
+  }
+  let total = 0;
+  let peak = 0;
+  let run = 0;
+  let pair = false;
+  for (let i = lo; i <= hi; i++) {
+    total += p[i];
+    if (p[i] > 0) peak = Math.max(peak, lin[i]);
+    run = p[i] > 0 ? run + 1 : 0;
+    if (run >= 2) pair = true;
+  }
+  if (!pair || peak < detLin) return Number.NaN;
+  let acc = 0;
+  for (let i = lo; i <= hi; i++) {
+    acc += p[i];
+    if (acc >= pct * total) return (j0 + i) * df;
+  }
+  return (j0 + hi) * df;
 }
 
 /** Envolvente con signo del semiplano dominante (el de más energía en su banda). */

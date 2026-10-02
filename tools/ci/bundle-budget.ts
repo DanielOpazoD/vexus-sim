@@ -49,41 +49,56 @@
 // funciones GLSL generadas de sus tablas, en todas las pasadas que clasifican), el gradiente de la capa con su pendiente,
 // la interpolación de la transmisión que no cruza la entrada en un hueso en B y D, la ventana de la difusa de la cortical
 // y sus gemelos TS. index sube a 335 kB.
-import { readdirSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
+import { bundleAssets } from './bundleAssets';
+import { basename, join } from 'node:path';
 
 const KB = 1024;
 const BUDGETS: Array<[RegExp, number]> = [
+  // El perfil corporal conserva sus 2080 bytes; carga solo al activar referencia, sin base64 en JS.
+  [/reference-body-.*\.bin$/, 2080],
   [/three.*\.js$/, 700 * KB],
-  [/index-.*\.js$/, 335 * KB],
+  [/^(index|bootstrap)-.*\.js$/, 335 * KB],
   [/\.css$/, 20 * KB],
   [/\.js$/, 120 * KB], // cualquier otro chunk
 ];
-const TOTAL_JS_BUDGET = 1000 * KB;
-/** Chunks que un usuario nunca descarga (solo `?e2e` o desarrollo): fuera del total, con su límite por chunk. */
+// 30-09-2026: +4 KiB aprobados para corregir captura/presentación PW y añadir controles respiratorios.
+// Coste acotado (~0,4 %); todos los chunks de producción y Workers siguen incluidos.
+// 01-10-2026: +12 KiB aprobados para el campo corporal/registro compartido de referencia.
+// Asset binario contado separadamente; límites por chunk conservados. El saneamiento cloud cuenta también testHooks en el total.
+// 02-10-2026: +8 KiB autorizados para asas, pared y contenido intestinales (decisión 101).
+// El total ahora recorre todo dist, incluido el worklet raíz que antes se omitía.
+const TOTAL_JS_BUDGET = 1024 * KB;
+/** Identifica los ganchos para el informe; todos los chunks y Workers cuentan en el total. */
 const TEST_ONLY = /^testHooks-.*\.js$/;
 
-const dir = join(process.cwd(), 'dist', 'assets');
-let files: string[];
+const dir = join(process.cwd(), 'dist');
+let files: Array<{ file: string; size: number }>;
 try {
-  files = readdirSync(dir);
+  files = bundleAssets(dir);
 } catch {
-  console.error('bundle-budget: no existe dist/assets — ejecuta `vite build` antes');
+  console.error('bundle-budget: no existe dist — ejecuta `vite build` antes');
   process.exit(1);
+}
+const referenceFiles = files.filter(({ file }) => /reference-body-.*\.bin$/.test(file));
+if (
+  referenceFiles.length !== 1 ||
+  !readFileSync(join(dir, referenceFiles[0].file)).equals(readFileSync('src/anatomy/reference-body.bin'))
+) {
+  throw new Error('Perfil corporal externo ausente, duplicado o modificado');
 }
 let over = false;
 let totalJs = 0;
 const rows: string[][] = [];
-for (const f of files) {
-  if (f.endsWith('.map')) continue;
-  const size = statSync(join(dir, f)).size;
-  if (f.endsWith('.js') && !TEST_ONLY.test(f)) totalJs += size;
+for (const { file, size } of files) {
+  const f = basename(file);
+  if (f.endsWith('.js')) totalJs += size;
   const budget = BUDGETS.find(([re]) => re.test(f));
   const max = budget ? budget[1] : Infinity;
   const ok = size <= max;
   if (!ok) over = true;
   rows.push([
-    TEST_ONLY.test(f) ? `${f} (solo pruebas)` : f,
+    TEST_ONLY.test(f) ? `${file} (solo pruebas)` : file,
     `${(size / KB).toFixed(1)} kB`,
     Number.isFinite(max) ? `${(max / KB).toFixed(0)} kB` : '—',
     ok ? 'ok' : 'OVER',

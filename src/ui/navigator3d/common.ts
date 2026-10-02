@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { torsoSkinPoint } from '../../anatomy/primitives';
 import type { AnatomyScene } from '../../anatomy/scene';
 
 /** Unidades de la escena three.js: cm (anatomía en mm / 10). */
@@ -27,6 +28,6 @@ export function torsoScale(zMm: number): number {
 /** Punto de la superficie del tronco (cm) a escala `scale`, ángulo φ y altura z (mm). */
 export function surfaceAt(a: AnatomyScene, phi: number, zMm: number, scale: number): THREE.Vector3 {
   const t = a.torso;
-  const sc = torsoScale(zMm) * scale;
-  return new THREE.Vector3(t.a * sc * Math.cos(phi) * CM, t.b * sc * Math.sin(phi) * CM, zMm * CM);
+  const p = torsoSkinPoint(phi, zMm, t);
+  return new THREE.Vector3(p[0] * scale * CM, ((t.y0 ?? 0) + (p[1] - (t.y0 ?? 0)) * scale) * CM, zMm * CM);
 }

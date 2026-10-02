@@ -20,7 +20,9 @@ jobs:
   check:
     name: lint · tipos · tests · build · presupuesto
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Cobertura completa observada ~18 min local; CI agotó20 min antes de build.
+    # Margen operativo para terminar todos los gates, sin modificar timeouts de pruebas ni umbrales.
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -47,18 +49,18 @@ jobs:
           retention-days: 7
 
   # En paralelo con `check` (no depende de él): el tiempo total de CI es el del más lento.
-  # Repartida en cuatro fragmentos, cada uno con un solo trabajador (playwright.config.ts): SwiftShader usa todos los
+  # Repartida en cinco fragmentos, cada uno con un solo trabajador (playwright.config.ts): SwiftShader usa todos los
   # núcleos del corredor en cada cuadro, y con dos trabajadores por corredor las pruebas se disputaban la CPU, tardaban
   # el doble y agotaban sus plazos a días alternos (79 % de ejecuciones de main en rojo, septiembre de 2026).
   e2e:
-    name: extremo a extremo (Chromium + SwiftShader) ${{ matrix.shard }}/4
+    name: extremo a extremo (Chromium + SwiftShader) ${{ matrix.shard }}/5
     runs-on: ubuntu-latest
     # un fragmento ronda los 10–15 min (la equivalencia sola, 3–6); con un reintento, más
     timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4]
+        shard: [1, 2, 3, 4, 5]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -71,7 +73,7 @@ jobs:
         run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
       - name: Caché de navegadores de Playwright
         id: pw-cache
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
@@ -80,7 +82,7 @@ jobs:
       - if: steps.pw-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
       - run: npx vite build
-      - run: npm run e2e -- --shard=${{ matrix.shard }}/4
+      - run: npm run e2e -- --shard=${{ matrix.shard }}/5
       - name: Guardar los tiempos (duración, arranque y ritmo del bucle de cada prueba)
         if: always()
         uses: actions/upload-artifact@v7
@@ -88,6 +90,14 @@ jobs:
           name: e2e-tiempos-${{ matrix.shard }}
           path: e2e-results.json
           retention-days: 14
+      - name: Guardar las capturas intestinales
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: bowel-visuals-${{ matrix.shard }}
+          path: test-results/**/bowel-*.png
+          retention-days: 7
+          if-no-files-found: ignore
       - name: Guardar el informe si falla
         if: failure()
         uses: actions/upload-artifact@v7
@@ -98,7 +108,7 @@ jobs:
             test-results
           retention-days: 7
 
-  # El veredicto que protege main (regla de la rama): verde solo si `check` y los cuatro fragmentos de la e2e lo están.
+  # El veredicto que protege main (regla de la rama): verde solo si `check` y los cinco fragmentos de la e2e lo están.
   # Un solo nombre estable aunque cambie el número de fragmentos; `always()` para que un trabajo cancelado o fallido
   # dé rojo y no «omitido».
   veredicto:

@@ -198,14 +198,14 @@ describe('Retroperitoneo (decisión 81)', () => {
     expect(next.get(Tissue.RetroperitonealFat) ?? 0, tag).toBeGreaterThan(250);
     expect(next.get(Tissue.QuadratusLumborum) ?? 0, tag).toBeGreaterThan(20);
     expect(next.get(Tissue.Liver) ?? 0, tag).toBeGreaterThan(50);
-    // y delante de la grasa retroperitoneal, por delante del riñón, las asas (duodeno y colon)
-    expect(cls([k.center[0], retroFrontY(Math.abs(k.center[0]), k.center[2]) + 5, k.center[2]]).tissue).toBe(Tissue.Bowel);
+    // delante del retroperitoneo queda mesenterio; no se inventa una luz intestinal sin eje geométrico
+    expect(cls([k.center[0], retroFrontY(Math.abs(k.center[0]), k.center[2]) + 5, k.center[2]]).tissue).toBe(Tissue.MesentericFat);
   });
 
   it('el compartimento: detrás del peritoneo parietal posterior, por delante de los grandes vasos y hasta el flanco', () => {
     // delante de la aorta y de la VCI, grasa hasta y = frontY; más adelante, asas
     expect(cls([0, RETRO_FAT.frontY - 3, -120]).tissue).toBe(Tissue.RetroperitonealFat);
-    expect(cls([0, RETRO_FAT.frontY + 3, -120]).tissue).toBe(Tissue.Bowel);
+    expect(cls([0, RETRO_FAT.frontY + 3, -120]).tissue).toBe(Tissue.MesentericFat);
     // entre la VCI y la aorta (la ventana del flanco): grasa, no asas
     expect(cls([-3, -18, -60]).tissue).toBe(Tissue.RetroperitonealFat);
     // en el flanco la grasa llega a la pared detrás de la línea axilar posterior; delante, la pared lateral toca asas

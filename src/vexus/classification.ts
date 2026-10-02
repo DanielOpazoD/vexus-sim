@@ -213,7 +213,7 @@ export function classifyModifiedVexus(input: Omit<VexusInputs, 'renal'>, ctx: Ve
 
 /** Fracción de pulsatilidad portal (%) sin recorte: puede superar 100 si Vmín < 0. */
 export function portalPulsatilityFraction(vMax: number, vMin: number): number {
-  if (!(vMax > 0)) return Number.NaN;
+  if (!(vMax > 0) || !Number.isFinite(vMax) || !Number.isFinite(vMin)) return Number.NaN;
   return (100 * (vMax - vMin)) / vMax;
 }
 

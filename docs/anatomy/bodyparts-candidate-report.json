@@ -1,0 +1,144 @@
+{
+  "source": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+  "license": "CC BY 4.0",
+  "credit": "BodyParts3D, © The Database Center for Life Science licensed under CC Attribution 4.0 International",
+  "registration": {
+    "sourceUnit": "mm",
+    "axes": [
+      [1, 0, 0],
+      [0, -1, 0],
+      [0, 0, 1]
+    ],
+    "sourceOrigin": [0, -200, 1180],
+    "targetOriginMm": [0, 100, 0],
+    "evidence": {
+      "units": "verified",
+      "orientation": "verified",
+      "landmarks": "pending"
+    }
+  },
+  "determinant": -1,
+  "reverseWinding": true,
+  "eligibleForIntegration": false,
+  "note": "Las cotas transformadas son candidatos geométricos, no dimensiones clínicas validadas. Un único registro para todos los assets; ninguna normalización por órgano.",
+  "files": [
+    {
+      "name": "partof_BP3D_4.0_obj_99/FJ3153.obj",
+      "sha256": "d17057ed1dad252a6fa6a3e8d92bc13310cebe0b584df147af0cc4a646f98f3e",
+      "vertices": 495,
+      "faces": 922,
+      "objBytes": 56265,
+      "sourceZipCompressedBytes": 18532,
+      "rawBounds": {
+        "min": [-10.3378, -213.353, 1164.02],
+        "max": [10.6039, -198.509, 1184.5]
+      },
+      "candidateMmBounds": {
+        "min": [-10.3378, 98.50899999999999, -15.980000000000018],
+        "max": [10.6039, 113.35300000000001, 4.5]
+      }
+    },
+    {
+      "name": "partof_BP3D_4.0_obj_99/FJ3178.obj",
+      "sha256": "32a06946d8eadbe1a847a373abe7499381c0182c72b7c94e3e2a0c3ba7c867e3",
+      "vertices": 3691,
+      "faces": 4646,
+      "objBytes": 374296,
+      "sourceZipCompressedBytes": 113630,
+      "rawBounds": {
+        "min": [-23.6149, -213.832, 1179.65],
+        "max": [23.9556, -165.166, 1289.64]
+      },
+      "candidateMmBounds": {
+        "min": [-23.6149, 65.166, -0.34999999999990905],
+        "max": [23.9556, 113.832, 109.6400000000001]
+      }
+    },
+    {
+      "name": "partof_BP3D_4.0_obj_99/FJ3225.obj",
+      "sha256": "daa25aba7fba3ff691d61cd239f8d49debc84ff871a351051c1d57a192b91dfd",
+      "vertices": 3419,
+      "faces": 6826,
+      "objBytes": 432180,
+      "sourceZipCompressedBytes": 127834,
+      "rawBounds": {
+        "min": [15.5623, -117.715, 1022.96],
+        "max": [122.349, -11.3545, 1158.99]
+      },
+      "candidateMmBounds": {
+        "min": [15.5623, -88.6455, -157.03999999999996],
+        "max": [122.349, 17.715000000000003, -21.00999999999999]
+      }
+    },
+    {
+      "name": "partof_BP3D_4.0_obj_99/FJ3232.obj",
+      "sha256": "6fa730aea273685148d3e9d3f52fe450acec4c13d6e3b1b6865e0e9532283abb",
+      "vertices": 4912,
+      "faces": 9710,
+      "objBytes": 622390,
+      "sourceZipCompressedBytes": 180882,
+      "rawBounds": {
+        "min": [14.0045, -197.688, 1172.17],
+        "max": [125.768, -12.7227, 1291.32]
+      },
+      "candidateMmBounds": {
+        "min": [14.0045, -87.2773, -7.829999999999927],
+        "max": [125.768, 97.68799999999999, 111.31999999999994]
+      }
+    },
+    {
+      "name": "partof_BP3D_4.0_obj_99/FJ3290.obj",
+      "sha256": "b847e67db475197cc4510744fef76bafd8e75c50797ca85eb8cd56dd853d61d6",
+      "vertices": 1446,
+      "faces": 2546,
+      "objBytes": 164758,
+      "sourceZipCompressedBytes": 51184,
+      "rawBounds": {
+        "min": [-27.4497, -178.588, 1280.27],
+        "max": [27.4497, -130.801, 1325.25]
+      },
+      "candidateMmBounds": {
+        "min": [-27.4497, 30.800999999999988, 100.26999999999998],
+        "max": [27.4497, 78.588, 145.25]
+      }
+    },
+    {
+      "name": "partof_BP3D_4.0_obj_99/FJ3330.obj",
+      "sha256": "0f688dd4e0d20a8328b4763c0acc7582a9beac8fe5c7ce58586db99c6e366945",
+      "vertices": 3415,
+      "faces": 6820,
+      "objBytes": 434809,
+      "sourceZipCompressedBytes": 128089,
+      "rawBounds": {
+        "min": [-123.648, -117.687, 1022.98],
+        "max": [-16.8729, -11.3593, 1158.98]
+      },
+      "candidateMmBounds": {
+        "min": [-123.648, -88.64070000000001, -157.01999999999998],
+        "max": [-16.8729, 17.686999999999998, -21.019999999999982]
+      }
+    },
+    {
+      "name": "partof_BP3D_4.0_obj_99/FJ3342.obj",
+      "sha256": "11d403618e4114a5edcd8f2fa4e90ef4e6427b04f4cd3962c59462694b55c443",
+      "vertices": 4910,
+      "faces": 9710,
+      "objBytes": 627176,
+      "sourceZipCompressedBytes": 181176,
+      "rawBounds": {
+        "min": [-127.079, -197.651, 1172.16],
+        "max": [-15.3142, -12.7276, 1291.32]
+      },
+      "candidateMmBounds": {
+        "min": [-127.079, -87.2724, -7.839999999999918],
+        "max": [-15.3142, 97.65100000000001, 111.31999999999994]
+      }
+    }
+  ],
+  "totals": {
+    "objBytes": 2711874,
+    "sourceZipCompressedBytes": 801327,
+    "vertices": 22288,
+    "faces": 41180
+  }
+}

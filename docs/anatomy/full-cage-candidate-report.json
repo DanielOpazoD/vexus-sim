@@ -1,0 +1,430 @@
+{
+  "source": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+  "license": "CC BY 4.0",
+  "credit": "BodyParts3D, \u00a9 The Database Center for Life Science licensed under CC Attribution 4.0 International",
+  "registration": {
+    "sourceUnit": "mm",
+    "axes": [
+      [1, 0, 0],
+      [0, -1, 0],
+      [0, 0, 1]
+    ],
+    "sourceOrigin": [-0.3152345, -205.92635, 1164.5735],
+    "targetOriginMm": [0, 85.25, 0],
+    "evidence": {
+      "units": "verified",
+      "orientation": "verified",
+      "landmarks": "pending"
+    }
+  },
+  "determinant": -1,
+  "reverseWinding": true,
+  "eligibleForIntegration": false,
+  "note": "Las cotas transformadas son candidatos geom\u00e9tricos, no dimensiones cl\u00ednicas validadas. Un \u00fanico registro para todos los assets; ninguna normalizaci\u00f3n por \u00f3rgano.",
+  "files": [
+    {
+      "name": "FJ3334.obj",
+      "sha256": "ecef0080744a8422b72b4f52229bd68945692cdef7d6fe2a57043b2155c49d17",
+      "vertices": 1642,
+      "faces": 3276,
+      "objBytes": 202346,
+      "sourceZipCompressedBytes": 61973,
+      "rawBounds": {
+        "min": [-69.7641, -130.424, 1310.07],
+        "max": [-15.1109, -64.4146, 1370.48]
+      },
+      "candidateMmBounds": {
+        "min": [-69.4488655, -56.261750000000006, 145.49649999999997],
+        "max": [-14.7956655, 9.747649999999993, 205.90650000000005]
+      }
+    },
+    {
+      "name": "FJ3336.obj",
+      "sha256": "e9f527453bb2a48764ac7243d0b9b23e37fb2a85e92cee445972a1a770a5eaa4",
+      "vertices": 2861,
+      "faces": 5594,
+      "objBytes": 358351,
+      "sourceZipCompressedBytes": 106874,
+      "rawBounds": {
+        "min": [-96.9721, -167.157, 1273.55],
+        "max": [-16.0495, -50.6529, 1359.03]
+      },
+      "candidateMmBounds": {
+        "min": [-96.6568655, -70.02345000000003, 108.97649999999999],
+        "max": [-15.734265499999998, 46.48065, 194.4565]
+      }
+    },
+    {
+      "name": "FJ3338.obj",
+      "sha256": "69dbbcfc72d592aa862621612e7ad1151ada3fa06c5ce51e24731015561ad7ac",
+      "vertices": 3634,
+      "faces": 7254,
+      "objBytes": 463529,
+      "sourceZipCompressedBytes": 135199,
+      "rawBounds": {
+        "min": [-108.947, -179.268, 1243.82],
+        "max": [-14.024, -36.829, 1335.97]
+      },
+      "candidateMmBounds": {
+        "min": [-108.6317655, -83.84735, 79.24649999999997],
+        "max": [-13.708765499999998, 58.59164999999999, 171.39650000000006]
+      }
+    },
+    {
+      "name": "FJ3340.obj",
+      "sha256": "b9bc6bbb160fd579ed246c3eb145b39f82866dc2dfeebe798f0dba5a2e352597",
+      "vertices": 4435,
+      "faces": 8832,
+      "objBytes": 567439,
+      "sourceZipCompressedBytes": 164761,
+      "rawBounds": {
+        "min": [-117.593, -192.192, 1211.1],
+        "max": [-15.0119, -23.1945, 1315.35]
+      },
+      "candidateMmBounds": {
+        "min": [-117.2777655, -97.48185000000001, 46.52649999999994],
+        "max": [-14.6966655, 71.51565, 150.77649999999994]
+      }
+    },
+    {
+      "name": "FJ3228.obj",
+      "sha256": "eb534d19462226e26b91234544f99abe118878a25c125f2a8839341e6769252b",
+      "vertices": 1641,
+      "faces": 3276,
+      "objBytes": 200850,
+      "sourceZipCompressedBytes": 61773,
+      "rawBounds": {
+        "min": [13.8004, -130.42, 1310.07],
+        "max": [68.4546, -64.417, 1370.48]
+      },
+      "candidateMmBounds": {
+        "min": [14.1156345, -56.25935000000001, 145.49649999999997],
+        "max": [68.7698345, 9.743649999999974, 205.90650000000005]
+      }
+    },
+    {
+      "name": "FJ3229.obj",
+      "sha256": "b752f038ceba8430f3872897ce69495d7dd74ed8e19c21d3f75d0bc0b156d84f",
+      "vertices": 2862,
+      "faces": 5594,
+      "objBytes": 355234,
+      "sourceZipCompressedBytes": 106207,
+      "rawBounds": {
+        "min": [14.7349, -167.127, 1273.51],
+        "max": [95.661, -50.6468, 1359.03]
+      },
+      "candidateMmBounds": {
+        "min": [15.0501345, -70.02955000000003, 108.93650000000002],
+        "max": [95.9762345, 46.450649999999996, 194.4565]
+      }
+    },
+    {
+      "name": "FJ3230.obj",
+      "sha256": "8b42d241c711fe9765b1239be33fcab6b865ab4619b5d05fa98ea245b6075d5c",
+      "vertices": 3637,
+      "faces": 7254,
+      "objBytes": 460035,
+      "sourceZipCompressedBytes": 134696,
+      "rawBounds": {
+        "min": [12.7243, -179.257, 1243.84],
+        "max": [107.633, -36.8579, 1335.98]
+      },
+      "candidateMmBounds": {
+        "min": [13.0395345, -83.81845000000001, 79.26649999999995],
+        "max": [107.9482345, 58.58064999999999, 171.40650000000005]
+      }
+    },
+    {
+      "name": "FJ3342.obj",
+      "sha256": "11d403618e4114a5edcd8f2fa4e90ef4e6427b04f4cd3962c59462694b55c443",
+      "vertices": 4910,
+      "faces": 9710,
+      "objBytes": 627176,
+      "sourceZipCompressedBytes": 181176,
+      "rawBounds": {
+        "min": [-127.079, -197.651, 1172.16],
+        "max": [-15.3142, -12.7276, 1291.32]
+      },
+      "candidateMmBounds": {
+        "min": [-126.76376549999999, -107.94875000000002, 7.586500000000115],
+        "max": [-14.998965499999999, 76.97465, 126.74649999999997]
+      }
+    },
+    {
+      "name": "FJ3232.obj",
+      "sha256": "6fa730aea273685148d3e9d3f52fe450acec4c13d6e3b1b6865e0e9532283abb",
+      "vertices": 4912,
+      "faces": 9710,
+      "objBytes": 622390,
+      "sourceZipCompressedBytes": 180882,
+      "rawBounds": {
+        "min": [14.0045, -197.688, 1172.17],
+        "max": [125.768, -12.7227, 1291.32]
+      },
+      "candidateMmBounds": {
+        "min": [14.319734500000001, -107.95365000000001, 7.5965000000001055],
+        "max": [126.0832345, 77.01164999999997, 126.74649999999997]
+      }
+    },
+    {
+      "name": "FJ3231.obj",
+      "sha256": "28b852d4813703c5654d0405168e22bf0032632d47b9667b4b16e60ed89a425b",
+      "vertices": 4445,
+      "faces": 8850,
+      "objBytes": 564537,
+      "sourceZipCompressedBytes": 164277,
+      "rawBounds": {
+        "min": [12.9057, -192.195, 1211.1],
+        "max": [116.281, -23.1919, 1315.35]
+      },
+      "candidateMmBounds": {
+        "min": [13.2209345, -97.48445000000001, 46.52649999999994],
+        "max": [116.59623450000001, 71.51864999999998, 150.77649999999994]
+      }
+    },
+    {
+      "name": "FJ3344.obj",
+      "sha256": "67f1f42fea1c289adaf4929716534bad7dfdd136ca0057f05de83d6e20c8f0a8",
+      "vertices": 5168,
+      "faces": 10246,
+      "objBytes": 661848,
+      "sourceZipCompressedBytes": 192028,
+      "rawBounds": {
+        "min": [-134.349, -193.505, 1137.91],
+        "max": [-14.8373, -3.64141, 1265.7]
+      },
+      "candidateMmBounds": {
+        "min": [-134.0337655, -117.03494, -26.663499999999885],
+        "max": [-14.5220655, 72.82864999999998, 101.12650000000008]
+      }
+    },
+    {
+      "name": "FJ3233.obj",
+      "sha256": "2a0f1e32b8410b6396bea7ae342a16ae1ac1b77042e70d7e98cabeb7dcf3dfb9",
+      "vertices": 5172,
+      "faces": 10264,
+      "objBytes": 657313,
+      "sourceZipCompressedBytes": 191162,
+      "rawBounds": {
+        "min": [12.7754, -193.495, 1137.9],
+        "max": [133.054, -3.6444, 1266.83]
+      },
+      "candidateMmBounds": {
+        "min": [13.0906345, -117.03195000000002, -26.673499999999876],
+        "max": [133.3692345, 72.81864999999999, 102.25649999999996]
+      }
+    },
+    {
+      "name": "FJ3346.obj",
+      "sha256": "91aa56e034fbe6f413c0f15b76d725a1f8efd115aa2900beda6edf43a3ab0c43",
+      "vertices": 5058,
+      "faces": 10032,
+      "objBytes": 647432,
+      "sourceZipCompressedBytes": 186730,
+      "rawBounds": {
+        "min": [-137.085, -180.203, 1105.19],
+        "max": [-13.6897, -4.48691, 1240.27]
+      },
+      "candidateMmBounds": {
+        "min": [-136.7697655, -116.18944000000002, -59.38349999999991],
+        "max": [-13.3744655, 59.52664999999999, 75.69650000000001]
+      }
+    },
+    {
+      "name": "FJ3234.obj",
+      "sha256": "638a766f20b64d02095efa845b5ea316624a376acb44c7e4a6d533d4da6ef4db",
+      "vertices": 5054,
+      "faces": 10032,
+      "objBytes": 642411,
+      "sourceZipCompressedBytes": 185932,
+      "rawBounds": {
+        "min": [12.3825, -180.208, 1105.19],
+        "max": [135.778, -4.49795, 1240.25]
+      },
+      "candidateMmBounds": {
+        "min": [12.697734500000001, -116.17840000000001, -59.38349999999991],
+        "max": [136.0932345, 59.531649999999985, 75.67650000000003]
+      }
+    },
+    {
+      "name": "FJ3347.obj",
+      "sha256": "43a1591cf1e123ca01f64297a7ce008d679a5f5f26421cc5b69e2232da89d743",
+      "vertices": 4199,
+      "faces": 8336,
+      "objBytes": 535785,
+      "sourceZipCompressedBytes": 155588,
+      "rawBounds": {
+        "min": [-132.968, -162.678, 1074.66],
+        "max": [-13.6765, -4.56449, 1211.33]
+      },
+      "candidateMmBounds": {
+        "min": [-132.6527655, -116.11186000000001, -89.91349999999989],
+        "max": [-13.3612655, 42.001649999999984, 46.75649999999996]
+      }
+    },
+    {
+      "name": "FJ3235.obj",
+      "sha256": "81a7215ef6ed923bbad6f07208bbc0ee26ddbaae3b1423f624cae465012d9144",
+      "vertices": 4211,
+      "faces": 8336,
+      "objBytes": 532786,
+      "sourceZipCompressedBytes": 155503,
+      "rawBounds": {
+        "min": [12.3704, -162.675, 1074.65],
+        "max": [131.638, -4.56957, 1211.32]
+      },
+      "candidateMmBounds": {
+        "min": [12.6856345, -116.10678000000001, -89.92349999999988],
+        "max": [131.9532345, 41.99865, 46.74649999999997]
+      }
+    },
+    {
+      "name": "FJ3348.obj",
+      "sha256": "7d3a969b778da18eb38b1a64d92e2b90e1730fcb0d7b2bfacd125ff4826876d0",
+      "vertices": 3808,
+      "faces": 7576,
+      "objBytes": 485203,
+      "sourceZipCompressedBytes": 141991,
+      "rawBounds": {
+        "min": [-129.098, -135.632, 1050.09],
+        "max": [-15.8646, -7.52907, 1185.37]
+      },
+      "candidateMmBounds": {
+        "min": [-128.7827655, -113.14728000000002, -114.48350000000005],
+        "max": [-15.549365499999999, 14.955649999999991, 20.796499999999924]
+      }
+    },
+    {
+      "name": "FJ3236.obj",
+      "sha256": "3dc292292b9f2bd5e226ac100d3a8db76cba8eb1d9d09533a6e5e871f023e2a8",
+      "vertices": 3805,
+      "faces": 7576,
+      "objBytes": 481790,
+      "sourceZipCompressedBytes": 141411,
+      "rawBounds": {
+        "min": [14.5582, -135.602, 1050.09],
+        "max": [127.783, -7.52766, 1185.36]
+      },
+      "candidateMmBounds": {
+        "min": [14.8734345, -113.14869000000002, -114.48350000000005],
+        "max": [128.0982345, 14.92564999999999, 20.786499999999933]
+      }
+    },
+    {
+      "name": "FJ3330.obj",
+      "sha256": "0f688dd4e0d20a8328b4763c0acc7582a9beac8fe5c7ce58586db99c6e366945",
+      "vertices": 3415,
+      "faces": 6820,
+      "objBytes": 434809,
+      "sourceZipCompressedBytes": 128089,
+      "rawBounds": {
+        "min": [-123.648, -117.687, 1022.98],
+        "max": [-16.8729, -11.3593, 1158.98]
+      },
+      "candidateMmBounds": {
+        "min": [-123.3327655, -109.31705000000002, -141.59349999999995],
+        "max": [-16.557665500000002, -2.989350000000016, -5.593499999999949]
+      }
+    },
+    {
+      "name": "FJ3225.obj",
+      "sha256": "daa25aba7fba3ff691d61cd239f8d49debc84ff871a351051c1d57a192b91dfd",
+      "vertices": 3419,
+      "faces": 6826,
+      "objBytes": 432180,
+      "sourceZipCompressedBytes": 127834,
+      "rawBounds": {
+        "min": [15.5623, -117.715, 1022.96],
+        "max": [122.349, -11.3545, 1158.99]
+      },
+      "candidateMmBounds": {
+        "min": [15.877534500000001, -109.32185000000001, -141.61349999999993],
+        "max": [122.6642345, -2.96135000000001, -5.583499999999958]
+      }
+    },
+    {
+      "name": "FJ3331.obj",
+      "sha256": "761d6d8713c31d4b9f795c4875da9fc750c913907386489568fdebea15af49c3",
+      "vertices": 2437,
+      "faces": 4866,
+      "objBytes": 306724,
+      "sourceZipCompressedBytes": 91934,
+      "rawBounds": {
+        "min": [-111.353, -96.0183, 1008.08],
+        "max": [-17.5963, -17.962, 1121.73]
+      },
+      "candidateMmBounds": {
+        "min": [-111.03776549999999, -102.71435000000002, -156.49349999999993],
+        "max": [-17.2810655, -24.658050000000017, -42.84349999999995]
+      }
+    },
+    {
+      "name": "FJ3226.obj",
+      "sha256": "4bb9d52fdb2c15cb459c2bd08fd58082cdb39d15903cde675313762ea2287fc8",
+      "vertices": 2435,
+      "faces": 4866,
+      "objBytes": 304278,
+      "sourceZipCompressedBytes": 91486,
+      "rawBounds": {
+        "min": [16.279, -96.0117, 1008.06],
+        "max": [110.054, -17.9614, 1121.74]
+      },
+      "candidateMmBounds": {
+        "min": [16.5942345, -102.71495000000002, -156.51350000000002],
+        "max": [110.3692345, -24.66465000000001, -42.83349999999996]
+      }
+    },
+    {
+      "name": "FJ3332.obj",
+      "sha256": "ece92488a9293cde2d8a8275cee8232326b377811afba888f6147d7217e04e07",
+      "vertices": 1412,
+      "faces": 2818,
+      "objBytes": 172395,
+      "sourceZipCompressedBytes": 53877,
+      "rawBounds": {
+        "min": [-86.5332, -66.0973, 1011.34],
+        "max": [-18.2125, -27.9922, 1089.17]
+      },
+      "candidateMmBounds": {
+        "min": [-86.21796549999999, -92.68415000000002, -153.23349999999994],
+        "max": [-17.8972655, -54.579049999999995, -75.4034999999999]
+      }
+    },
+    {
+      "name": "FJ3227.obj",
+      "sha256": "83e04b8b6f91e4de57e7b380a2f2c7d6f0bbf284ce76710ca89aa82fb376bd4e",
+      "vertices": 1411,
+      "faces": 2818,
+      "objBytes": 170995,
+      "sourceZipCompressedBytes": 53711,
+      "rawBounds": {
+        "min": [16.8903, -66.0698, 1011.33],
+        "max": [85.2211, -28.0149, 1089.16]
+      },
+      "candidateMmBounds": {
+        "min": [17.2055345, -92.66145, -153.24349999999993],
+        "max": [85.53633450000001, -54.60655000000003, -75.41349999999989]
+      }
+    }
+  ],
+  "totals": {
+    "objBytes": 10887836,
+    "sourceZipCompressedBytes": 3195094,
+    "vertices": 85983,
+    "faces": 170762
+  },
+  "sourceSkinZDomainMm": [-160, 120],
+  "skinDomainNote": "Current runtime clamps the eight source slices outside this domain. Complete cage needs additional verified skin slices; bounds are candidates, not acquisition approval.",
+  "partsOutsideSourceSkinZDomain": [
+    "FJ3334.obj",
+    "FJ3336.obj",
+    "FJ3338.obj",
+    "FJ3340.obj",
+    "FJ3228.obj",
+    "FJ3229.obj",
+    "FJ3230.obj",
+    "FJ3342.obj",
+    "FJ3232.obj",
+    "FJ3231.obj"
+  ]
+}

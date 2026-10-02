@@ -58,7 +58,7 @@ export function bindImageClick(opts: {
     { capture: true },
   );
   host.addEventListener('pointermove', (e) => {
-    if (dragLine !== e.pointerId) return;
+    if (dragLine !== e.pointerId || getSim().frozen) return;
     const { px, py } = at(e);
     dispatch({ type: 'placeMLine', theta: lineTheta(px, py) });
   });

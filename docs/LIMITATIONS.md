@@ -118,14 +118,13 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   normal del pericardio en la GPU es 1 (la de la distancia aproximada del elipsoide se aparta un 1,1 % en la mediana y un
   6,5 % en p95: ≤ 0,6 dB en su eco). El gemelo de la pasada A en TS (`transmissionHitsLine`, en las pruebas) sigue
   reflejando con la de la cúpula.
-- **La vértebra no tiene cortical** (`vertebra-no-cortex`): el cuerpo vertebral es un cilindro de 34 mm de hueso sin
-  cara (decisión 69; las costillas la tienen desde la 62). En la transversa epigástrica (decisión 83) su cara anterior
-  no da la línea curva brillante de un equipo: el cuerpo se ve como una cúpula oscura sobre la sombra, que con el arco
-  posterior es un rectángulo. La sombra sí sale de la física (la entrada en el hueso, 100 dB desde la decisión 88, y 10 dB
-  por mm a 2,5 MHz): la banda de su superficie, lo único que dibuja su borde, es el moteado del hueso hasta el centro
-  de su primera fila de la pasada A, 0–0,9 mm según dónde cae su cara en la rejilla (mediana 0,4 mm; antes, con 6 dB de
-  entrada, una banda de unos milímetros que se apagaba poco a poco). Su tejido conserva la retrodispersión (0,9) que el
-  hueso de las costillas, con cortical, perdió en la decisión 88.
+- **Columna continua y opaca simplificada** (`vertebra-continuous-geometry`, decisión 103): la superficie vertebral
+  ya genera un eco cortical propio, dependiente de incidencia, y se elimina el moteado de su interior. La geometría sigue
+  siendo cilindro y arco rectangular continuos: sin cuerpos segmentados, discos, canal, pedículos ni apófisis anatómicas.
+  La rugosidad/pendiente se extrapolan de la cortical costal; no se han calibrado frente a clips vertebrales. La sombra
+  conserva el modelo óseo opaco previo (100 dB de entrada); no resuelve corteza/esponjosa ni señales RF intravertebrales.
+  No permite entrenamiento de punción neuraxial ni evaluación de densidad ósea. En uniones no suaves del cuerpo/arco,
+  la normal es el gradiente numérico de la unión y la curvatura se aproxima por cilindro/plano.
 - **La aorta no late en modo B** (`aorta-fixed-caliber`): su calibre es fijo; el pulso arterial está en su velocidad
   (color y PW), no en su pared. En la transversa epigástrica (decisión 83) no se ve el latido de 1–4 mm que ayuda a
   distinguirla de la VCI: se reconoce por su pared más gruesa y brillante, su sección redonda, su sitio sobre la vértebra,

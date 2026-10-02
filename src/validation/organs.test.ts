@@ -10,7 +10,7 @@ import { LIGAMENTUM_VENOSUM, ligamentumVenosumSdf, umbilicalFissureSdf, UMBILICA
 describe('Módulos de órgano', () => {
   it('las normales vec3 del clasificador no se redeclaran en el mismo bloque', () => {
     const duplicates = (source: string): string[] => {
-      const text = source.slice(source.indexOf('Cls classifyWith(')).replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '');
+      const text = source.slice(source.indexOf('Cls classifyTissue(')).replace(/\/\*[\s\S]*?\*\/|\/\/[^\n]*/g, '');
       let depth = 0,
         top = '';
       for (const char of text.slice(text.indexOf('{'))) {

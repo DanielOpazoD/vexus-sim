@@ -240,7 +240,10 @@ export function interfaceUniforms(k0: number, kDb = IFACE_K_DB): Float32Array {
  * El cartílago transmite: su cara profunda sí se ve. Gemelo de la condición de `interfaceEcho` (GLSL).
  */
 export function faceLitFromProbe(face: Interface, normal: readonly number[], dir: readonly number[]): boolean {
-  return face !== Interface.RibCortex || normal[0] * dir[0] + normal[1] * dir[1] + normal[2] * dir[2] <= 0;
+  return (
+    (face !== Interface.RibCortex && face !== Interface.VertebralCortex) ||
+    normal[0] * dir[0] + normal[1] * dir[1] + normal[2] * dir[2] <= 0
+  );
 }
 
 /** Uniforms del último (k0, K) pedido: el gemelo evalúa el eco en cientos de miles de muestras. */
@@ -340,7 +343,7 @@ export const BONE_IMPEDANCE_RATIO =
  * el contorno de media costilla: un disco. 1 en el resto de caras.
  */
 export function boneDiffuseWindow(face: Interface, cosI: number): number {
-  if (face !== Interface.RibCortex) return 1;
+  if (face !== Interface.RibCortex && face !== Interface.VertebralCortex) return 1;
   const ct2 = 1 - (1 - cosI * cosI) / (BONE_CRITICAL_SIN * BONE_CRITICAL_SIN);
   if (ct2 <= 0) return 0;
   const ct = Math.sqrt(ct2);
@@ -480,11 +483,11 @@ vec2 interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w) {
   float gn = length(gw);
   fg = vec4(gw / max(gn, 1e-9), gn);
   // la cara posterior de una costilla ósea solo se alcanza a través del hueso (faceLitFromProbe, decisión 62)
-  if (c.iface == IF_RIB && dot(fg.xyz, dir) > 0.0) return vec2(0.0);
+  if ((c.iface == IF_RIB || c.iface == IF_VERTEBRAL_CORTEX) && dot(fg.xyz, dir) > 0.0) return vec2(0.0);
   float cosI = abs(dot(fg.xyz, dir));
   if (cosI < IFACE_MIN_COS) return vec2(0.0);
   // tubos y costillas (decisión 62): cilindros con la curvatura de su sección en c.kc y su eje en c.tangent
-  float curv = c.iface <= IF_LAST_TUBE || c.iface == IF_RIB || c.iface == IF_PERICHONDRIUM || c.iface == IF_BOWEL_LUMEN || c.iface == IF_BOWEL_SEROSA ? tubeCurvature(c, fg.xyz, dir, r, se) : 1.0;
+  float curv = c.iface <= IF_LAST_TUBE || c.iface == IF_RIB || c.iface == IF_VERTEBRAL_CORTEX || c.iface == IF_PERICHONDRIUM || c.iface == IF_BOWEL_LUMEN || c.iface == IF_BOWEL_SEROSA ? tubeCurvature(c, fg.xyz, dir, r, se) : 1.0;
   // las caras de la pared: la variación anclada de su reflectividad a lo largo de la cara (wallTexture.ts)
   float gain = c.iface >= IF_FIRST_WALL && c.iface <= IF_LAST_WALL ? wallFaceGain(m, c.iface) : 1.0;
   // la cara interna de la pared con grasa detrás (fatAcrossWall, decisión 65): dentro del compartimento retroperitoneal y
@@ -504,7 +507,7 @@ vec2 interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w) {
   // ángulo crítico (boneDiffuseWindow, decisión 88)
   float ctw = sqrt(max(0.0, 1.0 - (1.0 - cosI * cosI) / BONE_CRITICAL_SIN2));
   float zw = cosI + BONE_Z_RATIO * ctw;
-  float wd = c.iface == IF_RIB ? cosI * ctw * (1.0 + BONE_Z_RATIO) * (1.0 + BONE_Z_RATIO) / (zw * zw) : 1.0;
+  float wd = (c.iface == IF_RIB || c.iface == IF_VERTEBRAL_CORTEX) ? cosI * ctw * (1.0 + BONE_Z_RATIO) * (1.0 + BONE_Z_RATIO) / (zw * zw) : 1.0;
   return vec2(faceEcho(c.iface, cosF, min(1.0 - 4.0 * FACET_TILT2 * P.z, 1.0 - FACET_RHO2), 1.0, curv, g),
               IFACE_DIFFUSE * P.x * inversesqrt(P.z) * sqrt(max(0.0, 1.0 - exp(-P.y * P.y))) * cosI * wd * g);
 }

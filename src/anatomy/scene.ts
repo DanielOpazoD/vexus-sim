@@ -71,6 +71,7 @@ import {
 export type { DuctDef, VesselDef } from './vesselTree';
 import { BOWEL_BD_CAP_MM, DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, Tissue } from './tissues';
 import {
+  VERTEBRAL_FIELD_REACH_MM,
   FACE_GRADIENT_EPS_MM,
   Interface,
   LAST_TUBE_INTERFACE,
@@ -157,7 +158,8 @@ export function faceGeometryOf(i: Interface): FaceGeometry | null {
     i === Interface.PleuraWall ||
     isWallLayerInterface(i) ||
     isRibInterface(i) ||
-    isBowelInterface(i)
+    isBowelInterface(i) ||
+    i === Interface.VertebralCortex
   )
     return null;
   if (i <= LAST_TUBE_INTERFACE) return 'tube';
@@ -502,6 +504,16 @@ export class AnatomyScene {
    * La clasificación sigue siendo binaria: la fracción de aire del haz es de la imagen, no de la anatomía.
    */
   classify(m: Vec3, caliber: VesselCaliber, withCurtain = true): Classification {
+    const c = this.classifyTissue(m, caliber, withCurtain);
+    // La cortical pertenece al tejido de fuera; nunca al hueso ni al gas.
+    if ([Tissue.Air, Tissue.Lung, Tissue.BowelGas, Tissue.Bone, Tissue.Vertebra].includes(c.tissue)) return c;
+    const d = sdSpine(m, this.spine);
+    if (d >= 0 && d < VERTEBRAL_FIELD_REACH_MM && d < c.interfaceDistance)
+      return { ...c, interface: Interface.VertebralCortex, interfaceDistance: d };
+    return c;
+  }
+
+  private classifyTissue(m: Vec3, caliber: VesselCaliber, withCurtain: boolean): Classification {
     const torso = this.torso;
     const depth = torsoDepth(m, torso);
     if (m[2] < torso.zMin || m[2] > torso.zMax || depth > 0) return NONE;
@@ -663,6 +675,11 @@ export class AnatomyScene {
     if (face === undefined) {
       // las caras de la pared y de las costillas (decisión 62) no tienen geometría de faceSdf
       const iface = this.classify(m, caliber).interface;
+      if (iface === Interface.VertebralCortex) {
+        const body = Math.hypot(m[0] - this.spine.x0, m[1] - this.spine.y0) - this.spine.r;
+        const curvature = body <= sdSpine(m, this.spine) + 1e-8 ? 1 / this.spine.r : 0;
+        return { ...this.numericGradient(m, (p) => sdSpine(p, this.spine), curvature), axis: [0, 0, 1] };
+      }
       if (isBowelInterface(iface)) {
         const q = bowelQuery(m, this.bowelRadii),
           n = iface === Interface.BowelSerosa ? q.normal : q.lumenNormal,

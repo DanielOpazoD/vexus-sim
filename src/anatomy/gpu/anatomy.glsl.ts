@@ -24,6 +24,7 @@ import { CARTILAGE_ROWS } from '../referenceCartilageData';
  */
 import { BOWEL_BD_CAP_MM, DIAPHRAGM_THICKNESS_MM, LIVER_CAPSULE_MM, TISSUE_GLSL_NAME } from '../tissues';
 import {
+  VERTEBRAL_FIELD_REACH_MM,
   FACE_GRADIENT_EPS_MM,
   FIRST_WALL_INTERFACE,
   INTERFACE_COUNT,
@@ -84,6 +85,7 @@ ${INTERFACE_DEFINES}
 #define MORISON_CONTACT_MM ${MORISON_CONTACT_MM.toFixed(3)}
 #define MORISON_SLIVER_MM ${MORISON_SLIVER_MM.toFixed(3)}
 #define GALLBLADDER_CONTACT_MM ${GALLBLADDER_CONTACT_MM.toFixed(3)}
+#define VERTEBRAL_REACH ${VERTEBRAL_FIELD_REACH_MM.toFixed(1)}
 #define FACE_GRAD_EPS ${FACE_GRADIENT_EPS_MM.toFixed(3)}
 #define DIAPHRAGM_MM ${DIAPHRAGM_THICKNESS_MM.toFixed(3)}
 #define CAPSULE_MM ${LIVER_CAPSULE_MM.toFixed(3)}
@@ -472,8 +474,16 @@ bool classifyWall(vec3 m, out Cls c, out float depth, out vec3 tn) {
   return false;
 }
 
+// Misma unión cuerpo/arco que sdSpine en primitives.ts.
+float spineSd(vec3 m) {
+  vec2 q = abs(m.xy - vec2(uSpine.x, 0.5 * (uSpineArch.y + uSpineArch.z)))
+    - vec2(uSpineArch.x, 0.5 * (uSpineArch.z - uSpineArch.y));
+  return min(length(m.xy - uSpine.xy) - uSpine.z,
+    length(max(q, 0.0)) + min(max(q.x, q.y), 0.0));
+}
+
 // withCurtain = false: sin la cortina (decisión 61), lo de detrás de la lámina; gemelo classify(m, cal, false)
-Cls classifyWith(vec3 m, bool withCurtain) {
+Cls classifyTissue(vec3 m, bool withCurtain) {
   Cls c;
   float depth;
   vec3 tn;
@@ -660,6 +670,17 @@ Cls classifyWith(vec3 m, bool withCurtain) {
   return c;
 }
 
+Cls classifyWith(vec3 m, bool withCurtain) {
+  Cls c = classifyTissue(m, withCurtain);
+  if(c.tissue == T_AIR || c.tissue == T_LUNG || c.tissue == T_BOWELGAS || c.tissue == T_BONE || c.tissue == T_VERTEBRA) return c;
+  float d = spineSd(m);
+  if(d >= 0.0 && d < VERTEBRAL_REACH && d < c.ifd) {
+    c.iface = IF_VERTEBRAL_CORTEX; c.ifd = d; c.tangent = vec3(0.0, 0.0, 1.0);
+    c.kc = length(m.xy - uSpine.xy) - uSpine.z <= d + 1e-5 ? 1.0 / uSpine.z : 0.0;
+  }
+  return c;
+}
+
 Cls classify(vec3 m) { return classifyWith(m, true); }
 
 // −faceSdf('liverSurface') de TS: margen hacia dentro del parénquima (hígado, cúpula y pared), la
@@ -717,7 +738,11 @@ float domeSd(vec3 m) { vec3 n; return sdDome(m, n); }
 vec4 faceGradient(Cls c, vec3 m) {
   vec2 h = vec2(FACE_GRAD_EPS, 0.0);
   vec3 g;
-  if (c.tissue == T_CAPSULE) {
+  if (c.iface == IF_VERTEBRAL_CORTEX) {
+    g = vec3(spineSd(m + h.xyy) - spineSd(m - h.xyy),
+             spineSd(m + h.yxy) - spineSd(m - h.yxy),
+             spineSd(m + h.yyx) - spineSd(m - h.yyx));
+  } else if (c.tissue == T_CAPSULE) {
     g = vec3(liverInner(m + h.xyy) - liverInner(m - h.xyy),
              liverInner(m + h.yxy) - liverInner(m - h.yxy),
              liverInner(m + h.yyx) - liverInner(m - h.yyx));

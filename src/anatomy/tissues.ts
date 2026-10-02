@@ -157,8 +157,7 @@ export const TISSUES: TissueProps[] = [
   // tras una costilla y el tejido seguía visible dentro de la sombra (decisión 54). Sin retrodispersión propia
   // (decisión 88): lo que devuelve una costilla es el eco de su cortical anterior, la cara que dibuja el tejido blando de
   // delante (decisión 62); lo que entra en el hueso no vuelve a formar imagen, y con 0,9 su moteado dibujaba bajo la
-  // cortical una media luna gris (el disco de la costilla, distinto de su sombra). La vértebra, sin cara de cortical, la
-  // conserva (su banda de superficie es lo que queda de su eco: `vertebra-no-cortex`).
+  // cortical una media luna gris. La vértebra tiene ahora su propia interfaz exterior; tampoco dibuja moteado interior.
   { name: 'hueso cortical', c: 3515, rho: 1908, alpha1: 20, b: 1, backscatter: 0, gas: false, bone: true },
   // el «resto» del abdomen (asas, mesenterio; la grasa retroperitoneal es un tejido propio desde la decisión 81): el
   // nivel lo da su textura (decisión 74, `ultrasound/restTexture.ts`), granulosa por los grumos
@@ -192,7 +191,7 @@ export const TISSUES: TissueProps[] = [
   { name: 'grasa perirrenal', c: 1450, rho: 920, alpha1: 0.45, b: 1.1, backscatter: 2.4, gas: false, bone: false, speckleClump: 0.8 },
   { name: 'pared de vía biliar', c: 1586, rho: 1079, alpha1: 0.7, b: 1, backscatter: 2.4, gas: false, bone: false },
   // Vértebra: mismas propiedades que el hueso cortical; tejido aparte solo para rotular «columna»
-  { name: 'vértebra', c: 3515, rho: 1908, alpha1: 20, b: 1, backscatter: 0.9, gas: false, bone: true },
+  { name: 'vértebra', c: 3515, rho: 1908, alpha1: 20, b: 1, backscatter: 0, gas: false, bone: true },
   // Ligamento redondo: grasa + tejido fibroso, marcadamente ecogénico (foco brillante en el
   // corte transversal del lóbulo izquierdo, a veces con sombra) [E.3].
   { name: 'ligamento redondo (grasa)', c: 1470, rho: 950, alpha1: 0.6, b: 1.1, backscatter: 2.2, gas: false, bone: false },

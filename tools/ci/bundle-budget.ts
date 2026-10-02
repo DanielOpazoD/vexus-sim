@@ -49,11 +49,14 @@
 // funciones GLSL generadas de sus tablas, en todas las pasadas que clasifican), el gradiente de la capa con su pendiente,
 // la interpolación de la transmisión que no cruza la entrada en un hueso en B y D, la ventana de la difusa de la cortical
 // y sus gemelos TS. index sube a 335 kB.
+import { readFileSync } from 'node:fs';
 import { bundleAssets } from './bundleAssets';
 import { basename, join } from 'node:path';
 
 const KB = 1024;
 const BUDGETS: Array<[RegExp, number]> = [
+  // El perfil corporal conserva sus 2080 bytes; carga solo al activar referencia, sin base64 en JS.
+  [/reference-body-.*\.bin$/, 2080],
   [/three.*\.js$/, 700 * KB],
   [/^(index|bootstrap)-.*\.js$/, 335 * KB],
   [/\.css$/, 20 * KB],
@@ -76,6 +79,13 @@ try {
 } catch {
   console.error('bundle-budget: no existe dist — ejecuta `vite build` antes');
   process.exit(1);
+}
+const referenceFiles = files.filter(({ file }) => /reference-body-.*\.bin$/.test(file));
+if (
+  referenceFiles.length !== 1 ||
+  !readFileSync(join(dir, referenceFiles[0].file)).equals(readFileSync('src/anatomy/reference-body.bin'))
+) {
+  throw new Error('Perfil corporal externo ausente, duplicado o modificado');
 }
 let over = false;
 let totalJs = 0;

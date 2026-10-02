@@ -106,3 +106,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [100](DECISIONS.md#L4804) | Fundido del moteado gobernado por tiempo de simulación | vigente |
 | [101](DECISIONS.md#L4816) | Asas intestinales con pared, luz y gas físicos | vigente |
 | [102](DECISIONS.md#L4828) | Pliegues, calibre variable y respuesta intestinal local a la compresión | vigente |
+| [103](DECISIONS.md#L4842) | Interfaz cortical vertebral y sombra sin moteado óseo | vigente |

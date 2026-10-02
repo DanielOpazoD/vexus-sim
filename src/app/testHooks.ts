@@ -55,6 +55,10 @@ import { startPointsFor, type StartPoint } from './startPoints';
  * que abre el alumno.
  */
 export interface TestHooks {
+  corticalSamples: (points: Vec3[]) => {
+    spine: { x0: number; y0: number; r: number; archHalfWidth: number; archY0: number; archY1: number };
+    rows: number[][];
+  };
   equivalenceSweep: () => EquivalencePoseReport[];
   /** Paridad dirigida a pared, luz, gas y serosa intestinales; solo pruebas. */
   bowelEquivalence: () => {
@@ -360,6 +364,30 @@ export function frameMeasureOptions(opts: FrameCostOptions = {}): RenderMeasureO
 
 export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: EquipmentCommand) => void, loopFrames: () => number): TestHooks {
   const hooks: TestHooks = {
+    corticalSamples: (points) => {
+      const sim = getSim(),
+        sample = sim.sample;
+      if (!points.length) return { spine: sim.scene.spine, rows: [] };
+      const world = new Float32Array(points.flatMap((p) => sim.anatomy.deformation.toWorld(p, sample.resp)));
+      const gpu = sim.gpuQuery(world, sim.frame, true, { normals: true });
+      const rows = points.map((_, i) => {
+        const c = sim.anatomy.classifyWorld([world[3 * i], world[3 * i + 1], world[3 * i + 2]], sample);
+        const g = sim.scene.faceGradient(c.material, sim.anatomy.caliberFor(sample));
+        return [
+          c.tissue,
+          c.interface,
+          c.interfaceDistance,
+          ...(g?.normal ?? [0, 0, 0]),
+          g?.norm ?? 0,
+          gpu.tissue[i],
+          gpu.iface[i],
+          gpu.ifd[i],
+          ...Array.from(gpu.normal!.subarray(3 * i, 3 * i + 3)),
+          gpu.gradNorm![i],
+        ];
+      });
+      return { spine: sim.scene.spine, rows };
+    },
     equivalenceSweep: () => equivalenceSweep(getSim()),
     bowelEquivalence: () => {
       const sim = getSim(),

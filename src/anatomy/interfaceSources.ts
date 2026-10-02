@@ -10,6 +10,8 @@ const INTERMUSCULAR = 'fascia con grasa entre dos músculos: 2Γ·sen(kt) con Γ
 const WALL = 'Z de TISSUES (IT’IS); suelo por la pared vascular (IT’IS «blood vessel wall», |R| ≈ 0,024) [LITERATURA aprox.]';
 /** Scientific provenance, retained in source without shipping unused prose in each scene worker. */
 export const INTERFACE_SOURCES: Readonly<Record<Interface, string>> = {
+  [Interface.VertebralCortex]:
+    'Garra et al., Ultrasound Med Biol 2009, doi:10.1016/j.ultrasmedbio.2008.06.004: reflexión anterior observada. Rugosidad y pendiente extrapoladas de cortical costal, no medidas; modelo opaco sin esponjosa resuelta.',
   [Interface.None]: '—',
   [Interface.VeinLumen]: `${WALL}; s de la VSH, brillante solo a ±12° [ESTIMADO]`,
   [Interface.IvcLumen]: `${WALL}; pared más gruesa y ondulada [ESTIMADO]`,

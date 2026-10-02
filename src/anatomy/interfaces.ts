@@ -64,9 +64,12 @@ export enum Interface {
   Pericardium = 22,
   BowelLumen = 23,
   BowelSerosa = 24,
+  VertebralCortex = 25,
 }
 
-export const INTERFACE_COUNT = 25;
+export const INTERFACE_COUNT = 26;
+/** Banda material conservadora para la cortical; el perfil efectivo mide menos de 1 mm. */
+export const VERTEBRAL_FIELD_REACH_MM = 5;
 /** Las caras de tubo van primero (ids ≤ esta): solo ellas llevan coherencia de curvatura. */
 export const LAST_TUBE_INTERFACE = Interface.DuctLumen;
 /** Caras de las capas de la pared (decisión 62): ids consecutivos de `SkinFat` a `Peritoneum`. */
@@ -91,7 +94,7 @@ export function isBowelInterface(i: Interface): boolean {
   return i === Interface.BowelLumen || i === Interface.BowelSerosa;
 }
 export function hasCurvatureCoherence(i: Interface): boolean {
-  return (i !== Interface.None && i <= LAST_TUBE_INTERFACE) || isRibInterface(i) || isBowelInterface(i);
+  return (i !== Interface.None && i <= LAST_TUBE_INTERFACE) || isRibInterface(i) || isBowelInterface(i) || i === Interface.VertebralCortex;
 }
 /**
  * Cápsula hepática y grasa perirrenal a ≤ esto (mm) son la misma cara (Morison): la dibuja la grasa,
@@ -147,6 +150,7 @@ export const INTERFACE_GLSL_NAME: Record<Interface, string> = {
   [Interface.Pericardium]: 'IF_PERICARDIUM',
   [Interface.BowelLumen]: 'IF_BOWEL_LUMEN',
   [Interface.BowelSerosa]: 'IF_BOWEL_SEROSA',
+  [Interface.VertebralCortex]: 'IF_VERTEBRAL_CORTEX',
 };
 
 /** Propiedades de una cara lisa (tabla de la decisión 57). */
@@ -335,6 +339,14 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
   [Interface.RibCortex]: {
     name: 'cortical costal',
     sides: [Tissue.Muscle, Tissue.Bone],
+    floor: 0,
+    roughnessMm: 0.045,
+    slopeRms: 0.15,
+    twoSided: false,
+  },
+  [Interface.VertebralCortex]: {
+    name: 'cortical vertebral',
+    sides: [Tissue.Muscle, Tissue.Vertebra],
     floor: 0,
     roughnessMm: 0.045,
     slopeRms: 0.15,

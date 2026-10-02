@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { uncompress } from '../anatomy/compression';
 import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
@@ -22,6 +23,8 @@ import {
   spineSlabSd,
 } from '../anatomy/primitives';
 import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
+import { HEPATIC_SPINE_GAP_MM } from '../anatomy/organs/liver';
+import { setReferenceBody, validateReferenceBody } from '../anatomy/referenceBody';
 import { TISSUES, Tissue } from '../anatomy/tissues';
 import { START_POINTS } from '../app/startPoints';
 import { NORMAL_ADULT } from '../cases';
@@ -50,6 +53,8 @@ const sp = scene.spine;
 const cls = (m: Vec3) => scene.classify(m, BASELINE_CALIBER);
 const k0 = (2 * Math.PI) / (1540 / (CONVEX_C35_PROFILE.bEffectiveMHz * 1000));
 const deg = (rad: number) => (rad * 180) / Math.PI;
+const bytes = readFileSync('src/anatomy/reference-body.bin');
+const profile = validateReferenceBody(new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)));
 
 describe('columna: cuerpos elípticos con discos (PR119; recuperación provisional de la decisión 103)', () => {
   it('cuerpo de 40 × 29 mm, la misma área que el círculo de radio r (el peso respiratorio no cambia), cuerpos de 24 mm y discos de 7', () => {
@@ -204,24 +209,73 @@ describe('columna: cuerpos elípticos con discos (PR119; recuperación provision
     expect(cls(beside).boundaryDistance).toBeLessThanOrEqual(sdSpineDisc(beside, sp) + 1e-9);
   });
 
-  it('la distancia a la frontera del tejido junto a la columna cuenta el hueso (antes el hígado que recorta no la contaba)', () => {
-    // en la subxifoidea el hígado apoya en el costado del cuerpo: a 2 mm de la cara, su frontera está a ≤ 2 mm
-    const pose = poseOf('subxiphoid');
-    const contact = probeContact(pose, CONVEX_C35, scene.torso);
-    let checked = 0;
-    for (let i = 0; i < 61; i++) {
-      const th = -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * i) / 60;
-      for (let r = 80; r < 175; r += 0.25) {
-        const m = uncompress(pointOnLine(contact.frame, CONVEX_C35, th, r), contact);
-        const d = sdSpine(m, sp);
-        if (d < 1.5 || d > 3) continue;
-        const c = cls(m);
-        if (c.tissue !== Tissue.Liver) continue;
-        checked++;
-        expect(c.boundaryDistance, `${i} ${r}`).toBeLessThanOrEqual(d + 1e-9);
+  it.each([false, true])(
+    'subxifoidea: el plano de exclusión hepática conserva grasa y una frontera que cuenta el hueso (referencia %s)',
+    (reference) => {
+      // Se conserva la rejilla y la cota de PR119. PR144 excluye hígado a ≤3 mm del hueso: exigir
+      // parénquima en esa banda contradecía su separación. Ahora se verifica también la exclusión,
+      // sin hacer vacua la cota por filtrar las muestras de hígado que ya no pueden existir.
+      setReferenceBody(reference ? profile : undefined);
+      let localScene: AnatomyScene;
+      try {
+        localScene = new AnatomyScene(NORMAL_ADULT);
+      } finally {
+        setReferenceBody();
       }
+      const pose = poseOf('subxiphoid');
+      // Misma rejilla original; en referencia se trasladan sus muestras con el eje vertebral.
+      // El torso de referencia es más profundo y el rango original no alcanza su columna.
+      const contact = probeContact(pose, CONVEX_C35, scene.torso);
+      let checked = 0;
+      let fat = 0;
+      for (let i = 0; i < 61; i++) {
+        const th = -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * i) / 60;
+        for (let r = 80; r < 175; r += 0.25) {
+          const m = uncompress(pointOnLine(contact.frame, CONVEX_C35, th, r), contact);
+          m[1] += localScene.spine.y0 - sp.y0;
+          const d = sdSpine(m, localScene.spine);
+          if (d < 1.5 || d > HEPATIC_SPINE_GAP_MM) continue;
+          const c = localScene.classify(m, BASELINE_CALIBER);
+          checked++;
+          expect(localScene.liverSdf(m), `${i} ${r}`).toBeGreaterThanOrEqual(0);
+          expect(c.tissue, `${i} ${r}`).not.toBe(Tissue.Liver);
+          expect(c.tissue, `${i} ${r}`).not.toBe(Tissue.LiverCapsule);
+          expect(c.boundaryDistance, `${i} ${r}`).toBeLessThanOrEqual(d + 1e-9);
+          if (c.tissue === Tissue.RetroperitonealFat) fat++;
+        }
+      }
+      expect(checked).toBeGreaterThan(20);
+      // El plano blando tiene extensión: no basta excluir el hígado sustituyéndolo por aire/hueso.
+      expect(fat).toBeGreaterThan(20);
+    },
+  );
+
+  it.each([false, true])('la cota ósea es activa y el diafragma conserva su interfaz (referencia %s)', (reference) => {
+    setReferenceBody(reference ? profile : undefined);
+    let s: AnatomyScene;
+    try {
+      s = new AnatomyScene(NORMAL_ADULT);
+    } finally {
+      setReferenceBody();
     }
-    expect(checked).toBeGreaterThan(20);
+    // Testigo junto al arco donde ni hígado ni disco dominan; verifica la cota total.
+    // El retroperitoneo también la aplica: la sensibilidad a quitarla de withSpineFace la prueba la rejilla anterior.
+    const fat: Vec3 = [-s.spine.archHalfWidth - 1, s.spine.archY0 + 5, -20];
+    const d = sdSpine(fat, s.spine),
+      c = s.classify(fat, BASELINE_CALIBER);
+    expect(c.tissue).toBe(Tissue.RetroperitonealFat);
+    expect(d).toBeGreaterThan(0);
+    expect(s.liverSdf(fat)).toBeGreaterThan(d + 0.5);
+    expect(Math.abs(sdSpineDisc(fat, s.spine))).toBeGreaterThan(d + 0.5);
+    expect(c.boundaryDistance).toBeCloseTo(d, 10);
+    // Testigos reales dentro del alcance antiguo de 1,3 mm: el predicado amplio de PR119
+    // inventaba una cortical sobre el diafragma, incluso sustituyendo su interfaz propia.
+    const diaphragm: Vec3 = [-20, s.spine.y0 - 1, reference ? 36 : 47];
+    const q = s.classify(diaphragm, BASELINE_CALIBER);
+    expect(q.tissue).toBe(Tissue.Diaphragm);
+    expect(sdSpine(diaphragm, s.spine)).toBeGreaterThan(0);
+    expect(sdSpine(diaphragm, s.spine)).toBeLessThan(1.3);
+    expect(q.interface).toBe(reference ? Interface.DiaphragmLiver : Interface.None);
   });
 
   it('la cara del cuerpo: normal de la elipse en su costado y ±z en los platillos, norma 1 y la curvatura de su sección', () => {

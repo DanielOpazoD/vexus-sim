@@ -101,3 +101,45 @@ paridad TS/GLSL, E2E CPU/GPU y comparadores sobre el SHA final, con ambos perfil
 
 Las dimensiones vertebrales y la holgura hepática siguen siendo parámetros aproximados o estimados; los conteos
 son evidencia de software y no validación clínica. No se incorporaron referencias clínicas privadas.
+
+## Revisión autorizada de los contratos (2026-10-02)
+
+El operador autorizó conservar la separación de PR144 y sustituir las dos expectativas incompatibles por
+regresiones geométricas. Los fallos anteriores se conservan arriba como registro histórico; ya no describen
+el estado de las pruebas dirigidas. No cambió código de producción durante esta revisión.
+
+- La rejilla subxifoidea original (61 rayos, 80–175 mm cada 0,25 mm y banda ósea 1,5–3 mm) conserva su cota
+  `boundaryDistance <= dBone`. Exige exclusión de parénquima/cápsula y más de 20 muestras de grasa. Para el cuerpo
+  de referencia se trasladan las mismas muestras con el eje vertebral: el rango original desde su piel no alcanza
+  la columna, por lo que no se presenta ese muestreo homólogo como adquisición clínica del torso de referencia.
+- Se conservan ambos testigos intercostales históricos, con solo la traslación AP de la columna para referencia.
+  La normal local y una bisección de la superficie ósea generan un recorrido cada 0,1 mm, independiente de la
+  clasificación y de la fórmula hepática. Exige hueso → grasa → cápsula → parénquima, más de 20/5/10 muestras
+  blandas respectivamente, plano de grasa de 2,7–3,3 mm y espesor capsular dentro de 0,2 mm del parámetro de 0,8 mm.
+  La cápsula conserva su interfaz propia y su distancia al hígado; la grasa conserva la cortical del cuerpo.
+- Un testigo junto al arco exige que la cota ósea sea activa aunque hígado y disco estén más lejos. Esto evita
+  una prueba vacua: junto al costado elíptico la distancia del disco puede ser igual a la del cuerpo.
+- Dos testigos de diafragma a menos de 1,3 mm del hueso protegen tanto `None` como `DiaphragmLiver` frente al
+  predicado cortical amplio original. Permanecen los guards originales de corteza ≥20, discos ≥8/grupos ≥3,
+  dueños permitidos, arco sin cortical y cápsula suprimida.
+
+Pruebas dirigidas: **16/16 pasan** (`spine` y `hepaticBoundary`, un trabajador, 4,51 s). Tres mutaciones temporales
+se ejecutaron separadamente contra esas mismas pruebas y luego se restauraron los archivos byte por byte:
+
+| Mutación                                   | Fallos | Propiedad que detecta la regresión                            |
+| ------------------------------------------ | ------ | ------------------------------------------------------------- |
+| Eliminar separación hepática CPU           | 8      | Exclusión, recorrido capsular y guarda cortical original      |
+| Eliminar `dSpine` de la cota de frontera   | 3      | Guard previo y ambas rejillas (rayo 0, profundidad 140,75 mm) |
+| Restaurar predicado cortical amplio 1,3 mm | 5      | Interfaz del diafragma y cortical del testigo `towardBone`    |
+
+Cada mutación terminó con exit 1; no se modificó ninguna constante, umbral ni guarda para hacerlas fallar.
+La restauración se comprobó con SHA-256 y `git diff`: solo cambiaron los dos archivos de pruebas.
+Logs y script reproducible: evidencia externa `pr119-pr144-evidence/mutation-*.log`, `mutations.json` y
+`pr119-mutations.py`. La validación completa y visual sigue pendiente en este punto del registro.
+
+La revisión independiente confirmó los contratos y precisó la atribución de las mutaciones: el testigo del arco
+verifica la cota total, pero sigue pasando al quitarla solo de `withSpineFace`, porque el clasificador retroperitoneal
+también la aplica. La sensibilidad a esa eliminación la prueban ambas rejillas: en el rayo 0 a 140,75 mm, la
+frontera mutada mide 2,10456286245 mm frente a una cota ósea de 2,09895745306 mm. El predicado cortical antiguo
+falla además en el testigo `towardBone` antes de llegar al recorrido; no se atribuye ese fallo a la exclusividad
+capsular. Los testigos del diafragma sí fallan específicamente por una cortical invasora en ambos perfiles.

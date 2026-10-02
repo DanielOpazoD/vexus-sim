@@ -4,7 +4,7 @@ import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
 import { HEPATIC_SPINE_GAP_MM } from '../anatomy/organs/liver';
 import { sdSpine } from '../anatomy/primitives';
 import { Interface } from '../anatomy/interfaces';
-import { Tissue } from '../anatomy/tissues';
+import { LIVER_CAPSULE_MM, Tissue } from '../anatomy/tissues';
 import { setReferenceBody, validateReferenceBody } from '../anatomy/referenceBody';
 import { NORMAL_ADULT } from '../cases';
 import { retroTexture, visceralFatLobules } from '../ultrasound/retroTexture';
@@ -43,14 +43,79 @@ describe('frontera hepática y plano retrohepático', () => {
       expect(capsule).toBeGreaterThan(10);
       expect(cortex).toBeGreaterThan(10);
     });
-  it('reproduce la transición hepática antes del hueso observada en la ventana intercostal', () => {
-    const s = new AnatomyScene(NORMAL_ADULT);
-    const before: Vec3 = [-17.508805707, -34.116796875, 15.268222628];
-    const towardBone: Vec3 = [-15, -34, 15.3];
-    expect(s.classify(before, BASELINE_CALIBER).tissue).toBe(Tissue.Liver);
+  it.each([false, true])('el recorrido normal conserva hueso → grasa → cápsula → parénquima (referencia %s)', (reference) => {
+    setReferenceBody(reference ? profile : undefined);
+    let s: AnatomyScene;
+    try {
+      s = new AnatomyScene(NORMAL_ADULT);
+    } finally {
+      setReferenceBody();
+    }
+    // Los dos testigos históricos no se recolocan para obtener verde. En referencia solo se
+    // traslada el eje AP con la columna; la elipse sitúa «before» dentro de la cápsula.
+    const before: Vec3 = [-17.508805707, s.spine.y0 + 11.883203125, 15.268222628];
+    const towardBone: Vec3 = [-15, s.spine.y0 + 12, 15.3];
+    const anchor = s.classify(before, BASELINE_CALIBER);
+    expect(anchor.tissue).toBe(Tissue.LiverCapsule);
+    expect(anchor.interface).toBe(Interface.LiverCapsule);
+    expect(sdSpine(before, s.spine)).toBeGreaterThan(HEPATIC_SPINE_GAP_MM);
+    expect(-s.liverSdf(before)).toBeGreaterThan(0);
+    expect(-s.liverSdf(before)).toBeLessThan(LIVER_CAPSULE_MM);
     const c = s.classify(towardBone, BASELINE_CALIBER);
     expect(c.tissue).toBe(Tissue.RetroperitonealFat);
     expect(c.interface).toBe(Interface.VertebralCortex);
+
+    // Buscar la superficie ósea sobre la normal local, sin fijar un nuevo punto «hepático».
+    // La derivada geométrica y la bisección no usan la clasificación ni la fórmula del recorte hepático.
+    const h = 1e-3;
+    const gradient = before.map((_, axis) => {
+      const plus: Vec3 = [...before],
+        minus: Vec3 = [...before];
+      plus[axis] += h;
+      minus[axis] -= h;
+      return (sdSpine(plus, s.spine) - sdSpine(minus, s.spine)) / (2 * h);
+    });
+    const norm = Math.hypot(...gradient);
+    const at = (t: number): Vec3 => before.map((v, axis) => v + (t * gradient[axis]) / norm) as Vec3;
+    let lo = -6,
+      hi = 0;
+    expect(sdSpine(at(lo), s.spine)).toBeLessThan(0);
+    for (let i = 0; i < 40; i++) {
+      const mid = (lo + hi) / 2;
+      if (sdSpine(at(mid), s.spine) < 0) lo = mid;
+      else hi = mid;
+    }
+    const surface = (lo + hi) / 2;
+    const runs: { tissue: Tissue; start: number; count: number }[] = [];
+    for (let i = -5; i <= 60; i++) {
+      const offset = i / 10;
+      const p = at(surface + offset),
+        dBone = sdSpine(p, s.spine);
+      const q = s.classify(p, BASELINE_CALIBER);
+      if (runs.at(-1)?.tissue !== q.tissue) runs.push({ tissue: q.tissue, start: offset, count: 0 });
+      runs.at(-1)!.count++;
+      if (q.tissue === Tissue.RetroperitonealFat) {
+        expect(q.boundaryDistance).toBeLessThanOrEqual(dBone + 1e-9);
+        expect(q.interface).toBe(Interface.VertebralCortex);
+        expect(q.interfaceDistance).toBeCloseTo(dBone, 9);
+      }
+      if (q.tissue === Tissue.LiverCapsule) {
+        expect(dBone).toBeGreaterThanOrEqual(HEPATIC_SPINE_GAP_MM);
+        expect(q.interface).toBe(Interface.LiverCapsule);
+        expect(q.interfaceDistance).toBeCloseTo(-s.liverSdf(p), 9);
+        expect(q.interfaceDistance).toBeLessThan(LIVER_CAPSULE_MM);
+      }
+      if (q.tissue === Tissue.Liver) expect(-s.liverSdf(p)).toBeGreaterThanOrEqual(LIVER_CAPSULE_MM);
+    }
+    expect(runs.map((r) => r.tissue)).toEqual([Tissue.Vertebra, Tissue.RetroperitonealFat, Tissue.LiverCapsule, Tissue.Liver]);
+    expect(runs[1].count).toBeGreaterThan(20);
+    expect(runs[2].count).toBeGreaterThan(5);
+    expect(runs[3].count).toBeGreaterThan(10);
+    // Distancias físicas medidas a lo largo de la normal (paso 0,1 mm); no solo nombres de tejido.
+    expect(runs[2].start - runs[1].start).toBeGreaterThan(2.7);
+    expect(runs[2].start - runs[1].start).toBeLessThan(3.3);
+    expect(runs[3].start - runs[2].start).toBeGreaterThan(LIVER_CAPSULE_MM - 0.2);
+    expect(runs[3].start - runs[2].start).toBeLessThan(LIVER_CAPSULE_MM + 0.2);
   });
 });
 

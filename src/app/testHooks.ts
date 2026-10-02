@@ -1321,6 +1321,9 @@ export function faceNormalStats(sim: Simulator): Record<FaceNormalRow, FaceNorma
     const c = scene.classify(m, caliber);
     const t = c.tissue;
     const tube = sdf(m, 'tube') !== null;
+    // junto a un cuerpo vertebral la muestra dibuja su cortical (PR119; recuperación provisional de la decisión 103) y no la cara de su tejido: su eco usa la normal
+    // de la columna (la primera rama de `faceGradient`), incluida la cara del platillo dentro de un disco.
+    if (c.interface === Interface.VertebralCortex && face !== 'spine') return null;
     switch (face) {
       case 'tube':
         return tube && TUBE_TISSUES.has(t) ? t : null;
@@ -1341,6 +1344,9 @@ export function faceNormalStats(sim: Simulator): Record<FaceNormalRow, FaceNorma
       case 'pericardium':
         // la capa del pericardio (decisión 85): su cara es de un lado
         return c.interface === Interface.Pericardium ? t : null;
+      case 'spine':
+        // el tejido blando (o el disco) que dibuja la cortical de la columna (PR119; recuperación provisional de la decisión 103), de un lado
+        return c.interface === Interface.VertebralCortex ? t : null;
     }
   };
   type Candidate = { p: Vec3; m: Vec3 };

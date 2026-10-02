@@ -64,6 +64,9 @@ for (const reference of [false, true])
       // y el corazón y el mediastino (decisión 85): ~300 y ~700 puntos interiores por caso con la CPU
       expect(vol.byTissue.Myocardium ?? 0, vtag).toBeGreaterThan(100);
       expect(vol.byTissue.Mediastinum ?? 0, vtag).toBeGreaterThan(300);
+      // PR119: los discos deben participar en el volumen de paridad, además del cartílago costal.
+      expect(vol.byTissue.Vertebra ?? 0, vtag).toBeGreaterThan(1000);
+      expect(vol.byTissue.Cartilage ?? 0, vtag).toBeGreaterThan(100);
       expect(vol.bloodPoints, vtag).toBeGreaterThan(300);
       expect(vol.vesselAgreement, vtag).toBe(1);
       expect(vol.velocityP95RelErr, vtag).toBeLessThan(1e-3);
@@ -101,6 +104,7 @@ for (const reference of [false, true])
         'Perichondrium',
         // el pericardio (decisión 85): la subxifoidea, la subcostal y el flanco lo cruzan
         'Pericardium',
+        'VertebralCortex',
       ])
         expect(shell.byInterface[face] ?? 0, stag).toBeGreaterThan(50);
       expect(shell.agreement, stag).toBeGreaterThanOrEqual(0.999);

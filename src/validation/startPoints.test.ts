@@ -9,6 +9,7 @@ import { NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient, type RespiratoryPattern } from '../physiology/patientState';
 import { uncompress } from '../anatomy/compression';
+import { sdSpineDisc } from '../anatomy/primitives';
 import { domeFloor } from '../anatomy/organs/heart';
 import { heartChamber } from '../anatomy/organs/heartChamber';
 import { kidneyLocal, kidneyOuterSdf, perirenalOuterSdf } from '../anatomy/organs/kidney';
@@ -203,7 +204,8 @@ describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', 
   it('intercostal derecho: ninguna costilla en todo el sector, ósea o cartílago, hasta el fondo de la imagen', () => {
     // decisión 62: la pose de antes (casi craneocaudal) cruzaba seis costillas óseas; la primera del 8.º espacio,
     // con 11° de basculación, dejaba una en cada borde (a 36–52 y a 71 mm) y 14 líneas sin acoplar. Con la de
-    // ahora, girar la sonda 2° ya mete la 9.ª en un borde. La vértebra, al fondo (14–16 cm), no cuenta.
+    // ahora, girar la sonda 2° ya mete la 9.ª en un borde. La vértebra y sus discos (PR119; recuperación provisional de la decisión 103), al fondo (14–16 cm), no
+    // cuentan.
     const sp = byId('intercostal');
     const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
     const contact = probeContact(pose, CONVEX_C35, scene.torso);
@@ -212,8 +214,10 @@ describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', 
     for (let i = 0; i < nLines; i++) {
       const theta = -CONVEX_C35.halfSector + (2 * CONVEX_C35.halfSector * i) / (nLines - 1);
       for (let r = 1; r < 180; r += 1) {
-        const t = scene.classify(uncompress(pointOnLine(fr, CONVEX_C35, theta, r), contact), BASELINE_CALIBER).tissue;
-        expect(t === Tissue.Bone || t === Tissue.Cartilage, `línea ${i} a ${r} mm`).toBe(false);
+        const m = uncompress(pointOnLine(fr, CONVEX_C35, theta, r), contact);
+        const t = scene.classify(m, BASELINE_CALIBER).tissue;
+        const disc = t === Tissue.Cartilage && sdSpineDisc(m, scene.spine) < 0;
+        expect(t === Tissue.Bone || (t === Tissue.Cartilage && !disc), `línea ${i} a ${r} mm`).toBe(false);
       }
     }
   });

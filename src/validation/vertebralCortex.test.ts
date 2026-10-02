@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
 import { Interface, INTERFACES, hasCurvatureCoherence, interfaceReflectivity } from '../anatomy/interfaces';
-import { sdSpine } from '../anatomy/primitives';
+import { sdSpine, sdSpineDisc, SPINE_SHAPE } from '../anatomy/primitives';
 import { setReferenceBody, validateReferenceBody } from '../anatomy/referenceBody';
 import { NORMAL_ADULT } from '../cases';
 import { Tissue, TISSUES } from '../anatomy/tissues';
@@ -26,21 +26,32 @@ for (const reference of [false, true])
     it('la cara anterior vive fuera del hueso y la distancia proviene de la geometría', () => {
       const s = scene.spine;
       let count = 0;
-      for (const z of [-140, -110, -80])
+      for (const z of [-4, -3, -2].map((level) => SPINE_SHAPE.z0Mm + level * SPINE_SHAPE.levelMm))
         for (const angle of [-0.5, 0, 0.5])
           for (const delta of [0.08, 0.3, 0.7]) {
-            const p: Vec3 = [s.x0 + (s.r + delta) * Math.sin(angle), s.y0 + (s.r + delta) * Math.cos(angle), z];
+            const a = s.r * SPINE_SHAPE.aspect,
+              b = s.r / SPINE_SHAPE.aspect;
+            const x = (a + delta) * Math.sin(angle),
+              y = (b + delta) * Math.cos(angle);
+            const p: Vec3 = [s.x0 + x, s.y0 + y, z];
             const c = scene.classify(p, BASELINE_CALIBER);
             if (c.interface !== face) continue; // otro órgano puede poseer una cara más cercana
             count++;
             expect(c.tissue).not.toBe(Tissue.Vertebra);
             expect(c.interfaceDistance).toBeCloseTo(sdSpine(p, s), 10);
             const g = scene.faceGradient(p, BASELINE_CALIBER)!;
-            expect(g.normal[0]).toBeCloseTo(Math.sin(angle), 5);
-            expect(g.normal[1]).toBeCloseTo(Math.cos(angle), 5);
+            // Derivada analítica de la distancia aproximada de la elipse, independiente del gradiente numérico usado al renderizar.
+            const k1 = Math.hypot(x / a, y / b),
+              k2 = Math.hypot(x / (a * a), y / (b * b));
+            const nx = ((2 * k1 - 1) * x) / (a * a * k1 * k2) - (k1 * (k1 - 1) * x) / (a ** 4 * k2 ** 3);
+            const ny = ((2 * k1 - 1) * y) / (b * b * k1 * k2) - (k1 * (k1 - 1) * y) / (b ** 4 * k2 ** 3);
+            const norm = Math.hypot(nx, ny);
+            expect(g.normal[0]).toBeCloseTo(nx / norm, 5);
+            expect(g.normal[1]).toBeCloseTo(ny / norm, 5);
             expect(g.normal[2]).toBe(0);
-            expect(g.norm).toBeCloseTo(1, 5);
-            expect(g.curvature).toBe(1 / s.r);
+            expect(g.norm).toBeCloseTo(norm, 5);
+            const param = Math.atan2(y / b, x / a);
+            expect(g.curvature).toBeCloseTo((a * b) / Math.hypot(a * Math.sin(param), b * Math.cos(param)) ** 3, 12);
             expect(g.axis).toEqual([0, 0, 1]);
             expect(faceLitFromProbe(face, g.normal, [0, -1, 0])).toBe(true);
             expect(faceLitFromProbe(face, g.normal, [0, 1, 0])).toBe(false);
@@ -59,7 +70,7 @@ for (const reference of [false, true])
     it('el interior no dibuja otra cortical ni moteado óseo', () => {
       const s = scene.spine;
       for (const depth of [0.1, 1, 5, 12]) {
-        const c = scene.classify([s.x0, s.y0 + s.r - depth, -110], BASELINE_CALIBER);
+        const c = scene.classify([s.x0, s.y0 + s.r / SPINE_SHAPE.aspect - depth, -110], BASELINE_CALIBER);
         expect(c.tissue).toBe(Tissue.Vertebra);
         expect(c.interface).toBe(Interface.None);
       }
@@ -90,7 +101,8 @@ describe('respuesta acústica de cortical vertebral', () => {
           const q = scene.classify([x, y, z], BASELINE_CALIBER);
           if (q.interface === face) {
             seen++;
-            expect([Tissue.RetroperitonealFat, Tissue.Psoas, Tissue.QuadratusLumborum, Tissue.Mediastinum]).toContain(q.tissue);
+            if (q.tissue === Tissue.Cartilage) expect(sdSpineDisc([x, y, z], scene.spine)).toBeLessThan(0);
+            else expect([Tissue.RetroperitonealFat, Tissue.Psoas, Tissue.QuadratusLumborum, Tissue.Mediastinum]).toContain(q.tissue);
           }
         }
     expect(seen).toBeGreaterThan(100);

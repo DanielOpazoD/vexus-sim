@@ -10,6 +10,9 @@ import { captureBMode } from './captureBMode';
 const root = process.cwd(),
   sha = process.env.BASE_SHA;
 if (!sha || !/^[a-f0-9]{40}$/.test(sha)) throw new Error('BASE_SHA debe ser un commit exacto de 40 caracteres');
+const selectedProfile = process.env.COMPARISON_PROFILE ?? 'both';
+if (!['both', 'legacy', 'reference'].includes(selectedProfile)) throw new Error('COMPARISON_PROFILE debe ser both, legacy o reference');
+const references = selectedProfile === 'both' ? [false, true] : [selectedProfile === 'reference'];
 const out = resolve(process.env.PORTAL_OUT ?? join(tmpdir(), 'vexus-portal-evidence'));
 mkdirSync(out, { recursive: true });
 const base = join(mkdtempSync(join(tmpdir(), 'vexus-portal-base-')), 'repo');
@@ -62,22 +65,27 @@ try {
           console.error(version, m.text());
         }
       });
-      for (const id of ['portal', 'intercostal', 'subcostal'] as const) {
-        await page.goto(`http://127.0.0.1:${port}/?e2e=app`);
-        await page.waitForFunction(() => (window.__vexusTest?.framesRendered() ?? 0) >= 2, undefined, { timeout: 180_000 });
-        const settings = await page.evaluate((id) => {
-          const t = window.__vexusTest!;
-          if (t.circulation().caseId !== 'normal-adult') throw new Error('Caso no normal');
-          t.goToStartPoint(id);
-          t.frameCostMs(6);
-          const sim = t.sim();
-          return { pose: sim.pose, bmode: sim.bmode, respiration: sim.patient.respiratoryPattern, reference: !!sim.scene.torso.profile };
-        }, id);
-        await page.locator('#freeze').evaluate((button: HTMLButtonElement) => button.click());
-        await captureBMode(page, join(out, `${version}-${id}.png`));
-        results.push({ version, sha: commit, mode: id, settings });
-        writeFileSync(join(out, 'partial.json'), JSON.stringify({ results }, null, 2));
-        console.log(JSON.stringify({ version, id, settings }));
+      for (const reference of references) {
+        const profile = reference ? 'reference' : 'legacy';
+        for (const id of ['portal', 'intercostal', 'subcostal', 'subxiphoid'] as const) {
+          await page.goto(`http://127.0.0.1:${port}/?e2e=app${reference ? '&reference=1' : ''}`);
+          await page.waitForFunction(() => (window.__vexusTest?.framesRendered() ?? 0) >= 2, undefined, { timeout: 180_000 });
+          if ((await page.evaluate(() => !!window.__vexusTest!.sim().scene.torso.profile)) !== reference)
+            throw new Error('El perfil corporal cargado no coincide con el solicitado');
+          const settings = await page.evaluate((id) => {
+            const t = window.__vexusTest!;
+            if (t.circulation().caseId !== 'normal-adult') throw new Error('Caso no normal');
+            t.goToStartPoint(id);
+            t.frameCostMs(6);
+            const sim = t.sim();
+            return { pose: sim.pose, bmode: sim.bmode, respiration: sim.patient.respiratoryPattern, reference: !!sim.scene.torso.profile };
+          }, id);
+          await page.locator('#freeze').evaluate((button: HTMLButtonElement) => button.click());
+          await captureBMode(page, join(out, `${version}-${profile}-${id}.png`));
+          results.push({ version, sha: commit, mode: `${profile}-${id}`, settings });
+          writeFileSync(join(out, 'partial.json'), JSON.stringify({ results }, null, 2));
+          console.log(JSON.stringify({ version, id, settings }));
+        }
       }
       if (errors.length) throw new Error(errors.join('\n'));
     } finally {

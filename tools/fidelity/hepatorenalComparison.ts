@@ -71,6 +71,8 @@ try {
           : { phi: 3.2, z: -80, yaw: -0.1, tilt: -0.4, rock: 0.1, lift: 0 };
         await page.goto(`http://127.0.0.1:${port}/?e2e=1${reference ? '&reference=1' : ''}`);
         await page.waitForFunction(() => (window.__vexusTest?.framesRendered() ?? 0) >= 2, undefined, { timeout: 180_000 });
+        if ((await page.evaluate(() => !!window.__vexusTest!.sim().scene.torso.profile)) !== reference)
+          throw new Error('El perfil corporal cargado no coincide con el solicitado');
         await page.evaluate((pose) => {
           const t = window.__vexusTest!;
           if (t.circulation().caseId !== 'normal-adult') throw new Error('Caso no normal');

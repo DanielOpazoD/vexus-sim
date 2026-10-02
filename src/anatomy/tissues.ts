@@ -175,8 +175,9 @@ export const TISSUES: TissueProps[] = [
   { name: 'gas intestinal', c: 343, rho: 1.16, alpha1: 0.0034, b: 2, backscatter: 0, gas: true, bone: false },
   { name: 'líquido (bilis/luz intestinal/ascitis)', c: 1482, rho: 994, alpha1: 0.0022, b: 1, backscatter: 0.002, gas: false, bone: false },
   { name: 'pared arterial', c: 1586, rho: 1079, alpha1: 0.7, b: 1, backscatter: 1.8, gas: false, bone: false },
-  // cartílago hialino: homogéneo e hipoecoico (≈ 0,15), con el pericondrio como cara (decisión 62)
-  { name: 'cartílago costal', c: 1640, rho: 1100, alpha1: 0.9, b: 1, backscatter: 0.15, gas: false, bone: false },
+  // cartílago hialino: homogéneo e hipoecoico (≈ 0,15), con el pericondrio como cara (decisión 62); también el disco
+  // intervertebral (PR119; recuperación provisional de la decisión 103: fibrocartílago, hipoecoico, c de 1550–1650 m/s) [EXTRAPOLACIÓN PROPIA]
+  { name: 'cartílago', c: 1640, rho: 1100, alpha1: 0.9, b: 1, backscatter: 0.15, gas: false, bone: false },
   // Riñón (IT'IS: c 1560, ρ 1066, α 0,7·f^1,0). Corteza iso/ligeramente hipoecoica al hígado;
   // médula (pirámides) hipoecoica pero no negra: −8,2 dB bajo la corteza (decisión 87; −4,6 en la 68, con las pirámides
   // cortadas por el cáliz no se veían) [ESTIMADO]; seno = grasa + vasos, marcadamente ecogénico (E.3, B.5), lo más

@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { bootWithoutErrors, budget, checkAfterEach } from './support';
 import { Interface } from '../src/anatomy/interfaces';
 import { Tissue } from '../src/anatomy/tissues';
+import { SPINE_SHAPE } from '../src/anatomy/primitives';
 import type { Vec3 } from '../src/core/vec3';
 checkAfterEach();
 for (const reference of [false, true])
@@ -10,17 +11,22 @@ for (const reference of [false, true])
     await bootWithoutErrors(page, reference ? '?e2e=1&reference=1' : '?e2e=1');
     const { spine: s } = await page.evaluate(() => window.__vexusTest!.corticalSamples([]));
     const points: Vec3[] = [];
-    for (const z of [-140, -110, -80, -50, -20])
+    for (const z of [-4, -3, -2, -1, 0].map((level) => SPINE_SHAPE.z0Mm + level * SPINE_SHAPE.levelMm))
       for (let j = 0; j < 48; j++)
         for (const d of [-1, -0.2, 0.08, 0.3, 0.7]) {
           const a = (j * Math.PI) / 24;
-          points.push([s.x0 + (s.r + d) * Math.sin(a), s.y0 + (s.r + d) * Math.cos(a), z]);
+          points.push([s.x0 + (s.r * SPINE_SHAPE.aspect + d) * Math.sin(a), s.y0 + (s.r / SPINE_SHAPE.aspect + d) * Math.cos(a), z]);
         }
     for (const z of [-140, -110, -80])
       for (const side of [-1, 1])
         for (const d of [-0.2, 0.1, 0.4])
           for (const fraction of [0.15, 0.4, 0.7])
             points.push([s.x0 + side * (s.archHalfWidth + d), s.archY0 + (s.archY1 - s.archY0) * fraction, z]);
+    for (const level of [-4, -3, -2, -1, 0])
+      for (const side of [-1, 1])
+        for (const d of [-0.2, 0.08, 0.3, 0.7, 1.6])
+          for (const x of [-10, 0, 10])
+            points.push([s.x0 + x, s.y0, SPINE_SHAPE.z0Mm + level * SPINE_SHAPE.levelMm + side * (SPINE_SHAPE.bodyMm / 2 + d)]);
     const { rows } = await page.evaluate((points) => window.__vexusTest!.corticalSamples(points), points);
     let faces = 0,
       bone = 0,

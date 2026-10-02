@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { bootWithoutErrors, budget, checkAfterEach } from './support';
 import { Interface } from '../src/anatomy/interfaces';
 import { Tissue } from '../src/anatomy/tissues';
+import { SPINE_SHAPE } from '../src/anatomy/primitives';
 import type { Vec3 } from '../src/core/vec3';
 checkAfterEach();
 for (const reference of [false, true])
@@ -10,7 +11,8 @@ for (const reference of [false, true])
     await bootWithoutErrors(page, reference ? '?e2e=1&reference=1' : '?e2e=1');
     const { spine: s } = await page.evaluate(() => window.__vexusTest!.corticalSamples([]));
     const points: Vec3[] = [];
-    for (const z of [-50, -20, 0, 20, 40])
+    // Los centros discales regresan la discontinuidad hepática detectada al conciliar PR119/144.
+    for (const z of [-50, -20, 0, 20, 40, ...[-1, 0, 1].map((level) => SPINE_SHAPE.z0Mm + (level + 0.5) * SPINE_SHAPE.levelMm)])
       for (let j = 0; j < 48; j++)
         for (const d of [2.8, 3.2, 3.6, 4.4, 6, 8]) {
           const a = (j * Math.PI) / 24;

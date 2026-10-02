@@ -578,8 +578,9 @@ test('las normales de la GPU coinciden con el gradiente de la distancia de TS en
   ] as const;
   // el pericardio (decisión 85), desde la subxifoidea: la normal del elipsoide de la cámara más cercana (o la de la cúpula
   // donde el saco apoya) frente al gradiente del epicardio recortado; sin la puerta de la norma (la GPU da 1 y la distancia
-  // aproximada del elipsoide, |∇| a 1,1 % en la mediana y 6,5 % en p95 del gemelo TS: ≤ 0,6 dB en su eco)
-  const faces = ['tube', 'liverSurface', 'dome', 'kidneyOuter', 'perirenalOuter', 'gallbladder', 'pericardium'] as const;
+  // aproximada del elipsoide, |∇| a 1,1 % en la mediana y 6,5 % en p95 del gemelo TS: ≤ 0,6 dB en su eco). La cortical de
+  // los cuerpos vertebrales (PR119; recuperación provisional de la decisión 103, subxifoidea, intercostal y renal): el gradiente numérico de su distancia en los dos
+  const faces = ['tube', 'liverSurface', 'dome', 'kidneyOuter', 'perirenalOuter', 'gallbladder', 'pericardium', 'spine'] as const;
   // subconjuntos (`FACE_NORMAL_SUBSETS`): se muestrean aparte y no cambian la fila de su cara
   const subsets = ['tubeIvc', 'tubeIvcBody', 'kidneyOuterNotchFree', 'kidneyOuterNotch'] as const;
   const gated = [
@@ -591,6 +592,7 @@ test('las normales de la GPU coinciden con el gradiente de la distancia de TS en
     'perirenalOuter',
     'gallbladder',
     'tubeIvcBody',
+    'spine',
   ] as const;
   const seen = new Map<string, number>();
   for (const view of views) {
@@ -618,6 +620,7 @@ test('las normales de la GPU coinciden con el gradiente de la distancia de TS en
         'kidneyOuterNotch',
         'perirenalOuter',
         'tubeIvcBody',
+        'spine',
       ];
       if (exact.includes(row)) expect(f.p01, tag).toBeGreaterThanOrEqual(0.98);
       if ((gated as readonly string[]).includes(row)) expect(f.normErrP95, tag).toBeLessThanOrEqual(0.01);

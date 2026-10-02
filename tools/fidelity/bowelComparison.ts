@@ -24,8 +24,8 @@ const browser = await chromium.launch({
 const results: Array<{ version: string; sha: string; mode: string; frameMs: number[] }> = [];
 try {
   for (const [version, cwd, port, commit] of [
-    ['before', base, 6611, sha],
     ['after', root, 6612, process.env.HEAD_SHA ?? 'working-tree'],
+    ['before', base, 6611, sha],
   ] as const) {
     const server = spawn(process.execPath, [viteOf(cwd), 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
       cwd,
@@ -73,7 +73,13 @@ try {
         );
         const frameMs: number[] = [];
         for (let i = 0; i < 3; i++) frameMs.push(await page.evaluate(() => window.__vexusTest!.frameCostMs(3)));
-        await page.locator('#gl').screenshot({ path: join(out, `${version}-${mode}.png`) });
+        // Congelar mediante el control real tras medir; evita esperar estabilidad de un canvas que sigue dibujando.
+        await page.locator('#freeze').evaluate((button: HTMLButtonElement) => button.click());
+        if ((await page.locator('#freeze').getAttribute('aria-pressed')) !== 'true') throw new Error('No se congeló la imagen');
+        const clip = await page.locator('#gl').boundingBox();
+        if (!clip) throw new Error('Canvas sin geometría');
+        await page.screenshot({ path: join(out, `${version}-${mode}.png`), clip });
+        await page.locator('#freeze').evaluate((button: HTMLButtonElement) => button.click());
         results.push({ version, sha: commit, mode, frameMs });
       }
       if (errors.length) throw new Error(errors.join('\n'));
@@ -88,7 +94,7 @@ try {
       {
         results,
         notes:
-          'Mismo runner, tres lotes de tres cuadros por plano. Orden antes/después; variabilidad temporal sin intervalo de confianza. No prueba rendimiento Metal ni fidelidad clínica.',
+          'Mismo runner, tres lotes de tres cuadros por plano. Orden después/antes; variabilidad temporal sin intervalo de confianza. No prueba rendimiento Metal ni fidelidad clínica.',
       },
       null,
       2,

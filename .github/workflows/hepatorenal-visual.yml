@@ -11,7 +11,7 @@ on:
       - 'src/anatomy/interfaces.ts'
       - 'src/anatomy/tissues.ts'
       - 'src/ultrasound/interfaceEcho.ts'
-      - 'e2e/hepatorrenalCortex.spec.ts'
+      - 'e2e/hepatorenal.spec.ts'
       - 'tools/fidelity/hepatorenalComparison.ts'
       - '.github/workflows/hepatorenal-visual.yml'
 permissions:

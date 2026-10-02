@@ -11,7 +11,7 @@ on:
       - 'src/anatomy/interfaces.ts'
       - 'src/anatomy/tissues.ts'
       - 'src/ultrasound/interfaceEcho.ts'
-      - 'e2e/vesicularCortex.spec.ts'
+      - 'e2e/gallbladderGradient.spec.ts'
       - 'tools/fidelity/gallbladderComparison.ts'
       - '.github/workflows/gallbladder-visual.yml'
 permissions:

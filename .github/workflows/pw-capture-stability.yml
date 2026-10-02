@@ -30,7 +30,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npx vite build
-      - run: npm run e2e -- --grep '^lo medido a la vista' --repeat-each=3 --workers=1
+      - run: npm run e2e -- --grep 'lo medido a la vista' --repeat-each=3 --workers=1
       - uses: actions/upload-artifact@v7
         if: always()
         with:

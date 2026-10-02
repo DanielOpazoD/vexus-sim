@@ -27,9 +27,21 @@ test('el adulto de referencia carga el mismo campo corporal para imagen y consul
   expect(result.ribs.every((r) => r.shape?.length === 4)).toBe(true);
   expect(result.parity.points).toBeGreaterThan(3000);
   expect(result.parity.tissueAgreement).toBe(1);
+  expect(result.windows.map((r) => r.id)).toEqual([
+    'subxiphoid',
+    'epigastric',
+    'intercostal',
+    'subcostal',
+    'flank',
+    'portal',
+    'renal',
+    'hepatorenal',
+  ]);
   for (const row of result.windows) {
     expect(row.interiorAgreement, row.id).toBe(1);
-    expect(row.bloodCells, row.id).toBeGreaterThan(0);
+    // Las siete ventanas vasculares mantienen su cobertura de sangre. La nueva vista
+    // parenquimatosa se valida con corteza/hígado en hepatorenal.spec.ts, sin inventar vasos.
+    if (row.id !== 'hepatorenal') expect(row.bloodCells, row.id).toBeGreaterThan(0);
     expect(row.vesselAgreement, row.id).toBe(1);
   }
   expect(result.windows.find((r) => r.id === 'subxiphoid')!.bloodCells).toBeGreaterThan(50);

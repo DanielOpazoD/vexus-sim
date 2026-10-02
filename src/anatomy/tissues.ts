@@ -185,10 +185,10 @@ export const TISSUES: TissueProps[] = [
   { name: 'corteza renal', c: 1560, rho: 1066, alpha1: 0.7, b: 1, backscatter: 0.72, gas: false, bone: false },
   { name: 'médula renal', c: 1560, rho: 1066, alpha1: 0.6, b: 1, backscatter: 0.28, gas: false, bone: false },
   { name: 'seno renal', c: 1480, rho: 950, alpha1: 0.5, b: 1.1, backscatter: 4.5, gas: false, bone: false, speckleClump: 1.0 },
-  // grasa perirrenal: ecogénica, con tabiques fibrosos (decisión 87: 1,5 → 2,4; en las referencias reales del juez la banda de
-  // Morison y la grasa alrededor del riñón están a 2,5 veces el gris del hígado, la corteza a 0,8) [ESTIMADO]; cierra el
-  // contorno del riñón por contraste a cualquier incidencia, con la línea especular de la cápsula encima de frente
-  { name: 'grasa perirrenal', c: 1450, rho: 920, alpha1: 0.45, b: 1.1, backscatter: 2.4, gas: false, bone: false, speckleClump: 0.8 },
+  // Grasa perirrenal normal (decisión 104): eco difuso moderado y menor agrupación para evitar un halo
+  // grueso uniforme. Amplitud 1,8 y agrupación 0,5 [ESTIMADAS]; su interfaz especular permanece independiente.
+  // No se modifica espesor, impedancia, atenuación ni la ecogenicidad relativa hígado/corteza.
+  { name: 'grasa perirrenal', c: 1450, rho: 920, alpha1: 0.45, b: 1.1, backscatter: 1.8, gas: false, bone: false, speckleClump: 0.5 },
   { name: 'pared de vía biliar', c: 1586, rho: 1079, alpha1: 0.7, b: 1, backscatter: 2.4, gas: false, bone: false },
   // Vértebra: mismas propiedades que el hueso cortical; tejido aparte solo para rotular «columna»
   { name: 'vértebra', c: 3515, rho: 1908, alpha1: 20, b: 1, backscatter: 0, gas: false, bone: true },
@@ -207,7 +207,7 @@ export const TISSUES: TissueProps[] = [
   // granulosa como la perirrenal, algo menos brillante (decisión 87: 1,4 → 2,0) [ESTIMADO]
   { name: 'psoas', c: 1588, rho: 1090, alpha1: 0.617, b: 1.083, backscatter: 0.35, gas: false, bone: false },
   { name: 'cuadrado lumbar', c: 1588, rho: 1090, alpha1: 0.617, b: 1.083, backscatter: 0.35, gas: false, bone: false },
-  { name: 'grasa retroperitoneal', c: 1450, rho: 920, alpha1: 0.45, b: 1.1, backscatter: 2.0, gas: false, bone: false, speckleClump: 0.8 },
+  { name: 'grasa retroperitoneal', c: 1450, rho: 920, alpha1: 0.45, b: 1.1, backscatter: 2.0, gas: false, bone: false, speckleClump: 0.5 },
   // Corazón (decisión 85): el miocardio es músculo estriado cardíaco (IT'IS «heart muscle»: c 1561, ρ 1081; atenuación de
   // Duck 1990, 0,52 dB/cm/MHz), hipoecoico frente al hígado [ESTIMADO 0,4]; el mediastino, grasa con tabiques de tejido
   // conectivo, menos ecogénica que la retroperitoneal (2,0 desde la decisión 87) y granulosa [ESTIMADO]

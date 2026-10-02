@@ -487,12 +487,13 @@ export function strongScatter(t: Tissue): StrongScatter {
 /**
  * Variación de la densidad de dispersores a escala de milímetros (la textura sobre la textura: lobulillos y territorios
  * de espacios porta): un factor de amplitud 10^(x/20) con x un ruido de valor continuo simétrico en dB (mediana 0 dB, DE
- * 0,185·escala = 2,2 dB), además de la heterogeneidad lenta de 6,25 mm. Como los dispersores fuertes, conserva la mediana
- * del tejido (la potencia media sube +0,55 dB). Anclada al material como la heterogeneidad (no se decorrela al abanicar
+ * 0,185·escala ≈ 2,04 dB), además de la heterogeneidad lenta de 6,25 mm. Como los dispersores fuertes, conserva la mediana
+ * del tejido (la potencia media sube aproximadamente +0,5 dB). Anclada al material como la heterogeneidad (no se decorrela al abanicar
  * ni hierve) y del plano central, como los grumos (un factor para los tres planos). Célula y escala [EXTRAPOLACIÓN
- * PROPIA], calibradas con la heterogeneidad por escalas de los paneles reales del juez ciego (`docs/fidelity/README.md`).
+ * PROPIA]; ajuste de apariencia normal en la decisión 104, con las guardas estadísticas de `docs/fidelity/README.md`.
  */
-export const DENSITY = { cellMm: 4, scaleDb: 12, salt: 41 } as const;
+// Decisión 104: relieve fino del hígado normal; se conserva el campo complejo, la PSF y la mediana.
+export const DENSITY = { cellMm: 3, scaleDb: 11, salt: 41 } as const;
 /** Tejidos con la variación de densidad de dispersores (decisión 89). */
 export const DENSITY_TISSUES: readonly Tissue[] = [Tissue.Liver];
 

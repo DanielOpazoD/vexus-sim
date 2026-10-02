@@ -8,7 +8,7 @@ import type { Torso } from '../anatomy/primitives';
  * π/2 = anterior), z en mm.
  */
 export interface StartPoint {
-  id: 'subxiphoid' | 'epigastric' | 'intercostal' | 'subcostal' | 'flank' | 'portal' | 'renal';
+  id: 'subxiphoid' | 'epigastric' | 'intercostal' | 'subcostal' | 'flank' | 'portal' | 'renal' | 'hepatorenal';
   label: string;
   phi: number;
   z: number;
@@ -138,10 +138,22 @@ export const START_POINTS: readonly StartPoint[] = [
     tilt: -0.4,
     hint: 'Riñón derecho en eje largo por el flanco (línea axilar posterior): hígado como ventana, cápsula, corteza, pirámides y seno ecogénico (la pelvis, colapsada; la vena renal sale por el hilio); puerta PW en un vaso interlobar.',
   },
+  {
+    id: 'hepatorenal',
+    label: 'Hepatorrenal',
+    color: '#e8bf79',
+    phi: 3.2,
+    z: -80,
+    yaw: -0.1,
+    tilt: -0.4,
+    rock: 0.1,
+    hint: 'Hígado y riñón derecho en eje largo: compara parénquima hepático y corteza renal a igual profundidad, sin incluir vasos, pirámides ni seno. Afina el espacio intercostal para despejar sombras.',
+  },
 ];
 
 /** Offline landmark/ray calibration of the shared BodyParts3D-derived torso; see REFERENCE_TORSO.md. */
 const REFERENCE_POSES = {
+  hepatorenal: { phi: 3.2, z: -80, yaw: 0, tilt: -0.4, rock: -0.2 },
   subxiphoid: {
     phi: 1.65,
     z: -15,

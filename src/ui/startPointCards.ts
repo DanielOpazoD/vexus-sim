@@ -17,6 +17,7 @@ const CARD_SUB: Record<StartPointId, string> = {
   flank: 'VCI coronal con las suprahepáticas',
   portal: 'Porta principal con la VCI detrás',
   renal: 'Riñón en eje largo · interlobares',
+  hepatorenal: 'Hígado, corteza y plano de Morison',
 };
 
 /** Radio (mm, sobre la piel) dentro del cual la sonda «está» en una ventana; las dos más próximas distan 24 mm. */

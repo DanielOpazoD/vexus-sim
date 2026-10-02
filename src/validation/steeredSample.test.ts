@@ -296,7 +296,7 @@ describe('rama dirigida de la pasada B: geometría (decisión 58)', () => {
       'tissue = mediumFieldPh(p, dir, s, elevSigma(r), !under, lookPhase(rho, alpha, a, k2), gr.x * uLateral + gr.y * uAxial, spec);',
       'float rhoJ = sqrt(uCurvR * uCurvR + d * d + 2.0 * d * uSteer.z);',
       'vec2 f = wallFieldPh(elem + dirK * d, dirK, elevSigma(rhoJ - uCurvR), lookPhase(rhoJ, alJ, a, k2), gr.x * uLateral + gr.y * uAxial, wD);',
-      'vec2 e = interfaceEcho(c, m, dir, r, se, w);',
+      'vec2 e = interfaceEcho(c, m, dir, r, se, w, withCurtain);',
       // la especular aparte (decisión 88): los ecos especulares con la transmisión de sus pares en la apertura (decisión 91)
       'spec = e.x;',
       'return field * (1.0 + e.y / max(length(field), 1e-6));',

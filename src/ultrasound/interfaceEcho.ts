@@ -1,8 +1,9 @@
 import { IDENTITY_WARP, warpNormal, type Warp } from '../anatomy/compression';
+import type { AnatomyScene, VesselCaliber } from '../anatomy/scene';
 import { INTERFACES, INTERFACE_COUNT, Interface, interfaceReflectivity } from '../anatomy/interfaces';
 import { quadratusSdf, retroFatSdf } from '../anatomy/organs/retroperitoneum';
 import { sdDiaphragm, type Diaphragm, type Torso } from '../anatomy/primitives';
-import { DIAPHRAGM_THICKNESS_MM, TISSUES, Tissue } from '../anatomy/tissues';
+import { DIAPHRAGM_THICKNESS_MM, TISSUES, Tissue, reflectionCoefficient } from '../anatomy/tissues';
 import type { Vec3 } from '../core/vec3';
 import { valueNoise } from './speckleField';
 
@@ -163,6 +164,25 @@ export function fatAcrossWall(m: Vec3, scene: WallAcrossScene): boolean {
 export function faceSiteGain(face: Interface, m: Vec3, scene: WallAcrossScene): number {
   return face === Interface.Peritoneum && fatAcrossWall(m, scene) ? RETRO_PERITONEUM_GAIN : 1;
 }
+/** Actual exterior medium, rather than assuming muscle at every exposed hepatic surface. */
+export function capsuleExteriorGain(tissue: Tissue): number {
+  if (tissue !== Tissue.RetroperitonealFat && tissue !== Tissue.MesentericFat) return 1;
+  return Math.max(1, Math.abs(reflectionCoefficient(Tissue.LiverCapsule, tissue)) / interfaceReflectivity(Interface.LiverCapsule));
+}
+/** Material-space probe beyond the capsule; bounded first-order projection, not a new layer. */
+export const CAPSULE_OUTSIDE_MM = 0.5;
+export const CAPSULE_PROJECTION_MAX_MM = 2;
+export function liverCapsuleSiteGain(m: Vec3, scene: AnatomyScene, caliber: VesselCaliber, withCurtain = true): number {
+  const c = scene.classify(m, caliber, withCurtain);
+  if (c.interface !== Interface.LiverCapsule) return 1;
+  const g = scene.faceGradient(m, caliber, 'liverSurface');
+  if (!g || g.norm < 1e-6) return 1;
+  const offset = c.interfaceDistance / g.norm;
+  if (offset > CAPSULE_PROJECTION_MAX_MM) return 1;
+  const outside = m.map((v, i) => v + g.normal[i] * (offset + CAPSULE_OUTSIDE_MM)) as Vec3;
+  return capsuleExteriorGain(scene.classify(outside, caliber, withCurtain).tissue);
+}
+
 /**
  * Desviación típica de `valueNoise` − 0,5 en un punto al azar (medida en 400 000 puntos: 0,1846; la de la
  * uniforme sería 0,2887: la interpolación con fundido la reduce). Normaliza la inclinación a σ_t.
@@ -483,13 +503,23 @@ float tubeCurvature(Cls c, vec3 n, vec3 dir, float r, float se) {
 // Eco de la cara que dibuja la muestra (material m, rayo dir, profundidad r): (especular, amplitud de la difusa).
 // La normal y la norma del gradiente son las del mundo: las materiales por la jacobiana de la compresión de la
 // sonda (w, decisión 63)
-vec2 interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w) {
+vec2 interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w, bool withCurtain) {
   if (c.iface == IF_NONE) return vec2(0.0);
   // salida barata sin gradiente: δ = ifd/(|∇|·cosθ) ≥ ifd/|∇|; la norma de un tubo ya está en c.n, la
   // del resto se acota (IFACE_GRAD_MAX); la compresión la multiplica a lo sumo por warpBound
   float gBound = (c.iface <= IF_LAST_TUBE ? length(c.n) : IFACE_GRAD_MAX) * warpBound(w);
   if (c.ifd > (uIface[c.iface].w > 0.5 ? IFACE_REACH : IFACE_SHIFT + IFACE_REACH) * gBound) return vec2(0.0);
   vec4 fg = faceGradient(c, m);
+  float capsuleGain = 1.0;
+  if (c.iface == IF_LIVER_CAPSULE && fg.w > 1e-6) {
+    float offset = c.ifd / fg.w;
+    if (offset <= ${CAPSULE_PROJECTION_MAX_MM.toFixed(1)}) {
+      // liverInner has an inward gradient in GLSL; the TS faceSdf gradient is outward.
+      int exterior = classifyWith(m - fg.xyz * (offset + ${CAPSULE_OUTSIDE_MM.toFixed(1)}), withCurtain).tissue;
+      if (exterior == T_RETROFAT) capsuleGain = ${capsuleExteriorGain(Tissue.RetroperitonealFat).toFixed(7)};
+      else if (exterior == T_MESENTERIC_FAT) capsuleGain = ${capsuleExteriorGain(Tissue.MesentericFat).toFixed(7)};
+    }
+  }
   vec3 nm = fg.xyz; // normal material: la inclinación anclada pertenece a este marco
   vec3 gw = warpNormal(w, fg.xyz * fg.w);
   float gn = length(gw);
@@ -501,7 +531,7 @@ vec2 interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w) {
   // tubos y costillas (decisión 62): cilindros con la curvatura de su sección en c.kc y su eje en c.tangent
   float curv = c.iface <= IF_LAST_TUBE || c.iface == IF_RIB || c.iface == IF_VERTEBRAL_CORTEX || c.iface == IF_PERICHONDRIUM || c.iface == IF_BOWEL_LUMEN || c.iface == IF_BOWEL_SEROSA ? tubeCurvature(c, fg.xyz, dir, r, se) : 1.0;
   // las caras de la pared: la variación anclada de su reflectividad a lo largo de la cara (wallTexture.ts)
-  float gain = c.iface >= IF_FIRST_WALL && c.iface <= IF_LAST_WALL ? wallFaceGain(m, c.iface) : 1.0;
+  float gain = c.iface >= IF_FIRST_WALL && c.iface <= IF_LAST_WALL ? wallFaceGain(m, c.iface) : capsuleGain;
   // la cara interna de la pared con grasa detrás (fatAcrossWall, decisión 65): dentro del compartimento retroperitoneal y
   // sin hígado, cúpula ni cuadrado lumbar contra la pared, grasa con grasa
   float dB;

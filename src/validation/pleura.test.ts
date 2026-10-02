@@ -498,11 +498,11 @@ describe('clasificación sin la cortina (gemelo de classifyWith(m, false))', () 
     // las capas de la decisión 62, lo mismo que da classify antes de la pleura, sin órganos ni tubos), con el eco de
     // cara plana de sus capas (wallFaceEchoFlat, sin faceGradient) y, pasada la cara interna, la capa más honda
     expect(PLEURA_GLSL).toContain('Cls c = classifyWith(m, withCurtain);');
-    expect(PLEURA_GLSL).toContain('vec2 f1 = sampleSide(p + uElev * se, se, c, withCurtain, w);');
+    expect(PLEURA_GLSL).toContain('vec2 f1 = fieldFor(m1, se, sideT.x, normalize(p1 - uCurvC), w);');
     expect(FRAG_RAWFIELD).toContain(
       'vec2 tissue = wTissue >= CURTAIN_MIN_AIR ? mediumField(p, dir, r, elevSigma(r), !under, spec) : vec2(0.0);',
     );
-    expect(FRAG_RAWFIELD_STEERED).toContain('vec2 f1 = sampleSidePh(p + uElev * se, se, c, ph0, g, withCurtain, w);');
+    expect(FRAG_RAWFIELD_STEERED).toContain('vec2 f1 = fieldForPh(m1, se, sideT.x, ph0, g, normalize(p1 - uCurvC), w);');
     expect(FRAG_RAWFIELD_STEERED).toContain('tissue = mediumFieldPh(p, dir, s, elevSigma(r), !under, lookPhase(rho, alpha, a, k2)');
     expect(ANATOMY_GLSL).toContain('if (classifyWall(m, c, depth, tn)) return c;');
     expect(PLEURA_GLSL).toContain('if (!classifyWall(m, c, depth, tn)) { c.tissue = T_FAT; c.n = tn; }');

@@ -3,6 +3,14 @@ on:
   pull_request:
     paths:
       - 'src/anatomy/scene.ts'
+      - 'src/anatomy/organs/liver.ts'
+      - 'src/anatomy/primitives.ts'
+      - 'src/ultrasound/pleura.ts'
+      - 'src/ultrasound/shaders/passes.glsl.ts'
+      - 'tools/build/**'
+      - 'vite.config.ts'
+      - 'tools/fidelity/captureBMode.ts'
+      - 'e2e/hepaticBoundary.spec.ts'
       - 'src/ultrasound/speckleField.ts'
       - 'src/ultrasound/retroTexture.ts'
       - 'src/anatomy/gpu/anatomy.glsl.ts'

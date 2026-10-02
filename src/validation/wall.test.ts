@@ -722,7 +722,7 @@ describe('gemelo GLSL (organs/wall.ts y wallTexture.ts)', () => {
       'c.iface <= IF_LAST_TUBE || c.iface == IF_RIB || c.iface == IF_VERTEBRAL_CORTEX || c.iface == IF_PERICHONDRIUM || c.iface == IF_BOWEL_LUMEN || c.iface == IF_BOWEL_SEROSA ? tubeCurvature(',
     );
     // la variación anclada de la pared multiplica la especular de la faceta y la difusa (decisión 65)
-    expect(echo).toContain('float gain = c.iface >= IF_FIRST_WALL && c.iface <= IF_LAST_WALL ? wallFaceGain(m, c.iface) : 1.0;');
+    expect(echo).toContain('float gain = c.iface >= IF_FIRST_WALL && c.iface <= IF_LAST_WALL ? wallFaceGain(m, c.iface) : capsuleGain;');
     expect(FRAG_RAWFIELD).toContain(`uIface[${INTERFACE_COUNT}]`);
     // tablas del GLSL con el tamaño interpolado
     expect(WALL_TEXTURE_GLSL).toContain(`const float WT_FACE_VAR[${WALL_TEXTURE.faceVariation.length}]`);

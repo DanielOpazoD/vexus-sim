@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { bootWithoutErrors } from './support';
 
-for (const reference of [false, true])
-  test(`respiración apagada: referencia estable, corazón y flujo activos, configuración y M sin ciclo ${reference ? '(referencia)' : ''}`, async ({
-    page,
-  }) => {
+// Dos contratos independientes: fisiología/PW y el ciclo de configuración/medición M.
+// Conserva todas las aserciones y el plazo original; evita acumular ambos flujos en180s.
+for (const reference of [false, true]) {
+  test(`respiración apagada: corazón y PW activos (${reference ? 'referencia' : 'legacy'})`, async ({ page }) => {
     test.setTimeout(180_000);
     const errors = await bootWithoutErrors(page, reference ? '?e2e=1&reference=1' : '?e2e=1');
     await expect(page.getByRole('button', { name: 'Activar respiración', exact: true })).toBeVisible();
@@ -46,6 +46,12 @@ for (const reference of [false, true])
     });
     expect(pw.after).toBeGreaterThan(pw.before + 30);
     expect(pw).toMatchObject({ cycling: false, phase: 0 });
+    expect(errors).toEqual([]);
+  });
+  test(`respiración y M: activar, medir y volver a apagar (${reference ? 'referencia' : 'legacy'})`, async ({ page }) => {
+    test.setTimeout(180_000);
+    const errors = await bootWithoutErrors(page, reference ? '?e2e=1&reference=1' : '?e2e=1');
+    await expect(page.getByRole('button', { name: 'Activar respiración', exact: true })).toBeVisible();
     await page.evaluate(() => window.__vexusTest!.goToStartPoint('subxiphoid'));
     await page.locator('#mode-m').click();
     await page.getByRole('tab', { name: 'Medir' }).click();
@@ -86,3 +92,4 @@ for (const reference of [false, true])
     ).toMatchObject({ cycling: false, phase: 0, volume: 0 });
     expect(errors).toEqual([]);
   });
+}

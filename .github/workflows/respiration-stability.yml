@@ -1,0 +1,42 @@
+name: Estabilidad de respiración
+on:
+  pull_request:
+    paths:
+      - 'e2e/respiration.spec.ts'
+      - 'e2e/support.ts'
+      - 'src/anatomy/**'
+      - 'src/ultrasound/**'
+      - 'tools/build/**'
+      - 'vite.config.ts'
+      - '.github/workflows/respiration-stability.yml'
+permissions:
+  contents: read
+concurrency:
+  group: respiration-stability-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  repeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx vite build
+      - run: npm run e2e -- --grep 'respiración y M:' --repeat-each=3 --workers=1
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: respiration-stability
+          path: |
+            e2e-results.json
+            test-results
+          retention-days: 7
+          if-no-files-found: warn

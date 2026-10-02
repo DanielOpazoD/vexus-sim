@@ -1,0 +1,78 @@
+{
+  "method": "Same current safe fitter, source face iteration order, frozen snapshot; exact numerical parameter equality; no new candidate integrated",
+  "candidateSha256": "a272d82844ce50f0454a023b3343087bf008087f464cd0cdcc5c3ed1fcdcd623",
+  "replay": [
+    {
+      "id": "FJ3346",
+      "maximumParameterReplayDifference": 0.0,
+      "unconvergedSections": []
+    },
+    {
+      "id": "FJ3345",
+      "maximumParameterReplayDifference": 0.0,
+      "unconvergedSections": []
+    },
+    {
+      "id": "FJ3234",
+      "maximumParameterReplayDifference": 0.0,
+      "unconvergedSections": []
+    },
+    {
+      "id": "FJ3255",
+      "maximumParameterReplayDifference": 0.0,
+      "unconvergedSections": []
+    }
+  ],
+  "payload": {
+    "profileFloat32Bytes": 1536,
+    "profileFloat64Bytes": 3072,
+    "float32Gzip6Bytes": 1514,
+    "canonicalSnapshotJsonBytes": 10714,
+    "runtimeAddedJsBytes": 0,
+    "currentRuntimeJsBytes": 1037104,
+    "runtimeJsLimitBytes": 1040384,
+    "rootChunkLimitKiB": 335
+  },
+  "oracleContractTests": {
+    "passed": 5,
+    "failed": 0
+  },
+  "convergence": [
+    {
+      "id": "FJ3346",
+      "sourceToZeroShellP95Mm64": 1.9176745618935298,
+      "sourceToZeroShellP95Mm128": 1.8981975310680006,
+      "zeroShellToSourceP95Mm64": 1.5975815352588945,
+      "zeroShellToSourceP95Mm128": 1.6279582176714529,
+      "triangulatedShellMaxAbsFieldMm64": 0.812576046365217,
+      "triangulatedShellMaxAbsFieldMm128": 0.41380801218813057
+    },
+    {
+      "id": "FJ3345",
+      "sourceToZeroShellP95Mm64": 2.038916602564336,
+      "sourceToZeroShellP95Mm128": 2.0415067370460775,
+      "zeroShellToSourceP95Mm64": 1.2623138924528323,
+      "zeroShellToSourceP95Mm128": 1.3051250296021295,
+      "triangulatedShellMaxAbsFieldMm64": 0.6656828385875783,
+      "triangulatedShellMaxAbsFieldMm128": 0.1779453480634799
+    },
+    {
+      "id": "FJ3234",
+      "sourceToZeroShellP95Mm64": 1.8035553884965596,
+      "sourceToZeroShellP95Mm128": 1.725432350662955,
+      "zeroShellToSourceP95Mm64": 1.3437981196056674,
+      "zeroShellToSourceP95Mm128": 1.3591264846806614,
+      "triangulatedShellMaxAbsFieldMm64": 0.7718350982271561,
+      "triangulatedShellMaxAbsFieldMm128": 0.24893104816315112
+    },
+    {
+      "id": "FJ3255",
+      "sourceToZeroShellP95Mm64": 2.098390682788445,
+      "sourceToZeroShellP95Mm128": 2.09800376478973,
+      "zeroShellToSourceP95Mm64": 1.0178100846451352,
+      "zeroShellToSourceP95Mm128": 1.0477585670309892,
+      "triangulatedShellMaxAbsFieldMm64": 0.6177664420005524,
+      "triangulatedShellMaxAbsFieldMm128": 0.19048122604487747
+    }
+  ]
+}

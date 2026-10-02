@@ -153,6 +153,11 @@ test('lo medido a la vista sobre el espectro y el vaso equivocado (decisión 94)
     await page.getByRole('tab', { name: 'Medir' }).click();
     await page.getByRole('button', { name: row, exact: true }).click();
     const button = page.getByRole('button', { name: 'Capturar' });
+    // No leer un canvas GPU en la captura rechazada: ese dato no se comprobaba.
+    if (row !== 'Porta PF') {
+      await button.click();
+      return;
+    }
     await button.evaluate((el) => {
       el.addEventListener(
         'click',
@@ -168,7 +173,7 @@ test('lo medido a la vista sobre el espectro y el vaso equivocado (decisión 94)
     });
     const handle = await button.elementHandle();
     await button.click();
-    if (row === 'Porta PF') expect(Number(await handle.getAttribute('data-capture-trace'))).toBeGreaterThan(30);
+    expect(Number(await handle.getAttribute('data-capture-trace'))).toBeGreaterThan(30);
   };
   // píxeles del trazado de la captura (ámbar, #ffd166) en el espectro: el mapa de grises del espectro no llega a ese tono
   const tracePixels = () =>
@@ -192,10 +197,8 @@ test('lo medido a la vista sobre el espectro y el vaso equivocado (decisión 94)
   // la fila de la porta sobre el mismo vaso sí mide, y su traza queda dibujada sobre el espectro
   await capture('Porta PF');
   await expect(page.locator('.result')).toContainText(/Porta: \d+\.\d\/\d+\.\d cm\/s → PF \d+ %/);
-  await withinFrames(page, 3, 'traza de captura >30 píxeles', async () => {
-    const n = await tracePixels();
-    return n > 30 || `traza: ${n} píxeles`;
-  });
+  // El listener ya comprobó los píxeles de la captura en vivo. Releerlos aquí era
+  // redundante y costó48s en SwiftShader. Se mantiene la comprobación independiente al congelar.
   // congelado sigue a la vista
   await page.locator('#freeze').click();
   await withinFrames(page, 3, 'traza de captura >30 píxeles', async () => {
@@ -1268,6 +1271,38 @@ test('intervenciones docentes (decisión 79): bolo y PEEP mueven el lazo del sim
   await page.selectOption('#case-select', 'severe-congestion');
   await expect.poll(loop, { timeout: 30_000 }).toMatchObject({ caseId: 'severe-congestion', interventions: 0 });
   await expect(page.getByRole('status')).toHaveText('');
+  expect(errors).toEqual([]);
+});
+
+test('el anuncio docente no mueve Reiniciar paciente entre apuntar y hacer clic', async ({ page }) => {
+  budget(60_000);
+  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  await page.locator('#debug-toggle').check({ force: true });
+  await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
+  const reset = page.getByRole('button', { name: 'Reiniciar paciente', exact: true });
+  await reset.scrollIntoViewIfNeeded();
+  // El handler vacía el anuncio y lo repone 50 ms después. Medir en el mismo turno observa la región vacía,
+  // sin sustituir el timer ni el bucle: el clic real conserva las coordenadas a las que el usuario apuntó.
+  const aimedAt = await page
+    .getByRole('group', { name: 'PEEP' })
+    .getByRole('button', { name: '10', exact: true })
+    .evaluate((b) => {
+      (b as HTMLButtonElement).click();
+      const reset = [...document.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Reiniciar paciente')!;
+      const r = reset.getBoundingClientRect();
+      return { x: r.x, y: r.y, width: r.width, height: r.height };
+    });
+  await expect(page.getByRole('status').filter({ hasText: 'PEEP a 10 cmH₂O.' })).toBeVisible();
+  expect(await reset.boundingBox(), 'el anuncio no desplaza el botón ya apuntado').toEqual(aimedAt);
+  await page.mouse.click(aimedAt.x + aimedAt.width / 2, aimedAt.y + aimedAt.height / 2);
+  expect(await page.evaluate(() => window.__vexusTest!.circulation())).toMatchObject({
+    caseId: 'normal-adult',
+    rapMeanMmHg: 5,
+    fluidTargetMl: 0,
+    peepTargetCmH2O: 0,
+    interventions: 0,
+  });
+  await expect(page.getByRole('status').filter({ hasText: 'Paciente reiniciado' })).toBeVisible();
   expect(errors).toEqual([]);
 });
 

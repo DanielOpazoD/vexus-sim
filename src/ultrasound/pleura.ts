@@ -370,7 +370,7 @@ float curtainSteerWeight(float r, float D, float fAir) { return D > 0.0 && fAir 
 `;
 
 /**
- * La misma física en GLSL, común a los dos programas de la pasada B (va detrás de `sampleSide`: usa
+ * La misma física en GLSL, común a los dos programas de la pasada B (va detrás de `elevationTissues` y `fieldFor`: usa
  * `elevSigma`, `lateralSigmaMm`, `fieldFor`, `anchoredClump`, `interfaceEcho`, `wallFaceEchoFlat`,
  * `scattererField`, `uSeed`, `uElev` y `uCurtain`). Lleva `CURTAIN_AIR_GLSL` (y con él `uHits2`).
  */
@@ -418,8 +418,11 @@ vec2 mediumField(vec3 p, vec3 dir, float r, float se, bool withCurtain, out floa
   Warp w = warpAt(p);
   Cls c = classifyWith(m, withCurtain);
   vec2 f0 = fieldFor(m, se, c.tissue, normalize(p - uCurvC), w);
-  vec2 f1 = sampleSide(p + uElev * se, se, c, withCurtain, w);
-  vec2 f2 = sampleSide(p - uElev * se, se, c, withCurtain, w);
+  vec3 p1 = p + uElev * se, p2 = p - uElev * se;
+  vec3 m1 = toMaterial(p1), m2 = toMaterial(p2);
+  ivec2 sideT = elevationTissues(m1, m2, se, c, withCurtain);
+  vec2 f1 = fieldFor(m1, se, sideT.x, normalize(p1 - uCurvC), w);
+  vec2 f2 = fieldFor(m2, se, sideT.y, normalize(p2 - uCurvC), w);
   float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
   vec2 field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
   float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
@@ -428,7 +431,7 @@ vec2 mediumField(vec3 p, vec3 dir, float r, float se, bool withCurtain, out floa
   field *= densityGain(m, c.tissue);
   // eco de interfaz (decisiones 57 y 65): la especular, real (fase 0 común a la cara), y la difusa sobre el fasor
   // unidad del moteado de la muestra (incoherente, anclada)
-  vec2 e = interfaceEcho(c, m, dir, r, se, w);
+  vec2 e = interfaceEcho(c, m, dir, r, se, w, withCurtain);
   spec = e.x;
   return field * (1.0 + e.y / max(length(field), 1e-6));
 }

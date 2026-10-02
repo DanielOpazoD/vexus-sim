@@ -16,8 +16,8 @@ import { sdSpine } from '../../anatomy/primitives';
  *    resto. Cuando la decisión 60 dé el peso continuo de dueño (ifw), el nivel se multiplicará aquí por él.
  *  - Nivel previsto del eco (dB sobre el moteado): el lóbulo del conjunto con los parámetros de producción de
  *    cada cara (`facetLobe` relativo a la incidencia normal; desde la decisión 65 la rugosidad fina es la de frente,
- *    χ(0), y se cancela: es la media sobre las facetas) sobre el pico medido con GPU a < 15° (cápsula 19 dB,
- *    cúpula 17 dB). Visible desde +6 dB, como el banco.
+ *    χ(0), y se cancela: es la media sobre las facetas) sobre el pico medido con GPU a < 15° (cápsula base 19 dB,
+ *    cúpula 17 dB), más el factor capsular del medio exterior desde la decisión107. Visible desde +6 dB, como el banco.
  *  - Oculto: línea desacoplada (< 0,5) o con pulmón o gas intestinal antes del vértice.
  *
  * Métricas: aristas 3D (la normal gira > 8° entre vértices a 0,5 mm), extremos de los tramos visibles de la
@@ -44,7 +44,7 @@ import type { Vec3 } from '../../core/vec3';
 import type { ProbeCompression } from '../../anatomy/compression';
 import { contactCoupling, probeContact } from '../../probe/contact';
 import { CONVEX_C35, lineDirection, pointOnLine, probeFrame, type ProbeFrame, type ProbePose } from '../../probe/probe';
-import { facetLobe } from '../../ultrasound/interfaceEcho';
+import { facetLobe, liverCapsuleSiteGain } from '../../ultrasound/interfaceEcho';
 import { FACE_GRADIENT_EPS_MM } from '../../anatomy/interfaces';
 
 export const CONTOUR_DEPTH_MM = 180;
@@ -419,7 +419,10 @@ export function analyzeContour(v: ContourView, inner?: (m: Vec3) => number): Con
       const innerHere = innerOf(p);
       const owner: ContourOwner =
         t.dDiaphragm - innerHere <= DOME_OWNER_MM ? 'dome' : dPeri <= MORISON_CONTACT_MM + 0.5 ? 'morison' : 'capsule';
-      const db = owner === 'morison' ? Number.NaN : faceLevelDb(cosI, owner);
+      // Calibración de la cápsula base más el salto del medio exterior, como en la pasada B.
+      const insideCapsule = p.map((value, i) => value - 0.2 * n[i]) as Vec3;
+      const gain = owner === 'capsule' ? liverCapsuleSiteGain(insideCapsule, s, v.caliber) : 1;
+      const db = owner === 'morison' ? Number.NaN : faceLevelDb(cosI, owner) + 20 * Math.log10(gain);
       return { X, Y, s: k * ds, theta, r, p, label: t.label, owner, n, cosI, db, hidden };
     });
     chains.push(vs);

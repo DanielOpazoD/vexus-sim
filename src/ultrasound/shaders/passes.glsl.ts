@@ -525,7 +525,7 @@ const float PLEURA_STEER_GUESS_MM = ${glslFloat(PLEURA_STEER_GUESS_MM)};
 // Número de onda de ida y vuelta con que steeredField forma la fase de la mirada de la muestra (k2 a la frecuencia del
 // eco, decisión 84): g = lookK2·(b_k − b_0), así que la dirección de la mirada es b_0 + g/lookK2
 float lookK2;
-// fieldFor y sampleSide con la fase de la mirada por nodo (speckleField.ts, variantes …Ph); b0, la dirección de la
+// Campo de los planos con la fase de la mirada por nodo (speckleField.ts, variantes …Ph); b0, la dirección de la
 // mirada 0 en el punto del mundo (la radial desde el centro de curvatura); w, la jacobiana de la compresión
 vec2 fieldForPhBase(vec3 m, float se, int tissue, float ph0, vec3 g, vec3 b0, Warp w) {
   vec2 f = speckleFieldPh(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP, ph0, g, strongScatter(tissue));
@@ -544,11 +544,6 @@ vec2 fieldForPhBase(vec3 m, float se, int tissue, float ph0, vec3 g, vec3 b0, Wa
 // wallFieldPh usa la base
 vec2 fieldForPh(vec3 m, float se, int tissue, float ph0, vec3 g, vec3 b0, Warp w) {
   return fieldForPhBase(m, se, tissue, ph0, g, b0, w) * retroTexture(m, tissue, normalize(b0 + g / lookK2), w);
-}
-vec2 sampleSidePh(vec3 p, float se, Cls center, float ph0, vec3 g, bool withCurtain, Warp w) {
-  vec3 m = toMaterial(p);
-  int t = center.bd > se + 0.5 ? center.tissue : classifyWith(m, withCurtain).tissue;
-  return fieldForPh(m, se, t, ph0, g, normalize(p - uCurvC), w);
 }
 // h2 de A0 de la línea cuyo cruce de la pleura está en el camino de φ_k (punto fijo) y sD, su distancia en él
 vec4 steeredPleura(float phiK, float a, int line0, out float sD) {
@@ -578,8 +573,11 @@ vec2 mediumFieldPh(vec3 p, vec3 dir, float r, float se, bool withCurtain, float 
   Warp w = warpAt(p);
   Cls c = classifyWith(m, withCurtain);
   vec2 f0 = fieldForPh(m, se, c.tissue, ph0, g, normalize(p - uCurvC), w);
-  vec2 f1 = sampleSidePh(p + uElev * se, se, c, ph0, g, withCurtain, w);
-  vec2 f2 = sampleSidePh(p - uElev * se, se, c, ph0, g, withCurtain, w);
+  vec3 p1 = p + uElev * se, p2 = p - uElev * se;
+  vec3 m1 = toMaterial(p1), m2 = toMaterial(p2);
+  ivec2 sideT = elevationTissues(m1, m2, se, c, withCurtain);
+  vec2 f1 = fieldForPh(m1, se, sideT.x, ph0, g, normalize(p1 - uCurvC), w);
+  vec2 f2 = fieldForPh(m2, se, sideT.y, ph0, g, normalize(p2 - uCurvC), w);
   float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
   vec2 field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
   float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
@@ -587,7 +585,7 @@ vec2 mediumFieldPh(vec3 p, vec3 dir, float r, float se, bool withCurtain, float 
   // densidad de dispersores (decisión 89), del material: la misma en todas las miradas
   field *= densityGain(m, c.tissue);
   // eco de interfaz (decisiones 57 y 65), como mediumField: la difusa sobre el fasor de esta mirada y la especular aparte
-  vec2 e = interfaceEcho(c, m, dir, r, se, w);
+  vec2 e = interfaceEcho(c, m, dir, r, se, w, withCurtain);
   spec = e.x;
   return field * (1.0 + e.y / max(length(field), 1e-6));
 }
@@ -834,11 +832,17 @@ vec2 fieldFor(vec3 m, float se, int tissue, vec3 dir, Warp w) {
 // Plano lateral en elevación: si el plano central está lejos de toda interfaz
 // (bd > desplazamiento), el tejido es el mismo y se ahorra la clasificación. Bajo la pleura de la
 // cortina (decisión 61) el tejido es el de detrás de la lámina de pulmón (withCurtain = false). Una sola
-// llamada a fieldFor (se inlinea una vez por plano, no dos).
-vec2 sampleSide(vec3 p, float se, Cls center, bool withCurtain, Warp w) {
-  vec3 m = toMaterial(p);
-  int t = center.bd > se + 0.5 ? center.tissue : classifyWith(m, withCurtain).tissue;
-  return fieldFor(m, se, t, normalize(p - uCurvC), w);
+// copia del clasificador para los dos planos; el campo se evalúa después, fuera del bucle.
+// Clasificar los dos planos en un bucle pequeño comparte una copia del clasificador.
+// El campo, sus texturas, warpAt y el eco siguen fuera de bucles (guarda de compilación).
+ivec2 elevationTissues(vec3 plus, vec3 minus, float se, Cls center, bool withCurtain) {
+  if (center.bd > se + 0.5) return ivec2(center.tissue);
+  ivec2 tissues;
+  for (int i = 0; i < 2; i++) {
+    vec3 m = i == 0 ? plus : minus;
+    tissues[i] = classifyWith(m, withCurtain).tissue;
+  }
+  return tissues;
 }
 ${PLEURA_GLSL}
 ${look === 'steered' ? STEERED_RAW_MAIN_GLSL : LOOK0_RAW_MAIN_GLSL}`;

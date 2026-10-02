@@ -15,7 +15,7 @@ main ──●──●──●──●──●──●──►   siempre v
 - **Pull request** por cada rama, con la plantilla (`.github/pull_request_template.md`): qué
   cambia, número de decisión, cómo se verificó. Se integra con _squash_ o _merge_ normal, nunca
   con historia reescrita de `main`, y **solo con la CI en verde**: el check «CI verde (check + e2e)»
-  (el trabajo `check` y los cuatro fragmentos de la e2e). Una prueba que solo pasa al reintentarla
+  (el trabajo `check` y los cinco fragmentos de la e2e). Una prueba que solo pasa al reintentarla
   hace fallar la ejecución (`failOnFlakyTests`): no es verde. Una corrida local no sustituye a la CI.
 - **Comentario de verificación**: enlaza la ejecución real de la CI sobre el último commit del PR
   (`gh pr checks <n>` da el enlace de cada check) y dice qué más se miró (navegador, cifras). «Verde
@@ -87,7 +87,7 @@ a qué objetivo sirve; un cambio que no sirve a ninguno no entra.
   suite rápida y entra en `test:slow` / `test:all`.
 - Sin WebGL ni DOM en los tests unitarios: todo lo físico se prueba en TypeScript puro. Lo que solo
   el navegador puede ver (arranque, render, cableado de la UI) va en `e2e/` (Playwright, `npm run
-e2e`; CI lo ejecuta en paralelo con `check`, en cuatro fragmentos de un trabajador con SwiftShader).
+e2e`; CI lo ejecuta en paralelo con `check`, en cinco fragmentos de un trabajador con SwiftShader).
 - En la e2e se espera en cuadros del bucle o en tiempo de simulación (`withinFrames`,
   `withinSimSeconds` y el gancho `framesRendered`, `e2e/support.ts`), nunca «n segundos de reloj»:
   con SwiftShader un cuadro tarda de décimas a varios segundos según el corredor. Los plazos en

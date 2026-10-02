@@ -277,7 +277,10 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       [
         [[28, 66, -26], 1.6],
         [[18, 56, -10], 2.0],
-        [[10, 14, 14], 2.4],
+        // Confluencia sobre el segmento [30,46,2] → [0,6,26] de hvLeft (t=1/2).
+        // El extremo previo [10,14,14] fallaba la guarda de unión con calibres fisiológicos.
+        // Es una restricción de continuidad del modelo, no una coordenada clínica calibrada.
+        [[15, 26, 14], 2.4],
       ],
       2.0,
     ),

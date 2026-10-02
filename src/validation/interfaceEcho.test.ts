@@ -343,7 +343,7 @@ describe('Uniforms y GLSL del eco de interfaz', () => {
     expect(FRAG_RAWFIELD).toContain(LATERAL_PSF_GLSL);
     expect(FRAG_LATERAL).toContain(LATERAL_PSF_GLSL);
     // la muestra de la imagen (decisión 61: `mediumField`, una vez y fuera de bucles)
-    expect(FRAG_RAWFIELD).toContain('vec2 e = interfaceEcho(c, m, dir, r, se, w);');
+    expect(FRAG_RAWFIELD).toContain('vec2 e = interfaceEcho(c, m, dir, r, se, w, withCurtain);');
     // la especular va aparte (decisión 88): la pasada B la multiplica por la de sus pares en la apertura (decisión 91)
     expect(FRAG_RAWFIELD).toContain('spec = e.x;');
     expect(FRAG_RAWFIELD).toContain('return field * (1.0 + e.y / max(length(field), 1e-6));');
@@ -625,8 +625,10 @@ describe('Facetas y componente difusa de las caras (decisión 65)', () => {
     expect(echo).toContain(
       'return (vec3(valueNoise(q, s), valueNoise(q, s + FACET_SALT_C), valueNoise(q, s + 2.0 * FACET_SALT_C)) - 0.5) * (FACET_GAIN * st);',
     );
-    expect(echo).toContain('vec3 nf = fg.xyz + t - dot(t, fg.xyz) * fg.xyz;');
-    expect(echo).toContain('float cosF = abs(dot(nf, dir)) * inversesqrt(dot(nf, nf));');
+    expect(echo).toContain('vec3 f = warpNormal(w, n + t - dot(t, n) * n);');
+    expect(echo).toContain('vec3 nm = fg.xyz;');
+    expect(echo.indexOf('vec3 nm = fg.xyz;')).toBeLessThan(echo.indexOf('fg = vec4(gw /'));
+    expect(echo).toContain('float cosF = facetCosine(nm, dir, t, w);');
     // σ_t = max(tan 5°, ρ·s) con s² = 1/(4·P.z): la inclinación y el lóbulo propio de la faceta
     expect(echo).toContain('vec3 t = facetTilt(m, c.iface, sqrt(max(FACET_TILT2, 0.25 * FACET_RHO2 / P.z)));');
     expect(echo).toContain(
@@ -656,8 +658,8 @@ describe('Facetas y componente difusa de las caras (decisión 65)', () => {
       expect(src).toContain('return field * (1.0 + e.y / max(length(field), 1e-6));');
     }
     // el programa dirigido lleva las dos (mediumField del preludio y mediumFieldPh de su rama), la mirada 0 una
-    expect(FRAG_RAWFIELD_STEERED.split('vec2 e = interfaceEcho(c, m, dir, r, se, w);').length - 1).toBe(2);
-    expect(FRAG_RAWFIELD.split('vec2 e = interfaceEcho(c, m, dir, r, se, w);').length - 1).toBe(1);
+    expect(FRAG_RAWFIELD_STEERED.split('vec2 e = interfaceEcho(c, m, dir, r, se, w, withCurtain);').length - 1).toBe(2);
+    expect(FRAG_RAWFIELD.split('vec2 e = interfaceEcho(c, m, dir, r, se, w, withCurtain);').length - 1).toBe(1);
     expect(echo).toContain('return interfaceProfileEcho(IF_PLEURA, sqrt(max(0.0, 0.5 * (1.0 - dot(d0, dR)))), 1.0, delta);');
   });
 });

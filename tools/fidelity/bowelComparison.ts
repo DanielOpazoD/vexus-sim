@@ -46,9 +46,15 @@ try {
       if (!ready) throw new Error('Servidor de comparación no responde');
       const page = await context.newPage();
       const errors: string[] = [];
-      page.on('pageerror', (e) => errors.push(e.message));
+      page.on('pageerror', (e) => {
+        errors.push(e.message);
+        console.error(version, e.message);
+      });
       page.on('console', (m) => {
-        if (m.type() === 'error') errors.push(m.text());
+        if (m.type() === 'error') {
+          errors.push(m.text());
+          console.error(version, m.text());
+        }
       });
       await page.goto(`http://127.0.0.1:${port}/?e2e=1`);
       await page.waitForFunction(() => (window.__vexusTest?.framesRendered() ?? 0) >= 2, undefined, { timeout: 180_000 });

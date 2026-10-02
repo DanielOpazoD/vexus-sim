@@ -14,7 +14,11 @@ concurrency:
   group: bowel-visual-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  comparison:
+  capture:
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [legacy, reference]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -32,13 +36,23 @@ jobs:
       - name: Capturas y coste en la base exacta y el cambio
         run: node --import tsx tools/fidelity/bowelComparison.ts
         env:
+          COMPARISON_PROFILE: ${{ matrix.profile }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           BOWEL_OUT: ${{ runner.temp }}/vexus-bowel-evidence
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: bowel-before-after
+          name: bowel-before-after-${{ matrix.profile }}
           path: ${{ runner.temp }}/vexus-bowel-evidence
           retention-days: 7
           if-no-files-found: warn
+
+  comparison:
+    needs: capture
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Ambos perfiles completos
+        run: test '${{ needs.capture.result }}' = 'success'

@@ -10,6 +10,9 @@ import { captureBMode } from './captureBMode';
 const root = process.cwd(),
   sha = process.env.BASE_SHA;
 if (!sha || !/^[a-f0-9]{40}$/.test(sha)) throw new Error('BASE_SHA debe ser un commit exacto de 40 caracteres');
+const selectedProfile = process.env.COMPARISON_PROFILE ?? 'both';
+if (!['both', 'legacy', 'reference'].includes(selectedProfile)) throw new Error('COMPARISON_PROFILE debe ser both, legacy o reference');
+const references = selectedProfile === 'both' ? [false, true] : [selectedProfile === 'reference'];
 const out = resolve(process.env.PORTAL_OUT ?? join(tmpdir(), 'vexus-portal-evidence'));
 mkdirSync(out, { recursive: true });
 const base = join(mkdtempSync(join(tmpdir(), 'vexus-portal-base-')), 'repo');
@@ -62,7 +65,7 @@ try {
           console.error(version, m.text());
         }
       });
-      for (const reference of [false, true]) {
+      for (const reference of references) {
         const profile = reference ? 'reference' : 'legacy';
         for (const id of ['portal', 'intercostal', 'subcostal', 'subxiphoid'] as const) {
           await page.goto(`http://127.0.0.1:${port}/?e2e=app${reference ? '&reference=1' : ''}`);

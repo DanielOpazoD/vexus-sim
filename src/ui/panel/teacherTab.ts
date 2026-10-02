@@ -170,6 +170,13 @@ export class TeacherTab {
       )
       .setAttribute('aria-labelledby', peepLabel.id);
     sec.appendChild(peepRow);
+    // Los controles quedan antes de los valores y anuncios variables: al reaparecer el status no mueve el clic de reinicio.
+    button(row(sec), 'Reiniciar paciente', () => {
+      const error = this.onResetPatient();
+      this.#announce(error ? `No se pudo reiniciar el paciente: ${errorMessage(error)}` : 'Paciente reiniciado: vuelve al caso.');
+      this.#ctx.sync();
+      this.#renderLoop();
+    });
     const dl = document.createElement('dl');
     dl.className = 'loop-state';
     const field = (label: string) => {
@@ -191,12 +198,6 @@ export class TeacherTab {
     // anuncio de lo aplicado para los lectores de pantalla (el estado numérico cambia 4 veces por segundo y no se anuncia)
     this.#announceEl = note(sec);
     this.#announceEl.setAttribute('role', 'status');
-    button(row(sec), 'Reiniciar paciente', () => {
-      const error = this.onResetPatient();
-      this.#announce(error ? `No se pudo reiniciar el paciente: ${errorMessage(error)}` : 'Paciente reiniciado: vuelve al caso.');
-      this.#ctx.sync();
-      this.#renderLoop();
-    });
     this.#renderLoop();
   }
 

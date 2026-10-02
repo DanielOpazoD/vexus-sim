@@ -41,4 +41,4 @@ después `README.md`, `docs/ARCHITECTURE.md`, `docs/GLOSSARY.md` y `docs/TESTING
 
 Ramas `feat/…`, `fix/…`, `test/…`, `docs/…`; Conventional Commits en español; PR con descripción
 de qué cambia y cómo se verificó (con el enlace a la ejecución de CI); squash-merge solo con la CI en verde
-(«CI verde (check + e2e)»: `check` y los cuatro fragmentos de la e2e).
+(«CI verde (check + e2e)»: `check` y los cinco fragmentos de la e2e).

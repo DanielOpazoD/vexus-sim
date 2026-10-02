@@ -23,7 +23,7 @@ import {
   type Tube,
   type TubeHit,
 } from './primitives';
-import { GALLBLADDER_WALL_MM, gallbladderBody, gallbladderSdf, type GallbladderShape } from './organs/gallbladder';
+import { GALLBLADDER_WALL_MM, gallbladderBody, gallbladderGradient, gallbladderSdf, type GallbladderShape } from './organs/gallbladder';
 import {
   KIDNEY_RADII,
   KIDNEY_SINUS,
@@ -711,6 +711,11 @@ export class AnatomyScene {
       face = faceGeometryOf(iface);
     }
     if (face === null) return null;
+    if (face === 'gallbladder') {
+      const g = gallbladderGradient(m, this.gallbladder);
+      const norm = Math.hypot(...g);
+      return norm > 0 ? { normal: g.map((x) => x / norm) as Vec3, norm, curvature: 0 } : { normal: [0, 1, 0], norm: 1, curvature: 0 };
+    }
     if (face === 'tube') {
       const best = this.bestTube(m, caliber);
       if (!best) return null;

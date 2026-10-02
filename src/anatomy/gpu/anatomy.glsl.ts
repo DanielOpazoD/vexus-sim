@@ -753,9 +753,9 @@ vec4 faceGradient(Cls c, vec3 m) {
              domeSd(m + h.yxy) - domeSd(m - h.yxy),
              domeSd(m + h.yyx) - domeSd(m - h.yyx));
   } else if (c.iface == IF_GALLBLADDER) {
-    g = vec3(gallbladderSdf(m + h.xyy) - gallbladderSdf(m - h.xyy),
-             gallbladderSdf(m + h.yxy) - gallbladderSdf(m - h.yxy),
-             gallbladderSdf(m + h.yyx) - gallbladderSdf(m - h.yyx));
+    // El gradiente exacto ya salió de classify; conserva su norma y evita seis consultas.
+    float l = length(c.n);
+    return l > 0.0 ? vec4(c.n / l, l) : vec4(0.0, 1.0, 0.0, 1.0);
   } else if (c.iface >= IF_FIRST_WALL && c.iface <= IF_LAST_WALL) {
     // capas de la pared (decisión 62): el gradiente de la distancia de su capa con su pendiente (wallFaceGradient,
     // decisión 88: tres evaluaciones de su profundidad en lugar de las seis de wallFaceSd), en la escala de las demás

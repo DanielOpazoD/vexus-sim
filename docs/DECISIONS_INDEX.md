@@ -108,3 +108,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [102](DECISIONS.md#L4828) | Pliegues, calibre variable y respuesta intestinal local a la compresión | vigente |
 | [103](DECISIONS.md#L4842) | Interfaz cortical vertebral y sombra sin moteado óseo | vigente |
 | [104](DECISIONS.md#L4854) | Apariencia hepatorrenal normal y comparación a profundidad compartida | vigente |
+| [105](DECISIONS.md#L4866) | Gradiente vesicular analítico y norma física del eco | vigente |

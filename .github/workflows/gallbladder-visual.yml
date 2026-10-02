@@ -1,0 +1,50 @@
+name: Comparación visual vesicular
+on:
+  pull_request:
+    paths:
+      - 'src/anatomy/scene.ts'
+      - 'src/anatomy/organs/gallbladder.ts'
+      - 'src/ultrasound/retroTexture.ts'
+      - 'tools/fidelity/gallbladderMeasurements.ts'
+      - 'tools/fidelity/gallbladderPose.ts'
+      - 'src/anatomy/gpu/anatomy.glsl.ts'
+      - 'src/anatomy/interfaces.ts'
+      - 'src/anatomy/tissues.ts'
+      - 'src/ultrasound/interfaceEcho.ts'
+      - 'e2e/vesicularCortex.spec.ts'
+      - 'tools/fidelity/gallbladderComparison.ts'
+      - '.github/workflows/gallbladder-visual.yml'
+permissions:
+  contents: read
+concurrency:
+  group: gallbladder-visual-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  comparison:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx vite build
+      - name: Capturas y coste en la base exacta y el cambio
+        run: node --import tsx tools/fidelity/gallbladderComparison.ts
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          GALLBLADDER_OUT: ${{ runner.temp }}/vexus-gallbladder-evidence
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: gallbladder-before-after
+          path: ${{ runner.temp }}/vexus-gallbladder-evidence
+          retention-days: 7
+          if-no-files-found: warn

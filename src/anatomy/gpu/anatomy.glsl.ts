@@ -647,11 +647,11 @@ Cls classifyWith(vec3 m, bool withCurtain) {
   c.tissue = retroperitoneum(m, -depth - wall, dPeri, bdRetro);
   c.bd = max(min(min(bdBowel, bdRetro), dSpine), 0.0); c.n = tn;
   if(c.tissue!=T_BOWEL)return c;
-  vec3 bn,ba,ln;float dl,br;float d=bowelQuery(m,bn,ba,dl,ln,br);
+  vec3 bn,ba,bowelLumenNormal;float dl,br;float d=bowelQuery(m,bn,ba,dl,bowelLumenNormal,br);
   if(d>=BOWEL_REACH){c.tissue=T_MESENTERIC_FAT;c.bd=min(c.bd,d/2.0);return c;}
   c.tangent=ba;
   c.iface=abs(d)<abs(dl)?IF_BOWEL_SEROSA:IF_BOWEL_LUMEN;
-  c.n=c.iface==IF_BOWEL_SEROSA?bn:ln;
+  c.n=c.iface==IF_BOWEL_SEROSA?bn:bowelLumenNormal;
   c.ifd=abs(c.iface==IF_BOWEL_SEROSA?d:dl);
   c.kc=1.0/(c.iface==IF_BOWEL_SEROSA?br:br-BOWEL_WALL);
   if(d>=0.0){c.tissue=T_MESENTERIC_FAT;c.bd=min(c.bd,d/2.0);}

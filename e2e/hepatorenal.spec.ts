@@ -27,7 +27,7 @@ for (const reference of [false, true])
     await page.screenshot({ path, clip: clip!, animations: 'disabled' });
     const pose = reference
       ? { phi: 3.2, z: -80, yaw: 0, tilt: -0.4, rock: -0.2, lift: 0 }
-      : { phi: 3.2, z: -80, yaw: -0.2, tilt: -0.4, rock: 0.2, lift: 0 };
+      : { phi: 3.2, z: -80, yaw: -0.1, tilt: -0.4, rock: 0.1, lift: 0 };
     const r = measureHepatorenal(path, pose, reference);
     expect(r.bands.length).toBeGreaterThanOrEqual(3);
     expect(r.matchedPixels).toBeGreaterThan(150);

@@ -67,7 +67,7 @@ try {
         const mode = reference ? 'reference' : 'legacy';
         const pose = reference
           ? { phi: 3.2, z: -80, yaw: 0, tilt: -0.4, rock: -0.2, lift: 0 }
-          : { phi: 3.2, z: -80, yaw: -0.2, tilt: -0.4, rock: 0.2, lift: 0 };
+          : { phi: 3.2, z: -80, yaw: -0.1, tilt: -0.4, rock: 0.1, lift: 0 };
         await page.goto(`http://127.0.0.1:${port}/?e2e=1${reference ? '&reference=1' : ''}`);
         await page.waitForFunction(() => (window.__vexusTest?.framesRendered() ?? 0) >= 2, undefined, { timeout: 180_000 });
         await page.evaluate((pose) => {

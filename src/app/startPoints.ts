@@ -144,9 +144,9 @@ export const START_POINTS: readonly StartPoint[] = [
     color: '#e8bf79',
     phi: 3.2,
     z: -80,
-    yaw: -0.2,
+    yaw: -0.1,
     tilt: -0.4,
-    rock: 0.2,
+    rock: 0.1,
     hint: 'Hígado y riñón derecho en eje largo: compara parénquima hepático y corteza renal a igual profundidad, sin incluir vasos, pirámides ni seno. Afina el espacio intercostal para despejar sombras.',
   },
 ];

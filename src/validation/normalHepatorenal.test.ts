@@ -14,7 +14,7 @@ describe('apariencia hepatorrenal normal sin cambiar el contraste parenquimatoso
   });
   it('fina heterogeneidad material, simétrica en dB y sin señal distinta en otros tejidos', () => {
     expect(DENSITY.cellMm).toBe(3);
-    expect(DENSITY.scaleDb).toBe(10);
+    expect(DENSITY.scaleDb).toBe(11);
     let sum = 0,
       min = Infinity,
       max = -Infinity;

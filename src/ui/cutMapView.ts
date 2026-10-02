@@ -50,6 +50,7 @@ const TISSUE_COLOR: Record<number, [number, number, number]> = {
   [Tissue.RetroperitonealFat]: [220, 196, 128],
   [Tissue.Myocardium]: [150, 62, 78],
   [Tissue.Mediastinum]: [196, 170, 112],
+  [Tissue.MesentericFat]: [212, 183, 112],
 };
 const TISSUE_LABEL: Record<number, string> = {
   [Tissue.Liver]: 'hígado',
@@ -73,6 +74,7 @@ const TISSUE_LABEL: Record<number, string> = {
   [Tissue.RetroperitonealFat]: 'retroperitoneo',
   [Tissue.Myocardium]: 'miocardio',
   [Tissue.Mediastinum]: 'mediastino',
+  [Tissue.MesentericFat]: 'grasa mesentérica',
 };
 /** Cavidades del corazón (decisión 85), en el orden de `HEART_CHAMBER_IDS`: rótulo y color (derechas azules, izquierdas rojas). */
 const CHAMBER: ReadonlyArray<{ label: string; color: [number, number, number] }> = [

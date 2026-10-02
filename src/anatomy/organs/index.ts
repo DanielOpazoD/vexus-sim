@@ -1,3 +1,4 @@
+import * as bowel from './bowel';
 import * as gallbladder from './gallbladder';
 import * as heart from './heart';
 import * as kidney from './kidney';
@@ -26,6 +27,7 @@ export interface OrganModule {
 }
 
 export const ORGAN_MODULES: readonly OrganModule[] = [
+  { id: 'bowel', exports: bowel, glsl: bowel.BOWEL_GLSL },
   {
     id: 'wall',
     exports: wall,

@@ -40,4 +40,6 @@ export const INTERFACE_SOURCES: Readonly<Record<Interface, string>> = {
   [Interface.Perichondrium]:
     'Fresnel cartílago / músculo 0,021 (TISSUES); lámina densa de colágeno: suelo 0,025, σz 0,06 y s 0,3 como las fascias [ESTIMADO]: su eco especular (K·|R|·Λ·χ a 2,5 MHz) queda en 9,8 dB a 0° y 5,9 a 30°; con el suelo 0,06, σz 0,03 y s 0,2 (25,8 y 10,6), en la subxifoidea los cortes de los cartílagos del reborde eran una cadena de rizos blancos (capturas con GPU, 25-09-2026)',
   [Interface.Pericardium]: 'pericardio fibroso (colágeno / grasa, Duck 1990): suelo 0,15 [LITERATURA aprox.]; σz 0,06, s 0,2 [ESTIMADO]',
+  [Interface.BowelLumen]: 'EFSUMB 2016; doi:10.1055/s-0042-115853. Rugosidad y pendiente estimadas (decisión 101).',
+  [Interface.BowelSerosa]: 'EFSUMB 2016; doi:10.1055/s-0042-115853. Rugosidad y pendiente estimadas (decisión 101).',
 };

@@ -1,3 +1,4 @@
+import { BOWEL_NODES, BOWEL_BOUNDS, BOWEL_GROUPS } from '../anatomy/organs/bowel';
 import { CARTILAGE_ROWS } from '../anatomy/referenceCartilageData';
 import type { AnatomyScene, VesselCaliber } from '../anatomy/scene';
 import { VESSEL_META } from '../physiology/vessels';
@@ -45,6 +46,7 @@ import {
   RIB_BASE,
   CARTILAGE_BASE,
   COMPRESSION_BASE,
+  BOWEL_BASE,
   MAX_NODES,
   MAX_TUBES,
   MAX_TUBE_SEGMENTS,
@@ -654,6 +656,8 @@ export class UltrasoundRenderer {
       this.sceneData.set([ribAnteriorEndX(r), r.shape ? 1 : 0, r.sourceCartilage ? 1 : 0, 0], (RIB_BASE + i * 2 + 1) * 4);
     });
     if (s.torso.profile) CARTILAGE_ROWS.forEach((row, i) => this.sceneData.set(row, (CARTILAGE_BASE + i) * 4));
+    BOWEL_BOUNDS.forEach((row, i) => this.sceneData.set(row, (BOWEL_BASE + i) * 4));
+    BOWEL_NODES.forEach((p, i) => this.sceneData.set([...p, 0], (BOWEL_BASE + BOWEL_GROUPS + i) * 4));
     this.tubeCountTotal = tubes.length;
     if (this.tubeCountTotal > MAX_TUBES) throw new Error('Demasiados tubos para el shader');
     let n = 0;

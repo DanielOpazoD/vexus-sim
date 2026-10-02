@@ -53,10 +53,12 @@ export enum Tissue {
    * 1,5 mm junto al miocardio es el pericardio, que dibuja la cara pericárdica.
    */
   Mediastinum = 31,
+  /** Grasa intraperitoneal entre asas; no pared intestinal. */
+  MesentericFat = 32,
 }
 
-/** 32 llena las ranuras de 4 en 4 de las tablas por tejido (`TISSUE_VEC4` = 8): un tejido más cuesta dos en la pasada B. */
-export const TISSUE_COUNT = 32;
+/** 33 tejidos: nueve ranuras vec4 por tabla; la grasa mesentérica es un tejido distinto de la pared intestinal. */
+export const TISSUE_COUNT = 33;
 
 /**
  * Nombre de cada tejido en GLSL (`#define T_… índice`). Se genera desde aquí
@@ -96,6 +98,7 @@ export const TISSUE_GLSL_NAME: Record<Tissue, string> = {
   [Tissue.RetroperitonealFat]: 'T_RETROFAT',
   [Tissue.Myocardium]: 'T_MYOCARDIUM',
   [Tissue.Mediastinum]: 'T_MEDIASTINUM',
+  [Tissue.MesentericFat]: 'T_MESENTERIC_FAT',
 };
 
 /** Lámina diafragmática bajo la cúpula (mm); la misma en TS, GLSL y el navegador 3D. */
@@ -160,7 +163,7 @@ export const TISSUES: TissueProps[] = [
   // el «resto» del abdomen (asas, mesenterio; la grasa retroperitoneal es un tejido propio desde la decisión 81): el
   // nivel lo da su textura (decisión 74, `ultrasound/restTexture.ts`), granulosa por los grumos
   {
-    name: 'intestino (pared/contenido)',
+    name: 'pared intestinal',
     c: 1570,
     rho: 1050,
     alpha1: 0.7,
@@ -171,7 +174,7 @@ export const TISSUES: TissueProps[] = [
     speckleClump: 0.5,
   },
   { name: 'gas intestinal', c: 343, rho: 1.16, alpha1: 0.0034, b: 2, backscatter: 0, gas: true, bone: false },
-  { name: 'líquido (bilis/ascitis)', c: 1482, rho: 994, alpha1: 0.0022, b: 1, backscatter: 0.002, gas: false, bone: false },
+  { name: 'líquido (bilis/luz intestinal/ascitis)', c: 1482, rho: 994, alpha1: 0.0022, b: 1, backscatter: 0.002, gas: false, bone: false },
   { name: 'pared arterial', c: 1586, rho: 1079, alpha1: 0.7, b: 1, backscatter: 1.8, gas: false, bone: false },
   // cartílago hialino: homogéneo e hipoecoico (≈ 0,15), con el pericondrio como cara (decisión 62)
   { name: 'cartílago costal', c: 1640, rho: 1100, alpha1: 0.9, b: 1, backscatter: 0.15, gas: false, bone: false },
@@ -211,6 +214,8 @@ export const TISSUES: TissueProps[] = [
   // conectivo, menos ecogénica que la retroperitoneal (2,0 desde la decisión 87) y granulosa [ESTIMADO]
   { name: 'miocardio', c: 1561, rho: 1081, alpha1: 0.52, b: 1.1, backscatter: 0.4, gas: false, bone: false },
   { name: 'mediastino', c: 1460, rho: 940, alpha1: 0.5, b: 1.1, backscatter: 1.0, gas: false, bone: false, speckleClump: 0.6 },
+  // Propiedades de grasa; retrodispersión mesentérica estimada, antes mezclada con falsas asas.
+  { name: 'grasa mesentérica', c: 1450, rho: 920, alpha1: 0.45, b: 1.1, backscatter: 1.35, gas: false, bone: false, speckleClump: 0.5 },
 ];
 
 /** Impedancia acústica Z = ρc en MRayl. */

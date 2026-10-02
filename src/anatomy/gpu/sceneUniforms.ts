@@ -14,7 +14,6 @@ import type { PhysiologySample } from '../../physiology/engine';
  * subida desde el renderer (`evaluateSceneUniforms` + `uploadSceneUniforms`). Antes había que
  * escribir cada nombre dos veces (≈ 85 líneas en el renderer) y un olvido fallaba en silencio.
  */
-export const MAX_GAS = 6;
 /** Seis registros bilaterales (pares 5–10); no doce evaluaciones por punto. */
 export const MAX_RIBS = 6;
 
@@ -145,18 +144,6 @@ export const SCENE_UNIFORMS: readonly UniformSpec[] = [
     type: 'vec2',
     // radio de la unión suave entre tramos, espesor de pared (mm)
     value: (s) => [s.gallbladder.blendMm, s.gallbladderWallMm],
-  },
-  {
-    name: 'uGas',
-    type: 'vec4',
-    count: MAX_GAS,
-    // bolsas de gas: centro, radio (relleno lejos)
-    value: (s) =>
-      pad(
-        s.gasPockets.slice(0, MAX_GAS).map((g) => [...g.center, g.r]),
-        MAX_GAS,
-        [0, 0, 9999, 0],
-      ),
   },
   {
     name: 'uRibs',

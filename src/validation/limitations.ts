@@ -32,7 +32,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'ivc-single-compartment',
   'morison-rim-sliver',
   'ivc-wall-lag-not-in-network',
-  'bowel-gas-no-shadow',
+  'bowel-segment-static',
   'simplified-retroperitoneum',
   'no-thoracic-waterfall',
   'gate-lost-with-quiet-breathing',

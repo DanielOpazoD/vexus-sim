@@ -90,6 +90,14 @@ jobs:
           name: e2e-tiempos-${{ matrix.shard }}
           path: e2e-results.json
           retention-days: 14
+      - name: Guardar las capturas intestinales
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: bowel-visuals-${{ matrix.shard }}
+          path: test-results/**/bowel-*.png
+          retention-days: 7
+          if-no-files-found: ignore
       - name: Guardar el informe si falla
         if: failure()
         uses: actions/upload-artifact@v7

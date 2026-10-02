@@ -515,7 +515,7 @@ describe('caras nuevas en la tabla de la decisión 57', () => {
   it('cada cara de la pared y de la costilla tiene su fila, su nombre GLSL, su fuente y un solo tipo de dueño', () => {
     // tras la pleura parietal de la decisión 61 (12): nueve caras de la pared y las costillas, 13–21; después, el pericardio
     // (decisión 85)
-    expect(INTERFACE_COUNT).toBe(23);
+    expect(INTERFACE_COUNT).toBe(25); // dos interfaces intestinales, sin cambiar las caras de pared
     expect(Interface.SkinFat).toBe(Interface.PleuraWall + 1);
     expect(Object.keys(INTERFACES)).toHaveLength(INTERFACE_COUNT);
     for (const f of [...WALL_FACES, Interface.RibCortex, Interface.Perichondrium]) {
@@ -716,7 +716,9 @@ describe('gemelo GLSL (organs/wall.ts y wallTexture.ts)', () => {
     for (const src of [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED])
       expect(src.indexOf('float wallFaceGain(')).toBeLessThan(src.indexOf('vec2 interfaceEcho('));
     const echo = INTERFACE_ECHO_GLSL.replace(/\s+/g, ' ');
-    expect(echo).toContain('c.iface <= IF_LAST_TUBE || c.iface == IF_RIB || c.iface == IF_PERICHONDRIUM ? tubeCurvature(');
+    expect(echo).toContain(
+      'c.iface <= IF_LAST_TUBE || c.iface == IF_RIB || c.iface == IF_PERICHONDRIUM || c.iface == IF_BOWEL_LUMEN || c.iface == IF_BOWEL_SEROSA ? tubeCurvature(',
+    );
     // la variación anclada de la pared multiplica la especular de la faceta y la difusa (decisión 65)
     expect(echo).toContain('float gain = c.iface >= IF_FIRST_WALL && c.iface <= IF_LAST_WALL ? wallFaceGain(m, c.iface) : 1.0;');
     expect(FRAG_RAWFIELD).toContain(`uIface[${INTERFACE_COUNT}]`);
@@ -725,7 +727,7 @@ describe('gemelo GLSL (organs/wall.ts y wallTexture.ts)', () => {
     expect(WALL_TEXTURE.faceVariation.length).toBe(LAST_WALL_INTERFACE - FIRST_WALL_INTERFACE + 1);
     // los tejidos de la decisión 81 (psoas, cuadrado lumbar, grasa retroperitoneal) y de la 85 (miocardio y mediastino) van al
     // final: no mueven índices
-    expect(TISSUE_COUNT).toBe(32);
+    expect(TISSUE_COUNT).toBe(33); // grasa mesentérica añadida sin renumerar tejidos previos
   });
 });
 

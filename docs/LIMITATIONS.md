@@ -64,15 +64,16 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   mide sigue al volumen de la red con τ = 0,2 s (decisión 73), pero la red calcula presiones y caudales con su volumen
   elástico; los dos diámetros se separan hasta un 14 % en los colapsos rápidos del sano (5 % en la congestión grave),
   con la misma media.
-- **El gas intestinal no da sombra** (`bowel-gas-no-shadow`): el contenido de las asas del «resto» (decisión 74) es una
-  textura de retrodispersión; el gas brilla pero no refleja ni reverbera ni deja sombra sucia detrás (las bolsas de gas
-  de la anatomía sí lo hacen, pero no hay ninguna en los casos de referencia).
+- **Segmento intestinal representativo y estático** (`bowel-segment-static`): eje estimado, no atlas ni reconstrucción
+  de todo el tubo digestivo; sin duodeno o colon individualizados, válvulas conniventes, mesenterio vascularizado,
+  peristalsis o desplazamiento de gas/líquido. Pared y reflectividad por capas estimadas, pendientes de comparación
+  clínica. El gas intraluminal participa en transmisión y reverberación; no se interpreta el muestreo como validación
+  clínica. La malla 3D suaviza el eje y no representa su mucosa. El cuerpo de referencia se extrapola fuera de −160..120 mm.
 - **Retroperitoneo simplificado** (`simplified-retroperitoneum`): el psoas (cuatro conos redondeados) y el cuadrado
   lumbar (una lámina contra la pared) son sólidos lisos y simétricos (decisión 81), sin los pilares del diafragma, el
   ilíaco ni las suprarrenales, y sus fascias no tienen cara (el borde lo da el contraste músculo/grasa). La pared
   posterior del modelo mide 28 mm y el riñón apoya en ella: el cuadrado le deja sitio en lugar de pasar entre ambos. El
-  peritoneo parietal posterior es una superficie suave, sin recesos, y el duodeno y el colon ascendente son el «resto»
-  con la textura de asas. Los músculos se mueven con la respiración con el peso del campo de desplazamiento (en el psoas,
+  peritoneo parietal posterior es una superficie suave, sin recesos, y el duodeno y el colon ascendente no tienen todavía geometría individual. Los músculos se mueven con la respiración con el peso del campo de desplazamiento (en el psoas,
   de ~0,1 junto a la columna a 1 en su parte lateral e inferior; en el cuadrado, ≤ 0,6), en lugar de quedarse quietos
   bajo el riñón que se desliza. En la hepatomegalia de la congestión grave el hígado ocupa el origen del psoas en
   T12–L1 (hasta 12 mm) y el borde superior del cuadrado (hasta 7 mm): se clasifica antes. La textura de sus fascículos no

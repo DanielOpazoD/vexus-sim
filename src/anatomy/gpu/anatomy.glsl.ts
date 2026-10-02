@@ -1,3 +1,4 @@
+import { BOWEL_TEXELS } from '../organs/bowel';
 import { CARTILAGE_GLSL } from './referenceCartilage.glsl';
 import { CARTILAGE_ROWS } from '../referenceCartilageData';
 /**
@@ -36,7 +37,7 @@ import {
 import { COMPRESSION_GLSL, PROBE_COMPRESSION } from '../compression';
 import { ORGAN_MODULES } from '../organs';
 import { RIB_ANTERIOR_END, TUBE_SHAPE } from '../primitives';
-import { MAX_GAS, MAX_RIBS, SCENE_UNIFORMS_GLSL } from './sceneUniforms';
+import { MAX_RIBS, SCENE_UNIFORMS_GLSL } from './sceneUniforms';
 
 export const MAX_TUBES = 128;
 export const MAX_NODES = 640;
@@ -52,8 +53,9 @@ export const COMPRESSION_BASE = NODE_BASE + MAX_NODES;
 export const BODY_BASE = COMPRESSION_BASE + PROBE_COMPRESSION.nodes;
 export const RIB_BASE = BODY_BASE + 130;
 export const CARTILAGE_BASE = RIB_BASE + MAX_RIBS * 2;
-export const SCENE_TEX_H = Math.ceil((CARTILAGE_BASE + CARTILAGE_ROWS.length) / SCENE_TEX_W);
-export { MAX_GAS, MAX_RIBS } from './sceneUniforms';
+export const BOWEL_BASE = CARTILAGE_BASE + CARTILAGE_ROWS.length;
+export const SCENE_TEX_H = Math.ceil((BOWEL_BASE + BOWEL_TEXELS) / SCENE_TEX_W);
+export { MAX_RIBS } from './sceneUniforms';
 
 const TISSUE_DEFINES = Object.entries(TISSUE_GLSL_NAME)
   .map(([index, name]) => `#define ${name} ${index}`)
@@ -71,7 +73,7 @@ export const ANATOMY_GLSL = /* glsl */ `
 #define NODE_BASE ${NODE_BASE}
 #define TUBE_HDR ${TUBE_HEADER_TEXELS}
 #define COMP_BASE ${NODE_BASE + MAX_NODES}
-#define MAX_GAS ${MAX_GAS}
+#define BOWEL_BASE ${BOWEL_BASE}
 #define MAX_RIBS ${MAX_RIBS}
 ${TISSUE_DEFINES}
 ${INTERFACE_DEFINES}
@@ -639,16 +641,21 @@ Cls classifyWith(vec3 m, bool withCurtain) {
   float bdBowel = min(min(BOWEL_BD_CAP_MM, dDome - DIAPHRAGM_MM), dGb - uGbExtra.y);
   bdBowel = min(bdBowel, min(dLiverBase, -depth - wall));
   for (int k = 0; k < 2; k++) bdBowel = min(bdBowel, perirenalOuterSdf(kidneyLocal(m, k), k));
-  for (int i = 0; i < MAX_GAS; i++) {
-    float dg = sdSphere(m, uGas[i], sn);
-    if (dg < 0.0) { c.tissue = T_BOWELGAS; c.bd = -dg; c.n = sn; return c; }
-    bdBowel = min(bdBowel, dg);
-  }
   // detrás del peritoneo parietal posterior, el retroperitoneo (decisión 81): psoas, cuadrado lumbar y grasa; la
   // distancia a la frontera cuenta también la columna, que se clasifica antes
   float bdRetro;
   c.tissue = retroperitoneum(m, -depth - wall, dPeri, bdRetro);
   c.bd = max(min(min(bdBowel, bdRetro), dSpine), 0.0); c.n = tn;
+  if(c.tissue!=T_BOWEL)return c;
+  vec3 bn,ba;float d=bowelQuery(m,bn,ba), dl=d+BOWEL_WALL;
+  if(d>=BOWEL_REACH){c.tissue=T_MESENTERIC_FAT;c.bd=min(c.bd,d);return c;}
+  c.n=bn;c.tangent=ba;
+  c.iface=d>-0.5*BOWEL_WALL?IF_BOWEL_SEROSA:IF_BOWEL_LUMEN;
+  c.ifd=abs(c.iface==IF_BOWEL_SEROSA?d:dl);
+  c.kc=1.0/(c.iface==IF_BOWEL_SEROSA?BOWEL_RADIUS:BOWEL_RADIUS-BOWEL_WALL);
+  if(d>=0.0){c.tissue=T_MESENTERIC_FAT;c.bd=min(c.bd,d);}
+  else if(dl>=0.0){c.tissue=T_BOWEL;c.bd=min(c.bd,min(-d,dl));}
+  else {float dg=bowelGasSdf(m,dl);c.tissue=dg<0.0?T_BOWELGAS:T_FLUID;c.bd=min(c.bd,min(-dl,abs(dg)));if(dg<0.0){c.iface=IF_NONE;c.ifd=1e3;}}
   return c;
 }
 

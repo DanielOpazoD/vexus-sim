@@ -104,3 +104,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [98](DECISIONS.md#L4780) | Recuperar el campo torácico como referencia opt-in y mantener el presupuesto completo | vigente |
 | [99](DECISIONS.md#L4792) | Borde 3D del diafragma en la pared corporal compartida | vigente |
 | [100](DECISIONS.md#L4804) | Fundido del moteado gobernado por tiempo de simulación | vigente |
+| [101](DECISIONS.md#L4816) | Asas intestinales con pared, luz y gas físicos | vigente |

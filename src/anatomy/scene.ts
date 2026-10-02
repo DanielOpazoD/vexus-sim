@@ -1,3 +1,4 @@
+import { BOWEL_RADIUS_MM, BOWEL_FIELD_REACH_MM, BOWEL_WALL_MM, bowelQuery, bowelGasSdf } from './organs/bowel';
 import { referenceBody } from './referenceBody';
 import { smoothstep, type Vec3 } from '../core/vec3';
 import type { PatientState } from '../physiology/patientState';
@@ -9,7 +10,6 @@ import {
   sdDiaphragm,
   sdDiaphragmSlope,
   sdRib,
-  sdSphere,
   smoothMax,
   torsoDepth,
   tubeFaceGradient,
@@ -19,7 +19,6 @@ import {
   type Diaphragm,
   type Ellipsoid,
   type Rib,
-  type Sphere,
   type Torso,
   type Tube,
   type TubeHit,
@@ -80,6 +79,7 @@ import {
   MORISON_SLIVER_MM,
   interfaceOfVessel,
   isRibInterface,
+  isBowelInterface,
   isWallLayerInterface,
 } from './interfaces';
 
@@ -151,7 +151,14 @@ export const FACE_GEOMETRIES: readonly FaceGeometry[] = [
  * `wallFaceGradient`) o la de su costilla (`ribSd`), y `faceGradient` las trata aparte.
  */
 export function faceGeometryOf(i: Interface): FaceGeometry | null {
-  if (i === Interface.None || i === Interface.Pleura || i === Interface.PleuraWall || isWallLayerInterface(i) || isRibInterface(i))
+  if (
+    i === Interface.None ||
+    i === Interface.Pleura ||
+    i === Interface.PleuraWall ||
+    isWallLayerInterface(i) ||
+    isRibInterface(i) ||
+    isBowelInterface(i)
+  )
     return null;
   if (i <= LAST_TUBE_INTERFACE) return 'tube';
   if (i === Interface.GallbladderLumen) return 'gallbladder';
@@ -251,8 +258,6 @@ export class AnatomyScene {
   readonly gallbladderWallMm = GALLBLADDER_WALL_MM;
   readonly kidneyRight: Kidney;
   readonly kidneyLeft: Kidney;
-  /** Bolsas de gas intestinal (confusor; vacío en el avatar de referencia). */
-  readonly gasPockets: Sphere[];
   vessels: VesselDef[];
   readonly ducts: DuctDef[];
   readonly vesselById: Map<VesselId, VesselDef>;
@@ -317,7 +322,6 @@ export class AnatomyScene {
       sinusOffset: KIDNEY_SINUS.offsetV,
       hilumRadius: 7,
     };
-    this.gasPockets = [];
     this.ribs = [];
     // Pares costales 5–10: el 7.º cartílago llega al esternón a la altura del xifoides (z 0).
     // Oblicuidad creciente hacia abajo: la cabeza de la 5.ª está en T5 (≈ 6 cm sobre su
@@ -567,15 +571,25 @@ export class AnatomyScene {
       -depth - wall.wallMm,
     );
     for (const k of [this.kidneyRight, this.kidneyLeft]) bd = Math.min(bd, perirenalOuterSdf(kidneyLocal(m, k), k));
-    for (const g of this.gasPockets) {
-      const dg = sdSphere(m, g);
-      if (dg < 0) return { ...NONE, tissue: Tissue.BowelGas, boundaryDistance: -dg };
-      bd = Math.min(bd, dg);
-    }
     // detrás del peritoneo parietal posterior, el retroperitoneo (decisión 81): psoas, cuadrado lumbar y grasa; delante, el
     // intestino. Su distancia a la frontera cuenta también la columna, que se clasifica antes (el psoas la bordea)
     const [tissue, dRetro] = retroperitoneum(m, -depth - wall.wallMm, kidney.dPeriMm);
-    return { ...NONE, tissue, boundaryDistance: Math.max(0, Math.min(bd, dRetro, sdSpine(m, this.spine))) };
+    bd = Math.max(0, Math.min(bd, dRetro, sdSpine(m, this.spine)));
+    if (tissue !== Tissue.Bowel) return { ...NONE, tissue, boundaryDistance: bd };
+    const q = bowelQuery(m),
+      dl = q.d + BOWEL_WALL_MM;
+    if (q.d >= BOWEL_FIELD_REACH_MM) return { ...NONE, tissue: Tissue.MesentericFat, boundaryDistance: Math.min(bd, q.d) };
+    const iface = q.d > -0.5 * BOWEL_WALL_MM ? Interface.BowelSerosa : Interface.BowelLumen;
+    const face = { interface: iface, interfaceDistance: Math.abs(iface === Interface.BowelSerosa ? q.d : dl), boundaryNormal: q.normal };
+    if (q.d >= 0) return { ...NONE, ...face, tissue: Tissue.MesentericFat, boundaryDistance: Math.min(bd, q.d) };
+    if (dl >= 0) return { ...NONE, ...face, tissue: Tissue.Bowel, boundaryDistance: Math.min(bd, -q.d, dl) };
+    const dg = bowelGasSdf(m, dl);
+    return {
+      ...NONE,
+      ...(dg < 0 ? {} : face),
+      tissue: dg < 0 ? Tissue.BowelGas : Tissue.Fluid,
+      boundaryDistance: Math.min(bd, -dl, Math.abs(dg)),
+    };
   }
 
   /**
@@ -644,6 +658,15 @@ export class AnatomyScene {
     if (face === undefined) {
       // las caras de la pared y de las costillas (decisión 62) no tienen geometría de faceSdf
       const iface = this.classify(m, caliber).interface;
+      if (isBowelInterface(iface)) {
+        const q = bowelQuery(m);
+        return {
+          normal: q.normal,
+          norm: 1,
+          axis: q.axis,
+          curvature: 1 / (iface === Interface.BowelSerosa ? BOWEL_RADIUS_MM : BOWEL_RADIUS_MM - BOWEL_WALL_MM),
+        };
+      }
       if (isWallLayerInterface(iface)) {
         // la pendiente de la capa (decisión 88), como la GPU: tres evaluaciones de su profundidad
         const g = wallFaceGradient(m, iface, this.torso);

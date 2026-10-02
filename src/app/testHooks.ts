@@ -1,3 +1,4 @@
+import { BOWEL_NODES, BOWEL_GAS } from '../anatomy/organs/bowel';
 import { VESSEL_META, type VesselId } from '../physiology/vessels';
 import { gateInColorBox, type EquipmentCommand } from './equipment';
 import { errorLog } from './errorLog';
@@ -55,6 +56,19 @@ import { startPointsFor, type StartPoint } from './startPoints';
  */
 export interface TestHooks {
   equivalenceSweep: () => EquivalencePoseReport[];
+  /** Paridad dirigida a pared, luz, gas y serosa intestinales; solo pruebas. */
+  bowelEquivalence: () => {
+    samples: number;
+    interior: number;
+    agreement: number;
+    gas: number;
+    fluid: number;
+    wall: number;
+    faces: number;
+    faceAgreement: number;
+    maxDistanceError: number;
+    normalMinDot: number;
+  };
   /** Equivalencia TS ↔ GLSL en `n` puntos aleatorios de todo el tronco. */
   volumeEquivalence: (n?: number) => VolumeEquivalenceReport;
   /** Equivalencia de la cara de interfaz y su distancia a 0,01–0,6 mm de cada cara, en los planos de partida. */
@@ -346,6 +360,63 @@ export function frameMeasureOptions(opts: FrameCostOptions = {}): RenderMeasureO
 export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: EquipmentCommand) => void, loopFrames: () => number): TestHooks {
   const hooks: TestHooks = {
     equivalenceSweep: () => equivalenceSweep(getSim()),
+    bowelEquivalence: () => {
+      const sim = getSim(),
+        sample = sim.sample,
+        points: Vec3[] = [];
+      for (const p of BOWEL_NODES.filter((p) => p[2] > -235))
+        for (const r of [7, 8.5, 9.5, 10.5, 13])
+          for (let j = 0; j < 6; j++) {
+            const q: Vec3 = [p[0] + 0.137, p[1] + 0.073, p[2] + 0.191];
+            q[j % 3] += r * (j < 3 ? 1 : -1);
+            points.push(q);
+          }
+      for (const g of BOWEL_GAS)
+        for (let x = -8; x <= 8; x += 2)
+          for (let y = -4; y <= 4; y += 2)
+            for (let z = -8; z <= 8; z += 2) points.push([g.center[0] + x + 0.137, g.center[1] + y + 0.073, g.center[2] + z + 0.191]);
+      const world = new Float32Array(points.flatMap((p) => sim.anatomy.deformation.toWorld(p, sample.resp)));
+      const gpu = sim.gpuQuery(world, sim.frame, true, { normals: true });
+      let interior = 0,
+        same = 0,
+        gas = 0,
+        fluid = 0,
+        wall = 0,
+        faces = 0,
+        sameFace = 0,
+        maxDistanceError = 0,
+        normalMinDot = 1;
+      for (let i = 0; i < points.length; i++) {
+        const q = sim.anatomy.classifyWorld([world[i * 3], world[i * 3 + 1], world[i * 3 + 2]], sample);
+        if (q.boundaryDistance < 0.05) continue;
+        interior++;
+        if (Number(q.tissue) === gpu.tissue[i]) same++;
+        if (q.tissue === Tissue.BowelGas) gas++;
+        if (q.tissue === Tissue.Fluid) fluid++;
+        if (q.tissue === Tissue.Bowel) wall++;
+        if (q.interface !== Interface.BowelLumen && q.interface !== Interface.BowelSerosa) continue;
+        faces++;
+        if (Number(q.interface) === gpu.iface[i]) sameFace++;
+        maxDistanceError = Math.max(maxDistanceError, Math.abs(q.interfaceDistance - gpu.ifd[i]));
+        const n = sim.scene.faceGradient(q.material, sim.anatomy.caliberFor(sample))!.normal;
+        normalMinDot = Math.min(
+          normalMinDot,
+          Math.abs(n[0] * gpu.normal![i * 3] + n[1] * gpu.normal![i * 3 + 1] + n[2] * gpu.normal![i * 3 + 2]),
+        );
+      }
+      return {
+        samples: points.length,
+        interior,
+        agreement: same / interior,
+        gas,
+        fluid,
+        wall,
+        faces,
+        faceAgreement: sameFace / faces,
+        maxDistanceError,
+        normalMinDot,
+      };
+    },
     volumeEquivalence: (n) => volumeEquivalence(getSim(), n),
     interfaceShell: () => interfaceShellEquivalence(getSim()),
     speckle: (opts) => {

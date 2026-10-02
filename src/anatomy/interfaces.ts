@@ -62,9 +62,11 @@ export enum Interface {
   Perichondrium = 21,
   /** Pericardio junto al epicardio (decisión 85): lo dibuja la capa del pericardio (un lado). */
   Pericardium = 22,
+  BowelLumen = 23,
+  BowelSerosa = 24,
 }
 
-export const INTERFACE_COUNT = 23;
+export const INTERFACE_COUNT = 25;
 /** Las caras de tubo van primero (ids ≤ esta): solo ellas llevan coherencia de curvatura. */
 export const LAST_TUBE_INTERFACE = Interface.DuctLumen;
 /** Caras de las capas de la pared (decisión 62): ids consecutivos de `SkinFat` a `Peritoneum`. */
@@ -85,8 +87,11 @@ export function isRibInterface(i: Interface): boolean {
  * Caras con coherencia de curvatura (decisión 57): las de tubo y, desde la decisión 62, las de costilla (un
  * cilindro de sección elíptica, con la curvatura de su sección, `ribCurvature`).
  */
+export function isBowelInterface(i: Interface): boolean {
+  return i === Interface.BowelLumen || i === Interface.BowelSerosa;
+}
 export function hasCurvatureCoherence(i: Interface): boolean {
-  return (i !== Interface.None && i <= LAST_TUBE_INTERFACE) || isRibInterface(i);
+  return (i !== Interface.None && i <= LAST_TUBE_INTERFACE) || isRibInterface(i) || isBowelInterface(i);
 }
 /**
  * Cápsula hepática y grasa perirrenal a ≤ esto (mm) son la misma cara (Morison): la dibuja la grasa,
@@ -140,6 +145,8 @@ export const INTERFACE_GLSL_NAME: Record<Interface, string> = {
   [Interface.RibCortex]: 'IF_RIB',
   [Interface.Perichondrium]: 'IF_PERICHONDRIUM',
   [Interface.Pericardium]: 'IF_PERICARDIUM',
+  [Interface.BowelLumen]: 'IF_BOWEL_LUMEN',
+  [Interface.BowelSerosa]: 'IF_BOWEL_SEROSA',
 };
 
 /** Propiedades de una cara lisa (tabla de la decisión 57). */
@@ -348,6 +355,23 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
     roughnessMm: 0.06,
     slopeRms: 0.2,
     twoSided: false,
+  },
+  // Interfaces intestinales: Fresnel, rugosidad y pendiente estimadas para revisión visual.
+  [Interface.BowelLumen]: {
+    name: 'interfaz mucosa-luz intestinal',
+    sides: [Tissue.Bowel, Tissue.Fluid],
+    floor: 0,
+    roughnessMm: 0.035,
+    slopeRms: 0.28,
+    twoSided: true,
+  },
+  [Interface.BowelSerosa]: {
+    name: 'serosa-grasa mesentérica',
+    sides: [Tissue.Bowel, Tissue.MesentericFat],
+    floor: 0,
+    roughnessMm: 0.06,
+    slopeRms: 0.28,
+    twoSided: true,
   },
 };
 

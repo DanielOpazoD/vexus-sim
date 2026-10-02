@@ -665,8 +665,7 @@ describe('Anatomía implícita (base B)', () => {
     expect(top - bottom).toBeLessThan(160);
     expect(bottom).toBeLessThan(-65); // borde por debajo del reborde costal medioclavicular
     expect(top).toBeLessThan(60); // cúpula en T8–T9 (+55 mm sobre el xifoides)
-    // sin gas intestinal en el avatar de referencia
-    expect(scene.gasPockets.length).toBe(0);
+    // El gas intraluminal se comprueba contra la geometría del intestino en bowel.test.ts.
   });
 
   it('árbol hepático procedural: ≥ 40 ramas de 3.º–4.º orden dentro del hígado, con id de su madre y sin alterar áreas', () => {
@@ -786,7 +785,7 @@ describe('Anatomía implícita (base B)', () => {
     }
   });
 
-  it('el intestino (el «resto») mide su distancia a la frontera: tiende a 0 junto al diafragma y el hígado', () => {
+  it('el espacio intraperitoneal mide su distancia a la frontera: tiende a 0 junto al diafragma y el hígado', () => {
     // Antes valía 5 mm fijos: el gate volumétrico daba por interior un punto pegado al diafragma
     // y float32 lo clasificaba al otro lado (Bowel→Diaphragm en CI). Subiendo por tres columnas,
     // el bd de cada punto de intestino no supera la distancia a la interfaz que se encuentra. Desde la decisión 81 el
@@ -800,7 +799,8 @@ describe('Anatomía implícita (base B)', () => {
       let zT = Number.NaN;
       for (let z = -120; z < 60; z += 0.25) {
         const c = cls([x, y, z]);
-        if (c.tissue === Tissue.Bowel || c.tissue === Tissue.RetroperitonealFat) samples.push({ z, bd: c.boundaryDistance });
+        if ([Tissue.Bowel, Tissue.MesentericFat, Tissue.Fluid, Tissue.BowelGas, Tissue.RetroperitonealFat].includes(c.tissue))
+          samples.push({ z, bd: c.boundaryDistance });
         else if (samples.length && samples[samples.length - 1].z === z - 0.25) {
           expect(c.tissue, `${x},${y}`).toBe(expected);
           zT = z;
@@ -1350,10 +1350,10 @@ describe('Caras de interfaz en classify (decisión 57)', () => {
     expect(trimmed, tag).toBeLessThan(0.25 * lumenInRa);
   });
 
-  it('hígado, intestino y pulmón no dibujan cara; el músculo de la pared, la de su capa (decisión 62)', () => {
+  it('hígado, mesenterio lejos de asas y pulmón no dibujan cara; el músculo de la pared, la de su capa (decisión 62)', () => {
     for (const [p, t] of [
       [[-60, 20, -10], Tissue.Liver],
-      [[40, 40, -120], Tissue.Bowel],
+      [[40, 40, -120], Tissue.MesentericFat],
       [[-75, -5, 70], Tissue.Lung],
     ] as [V, Tissue][]) {
       expect(cls(p).tissue).toBe(t);

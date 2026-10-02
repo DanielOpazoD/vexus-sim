@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { chromium } from '@playwright/test';
+import { captureBMode } from './captureBMode';
 import { measureHepatorenal } from './hepatorenalMeasurements';
 
 const root = process.cwd(),
@@ -83,12 +84,9 @@ try {
         for (let i = 0; i < 2; i++) frameMs.push(await page.evaluate(() => window.__vexusTest!.frameCostMs(3)));
         await page.locator('#freeze').evaluate((button: HTMLButtonElement) => button.click());
         if ((await page.locator('#freeze').getAttribute('aria-pressed')) !== 'true') throw new Error('No se congeló la imagen');
-        const clip = await page.locator('#gl').boundingBox();
-        if (!clip) throw new Error('Canvas sin geometría');
         const path = join(out, `${version}-${mode}.png`);
-        // Captura solo tras vaciar explícitamente la cola GPU; no decodificar PNG en el navegador.
-        await page.locator('#gl').evaluate((canvas: HTMLCanvasElement) => canvas.getContext('webgl2')!.finish());
-        await page.screenshot({ path, clip, animations: 'disabled' });
+        // PNG original del framebuffer mostrado, sin HUD; evita el timeout del compositor tras las fuentes.
+        await captureBMode(page, path);
         const measurements = measureHepatorenal(path, pose, reference);
         results.push({ version, sha: commit, mode, frameMs, measurements });
         writeFileSync(join(out, 'partial.json'), JSON.stringify({ results, harmonic: true, compound: true, depthMm: 180 }, null, 2));
@@ -106,7 +104,7 @@ try {
       {
         results,
         notes:
-          'Mismo runner, compuesto y armónica por defecto, dos lotes de tres cuadros tras dos vueltas del anillo. Orden después/antes. ROIs anatómicas a profundidad emparejada; no HRI clínico ni validación de ausencia de esteatosis. Sin calibración entre dispositivos o a partir de grises de referencias externas.',
+          'PNG del framebuffer presentado, sin HUD ni retoques. Mismo runner, compuesto y armónica por defecto, dos lotes de tres cuadros tras dos vueltas del anillo. Orden después/antes. ROIs anatómicas a profundidad emparejada; no HRI clínico ni validación de ausencia de esteatosis. Sin calibración entre dispositivos o a partir de grises de referencias externas.',
       },
       null,
       2,

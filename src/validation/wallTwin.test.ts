@@ -56,7 +56,7 @@ const VIEWS = {
   flank: normalFrame(scene, Math.PI * 1.04, -14, true),
 } as const;
 type ViewId = keyof typeof VIEWS;
-const anchorOf = (f: TwinFrame): SpeckleAnchorState => new ElevationAnchor().update(f.face, f.elevation);
+const anchorOf = (f: TwinFrame): SpeckleAnchorState => new ElevationAnchor().update(f.face, f.elevation, 0);
 const J0 = 40;
 const J1 = 151;
 const CENTER = 95;

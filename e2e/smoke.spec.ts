@@ -934,8 +934,7 @@ test('el fundido del ancla del moteado no da saltos: la textura y la correlació
   // Lo que el fundido le cuesta a la correlación con el cuadro anterior, de sus pesos: el medio de un cuadro es
   // √w·N + √(1 − w)·V (N el ancla nueva, V la anterior; `SpeckleAnchor`). Si el fundido sigue, las dos anclas son
   // las mismas: ρ = √(w₀·w) + √((1 − w₀)(1 − w)) ≈ 0,99. Si empieza uno (w baja), la nueva del cuadro anterior es
-  // la vieja de este: ρ = √(w₀)·√(1 − w) (√(8/9) tras un cuadro sin fundido; 8/9 en el enlace de dos fundidos
-  // seguidos). La envolvente de un moteado de Rayleigh correlaciona ≈ ρ² (0,876 y 0,770, Monte Carlo; ρ² da
+  // la vieja de este: ρ = √(w₀)·√(1 − w). La transición temporal empieza en w=0 y termina en w=1. La envolvente de un moteado de Rayleigh correlaciona ≈ ρ² (0,876 y 0,770, Monte Carlo; ρ² da
   // 0,889 y 0,790, algo más exigente).
   const fade = frames.map((f, i) => {
     const w0 = i === 0 ? 1 : frames[i - 1].w;
@@ -957,7 +956,7 @@ test('el fundido del ancla del moteado no da saltos: la textura y la correlació
   frames.forEach((f, i) => {
     expect(f.snr / snr0, tag).toBeGreaterThan(0.85);
     expect(f.snr / snr0, tag).toBeLessThan(1.15);
-    // el ancla no cambia más de 1/9 del medio entre dos cuadros (ρ² ≥ (8/9)²): reanclar a mitad de un fundido
+    // Se conserva la guarda previa de correlación para este barrido a 60 Hz; reanclar a mitad de un fundido
     // soltaba de golpe el medio viejo (w 0,44 → 0,11: ρ² = 0,39; en GPU, correlación 0,65)
     expect(fade[i], `cuadro ${i}: ${tag}`).toBeGreaterThan(0.78);
     // el fundido no baja la correlación con el cuadro anterior más de lo que cuesta (hígado puro, intercostal en

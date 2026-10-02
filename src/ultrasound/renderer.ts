@@ -1289,7 +1289,7 @@ export class UltrasoundRenderer {
     // el transitorio, de banda fundamental, se rechaza en armónica (decisión 77); el ruido del receptor va en C y D
     p.f('uTransientGain', transientGain(inputs.bmode.harmonic));
     p.v2('uHarmonicNear', ...harmonicNearUniform(inputs.bmode.harmonic));
-    const an = this.speckleAnchor.update(inputs.frame.face, inputs.frame.elevation);
+    const an = this.speckleAnchor.update(inputs.frame.face, inputs.frame.elevation, inputs.sample.t);
     this.lastAnchorWeight = an.w;
     p.v3('uAnchorE0', an.a.e);
     p.v3('uAnchorP0', an.a.p);

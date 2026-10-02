@@ -4800,3 +4800,15 @@ estadística de speckle contra clips reales; casos de la matriz G.2; arritmias.
 **Consecuencias.** El borde visual acompaña el cuerpo legacy y de referencia. No cambia campos acústicos TS/GLSL, órganos, poses ni presets. Las cúpulas siguen estimadas; tendón, pilares, hiatos e inserciones anatómicas permanecen limitados por las fuentes pendientes. El error de discretización de la malla no equivale al residuo numérico de su borde.
 
 **Verificación.** Tres pruebas físicas cubren ambos campos, los tres casos, profundidad interna, superficie y winding. El muestreo anterior incumple el límite de 0,0001 mm; el residuo nuevo máximo del adulto normal de referencia es 0,000000270 mm. Método y límites en `anatomy/DIAPHRAGM_BOUNDARY.md`. Se requieren gates completos y E2E del build final antes de cerrar el cambio.
+
+## 100. Fundido del moteado gobernado por tiempo de simulación
+
+**Contexto.** `ElevationAnchor` consumía ocho llamadas de render por transición. Dos pruebas nuevas fallaron en la base: repetir el mismo instante cambiaba el peso, y a igual tiempo los pesos diferían entre 15, 30 y 60 FPS. Repetir la pasada B para medir rendimiento también consumía transición.
+
+**Opciones.** Conservar el contador o usar tiempo de pared mantiene dependencia de la presentación o rompe el reloj único. Cambiar los dispersores y su distribución no es necesario para corregir este defecto temporal.
+
+**Decisión.** `ElevationAnchor.update` exige tiempo de simulación y el renderer pasa `sample.t`. La transición dura 8/60 s [EXTRAPOLACIÓN PROPIA: equivalencia de duración con ocho cuadros a 60 Hz, no constante biológica]. Empieza con peso cero, mantiene los dos medios distintos hasta terminar y libera el anterior con peso uno. Repetir el instante no avanza el fundido. Un reloj reiniciado descarta la historia; tiempos no finitos o negativos se rechazan antes de mutarla. El gancho de prueba de fundido avanza explícitamente el reloj.
+
+**Consecuencias.** El progreso de un fundido ya iniciado deja de depender del número de renders y de repeticiones de pasada. No se afirma invariancia de toda una trayectoria muestreada: detectar el cruce de 6 grados y los saltos entre poses sigue dependiendo de las poses disponibles en cada cuadro. Tampoco se cambia la composición espacial, la PSF, la distribución de dispersores ni la calibración clínica. Con el reloj pausado la transición permanece fija.
+
+**Verificación.** Regresión roja antes del cambio y verde después en `speckleTime.test.ts`; pruebas de 15/30/60 FPS, repetición del instante, reinicio, salto de pose, extremos e entradas inválidas. `compoundRenderer.test.ts` comprueba el reloj en los uniforms reales de B y repeticiones de esa pasada sobre WebGL falso. Se conservan las guardas estadísticas y de correlación del medio. Check completo, presupuesto y E2E del build final deben verificarse antes de publicar y sus resultados constar en el PR.

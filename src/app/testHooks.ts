@@ -1054,7 +1054,8 @@ function crossfade(
   let levelDb = 0;
   for (let f = 0; f < opts.frames; f++) {
     pose.yaw += (opts.stepDeg * Math.PI) / 180;
-    const env = envelopeAt(sim, pose, opts.compound, 1);
+    // El fundido consume tiempo de simulación, no llamadas de render.
+    const env = envelopeAt(sim, pose, opts.compound, 1, 1 / 60);
     const mask = liverMask(sim, env);
     const d = detrended(env, mask).filter(Number.isFinite);
     const mean = d.reduce((s, v) => s + v, 0) / d.length;
@@ -1409,9 +1410,15 @@ function windowWeight(sim: Simulator): (theta: number, r: number) => number {
  * mirada 0 tras un cuadro o, con `compound`, la compuesta tras `frames` cuadros (una mirada cada uno; con N,
  * todas las miradas son de esta pose). Si el anillo no queda lleno, lanza.
  */
-function envelopeAt(sim: Simulator, pose: ProbePose, compound = false, frames = 1): { lines: number; samples: number; data: Float32Array } {
+function envelopeAt(
+  sim: Simulator,
+  pose: ProbePose,
+  compound = false,
+  frames = 1,
+  elapsedSeconds = 1.5 * sim.physiology.clock.dt,
+): { lines: number; samples: number; data: Float32Array } {
   sim.setPose(pose);
-  sim.advance(1.5 * sim.physiology.clock.dt);
+  sim.advance(elapsedSeconds);
   for (let i = 0; i < frames; i++) sim.render();
   if (!compound) return sim.renderer.readEnvelope();
   const st = sim.renderer.compoundState();

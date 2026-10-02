@@ -66,6 +66,24 @@ const K2 = lookWavenumber();
 const close = (a: readonly number[], b: readonly number[]) => a.forEach((v, i) => expect(v).toBeCloseTo(b[i], 12));
 
 describe('composición espacial en el renderizador (WebGL falso)', () => {
+  it('el renderer usa el reloj de la muestra y repetir pasadas no consume el fundido', () => {
+    const { sim, frame } = rig(false);
+    frame();
+    sim.setPose({ ...sim.pose, yaw: sim.pose.yaw + (7 * Math.PI) / 180 });
+    sim.advance(0.02);
+    expect(frame().raw.uniforms.uAnchorW[0]).toBe(0);
+    sim.advance(0.04);
+    const mid = frame().raw.uniforms.uAnchorW[0];
+    expect(mid).toBeGreaterThan(0);
+    expect(mid).toBeLessThan(1);
+    for (let i = 0; i < 12; i++) expect(frame().raw.uniforms.uAnchorW[0]).toBe(mid);
+    sim.render({ repeat: { pass: 'rawField', times: 4 } });
+    expect(sim.renderer.speckleAnchorWeight).toBe(mid);
+    sim.advance(0.2);
+    expect(frame().raw.uniforms.uAnchorW[0]).toBe(1);
+    sim.dispose();
+  });
+
   it('encendido: miradas 0, +θ, −θ por cuadro, cada una en su ranura, y K compone las válidas', () => {
     const { sim, frame, fboTextures } = rig(true);
     const R = sim.transducer.curvatureRadius;

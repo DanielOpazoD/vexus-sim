@@ -8,7 +8,7 @@ import { CONVEX_BEAM } from '../ultrasound/beamModel';
 import { COMPOUND, lookTheta } from '../ultrasound/compound';
 import {
   ANCHOR_SALT_STEP,
-  CROSSFADE_FRAMES,
+  CROSSFADE_SECONDS,
   ElevationAnchor,
   REANCHOR_DEG,
   SPECKLE_LOOK_GLSL,
@@ -29,6 +29,7 @@ import { rng } from './syntheticSpeckle';
  * mover la sonda, como la ve el alumno.
  */
 const H = 0.42;
+const FADE_STEPS = Math.round(CROSSFADE_SECONDS * 60);
 const SALT = (1234 % 1000) / 7;
 const elevSigma = (r: number): number => 1.6 * Math.sqrt(1 + ((r - CONVEX_C35.elevationFocusMm) / 45) ** 2);
 const torso = new AnatomyScene(NORMAL_ADULT).torso;
@@ -44,7 +45,7 @@ const deg = (d: number): number => (d * Math.PI) / 180;
 
 function image(pose: ProbePose, anchor: ElevationAnchor, shift: Vec3 = [0, 0, 0]): number[] {
   const fr = probeFrame(pose, torso, CONVEX_C35);
-  const st = anchor.update(fr.face, fr.elevation);
+  const st = anchor.update(fr.face, fr.elevation, 0);
   return patch(fr, st, shift);
 }
 
@@ -109,7 +110,7 @@ describe('medio de dispersores anclado (decisión 55)', () => {
   it('trasladar el medio en elevación lo decorrela a la escala del grosor de corte, no de la célula', () => {
     const anchor = new ElevationAnchor();
     const fr = probeFrame(BASE, torso, CONVEX_C35);
-    const st = anchor.update(fr.face, fr.elevation);
+    const st = anchor.update(fr.face, fr.elevation, 0);
     const ref = patch(fr, st);
     const shifted = (mm: number) => corr(ref, patch(fr, st, [fr.elevation[0] * mm, fr.elevation[1] * mm, fr.elevation[2] * mm]));
     // la célula mide 0,42 mm: sin la compresión, 0,5 mm ya decorrelaría
@@ -143,9 +144,10 @@ describe('medio de dispersores anclado (decisión 55)', () => {
 
   it('el ancla sigue fija con giros pequeños, se renueva con un fundido pasado REANCHOR_DEG y se reinicia con un salto', () => {
     const anchor = new ElevationAnchor();
+    let time = 0;
     const st = (pose: ProbePose) => {
       const fr = probeFrame(pose, torso, CONVEX_C35);
-      return anchor.update(fr.face, fr.elevation);
+      return anchor.update(fr.face, fr.elevation, (time += 1 / 60));
     };
     const s0 = st(BASE);
     expect(s0.w).toBe(1);
@@ -157,32 +159,32 @@ describe('medio de dispersores anclado (decisión 55)', () => {
       expect(si.w).toBe(1);
     }
     const k = REANCHOR_DEG + 1;
-    // al pasar el umbral: ancla nueva con la otra semilla y un fundido monótono de CROSSFADE_FRAMES cuadros
+    // al pasar el umbral: ancla nueva con la otra semilla y un fundido monótono durante CROSSFADE_SECONDS segundos
     const weights: number[] = [];
     const s = st({ ...BASE, yaw: BASE.yaw + deg(k) });
     expect(s.a.parity).toBe(1);
     expect(s.b).toBe(s0.a);
     weights.push(s.w);
-    for (let i = 1; i < CROSSFADE_FRAMES + 2; i++) {
+    for (let i = 1; i < FADE_STEPS + 2; i++) {
       const si = st({ ...BASE, yaw: BASE.yaw + deg(k) });
       // mientras dure el fundido, los dos medios son distintos (si no, √w + √(1−w) > 1: destello)
       if (si.w < 1) expect(si.b.parity).not.toBe(si.a.parity);
       weights.push(si.w);
     }
-    expect(weights.filter((w) => w < 1)).toHaveLength(CROSSFADE_FRAMES);
+    expect(weights.filter((w) => w < 1)).toHaveLength(FADE_STEPS);
     for (let i = 1; i < weights.length; i++) expect(weights[i]).toBeGreaterThan(weights[i - 1] - 1e-12);
     expect(weights.at(-1)).toBe(1);
     // girar deprisa durante el fundido no lo interrumpe: el peso sigue subiendo hasta 1
     const fast = new ElevationAnchor();
     const stFast = (d: number) => {
       const fr = probeFrame({ ...BASE, yaw: BASE.yaw + deg(d) }, torso, CONVEX_C35);
-      return fast.update(fr.face, fr.elevation);
+      return fast.update(fr.face, fr.elevation, d / 60);
     };
     stFast(0);
     const fastW: number[] = [];
-    for (let d = 1; d <= REANCHOR_DEG + CROSSFADE_FRAMES + 2; d++) fastW.push(stFast(d).w);
+    for (let d = 1; d <= REANCHOR_DEG + FADE_STEPS + 2; d++) fastW.push(stFast(d).w);
     const firstFade = fastW.findIndex((w) => w < 1);
-    const run = fastW.slice(firstFade, firstFade + CROSSFADE_FRAMES);
+    const run = fastW.slice(firstFade, firstFade + FADE_STEPS);
     for (let i = 1; i < run.length; i++) expect(run[i]).toBeGreaterThan(run[i - 1]);
     const settled = st({ ...BASE, yaw: BASE.yaw + deg(k) });
     expect(settled.b).toBe(settled.a);
@@ -206,12 +208,12 @@ describe('medio de dispersores anclado (decisión 55)', () => {
             [st.a, Math.sqrt(st.w)],
             [st.b, Math.sqrt(1 - st.w)],
           ]);
-    let prev = anchor.update(probeFrame(BASE, torso, CONVEX_C35).face, probeFrame(BASE, torso, CONVEX_C35).elevation);
+    let prev = anchor.update(probeFrame(BASE, torso, CONVEX_C35).face, probeFrame(BASE, torso, CONVEX_C35).elevation, 0);
     let starts = 0;
     let links = 0;
     for (let d = 1; d <= 40; d++) {
       const fr = probeFrame({ ...BASE, yaw: BASE.yaw + deg(d) }, torso, CONVEX_C35);
-      const st = anchor.update(fr.face, fr.elevation);
+      const st = anchor.update(fr.face, fr.elevation, d / 60);
       const m0 = media(prev);
       let exact = 0;
       for (const [k, amp] of media(st)) exact += amp * (m0.get(k) ?? 0);
@@ -225,15 +227,15 @@ describe('medio de dispersores anclado (decisión 55)', () => {
       }
       prev = st;
     }
-    // a 1° por cuadro los fundidos van seguidos: el enlace de dos (ρ = 8/9) es el peor caso
+    // A 60 Hz cada fundido llega a w=1 antes de comenzar el siguiente.
     expect(starts).toBeGreaterThanOrEqual(3);
-    expect(links).toBeGreaterThanOrEqual(2);
+    expect(links).toBe(0);
   });
 
   it('durante el fundido el moteado sigue siendo de Rayleigh con la misma potencia media', () => {
     const anchor = new ElevationAnchor();
     const fr = probeFrame(BASE, torso, CONVEX_C35);
-    const a = anchor.update(fr.face, fr.elevation).a;
+    const a = anchor.update(fr.face, fr.elevation, 0).a;
     const tilted = probeFrame({ ...BASE, yaw: BASE.yaw + deg(30) }, torso, CONVEX_C35);
     const mid: SpeckleAnchorState = { a: { e: tilted.elevation, p: tilted.face, parity: 1 }, b: a, w: 0.5 };
     const still: SpeckleAnchorState = { a, b: a, w: 1 };
@@ -267,7 +269,7 @@ describe('fase de mirada por nodo (decisión 58)', () => {
   const K2 = lookWavenumber(CONVEX_BEAM);
   const fr = probeFrame(BASE, torso, CONVEX_C35);
   const anchor = new ElevationAnchor();
-  const st = anchor.update(fr.face, fr.elevation);
+  const st = anchor.update(fr.face, fr.elevation, 0);
   const c = fr.curvatureCenter;
   const R = CONVEX_C35.curvatureRadius;
   /** Δ_k y su gradiente en el mundo en un punto del plano (x lateral, z axial desde el centro de curvatura). */

@@ -24,8 +24,8 @@ export function bowelWallProfile(depthMm: number): number {
   return v + (p.mucosaBack - v) * smooth(p.submucosaEndMm - e, p.submucosaEndMm + e, depthMm);
 }
 /** Solo para muestras clasificadas como pared intestinal. Profundidad desde su superficie exterior. */
-export function restTexture(m: Vec3): number {
-  return bowelWallProfile(-bowelSdf(m));
+export function restTexture(m: Vec3, radii?: ArrayLike<number>): number {
+  return bowelWallProfile(-bowelSdf(m, radii));
 }
 export const REST_TEXTURE_GLSL = /* glsl */ `
 float bowelWallProfile(float d){

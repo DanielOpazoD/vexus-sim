@@ -52,15 +52,19 @@ try {
       });
       await page.goto(`http://127.0.0.1:${port}/?e2e=1`);
       await page.waitForFunction(() => (window.__vexusTest?.framesRendered() ?? 0) >= 2, undefined, { timeout: 180_000 });
-      for (const [mode, yaw] of [
-        ['transverse', Math.PI / 2],
-        ['longitudinal', 0],
+      for (const [mode, yaw, lift] of [
+        ['transverse', Math.PI / 2, 0],
+        ['longitudinal', 0, 0],
+        ['transverse-pressed', Math.PI / 2, -6],
       ] as const) {
-        await page.evaluate((yaw) => {
-          const t = window.__vexusTest!;
-          t.setCompound(false);
-          t.setPose({ phi: Math.PI / 2, z: -112, lift: 0, yaw, rock: 0, tilt: 0 });
-        }, yaw);
+        await page.evaluate(
+          ({ yaw, lift }) => {
+            const t = window.__vexusTest!;
+            t.setCompound(false);
+            t.setPose({ phi: Math.PI / 2, z: -112, lift, yaw, rock: 0, tilt: 0 });
+          },
+          { yaw, lift },
+        );
         const frameMs: number[] = [];
         for (let i = 0; i < 3; i++) frameMs.push(await page.evaluate(() => window.__vexusTest!.frameCostMs(3)));
         await page.locator('#gl').screenshot({ path: join(out, `${version}-${mode}.png`) });

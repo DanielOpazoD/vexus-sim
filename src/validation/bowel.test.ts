@@ -5,6 +5,7 @@ import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
 import { Interface } from '../anatomy/interfaces';
 import {
   BOWEL_RADIUS_MM,
+  BOWEL_REST_RADII,
   BOWEL_WALL_MM,
   BOWEL_NODES,
   BOWEL_GAS,
@@ -21,18 +22,20 @@ const unit = (v: Vec3): Vec3 => v.map((x) => x / Math.hypot(...v)) as Vec3;
 const cross = (a: Vec3, b: Vec3): Vec3 => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
 
 describe('asas intestinales con luz propia', () => {
-  it('distingue mesenterio, muscular, luz y las dos interfaces con pared de 2 mm', () => {
+  it('distingue mesenterio, pared y luz con radio variable y pliegue mucoso', () => {
     const scene = new AnatomyScene(NORMAL_ADULT);
-    const at = (depth: number) => scene.classify([-38 - depth, 22, -250], BASELINE_CALIBER);
+    const t = 80 / 125,
+      r = BOWEL_REST_RADII[0] + (BOWEL_REST_RADII[1] - BOWEL_REST_RADII[0]) * t * t * (3 - 2 * t);
+    const at = (depth: number) => scene.classify([-48 + r - depth, 22, -250], BASELINE_CALIBER);
     expect(2 * BOWEL_RADIUS_MM).toBeLessThan(25);
     expect(BOWEL_WALL_MM).toBe(2);
     expect(at(-1).tissue).toBe(Tissue.MesentericFat);
     expect(at(0.5).tissue).toBe(Tissue.Bowel);
     expect(at(0.5).interface).toBe(Interface.BowelSerosa);
-    expect(at(1.5).tissue).toBe(Tissue.Bowel);
-    expect(at(1.5).interface).toBe(Interface.BowelLumen);
-    expect(at(3).tissue).toBe(Tissue.Fluid);
-    expect(at(3).interface).toBe(Interface.BowelLumen);
+    expect(at(1.8).tissue).toBe(Tissue.Bowel);
+    expect(at(1.8).interface).toBe(Interface.BowelLumen);
+    expect(at(3.5).tissue).toBe(Tissue.Fluid);
+    expect(at(3.5).interface).toBe(Interface.BowelLumen);
   });
   it('el descarte por grupos contiene todos sus segmentos y sus paredes', () => {
     BOWEL_BOUNDS.forEach((b, g) => {
@@ -60,7 +63,12 @@ describe('asas intestinales con luz propia', () => {
             if (p[2] < -235) continue; // región representada, no toda la longitud del intestino
             for (let j = 0; j < 16; j++) {
               const ang = (j * 2 * Math.PI) / 16;
-              const q = p.map((x, k) => x + (BOWEL_RADIUS_MM - 0.2) * (Math.cos(ang) * n[k] + Math.sin(ang) * v[k])) as Vec3;
+              const q = p.map(
+                (x, k) =>
+                  x +
+                  (BOWEL_REST_RADII[i] + (BOWEL_REST_RADII[i + 1] - BOWEL_REST_RADII[i]) * t * t * (3 - 2 * t) - 0.2) *
+                    (Math.cos(ang) * n[k] + Math.sin(ang) * v[k]),
+              ) as Vec3;
               const hit = scene.classify(q, BASELINE_CALIBER);
               expect(
                 [Tissue.Bowel, Tissue.Fluid, Tissue.BowelGas],
@@ -85,7 +93,7 @@ describe('asas intestinales con luz propia', () => {
         for (let y = -6; y <= 6; y += 1)
           for (let z = -10; z <= 10; z += 1) {
             const p: Vec3 = [pocket.center[0] + x, pocket.center[1] + y, pocket.center[2] + z];
-            const lumen = bowelQuery(p).d + BOWEL_WALL_MM,
+            const lumen = bowelQuery(p).lumen,
               d = bowelGasSdf(p, lumen),
               hit = scene.classify(p, BASELINE_CALIBER);
             if (hit.tissue === Tissue.BowelGas) {
@@ -113,8 +121,17 @@ describe('asas intestinales con luz propia', () => {
     const scene = new AnatomyScene(NORMAL_ADULT),
       p: Vec3 = [-38.5, 22, -250];
     const g = scene.faceGradient(p, BASELINE_CALIBER)!;
-    expect(g.normal).toEqual([1, 0, 0]);
-    expect(g.norm).toBe(1);
-    expect(g.curvature).toBe(0.1);
+    const eps = 1e-4,
+      field = (q: Vec3) => bowelQuery(q).d;
+    const grad = [0, 1, 2].map((j) => {
+      const a = [...p] as Vec3,
+        b = [...p] as Vec3;
+      a[j] += eps;
+      b[j] -= eps;
+      return (field(a) - field(b)) / (2 * eps);
+    });
+    expect(g.norm).toBeCloseTo(Math.hypot(...grad), 6);
+    g.normal.forEach((x, j) => expect(x).toBeCloseTo(grad[j] / Math.hypot(...grad), 6));
+    expect(g.curvature).toBeCloseTo(1 / bowelQuery(p).radius, 8);
   });
 });

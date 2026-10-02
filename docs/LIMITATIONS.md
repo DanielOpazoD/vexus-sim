@@ -65,8 +65,8 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   elástico; los dos diámetros se separan hasta un 14 % en los colapsos rápidos del sano (5 % en la congestión grave),
   con la misma media.
 - **Segmento intestinal representativo y estático** (`bowel-segment-static`): eje estimado, no atlas ni reconstrucción
-  de todo el tubo digestivo; sin duodeno o colon individualizados, válvulas conniventes, mesenterio vascularizado,
-  peristalsis o desplazamiento de gas/líquido. Pared y reflectividad por capas estimadas, pendientes de comparación
+  de todo el tubo digestivo; sin duodeno o colon individualizados o mesenterio vascularizado; pliegues estimados, sin
+  peristalsis o desplazamiento de gas/líquido. Contracción radial local estimada, sin aplanamiento anisótropo ni conservación de volumen. Pared y reflectividad por capas estimadas, pendientes de comparación
   clínica. El gas intraluminal participa en transmisión y reverberación; no se interpreta el muestreo como validación
   clínica. La malla 3D suaviza el eje y no representa su mucosa. El cuerpo de referencia se extrapola fuera de −160..120 mm.
 - **Retroperitoneo simplificado** (`simplified-retroperitoneum`): el psoas (cuatro conos redondeados) y el cuadrado

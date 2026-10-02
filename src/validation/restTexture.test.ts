@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { REST_TEXTURE, REST_TEXTURE_GLSL, bowelWallProfile, restTexture } from '../ultrasound/restTexture';
-import { BOWEL_WALL_MM } from '../anatomy/organs/bowel';
+import { BOWEL_WALL_MM, BOWEL_REST_RADII } from '../anatomy/organs/bowel';
 
 describe('pared intestinal ligada a la geometría, no al ruido', () => {
   it('muscular y mucosa hipoecoicas, submucosa ecogénica; todas dentro de la pared física', () => {
@@ -14,7 +14,9 @@ describe('pared intestinal ligada a la geometría, no al ruido', () => {
     }
   });
   it('usa la distancia real del eje continuo y conserva exactamente la misma anatomía entre repeticiones', () => {
-    for (const d of [0.3, 0.875, 1.6]) expect(restTexture([-38 - d, 22, -250])).toBeCloseTo(bowelWallProfile(d), 8);
+    const t = 80 / 125,
+      r = BOWEL_REST_RADII[0] + (BOWEL_REST_RADII[1] - BOWEL_REST_RADII[0]) * t * t * (3 - 2 * t);
+    for (const d of [0.3, 0.875, 1.6]) expect(restTexture([-48 + r - d, 22, -250])).toBeCloseTo(bowelWallProfile(d), 8);
   });
   it('el shader comparte parámetros y no genera asas con uSeed ni valueNoise', () => {
     expect(REST_TEXTURE_GLSL).toContain('bowelWallProfile(-bowelSdf(m))');

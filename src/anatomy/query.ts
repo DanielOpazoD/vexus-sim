@@ -1,3 +1,4 @@
+import { bowelRadii } from './organs/bowel';
 import type { Vec3 } from '../core/vec3';
 import type { PhysiologySample } from '../physiology/engine';
 import { VESSEL_META, type VesselId } from '../physiology/vessels';
@@ -38,6 +39,7 @@ export class AnatomyQuery {
    */
   setProbeCompression(k: ProbeCompression | null): void {
     this.deformation.compression = k;
+    this.scene.bowelRadii = bowelRadii(k);
   }
 
   get probeCompression(): ProbeCompression | null {

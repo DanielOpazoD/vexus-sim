@@ -1,4 +1,5 @@
 import type { Vec3 } from '../../core/vec3';
+import { compressionSample, type ProbeCompression } from '../compression';
 
 /** Segmento yeyunoileal representativo, mm/LAS. Recorrido estimado, no registro de un atlas.
  * Extremos fuera de la región abdominal estudiada; no pretende reconstruir todo el intestino.
@@ -59,6 +60,23 @@ export const BOWEL_NODES: readonly Vec3[] = [
   [55, 20, -220],
   [55, 20, -330],
 ];
+/** Abscisa curvilínea, compartida por radio y pliegues: no reinicia la fase en cada cápsula. */
+export const BOWEL_ARC = BOWEL_NODES.map((_, i) =>
+  BOWEL_NODES.slice(1, i + 1).reduce((s, p, j) => s + Math.hypot(...p.map((x, k) => x - BOWEL_NODES[j][k])), 0),
+);
+/** Radios de reposo estimados. La envolvente anterior de 10 mm sigue siendo conservadora. */
+export const BOWEL_RADII = BOWEL_ARC.map((s) => 8.8 + 1.2 * Math.cos(s / 43));
+export const BOWEL_FOLD_MM = 1.2;
+export const BOWEL_FOLD_PERIOD_MM = 8;
+/** Respuesta cuasiestática local estimada: carga de la sonda reduce el radio hasta 18 %.
+ * No simula conservación de volumen, presión intraluminal ni peristalsis. null restaura el reposo. */
+export function bowelRadii(k: ProbeCompression | null): Float32Array {
+  return Float32Array.from(
+    BOWEL_RADII,
+    (r, i) => r * (1 - (k ? Math.min(0.18, Math.max(0, -compressionSample(BOWEL_NODES[i], k).shift) * 0.012) : 0)),
+  );
+}
+export const BOWEL_REST_RADII = bowelRadii(null);
 export const BOWEL_GROUP_SIZE = 8;
 export const BOWEL_GROUPS = Math.ceil((BOWEL_NODES.length - 1) / BOWEL_GROUP_SIZE);
 /** Esferas conservadoras por grupo: descarte antes de recorrer los segmentos. */
@@ -67,35 +85,58 @@ export const BOWEL_BOUNDS = Array.from({ length: BOWEL_GROUPS }, (_, k): [number
   const c = [0, 1, 2].map((j) => (Math.min(...p.map((v) => v[j])) + Math.max(...p.map((v) => v[j]))) / 2) as Vec3;
   return [...c, Math.max(...p.map((v) => Math.hypot(v[0] - c[0], v[1] - c[1], v[2] - c[2]))) + BOWEL_RADIUS_MM];
 });
-export const BOWEL_TEXELS = BOWEL_GROUPS + BOWEL_NODES.length;
-/** Distancia exterior truncada a +5 mm y normal; una unión de cápsulas sobre el eje continuo. */
-export function bowelQuery(m: Vec3): { d: number; normal: Vec3; axis: Vec3 } {
-  let d = BOWEL_FIELD_REACH_MM;
+export const BOWEL_TEXELS = BOWEL_GROUPS + 2 * BOWEL_NODES.length;
+/** Campos de serosa y luz, uniones independientes; gradientes analíticos en el segmento ganador.
+ * Los campos no son distancias euclídeas: su norma se conserva para el eco de interfaz. */
+export function bowelQuery(m: Vec3, radii: ArrayLike<number> = BOWEL_REST_RADII) {
+  let d = BOWEL_FIELD_REACH_MM,
+    lumen = BOWEL_FIELD_REACH_MM + BOWEL_WALL_MM;
   let normal: Vec3 = [0, 1, 0],
+    lumenNormal: Vec3 = [0, 1, 0],
     axis: Vec3 = [0, 0, 1];
+  let radius = BOWEL_RADIUS_MM;
   for (let g = 0; g < BOWEL_GROUPS; g++) {
-    const b = BOWEL_BOUNDS[g];
-    if (Math.hypot(m[0] - b[0], m[1] - b[1], m[2] - b[2]) - b[3] > BOWEL_FIELD_REACH_MM) continue;
+    const bound = BOWEL_BOUNDS[g];
+    if (Math.hypot(...m.map((x, j) => x - bound[j])) - bound[3] > BOWEL_FIELD_REACH_MM) continue;
     for (let i = g * BOWEL_GROUP_SIZE; i < Math.min((g + 1) * BOWEL_GROUP_SIZE, BOWEL_NODES.length - 1); i++) {
       const a = BOWEL_NODES[i],
         b = BOWEL_NODES[i + 1];
-      const v: Vec3 = [b[0] - a[0], b[1] - a[1], b[2] - a[2]],
-        p: Vec3 = [m[0] - a[0], m[1] - a[1], m[2] - a[2]];
-      const l2 = v[0] * v[0] + v[1] * v[1] + v[2] * v[2];
-      const t = Math.max(0, Math.min(1, (p[0] * v[0] + p[1] * v[1] + p[2] * v[2]) / l2));
-      const q: Vec3 = [p[0] - t * v[0], p[1] - t * v[1], p[2] - t * v[2]],
-        r = Math.hypot(...q);
-      if (r - BOWEL_RADIUS_MM < d) {
-        d = r - BOWEL_RADIUS_MM;
-        normal = r > 1e-8 ? (q.map((x) => x / r) as Vec3) : [0, 1, 0];
-        axis = v.map((x) => x / Math.sqrt(l2)) as Vec3;
+      const v = b.map((x, j) => x - a[j]) as Vec3,
+        len = Math.hypot(...v);
+      const u = v.map((x) => x / len) as Vec3,
+        p = m.map((x, j) => x - a[j]) as Vec3;
+      const h = p.reduce((sum, x, j) => sum + x * u[j], 0) / len,
+        t = Math.max(0, Math.min(1, h));
+      const q = p.map((x, j) => x - t * v[j]) as Vec3,
+        rho = Math.hypot(...q);
+      const n = rho > 1e-8 ? (q.map((x) => x / rho) as Vec3) : ([0, 1, 0] as Vec3);
+      const active = h > 0 && h < 1;
+      const r = radii[i] + (radii[i + 1] - radii[i]) * t * t * (3 - 2 * t);
+      const dr = active ? ((radii[i + 1] - radii[i]) * 6 * t * (1 - t)) / len : 0;
+      const arc = BOWEL_ARC[i] + t * len,
+        phase = (arc * 2 * Math.PI) / BOWEL_FOLD_PERIOD_MM;
+      // Crestas redondeadas separadas: fase continua entre segmentos, independiente del grano.
+      const c = 0.5 + 0.5 * Math.cos(phase),
+        fold = BOWEL_FOLD_MM * c * c;
+      const df = active ? (-BOWEL_FOLD_MM * c * Math.sin(phase) * 2 * Math.PI) / BOWEL_FOLD_PERIOD_MM : 0;
+      const outer = rho - r,
+        inner = outer + BOWEL_WALL_MM + fold;
+      if (outer < d) {
+        d = outer;
+        normal = n.map((x, j) => x - dr * u[j]) as Vec3;
+        axis = u;
+        radius = r;
+      }
+      if (inner < lumen) {
+        lumen = inner;
+        lumenNormal = n.map((x, j) => x + (df - dr) * u[j]) as Vec3;
       }
     }
   }
-  return { d, normal, axis };
+  return { d, lumen, normal, lumenNormal, axis, radius };
 }
-export function bowelSdf(m: Vec3): number {
-  return bowelQuery(m).d;
+export function bowelSdf(m: Vec3, radii: ArrayLike<number> = BOWEL_REST_RADII): number {
+  return bowelQuery(m, radii).d;
 }
 /** Pequeñas inclusiones anteriores de gas, siempre recortadas por la luz. Distribución estática estimada. */
 export const BOWEL_GAS: readonly { center: Vec3; radii: Vec3 }[] = [
@@ -113,25 +154,29 @@ export const BOWEL_GLSL = /* glsl */ `
 #define BOWEL_REACH ${f(BOWEL_FIELD_REACH_MM)}
 #define BOWEL_RADIUS ${f(BOWEL_RADIUS_MM)}
 #define BOWEL_WALL ${f(BOWEL_WALL_MM)}
-float bowelQuery(vec3 m, out vec3 n, out vec3 axis) {
-  float d = ${f(BOWEL_FIELD_REACH_MM)}; n=vec3(0,1,0); axis=vec3(0,0,1);
+float bowelQuery(vec3 m, out vec3 n, out vec3 axis, out float lumen, out vec3 ln, out float radius) {
+  float d=BOWEL_REACH; lumen=BOWEL_REACH+BOWEL_WALL;n=vec3(0,1,0);ln=n;axis=vec3(0,0,1);radius=BOWEL_RADIUS;
   for(int g=0;g<${BOWEL_GROUPS};g++){
     vec4 bound=sceneTexel(BOWEL_BASE+g);
-    if(distance(m,bound.xyz)-bound.w>${f(BOWEL_FIELD_REACH_MM)})continue;
+    if(distance(m,bound.xyz)-bound.w>BOWEL_REACH)continue;
     for(int j=0;j<${BOWEL_GROUP_SIZE};j++){
-      int i=g*${BOWEL_GROUP_SIZE}+j;
-      if(i>=${BOWEL_NODES.length - 1})break;
-      vec3 a=sceneTexel(BOWEL_BASE+${BOWEL_GROUPS}+i).xyz;
-      vec3 v=sceneTexel(BOWEL_BASE+${BOWEL_GROUPS}+i+1).xyz-a;
-      vec3 p=m-a;
-      float t=clamp(dot(p,v)/dot(v,v),0.0,1.0);
-      vec3 q=p-t*v;float r=length(q);
-      if(r-BOWEL_RADIUS<d){d=r-BOWEL_RADIUS;n=r>1e-8?q/r:vec3(0,1,0);axis=normalize(v);}
+      int i=g*${BOWEL_GROUP_SIZE}+j;if(i>=${BOWEL_NODES.length - 1})break;
+      vec4 a=sceneTexel(BOWEL_BASE+${BOWEL_GROUPS}+i), b=sceneTexel(BOWEL_BASE+${BOWEL_GROUPS}+i+1);
+      vec3 v=b.xyz-a.xyz;float len=length(v);vec3 u=v/len,p=m-a.xyz;
+      float h=dot(p,u)/len,t=clamp(h,0.0,1.0);vec3 q=p-t*v;float rho=length(q);vec3 nn=rho>1e-8?q/rho:vec3(0,1,0);
+      float ra=sceneTexel(BOWEL_BASE+${BOWEL_GROUPS + BOWEL_NODES.length}+i).x;
+      float rb=sceneTexel(BOWEL_BASE+${BOWEL_GROUPS + BOWEL_NODES.length}+i+1).x;
+      float r=mix(ra,rb,t*t*(3.0-2.0*t)),dr=(h>0.0&&h<1.0)?(rb-ra)*6.0*t*(1.0-t)/len:0.0;
+      float phase=(a.w+t*len)*${(2 * Math.PI) / BOWEL_FOLD_PERIOD_MM},c=0.5+0.5*cos(phase);
+      float fold=${f(BOWEL_FOLD_MM)}*c*c,df=(h>0.0&&h<1.0)?-${f(BOWEL_FOLD_MM)}*c*sin(phase)*${(2 * Math.PI) / BOWEL_FOLD_PERIOD_MM}:0.0;
+      float outer=rho-r,inner=outer+BOWEL_WALL+fold;
+      if(outer<d){d=outer;n=nn-dr*u;axis=u;radius=r;}
+      if(inner<lumen){lumen=inner;ln=nn+(df-dr)*u;}
     }
   }
   return d;
 }
-float bowelSdf(vec3 m){vec3 n,axis;return bowelQuery(m,n,axis);}
+float bowelSdf(vec3 m){vec3 n,axis,ln;float lumen,r;return bowelQuery(m,n,axis,lumen,ln,r);}
 float bowelGasSdf(vec3 m,float lumen){
   float d=1e3;
   ${BOWEL_GAS.map((g) => `d=min(d,(length((m-vec3(${g.center.map(f).join(',')}))/vec3(${g.radii.map(f).join(',')}))-1.0)*${f(Math.min(...g.radii))});`).join('\n')}

@@ -63,3 +63,16 @@ export const ORGAN_MODULES: readonly OrganModule[] = [
     gpuOnly: { epiNormal: 'normal en c.n; TS: gradiente de faceSdf' },
   },
 ];
+
+/** Solo fuentes GLSL en producción: el registro de validación no debe retener namespaces TS completos. */
+export const ORGAN_GLSL = [
+  bowel.BOWEL_GLSL,
+  wall.WALL_GLSL,
+  kidney.KIDNEY_GLSL,
+  liverLigaments.LIVER_LIGAMENTS_GLSL,
+  lungCurtain.LUNG_CURTAIN_GLSL,
+  gallbladder.GALLBLADDER_GLSL,
+  liver.LIVER_GLSL,
+  retroperitoneum.RETROPERITONEUM_GLSL,
+  heart.HEART_GLSL,
+];

@@ -1,4 +1,4 @@
-import { BOWEL_NODES, BOWEL_BOUNDS, BOWEL_GROUPS } from '../anatomy/organs/bowel';
+import { BOWEL_NODES, BOWEL_BOUNDS, BOWEL_GROUPS, BOWEL_ARC } from '../anatomy/organs/bowel';
 import { CARTILAGE_ROWS } from '../anatomy/referenceCartilageData';
 import type { AnatomyScene, VesselCaliber } from '../anatomy/scene';
 import { VESSEL_META } from '../physiology/vessels';
@@ -657,7 +657,8 @@ export class UltrasoundRenderer {
     });
     if (s.torso.profile) CARTILAGE_ROWS.forEach((row, i) => this.sceneData.set(row, (CARTILAGE_BASE + i) * 4));
     BOWEL_BOUNDS.forEach((row, i) => this.sceneData.set(row, (BOWEL_BASE + i) * 4));
-    BOWEL_NODES.forEach((p, i) => this.sceneData.set([...p, 0], (BOWEL_BASE + BOWEL_GROUPS + i) * 4));
+    BOWEL_NODES.forEach((p, i) => this.sceneData.set([...p, BOWEL_ARC[i]], (BOWEL_BASE + BOWEL_GROUPS + i) * 4));
+    s.bowelRadii.forEach((r, i) => this.sceneData.set([r, 0, 0, 0], (BOWEL_BASE + BOWEL_GROUPS + BOWEL_NODES.length + i) * 4));
     this.tubeCountTotal = tubes.length;
     if (this.tubeCountTotal > MAX_TUBES) throw new Error('Demasiados tubos para el shader');
     let n = 0;
@@ -723,9 +724,12 @@ export class UltrasoundRenderer {
    * nodo, (s₀, s_D, D, R). Se sube la fila entera que la contiene (los nodos de tubo de esa fila no cambian).
    */
   private uploadCompressionTable(k: ProbeCompression): void {
+    this.currentScene.bowelRadii.forEach((r, i) =>
+      this.sceneData.set([r, 0, 0, 0], (BOWEL_BASE + BOWEL_GROUPS + BOWEL_NODES.length + i) * 4),
+    );
     k.nodes.forEach((n, i) => this.sceneData.set([n[0], n[1], n[2], k.radiusMm], (COMPRESSION_BASE + i) * 4));
     const row0 = Math.floor(COMPRESSION_BASE / SCENE_TEX_W);
-    const row1 = Math.floor((COMPRESSION_BASE + k.nodes.length - 1) / SCENE_TEX_W);
+    const row1 = Math.floor((BOWEL_BASE + BOWEL_GROUPS + 2 * BOWEL_NODES.length - 1) / SCENE_TEX_W);
     const gl = this.gl;
     gl.bindTexture(gl.TEXTURE_2D, this.sceneTex);
     gl.texSubImage2D(

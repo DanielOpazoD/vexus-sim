@@ -7,6 +7,9 @@ import {
   diaphragmHeight,
   orthonormalBasis,
   sdSpine,
+  spineBodySd,
+  spineDistances,
+  spineFaceCurvature,
   sdDiaphragm,
   sdDiaphragmSlope,
   sdRib,
@@ -132,9 +135,10 @@ export interface Classification {
  *  - `kidneyOuter`: el contorno externo del riñón (cápsula renal);
  *  - `perirenalOuter`: la cara externa de la grasa perirrenal (Morison), el contorno menos su grosor local;
  *  - `gallbladder`: la luz vesicular;
- *  - `pericardium`: el epicardio recortado por la cúpula (decisión 85), la cara interna de la capa del pericardio.
+ *  - `pericardium`: el epicardio recortado por la cúpula (decisión 85), la cara interna de la capa del pericardio;
+ *  - `spine`: los cuerpos vertebrales (`spineBodySd`, PR119; recuperación provisional de la decisión 103), su cortical.
  */
-export type FaceGeometry = 'tube' | 'liverSurface' | 'dome' | 'kidneyOuter' | 'perirenalOuter' | 'gallbladder' | 'pericardium';
+export type FaceGeometry = 'tube' | 'liverSurface' | 'dome' | 'kidneyOuter' | 'perirenalOuter' | 'gallbladder' | 'pericardium' | 'spine';
 export const FACE_GEOMETRIES: readonly FaceGeometry[] = [
   'tube',
   'liverSurface',
@@ -143,6 +147,7 @@ export const FACE_GEOMETRIES: readonly FaceGeometry[] = [
   'perirenalOuter',
   'gallbladder',
   'pericardium',
+  'spine',
 ];
 
 /**
@@ -158,8 +163,7 @@ export function faceGeometryOf(i: Interface): FaceGeometry | null {
     i === Interface.PleuraWall ||
     isWallLayerInterface(i) ||
     isRibInterface(i) ||
-    isBowelInterface(i) ||
-    i === Interface.VertebralCortex
+    isBowelInterface(i)
   )
     return null;
   if (i <= LAST_TUBE_INTERFACE) return 'tube';
@@ -168,6 +172,7 @@ export function faceGeometryOf(i: Interface): FaceGeometry | null {
   if (i === Interface.DiaphragmLiver) return 'dome';
   if (i === Interface.PerirenalFat) return 'perirenalOuter';
   if (i === Interface.Pericardium) return 'pericardium';
+  if (i === Interface.VertebralCortex) return 'spine';
   return 'kidneyOuter';
 }
 
@@ -493,7 +498,7 @@ export class AnatomyScene {
   /**
    * Clasifica un punto MATERIAL. `caliber` aporta las escalas de radio que
    * dicta la fisiología en este instante. Orden de prioridad (el primero que
-   * contiene el punto gana): pared → costillas → columna → cortina pulmonar → vasos y conductos →
+   * contiene el punto gana): pared → costillas → columna (hueso y disco, PR119; recuperación provisional de la decisión 103) → cortina pulmonar → vasos y conductos →
    * tórax (corazón, pericardio, mediastino o pulmón, decisión 85) / diafragma → vesícula → riñones → hígado → gas →
    * psoas → cuadrado lumbar → grasa retroperitoneal → intestino (decisión 81). Cada paso es un método propio; el mismo orden vive en GLSL
    * (`classifyWith`).
@@ -502,29 +507,29 @@ export class AnatomyScene {
    * lámina de pulmón, igual que `classify` en todos los demás puntos. La usan el tejido que se ve en
    * parte a través del borde blando de la cortina y su transmisión (gemelo GLSL `classifyWith(m, false)`).
    * La clasificación sigue siendo binaria: la fracción de aire del haz es de la imagen, no de la anatomía.
+   * Fuera del hueso, la frontera cuenta hueso y disco. Los dueños corticales de PR139 y el disco de PR119 pueden
+   * dibujar la cortical más cercana; las interfaces de órganos y sus caras suprimidas se conservan (`withSpineFace`).
    */
   classify(m: Vec3, caliber: VesselCaliber, withCurtain = true): Classification {
-    const c = this.classifyTissue(m, caliber, withCurtain);
-    // La cortical pertenece al tejido de fuera; nunca al hueso ni al gas.
-    if (
-      c.interface !== Interface.None ||
-      ![Tissue.RetroperitonealFat, Tissue.Psoas, Tissue.QuadratusLumborum, Tissue.Mediastinum].includes(c.tissue)
-    )
-      return c;
-    // El arco rectangular es solo un oclusor provisional, no una cortical anatómica.
-    const d = Math.hypot(m[0] - this.spine.x0, m[1] - this.spine.y0) - this.spine.r;
-    if (d >= 0 && d < VERTEBRAL_FIELD_REACH_MM && d <= sdSpine(m, this.spine) + 1e-5 && d < c.interfaceDistance)
-      return { ...c, interface: Interface.VertebralCortex, interfaceDistance: d };
-    return c;
-  }
-
-  private classifyTissue(m: Vec3, caliber: VesselCaliber, withCurtain: boolean): Classification {
     const torso = this.torso;
     const depth = torsoDepth(m, torso);
     if (m[2] < torso.zMin || m[2] > torso.zMax || depth > 0) return NONE;
     const wall = this.classifyWall(m, -depth);
     if (wall.final) return wall.cls;
-    const curtain = withCurtain ? this.classifyLungCurtain(m, -depth - wall.wallMm, caliber.diaphragmCaudalMm) : null;
+    // la columna (PR119; recuperación provisional de la decisión 103): el hueso de los cuerpos y del arco, el disco entre dos cuerpos y, en el tejido blando de
+    // alrededor, la cara de su cortical
+    const d = spineDistances(m, this.spine);
+    if (d.bone < 0) return { ...NONE, tissue: Tissue.Vertebra, boundaryDistance: -d.bone };
+    const c: Classification =
+      d.disc < 0
+        ? { ...NONE, tissue: Tissue.Cartilage, boundaryDistance: -d.disc }
+        : this.classifyInside(m, caliber, withCurtain, depth, wall.wallMm);
+    return withSpineFace(c, d.bone, d.body, d.disc);
+  }
+
+  /** `classify` dentro de la cavidad y fuera de la columna: cortina, tubos, tórax, diafragma y vísceras. */
+  private classifyInside(m: Vec3, caliber: VesselCaliber, withCurtain: boolean, depth: number, wallMm: number): Classification {
+    const curtain = withCurtain ? this.classifyLungCurtain(m, -depth - wallMm, caliber.diaphragmCaudalMm) : null;
     if (curtain) return curtain;
     const tube = this.classifyTubes(m, caliber);
     const [dDome, slope] = sdDiaphragmSlope(m, this.diaphragm, this.torso);
@@ -549,7 +554,7 @@ export class AnatomyScene {
       const t = thorax(m, dDome, floor);
       const face = t.ifd < NONE.interfaceDistance ? { interface: Interface.Pericardium, interfaceDistance: t.ifd } : {};
       // su distancia a la frontera cuenta también la columna y la pared (como el retroperitoneo)
-      const bd = Math.min(t.bd, sdSpine(m, this.spine), -depth - wall.wallMm);
+      const bd = Math.min(t.bd, sdSpine(m, this.spine), -depth - wallMm);
       return { ...NONE, tissue: t.tissue, boundaryDistance: bd, ...face };
     }
     if (dDome < DIAPHRAGM_THICKNESS_MM) {
@@ -575,23 +580,17 @@ export class AnatomyScene {
       };
     const kidney = this.classifyKidneys(m);
     if (kidney.cls) return kidney.cls;
-    const liver = this.classifyLiver(m, dDome, -depth - wall.wallMm, kidney, dGb - this.gallbladderWallMm);
+    const liver = this.classifyLiver(m, dDome, -depth - wallMm, kidney, dGb - this.gallbladderWallMm);
     if (liver) return liver;
     // Intestino: el «resto». Su distancia a la frontera es la de las interfaces que ganan antes
     // (diafragma, vesícula, hígado, pared, grasa perirrenal, gas; el corazón queda por encima del diafragma); como en el hígado, no
     // cuenta la de los tubos. Con 5 mm fijos el gate volumétrico daba por interior un punto pegado
     // al diafragma que float32 clasificaba al otro lado (CI de #39: Bowel→Diaphragm, 1 de 44 826).
-    let bd = Math.min(
-      BOWEL_BD_CAP_MM,
-      dDome - DIAPHRAGM_THICKNESS_MM,
-      dGb - this.gallbladderWallMm,
-      this.liverBaseSdf(m),
-      -depth - wall.wallMm,
-    );
+    let bd = Math.min(BOWEL_BD_CAP_MM, dDome - DIAPHRAGM_THICKNESS_MM, dGb - this.gallbladderWallMm, this.liverBaseSdf(m), -depth - wallMm);
     for (const k of [this.kidneyRight, this.kidneyLeft]) bd = Math.min(bd, perirenalOuterSdf(kidneyLocal(m, k), k));
     // detrás del peritoneo parietal posterior, el retroperitoneo (decisión 81): psoas, cuadrado lumbar y grasa; delante, el
     // intestino. Su distancia a la frontera cuenta también la columna, que se clasifica antes (el psoas la bordea)
-    const [tissue, dRetro] = retroperitoneum(m, -depth - wall.wallMm, kidney.dPeriMm);
+    const [tissue, dRetro] = retroperitoneum(m, -depth - wallMm, kidney.dPeriMm);
     bd = Math.max(0, Math.min(bd, dRetro, sdSpine(m, this.spine)));
     if (tissue !== Tissue.Bowel) return { ...NONE, tissue, boundaryDistance: bd };
     const q = bowelQuery(m, this.bowelRadii),
@@ -625,7 +624,8 @@ export class AnatomyScene {
    *  - `kidneyOuter`: el menor `dOuter` de los dos riñones;
    *  - `perirenalOuter`: el menor `perirenalOuterSdf` de los dos riñones (`dOuter` − grosor local de la grasa);
    *  - `gallbladder`: `gallbladderSdf`;
-   *  - `pericardium`: `heartOuterSdf` (el epicardio recortado por la cúpula).
+   *  - `pericardium`: `heartOuterSdf` (el epicardio recortado por la cúpula);
+   *  - `spine`: `spineBodySd` (los cuerpos vertebrales, PR119; recuperación provisional de la decisión 103).
    * Solo banco de fidelidad y pruebas: la clasificación no la llama.
    */
   faceSdf(m: Vec3, caliber: VesselCaliber, face: FaceGeometry): number | null {
@@ -653,6 +653,8 @@ export class AnatomyScene {
         return gallbladderSdf(m, this.gallbladder);
       case 'pericardium':
         return heartOuterSdf(m, domeFloor(m, this.diaphragm, this.torso));
+      case 'spine':
+        return spineBodySd(m, this.spine);
     }
   }
 
@@ -680,12 +682,6 @@ export class AnatomyScene {
     if (face === undefined) {
       // las caras de la pared y de las costillas (decisión 62) no tienen geometría de faceSdf
       const iface = this.classify(m, caliber).interface;
-      if (iface === Interface.VertebralCortex) {
-        const x = m[0] - this.spine.x0,
-          y = m[1] - this.spine.y0,
-          r = Math.hypot(x, y);
-        return { normal: [x / r, y / r, 0], norm: 1, curvature: 1 / this.spine.r, axis: [0, 0, 1] };
-      }
       if (isBowelInterface(iface)) {
         const q = bowelQuery(m, this.bowelRadii),
           n = iface === Interface.BowelSerosa ? q.normal : q.lumenNormal,
@@ -724,6 +720,9 @@ export class AnatomyScene {
       return { normal: [gradient[0] / norm, gradient[1] / norm, gradient[2] / norm], norm, curvature, axis: best.hit.tangent };
     }
     const geometry = face;
+    // la columna (PR119; recuperación provisional de la decisión 103): el costado de los cuerpos es un cilindro en z, con la curvatura de su elipse
+    if (geometry === 'spine')
+      return { ...this.numericGradient(m, (p) => spineBodySd(p, this.spine), spineFaceCurvature(m, this.spine)), axis: [0, 0, 1] };
     return this.numericGradient(m, (p) => this.faceSdf(p, caliber, geometry)!, 0);
   }
 
@@ -745,7 +744,7 @@ export class AnatomyScene {
 
   /**
    * Capas parietales y costillas (decisión 62, módulo `organs/wall`). `final` = el punto está en piel,
-   * grasa subcutánea, costilla/cartílago, músculo, grasa preperitoneal o columna (no hay nada más que
+   * grasa subcutánea, costilla/cartílago, músculo o grasa preperitoneal (no hay nada más que
    * mirar); si no, devuelve el espesor total de la pared para recortar el hígado. Cada muestra de las capas
    * dibuja la cara de la capa más cercana (`wallFace`); junto a una costilla ósea, su cortical; el cartílago,
    * su pericondrio. El hueso no dibuja cara (su cortical la dibuja el tejido blando de fuera).
@@ -783,11 +782,7 @@ export class AnatomyScene {
         ribAny = Math.min(ribAny, r.d);
         if (!r.cartilage) ribD = Math.min(ribD, r.d);
       }
-    if (d >= wall) {
-      const dSpine = sdSpine(m, this.spine);
-      if (dSpine < 0) return { final: true, cls: { ...NONE, tissue: Tissue.Vertebra, boundaryDistance: -dSpine } };
-      return { final: false, wallMm: wall };
-    }
+    if (d >= wall) return { final: false, wallMm: wall };
     // las coordenadas de la pared solo dentro de ella: fascia profunda y transversalis onduladas en (u, z)
     const u = wallArc(m, torso);
     const w = wallDepths(torso, u, m[2]);
@@ -1018,6 +1013,26 @@ const NONE: Classification = Object.freeze({
   vesselHit: null,
   flowFactor: 1,
 });
+
+/**
+ * Recuperación PR119: la frontera cuenta cuerpos y discos. Conserva los dueños de PR139 y admite el disco
+ * intervertebral junto a sus platillos; nunca sustituye la cara de un órgano ni ilumina el arco provisional.
+ * Gemelo del final de classifyWith (GLSL), con el alcance conservador de la decisión103.
+ */
+function withSpineFace(c: Classification, dSpine: number, dBody: number, dDisc: number): Classification {
+  // Conserva los dueños de PR139, también cuando una cápsula tiene su cara suprimida.
+  // El disco propio de PR119 es el único dueño nuevo: permite el eco de sus platillos.
+  const owner =
+    c.tissue === Tissue.RetroperitonealFat ||
+    c.tissue === Tissue.Psoas ||
+    c.tissue === Tissue.QuadratusLumborum ||
+    c.tissue === Tissue.Mediastinum ||
+    (c.tissue === Tissue.Cartilage && dDisc < 0);
+  const bd = Math.min(c.boundaryDistance, dSpine, Math.abs(dDisc));
+  if (c.interface === Interface.None && owner && dBody === dSpine && dBody < VERTEBRAL_FIELD_REACH_MM && dBody < c.interfaceDistance)
+    return { ...c, boundaryDistance: bd, interface: Interface.VertebralCortex, interfaceDistance: dBody };
+  return bd < c.boundaryDistance ? { ...c, boundaryDistance: bd } : c;
+}
 
 /** Escalas de calibre que la fisiología impone a la anatomía en un instante. */
 export interface VesselCaliber {

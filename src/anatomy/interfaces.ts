@@ -86,6 +86,11 @@ export function isRibInterface(i: Interface): boolean {
   return i === Interface.RibCortex || i === Interface.Perichondrium;
 }
 
+/** Cortical ósea: misma iluminación exterior y ventana angular en costilla y vértebra. */
+export function isBoneCortex(i: Interface): boolean {
+  return i === Interface.RibCortex || i === Interface.VertebralCortex;
+}
+
 /**
  * Caras con coherencia de curvatura (decisión 57): las de tubo y, desde la decisión 62, las de costilla (un
  * cilindro de sección elíptica, con la curvatura de su sección, `ribCurvature`).

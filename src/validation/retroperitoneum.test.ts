@@ -12,7 +12,7 @@ import {
   retroFrontY,
   retroperitoneum,
 } from '../anatomy/organs/retroperitoneum';
-import { sdSpine, torsoDepth, tubeQuery } from '../anatomy/primitives';
+import { SPINE_SHAPE, sdSpine, torsoDepth, tubeQuery } from '../anatomy/primitives';
 import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
 import { TISSUES, TISSUE_GLSL_NAME, Tissue } from '../anatomy/tissues';
 import { CASES, NORMAL_ADULT } from '../cases';
@@ -53,8 +53,8 @@ describe('Retroperitoneo (decisión 81)', () => {
     for (const { z, s } of levels) {
       const tag = `z ${z}: ${JSON.stringify(s)}`;
       expect(s.area, tag).toBeGreaterThan(0);
-      // lateral al cuerpo vertebral (radio 17 mm) y medial al riñón
-      expect(-s.x, tag).toBeGreaterThan(scene.spine.r + 3);
+      // lateral al cuerpo vertebral (su semieje transverso, 20 mm desde la PR119; recuperación provisional de la decisión 103) y medial al riñón
+      expect(-s.x, tag).toBeGreaterThan(scene.spine.r * SPINE_SHAPE.aspect + 3);
       expect(-s.x, tag).toBeLessThan(55);
       // por detrás de la VCI (y ≈ −12…−17) y por delante de las apófisis transversas (el arco, de −58 a −78)
       expect(s.y, tag).toBeLessThan(-30);
@@ -142,6 +142,20 @@ describe('Retroperitoneo (decisión 81)', () => {
     expect(near.ivc, tag).toBeGreaterThan(5);
     expect(near.aorta, tag).toBeGreaterThan(1);
     expect(near.spine, tag).toBeGreaterThan(0.5);
+    // el psoas de arriba entre el costado del cuerpo vertebral y la grasa perirrenal (PR119; recuperación provisional de la decisión 103: el cuerpo de 40 mm de ancho),
+    // en una rejilla fina de 0,2 mm: la de 2 mm de arriba no ve holguras de décimas
+    let bone = 1e3;
+    let fat = 1e3;
+    for (let z = -115; z <= -40; z += 0.25)
+      for (let x = 17; x <= 46; x += 0.2)
+        for (let y = -60; y <= -34; y += 0.2) {
+          const m: Vec3 = [-x, y, z];
+          if (psoasSdf(m) >= 0) continue;
+          bone = Math.min(bone, sdSpine(m, scene.spine));
+          fat = Math.min(fat, dPeri(m));
+        }
+    expect(bone, `hueso ${bone}`).toBeGreaterThan(0.5);
+    expect(fat, `grasa ${fat}`).toBeGreaterThan(0.3);
   });
 
   it('en todos los casos, lo que se clasifica antes gana: nada retroperitoneal dentro de riñón, hígado, vasos o columna', () => {

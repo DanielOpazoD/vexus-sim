@@ -5,10 +5,12 @@ import { facetLobe, interfaceAmplitude, IFACE_BETA, IFACE_K_DB, IFACE_SLOPE_REF,
 import { DENSITY, densityDb } from '../ultrasound/speckleField';
 
 describe('contraste portal normal: angularidad y homogeneidad material', () => {
-  it('amplía la respuesta oblicua sin aumentar el pico normal del conjunto ni el grosor del eco', () => {
+  it('amplía la respuesta oblicua con incremento frontal acotado y sin aumentar el grosor del eco', () => {
     const p = INTERFACES[Interface.PortalLumen];
     const previous = (IFACE_BETA * 10 ** (IFACE_K_DB / 20) * 0.05 * IFACE_SLOPE_REF) / 0.25;
-    expect(interfaceAmplitude(Interface.PortalLumen)).toBeCloseTo(previous, 12);
+    const gainDb = 20 * Math.log10(interfaceAmplitude(Interface.PortalLumen) / previous);
+    expect(gainDb).toBeGreaterThan(3);
+    expect(gainDb).toBeLessThan(6);
     expect(p.roughnessMm).toBe(0.03);
     expect(IFACE_SIGMA_H_MM).toBe(0.14);
     for (const deg of [20, 30, 40, 50, 60]) {

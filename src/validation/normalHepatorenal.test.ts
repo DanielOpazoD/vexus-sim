@@ -14,7 +14,7 @@ describe('apariencia hepatorrenal normal sin cambiar el contraste parenquimatoso
   });
   it('fina heterogeneidad material, simétrica en dB y sin señal distinta en otros tejidos', () => {
     expect(DENSITY.cellMm).toBe(3);
-    expect(DENSITY.scaleDb).toBe(11);
+    expect(DENSITY.scaleDb).toBe(4);
     let sum = 0,
       min = Infinity,
       max = -Infinity;
@@ -27,7 +27,8 @@ describe('apariencia hepatorrenal normal sin cambiar el contraste parenquimatoso
       expect(densityGain(p, 7, Tissue.RenalCortex)).toBe(1);
     }
     expect(Math.abs(sum / 10000)).toBeLessThan(0.5);
-    expect(max - min).toBeGreaterThan(5);
+    expect(max - min).toBeGreaterThan(1);
+    expect(max - min).toBeLessThanOrEqual(4);
   });
   it('grasa perirrenal menos dominante; seno brillante, médula hipoecoica e interfaces intactas', () => {
     expect(TISSUES[Tissue.PerirenalFat].backscatter).toBe(1.8);

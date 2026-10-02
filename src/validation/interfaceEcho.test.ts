@@ -79,7 +79,7 @@ describe('Tabla de caras de interfaz', () => {
     // el salto de impedancia de pared/sangre (0,016) y cápsula/músculo (0,006) queda bajo el suelo
     expect(interfaceReflectivity(Interface.VeinLumen)).toBe(0.025);
     expect(interfaceReflectivity(Interface.IvcLumen)).toBe(0.025);
-    expect(interfaceReflectivity(Interface.PortalLumen)).toBe(0.05);
+    expect(interfaceReflectivity(Interface.PortalLumen)).toBe(0.09);
     expect(interfaceReflectivity(Interface.ArteryLumen)).toBe(0.04);
     expect(interfaceReflectivity(Interface.LiverCapsule)).toBe(0.03);
     expect(interfaceReflectivity(Interface.DiaphragmLiver)).toBe(0.02);

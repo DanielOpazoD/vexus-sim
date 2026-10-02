@@ -203,9 +203,11 @@ export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
   [Interface.PortalLumen]: {
     name: 'luz portal (vaina de Glisson)',
     sides: [Tissue.VesselWallPortal, Tissue.Blood],
-    floor: 0.05,
+    // Wider angular response, not a thicker wall (Wachsberg et al., PMID 9401994).
+    // Estimated pair preserves floor/slope and the normal-incidence ensemble amplitude.
+    floor: 0.09,
     roughnessMm: 0.03,
-    slopeRms: 0.25,
+    slopeRms: 0.45,
     twoSided: true,
   },
   [Interface.ArteryLumen]: {

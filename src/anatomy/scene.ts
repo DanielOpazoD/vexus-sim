@@ -506,7 +506,11 @@ export class AnatomyScene {
   classify(m: Vec3, caliber: VesselCaliber, withCurtain = true): Classification {
     const c = this.classifyTissue(m, caliber, withCurtain);
     // La cortical pertenece al tejido de fuera; nunca al hueso ni al gas.
-    if ([Tissue.Air, Tissue.Lung, Tissue.BowelGas, Tissue.Bone, Tissue.Vertebra].includes(c.tissue)) return c;
+    if (
+      c.interface !== Interface.None ||
+      ![Tissue.RetroperitonealFat, Tissue.Psoas, Tissue.QuadratusLumborum, Tissue.Mediastinum].includes(c.tissue)
+    )
+      return c;
     // El arco rectangular es solo un oclusor provisional, no una cortical anatómica.
     const d = Math.hypot(m[0] - this.spine.x0, m[1] - this.spine.y0) - this.spine.r;
     if (d >= 0 && d < VERTEBRAL_FIELD_REACH_MM && d <= sdSpine(m, this.spine) + 1e-5 && d < c.interfaceDistance)

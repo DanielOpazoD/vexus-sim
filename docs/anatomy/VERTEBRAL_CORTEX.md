@@ -13,7 +13,7 @@ La publicación orienta el fenómeno, no calibra la geometría, amplitud, rugosi
 ## Contrato
 
 - La unión de cilindro y arco existente conserva posición y tamaño. No se desplaza la aorta ni la VCI
-- La interfaz pertenece a las muestras exteriores de tejido blando, a menos de 5 mm de la superficie y cuando es su cara más cercana. Hueso/gas/aire no la emiten
+- La interfaz pertenece a grasa retroperitoneal, psoas, cuadrado lumbar o mediastino sin otra interfaz, a menos de 5 mm de la superficie. No se asigna a cápsulas, vasos ni otros órganos, tampoco cuando su cara está intencionalmente suprimida. Hueso/gas/aire no la emiten
 - Distancia y normal analítica TS/GLSL corresponden al cuerpo cilíndrico, solo donde es la superficie ósea más cercana. Eje craneocaudal y curvatura 1/r. El arco rectangular es un oclusor provisional y no emite esta interfaz: hacerlo producía dos barras brillantes artificiales en la revisión visual
 - Fresnel de la tabla existente, suelo cero; rugosidad RMS 0,045 mm y pendiente RMS 0,15, extrapoladas de cortical costal
 - Perfil de eco filtrado por la resolución y orientado por la normal deformada, con caída de la difusa tras el ángulo crítico del modelo longitudinal

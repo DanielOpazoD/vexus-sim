@@ -672,7 +672,7 @@ Cls classifyTissue(vec3 m, bool withCurtain) {
 
 Cls classifyWith(vec3 m, bool withCurtain) {
   Cls c = classifyTissue(m, withCurtain);
-  if(c.tissue == T_AIR || c.tissue == T_LUNG || c.tissue == T_BOWELGAS || c.tissue == T_BONE || c.tissue == T_VERTEBRA) return c;
+  if(c.iface != IF_NONE || (c.tissue != T_RETROFAT && c.tissue != T_PSOAS && c.tissue != T_QUADRATUS && c.tissue != T_MEDIASTINUM)) return c;
   float d = length(m.xy - uSpine.xy) - uSpine.z;
   if(d >= 0.0 && d < VERTEBRAL_REACH && d <= spineSd(m) + 1e-5 && d < c.ifd) {
     c.iface = IF_VERTEBRAL_CORTEX; c.ifd = d; c.tangent = vec3(0.0, 0.0, 1.0);

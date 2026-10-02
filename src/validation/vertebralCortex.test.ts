@@ -76,6 +76,25 @@ for (const reference of [false, true])
     });
   });
 describe('respuesta acústica de cortical vertebral', () => {
+  it('no toma la normal de cápsulas o vasos ni añade ecos a caras suprimidas', () => {
+    const scene = new AnatomyScene(NORMAL_ADULT);
+    const p: Vec3 = [-14.1, -30.3, 46.9]; // fallo real de la E2E subxifoidea
+    expect(sdSpine(p, scene.spine)).toBeLessThan(5);
+    const c = scene.classify(p, BASELINE_CALIBER);
+    expect(c.tissue).toBe(Tissue.LiverCapsule);
+    expect(c.interface).toBe(Interface.None);
+    let seen = 0;
+    for (let x = -35; x <= 35; x += 3)
+      for (let y = -65; y <= -15; y += 3)
+        for (let z = -140; z <= 80; z += 11) {
+          const q = scene.classify([x, y, z], BASELINE_CALIBER);
+          if (q.interface === face) {
+            seen++;
+            expect([Tissue.RetroperitonealFat, Tissue.Psoas, Tissue.QuadratusLumborum, Tissue.Mediastinum]).toContain(q.tissue);
+          }
+        }
+    expect(seen).toBeGreaterThan(100);
+  });
   it('Fresnel sin brillo artificial, perfil normalizado y dependencia angular', () => {
     expect(INTERFACES[face].floor).toBe(0);
     expect(interfaceReflectivity(face)).toBeGreaterThan(0.5);

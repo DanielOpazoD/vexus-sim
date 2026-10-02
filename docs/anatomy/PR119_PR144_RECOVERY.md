@@ -1,6 +1,13 @@
 # Combinación local de PR119 con PR144
 
-Estado: **WIP local, no apto para integrar**. Rama `chore/reconcile-pr119-pr144-20261002`, worktree
+Estado actual: **check local aprobado; autorizado únicamente como borrador, pendiente de CI y revisión**.
+La sección «Validación final local» contiene los resultados actuales. El registro inicial y sus fallos se
+conservan debajo como historial; sus afirmaciones de estado pertenecen a esa etapa. La decisión 108 documenta
+la corrección posterior del contorno. No se permite fusionar todavía.
+
+## Registro inicial (histórico)
+
+Estado inicial: **WIP local, no apto para integrar**. Rama `chore/reconcile-pr119-pr144-20261002`, worktree
 `/workspace/vexus-pr119-pr144`. Primer padre: PR144 exacto `d6a21f88446b09c86aeb354cf07b6edeb6edc7cc`
 (árbol `e2a3a2b7daa87a759ffc9e2fd025eda07843676c`); segundo padre: candidato PR119
 `6d6fb6d87d5e460dcf63c38a4dad863e6ab7d638`, que conserva la ascendencia original `bd35838`.
@@ -200,3 +207,34 @@ aserción. Continúan siendo 57 pruebas E2E en ambos perfiles.
 El operador autorizó publicar únicamente un **borrador** tras suite/check locales, auditoría, índice y hook
 normal verdes. E2E y comparadores pueden ejecutarse en CI después de publicarlo; hasta entonces son pendientes,
 no resultados aprobados. No se permite fusionar antes de la revisión del padre y de los resultados completos.
+
+## Validación final local
+
+El check completo se ejecutó sobre `ecbf2c485cf52ab19e9fe6ea58e3041028d8c54b`, árbol
+`3fa1a0fd3a6ea5544e64b4244178a1ab8a689d5b`, sincronizado con main
+`6e1bd92fad75be2435f6d66188dc2192f0e1291b`. El árbol de ese main es idéntico al de PR144
+`d6a21f88446b09c86aeb354cf07b6edeb6edc7cc`; la sincronización previa conservó el árbol candidato.
+Esta actualización del registro no modifica código, pruebas, configuración ni comparadores.
+
+| Gate                              | Resultado                                                                    |
+| --------------------------------- | ---------------------------------------------------------------------------- |
+| `npm run check`, dos trabajadores | Exit 0; formato, lint, tipos, cobertura, build y presupuesto aprobados       |
+| Suite completa                    | 116/116 archivos; 1084 pruebas aprobadas +12 fallos esperados; 1442,90 s     |
+| Cobertura                         | Statements 91,32%; branches 90,35%; functions 91,20%; lines 92,28%           |
+| JS total                          | 1.045.002 / 1.048.576 bytes; margen 3.574 bytes; límites intactos            |
+| Auditoría de producción           | Exit 0; cero vulnerabilidades                                                |
+| Índice de decisiones              | Exit 0; secuencia continua 1–108                                             |
+| Hueso frente a PR119              | 203.522 evaluaciones, cero diferencias, error máximo 0                       |
+| Guarda subxifoidea                | 40 líneas corticales, 13 discales, 4 grupos; umbrales 20/8/3 intactos        |
+| Mutaciones                        | Las cuatro fallan por las propiedades protegidas; restauración byte por byte |
+
+La comparación adicional de los arrays vasculares completos confirma igualdad byte por byte frente a PR144
+en ambos cuerpos, incluidos nodos, radios e índices (92 y 97 vasos respectivamente). Los hashes y scripts
+reproducibles están en `vessel-geometry.json` y en el paquete externo de evidencia.
+
+El hook normal de push debe pasar antes de crear el borrador. E2E CPU/GPU (57 pruebas) y los cinco comparadores
+(48 PNG previstos, ambos perfiles y ventana subxifoidea) se ejecutarán en CI sobre el head publicado; **todavía
+no son resultados aprobados**. El listado local de E2E únicamente confirma descubrimiento de pruebas. Los
+harnesses externos preparados anteriormente no se ejecutaron y fueron sustituidos por los scripts nativos
+versionados. Los IDs y estados de CI, el SHA final y la equivalencia de fuentes se registran en la evidencia
+transportable y en el PR. No se fusionará sin resultados completos y revisión del padre.

@@ -123,8 +123,8 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   siendo cilindro y arco rectangular continuos: sin cuerpos segmentados, discos, canal, pedículos ni apófisis anatómicas.
   La rugosidad/pendiente se extrapolan de la cortical costal; no se han calibrado frente a clips vertebrales. La sombra
   conserva el modelo óseo opaco previo (100 dB de entrada); no resuelve corteza/esponjosa ni señales RF intravertebrales.
-  No permite entrenamiento de punción neuraxial ni evaluación de densidad ósea. En uniones no suaves del cuerpo/arco,
-  la normal es el gradiente numérico de la unión y la curvatura se aproxima por cilindro/plano.
+  No permite entrenamiento de punción neuraxial ni evaluación de densidad ósea. El arco rectangular sigue aportando oclusión, pero no emite
+  cortical: sus superficies planas producían barras artificiales. Solo el cuerpo cilíndrico tiene normal analítica y eco propio.
 - **La aorta no late en modo B** (`aorta-fixed-caliber`): su calibre es fijo; el pulso arterial está en su velocidad
   (color y PW), no en su pared. En la transversa epigástrica (decisión 83) no se ve el latido de 1–4 mm que ayuda a
   distinguirla de la VCI: se reconoce por su pared más gruesa y brillante, su sección redonda, su sitio sobre la vértebra,

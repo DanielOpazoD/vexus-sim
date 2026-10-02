@@ -65,14 +65,13 @@ for (const reference of [false, true])
       }
       expect(TISSUES[Tissue.Vertebra].backscatter).toBe(0);
     });
-    it('la cortical lateral del arco tiene normal exterior plana', () => {
+    it('el arco rectangular provisional no inventa barras corticales', () => {
       const s = scene.spine;
       for (const side of [-1, 1]) {
         const p: Vec3 = [s.x0 + side * (s.archHalfWidth + 0.3), (s.archY0 + s.archY1) / 2, -110];
-        expect(scene.classify(p, BASELINE_CALIBER).interface).toBe(face);
-        const g = scene.faceGradient(p, BASELINE_CALIBER)!;
-        expect(g.normal).toEqual([side, 0, 0]);
-        expect(g.curvature).toBe(0);
+        expect(scene.classify(p, BASELINE_CALIBER).interface).not.toBe(face);
+        const anterior: Vec3 = [s.x0 + side * 24, s.archY1 + 0.3, -110];
+        expect(scene.classify(anterior, BASELINE_CALIBER).interface).not.toBe(face);
       }
     });
   });

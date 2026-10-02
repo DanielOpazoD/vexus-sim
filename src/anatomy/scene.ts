@@ -507,8 +507,9 @@ export class AnatomyScene {
     const c = this.classifyTissue(m, caliber, withCurtain);
     // La cortical pertenece al tejido de fuera; nunca al hueso ni al gas.
     if ([Tissue.Air, Tissue.Lung, Tissue.BowelGas, Tissue.Bone, Tissue.Vertebra].includes(c.tissue)) return c;
-    const d = sdSpine(m, this.spine);
-    if (d >= 0 && d < VERTEBRAL_FIELD_REACH_MM && d < c.interfaceDistance)
+    // El arco rectangular es solo un oclusor provisional, no una cortical anatómica.
+    const d = Math.hypot(m[0] - this.spine.x0, m[1] - this.spine.y0) - this.spine.r;
+    if (d >= 0 && d < VERTEBRAL_FIELD_REACH_MM && d <= sdSpine(m, this.spine) + 1e-5 && d < c.interfaceDistance)
       return { ...c, interface: Interface.VertebralCortex, interfaceDistance: d };
     return c;
   }
@@ -676,9 +677,10 @@ export class AnatomyScene {
       // las caras de la pared y de las costillas (decisión 62) no tienen geometría de faceSdf
       const iface = this.classify(m, caliber).interface;
       if (iface === Interface.VertebralCortex) {
-        const body = Math.hypot(m[0] - this.spine.x0, m[1] - this.spine.y0) - this.spine.r;
-        const curvature = body <= sdSpine(m, this.spine) + 1e-8 ? 1 / this.spine.r : 0;
-        return { ...this.numericGradient(m, (p) => sdSpine(p, this.spine), curvature), axis: [0, 0, 1] };
+        const x = m[0] - this.spine.x0,
+          y = m[1] - this.spine.y0,
+          r = Math.hypot(x, y);
+        return { normal: [x / r, y / r, 0], norm: 1, curvature: 1 / this.spine.r, axis: [0, 0, 1] };
       }
       if (isBowelInterface(iface)) {
         const q = bowelQuery(m, this.bowelRadii),

@@ -673,10 +673,10 @@ Cls classifyTissue(vec3 m, bool withCurtain) {
 Cls classifyWith(vec3 m, bool withCurtain) {
   Cls c = classifyTissue(m, withCurtain);
   if(c.tissue == T_AIR || c.tissue == T_LUNG || c.tissue == T_BOWELGAS || c.tissue == T_BONE || c.tissue == T_VERTEBRA) return c;
-  float d = spineSd(m);
-  if(d >= 0.0 && d < VERTEBRAL_REACH && d < c.ifd) {
+  float d = length(m.xy - uSpine.xy) - uSpine.z;
+  if(d >= 0.0 && d < VERTEBRAL_REACH && d <= spineSd(m) + 1e-5 && d < c.ifd) {
     c.iface = IF_VERTEBRAL_CORTEX; c.ifd = d; c.tangent = vec3(0.0, 0.0, 1.0);
-    c.kc = length(m.xy - uSpine.xy) - uSpine.z <= d + 1e-5 ? 1.0 / uSpine.z : 0.0;
+    c.kc = 1.0 / uSpine.z; c.n = normalize(vec3(m.xy - uSpine.xy, 0.0));
   }
   return c;
 }
@@ -739,9 +739,7 @@ vec4 faceGradient(Cls c, vec3 m) {
   vec2 h = vec2(FACE_GRAD_EPS, 0.0);
   vec3 g;
   if (c.iface == IF_VERTEBRAL_CORTEX) {
-    g = vec3(spineSd(m + h.xyy) - spineSd(m - h.xyy),
-             spineSd(m + h.yxy) - spineSd(m - h.yxy),
-             spineSd(m + h.yyx) - spineSd(m - h.yyx));
+    return vec4(c.n, 1.0);
   } else if (c.tissue == T_CAPSULE) {
     g = vec3(liverInner(m + h.xyy) - liverInner(m - h.xyy),
              liverInner(m + h.yxy) - liverInner(m - h.yxy),

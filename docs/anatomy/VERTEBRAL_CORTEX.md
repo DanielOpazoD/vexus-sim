@@ -14,14 +14,14 @@ La publicación orienta el fenómeno, no calibra la geometría, amplitud, rugosi
 
 - La unión de cilindro y arco existente conserva posición y tamaño. No se desplaza la aorta ni la VCI
 - La interfaz pertenece a las muestras exteriores de tejido blando, a menos de 5 mm de la superficie y cuando es su cara más cercana. Hueso/gas/aire no la emiten
-- Distancia y gradiente TS/GLSL corresponden a esa unión. Eje craneocaudal, curvatura cilíndrica anterior y aproximación plana en el arco
+- Distancia y normal analítica TS/GLSL corresponden al cuerpo cilíndrico, solo donde es la superficie ósea más cercana. Eje craneocaudal y curvatura 1/r. El arco rectangular es un oclusor provisional y no emite esta interfaz: hacerlo producía dos barras brillantes artificiales en la revisión visual
 - Fresnel de la tabla existente, suelo cero; rugosidad RMS 0,045 mm y pendiente RMS 0,15, extrapoladas de cortical costal
 - Perfil de eco filtrado por la resolución y orientado por la normal deformada, con caída de la difusa tras el ángulo crítico del modelo longitudinal
 - No se ilumina desde dentro la cortical opuesta. La sombra sigue la transmisión existente, sin nueva máscara o aumento de pérdida
 
 ## Límites
 
-No hay cuerpos vertebrales individualizados, discos, canal ni anatomía neuraxial. El arco rectangular no es un arco posterior anatómico. La ley óptica/acústica es una aproximación de interfaz; no resuelve ondas de corte, corteza y esponjosa, ni permite estudiar densidad ósea. La selección de una sola cara por muestra mantiene la limitación previa en contactos subresolución. Las uniones no suaves usan gradiente numérico y una aproximación local de curvatura. No hay validación clínica independiente.
+No hay cuerpos vertebrales individualizados, discos, canal ni anatomía neuraxial. El arco rectangular no es un arco posterior anatómico. La ley óptica/acústica es una aproximación de interfaz; no resuelve ondas de corte, corteza y esponjosa, ni permite estudiar densidad ósea. La selección de una sola cara por muestra mantiene la limitación previa en contactos subresolución. La cortical se interrumpe donde el arco pasa a ser el hueso más cercano; ese arco solo aporta oclusión hasta disponer de anatomía posterior real. No hay validación clínica independiente.
 
 ## Evidencia reproducible
 

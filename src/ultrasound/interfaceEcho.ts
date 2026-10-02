@@ -1,3 +1,4 @@
+import { IDENTITY_WARP, warpNormal, type Warp } from '../anatomy/compression';
 import { INTERFACES, INTERFACE_COUNT, Interface, interfaceReflectivity } from '../anatomy/interfaces';
 import { quadratusSdf, retroFatSdf } from '../anatomy/organs/retroperitoneum';
 import { sdDiaphragm, type Diaphragm, type Torso } from '../anatomy/primitives';
@@ -291,13 +292,22 @@ export function facetTilt(m: Vec3, face: Interface): Vec3 {
 
 /**
  * Coseno de incidencia sobre la faceta: |n_f·dir|/|n_f| con n_f = n + τ − (τ·n)·n (la inclinación sin su
- * componente normal); n y dir unitarios.
+ * componente normal). n es material y dir del mundo, ambos unitarios. La faceta completa se
+ * transporta mediante Jᵀ antes de medir la incidencia; inclinar la normal ya transformada mezcla marcos.
  */
-export function facetCosine(n: readonly number[], dir: readonly number[], tilt: readonly number[]): number {
+export function facetCosine(n: readonly number[], dir: readonly number[], tilt: readonly number[], w: Warp = IDENTITY_WARP): number {
   const tn = tilt[0] * n[0] + tilt[1] * n[1] + tilt[2] * n[2];
-  const f = [n[0] + tilt[0] - tn * n[0], n[1] + tilt[1] - tn * n[1], n[2] + tilt[2] - tn * n[2]];
+  const f = warpNormal(w, [n[0] + tilt[0] - tn * n[0], n[1] + tilt[1] - tn * n[1], n[2] + tilt[2] - tn * n[2]]);
   return Math.abs(f[0] * dir[0] + f[1] * dir[1] + f[2] * dir[2]) / Math.hypot(f[0], f[1], f[2]);
 }
+
+/** Núcleo compartido por el renderer y la prueba WebGL: n y t materiales, dir del mundo. */
+export const FACET_COSINE_GLSL = /* glsl */ `
+float facetCosine(vec3 n, vec3 dir, vec3 t, Warp w) {
+  vec3 f = warpNormal(w, n + t - dot(t, n) * n);
+  return abs(dot(f, dir)) * inversesqrt(dot(f, f));
+}
+`;
 
 /** Pendiente propia de la faceta: s_f² = s² − σ_t² (la media sobre las inclinaciones da el lóbulo de s). */
 export function facetSlope(s: number): number {
@@ -405,6 +415,7 @@ export const IFACE_DIFFUSE_PER_A = FACET.diffuse / (2 * IFACE_BETA * 10 ** (IFAC
  * `WALL_TEXTURE_GLSL` y `valueNoise` de `SPECKLE_TISSUE_GLSL`). `se` es la σ elevacional de UNA vía (`elevSigma`).
  */
 export const INTERFACE_ECHO_GLSL = /* glsl */ `
+${FACET_COSINE_GLSL}
 uniform vec4 uIface[${INTERFACE_COUNT}]; // (A, 2·k0·σz, 1/(4s²), dos lados) — interfaceEcho.ts
 uniform float uIfaceK0;                 // 2π/λ (1/mm)
 #define IFACE_SIGMA_H ${IFACE_SIGMA_H_MM.toFixed(4)}
@@ -479,6 +490,7 @@ vec2 interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w) {
   float gBound = (c.iface <= IF_LAST_TUBE ? length(c.n) : IFACE_GRAD_MAX) * warpBound(w);
   if (c.ifd > (uIface[c.iface].w > 0.5 ? IFACE_REACH : IFACE_SHIFT + IFACE_REACH) * gBound) return vec2(0.0);
   vec4 fg = faceGradient(c, m);
+  vec3 nm = fg.xyz; // normal material: la inclinación anclada pertenece a este marco
   vec3 gw = warpNormal(w, fg.xyz * fg.w);
   float gn = length(gw);
   fg = vec4(gw / max(gn, 1e-9), gn);
@@ -499,8 +511,7 @@ vec2 interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w) {
   // la faceta (decisión 65): la normal inclinada por el campo anclado, sin su componente normal
   vec4 P = uIface[c.iface];
   vec3 t = facetTilt(m, c.iface, sqrt(max(FACET_TILT2, 0.25 * FACET_RHO2 / P.z)));
-  vec3 nf = fg.xyz + t - dot(t, fg.xyz) * fg.xyz;
-  float cosF = abs(dot(nf, dir)) * inversesqrt(dot(nf, nf));
+  float cosF = facetCosine(nm, dir, t, w);
   // su lóbulo propio (s_f² = s² − σ_t², σ_t = max(tan 5°, ρ·s): kf = (s_f/s)²) en cosF con la rugosidad fina de frente,
   // χ(0); la difusa: κ_d·R_ef = IFACE_DIFFUSE·P.x·2s por √(1 − χ(0)²), la energía que la rugosidad fina saca de la
   // coherente, con Lambert (cosI) y, en la cortical costal, la transmisión de la onda longitudinal en la cara, 0 desde el

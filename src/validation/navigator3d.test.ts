@@ -60,7 +60,7 @@ describe('Mallas 3D por marching cubes sobre el SDF (decisiones 37 y 40)', () =>
 });
 
 describe('Rótulos de los anillos de las ventanas en el 3D', () => {
-  it('la epigástrica, a 3,2 cm de la subxifoidea y a su misma altura, sube un rótulo y los demás siguen en su anillo (decisión 83)', () => {
+  it('las ventanas nuevas conservan separación de rótulos sin mover las anteriores', () => {
     // Comprueba la regla en el espacio de la escena (≥ 1,8 cm de altura o ≥ 5 cm entre rótulos), no en la pantalla: con
     // la cámara por defecto «Porta · lateral» y «Renal» (a 1,9 cm de altura, desde la 69) aún se pisan
     const at = windowLabelPositions(scene);
@@ -71,7 +71,12 @@ describe('Rótulos de los anillos de las ventanas en el 3D', () => {
           Math.abs(at[i].z - at[j].z) >= LABEL_STEP_CM - 1e-9 || Math.hypot(at[i].x - at[j].x, at[i].y - at[j].y) >= LABEL_NEAR_CM;
         expect(clear, `${START_POINTS[i].id} / ${START_POINTS[j].id}`).toBe(true);
       }
-    // solo el de la epigástrica deja la altura de su anillo
-    START_POINTS.forEach((sp, i) => expect(at[i].z, sp.id).toBeCloseTo(sp.z * CM + (sp.id === 'epigastric' ? LABEL_STEP_CM : 0), 9));
+    // La hepatorrenal añadida al final sube dos escalones; las ventanas previas conservan su posición.
+    START_POINTS.forEach((sp, i) =>
+      expect(at[i].z, sp.id).toBeCloseTo(
+        sp.z * CM + (sp.id === 'epigastric' ? LABEL_STEP_CM : sp.id === 'hepatorenal' ? 2 * LABEL_STEP_CM : 0),
+        9,
+      ),
+    );
   });
 });

@@ -6,6 +6,7 @@ import { setReferenceBody } from '../../src/anatomy/referenceBody';
 import { NORMAL_ADULT } from '../../src/cases';
 import { clonePatient } from '../../src/physiology/patientState';
 import { PhysiologyEngine } from '../../src/physiology/engine';
+import { kidneyLocal } from '../../src/anatomy/organs/kidney';
 import { Tissue } from '../../src/anatomy/tissues';
 import { probeContact } from '../../src/probe/contact';
 import { CONVEX_C35, pointOnLine, type ProbePose } from '../../src/probe/probe';
@@ -32,7 +33,11 @@ for (const reference of [false, true]) {
             anatomy.setProbeCompression(k);
             const liver = new Array<number>(36).fill(0),
               cortex = new Array<number>(36).fill(0);
-            let transhepatic = 0;
+            let transhepatic = 0,
+              uMin = Infinity,
+              uMax = -Infinity,
+              sinus = 0,
+              edge = 0;
             for (let j = 0; j < 20; j++) {
               let seenLiver = false,
                 blocked = false;
@@ -41,6 +46,13 @@ for (const reference of [false, true]) {
                   c = anatomy.classifyWorld(p, sample);
                 if ([Tissue.Bone, Tissue.Vertebra, Tissue.Lung, Tissue.BowelGas].includes(c.tissue)) blocked = true;
                 if (blocked) continue;
+                if ([Tissue.RenalCortex, Tissue.RenalMedulla, Tissue.RenalSinus].includes(c.tissue)) {
+                  const u = kidneyLocal(c.material, scene.kidneyRight)[0];
+                  uMin = Math.min(uMin, u);
+                  uMax = Math.max(uMax, u);
+                  if (j < 2 || j > 17) edge++;
+                  if (c.tissue === Tissue.RenalSinus) sinus++;
+                }
                 if (c.tissue === Tissue.Liver) {
                   seenLiver = true;
                   if (c.boundaryDistance > 2) liver[Math.floor(r / 5)]++;
@@ -58,7 +70,10 @@ for (const reference of [false, true]) {
               transhepatic,
               liver: liver.reduce((a, b) => a + b, 0),
               cortex: cortex.reduce((a, b) => a + b, 0),
-              score: matched + transhepatic * 0.5,
+              uSpan: Number.isFinite(uMin) ? uMax - uMin : 0,
+              sinus,
+              edge,
+              score: matched + transhepatic * 0.5 + (Number.isFinite(uMin) ? uMax - uMin : 0) * 0.8 + sinus * 0.5 - edge * 3,
             });
           }
   ranked.sort((a, b) => b.score - a.score);
@@ -66,4 +81,4 @@ for (const reference of [false, true]) {
   console.log(JSON.stringify(results.at(-1), null, 2));
   setReferenceBody();
 }
-writeFileSync('/tmp/hepatorenal-poses.json', JSON.stringify(results, null, 2));
+writeFileSync('/tmp/hepatorenal-long-poses.json', JSON.stringify(results, null, 2));

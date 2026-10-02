@@ -62,6 +62,8 @@ const CENTRAL_LANDMARK: Record<StartPoint['id'], { landmark: Tissue; vessel?: Re
   flank: { landmark: Tissue.Blood, vessel: /^ivc/, approach: 'full' },
   portal: { landmark: Tissue.RenalCortex, approach: 'half' },
   renal: { landmark: Tissue.RenalCortex, approach: 'none' },
+  // Medición geométrica de la nueva ventana: 69,5 → 61,5 mm con δ=18,77 mm.
+  hepatorenal: { landmark: Tissue.RenalCortex, approach: 'half' },
 };
 /** Profundidad bajo la cara (mm) a la que la línea θ cruza la capa de profundidad radial w, con la compresión k. */
 function levelDepth(frame: ProbeFrame, k: ProbeCompression | null, theta: number, w: number): number {

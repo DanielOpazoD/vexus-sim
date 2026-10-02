@@ -157,7 +157,7 @@ describe('dispersores fuertes del parénquima (decisión 89)', () => {
 });
 
 describe('densidad de dispersores a escala de milímetros (decisión 89)', () => {
-  it('solo en el hígado, simétrica en dB (mediana 0 dB, DE 2,2 dB) y continua (≤ 0,45 dB en 0,1 mm)', () => {
+  it('solo en el hígado, simétrica en dB (mediana 0 dB, DE ≈1,85 dB) y continua (pendiente acotada por la célula)', () => {
     expect(DENSITY_TISSUES).toEqual([LIVER]);
     const r = rng(17);
     const db: number[] = [];
@@ -175,7 +175,7 @@ describe('densidad de dispersores a escala de milímetros (decisión 89)', () =>
     const sd = Math.sqrt(db.reduce((x, y) => x + (y - mean) ** 2, 0) / N);
     expect(sd).toBeGreaterThan(0.17 * DENSITY.scaleDb);
     expect(sd).toBeLessThan(0.2 * DENSITY.scaleDb);
-    // la pendiente máxima del ruido de valor es 1,5 por célula: 12 dB × 1,5 / 40 = 0,45 dB en 0,1 mm
+    // La pendiente máxima del ruido de valor es 1,5 por célula; se conserva la guarda analítica.
     expect(maxJump).toBeLessThanOrEqual((DENSITY.scaleDb * 1.5 * 0.1) / DENSITY.cellMm + 1e-9);
     // anclada: el mismo punto material da lo mismo, y otra semilla del moteado, otra realización
     expect(densityGain([10, 20, 30], 3.3, LIVER)).toBe(densityGain([10, 20, 30], 3.3, LIVER));

@@ -66,14 +66,15 @@ try {
       for (const reference of [false, true]) {
         const mode = reference ? 'reference' : 'legacy';
         const pose = reference
-          ? { phi: 3.2, z: -80, yaw: 0.2, tilt: -0.4, rock: 0.2, lift: 0 }
-          : { phi: 3.4, z: -40, yaw: 0, tilt: -0.6, rock: 0, lift: 0 };
+          ? { phi: 3.2, z: -80, yaw: 0, tilt: -0.4, rock: -0.2, lift: 0 }
+          : { phi: 3.2, z: -80, yaw: -0.2, tilt: -0.4, rock: 0.2, lift: 0 };
         await page.goto(`http://127.0.0.1:${port}/?e2e=1${reference ? '&reference=1' : ''}`);
         await page.waitForFunction(() => (window.__vexusTest?.framesRendered() ?? 0) >= 2, undefined, { timeout: 180_000 });
         await page.evaluate((pose) => {
           const t = window.__vexusTest!;
           if (t.circulation().caseId !== 'normal-adult') throw new Error('Caso no normal');
           t.setCompound(true);
+          t.setHarmonic(true);
           t.setPose(pose);
         }, pose);
         // Dos vueltas del anillo asientan la composición antes de medir.
@@ -85,9 +86,12 @@ try {
         const clip = await page.locator('#gl').boundingBox();
         if (!clip) throw new Error('Canvas sin geometría');
         const path = join(out, `${version}-${mode}.png`);
-        await page.screenshot({ path, clip });
+        // Captura solo tras vaciar explícitamente la cola GPU; no decodificar PNG en el navegador.
+        await page.locator('#gl').evaluate((canvas: HTMLCanvasElement) => canvas.getContext('webgl2')!.finish());
+        await page.screenshot({ path, clip, animations: 'disabled' });
         const measurements = measureHepatorenal(path, pose, reference);
         results.push({ version, sha: commit, mode, frameMs, measurements });
+        writeFileSync(join(out, 'partial.json'), JSON.stringify({ results, harmonic: true, compound: true, depthMm: 180 }, null, 2));
         console.log(JSON.stringify({ version, mode, measurements }));
       }
       if (errors.length) throw new Error(errors.join('\n'));

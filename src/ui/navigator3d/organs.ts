@@ -1,4 +1,4 @@
-import { BOWEL_NODES, BOWEL_RADIUS_MM } from '../../anatomy/organs/bowel';
+import { BOWEL_NODES, BOWEL_REST_RADII } from '../../anatomy/organs/bowel';
 import * as THREE from 'three';
 import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js';
 import { kidneyLocal, kidneyOuterSdf, type Kidney } from '../../anatomy/organs/kidney';
@@ -147,7 +147,7 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
   const liver = buildLiverMesh(a);
   g.add(liver, buildCouinaudLabels(a, liver));
   const bowel = variableTube(
-    { kind: 'tube', nodes: BOWEL_NODES.filter((p) => p[2] > -240).map((p) => ({ p, r: BOWEL_RADIUS_MM })), apScale: 1 },
+    { kind: 'tube', nodes: BOWEL_NODES.map((p, i) => ({ p, r: BOWEL_REST_RADII[i] })).filter(({ p }) => p[2] > -240), apScale: 1 },
     0xcda08b,
     0.85,
   );

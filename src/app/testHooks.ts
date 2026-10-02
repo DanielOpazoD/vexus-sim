@@ -68,6 +68,7 @@ export interface TestHooks {
     faceAgreement: number;
     maxDistanceError: number;
     normalMinDot: number;
+    radii: number[];
   };
   /** Equivalencia TS ↔ GLSL en `n` puntos aleatorios de todo el tronco. */
   volumeEquivalence: (n?: number) => VolumeEquivalenceReport;
@@ -415,6 +416,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
         faceAgreement: sameFace / faces,
         maxDistanceError,
         normalMinDot,
+        radii: Array.from(sim.scene.bowelRadii),
       };
     },
     volumeEquivalence: (n) => volumeEquivalence(getSim(), n),

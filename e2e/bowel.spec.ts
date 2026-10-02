@@ -30,3 +30,32 @@ for (const reference of [false, true])
     info.annotations.push({ type: 'bowel-parity', description: JSON.stringify(r) });
     expect(errors).toEqual([]);
   });
+
+for (const reference of [false, true])
+  test(`asas: compresión local reversible y gemelo GPU (${reference ? 'referencia' : 'legacy'})`, async ({ page }, info) => {
+    budget(200_000);
+    await bootWithoutErrors(page, reference ? '?e2e=1&reference=1' : '?e2e=1');
+    const measure = async (lift: number) =>
+      page.evaluate((lift) => {
+        const t = window.__vexusTest!;
+        t.setCompound(false);
+        t.setPose({ phi: Math.PI / 2, z: -112, lift, yaw: Math.PI / 2, rock: 0, tilt: 0 });
+        return t.bowelEquivalence();
+      }, lift);
+    const before = await measure(0),
+      pressed = await measure(-6),
+      released = await measure(0);
+    expect(pressed.radii.some((r, i) => r < before.radii[i] - 0.02)).toBe(true);
+    expect(released.radii).toEqual(before.radii);
+    for (const r of [before, pressed, released]) {
+      expect(r.interior).toBeGreaterThan(1800);
+      expect(r.agreement).toBe(1);
+      expect(r.faceAgreement).toBe(1);
+      expect(r.maxDistanceError).toBeLessThan(0.02);
+      expect(r.normalMinDot).toBeGreaterThan(0.99);
+    }
+    info.annotations.push({
+      type: 'bowel-compression',
+      description: JSON.stringify({ before: before.radii, pressed: pressed.radii, released: released.radii }),
+    });
+  });

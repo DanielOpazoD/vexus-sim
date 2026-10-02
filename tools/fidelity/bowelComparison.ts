@@ -24,8 +24,8 @@ const browser = await chromium.launch({
 const results: Array<{ version: string; sha: string; mode: string; frameMs: number[] }> = [];
 try {
   for (const [version, cwd, port, commit] of [
-    ['before', base, 6611, sha],
     ['after', root, 6612, process.env.HEAD_SHA ?? 'working-tree'],
+    ['before', base, 6611, sha],
   ] as const) {
     const server = spawn(process.execPath, [viteOf(cwd), 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
       cwd,
@@ -46,24 +46,40 @@ try {
       if (!ready) throw new Error('Servidor de comparación no responde');
       const page = await context.newPage();
       const errors: string[] = [];
-      page.on('pageerror', (e) => errors.push(e.message));
+      page.on('pageerror', (e) => {
+        errors.push(e.message);
+        console.error(version, e.message);
+      });
       page.on('console', (m) => {
-        if (m.type() === 'error') errors.push(m.text());
+        if (m.type() === 'error') {
+          errors.push(m.text());
+          console.error(version, m.text());
+        }
       });
       await page.goto(`http://127.0.0.1:${port}/?e2e=1`);
       await page.waitForFunction(() => (window.__vexusTest?.framesRendered() ?? 0) >= 2, undefined, { timeout: 180_000 });
-      for (const [mode, yaw] of [
-        ['transverse', Math.PI / 2],
-        ['longitudinal', 0],
+      for (const [mode, yaw, lift] of [
+        ['transverse', Math.PI / 2, 0],
+        ['longitudinal', 0, 0],
+        ['transverse-pressed', Math.PI / 2, -6],
       ] as const) {
-        await page.evaluate((yaw) => {
-          const t = window.__vexusTest!;
-          t.setCompound(false);
-          t.setPose({ phi: Math.PI / 2, z: -112, lift: 0, yaw, rock: 0, tilt: 0 });
-        }, yaw);
+        await page.evaluate(
+          ({ yaw, lift }) => {
+            const t = window.__vexusTest!;
+            t.setCompound(false);
+            t.setPose({ phi: Math.PI / 2, z: -112, lift, yaw, rock: 0, tilt: 0 });
+          },
+          { yaw, lift },
+        );
         const frameMs: number[] = [];
         for (let i = 0; i < 3; i++) frameMs.push(await page.evaluate(() => window.__vexusTest!.frameCostMs(3)));
-        await page.locator('#gl').screenshot({ path: join(out, `${version}-${mode}.png`) });
+        // Congelar mediante el control real tras medir; evita esperar estabilidad de un canvas que sigue dibujando.
+        await page.locator('#freeze').evaluate((button: HTMLButtonElement) => button.click());
+        if ((await page.locator('#freeze').getAttribute('aria-pressed')) !== 'true') throw new Error('No se congeló la imagen');
+        const clip = await page.locator('#gl').boundingBox();
+        if (!clip) throw new Error('Canvas sin geometría');
+        await page.screenshot({ path: join(out, `${version}-${mode}.png`), clip });
+        await page.locator('#freeze').evaluate((button: HTMLButtonElement) => button.click());
         results.push({ version, sha: commit, mode, frameMs });
       }
       if (errors.length) throw new Error(errors.join('\n'));
@@ -78,7 +94,7 @@ try {
       {
         results,
         notes:
-          'Mismo runner, tres lotes de tres cuadros por plano. Orden antes/después; variabilidad temporal sin intervalo de confianza. No prueba rendimiento Metal ni fidelidad clínica.',
+          'Mismo runner, tres lotes de tres cuadros por plano. Orden después/antes; variabilidad temporal sin intervalo de confianza. No prueba rendimiento Metal ni fidelidad clínica.',
       },
       null,
       2,

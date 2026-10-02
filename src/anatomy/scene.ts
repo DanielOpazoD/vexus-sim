@@ -1,4 +1,4 @@
-import { BOWEL_RADIUS_MM, BOWEL_FIELD_REACH_MM, BOWEL_WALL_MM, bowelQuery, bowelGasSdf } from './organs/bowel';
+import { BOWEL_FIELD_REACH_MM, BOWEL_WALL_MM, bowelQuery, bowelGasSdf, bowelRadii } from './organs/bowel';
 import { referenceBody } from './referenceBody';
 import { smoothstep, type Vec3 } from '../core/vec3';
 import type { PatientState } from '../physiology/patientState';
@@ -229,6 +229,7 @@ export function ribTiltMm(ribNo: number): number {
 }
 
 export class AnatomyScene {
+  bowelRadii = bowelRadii(null);
   readonly torso: Torso;
   readonly ribs: Rib[];
   private spineReferenceOffset = 0;
@@ -576,19 +577,23 @@ export class AnatomyScene {
     const [tissue, dRetro] = retroperitoneum(m, -depth - wall.wallMm, kidney.dPeriMm);
     bd = Math.max(0, Math.min(bd, dRetro, sdSpine(m, this.spine)));
     if (tissue !== Tissue.Bowel) return { ...NONE, tissue, boundaryDistance: bd };
-    const q = bowelQuery(m),
-      dl = q.d + BOWEL_WALL_MM;
-    if (q.d >= BOWEL_FIELD_REACH_MM) return { ...NONE, tissue: Tissue.MesentericFat, boundaryDistance: Math.min(bd, q.d) };
-    const iface = q.d > -0.5 * BOWEL_WALL_MM ? Interface.BowelSerosa : Interface.BowelLumen;
-    const face = { interface: iface, interfaceDistance: Math.abs(iface === Interface.BowelSerosa ? q.d : dl), boundaryNormal: q.normal };
-    if (q.d >= 0) return { ...NONE, ...face, tissue: Tissue.MesentericFat, boundaryDistance: Math.min(bd, q.d) };
-    if (dl >= 0) return { ...NONE, ...face, tissue: Tissue.Bowel, boundaryDistance: Math.min(bd, -q.d, dl) };
+    const q = bowelQuery(m, this.bowelRadii),
+      dl = q.lumen;
+    if (q.d >= BOWEL_FIELD_REACH_MM) return { ...NONE, tissue: Tissue.MesentericFat, boundaryDistance: Math.min(bd, q.d / 2) };
+    const iface = Math.abs(q.d) < Math.abs(dl) ? Interface.BowelSerosa : Interface.BowelLumen;
+    const face = {
+      interface: iface,
+      interfaceDistance: Math.abs(iface === Interface.BowelSerosa ? q.d : dl),
+      boundaryNormal: iface === Interface.BowelSerosa ? q.normal : q.lumenNormal,
+    };
+    if (q.d >= 0) return { ...NONE, ...face, tissue: Tissue.MesentericFat, boundaryDistance: Math.min(bd, q.d / 2) };
+    if (dl >= 0) return { ...NONE, ...face, tissue: Tissue.Bowel, boundaryDistance: Math.min(bd, -q.d / 2, dl / 2) };
     const dg = bowelGasSdf(m, dl);
     return {
       ...NONE,
       ...(dg < 0 ? {} : face),
       tissue: dg < 0 ? Tissue.BowelGas : Tissue.Fluid,
-      boundaryDistance: Math.min(bd, -dl, Math.abs(dg)),
+      boundaryDistance: Math.min(bd, -dl / 2, Math.abs(dg) / 2),
     };
   }
 
@@ -659,12 +664,14 @@ export class AnatomyScene {
       // las caras de la pared y de las costillas (decisión 62) no tienen geometría de faceSdf
       const iface = this.classify(m, caliber).interface;
       if (isBowelInterface(iface)) {
-        const q = bowelQuery(m);
+        const q = bowelQuery(m, this.bowelRadii),
+          n = iface === Interface.BowelSerosa ? q.normal : q.lumenNormal,
+          norm = Math.hypot(...n);
         return {
-          normal: q.normal,
-          norm: 1,
+          normal: n.map((x) => x / norm) as Vec3,
+          norm,
           axis: q.axis,
-          curvature: 1 / (iface === Interface.BowelSerosa ? BOWEL_RADIUS_MM : BOWEL_RADIUS_MM - BOWEL_WALL_MM),
+          curvature: 1 / (iface === Interface.BowelSerosa ? q.radius : q.radius - BOWEL_WALL_MM),
         };
       }
       if (isWallLayerInterface(iface)) {

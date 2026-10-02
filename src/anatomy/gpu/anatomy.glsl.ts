@@ -35,7 +35,7 @@ import {
   MORISON_SLIVER_MM,
 } from '../interfaces';
 import { COMPRESSION_GLSL, PROBE_COMPRESSION } from '../compression';
-import { ORGAN_MODULES } from '../organs';
+import { ORGAN_GLSL } from '../organs';
 import { RIB_ANTERIOR_END, TUBE_SHAPE } from '../primitives';
 import { MAX_RIBS, SCENE_UNIFORMS_GLSL } from './sceneUniforms';
 
@@ -418,7 +418,7 @@ void tubeFace(vec3 p, int t, int seg, float s, float arc, out vec3 tangent, out 
 }
 
 // Módulos de órgano (anatomy/organs/*): gemelos GLSL de sus funciones TS
-${ORGAN_MODULES.map((o) => o.glsl).join('\n')}
+${ORGAN_GLSL.join('\n')}
 
 // Profundidad bajo la cara interna de la pared (mm; 0 en la pleura parietal). Gemelo: AnatomyScene.insideWallMm
 float insideWallMm(vec3 m) { return -torsoDepth(m) - (uWall.x + uWall.y + uWall.z); }
@@ -647,15 +647,16 @@ Cls classifyWith(vec3 m, bool withCurtain) {
   c.tissue = retroperitoneum(m, -depth - wall, dPeri, bdRetro);
   c.bd = max(min(min(bdBowel, bdRetro), dSpine), 0.0); c.n = tn;
   if(c.tissue!=T_BOWEL)return c;
-  vec3 bn,ba;float d=bowelQuery(m,bn,ba), dl=d+BOWEL_WALL;
-  if(d>=BOWEL_REACH){c.tissue=T_MESENTERIC_FAT;c.bd=min(c.bd,d);return c;}
-  c.n=bn;c.tangent=ba;
-  c.iface=d>-0.5*BOWEL_WALL?IF_BOWEL_SEROSA:IF_BOWEL_LUMEN;
+  vec3 bn,ba,bowelLumenNormal;float dl,br;float d=bowelQuery(m,bn,ba,dl,bowelLumenNormal,br);
+  if(d>=BOWEL_REACH){c.tissue=T_MESENTERIC_FAT;c.bd=min(c.bd,d/2.0);return c;}
+  c.tangent=ba;
+  c.iface=abs(d)<abs(dl)?IF_BOWEL_SEROSA:IF_BOWEL_LUMEN;
+  c.n=c.iface==IF_BOWEL_SEROSA?bn:bowelLumenNormal;
   c.ifd=abs(c.iface==IF_BOWEL_SEROSA?d:dl);
-  c.kc=1.0/(c.iface==IF_BOWEL_SEROSA?BOWEL_RADIUS:BOWEL_RADIUS-BOWEL_WALL);
-  if(d>=0.0){c.tissue=T_MESENTERIC_FAT;c.bd=min(c.bd,d);}
-  else if(dl>=0.0){c.tissue=T_BOWEL;c.bd=min(c.bd,min(-d,dl));}
-  else {float dg=bowelGasSdf(m,dl);c.tissue=dg<0.0?T_BOWELGAS:T_FLUID;c.bd=min(c.bd,min(-dl,abs(dg)));if(dg<0.0){c.iface=IF_NONE;c.ifd=1e3;}}
+  c.kc=1.0/(c.iface==IF_BOWEL_SEROSA?br:br-BOWEL_WALL);
+  if(d>=0.0){c.tissue=T_MESENTERIC_FAT;c.bd=min(c.bd,d/2.0);}
+  else if(dl>=0.0){c.tissue=T_BOWEL;c.bd=min(c.bd,min(-d,dl)/2.0);}
+  else {float dg=bowelGasSdf(m,dl);c.tissue=dg<0.0?T_BOWELGAS:T_FLUID;c.bd=min(c.bd,min(-dl,abs(dg))/2.0);if(dg<0.0){c.iface=IF_NONE;c.ifd=1e3;}}
   return c;
 }
 

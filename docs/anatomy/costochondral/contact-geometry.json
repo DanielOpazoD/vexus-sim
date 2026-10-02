@@ -1,0 +1,663 @@
+{
+  "method": "All used source vertices + all triangle centroids in complete sampled proximity bands; exact point/triangle distances to each candidate zero-shell piece, both directions of bone/cartilage contact. Bands descriptive, not anatomical tolerances. Complements global bidirectional and voxel bank.",
+  "candidateSha256": "a272d82844ce50f0454a023b3343087bf008087f464cd0cdcc5c3ed1fcdcd623",
+  "sourceSha256": {
+    "FJ2810": "50fb17d0b3559b8b6c5481dbe7f877d25726e576564da615c45b2dd7654e315d",
+    "FJ3346": "91aa56e034fbe6f413c0f15b76d725a1f8efd115aa2900beda6edf43a3ab0c43",
+    "FJ3345": "a4d22796f4ffc6f9ad1b7d620c917be1638244864eca62aec60bd11033ed3041",
+    "FJ3234": "638a766f20b64d02095efa845b5ea316624a376acb44c7e4a6d533d4da6ef4db",
+    "FJ3255": "97e69ede580a6e81cc42bb54fb22d4752719b61c5fced8ccccfb18ce64996676"
+  },
+  "candidateIntegrated": false,
+  "clinicalValidation": false,
+  "results": [
+    {
+      "resolution": 64,
+      "side": "right",
+      "sourceId": "FJ3346",
+      "maxExactOriginalOtherDistanceMm": 0.03,
+      "originalOtherDistanceMm": {
+        "count": 130,
+        "min": 0.00040743725991553205,
+        "rms": 0.015168750552533531,
+        "p95": 0.028815375177557175,
+        "max": 0.029997320920511446
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 130,
+        "min": 0.0021600151681689674,
+        "rms": 1.1626236086197916,
+        "p95": 2.334848843114126,
+        "max": 2.703914872727996
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 130,
+        "min": 0.0045068504782326034,
+        "rms": 0.6489551669840185,
+        "p95": 1.2181542666022418,
+        "max": 1.4330013138475095
+      }
+    },
+    {
+      "resolution": 64,
+      "side": "right",
+      "sourceId": "FJ3346",
+      "maxExactOriginalOtherDistanceMm": 0.1,
+      "originalOtherDistanceMm": {
+        "count": 235,
+        "min": 0.00040743725991553205,
+        "rms": 0.04250983407200158,
+        "p95": 0.08573674546489334,
+        "max": 0.09819879733600967
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 235,
+        "min": 0.0021600151681689674,
+        "rms": 1.2754225656865241,
+        "p95": 2.503492415246587,
+        "max": 2.7167268223656587
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 235,
+        "min": 0.004458797189511937,
+        "rms": 0.6981633676638535,
+        "p95": 1.3477664818891926,
+        "max": 1.6637549834779535
+      }
+    },
+    {
+      "resolution": 64,
+      "side": "right",
+      "sourceId": "FJ3346",
+      "maxExactOriginalOtherDistanceMm": 0.5,
+      "originalOtherDistanceMm": {
+        "count": 586,
+        "min": 0.00040743725991553205,
+        "rms": 0.23982307906468509,
+        "p95": 0.4567049836875199,
+        "max": 0.4986431453333258
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 586,
+        "min": 0.0013040472197292556,
+        "rms": 1.5437360658330816,
+        "p95": 2.7597896002220343,
+        "max": 2.860241730135367
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 586,
+        "min": 0.004458797189511937,
+        "rms": 0.9589427782627334,
+        "p95": 1.6193888514488362,
+        "max": 2.0575164457303083
+      }
+    },
+    {
+      "resolution": 64,
+      "side": "right",
+      "sourceId": "FJ3345",
+      "maxExactOriginalOtherDistanceMm": 0.03,
+      "originalOtherDistanceMm": {
+        "count": 101,
+        "min": 0.00011497499866582926,
+        "rms": 0.013069940603009953,
+        "p95": 0.024000242587320888,
+        "max": 0.029584038307197615
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 101,
+        "min": 0.001965921496718241,
+        "rms": 0.6555456664019945,
+        "p95": 1.2885760654013874,
+        "max": 1.6120667677942442
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 101,
+        "min": 0.007228909187602245,
+        "rms": 1.0646694108928338,
+        "p95": 2.1991429981356645,
+        "max": 2.721391333773608
+      }
+    },
+    {
+      "resolution": 64,
+      "side": "right",
+      "sourceId": "FJ3345",
+      "maxExactOriginalOtherDistanceMm": 0.1,
+      "originalOtherDistanceMm": {
+        "count": 181,
+        "min": 0.00011497499866582926,
+        "rms": 0.04155305817226107,
+        "p95": 0.08778921638218012,
+        "max": 0.0988047227231364
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 181,
+        "min": 0.0012506065867682232,
+        "rms": 0.7278547244079288,
+        "p95": 1.4253763362600742,
+        "max": 1.6120667677942442
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 181,
+        "min": 0.007228909187602245,
+        "rms": 1.372511597240171,
+        "p95": 2.6666706955025763,
+        "max": 2.821506887699579
+      }
+    },
+    {
+      "resolution": 64,
+      "side": "right",
+      "sourceId": "FJ3345",
+      "maxExactOriginalOtherDistanceMm": 0.5,
+      "originalOtherDistanceMm": {
+        "count": 363,
+        "min": 0.00011497499866582926,
+        "rms": 0.18911673825225217,
+        "p95": 0.3967668245628419,
+        "max": 0.48694047454446265
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 363,
+        "min": 0.0012506065867682232,
+        "rms": 0.8295853351191123,
+        "p95": 1.4955419403490755,
+        "max": 1.6832698819414107
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 363,
+        "min": 0.007228909187602245,
+        "rms": 1.571350383950338,
+        "p95": 2.7915760385150628,
+        "max": 3.0901941370793358
+      }
+    },
+    {
+      "resolution": 64,
+      "side": "left",
+      "sourceId": "FJ3234",
+      "maxExactOriginalOtherDistanceMm": 0.03,
+      "originalOtherDistanceMm": {
+        "count": 115,
+        "min": 6.029612744117568e-5,
+        "rms": 0.01732623437942828,
+        "p95": 0.028945307384304137,
+        "max": 0.029948376521705743
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 115,
+        "min": 0.01118181555353338,
+        "rms": 1.0660241726644688,
+        "p95": 1.9576997332207635,
+        "max": 2.642073829387918
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 115,
+        "min": 0.0043221708507759846,
+        "rms": 0.6029050928491004,
+        "p95": 1.20176892086007,
+        "max": 1.466174831515157
+      }
+    },
+    {
+      "resolution": 64,
+      "side": "left",
+      "sourceId": "FJ3234",
+      "maxExactOriginalOtherDistanceMm": 0.1,
+      "originalOtherDistanceMm": {
+        "count": 237,
+        "min": 6.029612744117568e-5,
+        "rms": 0.04682342201835319,
+        "p95": 0.09074929957877369,
+        "max": 0.09989240355487511
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 237,
+        "min": 0.001302144744929362,
+        "rms": 1.2786725898158506,
+        "p95": 2.370203158150149,
+        "max": 2.704045403790884
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 237,
+        "min": 0.0043221708507759846,
+        "rms": 0.7118788996935443,
+        "p95": 1.3933732765836608,
+        "max": 1.7165937951407286
+      }
+    },
+    {
+      "resolution": 64,
+      "side": "left",
+      "sourceId": "FJ3234",
+      "maxExactOriginalOtherDistanceMm": 0.5,
+      "originalOtherDistanceMm": {
+        "count": 613,
+        "min": 6.029612744117568e-5,
+        "rms": 0.24664324227069562,
+        "p95": 0.4647583875902849,
+        "max": 0.4991959614929193
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 613,
+        "min": 0.001302144744929362,
+        "rms": 1.6961227259405858,
+        "p95": 2.7112263215670565,
+        "max": 2.8237160768313427
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 613,
+        "min": 0.0043221708507759846,
+        "rms": 1.0312310381200942,
+        "p95": 1.8132494827171244,
+        "max": 2.0507729820723872
+      }
+    },
+    {
+      "resolution": 64,
+      "side": "left",
+      "sourceId": "FJ3255",
+      "maxExactOriginalOtherDistanceMm": 0.03,
+      "originalOtherDistanceMm": {
+        "count": 78,
+        "min": 0.0006874932119467743,
+        "rms": 0.015764145801661,
+        "p95": 0.029700852870032803,
+        "max": 0.0297300238281292
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 78,
+        "min": 0.0018864099364573246,
+        "rms": 0.5077679399241001,
+        "p95": 1.2313990793253051,
+        "max": 1.4050244095500246
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 78,
+        "min": 0.024881367164150195,
+        "rms": 1.2090601811648312,
+        "p95": 2.4961239699621474,
+        "max": 2.6798703450667176
+      }
+    },
+    {
+      "resolution": 64,
+      "side": "left",
+      "sourceId": "FJ3255",
+      "maxExactOriginalOtherDistanceMm": 0.1,
+      "originalOtherDistanceMm": {
+        "count": 147,
+        "min": 0.0006874932119467743,
+        "rms": 0.04287586451439975,
+        "p95": 0.0878528051534551,
+        "max": 0.09848717168685227
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 147,
+        "min": 0.0018864099364573246,
+        "rms": 0.5981556821260562,
+        "p95": 1.2798341600031171,
+        "max": 1.5912446844068908
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 147,
+        "min": 0.015993974681413024,
+        "rms": 1.275267334832775,
+        "p95": 2.499567054340929,
+        "max": 2.7055854758976716
+      }
+    },
+    {
+      "resolution": 64,
+      "side": "left",
+      "sourceId": "FJ3255",
+      "maxExactOriginalOtherDistanceMm": 0.5,
+      "originalOtherDistanceMm": {
+        "count": 333,
+        "min": 0.0006874932119467743,
+        "rms": 0.22156019762120738,
+        "p95": 0.44487536441375275,
+        "max": 0.4940060962283096
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 333,
+        "min": 0.000809511911803278,
+        "rms": 0.6892678368523998,
+        "p95": 1.4264972467789128,
+        "max": 1.7620897173432657
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 333,
+        "min": 0.015993974681413024,
+        "rms": 1.7043210145242589,
+        "p95": 2.9309766125724743,
+        "max": 3.083251697517143
+      }
+    },
+    {
+      "resolution": 128,
+      "side": "right",
+      "sourceId": "FJ3346",
+      "maxExactOriginalOtherDistanceMm": 0.03,
+      "originalOtherDistanceMm": {
+        "count": 130,
+        "min": 0.00040743725991553205,
+        "rms": 0.015168750552533531,
+        "p95": 0.028815375177557175,
+        "max": 0.029997320920511446
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 130,
+        "min": 0.001026421316825796,
+        "rms": 1.1392548188712923,
+        "p95": 2.353702718272171,
+        "max": 2.7320325365221874
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 130,
+        "min": 9.850535210566919e-5,
+        "rms": 0.6072751613834749,
+        "p95": 1.1728049560504592,
+        "max": 1.4308545507567363
+      }
+    },
+    {
+      "resolution": 128,
+      "side": "right",
+      "sourceId": "FJ3346",
+      "maxExactOriginalOtherDistanceMm": 0.1,
+      "originalOtherDistanceMm": {
+        "count": 235,
+        "min": 0.00040743725991553205,
+        "rms": 0.04250983407200158,
+        "p95": 0.08573674546489334,
+        "max": 0.09819879733600967
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 235,
+        "min": 0.001026421316825796,
+        "rms": 1.2432816438154954,
+        "p95": 2.5575602728623514,
+        "max": 2.7506557407648233
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 235,
+        "min": 9.850535210566919e-5,
+        "rms": 0.6615899148091452,
+        "p95": 1.31972021741556,
+        "max": 1.6632055709120772
+      }
+    },
+    {
+      "resolution": 128,
+      "side": "right",
+      "sourceId": "FJ3346",
+      "maxExactOriginalOtherDistanceMm": 0.5,
+      "originalOtherDistanceMm": {
+        "count": 586,
+        "min": 0.00040743725991553205,
+        "rms": 0.23982307906468509,
+        "p95": 0.4567049836875199,
+        "max": 0.4986431453333258
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 586,
+        "min": 0.001026421316825796,
+        "rms": 1.5074576178581454,
+        "p95": 2.7833698995088536,
+        "max": 2.886287138883056
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 586,
+        "min": 9.850535210566919e-5,
+        "rms": 0.9195088164214008,
+        "p95": 1.5876142241341968,
+        "max": 1.9090812130982788
+      }
+    },
+    {
+      "resolution": 128,
+      "side": "right",
+      "sourceId": "FJ3345",
+      "maxExactOriginalOtherDistanceMm": 0.03,
+      "originalOtherDistanceMm": {
+        "count": 101,
+        "min": 0.00011497499866582926,
+        "rms": 0.013069940603009953,
+        "p95": 0.024000242587320888,
+        "max": 0.029584038307197615
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 101,
+        "min": 0.0038324745298834438,
+        "rms": 0.580451158796261,
+        "p95": 1.1773406363039929,
+        "max": 1.4217508811431434
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 101,
+        "min": 0.007126400217713203,
+        "rms": 1.0450061962044292,
+        "p95": 2.2378589350443954,
+        "max": 2.7390424563930034
+      }
+    },
+    {
+      "resolution": 128,
+      "side": "right",
+      "sourceId": "FJ3345",
+      "maxExactOriginalOtherDistanceMm": 0.1,
+      "originalOtherDistanceMm": {
+        "count": 181,
+        "min": 0.00011497499866582926,
+        "rms": 0.04155305817226107,
+        "p95": 0.08778921638218012,
+        "max": 0.0988047227231364
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 181,
+        "min": 0.0008962077360601561,
+        "rms": 0.6752351815064995,
+        "p95": 1.2734212719497604,
+        "max": 1.6021029543416578
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 181,
+        "min": 0.007126400217713203,
+        "rms": 1.3401854535403581,
+        "p95": 2.7040501514633406,
+        "max": 2.8554141227860077
+      }
+    },
+    {
+      "resolution": 128,
+      "side": "right",
+      "sourceId": "FJ3345",
+      "maxExactOriginalOtherDistanceMm": 0.5,
+      "originalOtherDistanceMm": {
+        "count": 363,
+        "min": 0.00011497499866582926,
+        "rms": 0.18911673825225217,
+        "p95": 0.3967668245628419,
+        "max": 0.48694047454446265
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 363,
+        "min": 0.0008962077360601561,
+        "rms": 0.7721241132114897,
+        "p95": 1.4472774905939316,
+        "max": 1.681294407245293
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 363,
+        "min": 0.007126400217713203,
+        "rms": 1.5341288083399922,
+        "p95": 2.836236283591062,
+        "max": 3.126596677699072
+      }
+    },
+    {
+      "resolution": 128,
+      "side": "left",
+      "sourceId": "FJ3234",
+      "maxExactOriginalOtherDistanceMm": 0.03,
+      "originalOtherDistanceMm": {
+        "count": 115,
+        "min": 6.029612744117568e-5,
+        "rms": 0.01732623437942828,
+        "p95": 0.028945307384304137,
+        "max": 0.029948376521705743
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 115,
+        "min": 0.0022037233846894533,
+        "rms": 0.9197718858532946,
+        "p95": 1.7725887325784302,
+        "max": 2.6526642830455316
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 115,
+        "min": 0.0008630057281265967,
+        "rms": 0.5727203666769548,
+        "p95": 1.2017339915877452,
+        "max": 1.4598356744050958
+      }
+    },
+    {
+      "resolution": 128,
+      "side": "left",
+      "sourceId": "FJ3234",
+      "maxExactOriginalOtherDistanceMm": 0.1,
+      "originalOtherDistanceMm": {
+        "count": 237,
+        "min": 6.029612744117568e-5,
+        "rms": 0.04682342201835319,
+        "p95": 0.09074929957877369,
+        "max": 0.09989240355487511
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 237,
+        "min": 0.00130214474492778,
+        "rms": 1.1310689122919013,
+        "p95": 2.0894958072267356,
+        "max": 2.7337659874434017
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 237,
+        "min": 0.0008630057281265967,
+        "rms": 0.6858210627768752,
+        "p95": 1.324708839268442,
+        "max": 1.709401075702984
+      }
+    },
+    {
+      "resolution": 128,
+      "side": "left",
+      "sourceId": "FJ3234",
+      "maxExactOriginalOtherDistanceMm": 0.5,
+      "originalOtherDistanceMm": {
+        "count": 613,
+        "min": 6.029612744117568e-5,
+        "rms": 0.24664324227069562,
+        "p95": 0.4647583875902849,
+        "max": 0.4991959614929193
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 613,
+        "min": 0.00130214474492778,
+        "rms": 1.544576602765927,
+        "p95": 2.718050388279618,
+        "max": 2.8453592038038233
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 613,
+        "min": 0.0008630057281265967,
+        "rms": 1.0114738533960368,
+        "p95": 1.805128044534326,
+        "max": 2.039273543384088
+      }
+    },
+    {
+      "resolution": 128,
+      "side": "left",
+      "sourceId": "FJ3255",
+      "maxExactOriginalOtherDistanceMm": 0.03,
+      "originalOtherDistanceMm": {
+        "count": 78,
+        "min": 0.0006874932119467743,
+        "rms": 0.015764145801661,
+        "p95": 0.029700852870032803,
+        "max": 0.0297300238281292
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 78,
+        "min": 9.609753767335922e-5,
+        "rms": 0.470505435932706,
+        "p95": 1.1100801789771788,
+        "max": 1.403751513332518
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 78,
+        "min": 0.0005706022924207218,
+        "rms": 1.1300171001479347,
+        "p95": 2.4870195794179604,
+        "max": 2.7191874848103295
+      }
+    },
+    {
+      "resolution": 128,
+      "side": "left",
+      "sourceId": "FJ3255",
+      "maxExactOriginalOtherDistanceMm": 0.1,
+      "originalOtherDistanceMm": {
+        "count": 147,
+        "min": 0.0006874932119467743,
+        "rms": 0.04287586451439975,
+        "p95": 0.0878528051534551,
+        "max": 0.09848717168685227
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 147,
+        "min": 9.609753767335922e-5,
+        "rms": 0.5627439908908466,
+        "p95": 1.21438167514311,
+        "max": 1.5010978627607539
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 147,
+        "min": 0.0005706022924207218,
+        "rms": 1.1620192561667402,
+        "p95": 2.5101290438948984,
+        "max": 2.7439233347333447
+      }
+    },
+    {
+      "resolution": 128,
+      "side": "left",
+      "sourceId": "FJ3255",
+      "maxExactOriginalOtherDistanceMm": 0.5,
+      "originalOtherDistanceMm": {
+        "count": 333,
+        "min": 0.0006874932119467743,
+        "rms": 0.22156019762120738,
+        "p95": 0.44487536441375275,
+        "max": 0.4940060962283096
+      },
+      "ownCandidateTriangleDistanceMm": {
+        "count": 333,
+        "min": 9.609753767335922e-5,
+        "rms": 0.6558455447613198,
+        "p95": 1.3268878241857263,
+        "max": 1.7574713920221974
+      },
+      "otherCandidateTriangleDistanceMm": {
+        "count": 333,
+        "min": 0.0005706022924207218,
+        "rms": 1.5976687118612845,
+        "p95": 2.950982194227542,
+        "max": 3.090723325365624
+      }
+    }
+  ]
+}

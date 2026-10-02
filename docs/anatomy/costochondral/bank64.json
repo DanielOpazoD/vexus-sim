@@ -1,0 +1,1001 @@
+{
+  "oracle": {
+    "sourceSha256": {
+      "FJ2810": "50fb17d0b3559b8b6c5481dbe7f877d25726e576564da615c45b2dd7654e315d",
+      "FJ3346": "91aa56e034fbe6f413c0f15b76d725a1f8efd115aa2900beda6edf43a3ab0c43",
+      "FJ3345": "a4d22796f4ffc6f9ad1b7d620c917be1638244864eca62aec60bd11033ed3041",
+      "FJ3234": "638a766f20b64d02095efa845b5ea316624a376acb44c7e4a6d533d4da6ef4db",
+      "FJ3255": "97e69ede580a6e81cc42bb54fb22d4752719b61c5fced8ccccfb18ce64996676"
+    },
+    "rigidRegistration": "LPS origin[-.3152345,-205.92635,1164.5735] to LAS[0,85.25,0]; y reflection with reversed winding",
+    "surfaceSamples": "all used vertices + all triangle centroids; unweighted; coincident positions retained",
+    "sourceToFieldDistance": "exact point/triangle distance to a triangulated candidate zero-level shell, not exact continuous Hausdorff",
+    "fieldToSourceDistance": "candidate zero-shell vertices + triangle centroids to exact original triangles",
+    "skin": "original closed triangle y-ray intersections; anterior outer/inner only when exactly two anterior hits",
+    "connectivity": "whole original mesh topology + joint ROI voxel solid/void connectivity; void is free space, NOT vascular lumen",
+    "clinicalTolerance": null,
+    "clinicalValidation": false
+  },
+  "candidateSha256": "a272d82844ce50f0454a023b3343087bf008087f464cd0cdcc5c3ed1fcdcd623",
+  "software": {
+    "python": "3.12.14",
+    "numpy": "2.3.5",
+    "scipy": "1.17.0"
+  },
+  "sampling": {
+    "angular": 64,
+    "circumference": 64,
+    "voxelPitchesMm": [0.5, 0.25]
+  },
+  "parts": [
+    {
+      "id": "FJ3346",
+      "side": "right",
+      "tissue": "bone",
+      "sourceTopology": {
+        "usedVerticesAfterExactWeld": 5018,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 10032,
+            "usedOriginalVertices": 5058,
+            "surfaceAreaMm2": 12340.651597390926,
+            "signedEnclosedVolumeMm3": 31955.02726735266,
+            "minLasMm": [-136.7697655, -116.18944000000002, -59.38349999999991],
+            "maxLasMm": [-13.3744655, 59.52664999999999, 75.69650000000001]
+          }
+        ]
+      },
+      "candidateTopology": {
+        "usedVerticesAfterExactWeld": 4994,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 9984,
+            "usedOriginalVertices": 4994,
+            "surfaceAreaMm2": 12197.353707573393,
+            "signedEnclosedVolumeMm3": 32125.731872723554,
+            "minLasMm": [-135.91457611261552, -114.68944833135774, -58.19780172793472],
+            "maxLasMm": [-13.57675428179656, 59.51537799648186, 75.558416034257]
+          }
+        ]
+      },
+      "sourceToTriangulatedZeroShellMm": {
+        "count": 15090,
+        "min": 8.891172799954341e-5,
+        "rms": 0.9238466822297355,
+        "p95": 1.9176745618935298,
+        "max": 2.860241730135367
+      },
+      "triangulatedZeroShellToOriginalMm": {
+        "count": 14978,
+        "min": 2.789979188778165e-7,
+        "rms": 0.7502978100682517,
+        "p95": 1.5975815352588945,
+        "max": 2.530207782578095
+      },
+      "sourceAbsApproximateFieldMm": {
+        "count": 15090,
+        "min": 9.576760505464908e-5,
+        "rms": 0.8485769692794257,
+        "p95": 1.759821840614994,
+        "max": 2.763988351629158
+      },
+      "triangulatedZeroShellAbsFieldMm": {
+        "count": 14978,
+        "min": 0.0,
+        "rms": 0.06568376447408497,
+        "p95": 0.05737333564736076,
+        "max": 0.812576046365217
+      }
+    },
+    {
+      "id": "FJ3345",
+      "side": "right",
+      "tissue": "cartilage",
+      "sourceTopology": {
+        "usedVerticesAfterExactWeld": 1233,
+        "surfaceComponents": 4,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 2444,
+            "usedOriginalVertices": 1520,
+            "surfaceAreaMm2": 6375.670525703108,
+            "signedEnclosedVolumeMm3": 17706.91638773866,
+            "minLasMm": [-109.5937655, 50.09864999999999, -62.01350000000002],
+            "maxLasMm": [-4.1923955, 92.53164999999998, 21.876500000000078]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.0004786856170802832,
+            "signedEnclosedVolumeMm3": 0.0,
+            "minLasMm": [-5.3072455000000005, 89.91565, 19.126500000000078],
+            "maxLasMm": [-5.3015155, 89.93865, 19.14650000000006]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.007699813787898842,
+            "signedEnclosedVolumeMm3": 0.0,
+            "minLasMm": [-4.6804855000000005, 89.01065, 19.276499999999942],
+            "maxLasMm": [-4.6243155, 89.12764999999999, 19.316500000000133]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.0016241986208578706,
+            "signedEnclosedVolumeMm3": -1.4117215787571672e-22,
+            "minLasMm": [49.8287345, 89.20065, -15.293499999999995],
+            "maxLasMm": [49.8805345, 89.23564999999999, -15.273500000000013]
+          }
+        ]
+      },
+      "candidateTopology": {
+        "usedVerticesAfterExactWeld": 4994,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 9984,
+            "usedOriginalVertices": 4994,
+            "surfaceAreaMm2": 6287.704759927836,
+            "signedEnclosedVolumeMm3": 17620.710133354583,
+            "minLasMm": [-109.14353957152227, 50.10863756116977, -61.82369277970218],
+            "maxLasMm": [-4.193358489184802, 92.5614186602804, 21.38941484458943]
+          }
+        ]
+      },
+      "sourceToTriangulatedZeroShellMm": {
+        "count": 3988,
+        "min": 0.000339115877815629,
+        "rms": 2.9543357665790824,
+        "p95": 2.038916602564336,
+        "max": 62.76537548695591
+      },
+      "triangulatedZeroShellToOriginalMm": {
+        "count": 14978,
+        "min": 5.802714111671021e-7,
+        "rms": 0.6324000585375068,
+        "p95": 1.2623138924528323,
+        "max": 3.5408843872433557
+      },
+      "sourceAbsApproximateFieldMm": {
+        "count": 3988,
+        "min": 9.388890199168159e-5,
+        "rms": 2.347369742325772,
+        "p95": 1.4989431166419944,
+        "max": 49.8805345
+      },
+      "triangulatedZeroShellAbsFieldMm": {
+        "count": 14978,
+        "min": 0.0,
+        "rms": 0.05522809673732513,
+        "p95": 0.015875749415309812,
+        "max": 0.6656828385875783
+      },
+      "originalSkinRelation": {
+        "matchedSamples": 3988,
+        "ambiguousOrMissingAnteriorRays": 0,
+        "outerYClearanceMm": {
+          "count": 3988,
+          "min": -0.04331727000000285,
+          "rms": 16.677253171323247,
+          "p95": 32.34874560583335,
+          "max": 35.37532561000002
+        },
+        "innerYClearanceMm": {
+          "count": 3988,
+          "min": -1.9381251100000014,
+          "rms": 14.886780865548493,
+          "p95": 30.12391561916668,
+          "max": 33.11784508000001
+        },
+        "withinOriginalSkinShellSamples": 154,
+        "beyondOuterSamples": 3,
+        "minimumOuterSamples": [
+          [-0.04331727000000285, [-12.2724655, 92.29665, 3.0965000000001055], [-137.65468349, -135.55726951, 90.35852489, 92.25333273]],
+          [
+            -0.014592579999998634,
+            [-13.372665499999998, 92.38165, 2.0631666666667265],
+            [-137.96835788, -135.85068572, 90.50059668, 92.36705742]
+          ],
+          [
+            -0.01283573666667337,
+            [-12.981132166666667, 92.24831666666667, 1.4965000000000448],
+            [-137.68821162, -135.55703423, 90.37119866, 92.23548093]
+          ]
+        ]
+      },
+      "candidateSkinRelation": {
+        "matchedSamples": 14978,
+        "ambiguousOrMissingAnteriorRays": 0,
+        "outerYClearanceMm": {
+          "count": 14978,
+          "min": 0.46469286574314594,
+          "rms": 17.429826942912218,
+          "p95": 30.360849932475887,
+          "max": 34.79245211952798
+        },
+        "innerYClearanceMm": {
+          "count": 14978,
+          "min": -1.44643082242645,
+          "rms": 15.59929265966242,
+          "p95": 28.19413210680937,
+          "max": 32.58555156053583
+        },
+        "withinOriginalSkinShellSamples": 512,
+        "beyondOuterSamples": 0,
+        "minimumOuterSamples": [
+          [
+            0.46469286574314594,
+            [-14.364213589513058, 92.26837238425685, 3.7970689949884515],
+            [-138.73171496, -136.65486924, 90.85350726, 92.73306525]
+          ],
+          [
+            0.47668168338491057,
+            [-14.411315631164136, 92.22255856661509, 3.3677489010492074],
+            [-138.67569568, -136.58944589, 90.82709933, 92.69924025]
+          ],
+          [
+            0.47943900542470885,
+            [-14.476263637893084, 92.31708484457529, 3.986600319693387],
+            [-138.81682248, -136.74444829, 90.89284727, 92.79652385]
+          ]
+        ]
+      }
+    },
+    {
+      "id": "FJ3234",
+      "side": "left",
+      "tissue": "bone",
+      "sourceTopology": {
+        "usedVerticesAfterExactWeld": 5018,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 10032,
+            "usedOriginalVertices": 5054,
+            "surfaceAreaMm2": 12340.043919764435,
+            "signedEnclosedVolumeMm3": 31949.534236348252,
+            "minLasMm": [12.697734500000001, -116.17840000000001, -59.38349999999991],
+            "maxLasMm": [136.0932345, 59.531649999999985, 75.67650000000003]
+          }
+        ]
+      },
+      "candidateTopology": {
+        "usedVerticesAfterExactWeld": 4994,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 9984,
+            "usedOriginalVertices": 4994,
+            "surfaceAreaMm2": 12028.685138974313,
+            "signedEnclosedVolumeMm3": -32086.22558520123,
+            "minLasMm": [12.843565039990509, -115.95221437748167, -58.188177110805974],
+            "maxLasMm": [135.7024112083389, 57.86023286203883, 75.52636323211614]
+          }
+        ]
+      },
+      "sourceToTriangulatedZeroShellMm": {
+        "count": 15086,
+        "min": 4.155194656988952e-5,
+        "rms": 0.8772169859942373,
+        "p95": 1.8035553884965596,
+        "max": 2.8237160768313427
+      },
+      "triangulatedZeroShellToOriginalMm": {
+        "count": 14978,
+        "min": 1.330477567839093e-6,
+        "rms": 0.6116975385059382,
+        "p95": 1.3437981196056674,
+        "max": 2.3314749593842445
+      },
+      "sourceAbsApproximateFieldMm": {
+        "count": 15086,
+        "min": 3.7978037849877334e-5,
+        "rms": 0.831268971671341,
+        "p95": 1.7598768264156632,
+        "max": 3.0086451244928734
+      },
+      "triangulatedZeroShellAbsFieldMm": {
+        "count": 14978,
+        "min": 0.0,
+        "rms": 0.05927737234381241,
+        "p95": 0.06896108917038582,
+        "max": 0.7718350982271561
+      }
+    },
+    {
+      "id": "FJ3255",
+      "side": "left",
+      "tissue": "cartilage",
+      "sourceTopology": {
+        "usedVerticesAfterExactWeld": 1159,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 2314,
+            "usedOriginalVertices": 1367,
+            "surfaceAreaMm2": 6355.334777540621,
+            "signedEnclosedVolumeMm3": 17668.43050821729,
+            "minLasMm": [3.6441945, 50.22764999999998, -61.99350000000004],
+            "maxLasMm": [108.7722345, 92.53965, 21.836500000000115]
+          }
+        ]
+      },
+      "candidateTopology": {
+        "usedVerticesAfterExactWeld": 4994,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 9984,
+            "usedOriginalVertices": 4994,
+            "surfaceAreaMm2": 6193.8675915829335,
+            "signedEnclosedVolumeMm3": -17439.879848155255,
+            "minLasMm": [3.645140598017345, 50.398784140321865, -61.95070343821145],
+            "maxLasMm": [108.41194428525152, 92.49691139144562, 21.48072916730804]
+          }
+        ]
+      },
+      "sourceToTriangulatedZeroShellMm": {
+        "count": 3681,
+        "min": 9.978620755692162e-5,
+        "rms": 0.8917817324598214,
+        "p95": 2.098390682788445,
+        "max": 3.466745389881116
+      },
+      "triangulatedZeroShellToOriginalMm": {
+        "count": 14978,
+        "min": 2.274873770672058e-6,
+        "rms": 0.5523380015088036,
+        "p95": 1.0178100846451352,
+        "max": 3.7646841141674288
+      },
+      "sourceAbsApproximateFieldMm": {
+        "count": 3681,
+        "min": 3.728430610094809e-5,
+        "rms": 0.6410459279846198,
+        "p95": 1.3708659408378725,
+        "max": 2.4426797513306107
+      },
+      "triangulatedZeroShellAbsFieldMm": {
+        "count": 14978,
+        "min": 0.0,
+        "rms": 0.06084160296425549,
+        "p95": 0.01876492630494797,
+        "max": 0.6177664420005524
+      },
+      "originalSkinRelation": {
+        "matchedSamples": 3681,
+        "ambiguousOrMissingAnteriorRays": 0,
+        "outerYClearanceMm": {
+          "count": 3681,
+          "min": 0.05736814000002255,
+          "rms": 16.741862216690812,
+          "p95": 30.784744556666688,
+          "max": 35.16663013000003
+        },
+        "innerYClearanceMm": {
+          "count": 3681,
+          "min": -1.9749849899999958,
+          "rms": 14.955786805427373,
+          "p95": 28.595646790000018,
+          "max": 33.11213297000003
+        },
+        "withinOriginalSkinShellSamples": 147,
+        "beyondOuterSamples": 0,
+        "minimumOuterSamples": [
+          [
+            0.05736814000002255,
+            [11.474234500000001, 92.26764999999997, 3.25649999999996],
+            [-137.71121792, -135.50522155, 90.36827601, 92.32501814]
+          ],
+          [
+            0.07181835000001513,
+            [12.526934500000001, 92.41964999999999, 2.4764999999999873],
+            [-138.04730375, -135.84327646, 90.44466501, 92.49146835]
+          ],
+          [
+            0.07666328333336025,
+            [12.608167833333335, 92.26731666666664, 1.179833333333363],
+            [-137.84059363, -135.61189128, 90.29543827, 92.34397995]
+          ]
+        ]
+      },
+      "candidateSkinRelation": {
+        "matchedSamples": 14978,
+        "ambiguousOrMissingAnteriorRays": 0,
+        "outerYClearanceMm": {
+          "count": 14978,
+          "min": 0.5201067409315527,
+          "rms": 17.333854045958283,
+          "p95": 30.512538729725836,
+          "max": 34.80928322145479
+        },
+        "innerYClearanceMm": {
+          "count": 14978,
+          "min": -1.456002658251748,
+          "rms": 15.527141543155158,
+          "p95": 28.347544028364943,
+          "max": 32.72118324145478
+        },
+        "withinOriginalSkinShellSamples": 535,
+        "beyondOuterSamples": 0,
+        "minimumOuterSamples": [
+          [
+            0.5201067409315527,
+            [12.090881053100604, 92.30312466906845, 6.8064148295517946],
+            [-138.66197756, -136.47321663, 90.97216371, 92.82323141]
+          ],
+          [
+            0.526246241533272,
+            [12.223004708256028, 92.30536518846672, 6.583416158526148],
+            [-138.68062147, -136.49079049, 90.98374018, 92.83161143]
+          ],
+          [
+            0.5283385189122498,
+            [12.182376116660741, 92.33628252108775, 7.007828816622915],
+            [-138.74184008, -136.55115933, 91.02280166, 92.86462104]
+          ]
+        ]
+      }
+    }
+  ],
+  "joints": [
+    {
+      "side": "right",
+      "patches": [
+        {
+          "sourceId": "FJ3346",
+          "maxExactSourceDistanceMm": 0.03,
+          "sourceOwnAbsFieldMm": {
+            "count": 44,
+            "min": 9.576760505464908e-5,
+            "rms": 1.1473372159561117,
+            "p95": 2.1560129619807107,
+            "max": 2.1777309994670424
+          },
+          "otherAbsFieldMm": {
+            "count": 44,
+            "min": 0.011536009237622269,
+            "rms": 1.420152794538583,
+            "p95": 3.27664147256946,
+            "max": 3.681741658095258
+          }
+        },
+        {
+          "sourceId": "FJ3346",
+          "maxExactSourceDistanceMm": 0.1,
+          "sourceOwnAbsFieldMm": {
+            "count": 82,
+            "min": 9.576760505464908e-5,
+            "rms": 1.204767898077169,
+            "p95": 2.1732221215336196,
+            "max": 2.190921545417833
+          },
+          "otherAbsFieldMm": {
+            "count": 82,
+            "min": 0.003495570906032558,
+            "rms": 1.6074579141772836,
+            "p95": 3.3554899474303106,
+            "max": 4.0834783201886475
+          }
+        },
+        {
+          "sourceId": "FJ3346",
+          "maxExactSourceDistanceMm": 0.5,
+          "sourceOwnAbsFieldMm": {
+            "count": 223,
+            "min": 9.576760505464908e-5,
+            "rms": 1.3657593051643717,
+            "p95": 2.2609860316093733,
+            "max": 2.321523145131976
+          },
+          "otherAbsFieldMm": {
+            "count": 223,
+            "min": 0.003495570906032558,
+            "rms": 1.9341988909285641,
+            "p95": 3.681234131017594,
+            "max": 4.9277177251457
+          }
+        },
+        {
+          "sourceId": "FJ3345",
+          "maxExactSourceDistanceMm": 0.03,
+          "sourceOwnAbsFieldMm": {
+            "count": 50,
+            "min": 0.0008670059244502346,
+            "rms": 1.1640519124097877,
+            "p95": 2.3282421902712915,
+            "max": 2.977131129575749
+          },
+          "otherAbsFieldMm": {
+            "count": 50,
+            "min": 0.022566146007842354,
+            "rms": 1.1089274809622935,
+            "p95": 2.0872060424865175,
+            "max": 2.1691053308431383
+          }
+        },
+        {
+          "sourceId": "FJ3345",
+          "maxExactSourceDistanceMm": 0.1,
+          "sourceOwnAbsFieldMm": {
+            "count": 95,
+            "min": 0.0008670059244502346,
+            "rms": 1.3218666371908794,
+            "p95": 2.5592657219107435,
+            "max": 3.845625369342307
+          },
+          "otherAbsFieldMm": {
+            "count": 95,
+            "min": 0.022566146007842354,
+            "rms": 1.3432162249192128,
+            "p95": 2.234921722153847,
+            "max": 2.3371493632536358
+          }
+        },
+        {
+          "sourceId": "FJ3345",
+          "maxExactSourceDistanceMm": 0.5,
+          "sourceOwnAbsFieldMm": {
+            "count": 197,
+            "min": 0.0008670059244502346,
+            "rms": 1.4503550933514213,
+            "p95": 2.9773359437861826,
+            "max": 3.845625369342307
+          },
+          "otherAbsFieldMm": {
+            "count": 197,
+            "min": 0.022566146007842354,
+            "rms": 1.552614473246443,
+            "p95": 2.3473566707791025,
+            "max": 2.488724478498867
+          }
+        }
+      ],
+      "voxelConnectivity": [
+        {
+          "pitchMm": 0.5,
+          "shape": [24, 24, 43],
+          "oddSourceRayLines": [0, 0],
+          "sourceSolid": {
+            "6": {
+              "components": 1,
+              "occupiedVoxels": 17836,
+              "largestComponentVoxels": 17836,
+              "spansRoiFacesXYZ": [true, true, true]
+            },
+            "26": {
+              "components": 1,
+              "occupiedVoxels": 17836,
+              "largestComponentVoxels": 17836,
+              "spansRoiFacesXYZ": [true, true, true]
+            }
+          },
+          "candidateSolid": {
+            "6": {
+              "components": 1,
+              "occupiedVoxels": 16463,
+              "largestComponentVoxels": 16463,
+              "spansRoiFacesXYZ": [true, true, true]
+            },
+            "26": {
+              "components": 1,
+              "occupiedVoxels": 16463,
+              "largestComponentVoxels": 16463,
+              "spansRoiFacesXYZ": [true, true, true]
+            }
+          },
+          "sourceVoid": {
+            "6": {
+              "components": 25,
+              "occupiedVoxels": 6932,
+              "largestComponentVoxels": 6908,
+              "spansRoiFacesXYZ": [true, true, true]
+            },
+            "26": {
+              "components": 16,
+              "occupiedVoxels": 6932,
+              "largestComponentVoxels": 6912,
+              "spansRoiFacesXYZ": [true, true, true]
+            }
+          },
+          "candidateVoid": {
+            "6": {
+              "components": 8,
+              "occupiedVoxels": 8305,
+              "largestComponentVoxels": 8297,
+              "spansRoiFacesXYZ": [true, true, true]
+            },
+            "26": {
+              "components": 1,
+              "occupiedVoxels": 8305,
+              "largestComponentVoxels": 8305,
+              "spansRoiFacesXYZ": [true, true, true]
+            }
+          },
+          "sourceOverlapVoxels": 13,
+          "candidateOverlapVoxels": 277,
+          "classificationDisagreementVoxels": 2241,
+          "subVoxelNativeGapsResolved": false
+        },
+        {
+          "pitchMm": 0.25,
+          "shape": [48, 48, 87],
+          "oddSourceRayLines": [0, 0],
+          "sourceSolid": {
+            "6": {
+              "components": 1,
+              "occupiedVoxels": 143281,
+              "largestComponentVoxels": 143281,
+              "spansRoiFacesXYZ": [true, true, true]
+            },
+            "26": {
+              "components": 1,
+              "occupiedVoxels": 143281,
+              "largestComponentVoxels": 143281,
+              "spansRoiFacesXYZ": [true, true, true]
+            }
+          },
+          "candidateSolid": {
+            "6": {
+              "components": 2,
+              "occupiedVoxels": 132237,
+              "largestComponentVoxels": 132235,
+              "spansRoiFacesXYZ": [true, true, true]
+            },
+            "26": {
+              "components": 1,
+              "occupiedVoxels": 132237,
+              "largestComponentVoxels": 132237,
+              "spansRoiFacesXYZ": [true, true, true]
+            }
+          },
+          "sourceVoid": {
+            "6": {
+              "components": 242,
+              "occupiedVoxels": 57167,
+              "largestComponentVoxels": 56920,
+              "spansRoiFacesXYZ": [true, true, true]
+            },
+            "26": {
+              "components": 62,
+              "occupiedVoxels": 57167,
+              "largestComponentVoxels": 56962,
+              "spansRoiFacesXYZ": [true, true, true]
+            }
+          },
+          "candidateVoid": {
+            "6": {
+              "components": 21,
+              "occupiedVoxels": 68211,
+              "largestComponentVoxels": 68183,
+              "spansRoiFacesXYZ": [true, true, true]
+            },
+            "26": {
+              "components": 1,
+              "occupiedVoxels": 68211,
+              "largestComponentVoxels": 68211,
+              "spansRoiFacesXYZ": [true, true, true]
+            }
+          },
+          "sourceOverlapVoxels": 113,
+          "candidateOverlapVoxels": 2235,
+          "classificationDisagreementVoxels": 17976,
+          "subVoxelNativeGapsResolved": false
+        }
+      ],
+      "roi": {
+        "minLasMm": [-110.8847655, 48.74464999999998, -60.43349999999987],
+        "maxLasMm": [-98.8497655, 60.68564999999998, -38.76350000000002],
+        "selection": "AABB of original used vertices <=0.5mm from other mesh plus two coarsest voxels; computational ROI, NOT anatomical tolerance"
+      }
+    },
+    {
+      "side": "left",
+      "patches": [
+        {
+          "sourceId": "FJ3234",
+          "maxExactSourceDistanceMm": 0.03,
+          "sourceOwnAbsFieldMm": {
+            "count": 38,
+            "min": 0.00036752327929534344,
+            "rms": 1.342565959570024,
+            "p95": 2.5454034368814966,
+            "max": 2.637007849860484
+          },
+          "otherAbsFieldMm": {
+            "count": 38,
+            "min": 0.0029317373560946393,
+            "rms": 0.9488044446610425,
+            "p95": 1.5358709022149484,
+            "max": 1.9039631925683231
+          }
+        },
+        {
+          "sourceId": "FJ3234",
+          "maxExactSourceDistanceMm": 0.1,
+          "sourceOwnAbsFieldMm": {
+            "count": 82,
+            "min": 0.00036752327929534344,
+            "rms": 1.4529858033487988,
+            "p95": 2.6102576715421755,
+            "max": 2.658402671320893
+          },
+          "otherAbsFieldMm": {
+            "count": 82,
+            "min": 0.0029317373560946393,
+            "rms": 1.044047487447055,
+            "p95": 1.8977773119410524,
+            "max": 2.5657739599376
+          }
+        },
+        {
+          "sourceId": "FJ3234",
+          "maxExactSourceDistanceMm": 0.5,
+          "sourceOwnAbsFieldMm": {
+            "count": 227,
+            "min": 0.00036752327929534344,
+            "rms": 1.692651240189908,
+            "p95": 2.6538184123784094,
+            "max": 2.7645584636693745
+          },
+          "otherAbsFieldMm": {
+            "count": 227,
+            "min": 0.0029317373560946393,
+            "rms": 1.4464358298522124,
+            "p95": 2.3857272485590273,
+            "max": 2.888017484061451
+          }
+        },
+        {
+          "sourceId": "FJ3255",
+          "maxExactSourceDistanceMm": 0.03,
+          "sourceOwnAbsFieldMm": {
+            "count": 33,
+            "min": 3.916144893157826e-5,
+            "rms": 1.030395159065838,
+            "p95": 1.8076858985150588,
+            "max": 2.4426797513306107
+          },
+          "otherAbsFieldMm": {
+            "count": 33,
+            "min": 0.006904390514876992,
+            "rms": 1.4263554191545094,
+            "p95": 2.6065956206283016,
+            "max": 2.6065956206283016
+          }
+        },
+        {
+          "sourceId": "FJ3255",
+          "maxExactSourceDistanceMm": 0.1,
+          "sourceOwnAbsFieldMm": {
+            "count": 61,
+            "min": 3.916144893157826e-5,
+            "rms": 1.0131058238609962,
+            "p95": 1.8076858985150588,
+            "max": 2.4426797513306107
+          },
+          "otherAbsFieldMm": {
+            "count": 61,
+            "min": 0.006904390514876992,
+            "rms": 1.4008942050063684,
+            "p95": 2.6065956206283016,
+            "max": 2.77083825728658
+          }
+        },
+        {
+          "sourceId": "FJ3255",
+          "maxExactSourceDistanceMm": 0.5,
+          "sourceOwnAbsFieldMm": {
+            "count": 150,
+            "min": 3.916144893157826e-5,
+            "rms": 0.9888460475806132,
+            "p95": 1.803539649393311,
+            "max": 2.4426797513306107
+          },
+          "otherAbsFieldMm": {
+            "count": 150,
+            "min": 0.006904390514876992,
+            "rms": 1.7710976065174442,
+            "p95": 2.9172089978582085,
+            "max": 3.559592136874858
+          }
+        }
+      ],
+      "voxelConnectivity": [
+        {
+          "pitchMm": 0.5,
+          "shape": [24, 23, 43],
+          "oddSourceRayLines": [0, 0],
+          "sourceSolid": {
+            "6": {
+              "components": 1,
+              "occupiedVoxels": 17313,
+              "largestComponentVoxels": 17313,
+              "spansRoiFacesXYZ": [true, true, true]
+            },
+            "26": {
+              "components": 1,
+              "occupiedVoxels": 17313,
+              "largestComponentVoxels": 17313,
+              "spansRoiFacesXYZ": [true, true, true]
+            }
+          },
+          "candidateSolid": {
+            "6": {
+              "components": 1,
+              "occupiedVoxels": 15681,
+              "largestComponentVoxels": 15681,
+              "spansRoiFacesXYZ": [true, true, true]
+            },
+            "26": {
+              "components": 1,
+              "occupiedVoxels": 15681,
+              "largestComponentVoxels": 15681,
+              "spansRoiFacesXYZ": [true, true, true]
+            }
+          },
+          "sourceVoid": {
+            "6": {
+              "components": 23,
+              "occupiedVoxels": 6423,
+              "largestComponentVoxels": 6401,
+              "spansRoiFacesXYZ": [true, true, true]
+            },
+            "26": {
+              "components": 16,
+              "occupiedVoxels": 6423,
+              "largestComponentVoxels": 6406,
+              "spansRoiFacesXYZ": [true, true, true]
+            }
+          },
+          "candidateVoid": {
+            "6": {
+              "components": 13,
+              "occupiedVoxels": 8055,
+              "largestComponentVoxels": 8041,
+              "spansRoiFacesXYZ": [true, true, true]
+            },
+            "26": {
+              "components": 1,
+              "occupiedVoxels": 8055,
+              "largestComponentVoxels": 8055,
+              "spansRoiFacesXYZ": [true, true, true]
+            }
+          },
+          "sourceOverlapVoxels": 12,
+          "candidateOverlapVoxels": 148,
+          "classificationDisagreementVoxels": 2464,
+          "subVoxelNativeGapsResolved": false
+        },
+        {
+          "pitchMm": 0.25,
+          "shape": [47, 47, 86],
+          "oddSourceRayLines": [0, 0],
+          "sourceSolid": {
+            "6": {
+              "components": 1,
+              "occupiedVoxels": 138668,
+              "largestComponentVoxels": 138668,
+              "spansRoiFacesXYZ": [true, true, true]
+            },
+            "26": {
+              "components": 1,
+              "occupiedVoxels": 138668,
+              "largestComponentVoxels": 138668,
+              "spansRoiFacesXYZ": [true, true, true]
+            }
+          },
+          "candidateSolid": {
+            "6": {
+              "components": 1,
+              "occupiedVoxels": 125471,
+              "largestComponentVoxels": 125471,
+              "spansRoiFacesXYZ": [true, true, true]
+            },
+            "26": {
+              "components": 1,
+              "occupiedVoxels": 125471,
+              "largestComponentVoxels": 125471,
+              "spansRoiFacesXYZ": [true, true, true]
+            }
+          },
+          "sourceVoid": {
+            "6": {
+              "components": 175,
+              "occupiedVoxels": 51306,
+              "largestComponentVoxels": 51131,
+              "spansRoiFacesXYZ": [true, true, true]
+            },
+            "26": {
+              "components": 68,
+              "occupiedVoxels": 51306,
+              "largestComponentVoxels": 51153,
+              "spansRoiFacesXYZ": [true, true, true]
+            }
+          },
+          "candidateVoid": {
+            "6": {
+              "components": 30,
+              "occupiedVoxels": 64503,
+              "largestComponentVoxels": 64467,
+              "spansRoiFacesXYZ": [true, true, true]
+            },
+            "26": {
+              "components": 1,
+              "occupiedVoxels": 64503,
+              "largestComponentVoxels": 64503,
+              "spansRoiFacesXYZ": [true, true, true]
+            }
+          },
+          "sourceOverlapVoxels": 84,
+          "candidateOverlapVoxels": 1165,
+          "classificationDisagreementVoxels": 19579,
+          "subVoxelNativeGapsResolved": false
+        }
+      ],
+      "roi": {
+        "minLasMm": [98.3264345, 48.84664999999998, -60.38349999999991],
+        "maxLasMm": [110.1332345, 60.531649999999985, -38.83349999999996],
+        "selection": "AABB of original used vertices <=0.5mm from other mesh plus two coarsest voxels; computational ROI, NOT anatomical tolerance"
+      }
+    }
+  ],
+  "representation": {
+    "rawFloat32ProfileBytes": 1536,
+    "rawFloat64ProfileBytes": 3072,
+    "rowCount": 64,
+    "runtimeDeltaBytes": 0,
+    "candidateIntegrated": false
+  },
+  "bilateralUnion": {
+    "sourceToTriangulatedZeroShellMm": {
+      "count": 37845,
+      "min": 4.155194656988952e-5,
+      "rms": 0.8575673957348602,
+      "p95": 1.7562536185736244,
+      "max": 3.466745389881116
+    },
+    "triangulatedZeroShellToOriginalMm": {
+      "count": 59912,
+      "min": 2.789979188778165e-7,
+      "rms": 0.6406341666104879,
+      "p95": 1.3645119814403632,
+      "max": 3.7646841141674288
+    }
+  }
+}

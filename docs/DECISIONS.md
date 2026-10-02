@@ -4800,3 +4800,15 @@ estadística de speckle contra clips reales; casos de la matriz G.2; arritmias.
 **Consecuencias.** El borde visual acompaña el cuerpo legacy y de referencia. No cambia campos acústicos TS/GLSL, órganos, poses ni presets. Las cúpulas siguen estimadas; tendón, pilares, hiatos e inserciones anatómicas permanecen limitados por las fuentes pendientes. El error de discretización de la malla no equivale al residuo numérico de su borde.
 
 **Verificación.** Tres pruebas físicas cubren ambos campos, los tres casos, profundidad interna, superficie y winding. El muestreo anterior incumple el límite de 0,0001 mm; el residuo nuevo máximo del adulto normal de referencia es 0,000000270 mm. Método y límites en `anatomy/DIAPHRAGM_BOUNDARY.md`. Se requieren gates completos y E2E del build final antes de cerrar el cambio.
+
+## 100. Banco bilateral offline antes de corregir la unión costocondral
+
+**Contexto.** La proximidad original hueso/cartílago séptimo contrasta con errores del campo publicado en los extremos. Una candidata por lados cierra un vértice pero no toda la región de unión. La piel original también presenta una discrepancia observada de 0,043317 mm en y, con incertidumbre de malla/registro pendiente.
+
+**Opciones.** Anclar un punto, desplazar piel/cartílago o aceptar sólo P95 global no comprueba el contacto. Las estadísticas del campo aproximado tampoco sustituyen distancias geométricas ni conectividad del sólido.
+
+**Decisión.** Conservar una rama documental y un banco offline de distancia bidireccional superficie/nivel cero, región bilateral completa muestreada, componentes y conectividad sólido/espacio libre, y ambas caras de piel. Las mallas locales existentes se verifican por SHA256 y se usan como oráculo geométrico observado. No se incorporan las candidatas elípticas ni se modifican assets/runtime.
+
+**Consecuencias.** Se mantienen datos reproducibles, atribución DBCLS/BodyParts3D CC BY4.0 y componentes singulares de fuente. Resoluciones y bins de proximidad son parámetros numéricos, nunca tolerancias clínicas. El error subvoxel y la incertidumbre quedan explícitos; no se mueven órganos, piel ni cartílago. Una aproximación local necesita otro contorno/interfaz fundamentado; mezclar un candidato fallido no lo corrige. Costos de datos/layout y margen del presupuesto se informan antes de cualquier propuesta runtime.
+
+**Verificación.** Cinco contratos sintéticos del oráculo, reproducción de los cuatro perfiles, banco completo a dos resoluciones, campo CPU publicado sobre sus muestras y revisión de los cortes fuente. Métodos/resultados en [COSTOCHONDRAL_BENCHMARK.md](anatomy/COSTOCHONDRAL_BENCHMARK.md). Los gates normales se ejecutan sobre el head documental final; no se atribuye a las candidatas una CI de runtime anterior.

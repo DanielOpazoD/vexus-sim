@@ -1,6 +1,6 @@
 import { BOWEL_FIELD_REACH_MM, BOWEL_WALL_MM, bowelQuery, bowelGasSdf, bowelRadii } from './organs/bowel';
 import { referenceBody } from './referenceBody';
-import { smoothstep, type Vec3 } from '../core/vec3';
+import { smoothstep, scale, type Vec3 } from '../core/vec3';
 import type { PatientState } from '../physiology/patientState';
 import { VESSEL_META, type VesselAreas, type VesselId } from '../physiology/vessels';
 import {
@@ -714,7 +714,7 @@ export class AnatomyScene {
     if (face === 'gallbladder') {
       const g = gallbladderGradient(m, this.gallbladder);
       const norm = Math.hypot(...g);
-      return norm > 0 ? { normal: g.map((x) => x / norm) as Vec3, norm, curvature: 0 } : { normal: [0, 1, 0], norm: 1, curvature: 0 };
+      return { normal: norm > 0 ? scale(g, 1 / norm) : [0, 1, 0], norm: norm || 1, curvature: 0 };
     }
     if (face === 'tube') {
       const best = this.bestTube(m, caliber);

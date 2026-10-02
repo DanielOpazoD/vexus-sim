@@ -62,11 +62,19 @@ export function gallbladderAxis(g: GallbladderShape): Vec3 {
 
 /** Distancia con signo a un tramo de la luz: cono redondeado con el radio interpolado a lo largo del segmento. */
 export function gbSegment(m: Vec3, a: GallbladderNode, b: GallbladderNode): number {
-  const ab = sub(b.p, a.p),
-    ap = sub(m, a.p);
-  const s = Math.max(0, Math.min(1, dot(ap, ab) / dot(ab, ab)));
-  const d = sub(ap, scale(ab, s));
-  return Math.sqrt(dot(d, d)) - (a.r + (b.r - a.r) * s);
+  const abx = b.p[0] - a.p[0];
+  const aby = b.p[1] - a.p[1];
+  const abz = b.p[2] - a.p[2];
+  const apx = m[0] - a.p[0];
+  const apy = m[1] - a.p[1];
+  const apz = m[2] - a.p[2];
+  const len2 = abx * abx + aby * aby + abz * abz;
+  let s = (apx * abx + apy * aby + apz * abz) / len2;
+  s = s < 0 ? 0 : s > 1 ? 1 : s;
+  const dx = apx - abx * s;
+  const dy = apy - aby * s;
+  const dz = apz - abz * s;
+  return Math.sqrt(dx * dx + dy * dy + dz * dz) - (a.r + (b.r - a.r) * s);
 }
 
 /** Gradiente exacto del tramo, incluida la derivada nula del radio en sus tapas. */
@@ -82,11 +90,12 @@ export function gbSegmentGradient(m: Vec3, a: GallbladderNode, b: GallbladderNod
 
 /** Gradiente de la misma unión suave, sin normalizar: su norma calibra el grosor del eco. */
 export function gallbladderGradient(m: Vec3, g: GallbladderShape): Vec3 {
-  let d = gbSegment(m, g.nodes[0], g.nodes[1]);
-  let grad = gbSegmentGradient(m, g.nodes[0], g.nodes[1]);
-  for (let i = 1; i < g.nodes.length - 1; i++) {
-    const di = gbSegment(m, g.nodes[i], g.nodes[i + 1]);
-    const next = gbSegmentGradient(m, g.nodes[i], g.nodes[i + 1]);
+  const n = g.nodes;
+  let d = gbSegment(m, n[0], n[1]);
+  let grad = gbSegmentGradient(m, n[0], n[1]);
+  for (let i = 1; i < n.length - 1; i++) {
+    const di = gbSegment(m, n[i], n[i + 1]);
+    const next = gbSegmentGradient(m, n[i], n[i + 1]);
     const h = Math.max(0, Math.min(1, 0.5 + (0.5 * (di - d)) / g.blendMm));
     grad = add(scale(next, 1 - h), scale(grad, h));
     d = smoothMin(d, di, g.blendMm);
@@ -120,10 +129,7 @@ float gbSegment(vec3 m, vec4 a, vec4 b, out vec3 g) {
   return dist - (a.w + (b.w - a.w) * s);
 }
 
-float gbSegment(vec3 m, vec4 a, vec4 b) {
-  vec3 unused;
-  return gbSegment(m, a, b, unused);
-}
+
 
 float gallbladderSdf(vec3 m, out vec3 n) {
   vec3 g;
@@ -138,8 +144,7 @@ float gallbladderSdf(vec3 m, out vec3 n) {
 }
 
 float gallbladderSdf(vec3 m) {
-  float d = gbSegment(m, uGbNodes[0], uGbNodes[1]);
-  for (int i = 1; i < ${GALLBLADDER_NODES - 1}; i++) d = smoothMin(d, gbSegment(m, uGbNodes[i], uGbNodes[i + 1]), uGbExtra.x);
-  return d;
+  vec3 unused;
+  return gallbladderSdf(m, unused);
 }
 `;

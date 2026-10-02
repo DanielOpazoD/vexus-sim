@@ -1272,6 +1272,38 @@ test('intervenciones docentes (decisión 79): bolo y PEEP mueven el lazo del sim
   expect(errors).toEqual([]);
 });
 
+test('el anuncio docente no mueve Reiniciar paciente entre apuntar y hacer clic', async ({ page }) => {
+  budget(60_000);
+  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  await page.locator('#debug-toggle').check({ force: true });
+  await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
+  const reset = page.getByRole('button', { name: 'Reiniciar paciente', exact: true });
+  await reset.scrollIntoViewIfNeeded();
+  // El handler vacía el anuncio y lo repone 50 ms después. Medir en el mismo turno observa la región vacía,
+  // sin sustituir el timer ni el bucle: el clic real conserva las coordenadas a las que el usuario apuntó.
+  const aimedAt = await page
+    .getByRole('group', { name: 'PEEP' })
+    .getByRole('button', { name: '10', exact: true })
+    .evaluate((b) => {
+      (b as HTMLButtonElement).click();
+      const reset = [...document.querySelectorAll<HTMLButtonElement>('button')].find((b) => b.textContent === 'Reiniciar paciente')!;
+      const r = reset.getBoundingClientRect();
+      return { x: r.x, y: r.y, width: r.width, height: r.height };
+    });
+  await expect(page.getByRole('status').filter({ hasText: 'PEEP a 10 cmH₂O.' })).toBeVisible();
+  expect(await reset.boundingBox(), 'el anuncio no desplaza el botón ya apuntado').toEqual(aimedAt);
+  await page.mouse.click(aimedAt.x + aimedAt.width / 2, aimedAt.y + aimedAt.height / 2);
+  expect(await page.evaluate(() => window.__vexusTest!.circulation())).toMatchObject({
+    caseId: 'normal-adult',
+    rapMeanMmHg: 5,
+    fluidTargetMl: 0,
+    peepTargetCmH2O: 0,
+    interventions: 0,
+  });
+  await expect(page.getByRole('status').filter({ hasText: 'Paciente reiniciado' })).toBeVisible();
+  expect(errors).toEqual([]);
+});
+
 test('color: la misma transmisión que el PW y una ganancia que alcanza el ruido del equipo', async ({ page }) => {
   // El modelo, en el mismo punto: el téxel de la pasada A que lee el color en la puerta (convertido a la
   // frecuencia Doppler y con el acoplamiento que muestrea el color) frente al mismo téxel en la CPU, a ≤ 0,1 dB

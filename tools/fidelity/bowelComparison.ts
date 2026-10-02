@@ -1,6 +1,6 @@
 /** Capturas y coste antes/después en el mismo runner. Solo QA; no es una calibración clínica. */
 import { execFileSync, spawn } from 'node:child_process';
-import { mkdirSync, mkdtempSync, symlinkSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
@@ -14,9 +14,10 @@ mkdirSync(out, { recursive: true });
 const base = join(mkdtempSync(join(tmpdir(), 'vexus-bowel-base-')), 'repo');
 execFileSync('git', ['fetch', '--no-tags', 'origin', sha], { cwd: root, stdio: 'inherit' });
 execFileSync('git', ['worktree', 'add', '--detach', base, sha], { cwd: root, stdio: 'inherit' });
-symlinkSync(join(root, 'node_modules'), join(base, 'node_modules'), 'dir');
-const vite = join(root, 'node_modules/vite/bin/vite.js');
-execFileSync(process.execPath, [vite, 'build'], { cwd: base, env: { ...process.env, GITHUB_SHA: sha }, stdio: 'inherit' });
+// El minificador verifica rutas reales: compartir node_modules con un symlink invalida su mapa.
+execFileSync('npm', ['ci', '--prefer-offline'], { cwd: base, stdio: 'inherit' });
+const viteOf = (cwd: string) => join(cwd, 'node_modules/vite/bin/vite.js');
+execFileSync(process.execPath, [viteOf(base), 'build'], { cwd: base, env: { ...process.env, GITHUB_SHA: sha }, stdio: 'inherit' });
 const browser = await chromium.launch({
   args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--ignore-gpu-blocklist'],
 });
@@ -26,7 +27,7 @@ try {
     ['before', base, 6611, sha],
     ['after', root, 6612, process.env.HEAD_SHA ?? 'working-tree'],
   ] as const) {
-    const server = spawn(process.execPath, [vite, 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
+    const server = spawn(process.execPath, [viteOf(cwd), 'preview', '--host', '127.0.0.1', '--port', String(port), '--strictPort'], {
       cwd,
       stdio: 'inherit',
     });

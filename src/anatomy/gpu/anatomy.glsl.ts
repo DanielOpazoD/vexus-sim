@@ -420,6 +420,17 @@ void tubeFace(vec3 p, int t, int seg, float s, float arc, out vec3 tangent, out 
 }
 
 // Módulos de órgano (anatomy/organs/*): gemelos GLSL de sus funciones TS
+// Misma unión cuerpo/arco que sdSpine en primitives.ts.
+float spineSd(vec3 m, float blend) {
+  vec2 q = abs(m.xy - vec2(uSpine.x, 0.5 * (uSpineArch.y + uSpineArch.z)))
+    - vec2(uSpineArch.x, 0.5 * (uSpineArch.z - uSpineArch.y));
+  float body = length(m.xy - uSpine.xy) - uSpine.z;
+  float arch = length(max(q, 0.0)) + min(max(q.x, q.y), 0.0);
+  return blend > 0.0 ? smoothMin(body, arch, blend) : min(body, arch);
+}
+
+float spineSd(vec3 m) { return spineSd(m, 0.0); }
+
 ${ORGAN_GLSL.join('\n')}
 
 // Profundidad bajo la cara interna de la pared (mm; 0 en la pleura parietal). Gemelo: AnatomyScene.insideWallMm
@@ -472,14 +483,6 @@ bool classifyWall(vec3 m, out Cls c, out float depth, out vec3 tn) {
     return true;
   }
   return false;
-}
-
-// Misma unión cuerpo/arco que sdSpine en primitives.ts.
-float spineSd(vec3 m) {
-  vec2 q = abs(m.xy - vec2(uSpine.x, 0.5 * (uSpineArch.y + uSpineArch.z)))
-    - vec2(uSpineArch.x, 0.5 * (uSpineArch.z - uSpineArch.y));
-  return min(length(m.xy - uSpine.xy) - uSpine.z,
-    length(max(q, 0.0)) + min(max(q.x, q.y), 0.0));
 }
 
 // withCurtain = false: sin la cortina (decisión 61), lo de detrás de la lámina; gemelo classify(m, cal, false)

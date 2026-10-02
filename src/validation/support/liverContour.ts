@@ -1,3 +1,5 @@
+import { HEPATIC_SPINE_GAP_MM, HEPATIC_SPINE_ROUND_MM } from '../../anatomy/organs/liver';
+import { sdSpine } from '../../anatomy/primitives';
 /**
  * Contorno del hígado en el plano de imagen (PR 0 de las decisiones 60 y 64), portado del diseño
  * «geometry-first» (`design-contour/geometry-first/contour.ts`) sobre las funciones de producción. Lo usa
@@ -66,7 +68,18 @@ export const PEAK_DB = { capsule: 21, dome: 17 } as const;
 
 export type ContourCase = 'normal' | 'severe';
 export type ContourLabel =
-  'lobeR' | 'lobeL' | 'lobeBlend' | 'visceral' | 'visceralBlend' | 'medialCut' | 'renal' | 'gbFossa' | 'fissure' | 'wall' | 'dome';
+  | 'lobeR'
+  | 'lobeL'
+  | 'lobeBlend'
+  | 'visceral'
+  | 'visceralBlend'
+  | 'medialCut'
+  | 'renal'
+  | 'gbFossa'
+  | 'spine'
+  | 'fissure'
+  | 'wall'
+  | 'dome';
 export type ContourOwner = 'capsule' | 'dome' | 'morison';
 
 /** Plano de imagen de una vista: la pose de partida en apnea espiratoria (la de las capturas), con desvíos. */
@@ -147,12 +160,14 @@ export function liverTerms(s: AnatomyScene, m: Vec3): LiverTerms {
   if (d1v > d0 + 1e-3) label = Math.abs(d0 - visc) < s.visceralFace.edgeRoundMm ? 'visceralBlend' : 'visceral';
   const d1 = smoothMax(d1v, medialCutDistance(m), MEDIAL_CUT.roundMm);
   if (d1 > d1v + 1e-3) label = 'medialCut';
+  const dSpine = smoothMax(d1, HEPATIC_SPINE_GAP_MM - sdSpine(m, s.spine, HEPATIC_SPINE_ROUND_MM), HEPATIC_SPINE_ROUND_MM);
+  if (dSpine > d1 + 1e-3) label = 'spine';
   const d2 = smoothMax(
-    d1,
+    dSpine,
     -(perirenalOuterSdf(kidneyLocal(m, s.kidneyRight), s.kidneyRight) + RENAL_IMPRESSION_OVERLAP_MM),
     RENAL_IMPRESSION.roundMm,
   );
-  if (d2 > d1 + 1e-3) label = 'renal';
+  if (d2 > dSpine + 1e-3) label = 'renal';
   const d3 = smoothMax(d2, -(gallbladderSdf(m, s.gallbladder) - s.gallbladderWallMm), GALLBLADDER_FOSSA_ROUND_MM);
   if (d3 > d2 + 1e-3) label = 'gbFossa';
   const d4 = smoothMax(d3, -umbilicalFissureSdf(m, d3, s.umbilicalFissure), s.umbilicalFissure.roundMm);

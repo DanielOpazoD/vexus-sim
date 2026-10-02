@@ -1,5 +1,5 @@
 import type { Vec3 } from '../../core/vec3';
-import { sdEllipsoid, smoothMax, smoothMin, type Ellipsoid, type Torso } from '../primitives';
+import { sdEllipsoid, sdSpine, smoothMax, smoothMin, type Ellipsoid, type Spine, type Torso } from '../primitives';
 import { gallbladderSdf, type GallbladderShape } from './gallbladder';
 import { RENAL_IMPRESSION_OVERLAP_MM, kidneyLocal, perirenalOuterSdf, type Kidney } from './kidney';
 import { umbilicalFissureSdf, type UmbilicalFissure } from './liverLigaments';
@@ -84,6 +84,9 @@ export const LIVER_BLEND_MM = 15;
 export const RENAL_IMPRESSION = { roundMm: 8 } as const;
 /** Redondeo del borde de la fosa vesicular (mm). */
 export const GALLBLADDER_FOSSA_ROUND_MM = 2;
+/** Estimated retrohepatic soft-tissue clearance; prevents liver/bone intersection, not a clinical measurement. */
+export const HEPATIC_SPINE_GAP_MM = 3;
+export const HEPATIC_SPINE_ROUND_MM = 6;
 
 /**
  * Lóbulos y cara visceral para un factor de tamaño. Los lóbulos son la envolvente (la pared recorta la cara anterior y
@@ -110,6 +113,7 @@ export function liverLobes(sizeFactor: number): { liver: Ellipsoid; liverLeft: E
 
 /** Lo que el SDF del hígado necesita de la escena (`AnatomyScene` lo cumple tal cual). */
 export interface LiverShape {
+  readonly spine: Spine;
   readonly liver: Ellipsoid;
   readonly liverLeft: Ellipsoid;
   readonly liverBlendMm: number;
@@ -192,6 +196,7 @@ export function liverBaseSdf(m: Vec3, s: LiverShape): number {
   let d = smoothMin(sdEllipsoid(m, s.liver), sdEllipsoid(m, s.liverLeft), s.liverBlendMm);
   d = smoothMax(d, -visceralFaceDistance(m, s.visceralFace, s.torso, s.wallThickness()).d, s.visceralFace.edgeRoundMm);
   d = smoothMax(d, medialCutDistance(m), MEDIAL_CUT.roundMm);
+  d = smoothMax(d, HEPATIC_SPINE_GAP_MM - sdSpine(m, s.spine, HEPATIC_SPINE_ROUND_MM), HEPATIC_SPINE_ROUND_MM);
   // impresión renal: el hígado apoya en la cara externa de la grasa perirrenal, de grosor variable (decisión 68)
   d = smoothMax(
     d,
@@ -217,6 +222,8 @@ export function liverSdf(m: Vec3, s: LiverShape): number {
  * la fosa vesicular: la de `liverInner`, cuyo gradiente numérico da la cara de la cápsula (`faceGradient`).
  */
 export const LIVER_GLSL = /* glsl */ `
+const float HEPATIC_SPINE_GAP_MM = ${HEPATIC_SPINE_GAP_MM.toFixed(3)};
+const float HEPATIC_SPINE_ROUND_MM = ${HEPATIC_SPINE_ROUND_MM.toFixed(3)};
 const float RENAL_IMPRESSION_ROUND_MM = ${RENAL_IMPRESSION.roundMm.toFixed(3)};
 const float RENAL_IMPRESSION_OVERLAP_MM = ${RENAL_IMPRESSION_OVERLAP_MM.toFixed(3)};
 const float GALLBLADDER_FOSSA_ROUND_MM = ${GALLBLADDER_FOSSA_ROUND_MM.toFixed(3)};
@@ -316,6 +323,7 @@ float liverSdf(vec3 m, out vec3 n, out float dBase) {
   float dc = medialCutDistance(m);
   float d2 = smoothMax(d1, dc, MEDIAL_CUT_ROUND_MM);
   if (d2 > d1 + 1e-3) n = medialCutNormal(m);
+  d2 = smoothMax(d2, HEPATIC_SPINE_GAP_MM - spineSd(m, HEPATIC_SPINE_ROUND_MM), HEPATIC_SPINE_ROUND_MM);
   vec3 kn;
   float dk = kidneyOuter(m, 0, kn) - perirenalThicknessMm(kidneyLocal(m, 0), 0) + RENAL_IMPRESSION_OVERLAP_MM;
   float d3 = smoothMax(d2, -dk, RENAL_IMPRESSION_ROUND_MM);
@@ -338,6 +346,7 @@ float liverSdf(vec3 m, out float dBase) {
   vec3 vn;
   float d1 = smoothMax(d, -visceralFaceDistance(m, vn), uVisSlope.w);
   float d2 = smoothMax(d1, medialCutDistance(m), MEDIAL_CUT_ROUND_MM);
+  d2 = smoothMax(d2, HEPATIC_SPINE_GAP_MM - spineSd(m, HEPATIC_SPINE_ROUND_MM), HEPATIC_SPINE_ROUND_MM);
   float dk = kidneyOuterSdf(kidneyLocal(m, 0), uKidR[0]) - perirenalThicknessMm(kidneyLocal(m, 0), 0) + RENAL_IMPRESSION_OVERLAP_MM;
   float d3 = smoothMax(d2, -dk, RENAL_IMPRESSION_ROUND_MM);
   float dg = gallbladderSdf(m) - uGbExtra.y;

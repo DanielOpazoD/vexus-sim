@@ -37,8 +37,8 @@ describe('Textura de los músculos retroperitoneales (decisión 81)', () => {
   const psoas = samples(Tissue.Psoas, 4000);
   const quadratus = samples(Tissue.QuadratusLumborum, 3000);
 
-  it('vale 1 en cualquier otro tejido (grasa retroperitoneal, riñón, hígado, músculo de la pared)', () => {
-    for (const t of [Tissue.RetroperitonealFat, Tissue.RenalCortex, Tissue.Liver, Tissue.Muscle, Tissue.Bowel])
+  it('vale 1 en cualquier tejidos ajenos (corteza renal, hígado, músculo de la pared, intestino)', () => {
+    for (const t of [Tissue.PerirenalFat, Tissue.RenalCortex, Tissue.Liver, Tissue.Muscle, Tissue.Bowel])
       for (const m of psoas.slice(0, 50)) expect(retroTexture(m, t, [1, 0, 0])).toBe(1);
   });
 

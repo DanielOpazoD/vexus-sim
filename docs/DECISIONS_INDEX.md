@@ -110,3 +110,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [104](DECISIONS.md#L4854) | Apariencia hepatorrenal normal y comparación a profundidad compartida | vigente |
 | [105](DECISIONS.md#L4866) | Gradiente vesicular analítico y norma física del eco | vigente |
 | [106](DECISIONS.md#L4876) | Pared portal visible en oblicuidad y parénquima normal homogéneo | vigente |
+| [107](DECISIONS.md#L4888) | Separación retrohepática, textura de grasa visceral y transporte GLSL sin pérdida | vigente |

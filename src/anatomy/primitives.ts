@@ -338,8 +338,8 @@ export function sdCylinderZ(p: Vec3, c: CylinderZ): number {
   return Math.hypot(p[0] - c.x0, p[1] - c.y0) - c.r;
 }
 
-/** Distancia con signo a la columna (cuerpo ∪ arco posterior); negativa en hueso. */
-export function sdSpine(p: Vec3, sp: Spine): number {
+/** Distancia a cuerpo ∪ arco. blendMm=0 conserva el hueso; >0 solo suaviza la envolvente de exclusión de órganos. */
+export function sdSpine(p: Vec3, sp: Spine, blendMm = 0): number {
   const body = sdCylinderZ(p, sp);
   const dx = Math.abs(p[0] - sp.x0) - sp.archHalfWidth;
   const cy = 0.5 * (sp.archY0 + sp.archY1);
@@ -347,7 +347,7 @@ export function sdSpine(p: Vec3, sp: Spine): number {
   const ox = Math.max(dx, 0);
   const oy = Math.max(dy, 0);
   const arch = Math.hypot(ox, oy) + Math.min(Math.max(dx, dy), 0);
-  return Math.min(body, arch);
+  return blendMm > 0 ? smoothMin(body, arch, blendMm) : Math.min(body, arch);
 }
 
 export interface TubeHit {

@@ -15,7 +15,7 @@ import { wallOrientation } from './wallTexture';
  * psoas (de T12 a la pelvis, a ≤ 5° de cada tramo, sin costuras entre tramos) y, en el cuadrado, sus fibras
  * iliocostales (de la cresta ilíaca hacia arriba y adentro). Es un factor de la amplitud de la pasada B evaluado en cada
  * plano de elevación, como el de la pared (decisión 62); desde la decisión 87 también los lóbulos del seno renal (grasa
- * retroperitoneal que sigue en la perirrenal por el hilio, `sinusLobules`); 1 en el resto de tejidos. Gemelos: estas
+ * retroperitoneal que sigue en la perirrenal por el hilio, `sinusLobules`); desde la decisión 107 también los lóbulos de la grasa mesentérica/retroperitoneal; 1 en el resto de tejidos. Gemelos: estas
  * funciones (TS) y `RETRO_TEXTURE_GLSL`.
  */
 export const RETRO_TEXTURE = {
@@ -47,6 +47,14 @@ export const SINUS_TEXTURE = { cellMm: 3, gain: 4, salt: 57.3, norm: 0.615 } as 
 /** Factor de amplitud de los lóbulos del seno renal en el punto material `m` (potencia media 1). */
 export function sinusLobules(m: Vec3): number {
   const S = SINUS_TEXTURE;
+  return S.norm * Math.exp(S.gain * (valueNoise([m[0] / S.cellMm, m[1] / S.cellMm, m[2] / S.cellMm], S.salt) - 0.5));
+}
+
+/** Estimated lobular texture of mesenteric/retroperitoneal fat, distinct from hepatic speckle.
+ * Power normalized on 200k material samples; does not change basal attenuation/backscatter. */
+export const VISCERAL_FAT_TEXTURE = { cellMm: 6, gain: 2, salt: 83.7, norm: 0.875 } as const;
+export function visceralFatLobules(m: Vec3): number {
+  const S = VISCERAL_FAT_TEXTURE;
   return S.norm * Math.exp(S.gain * (valueNoise([m[0] / S.cellMm, m[1] / S.cellMm, m[2] / S.cellMm], S.salt) - 0.5));
 }
 
@@ -123,10 +131,11 @@ export function fascicleSeptum(m: Vec3, tissue: Tissue): [number, number, number
 /**
  * Factor de amplitud de la textura de los músculos retroperitoneales en el punto material `m` del tejido `tissue`, con el
  * haz en la dirección `dir` (unitaria, del mundo): 1 + (G·brillo − 1)·peso, con G la ganancia del septo sobre el músculo; en
- * el seno renal, sus lóbulos (`sinusLobules`). 1 fuera del psoas, del cuadrado lumbar y del seno. La normal del septo pasa al mundo por la jacobiana de la compresión (`warp`).
+ * el seno renal, sus lóbulos (`sinusLobules`). 1 fuera del psoas, cuadrado lumbar, seno y grasa mesentérica/retroperitoneal. La normal del septo pasa al mundo por la jacobiana de la compresión (`warp`).
  */
 export function retroTexture(m: Vec3, tissue: Tissue, dir: Vec3, warp: Warp = IDENTITY_WARP): number {
   if (tissue === Tissue.RenalSinus) return sinusLobules(m);
+  if (tissue === Tissue.RetroperitonealFat || tissue === Tissue.MesentericFat) return visceralFatLobules(m);
   if (tissue !== Tissue.Psoas && tissue !== Tissue.QuadratusLumborum) return 1;
   const s = fascicleSeptum(m, tissue);
   const g = RETRO_TEXTURE.septumBack / TISSUES[tissue].backscatter;
@@ -143,6 +152,7 @@ const chord = norm3(PSOAS_CHORD);
  * retroperitoneales.
  */
 export const RETRO_TEXTURE_GLSL = /* glsl */ `
+const vec4 RT_F = vec4(${f4(VISCERAL_FAT_TEXTURE.cellMm)}, ${f4(VISCERAL_FAT_TEXTURE.gain)}, ${f4(VISCERAL_FAT_TEXTURE.salt)}, ${f4(VISCERAL_FAT_TEXTURE.norm)});
 const vec4 RT_A = vec4(${f4(RETRO_TEXTURE.fascicleMm)}, ${f4(RETRO_TEXTURE.septumSigmaMm)}, ${f4(RETRO_TEXTURE.septumBack)}, ${f4(RETRO_TEXTURE.segmentMm)});
 const vec3 RT_B = vec3(${f4(RETRO_TEXTURE.mask[0])}, ${f4(RETRO_TEXTURE.mask[1])}, ${f4(RETRO_TEXTURE.quadratusSlant)});
 const vec3 RT_CHORD = vec3(${chord.map(f4).join(', ')});
@@ -183,6 +193,7 @@ vec4 fascicleSeptum(vec3 m, int tissue) {
 }
 float retroTexture(vec3 m, int tissue, vec3 dir, Warp w) {
   // lóbulos del seno renal (decisión 87, sinusLobules)
+  if (tissue == T_RETROFAT || tissue == T_MESENTERIC_FAT) return RT_F.w * exp(RT_F.y * (valueNoise(m / RT_F.x, RT_F.z) - 0.5));
   if (tissue == T_RENAL_SINUS) return RT_S.w * exp(RT_S.y * (valueNoise(m / RT_S.x, RT_S.z) - 0.5));
   if (tissue != T_PSOAS && tissue != T_QUADRATUS) return 1.0;
   vec4 s = fascicleSeptum(m, tissue);

@@ -625,8 +625,10 @@ describe('Facetas y componente difusa de las caras (decisión 65)', () => {
     expect(echo).toContain(
       'return (vec3(valueNoise(q, s), valueNoise(q, s + FACET_SALT_C), valueNoise(q, s + 2.0 * FACET_SALT_C)) - 0.5) * (FACET_GAIN * st);',
     );
-    expect(echo).toContain('vec3 nf = fg.xyz + t - dot(t, fg.xyz) * fg.xyz;');
-    expect(echo).toContain('float cosF = abs(dot(nf, dir)) * inversesqrt(dot(nf, nf));');
+    expect(echo).toContain('vec3 f = warpNormal(w, n + t - dot(t, n) * n);');
+    expect(echo).toContain('vec3 nm = fg.xyz;');
+    expect(echo.indexOf('vec3 nm = fg.xyz;')).toBeLessThan(echo.indexOf('fg = vec4(gw /'));
+    expect(echo).toContain('float cosF = facetCosine(nm, dir, t, w);');
     // σ_t = max(tan 5°, ρ·s) con s² = 1/(4·P.z): la inclinación y el lóbulo propio de la faceta
     expect(echo).toContain('vec3 t = facetTilt(m, c.iface, sqrt(max(FACET_TILT2, 0.25 * FACET_RHO2 / P.z)));');
     expect(echo).toContain(

@@ -143,3 +143,60 @@ también la aplica. La sensibilidad a esa eliminación la prueban ambas rejillas
 frontera mutada mide 2,10456286245 mm frente a una cota ósea de 2,09895745306 mm. El predicado cortical antiguo
 falla además en el testigo `towardBone` antes de llegar al recorrido; no se atribuye ese fallo a la exclusividad
 capsular. Los testigos del diafragma sí fallan específicamente por una cortical invasora en ambos perfiles.
+
+## Defecto de contorno descubierto y corrección de la causa
+
+La primera suite completa sobre el candidato sincronizado con `main` terminó en 2.557,96 s: **115 archivos
+aprobados y uno fallido; 1.079 pruebas aprobadas, 12 fallos esperados y un fallo real**. El fallo de
+`liverContour.test.ts:75` informó `spine|spine`. Build y presupuesto no se ejecutaron en esa cadena roja;
+las colas de E2E/comparadores se detuvieron sin arrancar. No se declara cobertura aprobada para esa corrida.
+
+La discontinuidad era real: en `[-13.035898384862241,-34,26.5]`, lejos de pared/cúpula (17,15 mm), el salto de
+normal al atravesar el centro discal se mantiene en 135,88° al refinar a 0,001 mm. La distancia a cuerpos
+segmentados tiene una cúspide entre platillos; suavizar cuerpo y arco no elimina esa discontinuidad interna.
+La [decisión108](../DECISIONS.md#108-envolvente-hepática-continua-frente-a-la-columna-segmentada) introduce un
+helper hepático explícito y continuo que incluye el espacio discal. Se conserva `sdSpine`/`spineSd`, hueso,
+cartílago, dueños corticales y acústica. Cambian el recorte hepático común en TS, sus dos sobrecargas GLSL y
+su atribución en `liverTerms`; no se cambia el test de contorno ni se permite otra etiqueta en su aserción.
+
+La envolvente cumple `E <= dBone`, por lo que el recorte conserva la separación de 3 mm respecto al hueso real.
+El helper se comprueba sobre cuerpos, platillos, centros discales y arco en ambos perfiles. La nueva regresión
+busca la superficie con un intervalo validado y verifica la convergencia de normales, además de excluir el
+antiguo pliegue. Con el arreglo, el salto refinado es aproximadamente cero. Reintroducir el campo segmentado
+hace fallar específicamente la guarda angular en ambos cuerpos: **137,236° frente al límite de 1°**.
+
+Resultados dirigidos tras el arreglo: **25 pruebas aprobadas +4 fallos esperados** en `spine`,
+`hepaticBoundary` y `liverContour` (86,55 s). Las cuatro mutaciones —sin separación, sin cota ósea,
+predicado cortical amplio y envolvente segmentada— fallan y se restauran byte por byte. La guarda original
+conserva **40 líneas corticales, 13 discales y 4 grupos** (mínimos 20/8/3). El diferencial de hueso volvió a
+comparar 203.522 evaluaciones con PR119 preservado: **cero diferencias, error máximo 0**.
+
+### Cambio geométrico medido frente a PR144
+
+Rejilla de puntos medios de 2 mm, 3.042.000 muestras por perfil, caja `[-180,180] × [-130,130] × [-150,110]` mm.
+Ninguna muestra del campo hepático alcanza el borde de la caja. Se mide el campo de superficie hepática
+(cápsula y cavidades vasculares incluidas), no un volumen clínico ni una segmentación exacta de parénquima.
+Una primera caja insuficiente se descartó mediante esa comprobación y se conserva como diagnóstico incompleto.
+
+| Perfil     | Campo base (ml) | Campo nuevo (ml) | Ganado (ml) | Perdido (ml) | Neto (ml) |
+| ---------- | --------------- | ---------------- | ----------- | ------------ | --------- |
+| Procedural | 1815,480        | 1812,352         | 0,320       | 3,448        | −3,128    |
+| Referencia | 1921,584        | 1918,904         | 0,288       | 2,968        | −2,680    |
+
+Los cambios muestreados se localizan en el plano retrohepático; los puntos perdidos clasifican como grasa
+retroperitoneal y los ganados como cápsula. El número de vasos y de ramas procedurales permanece 92/60 y
+97/65 respectivamente; la longitud total permanece 3689,689 y 3773,220 mm. Esto no sustituye las guardas
+vasculares, de Morison ni la paridad GPU.
+
+### Plan final autorizado
+
+La revisión independiente confirmó la corrección y los comparadores antes de repetir el check completo.
+Se mantienen todos los umbrales y los plazos; la repetición usa dos trabajadores, sin navegador concurrente.
+Los comparadores nativos de CI ahora cubren ambos perfiles, comprueban el perfil efectivo y añaden la ventana
+subxifoidea original al comparador portal: **48 capturas previstas** entre los cinco workflows existentes.
+La paridad hepática E2E añade los centros de tres discos a las cinco alturas anteriores, sin reducir ninguna
+aserción. Continúan siendo 57 pruebas E2E en ambos perfiles.
+
+El operador autorizó publicar únicamente un **borrador** tras suite/check locales, auditoría, índice y hook
+normal verdes. E2E y comparadores pueden ejecutarse en CI después de publicarlo; hasta entonces son pendientes,
+no resultados aprobados. No se permite fusionar antes de la revisión del padre y de los resultados completos.

@@ -56,31 +56,37 @@ try {
           console.error(version, m.text());
         }
       });
-      await page.goto(`http://127.0.0.1:${port}/?e2e=1`);
-      await page.waitForFunction(() => (window.__vexusTest?.framesRendered() ?? 0) >= 2, undefined, { timeout: 180_000 });
-      for (const [mode, yaw, lift] of [
-        ['transverse', Math.PI / 2, 0],
-        ['longitudinal', 0, 0],
-        ['transverse-pressed', Math.PI / 2, -6],
-      ] as const) {
-        await page.evaluate(
-          ({ yaw, lift }) => {
-            const t = window.__vexusTest!;
-            t.setCompound(false);
-            t.setPose({ phi: Math.PI / 2, z: -20, lift, yaw, rock: 0, tilt: 0 });
-          },
-          { yaw, lift },
-        );
-        const frameMs: number[] = [];
-        for (let i = 0; i < 3; i++) frameMs.push(await page.evaluate(() => window.__vexusTest!.frameCostMs(3)));
-        // Congelar mediante el control real tras medir; evita esperar estabilidad de un canvas que sigue dibujando.
-        await page.locator('#freeze').evaluate((button: HTMLButtonElement) => button.click());
-        if ((await page.locator('#freeze').getAttribute('aria-pressed')) !== 'true') throw new Error('No se congeló la imagen');
-        const clip = await page.locator('#gl').boundingBox();
-        if (!clip) throw new Error('Canvas sin geometría');
-        await page.screenshot({ path: join(out, `${version}-${mode}.png`), clip });
-        await page.locator('#freeze').evaluate((button: HTMLButtonElement) => button.click());
-        results.push({ version, sha: commit, mode, frameMs });
+      for (const reference of [false, true]) {
+        const profile = reference ? 'reference' : 'legacy';
+        await page.goto(`http://127.0.0.1:${port}/?e2e=1${reference ? '&reference=1' : ''}`);
+        await page.waitForFunction(() => (window.__vexusTest?.framesRendered() ?? 0) >= 2, undefined, { timeout: 180_000 });
+        if ((await page.evaluate(() => !!window.__vexusTest!.sim().scene.torso.profile)) !== reference)
+          throw new Error('El perfil corporal cargado no coincide con el solicitado');
+        for (const [mode, yaw, lift] of [
+          ['transverse', Math.PI / 2, 0],
+          ['longitudinal', 0, 0],
+          ['transverse-pressed', Math.PI / 2, -6],
+        ] as const) {
+          await page.evaluate(
+            ({ yaw, lift }) => {
+              const t = window.__vexusTest!;
+              t.setCompound(false);
+              t.setPose({ phi: Math.PI / 2, z: -20, lift, yaw, rock: 0, tilt: 0 });
+            },
+            { yaw, lift },
+          );
+          const frameMs: number[] = [];
+          for (let i = 0; i < 3; i++) frameMs.push(await page.evaluate(() => window.__vexusTest!.frameCostMs(3)));
+          // Congelar mediante el control real tras medir; evita esperar estabilidad de un canvas que sigue dibujando.
+          await page.locator('#freeze').evaluate((button: HTMLButtonElement) => button.click());
+          if ((await page.locator('#freeze').getAttribute('aria-pressed')) !== 'true') throw new Error('No se congeló la imagen');
+          const clip = await page.locator('#gl').boundingBox();
+          if (!clip) throw new Error('Canvas sin geometría');
+          await page.screenshot({ path: join(out, `${version}-${profile}-${mode}.png`), clip });
+          await page.locator('#freeze').evaluate((button: HTMLButtonElement) => button.click());
+          results.push({ version, sha: commit, mode: `${profile}-${mode}`, frameMs });
+          writeFileSync(join(out, 'partial.json'), JSON.stringify({ results }, null, 2));
+        }
       }
       if (errors.length) throw new Error(errors.join('\n'));
     } finally {

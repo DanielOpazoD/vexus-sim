@@ -1,8 +1,8 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
-import { HEPATIC_SPINE_GAP_MM } from '../anatomy/organs/liver';
-import { sdSpine } from '../anatomy/primitives';
+import { HEPATIC_SPINE_GAP_MM, hepaticSpineEnvelopeSd } from '../anatomy/organs/liver';
+import { SPINE_SHAPE, sdSpine } from '../anatomy/primitives';
 import { Interface } from '../anatomy/interfaces';
 import { LIVER_CAPSULE_MM, Tissue } from '../anatomy/tissues';
 import { setReferenceBody, validateReferenceBody } from '../anatomy/referenceBody';
@@ -43,6 +43,92 @@ describe('frontera hepática y plano retrohepático', () => {
       expect(capsule).toBeGreaterThan(10);
       expect(cortex).toBeGreaterThan(10);
     });
+  it.each([false, true])('la envolvente hepática excluye el hueso en cuerpos, platillos, discos y arco (referencia %s)', (reference) => {
+    setReferenceBody(reference ? profile : undefined);
+    let s: AnatomyScene;
+    try {
+      s = new AnatomyScene(NORMAL_ADULT);
+    } finally {
+      setReferenceBody();
+    }
+    let gapSamples = 0;
+    for (const level of [-4, -3, -2, -1, 0, 1, 2])
+      for (const dz of [-15.6, -15.5, -15.4, -12.1, -12, -11.9, 0, 11.9, 12, 12.1, 15.4, 15.5, 15.6])
+        for (const x of [-45, -40, -20, -10, 0, 10, 20, 40, 45])
+          for (const y of [-35, -32, -20, -12, 0, 12, 20]) {
+            const p: Vec3 = [s.spine.x0 + x, s.spine.y0 + y, SPINE_SHAPE.z0Mm + level * SPINE_SHAPE.levelMm + dz];
+            const bone = sdSpine(p, s.spine);
+            expect(hepaticSpineEnvelopeSd(p, s.spine)).toBeLessThanOrEqual(bone + 1e-12);
+            if (bone >= 0 && bone < HEPATIC_SPINE_GAP_MM) {
+              gapSamples++;
+              expect(s.liverSdf(p)).toBeGreaterThanOrEqual(0);
+            }
+          }
+    expect(gapSamples).toBeGreaterThan(100);
+  });
+
+  it.each([false, true])('la normal hepática converge a través del centro discal sin un pliegue espurio (referencia %s)', (reference) => {
+    setReferenceBody(reference ? profile : undefined);
+    let s: AnatomyScene;
+    try {
+      s = new AnatomyScene(NORMAL_ADULT);
+    } finally {
+      setReferenceBody();
+    }
+    const z = SPINE_SHAPE.z0Mm + 1.5 * SPINE_SHAPE.levelMm;
+    // Testigo descubierto por liverContour: antes había una cúspide de ~136° persistente al refinar.
+    const oldFold: Vec3 = [-13.035898384862241, s.spine.y0 + 12, z];
+    const at = (x: number, dz: number): Vec3 => [x, s.spine.y0 + 12, z + dz];
+    const surface = (dz: number): Vec3 => {
+      let lo = -30,
+        hi = -10;
+      expect(s.liverSdf(at(lo, dz))).toBeLessThan(0);
+      expect(s.liverSdf(at(hi, dz))).toBeGreaterThan(0);
+      for (let i = 0; i < 45; i++) {
+        const mid = (lo + hi) / 2;
+        if (s.liverSdf(at(mid, dz)) < 0) lo = mid;
+        else hi = mid;
+      }
+      const p = at((lo + hi) / 2, dz);
+      expect(Math.abs(s.faceSdf(p, BASELINE_CALIBER, 'liverSurface')!)).toBeLessThan(1e-8);
+      expect(sdSpine(p, s.spine)).toBeGreaterThanOrEqual(HEPATIC_SPINE_GAP_MM);
+      return p;
+    };
+    const normal = (p: Vec3, h: number) => {
+      const g = p.map((_, axis) => {
+        const plus: Vec3 = [...p],
+          minus: Vec3 = [...p];
+        plus[axis] += h;
+        minus[axis] -= h;
+        return (s.liverSdf(plus) - s.liverSdf(minus)) / (2 * h);
+      });
+      const norm = Math.hypot(...g);
+      expect(norm).toBeGreaterThan(0.1);
+      return g.map((x) => x / norm);
+    };
+    const turns = [0.1, 0.025, 0.005].map((step) => {
+      const a = normal(surface(-step), step / 10),
+        b = normal(surface(step), step / 10);
+      return (
+        (Math.acos(
+          Math.max(
+            -1,
+            Math.min(
+              1,
+              a.reduce((dot, n, i) => dot + n * b[i], 0),
+            ),
+          ),
+        ) *
+          180) /
+        Math.PI
+      );
+    });
+    expect(turns[1]).toBeLessThan(1);
+    expect(turns[2]).toBeLessThan(0.2);
+    expect(turns[2]).toBeLessThanOrEqual(turns[0] * 0.5 + 1e-5);
+    expect(s.liverSdf(oldFold)).toBeGreaterThan(2);
+  });
+
   it.each([false, true])('el recorrido normal conserva hueso → grasa → cápsula → parénquima (referencia %s)', (reference) => {
     setReferenceBody(reference ? profile : undefined);
     let s: AnatomyScene;

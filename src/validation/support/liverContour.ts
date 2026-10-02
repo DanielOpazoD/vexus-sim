@@ -1,5 +1,4 @@
-import { HEPATIC_SPINE_GAP_MM, HEPATIC_SPINE_ROUND_MM } from '../../anatomy/organs/liver';
-import { sdSpine } from '../../anatomy/primitives';
+import { HEPATIC_SPINE_GAP_MM, HEPATIC_SPINE_ROUND_MM, hepaticSpineEnvelopeSd } from '../../anatomy/organs/liver';
 /**
  * Contorno del hígado en el plano de imagen (PR 0 de las decisiones 60 y 64), portado del diseño
  * «geometry-first» (`design-contour/geometry-first/contour.ts`) sobre las funciones de producción. Lo usa
@@ -160,7 +159,7 @@ export function liverTerms(s: AnatomyScene, m: Vec3): LiverTerms {
   if (d1v > d0 + 1e-3) label = Math.abs(d0 - visc) < s.visceralFace.edgeRoundMm ? 'visceralBlend' : 'visceral';
   const d1 = smoothMax(d1v, medialCutDistance(m), MEDIAL_CUT.roundMm);
   if (d1 > d1v + 1e-3) label = 'medialCut';
-  const dSpine = smoothMax(d1, HEPATIC_SPINE_GAP_MM - sdSpine(m, s.spine, HEPATIC_SPINE_ROUND_MM), HEPATIC_SPINE_ROUND_MM);
+  const dSpine = smoothMax(d1, HEPATIC_SPINE_GAP_MM - hepaticSpineEnvelopeSd(m, s.spine), HEPATIC_SPINE_ROUND_MM);
   if (dSpine > d1 + 1e-3) label = 'spine';
   const d2 = smoothMax(
     dSpine,

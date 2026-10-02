@@ -1,0 +1,47 @@
+name: Comparación visual portal
+on:
+  pull_request:
+    paths:
+      - 'src/anatomy/scene.ts'
+      - 'src/ultrasound/speckleField.ts'
+      - 'src/ultrasound/retroTexture.ts'
+      - 'src/anatomy/gpu/anatomy.glsl.ts'
+      - 'src/anatomy/interfaces.ts'
+      - 'src/anatomy/tissues.ts'
+      - 'src/ultrasound/interfaceEcho.ts'
+      - 'tools/fidelity/portalComparison.ts'
+      - '.github/workflows/portal-visual.yml'
+permissions:
+  contents: read
+concurrency:
+  group: portal-visual-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  comparison:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx vite build
+      - name: Capturas y coste en la base exacta y el cambio
+        run: node --import tsx tools/fidelity/portalComparison.ts
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PORTAL_OUT: ${{ runner.temp }}/vexus-portal-evidence
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: portal-before-after
+          path: ${{ runner.temp }}/vexus-portal-evidence
+          retention-days: 7
+          if-no-files-found: warn

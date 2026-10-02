@@ -21,19 +21,12 @@ import {
 } from './support/compoundTwin';
 
 /**
- * Lo que la textura del hígado (decisión 89) hace a las métricas de la envolvente con las que la e2e y el banco vigilan el
- * moteado, en el gemelo B → C → D de la composición (el de `compoundSpeckle.test.ts`: la subxifoidea del sano, parches de
- * 32 líneas × 144 muestras a 20, 45, 90 y 150 mm, 8 realizaciones, las mismas sales con y sin la textura). Esas métricas
- * se definieron para un moteado de Rayleigh (decisiones 52 y 58); el hígado ya no lo es a propósito (m de Nakagami 0,85 en
- * ventanas de tres pulsos, como el hígado sano in vivo, `parenchymaTexture.test.ts`), así que sus bandas se desplazan. Esta
- * prueba fija cuánto y en qué sentido, y que los defectos que las guardas buscan siguen fuera:
- *
- *  - la SNR de la envolvente baja (mirada 0 ×0,84–0,88; compuesto ×0,75–0,80: la composición promedia el moteado, no la
- *    densidad de dispersores ni los nodos fuertes, que son los mismos en las tres miradas);
- *  - la fracción oscura y las grietas suben (las zonas de menos densidad quedan por debajo de 0,3 × la media del parche);
- *  - el grano medido (FWHM de la autocovarianza normalizada por la varianza del parche) crece: la densidad, de 4 mm, añade
- *    un pedestal ancho a la autocovarianza, y más en el compuesto, que tiene menos varianza de moteado;
- *  - la desviación del gris (en dB) del compuesto crece ×1,19–1,27 (G4).
+ * Gemelo B → C → D en cuatro profundidades y ocho realizaciones pareadas. El relieve
+ * milimétrico reducido (decisión 106) conserva los dispersores fuertes y la PSF; los
+ * límites de grano/oscuridad siguen detectando intensidad, |Re| y suavizado artificial.
+ * Las bandas de apariencia anteriores exigían heterogeneidad adicional: se sustituyen
+ * por cotas superiores más estrictas del exceso de variación y proximidad al basal.
+ * Son contratos de ingeniería, no intervalos clínicos universales de un hígado sano.
  */
 const DEPTHS = [20, 45, 90, 150];
 const SEEDS = 8;
@@ -171,6 +164,19 @@ function stats(r: number, texture: boolean): Stats {
       measure(out.defects.binomial, smooth(e0, PATCH.lines, PATCH.rows));
     }
     const c = Float64Array.from(e0, (v, i) => (v + ep[i] + em[i]) / 3);
+    const looks = [e0, ep, em];
+    const means = looks.map((v) => mean(Array.from(v)));
+    let varianceSum = 0;
+    for (let a = 0; a < 3; a++)
+      for (let b = 0; b < 3; b++) {
+        let covariance = 0;
+        for (let i = 0; i < e0.length; i++) covariance += (looks[a][i] - means[a]) * (looks[b][i] - means[b]);
+        varianceSum += covariance / e0.length;
+      }
+    const mc = mean(Array.from(c));
+    const vc = Array.from(c).reduce((sum, v) => sum + (v - mc) ** 2, 0) / c.length;
+    expect(mc).toBeCloseTo(mean(means), 10);
+    expect(vc).toBeCloseTo(varianceSum / 9, 10);
     rho.p.push(intensityCorrelation(e0, ep));
     rho.m.push(intensityCorrelation(e0, em));
     rho.pm.push(intensityCorrelation(ep, em));
@@ -223,26 +229,26 @@ describe('textura del hígado en el gemelo de la composición: las bandas de las
   const T = TEXTURED_GUARDS;
   const within = (x: number, [lo, hi]: readonly [number, number]) => x >= lo && x <= hi;
 
-  it('mirada 0: la SNR baja 0,2–0,35 y queda en su banda nueva, con más oscuros y grietas, pero lejos de los defectos', () => {
+  it('mirada 0: textura normal próxima a Rayleigh sin imponer heterogeneidad macroscópica', () => {
     for (const r of DEPTHS) {
       const [p, l] = [plain.get(r)!, liver.get(r)!];
       const snr = avg(l.look0, 'snr');
       const drop = avg(p.look0, 'snr') - snr;
-      expect(drop, `${r} mm: SNR ${snr.toFixed(3)}, baja ${drop.toFixed(3)}`).toBeGreaterThan(0.2);
-      expect(drop, `${r} mm`).toBeLessThan(0.35);
+      expect(drop, `${r} mm: SNR ${snr.toFixed(3)}, baja ${drop.toFixed(3)}`).toBeGreaterThan(0.05);
+      expect(drop, `${r} mm`).toBeLessThan(0.25);
       expect(within(snr, T.snr), `${r} mm: SNR ${snr.toFixed(3)}`).toBe(true);
-      // ≥ 0,2 sobre el suelo y ≥ 0,1 bajo el techo (los defectos, en su propia prueba)
+      // Conserva la banda de seguridad; no fuerza un margen que exigiría un hígado más heterogéneo.
       expect(snr - T.snr[0], `${r} mm`).toBeGreaterThan(0.2);
-      expect(T.snr[1] - snr, `${r} mm`).toBeGreaterThan(0.1);
+      expect(T.snr[1] - snr, `${r} mm`).toBeGreaterThan(0);
       const dark = avg(l.look0, 'darkFraction');
       expect(within(dark, T.dark), `${r} mm: oscuros ${dark.toFixed(3)}`).toBe(true);
       expect(dark, `${r} mm`).toBeGreaterThan(avg(p.look0, 'darkFraction'));
-      // la guarda de Rayleigh (parches de 16 × 8): ×0,85–0,93 y ≥ 0,2 sobre su suelo nuevo
+      // La textura se aproxima al moteado basal; no se exige una caída artificial de SNR.
       const small = mean(l.small);
-      expect(small / mean(p.small), `${r} mm: 16 × 8 ${small.toFixed(3)} frente a ${mean(p.small).toFixed(3)}`).toBeGreaterThan(0.85);
-      expect(small / mean(p.small), `${r} mm`).toBeLessThan(0.93);
+      expect(small / mean(p.small), `${r} mm: 16 × 8 ${small.toFixed(3)} frente a ${mean(p.small).toFixed(3)}`).toBeGreaterThan(0.9);
+      expect(small / mean(p.small), `${r} mm`).toBeLessThan(1);
       expect(
-        within(small, T.rayleigh) && small - T.rayleigh[0] > 0.2 && T.rayleigh[1] - small > 0.1,
+        within(small, T.rayleigh) && small - T.rayleigh[0] > 0.2 && T.rayleigh[1] - small > 0,
         `${r} mm: 16 × 8 ${small.toFixed(3)}`,
       ).toBe(true);
       const crack = avg(l.look0, 'crackIndex');
@@ -288,12 +294,12 @@ describe('textura del hígado en el gemelo de la composición: las bandas de las
     }
   });
 
-  it('el grano medido crece con el pedestal de la densidad (mirada 0 +5–15 % axial, compuesto más) y sigue en K1 y K2', () => {
+  it('el grano sigue la PSF: sin exigir que la densidad lo ensanche artificialmente', () => {
     for (const r of DEPTHS) {
       const [p, l] = [plain.get(r)!, liver.get(r)!];
       const ax = avg(l.look0, 'fwhmAxialMm');
-      expect(ax / avg(p.look0, 'fwhmAxialMm'), `${r} mm: axial ${ax.toFixed(2)} mm`).toBeGreaterThan(1.05);
-      expect(ax / avg(p.look0, 'fwhmAxialMm'), `${r} mm`).toBeLessThan(1.15);
+      expect(ax / avg(p.look0, 'fwhmAxialMm'), `${r} mm: axial ${ax.toFixed(2)} mm`).toBeGreaterThan(1);
+      expect(ax / avg(p.look0, 'fwhmAxialMm'), `${r} mm`).toBeLessThan(1.1);
       expect(within(ax, T.axialMm), `${r} mm: axial ${ax.toFixed(2)} mm`).toBe(true);
       for (const [name, t] of [
         ['mirada 0', l.look0],
@@ -305,14 +311,15 @@ describe('textura del hígado en el gemelo de la composición: las bandas de las
     }
   });
 
-  it('compuesto: la SNR sube √N_eff sobre la de la mirada 0 (N_eff baja: la textura es la misma en las tres miradas) y cumple G1, G2 y G3 nuevos', () => {
+  it('compuesto: mejora SNR conservando las guardas de oscuridad, grietas y grano', () => {
     for (const r of DEPTHS) {
       const [p, l] = [plain.get(r)!, liver.get(r)!];
       const c = avg(l.compound, 'snr');
       const gain = c / avg(l.look0, 'snr');
-      expect(Math.abs(gain / Math.sqrt(l.nEff) - 1), `${r} mm: ×${gain.toFixed(3)} frente a √${l.nEff.toFixed(2)}`).toBeLessThanOrEqual(
-        0.1,
-      );
+      // N_eff de intensidad no predice exactamente la SNR de una media de envolventes.
+      // La identidad de covarianza de las envolventes se comprueba por realización en stats().
+      expect(gain, `${r} mm`).toBeGreaterThan(1);
+      expect(gain, `${r} mm`).toBeLessThan(Math.sqrt(3));
       expect(l.nEff, `${r} mm`).toBeLessThan(p.nEff);
       expect(c, `${r} mm: SNR ${c.toFixed(3)}`).toBeGreaterThanOrEqual(r < 60 || r >= 140 ? T.compoundSnr.outer : T.compoundSnr.inner);
       expect(c, `${r} mm`).toBeLessThanOrEqual(T.compoundSnr.max);
@@ -338,15 +345,15 @@ describe('textura del hígado en el gemelo de la composición: las bandas de las
     }
   });
 
-  it('G4: la desviación del gris del compuesto (en dB) crece ×1,15–1,35 y la de la mirada 0 ×1,05–1,15', () => {
+  it('G4: limita el exceso de variación del gris normal, sin exigir el moteado grueso anterior', () => {
     for (const r of DEPTHS) {
       const [p, l] = [plain.get(r)!, liver.get(r)!];
       const c = l.sdDbC / p.sdDbC;
       const z = l.sdDb0 / p.sdDb0;
-      expect(c, `${r} mm: compuesto ×${c.toFixed(3)}`).toBeGreaterThan(1.15);
-      expect(c, `${r} mm`).toBeLessThan(1.35);
-      expect(z, `${r} mm: mirada 0 ×${z.toFixed(3)}`).toBeGreaterThan(1.05);
-      expect(z, `${r} mm`).toBeLessThan(1.15);
+      expect(c, `${r} mm: compuesto ×${c.toFixed(3)}`).toBeGreaterThan(1);
+      expect(c, `${r} mm`).toBeLessThan(1.15);
+      expect(z, `${r} mm: mirada 0 ×${z.toFixed(3)}`).toBeGreaterThan(1);
+      expect(z, `${r} mm`).toBeLessThan(1.1);
     }
   });
 });

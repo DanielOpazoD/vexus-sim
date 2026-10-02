@@ -157,7 +157,7 @@ describe('dispersores fuertes del parénquima (decisión 89)', () => {
 });
 
 describe('densidad de dispersores a escala de milímetros (decisión 89)', () => {
-  it('solo en el hígado, simétrica en dB (mediana 0 dB, DE ≈1,85 dB) y continua (pendiente acotada por la célula)', () => {
+  it('solo en el hígado, simétrica en dB (mediana 0 dB, DE ≈0,74 dB) y continua (pendiente acotada por la célula)', () => {
     expect(DENSITY_TISSUES).toEqual([LIVER]);
     const r = rng(17);
     const db: number[] = [];

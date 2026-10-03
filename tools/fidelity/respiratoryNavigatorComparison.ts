@@ -73,6 +73,7 @@ try {
           throw new Error('El perfil corporal cargado no coincide con el solicitado');
         await page.locator('#freeze').evaluate((button: HTMLButtonElement) => button.click());
         await page.locator('#debug-toggle').check();
+        await page.getByRole('tab', { name: 'Adquirir', exact: true }).click();
         await page.locator('#nav-layers').click();
         await page.locator('#layer-skin').uncheck();
         await page.locator('#layer-windows').uncheck();

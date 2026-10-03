@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { AnatomyScene, VesselCaliber } from '../anatomy/scene';
-import { RespiratoryDeformation } from '../anatomy/deformation';
+import { bindRespiratoryMotion } from './navigator3d/respiratoryMotion';
 import type { ProbeFrame, ProbePose, Transducer } from '../probe/probe';
 import { buildAnatomyGroups } from './navigator3d/anatomyGroups';
 import { CM, disposeObject } from './navigator3d/common';
@@ -74,6 +74,7 @@ export class Navigator3D {
   private lastZ = 0;
   private dirty = true;
   private lastResp = -1;
+  private respiratoryMotion: ReturnType<typeof bindRespiratoryMotion> | null = null;
   private lastPoseKey = '';
   private lastDepth = -1;
   layers: NavigatorLayers = { skin: true, skeleton: true, organs: true, vessels: true, windows: true };
@@ -146,6 +147,7 @@ export class Navigator3D {
   setAnatomy(anatomy: AnatomyScene): void {
     if (anatomy === this.anatomy) return;
     this.anatomy = anatomy;
+    this.respiratoryMotion = null;
     for (const g of [this.skin, this.skeleton, this.organs, this.vessels, this.windows]) {
       this.world.remove(g);
       this.retired.push(g);
@@ -167,6 +169,7 @@ export class Navigator3D {
     this.releaseRetired();
     window.removeEventListener('pointermove', this.onMove);
     window.removeEventListener('pointerup', this.onUp);
+    this.respiratoryMotion = null;
     this.renderer.dispose();
     this.renderer.domElement.remove();
   }
@@ -355,11 +358,11 @@ export class Navigator3D {
     }
     if (!this.dirty) return;
     this.dirty = false;
-    // órganos y vasos siguen el campo respiratorio (ponderación ≈1 en vísceras)
-    const d = RespiratoryDeformation.direction;
-    const shift = new THREE.Vector3(d[0] * resp * CM, d[1] * resp * CM, d[2] * resp * CM);
-    this.organs.position.copy(shift);
-    this.vessels.position.copy(shift);
+    // El mismo peso material que usa la anatomía: inserciones y región paravertebral quietas.
+    // OFF por defecto no crea los buffers; al apagar después se restauran las posiciones exactas.
+    if (resp !== 0 && !this.respiratoryMotion)
+      this.respiratoryMotion = bindRespiratoryMotion([this.organs, this.vessels], (m) => this.anatomy.respiratoryWeight(m));
+    this.respiratoryMotion?.apply(resp);
     // sonda: base (lateral, elevación, axial) → (x, y, z) locales
     const fr = this.opts.getFrame();
     this.probe.position.set(fr.face[0] * CM, fr.face[1] * CM, fr.face[2] * CM);

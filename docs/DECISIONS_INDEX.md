@@ -112,3 +112,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [106](DECISIONS.md#L4876) | Pared portal visible en oblicuidad y parénquima normal homogéneo | vigente |
 | [107](DECISIONS.md#L4888) | Separación retrohepática, textura de grasa visceral y transporte GLSL sin pérdida | vigente |
 | [108](DECISIONS.md#L4900) | Envolvente hepática continua frente a la columna segmentada | vigente |
+| [109](DECISIONS.md#L4912) | Unión interhemidiafragmática continua y acotada | vigente |

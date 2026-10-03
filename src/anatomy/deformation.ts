@@ -1,3 +1,4 @@
+import { RESPIRATORY_DIRECTION as DIR } from './respiratoryDirection';
 import type { Vec3 } from '../core/vec3';
 import type { RespiratorySample } from '../physiology/respiratory';
 import { compressionElevation, compressionSample, uncompress, type ProbeCompression } from './compression';
@@ -21,13 +22,6 @@ import type { AnatomyScene } from './scene';
  */
 /** Cota del intervalo normalizado tras resolver la inversa; no es precisión clínica. */
 export const RESPIRATORY_INVERSE_STEPS = 14;
-const DIR: Vec3 = normalizeDir([0, 0.15, -1]);
-
-function normalizeDir(v: Vec3): Vec3 {
-  const l = Math.hypot(v[0], v[1], v[2]);
-  return [v[0] / l, v[1] / l, v[2] / l];
-}
-
 export class RespiratoryDeformation {
   /** Contacto de la sonda del cuadro (decisión 63); null sin compresión. */
   compression: ProbeCompression | null = null;

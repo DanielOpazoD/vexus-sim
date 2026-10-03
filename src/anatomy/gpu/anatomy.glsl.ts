@@ -481,6 +481,26 @@ float spineSd(vec3 m, float blend) {
 float spineSd(vec3 m) { return spineSd(m, 0.0); }
 
 ${ORGAN_GLSL.join('\n')}
+// Exact differential of the shared respiratory weight, where the thoracic profile is differentiable.
+vec3 respWeightGradient(vec3 m) {
+  float inside = -torsoDepth(m) - (uWall.x + uWall.y + uWall.z);
+  vec2 delta = m.xy - uSpine.xy;
+  float r = length(delta);
+  float a = -smoothstep(uSpine.z + 5.0, uSpine.z + 35.0, r) * smoothstepSlope(0.0, 25.0, inside);
+  float b = smoothstep(0.0, 25.0, inside) * smoothstepSlope(uSpine.z + 5.0, uSpine.z + 35.0, r) / max(r, 1e-9);
+  if (a == 0.0) return vec3(b * delta, 0.0);
+  return a * torsoDepthGrad(m) + vec3(b * delta, 0.0);
+}
+// Sherman–Morrison: material covectors pass through respiration first, compression second.
+Warp anatomyWarpAt(vec3 p, vec3 m) {
+  Warp w = warpAt(p);
+  if (uResp.x != 0.0) {
+    vec3 g = respWeightGradient(m);
+    w.respiratory = uResp.x * g / (1.0 + uResp.x * dot(uResp.yzw, g));
+  }
+  return w;
+}
+
 
 // Profundidad bajo la cara interna de la pared (mm; 0 en la pleura parietal). Gemelo: AnatomyScene.insideWallMm
 float insideWallMm(vec3 m) { return -torsoDepth(m) - (uWall.x + uWall.y + uWall.z); }

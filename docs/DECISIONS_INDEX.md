@@ -116,3 +116,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [110](DECISIONS.md#L4920) | Límite único del diafragma en el eje corporal | vigente |
 | [111](DECISIONS.md#L4928) | Registro de las mallas orgánicas y recorte hepático compartido | vigente |
 | [112](DECISIONS.md#L4936) | Respiración del navegador en coordenadas materiales | vigente |
+| [113](DECISIONS.md#L4944) | Inversa respiratoria escalar con intervalo acotado | vigente |

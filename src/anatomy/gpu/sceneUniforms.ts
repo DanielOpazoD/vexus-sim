@@ -230,7 +230,7 @@ export const SCENE_UNIFORMS: readonly UniformSpec[] = [
 /** Declaraciones GLSL generadas del esquema (más el sampler de la textura de escena). */
 export const SCENE_UNIFORMS_GLSL = [
   ...SCENE_UNIFORMS.map((u) => `uniform ${u.type} ${u.name}${u.count ? `[${u.count}]` : ''};`),
-  'uniform sampler2D uSceneTex; // cabeceras y nodos de los tubos',
+  'uniform highp sampler2D uSceneTex; // datos geométricos RGBA32F, no color normalizado',
 ].join('\n');
 
 /** Valores de un cuadro, evaluados UNA vez y subidos a cada programa que usa la anatomía. */

@@ -152,6 +152,32 @@ describe('PF portal sobre un espectro débil (decisión 94)', () => {
   });
 });
 
+describe('Deriva de la envolvente portal frente al ciclo cardíaco', () => {
+  it.each([1, -1] as const)('una rampa lenta no se acepta como pulsatilidad cardíaca (signo %i)', (sign) => {
+    const cols = portalColumns({ top: (t) => 13 + 5 * t, sign, snrDb: 40 });
+    const m = measureObservedPortal(cols, beats, opts)!;
+    expect(m.quality.issue).toBe('inconsistent');
+    expect(m.measuredBeats).toHaveLength(beats.length);
+    expect(m.trace).toHaveLength(cols.length);
+  });
+
+  it('conserva un flujo casi constante: el ruido de cuantización no demuestra deriva', () => {
+    const m = measureObservedPortal(portalColumns({ top: () => 20, snrDb: 40 }), beats, opts)!;
+    expect(m.quality.issue).toBeNull();
+  });
+
+  it('conserva una rampa que se repite en cada ciclo: sus fases equivalentes tienen el mismo nivel', () => {
+    const top = (t: number) => 16 + (8 * ((((t - 0.4) % 0.8) + 0.8) % 0.8)) / 0.8;
+    const m = measureObservedPortal(portalColumns({ top, snrDb: 40 }), beats, opts)!;
+    expect(m.quality.issue).toBeNull();
+  });
+
+  it('conserva una onda cardíaca repetible pese a una deriva pequeña', () => {
+    const cols = portalColumns({ top: (t) => pulsatile(t) + 0.2 * t, snrDb: 40 });
+    expect(measureObservedPortal(cols, beats, opts)!.quality.issue).toBeNull();
+  });
+});
+
 describe('La porta que la escala o el filtro de pared no dejan medir (revisión de la decisión 94)', () => {
   it('el pico que llega al Nyquist se recorta: aliasing, no una PF baja', () => {
     // envolvente hasta 58 de 64 bins (0,9 del Nyquist) en el pico del latido

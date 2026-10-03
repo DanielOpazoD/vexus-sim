@@ -1,0 +1,91 @@
+{
+  "algorithm": "normalized-bisection-14-interpolated",
+  "baseline": "Two fixed-point iterations, as in parent 8358fcd41750e89d66c64d54fe7b7fb382e3d2d6",
+  "compression": false,
+  "clinicalValidation": false,
+  "globalInjectivityProved": false,
+  "grid": {
+    "min": [-140, -90, -150],
+    "max": [140, 100, 90],
+    "stepMm": 5,
+    "filter": "insideWallMm >= 0"
+  },
+  "rows": [
+    {
+      "reference": false,
+      "excursionMm": 10,
+      "samples": 64239,
+      "oldMaxErrorMm": 0.0622189704554032,
+      "newMaxErrorMm": 1.249603179466351e-10,
+      "oldOver01Mm": 0,
+      "oldOver1Mm": 0,
+      "newOver002Mm": 0,
+      "bracketWidthMm": 0.0006103515625,
+      "worst": {
+        "material": [-60, 55, -150],
+        "world": [-60, 56.12133707973231, -157.47558053154873],
+        "old": [-60, 55.00922959025821, -150.0615306017214],
+        "corrected": [-60, 55.0000000000004, -150.00000000000267],
+        "oldErrorMm": 0.0622189704554032,
+        "correctedErrorMm": 2.70110930853587e-12
+      }
+    },
+    {
+      "reference": false,
+      "excursionMm": 30,
+      "samples": 64239,
+      "oldMaxErrorMm": 1.800950285693384,
+      "newMaxErrorMm": 3.4622113851955546e-9,
+      "oldOver01Mm": 17836,
+      "oldOver1Mm": 4165,
+      "newOver002Mm": 0,
+      "bracketWidthMm": 0.0018310546875,
+      "worst": {
+        "material": [-60, 55, -60],
+        "world": [-60, 58.36401123919693, -82.42674159464617],
+        "old": [-60, 55.26715378108461, -61.78102520723073],
+        "corrected": [-60, 55.0000000000135, -60.00000000008997],
+        "oldErrorMm": 1.800950285693384,
+        "correctedErrorMm": 9.097617933164622e-11
+      }
+    },
+    {
+      "reference": true,
+      "excursionMm": 10,
+      "samples": 73243,
+      "oldMaxErrorMm": 0.46459007674428915,
+      "newMaxErrorMm": 0.000052743480167435496,
+      "oldOver01Mm": 3999,
+      "oldOver1Mm": 0,
+      "newOver002Mm": 0,
+      "bracketWidthMm": 0.0006103515625,
+      "worst": {
+        "material": [-80, 35, -95],
+        "world": [-80, 36.07696000083453, -102.1797333388969],
+        "old": [-80, 35.068917502411146, -95.4594500160743],
+        "corrected": [-80, 35.00000000002389, -95.00000000015926],
+        "oldErrorMm": 0.46459007674428915,
+        "correctedErrorMm": 1.6104266376371793e-10
+      }
+    },
+    {
+      "reference": true,
+      "excursionMm": 30,
+      "samples": 73243,
+      "oldMaxErrorMm": 14.360101072609126,
+      "newMaxErrorMm": 0.0005709381684387261,
+      "oldOver01Mm": 22407,
+      "oldOver1Mm": 9992,
+      "newOver002Mm": 0,
+      "bracketWidthMm": 0.0018310546875,
+      "worst": {
+        "material": [80, 35, -85],
+        "world": [80, 38.863809726543266, -110.75873151028843],
+        "old": [80, 37.13018389723493, -99.2012259815662],
+        "corrected": [80, 35.00000000137524, -85.00000000916825],
+        "oldErrorMm": 14.360101072609126,
+        "correctedErrorMm": 9.270816271619878e-9
+      }
+    }
+  ]
+}

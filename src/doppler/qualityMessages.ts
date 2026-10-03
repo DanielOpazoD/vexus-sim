@@ -15,7 +15,7 @@ export function qualityText(q: Pick<MeasurementQuality, 'issue' | 'wrongVessel'>
     case 'intermittent':
       return 'no medible: el flujo no se repite de un latido a otro (el vaso entra y sale de la puerta: pida apnea o agrande la puerta)';
     case 'inconsistent':
-      return 'no medible: la onda cambia de un latido a otro (otro vaso entra a ratos en la puerta: recoloque la puerta; si respira, pida apnea)';
+      return 'no medible: la onda cambia entre latidos (revise la puerta; si respira, pida apnea)';
     case 'aliasing':
       return 'no medible: aliasing (suba la escala y vuelva a capturar)';
     case 'wall-filter':

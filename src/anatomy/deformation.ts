@@ -12,13 +12,15 @@ import type { AnatomyScene } from './scene';
  *
  *   p_mundo = m + D(t)·w(m)·dir ;  dir = (0, 0,15, −1) normalizada (caudal, algo anterior)
  *
- * La inversa se aproxima con w evaluado en p (w varía lentamente).
+ * La inversa resuelve el desplazamiento escalar en [0, 1] por bisección acotada.
  *
  * Encima, la compresión de la sonda (decisión 63, `compression.ts`): la sonda aprieta el tejido que la
  * respiración ha llevado bajo ella, así que mundo → material deshace primero la compresión y después la
  * respiración (el mismo orden que `toMaterial` en la GLSL). `compression` es el estado del contacto del cuadro
  * (null: sin sonda, el tronco rígido); lo pone el simulador con cada pose.
  */
+/** Cota del intervalo normalizado tras resolver la inversa; no es precisión clínica. */
+export const RESPIRATORY_INVERSE_STEPS = 14;
 const DIR: Vec3 = normalizeDir([0, 0.15, -1]);
 
 function normalizeDir(v: Vec3): Vec3 {
@@ -44,13 +46,35 @@ export class RespiratoryDeformation {
   }
 
   toMaterial(p: Vec3, resp: RespiratorySample): Vec3 {
-    // la compresión de la sonda y después dos iteraciones de punto fijo de la respiración: m = q − d(m)
+    // Primero deshacer compresión; después resolver a = w(q − D·a·dir), a ∈ [0,1].
     const q = uncompress(p, this.compression);
-    let m: Vec3 = q;
-    for (let i = 0; i < 2; i++) {
-      const d = this.displacement(m, resp);
-      m = [q[0] - d[0], q[1] - d[1], q[2] - d[2]];
+    const m: Vec3 = [...q];
+    const D = resp.diaphragmCaudalMm;
+    if (D === 0) return m;
+    const first = this.scene.respiratoryWeight(q);
+    if (first === 0) return m;
+    for (let j = 0; j < 3; j++) m[j] = q[j] - D * DIR[j];
+    const last = this.scene.respiratoryWeight(m);
+    if (last === 1) return m;
+    let lo = 0,
+      hi = 1,
+      flo = -first,
+      fhi = 1 - last;
+    for (let i = 0; i < RESPIRATORY_INVERSE_STEPS; i++) {
+      const a = (lo + hi) * 0.5;
+      for (let j = 0; j < 3; j++) m[j] = q[j] - D * a * DIR[j];
+      const f = a - this.scene.respiratoryWeight(m);
+      if (f < 0) {
+        lo = a;
+        flo = f;
+      } else {
+        hi = a;
+        fhi = f;
+      }
     }
+    // Interpolación dentro del intervalo final: evita escalones numéricos en las caras.
+    const a = Math.max(lo, Math.min(hi, (lo * fhi - hi * flo) / Math.max(fhi - flo, 1e-20)));
+    for (let j = 0; j < 3; j++) m[j] = q[j] - D * a * DIR[j];
     return m;
   }
 

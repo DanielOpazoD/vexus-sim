@@ -3,7 +3,7 @@
 ## Contrato
 
 La ruta habitual mantiene todos los archivos y aserciones. No cambia semillas, escalas,
-ventanas, tolerancias, timeouts ni los cinco fragmentos E2E. Tampoco cambia los archivos
+ventanas, tolerancias ni timeouts. Las E2E mantienen un trabajador por runner. Tampoco cambia los archivos
 fuente incluidos/excluidos del informe de cobertura ni sus umbrales (88/83/84/89 %).
 
 `npm run test:coverage` ejecuta secuencialmente:
@@ -76,3 +76,50 @@ medianos de 20,1–32,6 s: hay desigualdad de carga y variabilidad de runner. No
 ciegas el número de trabajadores dentro de un runner SwiftShader ni se amplían plazos para
 ocultar problemas. El trabajo de balancear y reducir arranques E2E es una revisión posterior,
 separada de esta optimización de instrumentación.
+
+## Reparto de navegador: ocho runners, un trabajador por runner
+
+La fase de CPU no era ya el camino crítico. En CI de #156, sus fases sumaron
+708,35 s, mientras el fragmento E2E más lento tardó 27,5 minutos. Se aumenta el
+reparto de cinco a ocho runners independientes; no se aumenta la concurrencia
+interna de SwiftShader ni se reduce el contenido de una prueba.
+
+Una reproducción aritmética de los 61 tiempos individuales de
+[CI de referencia](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37126779837),
+sobre el orden de descubrimiento actual, estima estos máximos por fragmento:
+
+| Fragmentos | Máximo estimado |
+| ---------- | --------------: |
+| 5          |       27,92 min |
+| 6          |       26,14 min |
+| 7          |       21,13 min |
+| 8          |       19,57 min |
+
+**Es una proyección, no una corrida de ocho runners ni una promesa de duración.**
+No incluye nuevas colas ni arranques; los runners anteriores tuvieron velocidades
+diferentes. El cambio añade tres arranques independientes y la disponibilidad de
+concurrencia puede limitar el beneficio. La duración real de CI debe comprobarse
+antes del merge y revisarse en los informes siguientes.
+
+Se usa el reparto nativo de
+[Playwright con fullyParallel](https://playwright.dev/docs/test-sharding), sin
+planificador propio ni historial obligatorio para ejecutar pruebas nuevas.
+La matriz literal es la única fuente del número de fragmentos; el denominador
+usa [strategy.job-total de GitHub](https://docs.github.com/en/actions/reference/workflows-and-actions/contexts#strategy-context).
+El veredicto protegido sigue requiriendo `check` y toda la matriz E2E, sin cambiar
+reintentos diagnósticos, rechazo de pruebas inestables, plazos ni workers.
+
+Antes de la cobertura, `tools/ci/verify-e2e-shards.ts` ejecuta la recolección real de
+Playwright (`--list`) sin navegador: suite completa y cada fragmento. Exige que la
+unión contenga cada identificador prueba/proyecto exactamente una vez. Rechaza
+listas vacías, omisiones, duplicados, pruebas omitidas y errores de descubrimiento.
+Las pruebas nuevas entran en la comparación automáticamente. El validador solo
+admite la matriz literal de un eje utilizada aquí; cualquier ampliación del
+esquema requiere revisarlo, en vez de aceptar silenciosamente otro reparto.
+
+El plan queda en `.validation/e2e-shards.json`, incluido en `validation-reports`.
+Recolectar no sustituye ejecutar: todos los fragmentos reales siguen siendo
+obligatorios y sus resultados se revisan por separado.
+
+La recolección y las ejecuciones reales usan `--forbid-only`: una prueba marcada
+accidentalmente como exclusiva detiene CI en vez de reducir silenciosamente la suite.

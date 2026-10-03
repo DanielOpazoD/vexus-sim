@@ -33,6 +33,8 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
+      - name: Todas las pruebas E2E previstas, una vez entre los fragmentos
+        run: node --import tsx tools/ci/verify-e2e-shards.ts
       - name: Cobertura de fuentes (umbrales intactos)
         run: npm run test:coverage:core
       - name: Matrices IQ exhaustivas (sin instrumentación V8)
@@ -64,18 +66,18 @@ jobs:
           retention-days: 7
 
   # En paralelo con `check` (no depende de él): el tiempo total de CI es el del más lento.
-  # Repartida en cinco fragmentos, cada uno con un solo trabajador (playwright.config.ts): SwiftShader usa todos los
+  # Repartida en ocho fragmentos, cada uno con un solo trabajador (playwright.config.ts): SwiftShader usa todos los
   # núcleos del corredor en cada cuadro, y con dos trabajadores por corredor las pruebas se disputaban la CPU, tardaban
   # el doble y agotaban sus plazos a días alternos (79 % de ejecuciones de main en rojo, septiembre de 2026).
   e2e:
-    name: extremo a extremo (Chromium + SwiftShader) ${{ matrix.shard }}/5
+    name: extremo a extremo (Chromium + SwiftShader) ${{ matrix.shard }}/${{ strategy.job-total }}
     runs-on: ubuntu-latest
     # un fragmento ronda los 10–15 min (la equivalencia sola, 3–6); con un reintento, más
     timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8]
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -97,7 +99,7 @@ jobs:
       - if: steps.pw-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
       - run: npx vite build
-      - run: npm run e2e -- --shard=${{ matrix.shard }}/5
+      - run: npm run e2e -- --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
       - name: Guardar los tiempos (duración, arranque y ritmo del bucle de cada prueba)
         if: always()
         uses: actions/upload-artifact@v7
@@ -123,7 +125,7 @@ jobs:
             test-results
           retention-days: 7
 
-  # El veredicto que protege main (regla de la rama): verde solo si `check` y los cinco fragmentos de la e2e lo están.
+  # El veredicto que protege main (regla de la rama): verde solo si `check` y todos los fragmentos de la e2e lo están.
   # Un solo nombre estable aunque cambie el número de fragmentos; `always()` para que un trabajo cancelado o fallido
   # dé rojo y no «omitido».
   veredicto:

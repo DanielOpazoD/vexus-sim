@@ -1150,3 +1150,106 @@ button.mode.active {
   color: var(--faint);
   white-space: nowrap;
 }
+
+/* Tres territorios sobre un único tiempo; modal docente de referencia fisiológica. */
+.venous-viewer {
+  width: min(1000px, calc(100vw - 24px));
+  max-height: calc(100dvh - 24px);
+  overflow: auto;
+  padding: 20px;
+  background: var(--panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+}
+.venous-viewer::backdrop {
+  background: rgb(0 0 0 / 75%);
+}
+.venous-viewer h2 {
+  margin: 0 0 8px;
+}
+.venous-viewer .row {
+  flex-wrap: wrap;
+}
+.venous-viewer label {
+  display: block;
+}
+.venous-viewer input[type='range'] {
+  display: block;
+  width: 100%;
+}
+.venous-row {
+  margin: 12px 0;
+  padding: 8px 12px;
+  background: var(--bg);
+  border-radius: 8px;
+}
+.venous-row figcaption {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.venous-row small {
+  color: var(--muted);
+  display: block;
+}
+.venous-row svg {
+  display: block;
+  width: 100%;
+  height: 90px;
+  overflow: hidden;
+}
+.venous-marker-row svg {
+  height: 48px;
+}
+.venous-row path {
+  fill: none;
+  vector-effect: non-scaling-stroke;
+}
+.venous-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.venous-wave {
+  stroke: var(--accent);
+  stroke-width: 1.5;
+}
+.venous-marker-row .venous-wave {
+  stroke: var(--ok);
+}
+.venous-cursor {
+  stroke: var(--accent-2);
+  stroke-width: 1;
+  stroke-dasharray: 4 3;
+}
+.venous-status,
+.venous-readout {
+  font-variant-numeric: tabular-nums;
+}
+@media (max-width: 600px) {
+  .venous-viewer {
+    padding: 12px;
+  }
+  .venous-row {
+    padding: 8px;
+  }
+}
+
+.venous-header {
+  position: sticky;
+  top: -20px;
+  margin-top: -20px;
+  padding-top: 20px;
+  z-index: 1;
+  background: var(--panel);
+  padding-bottom: 8px;
+}
+
+@media (max-width: 600px) {
+  .venous-header {
+    top: -12px;
+    margin-top: -12px;
+    padding-top: 12px;
+  }
+}

@@ -201,6 +201,10 @@ export class ControlPanel implements PanelContext {
     this.#teacher?.renderDebug();
   }
 
+  get venousComparisonOpen(): boolean {
+    return this.#teacher?.comparisonOpen ?? false;
+  }
+
   setEquivalence(report: EquivalenceReport | null): void {
     this.#equivalence = report;
     if (this.#teacher) this.#teacher.equivalence = report;

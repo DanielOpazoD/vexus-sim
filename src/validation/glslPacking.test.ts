@@ -1,8 +1,10 @@
 import { dirname, join } from 'node:path';
+import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { GLSL_WORDS, unpackGlsl } from '../core/glslPacking';
-import { packGlslTemplates } from '../../tools/build/glslPacking';
+import { GLSL_WORDS, GLSL_MARKERS, unpackGlsl } from '../core/glslPacking';
+import { glslPacking, packGlslTemplates } from '../../tools/build/glslPacking';
+import { threeGlslCompact } from '../../tools/build/threeGlslCompact';
 import { prepareGlslMangle, readSources, transformWithMangle } from '../../tools/build/glslMinify';
 import { bindingNames, compactBindings } from '../../tools/build/glslUniformNames';
 import { loadShaderGraph } from './support/shaderGraph';
@@ -10,15 +12,15 @@ import { loadShaderGraph } from './support/shaderGraph';
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 describe('transporte GLSL sin pérdida', () => {
   it('decodifica el diccionario completo sin tocar texto normal', () => {
-    expect(unpackGlsl(GLSL_WORDS.map((_, i) => '@' + String.fromCharCode(65 + i)).join(' '))).toBe(GLSL_WORDS.join(' '));
-    expect(unpackGlsl('x + 1.0; @0 @[ @a')).toBe('x + 1.0; @0 @[ @a');
+    expect(unpackGlsl(GLSL_WORDS.map((_, i) => '@' + GLSL_MARKERS[i]).join(' '))).toBe(GLSL_WORDS.join(' '));
+    expect(unpackGlsl('x + 1.0; @0 @[ @z')).toBe('x + 1.0; @0 @[ @z');
   });
   it('decodifica los diez tokens adicionales sin renombrar identificadores', () => {
     expect(unpackGlsl('@Q @R @S @T @U @V @W @X @Y @Z')).toBe(
       'tissue define texelFetch int gl_FragCoord referenceCartilage min ivec2 continue max',
     );
     expect(new Set(GLSL_WORDS).size).toBe(GLSL_WORDS.length);
-    expect(GLSL_WORDS.length).toBeLessThanOrEqual(26);
+    expect(GLSL_WORDS.length).toBeLessThanOrEqual(GLSL_MARKERS.length);
   });
   it('conserva interpolaciones con marcadores, coerción, orden y escapes', () => {
     const filler = 'float x = 1.0; return vec3(x);\n'.repeat(100);
@@ -63,5 +65,48 @@ describe('transporte GLSL sin pérdida', () => {
     }
     expect(programs).toBeGreaterThan(15);
     expect(saved).toBeGreaterThan(5000);
+  });
+
+  it('conserva cada export GLSL de Three byte por byte después del compactado existente', () => {
+    const plugin = threeGlslCompact();
+    (plugin.configResolved as (config: { root: string }) => void)({ root });
+    (plugin.buildStart as () => void)();
+    const compact = plugin.transform as (code: string, id: string) => { code: string };
+    const helper = join(root, 'src/core/glslPacking.ts');
+    const sources = new Map([[helper, readFileSync(helper, 'utf8')]]);
+    let modules = 0,
+      exports = 0,
+      saved = 0;
+    for (const folder of ['ShaderChunk', 'ShaderLib']) {
+      const dir = join(root, 'node_modules/three/src/renderers/shaders', folder);
+      for (const name of readdirSync(dir).filter((n) => n.endsWith('.glsl.js'))) {
+        const id = join(dir, name);
+        const code = compact(readFileSync(id, 'utf8'), id).code;
+        sources.set(id, code);
+        const before = loadShaderGraph(id, sources, (_, c) => c);
+        const after = loadShaderGraph(id, sources, (p, c) => packGlslTemplates(c, p, root));
+        expect(after, `${folder}/${name}`).toEqual(before);
+        for (const value of Object.values(before)) {
+          expect(typeof value, name).toBe('string');
+          exports++;
+        }
+        saved += code.length - packGlslTemplates(code, id, root).length;
+        modules++;
+      }
+    }
+    expect(modules).toBeGreaterThan(100);
+    expect(exports).toBeGreaterThanOrEqual(modules);
+    expect(saved).toBeGreaterThan(0); // El ahorro final se mide sobre el bundle, no sobre módulos aún sin tree-shaking.
+  });
+
+  it('limita el plugin a nuestras fuentes y los módulos GLSL de Three', () => {
+    const plugin = glslPacking();
+    (plugin.configResolved as (config: { root: string }) => void)({ root });
+    const transform = plugin.transform as (code: string, id: string) => { code: string } | null;
+    const code = 'export default /* glsl */ `' + 'float x=1.; return vec3(x);'.repeat(100) + '`;';
+    const paths = ['src/example.ts', 'node_modules/three/src/renderers/shaders/ShaderChunk/example.glsl.js'];
+    for (const path of paths) expect(transform(code, join(root, path))?.code).toContain('__unpackGlsl');
+    for (const path of ['node_modules/other/src/example.ts', 'node_modules/three/src/renderers/WebGLRenderer.js', 'tools/example.ts'])
+      expect(transform(code, join(root, path))).toBeNull();
   });
 });

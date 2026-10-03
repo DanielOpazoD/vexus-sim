@@ -10,6 +10,7 @@ import { measurePhysiologyTruth } from '../../vexus/measurements';
 import { button, controlId, note, row } from '../controls';
 import type { PanelContext } from './context';
 import { contextText, gradeValueText, patternText, renalText } from './vexusText';
+import { VenousViewer } from './venousViewer';
 
 /** Niveles de PEEP de la botonera (cmH₂O). */
 type PeepLevel = '0' | '5' | '10' | '15';
@@ -59,6 +60,10 @@ export function renderCaseNotes(el: HTMLElement, notes: CaseTeacherNotes | null)
 
 /** Pestaña Docente: verdad fisiológica, intervenciones y estado de la adquisición (solo con la casilla activada). */
 export class TeacherTab {
+  #venous: VenousViewer | null = null;
+  get comparisonOpen(): boolean {
+    return this.#venous?.dialog.open ?? false;
+  }
   #debugEl!: HTMLElement;
   #caseEl!: HTMLElement;
   /** Caso y modo de lo que solo ve el docente, ya pintado (se repinta solo si cambian). */
@@ -96,6 +101,11 @@ export class TeacherTab {
     this.#caseEl.className = 'case-notes';
     caseSec.appendChild(this.#caseEl);
     this.#buildInterventions(p);
+    const comparison = this.#ctx.section(p, 'Comparación venosa');
+    button(row(comparison), 'Abrir comparación venosa', () => {
+      this.#venous ??= new VenousViewer(this.#ctx, comparison);
+      this.#venous.open();
+    });
     const sec = this.#ctx.section(p, 'Verdad fisiológica y adquisición');
     note(sec, 'Oculto al alumno; la verdad del caso y lo adquirido se calculan por separado.');
     this.#debugEl = document.createElement('div');
@@ -203,6 +213,8 @@ export class TeacherTab {
 
   /** Cambio de caso o reinicio: el aviso de la intervención anterior ya no vale y las notas pasan al caso nuevo. */
   onSimulatorChanged(): void {
+    this.#venous?.clear();
+    this.#venous?.update();
     this.#clearAnnouncement();
     this.#renderLoop();
     this.#applyTeacherMode();
@@ -219,6 +231,7 @@ export class TeacherTab {
     const key = `${id}|${teacher}`;
     if (key === this.#caseKey) return;
     this.#caseKey = key;
+    this.#venous?.update();
     renderCaseNotes(this.#caseEl, caseTeacherNotes(id, teacher));
     if (teacher) {
       this.#renderLoop();
@@ -274,6 +287,7 @@ export class TeacherTab {
 
   renderDebug(): void {
     if (!this.#ctx.store.get().debug || this.#ctx.store.get().tab !== 'docente') return;
+    this.#venous?.update();
     this.#renderLoop();
     const sim = this.#ctx.sim();
     const s = sim.sample;

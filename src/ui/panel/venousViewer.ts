@@ -1,4 +1,10 @@
-import { venousComparisonTrace, type VenousComparisonPoint } from '../../physiology/venousComparison';
+import { VenousSpectralAcquisition, VENOUS_SPECTRAL_SCALES, VENOUS_FORWARD_SIGN } from '../../doppler/venousSpectral';
+import type { CaptureMark } from '../../doppler/spectralMeasure';
+import { captureProtocolVessel } from '../../doppler/capture';
+import type { Beat } from '../../physiology/rhythm';
+import type { PhysiologySample } from '../../physiology/engine';
+import { drawVenousSpectrum } from '../venousSpectralPlot';
+import { VENOUS_COMPARISON_CHANNELS, venousComparisonTrace, type VenousComparisonPoint } from '../../physiology/venousComparison';
 import { button, controlId, note, row } from '../controls';
 import type { PanelContext } from './context';
 
@@ -25,6 +31,20 @@ export class VenousViewer {
   #points: readonly VenousComparisonPoint[] = [];
   #paused = false;
   #scale = 60;
+  #spectralMode = true;
+  #annotations = false;
+  #spectral: VenousSpectralAcquisition | null = null;
+  #processedT = -Infinity;
+  #rawSamples: readonly PhysiologySample[] = [];
+  #beats: Beat[] = [];
+  #spectralScales: number[] = [...VENOUS_SPECTRAL_SCALES];
+  #canvases: HTMLCanvasElement[] = [];
+  #spectralControls: HTMLElement[] = [];
+  #plots: Element[] = [];
+  #marks: CaptureMark[][] = [[], [], []];
+  #marksT = -Infinity;
+  #measurementIssues = ['insuficiente', 'insuficiente', 'insuficiente'];
+  readonly #description: HTMLElement;
 
   constructor(ctx: PanelContext, host: HTMLElement) {
     this.#ctx = ctx;
@@ -44,9 +64,40 @@ export class VenousViewer {
       header,
       'Referencia fisiológica · velocidad media Q/A, no espectro PW adquirido. Simultaneidad virtual docente.',
     );
+    this.#description = description;
     description.id = controlId('referencia-fisiologica');
     d.setAttribute('aria-describedby', description.id);
     const controls = row(header);
+    const mode = document.createElement('select');
+    mode.setAttribute('aria-label', 'Tipo de visualización venosa');
+    for (const [value, label] of [
+      ['pw', 'Espectro PW'],
+      ['reference', 'Referencia Q/A'],
+    ]) {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      mode.appendChild(option);
+    }
+    mode.addEventListener('change', () => {
+      this.#spectralMode = mode.value === 'pw';
+      this.#spectral = null;
+      this.#processedT = -Infinity;
+      this.#marksT = -Infinity;
+      this.#marks = [[], [], []];
+      this.update();
+    });
+    controls.appendChild(mode);
+    const annotationLabel = document.createElement('label');
+    const annotations = document.createElement('input');
+    annotations.type = 'checkbox';
+    annotations.addEventListener('change', () => {
+      this.#annotations = annotations.checked;
+      this.#marksT = -Infinity;
+      this.#drawSpectra();
+    });
+    annotationLabel.append(annotations, ' Marcas A/S/D y máximos/mínimos');
+    controls.appendChild(annotationLabel);
     this.#pause = button(controls, 'Pausar vista', () => {
       this.#paused = !this.#paused;
       this.#pause.textContent = this.#paused ? 'Reanudar vista' : 'Pausar vista';
@@ -68,6 +119,7 @@ export class VenousViewer {
       this.#scale = Number(scale.value);
       this.#draw();
     });
+    label.className = 'venous-reference-scale';
     label.appendChild(scale);
     controls.appendChild(label);
     button(controls, 'Cerrar', () => {
@@ -93,12 +145,14 @@ export class VenousViewer {
       caption.append(name, value);
       const detail = document.createElement('small');
       detail.textContent = r.detail;
+      detail.className = 'venous-direction';
       const plot = svg('svg', {
         viewBox: '0 0 800 90',
         preserveAspectRatio: 'none',
         role: 'img',
         'aria-label': `${r.label}, ${r.unit}, mismo eje temporal`,
       });
+      this.#plots.push(plot);
       plot.appendChild(svg('path', { d: `M0 ${i === 4 ? 85 : 45}H800 M200 0V90 M400 0V90 M600 0V90`, class: 'venous-grid' }));
       const path = svg('path', { class: 'venous-wave', d: '' });
       const marker = svg('path', { class: 'venous-cursor', d: '' });
@@ -109,6 +163,38 @@ export class VenousViewer {
       limit.className = 'venous-limits';
       this.#limits.push(limit);
       figure.append(caption, detail, plot, limit);
+      if (i < 3) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 800;
+        canvas.height = 184;
+        canvas.className = 'venous-spectrum';
+        canvas.setAttribute('role', 'img');
+        canvas.setAttribute('aria-label', `${r.label}: espectro Doppler pulsado simulado y reloj ECG compartido`);
+        this.#canvases.push(canvas);
+        figure.insertBefore(canvas, limit);
+        const controls = row(figure);
+        const scaleLabel = document.createElement('label');
+        scaleLabel.textContent = 'Nyquist ';
+        const selector = document.createElement('select');
+        selector.setAttribute('aria-label', `Escala PW ${r.label}`);
+        for (const n of [10, 20, 30, 40, 50, 60, 80, 120]) {
+          const option = document.createElement('option');
+          option.value = String(n);
+          option.textContent = `±${n} cm/s`;
+          selector.appendChild(option);
+        }
+        selector.value = String(this.#spectralScales[i]);
+        selector.addEventListener('change', () => {
+          this.#spectralScales[i] = Number(selector.value);
+          this.#spectral = null;
+          this.#processedT = -Infinity;
+          this.#marksT = -Infinity;
+          this.update();
+        });
+        scaleLabel.appendChild(selector);
+        controls.appendChild(scaleLabel);
+        this.#spectralControls.push(controls);
+      }
       d.appendChild(figure);
     }
     const cursorLabel = document.createElement('label');
@@ -145,6 +231,18 @@ export class VenousViewer {
 
   clear(): void {
     this.#points = [];
+    this.#rawSamples = [];
+    this.#beats = [];
+    this.#spectral = null;
+    this.#processedT = -Infinity;
+    this.#marksT = -Infinity;
+    this.#marks = [[], [], []];
+    for (const canvas of this.#canvases) {
+      canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+      canvas.dataset.columns = '0';
+      canvas.dataset.marks = '';
+      canvas.dataset.lastTime = '';
+    }
     this.#paused = false;
     this.#pause.textContent = 'Pausar vista';
     this.#cursor.disabled = true;
@@ -164,11 +262,66 @@ export class VenousViewer {
     this.#case.textContent = this.#ctx.sim().patient.label;
     if (!this.#paused) {
       const e = this.#ctx.sim().physiology;
-      this.#points = venousComparisonTrace(e.samples.filter((s) => s.t >= e.clock.t - 6)).points;
+      this.#beats = e.rhythm.beatsBetween(Math.max(0, e.clock.t - 7), e.clock.t);
+      this.#rawSamples = e.samples.filter((s) => s.t >= e.clock.t - 6);
+      this.#points = venousComparisonTrace(this.#rawSamples).points;
       this.#cursor.max = String(Math.max(0, this.#points.length - 1));
       this.#cursor.value = this.#cursor.max;
     }
+    if (this.#spectralMode && this.#rawSamples.length) {
+      if (!this.#spectral) {
+        const sim = this.#ctx.sim();
+        this.#spectral = new VenousSpectralAcquisition(sim.anatomy, this.#rawSamples[0], sim.patient.seed);
+        this.#spectral.scales.splice(0, 3, ...this.#spectralScales);
+      }
+      // Bounded catch-up also works while the patient is frozen; never block on six seconds of IQ at once.
+      const next = this.#rawSamples.filter((s) => s.t > this.#processedT).slice(0, 32);
+      this.#spectral.push(next, this.#ctx.sim().physiology.clock.dt);
+      if (next.length) this.#processedT = next.at(-1)!.t;
+    }
     this.#draw();
+  }
+
+  #drawSpectra(): void {
+    if (!this.#spectralMode || !this.#spectral || !this.#points.length) return;
+    const end = this.#points.at(-1)!.t,
+      start = Math.max(0, end - 6);
+    if (this.#annotations && this.#processedT - this.#marksT >= 0.5) {
+      const rhythm = { beatsBetween: (from: number, to: number) => this.#beats.filter((b) => b.tR >= from && b.tR + b.rr <= to) };
+      const opts = { f0Hz: this.#spectral.f0Hz, angleCorrectionRad: 0, invert: false, fftSize: 128, wallFilterHz: 15, gainDb: 0 };
+      this.#marks = VENOUS_COMPARISON_CHANNELS.map(({ id }, i) => {
+        const m = captureProtocolVessel(
+          id,
+          this.#spectral!.chains[i].spectral.columns,
+          rhythm,
+          Math.min(end, this.#processedT),
+          opts,
+          this.#spectral!.gateTracks[i],
+        );
+        this.#measurementIssues[i] = m ? (m.quality.issue ?? '') : 'insuficiente';
+        return m?.quality.issue === null ? m.marks : [];
+      });
+      this.#marksT = this.#processedT;
+    }
+    const cursor = this.#points[Number(this.#cursor.value)];
+    for (let i = 0; i < 3; i++) {
+      const columns = this.#spectral.chains[i].spectral.columns;
+      drawVenousSpectrum(
+        this.#canvases[i],
+        columns,
+        start,
+        end,
+        this.#spectralScales[i],
+        this.#annotations ? this.#marks[i] : [],
+        this.#paused ? (cursor?.t ?? null) : null,
+      );
+      this.#canvases[i].dataset.columns = String(columns.length);
+      this.#canvases[i].dataset.lastTime = String(columns.at(-1)?.t ?? '');
+      this.#canvases[i].dataset.marks = this.#annotations ? this.#marks[i].map((m) => m.label).join(',') : '';
+      this.#limits[i].textContent =
+        `2,5 MHz · PRF ${columns.at(-1)?.prfHz.toFixed(0) ?? '—'} Hz · filtro 15 Hz · θ 0° · ${this.#spectralScales[i]} cm/s Nyquist${this.#annotations && this.#measurementIssues[i] ? ` · Marcas no disponibles: ${this.#measurementIssues[i]}` : ''}`;
+      this.#values[i].textContent = 'PW simulado';
+    }
   }
 
   #value(p: VenousComparisonPoint, row: number): number {
@@ -181,6 +334,17 @@ export class VenousViewer {
   }
 
   #draw(): void {
+    this.#description.textContent = this.#spectralMode
+      ? 'PW simulado · IQ → filtro → espectro. Tres puertas virtuales que siguen al vaso; transmisión ideal y alineación a 0°. Sin validación clínica.'
+      : 'Referencia fisiológica · velocidad media Q/A, no espectro PW adquirido. Simultaneidad virtual docente.';
+    (this.dialog.querySelector('.venous-reference-scale') as HTMLElement).hidden = this.#spectralMode;
+    for (let i = 0; i < 3; i++) {
+      this.#plots[i].setAttribute('style', this.#spectralMode ? 'display:none' : '');
+      this.#canvases[i].hidden = !this.#spectralMode;
+      this.#spectralControls[i].hidden = !this.#spectralMode;
+      const detail = this.dialog.querySelectorAll('.venous-direction')[i];
+      detail.textContent = `${this.#spectralMode && VENOUS_FORWARD_SIGN[i] < 0 ? '−' : '+'} ${VENOUS_COMPARISON_CHANNELS[i].forward}${this.#spectralMode ? ' · orientación virtual' : ''}`;
+    }
     if (!this.#points.length) {
       this.#status.textContent = 'Acumulando historial…';
       return;
@@ -189,12 +353,13 @@ export class VenousViewer {
       b = this.#points.at(-1)!;
     let clipped = false;
     for (let i = 0; i < 5; i++) {
+      if (i < 3 && this.#spectralMode) continue;
       const scale = i < 3 ? this.#scale : i === 3 ? 2 : 1;
       let d = '',
         previous = -Infinity;
       for (const p of this.#points) {
         const value = this.#value(p, i);
-        if (i < 3 && Math.abs(value) > scale) clipped = true;
+        if (!this.#spectralMode && i < 3 && Math.abs(value) > scale) clipped = true;
         const y = i === 4 ? 85 - value * 80 : 45 - (value / scale) * 40;
         // No conectar huecos de adquisición como si fueran datos continuos.
         d += `${p.t - previous > 0.0081 ? 'M' : 'L'}${this.#x(p.t).toFixed(1)},${y.toFixed(1)}`;
@@ -205,6 +370,7 @@ export class VenousViewer {
         i < 3 ? `+${scale} / 0 / −${scale} cm/s` : i === 3 ? '+2 / 0 / −2 mV' : '0 = espiración · 1 = inspiración';
     }
     this.#status.textContent = `${this.#paused ? 'Vista pausada (solo esta ventana)' : this.#ctx.sim().frozen ? 'Paciente congelado' : 'En vivo'} · ${a.t.toFixed(2)}–${b.t.toFixed(2)} s · ${b.respiratoryCycling ? 'Respiración activa' : 'Respiración sin ciclo'}${clipped ? ' · Hay valores fuera de escala: amplía el rango' : ''}`;
+    if (this.#spectralMode && b.t - this.#processedT > 0.2) this.#status.textContent += ' · Reconstruyendo señal IQ…';
     this.#showCursor();
   }
 
@@ -216,6 +382,7 @@ export class VenousViewer {
       this.#markers[i].setAttribute('d', `M${x} 0V90`);
       this.#values[i].textContent = `${this.#value(p, i).toFixed(2)} ${i < 3 ? 'cm/s' : i === 3 ? 'mV' : ''}`;
     }
+    this.#drawSpectra();
     this.#cursor.setAttribute('aria-valuetext', `${p.t.toFixed(3)} segundos`);
     this.#readout.textContent = `t ${p.t.toFixed(3)} s · latido ${p.beatIndex} · PAD instantánea ${p.rightAtrialMmHg.toFixed(1)} mmHg · PIA instantánea ${p.abdominalMmHg.toFixed(1)} mmHg`;
   }

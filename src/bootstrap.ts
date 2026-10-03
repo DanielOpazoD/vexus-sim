@@ -399,6 +399,7 @@ function frame(now: number, dt: number): void {
   probeAnimator.tick(dt);
   s.advance(dt);
   const comparisonOpen = panel.venousComparisonOpen;
+  if (comparisonOpen) panel.renderVenous();
   // El visor es modal: no gastar GPU en imágenes ocultas. El reloj y la adquisición IQ
   // siguen en advance; al cerrar se vuelve a dibujar el estado actual, sin cambiar frozen.
   // Si ya se adquiría M, mantener sus columnas y cine: no fabricar un hueco temporal.

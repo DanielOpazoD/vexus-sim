@@ -1253,3 +1253,17 @@ button.mode.active {
     padding-top: 12px;
   }
 }
+
+.venous-spectrum {
+  width: 100%;
+  height: 184px;
+  display: block;
+  background: #000;
+  margin-top: 6px;
+}
+.venous-spectrum[hidden] {
+  display: none;
+}
+.venous-viewer [hidden] {
+  display: none !important;
+}

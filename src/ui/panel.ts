@@ -201,6 +201,10 @@ export class ControlPanel implements PanelContext {
     this.#teacher?.renderDebug();
   }
 
+  renderVenous(): void {
+    this.#teacher?.renderVenous();
+  }
+
   get venousComparisonOpen(): boolean {
     return this.#teacher?.comparisonOpen ?? false;
   }

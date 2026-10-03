@@ -33,10 +33,10 @@ export class PwDopplerChain {
   private pending = 0;
   private prfHz = 2600;
 
-  constructor(anatomy: AnatomyQuery, seed: number, audio: AudioSink = SILENT_AUDIO) {
+  constructor(anatomy: AnatomyQuery, seed: number, audio: AudioSink = SILENT_AUDIO, history: { maxColumns?: number } = {}) {
     this.sampleVolume = new SampleVolumeIQ(anatomy, seed);
     this.wallFilter = new WallFilter(25, this.prfHz);
-    this.spectral = new SpectralProcessor({ fftSize: 128, hop: 16 });
+    this.spectral = new SpectralProcessor({ fftSize: 128, hop: 16, ...history });
     this.audio = audio;
   }
 

@@ -12,6 +12,7 @@ test('comparación venosa: reloj único, cursor, pausa, escala y cierre accesibl
   await open.click({ force: true });
   const dialog = page.getByRole('dialog', { name: 'Comparación venosa' });
   await expect(dialog).toBeVisible();
+  await dialog.getByRole('combobox', { name: 'Tipo de visualización venosa' }).selectOption('reference');
   await expect(dialog).toContainText('no espectro PW adquirido');
   await expect(dialog.locator('.venous-wave')).toHaveCount(5);
   await withinFrames(page, 20, 'curvas con datos', async () => {
@@ -97,5 +98,66 @@ test('comparación venosa: reloj único, cursor, pausa, escala y cierre accesibl
   await expect(page.locator('.venous-readout')).toHaveText('');
   await expect(page.locator('.venous-case')).toHaveText('');
   await expect(page.locator('.venous-wave').first()).toHaveAttribute('d', '');
+  expect(errors).toEqual([]);
+});
+
+test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala independiente', async ({ page }, info) => {
+  budget(120_000);
+  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  await page.locator('#debug-toggle').check({ force: true });
+  await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
+  await page.evaluate(() => window.__vexusTest!.advance(30));
+  await page.locator('#freeze').click({ force: true });
+  const before = await page.evaluate(() => ({ t: window.__vexusTest!.sim().physiology.clock.t, frozen: window.__vexusTest!.sim().frozen }));
+  await page.getByRole('button', { name: 'Abrir comparación venosa' }).click({ force: true });
+  const dialog = page.getByRole('dialog', { name: 'Comparación venosa' });
+  await expect(dialog.getByRole('combobox', { name: 'Tipo de visualización venosa' })).toHaveValue('pw');
+  const canvases = dialog.locator('.venous-spectrum');
+  await expect(canvases).toHaveCount(3);
+  await withinFrames(page, 140, 'reconstrucción de tres señales IQ', async () => {
+    const times = await canvases.evaluateAll((els) => els.map((el) => Number((el as HTMLCanvasElement).dataset.lastTime)));
+    return times.every((t) => before.t - t < 0.15) || `últimas columnas ${times.join(', ')}`;
+  });
+  expect(
+    await canvases.evaluateAll((els) =>
+      els.map((el) => {
+        const c = el as HTMLCanvasElement;
+        const d = c.getContext('2d')!.getImageData(20, 15, c.width - 120, c.height - 50).data;
+        const levels = new Set<number>();
+        let nonzero = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          levels.add(d[i]);
+          if (d[i] > 12) nonzero++;
+        }
+        return levels.size > 30 && nonzero > 1000;
+      }),
+    ),
+  ).toEqual([true, true, true]);
+  await dialog.getByRole('checkbox', { name: 'Marcas A/S/D y máximos/mínimos' }).check();
+  await expect(canvases.first()).toHaveAttribute('data-marks', /S/);
+  await expect(canvases.first()).toHaveAttribute('data-marks', /D/);
+  await expect(canvases.first()).toHaveAttribute('data-marks', /A/);
+  await page.screenshot({ path: info.outputPath('venous-pw-desktop.png') });
+  await dialog.getByRole('button', { name: 'Pausar vista', exact: true }).click();
+  const cursor = dialog.getByRole('slider', { name: 'Cursor sincronizado' });
+  await cursor.focus();
+  await page.keyboard.press('ArrowLeft');
+  const rowScales = dialog.locator('[aria-label^="Escala PW"]');
+  await rowScales.nth(1).selectOption('80');
+  await expect(rowScales.nth(0)).toHaveValue('80');
+  await expect(rowScales.nth(1)).toHaveValue('80');
+  await expect(rowScales.nth(2)).toHaveValue('60');
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+  await dialog.evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  await page.screenshot({ path: info.outputPath('venous-pw-mobile.png') });
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
+  expect(
+    await page.evaluate(() => ({ t: window.__vexusTest!.sim().physiology.clock.t, frozen: window.__vexusTest!.sim().frozen })),
+  ).toEqual(before);
+  await expect(page.locator('.venous-spectrum').first()).toHaveAttribute('data-columns', '0');
   expect(errors).toEqual([]);
 });

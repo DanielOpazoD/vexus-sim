@@ -5044,3 +5044,11 @@ esto evita redibujados ocultos entre comprobaciones de limpieza y añade ese est
 **Decisión.** Suavizar únicamente el soporte rectangular del centrado mediante una transición cúbica C1 simétrica de 40 ms. Su integral sigue siendo RR y los pesos adyacentes suman uno: se conserva el área de centrado y el nivel para medias iguales. No se filtran ondas mecánicas ni IQ, ni se modifican amplitudes, eventos o aleatoriedad. La duración es una regularización numérica explícita, no un parámetro valvular validado.
 
 **Verificación.** Cuatro contratos rápidos de continuidad, derivada, área y partición de unidad, más los contratos existentes de carga y media. Se mantiene la protección de captura de la decisión 121; no se desplaza un contraejemplo de señal para hacer pasar la suite. El modelo auricular sigue prescrito y no se anuncia como cámara volumétrica ni como fisiología clínicamente validada. Detalle en `physiology/ATRIAL_CONTINUITY.md`.
+
+## 123. Comparación venosa con espectros PW observados y escalas independientes
+
+**Requisito.** El propietario pidió imagen de Doppler pulsado sincronizada con ECG, con marcas opcionales de ondas y escala por examen. La referencia Q/A de la decisión 120 permanece secundaria y no se presenta como imagen PW.
+
+**Implementación.** Tres adquisiciones virtuales anatómicas siguen sus vasos y comparten el historial fisiológico. Se reutiliza dispersores → IQ → filtro de pared → STFT; la imagen pinta potencia, sin ruido gráfico ni relleno de curvas. La transmisión ideal y alineación a cero grados son supuestos explícitos. Las escalas iniciales 80/50/60 cm/s tienen PRF física independiente y pueden modificarse. Las marcas proceden del medidor espectral y requieren calidad: A/S/D hepáticas, Vmáx/Vmín portales y S/D/mín interlobares. El trabajo por cuadro se acota y el cierre borra señal y datos; el paciente no se modifica al pausar la vista.
+
+**Verificación y límites.** Contratos de geometría en siete casos, determinismo por fragmentos, señal multibin, reloj y huecos; adquisición normal en apnea medible en los tres canales. E2E específico de imagen, marcas, escala independiente y móvil, además del flujo de referencia previo. Se preservan las limitaciones de fisiología y validación clínica. Detalle y fuentes en `physiology/VENOUS_SPECTRAL_VIEWER.md`.

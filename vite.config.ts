@@ -8,6 +8,7 @@ import { threeGlslCompact } from './tools/build/threeGlslCompact';
 import { glslUniformNames } from './tools/build/glslUniformNames';
 import { glslPacking } from './tools/build/glslPacking';
 import { marchingTable } from './tools/build/marchingTable';
+import { coverageFiles } from './tools/ci/coveragePartition';
 
 /**
  * Niveles de prueba (práctica de EchoTwin): un archivo cuya PRIMERA línea es
@@ -16,12 +17,12 @@ import { marchingTable } from './tools/build/marchingTable';
  */
 // Relativo a este archivo, no al cwd: el servidor puede arrancar desde otro directorio
 const SRC_DIR = join(dirname(fileURLToPath(import.meta.url)), 'src');
-function testFilesWithMarker(marker: string, dir = SRC_DIR): string[] {
+function testFilesWithMarker(marker: string | null, dir = SRC_DIR): string[] {
   const out: string[] = [];
   for (const f of readdirSync(dir)) {
     const p = join(dir, f);
     if (statSync(p).isDirectory()) out.push(...testFilesWithMarker(marker, p));
-    else if (/\.test\.ts$/.test(f) && readFileSync(p, 'utf8').split('\n')[0].trim() === marker) out.push(p);
+    else if (/\.test\.ts$/.test(f) && (marker === null || readFileSync(p, 'utf8').split('\n')[0].trim() === marker)) out.push(p);
   }
   return out;
 }
@@ -40,6 +41,9 @@ function gitCommit(): string {
   }
 }
 const tier = process.env['VITEST_TIER'] ?? 'fast';
+const partition = process.env['VITEST_COVERAGE_PARTITION'] ?? 'all';
+// The default keeps glob discovery for watch mode; split coverage fails closed on invalid/missing files.
+const selected = partition === 'all' ? null : coverageFiles(testFilesWithMarker(null), partition, tier);
 
 export default defineConfig({
   // Source modules expose tagged GLSL to the token-preserving compactor; no vendor fork.
@@ -75,7 +79,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: tier === 'slow' ? SLOW : ['src/**/*.test.ts'],
+    include: selected ?? (tier === 'slow' ? SLOW : ['src/**/*.test.ts']),
     exclude: tier === 'fast' ? ['node_modules/**', ...SLOW] : ['node_modules/**'],
     environment: 'node',
     testTimeout: 60_000,
@@ -98,7 +102,8 @@ export default defineConfig({
         'src/app/session.ts', // construye el Simulator sobre un canvas WebGL: lo cubre la e2e
       ],
       reporter: ['text-summary', 'html', 'json-summary'],
-      // Umbrales: solo pueden subir (Fase 0). Medidos con todos los niveles.
+      // Umbrales: solo pueden subir (Fase 0). Todas las fuentes siguen incluidas; las matrices IQ
+      // se ejecutan aparte sin instrumentación. test:coverage:full conserva la referencia íntegra.
       thresholds: { statements: 88, branches: 83, functions: 84, lines: 89 },
     },
   },

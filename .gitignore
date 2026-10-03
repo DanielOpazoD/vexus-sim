@@ -24,3 +24,6 @@ Thumbs.db
 test-results/
 playwright-report/
 e2e-results.json
+
+# Informes de las dos fases de validación
+.validation/

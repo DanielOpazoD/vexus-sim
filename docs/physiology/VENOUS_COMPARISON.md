@@ -120,3 +120,9 @@ resultado clínico validado.
 Aún no hay sliders fisiológicos libres, taponamiento ni compliance VD. Se deben
 incorporar por mecanismos y validar según las etapas restantes. La respiración
 conserva el estado del simulador y continúa desactivada al inicio normal.
+
+Mientras el modal está abierto se omiten B, navegador 3D, corte y trazas de fondo
+invisibles. El reloj fisiológico y la adquisición IQ continúan; no se modifica
+`frozen`. Si M ya estaba activo, se mantienen su adquisición y cine para no
+introducir una discontinuidad de columnas. Al cerrar se dibuja el estado actual.
+La cabecera de controles permanece visible al desplazarse por la ventana.

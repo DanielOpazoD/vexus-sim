@@ -30,17 +30,23 @@ export class VenousViewer {
     this.#ctx = ctx;
     const d = this.dialog;
     d.className = 'venous-viewer';
+    const header = document.createElement('header');
+    header.className = 'venous-header';
+    d.appendChild(header);
     const heading = document.createElement('h2');
     heading.id = controlId('comparacion-venosa');
     heading.textContent = 'Comparación venosa';
     d.setAttribute('aria-labelledby', heading.id);
-    d.appendChild(heading);
-    this.#case = note(d);
+    header.appendChild(heading);
+    this.#case = note(header);
     this.#case.className = 'venous-case';
-    const description = note(d, 'Referencia fisiológica · velocidad media Q/A, no espectro PW adquirido. Simultaneidad virtual docente.');
+    const description = note(
+      header,
+      'Referencia fisiológica · velocidad media Q/A, no espectro PW adquirido. Simultaneidad virtual docente.',
+    );
     description.id = controlId('referencia-fisiologica');
     d.setAttribute('aria-describedby', description.id);
-    const controls = row(d);
+    const controls = row(header);
     this.#pause = button(controls, 'Pausar vista', () => {
       this.#paused = !this.#paused;
       this.#pause.textContent = this.#paused ? 'Reanudar vista' : 'Pausar vista';
@@ -65,7 +71,7 @@ export class VenousViewer {
     label.appendChild(scale);
     controls.appendChild(label);
     button(controls, 'Cerrar', () => d.close());
-    this.#status = note(d);
+    this.#status = note(header);
     this.#status.className = 'venous-status';
     const trace = venousComparisonTrace([]);
     const rows = [
@@ -115,7 +121,10 @@ export class VenousViewer {
     d.appendChild(cursorLabel);
     this.#readout = note(d);
     this.#readout.className = 'venous-readout';
-    note(d, 'Modelo en desarrollo: taponamiento y compliance diastólica VD aún no implementados.');
+    note(
+      d,
+      'Modelo en desarrollo: taponamiento y compliance diastólica VD aún no implementados. Esta vista no cambia la congelación del paciente.',
+    );
     // El modal nativo maneja foco y Escape. Sus teclas no disparan atajos del ecógrafo de fondo.
     d.addEventListener('keydown', (e) => e.stopPropagation());
     d.addEventListener('close', () => this.clear());
@@ -126,6 +135,7 @@ export class VenousViewer {
     if (!this.#ctx.store.get().debug || this.dialog.open) return;
     this.clear();
     this.dialog.showModal();
+    this.dialog.scrollTop = 0;
     this.update();
   }
 

@@ -18,6 +18,13 @@ test('comparación venosa: reloj único, cursor, pausa, escala y cierre accesibl
     const paths = await dialog.locator('.venous-wave').evaluateAll((els) => els.map((e) => e.getAttribute('d')));
     return paths.every((p) => p && p.includes('L')) || 'sin trazas completas';
   });
+  const runningAt = await page.evaluate(() => window.__vexusTest!.sim().physiology.clock.t);
+  await withinFrames(
+    page,
+    20,
+    'el reloj continúa con el visor abierto',
+    async () => (await page.evaluate(() => window.__vexusTest!.sim().physiology.clock.t)) > runningAt || 'reloj detenido',
+  );
   await dialog.getByRole('button', { name: 'Pausar vista', exact: true }).click();
   const pausedPaths = await dialog.locator('.venous-wave').evaluateAll((els) => els.map((e) => e.getAttribute('d')));
   const cursor = dialog.getByRole('slider', { name: 'Cursor sincronizado' });
@@ -52,12 +59,21 @@ test('comparación venosa: reloj único, cursor, pausa, escala y cierre accesibl
   await dialog.getByRole('combobox', { name: 'Escala común de velocidad' }).selectOption('120');
   await expect(dialog.locator('.venous-limits').first()).toHaveText('+120 / 0 / −120 cm/s');
   await dialog.getByRole('combobox', { name: 'Escala común de velocidad' }).selectOption('60');
-  await page.screenshot({ path: info.outputPath('venous-desktop.png'), fullPage: true });
+  await dialog.evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  await page.screenshot({ path: info.outputPath('venous-desktop.png') });
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
-  await page.screenshot({ path: info.outputPath('venous-mobile.png'), fullPage: true });
+  const bounds = await dialog.boundingBox();
+  expect(bounds!.x).toBeGreaterThanOrEqual(0);
+  expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(390);
+  await dialog.evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  await page.screenshot({ path: info.outputPath('venous-mobile.png') });
   await dialog.locator('.venous-readout').scrollIntoViewIfNeeded();
-  await page.screenshot({ path: info.outputPath('venous-mobile-cursor.png'), fullPage: true });
+  await page.screenshot({ path: info.outputPath('venous-mobile-cursor.png') });
   await dialog.getByRole('button', { name: 'Reanudar vista' }).click();
   await expect(cursor).toBeDisabled();
   await expect(dialog.locator('.venous-status')).toContainText('En vivo');

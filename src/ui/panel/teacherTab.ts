@@ -61,6 +61,9 @@ export function renderCaseNotes(el: HTMLElement, notes: CaseTeacherNotes | null)
 /** Pestaña Docente: verdad fisiológica, intervenciones y estado de la adquisición (solo con la casilla activada). */
 export class TeacherTab {
   #venous: VenousViewer | null = null;
+  get comparisonOpen(): boolean {
+    return this.#venous?.dialog.open ?? false;
+  }
   #debugEl!: HTMLElement;
   #caseEl!: HTMLElement;
   /** Caso y modo de lo que solo ve el docente, ya pintado (se repinta solo si cambian). */

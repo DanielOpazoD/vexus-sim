@@ -1235,3 +1235,11 @@ button.mode.active {
     padding: 8px;
   }
 }
+
+.venous-header {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--panel);
+  padding-bottom: 8px;
+}

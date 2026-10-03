@@ -398,15 +398,21 @@ function frame(now: number, dt: number): void {
   input.tick(dt);
   probeAnimator.tick(dt);
   s.advance(dt);
-  if (!gpu.lost) {
+  const comparisonOpen = panel.venousComparisonOpen;
+  // El visor es modal: no gastar GPU en imágenes ocultas. El reloj y la adquisición IQ
+  // siguen en advance; al cerrar se vuelve a dibujar el estado actual, sin cambiar frozen.
+  // Si ya se adquiría M, mantener sus columnas y cine: no fabricar un hueco temporal.
+  if ((!comparisonOpen || s.mmode.enabled) && !gpu.lost) {
     s.render();
     cine.tick();
   }
-  drawOverlay(overlay, s);
-  nav?.draw();
-  if (store.get().torso && !gpu.lost) cutMap?.draw(s, now);
+  if (!comparisonOpen) {
+    drawOverlay(overlay, s);
+    nav?.draw();
+    if (store.get().torso && !gpu.lost) cutMap?.draw(s, now);
+    drawTraces(s);
+  }
   const t = s.physiology.clock.t;
-  drawTraces(s);
   const h = hudText({
     patientLabel: caseDisplayLabel(s.patient.id, store.get().debug),
     frozen: s.frozen,
@@ -438,7 +444,10 @@ function frame(now: number, dt: number): void {
     frameTime = 0;
     // Comprobación TS ↔ GLSL en vivo (solo docente): mapa GPU vs mapa del Worker, misma rejilla.
     // La lectura GPU es asíncrona: el mapa devuelto se compara con la instantánea CPU anterior.
-    if (store.get().debug && store.get().torso && !gpu.lost) {
+    if (comparisonOpen) {
+      eqPrevCpu = null;
+      panel.setEquivalence(null);
+    } else if (store.get().debug && store.get().torso && !gpu.lost) {
       const cpu = cutMap?.lastMap ?? null;
       const gpuMap = cpu ? s.gpuTissueMap(cpu) : null;
       panel.setEquivalence(gpuMap && eqPrevCpu ? compareTissueGrids(eqPrevCpu.map, gpuMap) : null);

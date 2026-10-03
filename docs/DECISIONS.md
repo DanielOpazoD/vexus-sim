@@ -5012,3 +5012,10 @@ La modulación hepática de densidad de 3 mm baja de escala 11 a 4 dB (campo aco
 **Coste.** Se aplica también a los módulos GLSL de Three el transporte reversible ya usado por nuestros shaders. Se amplía el diccionario a 42 palabras, sin cambios en el shader decodificado, bindings, compilación ni algoritmos. Los marcadores no asignados se conservan y los literales con escapes o marcadores preexistentes siguen sin empaquetarse. Se comprueba cada export de cada ShaderChunk/ShaderLib byte por byte y todo nuestro grafo ensamblado. No se modifica el paquete instalado ni su licencia. Esto permite incorporar el visor y recuperar margen real sin elevar los presupuestos.
 
 **Verificación.** Una prueba E2E específica cubre datos, cursor sincronizado, pausa sin efecto sobre el paciente, escala, teclado, móvil, Escape, reapertura y limpieza al salir. Guarda capturas para inspección visual. Los contratos de sincronización de la decisión 119 siguen siendo independientes de la UI. La vista no certifica fisiología ni reemplaza la implementación futura de adquisición PW y mecanismos ausentes.
+
+**Revisión de navegador.** La primera ejecución agotó el tiempo al capturar la UI
+móvil: cada captura esperaba el render ecográfico oculto, hasta 90 s en SwiftShader.
+Se corrige el coste de producto, sin ampliar timeouts ni reintentos: el modal omite
+B/3D/corte/trazas invisibles; mantiene fisiología e IQ, y la adquisición M si estaba
+activa. La cabecera queda fija al desplazar el contenido. La prueba conserva las
+comprobaciones y captura el viewport real móvil, no el ancho desbordado del fondo.

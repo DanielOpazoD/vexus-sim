@@ -1,0 +1,218 @@
+{
+  "modifiedOriginalFaceIndices": [36897, 36898, 36899, 36900, 36901, 36902],
+  "modifiedTriangleCount": 6,
+  "unmodifiedRetainedTriangles": 68484,
+  "allRetainedVertexPositionsPreserved": true,
+  "directedBoundaryPreserved": true,
+  "deviationCertificates": [
+    {
+      "lowerWitnessMm": 0.04912335120761705,
+      "certifiedUpperMm": 0.07443858333620851,
+      "thresholdMm": 0.075,
+      "evaluatedCells": 370,
+      "subdivisionLevels": 4,
+      "roundoffAllowanceMm": 1e-9
+    },
+    {
+      "lowerWitnessMm": 0.056175276297482604,
+      "certifiedUpperMm": 0.07487752585084707,
+      "thresholdMm": 0.075,
+      "evaluatedCells": 374,
+      "subdivisionLevels": 5,
+      "roundoffAllowanceMm": 1e-9
+    }
+  ],
+  "sourceIntersectionPairsBefore": [
+    [36897, 36898],
+    [36897, 36901],
+    [36897, 36902],
+    [36898, 36900],
+    [36899, 36900],
+    [36900, 36901]
+  ],
+  "selfIntersectionPairsAfter": [],
+  "selfIntersectionsValidated": true,
+  "cgalPythonVersion": "6.0.1.post202410241521",
+  "cgalApi": "Polygon_mesh_processing.self_intersections",
+  "topologyAfter": {
+    "usedVerticesAfterExactWeld": 34241,
+    "surfaceComponents": 1,
+    "boundaryEdges": 0,
+    "nonManifoldEdges": 0,
+    "inconsistentOrientedEdges": 0,
+    "degenerateTriangles": 0,
+    "components": [
+      {
+        "triangles": 68490,
+        "usedOriginalVertices": 34241,
+        "surfaceAreaMm2": 217118.96291361336,
+        "signedEnclosedVolumeMm3": 320645.59339342546,
+        "minLasMm": [-122.01376549999999, -94.76055000000002, -178.7215],
+        "maxLasMm": [121.1782345, 84.64665, 28.00649999999996]
+      }
+    ]
+  },
+  "topologyInvariant": {
+    "vertices": 34241,
+    "edges": 102735,
+    "faces": 68490,
+    "eulerCharacteristic": -4,
+    "genus": 3.0
+  },
+  "nonManifoldVertexLinks": 0,
+  "primaryVolumeBeforeMm3": 320645.60577939363,
+  "primaryVolumeAfterMm3": 320645.59339342546,
+  "runtimeIntegration": false,
+  "clinicalValidation": false,
+  "sourceElement": "FJ3131",
+  "sourceSha256": "2a78d0f155249d4b8348e9656170af4caf2b41778c0e047fc8c1c6890878058b",
+  "componentPlanSha256": "fd5d1fb20ad3a62d80a813b64c72fc5cd57f8c61f500a2daf8130e296dc69e81",
+  "repairPlanSha256": "8305cfe552d6eee64a414f21261132821bda373c49041ad8da3b1323e062bbea",
+  "candidateSha256": "581c17df0c5b9469d4a0081550652b288f9bac03233ce810c81a85140e6dada3",
+  "candidateBytes": 826689,
+  "componentSelection": {
+    "originalTriangles": 68522,
+    "retainedOriginalFaceIndicesSha256": "4e1a8b27777114a362f8231254fce282ab62fed86702c170efa329740f37be20",
+    "removedTriangleCount": 32,
+    "removedSurfaceAreaMm2": 0.12474308873755192,
+    "removedAbsoluteVolumeMm3": 0.0005997068999999147,
+    "removedComponents": [
+      {
+        "originalFaceIndices": [36868, 36869, 36873, 36874, 36877, 36878, 36879, 36880],
+        "topology": {
+          "usedVerticesAfterExactWeld": 5,
+          "surfaceComponents": 1,
+          "boundaryEdges": 0,
+          "nonManifoldEdges": 4,
+          "inconsistentOrientedEdges": 0,
+          "degenerateTriangles": 0,
+          "components": [
+            {
+              "triangles": 8,
+              "usedOriginalVertices": 10,
+              "surfaceAreaMm2": 2.5149999999979795e-5,
+              "signedEnclosedVolumeMm3": 0.0,
+              "minLasMm": [4.1125545, -19.679350000000014, -15.573499999999967],
+              "maxLasMm": [4.1175845, -19.674350000000018, -15.573499999999967]
+            }
+          ]
+        }
+      },
+      {
+        "originalFaceIndices": [36936, 36937, 36941, 36942, 36944, 36949],
+        "topology": {
+          "usedVerticesAfterExactWeld": 5,
+          "surfaceComponents": 1,
+          "boundaryEdges": 0,
+          "nonManifoldEdges": 0,
+          "inconsistentOrientedEdges": 0,
+          "degenerateTriangles": 0,
+          "components": [
+            {
+              "triangles": 6,
+              "usedOriginalVertices": 16,
+              "surfaceAreaMm2": 0.02496986177867607,
+              "signedEnclosedVolumeMm3": 0.00019094130000004924,
+              "minLasMm": [4.6509445, -20.026350000000008, -13.23350000000005],
+              "maxLasMm": [4.7152345, -19.92735000000002, -13.053499999999985]
+            }
+          ]
+        }
+      },
+      {
+        "originalFaceIndices": [36945, 36946, 36947, 36948, 36950, 36951, 36952, 36953, 36954, 36957],
+        "topology": {
+          "usedVerticesAfterExactWeld": 7,
+          "surfaceComponents": 1,
+          "boundaryEdges": 0,
+          "nonManifoldEdges": 0,
+          "inconsistentOrientedEdges": 0,
+          "degenerateTriangles": 0,
+          "components": [
+            {
+              "triangles": 10,
+              "usedOriginalVertices": 26,
+              "surfaceAreaMm2": 0.048563236641129964,
+              "signedEnclosedVolumeMm3": 0.00039393519999988096,
+              "minLasMm": [4.9366645, -20.002350000000007, -12.903499999999894],
+              "maxLasMm": [5.0414345, -19.950350000000014, -12.573499999999967]
+            }
+          ]
+        }
+      },
+      {
+        "originalFaceIndices": [36959, 36961, 36963, 36964, 36967, 36969],
+        "topology": {
+          "usedVerticesAfterExactWeld": 5,
+          "surfaceComponents": 1,
+          "boundaryEdges": 0,
+          "nonManifoldEdges": 0,
+          "inconsistentOrientedEdges": 0,
+          "degenerateTriangles": 0,
+          "components": [
+            {
+              "triangles": 6,
+              "usedOriginalVertices": 16,
+              "surfaceAreaMm2": 0.00423361499943693,
+              "signedEnclosedVolumeMm3": 1.4830399999984543e-5,
+              "minLasMm": [5.2881944999999995, -20.002350000000007, -12.273500000000013],
+              "maxLasMm": [5.3452345, -19.950350000000014, -12.24350000000004]
+            }
+          ]
+        }
+      },
+      {
+        "originalFaceIndices": [38795, 38798],
+        "topology": {
+          "usedVerticesAfterExactWeld": 3,
+          "surfaceComponents": 1,
+          "boundaryEdges": 0,
+          "nonManifoldEdges": 0,
+          "inconsistentOrientedEdges": 0,
+          "degenerateTriangles": 0,
+          "components": [
+            {
+              "triangles": 2,
+              "usedOriginalVertices": 6,
+              "surfaceAreaMm2": 0.046951225318308976,
+              "signedEnclosedVolumeMm3": 9.03501810404587e-21,
+              "minLasMm": [14.3152345, -20.153350000000017, -12.273500000000013],
+              "maxLasMm": [14.408134500000001, -19.97635000000001, -12.053499999999985]
+            }
+          ]
+        }
+      }
+    ],
+    "retained": {
+      "usedVerticesAfterExactWeld": 34241,
+      "surfaceComponents": 1,
+      "boundaryEdges": 0,
+      "nonManifoldEdges": 0,
+      "inconsistentOrientedEdges": 0,
+      "degenerateTriangles": 0,
+      "components": [
+        {
+          "triangles": 68490,
+          "usedOriginalVertices": 34241,
+          "surfaceAreaMm2": 217118.97644760588,
+          "signedEnclosedVolumeMm3": 320645.60577939363,
+          "minLasMm": [-122.01376549999999, -94.76055000000002, -178.7215],
+          "maxLasMm": [121.1782345, 84.64665, 28.00649999999996]
+        }
+      ]
+    },
+    "nonManifoldVertexLinks": 0,
+    "retainedTopologyInvariant": {
+      "vertices": 34241,
+      "edges": 102735,
+      "faces": 68490,
+      "eulerCharacteristic": -4,
+      "genus": 3.0
+    },
+    "retainedTrianglesExactlyPreserved": true,
+    "runtimeIntegration": false,
+    "selfIntersectionsValidated": false,
+    "clinicalValidation": false
+  },
+  "credit": "BodyParts3D, \u00a9 The Database Center for Life Science licensed under CC Attribution 4.0 International"
+}

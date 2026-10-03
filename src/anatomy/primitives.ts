@@ -227,9 +227,21 @@ function domeLift(x: number, y: number, dome: Dome): number {
 /** Anchura en altura de la unión C1 entre cúpulas [ESTIMADO]; eleva la unión como máximo 1 mm. */
 export const DIAPHRAGM_JOIN_MM = 4;
 
+/** Núcleo normalizado que extingue la dependencia angular en el eje [ESTIMADO].
+ * Fuera del 10 % del radio corporal conserva la inserción heredada; no representa un tendón.
+ */
+export const DIAPHRAGM_AXIS_CORE = 0.1;
+export function diaphragmInteriorEdgeZ(x: number, y: number, d: Diaphragm, t: Torso): number {
+  const u = x / t.a,
+    v = (y - (t.y0 ?? 0)) / t.b,
+    rho = Math.hypot(u, v),
+    q = Math.min(1, rho / DIAPHRAGM_AXIS_CORE);
+  return d.edgeZ + d.edgeRise * q * q * (3 - 2 * q) * Math.pow(Math.max(0, v) / Math.max(rho, 1e-20), 1.5);
+}
+
 /** Altura del mismo diafragma continuo: mezcla local de cúpulas, sin mover sus ápices ni sus parámetros. */
 export function diaphragmHeight(x: number, y: number, d: Diaphragm, torso: Torso): number {
-  const edge = diaphragmEdgeZ(torsoPhi(x, y, torso), d);
+  const edge = diaphragmInteriorEdgeZ(x, y, d, torso);
   const zr = edge + Math.max(0, d.right.apex - edge) * domeLift(x, y, d.right);
   const zl = edge + Math.max(0, d.left.apex - edge) * domeLift(x, y, d.left);
   // Los dos levantamientos se anulan juntos fuera de las cúpulas: conservar ahí la inserción,

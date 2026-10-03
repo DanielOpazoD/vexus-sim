@@ -137,6 +137,17 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
   await expect(canvases.first()).toHaveAttribute('data-marks', /S/);
   await expect(canvases.first()).toHaveAttribute('data-marks', /D/);
   await expect(canvases.first()).toHaveAttribute('data-marks', /A/);
+  await page.setViewportSize({ width: 1280, height: 1380 });
+  await withinFrames(
+    page,
+    20,
+    'resolución nativa del canvas',
+    async () =>
+      (await canvases
+        .first()
+        .evaluate((el) => Math.abs((el as HTMLCanvasElement).width - el.clientWidth * Math.min(2, devicePixelRatio)) < 2)) ||
+      'resolución antigua',
+  );
   await page.screenshot({ path: info.outputPath('venous-pw-desktop.png') });
   await dialog.getByRole('button', { name: 'Pausar vista', exact: true }).click();
   const cursor = dialog.getByRole('slider', { name: 'Cursor sincronizado' });
@@ -147,12 +158,37 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
   await expect(rowScales.nth(0)).toHaveValue('80');
   await expect(rowScales.nth(1)).toHaveValue('80');
   await expect(rowScales.nth(2)).toHaveValue('60');
+  await withinFrames(
+    page,
+    140,
+    'nueva escala sin imagen incompleta',
+    async () =>
+      (await canvases.evaluateAll((els) =>
+        els.every(
+          (el) =>
+            Number((el as HTMLElement).dataset.lastTime) >
+            Number(document.querySelector('.venous-readout')!.textContent.match(/^t ([\d.]+)/)![1]) - 0.15,
+        ),
+      )) || 'reconstrucción pendiente',
+  );
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
   await dialog.evaluate((el) => {
     el.scrollTop = 0;
   });
+  await withinFrames(
+    page,
+    20,
+    'texto espectral móvil a resolución nativa',
+    async () =>
+      (await canvases
+        .first()
+        .evaluate((el) => Math.abs((el as HTMLCanvasElement).width - el.clientWidth * Math.min(2, devicePixelRatio)) < 2)) ||
+      'resolución antigua',
+  );
   await page.screenshot({ path: info.outputPath('venous-pw-mobile.png') });
+  await dialog.locator('.venous-marker-row').first().scrollIntoViewIfNeeded();
+  await page.screenshot({ path: info.outputPath('venous-pw-mobile-ecg.png') });
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
   expect(

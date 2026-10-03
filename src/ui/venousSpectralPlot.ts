@@ -10,12 +10,13 @@ export function drawVenousSpectrum(
   scaleCms: number,
   marks: readonly CaptureMark[],
   cursorT: number | null,
+  pixelRatio = 1,
 ): void {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
   const W = canvas.width,
     H = canvas.height,
-    plotH = H - 24;
+    plotH = H - 24 * pixelRatio;
   const span = Math.max(0.004, end - start);
   const xOf = (t: number) => ((t - start) / span) * W;
   const bitmap = ctx.createImageData(W, plotH);
@@ -42,27 +43,34 @@ export function drawVenousSpectrum(
   ctx.fillRect(0, 0, W, H);
   ctx.putImageData(bitmap, 0, 0);
   ctx.strokeStyle = '#8b969f';
-  ctx.lineWidth = 1;
+  ctx.lineWidth = pixelRatio;
   ctx.beginPath();
   ctx.moveTo(0, plotH / 2);
   ctx.lineTo(W, plotH / 2);
   ctx.stroke();
-  ctx.font = '13px sans-serif';
+  ctx.font = `${13 * pixelRatio}px sans-serif`;
   ctx.fillStyle = '#d7e0e5';
   for (const [y, text] of [
-    [15, `+${scaleCms}`],
-    [plotH / 2 - 3, '0'],
-    [plotH - 4, `−${scaleCms} cm/s`],
+    [15 * pixelRatio, `+${scaleCms}`],
+    [plotH / 2 - 3 * pixelRatio, '0'],
+    [plotH - 4 * pixelRatio, `−${scaleCms} cm/s`],
   ] as const) {
-    ctx.fillText(text, W - 80, y);
+    ctx.fillText(text, W - 80 * pixelRatio, y);
   }
-  for (let t = Math.ceil(start); t <= end; t++) ctx.fillText(`${t}s`, xOf(t) + 2, H - 5);
+  for (let t = Math.ceil(start); t <= end; t++) ctx.fillText(`${t}s`, xOf(t) + 2 * pixelRatio, H - 5 * pixelRatio);
   ctx.fillStyle = '#ffd166';
   for (const mark of marks) {
     if (mark.t < start || mark.t > end || Math.abs(mark.vScreen) >= scaleCms) continue;
     const x = xOf(mark.t),
       y = (plotH / 2) * (1 - mark.vScreen / scaleCms);
-    ctx.fillText(mark.label, Math.max(2, Math.min(W - 22, x)), Math.max(14, Math.min(plotH - 3, y - 5)));
+    ctx.fillText(
+      mark.label,
+      Math.max(2 * pixelRatio, Math.min(W - 40 * pixelRatio, x)),
+      Math.max(
+        14 * pixelRatio,
+        Math.min(plotH - 3 * pixelRatio, y + (mark.label === 'Vmín' || mark.label === 'mín' ? 16 : -5) * pixelRatio),
+      ),
+    );
   }
   if (cursorT !== null) {
     ctx.strokeStyle = '#66ddff';

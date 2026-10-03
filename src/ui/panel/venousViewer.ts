@@ -39,6 +39,7 @@ export class VenousViewer {
   #beats: Beat[] = [];
   #spectralScales: number[] = [...VENOUS_SPECTRAL_SCALES];
   #canvases: HTMLCanvasElement[] = [];
+  #paintKeys = ['', '', ''];
   #spectralControls: HTMLElement[] = [];
   #plots: Element[] = [];
   #marks: CaptureMark[][] = [[], [], []];
@@ -231,6 +232,7 @@ export class VenousViewer {
 
   clear(): void {
     this.#points = [];
+    this.#paintKeys = ['', '', ''];
     this.#rawSamples = [];
     this.#beats = [];
     this.#spectral = null;
@@ -306,15 +308,26 @@ export class VenousViewer {
     const cursor = this.#points[Number(this.#cursor.value)];
     for (let i = 0; i < 3; i++) {
       const columns = this.#spectral.chains[i].spectral.columns;
-      drawVenousSpectrum(
-        this.#canvases[i],
-        columns,
-        start,
-        end,
-        this.#spectralScales[i],
-        this.#annotations ? this.#marks[i] : [],
-        this.#paused ? (cursor?.t ?? null) : null,
-      );
+      const canvas = this.#canvases[i];
+      const ratio = Math.min(2, window.devicePixelRatio || 1);
+      const width = Math.max(1, Math.round(canvas.clientWidth || 800));
+      const targetW = Math.round(width * ratio),
+        targetH = Math.round(184 * ratio);
+      if (canvas.width !== targetW) canvas.width = targetW;
+      if (canvas.height !== targetH) canvas.height = targetH;
+      const paintKey = `${targetW}/${targetH}/${this.#spectralScales[i]}/${end}/${columns.at(-1)?.t}/${this.#marksT}/${this.#annotations}/${this.#paused ? cursor?.t : ''}`;
+      if (paintKey !== this.#paintKeys[i])
+        drawVenousSpectrum(
+          this.#canvases[i],
+          columns,
+          start,
+          end,
+          this.#spectralScales[i],
+          this.#annotations ? this.#marks[i] : [],
+          this.#paused ? (cursor?.t ?? null) : null,
+          ratio,
+        );
+      this.#paintKeys[i] = paintKey;
       this.#canvases[i].dataset.columns = String(columns.length);
       this.#canvases[i].dataset.lastTime = String(columns.at(-1)?.t ?? '');
       this.#canvases[i].dataset.marks = this.#annotations ? this.#marks[i].map((m) => m.label).join(',') : '';

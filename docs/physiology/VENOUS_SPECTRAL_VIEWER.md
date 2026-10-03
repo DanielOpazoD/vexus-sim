@@ -53,3 +53,12 @@ tres territorios. E2E comprueba píxeles de espectro, ECG/cursor, marcas, escala
 independiente, móvil y limpieza al cerrar. El trabajo se limita por cuadro y
 se detiene al cerrar; no debe bloquear con seis segundos de IQ de una sola vez.
 Las pruebas y el aspecto visual no constituyen un banco de validación clínica.
+
+## Revisión visual móvil
+
+La primera ejecución E2E pasó, pero la captura mostró texto ilegible al reducir
+un canvas de 800 píxeles a un teléfono. Se corrige el bitmap al ancho real y DPR
+(hasta 2), con fuente de tamaño visual constante. Las vistas congeladas reutilizan
+el bitmap mientras no cambien señal, cursor, marcas o tamaño. La prueba espera
+la reconstrucción tras cambiar PRF antes de fotografiar y verifica resolución nativa.
+Se conserva una captura completa de escritorio y otra inferior móvil con ECG.

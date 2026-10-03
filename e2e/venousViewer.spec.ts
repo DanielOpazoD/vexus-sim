@@ -80,7 +80,7 @@ test('comparación venosa: reloj único, cursor, pausa, escala y cierre accesibl
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
   await expect(open).toBeFocused();
-  await expect(dialog.locator('.venous-readout')).toHaveText('');
+  await expect(page.locator('.venous-viewer .venous-readout')).toHaveText('');
   await open.click({ force: true });
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'Cerrar', exact: true }).click();

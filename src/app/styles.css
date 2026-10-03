@@ -1238,8 +1238,18 @@ button.mode.active {
 
 .venous-header {
   position: sticky;
-  top: 0;
+  top: -20px;
+  margin-top: -20px;
+  padding-top: 20px;
   z-index: 1;
   background: var(--panel);
   padding-bottom: 8px;
+}
+
+@media (max-width: 600px) {
+  .venous-header {
+    top: -12px;
+    margin-top: -12px;
+    padding-top: 12px;
+  }
 }

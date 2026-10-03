@@ -70,7 +70,10 @@ export class VenousViewer {
     });
     label.appendChild(scale);
     controls.appendChild(label);
-    button(controls, 'Cerrar', () => d.close());
+    button(controls, 'Cerrar', () => {
+      this.clear();
+      d.close();
+    });
     this.#status = note(header);
     this.#status.className = 'venous-status';
     const trace = venousComparisonTrace([]);
@@ -127,6 +130,7 @@ export class VenousViewer {
     );
     // El modal nativo maneja foco y Escape. Sus teclas no disparan atajos del ecógrafo de fondo.
     d.addEventListener('keydown', (e) => e.stopPropagation());
+    d.addEventListener('cancel', () => this.clear());
     d.addEventListener('close', () => this.clear());
     host.appendChild(d);
   }

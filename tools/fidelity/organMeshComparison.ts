@@ -66,7 +66,7 @@ try {
       });
       for (const reference of references) {
         const profile = reference ? 'reference' : 'legacy';
-        await page.goto(`http://127.0.0.1:${port}/?e2e=app${reference ? '&reference=1' : ''}`);
+        await page.goto(`http://127.0.0.1:${port}/?e2e=app&docente=1${reference ? '&reference=1' : ''}`);
         await page.waitForFunction(() => (window.__vexusTest?.framesRendered() ?? 0) >= 2, undefined, { timeout: 180_000 });
         await page.locator('#nav3d canvas').waitFor({ state: 'visible', timeout: 180_000 });
         if ((await page.evaluate(() => !!window.__vexusTest!.sim().scene.torso.profile)) !== reference)

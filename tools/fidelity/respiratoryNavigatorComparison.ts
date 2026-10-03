@@ -73,6 +73,9 @@ try {
           throw new Error('El perfil corporal cargado no coincide con el solicitado');
         await page.locator('#freeze').evaluate((button: HTMLButtonElement) => button.click());
         await page.locator('#debug-toggle').check();
+        // Teacher mode changes 3D materials/layers; wait for its render before another pointer action.
+        const teacherFrame = await page.evaluate(() => window.__vexusTest!.framesRendered());
+        await page.waitForFunction((n) => window.__vexusTest!.framesRendered() >= n + 2, teacherFrame, { timeout: 180_000 });
         await page.getByRole('tab', { name: 'Adquirir', exact: true }).click();
         await page.locator('#nav-layers').click();
         await page.locator('#layer-skin').uncheck();

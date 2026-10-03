@@ -2,6 +2,9 @@ name: Inversa respiratoria CPU y GPU
 on:
   pull_request:
     paths:
+      - 'src/ultrasound/transmission.ts'
+      - 'src/ultrasound/shaders/passes.glsl.ts'
+      - 'src/validation/pleuralReflection.test.ts'
       - 'src/anatomy/deformation.ts'
       - 'src/anatomy/compression.ts'
       - 'src/anatomy/respiratoryNormals.ts'

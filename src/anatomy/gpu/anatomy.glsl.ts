@@ -1,3 +1,4 @@
+import { RESPIRATORY_INVERSE_STEPS } from '../deformation';
 import { BOWEL_TEXELS } from '../organs/bowel';
 import { CARTILAGE_GLSL } from './referenceCartilage.glsl';
 import { CARTILAGE_ROWS } from '../referenceCartilageData';
@@ -166,16 +167,30 @@ float respWeight(vec3 m) {
   return wWall * wSpine;
 }
 
-vec3 respDisplacement(vec3 m) {
-  return uResp.yzw * (uResp.x * respWeight(m));
-}
-
 ${COMPRESSION_GLSL}
 // Mundo → material: la compresión de la sonda (decisión 63) y después la respiración (deformation.ts)
 vec3 toMaterial(vec3 p) {
   vec3 q = uncompress(p);
   vec3 m = q;
-  for (int i = 0; i < 2; i++) m = q - respDisplacement(m);
+  float D = uResp.x;
+  if (D != 0.0) {
+    float first = respWeight(q);
+    if (first > 0.0) {
+      m = q - D * uResp.yzw;
+      float last = respWeight(m);
+      if (last < 1.0) {
+        float lo = 0.0, hi = 1.0, flo = -first, fhi = 1.0 - last;
+        for (int i = 0; i < ${RESPIRATORY_INVERSE_STEPS}; i++) {
+          float a = 0.5 * (lo + hi);
+          m = q - (D * a) * uResp.yzw;
+          float f = a - respWeight(m);
+          if (f < 0.0) { lo = a; flo = f; } else { hi = a; fhi = f; }
+        }
+        float a = clamp((lo * fhi - hi * flo) / max(fhi - flo, 1e-20), lo, hi);
+        m = q - (D * a) * uResp.yzw;
+      }
+    }
+  }
   return m;
 }
 

@@ -373,9 +373,7 @@ describe('gemelo del campo y de su jacobiana (TS = GLSL)', () => {
     for (const fn of ['compressionSample', 'uncompress', 'warpAt', 'warpNormal', 'warpBound'])
       expect(COMPRESSION_GLSL, fn).toMatch(new RegExp(`\\b${fn}\\(`));
     expect(ANATOMY_GLSL).toContain(COMPRESSION_GLSL);
-    expect(ANATOMY_GLSL).toMatch(
-      /vec3 toMaterial\(vec3 p\) \{\n\s+vec3 q = uncompress\(p\);\n\s+vec3 m = q;\n\s+for \(int i = 0; i < 2; i\+\+\) m = q - respDisplacement\(m\);/,
-    );
+    expect(ANATOMY_GLSL).toMatch(/vec3 toMaterial\(vec3 p\) \{\n\s+vec3 q = uncompress\(p\);\n\s+vec3 m = q;\n\s+float D = uResp.x;/);
     // sin atan (el arranque con SwiftShader) y sin indexado dinámico de uniforms: la tabla va en la textura de escena
     expect(COMPRESSION_GLSL.replace(/\/\/.*$/gm, '')).not.toMatch(/\batan\s*\(/);
     expect(COMPRESSION_GLSL).toContain('sceneTexel(COMP_BASE + i)');

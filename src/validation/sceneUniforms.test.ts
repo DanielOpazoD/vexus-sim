@@ -19,6 +19,10 @@ import {
 const body = ANATOMY_GLSL.replace(SCENE_UNIFORMS_GLSL, '');
 const declared = new Set([...SCENE_UNIFORMS.map((u) => u.name), 'uSceneTex']);
 
+it('exige highp al leer coordenadas geométricas RGBA32F', () => {
+  expect(SCENE_UNIFORMS_GLSL).toContain('uniform highp sampler2D uSceneTex;');
+});
+
 describe('Esquema de uniforms de la escena', () => {
   it('ANATOMY_GLSL no contiene declaraciones de uniform escritas a mano', () => {
     expect(body).not.toMatch(/^\s*uniform\s/m);

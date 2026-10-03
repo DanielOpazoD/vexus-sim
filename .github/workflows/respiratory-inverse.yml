@@ -1,0 +1,42 @@
+name: Inversa respiratoria CPU y GPU
+on:
+  pull_request:
+    paths:
+      - 'src/anatomy/deformation.ts'
+      - 'src/anatomy/gpu/anatomy.glsl.ts'
+      - 'src/anatomy/gpu/sceneUniforms.ts'
+      - 'src/validation/respiratoryInverse.test.ts'
+      - 'tools/fidelity/respiratoryInverseParity.ts'
+      - '.github/workflows/respiratory-inverse.yml'
+permissions:
+  contents: read
+concurrency:
+  group: respiratory-inverse-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Cerrar ida/vuelta material y paridad GPU
+        run: node --import tsx tools/fidelity/respiratoryInverseParity.ts
+        env:
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
+          RESP_INVERSE_OUT: ${{ runner.temp }}/respiratory-inverse-evidence
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: respiratory-inverse-evidence
+          path: ${{ runner.temp }}/respiratory-inverse-evidence
+          retention-days: 7
+          if-no-files-found: warn

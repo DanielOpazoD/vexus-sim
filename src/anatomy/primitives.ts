@@ -224,12 +224,19 @@ function domeLift(x: number, y: number, dome: Dome): number {
   return Math.sqrt(Math.max(0, 1 - rho2 * rho2));
 }
 
-/** Altura del diafragma (z, mm) en (x, y): inserción costal + la hemicúpula más alta. */
+/** Anchura en altura de la unión C1 entre cúpulas [ESTIMADO]; eleva la unión como máximo 1 mm. */
+export const DIAPHRAGM_JOIN_MM = 4;
+
+/** Altura del mismo diafragma continuo: mezcla local de cúpulas, sin mover sus ápices ni sus parámetros. */
 export function diaphragmHeight(x: number, y: number, d: Diaphragm, torso: Torso): number {
   const edge = diaphragmEdgeZ(torsoPhi(x, y, torso), d);
   const zr = edge + Math.max(0, d.right.apex - edge) * domeLift(x, y, d.right);
   const zl = edge + Math.max(0, d.left.apex - edge) * domeLift(x, y, d.left);
-  return Math.max(edge, zr, zl);
+  // Los dos levantamientos se anulan juntos fuera de las cúpulas: conservar ahí la inserción,
+  // sin añadir el k/4 que smoothMax produciría entre dos ceros.
+  const t = Math.min(1, Math.max(0, ((zr + zl) * 0.5 - edge) / (2 * DIAPHRAGM_JOIN_MM)));
+  const join = DIAPHRAGM_JOIN_MM * t * t * (3 - 2 * t);
+  return join > 0 ? smoothMax(zr, zl, join) : edge;
 }
 
 /**

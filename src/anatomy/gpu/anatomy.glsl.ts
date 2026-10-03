@@ -37,7 +37,7 @@ import {
 } from '../interfaces';
 import { COMPRESSION_GLSL, PROBE_COMPRESSION } from '../compression';
 import { ORGAN_GLSL } from '../organs';
-import { RIB_ANTERIOR_END, SPINE_SHAPE, TUBE_SHAPE } from '../primitives';
+import { DIAPHRAGM_JOIN_MM, RIB_ANTERIOR_END, SPINE_SHAPE, TUBE_SHAPE } from '../primitives';
 import { MAX_RIBS, SCENE_UNIFORMS_GLSL } from './sceneUniforms';
 
 export const MAX_TUBES = 128;
@@ -197,7 +197,10 @@ float domeHeight(float x, float y) {
   float edge = uDiaphragm.z + uDiaphragm.w * pow(max(0.0, sin(phi)), 1.5);
   float zr = edge + max(0.0, uDiaphragm.x - edge) * domeLift(x, y, uDomeR);
   float zl = edge + max(0.0, uDiaphragm.y - edge) * domeLift(x, y, uDomeL);
-  return max(edge, max(zr, zl));
+  float k = ${DIAPHRAGM_JOIN_MM.toFixed(3)} * smoothstep(0.0, ${(2 * DIAPHRAGM_JOIN_MM).toFixed(3)}, 0.5 * (zr + zl) - edge);
+  if (k <= 0.0) return edge;
+  float h = max(k - abs(zr - zl), 0.0) / k;
+  return max(zr, zl) + h * h * k * 0.25;
 }
 
 // Distancia con signo al diafragma (negativa en el tórax) y normal hacia el abdomen.

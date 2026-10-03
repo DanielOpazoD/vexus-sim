@@ -1,0 +1,151 @@
+{
+  "candidateSha256": "581c17df0c5b9469d4a0081550652b288f9bac03233ce810c81a85140e6dada3",
+  "manifestSha256": "98ba6f5a9c26bf1e214af52cb0ecabedcb7848ce9ff8fef1914fcfbc972de73b",
+  "runtimeIntegration": false,
+  "clinicalValidation": false,
+  "registrationChanged": false,
+  "sourceVerticesMoved": false,
+  "sourceFacesClipped": false,
+  "method": "CGAL complete triangle-surface intersection plus AABB distance and bounded side at source vertices and face centroids",
+  "status": "blocked-pending-anatomical-reconciliation",
+  "parts": [
+    {
+      "id": "FJ1932",
+      "label": "abdominal aorta",
+      "sha256": "cbdbe976943f977c48b9dbdfa2efdd9eb025f935d3f921a3fb8479df2090d25d",
+      "vertexSamples": 1226,
+      "faceCentroidSamples": 2270,
+      "sampleCount": 3496,
+      "negativeSamples": 111,
+      "sampledMinSignedDistanceMm": -1.7089475263312106,
+      "sampledMinUnsignedDistanceMm": 0.006093102203737547,
+      "worstSample": {
+        "kind": "face-centroid",
+        "sourceIndex": 1870,
+        "pointLasMm": [10.973267833333333, -10.642683333333347, -58.11683333333334],
+        "signedDistanceMm": -1.7089475263312106
+      },
+      "interpretation": "penetration-witness",
+      "surfaceIntersectionDetected": true,
+      "surfaceIntersectionMethod": "CGAL do_intersect over every source triangle",
+      "globalMinimumDistanceCertified": false,
+      "anatomicalAcceptance": false,
+      "note": "Vertex/centroid counts are not an overlap fraction or an area/volume measurement. Unsampled contacts may exist."
+    },
+    {
+      "id": "FJ2563",
+      "label": "esophagus",
+      "sha256": "0bc2935e13650b9a5ea143dee97767e2dba0589eae92f0df4e01f3e2fce3c4b0",
+      "vertexSamples": 323,
+      "faceCentroidSamples": 578,
+      "sampleCount": 901,
+      "negativeSamples": 22,
+      "sampledMinSignedDistanceMm": -1.41562876374112,
+      "sampledMinUnsignedDistanceMm": 0.09047059810788814,
+      "worstSample": {
+        "kind": "vertex",
+        "sourceIndex": 180,
+        "pointLasMm": [0.12929149999999998, -21.449050000000014, -20.60349999999994],
+        "signedDistanceMm": -1.41562876374112
+      },
+      "interpretation": "penetration-witness",
+      "surfaceIntersectionDetected": true,
+      "surfaceIntersectionMethod": "CGAL do_intersect over every source triangle",
+      "globalMinimumDistanceCertified": false,
+      "anatomicalAcceptance": false,
+      "note": "Vertex/centroid counts are not an overlap fraction or an area/volume measurement. Unsampled contacts may exist."
+    },
+    {
+      "id": "FJ3441",
+      "label": "IVC segment FJ3441",
+      "sha256": "749081b95f406bd38edea220d216f84aa17e019b91c117e7cfd5f3e546ea1163",
+      "vertexSamples": 793,
+      "faceCentroidSamples": 1410,
+      "sampleCount": 2203,
+      "negativeSamples": 1,
+      "sampledMinSignedDistanceMm": -0.01387104795108761,
+      "sampledMinUnsignedDistanceMm": 0.0051341455265199515,
+      "worstSample": {
+        "kind": "vertex",
+        "sourceIndex": 438,
+        "pointLasMm": [-8.5806755, -15.010350000000017, 15.286499999999933],
+        "signedDistanceMm": -0.01387104795108761
+      },
+      "interpretation": "penetration-witness",
+      "surfaceIntersectionDetected": true,
+      "surfaceIntersectionMethod": "CGAL do_intersect over every source triangle",
+      "globalMinimumDistanceCertified": false,
+      "anatomicalAcceptance": false,
+      "note": "Vertex/centroid counts are not an overlap fraction or an area/volume measurement. Unsampled contacts may exist."
+    },
+    {
+      "id": "FJ3659",
+      "label": "IVC segment FJ3659",
+      "sha256": "a2ff79789ca4d74a0ed2382f347918bc630710f92fab40146ba7353b98bc2b02",
+      "vertexSamples": 968,
+      "faceCentroidSamples": 1670,
+      "sampleCount": 2638,
+      "negativeSamples": 12,
+      "sampledMinSignedDistanceMm": -1.152413903441921,
+      "sampledMinUnsignedDistanceMm": 0.013723282674412862,
+      "worstSample": {
+        "kind": "face-centroid",
+        "sourceIndex": 900,
+        "pointLasMm": [-10.2848955, -9.089350000000016, -155.0468333333333],
+        "signedDistanceMm": -1.152413903441921
+      },
+      "interpretation": "penetration-witness",
+      "surfaceIntersectionDetected": true,
+      "surfaceIntersectionMethod": "CGAL do_intersect over every source triangle",
+      "globalMinimumDistanceCertified": false,
+      "anatomicalAcceptance": false,
+      "note": "Vertex/centroid counts are not an overlap fraction or an area/volume measurement. Unsampled contacts may exist."
+    },
+    {
+      "id": "FJ3145",
+      "label": "left kidney",
+      "sha256": "b52066a987f767ad9e5c3092958bf5dd760d9f05f1497d1fc7f7ff11539bdfd2",
+      "vertexSamples": 1497,
+      "faceCentroidSamples": 2982,
+      "sampleCount": 4479,
+      "negativeSamples": 0,
+      "sampledMinSignedDistanceMm": 3.5869500978682383,
+      "sampledMinUnsignedDistanceMm": 3.5869500978682383,
+      "worstSample": {
+        "kind": "vertex",
+        "sourceIndex": 358,
+        "pointLasMm": [34.629934500000005, -45.65515000000002, -90.07349999999997],
+        "signedDistanceMm": 3.5869500978682383
+      },
+      "interpretation": "inconclusive-no-sampled-penetration",
+      "surfaceIntersectionDetected": false,
+      "surfaceIntersectionMethod": "CGAL do_intersect over every source triangle",
+      "globalMinimumDistanceCertified": false,
+      "anatomicalAcceptance": false,
+      "note": "Vertex/centroid counts are not an overlap fraction or an area/volume measurement. Unsampled contacts may exist."
+    },
+    {
+      "id": "FJ3147",
+      "label": "right kidney",
+      "sha256": "e21e2ebd5224b1cbf8caabbf4fa788d894819a328a006dcdb2eb8aa6eee5875a",
+      "vertexSamples": 1163,
+      "faceCentroidSamples": 2310,
+      "sampleCount": 3473,
+      "negativeSamples": 0,
+      "sampledMinSignedDistanceMm": 1.1466555077964928,
+      "sampledMinUnsignedDistanceMm": 1.1466555077964928,
+      "worstSample": {
+        "kind": "vertex",
+        "sourceIndex": 14,
+        "pointLasMm": [-83.96456549999999, -49.067650000000015, -151.21349999999995],
+        "signedDistanceMm": 1.1466555077964928
+      },
+      "interpretation": "inconclusive-no-sampled-penetration",
+      "surfaceIntersectionDetected": false,
+      "surfaceIntersectionMethod": "CGAL do_intersect over every source triangle",
+      "globalMinimumDistanceCertified": false,
+      "anatomicalAcceptance": false,
+      "note": "Vertex/centroid counts are not an overlap fraction or an area/volume measurement. Unsampled contacts may exist."
+    }
+  ]
+}

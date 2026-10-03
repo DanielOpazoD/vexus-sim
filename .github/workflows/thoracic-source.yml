@@ -10,6 +10,9 @@ on:
       - 'tools/anatomy/diaphragm_source_test.py'
       - 'tools/anatomy/diaphragm_source_repair.py'
       - 'tools/anatomy/diaphragm_source_repair_test.py'
+      - 'tools/anatomy/diaphragm_relationships.py'
+      - 'tools/anatomy/diaphragm_relationships_test.py'
+      - 'docs/anatomy/diaphragm-relationship-*.json'
       - 'docs/anatomy/diaphragm-source-*.json'
       - 'docs/anatomy/thoracic-source-*.json'
       - '.github/workflows/thoracic-source.yml'
@@ -39,3 +42,4 @@ jobs:
           "$RUNNER_TEMP/source-venv/bin/python" tools/anatomy/thoracic_source_test.py
           "$RUNNER_TEMP/source-venv/bin/python" tools/anatomy/diaphragm_source_test.py
           "$RUNNER_TEMP/source-venv/bin/python" tools/anatomy/diaphragm_source_repair_test.py
+          "$RUNNER_TEMP/source-venv/bin/python" tools/anatomy/diaphragm_relationships_test.py

@@ -16,7 +16,17 @@ export const GLSL_WORDS = [
   'precision',
   'highp',
   'inversesqrt',
+  'tissue',
+  'define',
+  'texelFetch',
+  'int',
+  'gl_FragCoord',
+  'referenceCartilage',
+  'min',
+  'ivec2',
+  'continue',
+  'max',
 ] as const;
 export function unpackGlsl(s: string): string {
-  return s.replace(/@([A-P])/g, (_, c: string) => GLSL_WORDS[c.charCodeAt(0) - 65]);
+  return s.replace(/@([A-Z])/g, (_, c: string) => GLSL_WORDS[c.charCodeAt(0) - 65]);
 }

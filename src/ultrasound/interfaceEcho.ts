@@ -501,8 +501,7 @@ float tubeCurvature(Cls c, vec3 n, vec3 dir, float r, float se) {
   return inversesqrt(sqrt((1.0 + al * al) * (1.0 + ae * ae)));
 }
 // Eco de la cara que dibuja la muestra (material m, rayo dir, profundidad r): (especular, amplitud de la difusa).
-// La normal y la norma del gradiente son las del mundo: las materiales por la jacobiana de la compresión de la
-// sonda (w, decisión 63)
+// La normal y su norma pasan del material al mundo por ambas jacobianas: respiración y compresión (w).
 vec2 interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w, bool withCurtain) {
   if (c.iface == IF_NONE) return vec2(0.0);
   // salida barata sin gradiente: δ = ifd/(|∇|·cosθ) ≥ ifd/|∇|; la norma de un tubo ya está en c.n, la

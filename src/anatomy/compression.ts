@@ -1,3 +1,4 @@
+import { RESPIRATORY_DIRECTION } from './respiratoryDirection';
 import { clamp, dot, length, smoothstep, type Vec3 } from '../core/vec3';
 import type { Torso } from './primitives';
 
@@ -233,6 +234,8 @@ export function uncompress(p: Vec3, k: ProbeCompression | null): Vec3 {
  * diferencias centrales. Sin compresión, la identidad.
  */
 export interface Warp {
+  /** D ∇w / det(J), en el marco material; ausente significa respiración OFF. */
+  respiratory?: Vec3;
   shift: number;
   rhat: Vec3;
   rho: number;
@@ -284,8 +287,13 @@ function smoothstepSlope(e0: number, e1: number, x: number): number {
  * Gradiente en el mundo de un campo material cuyo gradiente material es `n` (sin normalizar):
  * J^T·n = n + (r̂·n)·∇s + (s/ρ)·(n − (n·r̂)·r̂ − (n·ê)·ê). La normal de una cara en el mundo es su dirección y su
  * norma pasa la distancia de la cara a distancia por la normal en el mundo (el eco de interfaz, decisión 57).
+ * Si hay respiración, primero se aplica J_resp^(-T): n − (D∇w/det)·(dir·n), sin normalizar.
  */
 export function warpNormal(w: Warp, n: Vec3): Vec3 {
+  if (w.respiratory) {
+    const dn = dot(RESPIRATORY_DIRECTION, n);
+    n = [n[0] - w.respiratory[0] * dn, n[1] - w.respiratory[1] * dn, n[2] - w.respiratory[2] * dn];
+  }
   const rn = dot(w.rhat, n);
   const en = dot(w.elevation, n);
   const q = w.shift / w.rho;
@@ -296,9 +304,9 @@ export function warpNormal(w: Warp, n: Vec3): Vec3 {
   ];
 }
 
-/** Cota de |J^T·n|/|n| (la salida barata del eco de interfaz): 1 + |∇s| + |s|/ρ. */
+/** Cota de norma de la composición: (1 + |∇s| + |s|/ρ) · (1 + |D∇w/det|). */
 export function warpBound(w: Warp): number {
-  return 1 + length(w.grad) + Math.abs(w.shift) / w.rho;
+  return (1 + length(w.grad) + Math.abs(w.shift) / w.rho) * (1 + (w.respiratory ? length(w.respiratory) : 0));
 }
 
 const f4 = (x: number): string => x.toFixed(4);
@@ -364,8 +372,8 @@ vec3 uncompress(vec3 p) {
   return p + s * rhat;
 }
 // Jacobiana de la inversa: s, r̂, ρ y ∇s (analítico: una evaluación del campo), para llevar normales al mundo
-struct Warp { float s; vec3 rhat; float rho; vec3 g; };
-Warp noWarp() { Warp w; w.s = 0.0; w.rhat = vec3(0.0); w.rho = 1.0; w.g = vec3(0.0); return w; }
+struct Warp { float s; vec3 rhat; float rho; vec3 g; vec3 respiratory; };
+Warp noWarp() { Warp w; w.s = 0.0; w.rhat = vec3(0.0); w.rho = 1.0; w.g = vec3(0.0); w.respiratory = vec3(0.0); return w; }
 float smoothstepSlope(float e0, float e1, float x) {
   float u = (x - e0) / (e1 - e0);
   return u > 0.0 && u < 1.0 ? 6.0 * u * (1.0 - u) / (e1 - e0) : 0.0;
@@ -405,10 +413,11 @@ Warp warpAt(vec3 p) {
   return w;
 }
 vec3 warpNormal(Warp w, vec3 n) {
+  n -= w.respiratory * dot(vec3(${RESPIRATORY_DIRECTION.map((v) => v.toPrecision(15)).join(',')}), n);
   float rn = dot(w.rhat, n);
   vec3 el = compressionElevation();
   return n + rn * w.g + (w.s / w.rho) * (n - rn * w.rhat - dot(el, n) * el);
 }
 // Cota de |J^T·n|/|n|: la salida barata del eco de interfaz la usa para no descartar muestras a su alcance
-float warpBound(Warp w) { return 1.0 + length(w.g) + abs(w.s) / w.rho; }
+float warpBound(Warp w) { return (1.0 + length(w.g) + abs(w.s) / w.rho) * (1.0 + length(w.respiratory)); }
 `;

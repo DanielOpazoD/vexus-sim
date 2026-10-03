@@ -415,7 +415,7 @@ vec2 slidingField(vec3 pD, float h, float salt) {
 // líneas de la cortina, por la del rayo central, decisión 88).
 vec2 mediumField(vec3 p, vec3 dir, float r, float se, bool withCurtain, out float spec) {
   vec3 m = toMaterial(p);
-  Warp w = warpAt(p);
+  Warp w = anatomyWarpAt(p, m);
   Cls c = classifyWith(m, withCurtain);
   vec2 f0 = fieldFor(m, se, c.tissue, normalize(p - uCurvC), w);
   vec3 p1 = p + uElev * se, p2 = p - uElev * se;

@@ -119,3 +119,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [113](DECISIONS.md#L4944) | Inversa respiratoria escalar con intervalo acotado | vigente |
 | [114](DECISIONS.md#L4956) | Margen de transporte GLSL sin alterar los shaders | vigente |
 | [115](DECISIONS.md#L4964) | Matrices IQ completas fuera de la instrumentación de cobertura | vigente |
+| [116](DECISIONS.md#L4972) | Gradientes de interfaz transportados por respiración y compresión | vigente |

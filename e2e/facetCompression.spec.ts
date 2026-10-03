@@ -5,15 +5,17 @@ import type { Vec3 } from '../src/core/vec3';
 
 // Compila los núcleos de producción, no una traducción del cálculo en el test.
 const warpStruct = COMPRESSION_GLSL.match(/struct Warp \{[^}]+\};/)?.[0];
+const noWarp = COMPRESSION_GLSL.match(/Warp noWarp\(\) \{[^}]+\}/)?.[0];
 const warpNormal = COMPRESSION_GLSL.match(/vec3 warpNormal\(Warp w, vec3 n\) \{[^}]+\}/)?.[0];
-if (!warpStruct || !warpNormal) throw new Error('No se encontraron los núcleos GLSL de compresión');
+if (!warpStruct || !warpNormal || !noWarp) throw new Error('No se encontraron los núcleos GLSL de compresión');
 const normalize = (v: Vec3): Vec3 => v.map((x) => x / Math.hypot(...v)) as Vec3;
 const warps: Warp[] = [
   { shift: 0, rhat: [0, 1, 0], rho: 100, elevation: [0, 0, 1], grad: [0, 0, 0] },
   { shift: 0, rhat: [0, 1, 0], rho: 100, elevation: [0, 0, 1], grad: [0.4, 0.6, 0] },
   { shift: -5, rhat: normalize([1, 2, 0]), rho: 80, elevation: [0, 0, 1], grad: [0.2, -0.3, 0] },
 ];
-const samples = warps.flatMap((w) =>
+const respiratoryWarps = warps.flatMap((w) => [w, { ...w, respiratory: [0.2, -0.5, 0.1] as Vec3 }]);
+const samples = respiratoryWarps.flatMap((w) =>
   [normalize([1, 2, 3]), normalize([-2, 1, 0.5]), [0, 1, 0] as Vec3].flatMap((n) =>
     [
       [0.2, 0, 0.1],
@@ -23,7 +25,7 @@ const samples = warps.flatMap((w) =>
   ),
 );
 
-test('las facetas materiales conservan la paridad de incidencia bajo compresión en WebGL2', async ({ page }) => {
+test('las facetas materiales conservan la paridad de incidencia bajo compresión y respiración en WebGL2', async ({ page }) => {
   // Banco de kernel, sin cargar la escena: las E2E existentes ejercitan su integración en las pasadas B.
   const values = await page.evaluate(
     ({ source, samples }) => {
@@ -66,6 +68,7 @@ test('las facetas materiales conservan la paridad de incidencia bajo compresión
           v('uElevation', w.elevation);
           v('uRhat', w.rhat);
           v('uGrad', w.grad);
+          v('uRespiratory', w.respiratory ?? [0, 0, 0]);
           f('uShift', w.shift);
           f('uRho', w.rho);
           gl.drawArrays(gl.TRIANGLES, 0, 3);
@@ -86,21 +89,23 @@ test('las facetas materiales conservan la paridad de incidencia bajo compresión
       source: `#version 300 es
 precision highp float;
 precision highp int;
-uniform vec3 uN,uTilt,uDir,uElevation,uRhat,uGrad;
+uniform vec3 uN,uTilt,uDir,uElevation,uRhat,uGrad,uRespiratory;
 uniform float uShift,uRho;
 out vec4 color;
 vec3 compressionElevation(){return uElevation;}
 ${warpStruct}
+${noWarp}
 ${warpNormal}
 ${FACET_COSINE_GLSL}
 void main(){
-  Warp w=Warp(uShift,uRhat,uRho,uGrad);
+  Warp w=noWarp();
+  w.s=uShift; w.rhat=uRhat; w.rho=uRho; w.g=uGrad; w.respiratory=uRespiratory;
   uint bits=floatBitsToUint(facetCosine(uN,uDir,uTilt,w));
   color=vec4(float(bits&255u),float((bits>>8)&255u),float((bits>>16)&255u),float((bits>>24)&255u))/255.0;
 }`,
     },
   );
-  expect(values).toHaveLength(27);
+  expect(values).toHaveLength(54);
   for (let i = 0; i < samples.length; i++) {
     const { w, n, tilt, dir } = samples[i];
     expect(Number.isFinite(values[i]), `muestra ${i}`).toBe(true);

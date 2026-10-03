@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { chromium } from '@playwright/test';
+import { captureBMode } from './captureBMode';
 
 const root = process.cwd(),
   sha = process.env.BASE_SHA;
@@ -83,9 +84,9 @@ try {
           // Congelar mediante el control real tras medir; evita esperar estabilidad de un canvas que sigue dibujando.
           await page.locator('#freeze').evaluate((button: HTMLButtonElement) => button.click());
           if ((await page.locator('#freeze').getAttribute('aria-pressed')) !== 'true') throw new Error('No se congeló la imagen');
-          const clip = await page.locator('#gl').boundingBox();
-          if (!clip) throw new Error('Canvas sin geometría');
-          await page.screenshot({ path: join(out, `${version}-${profile}-${mode}.png`), clip });
+          // Framebuffer realmente congelado, igual que los otros comparadores: el compositor
+          // de Chromium puede agotar 30 s aun con las fuentes listas y el render completado.
+          await captureBMode(page, join(out, `${version}-${profile}-${mode}.png`));
           await page.locator('#freeze').evaluate((button: HTMLButtonElement) => button.click());
           results.push({ version, sha: commit, mode: `${profile}-${mode}`, frameMs });
           writeFileSync(join(out, 'partial.json'), JSON.stringify({ results }, null, 2));

@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
 import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
-import { DIAPHRAGM_JOIN_MM, diaphragmEdgeZ, diaphragmHeight, torsoPhi, type Dome } from '../anatomy/primitives';
+import { DIAPHRAGM_JOIN_MM, diaphragmInteriorEdgeZ, diaphragmHeight, type Dome } from '../anatomy/primitives';
 import { setReferenceBody } from '../anatomy/referenceBody';
 const bytes = readFileSync('src/anatomy/reference-body.bin');
 const profile = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
@@ -10,7 +10,7 @@ afterEach(() => setReferenceBody());
 
 /** Independent two-dome construction identifies the original switching curve, not a tuned pixel. */
 function originalHeights(s: AnatomyScene, x: number, y: number): [number, number] {
-  const edge = diaphragmEdgeZ(torsoPhi(x, y, s.torso), s.diaphragm);
+  const edge = diaphragmInteriorEdgeZ(x, y, s.diaphragm, s.torso);
   const dome = (d: Dome) => {
     const r2 = ((x - d.x0) / d.rx) ** 2 + ((y - d.y0) / d.ry) ** 2;
     return edge + Math.max(0, d.apex - edge) * Math.sqrt(Math.max(0, 1 - r2 * r2));
@@ -81,7 +81,7 @@ describe('continuidad de la unión interhemidiafragmática', () => {
           unchanged++;
         }
         if (delta > 1e-8) changed++;
-        const edge = diaphragmEdgeZ(torsoPhi(x, y, s.torso), s.diaphragm);
+        const edge = diaphragmInteriorEdgeZ(x, y, s.diaphragm, s.torso);
         if (r === edge && l === edge) {
           expect(after).toBe(edge);
           exterior++;

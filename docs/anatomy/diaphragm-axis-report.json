@@ -1,0 +1,75 @@
+{
+  "base": "10b2c4ede708c5a43422e3ac93e754a749e3763e",
+  "method": "Sampled height change and angular limit convergence, not volume integration or clinical validation",
+  "normalizedCoreRadius": 0.1,
+  "results": [
+    {
+      "reference": false,
+      "samples": 308321,
+      "gridStepMm": 0.5,
+      "changed": 1018,
+      "minDeltaMm": -4.64543927079,
+      "maxDeltaMm": 2.842170943040401e-14,
+      "outsideCoreMaxErrorMm": 2.842170943040401e-14,
+      "angularLimits": [
+        {
+          "radiusMm": 0.1,
+          "beforeRangeMm": 4.7333199171685365,
+          "afterRangeMm": 0.14908305910679331
+        },
+        {
+          "radiusMm": 0.01,
+          "beforeRangeMm": 4.668939788451688,
+          "afterRangeMm": 0.014910616187108872
+        },
+        {
+          "radiusMm": 0.001,
+          "beforeRangeMm": 4.662519642913736,
+          "afterRangeMm": 0.0014910853996568108
+        }
+      ],
+      "vessels": {
+        "before": "2155e5f806edfe3406d688b363fdb95fb9c62056ca104bf5f3655fc1774125b7",
+        "after": "2155e5f806edfe3406d688b363fdb95fb9c62056ca104bf5f3655fc1774125b7",
+        "countBefore": 92,
+        "countAfter": 92
+      },
+      "ribsIdentical": true,
+      "kidneysIdentical": true
+    },
+    {
+      "reference": true,
+      "samples": 308321,
+      "gridStepMm": 0.5,
+      "changed": 1069,
+      "minDeltaMm": -5.32005335332299,
+      "maxDeltaMm": 3.552713678800501e-14,
+      "outsideCoreMaxErrorMm": 3.552713678800501e-14,
+      "angularLimits": [
+        {
+          "radiusMm": 0.1,
+          "beforeRangeMm": 5.425411751370099,
+          "afterRangeMm": 0.16589236075243008
+        },
+        {
+          "radiusMm": 0.01,
+          "beforeRangeMm": 5.341141855856328,
+          "afterRangeMm": 0.016575098055703563
+        },
+        {
+          "radiusMm": 0.001,
+          "beforeRangeMm": 5.332734109514277,
+          "afterRangeMm": 0.0016573676290221329
+        }
+      ],
+      "vessels": {
+        "before": "32234efa729c3183cfdef4c13d5fcaaa3defea92adad90b7ab0afad3e64e49f0",
+        "after": "32234efa729c3183cfdef4c13d5fcaaa3defea92adad90b7ab0afad3e64e49f0",
+        "countBefore": 97,
+        "countAfter": 97
+      },
+      "ribsIdentical": true,
+      "kidneysIdentical": true
+    }
+  ]
+}

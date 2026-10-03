@@ -118,3 +118,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [112](DECISIONS.md#L4936) | Respiración del navegador en coordenadas materiales | vigente |
 | [113](DECISIONS.md#L4944) | Inversa respiratoria escalar con intervalo acotado | vigente |
 | [114](DECISIONS.md#L4956) | Margen de transporte GLSL sin alterar los shaders | vigente |
+| [115](DECISIONS.md#L4964) | Matrices IQ completas fuera de la instrumentación de cobertura | vigente |

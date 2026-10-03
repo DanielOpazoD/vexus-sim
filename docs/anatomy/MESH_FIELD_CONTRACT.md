@@ -69,7 +69,7 @@ Las normales en aristas, vértices y ejes mediales no tienen necesariamente una 
 El BVH de esta fuente tiene 22.291 nodos y profundidad 14; los cuatro buffers ocupan
 5.096.544 bytes antes del relleno de texturas. La fixture comprimida ocupa 1.365.631 bytes.
 Estos costes impiden tratarlo como una incorporación gratuita al raymarcher.
-El informe mide lotes de consultas aisladas; **no mide FPS del simulador** y SwiftShader no
+El informe mide lotes de consultas aisladas, incluyendo readback bloqueante de ambas texturas; **no mide FPS del simulador** y SwiftShader no
 representa Metal, móviles o GPU integrada. No hay una promesa de rendimiento comercial.
 
 Antes de incorporar la fuente faltan: coste por rayo/píxel real, estrategia de aceleración o

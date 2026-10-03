@@ -2,6 +2,7 @@
 export const MESH_FIELD_QUERY_GLSL = `#version 300 es
 precision highp float;
 precision highp int;
+precision highp sampler2D;
 uniform sampler2D uVertices;
 uniform sampler2D uFaces;
 uniform sampler2D uAdjacent;

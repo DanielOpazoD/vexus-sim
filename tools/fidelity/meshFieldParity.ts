@@ -112,13 +112,13 @@ try {
       for (let i = 0; i < 4; i++) {
         const t = performance.now();
         gl.drawArrays(gl.TRIANGLES, 0, 3);
-        gl.finish();
+        // Blocking readback is included: gl.finish alone can be deferred by the browser.
+        gl.readBuffer(gl.COLOR_ATTACHMENT0);
+        gl.readPixels(0, 0, width, height, gl.RGBA, gl.FLOAT, fields);
+        gl.readBuffer(gl.COLOR_ATTACHMENT1);
+        gl.readPixels(0, 0, width, height, gl.RGBA, gl.FLOAT, diagnostics);
         if (i) batchMs.push(performance.now() - t);
       }
-      gl.readBuffer(gl.COLOR_ATTACHMENT0);
-      gl.readPixels(0, 0, width, height, gl.RGBA, gl.FLOAT, fields);
-      gl.readBuffer(gl.COLOR_ATTACHMENT1);
-      gl.readPixels(0, 0, width, height, gl.RGBA, gl.FLOAT, diagnostics);
       const error = gl.getError();
       if (error !== gl.NO_ERROR) throw new Error(`WebGL error ${error}`);
       const debug = gl.getExtension('WEBGL_debug_renderer_info');
@@ -174,7 +174,7 @@ try {
     failedCount,
     failures,
     renderer: result.renderer,
-    queryBatchMs: result.batchMs,
+    queryBatchIncludingReadbackMs: result.batchMs,
     bvhNodes: mesh.nodes.length / 8,
     bvhDepth: mesh.maxDepth,
     bufferBytes: [mesh.vertices, mesh.faces, mesh.adjacent, mesh.nodes].reduce((s, a) => s + a.byteLength, 0),

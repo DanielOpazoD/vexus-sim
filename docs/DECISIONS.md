@@ -5020,7 +5020,14 @@ B/3D/corte/trazas invisibles; mantiene fisiología e IQ, y la adquisición M si 
 activa. La cabecera queda fija al desplazar el contenido. La prueba conserva las
 comprobaciones y captura el viewport real móvil, no el ancho desbordado del fondo.
 
-**Feedback temprano.** Se añade un workflow acotado al visor y sus dependencias: tres repeticiones, cero reintentos y parada al primer fallo, con capturas y trace. No sustituye el conjunto completo de CI ni su veredicto protegido. Evita esperar a que termine un fragmento largo para inspeccionar un fallo del modal. La limpieza del DOM cerrado se comprueba con un selector DOM, porque el rol accesible de un diálogo cerrado deja de estar disponible; se conserva la misma exigencia de contenido vacío.
+**Feedback temprano.** Se añade un workflow acotado al visor y sus dependencias: tres ejecuciones independientes en paralelo, cero reintentos y parada al primer fallo por proceso, con capturas y trace. No sustituye el conjunto completo de CI ni su veredicto protegido. Evita esperar a que termine un fragmento largo para inspeccionar un fallo del modal. La limpieza del DOM cerrado se comprueba con un selector DOM, porque el rol accesible de un diálogo cerrado deja de estar disponible; se conserva la misma exigencia de contenido vacío.
+
+Las tres ejecuciones se reparten en corredores separados: dos repeticiones
+secuenciales pasaron, pero el workflow inicial agotó 15 min durante la tercera.
+Se conservan las tres comprobaciones y el mismo límite por corredor, sin elevar
+el tiempo permitido por prueba. Tras comprobar reloj vivo, pausa y reanudación,
+la reapertura se prueba también con el equipo congelado mediante su botón real;
+esto evita redibujados ocultos entre comprobaciones de limpieza y añade ese estado.
 
 ## 121. Captura suprahepática con sangre visible durante la ventana espectral
 

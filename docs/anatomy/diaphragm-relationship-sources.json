@@ -1,0 +1,38 @@
+{
+  "sourceArchiveSha256": "9fbc713fffeee924a5a657d9813d84d7eb957bded63adb854931dd5e3eb61c97",
+  "labelTableSha256": "3f5f6df1028eb122b30de77c711597b6bb8e5541658e5985859fd228adbf88ea",
+  "registration": "Common LAS millimetres, unchanged xiphoid registration from source recovery",
+  "credit": "BodyParts3D, \u00a9 The Database Center for Life Science licensed under CC Attribution 4.0 International",
+  "parts": [
+    {
+      "id": "FJ1932",
+      "label": "abdominal aorta",
+      "sha256": "cbdbe976943f977c48b9dbdfa2efdd9eb025f935d3f921a3fb8479df2090d25d"
+    },
+    {
+      "id": "FJ2563",
+      "label": "esophagus",
+      "sha256": "0bc2935e13650b9a5ea143dee97767e2dba0589eae92f0df4e01f3e2fce3c4b0"
+    },
+    {
+      "id": "FJ3441",
+      "label": "IVC segment FJ3441",
+      "sha256": "749081b95f406bd38edea220d216f84aa17e019b91c117e7cfd5f3e546ea1163"
+    },
+    {
+      "id": "FJ3659",
+      "label": "IVC segment FJ3659",
+      "sha256": "a2ff79789ca4d74a0ed2382f347918bc630710f92fab40146ba7353b98bc2b02"
+    },
+    {
+      "id": "FJ3145",
+      "label": "left kidney",
+      "sha256": "b52066a987f767ad9e5c3092958bf5dd760d9f05f1497d1fc7f7ff11539bdfd2"
+    },
+    {
+      "id": "FJ3147",
+      "label": "right kidney",
+      "sha256": "e21e2ebd5224b1cbf8caabbf4fa788d894819a328a006dcdb2eb8aa6eee5875a"
+    }
+  ]
+}

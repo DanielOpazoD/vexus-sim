@@ -198,8 +198,8 @@ float domeHeight(float x, float y) {
   float zr = edge + max(0.0, uDiaphragm.x - edge) * domeLift(x, y, uDomeR);
   float zl = edge + max(0.0, uDiaphragm.y - edge) * domeLift(x, y, uDomeL);
   float k = ${DIAPHRAGM_JOIN_MM.toFixed(3)} * smoothstep(0.0, ${(2 * DIAPHRAGM_JOIN_MM).toFixed(3)}, 0.5 * (zr + zl) - edge);
-  if (k <= 0.0) return edge;
-  float h = max(k - abs(zr - zl), 0.0) / k;
+  // Branchless: esta función se expande dentro del clasificador y sus gradientes.
+  float h = max(k - abs(zr - zl), 0.0) / max(k, 1e-20);
   return max(zr, zl) + h * h * k * 0.25;
 }
 

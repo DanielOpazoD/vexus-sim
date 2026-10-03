@@ -81,7 +81,12 @@ test('comparación venosa: reloj único, cursor, pausa, escala y cierre accesibl
   await expect(dialog).not.toBeVisible();
   await expect(open).toBeFocused();
   await expect(page.locator('.venous-viewer .venous-readout')).toHaveText('');
+  // El flujo vivo ya se comprobó. Probar además reapertura congelada evita redibujar
+  // GPU de fondo entre comprobaciones de limpieza y cubre ese estado del usuario.
+  await page.locator('#freeze').click({ force: true });
+  expect(await page.evaluate(() => window.__vexusTest!.sim().frozen)).toBe(true);
   await open.click({ force: true });
+  await expect(dialog.locator('.venous-status')).toContainText('Paciente congelado');
   await expect(dialog).toBeVisible();
   await dialog.getByRole('button', { name: 'Cerrar', exact: true }).click();
   await expect(dialog).not.toBeVisible();

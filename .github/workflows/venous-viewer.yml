@@ -1,0 +1,44 @@
+name: Visor venoso · validación rápida
+on:
+  pull_request:
+    paths:
+      - 'src/ui/panel/**'
+      - 'src/ui/panel.ts'
+      - 'src/bootstrap.ts'
+      - 'src/app/styles.css'
+      - 'src/physiology/**'
+      - 'e2e/venousViewer.spec.ts'
+      - 'e2e/support.ts'
+      - '.github/workflows/venous-viewer.yml'
+permissions:
+  contents: read
+concurrency:
+  group: venous-viewer-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  repeat:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx vite build
+      # Diagnóstico temprano adicional: la CI principal sigue ejecutando sus 62 pruebas completas.
+      - run: npm run e2e -- e2e/venousViewer.spec.ts --forbid-only --repeat-each=3 --retries=0 --max-failures=1 --workers=1
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: venous-viewer-early
+          path: |
+            e2e-results.json
+            test-results
+          retention-days: 7
+          if-no-files-found: warn

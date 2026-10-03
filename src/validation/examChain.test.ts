@@ -185,7 +185,7 @@ describe('Cadena completa del alumno: puerta → espectro → medición → grad
           expect(portal!.quality.beats).toBe(2);
           expect(portal!.quality.validBeats).toBe(2);
           expect(portal!.measuredBeats).toHaveLength(2);
-        } else expect(portal!.quality.issue).toBe('intermittent');
+        } else expect(['intermittent', 'inconsistent']).toContain(portal!.quality.issue);
         return;
       }
       expect(classifyPortal(portal!.pulsatilityFraction)).toBe(classifyPortal(truth.portalPF));

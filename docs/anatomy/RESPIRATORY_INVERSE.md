@@ -57,6 +57,39 @@ La última orden necesita Chromium de Playwright y WebGL2. El resultado de Actio
 exacto y sus artefactos, determina si la GPU aprueba; la existencia del workflow no equivale a
 una ejecución aprobada. Se mantienen las pruebas funcionales y visuales de la aplicación.
 
+## Regresión funcional descubierta al invertir mejor
+
+La suite completa de la primera versión encontró una regresión real: la captura portal sana
+con respiración tranquila aceptaba PF 31,41 % (clase leve), frente a 19,61 % en la verdad de la
+ventana larga y 20,35 % en los mismos latidos medidos. La inversa previa daba 28,85 %.
+No se conserva deliberadamente una inversa incorrecta para mantener esa semilla ni se cambian
+las clases o la tolerancia de 12 puntos de la prueba.
+
+La traza mostraba deriva lenta: en tres de cuatro latidos, el cambio entre extremos equivalía
+aproximadamente al 81 %, 90 % y 91 % de la excursión intralatido. Contar una traza presente
+no basta para distinguir esa deriva de una pulsación cardíaca repetible. Las recomendaciones
+[Decoding VExUS](https://pmc.ncbi.nlm.nih.gov/articles/PMC11576717/) advierten de esta confusión
+entre variación respiratoria y cardíaca; no proporcionan un umbral automático validado.
+
+Se añade una guarda **[EXTRAPOLACIÓN PROPIA, no validada clínicamente]** sobre la traza
+adquirida, sin consultar caso, amplitud respiratoria ni verdad fisiológica:
+
+- compara las medianas del 10 % inicial/final de valores finitos de cada latido
+- considera deriva dominante si el cambio supera el 75 % de la excursión robusta y esta
+  excursión supera dos bins de velocidad, evitando atribuir deriva al ruido de cuantización
+- requiere al menos tres latidos y mayoría estricta con esa deriva; además, la variación
+  de sus niveles iniciales debe superar la mediana de las excursiones intralatido
+- si la captura ya era rechazada, conserva el motivo previo; en caso contrario, informa
+  «inconsistent» y propone revisar la puerta/apnea. No altera PF, traza ni marcas
+
+La segunda condición distingue una rampa repetible en cada ciclo o una inversión verdadera,
+que no deben rechazarse por comparar los lados de una transición rápida. Las pruebas
+sintéticas incluyen rampas lentas en ambos sentidos, flujo constante, rampa cardíaca
+repetible, pequeña deriva y la inversión verdadera ya cubierta. La cadena heredada admite
+este motivo adicional de rechazo, conservando íntegros clase y error máximo cuando se acepta
+la medición. Se exige mantener también la cobertura/aceptación de los siete casos y tres
+semillas a las cuatro escalas en `examChainScale.test.ts`; no vale rechazar todas las capturas.
+
 ## Coste y límites pendientes
 
 La zona de transición requiere más evaluaciones de peso. OFF y los extremos evitan el bucle;

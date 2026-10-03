@@ -482,6 +482,8 @@ export function measureObservedPortal(columns: readonly SpectralColumn[], beats:
   const marks: CaptureMark[] = [];
   let clipped = false;
   let wallCut = false;
+  let drifting = 0;
+  const starts: number[] = [];
   for (const b of beats) {
     const inBeat = trace.filter((p) => p.t >= b.tR && p.t < b.tR + b.rr);
     // portalTrace conserva una muestra por columna: la cobertura se verificó antes de elegir la dirección.
@@ -491,6 +493,11 @@ export function measureObservedPortal(columns: readonly SpectralColumn[], beats:
     const vmax = quantile(v, PORTAL_Q_HI);
     const vmin = quantile(v, PORTAL_Q_LO);
     if (!(vmax > 0)) continue;
+    // Una excursión dominada por la deriva entre fases ECG equivalentes no
+    // demuestra pulsación cardíaca. Medianas del 10 % inicial y final.
+    const edge = Math.max(1, Math.floor(v.length * 0.1));
+    starts.push(median(v.slice(0, edge)));
+    if (vmax - vmin > 2 * cmsOf(binHz) && Math.abs(median(v.slice(-edge)) - median(v.slice(0, edge))) > 0.75 * (vmax - vmin)) drifting++;
     // el pico toca el Nyquist: se recorta (la PF baja) o se pliega al otro lado (se leería como inversión)
     if (vmax >= PORTAL_CLIP_NYQUIST * nyquistCms) clipped = true;
     // Una inversión resuelta lejos de cero no es pérdida por filtro: conserva PF >100%.
@@ -513,6 +520,13 @@ export function measureObservedPortal(columns: readonly SpectralColumn[], beats:
   const quality = qualityOf(columns.filter(inEffective), effective, opts, 'both', undefined, undefined, (c) => present.has(c.t));
   if (clipped || wrapped) quality.issue = 'aliasing';
   else if (wallCut && (quality.issue === null || quality.issue === 'intermittent')) quality.issue = 'wall-filter';
+  if (
+    quality.issue === null &&
+    drifting >= 3 &&
+    drifting > maxs.length / 2 &&
+    Math.max(...starts) - Math.min(...starts) > median(maxs.map((v, i) => v - mins[i]))
+  )
+    quality.issue = 'inconsistent';
   if (!maxs.length && quality.issue === null) quality.issue = 'few-beats';
   return {
     kind: 'portal',

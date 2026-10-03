@@ -59,4 +59,11 @@ describe('partición de cobertura sin perder pruebas', () => {
     expect(scripts['test:matrix']).not.toContain('--coverage');
     expect(scripts['test:coverage:full']).toBe('VITEST_TIER=all VITEST_COVERAGE_PARTITION=all vitest run --coverage --testTimeout=180000');
   });
+  it('publica los informes de ambas fases aunque su directorio sea oculto', () => {
+    const workflow = readFileSync(join(root, '.github/workflows/ci.yml'), 'utf8');
+    const upload = workflow.split('name: validation-reports')[1]?.split('      - run:')[0];
+    expect(upload).toContain('.validation/*.json');
+    expect(upload).toContain('include-hidden-files: true');
+    expect(upload).toContain('if-no-files-found: error');
+  });
 });

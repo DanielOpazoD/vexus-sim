@@ -44,11 +44,12 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: validation-reports
+          include-hidden-files: true
           path: |
             .validation/*.json
             coverage/coverage-summary.json
           retention-days: 14
-          if-no-files-found: warn
+          if-no-files-found: error
       - run: npm run build
       - name: Auditoría de dependencias de producción
         run: npm audit --omit=dev --audit-level=high

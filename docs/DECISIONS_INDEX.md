@@ -123,3 +123,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [117](DECISIONS.md#L4980) | Ocho fragmentos E2E con partición verificada | vigente |
 | [118](DECISIONS.md#L4988) | Reflexión pleural en el marco deformado | vigente |
 | [119](DECISIONS.md#L4998) | Contrato sincronizado del visor venoso comparativo | vigente |
+| [120](DECISIONS.md#L5006) | Vista docente venosa sincronizada y transporte compacto sin pérdida | vigente |

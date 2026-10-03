@@ -5002,3 +5002,13 @@ La modulación hepática de densidad de 3 mm baja de escala 11 a 4 dB (campo aco
 **Dominio.** Los parámetros presentes se declaran limitados a casos; el control venoso global no está expuesto y compliance VD/taponamiento no están modelados. La investigación previa impide resolverlos como cambios gráficos. El registro de capacidades debe cambiar únicamente cuando exista el mecanismo correspondiente.
 
 **Verificación.** Siete contratos rápidos y una auditoría reproducible de 32 casos, independiente de WebGL y de la captura PW. Esta primera etapa no añade UI ni modifica la fisiología o la imagen. Se conservan presupuestos, plazos y todas las pruebas existentes. Véase `physiology/VENOUS_COMPARISON.md`.
+
+## 120. Vista docente venosa sincronizada y transporte compacto sin pérdida
+
+**Decisión.** Mostrar suprahepática derecha, porta e interlobar derecha en filas sobre el mismo reloj, con ECG y respiración. Es una referencia de velocidad media Q/A, expresamente distinta del espectro PW adquirido. Usa un único historial del simulador; no construye motores ni modifica parámetros, flujo, respiración o congelación. Ventana de seis segundos, escala común explícita y aviso de valores fuera de rango; los huecos no se conectan. El cursor pausado consulta las tres muestras del mismo instante.
+
+**Interacción.** Modal nativo con foco y Escape, controles de pausa de la vista, escala y cierre; atajos locales no alcanzan el ecógrafo de fondo. Cerrar, reiniciar/cambiar paciente o salir de docente limpia los datos. Sin docente no se abre. No se cambia la respiración por defecto ni se añaden controles fisiológicos aún no calibrados. El ECG y la fracción inspirada tienen sus propias unidades y límites.
+
+**Coste.** Se aplica también a los módulos GLSL de Three el transporte reversible ya usado por nuestros shaders. Se amplía el diccionario a 42 palabras, sin cambios en el shader decodificado, bindings, compilación ni algoritmos. Los marcadores no asignados se conservan y los literales con escapes o marcadores preexistentes siguen sin empaquetarse. Se comprueba cada export de cada ShaderChunk/ShaderLib byte por byte y todo nuestro grafo ensamblado. No se modifica el paquete instalado ni su licencia. Esto permite incorporar el visor y recuperar margen real sin elevar los presupuestos.
+
+**Verificación.** Una prueba E2E específica cubre datos, cursor sincronizado, pausa sin efecto sobre el paciente, escala, teclado, móvil, Escape, reapertura y limpieza al salir. Guarda capturas para inspección visual. Los contratos de sincronización de la decisión 119 siguen siendo independientes de la UI. La vista no certifica fisiología ni reemplaza la implementación futura de adquisición PW y mecanismos ausentes.

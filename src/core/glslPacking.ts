@@ -26,7 +26,24 @@ export const GLSL_WORDS = [
   'ivec2',
   'continue',
   'max',
+  'include',
+  'material',
+  'endif',
+  'ifdef',
+  'reflectedLight',
+  'defined',
+  'varying',
+  'roughness',
+  'direction',
+  'NUM_POINT_LIGHT_SHADOWS',
+  'texture2D',
+  'normal',
+  'shadowIntensity',
+  'color',
+  'clipping_planes_pars_fragment',
+  'specularColor',
 ] as const;
+export const GLSL_MARKERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 export function unpackGlsl(s: string): string {
-  return s.replace(/@([A-Z])/g, (_, c: string) => GLSL_WORDS[c.charCodeAt(0) - 65]);
+  return s.replace(/@([A-Za-z])/g, (_, c: string) => GLSL_WORDS[GLSL_MARKERS.indexOf(c)] ?? `@${c}`);
 }

@@ -115,6 +115,14 @@ jobs:
           path: test-results/**/bowel-*.png
           retention-days: 7
           if-no-files-found: ignore
+      - name: Guardar el visor venoso
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: venous-visuals-${{ matrix.shard }}
+          path: test-results/**/venous-*.png
+          retention-days: 7
+          if-no-files-found: ignore
       - name: Guardar el informe si falla
         if: failure()
         uses: actions/upload-artifact@v7

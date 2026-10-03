@@ -1,6 +1,6 @@
 import { dirname, join, relative } from 'node:path';
 import type { Plugin } from 'vite';
-import { GLSL_WORDS } from '../../src/core/glslPacking';
+import { GLSL_WORDS, GLSL_MARKERS } from '../../src/core/glslPacking';
 import { findGlslTemplates, scanModule } from './glslMinify';
 
 /** Encode static pieces only: dynamic interpolations retain their original evaluation/coercion. */
@@ -16,10 +16,7 @@ export function packGlslTemplates(code: string, id: string, root: string): strin
       // Preserve JS escapes literally; marker collisions remain on the ordinary path.
       if (/[\\@`]/.test(raw)) return raw;
       const cooked = raw.replace(/\r\n?/g, '\n');
-      const packed = cooked.replace(
-        words,
-        (word) => '@' + String.fromCharCode(65 + GLSL_WORDS.indexOf(word as (typeof GLSL_WORDS)[number])),
-      );
+      const packed = cooked.replace(words, (word) => '@' + GLSL_MARKERS[GLSL_WORDS.indexOf(word as (typeof GLSL_WORDS)[number])]);
       const expression = '${' + alias + '(' + JSON.stringify(packed) + ')}';
       if (expression.length + 16 >= raw.length) return raw;
       used = true;
@@ -45,7 +42,10 @@ export function glslPacking(): Plugin {
       root = config.root;
     },
     transform(code, id) {
-      if (!/[\\/]src[\\/].*\.ts$/.test(id) || /[\\/]node_modules[\\/]/.test(id) || !code.includes('glsl')) return null;
+      const path = id.replaceAll('\\', '/');
+      const own = /\/src\/.*\.ts$/.test(path) && !path.includes('/node_modules/');
+      const vendor = /\/node_modules\/three\/src\/renderers\/shaders\/(?:ShaderChunk|ShaderLib)\/[^/]+\.glsl\.js$/.test(path);
+      if ((!own && !vendor) || !code.includes('glsl')) return null;
       const out = packGlslTemplates(code, id, root);
       return out === code ? null : { code: out, map: null };
     },

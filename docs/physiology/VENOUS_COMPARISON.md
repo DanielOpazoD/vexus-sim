@@ -84,10 +84,10 @@ No se agregan 32 adquisiciones PW o inicializaciones WebGL a la CI.
 
 Siete tests rápidos verifican reloj común, conversión exacta, copias, signos,
 casos incluidos con FA, rechazo de datos inválidos y límites de capacidades.
-No aumentan escenarios E2E, timeouts, reintentos ni presupuesto. El módulo aún
-no se importa desde la aplicación: esta etapa no cambia las imágenes ni añade
-la interfaz visible. La primera vista posterior debe rotular sus curvas como
-referencia fisiológica; la vista PW necesita su propia cadena de señal.
+En la etapa 1 no aumentaron escenarios E2E, timeouts, reintentos ni presupuesto.
+El módulo todavía no se importaba desde la aplicación. La etapa 2 descrita abajo
+lo conecta a una vista rotulada como referencia fisiológica; la vista PW necesita
+su propia cadena de señal.
 
 ## Secuencia restante
 
@@ -100,3 +100,23 @@ referencia fisiológica; la vista PW necesita su propia cadena de señal.
 
 La respiración permanece desactivada por defecto. Ningún paso habilita una
 función inexistente por el solo hecho de añadir su botón.
+
+## Etapa 2: primera vista docente
+
+En Docente → Comparación venosa → Abrir comparación venosa aparecen las tres
+velocidades medias sobre el mismo tiempo, además de ECG y respiración. Es una
+**referencia fisiológica**, no un espectrograma adquirido. No se presenta como
+resultado clínico validado.
+
+- Últimos seis segundos; escala común ±20, ±60 o ±120 cm/s y aviso fuera de rango
+- Signo anatómico explícito y valores numéricos sin normalización entre órganos
+- Pausar vista conserva una copia; el cursor consulta todas las filas a la vez
+- Esta pausa no cambia la congelación ni el tiempo del simulador
+- ECG en mV; respiración como fracción inspirada del modelo, no volumen en litros
+- PAD y PIA del cursor son instantáneas, no medias ni presiones transmurales
+- Cierre/Escape devuelve el foco; cambio de paciente o modo alumno limpia los datos
+- Diseño adaptable y controles de teclado; el modal contiene sus propios atajos
+
+Aún no hay sliders fisiológicos libres, taponamiento ni compliance VD. Se deben
+incorporar por mecanismos y validar según las etapas restantes. La respiración
+conserva el estado del simulador y continúa desactivada al inicio normal.

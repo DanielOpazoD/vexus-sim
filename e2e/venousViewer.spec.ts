@@ -1,0 +1,80 @@
+import { expect, test } from '@playwright/test';
+import { bootWithoutErrors, budget, checkAfterEach, withinFrames } from './support';
+
+checkAfterEach();
+test('comparación venosa: reloj único, cursor, pausa, escala y cierre accesible sin cambiar al paciente', async ({ page }, info) => {
+  budget(120_000);
+  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  await page.locator('#debug-toggle').check({ force: true });
+  await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
+  await page.evaluate(() => window.__vexusTest!.advance(8));
+  const open = page.getByRole('button', { name: 'Abrir comparación venosa' });
+  await open.click({ force: true });
+  const dialog = page.getByRole('dialog', { name: 'Comparación venosa' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog).toContainText('no espectro PW adquirido');
+  await expect(dialog.locator('.venous-wave')).toHaveCount(5);
+  await withinFrames(page, 20, 'curvas con datos', async () => {
+    const paths = await dialog.locator('.venous-wave').evaluateAll((els) => els.map((e) => e.getAttribute('d')));
+    return paths.every((p) => p && p.includes('L')) || 'sin trazas completas';
+  });
+  await dialog.getByRole('button', { name: 'Pausar vista', exact: true }).click();
+  const pausedPaths = await dialog.locator('.venous-wave').evaluateAll((els) => els.map((e) => e.getAttribute('d')));
+  const cursor = dialog.getByRole('slider', { name: 'Cursor sincronizado' });
+  await expect(cursor).toBeEnabled();
+  // Contraste numérico con la muestra original, no con otra copia del observador.
+  const shown = await dialog.locator('.venous-row figcaption span').allTextContents();
+  const expected = await page.evaluate(() => {
+    const time = Number(document.querySelector('.venous-readout')!.textContent.match(/^t ([\d.]+)/)![1]);
+    const sample = window.__vexusTest!.sim().physiology.samples.find((s) => Math.abs(s.t - time) < 0.00051)!;
+    return [sample.velocities.hvRight / 10, sample.velocities.pvTrunk / 10, sample.velocities.interlobarVein1 / 10];
+  });
+  expect(shown.slice(0, 3)).toEqual(expected.map((v) => `${v.toFixed(2)} cm/s`));
+  for (let i = 0; i < 3; i++) {
+    const xy = pausedPaths[i]!.match(/L([\d.-]+),([\d.-]+)$/)!;
+    expect(Number(xy[1])).toBe(800);
+    expect(Math.abs(Number(xy[2]) - (45 - (expected[i] / 60) * 40))).toBeLessThanOrEqual(0.051);
+  }
+  const previous = await cursor.inputValue();
+  await cursor.focus();
+  await page.keyboard.press('ArrowLeft');
+  expect(Number(await cursor.inputValue())).toBe(Number(previous) - 1);
+  const markers = await dialog.locator('.venous-cursor').evaluateAll((els) => els.map((e) => e.getAttribute('d')));
+  expect(new Set(markers).size).toBe(1);
+  // Atajos del ecógrafo de fondo no deben cambiar modo ni congelación desde el modal.
+  const frozen = await page.evaluate(() => window.__vexusTest!.sim().frozen);
+  await page.keyboard.press('Space');
+  expect(await page.evaluate(() => window.__vexusTest!.sim().frozen)).toBe(frozen);
+  await page.evaluate(() => window.__vexusTest!.advance(1));
+  expect(await dialog.locator('.venous-wave').evaluateAll((els) => els.map((e) => e.getAttribute('d')))).toEqual(pausedPaths);
+  await dialog.getByRole('combobox', { name: 'Escala común de velocidad' }).selectOption('20');
+  await expect(dialog.locator('.venous-status')).toContainText('fuera de escala');
+  await dialog.getByRole('combobox', { name: 'Escala común de velocidad' }).selectOption('120');
+  await expect(dialog.locator('.venous-limits').first()).toHaveText('+120 / 0 / −120 cm/s');
+  await dialog.getByRole('combobox', { name: 'Escala común de velocidad' }).selectOption('60');
+  await page.screenshot({ path: info.outputPath('venous-desktop.png'), fullPage: true });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+  await page.screenshot({ path: info.outputPath('venous-mobile.png'), fullPage: true });
+  await dialog.locator('.venous-readout').scrollIntoViewIfNeeded();
+  await page.screenshot({ path: info.outputPath('venous-mobile-cursor.png'), fullPage: true });
+  await dialog.getByRole('button', { name: 'Reanudar vista' }).click();
+  await expect(cursor).toBeDisabled();
+  await expect(dialog.locator('.venous-status')).toContainText('En vivo');
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
+  await expect(open).toBeFocused();
+  await expect(dialog.locator('.venous-readout')).toHaveText('');
+  await open.click({ force: true });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Cerrar', exact: true }).click();
+  await expect(dialog).not.toBeVisible();
+  await open.click({ force: true });
+  // También se limpia si el estado docente cambia con el modal todavía abierto.
+  await page.locator('#debug-toggle').evaluate((el) => (el as HTMLInputElement).click());
+  await expect(dialog).not.toBeVisible();
+  await expect(page.locator('.venous-readout')).toHaveText('');
+  await expect(page.locator('.venous-case')).toHaveText('');
+  await expect(page.locator('.venous-wave').first()).toHaveAttribute('d', '');
+  expect(errors).toEqual([]);
+});

@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'src/anatomy/deformation.ts'
+      - 'src/anatomy/compression.ts'
+      - 'src/anatomy/respiratoryNormals.ts'
+      - 'src/anatomy/respiratoryDirection.ts'
+      - 'src/validation/respiratoryNormals.test.ts'
       - 'src/anatomy/gpu/anatomy.glsl.ts'
       - 'src/anatomy/gpu/sceneUniforms.ts'
       - 'src/validation/respiratoryInverse.test.ts'
@@ -40,3 +44,38 @@ jobs:
           path: ${{ runner.temp }}/respiratory-inverse-evidence
           retention-days: 7
           if-no-files-found: warn
+
+  visual:
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [legacy, reference]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx vite build
+      - name: Ecos en inspiración sostenida, antes y después
+        run: node --import tsx tools/fidelity/portalComparison.ts
+        env:
+          COMPARISON_PROFILE: ${{ matrix.profile }}
+          COMPARISON_RESPIRATION: inspiration
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PORTAL_OUT: ${{ runner.temp }}/respiratory-normal-visuals
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: respiratory-normal-visuals-${{ matrix.profile }}
+          path: ${{ runner.temp }}/respiratory-normal-visuals
+          retention-days: 7
+          if-no-files-found: error

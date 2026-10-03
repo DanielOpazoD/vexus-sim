@@ -570,7 +570,7 @@ float steeredT(float phiK, float a, float x, bool ray) {
 // mediumField y wallField con la fase de la mirada por nodo
 vec2 mediumFieldPh(vec3 p, vec3 dir, float r, float se, bool withCurtain, float ph0, vec3 g, out float spec) {
   vec3 m = toMaterial(p);
-  Warp w = warpAt(p);
+  Warp w = anatomyWarpAt(p, m);
   Cls c = classifyWith(m, withCurtain);
   vec2 f0 = fieldForPh(m, se, c.tissue, ph0, g, normalize(p - uCurvC), w);
   vec3 p1 = p + uElev * se, p2 = p - uElev * se;

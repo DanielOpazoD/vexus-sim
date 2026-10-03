@@ -3,6 +3,8 @@ import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 import { AnatomyScene } from '../../src/anatomy/scene';
 import { RespiratoryDeformation, RESPIRATORY_INVERSE_STEPS } from '../../src/anatomy/deformation';
+import { anatomyWarpAt, respiratoryWeightGradient } from '../../src/anatomy/respiratoryNormals';
+import { warpNormal, warpBound } from '../../src/anatomy/compression';
 import { setReferenceBody } from '../../src/anatomy/referenceBody';
 import { ANATOMY_GLSL, BODY_BASE, COMPRESSION_BASE, SCENE_TEX_H, SCENE_TEX_W } from '../../src/anatomy/gpu/anatomy.glsl';
 import { evaluateSceneUniforms } from '../../src/anatomy/gpu/sceneUniforms';
@@ -55,8 +57,26 @@ try {
         if (compressed) contact.nodes.forEach((n, i) => sceneData.set([n[0], n[1], n[2], contact.radiusMm], (COMPRESSION_BASE + i) * 4));
         const world = materials.map((m) => deformation.toWorld(m, sample.resp).map(Math.fround) as Vec3);
         const cpu = world.map((p) => deformation.toMaterial(p, sample.resp));
+        const normalMaterials = materials.map((m) => m.map((x, j) => Math.fround(x + [0.371, 0.217, 0.113][j])) as Vec3);
+        const normalWorld = normalMaterials.map((m) => deformation.toWorld(m, sample.resp).map(Math.fround) as Vec3);
+        const normals: Vec3[] = [
+          [1, 0, 0],
+          [0, 1, 0],
+          [0, 0, 1],
+          [0.3, -0.7, 1.8],
+        ];
+        let minimumRespiratoryDeterminant = Infinity;
+        const cpuNormals = normalMaterials.map((m, i) => {
+          const gradient = respiratoryWeightGradient(scene, m);
+          minimumRespiratoryDeterminant = Math.min(
+            minimumRespiratoryDeterminant,
+            1 + mm * gradient.reduce((sum, value, j) => sum + value * RespiratoryDeformation.direction[j], 0),
+          );
+          const w = anatomyWarpAt(scene, normalWorld[i], m, mm, deformation.compression);
+          return { value: warpNormal(w, normals[i % 4]), bound: warpBound(w) };
+        });
         const result = await page.evaluate(
-          ({ anatomy, values, sceneData, world, sceneWidth, sceneHeight }) => {
+          ({ anatomy, values, sceneData, world, normalMaterials, normalWorld, sceneWidth, sceneHeight }) => {
             const width = 256,
               height = Math.ceil(world.length / width),
               canvas = document.createElement('canvas');
@@ -90,8 +110,13 @@ precision highp float;precision highp int;
 ${anatomy}
 uniform highp sampler2D uInputPoints;
 uniform int uPointCount;
+uniform int uNormalMode;
+uniform highp sampler2D uNormalMaterials;
+uniform highp sampler2D uNormalWorld;
 layout(location=0) out vec4 result;
-void main(){int i=int(gl_FragCoord.y)*256+int(gl_FragCoord.x);result=vec4(0);if(i>=uPointCount)return;vec3 p=texelFetch(uInputPoints,ivec2(i%256,i/256),0).xyz;vec3 m=toMaterial(p);vec3 q=uncompress(p);result=vec4(m,length(m+uResp.x*respWeight(m)*uResp.yzw-q));}`,
+void main(){int i=int(gl_FragCoord.y)*256+int(gl_FragCoord.x);result=vec4(0);if(i>=uPointCount)return;ivec2 uv=ivec2(i%256,i/256);
+if(uNormalMode==1){vec3 m=texelFetch(uNormalMaterials,uv,0).xyz;vec3 p=texelFetch(uNormalWorld,uv,0).xyz;int j=i%4;vec3 n=j==0?vec3(1,0,0):j==1?vec3(0,1,0):j==2?vec3(0,0,1):vec3(.3,-.7,1.8);Warp w=anatomyWarpAt(p,m);result=vec4(warpNormal(w,n),warpBound(w));return;}
+vec3 p=texelFetch(uInputPoints,uv,0).xyz;vec3 m=toMaterial(p);vec3 q=uncompress(p);result=vec4(m,length(m+uResp.x*respWeight(m)*uResp.yzw-q));}`,
               ),
             );
             gl.linkProgram(program);
@@ -146,6 +171,16 @@ void main(){int i=int(gl_FragCoord.y)*256+int(gl_FragCoord.x);result=vec4(0);if(
                   break;
               }
             }
+            for (const [name, data, unit] of [
+              ['uNormalMaterials', normalMaterials, 2],
+              ['uNormalWorld', normalWorld, 3],
+            ] as const) {
+              const input = new Float32Array(width * height * 4);
+              data.forEach((p, i) => input.set(p, i * 4));
+              gl.activeTexture(gl.TEXTURE0 + unit);
+              texture(width, height, input);
+              gl.uniform1i(gl.getUniformLocation(program, name), unit);
+            }
             gl.viewport(0, 0, width, height);
             const pixels = new Float32Array(width * height * 4),
               times: number[] = [];
@@ -155,21 +190,42 @@ void main(){int i=int(gl_FragCoord.y)*256+int(gl_FragCoord.x);result=vec4(0);if(
               gl.readPixels(0, 0, width, height, gl.RGBA, gl.FLOAT, pixels);
               if (i) times.push(performance.now() - start);
             }
+            const normalPixels = new Float32Array(width * height * 4);
+            gl.uniform1i(gl.getUniformLocation(program, 'uNormalMode'), 1);
+            gl.drawArrays(gl.TRIANGLES, 0, 3);
+            gl.readPixels(0, 0, width, height, gl.RGBA, gl.FLOAT, normalPixels);
             const error = gl.getError();
             if (error !== gl.NO_ERROR) throw new Error(`WebGL error ${error}`);
             const debug = gl.getExtension('WEBGL_debug_renderer_info'),
               renderer = String(gl.getParameter(debug ? debug.UNMASKED_RENDERER_WEBGL : gl.RENDERER));
-            const result = { values: Array.from(pixels.slice(0, world.length * 4)), times, renderer };
+            const result = {
+              values: Array.from(pixels.slice(0, world.length * 4)),
+              normals: Array.from(normalPixels.slice(0, world.length * 4)),
+              times,
+              renderer,
+            };
             gl.getExtension('WEBGL_lose_context')?.loseContext();
             return result;
           },
-          { anatomy: ANATOMY_GLSL, values, sceneData: Array.from(sceneData), world, sceneWidth: SCENE_TEX_W, sceneHeight: SCENE_TEX_H },
+          {
+            anatomy: ANATOMY_GLSL,
+            values,
+            sceneData: Array.from(sceneData),
+            world,
+            normalMaterials,
+            normalWorld,
+            sceneWidth: SCENE_TEX_W,
+            sceneHeight: SCENE_TEX_H,
+          },
         );
         let cpuError = 0,
           gpuError = 0,
           parityError = 0,
           residual = 0,
           failed = 0;
+        let normalError = 0,
+          boundError = 0,
+          normalFailed = 0;
         const witnesses: object[] = [];
         for (let i = 0; i < materials.length; i++) {
           const gpu = result.values.slice(i * 4, i * 4 + 3),
@@ -186,7 +242,30 @@ void main(){int i=int(gl_FragCoord.y)*256+int(gl_FragCoord.x);result=vec4(0);if(
             if (witnesses.length < 20) witnesses.push({ i, material: m, world: world[i], cpu: cpu[i], gpu, a, b, c });
           }
         }
+        for (let i = 0; i < materials.length; i++) {
+          const actual = result.normals.slice(i * 4, i * 4 + 3);
+          const err = Math.hypot(...actual.map((v, j) => v - cpuNormals[i].value[j]));
+          const be = Math.abs(result.normals[i * 4 + 3] - cpuNormals[i].bound);
+          const n = normals[i % 4],
+            len = Math.hypot(...n);
+          normalError = Math.max(normalError, err);
+          boundError = Math.max(boundError, be);
+          if (
+            ![err, be, ...actual].every(Number.isFinite) ||
+            err > 0.001 ||
+            be > 0.001 ||
+            Math.hypot(...actual) > result.normals[i * 4 + 3] * len + 0.0001
+          ) {
+            normalFailed++;
+            if (witnesses.length < 20)
+              witnesses.push({ normal: true, i, material: normalMaterials[i], actual, cpu: cpuNormals[i], err, be });
+          }
+        }
         reports.push({
+          minimumRespiratoryDeterminant,
+          normalError,
+          boundError,
+          normalFailed,
           reference,
           compressed,
           mm,
@@ -203,13 +282,20 @@ void main(){int i=int(gl_FragCoord.y)*256+int(gl_FragCoord.x);result=vec4(0);if(
         writeFileSync(
           `${out}/report.json`,
           JSON.stringify(
-            { candidateSha: process.env.CANDIDATE_SHA ?? null, steps: RESPIRATORY_INVERSE_STEPS, thresholdMm: 0.002, reports },
+            {
+              candidateSha: process.env.CANDIDATE_SHA ?? null,
+              steps: RESPIRATORY_INVERSE_STEPS,
+              thresholdMm: 0.002,
+              normalVectorTolerance: 0.001,
+              boundTolerance: 0.001,
+              reports,
+            },
             null,
             2,
           ) + '\n',
         );
         console.log(JSON.stringify(reports.at(-1)));
-        if (failed) throw new Error(`${failed} inverse queries failed`);
+        if (failed || normalFailed) throw new Error(`${failed} inverse queries and ${normalFailed} normal queries failed`);
       }
   }
 } catch (error) {

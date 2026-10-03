@@ -12,6 +12,8 @@ const root = process.cwd(),
 if (!sha || !/^[a-f0-9]{40}$/.test(sha)) throw new Error('BASE_SHA debe ser un commit exacto de 40 caracteres');
 const selectedProfile = process.env.COMPARISON_PROFILE ?? 'both';
 if (!['both', 'legacy', 'reference'].includes(selectedProfile)) throw new Error('COMPARISON_PROFILE debe ser both, legacy o reference');
+const inspiration = process.env.COMPARISON_RESPIRATION === 'inspiration';
+if (process.env.COMPARISON_RESPIRATION && !inspiration) throw new Error('Unsupported comparison respiration');
 const references = selectedProfile === 'both' ? [false, true] : [selectedProfile === 'reference'];
 const out = resolve(process.env.PORTAL_OUT ?? join(tmpdir(), 'vexus-portal-evidence'));
 mkdirSync(out, { recursive: true });
@@ -67,19 +69,35 @@ try {
       });
       for (const reference of references) {
         const profile = reference ? 'reference' : 'legacy';
-        for (const id of ['portal', 'intercostal', 'subcostal', 'subxiphoid'] as const) {
+        for (const id of inspiration
+          ? (['portal', 'subcostal'] as const)
+          : (['portal', 'intercostal', 'subcostal', 'subxiphoid'] as const)) {
           await page.goto(`http://127.0.0.1:${port}/?e2e=app${reference ? '&reference=1' : ''}`);
           await page.waitForFunction(() => (window.__vexusTest?.framesRendered() ?? 0) >= 2, undefined, { timeout: 180_000 });
           if ((await page.evaluate(() => !!window.__vexusTest!.sim().scene.torso.profile)) !== reference)
             throw new Error('El perfil corporal cargado no coincide con el solicitado');
+          if (inspiration) {
+            await page.getByRole('button', { name: 'Apnea inspiratoria', exact: true }).click();
+            await page.waitForFunction(() => Math.abs(window.__vexusTest!.sim().sample.resp.diaphragmCaudalMm - 30) < 1e-6, undefined, {
+              timeout: 180_000,
+            });
+          }
           const settings = await page.evaluate((id) => {
             const t = window.__vexusTest!;
             if (t.circulation().caseId !== 'normal-adult') throw new Error('Caso no normal');
             t.goToStartPoint(id);
-            t.frameCostMs(6);
+            const frameMs = t.frameCostMs(6);
             const sim = t.sim();
-            return { pose: sim.pose, bmode: sim.bmode, respiration: sim.patient.respiratoryPattern, reference: !!sim.scene.torso.profile };
+            return {
+              frameMs,
+              pose: sim.pose,
+              bmode: sim.bmode,
+              respiration: sim.patient.respiratoryPattern,
+              displacementMm: sim.sample.resp.diaphragmCaudalMm,
+              reference: !!sim.scene.torso.profile,
+            };
           }, id);
+          if (Math.abs(settings.displacementMm - (inspiration ? 30 : 0)) > 1e-6) throw new Error('Unexpected respiratory displacement');
           await page.locator('#freeze').evaluate((button: HTMLButtonElement) => button.click());
           await captureBMode(page, join(out, `${version}-${profile}-${id}.png`));
           results.push({ version, sha: commit, mode: `${profile}-${id}`, settings });
@@ -98,6 +116,7 @@ try {
     JSON.stringify(
       {
         results,
+        inspiration,
         notes:
           'PNG original del framebuffer, sin HUD ni retoques. Mismo runner, ventanas y ajustes predeterminados; seis cuadros de asentamiento. Orden después/antes. Comparación de ingeniería, no validación clínica.',
       },

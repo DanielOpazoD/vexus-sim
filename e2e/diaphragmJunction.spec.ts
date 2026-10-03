@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { bootWithoutErrors, budget, checkAfterEach } from './support';
 import { Interface } from '../src/anatomy/interfaces';
+import { Tissue } from '../src/anatomy/tissues';
 checkAfterEach();
 for (const reference of [false, true])
   test(`unión diafragmática y tejidos vecinos CPU/GPU (${reference ? 'referencia' : 'legacy'})`, async ({ page }, info) => {
@@ -12,7 +13,9 @@ for (const reference of [false, true])
         points: [number, number, number][] = [];
       for (const x of [16, 18, 20, 22, 24])
         for (const y of [-40, -20, 0, 20, 40])
-          for (const target of [-1.25, 0.25, 0.75, 1.25, 1.75, 2.25, 3.25]) {
+          // Ambos lados del selector de cara a 1,25 mm, no exactamente sobre su discontinuidad:
+          // Float32/Float64 pueden elegir lados distintos allí sin discrepar en tejido o superficie.
+          for (const target of [-1.25, 0.25, 0.75, 1.15, 1.35, 1.75, 2.25, 3.25]) {
             let lo = -150,
               hi = 150;
             for (let i = 0; i < 35; i++) {
@@ -26,12 +29,17 @@ for (const reference of [false, true])
       return points;
     });
     const { rows } = await page.evaluate((points) => window.__vexusTest!.corticalSamples(points), points);
+    expect(rows).toHaveLength(200);
     let faces = 0,
       minDot = 1,
       maxError = 0;
-    for (const r of rows) {
-      expect(r[7]).toBe(r[0]);
-      expect(r[8]).toBe(r[1]);
+    for (const [i, r] of rows.entries()) {
+      expect(r[7], `tejido muestra ${i}`).toBe(r[0]);
+      if (r[0] === Number(Tissue.Diaphragm)) {
+        const target = [-1.25, 0.25, 0.75, 1.15, 1.35, 1.75, 2.25, 3.25][i % 8];
+        expect(r[1], `cara CPU a ${target} mm`).toBe(target > 1.25 ? Number(Interface.DiaphragmLiver) : 0);
+      }
+      expect(r[8], `cara GPU muestra ${i}`).toBe(r[1]);
       if (r[1] !== Number(Interface.DiaphragmLiver)) continue;
       faces++;
       maxError = Math.max(maxError, Math.abs(r[2] - r[9]));

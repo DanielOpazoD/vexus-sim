@@ -1,0 +1,1981 @@
+{
+  "source": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+  "archiveSha256": "9fbc713fffeee924a5a657d9813d84d7eb957bded63adb854931dd5e3eb61c97",
+  "license": "CC BY 4.0",
+  "credit": "BodyParts3D, © The Database Center for Life Science licensed under CC Attribution 4.0 International",
+  "registration": {
+    "sourceOriginMm": [-0.3152345, -205.92635, 1164.5735],
+    "axes": [
+      [1, 0, 0],
+      [0, -1, 0],
+      [0, 0, 1]
+    ],
+    "targetOriginMm": [0, 85.25, 0],
+    "reverseWinding": true
+  },
+  "sourceBytesVerified": true,
+  "officialLabelsVerified": true,
+  "runtimeIntegration": false,
+  "note": "Exact source components retained. Non-manifold edges and tiny components are reported, never silently repaired or discarded. Source validation is not clinical validation.",
+  "parts": [
+    {
+      "id": "FJ2810",
+      "name": "skin",
+      "conceptId": "FMA7163",
+      "entry": "partof_BP3D_4.0_obj_99/FJ2810.obj",
+      "bytes": 14465506,
+      "sha256": "50fb17d0b3559b8b6c5481dbe7f877d25726e576564da615c45b2dd7654e315d",
+      "crc32": "d5f4a789",
+      "vertices": 102467,
+      "triangles": 203382,
+      "minLasMm": [-333.80376550000005, -165.92395000000002, -1242.6847],
+      "maxLasMm": [333.14023449999996, 126.10664999999997, 476.78649999999993],
+      "topology": {
+        "usedVerticesAfterExactWeld": 101691,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 203382,
+            "usedOriginalVertices": 102467,
+            "surfaceAreaMm2": 3502598.9744933173,
+            "signedEnclosedVolumeMm3": 3431998.5038465722,
+            "minLasMm": [-333.80376550000005, -165.92395000000002, -1242.6847],
+            "maxLasMm": [333.14023449999996, 126.10664999999997, 476.78649999999993]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3131",
+      "name": "diaphragm",
+      "conceptId": "FMA13295",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3131.obj",
+      "bytes": 4828614,
+      "sha256": "2a78d0f155249d4b8348e9656170af4caf2b41778c0e047fc8c1c6890878058b",
+      "crc32": "2adc37ad",
+      "vertices": 35527,
+      "triangles": 68522,
+      "minLasMm": [-122.01376549999999, -94.76055000000002, -178.7215],
+      "maxLasMm": [121.1782345, 84.64665, 28.00649999999996],
+      "topology": {
+        "usedVerticesAfterExactWeld": 34266,
+        "surfaceComponents": 6,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 4,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 68490,
+            "usedOriginalVertices": 35453,
+            "surfaceAreaMm2": 217118.97644760588,
+            "signedEnclosedVolumeMm3": 320645.6057793941,
+            "minLasMm": [-122.01376549999999, -94.76055000000002, -178.7215],
+            "maxLasMm": [121.1782345, 84.64665, 28.00649999999996]
+          },
+          {
+            "triangles": 8,
+            "usedOriginalVertices": 10,
+            "surfaceAreaMm2": 2.5149999999979795e-5,
+            "signedEnclosedVolumeMm3": 0.0,
+            "minLasMm": [4.1125545, -19.679350000000014, -15.573499999999967],
+            "maxLasMm": [4.1175845, -19.674350000000018, -15.573499999999967]
+          },
+          {
+            "triangles": 6,
+            "usedOriginalVertices": 16,
+            "surfaceAreaMm2": 0.02496986177867607,
+            "signedEnclosedVolumeMm3": 0.00019094130000004924,
+            "minLasMm": [4.6509445, -20.026350000000008, -13.23350000000005],
+            "maxLasMm": [4.7152345, -19.92735000000002, -13.053499999999985]
+          },
+          {
+            "triangles": 10,
+            "usedOriginalVertices": 26,
+            "surfaceAreaMm2": 0.048563236641129964,
+            "signedEnclosedVolumeMm3": 0.00039393519999988096,
+            "minLasMm": [4.9366645, -20.002350000000007, -12.903499999999894],
+            "maxLasMm": [5.0414345, -19.950350000000014, -12.573499999999967]
+          },
+          {
+            "triangles": 6,
+            "usedOriginalVertices": 16,
+            "surfaceAreaMm2": 0.00423361499943693,
+            "signedEnclosedVolumeMm3": 1.4830399999984543e-5,
+            "minLasMm": [5.2881944999999995, -20.002350000000007, -12.273500000000013],
+            "maxLasMm": [5.3452345, -19.950350000000014, -12.24350000000004]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.046951225318308976,
+            "signedEnclosedVolumeMm3": 9.03501810404587e-21,
+            "minLasMm": [14.3152345, -20.153350000000017, -12.273500000000013],
+            "maxLasMm": [14.408134500000001, -19.97635000000001, -12.053499999999985]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3153",
+      "name": "xiphoid process",
+      "conceptId": "FMA7488",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3153.obj",
+      "bytes": 56265,
+      "sha256": "d17057ed1dad252a6fa6a3e8d92bc13310cebe0b584df147af0cc4a646f98f3e",
+      "crc32": "19f9b8c5",
+      "vertices": 495,
+      "triangles": 922,
+      "minLasMm": [-10.022565499999999, 77.83264999999997, -0.5534999999999854],
+      "maxLasMm": [10.9191345, 92.67665, 19.926500000000033],
+      "topology": {
+        "usedVerticesAfterExactWeld": 463,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 922,
+            "usedOriginalVertices": 495,
+            "surfaceAreaMm2": 1098.5853860401305,
+            "signedEnclosedVolumeMm3": 2450.79352609116,
+            "minLasMm": [-10.022565499999999, 77.83264999999997, -0.5534999999999854],
+            "maxLasMm": [10.9191345, 92.67665, 19.926500000000033]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3154",
+      "name": "tenth thoracic vertebra",
+      "conceptId": "FMA10037",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3154.obj",
+      "bytes": 181677,
+      "sha256": "55fd0b1ec25bc207c5a58cb2aa3d5f2880df6593719ec803c83ac898d3bda358",
+      "crc32": "b145b2f2",
+      "vertices": 1584,
+      "triangles": 2790,
+      "minLasMm": [-33.341565499999994, -112.85385000000002, -64.80349999999999],
+      "maxLasMm": [32.5604345, -36.61855000000001, -7.443499999999858],
+      "topology": {
+        "usedVerticesAfterExactWeld": 1395,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 2790,
+            "usedOriginalVertices": 1584,
+            "surfaceAreaMm2": 10175.361558733384,
+            "signedEnclosedVolumeMm3": 36466.53472537542,
+            "minLasMm": [-33.341565499999994, -112.85385000000002, -64.80349999999999],
+            "maxLasMm": [32.5604345, -36.61855000000001, -7.443499999999858]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3155",
+      "name": "eleventh thoracic vertebra",
+      "conceptId": "FMA10059",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3155.obj",
+      "bytes": 178073,
+      "sha256": "7ce892808f37a9c96c74f298334be195cb50bfdbe64bcfa62072141ed38df0a2",
+      "crc32": "c8495564",
+      "vertices": 1593,
+      "triangles": 2674,
+      "minLasMm": [-26.4457655, -107.66745, -88.85349999999994],
+      "maxLasMm": [25.8745345, -28.143950000000018, -35.303499999999985],
+      "topology": {
+        "usedVerticesAfterExactWeld": 1337,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 2674,
+            "usedOriginalVertices": 1593,
+            "surfaceAreaMm2": 9907.157057670012,
+            "signedEnclosedVolumeMm3": 37562.57664974004,
+            "minLasMm": [-26.4457655, -107.66745, -88.85349999999994],
+            "maxLasMm": [25.8745345, -28.143950000000018, -35.303499999999985]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3156",
+      "name": "twelfth thoracic vertebra",
+      "conceptId": "FMA10081",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3156.obj",
+      "bytes": 181657,
+      "sha256": "d78f0563a0c0b5be89284a6d73434998a05dc9dbddb471b49e398c9ef96f07ae",
+      "crc32": "cc7b3828",
+      "vertices": 1593,
+      "triangles": 2772,
+      "minLasMm": [-22.0711655, -98.11545000000001, -114.61349999999993],
+      "maxLasMm": [21.3700345, -19.29135000000001, -62.98350000000005],
+      "topology": {
+        "usedVerticesAfterExactWeld": 1386,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 2772,
+            "usedOriginalVertices": 1593,
+            "surfaceAreaMm2": 10158.08690492027,
+            "signedEnclosedVolumeMm3": 38478.80783581989,
+            "minLasMm": [-22.0711655, -98.11545000000001, -114.61349999999993],
+            "maxLasMm": [21.3700345, -19.29135000000001, -62.98350000000005]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3158",
+      "name": "first thoracic vertebra",
+      "conceptId": "FMA9165",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3158.obj",
+      "bytes": 114179,
+      "sha256": "57a9cd9f62fc902f2d10f32c83237bba5bee4a24ae323a2b2405d9df68fd585b",
+      "crc32": "1cd9578c",
+      "vertices": 1078,
+      "triangles": 1700,
+      "minLasMm": [-37.0677655, -103.58965, 182.64650000000006],
+      "maxLasMm": [36.231434500000006, -33.80445000000002, 212.32650000000012],
+      "topology": {
+        "usedVerticesAfterExactWeld": 850,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 1700,
+            "usedOriginalVertices": 1078,
+            "surfaceAreaMm2": 6183.91535811333,
+            "signedEnclosedVolumeMm3": 15225.847093580538,
+            "minLasMm": [-37.0677655, -103.58965, 182.64650000000006],
+            "maxLasMm": [36.231434500000006, -33.80445000000002, 212.32650000000012]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3160",
+      "name": "second thoracic vertebra",
+      "conceptId": "FMA9187",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3160.obj",
+      "bytes": 126576,
+      "sha256": "f04ca280dc74fdc79afb14e5da1515a1e77762960bb38fab869be0e617348eac",
+      "crc32": "eb8fe9e5",
+      "vertices": 1161,
+      "triangles": 1938,
+      "minLasMm": [-35.6068655, -108.55585000000002, 162.01649999999995],
+      "maxLasMm": [34.893634500000005, -38.00055000000002, 195.78649999999993],
+      "topology": {
+        "usedVerticesAfterExactWeld": 969,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 1938,
+            "usedOriginalVertices": 1161,
+            "surfaceAreaMm2": 6701.387202846929,
+            "signedEnclosedVolumeMm3": 17689.278729788773,
+            "minLasMm": [-35.6068655, -108.55585000000002, 162.01649999999995],
+            "maxLasMm": [34.893634500000005, -38.00055000000002, 195.78649999999993]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3163",
+      "name": "third thoracic vertebra",
+      "conceptId": "FMA9209",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3163.obj",
+      "bytes": 130540,
+      "sha256": "968ed4928160fd54c444aa8c4a2c318fa56368c55c715afcdeaa48445382d3f6",
+      "crc32": "6af86753",
+      "vertices": 1175,
+      "triangles": 2038,
+      "minLasMm": [-32.650865499999995, -119.31624000000002, 137.65650000000005],
+      "maxLasMm": [32.1561345, -43.940050000000014, 177.27649999999994],
+      "topology": {
+        "usedVerticesAfterExactWeld": 1019,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 2038,
+            "usedOriginalVertices": 1175,
+            "surfaceAreaMm2": 7056.219537598247,
+            "signedEnclosedVolumeMm3": 18681.077010997786,
+            "minLasMm": [-32.650865499999995, -119.31624000000002, 137.65650000000005],
+            "maxLasMm": [32.1561345, -43.940050000000014, 177.27649999999994]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3166",
+      "name": "fourth thoracic vertebra",
+      "conceptId": "FMA9248",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3166.obj",
+      "bytes": 133882,
+      "sha256": "cd744d75a90dc4d2b38f3b25928656ae2f9b873ea3113d01f91a102290eda5bd",
+      "crc32": "53f226c5",
+      "vertices": 1210,
+      "triangles": 2066,
+      "minLasMm": [-35.1464655, -120.47845400000003, 113.16650000000004],
+      "maxLasMm": [34.5972345, -51.07145000000003, 156.83650000000011],
+      "topology": {
+        "usedVerticesAfterExactWeld": 1033,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 2066,
+            "usedOriginalVertices": 1210,
+            "surfaceAreaMm2": 7203.9125371793225,
+            "signedEnclosedVolumeMm3": 19128.8262876079,
+            "minLasMm": [-35.1464655, -120.47845400000003, 113.16650000000004],
+            "maxLasMm": [34.5972345, -51.07145000000003, 156.83650000000011]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3169",
+      "name": "fifth thoracic vertebra",
+      "conceptId": "FMA9922",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3169.obj",
+      "bytes": 147917,
+      "sha256": "7eb98fe2886168196d8a7ee37d1c7a6e7decbc1c09cdf2d4295c13ed7ba3df0c",
+      "crc32": "f110c159",
+      "vertices": 1321,
+      "triangles": 2280,
+      "minLasMm": [-35.836265499999996, -120.69489990000002, 75.19650000000001],
+      "maxLasMm": [35.2049345, -54.66735, 132.69650000000001],
+      "topology": {
+        "usedVerticesAfterExactWeld": 1140,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 2280,
+            "usedOriginalVertices": 1321,
+            "surfaceAreaMm2": 7873.8714647190245,
+            "signedEnclosedVolumeMm3": 21726.793049489963,
+            "minLasMm": [-35.836265499999996, -120.69489990000002, 75.19650000000001],
+            "maxLasMm": [35.2049345, -54.66735, 132.69650000000001]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3171",
+      "name": "sixth thoracic vertebra",
+      "conceptId": "FMA9945",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3171.obj",
+      "bytes": 149094,
+      "sha256": "7c9c326269edd09bdf02aca90333c61debe4f39c777fbef887751826a54adb9e",
+      "crc32": "b03ff57f",
+      "vertices": 1353,
+      "triangles": 2248,
+      "minLasMm": [-36.107465499999996, -119.48392000000001, 44.80650000000014],
+      "maxLasMm": [35.349134500000005, -55.45545000000001, 104.50649999999996],
+      "topology": {
+        "usedVerticesAfterExactWeld": 1124,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 2248,
+            "usedOriginalVertices": 1353,
+            "surfaceAreaMm2": 8284.428582848586,
+            "signedEnclosedVolumeMm3": 23707.812312842598,
+            "minLasMm": [-36.107465499999996, -119.48392000000001, 44.80650000000014],
+            "maxLasMm": [35.349134500000005, -55.45545000000001, 104.50649999999996]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3173",
+      "name": "seventh thoracic vertebra",
+      "conceptId": "FMA9968",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3173.obj",
+      "bytes": 167619,
+      "sha256": "1bcf85e649234f976236f81077019ae66971c69c0943992a7ec0072939d42245",
+      "crc32": "48233cd2",
+      "vertices": 1478,
+      "triangles": 2574,
+      "minLasMm": [-36.9110655, -120.00485700000002, 14.726499999999987],
+      "maxLasMm": [36.6358345, -53.69715000000002, 77.22649999999999],
+      "topology": {
+        "usedVerticesAfterExactWeld": 1287,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 2574,
+            "usedOriginalVertices": 1478,
+            "surfaceAreaMm2": 9062.301424625672,
+            "signedEnclosedVolumeMm3": 27928.75255291522,
+            "minLasMm": [-36.9110655, -120.00485700000002, 14.726499999999987],
+            "maxLasMm": [36.6358345, -53.69715000000002, 77.22649999999999]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3174",
+      "name": "eighth thoracic vertebra",
+      "conceptId": "FMA9991",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3174.obj",
+      "bytes": 157446,
+      "sha256": "f5928470229deb2c7579804b883ffeaae611127dac1454caed3b3df93fe8dad6",
+      "crc32": "daa7459e",
+      "vertices": 1392,
+      "triangles": 2424,
+      "minLasMm": [-33.344165499999995, -119.74455400000002, -10.823499999999967],
+      "maxLasMm": [32.467934500000005, -48.64875000000001, 48.47649999999999],
+      "topology": {
+        "usedVerticesAfterExactWeld": 1212,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 2424,
+            "usedOriginalVertices": 1392,
+            "surfaceAreaMm2": 8871.473189837343,
+            "signedEnclosedVolumeMm3": 27965.81743413062,
+            "minLasMm": [-33.344165499999995, -119.74455400000002, -10.823499999999967],
+            "maxLasMm": [32.467934500000005, -48.64875000000001, 48.47649999999999]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3175",
+      "name": "ninth thoracic vertebra",
+      "conceptId": "FMA10014",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3175.obj",
+      "bytes": 166121,
+      "sha256": "f1ce32fedb9f84ac37b800b2a182f6701f972fbd8cc01be7732ab3ca3864603e",
+      "crc32": "7da3efae",
+      "vertices": 1443,
+      "triangles": 2586,
+      "minLasMm": [-34.079565499999994, -114.52029000000002, -37.94349999999986],
+      "maxLasMm": [33.3132345, -43.023450000000025, 20.26649999999995],
+      "topology": {
+        "usedVerticesAfterExactWeld": 1293,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 2586,
+            "usedOriginalVertices": 1443,
+            "surfaceAreaMm2": 9444.30476406766,
+            "signedEnclosedVolumeMm3": 32052.23841021203,
+            "minLasMm": [-34.079565499999994, -114.52029000000002, -37.94349999999986],
+            "maxLasMm": [33.3132345, -43.023450000000025, 20.26649999999995]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3178",
+      "name": "body of sternum",
+      "conceptId": "FMA7487",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3178.obj",
+      "bytes": 374296,
+      "sha256": "32a06946d8eadbe1a847a373abe7499381c0182c72b7c94e3e2a0c3ba7c867e3",
+      "crc32": "1f1a8aae",
+      "vertices": 3691,
+      "triangles": 4646,
+      "minLasMm": [-23.2996655, 44.48964999999998, 15.076500000000124],
+      "maxLasMm": [24.2708345, 93.15564999999998, 125.06650000000013],
+      "topology": {
+        "usedVerticesAfterExactWeld": 2327,
+        "surfaceComponents": 10,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.008779471567237566,
+            "signedEnclosedVolumeMm3": -1.6940658945086007e-21,
+            "minLasMm": [-23.2996655, 75.02265, 47.90650000000005],
+            "maxLasMm": [-23.2746655, 75.05464999999998, 48.206500000000005]
+          },
+          {
+            "triangles": 4624,
+            "usedOriginalVertices": 3631,
+            "surfaceAreaMm2": 12509.419722088078,
+            "signedEnclosedVolumeMm3": 56428.00117055927,
+            "minLasMm": [-23.133965500000002, 44.48964999999998, 15.076500000000124],
+            "maxLasMm": [24.2708345, 93.15564999999998, 125.06650000000013]
+          },
+          {
+            "triangles": 6,
+            "usedOriginalVertices": 12,
+            "surfaceAreaMm2": 0.16841444104718406,
+            "signedEnclosedVolumeMm3": 0.002518764666667075,
+            "minLasMm": [-22.894665500000002, 77.96564999999998, 49.216499999999996],
+            "maxLasMm": [-22.7002655, 78.54065, 49.446500000000015]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.009042432692599899,
+            "signedEnclosedVolumeMm3": 0.0,
+            "minLasMm": [-22.752965500000002, 78.80265, 49.03649999999993],
+            "maxLasMm": [-22.6784655, 78.86464999999998, 49.12650000000008]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.004780332206040304,
+            "signedEnclosedVolumeMm3": -5.646886315028669e-22,
+            "minLasMm": [-22.2820655, 79.70164999999997, 48.75649999999996],
+            "maxLasMm": [-22.2355655, 79.75264999999999, 48.826500000000124]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.050078686469988504,
+            "signedEnclosedVolumeMm3": 0.0,
+            "minLasMm": [-21.8390655, 80.54565, 48.17650000000003],
+            "maxLasMm": [-21.708565500000002, 80.65265, 48.47649999999999]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.0008956800544828781,
+            "signedEnclosedVolumeMm3": 0.0,
+            "minLasMm": [-19.0222655, 82.27265, 34.50649999999996],
+            "maxLasMm": [-19.0007655, 82.29264999999998, 34.53649999999993]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.043211342388766526,
+            "signedEnclosedVolumeMm3": 2.5975677049131878e-20,
+            "minLasMm": [-16.640065500000002, 57.192649999999986, 113.12650000000008],
+            "maxLasMm": [-16.5260655, 57.31465, 113.42650000000003]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.0011050229907099832,
+            "signedEnclosedVolumeMm3": 3.529303946892918e-23,
+            "minLasMm": [23.073234499999998, 79.24765, 49.076500000000124],
+            "maxLasMm": [23.1015345, 79.26864999999998, 49.106500000000096]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.002090832917759926,
+            "signedEnclosedVolumeMm3": 0.0,
+            "minLasMm": [24.0301345, 75.06965, 48.41650000000004],
+            "maxLasMm": [24.0530345, 75.10664999999997, 48.466499999999996]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3225",
+      "name": "left tenth rib",
+      "conceptId": "FMA8472",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3225.obj",
+      "bytes": 432180,
+      "sha256": "daa25aba7fba3ff691d61cd239f8d49debc84ff871a351051c1d57a192b91dfd",
+      "crc32": "342ed6da",
+      "vertices": 3419,
+      "triangles": 6826,
+      "minLasMm": [15.877534500000001, -109.32185000000001, -141.61349999999993],
+      "maxLasMm": [122.6642345, -2.96135000000001, -5.583499999999958],
+      "topology": {
+        "usedVerticesAfterExactWeld": 3415,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 6826,
+            "usedOriginalVertices": 3419,
+            "surfaceAreaMm2": 8075.440796189003,
+            "signedEnclosedVolumeMm3": 17081.242913157694,
+            "minLasMm": [15.877534500000001, -109.32185000000001, -141.61349999999993],
+            "maxLasMm": [122.6642345, -2.96135000000001, -5.583499999999958]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3226",
+      "name": "left eleventh rib",
+      "conceptId": "FMA8532",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3226.obj",
+      "bytes": 304278,
+      "sha256": "4bb9d52fdb2c15cb459c2bd08fd58082cdb39d15903cde675313762ea2287fc8",
+      "crc32": "3676624e",
+      "vertices": 2435,
+      "triangles": 4866,
+      "minLasMm": [16.5942345, -102.71495000000002, -156.51350000000002],
+      "maxLasMm": [110.3692345, -24.66465000000001, -42.83349999999996],
+      "topology": {
+        "usedVerticesAfterExactWeld": 2435,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 4866,
+            "usedOriginalVertices": 2435,
+            "surfaceAreaMm2": 5870.098824024242,
+            "signedEnclosedVolumeMm3": 11358.93759387117,
+            "minLasMm": [16.5942345, -102.71495000000002, -156.51350000000002],
+            "maxLasMm": [110.3692345, -24.66465000000001, -42.83349999999996]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3227",
+      "name": "left twelfth rib",
+      "conceptId": "FMA8534",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3227.obj",
+      "bytes": 170995,
+      "sha256": "83e04b8b6f91e4de57e7b380a2f2c7d6f0bbf284ce76710ca89aa82fb376bd4e",
+      "crc32": "02ea806a",
+      "vertices": 1411,
+      "triangles": 2818,
+      "minLasMm": [17.2055345, -92.66145, -153.24349999999993],
+      "maxLasMm": [85.53633450000001, -54.60655000000003, -75.41349999999989],
+      "topology": {
+        "usedVerticesAfterExactWeld": 1411,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 2818,
+            "usedOriginalVertices": 1411,
+            "surfaceAreaMm2": 3388.818010358003,
+            "signedEnclosedVolumeMm3": 6440.442137906196,
+            "minLasMm": [17.2055345, -92.66145, -153.24349999999993],
+            "maxLasMm": [85.53633450000001, -54.60655000000003, -75.41349999999989]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3228",
+      "name": "left first rib",
+      "conceptId": "FMA7987",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3228.obj",
+      "bytes": 200850,
+      "sha256": "eb534d19462226e26b91234544f99abe118878a25c125f2a8839341e6769252b",
+      "crc32": "0e3ffe75",
+      "vertices": 1641,
+      "triangles": 3276,
+      "minLasMm": [14.1156345, -56.25935000000001, 145.49649999999997],
+      "maxLasMm": [68.7698345, 9.743649999999974, 205.90650000000005],
+      "topology": {
+        "usedVerticesAfterExactWeld": 1640,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 3276,
+            "usedOriginalVertices": 1641,
+            "surfaceAreaMm2": 4085.172117038851,
+            "signedEnclosedVolumeMm3": 6096.277779256431,
+            "minLasMm": [14.1156345, -56.25935000000001, 145.49649999999997],
+            "maxLasMm": [68.7698345, 9.743649999999974, 205.90650000000005]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3229",
+      "name": "left second rib",
+      "conceptId": "FMA8012",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3229.obj",
+      "bytes": 355234,
+      "sha256": "b752f038ceba8430f3872897ce69495d7dd74ed8e19c21d3f75d0bc0b156d84f",
+      "crc32": "412c4241",
+      "vertices": 2862,
+      "triangles": 5594,
+      "minLasMm": [15.0501345, -70.02955000000003, 108.93650000000002],
+      "maxLasMm": [95.9762345, 46.450649999999996, 194.4565],
+      "topology": {
+        "usedVerticesAfterExactWeld": 2799,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 5594,
+            "usedOriginalVertices": 2862,
+            "surfaceAreaMm2": 7115.573679975696,
+            "signedEnclosedVolumeMm3": 14342.15993711397,
+            "minLasMm": [15.0501345, -70.02955000000003, 108.93650000000002],
+            "maxLasMm": [95.9762345, 46.450649999999996, 194.4565]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3230",
+      "name": "left third rib",
+      "conceptId": "FMA8039",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3230.obj",
+      "bytes": 460035,
+      "sha256": "8b42d241c711fe9765b1239be33fcab6b865ab4619b5d05fa98ea245b6075d5c",
+      "crc32": "1c139782",
+      "vertices": 3637,
+      "triangles": 7254,
+      "minLasMm": [13.0395345, -83.81845000000001, 79.26649999999995],
+      "maxLasMm": [107.9482345, 58.58064999999999, 171.40650000000005],
+      "topology": {
+        "usedVerticesAfterExactWeld": 3629,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 7254,
+            "usedOriginalVertices": 3637,
+            "surfaceAreaMm2": 8733.233516703684,
+            "signedEnclosedVolumeMm3": 17967.795843106123,
+            "minLasMm": [13.0395345, -83.81845000000001, 79.26649999999995],
+            "maxLasMm": [107.9482345, 58.58064999999999, 171.40650000000005]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3231",
+      "name": "left fourth rib",
+      "conceptId": "FMA8148",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3231.obj",
+      "bytes": 564537,
+      "sha256": "28b852d4813703c5654d0405168e22bf0032632d47b9667b4b16e60ed89a425b",
+      "crc32": "ffe3f7b9",
+      "vertices": 4445,
+      "triangles": 8850,
+      "minLasMm": [13.2209345, -97.48445000000001, 46.52649999999994],
+      "maxLasMm": [116.59623450000001, 71.51864999999998, 150.77649999999994],
+      "topology": {
+        "usedVerticesAfterExactWeld": 4427,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 8850,
+            "usedOriginalVertices": 4445,
+            "surfaceAreaMm2": 10535.365843556037,
+            "signedEnclosedVolumeMm3": 24893.33920748554,
+            "minLasMm": [13.2209345, -97.48445000000001, 46.52649999999994],
+            "maxLasMm": [116.59623450000001, 71.51864999999998, 150.77649999999994]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3232",
+      "name": "left fifth rib",
+      "conceptId": "FMA8093",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3232.obj",
+      "bytes": 622390,
+      "sha256": "6fa730aea273685148d3e9d3f52fe450acec4c13d6e3b1b6865e0e9532283abb",
+      "crc32": "8caadafa",
+      "vertices": 4912,
+      "triangles": 9710,
+      "minLasMm": [14.319734500000001, -107.95365000000001, 7.5965000000001055],
+      "maxLasMm": [126.0832345, 77.01164999999997, 126.74649999999997],
+      "topology": {
+        "usedVerticesAfterExactWeld": 4857,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 9710,
+            "usedOriginalVertices": 4912,
+            "surfaceAreaMm2": 11853.578888794927,
+            "signedEnclosedVolumeMm3": 30030.133500482916,
+            "minLasMm": [14.319734500000001, -107.95365000000001, 7.5965000000001055],
+            "maxLasMm": [126.0832345, 77.01164999999997, 126.74649999999997]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3233",
+      "name": "left sixth rib",
+      "conceptId": "FMA8202",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3233.obj",
+      "bytes": 657313,
+      "sha256": "2a0f1e32b8410b6396bea7ae342a16ae1ac1b77042e70d7e98cabeb7dcf3dfb9",
+      "crc32": "c5330a94",
+      "vertices": 5172,
+      "triangles": 10264,
+      "minLasMm": [13.0906345, -117.03195000000002, -26.673499999999876],
+      "maxLasMm": [133.3692345, 72.81864999999999, 102.25649999999996],
+      "topology": {
+        "usedVerticesAfterExactWeld": 5134,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 10264,
+            "usedOriginalVertices": 5172,
+            "surfaceAreaMm2": 12414.320132257853,
+            "signedEnclosedVolumeMm3": 31399.272275902866,
+            "minLasMm": [13.0906345, -117.03195000000002, -26.673499999999876],
+            "maxLasMm": [133.3692345, 72.81864999999999, 102.25649999999996]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3234",
+      "name": "left seventh rib",
+      "conceptId": "FMA8256",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3234.obj",
+      "bytes": 642411,
+      "sha256": "638a766f20b64d02095efa845b5ea316624a376acb44c7e4a6d533d4da6ef4db",
+      "crc32": "846dd9ac",
+      "vertices": 5054,
+      "triangles": 10032,
+      "minLasMm": [12.697734500000001, -116.17840000000001, -59.38349999999991],
+      "maxLasMm": [136.0932345, 59.531649999999985, 75.67650000000003],
+      "topology": {
+        "usedVerticesAfterExactWeld": 5018,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 10032,
+            "usedOriginalVertices": 5054,
+            "surfaceAreaMm2": 12340.043919764435,
+            "signedEnclosedVolumeMm3": 31949.534236348252,
+            "minLasMm": [12.697734500000001, -116.17840000000001, -59.38349999999991],
+            "maxLasMm": [136.0932345, 59.531649999999985, 75.67650000000003]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3235",
+      "name": "left eighth rib",
+      "conceptId": "FMA8310",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3235.obj",
+      "bytes": 532786,
+      "sha256": "81a7215ef6ed923bbad6f07208bbc0ee26ddbaae3b1423f624cae465012d9144",
+      "crc32": "599076cb",
+      "vertices": 4211,
+      "triangles": 8336,
+      "minLasMm": [12.6856345, -116.10678000000001, -89.92349999999988],
+      "maxLasMm": [131.9532345, 41.99865, 46.74649999999997],
+      "topology": {
+        "usedVerticesAfterExactWeld": 4170,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 8336,
+            "usedOriginalVertices": 4211,
+            "surfaceAreaMm2": 10242.352811040508,
+            "signedEnclosedVolumeMm3": 24104.3318338056,
+            "minLasMm": [12.6856345, -116.10678000000001, -89.92349999999988],
+            "maxLasMm": [131.9532345, 41.99865, 46.74649999999997]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3236",
+      "name": "left ninth rib",
+      "conceptId": "FMA8391",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3236.obj",
+      "bytes": 481790,
+      "sha256": "3dc292292b9f2bd5e226ac100d3a8db76cba8eb1d9d09533a6e5e871f023e2a8",
+      "crc32": "fe876b82",
+      "vertices": 3805,
+      "triangles": 7576,
+      "minLasMm": [14.8734345, -113.14869000000002, -114.48350000000005],
+      "maxLasMm": [128.0982345, 14.92564999999999, 20.786499999999933],
+      "topology": {
+        "usedVerticesAfterExactWeld": 3790,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 7576,
+            "usedOriginalVertices": 3805,
+            "surfaceAreaMm2": 9273.12462339419,
+            "signedEnclosedVolumeMm3": 21074.088336720106,
+            "minLasMm": [14.8734345, -113.14869000000002, -114.48350000000005],
+            "maxLasMm": [128.0982345, 14.92564999999999, 20.786499999999933]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3239",
+      "name": "left first costal cartilage",
+      "conceptId": "FMA8005",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3239.obj",
+      "bytes": 42790,
+      "sha256": "9ca5fdb0582ad2795c9316ab9bb2f89f952b5a8c8fcf92a37efa042fc5c7739c",
+      "crc32": "3062cf1c",
+      "vertices": 418,
+      "triangles": 642,
+      "minLasMm": [19.8104345, 1.6476499999999845, 132.29649999999992],
+      "maxLasMm": [56.510534500000006, 30.13565, 155.67650000000003],
+      "topology": {
+        "usedVerticesAfterExactWeld": 323,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 642,
+            "usedOriginalVertices": 418,
+            "surfaceAreaMm2": 1650.5619501056426,
+            "signedEnclosedVolumeMm3": 3555.392343676336,
+            "minLasMm": [19.8104345, 1.6476499999999845, 132.29649999999992],
+            "maxLasMm": [56.510534500000006, 30.13565, 155.67650000000003]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3242",
+      "name": "left second costal cartilage",
+      "conceptId": "FMA8031",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3242.obj",
+      "bytes": 36200,
+      "sha256": "c83bb88d995837a455e72707e9d5ecb0035ad60d8fd2f6f28d3710b4ef4c9d8e",
+      "crc32": "ae20719d",
+      "vertices": 330,
+      "triangles": 588,
+      "minLasMm": [10.517734500000001, 37.07164999999998, 105.5965000000001],
+      "maxLasMm": [48.3725345, 57.56864999999999, 123.43650000000002],
+      "topology": {
+        "usedVerticesAfterExactWeld": 296,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 588,
+            "usedOriginalVertices": 330,
+            "surfaceAreaMm2": 1609.3236227456014,
+            "signedEnclosedVolumeMm3": 3595.322371049844,
+            "minLasMm": [10.517734500000001, 37.07164999999998, 105.5965000000001],
+            "maxLasMm": [48.3725345, 57.56864999999999, 123.43650000000002]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3245",
+      "name": "left third costal cartilage",
+      "conceptId": "FMA8058",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3245.obj",
+      "bytes": 36602,
+      "sha256": "ac65f51684b5dbcc3ea82381edae8723cbd9c7b8680bf6149a31dbf0acd26065",
+      "crc32": "84240ca5",
+      "vertices": 328,
+      "triangles": 604,
+      "minLasMm": [13.4097345, 50.761649999999975, 77.82650000000012],
+      "maxLasMm": [51.0378345, 69.39765, 95.41650000000004],
+      "topology": {
+        "usedVerticesAfterExactWeld": 304,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 604,
+            "usedOriginalVertices": 328,
+            "surfaceAreaMm2": 1608.9027921145707,
+            "signedEnclosedVolumeMm3": 3411.1593132524977,
+            "minLasMm": [13.4097345, 50.761649999999975, 77.82650000000012],
+            "maxLasMm": [51.0378345, 69.39765, 95.41650000000004]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3248",
+      "name": "left fourth costal cartilage",
+      "conceptId": "FMA8167",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3248.obj",
+      "bytes": 40725,
+      "sha256": "3633cb39f1540513872b9477c829d562114dce8d19cba5c99073fe4e3abeb1be",
+      "crc32": "0b2efa74",
+      "vertices": 371,
+      "triangles": 658,
+      "minLasMm": [14.616934500000001, 63.64964999999998, 46.50649999999996],
+      "maxLasMm": [60.092034500000004, 77.90064999999998, 70.99649999999997],
+      "topology": {
+        "usedVerticesAfterExactWeld": 331,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 658,
+            "usedOriginalVertices": 371,
+            "surfaceAreaMm2": 1832.9518511298834,
+            "signedEnclosedVolumeMm3": 4131.073806761161,
+            "minLasMm": [14.616934500000001, 63.64964999999998, 46.50649999999996],
+            "maxLasMm": [60.092034500000004, 77.90064999999998, 70.99649999999997]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3251",
+      "name": "left fifth costal cartilage",
+      "conceptId": "FMA8112",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3251.obj",
+      "bytes": 66532,
+      "sha256": "86be490af572a3d8c7f41fd1ed3f4bfac19a9966737bc1275f135f160d8298be",
+      "crc32": "f5a9970b",
+      "vertices": 594,
+      "triangles": 1086,
+      "minLasMm": [18.030534499999998, 68.64864999999998, 7.036499999999933],
+      "maxLasMm": [82.34883450000001, 88.36165, 50.66650000000004],
+      "topology": {
+        "usedVerticesAfterExactWeld": 545,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 1086,
+            "usedOriginalVertices": 594,
+            "surfaceAreaMm2": 3019.011132393181,
+            "signedEnclosedVolumeMm3": 7434.228575347498,
+            "minLasMm": [18.030534499999998, 68.64864999999998, 7.036499999999933],
+            "maxLasMm": [82.34883450000001, 88.36165, 50.66650000000004]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3254",
+      "name": "left sixth costal cartilage",
+      "conceptId": "FMA8221",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3254.obj",
+      "bytes": 91695,
+      "sha256": "bc9ca44f2ea1fa9800d7f0a35c4596f41df1750ba9c89910d4f64041131db2bf",
+      "crc32": "453e08ae",
+      "vertices": 815,
+      "triangles": 1498,
+      "minLasMm": [14.1774345, 64.49564999999998, -26.99350000000004],
+      "maxLasMm": [93.3166345, 91.48464999999999, 32.706500000000005],
+      "topology": {
+        "usedVerticesAfterExactWeld": 751,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 1498,
+            "usedOriginalVertices": 815,
+            "surfaceAreaMm2": 4053.450689076609,
+            "signedEnclosedVolumeMm3": 10698.759046427329,
+            "minLasMm": [14.1774345, 64.49564999999998, -26.99350000000004],
+            "maxLasMm": [93.3166345, 91.48464999999999, 32.706500000000005]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3255",
+      "name": "left seventh costal cartilage",
+      "conceptId": "FMA8275",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3255.obj",
+      "bytes": 150879,
+      "sha256": "97e69ede580a6e81cc42bb54fb22d4752719b61c5fced8ccccfb18ce64996676",
+      "crc32": "d3733752",
+      "vertices": 1367,
+      "triangles": 2314,
+      "minLasMm": [3.6441945, 50.22764999999998, -61.99350000000004],
+      "maxLasMm": [108.7722345, 92.53965, 21.836500000000115],
+      "topology": {
+        "usedVerticesAfterExactWeld": 1159,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 2314,
+            "usedOriginalVertices": 1367,
+            "surfaceAreaMm2": 6355.334777540621,
+            "signedEnclosedVolumeMm3": 17668.43050821729,
+            "minLasMm": [3.6441945, 50.22764999999998, -61.99350000000004],
+            "maxLasMm": [108.7722345, 92.53965, 21.836500000000115]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3262",
+      "name": "left humerus",
+      "conceptId": "FMA23131",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3262.obj",
+      "bytes": 247433,
+      "sha256": "58b4f0f36723f27726009cdf4b77172dc694303f4e03f51b29c1663507480194",
+      "crc32": "52525492",
+      "vertices": 2073,
+      "triangles": 3844,
+      "minLasMm": [140.3882345, -69.62045, -135.36349999999993],
+      "maxLasMm": [241.0752345, -20.447350000000014, 171.94650000000001],
+      "topology": {
+        "usedVerticesAfterExactWeld": 1924,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 3844,
+            "usedOriginalVertices": 2073,
+            "surfaceAreaMm2": 28145.34180408286,
+            "signedEnclosedVolumeMm3": 155552.26140092773,
+            "minLasMm": [140.3882345, -69.62045, -135.36349999999993],
+            "maxLasMm": [241.0752345, -20.447350000000014, 171.94650000000001]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3290",
+      "name": "manubrium",
+      "conceptId": "FMA7486",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3290.obj",
+      "bytes": 164758,
+      "sha256": "b847e67db475197cc4510744fef76bafd8e75c50797ca85eb8cd56dd853d61d6",
+      "crc32": "526578d8",
+      "vertices": 1446,
+      "triangles": 2546,
+      "minLasMm": [-27.1344655, 10.124649999999974, 115.69650000000001],
+      "maxLasMm": [27.7649345, 57.91164999999998, 160.67650000000003],
+      "topology": {
+        "usedVerticesAfterExactWeld": 1275,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 2546,
+            "usedOriginalVertices": 1446,
+            "surfaceAreaMm2": 6833.315814514719,
+            "signedEnclosedVolumeMm3": 36098.90124881782,
+            "minLasMm": [-27.1344655, 10.124649999999974, 115.69650000000001],
+            "maxLasMm": [27.7649345, 57.91164999999998, 160.67650000000003]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3330",
+      "name": "right tenth rib",
+      "conceptId": "FMA8445",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3330.obj",
+      "bytes": 434809,
+      "sha256": "0f688dd4e0d20a8328b4763c0acc7582a9beac8fe5c7ce58586db99c6e366945",
+      "crc32": "5573162a",
+      "vertices": 3415,
+      "triangles": 6820,
+      "minLasMm": [-123.3327655, -109.31705000000002, -141.59349999999995],
+      "maxLasMm": [-16.557665500000002, -2.989350000000016, -5.593499999999949],
+      "topology": {
+        "usedVerticesAfterExactWeld": 3412,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 6820,
+            "usedOriginalVertices": 3415,
+            "surfaceAreaMm2": 8072.5937763348475,
+            "signedEnclosedVolumeMm3": 17086.660373395065,
+            "minLasMm": [-123.3327655, -109.31705000000002, -141.59349999999995],
+            "maxLasMm": [-16.557665500000002, -2.989350000000016, -5.593499999999949]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3331",
+      "name": "right eleventh rib",
+      "conceptId": "FMA8531",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3331.obj",
+      "bytes": 306724,
+      "sha256": "761d6d8713c31d4b9f795c4875da9fc750c913907386489568fdebea15af49c3",
+      "crc32": "4fcdd8cb",
+      "vertices": 2437,
+      "triangles": 4866,
+      "minLasMm": [-111.03776549999999, -102.71435000000002, -156.49349999999993],
+      "maxLasMm": [-17.2810655, -24.658050000000017, -42.84349999999995],
+      "topology": {
+        "usedVerticesAfterExactWeld": 2435,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 4866,
+            "usedOriginalVertices": 2437,
+            "surfaceAreaMm2": 5869.44277778636,
+            "signedEnclosedVolumeMm3": 11350.593662789392,
+            "minLasMm": [-111.03776549999999, -102.71435000000002, -156.49349999999993],
+            "maxLasMm": [-17.2810655, -24.658050000000017, -42.84349999999995]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3332",
+      "name": "right twelfth rib",
+      "conceptId": "FMA8533",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3332.obj",
+      "bytes": 172395,
+      "sha256": "ece92488a9293cde2d8a8275cee8232326b377811afba888f6147d7217e04e07",
+      "crc32": "aaf7302f",
+      "vertices": 1412,
+      "triangles": 2818,
+      "minLasMm": [-86.21796549999999, -92.68415000000002, -153.23349999999994],
+      "maxLasMm": [-17.8972655, -54.579049999999995, -75.4034999999999],
+      "topology": {
+        "usedVerticesAfterExactWeld": 1411,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 2818,
+            "usedOriginalVertices": 1412,
+            "surfaceAreaMm2": 3390.1319729951833,
+            "signedEnclosedVolumeMm3": 6446.936189342491,
+            "minLasMm": [-86.21796549999999, -92.68415000000002, -153.23349999999994],
+            "maxLasMm": [-17.8972655, -54.579049999999995, -75.4034999999999]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3333",
+      "name": "right first costal cartilage",
+      "conceptId": "FMA7875",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3333.obj",
+      "bytes": 45599,
+      "sha256": "616b5add6471a3fd2a7297cbebfee18a13866eb165ca0be05c5942ae16bacc10",
+      "crc32": "37130860",
+      "vertices": 436,
+      "triangles": 676,
+      "minLasMm": [-55.872165499999994, 1.494649999999993, 132.33650000000011],
+      "maxLasMm": [-19.1968655, 30.08064999999999, 155.64650000000006],
+      "topology": {
+        "usedVerticesAfterExactWeld": 340,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 676,
+            "usedOriginalVertices": 436,
+            "surfaceAreaMm2": 1657.8800300538132,
+            "signedEnclosedVolumeMm3": 3575.9408645283365,
+            "minLasMm": [-55.872165499999994, 1.494649999999993, 132.33650000000011],
+            "maxLasMm": [-19.1968655, 30.08064999999999, 155.64650000000006]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3334",
+      "name": "right first rib",
+      "conceptId": "FMA7857",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3334.obj",
+      "bytes": 202346,
+      "sha256": "ecef0080744a8422b72b4f52229bd68945692cdef7d6fe2a57043b2155c49d17",
+      "crc32": "36226669",
+      "vertices": 1642,
+      "triangles": 3276,
+      "minLasMm": [-69.4488655, -56.261750000000006, 145.49649999999997],
+      "maxLasMm": [-14.7956655, 9.747649999999993, 205.90650000000005],
+      "topology": {
+        "usedVerticesAfterExactWeld": 1640,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 3276,
+            "usedOriginalVertices": 1642,
+            "surfaceAreaMm2": 4086.003095595245,
+            "signedEnclosedVolumeMm3": 6103.0839949371475,
+            "minLasMm": [-69.4488655, -56.261750000000006, 145.49649999999997],
+            "maxLasMm": [-14.7956655, 9.747649999999993, 205.90650000000005]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3335",
+      "name": "right second costal cartilage",
+      "conceptId": "FMA7886",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3335.obj",
+      "bytes": 42019,
+      "sha256": "065a4969ea4210ce6d3f5838dc2da20f1153de478e02c7a86ced152eab82bf6a",
+      "crc32": "77aef7d3",
+      "vertices": 383,
+      "triangles": 658,
+      "minLasMm": [-47.871765499999995, 37.06864999999999, 105.54649999999992],
+      "maxLasMm": [-9.9293655, 57.58464999999998, 123.44650000000001],
+      "topology": {
+        "usedVerticesAfterExactWeld": 333,
+        "surfaceComponents": 2,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 656,
+            "usedOriginalVertices": 377,
+            "surfaceAreaMm2": 1615.3345139791459,
+            "signedEnclosedVolumeMm3": 3608.521001400835,
+            "minLasMm": [-47.871765499999995, 37.06864999999999, 105.54649999999992],
+            "maxLasMm": [-9.9293655, 57.58464999999998, 123.44650000000001]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.005093120580758376,
+            "signedEnclosedVolumeMm3": -5.646886315028669e-22,
+            "minLasMm": [-41.7842655, 37.25064999999998, 122.79649999999992],
+            "maxLasMm": [-41.7475655, 37.33964999999998, 122.8465000000001]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3336",
+      "name": "right second rib",
+      "conceptId": "FMA7882",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3336.obj",
+      "bytes": 358351,
+      "sha256": "e9f527453bb2a48764ac7243d0b9b23e37fb2a85e92cee445972a1a770a5eaa4",
+      "crc32": "ad9a3396",
+      "vertices": 2861,
+      "triangles": 5594,
+      "minLasMm": [-96.6568655, -70.02345000000003, 108.97649999999999],
+      "maxLasMm": [-15.734265499999998, 46.48065, 194.4565],
+      "topology": {
+        "usedVerticesAfterExactWeld": 2799,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 5594,
+            "usedOriginalVertices": 2861,
+            "surfaceAreaMm2": 7115.77625626537,
+            "signedEnclosedVolumeMm3": 14344.079452433587,
+            "minLasMm": [-96.6568655, -70.02345000000003, 108.97649999999999],
+            "maxLasMm": [-15.734265499999998, 46.48065, 194.4565]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3337",
+      "name": "right third costal cartilage",
+      "conceptId": "FMA7913",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3337.obj",
+      "bytes": 42128,
+      "sha256": "469513e43364a7212843011c944a9fff22b5b50496a11e739bcdafc70005d3dd",
+      "crc32": "b7df8cfa",
+      "vertices": 386,
+      "triangles": 652,
+      "minLasMm": [-50.4089655, 50.74464999999998, 77.80650000000014],
+      "maxLasMm": [-12.7357655, 69.43164999999999, 95.40650000000005],
+      "topology": {
+        "usedVerticesAfterExactWeld": 328,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 652,
+            "usedOriginalVertices": 386,
+            "surfaceAreaMm2": 1617.0724011016357,
+            "signedEnclosedVolumeMm3": 3427.1143808233323,
+            "minLasMm": [-50.4089655, 50.74464999999998, 77.80650000000014],
+            "maxLasMm": [-12.7357655, 69.43164999999999, 95.40650000000005]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3338",
+      "name": "right third rib",
+      "conceptId": "FMA7909",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3338.obj",
+      "bytes": 463529,
+      "sha256": "69dbbcfc72d592aa862621612e7ad1151ada3fa06c5ce51e24731015561ad7ac",
+      "crc32": "9b8b2184",
+      "vertices": 3634,
+      "triangles": 7254,
+      "minLasMm": [-108.6317655, -83.84735, 79.24649999999997],
+      "maxLasMm": [-13.708765499999998, 58.59164999999999, 171.39650000000006],
+      "topology": {
+        "usedVerticesAfterExactWeld": 3629,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 7254,
+            "usedOriginalVertices": 3634,
+            "surfaceAreaMm2": 8732.175053071162,
+            "signedEnclosedVolumeMm3": 17958.894531136753,
+            "minLasMm": [-108.6317655, -83.84735, 79.24649999999997],
+            "maxLasMm": [-13.708765499999998, 58.59164999999999, 171.39650000000006]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3339",
+      "name": "right fourth costal cartilage",
+      "conceptId": "FMA7976",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3339.obj",
+      "bytes": 43628,
+      "sha256": "fc442f6596ca1a7ce18fc2d65cb92dcc1de1951381ebd631223469b6e84923b1",
+      "crc32": "6311772b",
+      "vertices": 391,
+      "triangles": 694,
+      "minLasMm": [-59.591565499999994, 63.527649999999994, 46.52649999999994],
+      "maxLasMm": [-13.995865499999999, 77.91064999999998, 70.98649999999998],
+      "topology": {
+        "usedVerticesAfterExactWeld": 349,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 694,
+            "usedOriginalVertices": 391,
+            "surfaceAreaMm2": 1838.9430028337947,
+            "signedEnclosedVolumeMm3": 4139.6469217199965,
+            "minLasMm": [-59.591565499999994, 63.527649999999994, 46.52649999999994],
+            "maxLasMm": [-13.995865499999999, 77.91064999999998, 70.98649999999998]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3340",
+      "name": "right fourth rib",
+      "conceptId": "FMA7957",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3340.obj",
+      "bytes": 567439,
+      "sha256": "b9bc6bbb160fd579ed246c3eb145b39f82866dc2dfeebe798f0dba5a2e352597",
+      "crc32": "d4ac4ec2",
+      "vertices": 4435,
+      "triangles": 8832,
+      "minLasMm": [-117.2777655, -97.48185000000001, 46.52649999999994],
+      "maxLasMm": [-14.6966655, 71.51565, 150.77649999999994],
+      "topology": {
+        "usedVerticesAfterExactWeld": 4418,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 8832,
+            "usedOriginalVertices": 4435,
+            "surfaceAreaMm2": 10519.225978829136,
+            "signedEnclosedVolumeMm3": 24850.60317043342,
+            "minLasMm": [-117.2777655, -97.48185000000001, 46.52649999999994],
+            "maxLasMm": [-14.6966655, 71.51565, 150.77649999999994]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3341",
+      "name": "right fifth costal cartilage",
+      "conceptId": "FMA8070",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3341.obj",
+      "bytes": 73177,
+      "sha256": "921b821e925624302d8ab138dfa80a24bf3d9150e006b7ac27a2b5f73d15ab33",
+      "crc32": "6093fb3d",
+      "vertices": 652,
+      "triangles": 1168,
+      "minLasMm": [-81.8505655, 68.63964999999999, 7.036499999999933],
+      "maxLasMm": [-17.3843655, 88.35964999999999, 50.67650000000003],
+      "topology": {
+        "usedVerticesAfterExactWeld": 586,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 1168,
+            "usedOriginalVertices": 652,
+            "surfaceAreaMm2": 3025.2770321182406,
+            "signedEnclosedVolumeMm3": 7434.879011584492,
+            "minLasMm": [-81.8505655, 68.63964999999999, 7.036499999999933],
+            "maxLasMm": [-17.3843655, 88.35964999999999, 50.67650000000003]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3342",
+      "name": "right fifth rib",
+      "conceptId": "FMA8066",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3342.obj",
+      "bytes": 627176,
+      "sha256": "11d403618e4114a5edcd8f2fa4e90ef4e6427b04f4cd3962c59462694b55c443",
+      "crc32": "863617df",
+      "vertices": 4910,
+      "triangles": 9710,
+      "minLasMm": [-126.76376549999999, -107.94875000000002, 7.586500000000115],
+      "maxLasMm": [-14.998965499999999, 76.97465, 126.74649999999997],
+      "topology": {
+        "usedVerticesAfterExactWeld": 4857,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 9710,
+            "usedOriginalVertices": 4910,
+            "surfaceAreaMm2": 11853.648642235601,
+            "signedEnclosedVolumeMm3": 30032.525587339474,
+            "minLasMm": [-126.76376549999999, -107.94875000000002, 7.586500000000115],
+            "maxLasMm": [-14.998965499999999, 76.97465, 126.74649999999997]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3343",
+      "name": "right sixth costal cartilage",
+      "conceptId": "FMA8194",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3343.obj",
+      "bytes": 103505,
+      "sha256": "3b633ffd599c51c1f00d66442855a047b013bda569fa092ea31ece5fdc289111",
+      "crc32": "a5f1067d",
+      "vertices": 971,
+      "triangles": 1546,
+      "minLasMm": [-93.3821655, 64.07264999999998, -27.013500000000022],
+      "maxLasMm": [-13.5502655, 91.51065, 32.67650000000003],
+      "topology": {
+        "usedVerticesAfterExactWeld": 787,
+        "surfaceComponents": 7,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.0007564631914367618,
+            "signedEnclosedVolumeMm3": -8.823259867232295e-24,
+            "minLasMm": [-93.3821655, 71.02265, -24.623499999999922],
+            "maxLasMm": [-93.3604655, 71.04065, -24.59349999999995]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.0004238844300037527,
+            "signedEnclosedVolumeMm3": 0.0,
+            "minLasMm": [-92.9915655, 71.29464999999999, -24.873499999999922],
+            "maxLasMm": [-92.9749655, 71.30564999999999, -24.85349999999994]
+          },
+          {
+            "triangles": 1534,
+            "usedOriginalVertices": 935,
+            "surfaceAreaMm2": 4060.580093259745,
+            "signedEnclosedVolumeMm3": 10709.568528279327,
+            "minLasMm": [-92.9042655, 64.29764999999998, -27.013500000000022],
+            "maxLasMm": [-13.5502655, 91.51065, 32.67650000000003]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.0007378466575106319,
+            "signedEnclosedVolumeMm3": 7.058607893785836e-23,
+            "minLasMm": [-86.4724655, 64.07264999999998, -18.35349999999994],
+            "maxLasMm": [-86.4553655, 64.09864999999999, -18.333499999999958]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.00012403692998466892,
+            "signedEnclosedVolumeMm3": 0.0,
+            "minLasMm": [-85.85026549999999, 69.63764999999998, -6.783500000000004],
+            "maxLasMm": [-85.8377655, 69.64665, -6.773500000000013]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.016216308549128575,
+            "signedEnclosedVolumeMm3": 0.0,
+            "minLasMm": [-85.28906549999999, 69.26565, -6.703500000000076],
+            "maxLasMm": [-85.15246549999999, 69.36964999999998, -6.623499999999922]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.023372440938836662,
+            "signedEnclosedVolumeMm3": 0.0,
+            "minLasMm": [-85.0239655, 68.94064999999998, -6.6534999999998945],
+            "maxLasMm": [-84.9272655, 69.11864999999997, -6.563499999999976]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3344",
+      "name": "right sixth rib",
+      "conceptId": "FMA8175",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3344.obj",
+      "bytes": 661848,
+      "sha256": "67f1f42fea1c289adaf4929716534bad7dfdd136ca0057f05de83d6e20c8f0a8",
+      "crc32": "910ae548",
+      "vertices": 5168,
+      "triangles": 10246,
+      "minLasMm": [-134.0337655, -117.03494, -26.663499999999885],
+      "maxLasMm": [-14.5220655, 72.82864999999998, 101.12650000000008],
+      "topology": {
+        "usedVerticesAfterExactWeld": 5125,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 10246,
+            "usedOriginalVertices": 5168,
+            "surfaceAreaMm2": 12390.501657492088,
+            "signedEnclosedVolumeMm3": 31347.536316182883,
+            "minLasMm": [-134.0337655, -117.03494, -26.663499999999885],
+            "maxLasMm": [-14.5220655, 72.82864999999998, 101.12650000000008]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3345",
+      "name": "right seventh costal cartilage",
+      "conceptId": "FMA8248",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3345.obj",
+      "bytes": 167567,
+      "sha256": "a4d22796f4ffc6f9ad1b7d620c917be1638244864eca62aec60bd11033ed3041",
+      "crc32": "1815d179",
+      "vertices": 1538,
+      "triangles": 2450,
+      "minLasMm": [-109.5937655, 50.09864999999999, -62.01350000000002],
+      "maxLasMm": [49.8805345, 92.53164999999998, 21.876500000000078],
+      "topology": {
+        "usedVerticesAfterExactWeld": 1233,
+        "surfaceComponents": 4,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 2444,
+            "usedOriginalVertices": 1520,
+            "surfaceAreaMm2": 6375.670525703108,
+            "signedEnclosedVolumeMm3": 17706.91638773866,
+            "minLasMm": [-109.5937655, 50.09864999999999, -62.01350000000002],
+            "maxLasMm": [-4.1923955, 92.53164999999998, 21.876500000000078]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.0004786856170802832,
+            "signedEnclosedVolumeMm3": 0.0,
+            "minLasMm": [-5.3072455000000005, 89.91565, 19.126500000000078],
+            "maxLasMm": [-5.3015155, 89.93865, 19.14650000000006]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.007699813787898842,
+            "signedEnclosedVolumeMm3": 0.0,
+            "minLasMm": [-4.6804855000000005, 89.01065, 19.276499999999942],
+            "maxLasMm": [-4.6243155, 89.12764999999999, 19.316500000000133]
+          },
+          {
+            "triangles": 2,
+            "usedOriginalVertices": 6,
+            "surfaceAreaMm2": 0.0016241986208578706,
+            "signedEnclosedVolumeMm3": -1.4117215787571672e-22,
+            "minLasMm": [49.8287345, 89.20065, -15.293499999999995],
+            "maxLasMm": [49.8805345, 89.23564999999999, -15.273500000000013]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3346",
+      "name": "right seventh rib",
+      "conceptId": "FMA8229",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3346.obj",
+      "bytes": 647432,
+      "sha256": "91aa56e034fbe6f413c0f15b76d725a1f8efd115aa2900beda6edf43a3ab0c43",
+      "crc32": "cb5a125c",
+      "vertices": 5058,
+      "triangles": 10032,
+      "minLasMm": [-136.7697655, -116.18944000000002, -59.38349999999991],
+      "maxLasMm": [-13.3744655, 59.52664999999999, 75.69650000000001],
+      "topology": {
+        "usedVerticesAfterExactWeld": 5018,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 10032,
+            "usedOriginalVertices": 5058,
+            "surfaceAreaMm2": 12340.651597390926,
+            "signedEnclosedVolumeMm3": 31955.02726735266,
+            "minLasMm": [-136.7697655, -116.18944000000002, -59.38349999999991],
+            "maxLasMm": [-13.3744655, 59.52664999999999, 75.69650000000001]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3347",
+      "name": "right eighth rib",
+      "conceptId": "FMA8283",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3347.obj",
+      "bytes": 535785,
+      "sha256": "43a1591cf1e123ca01f64297a7ce008d679a5f5f26421cc5b69e2232da89d743",
+      "crc32": "72171558",
+      "vertices": 4199,
+      "triangles": 8336,
+      "minLasMm": [-132.6527655, -116.11186000000001, -89.91349999999989],
+      "maxLasMm": [-13.3612655, 42.001649999999984, 46.75649999999996],
+      "topology": {
+        "usedVerticesAfterExactWeld": 4170,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 8336,
+            "usedOriginalVertices": 4199,
+            "surfaceAreaMm2": 10241.48691223817,
+            "signedEnclosedVolumeMm3": 24102.92055957673,
+            "minLasMm": [-132.6527655, -116.11186000000001, -89.91349999999989],
+            "maxLasMm": [-13.3612655, 42.001649999999984, 46.75649999999996]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3348",
+      "name": "right ninth rib",
+      "conceptId": "FMA8364",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3348.obj",
+      "bytes": 485203,
+      "sha256": "7d3a969b778da18eb38b1a64d92e2b90e1730fcb0d7b2bfacd125ff4826876d0",
+      "crc32": "d23edb56",
+      "vertices": 3808,
+      "triangles": 7576,
+      "minLasMm": [-128.7827655, -113.14728000000002, -114.48350000000005],
+      "maxLasMm": [-15.549365499999999, 14.955649999999991, 20.796499999999924],
+      "topology": {
+        "usedVerticesAfterExactWeld": 3790,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 7576,
+            "usedOriginalVertices": 3808,
+            "surfaceAreaMm2": 9273.096785688045,
+            "signedEnclosedVolumeMm3": 21071.72872390588,
+            "minLasMm": [-128.7827655, -113.14728000000002, -114.48350000000005],
+            "maxLasMm": [-15.549365499999999, 14.955649999999991, 20.796499999999924]
+          }
+        ]
+      }
+    },
+    {
+      "id": "FJ3368",
+      "name": "right humerus",
+      "conceptId": "FMA23130",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3368.obj",
+      "bytes": 256568,
+      "sha256": "159fbdeb854044e7b0ebd0d48cfe332afb44a691d09b89ff644a851826d08268",
+      "crc32": "9e57b574",
+      "vertices": 2233,
+      "triangles": 3784,
+      "minLasMm": [-240.5257655, -69.63725000000002, -135.37349999999992],
+      "maxLasMm": [-139.7747655, -20.45735000000002, 171.9665],
+      "topology": {
+        "usedVerticesAfterExactWeld": 1894,
+        "surfaceComponents": 1,
+        "boundaryEdges": 0,
+        "nonManifoldEdges": 0,
+        "inconsistentOrientedEdges": 0,
+        "degenerateTriangles": 0,
+        "components": [
+          {
+            "triangles": 3784,
+            "usedOriginalVertices": 2233,
+            "surfaceAreaMm2": 28181.28936982622,
+            "signedEnclosedVolumeMm3": 155622.74705739866,
+            "minLasMm": [-240.5257655, -69.63725000000002, -135.37349999999992],
+            "maxLasMm": [-139.7747655, -20.45735000000002, 171.9665]
+          }
+        ]
+      }
+    }
+  ]
+}

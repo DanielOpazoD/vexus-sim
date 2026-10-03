@@ -18,9 +18,11 @@ Los 24 OBJ costales incluidos coinciden con sus hashes (`costal-source-inventory
 
 El diagnóstico costocondral añade 71.280 muestras del volumen ajustado del séptimo cartílago: el mínimo SDF óseo muestreado es positivo (0,872 mm), señal de separación pendiente; no es distancia Euclídea global exacta. En las fuentes originales, las distancias mínimas entre vértices hueso/cartílago son 0,013 mm derecha y 0,030 mm izquierda (`source-costochondral-distances.json`, cota superior a separación superficial exacta). La media/reflexión bilateral del prototipo no acredita uniones reales: deben corregirse contra superficies fuente, sin puentes inventados ni mover órganos.
 
-## Fuentes pendientes y acceso
+## Fuentes recuperadas; integración pendiente
 
-`thoracic-source-requirements.json` resuelve las etiquetas oficiales y entradas ZIP de 27 piezas: catorce cartílagos, T1–T12 y diafragma. Cuatro están en el checkpoint (séptimos cartílagos y T9/T10); faltan 23. La lectura HEAD confirmada el 01-10-2026 a las 20:58:44 UTC fue rechazada por el proxy en CONNECT: `http_connect=403`, `http_code=000`, `proxy_used=1`; no hubo respuesta HTTP del origen `dbarchive.biosciencedbc.jp:443`. No se cambiaron permisos ni se buscaron rutas de bypass. El inventario conserva nombres, IDs, offsets y tamaños para una recuperación autorizada posterior. Esta limitación de fuentes no impide analizar las 24 costillas ya recuperadas, pero impide presentar un registro completo sustentado de vértebras/cartílagos/diafragma.
+`thoracic-source-requirements.json` conserva las etiquetas y entradas oficiales de 27 piezas: catorce cartílagos, T1–T12 y diafragma. El bloqueo de acceso de octubre 1 queda como antecedente: el 03-10-2026 la misma ruta respondió 200 y se recuperó el archivo completo. Las 27 piezas están verificadas por tamaño, CRC y SHA256; el manifiesto ampliado cubre 57 piezas junto con piel, costillas y referencias esternales. Véase [recuperación reproducible](THORACIC_SOURCE_RECOVERY.md).
+
+Esto resuelve la disponibilidad de fuentes, no su integración anatómica. El diafragma tiene componentes adicionales y cuatro aristas no-manifold en el oráculo de coordenadas soldadas; no se limpiaron silenciosamente. Mallas, inserciones y órganos deben reconciliarse en el mismo registro antes de promoción. Los OBJ no se incorporan al runtime en este bloque.
 
 ## División del bloque completo
 

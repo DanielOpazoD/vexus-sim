@@ -19,10 +19,10 @@ PAIRS = {'right': {'bone': 'FJ3346', 'cartilage': 'FJ3345'},
          'left': {'bone': 'FJ3234', 'cartilage': 'FJ3255'}}
 
 
-def load_mesh(directory, element):
+def load_mesh(directory, element, expected_sha=None):
     path = Path(directory) / (element + '.obj')
     raw = path.read_bytes()
-    if hashlib.sha256(raw).hexdigest() != HASHES[element]:
+    if hashlib.sha256(raw).hexdigest() != (expected_sha or HASHES[element]):
         raise ValueError('SHA256 no coincide: ' + element)
     vertices, faces = [], []
     for line in raw.decode('utf-8').splitlines():

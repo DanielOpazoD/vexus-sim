@@ -1,0 +1,31 @@
+name: Contrato de fuente torácica
+on:
+  pull_request:
+    paths:
+      - 'tools/anatomy/costochondral_geometry.py'
+      - 'tools/anatomy/costochondral_oracle_test.py'
+      - 'tools/anatomy/thoracic_source.py'
+      - 'tools/anatomy/thoracic_source_test.py'
+      - 'docs/anatomy/thoracic-source-*.json'
+      - '.github/workflows/thoracic-source.yml'
+permissions:
+  contents: read
+jobs:
+  source-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - name: Entorno Python aislado
+        run: |
+          python3 -m venv "$RUNNER_TEMP/source-venv"
+          "$RUNNER_TEMP/source-venv/bin/python" -m pip install numpy==2.3.5 scipy==1.17.0
+      - name: Oráculos sintéticos y contrato de archivo
+        env:
+          PYTHONDONTWRITEBYTECODE: '1'
+        run: |
+          "$RUNNER_TEMP/source-venv/bin/python" tools/anatomy/costochondral_oracle_test.py
+          "$RUNNER_TEMP/source-venv/bin/python" tools/anatomy/thoracic_source_test.py

@@ -62,6 +62,8 @@ export function runVenousModelAudit() {
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const report = {
     sourceSha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+    headTreeSha: execFileSync('git', ['rev-parse', 'HEAD^{tree}'], { encoding: 'utf8' }).trim(),
+    workingTreeDirty: execFileSync('git', ['status', '--porcelain'], { encoding: 'utf8' }).trim().length > 0,
     kind: 'current-model-audit',
     clinicalValidation: false,
     method:

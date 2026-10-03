@@ -45,13 +45,16 @@ try {
       canvas.height = height;
       const gl = canvas.getContext('webgl2', { antialias: false });
       if (!gl || !gl.getExtension('EXT_color_buffer_float')) throw new Error('Float WebGL2 target unavailable');
-      const compile = (kind: number, source: string) => {
-        const s = gl.createShader(kind)!;
-        gl.shaderSource(s, source);
-        gl.compileShader(s);
-        if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) ?? 'Shader compile failed');
-        return s;
-      };
+      // Anonymous array entries avoid tsx keepNames helpers in the serialized browser closure.
+      const [compile] = [
+        (kind: number, source: string) => {
+          const s = gl.createShader(kind)!;
+          gl.shaderSource(s, source);
+          gl.compileShader(s);
+          if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s) ?? 'Shader compile failed');
+          return s;
+        },
+      ];
       const program = gl.createProgram();
       gl.attachShader(
         program,
@@ -66,16 +69,18 @@ try {
       if (!gl.getProgramParameter(program, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(program) ?? 'Shader link failed');
       gl.useProgram(program);
       gl.bindVertexArray(gl.createVertexArray());
-      const texture = (h: number, values: Float32Array | null) => {
-        const t = gl.createTexture();
-        gl.bindTexture(gl.TEXTURE_2D, t);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, width, h, 0, gl.RGBA, gl.FLOAT, values);
-        return t;
-      };
+      const [texture] = [
+        (h: number, values: Float32Array | null) => {
+          const t = gl.createTexture();
+          gl.bindTexture(gl.TEXTURE_2D, t);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+          gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, width, h, 0, gl.RGBA, gl.FLOAT, values);
+          return t;
+        },
+      ];
       const framebuffer = gl.createFramebuffer();
       gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffer);
       for (let i = 0; i < 2; i++) {

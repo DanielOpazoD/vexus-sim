@@ -1,0 +1,531 @@
+{
+  "source": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+  "archiveBytes": 64888505,
+  "archiveSha256": "9fbc713fffeee924a5a657d9813d84d7eb957bded63adb854931dd5e3eb61c97",
+  "retrievedUtc": "2026-10-03T00:33:50Z",
+  "license": "CC BY 4.0",
+  "licenseUrl": "https://dbarchive.biosciencedbc.jp/en/bodyparts3d/lic.html",
+  "credit": "BodyParts3D, © The Database Center for Life Science licensed under CC Attribution 4.0 International",
+  "registrationFile": "docs/anatomy/full-cage-candidate-report.json",
+  "runtimeIntegration": false,
+  "parts": [
+    {
+      "id": "FJ2810",
+      "name": "skin",
+      "conceptId": "FMA7163",
+      "entry": "partof_BP3D_4.0_obj_99/FJ2810.obj",
+      "bytes": 14465506,
+      "sha256": "50fb17d0b3559b8b6c5481dbe7f877d25726e576564da615c45b2dd7654e315d",
+      "crc32": "d5f4a789"
+    },
+    {
+      "id": "FJ3131",
+      "name": "diaphragm",
+      "conceptId": "FMA13295",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3131.obj",
+      "bytes": 4828614,
+      "sha256": "2a78d0f155249d4b8348e9656170af4caf2b41778c0e047fc8c1c6890878058b",
+      "crc32": "2adc37ad"
+    },
+    {
+      "id": "FJ3153",
+      "name": "xiphoid process",
+      "conceptId": "FMA7488",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3153.obj",
+      "bytes": 56265,
+      "sha256": "d17057ed1dad252a6fa6a3e8d92bc13310cebe0b584df147af0cc4a646f98f3e",
+      "crc32": "19f9b8c5"
+    },
+    {
+      "id": "FJ3154",
+      "name": "tenth thoracic vertebra",
+      "conceptId": "FMA10037",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3154.obj",
+      "bytes": 181677,
+      "sha256": "55fd0b1ec25bc207c5a58cb2aa3d5f2880df6593719ec803c83ac898d3bda358",
+      "crc32": "b145b2f2"
+    },
+    {
+      "id": "FJ3155",
+      "name": "eleventh thoracic vertebra",
+      "conceptId": "FMA10059",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3155.obj",
+      "bytes": 178073,
+      "sha256": "7ce892808f37a9c96c74f298334be195cb50bfdbe64bcfa62072141ed38df0a2",
+      "crc32": "c8495564"
+    },
+    {
+      "id": "FJ3156",
+      "name": "twelfth thoracic vertebra",
+      "conceptId": "FMA10081",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3156.obj",
+      "bytes": 181657,
+      "sha256": "d78f0563a0c0b5be89284a6d73434998a05dc9dbddb471b49e398c9ef96f07ae",
+      "crc32": "cc7b3828"
+    },
+    {
+      "id": "FJ3158",
+      "name": "first thoracic vertebra",
+      "conceptId": "FMA9165",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3158.obj",
+      "bytes": 114179,
+      "sha256": "57a9cd9f62fc902f2d10f32c83237bba5bee4a24ae323a2b2405d9df68fd585b",
+      "crc32": "1cd9578c"
+    },
+    {
+      "id": "FJ3160",
+      "name": "second thoracic vertebra",
+      "conceptId": "FMA9187",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3160.obj",
+      "bytes": 126576,
+      "sha256": "f04ca280dc74fdc79afb14e5da1515a1e77762960bb38fab869be0e617348eac",
+      "crc32": "eb8fe9e5"
+    },
+    {
+      "id": "FJ3163",
+      "name": "third thoracic vertebra",
+      "conceptId": "FMA9209",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3163.obj",
+      "bytes": 130540,
+      "sha256": "968ed4928160fd54c444aa8c4a2c318fa56368c55c715afcdeaa48445382d3f6",
+      "crc32": "6af86753"
+    },
+    {
+      "id": "FJ3166",
+      "name": "fourth thoracic vertebra",
+      "conceptId": "FMA9248",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3166.obj",
+      "bytes": 133882,
+      "sha256": "cd744d75a90dc4d2b38f3b25928656ae2f9b873ea3113d01f91a102290eda5bd",
+      "crc32": "53f226c5"
+    },
+    {
+      "id": "FJ3169",
+      "name": "fifth thoracic vertebra",
+      "conceptId": "FMA9922",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3169.obj",
+      "bytes": 147917,
+      "sha256": "7eb98fe2886168196d8a7ee37d1c7a6e7decbc1c09cdf2d4295c13ed7ba3df0c",
+      "crc32": "f110c159"
+    },
+    {
+      "id": "FJ3171",
+      "name": "sixth thoracic vertebra",
+      "conceptId": "FMA9945",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3171.obj",
+      "bytes": 149094,
+      "sha256": "7c9c326269edd09bdf02aca90333c61debe4f39c777fbef887751826a54adb9e",
+      "crc32": "b03ff57f"
+    },
+    {
+      "id": "FJ3173",
+      "name": "seventh thoracic vertebra",
+      "conceptId": "FMA9968",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3173.obj",
+      "bytes": 167619,
+      "sha256": "1bcf85e649234f976236f81077019ae66971c69c0943992a7ec0072939d42245",
+      "crc32": "48233cd2"
+    },
+    {
+      "id": "FJ3174",
+      "name": "eighth thoracic vertebra",
+      "conceptId": "FMA9991",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3174.obj",
+      "bytes": 157446,
+      "sha256": "f5928470229deb2c7579804b883ffeaae611127dac1454caed3b3df93fe8dad6",
+      "crc32": "daa7459e"
+    },
+    {
+      "id": "FJ3175",
+      "name": "ninth thoracic vertebra",
+      "conceptId": "FMA10014",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3175.obj",
+      "bytes": 166121,
+      "sha256": "f1ce32fedb9f84ac37b800b2a182f6701f972fbd8cc01be7732ab3ca3864603e",
+      "crc32": "7da3efae"
+    },
+    {
+      "id": "FJ3178",
+      "name": "body of sternum",
+      "conceptId": "FMA7487",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3178.obj",
+      "bytes": 374296,
+      "sha256": "32a06946d8eadbe1a847a373abe7499381c0182c72b7c94e3e2a0c3ba7c867e3",
+      "crc32": "1f1a8aae"
+    },
+    {
+      "id": "FJ3225",
+      "name": "left tenth rib",
+      "conceptId": "FMA8472",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3225.obj",
+      "bytes": 432180,
+      "sha256": "daa25aba7fba3ff691d61cd239f8d49debc84ff871a351051c1d57a192b91dfd",
+      "crc32": "342ed6da"
+    },
+    {
+      "id": "FJ3226",
+      "name": "left eleventh rib",
+      "conceptId": "FMA8532",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3226.obj",
+      "bytes": 304278,
+      "sha256": "4bb9d52fdb2c15cb459c2bd08fd58082cdb39d15903cde675313762ea2287fc8",
+      "crc32": "3676624e"
+    },
+    {
+      "id": "FJ3227",
+      "name": "left twelfth rib",
+      "conceptId": "FMA8534",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3227.obj",
+      "bytes": 170995,
+      "sha256": "83e04b8b6f91e4de57e7b380a2f2c7d6f0bbf284ce76710ca89aa82fb376bd4e",
+      "crc32": "02ea806a"
+    },
+    {
+      "id": "FJ3228",
+      "name": "left first rib",
+      "conceptId": "FMA7987",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3228.obj",
+      "bytes": 200850,
+      "sha256": "eb534d19462226e26b91234544f99abe118878a25c125f2a8839341e6769252b",
+      "crc32": "0e3ffe75"
+    },
+    {
+      "id": "FJ3229",
+      "name": "left second rib",
+      "conceptId": "FMA8012",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3229.obj",
+      "bytes": 355234,
+      "sha256": "b752f038ceba8430f3872897ce69495d7dd74ed8e19c21d3f75d0bc0b156d84f",
+      "crc32": "412c4241"
+    },
+    {
+      "id": "FJ3230",
+      "name": "left third rib",
+      "conceptId": "FMA8039",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3230.obj",
+      "bytes": 460035,
+      "sha256": "8b42d241c711fe9765b1239be33fcab6b865ab4619b5d05fa98ea245b6075d5c",
+      "crc32": "1c139782"
+    },
+    {
+      "id": "FJ3231",
+      "name": "left fourth rib",
+      "conceptId": "FMA8148",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3231.obj",
+      "bytes": 564537,
+      "sha256": "28b852d4813703c5654d0405168e22bf0032632d47b9667b4b16e60ed89a425b",
+      "crc32": "ffe3f7b9"
+    },
+    {
+      "id": "FJ3232",
+      "name": "left fifth rib",
+      "conceptId": "FMA8093",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3232.obj",
+      "bytes": 622390,
+      "sha256": "6fa730aea273685148d3e9d3f52fe450acec4c13d6e3b1b6865e0e9532283abb",
+      "crc32": "8caadafa"
+    },
+    {
+      "id": "FJ3233",
+      "name": "left sixth rib",
+      "conceptId": "FMA8202",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3233.obj",
+      "bytes": 657313,
+      "sha256": "2a0f1e32b8410b6396bea7ae342a16ae1ac1b77042e70d7e98cabeb7dcf3dfb9",
+      "crc32": "c5330a94"
+    },
+    {
+      "id": "FJ3234",
+      "name": "left seventh rib",
+      "conceptId": "FMA8256",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3234.obj",
+      "bytes": 642411,
+      "sha256": "638a766f20b64d02095efa845b5ea316624a376acb44c7e4a6d533d4da6ef4db",
+      "crc32": "846dd9ac"
+    },
+    {
+      "id": "FJ3235",
+      "name": "left eighth rib",
+      "conceptId": "FMA8310",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3235.obj",
+      "bytes": 532786,
+      "sha256": "81a7215ef6ed923bbad6f07208bbc0ee26ddbaae3b1423f624cae465012d9144",
+      "crc32": "599076cb"
+    },
+    {
+      "id": "FJ3236",
+      "name": "left ninth rib",
+      "conceptId": "FMA8391",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3236.obj",
+      "bytes": 481790,
+      "sha256": "3dc292292b9f2bd5e226ac100d3a8db76cba8eb1d9d09533a6e5e871f023e2a8",
+      "crc32": "fe876b82"
+    },
+    {
+      "id": "FJ3239",
+      "name": "left first costal cartilage",
+      "conceptId": "FMA8005",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3239.obj",
+      "bytes": 42790,
+      "sha256": "9ca5fdb0582ad2795c9316ab9bb2f89f952b5a8c8fcf92a37efa042fc5c7739c",
+      "crc32": "3062cf1c"
+    },
+    {
+      "id": "FJ3242",
+      "name": "left second costal cartilage",
+      "conceptId": "FMA8031",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3242.obj",
+      "bytes": 36200,
+      "sha256": "c83bb88d995837a455e72707e9d5ecb0035ad60d8fd2f6f28d3710b4ef4c9d8e",
+      "crc32": "ae20719d"
+    },
+    {
+      "id": "FJ3245",
+      "name": "left third costal cartilage",
+      "conceptId": "FMA8058",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3245.obj",
+      "bytes": 36602,
+      "sha256": "ac65f51684b5dbcc3ea82381edae8723cbd9c7b8680bf6149a31dbf0acd26065",
+      "crc32": "84240ca5"
+    },
+    {
+      "id": "FJ3248",
+      "name": "left fourth costal cartilage",
+      "conceptId": "FMA8167",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3248.obj",
+      "bytes": 40725,
+      "sha256": "3633cb39f1540513872b9477c829d562114dce8d19cba5c99073fe4e3abeb1be",
+      "crc32": "0b2efa74"
+    },
+    {
+      "id": "FJ3251",
+      "name": "left fifth costal cartilage",
+      "conceptId": "FMA8112",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3251.obj",
+      "bytes": 66532,
+      "sha256": "86be490af572a3d8c7f41fd1ed3f4bfac19a9966737bc1275f135f160d8298be",
+      "crc32": "f5a9970b"
+    },
+    {
+      "id": "FJ3254",
+      "name": "left sixth costal cartilage",
+      "conceptId": "FMA8221",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3254.obj",
+      "bytes": 91695,
+      "sha256": "bc9ca44f2ea1fa9800d7f0a35c4596f41df1750ba9c89910d4f64041131db2bf",
+      "crc32": "453e08ae"
+    },
+    {
+      "id": "FJ3255",
+      "name": "left seventh costal cartilage",
+      "conceptId": "FMA8275",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3255.obj",
+      "bytes": 150879,
+      "sha256": "97e69ede580a6e81cc42bb54fb22d4752719b61c5fced8ccccfb18ce64996676",
+      "crc32": "d3733752"
+    },
+    {
+      "id": "FJ3262",
+      "name": "left humerus",
+      "conceptId": "FMA23131",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3262.obj",
+      "bytes": 247433,
+      "sha256": "58b4f0f36723f27726009cdf4b77172dc694303f4e03f51b29c1663507480194",
+      "crc32": "52525492"
+    },
+    {
+      "id": "FJ3290",
+      "name": "manubrium",
+      "conceptId": "FMA7486",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3290.obj",
+      "bytes": 164758,
+      "sha256": "b847e67db475197cc4510744fef76bafd8e75c50797ca85eb8cd56dd853d61d6",
+      "crc32": "526578d8"
+    },
+    {
+      "id": "FJ3330",
+      "name": "right tenth rib",
+      "conceptId": "FMA8445",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3330.obj",
+      "bytes": 434809,
+      "sha256": "0f688dd4e0d20a8328b4763c0acc7582a9beac8fe5c7ce58586db99c6e366945",
+      "crc32": "5573162a"
+    },
+    {
+      "id": "FJ3331",
+      "name": "right eleventh rib",
+      "conceptId": "FMA8531",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3331.obj",
+      "bytes": 306724,
+      "sha256": "761d6d8713c31d4b9f795c4875da9fc750c913907386489568fdebea15af49c3",
+      "crc32": "4fcdd8cb"
+    },
+    {
+      "id": "FJ3332",
+      "name": "right twelfth rib",
+      "conceptId": "FMA8533",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3332.obj",
+      "bytes": 172395,
+      "sha256": "ece92488a9293cde2d8a8275cee8232326b377811afba888f6147d7217e04e07",
+      "crc32": "aaf7302f"
+    },
+    {
+      "id": "FJ3333",
+      "name": "right first costal cartilage",
+      "conceptId": "FMA7875",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3333.obj",
+      "bytes": 45599,
+      "sha256": "616b5add6471a3fd2a7297cbebfee18a13866eb165ca0be05c5942ae16bacc10",
+      "crc32": "37130860"
+    },
+    {
+      "id": "FJ3334",
+      "name": "right first rib",
+      "conceptId": "FMA7857",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3334.obj",
+      "bytes": 202346,
+      "sha256": "ecef0080744a8422b72b4f52229bd68945692cdef7d6fe2a57043b2155c49d17",
+      "crc32": "36226669"
+    },
+    {
+      "id": "FJ3335",
+      "name": "right second costal cartilage",
+      "conceptId": "FMA7886",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3335.obj",
+      "bytes": 42019,
+      "sha256": "065a4969ea4210ce6d3f5838dc2da20f1153de478e02c7a86ced152eab82bf6a",
+      "crc32": "77aef7d3"
+    },
+    {
+      "id": "FJ3336",
+      "name": "right second rib",
+      "conceptId": "FMA7882",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3336.obj",
+      "bytes": 358351,
+      "sha256": "e9f527453bb2a48764ac7243d0b9b23e37fb2a85e92cee445972a1a770a5eaa4",
+      "crc32": "ad9a3396"
+    },
+    {
+      "id": "FJ3337",
+      "name": "right third costal cartilage",
+      "conceptId": "FMA7913",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3337.obj",
+      "bytes": 42128,
+      "sha256": "469513e43364a7212843011c944a9fff22b5b50496a11e739bcdafc70005d3dd",
+      "crc32": "b7df8cfa"
+    },
+    {
+      "id": "FJ3338",
+      "name": "right third rib",
+      "conceptId": "FMA7909",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3338.obj",
+      "bytes": 463529,
+      "sha256": "69dbbcfc72d592aa862621612e7ad1151ada3fa06c5ce51e24731015561ad7ac",
+      "crc32": "9b8b2184"
+    },
+    {
+      "id": "FJ3339",
+      "name": "right fourth costal cartilage",
+      "conceptId": "FMA7976",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3339.obj",
+      "bytes": 43628,
+      "sha256": "fc442f6596ca1a7ce18fc2d65cb92dcc1de1951381ebd631223469b6e84923b1",
+      "crc32": "6311772b"
+    },
+    {
+      "id": "FJ3340",
+      "name": "right fourth rib",
+      "conceptId": "FMA7957",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3340.obj",
+      "bytes": 567439,
+      "sha256": "b9bc6bbb160fd579ed246c3eb145b39f82866dc2dfeebe798f0dba5a2e352597",
+      "crc32": "d4ac4ec2"
+    },
+    {
+      "id": "FJ3341",
+      "name": "right fifth costal cartilage",
+      "conceptId": "FMA8070",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3341.obj",
+      "bytes": 73177,
+      "sha256": "921b821e925624302d8ab138dfa80a24bf3d9150e006b7ac27a2b5f73d15ab33",
+      "crc32": "6093fb3d"
+    },
+    {
+      "id": "FJ3342",
+      "name": "right fifth rib",
+      "conceptId": "FMA8066",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3342.obj",
+      "bytes": 627176,
+      "sha256": "11d403618e4114a5edcd8f2fa4e90ef4e6427b04f4cd3962c59462694b55c443",
+      "crc32": "863617df"
+    },
+    {
+      "id": "FJ3343",
+      "name": "right sixth costal cartilage",
+      "conceptId": "FMA8194",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3343.obj",
+      "bytes": 103505,
+      "sha256": "3b633ffd599c51c1f00d66442855a047b013bda569fa092ea31ece5fdc289111",
+      "crc32": "a5f1067d"
+    },
+    {
+      "id": "FJ3344",
+      "name": "right sixth rib",
+      "conceptId": "FMA8175",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3344.obj",
+      "bytes": 661848,
+      "sha256": "67f1f42fea1c289adaf4929716534bad7dfdd136ca0057f05de83d6e20c8f0a8",
+      "crc32": "910ae548"
+    },
+    {
+      "id": "FJ3345",
+      "name": "right seventh costal cartilage",
+      "conceptId": "FMA8248",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3345.obj",
+      "bytes": 167567,
+      "sha256": "a4d22796f4ffc6f9ad1b7d620c917be1638244864eca62aec60bd11033ed3041",
+      "crc32": "1815d179"
+    },
+    {
+      "id": "FJ3346",
+      "name": "right seventh rib",
+      "conceptId": "FMA8229",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3346.obj",
+      "bytes": 647432,
+      "sha256": "91aa56e034fbe6f413c0f15b76d725a1f8efd115aa2900beda6edf43a3ab0c43",
+      "crc32": "cb5a125c"
+    },
+    {
+      "id": "FJ3347",
+      "name": "right eighth rib",
+      "conceptId": "FMA8283",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3347.obj",
+      "bytes": 535785,
+      "sha256": "43a1591cf1e123ca01f64297a7ce008d679a5f5f26421cc5b69e2232da89d743",
+      "crc32": "72171558"
+    },
+    {
+      "id": "FJ3348",
+      "name": "right ninth rib",
+      "conceptId": "FMA8364",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3348.obj",
+      "bytes": 485203,
+      "sha256": "7d3a969b778da18eb38b1a64d92e2b90e1730fcb0d7b2bfacd125ff4826876d0",
+      "crc32": "d23edb56"
+    },
+    {
+      "id": "FJ3368",
+      "name": "right humerus",
+      "conceptId": "FMA23130",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3368.obj",
+      "bytes": 256568,
+      "sha256": "159fbdeb854044e7b0ebd0d48cfe332afb44a691d09b89ff644a851826d08268",
+      "crc32": "9e57b574"
+    }
+  ],
+  "elementTable": {
+    "source": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_element_parts.txt",
+    "bytes": 651179,
+    "sha256": "3f5f6df1028eb122b30de77c711597b6bb8e5541658e5985859fd228adbf88ea"
+  }
+}

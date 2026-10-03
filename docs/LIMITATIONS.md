@@ -118,13 +118,8 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   normal del pericardio en la GPU es 1 (la de la distancia aproximada del elipsoide se aparta un 1,1 % en la mediana y un
   6,5 % en p95: ≤ 0,6 dB en su eco). El gemelo de la pasada A en TS (`transmissionHitsLine`, en las pruebas) sigue
   reflejando con la de la cúpula.
-- **Columna continua y opaca simplificada** (`vertebra-continuous-geometry`, decisión 103): la superficie vertebral
-  ya genera un eco cortical propio, dependiente de incidencia, y se elimina el moteado de su interior. La geometría sigue
-  siendo cilindro y arco rectangular continuos: sin cuerpos segmentados, discos, canal, pedículos ni apófisis anatómicas.
-  La rugosidad/pendiente se extrapolan de la cortical costal; no se han calibrado frente a clips vertebrales. La sombra
-  conserva el modelo óseo opaco previo (100 dB de entrada); no resuelve corteza/esponjosa ni señales RF intravertebrales.
-  No permite entrenamiento de punción neuraxial ni evaluación de densidad ósea. El arco rectangular sigue aportando oclusión, pero no emite
-  cortical: sus superficies planas producían barras artificiales. Solo el cuerpo cilíndrico tiene normal analítica y eco propio.
+- **Columna segmentada con arco posterior provisional** (`vertebra-continuous-geometry`, identificador histórico; decisiones 103 y 108): los cuerpos tienen sección elíptica y segmentación craneocaudal con discos intervertebrales. La cortical de cuerpos y platillos depende de la incidencia y su normal deriva del mismo campo CPU/GLSL. El arco posterior sigue siendo una caja continua sin canal, pedículos ni apófisis anatómicas individualizadas; aporta oclusión pero no eco cortical propio. La separación retrohepática usa una envolvente continua para no transmitir los surcos discales al hígado. Dimensiones, rugosidad y respuesta acústica siguen estimadas; no están calibradas contra clips vertebrales. La sombra conserva el modelo óseo opaco previo (100 dB de entrada), sin corteza/esponjosa ni señales RF intravertebrales. No permite entrenamiento de punción neuraxial ni evaluación de densidad ósea.
+
 - **La aorta no late en modo B** (`aorta-fixed-caliber`): su calibre es fijo; el pulso arterial está en su velocidad
   (color y PW), no en su pared. En la transversa epigástrica (decisión 83) no se ve el latido de 1–4 mm que ayuda a
   distinguirla de la VCI: se reconoce por su pared más gruesa y brillante, su sección redonda, su sitio sobre la vértebra,

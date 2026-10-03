@@ -45,6 +45,28 @@ export interface GateVesselSample {
 const MIN_MEAN_BLOOD = 0.01;
 
 /**
+ * Pérdida sostenida de sangre suprahepática en la puerta, no ausencia de caudal.
+ * Los extremos observados de un tramo deben abarcar una ventana FFT completa.
+ * La composición geométrica conserva sangre cuando el flujo real se detiene;
+ * esto no clasifica como mala una pausa venosa fisiológica por sí misma.
+ */
+export function hepaticGateDropout(track: readonly GateVesselSample[], t0: number, t1: number, windowSeconds: number): boolean {
+  let start: number | null = null;
+  for (const s of track) {
+    if (s.t < t0 || s.t > t1) continue;
+    let blood = 0;
+    for (const [id, weight] of Object.entries(s.vessels) as [VesselId, number][])
+      if (VESSEL_META[id].system === 'hepaticVein') blood += weight;
+    if (blood >= MIN_MEAN_BLOOD) start = null;
+    else {
+      start ??= s.t;
+      if (s.t - start >= windowSeconds) return true;
+    }
+  }
+  return false;
+}
+
+/**
  * Sistema vascular que domina la sangre de la puerta en [t0, t1] (suma de los pesos de sangre de cada muestra), o
  * null si la puerta apenas ve sangre.
  */

@@ -328,14 +328,16 @@ describe('Casos trampa por la cadena del alumno (decisión 82)', () => {
     });
   }
 
-  // Limitación `ppv-hepatic-capture-false-reversal`: con el ventilador ciclando la puerta fija ve otro vaso en la
-  // insuflación y la calidad no siempre lo rechaza. Medido en 10 semillas del caso: en 5, 1–2 de 10 capturas con el
-  // visto bueno leen una S invertida con la verdad normal; con la de la prueba, 2. La prueba afirma la limitación: cuando
-  // la calidad la rechace fallará y habrá que retirarla (aquí y en docs/LIMITATIONS.md).
-  it('limitación conocida: con el ventilador ciclando alguna captura de la VSH con el visto bueno lee una S invertida falsa', () => {
+  // Regresión de `ppv-hepatic-capture-false-reversal`: la identidad media sigue siendo suprahepática,
+  // pero hay un tramo de 320 ms con <1 % de sangre en la puerta. El espectro residual antes daba
+  // una S invertida aceptada; se debe rechazar sin consultar la verdad fisiológica al decidir calidad.
+  it('rechaza la falsa inversión suprahepática con pérdida sostenida de sangre en la puerta', () => {
     const base = { ...MECHANICAL_VENTILATION, seed: MECHANICAL_VENTILATION.seed + 4 };
     const { captures, truth } = hepaticCaptures(base, 'quiet', 26, true);
     expect(truth.hepaticPattern).toBe('normal');
-    expect(captures.filter((c) => c.issue === null && c.pattern === 'severe').length, JSON.stringify(captures)).toBeGreaterThan(0);
+    expect(
+      captures.filter((c) => c.issue === null && c.pattern === 'severe'),
+      JSON.stringify(captures),
+    ).toEqual([]);
   });
 });

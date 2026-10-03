@@ -5028,3 +5028,11 @@ Se conservan las tres comprobaciones y el mismo límite por corredor, sin elevar
 el tiempo permitido por prueba. Tras comprobar reloj vivo, pausa y reanudación,
 la reapertura se prueba también con el equipo congelado mediante su botón real;
 esto evita redibujados ocultos entre comprobaciones de limpieza y añade ese estado.
+
+## 121. Captura suprahepática con sangre visible durante la ventana espectral
+
+**Defecto reproducido.** La calidad aceptaba una inversión S falsa en el caso ventilado con respiración activa. La verdad sobre los mismos cuatro latidos era normal. No cambió el sistema vascular dominante: la puerta perdía casi toda la sangre suprahepática durante 320 ms. La explicación histórica de «otro vaso» no se confirmó.
+
+**Decisión.** Si la captura iba a ser medible, rechazarla como intermitente cuando un tramo observado con menos del 1 % de peso de sangre suprahepática dura una ventana FFT completa (`fftSize / prfHz`). Se utiliza composición geométrica de la puerta como ayuda de supervisor, no la velocidad verdadera, la presión ni un grado prefijado. Una pausa de flujo no se confunde con desaparición de sangre. Los demás motivos de rechazo y los protocolos portal/renal permanecen intactos.
+
+**Verificación y límites.** Regresión roja antes y verde después, cuatro contratos rápidos, matriz PW completa sin bajar exigencias de utilidad y auditoría offline de 20 semillas / 200 capturas. Ninguna captura de ese barrido fue medible: se evita una clasificación falsa, no se valida la adquisición con PPV. Se conserva el identificador histórico de limitación con una explicación corregida. En controles de apnea se mantienen 10/10 capturas útiles del sano, grave y ventilado. El suelo geométrico y la duración son reglas de este simulador, no umbrales clínicos certificados. Detalle en `physiology/HEPATIC_GATE_VISIBILITY.md`.

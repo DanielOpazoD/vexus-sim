@@ -141,11 +141,14 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   tranquila, 3,4 en apnea inspiratoria y 5,3 tras un diurético de 1 L (con PIA 20, 5,4 m/s sin intervenir). Hallado por
   la propiedad de las intervenciones (`interventions.test.ts`, que lo afirma en una prueba aparte y solo exige < 8 m/s a
   esa vena con la PIA); por eso el caso usa PIA 16 y no 20.
-- **Con el ventilador ciclando, la calidad no siempre rechaza la VSH de otro vaso**
-  (`ppv-hepatic-capture-false-reversal`): con presión positiva y respiración «tranquila», en la insuflación la puerta fija
-  ve otro vaso; casi todas las capturas salen no medibles, pero en 5 de 10 semillas del caso de la ventilación 1–2 de 10
-  capturas con el visto bueno leen una S invertida con la verdad normal (`examChain.test.ts` lo afirma). En la pausa
-  espiratoria, la técnica que enseña el caso, todas son verdaderas.
+- **Captura suprahepática con PPV: protección parcial y baja utilidad con puerta fija**
+  (`ppv-hepatic-capture-false-reversal`, identificador histórico): el contraejemplo original ya se rechaza cuando
+  la puerta pierde sangre suprahepática durante una ventana FFT completa. La identidad media seguía siendo
+  suprahepática: no se confirmó la explicación anterior de «otro vaso». En 20 semillas / 200 capturas con
+  ventilación y respiración activa no hubo falsas capturas aceptadas, pero ninguna fue medible; esto protege el grado,
+  no valida la adquisición bajo PPV. La regla usa composición geométrica privilegiada del simulador como supervisor,
+  no una capacidad diagnóstica de un ecógrafo real. La técnica en apnea conserva los controles de utilidad existentes.
+  Otros movimientos, casos y señales requieren validación independiente. Véase `physiology/HEPATIC_GATE_VISIBILITY.md`.
 - **La VCI se dilata antes que en la tabla de la ASE** (`ivc-law-steep`): la ley de tubo de la VCI da al sano con PAD
   6/7/8 mmHg 20,1/22,2/24,0 mm con 27/23/20 % de colapso, que la tabla leería como una PAD intermedia (8) la primera y
   de 15 las otras dos. Por eso la trampa de la

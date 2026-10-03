@@ -4994,3 +4994,11 @@ La modulación hepática de densidad de 3 mm baja de escala 11 a 4 dB (campo aco
 **Coste y verificación.** Una evaluación de la jacobiana por línea que llega al espejo; ninguna por muestra ordinaria. La guarda de shaders admite exclusivamente esta llamada después de marcar el primer impacto; sigue rechazando llamadas duplicadas, sin guarda, dentro de un bucle del impacto o en cualquier otro bucle. `warpAt` ya usa una derivada analítica, no las siete evaluaciones históricas mencionadas en el comentario antiguo de esa guarda. Se conservan las cotas de copias inlineadas de clasificación y el presupuesto. El banco WebGL existente conserva sus 54 facetas y añade 162 componentes de dirección reflejada, sin abrir otra escena ni otro test E2E. Las imágenes y el coste real del shader deben verificarse antes de merge.
 
 **Límites.** Corrige el marco de reflexión de las normales disponibles, no la forma anatómica del diafragma, la aproximación de la normal mediastínica ni el modelo de reflexión especular. No prueba fidelidad clínica. Detalles en `fidelity/PLEURAL_REFLECTION.md`.
+
+## 119. Contrato sincronizado del visor venoso comparativo
+
+**Decisión.** Un observador puro proyecta el mismo historial fisiológico a suprahepática derecha, porta e interlobar derecha. Cada punto comparte timestamp, ECG y fases; las velocidades medias espaciales conservan signo y unidad cm/s. La salida se etiqueta `physiology-reference`, nunca espectro PW ni grado VExUS. No avanza relojes, no consume aleatoriedad y no retiene referencias mutables al motor.
+
+**Dominio.** Los parámetros presentes se declaran limitados a casos; el control venoso global no está expuesto y compliance VD/taponamiento no están modelados. La investigación previa impide resolverlos como cambios gráficos. El registro de capacidades debe cambiar únicamente cuando exista el mecanismo correspondiente.
+
+**Verificación.** Siete contratos rápidos y una auditoría reproducible de 32 casos, independiente de WebGL y de la captura PW. Esta primera etapa no añade UI ni modifica la fisiología o la imagen. Se conservan presupuestos, plazos y todas las pruebas existentes. Véase `physiology/VENOUS_COMPARISON.md`.

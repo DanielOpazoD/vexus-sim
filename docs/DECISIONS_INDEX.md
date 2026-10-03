@@ -122,3 +122,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [116](DECISIONS.md#L4972) | Gradientes de interfaz transportados por respiración y compresión | vigente |
 | [117](DECISIONS.md#L4980) | Ocho fragmentos E2E con partición verificada | vigente |
 | [118](DECISIONS.md#L4988) | Reflexión pleural en el marco deformado | vigente |
+| [119](DECISIONS.md#L4998) | Contrato sincronizado del visor venoso comparativo | vigente |

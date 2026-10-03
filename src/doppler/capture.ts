@@ -11,7 +11,7 @@ import {
   type ObservedPortal,
   type ObservedRenal,
 } from './spectralMeasure';
-import { wrongGateVessel, type GateVesselSample, type ProtocolVessel } from './vesselIdentity';
+import { hepaticGateDropout, wrongGateVessel, type GateVesselSample, type ProtocolVessel } from './vesselIdentity';
 
 /** Segundos de espectro que toma una captura (los que guarda el equipo a la vista). */
 const CAPTURE_SECONDS = 7;
@@ -65,6 +65,13 @@ export function captureProtocolVessel<K extends ProtocolVessel>(
   const effective = m.measuredBeats;
   const last = effective.at(-1)!;
   const found = wrongGateVessel(kind, gateTrack, effective[0].tR, last.tR + last.rr);
-  if (found === null) return m;
-  return { ...m, quality: { ...m.quality, issue: 'wrong-vessel', wrongVessel: { kind, found } } };
+  if (found !== null) return { ...m, quality: { ...m.quality, issue: 'wrong-vessel', wrongVessel: { kind, found } } };
+  if (
+    kind === 'hepatic' &&
+    m.quality.issue === null &&
+    columns.length &&
+    hepaticGateDropout(gateTrack, effective[0].tR, last.tR + last.rr, opts.fftSize / columns.at(-1)!.prfHz)
+  )
+    return { ...m, quality: { ...m.quality, issue: 'intermittent' } };
+  return m;
 }

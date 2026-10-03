@@ -114,3 +114,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [108](DECISIONS.md#L4900) | Envolvente hepática continua frente a la columna segmentada | vigente |
 | [109](DECISIONS.md#L4912) | Unión interhemidiafragmática continua y acotada | vigente |
 | [110](DECISIONS.md#L4920) | Límite único del diafragma en el eje corporal | vigente |
+| [111](DECISIONS.md#L4928) | Registro de las mallas orgánicas y recorte hepático compartido | vigente |

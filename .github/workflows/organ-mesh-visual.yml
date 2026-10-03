@@ -1,0 +1,56 @@
+name: Registro visual de órganos 3D
+on:
+  pull_request:
+    paths:
+      - 'src/ui/navigator3d/organs.ts'
+      - 'src/validation/organMeshRegistration.test.ts'
+      - 'tools/fidelity/organMeshComparison.ts'
+      - '.github/workflows/organ-mesh-visual.yml'
+permissions:
+  contents: read
+concurrency:
+  group: organ-mesh-visual-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  capture:
+    strategy:
+      fail-fast: false
+      matrix:
+        profile: [legacy, reference]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx vite build
+      - name: Capturas y coste en la base exacta y el cambio
+        run: node --import tsx tools/fidelity/organMeshComparison.ts
+        env:
+          COMPARISON_PROFILE: ${{ matrix.profile }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          ORGAN_MESH_OUT: ${{ runner.temp }}/vexus-organ-mesh-evidence
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: organ-mesh-before-after-${{ matrix.profile }}
+          path: ${{ runner.temp }}/vexus-organ-mesh-evidence
+          retention-days: 7
+          if-no-files-found: warn
+
+  comparison:
+    needs: capture
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    steps:
+      - name: Ambos perfiles completos
+        run: test '${{ needs.capture.result }}' = 'success'

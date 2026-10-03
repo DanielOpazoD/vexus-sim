@@ -82,6 +82,19 @@ function beatWave(t: number, b: Beat, w: RaWaveParams): number {
   return v;
 }
 
+/**
+ * Peso del centrado RR: rectángulo convolucionado con un núcleo simétrico compacto.
+ * Conserva exactamente su área (RR) y la partición de unidad entre latidos adyacentes.
+ * Transición C1 de 40 ms; regularización numérica del centrado, no tiempo valvular.
+ */
+export function atrialBaselineWeight(t: number, start: number, rr: number): number {
+  const step = (x: number): number => {
+    const u = Math.max(0, Math.min(1, (x + 0.02) / 0.04));
+    return u * u * (3 - 2 * u);
+  };
+  return step(t - start) - step(t - (start + rr));
+}
+
 export class RightAtriumModel {
   /** Parámetros de cada latido (congelados al entrar en juego) y su media sobre el RR. */
   private beatCache = new Map<number, { params: RaWaveParams; mean: number | null }>();
@@ -125,17 +138,17 @@ export class RightAtriumModel {
 
   /** Componente cardíaca centrada (media ≈ 0) de la presión de AD, mmHg. */
   cardiacComponent(t: number): number {
-    // Las ondas de cada latido se suman en todo su soporte; la media se resta
-    // solo dentro del intervalo RR del latido en curso, de modo que la suma
-    // conserva la media declarada ciclo a ciclo.
+    // Las ondas conservan su soporte. El centrado tiene la misma área que antes,
+    // pero mezcla continuamente las medias a ambos lados de R: no añade un salto
+    // de presión artificial cuando cambian RR o carga. No filtra las ondas mecánicas.
     let v = 0;
     for (const b of this.rhythm.beatsAround(t)) {
       const inSupport = t >= b.tR - 0.5 && t <= b.tR + 1.6;
-      const inRr = t >= b.tR && t < b.tR + b.rr;
-      if (!inSupport && !inRr) continue;
+      const weight = atrialBaselineWeight(t, b.tR, b.rr);
+      if (!inSupport && weight === 0) continue;
       const e = this.entry(b);
       if (inSupport) v += beatWave(t, b, e.params);
-      if (inRr) v -= this.beatMean(b, e);
+      if (weight > 0) v -= this.beatMean(b, e) * weight;
     }
     return v;
   }

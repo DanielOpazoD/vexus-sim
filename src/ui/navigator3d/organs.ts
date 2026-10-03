@@ -4,11 +4,10 @@ import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js';
 import { kidneyLocal, kidneyOuterSdf, type Kidney } from '../../anatomy/organs/kidney';
 import { gallbladderSdf } from '../../anatomy/organs/gallbladder';
 import { domeFloor, heartOuterSdf } from '../../anatomy/organs/heart';
-import { diaphragmHeight, torsoDepth } from '../../anatomy/primitives';
+import { diaphragmHeight } from '../../anatomy/primitives';
 import { diaphragmRim } from '../../anatomy/diaphragmRim';
 import { COUINAUD_LABEL, couinaudPlanes, couinaudSegment, type CouinaudSegment } from '../../anatomy/couinaud';
 import type { AnatomyScene } from '../../anatomy/scene';
-import { DIAPHRAGM_THICKNESS_MM } from '../../anatomy/tissues';
 import type { Vec3 } from '../../core/vec3';
 import { CM } from './common';
 import { labelSprite } from './labels';
@@ -38,7 +37,10 @@ export function meshFromSdf(sdf: (p: Vec3) => number, lo: Vec3, hi: Vec3, res: n
   geom.computeVertexNormals();
   const mesh = new THREE.Mesh(geom, material);
   mesh.scale.setScalar((size / 2) * CM);
-  mesh.position.set((lo[0] + size / 2) * CM, (lo[1] + size / 2) * CM, (lo[2] + size / 2) * CM);
+  // El campo se muestrea en i + 0,5; Three emite cada nodo en i. Compensar ese medio voxel
+  // en la transformación, sin cambiar las muestras ni la topología extraída.
+  const centre = size / 2 + size / (2 * res);
+  mesh.position.set((lo[0] + centre) * CM, (lo[1] + centre) * CM, (lo[2] + centre) * CM);
   return mesh;
 }
 
@@ -63,14 +65,9 @@ export function buildLiverMesh(a: AnatomyScene): THREE.Mesh {
   const lobes = [a.liver, a.liverLeft];
   const lo = [0, 1, 2].map((i) => Math.min(...lobes.map((l) => l.center[i] - l.radii[i])) - 8) as Vec3;
   const hi = [0, 1, 2].map((i) => Math.max(...lobes.map((l) => l.center[i] + l.radii[i])) + 8) as Vec3;
-  const wall = a.wallThickness();
-  // recortes idénticos a scene.classify: diafragma (lámina 2,5 mm) y pared del tronco
-  const sdf = (p: Vec3) =>
-    Math.max(
-      a.liverSdf(p),
-      -(diaphragmHeight(p[0], p[1], a.diaphragm, a.torso) - p[2]) + DIAPHRAGM_THICKNESS_MM,
-      torsoDepth(p, a.torso) + wall,
-    );
+  // Mismo margen que delimita el parénquima y contiene sus vasos: incluye la pendiente
+  // diafragmática, no solo la diferencia vertical de altura.
+  const sdf = (p: Vec3) => -a.liverInteriorMargin(p);
   const mesh = meshFromSdf(
     sdf,
     lo,

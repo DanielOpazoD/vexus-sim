@@ -121,3 +121,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [115](DECISIONS.md#L4964) | Matrices IQ completas fuera de la instrumentación de cobertura | vigente |
 | [116](DECISIONS.md#L4972) | Gradientes de interfaz transportados por respiración y compresión | vigente |
 | [117](DECISIONS.md#L4980) | Ocho fragmentos E2E con partición verificada | vigente |
+| [118](DECISIONS.md#L4988) | Reflexión pleural en el marco deformado | vigente |

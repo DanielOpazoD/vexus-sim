@@ -1,5 +1,6 @@
 import { TISSUES, Tissue, attenuationDbPerCm } from '../anatomy/tissues';
-import type { Vec3 } from '../core/vec3';
+import { dot, normalize, type Vec3 } from '../core/vec3';
+import { warpNormal, type Warp } from '../anatomy/compression';
 import { IFACE_REACH_MM } from './interfaceEcho';
 import { CURTAIN_CONTIGUOUS_SEGMENTS, CURTAIN_GAS_KIND, CURTAIN_RECORD_MM } from './pleura';
 import { glslFloat } from './receiver';
@@ -101,6 +102,20 @@ export function rayAttenuationDb(tissues: Iterable<Tissue>, stepMm: number, fMHz
  */
 export const MIRROR_BISECTION_STEPS = 6;
 
+/** Dirección reflejada en una interfaz material transportada al mundo. */
+export function mirrorDirection(dir: Vec3, normal: Vec3, warp?: Warp): Vec3 {
+  const n = warp ? normalize(warpNormal(warp, normal)) : normal;
+  const d = 2 * dot(dir, n);
+  return [dir[0] - d * n[0], dir[1] - d * n[1], dir[2] - d * n[2]];
+}
+
+/** Núcleo de A0; se aplica solo en el impacto, no en cada muestra del rayo. */
+export const MIRROR_DIRECTION_GLSL = /* glsl */ `
+vec3 mirrorDirection(vec3 dir, vec3 normal, Warp w) {
+  return reflect(dir, normalize(warpNormal(w, normal)));
+}
+`;
+
 /**
  * Gemelo de A0 (`FRAG_TRANS_HITS`): profundidad del espejo sobre la línea recta. `rLung` es el centro del
  * primer segmento grueso cuyo punto medio es pulmón y `step` el paso grueso; la bisección busca el cruce
@@ -122,6 +137,8 @@ export function mirrorCrossing(isLung: (r: number) => boolean, rLung: number, st
  * respiratoria va aparte, en el llamador).
  */
 export interface HitsLineQuery {
+  /** Transporte material→mundo de la normal, evaluado una vez en el impacto. */
+  warpAt?: (p: Vec3) => Warp;
   /** Tejido de `classify`, la normal de la interfaz y si es pulmón que toca la pared en el receso (`inLungRecess`). */
   at: (p: Vec3) => { tissue: Tissue; normal: Vec3; curtain: boolean };
   /** Tejido de `classify` sin la cortina (`classify(m, caliber, false)`): lo que hay detrás de la lámina. */
@@ -255,9 +272,7 @@ export function transmissionHitsLine(
         mirrorSeg = s;
         hitR = mr;
         hitPoint = at(origin, dir, hitR);
-        if (nn[0] * dir[0] + nn[1] * dir[1] + nn[2] * dir[2] > 0) nn = [-nn[0], -nn[1], -nn[2]];
-        const dd = dir[0] * nn[0] + dir[1] * nn[1] + dir[2] * nn[2];
-        dir = [dir[0] - 2 * dd * nn[0], dir[1] - 2 * dd * nn[1], dir[2] - 2 * dd * nn[2]];
+        dir = mirrorDirection(dir, nn, q.warpAt?.(hitPoint));
         if (gasSeg < 0) {
           gasSeg = s;
           gasKind = 1;

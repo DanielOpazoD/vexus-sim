@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test';
 import { COMPRESSION_GLSL, type Warp } from '../src/anatomy/compression';
 import { FACET_COSINE_GLSL, facetCosine } from '../src/ultrasound/interfaceEcho';
+import { MIRROR_DIRECTION_GLSL, mirrorDirection } from '../src/ultrasound/transmission';
 import type { Vec3 } from '../src/core/vec3';
 
 // Compila los núcleos de producción, no una traducción del cálculo en el test.
@@ -25,7 +26,7 @@ const samples = respiratoryWarps.flatMap((w) =>
   ),
 );
 
-test('las facetas materiales conservan la paridad de incidencia bajo compresión y respiración en WebGL2', async ({ page }) => {
+test('facetas y espejo pleural conservan la paridad bajo compresión y respiración en WebGL2', async ({ page }) => {
   // Banco de kernel, sin cargar la escena: las E2E existentes ejercitan su integración en las pasadas B.
   const values = await page.evaluate(
     ({ source, samples }) => {
@@ -61,7 +62,7 @@ test('las facetas materiales conservan la paridad de incidencia bajo compresión
         gl.disable(gl.DITHER);
         const v = (name: string, x: number[]) => gl.uniform3fv(gl.getUniformLocation(program, name), x);
         const f = (name: string, x: number) => gl.uniform1f(gl.getUniformLocation(program, name), x);
-        return samples.map(({ w, n, tilt, dir }) => {
+        return samples.flatMap(({ w, n, tilt, dir }) => {
           v('uN', n);
           v('uTilt', tilt);
           v('uDir', dir);
@@ -71,11 +72,14 @@ test('las facetas materiales conservan la paridad de incidencia bajo compresión
           v('uRespiratory', w.respiratory ?? [0, 0, 0]);
           f('uShift', w.shift);
           f('uRho', w.rho);
-          gl.drawArrays(gl.TRIANGLES, 0, 3);
-          const bytes = new Uint8Array(4);
-          gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, bytes);
-          if (gl.getError() !== gl.NO_ERROR) throw new Error('Error WebGL al leer incidencia');
-          return new DataView(bytes.buffer).getFloat32(0, true);
+          return [0, 1, 2, 3].map((component) => {
+            gl.uniform1i(gl.getUniformLocation(program, 'uComponent'), component);
+            gl.drawArrays(gl.TRIANGLES, 0, 3);
+            const bytes = new Uint8Array(4);
+            gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, bytes);
+            if (gl.getError() !== gl.NO_ERROR) throw new Error('Error WebGL al leer incidencia/reflexión');
+            return new DataView(bytes.buffer).getFloat32(0, true);
+          });
         });
       } finally {
         for (const s of shaders) gl.deleteShader(s);
@@ -91,24 +95,31 @@ precision highp float;
 precision highp int;
 uniform vec3 uN,uTilt,uDir,uElevation,uRhat,uGrad,uRespiratory;
 uniform float uShift,uRho;
+uniform int uComponent;
 out vec4 color;
 vec3 compressionElevation(){return uElevation;}
 ${warpStruct}
 ${noWarp}
 ${warpNormal}
 ${FACET_COSINE_GLSL}
+${MIRROR_DIRECTION_GLSL}
 void main(){
   Warp w=noWarp();
   w.s=uShift; w.rhat=uRhat; w.rho=uRho; w.g=uGrad; w.respiratory=uRespiratory;
-  uint bits=floatBitsToUint(facetCosine(uN,uDir,uTilt,w));
+  float value;
+  if(uComponent==0) value=facetCosine(uN,uDir,uTilt,w);
+  else value=mirrorDirection(uDir,uN,w)[uComponent-1];
+  uint bits=floatBitsToUint(value);
   color=vec4(float(bits&255u),float((bits>>8)&255u),float((bits>>16)&255u),float((bits>>24)&255u))/255.0;
 }`,
     },
   );
-  expect(values).toHaveLength(54);
+  expect(values).toHaveLength(54 * 4);
   for (let i = 0; i < samples.length; i++) {
     const { w, n, tilt, dir } = samples[i];
-    expect(Number.isFinite(values[i]), `muestra ${i}`).toBe(true);
-    expect(Math.abs(values[i] - facetCosine(n, dir, tilt, w)), `muestra ${i}`).toBeLessThan(3e-6);
+    expect(Number.isFinite(values[i * 4]), `muestra ${i}`).toBe(true);
+    expect(Math.abs(values[i * 4] - facetCosine(n, dir, tilt, w)), `muestra ${i}`).toBeLessThan(3e-6);
+    const reflected = mirrorDirection(dir, n, w);
+    for (let j = 0; j < 3; j++) expect(Math.abs(values[i * 4 + j + 1] - reflected[j]), `espejo ${i}/${j}`).toBeLessThan(3e-6);
   }
 });

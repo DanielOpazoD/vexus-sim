@@ -8,6 +8,7 @@ import {
   BONE_ENTRY_DB,
   GAS_DB_PER_CM,
   MIRROR_BISECTION_STEPS,
+  MIRROR_DIRECTION_GLSL,
   STEERED_PREFIX_GLSL,
   TRANSMISSION_LERP_GLSL,
   lumenExcessGlsl,
@@ -188,6 +189,7 @@ precision highp float;
 precision highp int;
 ${ANATOMY_GLSL}
 ${BEAM_GLSL}
+${MIRROR_DIRECTION_GLSL}
 uniform float uCoarseN;
 in vec2 vUv;
 layout(location = 0) out vec4 h0; // (segmento del espejo, del primer gas, del primer hueso, tipo de gas)
@@ -277,8 +279,7 @@ void main() {
           if (cm.tissue == T_LUNG) { hi = mid; nn = cm.n; } else lo = mid;
         }
         mirrorSeg = float(s); hitR = 0.5 * (lo + hi); hitPoint = origin + dir * hitR;
-        if (dot(nn, dir) > 0.0) nn = -nn;
-        dir = reflect(dir, nn);
+        dir = mirrorDirection(dir, nn, anatomyWarpAt(hitPoint, toMaterial(hitPoint)));
         if (gasSeg < 0.0) { gasSeg = float(s); gasKind = 1.0; }
         continue;
       }

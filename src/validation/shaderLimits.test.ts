@@ -23,6 +23,27 @@ import { SPECKLE_LOOK_GLSL } from '../ultrasound/speckleField';
 import { STEERING_GLSL } from '../ultrasound/steering';
 import { STEERED_PREFIX_GLSL } from '../ultrasound/transmission';
 
+/** Excepción acotada: una jacobiana analítica al primer impacto, nunca por muestra. */
+function withoutSingleMirrorWarp(src: string): string {
+  const guard = 'if (c.tissue == T_LUNG && mirrorSeg < 0.0) {';
+  const call = 'anatomyWarpAt(hitPoint, toMaterial(hitPoint))';
+  const start = src.indexOf(guard);
+  if (start < 0 || src.indexOf(guard, start + 1) >= 0) throw new Error('Falta guarda única del espejo');
+  let end = start + guard.length,
+    depth = 1;
+  for (; end < src.length && depth; end++) {
+    if (src[end] === '{') depth++;
+    if (src[end] === '}') depth--;
+  }
+  const block = src.slice(start, end);
+  const assignment = block.indexOf('mirrorSeg = float(s);');
+  if (assignment < 0 || block.indexOf(call) < assignment || src.split(call).length !== 2)
+    throw new Error('La jacobiana debe quedar después de marcar el único impacto');
+  if (loopBodies(new Map([['impact', block]])).some((body) => body.includes(call))) throw new Error('Jacobian dentro de bucle del impacto');
+  // El resto del grafo conserva la prohibición de warpAt en bucles.
+  return src.replace(call, 'noWarp()');
+}
+
 /**
  * Ranuras vec4 de uniforms que declara un shader (cota superior del empaquetado de GLSL ES 3.0):
  * escalar o vector = 1, array = n, mat3 = 3, mat4 = 4; los samplers no cuentan. El tamaño de un array
@@ -371,8 +392,10 @@ describe('Límites del shader con margen para crecer', () => {
       if (!g.has('main')) continue;
       expect(inlinedCopies(g, 'main', 'classifyWith'), name).toBe(budget[name] ?? 0);
       for (const body of loopBodies(g)) expect(reaches(g, body, 'faceGradient'), `${name}: faceGradient en un bucle`).toBe(false);
-      // la jacobiana de la compresión (decisión 63: siete evaluaciones del campo) tampoco va en un bucle
-      for (const body of loopBodies(g)) expect(reaches(g, body, 'warpAt'), `${name}: warpAt en un bucle`).toBe(false);
+      // warpAt ya es analítico (una evaluación); A0 admite solo la llamada del primer impacto.
+      // La prohibición sigue intacta para cualquier otra llamada dentro de un bucle.
+      const warpGraph = name === 'FRAG_TRANS_HITS' ? glslCallGraph(withoutSingleMirrorWarp(src)) : g;
+      for (const body of loopBodies(warpGraph)) expect(reaches(warpGraph, body, 'warpAt'), `${name}: warpAt en un bucle`).toBe(false);
       // ni la textura del psoas y del cuadrado (decisión 81: un Voronoi de 3 × 3 células por plano de elevación)
       for (const body of loopBodies(g)) expect(reaches(g, body, 'fascicleSeptum'), `${name}: fascicleSeptum en un bucle`).toBe(false);
       // ni el eco de interfaz de la muestra (decisión 65: tres ruidos de valor de la faceta y, en la cara interna de la
@@ -398,6 +421,26 @@ describe('Límites del shader con margen para crecer', () => {
     expect(inLoop).not.toBe(FRAG_RAWFIELD);
     const g = glslCallGraph(inLoop);
     expect(loopBodies(g).some((b) => reaches(g, b, 'faceGradient'))).toBe(true);
+  });
+
+  it('la excepción del espejo rechaza perder la guarda o duplicar la jacobiana', () => {
+    const src = PASSES.FRAG_TRANS_HITS;
+    expect(() =>
+      withoutSingleMirrorWarp(src.replace('if (c.tissue == T_LUNG && mirrorSeg < 0.0) {', 'if (c.tissue == T_LUNG) {')),
+    ).toThrow();
+    expect(() => withoutSingleMirrorWarp(src.replace('mirrorSeg = float(s);', 'mirrorSeg = -1.0;'))).toThrow();
+    expect(() => withoutSingleMirrorWarp(src + 'anatomyWarpAt(hitPoint, toMaterial(hitPoint))')).toThrow();
+    expect(() =>
+      withoutSingleMirrorWarp(
+        src.replace(
+          'dir = mirrorDirection(dir, nn, anatomyWarpAt(hitPoint, toMaterial(hitPoint)));',
+          'for (int bad = 0; bad < 2; bad++) { dir = mirrorDirection(dir, nn, anatomyWarpAt(hitPoint, toMaterial(hitPoint))); }',
+        ),
+      ),
+    ).toThrow();
+    const extra = withoutSingleMirrorWarp(src).replace('vec3 m = toMaterial(p);', 'Warp bad = warpAt(p); vec3 m = toMaterial(p);');
+    const graph = glslCallGraph(extra);
+    expect(loopBodies(graph).some((body) => reaches(graph, body, 'warpAt'))).toBe(true);
   });
 
   // El shader refleja el registro derecho: cada registro debe ser bilateral.

@@ -1,0 +1,42 @@
+name: Contrato de malla CPU y GPU
+on:
+  pull_request:
+    paths:
+      - 'tools/anatomy/meshField*'
+      - 'tools/anatomy/prepare_mesh_field_fixture.py'
+      - 'tools/anatomy/fixtures/**'
+      - 'src/validation/meshField.test.ts'
+      - 'tools/fidelity/meshFieldParity.ts'
+      - '.github/workflows/mesh-field.yml'
+permissions:
+  contents: read
+concurrency:
+  group: mesh-field-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - name: Contrastar consultas con CGAL
+        run: node --import tsx tools/fidelity/meshFieldParity.ts
+        env:
+          CANDIDATE_SHA: ${{ github.event.pull_request.head.sha }}
+          MESH_FIELD_OUT: ${{ runner.temp }}/mesh-field-evidence
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: mesh-field-evidence
+          path: ${{ runner.temp }}/mesh-field-evidence
+          retention-days: 7
+          if-no-files-found: warn

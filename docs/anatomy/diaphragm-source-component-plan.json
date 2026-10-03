@@ -1,0 +1,14 @@
+{
+  "sourceElement": "FJ3131",
+  "sourceSha256": "2a78d0f155249d4b8348e9656170af4caf2b41778c0e047fc8c1c6890878058b",
+  "excludedFaceIndices": [
+    36868, 36869, 36873, 36874, 36877, 36878, 36879, 36880, 36936, 36937, 36941, 36942, 36944, 36945, 36946, 36947, 36948, 36949, 36950,
+    36951, 36952, 36953, 36954, 36957, 36959, 36961, 36963, 36964, 36967, 36969, 38795, 38798
+  ],
+  "maxRemovedComponentExtentMm": 0.4,
+  "maxRemovedSurfaceAreaMm2": 0.2,
+  "maxRemovedAbsoluteVolumeMm3": 0.001,
+  "expectedRetainedGenus": 3,
+  "reason": "Explicit removal of five disconnected submillimetric source satellites (32 original triangles), including doubled zero-volume faces. These are source-specific audit bounds, not general anatomical tolerances. All 68490 triangles of the main component remain exactly unchanged. No hole filling or vertex displacement.",
+  "runtimeIntegration": false
+}

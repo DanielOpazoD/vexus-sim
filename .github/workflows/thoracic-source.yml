@@ -6,6 +6,11 @@ on:
       - 'tools/anatomy/costochondral_oracle_test.py'
       - 'tools/anatomy/thoracic_source.py'
       - 'tools/anatomy/thoracic_source_test.py'
+      - 'tools/anatomy/diaphragm_source.py'
+      - 'tools/anatomy/diaphragm_source_test.py'
+      - 'tools/anatomy/diaphragm_source_repair.py'
+      - 'tools/anatomy/diaphragm_source_repair_test.py'
+      - 'docs/anatomy/diaphragm-source-*.json'
       - 'docs/anatomy/thoracic-source-*.json'
       - '.github/workflows/thoracic-source.yml'
 permissions:
@@ -19,13 +24,18 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           persist-credentials: false
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.12'
       - name: Entorno Python aislado
         run: |
           python3 -m venv "$RUNNER_TEMP/source-venv"
-          "$RUNNER_TEMP/source-venv/bin/python" -m pip install numpy==2.3.5 scipy==1.17.0
+          "$RUNNER_TEMP/source-venv/bin/python" -m pip install numpy==2.3.5 scipy==1.17.0 cgal==6.0.1.post202410241521
       - name: Oráculos sintéticos y contrato de archivo
         env:
           PYTHONDONTWRITEBYTECODE: '1'
         run: |
           "$RUNNER_TEMP/source-venv/bin/python" tools/anatomy/costochondral_oracle_test.py
           "$RUNNER_TEMP/source-venv/bin/python" tools/anatomy/thoracic_source_test.py
+          "$RUNNER_TEMP/source-venv/bin/python" tools/anatomy/diaphragm_source_test.py
+          "$RUNNER_TEMP/source-venv/bin/python" tools/anatomy/diaphragm_source_repair_test.py

@@ -1,0 +1,21 @@
+{
+  "sourceElement": "FJ3131",
+  "sourceSha256": "2a78d0f155249d4b8348e9656170af4caf2b41778c0e047fc8c1c6890878058b",
+  "originalFaceIndices": [36897, 36898, 36899, 36900, 36901, 36902],
+  "replacementSourceVertexIndices": [
+    [18443, 18457, 18441],
+    [18451, 18441, 18457],
+    [18453, 18457, 18443],
+    [18453, 18443, 18451],
+    [18442, 18441, 18451],
+    [18442, 18451, 18443]
+  ],
+  "maxPatchExtentMm": 0.7,
+  "maxBidirectionalSurfaceDeviationMm": 0.075,
+  "expectedRemainingSelfIntersectionPairs": 0,
+  "expectedRetainedGenus": 3,
+  "reason": "Replace only the six sides of a self-crossing submillimetric triangular annulus by an embedded triangulation of the same six source vertices. Preserve both directed boundary cycles, all vertex positions and genus. No hole filling or global smoothing.",
+  "runtimeIntegration": false,
+  "expectedInitialSelfIntersectionPairs": 6,
+  "maxAbsoluteVolumeChangeMm3": 0.02
+}

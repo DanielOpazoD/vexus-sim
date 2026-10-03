@@ -11,7 +11,14 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 describe('transporte GLSL sin pérdida', () => {
   it('decodifica el diccionario completo sin tocar texto normal', () => {
     expect(unpackGlsl(GLSL_WORDS.map((_, i) => '@' + String.fromCharCode(65 + i)).join(' '))).toBe(GLSL_WORDS.join(' '));
-    expect(unpackGlsl('x + 1.0; @Z')).toBe('x + 1.0; @Z');
+    expect(unpackGlsl('x + 1.0; @0 @[ @a')).toBe('x + 1.0; @0 @[ @a');
+  });
+  it('decodifica los diez tokens adicionales sin renombrar identificadores', () => {
+    expect(unpackGlsl('@Q @R @S @T @U @V @W @X @Y @Z')).toBe(
+      'tissue define texelFetch int gl_FragCoord referenceCartilage min ivec2 continue max',
+    );
+    expect(new Set(GLSL_WORDS).size).toBe(GLSL_WORDS.length);
+    expect(GLSL_WORDS.length).toBeLessThanOrEqual(26);
   });
   it('conserva interpolaciones con marcadores, coerción, orden y escapes', () => {
     const filler = 'float x = 1.0; return vec3(x);\n'.repeat(100);

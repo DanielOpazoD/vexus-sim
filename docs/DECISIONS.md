@@ -5052,3 +5052,11 @@ esto evita redibujados ocultos entre comprobaciones de limpieza y añade ese est
 **Decisión.** Evaluar transporte de sangre y sensibilidad en cada pulso, conservar el sobrepaso y establecer la frecuencia antes de la primera contribución. Reconstruir linealmente el desplazamiento tisular intrapaso. Una tabla compartida de erf, 32 KiB y error adicional <1.2e-7, reduce coste sin reducir la frecuencia de evaluación. No cambian fisiología, filtros, FFT ni criterios de captura.
 
 **Verificación y límites.** Regresiones analíticas rojas con el código previo y verdes con el candidato, conservación de densidad, frecuencia/coseno/signo y error acotado de sensibilidad. Se mantienen las matrices respiratorias y multiescala, con sus umbrales. Este arreglo del PW existente es independiente del visor comparativo todavía en revisión clínica; no valida sus escalas o morfología. Detalle en `physiology/PW_PULSE_TRANSPORT.md`.
+
+## 124. Reparto E2E por coste observado y prueba de ejecución en el veredicto
+
+**Problema.** Los ocho fragmentos contienen todas las pruebas, pero repartir por número deja varias pruebas GPU costosas juntas. En la CI de la decisión 122, el fragmento más largo acumuló 1597,8 s de pruebas y el más corto 809,5 s.
+
+**Decisión.** La colección actual completa se reparte con costes medianos de tres ejecuciones verificadas, asignando primero los más largos al runner menos cargado. Las listas nativas de Playwright se vuelven a recolectar para probar su igualdad exacta por ID. Pesos ausentes usan un coste de reserva; nunca excluyen pruebas. Se conservan ocho corredores, un worker y todas las aserciones, timeouts y reglas anti-flaky.
+
+**Veredicto.** Además del estado de los jobs, el check protegido descarga los ocho informes y exige el mismo SHA/plan, todos los IDs una vez y un único resultado pasado sin retry. Se guardan explícitamente los metadatos ocultos de ejecución. Las pruebas rápidas cubren listas anidadas, incorporación de casos nuevos, determinismo y rechazo de fallos/omisiones/duplicados/reintentos. En la colección de 62 casos, la reducción prevista del tramo más largo es 32,7 %; es una estimación, no un ahorro real ya medido. Detalle en `E2E_COST_BALANCE.md`.

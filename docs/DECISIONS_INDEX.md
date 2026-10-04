@@ -127,3 +127,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [121](DECISIONS.md#L5032) | Captura suprahepática con sangre visible durante la ventana espectral | vigente |
 | [122](DECISIONS.md#L5040) | Continuidad del centrado auricular entre latidos | vigente |
 | [123](DECISIONS.md#L5048) | Transporte PW por pulso y continuidad del movimiento tisular | vigente |
+| [124](DECISIONS.md#L5056) | Reparto E2E por coste observado y prueba de ejecución en el veredicto | vigente |

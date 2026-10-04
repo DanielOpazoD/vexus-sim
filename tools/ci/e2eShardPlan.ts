@@ -1,4 +1,4 @@
-/** The supported CI matrix has one literal, consecutive shard axis; no custom scheduler. */
+/** The supported CI matrix has one literal, consecutive shard axis; a separately verified cost-balanced test list. */
 export function browserShardCount(workflow: string): number {
   const job = workflow.split('\n  e2e:\n')[1]?.split(/\n {2}[\w-]+:\n/)[0];
   const literal = job?.match(/matrix:\s*\n\s+shard:\s*(\[[^\n]+\])\s*\n\s+steps:/)?.[1];
@@ -9,7 +9,7 @@ export function browserShardCount(workflow: string): number {
   if (
     !job
       ?.split('\n')
-      .some((line) => line.trim() === '- run: npm run e2e -- --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}')
+      .some((line) => line.trim() === '- run: node --import tsx tools/ci/run-e2e-shard.ts ${{ matrix.shard }} ${{ strategy.job-total }}')
   )
     throw new Error('E2E command must use the matrix total');
   return shards.length;

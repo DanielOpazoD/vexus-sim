@@ -188,6 +188,8 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
       }),
     );
   const original = await snapshot();
+  const gateCenters = await canvases.evaluateAll((els) => els.map((e) => (e as HTMLCanvasElement).dataset.gateCenter));
+  expect(gateCenters.every((g) => g?.startsWith('['))).toBe(true);
   expect(original.every((r) => r.zeroY !== null)).toBe(true);
   const baseline = dialog.getByRole('slider', { name: /^Línea de base/ }).first();
   await baseline.focus();
@@ -238,6 +240,7 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
         ),
       )) || 'reconstrucción pendiente',
   );
+  expect(await canvases.evaluateAll((els) => els.map((e) => (e as HTMLCanvasElement).dataset.gateCenter))).toEqual(gateCenters);
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
   await dialog.evaluate((el) => {

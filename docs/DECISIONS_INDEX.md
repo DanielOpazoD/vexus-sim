@@ -140,3 +140,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [134](DECISIONS.md#L5306) | Recalibrar el reparto E2E con tiempos actuales verificados | vigente |
 | [135](DECISIONS.md#L5328) | Mostrar velocidades observadas junto a las marcas PW | vigente |
 | [136](DECISIONS.md#L5355) | Compliance de reservorios con mecanismo volumen-presión | vigente |
+| [137](DECISIONS.md#L5381) | Cambiar equipo PW sin recolocar la puerta anatómica | vigente |

@@ -27,6 +27,10 @@ const svg = (tag: string, attrs: Record<string, string>) => {
 export class VenousViewer {
   readonly dialog = document.createElement('dialog');
   readonly #ctx: PanelContext;
+  readonly #header = document.createElement('header');
+  readonly #headerSize = new ResizeObserver(() => {
+    this.dialog.style.setProperty('--venous-header-height', `${this.#header.offsetHeight + 12}px`);
+  });
   readonly #cursor = document.createElement('input');
   readonly #status: HTMLElement;
   readonly #case: HTMLElement;
@@ -71,7 +75,7 @@ export class VenousViewer {
     this.#ctx = ctx;
     const d = this.dialog;
     d.className = 'venous-viewer';
-    const header = document.createElement('header');
+    const header = this.#header;
     header.className = 'venous-header';
     d.appendChild(header);
     this.#experimentControls = new VenousExperimentControls((parameters) => {
@@ -89,17 +93,16 @@ export class VenousViewer {
     heading.id = controlId('comparacion-venosa');
     heading.textContent = 'Comparación venosa';
     d.setAttribute('aria-labelledby', heading.id);
-    header.appendChild(heading);
+    const actions = row(header);
+    actions.classList.add('venous-actions');
+    actions.appendChild(heading);
     this.#case = note(header);
     this.#case.className = 'venous-case';
-    const description = note(
-      header,
-      'Referencia fisiológica · velocidad media Q/A, no espectro PW adquirido. Simultaneidad virtual docente.',
-    );
+    const description = note(d, 'Referencia fisiológica · velocidad media Q/A, no espectro PW adquirido. Simultaneidad virtual docente.');
     this.#description = description;
     description.id = controlId('referencia-fisiologica');
     d.setAttribute('aria-describedby', description.id);
-    const controls = row(header);
+    const controls = row(d);
     const mode = document.createElement('select');
     mode.setAttribute('aria-label', 'Tipo de visualización venosa');
     for (const [value, label] of [
@@ -122,7 +125,7 @@ export class VenousViewer {
     });
     annotationLabel.append(annotations, ' Marcas A/S/D y máximos/mínimos');
     controls.appendChild(annotationLabel);
-    this.#pause = button(controls, 'Pausar vista', () => {
+    this.#pause = button(actions, 'Pausar vista', () => {
       this.#paused = !this.#paused;
       this.#pause.textContent = this.#paused ? 'Reanudar vista' : 'Pausar vista';
       this.#cursor.disabled = !this.#paused;
@@ -141,11 +144,11 @@ export class VenousViewer {
     label.className = 'venous-reference-scale';
     label.appendChild(scale);
     controls.appendChild(label);
-    button(controls, 'Cerrar', () => {
+    button(actions, 'Cerrar', () => {
       this.clear();
       d.close();
     });
-    this.#status = note(header);
+    this.#status = note(d);
     this.#status.className = 'venous-status';
     d.appendChild(this.#experimentControls.element);
     const trace = venousComparisonTrace([]);
@@ -298,7 +301,10 @@ export class VenousViewer {
     // El modal nativo maneja foco y Escape. Sus teclas no disparan atajos del ecógrafo de fondo.
     d.addEventListener('keydown', (e) => e.stopPropagation());
     d.addEventListener('cancel', () => this.clear());
-    d.addEventListener('close', () => this.clear());
+    d.addEventListener('close', () => {
+      this.#headerSize.disconnect();
+      this.clear();
+    });
     host.appendChild(d);
   }
 
@@ -306,6 +312,7 @@ export class VenousViewer {
     if (!this.#ctx.store.get().debug || this.dialog.open) return;
     this.clear();
     this.dialog.showModal();
+    this.#headerSize.observe(this.#header);
     this.dialog.scrollTop = 0;
     this.update();
   }

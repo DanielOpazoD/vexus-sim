@@ -1157,6 +1157,7 @@ button.mode.active {
 .venous-viewer {
   width: min(1000px, calc(100vw - 24px));
   max-height: calc(100dvh - 24px);
+  scroll-padding-top: var(--venous-header-height, 150px);
   overflow: auto;
   padding: 20px;
   background: var(--panel);
@@ -1238,6 +1239,17 @@ button.mode.active {
   }
 }
 
+.venous-actions {
+  align-items: center;
+}
+.venous-actions h2 {
+  flex: 1 1 170px;
+  margin: 0;
+  font-size: 20px;
+}
+.venous-header .venous-case {
+  margin-top: 6px;
+}
 .venous-header {
   position: sticky;
   top: -20px;

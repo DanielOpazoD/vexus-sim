@@ -5431,3 +5431,28 @@ tiempo total: los E2E y la variabilidad de corredores pueden dominar. No cambian
 sus ocho fragmentos, reintentos, plazos, pruebas ni el presupuesto de aplicación.
 El SHA acredita el checkout de CI; una ejecución local con cambios sin commit
 no equivale por sí sola a una prueba del árbol publicado.
+
+## 139. Encabezado compacto del visor sin ocultar el Doppler móvil
+
+**Hallazgo visual.** En las capturas reales del visor a 390 × 844, el encabezado
+fijo acumulaba título, contexto, explicación, selector, anotaciones y estado.
+Al desplazarse hacia riñón o ECG ocupaba aproximadamente un tercio de la altura
+útil y podía tapar controles o el nombre del trazado.
+
+**Cambio.** Solo título, caso y botones de pausa/cierre permanecen fijos.
+Explicación, selección de vista, anotaciones y estado continúan disponibles
+en el flujo del modal. Un ResizeObserver mide el encabezado al abrir y cuando
+cambia de tamaño; scroll-padding-top reserva su altura para navegación y foco.
+El observador se desconecta al cerrar y se reactiva al abrir. No se usa una
+altura fija que recorte contexto, ni se suprimen advertencias, datos o controles.
+
+**Verificación.** Se amplían las pruebas de ventana renal ya existentes en sano
+y congestión: encabezado compacto, selector enfocado fuera de su zona cubierta,
+pausa/cierre en pantalla y ausencia de desbordamiento horizontal. Se conservan
+las pruebas de Escape, restauración de foco, reapertura y aislamiento del paciente.
+Las capturas de escritorio/móvil permiten revisar el cambio en navegador real.
+No modifica IQ, física, escalas, adquisiciones ni mediciones.
+
+**Referencia de implementación.** Posicionamiento sticky y scroll-padding-top
+documentados en MDN: https://developer.mozilla.org/en-US/docs/Web/CSS/position
+y https://developer.mozilla.org/en-US/docs/Web/CSS/scroll-padding-top.

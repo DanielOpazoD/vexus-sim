@@ -12,6 +12,7 @@ import { startPointsFor, type StartPoint } from './startPoints';
 import { bestGateOnVessel, type GatePlacement } from './gatePlacement';
 import { acousticWindowWeight } from './gateTransmission';
 import { pwGate, type PwGateInfo } from './pwGate';
+import { pointOnLine } from '../probe/probe';
 import { probeContact, type ProbeContact } from '../probe/contact';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import type { BModeSettings } from '../ultrasound/renderer';
@@ -55,7 +56,7 @@ export class VenousSpectralAcquisition {
     this.#settings = { depthMm: settings.depthMm, focusMm: settings.focusMm };
     const profile = CONVEX_C35_PROFILE,
       tr = profile.geometry;
-    this.#contexts = WINDOWS.map(({ window, vessels }) => {
+    this.#contexts = WINDOWS.map(({ window, vessels, gateMm }) => {
       const paired = window === 'renal' && renalWindow === 'paired';
       const scene = new AnatomyScene(patient),
         query = new AnatomyQuery(scene);
@@ -70,6 +71,15 @@ export class VenousSpectralAcquisition {
       );
       query.setProbeCompression(contact);
       const weight = acousticWindowWeight(query, contact.frame, tr, contact, sample, this.#settings.depthMm, profile.dopplerEffectiveMHz);
+      // A virtual trunk acquisition should not straddle its terminal bifurcation.
+      // One gate length is a geometric safeguard, not a clinical distance threshold.
+      const portalEnd = window === 'portal' ? scene.vessels.find((v) => v.id === 'pvTrunk')!.tube.nodes.at(-1)!.p : null;
+      const trunkInterior = portalEnd
+        ? (candidate: GatePlacement) => {
+            const q = query.classifyWorld(pointOnLine(contact.frame, tr, candidate.theta, candidate.r), sample);
+            return Math.hypot(...q.material.map((value, i) => value - portalEnd[i])) >= gateMm;
+          }
+        : undefined;
       const best = bestGateOnVessel(
         query,
         contact.frame,
@@ -79,6 +89,7 @@ export class VenousSpectralAcquisition {
         175,
         paired ? 0.2 : 1.2,
         weight,
+        trunkInterior,
       );
       if (!best) throw new Error('No acoustic gate found for ' + window);
       return { anatomy: query, contact, best };

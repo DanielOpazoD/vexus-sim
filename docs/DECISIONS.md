@@ -5456,3 +5456,24 @@ No modifica IQ, física, escalas, adquisiciones ni mediciones.
 **Referencia de implementación.** Posicionamiento sticky y scroll-padding-top
 documentados en MDN: https://developer.mozilla.org/en-US/docs/Web/CSS/position
 y https://developer.mozilla.org/en-US/docs/Web/CSS/scroll-padding-top.
+
+## 140. La adquisición portal virtual evita el extremo de bifurcación
+
+**Hallazgo.** La puerta seleccionaba el centro del tronco por ángulo, luz y
+transmisión, pero en algunos cuerpos la muestra de 6 mm abarcaba ramas con
+proyecciones Doppler opuestas. La banda contralateral no equivalía necesariamente
+a inversión hepatófuga. El barrido de distancia conservando el modelo redujo
+mezcla y exceso de potencia contralateral; ruido y otros mecanismos permanecen.
+
+**Cambio.** Solo la selección automática portal del visor exige al centro una
+longitud de puerta de distancia material respecto al extremo distal del tronco.
+Es una guarda geométrica experimental de 6 mm, no un umbral clínico. La búsqueda
+admite una restricción opcional, evaluada por orden de puntuación, y devuelve
+null si ninguno sirve. Las llamadas sin restricción conservan su comportamiento.
+
+**Verificación.** Restricción imposible, disponibilidad de todos los casos en
+ambos cuerpos en apnea, predominio del tronco en cuatro cadenas IQ y patrones
+sano/congestivo conservados. Se mantienen puerta, filtros, PRF, ganancia,
+fisiología y criterios del alumno. No se borran bins negativos ni se impone la
+PF. Investigación, resultados y limitaciones en
+[fidelity/PORTAL_ACQUISITION_AUDIT.md](fidelity/PORTAL_ACQUISITION_AUDIT.md).

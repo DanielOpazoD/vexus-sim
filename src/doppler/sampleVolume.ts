@@ -93,6 +93,8 @@ interface Scatterer {
   /** Base de flujo (tangente·relación de áreas·perfil): vBlood = flowBasis·u_ref(t). */
   flowBasis: Vec3;
   tissue: Tissue;
+  weightEpoch: number;
+  stationaryWeight: number;
 }
 
 export interface GateComposition {
@@ -109,6 +111,11 @@ export interface GateComposition {
 }
 
 const N_SCATTERERS = 320;
+/** Refining Monte Carlo density must preserve expected incoherent signal power. */
+export function particleAmplitudeScale(count: number): number {
+  if (!Number.isInteger(count) || count <= 0) throw new RangeError('Invalid PW particle count');
+  return Math.sqrt(N_SCATTERERS / count);
+}
 /** Reclasificación geométrica (vaso, ρ, tangente): cada 96 ticks (≈37 ms a 2,6 kHz). */
 const RECLASSIFY_EVERY = 96;
 /** Actualización del campo de velocidad y frecuencia Doppler: cada 8 ticks (≈3 ms).
@@ -147,8 +154,10 @@ export function receiverNoiseDb(gainDb: number, fftSize: number): number {
 
 export class SampleVolumeIQ {
   private scatterers: Scatterer[] = [];
+  private particleAmplitudeScale = 1;
   private rng: SeededRandom;
   private tick = 0;
+  private weightEpoch = 0;
   /**
    * Desplazamiento respiratorio en el centro de la puerta. La posición de un dispersor en el mundo
    * es m + dispNow en la comprobación de salida, en la resiembra y en la composición. Antes la
@@ -170,8 +179,15 @@ export class SampleVolumeIQ {
   constructor(
     private readonly anatomy: AnatomyQuery,
     seed: number,
+    /** Uncached reference path for exact IQ parity tests. */
+    private readonly cacheStationaryTissue = true,
   ) {
     this.rng = new SeededRandom(seed ^ 0xd0991e);
+  }
+
+  /** Numerical population only; not a physiological blood-cell count. */
+  get particleCount(): number {
+    return this.scatterers.length;
   }
 
   get lastComposition(): GateComposition {
@@ -206,6 +222,17 @@ export class SampleVolumeIQ {
     this.scatterers.length = 0;
     for (let i = 0; i < N_SCATTERERS; i++) this.scatterers.push(this.spawn(phys, null));
     this.updateComposition();
+    // Numerical refinement for a small lumen relative to the lateral beam.
+    // Geometry and observable sample-volume weight only; never case or grade.
+    const refine = Object.entries(this.composition.vessels).some(([id, weight]) => {
+      const vessel = this.anatomy.scene.vesselById.get(id as VesselId);
+      return weight >= 0.02 && vessel && Math.max(...vessel.tube.nodes.map((n) => n.r)) <= 2 * this.gate!.lateralSigmaMm;
+    });
+    if (refine) {
+      for (let i = N_SCATTERERS; i < 4 * N_SCATTERERS; i++) this.scatterers.push(this.spawn(phys, null));
+      this.updateComposition();
+    }
+    this.particleAmplitudeScale = particleAmplitudeScale(this.scatterers.length);
   }
 
   /** Posición uniforme en la caja, en coordenadas de la puerta. */
@@ -257,6 +284,8 @@ export class SampleVolumeIQ {
       fading: false,
       dAmp: 0,
       rampLeft: 0,
+      weightEpoch: -1,
+      stationaryWeight: 0,
       pending: null,
       vessel: q.vessel,
       isBlood,
@@ -348,6 +377,8 @@ export class SampleVolumeIQ {
       fading: false,
       dAmp: 0,
       rampLeft: 0,
+      weightEpoch: -1,
+      stationaryWeight: 0,
       pending: null,
       vessel: exited.vessel,
       isBlood: true,
@@ -437,6 +468,8 @@ export class SampleVolumeIQ {
     const invLat2 = 1 / (g.lateralSigmaMm * g.lateralSigmaMm);
     const invEl2 = 1 / (g.elevationSigmaMm * g.elevationSigmaMm);
     const twoPiDt = 2 * Math.PI * dt;
+    const weightEpoch = ++this.weightEpoch;
+    const stationaryTissue = this.cacheStationaryTissue && tissueVel.every((v) => v === 0);
     for (let k = 0; k < n; k++) {
       // Respiration is sampled on the physiology clock. Reconstruct its smooth
       // displacement at each emitted pulse instead of stepping tissue at 250 Hz.
@@ -451,6 +484,7 @@ export class SampleVolumeIQ {
       for (let j = 0; j < this.scatterers.length; j++) {
         const s = this.scatterers[j];
         if (s.isBlood) {
+          s.weightEpoch = -1;
           // Advección en coordenadas materiales (la sangre se mueve respecto al vaso).
           s.m[0] += s.vBlood[0] * dt;
           s.m[1] += s.vBlood[1] * dt;
@@ -538,8 +572,18 @@ export class SampleVolumeIQ {
         s.cr = cr;
         s.ci = ci;
         // Sample the existing pulse-convolved spatial sensitivity at this pulse, not a delayed 8-pulse ramp.
-        const axialW = 0.5 * (pulseErf((half - ax) / (ps * Math.SQRT2)) + pulseErf((half + ax) / (ps * Math.SQRT2)));
-        const weight = axialW * Math.exp(-0.5 * (la * la * invLat2 + el * el * invEl2));
+        // Exact reuse only for stationary tissue within this generate call.
+        // Blood and any respiratory motion retain per-pulse spatial weighting.
+        let weight: number;
+        if (stationaryTissue && !s.isBlood && s.weightEpoch === weightEpoch) weight = s.stationaryWeight;
+        else {
+          const axialW = 0.5 * (pulseErf((half - ax) / (ps * Math.SQRT2)) + pulseErf((half + ax) / (ps * Math.SQRT2)));
+          weight = axialW * Math.exp(-0.5 * (la * la * invLat2 + el * el * invEl2));
+          if (stationaryTissue && !s.isBlood) {
+            s.weightEpoch = weightEpoch;
+            s.stationaryWeight = weight;
+          }
+        }
         if (s.rampLeft > 0) {
           s.amp += s.dAmp;
           s.rampLeft--;
@@ -552,8 +596,8 @@ export class SampleVolumeIQ {
       const nr = this.rng.gaussian() * NOISE_STD;
       const ni = this.rng.gaussian() * NOISE_STD;
       this.transmissionNow += (g.transmission - this.transmissionNow) * TRANSMISSION_ALPHA;
-      re[offset + k] = (sr * this.transmissionNow + nr) * this.equipment.gain;
-      im[offset + k] = (si * this.transmissionNow + ni) * this.equipment.gain;
+      re[offset + k] = (sr * this.particleAmplitudeScale * this.transmissionNow + nr) * this.equipment.gain;
+      im[offset + k] = (si * this.particleAmplitudeScale * this.transmissionNow + ni) * this.equipment.gain;
       this.tick++;
       if (this.tick % (RECLASSIFY_EVERY * 4) === 0) this.updateComposition();
     }

@@ -543,3 +543,13 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   estimador, no la posibilidad clínica de registrar arteria y vena simultáneamente.
   Una futura identificación fiable de ambas componentes requiere validación
   independiente; no se introduce un patrón desde la fisiología para corregirlo.
+
+## Resolución numérica del volumen PW
+
+- `pw-adaptive-sampling-resolution`: el refinamiento 320→1280 depende del
+  calibre máximo del tubo y su peso geométrico frente al ancho lateral del haz.
+  No representa una densidad humana de eritrocitos ni garantiza convergencia
+  para todo vaso fino o rama procedural. La potencia se conserva en esperanza
+  estadística; cambian las realizaciones de speckle. El máximo de cuatro veces
+  acota el coste. No resuelve la limitación previa de reclasificación parcial,
+  el vaso acompañante fuera de plano ni la separación arterial/venosa.

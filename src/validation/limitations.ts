@@ -42,6 +42,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'af-capture-beat-sampling',
   'vessel-identity-from-model',
   'renal-arterial-dominance-identity',
+  'pw-adaptive-sampling-resolution',
   'weak-signal-not-flagged',
   'respiratory-clutter-masks-slow-flow',
   'gate-placement-ignores-shadows',

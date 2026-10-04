@@ -30,12 +30,14 @@ for (const [id, pattern] of [
         el.value = '50';
         el.dispatchEvent(new Event('input', { bubbles: true }));
       });
-    await page.evaluate(() => {
+    const particleCount = await page.evaluate(() => {
       const t = window.__vexusTest!;
       t.advance(30);
       t.advance(8);
       t.sim().render();
+      return t.sim().sampleVolume.particleCount;
     });
+    expect(particleCount).toBe(1280);
     await page.locator('#freeze').click();
     await expect(page.locator('#freeze')).toHaveAttribute('aria-pressed', 'true');
     await page.getByRole('tab', { name: 'Medir', exact: true }).click();
@@ -78,11 +80,13 @@ test('puerta arterial renal: no certifica continuidad venosa por error', async (
     t.advance(30);
     t.advance(8);
     t.sim().render();
-    return t.sim().gateInfo?.vessel;
+    return { vessel: t.sim().gateInfo?.vessel, particles: t.sim().sampleVolume.particleCount };
   });
-  expect(vessel).toMatch(/^interlobarArtery/);
+  expect(vessel.vessel).toMatch(/^interlobarArtery/);
+  expect(vessel.particles).toBe(1280);
   await page.locator('#freeze').click();
   await expect(page.locator('#freeze')).toHaveAttribute('aria-pressed', 'true');
+  await page.screenshot({ path: testInfo.outputPath('venous-renal-arterial-spectrum.png') });
   await page.getByRole('tab', { name: 'Medir', exact: true }).click();
   await page.getByRole('button', { name: 'Renal', exact: true }).click();
   await page.getByRole('button', { name: 'Capturar', exact: true }).click();

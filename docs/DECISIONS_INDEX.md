@@ -131,3 +131,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [125](DECISIONS.md#L5064) | Promedio PW limitado a una misma rejilla física de adquisición | vigente |
 | [126](DECISIONS.md#L5096) | Regla lateral de velocidad del Doppler pulsado | vigente |
 | [127](DECISIONS.md#L5117) | Territorio interlobar y calibración provisional de velocidad renal | vigente |
+| [128](DECISIONS.md#L5158) | Refinamiento numérico PW de vasos pequeños y caché espacial exacta | vigente |

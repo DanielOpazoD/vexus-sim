@@ -31,6 +31,7 @@ const WINDOWS: readonly { window: StartPoint['id']; vessels: readonly VesselId[]
 export class VenousSpectralAcquisition {
   readonly f0Hz = CONVEX_C35_PROFILE.geometry.f0Doppler;
   readonly scales: number[] = [...VENOUS_SPECTRAL_SCALES];
+  readonly wallFilters: number[] = [15, 15, 15];
   readonly chains: PwDopplerChain[];
   readonly gateTracks: GateVesselSample[][] = [[], [], []];
   readonly materialCenters: Vec3[];
@@ -90,7 +91,7 @@ export class VenousSpectralAcquisition {
       if (this.#lastT !== null && s.t <= this.#lastT) continue;
       if (this.#lastT !== null && Math.abs(s.t - this.#lastT - dt) > 1e-6) this.reset();
       for (const [i, chain] of this.chains.entries()) {
-        chain.begin(prfFromNyquistCms(this.scales[i], this.f0Hz), this.f0Hz, 0, 15, s.t);
+        chain.begin(prfFromNyquistCms(this.scales[i], this.f0Hz), this.f0Hz, 0, this.wallFilters[i], s.t);
         if (this.#steps % 8 === 0) chain.setGate(this.gate(i, s), s);
         // Each virtual probe stays on its anatomical window; respiratory dropout remains observable.
         chain.step(s, [0, 0, 0], dt);

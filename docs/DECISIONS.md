@@ -5228,3 +5228,11 @@ Se adelanta esta corrección del laboratorio pendiente: ocultar anotaciones no
 debe ocultar aliasing o incertidumbre de la adquisición. Una E2E fuerza Nyquist
 renal 20 cm/s en el grave y exige aviso; al ampliar a 80 exige recuperación sin
 modificar al paciente.
+
+## 130. Explorador hemodinámico por estados calculados y progresión docente
+
+**Etapa explícita.** Cinco parámetros del modelo existente construyen escenarios de equilibrio independientes, con integración de la red y adquisición IQ/PW; no se presenta como una intervención continua. Se conserva el paciente observado y la anatomía hepática normal. Taponamiento y distensibilidades aún sin mecanismo permanecen declarados pendientes.
+
+**Progresión.** Una coordenada continua modifica cinco parámetros en paralelo, sin introducir un grado en el motor. Los anclajes docentes 0/1/2/3 se verifican a partir de los observables de cuatro ventanas, y el grado de referencia se recalcula. La PIA alta activa el contexto de interpretación limitada. No se usa la clasificación para dibujar o normalizar ondas.
+
+**Verificación y coste.** Dominios, continuidad, independencia, finitud y reloj acotado; adquisición inicial completa antes de avanzar el experimento visible. E2E del laboratorio, incluida en los fragmentos completos. Un segundo banco reversible de códigos GLSL conserva cada shader reconstruido y recupera margen sin ampliar presupuestos. Véase `physiology/VENOUS_PARAMETER_LAB.md`; siguen pendientes transiciones causales y validación clínica.

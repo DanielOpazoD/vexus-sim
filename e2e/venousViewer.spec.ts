@@ -308,3 +308,116 @@ test('PW comparado: calidad visible sin marcas y recuperación al ampliar escala
   await page.screenshot({ path: info.outputPath('venous-pw-quality-recovered.png') });
   expect(errors).toEqual([]);
 });
+
+test('laboratorio venoso: parámetros físicos, progresión calculada y aislamiento del paciente', async ({ page }, info) => {
+  budget(120_000);
+  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  await page.locator('#debug-toggle').check({ force: true });
+  await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
+  await page.locator('#freeze').click({ force: true });
+  const original = await page.evaluate(() => ({
+    patient: JSON.stringify(window.__vexusTest!.sim().patient),
+    t: window.__vexusTest!.sim().physiology.clock.t,
+    frozen: window.__vexusTest!.sim().frozen,
+  }));
+  await page.getByRole('button', { name: 'Abrir comparación venosa' }).click({ force: true });
+  const dialog = page.getByRole('dialog', { name: 'Comparación venosa' }),
+    lab = dialog.locator('.venous-experiment');
+  await lab.locator('summary').click();
+  await lab.getByRole('checkbox', { name: 'Explorar estados estables independientes' }).check();
+  await withinFrames(page, 140, 'estado experimental y señales iniciales', async () => {
+    const status = await lab.locator('small').textContent();
+    const times = await dialog
+      .locator('.venous-spectrum')
+      .evaluateAll((els) => els.map((e) => Number((e as HTMLElement).dataset.lastTime)));
+    return Boolean(status?.includes('calculado: 0') && times.every((t) => t >= 29)) || 'calculando escenario inicial';
+  });
+  await expect(dialog.locator('.venous-case')).toContainText('Experimento hemodinámico');
+  await lab.getByRole('button', { name: 'Guía 3', exact: true }).click();
+  await withinFrames(page, 140, 'progresión a congestión avanzada con grado calculado', async () => {
+    const status = await lab.locator('small').textContent();
+    const times = await dialog
+      .locator('.venous-spectrum')
+      .evaluateAll((els) => els.map((e) => Number((e as HTMLElement).dataset.lastTime)));
+    return Boolean(status?.includes('calculado: 3') && times.every((t) => t >= 29)) || 'reconstruyendo congestión';
+  });
+  await expect(lab.getByRole('slider', { name: 'PAD basal', exact: true })).toHaveValue('18');
+  expect(Number(await lab.getByRole('slider', { name: 'Función sistólica VD (modelo)', exact: true }).inputValue())).toBeCloseTo(0.3, 12);
+  await expect(lab).toContainText('transición clínica continua aún no está modelada');
+  const renalRow = dialog.locator('.venous-row').nth(2);
+  await renalRow.getByRole('combobox', { name: 'Escala PW Vena interlobar derecha', exact: true }).selectOption('20');
+  await withinFrames(
+    page,
+    150,
+    'aliasing al reducir la escala renal',
+    async () => (await renalRow.locator('.venous-limits').innerText()).includes('aliasing') || 'reconstruyendo escala renal',
+  );
+  await renalRow.getByRole('combobox', { name: 'Escala PW Vena interlobar derecha', exact: true }).selectOption('80');
+  const renalBase = renalRow.getByRole('slider', { name: 'Línea de base Vena interlobar derecha', exact: true });
+  await renalBase.focus();
+  await page.keyboard.press('Home');
+  for (let i = 0; i < 8; i++) await page.keyboard.press('ArrowRight');
+  await expect(renalRow.locator('canvas')).toHaveAttribute('data-baseline', '0');
+  await withinFrames(page, 100, 'escala renal sin plegamiento en el caso avanzado', async () => {
+    const text = await renalRow.locator('.venous-limits').textContent();
+    return Boolean(text && !text.includes('no medible') && !text.includes('Esperando')) || 'reconstruyendo escala renal';
+  });
+  await dialog.getByRole('combobox', { name: 'Filtro PW Porta', exact: true }).selectOption('5');
+  await expect(dialog.locator('.venous-row').nth(1)).toContainText('filtro 5 Hz');
+  await withinFrames(
+    page,
+    100,
+    'reconstrucción tras cambiar filtro',
+    async () => !(await dialog.locator('.venous-status').textContent())?.includes('Reconstruyendo') || 'reconstruyendo filtro',
+  );
+  await page.setViewportSize({ width: 1280, height: 1380 });
+  await lab.locator('summary').click();
+  await dialog.evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  await page.screenshot({ path: info.outputPath('venous-laboratory-grade3.png') });
+  await lab.locator('summary').click();
+  const abdominal = lab.getByRole('slider', { name: 'Presión intraabdominal', exact: true });
+  await abdominal.focus();
+  await page.keyboard.press('End');
+  await expect(abdominal).toHaveValue('25');
+  await withinFrames(
+    page,
+    80,
+    'ajuste individual con interpretación limitada por PIA',
+    async () => (await lab.locator('small').textContent())?.includes('PIA alta: interpretación limitada') || 'calculando presión abdominal',
+  );
+  await expect(lab).toContainText('Personalizado');
+
+  expect(
+    await page.evaluate(() => ({
+      patient: JSON.stringify(window.__vexusTest!.sim().patient),
+      t: window.__vexusTest!.sim().physiology.clock.t,
+      frozen: window.__vexusTest!.sim().frozen,
+    })),
+  ).toEqual(original);
+  await page.setViewportSize({ width: 1280, height: 1380 });
+  await dialog.evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  await withinFrames(
+    page,
+    150,
+    'escenario completo antes de fotografiar los controles',
+    async () => !(await dialog.locator('.venous-status').innerText()).includes('Reconstruyendo') || 'adquiriendo señal del experimento',
+  );
+  const controlRows = await lab.locator('fieldset > label').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().y));
+  expect(controlRows[1]).toBeCloseTo(controlRows[2], 0);
+  await page.screenshot({ path: info.outputPath('venous-laboratory-desktop.png') });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+  const mobileRows = await lab.locator('fieldset > label').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().y));
+  expect(mobileRows[2]).toBeGreaterThan(mobileRows[1]);
+  await page.screenshot({ path: info.outputPath('venous-laboratory-mobile.png') });
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
+  await page.getByRole('button', { name: 'Abrir comparación venosa' }).click({ force: true });
+  await expect(lab.getByRole('checkbox', { name: 'Explorar estados estables independientes' })).not.toBeChecked();
+  await expect(dialog.locator('.venous-case')).toContainText('Adulto sano');
+  expect(errors).toEqual([]);
+});

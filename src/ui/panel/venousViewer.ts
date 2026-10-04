@@ -1,4 +1,9 @@
 import { qualityText } from '../../doppler/qualityMessages';
+import { VenousExperiment } from '../../app/venousExperiment';
+import { VenousExperimentControls } from './venousExperimentControls';
+import { measurePhysiologyTruth } from '../../vexus/measurements';
+import { classifyVexusC } from '../../vexus/classification';
+import { gradeValueText } from './vexusText';
 import { VENOUS_PW_PRESENTATION } from '../spectralPresentation';
 import { VenousSpectralAcquisition, VENOUS_SPECTRAL_SCALES, VENOUS_FORWARD_SIGN } from '../../app/venousSpectral';
 import type { CaptureMark } from '../../doppler/spectralMeasure';
@@ -40,6 +45,7 @@ export class VenousViewer {
   #rawSamples: readonly PhysiologySample[] = [];
   #beats: Beat[] = [];
   #spectralScales: number[] = [...VENOUS_SPECTRAL_SCALES];
+  #wallFilters = [15, 15, 15];
   #canvases: HTMLCanvasElement[] = [];
   #paintKeys = ['', '', ''];
   #baselines = [0, 0, 0.1];
@@ -50,6 +56,13 @@ export class VenousViewer {
   #marksT = -Infinity;
   #measurementIssues = ['insuficiente', 'insuficiente', 'insuficiente'];
   readonly #description: HTMLElement;
+  readonly #experimentControls: VenousExperimentControls;
+  #experiment: VenousExperiment | null = null;
+  #experimentWallTime = 0;
+  #gradeT = -Infinity;
+  #experimentGrade = '—';
+  #experimentError = '';
+  #experimentPrimed = false;
 
   constructor(ctx: PanelContext, host: HTMLElement) {
     this.#ctx = ctx;
@@ -58,6 +71,17 @@ export class VenousViewer {
     const header = document.createElement('header');
     header.className = 'venous-header';
     d.appendChild(header);
+    this.#experimentControls = new VenousExperimentControls((parameters) => {
+      this.clear(false);
+      try {
+        this.#experiment = parameters ? new VenousExperiment(parameters) : null;
+      } catch (error) {
+        this.#experiment = null;
+        this.#experimentError = String(error);
+      }
+      this.#experimentWallTime = 0;
+      this.update();
+    });
     const heading = document.createElement('h2');
     heading.id = controlId('comparacion-venosa');
     heading.textContent = 'Comparación venosa';
@@ -78,14 +102,11 @@ export class VenousViewer {
     for (const [value, label] of [
       ['pw', 'Espectro PW'],
       ['reference', 'Referencia Q/A'],
-    ]) {
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = label;
-      mode.appendChild(option);
-    }
+    ])
+      mode.add(new Option(label, value));
     mode.addEventListener('change', () => {
       this.#spectralMode = mode.value === 'pw';
+      this.#experimentPrimed = false;
       this.#spectral = null;
       this.#processedT = -Infinity;
       this.#marksT = -Infinity;
@@ -113,12 +134,7 @@ export class VenousViewer {
     label.textContent = 'Escala común ';
     const scale = document.createElement('select');
     scale.setAttribute('aria-label', 'Escala común de velocidad');
-    for (const n of [20, 60, 120]) {
-      const option = document.createElement('option');
-      option.value = String(n);
-      option.textContent = `±${n} cm/s`;
-      scale.appendChild(option);
-    }
+    for (const n of [20, 60, 120]) scale.add(new Option(`±${n} cm/s`, String(n)));
     scale.value = '60';
     scale.addEventListener('change', () => {
       this.#scale = Number(scale.value);
@@ -133,6 +149,7 @@ export class VenousViewer {
     });
     this.#status = note(header);
     this.#status.className = 'venous-status';
+    d.appendChild(this.#experimentControls.element);
     const trace = venousComparisonTrace([]);
     const rows = [
       ...trace.channels.map((c) => ({ label: c.label, detail: `+ ${c.forward}`, unit: 'cm/s' })),
@@ -182,20 +199,32 @@ export class VenousViewer {
         scaleLabel.textContent = 'Nyquist ';
         const selector = document.createElement('select');
         selector.setAttribute('aria-label', `Escala PW ${r.label}`);
-        for (const n of [10, 20, 30, 40, 50, 60, 80, 120]) {
-          const option = document.createElement('option');
-          option.value = String(n);
-          option.textContent = `±${n} cm/s`;
-          selector.appendChild(option);
-        }
+        for (const n of [10, 20, 30, 40, 50, 60, 80, 120]) selector.add(new Option(`±${n} cm/s`, String(n)));
         selector.value = String(this.#spectralScales[i]);
         selector.addEventListener('change', () => {
           this.#spectralScales[i] = Number(selector.value);
+          this.#experimentPrimed = false;
           this.#spectral = null;
           this.#processedT = -Infinity;
           this.#marksT = -Infinity;
           this.update();
         });
+        const filterLabel = document.createElement('label');
+        filterLabel.textContent = 'Filtro de pared ';
+        const filter = document.createElement('select');
+        filter.setAttribute('aria-label', `Filtro PW ${r.label}`);
+        for (const hz of [5, 10, 15, 25, 50]) filter.add(new Option(`${hz} Hz`, String(hz)));
+        filter.value = String(this.#wallFilters[i]);
+        filter.addEventListener('change', () => {
+          this.#wallFilters[i] = Number(filter.value);
+          this.#experimentPrimed = false;
+          this.#spectral = null;
+          this.#processedT = -Infinity;
+          this.#marksT = -Infinity;
+          this.update();
+        });
+        filterLabel.appendChild(filter);
+        controls.appendChild(filterLabel);
         scaleLabel.appendChild(selector);
         controls.appendChild(scaleLabel);
         const baselineLabel = document.createElement('label');
@@ -271,7 +300,15 @@ export class VenousViewer {
     this.update();
   }
 
-  clear(): void {
+  clear(resetExperiment = true): void {
+    this.#experimentError = '';
+    this.#experimentGrade = '—';
+    this.#experimentPrimed = false;
+    if (resetExperiment) {
+      this.#experiment = null;
+      this.#experimentControls.reset();
+    }
+    this.#gradeT = -Infinity;
     this.#points = [];
     this.#paintKeys = ['', '', ''];
     this.#rawSamples = [];
@@ -302,9 +339,53 @@ export class VenousViewer {
       return;
     }
     if (!this.dialog.open) return;
-    this.#case.textContent = this.#ctx.sim().patient.label;
+    if (this.#experimentError) {
+      this.#status.textContent = `Experimento fuera de dominio: ${this.#experimentError}`;
+      return;
+    }
+    const sim = this.#ctx.sim();
+    if (this.#experiment) {
+      const now = performance.now();
+      try {
+        this.#experiment.advance(
+          this.#experiment.ready && !this.#experimentPrimed
+            ? 0
+            : this.#experimentWallTime
+              ? Math.max(0, (now - this.#experimentWallTime) / 1000)
+              : 0,
+        );
+      } catch (error) {
+        this.#experimentError = String(error);
+        this.#status.textContent = `Experimento fuera de dominio: ${this.#experimentError}`;
+        return;
+      }
+      this.#experimentWallTime = now;
+      if (!this.#experiment.ready) {
+        this.#status.textContent = 'Calculando estado estable experimental…';
+        return;
+      }
+    }
+    const e = this.#experiment?.engine ?? sim.physiology;
+    this.#case.textContent = this.#experiment?.patient.label ?? sim.patient.label;
+    if (this.#experiment && !this.#paused && e.clock.t - this.#gradeT > 0.5) {
+      const m = measurePhysiologyTruth(e, { fromT: e.clock.t - 6, toT: e.clock.t });
+      const grade = classifyVexusC(
+        {
+          ivcMaxDiameterMm: m.ivcMaxMm,
+          hepatic: m.hepaticPattern,
+          portalPulsatilityFraction: m.portalPF,
+          renal: m.renalPattern,
+        },
+        { raisedIntraAbdominalPressure: this.#experiment.patient.intraAbdominalPressureMmHg >= 12 },
+      );
+      this.#experimentGrade = gradeValueText(grade);
+      this.#experimentControls.status.textContent = `VExUS de referencia calculado: ${gradeValueText(grade)} · VCI ${m.ivcMaxMm.toFixed(1)} mm · PF portal ${m.portalPF.toFixed(0)} %${this.#experiment.patient.intraAbdominalPressureMmHg >= 12 ? ' · PIA alta: interpretación limitada' : ''}`;
+      this.#gradeT = e.clock.t;
+    }
+    this.#case.textContent = this.#experiment
+      ? `${this.#experiment.patient.label} · VExUS ref. ${this.#experimentGrade}`
+      : sim.patient.label;
     if (!this.#paused) {
-      const e = this.#ctx.sim().physiology;
       this.#beats = e.rhythm.beatsBetween(Math.max(0, e.clock.t - 7), e.clock.t);
       this.#rawSamples = e.samples.filter((s) => s.t >= e.clock.t - 6);
       this.#points = venousComparisonTrace(this.#rawSamples).points;
@@ -314,14 +395,22 @@ export class VenousViewer {
     if (this.#spectralMode && this.#rawSamples.length) {
       if (!this.#spectral) {
         const sim = this.#ctx.sim();
-        this.#spectral = new VenousSpectralAcquisition(sim.anatomy, this.#rawSamples[0], sim.patient.seed, sim.patient, sim.bmode);
+        this.#spectral = new VenousSpectralAcquisition(
+          this.#experiment?.anatomy ?? sim.anatomy,
+          this.#rawSamples[0],
+          this.#experiment?.patient.seed ?? sim.patient.seed,
+          this.#experiment?.patient ?? sim.patient,
+          sim.bmode,
+        );
         this.#spectral.scales.splice(0, 3, ...this.#spectralScales);
+        this.#spectral.wallFilters.splice(0, 3, ...this.#wallFilters);
       }
       // Bounded catch-up also works while the patient is frozen; never block on six seconds of IQ at once.
       const next = this.#rawSamples.filter((s) => s.t > this.#processedT).slice(0, 32);
       this.#spectral.push(next, this.#ctx.sim().physiology.clock.dt);
       if (next.length) this.#processedT = next.at(-1)!.t;
     }
+    if (this.#experiment && this.#processedT >= (this.#rawSamples.at(-1)?.t ?? e.clock.t) - 0.15) this.#experimentPrimed = true;
     this.#draw();
   }
 
@@ -338,7 +427,7 @@ export class VenousViewer {
           this.#spectral!.chains[i].spectral.columns,
           rhythm,
           Math.min(end, this.#processedT),
-          opts,
+          { ...opts, wallFilterHz: this.#wallFilters[i] },
           this.#spectral!.gateTracks[i],
         );
         this.#measurementIssues[i] = m ? (m.quality.issue ? qualityText(m.quality) : '') : 'Esperando cuatro latidos';
@@ -376,7 +465,7 @@ export class VenousViewer {
       this.#canvases[i].dataset.lastTime = String(columns.at(-1)?.t ?? '');
       this.#canvases[i].dataset.marks = this.#annotations ? this.#marks[i].map((m) => m.label).join(',') : '';
       this.#limits[i].textContent =
-        `2,5 MHz · PRF ${columns.at(-1)?.prfHz.toFixed(0) ?? '—'} Hz · filtro 15 Hz · θ ${this.#spectral.gateInfo[i].beamAngleToFlowDeg?.toFixed(0) ?? '—'}° · velocidad axial · ${this.#spectralScales[i]} cm/s Nyquist · imagen ${this.#presentation[i].gainDb} dB / RD ${this.#presentation[i].dynamicRangeDb}${this.#measurementIssues[i] ? ` · ${this.#measurementIssues[i]}` : ''}`;
+        `2,5 MHz · PRF ${columns.at(-1)?.prfHz.toFixed(0) ?? '—'} Hz · filtro ${this.#wallFilters[i]} Hz · θ ${this.#spectral.gateInfo[i].beamAngleToFlowDeg?.toFixed(0) ?? '—'}° · velocidad axial · ${this.#spectralScales[i]} cm/s Nyquist · imagen ${this.#presentation[i].gainDb} dB / RD ${this.#presentation[i].dynamicRangeDb}${this.#measurementIssues[i] ? ` · ${this.#measurementIssues[i]}` : ''}`;
       this.#values[i].textContent = 'PW simulado';
     }
   }
@@ -434,7 +523,7 @@ export class VenousViewer {
       this.#limits[i].textContent =
         i < 3 ? `+${scale} / 0 / −${scale} cm/s` : i === 3 ? '+2 / 0 / −2 mV' : '0 = espiración · 1 = inspiración';
     }
-    this.#status.textContent = `${this.#paused ? 'Vista pausada (solo esta ventana)' : this.#ctx.sim().frozen ? 'Paciente congelado' : 'En vivo'} · ${a.t.toFixed(2)}–${b.t.toFixed(2)} s · ${b.respiratoryCycling ? 'Respiración activa' : 'Respiración sin ciclo'}${clipped ? ' · Hay valores fuera de escala: amplía el rango' : ''}`;
+    this.#status.textContent = `${this.#paused ? 'Vista pausada (solo esta ventana)' : this.#experiment ? 'Experimento en vivo' : this.#ctx.sim().frozen ? 'Paciente congelado' : 'En vivo'} · ${a.t.toFixed(2)}–${b.t.toFixed(2)} s · ${b.respiratoryCycling ? 'Respiración activa' : 'Respiración sin ciclo'}${clipped ? ' · Hay valores fuera de escala: amplía el rango' : ''}`;
     if (this.#spectralMode && b.t - this.#processedT > 0.2) this.#status.textContent += ' · Reconstruyendo señal IQ…';
     this.#showCursor();
   }

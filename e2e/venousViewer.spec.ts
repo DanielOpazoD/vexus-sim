@@ -299,6 +299,12 @@ test('PW comparado: calidad visible sin marcas y recuperación al ampliar escala
   });
   expect(await page.evaluate(() => window.__vexusTest!.sim().physiology.clock.t)).toBe(before);
   await page.setViewportSize({ width: 1280, height: 1380 });
+  await withinFrames(
+    page,
+    100,
+    'historial completo antes de guardar evidencia visual',
+    async () => !(await dialog.locator('.venous-status').innerText()).includes('Reconstruyendo') || 'reconstruyendo señal IQ',
+  );
   await page.screenshot({ path: info.outputPath('venous-pw-quality-recovered.png') });
   expect(errors).toEqual([]);
 });

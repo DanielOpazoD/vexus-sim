@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Reparto E2E recalibrado con tres ejecuciones completas verificadas; mismos tests, ocho corredores y cero reintentos, sin relajar cobertura ni timeouts (134).
+
 - Visor PW: selección explícita de ventana renal venosa o par arterial/venoso para inspección, sin reescalar velocidades y conservando las advertencias de calidad (133).
 
 - Margen del bundle recuperado con un tercer banco de transporte GLSL reversible; conserva programas idénticos y todos los límites de tamaño (132).

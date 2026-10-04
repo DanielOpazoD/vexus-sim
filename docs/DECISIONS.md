@@ -5302,3 +5302,25 @@ universal. La relación entre picos sigue siendo provisional y dependiente del
 ángulo, territorio y estado del modelo. No se presenta esta selección como
 validación clínica ni como medición venosa automática fiable en una puerta
 arterial. Evidencia y fuentes en `physiology/RENAL_PAIRED_VELOCITY_REVIEW.md`.
+
+## 134. Recalibrar el reparto E2E con tiempos actuales verificados
+
+**Hallazgo.** Tras incorporar adquisiciones renales, visor y laboratorio, los pesos
+históricos no describían todos los tests actuales. En tres ejecuciones completas
+el fragmento más lento acumuló 1246, 1433 y 1421 segundos de pruebas, mientras
+otros quedaban entre 575 y 850 segundos. Los ocho corredores ya existían.
+
+**Cambio.** Actualizar únicamente la tabla de costes con la mediana por identidad
+de test de tres ejecuciones verdes: 37202838436, 37204937136 y 37205001469. Cada
+fuente aporta 70 tests únicos, una ejecución, cero retries; se verificaron SHA,
+ocho informes, identidad del plan y digest de los 24 artefactos. No se cambia el
+algoritmo, número de corredores, selección, aserciones, timeouts ni cobertura.
+
+**Evaluación.** Reasignar los mismos tiempos observados con la nueva tabla reduce
+el máximo retrospectivo a 1088, 1148 y 1284 segundos. Para no evaluar solo sobre
+los datos usados para ajustar, se calculó también el reparto con dos fuentes y se
+aplicó a la tercera: máximos 1152, 1217 y 1252 segundos (7,5–15,0 % menos). Es una
+estimación de planificación, no una promesa de tiempo real: el rendimiento de los
+corredores varía. Las pruebas nuevas siguen entrando con coste de respaldo y las
+obsoletas no se ejecutan por existir en la tabla. La verificación nativa recoge
+71 tests actuales, exactamente una vez entre ocho listas disjuntas.

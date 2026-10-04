@@ -320,14 +320,16 @@ describe('Columnas de la captura (decisión 94)', () => {
 
   it('solo las de la PRF actual y sin el transitorio del filtro de pared tras el cambio', () => {
     const col = (t: number, prfHz: number): SpectralColumn => ({ t, prfHz, powerDb: new Float32Array(N) });
+    // Cadencia compatible con ventanas FFT solapadas, también a PRF 3900.
     const spectrum = [
-      ...Array.from({ length: 50 }, (_, i) => col(i * 0.05, 2600)),
-      ...Array.from({ length: 50 }, (_, i) => col(2.5 + i * 0.05, 3900)),
+      ...Array.from({ length: 100 }, (_, i) => col(i * 0.025, 2600)),
+      ...Array.from({ length: 100 }, (_, i) => col(2.5 + i * 0.025, 3900)),
     ];
     const got = captureColumns(spectrum, -10);
+    expect(got).toHaveLength(spectrum.slice(100).filter((c) => c.t > 2.5 + WALL_SETTLE_S).length);
     expect(got.every((c) => c.prfHz === 3900)).toBe(true);
     expect(got[0].t).toBeGreaterThan(2.5 + WALL_SETTLE_S - 1e-9);
-    expect(captureColumns(spectrum.slice(0, 50), 1)).toHaveLength(spectrum.slice(0, 50).filter((c) => c.t > 1).length);
+    expect(captureColumns(spectrum.slice(0, 100), 1)).toHaveLength(spectrum.slice(0, 100).filter((c) => c.t > 1).length);
   });
 });
 

@@ -137,3 +137,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [131](DECISIONS.md#L5240) | Distinguir máximos por fase de ondas renales independientes | vigente |
 | [132](DECISIONS.md#L5262) | Margen de distribución con un tercer banco GLSL reversible | vigente |
 | [133](DECISIONS.md#L5280) | Ventana renal pareada explícita, sin escalar la vena | vigente |
+| [134](DECISIONS.md#L5306) | Recalibrar el reparto E2E con tiempos actuales verificados | vigente |

@@ -5556,3 +5556,36 @@ también la ruta de recuperación respiratoria ya probada.
 La respiración posterior puede sacar sangre de la puerta y los controles de
 calidad permanecen intactos. El ángulo que figura bajo el espectro sigue siendo
 el ángulo real haz–flujo de la adquisición, no los 2° de ajuste del soporte.
+
+## 144. PRF virtual limitada por el retorno del eco y escala efectiva visible
+
+**Defecto reproducido.** El visor comparado convertía directamente la escala
+solicitada en PRF, a diferencia del equipo principal. En el adulto normal del
+contrato, la puerta portal está a 112,5 mm y mide 6 mm. Solicitar ±120 cm/s
+producía 7792,2 Hz, por encima de los 6666,7 Hz que admite su cara distal.
+La prueba nueva falló con esa frecuencia antes de corregir el procesamiento.
+
+**Física y cambio.** Se reutiliza `maxPrfForDepth` del equipo: PRF ≤ c/(2d),
+con c=1540 m/s, d=profundidad+semilongitud de puerta y el límite electrónico
+existente. La señal se adquiere a esa PRF efectiva. La regla lateral, posición
+de las marcas y rótulo de Nyquist usan su conversión inversa, no el valor
+solicitado. El selector dice «Nyquist solicitado» y la limitación por profundidad
+se señala cuando actúa. En el ejemplo, la escala efectiva es ±102,67 cm/s.
+
+**Alcance.** No se implementa HPRF ni se simulan ecos de puertas ambiguas.
+Es la misma aproximación temporal del equipo principal; no modela un margen
+adicional del receptor. No cambia flujo, volumen, velocidad sanguínea ni puerta.
+Las tres adquisiciones virtuales son independientes, no un escaneo triple real.
+Las escalas basales admisibles conservan exactamente su PRF.
+
+**Fuentes.** La restricción de rango se explicita en la descripción técnica
+primaria de [US5564424A](https://patents.google.com/patent/US5564424), ecuación II.
+La ambigüedad de rango en pacientes fue estudiada en
+[PMID 3932479](https://pubmed.ncbi.nlm.nih.gov/3932479/); no se utiliza ese estudio
+como validación clínica de este simulador.
+
+**Verificación.** Contrato rojo/verde de la cara distal, igualdad entre PRF de
+columnas y equipo efectivo, conversión inversa de escala, restauración de escalas
+sin recolocar puertas. La E2E existente solicita ±120 en porta y verifica
+limitación, coherencia de unidades, aviso y captura; conserva independencia de
+canales, adquisición completa, congelación, accesibilidad móvil y ausencia de errores.

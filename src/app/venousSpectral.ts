@@ -1,7 +1,8 @@
+import { maxPrfForDepth } from './equipment';
 import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene } from '../anatomy/scene';
 import type { Vec3 } from '../core/vec3';
-import { prfFromNyquistCms } from '../core/units';
+import { C_RECONSTRUCTION_MM_S, nyquistVelocityCms, prfFromNyquistCms } from '../core/units';
 import type { PhysiologySample } from '../physiology/engine';
 import type { PatientState } from '../physiology/patientState';
 import type { VesselId } from '../physiology/vessels';
@@ -46,6 +47,7 @@ export class VenousSpectralAcquisition {
   readonly chains: PwDopplerChain[];
   readonly gateTracks: GateVesselSample[][] = [[], [], []];
   readonly materialCenters: Vec3[];
+  readonly gateDepthsMm: readonly number[];
   readonly gateInfo: PwGateInfo[] = [];
   readonly #contexts: { anatomy: AnatomyQuery; contact: ProbeContact; best: GatePlacement }[];
   readonly #settings: Pick<BModeSettings, 'depthMm' | 'focusMm'>;
@@ -111,8 +113,21 @@ export class VenousSpectralAcquisition {
       if (!best) throw new AcousticWindowUnavailableError(window);
       return { anatomy: query, contact, best };
     });
+    this.gateDepthsMm = this.#contexts.map((c) => c.best.r);
     this.materialCenters = this.#contexts.map((c, i) => c.anatomy.deformation.toMaterial(this.gate(i, sample).center, sample.resp));
     this.chains = this.#contexts.map((c, i) => new PwDopplerChain(c.anatomy, seed + 7919 * (i + 1), undefined, { maxColumns: 4096 }));
+  }
+
+  /** The far edge must return before the next pulse; this viewer does not simulate HPRF. */
+  prfHz(index: number): number {
+    return Math.min(
+      prfFromNyquistCms(this.scales[index], this.f0Hz),
+      maxPrfForDepth(this.gateDepthsMm[index] + WINDOWS[index].gateMm / 2, C_RECONSTRUCTION_MM_S),
+    );
+  }
+
+  nyquistCms(index: number): number {
+    return nyquistVelocityCms(this.prfHz(index), this.f0Hz);
   }
 
   gate(index: number, sample: PhysiologySample): GateGeometry {
@@ -133,12 +148,13 @@ export class VenousSpectralAcquisition {
   /** Input timestamps remain authoritative. A gap resets acquisition instead of bridging absent samples. */
   push(samples: readonly PhysiologySample[], dt: number): void {
     if (!(dt > 0) || !Number.isFinite(dt)) throw new Error('Paso temporal inválido');
+    const prfs = this.chains.map((_, i) => this.prfHz(i));
     for (const s of samples) {
       if (!Number.isFinite(s.t)) throw new Error('Tiempo no finito');
       if (this.#lastT !== null && s.t <= this.#lastT) continue;
       if (this.#lastT !== null && Math.abs(s.t - this.#lastT - dt) > 1e-6) this.reset();
       for (const [i, chain] of this.chains.entries()) {
-        chain.begin(prfFromNyquistCms(this.scales[i], this.f0Hz), this.f0Hz, 0, this.wallFilters[i], s.t);
+        chain.begin(prfs[i], this.f0Hz, 0, this.wallFilters[i], s.t);
         if (this.#steps % 8 === 0) chain.setGate(this.gate(i, s), s);
         // Each virtual probe stays on its anatomical window; respiratory dropout remains observable.
         chain.step(s, [0, 0, 0], dt);

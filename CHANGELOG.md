@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- PW virtual: PRF acotada por profundidad y cara distal de la puerta; regla lateral y marcas usan la escala efectiva, con aviso cuando limita la solicitada (144).
+
 - Visor VSH: alternativa de inclinación física +2° para recuperar ventanas sin modificar hemodinámica; pose habitual por defecto y calidad de adquisición conservada (143).
 
 - E2E de regla PW: estabilización fisiológica antes de activar IQ, conservando adquisición real, aserciones, capturas y plazos; evita calcular señal descartada durante la preparación (142).

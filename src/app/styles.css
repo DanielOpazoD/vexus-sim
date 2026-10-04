@@ -1293,16 +1293,34 @@ button.mode.active {
 .venous-experiment fieldset {
   border: 0;
   padding: 0;
+  min-width: 0;
   display: grid;
-  gap: 6px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px 20px;
 }
 .venous-experiment fieldset > label {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
   align-items: center;
   gap: 6px;
 }
+.venous-experiment fieldset > label:first-child,
+.venous-experiment fieldset > .row {
+  grid-column: 1 / -1;
+}
+.venous-experiment fieldset input[type='range'] {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  min-width: 0;
+}
 .venous-experiment output {
+  grid-column: 2;
+  grid-row: 1;
+  text-align: right;
   font-variant-numeric: tabular-nums;
-  min-width: 4em;
+}
+@media (max-width: 650px) {
+  .venous-experiment fieldset {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

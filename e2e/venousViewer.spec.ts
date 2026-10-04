@@ -400,9 +400,19 @@ test('laboratorio venoso: parámetros físicos, progresión calculada y aislamie
   await dialog.evaluate((el) => {
     el.scrollTop = 0;
   });
+  await withinFrames(
+    page,
+    150,
+    'escenario completo antes de fotografiar los controles',
+    async () => !(await dialog.locator('.venous-status').innerText()).includes('Reconstruyendo') || 'adquiriendo señal del experimento',
+  );
+  const controlRows = await lab.locator('fieldset > label').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().y));
+  expect(controlRows[1]).toBeCloseTo(controlRows[2], 0);
   await page.screenshot({ path: info.outputPath('venous-laboratory-desktop.png') });
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+  const mobileRows = await lab.locator('fieldset > label').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().y));
+  expect(mobileRows[2]).toBeGreaterThan(mobileRows[1]);
   await page.screenshot({ path: info.outputPath('venous-laboratory-mobile.png') });
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();

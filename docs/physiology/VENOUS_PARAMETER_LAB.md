@@ -90,3 +90,12 @@ y comunicado al medidor espectral. Bajar su corte no garantiza recuperar una
 velocidad inferior a la resolución de la STFT. La porta del anclaje 3 puede
 acercarse al filtro; se conserva la advertencia, sin forzar una medición válida.
 El grado de referencia fisiológica permanece distinto de esas mediciones.
+
+## Controles y evidencia visual
+
+Los parámetros usan dos columnas en escritorio y una en teléfono, con el valor
+al lado de su etiqueta y el deslizador debajo. Se conserva el orden de teclado,
+los nombres accesibles y el detalle de mecanismos pendientes. La E2E comprueba
+la disposición en ambos anchos y espera que termine la reconstrucción IQ antes
+de guardar la captura de controles. Las referencias renales incluyen sano y
+congestión en una misma puerta arterial, con el caso explícito en modo docente.

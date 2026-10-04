@@ -42,6 +42,16 @@ export const GLSL_WORDS = [
   'color',
   'clipping_planes_pars_fragment',
   'specularColor',
+  'NUM_DIR_LIGHT_SHADOWS',
+  'clipping_planes_pars_vertex',
+  'vViewPosition',
+  'logdepthbuf_pars_fragment',
+  'NUM_SUN_LIGHT_SHADOWS',
+  'clipping_planes_fragment',
+  'NUM_SPOT_LIGHT_SHADOWS',
+  'tonemapping_fragment',
+  'morphtarget_pars_vertex',
+  'logdepthbuf_pars_vertex',
 ] as const;
 export const GLSL_MARKERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
 export function unpackGlsl(s: string): string {

@@ -1,3 +1,4 @@
+import { DEFAULT_BMODE } from '../../src/ultrasound/renderer';
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
 import { setReferenceBody } from '../../src/anatomy/referenceBody';
 import { dirname } from 'node:path';
@@ -6,7 +7,7 @@ import { AnatomyScene } from '../../src/anatomy/scene';
 import { AnatomyQuery } from '../../src/anatomy/query';
 import { NORMAL_ADULT } from '../../src/cases';
 import { PhysiologyEngine } from '../../src/physiology/engine';
-import { VenousSpectralAcquisition } from '../../src/doppler/venousSpectral';
+import { VenousSpectralAcquisition } from '../../src/app/venousSpectral';
 import { measureObservedHepatic, measureObservedPortal, measureObservedRenal } from '../../src/doppler/spectralMeasure';
 if (process.argv.includes('--reference')) {
   const b = readFileSync('src/anatomy/reference-body.bin');
@@ -17,7 +18,7 @@ const scene = new AnatomyScene(patient),
   query = new AnatomyQuery(scene);
 const engine = new PhysiologyEngine(patient, scene.vesselAreas());
 for (let i = 0; i < 7500; i++) engine.step();
-const acquisition = new VenousSpectralAcquisition(query, engine.sample, NORMAL_ADULT.seed, patient);
+const acquisition = new VenousSpectralAcquisition(query, engine.sample, NORMAL_ADULT.seed, patient, DEFAULT_BMODE);
 const samples = Array.from({ length: 1625 }, () => engine.step());
 console.time('three-channel-IQ');
 acquisition.push(samples, engine.clock.dt);

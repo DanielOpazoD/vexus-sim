@@ -5,16 +5,16 @@ import { prfFromNyquistCms } from '../core/units';
 import type { PhysiologySample } from '../physiology/engine';
 import type { PatientState } from '../physiology/patientState';
 import type { VesselId } from '../physiology/vessels';
-import { PwDopplerChain } from './pwChain';
-import type { GateGeometry } from './sampleVolume';
-import type { GateVesselSample } from './vesselIdentity';
-import { startPointsFor, type StartPoint } from '../app/startPoints';
-import { bestGateOnVessel, type GatePlacement } from '../app/gatePlacement';
-import { acousticWindowWeight } from '../app/gateTransmission';
-import { pwGate, type PwGateInfo } from '../app/pwGate';
+import { PwDopplerChain } from '../doppler/pwChain';
+import type { GateGeometry } from '../doppler/sampleVolume';
+import type { GateVesselSample } from '../doppler/vesselIdentity';
+import { startPointsFor, type StartPoint } from './startPoints';
+import { bestGateOnVessel, type GatePlacement } from './gatePlacement';
+import { acousticWindowWeight } from './gateTransmission';
+import { pwGate, type PwGateInfo } from './pwGate';
 import { probeContact, type ProbeContact } from '../probe/contact';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
-import { DEFAULT_BMODE } from '../ultrasound/renderer';
+import type { BModeSettings } from '../ultrasound/renderer';
 
 /** Experimental acquisition settings; calibration is separate from physiological normality. */
 export const VENOUS_SPECTRAL_SCALES = [50, 30, 40] as const;
@@ -36,10 +36,18 @@ export class VenousSpectralAcquisition {
   readonly materialCenters: Vec3[];
   readonly gateInfo: PwGateInfo[] = [];
   readonly #contexts: { anatomy: AnatomyQuery; contact: ProbeContact; best: GatePlacement }[];
+  readonly #settings: Pick<BModeSettings, 'depthMm' | 'focusMm'>;
   #lastT: number | null = null;
   #steps = 0;
 
-  constructor(anatomy: AnatomyQuery, sample: PhysiologySample, seed: number, patient: PatientState) {
+  constructor(
+    anatomy: AnatomyQuery,
+    sample: PhysiologySample,
+    seed: number,
+    patient: PatientState,
+    settings: Pick<BModeSettings, 'depthMm' | 'focusMm'>,
+  ) {
+    this.#settings = { depthMm: settings.depthMm, focusMm: settings.focusMm };
     const profile = CONVEX_C35_PROFILE,
       tr = profile.geometry;
     this.#contexts = WINDOWS.map(({ window, vessels }) => {
@@ -50,7 +58,7 @@ export class VenousSpectralAcquisition {
       const sp = startPointsFor(scene.torso).find((s) => s.id === window)!;
       const contact = probeContact({ phi: sp.phi, z: sp.z, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0, lift: 0 }, tr, scene.torso);
       query.setProbeCompression(contact);
-      const weight = acousticWindowWeight(query, contact.frame, tr, contact, sample, DEFAULT_BMODE.depthMm, profile.dopplerEffectiveMHz);
+      const weight = acousticWindowWeight(query, contact.frame, tr, contact, sample, this.#settings.depthMm, profile.dopplerEffectiveMHz);
       const best = bestGateOnVessel(query, contact.frame, tr, sample, vessels, 175, 1.2, weight);
       if (!best) throw new Error('No acoustic gate found for ' + window);
       return { anatomy: query, contact, best };
@@ -66,7 +74,7 @@ export class VenousSpectralAcquisition {
       contact.frame,
       contact,
       CONVEX_C35_PROFILE,
-      DEFAULT_BMODE.focusMm,
+      this.#settings.focusMm,
       { theta: best.theta, depthMm: best.r, gateMm: WINDOWS[index].gateMm },
       sample,
     );

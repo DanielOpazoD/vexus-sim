@@ -1,4 +1,4 @@
-import { VenousSpectralAcquisition, VENOUS_SPECTRAL_SCALES, VENOUS_FORWARD_SIGN } from '../../doppler/venousSpectral';
+import { VenousSpectralAcquisition, VENOUS_SPECTRAL_SCALES, VENOUS_FORWARD_SIGN } from '../../app/venousSpectral';
 import type { CaptureMark } from '../../doppler/spectralMeasure';
 import { captureProtocolVessel } from '../../doppler/capture';
 import type { Beat } from '../../physiology/rhythm';
@@ -289,7 +289,7 @@ export class VenousViewer {
     if (this.#spectralMode && this.#rawSamples.length) {
       if (!this.#spectral) {
         const sim = this.#ctx.sim();
-        this.#spectral = new VenousSpectralAcquisition(sim.anatomy, this.#rawSamples[0], sim.patient.seed, sim.patient);
+        this.#spectral = new VenousSpectralAcquisition(sim.anatomy, this.#rawSamples[0], sim.patient.seed, sim.patient, sim.bmode);
         this.#spectral.scales.splice(0, 3, ...this.#spectralScales);
       }
       // Bounded catch-up also works while the patient is frozen; never block on six seconds of IQ at once.

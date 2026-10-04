@@ -1,9 +1,10 @@
+import { DEFAULT_BMODE } from '../ultrasound/renderer';
 import { describe, expect, it } from 'vitest';
 import { AnatomyScene } from '../anatomy/scene';
 import { AnatomyQuery } from '../anatomy/query';
 import { NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
-import { VenousSpectralAcquisition } from '../doppler/venousSpectral';
+import { VenousSpectralAcquisition } from '../app/venousSpectral';
 import { VESSEL_META } from '../physiology/vessels';
 
 function fixture() {
@@ -16,7 +17,7 @@ function fixture() {
 describe('PW venoso virtual: IQ espacial y reloj compartido', () => {
   it('sitúa tres puertas reales en los vasos declarados sin cambiar la anatomía del alumno', () => {
     const { anatomy, engine } = fixture();
-    const acquisition = new VenousSpectralAcquisition(anatomy, engine.sample, 47, NORMAL_ADULT);
+    const acquisition = new VenousSpectralAcquisition(anatomy, engine.sample, 47, NORMAL_ADULT, DEFAULT_BMODE);
     for (const [i, system] of ['hepaticVein', 'portal', 'interlobarVein'].entries()) {
       const gate = acquisition.gate(i, engine.sample);
       const info = acquisition.gateInfo[i];
@@ -32,7 +33,7 @@ describe('PW venoso virtual: IQ espacial y reloj compartido', () => {
 
   it('emite potencia multibin desde dispersores y conserva los tiempos del ECG', () => {
     const { anatomy, engine } = fixture();
-    const acquisition = new VenousSpectralAcquisition(anatomy, engine.sample, 47, NORMAL_ADULT);
+    const acquisition = new VenousSpectralAcquisition(anatomy, engine.sample, 47, NORMAL_ADULT, DEFAULT_BMODE);
     const samples = Array.from({ length: 75 }, () => engine.step());
     const before = JSON.stringify(samples);
     acquisition.push(samples, engine.clock.dt);
@@ -52,7 +53,7 @@ describe('PW venoso virtual: IQ espacial y reloj compartido', () => {
 
   it('no fabrica continuidad a través de un intervalo ausente', () => {
     const { anatomy, engine } = fixture();
-    const acquisition = new VenousSpectralAcquisition(anatomy, engine.sample, 47, NORMAL_ADULT);
+    const acquisition = new VenousSpectralAcquisition(anatomy, engine.sample, 47, NORMAL_ADULT, DEFAULT_BMODE);
     acquisition.push(
       Array.from({ length: 50 }, () => engine.step()),
       engine.clock.dt,

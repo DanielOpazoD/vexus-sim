@@ -1,9 +1,10 @@
+import { DEFAULT_BMODE } from '../ultrasound/renderer';
 import { describe, expect, it } from 'vitest';
 import { AnatomyScene } from '../anatomy/scene';
 import { AnatomyQuery } from '../anatomy/query';
 import { CASES, NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
-import { VenousSpectralAcquisition } from '../doppler/venousSpectral';
+import { VenousSpectralAcquisition } from '../app/venousSpectral';
 import { measureObservedHepatic, measureObservedPortal, measureObservedRenal } from '../doppler/spectralMeasure';
 import { captureProtocolVessel } from '../doppler/capture';
 import { VENOUS_COMPARISON_CHANNELS } from '../physiology/venousComparison';
@@ -17,7 +18,7 @@ describe('contratos de adquisición PW comparada', () => {
         anatomy = new AnatomyQuery(scene),
         engine = new PhysiologyEngine(patient, scene.vesselAreas());
       const source = JSON.stringify({ vessels: scene.vessels, bowel: scene.bowelRadii });
-      const a = new VenousSpectralAcquisition(anatomy, engine.sample, patient.seed, patient);
+      const a = new VenousSpectralAcquisition(anatomy, engine.sample, patient.seed, patient, DEFAULT_BMODE);
       expect(a.materialCenters).toHaveLength(3);
       const centers = [0, 1, 2].map((i) => a.gate(i, engine.sample).center);
       for (const [i, system] of ['hepaticVein', 'portal', 'interlobarVein'].entries()) {
@@ -43,8 +44,8 @@ describe('contratos de adquisición PW comparada', () => {
     const scene = new AnatomyScene(NORMAL_ADULT),
       anatomy = new AnatomyQuery(scene),
       engine = new PhysiologyEngine(NORMAL_ADULT, scene.vesselAreas());
-    const a = new VenousSpectralAcquisition(anatomy, engine.sample, 31, NORMAL_ADULT),
-      b = new VenousSpectralAcquisition(anatomy, engine.sample, 31, NORMAL_ADULT);
+    const a = new VenousSpectralAcquisition(anatomy, engine.sample, 31, NORMAL_ADULT, DEFAULT_BMODE),
+      b = new VenousSpectralAcquisition(anatomy, engine.sample, 31, NORMAL_ADULT, DEFAULT_BMODE);
     const samples = Array.from({ length: 60 }, () => engine.step());
     a.push(samples, engine.clock.dt);
     for (let i = 0; i < samples.length; i += 7) b.push(samples.slice(i, i + 7), engine.clock.dt);
@@ -59,7 +60,7 @@ describe('contratos de adquisición PW comparada', () => {
       anatomy = new AnatomyQuery(scene),
       engine = new PhysiologyEngine(patient, scene.vesselAreas());
     for (let i = 0; i < 7500; i++) engine.step();
-    const a = new VenousSpectralAcquisition(anatomy, engine.sample, patient.seed, patient);
+    const a = new VenousSpectralAcquisition(anatomy, engine.sample, patient.seed, patient, DEFAULT_BMODE);
     const samples = Array.from({ length: 1625 }, () => engine.step());
     a.push(samples, engine.clock.dt);
     const beats = engine.rhythm.beatsBetween(samples[0].t, samples.at(-1)!.t);

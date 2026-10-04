@@ -82,3 +82,13 @@ hemodinámica renal. Los índices de pulsatilidad normales publicados dependen d
 territorio y método; no se fuerza una onda plana ni se reescala el caudal para
 imitar una captura. Véase RENAL_WAVEFORM_MODEL_REVIEW.md. El visor permanece en
 borrador clínico hasta revisar las capturas y los límites del modelo.
+
+## Dependencias y presupuesto
+
+El coordinador de ventanas reside en app/venousSpectral.ts, porque reutiliza
+colocación de sonda y puerta de la aplicación. El motor Doppler no importa app.
+Profundidad y foco se copian del equipo al crear la adquisición; se inyectan
+como datos para evitar que el visor importe el renderer completo. El diccionario
+reversible de GLSL aprovecha sus diez marcadores restantes para reducir bytes;
+las pruebas comparan todos los shaders reconstruidos byte por byte. No se amplían
+presupuestos ni se modifica la física de los shaders.

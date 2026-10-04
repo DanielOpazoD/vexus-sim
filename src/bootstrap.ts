@@ -21,6 +21,7 @@ import { buildLayerMenu } from './ui/controllers/layerMenu';
 import type { CutMapView } from './ui/cutMapView';
 import { bindCollapsible, bindPopover } from './ui/disclosure';
 import { SpectrogramView, drawEcg, drawOverlay } from './ui/displays';
+import { drawVelocityRuler } from './ui/velocityRuler';
 import { MModeView } from './ui/mModeView';
 import { traceRight } from './ui/sweep';
 import { bindKeyboardShortcuts } from './ui/keyboardShortcuts';
@@ -49,6 +50,7 @@ const glCanvas = $<HTMLCanvasElement>('gl');
 const overlay = $<HTMLCanvasElement>('overlay');
 const ecgCanvas = $<HTMLCanvasElement>('ecg');
 const spectrumCanvas = $<HTMLCanvasElement>('spectrum');
+const pwScaleCanvas = $<HTMLCanvasElement>('pw-scale');
 const mCanvas = $<HTMLCanvasElement>('mmode');
 const cutCanvas = $<HTMLCanvasElement>('cutmap');
 const navHost = $<HTMLElement>('nav3d');
@@ -353,7 +355,7 @@ function fitCanvases(): void {
     overlay.width = w;
     overlay.height = h;
   }
-  for (const c of [ecgCanvas, spectrumCanvas, mCanvas, cutCanvas]) {
+  for (const c of [ecgCanvas, spectrumCanvas, pwScaleCanvas, mCanvas, cutCanvas]) {
     // el corte se calcula por píxel en CPU: resolución 1× basta
     const k = c === cutCanvas ? 1 : dpr;
     const cw = Math.floor(c.clientWidth * k);
@@ -389,6 +391,7 @@ function drawTraces(s: Simulator): void {
   const tRight = traceRight(t, cursorT, secondsVisible);
   drawEcg(ecgCanvas, s, secondsVisible, tRight, cursorT);
   spectrogram.draw(s, s.spectral.columns, tRight, secondsVisible, cursorT, panel.captureOverlay);
+  if (s.pw.enabled) drawVelocityRuler(pwScaleCanvas, s.pwNyquistCms(), s.pw.baselineShift, s.pw.invert);
   if (s.mmode.enabled && !gpu.lost) mview.draw(s.renderer, tRight, secondsVisible, cursorT, panel.mMarks);
 }
 

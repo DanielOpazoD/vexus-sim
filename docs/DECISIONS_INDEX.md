@@ -128,5 +128,9 @@ Generado por `npm run docs:index` — no editar a mano.
 | [122](DECISIONS.md#L5040) | Continuidad del centrado auricular entre latidos | vigente |
 | [123](DECISIONS.md#L5048) | Transporte PW por pulso y continuidad del movimiento tisular | vigente |
 | [124](DECISIONS.md#L5056) | Reparto E2E por coste observado y prueba de ejecución en el veredicto | vigente |
-| [125](DECISIONS.md#L5064) | Comparación venosa con espectros PW observados y escalas independientes | vigente |
-| [126](DECISIONS.md#L5085) | Explorador hemodinámico por estados calculados y progresión docente | vigente |
+| [125](DECISIONS.md#L5064) | Promedio PW limitado a una misma rejilla física de adquisición | vigente |
+| [126](DECISIONS.md#L5096) | Regla lateral de velocidad del Doppler pulsado | vigente |
+| [127](DECISIONS.md#L5117) | Territorio interlobar y calibración provisional de velocidad renal | vigente |
+| [128](DECISIONS.md#L5158) | Refinamiento numérico PW de vasos pequeños y caché espacial exacta | vigente |
+| [129](DECISIONS.md#L5197) | Comparación venosa con espectros PW observados y escalas independientes | vigente |
+| [130](DECISIONS.md#L5232) | Explorador hemodinámico por estados calculados y progresión docente | vigente |

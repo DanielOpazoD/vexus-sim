@@ -62,7 +62,7 @@ calculado en los anclajes. No certifican todas las combinaciones ni transitorios
 La E2E cubre activar, progresar, adquirir, conservar al paciente original, móvil
 y limpiar al cerrar. La distribución CI incluye la nueva prueba sin omisiones.
 
-Para conservar el presupuesto, el transporte GLSL reversible usa un segundo banco
+El visor previo conserva el presupuesto mediante transporte GLSL reversible con un segundo banco
 de 64 códigos. Los códigos existentes son estables; un prefijo selecciona el nuevo
 banco. Los shaders reconstruidos siguen siendo idénticos byte por byte, incluyendo
 interpolaciones y escapes. No cambia la física, el shader ejecutado ni los límites.
@@ -77,10 +77,11 @@ interpolaciones y escapes. No cambia la física, el shader ejecutado ni los lím
 
 ## Hallazgo de revisión visual y ajuste del equipo
 
-La primera captura del anclaje 3 mostró plegamiento renal con el ajuste inicial
-de 50 cm/s: el análisis independiente confirma tres latidos envueltos de cuatro
-y calidad «aliasing». A 80 cm/s, los cuatro latidos son válidos y la misma guarda
-de calidad pasa. La calidad se calcula y comunica aunque las marcas estén
+La primera captura, anterior a la recalibración territorial renal, mostró
+plegamiento con Nyquist 50 cm/s. Ese hallazgo es histórico, no describe la
+amplitud del modelo actual. Tras adoptar el territorio provisional del 5 %,
+la prueba provoca plegamiento explícitamente reduciendo Nyquist a 20 cm/s
+y comprueba recuperación a 80 cm/s, sin cambiar la fisiología. La calidad se calcula y comunica aunque las marcas estén
 apagadas. La prueba de navegador exige el aviso, cambia la escala mediante el
 control real y verifica que desaparezca la condición no medible.
 

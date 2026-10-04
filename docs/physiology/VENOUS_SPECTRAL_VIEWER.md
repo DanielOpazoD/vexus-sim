@@ -5,7 +5,8 @@
 La vista inicial son tres imágenes de potencia espectral, no curvas Q/A engrosadas.
 Cada territorio usa la cadena existente de dispersores espaciales persistentes,
 IQ compleja, filtro de pared de 15 Hz y STFT Hann de 128 muestras / salto de 16.
-El mapa de grises representa potencia con el mismo rango de 45 dB del PW principal.
+El mapa de grises representa potencia; ganancia y rango dinámico son configurables
+por territorio. Los presets se detallan más abajo.
 No se añade ruido en la imagen ni se rellena el área bajo una envolvente.
 El ECG, las columnas y el cursor usan segundos del mismo reloj fisiológico;
 la columna se sitúa en el centro temporal de su ventana FFT.
@@ -90,7 +91,8 @@ colocación de sonda y puerta de la aplicación. El motor Doppler no importa app
 Profundidad y foco se copian del equipo al crear la adquisición; se inyectan
 como datos para evitar que el visor importe el renderer completo. El diccionario
 reversible de GLSL aprovecha los marcadores disponibles para reducir bytes;
-el alfabeto se extiende a 64 símbolos ASCII y las pruebas comparan todos los shaders reconstruidos byte por byte. No se amplían
+dos bancos de 64 símbolos ASCII conservan los códigos originales y las pruebas
+comparan todos los shaders reconstruidos byte por byte. No se amplían
 presupuestos ni se modifica la física de los shaders.
 
 ## Revisión de llenado portal y señal arterial renal
@@ -117,9 +119,20 @@ explícitas, no una mejora de la relación señal/ruido física ni parámetros c
 calibrados. Las pruebas exigen que variar la ganancia cambie píxeles sin reiniciar
 IQ, mover timestamps, modificar marcas o alterar la línea cero.
 
-Como contraste técnico, un barrido offline de Nyquist renal 40–100 cm/s sobre el
-mismo paciente encuentra envolventes arteriales visibles cerca del extremo a 40. La escala 50 con base desplazada da espacio al componente arterial y conserva
+Como contraste técnico histórico, antes de la calibración territorial renal,
+un barrido offline de Nyquist 40–100 cm/s encontró envolventes arteriales
+visibles cerca del extremo a 40. Ese resultado no calibra la amplitud actual. La escala 50 con base desplazada da espacio al componente arterial y conserva
 la vena bajo cero. Las variaciones de estimación entre PRF y la incertidumbre de
 caudal/área del modelo siguen requiriendo calibración independiente. Se mantienen
 los criterios de captura y el borrador clínico. Guía de técnica: AIUM 2020,
 doi:10.1002/jum.15260, https://onlinelibrary.wiley.com/doi/10.1002/jum.15260.
+
+## Actualización del motor y revisión pendiente
+
+La recuperación del visor usa el territorio interlobar provisional del 5 % y
+el muestreo adaptativo de vasos pequeños, descritos en
+[RENAL_TERRITORY_CALIBRATION.md](RENAL_TERRITORY_CALIBRATION.md). La calibración
+sigue pendiente de validación externa. Las cifras exploratorias anteriores
+no deben interpretarse como mediciones del código recuperado. La revisión de
+las nuevas capturas del visor se hace sobre su HEAD publicado, con la calidad
+visible incluso cuando el alumno desactiva las marcas.

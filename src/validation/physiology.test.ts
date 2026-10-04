@@ -4,7 +4,8 @@ import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { clonePatient, type PatientState } from '../physiology/patientState';
-import { classifyVexusC } from '../vexus/classification';
+import { classifyVexusC, RENAL_INTERRUPTION_FLOOR_CMS } from '../vexus/classification';
+import { INTERLOBAR_FLOW_SHARE } from '../physiology/vessels';
 import { measurePhysiologyTruth } from '../vexus/measurements';
 
 function run(patient: PatientState, seconds: number): PhysiologyEngine {
@@ -88,11 +89,15 @@ describe('Fisiología: el VExUS emerge de la señal, no se asigna (guía §5, §
     const e = run(interpolate(NORMAL_ADULT, SEVERE_CONGESTION, 0.6), 16);
     const m = measurePhysiologyTruth(e, { fromT: 6, toT: 16 });
     expect(m.rvMin / Math.max(m.rvS, m.rvD)).toBeLessThan(0.3);
-    expect(m.rvMin).toBeGreaterThan(3); // medido: 4,5 cm/s (mínimo resoluble)
+    // Preserve the historical flow guard at its original 12% territory. A
+    // different branch fraction scales Q/A but must not weaken the flow bound.
+    const originalTerritoryScale = 0.12 / INTERLOBAR_FLOW_SHARE;
+    expect(m.rvMin * originalTerritoryScale).toBeGreaterThan(3);
+    expect(m.rvMin).toBeGreaterThan(RENAL_INTERRUPTION_FLOOR_CMS);
     expect(m.renalPattern).toBe('continuous');
     // más cerca del grave el mínimo sí toca la línea de base (medido −0,5 cm/s): hay interrupción
     const late = measurePhysiologyTruth(run(interpolate(NORMAL_ADULT, SEVERE_CONGESTION, 0.9), 16), { fromT: 6, toT: 16 });
-    expect(late.rvMin).toBeLessThan(1);
+    expect(late.rvMin * originalTerritoryScale).toBeLessThan(1);
     expect(late.renalPattern).not.toBe('continuous');
   });
 

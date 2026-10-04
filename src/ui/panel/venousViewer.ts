@@ -102,12 +102,8 @@ export class VenousViewer {
     for (const [value, label] of [
       ['pw', 'Espectro PW'],
       ['reference', 'Referencia Q/A'],
-    ]) {
-      const option = document.createElement('option');
-      option.value = value;
-      option.textContent = label;
-      mode.appendChild(option);
-    }
+    ])
+      mode.add(new Option(label, value));
     mode.addEventListener('change', () => {
       this.#spectralMode = mode.value === 'pw';
       this.#experimentPrimed = false;
@@ -138,12 +134,7 @@ export class VenousViewer {
     label.textContent = 'Escala común ';
     const scale = document.createElement('select');
     scale.setAttribute('aria-label', 'Escala común de velocidad');
-    for (const n of [20, 60, 120]) {
-      const option = document.createElement('option');
-      option.value = String(n);
-      option.textContent = `±${n} cm/s`;
-      scale.appendChild(option);
-    }
+    for (const n of [20, 60, 120]) scale.add(new Option(`±${n} cm/s`, String(n)));
     scale.value = '60';
     scale.addEventListener('change', () => {
       this.#scale = Number(scale.value);
@@ -208,12 +199,7 @@ export class VenousViewer {
         scaleLabel.textContent = 'Nyquist ';
         const selector = document.createElement('select');
         selector.setAttribute('aria-label', `Escala PW ${r.label}`);
-        for (const n of [10, 20, 30, 40, 50, 60, 80, 120]) {
-          const option = document.createElement('option');
-          option.value = String(n);
-          option.textContent = `±${n} cm/s`;
-          selector.appendChild(option);
-        }
+        for (const n of [10, 20, 30, 40, 50, 60, 80, 120]) selector.add(new Option(`±${n} cm/s`, String(n)));
         selector.value = String(this.#spectralScales[i]);
         selector.addEventListener('change', () => {
           this.#spectralScales[i] = Number(selector.value);

@@ -5061,7 +5061,140 @@ esto evita redibujados ocultos entre comprobaciones de limpieza y añade ese est
 
 **Veredicto.** Además del estado de los jobs, el check protegido descarga los ocho informes y exige el mismo SHA/plan, todos los IDs una vez y un único resultado pasado sin retry. Se guardan explícitamente los metadatos ocultos de ejecución. Las pruebas rápidas cubren listas anidadas, incorporación de casos nuevos, determinismo y rechazo de fallos/omisiones/duplicados/reintentos. En la colección de 62 casos, la reducción prevista del tramo más largo es 32,7 %; es una estimación, no un ahorro real ya medido. Detalle en `E2E_COST_BALANCE.md`.
 
-## 125. Comparación venosa con espectros PW observados y escalas independientes
+## 125. Promedio PW limitado a una misma rejilla física de adquisición
+
+**Problema.** El promedio 3 × 3 usado antes de medir el espectro combinaba columnas
+adyacentes por índice aunque su PRF fuera distinta o hubiera un salto del reloj.
+Un mismo bin no representa los mismos Hz al cambiar la escala. Además, copiaba
+la longitud FFT de la primera columna a todas las siguientes. Esto podía introducir
+potencia anterior en otra velocidad o después de una interrupción de adquisición.
+
+**Decisión.** Conservar la resolución de cada columna y combinar solo vecinos con
+igual PRF y longitud FFT, tiempo estrictamente ordenado y distancia temporal no
+mayor que la duración de su ventana FFT. Se mantiene el promedio en potencia
+lineal y la entrada inmutable. El coste sigue siendo O(columnas × bins), sin
+nueva dependencia ni cambio del procesador IQ. La ruta de captura recorta el
+último tramo continuo con esta misma regla, antes de medir: no reúne latidos
+anteriores a un hueco, un reinicio de reloj o un cambio de resolución. Conserva
+la espera de estabilización de 100 ms ya aplicada tras cambios de escala.
+
+**Verificación.** Trece contratos deterministas: promedio lineal, inmutabilidad,
+rejilla de frecuencias, tamaños FFT, tiempo repetido/invertido, huecos, duración
+física de ventana y ausencia de transferencia de un pico a ruido posterior.
+Los ocho contratos iniciales del promedio dan siete fallos y un acierto antes
+de la corrección. Se añaden cinco contratos de captura (hueco, reloj, resolución,
+PRF y continuidad ordinaria); los trece pasan después. Se requieren
+además la suite y CI completas del commit publicado antes de integrar.
+
+**Alcance.** Objetivos 1, 4 y 8: evitar contaminar la señal que sustenta una medición.
+No calibra por sí solo las velocidades humanas ni corrige la red renal. Las
+medianas temporales posteriores mantienen sus contratos dentro del tramo
+continuo seleccionado; no se atribuye validez a mediciones directas de historiales
+mixtos fuera de la ruta de captura.
+Los PR del visor PW y su laboratorio siguen en revisión clínica independiente.
+
+## 126. Regla lateral de velocidad del Doppler pulsado
+
+**Objetivo.** Fidelidad ecográfica y legibilidad (2 y 6): graduación en cm/s con
+cero explícito y escala asimétrica al desplazar la línea de base.
+
+**Decisión.** Un carril lateral independiente muestra marcas principales y
+secundarias sin tapar señal adquirida. ECG y espectro conservan la misma anchura
+y reloj. Los rótulos usan el mismo signo de pantalla que las mediciones; invertir
+la señal también invierte el desplazamiento del cero. La corrección angular
+cambia las velocidades rotuladas, no los píxeles de la señal.
+
+**Evidencia.** Los ejemplos aportados muestran escalas distintas y asimétricas,
+incluido +60/−20 cm/s. El máximo de una escala no es el pico de la onda. Esta
+mejora no recalibra flujos ni certifica velocidades clínicas. Se retiran los dos
+rótulos antiguos de extremos, cuya inversión con línea de base desplazada no
+coincidía con el signo de pantalla de la captura.
+
+**Verificación.** Contratos de coordenadas frente a la conversión Doppler y la
+posición de la captura, tamaños e inversión, además de navegador real con los
+controles de la aplicación y ausencia de superposición con el espectro.
+
+## 127. Territorio interlobar y calibración provisional de velocidad renal
+
+**Objetivo.** Fidelidad física/ecográfica y honestidad (1, 2, 4 y 8): corregir la
+magnitud por la cadena Q/A, no por el dibujo del espectro ni por el grado.
+
+**Decisión.** Cada rama interlobar representada recibe 5 % del caudal de un riñón,
+antes 12 %. Las tres ramas derechas representan 15 %; queda explícito el 85 % no
+representado. El caudal total, presiones, resistencias y compliances no cambian.
+Es una calibración provisional de territorio/área `NEEDS_CALIBRATION`, no una
+fracción anatómica medida en humanos. Se documentan las referencias, diferencias
+entre media seccional y envolvente, y los candidatos descartados en
+`docs/physiology/RENAL_TERRITORY_CALIBRATION.md`.
+
+**Evidencia previa.** Ocho adquisiciones controladas: con 6 %, S/D venosas sanas
+16,25/13,75 cm/s frente a 31,25/25,63 con 12 %; D grave 30,63 frente a 61,25.
+Son salidas simuladas, no rangos clínicos. El candidato 4 % produjo cuatro fallos
+de matriz y se descartó. Con 6 % no hubo discrepancias de patrón en la matriz;
+solo dejó de cumplirse la antigua expectativa de aliasing a 2600 Hz. Se conserva
+la prueba forzándolo a 1300 Hz y se añade la recuperación medible a 2600 Hz.
+
+**Verificación requerida.** Presupuesto de flujo y unidades, todas las matrices
+sin rebajar umbrales, CI del árbol final y capturas reales de navegador en sano y
+grave. Las nuevas capturas quedan en los artefactos `venous-renal-territory-*`.
+No se declara resuelta la calibración de todos los escenarios ni la estimación
+arterial en una puerta mixta; el visor y laboratorio mantienen su revisión clínica.
+
+**Seguridad de identidad.** La auditoría de puerta mixta mostró falsos resultados
+continuos al dominar la arteria. Se rechaza la medición automática si cualquier
+latido medido tiene predominio arterial anatómico, sin alterar espectro o IQ.
+La captura mixta clínica sigue siendo válida; es una limitación declarada del
+estimador actual, probada con IQ real en ambos cuerpos y sano/grave.
+
+**Revisión de amplitudes.** Tras releer Iida 2016, Husain-Syed 2019 y las
+capturas clínicas aportadas, se prefiere el candidato 5 % al anterior 6 %. En
+el banco: S/D/mín sanos 13,75/11,25/6,25 cm/s y D grave 26,25, sin asignar una
+velocidad por grado ni afirmar un máximo universal. Las 53 matrices pasan y
+42 escenarios de referencia (7 casos × 3 semillas × 2 respiraciones) no cambian
+patrón al comparar el suelo absoluto de 2 cm/s con la misma regla relativa sin
+ese suelo. Es una comprobación de estabilidad, no validación clínica del suelo
+cero. El candidato 4 % sigue descartado.
+
+## 128. Refinamiento numérico PW de vasos pequeños y caché espacial exacta
+
+**Objetivo.** Fidelidad física y ecográfica, rendimiento y verificabilidad
+(objetivos 1, 2, 4 y 8): evitar que pocos dispersores produzcan bandas arteriales
+artificialmente discretas sin pintar una envolvente ni modificar la fisiología.
+
+**Decisión.** La población inicial conserva 320 puntos. Si un vaso con al menos
+2 % del peso geométrico del volumen tiene radio máximo de su tubo ≤ 2σ lateral,
+se refina a 1280. No se consulta el caso ni el grado. Se conserva la misma
+realización inicial, añadiendo puntos uniformes, y se multiplica la señal por
+sqrt(320/N); el ruido del receptor no se escala. El refinamiento se reevalúa al
+resembrar, no oscila cada pulso. Es una regla numérica provisional, no densidad
+real de eritrocitos ni garantía de convergencia en toda anatomía.
+
+El peso espacial de tejido inmóvil se reutiliza solo dentro de una llamada a
+generate. Sangre y movimiento respiratorio mantienen evaluación por pulso. Cada
+llamada invalida la caché; partículas nuevas y transiciones desde sangre también.
+La ruta sin caché queda disponible para pruebas de paridad exacta.
+
+**Evidencia.** El aumento global a 1280 produjo dos PF portales falsamente
+aceptadas (51/53 contratos), por lo que se descartó. El refinamiento geométrico
+pasó los 53 contratos sin rebajar tolerancias, 5 contratos de densidad/potencia
+y 3 de transporte. Cuatro pruebas comprueban IQ bit a bit en porta y renal,
+apnea y respiración, cambiando puerta, PRF, foco, ganancia y movimiento de sonda.
+El ensayo de 4 s con cuatro repeticiones alternadas también conserva el hash de
+todas las IQ. La mediana renal en apnea pasó de 1137 a 977 ms en esta máquina;
+no es una promesa de FPS ni un resultado clínico.
+
+**Verificación requerida.** Suite completa y CI del árbol final, comparaciones
+reales en navegador de ambos componentes y coste visible. La identificación de
+una arteria como vena sigue protegida por el rechazo conservador; mejorar la
+textura no autoriza falsear la clasificación ni valida PSV/EDV arterial.
+
+La validación rápida reparte sus tres archivos en corredores independientes,
+conservando tres ejecuciones de cada prueba, un worker, los mismos timeouts y
+cero retries. No se elimina ninguna prueba ni se sustituye el veredicto completo
+protegido. Esto evita que adquisiciones independientes se acumulen en una sola
+secuencia larga al refinar el volumen PW.
+
+## 129. Comparación venosa con espectros PW observados y escalas independientes
 
 **Requisito.** El propietario pidió imagen de Doppler pulsado sincronizada con ECG, con marcas opcionales de ondas y escala por examen. La referencia Q/A de la decisión 120 permanece secundaria y no se presenta como imagen PW.
 
@@ -5082,7 +5215,21 @@ reconstruir IQ ni modificar marcas. Los controles hemodinámicos y la progresió
 coordinada 0–3 solicitados son una etapa posterior; no se simulan con estos ajustes
 de presentación.
 
-## 126. Explorador hemodinámico por estados calculados y progresión docente
+**Recuperación sobre el motor revisado.** Se integran continuidad de captura,
+regla lateral, calibración renal revisada y refinamiento de población. El build
+inicial excedió el presupuesto (1025,4/1024 KiB). Se adelanta el segundo banco de
+64 códigos del transporte GLSL ya ensayado en el laboratorio pendiente: es una
+codificación reversible del texto, no cambio de shader ni aumento del límite.
+Sus pruebas exigen reconstrucción byte a byte, incluidos escapes e interpolación.
+La validación clínica y las nuevas capturas siguen pendientes sobre este árbol.
+
+La calidad se calcula y se muestra aunque las marcas A/S/D estén desactivadas.
+Se adelanta esta corrección del laboratorio pendiente: ocultar anotaciones no
+debe ocultar aliasing o incertidumbre de la adquisición. Una E2E fuerza Nyquist
+renal 20 cm/s en el grave y exige aviso; al ampliar a 80 exige recuperación sin
+modificar al paciente.
+
+## 130. Explorador hemodinámico por estados calculados y progresión docente
 
 **Etapa explícita.** Cinco parámetros del modelo existente construyen escenarios de equilibrio independientes, con integración de la red y adquisición IQ/PW; no se presenta como una intervención continua. Se conserva el paciente observado y la anatomía hepática normal. Taponamiento y distensibilidades aún sin mecanismo permanecen declarados pendientes.
 

@@ -262,6 +262,47 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
   expect(errors).toEqual([]);
 });
 
+test('PW comparado: calidad visible sin marcas y recuperación al ampliar escala renal', async ({ page }, info) => {
+  budget(240_000);
+  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  await page.selectOption('#case-select', 'severe-congestion');
+  await page
+    .locator('button', { hasText: /Apnea\s*esp/ })
+    .first()
+    .click();
+  await page.locator('#debug-toggle').check({ force: true });
+  await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
+  await page.evaluate(() => {
+    window.__vexusTest!.advance(30);
+    window.__vexusTest!.sim().render();
+  });
+  await page.locator('#freeze').click();
+  const before = await page.evaluate(() => window.__vexusTest!.sim().physiology.clock.t);
+  await page.getByRole('button', { name: 'Abrir comparación venosa' }).click({ force: true });
+  const dialog = page.getByRole('dialog', { name: 'Comparación venosa' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('checkbox', { name: 'Marcas A/S/D y máximos/mínimos' })).not.toBeChecked();
+  const renal = dialog.locator('.venous-row').nth(2);
+  const scale = renal.getByRole('combobox', { name: 'Escala PW Vena interlobar derecha', exact: true });
+  await scale.selectOption('20');
+  await withinFrames(
+    page,
+    150,
+    'aliasing renal comunicado sin anotaciones',
+    async () => (await renal.locator('.venous-limits').innerText()).includes('aliasing') || 'adquiriendo PW',
+  );
+  await expect(renal.locator('canvas')).toHaveAttribute('data-marks', '');
+  await scale.selectOption('80');
+  await withinFrames(page, 150, 'captura renal recuperada sin modificar fisiología', async () => {
+    const text = await renal.locator('.venous-limits').innerText();
+    return (!text.includes('no medible') && !text.includes('Esperando')) || 'reconstruyendo adquisición';
+  });
+  expect(await page.evaluate(() => window.__vexusTest!.sim().physiology.clock.t)).toBe(before);
+  await page.setViewportSize({ width: 1280, height: 1380 });
+  await page.screenshot({ path: info.outputPath('venous-pw-quality-recovered.png') });
+  expect(errors).toEqual([]);
+});
+
 test('laboratorio venoso: parámetros físicos, progresión calculada y aislamiento del paciente', async ({ page }, info) => {
   budget(120_000);
   const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
@@ -298,7 +339,13 @@ test('laboratorio venoso: parámetros físicos, progresión calculada y aislamie
   expect(Number(await lab.getByRole('slider', { name: 'Función sistólica VD (modelo)', exact: true }).inputValue())).toBeCloseTo(0.3, 12);
   await expect(lab).toContainText('transición clínica continua aún no está modelada');
   const renalRow = dialog.locator('.venous-row').nth(2);
-  await expect(renalRow).toContainText('aliasing');
+  await renalRow.getByRole('combobox', { name: 'Escala PW Vena interlobar derecha', exact: true }).selectOption('20');
+  await withinFrames(
+    page,
+    150,
+    'aliasing al reducir la escala renal',
+    async () => (await renalRow.locator('.venous-limits').innerText()).includes('aliasing') || 'reconstruyendo escala renal',
+  );
   await renalRow.getByRole('combobox', { name: 'Escala PW Vena interlobar derecha', exact: true }).selectOption('80');
   const renalBase = renalRow.getByRole('slider', { name: 'Línea de base Vena interlobar derecha', exact: true });
   await renalBase.focus();

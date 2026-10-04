@@ -153,7 +153,15 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
     canvases.evaluateAll((els) =>
       els.map((el) => {
         const c = el as HTMLCanvasElement;
-        const data = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+        // Repeated getImageData on the live canvas makes Chromium switch its renderer
+        // from GPU to CPU, changing antialiased text pixels during the assertion.
+        // Read a disposable software copy so the test does not mutate the renderer it verifies.
+        const copy = document.createElement('canvas');
+        copy.width = c.width;
+        copy.height = c.height;
+        const context = copy.getContext('2d', { willReadFrequently: true })!;
+        context.drawImage(c, 0, 0);
+        const data = context.getImageData(0, 0, copy.width, copy.height).data;
         let hash = 2166136261;
         for (const v of data) hash = Math.imul(hash ^ v, 16777619) >>> 0;
         const yellowRows: number[] = [];

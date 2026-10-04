@@ -1,3 +1,4 @@
+import { presentationPower, spectralGrey, type SpectralPresentation } from './spectralPresentation';
 import { spectralAxis, spectralBinAt, spectralTicks } from './spectralAxis';
 import type { SpectralColumn } from '../doppler/spectral';
 import type { CaptureMark } from '../doppler/spectralMeasure';
@@ -13,6 +14,7 @@ export function drawVenousSpectrum(
   cursorT: number | null,
   pixelRatio = 1,
   baselineShift = 0,
+  presentation: SpectralPresentation = { gainDb: 0, dynamicRangeDb: 45 },
 ): void {
   const axis = spectralAxis(scaleCms, baselineShift);
   const ctx = canvas.getContext('2d');
@@ -31,10 +33,11 @@ export function drawVenousSpectrum(
     const hopS = 16 / col.prfHz;
     const x0 = Math.max(0, Math.floor(xOf(col.t - hopS / 2)));
     const x1 = Math.min(plotW, Math.ceil(xOf(col.t + hopS / 2)));
-    const n = col.powerDb.length;
+    const power = presentationPower(columns, c);
+    const n = power.length;
     for (let y = 0; y < plotH; y++) {
       const k = spectralBinAt((y + 0.5) / plotH, n, baselineShift);
-      const value = Math.round(255 * Math.pow(Math.max(0, Math.min(1, (col.powerDb[k] + 52) / 45)), 1.4));
+      const value = spectralGrey(power[k], presentation);
       for (let x = x0; x < x1; x++) {
         const p = (y * plotW + x) * 4;
         bitmap.data[p] = value;

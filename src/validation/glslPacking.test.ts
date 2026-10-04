@@ -13,7 +13,7 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 describe('transporte GLSL sin pérdida', () => {
   it('decodifica el diccionario completo sin tocar texto normal', () => {
     expect(unpackGlsl(GLSL_WORDS.map((_, i) => '@' + GLSL_MARKERS[i]).join(' '))).toBe(GLSL_WORDS.join(' '));
-    expect(unpackGlsl('x + 1.0; @0 @[')).toBe('x + 1.0; @0 @[');
+    expect(unpackGlsl('x + 1.0; @! @[')).toBe('x + 1.0; @! @[');
     expect(unpackGlsl('@z')).toBe('logdepthbuf_pars_vertex');
   });
   it('decodifica los diez tokens adicionales sin renombrar identificadores', () => {

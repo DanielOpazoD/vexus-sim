@@ -5065,8 +5065,19 @@ esto evita redibujados ocultos entre comprobaciones de limpieza y añade ese est
 
 **Requisito.** El propietario pidió imagen de Doppler pulsado sincronizada con ECG, con marcas opcionales de ondas y escala por examen. La referencia Q/A de la decisión 120 permanece secundaria y no se presenta como imagen PW.
 
-**Implementación.** Tres ventanas anatómicas independientes comparten el historial fisiológico. Se reutiliza dispersores → IQ → filtro de pared → STFT; la imagen pinta potencia, sin ruido gráfico ni relleno de curvas. Contacto, compresión, haz, ángulo, profundidad y transmisión proceden del ecógrafo. Las puertas permanecen fijas y la respiración puede perder el vaso. Se presenta velocidad axial sin corrección angular. Las escalas iniciales 50/30/40 cm/s tienen PRF física independiente; son ajustes del modelo, no límites clínicos. La base se desplaza sin modificar IQ. Los ejes de velocidad ocupan una columna lateral y ECG/respiración reservan el mismo ancho para conservar alineación temporal. Las marcas proceden del medidor espectral y requieren calidad: A/S/D hepáticas, Vmáx/Vmín portales y S/D/mín interlobares. El trabajo por cuadro se acota y el cierre borra señal y datos; el paciente no se modifica al pausar la vista.
+**Implementación.** Tres ventanas anatómicas independientes comparten el historial fisiológico. Se reutiliza dispersores → IQ → filtro de pared → STFT; la imagen pinta potencia, sin ruido gráfico ni relleno de curvas. Contacto, compresión, haz, ángulo, profundidad y transmisión proceden del ecógrafo. Las puertas permanecen fijas y la respiración puede perder el vaso. Se presenta velocidad axial sin corrección angular. Las escalas iniciales 50/30/50 cm/s tienen PRF física independiente; son ajustes del modelo, no límites clínicos. La base se desplaza sin modificar IQ. Los ejes de velocidad ocupan una columna lateral y ECG/respiración reservan el mismo ancho para conservar alineación temporal. Las marcas proceden del medidor espectral y requieren calidad: A/S/D hepáticas, Vmáx/Vmín portales y S/D/mín interlobares. El trabajo por cuadro se acota y el cierre borra señal y datos; el paciente no se modifica al pausar la vista.
 
 **Verificación y límites.** Contratos de geometría en siete casos, determinismo por fragmentos, señal multibin, reloj y huecos; adquisición normal en apnea medible en los tres canales. E2E específico de imagen, marcas, escala independiente y móvil, además del flujo de referencia previo. Se preservan las limitaciones de fisiología y validación clínica. Detalle y fuentes en `physiology/VENOUS_SPECTRAL_VIEWER.md`.
 
 **Estado.** Borrador clínico retenido tras el rechazo visual del propietario. Pasar pruebas técnicas no autoriza anunciar validación clínica ni fusionar esta etapa.
+
+**Refinamiento de presentación solicitado.** Puertas portal/interlobar de 6/4 mm,
+componente arterial y venoso renal de una misma adquisición, y base renal inicial
++0,1 (intervalo visible −40/+60 cm/s a Nyquist 50). Promedio de potencia lineal
+de tres columnas contiguas, sin mezclar huecos ni frecuencias de muestreo, más
+ganancia digital/rango dinámico configurables. No se altera la onda fisiológica
+ni se rellena una envolvente; el espectro fuente y sus mediciones se conservan.
+La prueba de navegador exige que el cambio de ganancia sea reversible sin
+reconstruir IQ ni modificar marcas. Los controles hemodinámicos y la progresión
+coordinada 0–3 solicitados son una etapa posterior; no se simulan con estos ajustes
+de presentación.

@@ -52,8 +52,20 @@ export const GLSL_WORDS = [
   'tonemapping_fragment',
   'morphtarget_pars_vertex',
   'logdepthbuf_pars_vertex',
+  'clipping_planes_vertex',
+  'colorspace_fragment',
+  'premultiplied_alpha_fragment',
+  'shadowMapSize',
+  'clearcoatRoughness',
+  'shadowBias',
+  'morphinstance_vertex',
+  'logdepthbuf_fragment',
+  'shadowRadius',
+  'alphatest_pars_fragment',
+  'alphahash_pars_fragment',
+  'USE_REVERSED_DEPTH_BUFFER',
 ] as const;
-export const GLSL_MARKERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
+export const GLSL_MARKERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_$';
 export function unpackGlsl(s: string): string {
-  return s.replace(/@([A-Za-z])/g, (_, c: string) => GLSL_WORDS[GLSL_MARKERS.indexOf(c)] ?? `@${c}`);
+  return s.replace(/@([A-Za-z0-9_$])/g, (_, c: string) => GLSL_WORDS[GLSL_MARKERS.indexOf(c)] ?? `@${c}`);
 }

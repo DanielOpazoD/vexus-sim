@@ -14,7 +14,7 @@ El historial es de seis segundos. Las tres PRF pueden diferir; cada columna mant
 su frecuencia de muestreo y tiempo. La orientación virtual coloca el flujo
 anterógrado suprahepático/interlobar bajo cero y portal sobre cero; no se afirma
 que todas las ventanas clínicas tengan ese signo. La escala tiene unidades cm/s, cero explícito
-y Nyquist independiente por territorio. Los ajustes iniciales 50/30/40 cm/s son
+y Nyquist independiente por territorio. Los ajustes iniciales 50/30/50 cm/s son
 ajustes de equipo para este modelo, no límites clínicos de normalidad. Una escala
 insuficiente puede producir aliasing real de la señal; aumentarla reconstruye la
 adquisición virtual y conserva el reloj del paciente. No se normaliza la amplitud.
@@ -25,7 +25,7 @@ Cada territorio obtiene una ventana mediante las mismas rutinas de contacto,
 compresión, transmisión y colocación de puerta que el ecógrafo principal. Se
 emplean tres copias anatómicas independientes del mismo paciente, de manera que
 la compresión de una sonda virtual no cambie los otros territorios ni el torso de
-la vista principal. Las puertas de 4/4/2 mm permanecen fijas en el espacio; la
+la vista principal. Las puertas de 4/6/4 mm permanecen fijas en el espacio; la
 respiración puede desplazar el vaso respecto a ellas y perder señal. El ángulo,
 la profundidad y la sensibilidad del haz afectan la IQ. Se muestra velocidad
 axial sin corrección angular, junto al ángulo actual. Esta simultaneidad virtual
@@ -89,6 +89,37 @@ El coordinador de ventanas reside en app/venousSpectral.ts, porque reutiliza
 colocación de sonda y puerta de la aplicación. El motor Doppler no importa app.
 Profundidad y foco se copian del equipo al crear la adquisición; se inyectan
 como datos para evitar que el visor importe el renderer completo. El diccionario
-reversible de GLSL aprovecha sus diez marcadores restantes para reducir bytes;
-las pruebas comparan todos los shaders reconstruidos byte por byte. No se amplían
+reversible de GLSL aprovecha los marcadores disponibles para reducir bytes;
+el alfabeto se extiende a 64 símbolos ASCII y las pruebas comparan todos los shaders reconstruidos byte por byte. No se amplían
 presupuestos ni se modifica la física de los shaders.
+
+## Revisión de llenado portal y señal arterial renal
+
+A solicitud del propietario se amplían las puertas portal e interlobar a 6 y
+4 mm respectivamente. Es un cambio de volumen de muestra físico: puede aumentar
+la dispersión de velocidades y captar la arteria adyacente. La fila renal declara
+arteria y vena de la misma puerta; no suma dos espectros adquiridos aparte. La
+PRF renal corresponde a Nyquist 50 cm/s, con base inicial +0,1: intervalo visible
+−40 a +60 cm/s. El intervalo total sigue siendo 100 cm/s. No son valores de
+normalidad poblacional ni una corrección angular. La escala permanece ajustable.
+
+La presentación promedia potencia LINEAL de tres columnas contiguas con pesos
+1/4, 1/2 y 1/4, conservando bin y tiempo central. A las PRF iniciales, el soporte
+se extiende aproximadamente 5–8 ms a cada lado. No mezcla PRF ni huecos. No se
+rellena el área bajo una envolvente, no se fabrica señal de flujo ausente y no
+cambian las mediciones sobre el espectro fuente. Se cachean arrays de potencia
+sin referencias encadenadas a columnas antiguas, para no retener todo el historial.
+
+Ganancia digital de imagen y rango dinámico se muestran en cada fila y pueden
+ajustarse en «Imagen». Los presets de presentación portal/renal usan +15 dB y
+25 dB de rango; la suprahepática conserva 0/45 dB. Son decisiones de visualización
+explícitas, no una mejora de la relación señal/ruido física ni parámetros clínicos
+calibrados. Las pruebas exigen que variar la ganancia cambie píxeles sin reiniciar
+IQ, mover timestamps, modificar marcas o alterar la línea cero.
+
+Como contraste técnico, un barrido offline de Nyquist renal 40–100 cm/s sobre el
+mismo paciente encuentra envolventes arteriales visibles cerca del extremo a 40. La escala 50 con base desplazada da espacio al componente arterial y conserva
+la vena bajo cero. Las variaciones de estimación entre PRF y la incertidumbre de
+caudal/área del modelo siguen requiriendo calibración independiente. Se mantienen
+los criterios de captura y el borrador clínico. Guía de técnica: AIUM 2020,
+doi:10.1002/jum.15260, https://onlinelibrary.wiley.com/doi/10.1002/jum.15260.

@@ -1,3 +1,4 @@
+import { VENOUS_PW_PRESENTATION } from '../spectralPresentation';
 import { VenousSpectralAcquisition, VENOUS_SPECTRAL_SCALES, VENOUS_FORWARD_SIGN } from '../../app/venousSpectral';
 import type { CaptureMark } from '../../doppler/spectralMeasure';
 import { captureProtocolVessel } from '../../doppler/capture';
@@ -40,7 +41,8 @@ export class VenousViewer {
   #spectralScales: number[] = [...VENOUS_SPECTRAL_SCALES];
   #canvases: HTMLCanvasElement[] = [];
   #paintKeys = ['', '', ''];
-  #baselines = [0, 0, 0];
+  #baselines = [0, 0, 0.1];
+  readonly #presentation = VENOUS_PW_PRESENTATION.map((p) => ({ ...p }));
   #spectralControls: HTMLElement[] = [];
   #plots: Element[] = [];
   #marks: CaptureMark[][] = [[], [], []];
@@ -202,7 +204,7 @@ export class VenousViewer {
         baseline.min = '-0.4';
         baseline.max = '0.4';
         baseline.step = '0.05';
-        baseline.value = '0';
+        baseline.value = String(this.#baselines[i]);
         baseline.setAttribute('aria-label', `Línea de base ${r.label}`);
         baseline.addEventListener('input', () => {
           this.#baselines[i] = Number(baseline.value);
@@ -210,6 +212,28 @@ export class VenousViewer {
         });
         baselineLabel.appendChild(baseline);
         controls.appendChild(baselineLabel);
+        const image = document.createElement('details');
+        const summary = document.createElement('summary');
+        summary.textContent = 'Imagen';
+        image.appendChild(summary);
+        for (const [key, text, values] of [
+          ['gainDb', 'Ganancia de imagen (dB)', [-6, 0, 6, 9, 12, 15, 18, 24]],
+          ['dynamicRangeDb', 'Rango dinámico (dB)', [20, 25, 30, 35, 45, 60]],
+        ] as const) {
+          const label = document.createElement('label');
+          label.textContent = text;
+          const select = document.createElement('select');
+          select.setAttribute('aria-label', `${text} ${r.label}`);
+          for (const v of values) select.add(new Option(String(v), String(v)));
+          select.value = String(this.#presentation[i][key]);
+          select.addEventListener('change', () => {
+            this.#presentation[i][key] = Number(select.value);
+            this.#drawSpectra();
+          });
+          label.appendChild(select);
+          image.appendChild(label);
+        }
+        controls.appendChild(image);
         this.#spectralControls.push(controls);
       }
       d.appendChild(figure);
@@ -331,7 +355,7 @@ export class VenousViewer {
         targetH = Math.round(184 * ratio);
       if (canvas.width !== targetW) canvas.width = targetW;
       if (canvas.height !== targetH) canvas.height = targetH;
-      const paintKey = `${targetW}/${targetH}/${this.#spectralScales[i]}/${this.#baselines[i]}/${end}/${columns.at(-1)?.t}/${this.#marksT}/${this.#annotations}/${this.#paused ? cursor?.t : ''}`;
+      const paintKey = `${targetW}/${targetH}/${this.#spectralScales[i]}/${this.#baselines[i]}/${this.#presentation[i].gainDb}/${this.#presentation[i].dynamicRangeDb}/${end}/${columns.at(-1)?.t}/${this.#marksT}/${this.#annotations}/${this.#paused ? cursor?.t : ''}`;
       if (paintKey !== this.#paintKeys[i])
         drawVenousSpectrum(
           this.#canvases[i],
@@ -343,6 +367,7 @@ export class VenousViewer {
           this.#paused ? (cursor?.t ?? null) : null,
           ratio,
           this.#baselines[i],
+          this.#presentation[i],
         );
       this.#paintKeys[i] = paintKey;
       this.#canvases[i].dataset.baseline = String(this.#baselines[i]);
@@ -350,7 +375,7 @@ export class VenousViewer {
       this.#canvases[i].dataset.lastTime = String(columns.at(-1)?.t ?? '');
       this.#canvases[i].dataset.marks = this.#annotations ? this.#marks[i].map((m) => m.label).join(',') : '';
       this.#limits[i].textContent =
-        `2,5 MHz · PRF ${columns.at(-1)?.prfHz.toFixed(0) ?? '—'} Hz · filtro 15 Hz · θ ${this.#spectral.gateInfo[i].beamAngleToFlowDeg?.toFixed(0) ?? '—'}° · velocidad axial · ${this.#spectralScales[i]} cm/s Nyquist${this.#annotations && this.#measurementIssues[i] ? ` · Marcas no disponibles: ${this.#measurementIssues[i]}` : ''}`;
+        `2,5 MHz · PRF ${columns.at(-1)?.prfHz.toFixed(0) ?? '—'} Hz · filtro 15 Hz · θ ${this.#spectral.gateInfo[i].beamAngleToFlowDeg?.toFixed(0) ?? '—'}° · velocidad axial · ${this.#spectralScales[i]} cm/s Nyquist · imagen ${this.#presentation[i].gainDb} dB / RD ${this.#presentation[i].dynamicRangeDb}${this.#annotations && this.#measurementIssues[i] ? ` · Marcas no disponibles: ${this.#measurementIssues[i]}` : ''}`;
       this.#values[i].textContent = 'PW simulado';
     }
   }
@@ -374,8 +399,15 @@ export class VenousViewer {
       this.#plots[i].setAttribute('style', this.#spectralMode ? 'display:none' : '');
       this.#canvases[i].hidden = !this.#spectralMode;
       this.#spectralControls[i].hidden = !this.#spectralMode;
+      if (i === 2)
+        this.dialog.querySelectorAll('.venous-row figcaption strong')[i].textContent = this.#spectralMode
+          ? 'Arteria y vena interlobares derechas'
+          : 'Vena interlobar derecha';
       const detail = this.dialog.querySelectorAll('.venous-direction')[i];
-      detail.textContent = `${this.#spectralMode && VENOUS_FORWARD_SIGN[i] < 0 ? '−' : '+'} ${VENOUS_COMPARISON_CHANNELS[i].forward}${this.#spectralMode ? ' · orientación virtual' : ''}`;
+      detail.textContent =
+        i === 2 && this.#spectralMode
+          ? '+ arteria · − vena · misma puerta PW'
+          : `${this.#spectralMode && VENOUS_FORWARD_SIGN[i] < 0 ? '−' : '+'} ${VENOUS_COMPARISON_CHANNELS[i].forward}${this.#spectralMode ? ' · orientación virtual' : ''}`;
     }
     if (!this.#points.length) {
       this.#status.textContent = 'Acumulando historial…';

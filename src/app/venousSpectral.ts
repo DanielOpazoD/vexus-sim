@@ -17,12 +17,12 @@ import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import type { BModeSettings } from '../ultrasound/renderer';
 
 /** Experimental acquisition settings; calibration is separate from physiological normality. */
-export const VENOUS_SPECTRAL_SCALES = [50, 30, 40] as const;
+export const VENOUS_SPECTRAL_SCALES = [50, 30, 50] as const;
 export const VENOUS_FORWARD_SIGN = [-1, 1, -1] as const;
 const WINDOWS: readonly { window: StartPoint['id']; vessels: readonly VesselId[]; gateMm: number }[] = [
   { window: 'intercostal', vessels: ['hvRight'], gateMm: 4 },
-  { window: 'portal', vessels: ['pvTrunk'], gateMm: 4 },
-  { window: 'renal', vessels: ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'], gateMm: 2 },
+  { window: 'portal', vessels: ['pvTrunk'], gateMm: 6 },
+  { window: 'renal', vessels: ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'], gateMm: 4 },
 ];
 
 /** Three virtual probe acquisitions through the same anatomical window code as the simulator.

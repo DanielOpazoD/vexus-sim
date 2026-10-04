@@ -198,6 +198,18 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
   for (const key of ['columns', 'lastTime', 'marks'] as const) expect(shifted[0][key]).toBe(original[0][key]);
   for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowLeft');
   await expect(canvases.first()).toHaveAttribute('data-baseline', '0');
+  // Image gain must change only pixels, retaining IQ history and source-derived marks.
+  const portalRow = dialog.locator('.venous-row').nth(1);
+  await portalRow.locator('summary').click();
+  const imageGain = portalRow.getByRole('combobox', { name: 'Ganancia de imagen (dB) Porta' });
+  const priorGain = await snapshot();
+  await imageGain.selectOption('0');
+  const lowGain = await snapshot();
+  expect(lowGain[1].hash).not.toBe(priorGain[1].hash);
+  expect(lowGain.map(({ hash: _h, ...rest }) => rest)).toEqual(priorGain.map(({ hash: _h, ...rest }) => rest));
+  await imageGain.selectOption('15');
+  expect(await snapshot()).toEqual(priorGain);
+  await portalRow.locator('summary').click();
   expect(await snapshot()).toEqual(original);
   await page.screenshot({ path: info.outputPath('venous-pw-desktop.png') });
   await dialog.getByRole('button', { name: 'Pausar vista', exact: true }).click();
@@ -208,7 +220,7 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
   await rowScales.nth(1).selectOption('80');
   await expect(rowScales.nth(0)).toHaveValue('50');
   await expect(rowScales.nth(1)).toHaveValue('80');
-  await expect(rowScales.nth(2)).toHaveValue('40');
+  await expect(rowScales.nth(2)).toHaveValue('50');
   await withinFrames(
     page,
     140,

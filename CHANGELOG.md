@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Visor VSH: alternativa de inclinación física +2° para recuperar ventanas sin modificar hemodinámica; pose habitual por defecto y calidad de adquisición conservada (143).
+
 - E2E de regla PW: estabilización fisiológica antes de activar IQ, conservando adquisición real, aserciones, capturas y plazos; evita calcular señal descartada durante la preparación (142).
 
 - Visor PW: una ventana anatómica no disponible se informa y limpia sin degradar el bucle ni mostrar cifras de referencia como mediciones; recuperación tras corregir la adquisición (141).

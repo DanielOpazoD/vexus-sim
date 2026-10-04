@@ -5525,3 +5525,34 @@ estabilización fisiológica ni la adquisición observada.
 del CI completo: hay otras pruebas y variabilidad de corredores. La prueba de
 geometría no constituye una validación de operación PW sostenida durante 38 s.
 Los ensayos de cadena, estabilidad y fisiología siguen separados e intactos.
+
+## 143. Alternativa de inclinación física para la ventana suprahepática virtual
+
+**Auditoría.** En referencia/respiración tranquila a t=2 s, el adulto normal y
+el caso de IT no ofrecían una puerta intercostal habitual. Se probaron cambios
+de rock e inclinación de ±2° y ±4° sin mover órganos ni alterar hemodinámica.
+Inclinación +2° encontró una puerta en VSH derecha con |cos α|≈0,967 y
+transmisión de amplitud≈0,067; rock no la recuperó. Son resultados de estos
+casos/modelo, no una recomendación clínica universal. El barrido se reproduce
+con `node --import tsx tools/fidelity/virtualWindowPoseAudit.ts`.
+
+**Cambio.** Un selector nativo junto al PW suprahepático ofrece Habitual o
+Inclinación +2°. Cambia realmente el marco de la sonda virtual, su contacto,
+la búsqueda anatómica y la proyección Doppler; no multiplica una curva ni
+aplica corrección angular artificial. La opción habitual permanece por defecto.
+La guarda de ventana ausente sigue activa si la alternativa tampoco permite
+adquirir. El cambio de ventana reconstruye la adquisición virtual, como la
+selección renal existente, sin mover la sonda ni cambiar al paciente principal.
+
+**Verificación.** Omitir la opción equivale exactamente a Habitual. En una
+instantánea común, porta y renal conservan geometría e IQ, mientras cambia el
+haz de VSH; paciente, muestras y reloj no se modifican. En los dos casos de la
+auditoría, la alternativa encuentra sangre suprahepática y genera IQ con la
+misma respiración. La E2E de ausencia ahora exige recuperar señal por cambio
+de ventana sin alterar al paciente, volver a la habitual ausente y conservar
+también la ruta de recuperación respiratoria ya probada.
+
+**Límites.** No se certifica una captura medible en cualquier fase o escenario.
+La respiración posterior puede sacar sangre de la puerta y los controles de
+calidad permanecen intactos. El ángulo que figura bajo el espectro sigue siendo
+el ángulo real haz–flujo de la adquisición, no los 2° de ajuste del soporte.

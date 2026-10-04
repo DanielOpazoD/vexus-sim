@@ -21,6 +21,7 @@ import type { BModeSettings } from '../ultrasound/renderer';
 export const VENOUS_SPECTRAL_SCALES = [50, 30, 50] as const;
 export const VENOUS_FORWARD_SIGN = [-1, 1, -1] as const;
 export type RenalSpectralWindow = 'venous' | 'paired';
+export type HepaticSpectralWindow = 'standard' | 'tilted';
 const WINDOWS: readonly { window: StartPoint['id']; vessels: readonly VesselId[]; gateMm: number }[] = [
   { window: 'intercostal', vessels: ['hvRight'], gateMm: 4 },
   { window: 'portal', vessels: ['pvTrunk'], gateMm: 6 },
@@ -59,6 +60,7 @@ export class VenousSpectralAcquisition {
     patient: PatientState,
     settings: Pick<BModeSettings, 'depthMm' | 'focusMm'>,
     renalWindow: RenalSpectralWindow = 'venous',
+    hepaticWindow: HepaticSpectralWindow = 'standard',
   ) {
     this.#seed = seed;
     this.#settings = { depthMm: settings.depthMm, focusMm: settings.focusMm };
@@ -73,7 +75,14 @@ export class VenousSpectralAcquisition {
       const sp = startPointsFor(scene.torso).find((s) => s.id === window)!;
       // Audited acquisition pose, not a velocity or brightness correction.
       const contact = probeContact(
-        { phi: sp.phi, z: sp.z, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: (sp.tilt ?? 0) - (paired ? Math.PI / 90 : 0), lift: 0 },
+        {
+          phi: sp.phi,
+          z: sp.z,
+          yaw: sp.yaw,
+          rock: sp.rock ?? 0,
+          tilt: (sp.tilt ?? 0) - (paired ? Math.PI / 90 : 0) + (window === 'intercostal' && hepaticWindow === 'tilted' ? Math.PI / 90 : 0),
+          lift: 0,
+        },
         tr,
         scene.torso,
       );

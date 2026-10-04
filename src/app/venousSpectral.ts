@@ -27,6 +27,14 @@ const WINDOWS: readonly { window: StartPoint['id']; vessels: readonly VesselId[]
   { window: 'renal', vessels: ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'], gateMm: 4 },
 ];
 
+/** A missing anatomical window is an acquisition limitation, not a numerical engine failure. */
+export class AcousticWindowUnavailableError extends Error {
+  constructor(readonly window: StartPoint['id']) {
+    super('No acoustic gate found for ' + window);
+    this.name = 'AcousticWindowUnavailableError';
+  }
+}
+
 /** Three virtual probe acquisitions through the same anatomical window code as the simulator.
  * Independent scene/query instances isolate probe compression; physiology remains shared and read-only.
  */
@@ -91,7 +99,7 @@ export class VenousSpectralAcquisition {
         weight,
         trunkInterior,
       );
-      if (!best) throw new Error('No acoustic gate found for ' + window);
+      if (!best) throw new AcousticWindowUnavailableError(window);
       return { anatomy: query, contact, best };
     });
     this.materialCenters = this.#contexts.map((c, i) => c.anatomy.deformation.toMaterial(this.gate(i, sample).center, sample.resp));

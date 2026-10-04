@@ -5477,3 +5477,30 @@ sano/congestivo conservados. Se mantienen puerta, filtros, PRF, ganancia,
 fisiología y criterios del alumno. No se borran bins negativos ni se impone la
 PF. Investigación, resultados y limitaciones en
 [fidelity/PORTAL_ACQUISITION_AUDIT.md](fidelity/PORTAL_ACQUISITION_AUDIT.md).
+
+## 141. Una ventana virtual ausente no es una avería del bucle
+
+**Reproducción.** Con cuerpo de referencia, adulto normal y respiración tranquila
+a t=2 s, la búsqueda intercostal puede no encontrar una puerta aceptable. Ocurre
+también en el código anterior a la guarda portal. La excepción genérica llegaba
+al bucle global, que podía entrar en su modo degradado de reintento a 1 Hz.
+
+**Cambio.** Se distingue el error esperado de adquisición mediante un tipo
+específico. El visor muestra qué ventana no está disponible, limpia imágenes y
+cifras PW anteriores y ofrece la referencia Q/A como alternativa explícita.
+No transforma Q/A en una medición PW ni dibuja flujo cero. Reintenta al avanzar
+medio segundo del reloj simulado, sin búsquedas cada cuadro sobre la misma fase
+congelada. Un cambio de equipo reinicia el intento. Los errores inesperados
+continúan propagándose al registro global.
+
+**Alcance.** La adquisición de las tres ventanas sigue siendo conjunta: si una
+no puede configurarse, este visor no presenta las otras como una comparación PW
+completa. No corrige la anatomía ni garantiza una ventana acústica en toda fase;
+la ausencia se vuelve visible y recuperable sin degradar el resto del simulador.
+
+**Verificación.** La prueba geométrica reproduce la ausencia intercostal en
+referencia/respiración y la recuperación en apnea. La E2E exige aviso sin cifras
+PW incluso al mover el cursor pausado, continuidad del bucle, cambio a referencia fisiológica, adquisición IQ tras
+corregir la respiración, reloj congelado conservado, cierre y foco recuperado.
+Se reutiliza la limpieza de canvases y el manejador de cambio de equipo para
+evitar estados y mediciones anteriores al cambiar de ventana renal.

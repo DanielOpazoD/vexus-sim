@@ -13,7 +13,7 @@ import { lineDirection, pointOnLine, type ProbeFrame, type Transducer } from '..
  * del candidato (`acousticWindowWeight`: la transmisión hasta el punto). Sin peso no mira la
  * transmisión y desde algunos puntos de partida la mejor puerta cae en una sombra (limitación
  * `gate-placement-ignores-shadows`). La usan las pruebas de la cadena del alumno y los ganchos de
- * la e2e; no la UI (en la app la puerta la pone el alumno).
+ * la e2e y las ventanas virtuales del visor; en la exploración manual la puerta la pone el alumno.
  */
 export interface GatePlacement {
   theta: number;

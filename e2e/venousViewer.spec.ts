@@ -509,3 +509,69 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
       expect(errors).toEqual([]);
     },
   );
+
+test('ventana ausente: aviso de adquisición, bucle estable y recuperación sin cambiar el paciente', async ({ page }, info) => {
+  budget(120_000);
+  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1&reference=1');
+  await page.locator('#freeze').click({ force: true });
+  await page.locator('#debug-toggle').check({ force: true });
+  await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
+  await page.evaluate(() => {
+    const sim = window.__vexusTest!.sim();
+    sim.patient.respiratoryPattern = 'quiet';
+    while (sim.physiology.clock.t < 8 - 1e-9) sim.physiology.step();
+  });
+  const open = page.getByRole('button', { name: 'Abrir comparación venosa' });
+  await open.click({ force: true });
+  const dialog = page.getByRole('dialog', { name: 'Comparación venosa' });
+  await expect(dialog.locator('.venous-status')).toContainText('Ventana PW no disponible (intercostal)');
+  await expect(dialog.locator('.venous-row figcaption span').first()).toHaveText('Sin adquisición');
+  await expect(dialog.locator('.venous-spectrum').first()).toHaveAttribute('data-columns', '0');
+  const frames = await page.evaluate(() => window.__vexusTest!.framesRendered());
+  await withinFrames(
+    page,
+    20,
+    'el fallo de ventana no degrada el bucle',
+    async () => (await page.evaluate(() => window.__vexusTest!.framesRendered())) > frames || 'sin cuadros nuevos',
+  );
+  await dialog.getByRole('button', { name: 'Pausar vista', exact: true }).click();
+  const cursor = dialog.getByRole('slider', { name: 'Cursor sincronizado' });
+  await cursor.focus();
+  await page.keyboard.press('ArrowLeft');
+  expect(
+    await dialog
+      .locator('.venous-row figcaption span')
+      .allTextContents()
+      .then((v) => v.slice(0, 3)),
+  ).toEqual(['Sin adquisición', 'Sin adquisición', 'Sin adquisición']);
+  await dialog.getByRole('button', { name: 'Reanudar vista', exact: true }).click();
+  await page.screenshot({ path: info.outputPath('venous-window-unavailable.png') });
+  const mode = dialog.getByRole('combobox', { name: 'Tipo de visualización venosa' });
+  await mode.selectOption('reference');
+  await expect(dialog.locator('.venous-status')).not.toContainText('Ventana PW no disponible');
+  await expect(dialog.locator('.venous-wave').first()).toHaveAttribute('d', /L/);
+  await page.evaluate(() => {
+    const sim = window.__vexusTest!.sim();
+    sim.patient.respiratoryPattern = 'apnea-expiratory';
+    while (sim.physiology.clock.t < 16 - 1e-9) sim.physiology.step();
+  });
+  const before = await page.evaluate(() => ({ t: window.__vexusTest!.sim().physiology.clock.t, frozen: window.__vexusTest!.sim().frozen }));
+  await mode.selectOption('pw');
+  await withinFrames(
+    page,
+    140,
+    'recuperación real de IQ después de corregir la respiración',
+    async () =>
+      (await dialog
+        .locator('.venous-spectrum')
+        .first()
+        .evaluate((el) => Number((el as HTMLCanvasElement).dataset.columns))) > 30 || 'sin IQ',
+  );
+  await expect(dialog.locator('.venous-status')).not.toContainText('Ventana PW no disponible');
+  expect(
+    await page.evaluate(() => ({ t: window.__vexusTest!.sim().physiology.clock.t, frozen: window.__vexusTest!.sim().frozen })),
+  ).toEqual(before);
+  await dialog.getByRole('button', { name: 'Cerrar', exact: true }).click();
+  await expect(open).toBeFocused();
+  expect(errors).toEqual([]);
+});

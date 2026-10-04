@@ -6,7 +6,13 @@ import { measurePhysiologyTruth } from '../../vexus/measurements';
 import { classifyVexusC } from '../../vexus/classification';
 import { gradeValueText } from './vexusText';
 import { VENOUS_PW_PRESENTATION } from '../spectralPresentation';
-import { VenousSpectralAcquisition, VENOUS_SPECTRAL_SCALES, VENOUS_FORWARD_SIGN, type RenalSpectralWindow } from '../../app/venousSpectral';
+import {
+  AcousticWindowUnavailableError,
+  VenousSpectralAcquisition,
+  VENOUS_SPECTRAL_SCALES,
+  VENOUS_FORWARD_SIGN,
+  type RenalSpectralWindow,
+} from '../../app/venousSpectral';
 import type { CaptureMark } from '../../doppler/spectralMeasure';
 import { captureProtocolVessel } from '../../doppler/capture';
 import type { Beat } from '../../physiology/rhythm';
@@ -47,6 +53,8 @@ export class VenousViewer {
   #annotations = false;
   #spectral: VenousSpectralAcquisition | null = null;
   #processedT = -Infinity;
+  #unavailable: AcousticWindowUnavailableError | null = null;
+  #retryAt = -Infinity;
   #rawSamples: readonly PhysiologySample[] = [];
   #beats: Beat[] = [];
   #spectralScales: number[] = [...VENOUS_SPECTRAL_SCALES];
@@ -207,11 +215,7 @@ export class VenousViewer {
             this.#renalWindow = select.value as RenalSpectralWindow;
             this.#experimentPrimed = false;
             this.#spectral = null;
-            this.#processedT = -Infinity;
-            this.#marksT = -Infinity;
-            this.#marks = [[], [], []];
-            this.#paintKeys = ['', '', ''];
-            this.update();
+            this.#rebuildEquipment();
           });
           label.appendChild(select);
           controls.appendChild(label);
@@ -318,6 +322,8 @@ export class VenousViewer {
   }
 
   #rebuildEquipment(): void {
+    this.#unavailable = null;
+    this.#retryAt = -Infinity;
     this.#experimentPrimed = false;
     if (this.#spectral) {
       this.#spectral.scales.splice(0, 3, ...this.#spectralScales);
@@ -333,6 +339,8 @@ export class VenousViewer {
   }
 
   clear(resetExperiment = true): void {
+    this.#unavailable = null;
+    this.#retryAt = -Infinity;
     this.#experimentError = '';
     this.#experimentGrade = '—';
     this.#experimentPrimed = false;
@@ -350,13 +358,7 @@ export class VenousViewer {
     this.#marksT = -Infinity;
     this.#marks = [[], [], []];
     this.#velocitySummaries = ['', '', ''];
-    for (const canvas of this.#canvases) {
-      canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
-      canvas.dataset.columns = '0';
-      canvas.dataset.marks = '';
-      canvas.dataset.lastTime = '';
-      canvas.dataset.gateCenter = '';
-    }
+    this.#clearCanvases();
     this.#paused = false;
     this.#pause.textContent = 'Pausar vista';
     this.#cursor.disabled = true;
@@ -364,6 +366,16 @@ export class VenousViewer {
     this.#cursor.value = '0';
     for (const p of [...this.#paths, ...this.#markers]) p.setAttribute('d', '');
     for (const el of [...this.#values, ...this.#limits, this.#status, this.#readout, this.#case]) el.textContent = '';
+  }
+
+  #clearCanvases(): void {
+    for (const canvas of this.#canvases) {
+      canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+      canvas.dataset.columns = '0';
+      canvas.dataset.marks = '';
+      canvas.dataset.lastTime = '';
+      canvas.dataset.gateCenter = '';
+    }
   }
 
   update(): void {
@@ -427,18 +439,35 @@ export class VenousViewer {
       this.#cursor.value = this.#cursor.max;
     }
     if (this.#spectralMode && this.#rawSamples.length) {
+      if (!this.#spectral && e.clock.t >= this.#retryAt) {
+        try {
+          const sim = this.#ctx.sim();
+          this.#spectral = new VenousSpectralAcquisition(
+            this.#experiment?.anatomy ?? sim.anatomy,
+            this.#rawSamples[0],
+            this.#experiment?.patient.seed ?? sim.patient.seed,
+            this.#experiment?.patient ?? sim.patient,
+            sim.bmode,
+            this.#renalWindow,
+          );
+          this.#spectral.scales.splice(0, 3, ...this.#spectralScales);
+          this.#spectral.wallFilters.splice(0, 3, ...this.#wallFilters);
+          this.#unavailable = null;
+        } catch (error) {
+          if (!(error instanceof AcousticWindowUnavailableError)) throw error;
+          this.#unavailable = error;
+          this.#retryAt = e.clock.t + 0.5;
+        }
+      }
       if (!this.#spectral) {
-        const sim = this.#ctx.sim();
-        this.#spectral = new VenousSpectralAcquisition(
-          this.#experiment?.anatomy ?? sim.anatomy,
-          this.#rawSamples[0],
-          this.#experiment?.patient.seed ?? sim.patient.seed,
-          this.#experiment?.patient ?? sim.patient,
-          sim.bmode,
-          this.#renalWindow,
-        );
-        this.#spectral.scales.splice(0, 3, ...this.#spectralScales);
-        this.#spectral.wallFilters.splice(0, 3, ...this.#wallFilters);
+        this.#clearCanvases();
+        this.#draw();
+        this.#status.textContent = `Ventana PW no disponible (${this.#unavailable?.window ?? 'desconocida'}). Cambia respiración o consulta Referencia Q/A. Se reintenta al avanzar el reloj.`;
+        for (let i = 0; i < 3; i++) {
+          this.#values[i].textContent = 'Sin adquisición';
+          this.#limits[i].textContent = 'Sin medición PW';
+        }
+        return;
       }
       // Bounded catch-up also works while the patient is frozen; never block on six seconds of IQ at once.
       const next = this.#rawSamples.filter((s) => s.t > this.#processedT).slice(0, 32);
@@ -571,7 +600,10 @@ export class VenousViewer {
     const x = this.#x(p.t).toFixed(1);
     for (let i = 0; i < 5; i++) {
       this.#markers[i].setAttribute('d', `M${x} 0V90`);
-      this.#values[i].textContent = `${this.#value(p, i).toFixed(2)} ${i < 3 ? 'cm/s' : i === 3 ? 'mV' : ''}`;
+      this.#values[i].textContent =
+        i < 3 && this.#spectralMode && !this.#spectral
+          ? 'Sin adquisición'
+          : `${this.#value(p, i).toFixed(2)} ${i < 3 ? 'cm/s' : i === 3 ? 'mV' : ''}`;
     }
     this.#drawSpectra();
     this.#cursor.setAttribute('aria-valuetext', `${p.t.toFixed(3)} segundos`);

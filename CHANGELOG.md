@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Visor PW: una ventana anatómica no disponible se informa y limpia sin degradar el bucle ni mostrar cifras de referencia como mediciones; recuperación tras corregir la adquisición (141).
+
 - Adquisición virtual portal: centro separado de la bifurcación por una longitud de puerta para reducir mezcla de ramas; flujo y espectro sin recortes cosméticos (140).
 
 - Visor venoso móvil: encabezado fijo compacto con caso/pausa/cierre, espacio de desplazamiento ajustado a su altura y controles fuera de la zona cubierta (139).

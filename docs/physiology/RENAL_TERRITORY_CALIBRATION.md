@@ -63,3 +63,9 @@ valores con los mismos ajustes, sin confundir este avance de amplitud con un
 modelo renal completo o una validación clínica. Los mecanismos de compliance,
 la incertidumbre de medición y los escenarios hemodinámicos complejos siguen
 requiriendo desarrollo y contraste independiente.
+
+La suite core también contenía márgenes históricos de mínimo Q/A (>3 y <1
+cm/s) ligados al territorio anterior de 12 %. Se conservan ambos límites
+expresando la velocidad en ese territorio original, y se exige además que el
+mínimo actual del estado intermedio supere el suelo instrumental vigente. No
+se cambia el clasificador ni se baja un margen para hacer pasar el caso.

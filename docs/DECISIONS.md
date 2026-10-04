@@ -5044,3 +5044,11 @@ esto evita redibujados ocultos entre comprobaciones de limpieza y añade ese est
 **Decisión.** Suavizar únicamente el soporte rectangular del centrado mediante una transición cúbica C1 simétrica de 40 ms. Su integral sigue siendo RR y los pesos adyacentes suman uno: se conserva el área de centrado y el nivel para medias iguales. No se filtran ondas mecánicas ni IQ, ni se modifican amplitudes, eventos o aleatoriedad. La duración es una regularización numérica explícita, no un parámetro valvular validado.
 
 **Verificación.** Cuatro contratos rápidos de continuidad, derivada, área y partición de unidad, más los contratos existentes de carga y media. Se mantiene la protección de captura de la decisión 121; no se desplaza un contraejemplo de señal para hacer pasar la suite. El modelo auricular sigue prescrito y no se anuncia como cámara volumétrica ni como fisiología clínicamente validada. Detalle en `physiology/ATRIAL_CONTINUITY.md`.
+
+## 123. Transporte PW por pulso y continuidad del movimiento tisular
+
+**Defecto reproducido.** Un fantoma con flujo constante detecta energía espectral espuria y densidad ponderada dependiente de PRF/velocidad. La renovación a una posición fija perdía el sobrepaso; pesos y frecuencia nueva esperaban hasta ocho pulsos. La primera corrección reveló además el escalón tisular del reloj fisiológico de 4 ms.
+
+**Decisión.** Evaluar transporte de sangre y sensibilidad en cada pulso, conservar el sobrepaso y establecer la frecuencia antes de la primera contribución. Reconstruir linealmente el desplazamiento tisular intrapaso. Una tabla compartida de erf, 32 KiB y error adicional <1.2e-7, reduce coste sin reducir la frecuencia de evaluación. No cambian fisiología, filtros, FFT ni criterios de captura.
+
+**Verificación y límites.** Regresiones analíticas rojas con el código previo y verdes con el candidato, conservación de densidad, frecuencia/coseno/signo y error acotado de sensibilidad. Se mantienen las matrices respiratorias y multiescala, con sus umbrales. Este arreglo del PW existente es independiente del visor comparativo todavía en revisión clínica; no valida sus escalas o morfología. Detalle en `physiology/PW_PULSE_TRANSPORT.md`.

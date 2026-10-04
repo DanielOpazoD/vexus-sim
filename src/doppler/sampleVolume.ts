@@ -65,13 +65,8 @@ interface Scatterer {
   ci: number;
   rotC: number;
   rotS: number;
-  /**
-   * Peso del haz/puerta y su incremento por tick: el objetivo se recalcula cada SLOW_EVERY ticks y
-   * el peso lo alcanza en rampa. Con escalones, el tejido que respira (clutter a +40 dB de la
-   * sangre) quedaba modulado a PRF/8 y sus réplicas llenaban todo el espectro de «sangre».
-   */
-  w: number;
-  dw: number;
+  /** La frecuencia se inicializa antes del primer pulso tras sembrar el dispersor. */
+  fresh: boolean;
   /** Salió de la caja y se está apagando en rampa; se resiembra cuando la rampa termina. */
   fading: boolean;
   /**
@@ -116,7 +111,8 @@ export interface GateComposition {
 const N_SCATTERERS = 320;
 /** Reclasificación geométrica (vaso, ρ, tangente): cada 96 ticks (≈37 ms a 2,6 kHz). */
 const RECLASSIFY_EVERY = 96;
-/** Actualización de pesos, salida de caja y frecuencia Doppler: cada 8 ticks (≈3 ms). */
+/** Actualización del campo de velocidad y frecuencia Doppler: cada 8 ticks (≈3 ms).
+ * La posición, salida de sangre y sensibilidad espacial se evalúan en CADA pulso. */
 const SLOW_EVERY = 8;
 /** Duración de toda variación de amplitud (ticks): ~5 ms a 6 kHz, su energía queda junto a la línea de base. */
 const AMP_RAMP_TICKS = 32;
@@ -257,8 +253,7 @@ export class SampleVolumeIQ {
       ci: Math.sin(phase),
       rotC: 1,
       rotS: 0,
-      w: 0,
-      dw: 0,
+      fresh: true,
       fading: false,
       dAmp: 0,
       rampLeft: 0,
@@ -324,7 +319,8 @@ export class SampleVolumeIQ {
         tOut = Math.min(tOut, Math.max(t1, t2));
       }
       if (ok && tIn < tOut && Number.isFinite(tOut)) {
-        const t = tOut - 0.02 * (tOut - Math.max(tIn, 0));
+        const chord = tOut - tIn;
+        const t = (Math.floor(tIn / chord) + 1) * chord;
         const entry: [number, number, number] = [c[0] + d[0] * t, c[1] + d[1] * t, c[2] + d[2] * t];
         if (exited.isBlood) return this.reenter(exited, this.gateToWorld(entry));
         // El tejido se reclasifica en el punto de entrada: con la respiración puede entrar sangre.
@@ -348,8 +344,7 @@ export class SampleVolumeIQ {
       ci: Math.sin(phase),
       rotC: 1,
       rotS: 0,
-      w: 0,
-      dw: 0,
+      fresh: true,
       fading: false,
       dAmp: 0,
       rampLeft: 0,
@@ -411,7 +406,7 @@ export class SampleVolumeIQ {
     // Ventana de puerta (caja de longitud L) suavizada por el pulso.
     const half = g.lengthMm / 2;
     const ps = Math.max(0.2, g.pulseSigmaMm);
-    const axialW = 0.5 * (erf((half - ax) / (ps * Math.SQRT2)) + erf((half + ax) / (ps * Math.SQRT2)));
+    const axialW = 0.5 * (pulseErf((half - ax) / (ps * Math.SQRT2)) + pulseErf((half + ax) / (ps * Math.SQRT2)));
     const latW = Math.exp(-0.5 * (la / g.lateralSigmaMm) ** 2);
     const elW = Math.exp(-0.5 * (el / g.elevationSigmaMm) ** 2);
     return axialW * latW * elW;
@@ -434,7 +429,8 @@ export class SampleVolumeIQ {
     const apSigma = g.apertureAngleSigmaRad ?? 0;
     const tissueVel = this.anatomy.deformation.tissueVelocity(g.center, phys.resp);
     // La deformación se evalúa en el centro de la puerta (varía lentamente).
-    const disp = this.anatomy.deformation.displacement(g.center, phys.resp);
+    const endDisp = this.anatomy.deformation.displacement(g.center, phys.resp);
+    const disp: Vec3 = [...endDisp];
     this.dispNow = disp;
     const half = g.lengthMm / 2;
     const ps = Math.max(0.2, g.pulseSigmaMm);
@@ -442,6 +438,12 @@ export class SampleVolumeIQ {
     const invEl2 = 1 / (g.elevationSigmaMm * g.elevationSigmaMm);
     const twoPiDt = 2 * Math.PI * dt;
     for (let k = 0; k < n; k++) {
+      // Respiration is sampled on the physiology clock. Reconstruct its smooth
+      // displacement at each emitted pulse instead of stepping tissue at 250 Hz.
+      const untilEnd = (n - 1 - k) * dt;
+      disp[0] = endDisp[0] - tissueVel[0] * untilEnd;
+      disp[1] = endDisp[1] - tissueVel[1] * untilEnd;
+      disp[2] = endDisp[2] - tissueVel[2] * untilEnd;
       let sr = 0;
       let si = 0;
       const slow = this.tick % SLOW_EVERY === 0;
@@ -454,6 +456,19 @@ export class SampleVolumeIQ {
           s.m[1] += s.vBlood[1] * dt;
           s.m[2] += s.vBlood[2] * dt;
         }
+        const dx = s.m[0] + disp[0] - g.center[0];
+        const dy = s.m[1] + disp[1] - g.center[1];
+        const dz = s.m[2] + disp[2] - g.center[2];
+        const ax = dx * g.beamDir[0] + dy * g.beamDir[1] + dz * g.beamDir[2];
+        const la = dx * g.lateral[0] + dy * g.lateral[1] + dz * g.lateral[2];
+        const el = dx * g.elevation[0] + dy * g.elevation[1] + dz * g.elevation[2];
+        const outside = Math.abs(ax) > this.halfAxial || Math.abs(la) > this.halfLateral || Math.abs(el) > this.halfElev;
+        // Transport at every emitted pulse, with periodic overshoot preserved: no density clumps at PRF/8.
+        if (outside && s.isBlood && !s.fading) {
+          this.scatterers[j] = this.spawn(phys, s);
+          continue;
+        }
+        const refresh = slow || s.fresh;
         if (slow && s.fading && s.rampLeft <= 0) {
           // ya se apagó en rampa: ahora se resiembra
           this.scatterers[j] = this.spawn(phys, s);
@@ -469,35 +484,15 @@ export class SampleVolumeIQ {
           s.pending = null;
           startAmpRamp(s, p.amp);
         }
-        if (slow && !s.fading) {
-          const wx = s.m[0] + disp[0];
-          const wy = s.m[1] + disp[1];
-          const wz = s.m[2] + disp[2];
-          const dx = wx - g.center[0];
-          const dy = wy - g.center[1];
-          const dz = wz - g.center[2];
-          const ax = dx * g.beamDir[0] + dy * g.beamDir[1] + dz * g.beamDir[2];
-          const la = dx * g.lateral[0] + dy * g.lateral[1] + dz * g.lateral[2];
-          const el = dx * g.elevation[0] + dy * g.elevation[1] + dz * g.elevation[2];
-          const outside = Math.abs(ax) > this.halfAxial || Math.abs(la) > this.halfLateral || Math.abs(el) > this.halfElev;
-          if (outside && s.isBlood) {
-            // La sangre que sale se resiembra al instante (por su cuerda, ver `spawn`): su amplitud es
-            // 100 veces menor que la del tejido y apagarla en rampa vaciaba la caja (el flujo rápido
-            // la cruza en ~150 ticks: un 20 % de la población estaba siempre apagándose fuera).
-            this.scatterers[j] = this.spawn(phys, s);
-            continue;
-          } else if (outside) {
-            // El tejido que sale se apaga en rampa y luego se resiembra. Desaparecer de golpe con el
-            // peso de la cara (≈ 0,04 en las laterales) era, en el tejido que respira (40 dB sobre la
-            // sangre), un chasquido de banda ancha del nivel de la sangre en cada salida.
+        if (refresh && !s.fading) {
+          if (outside) {
             s.fading = true;
-            s.dw = 0;
             startAmpRamp(s, 0);
           } else {
             if (reclass && (j + this.tick / SLOW_EVERY) % 4 === 0) {
               // Reclasificación geométrica: por la aritmética (96/8 = 12 ≡ 0 mod 4) solo alcanza a los
               // dispersores con j ≡ 0 (mod 4); ver la limitación `thin-vessel-sample-volume-lag`.
-              const q = this.anatomy.classifyWorld([wx, wy, wz], phys);
+              const q = this.anatomy.classifyWorld([s.m[0] + disp[0], s.m[1] + disp[1], s.m[2] + disp[2]], phys);
               const nowBlood = q.tissue === Tissue.Blood && q.bloodVelocity !== null;
               // La sangre que sigue en su vaso conserva su dirección (órbita cerrada, ver `spawn`)
               const sameVessel = nowBlood && s.isBlood && q.vessel === s.vessel;
@@ -519,10 +514,6 @@ export class SampleVolumeIQ {
               s.vBlood[1] = s.flowBasis[1] * u;
               s.vBlood[2] = s.flowBasis[2] * u;
             }
-            // Peso del haz/puerta: ventana axial (erf) × gaussianas lateral y elevacional.
-            const axialW = 0.5 * (erf((half - ax) / (ps * Math.SQRT2)) + erf((half + ax) / (ps * Math.SQRT2)));
-            const wTarget = axialW * Math.exp(-0.5 * (la * la * invLat2 + el * el * invEl2));
-            s.dw = (wTarget - s.w) / SLOW_EVERY;
             // Velocidad relativa: sangre + tejido − sonda, proyectada sobre b̂ → fD → rotación por tick.
             const vx = (s.isBlood ? s.vBlood[0] : 0) + tissueVel[0] - probeVelocity[0];
             const vy = (s.isBlood ? s.vBlood[1] : 0) + tissueVel[1] - probeVelocity[1];
@@ -538,6 +529,7 @@ export class SampleVolumeIQ {
             const dphi = twoPiDt * fd;
             s.rotC = Math.cos(dphi);
             s.rotS = Math.sin(dphi);
+            s.fresh = false;
           }
         }
         // Avance de fase por multiplicación compleja: e^{iφ} · e^{i2πfDΔt}
@@ -545,12 +537,14 @@ export class SampleVolumeIQ {
         const ci = s.cr * s.rotS + s.ci * s.rotC;
         s.cr = cr;
         s.ci = ci;
-        s.w += s.dw;
+        // Sample the existing pulse-convolved spatial sensitivity at this pulse, not a delayed 8-pulse ramp.
+        const axialW = 0.5 * (pulseErf((half - ax) / (ps * Math.SQRT2)) + pulseErf((half + ax) / (ps * Math.SQRT2)));
+        const weight = axialW * Math.exp(-0.5 * (la * la * invLat2 + el * el * invEl2));
         if (s.rampLeft > 0) {
           s.amp += s.dAmp;
           s.rampLeft--;
         }
-        const a = s.amp * s.w;
+        const a = s.amp * weight;
         sr += a * cr;
         si += a * ci;
       }
@@ -570,7 +564,21 @@ export class SampleVolumeIQ {
 export function erf(x: number): number {
   const sign = x < 0 ? -1 : 1;
   const ax = Math.abs(x);
+  if (ax > 4) return sign; // Tail error < 1.6e-8, below the approximation error below.
   const t = 1 / (1 + 0.3275911 * ax);
   const y = 1 - ((((1.061405429 * t - 1.453152027) * t + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-ax * ax);
   return sign * y;
+}
+
+/** Positive erf table, 32 KiB shared by all sample volumes. Linear interpolation
+ * adds <1.2e-7 absolute error (h=1/1024, max |erf''|<0.968), avoiding two
+ * exponentials per scatterer per pulse without reducing pulse sampling. */
+const ERF_TABLE = Float64Array.from({ length: 4097 }, (_, i) => erf(i / 1024));
+export function pulseErf(x: number): number {
+  const a = Math.abs(x);
+  if (a >= 4) return x < 0 ? -1 : 1;
+  const u = a * 1024,
+    i = Math.floor(u);
+  const y = ERF_TABLE[i] + (ERF_TABLE[i + 1] - ERF_TABLE[i]) * (u - i);
+  return x < 0 ? -y : y;
 }

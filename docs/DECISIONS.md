@@ -5154,3 +5154,42 @@ velocidad por grado ni afirmar un máximo universal. Las 53 matrices pasan y
 patrón al comparar el suelo absoluto de 2 cm/s con la misma regla relativa sin
 ese suelo. Es una comprobación de estabilidad, no validación clínica del suelo
 cero. El candidato 4 % sigue descartado.
+
+## 128. Refinamiento numérico PW de vasos pequeños y caché espacial exacta
+
+**Objetivo.** Fidelidad física y ecográfica, rendimiento y verificabilidad
+(objetivos 1, 2, 4 y 8): evitar que pocos dispersores produzcan bandas arteriales
+artificialmente discretas sin pintar una envolvente ni modificar la fisiología.
+
+**Decisión.** La población inicial conserva 320 puntos. Si un vaso con al menos
+2 % del peso geométrico del volumen tiene radio máximo de su tubo ≤ 2σ lateral,
+se refina a 1280. No se consulta el caso ni el grado. Se conserva la misma
+realización inicial, añadiendo puntos uniformes, y se multiplica la señal por
+sqrt(320/N); el ruido del receptor no se escala. El refinamiento se reevalúa al
+resembrar, no oscila cada pulso. Es una regla numérica provisional, no densidad
+real de eritrocitos ni garantía de convergencia en toda anatomía.
+
+El peso espacial de tejido inmóvil se reutiliza solo dentro de una llamada a
+generate. Sangre y movimiento respiratorio mantienen evaluación por pulso. Cada
+llamada invalida la caché; partículas nuevas y transiciones desde sangre también.
+La ruta sin caché queda disponible para pruebas de paridad exacta.
+
+**Evidencia.** El aumento global a 1280 produjo dos PF portales falsamente
+aceptadas (51/53 contratos), por lo que se descartó. El refinamiento geométrico
+pasó los 53 contratos sin rebajar tolerancias, 5 contratos de densidad/potencia
+y 3 de transporte. Cuatro pruebas comprueban IQ bit a bit en porta y renal,
+apnea y respiración, cambiando puerta, PRF, foco, ganancia y movimiento de sonda.
+El ensayo de 4 s con cuatro repeticiones alternadas también conserva el hash de
+todas las IQ. La mediana renal en apnea pasó de 1137 a 977 ms en esta máquina;
+no es una promesa de FPS ni un resultado clínico.
+
+**Verificación requerida.** Suite completa y CI del árbol final, comparaciones
+reales en navegador de ambos componentes y coste visible. La identificación de
+una arteria como vena sigue protegida por el rechazo conservador; mejorar la
+textura no autoriza falsear la clasificación ni valida PSV/EDV arterial.
+
+La validación rápida reparte sus tres archivos en corredores independientes,
+conservando tres ejecuciones de cada prueba, un worker, los mismos timeouts y
+cero retries. No se elimina ninguna prueba ni se sustituye el veredicto completo
+protegido. Esto evita que adquisiciones independientes se acumulen en una sola
+secuencia larga al refinar el volumen PW.

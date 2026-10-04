@@ -5236,3 +5236,25 @@ modificar al paciente.
 **Progresión.** Una coordenada continua modifica cinco parámetros en paralelo, sin introducir un grado en el motor. Los anclajes docentes 0/1/2/3 se verifican a partir de los observables de cuatro ventanas, y el grado de referencia se recalcula. La PIA alta activa el contexto de interpretación limitada. No se usa la clasificación para dibujar o normalizar ondas.
 
 **Verificación y coste.** Dominios, continuidad, independencia, finitud y reloj acotado; adquisición inicial completa antes de avanzar el experimento visible. E2E del laboratorio, incluida en los fragmentos completos. Un segundo banco reversible de códigos GLSL conserva cada shader reconstruido y recupera margen sin ampliar presupuestos. Véase `physiology/VENOUS_PARAMETER_LAB.md`; siguen pendientes transiciones causales y validación clínica.
+
+## 131. Distinguir máximos por fase de ondas renales independientes
+
+**Hallazgo.** La captura renal monofásica rotulaba S sobre el máximo de una ventana
+sistólica aunque no existiera una onda S independiente. Un máximo temporal
+residual no convierte el patrón D predominante en bifásico.
+
+**Cambio.** Se conservan sin modificación el espectro, la traza, S/D numéricos,
+calidad y clasificación. Cuando el clasificador observado informa monofásico,
+las marcas opcionales no añaden una S; permanecen D y mínimo. El resultado
+numérico se rotula «máx. sist.» y «diást.» para describir qué se midió. No se
+recorta el flujo residual ni se baja la velocidad de la vena para modificar
+su apariencia. La condición procede del patrón observado, nunca del caso.
+
+**Verificación y límites.** Se amplían las mismas adquisiciones de la prueba de
+interrupción renal: bifásico conserva S/D; monofásico mantiene S numérico positivo
+sin marcar una onda S, e invertir pantalla conserva valores y cambia solo el signo
+de las marcas. No se añaden simulaciones costosas redundantes. El patrón y su
+umbral siguen siendo aproximaciones del modelo, no validación clínica.
+
+Nomenclatura de patrón monofásico diastólico: Yoshihisa et al., 2022,
+doi:10.3389/fcvm.2022.772466, figura 1 y métodos.

@@ -142,12 +142,29 @@ describe('interrupción del flujo renal medida sobre el espectro', () => {
       const tag = `${prf} Hz, pausa ${gap} ms: ${JSON.stringify({ s: m.sPeak, d: m.dPeak, min: m.vMin, p: m.pattern, q: m.quality.issue })}`;
       expect(m.quality.issue, tag).toBeNull();
       expect(m.pattern, tag).toBe('biphasic');
+      expect(m.marks.some((p) => p.label === 'S')).toBe(true);
+      expect(m.marks.some((p) => p.label === 'D')).toBe(true);
     }
   });
 
   it('con S pequeña y la vena parada en sístole, monofásica: el grado no baja', () => {
-    const m = measure(acquire((t) => vein(t, 5, 25, 20), 6000));
+    const a = acquire((t) => vein(t, 5, 25, 20), 6000);
+    const m = measure(a);
     expect(m.pattern, JSON.stringify(m.vMin)).toBe('monophasic');
+    expect(m.sPeak).toBeGreaterThan(0); // Measured residual velocity is retained, not clamped away.
+    expect(m.marks.some((p) => p.label === 'S')).toBe(false);
+    expect(m.marks.filter((p) => p.label === 'D')).toHaveLength(m.measuredBeats.length);
+    const inverted = measureObservedRenal(a.columns, a.beats, {
+      f0Hz: F0,
+      angleCorrectionRad: 0,
+      invert: true,
+      fftSize: 128,
+      wallFilterHz: 25,
+    })!;
+    expect(inverted.sPeak).toBe(m.sPeak);
+    expect(inverted.dPeak).toBe(m.dPeak);
+    expect(inverted.pattern).toBe(m.pattern);
+    expect(inverted.marks).toEqual(m.marks.map((p) => ({ ...p, vScreen: -p.vScreen })));
   });
 
   it('una vena que late sin detenerse (mínimo 4 cm/s) sigue siendo continua a 2,6 y 6 kHz', () => {

@@ -443,7 +443,7 @@ export class MeasureTab {
         'renal',
         rejected(this.lastRenal, 'Renal') ??
           (k
-            ? `Renal: S ${k.sPeak.toFixed(1)} · D ${k.dPeak.toFixed(1)} · mín ${k.vMin.toFixed(1)} cm/s → <b>${renalText(k.pattern)}</b> <span class="small">(${k.beats} latidos)</span>`
+            ? `Renal: máx. sist. ${k.sPeak.toFixed(1)} · diást. ${k.dPeak.toFixed(1)} · mín ${k.vMin.toFixed(1)} cm/s → <b>${renalText(k.pattern)}</b> <span class="small">(${k.beats} latidos)</span>`
             : '<span class="small">Renal: no evaluado; el clasificador devuelve el intervalo compatible.</span>'),
       ),
       ...contextResultLines(res, modified),

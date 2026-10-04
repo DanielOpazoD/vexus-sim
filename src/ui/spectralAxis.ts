@@ -11,8 +11,8 @@ export function spectralAxis(nyquistCms: number, baselineShift: number) {
 }
 
 /** FFT-shifted bins remain periodic at PRF. Use pixel centers to avoid sampling the duplicated Nyquist edge. */
-export function spectralBinAt(rowFraction: number, fftSize: number, baselineShift: number): number {
-  const binFraction = 1 - rowFraction + baselineShift;
+export function spectralBinAt(rowFraction: number, fftSize: number, baselineShift: number, invert = false): number {
+  const binFraction = invert ? rowFraction - baselineShift : 1 - rowFraction + baselineShift;
   const wrapped = ((binFraction % 1) + 1) % 1;
   return Math.round(wrapped * fftSize) % fftSize;
 }

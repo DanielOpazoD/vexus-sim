@@ -33,6 +33,17 @@ describe('línea de base PW: presentación con banda de muestreo intacta', () =>
     ])
       expect(() => spectralAxis(scale, shift)).toThrow();
   });
+  it('invertir cambia solo el signo de pantalla, también con línea de base desplazada', () => {
+    for (const shift of [-0.4, -0.15, 0, 0.2, 0.4]) {
+      const axis = spectralAxis(50, shift);
+      for (let k = 0; k < 128; k++) {
+        const velocity = ((k - 64) / 64) * 50;
+        expect(spectralBinAt(axis.fractionOf(-velocity), 128, shift, true)).toBe(k);
+        expect(spectralBinAt(axis.fractionOf(velocity), 128, shift, false)).toBe(k);
+      }
+      expect(spectralBinAt(axis.zeroFraction, 128, shift, true)).toBe(64);
+    }
+  });
 });
 
 it('los ticks son velocidades redondas, ordenadas y dentro de la banda desplazada', () => {

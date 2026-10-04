@@ -5775,3 +5775,35 @@ El callback no depende de variables externas al serializarlo para el navegador.
 La prueba real corresponde al workflow de comparación en legacy y referencia,
 sin ampliar su timeout; sus nuevas capturas y metadatos deben revisarse antes
 de integrar. No se presume equivalencia de píxeles por pasar los tests de orquestación.
+
+## 150. Inversión de presentación PW sin invertir el flujo del paciente
+
+**Estado:** vigente.
+
+**Objetivo docente.** El signo mostrado depende de la orientación del haz y de
+los mandos de presentación. Cambiarlo no debe simular una inversión fisiológica
+ni convertir una adquisición inválida en válida. El visor incorpora INV por
+territorio dentro de «Imagen y muestreo», desactivado por defecto.
+
+**Mecanismo.** Es una reflexión de coordenadas: `P_pantalla(v) = P_adquirida(-v)`.
+El índice FFT sigue siendo periódico a la PRF, también con línea de base desplazada;
+el bin de frecuencia cero y el borde periódico de Nyquist conservan su identidad.
+No se modifica ninguna columna IQ/STFT, PRF, volumen de muestra, caudal, muestra
+fisiológica, escala o instante. Las marcas y sus valores numéricos invierten solo
+el signo visible; conservan fase cardíaca, amplitud y etiquetas. La leyenda cambia
+junto con el espectro y muestra «INV: presentación». En la referencia Q/A permanece
+la convención fisiológica original. Se conserva la advertencia de calidad existente.
+
+**Diseño.** La adquisición y el estimador reciben exactamente los mismos datos y
+opciones. INV se aplica en el dibujo y al formatear los valores ya observados; no
+se usa para ocultar aliasing, recuperar señales ausentes ni reclasificar VExUS.
+La inversión de un espectro renal cambia conjuntamente arteria y vena, sin alterar
+su identidad anatómica. No es una corrección angular ni aumenta el Nyquist.
+
+**Verificación.** Contratos de todos los bins con cinco posiciones de la línea de
+base; reflexión de un bitmap de potencia y sus marcas; inmutabilidad de columnas;
+valores con signo, datos ausentes y rechazo por calidad. E2E sobre el paciente
+congelado comprueba reversibilidad de píxeles, conservación del cero, columnas,
+tiempos y etiquetas, aislamiento de los otros territorios y reloj sin cambios.
+La captura del estado invertido se revisa antes de integrar. No supone validación
+clínica nueva: es una transformación matemática explícita de presentación.

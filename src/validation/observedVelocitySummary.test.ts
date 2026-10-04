@@ -33,4 +33,12 @@ describe('valores PW observados con signo de pantalla', () => {
     expect(observedVelocitySummary(input)).toContain('S 0.0 · D -18.3');
     expect(input).toEqual(before);
   });
+  it('INV invierte signos visibles sin cambiar la captura ni legitimar una mala adquisición', () => {
+    const before = structuredClone(hepatic);
+    expect(observedVelocitySummary(hepatic, true)).toBe('S +32.0 · D +18.0 · A -5.0 cm/s · mediana 4 lat.');
+    expect(hepatic).toEqual(before);
+    expect(observedVelocitySummary({ ...hepatic, quality: { issue: 'aliasing' } }, true)).toBe('');
+    expect(observedVelocitySummary({ ...hepatic, aPeak: NaN }, true)).toContain('A —');
+    expect(observedVelocitySummary({ ...hepatic, sPeak: 0.01 }, true)).toContain('S 0.0');
+  });
 });

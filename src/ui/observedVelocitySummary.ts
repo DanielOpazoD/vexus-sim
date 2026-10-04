@@ -14,11 +14,11 @@ type SummaryObservation = {
 /** Observed beat medians, with the same screen sign as the spectral marks.
  * No values are published from an acquisition rejected by its quality gate.
  */
-export function observedVelocitySummary(m: SummaryObservation | null): string {
+export function observedVelocitySummary(m: SummaryObservation | null, invert = false): string {
   if (!m || m.quality.issue !== null || m.beats < 1 || Math.abs(m.anterogradeSign) !== 1) return '';
   const value = (v: number): string => {
     if (!Number.isFinite(v)) return '—';
-    const rounded = Number((v * m.anterogradeSign).toFixed(1));
+    const rounded = Number((v * m.anterogradeSign * (invert ? -1 : 1)).toFixed(1));
     return `${rounded > 0 ? '+' : ''}${rounded.toFixed(1)}`;
   };
   const waves =

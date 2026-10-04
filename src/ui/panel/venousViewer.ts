@@ -109,12 +109,7 @@ export class VenousViewer {
       mode.add(new Option(label, value));
     mode.addEventListener('change', () => {
       this.#spectralMode = mode.value === 'pw';
-      this.#experimentPrimed = false;
-      this.#spectral = null;
-      this.#processedT = -Infinity;
-      this.#marksT = -Infinity;
-      this.#marks = [[], [], []];
-      this.update();
+      this.#rebuildEquipment();
     });
     controls.appendChild(mode);
     const annotationLabel = document.createElement('label');
@@ -226,11 +221,7 @@ export class VenousViewer {
         selector.value = String(this.#spectralScales[i]);
         selector.addEventListener('change', () => {
           this.#spectralScales[i] = Number(selector.value);
-          this.#experimentPrimed = false;
-          this.#spectral = null;
-          this.#processedT = -Infinity;
-          this.#marksT = -Infinity;
-          this.update();
+          this.#rebuildEquipment();
         });
         const filterLabel = document.createElement('label');
         filterLabel.textContent = 'Filtro de pared ';
@@ -240,11 +231,7 @@ export class VenousViewer {
         filter.value = String(this.#wallFilters[i]);
         filter.addEventListener('change', () => {
           this.#wallFilters[i] = Number(filter.value);
-          this.#experimentPrimed = false;
-          this.#spectral = null;
-          this.#processedT = -Infinity;
-          this.#marksT = -Infinity;
-          this.update();
+          this.#rebuildEquipment();
         });
         filterLabel.appendChild(filter);
         controls.appendChild(filterLabel);
@@ -323,6 +310,21 @@ export class VenousViewer {
     this.update();
   }
 
+  #rebuildEquipment(): void {
+    this.#experimentPrimed = false;
+    if (this.#spectral) {
+      this.#spectral.scales.splice(0, 3, ...this.#spectralScales);
+      this.#spectral.wallFilters.splice(0, 3, ...this.#wallFilters);
+      this.#spectral.reacquire();
+    }
+    this.#processedT = -Infinity;
+    this.#marksT = -Infinity;
+    this.#marks = [[], [], []];
+    this.#velocitySummaries = ['', '', ''];
+    this.#paintKeys = ['', '', ''];
+    this.update();
+  }
+
   clear(resetExperiment = true): void {
     this.#experimentError = '';
     this.#experimentGrade = '—';
@@ -346,6 +348,7 @@ export class VenousViewer {
       canvas.dataset.columns = '0';
       canvas.dataset.marks = '';
       canvas.dataset.lastTime = '';
+      canvas.dataset.gateCenter = '';
     }
     this.#paused = false;
     this.#pause.textContent = 'Pausar vista';
@@ -489,6 +492,7 @@ export class VenousViewer {
       this.#canvases[i].dataset.baseline = String(this.#baselines[i]);
       this.#canvases[i].dataset.columns = String(columns.length);
       this.#canvases[i].dataset.lastTime = String(columns.at(-1)?.t ?? '');
+      this.#canvases[i].dataset.gateCenter = JSON.stringify(this.#spectral.gateInfo[i].world);
       this.#canvases[i].dataset.marks = this.#annotations ? this.#marks[i].map((m) => m.label).join(',') : '';
       this.#limits[i].textContent =
         `2,5 MHz · PRF ${columns.at(-1)?.prfHz.toFixed(0) ?? '—'} Hz · filtro ${this.#wallFilters[i]} Hz · θ ${this.#spectral.gateInfo[i].beamAngleToFlowDeg?.toFixed(0) ?? '—'}° · velocidad axial · ${this.#spectralScales[i]} cm/s Nyquist · imagen ${this.#presentation[i].gainDb} dB / RD ${this.#presentation[i].dynamicRangeDb}${this.#measurementIssues[i] ? ` · ${this.#measurementIssues[i]}` : ''}`;

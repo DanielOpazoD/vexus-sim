@@ -5377,3 +5377,29 @@ trayectorias basales idénticas en todos los casos, dominios y finitud. A igual
 bolo computacional, menor C produce mayor incremento de PAD del lazo en sano y
 congestión, sin imponer una magnitud clínica. El navegador verifica control,
 combinación con PIA alta, aislamiento del paciente y diseño de controles.
+
+## 137. Cambiar equipo PW sin recolocar la puerta anatómica
+
+**Hallazgo.** El visor reconstruía toda la adquisición al cambiar PRF, filtro o
+modo de visualización, incluida la búsqueda de la mejor puerta. Si había pasado
+medio segundo de respiración tranquila, la nueva búsqueda del sano movía las
+puertas virtuales 4,50/9,76/2,28 mm (suprahepática/porta/renal) en el ensayo local.
+Así se comparaba otro volumen de muestra al creer que solo se cambiaba el equipo.
+
+**Cambio.** La adquisición puede reconstruir su historial conservando contactos,
+marco y puerta ya elegidos. Crea nuevas cadenas IQ con las semillas originales:
+reutilizar las partículas del final del historial al volver al comienzo sería
+incorrecto. Escalas y filtros se aplican a las nuevas cadenas; se limpian traza,
+identidad, marcas y valores anteriores. Un método común de la interfaz reemplaza
+tres secuencias duplicadas. El caso, experimento o ventana renal diferente siguen
+creando su adquisición correspondiente; no se fija la sangre al haz ni se elimina
+la pérdida de señal por respiración.
+
+**Verificación.** El mismo historial reconstruido produce columnas idénticas;
+las cadenas y poblaciones se renuevan. Las puertas permanecen exactamente iguales
+al cambiar equipo y avanzar el tiempo respiratorio, aunque repetir la búsqueda
+anatómica las movería. La prueba E2E existente verifica centros de puerta antes y
+después de cambiar escala, junto con las pruebas de recuperación de calidad.
+No cambia fisiología, caudal, perfiles ni criterios de medición. La selección
+inicial y la mezcla de ramas que pueda captar una puerta siguen requiriendo
+revisión de adquisición; esta corrección no certifica su pureza ni fidelidad clínica.

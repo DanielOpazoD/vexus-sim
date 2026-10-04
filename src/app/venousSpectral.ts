@@ -39,6 +39,7 @@ export class VenousSpectralAcquisition {
   readonly gateInfo: PwGateInfo[] = [];
   readonly #contexts: { anatomy: AnatomyQuery; contact: ProbeContact; best: GatePlacement }[];
   readonly #settings: Pick<BModeSettings, 'depthMm' | 'focusMm'>;
+  readonly #seed: number;
   #lastT: number | null = null;
   #steps = 0;
 
@@ -50,6 +51,7 @@ export class VenousSpectralAcquisition {
     settings: Pick<BModeSettings, 'depthMm' | 'focusMm'>,
     renalWindow: RenalSpectralWindow = 'venous',
   ) {
+    this.#seed = seed;
     this.#settings = { depthMm: settings.depthMm, focusMm: settings.focusMm };
     const profile = CONVEX_C35_PROFILE,
       tr = profile.geometry;
@@ -126,5 +128,14 @@ export class VenousSpectralAcquisition {
     for (const track of this.gateTracks) track.length = 0;
     this.#lastT = null;
     this.#steps = 0;
+  }
+
+  /** Replay a history with new equipment, retaining the already selected probe/gate geometry.
+   * A fresh particle population is essential: history replay must not reuse future advection state.
+   */
+  reacquire(): void {
+    for (const [i, context] of this.#contexts.entries())
+      this.chains[i] = new PwDopplerChain(context.anatomy, this.#seed + 7919 * (i + 1), undefined, { maxColumns: 4096 });
+    this.reset();
   }
 }

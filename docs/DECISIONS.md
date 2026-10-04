@@ -5092,3 +5092,29 @@ medianas temporales posteriores mantienen sus contratos dentro del tramo
 continuo seleccionado; no se atribuye validez a mediciones directas de historiales
 mixtos fuera de la ruta de captura.
 Los PR del visor PW y su laboratorio siguen en revisión clínica independiente.
+
+## 126. Territorio interlobar y calibración provisional de velocidad renal
+
+**Objetivo.** Fidelidad física/ecográfica y honestidad (1, 2, 4 y 8): corregir la
+magnitud por la cadena Q/A, no por el dibujo del espectro ni por el grado.
+
+**Decisión.** Cada rama interlobar representada recibe 6 % del caudal de un riñón,
+antes 12 %. Las tres ramas derechas representan 18 %; queda explícito el 82 % no
+representado. El caudal total, presiones, resistencias y compliances no cambian.
+Es una calibración provisional de territorio/área `NEEDS_CALIBRATION`, no una
+fracción anatómica medida en humanos. Se documentan las referencias, diferencias
+entre media seccional y envolvente, y los candidatos descartados en
+`docs/physiology/RENAL_TERRITORY_CALIBRATION.md`.
+
+**Evidencia previa.** Ocho adquisiciones controladas: con 6 %, S/D venosas sanas
+16,25/13,75 cm/s frente a 31,25/25,63 con 12 %; D grave 30,63 frente a 61,25.
+Son salidas simuladas, no rangos clínicos. El candidato 4 % produjo cuatro fallos
+de matriz y se descartó. Con 6 % no hubo discrepancias de patrón en la matriz;
+solo dejó de cumplirse la antigua expectativa de aliasing a 2600 Hz. Se conserva
+la prueba forzándolo a 1300 Hz y se añade la recuperación medible a 2600 Hz.
+
+**Verificación requerida.** Presupuesto de flujo y unidades, todas las matrices
+sin rebajar umbrales, CI del árbol final y capturas reales de navegador en sano y
+grave. Las nuevas capturas quedan en los artefactos `venous-renal-territory-*`.
+No se declara resuelta la calibración de todos los escenarios ni la estimación
+arterial en una puerta mixta; el visor y laboratorio mantienen su revisión clínica.

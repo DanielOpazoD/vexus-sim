@@ -129,3 +129,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [123](DECISIONS.md#L5048) | Transporte PW por pulso y continuidad del movimiento tisular | vigente |
 | [124](DECISIONS.md#L5056) | Reparto E2E por coste observado y prueba de ejecución en el veredicto | vigente |
 | [125](DECISIONS.md#L5064) | Promedio PW limitado a una misma rejilla física de adquisición | vigente |
+| [126](DECISIONS.md#L5096) | Territorio interlobar y calibración provisional de velocidad renal | vigente |

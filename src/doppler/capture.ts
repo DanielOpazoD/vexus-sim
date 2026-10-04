@@ -11,7 +11,7 @@ import {
   type ObservedPortal,
   type ObservedRenal,
 } from './spectralMeasure';
-import { hepaticGateDropout, wrongGateVessel, type GateVesselSample, type ProtocolVessel } from './vesselIdentity';
+import { dominantGateSystem, hepaticGateDropout, wrongGateVessel, type GateVesselSample, type ProtocolVessel } from './vesselIdentity';
 
 /** Segundos de espectro que toma una captura (los que guarda el equipo a la vista). */
 const CAPTURE_SECONDS = 7;
@@ -65,6 +65,17 @@ export function captureProtocolVessel<K extends ProtocolVessel>(
   const last = effective.at(-1)!;
   const found = wrongGateVessel(kind, gateTrack, effective[0].tR, last.tR + last.rr);
   if (found !== null) return { ...m, quality: { ...m.quality, issue: 'wrong-vessel', wrongVessel: { kind, found } } };
+  // The automatic renal estimator assumes the dominant signal belongs to the
+  // vein. When anatomy says the artery dominates, a continuous arterial trace
+  // must not be accepted as venous continuity. This is an estimator limitation,
+  // not a claim that a clinician cannot interpret a mixed arterial/venous gate.
+  if (
+    kind === 'renal' &&
+    m.quality.issue === null &&
+    effective.some((b) => dominantGateSystem(gateTrack, b.tR, b.tR + b.rr) === 'interlobarArtery')
+  )
+    return { ...m, quality: { ...m.quality, issue: 'renal-identity' } };
+
   if (
     kind === 'hepatic' &&
     m.quality.issue === null &&

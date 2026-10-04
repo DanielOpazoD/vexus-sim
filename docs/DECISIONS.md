@@ -5118,3 +5118,9 @@ sin rebajar umbrales, CI del árbol final y capturas reales de navegador en sano
 grave. Las nuevas capturas quedan en los artefactos `venous-renal-territory-*`.
 No se declara resuelta la calibración de todos los escenarios ni la estimación
 arterial en una puerta mixta; el visor y laboratorio mantienen su revisión clínica.
+
+**Seguridad de identidad.** La auditoría de puerta mixta mostró falsos resultados
+continuos al dominar la arteria. Se rechaza la medición automática si cualquier
+latido medido tiene predominio arterial anatómico, sin alterar espectro o IQ.
+La captura mixta clínica sigue siendo válida; es una limitación declarada del
+estimador actual, probada con IQ real en ambos cuerpos y sano/grave.

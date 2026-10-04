@@ -533,3 +533,13 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - `reference-cartilage-seventh-only`: solo el séptimo cartílago bilateral tiene secciones medidas en los OBJ incluidos; los otros cartílagos siguen pendientes. Las 16 elipses interpoladas tienen residual de superficie RMS 0,94 mm, p95 2,10 mm, máximo 3,15 mm. Promedio bilateral, extremos cerrados y sección elíptica son aproximaciones; pasar CPU/GLSL no constituye validación clínica.
 
 - `reference-diaphragm-incomplete`: el campo actual comparte dos cúpulas asimétricas e inserción periférica continua entre TS/GLSL, pero no distingue tendón central, pilares ni hiatos. El borde 3D sigue ahora la pared interna del campo corporal compartido; esto no reconstruye las inserciones anatómicas por pieza. Respiración coherente entre consumidores no acredita contactos anatómicos bajo movimiento; véase `anatomy/DIAPHRAGM_AUDIT.md`.
+
+## Identificación automática en el PW renal
+
+- `renal-arterial-dominance-identity`: el estimador automático puede confundir una
+  arteria dominante con una vena continua. La ruta de captura rechaza de forma
+  conservadora una adquisición renal dominada por arteria en los latidos medidos,
+  sin alterar el espectro ni ocultar problemas de calidad previos. Esto limita el
+  estimador, no la posibilidad clínica de registrar arteria y vena simultáneamente.
+  Una futura identificación fiable de ambas componentes requiere validación
+  independiente; no se introduce un patrón desde la fisiología para corregirlo.

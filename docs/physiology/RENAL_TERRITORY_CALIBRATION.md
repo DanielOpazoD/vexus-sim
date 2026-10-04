@@ -69,3 +69,24 @@ cm/s) ligados al territorio anterior de 12 %. Se conservan ambos límites
 expresando la velocidad en ese territorio original, y se exige además que el
 mínimo actual del estado intermedio supere el suelo instrumental vigente. No
 se cambia el clasificador ni se baja un margen para hacer pasar el caso.
+
+## Identidad arterial/venosa: rechazo conservador
+
+La auditoría de plano/puerta detectó que centrar la adquisición en la arteria
+puede hacer que el estimador aislado acepte esa señal como vena continua, incluso
+en el caso grave. Se añade un rechazo automático `renal-identity` cuando domina
+la arteria en cualquiera de los latidos efectivamente medidos. La supervisión usa
+la identidad anatómica de la puerta, no el grado ni el patrón fisiológico oculto;
+no altera la IQ, el espectro o su amplitud, y conserva problemas previos como
+aliasing. Se prueba el mismo IQ con y sin la guarda en dos cuerpos y dos casos.
+
+Es una limitación de identificación del estimador actual. Clínicamente sí se
+adquieren arteria y vena simultáneamente (Iida 2016); esta guarda no prohíbe esa
+técnica ni sustituye un futuro separador validado. La mejora del componente
+arterial y su identificación espectral independiente siguen pendientes.
+
+Los aproximadamente 30 cm/s de D grave son por ahora un resultado del simulador,
+no un máximo clínico demostrado. No se usa el extremo de una escala lateral de
+una figura como si fuera la velocidad medida del paciente. Su validación requiere
+revisar la envolvente, calibración, lugar de muestreo y corrección angular en las
+fuentes originales.

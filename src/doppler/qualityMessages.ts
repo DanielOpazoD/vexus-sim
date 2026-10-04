@@ -10,6 +10,8 @@ export function qualityText(q: Pick<MeasurementQuality, 'issue' | 'wrongVessel'>
       return 'medible';
     case 'wrong-vessel':
       return q.wrongVessel ? wrongVesselText(q.wrongVessel.kind, q.wrongVessel.found) : 'no medible: vaso equivocado (recoloque la puerta)';
+    case 'renal-identity':
+      return 'no medible automáticamente: domina la arteria y no se identifica la vena con seguridad (ajuste la puerta)';
     case 'no-signal':
       return 'no medible: no hay flujo en la puerta (¿está sobre el vaso? ¿hay sombra o poco contacto? si respira, pida apnea)';
     case 'intermittent':

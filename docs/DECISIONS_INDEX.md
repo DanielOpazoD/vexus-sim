@@ -138,3 +138,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [132](DECISIONS.md#L5262) | Margen de distribución con un tercer banco GLSL reversible | vigente |
 | [133](DECISIONS.md#L5280) | Ventana renal pareada explícita, sin escalar la vena | vigente |
 | [134](DECISIONS.md#L5306) | Recalibrar el reparto E2E con tiempos actuales verificados | vigente |
+| [135](DECISIONS.md#L5328) | Mostrar velocidades observadas junto a las marcas PW | vigente |

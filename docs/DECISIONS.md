@@ -5324,3 +5324,30 @@ estimación de planificación, no una promesa de tiempo real: el rendimiento de 
 corredores varía. Las pruebas nuevas siguen entrando con coste de respaldo y las
 obsoletas no se ejecutan por existir en la tabla. La verificación nativa recoge
 71 tests actuales, exactamente una vez entre ocho listas disjuntas.
+
+## 135. Mostrar velocidades observadas junto a las marcas PW
+
+**Problema.** El visor permitía comparar imágenes y activar marcas, pero su
+cabecera solo decía «PW simulado». Para revisar amplitudes había que estimarlas
+visualmente sobre la escala, sin ver el resumen numérico del mismo capturador.
+
+**Cambio.** Con las anotaciones activas, cada fila muestra las medianas de los
+picos observados por latido y cuántos latidos se midieron: S/D/A suprahepáticas,
+Vmáx/Vmín portal y máximos sistólico/diastólico/mínimo renales. Usa exclusivamente
+la captura de IQ existente. Multiplica sus valores orientados por el signo de
+pantalla usado por las marcas, para que los números concuerden con el eje visible;
+no es corrección angular ni normalización de amplitud. Una A ausente se muestra
+como no disponible. El máximo sistólico renal residual no se llama onda S.
+
+**Seguridad y coste.** Si la calidad rechaza la captura, no se muestran valores
+cuantitativos, aunque las marcas estén activas; el motivo sigue visible. La puerta
+renal dominada por arteria mantiene esa limitación. Ganancia de imagen y rango
+dinámico solo cambian brillo. El formateo reutiliza la medición ya calculada cada
+medio segundo: no añade una adquisición ni vuelve a analizar cada cuadro.
+
+**Verificación.** Pruebas puras de signos, inversión, flujo portal retrógrado,
+A ausente, redondeo, no mutación y rechazo por calidad. Se amplían E2E existentes
+para valores válidos, invariancia frente a ganancia y retirada/recuperación ante
+aliasing. La inspección pareada añade el caso de congestión grave, además del sano,
+con evidencia visual identificada. Las cifras son medianas
+robustas del estimador simulado, no intervalos clínicos normales ni validación humana.

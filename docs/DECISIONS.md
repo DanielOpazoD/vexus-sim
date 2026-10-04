@@ -5622,3 +5622,31 @@ mantiene exactamente IQ de VSH/renal, centros y datos del paciente; restaurar
 PRF responde al nuevo extremo distal. E2E conserva los mandos independientes,
 comprueba la longitud aplicada y rotulada, PRF/escala coherentes, historial
 completo y vista móvil. No se añade otra inicialización de navegador.
+
+## 146. Recuperar margen con un cuarto banco de transporte GLSL
+
+**Evidencia.** Tras los mandos de adquisición, el build medido ocupaba
+1 047 962 bytes de JS, solo 614 bytes bajo el presupuesto de 1 MiB.
+Se mantiene ese límite y se reduce el tamaño del JS sin comprimir.
+
+**Cambio.** Cuarto banco de 64 códigos con prefijo @:, conservando los 192
+códigos anteriores. La auditoría `node --import tsx tools/build/glslTokenAudit.ts 192`
+cuenta tokens en las porciones estáticas después del renombrado y compactado
+reales, excluye palabras ya presentes y estima el ahorro descontando la tabla.
+Su salida permite reproducir la selección; las estimaciones de módulos antes
+de tree-shaking no sustituyen la medida del build final.
+
+**Resultado local.** JS total de 1 047 962 a 1 044 823 bytes: 3139 bytes menos,
+3753 bytes de margen, aproximadamente 1020,3/1024 KiB. No se recortan órganos,
+señal, mandos, tests ni documentación del producto. Tampoco se declara un aumento
+de FPS: el cambio recupera presupuesto sin comprimir y decodifica al inicializar módulos.
+La comprobación adicional de todos los JS por archivo dio gzip nivel 9 de
+350 824 a 350 953 bytes (+129), y Brotli calidad 11 de 303 663 a 303 672
+bytes (+9). Por tanto, no reduce la descarga comprimida; se adopta por el
+margen de distribución sin elevar el presupuesto, no como ahorro de red.
+
+**Verificación.** Pruebas de las fronteras 0/63, 64/127, 128/191 y 192/255,
+rechazo de índices inválidos, marcadores incompletos, interpolación y coerción.
+La prueba existente reconstruye cada programa del ecógrafo y cada export de
+los módulos GLSL de Three byte por byte, comparándolos con su ruta sin packing.
+La compilación real y las pruebas de WebGL se mantienen en E2E antes de integrar.

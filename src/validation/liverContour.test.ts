@@ -134,27 +134,4 @@ describe('Contorno del hígado en las vistas de las capturas (PR 0 de las decisi
     expect(fades.length).toBeGreaterThan(0);
     expect(Math.min(...fades)).toBeGreaterThanOrEqual(3);
   });
-
-  it.fails(
-    '60: ≤ 15 aristas fuera de la fisura en 56 poses (2 casos × 4 vistas × 7 desvíos de ±6° y ±0,05 rad; hoy 102)',
-    () => {
-      const d = (6 * Math.PI) / 180;
-      const offsets: [number, number, number][] = [
-        [0, 0, 0],
-        [0, d, 0],
-        [0, -d, 0],
-        [0, 0, d],
-        [0, 0, -d],
-        [0.05, 0, 0],
-        [-0.05, 0, 0],
-      ];
-      let creases = 0;
-      for (const c of ['normal', 'severe'] as const)
-        for (const sp of ['subxiphoid', 'intercostal', 'flank', 'renal'] as const)
-          for (const [dPhi, dRock, dTilt] of offsets)
-            creases += analyzeContour(contourView(c, sp, dPhi, dRock, dTilt)).creases.filter((x) => !x.fissure).length;
-      expect(creases).toBeLessThanOrEqual(15);
-    },
-    600_000,
-  );
 });

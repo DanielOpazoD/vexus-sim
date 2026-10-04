@@ -137,3 +137,23 @@ su unión. Para ejecutarlas por separado, usar `npm run test:coverage:core`,
 HEAD entre fases. Invocar Vitest manualmente no produce el sello exigido.
 La referencia `npm run test:coverage:full` sigue disponible. El SHA local no
 certifica cambios sin commit; la aprobación de PR depende de su checkout en CI.
+
+### Matriz de poses hepáticas y cobertura representativa
+
+`liverContour.test.ts` mantiene las vistas representativas, guardas de contacto,
+normales y métricas bajo instrumentación de cobertura. El barrido repetitivo de
+56 poses vive en `liverContourPoseMatrix.test.ts`, en la fase exhaustiva sin
+instrumentación, con los mismos casos, ángulos, malla de 0,25 mm y umbral de aristas.
+El veredicto exige ambas fases y todos sus archivos con procedencia del mismo SHA.
+
+El cálculo de la matriz ocurre en `beforeAll`, fuera del `it.fails` que representa
+la limitación anatómica conocida. Un error numérico o excepción en la construcción
+falla el setup; no puede pasar como el defecto esperado del umbral geométrico.
+Una prueba ordinaria exige 56 poses únicas con conteos enteros válidos.
+La referencia totalmente instrumentada sigue disponible y los umbrales globales
+no se reducen ni se añaden exclusiones de fuentes.
+
+Los contratos de pared se reparten en `wallTwin.test.ts` (física) y
+`wallDisplayTwin.test.ts` (presentación) para evitar una única cola secuencial.
+`support/wallFixture.ts` comparte las condiciones iniciales, no las aserciones;
+las dos suites conservan sus cachés locales y todas sus muestras y umbrales.

@@ -9,7 +9,6 @@ for (const [id, pattern] of [
     budget(240_000);
     await page.setViewportSize({ width: 1440, height: 1000 });
     const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
-    await page.locator('#debug-toggle').check({ force: true });
     await page.selectOption('#case-select', id);
     await page
       .locator('button', { hasText: /Apnea\s*esp/ })
@@ -41,6 +40,8 @@ for (const [id, pattern] of [
     expect(particleCount).toBe(1280);
     await page.locator('#freeze').click();
     await expect(page.locator('#freeze')).toHaveAttribute('aria-pressed', 'true');
+    // Activating teacher mode changes the active tab; reveal the case only after acquisition.
+    await page.locator('#debug-toggle').check({ force: true });
     await page.getByRole('tab', { name: 'Medir', exact: true }).click();
     await page.getByRole('button', { name: 'Renal', exact: true }).click();
     await page.getByRole('button', { name: 'Capturar', exact: true }).click();
@@ -56,7 +57,6 @@ for (const caseId of ['normal-adult', 'severe-congestion'] as const)
     budget(240_000);
     await page.setViewportSize({ width: 1440, height: 1000 });
     const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
-    await page.locator('#debug-toggle').check({ force: true });
     await page.selectOption('#case-select', caseId);
     await page
       .locator('button', { hasText: /Apnea\s*esp/ })
@@ -89,6 +89,9 @@ for (const caseId of ['normal-adult', 'severe-congestion'] as const)
     expect(vessel.particles).toBe(1280);
     await page.locator('#freeze').click();
     await expect(page.locator('#freeze')).toHaveAttribute('aria-pressed', 'true');
+    // Activating teacher mode changes the active tab; reveal the case only after acquisition.
+    await page.locator('#debug-toggle').check({ force: true });
+    await page.getByRole('tab', { name: 'Doppler', exact: true }).click();
     await page.screenshot({ path: testInfo.outputPath(`venous-renal-arterial-spectrum-${caseId}.png`) });
     await page.getByRole('tab', { name: 'Medir', exact: true }).click();
     await page.getByRole('button', { name: 'Renal', exact: true }).click();

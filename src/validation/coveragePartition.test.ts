@@ -53,17 +53,20 @@ describe('partición de cobertura sin perder pruebas', () => {
   it('la ruta habitual exige ambas fases y conserva la referencia totalmente instrumentada', () => {
     const scripts = (JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { scripts: Record<string, string> }).scripts;
     expect(scripts['test:coverage']).toBe('npm run test:coverage:core && npm run test:matrix && npm run test:coverage:verify');
-    expect(scripts['test:coverage:core']).toContain('VITEST_COVERAGE_PARTITION=core');
-    expect(scripts['test:coverage:core']).toContain('--coverage');
-    expect(scripts['test:matrix']).toContain('VITEST_COVERAGE_PARTITION=matrix');
-    expect(scripts['test:matrix']).not.toContain('--coverage');
+    expect(scripts['test:coverage:core']).toBe('node --import tsx tools/ci/run-validation-phase.ts core');
+    expect(scripts['test:matrix']).toBe('node --import tsx tools/ci/run-validation-phase.ts matrix');
     expect(scripts['test:coverage:full']).toBe('VITEST_TIER=all VITEST_COVERAGE_PARTITION=all vitest run --coverage --testTimeout=180000');
   });
   it('publica los informes de ambas fases aunque su directorio sea oculto', () => {
     const workflow = readFileSync(join(root, '.github/workflows/ci.yml'), 'utf8');
-    const upload = workflow.split('name: validation-reports')[1]?.split('      - run:')[0];
-    expect(upload).toContain('.validation/*.json');
-    expect(upload).toContain('include-hidden-files: true');
-    expect(upload).toContain('if-no-files-found: error');
+    for (const phase of ['core', 'matrix']) {
+      const upload = workflow.split('name: validation-' + phase)[1]?.split('  #')[0];
+      expect(upload).toContain('.validation/' + phase + '.json');
+      expect(upload).toContain('.validation/' + phase + '.source.json');
+      expect(upload).toContain('include-hidden-files: true');
+      expect(upload).toContain('if-no-files-found: error');
+    }
+    expect(workflow).toContain('merge-multiple: true');
+    expect(workflow).toContain('run: npm run test:coverage:verify');
   });
 });

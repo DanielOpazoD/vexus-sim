@@ -114,7 +114,7 @@ describe('veredicto basado en ejecución real', () => {
   it('CI conserva el veredicto protegido y exige informes de ejecución, incluso los metadatos ocultos', () => {
     const workflow = readFileSync('.github/workflows/ci.yml', 'utf8');
     expect(workflow).toContain('name: CI verde (check + e2e)');
-    expect(workflow).toContain('needs: [check, e2e]');
+    expect(workflow).toContain('needs: [check, matrix-validation, e2e]');
     expect(workflow).toContain('include-hidden-files: true');
     expect(workflow).toContain('tools/ci/verify-e2e-execution.ts e2e-evidence');
     expect(readFileSync('tools/ci/run-e2e-shard.ts', 'utf8')).toContain("'--forbid-only'");

@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- CI: cobertura y matrices IQ en paralelo, con veredicto obligatorio que reconcilia commit, hashes y todos los archivos; mismos umbrales, pruebas y plazos (138).
+
 - Visor PW: cambiar escala, filtro o presentación conserva la puerta anatómica; reconstruye el historial con dispersores nuevos y elimina mediciones previas (137).
 
 - Laboratorio: compliance relativa de reservorios venosos esplácnico/periférico mediante la ley volumen-presión, con alcance explícito y casos basales idénticos (136).

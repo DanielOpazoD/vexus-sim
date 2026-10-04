@@ -121,3 +121,19 @@ un gancho que midiera «la envolvente» sin decir cuál cambiaría de significad
 - Rendimiento por cuadro medido en CI (solo presupuesto de bundle).
 - Interacción de UI más allá de la e2e de humo (paneles, teclado completo, navegador 3D); con el DOM falso de
   `src/validation/support/fakeDom.ts` solo se prueba el contexto clínico de las pestañas Medir y Docente.
+
+### Procedencia de las fases de validación
+
+En CI, core con cobertura y las matrices IQ corren en trabajos independientes.
+El veredicto protegido exige ambos y todos los fragmentos E2E. Los artefactos
+`validation-core` y `validation-matrix` contienen informes JSON y sellos
+`*.source.json` con fase, commit y SHA256; el cierre comprueba sus bytes, el
+commit del checkout y la lista completa de archivos, sin omisiones ni duplicados.
+No basta un informe exitoso procedente de otra revisión.
+
+En local, `npm run test:coverage` mantiene las dos fases secuenciales y verifica
+su unión. Para ejecutarlas por separado, usar `npm run test:coverage:core`,
+`npm run test:matrix` y finalmente `npm run test:coverage:verify`, sin cambiar
+HEAD entre fases. Invocar Vitest manualmente no produce el sello exigido.
+La referencia `npm run test:coverage:full` sigue disponible. El SHA local no
+certifica cambios sin commit; la aprobación de PR depende de su checkout en CI.

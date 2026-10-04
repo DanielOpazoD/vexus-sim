@@ -141,3 +141,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [135](DECISIONS.md#L5328) | Mostrar velocidades observadas junto a las marcas PW | vigente |
 | [136](DECISIONS.md#L5355) | Compliance de reservorios con mecanismo volumen-presión | vigente |
 | [137](DECISIONS.md#L5381) | Cambiar equipo PW sin recolocar la puerta anatómica | vigente |
+| [138](DECISIONS.md#L5407) | Fases de validación paralelas, reconciliadas por commit e integridad | vigente |

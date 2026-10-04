@@ -5403,3 +5403,31 @@ después de cambiar escala, junto con las pruebas de recuperación de calidad.
 No cambia fisiología, caudal, perfiles ni criterios de medición. La selección
 inicial y la mezcla de ramas que pueda captar una puerta siguen requiriendo
 revisión de adquisición; esta corrección no certifica su pureza ni fidelidad clínica.
+
+## 138. Fases de validación paralelas, reconciliadas por commit e integridad
+
+**Problema.** El trabajo de CI serializaba cobertura y matrices IQ exhaustivas
+en el mismo corredor. Su duración variable se acercaba al límite de 25 minutos.
+Aumentar ese límite u omitir escenarios escondería el problema.
+
+**Cambio.** CI ejecuta cobertura/core y matriz IQ en dos trabajos independientes;
+cada uno conserva todos sus archivos, aserciones, nivel all y plazo por prueba.
+Core sigue aplicando los mismos umbrales V8, formato, lint, tipos, build,
+presupuesto y auditoría. La matriz sigue sin instrumentación. Se mantiene
+el comando local secuencial y la referencia totalmente instrumentada.
+
+**Contrato de cierre.** El mismo veredicto protegido requiere éxito de core,
+matriz y los ocho fragmentos E2E. Después descarga ambos informes, verifica
+fase, SHA del commit y hash SHA256 de sus bytes y exige la unión disjunta
+completa de archivos. El ejecutor elimina informes viejos antes de empezar,
+solo sella ejecuciones exitosas y rechaza un HEAD que cambie durante la fase.
+Una evidencia ausente, alterada o de otro commit falla. Los informes permanecen
+disponibles como artefactos incluso ante fallos; un informe parcial no obtiene
+sello ni convierte en verde un trabajo fallido.
+
+**Coste y límites.** Un corredor adicional permite solapar las dos fases, a
+cambio de otro checkout e instalación. No se promete una reducción fija del
+tiempo total: los E2E y la variabilidad de corredores pueden dominar. No cambian
+sus ocho fragmentos, reintentos, plazos, pruebas ni el presupuesto de aplicación.
+El SHA acredita el checkout de CI; una ejecución local con cambios sin commit
+no equivale por sí sola a una prueba del árbol publicado.

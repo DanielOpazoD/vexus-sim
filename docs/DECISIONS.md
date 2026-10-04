@@ -5060,3 +5060,35 @@ esto evita redibujados ocultos entre comprobaciones de limpieza y añade ese est
 **Decisión.** La colección actual completa se reparte con costes medianos de tres ejecuciones verificadas, asignando primero los más largos al runner menos cargado. Las listas nativas de Playwright se vuelven a recolectar para probar su igualdad exacta por ID. Pesos ausentes usan un coste de reserva; nunca excluyen pruebas. Se conservan ocho corredores, un worker y todas las aserciones, timeouts y reglas anti-flaky.
 
 **Veredicto.** Además del estado de los jobs, el check protegido descarga los ocho informes y exige el mismo SHA/plan, todos los IDs una vez y un único resultado pasado sin retry. Se guardan explícitamente los metadatos ocultos de ejecución. Las pruebas rápidas cubren listas anidadas, incorporación de casos nuevos, determinismo y rechazo de fallos/omisiones/duplicados/reintentos. En la colección de 62 casos, la reducción prevista del tramo más largo es 32,7 %; es una estimación, no un ahorro real ya medido. Detalle en `E2E_COST_BALANCE.md`.
+
+## 125. Promedio PW limitado a una misma rejilla física de adquisición
+
+**Problema.** El promedio 3 × 3 usado antes de medir el espectro combinaba columnas
+adyacentes por índice aunque su PRF fuera distinta o hubiera un salto del reloj.
+Un mismo bin no representa los mismos Hz al cambiar la escala. Además, copiaba
+la longitud FFT de la primera columna a todas las siguientes. Esto podía introducir
+potencia anterior en otra velocidad o después de una interrupción de adquisición.
+
+**Decisión.** Conservar la resolución de cada columna y combinar solo vecinos con
+igual PRF y longitud FFT, tiempo estrictamente ordenado y distancia temporal no
+mayor que la duración de su ventana FFT. Se mantiene el promedio en potencia
+lineal y la entrada inmutable. El coste sigue siendo O(columnas × bins), sin
+nueva dependencia ni cambio del procesador IQ. La ruta de captura recorta el
+último tramo continuo con esta misma regla, antes de medir: no reúne latidos
+anteriores a un hueco, un reinicio de reloj o un cambio de resolución. Conserva
+la espera de estabilización de 100 ms ya aplicada tras cambios de escala.
+
+**Verificación.** Trece contratos deterministas: promedio lineal, inmutabilidad,
+rejilla de frecuencias, tamaños FFT, tiempo repetido/invertido, huecos, duración
+física de ventana y ausencia de transferencia de un pico a ruido posterior.
+Los ocho contratos iniciales del promedio dan siete fallos y un acierto antes
+de la corrección. Se añaden cinco contratos de captura (hueco, reloj, resolución,
+PRF y continuidad ordinaria); los trece pasan después. Se requieren
+además la suite y CI completas del commit publicado antes de integrar.
+
+**Alcance.** Objetivos 1, 4 y 8: evitar contaminar la señal que sustenta una medición.
+No calibra por sí solo las velocidades humanas ni corrige la red renal. Las
+medianas temporales posteriores mantienen sus contratos dentro del tramo
+continuo seleccionado; no se atribuye validez a mediciones directas de historiales
+mixtos fuera de la ruta de captura.
+Los PR del visor PW y su laboratorio siguen en revisión clínica independiente.

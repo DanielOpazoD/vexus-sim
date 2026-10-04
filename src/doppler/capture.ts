@@ -1,7 +1,7 @@
 export { qualityText } from './qualityMessages';
 import type { Beat } from '../physiology/rhythm';
 import { CAPTURE_BEATS } from './measureQuality';
-import type { SpectralColumn } from './spectral';
+import { contiguousSpectralColumns, type SpectralColumn } from './spectral';
 import {
   measureObservedHepatic,
   measureObservedPortal,
@@ -23,14 +23,13 @@ const CAPTURE_SECONDS = 7;
 export const WALL_SETTLE_S = 0.1;
 
 /**
- * Columnas de la captura: las de los últimos CAPTURE_SECONDS con la PRF actual, sin el transitorio del filtro de pared
- * tras el cambio (decisión 94). Con columnas de dos escalas la banda, el suelo y el aliasing se juzgaban mezclados.
+ * Columnas de la captura: el último tramo continuo con la PRF y resolución actuales, sin el transitorio del filtro de pared
+ * tras el cambio (decisiones 94 y 125). No reúne latidos separados por huecos o reinicios del reloj.
  */
 export function captureColumns(spectrum: readonly SpectralColumn[], t0: number): SpectralColumn[] {
   if (!spectrum.length) return [];
-  const prf = spectrum[spectrum.length - 1].prfHz;
   let first = spectrum.length - 1;
-  while (first > 0 && spectrum[first - 1].prfHz === prf) first--;
+  while (first > 0 && contiguousSpectralColumns(spectrum[first - 1], spectrum[first])) first--;
   const tStart = Math.max(t0, first > 0 ? spectrum[first].t + WALL_SETTLE_S : -Infinity);
   return spectrum.slice(first).filter((c) => c.t > tStart);
 }

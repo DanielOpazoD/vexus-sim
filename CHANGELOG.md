@@ -5,6 +5,10 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+### Corregido
+
+- Promedio espectral PW: conserva la rejilla Hz de cada columna y no mezcla escalas, resoluciones FFT ni adquisiciones separadas por saltos del reloj; la captura toma solo el último tramo continuo (125). No supone calibración clínica de las velocidades.
+
 ### Añadido
 
 - Corazón y mediastino (85). Por encima del diafragma ya no todo es pulmón: el corazón apoya en el centro tendinoso, con la aurícula derecha recibiendo la VCI por su suelo justo sobre el hiato, el ventrículo derecho delante tras el xifoides, el izquierdo y la aurícula izquierda detrás, miocardio hipoecoico (pared del VD de 4 mm, de la AD de 2), cavidades anecoicas y el pericardio como una línea brillante; alrededor, la grasa del mediastino, que sigue por detrás alrededor de la aorta torácica, y los pulmones a los lados. En la subxifoidea la VCI entra en la aurícula (antes, 0 de 669 muestras de la aurícula a la vista; ahora 296 de 345, a 11 cm) con el diafragma y el pericardio de por medio; en la subcostal la aurícula aparece más allá de la suprahepática media y la VCI se ve entera; al abanicar la epigástrica hacia la cabeza la aorta ya no se pierde. La VCI se estrecha en el hiato del diafragma y se abre en la aurícula (antes, paredes paralelas hasta el borde del espejo del pulmón); dilatada por la congestión, no atraviesa el tabique interauricular ni entra en la aurícula izquierda, que se abre en el ventrículo izquierdo por la mitral. El corte del docente rotula AD, VD, VI y AI, miocardio y mediastino; el 3D dibuja el corazón. El corazón es un esquema estático, igual en todos los casos (limitación `schematic-static-heart`).

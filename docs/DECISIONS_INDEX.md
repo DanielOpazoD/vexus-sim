@@ -128,3 +128,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [122](DECISIONS.md#L5040) | Continuidad del centrado auricular entre latidos | vigente |
 | [123](DECISIONS.md#L5048) | Transporte PW por pulso y continuidad del movimiento tisular | vigente |
 | [124](DECISIONS.md#L5056) | Reparto E2E por coste observado y prueba de ejecución en el veredicto | vigente |
+| [125](DECISIONS.md#L5064) | Promedio PW limitado a una misma rejilla física de adquisición | vigente |

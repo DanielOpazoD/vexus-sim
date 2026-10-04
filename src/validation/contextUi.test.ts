@@ -149,7 +149,7 @@ describe('Pestaña Medir: contexto clínico (decisión 82)', () => {
     expect(lines.find((l) => l.includes('Porta: 13.0/8.0'))).toContain('(leve)');
     expect(lines.find((l) => l.includes('Porta: 13.0/8.0'))).toContain('· no fiable');
     expect(lines.find((l) => l.includes('VSH: S'))).not.toContain('no fiable');
-    expect(lines.find((l) => l.includes('Renal: S'))).not.toContain('no fiable');
+    expect(lines.find((l) => l.includes('Renal: máx. sist.'))).not.toContain('no fiable');
     expect(m.live().textContent).toBe('VExUS 3, con el contexto');
     // con la suprahepática normal, que la cirrosis puede ocultar, sí deja de contar: el intervalo lo abre el riñón
     m.measured({ hepatic: NORMAL_HV, portal, renal: MONOPHASIC_RV });

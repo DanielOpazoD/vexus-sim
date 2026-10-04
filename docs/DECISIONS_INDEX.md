@@ -134,3 +134,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [128](DECISIONS.md#L5158) | Refinamiento numérico PW de vasos pequeños y caché espacial exacta | vigente |
 | [129](DECISIONS.md#L5197) | Comparación venosa con espectros PW observados y escalas independientes | vigente |
 | [130](DECISIONS.md#L5232) | Explorador hemodinámico por estados calculados y progresión docente | vigente |
+| [131](DECISIONS.md#L5240) | Distinguir máximos por fase de ondas renales independientes | vigente |

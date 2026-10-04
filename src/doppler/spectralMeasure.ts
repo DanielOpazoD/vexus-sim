@@ -723,6 +723,7 @@ export function measureObservedRenal(columns: readonly SpectralColumn[], beats: 
     );
   }
   const vMin = minList.length ? median(minList) : Number.NaN;
+  const pattern = renalPatternFromPeaks(sPeak, dPeak, vMin, floorCms);
   return {
     kind: 'renal',
     // la arteria vecina siempre da señal: la calidad se juzga en el lado de la vena
@@ -740,10 +741,11 @@ export function measureObservedRenal(columns: readonly SpectralColumn[], beats: 
     sPeak,
     dPeak,
     vMin,
-    pattern: renalPatternFromPeaks(sPeak, dPeak, vMin, floorCms),
+    pattern,
     beats: sList.length,
     measuredBeats: measured,
-    marks,
+    // Retain the systolic-window maximum numerically; it is not a separate S wave in a D-only pattern.
+    marks: pattern === 'monophasic' ? marks.filter((m) => m.label !== 'S') : marks,
     anterogradeSign,
     trace,
   };

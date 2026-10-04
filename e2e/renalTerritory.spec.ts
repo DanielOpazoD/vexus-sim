@@ -45,7 +45,9 @@ for (const [id, pattern] of [
     await page.getByRole('tab', { name: 'Medir', exact: true }).click();
     await page.getByRole('button', { name: 'Renal', exact: true }).click();
     await page.getByRole('button', { name: 'Capturar', exact: true }).click();
-    await expect(page.locator('.result')).toContainText(new RegExp(`Renal: S [\\d.]+ · D [\\d.]+ · mín [-\\d.]+ cm/s → ${pattern}`));
+    await expect(page.locator('.result')).toContainText(
+      new RegExp(`Renal: máx. sist. [\\d.]+ · diást. [\\d.]+ · mín [-\\d.]+ cm/s → ${pattern}`),
+    );
     console.log(JSON.stringify({ case: id, result: await page.locator('.result').innerText() }));
     await page.screenshot({ path: testInfo.outputPath(`venous-renal-territory-${id}.png`) });
     expect(errors).toEqual([]);

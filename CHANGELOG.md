@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Visor PW: valores opcionales medidos de S/D/A y máximos/mínimos, con signo de pantalla y número de latidos; se ocultan cuando falla la calidad y no dependen de ganancia de imagen (135).
+
 - Reparto E2E recalibrado con tres ejecuciones completas verificadas; mismos tests, ocho corredores y cero reintentos, sin relajar cobertura ni timeouts (134).
 
 - Visor PW: selección explícita de ventana renal venosa o par arterial/venoso para inspección, sin reescalar velocidades y conservando las advertencias de calidad (133).

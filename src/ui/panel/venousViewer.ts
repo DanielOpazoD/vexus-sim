@@ -1,3 +1,4 @@
+import { observedVelocitySummary } from '../observedVelocitySummary';
 import { qualityText } from '../../doppler/qualityMessages';
 import { VenousExperiment } from '../../app/venousExperiment';
 import { VenousExperimentControls } from './venousExperimentControls';
@@ -56,6 +57,7 @@ export class VenousViewer {
   #marks: CaptureMark[][] = [[], [], []];
   #marksT = -Infinity;
   #measurementIssues = ['insuficiente', 'insuficiente', 'insuficiente'];
+  #velocitySummaries = ['', '', ''];
   readonly #description: HTMLElement;
   readonly #experimentControls: VenousExperimentControls;
   #experiment: VenousExperiment | null = null;
@@ -338,6 +340,7 @@ export class VenousViewer {
     this.#processedT = -Infinity;
     this.#marksT = -Infinity;
     this.#marks = [[], [], []];
+    this.#velocitySummaries = ['', '', ''];
     for (const canvas of this.#canvases) {
       canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
       canvas.dataset.columns = '0';
@@ -452,6 +455,7 @@ export class VenousViewer {
           { ...opts, wallFilterHz: this.#wallFilters[i] },
           this.#spectral!.gateTracks[i],
         );
+        this.#velocitySummaries[i] = observedVelocitySummary(m);
         this.#measurementIssues[i] = m ? (m.quality.issue ? qualityText(m.quality) : '') : 'Esperando cuatro latidos';
         return m?.quality.issue === null ? m.marks : [];
       });
@@ -488,7 +492,7 @@ export class VenousViewer {
       this.#canvases[i].dataset.marks = this.#annotations ? this.#marks[i].map((m) => m.label).join(',') : '';
       this.#limits[i].textContent =
         `2,5 MHz · PRF ${columns.at(-1)?.prfHz.toFixed(0) ?? '—'} Hz · filtro ${this.#wallFilters[i]} Hz · θ ${this.#spectral.gateInfo[i].beamAngleToFlowDeg?.toFixed(0) ?? '—'}° · velocidad axial · ${this.#spectralScales[i]} cm/s Nyquist · imagen ${this.#presentation[i].gainDb} dB / RD ${this.#presentation[i].dynamicRangeDb}${this.#measurementIssues[i] ? ` · ${this.#measurementIssues[i]}` : ''}`;
-      this.#values[i].textContent = 'PW simulado';
+      this.#values[i].textContent = this.#annotations && this.#velocitySummaries[i] ? this.#velocitySummaries[i] : 'PW simulado';
     }
   }
 

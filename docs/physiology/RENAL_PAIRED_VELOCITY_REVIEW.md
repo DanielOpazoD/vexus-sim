@@ -60,3 +60,17 @@ Ambas figuras son referencias, no texturas del simulador. No se extrapolan
 velocidades de perros, embarazadas o venas pulmonares a este adulto virtual.
 No se confunde la escala de color de 10–20 cm/s con el pico de una onda PW.
 La calibración clínica permanece abierta y requiere más que consistencia numérica.
+
+## Ventana opcional del visor
+
+La adquisición comparada mantiene la puerta venosa como opción inicial. La opción
+«Par arteria/vena: inspección» reproduce la pose auditada de −2° y búsqueda de
+arteria interlobar, con margen de pared de 0,2 mm y puerta de 4 mm. La opción
+venosa conserva su margen de 1,2 mm. Cambia geometría de adquisición, no caudal,
+área vascular, perfil de velocidad ni ganancia relativa.
+
+No se fuerza que la vena alcance una fracción predeterminada de la arteria. La
+captura automática conserva el control de identidad: el predominio arterial puede
+invalidar una medición venosa aunque el par sea útil para inspección visual. Las
+otras dos adquisiciones y la fisiología permanecen iguales. Esta selección no
+reemplaza la calibración pendiente ni la habilidad de obtener una puerta venosa.

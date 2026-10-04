@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Visor PW: selección explícita de ventana renal venosa o par arterial/venoso para inspección, sin reescalar velocidades y conservando las advertencias de calidad (133).
+
 - Margen del bundle recuperado con un tercer banco de transporte GLSL reversible; conserva programas idénticos y todos los límites de tamaño (132).
 
 - Anotaciones renales: el patrón observado monofásico muestra D/mín sin añadir una onda S independiente; conserva el máximo sistólico numérico y lo identifica como máximo por fase (131).

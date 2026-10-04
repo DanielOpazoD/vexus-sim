@@ -19,6 +19,7 @@ import type { BModeSettings } from '../ultrasound/renderer';
 /** Experimental acquisition settings; calibration is separate from physiological normality. */
 export const VENOUS_SPECTRAL_SCALES = [50, 30, 50] as const;
 export const VENOUS_FORWARD_SIGN = [-1, 1, -1] as const;
+export type RenalSpectralWindow = 'venous' | 'paired';
 const WINDOWS: readonly { window: StartPoint['id']; vessels: readonly VesselId[]; gateMm: number }[] = [
   { window: 'intercostal', vessels: ['hvRight'], gateMm: 4 },
   { window: 'portal', vessels: ['pvTrunk'], gateMm: 6 },
@@ -47,20 +48,36 @@ export class VenousSpectralAcquisition {
     seed: number,
     patient: PatientState,
     settings: Pick<BModeSettings, 'depthMm' | 'focusMm'>,
+    renalWindow: RenalSpectralWindow = 'venous',
   ) {
     this.#settings = { depthMm: settings.depthMm, focusMm: settings.focusMm };
     const profile = CONVEX_C35_PROFILE,
       tr = profile.geometry;
     this.#contexts = WINDOWS.map(({ window, vessels }) => {
+      const paired = window === 'renal' && renalWindow === 'paired';
       const scene = new AnatomyScene(patient),
         query = new AnatomyQuery(scene);
       // Reuse the exact reference body selected when the observed simulator was constructed.
       if (scene.torso.profile !== anatomy.scene.torso.profile) throw new Error('The reference body changed during acquisition setup');
       const sp = startPointsFor(scene.torso).find((s) => s.id === window)!;
-      const contact = probeContact({ phi: sp.phi, z: sp.z, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0, lift: 0 }, tr, scene.torso);
+      // Audited acquisition pose, not a velocity or brightness correction.
+      const contact = probeContact(
+        { phi: sp.phi, z: sp.z, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: (sp.tilt ?? 0) - (paired ? Math.PI / 90 : 0), lift: 0 },
+        tr,
+        scene.torso,
+      );
       query.setProbeCompression(contact);
       const weight = acousticWindowWeight(query, contact.frame, tr, contact, sample, this.#settings.depthMm, profile.dopplerEffectiveMHz);
-      const best = bestGateOnVessel(query, contact.frame, tr, sample, vessels, 175, 1.2, weight);
+      const best = bestGateOnVessel(
+        query,
+        contact.frame,
+        tr,
+        sample,
+        paired ? ['interlobarArtery1', 'interlobarArtery2', 'interlobarArtery3'] : vessels,
+        175,
+        paired ? 0.2 : 1.2,
+        weight,
+      );
       if (!best) throw new Error('No acoustic gate found for ' + window);
       return { anatomy: query, contact, best };
     });

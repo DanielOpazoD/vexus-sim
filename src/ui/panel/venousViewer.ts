@@ -5,7 +5,7 @@ import { measurePhysiologyTruth } from '../../vexus/measurements';
 import { classifyVexusC } from '../../vexus/classification';
 import { gradeValueText } from './vexusText';
 import { VENOUS_PW_PRESENTATION } from '../spectralPresentation';
-import { VenousSpectralAcquisition, VENOUS_SPECTRAL_SCALES, VENOUS_FORWARD_SIGN } from '../../app/venousSpectral';
+import { VenousSpectralAcquisition, VENOUS_SPECTRAL_SCALES, VENOUS_FORWARD_SIGN, type RenalSpectralWindow } from '../../app/venousSpectral';
 import type { CaptureMark } from '../../doppler/spectralMeasure';
 import { captureProtocolVessel } from '../../doppler/capture';
 import type { Beat } from '../../physiology/rhythm';
@@ -46,6 +46,7 @@ export class VenousViewer {
   #beats: Beat[] = [];
   #spectralScales: number[] = [...VENOUS_SPECTRAL_SCALES];
   #wallFilters = [15, 15, 15];
+  #renalWindow: RenalSpectralWindow = 'venous';
   #canvases: HTMLCanvasElement[] = [];
   #paintKeys = ['', '', ''];
   #baselines = [0, 0, 0.1];
@@ -195,6 +196,26 @@ export class VenousViewer {
         this.#canvases.push(canvas);
         figure.insertBefore(canvas, limit);
         const controls = row(figure);
+        if (i === 2) {
+          const label = document.createElement('label');
+          label.textContent = 'Ventana renal ';
+          const select = document.createElement('select');
+          select.setAttribute('aria-label', 'Ventana renal PW');
+          select.add(new Option('Vena: medición', 'venous'));
+          select.add(new Option('Par arteria/vena: inspección', 'paired'));
+          select.addEventListener('change', () => {
+            this.#renalWindow = select.value as RenalSpectralWindow;
+            this.#experimentPrimed = false;
+            this.#spectral = null;
+            this.#processedT = -Infinity;
+            this.#marksT = -Infinity;
+            this.#marks = [[], [], []];
+            this.#paintKeys = ['', '', ''];
+            this.update();
+          });
+          label.appendChild(select);
+          controls.appendChild(label);
+        }
         const scaleLabel = document.createElement('label');
         scaleLabel.textContent = 'Nyquist ';
         const selector = document.createElement('select');
@@ -401,6 +422,7 @@ export class VenousViewer {
           this.#experiment?.patient.seed ?? sim.patient.seed,
           this.#experiment?.patient ?? sim.patient,
           sim.bmode,
+          this.#renalWindow,
         );
         this.#spectral.scales.splice(0, 3, ...this.#spectralScales);
         this.#spectral.wallFilters.splice(0, 3, ...this.#wallFilters);
@@ -496,7 +518,7 @@ export class VenousViewer {
       const detail = this.dialog.querySelectorAll('.venous-direction')[i];
       detail.textContent =
         i === 2 && this.#spectralMode
-          ? '+ arteria · − vena · misma puerta PW'
+          ? `+ arteria · − vena · misma puerta PW${this.#renalWindow === 'paired' ? ' · inspección: predominio arterial puede impedir medición venosa' : ' · centrada en vena'}`
           : `${this.#spectralMode && VENOUS_FORWARD_SIGN[i] < 0 ? '−' : '+'} ${VENOUS_COMPARISON_CHANNELS[i].forward}${this.#spectralMode ? ' · orientación virtual' : ''}`;
     }
     if (!this.#points.length) {

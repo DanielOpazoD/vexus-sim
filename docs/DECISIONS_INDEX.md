@@ -136,3 +136,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [130](DECISIONS.md#L5232) | Explorador hemodinámico por estados calculados y progresión docente | vigente |
 | [131](DECISIONS.md#L5240) | Distinguir máximos por fase de ondas renales independientes | vigente |
 | [132](DECISIONS.md#L5262) | Margen de distribución con un tercer banco GLSL reversible | vigente |
+| [133](DECISIONS.md#L5280) | Ventana renal pareada explícita, sin escalar la vena | vigente |

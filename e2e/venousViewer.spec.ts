@@ -297,6 +297,26 @@ test('laboratorio venoso: parámetros físicos, progresión calculada y aislamie
   await expect(lab.getByRole('slider', { name: 'PAD basal', exact: true })).toHaveValue('18');
   expect(Number(await lab.getByRole('slider', { name: 'Función sistólica VD (modelo)', exact: true }).inputValue())).toBeCloseTo(0.3, 12);
   await expect(lab).toContainText('transición clínica continua aún no está modelada');
+  const renalRow = dialog.locator('.venous-row').nth(2);
+  await expect(renalRow).toContainText('aliasing');
+  await renalRow.getByRole('combobox', { name: 'Escala PW Vena interlobar derecha', exact: true }).selectOption('80');
+  const renalBase = renalRow.getByRole('slider', { name: 'Línea de base Vena interlobar derecha', exact: true });
+  await renalBase.focus();
+  await page.keyboard.press('Home');
+  for (let i = 0; i < 8; i++) await page.keyboard.press('ArrowRight');
+  await expect(renalRow.locator('canvas')).toHaveAttribute('data-baseline', '0');
+  await withinFrames(page, 100, 'escala renal sin plegamiento en el caso avanzado', async () => {
+    const text = await renalRow.locator('.venous-limits').textContent();
+    return Boolean(text && !text.includes('no medible') && !text.includes('Esperando')) || 'reconstruyendo escala renal';
+  });
+  await dialog.getByRole('combobox', { name: 'Filtro PW Porta', exact: true }).selectOption('5');
+  await expect(dialog.locator('.venous-row').nth(1)).toContainText('filtro 5 Hz');
+  await withinFrames(
+    page,
+    100,
+    'reconstrucción tras cambiar filtro',
+    async () => !(await dialog.locator('.venous-status').textContent())?.includes('Reconstruyendo') || 'reconstruyendo filtro',
+  );
   await page.setViewportSize({ width: 1280, height: 1380 });
   await lab.locator('summary').click();
   await dialog.evaluate((el) => {

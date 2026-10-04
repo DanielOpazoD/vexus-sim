@@ -1,3 +1,4 @@
+import { qualityText } from '../../doppler/qualityMessages';
 import { VenousExperiment } from '../../app/venousExperiment';
 import { VenousExperimentControls } from './venousExperimentControls';
 import { measurePhysiologyTruth } from '../../vexus/measurements';
@@ -44,6 +45,7 @@ export class VenousViewer {
   #rawSamples: readonly PhysiologySample[] = [];
   #beats: Beat[] = [];
   #spectralScales: number[] = [...VENOUS_SPECTRAL_SCALES];
+  #wallFilters = [15, 15, 15];
   #canvases: HTMLCanvasElement[] = [];
   #paintKeys = ['', '', ''];
   #baselines = [0, 0, 0.1];
@@ -108,6 +110,7 @@ export class VenousViewer {
     }
     mode.addEventListener('change', () => {
       this.#spectralMode = mode.value === 'pw';
+      this.#experimentPrimed = false;
       this.#spectral = null;
       this.#processedT = -Infinity;
       this.#marksT = -Infinity;
@@ -214,11 +217,28 @@ export class VenousViewer {
         selector.value = String(this.#spectralScales[i]);
         selector.addEventListener('change', () => {
           this.#spectralScales[i] = Number(selector.value);
+          this.#experimentPrimed = false;
           this.#spectral = null;
           this.#processedT = -Infinity;
           this.#marksT = -Infinity;
           this.update();
         });
+        const filterLabel = document.createElement('label');
+        filterLabel.textContent = 'Filtro de pared ';
+        const filter = document.createElement('select');
+        filter.setAttribute('aria-label', `Filtro PW ${r.label}`);
+        for (const hz of [5, 10, 15, 25, 50]) filter.add(new Option(`${hz} Hz`, String(hz)));
+        filter.value = String(this.#wallFilters[i]);
+        filter.addEventListener('change', () => {
+          this.#wallFilters[i] = Number(filter.value);
+          this.#experimentPrimed = false;
+          this.#spectral = null;
+          this.#processedT = -Infinity;
+          this.#marksT = -Infinity;
+          this.update();
+        });
+        filterLabel.appendChild(filter);
+        controls.appendChild(filterLabel);
         scaleLabel.appendChild(selector);
         controls.appendChild(scaleLabel);
         const baselineLabel = document.createElement('label');
@@ -397,13 +417,14 @@ export class VenousViewer {
           sim.bmode,
         );
         this.#spectral.scales.splice(0, 3, ...this.#spectralScales);
+        this.#spectral.wallFilters.splice(0, 3, ...this.#wallFilters);
       }
       // Bounded catch-up also works while the patient is frozen; never block on six seconds of IQ at once.
       const next = this.#rawSamples.filter((s) => s.t > this.#processedT).slice(0, 32);
       this.#spectral.push(next, this.#ctx.sim().physiology.clock.dt);
       if (next.length) this.#processedT = next.at(-1)!.t;
     }
-    if (this.#experiment && this.#processedT >= e.clock.t - 0.15) this.#experimentPrimed = true;
+    if (this.#experiment && this.#processedT >= (this.#rawSamples.at(-1)?.t ?? e.clock.t) - 0.15) this.#experimentPrimed = true;
     this.#draw();
   }
 
@@ -411,7 +432,7 @@ export class VenousViewer {
     if (!this.#spectralMode || !this.#spectral || !this.#points.length) return;
     const end = this.#points.at(-1)!.t,
       start = Math.max(0, end - 6);
-    if (this.#annotations && this.#processedT - this.#marksT >= 0.5) {
+    if (this.#processedT - this.#marksT >= 0.5) {
       const rhythm = { beatsBetween: (from: number, to: number) => this.#beats.filter((b) => b.tR >= from && b.tR + b.rr <= to) };
       const opts = { f0Hz: this.#spectral.f0Hz, angleCorrectionRad: 0, invert: false, fftSize: 128, wallFilterHz: 15, gainDb: 0 };
       this.#marks = VENOUS_COMPARISON_CHANNELS.map(({ id }, i) => {
@@ -420,10 +441,10 @@ export class VenousViewer {
           this.#spectral!.chains[i].spectral.columns,
           rhythm,
           Math.min(end, this.#processedT),
-          opts,
+          { ...opts, wallFilterHz: this.#wallFilters[i] },
           this.#spectral!.gateTracks[i],
         );
-        this.#measurementIssues[i] = m ? (m.quality.issue ?? '') : 'insuficiente';
+        this.#measurementIssues[i] = m ? (m.quality.issue ? qualityText(m.quality) : '') : 'Esperando cuatro latidos';
         return m?.quality.issue === null ? m.marks : [];
       });
       this.#marksT = this.#processedT;
@@ -458,7 +479,7 @@ export class VenousViewer {
       this.#canvases[i].dataset.lastTime = String(columns.at(-1)?.t ?? '');
       this.#canvases[i].dataset.marks = this.#annotations ? this.#marks[i].map((m) => m.label).join(',') : '';
       this.#limits[i].textContent =
-        `2,5 MHz · PRF ${columns.at(-1)?.prfHz.toFixed(0) ?? '—'} Hz · filtro 15 Hz · θ ${this.#spectral.gateInfo[i].beamAngleToFlowDeg?.toFixed(0) ?? '—'}° · velocidad axial · ${this.#spectralScales[i]} cm/s Nyquist · imagen ${this.#presentation[i].gainDb} dB / RD ${this.#presentation[i].dynamicRangeDb}${this.#annotations && this.#measurementIssues[i] ? ` · Marcas no disponibles: ${this.#measurementIssues[i]}` : ''}`;
+        `2,5 MHz · PRF ${columns.at(-1)?.prfHz.toFixed(0) ?? '—'} Hz · filtro ${this.#wallFilters[i]} Hz · θ ${this.#spectral.gateInfo[i].beamAngleToFlowDeg?.toFixed(0) ?? '—'}° · velocidad axial · ${this.#spectralScales[i]} cm/s Nyquist · imagen ${this.#presentation[i].gainDb} dB / RD ${this.#presentation[i].dynamicRangeDb}${this.#measurementIssues[i] ? ` · ${this.#measurementIssues[i]}` : ''}`;
       this.#values[i].textContent = 'PW simulado';
     }
   }

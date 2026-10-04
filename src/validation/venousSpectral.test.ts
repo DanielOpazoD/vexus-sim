@@ -15,6 +15,18 @@ function fixture() {
 }
 
 describe('PW venoso virtual: IQ espacial y reloj compartido', () => {
+  it('cada filtro de pared configura la IQ de su canal sin copiarse a los vecinos', () => {
+    const { anatomy, engine } = fixture();
+    const a = new VenousSpectralAcquisition(anatomy, engine.sample, 47, NORMAL_ADULT, DEFAULT_BMODE);
+    a.wallFilters.splice(0, 3, 25, 5, 15);
+    a.push(
+      Array.from({ length: 40 }, () => engine.step()),
+      engine.clock.dt,
+    );
+    expect(a.chains.map((c) => c.wallFilter.cutoffHz)).toEqual([25, 5, 15]);
+    expect(a.chains[1].wallFilter.magnitude(10)).toBeGreaterThan(a.chains[0].wallFilter.magnitude(10));
+  });
+
   it('sitúa tres puertas reales en los vasos declarados sin cambiar la anatomía del alumno', () => {
     const { anatomy, engine } = fixture();
     const acquisition = new VenousSpectralAcquisition(anatomy, engine.sample, 47, NORMAL_ADULT, DEFAULT_BMODE);

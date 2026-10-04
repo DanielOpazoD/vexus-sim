@@ -74,3 +74,18 @@ interpolaciones y escapes. No cambia la física, el shader ejecutado ni los lím
 - Compliance sistémica y por compartimentos, distinta de rigidez parenquimatosa
 - Modelo pericárdico/taponamiento y su interacción con respiración y llenado
 - Validación de formas, velocidades, escalas y respuestas con expertos externos
+
+## Hallazgo de revisión visual y ajuste del equipo
+
+La primera captura del anclaje 3 mostró plegamiento renal con el ajuste inicial
+de 50 cm/s: el análisis independiente confirma tres latidos envueltos de cuatro
+y calidad «aliasing». A 80 cm/s, los cuatro latidos son válidos y la misma guarda
+de calidad pasa. La calidad se calcula y comunica aunque las marcas estén
+apagadas. La prueba de navegador exige el aviso, cambia la escala mediante el
+control real y verifica que desaparezca la condición no medible.
+
+El filtro de pared pasa a ser configurable por canal (5–50 Hz), aplicado a la IQ
+y comunicado al medidor espectral. Bajar su corte no garantiza recuperar una
+velocidad inferior a la resolución de la STFT. La porta del anclaje 3 puede
+acercarse al filtro; se conserva la advertencia, sin forzar una medición válida.
+El grado de referencia fisiológica permanece distinto de esas mediciones.

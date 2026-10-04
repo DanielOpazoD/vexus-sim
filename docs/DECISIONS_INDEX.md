@@ -126,3 +126,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [120](DECISIONS.md#L5006) | Vista docente venosa sincronizada y transporte compacto sin pérdida | vigente |
 | [121](DECISIONS.md#L5032) | Captura suprahepática con sangre visible durante la ventana espectral | vigente |
 | [122](DECISIONS.md#L5040) | Continuidad del centrado auricular entre latidos | vigente |
+| [123](DECISIONS.md#L5048) | Transporte PW por pulso y continuidad del movimiento tisular | vigente |

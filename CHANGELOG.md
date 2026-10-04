@@ -124,6 +124,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- PW: transporte y sensibilidad por pulso, reentrada conservando sobrepaso y movimiento tisular intrapaso, con regresiones físicas de frecuencia y densidad (123). No modifica el modelo hemodinámico ni los criterios de captura.
+
 - Costuras y peine (91). Bajo la sombra de una costilla la textura cambiaba a saltos en costuras verticales que seguían
   hasta el fondo, y la pared de la VCI, 8 cm más abajo, se rompía con bordes verticales: la penumbra de la apertura se
   promediaba con nueve tomas en líneas enteras y los ecos especulares llevaban la transmisión del rayo central en toda

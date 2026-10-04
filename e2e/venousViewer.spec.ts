@@ -486,6 +486,17 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
       await page.setViewportSize({ width: 390, height: 844 });
       expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
       await renal.scrollIntoViewIfNeeded();
+      // Compact persistent context/actions must not cover the Doppler or its keyboard-focused controls.
+      const header = dialog.locator('.venous-header');
+      const headerBounds = await header.boundingBox();
+      expect(headerBounds!.height).toBeLessThan(170);
+      await selector.focus();
+      await selector.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+      const selectorBounds = await selector.boundingBox();
+      const stuckBounds = await header.boundingBox();
+      expect(selectorBounds!.y).toBeGreaterThanOrEqual(stuckBounds!.y + stuckBounds!.height);
+      await expect(header.getByRole('button', { name: 'Cerrar', exact: true })).toBeInViewport();
+      await expect(header.getByRole('button', { name: 'Pausar vista', exact: true })).toBeInViewport();
       await page.screenshot({ path: info.outputPath('venous-paired-renal-mobile.png') });
       await selector.selectOption('venous');
       await ready();

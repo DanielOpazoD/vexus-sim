@@ -40,6 +40,7 @@ export class VenousViewer {
   #spectralScales: number[] = [...VENOUS_SPECTRAL_SCALES];
   #canvases: HTMLCanvasElement[] = [];
   #paintKeys = ['', '', ''];
+  #baselines = [0, 0, 0];
   #spectralControls: HTMLElement[] = [];
   #plots: Element[] = [];
   #marks: CaptureMark[][] = [[], [], []];
@@ -194,6 +195,21 @@ export class VenousViewer {
         });
         scaleLabel.appendChild(selector);
         controls.appendChild(scaleLabel);
+        const baselineLabel = document.createElement('label');
+        baselineLabel.textContent = 'Línea de base ';
+        const baseline = document.createElement('input');
+        baseline.type = 'range';
+        baseline.min = '-0.4';
+        baseline.max = '0.4';
+        baseline.step = '0.05';
+        baseline.value = '0';
+        baseline.setAttribute('aria-label', `Línea de base ${r.label}`);
+        baseline.addEventListener('input', () => {
+          this.#baselines[i] = Number(baseline.value);
+          this.#drawSpectra();
+        });
+        baselineLabel.appendChild(baseline);
+        controls.appendChild(baselineLabel);
         this.#spectralControls.push(controls);
       }
       d.appendChild(figure);
@@ -315,7 +331,7 @@ export class VenousViewer {
         targetH = Math.round(184 * ratio);
       if (canvas.width !== targetW) canvas.width = targetW;
       if (canvas.height !== targetH) canvas.height = targetH;
-      const paintKey = `${targetW}/${targetH}/${this.#spectralScales[i]}/${end}/${columns.at(-1)?.t}/${this.#marksT}/${this.#annotations}/${this.#paused ? cursor?.t : ''}`;
+      const paintKey = `${targetW}/${targetH}/${this.#spectralScales[i]}/${this.#baselines[i]}/${end}/${columns.at(-1)?.t}/${this.#marksT}/${this.#annotations}/${this.#paused ? cursor?.t : ''}`;
       if (paintKey !== this.#paintKeys[i])
         drawVenousSpectrum(
           this.#canvases[i],
@@ -326,8 +342,10 @@ export class VenousViewer {
           this.#annotations ? this.#marks[i] : [],
           this.#paused ? (cursor?.t ?? null) : null,
           ratio,
+          this.#baselines[i],
         );
       this.#paintKeys[i] = paintKey;
+      this.#canvases[i].dataset.baseline = String(this.#baselines[i]);
       this.#canvases[i].dataset.columns = String(columns.length);
       this.#canvases[i].dataset.lastTime = String(columns.at(-1)?.t ?? '');
       this.#canvases[i].dataset.marks = this.#annotations ? this.#marks[i].map((m) => m.label).join(',') : '';

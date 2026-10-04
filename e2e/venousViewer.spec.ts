@@ -148,6 +148,42 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
         .evaluate((el) => Math.abs((el as HTMLCanvasElement).width - el.clientWidth * Math.min(2, devicePixelRatio)) < 2)) ||
       'resolución antigua',
   );
+  // Baseline is a reversible display transform. It must not reconstruct IQ or move the patient's clock.
+  const snapshot = () =>
+    canvases.evaluateAll((els) =>
+      els.map((el) => {
+        const c = el as HTMLCanvasElement;
+        const data = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+        let hash = 2166136261;
+        for (const v of data) hash = Math.imul(hash ^ v, 16777619) >>> 0;
+        const yellowRows: number[] = [];
+        for (let y = 0; y < c.height; y++) {
+          const at = (y * c.width + 10) * 4;
+          if (data[at] - data[at + 2] > 50 && data[at + 1] - data[at + 2] > 45 && data[at] - data[at + 1] < 30) yellowRows.push(y);
+        }
+        return {
+          hash,
+          columns: c.dataset.columns,
+          lastTime: c.dataset.lastTime,
+          marks: c.dataset.marks,
+          zeroY: yellowRows.length ? yellowRows.reduce((a, b) => a + b, 0) / yellowRows.length : null,
+        };
+      }),
+    );
+  const original = await snapshot();
+  expect(original.every((r) => r.zeroY !== null)).toBe(true);
+  const baseline = dialog.getByRole('slider', { name: /^Línea de base/ }).first();
+  await baseline.focus();
+  for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowRight');
+  await expect(canvases.first()).toHaveAttribute('data-baseline', '0.2');
+  const shifted = await snapshot();
+  expect(shifted[0].zeroY!).toBeGreaterThan(original[0].zeroY! + 20);
+  expect(shifted[0].hash).not.toBe(original[0].hash);
+  expect(shifted.slice(1)).toEqual(original.slice(1));
+  for (const key of ['columns', 'lastTime', 'marks'] as const) expect(shifted[0][key]).toBe(original[0][key]);
+  for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowLeft');
+  await expect(canvases.first()).toHaveAttribute('data-baseline', '0');
+  expect(await snapshot()).toEqual(original);
   await page.screenshot({ path: info.outputPath('venous-pw-desktop.png') });
   await dialog.getByRole('button', { name: 'Pausar vista', exact: true }).click();
   const cursor = dialog.getByRole('slider', { name: 'Cursor sincronizado' });

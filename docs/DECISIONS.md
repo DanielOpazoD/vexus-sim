@@ -5807,3 +5807,27 @@ congelado comprueba reversibilidad de píxeles, conservación del cero, columnas
 tiempos y etiquetas, aislamiento de los otros territorios y reloj sin cambios.
 La captura del estado invertido se revisa antes de integrar. No supone validación
 clínica nueva: es una transformación matemática explícita de presentación.
+
+**Corrección de fiabilidad detectada al seguir main.** El posmerge de la decisión
+149 agotó 180 s al esperar el último botón del ciclo respiración/M; el reintento
+pasó en 154,6 s, pero el veredicto rechazó correctamente ese resultado inestable
+([run 37240743368](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37240743368)).
+La traza mostró esperas de estabilidad de dos cuadros de 5–19 s por control bajo
+SwiftShader. Esto identifica tiempo consumido en sincronización de interacción;
+no demuestra por sí solo un fallo fisiológico del botón. El ciclo M activa los
+controles mediante Enter nativo, tras exigir visibilidad y habilitación. Conserva
+los clics reales de los calibres, sus coordenadas, todos los criterios y el plazo
+de 180 s; añade guardas de visibilidad y dimensiones del canvas. No usa clics
+forzados, no cambia el estado mediante JavaScript ni elimina el reintento del
+veredicto: las repeticiones deben pasar sin necesitarlo. La ruta PW conserva su
+interacción por ratón. La nueva CI y el protocolo respiratorio repetido deben
+verificar esta corrección antes de integrar el PR.
+
+La revisión del cableado encontró además que el conmutador cambiaba el patrón y
+`aria-pressed` en el evento, pero su etiqueta, nota y maniobra segmentada esperaban
+la siguiente sincronización del panel. Ahora llama a `ctx.sync()` en ese mismo
+evento. Dos pruebas del DOM de los controles reales, sin avanzar reloj ni GPU,
+comprueban ambos sentidos, clics repetidos, respiración profunda, pausa inspiratoria
+e inmutabilidad del resto del paciente. Retirar esa llamada hace fallar ambas
+pruebas: no dependen de un cuadro posterior para acertar. No se cambia la dinámica
+respiratoria ni se inventa una transición fisiológica más rápida.

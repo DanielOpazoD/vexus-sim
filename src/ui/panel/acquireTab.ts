@@ -90,6 +90,15 @@ export function buildAcquireTab(ctx: PanelContext, p: HTMLElement): HTMLElement 
   });
   ctx.track(button(row(probe), 'Reiniciar sonda', () => s().setPose({ ...s().pose, yaw: 0, rock: 0, tilt: 0, lift: 0 })));
 
+  buildRespirationControls(ctx, p);
+
+  buildImageAdvanced(ctx, ctx.section(p, 'Avanzado', { collapsed: true, info: IMAGE_ADVANCED_INFO }));
+  return m.parentElement!;
+}
+
+/** Controles respiratorios: la respuesta del panel pertenece al evento, no al próximo cuadro. */
+export function buildRespirationControls(ctx: PanelContext, p: HTMLElement): void {
+  const s = ctx.sim;
   const resp = ctx.section(p, 'Configurar respiración', {
     info: 'Apagada: referencia de fin de espiración. Las maniobras cambian presiones y movimiento; el corazón, el flujo y el reloj continúan.',
   });
@@ -99,6 +108,8 @@ export function buildAcquireTab(ctx: PanelContext, p: HTMLElement): HTMLElement 
     'Activar respiración',
     () => {
       s().patient.respiratoryPattern = breathing() ? 'apnea-expiratory' : 'quiet';
+      // Actualiza rótulo, estado accesible y maniobra sin esperar otro cuadro GPU.
+      ctx.sync();
     },
     breathing,
   );
@@ -126,7 +137,4 @@ export function buildAcquireTab(ctx: PanelContext, p: HTMLElement): HTMLElement 
       (v) => (s().patient.respiratoryPattern = v),
     )
     .classList.add('grid2');
-
-  buildImageAdvanced(ctx, ctx.section(p, 'Avanzado', { collapsed: true, info: IMAGE_ADVANCED_INFO }));
-  return m.parentElement!;
 }

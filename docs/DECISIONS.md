@@ -5650,3 +5650,63 @@ rechazo de índices inválidos, marcadores incompletos, interpolación y coerci�
 La prueba existente reconstruye cada programa del ecógrafo y cada export de
 los módulos GLSL de Three byte por byte, comparándolos con su ruta sin packing.
 La compilación real y las pruebas de WebGL se mantienen en E2E antes de integrar.
+
+## 147. Matriz hepática exhaustiva sin repetir instrumentación de cobertura
+
+**Evidencia.** En la validación local precedente, el archivo de contorno consumió
+202 s, de los cuales 163 s correspondían al barrido de 56 poses instrumentado.
+La fase core completa duró 292 s y la matriz IQ 365 s. Son tiempos de esa corrida,
+no promesas de duración en otros corredores.
+
+**Cambio.** Se extrae únicamente ese barrido a un archivo de matriz exhaustiva,
+junto a las tres matrices IQ. Se conservan los dos casos, cuatro vistas, siete
+desvíos, rejilla de 0,25 mm, definición de arista y umbral ≤15 del defecto conocido.
+Las ocho pruebas representativas y de contacto del archivo original permanecen
+instrumentadas; siguen cubriendo las funciones anatómicas y el propio analizador.
+No hay exclusiones nuevas de fuentes ni cambios de umbrales o presupuestos.
+El manifiesto cerrado sigue exigiendo todos los archivos de ambas fases.
+
+**Calidad del test esperado.** El cálculo sale del `it.fails` y pasa a un setup
+con el mismo plazo de 600 s. Así, una excepción inesperada no cuenta como éxito
+del defecto geométrico. Una aserción ordinaria exige 56 identificadores únicos
+y conteos válidos; solo la exigencia geométrica todavía pendiente conserva
+`it.fails`. Se añade una aserción, no se elimina ninguna pose.
+
+**Alternativa descartada.** Una caché de la rejilla angular conservó exactamente
+18 informes en una prueba local, pero sus medianas variaron entre +0,3 % y −6,9 %
+con memoria adicional. No se incorporó esa caché ni se modificó el analizador.
+La optimización propuesta evita instrumentación repetitiva en el barrido,
+conservando la referencia completamente instrumentada para auditoría.
+
+**Medición intermedia y ajuste de alcance.** Separar solo las poses redujo el
+barrido a 58,6 s, pero core duró 295,5 frente a 292,0 s; la matriz duró 372,9
+frente a 365,0 s. No hubo ganancia demostrada de tiempo total. Las cuatro métricas
+de cobertura permanecieron exactamente iguales. El cuello de botella era
+`wallTwin.test.ts`, con 293,3 s: dos grupos con cachés independientes en serie.
+Se separan sus diez pruebas físicas y cinco de presentación en archivos distintos,
+con fixture determinista compartido y sin aumentar el número de workers.
+La comparación AST de las quince llamadas `it` antes/después fue idéntica;
+se preservan cuerpos, umbrales y plazos. Las aserciones permanecen en archivos
+`.test.ts`, no pasan a módulos instrumentados para inflar cobertura.
+La verificación completa posterior determina el resultado final, sin prometer
+que los tiempos locales se trasladen a CI ni al navegador del usuario.
+
+**Revisión del harness.** La primera separación de pared dio core 260,7 s y
+matriz 374,4 s. Al revisar el perfil, se evitó que las pequeñas funciones
+aritméticas del harness (mediana, media y anclaje) pasaran de `.test.ts` a un
+módulo instrumentado: eso añade trabajo de cobertura a operaciones repetidas.
+Se mantienen como utilidades breves en los dos archivos de prueba; el fixture
+solo comparte condiciones iniciales. No se añade una exclusión para ocultarlas.
+
+**Resultado final local.** Código final: core 178,63 s y matriz 368,93 s,
+frente a 292,01 + 365,03 s de la corrida basal: suma de fases 547,56 frente a
+657,04 s (109,48 s menos, aproximadamente 16,7 % en esta comparación local).
+No se extrapola a una reducción de igual magnitud en CI. Pasaron 1284 pruebas
+ordinarias y los mismos 12 fallos esperados declarados, en 152 archivos.
+Cobertura: 91,51 % sentencias, 90,42 % ramas, 91,74 % funciones y 92,41 % líneas;
+ningún umbral se redujo.
+
+**Mutación comprobada.** En un worktree aislado se inyectó una excepción ajena al
+criterio geométrico. El antiguo callback `it.fails` la aceptó (salida 0); el nuevo
+setup falló la suite (salida 1). Los mutantes se restauraron y no se publican.
+Esta prueba focalizada de rechazo no sustituye la validación completa anterior.

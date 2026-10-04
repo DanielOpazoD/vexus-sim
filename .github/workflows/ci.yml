@@ -62,7 +62,7 @@ jobs:
           retention-days: 7
 
   matrix-validation:
-    name: Matrices IQ exhaustivas
+    name: Matrices exhaustivas IQ y anatomía
     runs-on: ubuntu-latest
     timeout-minutes: 25
     steps:

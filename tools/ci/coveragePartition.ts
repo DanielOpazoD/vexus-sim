@@ -1,8 +1,9 @@
-/** Exhaustive IQ matrices run without V8 instrumentation; every other test still contributes coverage. */
-export const IQ_MATRIX_FILES = [
+/** Exhaustive IQ/pose matrices run without V8 instrumentation; representative anatomy still contributes coverage. */
+export const EXHAUSTIVE_MATRIX_FILES = [
   'src/validation/examChain.test.ts',
   'src/validation/examChainScale.test.ts',
   'src/validation/examChainScalePatterns.test.ts',
+  'src/validation/liverContourPoseMatrix.test.ts',
 ] as const;
 
 export type CoveragePartition = 'all' | 'core' | 'matrix';
@@ -14,7 +15,7 @@ export function coverageFiles(files: readonly string[], partition: string, tier:
   if (new Set(files).size !== files.length) throw new Error('Duplicate validation file');
   if (partition === 'all') return [...files];
   const matrix = new Set<string>();
-  for (const target of IQ_MATRIX_FILES) {
+  for (const target of EXHAUSTIVE_MATRIX_FILES) {
     const matches = files.filter((file) => file.replaceAll('\\', '/').endsWith('/' + target) || file.replaceAll('\\', '/') === target);
     if (matches.length !== 1) throw new Error(`Expected exactly one validation file: ${target}`);
     matrix.add(matches[0]);

@@ -2,10 +2,11 @@ import { readFileSync, existsSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { coverageFiles, IQ_MATRIX_FILES, verifyReportedFiles } from '../../tools/ci/coveragePartition';
+import { coverageFiles, EXHAUSTIVE_MATRIX_FILES, verifyReportedFiles } from '../../tools/ci/coveragePartition';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
-const files = [...IQ_MATRIX_FILES.map((p) => join(root, p)), join(root, 'src/validation/anatomy.test.ts')];
+const representative = [join(root, 'src/validation/anatomy.test.ts'), join(root, 'src/validation/liverContour.test.ts')];
+const files = [...EXHAUSTIVE_MATRIX_FILES.map((p) => join(root, p)), ...representative];
 
 describe('partición de cobertura sin perder pruebas', () => {
   it('las dos particiones son disjuntas y su unión conserva cada archivo', () => {
@@ -13,8 +14,8 @@ describe('partición de cobertura sin perder pruebas', () => {
     const matrix = coverageFiles(files, 'matrix', 'all');
     expect(core.filter((p) => matrix.includes(p))).toEqual([]);
     expect([...core, ...matrix].sort()).toEqual([...files].sort());
-    expect(matrix).toHaveLength(3);
-    expect(core).toEqual([files[3]]);
+    expect(matrix).toHaveLength(4);
+    expect(core).toEqual(representative);
   });
   it('una prueba nueva entra automáticamente en cobertura', () => {
     const added = join(root, 'src/validation/newPhysics.test.ts');
@@ -45,7 +46,7 @@ describe('partición de cobertura sin perder pruebas', () => {
     ).toThrow();
   });
   it('el manifiesto señala archivos reales y no incorpora globs amplios', () => {
-    for (const p of IQ_MATRIX_FILES) {
+    for (const p of EXHAUSTIVE_MATRIX_FILES) {
       expect(existsSync(join(root, p)), p).toBe(true);
       expect(p).not.toMatch(/[*?]/);
     }

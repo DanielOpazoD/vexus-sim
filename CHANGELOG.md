@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Validación: barrido hepático de 56 poses en fase exhaustiva, pared física/presentación en suites independientes y cobertura representativa conservada; errores de cálculo no pasan como fallo geométrico esperado (147).
+
 - Transporte GLSL: cuarto banco reversible con selección reproducible; recupera 3139 bytes de margen sin cambiar shaders ni elevar presupuestos (146).
 
 - Visor PW: longitud de puerta de 2/4/6 mm por territorio, aplicada al volumen de muestra y límite de PRF; conserva centros, escalas basales y calidad (145).

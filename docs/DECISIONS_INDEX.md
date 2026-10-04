@@ -150,3 +150,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [144](DECISIONS.md#L5560) | PRF virtual limitada por el retorno del eco y escala efectiva visible | vigente |
 | [145](DECISIONS.md#L5593) | Longitud de puerta PW como mando físico por territorio | vigente |
 | [146](DECISIONS.md#L5626) | Recuperar margen con un cuarto banco de transporte GLSL | vigente |
+| [147](DECISIONS.md#L5654) | Matriz hepática exhaustiva sin repetir instrumentación de cobertura | vigente |

@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Visor PW: longitud de puerta de 2/4/6 mm por territorio, aplicada al volumen de muestra y límite de PRF; conserva centros, escalas basales y calidad (145).
+
 - PW virtual: PRF acotada por profundidad y cara distal de la puerta; regla lateral y marcas usan la escala efectiva, con aviso cuando limita la solicitada (144).
 
 - Visor VSH: alternativa de inclinación física +2° para recuperar ventanas sin modificar hemodinámica; pose habitual por defecto y calidad de adquisición conservada (143).

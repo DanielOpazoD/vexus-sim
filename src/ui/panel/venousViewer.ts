@@ -10,6 +10,7 @@ import {
   AcousticWindowUnavailableError,
   VenousSpectralAcquisition,
   VENOUS_SPECTRAL_SCALES,
+  VENOUS_GATE_LENGTHS_MM,
   VENOUS_FORWARD_SIGN,
   type RenalSpectralWindow,
   type HepaticSpectralWindow,
@@ -59,6 +60,7 @@ export class VenousViewer {
   #rawSamples: readonly PhysiologySample[] = [];
   #beats: Beat[] = [];
   #spectralScales: number[] = [...VENOUS_SPECTRAL_SCALES];
+  #gateLengthsMm = [...VENOUS_GATE_LENGTHS_MM];
   #wallFilters = [15, 15, 15];
   #renalWindow: RenalSpectralWindow = 'venous';
   #hepaticWindow: HepaticSpectralWindow = 'standard';
@@ -232,6 +234,18 @@ export class VenousViewer {
           label.appendChild(select);
           controls.appendChild(label);
         }
+        const gateLabel = document.createElement('label');
+        gateLabel.textContent = 'Puerta ';
+        const gateSize = document.createElement('select');
+        gateSize.setAttribute('aria-label', `Longitud de puerta PW ${r.label}`);
+        for (const mm of [2, 4, 6]) gateSize.add(new Option(`${mm} mm`, String(mm)));
+        gateSize.value = String(this.#gateLengthsMm[i]);
+        gateSize.addEventListener('change', () => {
+          this.#gateLengthsMm[i] = Number(gateSize.value);
+          this.#rebuildEquipment();
+        });
+        gateLabel.appendChild(gateSize);
+        controls.appendChild(gateLabel);
         const scaleLabel = document.createElement('label');
         scaleLabel.textContent = 'Nyquist solicitado ';
         const selector = document.createElement('select');
@@ -340,6 +354,7 @@ export class VenousViewer {
     if (this.#spectral) {
       this.#spectral.scales.splice(0, 3, ...this.#spectralScales);
       this.#spectral.wallFilters.splice(0, 3, ...this.#wallFilters);
+      this.#gateLengthsMm.forEach((mm, i) => this.#spectral!.setGateLengthMm(i, mm));
       this.#spectral.reacquire();
     }
     this.#processedT = -Infinity;
@@ -465,6 +480,7 @@ export class VenousViewer {
           );
           this.#spectral.scales.splice(0, 3, ...this.#spectralScales);
           this.#spectral.wallFilters.splice(0, 3, ...this.#wallFilters);
+          this.#gateLengthsMm.forEach((mm, i) => this.#spectral!.setGateLengthMm(i, mm));
           this.#unavailable = null;
         } catch (error) {
           if (!(error instanceof AcousticWindowUnavailableError)) throw error;
@@ -541,6 +557,7 @@ export class VenousViewer {
       this.#paintKeys[i] = paintKey;
       canvas.dataset.nyquistCms = String(scale);
       canvas.dataset.prfHz = String(this.#spectral.prfHz(i));
+      canvas.dataset.gateLengthMm = String(this.#spectral.gateLengthMm(i));
       canvas.dataset.gateDepthMm = String(this.#spectral.gateDepthsMm[i]);
       this.#canvases[i].dataset.baseline = String(this.#baselines[i]);
       this.#canvases[i].dataset.columns = String(columns.length);
@@ -548,7 +565,7 @@ export class VenousViewer {
       this.#canvases[i].dataset.gateCenter = JSON.stringify(this.#spectral.gateInfo[i].world);
       this.#canvases[i].dataset.marks = this.#annotations ? this.#marks[i].map((m) => m.label).join(',') : '';
       this.#limits[i].textContent =
-        `2,5 MHz · PRF ${columns.at(-1)?.prfHz.toFixed(0) ?? '—'} Hz · filtro ${this.#wallFilters[i]} Hz · θ ${this.#spectral.gateInfo[i].beamAngleToFlowDeg?.toFixed(0) ?? '—'}° · velocidad axial · ${scale.toFixed(1)} cm/s Nyquist${scale < this.#spectralScales[i] - 1e-6 ? ' (límite por profundidad)' : ''} · imagen ${this.#presentation[i].gainDb} dB / RD ${this.#presentation[i].dynamicRangeDb}${this.#measurementIssues[i] ? ` · ${this.#measurementIssues[i]}` : ''}`;
+        `2,5 MHz · PRF ${columns.at(-1)?.prfHz.toFixed(0) ?? '—'} Hz · puerta ${this.#gateLengthsMm[i]} mm · filtro ${this.#wallFilters[i]} Hz · θ ${this.#spectral.gateInfo[i].beamAngleToFlowDeg?.toFixed(0) ?? '—'}° · velocidad axial · ${scale.toFixed(1)} cm/s Nyquist${scale < this.#spectralScales[i] - 1e-6 ? ' (límite por profundidad)' : ''} · imagen ${this.#presentation[i].gainDb} dB / RD ${this.#presentation[i].dynamicRangeDb}${this.#measurementIssues[i] ? ` · ${this.#measurementIssues[i]}` : ''}`;
       this.#values[i].textContent = this.#annotations && this.#velocitySummaries[i] ? this.#velocitySummaries[i] : 'PW simulado';
     }
   }

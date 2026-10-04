@@ -5831,3 +5831,11 @@ comprueban ambos sentidos, clics repetidos, respiración profunda, pausa inspira
 e inmutabilidad del resto del paciente. Retirar esa llamada hace fallar ambas
 pruebas: no dependen de un cuadro posterior para acertar. No se cambia la dinámica
 respiratoria ni se inventa una transición fisiológica más rápida.
+
+La primera ejecución de esta reparación reveló una espera implícita adicional:
+Enter llegaba a los calibres antes del primer dibujo M y su conversión de píxel
+a profundidad aún no estaba presentada; los pares se descartaban como menores
+de 1 mm. El E2E ahora exige un cuadro nuevo del bucle con franja M adquirida y
+profundidad vigente antes de cada serie de calibres, sin dibujar mediante ganchos
+ni esperar segundos arbitrarios. La primera tentativa fallida queda registrada
+en el run 37244030603; no se acepta ni se repite sin esta corrección.

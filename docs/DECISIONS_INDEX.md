@@ -143,3 +143,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [137](DECISIONS.md#L5381) | Cambiar equipo PW sin recolocar la puerta anatómica | vigente |
 | [138](DECISIONS.md#L5407) | Fases de validación paralelas, reconciliadas por commit e integridad | vigente |
 | [139](DECISIONS.md#L5435) | Encabezado compacto del visor sin ocultar el Doppler móvil | vigente |
+| [140](DECISIONS.md#L5460) | La adquisición portal virtual evita el extremo de bifurcación | vigente |

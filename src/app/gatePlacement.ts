@@ -40,6 +40,8 @@ export function bestGateOnVessel(
    * ventana sin sombras. Sin él la colocación ignora las sombras (`gate-placement-ignores-shadows`).
    */
   weight?: (theta: number, r: number) => number,
+  /** Optional acquisition constraint, checked in score order; no acceptable candidate returns null. */
+  accept?: (candidate: GatePlacement) => boolean,
 ): GatePlacement | null {
   const classify = (th: number, r: number) => anatomy.classifyWorld(pointOnLine(frame, tr, th, r), sample);
   // ¿hay VCI a menos de OTHER_VESSEL_MM en el plano (8 direcciones)? (solo si el objetivo no es la VCI)
@@ -75,7 +77,7 @@ export function bestGateOnVessel(
       });
     }
   candidates.sort((a, b) => b.score - a.score);
-  const best = candidates.find((c) => !nearCava(c.theta, c.r, c.vessel)) ?? null;
+  const best = candidates.find((c) => (!accept || accept(c)) && !nearCava(c.theta, c.r, c.vessel)) ?? null;
   if (!best) return null;
   const { score: _score, ...placement } = best;
   return placement;

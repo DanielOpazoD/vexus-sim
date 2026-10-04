@@ -5742,3 +5742,36 @@ real con FFT distinta, independencia respecto de potencia e inmutabilidad.
 E2E existente comprueba información inicial, invariancia ante ganancia y cambio
 con PRF limitada y puerta de 2 mm; captura el detalle expandido. No modifica
 fisiología, adquisición, medición ni píxeles del espectro.
+
+## 149. Comparar imágenes en un estado fisiológico fijado y registrado
+
+**Hallazgo.** El comparador portal esperaba dos cuadros de arranque, medía el
+render y congelaba en otra acción asíncrona. No fijaba ni registraba el tiempo
+fisiológico. En el PR187, con los 23 exports GLSL iguales entre versiones, las
+cuatro imágenes legacy diferían: error absoluto medio de gris de 0,26–0,54.
+Eso no demuestra una regresión de imagen ni permite atribuirla a una causa única.
+
+**Cambio de QA.** Congelar antes de otra acción del navegador; integrar el
+motor real hasta t=5 s para preparar una eventual apnea inspiratoria en el mismo
+instante; después colocar la sonda y avanzar un paso ordinario en la misma pose
+para anular su velocidad residual; integrar hasta t=30 s y reiniciar el historial
+visual con la escena existente, sin recompilar ni cambiar anatomía. Renderizar
+el mismo calentamiento y seis cuadros medidos, y congelar dentro de la misma
+acción síncrona. Registrar caso, semilla, paso, tiempo, muestra fisiológica,
+ajustes y número real del cuadro sellado en cine. Rechazar tiempos imposibles,
+retroceso de reloj, un fotograma de otra fecha o tiempos de render no válidos.
+
+**Límite explícito.** El contador del receptor no se reinicia: el ruido electrónico
+depende de su número de cuadro, por lo que fijar fisiología no garantiza identidad
+píxel a píxel. Se registra el cuadro y `receiverPhaseReset: false`; la comparación
+no elimina ruido para aparentar mejor imagen. Los tiempos de SwiftShader no son
+FPS de un ecógrafo ni de un portátil real. Este protocolo es de QA, no de validación
+clínica y no cambia el funcionamiento normal del simulador.
+
+**Verificación.** Tests de orquestación con el reloj real: inicios distintos,
+conteo íntegro de pasos, congelación entre etapas y tras errores, reinicio del
+historial, metadatos, rechazo de relojes sin progreso y fotogramas antiguos.
+El callback no depende de variables externas al serializarlo para el navegador.
+La prueba real corresponde al workflow de comparación en legacy y referencia,
+sin ampliar su timeout; sus nuevas capturas y metadatos deben revisarse antes
+de integrar. No se presume equivalencia de píxeles por pasar los tests de orquestación.

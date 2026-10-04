@@ -6,6 +6,7 @@ import { join, resolve } from 'node:path';
 import { setTimeout as delay } from 'node:timers/promises';
 import { chromium } from '@playwright/test';
 import { captureBMode } from './captureBMode';
+import { comparisonState } from './comparisonState';
 
 const root = process.cwd(),
   sha = process.env.BASE_SHA;
@@ -76,29 +77,15 @@ try {
           await page.waitForFunction(() => (window.__vexusTest?.framesRendered() ?? 0) >= 2, undefined, { timeout: 180_000 });
           if ((await page.evaluate(() => !!window.__vexusTest!.sim().scene.torso.profile)) !== reference)
             throw new Error('El perfil corporal cargado no coincide con el solicitado');
+          // Freeze before awaiting another browser action, then apply any manoeuvre at a fixed time.
+          const prepared = await page.evaluate(comparisonState, { phase: 'prepare' as const, targetSeconds: 5 });
           if (inspiration) {
             await page.getByRole('button', { name: 'Apnea inspiratoria', exact: true }).click();
-            await page.waitForFunction(() => Math.abs(window.__vexusTest!.sim().sample.resp.diaphragmCaudalMm - 30) < 1e-6, undefined, {
-              timeout: 180_000,
-            });
           }
-          const settings = await page.evaluate((id) => {
-            const t = window.__vexusTest!;
-            if (t.circulation().caseId !== 'normal-adult') throw new Error('Caso no normal');
-            t.goToStartPoint(id);
-            const frameMs = t.frameCostMs(6);
-            const sim = t.sim();
-            return {
-              frameMs,
-              pose: sim.pose,
-              bmode: sim.bmode,
-              respiration: sim.patient.respiratoryPattern,
-              displacementMm: sim.sample.resp.diaphragmCaudalMm,
-              reference: !!sim.scene.torso.profile,
-            };
-          }, id);
+          const acquisition = await page.evaluate(comparisonState, { phase: 'capture' as const, targetSeconds: 30, view: id, frames: 6 });
+          const settings = { ...acquisition, preparationTime: prepared.time };
+          if (settings.caseId !== 'normal-adult' || settings.time !== 30 || !settings.frozen) throw new Error('Invalid comparison state');
           if (Math.abs(settings.displacementMm - (inspiration ? 30 : 0)) > 1e-6) throw new Error('Unexpected respiratory displacement');
-          await page.locator('#freeze').evaluate((button: HTMLButtonElement) => button.click());
           await captureBMode(page, join(out, `${version}-${profile}-${id}.png`));
           results.push({ version, sha: commit, mode: `${profile}-${id}`, settings });
           writeFileSync(join(out, 'partial.json'), JSON.stringify({ results }, null, 2));

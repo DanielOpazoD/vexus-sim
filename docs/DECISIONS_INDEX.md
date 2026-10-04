@@ -152,3 +152,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [146](DECISIONS.md#L5626) | Recuperar margen con un cuarto banco de transporte GLSL | vigente |
 | [147](DECISIONS.md#L5654) | Matriz hepática exhaustiva sin repetir instrumentación de cobertura | vigente |
 | [148](DECISIONS.md#L5714) | Mostrar el muestreo espectral sin prometer exactitud clínica | vigente |
+| [149](DECISIONS.md#L5746) | Comparar imágenes en un estado fisiológico fijado y registrado | vigente |

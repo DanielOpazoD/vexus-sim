@@ -25,8 +25,8 @@
     "e2e": "playwright test",
     "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
     "test:coverage:full": "VITEST_TIER=all VITEST_COVERAGE_PARTITION=all vitest run --coverage --testTimeout=180000",
-    "test:coverage:core": "VITEST_TIER=all VITEST_COVERAGE_PARTITION=core vitest run --coverage --testTimeout=180000 --reporter=default --reporter=json --outputFile=.validation/core.json",
-    "test:matrix": "VITEST_TIER=all VITEST_COVERAGE_PARTITION=matrix vitest run --testTimeout=180000 --reporter=default --reporter=json --outputFile=.validation/matrix.json",
+    "test:coverage:core": "node --import tsx tools/ci/run-validation-phase.ts core",
+    "test:matrix": "node --import tsx tools/ci/run-validation-phase.ts matrix",
     "test:coverage:verify": "node --import tsx tools/ci/verify-validation.ts"
   },
   "devDependencies": {

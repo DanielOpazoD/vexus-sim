@@ -1,3 +1,8 @@
+import { VenousExperiment } from '../../app/venousExperiment';
+import { VenousExperimentControls } from './venousExperimentControls';
+import { measurePhysiologyTruth } from '../../vexus/measurements';
+import { classifyVexusC } from '../../vexus/classification';
+import { gradeValueText } from './vexusText';
 import { VENOUS_PW_PRESENTATION } from '../spectralPresentation';
 import { VenousSpectralAcquisition, VENOUS_SPECTRAL_SCALES, VENOUS_FORWARD_SIGN } from '../../app/venousSpectral';
 import type { CaptureMark } from '../../doppler/spectralMeasure';
@@ -49,6 +54,13 @@ export class VenousViewer {
   #marksT = -Infinity;
   #measurementIssues = ['insuficiente', 'insuficiente', 'insuficiente'];
   readonly #description: HTMLElement;
+  readonly #experimentControls: VenousExperimentControls;
+  #experiment: VenousExperiment | null = null;
+  #experimentWallTime = 0;
+  #gradeT = -Infinity;
+  #experimentGrade = '—';
+  #experimentError = '';
+  #experimentPrimed = false;
 
   constructor(ctx: PanelContext, host: HTMLElement) {
     this.#ctx = ctx;
@@ -57,6 +69,17 @@ export class VenousViewer {
     const header = document.createElement('header');
     header.className = 'venous-header';
     d.appendChild(header);
+    this.#experimentControls = new VenousExperimentControls((parameters) => {
+      this.clear(false);
+      try {
+        this.#experiment = parameters ? new VenousExperiment(parameters) : null;
+      } catch (error) {
+        this.#experiment = null;
+        this.#experimentError = String(error);
+      }
+      this.#experimentWallTime = 0;
+      this.update();
+    });
     const heading = document.createElement('h2');
     heading.id = controlId('comparacion-venosa');
     heading.textContent = 'Comparación venosa';
@@ -132,6 +155,7 @@ export class VenousViewer {
     });
     this.#status = note(header);
     this.#status.className = 'venous-status';
+    d.appendChild(this.#experimentControls.element);
     const trace = venousComparisonTrace([]);
     const rows = [
       ...trace.channels.map((c) => ({ label: c.label, detail: `+ ${c.forward}`, unit: 'cm/s' })),
@@ -270,7 +294,15 @@ export class VenousViewer {
     this.update();
   }
 
-  clear(): void {
+  clear(resetExperiment = true): void {
+    this.#experimentError = '';
+    this.#experimentGrade = '—';
+    this.#experimentPrimed = false;
+    if (resetExperiment) {
+      this.#experiment = null;
+      this.#experimentControls.reset();
+    }
+    this.#gradeT = -Infinity;
     this.#points = [];
     this.#paintKeys = ['', '', ''];
     this.#rawSamples = [];
@@ -301,9 +333,53 @@ export class VenousViewer {
       return;
     }
     if (!this.dialog.open) return;
-    this.#case.textContent = this.#ctx.sim().patient.label;
+    if (this.#experimentError) {
+      this.#status.textContent = `Experimento fuera de dominio: ${this.#experimentError}`;
+      return;
+    }
+    const sim = this.#ctx.sim();
+    if (this.#experiment) {
+      const now = performance.now();
+      try {
+        this.#experiment.advance(
+          this.#experiment.ready && !this.#experimentPrimed
+            ? 0
+            : this.#experimentWallTime
+              ? Math.max(0, (now - this.#experimentWallTime) / 1000)
+              : 0,
+        );
+      } catch (error) {
+        this.#experimentError = String(error);
+        this.#status.textContent = `Experimento fuera de dominio: ${this.#experimentError}`;
+        return;
+      }
+      this.#experimentWallTime = now;
+      if (!this.#experiment.ready) {
+        this.#status.textContent = 'Calculando estado estable experimental…';
+        return;
+      }
+    }
+    const e = this.#experiment?.engine ?? sim.physiology;
+    this.#case.textContent = this.#experiment?.patient.label ?? sim.patient.label;
+    if (this.#experiment && !this.#paused && e.clock.t - this.#gradeT > 0.5) {
+      const m = measurePhysiologyTruth(e, { fromT: e.clock.t - 6, toT: e.clock.t });
+      const grade = classifyVexusC(
+        {
+          ivcMaxDiameterMm: m.ivcMaxMm,
+          hepatic: m.hepaticPattern,
+          portalPulsatilityFraction: m.portalPF,
+          renal: m.renalPattern,
+        },
+        { raisedIntraAbdominalPressure: this.#experiment.patient.intraAbdominalPressureMmHg >= 12 },
+      );
+      this.#experimentGrade = gradeValueText(grade);
+      this.#experimentControls.status.textContent = `VExUS de referencia calculado: ${gradeValueText(grade)} · VCI ${m.ivcMaxMm.toFixed(1)} mm · PF portal ${m.portalPF.toFixed(0)} %${this.#experiment.patient.intraAbdominalPressureMmHg >= 12 ? ' · PIA alta: interpretación limitada' : ''}`;
+      this.#gradeT = e.clock.t;
+    }
+    this.#case.textContent = this.#experiment
+      ? `${this.#experiment.patient.label} · VExUS ref. ${this.#experimentGrade}`
+      : sim.patient.label;
     if (!this.#paused) {
-      const e = this.#ctx.sim().physiology;
       this.#beats = e.rhythm.beatsBetween(Math.max(0, e.clock.t - 7), e.clock.t);
       this.#rawSamples = e.samples.filter((s) => s.t >= e.clock.t - 6);
       this.#points = venousComparisonTrace(this.#rawSamples).points;
@@ -313,7 +389,13 @@ export class VenousViewer {
     if (this.#spectralMode && this.#rawSamples.length) {
       if (!this.#spectral) {
         const sim = this.#ctx.sim();
-        this.#spectral = new VenousSpectralAcquisition(sim.anatomy, this.#rawSamples[0], sim.patient.seed, sim.patient, sim.bmode);
+        this.#spectral = new VenousSpectralAcquisition(
+          this.#experiment?.anatomy ?? sim.anatomy,
+          this.#rawSamples[0],
+          this.#experiment?.patient.seed ?? sim.patient.seed,
+          this.#experiment?.patient ?? sim.patient,
+          sim.bmode,
+        );
         this.#spectral.scales.splice(0, 3, ...this.#spectralScales);
       }
       // Bounded catch-up also works while the patient is frozen; never block on six seconds of IQ at once.
@@ -321,6 +403,7 @@ export class VenousViewer {
       this.#spectral.push(next, this.#ctx.sim().physiology.clock.dt);
       if (next.length) this.#processedT = next.at(-1)!.t;
     }
+    if (this.#experiment && this.#processedT >= e.clock.t - 0.15) this.#experimentPrimed = true;
     this.#draw();
   }
 
@@ -433,7 +516,7 @@ export class VenousViewer {
       this.#limits[i].textContent =
         i < 3 ? `+${scale} / 0 / −${scale} cm/s` : i === 3 ? '+2 / 0 / −2 mV' : '0 = espiración · 1 = inspiración';
     }
-    this.#status.textContent = `${this.#paused ? 'Vista pausada (solo esta ventana)' : this.#ctx.sim().frozen ? 'Paciente congelado' : 'En vivo'} · ${a.t.toFixed(2)}–${b.t.toFixed(2)} s · ${b.respiratoryCycling ? 'Respiración activa' : 'Respiración sin ciclo'}${clipped ? ' · Hay valores fuera de escala: amplía el rango' : ''}`;
+    this.#status.textContent = `${this.#paused ? 'Vista pausada (solo esta ventana)' : this.#experiment ? 'Experimento en vivo' : this.#ctx.sim().frozen ? 'Paciente congelado' : 'En vivo'} · ${a.t.toFixed(2)}–${b.t.toFixed(2)} s · ${b.respiratoryCycling ? 'Respiración activa' : 'Respiración sin ciclo'}${clipped ? ' · Hay valores fuera de escala: amplía el rango' : ''}`;
     if (this.#spectralMode && b.t - this.#processedT > 0.2) this.#status.textContent += ' · Reconstruyendo señal IQ…';
     this.#showCursor();
   }

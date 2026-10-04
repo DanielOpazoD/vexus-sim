@@ -5,7 +5,7 @@ on:
       - 'src/ui/panel/**'
       - 'src/ui/venousSpectralPlot.ts'
       - 'src/doppler/**'
-      - 'src/app/venousSpectral.ts'
+      - 'src/app/venous*.ts'
       - 'src/ui/panel.ts'
       - 'src/bootstrap.ts'
       - 'src/app/styles.css'

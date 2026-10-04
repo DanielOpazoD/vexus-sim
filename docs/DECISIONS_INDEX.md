@@ -129,3 +129,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [123](DECISIONS.md#L5048) | Transporte PW por pulso y continuidad del movimiento tisular | vigente |
 | [124](DECISIONS.md#L5056) | Reparto E2E por coste observado y prueba de ejecución en el veredicto | vigente |
 | [125](DECISIONS.md#L5064) | Comparación venosa con espectros PW observados y escalas independientes | vigente |
+| [126](DECISIONS.md#L5085) | Explorador hemodinámico por estados calculados y progresión docente | vigente |

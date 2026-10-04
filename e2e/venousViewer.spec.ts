@@ -261,3 +261,80 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
   await expect(page.locator('.venous-spectrum').first()).toHaveAttribute('data-columns', '0');
   expect(errors).toEqual([]);
 });
+
+test('laboratorio venoso: parámetros físicos, progresión calculada y aislamiento del paciente', async ({ page }, info) => {
+  budget(120_000);
+  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  await page.locator('#debug-toggle').check({ force: true });
+  await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
+  await page.locator('#freeze').click({ force: true });
+  const original = await page.evaluate(() => ({
+    patient: JSON.stringify(window.__vexusTest!.sim().patient),
+    t: window.__vexusTest!.sim().physiology.clock.t,
+    frozen: window.__vexusTest!.sim().frozen,
+  }));
+  await page.getByRole('button', { name: 'Abrir comparación venosa' }).click({ force: true });
+  const dialog = page.getByRole('dialog', { name: 'Comparación venosa' }),
+    lab = dialog.locator('.venous-experiment');
+  await lab.locator('summary').click();
+  await lab.getByRole('checkbox', { name: 'Explorar estados estables independientes' }).check();
+  await withinFrames(page, 140, 'estado experimental y señales iniciales', async () => {
+    const status = await lab.locator('small').textContent();
+    const times = await dialog
+      .locator('.venous-spectrum')
+      .evaluateAll((els) => els.map((e) => Number((e as HTMLElement).dataset.lastTime)));
+    return Boolean(status?.includes('calculado: 0') && times.every((t) => t >= 29)) || 'calculando escenario inicial';
+  });
+  await expect(dialog.locator('.venous-case')).toContainText('Experimento hemodinámico');
+  await lab.getByRole('button', { name: 'Guía 3', exact: true }).click();
+  await withinFrames(page, 140, 'progresión a congestión avanzada con grado calculado', async () => {
+    const status = await lab.locator('small').textContent();
+    const times = await dialog
+      .locator('.venous-spectrum')
+      .evaluateAll((els) => els.map((e) => Number((e as HTMLElement).dataset.lastTime)));
+    return Boolean(status?.includes('calculado: 3') && times.every((t) => t >= 29)) || 'reconstruyendo congestión';
+  });
+  await expect(lab.getByRole('slider', { name: 'PAD basal', exact: true })).toHaveValue('18');
+  expect(Number(await lab.getByRole('slider', { name: 'Función sistólica VD (modelo)', exact: true }).inputValue())).toBeCloseTo(0.3, 12);
+  await expect(lab).toContainText('transición clínica continua aún no está modelada');
+  await page.setViewportSize({ width: 1280, height: 1380 });
+  await lab.locator('summary').click();
+  await dialog.evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  await page.screenshot({ path: info.outputPath('venous-laboratory-grade3.png') });
+  await lab.locator('summary').click();
+  const abdominal = lab.getByRole('slider', { name: 'Presión intraabdominal', exact: true });
+  await abdominal.focus();
+  await page.keyboard.press('End');
+  await expect(abdominal).toHaveValue('25');
+  await withinFrames(
+    page,
+    80,
+    'ajuste individual con interpretación limitada por PIA',
+    async () => (await lab.locator('small').textContent())?.includes('PIA alta: interpretación limitada') || 'calculando presión abdominal',
+  );
+  await expect(lab).toContainText('Personalizado');
+
+  expect(
+    await page.evaluate(() => ({
+      patient: JSON.stringify(window.__vexusTest!.sim().patient),
+      t: window.__vexusTest!.sim().physiology.clock.t,
+      frozen: window.__vexusTest!.sim().frozen,
+    })),
+  ).toEqual(original);
+  await page.setViewportSize({ width: 1280, height: 1380 });
+  await dialog.evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  await page.screenshot({ path: info.outputPath('venous-laboratory-desktop.png') });
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+  await page.screenshot({ path: info.outputPath('venous-laboratory-mobile.png') });
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
+  await page.getByRole('button', { name: 'Abrir comparación venosa' }).click({ force: true });
+  await expect(lab.getByRole('checkbox', { name: 'Explorar estados estables independientes' })).not.toBeChecked();
+  await expect(dialog.locator('.venous-case')).toContainText('Adulto sano');
+  expect(errors).toEqual([]);
+});

@@ -1272,3 +1272,26 @@ button.mode.active {
 .venous-pw-mode .venous-marker-row svg {
   width: calc(100% - 58px);
 }
+
+.venous-experiment {
+  padding: 10px;
+  margin: 8px 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.venous-experiment fieldset {
+  border: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.venous-experiment fieldset > label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.venous-experiment output {
+  font-variant-numeric: tabular-nums;
+  min-width: 4em;
+}

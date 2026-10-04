@@ -2,15 +2,15 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { browserShardCount, listedTestIds, verifyShardPlans, type ListedReport } from '../../tools/ci/e2eShardPlan';
 const workflow = (axis = '[1, 2]') =>
-  `jobs:\n  e2e:\n    strategy:\n      matrix:\n        shard: ${axis}\n    steps:\n      - run: npm run e2e -- --forbid-only --shard=\${{ matrix.shard }}/\${{ strategy.job-total }}\n  veredicto:\n`;
+  `jobs:\n  e2e:\n    strategy:\n      matrix:\n        shard: ${axis}\n    steps:\n      - run: node --import tsx tools/ci/run-e2e-shard.ts \${{ matrix.shard }} \${{ strategy.job-total }}\n  veredicto:\n`;
 describe('reparto E2E íntegro y sin concurrencia dentro de SwiftShader', () => {
   it('el número de fragmentos procede de una sola matriz literal', () => {
     expect(browserShardCount(workflow())).toBe(2);
     for (const axis of ['[]', '[0, 1]', '[1, 1]', '[1, 3]', '[1, "2"]']) expect(() => browserShardCount(workflow(axis))).toThrow();
     expect(() => browserShardCount(workflow().replace('        shard:', '        os: [linux, windows]\n        shard:'))).toThrow();
     expect(() => browserShardCount(workflow().replace('${{ strategy.job-total }}', '5'))).toThrow();
-    expect(() => browserShardCount(workflow().replace(' --forbid-only', ''))).toThrow();
-    expect(() => browserShardCount(workflow().replace(' -- --forbid-only --shard', ' -- --forbid-only --grep only --shard'))).toThrow();
+    expect(() => browserShardCount(workflow().replace('run-e2e-shard.ts', 'another-command.ts'))).toThrow();
+    expect(() => browserShardCount(workflow().replace('run-e2e-shard.ts ', 'run-e2e-shard.ts --grep only '))).toThrow();
   });
   it('extrae pruebas anidadas y distingue proyectos', () => {
     const report: ListedReport = {

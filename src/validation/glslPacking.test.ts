@@ -15,16 +15,17 @@ describe('transporte GLSL sin pérdida', () => {
     expect(unpackGlsl(GLSL_WORDS.map((_, i) => glslMarker(i)).join(' '))).toBe(GLSL_WORDS.join(' '));
     expect(unpackGlsl('x + 1.0; @! @[')).toBe('x + 1.0; @! @[');
     expect(unpackGlsl('@z')).toBe('logdepthbuf_pars_vertex');
+    expect([0, 63, 64, 127, 128, 191].map(glslMarker)).toEqual(['@A', '@$', '@~A', '@~$', '@!A', '@!$']);
     expect(new Set(GLSL_WORDS.map((_, i) => glslMarker(i))).size).toBe(GLSL_WORDS.length);
     expect(unpackGlsl('@~! @~~A')).toBe('@~! @~~A');
-    for (const index of [-1, 128, NaN, 0.5]) expect(() => glslMarker(index)).toThrow(RangeError);
+    for (const index of [-1, 192, NaN, 0.5]) expect(() => glslMarker(index)).toThrow(RangeError);
   });
   it('decodifica los diez tokens adicionales sin renombrar identificadores', () => {
     expect(unpackGlsl('@Q @R @S @T @U @V @W @X @Y @Z')).toBe(
       'tissue define texelFetch int gl_FragCoord referenceCartilage min ivec2 continue max',
     );
     expect(new Set(GLSL_WORDS).size).toBe(GLSL_WORDS.length);
-    expect(GLSL_WORDS.length).toBeLessThanOrEqual(2 * GLSL_MARKERS.length);
+    expect(GLSL_WORDS.length).toBeLessThanOrEqual(3 * GLSL_MARKERS.length);
   });
   it('conserva interpolaciones con marcadores, coerción, orden y escapes', () => {
     const filler = 'float x = 1.0; return vec3(x);\n'.repeat(100);

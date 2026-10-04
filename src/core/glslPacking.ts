@@ -128,16 +128,82 @@ export const GLSL_WORDS = [
   'USE_CLEARCOAT_ROUGHNESSMAP',
   'refractionCoords',
   'coupling',
+  'morphTargetInfluences',
+  'vWorldDirection',
+  'NUM_CLIPPING_PLANES',
+  'modelMatrix',
+  'USE_IRIDESCENCE_THICKNESSMAP',
+  'pragma',
+  'projectionMatrix',
+  'bumpmap_pars_fragment',
+  'normal_fragment_begin',
+  'UNION_CLIPPING_PLANES',
+  'vClearcoatNormalMapUv',
+  'diffuse',
+  'gl_Position',
+  'USE_SPECULAR_INTENSITYMAP',
+  'USE_TANGENT',
+  'normal_fragment_maps',
+  'normal_pars_fragment',
+  'common',
+  'curvature',
+  'morphTargetBaseInfluence',
+  'retroreflectivity',
+  'sheenColor',
+  'worldpos_vertex',
+  'fog_fragment',
+  'map_fragment',
+  'directionalLightShadows',
+  'receiveShadow',
+  'shadowmap_pars_fragment',
+  'USE_DISPLACEMENTMAP',
+  'vDirectionalShadowCoord',
+  'vSunShadowWorldPosition',
+  'shadow',
+  'texelSize',
+  'USE_TRANSMISSION',
+  'vHighPrecisionZW',
+  'color_fragment',
+  'curtain',
+  'floor',
+  'lightmap_pars_fragment',
+  'USE_SHEEN_ROUGHNESSMAP',
+  'dithering_fragment',
+  'location',
+  'MORPHTARGETS_COUNT',
+  'normal_pars_vertex',
+  'USE_LOGARITHMIC_DEPTH_BUFFER',
+  'void',
+  'cube_uv_reflection_fragment',
+  'envmap_common_pars_fragment',
+  'shadowmap_pars_vertex',
+  'textureSize',
+  'USE_ALPHAMAP',
+  'USE_BUMPMAP',
+  'USE_SPECULAR_COLORMAP',
+  'vSpotLightCoord',
+  'rectAreaLight',
+  'USE_ENVMAP',
+  'vIridescenceThicknessMapUv',
+  'NUM_RECT_AREA_LIGHTS',
+  'version',
+  'bool',
+  'emissivemap_pars_fragment',
+  'mat3',
+  'anisotropyVector',
+  'PointLightShadow',
 ] as const;
 export const GLSL_MARKERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_$';
-/** Stable short codes for the first bank; a tilde selects the second bank. */
+const GLSL_BANKS = ['', '~', '!'];
+/** Stable short codes for the first bank; a tilde or exclamation mark selects the second or third bank. */
 export function glslMarker(index: number): string {
-  if (!Number.isInteger(index) || index < 0 || index >= 2 * GLSL_MARKERS.length) throw new RangeError('Invalid GLSL marker index');
-  return '@' + (index < GLSL_MARKERS.length ? '' : '~') + GLSL_MARKERS[index % GLSL_MARKERS.length];
+  if (!Number.isInteger(index) || index < 0 || index >= GLSL_BANKS.length * GLSL_MARKERS.length)
+    throw new RangeError('Invalid GLSL marker index');
+  return '@' + GLSL_BANKS[Math.floor(index / GLSL_MARKERS.length)] + GLSL_MARKERS[index % GLSL_MARKERS.length];
 }
 export function unpackGlsl(s: string): string {
   return s.replace(
-    /@(~?)([A-Za-z0-9_$])/g,
-    (original, bank: string, c: string) => GLSL_WORDS[GLSL_MARKERS.indexOf(c) + (bank ? GLSL_MARKERS.length : 0)] ?? original,
+    /@([~!]?)([A-Za-z0-9_$])/g,
+    (original, bank: string, c: string) => GLSL_WORDS[GLSL_MARKERS.indexOf(c) + GLSL_BANKS.indexOf(bank) * GLSL_MARKERS.length] ?? original,
   );
 }

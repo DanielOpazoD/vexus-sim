@@ -41,6 +41,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'portal-trace-tuned-on-chain',
   'af-capture-beat-sampling',
   'vessel-identity-from-model',
+  'renal-arterial-dominance-identity',
   'weak-signal-not-flagged',
   'respiratory-clutter-masks-slow-flow',
   'gate-placement-ignores-shadows',

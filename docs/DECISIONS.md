@@ -5113,3 +5113,44 @@ coincidía con el signo de pantalla de la captura.
 **Verificación.** Contratos de coordenadas frente a la conversión Doppler y la
 posición de la captura, tamaños e inversión, además de navegador real con los
 controles de la aplicación y ausencia de superposición con el espectro.
+
+## 127. Territorio interlobar y calibración provisional de velocidad renal
+
+**Objetivo.** Fidelidad física/ecográfica y honestidad (1, 2, 4 y 8): corregir la
+magnitud por la cadena Q/A, no por el dibujo del espectro ni por el grado.
+
+**Decisión.** Cada rama interlobar representada recibe 5 % del caudal de un riñón,
+antes 12 %. Las tres ramas derechas representan 15 %; queda explícito el 85 % no
+representado. El caudal total, presiones, resistencias y compliances no cambian.
+Es una calibración provisional de territorio/área `NEEDS_CALIBRATION`, no una
+fracción anatómica medida en humanos. Se documentan las referencias, diferencias
+entre media seccional y envolvente, y los candidatos descartados en
+`docs/physiology/RENAL_TERRITORY_CALIBRATION.md`.
+
+**Evidencia previa.** Ocho adquisiciones controladas: con 6 %, S/D venosas sanas
+16,25/13,75 cm/s frente a 31,25/25,63 con 12 %; D grave 30,63 frente a 61,25.
+Son salidas simuladas, no rangos clínicos. El candidato 4 % produjo cuatro fallos
+de matriz y se descartó. Con 6 % no hubo discrepancias de patrón en la matriz;
+solo dejó de cumplirse la antigua expectativa de aliasing a 2600 Hz. Se conserva
+la prueba forzándolo a 1300 Hz y se añade la recuperación medible a 2600 Hz.
+
+**Verificación requerida.** Presupuesto de flujo y unidades, todas las matrices
+sin rebajar umbrales, CI del árbol final y capturas reales de navegador en sano y
+grave. Las nuevas capturas quedan en los artefactos `venous-renal-territory-*`.
+No se declara resuelta la calibración de todos los escenarios ni la estimación
+arterial en una puerta mixta; el visor y laboratorio mantienen su revisión clínica.
+
+**Seguridad de identidad.** La auditoría de puerta mixta mostró falsos resultados
+continuos al dominar la arteria. Se rechaza la medición automática si cualquier
+latido medido tiene predominio arterial anatómico, sin alterar espectro o IQ.
+La captura mixta clínica sigue siendo válida; es una limitación declarada del
+estimador actual, probada con IQ real en ambos cuerpos y sano/grave.
+
+**Revisión de amplitudes.** Tras releer Iida 2016, Husain-Syed 2019 y las
+capturas clínicas aportadas, se prefiere el candidato 5 % al anterior 6 %. En
+el banco: S/D/mín sanos 13,75/11,25/6,25 cm/s y D grave 26,25, sin asignar una
+velocidad por grado ni afirmar un máximo universal. Las 53 matrices pasan y
+42 escenarios de referencia (7 casos × 3 semillas × 2 respiraciones) no cambian
+patrón al comparar el suelo absoluto de 2 cm/s con la misma regla relativa sin
+ese suelo. Es una comprobación de estabilidad, no validación clínica del suelo
+cero. El candidato 4 % sigue descartado.

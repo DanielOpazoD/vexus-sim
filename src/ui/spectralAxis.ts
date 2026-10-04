@@ -16,3 +16,15 @@ export function spectralBinAt(rowFraction: number, fftSize: number, baselineShif
   const wrapped = ((binFraction % 1) + 1) % 1;
   return Math.round(wrapped * fftSize) % fftSize;
 }
+
+/** Major ticks in velocity units, independent of the acquired spectrum. */
+export function spectralTicks(nyquistCms: number, baselineShift: number): number[] {
+  const axis = spectralAxis(nyquistCms, baselineShift);
+  const target = (axis.maxCms - axis.minCms) / 5;
+  const order = 10 ** Math.floor(Math.log10(target));
+  const scaled = target / order;
+  const step = order * (scaled <= 1 ? 1 : scaled <= 2 ? 2 : scaled <= 5 ? 5 : 10);
+  const ticks: number[] = [];
+  for (let n = Math.ceil(axis.minCms / step); n <= Math.floor(axis.maxCms / step); n++) ticks.push(n === 0 ? 0 : n * step);
+  return ticks;
+}

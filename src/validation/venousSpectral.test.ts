@@ -4,7 +4,7 @@ import { AnatomyQuery } from '../anatomy/query';
 import { NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { VenousSpectralAcquisition } from '../doppler/venousSpectral';
-import { VENOUS_COMPARISON_CHANNELS } from '../physiology/venousComparison';
+import { VESSEL_META } from '../physiology/vessels';
 
 function fixture() {
   const anatomy = new AnatomyQuery(new AnatomyScene(NORMAL_ADULT));
@@ -16,10 +16,15 @@ function fixture() {
 describe('PW venoso virtual: IQ espacial y reloj compartido', () => {
   it('sitúa tres puertas reales en los vasos declarados sin cambiar la anatomía del alumno', () => {
     const { anatomy, engine } = fixture();
-    const acquisition = new VenousSpectralAcquisition(anatomy, engine.sample, 47);
-    for (const [i, channel] of VENOUS_COMPARISON_CHANNELS.entries()) {
+    const acquisition = new VenousSpectralAcquisition(anatomy, engine.sample, 47, NORMAL_ADULT);
+    for (const [i, system] of ['hepaticVein', 'portal', 'interlobarVein'].entries()) {
       const gate = acquisition.gate(i, engine.sample);
-      expect(anatomy.classifyWorld(gate.center, engine.sample).vessel).toBe(channel.vessel);
+      const info = acquisition.gateInfo[i];
+      expect(info.vessel).not.toBeNull();
+      expect(VESSEL_META[info.vessel!].system).toBe(system);
+      expect(info.transmission).toBeGreaterThan(0);
+      expect(info.transmission).toBeLessThan(1);
+      expect(info.beamAngleToFlowDeg).toBeGreaterThan(0);
       expect(Math.hypot(...gate.beamDir)).toBeCloseTo(1, 12);
     }
     expect(anatomy.probeCompression).toBeNull();
@@ -27,7 +32,7 @@ describe('PW venoso virtual: IQ espacial y reloj compartido', () => {
 
   it('emite potencia multibin desde dispersores y conserva los tiempos del ECG', () => {
     const { anatomy, engine } = fixture();
-    const acquisition = new VenousSpectralAcquisition(anatomy, engine.sample, 47);
+    const acquisition = new VenousSpectralAcquisition(anatomy, engine.sample, 47, NORMAL_ADULT);
     const samples = Array.from({ length: 75 }, () => engine.step());
     const before = JSON.stringify(samples);
     acquisition.push(samples, engine.clock.dt);
@@ -47,7 +52,7 @@ describe('PW venoso virtual: IQ espacial y reloj compartido', () => {
 
   it('no fabrica continuidad a través de un intervalo ausente', () => {
     const { anatomy, engine } = fixture();
-    const acquisition = new VenousSpectralAcquisition(anatomy, engine.sample, 47);
+    const acquisition = new VenousSpectralAcquisition(anatomy, engine.sample, 47, NORMAL_ADULT);
     acquisition.push(
       Array.from({ length: 50 }, () => engine.step()),
       engine.clock.dt,

@@ -1,77 +1,77 @@
 import { AnatomyQuery } from '../anatomy/query';
-import { add, cross, normalize, scale, sub, type Vec3 } from '../core/vec3';
+import { AnatomyScene } from '../anatomy/scene';
+import type { Vec3 } from '../core/vec3';
 import { prfFromNyquistCms } from '../core/units';
 import type { PhysiologySample } from '../physiology/engine';
-import { VENOUS_COMPARISON_CHANNELS } from '../physiology/venousComparison';
+import type { PatientState } from '../physiology/patientState';
+import type { VesselId } from '../physiology/vessels';
 import { PwDopplerChain } from './pwChain';
 import type { GateGeometry } from './sampleVolume';
 import type { GateVesselSample } from './vesselIdentity';
+import { startPointsFor, type StartPoint } from '../app/startPoints';
+import { bestGateOnVessel, type GatePlacement } from '../app/gatePlacement';
+import { acousticWindowWeight } from '../app/gateTransmission';
+import { pwGate, type PwGateInfo } from '../app/pwGate';
+import { probeContact, type ProbeContact } from '../probe/contact';
+import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
+import { DEFAULT_BMODE } from '../ultrasound/renderer';
 
-export const VENOUS_SPECTRAL_SCALES = [80, 50, 60] as const;
-/** Explicit virtual beam orientation: forward hepatic/renal below baseline, portal above. */
+/** Experimental acquisition settings; calibration is separate from physiological normality. */
+export const VENOUS_SPECTRAL_SCALES = [50, 30, 40] as const;
 export const VENOUS_FORWARD_SIGN = [-1, 1, -1] as const;
+const WINDOWS: readonly { window: StartPoint['id']; vessels: readonly VesselId[]; gateMm: number }[] = [
+  { window: 'intercostal', vessels: ['hvRight'], gateMm: 4 },
+  { window: 'portal', vessels: ['pvTrunk'], gateMm: 4 },
+  { window: 'renal', vessels: ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'], gateMm: 2 },
+];
 
-/** Three virtual, vessel-following acquisitions; not three simultaneous physical probes.
- * Uses the existing spatial scatterers → IQ → wall filter → STFT pipeline, not an envelope texture.
- * Ideal transmission and beam alignment are explicit teaching assumptions, not an acoustic window claim.
+/** Three virtual probe acquisitions through the same anatomical window code as the simulator.
+ * Independent scene/query instances isolate probe compression; physiology remains shared and read-only.
  */
 export class VenousSpectralAcquisition {
-  readonly f0Hz = 2.5e6;
+  readonly f0Hz = CONVEX_C35_PROFILE.geometry.f0Doppler;
   readonly scales: number[] = [...VENOUS_SPECTRAL_SCALES];
   readonly chains: PwDopplerChain[];
   readonly gateTracks: GateVesselSample[][] = [[], [], []];
   readonly materialCenters: Vec3[];
-  readonly #anatomy: AnatomyQuery;
+  readonly gateInfo: PwGateInfo[] = [];
+  readonly #contexts: { anatomy: AnatomyQuery; contact: ProbeContact; best: GatePlacement }[];
   #lastT: number | null = null;
+  #steps = 0;
 
-  constructor(anatomy: AnatomyQuery, sample: PhysiologySample, seed: number) {
-    // Independent query cache and no probe compression; never modify the simulator's anatomy/query.
-    this.#anatomy = new AnatomyQuery(anatomy.scene);
-    this.materialCenters = VENOUS_COMPARISON_CHANNELS.map(({ vessel }) => {
-      const nodes = anatomy.scene.vesselById.get(vessel)!.tube.nodes;
-      let best: Vec3 | null = null;
-      let clearance = -Infinity;
-      for (let i = 1; i < nodes.length; i++) {
-        for (const fraction of [0.25, 0.5, 0.75]) {
-          const p = add(nodes[i - 1].p, scale(sub(nodes[i].p, nodes[i - 1].p), fraction));
-          const world = this.#anatomy.deformation.toWorld(p, sample.resp);
-          const hit = this.#anatomy.classifyWorld(world, sample);
-          if (hit.vessel === vessel && hit.vesselHit && -hit.vesselHit.d > clearance) {
-            clearance = -hit.vesselHit.d;
-            best = p;
-          }
-        }
-      }
-      if (!best) throw new Error(`Sin puerta virtual válida en ${vessel}`);
-      return best;
+  constructor(anatomy: AnatomyQuery, sample: PhysiologySample, seed: number, patient: PatientState) {
+    const profile = CONVEX_C35_PROFILE,
+      tr = profile.geometry;
+    this.#contexts = WINDOWS.map(({ window, vessels }) => {
+      const scene = new AnatomyScene(patient),
+        query = new AnatomyQuery(scene);
+      // Reuse the exact reference body selected when the observed simulator was constructed.
+      if (scene.torso.profile !== anatomy.scene.torso.profile) throw new Error('The reference body changed during acquisition setup');
+      const sp = startPointsFor(scene.torso).find((s) => s.id === window)!;
+      const contact = probeContact({ phi: sp.phi, z: sp.z, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0, lift: 0 }, tr, scene.torso);
+      query.setProbeCompression(contact);
+      const weight = acousticWindowWeight(query, contact.frame, tr, contact, sample, DEFAULT_BMODE.depthMm, profile.dopplerEffectiveMHz);
+      const best = bestGateOnVessel(query, contact.frame, tr, sample, vessels, 175, 1.2, weight);
+      if (!best) throw new Error('No acoustic gate found for ' + window);
+      return { anatomy: query, contact, best };
     });
-    this.chains = VENOUS_COMPARISON_CHANNELS.map(
-      (_, i) => new PwDopplerChain(this.#anatomy, seed + 7919 * (i + 1), undefined, { maxColumns: 4096 }),
-    );
+    this.materialCenters = this.#contexts.map((c, i) => c.anatomy.deformation.toMaterial(this.gate(i, sample).center, sample.resp));
+    this.chains = this.#contexts.map((c, i) => new PwDopplerChain(c.anatomy, seed + 7919 * (i + 1), undefined, { maxColumns: 4096 }));
   }
 
   gate(index: number, sample: PhysiologySample): GateGeometry {
-    const material = this.materialCenters[index];
-    const center = this.#anatomy.deformation.toWorld(material, sample.resp);
-    const hit = this.#anatomy.classifyWorld(center, sample);
-    if (hit.vessel !== VENOUS_COMPARISON_CHANNELS[index].vessel || !hit.vesselHit) {
-      throw new Error('La puerta virtual perdió su vaso; no se inventa señal');
-    }
-    // SampleVolumeIQ projects onto -beamDir; the chosen virtual probe orientation is explicit.
-    const beamDir = scale(hit.vesselHit.tangent, -VENOUS_FORWARD_SIGN[index]);
-    const lateral = normalize(cross(beamDir, Math.abs(beamDir[2]) < 0.9 ? [0, 0, 1] : [0, 1, 0]));
-    return {
-      center,
-      beamDir,
-      lateral,
-      elevation: cross(beamDir, lateral),
-      lengthMm: index === 2 ? 1 : 2,
-      lateralSigmaMm: index === 2 ? 0.35 : 0.6,
-      elevationSigmaMm: index === 2 ? 0.35 : 0.6,
-      pulseSigmaMm: 0.25,
-      apertureAngleSigmaRad: 0.04,
-      transmission: 1,
-    };
+    const { anatomy, contact, best } = this.#contexts[index];
+    const result = pwGate(
+      anatomy,
+      contact.frame,
+      contact,
+      CONVEX_C35_PROFILE,
+      DEFAULT_BMODE.focusMm,
+      { theta: best.theta, depthMm: best.r, gateMm: WINDOWS[index].gateMm },
+      sample,
+    );
+    this.gateInfo[index] = result.info;
+    return result.gate;
   }
 
   /** Input timestamps remain authoritative. A gap resets acquisition instead of bridging absent samples. */
@@ -83,14 +83,15 @@ export class VenousSpectralAcquisition {
       if (this.#lastT !== null && Math.abs(s.t - this.#lastT - dt) > 1e-6) this.reset();
       for (const [i, chain] of this.chains.entries()) {
         chain.begin(prfFromNyquistCms(this.scales[i], this.f0Hz), this.f0Hz, 0, 15, s.t);
-        chain.setGate(this.gate(i, s), s);
-        // Tracked virtual gate follows bulk tissue displacement; venous flow still carries respiratory modulation.
-        chain.step(s, this.#anatomy.deformation.tissueVelocity(this.materialCenters[i], s.resp), dt);
+        if (this.#steps % 8 === 0) chain.setGate(this.gate(i, s), s);
+        // Each virtual probe stays on its anatomical window; respiratory dropout remains observable.
+        chain.step(s, [0, 0, 0], dt);
         chain.flush();
         this.gateTracks[i].push({ t: s.t, vessels: { ...chain.sampleVolume.lastComposition.vessels } });
         while (this.gateTracks[i].length && this.gateTracks[i][0].t < s.t - 8) this.gateTracks[i].shift();
       }
       this.#lastT = s.t;
+      this.#steps++;
     }
   }
 
@@ -98,5 +99,6 @@ export class VenousSpectralAcquisition {
     for (const chain of this.chains) chain.reset();
     for (const track of this.gateTracks) track.length = 0;
     this.#lastT = null;
+    this.#steps = 0;
   }
 }

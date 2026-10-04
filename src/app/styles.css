@@ -1267,3 +1267,8 @@ button.mode.active {
 .venous-viewer [hidden] {
   display: none !important;
 }
+
+/* Match the PW image time axis; the remaining 58 px contain velocity labels. */
+.venous-pw-mode .venous-marker-row svg {
+  width: calc(100% - 58px);
+}

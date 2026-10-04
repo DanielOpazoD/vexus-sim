@@ -148,6 +148,13 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
         .evaluate((el) => Math.abs((el as HTMLCanvasElement).width - el.clientWidth * Math.min(2, devicePixelRatio)) < 2)) ||
       'resolución antigua',
   );
+  const alignedAxes = () =>
+    dialog.evaluate((el) => {
+      const image = el.querySelector('.venous-spectrum')!.getBoundingClientRect();
+      const traces = [...el.querySelectorAll('.venous-marker-row svg')].map((svg) => svg.getBoundingClientRect());
+      return traces.every((trace) => Math.abs(trace.x - image.x) < 1 && Math.abs(trace.width - (image.width - 58)) < 1);
+    });
+  expect(await alignedAxes()).toBe(true);
   // Baseline is a reversible display transform. It must not reconstruct IQ or move the patient's clock.
   const snapshot = () =>
     canvases.evaluateAll((els) =>
@@ -199,9 +206,9 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
   await page.keyboard.press('ArrowLeft');
   const rowScales = dialog.locator('[aria-label^="Escala PW"]');
   await rowScales.nth(1).selectOption('80');
-  await expect(rowScales.nth(0)).toHaveValue('80');
+  await expect(rowScales.nth(0)).toHaveValue('50');
   await expect(rowScales.nth(1)).toHaveValue('80');
-  await expect(rowScales.nth(2)).toHaveValue('60');
+  await expect(rowScales.nth(2)).toHaveValue('40');
   await withinFrames(
     page,
     140,
@@ -230,6 +237,7 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
         .evaluate((el) => Math.abs((el as HTMLCanvasElement).width - el.clientWidth * Math.min(2, devicePixelRatio)) < 2)) ||
       'resolución antigua',
   );
+  expect(await alignedAxes()).toBe(true);
   await page.screenshot({ path: info.outputPath('venous-pw-mobile.png') });
   await dialog.locator('.venous-marker-row').first().scrollIntoViewIfNeeded();
   await page.screenshot({ path: info.outputPath('venous-pw-mobile-ecg.png') });

@@ -112,8 +112,9 @@ por pulso. Es una optimización numérica, no una reducción de dispersores o PR
 - Registro clínico comentado y figuras publicadas por NephroPOCUS, 2025:
   https://nephropocus.com/2025/03/27/hepatic-vein-doppler-and-ekg-are-there-any-workarounds/amp/
 - Kudo et al., 2017, doi:10.1007/s10396-017-0770-0:
-  https://pubmed.ncbi.nlm.nih.gov/28150225/ . El resumen fue consultado; el PDF
-  completo no se pudo descargar. No se extraen valores numéricos de tablas no vistas.
+  https://pubmed.ncbi.nlm.nih.gov/28150225/ . Tras fallar la URL histórica se
+  recuperó el PDF completo mediante el repositorio institucional actual. Tabla 2
+  y figura 1 revisadas con su erratum; véase RENAL_WAVEFORM_MODEL_REVIEW.md.
 
 Las imágenes privadas aportadas por el usuario son referencias de revisión, no
 activos distribuidos en el repositorio. No se atribuye validación externa a los

@@ -8,23 +8,34 @@ import { measureObservedHepatic, measureObservedPortal, measureObservedRenal } f
 import { captureProtocolVessel } from '../doppler/capture';
 import { VENOUS_COMPARISON_CHANNELS } from '../physiology/venousComparison';
 import { prfFromNyquistCms } from '../core/units';
+import { VESSEL_META } from '../physiology/vessels';
 
 describe('contratos de adquisición PW comparada', () => {
-  it('encuentra cada vaso en los siete pacientes, sin desplazar órganos', () => {
+  it('encuentra cada territorio y conserva tres ventanas fijas sin mover el paciente observado', () => {
     for (const patient of CASES) {
       const scene = new AnatomyScene(patient),
         anatomy = new AnatomyQuery(scene),
         engine = new PhysiologyEngine(patient, scene.vesselAreas());
-      const source = JSON.stringify(scene.vessels);
-      const a = new VenousSpectralAcquisition(anatomy, engine.sample, patient.seed);
+      const source = JSON.stringify({ vessels: scene.vessels, bowel: scene.bowelRadii });
+      const a = new VenousSpectralAcquisition(anatomy, engine.sample, patient.seed, patient);
       expect(a.materialCenters).toHaveLength(3);
+      const centers = [0, 1, 2].map((i) => a.gate(i, engine.sample).center);
+      for (const [i, system] of ['hepaticVein', 'portal', 'interlobarVein'].entries()) {
+        expect(a.gateInfo[i].vessel).not.toBeNull();
+        expect(VESSEL_META[a.gateInfo[i].vessel!].system).toBe(system);
+      }
       for (let cycle = 0; cycle < 4; cycle++) {
-        for (const [i, id] of ['hvRight', 'pvTrunk', 'interlobarVein1'].entries()) {
-          expect(anatomy.classifyWorld(a.gate(i, engine.sample).center, engine.sample).vessel).toBe(id);
+        for (const i of [0, 1, 2]) {
+          const gate = a.gate(i, engine.sample);
+          expect(gate.center).toEqual(centers[i]);
+          expect(Number.isFinite(gate.transmission)).toBe(true);
+          expect(gate.transmission).toBeGreaterThanOrEqual(0);
+          expect(gate.transmission).toBeLessThanOrEqual(1);
         }
         for (let step = 0; step < 500; step++) engine.step();
       }
-      expect(JSON.stringify(scene.vessels)).toBe(source);
+      expect(JSON.stringify({ vessels: scene.vessels, bowel: scene.bowelRadii })).toBe(source);
+      expect(anatomy.probeCompression).toBeNull();
     }
   });
 
@@ -32,8 +43,8 @@ describe('contratos de adquisición PW comparada', () => {
     const scene = new AnatomyScene(NORMAL_ADULT),
       anatomy = new AnatomyQuery(scene),
       engine = new PhysiologyEngine(NORMAL_ADULT, scene.vesselAreas());
-    const a = new VenousSpectralAcquisition(anatomy, engine.sample, 31),
-      b = new VenousSpectralAcquisition(anatomy, engine.sample, 31);
+    const a = new VenousSpectralAcquisition(anatomy, engine.sample, 31, NORMAL_ADULT),
+      b = new VenousSpectralAcquisition(anatomy, engine.sample, 31, NORMAL_ADULT);
     const samples = Array.from({ length: 60 }, () => engine.step());
     a.push(samples, engine.clock.dt);
     for (let i = 0; i < samples.length; i += 7) b.push(samples.slice(i, i + 7), engine.clock.dt);
@@ -48,7 +59,7 @@ describe('contratos de adquisición PW comparada', () => {
       anatomy = new AnatomyQuery(scene),
       engine = new PhysiologyEngine(patient, scene.vesselAreas());
     for (let i = 0; i < 7500; i++) engine.step();
-    const a = new VenousSpectralAcquisition(anatomy, engine.sample, patient.seed);
+    const a = new VenousSpectralAcquisition(anatomy, engine.sample, patient.seed, patient);
     const samples = Array.from({ length: 1625 }, () => engine.step());
     a.push(samples, engine.clock.dt);
     const beats = engine.rhythm.beatsBetween(samples[0].t, samples.at(-1)!.t);

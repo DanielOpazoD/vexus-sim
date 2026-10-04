@@ -99,13 +99,16 @@ jobs:
       - if: steps.pw-cache.outputs.cache-hit == 'true'
         run: npx playwright install-deps chromium
       - run: npx vite build
-      - run: npm run e2e -- --forbid-only --shard=${{ matrix.shard }}/${{ strategy.job-total }}
+      - run: node --import tsx tools/ci/run-e2e-shard.ts ${{ matrix.shard }} ${{ strategy.job-total }}
       - name: Guardar los tiempos (duración, arranque y ritmo del bucle de cada prueba)
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: e2e-tiempos-${{ matrix.shard }}
-          path: e2e-results.json
+          include-hidden-files: true
+          path: |
+            e2e-results.json
+            .validation/e2e-execution.json
           retention-days: 14
       - name: Guardar las capturas intestinales
         if: always()
@@ -147,3 +150,15 @@ jobs:
           echo "check: ${{ needs.check.result }} · e2e: ${{ needs.e2e.result }}"
           test "${{ needs.check.result }}" = success
           test "${{ needs.e2e.result }}" = success
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - uses: actions/download-artifact@v8.0.1
+        with:
+          pattern: e2e-tiempos-*
+          path: e2e-evidence
+      - name: Todas las pruebas realmente ejecutadas, exactamente una vez
+        run: node --import tsx tools/ci/verify-e2e-execution.ts e2e-evidence

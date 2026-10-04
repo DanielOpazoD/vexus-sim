@@ -1,4 +1,5 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
+import { setReferenceBody } from '../../src/anatomy/referenceBody';
 import { dirname } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { AnatomyScene } from '../../src/anatomy/scene';
@@ -7,12 +8,16 @@ import { NORMAL_ADULT } from '../../src/cases';
 import { PhysiologyEngine } from '../../src/physiology/engine';
 import { VenousSpectralAcquisition } from '../../src/doppler/venousSpectral';
 import { measureObservedHepatic, measureObservedPortal, measureObservedRenal } from '../../src/doppler/spectralMeasure';
+if (process.argv.includes('--reference')) {
+  const b = readFileSync('src/anatomy/reference-body.bin');
+  setReferenceBody(new Float32Array(b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength)));
+}
 const patient = { ...NORMAL_ADULT, respiratoryPattern: 'apnea-expiratory' as const };
 const scene = new AnatomyScene(patient),
   query = new AnatomyQuery(scene);
 const engine = new PhysiologyEngine(patient, scene.vesselAreas());
 for (let i = 0; i < 7500; i++) engine.step();
-const acquisition = new VenousSpectralAcquisition(query, engine.sample, NORMAL_ADULT.seed);
+const acquisition = new VenousSpectralAcquisition(query, engine.sample, NORMAL_ADULT.seed, patient);
 const samples = Array.from({ length: 1625 }, () => engine.step());
 console.time('three-channel-IQ');
 acquisition.push(samples, engine.clock.dt);
@@ -30,6 +35,8 @@ const results = [measureObservedHepatic, measureObservedPortal, measureObservedR
   });
   return {
     scale: acquisition.scales[i],
+    gate: acquisition.gate(i, engine.sample),
+    info: acquisition.gateInfo[i],
     composition: chain.sampleVolume.lastComposition,
     quality: observed?.quality,
     marks: observed?.marks,
@@ -44,7 +51,8 @@ writeFileSync(
   JSON.stringify({
     sourceSha: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
     clinicalValidation: false,
-    method: 'Virtual aligned and tracked gates, unit transmission, normal adult at end-expiratory apnea; spatial IQ and STFT',
+    method:
+      'Experimental fixed anatomical windows, production pwGate PSF/transmission, no angle correction; normal adult in end-expiratory apnea',
     start: samples[0].t,
     end: samples.at(-1)!.t,
     results,

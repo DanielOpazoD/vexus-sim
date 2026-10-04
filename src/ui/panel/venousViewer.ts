@@ -289,7 +289,7 @@ export class VenousViewer {
     if (this.#spectralMode && this.#rawSamples.length) {
       if (!this.#spectral) {
         const sim = this.#ctx.sim();
-        this.#spectral = new VenousSpectralAcquisition(sim.anatomy, this.#rawSamples[0], sim.patient.seed);
+        this.#spectral = new VenousSpectralAcquisition(sim.anatomy, this.#rawSamples[0], sim.patient.seed, sim.patient);
         this.#spectral.scales.splice(0, 3, ...this.#spectralScales);
       }
       // Bounded catch-up also works while the patient is frozen; never block on six seconds of IQ at once.
@@ -350,7 +350,7 @@ export class VenousViewer {
       this.#canvases[i].dataset.lastTime = String(columns.at(-1)?.t ?? '');
       this.#canvases[i].dataset.marks = this.#annotations ? this.#marks[i].map((m) => m.label).join(',') : '';
       this.#limits[i].textContent =
-        `2,5 MHz · PRF ${columns.at(-1)?.prfHz.toFixed(0) ?? '—'} Hz · filtro 15 Hz · θ 0° · ${this.#spectralScales[i]} cm/s Nyquist${this.#annotations && this.#measurementIssues[i] ? ` · Marcas no disponibles: ${this.#measurementIssues[i]}` : ''}`;
+        `2,5 MHz · PRF ${columns.at(-1)?.prfHz.toFixed(0) ?? '—'} Hz · filtro 15 Hz · θ ${this.#spectral.gateInfo[i].beamAngleToFlowDeg?.toFixed(0) ?? '—'}° · velocidad axial · ${this.#spectralScales[i]} cm/s Nyquist${this.#annotations && this.#measurementIssues[i] ? ` · Marcas no disponibles: ${this.#measurementIssues[i]}` : ''}`;
       this.#values[i].textContent = 'PW simulado';
     }
   }
@@ -366,9 +366,10 @@ export class VenousViewer {
 
   #draw(): void {
     this.#description.textContent = this.#spectralMode
-      ? 'PW simulado · IQ → filtro → espectro. Tres puertas virtuales que siguen al vaso; transmisión ideal y alineación a 0°. Sin validación clínica.'
+      ? 'PW simulado · IQ → filtro → espectro. Tres ventanas anatómicas virtuales: haz, puerta y atenuación del ecógrafo. Velocidad axial sin corrección angular. Sin validación clínica.'
       : 'Referencia fisiológica · velocidad media Q/A, no espectro PW adquirido. Simultaneidad virtual docente.';
     (this.dialog.querySelector('.venous-reference-scale') as HTMLElement).hidden = this.#spectralMode;
+    this.dialog.classList.toggle('venous-pw-mode', this.#spectralMode);
     for (let i = 0; i < 3; i++) {
       this.#plots[i].setAttribute('style', this.#spectralMode ? 'display:none' : '');
       this.#canvases[i].hidden = !this.#spectralMode;

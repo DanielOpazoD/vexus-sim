@@ -5045,10 +5045,28 @@ esto evita redibujados ocultos entre comprobaciones de limpieza y añade ese est
 
 **Verificación.** Cuatro contratos rápidos de continuidad, derivada, área y partición de unidad, más los contratos existentes de carga y media. Se mantiene la protección de captura de la decisión 121; no se desplaza un contraejemplo de señal para hacer pasar la suite. El modelo auricular sigue prescrito y no se anuncia como cámara volumétrica ni como fisiología clínicamente validada. Detalle en `physiology/ATRIAL_CONTINUITY.md`.
 
-## 123. Comparación venosa con espectros PW observados y escalas independientes
+## 123. Transporte PW por pulso y continuidad del movimiento tisular
+
+**Defecto reproducido.** Un fantoma con flujo constante detecta energía espectral espuria y densidad ponderada dependiente de PRF/velocidad. La renovación a una posición fija perdía el sobrepaso; pesos y frecuencia nueva esperaban hasta ocho pulsos. La primera corrección reveló además el escalón tisular del reloj fisiológico de 4 ms.
+
+**Decisión.** Evaluar transporte de sangre y sensibilidad en cada pulso, conservar el sobrepaso y establecer la frecuencia antes de la primera contribución. Reconstruir linealmente el desplazamiento tisular intrapaso. Una tabla compartida de erf, 32 KiB y error adicional <1.2e-7, reduce coste sin reducir la frecuencia de evaluación. No cambian fisiología, filtros, FFT ni criterios de captura.
+
+**Verificación y límites.** Regresiones analíticas rojas con el código previo y verdes con el candidato, conservación de densidad, frecuencia/coseno/signo y error acotado de sensibilidad. Se mantienen las matrices respiratorias y multiescala, con sus umbrales. Este arreglo del PW existente es independiente del visor comparativo todavía en revisión clínica; no valida sus escalas o morfología. Detalle en `physiology/PW_PULSE_TRANSPORT.md`.
+
+## 124. Reparto E2E por coste observado y prueba de ejecución en el veredicto
+
+**Problema.** Los ocho fragmentos contienen todas las pruebas, pero repartir por número deja varias pruebas GPU costosas juntas. En la CI de la decisión 122, el fragmento más largo acumuló 1597,8 s de pruebas y el más corto 809,5 s.
+
+**Decisión.** La colección actual completa se reparte con costes medianos de tres ejecuciones verificadas, asignando primero los más largos al runner menos cargado. Las listas nativas de Playwright se vuelven a recolectar para probar su igualdad exacta por ID. Pesos ausentes usan un coste de reserva; nunca excluyen pruebas. Se conservan ocho corredores, un worker y todas las aserciones, timeouts y reglas anti-flaky.
+
+**Veredicto.** Además del estado de los jobs, el check protegido descarga los ocho informes y exige el mismo SHA/plan, todos los IDs una vez y un único resultado pasado sin retry. Se guardan explícitamente los metadatos ocultos de ejecución. Las pruebas rápidas cubren listas anidadas, incorporación de casos nuevos, determinismo y rechazo de fallos/omisiones/duplicados/reintentos. En la colección de 62 casos, la reducción prevista del tramo más largo es 32,7 %; es una estimación, no un ahorro real ya medido. Detalle en `E2E_COST_BALANCE.md`.
+
+## 125. Comparación venosa con espectros PW observados y escalas independientes
 
 **Requisito.** El propietario pidió imagen de Doppler pulsado sincronizada con ECG, con marcas opcionales de ondas y escala por examen. La referencia Q/A de la decisión 120 permanece secundaria y no se presenta como imagen PW.
 
-**Implementación.** Tres adquisiciones virtuales anatómicas siguen sus vasos y comparten el historial fisiológico. Se reutiliza dispersores → IQ → filtro de pared → STFT; la imagen pinta potencia, sin ruido gráfico ni relleno de curvas. La transmisión ideal y alineación a cero grados son supuestos explícitos. Las escalas iniciales 80/50/60 cm/s tienen PRF física independiente y pueden modificarse. Las marcas proceden del medidor espectral y requieren calidad: A/S/D hepáticas, Vmáx/Vmín portales y S/D/mín interlobares. El trabajo por cuadro se acota y el cierre borra señal y datos; el paciente no se modifica al pausar la vista.
+**Implementación.** Tres ventanas anatómicas independientes comparten el historial fisiológico. Se reutiliza dispersores → IQ → filtro de pared → STFT; la imagen pinta potencia, sin ruido gráfico ni relleno de curvas. Contacto, compresión, haz, ángulo, profundidad y transmisión proceden del ecógrafo. Las puertas permanecen fijas y la respiración puede perder el vaso. Se presenta velocidad axial sin corrección angular. Las escalas iniciales 50/30/40 cm/s tienen PRF física independiente; son ajustes del modelo, no límites clínicos. La base se desplaza sin modificar IQ. Los ejes de velocidad ocupan una columna lateral y ECG/respiración reservan el mismo ancho para conservar alineación temporal. Las marcas proceden del medidor espectral y requieren calidad: A/S/D hepáticas, Vmáx/Vmín portales y S/D/mín interlobares. El trabajo por cuadro se acota y el cierre borra señal y datos; el paciente no se modifica al pausar la vista.
 
 **Verificación y límites.** Contratos de geometría en siete casos, determinismo por fragmentos, señal multibin, reloj y huecos; adquisición normal en apnea medible en los tres canales. E2E específico de imagen, marcas, escala independiente y móvil, además del flujo de referencia previo. Se preservan las limitaciones de fisiología y validación clínica. Detalle y fuentes en `physiology/VENOUS_SPECTRAL_VIEWER.md`.
+
+**Estado.** Borrador clínico retenido tras el rechazo visual del propietario. Pasar pruebas técnicas no autoriza anunciar validación clínica ni fusionar esta etapa.

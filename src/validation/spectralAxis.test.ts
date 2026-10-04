@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { spectralAxis, spectralBinAt } from '../ui/spectralAxis';
+import { spectralAxis, spectralBinAt, spectralTicks } from '../ui/spectralAxis';
 describe('línea de base PW: presentación con banda de muestreo intacta', () => {
   it('conserva el ancho equivalente a una PRF y coloca exactamente el cero', () => {
     for (const scale of [10, 20, 30, 40])
@@ -33,4 +33,17 @@ describe('línea de base PW: presentación con banda de muestreo intacta', () =>
     ])
       expect(() => spectralAxis(scale, shift)).toThrow();
   });
+});
+
+it('los ticks son velocidades redondas, ordenadas y dentro de la banda desplazada', () => {
+  expect(spectralTicks(10, 0)).toEqual([-10, -5, 0, 5, 10]);
+  expect(spectralTicks(50, 0)).toEqual([-40, -20, 0, 20, 40]);
+  for (const scale of [10, 20, 30, 40, 50, 60, 80, 120])
+    for (const shift of [-0.4, 0, 0.4]) {
+      const a = spectralAxis(scale, shift),
+        ticks = spectralTicks(scale, shift);
+      expect(ticks).toContain(0);
+      expect(ticks).toEqual([...new Set(ticks)].sort((x, y) => x - y));
+      expect(ticks.every((v) => v >= a.minCms && v <= a.maxCms)).toBe(true);
+    }
 });

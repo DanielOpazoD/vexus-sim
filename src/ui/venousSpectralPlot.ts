@@ -1,4 +1,4 @@
-import { spectralAxis, spectralBinAt } from './spectralAxis';
+import { spectralAxis, spectralBinAt, spectralTicks } from './spectralAxis';
 import type { SpectralColumn } from '../doppler/spectral';
 import type { CaptureMark } from '../doppler/spectralMeasure';
 
@@ -19,23 +19,24 @@ export function drawVenousSpectrum(
   if (!ctx) return;
   const W = canvas.width,
     H = canvas.height,
-    plotH = H - 24 * pixelRatio;
+    plotH = Math.max(1, Math.round(H - 24 * pixelRatio)),
+    plotW = Math.max(1, Math.round(W - 58 * pixelRatio));
   const span = Math.max(0.004, end - start);
-  const xOf = (t: number) => ((t - start) / span) * W;
-  const bitmap = ctx.createImageData(W, plotH);
+  const xOf = (t: number) => ((t - start) / span) * plotW;
+  const bitmap = ctx.createImageData(plotW, plotH);
   for (let i = 3; i < bitmap.data.length; i += 4) bitmap.data[i] = 255;
   for (let c = 0; c < columns.length; c++) {
     const col = columns[c];
     if (col.t < start || col.t > end) continue;
     const hopS = 16 / col.prfHz;
     const x0 = Math.max(0, Math.floor(xOf(col.t - hopS / 2)));
-    const x1 = Math.min(W, Math.ceil(xOf(col.t + hopS / 2)));
+    const x1 = Math.min(plotW, Math.ceil(xOf(col.t + hopS / 2)));
     const n = col.powerDb.length;
     for (let y = 0; y < plotH; y++) {
       const k = spectralBinAt((y + 0.5) / plotH, n, baselineShift);
       const value = Math.round(255 * Math.pow(Math.max(0, Math.min(1, (col.powerDb[k] + 52) / 45)), 1.4));
       for (let x = x0; x < x1; x++) {
-        const p = (y * W + x) * 4;
+        const p = (y * plotW + x) * 4;
         bitmap.data[p] = value;
         bitmap.data[p + 1] = value;
         bitmap.data[p + 2] = value;
@@ -49,18 +50,27 @@ export function drawVenousSpectrum(
   ctx.lineWidth = 1.5 * pixelRatio;
   ctx.beginPath();
   ctx.moveTo(0, plotH * axis.zeroFraction);
-  ctx.lineTo(W, plotH * axis.zeroFraction);
+  ctx.lineTo(plotW, plotH * axis.zeroFraction);
   ctx.stroke();
   ctx.font = `${13 * pixelRatio}px sans-serif`;
   ctx.fillStyle = '#d7e0e5';
-  for (const [y, text] of [
-    [15 * pixelRatio, `+${axis.maxCms.toFixed(0)}`],
-    [plotH * axis.zeroFraction - 4 * pixelRatio, '0 cm/s'],
-    [plotH - 4 * pixelRatio, `${axis.minCms.toFixed(0)} cm/s`],
-  ] as const) {
-    ctx.fillText(text, W - 80 * pixelRatio, y);
+  const labelX = plotW + 4 * pixelRatio;
+  ctx.fillText(`+${axis.maxCms.toFixed(0)}`, labelX, 13 * pixelRatio);
+  ctx.fillText(`${axis.minCms.toFixed(0)}`, labelX, plotH - 3 * pixelRatio);
+  for (const value of spectralTicks(scaleCms, baselineShift)) {
+    const y = plotH * axis.fractionOf(value);
+    if (y < 24 * pixelRatio || y > plotH - 18 * pixelRatio) continue;
+    ctx.fillStyle = value === 0 ? '#efdc72' : '#d7e0e5';
+    ctx.fillText(value === 0 ? '0' : `${value > 0 ? '+' : ''}${value}`, labelX, y + 4 * pixelRatio);
+    ctx.fillRect(plotW - 4 * pixelRatio, y, 4 * pixelRatio, pixelRatio);
   }
-  for (let t = Math.ceil(start); t <= end; t++) ctx.fillText(`${t}s`, xOf(t) + 2 * pixelRatio, H - 5 * pixelRatio);
+  ctx.fillStyle = '#d7e0e5';
+  ctx.fillText('cm/s', labelX, H - 5 * pixelRatio);
+  for (let t = Math.ceil(start); t <= end; t++) {
+    const label = `${t}s`,
+      x = xOf(t) + 2 * pixelRatio;
+    if (x + ctx.measureText(label).width < plotW) ctx.fillText(label, x, H - 5 * pixelRatio);
+  }
   ctx.fillStyle = '#ffd166';
   for (const mark of marks) {
     if (mark.t < start || mark.t > end || mark.vScreen <= axis.minCms || mark.vScreen >= axis.maxCms) continue;
@@ -68,7 +78,7 @@ export function drawVenousSpectrum(
       y = plotH * axis.fractionOf(mark.vScreen);
     ctx.fillText(
       mark.label,
-      Math.max(2 * pixelRatio, Math.min(W - 40 * pixelRatio, x)),
+      Math.max(2 * pixelRatio, Math.min(plotW - 40 * pixelRatio, x)),
       Math.max(
         14 * pixelRatio,
         Math.min(plotH - 3 * pixelRatio, y + (mark.label === 'Vmín' || mark.label === 'mín' ? 16 : -5) * pixelRatio),

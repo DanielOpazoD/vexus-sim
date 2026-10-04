@@ -81,8 +81,8 @@ la ventana de visualización periódica; no elimina aliasing ni altera la señal
 Estas mejoras de adquisición y ejes no resuelven por sí solas la calibración
 hemodinámica renal. Los índices de pulsatilidad normales publicados dependen del
 territorio y método; no se fuerza una onda plana ni se reescala el caudal para
-imitar una captura. Véase RENAL_WAVEFORM_MODEL_REVIEW.md. El visor permanece en
-borrador clínico hasta revisar las capturas y los límites del modelo.
+imitar una captura. Véase RENAL_WAVEFORM_MODEL_REVIEW.md. El visor es una función educativa en calibración; la integración técnica
+requiere CI completa y revisión visual, y no equivale a validación clínica.
 
 ## Dependencias y presupuesto
 
@@ -124,7 +124,7 @@ un barrido offline de Nyquist 40–100 cm/s encontró envolventes arteriales
 visibles cerca del extremo a 40. Ese resultado no calibra la amplitud actual. La escala 50 con base desplazada da espacio al componente arterial y conserva
 la vena bajo cero. Las variaciones de estimación entre PRF y la incertidumbre de
 caudal/área del modelo siguen requiriendo calibración independiente. Se mantienen
-los criterios de captura y el borrador clínico. Guía de técnica: AIUM 2020,
+los criterios de captura y la calibración clínica abierta. Guía de técnica: AIUM 2020,
 doi:10.1002/jum.15260, https://onlinelibrary.wiley.com/doi/10.1002/jum.15260.
 
 ## Actualización del motor y revisión pendiente
@@ -133,6 +133,9 @@ La recuperación del visor usa el territorio interlobar provisional del 5 % y
 el muestreo adaptativo de vasos pequeños, descritos en
 [RENAL_TERRITORY_CALIBRATION.md](RENAL_TERRITORY_CALIBRATION.md). La calibración
 sigue pendiente de validación externa. Las cifras exploratorias anteriores
-no deben interpretarse como mediciones del código recuperado. La revisión de
-las nuevas capturas del visor se hace sobre su HEAD publicado, con la calidad
-visible incluso cuando el alumno desactiva las marcas.
+no deben interpretarse como mediciones del código recuperado. Las nuevas capturas se revisaron sobre su HEAD publicado, con la calidad
+visible incluso cuando el alumno desactiva las marcas. Se añadieron pares sano/grave
+con igual puerta y escala, identificación docente y adquisición completa. Las
+velocidades venosas de congestión pueden aproximarse al pico arterial del modelo;
+no se adopta esta relación como objetivo poblacional ni se fuerza una fracción fija.
+El banco sigue necesitando validación clínica independiente.

@@ -150,8 +150,14 @@ export const PV_FLOW_SHARE: Record<PortalVeinId, number> = {
   pvLeftMedial: 0.15,
 };
 
-/** Fracción del caudal renal (por riñón) que lleva cada vaso interlobar modelado. */
-export const INTERLOBAR_FLOW_SHARE = 0.12;
+/**
+ * Fracción del caudal de un riñón que lleva cada interlobar representada.
+ * Las tres ramas derechas representan 15 %; el 85 % restante sigue en el árbol
+ * no representado. No cambia el caudal renal total ni la red presión-volumen.
+ * Calibración provisional del territorio/área, no una proporción anatómica medida
+ * en humanos (decisión 127; NEEDS_CALIBRATION).
+ */
+export const INTERLOBAR_FLOW_SHARE = 0.05;
 
 /**
  * Áreas luminales de referencia (mm²) del avatar basal, derivadas de los radios

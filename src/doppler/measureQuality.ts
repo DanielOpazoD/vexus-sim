@@ -32,7 +32,8 @@ import type { ProtocolVessel } from './vesselIdentity';
  *    dirección entre latidos y D es anterógrada en todo grado VExUS; una onda casi nula
  *    (|x| < 25 % de D) no cuenta.
  */
-export type QualityIssue = 'no-signal' | 'intermittent' | 'aliasing' | 'inconsistent' | 'few-beats' | 'wrong-vessel' | 'wall-filter';
+export type QualityIssue =
+  'no-signal' | 'intermittent' | 'aliasing' | 'inconsistent' | 'few-beats' | 'wrong-vessel' | 'wall-filter' | 'renal-identity';
 
 export interface MeasurementQuality {
   /** Latidos cubiertos por el espectro en la ventana y cuántos tienen sangre suficiente. */

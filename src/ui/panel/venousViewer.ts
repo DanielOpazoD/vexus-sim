@@ -1,3 +1,4 @@
+import { qualityText } from '../../doppler/qualityMessages';
 import { VENOUS_PW_PRESENTATION } from '../spectralPresentation';
 import { VenousSpectralAcquisition, VENOUS_SPECTRAL_SCALES, VENOUS_FORWARD_SIGN } from '../../app/venousSpectral';
 import type { CaptureMark } from '../../doppler/spectralMeasure';
@@ -328,7 +329,7 @@ export class VenousViewer {
     if (!this.#spectralMode || !this.#spectral || !this.#points.length) return;
     const end = this.#points.at(-1)!.t,
       start = Math.max(0, end - 6);
-    if (this.#annotations && this.#processedT - this.#marksT >= 0.5) {
+    if (this.#processedT - this.#marksT >= 0.5) {
       const rhythm = { beatsBetween: (from: number, to: number) => this.#beats.filter((b) => b.tR >= from && b.tR + b.rr <= to) };
       const opts = { f0Hz: this.#spectral.f0Hz, angleCorrectionRad: 0, invert: false, fftSize: 128, wallFilterHz: 15, gainDb: 0 };
       this.#marks = VENOUS_COMPARISON_CHANNELS.map(({ id }, i) => {
@@ -340,7 +341,7 @@ export class VenousViewer {
           opts,
           this.#spectral!.gateTracks[i],
         );
-        this.#measurementIssues[i] = m ? (m.quality.issue ?? '') : 'insuficiente';
+        this.#measurementIssues[i] = m ? (m.quality.issue ? qualityText(m.quality) : '') : 'Esperando cuatro latidos';
         return m?.quality.issue === null ? m.marks : [];
       });
       this.#marksT = this.#processedT;
@@ -375,7 +376,7 @@ export class VenousViewer {
       this.#canvases[i].dataset.lastTime = String(columns.at(-1)?.t ?? '');
       this.#canvases[i].dataset.marks = this.#annotations ? this.#marks[i].map((m) => m.label).join(',') : '';
       this.#limits[i].textContent =
-        `2,5 MHz · PRF ${columns.at(-1)?.prfHz.toFixed(0) ?? '—'} Hz · filtro 15 Hz · θ ${this.#spectral.gateInfo[i].beamAngleToFlowDeg?.toFixed(0) ?? '—'}° · velocidad axial · ${this.#spectralScales[i]} cm/s Nyquist · imagen ${this.#presentation[i].gainDb} dB / RD ${this.#presentation[i].dynamicRangeDb}${this.#annotations && this.#measurementIssues[i] ? ` · Marcas no disponibles: ${this.#measurementIssues[i]}` : ''}`;
+        `2,5 MHz · PRF ${columns.at(-1)?.prfHz.toFixed(0) ?? '—'} Hz · filtro 15 Hz · θ ${this.#spectral.gateInfo[i].beamAngleToFlowDeg?.toFixed(0) ?? '—'}° · velocidad axial · ${this.#spectralScales[i]} cm/s Nyquist · imagen ${this.#presentation[i].gainDb} dB / RD ${this.#presentation[i].dynamicRangeDb}${this.#measurementIssues[i] ? ` · ${this.#measurementIssues[i]}` : ''}`;
       this.#values[i].textContent = 'PW simulado';
     }
   }

@@ -15,6 +15,12 @@ export interface SpectralColumn {
   prfHz: number;
 }
 
+/** Adjacent columns on one frequency grid with overlapping FFT acquisition windows. */
+export function contiguousSpectralColumns(a: SpectralColumn, b: SpectralColumn): boolean {
+  const dt = b.t - a.t;
+  return a.prfHz > 0 && a.prfHz === b.prfHz && a.powerDb.length === b.powerDb.length && dt > 0 && dt <= a.powerDb.length / a.prfHz + 1e-9;
+}
+
 export class SpectralProcessor {
   readonly fftSize: number;
   readonly hop: number;

@@ -34,16 +34,18 @@ export interface TruthMeasurements {
   pvMax: number;
   pvMin: number;
   portalPF: number;
+  /** Extremos temporales de la media seccional Q/A; no envolvente PW clínica. */
   haPsv: number;
   haEdv: number;
   /**
-   * Vena interlobar (cm/s, positivo = hacia el hilio): picos S y D y mínimo resoluble del ciclo
+   * Media seccional Q/A de la vena interlobar (cm/s, positivo = hacia el hilio): picos S y D y mínimo resoluble del ciclo
    * (el valle sostenido `RENAL_GAP_MIN_S`, `resolvableMinimum`).
    */
   rvS: number;
   rvD: number;
   rvMin: number;
   renalPattern: RenalPattern;
+  /** Extremos temporales de la media seccional Q/A; no envolvente PW clínica. */
   raPsv: number;
   raEdv: number;
   qHvMean: number;

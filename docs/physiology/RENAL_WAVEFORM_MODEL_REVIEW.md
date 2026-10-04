@@ -1,5 +1,9 @@
 # Revisión del modelo de onda venosa renal
 
+> Registro de investigación previo a la calibración territorial del 5 % y al
+> muestreo adaptativo. Sus cifras exploratorias son históricas; el estado actual
+> y sus límites se documentan en [RENAL_TERRITORY_CALIBRATION.md](RENAL_TERRITORY_CALIBRATION.md).
+
 Investigación personal, 2026-10-04. Estado: **no integrado en producción**.
 Esta revisión no prescribe tratamiento ni certifica validez clínica del simulador.
 

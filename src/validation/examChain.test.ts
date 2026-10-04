@@ -209,11 +209,10 @@ describe('Cadena completa del alumno: puerta → espectro → medición → grad
     ).toEqual([]);
   });
 
-  // La onda D del grave (≈ 34 cm/s) roza el Nyquist a la PRF por defecto (2600 Hz, ±40 cm/s): se
-  // pliega, deja su ventana diastólica sin sangre del lado de la vena y ningún latido vale. La calidad
-  // decía «el vaso entra y sale de la puerta» (en apnea); ahora dice aliasing: hay que subir la escala.
-  it('Congestión grave, renal a 2600 Hz en apnea: no medible por aliasing, no «intermitente»', () => {
-    const { captures } = renalCaptures(SEVERE_CONGESTION, SEVERE_CONGESTION.seed, 20);
+  // Fuerza una escala insuficiente para la calibración renal actual. Al bajar el
+  // caudal por rama, el aliasing no debe seguir ligado accidentalmente a 2600 Hz.
+  it('Congestión grave, renal a 1300 Hz en apnea: no medible por aliasing, no «intermitente»', () => {
+    const { captures } = renalCaptures(SEVERE_CONGESTION, SEVERE_CONGESTION.seed, 20, 1300);
     const tag = JSON.stringify(captures);
     expect(captures.length, tag).toBeGreaterThan(4);
     expect(
@@ -221,6 +220,14 @@ describe('Cadena completa del alumno: puerta → espectro → medición → grad
       tag,
     ).toEqual([]);
     expect(captures.filter((c) => c.issue === 'aliasing').length, tag).toBeGreaterThan(0);
+  });
+
+  it('Congestión grave, renal a 2600 Hz: la escala suficiente conserva el patrón diastólico', () => {
+    const { captures, truth } = renalCaptures(SEVERE_CONGESTION, SEVERE_CONGESTION.seed, 20);
+    const valid = captures.filter((c) => c.issue === null);
+    expect(truth.renalPattern).toBe('monophasic');
+    expect(valid.length, JSON.stringify(captures)).toBeGreaterThan(4);
+    expect(valid.every((c) => c.pattern === 'monophasic')).toBe(true);
   });
 
   // La interlobar del caso grave entra y sale de la puerta con la respiración: antes se medía «bifásica» (era

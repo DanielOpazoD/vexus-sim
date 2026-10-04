@@ -1,7 +1,7 @@
 export { qualityText } from './qualityMessages';
 import type { Beat } from '../physiology/rhythm';
 import { CAPTURE_BEATS } from './measureQuality';
-import type { SpectralColumn } from './spectral';
+import { contiguousSpectralColumns, type SpectralColumn } from './spectral';
 import {
   measureObservedHepatic,
   measureObservedPortal,
@@ -11,7 +11,7 @@ import {
   type ObservedPortal,
   type ObservedRenal,
 } from './spectralMeasure';
-import { hepaticGateDropout, wrongGateVessel, type GateVesselSample, type ProtocolVessel } from './vesselIdentity';
+import { dominantGateSystem, hepaticGateDropout, wrongGateVessel, type GateVesselSample, type ProtocolVessel } from './vesselIdentity';
 
 /** Segundos de espectro que toma una captura (los que guarda el equipo a la vista). */
 const CAPTURE_SECONDS = 7;
@@ -23,14 +23,13 @@ const CAPTURE_SECONDS = 7;
 export const WALL_SETTLE_S = 0.1;
 
 /**
- * Columnas de la captura: las de los últimos CAPTURE_SECONDS con la PRF actual, sin el transitorio del filtro de pared
- * tras el cambio (decisión 94). Con columnas de dos escalas la banda, el suelo y el aliasing se juzgaban mezclados.
+ * Columnas de la captura: el último tramo continuo con la PRF y resolución actuales, sin el transitorio del filtro de pared
+ * tras el cambio (decisiones 94 y 125). No reúne latidos separados por huecos o reinicios del reloj.
  */
 export function captureColumns(spectrum: readonly SpectralColumn[], t0: number): SpectralColumn[] {
   if (!spectrum.length) return [];
-  const prf = spectrum[spectrum.length - 1].prfHz;
   let first = spectrum.length - 1;
-  while (first > 0 && spectrum[first - 1].prfHz === prf) first--;
+  while (first > 0 && contiguousSpectralColumns(spectrum[first - 1], spectrum[first])) first--;
   const tStart = Math.max(t0, first > 0 ? spectrum[first].t + WALL_SETTLE_S : -Infinity);
   return spectrum.slice(first).filter((c) => c.t > tStart);
 }
@@ -66,6 +65,17 @@ export function captureProtocolVessel<K extends ProtocolVessel>(
   const last = effective.at(-1)!;
   const found = wrongGateVessel(kind, gateTrack, effective[0].tR, last.tR + last.rr);
   if (found !== null) return { ...m, quality: { ...m.quality, issue: 'wrong-vessel', wrongVessel: { kind, found } } };
+  // The automatic renal estimator assumes the dominant signal belongs to the
+  // vein. When anatomy says the artery dominates, a continuous arterial trace
+  // must not be accepted as venous continuity. This is an estimator limitation,
+  // not a claim that a clinician cannot interpret a mixed arterial/venous gate.
+  if (
+    kind === 'renal' &&
+    m.quality.issue === null &&
+    effective.some((b) => dominantGateSystem(gateTrack, b.tR, b.tR + b.rr) === 'interlobarArtery')
+  )
+    return { ...m, quality: { ...m.quality, issue: 'renal-identity' } };
+
   if (
     kind === 'hepatic' &&
     m.quality.issue === null &&

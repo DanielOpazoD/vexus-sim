@@ -1,5 +1,9 @@
 # PW: validación física antes de calibración visual
 
+> Registro de investigación previo a la calibración territorial del 5 % y al
+> muestreo adaptativo. Sus cifras exploratorias son históricas; el estado actual
+> y sus límites se documentan en [RENAL_TERRITORY_CALIBRATION.md](RENAL_TERRITORY_CALIBRATION.md).
+
 Estado: investigación y corrección experimental, 2026-10-04. El PR 164 permanece
 retenido para revisión clínica, aunque su primera versión pasó CI. Una imagen
 reconocible y pruebas verdes no demuestran fidelidad clínica.

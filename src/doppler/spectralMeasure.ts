@@ -15,6 +15,7 @@ import { assessQuality, flowBandMinHz, type MeasurementQuality } from './measure
 import { receiverNoiseDb } from './sampleVolume';
 import {
   captureNoiseFloorsDb,
+  contiguousSpectralColumns,
   columnEnvelope,
   columnPercentileEnvelope,
   halfPlaneEnvelopeHz,
@@ -193,21 +194,22 @@ const TRACE_MEDIAN_HALF = 2;
 /**
  * Promedio del espectro en una vecindad 3 × 3 (columnas × bins) en potencia lineal: reduce
  * la varianza del periodograma (moteado espectral de pocos dispersores) antes de trazar la
- * envolvente, como el promediado de visualización de un equipo. No toca la señal mostrada.
+ * envolvente, como el promediado de visualización de un equipo. Solo combina columnas con
+ * la misma PRF/resolución y ventanas FFT temporalmente solapadas. No toca la señal mostrada.
  */
 export function smoothSpectrum(columns: readonly SpectralColumn[]): SpectralColumn[] {
   const n = columns.length;
   if (n === 0) return [];
-  const N = columns[0].powerDb.length;
   const lin = columns.map((c) => Float64Array.from(c.powerDb, (db) => Math.pow(10, db / 10)));
   return columns.map((c, i) => {
+    const N = c.powerDb.length;
+    const lo = i > 0 && contiguousSpectralColumns(columns[i - 1], c) ? i - 1 : i;
+    const hi = i + 1 < n && contiguousSpectralColumns(c, columns[i + 1]) ? i + 1 : i;
     const out = new Float32Array(N);
     for (let k = 0; k < N; k++) {
       let acc = 0;
       let cnt = 0;
-      for (let di = -1; di <= 1; di++) {
-        const ii = i + di;
-        if (ii < 0 || ii >= n || lin[ii].length !== N) continue;
+      for (let ii = lo; ii <= hi; ii++) {
         for (let dk = -1; dk <= 1; dk++) {
           const kk = k + dk;
           if (kk < 0 || kk >= N) continue;

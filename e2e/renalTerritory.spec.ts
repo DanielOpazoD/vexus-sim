@@ -7,6 +7,7 @@ for (const [id, pattern] of [
 ] as const) {
   test(`calibración territorial renal: captura adquirida ${id}`, async ({ page }, testInfo) => {
     budget(240_000);
+    await page.setViewportSize({ width: 1440, height: 1000 });
     const errors = await bootWithoutErrors(page);
     await page.selectOption('#case-select', id);
     await page

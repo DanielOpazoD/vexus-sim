@@ -1,3 +1,5 @@
+import { C_RECONSTRUCTION_MM_S, nyquistVelocityCms, prfFromNyquistCms } from '../core/units';
+import { maxPrfForDepth } from '../app/equipment';
 import { DEFAULT_BMODE } from '../ultrasound/renderer';
 import { describe, expect, it } from 'vitest';
 import { AnatomyScene } from '../anatomy/scene';
@@ -15,6 +17,44 @@ function fixture() {
 }
 
 describe('PW venoso virtual: IQ espacial y reloj compartido', () => {
+  it('respeta el retorno del eco de la cara distal de cada puerta al solicitar una escala alta', () => {
+    const { anatomy, engine } = fixture();
+    const a = new VenousSpectralAcquisition(anatomy, engine.sample, 47, NORMAL_ADULT, DEFAULT_BMODE);
+    a.scales.fill(120);
+    a.push(
+      Array.from({ length: 30 }, () => engine.step()),
+      engine.clock.dt,
+    );
+    const rows = a.chains.map((chain, i) => ({
+      depth: a.gateDepthsMm[i],
+      prf: chain.spectral.columns.at(-1)!.prfHz,
+      limit: maxPrfForDepth(a.gateDepthsMm[i] + a.gate(i, engine.sample).lengthMm / 2, C_RECONSTRUCTION_MM_S),
+    }));
+
+    expect(rows.some((r) => prfFromNyquistCms(120, a.f0Hz) > r.limit)).toBe(true);
+    for (const [i, row] of rows.entries()) {
+      expect(row.prf).toBeLessThanOrEqual(row.limit);
+      expect(row.prf).toBe(a.prfHz(i));
+      expect(a.nyquistCms(i)).toBeCloseTo(nyquistVelocityCms(row.prf, a.f0Hz), 12);
+    }
+    expect(a.scales).toEqual([120, 120, 120]);
+    expect(a.nyquistCms(1)).toBeLessThan(120);
+  });
+
+  it('las escalas basales físicamente posibles conservan PRF y vuelven tras una solicitud limitada', () => {
+    const { anatomy, engine } = fixture();
+    const a = new VenousSpectralAcquisition(anatomy, engine.sample, 47, NORMAL_ADULT, DEFAULT_BMODE);
+    const original = [...a.scales];
+    for (let i = 0; i < 3; i++) expect(a.prfHz(i)).toBe(prfFromNyquistCms(original[i], a.f0Hz));
+    const centers = a.gateInfo.map((g) => g.world);
+    a.scales.fill(120);
+    a.reacquire();
+    a.scales.splice(0, 3, ...original);
+    a.reacquire();
+    for (let i = 0; i < 3; i++) expect(a.prfHz(i)).toBe(prfFromNyquistCms(original[i], a.f0Hz));
+    expect(a.gateInfo.map((g) => g.world)).toEqual(centers);
+  });
+
   it('cambiar equipo durante respiración no recoloca la puerta buscando otra vez el vaso', () => {
     const patient = { ...NORMAL_ADULT, respiratoryPattern: 'quiet' as const };
     const anatomy = new AnatomyQuery(new AnatomyScene(patient));

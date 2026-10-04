@@ -233,7 +233,7 @@ export class VenousViewer {
           controls.appendChild(label);
         }
         const scaleLabel = document.createElement('label');
-        scaleLabel.textContent = 'Nyquist ';
+        scaleLabel.textContent = 'Nyquist solicitado ';
         const selector = document.createElement('select');
         selector.setAttribute('aria-label', `Escala PW ${r.label}`);
         for (const n of [10, 20, 30, 40, 50, 60, 80, 120]) selector.add(new Option(`±${n} cm/s`, String(n)));
@@ -517,20 +517,21 @@ export class VenousViewer {
     for (let i = 0; i < 3; i++) {
       const columns = this.#spectral.chains[i].spectral.columns;
       const canvas = this.#canvases[i];
+      const scale = this.#spectral.nyquistCms(i);
       const ratio = Math.min(2, window.devicePixelRatio || 1);
       const width = Math.max(1, Math.round(canvas.clientWidth || 800));
       const targetW = Math.round(width * ratio),
         targetH = Math.round(184 * ratio);
       if (canvas.width !== targetW) canvas.width = targetW;
       if (canvas.height !== targetH) canvas.height = targetH;
-      const paintKey = `${targetW}/${targetH}/${this.#spectralScales[i]}/${this.#baselines[i]}/${this.#presentation[i].gainDb}/${this.#presentation[i].dynamicRangeDb}/${end}/${columns.at(-1)?.t}/${this.#marksT}/${this.#annotations}/${this.#paused ? cursor?.t : ''}`;
+      const paintKey = `${targetW}/${targetH}/${scale}/${this.#baselines[i]}/${this.#presentation[i].gainDb}/${this.#presentation[i].dynamicRangeDb}/${end}/${columns.at(-1)?.t}/${this.#marksT}/${this.#annotations}/${this.#paused ? cursor?.t : ''}`;
       if (paintKey !== this.#paintKeys[i])
         drawVenousSpectrum(
           this.#canvases[i],
           columns,
           start,
           end,
-          this.#spectralScales[i],
+          scale,
           this.#annotations ? this.#marks[i] : [],
           this.#paused ? (cursor?.t ?? null) : null,
           ratio,
@@ -538,13 +539,16 @@ export class VenousViewer {
           this.#presentation[i],
         );
       this.#paintKeys[i] = paintKey;
+      canvas.dataset.nyquistCms = String(scale);
+      canvas.dataset.prfHz = String(this.#spectral.prfHz(i));
+      canvas.dataset.gateDepthMm = String(this.#spectral.gateDepthsMm[i]);
       this.#canvases[i].dataset.baseline = String(this.#baselines[i]);
       this.#canvases[i].dataset.columns = String(columns.length);
       this.#canvases[i].dataset.lastTime = String(columns.at(-1)?.t ?? '');
       this.#canvases[i].dataset.gateCenter = JSON.stringify(this.#spectral.gateInfo[i].world);
       this.#canvases[i].dataset.marks = this.#annotations ? this.#marks[i].map((m) => m.label).join(',') : '';
       this.#limits[i].textContent =
-        `2,5 MHz · PRF ${columns.at(-1)?.prfHz.toFixed(0) ?? '—'} Hz · filtro ${this.#wallFilters[i]} Hz · θ ${this.#spectral.gateInfo[i].beamAngleToFlowDeg?.toFixed(0) ?? '—'}° · velocidad axial · ${this.#spectralScales[i]} cm/s Nyquist · imagen ${this.#presentation[i].gainDb} dB / RD ${this.#presentation[i].dynamicRangeDb}${this.#measurementIssues[i] ? ` · ${this.#measurementIssues[i]}` : ''}`;
+        `2,5 MHz · PRF ${columns.at(-1)?.prfHz.toFixed(0) ?? '—'} Hz · filtro ${this.#wallFilters[i]} Hz · θ ${this.#spectral.gateInfo[i].beamAngleToFlowDeg?.toFixed(0) ?? '—'}° · velocidad axial · ${scale.toFixed(1)} cm/s Nyquist${scale < this.#spectralScales[i] - 1e-6 ? ' (límite por profundidad)' : ''} · imagen ${this.#presentation[i].gainDb} dB / RD ${this.#presentation[i].dynamicRangeDb}${this.#measurementIssues[i] ? ` · ${this.#measurementIssues[i]}` : ''}`;
       this.#values[i].textContent = this.#annotations && this.#velocitySummaries[i] ? this.#velocitySummaries[i] : 'PW simulado';
     }
   }

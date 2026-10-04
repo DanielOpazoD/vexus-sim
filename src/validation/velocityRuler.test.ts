@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { velocityRuler, drawVelocityRuler } from '../ui/velocityRuler';
 import { spectrumRowOf } from '../ui/captureOverlay';
-import { dopplerShiftHz } from '../core/units';
+import { dopplerShiftHz, nyquistVelocityCms } from '../core/units';
 
 describe('escala lateral PW', () => {
   it('reproduce el ejemplo asimétrico +60 / −20 sin cambiar la PRF', () => {
@@ -52,4 +52,11 @@ it('dibuja unidades junto al cero y restaura el contexto', () => {
   expect(ctx.fillText).toHaveBeenCalledWith('60', 8, 7);
   expect(ctx.fillText).toHaveBeenCalledWith('-20', 8, 233);
   expect(ctx.restore).toHaveBeenCalledOnce();
+});
+
+it('rotula los extremos aunque la PRF entera no coincida exactamente con 40 cm/s', () => {
+  const a = velocityRuler(nyquistVelocityCms(2597, 2.5e6), 0.25, false, 224);
+  expect(a.ticks.find((x) => x.row === 0)?.major).toBe(true);
+  expect(a.ticks.find((x) => x.row === 224)?.major).toBe(true);
+  expect(a.ticks.find((x) => x.row === 0)?.value).toBeCloseTo(60, 1);
 });

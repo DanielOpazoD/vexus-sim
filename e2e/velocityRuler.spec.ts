@@ -38,7 +38,7 @@ test('escala PW lateral: cero, inversión, tamaño y ECG alineados', async ({ pa
   });
   await page.locator('#freeze').click();
   await expect(page.locator('#freeze')).toHaveAttribute('aria-pressed', 'true');
-  await page.screenshot({ path: testInfo.outputPath('venous-pw-lateral-scale-renal.png') });
+  await page.screenshot({ path: testInfo.outputPath('venous-pw-lateral-scale-shift.png') });
   async function geometry() {
     return page.evaluate(() => {
       const box = (id: string) => {
@@ -63,6 +63,29 @@ test('escala PW lateral: cero, inversión, tamaño y ECG alineados', async ({ pa
   await page.getByRole('button', { name: 'Invertir espectro', exact: true }).click();
   await expect(page.locator('#pw-scale')).toHaveAttribute('aria-label', /-60\.0 a 20\.0/);
   await page.screenshot({ path: testInfo.outputPath('venous-pw-lateral-scale.png') });
+  // A separate acquisition with enough displayed bandwidth for current main's
+  // renal velocities: the asymmetric example above deliberately tests wrapping.
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.getByRole('button', { name: 'Invertir espectro', exact: true }).click();
+  await page
+    .getByRole('slider', { name: 'Escala', exact: true })
+    .last()
+    .evaluate((el: HTMLInputElement) => {
+      el.value = '80';
+      el.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  await page.getByRole('slider', { name: 'Línea de base', exact: true }).evaluate((el: HTMLInputElement) => {
+    el.value = '0';
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await page.locator('#freeze').click();
+  await page.evaluate(() => {
+    window.__vexusTest!.advance(8);
+    window.__vexusTest!.sim().render();
+  });
+  await page.locator('#freeze').click();
+  await expect(page.locator('#pw-scale')).toHaveAttribute('aria-label', /-80\.0 a 80\.0/);
+  await page.screenshot({ path: testInfo.outputPath('venous-pw-lateral-scale-renal.png') });
   await page.locator('#mode-pw').click();
   await expect(page.locator('#pw-scale')).not.toBeVisible();
   expect(errors).toEqual([]);

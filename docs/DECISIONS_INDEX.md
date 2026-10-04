@@ -145,3 +145,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [139](DECISIONS.md#L5435) | Encabezado compacto del visor sin ocultar el Doppler móvil | vigente |
 | [140](DECISIONS.md#L5460) | La adquisición portal virtual evita el extremo de bifurcación | vigente |
 | [141](DECISIONS.md#L5481) | Una ventana virtual ausente no es una avería del bucle | vigente |
+| [142](DECISIONS.md#L5508) | Calentar fisiología antes de activar PW en la prueba de regla lateral | vigente |

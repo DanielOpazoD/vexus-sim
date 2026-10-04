@@ -9,6 +9,18 @@ test('escala PW lateral: cero, inversión, tamaño y ECG alineados', async ({ pa
     .locator('button', { hasText: /Apnea\s*esp/ })
     .first()
     .click();
+  // Settle physiology before enabling the expensive IQ observer. Only the following
+  // eight seconds are needed for this ruler/viewport test, not thirty discarded seconds.
+  const warmup = await page.evaluate(() => {
+    const sim = window.__vexusTest!.sim();
+    const before = sim.physiology.clock.t;
+    const enabled = sim.pw.enabled;
+    window.__vexusTest!.advance(30);
+    return { enabled, elapsed: sim.physiology.clock.t - before, columns: sim.pwChain.spectral.columns.length };
+  });
+  expect(warmup.enabled).toBe(false);
+  expect(warmup.elapsed).toBeGreaterThanOrEqual(29.99);
+  expect(warmup.columns).toBe(0);
   await page.locator('#mode-pw').click();
   expect(
     await page.evaluate(() => {
@@ -31,11 +43,23 @@ test('escala PW lateral: cero, inversión, tamaño y ECG alineados', async ({ pa
     el.dispatchEvent(new Event('input', { bubbles: true }));
   });
   await expect(page.locator('#pw-scale')).toHaveAttribute('aria-label', /-20\.0 a 60\.0/);
-  await page.evaluate(() => {
-    window.__vexusTest!.advance(30);
+  const acquired = await page.evaluate(() => {
     window.__vexusTest!.advance(8);
-    window.__vexusTest!.sim().render();
+    const sim = window.__vexusTest!.sim();
+    sim.render();
+    const columns = sim.pwChain.spectral.columns;
+    return {
+      count: columns.length,
+      span: columns.at(-1)!.t - columns[0].t,
+      age: sim.physiology.clock.t - columns.at(-1)!.t,
+      finite: columns.every((c) => c.powerDb.every(Number.isFinite)),
+    };
   });
+  expect(acquired.count).toBeGreaterThan(100);
+  expect(acquired.span).toBeGreaterThanOrEqual(6);
+  expect(acquired.age).toBeGreaterThanOrEqual(0);
+  expect(acquired.age).toBeLessThan(0.15);
+  expect(acquired.finite).toBe(true);
   await page.locator('#freeze').click();
   await expect(page.locator('#freeze')).toHaveAttribute('aria-pressed', 'true');
   await page.screenshot({ path: testInfo.outputPath('venous-pw-lateral-scale-shift.png') });
@@ -63,8 +87,8 @@ test('escala PW lateral: cero, inversión, tamaño y ECG alineados', async ({ pa
   await page.getByRole('button', { name: 'Invertir espectro', exact: true }).click();
   await expect(page.locator('#pw-scale')).toHaveAttribute('aria-label', /-60\.0 a 20\.0/);
   await page.screenshot({ path: testInfo.outputPath('venous-pw-lateral-scale.png') });
-  // A separate acquisition with enough displayed bandwidth for current main's
-  // renal velocities: the asymmetric example above deliberately tests wrapping.
+  // A separate wide-band acquisition after resetting the displayed scale.
+  // The asymmetric example above verifies ruler geometry, not a clinical velocity threshold.
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole('button', { name: 'Invertir espectro', exact: true }).click();
   await page

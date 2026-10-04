@@ -5,6 +5,9 @@ on:
       - 'src/ui/panel/**'
       - 'src/ui/panel.ts'
       - 'src/bootstrap.ts'
+      - 'src/ui/velocityRuler.ts'
+      - 'src/ui/displays.ts'
+      - 'e2e/velocityRuler.spec.ts'
       - 'src/app/styles.css'
       - 'src/physiology/**'
       - 'e2e/venousViewer.spec.ts'
@@ -34,9 +37,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npx vite build
-      # Diagnóstico temprano adicional: la CI principal sigue ejecutando sus 62 pruebas completas.
-      - run: npm run e2e -- e2e/venousViewer.spec.ts --forbid-only --repeat-each=1 --retries=0 --max-failures=1 --workers=1
+      - run: GITHUB_SHA="$(git rev-parse HEAD)" npx vite build
+      # Diagnóstico temprano adicional: la CI principal sigue ejecutando todas sus pruebas completas.
+      - run: npm run e2e -- e2e/venousViewer.spec.ts e2e/velocityRuler.spec.ts --forbid-only --repeat-each=1 --retries=0 --max-failures=1 --workers=1
       - uses: actions/upload-artifact@v7
         if: always()
         with:

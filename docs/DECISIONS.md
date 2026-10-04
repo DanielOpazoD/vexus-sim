@@ -5092,3 +5092,24 @@ medianas temporales posteriores mantienen sus contratos dentro del tramo
 continuo seleccionado; no se atribuye validez a mediciones directas de historiales
 mixtos fuera de la ruta de captura.
 Los PR del visor PW y su laboratorio siguen en revisión clínica independiente.
+
+## 126. Regla lateral de velocidad del Doppler pulsado
+
+**Objetivo.** Fidelidad ecográfica y legibilidad (2 y 6): graduación en cm/s con
+cero explícito y escala asimétrica al desplazar la línea de base.
+
+**Decisión.** Un carril lateral independiente muestra marcas principales y
+secundarias sin tapar señal adquirida. ECG y espectro conservan la misma anchura
+y reloj. Los rótulos usan el mismo signo de pantalla que las mediciones; invertir
+la señal también invierte el desplazamiento del cero. La corrección angular
+cambia las velocidades rotuladas, no los píxeles de la señal.
+
+**Evidencia.** Los ejemplos aportados muestran escalas distintas y asimétricas,
+incluido +60/−20 cm/s. El máximo de una escala no es el pico de la onda. Esta
+mejora no recalibra flujos ni certifica velocidades clínicas. Se retiran los dos
+rótulos antiguos de extremos, cuya inversión con línea de base desplazada no
+coincidía con el signo de pantalla de la captura.
+
+**Verificación.** Contratos de coordenadas frente a la conversión Doppler y la
+posición de la captura, tamaños e inversión, además de navegador real con los
+controles de la aplicación y ausencia de superposición con el espectro.

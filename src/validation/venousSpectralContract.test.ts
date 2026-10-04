@@ -20,6 +20,8 @@ describe('contratos de adquisición PW comparada', () => {
       const source = JSON.stringify({ vessels: scene.vessels, bowel: scene.bowelRadii });
       const a = new VenousSpectralAcquisition(anatomy, engine.sample, patient.seed, patient, DEFAULT_BMODE);
       expect(a.materialCenters).toHaveLength(3);
+      const paired = new VenousSpectralAcquisition(anatomy, engine.sample, patient.seed, patient, DEFAULT_BMODE, 'paired');
+      expect(VESSEL_META[paired.gateInfo[2].vessel!].system).toBe('interlobarArtery');
       const centers = [0, 1, 2].map((i) => a.gate(i, engine.sample).center);
       for (const [i, system] of ['hepaticVein', 'portal', 'interlobarVein'].entries()) {
         expect(a.gateInfo[i].vessel).not.toBeNull();

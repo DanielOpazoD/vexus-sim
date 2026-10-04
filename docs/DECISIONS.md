@@ -5276,3 +5276,29 @@ de bancos, interpolaciones, orden de coerción, escapes y marcadores inválidos.
 El shader enviado a WebGL es el mismo. El build medido baja de 1023,9 a 1018,9 KiB
 sin aumentar el límite de 1024 KiB. Es reducción de transporte, no una afirmación
 de aumento de FPS ni de fidelidad clínica.
+
+## 133. Ventana renal pareada explícita, sin escalar la vena
+
+**Problema.** En el visor comparativo la puerta centrada en vena puede dejar la
+arteria acompañante fuera del plano principal. Comparar alturas sin conocer la
+ventana confunde una adquisición débil con una relación fisiológica universal.
+
+**Cambio.** Se conserva «Vena: medición» por defecto. Una opción docente
+«Par arteria/vena: inspección» inclina dos grados la sonda virtual y centra la
+puerta de 4 mm en una arteria interlobar, usando la misma búsqueda geométrica y
+cadena IQ del ecógrafo. Es la pose auditada en sano y congestión, en ambos cuerpos.
+No reescala velocidades, ganancias relativas, perfiles ni caudales. El espectro
+puede contener ambos vasos; la captura venosa mantiene su rechazo por predominio
+arterial y no ofrece marcas de medición cuando la calidad no lo permite.
+
+**Verificación.** En ambos cuerpos y casos, la puerta cambia de sistema venoso a
+arterial y la composición incluye los dos. Las columnas hepáticas y portales son
+idénticas para la misma historia; el paciente y sus muestras permanecen intactos.
+La prueba de navegador cambia de ventana y vuelve, comprueba calidad visible,
+reconstrucción completa, reloj congelado, diseño móvil y captura de pantalla.
+
+**Límites.** Una pose útil en los casos auditados no garantiza adquisición óptima
+universal. La relación entre picos sigue siendo provisional y dependiente del
+ángulo, territorio y estado del modelo. No se presenta esta selección como
+validación clínica ni como medición venosa automática fiable en una puerta
+arterial. Evidencia y fuentes en `physiology/RENAL_PAIRED_VELOCITY_REVIEW.md`.

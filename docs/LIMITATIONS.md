@@ -514,10 +514,10 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 
 - **La identidad del vaso la da el modelo, no la imagen** (`vessel-identity-from-model`, decisión 94): una captura cuya
   puerta estaba sobre otro sistema vascular que el de su fila se rechaza como «vaso equivocado» con el vaso que había; el
-  simulador lo sabe por la sangre del volumen de muestra, como lo sabría un supervisor, no un ecógrafo. Decide el sistema
-  que domina la sangre de la puerta en los 7 s de la captura: una puerta a caballo entre dos vasos se atribuye al que más
-  pesa, y la fila renal admite la arteria interlobar (la medición elige el lado de la vena), así que una puerta centrada
-  en la arteria no se rechaza.
+  simulador lo sabe por la sangre del volumen de muestra, como lo sabría un supervisor, no un ecógrafo. La atribución
+  general usa la composición adquirida. Desde la decisión 127, la captura renal añade una guarda conservadora sobre
+  los latidos realmente medidos: si domina una arteria interlobar, rechaza la medición venosa automática. El espectro
+  pareado sigue visible para inspección; no se asegura que el estimador separe ambas componentes con fiabilidad.
 
 - **El modo ciego es de pantalla, no de código** (`blind-mode-screen-only`, decisión 82): el alumno no ve el nombre del
   caso, sus confusores reales ni la trampa en la pantalla ni en el DOM, y las explicaciones de las trampas con los

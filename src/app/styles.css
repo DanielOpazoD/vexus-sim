@@ -623,11 +623,13 @@ button.secondary.on {
   background: #000;
 }
 .app.pw-on .traces {
+  grid-template-columns: minmax(0, 1fr) 52px;
   grid-template-rows: 40px var(--spectrum-h);
 }
 .app.m-on .traces {
   grid-template-rows: 40px var(--mmode-h);
 }
+.app:not(.pw-on) .pw-scale,
 .app:not(.pw-on) .spectrum,
 .app:not(.m-on) .mmode {
   display: none;
@@ -1252,4 +1254,13 @@ button.mode.active {
     margin-top: -12px;
     padding-top: 12px;
   }
+}
+
+.app.pw-on .ecg,
+.app.pw-on .spectrum {
+  grid-column: 1;
+}
+.pw-scale {
+  grid-column: 2;
+  grid-row: 2;
 }

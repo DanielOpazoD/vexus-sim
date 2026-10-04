@@ -1,12 +1,12 @@
 # Calibración provisional del territorio interlobar
 
-2026-10-04. Decisión 126. Parámetro **NEEDS_CALIBRATION**; no validación clínica
+2026-10-04. Decisión 127. Parámetro **NEEDS_CALIBRATION**; no validación clínica
 independiente ni proporción anatómica humana demostrada.
 
 ## Qué cambia físicamente
 
-Cada interlobar representada recibe 6 % del flujo de un riñón, antes 12 %.
-Las tres ramas del derecho representan 18 %; el territorio no representado, 82 %.
+Cada interlobar representada recibe 5 % del flujo de un riñón, antes 12 %.
+Las tres ramas del derecho representan 15 %; el territorio no representado, 85 %.
 El flujo renal total, sus presiones, resistencias, compliances y volumen siguen
 saliendo de la misma red. La velocidad local resulta de Q/A y del perfil radial;
 ningún grado VExUS entra en esa asignación. No se modifica la escala para ocultar
@@ -38,7 +38,7 @@ Jeong et al. (2011) sigue pendiente de acceso; no se inventan sus valores.
 - Corrección: https://pubmed.ncbi.nlm.nih.gov/29063420/
 - Jeong: https://pubmed.ncbi.nlm.nih.gov/21544829/
 
-## Sensibilidad y elección provisional
+## Sensibilidad previa: candidatos 6 % y 4 %
 
 En un banco personal con ventana anatómica real, apnea espiratoria, 30 s de
 estabilización, 8 s de IQ y escala axial ±80 cm/s, pasar de 12 a 6 % redujo los
@@ -85,8 +85,42 @@ adquieren arteria y vena simultáneamente (Iida 2016); esta guarda no prohíbe e
 técnica ni sustituye un futuro separador validado. La mejora del componente
 arterial y su identificación espectral independiente siguen pendientes.
 
-Los aproximadamente 30 cm/s de D grave son por ahora un resultado del simulador,
+Los aproximadamente 30 cm/s de D grave del candidato anterior 6 % eran un resultado del simulador,
 no un máximo clínico demostrado. No se usa el extremo de una escala lateral de
 una figura como si fuera la velocidad medida del paciente. Su validación requiere
 revisar la envolvente, calibración, lugar de muestreo y corrección angular en las
 fuentes originales.
+
+## Revisión final propuesta: 5 %, después de las nuevas referencias
+
+La figura 1 de Husain-Syed 2019 (https://pmc.ncbi.nlm.nih.gov/articles/PMC6898799/)
+distingue capturas clínicas de un esquema inferior. El extremo −30 cm/s del
+esquema no es el pico del paciente. El ejemplo grave tiene picos aproximadamente
+20–25 cm/s por lectura visual; el de Iida 2016 es menor. No son medias de cohorte
+ni límites poblacionales. Otra captura aportada rotula VSA arterial 30,4 cm/s,
+que no debe confundirse con la onda D venosa.
+
+El ensayo 5 % conserva Q renal total y produce, con la misma adquisición axial
+±80 cm/s del banco, S/D/mín sanos 13,75/11,25/6,25 y D grave 26,25 cm/s. El
+centro arterial teórico sano es 41,41 cm/s antes de proyección angular; no se
+presenta como PSV medida. Esta elección mejora la concordancia de magnitudes
+con las referencias revisadas respecto a 12 % y 6 %, pero continúa identificada
+como parámetro provisional: los ejemplos no identifican una fracción anatómica
+real de 5 %. Tampoco imponen D = 26,25 en otros estados.
+
+Las 53 matrices existentes pasan a 5 % sin relajar umbrales. En una auditoría
+separada de 168 escenarios (7 casos × 4 fracciones × 3 semillas × 2 patrones
+respiratorios), los ocho cambios de patrón al retirar el suelo absoluto de
+2 cm/s pertenecieron al candidato 4 %; ninguno de los 42 escenarios a 5 % lo
+mostró. No se cambia el clasificador. Quedan exigidas CI y capturas reales del
+árbol final con la escala lateral incorporada.
+
+## Reproducción
+
+- `node --import tsx tools/fidelity/renalTerritoryBenchmark.ts`: compara 12/6/5/4 %
+  usando la ruta de adquisición y captura compartida con la aplicación; devuelve
+  valores Q/A, flujo total y medición observada. No importa módulos del visor
+  todavía pendiente de integración. El resultado se guarda en `/tmp` por defecto.
+- `node --import tsx tools/fidelity/renalTruthResolutionAudit.ts`: reproduce los
+  168 escenarios de estabilidad del suelo de clasificación, sin adoptar el
+  clasificador contrafactual.

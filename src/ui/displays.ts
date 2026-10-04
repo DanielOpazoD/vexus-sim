@@ -3,7 +3,6 @@ import { drawCursor } from './mModeView';
 import { nyquistVelocityCms, wrapToNyquist } from '../core/units';
 import type { Simulator } from '../app/simulator';
 import type { SpectralColumn } from '../doppler/spectral';
-import { velocityFromShiftMmS } from '../core/units';
 import { overlayOnSpectrum, spectrumRowOf, type CaptureOverlay } from './captureOverlay';
 
 /**
@@ -304,11 +303,6 @@ export class SpectrogramView {
     ctx.fillStyle = '#9aa7b4';
     ctx.font = '10px sans-serif';
     const nyq = sim.pwNyquistCms();
-    const topF = (0.5 + pw.baselineShift) * pw.prfHz * (pw.invert ? -1 : 1);
-    const botF = (-0.5 + pw.baselineShift) * pw.prfHz * (pw.invert ? -1 : 1);
-    const toCms = (f: number) => velocityFromShiftMmS(f, sim.transducer.f0Doppler, pw.angleCorrection) / 10;
-    ctx.fillText(`${toCms(topF).toFixed(0)} cm/s`, W - 60, 11);
-    ctx.fillText(`${toCms(botF).toFixed(0)} cm/s`, W - 60, H - 4);
     ctx.fillText(
       `Nyquist ±${nyq.toFixed(0)} cm/s · PRF ${pw.prfHz} Hz · WF ${pw.wallFilterHz} Hz · ${pw.sweepMmS} mm/s · θ ${((pw.angleCorrection * 180) / Math.PI).toFixed(0)}°${pw.invert ? ' · INV' : ''}`,
       6,

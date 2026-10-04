@@ -7,7 +7,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
-- Calibración renal provisional por territorio perfundido (126): 6 % del flujo por interlobar representada, conservando el caudal renal total; verificación de patrones, aliasing y presupuesto Q/A. No es una proporción anatómica humana validada.
+- Calibración renal provisional por territorio perfundido (127): 5 % del flujo por interlobar representada, conservando el caudal renal total; verificación de patrones, aliasing y presupuesto Q/A. No es una proporción anatómica humana validada.
 
 - Promedio espectral PW: conserva la rejilla Hz de cada columna y no mezcla escalas, resoluciones FFT ni adquisiciones separadas por saltos del reloj; la captura toma solo el último tramo continuo (125). No supone calibración clínica de las velocidades.
 

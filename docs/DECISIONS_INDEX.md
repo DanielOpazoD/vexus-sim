@@ -144,3 +144,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [138](DECISIONS.md#L5407) | Fases de validación paralelas, reconciliadas por commit e integridad | vigente |
 | [139](DECISIONS.md#L5435) | Encabezado compacto del visor sin ocultar el Doppler móvil | vigente |
 | [140](DECISIONS.md#L5460) | La adquisición portal virtual evita el extremo de bifurcación | vigente |
+| [141](DECISIONS.md#L5481) | Una ventana virtual ausente no es una avería del bucle | vigente |

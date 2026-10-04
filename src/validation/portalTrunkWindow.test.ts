@@ -6,7 +6,7 @@ import { setReferenceBody } from '../anatomy/referenceBody';
 import { AnatomyScene } from '../anatomy/scene';
 import { AnatomyQuery } from '../anatomy/query';
 import { PhysiologyEngine } from '../physiology/engine';
-import { VenousSpectralAcquisition } from '../app/venousSpectral';
+import { AcousticWindowUnavailableError, VenousSpectralAcquisition } from '../app/venousSpectral';
 import { DEFAULT_BMODE } from '../ultrasound/renderer';
 import { captureProtocolVessel } from '../doppler/capture';
 import { bestGateOnVessel } from '../app/gatePlacement';
@@ -16,6 +16,25 @@ const body = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOff
 afterEach(() => setReferenceBody());
 
 describe('puerta virtual portal dentro del tronco', () => {
+  it('distingue una ventana ausente de una avería numérica y puede recuperarla en apnea', () => {
+    setReferenceBody(body);
+    const quiet = { ...NORMAL_ADULT, respiratoryPattern: 'quiet' as typeof NORMAL_ADULT.respiratoryPattern };
+    const query = new AnatomyQuery(new AnatomyScene(quiet));
+    const engine = new PhysiologyEngine(quiet, query.scene.vesselAreas());
+    for (let i = 0; i < 500; i++) engine.step();
+    expect(() => new VenousSpectralAcquisition(query, engine.sample, quiet.seed, quiet, DEFAULT_BMODE)).toThrow(
+      AcousticWindowUnavailableError,
+    );
+    try {
+      new VenousSpectralAcquisition(query, engine.sample, quiet.seed, quiet, DEFAULT_BMODE);
+    } catch (error) {
+      expect((error as AcousticWindowUnavailableError).window).toBe('intercostal');
+    }
+    quiet.respiratoryPattern = 'apnea-expiratory';
+    for (let i = 0; i < 750; i++) engine.step();
+    expect(() => new VenousSpectralAcquisition(query, engine.sample, quiet.seed, quiet, DEFAULT_BMODE)).not.toThrow();
+  });
+
   it('una restricción imposible devuelve null, no el candidato de puntuación cero', () => {
     const s = openSession(NORMAL_ADULT, 'apnea-expiratory');
     const contact = probeAt(s, 'portal');

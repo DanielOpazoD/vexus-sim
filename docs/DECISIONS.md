@@ -5589,3 +5589,36 @@ columnas y equipo efectivo, conversión inversa de escala, restauración de esca
 sin recolocar puertas. La E2E existente solicita ±120 en porta y verifica
 limitación, coherencia de unidades, aviso y captura; conserva independencia de
 canales, adquisición completa, congelación, accesibilidad móvil y ausencia de errores.
+
+## 145. Longitud de puerta PW como mando físico por territorio
+
+**Objetivo.** Permitir estudiar cómo el volumen de muestra cambia la señal
+adquirida, sin modificar las ondas del paciente. El visor tenía puertas fijas
+de 4/6/4 mm para VSH/porta/renal, aunque la cadena física ya admite longitudes.
+
+**Cambio.** Cada territorio ofrece 2, 4 o 6 mm y conserva su valor inicial.
+La longitud se aplica a `pwGate` y al volumen de dispersores real; también a
+la cara distal que limita la PRF. Cambiarla reconstruye la IQ desde el mismo
+historial y semilla, sin buscar otro centro ni mover el haz. Ganancia, filtro,
+calidad y hemodinámica mantienen sus responsabilidades. Valores fuera del
+dominio y canales inexistentes se rechazan.
+
+**Límite anatómico.** La búsqueda inicial de porta conserva su separación de
+6 mm respecto de la bifurcación. Ninguna opción aumenta esa puerta por encima
+de 6 mm, de modo que reducirla no exige una recolocación escondida. La PSF
+lateral y elevacional sigue pudiendo incluir vasos vecinos: una puerta menor
+no garantiza pureza, mejor calidad ni una velocidad determinada.
+
+**Fundamento y alcance.** El
+[protocolo dúplex abdominal de MCB, marzo de 2024](https://ref.mcbradiology.com/Protocols,%20Policies,%20Worksheets%20&%20Forms/US/Protocols/Abdomen%20Duplex.pdf)
+recomienda volumen pequeño y ajuste de adquisición. Los tres tamaños ofrecidos
+son un dominio docente del simulador, no una recomendación clínica universal
+ni una calibración contra pacientes. No se promete una relación cuantitativa
+clínica entre longitud, SNR y ensanchamiento del espectro.
+
+**Verificación.** En un historial común, estrechar porta a 2 mm cambia su IQ,
+mantiene exactamente IQ de VSH/renal, centros y datos del paciente; restaurar
+6 mm y reconstruir reproduce bit a bit la adquisición original. El límite de
+PRF responde al nuevo extremo distal. E2E conserva los mandos independientes,
+comprueba la longitud aplicada y rotulada, PRF/escala coherentes, historial
+completo y vista móvil. No se añade otra inicialización de navegador.

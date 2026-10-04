@@ -17,6 +17,36 @@ function fixture() {
 }
 
 describe('PW venoso virtual: IQ espacial y reloj compartido', () => {
+  it('la longitud cambia el volumen físico y su IQ sin mover puertas ni alterar otros canales', () => {
+    const { anatomy, engine } = fixture();
+    const a = new VenousSpectralAcquisition(anatomy, engine.sample, 47, NORMAL_ADULT, DEFAULT_BMODE);
+    const b = new VenousSpectralAcquisition(anatomy, engine.sample, 47, NORMAL_ADULT, DEFAULT_BMODE);
+    expect([0, 1, 2].map((i) => a.gateLengthMm(i))).toEqual([4, 6, 4]);
+    b.setGateLengthMm(1, 2);
+    const before = a.gateInfo.map((g) => g.world);
+    expect(b.gate(1, engine.sample).lengthMm).toBe(2);
+    expect(b.gate(1, engine.sample).center).toEqual(a.gate(1, engine.sample).center);
+    const history = Array.from({ length: 75 }, () => engine.step());
+    const source = JSON.stringify(history);
+    a.push(history, engine.clock.dt);
+    b.push(history, engine.clock.dt);
+    expect(b.chains[1].spectral.columns).not.toEqual(a.chains[1].spectral.columns);
+    for (const i of [0, 2]) expect(b.chains[i].spectral.columns).toEqual(a.chains[i].spectral.columns);
+    expect(b.gateInfo.map((g) => g.world)).toEqual(before);
+    expect(JSON.stringify(history)).toBe(source);
+    b.setGateLengthMm(1, 6);
+    b.reacquire();
+    b.push(history, engine.clock.dt);
+    expect(b.chains.map((c) => c.spectral.columns)).toEqual(a.chains.map((c) => c.spectral.columns));
+    a.scales[1] = 120;
+    b.scales[1] = 120;
+    b.setGateLengthMm(1, 2);
+    expect(b.prfHz(1)).toBeGreaterThan(a.prfHz(1));
+    expect(b.prfHz(1)).toBeCloseTo(1_540_000 / (2 * (b.gateDepthsMm[1] + 1)), 10);
+    for (const mm of [NaN, Infinity, -2, 0, 3, 8]) expect(() => b.setGateLengthMm(1, mm)).toThrow(RangeError);
+    expect(() => b.setGateLengthMm(3, 2)).toThrow(RangeError);
+  });
+
   it('respeta el retorno del eco de la cara distal de cada puerta al solicitar una escala alta', () => {
     const { anatomy, engine } = fixture();
     const a = new VenousSpectralAcquisition(anatomy, engine.sample, 47, NORMAL_ADULT, DEFAULT_BMODE);

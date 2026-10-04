@@ -222,6 +222,12 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
   const cursor = dialog.getByRole('slider', { name: 'Cursor sincronizado' });
   await cursor.focus();
   await page.keyboard.press('ArrowLeft');
+  const gateSizes = dialog.locator('[aria-label^="Longitud de puerta PW"]');
+  expect(await gateSizes.evaluateAll((els) => els.map((el) => (el as HTMLSelectElement).value))).toEqual(['4', '6', '4']);
+  await gateSizes.nth(1).selectOption('2');
+  await expect(gateSizes.nth(1)).toHaveValue('2');
+  await expect(gateSizes.nth(0)).toHaveValue('4');
+  await expect(gateSizes.nth(2)).toHaveValue('4');
   const rowScales = dialog.locator('[aria-label^="Escala PW"]');
   await rowScales.nth(1).selectOption('120');
   await expect(rowScales.nth(0)).toHaveValue('50');
@@ -245,11 +251,14 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
     prf: Number((el as HTMLCanvasElement).dataset.prfHz),
     scale: Number((el as HTMLCanvasElement).dataset.nyquistCms),
     depth: Number((el as HTMLCanvasElement).dataset.gateDepthMm),
+    gate: Number((el as HTMLCanvasElement).dataset.gateLengthMm),
   }));
+  expect(portalEquipment.gate).toBe(2);
   expect(portalEquipment.scale).toBeLessThan(120);
-  expect(portalEquipment.prf).toBeLessThanOrEqual(1_540_000 / (2 * (portalEquipment.depth + 3)));
+  expect(portalEquipment.prf).toBeLessThanOrEqual(1_540_000 / (2 * (portalEquipment.depth + portalEquipment.gate / 2)));
   expect(portalEquipment.scale).toBeCloseTo(((portalEquipment.prf * 1540) / (4 * 2_500_000)) * 100, 8);
   await expect(portalRow.locator('.venous-limits')).toContainText('límite por profundidad');
+  await expect(portalRow.locator('.venous-limits')).toContainText('puerta 2 mm');
   await page.screenshot({ path: info.outputPath('venous-pw-depth-limited.png') });
 
   await page.setViewportSize({ width: 390, height: 844 });

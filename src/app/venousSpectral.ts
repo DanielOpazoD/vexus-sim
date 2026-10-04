@@ -29,6 +29,8 @@ const WINDOWS: readonly { window: StartPoint['id']; vessels: readonly VesselId[]
   { window: 'renal', vessels: ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'], gateMm: 4 },
 ];
 
+export const VENOUS_GATE_LENGTHS_MM = WINDOWS.map((w) => w.gateMm);
+
 /** A missing anatomical window is an acquisition limitation, not a numerical engine failure. */
 export class AcousticWindowUnavailableError extends Error {
   constructor(readonly window: StartPoint['id']) {
@@ -47,6 +49,7 @@ export class VenousSpectralAcquisition {
   readonly chains: PwDopplerChain[];
   readonly gateTracks: GateVesselSample[][] = [[], [], []];
   readonly materialCenters: Vec3[];
+  readonly #gateLengthsMm = [...VENOUS_GATE_LENGTHS_MM];
   readonly gateDepthsMm: readonly number[];
   readonly gateInfo: PwGateInfo[] = [];
   readonly #contexts: { anatomy: AnatomyQuery; contact: ProbeContact; best: GatePlacement }[];
@@ -118,11 +121,20 @@ export class VenousSpectralAcquisition {
     this.chains = this.#contexts.map((c, i) => new PwDopplerChain(c.anatomy, seed + 7919 * (i + 1), undefined, { maxColumns: 4096 }));
   }
 
+  gateLengthMm(index: number): number {
+    return this.#gateLengthsMm[index];
+  }
+
+  setGateLengthMm(index: number, lengthMm: number): void {
+    if (!WINDOWS[index] || ![2, 4, 6].includes(lengthMm)) throw new RangeError('Puerta PW fuera de dominio');
+    this.#gateLengthsMm[index] = lengthMm;
+  }
+
   /** The far edge must return before the next pulse; this viewer does not simulate HPRF. */
   prfHz(index: number): number {
     return Math.min(
       prfFromNyquistCms(this.scales[index], this.f0Hz),
-      maxPrfForDepth(this.gateDepthsMm[index] + WINDOWS[index].gateMm / 2, C_RECONSTRUCTION_MM_S),
+      maxPrfForDepth(this.gateDepthsMm[index] + this.gateLengthMm(index) / 2, C_RECONSTRUCTION_MM_S),
     );
   }
 
@@ -138,7 +150,7 @@ export class VenousSpectralAcquisition {
       contact,
       CONVEX_C35_PROFILE,
       this.#settings.focusMm,
-      { theta: best.theta, depthMm: best.r, gateMm: WINDOWS[index].gateMm },
+      { theta: best.theta, depthMm: best.r, gateMm: this.gateLengthMm(index) },
       sample,
     );
     this.gateInfo[index] = result.info;

@@ -1,3 +1,4 @@
+import { spectralSampling } from '../../doppler/spectralSampling';
 import { observedVelocitySummary } from '../observedVelocitySummary';
 import { qualityText } from '../../doppler/qualityMessages';
 import { VenousExperiment } from '../../app/venousExperiment';
@@ -69,6 +70,7 @@ export class VenousViewer {
   #baselines = [0, 0, 0.1];
   readonly #presentation = VENOUS_PW_PRESENTATION.map((p) => ({ ...p }));
   #spectralControls: HTMLElement[] = [];
+  #samplingNotes: HTMLElement[] = [];
   #plots: Element[] = [];
   #marks: CaptureMark[][] = [[], [], []];
   #marksT = -Infinity;
@@ -287,7 +289,7 @@ export class VenousViewer {
         controls.appendChild(baselineLabel);
         const image = document.createElement('details');
         const summary = document.createElement('summary');
-        summary.textContent = 'Imagen';
+        summary.textContent = 'Imagen y muestreo';
         image.appendChild(summary);
         for (const [key, text, values] of [
           ['gainDb', 'Ganancia de imagen (dB)', [-6, 0, 6, 9, 12, 15, 18, 24]],
@@ -306,6 +308,9 @@ export class VenousViewer {
           label.appendChild(select);
           image.appendChild(label);
         }
+        const sampling = note(image, 'Sin datos de muestreo');
+        sampling.classList.add('venous-sampling');
+        this.#samplingNotes.push(sampling);
         controls.appendChild(image);
         this.#spectralControls.push(controls);
       }
@@ -396,6 +401,7 @@ export class VenousViewer {
   }
 
   #clearCanvases(): void {
+    for (const note of this.#samplingNotes) note.textContent = 'Sin datos de muestreo';
     for (const canvas of this.#canvases) {
       canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
       canvas.dataset.columns = '0';
@@ -534,6 +540,11 @@ export class VenousViewer {
       const columns = this.#spectral.chains[i].spectral.columns;
       const canvas = this.#canvases[i];
       const scale = this.#spectral.nyquistCms(i);
+      const sampling = spectralSampling(columns.at(-1), this.#spectral.f0Hz);
+      const samplingText = sampling
+        ? `FFT ${sampling.fftSize} · paso ${sampling.binCms.toFixed(2)} cm/s por bin · ventana ${sampling.windowMs.toFixed(1)} ms. No equivale a exactitud clínica ni a resolución efectiva.`
+        : 'Sin datos de muestreo';
+      if (this.#samplingNotes[i].textContent !== samplingText) this.#samplingNotes[i].textContent = samplingText;
       const ratio = Math.min(2, window.devicePixelRatio || 1);
       const width = Math.max(1, Math.round(canvas.clientWidth || 800));
       const targetW = Math.round(width * ratio),

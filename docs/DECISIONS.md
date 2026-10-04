@@ -5710,3 +5710,35 @@ ningún umbral se redujo.
 criterio geométrico. El antiguo callback `it.fails` la aceptó (salida 0); el nuevo
 setup falló la suite (salida 1). Los mutantes se restauraron y no se publican.
 Esta prueba focalizada de rechazo no sustituye la validación completa anterior.
+
+## 148. Mostrar el muestreo espectral sin prometer exactitud clínica
+
+**Objetivo docente.** Una escala alta no solo cambia el tamaño visual de la onda:
+al aumentar PRF con FFT fija, separa más los centros de los bins de velocidad y
+acorta la ventana de adquisición. Los decimales de un resultado no prueban su
+exactitud. El visor mostraba PRF/escala, pero no hacía explícito ese compromiso.
+
+**Cambio.** «Imagen y muestreo» muestra el tamaño FFT, paso axial de velocidad
+por bin y duración nominal de ventana, calculados desde la última columna real:
+Δf=PRF/N, Δv=c·Δf/(2f0), T=N/PRF. No se presume N=128 en la función de cálculo.
+La información sigue a la PRF efectiva limitada por profundidad; no a la escala
+solicitada. Ganancia y amplitud de potencia no modifican esos datos.
+
+**Alcance.** Espaciado entre bins no equivale a resolución espectral efectiva,
+precisión del estimador ni incertidumbre clínica. La ventana Hann, ruido,
+ensanchamiento, mezcla espacial y promediado de presentación también importan.
+Tampoco T es el tiempo entre columnas o FPS de pantalla. El aviso está junto a
+los números. Sin columnas se informa la ausencia; metadatos imposibles lanzan
+un error observable en vez de mostrar un dato fabricado.
+
+**Fuentes.** La rejilla de frecuencia está descrita en la documentación primaria
+de [NumPy fftfreq](https://numpy.org/doc/stable/reference/generated/numpy.fft.fftfreq.html);
+la ponderación de [Hann](https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.windows.hann.html)
+no convierte esa rejilla en un límite de exactitud. La conversión Doppler usa
+las mismas unidades y velocidad acústica del equipo existente.
+
+**Verificación.** Pruebas de fórmulas, escalado de PRF/N/f0, columnas del procesador
+real con FFT distinta, independencia respecto de potencia e inmutabilidad.
+E2E existente comprueba información inicial, invariancia ante ganancia y cambio
+con PRF limitada y puerta de 2 mm; captura el detalle expandido. No modifica
+fisiología, adquisición, medición ni píxeles del espectro.

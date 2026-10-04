@@ -206,10 +206,14 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
   const portalRow = dialog.locator('.venous-row').nth(1);
   await portalRow.locator('summary').click();
   const imageGain = portalRow.getByRole('combobox', { name: 'Ganancia de imagen (dB) Porta' });
+  const samplingBefore = await portalRow.locator('.venous-sampling').textContent();
+  await expect(portalRow.locator('.venous-sampling')).toContainText('FFT 128 · paso 0.47 cm/s por bin');
+  await expect(portalRow.locator('.venous-sampling')).toContainText('No equivale a exactitud clínica');
   const priorGain = await snapshot();
   const measuredValues = await dialog.locator('.venous-row figcaption span').allTextContents();
   await imageGain.selectOption('0');
   const lowGain = await snapshot();
+  expect(await portalRow.locator('.venous-sampling').textContent()).toBe(samplingBefore);
   expect(await dialog.locator('.venous-row figcaption span').allTextContents()).toEqual(measuredValues);
   expect(lowGain[1].hash).not.toBe(priorGain[1].hash);
   expect(lowGain.map(({ hash: _h, ...rest }) => rest)).toEqual(priorGain.map(({ hash: _h, ...rest }) => rest));
@@ -259,7 +263,11 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
   expect(portalEquipment.scale).toBeCloseTo(((portalEquipment.prf * 1540) / (4 * 2_500_000)) * 100, 8);
   await expect(portalRow.locator('.venous-limits')).toContainText('límite por profundidad');
   await expect(portalRow.locator('.venous-limits')).toContainText('puerta 2 mm');
+  await expect(portalRow.locator('.venous-sampling')).toContainText(`paso ${((2 * portalEquipment.scale) / 128).toFixed(2)} cm/s por bin`);
+  await expect(portalRow.locator('.venous-sampling')).toContainText(`ventana ${((128 / portalEquipment.prf) * 1000).toFixed(1)} ms`);
+  await portalRow.locator('summary').click();
   await page.screenshot({ path: info.outputPath('venous-pw-depth-limited.png') });
+  await portalRow.locator('summary').click();
 
   await page.setViewportSize({ width: 390, height: 844 });
   expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
@@ -545,6 +553,7 @@ test('ventana ausente: aviso de adquisición, bucle estable y recuperación sin 
   await open.click({ force: true });
   const dialog = page.getByRole('dialog', { name: 'Comparación venosa' });
   await expect(dialog.locator('.venous-status')).toContainText('Ventana PW no disponible (intercostal)');
+  await expect(dialog.locator('.venous-sampling')).toHaveText(['Sin datos de muestreo', 'Sin datos de muestreo', 'Sin datos de muestreo']);
   await expect(dialog.locator('.venous-row figcaption span').first()).toHaveText('Sin adquisición');
   await expect(dialog.locator('.venous-spectrum').first()).toHaveAttribute('data-columns', '0');
   const frames = await page.evaluate(() => window.__vexusTest!.framesRendered());
@@ -599,6 +608,7 @@ test('ventana ausente: aviso de adquisición, bucle estable y recuperación sin 
   await page.screenshot({ path: info.outputPath('venous-hepatic-tilted.png') });
   await hepaticWindow.selectOption('standard');
   await expect(dialog.locator('.venous-status')).toContainText('Ventana PW no disponible (intercostal)');
+  await expect(dialog.locator('.venous-sampling')).toHaveText(['Sin datos de muestreo', 'Sin datos de muestreo', 'Sin datos de muestreo']);
   const mode = dialog.getByRole('combobox', { name: 'Tipo de visualización venosa' });
   await mode.selectOption('reference');
   await expect(dialog.locator('.venous-status')).not.toContainText('Ventana PW no disponible');

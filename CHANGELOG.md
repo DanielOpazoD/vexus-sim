@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- QA visual portal: preparación y captura con tiempos fisiológicos fijos, congelación síncrona y metadatos de estado/cuadro; sin prometer identidad de píxeles ante ruido de receptor (149).
+
 - Visor PW: detalle de FFT, paso de velocidad por bin y ventana temporal calculados desde la columna adquirida, con distinción explícita respecto de exactitud clínica (148).
 
 - Validación: barrido hepático de 56 poses en fase exhaustiva, pared física/presentación en suites independientes y cobertura representativa conservada; errores de cálculo no pasan como fallo geométrico esperado (147).

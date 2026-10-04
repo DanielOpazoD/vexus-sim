@@ -18,6 +18,7 @@ on:
       - 'src/anatomy/tissues.ts'
       - 'src/ultrasound/interfaceEcho.ts'
       - 'tools/fidelity/portalComparison.ts'
+      - 'tools/fidelity/comparisonState.ts'
       - '.github/workflows/portal-visual.yml'
 permissions:
   contents: read

@@ -5258,3 +5258,21 @@ umbral siguen siendo aproximaciones del modelo, no validación clínica.
 
 Nomenclatura de patrón monofásico diastólico: Yoshihisa et al., 2022,
 doi:10.3389/fcvm.2022.772466, figura 1 y métodos.
+
+## 132. Margen de distribución con un tercer banco GLSL reversible
+
+**Problema.** Tras el visor, laboratorio y corrección de marcas renales, quedaban
+solo 135 bytes bajo el límite de JS. Cada mejora pequeña arriesgaba el presupuesto.
+
+**Cambio.** Un tercer banco de 64 códigos usa el prefijo @!; se conservan los
+primeros 128 códigos. Los términos se seleccionan contando el texto estático
+después del renombrado y compactado reales del build. Contarlos antes favorecía
+identificadores que luego desaparecen y apenas recuperaba margen. El decodificador
+comparte la tabla de bancos; no crea una tabla nueva por cada palabra.
+
+**Verificación.** Las pruebas reconstruyen byte por byte todos los programas
+ensamblados del ecógrafo y cada export GLSL de Three, además de comprobar fronteras
+de bancos, interpolaciones, orden de coerción, escapes y marcadores inválidos.
+El shader enviado a WebGL es el mismo. El build medido baja de 1023,9 a 1018,9 KiB
+sin aumentar el límite de 1024 KiB. Es reducción de transporte, no una afirmación
+de aumento de FPS ni de fidelidad clínica.

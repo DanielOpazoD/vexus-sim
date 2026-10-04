@@ -12,6 +12,7 @@ import {
   VENOUS_SPECTRAL_SCALES,
   VENOUS_FORWARD_SIGN,
   type RenalSpectralWindow,
+  type HepaticSpectralWindow,
 } from '../../app/venousSpectral';
 import type { CaptureMark } from '../../doppler/spectralMeasure';
 import { captureProtocolVessel } from '../../doppler/capture';
@@ -60,6 +61,7 @@ export class VenousViewer {
   #spectralScales: number[] = [...VENOUS_SPECTRAL_SCALES];
   #wallFilters = [15, 15, 15];
   #renalWindow: RenalSpectralWindow = 'venous';
+  #hepaticWindow: HepaticSpectralWindow = 'standard';
   #canvases: HTMLCanvasElement[] = [];
   #paintKeys = ['', '', ''];
   #baselines = [0, 0, 0.1];
@@ -204,15 +206,25 @@ export class VenousViewer {
         this.#canvases.push(canvas);
         figure.insertBefore(canvas, limit);
         const controls = row(figure);
-        if (i === 2) {
+        if (i === 0 || i === 2) {
+          const hepatic = i === 0;
           const label = document.createElement('label');
-          label.textContent = 'Ventana renal ';
+          label.textContent = hepatic ? 'Ventana VSH ' : 'Ventana renal ';
           const select = document.createElement('select');
-          select.setAttribute('aria-label', 'Ventana renal PW');
-          select.add(new Option('Vena: medición', 'venous'));
-          select.add(new Option('Par arteria/vena: inspección', 'paired'));
+          select.setAttribute('aria-label', hepatic ? 'Ventana suprahepática PW' : 'Ventana renal PW');
+          const options = hepatic
+            ? [
+                ['standard', 'Habitual'],
+                ['tilted', 'Inclinación +2°'],
+              ]
+            : [
+                ['venous', 'Vena: medición'],
+                ['paired', 'Par arteria/vena: inspección'],
+              ];
+          for (const [value, text] of options) select.add(new Option(text, value));
           select.addEventListener('change', () => {
-            this.#renalWindow = select.value as RenalSpectralWindow;
+            if (hepatic) this.#hepaticWindow = select.value as HepaticSpectralWindow;
+            else this.#renalWindow = select.value as RenalSpectralWindow;
             this.#experimentPrimed = false;
             this.#spectral = null;
             this.#rebuildEquipment();
@@ -449,6 +461,7 @@ export class VenousViewer {
             this.#experiment?.patient ?? sim.patient,
             sim.bmode,
             this.#renalWindow,
+            this.#hepaticWindow,
           );
           this.#spectral.scales.splice(0, 3, ...this.#spectralScales);
           this.#spectral.wallFilters.splice(0, 3, ...this.#wallFilters);
@@ -462,7 +475,7 @@ export class VenousViewer {
       if (!this.#spectral) {
         this.#clearCanvases();
         this.#draw();
-        this.#status.textContent = `Ventana PW no disponible (${this.#unavailable?.window ?? 'desconocida'}). Cambia respiración o consulta Referencia Q/A. Se reintenta al avanzar el reloj.`;
+        this.#status.textContent = `Ventana PW no disponible (${this.#unavailable?.window ?? 'desconocida'}). Cambia ventana o respiración, o consulta Referencia Q/A. Se reintenta al avanzar el reloj.`;
         for (let i = 0; i < 3; i++) {
           this.#values[i].textContent = 'Sin adquisición';
           this.#limits[i].textContent = 'Sin medición PW';

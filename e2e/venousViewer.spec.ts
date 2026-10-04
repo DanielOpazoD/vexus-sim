@@ -545,7 +545,40 @@ test('ventana ausente: aviso de adquisición, bucle estable y recuperación sin 
       .then((v) => v.slice(0, 3)),
   ).toEqual(['Sin adquisición', 'Sin adquisición', 'Sin adquisición']);
   await dialog.getByRole('button', { name: 'Reanudar vista', exact: true }).click();
+  await dialog.evaluate((el) => {
+    el.scrollTop = 0;
+  });
   await page.screenshot({ path: info.outputPath('venous-window-unavailable.png') });
+  const samePatient = await page.evaluate(() => ({
+    t: window.__vexusTest!.sim().physiology.clock.t,
+    patient: JSON.stringify(window.__vexusTest!.sim().patient),
+  }));
+  const hepaticWindow = dialog.getByRole('combobox', { name: 'Ventana suprahepática PW' });
+  await hepaticWindow.selectOption('tilted');
+  await withinFrames(
+    page,
+    140,
+    'inclinación física recupera la puerta sin cambiar el paciente',
+    async () =>
+      (await dialog
+        .locator('.venous-spectrum')
+        .first()
+        .evaluate((el) => Number((el as HTMLCanvasElement).dataset.lastTime))) >=
+        samePatient.t - 0.15 || 'historial IQ incompleto',
+  );
+  await expect(dialog.locator('.venous-status')).not.toContainText('Ventana PW no disponible');
+  expect(
+    await page.evaluate(() => ({
+      t: window.__vexusTest!.sim().physiology.clock.t,
+      patient: JSON.stringify(window.__vexusTest!.sim().patient),
+    })),
+  ).toEqual(samePatient);
+  await dialog.evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  await page.screenshot({ path: info.outputPath('venous-hepatic-tilted.png') });
+  await hepaticWindow.selectOption('standard');
+  await expect(dialog.locator('.venous-status')).toContainText('Ventana PW no disponible (intercostal)');
   const mode = dialog.getByRole('combobox', { name: 'Tipo de visualización venosa' });
   await mode.selectOption('reference');
   await expect(dialog.locator('.venous-status')).not.toContainText('Ventana PW no disponible');

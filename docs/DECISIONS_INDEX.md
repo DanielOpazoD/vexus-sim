@@ -146,3 +146,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [140](DECISIONS.md#L5460) | La adquisición portal virtual evita el extremo de bifurcación | vigente |
 | [141](DECISIONS.md#L5481) | Una ventana virtual ausente no es una avería del bucle | vigente |
 | [142](DECISIONS.md#L5508) | Calentar fisiología antes de activar PW en la prueba de regla lateral | vigente |
+| [143](DECISIONS.md#L5529) | Alternativa de inclinación física para la ventana suprahepática virtual | vigente |

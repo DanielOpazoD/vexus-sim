@@ -91,12 +91,12 @@ describe('contrato del visor venoso comparativo', () => {
 
   it('no expone como implementados el pericardio, la compliance VD ni un control venoso global', () => {
     expect(VENOUS_CONTROL_CAPABILITIES).toEqual({
-      rightAtrialPressure: 'preset-only',
-      abdominalPressure: 'preset-only',
-      rvSystolicFunction: 'preset-only',
-      tricuspidRegurgitation: 'preset-only',
-      raCompliance: 'preset-only',
-      systemicVenousCompliance: 'not-exposed',
+      rightAtrialPressure: 'steady-state-experiment',
+      abdominalPressure: 'steady-state-experiment',
+      rvSystolicFunction: 'steady-state-experiment',
+      tricuspidRegurgitation: 'steady-state-experiment',
+      raCompliance: 'steady-state-experiment',
+      systemicVenousCompliance: 'reservoirs-only-experiment',
       rvCompliance: 'not-modeled',
       tamponade: 'not-modeled',
     });

@@ -37,7 +37,7 @@ export interface PatientState {
   rapMeanMmHg: number;
   /** Función sistólica longitudinal del VD, 0–1 (gobierna el descenso x). */
   rvFunction: number;
-  /** Distensibilidad relativa de la AD, 0–1 (1 normal; menor → ondas a/v mayores). */
+  /** Distensibilidad relativa de la AD, 0,1–2 (1 basal; menor → ondas a/v mayores). */
   raCompliance: number;
   /** Contracción auricular relativa, 0–1 (0 = sin onda a organizada). */
   atrialFunction: number;
@@ -48,6 +48,11 @@ export interface PatientState {
    * mililitros que añaden o quitan las intervenciones van aparte, en el lazo (`circulation.ts`).
    */
   stressedVolume: number;
+  /** Relative compliance of the splanchnic and lower-body venous reservoirs.
+   * Omitted = 1 (legacy cases). Not atrial, renal, hepatic or IVC compliance,
+   * and not a change of unstressed volume or a simulated venodilator dose.
+   */
+  venousReservoirCompliance?: number;
 
   // --- Presiones externas y respiración ---
   intraAbdominalPressureMmHg: number;
@@ -93,6 +98,7 @@ export function validatePatient(p: PatientState): void {
   inRange(p.atrialFunction, 0, 1, 'atrialFunction');
   inRange(p.tricuspidRegurgitation, 0, 1, 'tricuspidRegurgitation');
   inRange(p.stressedVolume, 0.4, 2, 'stressedVolume');
+  inRange(p.venousReservoirCompliance ?? 1, 0.5, 2, 'venousReservoirCompliance');
   inRange(p.intraAbdominalPressureMmHg, 0, 40, 'intraAbdominalPressureMmHg');
   inRange(p.peepCmH2O, 0, 30, 'peepCmH2O');
   inRange(p.respiratoryRateMin, 4, 50, 'respiratoryRateMin');

@@ -10,9 +10,10 @@ export const VENOUS_EXPERIMENT_FIELDS = [
   { key: 'rvFunction', label: 'Función sistólica VD (modelo)', unit: 'relativa', min: 0.2, max: 1, step: 0.05 },
   { key: 'tricuspidRegurgitation', label: 'Regurgitación tricuspídea (modelo)', unit: 'relativa', min: 0, max: 1, step: 0.05 },
   { key: 'raCompliance', label: 'Distensibilidad AD (modelo)', unit: 'relativa', min: 0.3, max: 2, step: 0.05 },
+  { key: 'venousReservoirCompliance', label: 'Compliance reservorios venosos', unit: 'relativa', min: 0.5, max: 2, step: 0.05 },
 ] as const;
 export type VenousExperimentKey = (typeof VENOUS_EXPERIMENT_FIELDS)[number]['key'];
-export type VenousExperimentParameters = Pick<PatientState, VenousExperimentKey>;
+export type VenousExperimentParameters = Required<Pick<PatientState, VenousExperimentKey>>;
 
 /** A bounded, explicit adult scenario. Never mutate a case singleton or the observed patient. */
 export function venousExperimentPatient(parameters: VenousExperimentParameters): PatientState {
@@ -41,6 +42,7 @@ export function congestionParameters(fraction: number): VenousExperimentParamete
     rvFunction: 0.85 - 0.55 * fraction,
     tricuspidRegurgitation: 0.05 + 0.65 * fraction,
     raCompliance: 1 - 0.45 * fraction,
+    venousReservoirCompliance: 1,
   };
 }
 

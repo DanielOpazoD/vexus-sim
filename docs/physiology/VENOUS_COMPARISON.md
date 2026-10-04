@@ -29,10 +29,11 @@ No interpola ni oculta huecos temporales. Un historial vacío es válido.
 
 El registro `VENOUS_CONTROL_CAPABILITIES` distingue:
 
-- `preset-only`: PAD, PIA, función sistólica VD, IT y compliance AD existen como
-  parámetros del motor, pero esta etapa no los expone como controles libres
-  clínicamente calibrados
-- `not-exposed`: compliance venosa sistémica; no equivale a la compliance hepática
+- `steady-state-experiment`: PAD, PIA, función sistólica VD, IT y compliance AD
+  se exploran como escenarios independientes; no son intervenciones continuas
+  clínicamente calibradas
+- `reservoirs-only-experiment`: compliance esplácnica/periférica relativa; no
+  equivale a compliance venosa global, hepática, renal, auricular o de VCI
 - `not-modeled`: compliance diastólica VD y taponamiento; faltan mecanismos propios
 
 No se añade ningún slider de taponamiento ni se lo imita elevando PAD. Los rangos

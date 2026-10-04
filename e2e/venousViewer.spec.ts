@@ -12,6 +12,7 @@ test('comparación venosa: reloj único, cursor, pausa, escala y cierre accesibl
   await open.click({ force: true });
   const dialog = page.getByRole('dialog', { name: 'Comparación venosa' });
   await expect(dialog).toBeVisible();
+  await dialog.getByRole('combobox', { name: 'Tipo de visualización venosa' }).selectOption('reference');
   await expect(dialog).toContainText('no espectro PW adquirido');
   await expect(dialog.locator('.venous-wave')).toHaveCount(5);
   await withinFrames(page, 20, 'curvas con datos', async () => {
@@ -97,5 +98,213 @@ test('comparación venosa: reloj único, cursor, pausa, escala y cierre accesibl
   await expect(page.locator('.venous-readout')).toHaveText('');
   await expect(page.locator('.venous-case')).toHaveText('');
   await expect(page.locator('.venous-wave').first()).toHaveAttribute('d', '');
+  expect(errors).toEqual([]);
+});
+
+test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala independiente', async ({ page }, info) => {
+  budget(120_000);
+  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  await page.locator('#debug-toggle').check({ force: true });
+  await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
+  await page.evaluate(() => window.__vexusTest!.advance(30));
+  await page.locator('#freeze').click({ force: true });
+  const before = await page.evaluate(() => ({ t: window.__vexusTest!.sim().physiology.clock.t, frozen: window.__vexusTest!.sim().frozen }));
+  await page.getByRole('button', { name: 'Abrir comparación venosa' }).click({ force: true });
+  const dialog = page.getByRole('dialog', { name: 'Comparación venosa' });
+  await expect(dialog.getByRole('combobox', { name: 'Tipo de visualización venosa' })).toHaveValue('pw');
+  const canvases = dialog.locator('.venous-spectrum');
+  await expect(canvases).toHaveCount(3);
+  await withinFrames(page, 140, 'reconstrucción de tres señales IQ', async () => {
+    const times = await canvases.evaluateAll((els) => els.map((el) => Number((el as HTMLCanvasElement).dataset.lastTime)));
+    return times.every((t) => before.t - t < 0.15) || `últimas columnas ${times.join(', ')}`;
+  });
+  expect(
+    await canvases.evaluateAll((els) =>
+      els.map((el) => {
+        const c = el as HTMLCanvasElement;
+        const d = c.getContext('2d')!.getImageData(20, 15, c.width - 120, c.height - 50).data;
+        const levels = new Set<number>();
+        let nonzero = 0;
+        for (let i = 0; i < d.length; i += 4) {
+          levels.add(d[i]);
+          if (d[i] > 12) nonzero++;
+        }
+        return levels.size > 30 && nonzero > 1000;
+      }),
+    ),
+  ).toEqual([true, true, true]);
+  await dialog.getByRole('checkbox', { name: 'Marcas A/S/D y máximos/mínimos' }).check();
+  await expect(canvases.first()).toHaveAttribute('data-marks', /S/);
+  await expect(canvases.first()).toHaveAttribute('data-marks', /D/);
+  await expect(canvases.first()).toHaveAttribute('data-marks', /A/);
+  await page.setViewportSize({ width: 1280, height: 1380 });
+  await withinFrames(
+    page,
+    20,
+    'resolución nativa del canvas',
+    async () =>
+      (await canvases
+        .first()
+        .evaluate((el) => Math.abs((el as HTMLCanvasElement).width - el.clientWidth * Math.min(2, devicePixelRatio)) < 2)) ||
+      'resolución antigua',
+  );
+  const alignedAxes = () =>
+    dialog.evaluate((el) => {
+      const image = el.querySelector('.venous-spectrum')!.getBoundingClientRect();
+      const traces = [...el.querySelectorAll('.venous-marker-row svg')].map((svg) => svg.getBoundingClientRect());
+      return traces.every((trace) => Math.abs(trace.x - image.x) < 1 && Math.abs(trace.width - (image.width - 58)) < 1);
+    });
+  expect(await alignedAxes()).toBe(true);
+  // Baseline is a reversible display transform. It must not reconstruct IQ or move the patient's clock.
+  const snapshot = () =>
+    canvases.evaluateAll((els) =>
+      els.map((el) => {
+        const c = el as HTMLCanvasElement;
+        // Repeated getImageData on the live canvas makes Chromium switch its renderer
+        // from GPU to CPU, changing antialiased text pixels during the assertion.
+        // Read a disposable software copy so the test does not mutate the renderer it verifies.
+        const copy = document.createElement('canvas');
+        copy.width = c.width;
+        copy.height = c.height;
+        const context = copy.getContext('2d', { willReadFrequently: true })!;
+        context.drawImage(c, 0, 0);
+        const data = context.getImageData(0, 0, copy.width, copy.height).data;
+        let hash = 2166136261;
+        for (const v of data) hash = Math.imul(hash ^ v, 16777619) >>> 0;
+        const yellowRows: number[] = [];
+        for (let y = 0; y < c.height; y++) {
+          const at = (y * c.width + 10) * 4;
+          if (data[at] - data[at + 2] > 50 && data[at + 1] - data[at + 2] > 45 && data[at] - data[at + 1] < 30) yellowRows.push(y);
+        }
+        return {
+          hash,
+          columns: c.dataset.columns,
+          lastTime: c.dataset.lastTime,
+          marks: c.dataset.marks,
+          zeroY: yellowRows.length ? yellowRows.reduce((a, b) => a + b, 0) / yellowRows.length : null,
+        };
+      }),
+    );
+  const original = await snapshot();
+  expect(original.every((r) => r.zeroY !== null)).toBe(true);
+  const baseline = dialog.getByRole('slider', { name: /^Línea de base/ }).first();
+  await baseline.focus();
+  for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowRight');
+  await expect(canvases.first()).toHaveAttribute('data-baseline', '0.2');
+  const shifted = await snapshot();
+  expect(shifted[0].zeroY!).toBeGreaterThan(original[0].zeroY! + 20);
+  expect(shifted[0].hash).not.toBe(original[0].hash);
+  expect(shifted.slice(1)).toEqual(original.slice(1));
+  for (const key of ['columns', 'lastTime', 'marks'] as const) expect(shifted[0][key]).toBe(original[0][key]);
+  for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowLeft');
+  await expect(canvases.first()).toHaveAttribute('data-baseline', '0');
+  // Image gain must change only pixels, retaining IQ history and source-derived marks.
+  const portalRow = dialog.locator('.venous-row').nth(1);
+  await portalRow.locator('summary').click();
+  const imageGain = portalRow.getByRole('combobox', { name: 'Ganancia de imagen (dB) Porta' });
+  const priorGain = await snapshot();
+  await imageGain.selectOption('0');
+  const lowGain = await snapshot();
+  expect(lowGain[1].hash).not.toBe(priorGain[1].hash);
+  expect(lowGain.map(({ hash: _h, ...rest }) => rest)).toEqual(priorGain.map(({ hash: _h, ...rest }) => rest));
+  await imageGain.selectOption('15');
+  expect(await snapshot()).toEqual(priorGain);
+  await portalRow.locator('summary').click();
+  expect(await snapshot()).toEqual(original);
+  await page.screenshot({ path: info.outputPath('venous-pw-desktop.png') });
+  await dialog.getByRole('button', { name: 'Pausar vista', exact: true }).click();
+  const cursor = dialog.getByRole('slider', { name: 'Cursor sincronizado' });
+  await cursor.focus();
+  await page.keyboard.press('ArrowLeft');
+  const rowScales = dialog.locator('[aria-label^="Escala PW"]');
+  await rowScales.nth(1).selectOption('80');
+  await expect(rowScales.nth(0)).toHaveValue('50');
+  await expect(rowScales.nth(1)).toHaveValue('80');
+  await expect(rowScales.nth(2)).toHaveValue('50');
+  await withinFrames(
+    page,
+    140,
+    'nueva escala sin imagen incompleta',
+    async () =>
+      (await canvases.evaluateAll((els) =>
+        els.every(
+          (el) =>
+            Number((el as HTMLElement).dataset.lastTime) >
+            Number(document.querySelector('.venous-readout')!.textContent.match(/^t ([\d.]+)/)![1]) - 0.15,
+        ),
+      )) || 'reconstrucción pendiente',
+  );
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+  await dialog.evaluate((el) => {
+    el.scrollTop = 0;
+  });
+  await withinFrames(
+    page,
+    20,
+    'texto espectral móvil a resolución nativa',
+    async () =>
+      (await canvases
+        .first()
+        .evaluate((el) => Math.abs((el as HTMLCanvasElement).width - el.clientWidth * Math.min(2, devicePixelRatio)) < 2)) ||
+      'resolución antigua',
+  );
+  expect(await alignedAxes()).toBe(true);
+  await page.screenshot({ path: info.outputPath('venous-pw-mobile.png') });
+  await dialog.locator('.venous-marker-row').first().scrollIntoViewIfNeeded();
+  await page.screenshot({ path: info.outputPath('venous-pw-mobile-ecg.png') });
+  await page.keyboard.press('Escape');
+  await expect(dialog).not.toBeVisible();
+  expect(
+    await page.evaluate(() => ({ t: window.__vexusTest!.sim().physiology.clock.t, frozen: window.__vexusTest!.sim().frozen })),
+  ).toEqual(before);
+  await expect(page.locator('.venous-spectrum').first()).toHaveAttribute('data-columns', '0');
+  expect(errors).toEqual([]);
+});
+
+test('PW comparado: calidad visible sin marcas y recuperación al ampliar escala renal', async ({ page }, info) => {
+  budget(240_000);
+  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  await page.selectOption('#case-select', 'severe-congestion');
+  await page
+    .locator('button', { hasText: /Apnea\s*esp/ })
+    .first()
+    .click();
+  await page.locator('#debug-toggle').check({ force: true });
+  await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
+  await page.evaluate(() => {
+    window.__vexusTest!.advance(30);
+    window.__vexusTest!.sim().render();
+  });
+  await page.locator('#freeze').click();
+  const before = await page.evaluate(() => window.__vexusTest!.sim().physiology.clock.t);
+  await page.getByRole('button', { name: 'Abrir comparación venosa' }).click({ force: true });
+  const dialog = page.getByRole('dialog', { name: 'Comparación venosa' });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole('checkbox', { name: 'Marcas A/S/D y máximos/mínimos' })).not.toBeChecked();
+  const renal = dialog.locator('.venous-row').nth(2);
+  const scale = renal.getByRole('combobox', { name: 'Escala PW Vena interlobar derecha', exact: true });
+  await scale.selectOption('20');
+  await withinFrames(
+    page,
+    150,
+    'aliasing renal comunicado sin anotaciones',
+    async () => (await renal.locator('.venous-limits').innerText()).includes('aliasing') || 'adquiriendo PW',
+  );
+  await expect(renal.locator('canvas')).toHaveAttribute('data-marks', '');
+  await scale.selectOption('80');
+  await withinFrames(page, 150, 'captura renal recuperada sin modificar fisiología', async () => {
+    const text = await renal.locator('.venous-limits').innerText();
+    return (!text.includes('no medible') && !text.includes('Esperando')) || 'reconstruyendo adquisición';
+  });
+  expect(await page.evaluate(() => window.__vexusTest!.sim().physiology.clock.t)).toBe(before);
+  await page.setViewportSize({ width: 1280, height: 1380 });
+  await withinFrames(
+    page,
+    100,
+    'historial completo antes de guardar evidencia visual',
+    async () => !(await dialog.locator('.venous-status').innerText()).includes('Reconstruyendo') || 'reconstruyendo señal IQ',
+  );
+  await page.screenshot({ path: info.outputPath('venous-pw-quality-recovered.png') });
   expect(errors).toEqual([]);
 });

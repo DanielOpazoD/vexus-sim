@@ -25,7 +25,7 @@ for (const u of [100, 300])
       flowBasis: [0, 0, 1],
       tissueVelocity: [0, 0, 0],
     });
-    const chain = new PwDopplerChain(anatomy, Number(process.argv[3] ?? 41));
+    const chain = new PwDopplerChain(anatomy, Number(process.argv[3] ?? 41), undefined, { maxColumns: 4096 });
     const gate = {
       center: [0, 0, 0] as [number, number, number],
       beamDir: [0, 0, -1] as [number, number, number],

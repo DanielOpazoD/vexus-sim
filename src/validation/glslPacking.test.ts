@@ -2,7 +2,7 @@ import { dirname, join } from 'node:path';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { GLSL_WORDS, GLSL_MARKERS, unpackGlsl } from '../core/glslPacking';
+import { GLSL_WORDS, GLSL_MARKERS, glslMarker, unpackGlsl } from '../core/glslPacking';
 import { glslPacking, packGlslTemplates } from '../../tools/build/glslPacking';
 import { threeGlslCompact } from '../../tools/build/threeGlslCompact';
 import { prepareGlslMangle, readSources, transformWithMangle } from '../../tools/build/glslMinify';
@@ -12,15 +12,19 @@ import { loadShaderGraph } from './support/shaderGraph';
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 describe('transporte GLSL sin pérdida', () => {
   it('decodifica el diccionario completo sin tocar texto normal', () => {
-    expect(unpackGlsl(GLSL_WORDS.map((_, i) => '@' + GLSL_MARKERS[i]).join(' '))).toBe(GLSL_WORDS.join(' '));
-    expect(unpackGlsl('x + 1.0; @0 @[ @z')).toBe('x + 1.0; @0 @[ @z');
+    expect(unpackGlsl(GLSL_WORDS.map((_, i) => glslMarker(i)).join(' '))).toBe(GLSL_WORDS.join(' '));
+    expect(unpackGlsl('x + 1.0; @! @[')).toBe('x + 1.0; @! @[');
+    expect(unpackGlsl('@z')).toBe('logdepthbuf_pars_vertex');
+    expect(new Set(GLSL_WORDS.map((_, i) => glslMarker(i))).size).toBe(GLSL_WORDS.length);
+    expect(unpackGlsl('@~! @~~A')).toBe('@~! @~~A');
+    for (const index of [-1, 128, NaN, 0.5]) expect(() => glslMarker(index)).toThrow(RangeError);
   });
   it('decodifica los diez tokens adicionales sin renombrar identificadores', () => {
     expect(unpackGlsl('@Q @R @S @T @U @V @W @X @Y @Z')).toBe(
       'tissue define texelFetch int gl_FragCoord referenceCartilage min ivec2 continue max',
     );
     expect(new Set(GLSL_WORDS).size).toBe(GLSL_WORDS.length);
-    expect(GLSL_WORDS.length).toBeLessThanOrEqual(GLSL_MARKERS.length);
+    expect(GLSL_WORDS.length).toBeLessThanOrEqual(2 * GLSL_MARKERS.length);
   });
   it('conserva interpolaciones con marcadores, coerción, orden y escapes', () => {
     const filler = 'float x = 1.0; return vec3(x);\n'.repeat(100);

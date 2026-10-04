@@ -5193,3 +5193,38 @@ conservando tres ejecuciones de cada prueba, un worker, los mismos timeouts y
 cero retries. No se elimina ninguna prueba ni se sustituye el veredicto completo
 protegido. Esto evita que adquisiciones independientes se acumulen en una sola
 secuencia larga al refinar el volumen PW.
+
+## 129. Comparación venosa con espectros PW observados y escalas independientes
+
+**Requisito.** El propietario pidió imagen de Doppler pulsado sincronizada con ECG, con marcas opcionales de ondas y escala por examen. La referencia Q/A de la decisión 120 permanece secundaria y no se presenta como imagen PW.
+
+**Implementación.** Tres ventanas anatómicas independientes comparten el historial fisiológico. Se reutiliza dispersores → IQ → filtro de pared → STFT; la imagen pinta potencia, sin ruido gráfico ni relleno de curvas. Contacto, compresión, haz, ángulo, profundidad y transmisión proceden del ecógrafo. Las puertas permanecen fijas y la respiración puede perder el vaso. Se presenta velocidad axial sin corrección angular. Las escalas iniciales 50/30/50 cm/s tienen PRF física independiente; son ajustes del modelo, no límites clínicos. La base se desplaza sin modificar IQ. Los ejes de velocidad ocupan una columna lateral y ECG/respiración reservan el mismo ancho para conservar alineación temporal. Las marcas proceden del medidor espectral y requieren calidad: A/S/D hepáticas, Vmáx/Vmín portales y S/D/mín interlobares. El trabajo por cuadro se acota y el cierre borra señal y datos; el paciente no se modifica al pausar la vista.
+
+**Verificación y límites.** Contratos de geometría en siete casos, determinismo por fragmentos, señal multibin, reloj y huecos; adquisición normal en apnea medible en los tres canales. E2E específico de imagen, marcas, escala independiente y móvil, además del flujo de referencia previo. Se preservan las limitaciones de fisiología y validación clínica. Detalle y fuentes en `physiology/VENOUS_SPECTRAL_VIEWER.md`.
+
+**Estado de revisión (4 de octubre).** El rechazo visual inicial motivó las correcciones de adquisición, escala y población de dispersores. La revisión personal de capturas nuevas, rotuladas como sano o congestión, permite evaluar la integración técnica con sus gates completos. La calibración clínica permanece abierta: una CI verde no certifica velocidades humanas ni termina la misión de fidelidad.
+
+**Refinamiento de presentación solicitado.** Puertas portal/interlobar de 6/4 mm,
+componente arterial y venoso renal de una misma adquisición, y base renal inicial
++0,1 (intervalo visible −40/+60 cm/s a Nyquist 50). Promedio de potencia lineal
+de tres columnas contiguas, sin mezclar huecos ni frecuencias de muestreo, más
+ganancia digital/rango dinámico configurables. No se altera la onda fisiológica
+ni se rellena una envolvente; el espectro fuente y sus mediciones se conservan.
+La prueba de navegador exige que el cambio de ganancia sea reversible sin
+reconstruir IQ ni modificar marcas. Los controles hemodinámicos y la progresión
+coordinada 0–3 solicitados son una etapa posterior; no se simulan con estos ajustes
+de presentación.
+
+**Recuperación sobre el motor revisado.** Se integran continuidad de captura,
+regla lateral, calibración renal revisada y refinamiento de población. El build
+inicial excedió el presupuesto (1025,4/1024 KiB). Se adelanta el segundo banco de
+64 códigos del transporte GLSL ya ensayado en el laboratorio pendiente: es una
+codificación reversible del texto, no cambio de shader ni aumento del límite.
+Sus pruebas exigen reconstrucción byte a byte, incluidos escapes e interpolación.
+Las capturas del producto recuperado se revisaron personalmente en escritorio y móvil. Se exige terminar la reconstrucción IQ antes de guardar evidencia. La calibración clínica sigue pendiente; el contraste arterial/venoso conserva ambos casos y la misma puerta, sin imponer un cociente fijo.
+
+La calidad se calcula y se muestra aunque las marcas A/S/D estén desactivadas.
+Se adelanta esta corrección del laboratorio pendiente: ocultar anotaciones no
+debe ocultar aliasing o incertidumbre de la adquisición. Una E2E fuerza Nyquist
+renal 20 cm/s en el grave y exige aviso; al ampliar a 80 exige recuperación sin
+modificar al paciente.

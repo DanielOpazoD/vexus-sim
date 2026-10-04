@@ -1264,3 +1264,22 @@ button.mode.active {
   grid-column: 2;
   grid-row: 2;
 }
+
+.venous-spectrum {
+  width: 100%;
+  height: 184px;
+  display: block;
+  background: #000;
+  margin-top: 6px;
+}
+.venous-spectrum[hidden] {
+  display: none;
+}
+.venous-viewer [hidden] {
+  display: none !important;
+}
+
+/* Match the PW image time axis; the remaining 58 px contain velocity labels. */
+.venous-pw-mode .venous-marker-row svg {
+  width: calc(100% - 58px);
+}

@@ -24,7 +24,7 @@ function acquire(u: number, prf: number, seed: number, angle = 0) {
     flowBasis: [0, 0, 1],
     tissueVelocity: [0, 0, 0],
   });
-  const chain = new PwDopplerChain(anatomy, seed);
+  const chain = new PwDopplerChain(anatomy, seed, undefined, { maxColumns: 2048 });
   const gate: GateGeometry = {
     center: [0, 0, 0],
     beamDir: [-Math.sin(angle), 0, -Math.cos(angle)],

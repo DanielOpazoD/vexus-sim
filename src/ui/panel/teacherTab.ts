@@ -285,9 +285,12 @@ export class TeacherTab {
     r.last.textContent = last ? `${interventionText(last)}, ${elapsedText(last, e.clock.t)}` : 'ninguna';
   }
 
+  renderVenous(): void {
+    this.#venous?.update();
+  }
+
   renderDebug(): void {
     if (!this.#ctx.store.get().debug || this.#ctx.store.get().tab !== 'docente') return;
-    this.#venous?.update();
     this.#renderLoop();
     const sim = this.#ctx.sim();
     const s = sim.sample;

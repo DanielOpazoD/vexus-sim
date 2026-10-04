@@ -111,8 +111,8 @@ cambian las mediciones sobre el espectro fuente. Se cachean arrays de potencia
 sin referencias encadenadas a columnas antiguas, para no retener todo el historial.
 
 Ganancia digital de imagen y rango dinámico se muestran en cada fila y pueden
-ajustarse en «Imagen». Los presets de presentación portal/renal usan +15 dB y
-25 dB de rango; la suprahepática conserva 0/45 dB. Son decisiones de visualización
+ajustarse en «Imagen». El preset portal usa +15 dB y 25 dB de rango; el renal, +9/30 dB para evitar
+saturación de la vena al reforzar la arteria. La suprahepática conserva 0/45 dB. Son decisiones de visualización
 explícitas, no una mejora de la relación señal/ruido física ni parámetros clínicos
 calibrados. Las pruebas exigen que variar la ganancia cambie píxeles sin reiniciar
 IQ, mover timestamps, modificar marcas o alterar la línea cero.

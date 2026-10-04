@@ -7,7 +7,7 @@ export interface SpectralPresentation {
 export const VENOUS_PW_PRESENTATION: readonly SpectralPresentation[] = [
   { gainDb: 0, dynamicRangeDb: 45 },
   { gainDb: 15, dynamicRangeDb: 25 },
-  { gainDb: 15, dynamicRangeDb: 25 },
+  { gainDb: 9, dynamicRangeDb: 30 },
 ];
 const cache = new WeakMap<SpectralColumn, { before: Float32Array | undefined; after: Float32Array | undefined; db: Float32Array }>();
 /** Short symmetric power averaging, not envelope filling. No frequency bins or timestamps move. */

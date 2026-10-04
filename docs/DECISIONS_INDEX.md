@@ -139,3 +139,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [133](DECISIONS.md#L5280) | Ventana renal pareada explícita, sin escalar la vena | vigente |
 | [134](DECISIONS.md#L5306) | Recalibrar el reparto E2E con tiempos actuales verificados | vigente |
 | [135](DECISIONS.md#L5328) | Mostrar velocidades observadas junto a las marcas PW | vigente |
+| [136](DECISIONS.md#L5355) | Compliance de reservorios con mecanismo volumen-presión | vigente |

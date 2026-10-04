@@ -58,12 +58,12 @@ export function venousComparisonTrace(samples: readonly PhysiologySample[]): Ven
 
 /** Capacidad del motor actual, no garantía de calibración de todo el dominio numérico. */
 export const VENOUS_CONTROL_CAPABILITIES = Object.freeze({
-  rightAtrialPressure: 'preset-only',
-  abdominalPressure: 'preset-only',
-  rvSystolicFunction: 'preset-only',
-  tricuspidRegurgitation: 'preset-only',
-  raCompliance: 'preset-only',
-  systemicVenousCompliance: 'not-exposed',
+  rightAtrialPressure: 'steady-state-experiment',
+  abdominalPressure: 'steady-state-experiment',
+  rvSystolicFunction: 'steady-state-experiment',
+  tricuspidRegurgitation: 'steady-state-experiment',
+  raCompliance: 'steady-state-experiment',
+  systemicVenousCompliance: 'reservoirs-only-experiment',
   rvCompliance: 'not-modeled',
   tamponade: 'not-modeled',
 } as const);

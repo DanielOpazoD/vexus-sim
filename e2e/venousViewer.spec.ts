@@ -384,6 +384,12 @@ test('laboratorio venoso: parámetros físicos, progresión calculada y aislamie
   });
   await page.screenshot({ path: info.outputPath('venous-laboratory-grade3.png') });
   await lab.locator('summary').click();
+  const compliance = lab.getByRole('slider', { name: 'Compliance reservorios venosos', exact: true });
+  await expect(compliance).toHaveValue('1');
+  await compliance.focus();
+  await page.keyboard.press('Home');
+  await expect(compliance).toHaveValue('0.5');
+  await expect(lab).toContainText('solo reservorios esplácnico/periférico');
   const abdominal = lab.getByRole('slider', { name: 'Presión intraabdominal', exact: true });
   await abdominal.focus();
   await page.keyboard.press('End');

@@ -70,11 +70,12 @@ export interface NetworkParams {
 
 export function defaultNetworkParams(p: PatientState): NetworkParams {
   const sv = p.stressedVolume;
+  const reservoirCompliance = p.venousReservoirCompliance ?? 1;
   return {
     pArtMean: 90,
     pArtPulse: 18,
     rArtSplanchnic: 4.8 / sv,
-    cSplanchnic: 40,
+    cSplanchnic: 40 * reservoirCompliance,
     v0Splanchnic: 0,
     rPortal: 0.2 * p.liver.sinusoidalResistance,
     rHepaticArtery: 16,
@@ -85,7 +86,7 @@ export function defaultNetworkParams(p: PatientState): NetworkParams {
     rHepaticVein: 0.06,
     lHepaticVein: 0.004,
     rArtLowerBody: 2.4 / sv,
-    cLowerBody: 60,
+    cLowerBody: 60 * reservoirCompliance,
     v0LowerBody: 0,
     rLowerBody: 0.08,
     ivcLengthMm: 150,

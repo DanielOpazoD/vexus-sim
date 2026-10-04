@@ -37,6 +37,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'no-thoracic-waterfall',
   'gate-lost-with-quiet-breathing',
   'thin-vessel-sample-volume-lag',
+  'venous-reservoir-compliance-scope',
   'severe-aliasing-not-detected',
   'portal-trace-tuned-on-chain',
   'af-capture-beat-sampling',

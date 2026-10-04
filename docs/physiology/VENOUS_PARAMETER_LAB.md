@@ -4,7 +4,8 @@
 
 El propietario pidió PAD, PIA, función sistólica VD, regurgitación tricuspídea,
 distensibilidad venosa/AD/VD y taponamiento, además de progresión gradual 0–3.
-Esta etapa expone cinco parámetros que el motor ya acepta al construir un caso.
+La etapa inicial expuso cinco parámetros del motor. La decisión 136 añade un
+sexto control de compliance de reservorios esplácnico/periférico.
 Cada ajuste crea un **nuevo escenario de equilibrio**, integra la misma red y
 adquiere IQ/PW desde sus vasos. No es todavía una intervención causal continua
 sobre el paciente previo. La interfaz lo declara antes de activar el laboratorio.
@@ -13,8 +14,9 @@ El paciente observado, su reloj, congelación y anatomía no se modifican. El ad
 experimental es sinusal y sin ciclo respiratorio, con hígado y anatomía normales.
 La pausa pertenece a la vista. Cerrar o cambiar el caso limpia el experimento.
 
-Taponamiento, distensibilidad sistémica venosa y distensibilidad diastólica VD se
-muestran como pendientes. No se simulan alterando el brillo ni multiplicando una
+Taponamiento y distensibilidad diastólica VD permanecen pendientes. La compliance
+venosa se expone solo para dos reservorios, no como modelo global validado; véase
+[alcance y verificación](VENOUS_RESERVOIR_COMPLIANCE.md). No se simulan alterando el brillo ni multiplicando una
 curva. La función VD actual usa la formulación simplificada existente: no equivale
 a un ventrículo con elastancia temporal ni a un modelo pericárdico validado.
 
@@ -71,7 +73,7 @@ interpolaciones y escapes. No cambia la física, el shader ejecutado ni los lím
 
 - Modificación causal continua que conserve volúmenes y estado entre ajustes
 - Función sistólica y diastólica VD con mecanismo hemodinámico más completo
-- Compliance sistémica y por compartimentos, distinta de rigidez parenquimatosa
+- Ampliar la compliance de reservorios a una ley regional no lineal y tono/volumen no estresado, distinta de rigidez parenquimatosa
 - Modelo pericárdico/taponamiento y su interacción con respiración y llenado
 - Validación de formas, velocidades, escalas y respuestas con expertos externos
 

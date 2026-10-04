@@ -553,3 +553,12 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   estadística; cambian las realizaciones de speckle. El máximo de cuatro veces
   acota el coste. No resuelve la limitación previa de reclasificación parcial,
   el vaso acompañante fuera de plano ni la separación arterial/venosa.
+
+## Compliance venosa experimental
+
+- `venous-reservoir-compliance-scope`: el factor relativo del laboratorio cambia
+  solo C esplácnica y del cuerpo inferior. No cambia tono/volumen no estresado,
+  AD, riñón, hígado o VCI. Cada ajuste es otro escenario a PAD basal especificada;
+  no representa una venodilatación que conserve el volumen previo. Dominio 0,5–2
+  y magnitudes basales son aproximaciones pendientes de calibración clínica.
+  [Mecanismo, referencias y ensayos](physiology/VENOUS_RESERVOIR_COMPLIANCE.md).

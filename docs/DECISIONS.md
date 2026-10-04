@@ -5351,3 +5351,29 @@ para valores válidos, invariancia frente a ganancia y retirada/recuperación an
 aliasing. La inspección pareada añade el caso de congestión grave, además del sano,
 con evidencia visual identificada. Las cifras son medianas
 robustas del estimador simulado, no intervalos clínicos normales ni validación humana.
+
+## 136. Compliance de reservorios con mecanismo volumen-presión
+
+**Alcance.** El propietario pidió distensibilidad del sistema venoso. Se expone
+por etapas un factor relativo para C esplácnica y del cuerpo inferior, no una
+compliance global ni una imitación de venodilatación. Las magnitudes permanecen
+NEEDS_CALIBRATION. La pendiente dV/dP se distingue del tono y del volumen no
+estresado, según la evidencia primaria discutida en
+`physiology/VENOUS_RESERVOIR_COMPLIANCE.md`.
+
+**Mecanismo.** El factor multiplica solo 40 y 60 mL/mmHg de la red existente.
+No cambia caudales por una regla, perfiles, ondas auriculares, C de órganos o
+VCI. El lazo de volumen ya consume esos coeficientes. Campo omitido equivale
+exactamente a 1; la progresión 0–3 conserva 1. El dominio 0,5–2 es experimental.
+
+**Interpretación.** El laboratorio reconstruye un estado independiente a PAD basal
+fija; cambiar C cambia su volumen inicial. No es una transición clínica aguda.
+Las diferencias de espectro en reposo pueden ser pequeñas y no se amplifican.
+Se corrige también el registro de capacidades: los cinco controles existentes
+son escenarios experimentales, y el sexto es parcial por reservorios.
+
+**Verificación.** Ley ΔP = ΔV/C, contabilidad de volumen, parámetros no afectados,
+trayectorias basales idénticas en todos los casos, dominios y finitud. A igual
+bolo computacional, menor C produce mayor incremento de PAD del lazo en sano y
+congestión, sin imponer una magnitud clínica. El navegador verifica control,
+combinación con PIA alta, aislamiento del paciente y diseño de controles.

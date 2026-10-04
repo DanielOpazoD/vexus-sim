@@ -5202,7 +5202,7 @@ secuencia larga al refinar el volumen PW.
 
 **Verificación y límites.** Contratos de geometría en siete casos, determinismo por fragmentos, señal multibin, reloj y huecos; adquisición normal en apnea medible en los tres canales. E2E específico de imagen, marcas, escala independiente y móvil, además del flujo de referencia previo. Se preservan las limitaciones de fisiología y validación clínica. Detalle y fuentes en `physiology/VENOUS_SPECTRAL_VIEWER.md`.
 
-**Estado.** Borrador clínico retenido tras el rechazo visual del propietario. Pasar pruebas técnicas no autoriza anunciar validación clínica ni fusionar esta etapa.
+**Estado de revisión (4 de octubre).** El rechazo visual inicial motivó las correcciones de adquisición, escala y población de dispersores. La revisión personal de capturas nuevas, rotuladas como sano o congestión, permite evaluar la integración técnica con sus gates completos. La calibración clínica permanece abierta: una CI verde no certifica velocidades humanas ni termina la misión de fidelidad.
 
 **Refinamiento de presentación solicitado.** Puertas portal/interlobar de 6/4 mm,
 componente arterial y venoso renal de una misma adquisición, y base renal inicial
@@ -5221,7 +5221,7 @@ inicial excedió el presupuesto (1025,4/1024 KiB). Se adelanta el segundo banco 
 64 códigos del transporte GLSL ya ensayado en el laboratorio pendiente: es una
 codificación reversible del texto, no cambio de shader ni aumento del límite.
 Sus pruebas exigen reconstrucción byte a byte, incluidos escapes e interpolación.
-La validación clínica y las nuevas capturas siguen pendientes sobre este árbol.
+Las capturas del producto recuperado se revisaron personalmente en escritorio y móvil. Se exige terminar la reconstrucción IQ antes de guardar evidencia. La calibración clínica sigue pendiente; el contraste arterial/venoso conserva ambos casos y la misma puerta, sin imponer un cociente fijo.
 
 La calidad se calcula y se muestra aunque las marcas A/S/D estén desactivadas.
 Se adelanta esta corrección del laboratorio pendiente: ocultar anotaciones no

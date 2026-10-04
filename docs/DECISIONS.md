@@ -5504,3 +5504,24 @@ PW incluso al mover el cursor pausado, continuidad del bucle, cambio a referenci
 corregir la respiración, reloj congelado conservado, cierre y foco recuperado.
 Se reutiliza la limpieza de canvases y el manejador de cambio de equipo para
 evitar estados y mediciones anteriores al cambiar de ventana renal.
+
+## 142. Calentar fisiología antes de activar PW en la prueba de regla lateral
+
+**Evidencia.** En los ocho artefactos verificados del CI del PR181, la prueba de
+regla lateral consumió 246 s; la duración varía con el corredor. Su preparación
+adquiría 30 s de IQ, luego otros 8 s, antes de inspeccionar regla, línea de base,
+inversión, tamaños y ECG. Los primeros 30 s no eran una aserción de estabilidad.
+
+**Cambio de prueba.** Esos 30 s de estabilización pasan antes de activar el
+observador PW. Se comprueba que el reloj avanza y que PW está apagado y no genera
+columnas. Después se conservan la colocación real de puerta, los 8 s de adquisición,
+la cobertura de al menos 6 s recientes de columnas IQ finitas,
+las dos anchuras de viewport, ambas inversiones, segunda adquisición de 8 s,
+capturas y cierre del modo. No cambia ninguna aserción previa, plazo, reintento,
+modelo o imagen del producto. Se elimina trabajo de IQ de preparación, no la
+estabilización fisiológica ni la adquisición observada.
+
+**Límite de interpretación.** Esto no garantiza un porcentaje fijo de reducción
+del CI completo: hay otras pruebas y variabilidad de corredores. La prueba de
+geometría no constituye una validación de operación PW sostenida durante 38 s.
+Los ensayos de cadena, estabilidad y fisiología siguen separados e intactos.

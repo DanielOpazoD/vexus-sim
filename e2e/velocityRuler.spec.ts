@@ -5,7 +5,18 @@ test('escala PW lateral: cero, inversión, tamaño y ECG alineados', async ({ pa
   budget(180_000);
   await page.setViewportSize({ width: 1440, height: 1000 });
   const errors = await bootWithoutErrors(page);
+  await page
+    .locator('button', { hasText: /Apnea\s*esp/ })
+    .first()
+    .click();
   await page.locator('#mode-pw').click();
+  expect(
+    await page.evaluate(() => {
+      const t = window.__vexusTest!;
+      t.goToStartPoint('renal');
+      return t.placeGate(['interlobarVein1', 'interlobarVein2', 'interlobarVein3']);
+    }),
+  ).toBe(true);
   await page.getByRole('tab', { name: 'Doppler', exact: true }).click();
   await page
     .getByRole('slider', { name: 'Escala', exact: true })
@@ -14,11 +25,20 @@ test('escala PW lateral: cero, inversión, tamaño y ECG alineados', async ({ pa
       el.value = '40';
       el.dispatchEvent(new Event('input', { bubbles: true }));
     });
+  await page.getByRole('button', { name: 'Avanzado', exact: true }).click();
   await page.getByRole('slider', { name: 'Línea de base', exact: true }).evaluate((el: HTMLInputElement) => {
     el.value = '0.25';
     el.dispatchEvent(new Event('input', { bubbles: true }));
   });
   await expect(page.locator('#pw-scale')).toHaveAttribute('aria-label', /-20\.0 a 60\.0/);
+  await page.evaluate(() => {
+    window.__vexusTest!.advance(30);
+    window.__vexusTest!.advance(8);
+    window.__vexusTest!.sim().render();
+  });
+  await page.locator('#freeze').click();
+  await expect(page.locator('#freeze')).toHaveAttribute('aria-pressed', 'true');
+  await page.screenshot({ path: testInfo.outputPath('venous-pw-lateral-scale-renal.png') });
   async function geometry() {
     return page.evaluate(() => {
       const box = (id: string) => {

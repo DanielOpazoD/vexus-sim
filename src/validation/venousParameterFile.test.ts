@@ -9,11 +9,12 @@ describe('archivo versionado de parámetros venosos', () => {
     const text = encodeVenousParameters(p);
     expect(decodeVenousParameters(text)).toEqual(p);
     expect(p).toEqual(before);
-    expect(Object.keys(JSON.parse(text))).toEqual(['kind', 'version', 'parameters']);
-    expect(Object.keys(JSON.parse(text).parameters)).toEqual(VENOUS_EXPERIMENT_FIELDS.map((f) => f.key));
+    const parsed = JSON.parse(text) as { parameters: Record<string, unknown> };
+    expect(Object.keys(parsed)).toEqual(['kind', 'version', 'parameters']);
+    expect(Object.keys(parsed.parameters)).toEqual(VENOUS_EXPERIMENT_FIELDS.map((f) => f.key));
   });
   it('rechaza formatos, versiones y claves desconocidas, incluso __proto__', () => {
-    const base = JSON.parse(encodeVenousParameters(congestionParameters(0)));
+    const base = { kind: 'vexus-venous-parameters', version: 1, parameters: congestionParameters(0) };
     for (const data of [
       null,
       [],

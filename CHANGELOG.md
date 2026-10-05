@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Tests: errores al preparar las simulaciones ya no pueden confundirse con dos limitaciones esperadas; se conservan controles fisiológicos y se elimina cálculo duplicado (162).
+
 - PW: el equipo y el receptor declaran el mismo corte efectivo del filtro de pared a PRF baja, preservando su respuesta física existente (161).
 
 - CI: separa adquisición y presentación del visor en la validación rápida, manteniendo pruebas, límites y tres repeticiones por caso (160).

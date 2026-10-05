@@ -6163,3 +6163,22 @@ https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.butter.html
 conservación del estado; tres pares frecuencia/PRF contra la fórmula bilineal
 analítica y un tono IQ de 25 Hz tras descartar el transitorio. No se atribuye
 a esta prueba validación clínica ni equivalencia con un fabricante.
+
+## 162. Un fallo esperado no debe esconder una avería de preparación
+
+**Defecto.** Dos pruebas `it.fails` construían su simulación dentro del cuerpo
+que debía fallar por una limitación conocida. Una excepción nueva en esa
+preparación podía contarse incorrectamente como el fallo esperado.
+
+**Cambio.** Preparar la simulación en `beforeAll`, fuera del alcance de
+`it.fails`. Comprobar positivamente que el contraejemplo fisiológico genera
+751 muestras finitas (estado inicial más 750 pasos a 250 Hz), de 0 a 3 s.
+Compartir las tres escenas del modelo antiguo entre su control positivo y
+su regresión esperada, sin repetir su cálculo.
+
+**Invariantes.** Se conservan pacientes, semillas, ecuaciones, umbrales y
+aserciones físicas. Los doce fallos esperados siguen siendo deudas abiertas;
+esta mejora no resuelve la aurícula prescrita ni los defectos anatómicos.
+La cobertura debe detectar una excepción inesperada de preparación como fallo
+real. El ahorro es la eliminación de cálculos duplicados, sin prometer una
+reducción global de tiempo no medida.

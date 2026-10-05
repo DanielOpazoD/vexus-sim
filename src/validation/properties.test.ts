@@ -1,6 +1,6 @@
 // @tier slow
 import fc from 'fast-check';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
 import { PhysiologyEngine, nonFiniteFields } from '../physiology/engine';
@@ -58,6 +58,28 @@ function run(p: PatientState, seconds: number) {
 const mean = (xs: number[]) => xs.reduce((a, b) => a + b, 0) / xs.length;
 
 describe('Propiedades del motor fisiológico (fast-check)', () => {
+  let rigidSamples: ReturnType<typeof run>;
+  beforeAll(() => {
+    const p = {
+      ...clonePatient(NORMAL_ADULT),
+      heartRateBpm: 40,
+      rapMeanMmHg: 0,
+      rvFunction: 0.55,
+      raCompliance: 0.3,
+      stressedVolume: 0.6,
+      respiratoryRateMin: 8,
+      liver: { sinusoidalResistance: 0.5, compliance: 1, sizeFactor: 0.9 },
+    };
+    rigidSamples = run(p, 3);
+  });
+
+  it('el contraejemplo rígido produce todo el registro finito antes de evaluar su límite conocido', () => {
+    expect(rigidSamples).toHaveLength(751);
+    expect(rigidSamples[0].t).toBe(0);
+    expect(rigidSamples.at(-1)!.t).toBeCloseTo(3, 9);
+    for (const sample of rigidSamples) expect(nonFiniteFields(sample)).toEqual([]);
+  });
+
   it('cualquier paciente válido da un estado finito y físicamente acotado durante 3 s', () => {
     fc.assert(
       fc.property(patientArb, (p) => {
@@ -114,16 +136,6 @@ describe('Propiedades del motor fisiológico (fast-check)', () => {
   });
 
   it.fails('contraejemplo conocido: aurícula muy rígida con PAD ≈ 0 da velocidades > 2 m/s', () => {
-    const p = {
-      ...clonePatient(NORMAL_ADULT),
-      heartRateBpm: 40,
-      rapMeanMmHg: 0,
-      rvFunction: 0.55,
-      raCompliance: 0.3,
-      stressedVolume: 0.6,
-      respiratoryRateMin: 8,
-      liver: { sinusoidalResistance: 0.5, compliance: 1, sizeFactor: 0.9 },
-    };
-    for (const s of run(p, 3)) for (const v of Object.values(s.velocities)) expect(Math.abs(v)).toBeLessThan(2000);
+    for (const s of rigidSamples) for (const v of Object.values(s.velocities)) expect(Math.abs(v)).toBeLessThan(2000);
   });
 });

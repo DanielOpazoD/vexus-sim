@@ -6182,3 +6182,24 @@ esta mejora no resuelve la aurícula prescrita ni los defectos anatómicos.
 La cobertura debe detectar una excepción inesperada de preparación como fallo
 real. El ahorro es la eliminación de cálculos duplicados, sin prometer una
 reducción global de tiempo no medida.
+
+## 163. Retener la ventana de captura PW también a PRF alta
+
+**Defecto.** Un límite fijo de 2048 columnas con salto de 16 muestras conserva
+solo unos 5,46 s a PRF de 6000 Hz y 2,73 s a 12000 Hz. La captura consultaba
+siete segundos, pero parte de esa señal ya había sido descartada.
+
+**Cambio.** Compartir la duración de siete segundos entre captura y retención.
+El límite implícito crece con PRF/salto, conservando un mínimo de 2048 columnas
+y un máximo de 8192. Los límites explícitos del constructor siguen mandando.
+No se interpola, remuestrea ni modifica la FFT, el reloj o la potencia.
+
+**Dominio y coste.** Con FFT 128 y salto 16, cubre siete segundos en el dominio
+del equipo hasta PRF de 12000 Hz. El máximo ocupa 4 MiB solo en vectores de
+potencia, más objetos y otras estructuras: no es una cota del heap completo.
+Fuera de ese dominio o con un límite explícito menor puede conservar menos.
+Las escalas habituales mantienen su historial anterior de 2048 columnas.
+
+**Verificación.** A PRF de 6000 y 12000 Hz, comprobar duración mínima y los
+últimos espectros contra un historial amplio; a 2600 Hz, igualdad del historial
+anterior y respeto de límite explícito; a 24000 Hz, respeto del techo de memoria.

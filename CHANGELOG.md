@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Visor PW: una ventana ausente afecta solo a su territorio; las otras señales continúan y conservan su adquisición al recuperar o ajustar la fila afectada (152).
+
 - Laboratorio venoso: FC sinusal de 50–120 lpm alimenta el reloj y motor originales; ECG/PW comparten eventos y la progresión conserva la frecuencia basal (151).
 
 - Visor PW: inversión de pantalla independiente por territorio, con marcas, valores y dirección coherentes; conserva adquisición, calidad y fisiología (150).

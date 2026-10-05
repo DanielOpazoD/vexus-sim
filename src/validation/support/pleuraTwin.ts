@@ -50,6 +50,7 @@ import {
 import { RECEIVER_NOISE } from '../../ultrasound/receiver';
 import {
   TISSUE_SALT_STEP,
+  SLOW_HETEROGENEITY_TISSUES,
   anchoredClumpGain,
   anchoredSliceField,
   densityGain,
@@ -219,7 +220,7 @@ export function simulatePleura(o: PleuraTwinOpts): PleuraTwinOut {
     const m = embed(x, y);
     const s = salt + t * TISSUE_SALT_STEP;
     let g = back;
-    if (t === Tissue.Liver || t === Tissue.Muscle) g *= 10 ** (heterogeneityDb(m, salt) / 20);
+    if (SLOW_HETEROGENEITY_TISSUES.includes(t)) g *= 10 ** (heterogeneityDb(m, salt) / 20);
     const clump = TISSUES[t].speckleClump ?? 0;
     if (clump > 0) g *= anchoredClumpGain(m, se, clump, salt, t * TISSUE_SALT_STEP, st);
     // densidad de dispersores del plano central (decisión 89): 1 fuera del hígado

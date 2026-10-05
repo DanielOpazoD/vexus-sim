@@ -156,3 +156,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [150](DECISIONS.md#L5779) | Inversión de presentación PW sin invertir el flujo del paciente | vigente |
 | [151](DECISIONS.md#L5843) | Frecuencia sinusal experimental desde el reloj cardíaco real | vigente |
 | [152](DECISIONS.md#L5873) | Ventanas PW independientes con fallo visible por territorio | vigente |
+| [153](DECISIONS.md#L5906) | Parénquima hepático basal sin manchas lentas añadidas | vigente |

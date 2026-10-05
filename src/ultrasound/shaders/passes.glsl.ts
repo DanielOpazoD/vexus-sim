@@ -22,7 +22,7 @@ import {
   PLEURA_STEER_GUESS_MM,
   PLEURA_STEER_ITERATIONS,
 } from '../pleura';
-import { SPECKLE_LOOK_GLSL, SPECKLE_TISSUE_GLSL } from '../speckleField';
+import { SPECKLE_LOOK_GLSL, SPECKLE_TISSUE_GLSL, SLOW_HETEROGENEITY_GLSL_CONDITION } from '../speckleField';
 import { WALL_FACE_ECHO_GLSL, WALL_TEXTURE_GLSL } from '../wallTexture';
 import { REST_TEXTURE_GLSL } from '../restTexture';
 import { PORTAL_TRIADS_GLSL, TRIAD_QUERY_BEAM } from '../portalTriads';
@@ -531,7 +531,7 @@ float lookK2;
 vec2 fieldForPhBase(vec3 m, float se, int tissue, float ph0, vec3 g, vec3 b0, Warp w) {
   vec2 f = speckleFieldPh(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP, ph0, g, strongScatter(tissue));
   float het = 1.0;
-  if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX || tissue == T_PSOAS || tissue == T_QUADRATUS) het = hetGain(m);
+  if (${SLOW_HETEROGENEITY_GLSL_CONDITION}) het = hetGain(m);
   // textura de la pared (decisión 62) con la dirección de esta mirada: b_k = b_0 + g/k2 (g = k2·(b_k − b_0))
   if (tissue == T_FAT || tissue == T_MUSCLE) het *= wallTexture(m, tissue, normalize(b0 + g / lookK2), w);
   // el resto del abdomen: asas y grasa mesentérica (decisión 74, restTexture.ts)
@@ -811,7 +811,7 @@ vec2 fieldForBase(vec3 m, float se, int tissue, vec3 dir, Warp w) {
   vec2 f = speckleField(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP, strongScatter(tissue));
   // Heterogeneidad lenta y continua del parénquima (desviación 1,15 dB a ~1,6 ciclos/cm) [EXTRAPOLACIÓN PROPIA]
   float het = 1.0;
-  if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX || tissue == T_PSOAS || tissue == T_QUADRATUS) het = hetGain(m);
+  if (${SLOW_HETEROGENEITY_GLSL_CONDITION}) het = hetGain(m);
   // Textura de la pared (decisión 62, wallTexture.ts): septos de la grasa y estrías del músculo, anclados al
   // material; dir, la dirección del haz de la mirada 0 en el punto del mundo (la radial desde el centro de
   // curvatura) y w, la jacobiana de la compresión de la sonda (decisión 63) que lleva la lámina al mundo

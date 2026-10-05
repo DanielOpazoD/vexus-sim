@@ -5902,3 +5902,40 @@ respiración, y añade conservación de imagen, columnas, tiempo, PRF y puerta d
 las dos filas no afectadas. Las capturas deben mostrar esa adquisición parcial
 real antes de integrar. Disponer de señal no equivale a que supere su evaluación
 de calidad ni a validación clínica independiente.
+
+## 153. Parénquima hepático basal sin manchas lentas añadidas
+
+**Problema y alcance.** La decisión 106 redujo la modulación de densidad de 3 mm,
+pero conservó otro campo multiplicativo de 6,25 mm y desviación aproximada de
+1,15 dB, compartido con músculo, intestino y corteza renal. Ese segundo campo
+no representa una estructura hepática concreta ni una patología declarada. El
+objetivo solicitado sigue siendo un hígado basal normal con moteado fino y
+arquitectura portal, sin manchas añadidas para aparentar detalle.
+
+**Cambio de modelo.** Retirar únicamente al tejido hepático de la selección de
+heterogeneidad lenta. La población compleja de dispersores, PSF, composición,
+tríadas portales, dispersores fuertes, modulación fina de densidad, atenuación,
+interfaces y retrodispersión basal permanecen. No se aplica filtro de suavizado
+sobre la imagen, no se modifica ganancia para igualar una fotografía y no se
+retoca el framebuffer. Una tabla compartida genera la condición GLSL de mirada
+central/dirigida y la selección de los gemelos CPU.
+
+**Evidencia y límites.** Es una elección explícita de simplificación del medio
+basal, no un umbral de heterogeneidad humana medido. Se revisaron las imágenes
+aportadas como referencia visual y las capturas reales del simulador; difieren
+en equipo, ventana y ajustes, por lo que no son un patrón cuantitativo de brillo.
+No se copian ni publican esas imágenes clínicas. La respuesta angular de la
+pared portal de la decisión 106 se conserva (Wachsberg et al., 1997,
+[PMID 9401994](https://pubmed.ncbi.nlm.nih.gov/9401994/)); ese estudio no se usa
+para asignar un valor de heterogeneidad al parénquima. El cambio se aplica al
+tejido hepático procedural común: no añade representación B-mode de fibrosis,
+esteatosis o nódulos al caso hemodinámico de cirrosis.
+
+**Verificación.** Contratos de selección de tejidos y paridad de las dos rutas
+GLSL; conservación de microestructura portal; tests existentes de moteado,
+contraste hepatorrenal, pared y contorno sin relajar sus criterios. Los gemelos
+CPU consumen la misma selección, no una imagen ajustada a la expectativa.
+La comparación GPU antes/después debe usar el estado fijado de la decisión 149,
+ambos perfiles corporales y las cuatro ventanas; revisar capturas y métricas
+antes de integrar. No se presupone mejor fidelidad clínica por pasar tests ni
+se promete aumento de FPS sin medición independiente.

@@ -50,6 +50,7 @@ import {
 import { TRANSIENT_AMPLITUDE, TRANSIENT_DECAY_MM, TRANSIENT_SKIP_MM } from '../../ultrasound/receiver';
 import {
   TISSUE_SALT_STEP,
+  SLOW_HETEROGENEITY_TISSUES,
   anchoredClumpGain,
   densityGain,
   heterogeneityDb,
@@ -67,14 +68,7 @@ export type WallModel = 'wall' | 'base';
 /** Retrodispersión de la pared antes de la decisión 62. */
 const BASE_BACK: Partial<Record<Tissue, number>> = { [Tissue.Fat]: 0.55, [Tissue.Muscle]: 0.5, [Tissue.Cartilage]: 0.6 };
 /** Tejidos con la heterogeneidad lenta del parénquima (`hetGain` de `fieldFor`). */
-const HET_TISSUES: ReadonlySet<Tissue> = new Set([
-  Tissue.Liver,
-  Tissue.Muscle,
-  Tissue.Bowel,
-  Tissue.RenalCortex,
-  Tissue.Psoas,
-  Tissue.QuadratusLumborum,
-]);
+const HET_TISSUES: ReadonlySet<Tissue> = new Set(SLOW_HETEROGENEITY_TISSUES);
 /** Muestras gruesas de la pasada A (`COARSE_DEPTH` del renderizador). */
 const COARSE = 160;
 /** Frecuencia B efectiva del convexo (MHz, `CONVEX_C35_PROFILE`). */

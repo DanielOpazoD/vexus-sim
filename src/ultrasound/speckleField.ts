@@ -387,6 +387,17 @@ export const HET_CELL_MM = 6.25;
  * antiguos cubos uniformes de ±2 dB (1,15 dB), ahora continua.
  */
 export const HET_SCALE_DB = 6.24;
+/** Basal liver has stationary scattering plus its portal microstructure, without an extra 6.25 mm mottling field.
+ * This is a model choice for normal parenchyma, not a measured human heterogeneity threshold.
+ */
+export const SLOW_HETEROGENEITY_TISSUES: readonly Tissue[] = [
+  Tissue.Muscle,
+  Tissue.Bowel,
+  Tissue.RenalCortex,
+  Tissue.Psoas,
+  Tissue.QuadratusLumborum,
+];
+export const SLOW_HETEROGENEITY_GLSL_CONDITION = SLOW_HETEROGENEITY_TISSUES.map((t) => `tissue == ${TISSUE_GLSL_NAME[t]}`).join(' || ');
 /** Célula de los grumos de dispersores (mm): ~ la PSF lateral, para que se vean como ecos sueltos. */
 export const CLUMP_CELL_MM = 1.2;
 

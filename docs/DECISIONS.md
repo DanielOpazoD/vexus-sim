@@ -6114,3 +6114,29 @@ orden, mediana y magnitud a menos de seis puntos del generador, incluyendo la
 invariancia por inversión de pantalla. Pruebas de umbrales inclusivos, rango,
 no mutación y datos ausentes/no finitos. La E2E del visor exige el texto observado
 y mantiene sus comprobaciones de píxeles al cambiar baseline, inversión y barrido.
+
+## 160. Separar adquisición y presentación en la validación rápida
+
+**Deuda.** El archivo del visor acumula siete pruebas costosas en un solo
+trabajador. Una ejecución anterior fue cancelada cerca del límite de quince
+minutos; no se atribuye una causa definitiva a esa cancelación.
+
+**Cambio.** Mover tres pruebas de adquisición a un archivo propio y conservar
+cuatro de presentación. Sus cuerpos y aserciones permanecen idénticos. La matriz
+rápida pasa de nueve a doce trabajos: cada caso mantiene tres ejecuciones, un
+trabajador, cero reintentos y el mismo límite de tiempo. Los artefactos incluyen
+el intento de workflow para no confundir la evidencia de una repetición.
+
+**Coste y límites.** Se busca reducir la cola del archivo más largo, no ahorrar
+minutos facturados: hay más preparaciones independientes. Los tiempos de los
+casos movidos usan la reserva conservadora del repartidor principal hasta contar
+con nuevas mediciones; no se inventan duraciones.
+
+**Verificación.** Reconstrucción exacta del archivo anterior concatenando los
+cuerpos separados; colección de cuatro y tres casos y comprobación de que el
+reparto principal conserva las 73 pruebas, una sola vez cada una. La CI real
+sigue siendo necesaria antes de fusionar.
+
+También se conservan las capturas `pw-*.png` en los artefactos visuales: la
+regresión de escala las generaba, pero el filtro anterior solo retenía
+`venous-*.png`. No se da por revisada una imagen que no fue recuperada.

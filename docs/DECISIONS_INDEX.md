@@ -165,3 +165,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [159](DECISIONS.md#L6092) | Mostrar la variación portal de los latidos realmente medidos | vigente |
 | [160](DECISIONS.md#L6118) | Separar adquisición y presentación en la validación rápida | vigente |
 | [161](DECISIONS.md#L6144) | Declarar el corte efectivo del filtro de pared PW | vigente |
+| [162](DECISIONS.md#L6167) | Un fallo esperado no debe esconder una avería de preparación | vigente |

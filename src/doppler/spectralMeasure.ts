@@ -103,6 +103,8 @@ export interface ObservedPortal {
   vMax: number;
   vMin: number;
   pulsatilityFraction: number;
+  /** Observed PF of each measured beat, in measuredBeats order; not a confidence interval. */
+  pulsatilityByBeat: number[];
   beats: number;
   /** Latidos medidos (con traza suficiente): los que marca el trazado sobre el espectro. */
   measuredBeats: Beat[];
@@ -536,6 +538,7 @@ export function measureObservedPortal(columns: readonly SpectralColumn[], beats:
     vMax: median(maxs),
     vMin: median(mins),
     pulsatilityFraction: median(pfs),
+    pulsatilityByBeat: pfs,
     beats: maxs.length,
     measuredBeats: measured,
     marks,

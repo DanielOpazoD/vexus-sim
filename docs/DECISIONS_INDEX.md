@@ -161,3 +161,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [155](DECISIONS.md#L5971) | Recalibrar el reparto E2E desde tres ejecuciones completas verificadas | vigente |
 | [156](DECISIONS.md#L6017) | No unir muestras IQ separadas por una pausa de adquisición | vigente |
 | [157](DECISIONS.md#L6045) | Margen de bundle con transporte GLSL reversible de ocho bancos | vigente |
+| [158](DECISIONS.md#L6071) | No rotular un espectro antiguo con el Nyquist de otra adquisición | vigente |

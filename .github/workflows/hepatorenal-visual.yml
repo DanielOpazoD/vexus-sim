@@ -4,6 +4,8 @@ on:
     paths:
       - 'src/anatomy/scene.ts'
       - 'src/ultrasound/speckleField.ts'
+      - 'src/ultrasound/shaders/passes.glsl.ts'
+      - 'e2e/liverTexture.spec.ts'
       - 'src/ultrasound/retroTexture.ts'
       - 'tools/fidelity/hepatorenalMeasurements.ts'
       - 'tools/fidelity/hepatorenalPose.ts'
@@ -21,7 +23,45 @@ concurrency:
   group: hepatorenal-visual-${{ github.ref }}
   cancel-in-progress: true
 jobs:
+  texture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: GITHUB_SHA="$(git rev-parse HEAD)" npx vite build
+      - name: Guardas hepáticas originales antes de comparar imágenes
+        run: npm run e2e -- e2e/liverTexture.spec.ts --forbid-only --retries=0 --workers=1
+      - name: Dos ejecuciones reales, sin omisiones ni reintentos
+        run: |
+          node --import tsx --input-type=module <<'JS'
+          import { readFileSync } from 'node:fs';
+          import { verifyExecutedReport } from './tools/ci/e2eWeightedPlan.ts';
+          import { listedTestIds } from './tools/ci/e2eShardPlan.ts';
+          const report = JSON.parse(readFileSync('e2e-results.json', 'utf8'));
+          const ids = listedTestIds(report);
+          if (ids.length !== 2) throw new Error('Expected both hepatic texture guards');
+          verifyExecutedReport(report, ids);
+          JS
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: hepatic-texture-guards
+          path: |
+            e2e-results.json
+            test-results
+          retention-days: 7
+          if-no-files-found: error
   comparison:
+    needs: texture
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:

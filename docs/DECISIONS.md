@@ -5902,3 +5902,39 @@ respiración, y añade conservación de imagen, columnas, tiempo, PRF y puerta d
 las dos filas no afectadas. Las capturas deben mostrar esa adquisición parcial
 real antes de integrar. Disponer de señal no equivale a que supere su evaluación
 de calidad ni a validación clínica independiente.
+
+## 153. Guardas hepáticas tempranas y dos cambios de textura rechazados
+
+**Resultado físico primero.** Se investigaron personalmente dos propuestas para
+reducir la heterogeneidad visual del hígado normal. Ambas pasaron las unitarias,
+los gemelos CPU y las comparaciones visuales, pero fallaron reproduciblemente
+la guarda GPU de contraste del compuesto en la banda 20–60 mm:
+
+- Retirar la modulación adicional de 6,25 mm: desviación 11,70 frente al contrato
+  12,5–17,5 (run 37251035395, HEAD 70a87cde).
+- Conservar la ley y amplitud a mitad de escala espacial: desviación 11,93
+  (run 37253020222, HEAD 2a33502e).
+
+Se descartan ambas, se restaura exactamente el modelo de main previo y se
+conservan los umbrales. No se compensa con ganancia, ruido o dispersores para
+forzar un test verde. El aspecto de las capturas no basta para afirmar fidelidad
+superior y estas tentativas no se presentan como mejora integrada de imagen.
+La textura hepática normal sigue siendo trabajo pendiente de calibración.
+
+**Mejora aceptada.** Mover sin cambiar una sola aserción las dos pruebas de
+moteado hepático y composición espacial desde `smoke.spec.ts` a
+`liverTexture.spec.ts`. El workflow hepatorrenal ya existente las ejecuta primero,
+sin reintentos ni tests omitidos, y exige dos ejecuciones reales aprobadas.
+Solo después se ejecuta la comparación de capturas. No se añade otro workflow ni
+se retiran de la CI completa: ésta vuelve a recolectar y verificar toda la suite.
+El nuevo orden detecta antes un contraste o una estadística incorrectos y evita
+invertir en la comparación hepatorrenal de un candidato que ya los rompió.
+
+**Verificación y trazabilidad.** Se compara el texto de ambos cuerpos de prueba
+antes y después de moverlos, incluidos plazos y anotaciones; la colección sigue
+conteniendo 73 pruebas únicas. Cambian dos IDs de Playwright por el archivo nuevo:
+usan el fallback de coste existente hasta recalibrar con tres runs completos,
+nunca se excluyen. El informe temprano conserva métricas de gris, SNR, grano y
+paridad; las capturas posteriores siguen llevando SHA de base/cambio.
+La comparación de ingeniería no constituye validación clínica ni determina por
+sí sola un patrón humano normal. El fallo debe ser visible y sus límites también.

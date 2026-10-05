@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- PW: retiene siete segundos para capturar a PRF alta dentro del dominio del equipo, sin modificar la FFT ni el historial habitual y con memoria acotada (163).
+
 - Tests: errores al preparar las simulaciones ya no pueden confundirse con dos limitaciones esperadas; se conservan controles fisiológicos y se elimina cálculo duplicado (162).
 
 - PW: el equipo y el receptor declaran el mismo corte efectivo del filtro de pared a PRF baja, preservando su respuesta física existente (161).

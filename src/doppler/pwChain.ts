@@ -42,10 +42,14 @@ export class PwDopplerChain {
 
   /** Configura equipo y prepara un lote de generación desde `tStart`. */
   begin(prfHz: number, f0Hz: number, gainDb: number, wallFilterHz: number, tStart: number): void {
+    if (this.spectral.sync(tStart, prfHz)) {
+      this.wallFilter.reset();
+      this.audio.reset();
+      this.pending = 0;
+    }
     this.prfHz = prfHz;
     this.wallFilter.design(wallFilterHz, prfHz);
     this.sampleVolume.setEquipment({ prfHz, f0Hz, gain: Math.pow(10, gainDb / 20) });
-    this.spectral.sync(tStart, prfHz);
     this.cursor = 0;
   }
 

@@ -36,6 +36,7 @@ export class SpectralProcessor {
   private maxColumns: number;
   private t0 = 0;
   private prfHz = 2500;
+  private synced = false;
 
   constructor(opts: { fftSize?: number; hop?: number; maxColumns?: number } = {}) {
     this.fftSize = opts.fftSize ?? 128;
@@ -50,12 +51,15 @@ export class SpectralProcessor {
   }
 
   /** Fija el tiempo de simulación del próximo índice de muestra y la PRF. */
-  sync(tNextSample: number, prfHz: number): void {
-    if (prfHz !== this.prfHz) {
-      this.prfHz = prfHz;
-      this.filled = 0;
-    }
+  sync(tNextSample: number, prfHz: number): boolean {
+    // Physiology batches round to whole IQ samples. Anything beyond one sample
+    // is a real acquisition gap, not a window that the FFT may bridge.
+    const interrupted = this.synced && Math.abs(tNextSample - this.t0 - this.sampleIndex / this.prfHz) > 1 / this.prfHz + 1e-9;
+    if (interrupted || prfHz !== this.prfHz) this.filled = 0;
+    this.prfHz = prfHz;
     this.t0 = tNextSample - this.sampleIndex / prfHz;
+    this.synced = true;
+    return interrupted;
   }
 
   push(re: Float32Array, im: Float32Array, n: number): void {
@@ -103,6 +107,7 @@ export class SpectralProcessor {
   reset(): void {
     this.filled = 0;
     this.columns.length = 0;
+    this.synced = false;
   }
 }
 

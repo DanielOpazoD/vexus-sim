@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- PW: una pausa de adquisición ya no une muestras antiguas y nuevas en la misma FFT; conserva el historial y reinicia filtro/audio al retomar (156).
+
 - CI: recalibración reproducible del reparto E2E con tres runs completos, hashes de evidencia y medianas verificadas; mantiene todos los tests y rechaza resultados con reintentos (155).
 
 - Visor venoso: barrido visible de 3/6 segundos compartido por PW, ECG y respiración, con cursor limitado al intervalo y adquisición/medición intactas (154).

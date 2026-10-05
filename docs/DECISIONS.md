@@ -6041,3 +6041,29 @@ procesador anterior. Se comprueban continuidad exacta, tolerancia submuestra,
 fecha y potencia tras pausa, conservación del historial y reinicio de filtro y
 audio por la cadena real. Es una corrección de adquisición digital, no una
 validación clínica de las ondas o del filtro de pared.
+
+## 157. Margen de bundle con transporte GLSL reversible de ocho bancos
+
+**Deuda.** Tras la corrección de adquisición, el JS total ocupa 1 048 283 bytes
+de 1 048 576 permitidos: solo 293 bytes para seguir corrigiendo el simulador.
+
+**Cambio.** Extender el diccionario de transporte de 256 a 512 palabras. Los
+primeros 256 códigos permanecen intactos; cuatro prefijos adicionales usan el
+mismo decodificador en la inicialización de los módulos. El análisis offline
+admite un límite explícito de candidatos y excluye los alias de uniformes
+generados por el propio build: persistirlos causa una colisión real en la
+siguiente compilación. No se modifican Three, las ecuaciones, las mallas, las
+interpolaciones ni los programas GLSL reconstruidos.
+
+**Medición.** Sobre el mismo commit base y 17 archivos JS, el total sin comprimir
+pasa de 1 048 283 a 1 043 420 bytes (−4863). Gzip nivel 9 pasa de 352 109 a
+352 680 (+571), y Brotli calidad 11 de 304 649 a 304 856 (+207). Se recupera
+margen del presupuesto de fuente distribuida; no mejora la transferencia
+comprimida y no se atribuye una mejora de FPS o de tiempo de arranque. Los
+presupuestos no cambian y todos los chunks siguen contados.
+
+**Verificación.** Los contratos existentes comparan byte por byte cada programa
+ensamblado de ecografía y cada export GLSL de Three, así como coerción, escapes
+y orden de las interpolaciones. Se comprueban los extremos de los ocho bancos,
+unicidad, códigos previos y rechazo de índices inválidos. La CI debe compilar
+y ejecutar los mismos shaders sobre WebGL antes de integrar.

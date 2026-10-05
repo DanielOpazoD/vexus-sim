@@ -11,6 +11,8 @@ const ctx = prepareGlslMangle(sources);
 const bindings = bindingNames(sources.map((s) => s.code).join('\n'));
 const counts = new Map<string, number>();
 const baseSize = Number(process.argv[2] ?? GLSL_WORDS.length);
+const limit = Number(process.argv[3] ?? 64);
+if (!Number.isInteger(limit) || limit < 1 || limit > 256) throw new RangeError('Invalid candidate limit');
 if (!Number.isInteger(baseSize) || baseSize < 0 || baseSize > GLSL_WORDS.length) throw new RangeError('Invalid base dictionary size');
 const existing = new Set<string>(GLSL_WORDS.slice(0, baseSize));
 const count = (code: string) => {
@@ -18,7 +20,9 @@ const count = (code: string) => {
     for (const raw of template.statics) {
       if (/[\\@`]/.test(raw)) continue;
       for (const word of raw.match(/\b[A-Za-z_]\w*\b/g) ?? []) {
-        if (word.length > 3 && !existing.has(word)) counts.set(word, (counts.get(word) ?? 0) + 1);
+        // Generated uniform aliases cannot be persisted: the binding collision guard
+        // correctly rejects them when scanning the next build's source dictionary.
+        if (word.length > 3 && !/^_u[0-9a-z]+$/.test(word) && !existing.has(word)) counts.set(word, (counts.get(word) ?? 0) + 1);
       }
     }
 };
@@ -38,4 +42,4 @@ const candidates = [...counts]
   .map(([word, count]) => ({ word, count, saving: (word.length - 3) * count - word.length - 3 }))
   .filter((x) => x.saving > 0)
   .sort((a, b) => b.saving - a.saving || a.word.localeCompare(b.word));
-console.log(JSON.stringify(candidates.slice(0, 64), null, 2));
+console.log(JSON.stringify(candidates.slice(0, limit), null, 2));

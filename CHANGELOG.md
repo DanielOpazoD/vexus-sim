@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Build: recupera 4863 bytes de presupuesto con empaquetado GLSL reversible; conserva todos los shaders y declara el pequeño aumento de tamaño comprimido (157).
+
 - PW: una pausa de adquisición ya no une muestras antiguas y nuevas en la misma FFT; conserva el historial y reinicia filtro/audio al retomar (156).
 
 - CI: recalibración reproducible del reparto E2E con tres runs completos, hashes de evidencia y medianas verificadas; mantiene todos los tests y rechaza resultados con reintentos (155).

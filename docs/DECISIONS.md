@@ -5938,3 +5938,32 @@ nunca se excluyen. El informe temprano conserva métricas de gris, SNR, grano y
 paridad; las capturas posteriores siguen llevando SHA de base/cambio.
 La comparación de ingeniería no constituye validación clínica ni determina por
 sí sola un patrón humano normal. El fallo debe ser visible y sus límites también.
+
+## 154. Barrido temporal común para inspeccionar PW y ECG sin alterar adquisición
+
+**Objetivo visual.** Permitir observar menos ciclos con más espacio horizontal
+para estudiar su morfología, conservando el espectro adquirido. «Ventana visible»
+selecciona 3 o 6 segundos; 6 sigue siendo el valor inicial. Son segundos reales
+del reloj del simulador, no una velocidad de papel en mm/s que dependa del tamaño
+físico de la pantalla o de su DPI.
+
+**Coordenadas compartidas.** PW de los tres territorios, ECG, respiración y cursor
+usan el mismo inicio y final temporales. El dibujo cambia la posición horizontal
+según esos instantes; no reescala el RR ni la FFT, no remuestrea IQ, no cambia PRF,
+puerta, ganancia o potencia. Las filas sin adquisición siguen vacías. Un historial
+corto empieza en cero, sin inventar segundos previos.
+
+**Medición.** Se conserva el historial y protocolo de cuatro latidos completos,
+aunque algunos queden fuera del barrido corto. El control explica que afecta
+solo la vista. Marcas y valores se mantienen ligados a la misma adquisición; se
+dibujan únicamente las marcas cuyo instante entra en la ventana. El cursor solo
+puede seleccionar muestras visibles y conserva su instante al cambiar de barrido
+si sigue dentro del nuevo intervalo; de lo contrario se lleva al primer instante
+visible. Cerrar limpia los metadatos temporales.
+
+**Verificación.** Contratos de transformación 6→3, reloj reconstruido desde
+coordenadas, historiales cortos y dominio finito. E2E exige columnas, instante
+final, valores y marcas invariantes; los cinco trazados comparten límites,
+se conserva alineación horizontal y la vuelta a 6 s restaura exactamente la
+imagen del paciente congelado. La captura de 3 s debe revisarse antes del merge.
+No se presenta como mejora de resolución física ni de precisión diagnóstica.

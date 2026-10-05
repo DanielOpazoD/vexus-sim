@@ -157,3 +157,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [151](DECISIONS.md#L5843) | Frecuencia sinusal experimental desde el reloj cardíaco real | vigente |
 | [152](DECISIONS.md#L5873) | Ventanas PW independientes con fallo visible por territorio | vigente |
 | [153](DECISIONS.md#L5906) | Guardas hepáticas tempranas y dos cambios de textura rechazados | vigente |
+| [154](DECISIONS.md#L5942) | Barrido temporal común para inspeccionar PW y ECG sin alterar adquisición | vigente |

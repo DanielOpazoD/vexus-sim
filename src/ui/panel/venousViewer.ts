@@ -1,4 +1,5 @@
 import { spectralSampling } from '../../doppler/spectralSampling';
+import { spectralTimeAxis } from '../spectralTimeAxis';
 import { observedVelocitySummary } from '../observedVelocitySummary';
 import { qualityText } from '../../doppler/qualityMessages';
 import { VenousExperiment } from '../../app/venousExperiment';
@@ -52,6 +53,7 @@ export class VenousViewer {
   #points: readonly VenousComparisonPoint[] = [];
   #paused = false;
   #scale = 60;
+  #visibleSeconds = 6;
   #spectralMode = true;
   #annotations = false;
   readonly #spectral: (VenousSpectralAcquisition | null)[] = [null, null, null];
@@ -130,6 +132,20 @@ export class VenousViewer {
       this.#rebuildEquipment();
     });
     controls.appendChild(mode);
+    const sweepLabel = document.createElement('label');
+    sweepLabel.textContent = 'Ventana visible ';
+    const sweep = document.createElement('select');
+    sweep.setAttribute('aria-label', 'Ventana temporal visible');
+    sweep.title = 'Solo barrido: no cambia IQ, frecuencia cardíaca ni los cuatro latidos de medición';
+    for (const seconds of [3, 6]) sweep.add(new Option(`${seconds} s`, String(seconds)));
+    sweep.value = String(this.#visibleSeconds);
+    sweep.addEventListener('change', () => {
+      this.#visibleSeconds = Number(sweep.value);
+      this.#syncCursorRange();
+      this.#draw();
+    });
+    sweepLabel.appendChild(sweep);
+    controls.appendChild(sweepLabel);
     const annotationLabel = document.createElement('label');
     const annotations = document.createElement('input');
     annotations.type = 'checkbox';
@@ -409,9 +425,14 @@ export class VenousViewer {
     this.#paused = false;
     this.#pause.textContent = 'Pausar vista';
     this.#cursor.disabled = true;
+    this.#cursor.min = '0';
     this.#cursor.max = '0';
     this.#cursor.value = '0';
     for (const p of [...this.#paths, ...this.#markers]) p.setAttribute('d', '');
+    for (const plot of this.#plots) {
+      (plot as SVGElement).dataset.timeStart = '';
+      (plot as SVGElement).dataset.timeEnd = '';
+    }
     for (const el of [...this.#values, ...this.#limits, this.#status, this.#readout, this.#case]) el.textContent = '';
   }
 
@@ -424,7 +445,8 @@ export class VenousViewer {
     const canvas = this.#canvases[i];
     canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
     canvas.dataset.columns = '0';
-    for (const key of ['marks', 'lastTime', 'gateCenter', 'prfHz', 'nyquistCms', 'gateLengthMm', 'gateDepthMm']) canvas.dataset[key] = '';
+    for (const key of ['marks', 'lastTime', 'gateCenter', 'prfHz', 'nyquistCms', 'gateLengthMm', 'gateDepthMm', 'timeStart', 'timeEnd'])
+      canvas.dataset[key] = '';
   }
 
   update(): void {
@@ -484,8 +506,7 @@ export class VenousViewer {
       this.#beats = e.rhythm.beatsBetween(Math.max(0, e.clock.t - 7), e.clock.t);
       this.#rawSamples = e.samples.filter((s) => s.t >= e.clock.t - 6);
       this.#points = venousComparisonTrace(this.#rawSamples).points;
-      this.#cursor.max = String(Math.max(0, this.#points.length - 1));
-      this.#cursor.value = this.#cursor.max;
+      this.#syncCursorRange();
     }
     if (this.#spectralMode && this.#rawSamples.length) {
       for (let i = 0; i < 3; i++) {
@@ -529,7 +550,7 @@ export class VenousViewer {
   #drawSpectra(): void {
     if (!this.#spectralMode || !this.#points.length) return;
     const end = this.#points.at(-1)!.t;
-    const start = Math.max(0, end - 6);
+    const { start } = spectralTimeAxis(end, this.#visibleSeconds);
     const rhythm = { beatsBetween: (from: number, to: number) => this.#beats.filter((b) => b.tR >= from && b.tR + b.rr <= to) };
     const cursor = this.#points[Number(this.#cursor.value)];
     for (let i = 0; i < 3; i++) {
@@ -568,7 +589,7 @@ export class VenousViewer {
         targetH = Math.round(184 * ratio);
       if (canvas.width !== targetW) canvas.width = targetW;
       if (canvas.height !== targetH) canvas.height = targetH;
-      const paintKey = `${targetW}/${targetH}/${scale}/${this.#baselines[i]}/${this.#inverted[i]}/${this.#presentation[i].gainDb}/${this.#presentation[i].dynamicRangeDb}/${end}/${columns.at(-1)?.t}/${this.#marksT[i]}/${this.#annotations}/${this.#paused ? cursor?.t : ''}`;
+      const paintKey = `${targetW}/${targetH}/${scale}/${this.#baselines[i]}/${this.#inverted[i]}/${this.#presentation[i].gainDb}/${this.#presentation[i].dynamicRangeDb}/${start}/${end}/${columns.at(-1)?.t}/${this.#marksT[i]}/${this.#annotations}/${this.#paused ? cursor?.t : ''}`;
       if (paintKey !== this.#paintKeys[i])
         drawVenousSpectrum(
           this.#canvases[i],
@@ -586,6 +607,8 @@ export class VenousViewer {
       this.#paintKeys[i] = paintKey;
       canvas.dataset.nyquistCms = String(scale);
       canvas.dataset.inverted = String(this.#inverted[i]);
+      canvas.dataset.timeStart = String(start);
+      canvas.dataset.timeEnd = String(end);
       canvas.dataset.prfHz = String(acquisition.prfHz(0));
       canvas.dataset.gateLengthMm = String(acquisition.gateLengthMm(0));
       canvas.dataset.gateDepthMm = String(acquisition.gateDepthsMm[0]);
@@ -604,9 +627,16 @@ export class VenousViewer {
     return row < 3 ? p.meanVelocityCmS[row] : row === 3 ? p.ecgMv : p.inspiredFraction;
   }
 
-  #x(t: number): number {
-    const end = this.#points.at(-1)?.t ?? 0;
-    return ((t - Math.max(0, end - 6)) / Math.min(6, Math.max(end, 0.004))) * 800;
+  #syncCursorRange(): void {
+    const axis = spectralTimeAxis(this.#points.at(-1)?.t ?? 0, this.#visibleSeconds);
+    const first = Math.max(
+      0,
+      this.#points.findIndex((p) => p.t >= axis.start),
+    );
+    const last = Math.max(0, this.#points.length - 1);
+    this.#cursor.min = String(first);
+    this.#cursor.max = String(last);
+    this.#cursor.value = String(this.#paused ? Math.max(first, Math.min(last, Number(this.#cursor.value))) : last);
   }
 
   #draw(): void {
@@ -636,25 +666,29 @@ export class VenousViewer {
     }
     const a = this.#points[0],
       b = this.#points.at(-1)!;
+    const axis = spectralTimeAxis(b.t, this.#visibleSeconds);
     let clipped = false;
     for (let i = 0; i < 5; i++) {
+      (this.#plots[i] as SVGElement).dataset.timeStart = String(axis.start);
+      (this.#plots[i] as SVGElement).dataset.timeEnd = String(axis.end);
       if (i < 3 && this.#spectralMode) continue;
       const scale = i < 3 ? this.#scale : i === 3 ? 2 : 1;
       let d = '',
         previous = -Infinity;
       for (const p of this.#points) {
+        if (p.t < axis.start) continue;
         const value = this.#value(p, i);
         if (!this.#spectralMode && i < 3 && Math.abs(value) > scale) clipped = true;
         const y = i === 4 ? 85 - value * 80 : 45 - (value / scale) * 40;
         // No conectar huecos de adquisición como si fueran datos continuos.
-        d += `${p.t - previous > 0.0081 ? 'M' : 'L'}${this.#x(p.t).toFixed(1)},${y.toFixed(1)}`;
+        d += `${p.t - previous > 0.0081 ? 'M' : 'L'}${(800 * axis.fractionOf(p.t)).toFixed(1)},${y.toFixed(1)}`;
         previous = p.t;
       }
       this.#paths[i].setAttribute('d', d);
       this.#limits[i].textContent =
         i < 3 ? `+${scale} / 0 / −${scale} cm/s` : i === 3 ? '+2 / 0 / −2 mV' : '0 = espiración · 1 = inspiración';
     }
-    this.#status.textContent = `${this.#paused ? 'Vista pausada (solo esta ventana)' : this.#experiment ? 'Experimento en vivo' : this.#ctx.sim().frozen ? 'Paciente congelado' : 'En vivo'} · ${a.t.toFixed(2)}–${b.t.toFixed(2)} s · ${b.respiratoryCycling ? 'Respiración activa' : 'Respiración sin ciclo'}${clipped ? ' · Hay valores fuera de escala: amplía el rango' : ''}`;
+    this.#status.textContent = `${this.#paused ? 'Vista pausada (solo esta ventana)' : this.#experiment ? 'Experimento en vivo' : this.#ctx.sim().frozen ? 'Paciente congelado' : 'En vivo'} · ${Math.max(a.t, axis.start).toFixed(2)}–${b.t.toFixed(2)} s · ${b.respiratoryCycling ? 'Respiración activa' : 'Respiración sin ciclo'}${clipped ? ' · Hay valores fuera de escala: amplía el rango' : ''}`;
     if (this.#spectralMode && this.#spectral.some((a, i) => a && b.t - this.#processedT[i] > 0.2))
       this.#status.textContent += ' · Reconstruyendo señal IQ…';
     if (this.#spectralMode && this.#unavailable.some(Boolean))
@@ -668,7 +702,7 @@ export class VenousViewer {
   #showCursor(): void {
     const p = this.#points[Number(this.#cursor.value)];
     if (!p) return;
-    const x = this.#x(p.t).toFixed(1);
+    const x = (800 * spectralTimeAxis(this.#points.at(-1)!.t, this.#visibleSeconds).fractionOf(p.t)).toFixed(1);
     for (let i = 0; i < 5; i++) {
       this.#markers[i].setAttribute('d', `M${x} 0V90`);
       this.#values[i].textContent =

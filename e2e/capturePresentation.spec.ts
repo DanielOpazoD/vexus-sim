@@ -195,13 +195,13 @@ test('captura congelada conserva alineación al invertir, desplazar baseline, re
       };
     });
   const beforeScale = await acquisition();
-  await page.evaluate(() => {
-    (window as unknown as { capturePath: [number, number][] }).capturePath = [];
-  });
   await page
     .getByRole('slider', { name: 'Escala', exact: true })
     .last()
     .evaluate((input) => {
+      // Clear the recorder in the same event as the scale change: an old RAF
+      // must not repopulate it between two browser calls.
+      (window as unknown as { capturePath: [number, number][] }).capturePath = [];
       (input as HTMLInputElement).value = '60';
       input.dispatchEvent(new Event('input', { bubbles: true }));
     });

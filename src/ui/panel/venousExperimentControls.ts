@@ -29,7 +29,7 @@ export class VenousExperimentControls {
     });
     const info = document.createElement('p');
     info.textContent =
-      'Modelo simplificado: cada ajuste recalcula un estado estable. La transición clínica continua aún no está modelada. El paciente original se conserva. Compliance venosa: solo reservorios esplácnico/periférico, a PAD basal fija; no equivale a venodilatación.';
+      'Modelo simplificado: cada ajuste recalcula un estado estable. La transición clínica continua aún no está modelada. El paciente original se conserva. FC: ritmo sinusal del modelo; no simula estimulación ni respuesta autonómica. Compliance venosa: solo reservorios esplácnico/periférico, a PAD basal fija; no equivale a venodilatación.';
     this.element.appendChild(info);
     const progression = document.createElement('label');
     progression.textContent = 'Progresión de congestión · ajuste fino';

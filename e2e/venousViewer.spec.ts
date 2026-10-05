@@ -418,7 +418,7 @@ test('laboratorio venoso: parámetros físicos, progresión calculada y aislamie
   await lab.locator('summary').click();
   await lab.getByRole('checkbox', { name: 'Explorar estados estables independientes' }).check();
   await withinFrames(page, 140, 'estado experimental y señales iniciales', async () => {
-    const status = await lab.locator('small').textContent();
+    const status = await lab.getByRole('status', { name: 'Estado del laboratorio venoso', exact: true }).textContent();
     const times = await dialog
       .locator('.venous-spectrum')
       .evaluateAll((els) => els.map((e) => Number((e as HTMLElement).dataset.lastTime)));
@@ -427,7 +427,7 @@ test('laboratorio venoso: parámetros físicos, progresión calculada y aislamie
   await expect(dialog.locator('.venous-case')).toContainText('Experimento hemodinámico');
   await lab.getByRole('button', { name: 'Guía 3', exact: true }).click();
   await withinFrames(page, 140, 'progresión a congestión avanzada con grado calculado', async () => {
-    const status = await lab.locator('small').textContent();
+    const status = await lab.getByRole('status', { name: 'Estado del laboratorio venoso', exact: true }).textContent();
     const times = await dialog
       .locator('.venous-spectrum')
       .evaluateAll((els) => els.map((e) => Number((e as HTMLElement).dataset.lastTime)));
@@ -487,7 +487,10 @@ test('laboratorio venoso: parámetros físicos, progresión calculada y aislamie
     page,
     80,
     'ajuste individual con interpretación limitada por PIA',
-    async () => (await lab.locator('small').textContent())?.includes('PIA alta: interpretación limitada') || 'calculando presión abdominal',
+    async () =>
+      (await lab.getByRole('status', { name: 'Estado del laboratorio venoso', exact: true }).textContent())?.includes(
+        'PIA alta: interpretación limitada',
+      ) || 'calculando presión abdominal',
   );
   await expect(lab).toContainText('Personalizado');
   await expect(dialog.locator('.venous-case')).toContainText('sinusal 50 lpm');

@@ -529,7 +529,11 @@ test('laboratorio venoso: parámetros físicos, progresión calculada y aislamie
   await lab.getByRole('button', { name: 'Guardar parámetros', exact: true }).click();
   const file = await downloaded;
   expect(file.suggestedFilename()).toBe('vexus-parametros-venosos.json');
-  const saved = JSON.parse(await readFile((await file.path())!, 'utf8'));
+  const saved = JSON.parse(await readFile(await file.path(), 'utf8')) as {
+    kind: string;
+    version: number;
+    parameters: Record<string, number>;
+  };
   expect(saved.kind).toBe('vexus-venous-parameters');
   expect(saved.version).toBe(1);
   expect(saved.parameters.heartRateBpm).toBe(50);

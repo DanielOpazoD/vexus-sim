@@ -32,7 +32,7 @@
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.63.0",
-    "@types/node": "22.20.2",
+    "@types/node": "26.6.4",
     "@types/three": "0.186.0",
     "@vitest/coverage-v8": "^5.0.2",
     "eslint": "10.11.0",

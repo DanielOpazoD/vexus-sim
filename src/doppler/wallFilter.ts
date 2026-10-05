@@ -1,9 +1,17 @@
+/** Corte efectivo del receptor, estrictamente por debajo de Nyquist. */
+export function effectiveWallFilterCutoff(cutoffHz: number, sampleRateHz: number): number {
+  if (!Number.isFinite(cutoffHz) || !Number.isFinite(sampleRateHz) || sampleRateHz <= 0)
+    throw new RangeError('Invalid wall-filter frequency');
+  return Math.min(Math.max(0, cutoffHz), sampleRateHz * 0.45);
+}
+
 /**
  * Filtro de pared (clutter) IIR paso alto: dos secciones de 2.º orden en
  * cascada (4.º orden) aplicadas a la señal IQ compleja (parte real e
  * imaginaria por separado; el filtro es lineal). Elimina los componentes
  * lentos (tejido, pared); un corte alto borra flujo venoso lento (guía §16,
- * invariante §21).
+ * invariante §21). La cascada conserva una amplitud 0,5 en el corte (−6 dB),
+ * distinta de un Butterworth global de cuarto orden (−3 dB).
  */
 export class WallFilter {
   private stage2: WallFilterStage;
@@ -67,10 +75,10 @@ export class WallFilterStage {
   }
 
   design(cutoffHz: number, sampleRateHz: number): void {
-    if (cutoffHz === this._cutoffHz && sampleRateHz === this._sampleRate) return;
-    this._cutoffHz = cutoffHz;
+    const fc = effectiveWallFilterCutoff(cutoffHz, sampleRateHz);
+    if (fc === this._cutoffHz && sampleRateHz === this._sampleRate) return;
+    this._cutoffHz = fc;
     this._sampleRate = sampleRateHz;
-    const fc = Math.min(cutoffHz, sampleRateHz * 0.45);
     if (fc <= 0) {
       this.b0 = 1;
       this.b1 = this.b2 = this.a1 = this.a2 = 0;

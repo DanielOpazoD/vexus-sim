@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { congestionParameters } from '../app/venousExperiment';
 import { VenousExperimentControls } from '../ui/panel/venousExperimentControls';
-import { fakeDocument, FakeElement, findAll } from './support/fakeDom';
+import { fakeDocument, type FakeElement, findAll } from './support/fakeDom';
 
 beforeEach(() => {
   vi.useFakeTimers();

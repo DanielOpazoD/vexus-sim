@@ -1,5 +1,6 @@
 import type { ObservedHepatic, ObservedPortal, ObservedRenal } from '../doppler/spectralMeasure';
 import type { MeasurementQuality } from '../doppler/measureQuality';
+import { portalBeatSummary } from './portalBeatSummary';
 
 type SummaryObservation = {
   quality: Pick<MeasurementQuality, 'issue'>;
@@ -7,7 +8,7 @@ type SummaryObservation = {
   anterogradeSign: number;
 } & (
   | Pick<ObservedHepatic, 'kind' | 'sPeak' | 'dPeak' | 'aPeak'>
-  | Pick<ObservedPortal, 'kind' | 'vMax' | 'vMin'>
+  | Pick<ObservedPortal, 'kind' | 'vMax' | 'vMin' | 'pulsatilityFraction' | 'pulsatilityByBeat'>
   | Pick<ObservedRenal, 'kind' | 'sPeak' | 'dPeak' | 'vMin'>
 );
 
@@ -27,5 +28,6 @@ export function observedVelocitySummary(m: SummaryObservation | null, invert = f
       : m.kind === 'portal'
         ? `Vmáx ${value(m.vMax)} · Vmín ${value(m.vMin)}`
         : `máx. sist. ${value(m.sPeak)} · diást. ${value(m.dPeak)} · mín ${value(m.vMin)}`;
-  return `${waves} cm/s · mediana ${m.beats} lat.`;
+  const variability = m.kind === 'portal' ? portalBeatSummary(m) : '';
+  return `${waves} cm/s · mediana ${m.beats} lat.${variability ? ` · ${variability}` : ''}`;
 }

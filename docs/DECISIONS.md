@@ -6088,3 +6088,29 @@ de columnas y redibujado al invertir o desplazar baseline. La E2E existente de
 presentación añade un cambio real del control Escala, exige ausencia de píxeles
 y trazado incompatibles, verifica reloj/señal congelados y guarda captura.
 Los otros flujos, umbrales y timeout de esa E2E se conservan.
+
+## 159. Mostrar la variación portal de los latidos realmente medidos
+
+**Deuda.** La captura conservaba solo la mediana de PF, aunque ya calculaba
+la PF de cada latido. Esto ocultaba dispersión importante, especialmente en
+ritmos irregulares, y favorecía interpretar cuatro latidos como una propiedad
+exacta y estable del paciente.
+
+**Cambio.** Conservar las PF observadas en el mismo orden de los latidos medidos.
+La pestaña Medir y el visor comparado muestran el rango mínimo–máximo y su
+cantidad. Si ese rango cruza 30 o 50 %, utilizando las constantes del clasificador,
+se indica ampliar el registro. Es variabilidad de la muestra, no un intervalo
+de confianza ni una cota para latidos futuros. Las capturas rechazadas por
+calidad continúan sin publicar estos valores.
+
+**Invariantes.** La mediana, velocidades, calidad y clasificación no cambian.
+No se calcula PF a partir del cociente de las medianas de velocidades. Se
+conservan PF superiores a 100 % cuando existe inversión; INV no cambia la PF.
+No se aumenta ficticiamente el número de latidos ni se reemplaza la observación
+por verdad fisiológica. La limitación de cuatro latidos en FA permanece abierta.
+
+**Verificación.** Espectro sintético con seis latidos de PF diferente: se conserva
+orden, mediana y magnitud a menos de seis puntos del generador, incluyendo la
+invariancia por inversión de pantalla. Pruebas de umbrales inclusivos, rango,
+no mutación y datos ausentes/no finitos. La E2E del visor exige el texto observado
+y mantiene sus comprobaciones de píxeles al cambiar baseline, inversión y barrido.

@@ -225,6 +225,35 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
   expect(await snapshot()).toEqual(beforeInvert);
   expect(await dialog.locator('.venous-row figcaption span').allTextContents()).toEqual(valuesBeforeInvert);
   await hepaticRow.locator('summary').click();
+  const sweep = dialog.getByRole('combobox', { name: 'Ventana temporal visible' });
+  const beforeSweep = await snapshot();
+  const valuesBeforeSweep = await dialog.locator('.venous-row figcaption span').allTextContents();
+  await sweep.selectOption('3');
+  const shortSweep = await snapshot();
+  expect(shortSweep.map(({ hash: _h, ...rest }) => rest)).toEqual(beforeSweep.map(({ hash: _h, ...rest }) => rest));
+  expect(shortSweep.every((row, i) => row.hash !== beforeSweep[i].hash)).toBe(true);
+  expect(await dialog.locator('.venous-row figcaption span').allTextContents()).toEqual(valuesBeforeSweep);
+  const timing = await canvases.evaluateAll((els) =>
+    els.map((el) => ({ start: Number((el as HTMLElement).dataset.timeStart), end: Number((el as HTMLElement).dataset.timeEnd) })),
+  );
+  for (const axis of timing) expect(axis.end - axis.start).toBeCloseTo(3, 9);
+  expect(timing.slice(1)).toEqual([timing[0], timing[0]]);
+  expect(
+    await dialog
+      .locator('.venous-marker-row svg')
+      .evaluateAll((els) =>
+        els.map((el) => ({ start: Number((el as SVGElement).dataset.timeStart), end: Number((el as SVGElement).dataset.timeEnd) })),
+      ),
+  ).toEqual([timing[0], timing[0]]);
+  expect(Number(await dialog.getByRole('slider', { name: 'Cursor sincronizado' }).getAttribute('min'))).toBeGreaterThan(0);
+  expect(await alignedAxes()).toBe(true);
+  await page.screenshot({ path: info.outputPath('venous-pw-3s.png') });
+  await sweep.selectOption('6');
+  expect(await snapshot()).toEqual(beforeSweep);
+  expect(await dialog.locator('.venous-row figcaption span').allTextContents()).toEqual(valuesBeforeSweep);
+  expect(
+    await page.evaluate(() => ({ t: window.__vexusTest!.sim().physiology.clock.t, frozen: window.__vexusTest!.sim().frozen })),
+  ).toEqual(before);
   // Image gain must change only pixels, retaining IQ history and source-derived marks.
   const portalRow = dialog.locator('.venous-row').nth(1);
   await portalRow.locator('summary').click();

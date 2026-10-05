@@ -3,12 +3,14 @@ import { errorLog } from '../app/errorLog';
 import { congestionParameters } from '../app/venousExperiment';
 import { encodeVenousParameters } from '../app/venousParameterFile';
 import { VenousExperimentControls } from '../ui/panel/venousExperimentControls';
-import { fakeDocument, FakeElement, findAll } from './support/fakeDom';
+import { fakeDocument, type FakeElement, findAll } from './support/fakeDom';
 
+const report = vi.fn(() => ({ source: 'ui' as const, message: 'expected import error', firstAt: 0, lastAt: 0, count: 1 }));
 beforeEach(() => {
+  report.mockClear();
   vi.useFakeTimers();
   vi.stubGlobal('document', fakeDocument());
-  vi.spyOn(errorLog, 'report').mockReturnValue({ source: 'ui', message: 'expected import error', firstAt: 0, lastAt: 0, count: 1 });
+  vi.spyOn(errorLog, 'report').mockImplementation(report);
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -45,7 +47,7 @@ describe('importación de parámetros aislada y sin carreras', () => {
   it('activa el experimento validado y muestra los controles importados', async () => {
     const s = setup();
     const p = { ...congestionParameters(0.4), heartRateBpm: 50, venousReservoirCompliance: 0.5 };
-    s.select(async () => encodeVenousParameters(p));
+    s.select(() => Promise.resolve(encodeVenousParameters(p)));
     await settle();
     expect(s.changed).toHaveBeenLastCalledWith(p);
     expect(findAll(s.root, (e) => e.type === 'checkbox')[0].checked).toBe(true);
@@ -55,17 +57,17 @@ describe('importación de parámetros aislada y sin carreras', () => {
   it('un archivo inválido o grande no sustituye el estado y deja error visible', async () => {
     const s = setup();
     const before = findAll(s.root, (e) => e.type === 'range').map((e) => e.value);
-    s.select(async () => '{}');
+    s.select(() => Promise.resolve('{}'));
     await settle();
     expect(s.changed).not.toHaveBeenCalled();
     expect(s.controls.status.textContent).toContain('No se importó');
-    const read = vi.fn(async () => '');
+    const read = vi.fn(() => Promise.resolve(''));
     s.select(read, 8193);
     await settle();
     expect(read).not.toHaveBeenCalled();
     expect(s.controls.status.textContent).toContain('8 KiB');
     expect(findAll(s.root, (e) => e.type === 'range').map((e) => e.value)).toEqual(before);
-    expect(errorLog.report).toHaveBeenCalledWith('ui', expect.any(Error));
+    expect(report).toHaveBeenCalledWith('ui', expect.any(Error));
   });
   it('cerrar o reiniciar impide que una lectura tardía reactive el experimento', async () => {
     const s = setup();
@@ -91,7 +93,7 @@ describe('importación de parámetros aislada y sin carreras', () => {
           resolve = r;
         }),
     );
-    s.select(async () => encodeVenousParameters(congestionParameters(0.4)));
+    s.select(() => Promise.resolve(encodeVenousParameters(congestionParameters(0.4))));
     await settle();
     resolve(encodeVenousParameters(congestionParameters(1)));
     await settle();

@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- PW: el equipo y el receptor declaran el mismo corte efectivo del filtro de pared a PRF baja, preservando su respuesta física existente (161).
+
 - CI: separa adquisición y presentación del visor en la validación rápida, manteniendo pruebas, límites y tres repeticiones por caso (160).
 
 - Porta: conserva y muestra la variación de PF entre latidos adquiridos; advierte cruces de umbral sin alterar la mediana ni simular certeza sobre latidos no registrados (159).

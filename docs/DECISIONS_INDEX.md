@@ -164,3 +164,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [158](DECISIONS.md#L6071) | No rotular un espectro antiguo con el Nyquist de otra adquisición | vigente |
 | [159](DECISIONS.md#L6092) | Mostrar la variación portal de los latidos realmente medidos | vigente |
 | [160](DECISIONS.md#L6118) | Separar adquisición y presentación en la validación rápida | vigente |
+| [161](DECISIONS.md#L6144) | Declarar el corte efectivo del filtro de pared PW | vigente |

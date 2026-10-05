@@ -157,3 +157,34 @@ Los contratos de pared se reparten en `wallTwin.test.ts` (física) y
 `wallDisplayTwin.test.ts` (presentación) para evitar una única cola secuencial.
 `support/wallFixture.ts` comparte las condiciones iniciales, no las aserciones;
 las dos suites conservan sus cachés locales y todas sus muestras y umbrales.
+
+## Revisar el coste E2E sin reducir la cobertura
+
+Los tiempos históricos solo reparten la colección **actual completa** entre los
+shards. No seleccionan qué pruebas se ejecutan, no amplían timeouts y no convierten
+reintentos en éxitos. Revisarlos cuando cambien los flujos o el coste del render,
+contrastando la duración real de los jobs con la estimada; no recalibrar para ocultar
+un timeout o una regresión sin investigar.
+
+1. Obtener los artefactos oficiales `e2e-tiempos-N` de **tres ejecuciones completas**
+   de CI recientes. Verificar repositorio, run, SHA y digest de cada descarga. No
+   usar runs parciales, fallidos o con reintentos, aunque el job figure verde.
+2. Extraer cada run a un directorio separado, conservando en cada shard
+   `.validation/e2e-execution.json` y `e2e-results.json`.
+3. Crear un manifiesto JSON: una matriz de tres objetos con `runId`, `sourceSha`
+   y `directory`. Ejecutar desde la raíz del repositorio:
+   `node --import tsx tools/ci/recalibrate-e2e.ts manifest.json tools/ci/e2eTimingWeights.json`.
+   Solo se recoge la lista de Playwright; no se abre ningún navegador.
+4. La herramienta exige todos los IDs actuales, shards completos, particiones
+   disjuntas coherentes, un único resultado aprobado por prueba y cero reintentos.
+   Calcula la mediana exacta de tres duraciones positivas por ID y conserva hashes
+   SHA-256 de los informes y metadatos usados. **La identidad auténtica de los
+   artefactos se verifica al descargarlos**; esos hashes y el análisis estructural
+   no sustituyen una firma del proveedor.
+5. El destino se reemplaza atómicamente solo después de validar todas las fuentes.
+   Si cambió la colección, obtener tres runs que ya incluyan las nuevas pruebas;
+   no completar huecos con valores inventados. Los tests nuevos siguen entrando en
+   CI mediante el fallback existente, aunque los pesos aún no se hayan actualizado.
+6. Revisar el diff, comprobar la nueva partición y seguir la CI completa y el
+   posmerge. Comparar predicción y ejecución real: una estimación más equilibrada
+   no demuestra por sí sola menor tiempo de pared ni menos consumo total.

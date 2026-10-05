@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- CI: recalibración reproducible del reparto E2E con tres runs completos, hashes de evidencia y medianas verificadas; mantiene todos los tests y rechaza resultados con reintentos (155).
+
 - Visor venoso: barrido visible de 3/6 segundos compartido por PW, ECG y respiración, con cursor limitado al intervalo y adquisición/medición intactas (154).
 
 - QA hepática: guardas GPU de moteado y composición antes de las capturas; conserva exactamente pruebas y umbrales, y registra dos propuestas de textura rechazadas (153).

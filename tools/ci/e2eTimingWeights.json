@@ -2,88 +2,217 @@
   "method": "Median duration in milliseconds from three verified no-retry full-suite runs; scheduling hints only, never test selection",
   "sources": [
     {
-      "runId": 37202838436,
-      "headSha": "e2c14fb1571c95bd10799bbee7fef9634c3e83cd"
+      "runId": 37255099328,
+      "headSha": "606b33892e4aee3961718755ecc2c88ca6101515",
+      "evidence": [
+        {
+          "shard": 1,
+          "executionSha256": "820b24b49196a4dafe34966ca60416124a704d04ac95d1f2b8e1ab0b57ccb1e8",
+          "reportSha256": "f2118f02dabde4515d4ac1d93e77ce2b851f8afac5a638e10d24da31970a87e8"
+        },
+        {
+          "shard": 2,
+          "executionSha256": "4fd15ec10082dcb35aa16dcd8c56034bb9f836fb63f601c5e8d296c27e44cb38",
+          "reportSha256": "edb1a9b60abdb5cdd6fcc4e5a4e4f4274ff246b04be48cea39c1f5986299e188"
+        },
+        {
+          "shard": 3,
+          "executionSha256": "e79030aefffb0a48554c53b16d04781e7df18f0d3ce1b205dee24dfffebd36cd",
+          "reportSha256": "86ffc2fe69682fcefb1ecc43361e957f969949c7d3bf655a209cc8e70168883d"
+        },
+        {
+          "shard": 4,
+          "executionSha256": "b3846f4ce1807f236c3732ecf1698a2504cb3ab7ea532a856c0f1de781efd02d",
+          "reportSha256": "175ecae55b1b7986bf86d9c4a22c42790e3d5324cf9ebbb21016e4eea259256d"
+        },
+        {
+          "shard": 5,
+          "executionSha256": "b6162aad592591fc13279117bb8d36aeb752503551b07ab0b46e933db1ff485e",
+          "reportSha256": "9c4c59a1447d748b8c5245e28639aa27996487a1b1ae4cc9a3983774eae0ffa0"
+        },
+        {
+          "shard": 6,
+          "executionSha256": "21768c90fc70159846fda4321b78fb16d1edfd82762564ce8bfa44cd44251076",
+          "reportSha256": "2f4a75a2cf3ce0bf8ed7bedcbf6accc4736461a8b9cc3123c7a9bbcae0aa9349"
+        },
+        {
+          "shard": 7,
+          "executionSha256": "9054818fec528c85898139e17ad86deac9591f9c551dc79f25a5203056dd09b8",
+          "reportSha256": "e389146bab8db23d0f647770047fe729da9b0b016ecc6ac78cf2b6e0ddfc5291"
+        },
+        {
+          "shard": 8,
+          "executionSha256": "d7ab598abbe18b0bed1e620a6c153fe0967ec0a69bb50681c27b31eb0123d0e5",
+          "reportSha256": "831308f7df373053ff3bc8f2c74e5293cd2340a3f0d9a1bdaa5e0517c1ec60e0"
+        }
+      ]
     },
     {
-      "runId": 37204937136,
-      "headSha": "065c8e9b1954abae2567119f9fe0134d515b3ec4"
+      "runId": 37256962692,
+      "headSha": "f6f88ac72f14451e8a778c718765dbcd079b2fd4",
+      "evidence": [
+        {
+          "shard": 1,
+          "executionSha256": "1e6c30a0582ca96f076336ed14f9d0dabba2dfb4c34dc537ed495dd18b7b9b9b",
+          "reportSha256": "2962ddfabe61013feca9fbb89b329f387ce8e888f5fd5f9ae6b6378b04b4b5a4"
+        },
+        {
+          "shard": 2,
+          "executionSha256": "c6afc4887a3b9c7cf35c97acf061e2075ccd2fca4d9a01be07a609015c572a01",
+          "reportSha256": "6e29a76a36f7020e0587dc012bb233039652212d2527fa062a3894a5001b75e9"
+        },
+        {
+          "shard": 3,
+          "executionSha256": "504e76e7ed00c9565a9a7328bed6f303b6175224af1aadab2bc0b4afcb0c5de9",
+          "reportSha256": "24d61842bbb8b941d437427e2e6d635822ffc21e5a77b158559119bb0777a4f5"
+        },
+        {
+          "shard": 4,
+          "executionSha256": "a3014721a230770686ab37350e35e1a2bc88d839d2b9b635e7c0c49f2f19bdb5",
+          "reportSha256": "b8b620c6a2a1fb6f803aff87c1bfbd8496f82417d3e41b895d0a33e946b04b0e"
+        },
+        {
+          "shard": 5,
+          "executionSha256": "b1f0a7e63065b28adca2630efef6a45446ea8e9db87b92e6f1b82d30dc5030d2",
+          "reportSha256": "ad758125ca5388023d675c9730dbb0ec73b99e4d5d893c8d99e416dcf9bf726a"
+        },
+        {
+          "shard": 6,
+          "executionSha256": "dc6dfed647e362c51e31e02183225ad12a75f997a65c55145ebdc0fad070a8aa",
+          "reportSha256": "7c1dce9e8fdb34bbdd085a268166a40d8d7d9513c4b52470663f8a87af9b3c0b"
+        },
+        {
+          "shard": 7,
+          "executionSha256": "dcb1129876024d9117cf752eea73486fac9149899f6426a0a664e4fb55bfd66c",
+          "reportSha256": "d2627b26ee27ab7b2161293d8e9d2be2fd24b91993f7ceea3b06ae058f8f22ce"
+        },
+        {
+          "shard": 8,
+          "executionSha256": "cca63a42d6fa2eed3101f021a0808c0d577e1125c41c20ad6cbdbaacd90efe7a",
+          "reportSha256": "49c940623d288139225ad26a0f368c46b849ac1443c4991be9d2e352daa2d270"
+        }
+      ]
     },
     {
-      "runId": 37205001469,
-      "headSha": "8341852fb973217e8fdbc663e6d58cfa73a407ca"
+      "runId": 37257132424,
+      "headSha": "d94f640ebcc55578424dc484cdeac3059df3694f",
+      "evidence": [
+        {
+          "shard": 1,
+          "executionSha256": "a0e90e0fa83352f21f098b3d5a47a4c1ac2628b47cd311924594e8aed9777b8d",
+          "reportSha256": "b03e7f07a51e324a780c72f5a799855a7b36217ad499c61fd5c8b806c1dd7255"
+        },
+        {
+          "shard": 2,
+          "executionSha256": "f1ff2611f8be4d959730d26555530ffc4715976ffdf075474f0025ee60004d55",
+          "reportSha256": "78d48c23aa6c86960aead6f6d919cb63f016fc142f614b8ebef7c1a40ae2601e"
+        },
+        {
+          "shard": 3,
+          "executionSha256": "d9c0e24e55e0a520a4967308d4abf1d436cfa006f5ea898831644da29745b521",
+          "reportSha256": "78fdf4ee52f79f9f53017350ee7a4d59b0a80a38e6296a2b06421de731f3b612"
+        },
+        {
+          "shard": 4,
+          "executionSha256": "65789e2a531225c80ee07d707dc36ad09c0909722c88594b9e81ac01a7a5601c",
+          "reportSha256": "81956b3c2c538d6dda8d90905aee0095fb2378e4f6409d379f1019306efd8a12"
+        },
+        {
+          "shard": 5,
+          "executionSha256": "035b73741f5fa9387ab9e57c2746ba8bdbfa8e5f82f1217f5d48464ee93962ab",
+          "reportSha256": "abffad7e1a19196aae1677ff1f4f516b2ba376e54524b0b19eea51c7af75e8a3"
+        },
+        {
+          "shard": 6,
+          "executionSha256": "ca01717ad0055d4f4cb5aca108d0df81f7299d5a64eb781072129dd68fd5059d",
+          "reportSha256": "ce974c3bea0b45cc960e1dd76ed2ef5385ccfb1826e3af3b09febdee0060767b"
+        },
+        {
+          "shard": 7,
+          "executionSha256": "dd38a3aaf59381016fd5a5dbb1f5e6bdde3ee41dc484264854871eadf2296786",
+          "reportSha256": "dd0c12f59f049b8687f765cea6bf85258a894b8cc166bd0d0c6d9290b2e101b6"
+        },
+        {
+          "shard": 8,
+          "executionSha256": "b7b06373cee2a4f2aba0e098e4f01c5b8313a6307f9fab66751b627bb0cf36be",
+          "reportSha256": "fed09d8d48edd498e8c54929489a77b4bad6f0b16f468aea5b9bf66dcbfc10de"
+        }
+      ]
     }
   ],
   "durationMs": {
-    "02a2673f01ff79d5104e-31b5d6703470499b470f/chromium": 82084,
-    "02a2673f01ff79d5104e-b957ea5c21a7dcc52491/chromium": 88985,
-    "04fde5937883274f2812-6baf2e6d329a2a659b60/chromium": 156948,
-    "24798b447740f0cd95a7-719eda5eae65b73b2612/chromium": 100089,
-    "24798b447740f0cd95a7-91e83dc301031077939a/chromium": 193973,
-    "24798b447740f0cd95a7-a8a412987b1e1240d821/chromium": 218807,
-    "290c707e502c084abf1a-a9670942b15e0ef17c49/chromium": 70012,
-    "290c707e502c084abf1a-b87746cf187f348849cf/chromium": 50057,
-    "31622549bfe0e6e293e8-0a9c56d5ea0f47f96eb8/chromium": 161418,
-    "31622549bfe0e6e293e8-6ba31c6921d25926439b/chromium": 105227,
-    "31622549bfe0e6e293e8-ad67d320314ded070616/chromium": 69959,
-    "31622549bfe0e6e293e8-cb86f971f65dd725ab20/chromium": 137274,
-    "35b4370cf1cae2112ea0-3396d0126e3e08081ad1/chromium": 70558,
-    "35b4370cf1cae2112ea0-99779f2336bf478e5ab0/chromium": 85276,
-    "4219922fea2e2bd3c691-17129cee58d29480ed65/chromium": 78552,
-    "4219922fea2e2bd3c691-1bd280c51fdfbbb72c6d/chromium": 71941,
-    "4219922fea2e2bd3c691-1ef7c9b9af03bb86204f/chromium": 103137,
-    "4219922fea2e2bd3c691-1fd87160da5d493fc58a/chromium": 122509,
-    "4219922fea2e2bd3c691-23be9500595fa3a94edc/chromium": 290099,
-    "4219922fea2e2bd3c691-2c2ff5f1107ebd8aca4a/chromium": 99931,
-    "4219922fea2e2bd3c691-38f3ccce18b5635db97e/chromium": 44070,
-    "4219922fea2e2bd3c691-395bf3d2aa78ed71f373/chromium": 146258,
-    "4219922fea2e2bd3c691-39811685a33f6aacb129/chromium": 69574,
-    "4219922fea2e2bd3c691-5b68a3bd42354b8eb51c/chromium": 186602,
-    "4219922fea2e2bd3c691-6999f55964c6584dccde/chromium": 59160,
-    "4219922fea2e2bd3c691-776d4d8bcbd8c3d76063/chromium": 279757,
-    "4219922fea2e2bd3c691-85e443d9e917eaaaccd0/chromium": 28029,
-    "4219922fea2e2bd3c691-8769fd55948826d39dde/chromium": 86536,
-    "4219922fea2e2bd3c691-8cfe233838f04e8ea71f/chromium": 80224,
-    "4219922fea2e2bd3c691-98195706d0f79b56b77d/chromium": 111717,
-    "4219922fea2e2bd3c691-9abb15074b919c622cf5/chromium": 138320,
-    "4219922fea2e2bd3c691-be58ab0233cb8b2bcca9/chromium": 109507,
-    "4219922fea2e2bd3c691-c50004346e2c04155488/chromium": 92255,
-    "4219922fea2e2bd3c691-cae494ae06620180c3d9/chromium": 128626,
-    "4219922fea2e2bd3c691-cba3594676ca58218e48/chromium": 78908,
-    "4219922fea2e2bd3c691-d0d7583199c4ce825a5a/chromium": 161965,
-    "4219922fea2e2bd3c691-d70c52160e845ebe6e36/chromium": 96721,
-    "4219922fea2e2bd3c691-e02d03c2b6291ce904f1/chromium": 118521,
-    "4219922fea2e2bd3c691-e17081e80f38e1c2cac1/chromium": 69509,
-    "4219922fea2e2bd3c691-e841da02bb63d17bd2f7/chromium": 128155,
-    "4219922fea2e2bd3c691-eb0dfbcc8de55da16cd8/chromium": 148763,
-    "4219922fea2e2bd3c691-f8b3269787059fc7975c/chromium": 180114,
-    "4219922fea2e2bd3c691-ff9754e19a8a6d523b70/chromium": 296216,
-    "48843ae211b22724fd90-0ec9cbc032270120bd79/chromium": 291503,
-    "48843ae211b22724fd90-1c733f37e6356d674702/chromium": 37842,
-    "48843ae211b22724fd90-357ce8d5426cd4c4bd1f/chromium": 331446,
-    "4d36d84f2fc4a98f7e5a-04532d3e8f2caa536ea9/chromium": 74317,
-    "4d36d84f2fc4a98f7e5a-101b4e47b0edb4e38ac0/chromium": 173939,
-    "4d36d84f2fc4a98f7e5a-8122a5cccaa0a60ee94a/chromium": 141330,
-    "4d36d84f2fc4a98f7e5a-b3b34b51545f3a1e5a6a/chromium": 33739,
-    "65a8620e4dd15ad8928e-9ad93641bd23ae05834a/chromium": 85108,
-    "65a8620e4dd15ad8928e-cb0a7e3e5a64ce80061c/chromium": 44459,
-    "6733fee7143a957f6dbd-68b8ef060b19e7164df9/chromium": 73171,
-    "6733fee7143a957f6dbd-fe12f7daaaa04db4fd0d/chromium": 92750,
-    "83512a2ef92479bb3681-2769c83c50a609955e73/chromium": 89470,
-    "83512a2ef92479bb3681-c8d02dbaa88a234b21e0/chromium": 83837,
-    "83512a2ef92479bb3681-cb47cfa7bf0d2d02b20b/chromium": 158500,
-    "83512a2ef92479bb3681-ee4cb2986d8a19f78793/chromium": 115129,
-    "8554e3a927deeecc4097-57ad1d46bf36f5f5dcac/chromium": 94426,
-    "8554e3a927deeecc4097-995403b66568c13a7d63/chromium": 90181,
-    "b799b1b5f69fb950dfc1-2e4a68f8dead47d357aa/chromium": 226506,
-    "ce430476ac921bf7e493-e28adaf46ecccff063bf/chromium": 32987,
-    "f045a812a84fee26bfe4-ad35b10b1f7e3604f278/chromium": 205036,
-    "fc81f8eb3e3b3cea5906-0a8787e432911c6983f3/chromium": 94717,
-    "fdcf93a2328d925a81fa-1fe78fe6e789001fbc55/chromium": 188503,
-    "fdcf93a2328d925a81fa-a301728a230342ec2d13/chromium": 151246,
-    "ff0c7fbd02bd624c9ced-193949cfb142155b654b/chromium": 77380,
-    "ff0c7fbd02bd624c9ced-2f4137c09641fdde401e/chromium": 155944,
-    "ff0c7fbd02bd624c9ced-4e840f17f41b1c85e517/chromium": 109907,
-    "ff0c7fbd02bd624c9ced-68b5c968e200ca9003e0/chromium": 133951
+    "02a2673f01ff79d5104e-31b5d6703470499b470f/chromium": 83240,
+    "02a2673f01ff79d5104e-b957ea5c21a7dcc52491/chromium": 95087,
+    "04fde5937883274f2812-6baf2e6d329a2a659b60/chromium": 75277,
+    "24798b447740f0cd95a7-719eda5eae65b73b2612/chromium": 93462,
+    "24798b447740f0cd95a7-91e83dc301031077939a/chromium": 109138,
+    "24798b447740f0cd95a7-a8a412987b1e1240d821/chromium": 181796,
+    "290c707e502c084abf1a-a9670942b15e0ef17c49/chromium": 56064,
+    "290c707e502c084abf1a-b87746cf187f348849cf/chromium": 46010,
+    "31622549bfe0e6e293e8-0a9c56d5ea0f47f96eb8/chromium": 131557,
+    "31622549bfe0e6e293e8-12eedf4f80db905c77a1/chromium": 126546,
+    "31622549bfe0e6e293e8-4d5144d9898a57896c9e/chromium": 123136,
+    "31622549bfe0e6e293e8-6ba31c6921d25926439b/chromium": 74441,
+    "31622549bfe0e6e293e8-ad67d320314ded070616/chromium": 103380,
+    "31622549bfe0e6e293e8-cb86f971f65dd725ab20/chromium": 130451,
+    "31622549bfe0e6e293e8-e6298d8d4bd355e14790/chromium": 71943,
+    "35b4370cf1cae2112ea0-3396d0126e3e08081ad1/chromium": 78317,
+    "35b4370cf1cae2112ea0-99779f2336bf478e5ab0/chromium": 95725,
+    "4219922fea2e2bd3c691-17129cee58d29480ed65/chromium": 121502,
+    "4219922fea2e2bd3c691-1bd280c51fdfbbb72c6d/chromium": 173036,
+    "4219922fea2e2bd3c691-1ef7c9b9af03bb86204f/chromium": 83719,
+    "4219922fea2e2bd3c691-1fd87160da5d493fc58a/chromium": 253410,
+    "4219922fea2e2bd3c691-23be9500595fa3a94edc/chromium": 199458,
+    "4219922fea2e2bd3c691-2c2ff5f1107ebd8aca4a/chromium": 171001,
+    "4219922fea2e2bd3c691-38f3ccce18b5635db97e/chromium": 58018,
+    "4219922fea2e2bd3c691-395bf3d2aa78ed71f373/chromium": 102488,
+    "4219922fea2e2bd3c691-39811685a33f6aacb129/chromium": 57628,
+    "4219922fea2e2bd3c691-5b68a3bd42354b8eb51c/chromium": 185811,
+    "4219922fea2e2bd3c691-6999f55964c6584dccde/chromium": 60806,
+    "4219922fea2e2bd3c691-776d4d8bcbd8c3d76063/chromium": 278305,
+    "4219922fea2e2bd3c691-85e443d9e917eaaaccd0/chromium": 78339,
+    "4219922fea2e2bd3c691-8769fd55948826d39dde/chromium": 64143,
+    "4219922fea2e2bd3c691-98195706d0f79b56b77d/chromium": 72749,
+    "4219922fea2e2bd3c691-9abb15074b919c622cf5/chromium": 120956,
+    "4219922fea2e2bd3c691-be58ab0233cb8b2bcca9/chromium": 222713,
+    "4219922fea2e2bd3c691-c50004346e2c04155488/chromium": 107815,
+    "4219922fea2e2bd3c691-cae494ae06620180c3d9/chromium": 146864,
+    "4219922fea2e2bd3c691-cba3594676ca58218e48/chromium": 122621,
+    "4219922fea2e2bd3c691-d0d7583199c4ce825a5a/chromium": 168053,
+    "4219922fea2e2bd3c691-d70c52160e845ebe6e36/chromium": 83536,
+    "4219922fea2e2bd3c691-e17081e80f38e1c2cac1/chromium": 45736,
+    "4219922fea2e2bd3c691-e841da02bb63d17bd2f7/chromium": 151395,
+    "4219922fea2e2bd3c691-eb0dfbcc8de55da16cd8/chromium": 128237,
+    "4219922fea2e2bd3c691-f8b3269787059fc7975c/chromium": 186969,
+    "4219922fea2e2bd3c691-ff9754e19a8a6d523b70/chromium": 192208,
+    "48843ae211b22724fd90-0ec9cbc032270120bd79/chromium": 326119,
+    "48843ae211b22724fd90-1c733f37e6356d674702/chromium": 67530,
+    "48843ae211b22724fd90-357ce8d5426cd4c4bd1f/chromium": 301784,
+    "4d36d84f2fc4a98f7e5a-04532d3e8f2caa536ea9/chromium": 46250,
+    "4d36d84f2fc4a98f7e5a-101b4e47b0edb4e38ac0/chromium": 59989,
+    "4d36d84f2fc4a98f7e5a-8122a5cccaa0a60ee94a/chromium": 73740,
+    "4d36d84f2fc4a98f7e5a-b3b34b51545f3a1e5a6a/chromium": 48259,
+    "65a8620e4dd15ad8928e-9ad93641bd23ae05834a/chromium": 83019,
+    "65a8620e4dd15ad8928e-cb0a7e3e5a64ce80061c/chromium": 82682,
+    "6733fee7143a957f6dbd-68b8ef060b19e7164df9/chromium": 90170,
+    "6733fee7143a957f6dbd-fe12f7daaaa04db4fd0d/chromium": 57758,
+    "83512a2ef92479bb3681-2769c83c50a609955e73/chromium": 129589,
+    "83512a2ef92479bb3681-c8d02dbaa88a234b21e0/chromium": 128633,
+    "83512a2ef92479bb3681-cb47cfa7bf0d2d02b20b/chromium": 154932,
+    "83512a2ef92479bb3681-ee4cb2986d8a19f78793/chromium": 175664,
+    "8554e3a927deeecc4097-57ad1d46bf36f5f5dcac/chromium": 73628,
+    "8554e3a927deeecc4097-995403b66568c13a7d63/chromium": 72039,
+    "b799b1b5f69fb950dfc1-2e4a68f8dead47d357aa/chromium": 227044,
+    "ce430476ac921bf7e493-e28adaf46ecccff063bf/chromium": 19433,
+    "d1680e18e6e0845d1d59-58d2661bbcc40594b565/chromium": 159337,
+    "d1680e18e6e0845d1d59-fe5462c2ffb333456054/chromium": 95094,
+    "f045a812a84fee26bfe4-ad35b10b1f7e3604f278/chromium": 94762,
+    "fc81f8eb3e3b3cea5906-0a8787e432911c6983f3/chromium": 105057,
+    "fdcf93a2328d925a81fa-1fe78fe6e789001fbc55/chromium": 154109,
+    "fdcf93a2328d925a81fa-a301728a230342ec2d13/chromium": 176093,
+    "ff0c7fbd02bd624c9ced-193949cfb142155b654b/chromium": 75236,
+    "ff0c7fbd02bd624c9ced-2f4137c09641fdde401e/chromium": 133929,
+    "ff0c7fbd02bd624c9ced-4e840f17f41b1c85e517/chromium": 77198,
+    "ff0c7fbd02bd624c9ced-68b5c968e200ca9003e0/chromium": 65539
   }
 }

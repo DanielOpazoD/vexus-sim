@@ -5967,3 +5967,49 @@ final, valores y marcas invariantes; los cinco trazados comparten límites,
 se conserva alineación horizontal y la vuelta a 6 s restaura exactamente la
 imagen del paciente congelado. La captura de 3 s debe revisarse antes del merge.
 No se presenta como mejora de resolución física ni de precisión diagnóstica.
+
+## 155. Recalibrar el reparto E2E desde tres ejecuciones completas verificadas
+
+**Problema.** El reparto por duración queda desactualizado cuando cambian los flujos
+reales. Un shard puede terminar mucho después que otros aunque las estimaciones
+parezcan equilibradas. Reducir casos, relajar tolerancias o dar por buenos los
+reintentos sacrificaría la verificación que el simulador necesita.
+
+**Decisión.** Añadir una herramienta offline reproducible para renovar únicamente
+las pistas de coste de la decisión 134. Recoge la colección Playwright actual y
+exige tres runs distintos con todos sus shards, una partición exacta sin duplicados
+ni omisiones y un único resultado aprobado por ID, sin reintentos. Cada shard debe
+pertenecer al SHA declarado de su run. Los tres runs pueden compartir commit; no
+pueden compartir identidad de ejecución. Las duraciones deben ser positivas y
+finitas; se conserva su mediana exacta, incluso si es menor que un milisegundo.
+
+**Trazabilidad.** El archivo de pesos conserva run, SHA y hashes SHA-256 de cada
+informe y metadato de ejecución. El operador verifica origen y digest de los
+artefactos oficiales al descargarlos. La herramienta verifica consistencia, no
+atestigua criptográficamente que un JSON arbitrario provenga de GitHub. Valida
+antes de escribir y reemplaza el destino atómicamente; no modifica los informes,
+los tests, timeouts, cantidad de shards ni criterios de aceptación.
+
+**Límites.** La mediana reduce sensibilidad a una medición aislada; no elimina las
+diferencias entre runners. Los pesos no prueban una mejora de tiempo de pared ni
+ahorro total. El reparto siempre incluye la colección actual y mantiene el fallback
+para pruebas nuevas. Se revisa el coste periódicamente o tras cambios relevantes,
+pero primero se investiga cualquier fallo o timeout: no se disfraza de problema de
+planificación. El procedimiento queda en `docs/TESTING.md`.
+
+**Verificación.** Pruebas de mediana e inmutabilidad, orden de entrada, identidad de
+runs y SHA, particiones contradictorias, shards ausentes/extra/repetidos, colección
+cambiada, ejecución omitida/duplicada/fallida/reintentada y duraciones inválidas.
+La actualización de pesos necesita tres ejecuciones completas verificadas de la
+colección vigente y la CI del cambio; pasar estas pruebas técnicas no valida la
+fidelidad clínica del simulador.
+
+**Primer conjunto reproducible.** Se verificaron los 24 ZIP oficiales de los runs
+37255099328, 37256962692 y 37257132424, sus hashes y SHA de ejecución. La colección
+actual incluye las dos guardas movidas en la decisión 153: 73 IDs completos en los
+tres runs, sin reintentos. Aplicando sus medianas a la partición anterior, el shard
+más largo suma 1 448 099 ms; la nueva partición predice 1 102 701 ms (−23,85 %), con
+el mismo trabajo total de 8 667 702 ms. Es una predicción de reparto, no una mejora
+de tiempo de pared observada ni una reducción de pruebas. Debe contrastarse con
+la ejecución final y su posmerge. Los tres commits y hashes de cada informe quedan
+en el archivo de pesos para repetir el cálculo.

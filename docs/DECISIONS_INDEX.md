@@ -158,3 +158,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [152](DECISIONS.md#L5873) | Ventanas PW independientes con fallo visible por territorio | vigente |
 | [153](DECISIONS.md#L5906) | Guardas hepáticas tempranas y dos cambios de textura rechazados | vigente |
 | [154](DECISIONS.md#L5942) | Barrido temporal común para inspeccionar PW y ECG sin alterar adquisición | vigente |
+| [155](DECISIONS.md#L5971) | Recalibrar el reparto E2E desde tres ejecuciones completas verificadas | vigente |

@@ -5869,3 +5869,36 @@ pasos de progresión; RR nominal, ciclos, muestras de ECG y eventos compartidos
 con el flujo a 50, 75 y 120 lpm. E2E usa el mando real dentro del cambio de escenario
 ya existente, confirma la cabecera y conserva el paciente original congelado,
 sin aumentar su timeout.
+
+## 152. Ventanas PW independientes con fallo visible por territorio
+
+**Defecto.** La construcción conjunta lanzaba una ausencia de ventana suprahepática
+antes de intentar porta y riñón. El visor borraba las tres filas, aunque las otras
+dos adquisiciones fueran anatómicamente posibles. La ausencia de una ventana no
+justifica borrar señales independientes ni sustituirlas por Q/A.
+
+**Cambio.** La misma cadena admite seleccionar un único territorio; conserva el
+índice anatómico original para su semilla, escala y longitud de puerta. La ruta
+conjunta sigue disponible con el comportamiento previo. El visor usa tres cadenas
+independientes sobre muestras y reloj compartidos. Cada fila conserva puerta,
+progreso de reconstrucción, marcas y reintento propios. Cambiar ventana, escala,
+filtro o puerta reconstruye solo el territorio afectado.
+
+**Ausencia y recuperación.** Solo la fila sin ventana borra su imagen, marcas y
+metadatos físicos, y muestra «Sin adquisición» y «Sin medición PW». Las demás
+continúan a partir de su IQ real. No se recurre a la verdad fisiológica para
+fabricar una curva; tampoco se convierte el fallo en error numérico silencioso.
+El reintento sigue al tiempo simulado, sin bucle repetitivo si el paciente está
+congelado. El experimento puede avanzar aunque una ventana falte; no queda
+bloqueado esperando una adquisición imposible. La recuperación no borra las
+columnas ni cambia las puertas de los territorios ya disponibles.
+
+**Verificación.** La adquisición separada debe ser idéntica bit a bit a la
+conjunta para columnas STFT, historia de identidad, geometría, PRF y replay con
+las mismas muestras/semillas. Caso real del avatar de referencia: ventana
+suprahepática habitual ausente y porta/riñón presentes; índices inválidos se
+rechazan. E2E conserva pruebas de pausa, recuperación por inclinación y por
+respiración, y añade conservación de imagen, columnas, tiempo, PRF y puerta de
+las dos filas no afectadas. Las capturas deben mostrar esa adquisición parcial
+real antes de integrar. Disponer de señal no equivale a que supere su evaluación
+de calidad ni a validación clínica independiente.

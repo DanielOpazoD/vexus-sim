@@ -44,15 +44,15 @@ export class AcousticWindowUnavailableError extends Error {
  */
 export class VenousSpectralAcquisition {
   readonly f0Hz = CONVEX_C35_PROFILE.geometry.f0Doppler;
-  readonly scales: number[] = [...VENOUS_SPECTRAL_SCALES];
-  readonly wallFilters: number[] = [15, 15, 15];
+  readonly scales: number[];
+  readonly wallFilters: number[];
   readonly chains: PwDopplerChain[];
-  readonly gateTracks: GateVesselSample[][] = [[], [], []];
+  readonly gateTracks: GateVesselSample[][];
   readonly materialCenters: Vec3[];
-  readonly #gateLengthsMm = [...VENOUS_GATE_LENGTHS_MM];
+  readonly #gateLengthsMm: number[];
   readonly gateDepthsMm: readonly number[];
   readonly gateInfo: PwGateInfo[] = [];
-  readonly #contexts: { anatomy: AnatomyQuery; contact: ProbeContact; best: GatePlacement }[];
+  readonly #contexts: { anatomy: AnatomyQuery; contact: ProbeContact; best: GatePlacement; index: number }[];
   readonly #settings: Pick<BModeSettings, 'depthMm' | 'focusMm'>;
   readonly #seed: number;
   #lastT: number | null = null;
@@ -66,12 +66,21 @@ export class VenousSpectralAcquisition {
     settings: Pick<BModeSettings, 'depthMm' | 'focusMm'>,
     renalWindow: RenalSpectralWindow = 'venous',
     hepaticWindow: HepaticSpectralWindow = 'standard',
+    /** Restrict to one territory (0=hepatic, 1=portal, 2=renal); its public arrays then use index 0. */
+    onlyWindow?: number,
   ) {
+    if (onlyWindow !== undefined && (!Number.isInteger(onlyWindow) || onlyWindow < 0 || onlyWindow >= WINDOWS.length))
+      throw new RangeError('Invalid PW territory');
+    const windows = WINDOWS.map((w, index) => ({ ...w, index })).filter((w) => onlyWindow === undefined || w.index === onlyWindow);
+    this.scales = windows.map(({ index }) => VENOUS_SPECTRAL_SCALES[index]);
+    this.wallFilters = windows.map(() => 15);
+    this.gateTracks = windows.map(() => []);
+    this.#gateLengthsMm = windows.map(({ gateMm }) => gateMm);
     this.#seed = seed;
     this.#settings = { depthMm: settings.depthMm, focusMm: settings.focusMm };
     const profile = CONVEX_C35_PROFILE,
       tr = profile.geometry;
-    this.#contexts = WINDOWS.map(({ window, vessels, gateMm }) => {
+    this.#contexts = windows.map(({ window, vessels, gateMm, index }) => {
       const paired = window === 'renal' && renalWindow === 'paired';
       const scene = new AnatomyScene(patient),
         query = new AnatomyQuery(scene);
@@ -114,11 +123,11 @@ export class VenousSpectralAcquisition {
         trunkInterior,
       );
       if (!best) throw new AcousticWindowUnavailableError(window);
-      return { anatomy: query, contact, best };
+      return { anatomy: query, contact, best, index };
     });
     this.gateDepthsMm = this.#contexts.map((c) => c.best.r);
     this.materialCenters = this.#contexts.map((c, i) => c.anatomy.deformation.toMaterial(this.gate(i, sample).center, sample.resp));
-    this.chains = this.#contexts.map((c, i) => new PwDopplerChain(c.anatomy, seed + 7919 * (i + 1), undefined, { maxColumns: 4096 }));
+    this.chains = this.#contexts.map((c) => new PwDopplerChain(c.anatomy, seed + 7919 * (c.index + 1), undefined, { maxColumns: 4096 }));
   }
 
   gateLengthMm(index: number): number {
@@ -126,7 +135,7 @@ export class VenousSpectralAcquisition {
   }
 
   setGateLengthMm(index: number, lengthMm: number): void {
-    if (!WINDOWS[index] || ![2, 4, 6].includes(lengthMm)) throw new RangeError('Puerta PW fuera de dominio');
+    if (!this.#contexts[index] || ![2, 4, 6].includes(lengthMm)) throw new RangeError('Puerta PW fuera de dominio');
     this.#gateLengthsMm[index] = lengthMm;
   }
 
@@ -191,7 +200,7 @@ export class VenousSpectralAcquisition {
    */
   reacquire(): void {
     for (const [i, context] of this.#contexts.entries())
-      this.chains[i] = new PwDopplerChain(context.anatomy, this.#seed + 7919 * (i + 1), undefined, { maxColumns: 4096 });
+      this.chains[i] = new PwDopplerChain(context.anatomy, this.#seed + 7919 * (context.index + 1), undefined, { maxColumns: 4096 });
     this.reset();
   }
 }

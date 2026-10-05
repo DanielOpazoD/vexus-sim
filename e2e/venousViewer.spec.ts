@@ -582,9 +582,32 @@ test('ventana ausente: aviso de adquisición, bucle estable y recuperación sin 
   await open.click({ force: true });
   const dialog = page.getByRole('dialog', { name: 'Comparación venosa' });
   await expect(dialog.locator('.venous-status')).toContainText('Ventana PW no disponible (intercostal)');
-  await expect(dialog.locator('.venous-sampling')).toHaveText(['Sin datos de muestreo', 'Sin datos de muestreo', 'Sin datos de muestreo']);
+  await expect(dialog.locator('.venous-sampling').first()).toHaveText('Sin datos de muestreo');
   await expect(dialog.locator('.venous-row figcaption span').first()).toHaveText('Sin adquisición');
   await expect(dialog.locator('.venous-spectrum').first()).toHaveAttribute('data-columns', '0');
+  await withinFrames(page, 140, 'porta y riñón conservan adquisiciones independientes', async () => {
+    const times = await dialog
+      .locator('.venous-spectrum')
+      .evaluateAll((els) => els.slice(1).map((e) => Number((e as HTMLElement).dataset.lastTime)));
+    return times.every((t) => t >= 7.85) || 'reconstruyendo las ventanas disponibles';
+  });
+  for (const index of [1, 2]) await expect(dialog.locator('.venous-sampling').nth(index)).toContainText('FFT 128');
+  const available = () =>
+    dialog.locator('.venous-spectrum').evaluateAll((els) =>
+      els.slice(1).map((el) => {
+        const canvas = el as HTMLCanvasElement;
+        let hash = 2166136261;
+        for (const char of canvas.toDataURL()) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619) >>> 0;
+        return {
+          hash,
+          columns: canvas.dataset.columns,
+          time: canvas.dataset.lastTime,
+          gate: canvas.dataset.gateCenter,
+          prf: canvas.dataset.prfHz,
+        };
+      }),
+    );
+  const availableBefore = await available();
   const frames = await page.evaluate(() => window.__vexusTest!.framesRendered());
   await withinFrames(
     page,
@@ -601,7 +624,7 @@ test('ventana ausente: aviso de adquisición, bucle estable y recuperación sin 
       .locator('.venous-row figcaption span')
       .allTextContents()
       .then((v) => v.slice(0, 3)),
-  ).toEqual(['Sin adquisición', 'Sin adquisición', 'Sin adquisición']);
+  ).toEqual(['Sin adquisición', 'PW simulado', 'PW simulado']);
   await dialog.getByRole('button', { name: 'Reanudar vista', exact: true }).click();
   await dialog.evaluate((el) => {
     el.scrollTop = 0;
@@ -634,10 +657,12 @@ test('ventana ausente: aviso de adquisición, bucle estable y recuperación sin 
   await dialog.evaluate((el) => {
     el.scrollTop = 0;
   });
+  expect(await available()).toEqual(availableBefore);
   await page.screenshot({ path: info.outputPath('venous-hepatic-tilted.png') });
   await hepaticWindow.selectOption('standard');
   await expect(dialog.locator('.venous-status')).toContainText('Ventana PW no disponible (intercostal)');
-  await expect(dialog.locator('.venous-sampling')).toHaveText(['Sin datos de muestreo', 'Sin datos de muestreo', 'Sin datos de muestreo']);
+  await expect(dialog.locator('.venous-sampling').first()).toHaveText('Sin datos de muestreo');
+  expect(await available()).toEqual(availableBefore);
   const mode = dialog.getByRole('combobox', { name: 'Tipo de visualización venosa' });
   await mode.selectOption('reference');
   await expect(dialog.locator('.venous-status')).not.toContainText('Ventana PW no disponible');

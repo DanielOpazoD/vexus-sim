@@ -54,10 +54,10 @@ export class VenousViewer {
   #scale = 60;
   #spectralMode = true;
   #annotations = false;
-  #spectral: VenousSpectralAcquisition | null = null;
-  #processedT = -Infinity;
-  #unavailable: AcousticWindowUnavailableError | null = null;
-  #retryAt = -Infinity;
+  readonly #spectral: (VenousSpectralAcquisition | null)[] = [null, null, null];
+  readonly #processedT = [-Infinity, -Infinity, -Infinity];
+  readonly #unavailable: (AcousticWindowUnavailableError | null)[] = [null, null, null];
+  readonly #retryAt = [-Infinity, -Infinity, -Infinity];
   #rawSamples: readonly PhysiologySample[] = [];
   #beats: Beat[] = [];
   #spectralScales: number[] = [...VENOUS_SPECTRAL_SCALES];
@@ -74,7 +74,7 @@ export class VenousViewer {
   #samplingNotes: HTMLElement[] = [];
   #plots: Element[] = [];
   #marks: CaptureMark[][] = [[], [], []];
-  #marksT = -Infinity;
+  readonly #marksT = [-Infinity, -Infinity, -Infinity];
   #measurementIssues = ['insuficiente', 'insuficiente', 'insuficiente'];
   #velocitySummaries = ['', '', ''];
   readonly #description: HTMLElement;
@@ -135,7 +135,7 @@ export class VenousViewer {
     annotations.type = 'checkbox';
     annotations.addEventListener('change', () => {
       this.#annotations = annotations.checked;
-      this.#marksT = -Infinity;
+      this.#marksT.fill(-Infinity);
       this.#drawSpectra();
     });
     annotationLabel.append(annotations, ' Marcas A/S/D y máximos/mínimos');
@@ -231,8 +231,8 @@ export class VenousViewer {
             if (hepatic) this.#hepaticWindow = select.value as HepaticSpectralWindow;
             else this.#renalWindow = select.value as RenalSpectralWindow;
             this.#experimentPrimed = false;
-            this.#spectral = null;
-            this.#rebuildEquipment();
+            this.#spectral[i] = null;
+            this.#rebuildEquipment(i);
           });
           label.appendChild(select);
           controls.appendChild(label);
@@ -245,7 +245,7 @@ export class VenousViewer {
         gateSize.value = String(this.#gateLengthsMm[i]);
         gateSize.addEventListener('change', () => {
           this.#gateLengthsMm[i] = Number(gateSize.value);
-          this.#rebuildEquipment();
+          this.#rebuildEquipment(i);
         });
         gateLabel.appendChild(gateSize);
         controls.appendChild(gateLabel);
@@ -257,7 +257,7 @@ export class VenousViewer {
         selector.value = String(this.#spectralScales[i]);
         selector.addEventListener('change', () => {
           this.#spectralScales[i] = Number(selector.value);
-          this.#rebuildEquipment();
+          this.#rebuildEquipment(i);
         });
         const filterLabel = document.createElement('label');
         filterLabel.textContent = 'Filtro de pared ';
@@ -267,7 +267,7 @@ export class VenousViewer {
         filter.value = String(this.#wallFilters[i]);
         filter.addEventListener('change', () => {
           this.#wallFilters[i] = Number(filter.value);
-          this.#rebuildEquipment();
+          this.#rebuildEquipment(i);
         });
         filterLabel.appendChild(filter);
         controls.appendChild(filterLabel);
@@ -298,7 +298,7 @@ export class VenousViewer {
         invert.setAttribute('aria-label', `Invertir espectro ${r.label}`);
         invert.addEventListener('change', () => {
           this.#inverted[i] = invert.checked;
-          this.#marksT = -Infinity;
+          this.#marksT[i] = -Infinity;
           this.#draw();
         });
         invertLabel.append(invert, ' Invertir espectro (solo pantalla)');
@@ -364,27 +364,30 @@ export class VenousViewer {
     this.update();
   }
 
-  #rebuildEquipment(): void {
-    this.#unavailable = null;
-    this.#retryAt = -Infinity;
+  #rebuildEquipment(index?: number): void {
     this.#experimentPrimed = false;
-    if (this.#spectral) {
-      this.#spectral.scales.splice(0, 3, ...this.#spectralScales);
-      this.#spectral.wallFilters.splice(0, 3, ...this.#wallFilters);
-      this.#gateLengthsMm.forEach((mm, i) => this.#spectral!.setGateLengthMm(i, mm));
-      this.#spectral.reacquire();
+    for (const i of index === undefined ? [0, 1, 2] : [index]) {
+      this.#unavailable[i] = null;
+      this.#retryAt[i] = -Infinity;
+      const acquisition = this.#spectral[i];
+      if (acquisition) {
+        acquisition.scales[0] = this.#spectralScales[i];
+        acquisition.wallFilters[0] = this.#wallFilters[i];
+        acquisition.setGateLengthMm(0, this.#gateLengthsMm[i]);
+        acquisition.reacquire();
+      }
+      this.#processedT[i] = -Infinity;
+      this.#marksT[i] = -Infinity;
+      this.#marks[i] = [];
+      this.#velocitySummaries[i] = '';
+      this.#paintKeys[i] = '';
     }
-    this.#processedT = -Infinity;
-    this.#marksT = -Infinity;
-    this.#marks = [[], [], []];
-    this.#velocitySummaries = ['', '', ''];
-    this.#paintKeys = ['', '', ''];
     this.update();
   }
 
   clear(resetExperiment = true): void {
-    this.#unavailable = null;
-    this.#retryAt = -Infinity;
+    this.#unavailable.fill(null);
+    this.#retryAt.fill(-Infinity);
     this.#experimentError = '';
     this.#experimentGrade = '—';
     this.#experimentPrimed = false;
@@ -397,9 +400,9 @@ export class VenousViewer {
     this.#paintKeys = ['', '', ''];
     this.#rawSamples = [];
     this.#beats = [];
-    this.#spectral = null;
-    this.#processedT = -Infinity;
-    this.#marksT = -Infinity;
+    this.#spectral.fill(null);
+    this.#processedT.fill(-Infinity);
+    this.#marksT.fill(-Infinity);
     this.#marks = [[], [], []];
     this.#velocitySummaries = ['', '', ''];
     this.#clearCanvases();
@@ -413,14 +416,15 @@ export class VenousViewer {
   }
 
   #clearCanvases(): void {
-    for (const note of this.#samplingNotes) note.textContent = 'Sin datos de muestreo';
-    for (const canvas of this.#canvases) {
-      canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
-      canvas.dataset.columns = '0';
-      canvas.dataset.marks = '';
-      canvas.dataset.lastTime = '';
-      canvas.dataset.gateCenter = '';
-    }
+    for (let i = 0; i < 3; i++) this.#clearCanvas(i);
+  }
+
+  #clearCanvas(i: number): void {
+    this.#samplingNotes[i].textContent = 'Sin datos de muestreo';
+    const canvas = this.#canvases[i];
+    canvas.getContext('2d')?.clearRect(0, 0, canvas.width, canvas.height);
+    canvas.dataset.columns = '0';
+    for (const key of ['marks', 'lastTime', 'gateCenter', 'prfHz', 'nyquistCms', 'gateLengthMm', 'gateDepthMm']) canvas.dataset[key] = '';
   }
 
   update(): void {
@@ -484,75 +488,76 @@ export class VenousViewer {
       this.#cursor.value = this.#cursor.max;
     }
     if (this.#spectralMode && this.#rawSamples.length) {
-      if (!this.#spectral && e.clock.t >= this.#retryAt) {
-        try {
-          const sim = this.#ctx.sim();
-          this.#spectral = new VenousSpectralAcquisition(
-            this.#experiment?.anatomy ?? sim.anatomy,
-            this.#rawSamples[0],
-            this.#experiment?.patient.seed ?? sim.patient.seed,
-            this.#experiment?.patient ?? sim.patient,
-            sim.bmode,
-            this.#renalWindow,
-            this.#hepaticWindow,
-          );
-          this.#spectral.scales.splice(0, 3, ...this.#spectralScales);
-          this.#spectral.wallFilters.splice(0, 3, ...this.#wallFilters);
-          this.#gateLengthsMm.forEach((mm, i) => this.#spectral!.setGateLengthMm(i, mm));
-          this.#unavailable = null;
-        } catch (error) {
-          if (!(error instanceof AcousticWindowUnavailableError)) throw error;
-          this.#unavailable = error;
-          this.#retryAt = e.clock.t + 0.5;
+      for (let i = 0; i < 3; i++) {
+        if (!this.#spectral[i] && e.clock.t >= this.#retryAt[i]) {
+          try {
+            const acquisition = new VenousSpectralAcquisition(
+              this.#experiment?.anatomy ?? sim.anatomy,
+              this.#rawSamples[0],
+              this.#experiment?.patient.seed ?? sim.patient.seed,
+              this.#experiment?.patient ?? sim.patient,
+              sim.bmode,
+              this.#renalWindow,
+              this.#hepaticWindow,
+              i,
+            );
+            acquisition.scales[0] = this.#spectralScales[i];
+            acquisition.wallFilters[0] = this.#wallFilters[i];
+            acquisition.setGateLengthMm(0, this.#gateLengthsMm[i]);
+            this.#spectral[i] = acquisition;
+            this.#unavailable[i] = null;
+            this.#processedT[i] = -Infinity;
+          } catch (error) {
+            if (!(error instanceof AcousticWindowUnavailableError)) throw error;
+            this.#unavailable[i] = error;
+            this.#retryAt[i] = e.clock.t + 0.5;
+          }
         }
+        const acquisition = this.#spectral[i];
+        if (!acquisition) continue;
+        // Each territory catches up independently; a missing window cannot erase another signal.
+        const next = this.#rawSamples.filter((s) => s.t > this.#processedT[i]).slice(0, 32);
+        acquisition.push(next, sim.physiology.clock.dt);
+        if (next.length) this.#processedT[i] = next.at(-1)!.t;
       }
-      if (!this.#spectral) {
-        this.#clearCanvases();
-        this.#draw();
-        this.#status.textContent = `Ventana PW no disponible (${this.#unavailable?.window ?? 'desconocida'}). Cambia ventana o respiración, o consulta Referencia Q/A. Se reintenta al avanzar el reloj.`;
-        for (let i = 0; i < 3; i++) {
-          this.#values[i].textContent = 'Sin adquisición';
-          this.#limits[i].textContent = 'Sin medición PW';
-        }
-        return;
-      }
-      // Bounded catch-up also works while the patient is frozen; never block on six seconds of IQ at once.
-      const next = this.#rawSamples.filter((s) => s.t > this.#processedT).slice(0, 32);
-      this.#spectral.push(next, this.#ctx.sim().physiology.clock.dt);
-      if (next.length) this.#processedT = next.at(-1)!.t;
     }
-    if (this.#experiment && this.#processedT >= (this.#rawSamples.at(-1)?.t ?? e.clock.t) - 0.15) this.#experimentPrimed = true;
+    if (this.#experiment && this.#spectral.every((a, i) => !a || this.#processedT[i] >= (this.#rawSamples.at(-1)?.t ?? e.clock.t) - 0.15))
+      this.#experimentPrimed = true;
     this.#draw();
   }
 
   #drawSpectra(): void {
-    if (!this.#spectralMode || !this.#spectral || !this.#points.length) return;
-    const end = this.#points.at(-1)!.t,
-      start = Math.max(0, end - 6);
-    if (this.#processedT - this.#marksT >= 0.5) {
-      const rhythm = { beatsBetween: (from: number, to: number) => this.#beats.filter((b) => b.tR >= from && b.tR + b.rr <= to) };
-      const opts = { f0Hz: this.#spectral.f0Hz, angleCorrectionRad: 0, invert: false, fftSize: 128, wallFilterHz: 15, gainDb: 0 };
-      this.#marks = VENOUS_COMPARISON_CHANNELS.map(({ id }, i) => {
+    if (!this.#spectralMode || !this.#points.length) return;
+    const end = this.#points.at(-1)!.t;
+    const start = Math.max(0, end - 6);
+    const rhythm = { beatsBetween: (from: number, to: number) => this.#beats.filter((b) => b.tR >= from && b.tR + b.rr <= to) };
+    const cursor = this.#points[Number(this.#cursor.value)];
+    for (let i = 0; i < 3; i++) {
+      const acquisition = this.#spectral[i];
+      if (!acquisition) {
+        this.#clearCanvas(i);
+        this.#values[i].textContent = 'Sin adquisición';
+        this.#limits[i].textContent = `Sin medición PW · ventana no disponible (${this.#unavailable[i]?.window ?? 'pendiente'})`;
+        continue;
+      }
+      if (this.#processedT[i] - this.#marksT[i] >= 0.5) {
         const m = captureProtocolVessel(
-          id,
-          this.#spectral!.chains[i].spectral.columns,
+          VENOUS_COMPARISON_CHANNELS[i].id,
+          acquisition.chains[0].spectral.columns,
           rhythm,
-          Math.min(end, this.#processedT),
-          { ...opts, wallFilterHz: this.#wallFilters[i] },
-          this.#spectral!.gateTracks[i],
+          Math.min(end, this.#processedT[i]),
+          { f0Hz: acquisition.f0Hz, angleCorrectionRad: 0, invert: false, fftSize: 128, wallFilterHz: this.#wallFilters[i], gainDb: 0 },
+          acquisition.gateTracks[0],
         );
         this.#velocitySummaries[i] = observedVelocitySummary(m, this.#inverted[i]);
         this.#measurementIssues[i] = m ? (m.quality.issue ? qualityText(m.quality) : '') : 'Esperando cuatro latidos';
-        return m?.quality.issue === null ? m.marks : [];
-      });
-      this.#marksT = this.#processedT;
-    }
-    const cursor = this.#points[Number(this.#cursor.value)];
-    for (let i = 0; i < 3; i++) {
-      const columns = this.#spectral.chains[i].spectral.columns;
+        this.#marks[i] = m?.quality.issue === null ? m.marks : [];
+        this.#marksT[i] = this.#processedT[i];
+      }
+      const columns = acquisition.chains[0].spectral.columns;
       const canvas = this.#canvases[i];
-      const scale = this.#spectral.nyquistCms(i);
-      const sampling = spectralSampling(columns.at(-1), this.#spectral.f0Hz);
+      const scale = acquisition.nyquistCms(0);
+      const sampling = spectralSampling(columns.at(-1), acquisition.f0Hz);
       const samplingText = sampling
         ? `FFT ${sampling.fftSize} · paso ${sampling.binCms.toFixed(2)} cm/s por bin · ventana ${sampling.windowMs.toFixed(1)} ms. No equivale a exactitud clínica ni a resolución efectiva.`
         : 'Sin datos de muestreo';
@@ -563,7 +568,7 @@ export class VenousViewer {
         targetH = Math.round(184 * ratio);
       if (canvas.width !== targetW) canvas.width = targetW;
       if (canvas.height !== targetH) canvas.height = targetH;
-      const paintKey = `${targetW}/${targetH}/${scale}/${this.#baselines[i]}/${this.#inverted[i]}/${this.#presentation[i].gainDb}/${this.#presentation[i].dynamicRangeDb}/${end}/${columns.at(-1)?.t}/${this.#marksT}/${this.#annotations}/${this.#paused ? cursor?.t : ''}`;
+      const paintKey = `${targetW}/${targetH}/${scale}/${this.#baselines[i]}/${this.#inverted[i]}/${this.#presentation[i].gainDb}/${this.#presentation[i].dynamicRangeDb}/${end}/${columns.at(-1)?.t}/${this.#marksT[i]}/${this.#annotations}/${this.#paused ? cursor?.t : ''}`;
       if (paintKey !== this.#paintKeys[i])
         drawVenousSpectrum(
           this.#canvases[i],
@@ -581,16 +586,16 @@ export class VenousViewer {
       this.#paintKeys[i] = paintKey;
       canvas.dataset.nyquistCms = String(scale);
       canvas.dataset.inverted = String(this.#inverted[i]);
-      canvas.dataset.prfHz = String(this.#spectral.prfHz(i));
-      canvas.dataset.gateLengthMm = String(this.#spectral.gateLengthMm(i));
-      canvas.dataset.gateDepthMm = String(this.#spectral.gateDepthsMm[i]);
+      canvas.dataset.prfHz = String(acquisition.prfHz(0));
+      canvas.dataset.gateLengthMm = String(acquisition.gateLengthMm(0));
+      canvas.dataset.gateDepthMm = String(acquisition.gateDepthsMm[0]);
       this.#canvases[i].dataset.baseline = String(this.#baselines[i]);
       this.#canvases[i].dataset.columns = String(columns.length);
       this.#canvases[i].dataset.lastTime = String(columns.at(-1)?.t ?? '');
-      this.#canvases[i].dataset.gateCenter = JSON.stringify(this.#spectral.gateInfo[i].world);
+      this.#canvases[i].dataset.gateCenter = JSON.stringify(acquisition.gateInfo[0].world);
       this.#canvases[i].dataset.marks = this.#annotations ? this.#marks[i].map((m) => m.label).join(',') : '';
       this.#limits[i].textContent =
-        `2,5 MHz · PRF ${columns.at(-1)?.prfHz.toFixed(0) ?? '—'} Hz · puerta ${this.#gateLengthsMm[i]} mm · filtro ${this.#wallFilters[i]} Hz · θ ${this.#spectral.gateInfo[i].beamAngleToFlowDeg?.toFixed(0) ?? '—'}° · velocidad axial · ${scale.toFixed(1)} cm/s Nyquist${scale < this.#spectralScales[i] - 1e-6 ? ' (límite por profundidad)' : ''} · imagen ${this.#presentation[i].gainDb} dB / RD ${this.#presentation[i].dynamicRangeDb}${this.#measurementIssues[i] ? ` · ${this.#measurementIssues[i]}` : ''}`;
+        `2,5 MHz · PRF ${columns.at(-1)?.prfHz.toFixed(0) ?? '—'} Hz · puerta ${this.#gateLengthsMm[i]} mm · filtro ${this.#wallFilters[i]} Hz · θ ${acquisition.gateInfo[0].beamAngleToFlowDeg?.toFixed(0) ?? '—'}° · velocidad axial · ${scale.toFixed(1)} cm/s Nyquist${scale < this.#spectralScales[i] - 1e-6 ? ' (límite por profundidad)' : ''} · imagen ${this.#presentation[i].gainDb} dB / RD ${this.#presentation[i].dynamicRangeDb}${this.#measurementIssues[i] ? ` · ${this.#measurementIssues[i]}` : ''}`;
       this.#values[i].textContent = this.#annotations && this.#velocitySummaries[i] ? this.#velocitySummaries[i] : 'PW simulado';
     }
   }
@@ -650,7 +655,13 @@ export class VenousViewer {
         i < 3 ? `+${scale} / 0 / −${scale} cm/s` : i === 3 ? '+2 / 0 / −2 mV' : '0 = espiración · 1 = inspiración';
     }
     this.#status.textContent = `${this.#paused ? 'Vista pausada (solo esta ventana)' : this.#experiment ? 'Experimento en vivo' : this.#ctx.sim().frozen ? 'Paciente congelado' : 'En vivo'} · ${a.t.toFixed(2)}–${b.t.toFixed(2)} s · ${b.respiratoryCycling ? 'Respiración activa' : 'Respiración sin ciclo'}${clipped ? ' · Hay valores fuera de escala: amplía el rango' : ''}`;
-    if (this.#spectralMode && b.t - this.#processedT > 0.2) this.#status.textContent += ' · Reconstruyendo señal IQ…';
+    if (this.#spectralMode && this.#spectral.some((a, i) => a && b.t - this.#processedT[i] > 0.2))
+      this.#status.textContent += ' · Reconstruyendo señal IQ…';
+    if (this.#spectralMode && this.#unavailable.some(Boolean))
+      this.#status.textContent += ` · Ventana PW no disponible (${this.#unavailable
+        .filter(Boolean)
+        .map((e) => e!.window)
+        .join(', ')}). Cada fila se evalúa por separado; cambia ventana o respiración.`;
     this.#showCursor();
   }
 
@@ -661,7 +672,7 @@ export class VenousViewer {
     for (let i = 0; i < 5; i++) {
       this.#markers[i].setAttribute('d', `M${x} 0V90`);
       this.#values[i].textContent =
-        i < 3 && this.#spectralMode && !this.#spectral
+        i < 3 && this.#spectralMode && !this.#spectral[i]
           ? 'Sin adquisición'
           : `${this.#value(p, i).toFixed(2)} ${i < 3 ? 'cm/s' : i === 3 ? 'mV' : ''}`;
     }

@@ -5903,39 +5903,43 @@ las dos filas no afectadas. Las capturas deben mostrar esa adquisición parcial
 real antes de integrar. Disponer de señal no equivale a que supere su evaluación
 de calidad ni a validación clínica independiente.
 
-## 153. Parénquima hepático basal sin manchas lentas añadidas
+## 153. Modulación material más fina en el parénquima hepático basal
 
 **Problema y alcance.** La decisión 106 redujo la modulación de densidad de 3 mm,
-pero conservó otro campo multiplicativo de 6,25 mm y desviación aproximada de
-1,15 dB, compartido con músculo, intestino y corteza renal. Ese segundo campo
-no representa una estructura hepática concreta ni una patología declarada. El
-objetivo solicitado sigue siendo un hígado basal normal con moteado fino y
-arquitectura portal, sin manchas añadidas para aparentar detalle.
+pero conservó otro campo multiplicativo de 6,25 mm, con desviación aproximada de
+1,15 dB. El objetivo es un hígado normal con textura fina, sin crear manchas
+macroscópicas para aparentar detalle ni perder el contraste del moteado.
 
-**Cambio de modelo.** Retirar únicamente al tejido hepático de la selección de
-heterogeneidad lenta. La población compleja de dispersores, PSF, composición,
-tríadas portales, dispersores fuertes, modulación fina de densidad, atenuación,
-interfaces y retrodispersión basal permanecen. No se aplica filtro de suavizado
-sobre la imagen, no se modifica ganancia para igualar una fotografía y no se
-retoca el framebuffer. Una tabla compartida genera la condición GLSL de mirada
-central/dirigida y la selección de los gemelos CPU.
+**Tentativa descartada.** Retirar completamente ese segundo campo pasó las
+unitarias y comparaciones visuales, pero la prueba GPU de composición espacial
+(run 37251035395, shard 3) midió desviación de gris 11,70 en la banda 20–60 mm,
+inferior al contrato 12,5–17,5. Falló también al reintentar. No se fusionó ni se
+relajó el umbral: homogeneidad no debe convertirse en textura demasiado plana.
 
-**Evidencia y límites.** Es una elección explícita de simplificación del medio
-basal, no un umbral de heterogeneidad humana medido. Se revisaron las imágenes
-aportadas como referencia visual y las capturas reales del simulador; difieren
-en equipo, ventana y ajustes, por lo que no son un patrón cuantitativo de brillo.
-No se copian ni publican esas imágenes clínicas. La respuesta angular de la
-pared portal de la decisión 106 se conserva (Wachsberg et al., 1997,
-[PMID 9401994](https://pubmed.ncbi.nlm.nih.gov/9401994/)); ese estudio no se usa
-para asignar un valor de heterogeneidad al parénquima. El cambio se aplica al
-tejido hepático procedural común: no añade representación B-mode de fibrosis,
-esteatosis o nódulos al caso hemodinámico de cirrosis.
+**Cambio de modelo.** Conservar la ley, amplitud, semilla e interpolación continua
+de esa modulación, pero reducir su escala espacial a la mitad solo en Liver
+(6,25 → 3,125 mm). La transformación de coordenada material es idéntica en CPU
+y GLSL, mirada central y dirigida. Los otros cinco tejidos mantienen exactamente
+su función anterior, punto por punto. Se conservan dispersores complejos, PSF,
+composición, tríadas portales, dispersores fuertes, campo fino de densidad,
+retrodispersión basal, atenuación e interfaces. No hay filtro de imagen posterior,
+ajuste de ganancia ni retoque del framebuffer para aparentar un resultado.
 
-**Verificación.** Contratos de selección de tejidos y paridad de las dos rutas
-GLSL; conservación de microestructura portal; tests existentes de moteado,
-contraste hepatorrenal, pared y contorno sin relajar sus criterios. Los gemelos
-CPU consumen la misma selección, no una imagen ajustada a la expectativa.
-La comparación GPU antes/después debe usar el estado fijado de la decisión 149,
-ambos perfiles corporales y las cuatro ventanas; revisar capturas y métricas
-antes de integrar. No se presupone mejor fidelidad clínica por pasar tests ni
-se promete aumento de FPS sin medición independiente.
+**Evidencia y límites.** La escala de 3,125 mm es un proxy de ingeniería explícito,
+no un tamaño lobular medido ni una calibración humana. Acerca la variación a la
+escala fina existente de 3 mm, conservando la distribución marginal del medio.
+Las referencias aportadas por el usuario se revisaron como orientación visual;
+no se copian ni se publican, ni su brillo se usa como patrón cuantitativo entre
+equipos. La respuesta angular portal de la decisión 106 se conserva (Wachsberg
+et al., 1997, [PMID 9401994](https://pubmed.ncbi.nlm.nih.gov/9401994/)); no se
+atribuye a ese estudio una escala de heterogeneidad que no midió. El tejido
+común no añade fibrosis, esteatosis ni nódulos B-mode a los casos hemodinámicos.
+Las limitaciones de cápsula/contactos siguen abiertas.
+
+**Verificación.** Contratos de selección, identidad de la ley bajo cambio de
+coordenada, conservación exacta de los otros tejidos, paridad de ambas rutas GLSL
+y microestructura portal. Los criterios existentes de moteado, contraste,
+pared y contorno se mantienen. La nueva comparación GPU debe revisar ambos
+perfiles y ventanas en el estado fijo de la decisión 149, incluyendo inspiración
+e interfaz hepatorrenal. Los resultados de la tentativa descartada no validan
+esta revisión. No se promete aumento de FPS ni validación clínica por pasar CI.

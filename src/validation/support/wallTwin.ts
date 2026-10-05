@@ -268,7 +268,7 @@ export function wallTwin(
         // con los dispersores fuertes del tejido (decisión 89): nodos de la misma retícula
         const f = speckleSliceField(m, g.latticeMm, se, seedF + tissue * TISSUE_SALT_STEP, st, strongScatter(tissue));
         let gain = back(tissue);
-        if (HET_TISSUES.has(tissue)) gain *= Math.pow(10, heterogeneityDb(m, seedF) / 20);
+        if (HET_TISSUES.has(tissue)) gain *= Math.pow(10, heterogeneityDb(m, seedF, tissue) / 20);
         const beam = normalize(m.map((x, k) => x - frame.center[k]) as Vec3);
         if (o.model === 'wall' && !o.noTexture && (tissue === Tissue.Fat || tissue === Tissue.Muscle))
           gain *= wallTexture(m, tissue, beam, scene.torso);

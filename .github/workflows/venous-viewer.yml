@@ -14,6 +14,7 @@ on:
       - 'src/app/styles.css'
       - 'src/physiology/**'
       - 'e2e/venousViewer.spec.ts'
+      - 'e2e/venousAcquisition.spec.ts'
       - 'e2e/renalTerritory.spec.ts'
       - 'src/doppler/**'
       - 'e2e/support.ts'
@@ -29,7 +30,7 @@ jobs:
       fail-fast: false
       matrix:
         attempt: [1, 2, 3]
-        suite: [renalTerritory, venousViewer, velocityRuler]
+        suite: [renalTerritory, venousViewer, venousAcquisition, velocityRuler]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -50,7 +51,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: venous-viewer-early-${{ matrix.attempt }}-${{ matrix.suite }}
+          name: venous-viewer-early-${{ github.run_attempt }}-${{ matrix.attempt }}-${{ matrix.suite }}
           path: |
             e2e-results.json
             test-results

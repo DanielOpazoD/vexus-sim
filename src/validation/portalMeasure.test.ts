@@ -7,6 +7,7 @@ import { measureObservedPortal } from '../doppler/spectralMeasure';
 import { dominantGateSystem, wrongGateVessel, type GateVesselSample } from '../doppler/vesselIdentity';
 import type { Beat } from '../physiology/rhythm';
 import { captureOverlay, spectrumRowOf } from '../ui/captureOverlay';
+import { median } from '../core/series';
 
 /**
  * Medición de la porta y captura (decisión 94) con espectros sintéticos: ruido del receptor (periodograma exponencial)
@@ -105,6 +106,27 @@ describe('PF portal sobre un espectro débil (decisión 94)', () => {
     expect(clean.quality.issue).toBeNull();
     expect(clean.pulsatilityFraction).toBeGreaterThan(28);
     expect(clean.pulsatilityFraction).toBeLessThan(40);
+    expect(clean.pulsatilityByBeat).toHaveLength(clean.measuredBeats.length);
+    expect(median(clean.pulsatilityByBeat)).toBe(clean.pulsatilityFraction);
+  });
+
+  it('conserva la PF de cada latido observado en el mismo orden, sin sustituirla por una cifra global', () => {
+    const fractions = [0.2, 0.4, 0.6, 0.2, 0.4, 0.6];
+    const columns = portalColumns({
+      snrDb: 40,
+      top: (t) => {
+        const index = Math.max(0, Math.min(5, Math.floor((t - 0.4) / 0.8)));
+        const phase = (t - 0.4 - index * 0.8) / 0.8;
+        return 25 * (1 - (fractions[index] * (1 - Math.cos(2 * Math.PI * phase))) / 2);
+      },
+    });
+    const m = measureObservedPortal(columns, beats, opts)!;
+    expect(m.quality.issue).toBeNull();
+    expect(m.pulsatilityByBeat).toHaveLength(6);
+    for (const [i, value] of m.pulsatilityByBeat.entries()) expect(Math.abs(value - fractions[i] * 100)).toBeLessThan(6);
+    expect(m.pulsatilityFraction).toBe(median(m.pulsatilityByBeat));
+    const inverted = measureObservedPortal(columns, beats, { ...opts, invert: true })!;
+    expect(inverted.pulsatilityByBeat).toEqual(m.pulsatilityByBeat);
   });
 
   it('con clutter, un bin de ruido junto a la base y caídas de señal, la PF sigue a la limpia', () => {

@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Porta: conserva y muestra la variación de PF entre latidos adquiridos; advierte cruces de umbral sin alterar la mediana ni simular certeza sobre latidos no registrados (159).
+
 - PW principal: cambiar PRF ya no muestra el historial ni marcas antiguas bajo una escala de velocidad incompatible, tampoco estando congelado (158).
 
 - Build: recupera 4863 bytes de presupuesto con empaquetado GLSL reversible; conserva todos los shaders y declara el pequeño aumento de tamaño comprimido (157).

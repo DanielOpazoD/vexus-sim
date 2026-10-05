@@ -6225,3 +6225,32 @@ estables independientes del paciente original.
 cancelación de debounce al reiniciar. La E2E existente vuelve a Guía 0 por
 teclado tras personalizar controles, exige conservar FC/compliance, cambiar
 PAD/PIA y mantener intactos paciente, reloj y congelación.
+
+## 165. Archivos de parámetros venosos con dominio y versión explícitos
+
+**Objetivo.** Permitir guardar y compartir los siete controles del laboratorio
+para repetir una exploración docente, sin copiar datos del paciente ni
+presentar un archivo de parámetros como una grabación de señal.
+
+**Contrato.** JSON identificado como `vexus-venous-parameters`, versión de
+formato 1, con exactamente las siete claves conocidas. Se validan dominio,
+valores finitos y estructura antes de modificar controles o activar un
+experimento. Se rechazan claves o versiones desconocidas y archivos mayores
+de 8 KiB, incluyendo su tamaño real en UTF-8. La exportación libera su URL.
+
+**Concurrencia.** Cada intención del usuario invalida importaciones previas.
+Cerrar/reiniciar, modificar un control o seleccionar otro archivo impide que
+una lectura tardía sobrescriba la decisión más reciente. Un archivo inválido
+conserva los parámetros anteriores y deja un error visible y registrado.
+
+**Límites.** Solo se guardan parámetros sintéticos del modelo. No incluye IQ,
+curvas, posición de sonda ni identidad de pacientes. La versión del formato
+no certifica equivalencia fisiológica entre versiones del motor; se avisa
+expresamente que no garantiza curvas idénticas. El paciente del alumno
+permanece separado del experimento.
+
+**Verificación.** Round-trip, esquema estricto, todos los dominios, valores
+no finitos, claves desconocidas y límite de bytes. Eventos DOM de exportación,
+importación, errores, reinicio y carreras entre archivos/ajustes. La E2E
+existente descarga un archivo real, modifica e importa sus parámetros,
+comprueba controles/caso y conserva paciente, reloj y congelación.

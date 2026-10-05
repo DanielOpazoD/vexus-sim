@@ -6204,6 +6204,15 @@ Las escalas habituales mantienen su historial anterior de 2048 columnas.
 últimos espectros contra un historial amplio; a 2600 Hz, igualdad del historial
 anterior y respeto de límite explícito; a 24000 Hz, respeto del techo de memoria.
 
+**Regresión de instrumentación detectada en CI.** Al cambiar el barrido, el
+E2E confundía glifos amarillos con la línea de base porque inspeccionaba una
+sola columna de píxeles. El detector ahora exige una línea horizontal que
+ocupe más de la mitad del ancho; sigue midiendo su posición desde los píxeles,
+sin asumirla ni relajar la igualdad. Dos controles sintéticos comprueban que
+ignora glifos locales y detecta desplazamiento y ausencia de línea. Restaurar
+el detector antiguo hace fallar ambos controles. Se conservan el hash completo,
+las aserciones fisiológicas y el rechazo de pruebas que pasan solo al reintentar.
+
 ## 164. Conservar FC y compliance al recorrer las guías de congestión
 
 **Defecto.** Tras ajustar frecuencia cardíaca o compliance de los reservorios,

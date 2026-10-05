@@ -1,3 +1,4 @@
+import { effectiveWallFilterCutoff } from '../doppler/wallFilter';
 import type { BModeSettings, ColorSettings } from '../ultrasound/renderer';
 import type { EquipmentSettings, PwSettings } from './simulator';
 
@@ -122,14 +123,15 @@ export function normalizeEquipment(e: EquipmentSettings, ctx: EquipmentContext):
   const p = e.pw;
   const gateMm = clamp(p.gateMm, L.gateMm.min, L.gateMm.max);
   const gateDepth = clamp(p.depthMm, 5 + gateMm / 2, depth - gateMm / 2);
+  const pwPrf = clamp(p.prfHz, L.prfHz.min, maxPrfForDepth(gateDepth + gateMm / 2, ctx.cMmS));
   const pw: PwSettings = {
     ...p,
     gateMm,
     theta: clamp(p.theta, -hs, hs),
     depthMm: gateDepth,
-    prfHz: clamp(p.prfHz, L.prfHz.min, maxPrfForDepth(gateDepth + gateMm / 2, ctx.cMmS)),
+    prfHz: pwPrf,
     baselineShift: clamp(p.baselineShift, -0.5, 0.5),
-    wallFilterHz: Math.max(0, p.wallFilterHz),
+    wallFilterHz: effectiveWallFilterCutoff(p.wallFilterHz, pwPrf),
   };
   return { bmode, color, pw, mmode: { ...e.mmode, theta: clamp(e.mmode.theta, -hs, hs) } };
 }

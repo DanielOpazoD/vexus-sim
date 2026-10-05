@@ -6140,3 +6140,26 @@ sigue siendo necesaria antes de fusionar.
 También se conservan las capturas `pw-*.png` en los artefactos visuales: la
 regresión de escala las generaba, pero el filtro anterior solo retenía
 `venous-*.png`. No se da por revisada una imagen que no fue recuperada.
+
+## 161. Declarar el corte efectivo del filtro de pared PW
+
+**Defecto.** Con PRF de 250 Hz y corte solicitado de 300 Hz, el receptor
+limitaba internamente el filtro a 112,5 Hz, pero el estado del equipo y su
+getter seguían declarando 300 Hz. La interfaz podía enseñar una configuración
+físicamente distinta de la aplicada.
+
+**Cambio.** Compartir la normalización a [0, 0,45 × PRF] entre equipo y
+receptor. Rechazar valores no finitos y PRF no positiva antes de modificar
+un diseño válido. No se modifica el filtro Color.
+
+**Invariante.** Se mantienen los coeficientes de las dos etapas Butterworth
+de segundo orden y su respuesta conjunta de amplitud 0,5 en el corte
+(aproximadamente −6 dB). No se transforma en un Butterworth global de cuarto
+orden, cuyo corte convencional es −3 dB: sería otro receptor y cambiaría las
+señales lentas y la calibración. Referencia de esa distinción:
+https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.butter.html
+
+**Verificación.** Contrato equipo/receptor a PRF baja, entradas inválidas y
+conservación del estado; tres pares frecuencia/PRF contra la fórmula bilineal
+analítica y un tono IQ de 25 Hz tras descartar el transitorio. No se atribuye
+a esta prueba validación clínica ni equivalencia con un fabricante.

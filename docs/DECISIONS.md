@@ -5839,3 +5839,33 @@ de 1 mm. El E2E ahora exige un cuadro nuevo del bucle con franja M adquirida y
 profundidad vigente antes de cada serie de calibres, sin dibujar mediante ganchos
 ni esperar segundos arbitrarios. La primera tentativa fallida queda registrada
 en el run 37244030603; no se acepta ni se repite sin esta corrección.
+
+## 151. Frecuencia sinusal experimental desde el reloj cardíaco real
+
+**Objetivo.** Explorar el efecto temporal de la frecuencia cardíaca en las tres
+adquisiciones PW y en su ECG común, sin estirar una imagen ni modificar al paciente
+observado. Se expone `heartRateBpm`, ya existente en el motor, como control sinusal
+entre 50 y 120 lpm. Es un dominio de exploración acotado de ingeniería, no un
+intervalo clínico validado del simulador.
+
+**Cadena causal.** El control crea un nuevo estado estable independiente. El
+`RhythmGenerator` obtiene su RR nominal de `60 / heartRateBpm`; mantiene la
+variabilidad sinusal, PR y el modelo temporal preexistente (escalado sistólico
+con raíz de RR, extrapolación declarada). Los eventos eléctricos y mecánicos
+alimentan la presión auricular, la red de flujo y el ECG del mismo motor. La IQ
+se reconstruye a partir de las nuevas muestras; no se transforma temporalmente
+un espectro anterior ni se fuerza una amplitud o un grado VExUS.
+
+**Invariantes y límites.** La progresión 0→3 conserva la frecuencia basal para
+no introducir taquicardia implícita. Al personalizar FC se conservan los demás
+parámetros, la anatomía y el paciente original. La cabecera informa la frecuencia
+sinusal elegida. No representa una intervención de marcapasos, un reflejo autonómico,
+un tránsito clínico entre estados ni valida respuesta de gasto a la frecuencia.
+Las amplitudes, presiones y rangos conservan las limitaciones de calibración del
+modelo actual; un patrón distinto no demuestra un cambio clínico de congestión.
+
+**Pruebas.** Dominio y extremos finitos; frecuencia basal invariante en los mil
+pasos de progresión; RR nominal, ciclos, muestras de ECG y eventos compartidos
+con el flujo a 50, 75 y 120 lpm. E2E usa el mando real dentro del cambio de escenario
+ya existente, confirma la cabecera y conserva el paciente original congelado,
+sin aumentar su timeout.

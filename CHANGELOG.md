@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Laboratorio venoso: FC sinusal de 50–120 lpm alimenta el reloj y motor originales; ECG/PW comparten eventos y la progresión conserva la frecuencia basal (151).
+
 - Visor PW: inversión de pantalla independiente por territorio, con marcas, valores y dirección coherentes; conserva adquisición, calidad y fisiología (150).
 
 - QA visual portal: preparación y captura con tiempos fisiológicos fijos, congelación síncrona y metadatos de estado/cuadro; sin prometer identidad de píxeles ante ruido de receptor (149).

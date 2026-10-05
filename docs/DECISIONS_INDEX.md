@@ -154,3 +154,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [148](DECISIONS.md#L5714) | Mostrar el muestreo espectral sin prometer exactitud clínica | vigente |
 | [149](DECISIONS.md#L5746) | Comparar imágenes en un estado fisiológico fijado y registrado | vigente |
 | [150](DECISIONS.md#L5779) | Inversión de presentación PW sin invertir el flujo del paciente | vigente |
+| [151](DECISIONS.md#L5843) | Frecuencia sinusal experimental desde el reloj cardíaco real | vigente |

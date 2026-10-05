@@ -10,12 +10,14 @@ describe('parámetros de escenario hemodinámico', () => {
     expect(p.liver).not.toBe(NORMAL_ADULT.liver);
     expect(p.respiratoryPattern).toBe('apnea-expiratory');
     expect(p).not.toHaveProperty('grade');
+    expect(p.heartRateBpm).toBe(NORMAL_ADULT.heartRateBpm);
     expect(JSON.stringify(NORMAL_ADULT)).toBe(original);
   });
   it('cada paso intermedio cambia parámetros de forma continua, dentro de sus dominios', () => {
     let before = congestionParameters(0);
     for (let i = 1; i <= 1000; i++) {
       const now = congestionParameters(i / 1000);
+      expect(now.heartRateBpm).toBe(NORMAL_ADULT.heartRateBpm);
       venousExperimentPatient(now);
       expect(now.rapMeanMmHg - before.rapMeanMmHg).toBeCloseTo(0.013, 10);
       for (const f of VENOUS_EXPERIMENT_FIELDS)
@@ -72,5 +74,31 @@ describe('escenarios estables derivados de la red', () => {
         expect(x.ready).toBe(true);
         for (const value of Object.values(x.engine.sample.velocities)) expect(Number.isFinite(value)).toBe(true);
       }
+  });
+});
+
+describe('frecuencia cardíaca sinusal como entrada del motor, no estiramiento de imagen', () => {
+  it('modifica RR y el número de ciclos con ECG y flujo en el mismo reloj, sin modificar anatomía ni el caso original', () => {
+    const original = JSON.stringify(NORMAL_ADULT);
+    const states = [50, 75, 120].map((heartRateBpm) => {
+      const x = new VenousExperiment({ ...congestionParameters(0), heartRateBpm });
+      for (let i = 0; i < 30; i++) x.advance(0);
+      const samples = x.engine.samples.filter((s) => s.t >= 24);
+      const beats = x.engine.rhythm.beatsBetween(24, 30);
+      expect(x.engine.rhythm.nominalRR()).toBe(60 / heartRateBpm);
+      expect(beats.length).toBeGreaterThanOrEqual(Math.floor(heartRateBpm / 10) - 1);
+      for (const s of samples) {
+        const b = x.engine.rhythm.currentBeat(s.t);
+        expect(s.lastR).toBe(b.tR);
+        expect(s.rr).toBe(b.rr);
+        expect(s.ecgMv).toBe(x.engine.rhythm.ecg(s.t));
+        expect(Number.isFinite(s.qHepaticVein + s.qPortal + s.qRenalVein)).toBe(true);
+      }
+      expect(x.patient.liver).toEqual(NORMAL_ADULT.liver);
+      return { x, beats };
+    });
+    expect(states[2].beats.length).toBeGreaterThan(states[0].beats.length);
+    expect(states[0].x.engine.sample.qHepaticVein).not.toBe(states[2].x.engine.sample.qHepaticVein);
+    expect(JSON.stringify(NORMAL_ADULT)).toBe(original);
   });
 });

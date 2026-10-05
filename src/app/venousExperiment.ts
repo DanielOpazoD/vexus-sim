@@ -5,6 +5,7 @@ import { clonePatient, validatePatient, type PatientState } from '../physiology/
  * These are independent scenario boundaries, not validated causal interventions.
  */
 export const VENOUS_EXPERIMENT_FIELDS = [
+  { key: 'heartRateBpm', label: 'Frecuencia cardíaca sinusal', unit: 'lpm', min: 50, max: 120, step: 1 },
   { key: 'rapMeanMmHg', label: 'PAD basal', unit: 'mmHg', min: 2, max: 25, step: 0.5 },
   { key: 'intraAbdominalPressureMmHg', label: 'Presión intraabdominal', unit: 'mmHg', min: 0, max: 25, step: 0.5 },
   { key: 'rvFunction', label: 'Función sistólica VD (modelo)', unit: 'relativa', min: 0.2, max: 1, step: 0.05 },
@@ -25,7 +26,7 @@ export function venousExperimentPatient(parameters: VenousExperimentParameters):
     p[field.key] = value;
   }
   p.id = 'venous-experiment';
-  p.label = 'Experimento hemodinámico · adulto sinusal';
+  p.label = `Experimento hemodinámico · sinusal ${p.heartRateBpm} lpm`;
   p.respiratoryPattern = 'apnea-expiratory';
   validatePatient(p);
   return p;
@@ -37,6 +38,7 @@ export function venousExperimentPatient(parameters: VenousExperimentParameters):
 export function congestionParameters(fraction: number): VenousExperimentParameters {
   if (!Number.isFinite(fraction) || fraction < 0 || fraction > 1) throw new RangeError('Progresión fuera de [0,1]');
   return {
+    heartRateBpm: NORMAL_ADULT.heartRateBpm,
     rapMeanMmHg: 5 + 13 * fraction,
     intraAbdominalPressureMmHg: 5 + 2 * fraction,
     rvFunction: 0.85 - 0.55 * fraction,

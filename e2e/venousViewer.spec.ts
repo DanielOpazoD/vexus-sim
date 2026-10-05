@@ -444,6 +444,10 @@ test('laboratorio venoso: parámetros físicos, progresión calculada y aislamie
   await page.keyboard.press('Home');
   await expect(compliance).toHaveValue('0.5');
   await expect(lab).toContainText('solo reservorios esplácnico/periférico');
+  const heartRate = lab.getByRole('slider', { name: 'Frecuencia cardíaca sinusal', exact: true });
+  await heartRate.focus();
+  await page.keyboard.press('Home');
+  await expect(heartRate).toHaveValue('50');
   const abdominal = lab.getByRole('slider', { name: 'Presión intraabdominal', exact: true });
   await abdominal.focus();
   await page.keyboard.press('End');
@@ -455,6 +459,8 @@ test('laboratorio venoso: parámetros físicos, progresión calculada y aislamie
     async () => (await lab.locator('small').textContent())?.includes('PIA alta: interpretación limitada') || 'calculando presión abdominal',
   );
   await expect(lab).toContainText('Personalizado');
+  await expect(dialog.locator('.venous-case')).toContainText('sinusal 50 lpm');
+  await expect(lab).toContainText('no simula estimulación ni respuesta autonómica');
 
   expect(
     await page.evaluate(() => ({

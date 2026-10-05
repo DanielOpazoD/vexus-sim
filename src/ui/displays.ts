@@ -224,7 +224,7 @@ export class SpectrogramView {
       this.reset();
     }
     const pw = sim.pw;
-    const presentation = `${pw.baselineShift}/${pw.invert}/${secondsVisible}`;
+    const presentation = `${pw.prfHz}/${pw.baselineShift}/${pw.invert}/${secondsVisible}`;
     if (presentation !== this.#presentation) {
       this.reset();
       this.#presentation = presentation;
@@ -253,6 +253,8 @@ export class SpectrogramView {
     const fft = sim.spectral.fftSize;
     const dtCol = sim.spectral.hop / pw.prfHz;
     for (const col of columns) {
+      // Old bins must never be relabelled with the current Nyquist scale.
+      if (col.prfHz !== pw.prfHz) continue;
       if (col.t <= this.#lastDrawnT) continue;
       if (!this.#timeline.ready(col.t, dtCol)) break;
       const [x0, x1] = this.#timeline.span(col.t, dtCol, pxPerSec, W);
@@ -317,7 +319,7 @@ export class SpectrogramView {
       ctx.lineTo(x, H);
       ctx.stroke();
     }
-    if (capture && overlayOnSpectrum(capture, columns))
+    if (capture && capture.prfHz === pw.prfHz && overlayOnSpectrum(capture, columns))
       drawCaptureOverlay(ctx, capture, (t) => ecgX(t, this.#timeline.rightT, secondsVisible, W), H, pw);
     if (cursorT !== null) drawCursor(ctx, ecgX(cursorT, this.#timeline.rightT, secondsVisible, W), H);
   }

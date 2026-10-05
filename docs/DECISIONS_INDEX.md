@@ -159,3 +159,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [153](DECISIONS.md#L5906) | Guardas hepáticas tempranas y dos cambios de textura rechazados | vigente |
 | [154](DECISIONS.md#L5942) | Barrido temporal común para inspeccionar PW y ECG sin alterar adquisición | vigente |
 | [155](DECISIONS.md#L5971) | Recalibrar el reparto E2E desde tres ejecuciones completas verificadas | vigente |
+| [156](DECISIONS.md#L6017) | No unir muestras IQ separadas por una pausa de adquisición | vigente |

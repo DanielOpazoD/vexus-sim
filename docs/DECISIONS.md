@@ -6013,3 +6013,31 @@ el mismo trabajo total de 8 667 702 ms. Es una predicción de reparto, no una me
 de tiempo de pared observada ni una reducción de pruebas. Debe contrastarse con
 la ejecución final y su posmerge. Los tres commits y hashes de cada informe quedan
 en el archivo de pesos para repetir el cálculo.
+
+## 156. No unir muestras IQ separadas por una pausa de adquisición
+
+**Defecto reproducido.** El procesador espectral conservaba una FFT parcial al
+reanudar el PW con la misma PRF después de una pausa o un salto atrás del reloj.
+Con 127 muestras antiguas y una nueva emitía una columna, fechada incluso antes
+de la reanudación. Las guardas de continuidad posteriores al espectro no pueden
+reparar una FFT que ya mezcló instantes no contiguos.
+
+**Corrección.** Comparar el tiempo del siguiente lote con el siguiente índice IQ
+previsto antes de modificar la referencia temporal. Una diferencia superior a
+una muestra (más tolerancia numérica) invalida únicamente la FFT parcial y
+reinicia la memoria del filtro, el audio y el residuo fraccional de la cadena.
+Las columnas completas anteriores conservan identidad y fecha; nunca se
+rellena el intervalo sin adquisición. La primera columna nueva requiere 128
+muestras nuevas y lleva el centro de esa ventana.
+
+**Invariantes.** El residuo submuestra normal del reloj fisiológico no reinicia
+la adquisición. Dividir una señal continua en lotes conserva exactamente sus
+columnas. El cambio de PRF conserva su guarda anterior. Reiniciar la cadena
+explícitamente no simula otra interrupción en el primer lote. No cambia la
+fisiología, el espectro de un flujo continuo ni las escalas.
+
+**Verificación.** Las dos regresiones de salto positivo/negativo fallaron con el
+procesador anterior. Se comprueban continuidad exacta, tolerancia submuestra,
+fecha y potencia tras pausa, conservación del historial y reinicio de filtro y
+audio por la cadena real. Es una corrección de adquisición digital, no una
+validación clínica de las ondas o del filtro de pared.

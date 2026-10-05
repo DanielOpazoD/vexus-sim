@@ -166,3 +166,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [160](DECISIONS.md#L6118) | Separar adquisición y presentación en la validación rápida | vigente |
 | [161](DECISIONS.md#L6144) | Declarar el corte efectivo del filtro de pared PW | vigente |
 | [162](DECISIONS.md#L6167) | Un fallo esperado no debe esconder una avería de preparación | vigente |
+| [163](DECISIONS.md#L6186) | Retener la ventana de captura PW también a PRF alta | vigente |

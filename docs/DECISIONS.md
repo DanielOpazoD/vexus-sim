@@ -6067,3 +6067,24 @@ ensamblado de ecografía y cada export GLSL de Three, así como coerción, escap
 y orden de las interpolaciones. Se comprueban los extremos de los ocho bancos,
 unicidad, códigos previos y rechazo de índices inválidos. La CI debe compilar
 y ejecutar los mismos shaders sobre WebGL antes de integrar.
+
+## 158. No rotular un espectro antiguo con el Nyquist de otra adquisición
+
+**Defecto.** El bitmap principal se reconstruía al cambiar línea de base o
+inversión, pero no PRF. Una escala nueva podía rotular las mismas alturas de
+un espectro anterior con otras velocidades, incluso con el paciente congelado.
+El trazado de una captura anterior también podía persistir sobre el nuevo eje.
+
+**Corrección.** La PRF forma parte de la identidad de presentación. Al cambiarla
+se limpia el bitmap y solo se dibujan columnas y capturas de esa PRF. No se
+reescala ni pliega otra vez una adquisición histórica para hacerla encajar.
+Volver a su PRF recupera la presentación original desde las mismas columnas.
+La señal adquirida, sus fechas y el paciente permanecen intactos.
+
+**Verificación.** Dos regresiones del renderizador real sobre canvas registrador
+fallaron antes de la corrección: bitmap congelado sin limpiar e historial mixto
+dibujado bajo un único eje. Se comprueban reversibilidad, conservación exacta
+de columnas y redibujado al invertir o desplazar baseline. La E2E existente de
+presentación añade un cambio real del control Escala, exige ausencia de píxeles
+y trazado incompatibles, verifica reloj/señal congelados y guarda captura.
+Los otros flujos, umbrales y timeout de esa E2E se conservan.

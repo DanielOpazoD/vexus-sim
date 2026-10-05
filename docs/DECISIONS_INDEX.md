@@ -163,3 +163,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [157](DECISIONS.md#L6045) | Margen de bundle con transporte GLSL reversible de ocho bancos | vigente |
 | [158](DECISIONS.md#L6071) | No rotular un espectro antiguo con el Nyquist de otra adquisición | vigente |
 | [159](DECISIONS.md#L6092) | Mostrar la variación portal de los latidos realmente medidos | vigente |
+| [160](DECISIONS.md#L6118) | Separar adquisición y presentación en la validación rápida | vigente |

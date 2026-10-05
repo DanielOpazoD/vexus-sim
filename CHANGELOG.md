@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- CI: separa adquisición y presentación del visor en la validación rápida, manteniendo pruebas, límites y tres repeticiones por caso (160).
+
 - Porta: conserva y muestra la variación de PF entre latidos adquiridos; advierte cruces de umbral sin alterar la mediana ni simular certeza sobre latidos no registrados (159).
 
 - PW principal: cambiar PRF ya no muestra el historial ni marcas antiguas bajo una escala de velocidad incompatible, tampoco estando congelado (158).

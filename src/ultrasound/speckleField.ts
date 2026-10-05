@@ -387,19 +387,6 @@ export const HET_CELL_MM = 6.25;
  * antiguos cubos uniformes de ±2 dB (1,15 dB), ahora continua.
  */
 export const HET_SCALE_DB = 6.24;
-/** Normal liver retains material contrast at half the former spatial scale.
- * Engineering proxy, not a measured lobular dimension or human calibration.
- */
-export const LIVER_HET_COORDINATE_SCALE = 2;
-export const SLOW_HETEROGENEITY_TISSUES: readonly Tissue[] = [
-  Tissue.Liver,
-  Tissue.Muscle,
-  Tissue.Bowel,
-  Tissue.RenalCortex,
-  Tissue.Psoas,
-  Tissue.QuadratusLumborum,
-];
-export const SLOW_HETEROGENEITY_GLSL_CONDITION = SLOW_HETEROGENEITY_TISSUES.map((t) => `tissue == ${TISSUE_GLSL_NAME[t]}`).join(' || ');
 /** Célula de los grumos de dispersores (mm): ~ la PSF lateral, para que se vean como ecos sueltos. */
 export const CLUMP_CELL_MM = 1.2;
 
@@ -420,9 +407,7 @@ export function valueNoise(q: Vec3, salt: number): number {
 }
 
 /** Heterogeneidad lenta del parénquima (dB), continua: `hetGain` de la pasada B. */
-export function heterogeneityDb(m: Vec3, seed: number, tissue?: Tissue): number {
-  if (tissue === Tissue.Liver)
-    m = [m[0] * LIVER_HET_COORDINATE_SCALE, m[1] * LIVER_HET_COORDINATE_SCALE, m[2] * LIVER_HET_COORDINATE_SCALE];
+export function heterogeneityDb(m: Vec3, seed: number): number {
   return (valueNoise([m[0] / HET_CELL_MM, m[1] / HET_CELL_MM, m[2] / HET_CELL_MM], seed + 11) - 0.5) * HET_SCALE_DB;
 }
 
@@ -553,8 +538,7 @@ float valueNoise(vec3 q, float salt) {
   float x11 = mix(hash13(c + vec3(0, 1, 1) + o), hash13(c + vec3(1, 1, 1) + o), s.x);
   return mix(mix(x00, x10, s.y), mix(x01, x11, s.y), s.z);
 }
-float hetGain(vec3 m, int tissue) {
-  if (tissue == T_LIVER) m *= ${glslFloat(LIVER_HET_COORDINATE_SCALE)};
+float hetGain(vec3 m) {
   return pow(10.0, (valueNoise(m / HET_CELL_MM, uSeed + 11.0) - 0.5) * HET_SCALE_DB / 20.0);
 }
 float clumpGain(vec3 q, float clump, float salt) {

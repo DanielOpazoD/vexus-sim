@@ -7,7 +7,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
-- B-mode hepático basal: reduce a la mitad la escala espacial de la modulación material, conservando contraste, moteado, tríadas e interfaces, con selección compartida por GPU y gemelos CPU (153).
+- QA hepática: guardas GPU de moteado y composición antes de las capturas; conserva exactamente pruebas y umbrales, y registra dos propuestas de textura rechazadas (153).
 
 - Visor PW: una ventana ausente afecta solo a su territorio; las otras señales continúan y conservan su adquisición al recuperar o ajustar la fila afectada (152).
 

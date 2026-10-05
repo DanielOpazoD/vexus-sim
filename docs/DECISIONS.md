@@ -5903,43 +5903,38 @@ las dos filas no afectadas. Las capturas deben mostrar esa adquisición parcial
 real antes de integrar. Disponer de señal no equivale a que supere su evaluación
 de calidad ni a validación clínica independiente.
 
-## 153. Modulación material más fina en el parénquima hepático basal
+## 153. Guardas hepáticas tempranas y dos cambios de textura rechazados
 
-**Problema y alcance.** La decisión 106 redujo la modulación de densidad de 3 mm,
-pero conservó otro campo multiplicativo de 6,25 mm, con desviación aproximada de
-1,15 dB. El objetivo es un hígado normal con textura fina, sin crear manchas
-macroscópicas para aparentar detalle ni perder el contraste del moteado.
+**Resultado físico primero.** Se investigaron personalmente dos propuestas para
+reducir la heterogeneidad visual del hígado normal. Ambas pasaron las unitarias,
+los gemelos CPU y las comparaciones visuales, pero fallaron reproduciblemente
+la guarda GPU de contraste del compuesto en la banda 20–60 mm:
 
-**Tentativa descartada.** Retirar completamente ese segundo campo pasó las
-unitarias y comparaciones visuales, pero la prueba GPU de composición espacial
-(run 37251035395, shard 3) midió desviación de gris 11,70 en la banda 20–60 mm,
-inferior al contrato 12,5–17,5. Falló también al reintentar. No se fusionó ni se
-relajó el umbral: homogeneidad no debe convertirse en textura demasiado plana.
+- Retirar la modulación adicional de 6,25 mm: desviación 11,70 frente al contrato
+  12,5–17,5 (run 37251035395, HEAD 70a87cde).
+- Conservar la ley y amplitud a mitad de escala espacial: desviación 11,93
+  (run 37253020222, HEAD 2a33502e).
 
-**Cambio de modelo.** Conservar la ley, amplitud, semilla e interpolación continua
-de esa modulación, pero reducir su escala espacial a la mitad solo en Liver
-(6,25 → 3,125 mm). La transformación de coordenada material es idéntica en CPU
-y GLSL, mirada central y dirigida. Los otros cinco tejidos mantienen exactamente
-su función anterior, punto por punto. Se conservan dispersores complejos, PSF,
-composición, tríadas portales, dispersores fuertes, campo fino de densidad,
-retrodispersión basal, atenuación e interfaces. No hay filtro de imagen posterior,
-ajuste de ganancia ni retoque del framebuffer para aparentar un resultado.
+Se descartan ambas, se restaura exactamente el modelo de main previo y se
+conservan los umbrales. No se compensa con ganancia, ruido o dispersores para
+forzar un test verde. El aspecto de las capturas no basta para afirmar fidelidad
+superior y estas tentativas no se presentan como mejora integrada de imagen.
+La textura hepática normal sigue siendo trabajo pendiente de calibración.
 
-**Evidencia y límites.** La escala de 3,125 mm es un proxy de ingeniería explícito,
-no un tamaño lobular medido ni una calibración humana. Acerca la variación a la
-escala fina existente de 3 mm, conservando la distribución marginal del medio.
-Las referencias aportadas por el usuario se revisaron como orientación visual;
-no se copian ni se publican, ni su brillo se usa como patrón cuantitativo entre
-equipos. La respuesta angular portal de la decisión 106 se conserva (Wachsberg
-et al., 1997, [PMID 9401994](https://pubmed.ncbi.nlm.nih.gov/9401994/)); no se
-atribuye a ese estudio una escala de heterogeneidad que no midió. El tejido
-común no añade fibrosis, esteatosis ni nódulos B-mode a los casos hemodinámicos.
-Las limitaciones de cápsula/contactos siguen abiertas.
+**Mejora aceptada.** Mover sin cambiar una sola aserción las dos pruebas de
+moteado hepático y composición espacial desde `smoke.spec.ts` a
+`liverTexture.spec.ts`. El workflow hepatorrenal ya existente las ejecuta primero,
+sin reintentos ni tests omitidos, y exige dos ejecuciones reales aprobadas.
+Solo después se ejecuta la comparación de capturas. No se añade otro workflow ni
+se retiran de la CI completa: ésta vuelve a recolectar y verificar toda la suite.
+El nuevo orden detecta antes un contraste o una estadística incorrectos y evita
+invertir en la comparación hepatorrenal de un candidato que ya los rompió.
 
-**Verificación.** Contratos de selección, identidad de la ley bajo cambio de
-coordenada, conservación exacta de los otros tejidos, paridad de ambas rutas GLSL
-y microestructura portal. Los criterios existentes de moteado, contraste,
-pared y contorno se mantienen. La nueva comparación GPU debe revisar ambos
-perfiles y ventanas en el estado fijo de la decisión 149, incluyendo inspiración
-e interfaz hepatorrenal. Los resultados de la tentativa descartada no validan
-esta revisión. No se promete aumento de FPS ni validación clínica por pasar CI.
+**Verificación y trazabilidad.** Se compara el texto de ambos cuerpos de prueba
+antes y después de moverlos, incluidos plazos y anotaciones; la colección sigue
+conteniendo 73 pruebas únicas. Cambian dos IDs de Playwright por el archivo nuevo:
+usan el fallback de coste existente hasta recalibrar con tres runs completos,
+nunca se excluyen. El informe temprano conserva métricas de gris, SNR, grano y
+paridad; las capturas posteriores siguen llevando SHA de base/cambio.
+La comparación de ingeniería no constituye validación clínica ni determina por
+sí sola un patrón humano normal. El fallo debe ser visible y sus límites también.

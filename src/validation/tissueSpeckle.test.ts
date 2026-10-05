@@ -63,7 +63,7 @@ describe('moteado por tejido (decisión 56)', () => {
     expect(pts.map((m) => field(m, Tissue.Liver)[0])).toEqual(liver);
   });
 
-  it('el campo de heterogeneidad de los tejidos que lo usan conserva continuidad y desviación (1,15 dB)', () => {
+  it('la heterogeneidad del parénquima es continua y conserva su desviación (1,15 dB)', () => {
     let maxJump = 0;
     const vals: number[] = [];
     for (let i = 0; i < 4000; i++) {

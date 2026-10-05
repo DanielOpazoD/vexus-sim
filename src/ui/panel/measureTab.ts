@@ -10,6 +10,7 @@ import type { ObservedHepatic, ObservedPortal, ObservedRenal } from '../../doppl
 import type * as CaptureMeasurements from '../../doppler/capture';
 import type { ProtocolVessel } from '../../doppler/vesselIdentity';
 import { captureOverlay, type CaptureOverlay } from '../captureOverlay';
+import { portalBeatSummary } from '../portalBeatSummary';
 import { classifyModifiedVexus, classifyVexusC, type Territory, type VexusContext, type VexusResult } from '../../vexus/classification';
 import { button, note, row } from '../controls';
 import type { PanelContext } from './context';
@@ -436,7 +437,7 @@ export class MeasureTab {
         'portal',
         rejected(this.lastPortal, 'Porta') ??
           (p
-            ? `Porta: ${p.vMax.toFixed(1)}/${p.vMin.toFixed(1)} cm/s → PF <b>${Number.isFinite(p.pulsatilityFraction) ? p.pulsatilityFraction.toFixed(0) + ' %' : 'n/a'}</b> <span class="small">(${portalText(res.portalClass)}${res.portalNearThreshold ? ', próximo al umbral' : ''})</span>`
+            ? `Porta: ${p.vMax.toFixed(1)}/${p.vMin.toFixed(1)} cm/s → PF <b>${Number.isFinite(p.pulsatilityFraction) ? p.pulsatilityFraction.toFixed(0) + ' %' : 'n/a'}</b> <span class="small">(${portalText(res.portalClass)}${res.portalNearThreshold ? ', próximo al umbral' : ''}) · ${portalBeatSummary(p)}</span>`
             : 'Porta: —'),
       ),
       line(

@@ -5775,3 +5775,67 @@ El callback no depende de variables externas al serializarlo para el navegador.
 La prueba real corresponde al workflow de comparación en legacy y referencia,
 sin ampliar su timeout; sus nuevas capturas y metadatos deben revisarse antes
 de integrar. No se presume equivalencia de píxeles por pasar los tests de orquestación.
+
+## 150. Inversión de presentación PW sin invertir el flujo del paciente
+
+**Estado:** vigente.
+
+**Objetivo docente.** El signo mostrado depende de la orientación del haz y de
+los mandos de presentación. Cambiarlo no debe simular una inversión fisiológica
+ni convertir una adquisición inválida en válida. El visor incorpora INV por
+territorio dentro de «Imagen y muestreo», desactivado por defecto.
+
+**Mecanismo.** Es una reflexión de coordenadas: `P_pantalla(v) = P_adquirida(-v)`.
+El índice FFT sigue siendo periódico a la PRF, también con línea de base desplazada;
+el bin de frecuencia cero y el borde periódico de Nyquist conservan su identidad.
+No se modifica ninguna columna IQ/STFT, PRF, volumen de muestra, caudal, muestra
+fisiológica, escala o instante. Las marcas y sus valores numéricos invierten solo
+el signo visible; conservan fase cardíaca, amplitud y etiquetas. La leyenda cambia
+junto con el espectro y muestra «INV: presentación». En la referencia Q/A permanece
+la convención fisiológica original. Se conserva la advertencia de calidad existente.
+
+**Diseño.** La adquisición y el estimador reciben exactamente los mismos datos y
+opciones. INV se aplica en el dibujo y al formatear los valores ya observados; no
+se usa para ocultar aliasing, recuperar señales ausentes ni reclasificar VExUS.
+La inversión de un espectro renal cambia conjuntamente arteria y vena, sin alterar
+su identidad anatómica. No es una corrección angular ni aumenta el Nyquist.
+
+**Verificación.** Contratos de todos los bins con cinco posiciones de la línea de
+base; reflexión de un bitmap de potencia y sus marcas; inmutabilidad de columnas;
+valores con signo, datos ausentes y rechazo por calidad. E2E sobre el paciente
+congelado comprueba reversibilidad de píxeles, conservación del cero, columnas,
+tiempos y etiquetas, aislamiento de los otros territorios y reloj sin cambios.
+La captura del estado invertido se revisa antes de integrar. No supone validación
+clínica nueva: es una transformación matemática explícita de presentación.
+
+**Corrección de fiabilidad detectada al seguir main.** El posmerge de la decisión
+149 agotó 180 s al esperar el último botón del ciclo respiración/M; el reintento
+pasó en 154,6 s, pero el veredicto rechazó correctamente ese resultado inestable
+([run 37240743368](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37240743368)).
+La traza mostró esperas de estabilidad de dos cuadros de 5–19 s por control bajo
+SwiftShader. Esto identifica tiempo consumido en sincronización de interacción;
+no demuestra por sí solo un fallo fisiológico del botón. El ciclo M activa los
+controles mediante Enter nativo, tras exigir visibilidad y habilitación. Conserva
+los clics reales de los calibres, sus coordenadas, todos los criterios y el plazo
+de 180 s; añade guardas de visibilidad y dimensiones del canvas. No usa clics
+forzados, no cambia el estado mediante JavaScript ni elimina el reintento del
+veredicto: las repeticiones deben pasar sin necesitarlo. La ruta PW conserva su
+interacción por ratón. La nueva CI y el protocolo respiratorio repetido deben
+verificar esta corrección antes de integrar el PR.
+
+La revisión del cableado encontró además que el conmutador cambiaba el patrón y
+`aria-pressed` en el evento, pero su etiqueta, nota y maniobra segmentada esperaban
+la siguiente sincronización del panel. Ahora llama a `ctx.sync()` en ese mismo
+evento. Dos pruebas del DOM de los controles reales, sin avanzar reloj ni GPU,
+comprueban ambos sentidos, clics repetidos, respiración profunda, pausa inspiratoria
+e inmutabilidad del resto del paciente. Retirar esa llamada hace fallar ambas
+pruebas: no dependen de un cuadro posterior para acertar. No se cambia la dinámica
+respiratoria ni se inventa una transición fisiológica más rápida.
+
+La primera ejecución de esta reparación reveló una espera implícita adicional:
+Enter llegaba a los calibres antes del primer dibujo M y su conversión de píxel
+a profundidad aún no estaba presentada; los pares se descartaban como menores
+de 1 mm. El E2E ahora exige un cuadro nuevo del bucle con franja M adquirida y
+profundidad vigente antes de cada serie de calibres, sin dibujar mediante ganchos
+ni esperar segundos arbitrarios. La primera tentativa fallida queda registrada
+en el run 37244030603; no se acepta ni se repite sin esta corrección.

@@ -15,6 +15,7 @@ export function drawVenousSpectrum(
   pixelRatio = 1,
   baselineShift = 0,
   presentation: SpectralPresentation = { gainDb: 0, dynamicRangeDb: 45 },
+  invert = false,
 ): void {
   const axis = spectralAxis(scaleCms, baselineShift);
   const ctx = canvas.getContext('2d');
@@ -36,7 +37,7 @@ export function drawVenousSpectrum(
     const power = presentationPower(columns, c);
     const n = power.length;
     for (let y = 0; y < plotH; y++) {
-      const k = spectralBinAt((y + 0.5) / plotH, n, baselineShift);
+      const k = spectralBinAt((y + 0.5) / plotH, n, baselineShift, invert);
       const value = spectralGrey(power[k], presentation);
       for (let x = x0; x < x1; x++) {
         const p = (y * plotW + x) * 4;
@@ -76,9 +77,10 @@ export function drawVenousSpectrum(
   }
   ctx.fillStyle = '#ffd166';
   for (const mark of marks) {
-    if (mark.t < start || mark.t > end || mark.vScreen <= axis.minCms || mark.vScreen >= axis.maxCms) continue;
+    const velocity = invert ? -mark.vScreen : mark.vScreen;
+    if (mark.t < start || mark.t > end || velocity <= axis.minCms || velocity >= axis.maxCms) continue;
     const x = xOf(mark.t),
-      y = plotH * axis.fractionOf(mark.vScreen);
+      y = plotH * axis.fractionOf(velocity);
     ctx.fillText(
       mark.label,
       Math.max(2 * pixelRatio, Math.min(plotW - 40 * pixelRatio, x)),

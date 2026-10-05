@@ -1,5 +1,34 @@
-import { expect, test } from '@playwright/test';
-import { bootWithoutErrors } from './support';
+import { expect, test, type Locator, type Page } from '@playwright/test';
+import { bootWithoutErrors, framesRendered, withinFrames } from './support';
+
+/** Native keyboard activation avoids waiting two rendered GPU frames to prove pointer stability.
+ * Visibility and enabled state remain required; this is not force-clicking a hidden control.
+ */
+async function activate(control: Locator): Promise<void> {
+  await expect(control).toBeVisible();
+  await expect(control).toBeEnabled();
+  await control.press('Enter');
+}
+
+/** Espera adquisición y presentación reales antes de convertir píxeles en milímetros.
+ * Enter no aporta las esperas implícitas de estabilidad del puntero.
+ */
+async function acquiredMFrame(page: Page): Promise<void> {
+  const before = await framesRendered(page);
+  await withinFrames(page, 3, 'franja M adquirida y presentada', async () =>
+    page.evaluate((previous) => {
+      const api = window.__vexusTest!;
+      const s = api.sim();
+      return (
+        (api.framesRendered() > previous &&
+          s.mmode.enabled &&
+          s.renderer.mStrip.count > 0 &&
+          s.renderer.mStrip.depthMm === s.bmode.depthMm) ||
+        'sin cuadro M con profundidad vigente'
+      );
+    }, before),
+  );
+}
 
 // Dos contratos independientes: fisiología/PW y el ciclo de configuración/medición M.
 // Conserva todas las aserciones y el plazo original; evita acumular ambos flujos en180s.
@@ -53,15 +82,19 @@ for (const reference of [false, true]) {
     const errors = await bootWithoutErrors(page, reference ? '?e2e=1&reference=1' : '?e2e=1');
     await expect(page.getByRole('button', { name: 'Activar respiración', exact: true })).toBeVisible();
     await page.evaluate(() => window.__vexusTest!.goToStartPoint('subxiphoid'));
-    await page.locator('#mode-m').click();
-    await page.getByRole('tab', { name: 'Medir' }).click();
-    await page.getByRole('button', { name: 'VCI modo M', exact: true }).click();
+    await activate(page.locator('#mode-m'));
+    await activate(page.getByRole('tab', { name: 'Medir' }));
+    await activate(page.getByRole('button', { name: 'VCI modo M', exact: true }));
+    await expect(page.locator('#mmode')).toBeVisible();
+    await acquiredMFrame(page);
     const box = (await page.locator('#mmode').boundingBox())!;
+    expect(box.width).toBeGreaterThan(100);
+    expect(box.height).toBeGreaterThan(70);
     for (const dx of [40, 80]) for (const dy of [40, 60]) await page.mouse.click(box.x + dx, box.y + dy);
     await expect(page.locator('.result')).toContainText('sin ciclo respiratorio completo');
     await expect(page.locator('.result')).not.toContainText('colapso');
-    await page.getByRole('tab', { name: 'Adquirir' }).click();
-    await page.getByRole('button', { name: 'Activar respiración', exact: true }).click();
+    await activate(page.getByRole('tab', { name: 'Adquirir' }));
+    await activate(page.getByRole('button', { name: 'Activar respiración', exact: true }));
     await expect(page.getByRole('button', { name: 'Desactivar respiración', exact: true })).toBeVisible();
     expect(
       await page.evaluate(() => {
@@ -75,14 +108,18 @@ for (const reference of [false, true]) {
       }),
     ).toBeGreaterThan(0.9);
     // Avanzar fisiología sin renderizar deja un hueco real en la franja M: no acredita un ciclo adquirido.
-    await page.getByRole('tab', { name: 'Medir' }).click();
-    await page.getByRole('button', { name: 'VCI modo M', exact: true }).click();
+    await activate(page.getByRole('tab', { name: 'Medir' }));
+    await activate(page.getByRole('button', { name: 'VCI modo M', exact: true }));
+    await expect(page.locator('#mmode')).toBeVisible();
+    await acquiredMFrame(page);
     const freshBox = (await page.locator('#mmode').boundingBox())!;
+    expect(freshBox.width).toBeGreaterThan(100);
+    expect(freshBox.height).toBeGreaterThan(70);
     for (const dx of [50, 100]) for (const dy of [40, 70]) await page.mouse.click(freshBox.x + dx, freshBox.y + dy);
     await expect(page.locator('.result')).toContainText('sin ciclo respiratorio completo');
     await expect(page.locator('.result')).not.toContainText('colapso');
-    await page.getByRole('tab', { name: 'Adquirir' }).click();
-    await page.getByRole('button', { name: 'Desactivar respiración', exact: true }).click();
+    await activate(page.getByRole('tab', { name: 'Adquirir' }));
+    await activate(page.getByRole('button', { name: 'Desactivar respiración', exact: true }));
     await expect(page.getByRole('button', { name: 'Activar respiración', exact: true })).toBeVisible();
     expect(
       await page.evaluate(() => {

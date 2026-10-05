@@ -202,6 +202,29 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
   for (const key of ['columns', 'lastTime', 'marks'] as const) expect(shifted[0][key]).toBe(original[0][key]);
   for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowLeft');
   await expect(canvases.first()).toHaveAttribute('data-baseline', '0');
+  // INV changes screen polarity only: same columns, clock, baseline, labels and other rows.
+  const hepaticRow = dialog.locator('.venous-row').first();
+  await hepaticRow.locator('summary').click();
+  const invert = hepaticRow.getByRole('checkbox', { name: 'Invertir espectro Suprahepática derecha' });
+  const beforeInvert = await snapshot();
+  const valuesBeforeInvert = await dialog.locator('.venous-row figcaption span').allTextContents();
+  await invert.check();
+  await expect(canvases.first()).toHaveAttribute('data-inverted', 'true');
+  const inverted = await snapshot();
+  expect(inverted[0].hash).not.toBe(beforeInvert[0].hash);
+  expect(inverted.slice(1)).toEqual(beforeInvert.slice(1));
+  for (const key of ['columns', 'lastTime', 'marks', 'zeroY'] as const) expect(inverted[0][key]).toBe(beforeInvert[0][key]);
+  await expect(hepaticRow.locator('figcaption span')).toContainText(/S \+[\d.]+.*D \+[\d.]+.*A -[\d.]+/);
+  await expect(hepaticRow.locator('.venous-direction')).toContainText('+ hacia la aurícula derecha');
+  await expect(hepaticRow.locator('.venous-direction')).toContainText('INV: presentación');
+  expect(
+    await page.evaluate(() => ({ t: window.__vexusTest!.sim().physiology.clock.t, frozen: window.__vexusTest!.sim().frozen })),
+  ).toEqual(before);
+  await page.screenshot({ path: info.outputPath('venous-pw-inverted.png') });
+  await invert.uncheck();
+  expect(await snapshot()).toEqual(beforeInvert);
+  expect(await dialog.locator('.venous-row figcaption span').allTextContents()).toEqual(valuesBeforeInvert);
+  await hepaticRow.locator('summary').click();
   // Image gain must change only pixels, retaining IQ history and source-derived marks.
   const portalRow = dialog.locator('.venous-row').nth(1);
   await portalRow.locator('summary').click();

@@ -68,6 +68,7 @@ export class VenousViewer {
   #canvases: HTMLCanvasElement[] = [];
   #paintKeys = ['', '', ''];
   #baselines = [0, 0, 0.1];
+  #inverted = [false, false, false];
   readonly #presentation = VENOUS_PW_PRESENTATION.map((p) => ({ ...p }));
   #spectralControls: HTMLElement[] = [];
   #samplingNotes: HTMLElement[] = [];
@@ -291,6 +292,17 @@ export class VenousViewer {
         const summary = document.createElement('summary');
         summary.textContent = 'Imagen y muestreo';
         image.appendChild(summary);
+        const invertLabel = document.createElement('label');
+        const invert = document.createElement('input');
+        invert.type = 'checkbox';
+        invert.setAttribute('aria-label', `Invertir espectro ${r.label}`);
+        invert.addEventListener('change', () => {
+          this.#inverted[i] = invert.checked;
+          this.#marksT = -Infinity;
+          this.#draw();
+        });
+        invertLabel.append(invert, ' Invertir espectro (solo pantalla)');
+        image.appendChild(invertLabel);
         for (const [key, text, values] of [
           ['gainDb', 'Ganancia de imagen (dB)', [-6, 0, 6, 9, 12, 15, 18, 24]],
           ['dynamicRangeDb', 'Rango dinámico (dB)', [20, 25, 30, 35, 45, 60]],
@@ -529,7 +541,7 @@ export class VenousViewer {
           { ...opts, wallFilterHz: this.#wallFilters[i] },
           this.#spectral!.gateTracks[i],
         );
-        this.#velocitySummaries[i] = observedVelocitySummary(m);
+        this.#velocitySummaries[i] = observedVelocitySummary(m, this.#inverted[i]);
         this.#measurementIssues[i] = m ? (m.quality.issue ? qualityText(m.quality) : '') : 'Esperando cuatro latidos';
         return m?.quality.issue === null ? m.marks : [];
       });
@@ -551,7 +563,7 @@ export class VenousViewer {
         targetH = Math.round(184 * ratio);
       if (canvas.width !== targetW) canvas.width = targetW;
       if (canvas.height !== targetH) canvas.height = targetH;
-      const paintKey = `${targetW}/${targetH}/${scale}/${this.#baselines[i]}/${this.#presentation[i].gainDb}/${this.#presentation[i].dynamicRangeDb}/${end}/${columns.at(-1)?.t}/${this.#marksT}/${this.#annotations}/${this.#paused ? cursor?.t : ''}`;
+      const paintKey = `${targetW}/${targetH}/${scale}/${this.#baselines[i]}/${this.#inverted[i]}/${this.#presentation[i].gainDb}/${this.#presentation[i].dynamicRangeDb}/${end}/${columns.at(-1)?.t}/${this.#marksT}/${this.#annotations}/${this.#paused ? cursor?.t : ''}`;
       if (paintKey !== this.#paintKeys[i])
         drawVenousSpectrum(
           this.#canvases[i],
@@ -564,9 +576,11 @@ export class VenousViewer {
           ratio,
           this.#baselines[i],
           this.#presentation[i],
+          this.#inverted[i],
         );
       this.#paintKeys[i] = paintKey;
       canvas.dataset.nyquistCms = String(scale);
+      canvas.dataset.inverted = String(this.#inverted[i]);
       canvas.dataset.prfHz = String(this.#spectral.prfHz(i));
       canvas.dataset.gateLengthMm = String(this.#spectral.gateLengthMm(i));
       canvas.dataset.gateDepthMm = String(this.#spectral.gateDepthsMm[i]);
@@ -607,8 +621,9 @@ export class VenousViewer {
       const detail = this.dialog.querySelectorAll('.venous-direction')[i];
       detail.textContent =
         i === 2 && this.#spectralMode
-          ? `+ arteria · − vena · misma puerta PW${this.#renalWindow === 'paired' ? ' · inspección: predominio arterial puede impedir medición venosa' : ' · centrada en vena'}`
-          : `${this.#spectralMode && VENOUS_FORWARD_SIGN[i] < 0 ? '−' : '+'} ${VENOUS_COMPARISON_CHANNELS[i].forward}${this.#spectralMode ? ' · orientación virtual' : ''}`;
+          ? `${this.#inverted[i] ? '− arteria · + vena' : '+ arteria · − vena'} · misma puerta PW${this.#renalWindow === 'paired' ? ' · inspección: predominio arterial puede impedir medición venosa' : ' · centrada en vena'}`
+          : `${this.#spectralMode && VENOUS_FORWARD_SIGN[i] * (this.#inverted[i] ? -1 : 1) < 0 ? '−' : '+'} ${VENOUS_COMPARISON_CHANNELS[i].forward}${this.#spectralMode ? ' · orientación virtual' : ''}`;
+      if (this.#spectralMode && this.#inverted[i]) detail.textContent += ' · INV: presentación';
     }
     if (!this.#points.length) {
       this.#status.textContent = 'Acumulando historial…';

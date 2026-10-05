@@ -1,5 +1,8 @@
 import { FFT, hannWindow } from '../core/fft';
 
+/** Ventana temporal que debe poder consultar una captura PW. */
+export const SPECTRAL_CAPTURE_SECONDS = 7;
+
 /**
  * Espectrograma Doppler pulsado: P(m,k) = |STFT{z}(m,k)|² (base D.8). Cada
  * columna lleva el instante de adquisición de su centro de ventana (reloj de
@@ -33,7 +36,7 @@ export class SpectralProcessor {
   private workRe: Float32Array;
   private workIm: Float32Array;
   readonly columns: SpectralColumn[] = [];
-  private maxColumns: number;
+  private maxColumns: number | undefined;
   private t0 = 0;
   private prfHz = 2500;
   private synced = false;
@@ -41,7 +44,7 @@ export class SpectralProcessor {
   constructor(opts: { fftSize?: number; hop?: number; maxColumns?: number } = {}) {
     this.fftSize = opts.fftSize ?? 128;
     this.hop = opts.hop ?? 16;
-    this.maxColumns = opts.maxColumns ?? 2048;
+    this.maxColumns = opts.maxColumns;
     this.fft = new FFT(this.fftSize);
     this.window = hannWindow(this.fftSize);
     this.bufRe = new Float32Array(this.fftSize);
@@ -96,7 +99,8 @@ export class SpectralProcessor {
     // Centro de la ventana: la muestra sampleIndex − N/2
     const tCenter = this.t0 + (this.sampleIndex - half) / this.prfHz;
     this.columns.push({ t: tCenter, powerDb: power, prfHz: this.prfHz });
-    if (this.columns.length > this.maxColumns) this.columns.splice(0, this.columns.length - this.maxColumns);
+    const limit = this.maxColumns ?? Math.min(8192, Math.max(2048, Math.ceil((SPECTRAL_CAPTURE_SECONDS * this.prfHz) / this.hop) + 1));
+    if (this.columns.length > limit) this.columns.splice(0, this.columns.length - limit);
   }
 
   /** Frecuencia (Hz) del bin k con fftshift. */

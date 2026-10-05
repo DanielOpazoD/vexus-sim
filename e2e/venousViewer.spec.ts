@@ -1,3 +1,4 @@
+import { spectralSnapshot } from './spectralSnapshot';
 import { expect, test } from '@playwright/test';
 import { bootWithoutErrors, budget, checkAfterEach, withinFrames } from './support';
 
@@ -159,35 +160,7 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
     });
   expect(await alignedAxes()).toBe(true);
   // Baseline is a reversible display transform. It must not reconstruct IQ or move the patient's clock.
-  const snapshot = () =>
-    canvases.evaluateAll((els) =>
-      els.map((el) => {
-        const c = el as HTMLCanvasElement;
-        // Repeated getImageData on the live canvas makes Chromium switch its renderer
-        // from GPU to CPU, changing antialiased text pixels during the assertion.
-        // Read a disposable software copy so the test does not mutate the renderer it verifies.
-        const copy = document.createElement('canvas');
-        copy.width = c.width;
-        copy.height = c.height;
-        const context = copy.getContext('2d', { willReadFrequently: true })!;
-        context.drawImage(c, 0, 0);
-        const data = context.getImageData(0, 0, copy.width, copy.height).data;
-        let hash = 2166136261;
-        for (const v of data) hash = Math.imul(hash ^ v, 16777619) >>> 0;
-        const yellowRows: number[] = [];
-        for (let y = 0; y < c.height; y++) {
-          const at = (y * c.width + 10) * 4;
-          if (data[at] - data[at + 2] > 50 && data[at + 1] - data[at + 2] > 45 && data[at] - data[at + 1] < 30) yellowRows.push(y);
-        }
-        return {
-          hash,
-          columns: c.dataset.columns,
-          lastTime: c.dataset.lastTime,
-          marks: c.dataset.marks,
-          zeroY: yellowRows.length ? yellowRows.reduce((a, b) => a + b, 0) / yellowRows.length : null,
-        };
-      }),
-    );
+  const snapshot = () => canvases.evaluateAll(spectralSnapshot);
   const original = await snapshot();
   const gateCenters = await canvases.evaluateAll((els) => els.map((e) => (e as HTMLCanvasElement).dataset.gateCenter));
   expect(gateCenters.every((g) => g?.startsWith('['))).toBe(true);

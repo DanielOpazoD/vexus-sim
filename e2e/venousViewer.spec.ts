@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { expect, test } from '@playwright/test';
 import { bootWithoutErrors, budget, checkAfterEach, withinFrames } from './support';
 
@@ -524,6 +525,26 @@ test('laboratorio venoso: parámetros físicos, progresión calculada y aislamie
   await expect(lab.getByRole('slider', { name: 'PAD basal', exact: true })).toHaveValue('5');
   await expect(abdominal).toHaveValue('5');
   await expect(dialog.locator('.venous-case')).toContainText('sinusal 50 lpm');
+  const downloaded = page.waitForEvent('download');
+  await lab.getByRole('button', { name: 'Guardar parámetros', exact: true }).click();
+  const file = await downloaded;
+  expect(file.suggestedFilename()).toBe('vexus-parametros-venosos.json');
+  const saved = JSON.parse(await readFile((await file.path())!, 'utf8'));
+  expect(saved.kind).toBe('vexus-venous-parameters');
+  expect(saved.version).toBe(1);
+  expect(saved.parameters.heartRateBpm).toBe(50);
+  expect(saved.parameters.venousReservoirCompliance).toBe(0.5);
+  saved.parameters.heartRateBpm = 80;
+  await lab.getByLabel('Importar parámetros venosos', { exact: true }).setInputFiles({
+    name: 'parametros.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(saved)),
+  });
+  await expect(heartRate).toHaveValue('80');
+  await expect(compliance).toHaveValue('0.5');
+  await expect(dialog.locator('.venous-case')).toContainText('sinusal 80 lpm');
+  await expect(lab).toContainText('Importado');
+  expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
   expect(
     await page.evaluate(() => ({
       patient: JSON.stringify(window.__vexusTest!.sim().patient),

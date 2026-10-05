@@ -26,7 +26,7 @@ function setup() {
     Object.assign(input, { files: [{ size, text }] });
     input.dispatch('change');
   };
-  return { changed, controls, root, select };
+  return { changed, controls, root, input, select };
 }
 const settle = async () => {
   await Promise.resolve();
@@ -53,6 +53,9 @@ describe('importación de parámetros aislada y sin carreras', () => {
     expect(findAll(s.root, (e) => e.type === 'checkbox')[0].checked).toBe(true);
     expect(findAll(s.root, (e) => e.getAttribute('aria-label') === 'Frecuencia cardíaca sinusal')[0].value).toBe('50');
     expect(s.root.textContent).toContain('no guarda señales');
+    expect(s.controls.status.getAttribute('role')).toBe('status');
+    expect(s.input.getAttribute('aria-describedby')).toBe(s.controls.status.id);
+    expect(s.input.getAttribute('aria-invalid')).toBeNull();
   });
   it('un archivo inválido o grande no sustituye el estado y deja error visible', async () => {
     const s = setup();
@@ -61,6 +64,7 @@ describe('importación de parámetros aislada y sin carreras', () => {
     await settle();
     expect(s.changed).not.toHaveBeenCalled();
     expect(s.controls.status.textContent).toContain('No se importó');
+    expect(s.input.getAttribute('aria-invalid')).toBe('true');
     const read = vi.fn(() => Promise.resolve(''));
     s.select(read, 8193);
     await settle();
@@ -68,6 +72,8 @@ describe('importación de parámetros aislada y sin carreras', () => {
     expect(s.controls.status.textContent).toContain('8 KiB');
     expect(findAll(s.root, (e) => e.type === 'range').map((e) => e.value)).toEqual(before);
     expect(report).toHaveBeenCalledWith('ui', expect.any(Error));
+    s.controls.reset();
+    expect(s.input.getAttribute('aria-invalid')).toBeNull();
   });
   it('cerrar o reiniciar impide que una lectura tardía reactive el experimento', async () => {
     const s = setup();

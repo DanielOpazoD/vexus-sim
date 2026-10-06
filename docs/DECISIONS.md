@@ -6354,6 +6354,8 @@ Defecto: f y f+PRF producían la misma fase pero diferente rechazo de clutter; f
 
 Aceptación: secuencias IQ muestreadas como oráculo independiente, alias positivos/negativos, DC y desactivación; compilación GPU real y adquisición portal normal/grave. Sigue siendo respuesta aproximada sobre autocorrelación emulada (`color-emulated-estimator`), sin ensemble temporal filtrado real ni calibración clínica. Presupuesto total +1 KiB, de 1030 a 1031, para el pequeño módulo/folding y controles de desarrollo; todos los chunks siguen contando.
 
+Seguimiento de 173: SwiftShader produjo un error de fasor 3,24e−5 al generar el IQ mediante sin/cos del driver dentro del fixture, aunque el cálculo de ganancia precedía correctamente al fallo. El oráculo GPU recibe ahora muestras IQ conocidas calculadas en doble precisión, ejecuta el filtro de producción y compara contra fase entre muestras independiente. Conserva los nueve puntos, límite 2e−6 por componente y 5e−7 de potencia. Se aísla en una página vacía para no compilar el simulador completo; las pruebas de integración color conservan el arranque real. Se registra el fallo previo y se exige CI completa de las cabezas corregidas.
+
 ## 174. Conservar las barreras fijas al convertir transmisión para color
 
 Defecto: escalar toda la pérdida B por fD/fB debilitaba hueso/gas y el suelo 1e-6 limitaba la atenuación. A2 registra pérdidas fijas en su canal .w auxiliar existente; el color lee los prefijos dB y conserva esa parte al convertir absorción. Un sampler adicional, sin textura nueva. Se preserva A.o2.y, que sí almacena el rayo dirigido. B, apertura, refracción y transmisión PW no cambian. Contrato previo: `anatomy/DOPPLER_ATTENUATION_CONTRACT.md`.

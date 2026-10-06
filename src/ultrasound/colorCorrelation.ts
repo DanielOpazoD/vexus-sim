@@ -43,6 +43,8 @@ void main() {
     float w = (x == 0 ? 2.0 : 1.0) * (y == 0 ? 2.0 : 1.0) / 16.0;
     r1 += w * sampleR1(vUv + vec2(float(x), float(y)) * uCellStep);
   }
-  oColor = vec4(r1, texture(uRawColor, vUv).z, 0.0);
+  // Blood fraction is metadata of this cell, not a filtered correlation sample.
+  // Fetch its integer texel so interpolation cannot alter it at cell boundaries.
+  oColor = vec4(r1, texelFetch(uRawColor, ivec2(gl_FragCoord.xy), 0).z, 0.0);
 }
 `;

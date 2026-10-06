@@ -1,7 +1,7 @@
 import { abdominalAtlas } from '../anatomy/abdominalAtlas';
 import { ABDOMINAL_ATLAS } from '../anatomy/abdominalAtlasData';
 
-/** One bounded source volume; historical renderers do not allocate an abdominal texture. */
+/** One bounded source volume; historical renderers bind a complete 4-byte dummy texture. */
 export function createAbdominalTexture(gl: WebGL2RenderingContext, enabled: boolean): WebGLTexture {
   if (enabled && !abdominalAtlas) throw new Error('Campo abdominal CPU ausente');
   const dimensions = enabled ? ABDOMINAL_ATLAS.textureDimensions : [1, 1, 1];

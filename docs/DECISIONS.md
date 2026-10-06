@@ -6294,6 +6294,12 @@ La métrica material de peritoneo de la decisión 65 conserva su plano renal his
 
 **Verificación.** Controles por debajo de z=0, en el xifoides correcto y a ambos lados de la unión; misma frontera en CPU/GPU/malla, adquisiciones, signos y rechazo de muestras/campos no finitos. Resultados y límites en `anatomy/STERNAL_FRAME_RESULT.md`. No hay cambios fisiológicos ni publicación.
 
+Seguimiento de 166: la CI encontró una puerta arterial renal fija de la pose anterior (θ 0,4266/r 48 mm), ahora fuera del vaso. La prueba adquiere una arteria real con búsqueda ponderada por transmisión y margen interior 0,2 mm, igual al audit pareado existente para arterias de radio 0,5–1,35 mm. Conserva la comprobación del vaso, 1280 partículas y rechazo de certificación venosa; no cambia señal ni umbral clínico.
+
+La comprobación costal heredada suponía seis pares y muestreaba los nuevos arcos como si no tuvieran término craneocaudal ni extremos libres. Sus tres posiciones por lado ahora siguen las elipses declaradas, muestrean cartílago lateral al esternón y los tres tramos óseos de 11–12. Exige 52 puntos óseos y 20 cartilaginosos, acuerdo exacto CPU/GPU. El adulto de referencia conserva los ajustes registrados de 5–10, ajustes explícitos de 11–12 y declara los cuatro arcos superiores como estimados en vez de exigirles una medición inexistente.
+
+El test de captura congelada agotó 180 s globales en SwiftShader y pasó solo al reintento (CI sigue roja). Usaba setTimeout global en vez del presupuesto común: se conserva trabajo 180 s y se suma el arranque BOOT_MS como en las otras pruebas. No se modifica polling, imágenes, tolerancias ni política de primer intento; la nueva revisión exige toda CI verde sin reintentos aprobados.
+
 ## 168. Adquisición portal intrahepática separada del tronco principal
 
 **Defecto y mecanismo.** La pose lateral anterior sigue demasiado el segmento extrahepático y muestra cava parcial. Se adquiere físicamente hilio/rama derecha sin agrandar vísceras ni ocultar vasos. `portalTrunk` conserva exactamente las poses previas para PW VExUS; el protocolo usa esa ventana con sus restricciones de calidad, puerta de 6 mm y distancia a bifurcación conservadas. `subxiphoid` se identifica como Subcostal · VCI longitudinal, con pose intacta.
@@ -6311,3 +6317,5 @@ La métrica material de peritoneo de la decisión 65 conserva su plano renal his
 **Invariantes y refutación.** No se alteran flujo, áreas, signo fisiológico, proyección axial, clutter, ruido, ganancia, filtro, acoplamiento, transmisión, cadencia ni umbral. Comparación numérica independiente GPU: reconstruir fasores desde el campo crudo y calcular interpolación/kernel, sin importar funciones de producción. Se comprueban sangre frente a píxeles, aliasing, inversión de presentación, ausencia de contacto, filtro alto y cine en ambos cuerpos. Error de correlación, cancelación falsa o señal sin sangre refutan el cambio.
 
 **Alcance y coste.** Estimador emulado y kernel espacial estimado, no IQ clínico real. Una textura RGBA32F 96×160 adicional (240 KiB), programa/pasada a cadencia de color. Presupuesto 1028→1030 KiB para interpolación y adquisiciones: límites por chunk y total siguen activos. Paleta/preset se entregan por separado. Base física: [Evans, Jensen y Nielsen, 2011](https://pmc.ncbi.nlm.nih.gov/articles/PMC3262272/); la publicación no suministra este kernel concreto.
+
+Seguimiento de 168: el barrido GPU incluye las nueve ventanas, incluida portalTrunk. La ventana portal ahora contiene ramas intrahepáticas menores: su rejilla se refina de 48×72 a 64×96, conservando >50 células sanguíneas completamente interiores y todos los umbrales de acuerdo y velocidad. La rejilla del resto de ventanas, volumen y cáscaras no cambia.

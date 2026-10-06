@@ -44,6 +44,7 @@ import type { SegmentGrid } from './transmission';
 import {
   BODY_BASE,
   RIB_BASE,
+  RIB_TEXELS,
   CARTILAGE_BASE,
   COMPRESSION_BASE,
   BOWEL_BASE,
@@ -652,8 +653,12 @@ export class UltrasoundRenderer {
     ];
     if (s.torso.profile) this.sceneData.set(s.torso.profile, BODY_BASE * 4);
     s.ribs.forEach((r, i) => {
-      this.sceneData.set(ribShape(r, s.torso), (RIB_BASE + i * 2) * 4);
-      this.sceneData.set([ribAnteriorEndX(r), r.shape ? 1 : 0, r.sourceCartilage ? 1 : 0, 0], (RIB_BASE + i * 2 + 1) * 4);
+      this.sceneData.set([r.zAnterior, r.tilt, r.halfWidth, r.halfThickness], (RIB_BASE + i * RIB_TEXELS) * 4);
+      this.sceneData.set(ribShape(r, s.torso), (RIB_BASE + i * RIB_TEXELS + 1) * 4);
+      this.sceneData.set(
+        [ribAnteriorEndX(r), r.shape || !Number.isFinite(r.cartilageFromPhi) ? 1 : 0, r.sourceCartilage ? 1 : 0, r.frontPhi ?? 0],
+        (RIB_BASE + i * RIB_TEXELS + 2) * 4,
+      );
     });
     if (s.torso.profile) CARTILAGE_ROWS.forEach((row, i) => this.sceneData.set(row, (CARTILAGE_BASE + i) * 4));
     BOWEL_BOUNDS.forEach((row, i) => this.sceneData.set(row, (BOWEL_BASE + i) * 4));

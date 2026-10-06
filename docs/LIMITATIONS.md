@@ -90,11 +90,8 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   cardíaca del calibre está amortiguada.
 - **Sin movimiento cardíaco transmitido a hígado/cava** (`no-cardiac-tissue-motion`); la
   respiración es el único movimiento tisular, y el corazón (decisión 85) no late.
-- **Sin bazo y caja torácica incompleta** (`no-spleen-no-left-ribs`, identificador histórico): existen los pares
-  5–10 en CPU, GPU y navegador 3D. Las superficies 3D se detienen con margen de un semiespesor en los extremos para no atravesar el corte SDF; no tienen tapas ni articulaciones detalladas. Los pares 1–4 y 11–12 no están modelados ni se dibujan como decoración.
-  El lado izquierdo refleja el registro derecho; no representa asimetrías individuales. Sección, inclinación y separación
-  siguen parámetros adultos estimados, sin registro CT/atlas ni validación antropométrica independiente. El cartílago
-  anterior y el final en apófisis transversa son aproximaciones; los arcos no tienen articulaciones costovertebrales detalladas.
+- **Sin bazo** (`no-spleen`): la anatomía visceral izquierda permanece incompleta.
+- **Esqueleto torácico estimado** (`thoracic-skeleton-estimated`, decisión 166): existen doce pares funcionales y esternón compartidos en CPU, GPU y 3D. Las costillas 11/12 terminan libremente; sus recorridos se ajustan al diseño LUS (errores máximos de ajuste 2,66 y 0,80 mm, no errores clínicos). Los arcos 5–10 y sus inserciones aproximadas se preservan. Falta registrar el conjunto con un mismo adulto, estrechamiento superior, asimetrías, articulaciones, clavículas/escápulas acústicas y región diafragmática completa. Las superficies costales no tienen tapas ni articulaciones detalladas. Manubrio/cuerpo son hueso y xifoides cartílago estimado; no representa variabilidad de osificación. Ninguna validación clínica independiente está cerrada.
 - **El corazón es un esquema estático** (`schematic-static-heart`, decisión 85): cuatro elipsoides con su miocardio, los
   tabiques y los orificios auriculoventriculares abiertos, sin valvas, sin grandes vasos de la base (vena cava superior,
   raíz aórtica, tronco pulmonar), sin seno coronario ni venas pulmonares; el pericardio es la capa de 1,5 mm del tejido del
@@ -528,7 +525,7 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 
 ## Adulto de referencia en revisión (`?reference=1`)
 
-- `reference-thorax-incomplete`: el campo actual conserva seis pares 5–10, columna procedural desplazada y esternón visual heredado. Los 24 OBJ costales están hashverificados, pero todavía no representan doce pares funcionales ni articulaciones completas. El diafragma existente tiene dos cúpulas aproximadas; su arquitectura, tendón, pilares, hiatos e inserciones deben revisarse con el tórax completo. [Plan y estado](anatomy/TORSO_PROGRESS.md).
+- `reference-thorax-incomplete`: solo los pares 5–10 conservan el ajuste del atlas. Los pares restantes y el esternón son procedurales estimados, no piezas registradas de los 24 OBJ. El perfil corporal superior sigue limitado y la columna es procedural desplazada; no existe un adulto de referencia reconciliado completo. [Plan y estado](anatomy/TORSO_PROGRESS.md).
 - `reference-skeletal-organ-overlap`: un muestreo denso del esqueleto sin compresión contra los tejidos originales detecta intersecciones con hígado y cinco muestras sanguíneas en la sexta costilla. La precedencia de hueso en el clasificador no elimina este defecto geométrico. No se movieron órganos ni se ensancharon ventanas para ocultarlo. La superficie del séptimo cartílago queda a un mínimo muestreado de 0,39 mm de la piel externa: también necesita reconciliarse con el espesor cutáneo. [Medición](anatomy/reference-relationships-report.json).
 - `reference-cartilage-seventh-only`: solo el séptimo cartílago bilateral tiene secciones medidas en los OBJ incluidos; los otros cartílagos siguen pendientes. Las 16 elipses interpoladas tienen residual de superficie RMS 0,94 mm, p95 2,10 mm, máximo 3,15 mm. Promedio bilateral, extremos cerrados y sección elíptica son aproximaciones; pasar CPU/GLSL no constituye validación clínica.
 

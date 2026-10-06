@@ -50,10 +50,12 @@ for (const reference of [false, true])
       // la transversa epigástrica corta de través la VCI y la aorta: 25 celdas interiores en el sano (66 y 55 en los
       // congestivos) con el TS como «GPU»
       expect(report.find((r) => r.id === 'epigastric')!.bloodCells).toBeGreaterThan(15);
-      // Volumen (Fase 2): 50 000 puntos de todo el tronco. Lejos de interfaces (≥ 1 mm) las dos
+      // Volumen (Fase 2): 60 000 puntos de todo el tronco. Lejos de interfaces (≥ 1 mm) las dos
       // anatomías deben coincidir EXACTAMENTE: cambiar en GLSL el redondeo de la fisura umbilical
       // de 3 a 6 mm solo lo detecta esto (1 discrepancia en 18 000; las ventanas daban 100 %).
-      const vol = await page.evaluate(() => window.__vexusTest!.volumeEquivalence(50_000));
+      // Doce pares añaden superficies: mantener >40 000 muestras interiores aumentando el banco,
+      // sin bajar la igualdad exacta ni alejar la exclusión de 1 mm de las interfaces (decisión 166).
+      const vol = await page.evaluate(() => window.__vexusTest!.volumeEquivalence(60_000));
       const vtag = `${id}/volumen: ${JSON.stringify(vol)}`;
       expect(vol.interiorPoints, vtag).toBeGreaterThan(40_000);
       expect(vol.tissueAgreement, vtag).toBe(1);

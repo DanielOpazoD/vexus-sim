@@ -1,7 +1,7 @@
 // @tier slow
 import { describe, expect, it } from 'vitest';
 import { Interface } from '../anatomy/interfaces';
-import { Tissue } from '../anatomy/tissues';
+import { TISSUES, Tissue } from '../anatomy/tissues';
 import { fidelityStats } from '../app/fidelity';
 import type { Simulator } from '../app/simulator';
 import { START_POINTS, type StartPoint } from '../app/startPoints';
@@ -12,7 +12,7 @@ import { DISPLAY_MARGIN_PX, DISPLAY_REF_DB } from '../ultrasound/renderer';
 import { pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
 import { ElevationAnchor, type SpeckleAnchorState } from '../ultrasound/speckleField';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
-import { type TwinFrame } from './support/compoundTwin';
+import { TWIN_GEOMETRY, type TwinFrame } from './support/compoundTwin';
 import { wallTwin } from './support/wallTwin';
 
 import { RATIO_15_DB, SKIRT_DB, TGC, anatomy, caliber, engine, scene } from './support/wallFixture';
@@ -100,9 +100,11 @@ function benchOnTwinUncached(id: StartPoint['id'], bo: BenchOpts) {
  * pared) sobre la del tejido a 1,5–4 mm a cada lado (dB; ~0 si no hay línea), según lo que hay detrás (el primer
  * tejido que no es la grasa de la pared): grasa retroperitoneal o perirrenal, o el hígado.
  */
-function renalWallFace(noFacets: boolean): { fat: number[]; liver: number[] } {
+function renalWallFace(noFacets: boolean): { fat: number[]; liver: number[]; shadowed: number } {
   const sp = START_POINTS.find((s) => s.id === 'renal')!;
-  const pose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
+  // Conserva el plano de referencia de la decisión 65 para contrastar el mismo material.
+  // La adquisición del nuevo preset (5 mm caudal) se valida en startPoints/PW y en el banco de pantalla.
+  const pose = { phi: sp.phi, z: -85, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
   const frame = probeFrame(pose, scene.torso, CONVEX_C35);
   const f: TwinFrame = {
     center: frame.curvatureCenter,
@@ -111,10 +113,12 @@ function renalWallFace(noFacets: boolean): { fat: number[]; liver: number[] } {
     elevation: frame.elevation,
     face: frame.face,
   };
-  const o = wallTwin(scene, caliber, f, anchorOf(f), { model: 'wall', j0: 0, j1: CONVEX_C35.lines - 1, r0: 0, r1: 60, noFacets });
+  // Doble densidad angular para conservar el mínimo de muestras observables tras excluir sombras.
+  const geometry = { ...TWIN_GEOMETRY, lines: TWIN_GEOMETRY.lines * 2 };
+  const o = wallTwin(scene, caliber, f, anchorOf(f), { model: 'wall', j0: 0, j1: geometry.lines - 1, r0: 0, r1: 60, noFacets }, geometry);
   const nR = o.i1 - o.i0 + 1;
   const pow = (i: number, jj: number): number => o.env[i * o.nL + jj] ** 2;
-  const out = { fat: [] as number[], liver: [] as number[] };
+  const out = { fat: [] as number[], liver: [] as number[], shadowed: 0 };
   const n = (mm: number) => Math.round(mm / o.dr);
   for (let jj = 0; jj < o.nL; jj++) {
     let a = -1;
@@ -126,6 +130,19 @@ function renalWallFace(noFacets: boolean): { fat: number[]; liver: number[] } {
       } else if (a >= 0) break;
     }
     if (a < 0 || b + n(4) >= nR || b - n(4) < 0) continue;
+    // La llegada a la cara y su fondo deben ser observables. Con doce pares, el preset
+    // puede tener costillas en los bordes: su sombra no mide la reflectividad del peritoneo.
+    let entered = false;
+    let blocked = false;
+    for (let i = 0; i <= b + n(4); i++) {
+      const t: Tissue = o.tissue[i * o.nL + jj];
+      if (t !== Tissue.Air) entered = true;
+      if (entered && (TISSUES[t].bone || TISSUES[t].gas)) blocked = true;
+    }
+    if (blocked) {
+      out.shadowed++;
+      continue;
+    }
     let across: Tissue | undefined;
     for (let i = b + 1; i < nR && across === undefined; i++) {
       const tt: Tissue = o.tissue[i * o.nL + jj];
@@ -152,7 +169,8 @@ function renalWallFace(noFacets: boolean): { fat: number[]; liver: number[] } {
   return out;
 }
 
-const summary = (x: { fat: number[]; liver: number[] }) => ({
+const summary = (x: { fat: number[]; liver: number[]; shadowed: number }) => ({
+  shadowed: x.shadowed,
   fat: `${x.fat.length} líneas, mediana ${median(x.fat).toFixed(1)} dB, media ${mean(x.fat).toFixed(1)}`,
   liver: `${x.liver.length} líneas, mediana ${median(x.liver).toFixed(1)} dB, media ${mean(x.liver).toFixed(1)}`,
 });
@@ -195,7 +213,7 @@ describe('banco de la pared de la GPU (display.wall) sobre el gemelo en las pose
     }
   });
 
-  it('decisión 65: en la ventana renal la cara interna de la pared se apaga donde hay grasa detrás y sigue contra el hígado', () => {
+  it('decisión 65: en el plano renal de referencia visible la cara interna se apaga contra grasa y sigue contra hígado', () => {
     // detrás del peritoneo parietal posterior (el compartimento retroperitoneal) no hay peritoneo: la grasa extraperitoneal
     // de la pared sigue en la retroperitoneal y su R_ef baja a la de una fascia (0,03); contra el área desnuda del hígado
     // el salto grasa/hígado sigue ahí. Línea a línea, el exceso de potencia en el cruce sobre el tejido de alrededor,
@@ -209,6 +227,8 @@ describe('banco de la pared de la GPU (display.wall) sobre el gemelo en las pose
     const after = renalWallFace(false);
     const before = renalWallFace(true);
     const msg = JSON.stringify({ after: summary(after), before: summary(before) });
+    expect(after.shadowed, msg).toBeGreaterThan(0);
+    expect(before.shadowed, msg).toBe(after.shadowed);
     expect(after.fat.length, msg).toBeGreaterThanOrEqual(60);
     expect(after.liver.length, msg).toBeGreaterThanOrEqual(30);
     // grasa con grasa: ya no hay línea (nada sobre el tejido de alrededor) y cae ≥ 3,5 dB

@@ -6263,3 +6263,39 @@ no finitos, claves desconocidas y límite de bytes. Eventos DOM de exportación,
 importación, errores, reinicio y carreras entre archivos/ajustes. La E2E
 existente descarga un archivo real, modifica e importa sus parámetros,
 comprueba controles/caso y conserva paciente, reloj y congelación.
+
+## 166. Doce pares costales y esternón en la anatomía acústica local
+
+[Estado: referencia craneocaudal esternal corregida por 167; el resto del hito se conserva.]
+
+**Contexto.** Daniel prioriza anatomía ecográfica antes de ampliar funciones. En d7f214f solo existen los pares 5–10; el esternón 3D no participa en la imagen. La auditoría adicional aportada por Daniel confirma el defecto y exige medir contactos y evitar recuperar presets deformando anatomía. Contrato previo: `anatomy/LOCAL_ANATOMY_CONTRACT.md`.
+
+**Opciones.** Dibujar piezas decorativas, portar sin registro todo LUS, o completar primero el campo común con aproximaciones explícitas.
+
+**Decisión.** Primer hito local: doce pares numerados y campos de manubrio/cuerpo/xifoides, con cortical/pericondrio existentes. Mismo registro para CPU, GLSL y 3D. 11/12 tienen extremos libres; ajuste angular a la fuente LUS 7a7def6, MIT, preservando los arcos 5–10 y la geometría visceral. El ajuste a 101 muestras reduce el error de transferencia del recorrido a máximos 2,66/0,80 mm; no equivale a concordancia clínica. Materiales esternales se extraen separadamente con cierre en z=0.
+
+**Consecuencias.** Los bordes portal y subcostal encuentran huesos que antes faltaban; los vasos objetivo deben permanecer enteramente visibles. El test exige adquisición despejada hasta ellos en vez de ausencia de hueso en todo el sector. No se ensanchan espacios ni mueven órganos. La regresión de adquisición PW renal en sano mostró que el punto previo estaba bajo la 11.ª: transmisión 7,30·10⁻⁹. Se desplaza únicamente la sonda de z −85 a −90 mm, conservando ángulos, con transmisión 0,205; un negativo exige mantener la sombra del punto previo. El espectro vuelve a ser medible con las pruebas originales. Se mantienen `reference-thorax-incomplete` y un nuevo límite `thoracic-skeleton-estimated`. Estrechamiento superior, inserciones indirectas, articulaciones, diafragma y corazón siguen pendientes de registro. Se amplía a propósito el presupuesto total JS en 4 KiB (1024→1028): medición inicial 1026,9 KiB al añadir los campos compartidos; se conservan límites por chunk y cómputo de Workers/testHooks.
+
+Los tres registros por costilla pasan a la textura de datos existente: duplicar uniformes excedía la guarda portátil del fragment shader. Se mantiene esa guarda. El banco volumétrico pasa de 50.000 a 60.000 puntos para conservar más de 40.000 muestras interiores al añadir superficies; conserva exclusión de borde de 1 mm e igualdad exacta de tejido/interfaz.
+
+La métrica material de peritoneo de la decisión 65 conserva su plano renal histórico z=−85: trasladar el preset cambia también incidencia, textura y fondo de esa medición. Se excluyen prefijos de hueso/gas y se duplican líneas de 192 a 384 para mantener sus mínimos de 60/30 muestras observables; no se cambian umbrales de contraste. Se exige sombra no vacía e idéntica entre variantes. Los otros cuatro bancos de pantalla siguen las poses actuales, incluida la renal z=−90, además de las pruebas de adquisición real. La prueba de pleura que excedió 180 s con paralelismo por defecto pasa en 91 s con tres workers; no se amplió timeout ni se redujo el banco.
+
+**Verificación.** Ver `anatomy/LOCAL_ANATOMY_RESULT.md` para resultados finales y límites. Incluye negativos delante de extremos libres, control adversarial sin terminación, geometría de ambos lados, tejido/interfaz/normal GPU, adquisición y calibración de siete casos. El contraejemplo hemodinámico de la auditoría se reprodujo sin modificar fisiología: 19,464 m/s internos en VCI a 24,432 s. Se registra para una reparación causal posterior, sin limitar su curva.
+
+## 167. Referencia xifoidea común y contactos medidos antes del clasificador
+
+**Contexto.** La primera adaptación LUS usaba z=0 como unión xifoesternal y extendía el xifoides hasta −30 mm. VExUS y el registro BodyParts3D anclan z=0 en la punta. La auditoría exige separar una relación anatómica correcta de una superposición escondida por prioridad. Contrato previo: `anatomy/STERNAL_FRAME_CONTRACT.md`.
+
+**Opciones.** Trasladar todo el adulto 30 mm basándose en comentarios, normalizar piezas por separado, o corregir el landmark esternal documentado y medir las relaciones individuales antes de otra integración.
+
+**Decisión.** Punta z=0 y unión z=18,2615 mm, landmark registrado de `REFERENCE_TORSO.md`. El mismo valor divide cartílago y hueso en CPU, GLSL y mallas cerradas. Se conserva el resto de parámetros estimados; no es un ajuste tridimensional nuevo del atlas. Costillas, órganos, vasos y poses permanecen en su marco previo. Nuevo diagnóstico `tools/anatomy/local-contacts.ts`: superficies costales/esternales frente a campos hepáticos antes/después de pared/diafragma, riñones en su marco local y epicardio antes del recorte diafragmático.
+
+**Consecuencias.** Desaparece el xifoides artificial caudal. El banco distingue el signo del campo y valida su propio residual superficial; un mínimo positivo no certifica separación global. En el perfil opcional se conservan testigos costilla–hígado efectivo de −19,634 mm: una deuda previa, no resuelta por recolocar el xifoides. Las uniones costales y el registro 3D siguen pendientes. La fuente pública no respondió desde el Mac; su recuperación no se presenta como realizada. Un primer diagnóstico renal omitió la transformación local; se conserva marcado inválido y se añadió una prueba de centros/riñón contralateral antes del informe corregido.
+
+**Verificación.** Controles por debajo de z=0, en el xifoides correcto y a ambos lados de la unión; misma frontera en CPU/GPU/malla, adquisiciones, signos y rechazo de muestras/campos no finitos. Resultados y límites en `anatomy/STERNAL_FRAME_RESULT.md`. No hay cambios fisiológicos ni publicación.
+
+Seguimiento de 166: la CI encontró una puerta arterial renal fija de la pose anterior (θ 0,4266/r 48 mm), ahora fuera del vaso. La prueba adquiere una arteria real con búsqueda ponderada por transmisión y margen interior 0,2 mm, igual al audit pareado existente para arterias de radio 0,5–1,35 mm. Conserva la comprobación del vaso, 1280 partículas y rechazo de certificación venosa; no cambia señal ni umbral clínico.
+
+La comprobación costal heredada suponía seis pares y muestreaba los nuevos arcos como si no tuvieran término craneocaudal ni extremos libres. Sus tres posiciones por lado ahora siguen las elipses declaradas, muestrean cartílago lateral al esternón y los tres tramos óseos de 11–12. Exige 52 puntos óseos y 20 cartilaginosos, acuerdo exacto CPU/GPU. El adulto de referencia conserva los ajustes registrados de 5–10, ajustes explícitos de 11–12 y declara los cuatro arcos superiores como estimados en vez de exigirles una medición inexistente.
+
+El test de captura congelada agotó 180 s globales en SwiftShader y pasó solo al reintento (CI sigue roja). Usaba setTimeout global en vez del presupuesto común: se conserva trabajo 180 s y se suma el arranque BOOT_MS como en las otras pruebas. No se modifica polling, imágenes, tolerancias ni política de primer intento; la nueva revisión exige toda CI verde sin reintentos aprobados.

@@ -131,9 +131,10 @@ export const START_POINTS: readonly StartPoint[] = [
     color: '#f28cb1',
     label: 'Renal',
     // Línea axilar posterior, plano coronal-oblicuo que contiene el eje largo del riñón
-    // (barrido de poses: ≈ 10 cm de riñón en el plano con seno y pirámides)
+    // (barrido de poses: ≈ 10 cm de riñón en el plano con seno y pirámides).
+    // Decisión 166: 5 mm caudal, fuera de la nueva 11.ª costilla.
     phi: Math.PI * 1.18,
-    z: -85,
+    z: -90,
     yaw: -0.3,
     tilt: -0.4,
     hint: 'Riñón derecho en eje largo por el flanco (línea axilar posterior): hígado como ventana, cápsula, corteza, pirámides y seno ecogénico (la pelvis, colapsada; la vena renal sale por el hilio); puerta PW en un vaso interlobar.',

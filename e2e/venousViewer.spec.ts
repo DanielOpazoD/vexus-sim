@@ -490,6 +490,20 @@ test('laboratorio venoso: parámetros físicos, progresión calculada y aislamie
   const mobileRows = await lab.locator('fieldset > label').evaluateAll((els) => els.map((e) => e.getBoundingClientRect().y));
   expect(mobileRows[2]).toBeGreaterThan(mobileRows[1]);
   await page.screenshot({ path: info.outputPath('venous-laboratory-mobile.png') });
+  await lab.getByRole('button', { name: 'Guía 0', exact: true }).focus();
+  await page.keyboard.press('Enter');
+  await expect(heartRate).toHaveValue('50');
+  await expect(compliance).toHaveValue('0.5');
+  await expect(lab.getByRole('slider', { name: 'PAD basal', exact: true })).toHaveValue('5');
+  await expect(abdominal).toHaveValue('5');
+  await expect(dialog.locator('.venous-case')).toContainText('sinusal 50 lpm');
+  expect(
+    await page.evaluate(() => ({
+      patient: JSON.stringify(window.__vexusTest!.sim().patient),
+      t: window.__vexusTest!.sim().physiology.clock.t,
+      frozen: window.__vexusTest!.sim().frozen,
+    })),
+  ).toEqual(original);
   await page.keyboard.press('Escape');
   await expect(dialog).not.toBeVisible();
   await page.getByRole('button', { name: 'Abrir comparación venosa' }).click({ force: true });

@@ -29,7 +29,7 @@ export class VenousExperimentControls {
     });
     const info = document.createElement('p');
     info.textContent =
-      'Modelo simplificado: cada ajuste recalcula un estado estable. La transición clínica continua aún no está modelada. El paciente original se conserva. FC: ritmo sinusal del modelo; no simula estimulación ni respuesta autonómica. Compliance venosa: solo reservorios esplácnico/periférico, a PAD basal fija; no equivale a venodilatación.';
+      'Modelo simplificado: cada ajuste recalcula un estado estable. La transición clínica continua aún no está modelada. El paciente original se conserva. FC: ritmo sinusal del modelo; no simula estimulación ni respuesta autonómica. Compliance venosa: solo reservorios esplácnico/periférico, a PAD basal fija; no equivale a venodilatación. Las guías conservan FC y compliance venosa; no fijan el grado.';
     this.element.appendChild(info);
     const progression = document.createElement('label');
     progression.textContent = 'Progresión de congestión · ajuste fino';
@@ -85,7 +85,8 @@ export class VenousExperimentControls {
     this.reset();
   }
   #setProgress(): void {
-    this.#parameters = congestionParameters(Number(this.#progress.value));
+    const { heartRateBpm, venousReservoirCompliance } = this.#parameters;
+    this.#parameters = { ...congestionParameters(Number(this.#progress.value)), heartRateBpm, venousReservoirCompliance };
     this.#pathValue.value = `${(100 * Number(this.#progress.value)).toFixed(1)} %`;
     this.#sync();
   }

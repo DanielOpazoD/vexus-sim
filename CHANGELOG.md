@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Laboratorio venoso: recorrer las guías conserva FC y compliance venosa personalizadas; el reinicio explícito mantiene su restauración completa (164).
+
 - PW: retiene siete segundos para capturar a PRF alta dentro del dominio del equipo, sin modificar la FFT ni el historial habitual y con memoria acotada (163).
 
 - Tests: errores al preparar las simulaciones ya no pueden confundirse con dos limitaciones esperadas; se conservan controles fisiológicos y se elimina cálculo duplicado (162).

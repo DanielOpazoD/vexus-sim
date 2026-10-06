@@ -6212,3 +6212,25 @@ sin asumirla ni relajar la igualdad. Dos controles sintéticos comprueban que
 ignora glifos locales y detecta desplazamiento y ausencia de línea. Restaurar
 el detector antiguo hace fallar ambos controles. Se conservan el hash completo,
 las aserciones fisiológicas y el rechazo de pruebas que pasan solo al reintentar.
+
+## 164. Conservar FC y compliance al recorrer las guías de congestión
+
+**Defecto.** Tras ajustar frecuencia cardíaca o compliance de los reservorios,
+seleccionar una guía o mover la progresión restablecía ambos valores sin una
+intervención explícita. Una comparación podía atribuir a congestión efectos
+producidos también por ese cambio accidental.
+
+**Cambio.** El control de progresión conserva FC y compliance elegidas; PAD,
+PIA, función VD, IT y compliance AD siguen el recorrido existente. La función
+pura que define las guías basales no cambia. El reinicio explícito restaura
+todos los valores y cancela cualquier ajuste pendiente.
+
+**Interpretación.** Las guías no fuerzan un grado. Con valores independientes
+personalizados, el grado calculado puede diferir del caso basal de la guía.
+No se añade una transición fisiológica continua: siguen siendo estados
+estables independientes del paciente original.
+
+**Verificación.** Eventos DOM de las cuatro guías y el recorrido fino, más
+cancelación de debounce al reiniciar. La E2E existente vuelve a Guía 0 por
+teclado tras personalizar controles, exige conservar FC/compliance, cambiar
+PAD/PIA y mantener intactos paciente, reloj y congelación.

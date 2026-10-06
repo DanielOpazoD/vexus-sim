@@ -70,7 +70,7 @@ describe('Atenuación a lo largo del rayo', () => {
     // la A2 de la GPU cobra la misma constante (antes un 6.0 escrito a mano) en la mirada 0 y en la dirigida
     for (const src of [FRAG_TRANS_PREFIX, FRAG_TRANS_PREFIX_STEERED])
       expect(src).toContain(
-        `if (g.z > 0.5 && !boneEntered) { attenDb += ${BONE_ENTRY_DB.toFixed(1)}; boneDb += ${BONE_ENTRY_DB.toFixed(1)}; boneEntered = true; }`,
+        `if (g.z > 0.5 && !boneEntered) { attenDb += ${BONE_ENTRY_DB.toFixed(1)}; boneDb += ${BONE_ENTRY_DB.toFixed(1)}; fixedDb += ${BONE_ENTRY_DB.toFixed(1)}; boneEntered = true; }`,
       );
   });
 
@@ -137,7 +137,7 @@ describe('Atenuación a lo largo del rayo', () => {
   it('decisión 88: la pasada D apaga el pedestal de una línea tapada por un hueso con la fracción de su haz que sobrevive', () => {
     // A: la transmisión con apertura sobre la del rayo sin lo que cobra el hueso (A2 o1.z); 1 lejos de todo hueso
     expect(FRAG_TRANS_PREFIX).toContain('if (g.z > 0.5) boneDb += abs(g.x);');
-    expect(FRAG_TRANS_PREFIX).toContain('o1 = vec4(step * psi, pa, boneDb, 0.0);');
+    expect(FRAG_TRANS_PREFIX).toContain('o1 = vec4(step * psi, pa, boneDb, fixedDb);');
     // (la de la apertura sin la refracción de las luces, que desvía la energía y no la quita; el rayo sin hueso en dB)
     for (const src of [FRAG_TRANSMISSION, FRAG_TRANSMISSION_STEERED]) {
       expect(src).toContain('float Tap = apertureTransmission(line, k, r, step, single, spec);');

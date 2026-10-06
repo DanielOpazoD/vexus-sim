@@ -297,6 +297,8 @@ export interface TransmissionRead {
   look: number;
   theta: number;
   prefixDb?: Float32Array;
+  /** Look-zero frequency-independent prefix (bone entry/gas), decision 174. */
+  fixedDb?: Float32Array;
   sGas?: Float32Array;
 }
 
@@ -1443,7 +1445,8 @@ export class UltrasoundRenderer {
     this.setSceneUniforms(this.pColor, inputs);
     this.setBeamUniforms(this.pColor, inputs);
     // el color usa la transmisión de un solo rayo, la misma que el PW (decisión 50)
-    this.pColor.tex('uTrans0', 0, this.tTrans.textures[2]);
+    this.pColor.tex('uTrans0', 0, this.tPre.textures[0]);
+    this.pColor.tex('uTransFixed', 2, this.tPre.textures[1]);
     this.pColor.tex('uCoupling', 1, this.couplingTex);
     this.pColor.v4('uBox', c.theta0, c.theta1, c.r0, c.r1);
     this.pColor.v2(
@@ -1841,18 +1844,24 @@ export class UltrasoundRenderer {
     if (look === 0) {
       const a2 = this.readRgba(this.tTrans, 2);
       const a0 = this.readRgba(this.tTrans, 0);
+      const pre = this.readRgba(this.tPre, 0);
+      const aux = this.readRgba(this.tPre, 1);
       const single = new Float32Array(n);
       const aperture = new Float32Array(n);
       const mirrorHit = new Float32Array(n);
       const specular = new Float32Array(n);
+      const prefixDb = new Float32Array(n);
+      const fixedDb = new Float32Array(n);
       for (let i = 0; i < n; i++) {
         single[i] = a2[i * 4];
+        prefixDb[i] = pre[i * 4];
+        fixedDb[i] = aux[i * 4 + 3];
         aperture[i] = a0[i * 4];
         mirrorHit[i] = a0[i * 4 + 3];
         specular[i] = a2[i * 4 + 3];
       }
       const own = this.look === null || this.look.index === 0;
-      return { lines: W, samples: H, single, aperture, mirrorHit, look: 0, theta: 0, ...(own ? { specular } : {}) };
+      return { lines: W, samples: H, single, aperture, mirrorHit, look: 0, theta: 0, prefixDb, fixedDb, ...(own ? { specular } : {}) };
     }
     const last = this.look;
     if (last === null || last.index !== look)

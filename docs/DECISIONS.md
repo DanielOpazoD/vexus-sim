@@ -6335,3 +6335,9 @@ La unión/entrada auricular deja de heredar la sección abdominal colapsada por 
 Defecto: f y f+PRF producían la misma fase pero diferente rechazo de clutter; f=0 y corte=0 generaba NaN. Se evalúa la respuesta de potencia estimada en la frecuencia plegada y devuelve identidad para corte cero. El módulo TS/GLSL conserva el cuarto orden anterior dentro de Nyquist. No añade máscara ni altera fisiología, fase, paleta, ganancia o umbrales. Contrato previo: `anatomy/COLOR_WALL_FILTER_CONTRACT.md`.
 
 Aceptación: secuencias IQ muestreadas como oráculo independiente, alias positivos/negativos, DC y desactivación; compilación GPU real y adquisición portal normal/grave. Sigue siendo respuesta aproximada sobre autocorrelación emulada (`color-emulated-estimator`), sin ensemble temporal filtrado real ni calibración clínica. Presupuesto total +1 KiB, de 1030 a 1031, para el pequeño módulo/folding y controles de desarrollo; todos los chunks siguen contando.
+
+## 174. Conservar las barreras fijas al convertir transmisión para color
+
+Defecto: escalar toda la pérdida B por fD/fB debilitaba hueso/gas y el suelo 1e-6 limitaba la atenuación. A2 registra pérdidas fijas en su canal .w auxiliar existente; el color lee los prefijos dB y conserva esa parte al convertir absorción. Un sampler adicional, sin textura nueva. Se preserva A.o2.y, que sí almacena el rayo dirigido. B, apertura, refracción y transmisión PW no cambian. Contrato previo: `anatomy/DOPPLER_ATTENUATION_CONTRACT.md`.
+
+Aceptación: integración PW independiente con capas de exponente uno, barreras óseas y gas, frecuencias diferentes, paridad del prefijo GPU y controles de señal portal. El escalado de absorción restante aún aproxima b=1; los exponentes tisulares diferentes requieren suma por segmento a fD, declarada como deuda para siguiente iteración. No hay calibración clínica nueva ni máscara vascular.

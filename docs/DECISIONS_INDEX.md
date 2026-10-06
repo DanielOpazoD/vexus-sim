@@ -177,3 +177,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [171](DECISIONS.md#L6325) | Resolver juntos los caudales de la unión cavoauricular | vigente |
 | [172](DECISIONS.md#L6329) | Sección regional de la cava superior y Q/A común con su anatomía | vigente |
 | [173](DECISIONS.md#L6333) | Filtro color periódico en frecuencia muestreada, identidad al desactivarlo | vigente |
+| [174](DECISIONS.md#L6339) | Conservar las barreras fijas al convertir transmisión para color | vigente |

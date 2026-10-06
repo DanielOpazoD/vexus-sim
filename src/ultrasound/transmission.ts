@@ -95,6 +95,23 @@ export function rayAttenuationDb(tissues: Iterable<Tissue>, stepMm: number, fMHz
   return db;
 }
 
+/** Frequency-independent part of the direct PW ray; reflected paths are handled separately by A2. */
+export function rayFixedAttenuationDb(tissues: Iterable<Tissue>, stepMm: number): number {
+  let db = 0,
+    entered = false,
+    boneEntered = false;
+  for (const t of tissues) {
+    if (t === Tissue.Air && !entered) continue;
+    entered = true;
+    if (TISSUES[t].gas) db += (GAS_DB_PER_CM * stepMm) / 10;
+    else if (TISSUES[t].bone && !boneEntered) {
+      db += BONE_ENTRY_DB;
+      boneEntered = true;
+    }
+  }
+  return db;
+}
+
 /**
  * Pasos de la bisección con que la pasada A (A0) coloca el espejo diafragmático en el cruce exacto con
  * el pulmón (decisión 57): del paso grueso (profundidad/160, 1,125 mm a 18 cm) a 0,018 mm; el punto

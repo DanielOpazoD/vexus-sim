@@ -6319,3 +6319,5 @@ El test de captura congelada agotó 180 s globales en SwiftShader y pasó solo a
 **Alcance y coste.** Estimador emulado y kernel espacial estimado, no IQ clínico real. Una textura RGBA32F 96×160 adicional (240 KiB), programa/pasada a cadencia de color. Presupuesto 1028→1030 KiB para interpolación y adquisiciones: límites por chunk y total siguen activos. Paleta/preset se entregan por separado. Base física: [Evans, Jensen y Nielsen, 2011](https://pmc.ncbi.nlm.nih.gov/articles/PMC3262272/); la publicación no suministra este kernel concreto.
 
 Seguimiento de 168: el barrido GPU incluye las nueve ventanas, incluida portalTrunk. La ventana portal ahora contiene ramas intrahepáticas menores: su rejilla se refina de 48×72 a 64×96, conservando >50 células sanguíneas completamente interiores y todos los umbrales de acuerdo y velocidad. La rejilla del resto de ventanas, volumen y cáscaras no cambia.
+
+Las tres adquisiciones E2E de PW que pedían explícitamente pvTrunk ahora usan portalTrunk, la misma pose original conservada para VExUS. La ventana portal intrahepática y sus pruebas color siguen en la rama derecha; no se fuerza la puerta ni la clasificación.

@@ -177,4 +177,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [171](DECISIONS.md#L6331) | Resolver juntos los caudales de la unión cavoauricular | vigente |
 | [172](DECISIONS.md#L6335) | Sección regional de la VCI suprahepática y Q/A común con su anatomía | vigente |
 | [173](DECISIONS.md#L6351) | Filtro color periódico en frecuencia muestreada, identidad al desactivarlo | vigente |
-| [174](DECISIONS.md#L6357) | Conservar las barreras fijas al convertir transmisión para color | vigente |
+| [174](DECISIONS.md#L6359) | Conservar las barreras fijas al convertir transmisión para color | vigente |

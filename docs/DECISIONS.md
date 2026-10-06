@@ -6342,6 +6342,8 @@ La paridad refinada añade 0,06 KiB a los ganchos incluidos: el total pasa liger
 
 Las tres adquisiciones E2E de PW que pedían explícitamente pvTrunk ahora usan portalTrunk, la misma pose original conservada para VExUS. La ventana portal intrahepática y sus pruebas color siguen en la rama derecha; no se fuerza la puerta ni la clasificación.
 
+Seguimiento de 168: CI slow detectó que el banco de dispersores persistentes del tronco portal seguía usando la tarjeta portal intrahepática. Se adquiere ahora desde portalTrunk, que conserva la pose original, sin cambiar caudales, volumen de muestra, semillas, duración ni límites de diferencia <0,05/reingreso >90 %. Error original: 0,14005, registrado antes de corregir el instrumento.
+
 Seguimiento de 172: se corrige solamente tilt de la adquisición subcostal procedural −0,4→−0,398 rad (+0,115°), tras documentar pérdida de la banda VSH a 1–2 cm en inspiración. El contrafactual de sonda queda en el contrato; se conservan distancia, incidencia ≤60°, transmisión ≥0,02 y cuerpos/respiraciones de los bancos. No se deforma anatomía para recuperar un preset.
 
 El candidato intermedio −0,38 se rechazó por acortar el eje visible a 33,72 mm (<45). El ajuste final −0,398 conserva 52,71 mm y recupera banda inspiratoria a 11,14 mm/59,17°/0,03695, con umbrales originales. Ambos experimentos quedan declarados en el contrato.

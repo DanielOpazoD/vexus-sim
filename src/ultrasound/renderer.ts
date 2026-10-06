@@ -233,6 +233,8 @@ export interface FrameInputs {
  * del equipo) y el cuadro de color que pintó G (con él, su capa de color está en el anillo).
  */
 export interface CineFrame {
+  /** Immutable acquisition geometry of the presented frame, also retained in cine. */
+  anatomy?: Pick<FrameInputs, 'sample' | 'frame' | 'compression'>;
   t: number;
   /** Cuadro dibujado (`frameCount`): entre dos guardados puede haber varios, y la persistencia los pesa todos. */
   n: number;
@@ -917,6 +919,11 @@ export class UltrasoundRenderer {
     this.afterFrame(inputs);
   }
 
+  /** Anatomical state of the image actually on screen, never the running clock behind an old cine frame. */
+  get displayedAnatomy(): CineFrame['anatomy'] {
+    return (this.cineShownFrame ?? this.lastFrame)?.anatomy;
+  }
+
   /**
    * Tomas del cuadro para el cine y el modo M (decisión 80), tras la presentación y fuera del grafo (no forman la
    * imagen): el cine guarda la envolvente compuesta y el color que convirtió G (≤ `CINE_RATE_HZ`); con el modo M,
@@ -925,6 +932,7 @@ export class UltrasoundRenderer {
   private afterFrame(inputs: FrameInputs): void {
     const c = inputs.color;
     const frame: CineFrame = {
+      anatomy: { sample: inputs.sample, frame: inputs.frame, compression: inputs.compression },
       t: inputs.sample.t,
       n: this.frameCount,
       bmode: inputs.bmode,

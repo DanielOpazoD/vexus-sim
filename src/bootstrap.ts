@@ -419,7 +419,10 @@ function frame(now: number, dt: number): void {
   if (!comparisonOpen) {
     drawOverlay(overlay, s);
     nav?.draw();
-    if (store.get().torso && !gpu.lost) cutMap?.draw(s, now);
+    if (store.get().torso && !gpu.lost) {
+      cutMap?.draw(s, now);
+    }
+    cutMap?.drawHighlight(overlay, s, store.get().torso && !gpu.lost);
     drawTraces(s);
   }
   const t = s.physiology.clock.t;

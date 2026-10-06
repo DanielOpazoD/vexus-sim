@@ -6301,3 +6301,13 @@ La métrica material de peritoneo de la decisión 65 conserva su plano renal his
 **Predicción e invariantes.** Menor proporción extrahepática en el corte lateral, vasos objetivos dentro del campo hepático y sin obstrucción. No cambian caudales, áreas, órganos ni el espectro del tronco anterior. Los rótulos nuevos ceden espacio a los existentes. En la pose oblicua la compresión se acota por el empuje máximo de toda la cara; se conserva además la banda previa para las otras poses.
 
 **Refutación y aceptación.** Campos individuales antes de prioridad de tejido, contrafactual de pose antigua, cuatro hábitos y sano/congestión en dos cuerpos; PW sigue en tronco principal y conserva calidad. Contrato previo en `anatomy/PORTAL_LIVER_CONTRACT.md`. El procesamiento complejo y la presentación color se integrarán por separado; este PR no reclama esas mejoras. Son controles de ingeniería, no validación clínica humana.
+
+## 169. Interpolación del Doppler color en el plano complejo
+
+**Defecto.** Promediar frecuencias plegadas cerca de +Nyquist/−Nyquist inventa una velocidad próxima a cero.
+
+**Mecanismo y predicción.** Se conserva R1=(Re, Im), se interpola explícitamente con texelFetch y se aplica un kernel [1 2 1]²/16 de una línea/paquete antes de recuperar frecuencia por atan2 y potencia por módulo. El cine almacena componentes complejos en RG16F. La lectura diagnóstica mantiene frecuencia/potencia como API pública. Debe conservarse la dirección a ambos lados de la discontinuidad de fase.
+
+**Invariantes y refutación.** No se alteran flujo, áreas, signo fisiológico, proyección axial, clutter, ruido, ganancia, filtro, acoplamiento, transmisión, cadencia ni umbral. Comparación numérica independiente GPU: reconstruir fasores desde el campo crudo y calcular interpolación/kernel, sin importar funciones de producción. Se comprueban sangre frente a píxeles, aliasing, inversión de presentación, ausencia de contacto, filtro alto y cine en ambos cuerpos. Error de correlación, cancelación falsa o señal sin sangre refutan el cambio.
+
+**Alcance y coste.** Estimador emulado y kernel espacial estimado, no IQ clínico real. Una textura RGBA32F 96×160 adicional (240 KiB), programa/pasada a cadencia de color. Presupuesto 1028→1030 KiB para interpolación y adquisiciones: límites por chunk y total siguen activos. Paleta/preset se entregan por separado. Base física: [Evans, Jensen y Nielsen, 2011](https://pmc.ncbi.nlm.nih.gov/articles/PMC3262272/); la publicación no suministra este kernel concreto.

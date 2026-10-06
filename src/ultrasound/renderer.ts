@@ -11,6 +11,7 @@ import { contactCoupling } from '../probe/contact';
 import { lineAngle, type ProbeFrame, type ProbePose, type Transducer } from '../probe/probe';
 import type { TransducerProfile } from './transducerProfile';
 import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
+import { COLOR_FILTER_GLSL } from './colorCorrelation';
 import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
 import { GREY_CURVE, greyOfLevel } from './greyMap';
 import { axialSigmaMm, focalReferenceFwhmMm, txApertureMm } from './beamModel';
@@ -336,6 +337,7 @@ export class UltrasoundRenderer {
   private pLateral: GLProgram;
   private pCompound: GLProgram;
   private pColor: GLProgram;
+  private pColorFilter: GLProgram;
   private pScan: GLProgram;
   private pPersist: GLProgram;
   private pBlit: GLProgram;
@@ -369,6 +371,7 @@ export class UltrasoundRenderer {
   private readonly tEnvLooks: RenderTarget[];
   private tEnv: RenderTarget;
   private tColor: RenderTarget;
+  private tColorRaw: RenderTarget;
   private tScan: RenderTarget | null = null;
   private tPersist: [RenderTarget, RenderTarget] | null = null;
   private persistIndex = 0;
@@ -480,6 +483,7 @@ export class UltrasoundRenderer {
       lateral: FRAG_LATERAL,
       compound: FRAG_COMPOUND,
       color: FRAG_COLOR,
+      colorFilter: COLOR_FILTER_GLSL,
       scanconvert: FRAG_SCANCONVERT,
       persist: FRAG_PERSIST,
       blit: FRAG_BLIT,
@@ -496,6 +500,7 @@ export class UltrasoundRenderer {
     this.pLateral = p.lateral;
     this.pCompound = p.compound;
     this.pColor = p.color;
+    this.pColorFilter = p.colorFilter;
     this.pScan = p.scanconvert;
     this.pPersist = p.persist;
     this.pBlit = p.blit;
@@ -524,6 +529,7 @@ export class UltrasoundRenderer {
     this.tEnvLooks = profile.compound.order.map(() => createTarget(gl, LINES, FINE_DEPTH, [f1n]));
     this.tEnv = createTarget(gl, LINES, FINE_DEPTH, [f1]);
     this.tColor = createTarget(gl, COLOR_W, COLOR_H, [f]);
+    this.tColorRaw = createTarget(gl, COLOR_W, COLOR_H, [f]);
     this.tMap = createTarget(gl, MAP_W, MAP_H, [{ internal: gl.RGBA8, format: gl.RGBA, type: gl.UNSIGNED_BYTE, filter: gl.NEAREST }]);
     this.couplingTex = createTexture(gl, LINES, 1, gl.R32F, gl.RED, gl.FLOAT, gl.LINEAR);
     this.sceneTex = createTexture(gl, SCENE_TEX_W, SCENE_TEX_H, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
@@ -582,6 +588,7 @@ export class UltrasoundRenderer {
       this.pLateral,
       this.pCompound,
       this.pColor,
+      this.pColorFilter,
       this.pScan,
       this.pPersist,
       this.pBlit,
@@ -603,6 +610,7 @@ export class UltrasoundRenderer {
       ...this.tEnvLooks,
       this.tEnv,
       this.tColor,
+      this.tColorRaw,
       this.tMap,
     ])
       deleteTarget(gl, t);
@@ -923,6 +931,7 @@ export class UltrasoundRenderer {
     this.cineEnv ??= this.cineLayers(gl.R16F, this.lines, FINE_DEPTH);
     this.blitLayer(this.cineEnv, slot, this.tEnv, true);
     if (frame.colorFrame) {
+      // R1 complejo (real, imaginario): G recupera fase y potencia también al reproducir el cine.
       this.cineColor ??= this.cineLayers(gl.RG16F, COLOR_W, COLOR_H);
       this.blitLayer(this.cineColor, slot, this.tColor, true);
     }
@@ -1104,7 +1113,8 @@ export class UltrasoundRenderer {
     axial: () => this.tAxial,
     lateral: () => this.tEnvLooks[this.look?.index ?? 0],
     compound: () => this.tEnv,
-    color: () => this.tColor,
+    color: () => this.tColorRaw,
+    colorFilter: () => this.tColor,
     scanConvert: () => this.tScan!,
     // tras la pasada, `persistIndex` ya apunta a la historia recién escrita
     persistence: () => this.tPersist![this.persistIndex],
@@ -1169,6 +1179,7 @@ export class UltrasoundRenderer {
     lateral: (inputs) => this.passLateral(inputs),
     compound: (inputs) => this.passCompound(inputs),
     color: (inputs) => this.passColor(inputs),
+    colorFilter: (inputs) => this.passColorFilter(inputs),
     scanConvert: (inputs) => this.passScanConvert(inputs),
     persistence: (inputs) => this.passPersistence(inputs),
     present: () => this.passPresent(),
@@ -1428,7 +1439,7 @@ export class UltrasoundRenderer {
     const gl = this.gl;
     const tr = inputs.transducer;
     const c = inputs.color;
-    bindTarget(gl, this.tColor);
+    bindTarget(gl, this.tColorRaw);
     this.pColor.use();
     this.setSceneUniforms(this.pColor, inputs);
     this.setBeamUniforms(this.pColor, inputs);
@@ -1458,6 +1469,19 @@ export class UltrasoundRenderer {
     this.pColor.f('uFrame', this.frameCount);
     drawFullscreen(gl);
     this.lastColorFrame = { box: [c.theta0, c.theta1, c.r0, c.r1], prf: c.prfHz };
+  }
+
+  private passColorFilter(inputs: FrameInputs): void {
+    const c = inputs.color;
+    bindTarget(this.gl, this.tColor);
+    this.pColorFilter.use();
+    this.pColorFilter.tex('uRawColor', 0, this.tColorRaw.textures[0]);
+    this.pColorFilter.v2(
+      'uCellStep',
+      1 / colorLineCount(c.theta0, c.theta1, this.profile.colorLineSpacingRad),
+      COLOR_PACKET_MM / (c.r1 - c.r0),
+    );
+    drawFullscreen(this.gl);
   }
 
   // G — conversión de barrido + mapa de grises + superposición del color
@@ -1697,13 +1721,18 @@ export class UltrasoundRenderer {
   }
 
   /** Campo del último cuadro de color (RGBA: frecuencia, potencia, fracción de sangre). Solo pruebas: lectura bloqueante. */
-  readColorField(): { width: number; height: number; data: Float32Array } {
+  readColorField(source: 'filtered' | 'raw' = 'filtered'): { width: number; height: number; data: Float32Array } {
     const gl = this.gl;
     const px = new Float32Array(COLOR_W * COLOR_H * 4);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.tColor.fbo);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, (source === 'raw' ? this.tColorRaw : this.tColor).fbo);
     gl.readBuffer(gl.COLOR_ATTACHMENT0);
     gl.readPixels(0, 0, COLOR_W, COLOR_H, gl.RGBA, gl.FLOAT, px);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    for (let i = 0; i < px.length; i += 4) {
+      const power = Math.hypot(px[i], px[i + 1]);
+      px[i] = (Math.atan2(px[i + 1], px[i]) * (this.lastColorFrame?.prf ?? 0)) / (2 * Math.PI);
+      px[i + 1] = power;
+    }
     return { width: COLOR_W, height: COLOR_H, data: px };
   }
 

@@ -147,6 +147,7 @@ const windows = new StartPointCards($('start-points'), {
         sp.id === 'portalTrunk',
       ))
         dispatch(cmd);
+    else if (sim().scene.hasAbdominalAtlas) dispatch({ type: 'bmode', patch: { depthMm: 180, focusMm: 90 } });
     probeAnimator.goTo(sp);
   },
   getPose: () => sim().pose,

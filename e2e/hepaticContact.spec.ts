@@ -106,4 +106,10 @@ test('main portal PW window restores its own depth after the intrahepatic window
   expect(Math.max(...result.hits.map((p) => p.r)) - Math.min(...result.hits.map((p) => p.r))).toBeGreaterThan(8);
   expect(result.errors).toEqual([]);
   expect(errors).toEqual([]);
+  // Portal acquisition settings must not crop the following renal/caval examination.
+  for (const index of [7, 8, 0]) {
+    await page.locator('.win-card').nth(index).click();
+    await expect(page.getByLabel('Profundidad', { exact: true })).toHaveValue('180');
+    await expect(page.getByLabel('Foco', { exact: true })).toHaveValue('90');
+  }
 });

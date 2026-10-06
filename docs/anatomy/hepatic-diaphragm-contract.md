@@ -18,3 +18,5 @@ Antes de aceptar:
 Fuentes para comparación visual: AIUM, [Abdomen image resources](https://aium.s3.amazonaws.com/guidelines/abdomen/imageResources.pdf), vistas hepáticas/diafragmáticas; EFSUMB, [Ultrasound of the Liver](https://doi.org/10.37713/ECB02); ACEP, [FAST Sonoguide](https://www.acep.org/sonoguide/basic/fast), marcador craneal en flanco y relaciones del cuadrante superior derecho. No constituyen validación clínica externa del simulador.
 
 Limitaciones que deben declararse: la transición fuera del polo superior, el diafragma izquierdo, corazón, hiatos y capas permanecen aproximaciones. No introducir ni suprimir ascitis/derrame en casos patológicos mediante esta corrección de contacto normal.
+
+El barrido real de las nueve ventanas detectó que tras la porta se conservaba su profundidad en el examen renal/caval siguiente. Las otras tarjetas atlas recuperan 180 mm y foco 90 mm; no sobrescriben ganancia, rango dinámico ni controles de Doppler del operador. Se comprueba la secuencia porta intrahepática → tronco PW → renal → hepatorrenal → cava.

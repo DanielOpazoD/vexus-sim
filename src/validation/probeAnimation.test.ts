@@ -45,10 +45,10 @@ describe('Animación hacia un punto de partida', () => {
     const r = slide({ phi: epi.phi, z: epi.z, lift: 0, yaw: epi.yaw, rock: 0, tilt: 0.45 }, epi);
     expect(r.pose.tilt).toBe(0);
     expect(r.seconds).toBeGreaterThan(0.5);
-    // la subcostal desde su punto con la sonda sin bascular ni abanicar: llega a 0,25 y −0,4
+    // la subcostal desde su punto con la sonda sin bascular ni abanicar: llega a los ángulos declarados en la tarjeta
     const sub = byId('subcostal');
     const q = slide({ phi: sub.phi, z: sub.z, lift: 0, yaw: sub.yaw, rock: 0, tilt: 0 }, sub);
-    expect([q.pose.rock, q.pose.tilt]).toEqual([0.25, -0.4]);
+    expect([q.pose.rock, q.pose.tilt]).toEqual([sub.rock, sub.tilt]);
   });
 
   it('gira por el arco corto: de +172° a la epigástrica (−90°) recorre 98°, no 262°', () => {

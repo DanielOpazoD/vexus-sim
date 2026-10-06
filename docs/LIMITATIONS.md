@@ -81,20 +81,15 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **Sin cascada torácica de la VCI** (`no-thoracic-waterfall`): la unión cavoauricular transmite
   cualquier caída de la PAD; no existe la meseta de Guyton por colapso de la VCI en la entrada
   torácica. Hallado por fast-check: con hipovolemia (volumen 0,6) y PAD media ≈ 0 la VCI se vacía
-  hacia la aurícula a > 100 mL/s y su velocidad supera 2 m/s (`properties.test.ts`, `it.fails`).
+  hacia la aurícula a > 100 mL/s. La decisión 172 corrige el denominador regional del contraejemplo de velocidad y conserva su cota de 2 m/s como regresión normal, pero no introduce esa meseta de caudal.
   Sí existe el resistor de Starling por debajo de 8 mm y un lumen residual de 3 mm. El diurético del sano (decisión 79)
   llega a ella: con −500 mL (PAD 2,3) la VCI baja a 6 mm en la inspiración y pasa por ella a 2,8 m/s; por eso los
   líquidos no bajan el llenado de 2 mmHg.
-- **La VCI es un solo compartimento abdominal** (`ivc-single-compartment`): su diámetro observado
-  usa la presión del compartimento entero, no la del segmento a 2 cm de la confluencia; la pulsación
-  cardíaca del calibre está amortiguada.
+- **Área regional de cava superior estimada** (`ivc-regional-area-estimated`, 172): la cava abdominal conserva un único compartimento de volumen; la unión/entrada auricular usa una sección propia, dependiente de presión de unión menos pleural y retrasada 0,2 s. Q/A, CPU, GPU y 3D comparten esa elipse. La ley regional y la transición gruesa por el hiato requieren calibración/registro independientes; no existe un volumen torácico adicional ni waterfall completo.
 - **Sin movimiento cardíaco transmitido a hígado/cava** (`no-cardiac-tissue-motion`); la
   respiración es el único movimiento tisular, y el corazón (decisión 85) no late.
-- **Sin bazo y caja torácica incompleta** (`no-spleen-no-left-ribs`, identificador histórico): existen los pares
-  5–10 en CPU, GPU y navegador 3D. Las superficies 3D se detienen con margen de un semiespesor en los extremos para no atravesar el corte SDF; no tienen tapas ni articulaciones detalladas. Los pares 1–4 y 11–12 no están modelados ni se dibujan como decoración.
-  El lado izquierdo refleja el registro derecho; no representa asimetrías individuales. Sección, inclinación y separación
-  siguen parámetros adultos estimados, sin registro CT/atlas ni validación antropométrica independiente. El cartílago
-  anterior y el final en apófisis transversa son aproximaciones; los arcos no tienen articulaciones costovertebrales detalladas.
+- **Sin bazo** (`no-spleen`): la anatomía visceral izquierda permanece incompleta.
+- **Esqueleto torácico estimado** (`thoracic-skeleton-estimated`, decisión 166): existen doce pares funcionales y esternón compartidos en CPU, GPU y 3D. Las costillas 11/12 terminan libremente; sus recorridos se ajustan al diseño LUS (errores máximos de ajuste 2,66 y 0,80 mm, no errores clínicos). Los arcos 5–10 y sus inserciones aproximadas se preservan. Falta registrar el conjunto con un mismo adulto, estrechamiento superior, asimetrías, articulaciones, clavículas/escápulas acústicas y región diafragmática completa. Las superficies costales no tienen tapas ni articulaciones detalladas. Manubrio/cuerpo son hueso y xifoides cartílago estimado; no representa variabilidad de osificación. Ninguna validación clínica independiente está cerrada.
 - **El corazón es un esquema estático** (`schematic-static-heart`, decisión 85): cuatro elipsoides con su miocardio, los
   tabiques y los orificios auriculoventriculares abiertos, sin valvas, sin grandes vasos de la base (vena cava superior,
   raíz aórtica, tronco pulmonar), sin seno coronario ni venas pulmonares; el pericardio es la capa de 1,5 mm del tejido del
@@ -135,12 +130,8 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   presión de los compartimentos del abdomen y colapsa la VCI, pero ni la resistencia de la vena renal ni el parénquima
   cambian. En el caso de la PIA el Doppler intrarrenal sale continuo y la porta al 25–27 %, sin calibrar frente al
   patrón real de la hipertensión intraabdominal.
-- **La VCI retrohepática se colapsa con la abdominal** (`iah-collapsed-ivc-velocity`): con la PIA por encima de la
-  PAD, el tramo retrohepático, que en el modelo comparte el calibre del compartimento abdominal (`ivc-single-compartment`),
-  se estrecha con él y lleva además el caudal de las suprahepáticas: con PIA 16 y PAD 14, 2,9 m/s con respiración
-  tranquila, 3,4 en apnea inspiratoria y 5,3 tras un diurético de 1 L (con PIA 20, 5,4 m/s sin intervenir). Hallado por
-  la propiedad de las intervenciones (`interventions.test.ts`, que lo afirma en una prueba aparte y solo exige < 8 m/s a
-  esa vena con la PIA); por eso el caso usa PIA 16 y no 20.
+  La decisión 172 retira `iah-collapsed-ivc-velocity`: el pico debido a dividir el flujo combinado por el área abdominal se reproduce como contrafactual, pero la velocidad superior usa su propia sección. No resuelve la cascada torácica ni todas las situaciones de PIA, y no se usa este cambio para validar los confusores clínicos restantes.
+
 - **Captura suprahepática con PPV: protección parcial y baja utilidad con puerta fija**
   (`ppv-hepatic-capture-false-reversal`, identificador histórico): el contraejemplo original ya se rechaza cuando
   la puerta pierde sangre suprahepática durante una ventana FFT completa. La identidad media seguía siendo
@@ -528,7 +519,7 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 
 ## Adulto de referencia en revisión (`?reference=1`)
 
-- `reference-thorax-incomplete`: el campo actual conserva seis pares 5–10, columna procedural desplazada y esternón visual heredado. Los 24 OBJ costales están hashverificados, pero todavía no representan doce pares funcionales ni articulaciones completas. El diafragma existente tiene dos cúpulas aproximadas; su arquitectura, tendón, pilares, hiatos e inserciones deben revisarse con el tórax completo. [Plan y estado](anatomy/TORSO_PROGRESS.md).
+- `reference-thorax-incomplete`: solo los pares 5–10 conservan el ajuste del atlas. Los pares restantes y el esternón son procedurales estimados, no piezas registradas de los 24 OBJ. El perfil corporal superior sigue limitado y la columna es procedural desplazada; no existe un adulto de referencia reconciliado completo. [Plan y estado](anatomy/TORSO_PROGRESS.md).
 - `reference-skeletal-organ-overlap`: un muestreo denso del esqueleto sin compresión contra los tejidos originales detecta intersecciones con hígado y cinco muestras sanguíneas en la sexta costilla. La precedencia de hueso en el clasificador no elimina este defecto geométrico. No se movieron órganos ni se ensancharon ventanas para ocultarlo. La superficie del séptimo cartílago queda a un mínimo muestreado de 0,39 mm de la piel externa: también necesita reconciliarse con el espesor cutáneo. [Medición](anatomy/reference-relationships-report.json).
 - `reference-cartilage-seventh-only`: solo el séptimo cartílago bilateral tiene secciones medidas en los OBJ incluidos; los otros cartílagos siguen pendientes. Las 16 elipses interpoladas tienen residual de superficie RMS 0,94 mm, p95 2,10 mm, máximo 3,15 mm. Promedio bilateral, extremos cerrados y sección elíptica son aproximaciones; pasar CPU/GLSL no constituye validación clínica.
 
@@ -562,3 +553,7 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   no representa una venodilatación que conserve el volumen previo. Dominio 0,5–2
   y magnitudes basales son aproximaciones pendientes de calibración clínica.
   [Mecanismo, referencias y ensayos](physiology/VENOUS_RESERVOIR_COMPLIANCE.md).
+
+`color-complex-kernel-estimated`: el kernel complejo del color es procesamiento espacial estimado sobre autocorrelación emulada; no se han validado resolución ni mezcla de velocidades contra clips independientes. Ganancia/interpolación pueden extender color junto a paredes y no se añade máscara vascular para esconderlo.
+
+Corregida `color-absorption-linear-scaling` (174→176): A2 integra α_t(fD) por segmento usando los exponentes tisulares vigentes y conserva hueso/gas/espejo fijos. Continúan el muestreo grueso, la aproximación de barreras y la falta de calibración clínica de coeficientes; no se declara paridad de apertura ni idéntico muestreo PW/color. No hay suelo de transmisión 1e-6.

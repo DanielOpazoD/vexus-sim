@@ -240,9 +240,15 @@ function gaussianBeamFace(r: number, focus = 90): number {
 describe('Gemelo B→C→D de los ecos de interfaz (decisión 57)', () => {
   let liverMed = 1;
   let R = {} as Record<CaseId, CaseResult>;
+  let today: Pick<Record<CaseId, CaseResult>, 'hv80' | 'ivc' | 'diaphragm'>;
   beforeAll(() => {
     liverMed = liverStats(180, [1, 2]).median;
     R = Object.fromEntries(Object.entries(CASES).map(([id, spec]) => [id, runCase('echo', spec, liverMed)])) as Record<CaseId, CaseResult>;
+    today = {
+      hv80: runCase('today', { ...CASES.hv80, phis: [0] }, liverMed),
+      ivc: runCase('today', { ...CASES.ivc, seeds: [1] }, liverMed),
+      diaphragm: runCase('today', { ...CASES.diaphragm, seeds: [1] }, liverMed),
+    };
   }, 120_000);
 
   it('β: una cara lisa en arco con S = 1 a 80 mm y 180 mm de profundidad da un pico igual al RMS del hígado', () => {
@@ -471,11 +477,6 @@ describe('Gemelo B→C→D de los ecos de interfaz (decisión 57)', () => {
   });
 
   it('la regla de antes da lo que da el moteado solo y deja la costura del espejo', () => {
-    const today = {
-      hv80: runCase('today', { ...CASES.hv80, phis: [0] }, liverMed),
-      ivc: runCase('today', { ...CASES.ivc, seeds: [1] }, liverMed),
-      diaphragm: runCase('today', { ...CASES.diaphragm, seeds: [1] }, liverMed),
-    };
     expect(bin(today.hv80, 0).ratio).toBeLessThan(1.25);
     expect(bin(today.ivc, 0).ratio).toBeLessThan(1.25);
     expect(bin(today.hv80, 0).gapFrac).toBeGreaterThan(0.5);
@@ -483,10 +484,6 @@ describe('Gemelo B→C→D de los ecos de interfaz (decisión 57)', () => {
   });
 
   it.fails('regresión: la regla de hoy (spec·cos⁴ en una muestra, espejo grueso) cumple M1, M4 y M7', () => {
-    wallsAndMirror({
-      hv80: runCase('today', { ...CASES.hv80, phis: [0] }, liverMed),
-      ivc: runCase('today', { ...CASES.ivc, seeds: [1] }, liverMed),
-      diaphragm: runCase('today', { ...CASES.diaphragm, seeds: [1] }, liverMed),
-    });
+    wallsAndMirror(today);
   });
 });

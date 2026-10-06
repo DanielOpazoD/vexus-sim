@@ -13,7 +13,7 @@ afterEach(() => setReferenceBody());
 describe('adulto de referencia: adquisición real desde presets recalibrados', () => {
   for (const [kind, window, vessels] of [
     ['hepatic', 'intercostal', ['hvRight']],
-    ['portal', 'portal', ['pvTrunk']],
+    ['portal', 'portalTrunk', ['pvTrunk']],
     ['renal', 'renal', ['interlobarVein1', 'interlobarVein2', 'interlobarVein3']],
   ] as const) {
     it(`${kind}: puerta, transmisión, IQ y captura interpretables sin mover órganos`, () => {

@@ -1,4 +1,7 @@
 import { TISSUE_COUNT } from '../../anatomy/tissues';
+import { COLOR_MAP_GLSL } from '../colorMap';
+import { COLOR_WALL_FILTER_GLSL } from '../colorWallFilter';
+import { SEGMENT_TAG_STRIDE } from '../segmentTag';
 import { C_RECONSTRUCTION_MM_S } from '../../core/units';
 import { ANATOMY_GLSL } from '../../anatomy/gpu/anatomy.glsl';
 import { APERTURE_GLSL, REFRACTION_GLSL, STEERED_APERTURE_GLSL } from '../aperture';
@@ -305,7 +308,7 @@ uniform sampler2D uHits1;
 uniform sampler2D uHits2;
 in vec2 vUv;
 // (dB ida y vuelta del segmento, negativo en el aire; camino de más en una luz líquida, decisión 86; es hueso; tipo de
-// gas: 0 no, 1 pulmón, 2 otro, 3 cortina)
+// etiqueta: gas (0 no, 1 pulmón, 2 otro, 3 cortina) + 4·tejido)
 out vec4 oSeg;
 void main() {
   int line = int(gl_FragCoord.x);
@@ -331,7 +334,7 @@ void main() {
   // .w: marca de gas para el prefijo dirigido (decisión 58), como A0: 1 pulmón, 2 otro gas, 3 cortina (61)
   float lung = !reflected && float(s) <= curtainLast ? ${glslFloat(CURTAIN_GAS_KIND)} : 1.0;
   float gas = flag > 0.5 && flag < 1.5 ? (c.tissue == T_LUNG ? lung : 2.0) : 0.0;
-  oSeg = vec4(c.tissue == T_AIR ? -db : db, ${lumenExcessGlsl('c.tissue')} * step, flag > 1.5 ? 1.0 : 0.0, gas);
+  oSeg = vec4(c.tissue == T_AIR ? -db : db, ${lumenExcessGlsl('c.tissue')} * step, flag > 1.5 ? 1.0 : 0.0, gas + ${SEGMENT_TAG_STRIDE}.0 * float(c.tissue));
 }
 `;
 
@@ -348,16 +351,19 @@ precision highp int;
 ${BEAM_GLSL}
 uniform float uCoarseN;
 uniform sampler2D uSeg;
+uniform vec4 uTissueDopplerRatio4[${TISSUE_VEC4}];
+float tissueDopplerRatio(int t) { return uTissueDopplerRatio4[t / 4][t % 4]; }
 uniform sampler2D uHits0;
 uniform sampler2D uHits1;
 in vec2 vUv;
 layout(location = 0) out vec4 o0; // (dB ida y vuelta de un rayo, gasHit, boneHit, mirrorHit)
-layout(location = 1) out vec4 o1; // (Ψ̃ de la refracción en las luces y su pendiente, decisión 86; dB del hueso, 0)
+layout(location = 1) out vec4 o1; // (Ψ̃ de la refracción en las luces y su pendiente, decisión 86; dB del hueso, pérdida Doppler total)
 ${steeredOnly(look, STEERED_PREFIX_DECL_GLSL)}void main() {
   int line = int(gl_FragCoord.x);
   int k = int(gl_FragCoord.y);
   float step = uDepth / uCoarseN;
-  float attenDb = 0.0, psi = 0.0, pa = 0.0, boneDb = 0.0;
+  float attenDb = 0.0, psi = 0.0, pa = 0.0, boneDb = 0.0, dopplerDb = 0.0;
+  vec4 h0 = texelFetch(uHits0, ivec2(line, 0), 0);
   bool entered = false;
   bool boneEntered = false;
   for (int s = 0; s < 512; s++) {
@@ -365,8 +371,12 @@ ${steeredOnly(look, STEERED_PREFIX_DECL_GLSL)}void main() {
     vec4 g = texelFetch(uSeg, ivec2(line, s), 0);
     if (g.x < 0.0 && !entered) continue;
     entered = true;
-    if (g.z > 0.5 && !boneEntered) { attenDb += ${glslFloat(BONE_ENTRY_DB)}; boneDb += ${glslFloat(BONE_ENTRY_DB)}; boneEntered = true; }
+    if (g.z > 0.5 && !boneEntered) { attenDb += ${glslFloat(BONE_ENTRY_DB)}; boneDb += ${glslFloat(BONE_ENTRY_DB)}; dopplerDb += ${glslFloat(BONE_ENTRY_DB)}; boneEntered = true; }
     attenDb += abs(g.x);
+    float gas = mod(g.w, ${SEGMENT_TAG_STRIDE}.0);
+    int tissue = int(floor(g.w / ${SEGMENT_TAG_STRIDE}.0));
+    bool fixedLoss = gas > 0.5 || float(s) == h0.x;
+    dopplerDb += abs(g.x) * (fixedLoss ? 1.0 : tissueDopplerRatio(tissue));
     // lo que cuesta el hueso (decisión 88): la pasada A saca de él la parte del haz que una costilla tapa
     if (g.z > 0.5) boneDb += abs(g.x);
     // Ψ̃ de la refracción en las luces y su pendiente (decisión 86, refractionPsi): Σe·(k − s)/(R + r) y Σ_{s<k} e/(R + r),
@@ -375,7 +385,6 @@ ${steeredOnly(look, STEERED_PREFIX_DECL_GLSL)}void main() {
     psi += e * float(k - s);
     if (s < k) pa += e;
   }
-  vec4 h0 = texelFetch(uHits0, ivec2(line, 0), 0);
   vec4 h1 = texelFetch(uHits1, ivec2(line, 0), 0);
   float kf = float(k);
   // Espejo desde la fila que contiene su r exacta menos el alcance del eco pleural: la pasada B refleja
@@ -385,7 +394,7 @@ ${steeredOnly(look, STEERED_PREFIX_DECL_GLSL)}void main() {
   float boneHit = h0.z >= 0.0 && h0.z <= kf ? (h0.z + 0.5) * step : -1.0;
   o0 = vec4(attenDb, gasHit, boneHit, mirrorHit);
   // la dirección (la reflejada tras el espejo) y el tipo de gas los pone la pasada A desde A0 (decisión 86)
-  o1 = vec4(step * psi, pa, boneDb, 0.0);
+  o1 = vec4(step * psi, pa, boneDb, dopplerDb);
 ${steeredOnly(look, STEERED_PREFIX_MAIN_GLSL)}}
 `;
 }
@@ -1175,14 +1184,14 @@ void main() {
 /**
  * Pasada F: Doppler color — emulación del estimador de autocorrelación sobre la
  * mezcla sangre/clutter/ruido en cada celda del cuadro de color.
- * Salida: (frecuencia estimada Hz plegada, potencia, fracción de sangre, 0).
+ * Salida: (Re R1, Im R1, fracción de sangre, 0). La fase se decodifica tras filtrar e interpolar.
  */
 export const FRAG_COLOR = /* glsl */ `#version 300 es
 precision highp float;
 precision highp int;
 ${ANATOMY_GLSL}
 ${BEAM_GLSL}
-uniform sampler2D uTrans0;
+uniform sampler2D uTransDoppler; // A2 auxiliary .w: total loss at Doppler frequency
 uniform vec4 uBox;        // theta0, theta1, r0, r1
 uniform vec2 uCells;      // líneas de color × paquetes axiales dentro de la caja
 uniform vec4 uBeam;       // λ·k, D_tx, D_rx,max, F#_rx,min (mismo modelo que la PSF)
@@ -1190,18 +1199,13 @@ uniform float uPrf;
 uniform float uF0;
 uniform float uWallHz;
 uniform float uColorGain;
-uniform float uDopplerFreqRatio; // f Doppler / f B del perfil: la atenuación en dB escala con f
 uniform float uEnsemble;
 uniform vec3 uProbeVel;   // mm/s
 uniform float uFrame;
 in vec2 vUv;
 out vec4 oColor;
 float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
-float wallResp(float f) {
-  // Filtro de clutter de orden alto (los equipos usan filtros de regresión con >60 dB de rechazo).
-  float x = f * f / (f * f + uWallHz * uWallHz);
-  return x * x * x * x;
-}
+${COLOR_WALL_FILTER_GLSL}
 // Normales en los nodos de la retícula de resolución del color (una línea de color × un paquete axial), dos por nodo
 vec2 colorGaussAt(vec2 q, float seed) {
   float a = hash12(q * 0.917 + vec2(seed * 1.37, seed * 0.61) + 0.5);
@@ -1235,8 +1239,8 @@ void main() {
   // Transmisión (pasada A, a la frecuencia B) convertida a la frecuencia Doppler del perfil: la misma
   // que usa la puerta PW. Antes el exponente era 0,714 fijo (B a 3,5 MHz) con el perfil a 2,5 y 2,5.
   float u = (theta + uHalfSector) / (2.0 * uHalfSector);
-  float Tb = texture(uTrans0, vec2(u, r / uDepth)).x;
-  float T = pow(max(Tb, 1e-6), uDopplerFreqRatio);
+  float dopplerDb = texture(uTransDoppler, vec2(u, r / uDepth)).w;
+  float T = pow(10.0, -dopplerDb / 20.0);
   // Sin contacto no hay eco: el acoplamiento de la línea multiplica la transmisión como en modo B.
   T *= texture(uCoupling, vec2(u, 0.5)).r;
   float bf = 0.0; float vb = 0.0; float vt = 0.0;
@@ -1274,8 +1278,8 @@ void main() {
   // de resolución y renovada en cada cuadro (la sangre avanza); da el relleno moteado y los huecos del color real
   vec2 sp = colorGauss(grid, uFrame + 17.0);
   float speckle = 0.5 * dot(sp, sp);
-  float Pb = bf * T * T * wallResp(fdB) * speckle;
-  float Pc = (1.0 - bf) * Ac * Ac * T * T * wallResp(fdT);
+  float Pb = bf * T * T * colorWallResponseHz(fdB, uWallHz, uPrf) * speckle;
+  float Pc = (1.0 - bf) * Ac * Ac * T * T * colorWallResponseHz(fdT, uWallHz, uPrf);
   float Pn = 3.2e-4; // suelo de ruido Doppler ≈ −35 dB re sangre a T=1 ([EXTRAPOLACIÓN PROPIA])
   float phB = 6.2831853 * fdB / uPrf;
   float phT = 6.2831853 * fdT / uPrf;
@@ -1291,9 +1295,8 @@ void main() {
   float g = colorGauss(grid, uFrame + 29.0).x;
   float ph = atan(R1.y, R1.x) + sigPh * g;
   ph = mod(ph + 3.14159265, 6.2831853) - 3.14159265;
-  float fEst = uPrf * ph / 6.2831853;
   float power = length(R1) * uColorGain;
-  oColor = vec4(fEst, power, bf, 0.0);
+  oColor = vec4(power * vec2(cos(ph), sin(ph)), bf, 0.0);
 }
 `;
 
@@ -1331,7 +1334,7 @@ float displayGrey(float env, float r) {
 export const FRAG_SCANCONVERT = /* glsl */ `#version 300 es
 precision highp float;
 uniform sampler2D uEnv;
-uniform sampler2D uColor;
+uniform highp sampler2D uColor;
 uniform vec2 uCanvas;      // px
 uniform vec2 uApex;        // px: centro de curvatura en pantalla
 uniform float uScale;      // px por mm
@@ -1346,6 +1349,7 @@ uniform int uColorInvert;
 in vec2 vUv;
 out vec4 oColor;
 ${DISPLAY_GREY_GLSL}
+${COLOR_MAP_GLSL}
 void main() {
   vec2 px = vUv * uCanvas;
   vec2 d = (px - uApex) / uScale;  // mm, y hacia abajo
@@ -1359,13 +1363,12 @@ void main() {
   if (uColorOn == 1 && theta >= uBox.x && theta <= uBox.y && r >= uBox.z && r <= uBox.w) {
     vec2 cuv = vec2((theta - uBox.x) / (uBox.y - uBox.x), (r - uBox.z) / (uBox.w - uBox.z));
     vec4 c = texture(uColor, cuv);
-    float f = c.x;
+    float power = length(c.xy);
+    float f = atan(c.y, c.x) * uPrf / 6.2831853;
     if (uColorInvert == 1) f = -f;
     float mag = clamp(abs(f) / (0.5 * uPrf), 0.0, 1.0);
-    if (c.y > uColorThreshold && (g < uColorPriority || c.y > 3.0 * uColorThreshold)) {
-      vec3 toward = mix(vec3(0.55, 0.05, 0.0), vec3(1.0, 0.95, 0.35), mag);
-      vec3 away = mix(vec3(0.0, 0.1, 0.6), vec3(0.35, 0.95, 1.0), mag);
-      col = f >= 0.0 ? toward : away;
+    if (power > uColorThreshold && (g < uColorPriority || power > 3.0 * uColorThreshold)) {
+      col = colorVelocityMap(f, mag);
     }
   }
   oColor = vec4(col, 1.0);

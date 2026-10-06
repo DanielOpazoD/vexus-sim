@@ -1,3 +1,4 @@
+import { SEGMENT_TAG_STRIDE } from './segmentTag';
 import { TISSUES, Tissue, attenuationDbPerCm } from '../anatomy/tissues';
 import { dot, normalize, type Vec3 } from '../core/vec3';
 import { warpNormal, type Warp } from '../anatomy/compression';
@@ -91,6 +92,23 @@ export function rayAttenuationDb(tissues: Iterable<Tissue>, stepMm: number, fMHz
       boneEntered = true;
     }
     db += 2 * attenuationDbPerCm(t, fMHz) * (stepMm / 10);
+  }
+  return db;
+}
+
+/** Frequency-independent part of the direct PW ray; reflected paths are handled separately by A2. */
+export function rayFixedAttenuationDb(tissues: Iterable<Tissue>, stepMm: number): number {
+  let db = 0,
+    entered = false,
+    boneEntered = false;
+  for (const t of tissues) {
+    if (t === Tissue.Air && !entered) continue;
+    entered = true;
+    if (TISSUES[t].gas) db += (GAS_DB_PER_CM * stepMm) / 10;
+    else if (TISSUES[t].bone && !boneEntered) {
+      db += BONE_ENTRY_DB;
+      boneEntered = true;
+    }
   }
   return db;
 }
@@ -409,7 +427,8 @@ vec4 steeredPrefix(int line, int k, out vec4 extra) {
     float sRow = alongLineMm(uCurvR + rS, a, rc);
     if (g.z > 0.5 && sBone < 0.0) sBone = sRow;
     // el pulmón de la cortina (marca ${CURTAIN_GAS_KIND}, decisión 61) no es un impacto de gas
-    if (g.w > 0.5 && g.w < ${glslFloat(CURTAIN_GAS_KIND - 0.5)} && sGas < 0.0) { sGas = crossing ? sMirror : sRow; gasKind = g.w; }
+    float gas = mod(g.w, ${SEGMENT_TAG_STRIDE}.0);
+    if (gas > 0.5 && gas < ${glslFloat(CURTAIN_GAS_KIND - 0.5)} && sGas < 0.0) { sGas = crossing ? sMirror : sRow; gasKind = gas; }
     db += abs(g.x) * scale;
     float e = g.y * scale / (uCurvR + rS);
     psi += e * float(k - s);

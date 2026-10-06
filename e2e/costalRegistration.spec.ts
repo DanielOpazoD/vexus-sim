@@ -12,10 +12,14 @@ test('la cortical izquierda conserva normales espejo y obstruye el haz real', as
     const cpu: number[][] = [];
     for (const rib of sim.scene.ribs)
       for (const side of [-1, 1]) {
+        const phi = rib.frontPhi === undefined ? Math.PI : (rib.frontPhi + 4.15) / 2;
+        const x = sim.scene.torso.a * rib.scale * Math.cos(phi);
+        const y = sim.scene.torso.b * rib.scale * Math.sin(phi);
+        const k = 1 + (rib.halfThickness + 0.1) / Math.hypot(x, y);
         const p: [number, number, number] = [
-          side * (sim.scene.torso.a * rib.scale + rib.halfThickness + 0.1),
-          0,
-          rib.zAnterior + rib.tilt * 0.5,
+          -side * x * k,
+          y * k,
+          rib.zAnterior + rib.tilt * (0.5 - 0.5 * Math.sin(phi)) + (rib.shape?.[3] ?? 0) * Math.cos(phi),
         ];
         material.push(p);
         cpu.push(sim.scene.faceGradient(p, sim.anatomy.caliberFor(sim.sample))!.normal);
@@ -69,7 +73,7 @@ test('la cortical izquierda conserva normales espejo y obstruye el haz real', as
     };
   });
   await info.attach('left-costal-acquisition.json', { body: JSON.stringify(report, null, 2), contentType: 'application/json' });
-  expect(report.dots).toHaveLength(12);
+  expect(report.dots).toHaveLength(24);
   expect(Math.min(...report.dots)).toBeGreaterThan(0.98);
   expect(Math.max(...report.mirrorError)).toBeLessThan(0.01);
   expect(report.gradNorm.every((n) => Number.isFinite(n) && n > 0.5)).toBe(true);

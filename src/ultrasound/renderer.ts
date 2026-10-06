@@ -1,7 +1,7 @@
+import { segmentGasKind } from './segmentTag';
 import { BOWEL_NODES, BOWEL_BOUNDS, BOWEL_GROUPS, BOWEL_ARC } from '../anatomy/organs/bowel';
 import { CARTILAGE_ROWS } from '../anatomy/referenceCartilageData';
-import type { AnatomyScene, VesselCaliber } from '../anatomy/scene';
-import { VESSEL_META } from '../physiology/vessels';
+import { vesselApScale, type AnatomyScene, type VesselCaliber } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
 import { Interface, interfaceOfVessel } from '../anatomy/interfaces';
 import { TISSUES, TISSUE_COUNT, attenuationDbPerCm } from '../anatomy/tissues';
@@ -11,6 +11,7 @@ import { contactCoupling } from '../probe/contact';
 import { lineAngle, type ProbeFrame, type ProbePose, type Transducer } from '../probe/probe';
 import type { TransducerProfile } from './transducerProfile';
 import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
+import { COLOR_FILTER_GLSL } from './colorCorrelation';
 import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
 import { GREY_CURVE, greyOfLevel } from './greyMap';
 import { axialSigmaMm, focalReferenceFwhmMm, txApertureMm } from './beamModel';
@@ -44,6 +45,7 @@ import type { SegmentGrid } from './transmission';
 import {
   BODY_BASE,
   RIB_BASE,
+  RIB_TEXELS,
   CARTILAGE_BASE,
   COMPRESSION_BASE,
   BOWEL_BASE,
@@ -296,6 +298,8 @@ export interface TransmissionRead {
   look: number;
   theta: number;
   prefixDb?: Float32Array;
+  /** Look-zero total round-trip loss at Doppler frequency, decision 176. */
+  dopplerDb?: Float32Array;
   sGas?: Float32Array;
 }
 
@@ -335,6 +339,7 @@ export class UltrasoundRenderer {
   private pLateral: GLProgram;
   private pCompound: GLProgram;
   private pColor: GLProgram;
+  private pColorFilter: GLProgram;
   private pScan: GLProgram;
   private pPersist: GLProgram;
   private pBlit: GLProgram;
@@ -368,6 +373,7 @@ export class UltrasoundRenderer {
   private readonly tEnvLooks: RenderTarget[];
   private tEnv: RenderTarget;
   private tColor: RenderTarget;
+  private tColorRaw: RenderTarget;
   private tScan: RenderTarget | null = null;
   private tPersist: [RenderTarget, RenderTarget] | null = null;
   private persistIndex = 0;
@@ -402,6 +408,7 @@ export class UltrasoundRenderer {
   private tubeCountTotal = 0;
   /** Tablas por tejido de 4 en 4 (`TISSUE_VEC4` vec4; el relleno tras el último tejido queda a 0). */
   private alpha = new Float32Array(TISSUE_VEC4 * 4);
+  private dopplerRatio = new Float32Array(TISSUE_VEC4 * 4);
   private back = new Float32Array(TISSUE_VEC4 * 4);
   private clump = new Float32Array(TISSUE_VEC4 * 4);
   private flags = new Float32Array(TISSUE_VEC4 * 4);
@@ -479,6 +486,7 @@ export class UltrasoundRenderer {
       lateral: FRAG_LATERAL,
       compound: FRAG_COMPOUND,
       color: FRAG_COLOR,
+      colorFilter: COLOR_FILTER_GLSL,
       scanconvert: FRAG_SCANCONVERT,
       persist: FRAG_PERSIST,
       blit: FRAG_BLIT,
@@ -495,6 +503,7 @@ export class UltrasoundRenderer {
     this.pLateral = p.lateral;
     this.pCompound = p.compound;
     this.pColor = p.color;
+    this.pColorFilter = p.colorFilter;
     this.pScan = p.scanconvert;
     this.pPersist = p.persist;
     this.pBlit = p.blit;
@@ -523,6 +532,7 @@ export class UltrasoundRenderer {
     this.tEnvLooks = profile.compound.order.map(() => createTarget(gl, LINES, FINE_DEPTH, [f1n]));
     this.tEnv = createTarget(gl, LINES, FINE_DEPTH, [f1]);
     this.tColor = createTarget(gl, COLOR_W, COLOR_H, [f]);
+    this.tColorRaw = createTarget(gl, COLOR_W, COLOR_H, [f]);
     this.tMap = createTarget(gl, MAP_W, MAP_H, [{ internal: gl.RGBA8, format: gl.RGBA, type: gl.UNSIGNED_BYTE, filter: gl.NEAREST }]);
     this.couplingTex = createTexture(gl, LINES, 1, gl.R32F, gl.RED, gl.FLOAT, gl.LINEAR);
     this.sceneTex = createTexture(gl, SCENE_TEX_W, SCENE_TEX_H, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
@@ -581,6 +591,7 @@ export class UltrasoundRenderer {
       this.pLateral,
       this.pCompound,
       this.pColor,
+      this.pColorFilter,
       this.pScan,
       this.pPersist,
       this.pBlit,
@@ -602,6 +613,7 @@ export class UltrasoundRenderer {
       ...this.tEnvLooks,
       this.tEnv,
       this.tColor,
+      this.tColorRaw,
       this.tMap,
     ])
       deleteTarget(gl, t);
@@ -652,8 +664,12 @@ export class UltrasoundRenderer {
     ];
     if (s.torso.profile) this.sceneData.set(s.torso.profile, BODY_BASE * 4);
     s.ribs.forEach((r, i) => {
-      this.sceneData.set(ribShape(r, s.torso), (RIB_BASE + i * 2) * 4);
-      this.sceneData.set([ribAnteriorEndX(r), r.shape ? 1 : 0, r.sourceCartilage ? 1 : 0, 0], (RIB_BASE + i * 2 + 1) * 4);
+      this.sceneData.set([r.zAnterior, r.tilt, r.halfWidth, r.halfThickness], (RIB_BASE + i * RIB_TEXELS) * 4);
+      this.sceneData.set(ribShape(r, s.torso), (RIB_BASE + i * RIB_TEXELS + 1) * 4);
+      this.sceneData.set(
+        [ribAnteriorEndX(r), r.shape || !Number.isFinite(r.cartilageFromPhi) ? 1 : 0, r.sourceCartilage ? 1 : 0, r.frontPhi ?? 0],
+        (RIB_BASE + i * RIB_TEXELS + 2) * 4,
+      );
     });
     if (s.torso.profile) CARTILAGE_ROWS.forEach((row, i) => this.sceneData.set(row, (CARTILAGE_BASE + i) * 4));
     BOWEL_BOUNDS.forEach((row, i) => this.sceneData.set(row, (BOWEL_BASE + i) * 4));
@@ -689,6 +705,8 @@ export class UltrasoundRenderer {
     for (let i = 0; i < TISSUE_COUNT; i++) {
       // Frecuencia efectiva de penetración del perfil (banda baja por atenuación)
       this.alpha[i] = attenuationDbPerCm(i, this.profile.bEffectiveMHz);
+      const alphaD = attenuationDbPerCm(i, this.profile.dopplerEffectiveMHz);
+      this.dopplerRatio[i] = this.alpha[i] > 0 ? alphaD / this.alpha[i] : 1;
       this.back[i] = TISSUES[i].backscatter;
       this.clump[i] = TISSUES[i].speckleClump ?? 0;
       this.flags[i] = TISSUES[i].gas ? 1 : TISSUES[i].bone ? 2 : 0;
@@ -770,7 +788,7 @@ export class UltrasoundRenderer {
       if (i < s.vessels.length) {
         const v = s.vessels[i];
         const scale = inputs.caliber.radiusScale(v.id);
-        this.sceneData[dst + 2] = VESSEL_META[v.id].system === 'ivc' ? inputs.caliber.ivcApScale : v.tube.apScale;
+        this.sceneData[dst + 2] = vesselApScale(v.id, v.tube.apScale, inputs.caliber);
         this.sceneData[dst + 3] = scale;
         this.sceneData[dst + 8] = inputs.sample.velocities[v.id] * (v.flowFactor ?? 1);
         this.sceneData[dst + 9] = v.refRadius * scale;
@@ -918,6 +936,7 @@ export class UltrasoundRenderer {
     this.cineEnv ??= this.cineLayers(gl.R16F, this.lines, FINE_DEPTH);
     this.blitLayer(this.cineEnv, slot, this.tEnv, true);
     if (frame.colorFrame) {
+      // R1 complejo (real, imaginario): G recupera fase y potencia también al reproducir el cine.
       this.cineColor ??= this.cineLayers(gl.RG16F, COLOR_W, COLOR_H);
       this.blitLayer(this.cineColor, slot, this.tColor, true);
     }
@@ -1099,7 +1118,8 @@ export class UltrasoundRenderer {
     axial: () => this.tAxial,
     lateral: () => this.tEnvLooks[this.look?.index ?? 0],
     compound: () => this.tEnv,
-    color: () => this.tColor,
+    color: () => this.tColorRaw,
+    colorFilter: () => this.tColor,
     scanConvert: () => this.tScan!,
     // tras la pasada, `persistIndex` ya apunta a la historia recién escrita
     persistence: () => this.tPersist![this.persistIndex],
@@ -1164,6 +1184,7 @@ export class UltrasoundRenderer {
     lateral: (inputs) => this.passLateral(inputs),
     compound: (inputs) => this.passCompound(inputs),
     color: (inputs) => this.passColor(inputs),
+    colorFilter: (inputs) => this.passColorFilter(inputs),
     scanConvert: (inputs) => this.passScanConvert(inputs),
     persistence: (inputs) => this.passPersistence(inputs),
     present: () => this.passPresent(),
@@ -1206,6 +1227,7 @@ export class UltrasoundRenderer {
     p.use();
     this.setBeamUniforms(p, inputs);
     p.f('uCoarseN', COARSE_DEPTH);
+    p.v4v('uTissueDopplerRatio4', this.dopplerRatio);
     p.tex('uSeg', 0, this.tSeg.textures[0]);
     p.tex('uHits0', 1, this.tHits.textures[0]);
     p.tex('uHits1', 2, this.tHits.textures[1]);
@@ -1423,12 +1445,12 @@ export class UltrasoundRenderer {
     const gl = this.gl;
     const tr = inputs.transducer;
     const c = inputs.color;
-    bindTarget(gl, this.tColor);
+    bindTarget(gl, this.tColorRaw);
     this.pColor.use();
     this.setSceneUniforms(this.pColor, inputs);
     this.setBeamUniforms(this.pColor, inputs);
     // el color usa la transmisión de un solo rayo, la misma que el PW (decisión 50)
-    this.pColor.tex('uTrans0', 0, this.tTrans.textures[2]);
+    this.pColor.tex('uTransDoppler', 2, this.tPre.textures[1]);
     this.pColor.tex('uCoupling', 1, this.couplingTex);
     this.pColor.v4('uBox', c.theta0, c.theta1, c.r0, c.r1);
     this.pColor.v2(
@@ -1447,12 +1469,24 @@ export class UltrasoundRenderer {
     this.pColor.f('uF0', tr.f0Doppler);
     this.pColor.f('uWallHz', c.wallFilterHz);
     this.pColor.f('uColorGain', COLOR_GAIN_REF * Math.pow(10, c.gainDb / 20));
-    this.pColor.f('uDopplerFreqRatio', this.profile.dopplerEffectiveMHz / this.profile.bEffectiveMHz);
     this.pColor.f('uEnsemble', c.ensemble);
     this.pColor.v3('uProbeVel', inputs.probeVelocity);
     this.pColor.f('uFrame', this.frameCount);
     drawFullscreen(gl);
     this.lastColorFrame = { box: [c.theta0, c.theta1, c.r0, c.r1], prf: c.prfHz };
+  }
+
+  private passColorFilter(inputs: FrameInputs): void {
+    const c = inputs.color;
+    bindTarget(this.gl, this.tColor);
+    this.pColorFilter.use();
+    this.pColorFilter.tex('uRawColor', 0, this.tColorRaw.textures[0]);
+    this.pColorFilter.v2(
+      'uCellStep',
+      1 / colorLineCount(c.theta0, c.theta1, this.profile.colorLineSpacingRad),
+      COLOR_PACKET_MM / (c.r1 - c.r0),
+    );
+    drawFullscreen(this.gl);
   }
 
   // G — conversión de barrido + mapa de grises + superposición del color
@@ -1692,13 +1726,18 @@ export class UltrasoundRenderer {
   }
 
   /** Campo del último cuadro de color (RGBA: frecuencia, potencia, fracción de sangre). Solo pruebas: lectura bloqueante. */
-  readColorField(): { width: number; height: number; data: Float32Array } {
+  readColorField(source: 'filtered' | 'raw' = 'filtered'): { width: number; height: number; data: Float32Array } {
     const gl = this.gl;
     const px = new Float32Array(COLOR_W * COLOR_H * 4);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.tColor.fbo);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, (source === 'raw' ? this.tColorRaw : this.tColor).fbo);
     gl.readBuffer(gl.COLOR_ATTACHMENT0);
     gl.readPixels(0, 0, COLOR_W, COLOR_H, gl.RGBA, gl.FLOAT, px);
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    for (let i = 0; i < px.length; i += 4) {
+      const power = Math.hypot(px[i], px[i + 1]);
+      px[i] = (Math.atan2(px[i + 1], px[i]) * (this.lastColorFrame?.prf ?? 0)) / (2 * Math.PI);
+      px[i + 1] = power;
+    }
     return { width: COLOR_W, height: COLOR_H, data: px };
   }
 
@@ -1808,18 +1847,24 @@ export class UltrasoundRenderer {
     if (look === 0) {
       const a2 = this.readRgba(this.tTrans, 2);
       const a0 = this.readRgba(this.tTrans, 0);
+      const pre = this.readRgba(this.tPre, 0);
+      const aux = this.readRgba(this.tPre, 1);
       const single = new Float32Array(n);
       const aperture = new Float32Array(n);
       const mirrorHit = new Float32Array(n);
       const specular = new Float32Array(n);
+      const prefixDb = new Float32Array(n);
+      const dopplerDb = new Float32Array(n);
       for (let i = 0; i < n; i++) {
         single[i] = a2[i * 4];
+        prefixDb[i] = pre[i * 4];
+        dopplerDb[i] = aux[i * 4 + 3];
         aperture[i] = a0[i * 4];
         mirrorHit[i] = a0[i * 4 + 3];
         specular[i] = a2[i * 4 + 3];
       }
       const own = this.look === null || this.look.index === 0;
-      return { lines: W, samples: H, single, aperture, mirrorHit, look: 0, theta: 0, ...(own ? { specular } : {}) };
+      return { lines: W, samples: H, single, aperture, mirrorHit, look: 0, theta: 0, prefixDb, dopplerDb, ...(own ? { specular } : {}) };
     }
     const last = this.look;
     if (last === null || last.index !== look)
@@ -1880,7 +1925,7 @@ export class UltrasoundRenderer {
         grid.air[i] = seg[t] < 0 ? 1 : 0;
         grid.excess[i] = seg[t + 1];
         grid.bone[i] = seg[t + 2] > 0.5 ? 1 : 0;
-        grid.gas[i] = Math.round(seg[t + 3]);
+        grid.gas[i] = segmentGasKind(Math.round(seg[t + 3]));
       }
     for (let l = 0; l < W; l++) {
       grid.mirrorSeg[l] = Math.round(h0[l * 4]);

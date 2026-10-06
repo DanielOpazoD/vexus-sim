@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AnatomyScene } from '../anatomy/scene';
-import { sdRib } from '../anatomy/primitives';
+import { sdRib, ribCentre } from '../anatomy/primitives';
 import { NORMAL_ADULT } from '../cases';
 import { costalGeometry } from '../ui/navigator3d/body';
 import type { Vec3 } from '../core/vec3';
@@ -20,29 +20,26 @@ describe('registro costal compartido en milímetros', () => {
           );
         }
         expect(geometry.groups.some((g) => g.materialIndex === 0)).toBe(true);
-        expect(geometry.groups.some((g) => g.materialIndex === 1)).toBe(true);
+        expect(geometry.groups.some((g) => g.materialIndex === 1)).toBe(Number.isFinite(rib.cartilageFromPhi));
         geometry.dispose();
       }
   });
   it('ambas hemicajas tienen hueso, cartílago y espacios derivados de sus superficies', () => {
     for (const rib of scene.ribs) {
-      for (const phi of [Math.PI * 0.95, Math.PI, Math.PI * 1.2, Math.PI * 1.35]) {
-        const q: Vec3 = [
-          scene.torso.a * rib.scale * Math.cos(phi),
-          scene.torso.b * rib.scale * Math.sin(phi),
-          rib.zAnterior + rib.tilt * (0.5 - 0.5 * Math.sin(phi)),
-        ];
+      for (const phi of [Math.PI * 0.95, Math.PI, Math.PI * 1.2, Math.PI * 1.35].filter((p) => p > (rib.frontPhi ?? 0))) {
+        const q = ribCentre(phi, rib, scene.torso);
         const right = sdRib(q, rib, scene.torso, scene.spine);
         const left = sdRib([-q[0], q[1], q[2]], rib, scene.torso, scene.spine);
         expect(right.d).toBeLessThan(0);
         expect(left).toEqual(right);
       }
     }
-    for (let i = 1; i < scene.ribs.length; i++) {
-      const upper = scene.ribs[i - 1],
-        lower = scene.ribs[i];
-      const zUpper = upper.zAnterior + upper.tilt * 0.5;
-      const zLower = lower.zAnterior + lower.tilt * 0.5;
+    const ordered = [...scene.ribs].sort((a, b) => a.number! - b.number!);
+    for (let i = 1; i < ordered.length; i++) {
+      const upper = ordered[i - 1],
+        lower = ordered[i];
+      const zUpper = ribCentre(Math.PI, upper, scene.torso)[2];
+      const zLower = ribCentre(Math.PI, lower, scene.torso)[2];
       const gap = zUpper - upper.halfWidth - zLower - lower.halfWidth;
       expect(gap).toBeGreaterThan(0);
       for (const side of [-1, 1]) {

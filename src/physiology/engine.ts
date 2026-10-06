@@ -1,4 +1,5 @@
 import { SimulationClock } from '../core/clock';
+import { supraIvcAreaMm2, supraIvcSection } from './supraIvc';
 import { Circulation, circulationBaseline, type AppliedIntervention, type Intervention } from './circulation';
 import type { PatientState } from './patientState';
 import { validatePatient } from './patientState';
@@ -36,7 +37,10 @@ export interface PhysiologySample {
   pRenal: number;
   qRenalArtery: number;
   qRenalVein: number;
+  /** Abdominal cava: the segment measured by the VExUS protocol. */
   ivc: { dEqMm: number; dApMm: number; dLatMm: number };
+  /** Junction/atrial entrance. Optional only for older synthetic test fixtures. */
+  ivcSupra?: { dEqMm: number; dApMm: number; dLatMm: number };
   /** Escala de radio de las suprahepáticas respecto al basal (≥ 0,5). */
   hvRadiusScale: number;
   pvRadiusScale: number;
@@ -65,6 +69,7 @@ export function nonFiniteFields(s: PhysiologySample): string[] {
   };
   for (const [k, v] of Object.entries(s)) if (typeof v === 'number') check(k, v);
   for (const [k, v] of Object.entries(s.ivc)) check(`ivc.${k}`, v);
+  if (s.ivcSupra) for (const [k, v] of Object.entries(s.ivcSupra)) check(`ivcSupra.${k}`, v);
   for (const [k, v] of Object.entries(s.resp)) if (typeof v === 'number') check(`resp.${k}`, v);
   for (const [k, v] of Object.entries(s.velocities)) check(`velocities.${k}`, v);
   return bad;
@@ -93,6 +98,7 @@ export class PhysiologyEngine {
   private current: PhysiologySample;
   /** Área de la luz de la VCI que marca su pared (mm²): sigue a la del volumen con la constante de la pared (decisión 73). */
   private ivcWallAreaMm2: number;
+  private ivcSupraWallAreaMm2: number;
   /** Pmsf del lazo en el paso anterior: su cambio es el volumen que entra o sale de la red (decisión 79). */
   private lastPmsf: number;
 
@@ -137,6 +143,7 @@ export class PhysiologyEngine {
     this.circulation.calibrate(circulationBaseline(this.network, pAbd0));
     this.lastPmsf = this.circulation.state.pmsfMmHg;
     this.ivcWallAreaMm2 = this.network.last.ivcAreaMm2;
+    this.ivcSupraWallAreaMm2 = supraIvcAreaMm2(this.network.last.pJunction - this.respiratory.pleuralAtEndExpiration());
     this.current = this.sampleFrom(this.network.last, 0);
     this.history.push(this.current);
   }
@@ -211,6 +218,8 @@ export class PhysiologyEngine {
     const pRa = this.rightAtrium.pressure(t, resp.pleuralMmHg, plExp);
     const out = this.network.step(this.clock.dt, this.arterialPulse(t), pRa, resp.abdominalMmHg, loop.arterialMeanMmHg);
     this.ivcWallAreaMm2 += (out.ivcAreaMm2 - this.ivcWallAreaMm2) * (1 - Math.exp(-this.clock.dt / IVC_WALL_TAU_S));
+    const supraArea = supraIvcAreaMm2(out.pJunction - resp.pleuralMmHg);
+    this.ivcSupraWallAreaMm2 += (supraArea - this.ivcSupraWallAreaMm2) * (1 - Math.exp(-this.clock.dt / IVC_WALL_TAU_S));
     const next = this.sampleFrom(out, t, resp, pRa);
     // Guardia NaN: un estado no finito se detiene aquí, con los campos culpables, en vez
     // de viajar en silencio a la GPU, al espectro y a la medición.
@@ -255,7 +264,7 @@ export class PhysiologyEngine {
       switch (id) {
         case 'ivcSupra':
           q = out.qIvcToRa + qHv;
-          areaScale = this.ivcWallAreaMm2 / this.areas.ivcSupra;
+          areaScale = this.ivcSupraWallAreaMm2 / this.areas.ivcSupra;
           break;
         case 'ivcInfra':
           q = out.qLowerBody;
@@ -348,6 +357,7 @@ export class PhysiologyEngine {
       qRenalArtery: out.qRenalArtery,
       qRenalVein: out.qRenalVein,
       ivc: { dEqMm: dEq, dApMm: dAp, dLatMm: dLat },
+      ivcSupra: supraIvcSection(this.ivcSupraWallAreaMm2),
       hvRadiusScale,
       pvRadiusScale,
       velocities,

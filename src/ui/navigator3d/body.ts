@@ -1,4 +1,5 @@
 import { referenceCartilage } from '../../anatomy/referenceCartilage';
+import { sternumSd, STERNUM } from '../../anatomy/organs/sternum';
 import { meshFromSdf } from './organs';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
@@ -77,7 +78,7 @@ export function costalGeometry(a: AnatomyScene, rib: Rib, side: number): THREE.B
   const rings = 64,
     segments = 12;
   const [aX, , y0] = ribShape(rib, a.torso);
-  const front = Math.acos(Math.max(-1, Math.min(1, (ribAnteriorEndX(rib) - rib.halfThickness - 0.01) / aX)));
+  const front = rib.frontPhi ?? Math.acos(Math.max(-1, Math.min(1, (ribAnteriorEndX(rib) - rib.halfThickness - 0.01) / aX)));
   for (let i = 0; i <= rings; i++) {
     const phi = front + ((Math.PI * 1.5 - front) * i) / rings;
     const [x, y, z] = ribCentre(phi, rib, a.torso);
@@ -117,13 +118,25 @@ export function buildSkeleton(a: AnatomyScene): THREE.Group {
     }
   if (a.ribs.some((r) => r.sourceCartilage))
     g.add(meshFromSdf((p) => referenceCartilage(p).d, [-115, 45, -70], [115, 105, 30], 96, cartilage));
-  // Anclaje distal conservado: la piel y la columna se registran alrededor de él.
-  const yFront = 8.925;
-  const sternum = new THREE.Mesh(new RoundedBoxGeometry(3.2, 0.9, 11, 3, 0.4), bone);
-  sternum.position.set(0, yFront - 0.2, 8.5);
-  const xiphoid = new THREE.Mesh(new RoundedBoxGeometry(1.5, 0.5, 3, 3, 0.3), cartilage);
-  xiphoid.position.set(0, yFront - 0.4, 1.5);
-  g.add(sternum, xiphoid);
+  // Esternón y xifoides del mismo campo acústico, sin la caja decorativa anterior.
+  const y0 = a.torso.y0 ?? 0;
+  g.add(
+    // Extensión unilateral antes de cortar cada material: evita interpolar el salto de anchura de la unión.
+    meshFromSdf(
+      (p) => Math.max(sternumSd([p[0], p[1], Math.max(STERNUM.zJunctionMm, p[2])], a.torso), STERNUM.zJunctionMm - p[2]),
+      [-30, y0 + 40, STERNUM.zJunctionMm - 1],
+      [30, y0 + a.torso.b, STERNUM.zTopMm + 1],
+      224,
+      bone,
+    ),
+    meshFromSdf(
+      (p) => Math.max(sternumSd([p[0], p[1], Math.min(STERNUM.zJunctionMm - 1e-8, p[2])], a.torso), p[2] - STERNUM.zJunctionMm),
+      [-10, y0 + 40, STERNUM.zTipMm - 1],
+      [10, y0 + a.torso.b, STERNUM.zJunctionMm + 1],
+      128,
+      cartilage,
+    ),
+  );
   // los cuerpos vertebrales de la imagen (PR119; recuperación provisional de la decisión 103): sección elíptica, uno cada `levelMm` con el disco entre ellos
   const { aspect, levelMm, bodyMm, z0Mm } = SPINE_SHAPE;
   for (let z = z0Mm - levelMm * Math.floor((z0Mm + 240) / levelMm); z <= 280; z += levelMm) {

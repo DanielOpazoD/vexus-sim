@@ -25,7 +25,7 @@ export type RenalSpectralWindow = 'venous' | 'paired';
 export type HepaticSpectralWindow = 'standard' | 'tilted';
 const WINDOWS: readonly { window: StartPoint['id']; vessels: readonly VesselId[]; gateMm: number }[] = [
   { window: 'intercostal', vessels: ['hvRight'], gateMm: 4 },
-  { window: 'portal', vessels: ['pvTrunk'], gateMm: 6 },
+  { window: 'portalTrunk', vessels: ['pvTrunk'], gateMm: 6 },
   { window: 'renal', vessels: ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'], gateMm: 4 },
 ];
 
@@ -87,6 +87,9 @@ export class VenousSpectralAcquisition {
       // Reuse the exact reference body selected when the observed simulator was constructed.
       if (scene.torso.profile !== anatomy.scene.torso.profile) throw new Error('The reference body changed during acquisition setup');
       const sp = startPointsFor(scene.torso).find((s) => s.id === window)!;
+      // Registered posterior kidney: the arterial plane is 3.5° behind its venous plane.
+      // Procedural acquisition retains its audited 2° offset; physiology is untouched.
+      const pairedTilt = paired ? ((scene.torso.profile ? 3.5 : 2) * Math.PI) / 180 : 0;
       // Audited acquisition pose, not a velocity or brightness correction.
       const contact = probeContact(
         {
@@ -94,7 +97,7 @@ export class VenousSpectralAcquisition {
           z: sp.z,
           yaw: sp.yaw,
           rock: sp.rock ?? 0,
-          tilt: (sp.tilt ?? 0) - (paired ? Math.PI / 90 : 0) + (window === 'intercostal' && hepaticWindow === 'tilted' ? Math.PI / 90 : 0),
+          tilt: (sp.tilt ?? 0) - pairedTilt + (window === 'intercostal' && hepaticWindow === 'tilted' ? Math.PI / 90 : 0),
           lift: 0,
         },
         tr,
@@ -104,7 +107,7 @@ export class VenousSpectralAcquisition {
       const weight = acousticWindowWeight(query, contact.frame, tr, contact, sample, this.#settings.depthMm, profile.dopplerEffectiveMHz);
       // A virtual trunk acquisition should not straddle its terminal bifurcation.
       // One gate length is a geometric safeguard, not a clinical distance threshold.
-      const portalEnd = window === 'portal' ? scene.vessels.find((v) => v.id === 'pvTrunk')!.tube.nodes.at(-1)!.p : null;
+      const portalEnd = window === 'portalTrunk' ? scene.vessels.find((v) => v.id === 'pvTrunk')!.tube.nodes.at(-1)!.p : null;
       const trunkInterior = portalEnd
         ? (candidate: GatePlacement) => {
             const q = query.classifyWorld(pointOnLine(contact.frame, tr, candidate.theta, candidate.r), sample);

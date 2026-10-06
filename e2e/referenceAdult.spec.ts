@@ -24,7 +24,11 @@ test('el adulto de referencia carga el mismo campo corporal para imagen y consul
   await info.attach('registered-reference.json', { body: JSON.stringify(result, null, 2), contentType: 'application/json' });
   expect(result.rows).toBe(520);
   expect(result.spine.y0).toBeCloseTo(-60.02345, 6);
-  expect(result.ribs.every((r) => r.shape?.length === 4)).toBe(true);
+  expect(result.ribs).toHaveLength(12);
+  // Registered 5–10 retain their fitted shapes; floating 11–12 use explicit free-end fits.
+  expect(result.ribs.filter((r) => r.number! >= 5).every((r) => r.shape?.length === 4)).toBe(true);
+  // Upper 1–4 use the declared procedural torso ellipse, with no invented measured registration.
+  expect(result.ribs.filter((r) => r.number! <= 4).every((r) => !r.shape && r.scale === 0.85)).toBe(true);
   expect(result.parity.points).toBeGreaterThan(3000);
   expect(result.parity.tissueAgreement).toBe(1);
   expect(result.windows.map((r) => r.id)).toEqual([
@@ -34,6 +38,7 @@ test('el adulto de referencia carga el mismo campo corporal para imagen y consul
     'subcostal',
     'flank',
     'portal',
+    'portalTrunk',
     'renal',
     'hepatorenal',
   ]);

@@ -261,7 +261,7 @@ export interface TestHooks {
   /** Lazo cerrado del simulador vivo (decisión 79): PAD, volumen y PEEP pedidos, intervenciones y el caso. */
   circulation: () => { caseId: string; rapMeanMmHg: number; fluidTargetMl: number; peepTargetCmH2O: number; interventions: number };
   /** Coloca la puerta PW sobre uno de los vasos con la técnica del operador; false si no lo ve. */
-  placeGate: (vessels: VesselId[]) => boolean;
+  placeGate: (vessels: VesselId[], minWallMm?: number) => boolean;
   /** Enciende o apaga la composición espacial con el comando del equipo (decisión 58). */
   setCompound: (on: boolean) => void;
   /** Enciende o apaga la armónica tisular con el comando del equipo (decisión 77). */
@@ -757,9 +757,8 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       const depth = sim.bmode.depthMm;
       const lines = sim.renderer.lines;
       const u = (theta + tr.halfSector) / (2 * tr.halfSector);
-      const tb = sim.renderer.transmissionAt(u, depthMm / depth);
-      const fB = sim.profile.bEffectiveMHz;
-      const ratio = sim.profile.dopplerEffectiveMHz / fB;
+      const transmission = sim.renderer.readTransmission();
+      const fD = sim.profile.dopplerEffectiveMHz;
       // el téxel que lee el color (el mismo índice que `transmissionAt`) y el acoplamiento como lo muestrea:
       // textura LINEAR de `lines` téxeles con el valor de `lineAngle(i)` en el i-ésimo
       const line = Math.min(lines - 1, Math.max(0, Math.floor(u * lines)));
@@ -769,8 +768,9 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       const i1 = Math.min(lines - 1, i0 + 1);
       const cAt = (i: number) => contactCoupling(sim.contact, lineAngle(i, tr));
       const coupling = cAt(i0) + (cAt(i1) - cAt(i0)) * (x - i0);
-      const db = (v: number) => 20 * Math.log10(Math.max(v, 1e-12));
-      const color = db(Math.pow(Math.max(tb, 1e-12), ratio) * coupling);
+      const db = (v: number) => 20 * Math.log10(Math.max(v, 1e-30));
+      const cell = row * lines + line;
+      const color = db(Math.pow(10, -transmission.dopplerDb![cell] / 20) * coupling);
       // el mismo téxel en la CPU: segmentos de la pasada A por el centro de la línea, con los dos lados de
       // cada segmento ambiguo (centro a < 0,02 mm de una interfaz)
       const thetaTexel = -tr.halfSector + (2 * tr.halfSector * (line + 0.5)) / lines;
@@ -788,7 +788,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       const path: Tissue[] = [];
       const walk = (k: number): void => {
         if (k === options.length) {
-          const v = -rayAttenuationDb(path, step, fB) * ratio + db(coupling);
+          const v = -rayAttenuationDb(path, step, fD) + db(coupling);
           lo = Math.min(lo, v);
           hi = Math.max(hi, v);
           return;
@@ -800,7 +800,6 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
         }
       };
       walk(0);
-      const fD = sim.profile.dopplerEffectiveMHz;
       const pw = gateTransmission(sim.anatomy, sim.frame, tr, sim.contact, theta, depthMm, sim.sample, fD);
       const pwAtTexel = gateTransmission(sim.anatomy, sim.frame, tr, sim.contact, thetaTexel, (row + 1) * step, sim.sample, fD);
       return {
@@ -850,7 +849,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
         interventions: c.interventions.length,
       };
     },
-    placeGate: (vessels) => {
+    placeGate: (vessels, minWallMm = 1.2) => {
       const sim = getSim();
       const g = bestGateOnVessel(
         sim.anatomy,
@@ -859,7 +858,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
         sim.sample,
         vessels,
         sim.bmode.depthMm - 5,
-        1.2,
+        minWallMm,
         windowWeight(sim),
       );
       if (!g) return false;

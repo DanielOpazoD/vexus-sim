@@ -60,7 +60,9 @@ const CENTRAL_LANDMARK: Record<StartPoint['id'], { landmark: Tissue; vessel?: Re
   intercostal: { landmark: Tissue.LigamentumVenosum, approach: 'full' },
   subcostal: { landmark: Tissue.Blood, vessel: /^hvMiddle$/, approach: 'half' },
   flank: { landmark: Tissue.Blood, vessel: /^ivc/, approach: 'full' },
-  portal: { landmark: Tissue.RenalCortex, approach: 'half' },
+  // Primer parénquima junto a la pared; no es el riñón profundo de la pose portal anterior.
+  portal: { landmark: Tissue.Liver, approach: 'none' },
+  portalTrunk: { landmark: Tissue.RenalCortex, approach: 'half' },
   renal: { landmark: Tissue.RenalCortex, approach: 'none' },
   // Medición geométrica de la nueva ventana: 69,5 → 61,5 mm con δ=18,77 mm.
   hepatorenal: { landmark: Tissue.RenalCortex, approach: 'half' },
@@ -285,7 +287,12 @@ describe('la sonda comprime el tejido (decisión 63): solo empuja y la pared baj
             worst = Math.max(worst, Math.hypot(m[0] - p[0], m[1] - p[1], m[2] - p[2]));
           }
       expect(n, sp.id).toBeGreaterThan(200);
-      expect(worst, sp.id).toBeLessThan(0.8 * k.summary.indentMm);
+      // En la nueva pose oblicua el talón hunde más que el eje central. El empuje superficial
+      // máximo se mide en los nodos de toda la cara; δ central no es su cota geométrica.
+      const facePush = Math.max(...k.nodes.map((node) => -node[0]));
+      expect(worst, sp.id).toBeLessThan(facePush);
+      // Mantener además la banda histórica para las ventanas previamente calibradas.
+      if (sp.id !== 'portal') expect(worst, sp.id).toBeLessThan(0.8 * k.summary.indentMm);
     }
   });
 

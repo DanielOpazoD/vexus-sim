@@ -463,7 +463,7 @@ function glslRelief(name: string, terms: readonly ReliefTerm[]): string {
   return `float ${name}(float u, float z, float iP) { return ${terms.map(term).join(' + ')}; }`;
 }
 
-/** Gemelo GLSL (usa uTorso, uWall = (piel, grasa, músculo, preperitoneal), uRibs, uRibParams, sdRib, torsoDepth). */
+/** Gemelo GLSL (usa uTorso, uWall = (piel, grasa, músculo, preperitoneal), datos costales de la textura, sdRib y torsoDepth). */
 export const WALL_GLSL = /* glsl */ `
 #define WALL_SCARPA_FRACTION ${WALL.scarpaFraction.toFixed(4)}
 #define WALL_PLANE_F0 ${WALL.planeFractions[0].toFixed(4)}
@@ -609,12 +609,13 @@ vec3 wallFaceGradient(vec3 m, int face) {
   return -(torsoDepthGrad(m) + sl.x * wallArcGradient(m) + vec3(0.0, 0.0, sl.y));
 }
 float ribSd(vec3 m, int k) {
+  if (k == MAX_RIBS) return sternumSd(m);
   bool cart; vec3 n;
   return sdRib(m, k, cart, n);
 }
 int nearestRib(vec3 m) {
-  int best = 0;
-  float bd = 1e9;
+  int best = MAX_RIBS;
+  float bd = sternumSd(m);
   for (int i = 0; i < MAX_RIBS; i++) {
     float d = ribSd(m, i);
     if (d < bd) { bd = d; best = i; }
@@ -622,15 +623,17 @@ int nearestRib(vec3 m) {
   return best;
 }
 vec3 ribTangent(vec3 p, int k) {
+  if (k == MAX_RIBS) return vec3(0.0, 0.0, 1.0);
   if (ribEndData(k).z > 0.5) { bool cart; vec3 n; sdRib(p, k, cart, n); if (cart) { vec3 tangent; float curvature; referenceCartilage(p, tangent, curvature); return tangent; } }
-  vec4 rib = uRibs[k], s = ribShapeData(k);
+  vec4 rib = ribData(k), s = ribShapeData(k);
   float mirror = p.x > 0.0 ? -1.0 : 1.0;
   float phi = atan((p.y - s.z) / s.y, -abs(p.x) / s.x);
   return normalize(vec3(-s.x * sin(phi) * mirror, s.y * cos(phi), -0.5 * rib.y * cos(phi) - s.w * sin(phi)));
 }
 float ribCurvature(vec3 p, int k) {
+  if (k == MAX_RIBS) return 0.0;
   if (ribEndData(k).z > 0.5) { bool cart; vec3 n; sdRib(p, k, cart, n); if (cart) { vec3 tangent; float curvature; referenceCartilage(p, tangent, curvature); return curvature; } }
-  vec4 rib = uRibs[k], s = ribShapeData(k);
+  vec4 rib = ribData(k), s = ribShapeData(k);
   vec2 xy = vec2(-abs(p.x), p.y - s.z);
   float rho = length(xy / s.xy);
   float dRadial = rho > 0.0 ? length(xy) * (1.0 - 1.0 / rho) : -min(s.x, s.y);

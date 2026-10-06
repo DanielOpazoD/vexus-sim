@@ -2,7 +2,7 @@ import { BOWEL_FIELD_REACH_MM, BOWEL_WALL_MM, bowelQuery, bowelGasSdf, bowelRadi
 import { referenceBody } from './referenceBody';
 import { smoothstep, scale, type Vec3 } from '../core/vec3';
 import type { PatientState } from '../physiology/patientState';
-import { VESSEL_META, type VesselAreas, type VesselId } from '../physiology/vessels';
+import { type VesselAreas, type VesselId } from '../physiology/vessels';
 import {
   diaphragmHeight,
   orthonormalBasis,
@@ -13,6 +13,7 @@ import {
   sdDiaphragm,
   sdDiaphragmSlope,
   sdRib,
+  ribDistanceLowerBound,
   smoothMax,
   torsoDepth,
   tubeFaceGradient,
@@ -57,6 +58,7 @@ import {
 import { domeFloor, heartFloor, heartOuterSdf, ivcAtrium, thorax } from './organs/heart';
 import { inLungCurtain, inLungRecess, lungCurtainDistance, lungCurtainEdgeMm } from './organs/lungCurtain';
 import { retroperitoneum } from './organs/retroperitoneum';
+import { sternumSd, STERNUM } from './organs/sternum';
 import {
   nearestRib,
   preperitonealMm,
@@ -314,7 +316,7 @@ export class AnatomyScene {
     const bL = orthonormalBasis([-0.22, -0.18, 1], [-1, 0.25, 0]);
     this.kidneyRight = {
       kind: 'kidney',
-      center: [-72, -38, -78],
+      center: [-72, -38 + this.spineReferenceOffset, -78],
       radii: KIDNEY_RADII,
       ...bR,
       sinusRadii: KIDNEY_SINUS.radii,
@@ -323,7 +325,7 @@ export class AnatomyScene {
     };
     this.kidneyLeft = {
       kind: 'kidney',
-      center: [78, -36, -70],
+      center: [78, -36 + this.spineReferenceOffset, -70],
       radii: KIDNEY_RADII,
       ...bL,
       sinusRadii: KIDNEY_SINUS.radii,
@@ -338,6 +340,7 @@ export class AnatomyScene {
     const anterior = [40, 20, 0, -25, -50, -75];
     for (let i = 0; i < anterior.length; i++) {
       this.ribs.push({
+        number: 5 + i,
         zAnterior: anterior[i],
         tilt: ribTiltMm(5 + i),
         ...RIB_SECTIONS[i],
@@ -368,6 +371,35 @@ export class AnatomyScene {
           : {}),
       });
     }
+    // Decisión 166: niveles superiores estimados del registro LUS; se preservan los arcos 5–10.
+    // El ajuste transversal sigue siendo una aproximación del adulto procedural VExUS.
+    for (const [i, zAnterior] of [148.3333, 118.4, 86.3, 60].entries())
+      this.ribs.push({
+        number: i + 1,
+        zAnterior,
+        tilt: [50, 56.6, 65.3667, 68.3333][i],
+        halfWidth: [5.1, 5.8, 6.3, 6.6][i],
+        halfThickness: [2.5, 2.6, 2.8, 2.9][i],
+        scale: 0.85,
+        cartilageFromPhi: Math.PI / 4,
+        rightOnly: false,
+      });
+    // 11/12 flotantes: extremos libres estimados, sin prolongación cartilaginosa al esternón.
+    for (const [i, number] of [11, 12].entries())
+      this.ribs.push({
+        number,
+        // Ajuste a 101 muestras LUS, docs/anatomy/floating-rib-registration.json (error ≤ 2,66 mm).
+        zAnterior: [-187.46253074456908, -211.830381408547][i],
+        tilt: [156.2131206819734, 158.35017340223095][i],
+        frontPhi: [2.9533963267968613, 3.444096326797897][i],
+        shape: [this.torso.a * 0.85, this.torso.b * 0.85, this.torso.y0 ?? 0, [16.59737136429592, 23.43245480406097][i]],
+        anteriorEndX: 15,
+        halfWidth: [4.9, 4.75][i],
+        halfThickness: [2.55, 2.5][i],
+        scale: 0.85,
+        cartilageFromPhi: Number.NaN,
+        rightOnly: false,
+      });
     const tree = buildVesselTree(this.kidneyRight, this.kidneyLeft);
     this.vessels = tree.vessels;
     // Ramas de 3.º–4.º orden confinadas al hígado (el SDF ya conoce riñón y vesícula); las madres sin hijas en su extremo,
@@ -590,7 +622,8 @@ export class AnatomyScene {
     for (const k of [this.kidneyRight, this.kidneyLeft]) bd = Math.min(bd, perirenalOuterSdf(kidneyLocal(m, k), k));
     // detrás del peritoneo parietal posterior, el retroperitoneo (decisión 81): psoas, cuadrado lumbar y grasa; delante, el
     // intestino. Su distancia a la frontera cuenta también la columna, que se clasifica antes (el psoas la bordea)
-    const [tissue, dRetro] = retroperitoneum(m, -depth - wallMm, kidney.dPeriMm);
+    const retroPoint: Vec3 = [m[0], m[1] - this.spineReferenceOffset, m[2]];
+    const [tissue, dRetro] = retroperitoneum(retroPoint, -depth - wallMm, kidney.dPeriMm);
     bd = Math.max(0, Math.min(bd, dRetro, sdSpine(m, this.spine)));
     if (tissue !== Tissue.Bowel) return { ...NONE, tissue, boundaryDistance: bd };
     const q = bowelQuery(m, this.bowelRadii),
@@ -701,6 +734,8 @@ export class AnatomyScene {
       }
       if (isRibInterface(iface)) {
         const rib = this.ribs[nearestRib(m, this.ribs, this.torso, this.spine)];
+        if (sternumSd(m, this.torso) < ribSd(m, rib, this.torso, this.spine))
+          return { ...this.numericGradient(m, (p) => sternumSd(p, this.torso), 0), axis: [0, 0, 1] };
         const g = this.numericGradient(m, (p) => ribSd(p, rib, this.torso, this.spine), ribCurvature(m, rib, this.torso));
         return { ...g, axis: ribTangent(m, rib, this.torso) };
       }
@@ -771,8 +806,24 @@ export class AnatomyScene {
     // pared o justo por debajo; la ósea más cercana da la cortical, el cartílago su pericondrio
     let ribD = 1e3;
     let ribAny = 1e3;
-    if (d >= ribSearchDepth(torso, this.ribs[0]?.scale ?? 1))
+    if (d >= ribSearchDepth(torso, this.ribs[0]?.scale ?? 1)) {
+      const sternumD = sternumSd(m, torso);
+      if (sternumD < 0) {
+        const cartilage = m[2] < STERNUM.zJunctionMm;
+        return {
+          final: true,
+          cls: {
+            ...NONE,
+            tissue: cartilage ? Tissue.Cartilage : Tissue.Bone,
+            boundaryDistance: -sternumD,
+            ...(cartilage ? { interface: Interface.Perichondrium, interfaceDistance: -sternumD } : {}),
+          },
+        };
+      }
+      ribAny = sternumD;
+      if (m[2] >= STERNUM.zJunctionMm) ribD = sternumD;
       for (const rib of this.ribs) {
+        if (!rib.sourceCartilage && ribDistanceLowerBound(m, rib) > Math.max(ribAny, ribD) + 0.01) continue;
         const r = sdRib(m, rib, torso, this.spine);
         if (r.d < 0) {
           const tissue = r.cartilage ? Tissue.Cartilage : Tissue.Bone;
@@ -782,6 +833,7 @@ export class AnatomyScene {
         ribAny = Math.min(ribAny, r.d);
         if (!r.cartilage) ribD = Math.min(ribD, r.d);
       }
+    }
     if (d >= wall) return { final: false, wallMm: wall };
     // las coordenadas de la pared solo dentro de ella: fascia profunda y transversalis onduladas en (u, z)
     const u = wallArc(m, torso);
@@ -811,7 +863,7 @@ export class AnatomyScene {
       if (Math.hypot(m[0] - b.center[0], m[1] - b.center[1], m[2] - b.center[2]) > b.r) continue;
       const def = this.vessels[i];
       const scale = caliber.radiusScale(def.id);
-      const apScale = VESSEL_META[def.id].system === 'ivc' ? caliber.ivcApScale : def.tube.apScale;
+      const apScale = vesselApScale(def.id, def.tube.apScale, caliber);
       const tube = apScale === def.tube.apScale ? def.tube : { ...def.tube, apScale };
       const hit = tubeQuery(m, tube, scale);
       if (hit.d < wallThicknessMm(def, hit.r) && (!bestVessel || hit.d < bestVessel.hit.d)) bestVessel = { def, hit, tube, scale };
@@ -1039,6 +1091,7 @@ export interface VesselCaliber {
   radiusScale(id: VesselId): number;
   /** Semieje AP / semieje lateral de la VCI. */
   ivcApScale: number;
+  ivcSupraApScale?: number;
   /** Descenso caudal del diafragma en este instante (mm, 0 en espiración): baja la cortina pulmonar. */
   diaphragmCaudalMm: number;
 }
@@ -1051,3 +1104,9 @@ export const BASELINE_CALIBER: VesselCaliber = {
 
 /** Cortina pulmonar: módulo de órgano `organs/lungCurtain` (se reexporta por compatibilidad). */
 export { LUNG_CURTAIN } from './organs/lungCurtain';
+
+/** Shared per-segment ellipse for CPU classification, GPU packing and navigator meshes. */
+export function vesselApScale(id: VesselId, baseAp: number, caliber: VesselCaliber): number {
+  if (id === 'ivcSupra') return caliber.ivcSupraApScale ?? caliber.ivcApScale;
+  return id === 'ivcInfra' ? caliber.ivcApScale : baseAp;
+}

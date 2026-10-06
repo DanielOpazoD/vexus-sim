@@ -1,5 +1,8 @@
 import { FFT, hannWindow } from '../core/fft';
 
+/** Ventana temporal que debe poder consultar una captura PW. */
+export const SPECTRAL_CAPTURE_SECONDS = 7;
+
 /**
  * Espectrograma Doppler pulsado: P(m,k) = |STFT{z}(m,k)|² (base D.8). Cada
  * columna lleva el instante de adquisición de su centro de ventana (reloj de
@@ -33,14 +36,15 @@ export class SpectralProcessor {
   private workRe: Float32Array;
   private workIm: Float32Array;
   readonly columns: SpectralColumn[] = [];
-  private maxColumns: number;
+  private maxColumns: number | undefined;
   private t0 = 0;
   private prfHz = 2500;
+  private synced = false;
 
   constructor(opts: { fftSize?: number; hop?: number; maxColumns?: number } = {}) {
     this.fftSize = opts.fftSize ?? 128;
     this.hop = opts.hop ?? 16;
-    this.maxColumns = opts.maxColumns ?? 2048;
+    this.maxColumns = opts.maxColumns;
     this.fft = new FFT(this.fftSize);
     this.window = hannWindow(this.fftSize);
     this.bufRe = new Float32Array(this.fftSize);
@@ -50,12 +54,15 @@ export class SpectralProcessor {
   }
 
   /** Fija el tiempo de simulación del próximo índice de muestra y la PRF. */
-  sync(tNextSample: number, prfHz: number): void {
-    if (prfHz !== this.prfHz) {
-      this.prfHz = prfHz;
-      this.filled = 0;
-    }
+  sync(tNextSample: number, prfHz: number): boolean {
+    // Physiology batches round to whole IQ samples. Anything beyond one sample
+    // is a real acquisition gap, not a window that the FFT may bridge.
+    const interrupted = this.synced && Math.abs(tNextSample - this.t0 - this.sampleIndex / this.prfHz) > 1 / this.prfHz + 1e-9;
+    if (interrupted || prfHz !== this.prfHz) this.filled = 0;
+    this.prfHz = prfHz;
     this.t0 = tNextSample - this.sampleIndex / prfHz;
+    this.synced = true;
+    return interrupted;
   }
 
   push(re: Float32Array, im: Float32Array, n: number): void {
@@ -92,7 +99,8 @@ export class SpectralProcessor {
     // Centro de la ventana: la muestra sampleIndex − N/2
     const tCenter = this.t0 + (this.sampleIndex - half) / this.prfHz;
     this.columns.push({ t: tCenter, powerDb: power, prfHz: this.prfHz });
-    if (this.columns.length > this.maxColumns) this.columns.splice(0, this.columns.length - this.maxColumns);
+    const limit = this.maxColumns ?? Math.min(8192, Math.max(2048, Math.ceil((SPECTRAL_CAPTURE_SECONDS * this.prfHz) / this.hop) + 1));
+    if (this.columns.length > limit) this.columns.splice(0, this.columns.length - limit);
   }
 
   /** Frecuencia (Hz) del bin k con fftshift. */
@@ -103,6 +111,7 @@ export class SpectralProcessor {
   reset(): void {
     this.filled = 0;
     this.columns.length = 0;
+    this.synced = false;
   }
 }
 

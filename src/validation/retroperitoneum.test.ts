@@ -287,7 +287,8 @@ describe('Retroperitoneo (decisión 81)', () => {
     expect(RETROPERITONEUM_GLSL).toContain(`${f(QUADRATUS.zTop)}, ${f(QUADRATUS.zBottom)}`);
     expect(RETROPERITONEUM_GLSL).toContain(`${f(RETRO_FAT.frontY)}, ${f(RETRO_FAT.xFront)}`);
     expect(ANATOMY_GLSL).toContain(RETROPERITONEUM_GLSL);
-    expect(ANATOMY_GLSL).toContain('c.tissue = retroperitoneum(m, -depth - wall, dPeri, bdRetro);');
+    expect(ANATOMY_GLSL).toContain('uSpine.y + 46.0');
+    expect(ANATOMY_GLSL).toContain('c.tissue = retroperitoneum(retroPoint, -depth - wall, dPeri, bdRetro);');
     // la función TS da los mismos tejidos que classify en el resto (el orden: psoas, cuadrado, grasa, asas)
     expect(retroperitoneum([-30, -46, -97], 10, 1e3)[0]).toBe(Tissue.Psoas);
     expect(retroperitoneum([-65, -60, -150], 5, 1e3)[0]).toBe(Tissue.QuadratusLumborum);

@@ -11,9 +11,18 @@ describe('valores PW observados con signo de pantalla', () => {
     expect(observedVelocitySummary({ ...hepatic, aPeak: NaN })).toContain('A —');
   });
   it('conserva una inversión portal y no recorta su mínimo', () => {
-    expect(observedVelocitySummary({ kind: 'portal', quality: { issue: null }, beats: 4, anterogradeSign: 1, vMax: 25, vMin: -6 })).toBe(
-      'Vmáx +25.0 · Vmín -6.0 cm/s · mediana 4 lat.',
-    );
+    expect(
+      observedVelocitySummary({
+        kind: 'portal',
+        quality: { issue: null },
+        beats: 4,
+        anterogradeSign: 1,
+        vMax: 25,
+        vMin: -6,
+        pulsatilityFraction: 124,
+        pulsatilityByBeat: [120, 124, 124, 128],
+      }),
+    ).toBe('Vmáx +25.0 · Vmín -6.0 cm/s · mediana 4 lat. · PF 124 % · rango entre 4 latidos 120–128 %');
   });
   it('los valores renales son máximos por fase, no nuevas ondas S/D', () => {
     expect(

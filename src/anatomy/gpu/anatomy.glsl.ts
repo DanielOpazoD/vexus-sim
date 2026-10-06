@@ -54,7 +54,9 @@ export const MAX_TUBE_SEGMENTS = 8;
 export const COMPRESSION_BASE = NODE_BASE + MAX_NODES;
 export const BODY_BASE = COMPRESSION_BASE + PROBE_COMPRESSION.nodes;
 export const RIB_BASE = BODY_BASE + 130;
-export const CARTILAGE_BASE = RIB_BASE + MAX_RIBS * 2;
+/** Tres téxeles por par: z/tilt/sección, forma transversal, extremo y flags. */
+export const RIB_TEXELS = 3;
+export const CARTILAGE_BASE = RIB_BASE + MAX_RIBS * RIB_TEXELS;
 export const BOWEL_BASE = CARTILAGE_BASE + CARTILAGE_ROWS.length;
 export const SCENE_TEX_H = Math.ceil((BOWEL_BASE + BOWEL_TEXELS) / SCENE_TEX_W);
 export { MAX_RIBS } from './sceneUniforms';
@@ -117,8 +119,9 @@ struct Cls {
 
 vec4 sceneTexel(int i) { return texelFetch(uSceneTex, ivec2(i % SCENE_TEX_W, i / SCENE_TEX_W), 0); }
 
-vec4 ribShapeData(int k) { return sceneTexel(${RIB_BASE} + k * 2); }
-vec4 ribEndData(int k) { return sceneTexel(${RIB_BASE} + k * 2 + 1); }
+vec4 ribData(int k) { return sceneTexel(${RIB_BASE} + k * ${RIB_TEXELS}); }
+vec4 ribShapeData(int k) { return sceneTexel(${RIB_BASE} + k * ${RIB_TEXELS} + 1); }
+vec4 ribEndData(int k) { return sceneTexel(${RIB_BASE} + k * ${RIB_TEXELS} + 2); }
 float bodyValue(int i) { return sceneTexel(${BODY_BASE} + i / 4)[i % 4]; }
 vec4 bodyInfo(float phi, float z, out float dc) {
   float zz = clamp((z + 160.0) / 40.0, 0.0, 7.0);
@@ -294,9 +297,17 @@ float sdSphere(vec3 p, vec4 s, out vec3 n) {
 
 ${CARTILAGE_GLSL(CARTILAGE_BASE)}
 
+// Cota inferior del arco óseo; el cartílago registrado no comparte su intervalo z.
+float ribDistanceLowerBound(vec3 p, int k) {
+  vec4 rib = ribData(k), shape = ribShapeData(k);
+  float amplitude = length(vec2(rib.y * 0.5, shape.w));
+  float dz = max(0.0, abs(p.z - rib.x - rib.y * 0.5) - amplitude);
+  return min(1e3, (dz / rib.z - 1.0) * min(rib.z, rib.w));
+}
+
 // Costilla: devuelve distancia y si es cartílago (φ anterior)
 float sdRibBone(vec3 p, int k, out bool cartilage, out vec3 n) {
-  vec4 rib = uRibs[k], shape = ribShapeData(k);
+  vec4 rib = ribData(k), shape = ribShapeData(k);
   float mirror = p.x > 0.0 ? -1.0 : 1.0;
   p.x = -abs(p.x);
   vec2 xy = vec2(p.x, p.y - shape.z);
@@ -317,7 +328,12 @@ float sdRibBone(vec3 p, int k, out bool cartilage, out vec3 n) {
   vec3 gradient = vec3(dRadial / (rib.w * rib.w) * gr - dz / (rib.z * rib.z) * zp * gp, dz / (rib.z * rib.z));
   gradient.x *= mirror;
   n = length(gradient) > 1e-6 ? normalize(gradient) : vec3(0,1,0);
-  return (length(q) - 1.0) * min(rib.w, rib.z);
+  float sectionD = (length(q) - 1.0) * min(rib.w, rib.z);
+  float frontPhi = ribEndData(k).w;
+  float angle = phi < 0.0 ? phi + 6.28318530718 : phi;
+  float capD = (frontPhi - angle) * (rho > 0.0 ? radius / rho : 1.0);
+  if (frontPhi > 0.0 && capD > sectionD) n = normalize(vec3(-gp.x * mirror, -gp.y, 0.0));
+  return frontPhi > 0.0 ? max(sectionD, capD) : sectionD;
 }
 
 float sdRib(vec3 p, int k, out bool cartilage, out vec3 n) {
@@ -525,7 +541,16 @@ bool classifyWall(vec3 m, out Cls c, out float depth, out vec3 tn) {
   // cercana da la cortical al tejido blando de fuera, el cartílago su pericondrio
   float ribD = 1e3; float ribAny = 1e3; int ribI = 0;
   if (d >= ribSearchDepth()) {
+    float sternumD = sternumSd(m);
+    if (sternumD < 0.0) {
+      c.tissue = m.z < STERNUM_JUNCTION ? T_CARTILAGE : T_BONE; c.bd = -sternumD; c.n = tn;
+      if (m.z < STERNUM_JUNCTION) { c.iface = IF_PERICHONDRIUM; c.ifd = -sternumD; c.tangent = vec3(0,0,1); c.kc = 0.0; }
+      return true;
+    }
+    ribAny = sternumD;
+    if (m.z >= STERNUM_JUNCTION) { ribD = sternumD; ribI = MAX_RIBS; }
     for (int i = 0; i < MAX_RIBS; i++) {
+      if (ribEndData(i).z < 0.5 && ribDistanceLowerBound(m, i) > max(ribAny, ribD) + 0.01) continue;
       bool cart; vec3 rn;
       float rd = sdRib(m, i, cart, rn);
       if (rd < 0.0) {
@@ -711,7 +736,8 @@ void classifyInside(vec3 m, bool withCurtain, float depth, vec3 tn, float dSpine
   // detrás del peritoneo parietal posterior, el retroperitoneo (decisión 81): psoas, cuadrado lumbar y grasa; la
   // distancia a la frontera cuenta también la columna, que se clasifica antes
   float bdRetro;
-  c.tissue = retroperitoneum(m, -depth - wall, dPeri, bdRetro);
+  vec3 retroPoint = m - vec3(0.0, uSpine.y + 46.0, 0.0);
+  c.tissue = retroperitoneum(retroPoint, -depth - wall, dPeri, bdRetro);
   c.bd = max(min(min(bdBowel, bdRetro), dSpine), 0.0); c.n = tn;
   if(c.tissue!=T_BOWEL)return;
   vec3 bn,ba,bowelLumenNormal;float dl,br;float d=bowelQuery(m,bn,ba,dl,bowelLumenNormal,br);

@@ -28,7 +28,7 @@ describe('captura renal real con puerta centrada en arteria', () => {
         for (let i = 0; i < 7000; i++) s.engine.step();
         const sp = startPointsFor(s.scene.torso).find((p) => p.id === 'renal')!;
         const contact = probeContact(
-          { phi: sp.phi, z: sp.z, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: (sp.tilt ?? 0) - (2 * Math.PI) / 180, lift: 0 },
+          { phi: sp.phi, z: sp.z, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: (sp.tilt ?? 0) - ((ref ? 3.5 : 2) * Math.PI) / 180, lift: 0 },
           TR,
           s.scene.torso,
         );

@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Laboratorio venoso: guardar/importar parámetros JSON versionados, con validación de dominio y protección contra lecturas tardías; no se presentan como grabaciones ni réplicas exactas de señales (165).
+
 - Laboratorio venoso: recorrer las guías conserva FC y compliance venosa personalizadas; el reinicio explícito mantiene su restauración completa (164).
 
 - PW: retiene siete segundos para capturar a PRF alta dentro del dominio del equipo, sin modificar la FFT ni el historial habitual y con memoria acotada (163).

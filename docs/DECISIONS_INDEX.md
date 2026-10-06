@@ -168,3 +168,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [162](DECISIONS.md#L6167) | Un fallo esperado no debe esconder una avería de preparación | vigente |
 | [163](DECISIONS.md#L6186) | Retener la ventana de captura PW también a PRF alta | vigente |
 | [164](DECISIONS.md#L6216) | Conservar FC y compliance al recorrer las guías de congestión | vigente |
+| [165](DECISIONS.md#L6238) | Archivos de parámetros venosos con dominio y versión explícitos | vigente |

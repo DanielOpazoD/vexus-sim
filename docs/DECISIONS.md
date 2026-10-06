@@ -6386,6 +6386,10 @@ El hook completo detectó además que la adquisición pareada opcional del visor
 
 La CI de 1a73aec detectó dos fixtures aún ligados a la pose anterior: renalArterialGate restaba 2° en referencia y la rejilla 32×64 no resolvía sangre con cuatro vecinos en vasos interlobares milimétricos. El fixture arterial usa la inclinación de referencia ya auditada (3,5°); la paridad renal ahora muestrea 192×384, 0,47 mm axial, sin bajar los criterios de identidad, interior ni velocidad. Cuatro capturas arteriales y la prueba nativa del adulto de referencia pasan a la primera. Fallos conservados: jobs 112279324097 y 112279324169, CI37465796998.
 
+#### 176 — Incidencias del corredor de captura (2026-10-06)
+
+En la cabeza `867d55f`, la captura vertebral de referencia completó todas sus etapas y subió su evidencia, pero su trabajo terminó cancelado al alcanzar el límite de 15 minutos. La captura 3D legacy agotó el límite de 20 minutos durante la instalación de Chromium, antes de ejecutar código del simulador. Se conservan los flujos fallidos [vertebral](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37476439750) y [órganos](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37476439709). Ambos trabajos de captura tienen ahora un límite de infraestructura de 30 minutos; no cambian planos, número de cuadros, comprobaciones, tolerancias ni aceptación del agregado. La nueva cabeza exige una ejecución completa verde antes de fusionarse.
+
 ## 177. Integrar la absorción Doppler por tejido sin nuevas texturas
 
 La conversión global de 174 usa b=1 para absorción, aunque piel, grasa, músculo y sangre tienen otros exponentes. A1 empaqueta gas+4·tejido en .w (entero float32 exacto); todos sus consumidores decodifican gas. A2 integra α_t(fD)/α_t(fB) por segmento, conserva espejo/gas y entrada ósea fijos, y entrega pérdida Doppler total en su .w auxiliar. F lee ese prefijo directamente, retirando el sampler B y la conversión global. Nueve vec4 de ratios (33 tejidos), sin nueva textura/pasada. Contrato previo: `anatomy/TISSUE_DOPPLER_PREFIX_CONTRACT.md`.

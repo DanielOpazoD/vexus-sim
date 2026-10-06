@@ -10,12 +10,16 @@ test('pares costales bilaterales existen en la anatomía GPU y el navegador', as
     const points: number[] = [];
     for (const rib of sim.scene.ribs)
       for (const side of [-1, 1]) {
-        const front = Math.acos(Math.max(-1, (Math.min(15, 15 + 1.53 * rib.zAnterior) - 10) / (sim.scene.torso.a * rib.scale)));
-        for (const phi of [Math.PI, Math.PI * 1.35, front]) {
+        const [ax, by, y0, zc] = rib.shape ?? [sim.scene.torso.a * rib.scale, sim.scene.torso.b * rib.scale, 0, 0];
+        const endX = rib.anteriorEndX ?? Math.min(15, 15 + 1.53 * rib.zAnterior);
+        // Sample cartilage lateral to the new sternum, and actual free ends on 11/12.
+        const front = rib.frontPhi !== undefined ? rib.frontPhi + 0.15 : Math.acos(Math.max(-1, Math.min(-40, endX - 10) / ax));
+        const phis = rib.frontPhi !== undefined ? [front, (front + 4.15) / 2, 4.15] : [Math.PI, Math.PI * 1.35, front];
+        for (const phi of phis) {
           const m: [number, number, number] = [
-            side * sim.scene.torso.a * rib.scale * Math.abs(Math.cos(phi)),
-            sim.scene.torso.b * rib.scale * Math.sin(phi),
-            rib.zAnterior + rib.tilt * (0.5 - 0.5 * Math.sin(phi)),
+            side * ax * Math.abs(Math.cos(phi)),
+            y0 + by * Math.sin(phi),
+            rib.zAnterior + rib.tilt * (0.5 - 0.5 * Math.sin(phi)) + zc * Math.cos(phi),
           ];
           points.push(...sim.anatomy.deformation.toWorld(m, sim.sample.resp));
         }
@@ -29,8 +33,10 @@ test('pares costales bilaterales existen en la anatomía GPU y el navegador', as
     return { gpu: Array.from(gpu.tissue), cpu };
   });
   expect(report.gpu).toEqual(report.cpu);
-  expect(report.cpu.filter((t) => t === Tissue.Bone)).toHaveLength(24);
-  expect(report.cpu.filter((t) => t === Tissue.Cartilage)).toHaveLength(12);
+  // Two bony samples per side on all twelve pairs, plus the four floating anterior ends.
+  expect(report.cpu.filter((t) => t === Tissue.Bone)).toHaveLength(52);
+  // Anterior cartilage exists on ten pairs; ribs 11–12 have free bony ends.
+  expect(report.cpu.filter((t) => t === Tissue.Cartilage)).toHaveLength(20);
   await page.evaluate(() => {
     const sim = window.__vexusTest!.sim();
     sim.setPose({ ...sim.pose, phi: 0, z: 14, lift: 0 });

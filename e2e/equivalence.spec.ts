@@ -33,6 +33,7 @@ for (const reference of [false, true])
         'subcostal',
         'flank',
         'portal',
+        'portalTrunk',
         'renal',
         'hepatorenal',
       ]);

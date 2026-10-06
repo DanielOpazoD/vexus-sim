@@ -6339,3 +6339,5 @@ La unión/entrada auricular deja de heredar la sección abdominal colapsada por 
 Seguimiento de 168: el barrido GPU incluye las nueve ventanas, incluida portalTrunk. La ventana portal ahora contiene ramas intrahepáticas menores: su rejilla se refina de 48×72 a 64×96, conservando >50 células sanguíneas completamente interiores y todos los umbrales de acuerdo y velocidad. La rejilla del resto de ventanas, volumen y cáscaras no cambia.
 
 La paridad refinada añade 0,06 KiB a los ganchos incluidos: el total pasa ligeramente de 1030 KiB. Margen +1 KiB compartido con 173 (1031 total); se mantienen todos los assets/Workers y límites por chunk.
+
+Las tres adquisiciones E2E de PW que pedían explícitamente pvTrunk ahora usan portalTrunk, la misma pose original conservada para VExUS. La ventana portal intrahepática y sus pruebas color siguen en la rama derecha; no se fuerza la puerta ni la clasificación.

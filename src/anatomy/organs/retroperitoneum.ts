@@ -68,7 +68,7 @@ export const QUADRATUS = {
  */
 export const RETRO_FAT = {
   frontY: -4,
-  xFront: 70,
+  xFront: 85,
   /** |x| donde el borde anterior llega a yLateral, en la pared lateral detrás de la línea axilar posterior. */
   xLateral: 132,
   yLateral: -45,

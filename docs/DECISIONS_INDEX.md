@@ -179,3 +179,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [173](DECISIONS.md#L6351) | Filtro color periódico en frecuencia muestreada, identidad al desactivarlo | vigente |
 | [174](DECISIONS.md#L6359) | Conservar las barreras fijas al convertir transmisión para color | vigente |
 | [175](DECISIONS.md#L6367) | Consulta costal con descarte geométrico conservador | vigente |
+| [177](DECISIONS.md#L6373) | Registro renal y muscular posterior coherente con la columna | vigente |

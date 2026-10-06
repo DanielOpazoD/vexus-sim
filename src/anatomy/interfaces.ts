@@ -65,9 +65,12 @@ export enum Interface {
   BowelLumen = 23,
   BowelSerosa = 24,
   VertebralCortex = 25,
+  PancreasCapsule = 26,
+  SpleenCapsule = 27,
+  BladderLumen = 28,
 }
 
-export const INTERFACE_COUNT = 26;
+export const INTERFACE_COUNT = 29;
 /** Banda material conservadora para la cortical; el perfil efectivo mide menos de 1 mm. */
 export const VERTEBRAL_FIELD_REACH_MM = 5;
 /** Las caras de tubo van primero (ids ≤ esta): solo ellas llevan coherencia de curvatura. */
@@ -156,6 +159,9 @@ export const INTERFACE_GLSL_NAME: Record<Interface, string> = {
   [Interface.BowelLumen]: 'IF_BOWEL_LUMEN',
   [Interface.BowelSerosa]: 'IF_BOWEL_SEROSA',
   [Interface.VertebralCortex]: 'IF_VERTEBRAL_CORTEX',
+  [Interface.PancreasCapsule]: 'IF_PANCREAS_CAPSULE',
+  [Interface.SpleenCapsule]: 'IF_SPLEEN_CAPSULE',
+  [Interface.BladderLumen]: 'IF_BLADDER_LUMEN',
 };
 
 /** Propiedades de una cara lisa (tabla de la decisión 57). */
@@ -181,6 +187,30 @@ export interface InterfaceProps {
 
 /** Tabla de caras, en el orden del enum (la del plan de la decisión 57). */
 export const INTERFACES: Readonly<Record<Interface, InterfaceProps>> = {
+  [Interface.PancreasCapsule]: {
+    name: 'envolvente pancreática',
+    sides: [Tissue.Pancreas, Tissue.MesentericFat],
+    floor: 0.008,
+    roughnessMm: 0.06,
+    slopeRms: 0.25,
+    twoSided: false,
+  },
+  [Interface.SpleenCapsule]: {
+    name: 'cápsula esplénica',
+    sides: [Tissue.Spleen, Tissue.SoftCapsule],
+    floor: 0.02,
+    roughnessMm: 0.04,
+    slopeRms: 0.22,
+    twoSided: false,
+  },
+  [Interface.BladderLumen]: {
+    name: 'urotelio / orina',
+    sides: [Tissue.BladderWall, Tissue.Fluid],
+    floor: 0.015,
+    roughnessMm: 0.04,
+    slopeRms: 0.22,
+    twoSided: true,
+  },
   [Interface.None]: {
     name: 'ninguna',
     sides: [Tissue.Air, Tissue.Air],

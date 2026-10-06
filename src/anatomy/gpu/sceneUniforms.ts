@@ -36,6 +36,9 @@ interface UniformSpec {
 }
 
 export const SCENE_UNIFORMS: readonly UniformSpec[] = [
+  { name: 'uBodyRows', type: 'int', value: (s) => [(s.torso.profile?.length ?? 520) / 65] },
+  { name: 'uBodyMinZ', type: 'float', value: (s) => [s.torso.profile?.length === 910 ? -400 : -160] },
+  { name: 'uAbdominalAtlasEnabled', type: 'int', value: (s) => [s.hasAbdominalAtlas ? 1 : 0] },
   /** a, b, zMin, zMax */
   { name: 'uReferenceBody', type: 'int', value: (s) => [s.torso.profile ? 1 : 0] },
   { name: 'uTorsoY', type: 'float', value: (s) => [s.torso.y0 ?? 0] },
@@ -212,10 +215,16 @@ export const SCENE_UNIFORMS: readonly UniformSpec[] = [
   },
 ];
 
-/** Declaraciones GLSL generadas del esquema (más el sampler de la textura de escena). */
+/** Geometric texture bindings shared by declarations and renderer. */
+export const SCENE_SAMPLERS = [
+  { name: 'uSceneTex', type: 'sampler2D', unit: 6 },
+  { name: 'uAbdominalAtlas', type: 'sampler3D', unit: 8 },
+] as const;
+
+/** Declaraciones GLSL generadas del esquema y sus samplers. */
 export const SCENE_UNIFORMS_GLSL = [
   ...SCENE_UNIFORMS.map((u) => `uniform ${u.type} ${u.name}${u.count ? `[${u.count}]` : ''};`),
-  'uniform highp sampler2D uSceneTex; // datos geométricos RGBA32F, no color normalizado',
+  ...SCENE_SAMPLERS.map((s) => `uniform highp ${s.type} ${s.name};`),
 ].join('\n');
 
 /** Valores de un cuadro, evaluados UNA vez y subidos a cada programa que usa la anatomía. */

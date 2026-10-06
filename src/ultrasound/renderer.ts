@@ -17,6 +17,7 @@ import { GREY_CURVE, greyOfLevel } from './greyMap';
 import { axialSigmaMm, focalReferenceFwhmMm, txApertureMm } from './beamModel';
 import { ANCHOR_SALT_STEP, ElevationAnchor } from './speckleField';
 import { interfaceUniforms } from './interfaceEcho';
+import { createAbdominalTexture } from './abdominalTexture';
 import {
   GLProgram,
   bindTarget,
@@ -58,7 +59,7 @@ import {
   SCENE_TEX_W,
 } from '../anatomy/gpu/anatomy.glsl';
 import { ribAnteriorEndX, ribShape, tubeShapeTexel } from '../anatomy/primitives';
-import { evaluateSceneUniforms, uploadSceneUniforms, type SceneUniformValues } from '../anatomy/gpu/sceneUniforms';
+import { SCENE_SAMPLERS, evaluateSceneUniforms, uploadSceneUniforms, type SceneUniformValues } from '../anatomy/gpu/sceneUniforms';
 import {
   FRAG_AXIAL,
   FRAG_BLIT,
@@ -401,6 +402,7 @@ export class UltrasoundRenderer {
   }
   /** Textura de datos de la escena (cabeceras de tubos + nodos, decisión 24). */
   private sceneTex: WebGLTexture;
+  private abdominalTex: WebGLTexture;
   private sceneData = new Float32Array(SCENE_TEX_W * SCENE_TEX_H * 4);
   /** Cabeceras de TODOS los tubos (`TUBE_HEADER_TEXELS` texels cada una); por cuadro se suben solo las del plano. */
   private headerAll = new Float32Array(MAX_TUBES * TUBE_HEADER_TEXELS * 4);
@@ -536,6 +538,7 @@ export class UltrasoundRenderer {
     this.tMap = createTarget(gl, MAP_W, MAP_H, [{ internal: gl.RGBA8, format: gl.RGBA, type: gl.UNSIGNED_BYTE, filter: gl.NEAREST }]);
     this.couplingTex = createTexture(gl, LINES, 1, gl.R32F, gl.RED, gl.FLOAT, gl.LINEAR);
     this.sceneTex = createTexture(gl, SCENE_TEX_W, SCENE_TEX_H, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
+    this.abdominalTex = createAbdominalTexture(gl, this.currentScene.hasAbdominalAtlas);
     this.uploadSceneStatic();
   }
 
@@ -621,6 +624,7 @@ export class UltrasoundRenderer {
     if (this.tPersist) for (const t of this.tPersist) deleteTarget(gl, t);
     gl.deleteTexture(this.couplingTex);
     gl.deleteTexture(this.sceneTex);
+    gl.deleteTexture(this.abdominalTex);
     if (this.mapPending) gl.deleteSync(this.mapPending.sync);
     if (this.mapPbo) gl.deleteBuffer(this.mapPbo);
     this.mapPending = null;
@@ -734,7 +738,8 @@ export class UltrasoundRenderer {
       this.sceneValuesCompression = inputs.compression;
     }
     uploadSceneUniforms(p, this.sceneValues);
-    p.tex('uSceneTex', 6, this.sceneTex);
+    p.tex(SCENE_SAMPLERS[0].name, SCENE_SAMPLERS[0].unit, this.sceneTex);
+    p.tex(SCENE_SAMPLERS[1].name, SCENE_SAMPLERS[1].unit, this.abdominalTex, this.gl.TEXTURE_3D);
   }
 
   /**

@@ -8,7 +8,7 @@ for (const reference of [false, true])
       // 33 full production renders plus UI/boot: the reference body took >6 min
       // on SwiftShader. Preserve every frame/assertion; allow 6 min work + BOOT.
       budget(360_000);
-      const errors = await bootWithoutErrors(page, `?e2e=app${reference ? '&reference=1' : ''}`);
+      const errors = await bootWithoutErrors(page, `?e2e=app&abdomen=legacy${reference ? '&reference=1' : ''}`);
       if (severe) await page.selectOption('#case-select', 'severe-congestion');
       await page.locator('.win-card').filter({ hasText: 'Porta · intrahepática' }).click();
       await page.waitForFunction(

@@ -1,3 +1,4 @@
+import { abdominalAtlas, abdominalAtlasSdf } from './abdominalAtlas';
 import { referenceCartilage } from './referenceCartilage';
 import { bodyDepth, bodyGradient, bodySection } from './referenceBody';
 import type { Vec3 } from '../core/vec3';
@@ -388,12 +389,14 @@ export function spineArchSd(p: Vec3, sp: Spine): number {
   const dx = Math.abs(p[0] - sp.x0) - sp.archHalfWidth;
   const cy = 0.5 * (sp.archY0 + sp.archY1);
   const dy = Math.abs(p[1] - cy) - 0.5 * (sp.archY1 - sp.archY0);
-  return Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) + Math.min(Math.max(dx, dy), 0);
+  const d = Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) + Math.min(Math.max(dx, dy), 0);
+  return abdominalAtlas ? Math.max(d, -60 - p[2]) : d;
 }
 
 /** Distancia con signo a los cuerpos vertebrales (el borde del platillo redondeado): la cara de su cortical. */
 export function spineBodySd(p: Vec3, sp: Spine): number {
-  return smoothMax(spineEllipseSd(p, sp), spineSlabSd(p[2]), SPINE_SHAPE.rimMm);
+  const d = smoothMax(spineEllipseSd(p, sp), spineSlabSd(p[2]), SPINE_SHAPE.rimMm);
+  return abdominalAtlas ? Math.min(Math.max(d, -60 - p[2]), abdominalAtlasSdf(p, 8)) : d;
 }
 
 /**
@@ -405,8 +408,10 @@ export function spineBodySd(p: Vec3, sp: Spine): number {
  */
 export function spineDistances(p: Vec3, sp: Spine): { body: number; bone: number; disc: number } {
   const e = spineEllipseSd(p, sp);
-  const body = smoothMax(e, spineSlabSd(p[2]), SPINE_SHAPE.rimMm);
-  return { body, bone: Math.min(body, spineArchSd(p, sp)), disc: Math.max(e, -body) };
+  const original = smoothMax(e, spineSlabSd(p[2]), SPINE_SHAPE.rimMm);
+  const body = spineBodySd(p, sp);
+  const disc = abdominalAtlas ? Math.min(Math.max(e, -original, -60 - p[2]), abdominalAtlasSdf(p, 10)) : Math.max(e, -body);
+  return { body, bone: Math.min(body, spineArchSd(p, sp)), disc };
 }
 
 /** Distancia a cuerpos ∪ arco. blendMm=0 conserva el hueso; >0 solo suaviza la envolvente de exclusión de órganos. */

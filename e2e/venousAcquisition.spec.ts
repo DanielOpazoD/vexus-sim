@@ -8,7 +8,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
       (caseId === 'severe-congestion' ? ' (congestión grave)' : ''),
     async ({ page }, info) => {
       budget(120_000);
-      const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+      const errors = await bootWithoutErrors(page, '?e2e=1&abdomen=legacy&docente=1');
       await page.selectOption('#case-select', caseId);
       await page
         .locator('button', { hasText: /Apnea\s*esp/ })
@@ -76,7 +76,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
 
 test('ventana ausente: aviso de adquisición, bucle estable y recuperación sin cambiar el paciente', async ({ page }, info) => {
   budget(120_000);
-  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1&reference=1');
+  const errors = await bootWithoutErrors(page, '?e2e=1&abdomen=legacy&docente=1&reference=1');
   await page.locator('#freeze').click({ force: true });
   await page.locator('#debug-toggle').check({ force: true });
   await page.getByRole('tab', { name: 'Docente' }).click({ force: true });

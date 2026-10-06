@@ -25,6 +25,9 @@ export function recordingGl(
     FRAMEBUFFER_COMPLETE: 0x8cd5,
     COLOR_ATTACHMENT0: 0x8ce0,
     NONE: 0,
+    NO_ERROR: 0,
+    MAX_3D_TEXTURE_SIZE: 0x8073,
+    TEXTURE_3D: 0x806f,
   };
   let nextConst = 0x10000;
   let nextId = 1;
@@ -37,7 +40,7 @@ export function recordingGl(
     units: new Map<number, Obj | null>(),
     viewport: [0, 0, 0, 0] as number[],
   };
-  const texInfo = new Map<Obj, { internal: number; w: number; h: number }>();
+  const texInfo = new Map<Obj, { internal: number; w: number; h: number; d?: number }>();
   const attachments = new Map<Obj, { internal: number; w: number; h: number }[]>();
   const draws: {
     fbo: Obj | null;
@@ -74,6 +77,13 @@ export function recordingGl(
   const fail = opts.fail;
   const failsCompile = (src: string | undefined) => fail?.stage === 'compile' && src === fail.frag;
   const methods: Record<string, (...a: never[]) => unknown> = {
+    getError: () => K.NO_ERROR,
+    getParameter: (p: number) => (p === K.MAX_3D_TEXTURE_SIZE ? 2048 : 0),
+    texImage3D: (_t: number, _l: number, internal: number, w: number, h: number, d: number) => {
+      const tex = state.units.get(state.unit);
+      if (tex) texInfo.set(tex, { internal, w, h, d });
+    },
+    deleteTexture: (tex: Obj) => void deleted.add(tex),
     getExtension: (name: string) => {
       calls.push(`getExtension:${name}`);
       return name === 'EXT_color_buffer_float' || name === 'OES_texture_float_linear' ? {} : null;

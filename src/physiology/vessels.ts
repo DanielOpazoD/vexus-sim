@@ -45,6 +45,23 @@ export const VESSEL_IDS = [
   'celiacTrunk',
   'splenicArtery',
   'sma',
+  'leftGastricArtery',
+  'commonHepaticArtery',
+  'ima',
+  'iliacArteryRight',
+  'iliacArteryLeft',
+  'internalIliacArteryRight',
+  'internalIliacArteryLeft',
+  'externalIliacArteryRight',
+  'externalIliacArteryLeft',
+  'iliacVeinRight',
+  'iliacVeinLeft',
+  'internalIliacVeinRight',
+  'internalIliacVeinLeft',
+  'externalIliacVeinRight',
+  'externalIliacVeinLeft',
+  'portalSmv',
+  'portalSplenic',
 ] as const;
 
 export type VesselId = (typeof VESSEL_IDS)[number];
@@ -59,6 +76,8 @@ export type VesselSystem =
   | 'hepaticArtery'
   | 'aorta'
   | 'visceralArtery'
+  | 'systemicArtery'
+  | 'systemicVein'
   | 'renalArtery'
   | 'renalVein'
   | 'interlobarArtery'
@@ -117,6 +136,23 @@ export const VESSEL_META: Readonly<Record<VesselId, VesselMeta>> = {
   celiacTrunk: meta('visceralArtery'),
   splenicArtery: meta('visceralArtery'),
   sma: meta('visceralArtery'),
+  leftGastricArtery: meta('visceralArtery'),
+  commonHepaticArtery: meta('visceralArtery'),
+  ima: meta('visceralArtery'),
+  iliacArteryRight: meta('systemicArtery'),
+  iliacArteryLeft: meta('systemicArtery'),
+  internalIliacArteryRight: meta('systemicArtery'),
+  internalIliacArteryLeft: meta('systemicArtery'),
+  externalIliacArteryRight: meta('systemicArtery'),
+  externalIliacArteryLeft: meta('systemicArtery'),
+  iliacVeinRight: meta('systemicVein'),
+  iliacVeinLeft: meta('systemicVein'),
+  internalIliacVeinRight: meta('systemicVein'),
+  internalIliacVeinLeft: meta('systemicVein'),
+  externalIliacVeinRight: meta('systemicVein'),
+  externalIliacVeinLeft: meta('systemicVein'),
+  portalSmv: meta('portal'),
+  portalSplenic: meta('portal'),
 };
 
 export function vesselKind(id: VesselId): VesselKind {
@@ -165,3 +201,24 @@ export const INTERLOBAR_FLOW_SHARE = 0.05;
  * anatomía; aquí solo se declara el contrato.
  */
 export type VesselAreas = Record<VesselId, number>;
+
+/** Estimated radii of the added main branches; anatomy overrides these from its tube definitions. */
+export const ABDOMINAL_VESSEL_RADII = {
+  leftGastricArtery: 1.8,
+  commonHepaticArtery: 2.4,
+  ima: 2.0,
+  iliacArteryRight: 5.0,
+  iliacArteryLeft: 5.0,
+  internalIliacArteryRight: 3.0,
+  internalIliacArteryLeft: 3.0,
+  externalIliacArteryRight: 4.0,
+  externalIliacArteryLeft: 4.0,
+  iliacVeinRight: 6.0,
+  iliacVeinLeft: 6.0,
+  internalIliacVeinRight: 4.0,
+  internalIliacVeinLeft: 4.0,
+  externalIliacVeinRight: 5.0,
+  externalIliacVeinLeft: 5.0,
+  portalSmv: 4.5,
+  portalSplenic: 3.5,
+} as const;

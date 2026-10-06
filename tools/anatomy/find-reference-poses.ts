@@ -3,6 +3,9 @@
  * Candidate rays are rejected when the real compressed anatomy contains bone or lung.
  */
 import { readFileSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
+import { setAbdominalAtlas } from '../../src/anatomy/abdominalAtlas';
+import { setAbdominalBody } from '../../src/anatomy/referenceBody';
 import { AnatomyScene } from '../../src/anatomy/scene';
 import { AnatomyQuery } from '../../src/anatomy/query';
 import { setReferenceBody } from '../../src/anatomy/referenceBody';
@@ -17,6 +20,13 @@ import { acousticWindowWeight, gateTransmission } from '../../src/app/gateTransm
 import { CONVEX_C35_PROFILE } from '../../src/ultrasound/transducerProfile';
 import type { VesselId } from '../../src/physiology/vessels';
 import { kidneyWorld } from '../../src/anatomy/organs/kidney';
+const atlas = process.argv.includes('--abdomen');
+if (atlas) {
+  const raw = gunzipSync(readFileSync('src/anatomy/abdominal-atlas.gzip.bin'));
+  setAbdominalAtlas(new Uint16Array(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength)));
+  const body = readFileSync('src/anatomy/abdominal-body.bin');
+  setAbdominalBody(new Float32Array(body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength)));
+}
 const bytes = readFileSync('src/anatomy/reference-body.bin');
 setReferenceBody(new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)));
 const scene = new AnatomyScene(NORMAL_ADULT),
@@ -138,8 +148,59 @@ const windows: Window[] = [
     vessels: ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'],
   },
 ];
+if (atlas) {
+  windows.push(
+    { ...windows.find((w) => w.id === 'portal')!, id: 'portalTrunk' },
+    { ...windows.find((w) => w.id === 'renal')!, id: 'hepatorenal' },
+  );
+}
+if (atlas)
+  for (const w of windows) {
+    const tube = scene.vessels.find((v) => v.id === w.vessels[0])!.tube;
+    if (w.id === 'portal') {
+      const right = scene.vessels.find((v) => v.id === 'pvRight')!.tube;
+      w.points = right.nodes.map((n) => n.p);
+      w.pivot = right.nodes[1].p;
+      w.long = sub(right.nodes.at(-1)!.p, right.nodes[0].p);
+      w.z = [-110, -50];
+      w.phi = [3.1, 3.7];
+    } else if (w.id === 'portalTrunk') {
+      w.points = tube.nodes.map((n) => n.p);
+      w.pivot = tube.nodes[2].p;
+      w.long = sub(tube.nodes.at(-1)!.p, tube.nodes[0].p);
+      w.z = [-120, -65];
+      w.phi = [3.0, 3.7];
+    } else if (w.id === 'renal') {
+      const k = scene.kidneyRight;
+      w.pivot = k.center;
+      w.long = k.u;
+      w.points = [-35, 0, 35].map((d) => k.center.map((x, i) => x + d * k.u[i]) as Vec3);
+      w.z = [-175, -115];
+      w.phi = [3.1, 3.75];
+    } else if (w.id === 'epigastric') {
+      w.points = [
+        [-15.1, -5.7, -60],
+        [10, -20, -60],
+      ];
+      w.pivot = [-2, -12, -60];
+      w.z = [-80, -40];
+    } else if (w.id === 'hepatorenal') {
+      const k = scene.kidneyRight;
+      w.points = [[-75, -20, -100], k.center];
+      w.pivot = k.center.map((x, i) => (x + w.points[0][i]) / 2) as Vec3;
+      w.long = k.u;
+      w.z = [-150, -85];
+      w.phi = [3.0, 3.5];
+    } else {
+      w.points = tube.nodes.map((n) => n.p);
+      w.pivot = tube.nodes[Math.floor(tube.nodes.length / 2)].p;
+      w.long = sub(tube.nodes.at(-1)!.p, tube.nodes[0].p);
+    }
+  }
 const all = [];
-for (const w of windows.filter((w) => !process.argv[2] || w.id === process.argv[2])) {
+for (const w of windows.filter(
+  (w) => !process.argv.slice(2).find((a) => !a.startsWith('--')) || w.id === process.argv.slice(2).find((a) => !a.startsWith('--')),
+)) {
   const candidates = [];
   for (let phi = w.phi[0]; phi <= w.phi[1] + 1e-6; phi += 0.05)
     for (let z = w.z[0]; z <= w.z[1]; z += 5) {

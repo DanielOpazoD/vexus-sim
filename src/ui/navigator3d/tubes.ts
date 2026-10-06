@@ -63,6 +63,8 @@ const SYSTEM_COLOR_3D: Record<VesselSystem, number> = {
   renalVein: 0x5a8cdc,
   interlobarArtery: 0xf0704d,
   interlobarVein: 0x5a8cdc,
+  systemicArtery: 0xf0704d,
+  systemicVein: 0x5a8cdc,
 };
 
 export function buildVessels(a: AnatomyScene, caliber: VesselCaliber): THREE.Group {

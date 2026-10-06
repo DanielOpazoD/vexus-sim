@@ -12,7 +12,7 @@ export function buildSkin(a: AnatomyScene): THREE.Mesh {
   const t = a.torso;
   const nT = 72;
   const nZ = 40;
-  const z0 = -260;
+  const z0 = a.hasAbdominalAtlas ? -430 : -260;
   const z1 = 270;
   const pos: number[] = [];
   const idx: number[] = [];
@@ -140,6 +140,7 @@ export function buildSkeleton(a: AnatomyScene): THREE.Group {
   // los cuerpos vertebrales de la imagen (PR119; recuperación provisional de la decisión 103): sección elíptica, uno cada `levelMm` con el disco entre ellos
   const { aspect, levelMm, bodyMm, z0Mm } = SPINE_SHAPE;
   for (let z = z0Mm - levelMm * Math.floor((z0Mm + 240) / levelMm); z <= 280; z += levelMm) {
+    if (a.hasAbdominalAtlas && z < -60) continue;
     const body = new THREE.Mesh(new THREE.CylinderGeometry(a.spine.r * CM, a.spine.r * CM, bodyMm * CM, 20), bone);
     body.scale.set(aspect, 1, 1 / aspect);
     body.rotation.x = Math.PI / 2;

@@ -1,3 +1,4 @@
+import { ABDOMINAL_VESSEL_RADII } from '../physiology/vessels';
 import { describe, expect, it } from 'vitest';
 import { CLUTTER } from '../ultrasound/clutter';
 import {
@@ -114,7 +115,7 @@ describe('Tabla de caras de interfaz', () => {
       seen.add(v.id);
     }
     // todos los vasos del modelo tienen tubo en la escena (y por tanto cara)
-    for (const id of VESSEL_IDS) expect(seen.has(id), id).toBe(true);
+    for (const id of VESSEL_IDS) if (!(id in ABDOMINAL_VESSEL_RADII)) expect(seen.has(id), id).toBe(true);
     expect(interfaceOfVessel('ivcSupra', Tissue.VesselWallThin)).toBe(Interface.IvcLumen);
     expect(interfaceOfVessel('aorta', Tissue.ArteryWall)).toBe(Interface.ArteryLumen);
   });

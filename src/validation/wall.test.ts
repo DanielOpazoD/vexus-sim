@@ -524,7 +524,7 @@ describe('caras nuevas en la tabla de la decisión 57', () => {
   it('cada cara de la pared y de la costilla tiene su fila, su nombre GLSL, su fuente y un solo tipo de dueño', () => {
     // tras la pleura parietal de la decisión 61 (12): nueve caras de la pared y las costillas, 13–21; después, el pericardio
     // (decisión 85)
-    expect(INTERFACE_COUNT).toBe(26); // cortical vertebral, sin cambiar las caras de pared
+    expect(INTERFACE_COUNT).toBe(29); // cortical vertebral, sin cambiar las caras de pared
     expect(Interface.SkinFat).toBe(Interface.PleuraWall + 1);
     expect(Object.keys(INTERFACES)).toHaveLength(INTERFACE_COUNT);
     for (const f of [...WALL_FACES, Interface.RibCortex, Interface.Perichondrium]) {
@@ -738,7 +738,7 @@ describe('gemelo GLSL (organs/wall.ts y wallTexture.ts)', () => {
     expect(WALL_TEXTURE.faceVariation.length).toBe(LAST_WALL_INTERFACE - FIRST_WALL_INTERFACE + 1);
     // los tejidos de la decisión 81 (psoas, cuadrado lumbar, grasa retroperitoneal) y de la 85 (miocardio y mediastino) van al
     // final: no mueven índices
-    expect(TISSUE_COUNT).toBe(33); // grasa mesentérica añadida sin renumerar tejidos previos
+    expect(TISSUE_COUNT).toBe(39); // grasa mesentérica añadida sin renumerar tejidos previos
   });
 });
 

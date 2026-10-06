@@ -231,7 +231,19 @@ const REFERENCE_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
         ? 'Ventana renal derecha del adulto de referencia: desde el flanco, afinar el eje largo y colocar la puerta en una vena interlobar visible.'
         : sp.hint,
 }));
+const ABDOMINAL_POSES = {
+  subxiphoid: { phi: 1.65, z: -15, yaw: 0.02476, rock: 0.591491, tilt: -0.055956 },
+  epigastric: { phi: 1.55, z: -80, yaw: -1.572947056125525, rock: 0.1493615263787931, tilt: 0.13328531500949725 },
+  intercostal: { phi: 2.7499999999999996, z: -50, yaw: 0.8786090954349242, rock: 0.15797256183069175, tilt: -0.41578524819208573 },
+  subcostal: { phi: 2.05, z: -75, yaw: 0.5323032197489349, rock: 0.5642639659950537, tilt: -0.20132686757042972 },
+  flank: { phi: 3.099999999999999, z: -70, yaw: 0.1767952406260464, rock: 0.5707775613505776, tilt: -0.04687503959831865 },
+  portal: { phi: 3.2499999999999996, z: -65, yaw: 2.8332047341730324, rock: 0.2122189996791038, tilt: -0.0937442490667998 },
+  renal: { phi: 3.15, z: -175, yaw: -0.04682166646295555, rock: 0.37638199977635656, tilt: -0.3330150669689693 },
+  portalTrunk: { phi: 3.249999999999999, z: -70, yaw: 0.27115711172810575, rock: -0.23037781334123322, tilt: 0.1571697157116251 },
+  hepatorenal: { phi: 3.249999999999999, z: -85, yaw: -0.24474601059834725, rock: -0.5334523465036443, tilt: -0.27223069855850024 },
+} as const;
+const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({ ...sp, ...ABDOMINAL_POSES[sp.id] }));
 /** Scene-specific presets; legacy tests/torso retain their own poses. */
 export function startPointsFor(torso: Pick<Torso, 'a' | 'b' | 'profile'>): readonly StartPoint[] {
-  return torso.profile ? REFERENCE_POINTS : START_POINTS;
+  return torso.profile?.length === 910 ? ABDOMINAL_POINTS : torso.profile ? REFERENCE_POINTS : START_POINTS;
 }

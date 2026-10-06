@@ -4,7 +4,7 @@ import { bootWithoutErrors, budget } from './support';
 for (const reference of [false, true]) {
   test(`ventanas hepáticas: rama, tronco PW y cava longitudinal, reference=${reference}`, async ({ page }, info) => {
     budget(180_000);
-    const errors = await bootWithoutErrors(page, `?e2e=app${reference ? '&reference=1' : ''}`);
+    const errors = await bootWithoutErrors(page, `?e2e=app&abdomen=legacy${reference ? '&reference=1' : ''}`);
     await page.locator('.win-card').filter({ hasText: 'Porta · intrahepática' }).click();
     await page.waitForFunction(() => {
       const s = window.__vexusTest!.sim();

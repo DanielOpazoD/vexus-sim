@@ -31,11 +31,11 @@ export const simTime = (page: Page): Promise<number> => page.evaluate(() => wind
 const paces = new WeakMap<Page, { bootMs: number; t0: number; f0: number }>();
 
 /**
- * Arranca la aplicación con los ganchos de prueba (`?e2e=1`: pose por defecto y fundamental; `?e2e=app`: como el
+ * Arranca la aplicación con los ganchos de prueba (`?e2e=1&abdomen=legacy`: pose por defecto y fundamental; `?e2e=app&abdomen=legacy`: como el
  * usuario) y espera sus dos primeros cuadros. Devuelve la lista de errores de página y de consola, que cada prueba
  * exige vacía al final.
  */
-export async function bootWithoutErrors(page: Page, query = '?e2e=1'): Promise<string[]> {
+export async function bootWithoutErrors(page: Page, query = '?e2e=1&abdomen=legacy'): Promise<string[]> {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
   page.on('console', (m) => {

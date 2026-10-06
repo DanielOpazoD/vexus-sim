@@ -4,7 +4,7 @@ import { bootWithoutErrors, budget, withinFrames } from './support';
 
 test('pares costales bilaterales existen en la anatomía GPU y el navegador', async ({ page }, info) => {
   budget(120_000);
-  const errors = await bootWithoutErrors(page, '?e2e=1&torso=legacy');
+  const errors = await bootWithoutErrors(page, '?e2e=1&abdomen=legacy&torso=legacy');
   const report = await page.evaluate(() => {
     const sim = window.__vexusTest!.sim();
     const points: number[] = [];

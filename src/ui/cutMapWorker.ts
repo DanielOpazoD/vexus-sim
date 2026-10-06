@@ -1,4 +1,6 @@
 import { setReferenceBody } from '../anatomy/referenceBody';
+import { setAbdominalBody } from '../anatomy/referenceBody';
+import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
 /// <reference lib="webworker" />
 import type { ProbeCompression } from '../anatomy/compression';
 import { AnatomyQuery } from '../anatomy/query';
@@ -35,6 +37,7 @@ export interface CutMapInit {
   type: 'init';
   patient: PatientState;
   referenceProfile?: Float32Array;
+  abdominalField?: Uint16Array;
 }
 
 export interface CutMapResponse {
@@ -74,6 +77,8 @@ self.onmessage = (ev: MessageEvent<CutMapInit | CutMapRequest>) => {
   try {
     if (msg.type === 'init') {
       setReferenceBody(msg.referenceProfile);
+      setAbdominalBody(msg.abdominalField ? msg.referenceProfile : undefined);
+      setAbdominalAtlas(msg.abdominalField);
       const scene = new AnatomyScene(msg.patient);
       query = new AnatomyQuery(scene);
       vesselIndex = new Map(scene.vessels.map((v, i) => [v.id, i]));

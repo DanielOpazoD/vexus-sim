@@ -62,13 +62,15 @@ test('cambia de caso y el HUD lo refleja', async ({ page }) => {
   expect(errors).toEqual([]);
 });
 
-test('lo que ve el usuario (?e2e=app): subxifoidea en armónica con composición, hígado a media escala y la VCI negra', async ({ page }) => {
-  // El resto de la e2e arranca en la pose por defecto y en fundamental (`?e2e=1`, la física calibrada de sus pruebas);
+test('lo que ve el usuario (?e2e=app&abdomen=legacy): subxifoidea en armónica con composición, hígado a media escala y la VCI negra', async ({
+  page,
+}) => {
+  // El resto de la e2e arranca en la pose por defecto y en fundamental (`?e2e=1&abdomen=legacy`, la física calibrada de sus pruebas);
   // la aplicación arranca en la ventana subxifoidea, en armónica y con la composición espacial (main.ts). Aquí, esa
   // configuración con los ganchos cargados: la imagen que abre el alumno, medida como el banco (decisiones 52 y 58).
   // Con SwiftShader (local, 27-09): hígado mediana 91, desviación 15,1; luz 7.
   budget(120_000);
-  const errors = await bootWithoutErrors(page, '?e2e=app');
+  const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=legacy');
   await withinFrames(page, 2, 'HUD en armónica con composición', contains(page, '#hud-tr', /THI 3,5 MHz[\s\S]*CX/));
   await withinFrames(page, 20, 'la tarjeta subxifoidea resaltada', async () => {
     const cur = await page.locator('.win-card[aria-current="true"]').allTextContents();
@@ -143,7 +145,7 @@ test('ventanas (decisión 83): Intro en una tarjeta, mantenida como con el dedo,
 test('lo medido a la vista sobre el espectro y el vaso equivocado (decisión 94)', async ({ page }) => {
   // CI observó operaciones GPU de20–46s: plazo operativo de arranque+trabajo, no tolerancia de señal.
   budget(120_000);
-  const errors = await bootWithoutErrors(page, '?e2e=1');
+  const errors = await bootWithoutErrors(page, '?e2e=1&abdomen=legacy');
   await page
     .locator('button', { hasText: /Apnea\s*esp/ })
     .first()
@@ -211,7 +213,7 @@ test('lo medido a la vista sobre el espectro y el vaso equivocado (decisión 94)
 test('modos por teclado, pestaña Medir y captura de una medición', async ({ page }) => {
   budget(180_000);
   // ?docente: al final se abre la pestaña Docente (en producción la casilla solo aparece así)
-  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  const errors = await bootWithoutErrors(page, '?e2e=1&abdomen=legacy&docente=1');
   // Técnica del operador: apnea espiratoria (pestaña Adquirir) antes de medir la suprahepática
   await page
     .locator('button', { hasText: /Apnea\s*esp/ })
@@ -957,7 +959,7 @@ test('modo alumno ciego: sin diagnóstico en pantalla; el docente lo ve con ?doc
   expect(errors).toEqual([]);
 
   // Con ?docente la casilla aparece y al marcarla vuelven el nombre, los rótulos y los vasos
-  const errors2 = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  const errors2 = await bootWithoutErrors(page, '?e2e=1&abdomen=legacy&docente=1');
   await page.locator('#debug-toggle').check();
   await page.selectOption('#case-select', 'severe-congestion');
   await withinFrames(page, 2, 'HUD con el nombre del caso', contains(page, '#hud-tl', 'Congestión venosa grave'));
@@ -1018,7 +1020,7 @@ test('casos trampa (decisión 82): el alumno lee la viñeta, marca el contexto y
   expect(errors).toEqual([]);
 
   // Docente: el nombre del caso, su contexto real y la trampa
-  const errors2 = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  const errors2 = await bootWithoutErrors(page, '?e2e=1&abdomen=legacy&docente=1');
   // al marcar «Docente» la consola abre su pestaña
   await page.locator('#debug-toggle').check({ force: true });
   await page.selectOption('#case-select', 'abdominal-hypertension');
@@ -1046,7 +1048,7 @@ test('intervenciones docentes (decisión 79): bolo y PEEP mueven el lazo del sim
   page,
 }) => {
   budget(180_000);
-  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  const errors = await bootWithoutErrors(page, '?e2e=1&abdomen=legacy&docente=1');
   // `force`: con render por software el hilo principal no deja a los elementos «estables»
   await page.locator('#debug-toggle').check({ force: true });
   await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
@@ -1095,7 +1097,7 @@ test('intervenciones docentes (decisión 79): bolo y PEEP mueven el lazo del sim
 
 test('el anuncio docente no mueve Reiniciar paciente entre apuntar y hacer clic', async ({ page }) => {
   budget(60_000);
-  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  const errors = await bootWithoutErrors(page, '?e2e=1&abdomen=legacy&docente=1');
   await page.locator('#debug-toggle').check({ force: true });
   await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
   const reset = page.getByRole('button', { name: 'Reiniciar paciente', exact: true });

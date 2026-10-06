@@ -188,7 +188,8 @@ const input = new ProbeInput(
 // para su primer cuadro; si falla, la aplicación sigue sin él.
 let nav: Navigator3D | null = null;
 void import('./ui/navigator3d')
-  .then(({ Navigator3D }) => {
+  .then(async ({ Navigator3D }) => {
+    if (sim().scene.hasAbdominalAtlas) await (await import('./anatomy/abdominalSurface')).loadAbdominalSurface();
     nav = new Navigator3D(navHost, sim().scene, sim().transducer, {
       getPose: () => sim().pose,
       setPose: setPoseManual,

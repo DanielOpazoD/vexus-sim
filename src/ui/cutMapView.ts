@@ -1,4 +1,5 @@
-import { referenceBody } from '../anatomy/referenceBody';
+import { abdominalBody } from '../anatomy/referenceBody';
+import { abdominalAtlas } from '../anatomy/abdominalAtlas';
 import type { Simulator } from '../app/simulator';
 import type { PhysiologySample } from '../physiology/engine';
 import type { ProbeFrame } from '../probe/probe';
@@ -18,6 +19,12 @@ import { RequestWatchdog } from './requestWatchdog';
 const MAP_W = 96;
 const MAP_H = 128;
 const TISSUE_COLOR: Record<number, [number, number, number]> = {
+  [Tissue.Pancreas]: [213, 172, 113],
+  [Tissue.Spleen]: [153, 94, 126],
+  [Tissue.GutSubmucosa]: [220, 199, 153],
+  [Tissue.GutMuscularis]: [141, 99, 104],
+  [Tissue.SoftCapsule]: [218, 201, 171],
+  [Tissue.BladderWall]: [167, 182, 132],
   [Tissue.Air]: [15, 17, 22],
   [Tissue.Skin]: [200, 170, 150],
   [Tissue.Fat]: [214, 190, 110],
@@ -53,6 +60,11 @@ const TISSUE_COLOR: Record<number, [number, number, number]> = {
   [Tissue.MesentericFat]: [212, 183, 112],
 };
 const TISSUE_LABEL: Record<number, string> = {
+  [Tissue.Pancreas]: 'páncreas',
+  [Tissue.Spleen]: 'bazo',
+  [Tissue.GutSubmucosa]: 'pared intestinal',
+  [Tissue.GutMuscularis]: 'pared intestinal',
+  [Tissue.BladderWall]: 'vejiga',
   [Tissue.Liver]: 'hígado',
   [Tissue.Fat]: 'grasa',
   [Tissue.Muscle]: 'músculo',
@@ -65,7 +77,7 @@ const TISSUE_LABEL: Record<number, string> = {
   [Tissue.RenalPelvis]: 'pelvis',
   [Tissue.Bowel]: 'intestino',
   [Tissue.BowelGas]: 'gas',
-  [Tissue.Fluid]: 'vesícula',
+  [Tissue.Fluid]: 'líquido',
   [Tissue.Cartilage]: 'cartílago',
   [Tissue.RenalCortex]: 'riñón',
   [Tissue.RenalSinus]: 'seno renal',
@@ -94,6 +106,8 @@ const SYSTEM_COLOR: Record<VesselSystem, [number, number, number]> = {
   renalVein: [90, 140, 220],
   interlobarArtery: [240, 90, 90],
   interlobarVein: [90, 140, 220],
+  systemicArtery: [240, 90, 90],
+  systemicVein: [80, 130, 220],
 };
 const vesselColor = (id: VesselId): [number, number, number] => SYSTEM_COLOR[VESSEL_META[id].system];
 const VESSEL_LABEL: Record<VesselId, string> = {
@@ -129,6 +143,23 @@ const VESSEL_LABEL: Record<VesselId, string> = {
   celiacTrunk: 'tronco celíaco',
   splenicArtery: 'art. esplénica',
   sma: 'AMS',
+  leftGastricArtery: 'gástrica izda.',
+  commonHepaticArtery: 'hepática común',
+  ima: 'AMI',
+  portalSmv: 'VMS',
+  portalSplenic: 'v. esplénica',
+  iliacArteryRight: 'ilíaca dcha.',
+  iliacArteryLeft: 'ilíaca izda.',
+  internalIliacArteryRight: 'ilíaca dcha.',
+  internalIliacArteryLeft: 'ilíaca izda.',
+  externalIliacArteryRight: 'ilíaca dcha.',
+  externalIliacArteryLeft: 'ilíaca izda.',
+  iliacVeinRight: 'ilíaca dcha.',
+  iliacVeinLeft: 'ilíaca izda.',
+  internalIliacVeinRight: 'ilíaca dcha.',
+  internalIliacVeinLeft: 'ilíaca izda.',
+  externalIliacVeinRight: 'ilíaca dcha.',
+  externalIliacVeinLeft: 'ilíaca izda.',
 };
 
 /** Tejido «sangre» como número (el mapa del Worker es un Uint8Array). */
@@ -204,7 +235,12 @@ export class CutMapView {
     }
     this.workerPatient = key;
     this.pending = false;
-    const init: CutMapInit = { type: 'init', referenceProfile: referenceBody, patient: sim.patient };
+    const init: CutMapInit = {
+      type: 'init',
+      referenceProfile: sim.scene.hasAbdominalAtlas ? abdominalBody : sim.scene.torso.profile,
+      patient: sim.patient,
+      abdominalField: sim.scene.hasAbdominalAtlas ? abdominalAtlas : undefined,
+    };
     this.worker.postMessage(init);
     this.worker.onmessage = (ev: MessageEvent<CutMapResponse | CutMapError>) => {
       if (ev.data.type === 'error') {

@@ -55,10 +55,16 @@ export enum Tissue {
   Mediastinum = 31,
   /** Grasa intraperitoneal entre asas; no pared intestinal. */
   MesentericFat = 32,
+  Pancreas = 33,
+  Spleen = 34,
+  GutSubmucosa = 35,
+  GutMuscularis = 36,
+  SoftCapsule = 37,
+  BladderWall = 38,
 }
 
 /** 33 tejidos: nueve ranuras vec4 por tabla; la grasa mesentérica es un tejido distinto de la pared intestinal. */
-export const TISSUE_COUNT = 33;
+export const TISSUE_COUNT = 39;
 
 /**
  * Nombre de cada tejido en GLSL (`#define T_… índice`). Se genera desde aquí
@@ -99,6 +105,12 @@ export const TISSUE_GLSL_NAME: Record<Tissue, string> = {
   [Tissue.Myocardium]: 'T_MYOCARDIUM',
   [Tissue.Mediastinum]: 'T_MEDIASTINUM',
   [Tissue.MesentericFat]: 'T_MESENTERIC_FAT',
+  [Tissue.Pancreas]: 'T_PANCREAS',
+  [Tissue.Spleen]: 'T_SPLEEN',
+  [Tissue.GutSubmucosa]: 'T_GUT_SUBMUCOSA',
+  [Tissue.GutMuscularis]: 'T_GUT_MUSCULARIS',
+  [Tissue.SoftCapsule]: 'T_SOFT_CAPSULE',
+  [Tissue.BladderWall]: 'T_BLADDER_WALL',
 };
 
 /** Lámina diafragmática bajo la cúpula (mm); la misma en TS, GLSL y el navegador 3D. */
@@ -216,6 +228,13 @@ export const TISSUES: TissueProps[] = [
   { name: 'mediastino', c: 1460, rho: 940, alpha1: 0.5, b: 1.1, backscatter: 1.0, gas: false, bone: false, speckleClump: 0.6 },
   // Propiedades de grasa; retrodispersión mesentérica estimada, antes mezclada con falsas asas.
   { name: 'grasa mesentérica', c: 1450, rho: 920, alpha1: 0.45, b: 1.1, backscatter: 1.35, gas: false, bone: false, speckleClump: 0.5 },
+  // Estimated acoustic calibration; source atlas geometry supplies no tissue measurements.
+  { name: 'páncreas', c: 1545, rho: 1050, alpha1: 0.65, b: 1.1, backscatter: 1.35, gas: false, bone: false },
+  { name: 'bazo', c: 1567, rho: 1060, alpha1: 0.5, b: 1.1, backscatter: 1.12, gas: false, bone: false },
+  { name: 'submucosa digestiva', c: 1600, rho: 1080, alpha1: 0.7, b: 1, backscatter: 2.6, gas: false, bone: false },
+  { name: 'muscular propia digestiva', c: 1588, rho: 1090, alpha1: 0.617, b: 1.083, backscatter: 0.3, gas: false, bone: false },
+  { name: 'serosa / cápsula visceral', c: 1600, rho: 1100, alpha1: 0.8, b: 1, backscatter: 1.6, gas: false, bone: false },
+  { name: 'pared vesical', c: 1588, rho: 1090, alpha1: 0.62, b: 1.083, backscatter: 1.15, gas: false, bone: false },
 ];
 
 /** Impedancia acústica Z = ρc en MRayl. */

@@ -4,7 +4,7 @@ import { Interface } from '../src/anatomy/interfaces';
 
 test('el adulto de referencia carga el mismo campo corporal para imagen y consulta TS/GPU', async ({ page }, info) => {
   budget(180_000);
-  const errors = await bootWithoutErrors(page, '?e2e=app&reference=1');
+  const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=legacy&reference=1');
   const result = await page.evaluate(() => {
     const T = window.__vexusTest!;
     const sim = T.sim();
@@ -60,7 +60,7 @@ test('el adulto de referencia carga el mismo campo corporal para imagen y consul
 
 test('captura del modelo previo con el mismo equipo y punto de partida', async ({ page }, info) => {
   budget(120_000);
-  const errors = await bootWithoutErrors(page, '?e2e=app&torso=legacy');
+  const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=legacy&torso=legacy');
   const frameMs = await page.evaluate(() => {
     const T = window.__vexusTest!;
     T.setCompound(false);
@@ -81,7 +81,7 @@ test('captura del modelo previo con el mismo equipo y punto de partida', async (
 
 test('la referencia conserva normales costales bilaterales y sombra tras el primer hueso', async ({ page }, info) => {
   budget(180_000);
-  const errors = await bootWithoutErrors(page, '?e2e=1&reference=1');
+  const errors = await bootWithoutErrors(page, '?e2e=1&abdomen=legacy&reference=1');
   const report = await page.evaluate(() => {
     const T = window.__vexusTest!;
     const sim = T.sim();

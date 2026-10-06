@@ -35,7 +35,7 @@ async function acquiredMFrame(page: Page): Promise<void> {
 for (const reference of [false, true]) {
   test(`respiración apagada: corazón y PW activos (${reference ? 'referencia' : 'legacy'})`, async ({ page }) => {
     test.setTimeout(180_000);
-    const errors = await bootWithoutErrors(page, reference ? '?e2e=1&reference=1' : '?e2e=1');
+    const errors = await bootWithoutErrors(page, reference ? '?e2e=1&abdomen=legacy&reference=1' : '?e2e=1&abdomen=legacy');
     await expect(page.getByRole('button', { name: 'Activar respiración', exact: true })).toBeVisible();
     const held = await page.evaluate(() => {
       const s = window.__vexusTest!.sim();
@@ -79,7 +79,7 @@ for (const reference of [false, true]) {
   });
   test(`respiración y M: activar, medir y volver a apagar (${reference ? 'referencia' : 'legacy'})`, async ({ page }) => {
     test.setTimeout(180_000);
-    const errors = await bootWithoutErrors(page, reference ? '?e2e=1&reference=1' : '?e2e=1');
+    const errors = await bootWithoutErrors(page, reference ? '?e2e=1&abdomen=legacy&reference=1' : '?e2e=1&abdomen=legacy');
     await expect(page.getByRole('button', { name: 'Activar respiración', exact: true })).toBeVisible();
     await page.evaluate(() => window.__vexusTest!.goToStartPoint('subxiphoid'));
     await activate(page.locator('#mode-m'));

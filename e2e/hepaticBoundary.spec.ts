@@ -8,7 +8,7 @@ checkAfterEach();
 for (const reference of [false, true])
   test(`plano retrohepático: cápsula y tejido blando CPU/GPU (${reference ? 'referencia' : 'legacy'})`, async ({ page }, info) => {
     budget(180_000);
-    await bootWithoutErrors(page, reference ? '?e2e=1&reference=1' : '?e2e=1');
+    await bootWithoutErrors(page, reference ? '?e2e=1&abdomen=legacy&reference=1' : '?e2e=1&abdomen=legacy');
     const { spine: s } = await page.evaluate(() => window.__vexusTest!.corticalSamples([]));
     const points: Vec3[] = [];
     // Los centros discales regresan la discontinuidad hepática detectada al conciliar PR119/144.

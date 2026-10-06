@@ -7,7 +7,7 @@ test('production GPU prefix integrates every tissue exponent, fixed barriers and
   page,
 }, info) => {
   budget(120000);
-  const errors = await bootWithoutErrors(page, '?e2e=1');
+  const errors = await bootWithoutErrors(page, '?e2e=1&abdomen=legacy');
   const results = await page.evaluate(
     ({ source, tissues, vec4s }) => {
       const gl = document.createElement('canvas').getContext('webgl2')!;

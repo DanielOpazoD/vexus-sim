@@ -159,9 +159,9 @@ export function probeVelocity(prev: ProbeFrame, next: ProbeFrame, dtSeconds: num
 
 export function clampPose(p: ProbePose): ProbePose {
   return {
-    // Hasta la línea axilar posterior derecha (ventana renal) en decúbito supino
-    phi: clamp(p.phi, -Math.PI * 0.05, Math.PI * 1.2),
-    z: clamp(p.z, -200, 200),
+    // Full circumference permits left splenorenal and posterior renal acquisition.
+    phi: ((((p.phi + Math.PI / 2) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI / 2,
+    z: clamp(p.z, -420, 200),
     lift: clamp(p.lift, -6, 25),
     yaw: ((((p.yaw + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI,
     rock: clamp(p.rock, -0.7, 0.7),

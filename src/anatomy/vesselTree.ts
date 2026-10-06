@@ -1,3 +1,4 @@
+import { registerAbdominalVessels } from './abdominalVessels';
 import { SeededRandom } from '../core/random';
 import { add, cross, dist, normalize, rotateAxis, scale, sub, type Vec3 } from '../core/vec3';
 import { VESSEL_META, type CaliberLaw, type VesselId } from '../physiology/vessels';
@@ -66,7 +67,11 @@ export interface DuctDef {
  * decisión 22). Los vasos renales e interlobares se construyen en el marco local
  * del riñón (`kidneyWorld`) para que sigan a la primitiva si esta cambia.
  */
-export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vessels: VesselDef[]; ducts: DuctDef[] } {
+export function buildVesselTree(
+  kidneyRight: Kidney,
+  kidneyLeft: Kidney,
+  registeredAbdomen = false,
+): { vessels: VesselDef[]; ducts: DuctDef[] } {
   const tube = (nodes: Array<[Vec3, number]>, apScale = 1): Tube => ({
     kind: 'tube',
     nodes: nodes.map(([p, r]) => ({ p, r })),
@@ -543,6 +548,7 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       wallMm: 0.6,
     },
   ];
+  if (registeredAbdomen) registerAbdominalVessels(vessels, ducts);
   return { vessels, ducts };
 }
 

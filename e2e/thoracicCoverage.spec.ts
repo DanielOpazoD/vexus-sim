@@ -5,7 +5,7 @@ import { Tissue } from '../src/anatomy/tissues';
 
 test('doce pares, extremos libres y esternón: misma barrera CPU/GPU', async ({ page }, info) => {
   budget(180_000);
-  const errors = await bootWithoutErrors(page, '?e2e=app');
+  const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=legacy');
   const report = await page.evaluate(() => {
     const sim = window.__vexusTest!.sim();
     const points: [number, number, number][] = [

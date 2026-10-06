@@ -6357,3 +6357,9 @@ Aceptación: secuencias IQ muestreadas como oráculo independiente, alias positi
 Defecto: escalar toda la pérdida B por fD/fB debilitaba hueso/gas y el suelo 1e-6 limitaba la atenuación. A2 registra pérdidas fijas en su canal .w auxiliar existente; el color lee los prefijos dB y conserva esa parte al convertir absorción. Un sampler adicional, sin textura nueva. Se preserva A.o2.y, que sí almacena el rayo dirigido. B, apertura, refracción y transmisión PW no cambian. Contrato previo: `anatomy/DOPPLER_ATTENUATION_CONTRACT.md`.
 
 Aceptación: integración PW independiente con capas de exponente uno, barreras óseas y gas, frecuencias diferentes, paridad del prefijo GPU y controles de señal portal. El escalado de absorción restante aún aproxima b=1; los exponentes tisulares diferentes requieren suma por segmento a fD, declarada como deuda para siguiente iteración. No hay calibración clínica nueva ni máscara vascular.
+
+## 175. Consulta costal con descarte geométrico conservador
+
+Doce pares requieren consultar numerosos arcos lejanos en cada muestra acústica. La cota inferior del intervalo z descarta solo arcos incapaces de mejorar ambos mínimos, con margen float32 0,01 mm; el cartílago registrado no se descarta. SDF, normales, tejidos, interfaces y densidad de muestreo se conservan. Contrato previo: `anatomy/COSTAL_QUERY_CONTRACT.md`. No BVH ni caché invalidable.
+
+Oráculo por todos los arcos en ambos cuerpos, superficies y extremos libres: mínimos y primer interior exactos. En rejilla CPU: consultas 602384→513832 y 601632→511288; timing variable en Mac compartido, sin promesa de fps. Rechazada primera implementación con Math.hypot más lenta; sqrt conserva la misma cota. Paridad GPU completa requerida. Crecimiento observado a 1031,4 KiB: margen explícito +1 KiB (1032 total), manteniendo todos los chunks/Workers y límites individuales.

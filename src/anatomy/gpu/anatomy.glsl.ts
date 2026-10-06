@@ -297,6 +297,14 @@ float sdSphere(vec3 p, vec4 s, out vec3 n) {
 
 ${CARTILAGE_GLSL(CARTILAGE_BASE)}
 
+// Cota inferior del arco óseo; el cartílago registrado no comparte su intervalo z.
+float ribDistanceLowerBound(vec3 p, int k) {
+  vec4 rib = ribData(k), shape = ribShapeData(k);
+  float amplitude = length(vec2(rib.y * 0.5, shape.w));
+  float dz = max(0.0, abs(p.z - rib.x - rib.y * 0.5) - amplitude);
+  return min(1e3, (dz / rib.z - 1.0) * min(rib.z, rib.w));
+}
+
 // Costilla: devuelve distancia y si es cartílago (φ anterior)
 float sdRibBone(vec3 p, int k, out bool cartilage, out vec3 n) {
   vec4 rib = ribData(k), shape = ribShapeData(k);
@@ -542,6 +550,7 @@ bool classifyWall(vec3 m, out Cls c, out float depth, out vec3 tn) {
     ribAny = sternumD;
     if (m.z >= STERNUM_JUNCTION) { ribD = sternumD; ribI = MAX_RIBS; }
     for (int i = 0; i < MAX_RIBS; i++) {
+      if (ribEndData(i).z < 0.5 && ribDistanceLowerBound(m, i) > max(ribAny, ribD) + 0.01) continue;
       bool cart; vec3 rn;
       float rd = sdRib(m, i, cart, rn);
       if (rd < 0.0) {

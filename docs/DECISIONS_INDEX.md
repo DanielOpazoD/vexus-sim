@@ -178,3 +178,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [172](DECISIONS.md#L6335) | Sección regional de la cava superior y Q/A común con su anatomía | vigente |
 | [173](DECISIONS.md#L6349) | Filtro color periódico en frecuencia muestreada, identidad al desactivarlo | vigente |
 | [174](DECISIONS.md#L6355) | Conservar las barreras fijas al convertir transmisión para color | vigente |
+| [175](DECISIONS.md#L6361) | Consulta costal con descarte geométrico conservador | vigente |

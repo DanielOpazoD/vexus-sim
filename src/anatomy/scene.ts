@@ -13,6 +13,7 @@ import {
   sdDiaphragm,
   sdDiaphragmSlope,
   sdRib,
+  ribDistanceLowerBound,
   smoothMax,
   torsoDepth,
   tubeFaceGradient,
@@ -821,6 +822,7 @@ export class AnatomyScene {
       ribAny = sternumD;
       if (m[2] >= STERNUM.zJunctionMm) ribD = sternumD;
       for (const rib of this.ribs) {
+        if (!rib.sourceCartilage && ribDistanceLowerBound(m, rib) > Math.max(ribAny, ribD) + 0.01) continue;
         const r = sdRib(m, rib, torso, this.spine);
         if (r.d < 0) {
           const tissue = r.cartilage ? Tissue.Cartilage : Tissue.Bone;

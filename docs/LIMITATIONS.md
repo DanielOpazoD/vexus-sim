@@ -560,4 +560,4 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   y magnitudes basales son aproximaciones pendientes de calibración clínica.
   [Mecanismo, referencias y ensayos](physiology/VENOUS_RESERVOIR_COMPLIANCE.md).
 
-El kernel complejo del color es procesamiento espacial estimado sobre autocorrelación emulada; no se han validado resolución ni mezcla de velocidades contra clips independientes. Ganancia/interpolación pueden extender color junto a paredes y no se añade máscara vascular para esconderlo.
+`color-complex-kernel-estimated`: el kernel complejo del color es procesamiento espacial estimado sobre autocorrelación emulada; no se han validado resolución ni mezcla de velocidades contra clips independientes. Ganancia/interpolación pueden extender color junto a paredes y no se añade máscara vascular para esconderlo.

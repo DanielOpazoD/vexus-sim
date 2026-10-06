@@ -242,7 +242,14 @@ const ABDOMINAL_POSES = {
   portalTrunk: { phi: 3.249999999999999, z: -70, yaw: 0.27115711172810575, rock: -0.23037781334123322, tilt: 0.1571697157116251 },
   hepatorenal: { phi: 3.249999999999999, z: -85, yaw: -0.24474601059834725, rock: -0.5334523465036443, tilt: -0.27223069855850024 },
 } as const;
-const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({ ...sp, ...ABDOMINAL_POSES[sp.id] }));
+const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
+  ...sp,
+  ...ABDOMINAL_POSES[sp.id],
+  hint:
+    sp.id === 'portal'
+      ? 'Rama portal derecha dentro del hígado desde lateral. Encuadre de 13 cm y foco a 10 cm; color ±35 cm/s, ganancia 12 dB. Afina entre costillas y ajusta la caja. Para medir VExUS, busca el tronco principal.'
+      : sp.hint,
+}));
 /** Scene-specific presets; legacy tests/torso retain their own poses. */
 export function startPointsFor(torso: Pick<Torso, 'a' | 'b' | 'profile'>): readonly StartPoint[] {
   return torso.profile?.length === 910 ? ABDOMINAL_POINTS : torso.profile ? REFERENCE_POINTS : START_POINTS;

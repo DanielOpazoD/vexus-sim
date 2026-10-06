@@ -3,7 +3,7 @@ import type { EquipmentCommand } from './equipment';
 /** Ajuste estimado de la adquisición intrahepática; se aplica al elegir la tarjeta, no al mover la sonda. */
 export function portalPreset(reference: boolean, f0Doppler: number, abdominalAtlas = false): readonly EquipmentCommand[] {
   return [
-    { type: 'bmode', patch: { depthMm: 150, focusMm: 100, gainDb: -2, dynamicRangeDb: 65 } },
+    { type: 'bmode', patch: { depthMm: abdominalAtlas ? 130 : 150, focusMm: 100, gainDb: -2, dynamicRangeDb: 65 } },
     {
       type: 'color',
       patch: {

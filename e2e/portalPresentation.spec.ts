@@ -148,7 +148,7 @@ for (const reference of [false, true, 'atlas'] as const)
         };
       });
       const tag = JSON.stringify(report);
-      expect(bmode.depthMm).toBe(150);
+      expect(bmode.depthMm).toBe(reference === 'atlas' ? 130 : 150);
       expect(report.settings.gainDb).toBe(12);
       expect(
         report.after.every((f) => f.blood > 100),

@@ -53,13 +53,29 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
           velocityWorst = Math.max(velocityWorst, Math.hypot(...v.map((value, k) => value - gpu.velocity[3 * i + k])));
         }
       }
-      return { atlas: s.scene.hasAbdominalAtlas, interior, matches, fields: [...fields], blood, velocityWorst, mismatches };
+      // Held-out internal segment crack reported in the hepatic image. The old
+      // source classified this node as exterior; both live classifiers must now
+      // see parenchyma, without manufacturing an internal capsule reflection.
+      const seamWorld = s.anatomy.deformation.toWorld([-67.5, -7.5, -34.5], s.sample.resp),
+        seamCpu = s.anatomy.classifyWorld(seamWorld, s.sample),
+        seamGpu = s.gpuQuery(new Float32Array(seamWorld), s.frame, true);
+      const seam = {
+        cpuTissue: seamCpu.tissue,
+        gpuTissue: seamGpu.tissue[0],
+        cpuInterfaceDistance: seamCpu.interfaceDistance,
+        gpuInterfaceDistance: seamGpu.ifd[0],
+      };
+      return { atlas: s.scene.hasAbdominalAtlas, interior, matches, fields: [...fields], blood, velocityWorst, mismatches, seam };
     }, points);
     expect(result.atlas).toBe(true);
     expect(result.interior).toBeGreaterThan(500);
     expect(result.matches, JSON.stringify(result.mismatches)).toBe(result.interior);
     expect(result.fields.length).toBe(11);
     expect(result.velocityWorst).toBeLessThan(0.1);
+    expect(result.seam.cpuTissue).toBe(4);
+    expect(result.seam.gpuTissue).toBe(4);
+    expect(result.seam.cpuInterfaceDistance).toBeGreaterThan(5);
+    expect(result.seam.gpuInterfaceDistance).toBeGreaterThan(5);
     await page.screenshot({ path: info.outputPath('abdomen.png') });
     expect(errors).toEqual([]);
   });

@@ -65,13 +65,16 @@ for (const caseId of ['normal-adult', 'severe-congestion'] as const)
       .first()
       .click();
     await page.locator('#mode-pw').click();
-    await page.evaluate(() => {
-      const t = window.__vexusTest!;
-      t.goToStartPoint('renal');
-      t.setPose({ ...t.sim().pose, tilt: t.sim().pose.tilt - (2 * Math.PI) / 180 });
-      // Gate verified by the paired-acquisition audit, not a synthetic spectral fixture.
-      t.placeGateAt(0.4265880543219286, 48);
-    });
+    expect(
+      await page.evaluate(() => {
+        const t = window.__vexusTest!;
+        t.goToStartPoint('renal');
+        t.setPose({ ...t.sim().pose, tilt: t.sim().pose.tilt - (2 * Math.PI) / 180 });
+        // Search the actual acquired artery after moving the probe caudal to rib 11.
+        // Its 0.5–1.35 mm radius requires the same 0.2 mm interior margin as the paired audit.
+        return t.placeGate(['interlobarArtery1', 'interlobarArtery2', 'interlobarArtery3'], 0.2);
+      }),
+    ).toBe(true);
     await page.getByRole('tab', { name: 'Doppler', exact: true }).click();
     await page
       .getByRole('slider', { name: 'Escala', exact: true })

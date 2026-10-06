@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { bootWithoutErrors } from './support';
+import { bootWithoutErrors, budget } from './support';
 
 async function snapshot(page: Page) {
   return page.evaluate(() => {
@@ -86,7 +86,8 @@ async function expectTransformed(page: Page, before: Awaited<ReturnType<typeof s
 test('captura congelada conserva alineación al invertir, desplazar baseline, redimensionar, retroceder cine y cambiar barrido', async ({
   page,
 }) => {
-  test.setTimeout(180_000);
+  // Keep the 180 s work allowance separate from compilation, as the shared CI budget requires.
+  budget(180_000);
   const errors = await bootWithoutErrors(page, '?e2e=1');
   await page
     .locator('button', { hasText: /Apnea\s*esp/ })
@@ -95,7 +96,7 @@ test('captura congelada conserva alineación al invertir, desplazar baseline, re
   await page.keyboard.press('p');
   expect(
     await page.evaluate(() => {
-      window.__vexusTest!.goToStartPoint('portal');
+      window.__vexusTest!.goToStartPoint('portalTrunk');
       return window.__vexusTest!.placeGate(['pvTrunk']);
     }),
   ).toBe(true);

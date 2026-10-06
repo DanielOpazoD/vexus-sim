@@ -262,7 +262,7 @@ export interface TestHooks {
   /** Lazo cerrado del simulador vivo (decisión 79): PAD, volumen y PEEP pedidos, intervenciones y el caso. */
   circulation: () => { caseId: string; rapMeanMmHg: number; fluidTargetMl: number; peepTargetCmH2O: number; interventions: number };
   /** Coloca la puerta PW sobre uno de los vasos con la técnica del operador; false si no lo ve. */
-  placeGate: (vessels: VesselId[]) => boolean;
+  placeGate: (vessels: VesselId[], minWallMm?: number) => boolean;
   /** Enciende o apaga la composición espacial con el comando del equipo (decisión 58). */
   setCompound: (on: boolean) => void;
   /** Enciende o apaga la armónica tisular con el comando del equipo (decisión 77). */
@@ -854,7 +854,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
         interventions: c.interventions.length,
       };
     },
-    placeGate: (vessels) => {
+    placeGate: (vessels, minWallMm = 1.2) => {
       const sim = getSim();
       const g = bestGateOnVessel(
         sim.anatomy,
@@ -863,7 +863,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
         sim.sample,
         vessels,
         sim.bmode.depthMm - 5,
-        1.2,
+        minWallMm,
         windowWeight(sim),
       );
       if (!g) return false;

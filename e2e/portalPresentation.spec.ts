@@ -5,7 +5,9 @@ import { bootWithoutErrors, budget } from './support';
 for (const reference of [false, true])
   for (const severe of [false, true]) {
     test(`porta: tarjeta real, rojo y sensibilidad, reference=${reference}, severe=${severe}`, async ({ page }, info) => {
-      budget(180_000);
+      // 33 full production renders plus UI/boot: the reference body took >6 min
+      // on SwiftShader. Preserve every frame/assertion; allow 6 min work + BOOT.
+      budget(360_000);
       const errors = await bootWithoutErrors(page, `?e2e=app${reference ? '&reference=1' : ''}`);
       if (severe) await page.selectOption('#case-select', 'severe-congestion');
       await page.locator('.win-card').filter({ hasText: 'Porta · intrahepática' }).click();

@@ -58,11 +58,12 @@ export class AnatomyQuery {
     if (s === this.lastSample && this.lastCaliber) return this.lastCaliber;
     const ivcRefLat = this.scene.vesselById.get('ivcSupra')!.refRadius;
     const ivcLatScale = s.ivc.dLatMm / 2 / ivcRefLat;
+    const supra = s.ivcSupra ?? s.ivc;
     const caliber: VesselCaliber = {
       radiusScale: (id: VesselId) => {
         switch (VESSEL_META[id].caliber) {
           case 'ivc':
-            return ivcLatScale;
+            return id === 'ivcSupra' ? supra.dLatMm / 2 / ivcRefLat : ivcLatScale;
           case 'hepaticVein':
             return s.hvRadiusScale;
           case 'portal':
@@ -72,6 +73,7 @@ export class AnatomyQuery {
         }
       },
       ivcApScale: s.ivc.dApMm / s.ivc.dLatMm,
+      ivcSupraApScale: supra.dApMm / supra.dLatMm,
       diaphragmCaudalMm: s.resp.diaphragmCaudalMm,
     };
     this.lastSample = s;

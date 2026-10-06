@@ -81,13 +81,11 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **Sin cascada torácica de la VCI** (`no-thoracic-waterfall`): la unión cavoauricular transmite
   cualquier caída de la PAD; no existe la meseta de Guyton por colapso de la VCI en la entrada
   torácica. Hallado por fast-check: con hipovolemia (volumen 0,6) y PAD media ≈ 0 la VCI se vacía
-  hacia la aurícula a > 100 mL/s y su velocidad supera 2 m/s (`properties.test.ts`, `it.fails`).
+  hacia la aurícula a > 100 mL/s. La decisión 172 corrige el denominador regional del contraejemplo de velocidad y conserva su cota de 2 m/s como regresión normal, pero no introduce esa meseta de caudal.
   Sí existe el resistor de Starling por debajo de 8 mm y un lumen residual de 3 mm. El diurético del sano (decisión 79)
   llega a ella: con −500 mL (PAD 2,3) la VCI baja a 6 mm en la inspiración y pasa por ella a 2,8 m/s; por eso los
   líquidos no bajan el llenado de 2 mmHg.
-- **La VCI es un solo compartimento abdominal** (`ivc-single-compartment`): su diámetro observado
-  usa la presión del compartimento entero, no la del segmento a 2 cm de la confluencia; la pulsación
-  cardíaca del calibre está amortiguada.
+- **Área regional de cava superior estimada** (`ivc-regional-area-estimated`, 172): la cava abdominal conserva un único compartimento de volumen; la unión/entrada auricular usa una sección propia, dependiente de presión de unión menos pleural y retrasada 0,2 s. Q/A, CPU, GPU y 3D comparten esa elipse. La ley regional y la transición gruesa por el hiato requieren calibración/registro independientes; no existe un volumen torácico adicional ni waterfall completo.
 - **Sin movimiento cardíaco transmitido a hígado/cava** (`no-cardiac-tissue-motion`); la
   respiración es el único movimiento tisular, y el corazón (decisión 85) no late.
 - **Sin bazo** (`no-spleen`): la anatomía visceral izquierda permanece incompleta.
@@ -132,12 +130,8 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   presión de los compartimentos del abdomen y colapsa la VCI, pero ni la resistencia de la vena renal ni el parénquima
   cambian. En el caso de la PIA el Doppler intrarrenal sale continuo y la porta al 25–27 %, sin calibrar frente al
   patrón real de la hipertensión intraabdominal.
-- **La VCI retrohepática se colapsa con la abdominal** (`iah-collapsed-ivc-velocity`): con la PIA por encima de la
-  PAD, el tramo retrohepático, que en el modelo comparte el calibre del compartimento abdominal (`ivc-single-compartment`),
-  se estrecha con él y lleva además el caudal de las suprahepáticas: con PIA 16 y PAD 14, 2,9 m/s con respiración
-  tranquila, 3,4 en apnea inspiratoria y 5,3 tras un diurético de 1 L (con PIA 20, 5,4 m/s sin intervenir). Hallado por
-  la propiedad de las intervenciones (`interventions.test.ts`, que lo afirma en una prueba aparte y solo exige < 8 m/s a
-  esa vena con la PIA); por eso el caso usa PIA 16 y no 20.
+  La decisión 172 retira `iah-collapsed-ivc-velocity`: el pico debido a dividir el flujo combinado por el área abdominal se reproduce como contrafactual, pero la velocidad superior usa su propia sección. No resuelve la cascada torácica ni todas las situaciones de PIA, y no se usa este cambio para validar los confusores clínicos restantes.
+
 - **Captura suprahepática con PPV: protección parcial y baja utilidad con puerta fija**
   (`ppv-hepatic-capture-false-reversal`, identificador histórico): el contraejemplo original ya se rechaza cuando
   la puerta pierde sangre suprahepática durante una ventana FFT completa. La identidad media seguía siendo

@@ -29,7 +29,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'procedural-vessel-shape',
   'no-left-interlobar-vessels',
   'arcuate-no-lumen',
-  'ivc-single-compartment',
+  'ivc-regional-area-estimated',
   'color-complex-kernel-estimated',
   'morison-rim-sliver',
   'ivc-wall-lag-not-in-network',
@@ -81,7 +81,6 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'm-mode-lumen-blooming',
   // confusores de los casos trampa (decisión 82)
   'iah-no-renal-compression',
-  'iah-collapsed-ivc-velocity',
   'ppv-hepatic-capture-false-reversal',
   'ivc-law-steep',
   'cirrhosis-hepatic-not-flattened',

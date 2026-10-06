@@ -6325,3 +6325,7 @@ La métrica material de peritoneo de la decisión 65 conserva su plano renal his
 ## 171. Resolver juntos los caudales de la unión cavoauricular
 
 La presión común Rj·(Qh+Qi) deja de usar caudales atrasados. Un sistema backward Euler 2×2 resuelve las dos ramas; conserva R, L y contornos. El determinante expandido evita restar dos Rj² grandes. Contrato previo en `anatomy/COUPLED_VENOUS_CONTRACT.md`; oráculos independientes de simetría, equilibrio, residual y disipación. No se cambian áreas ni se recorta velocidad; la limitación del área regional de la cava sigue pendiente. Casos y adquisición se comprueban en CI completa.
+
+## 172. Sección regional de la cava superior y Q/A común con su anatomía
+
+La unión/entrada auricular deja de heredar la sección abdominal colapsada por PIA. Una ley regional estimada depende de P_unión−P_pleural y conserva el retraso de pared 0,2 s. Q/A usa su área elíptica exacta; una función común selecciona la elipticidad en CPU, textura GPU y 3D sin añadir uniforms/texturas. La VCI abdominal medida por VExUS conserva área y comportamiento. Curva D=28·sigmoid((Ptm−4)/6), residual 3 mm: ESTIMADA, no calibrada clínicamente. Contrato, contrafactual y límites en `anatomy/REGIONAL_IVC_CONTRACT.md`. No cambia caudal ni fuerza signo/velocidad. Se mantiene la deuda waterfall y la transición gruesa entre tubos; no se declara fidelidad completa toracoabdominal.

@@ -135,7 +135,7 @@ describe('Propiedades del motor fisiológico (fast-check)', () => {
     for (const s of run(p, 3)) for (const v of Object.values(s.velocities)) expect(Math.abs(v)).toBeLessThan(2000);
   });
 
-  it.fails('contraejemplo conocido: aurícula muy rígida con PAD ≈ 0 da velocidades > 2 m/s', () => {
+  it('regresión de aurícula rígida con PAD ≈ 0: todas las velocidades conservan la cota de 2 m/s', () => {
     for (const s of rigidSamples) for (const v of Object.values(s.velocities)) expect(Math.abs(v)).toBeLessThan(2000);
   });
 });

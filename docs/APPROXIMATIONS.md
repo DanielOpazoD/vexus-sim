@@ -97,3 +97,5 @@ La extensión de doce pares costales y el esternón acústico (decisiones 166–
 Doppler color: conserva y filtra R1 complejo con [1 2 1]²/16 antes de estimar fase/potencia. Kernel espacial ESTIMADO, no ensembles IQ adquiridos ni calibración contra equipo clínico. La interpolación explícita mantiene continuidad de fase cerca de Nyquist.
 
 Porta intrahepática: ajuste al seleccionar tarjeta estimado para estos adultos: B 150 mm/foco 100 mm/−2 dB/RD65; caja 70–125 mm y anchura 0,42 rad, centro angular dependiente del cuerpo; color ±35 cm/s, +12 dB, filtro 60 Hz. No deriva de máquina clínica; permanece editable y no se reaplica al mover sonda manualmente. La paleta positiva es roja y la negativa azul; el signo procede del haz, no del nombre del vaso.
+
+Cava superior (172): ley regional D=28·sigmoid((P_unión−P_pleural−4)/6) mm, residual 3 mm y área de pared con τ=0,2 s. ESTIMADA para el adulto sintético; requiere validación independiente de diámetros/velocidades y registro de la transición por el hiato. El volumen abdominal y las ondas de la red permanecen iguales.

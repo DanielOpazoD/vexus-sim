@@ -2,7 +2,7 @@ import { BOWEL_FIELD_REACH_MM, BOWEL_WALL_MM, bowelQuery, bowelGasSdf, bowelRadi
 import { referenceBody } from './referenceBody';
 import { smoothstep, scale, type Vec3 } from '../core/vec3';
 import type { PatientState } from '../physiology/patientState';
-import { VESSEL_META, type VesselAreas, type VesselId } from '../physiology/vessels';
+import { type VesselAreas, type VesselId } from '../physiology/vessels';
 import {
   diaphragmHeight,
   orthonormalBasis,
@@ -860,7 +860,7 @@ export class AnatomyScene {
       if (Math.hypot(m[0] - b.center[0], m[1] - b.center[1], m[2] - b.center[2]) > b.r) continue;
       const def = this.vessels[i];
       const scale = caliber.radiusScale(def.id);
-      const apScale = VESSEL_META[def.id].system === 'ivc' ? caliber.ivcApScale : def.tube.apScale;
+      const apScale = vesselApScale(def.id, def.tube.apScale, caliber);
       const tube = apScale === def.tube.apScale ? def.tube : { ...def.tube, apScale };
       const hit = tubeQuery(m, tube, scale);
       if (hit.d < wallThicknessMm(def, hit.r) && (!bestVessel || hit.d < bestVessel.hit.d)) bestVessel = { def, hit, tube, scale };
@@ -1088,6 +1088,7 @@ export interface VesselCaliber {
   radiusScale(id: VesselId): number;
   /** Semieje AP / semieje lateral de la VCI. */
   ivcApScale: number;
+  ivcSupraApScale?: number;
   /** Descenso caudal del diafragma en este instante (mm, 0 en espiración): baja la cortina pulmonar. */
   diaphragmCaudalMm: number;
 }
@@ -1100,3 +1101,9 @@ export const BASELINE_CALIBER: VesselCaliber = {
 
 /** Cortina pulmonar: módulo de órgano `organs/lungCurtain` (se reexporta por compatibilidad). */
 export { LUNG_CURTAIN } from './organs/lungCurtain';
+
+/** Shared per-segment ellipse for CPU classification, GPU packing and navigator meshes. */
+export function vesselApScale(id: VesselId, baseAp: number, caliber: VesselCaliber): number {
+  if (id === 'ivcSupra') return caliber.ivcSupraApScale ?? caliber.ivcApScale;
+  return id === 'ivcInfra' ? caliber.ivcApScale : baseAp;
+}

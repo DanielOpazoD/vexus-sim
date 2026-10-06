@@ -322,19 +322,20 @@ describe('Estabilidad del lazo en los límites de las intervenciones', () => {
     );
   });
 
-  // Limitación `iah-collapsed-ivc-velocity` (decisión 82), hallada por la propiedad de arriba: con la presión
-  // intraabdominal por encima de la PAD la VCI abdominal se colapsa y, como es un solo compartimento
-  // (`ivc-single-compartment`), su tramo retrohepático se estrecha con ella y lleva además el caudal de las
-  // suprahepáticas: 2,9 m/s con respiración tranquila, 3,4 en apnea inspiratoria y 5,3 tras un diurético de 1 L. La prueba
-  // afirma la limitación (y no un `it.fails`, que pasaría con cualquier error): cuando el tramo retrohepático tenga su
-  // calibre propio fallará y habrá que retirarla, aquí y en docs/LIMITATIONS.md.
-  it('limitación conocida: con la presión intraabdominal alta y un diurético la VCI retrohepática supera 3 m/s', () => {
+  // Regression for the previously published high-IAP/diuresis counterexample.
+  // No velocity clipping: the upper segment now uses its own rendered section (172).
+  it('PIA alta con diuresis: la cava superior conserva Q/A regional sin el pico artificial de 3–8 m/s', () => {
     const e = engineFor(ABDOMINAL_HYPERTENSION);
     runTo(e, 1);
     expect(e.intervene({ kind: 'diuresis', volumeMl: 1000 })).not.toBeNull();
     let v = 0;
-    while (e.clock.t < 61) v = Math.max(v, Math.abs(e.step().velocities.ivcSupra));
-    expect(v).toBeGreaterThan(3000);
-    expect(v).toBeLessThan(8000); // la cota de cordura de la propiedad
+    while (e.clock.t < 61) {
+      const s = e.step();
+      v = Math.max(v, Math.abs(s.velocities.ivcSupra));
+      const area = (Math.PI * s.ivcSupra!.dApMm * s.ivcSupra!.dLatMm) / 4;
+      expect((s.velocities.ivcSupra * area) / 1000).toBeCloseTo(s.qIvcToRa + s.qHepaticVein, 8);
+    }
+    expect(v).toBeGreaterThan(100);
+    expect(v).toBeLessThan(2000);
   });
 });

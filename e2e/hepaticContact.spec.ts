@@ -46,7 +46,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
           const c = s.anatomy.classifyWorld(p, a.sample);
           world.push(...p);
           cpu.push(c.tissue);
-          points.push({ m, dz, tissue: c.tissue, vessel: c.vessel });
+          points.push({ m, dz, tissue: Number(c.tissue), vessel: c.vessel });
         }
       }
       const gpu = s.gpuQuery(new Float32Array(world), a.frame, true, { normals: true });

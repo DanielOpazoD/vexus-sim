@@ -90,8 +90,8 @@ it('apposes the registered superior liver without a virtual fat layer at indepen
         n = Math.ceil(Math.hypot(...b.map((x, k) => x - a[k])));
       for (let k = 0; k <= n; k++) {
         const p = a.map((x, i) => x + ((b[i] - x) * k) / n) as [number, number, number];
-        expect(abdominalAtlasSdf(p, 4) <= 0 || tubeQuery(p, cava).d < 0, `${id} ${p}`).toBe(true);
-        expect(abdominalAtlasSdf(p, 1), `${id} ${p}`).toBeGreaterThanOrEqual(0);
+        expect(abdominalAtlasSdf(p, 4) <= 0 || tubeQuery(p, cava).d < 0, `${id} ${p.join(',')}`).toBe(true);
+        expect(abdominalAtlasSdf(p, 1), `${id} ${p.join(',')}`).toBeGreaterThanOrEqual(0);
       }
     }
   }

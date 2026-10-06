@@ -1,3 +1,4 @@
+import { segmentGasKind } from './segmentTag';
 import { BOWEL_NODES, BOWEL_BOUNDS, BOWEL_GROUPS, BOWEL_ARC } from '../anatomy/organs/bowel';
 import { CARTILAGE_ROWS } from '../anatomy/referenceCartilageData';
 import { vesselApScale, type AnatomyScene, type VesselCaliber } from '../anatomy/scene';
@@ -297,8 +298,8 @@ export interface TransmissionRead {
   look: number;
   theta: number;
   prefixDb?: Float32Array;
-  /** Look-zero frequency-independent prefix (bone entry/gas), decision 174. */
-  fixedDb?: Float32Array;
+  /** Look-zero total round-trip loss at Doppler frequency, decision 176. */
+  dopplerDb?: Float32Array;
   sGas?: Float32Array;
 }
 
@@ -407,6 +408,7 @@ export class UltrasoundRenderer {
   private tubeCountTotal = 0;
   /** Tablas por tejido de 4 en 4 (`TISSUE_VEC4` vec4; el relleno tras el último tejido queda a 0). */
   private alpha = new Float32Array(TISSUE_VEC4 * 4);
+  private dopplerRatio = new Float32Array(TISSUE_VEC4 * 4);
   private back = new Float32Array(TISSUE_VEC4 * 4);
   private clump = new Float32Array(TISSUE_VEC4 * 4);
   private flags = new Float32Array(TISSUE_VEC4 * 4);
@@ -703,6 +705,8 @@ export class UltrasoundRenderer {
     for (let i = 0; i < TISSUE_COUNT; i++) {
       // Frecuencia efectiva de penetración del perfil (banda baja por atenuación)
       this.alpha[i] = attenuationDbPerCm(i, this.profile.bEffectiveMHz);
+      const alphaD = attenuationDbPerCm(i, this.profile.dopplerEffectiveMHz);
+      this.dopplerRatio[i] = this.alpha[i] > 0 ? alphaD / this.alpha[i] : 1;
       this.back[i] = TISSUES[i].backscatter;
       this.clump[i] = TISSUES[i].speckleClump ?? 0;
       this.flags[i] = TISSUES[i].gas ? 1 : TISSUES[i].bone ? 2 : 0;
@@ -1223,6 +1227,7 @@ export class UltrasoundRenderer {
     p.use();
     this.setBeamUniforms(p, inputs);
     p.f('uCoarseN', COARSE_DEPTH);
+    p.v4v('uTissueDopplerRatio4', this.dopplerRatio);
     p.tex('uSeg', 0, this.tSeg.textures[0]);
     p.tex('uHits0', 1, this.tHits.textures[0]);
     p.tex('uHits1', 2, this.tHits.textures[1]);
@@ -1445,8 +1450,7 @@ export class UltrasoundRenderer {
     this.setSceneUniforms(this.pColor, inputs);
     this.setBeamUniforms(this.pColor, inputs);
     // el color usa la transmisión de un solo rayo, la misma que el PW (decisión 50)
-    this.pColor.tex('uTrans0', 0, this.tPre.textures[0]);
-    this.pColor.tex('uTransFixed', 2, this.tPre.textures[1]);
+    this.pColor.tex('uTransDoppler', 2, this.tPre.textures[1]);
     this.pColor.tex('uCoupling', 1, this.couplingTex);
     this.pColor.v4('uBox', c.theta0, c.theta1, c.r0, c.r1);
     this.pColor.v2(
@@ -1465,7 +1469,6 @@ export class UltrasoundRenderer {
     this.pColor.f('uF0', tr.f0Doppler);
     this.pColor.f('uWallHz', c.wallFilterHz);
     this.pColor.f('uColorGain', COLOR_GAIN_REF * Math.pow(10, c.gainDb / 20));
-    this.pColor.f('uDopplerFreqRatio', this.profile.dopplerEffectiveMHz / this.profile.bEffectiveMHz);
     this.pColor.f('uEnsemble', c.ensemble);
     this.pColor.v3('uProbeVel', inputs.probeVelocity);
     this.pColor.f('uFrame', this.frameCount);
@@ -1851,17 +1854,17 @@ export class UltrasoundRenderer {
       const mirrorHit = new Float32Array(n);
       const specular = new Float32Array(n);
       const prefixDb = new Float32Array(n);
-      const fixedDb = new Float32Array(n);
+      const dopplerDb = new Float32Array(n);
       for (let i = 0; i < n; i++) {
         single[i] = a2[i * 4];
         prefixDb[i] = pre[i * 4];
-        fixedDb[i] = aux[i * 4 + 3];
+        dopplerDb[i] = aux[i * 4 + 3];
         aperture[i] = a0[i * 4];
         mirrorHit[i] = a0[i * 4 + 3];
         specular[i] = a2[i * 4 + 3];
       }
       const own = this.look === null || this.look.index === 0;
-      return { lines: W, samples: H, single, aperture, mirrorHit, look: 0, theta: 0, prefixDb, fixedDb, ...(own ? { specular } : {}) };
+      return { lines: W, samples: H, single, aperture, mirrorHit, look: 0, theta: 0, prefixDb, dopplerDb, ...(own ? { specular } : {}) };
     }
     const last = this.look;
     if (last === null || last.index !== look)
@@ -1922,7 +1925,7 @@ export class UltrasoundRenderer {
         grid.air[i] = seg[t] < 0 ? 1 : 0;
         grid.excess[i] = seg[t + 1];
         grid.bone[i] = seg[t + 2] > 0.5 ? 1 : 0;
-        grid.gas[i] = Math.round(seg[t + 3]);
+        grid.gas[i] = segmentGasKind(Math.round(seg[t + 3]));
       }
     for (let l = 0; l < W; l++) {
       grid.mirrorSeg[l] = Math.round(h0[l * 4]);

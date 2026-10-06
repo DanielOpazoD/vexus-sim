@@ -1,0 +1,13 @@
+# Atenuación Doppler por tejido y segmento
+
+Defecto antes de implementar: la decisión 174 conserva hueso/gas pero escala toda la absorción restante como b=1. Piel, grasa, músculo y sangre tienen exponentes distintos en la tabla vigente. Dos rayos con igual pérdida B pero distinta composición no deben tener igual pérdida Doppler al cambiar frecuencia.
+
+Mecanismo: codificar identidad de tejido junto al tipo de gas en el canal .w existente de A1 (gas + 4·tejido, entero exacto float32). Decodificar todos sus consumidores sin cambiar hueso .z, pérdida B .x ni camino .y. A2 integra pérdida Doppler por segmento con α_t(fD)/α_t(fB), mantiene gas/espejo y entrada ósea fijos; su .w auxiliar contiene pérdida Doppler total. Color la lee directamente. Nueve vec4 (33 tejidos) de ratios por programa A2, sin texturas nuevas; retirar sampler B y conversión global de color. No nueva frecuencia, coeficiente tisular, suelo, máscara ni ganancia.
+
+Predicción: mismo B, apertura, espejo, refracción y tejido; transmisión color coincide con integración directa a fD en capas de exponente no unitario, con barreras físicas idénticas. PW y color comparten ley α_t(f), conservan distintos muestreos y apertura. El banco numérico no demuestra calibración clínica de coeficientes ni perfección de sombras.
+
+Invariantes/refutación: bijección de etiquetas para todos los tejidos/tipos de gas, gas decodificado idéntico en camino dirigido y lectura QA, hueso separado intacto. Oráculo independiente por capa con α1·f^b, integración CPU de transmisión PW, prefijo GPU real en cuatro ventanas y controles gas/hueso/mismo B. Error >0,01 dB en prefijos no ambiguos, diferencia en B/interfaz o color fuera de sangre refuta; no aflojar umbrales ni ignorar errores por reintento. Comprobar límites WebGL portables, presets portal normal/grave y alias/inversión/filtro/contacto.
+
+Alcance: corrige b=1 de 174; conserva rejilla gruesa, aproximaciones de absorción/reflector, estimador color emulado, transiciones vasculares y deuda waterfall. No integración de corazón EchoTwin ni revisión clínica humana. Medir build y coste; mantener todos los chunks y Workers incluidos.
+
+Resultado antes de fusionar: 85 pruebas focales verdes, guardas de uniforms y samplers intactas. Oráculo GPU de todos los tejidos y cuatro ventanas, seis pruebas nativas verdes; cuatro imágenes portal normal/grave en dos cuerpos, dos oráculos complejos adicionales verdes. Build 1031,3 KiB ≤1032 sin aumento adicional. Los primeros fallos de expectativas de hash/canal/grafo fueron registrados y se sincronizaron con el contrato de A2, conservando hashes de B/A y todos sus controles numéricos.

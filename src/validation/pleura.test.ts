@@ -913,7 +913,7 @@ describe('A0: la pleura parietal es su propio tipo (3) y el espejo del diafragma
   it('A1 marca el pulmón de la cortina con 3 y los gemelos de A2 no lo toman por un impacto de gas', () => {
     expect(FRAG_TRANS_SEGMENTS).toContain('float curtainLast = floor(h2.w / 4.0) - 1.0;');
     expect(FRAG_TRANS_SEGMENTS).toContain(`float lung = !reflected && float(s) <= curtainLast ? ${CURTAIN_GAS_KIND.toFixed(1)} : 1.0;`);
-    expect(STEERED_PREFIX_GLSL).toContain('if (g.w > 0.5 && g.w < 2.5 && sGas < 0.0) { sGas = crossing ? sMirror : sRow; gasKind = g.w; }');
+    expect(STEERED_PREFIX_GLSL).toContain('if (gas > 0.5 && gas < 2.5 && sGas < 0.0) { sGas = crossing ? sMirror : sRow; gasKind = gas; }');
     // una línea con 3 segmentos de cortina bajo la pared y gas intestinal más hondo
     const grid = emptyGrid();
     for (const s of [24, 25, 26]) {

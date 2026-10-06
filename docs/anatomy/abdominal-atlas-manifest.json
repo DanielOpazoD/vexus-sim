@@ -8,9 +8,9 @@
   "pitchMm": 1.5,
   "textureDimensions": [338, 217, 280],
   "rawBytes": 82147520,
-  "gzipBytes": 5010075,
-  "sha256Gzip": "732fb1996375e38cba3c0f1772c9c20da2420d030fc830996576df4de488646d",
-  "sha256Raw": "3cab13acf24b5f9cca4350b91a040308431af7b9d89d5f3dc11677884ccf3ce6",
+  "gzipBytes": 5035715,
+  "sha256Gzip": "ef56a03cd8446d67aa9c88039d6e7f8d71d1d6563f3262dd4d0e0e62703f8b72",
+  "sha256Raw": "1a963ba64c23ffec44da2cdf1cf1ded62e35aca8602ba5d9a5c14070e0796958",
   "fields": [
     {
       "name": "pancreas",
@@ -4310,5 +4310,18 @@
       [107, 77, 63],
       [107, 80, 62]
     ]
+  },
+  "hepaticDiaphragmRegistration": {
+    "method": "superior crossing of the SAME hepatic +2.5 mm SDF level; muscle height smoothing sigma 0.75 mm; bounded superior/normal/border transition",
+    "sourceAtlasSha256": "3cab13acf24b5f9cca4350b91a040308431af7b9d89d5f3dc11677884ccf3ce6",
+    "originMm": [-124.5, -87.0],
+    "dimensions": [154, 120],
+    "offset": [178, 97, 258],
+    "pitchMm": 1.5,
+    "heightChannel": 0,
+    "supportChannel": 1,
+    "organFieldsBitwiseUnchanged": true,
+    "clinicalValidation": false,
+    "sourceDiaphragmIntegrated": false
   }
 }

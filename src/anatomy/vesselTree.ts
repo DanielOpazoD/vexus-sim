@@ -614,6 +614,8 @@ export function buildHepaticBranches(
   seed = 7,
   /** Holgura para la pared de la rama (mm, positiva dentro): por defecto −liverSdf; la escena añade las fisuras. */
   clearance: (m: Vec3) => number = (m) => -liverSdf(m),
+  /** Estimated peripheral branches must fit the shared scene capacity. */
+  branchCapacity = Infinity,
 ): { branches: VesselDef[]; parents: VesselDef[] } {
   const rng = new SeededRandom(seed);
   const out: VesselDef[] = [];
@@ -677,8 +679,9 @@ export function buildHepaticBranches(
     depth: number,
     peripheralFirst: boolean,
   ): void => {
-    if (depth > 2 || liverSdf(origin) > -2) return; // el origen también debe estar en el parénquima
+    if (depth > 2 || out.length >= branchCapacity || liverSdf(origin) > -2) return; // el origen también debe estar en el parénquima
     for (let k = 0; k < 2; k++) {
+      if (out.length >= branchCapacity) return;
       // eje perpendicular aleatorio; ángulo de bifurcación alterno, y si esa dirección
       // sale del hígado se prueba la simétrica (el árbol real se acomoda a la cápsula)
       const rnd: Vec3 = normalize([rng.float() - 0.5, rng.float() - 0.5, rng.float() - 0.5]);

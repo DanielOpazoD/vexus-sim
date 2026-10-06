@@ -96,7 +96,7 @@ La extensión de doce pares costales y el esternón acústico (decisiones 166–
 
 Doppler color: conserva y filtra R1 complejo con [1 2 1]²/16 antes de estimar fase/potencia. Kernel espacial ESTIMADO, no ensembles IQ adquiridos ni calibración contra equipo clínico. La interpolación explícita mantiene continuidad de fase cerca de Nyquist.
 
-Porta intrahepática: ajuste al seleccionar tarjeta estimado para estos adultos: B 150 mm/foco 100 mm/−2 dB/RD65; caja 70–125 mm y anchura 0,42 rad, centro angular dependiente del cuerpo; color ±35 cm/s, +12 dB, filtro 60 Hz. No deriva de máquina clínica; permanece editable y no se reaplica al mover sonda manualmente. La paleta positiva es roja y la negativa azul; el signo procede del haz, no del nombre del vaso.
+Porta intrahepática: ajuste al seleccionar tarjeta estimado para estos adultos: B 130 mm atlas (150 mm legacy/reference)/foco 100 mm/−2 dB/RD65; caja 70–125 mm y anchura 0,42 rad, centro angular dependiente del cuerpo; color ±35 cm/s, +12 dB, filtro 60 Hz. No deriva de máquina clínica; permanece editable y no se reaplica al mover sonda manualmente. La paleta positiva es roja y la negativa azul; el signo procede del haz, no del nombre del vaso.
 
 Cava superior (172): ley regional D=28·sigmoid((P_unión−P_pleural−4)/6) mm, residual 3 mm y área de pared con τ=0,2 s. ESTIMADA para el adulto sintético; requiere validación independiente de diámetros/velocidades y registro de la transición por el hiato. El volumen abdominal y las ondas de la red permanecen iguales.
 
@@ -111,3 +111,9 @@ Son estimados el bazo (~100 ml en este candidato), propiedades acústicas de pá
 Los centros/ejes exteriores renales se registran en la fuente; su seno, pirámides y compartimentos internos conservan arquitectura estimada. Psoas/discos y asas móviles se conforman fuera de órganos/apoyos y se documenta la diferencia respecto de la superficie original.
 
 Los vasos principales usan secciones fuente cuando existen. Ramas y conectores no segmentados y sus repartos de flujo son extrapolaciones; dos conectores esplénicos se ajustaron 10 mm hacia posterior para evitar lumen digestivo. La nueva geometría no constituye calibración de un árbol hemodinámico completo. Los detalles, datos fuente, reproducción y límites de hardware están en `docs/anatomy/ABDOMINAL_ATLAS.md`.
+
+## Contacto superior hepático y vasos proximales (179)
+
+La cúpula atlas usa una tabla de altura/soporte derivada de la superficie hepática, y cerca de ella la cáscara SDF de 2,5 mm. La transición entre 6 y 12 mm por debajo de la superficie preserva el dominio superior. Los campos de órganos permanecen idénticos; la malla 3D resuelve el mismo cero acústico. No se integra el activo FJ3131 ni se simula separación patológica por ascitis/derrame con esta corrección normal.
+
+Suprahepáticas: fuentes FJ2416/FJ2415 para las secciones proximales, estimación explícita de sus interpolaciones, vena media y tributarias. Se recalibran dos poses para los nuevos ejes. La marca azul superior es rígida al transductor y visible hacia el operador; la convención ecográfica conserva marca craneal en longitudinal y derecha del paciente en transversal. Porta principal PW mantiene encuadre propio de 160 mm y foco 130 mm tras la vista intrahepática.

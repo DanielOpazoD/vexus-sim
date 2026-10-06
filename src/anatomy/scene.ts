@@ -1,5 +1,6 @@
 import { BOWEL_FIELD_REACH_MM, BOWEL_WALL_MM, bowelQuery, bowelGasSdf, bowelRadii } from './organs/bowel';
 import { referenceBody, abdominalBody } from './referenceBody';
+import { SCENE_TUBE_CAPACITY } from './tubeCapacity';
 import { abdominalAtlas } from './abdominalAtlas';
 import { abdomenQuery } from './organs/abdomen';
 import { smoothstep, scale, type Vec3 } from '../core/vec3';
@@ -311,6 +312,7 @@ export class AnatomyScene {
       left: { kind: 'dome', x0: 70, y0: -5, rx: 70, ry: 85, apex: 25 },
       edgeZ: -50,
       edgeRise: 50,
+      hepaticContact: this.hasAbdominalAtlas,
     };
     // Columna: cuerpo vertebral de 36 mm justo por detrás de cava y aorta (su cara
     // posterior queda ≈ 5 cm de la piel dorsal, como en un adulto); arco posterior con
@@ -433,6 +435,7 @@ export class AnatomyScene {
       (m) => -this.liverInteriorMargin(m),
       7,
       (m) => Math.min(this.liverInteriorMargin(m), this.ligamentumVenosumSdf(m)),
+      this.hasAbdominalAtlas ? SCENE_TUBE_CAPACITY - this.vessels.length - tree.ducts.length : Infinity,
     );
     // la forma orgánica de las suprahepáticas y la porta (decisión 90): su semilla es su índice en la lista de la GPU (el H2.w
     // de la textura de escena, la del ruido de su radio) y su clase, la de su sistema

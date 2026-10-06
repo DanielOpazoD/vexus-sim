@@ -234,10 +234,12 @@ const REFERENCE_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
 const ABDOMINAL_POSES = {
   subxiphoid: { phi: 1.65, z: -15, yaw: 0.02476, rock: 0.591491, tilt: -0.055956 },
   epigastric: { phi: 1.55, z: -80, yaw: -1.572947056125525, rock: 0.1493615263787931, tilt: 0.13328531500949725 },
-  intercostal: { phi: 2.7499999999999996, z: -50, yaw: 0.8786090954349242, rock: 0.15797256183069175, tilt: -0.41578524819208573 },
-  subcostal: { phi: 2.05, z: -75, yaw: 0.5323032197489349, rock: 0.5642639659950537, tilt: -0.20132686757042972 },
+  intercostal: { phi: 2.6999999999999997, z: -35, yaw: 1.4289984516346848, rock: 0.010411158991924034, tilt: -0.15439831127567974 },
+  subcostal: { phi: 2.05, z: -85, yaw: 0.49441274450062855, rock: 0.40920976132648457, tilt: -0.018276745206425554 },
   flank: { phi: 3.099999999999999, z: -70, yaw: 0.1767952406260464, rock: 0.5707775613505776, tilt: -0.04687503959831865 },
-  portal: { phi: 3.2499999999999996, z: -65, yaw: 2.8332047341730324, rock: 0.2122189996791038, tilt: -0.0937442490667998 },
+  // Equivalent acoustic plane with the marked end cranial: yaw − π, rock/tilt sign reversed.
+  // The former pose pointed the marker caudally and mirrored the standard longitudinal orientation.
+  portal: { phi: 3.2499999999999996, z: -65, yaw: -0.3083879194167607, rock: -0.2122189996791038, tilt: 0.0937442490667998 },
   renal: { phi: 3.15, z: -175, yaw: -0.04682166646295555, rock: 0.37638199977635656, tilt: -0.3330150669689693 },
   portalTrunk: { phi: 3.249999999999999, z: -70, yaw: 0.27115711172810575, rock: -0.23037781334123322, tilt: 0.1571697157116251 },
   hepatorenal: { phi: 3.249999999999999, z: -85, yaw: -0.24474601059834725, rock: -0.5334523465036443, tilt: -0.27223069855850024 },
@@ -247,8 +249,10 @@ const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
   ...ABDOMINAL_POSES[sp.id],
   hint:
     sp.id === 'portal'
-      ? 'Rama portal derecha dentro del hígado desde lateral. Encuadre de 13 cm y foco a 10 cm; color ±35 cm/s, ganancia 12 dB. Afina entre costillas y ajusta la caja. Para medir VExUS, busca el tronco principal.'
-      : sp.hint,
+      ? 'Rama portal derecha dentro del hígado desde lateral, marcador craneal. Encuadre de 13 cm y foco a 10 cm; color ±35 cm/s, ganancia 12 dB. Afina entre costillas y ajusta la caja. Para medir VExUS, busca el tronco principal.'
+      : sp.id === 'portalTrunk'
+        ? 'Tronco portal principal para PW, marcador craneal. Encuadre de 16 cm y foco a 13 cm; afina en el hilio y coloca la puerta en el tronco, sin sustituirlo por una rama intrahepática.'
+        : sp.hint,
 }));
 /** Scene-specific presets; legacy tests/torso retain their own poses. */
 export function startPointsFor(torso: Pick<Torso, 'a' | 'b' | 'profile'>): readonly StartPoint[] {

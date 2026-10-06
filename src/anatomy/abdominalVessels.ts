@@ -29,6 +29,58 @@ const AXES: Partial<Record<VesselId, readonly Vec3[]>> = {
     [-15.1, -5.6, 25],
     [-15, -5, 35],
   ],
+  // Source section centroids: FJ2416 right and FJ2415 left hepatic veins,
+  // same LAS registration as the liver. Selected proximal courses and their
+  // estimated tributaries/junction are documented in docs/anatomy; no imported flow.
+  hvRight: [
+    [-70, -11.065, -25.4276],
+    [-55, -16.0815, -21.5546],
+    [-40, -17.526, -14.777],
+    [-30, -14.5257, -13.3149],
+    [-23, -10.5925, -14.626],
+    [-15.1, -5.7, -14],
+  ],
+  hvRightAnterior: [
+    [-95, 16, -35],
+    [-83, 3.6714, -24.3448],
+    [-70, -11.065, -25.4276],
+  ],
+  hvRightPosterior: [
+    [-100, -30, -35],
+    [-80, -29.9226, -10],
+    [-55, -16.0815, -21.5546],
+  ],
+  hvMiddle: [
+    [-40, 36, -58],
+    [-30, 29, -45],
+    [-25, 19, -30],
+    [-19, 10, -14],
+    [-12, 4, -6],
+    [-8, 1.2108, -3.757],
+  ],
+  hvMiddleTributary: [
+    [-70, 35, -65],
+    [-50, 25, -57],
+    [-25, 19, -30],
+  ],
+  hvLeft: [
+    // Distal source sections at x=35/45 intersect the independently registered
+    // stomach/liver envelope; they remain rejected evidence, not stitched into runtime.
+    [25, 19.641, -21.0818],
+    [15, 18.2851, -17.7846],
+    [5, 8.0443, -10.272],
+    [-3, 2.0803, -5.2795],
+    [-8, 1.2108, -3.757],
+  ],
+  hvLeftTributary: [
+    [28, 55, -48],
+    [20, 37, -28],
+    [15, 18.2851, -17.7846],
+  ],
+  hvCommonTrunk: [
+    [-8, 1.2108, -3.757],
+    [-15.1, -5.7, -3],
+  ],
   pvTrunk: [
     [-10.4, 6.5, -100],
     [-11.9, 8, -90],

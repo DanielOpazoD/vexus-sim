@@ -1,3 +1,4 @@
+import { SCENE_TUBE_CAPACITY } from '../tubeCapacity';
 import { RESPIRATORY_INVERSE_STEPS } from '../deformation';
 import { BOWEL_TEXELS } from '../organs/bowel';
 import { CARTILAGE_GLSL } from './referenceCartilage.glsl';
@@ -42,7 +43,7 @@ import { ORGAN_GLSL } from '../organs';
 import { DIAPHRAGM_AXIS_CORE, DIAPHRAGM_JOIN_MM, RIB_ANTERIOR_END, SPINE_SHAPE, TUBE_SHAPE } from '../primitives';
 import { MAX_RIBS, SCENE_UNIFORMS_GLSL } from './sceneUniforms';
 
-export const MAX_TUBES = 128;
+export const MAX_TUBES = SCENE_TUBE_CAPACITY;
 export const MAX_NODES = 640;
 /** Texels de la cabecera de cada tubo (H0–H4; H4, la forma orgánica, desde la decisión 90). */
 export const TUBE_HEADER_TEXELS = 5;
@@ -211,6 +212,8 @@ float domeLift(float x, float y, vec4 dome) {
 
 // Altura del diafragma: inserción costal (0 en el xifoides, −50 en flancos y espalda) +
 // la hemicúpula más alta (misma construcción que primitives.diaphragmHeight)
+vec2 hepaticDomeValue(vec2 p);
+float abdominalAtlasSdf(vec3 p, int k);
 float domeHeight(float x, float y) {
   vec2 uv = vec2(x / uTorso.x, (y - uTorsoY) / uTorso.y);
   float rho = length(uv);
@@ -220,7 +223,9 @@ float domeHeight(float x, float y) {
   float k = ${DIAPHRAGM_JOIN_MM.toFixed(3)} * smoothstep(0.0, ${(2 * DIAPHRAGM_JOIN_MM).toFixed(3)}, 0.5 * (zr + zl) - edge);
   // Branchless: esta función se expande dentro del clasificador y sus gradientes.
   float h = max(k - abs(zr - zl), 0.0) / max(k, 1e-20);
-  return max(zr, zl) + h * h * k * 0.25;
+  float height = max(zr, zl) + h * h * k * 0.25;
+  vec2 contact = hepaticDomeValue(vec2(x,y));
+  return mix(height,contact.x,contact.y);
 }
 
 // Distancia con signo al diafragma (negativa en el tórax) y normal hacia el abdomen.
@@ -231,7 +236,13 @@ float sdDome(vec3 p, out vec3 n) {
   float gy = (domeHeight(p.x, p.y + h) - domeHeight(p.x, p.y - h)) / (2.0 * h);
   float slope = sqrt(1.0 + gx * gx + gy * gy);
   n = normalize(vec3(gx, gy, -1.0)); // apunta hacia abajo (hacia el hígado)
-  return (zd - p.z) / slope;
+  float tangentDistance = (zd - p.z) / slope;
+  if(uAbdominalAtlasEnabled==0)return tangentDistance;
+  float contact=hepaticDomeValue(p.xy).y*(1.0-smoothstep(6.0,12.0,zd-p.z));
+  if(contact<=0.0)return tangentDistance;
+  // faceGradient evaluates the actual shell for interface echoes. Keep the
+  // finite height normal here, including above the source brick (zero gradient).
+  return mix(tangentDistance,DIAPHRAGM_MM-abdominalAtlasSdf(p,4),contact);
 }
 
 float sdEllipsoid(vec3 p, vec3 c, vec3 r, float taperX, out vec3 n) {

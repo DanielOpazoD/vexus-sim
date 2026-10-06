@@ -6,7 +6,7 @@ import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js';
 import { kidneyLocal, kidneyOuterSdf, type Kidney } from '../../anatomy/organs/kidney';
 import { gallbladderSdf } from '../../anatomy/organs/gallbladder';
 import { domeFloor, heartOuterSdf } from '../../anatomy/organs/heart';
-import { diaphragmHeight } from '../../anatomy/primitives';
+import { diaphragmSurfaceZ } from '../../anatomy/primitives';
 import { diaphragmRim } from '../../anatomy/diaphragmRim';
 import { COUINAUD_LABEL, couinaudPlanes, couinaudSegment, type CouinaudSegment } from '../../anatomy/couinaud';
 import type { AnatomyScene } from '../../anatomy/scene';
@@ -181,8 +181,8 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
   }
   // Diafragma: superficie paramétrica sobre toda la sección del tronco (misma
   // diaphragmHeight que el clasificador: dos hemicúpulas sobre la inserción costal)
-  const nR = 20;
-  const nA = 48;
+  const nR = a.hasAbdominalAtlas ? 96 : 20;
+  const nA = a.hasAbdominalAtlas ? 192 : 48;
   const pos: number[] = [];
   const idx: number[] = [];
   const wall = a.wallThickness();
@@ -193,7 +193,7 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
     for (let i = 0; i <= nA; i++) {
       const x = rim[i][0] * rho;
       const y = cy + (rim[i][1] - cy) * rho;
-      pos.push(x * CM, y * CM, diaphragmHeight(x, y, a.diaphragm, a.torso) * CM);
+      pos.push(x * CM, y * CM, diaphragmSurfaceZ(x, y, a.diaphragm, a.torso) * CM);
     }
   }
   for (let j = 0; j < nR; j++)

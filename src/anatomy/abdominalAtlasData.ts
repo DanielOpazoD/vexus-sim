@@ -2,9 +2,9 @@
 export const ABDOMINAL_ATLAS = {
   textureDimensions: [338, 217, 280],
   rawBytes: 82147520,
-  gzipBytes: 5010075,
-  sha256Gzip: '732fb1996375e38cba3c0f1772c9c20da2420d030fc830996576df4de488646d',
-  sha256Raw: '3cab13acf24b5f9cca4350b91a040308431af7b9d89d5f3dc11677884ccf3ce6',
+  gzipBytes: 5035715,
+  sha256Gzip: 'ef56a03cd8446d67aa9c88039d6e7f8d71d1d6563f3262dd4d0e0e62703f8b72',
+  sha256Raw: '1a963ba64c23ffec44da2cdf1cf1ded62e35aca8602ba5d9a5c14070e0796958',
 } as const;
 export const ABDOMINAL_FIELDS = [
   { name: 'pancreas', originMm: [-57.0, -34.5, -169.5], dimensions: [94, 48, 63], offset: [244, 97, 119], pitchMm: 1.5 },
@@ -20,3 +20,6 @@ export const ABDOMINAL_FIELDS = [
   { name: 'lumbarDiscs', originMm: [-34.5, -76.5, -279.0], dimensions: [47, 55, 156], offset: [272, 0, 0], pitchMm: 1.5 },
 ] as const;
 export const ABDOMINAL_BODY = { bytes: 3640, sha256: '47efbad03d2e4d226c7b541372db81d66f11e281fbf9419546c40496bbde0323' } as const;
+
+/** Estimated normal contact, not a segmented diaphragm. RG = height mm / support. */
+export const HEPATIC_DOME = { originMm: [-124.5, -87], dimensions: [154, 120], offset: [178, 97, 258], pitchMm: 1.5 } as const;

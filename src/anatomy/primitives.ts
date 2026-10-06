@@ -1,6 +1,7 @@
-import { abdominalAtlas, abdominalAtlasSdf } from './abdominalAtlas';
+import { abdominalAtlas, abdominalAtlasSdf, hepaticDomeValue } from './abdominalAtlas';
 import { referenceCartilage } from './referenceCartilage';
 import { bodyDepth, bodyGradient, bodySection } from './referenceBody';
+import { DIAPHRAGM_THICKNESS_MM } from './tissues';
 import type { Vec3 } from '../core/vec3';
 
 /**
@@ -211,6 +212,8 @@ export interface Diaphragm {
   /** Altura de la inserción en el flanco/espalda y ascenso hacia el xifoides (mm). */
   edgeZ: number;
   edgeRise: number;
+  /** Estimated apposition to the registered hepatic superior surface; atlas only. */
+  hepaticContact?: boolean;
 }
 
 /** Altura de la línea de inserción costal en el ángulo φ del tronco. */
@@ -249,7 +252,10 @@ export function diaphragmHeight(x: number, y: number, d: Diaphragm, torso: Torso
   // sin añadir el k/4 que smoothMax produciría entre dos ceros.
   const t = Math.min(1, Math.max(0, ((zr + zl) * 0.5 - edge) / (2 * DIAPHRAGM_JOIN_MM)));
   const join = DIAPHRAGM_JOIN_MM * t * t * (3 - 2 * t);
-  return join > 0 ? smoothMax(zr, zl, join) : edge;
+  const height = join > 0 ? smoothMax(zr, zl, join) : edge;
+  if (!d.hepaticContact) return height;
+  const [contactHeight, support] = hepaticDomeValue(x, y);
+  return height + support * (contactHeight - height);
 }
 
 /**
@@ -262,12 +268,38 @@ export function sdDiaphragmSlope(p: Vec3, d: Diaphragm, torso: Torso): [number, 
   const gx = (diaphragmHeight(p[0] + h, p[1], d, torso) - diaphragmHeight(p[0] - h, p[1], d, torso)) / (2 * h);
   const gy = (diaphragmHeight(p[0], p[1] + h, d, torso) - diaphragmHeight(p[0], p[1] - h, d, torso)) / (2 * h);
   const slope = Math.sqrt(1 + gx * gx + gy * gy);
-  return [(zd - p[2]) / slope, slope];
+  const tangentDistance = (zd - p[2]) / slope;
+  if (!d.hepaticContact) return [tangentDistance, slope];
+  // Close to the superior contact, the diaphragm is the 2.5 mm shell of the
+  // actual hepatic distance field. A tangent-plane offset alone separates or
+  // cuts curved liver surfaces. Outside this bounded shell keep the height field.
+  const [, support] = hepaticDomeValue(p[0], p[1]),
+    t = Math.min(1, Math.max(0, (zd - p[2] - 6) / 6)),
+    contact = support * (1 - t * t * (3 - 2 * t));
+  return [tangentDistance + contact * (DIAPHRAGM_THICKNESS_MM - abdominalAtlasSdf(p, 4) - tangentDistance), slope];
 }
 
 /** Distancia con signo al diafragma: negativa en el tórax (por encima). */
 export function sdDiaphragm(p: Vec3, d: Diaphragm, torso: Torso): number {
   return sdDiaphragmSlope(p, d, torso)[0];
+}
+
+/** Navigator samples the zero of the same acoustic shell, not a separate smoothed roof. */
+export function diaphragmSurfaceZ(x: number, y: number, d: Diaphragm, torso: Torso): number {
+  const height = diaphragmHeight(x, y, d, torso);
+  if (!d.hepaticContact || hepaticDomeValue(x, y)[1] === 0) return height;
+  // At −12 mm the shell support vanishes by construction; above the sheet both
+  // distances are negative. This bracket follows the contact support, not a fit.
+  let lo = height - 12,
+    hi = height + 12;
+  if (sdDiaphragm([x, y, lo], d, torso) < 0 || sdDiaphragm([x, y, hi], d, torso) > 0)
+    throw new Error('Diaphragm surface exceeds its registered contact bracket');
+  for (let i = 0; i < 18; i++) {
+    const z = (lo + hi) / 2;
+    if (sdDiaphragm([x, y, z], d, torso) > 0) lo = z;
+    else hi = z;
+  }
+  return (lo + hi) / 2;
 }
 
 export interface CylinderZ {

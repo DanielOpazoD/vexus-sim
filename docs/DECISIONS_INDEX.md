@@ -182,3 +182,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [176](DECISIONS.md#L6373) | Registro renal y muscular posterior coherente con la columna | vigente |
 | [177](DECISIONS.md#L6393) | Integrar la absorción Doppler por tejido sin nuevas texturas | vigente |
 | [178](DECISIONS.md#L6401) | Abdomen común de referencia: contornos, contactos y acústica explícita | vigente |
+| [179](DECISIONS.md#L6441) | Contacto hepatodiafragmático registrado y suprahepáticas proximales | vigente |

@@ -6298,6 +6298,8 @@ Seguimiento de 166: la CI encontró una puerta arterial renal fija de la pose an
 
 La comprobación costal heredada suponía seis pares y muestreaba los nuevos arcos como si no tuvieran término craneocaudal ni extremos libres. Sus tres posiciones por lado ahora siguen las elipses declaradas, muestrean cartílago lateral al esternón y los tres tramos óseos de 11–12. Exige 52 puntos óseos y 20 cartilaginosos, acuerdo exacto CPU/GPU. El adulto de referencia conserva los ajustes registrados de 5–10, ajustes explícitos de 11–12 y declara los cuatro arcos superiores como estimados en vez de exigirles una medición inexistente.
 
+El test de captura congelada agotó 180 s globales en SwiftShader y pasó solo al reintento (CI sigue roja). Usaba setTimeout global en vez del presupuesto común: se conserva trabajo 180 s y se suma el arranque BOOT_MS como en las otras pruebas. No se modifica polling, imágenes, tolerancias ni política de primer intento; la nueva revisión exige toda CI verde sin reintentos aprobados.
+
 ## 168. Adquisición portal intrahepática separada del tronco principal
 
 **Defecto y mecanismo.** La pose lateral anterior sigue demasiado el segmento extrahepático y muestra cava parcial. Se adquiere físicamente hilio/rama derecha sin agrandar vísceras ni ocultar vasos. `portalTrunk` conserva exactamente las poses previas para PW VExUS; el protocolo usa esa ventana con sus restricciones de calidad, puerta de 6 mm y distancia a bifurcación conservadas. `subxiphoid` se identifica como Subcostal · VCI longitudinal, con pose intacta.

@@ -46,6 +46,7 @@ function setup(opts: {
   window?: (typeof START_POINTS)[number]['id'];
   vessels?: VesselId[];
   historySeconds?: number;
+  settleSeconds?: number;
 }): Setup {
   const patient = { ...clonePatient(opts.base ?? NORMAL_ADULT), respiratoryPattern: opts.respiratoryPattern ?? 'apnea-expiratory' };
   if (opts.seed !== undefined) patient.seed = opts.seed;
@@ -53,7 +54,7 @@ function setup(opts: {
   const anatomy = new AnatomyQuery(scene);
   const engine = new PhysiologyEngine(patient, scene.vesselAreas(), { historySeconds: opts.historySeconds ?? 20 });
   const chain = new PwDopplerChain(anatomy, patient.seed);
-  for (let i = 0; i < Math.round(2 / engine.clock.dt); i++) engine.step();
+  for (let i = 0; i < Math.round((opts.settleSeconds ?? 2) / engine.clock.dt); i++) engine.step();
   const sp = START_POINTS.find((s) => s.id === (opts.window ?? 'intercostal'))!;
   const frame = probeFrame({ phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 }, scene.torso, CONVEX_C35);
   const best = bestGateOnVessel(anatomy, frame, CONVEX_C35, engine.sample, opts.vessels ?? ['hvRight'], 170)!;
@@ -171,7 +172,8 @@ describe('Invariantes de la guía §21 sobre la señal de la cadena completa', (
     // la banda del flujo venoso lento y no deja juzgar la sangre en el espectro, como en un equipo
     // real (limitación `respiratory-clutter-masks-slow-flow`); la coherencia entre respiración y
     // volumen de muestra se prueba sobre su composición en `sampleVolume.test.ts`.
-    const s = setup({});
+    // Allow caliber to settle before placing a stationary gate; this checks displacement, not startup drift.
+    const s = setup({ settleSeconds: 8 });
     const off = s.shifted(10);
     expect(s.anatomy.classifyWorld(off.center, s.engine.sample).vessel).toBeNull();
     const presence = (from: number) => {

@@ -6,6 +6,7 @@ import { modeHasColor, modeHasPw, toggleM, toggleMode } from './app/equipment';
 import { compareTissueGrids } from './app/equivalenceCheck';
 import { errorLog, errorMessage } from './app/errorLog';
 import { ProbeAnimator } from './app/probeAnimation';
+import { portalPreset } from './app/portalPreset';
 import { startPointsFor } from './app/startPoints';
 import { SimulationSession } from './app/session';
 import type { Simulator } from './app/simulator';
@@ -137,7 +138,10 @@ function setPoseManual(p: Parameters<Simulator['setPose']>[0]): void {
 }
 // Carril izquierdo: ventanas VExUS (la sonda se desliza hasta su punto de partida), ayuda y corte plegable
 const windows = new StartPointCards($('start-points'), {
-  onPick: (sp) => probeAnimator.goTo(sp),
+  onPick: (sp) => {
+    if (sp.id === 'portal') for (const cmd of portalPreset(!!sim().scene.torso.profile, sim().transducer.f0Doppler)) dispatch(cmd);
+    probeAnimator.goTo(sp);
+  },
   getPose: () => sim().pose,
   getTorso: () => sim().scene.torso,
   animating: () => probeAnimator.active,

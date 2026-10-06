@@ -95,3 +95,5 @@ Recorrido yeyunoileal estimado, muestreado en 51 nodos a precisión de almacenam
 La extensión de doce pares costales y el esternón acústico (decisiones 166–167) adaptan LUS MIT y landmarks registrados BodyParts3D. Las formas superiores, uniones y ajuste completo del adulto siguen estimados; ver `anatomy/LOCAL_ANATOMY_RESULT.md` y `anatomy/STERNAL_FRAME_RESULT.md`.
 
 Doppler color: conserva y filtra R1 complejo con [1 2 1]²/16 antes de estimar fase/potencia. Kernel espacial ESTIMADO, no ensembles IQ adquiridos ni calibración contra equipo clínico. La interpolación explícita mantiene continuidad de fase cerca de Nyquist.
+
+Porta intrahepática: ajuste al seleccionar tarjeta estimado para estos adultos: B 150 mm/foco 100 mm/−2 dB/RD65; caja 70–125 mm y anchura 0,42 rad, centro angular dependiente del cuerpo; color ±35 cm/s, +12 dB, filtro 60 Hz. No deriva de máquina clínica; permanece editable y no se reaplica al mover sonda manualmente. La paleta positiva es roja y la negativa azul; el signo procede del haz, no del nombre del vaso.

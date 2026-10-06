@@ -119,7 +119,7 @@ export const START_POINTS: readonly StartPoint[] = [
     yaw: 0.7,
     rock: 0.2,
     tilt: -0.4,
-    hint: 'Rama portal derecha dentro del hígado desde lateral. Ajusta profundidad, foco y caja color para esta ventana. Para medir VExUS, busca el tronco principal.',
+    hint: 'Rama portal derecha dentro del hígado desde lateral. Seleccionarla aplica ajuste abdominal: 15 cm, foco 10 cm, color ±35 cm/s y ganancia 12 dB; afina caja y controles. Para medir VExUS, busca el tronco principal.',
   },
   {
     id: 'portalTrunk',

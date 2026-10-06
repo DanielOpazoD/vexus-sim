@@ -96,7 +96,7 @@ test('captura congelada conserva alineación al invertir, desplazar baseline, re
   await page.keyboard.press('p');
   expect(
     await page.evaluate(() => {
-      window.__vexusTest!.goToStartPoint('portal');
+      window.__vexusTest!.goToStartPoint('portalTrunk');
       return window.__vexusTest!.placeGate(['pvTrunk']);
     }),
   ).toBe(true);

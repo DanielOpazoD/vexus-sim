@@ -187,7 +187,7 @@ test('lo medido a la vista sobre el espectro y el vaso equivocado (decisión 94)
   // la fila «Suprahepática» con la puerta en el tronco portal: rechazada, con dónde está la puerta
   expect(
     await page.evaluate(() => {
-      window.__vexusTest!.goToStartPoint('portal');
+      window.__vexusTest!.goToStartPoint('portalTrunk');
       return window.__vexusTest!.placeGate(['pvTrunk']);
     }),
   ).toBe(true);

@@ -174,3 +174,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [168](DECISIONS.md#L6297) | Adquisición portal intrahepática separada del tronco principal | vigente |
 | [169](DECISIONS.md#L6305) | Interpolación del Doppler color en el plano complejo | vigente |
 | [170](DECISIONS.md#L6315) | Paleta rojo/azul compartida y ajuste de la adquisición intrahepática | vigente |
+| [171](DECISIONS.md#L6325) | Resolver juntos los caudales de la unión cavoauricular | vigente |

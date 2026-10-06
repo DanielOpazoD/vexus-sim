@@ -6331,3 +6331,5 @@ El test de captura congelada agotó 180 s globales en SwiftShader y pasó solo a
 Seguimiento de 168: el barrido GPU incluye las nueve ventanas, incluida portalTrunk. La ventana portal ahora contiene ramas intrahepáticas menores: su rejilla se refina de 48×72 a 64×96, conservando >50 células sanguíneas completamente interiores y todos los umbrales de acuerdo y velocidad. La rejilla del resto de ventanas, volumen y cáscaras no cambia.
 
 Las tres adquisiciones E2E de PW que pedían explícitamente pvTrunk ahora usan portalTrunk, la misma pose original conservada para VExUS. La ventana portal intrahepática y sus pruebas color siguen en la rama derecha; no se fuerza la puerta ni la clasificación.
+
+Seguimiento de 168: CI slow detectó que el banco de dispersores persistentes del tronco portal seguía usando la tarjeta portal intrahepática. Se adquiere ahora desde portalTrunk, que conserva la pose original, sin cambiar caudales, volumen de muestra, semillas, duración ni límites de diferencia <0,05/reingreso >90 %. Error original: 0,14005, registrado antes de corregir el instrumento.

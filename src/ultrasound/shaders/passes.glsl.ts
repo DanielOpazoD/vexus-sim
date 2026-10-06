@@ -1,4 +1,5 @@
 import { TISSUE_COUNT } from '../../anatomy/tissues';
+import { COLOR_MAP_GLSL } from '../colorMap';
 import { C_RECONSTRUCTION_MM_S } from '../../core/units';
 import { ANATOMY_GLSL } from '../../anatomy/gpu/anatomy.glsl';
 import { APERTURE_GLSL, REFRACTION_GLSL, STEERED_APERTURE_GLSL } from '../aperture';
@@ -1345,6 +1346,7 @@ uniform int uColorInvert;
 in vec2 vUv;
 out vec4 oColor;
 ${DISPLAY_GREY_GLSL}
+${COLOR_MAP_GLSL}
 void main() {
   vec2 px = vUv * uCanvas;
   vec2 d = (px - uApex) / uScale;  // mm, y hacia abajo
@@ -1363,9 +1365,7 @@ void main() {
     if (uColorInvert == 1) f = -f;
     float mag = clamp(abs(f) / (0.5 * uPrf), 0.0, 1.0);
     if (power > uColorThreshold && (g < uColorPriority || power > 3.0 * uColorThreshold)) {
-      vec3 toward = mix(vec3(0.55, 0.05, 0.0), vec3(1.0, 0.95, 0.35), mag);
-      vec3 away = mix(vec3(0.0, 0.1, 0.6), vec3(0.35, 0.95, 1.0), mag);
-      col = f >= 0.0 ? toward : away;
+      col = colorVelocityMap(f, mag);
     }
   }
   oColor = vec4(col, 1.0);

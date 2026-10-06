@@ -1,6 +1,7 @@
 import { ecgX, SweepTimeline } from './sweep';
 import { drawCursor } from './mModeView';
 import { nyquistVelocityCms, wrapToNyquist } from '../core/units';
+import { colorMapRgb } from '../ultrasound/colorMap';
 import type { Simulator } from '../app/simulator';
 import type { SpectralColumn } from '../doppler/spectral';
 import { overlayOnSpectrum, spectrumRowOf, type CaptureOverlay } from './captureOverlay';
@@ -383,17 +384,6 @@ function drawCaptureOverlay(
     }
   }
   ctx.restore();
-}
-
-/**
- * Mapa del color de la conversión de barrido (FRAG_SCANCONVERT): hacia la sonda de rojo oscuro a amarillo, desde la
- * sonda de azul a celeste, negro en cero. `mag` ∈ [0, 1] es |f| / Nyquist.
- */
-export function colorMapRgb(towardProbe: boolean, mag: number): [number, number, number] {
-  const m = Math.min(1, Math.max(0, mag));
-  const a: [number, number, number] = towardProbe ? [0.55, 0.05, 0] : [0, 0.1, 0.6];
-  const b: [number, number, number] = towardProbe ? [1, 0.95, 0.35] : [0.35, 0.95, 1];
-  return [0, 1, 2].map((k) => Math.round(255 * (a[k] + (b[k] - a[k]) * m))) as [number, number, number];
 }
 
 /**

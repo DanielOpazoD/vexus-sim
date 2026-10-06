@@ -165,7 +165,7 @@ for (const reference of [false, true]) {
     expect(report.found, tag).not.toBeNull();
     expect(report.sampled).toBeGreaterThan(1000);
     expect(report.errorMax, tag).toBeLessThan(0.00001);
-    expect(report.fractionErrorMax, tag).toBeLessThan(0.00001);
+    expect(report.fractionErrorMax, tag).toBe(0);
     expect(report.signal.filtered.blood, tag).toBeGreaterThan(100);
     expect(report.signal.filtered.filled / report.signal.filtered.blood, tag).toBeGreaterThan(0.5);
     expect(report.signal.filtered.positive, tag).toBeGreaterThan(report.signal.filtered.negative);

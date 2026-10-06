@@ -1,5 +1,6 @@
 import { TISSUE_COUNT } from '../../anatomy/tissues';
 import { COLOR_MAP_GLSL } from '../colorMap';
+import { COLOR_WALL_FILTER_GLSL } from '../colorWallFilter';
 import { C_RECONSTRUCTION_MM_S } from '../../core/units';
 import { ANATOMY_GLSL } from '../../anatomy/gpu/anatomy.glsl';
 import { APERTURE_GLSL, REFRACTION_GLSL, STEERED_APERTURE_GLSL } from '../aperture';
@@ -1198,11 +1199,7 @@ uniform float uFrame;
 in vec2 vUv;
 out vec4 oColor;
 float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
-float wallResp(float f) {
-  // Filtro de clutter de orden alto (los equipos usan filtros de regresión con >60 dB de rechazo).
-  float x = f * f / (f * f + uWallHz * uWallHz);
-  return x * x * x * x;
-}
+${COLOR_WALL_FILTER_GLSL}
 // Normales en los nodos de la retícula de resolución del color (una línea de color × un paquete axial), dos por nodo
 vec2 colorGaussAt(vec2 q, float seed) {
   float a = hash12(q * 0.917 + vec2(seed * 1.37, seed * 0.61) + 0.5);
@@ -1275,8 +1272,8 @@ void main() {
   // de resolución y renovada en cada cuadro (la sangre avanza); da el relleno moteado y los huecos del color real
   vec2 sp = colorGauss(grid, uFrame + 17.0);
   float speckle = 0.5 * dot(sp, sp);
-  float Pb = bf * T * T * wallResp(fdB) * speckle;
-  float Pc = (1.0 - bf) * Ac * Ac * T * T * wallResp(fdT);
+  float Pb = bf * T * T * colorWallResponseHz(fdB, uWallHz, uPrf) * speckle;
+  float Pc = (1.0 - bf) * Ac * Ac * T * T * colorWallResponseHz(fdT, uWallHz, uPrf);
   float Pn = 3.2e-4; // suelo de ruido Doppler ≈ −35 dB re sangre a T=1 ([EXTRAPOLACIÓN PROPIA])
   float phB = 6.2831853 * fdB / uPrf;
   float phT = 6.2831853 * fdT / uPrf;

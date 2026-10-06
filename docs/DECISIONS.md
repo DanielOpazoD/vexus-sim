@@ -6329,3 +6329,9 @@ La presión común Rj·(Qh+Qi) deja de usar caudales atrasados. Un sistema backw
 ## 172. Sección regional de la cava superior y Q/A común con su anatomía
 
 La unión/entrada auricular deja de heredar la sección abdominal colapsada por PIA. Una ley regional estimada depende de P_unión−P_pleural y conserva el retraso de pared 0,2 s. Q/A usa su área elíptica exacta; una función común selecciona la elipticidad en CPU, textura GPU y 3D sin añadir uniforms/texturas. La VCI abdominal medida por VExUS conserva área y comportamiento. Curva D=28·sigmoid((Ptm−4)/6), residual 3 mm: ESTIMADA, no calibrada clínicamente. Contrato, contrafactual y límites en `anatomy/REGIONAL_IVC_CONTRACT.md`. No cambia caudal ni fuerza signo/velocidad. Se mantiene la deuda waterfall y la transición gruesa entre tubos; no se declara fidelidad completa toracoabdominal.
+
+## 173. Filtro color periódico en frecuencia muestreada, identidad al desactivarlo
+
+Defecto: f y f+PRF producían la misma fase pero diferente rechazo de clutter; f=0 y corte=0 generaba NaN. Se evalúa la respuesta de potencia estimada en la frecuencia plegada y devuelve identidad para corte cero. El módulo TS/GLSL conserva el cuarto orden anterior dentro de Nyquist. No añade máscara ni altera fisiología, fase, paleta, ganancia o umbrales. Contrato previo: `anatomy/COLOR_WALL_FILTER_CONTRACT.md`.
+
+Aceptación: secuencias IQ muestreadas como oráculo independiente, alias positivos/negativos, DC y desactivación; compilación GPU real y adquisición portal normal/grave. Sigue siendo respuesta aproximada sobre autocorrelación emulada (`color-emulated-estimator`), sin ensemble temporal filtrado real ni calibración clínica. Presupuesto total +1 KiB, de 1030 a 1031, para el pequeño módulo/folding y controles de desarrollo; todos los chunks siguen contando.

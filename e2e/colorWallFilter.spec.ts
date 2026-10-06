@@ -1,10 +1,16 @@
 import { expect, test } from '@playwright/test';
 import { COLOR_WALL_FILTER_GLSL } from '../src/ultrasound/colorWallFilter';
-import { bootWithoutErrors, budget } from './support';
+import { budget } from './support';
 
 test('GPU color filter: sampled aliases and disabled stationary signal remain finite', async ({ page }, info) => {
-  budget(120_000);
-  const errors = await bootWithoutErrors(page, '?e2e=1');
+  budget(120_000, 0);
+  const errors: string[] = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => {
+    if (m.type() === 'error') errors.push(m.text());
+  });
+  // This oracle compiles the production GPU filter, not the full application.
+  await page.setContent('<!doctype html><meta charset="utf-8"><title>IQ filter oracle</title>');
   const inputs = [
     [0, 0],
     [0, 60],
@@ -36,6 +42,13 @@ test('GPU color filter: sampled aliases and disabled stationary signal remain fi
         ),
       );
       const values = inputs.map(([f, cutoff]) => `vec2(${f.toFixed(1)},${cutoff.toFixed(1)})`).join(',');
+      // Known IQ samples are inputs: do not test the driver's transcendental approximation.
+      const iq = inputs
+        .map(([f]) => {
+          const phase = (2 * Math.PI * f) / 1000;
+          return `vec2(${Math.cos(phase).toFixed(17)},${Math.sin(phase).toFixed(17)})`;
+        })
+        .join(',');
       gl.attachShader(
         program,
         compile(
@@ -44,7 +57,7 @@ test('GPU color filter: sampled aliases and disabled stationary signal remain fi
 precision highp float;
 ${source}
 out vec4 outValue;
-void main(){vec2 inputs[${inputs.length}]=vec2[${inputs.length}](${values});vec2 v=inputs[int(gl_FragCoord.x)];float w=colorWallResponseHz(v.x,v.y,1000.0);outValue=vec4(w*cos(6.283185307*v.x/1000.0),w*sin(6.283185307*v.x/1000.0),w,1.0);}`,
+void main(){vec2 inputs[${inputs.length}]=vec2[${inputs.length}](${values});vec2 knownIQ[${inputs.length}]=vec2[${inputs.length}](${iq});int i=int(gl_FragCoord.x);vec2 v=inputs[i];float w=colorWallResponseHz(v.x,v.y,1000.0);outValue=vec4(w*knownIQ[i],w,1.0);}`,
         ),
       );
       gl.linkProgram(program);
@@ -76,8 +89,8 @@ void main(){vec2 inputs[${inputs.length}]=vec2[${inputs.length}](${values});vec2
     const f = (phase * 1000) / (2 * Math.PI);
     const expected = cutoff === 0 ? 1 : Math.pow(1 / (1 + (cutoff / Math.abs(f)) ** 2), 4);
     expect(output[4 * i + 2]).toBeCloseTo(expected, 6);
-    // GLSL float32 sin/cos at an aliased 2π multiple differ by up to ~0.6e-6 on Metal.
-    // Bound the numerical phasor error explicitly; the filter-power guard stays at 5e-7.
+    // Check filtered known IQ at the original bounds: 2e-6 per component, 5e-7 power.
+    // The independent sample-to-sample phase still defines the aliased frequency.
     expect(Math.abs(output[4 * i] - expected * Math.cos(phase))).toBeLessThan(2e-6);
     expect(Math.abs(output[4 * i + 1] - expected * Math.sin(phase))).toBeLessThan(2e-6);
   }

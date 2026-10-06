@@ -8,7 +8,7 @@ import type { Torso } from '../anatomy/primitives';
  * π/2 = anterior), z en mm.
  */
 export interface StartPoint {
-  id: 'subxiphoid' | 'epigastric' | 'intercostal' | 'subcostal' | 'flank' | 'portal' | 'renal' | 'hepatorenal';
+  id: 'subxiphoid' | 'epigastric' | 'intercostal' | 'subcostal' | 'flank' | 'portal' | 'portalTrunk' | 'renal' | 'hepatorenal';
   label: string;
   phi: number;
   z: number;
@@ -26,7 +26,7 @@ export const START_POINTS: readonly StartPoint[] = [
   {
     id: 'subxiphoid',
     color: '#7ce8a0',
-    label: 'Subxifoideo',
+    label: 'Subcostal · VCI longitudinal',
     // Paramediana derecha (x ≈ −32 mm en la piel): la normal cutánea de la elipse
     // converge hacia la línea media, así el plano sagital cruza la VCI (x −22) en
     // profundidad. El haz se bascula hacia la cabeza (rock), no se abanica.
@@ -34,7 +34,7 @@ export const START_POINTS: readonly StartPoint[] = [
     z: -20,
     yaw: 0,
     rock: 0.45,
-    hint: 'Bajo el xifoides, paramediano derecho, haz basculado hacia la cabeza: VCI en eje largo hasta la aurícula derecha a 10–14 cm; abanicar suavemente hacia la derecha del paciente.',
+    hint: 'Subxifoidea, marcador craneal: VCI por el hígado hasta la AD. Bascula hacia la cabeza y afina hacia la derecha.',
   },
   {
     id: 'epigastric',
@@ -111,20 +111,27 @@ export const START_POINTS: readonly StartPoint[] = [
   {
     id: 'portal',
     color: '#c08cff',
-    label: 'Porta · lateral',
-    // Ventana preferida de la porta en VExUS (Beaubien-Souligny 2018; Koratala 2024): lateral derecha, entre la axilar
-    // media y la posterior, más caudal que la de las suprahepáticas; plano coronal oblicuo con el haz algo hacia atrás y
-    // abajo. La porta principal queda en el centro del sector a < 60° del haz (48 de 48 muestras en la búsqueda de poses)
-    // y corre craneocaudal, así que la respiración la desliza por su eje; la VCI por detrás (decisión 69: el tronco
-    // portal pasa por delante de la VCI y el plano del flanco, que va a la VCI, ya no lo corta). Pendiente: con el hígado
-    // de 12,3 cm craneocaudales del modelo (normal 14 ± 1,7) el lóbulo derecho no llega a este nivel y el campo cercano es
-    // el «resto» en lugar de hígado; al corregir su tamaño la ventana será transhepática.
+    label: 'Porta · intrahepática',
+    // Decisión 168: rama derecha e hilio rodeados de hígado. No prolongar el tronco extrahepático
+    // en esta adquisición ni confundir la rama con el sitio de medición VExUS. Poses estimadas por rayos.
+    phi: 3.5,
+    z: -90,
+    yaw: 0.7,
+    rock: 0.2,
+    tilt: -0.4,
+    hint: 'Rama portal derecha dentro del hígado desde lateral. Ajusta profundidad, foco y caja color para esta ventana. Para medir VExUS, busca el tronco principal.',
+  },
+  {
+    id: 'portalTrunk',
+    color: '#b49ad9',
+    label: 'Porta · tronco PW',
+    // Tronco principal para la puerta del protocolo, lejos de la bifurcación; geometría conservada.
     phi: 3.466,
     z: -66,
     yaw: 0.08,
     rock: -0.3,
     tilt: -0.2,
-    hint: 'Porta principal por la línea axilar media–posterior, más caudal que la ventana de las suprahepáticas: marcador craneal, haz algo hacia atrás; la porta roja de paredes brillantes en el centro con la VCI por detrás; puerta PW en la porta principal.',
+    hint: 'Tronco principal para VExUS. Ajusta ángulo y escala; puerta PW lejos de la bifurcación y la arteria.',
   },
   {
     id: 'renal',
@@ -132,7 +139,8 @@ export const START_POINTS: readonly StartPoint[] = [
     label: 'Renal',
     // Línea axilar posterior, plano coronal-oblicuo que contiene el eje largo del riñón
     // (barrido de poses: ≈ 10 cm de riñón en el plano con seno y pirámides).
-    // Decisión 166: 5 mm caudal, fuera de la nueva 11.ª costilla.
+    // Decisión 166: 5 mm caudal al punto previo, que ahora queda bajo la 11.ª costilla.
+    // Se ajusta la adquisición; el riñón, los vasos y el esqueleto conservan su posición.
     phi: Math.PI * 1.18,
     z: -90,
     yaw: -0.3,
@@ -191,6 +199,13 @@ const REFERENCE_POSES = {
     tilt: 0.166586,
   },
   portal: {
+    phi: 3.5,
+    z: -60,
+    yaw: 1.1,
+    rock: -0.2,
+    tilt: 0.2,
+  },
+  portalTrunk: {
     phi: 3.3,
     z: -55,
     yaw: 0.107927,

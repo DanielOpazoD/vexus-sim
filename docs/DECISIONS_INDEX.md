@@ -171,3 +171,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [165](DECISIONS.md#L6238) | Archivos de parámetros venosos con dominio y versión explícitos | vigente |
 | [166](DECISIONS.md#L6267) | Doce pares costales y esternón en la anatomía acústica local | vigente |
 | [167](DECISIONS.md#L6285) | Referencia xifoidea común y contactos medidos antes del clasificador | vigente |
+| [168](DECISIONS.md#L6297) | Adquisición portal intrahepática separada del tronco principal | vigente |

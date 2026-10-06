@@ -25,7 +25,7 @@ export type RenalSpectralWindow = 'venous' | 'paired';
 export type HepaticSpectralWindow = 'standard' | 'tilted';
 const WINDOWS: readonly { window: StartPoint['id']; vessels: readonly VesselId[]; gateMm: number }[] = [
   { window: 'intercostal', vessels: ['hvRight'], gateMm: 4 },
-  { window: 'portal', vessels: ['pvTrunk'], gateMm: 6 },
+  { window: 'portalTrunk', vessels: ['pvTrunk'], gateMm: 6 },
   { window: 'renal', vessels: ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'], gateMm: 4 },
 ];
 
@@ -104,7 +104,7 @@ export class VenousSpectralAcquisition {
       const weight = acousticWindowWeight(query, contact.frame, tr, contact, sample, this.#settings.depthMm, profile.dopplerEffectiveMHz);
       // A virtual trunk acquisition should not straddle its terminal bifurcation.
       // One gate length is a geometric safeguard, not a clinical distance threshold.
-      const portalEnd = window === 'portal' ? scene.vessels.find((v) => v.id === 'pvTrunk')!.tube.nodes.at(-1)!.p : null;
+      const portalEnd = window === 'portalTrunk' ? scene.vessels.find((v) => v.id === 'pvTrunk')!.tube.nodes.at(-1)!.p : null;
       const trunkInterior = portalEnd
         ? (candidate: GatePlacement) => {
             const q = query.classifyWorld(pointOnLine(contact.frame, tr, candidate.theta, candidate.r), sample);

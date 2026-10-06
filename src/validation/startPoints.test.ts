@@ -165,17 +165,18 @@ const IVC = ['ivcInfra', 'ivcSupra'];
 const HEPATIC_VEINS = ['hvRight', 'hvMiddle', 'hvLeft'] as const;
 
 describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', () => {
-  it('porta lateral: acceso al vaso principal con ángulo Doppler útil', () => {
-    const s = sweep(byId('portal'), 170);
+  it('porta tronco PW: acceso al vaso principal con ángulo Doppler útil', () => {
+    const s = sweep(byId('portalTrunk'), 170);
     expect(s.coupling).toBeGreaterThan(0.75);
     expect(samples(s, 'pvTrunk') + samples(s, 'pvRight')).toBeGreaterThan(40);
+    // Decisión 168: conserva la adquisición previa del tronco; el preset hepático se verifica por separado.
     expect(samples(s, 'ivcInfra') + samples(s, 'ivcSupra')).toBeGreaterThan(20);
     // Con 11/12 hay sombras en los bordes del sector. Lo exigible es una ventana real hasta el vaso,
     // no borrar los huesos que el plano encuentra fuera de esa trayectoria (decisión 166).
-    const visible = screenMap(poseOf(byId('portal')), 170);
+    const visible = screenMap(poseOf(byId('portalTrunk')), 170);
     for (const id of ['pvTrunk', 'pvRight']) expect(visible.of(id).length, id).toBe(visible.all(id).length);
     // la puerta sobre la porta con el haz a ≤ 60° de su eje
-    const sp = byId('portal');
+    const sp = byId('portalTrunk');
     const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
     const contact = probeContact(pose, CONVEX_C35, scene.torso);
     const engine = new PhysiologyEngine(clonePatient(NORMAL_ADULT), scene.vesselAreas(), { historySeconds: 2 });

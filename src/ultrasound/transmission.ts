@@ -1,3 +1,4 @@
+import { SEGMENT_TAG_STRIDE } from './segmentTag';
 import { TISSUES, Tissue, attenuationDbPerCm } from '../anatomy/tissues';
 import { dot, normalize, type Vec3 } from '../core/vec3';
 import { warpNormal, type Warp } from '../anatomy/compression';
@@ -426,7 +427,8 @@ vec4 steeredPrefix(int line, int k, out vec4 extra) {
     float sRow = alongLineMm(uCurvR + rS, a, rc);
     if (g.z > 0.5 && sBone < 0.0) sBone = sRow;
     // el pulmón de la cortina (marca ${CURTAIN_GAS_KIND}, decisión 61) no es un impacto de gas
-    if (g.w > 0.5 && g.w < ${glslFloat(CURTAIN_GAS_KIND - 0.5)} && sGas < 0.0) { sGas = crossing ? sMirror : sRow; gasKind = g.w; }
+    float gas = mod(g.w, ${SEGMENT_TAG_STRIDE}.0);
+    if (gas > 0.5 && gas < ${glslFloat(CURTAIN_GAS_KIND - 0.5)} && sGas < 0.0) { sGas = crossing ? sMirror : sRow; gasKind = gas; }
     db += abs(g.x) * scale;
     float e = g.y * scale / (uCurvR + rS);
     psi += e * float(k - s);

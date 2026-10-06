@@ -271,7 +271,7 @@ describe('refracción en las luces líquidas (decisión 86)', () => {
       expect(src).toContain('if (g.x < 0.0 && !entered) continue;');
       expect(src).toContain('psi += e * float(k - s);');
       // y en .z, lo que cobra el hueso (decisión 88: la fracción del haz que sobrevive a los huesos, que lee la pasada D)
-      expect(src).toContain('o1 = vec4(step * psi, pa, boneDb, fixedDb);');
+      expect(src).toContain('o1 = vec4(step * psi, pa, boneDb, dopplerDb);');
     }
     expect(STEERED_PREFIX_GLSL).toContain('float e = g.y * scale / (uCurvR + rS);');
     expect(STEERED_PREFIX_GLSL).toContain('psi += e * float(k - s);');

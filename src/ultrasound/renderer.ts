@@ -1,7 +1,6 @@
 import { BOWEL_NODES, BOWEL_BOUNDS, BOWEL_GROUPS, BOWEL_ARC } from '../anatomy/organs/bowel';
 import { CARTILAGE_ROWS } from '../anatomy/referenceCartilageData';
-import type { AnatomyScene, VesselCaliber } from '../anatomy/scene';
-import { VESSEL_META } from '../physiology/vessels';
+import { vesselApScale, type AnatomyScene, type VesselCaliber } from '../anatomy/scene';
 import { Tissue } from '../anatomy/tissues';
 import { Interface, interfaceOfVessel } from '../anatomy/interfaces';
 import { TISSUES, TISSUE_COUNT, attenuationDbPerCm } from '../anatomy/tissues';
@@ -783,7 +782,7 @@ export class UltrasoundRenderer {
       if (i < s.vessels.length) {
         const v = s.vessels[i];
         const scale = inputs.caliber.radiusScale(v.id);
-        this.sceneData[dst + 2] = VESSEL_META[v.id].system === 'ivc' ? inputs.caliber.ivcApScale : v.tube.apScale;
+        this.sceneData[dst + 2] = vesselApScale(v.id, v.tube.apScale, inputs.caliber);
         this.sceneData[dst + 3] = scale;
         this.sceneData[dst + 8] = inputs.sample.velocities[v.id] * (v.flowFactor ?? 1);
         this.sceneData[dst + 9] = v.refRadius * scale;

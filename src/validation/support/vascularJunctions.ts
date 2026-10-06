@@ -1,3 +1,4 @@
+import { vesselApScale } from '../../anatomy/scene';
 import type { Vec3 } from '../../core/vec3';
 import { VESSEL_META, type VesselId } from '../../physiology/vessels';
 import { tubeQuery, type Tube } from '../../anatomy/primitives';
@@ -27,7 +28,7 @@ export type Junction = (typeof HEPATIC_JUNCTIONS)[number];
 
 /** Usa la misma ley de calibre y sección de la escena, incluidas forma orgánica y elipse de la cava. */
 function effectiveTube(v: VesselDef, caliber: VesselCaliber): Tube {
-  return VESSEL_META[v.id].system === 'ivc' ? { ...v.tube, apScale: caliber.ivcApScale } : v.tube;
+  return VESSEL_META[v.id].system === 'ivc' ? { ...v.tube, apScale: vesselApScale(v.id, v.tube.apScale, caliber) } : v.tube;
 }
 
 /**

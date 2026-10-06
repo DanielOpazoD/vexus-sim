@@ -2,77 +2,79 @@ import { expect, test } from '@playwright/test';
 import { bootWithoutErrors, budget, checkAfterEach, withinFrames } from './support';
 
 checkAfterEach();
-for (const caseId of ['normal-adult', 'severe-congestion'])
-  test(
-    'ventana renal pareada: cambia puerta, conserva paciente y no oculta calidad' +
-      (caseId === 'severe-congestion' ? ' (congestión grave)' : ''),
-    async ({ page }, info) => {
-      budget(120_000);
-      const errors = await bootWithoutErrors(page, '?e2e=1&abdomen=legacy&docente=1');
-      await page.selectOption('#case-select', caseId);
-      await page
-        .locator('button', { hasText: /Apnea\s*esp/ })
-        .first()
-        .click();
-      await page.locator('#debug-toggle').check({ force: true });
-      await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
-      await page.evaluate(() => window.__vexusTest!.advance(30));
-      await page.locator('#freeze').click({ force: true });
-      const before = await page.evaluate(() => ({
-        t: window.__vexusTest!.sim().physiology.clock.t,
-        frozen: window.__vexusTest!.sim().frozen,
-      }));
-      await page.getByRole('button', { name: 'Abrir comparación venosa' }).click({ force: true });
-      const dialog = page.getByRole('dialog', { name: 'Comparación venosa' });
-      const selector = dialog.getByRole('combobox', { name: 'Ventana renal PW' });
-      const renal = dialog.locator('.venous-row').nth(2);
-      const canvas = renal.locator('canvas');
-      const ready = () =>
-        withinFrames(
-          page,
-          140,
-          'ventana renal adquirida',
-          async () =>
-            (await canvas.evaluate((el) => Number((el as HTMLCanvasElement).dataset.lastTime))) > before.t - 0.15 || 'IQ incompleta',
-        );
-      await expect(selector).toHaveValue('venous');
-      await ready();
-      const original = await canvas.evaluate((el) => (el as HTMLCanvasElement).toDataURL());
-      await selector.selectOption('paired');
-      await ready();
-      await expect(renal).toContainText('inspección: predominio arterial');
-      await expect(renal.locator('.venous-limits')).toContainText(/arterial|arteria/i);
-      expect(await canvas.evaluate((el) => (el as HTMLCanvasElement).toDataURL())).not.toBe(original);
-      await expect(canvas).toHaveAttribute('data-marks', '');
-      await page.setViewportSize({ width: 1280, height: 1380 });
-      await renal.scrollIntoViewIfNeeded();
-      await page.screenshot({ path: info.outputPath('venous-paired-renal-window.png') });
-      await page.setViewportSize({ width: 390, height: 844 });
-      expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
-      await renal.scrollIntoViewIfNeeded();
-      // Compact persistent context/actions must not cover the Doppler or its keyboard-focused controls.
-      const header = dialog.locator('.venous-header');
-      const headerBounds = await header.boundingBox();
-      expect(headerBounds!.height).toBeLessThan(170);
-      await selector.focus();
-      await selector.evaluate((el) => el.scrollIntoView({ block: 'center' }));
-      const selectorBounds = await selector.boundingBox();
-      const stuckBounds = await header.boundingBox();
-      expect(selectorBounds!.y).toBeGreaterThanOrEqual(stuckBounds!.y + stuckBounds!.height);
-      await expect(header.getByRole('button', { name: 'Cerrar', exact: true })).toBeInViewport();
-      await expect(header.getByRole('button', { name: 'Pausar vista', exact: true })).toBeInViewport();
-      await page.screenshot({ path: info.outputPath('venous-paired-renal-mobile.png') });
-      await selector.selectOption('venous');
-      await ready();
-      await expect(renal).toContainText('centrada en vena');
-      await expect(renal.locator('.venous-limits')).not.toContainText('domina la arteria');
-      expect(
-        await page.evaluate(() => ({ t: window.__vexusTest!.sim().physiology.clock.t, frozen: window.__vexusTest!.sim().frozen })),
-      ).toEqual(before);
-      await dialog.getByRole('button', { name: 'Cerrar', exact: true }).click();
-      expect(errors).toEqual([]);
-    },
-  );
+for (const atlas of [false, true])
+  for (const caseId of ['normal-adult', 'severe-congestion'])
+    test(
+      'ventana renal pareada: cambia puerta, conserva paciente y no oculta calidad' +
+        (caseId === 'severe-congestion' ? ' (congestión grave)' : '') +
+        (atlas ? ' (abdomen atlas)' : ''),
+      async ({ page }, info) => {
+        budget(120_000);
+        const errors = await bootWithoutErrors(page, `?e2e=1&abdomen=${atlas ? 'atlas' : 'legacy'}&docente=1`);
+        await page.selectOption('#case-select', caseId);
+        await page
+          .locator('button', { hasText: /Apnea\s*esp/ })
+          .first()
+          .click();
+        await page.locator('#debug-toggle').check({ force: true });
+        await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
+        await page.evaluate(() => window.__vexusTest!.advance(30));
+        await page.locator('#freeze').click({ force: true });
+        const before = await page.evaluate(() => ({
+          t: window.__vexusTest!.sim().physiology.clock.t,
+          frozen: window.__vexusTest!.sim().frozen,
+        }));
+        await page.getByRole('button', { name: 'Abrir comparación venosa' }).click({ force: true });
+        const dialog = page.getByRole('dialog', { name: 'Comparación venosa' });
+        const selector = dialog.getByRole('combobox', { name: 'Ventana renal PW' });
+        const renal = dialog.locator('.venous-row').nth(2);
+        const canvas = renal.locator('canvas');
+        const ready = () =>
+          withinFrames(
+            page,
+            140,
+            'ventana renal adquirida',
+            async () =>
+              (await canvas.evaluate((el) => Number((el as HTMLCanvasElement).dataset.lastTime))) > before.t - 0.15 || 'IQ incompleta',
+          );
+        await expect(selector).toHaveValue('venous');
+        await ready();
+        const original = await canvas.evaluate((el) => (el as HTMLCanvasElement).toDataURL());
+        await selector.selectOption('paired');
+        await ready();
+        await expect(renal).toContainText('inspección: predominio arterial');
+        await expect(renal.locator('.venous-limits')).toContainText(/arterial|arteria/i);
+        expect(await canvas.evaluate((el) => (el as HTMLCanvasElement).toDataURL())).not.toBe(original);
+        await expect(canvas).toHaveAttribute('data-marks', '');
+        await page.setViewportSize({ width: 1280, height: 1380 });
+        await renal.scrollIntoViewIfNeeded();
+        await page.screenshot({ path: info.outputPath('venous-paired-renal-window.png') });
+        await page.setViewportSize({ width: 390, height: 844 });
+        expect(await dialog.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+        await renal.scrollIntoViewIfNeeded();
+        // Compact persistent context/actions must not cover the Doppler or its keyboard-focused controls.
+        const header = dialog.locator('.venous-header');
+        const headerBounds = await header.boundingBox();
+        expect(headerBounds!.height).toBeLessThan(170);
+        await selector.focus();
+        await selector.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+        const selectorBounds = await selector.boundingBox();
+        const stuckBounds = await header.boundingBox();
+        expect(selectorBounds!.y).toBeGreaterThanOrEqual(stuckBounds!.y + stuckBounds!.height);
+        await expect(header.getByRole('button', { name: 'Cerrar', exact: true })).toBeInViewport();
+        await expect(header.getByRole('button', { name: 'Pausar vista', exact: true })).toBeInViewport();
+        await page.screenshot({ path: info.outputPath('venous-paired-renal-mobile.png') });
+        await selector.selectOption('venous');
+        await ready();
+        await expect(renal).toContainText('centrada en vena');
+        await expect(renal.locator('.venous-limits')).not.toContainText('domina la arteria');
+        expect(
+          await page.evaluate(() => ({ t: window.__vexusTest!.sim().physiology.clock.t, frozen: window.__vexusTest!.sim().frozen })),
+        ).toEqual(before);
+        await dialog.getByRole('button', { name: 'Cerrar', exact: true }).click();
+        expect(errors).toEqual([]);
+      },
+    );
 
 test('ventana ausente: aviso de adquisición, bucle estable y recuperación sin cambiar el paciente', async ({ page }, info) => {
   budget(120_000);

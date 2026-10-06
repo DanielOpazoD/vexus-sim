@@ -45,7 +45,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
         if (c.boundaryDistance < 1) continue;
         interior++;
         fields.add(points[i].field);
-        if (c.tissue === gpu.tissue[i]) matches++;
+        if (Number(c.tissue) === gpu.tissue[i]) matches++;
         else mismatches.push({ field: points[i].field, p: points[i].p, cpu: c.tissue, gpu: gpu.tissue[i] });
         if (c.bloodVelocity) {
           blood++;
@@ -61,5 +61,74 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
     expect(result.fields.length).toBe(11);
     expect(result.velocityWorst).toBeLessThan(0.1);
     await page.screenshot({ path: info.outputPath('abdomen.png') });
+    expect(errors).toEqual([]);
+  });
+
+// Offline acquisition poses, not hidden runtime steering. These slices exercise the new
+// organs in the displayed image, in addition to the fixed whole-body parity bank above.
+const organSlices = [
+  {
+    name: 'pancreas',
+    tissue: 33,
+    minimum: 80,
+    pose: { phi: 1.57, z: -115, yaw: -1.5623784237291105, rock: 0.11865969197238625, tilt: -0.10030899383127126 },
+  },
+  {
+    name: 'bladder',
+    tissue: 38,
+    minimum: 40,
+    pose: { phi: 1.57, z: -354, yaw: -1.5769413305756639, rock: -0.018567853452892264, tilt: -0.313584243124829 },
+  },
+  {
+    name: 'spleen',
+    tissue: 34,
+    minimum: 200,
+    pose: { phi: -0.2, z: -80, yaw: -0.011254326337428964, rock: -0.1632081147344193, tilt: 0.1363193396656802 },
+  },
+];
+for (const slice of organSlices)
+  test(`abdomen displayed acquisition: ${slice.name}`, async ({ page }, info) => {
+    budget(120_000);
+    const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
+    const frame = await page.evaluate((pose) => {
+      const t = window.__vexusTest!;
+      t.setPose({ ...pose, lift: 0 });
+      return t.framesRendered();
+    }, slice.pose);
+    await page.waitForFunction((frame) => window.__vexusTest!.framesRendered() >= frame + 4, frame, { timeout: 120_000 });
+    await page.locator('#freeze').click();
+    const result = await page.evaluate((target) => {
+      const s = window.__vexusTest!.sim(),
+        flat: number[] = [],
+        tissues: Record<number, number> = {};
+      for (let y = 0; y < 96; y++)
+        for (let x = 0; x < 64; x++) {
+          const theta = (((x + 0.5) / 64) * 2 - 1) * s.transducer.halfSector;
+          const r = ((y + 0.5) / 96) * s.bmode.depthMm;
+          const d = s.frame.axial.map((v, i) => v * Math.cos(theta) + s.frame.lateral[i] * Math.sin(theta));
+          flat.push(...s.frame.curvatureCenter.map((v, i) => v + (s.transducer.curvatureRadius + r) * d[i]));
+        }
+      const gpu = s.gpuQuery(new Float32Array(flat), s.frame, true);
+      let matches = 0,
+        tested = 0,
+        hollowFlow = 0;
+      for (let i = 0; i < gpu.tissue.length; i++) {
+        tissues[gpu.tissue[i]] = (tissues[gpu.tissue[i]] ?? 0) + 1;
+        const p = flat.slice(3 * i, 3 * i + 3) as [number, number, number];
+        const c = s.anatomy.classifyWorld(p, s.sample);
+        if (c.boundaryDistance >= 1) {
+          tested++;
+          matches += Number(Number(c.tissue) === gpu.tissue[i]);
+        }
+        if ([13, 14, 35, 36, 37, 38].includes(c.tissue)) hollowFlow += Number(c.bloodVelocity !== null);
+      }
+      return { pose: s.pose, face: s.frame.face, target: tissues[target] ?? 0, tissues, tested, matches, hollowFlow };
+    }, slice.tissue);
+    expect(result.target, JSON.stringify(result)).toBeGreaterThan(slice.minimum);
+    expect(result.tested).toBeGreaterThan(1000);
+    expect(result.matches).toBe(result.tested);
+    expect(result.hollowFlow).toBe(0);
+    if (slice.name === 'bladder') expect(result.tissues[14]).toBeGreaterThan(200);
+    await page.screenshot({ path: info.outputPath(`${slice.name}.png`) });
     expect(errors).toEqual([]);
   });

@@ -159,6 +159,7 @@ if (atlas)
     const tube = scene.vessels.find((v) => v.id === w.vessels[0])!.tube;
     if (w.id === 'portal') {
       const right = scene.vessels.find((v) => v.id === 'pvRight')!.tube;
+      w.vessels = ['pvRight'];
       w.points = right.nodes.map((n) => n.p);
       w.pivot = right.nodes[1].p;
       w.long = sub(right.nodes.at(-1)!.p, right.nodes[0].p);

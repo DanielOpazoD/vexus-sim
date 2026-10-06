@@ -101,3 +101,13 @@ Porta intrahepática: ajuste al seleccionar tarjeta estimado para estos adultos:
 Cava superior (172): ley regional D=28·sigmoid((P_unión−P_pleural−4)/6) mm, residual 3 mm y área de pared con τ=0,2 s. ESTIMADA para el adulto sintético; requiere validación independiente de diámetros/velocidades y registro de la transición por el hiato. El volumen abdominal y las ondas de la red permanecen iguales.
 
 - Decisión 173: la respuesta de potencia del filtro color es (f²/(f²+fc²))⁴, con f plegada a Nyquist. Su orden/corte son estimados; no equivale a filtrar un ensemble IQ temporal real. El corte cero es identidad.
+
+## Abdomen de referencia (decisión 178)
+
+Registro LAS común, anclado al mismo xifoides de la fuente; no escala individual de vísceras. Los contornos de hígado, riñones, páncreas, vesícula, vejiga y tubo digestivo proceden de superficies BodyParts3D; costuras, orificios, contactos y fragmentos de rasterización se tratan explícitamente en el manifiesto. Los tejidos internos no son una segmentación clínica.
+
+Son estimados el bazo (~100 ml en este candidato), propiedades acústicas de páncreas/bazo, cápsulas de 0,35 mm, pared vesical de 2,5 mm y cinco estratos digestivos (3 mm estómago, 2 mm intestino delgado, 2,5 mm colon). El gas ocupa parches estáticos no dependientes, sin distribución calibrada ni peristalsis. La vejiga poco llena y la interposición de gas limitan su imagen.
+
+Los centros/ejes exteriores renales se registran en la fuente; su seno, pirámides y compartimentos internos conservan arquitectura estimada. Psoas/discos y asas móviles se conforman fuera de órganos/apoyos y se documenta la diferencia respecto de la superficie original.
+
+Los vasos principales usan secciones fuente cuando existen. Ramas y conectores no segmentados y sus repartos de flujo son extrapolaciones; dos conectores esplénicos se ajustaron 10 mm hacia posterior para evitar lumen digestivo. La nueva geometría no constituye calibración de un árbol hemodinámico completo. Los detalles, datos fuente, reproducción y límites de hardware están en `docs/anatomy/ABDOMINAL_ATLAS.md`.

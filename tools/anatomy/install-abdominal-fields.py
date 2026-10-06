@@ -15,8 +15,12 @@ for data,key in [(compressed,'sha256Gzip'),(raw,'sha256Raw')]:
  if hashlib.sha256(data).hexdigest()!=manifest[key]:raise ValueError('Candidate hash mismatch')
 if len(raw)!=manifest['rawBytes']:raise ValueError('Candidate size mismatch')
 fields=[{k:f[k]for k in ['name','originMm','dimensions','offset','pitchMm']}for f in manifest['fields']]
-body=json.loads((root/'docs/anatomy/abdominal-body-provenance.json').read_text())
+body=json.loads((args.candidate_dir/'abdominal-body-provenance.json').read_text())
+bodyRaw=(args.candidate_dir/'abdominal-body.bin').read_bytes()
+if len(bodyRaw)!=14*65*4 or len(bodyRaw)!=body['bytes'] or hashlib.sha256(bodyRaw).hexdigest()!=body['sha256']:raise ValueError('Candidate body hash/size mismatch')
 metadata={k:manifest[k]for k in ['textureDimensions','rawBytes','gzipBytes','sha256Gzip','sha256Raw']}
+(root/'src/anatomy/abdominal-body.bin').write_bytes(bodyRaw)
+(root/'docs/anatomy/abdominal-body-provenance.json').write_text(json.dumps(body,indent=2)+'\n')
 (root/'src/anatomy/abdominal-atlas.gzip.bin').write_bytes(compressed)
 (root/'docs/anatomy/abdominal-atlas-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
 text='/** Generated registered atlas descriptors; full provenance in docs/anatomy. */\n'

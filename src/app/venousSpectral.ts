@@ -85,7 +85,18 @@ export class VenousSpectralAcquisition {
       const scene = new AnatomyScene(patient),
         query = new AnatomyQuery(scene);
       // Reuse the exact reference body selected when the observed simulator was constructed.
-      if (scene.torso.profile !== anatomy.scene.torso.profile) throw new Error('The reference body changed during acquisition setup');
+      const bodyProfile = scene.torso.profile,
+        observedProfile = anatomy.scene.torso.profile;
+      // Atlas habitus expands a fresh exterior profile per scene. Equal coordinates
+      // preserve registration; object identity does not establish that physical contract.
+      if (
+        bodyProfile !== observedProfile &&
+        (!bodyProfile ||
+          !observedProfile ||
+          bodyProfile.length !== observedProfile.length ||
+          !bodyProfile.every((v, i) => v === observedProfile[i]))
+      )
+        throw new Error('The reference body changed during acquisition setup');
       const sp = startPointsFor(scene.torso).find((s) => s.id === window)!;
       // Registered posterior kidney: the arterial plane is 3.5° behind its venous plane.
       // Procedural acquisition retains its audited 2° offset; physiology is untouched.

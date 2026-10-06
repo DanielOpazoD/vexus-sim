@@ -5,6 +5,11 @@
  * resuelve, se borra de aquí y del documento en el mismo cambio.
  */
 export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
+  'abdominal-atlas-reference-adult',
+  'abdominal-viscera-internals-estimated',
+  'abdominal-vascular-branches-estimated',
+  'abdominal-liver-size-fixed',
+  'abdominal-3d-texture-minimum',
   'reference-thorax-incomplete',
   'reference-diaphragm-incomplete',
   'reference-skeletal-organ-overlap',

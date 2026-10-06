@@ -75,7 +75,11 @@ export function buildVessels(a: AnatomyScene, caliber: VesselCaliber): THREE.Gro
     const tube: Tube = {
       ...v.tube,
       apScale,
-      nodes: v.tube.nodes.map((n) => ({ p: [n.p[0], n.p[1], Math.max(-240, n.p[2])] as Vec3, r: n.r * scale })),
+      // Pelvic branches must retain the acoustic source coordinates; the old short avatar clipped at −240 mm.
+      nodes: v.tube.nodes.map((n) => ({
+        p: [n.p[0], n.p[1], a.hasAbdominalAtlas ? n.p[2] : Math.max(-240, n.p[2])] as Vec3,
+        r: n.r * scale,
+      })),
     };
     const system = VESSEL_META[v.id].system;
     g.add(variableTube(tube, SYSTEM_COLOR_3D[system], system === 'aorta' ? 0.7 : 1));

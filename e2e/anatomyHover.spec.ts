@@ -82,14 +82,30 @@ test('identifica y demarca hígado/porta sin alterar señal; sale, cambia plano 
   await expect(page.locator('.anatomy-tooltip')).toBeHidden();
   await expect(page.locator('#overlay')).not.toHaveAttribute('data-anatomy-hover');
 
-  // Frozen old image must retain its old anatomy even when the live probe changes.
+  const old = await page.evaluate(() => {
+    const s = window.__vexusTest!.sim();
+    return { index: s.renderer.cineCount - 1, frame: s.renderer.displayedAnatomy!.frame };
+  });
+  await page.locator('#freeze').click();
   await page.evaluate(() => {
     const s = window.__vexusTest!.sim();
-    s.pose = { ...s.pose, phi: s.pose.phi + 0.4 };
+    s.setPose({ ...s.pose, phi: s.pose.phi + 0.4 });
+    for (let i = 0; i < 6; i++) {
+      s.advance(s.physiology.clock.dt);
+      s.render();
+    }
   });
-  await pointAt(page, [140, 90, 60]);
-  await expect(page.locator('#overlay')).toHaveAttribute('data-anatomy-hover', 'Hígado');
-  expect((await snapshot()).hash).toBe(before.hash);
+  await page.locator('#freeze').click();
+  await page.locator('#cine').fill(String(old.index));
+  await page.locator('#cine').dispatchEvent('input');
+  await expect.poll(() => page.evaluate(() => window.__vexusTest!.sim().renderer.displayedAnatomy!.frame)).toEqual(old.frame);
+  await expect
+    .poll(async () => {
+      await pointAt(page, [140, 90, 60]);
+      return page.locator('#overlay').getAttribute('data-anatomy-hover');
+    })
+    .toBe('Hígado');
+  await page.screenshot({ path: info.outputPath('hover-old-cine.png') });
   await page.mouse.move(700, 20);
   await page.selectOption('#case-select', 'severe-congestion');
   await expect(page.locator('#overlay')).not.toHaveAttribute('data-anatomy-hover');

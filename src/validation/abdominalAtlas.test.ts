@@ -31,6 +31,17 @@ afterEach(() => {
 });
 
 describe('registered abdomen: actual shipped acoustic data', () => {
+  it('reconciles false internal hepatic capsule without inventing another organ or flow', () => {
+    // Held-out crack in the assembled segment surfaces: old field +0.75 mm (exterior),
+    // despite being deep inside the hepatic envelope. It must be parenchyma in the scene.
+    const p: [number, number, number] = [-67.5, -7.5, -34.5];
+    expect(abdominalAtlasSdf(p, 4)).toBeLessThan(-30);
+    const scene = new AnatomyScene(NORMAL_ADULT);
+    const c = scene.classify(p, BASELINE_CALIBER);
+    expect(c.tissue).toBe(Tissue.Liver);
+    expect(c.vessel).toBeNull();
+    expect(c.interfaceDistance).toBeGreaterThan(5);
+  });
   it('pins both representations, stays within the portable memory bound and contains every field', () => {
     expect(digest(compressed)).toBe(ABDOMINAL_ATLAS.sha256Gzip);
     expect(digest(raw)).toBe(ABDOMINAL_ATLAS.sha256Raw);

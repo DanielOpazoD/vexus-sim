@@ -9,3 +9,5 @@ Predicción: en tejido blando el resultado anterior permanece; en hueso/gas se c
 Refutación y aceptación: oráculos analíticos con capas soft/bone/gas y frecuencias diferentes, salida GPU real del prefijo y comparación con integración PW sin espejo; negativo de señal tras hueso/gas. Mantener espejo explícitamente distinto del camino PW y conservar todos los controles de paridad B/apertura existentes. Registrar cualquier diferencia residual por discretización sin relajar reglas anatómicas o clínicas.
 
 La entrada ósea y absorción de gas siguen siendo aproximaciones declaradas por la decisión 88, no coeficientes clínicos nuevos. Crecimiento previsto <0,5 KiB, cabe en el margen 1031 KiB de la decisión 173; verificarlo al compilar.
+
+El pre-push completo identificó dos expectativas antiguas de o1.w=0 y la dependencia F→A obsoleta. Se actualiza el grafo real a F→A2 y se registra el digest del prefijo extendido, sin cambiar los tres primeros componentes ni los hashes B/A. Las guardas de dependencias, de samplers y de refracción se conservan. Fallos originales retenidos en 08-final-push.log.

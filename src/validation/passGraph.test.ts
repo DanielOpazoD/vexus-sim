@@ -231,7 +231,7 @@ const SAMPLERS: Record<PassId, { srcs: readonly string[]; samplers: Record<strin
   lateral: { srcs: [FRAG_LATERAL], samplers: { uField: 'axial', uRxNoise: 'axial', uShadow: 'trans' } },
   // y la pleura de A0 (la cortina de la mirada 0, decisión 61)
   compound: { srcs: [FRAG_COMPOUND], samplers: { uLook0: 'envLooks', uLook1: 'envLooks', uLook2: 'envLooks', uHits2: 'transHits' } },
-  color: { srcs: [FRAG_COLOR], samplers: { uTrans0: 'trans' } },
+  color: { srcs: [FRAG_COLOR], samplers: { uTrans0: 'transPrefix', uTransFixed: 'transPrefix' } },
   colorFilter: { srcs: [COLOR_FILTER_GLSL], samplers: { uRawColor: 'colorRaw' } },
   scanConvert: { srcs: [FRAG_SCANCONVERT], samplers: { uEnv: 'env', uColor: 'color' } },
   persistence: { srcs: [FRAG_PERSIST], samplers: { uCur: 'scan', uPrev: 'persist' } },

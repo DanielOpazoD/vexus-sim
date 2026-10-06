@@ -93,7 +93,7 @@ export const START_POINTS: readonly StartPoint[] = [
     z: -55,
     yaw: 0.4,
     rock: 0.25,
-    tilt: -0.4,
+    tilt: -0.398,
     hint: 'Suprahepática media por debajo del reborde costal derecho, 5 cm bajo el xifoides: marcador craneal algo girado hacia la izquierda del paciente, haz basculado hacia la cabeza y abanicado hacia la derecha del paciente; la VSH media baja hasta el tronco común y la VCI, con la derecha desembocando a su lado; puerta PW en la VSH media a 1–2 cm de la VCI.',
   },
   {

@@ -1,5 +1,6 @@
 /** Generated from the acoustic signed-distance field. */
 export const ABDOMINAL_SURFACE = {
+  sourceFieldSha256: 'dfb127d9e7fed00e6ec953a7f6f4fcbc5f486f88b5ee2b9f4403fd94cd1fb945',
   rawBytes: 29443248,
   gzipBytes: 4746742,
   sha256Gzip: '7bb942ed95c4ec187255cc9837a14d4e8a8a41a3b2ca242f69382f415ace0754',

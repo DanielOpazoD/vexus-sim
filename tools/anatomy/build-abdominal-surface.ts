@@ -12,6 +12,8 @@ const half = (bits: number) => {
   return sign * (exp === 0 ? m * 2 ** -24 : (1 + m / 1024) * 2 ** (exp - 15));
 };
 const raw = gunzipSync(readFileSync('src/anatomy/abdominal-atlas.gzip.bin'));
+if (raw.byteLength !== ABDOMINAL_ATLAS.rawBytes || createHash('sha256').update(raw).digest('hex') !== ABDOMINAL_ATLAS.sha256Raw)
+  throw new Error('Surface extraction requires the pinned acoustic field');
 const data = new Uint16Array(raw.buffer, raw.byteOffset, raw.byteLength / 2);
 const [w, h] = ABDOMINAL_ATLAS.textureDimensions;
 const arrays: Float32Array[] = [];
@@ -50,6 +52,7 @@ const bytes = new Uint8Array(combined.buffer),
   compressed = gzipSync(bytes, { level: 9, mtime: 0 } as Parameters<typeof gzipSync>[1]);
 writeFileSync('src/anatomy/abdominal-surface.gzip.bin', compressed);
 const meta = {
+  sourceFieldSha256: ABDOMINAL_ATLAS.sha256Raw,
   rawBytes: bytes.length,
   gzipBytes: compressed.length,
   sha256Gzip: createHash('sha256').update(compressed).digest('hex'),

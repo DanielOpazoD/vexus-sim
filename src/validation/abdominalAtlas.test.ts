@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
+import { ABDOMINAL_SURFACE } from '../anatomy/abdominalSurfaceData';
 import { ABDOMINAL_ATLAS, ABDOMINAL_FIELDS } from '../anatomy/abdominalAtlasData';
 import { setAbdominalAtlas, abdominalAtlasSdf, abdominalAtlasValue } from '../anatomy/abdominalAtlas';
 import { setAbdominalBody } from '../anatomy/referenceBody';
@@ -57,6 +58,25 @@ describe('registered abdomen: actual shipped acoustic data', () => {
             if (abdominalAtlasSdf(p, k) < -1.5) interior++;
           }
       expect(interior, f.name).toBeGreaterThan(20);
+    }
+  });
+  it('pins every navigator surface to the same acoustic zero boundary', () => {
+    const compressedSurface = readFileSync('src/anatomy/abdominal-surface.gzip.bin');
+    const bytes = gunzipSync(compressedSurface);
+    expect(ABDOMINAL_SURFACE.sourceFieldSha256).toBe(ABDOMINAL_ATLAS.sha256Raw);
+    expect(digest(compressedSurface)).toBe(ABDOMINAL_SURFACE.sha256Gzip);
+    expect(digest(bytes)).toBe(ABDOMINAL_SURFACE.sha256Raw);
+    expect(bytes.byteLength).toBe(ABDOMINAL_SURFACE.rawBytes);
+    const vertices = new Float32Array(bytes.buffer, bytes.byteOffset, bytes.byteLength / 4);
+    for (const [k, surface] of ABDOMINAL_SURFACE.fields.entries()) {
+      expect(surface.name).toBe(ABDOMINAL_FIELDS[k].name);
+      expect(surface.count).toBeGreaterThan(1000);
+      for (let i = 0; i < surface.count; i += 97) {
+        const offset = surface.offset + 3 * i;
+        const p: [number, number, number] = [vertices[offset], vertices[offset + 1], vertices[offset + 2]];
+        expect(p.every(Number.isFinite)).toBe(true);
+        expect(Math.abs(abdominalAtlasSdf(p, k)), surface.name).toBeLessThan(0.001);
+      }
     }
   });
   it('places both kidneys posteriorly, left above right, and keeps posterior supports outside their parenchyma', () => {

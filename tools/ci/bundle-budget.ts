@@ -72,7 +72,7 @@ const BUDGETS: Array<[RegExp, number]> = [
 // Medición inicial 1026,9 KiB; conserva todos los chunks, Workers y ganchos dentro del cómputo.
 // 06-10-2026: +1 KiB compartido para sección regional, paridad portal y filtro color (172–173).
 // 06-10-2026: +1 KiB para descarte costal conservador CPU/GLSL (175), medido 1031,4 KiB.
-// 06-10-2026: +1 KiB para registro renal/músculos posteriores compartidos (177), medido 1032,3 KiB.
+// 06-10-2026: +1 KiB para registro renal/músculos posteriores compartidos (176), medido 1032,3 KiB.
 const TOTAL_JS_BUDGET = 1033 * KB;
 /** Identifica los ganchos para el informe; todos los chunks y Workers cuentan en el total. */
 const TEST_ONLY = /^testHooks-.*\.js$/;

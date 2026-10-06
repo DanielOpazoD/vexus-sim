@@ -213,7 +213,7 @@ const REFERENCE_POSES = {
     tilt: 0.133669,
   },
   renal: {
-    // Registered renal axis (177): aim through the real flank, not the former anterior kidney.
+    // Registered renal axis (176): aim through the real flank, not the former anterior kidney.
     phi: 3.35,
     z: -75,
     yaw: -0.175994,

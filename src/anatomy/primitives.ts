@@ -695,6 +695,12 @@ export function ribCentre(phi: number, rib: Rib, t: Torso): Vec3 {
   const [a, b, y, c] = ribShape(rib, t);
   return [a * Math.cos(phi), y + b * Math.sin(phi), rib.zAnterior + rib.tilt * (0.5 - 0.5 * Math.sin(phi)) + c * Math.cos(phi)];
 }
+/** Cota inferior al arco óseo. El cartílago registrado tiene otro campo: no se descarta. */
+export function ribDistanceLowerBound(p: Vec3, rib: Rib): number {
+  const amplitude = Math.sqrt((rib.tilt / 2) ** 2 + (rib.shape?.[3] ?? 0) ** 2);
+  const dz = Math.max(0, Math.abs(p[2] - rib.zAnterior - rib.tilt / 2) - amplitude);
+  return Math.min(1e3, (dz / rib.halfWidth - 1) * Math.min(rib.halfWidth, rib.halfThickness));
+}
 /** Distancia con signo a una costilla (negativa dentro del hueso). */
 export function sdRib(p: Vec3, rib: Rib, torso: Torso, spine?: Spine): { d: number; cartilage: boolean } {
   const bone = sdRibBone(p, rib, torso, spine);

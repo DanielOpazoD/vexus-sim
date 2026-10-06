@@ -11,6 +11,9 @@ import type { AnatomyScene } from '../../anatomy/scene';
 import type { Vec3 } from '../../core/vec3';
 import { CM } from './common';
 import { labelSprite } from './labels';
+import { psoasSdf, quadratusSdf } from '../../anatomy/organs/retroperitoneum';
+import { perirenalOuterSdf } from '../../anatomy/organs/kidney';
+import { torsoDepth } from '../../anatomy/primitives';
 import { variableTube } from './tubes';
 
 /**
@@ -143,6 +146,7 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
   const g = new THREE.Group();
   const liver = buildLiverMesh(a);
   g.add(liver, buildCouinaudLabels(a, liver));
+  g.add(buildPosteriorMuscles(a));
   const bowel = variableTube(
     { kind: 'tube', nodes: BOWEL_NODES.map((p, i) => ({ p, r: BOWEL_REST_RADII[i] })).filter(({ p }) => p[2] > -240), apScale: 1 },
     0xcda08b,
@@ -225,6 +229,29 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
   // Vía biliar (verde), fina
   for (const d of a.ducts) g.add(variableTube(d.tube, 0x5fc86a, 0.95));
   return g;
+}
+
+/** Posterior supports use the acoustic fields and the same vertebral registration. */
+export function buildPosteriorMuscles(a: AnatomyScene): THREE.Group {
+  const group = new THREE.Group(),
+    offset = a.spine.y0 + 46;
+  for (const side of [-1, 1]) {
+    const lo: Vec3 = [side < 0 ? -110 : 15, -160, -260];
+    const hi: Vec3 = [side < 0 ? -15 : 110, -10, -30];
+    for (const kind of ['psoas', 'quadratus'] as const) {
+      const field = (p: Vec3) => {
+        const local: Vec3 = [p[0], p[1] - offset, p[2]];
+        const sideDistance = side < 0 ? p[0] : -p[0];
+        if (kind === 'psoas') return Math.max(psoasSdf(local), sideDistance);
+        const peri = Math.min(...[a.kidneyRight, a.kidneyLeft].map((k) => perirenalOuterSdf(kidneyLocal(p, k), k)));
+        return Math.max(quadratusSdf(local, -torsoDepth(p, a.torso) - a.wallThickness(), peri), sideDistance);
+      };
+      const mesh = meshFromSdf(field, lo, hi, 40, new THREE.MeshStandardMaterial({ color: 0x8f5956, roughness: 0.85 }));
+      mesh.name = `${kind === 'psoas' ? 'Psoas mayor' : 'Cuadrado lumbar'} ${side < 0 ? 'derecho' : 'izquierdo'}`;
+      group.add(mesh);
+    }
+  }
+  return group;
 }
 
 /** Tubo con radio variable a lo largo de una polilínea (anillos por segmento, Catmull-Rom). */

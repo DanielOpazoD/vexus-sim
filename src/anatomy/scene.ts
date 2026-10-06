@@ -13,6 +13,7 @@ import {
   sdDiaphragm,
   sdDiaphragmSlope,
   sdRib,
+  ribDistanceLowerBound,
   smoothMax,
   torsoDepth,
   tubeFaceGradient,
@@ -315,7 +316,7 @@ export class AnatomyScene {
     const bL = orthonormalBasis([-0.22, -0.18, 1], [-1, 0.25, 0]);
     this.kidneyRight = {
       kind: 'kidney',
-      center: [-72, -38, -78],
+      center: [-72, -38 + this.spineReferenceOffset, -78],
       radii: KIDNEY_RADII,
       ...bR,
       sinusRadii: KIDNEY_SINUS.radii,
@@ -324,7 +325,7 @@ export class AnatomyScene {
     };
     this.kidneyLeft = {
       kind: 'kidney',
-      center: [78, -36, -70],
+      center: [78, -36 + this.spineReferenceOffset, -70],
       radii: KIDNEY_RADII,
       ...bL,
       sinusRadii: KIDNEY_SINUS.radii,
@@ -621,7 +622,8 @@ export class AnatomyScene {
     for (const k of [this.kidneyRight, this.kidneyLeft]) bd = Math.min(bd, perirenalOuterSdf(kidneyLocal(m, k), k));
     // detrás del peritoneo parietal posterior, el retroperitoneo (decisión 81): psoas, cuadrado lumbar y grasa; delante, el
     // intestino. Su distancia a la frontera cuenta también la columna, que se clasifica antes (el psoas la bordea)
-    const [tissue, dRetro] = retroperitoneum(m, -depth - wallMm, kidney.dPeriMm);
+    const retroPoint: Vec3 = [m[0], m[1] - this.spineReferenceOffset, m[2]];
+    const [tissue, dRetro] = retroperitoneum(retroPoint, -depth - wallMm, kidney.dPeriMm);
     bd = Math.max(0, Math.min(bd, dRetro, sdSpine(m, this.spine)));
     if (tissue !== Tissue.Bowel) return { ...NONE, tissue, boundaryDistance: bd };
     const q = bowelQuery(m, this.bowelRadii),
@@ -821,6 +823,7 @@ export class AnatomyScene {
       ribAny = sternumD;
       if (m[2] >= STERNUM.zJunctionMm) ribD = sternumD;
       for (const rib of this.ribs) {
+        if (!rib.sourceCartilage && ribDistanceLowerBound(m, rib) > Math.max(ribAny, ribD) + 0.01) continue;
         const r = sdRib(m, rib, torso, this.spine);
         if (r.d < 0) {
           const tissue = r.cartilage ? Tissue.Cartilage : Tissue.Bone;

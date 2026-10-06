@@ -87,6 +87,9 @@ export class VenousSpectralAcquisition {
       // Reuse the exact reference body selected when the observed simulator was constructed.
       if (scene.torso.profile !== anatomy.scene.torso.profile) throw new Error('The reference body changed during acquisition setup');
       const sp = startPointsFor(scene.torso).find((s) => s.id === window)!;
+      // Registered posterior kidney: the arterial plane is 3.5° behind its venous plane.
+      // Procedural acquisition retains its audited 2° offset; physiology is untouched.
+      const pairedTilt = paired ? ((scene.torso.profile ? 3.5 : 2) * Math.PI) / 180 : 0;
       // Audited acquisition pose, not a velocity or brightness correction.
       const contact = probeContact(
         {
@@ -94,7 +97,7 @@ export class VenousSpectralAcquisition {
           z: sp.z,
           yaw: sp.yaw,
           rock: sp.rock ?? 0,
-          tilt: (sp.tilt ?? 0) - (paired ? Math.PI / 90 : 0) + (window === 'intercostal' && hepaticWindow === 'tilted' ? Math.PI / 90 : 0),
+          tilt: (sp.tilt ?? 0) - pairedTilt + (window === 'intercostal' && hepaticWindow === 'tilted' ? Math.PI / 90 : 0),
           lift: 0,
         },
         tr,

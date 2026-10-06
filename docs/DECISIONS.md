@@ -6370,7 +6370,7 @@ Doce pares requieren consultar numerosos arcos lejanos en cada muestra acústica
 
 Oráculo por todos los arcos en ambos cuerpos, superficies y extremos libres: mínimos y primer interior exactos. En rejilla CPU: consultas 602384→513832 y 601632→511288; timing variable en Mac compartido, sin promesa de fps. Rechazada primera implementación con Math.hypot más lenta; sqrt conserva la misma cota. Paridad GPU completa requerida. Crecimiento observado a 1031,4 KiB: margen explícito +1 KiB (1032 total), manteniendo todos los chunks/Workers y límites individuales.
 
-## 177. Registro renal y muscular posterior coherente con la columna
+## 176. Registro renal y muscular posterior coherente con la columna
 
 **Defecto observado.** El adulto de referencia retrasa la columna 14,02345 mm, pero riñones y psoas conservaban coordenadas procedurales. El riñón procedural ya era posterior (cápsula a > 10 cm de la piel anterior); trasladarlo arbitrariamente atrás invadiría su pared posterior. No se corrige una imagen moviendo solo mallas.
 
@@ -6380,4 +6380,6 @@ Oráculo por todos los arcos en ambos cuerpos, superficies y extremos libres: m�
 
 **Alcance posterior solicitado.** Se registró un contrato previo para agregar geometría ecográfica real de bazo, páncreas, estómago, duodeno, todo el intestino y vejiga, y completar ramas principales aórticas/cavas. No están incorporados todavía en esta iteración. Referencias y controles en anatomy/ABDOMINAL_COMPLETENESS_CONTRACT.md; no equivale a validación clínica humana ni fidelidad máxima.
 
-Seguimiento de 177: la antigua pose renal de referencia perdió la puerta tras desplazar el órgano (fallo real guardado). Búsqueda offline por polos/eje renal y transmisión real: φ3,35, z−75, yaw−0,175994, rock−0,218131, tilt−0,41084; los tres hitos visibles, puerta interlobar a 54 mm, ángulo16,67° y transmisión0,1862. La adquisición completa conserva límites cos>0,5, transmisión>0,01, calidad y patrón continuo. Tres cadenas de referencia y dos imágenes hepatorrenales nativas pasan sin reintentos. Build1032,3 KiB: margen medido+1 KiB (1033 total), sin nuevas texturas.
+Seguimiento de 176: la antigua pose renal de referencia perdió la puerta tras desplazar el órgano (fallo real guardado). Búsqueda offline por polos/eje renal y transmisión real: φ3,35, z−75, yaw−0,175994, rock−0,218131, tilt−0,41084; los tres hitos visibles, puerta interlobar a 54 mm, ángulo16,67° y transmisión0,1862. La adquisición completa conserva límites cos>0,5, transmisión>0,01, calidad y patrón continuo. Tres cadenas de referencia y dos imágenes hepatorrenales nativas pasan sin reintentos. Build1032,3 KiB: margen medido+1 KiB (1033 total), sin nuevas texturas.
+
+El hook completo detectó además que la adquisición pareada opcional del visor perdía la arteria a −2° tras registrar el riñón. Barrido real de −5..+5°: −3,5° conserva puerta arterial en normal/grave, margen >0,73 mm y cos>0,93; se usa solo en referencia, procedural sigue −2°. Diez comprobaciones de documentación/pareado pasan, incluidas composición arterial y venosa, demás territorios y fisiología sin cambios. Los fallos y el barrido quedan guardados. La numeración renal es 176 en esta iteración; la integración Doppler siguiente pasa a 177.

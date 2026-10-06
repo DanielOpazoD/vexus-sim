@@ -1,6 +1,7 @@
 import { TISSUE_COUNT } from '../../anatomy/tissues';
 import { COLOR_MAP_GLSL } from '../colorMap';
 import { COLOR_WALL_FILTER_GLSL } from '../colorWallFilter';
+import { DOPPLER_TRANSMISSION_GLSL } from '../dopplerTransmission';
 import { C_RECONSTRUCTION_MM_S } from '../../core/units';
 import { ANATOMY_GLSL } from '../../anatomy/gpu/anatomy.glsl';
 import { APERTURE_GLSL, REFRACTION_GLSL, STEERED_APERTURE_GLSL } from '../aperture';
@@ -354,12 +355,12 @@ uniform sampler2D uHits0;
 uniform sampler2D uHits1;
 in vec2 vUv;
 layout(location = 0) out vec4 o0; // (dB ida y vuelta de un rayo, gasHit, boneHit, mirrorHit)
-layout(location = 1) out vec4 o1; // (Ψ̃ de la refracción en las luces y su pendiente, decisión 86; dB del hueso, 0)
+layout(location = 1) out vec4 o1; // (Ψ̃ de la refracción en las luces y su pendiente, decisión 86; dB del hueso, pérdida fija)
 ${steeredOnly(look, STEERED_PREFIX_DECL_GLSL)}void main() {
   int line = int(gl_FragCoord.x);
   int k = int(gl_FragCoord.y);
   float step = uDepth / uCoarseN;
-  float attenDb = 0.0, psi = 0.0, pa = 0.0, boneDb = 0.0;
+  float attenDb = 0.0, psi = 0.0, pa = 0.0, boneDb = 0.0, fixedDb = 0.0;
   bool entered = false;
   bool boneEntered = false;
   for (int s = 0; s < 512; s++) {
@@ -367,8 +368,9 @@ ${steeredOnly(look, STEERED_PREFIX_DECL_GLSL)}void main() {
     vec4 g = texelFetch(uSeg, ivec2(line, s), 0);
     if (g.x < 0.0 && !entered) continue;
     entered = true;
-    if (g.z > 0.5 && !boneEntered) { attenDb += ${glslFloat(BONE_ENTRY_DB)}; boneDb += ${glslFloat(BONE_ENTRY_DB)}; boneEntered = true; }
+    if (g.z > 0.5 && !boneEntered) { attenDb += ${glslFloat(BONE_ENTRY_DB)}; boneDb += ${glslFloat(BONE_ENTRY_DB)}; fixedDb += ${glslFloat(BONE_ENTRY_DB)}; boneEntered = true; }
     attenDb += abs(g.x);
+    if (g.w > 0.5) fixedDb += abs(g.x);
     // lo que cuesta el hueso (decisión 88): la pasada A saca de él la parte del haz que una costilla tapa
     if (g.z > 0.5) boneDb += abs(g.x);
     // Ψ̃ de la refracción en las luces y su pendiente (decisión 86, refractionPsi): Σe·(k − s)/(R + r) y Σ_{s<k} e/(R + r),
@@ -387,7 +389,7 @@ ${steeredOnly(look, STEERED_PREFIX_DECL_GLSL)}void main() {
   float boneHit = h0.z >= 0.0 && h0.z <= kf ? (h0.z + 0.5) * step : -1.0;
   o0 = vec4(attenDb, gasHit, boneHit, mirrorHit);
   // la dirección (la reflejada tras el espejo) y el tipo de gas los pone la pasada A desde A0 (decisión 86)
-  o1 = vec4(step * psi, pa, boneDb, 0.0);
+  o1 = vec4(step * psi, pa, boneDb, fixedDb);
 ${steeredOnly(look, STEERED_PREFIX_MAIN_GLSL)}}
 `;
 }
@@ -1184,7 +1186,8 @@ precision highp float;
 precision highp int;
 ${ANATOMY_GLSL}
 ${BEAM_GLSL}
-uniform sampler2D uTrans0;
+uniform sampler2D uTrans0; // A2: total loss dB
+uniform sampler2D uTransFixed; // A2 auxiliary .w: frequency-independent loss dB
 uniform vec4 uBox;        // theta0, theta1, r0, r1
 uniform vec2 uCells;      // líneas de color × paquetes axiales dentro de la caja
 uniform vec4 uBeam;       // λ·k, D_tx, D_rx,max, F#_rx,min (mismo modelo que la PSF)
@@ -1200,6 +1203,7 @@ in vec2 vUv;
 out vec4 oColor;
 float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
 ${COLOR_WALL_FILTER_GLSL}
+${DOPPLER_TRANSMISSION_GLSL}
 // Normales en los nodos de la retícula de resolución del color (una línea de color × un paquete axial), dos por nodo
 vec2 colorGaussAt(vec2 q, float seed) {
   float a = hash12(q * 0.917 + vec2(seed * 1.37, seed * 0.61) + 0.5);
@@ -1233,8 +1237,9 @@ void main() {
   // Transmisión (pasada A, a la frecuencia B) convertida a la frecuencia Doppler del perfil: la misma
   // que usa la puerta PW. Antes el exponente era 0,714 fijo (B a 3,5 MHz) con el perfil a 2,5 y 2,5.
   float u = (theta + uHalfSector) / (2.0 * uHalfSector);
-  float Tb = texture(uTrans0, vec2(u, r / uDepth)).x;
-  float T = pow(max(Tb, 1e-6), uDopplerFreqRatio);
+  float totalDb = texture(uTrans0, vec2(u, r / uDepth)).x;
+  float fixedDb = texture(uTransFixed, vec2(u, r / uDepth)).w;
+  float T = dopplerTransmission(totalDb, fixedDb, uDopplerFreqRatio);
   // Sin contacto no hay eco: el acoplamiento de la línea multiplica la transmisión como en modo B.
   T *= texture(uCoupling, vec2(u, 0.5)).r;
   float bf = 0.0; float vb = 0.0; float vt = 0.0;

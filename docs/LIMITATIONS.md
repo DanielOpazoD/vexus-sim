@@ -555,3 +555,5 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   [Mecanismo, referencias y ensayos](physiology/VENOUS_RESERVOIR_COMPLIANCE.md).
 
 `color-complex-kernel-estimated`: el kernel complejo del color es procesamiento espacial estimado sobre autocorrelación emulada; no se han validado resolución ni mezcla de velocidades contra clips independientes. Ganancia/interpolación pueden extender color junto a paredes y no se añade máscara vascular para esconderlo.
+
+La conversión de absorción del color todavía usa exponente unitario (`color-absorption-linear-scaling`, 174) después de separar hueso/gas; piel, grasa, músculo y sangre poseen b distinto de uno. Corregir requiere integración por tejido a la frecuencia Doppler. Las barreras fijas ya se conservan y no hay suelo de transmisión 1e-6.

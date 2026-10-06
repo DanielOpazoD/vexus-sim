@@ -20,7 +20,8 @@ import { Interface, isRibInterface, isWallLayerInterface } from '../anatomy/inte
 import { TISSUES, Tissue } from '../anatomy/tissues';
 import type { Vec3 } from '../core/vec3';
 import { FRAME_PASSES, type PassId } from '../ultrasound/passGraph';
-import { rayAttenuationDb } from '../ultrasound/transmission';
+import { rayAttenuationDb, rayFixedAttenuationDb } from '../ultrasound/transmission';
+import { dopplerTransmission } from '../ultrasound/dopplerTransmission';
 import { refractionBeam, type ApertureGeometry } from '../ultrasound/aperture';
 import { compareSteeredTransmission, look0TransmissionTwin } from './steeredParity';
 import { compoundActive, lookTheta } from '../ultrasound/compound';
@@ -757,7 +758,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       const depth = sim.bmode.depthMm;
       const lines = sim.renderer.lines;
       const u = (theta + tr.halfSector) / (2 * tr.halfSector);
-      const tb = sim.renderer.transmissionAt(u, depthMm / depth);
+      const transmission = sim.renderer.readTransmission();
       const fB = sim.profile.bEffectiveMHz;
       const ratio = sim.profile.dopplerEffectiveMHz / fB;
       // el téxel que lee el color (el mismo índice que `transmissionAt`) y el acoplamiento como lo muestrea:
@@ -769,8 +770,9 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       const i1 = Math.min(lines - 1, i0 + 1);
       const cAt = (i: number) => contactCoupling(sim.contact, lineAngle(i, tr));
       const coupling = cAt(i0) + (cAt(i1) - cAt(i0)) * (x - i0);
-      const db = (v: number) => 20 * Math.log10(Math.max(v, 1e-12));
-      const color = db(Math.pow(Math.max(tb, 1e-12), ratio) * coupling);
+      const db = (v: number) => 20 * Math.log10(Math.max(v, 1e-30));
+      const cell = row * lines + line;
+      const color = db(dopplerTransmission(transmission.prefixDb![cell], transmission.fixedDb![cell], ratio) * coupling);
       // el mismo téxel en la CPU: segmentos de la pasada A por el centro de la línea, con los dos lados de
       // cada segmento ambiguo (centro a < 0,02 mm de una interfaz)
       const thetaTexel = -tr.halfSector + (2 * tr.halfSector * (line + 0.5)) / lines;
@@ -788,7 +790,9 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       const path: Tissue[] = [];
       const walk = (k: number): void => {
         if (k === options.length) {
-          const v = -rayAttenuationDb(path, step, fB) * ratio + db(coupling);
+          const total = rayAttenuationDb(path, step, fB),
+            fixed = rayFixedAttenuationDb(path, step);
+          const v = db(dopplerTransmission(total, fixed, ratio) * coupling);
           lo = Math.min(lo, v);
           hi = Math.max(hi, v);
           return;

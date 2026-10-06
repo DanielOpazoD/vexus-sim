@@ -75,7 +75,7 @@ export const FRAME_PASSES: readonly PassSpec[] = [
   // huesos: bajo una costilla la línea no recibe lóbulos laterales (decisión 88)
   { id: 'lateral', label: 'D', reads: ['axial', 'trans'], writes: 'envLooks', cadence: 'frame' },
   { id: 'compound', label: 'K', reads: ['envLooks', 'transHits'], writes: 'env', cadence: 'frame' },
-  { id: 'color', label: 'F', reads: ['scene', 'trans'], writes: 'colorRaw', cadence: 'color' },
+  { id: 'color', label: 'F', reads: ['scene', 'transPrefix'], writes: 'colorRaw', cadence: 'color' },
   { id: 'colorFilter', label: 'F1', reads: ['colorRaw'], writes: 'color', cadence: 'color' },
   { id: 'scanConvert', label: 'G', reads: ['env', 'color'], writes: 'scan', cadence: 'frame' },
   { id: 'persistence', label: 'P', reads: ['scan', 'persist'], writes: 'persist', cadence: 'frame' },

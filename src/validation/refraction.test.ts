@@ -265,13 +265,13 @@ describe('refracción en las luces líquidas (decisión 86)', () => {
   it('la GLSL: A1 escribe el camino de más y el aire en negativo, A2 acumula Ψ̃ y A multiplica su transmisión con apertura', () => {
     // A1: el aire con el dB en negativo (el gel previo), el camino de más en .y
     expect(FRAG_TRANS_SEGMENTS).toContain(`oSeg = vec4(c.tissue == T_AIR ? -db : db, ${lumenExcessGlsl('c.tissue')} * step,`);
-    // A2 de la mirada 0 y su gemelo dirigido: Σe·(k − s)/(R + r), sin cancelación, con Ψ̃ en o1.w y en o3.z y la pendiente
+    // A2 de la mirada 0 y su gemelo dirigido: Σe·(k − s)/(R + r), sin cancelación, con Ψ̃ en o1.x y en o3.z y la pendiente
     // del camino dirigido en o3.w
     for (const src of [FRAG_TRANS_PREFIX, FRAG_TRANS_PREFIX_STEERED]) {
       expect(src).toContain('if (g.x < 0.0 && !entered) continue;');
       expect(src).toContain('psi += e * float(k - s);');
       // y en .z, lo que cobra el hueso (decisión 88: la fracción del haz que sobrevive a los huesos, que lee la pasada D)
-      expect(src).toContain('o1 = vec4(step * psi, pa, boneDb, 0.0);');
+      expect(src).toContain('o1 = vec4(step * psi, pa, boneDb, fixedDb);');
     }
     expect(STEERED_PREFIX_GLSL).toContain('float e = g.y * scale / (uCurvR + rS);');
     expect(STEERED_PREFIX_GLSL).toContain('psi += e * float(k - s);');

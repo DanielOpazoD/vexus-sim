@@ -325,11 +325,12 @@ describe('Límites del shader con margen para crecer', () => {
   // la mirada (los pares de la apertura mezclados con ella) y B la usa en lugar de la del rayo central fuera de la
   // cortina; en las líneas de la cortina sigue la del rayo central, con su lámina. Lejos de todo obstáculo es la del
   // rayo, la de antes.
+  // 174 conserva las primeras tres componentes de o1 y añade barreras fijas en .w; nuevo prefijo 3190420bf1186449.
   it('el main de los programas de la mirada 0 es, letra a letra, el de antes de la composición', () => {
     const mainOf = (src: string): string => src.slice(src.lastIndexOf('\nvoid main() {'));
     const print = (src: string): string => createHash('sha256').update(mainOf(src)).digest('hex').slice(0, 16);
     expect(Object.fromEntries(LOOK_PAIRS.map((p) => [p.name, print(p.look0)]))).toEqual({
-      FRAG_TRANS_PREFIX: '012de03287743344',
+      FRAG_TRANS_PREFIX: '3190420bf1186449',
       FRAG_TRANSMISSION: '8e60c30b337d5edd',
       FRAG_RAWFIELD: '509cf14b9fd7f51b',
     });

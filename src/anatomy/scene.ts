@@ -57,6 +57,7 @@ import {
 import { domeFloor, heartFloor, heartOuterSdf, ivcAtrium, thorax } from './organs/heart';
 import { inLungCurtain, inLungRecess, lungCurtainDistance, lungCurtainEdgeMm } from './organs/lungCurtain';
 import { retroperitoneum } from './organs/retroperitoneum';
+import { sternumSd, STERNUM } from './organs/sternum';
 import {
   nearestRib,
   preperitonealMm,
@@ -338,6 +339,7 @@ export class AnatomyScene {
     const anterior = [40, 20, 0, -25, -50, -75];
     for (let i = 0; i < anterior.length; i++) {
       this.ribs.push({
+        number: 5 + i,
         zAnterior: anterior[i],
         tilt: ribTiltMm(5 + i),
         ...RIB_SECTIONS[i],
@@ -368,6 +370,35 @@ export class AnatomyScene {
           : {}),
       });
     }
+    // Decisión 166: niveles superiores estimados del registro LUS; se preservan los arcos 5–10.
+    // El ajuste transversal sigue siendo una aproximación del adulto procedural VExUS.
+    for (const [i, zAnterior] of [148.3333, 118.4, 86.3, 60].entries())
+      this.ribs.push({
+        number: i + 1,
+        zAnterior,
+        tilt: [50, 56.6, 65.3667, 68.3333][i],
+        halfWidth: [5.1, 5.8, 6.3, 6.6][i],
+        halfThickness: [2.5, 2.6, 2.8, 2.9][i],
+        scale: 0.85,
+        cartilageFromPhi: Math.PI / 4,
+        rightOnly: false,
+      });
+    // 11/12 flotantes: extremos libres estimados, sin prolongación cartilaginosa al esternón.
+    for (const [i, number] of [11, 12].entries())
+      this.ribs.push({
+        number,
+        // Ajuste a 101 muestras LUS, docs/anatomy/floating-rib-registration.json (error ≤ 2,66 mm).
+        zAnterior: [-187.46253074456908, -211.830381408547][i],
+        tilt: [156.2131206819734, 158.35017340223095][i],
+        frontPhi: [2.9533963267968613, 3.444096326797897][i],
+        shape: [this.torso.a * 0.85, this.torso.b * 0.85, this.torso.y0 ?? 0, [16.59737136429592, 23.43245480406097][i]],
+        anteriorEndX: 15,
+        halfWidth: [4.9, 4.75][i],
+        halfThickness: [2.55, 2.5][i],
+        scale: 0.85,
+        cartilageFromPhi: Number.NaN,
+        rightOnly: false,
+      });
     const tree = buildVesselTree(this.kidneyRight, this.kidneyLeft);
     this.vessels = tree.vessels;
     // Ramas de 3.º–4.º orden confinadas al hígado (el SDF ya conoce riñón y vesícula); las madres sin hijas en su extremo,
@@ -701,6 +732,8 @@ export class AnatomyScene {
       }
       if (isRibInterface(iface)) {
         const rib = this.ribs[nearestRib(m, this.ribs, this.torso, this.spine)];
+        if (sternumSd(m, this.torso) < ribSd(m, rib, this.torso, this.spine))
+          return { ...this.numericGradient(m, (p) => sternumSd(p, this.torso), 0), axis: [0, 0, 1] };
         const g = this.numericGradient(m, (p) => ribSd(p, rib, this.torso, this.spine), ribCurvature(m, rib, this.torso));
         return { ...g, axis: ribTangent(m, rib, this.torso) };
       }
@@ -771,7 +804,22 @@ export class AnatomyScene {
     // pared o justo por debajo; la ósea más cercana da la cortical, el cartílago su pericondrio
     let ribD = 1e3;
     let ribAny = 1e3;
-    if (d >= ribSearchDepth(torso, this.ribs[0]?.scale ?? 1))
+    if (d >= ribSearchDepth(torso, this.ribs[0]?.scale ?? 1)) {
+      const sternumD = sternumSd(m, torso);
+      if (sternumD < 0) {
+        const cartilage = m[2] < STERNUM.zJunctionMm;
+        return {
+          final: true,
+          cls: {
+            ...NONE,
+            tissue: cartilage ? Tissue.Cartilage : Tissue.Bone,
+            boundaryDistance: -sternumD,
+            ...(cartilage ? { interface: Interface.Perichondrium, interfaceDistance: -sternumD } : {}),
+          },
+        };
+      }
+      ribAny = sternumD;
+      if (m[2] >= STERNUM.zJunctionMm) ribD = sternumD;
       for (const rib of this.ribs) {
         const r = sdRib(m, rib, torso, this.spine);
         if (r.d < 0) {
@@ -782,6 +830,7 @@ export class AnatomyScene {
         ribAny = Math.min(ribAny, r.d);
         if (!r.cartilage) ribD = Math.min(ribD, r.d);
       }
+    }
     if (d >= wall) return { final: false, wallMm: wall };
     // las coordenadas de la pared solo dentro de ella: fascia profunda y transversalis onduladas en (u, z)
     const u = wallArc(m, torso);

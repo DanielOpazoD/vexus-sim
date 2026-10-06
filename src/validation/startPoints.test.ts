@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { bestGateOnVessel } from '../app/gatePlacement';
-import { acousticWindowWeight } from '../app/gateTransmission';
+import { acousticWindowWeight, gateTransmission } from '../app/gateTransmission';
 import { START_POINTS, type StartPoint } from '../app/startPoints';
 import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
@@ -165,12 +165,15 @@ const IVC = ['ivcInfra', 'ivcSupra'];
 const HEPATIC_VEINS = ['hvRight', 'hvMiddle', 'hvLeft'] as const;
 
 describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', () => {
-  it('porta lateral (decisión 69): porta principal y derecha en el plano, VCI detrás, sin costillas y con ángulo Doppler útil', () => {
+  it('porta lateral: acceso al vaso principal con ángulo Doppler útil', () => {
     const s = sweep(byId('portal'), 170);
     expect(s.coupling).toBeGreaterThan(0.75);
     expect(samples(s, 'pvTrunk') + samples(s, 'pvRight')).toBeGreaterThan(40);
     expect(samples(s, 'ivcInfra') + samples(s, 'ivcSupra')).toBeGreaterThan(20);
-    expect(s.tissues.get(Tissue.Bone) ?? 0).toBe(0);
+    // Con 11/12 hay sombras en los bordes del sector. Lo exigible es una ventana real hasta el vaso,
+    // no borrar los huesos que el plano encuentra fuera de esa trayectoria (decisión 166).
+    const visible = screenMap(poseOf(byId('portal')), 170);
+    for (const id of ['pvTrunk', 'pvRight']) expect(visible.of(id).length, id).toBe(visible.all(id).length);
     // la puerta sobre la porta con el haz a ≤ 60° de su eje
     const sp = byId('portal');
     const pose: ProbePose = { phi: sp.phi, z: sp.z, lift: 0, yaw: sp.yaw, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
@@ -400,7 +403,10 @@ describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', 
       hv,
     });
     expect(m.coupling, tag).toBeGreaterThan(0.85);
-    expect(m.of(Tissue.Bone), tag).toHaveLength(0);
+    // Las costillas posteriores y el extremo esternal pueden entrar fuera de la trayectoria vascular.
+    // Exigir toda la cava y confluencia visibles conserva el negativo de barrera antepuesta.
+    expect(ivc.length, tag).toBe(m.all(...IVC).length);
+    expect(m.of('hvCommonTrunk').length, tag).toBe(m.all('hvCommonTrunk').length);
     // la VCI a la vista (161 muestras, entera desde la decisión 85: antes, 94 de 215, su parte craneal tras el pulmón de
     // encima de la cúpula) con el tronco común (28)
     expect(ivc.length, tag).toBeGreaterThan(60);
@@ -548,6 +554,52 @@ describe('Puntos de partida (decisión 17): cada ventana corta lo que promete', 
     const front = Array.from({ length: top - lastLiver(central) - 1 }, (_, k) => m.tissueAt(central, lastLiver(central) + 1 + k));
     expect(front, tag).toContain(Tissue.Mediastinum);
     expect(front, tag).not.toContain(Tissue.Lung);
+  });
+
+  it('renal: la ventana pasa junto a la flotante y el punto previo conserva su sombra ósea', () => {
+    const patient = { ...NORMAL_ADULT, respiratoryPattern: 'apnea-expiratory' as const };
+    const localScene = new AnatomyScene(patient);
+    const anatomy = new AnatomyQuery(localScene);
+    const engine = new PhysiologyEngine(patient, localScene.vesselAreas());
+    for (let i = 0; i < 7500; i++) engine.step();
+    const sp = byId('renal');
+    const transmission = (z: number) => {
+      const contact = probeContact({ ...poseOf(sp), z }, CONVEX_C35, localScene.torso);
+      anatomy.setProbeCompression(contact);
+      const weight = acousticWindowWeight(
+        anatomy,
+        contact.frame,
+        CONVEX_C35,
+        contact,
+        engine.sample,
+        180,
+        CONVEX_C35_PROFILE.dopplerEffectiveMHz,
+      );
+      const best = bestGateOnVessel(
+        anatomy,
+        contact.frame,
+        CONVEX_C35,
+        engine.sample,
+        ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'],
+        175,
+        1.2,
+        weight,
+      );
+      expect(best).not.toBeNull();
+      return gateTransmission(
+        anatomy,
+        contact.frame,
+        CONVEX_C35,
+        contact,
+        best!.theta,
+        best!.r,
+        engine.sample,
+        CONVEX_C35_PROFILE.dopplerEffectiveMHz,
+      );
+    };
+    // El negativo conserva el hueso que provocó la regresión, sin abrir una ventana en él.
+    expect(transmission(-85)).toBeLessThan(1e-6);
+    expect(transmission(sp.z)).toBeGreaterThan(0.05);
   });
 
   it('renal: corteza, médula y seno del riñón derecho con un vaso interlobar, el hígado y grasa alrededor', () => {

@@ -55,7 +55,7 @@ describe('Esquema de uniforms de la escena', () => {
         v4v: (n) => calls.push(`v4v:${n}`),
       };
       uploadSceneUniforms(sink, values);
-      expect(calls).toContain('v4v:uRibs');
+      expect(calls).not.toContain('v4v:uRibs'); // Costillas en textura de escena, decisión 166.
       expect(calls).toContain('v3v:uKidC');
       expect(calls).toContain('i:uTubeCount');
       expect(calls).toHaveLength(SCENE_UNIFORMS.length);

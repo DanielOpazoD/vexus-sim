@@ -169,3 +169,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [163](DECISIONS.md#L6186) | Retener la ventana de captura PW también a PRF alta | vigente |
 | [164](DECISIONS.md#L6216) | Conservar FC y compliance al recorrer las guías de congestión | vigente |
 | [165](DECISIONS.md#L6238) | Archivos de parámetros venosos con dominio y versión explícitos | vigente |
+| [166](DECISIONS.md#L6267) | Doce pares costales y esternón en la anatomía acústica local | vigente |
+| [167](DECISIONS.md#L6285) | Referencia xifoidea común y contactos medidos antes del clasificador | vigente |

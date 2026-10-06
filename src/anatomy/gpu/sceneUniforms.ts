@@ -14,8 +14,8 @@ import type { PhysiologySample } from '../../physiology/engine';
  * subida desde el renderer (`evaluateSceneUniforms` + `uploadSceneUniforms`). Antes había que
  * escribir cada nombre dos veces (≈ 85 líneas en el renderer) y un olvido fallaba en silencio.
  */
-/** Seis registros bilaterales (pares 5–10); no doce evaluaciones por punto. */
-export const MAX_RIBS = 6;
+/** Doce registros bilaterales (pares 1–12); cada registro refleja ambos lados. */
+export const MAX_RIBS = 12;
 
 type GlslType = 'float' | 'int' | 'vec2' | 'vec3' | 'vec4';
 const SIZE: Record<GlslType, number> = { float: 1, int: 1, vec2: 2, vec3: 3, vec4: 4 };
@@ -34,9 +34,6 @@ interface UniformSpec {
   count?: number;
   value: (s: AnatomyScene, c: UniformContext) => ArrayLike<number>;
 }
-
-const pad = (values: number[][], count: number, filler: number[]): number[] =>
-  Array.from({ length: count }, (_, i) => values[i] ?? filler).flat();
 
 export const SCENE_UNIFORMS: readonly UniformSpec[] = [
   /** a, b, zMin, zMax */
@@ -144,18 +141,6 @@ export const SCENE_UNIFORMS: readonly UniformSpec[] = [
     type: 'vec2',
     // radio de la unión suave entre tramos, espesor de pared (mm)
     value: (s) => [s.gallbladder.blendMm, s.gallbladderWallMm],
-  },
-  {
-    name: 'uRibs',
-    type: 'vec4',
-    count: MAX_RIBS,
-    // costillas: zAnterior, tilt, halfWidth, halfThickness
-    value: (s) =>
-      pad(
-        s.ribs.slice(0, MAX_RIBS).map((r) => [r.zAnterior, r.tilt, r.halfWidth, r.halfThickness]),
-        MAX_RIBS,
-        [9999, 0, 1, 1],
-      ),
   },
   {
     name: 'uRibParams',

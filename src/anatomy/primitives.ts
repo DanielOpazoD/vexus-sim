@@ -308,6 +308,10 @@ export interface Torso {
 }
 
 export interface Rib {
+  /** Número anatómico explícito; el orden de almacenamiento no identifica la costilla. */
+  number?: number;
+  /** Ángulo anterior del extremo libre (rad, π/2 anterior → 3π/2 posterior), solo 11/12. */
+  frontPhi?: number;
   /** Only the source seventh cartilage has measured sections. */
   sourceCartilage?: boolean;
   /** Altura z del arco costal en la línea anterior (φ = π/2) en mm. */
@@ -720,7 +724,10 @@ function sdRibBone(p: Vec3, rib: Rib, torso: Torso, spine?: Spine): { d: number;
   const qx = Math.abs(dRadial) / rib.halfThickness;
   const qz = Math.abs(dz) / rib.halfWidth;
   const q = Math.sqrt(qx * qx + qz * qz) - 1;
-  const d = q * Math.min(rib.halfThickness, rib.halfWidth);
+  const sectionD = q * Math.min(rib.halfThickness, rib.halfWidth);
+  const angle = phi < 0 ? phi + 2 * Math.PI : phi;
+  // Extremo libre: impide que 11/12 reaparezcan delante del cabo costal.
+  const d = rib.frontPhi === undefined ? sectionD : Math.max(sectionD, (rib.frontPhi - angle) * localR);
   // cartílago solo en el arco anterior, a menos de π/2 − cartilageFromPhi de la línea media (φ = π/2), a los
   // dos lados (antes `φ > cartilageFromPhi`, que en las costillas derechas, φ ∈ (π/2, π], hacía cartílago todo
   // el arco anterolateral: la ventana intercostal sin cortical ni sombra; decisión 62)

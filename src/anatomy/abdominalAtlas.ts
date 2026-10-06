@@ -54,7 +54,7 @@ export function abdominalAtlasGradient(p: Vec3, field: number): Vec3 {
 
 export const ABDOMINAL_ATLAS_GLSL = /* glsl */ `
 // Labels are categorical metadata;  nearest texel, never interpolated.
-// Trilinear distance interpolation uses explicit source texels for CPU/GPU parity.
+// Distance uses WebGL2 RG16F linear filtering of the same source lattice; categorical labels stay nearest.
 vec2 abdominalAtlasValue(vec3 p, int k){
   if(uAbdominalAtlasEnabled==0)return vec2(16.0,0.0); 
   vec3 lo,dim,off; 
@@ -62,13 +62,8 @@ vec2 abdominalAtlasValue(vec3 p, int k){
   else return vec2(16.0,0.0); 
   vec3 q=(p-lo)/1.5; 
   if(any(lessThan(q,vec3(0.0)))||any(greaterThan(q,dim-1.0)))return vec2(16.0,0.0); 
-  vec3 base=min(dim-2.0,floor(q)),t=q-base; 
-  ivec3 a=ivec3(off+base); 
-  float d=0.0; 
-  for(int z=0; z<=1; z++)for(int y=0; y<=1; y++)for(int x=0; x<=1; x++){
-    vec3 weight=mix(1.0-t,t,vec3(float(x),float(y),float(z))); 
-    d+=texelFetch(uAbdominalAtlas,a+ivec3(x,y,z),0).r*weight.x*weight.y*weight.z; 
-  }
+  // Normalized texel-center coordinates; linear filtering stays inside the selected brick.
+  float d=textureLod(uAbdominalAtlas,(off+q+0.5)/vec3(${ABDOMINAL_ATLAS.textureDimensions.map((v) => v.toFixed(1)).join(',')}),0.0).r;
   float label=texelFetch(uAbdominalAtlas,ivec3(off+floor(q+0.5)),0).g; 
   return vec2(d,label); 
 }

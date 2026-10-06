@@ -18,14 +18,28 @@ import {
 import { ELEV_RAYLEIGH_MM, ELEV_SIGMA0_MM, elevSigmaMm } from '../ultrasound/pleura';
 import { RECEIVER_GLSL, RECEIVER_NOISE } from '../ultrasound/receiver';
 import {
-  FRAG_AXIAL,
-  FRAG_COLOR,
-  FRAG_COMPOUND,
-  FRAG_LATERAL,
-  FRAG_RAWFIELD,
-  FRAG_RAWFIELD_STEERED,
-  LATERAL_PSF_GLSL,
+  FRAG_AXIAL as SOURCE_FRAG_AXIAL,
+  FRAG_COLOR as SOURCE_FRAG_COLOR,
+  FRAG_COMPOUND as SOURCE_FRAG_COMPOUND,
+  FRAG_LATERAL as SOURCE_FRAG_LATERAL,
+  FRAG_RAWFIELD as SOURCE_FRAG_RAWFIELD,
+  FRAG_RAWFIELD_STEERED as SOURCE_FRAG_RAWFIELD_STEERED,
+  LATERAL_PSF_GLSL as SOURCE_LATERAL_PSF_GLSL,
 } from '../ultrasound/shaders/passes.glsl';
+import { specializeSceneShaders } from '../ultrasound/sceneShader';
+const { FRAG_AXIAL, FRAG_COLOR, FRAG_COMPOUND, FRAG_LATERAL, FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED, LATERAL_PSF_GLSL } =
+  specializeSceneShaders(
+    {
+      FRAG_AXIAL: SOURCE_FRAG_AXIAL,
+      FRAG_COLOR: SOURCE_FRAG_COLOR,
+      FRAG_COMPOUND: SOURCE_FRAG_COMPOUND,
+      FRAG_LATERAL: SOURCE_FRAG_LATERAL,
+      FRAG_RAWFIELD: SOURCE_FRAG_RAWFIELD,
+      FRAG_RAWFIELD_STEERED: SOURCE_FRAG_RAWFIELD_STEERED,
+      LATERAL_PSF_GLSL: SOURCE_LATERAL_PSF_GLSL,
+    },
+    false,
+  );
 import { bmodeBeam, CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
 import { recordingGl } from './support/recordingGl';
 

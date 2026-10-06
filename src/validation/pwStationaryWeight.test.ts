@@ -9,7 +9,7 @@ describe('caché espacial: IQ idéntica bit a bit a la ruta por pulso', () => {
     for (const renal of [false, true])
       it(`${respiratory}, ${renal ? 'vaso pequeño' : 'porta'}: señal y composición intactas`, () => {
         const s = openSession(NORMAL_ADULT, respiratory);
-        const contact = probeAt(s, renal ? 'renal' : 'portal');
+        const contact = probeAt(s, renal ? 'renal' : 'portalTrunk');
         const best = placeGate(s, contact, renal ? ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'] : ['pvTrunk'])!;
         expect(best).not.toBeNull();
         const cached = new SampleVolumeIQ(s.anatomy, 47, true),

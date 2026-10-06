@@ -32,7 +32,7 @@ interface Territory {
 const TERRITORIES: Territory[] = [
   { kind: 'hepatic', window: 'intercostal', vessels: ['hvRight'] },
   // porta principal (la muestra que recomienda VExUS): corre craneocaudal y la respiración la desliza por su eje
-  { kind: 'portal', window: 'portal', vessels: ['pvTrunk'] },
+  { kind: 'portal', window: 'portalTrunk', vessels: ['pvTrunk'] },
   { kind: 'renal', window: 'renal', vessels: ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'] },
 ];
 

@@ -38,6 +38,7 @@ test('el adulto de referencia carga el mismo campo corporal para imagen y consul
     'subcostal',
     'flank',
     'portal',
+    'portalTrunk',
     'renal',
     'hepatorenal',
   ]);

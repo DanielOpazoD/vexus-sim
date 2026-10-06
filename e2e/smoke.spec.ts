@@ -72,7 +72,7 @@ test('lo que ve el usuario (?e2e=app): subxifoidea en armónica con composición
   await withinFrames(page, 2, 'HUD en armónica con composición', contains(page, '#hud-tr', /THI 3,5 MHz[\s\S]*CX/));
   await withinFrames(page, 20, 'la tarjeta subxifoidea resaltada', async () => {
     const cur = await page.locator('.win-card[aria-current="true"]').allTextContents();
-    return (cur.length === 1 && cur[0].includes('Subxifoideo')) || `resaltadas: ${JSON.stringify(cur)}`;
+    return (cur.length === 1 && cur[0].includes('VCI longitudinal')) || `resaltadas: ${JSON.stringify(cur)}`;
   });
   const s = await page.evaluate(() => {
     const T = window.__vexusTest!;
@@ -187,7 +187,7 @@ test('lo medido a la vista sobre el espectro y el vaso equivocado (decisión 94)
   // la fila «Suprahepática» con la puerta en el tronco portal: rechazada, con dónde está la puerta
   expect(
     await page.evaluate(() => {
-      window.__vexusTest!.goToStartPoint('portal');
+      window.__vexusTest!.goToStartPoint('portalTrunk');
       return window.__vexusTest!.placeGate(['pvTrunk']);
     }),
   ).toBe(true);

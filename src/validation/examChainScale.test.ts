@@ -62,7 +62,7 @@ function portalRows(caseIndex: number): Row[] {
   for (const resp of RESPIRATIONS)
     for (const seed of SEEDS) {
       const session = openSession(base, resp, seed);
-      const contact = probeAt(session, 'portal');
+      const contact = probeAt(session, 'portalTrunk');
       const best = placeGate(session, contact, ['pvTrunk']);
       expect(best, `${base.id}: sin tronco portal en la ventana «Porta»`).not.toBeNull();
       for (const scale of SCALES) {
@@ -124,7 +124,7 @@ describe('PF portal del alumno a las escalas del equipo (decisión 94)', () => {
       const rows: Row[] = [];
       for (const seed of [1, 4, 8]) {
         const session = openSession(base, 'apnea-expiratory', seed);
-        const contact = probeAt(session, 'portal');
+        const contact = probeAt(session, 'portalTrunk');
         const best = placeGate(session, contact, ['pvTrunk'])!;
         for (const [scale, wallFilterHz] of [
           [10, 25],

@@ -6299,3 +6299,17 @@ Seguimiento de 166: la CI encontró una puerta arterial renal fija de la pose an
 La comprobación costal heredada suponía seis pares y muestreaba los nuevos arcos como si no tuvieran término craneocaudal ni extremos libres. Sus tres posiciones por lado ahora siguen las elipses declaradas, muestrean cartílago lateral al esternón y los tres tramos óseos de 11–12. Exige 52 puntos óseos y 20 cartilaginosos, acuerdo exacto CPU/GPU. El adulto de referencia conserva los ajustes registrados de 5–10, ajustes explícitos de 11–12 y declara los cuatro arcos superiores como estimados en vez de exigirles una medición inexistente.
 
 El test de captura congelada agotó 180 s globales en SwiftShader y pasó solo al reintento (CI sigue roja). Usaba setTimeout global en vez del presupuesto común: se conserva trabajo 180 s y se suma el arranque BOOT_MS como en las otras pruebas. No se modifica polling, imágenes, tolerancias ni política de primer intento; la nueva revisión exige toda CI verde sin reintentos aprobados.
+
+## 168. Adquisición portal intrahepática separada del tronco principal
+
+**Defecto y mecanismo.** La pose lateral anterior sigue demasiado el segmento extrahepático y muestra cava parcial. Se adquiere físicamente hilio/rama derecha sin agrandar vísceras ni ocultar vasos. `portalTrunk` conserva exactamente las poses previas para PW VExUS; el protocolo usa esa ventana con sus restricciones de calidad, puerta de 6 mm y distancia a bifurcación conservadas. `subxiphoid` se identifica como Subcostal · VCI longitudinal, con pose intacta.
+
+**Predicción e invariantes.** Menor proporción extrahepática en el corte lateral, vasos objetivos dentro del campo hepático y sin obstrucción. No cambian caudales, áreas, órganos ni el espectro del tronco anterior. Los rótulos nuevos ceden espacio a los existentes. En la pose oblicua la compresión se acota por el empuje máximo de toda la cara; se conserva además la banda previa para las otras poses.
+
+**Refutación y aceptación.** Campos individuales antes de prioridad de tejido, contrafactual de pose antigua, cuatro hábitos y sano/congestión en dos cuerpos; PW sigue en tronco principal y conserva calidad. Contrato previo en `anatomy/PORTAL_LIVER_CONTRACT.md`. El procesamiento complejo y la presentación color se integrarán por separado; este PR no reclama esas mejoras. Son controles de ingeniería, no validación clínica humana.
+
+Seguimiento de 168: el barrido GPU incluye las nueve ventanas, incluida portalTrunk. La ventana portal ahora contiene ramas intrahepáticas menores: su rejilla se refina de 48×72 a 64×96, conservando >50 células sanguíneas completamente interiores y todos los umbrales de acuerdo y velocidad. La rejilla del resto de ventanas, volumen y cáscaras no cambia.
+
+Las tres adquisiciones E2E de PW que pedían explícitamente pvTrunk ahora usan portalTrunk, la misma pose original conservada para VExUS. La ventana portal intrahepática y sus pruebas color siguen en la rama derecha; no se fuerza la puerta ni la clasificación.
+
+Seguimiento de 168: CI slow detectó que el banco de dispersores persistentes del tronco portal seguía usando la tarjeta portal intrahepática. Se adquiere ahora desde portalTrunk, que conserva la pose original, sin cambiar caudales, volumen de muestra, semillas, duración ni límites de diferencia <0,05/reingreso >90 %. Error original: 0,14005, registrado antes de corregir el instrumento.

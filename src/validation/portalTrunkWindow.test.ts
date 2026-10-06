@@ -37,7 +37,7 @@ describe('puerta virtual portal dentro del tronco', () => {
 
   it('una restricción imposible devuelve null, no el candidato de puntuación cero', () => {
     const s = openSession(NORMAL_ADULT, 'apnea-expiratory');
-    const contact = probeAt(s, 'portal');
+    const contact = probeAt(s, 'portalTrunk');
     const args = [s.anatomy, contact.frame, TR, s.engine.sample, ['pvTrunk'], 175] as const;
     expect(bestGateOnVessel(...args)).not.toBeNull();
     expect(bestGateOnVessel(...args, 1.2, undefined, () => false)).toBeNull();

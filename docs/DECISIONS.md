@@ -6384,6 +6384,7 @@ Seguimiento de 176: la antigua pose renal de referencia perdió la puerta tras d
 
 El hook completo detectó además que la adquisición pareada opcional del visor perdía la arteria a −2° tras registrar el riñón. Barrido real de −5..+5°: −3,5° conserva puerta arterial en normal/grave, margen >0,73 mm y cos>0,93; se usa solo en referencia, procedural sigue −2°. Diez comprobaciones de documentación/pareado pasan, incluidas composición arterial y venosa, demás territorios y fisiología sin cambios. Los fallos y el barrido quedan guardados. La numeración renal es 176 en esta iteración; la integración Doppler siguiente pasa a 177.
 
+La CI de 1a73aec detectó dos fixtures aún ligados a la pose anterior: renalArterialGate restaba 2° en referencia y la rejilla 32×64 no resolvía sangre con cuatro vecinos en vasos interlobares milimétricos. El fixture arterial usa la inclinación de referencia ya auditada (3,5°); la paridad renal ahora muestrea 192×384, 0,47 mm axial, sin bajar los criterios de identidad, interior ni velocidad. Cuatro capturas arteriales y la prueba nativa del adulto de referencia pasan a la primera. Fallos conservados: jobs 112279324097 y 112279324169, CI37465796998.
 
 ## 177. Integrar la absorción Doppler por tejido sin nuevas texturas
 

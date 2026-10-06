@@ -70,8 +70,11 @@ function poseReport(sim: Simulator, id: string, frame: ProbeFrame, k: ProbeCompr
   const tr = sim.transducer;
   // Intrahepatic branches are smaller than the former extrahepatic trunk: refine
   // this acquired plane instead of lowering the >50 interior blood-cell guard.
-  const lines = id === 'portal' ? 64 : LINES;
-  const samples = id === 'portal' ? 96 : SAMPLES;
+  // The posterior renal plane contains millimetric interlobar vessels. A coarse
+  // 32×64 grid cannot contain blood plus four blood neighbours at that diameter.
+  // Resolve that acquired plane at the transducer's 192 lines, 0.47 mm axially.
+  const lines = id === 'renal' ? 192 : id === 'portal' ? 64 : LINES;
+  const samples = id === 'renal' ? 384 : id === 'portal' ? 96 : SAMPLES;
   {
     const n = lines * samples;
     const pts = new Float32Array(n * 3);

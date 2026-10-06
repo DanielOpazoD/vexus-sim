@@ -1175,7 +1175,7 @@ void main() {
 /**
  * Pasada F: Doppler color — emulación del estimador de autocorrelación sobre la
  * mezcla sangre/clutter/ruido en cada celda del cuadro de color.
- * Salida: (frecuencia estimada Hz plegada, potencia, fracción de sangre, 0).
+ * Salida: (Re R1, Im R1, fracción de sangre, 0). La fase se decodifica tras filtrar e interpolar.
  */
 export const FRAG_COLOR = /* glsl */ `#version 300 es
 precision highp float;
@@ -1291,9 +1291,8 @@ void main() {
   float g = colorGauss(grid, uFrame + 29.0).x;
   float ph = atan(R1.y, R1.x) + sigPh * g;
   ph = mod(ph + 3.14159265, 6.2831853) - 3.14159265;
-  float fEst = uPrf * ph / 6.2831853;
   float power = length(R1) * uColorGain;
-  oColor = vec4(fEst, power, bf, 0.0);
+  oColor = vec4(power * vec2(cos(ph), sin(ph)), bf, 0.0);
 }
 `;
 
@@ -1331,7 +1330,7 @@ float displayGrey(float env, float r) {
 export const FRAG_SCANCONVERT = /* glsl */ `#version 300 es
 precision highp float;
 uniform sampler2D uEnv;
-uniform sampler2D uColor;
+uniform highp sampler2D uColor;
 uniform vec2 uCanvas;      // px
 uniform vec2 uApex;        // px: centro de curvatura en pantalla
 uniform float uScale;      // px por mm
@@ -1359,10 +1358,11 @@ void main() {
   if (uColorOn == 1 && theta >= uBox.x && theta <= uBox.y && r >= uBox.z && r <= uBox.w) {
     vec2 cuv = vec2((theta - uBox.x) / (uBox.y - uBox.x), (r - uBox.z) / (uBox.w - uBox.z));
     vec4 c = texture(uColor, cuv);
-    float f = c.x;
+    float power = length(c.xy);
+    float f = atan(c.y, c.x) * uPrf / 6.2831853;
     if (uColorInvert == 1) f = -f;
     float mag = clamp(abs(f) / (0.5 * uPrf), 0.0, 1.0);
-    if (c.y > uColorThreshold && (g < uColorPriority || c.y > 3.0 * uColorThreshold)) {
+    if (power > uColorThreshold && (g < uColorPriority || power > 3.0 * uColorThreshold)) {
       vec3 toward = mix(vec3(0.55, 0.05, 0.0), vec3(1.0, 0.95, 0.35), mag);
       vec3 away = mix(vec3(0.0, 0.1, 0.6), vec3(0.35, 0.95, 1.0), mag);
       col = f >= 0.0 ? toward : away;

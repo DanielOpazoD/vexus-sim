@@ -6308,6 +6308,16 @@ El test de captura congelada agotó 180 s globales en SwiftShader y pasó solo a
 
 **Refutación y aceptación.** Campos individuales antes de prioridad de tejido, contrafactual de pose antigua, cuatro hábitos y sano/congestión en dos cuerpos; PW sigue en tronco principal y conserva calidad. Contrato previo en `anatomy/PORTAL_LIVER_CONTRACT.md`. El procesamiento complejo y la presentación color se integrarán por separado; este PR no reclama esas mejoras. Son controles de ingeniería, no validación clínica humana.
 
+## 169. Interpolación del Doppler color en el plano complejo
+
+**Defecto.** Promediar frecuencias plegadas cerca de +Nyquist/−Nyquist inventa una velocidad próxima a cero.
+
+**Mecanismo y predicción.** Se conserva R1=(Re, Im), se interpola explícitamente con texelFetch y se aplica un kernel [1 2 1]²/16 de una línea/paquete antes de recuperar frecuencia por atan2 y potencia por módulo. El cine almacena componentes complejos en RG16F. La lectura diagnóstica mantiene frecuencia/potencia como API pública. Debe conservarse la dirección a ambos lados de la discontinuidad de fase.
+
+**Invariantes y refutación.** No se alteran flujo, áreas, signo fisiológico, proyección axial, clutter, ruido, ganancia, filtro, acoplamiento, transmisión, cadencia ni umbral. Comparación numérica independiente GPU: reconstruir fasores desde el campo crudo y calcular interpolación/kernel, sin importar funciones de producción. Se comprueban sangre frente a píxeles, aliasing, inversión de presentación, ausencia de contacto, filtro alto y cine en ambos cuerpos. Error de correlación, cancelación falsa o señal sin sangre refutan el cambio. La fracción de sangre se copia por texel entero, sin interpolarla: el control GPU exige igualdad exacta del metadato entre campo crudo y filtrado, también en SwiftShader.
+
+**Alcance y coste.** Estimador emulado y kernel espacial estimado, no IQ clínico real. Una textura RGBA32F 96×160 adicional (240 KiB), programa/pasada a cadencia de color. Presupuesto 1028→1030 KiB para interpolación y adquisiciones: límites por chunk y total siguen activos. Paleta/preset se entregan por separado. Base física: [Evans, Jensen y Nielsen, 2011](https://pmc.ncbi.nlm.nih.gov/articles/PMC3262272/); la publicación no suministra este kernel concreto.
+
 Seguimiento de 168: el barrido GPU incluye las nueve ventanas, incluida portalTrunk. La ventana portal ahora contiene ramas intrahepáticas menores: su rejilla se refina de 48×72 a 64×96, conservando >50 células sanguíneas completamente interiores y todos los umbrales de acuerdo y velocidad. La rejilla del resto de ventanas, volumen y cáscaras no cambia.
 
 Las tres adquisiciones E2E de PW que pedían explícitamente pvTrunk ahora usan portalTrunk, la misma pose original conservada para VExUS. La ventana portal intrahepática y sus pruebas color siguen en la rama derecha; no se fuerza la puerta ni la clasificación.

@@ -736,7 +736,8 @@ void classifyInside(vec3 m, bool withCurtain, float depth, vec3 tn, float dSpine
   // detrás del peritoneo parietal posterior, el retroperitoneo (decisión 81): psoas, cuadrado lumbar y grasa; la
   // distancia a la frontera cuenta también la columna, que se clasifica antes
   float bdRetro;
-  c.tissue = retroperitoneum(m, -depth - wall, dPeri, bdRetro);
+  vec3 retroPoint = m - vec3(0.0, uSpine.y + 46.0, 0.0);
+  c.tissue = retroperitoneum(retroPoint, -depth - wall, dPeri, bdRetro);
   c.bd = max(min(min(bdBowel, bdRetro), dSpine), 0.0); c.n = tn;
   if(c.tissue!=T_BOWEL)return;
   vec3 bn,ba,bowelLumenNormal;float dl,br;float d=bowelQuery(m,bn,ba,dl,bowelLumenNormal,br);

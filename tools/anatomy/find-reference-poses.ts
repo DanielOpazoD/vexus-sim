@@ -16,6 +16,7 @@ import { bestGateOnVessel } from '../../src/app/gatePlacement';
 import { acousticWindowWeight, gateTransmission } from '../../src/app/gateTransmission';
 import { CONVEX_C35_PROFILE } from '../../src/ultrasound/transducerProfile';
 import type { VesselId } from '../../src/physiology/vessels';
+import { kidneyWorld } from '../../src/anatomy/organs/kidney';
 const bytes = readFileSync('src/anatomy/reference-body.bin');
 setReferenceBody(new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength)));
 const scene = new AnatomyScene(NORMAL_ADULT),
@@ -133,11 +134,7 @@ const windows: Window[] = [
     z: [-120, -60],
     pivot: scene.kidneyRight.center,
     long: scene.kidneyRight.u,
-    points: [
-      [-85, -35, -105],
-      [-72, -38, -78],
-      [-60, -40, -50],
-    ],
+    points: [-30, 0, 30].map((u) => kidneyWorld([u, 0, 0], scene.kidneyRight)),
     vessels: ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'],
   },
 ];

@@ -213,11 +213,12 @@ const REFERENCE_POSES = {
     tilt: 0.133669,
   },
   renal: {
-    phi: 3.25,
-    z: -105,
-    yaw: -0.044027,
-    rock: 0.188128,
-    tilt: -0.353448,
+    // Registered renal axis (177): aim through the real flank, not the former anterior kidney.
+    phi: 3.35,
+    z: -75,
+    yaw: -0.175994,
+    rock: -0.218131,
+    tilt: -0.41084,
   },
 } satisfies Record<StartPoint['id'], Pick<StartPoint, 'phi' | 'z' | 'yaw' | 'rock' | 'tilt'>>;
 const REFERENCE_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({

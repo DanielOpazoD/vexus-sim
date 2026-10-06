@@ -176,3 +176,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [170](DECISIONS.md#L6321) | Paleta rojo/azul compartida y ajuste de la adquisición intrahepática | vigente |
 | [171](DECISIONS.md#L6331) | Resolver juntos los caudales de la unión cavoauricular | vigente |
 | [172](DECISIONS.md#L6335) | Sección regional de la VCI suprahepática y Q/A común con su anatomía | vigente |
+| [173](DECISIONS.md#L6351) | Filtro color periódico en frecuencia muestreada, identidad al desactivarlo | vigente |

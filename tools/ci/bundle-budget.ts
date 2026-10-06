@@ -70,7 +70,7 @@ const BUDGETS: Array<[RegExp, number]> = [
 // El total ahora recorre todo dist, incluido el worklet raíz que antes se omitía.
 // 06-10-2026: +4 KiB para doce pares costales y campo esternal compartido CPU/GPU (decisión 166).
 // Medición inicial 1026,9 KiB; conserva todos los chunks, Workers y ganchos dentro del cómputo.
-// 06-10-2026: +1 KiB compartido para sección regional y refinamiento del barrido portal (172–173).
+// 06-10-2026: +1 KiB compartido para sección regional, paridad portal y filtro color (172–173).
 const TOTAL_JS_BUDGET = 1031 * KB;
 /** Identifica los ganchos para el informe; todos los chunks y Workers cuentan en el total. */
 const TEST_ONLY = /^testHooks-.*\.js$/;

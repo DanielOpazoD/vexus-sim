@@ -6347,3 +6347,11 @@ Seguimiento de 168: CI slow detectó que el banco de dispersores persistentes de
 Seguimiento de 172: se corrige solamente tilt de la adquisición subcostal procedural −0,4→−0,398 rad (+0,115°), tras documentar pérdida de la banda VSH a 1–2 cm en inspiración. El contrafactual de sonda queda en el contrato; se conservan distancia, incidencia ≤60°, transmisión ≥0,02 y cuerpos/respiraciones de los bancos. No se deforma anatomía para recuperar un preset.
 
 El candidato intermedio −0,38 se rechazó por acortar el eje visible a 33,72 mm (<45). El ajuste final −0,398 conserva 52,71 mm y recupera banda inspiratoria a 11,14 mm/59,17°/0,03695, con umbrales originales. Ambos experimentos quedan declarados en el contrato.
+
+## 173. Filtro color periódico en frecuencia muestreada, identidad al desactivarlo
+
+Defecto: f y f+PRF producían la misma fase pero diferente rechazo de clutter; f=0 y corte=0 generaba NaN. Se evalúa la respuesta de potencia estimada en la frecuencia plegada y devuelve identidad para corte cero. El módulo TS/GLSL conserva el cuarto orden anterior dentro de Nyquist. No añade máscara ni altera fisiología, fase, paleta, ganancia o umbrales. Contrato previo: `anatomy/COLOR_WALL_FILTER_CONTRACT.md`.
+
+Aceptación: secuencias IQ muestreadas como oráculo independiente, alias positivos/negativos, DC y desactivación; compilación GPU real y adquisición portal normal/grave. Sigue siendo respuesta aproximada sobre autocorrelación emulada (`color-emulated-estimator`), sin ensemble temporal filtrado real ni calibración clínica. Presupuesto total +1 KiB, de 1030 a 1031, para el pequeño módulo/folding y controles de desarrollo; todos los chunks siguen contando.
+
+Seguimiento de 173: SwiftShader produjo un error de fasor 3,24e−5 al generar el IQ mediante sin/cos del driver dentro del fixture, aunque el cálculo de ganancia precedía correctamente al fallo. El oráculo GPU recibe ahora muestras IQ conocidas calculadas en doble precisión, ejecuta el filtro de producción y compara contra fase entre muestras independiente. Conserva los nueve puntos, límite 2e−6 por componente y 5e−7 de potencia. Se aísla en una página vacía para no compilar el simulador completo; las pruebas de integración color conservan el arranque real. Se registra el fallo previo y se exige CI completa de las cabezas corregidas.

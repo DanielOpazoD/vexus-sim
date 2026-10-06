@@ -15,7 +15,8 @@ const CARD_SUB: Record<StartPointId, string> = {
   intercostal: 'Suprahepáticas y VCI por el hígado',
   subcostal: 'VSH media hasta la VCI',
   flank: 'VCI coronal con las suprahepáticas',
-  portal: 'Porta principal con la VCI detrás',
+  portal: 'Hilio y porción portal intrahepática',
+  portalTrunk: 'Tronco principal · puerta VExUS',
   renal: 'Riñón en eje largo · interlobares',
   hepatorenal: 'Hígado, corteza y plano de Morison',
 };

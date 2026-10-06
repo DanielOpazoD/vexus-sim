@@ -236,7 +236,7 @@ describe('capas de la pared (decisión 62)', () => {
   });
 
   it('cartílago costal solo en el arco anterior (±45°, hasta la línea medioclavicular) y las 8.ª–10.ª acaban en el reborde costal', () => {
-    const ribs = scene.ribs;
+    const ribs = scene.ribs.filter((r) => r.number! >= 5 && r.number! <= 10);
     // 5.ª–7.ª hasta el esternón; 8.ª–10.ª hasta el reborde costal, cada una más lateral
     expect(ribs.slice(0, 3).map((r) => ribAnteriorEndX(r))).toEqual([15, 15, 15]);
     const ends = ribs.slice(3).map((r) => ribAnteriorEndX(r));
@@ -281,6 +281,7 @@ describe('capas de la pared (decisión 62)', () => {
     // antes la grasa se clasificaba antes que las costillas: su cresta, donde asoma en la grasa (el arco
     // anterior, y con la fascia ondulada también el lateral), quedaba cortada por la grasa
     let inFat = 0;
+    let firstMisclassified: string | undefined;
     for (const rib of scene.ribs)
       for (let phiDeg = 95; phiDeg <= 250; phiDeg += 2.5)
         for (let dz = -rib.halfWidth; dz <= rib.halfWidth; dz += 0.5)
@@ -290,17 +291,25 @@ describe('capas de la pared (decisión 62)', () => {
             const p = at(phi, z, d);
             if (sdRib(p, rib, t, scene.spine).d > -0.05) continue;
             const c = cls(p);
-            expect([Tissue.Bone, Tissue.Cartilage], `${phiDeg}°, z ${z.toFixed(1)}, ${d} mm: ${Tissue[c.tissue]}`).toContain(c.tissue);
+            if (c.tissue !== Tissue.Bone && c.tissue !== Tissue.Cartilage && firstMisclassified === undefined)
+              firstMisclassified = `${phiDeg}°, z ${z.toFixed(1)}, ${d} mm: ${Tissue[c.tissue]}`;
             if (d < wallDepths(t, wallArc(p, t), z).fascia) inFat++;
           }
+    expect(firstMisclassified).toBeUndefined();
     expect(inFat).toBeGreaterThan(50);
     // conservadora: ningún punto más somero que ribSearchDepth está dentro de una costilla
     const depth0 = ribSearchDepth(t, scene.ribs[0].scale);
     expect(depth0).toBeGreaterThan(t.skinMm);
+    // Evaluate the same exhaustive grid without constructing millions of matcher objects.
+    // One minimum per rib preserves every sample and reports which rib violates the bound.
+    const shallowMin = scene.ribs.map(() => Infinity);
     for (let phiDeg = 90; phiDeg <= 270; phiDeg += 1)
       for (let z = -120; z <= 90; z += 1)
-        for (let d = 0; d < depth0; d += 0.5)
-          for (const rib of scene.ribs) expect(sdRib(at((phiDeg * Math.PI) / 180, z, d), rib, t, scene.spine).d).toBeGreaterThan(0);
+        for (let d = 0; d < depth0; d += 0.5) {
+          const p = at((phiDeg * Math.PI) / 180, z, d);
+          for (let i = 0; i < scene.ribs.length; i++) shallowMin[i] = Math.min(shallowMin[i], sdRib(p, scene.ribs[i], t, scene.spine).d);
+        }
+    for (let i = 0; i < shallowMin.length; i++) expect(shallowMin[i], `rib ${scene.ribs[i].number}`).toBeGreaterThan(0);
   });
 
   it('faceGradient de las caras de la pared: la normal de la piel inclinada por el relieve de la capa y |∇| bajo la cota', () => {

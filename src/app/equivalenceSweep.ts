@@ -68,14 +68,21 @@ export function equivalenceSweep(sim: Simulator): EquivalencePoseReport[] {
 
 function poseReport(sim: Simulator, id: string, frame: ProbeFrame, k: ProbeCompression): EquivalencePoseReport {
   const tr = sim.transducer;
+  // Intrahepatic branches are smaller than the former extrahepatic trunk: refine
+  // this acquired plane instead of lowering the >50 interior blood-cell guard.
+  // The posterior renal plane contains millimetric interlobar vessels. A coarse
+  // 32×64 grid cannot contain blood plus four blood neighbours at that diameter.
+  // Resolve that acquired plane at the transducer's 192 lines, 0.47 mm axially.
+  const lines = id === 'renal' ? 192 : id === 'portal' ? 64 : LINES;
+  const samples = id === 'renal' ? 384 : id === 'portal' ? 96 : SAMPLES;
   {
-    const n = LINES * SAMPLES;
+    const n = lines * samples;
     const pts = new Float32Array(n * 3);
-    for (let v = 0; v < SAMPLES; v++)
-      for (let u = 0; u < LINES; u++) {
-        const theta = -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / LINES;
-        const p = pointOnLine(frame, tr, theta, ((v + 0.5) / SAMPLES) * DEPTH_MM);
-        pts.set(p, (v * LINES + u) * 3);
+    for (let v = 0; v < samples; v++)
+      for (let u = 0; u < lines; u++) {
+        const theta = -tr.halfSector + (2 * tr.halfSector * (u + 0.5)) / lines;
+        const p = pointOnLine(frame, tr, theta, ((v + 0.5) / samples) * DEPTH_MM);
+        pts.set(p, (v * lines + u) * 3);
       }
     const gpu = sim.gpuQuery(pts, frame, false, { compression: k });
     const cpuTissue = new Uint8Array(n);
@@ -90,18 +97,18 @@ function poseReport(sim: Simulator, id: string, frame: ProbeFrame, k: ProbeCompr
       if (q.bloodVelocity) cpuVel.set(q.bloodVelocity, i * 3);
     }
     const rep = compareTissueGrids(
-      { width: LINES, height: SAMPLES, tissue: cpuTissue },
-      { width: LINES, height: SAMPLES, tissue: gpuTissue },
+      { width: lines, height: samples, tissue: cpuTissue },
+      { width: lines, height: samples, tissue: gpuTissue },
     )!;
     // Sangre interior: la celda y sus 4 vecinas son sangre en la CPU
     const errs: number[] = [];
     let blood = 0;
     let sameVessel = 0;
-    for (let v = 1; v < SAMPLES - 1; v++)
-      for (let u = 1; u < LINES - 1; u++) {
-        const i = v * LINES + u;
+    for (let v = 1; v < samples - 1; v++)
+      for (let u = 1; u < lines - 1; u++) {
+        const i = v * lines + u;
         if (cpuTissue[i] !== BLOOD || !cpuVessel[i]) continue;
-        if ([i - 1, i + 1, i - LINES, i + LINES].some((j) => cpuTissue[j] !== BLOOD)) continue;
+        if ([i - 1, i + 1, i - lines, i + lines].some((j) => cpuTissue[j] !== BLOOD)) continue;
         blood++;
         const gi = gpu.vessel[i];
         const gpuId = gi >= 0 && gi < sim.scene.vessels.length ? sim.scene.vessels[gi].id : null;

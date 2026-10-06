@@ -6013,3 +6013,387 @@ el mismo trabajo total de 8 667 702 ms. Es una predicción de reparto, no una me
 de tiempo de pared observada ni una reducción de pruebas. Debe contrastarse con
 la ejecución final y su posmerge. Los tres commits y hashes de cada informe quedan
 en el archivo de pesos para repetir el cálculo.
+
+## 156. No unir muestras IQ separadas por una pausa de adquisición
+
+**Defecto reproducido.** El procesador espectral conservaba una FFT parcial al
+reanudar el PW con la misma PRF después de una pausa o un salto atrás del reloj.
+Con 127 muestras antiguas y una nueva emitía una columna, fechada incluso antes
+de la reanudación. Las guardas de continuidad posteriores al espectro no pueden
+reparar una FFT que ya mezcló instantes no contiguos.
+
+**Corrección.** Comparar el tiempo del siguiente lote con el siguiente índice IQ
+previsto antes de modificar la referencia temporal. Una diferencia superior a
+una muestra (más tolerancia numérica) invalida únicamente la FFT parcial y
+reinicia la memoria del filtro, el audio y el residuo fraccional de la cadena.
+Las columnas completas anteriores conservan identidad y fecha; nunca se
+rellena el intervalo sin adquisición. La primera columna nueva requiere 128
+muestras nuevas y lleva el centro de esa ventana.
+
+**Invariantes.** El residuo submuestra normal del reloj fisiológico no reinicia
+la adquisición. Dividir una señal continua en lotes conserva exactamente sus
+columnas. El cambio de PRF conserva su guarda anterior. Reiniciar la cadena
+explícitamente no simula otra interrupción en el primer lote. No cambia la
+fisiología, el espectro de un flujo continuo ni las escalas.
+
+**Verificación.** Las dos regresiones de salto positivo/negativo fallaron con el
+procesador anterior. Se comprueban continuidad exacta, tolerancia submuestra,
+fecha y potencia tras pausa, conservación del historial y reinicio de filtro y
+audio por la cadena real. Es una corrección de adquisición digital, no una
+validación clínica de las ondas o del filtro de pared.
+
+## 157. Margen de bundle con transporte GLSL reversible de ocho bancos
+
+**Deuda.** Tras la corrección de adquisición, el JS total ocupa 1 048 283 bytes
+de 1 048 576 permitidos: solo 293 bytes para seguir corrigiendo el simulador.
+
+**Cambio.** Extender el diccionario de transporte de 256 a 512 palabras. Los
+primeros 256 códigos permanecen intactos; cuatro prefijos adicionales usan el
+mismo decodificador en la inicialización de los módulos. El análisis offline
+admite un límite explícito de candidatos y excluye los alias de uniformes
+generados por el propio build: persistirlos causa una colisión real en la
+siguiente compilación. No se modifican Three, las ecuaciones, las mallas, las
+interpolaciones ni los programas GLSL reconstruidos.
+
+**Medición.** Sobre el mismo commit base y 17 archivos JS, el total sin comprimir
+pasa de 1 048 283 a 1 043 420 bytes (−4863). Gzip nivel 9 pasa de 352 109 a
+352 680 (+571), y Brotli calidad 11 de 304 649 a 304 856 (+207). Se recupera
+margen del presupuesto de fuente distribuida; no mejora la transferencia
+comprimida y no se atribuye una mejora de FPS o de tiempo de arranque. Los
+presupuestos no cambian y todos los chunks siguen contados.
+
+**Verificación.** Los contratos existentes comparan byte por byte cada programa
+ensamblado de ecografía y cada export GLSL de Three, así como coerción, escapes
+y orden de las interpolaciones. Se comprueban los extremos de los ocho bancos,
+unicidad, códigos previos y rechazo de índices inválidos. La CI debe compilar
+y ejecutar los mismos shaders sobre WebGL antes de integrar.
+
+## 158. No rotular un espectro antiguo con el Nyquist de otra adquisición
+
+**Defecto.** El bitmap principal se reconstruía al cambiar línea de base o
+inversión, pero no PRF. Una escala nueva podía rotular las mismas alturas de
+un espectro anterior con otras velocidades, incluso con el paciente congelado.
+El trazado de una captura anterior también podía persistir sobre el nuevo eje.
+
+**Corrección.** La PRF forma parte de la identidad de presentación. Al cambiarla
+se limpia el bitmap y solo se dibujan columnas y capturas de esa PRF. No se
+reescala ni pliega otra vez una adquisición histórica para hacerla encajar.
+Volver a su PRF recupera la presentación original desde las mismas columnas.
+La señal adquirida, sus fechas y el paciente permanecen intactos.
+
+**Verificación.** Dos regresiones del renderizador real sobre canvas registrador
+fallaron antes de la corrección: bitmap congelado sin limpiar e historial mixto
+dibujado bajo un único eje. Se comprueban reversibilidad, conservación exacta
+de columnas y redibujado al invertir o desplazar baseline. La E2E existente de
+presentación añade un cambio real del control Escala, exige ausencia de píxeles
+y trazado incompatibles, verifica reloj/señal congelados y guarda captura.
+Los otros flujos, umbrales y timeout de esa E2E se conservan.
+
+## 159. Mostrar la variación portal de los latidos realmente medidos
+
+**Deuda.** La captura conservaba solo la mediana de PF, aunque ya calculaba
+la PF de cada latido. Esto ocultaba dispersión importante, especialmente en
+ritmos irregulares, y favorecía interpretar cuatro latidos como una propiedad
+exacta y estable del paciente.
+
+**Cambio.** Conservar las PF observadas en el mismo orden de los latidos medidos.
+La pestaña Medir y el visor comparado muestran el rango mínimo–máximo y su
+cantidad. Si ese rango cruza 30 o 50 %, utilizando las constantes del clasificador,
+se indica ampliar el registro. Es variabilidad de la muestra, no un intervalo
+de confianza ni una cota para latidos futuros. Las capturas rechazadas por
+calidad continúan sin publicar estos valores.
+
+**Invariantes.** La mediana, velocidades, calidad y clasificación no cambian.
+No se calcula PF a partir del cociente de las medianas de velocidades. Se
+conservan PF superiores a 100 % cuando existe inversión; INV no cambia la PF.
+No se aumenta ficticiamente el número de latidos ni se reemplaza la observación
+por verdad fisiológica. La limitación de cuatro latidos en FA permanece abierta.
+
+**Verificación.** Espectro sintético con seis latidos de PF diferente: se conserva
+orden, mediana y magnitud a menos de seis puntos del generador, incluyendo la
+invariancia por inversión de pantalla. Pruebas de umbrales inclusivos, rango,
+no mutación y datos ausentes/no finitos. La E2E del visor exige el texto observado
+y mantiene sus comprobaciones de píxeles al cambiar baseline, inversión y barrido.
+
+## 160. Separar adquisición y presentación en la validación rápida
+
+**Deuda.** El archivo del visor acumula siete pruebas costosas en un solo
+trabajador. Una ejecución anterior fue cancelada cerca del límite de quince
+minutos; no se atribuye una causa definitiva a esa cancelación.
+
+**Cambio.** Mover tres pruebas de adquisición a un archivo propio y conservar
+cuatro de presentación. Sus cuerpos y aserciones permanecen idénticos. La matriz
+rápida pasa de nueve a doce trabajos: cada caso mantiene tres ejecuciones, un
+trabajador, cero reintentos y el mismo límite de tiempo. Los artefactos incluyen
+el intento de workflow para no confundir la evidencia de una repetición.
+
+**Coste y límites.** Se busca reducir la cola del archivo más largo, no ahorrar
+minutos facturados: hay más preparaciones independientes. Los tiempos de los
+casos movidos usan la reserva conservadora del repartidor principal hasta contar
+con nuevas mediciones; no se inventan duraciones.
+
+**Verificación.** Reconstrucción exacta del archivo anterior concatenando los
+cuerpos separados; colección de cuatro y tres casos y comprobación de que el
+reparto principal conserva las 73 pruebas, una sola vez cada una. La CI real
+sigue siendo necesaria antes de fusionar.
+
+También se conservan las capturas `pw-*.png` en los artefactos visuales: la
+regresión de escala las generaba, pero el filtro anterior solo retenía
+`venous-*.png`. No se da por revisada una imagen que no fue recuperada.
+
+## 161. Declarar el corte efectivo del filtro de pared PW
+
+**Defecto.** Con PRF de 250 Hz y corte solicitado de 300 Hz, el receptor
+limitaba internamente el filtro a 112,5 Hz, pero el estado del equipo y su
+getter seguían declarando 300 Hz. La interfaz podía enseñar una configuración
+físicamente distinta de la aplicada.
+
+**Cambio.** Compartir la normalización a [0, 0,45 × PRF] entre equipo y
+receptor. Rechazar valores no finitos y PRF no positiva antes de modificar
+un diseño válido. No se modifica el filtro Color.
+
+**Invariante.** Se mantienen los coeficientes de las dos etapas Butterworth
+de segundo orden y su respuesta conjunta de amplitud 0,5 en el corte
+(aproximadamente −6 dB). No se transforma en un Butterworth global de cuarto
+orden, cuyo corte convencional es −3 dB: sería otro receptor y cambiaría las
+señales lentas y la calibración. Referencia de esa distinción:
+https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.butter.html
+
+**Verificación.** Contrato equipo/receptor a PRF baja, entradas inválidas y
+conservación del estado; tres pares frecuencia/PRF contra la fórmula bilineal
+analítica y un tono IQ de 25 Hz tras descartar el transitorio. No se atribuye
+a esta prueba validación clínica ni equivalencia con un fabricante.
+
+## 162. Un fallo esperado no debe esconder una avería de preparación
+
+**Defecto.** Dos pruebas `it.fails` construían su simulación dentro del cuerpo
+que debía fallar por una limitación conocida. Una excepción nueva en esa
+preparación podía contarse incorrectamente como el fallo esperado.
+
+**Cambio.** Preparar la simulación en `beforeAll`, fuera del alcance de
+`it.fails`. Comprobar positivamente que el contraejemplo fisiológico genera
+751 muestras finitas (estado inicial más 750 pasos a 250 Hz), de 0 a 3 s.
+Compartir las tres escenas del modelo antiguo entre su control positivo y
+su regresión esperada, sin repetir su cálculo.
+
+**Invariantes.** Se conservan pacientes, semillas, ecuaciones, umbrales y
+aserciones físicas. Los doce fallos esperados siguen siendo deudas abiertas;
+esta mejora no resuelve la aurícula prescrita ni los defectos anatómicos.
+La cobertura debe detectar una excepción inesperada de preparación como fallo
+real. El ahorro es la eliminación de cálculos duplicados, sin prometer una
+reducción global de tiempo no medida.
+
+## 163. Retener la ventana de captura PW también a PRF alta
+
+**Defecto.** Un límite fijo de 2048 columnas con salto de 16 muestras conserva
+solo unos 5,46 s a PRF de 6000 Hz y 2,73 s a 12000 Hz. La captura consultaba
+siete segundos, pero parte de esa señal ya había sido descartada.
+
+**Cambio.** Compartir la duración de siete segundos entre captura y retención.
+El límite implícito crece con PRF/salto, conservando un mínimo de 2048 columnas
+y un máximo de 8192. Los límites explícitos del constructor siguen mandando.
+No se interpola, remuestrea ni modifica la FFT, el reloj o la potencia.
+
+**Dominio y coste.** Con FFT 128 y salto 16, cubre siete segundos en el dominio
+del equipo hasta PRF de 12000 Hz. El máximo ocupa 4 MiB solo en vectores de
+potencia, más objetos y otras estructuras: no es una cota del heap completo.
+Fuera de ese dominio o con un límite explícito menor puede conservar menos.
+Las escalas habituales mantienen su historial anterior de 2048 columnas.
+
+**Verificación.** A PRF de 6000 y 12000 Hz, comprobar duración mínima y los
+últimos espectros contra un historial amplio; a 2600 Hz, igualdad del historial
+anterior y respeto de límite explícito; a 24000 Hz, respeto del techo de memoria.
+
+**Regresión de instrumentación detectada en CI.** Al cambiar el barrido, el
+E2E confundía glifos amarillos con la línea de base porque inspeccionaba una
+sola columna de píxeles. El detector ahora exige una línea horizontal que
+ocupe más de la mitad del ancho; sigue midiendo su posición desde los píxeles,
+sin asumirla ni relajar la igualdad. Dos controles sintéticos comprueban que
+ignora glifos locales y detecta desplazamiento y ausencia de línea. Restaurar
+el detector antiguo hace fallar ambos controles. Se conservan el hash completo,
+las aserciones fisiológicas y el rechazo de pruebas que pasan solo al reintentar.
+
+## 164. Conservar FC y compliance al recorrer las guías de congestión
+
+**Defecto.** Tras ajustar frecuencia cardíaca o compliance de los reservorios,
+seleccionar una guía o mover la progresión restablecía ambos valores sin una
+intervención explícita. Una comparación podía atribuir a congestión efectos
+producidos también por ese cambio accidental.
+
+**Cambio.** El control de progresión conserva FC y compliance elegidas; PAD,
+PIA, función VD, IT y compliance AD siguen el recorrido existente. La función
+pura que define las guías basales no cambia. El reinicio explícito restaura
+todos los valores y cancela cualquier ajuste pendiente.
+
+**Interpretación.** Las guías no fuerzan un grado. Con valores independientes
+personalizados, el grado calculado puede diferir del caso basal de la guía.
+No se añade una transición fisiológica continua: siguen siendo estados
+estables independientes del paciente original.
+
+**Verificación.** Eventos DOM de las cuatro guías y el recorrido fino, más
+cancelación de debounce al reiniciar. La E2E existente vuelve a Guía 0 por
+teclado tras personalizar controles, exige conservar FC/compliance, cambiar
+PAD/PIA y mantener intactos paciente, reloj y congelación.
+
+## 165. Archivos de parámetros venosos con dominio y versión explícitos
+
+**Objetivo.** Permitir guardar y compartir los siete controles del laboratorio
+para repetir una exploración docente, sin copiar datos del paciente ni
+presentar un archivo de parámetros como una grabación de señal.
+
+**Contrato.** JSON identificado como `vexus-venous-parameters`, versión de
+formato 1, con exactamente las siete claves conocidas. Se validan dominio,
+valores finitos y estructura antes de modificar controles o activar un
+experimento. Se rechazan claves o versiones desconocidas y archivos mayores
+de 8 KiB, incluyendo su tamaño real en UTF-8. La exportación libera su URL.
+
+**Concurrencia.** Cada intención del usuario invalida importaciones previas.
+Cerrar/reiniciar, modificar un control o seleccionar otro archivo impide que
+una lectura tardía sobrescriba la decisión más reciente. Un archivo inválido
+conserva los parámetros anteriores y deja un error visible y registrado.
+
+**Límites.** Solo se guardan parámetros sintéticos del modelo. No incluye IQ,
+curvas, posición de sonda ni identidad de pacientes. La versión del formato
+no certifica equivalencia fisiológica entre versiones del motor; se avisa
+expresamente que no garantiza curvas idénticas. El paciente del alumno
+permanece separado del experimento.
+
+**Verificación.** Round-trip, esquema estricto, todos los dominios, valores
+no finitos, claves desconocidas y límite de bytes. Eventos DOM de exportación,
+importación, errores, reinicio y carreras entre archivos/ajustes. La E2E
+existente descarga un archivo real, modifica e importa sus parámetros,
+comprueba controles/caso y conserva paciente, reloj y congelación.
+
+## 166. Doce pares costales y esternón en la anatomía acústica local
+
+[Estado: referencia craneocaudal esternal corregida por 167; el resto del hito se conserva.]
+
+**Contexto.** Daniel prioriza anatomía ecográfica antes de ampliar funciones. En d7f214f solo existen los pares 5–10; el esternón 3D no participa en la imagen. La auditoría adicional aportada por Daniel confirma el defecto y exige medir contactos y evitar recuperar presets deformando anatomía. Contrato previo: `anatomy/LOCAL_ANATOMY_CONTRACT.md`.
+
+**Opciones.** Dibujar piezas decorativas, portar sin registro todo LUS, o completar primero el campo común con aproximaciones explícitas.
+
+**Decisión.** Primer hito local: doce pares numerados y campos de manubrio/cuerpo/xifoides, con cortical/pericondrio existentes. Mismo registro para CPU, GLSL y 3D. 11/12 tienen extremos libres; ajuste angular a la fuente LUS 7a7def6, MIT, preservando los arcos 5–10 y la geometría visceral. El ajuste a 101 muestras reduce el error de transferencia del recorrido a máximos 2,66/0,80 mm; no equivale a concordancia clínica. Materiales esternales se extraen separadamente con cierre en z=0.
+
+**Consecuencias.** Los bordes portal y subcostal encuentran huesos que antes faltaban; los vasos objetivo deben permanecer enteramente visibles. El test exige adquisición despejada hasta ellos en vez de ausencia de hueso en todo el sector. No se ensanchan espacios ni mueven órganos. La regresión de adquisición PW renal en sano mostró que el punto previo estaba bajo la 11.ª: transmisión 7,30·10⁻⁹. Se desplaza únicamente la sonda de z −85 a −90 mm, conservando ángulos, con transmisión 0,205; un negativo exige mantener la sombra del punto previo. El espectro vuelve a ser medible con las pruebas originales. Se mantienen `reference-thorax-incomplete` y un nuevo límite `thoracic-skeleton-estimated`. Estrechamiento superior, inserciones indirectas, articulaciones, diafragma y corazón siguen pendientes de registro. Se amplía a propósito el presupuesto total JS en 4 KiB (1024→1028): medición inicial 1026,9 KiB al añadir los campos compartidos; se conservan límites por chunk y cómputo de Workers/testHooks.
+
+Los tres registros por costilla pasan a la textura de datos existente: duplicar uniformes excedía la guarda portátil del fragment shader. Se mantiene esa guarda. El banco volumétrico pasa de 50.000 a 60.000 puntos para conservar más de 40.000 muestras interiores al añadir superficies; conserva exclusión de borde de 1 mm e igualdad exacta de tejido/interfaz.
+
+La métrica material de peritoneo de la decisión 65 conserva su plano renal histórico z=−85: trasladar el preset cambia también incidencia, textura y fondo de esa medición. Se excluyen prefijos de hueso/gas y se duplican líneas de 192 a 384 para mantener sus mínimos de 60/30 muestras observables; no se cambian umbrales de contraste. Se exige sombra no vacía e idéntica entre variantes. Los otros cuatro bancos de pantalla siguen las poses actuales, incluida la renal z=−90, además de las pruebas de adquisición real. La prueba de pleura que excedió 180 s con paralelismo por defecto pasa en 91 s con tres workers; no se amplió timeout ni se redujo el banco.
+
+**Verificación.** Ver `anatomy/LOCAL_ANATOMY_RESULT.md` para resultados finales y límites. Incluye negativos delante de extremos libres, control adversarial sin terminación, geometría de ambos lados, tejido/interfaz/normal GPU, adquisición y calibración de siete casos. El contraejemplo hemodinámico de la auditoría se reprodujo sin modificar fisiología: 19,464 m/s internos en VCI a 24,432 s. Se registra para una reparación causal posterior, sin limitar su curva.
+
+## 167. Referencia xifoidea común y contactos medidos antes del clasificador
+
+**Contexto.** La primera adaptación LUS usaba z=0 como unión xifoesternal y extendía el xifoides hasta −30 mm. VExUS y el registro BodyParts3D anclan z=0 en la punta. La auditoría exige separar una relación anatómica correcta de una superposición escondida por prioridad. Contrato previo: `anatomy/STERNAL_FRAME_CONTRACT.md`.
+
+**Opciones.** Trasladar todo el adulto 30 mm basándose en comentarios, normalizar piezas por separado, o corregir el landmark esternal documentado y medir las relaciones individuales antes de otra integración.
+
+**Decisión.** Punta z=0 y unión z=18,2615 mm, landmark registrado de `REFERENCE_TORSO.md`. El mismo valor divide cartílago y hueso en CPU, GLSL y mallas cerradas. Se conserva el resto de parámetros estimados; no es un ajuste tridimensional nuevo del atlas. Costillas, órganos, vasos y poses permanecen en su marco previo. Nuevo diagnóstico `tools/anatomy/local-contacts.ts`: superficies costales/esternales frente a campos hepáticos antes/después de pared/diafragma, riñones en su marco local y epicardio antes del recorte diafragmático.
+
+**Consecuencias.** Desaparece el xifoides artificial caudal. El banco distingue el signo del campo y valida su propio residual superficial; un mínimo positivo no certifica separación global. En el perfil opcional se conservan testigos costilla–hígado efectivo de −19,634 mm: una deuda previa, no resuelta por recolocar el xifoides. Las uniones costales y el registro 3D siguen pendientes. La fuente pública no respondió desde el Mac; su recuperación no se presenta como realizada. Un primer diagnóstico renal omitió la transformación local; se conserva marcado inválido y se añadió una prueba de centros/riñón contralateral antes del informe corregido.
+
+**Verificación.** Controles por debajo de z=0, en el xifoides correcto y a ambos lados de la unión; misma frontera en CPU/GPU/malla, adquisiciones, signos y rechazo de muestras/campos no finitos. Resultados y límites en `anatomy/STERNAL_FRAME_RESULT.md`. No hay cambios fisiológicos ni publicación.
+
+Seguimiento de 166: la CI encontró una puerta arterial renal fija de la pose anterior (θ 0,4266/r 48 mm), ahora fuera del vaso. La prueba adquiere una arteria real con búsqueda ponderada por transmisión y margen interior 0,2 mm, igual al audit pareado existente para arterias de radio 0,5–1,35 mm. Conserva la comprobación del vaso, 1280 partículas y rechazo de certificación venosa; no cambia señal ni umbral clínico.
+
+La comprobación costal heredada suponía seis pares y muestreaba los nuevos arcos como si no tuvieran término craneocaudal ni extremos libres. Sus tres posiciones por lado ahora siguen las elipses declaradas, muestrean cartílago lateral al esternón y los tres tramos óseos de 11–12. Exige 52 puntos óseos y 20 cartilaginosos, acuerdo exacto CPU/GPU. El adulto de referencia conserva los ajustes registrados de 5–10, ajustes explícitos de 11–12 y declara los cuatro arcos superiores como estimados en vez de exigirles una medición inexistente.
+
+El test de captura congelada agotó 180 s globales en SwiftShader y pasó solo al reintento (CI sigue roja). Usaba setTimeout global en vez del presupuesto común: se conserva trabajo 180 s y se suma el arranque BOOT_MS como en las otras pruebas. No se modifica polling, imágenes, tolerancias ni política de primer intento; la nueva revisión exige toda CI verde sin reintentos aprobados.
+
+## 168. Adquisición portal intrahepática separada del tronco principal
+
+**Defecto y mecanismo.** La pose lateral anterior sigue demasiado el segmento extrahepático y muestra cava parcial. Se adquiere físicamente hilio/rama derecha sin agrandar vísceras ni ocultar vasos. `portalTrunk` conserva exactamente las poses previas para PW VExUS; el protocolo usa esa ventana con sus restricciones de calidad, puerta de 6 mm y distancia a bifurcación conservadas. `subxiphoid` se identifica como Subcostal · VCI longitudinal, con pose intacta.
+
+**Predicción e invariantes.** Menor proporción extrahepática en el corte lateral, vasos objetivos dentro del campo hepático y sin obstrucción. No cambian caudales, áreas, órganos ni el espectro del tronco anterior. Los rótulos nuevos ceden espacio a los existentes. En la pose oblicua la compresión se acota por el empuje máximo de toda la cara; se conserva además la banda previa para las otras poses.
+
+**Refutación y aceptación.** Campos individuales antes de prioridad de tejido, contrafactual de pose antigua, cuatro hábitos y sano/congestión en dos cuerpos; PW sigue en tronco principal y conserva calidad. Contrato previo en `anatomy/PORTAL_LIVER_CONTRACT.md`. El procesamiento complejo y la presentación color se integrarán por separado; este PR no reclama esas mejoras. Son controles de ingeniería, no validación clínica humana.
+
+## 169. Interpolación del Doppler color en el plano complejo
+
+**Defecto.** Promediar frecuencias plegadas cerca de +Nyquist/−Nyquist inventa una velocidad próxima a cero.
+
+**Mecanismo y predicción.** Se conserva R1=(Re, Im), se interpola explícitamente con texelFetch y se aplica un kernel [1 2 1]²/16 de una línea/paquete antes de recuperar frecuencia por atan2 y potencia por módulo. El cine almacena componentes complejos en RG16F. La lectura diagnóstica mantiene frecuencia/potencia como API pública. Debe conservarse la dirección a ambos lados de la discontinuidad de fase.
+
+**Invariantes y refutación.** No se alteran flujo, áreas, signo fisiológico, proyección axial, clutter, ruido, ganancia, filtro, acoplamiento, transmisión, cadencia ni umbral. Comparación numérica independiente GPU: reconstruir fasores desde el campo crudo y calcular interpolación/kernel, sin importar funciones de producción. Se comprueban sangre frente a píxeles, aliasing, inversión de presentación, ausencia de contacto, filtro alto y cine en ambos cuerpos. Error de correlación, cancelación falsa o señal sin sangre refutan el cambio. La fracción de sangre se copia por texel entero, sin interpolarla: el control GPU exige igualdad exacta del metadato entre campo crudo y filtrado, también en SwiftShader.
+
+**Alcance y coste.** Estimador emulado y kernel espacial estimado, no IQ clínico real. Una textura RGBA32F 96×160 adicional (240 KiB), programa/pasada a cadencia de color. Presupuesto 1028→1030 KiB para interpolación y adquisiciones: límites por chunk y total siguen activos. Paleta/preset se entregan por separado. Base física: [Evans, Jensen y Nielsen, 2011](https://pmc.ncbi.nlm.nih.gov/articles/PMC3262272/); la publicación no suministra este kernel concreto.
+
+## 170. Paleta rojo/azul compartida y ajuste de la adquisición intrahepática
+
+**Contexto.** El usuario pide flujo portal más visible y rojo, parecido a sus referencias. El mapa anterior termina en amarillo; las capturas de la decisión 168 centran la caja mediante QA y usan +8 dB, mientras la tarjeta real conserva caja genérica y ganancia 0. Contrato previo: `anatomy/PORTAL_PRESENTATION_CONTRACT.md`.
+
+**Decisión.** `colorMap.ts` comparte extremos cromáticos entre shader y barra: rojo para frecuencia positiva, azul para negativa, sin extremo amarillo. La luminancia sigue la magnitud axial y la inversión continúa actuando sobre presentación. Al seleccionar «Porta · intrahepática», el equipo aplica 150 mm de profundidad, foco 100 mm, ganancia B −2 dB, RD 65; caja estimada de 70–125 mm y 0,42 rad, escala ±35 cm/s, ganancia color +12 dB y filtro 60 Hz. El centro angular depende del cuerpo (0,11/0,31 rad). Se mantienen los controles editables, el estado encendido/apagado, ensemble, persistencia y TGC. El gesto manual conserva ajustes. La selección de otras ventanas mantiene el comportamiento previo. La descripción de la tarjeta informa del ajuste.
+
+**Consecuencias.** Se ve la rama completa dentro de la caja y se distingue su flujo rojo con mayor relleno; no se agranda el vaso ni se obliga a flujo positivo. Conserva geometría, espectro PW, caudal, filtro, contacto y estimador complejo. El ajuste es estimado para estos adultos sintéticos y se puede necesitar retocar en otras fases/casos. No se calibró contra una máquina concreta. Cerca de las paredes la interpolación espacial y la ganancia pueden extender color; el control negativo usa una caja sin sangre y no una máscara para recortar esa extensión.
+
+**Verificación.** La nueva prueba selecciona la tarjeta mediante UI, sin autocentrado por verdad anatómica, y compara ganancia 0/+12 en la misma caja durante ocho cuadros por estado. Incluye normal/congestión grave, ambos cuerpos; cuenta sangre de rama y píxeles RGB por separado. El rojo no se vuelve amarillo, la inversión deja el campo idéntico, filtro alto suprime la rama y la caja sin sangre conserva cero señal. Pruebas anteriores conservan aliasing, transmisión/ganancia, contacto y cine. Un primer instrumento de barrido omitió asentar la velocidad de sonda tras teletransportarla y generó clutter; se conservó marcado inválido y se corrigió antes de ajustar. Resultados, capturas y límites: `anatomy/PORTAL_PRESENTATION_RESULT.md`. CI detectó después un timeout de 360 s en el adulto de referencia: ocho cuadros por ganancia, cuatro de caja vacía, filtro, inversión y restauración suman 33 renders completos, además del arranque/UI. El presupuesto específico pasa a BOOT + 360 s de trabajo (540 s en CI), manteniendo todos los cuadros, controles y umbrales; se exige otra ejecución completa de la cabeza corregida, no un pase al reintentar.
+
+## 171. Resolver juntos los caudales de la unión cavoauricular
+
+La presión común Rj·(Qh+Qi) deja de usar caudales atrasados. Un sistema backward Euler 2×2 resuelve las dos ramas; conserva R, L y contornos. El determinante expandido evita restar dos Rj² grandes. Contrato previo en `anatomy/COUPLED_VENOUS_CONTRACT.md`; oráculos independientes de simetría, equilibrio, residual y disipación. No se cambian áreas ni se recorta velocidad; la limitación del área regional de la cava sigue pendiente. Casos y adquisición se comprueban en CI completa. La adquisición de porta usa ±40 cm/s, conservando el límite de profundidad, puerta, ruido y tolerancias: llevarla al techo de PRF (±87 cm/s) subresolvía el flujo lento de FA. Su verdad se mide en los mismos latidos de la captura, antes de adquirir el riñón; no se cambian el umbral 30 % ni los grados 0/1/3 ni el límite de error de 8 puntos. El control de sacar/devolver la puerta espera 8 s de estabilización del calibre antes de colocarla, conservando 150 Hz, +12 dB y presencia >90 %/<5 %; su fallo anterior con 2 s (0,8909/0/0,9166) y el diagnóstico 8 s (0,9369/0/0,9059) se conservan.
+
+## 172. Sección regional de la VCI suprahepática y Q/A común con su anatomía
+
+La unión/entrada auricular deja de heredar la sección abdominal colapsada por PIA. Una ley regional estimada depende de P_unión−P_pleural y conserva el retraso de pared 0,2 s. Q/A usa su área elíptica exacta; una función común selecciona la elipticidad en CPU, textura GPU y 3D sin añadir uniforms/texturas. La VCI abdominal medida por VExUS conserva área y comportamiento. Curva D=28·sigmoid((Ptm−4)/6), residual 3 mm: ESTIMADA, no calibrada clínicamente. Contrato, contrafactual y límites en `anatomy/REGIONAL_IVC_CONTRACT.md`. No cambia caudal ni fuerza signo/velocidad. Se mantiene la deuda waterfall y la transición gruesa entre tubos; no se declara fidelidad completa toracoabdominal.
+
+Seguimiento de 168: el barrido GPU incluye las nueve ventanas, incluida portalTrunk. La ventana portal ahora contiene ramas intrahepáticas menores: su rejilla se refina de 48×72 a 64×96, conservando >50 células sanguíneas completamente interiores y todos los umbrales de acuerdo y velocidad. La rejilla del resto de ventanas, volumen y cáscaras no cambia.
+
+La paridad refinada añade 0,06 KiB a los ganchos incluidos: el total pasa ligeramente de 1030 KiB. Margen +1 KiB compartido con 173 (1031 total); se mantienen todos los assets/Workers y límites por chunk.
+
+Las tres adquisiciones E2E de PW que pedían explícitamente pvTrunk ahora usan portalTrunk, la misma pose original conservada para VExUS. La ventana portal intrahepática y sus pruebas color siguen en la rama derecha; no se fuerza la puerta ni la clasificación.
+
+Seguimiento de 168: CI slow detectó que el banco de dispersores persistentes del tronco portal seguía usando la tarjeta portal intrahepática. Se adquiere ahora desde portalTrunk, que conserva la pose original, sin cambiar caudales, volumen de muestra, semillas, duración ni límites de diferencia <0,05/reingreso >90 %. Error original: 0,14005, registrado antes de corregir el instrumento.
+
+Seguimiento de 172: se corrige solamente tilt de la adquisición subcostal procedural −0,4→−0,398 rad (+0,115°), tras documentar pérdida de la banda VSH a 1–2 cm en inspiración. El contrafactual de sonda queda en el contrato; se conservan distancia, incidencia ≤60°, transmisión ≥0,02 y cuerpos/respiraciones de los bancos. No se deforma anatomía para recuperar un preset.
+
+El candidato intermedio −0,38 se rechazó por acortar el eje visible a 33,72 mm (<45). El ajuste final −0,398 conserva 52,71 mm y recupera banda inspiratoria a 11,14 mm/59,17°/0,03695, con umbrales originales. Ambos experimentos quedan declarados en el contrato.
+
+## 173. Filtro color periódico en frecuencia muestreada, identidad al desactivarlo
+
+Defecto: f y f+PRF producían la misma fase pero diferente rechazo de clutter; f=0 y corte=0 generaba NaN. Se evalúa la respuesta de potencia estimada en la frecuencia plegada y devuelve identidad para corte cero. El módulo TS/GLSL conserva el cuarto orden anterior dentro de Nyquist. No añade máscara ni altera fisiología, fase, paleta, ganancia o umbrales. Contrato previo: `anatomy/COLOR_WALL_FILTER_CONTRACT.md`.
+
+Aceptación: secuencias IQ muestreadas como oráculo independiente, alias positivos/negativos, DC y desactivación; compilación GPU real y adquisición portal normal/grave. Sigue siendo respuesta aproximada sobre autocorrelación emulada (`color-emulated-estimator`), sin ensemble temporal filtrado real ni calibración clínica. Presupuesto total +1 KiB, de 1030 a 1031, para el pequeño módulo/folding y controles de desarrollo; todos los chunks siguen contando.
+
+Seguimiento de 173: SwiftShader produjo un error de fasor 3,24e−5 al generar el IQ mediante sin/cos del driver dentro del fixture, aunque el cálculo de ganancia precedía correctamente al fallo. El oráculo GPU recibe ahora muestras IQ conocidas calculadas en doble precisión, ejecuta el filtro de producción y compara contra fase entre muestras independiente. Conserva los nueve puntos, límite 2e−6 por componente y 5e−7 de potencia. Se aísla en una página vacía para no compilar el simulador completo; las pruebas de integración color conservan el arranque real. Se registra el fallo previo y se exige CI completa de las cabezas corregidas.
+
+## 174. Conservar las barreras fijas al convertir transmisión para color
+
+Defecto: escalar toda la pérdida B por fD/fB debilitaba hueso/gas y el suelo 1e-6 limitaba la atenuación. A2 registra pérdidas fijas en su canal .w auxiliar existente; el color lee los prefijos dB y conserva esa parte al convertir absorción. Un sampler adicional, sin textura nueva. Se preserva A.o2.y, que sí almacena el rayo dirigido. B, apertura, refracción y transmisión PW no cambian. Contrato previo: `anatomy/DOPPLER_ATTENUATION_CONTRACT.md`.
+
+Aceptación: integración PW independiente con capas de exponente uno, barreras óseas y gas, frecuencias diferentes, paridad del prefijo GPU y controles de señal portal. El escalado de absorción restante aún aproxima b=1; los exponentes tisulares diferentes requieren suma por segmento a fD, declarada como deuda para siguiente iteración. No hay calibración clínica nueva ni máscara vascular.
+
+El guard anterior de texto que exigía literalmente `pow(max(Tb, 1e-6), uDopplerFreqRatio)` se retira porque imponía la aproximación refutada por esta decisión. Los oráculos independientes de prefijo GPU conservan frecuencia, barreras óseas/gas, controles por debajo de −120 dB y modo B; las otras once pruebas físicas del volumen PW mantienen sus criterios.
+
+## 175. Consulta costal con descarte geométrico conservador
+
+Doce pares requieren consultar numerosos arcos lejanos en cada muestra acústica. La cota inferior del intervalo z descarta solo arcos incapaces de mejorar ambos mínimos, con margen float32 0,01 mm; el cartílago registrado no se descarta. SDF, normales, tejidos, interfaces y densidad de muestreo se conservan. Contrato previo: `anatomy/COSTAL_QUERY_CONTRACT.md`. No BVH ni caché invalidable.
+
+Oráculo por todos los arcos en ambos cuerpos, superficies y extremos libres: mínimos y primer interior exactos. En rejilla CPU: consultas 602384→513832 y 601632→511288; timing variable en Mac compartido, sin promesa de fps. Rechazada primera implementación con Math.hypot más lenta; sqrt conserva la misma cota. Paridad GPU completa requerida. Crecimiento observado a 1031,4 KiB: margen explícito +1 KiB (1032 total), manteniendo todos los chunks/Workers y límites individuales.
+
+## 176. Registro renal y muscular posterior coherente con la columna
+
+**Defecto observado.** El adulto de referencia retrasa la columna 14,02345 mm, pero riñones y psoas conservaban coordenadas procedurales. El riñón procedural ya era posterior (cápsula a > 10 cm de la piel anterior); trasladarlo arbitrariamente atrás invadiría su pared posterior. No se corrige una imagen moviendo solo mallas.
+
+**Cambio físico.** Riñones de referencia acompañan el registro vertebral: centros y −52,02345/−50,02345 mm, frente a −38/−36. Los vasos locales renales y la impresión hepática se construyen desde esos órganos. Psoas, cuadrado y peritoneo posterior se consultan en el mismo marco TS/GLSL. La meseta estimada del peritoneo se extiende lateralmente de |x| 70 a 85 mm para envolver ambos riñones; no se cambia su posición anterior −4 mm ni se pintan asas dentro del retroperitoneo. El navegador muestra los músculos posteriores a partir de sus campos acústicos.
+
+**Oráculo y límites.** Banco de 800 puntos capsulares por riñón, superficies individuales antes de prioridad, piel anterior/posterior, psoas y peritoneo. Tras el registro: separación a piel anterior 106,99/102,74 mm procedural y 120,76/117,01 mm referencia; a piel posterior 30,99/30,74 y 55,46/57,21 mm respectivamente. Márgenes muestreados con pared interna ≥0,63 mm y psoas ≥9,04 mm, ninguna muestra capsular por delante del peritoneo. No son mínimos globales certificados, fascia ni grasa perirrenal no se certifican con esa medida. Control negativo restaura la ubicación anterior y detecta >100 muestras fuera del compartimento aunque la precedencia todavía devuelve tejido renal. La guarda literal previa que exigía retroperitoneum(m) falló; se adapta al marco registrado sin relajar geometría ni calidad de adquisición.
+
+**Alcance posterior solicitado.** Se registró un contrato previo para agregar geometría ecográfica real de bazo, páncreas, estómago, duodeno, todo el intestino y vejiga, y completar ramas principales aórticas/cavas. No están incorporados todavía en esta iteración. Referencias y controles en anatomy/ABDOMINAL_COMPLETENESS_CONTRACT.md; no equivale a validación clínica humana ni fidelidad máxima.
+
+Seguimiento de 176: la antigua pose renal de referencia perdió la puerta tras desplazar el órgano (fallo real guardado). Búsqueda offline por polos/eje renal y transmisión real: φ3,35, z−75, yaw−0,175994, rock−0,218131, tilt−0,41084; los tres hitos visibles, puerta interlobar a 54 mm, ángulo16,67° y transmisión0,1862. La adquisición completa conserva límites cos>0,5, transmisión>0,01, calidad y patrón continuo. Tres cadenas de referencia y dos imágenes hepatorrenales nativas pasan sin reintentos. Build1032,3 KiB: margen medido+1 KiB (1033 total), sin nuevas texturas.
+
+El hook completo detectó además que la adquisición pareada opcional del visor perdía la arteria a −2° tras registrar el riñón. Barrido real de −5..+5°: −3,5° conserva puerta arterial en normal/grave, margen >0,73 mm y cos>0,93; se usa solo en referencia, procedural sigue −2°. Diez comprobaciones de documentación/pareado pasan, incluidas composición arterial y venosa, demás territorios y fisiología sin cambios. Los fallos y el barrido quedan guardados. La numeración renal es 176 en esta iteración; la integración Doppler siguiente pasa a 177.
+
+La CI de 1a73aec detectó dos fixtures aún ligados a la pose anterior: renalArterialGate restaba 2° en referencia y la rejilla 32×64 no resolvía sangre con cuatro vecinos en vasos interlobares milimétricos. El fixture arterial usa la inclinación de referencia ya auditada (3,5°); la paridad renal ahora muestrea 192×384, 0,47 mm axial, sin bajar los criterios de identidad, interior ni velocidad. Cuatro capturas arteriales y la prueba nativa del adulto de referencia pasan a la primera. Fallos conservados: jobs 112279324097 y 112279324169, CI37465796998.
+
+#### 176 — Incidencias del corredor de captura (2026-10-06)
+
+En la cabeza `867d55f`, la captura vertebral de referencia completó todas sus etapas y subió su evidencia, pero su trabajo terminó cancelado al alcanzar el límite de 15 minutos. La captura 3D legacy agotó el límite de 20 minutos durante la instalación de Chromium, antes de ejecutar código del simulador. Se conservan los flujos fallidos [vertebral](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37476439750) y [órganos](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37476439709). Ambos trabajos de captura tienen ahora un límite de infraestructura de 30 minutos; no cambian planos, número de cuadros, comprobaciones, tolerancias ni aceptación del agregado. La nueva cabeza exige una ejecución completa verde antes de fusionarse.
+
+## 177. Integrar la absorción Doppler por tejido sin nuevas texturas
+
+La conversión global de 174 usa b=1 para absorción, aunque piel, grasa, músculo y sangre tienen otros exponentes. A1 empaqueta gas+4·tejido en .w (entero float32 exacto); todos sus consumidores decodifican gas. A2 integra α_t(fD)/α_t(fB) por segmento, conserva espejo/gas y entrada ósea fijos, y entrega pérdida Doppler total en su .w auxiliar. F lee ese prefijo directamente, retirando el sampler B y la conversión global. Nueve vec4 de ratios (33 tejidos), sin nueva textura/pasada. Contrato previo: `anatomy/TISSUE_DOPPLER_PREFIX_CONTRACT.md`.
+
+Aceptación: etiquetas de todos los tejidos/tipos de gas; programa A2 de producción en GPU con todos los tejidos y nueve pares de frecuencias, espejo/gas/hueso y B inalterado, error <0,01 dB. Prefijos de cuatro ventanas frente a integración independiente α1·f^b, adquisición portal normal/grave en ambos cuerpos y oráculo complejo con controles negativos. Límites WebGL de uniforms/samplers, grafo y hashes documentan cambio de .w, sin rebajar márgenes ni tolerancias.
+
+Se retira `color-absorption-linear-scaling`; continúan rejilla gruesa, barreras estimadas, ausencia de calibración clínica y estimador color emulado. Las funciones b=1 quedan solo como contrafactual histórico de 174 en tests, sin uso de renderer. Medido 1031,3 KiB ≤1032: coste neto menor tras retirar sampler/conversión, todos los activos/Workers incluidos. No se declara idéntica apertura ni discretización entre PW y color.

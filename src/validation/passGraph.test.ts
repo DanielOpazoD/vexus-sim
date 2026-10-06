@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { GpuPassTimer, summarizeGpuTimings } from '../ultrasound/gpuTimer';
+import { COLOR_FILTER_GLSL } from '../ultrasound/colorCorrelation';
 import { FRAME_PASSES, passGraphErrors, type PassId, type PassSpec, type Resource } from '../ultrasound/passGraph';
 import {
   FRAG_AXIAL,
@@ -22,7 +23,7 @@ import {
 describe('grafo de pasadas del renderer', () => {
   it('la tabla del renderer es un grafo válido: A → B → C → D → K → (F) → G → persistencia → pantalla', () => {
     expect(passGraphErrors(FRAME_PASSES)).toEqual([]);
-    expect(FRAME_PASSES.map((p) => p.label).join(' ')).toBe('A0 A1 A2 A B C D K F G P S');
+    expect(FRAME_PASSES.map((p) => p.label).join(' ')).toBe('A0 A1 A2 A B C D K F F1 G P S');
   });
 
   const without = (id: string) => FRAME_PASSES.filter((p) => p.id !== id);
@@ -60,11 +61,12 @@ describe('grafo de pasadas del renderer', () => {
   });
 
   it('el color de cadencia propia puede leerse del cuadro anterior; uno de cada cuadro no', () => {
-    expect(passGraphErrors(without('color')).join('\n')).toMatch(/scanConvert lee «color»/);
-    const colorEachFrame = FRAME_PASSES.map((p): PassSpec => (p.id === 'color' ? { ...p, cadence: 'frame' } : p));
+    expect(passGraphErrors(without('color')).join('\n')).toMatch(/colorFilter lee «colorRaw»/);
+    expect(passGraphErrors(without('colorFilter')).join('\n')).toMatch(/scanConvert lee «color»/);
+    const colorEachFrame = FRAME_PASSES.map((p): PassSpec => (p.id === 'colorFilter' ? { ...p, cadence: 'frame' } : p));
     expect(passGraphErrors(colorEachFrame)).toEqual([]);
     // movida detrás de G y de cadencia de cuadro, G leería un color que aún no existe
-    const late = [...colorEachFrame.filter((p) => p.id !== 'color'), colorEachFrame.find((p) => p.id === 'color')!];
+    const late = [...colorEachFrame.filter((p) => p.id !== 'colorFilter'), colorEachFrame.find((p) => p.id === 'colorFilter')!];
     expect(passGraphErrors(late).join('\n')).toMatch(/scanConvert lee «color»/);
   });
 
@@ -229,7 +231,8 @@ const SAMPLERS: Record<PassId, { srcs: readonly string[]; samplers: Record<strin
   lateral: { srcs: [FRAG_LATERAL], samplers: { uField: 'axial', uRxNoise: 'axial', uShadow: 'trans' } },
   // y la pleura de A0 (la cortina de la mirada 0, decisión 61)
   compound: { srcs: [FRAG_COMPOUND], samplers: { uLook0: 'envLooks', uLook1: 'envLooks', uLook2: 'envLooks', uHits2: 'transHits' } },
-  color: { srcs: [FRAG_COLOR], samplers: { uTrans0: 'trans' } },
+  color: { srcs: [FRAG_COLOR], samplers: { uTransDoppler: 'transPrefix' } },
+  colorFilter: { srcs: [COLOR_FILTER_GLSL], samplers: { uRawColor: 'colorRaw' } },
   scanConvert: { srcs: [FRAG_SCANCONVERT], samplers: { uEnv: 'env', uColor: 'color' } },
   persistence: { srcs: [FRAG_PERSIST], samplers: { uCur: 'scan', uPrev: 'persist' } },
   present: { srcs: [FRAG_BLIT], samplers: { uTex: 'persist' } },
@@ -243,7 +246,9 @@ function samplerErrors(passes: readonly PassSpec[], table = SAMPLERS): string[] 
     const { srcs, samplers } = table[p.id];
     const all = new Set<string>();
     for (const src of srcs) {
-      const declared = [...src.replace(/\/\/.*$/gm, '').matchAll(/\buniform\s+sampler2D\s+(\w+)/g)].map((m) => m[1]);
+      const declared = [...src.replace(/\/\/.*$/gm, '').matchAll(/\buniform\s+(?:(?:lowp|mediump|highp)\s+)?sampler2D\s+(\w+)/g)].map(
+        (m) => m[1],
+      );
       for (const name of declared) {
         all.add(name);
         if (PRELUDE_SAMPLERS.has(name)) continue;

@@ -1,7 +1,7 @@
 export { qualityText } from './qualityMessages';
 import type { Beat } from '../physiology/rhythm';
 import { CAPTURE_BEATS } from './measureQuality';
-import { contiguousSpectralColumns, type SpectralColumn } from './spectral';
+import { SPECTRAL_CAPTURE_SECONDS, contiguousSpectralColumns, type SpectralColumn } from './spectral';
 import {
   measureObservedHepatic,
   measureObservedPortal,
@@ -14,7 +14,7 @@ import {
 import { dominantGateSystem, hepaticGateDropout, wrongGateVessel, type GateVesselSample, type ProtocolVessel } from './vesselIdentity';
 
 /** Segundos de espectro que toma una captura (los que guarda el equipo a la vista). */
-const CAPTURE_SECONDS = 7;
+const CAPTURE_SECONDS = SPECTRAL_CAPTURE_SECONDS;
 /**
  * Tras un cambio de escala (PRF) el filtro de pared cambia de coeficientes con el clutter del tejido 40–60 dB sobre la
  * sangre dentro: su transitorio es una línea vertical de banda ancha. La captura descarta esta cola (≈ 5 constantes de

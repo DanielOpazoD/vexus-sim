@@ -159,3 +159,25 @@ Generado por `npm run docs:index` — no editar a mano.
 | [153](DECISIONS.md#L5906) | Guardas hepáticas tempranas y dos cambios de textura rechazados | vigente |
 | [154](DECISIONS.md#L5942) | Barrido temporal común para inspeccionar PW y ECG sin alterar adquisición | vigente |
 | [155](DECISIONS.md#L5971) | Recalibrar el reparto E2E desde tres ejecuciones completas verificadas | vigente |
+| [156](DECISIONS.md#L6017) | No unir muestras IQ separadas por una pausa de adquisición | vigente |
+| [157](DECISIONS.md#L6045) | Margen de bundle con transporte GLSL reversible de ocho bancos | vigente |
+| [158](DECISIONS.md#L6071) | No rotular un espectro antiguo con el Nyquist de otra adquisición | vigente |
+| [159](DECISIONS.md#L6092) | Mostrar la variación portal de los latidos realmente medidos | vigente |
+| [160](DECISIONS.md#L6118) | Separar adquisición y presentación en la validación rápida | vigente |
+| [161](DECISIONS.md#L6144) | Declarar el corte efectivo del filtro de pared PW | vigente |
+| [162](DECISIONS.md#L6167) | Un fallo esperado no debe esconder una avería de preparación | vigente |
+| [163](DECISIONS.md#L6186) | Retener la ventana de captura PW también a PRF alta | vigente |
+| [164](DECISIONS.md#L6216) | Conservar FC y compliance al recorrer las guías de congestión | vigente |
+| [165](DECISIONS.md#L6238) | Archivos de parámetros venosos con dominio y versión explícitos | vigente |
+| [166](DECISIONS.md#L6267) | Doce pares costales y esternón en la anatomía acústica local | vigente |
+| [167](DECISIONS.md#L6285) | Referencia xifoidea común y contactos medidos antes del clasificador | vigente |
+| [168](DECISIONS.md#L6303) | Adquisición portal intrahepática separada del tronco principal | vigente |
+| [169](DECISIONS.md#L6311) | Interpolación del Doppler color en el plano complejo | vigente |
+| [170](DECISIONS.md#L6321) | Paleta rojo/azul compartida y ajuste de la adquisición intrahepática | vigente |
+| [171](DECISIONS.md#L6331) | Resolver juntos los caudales de la unión cavoauricular | vigente |
+| [172](DECISIONS.md#L6335) | Sección regional de la VCI suprahepática y Q/A común con su anatomía | vigente |
+| [173](DECISIONS.md#L6351) | Filtro color periódico en frecuencia muestreada, identidad al desactivarlo | vigente |
+| [174](DECISIONS.md#L6359) | Conservar las barreras fijas al convertir transmisión para color | vigente |
+| [175](DECISIONS.md#L6367) | Consulta costal con descarte geométrico conservador | vigente |
+| [176](DECISIONS.md#L6373) | Registro renal y muscular posterior coherente con la columna | vigente |
+| [177](DECISIONS.md#L6393) | Integrar la absorción Doppler por tejido sin nuevas texturas | vigente |

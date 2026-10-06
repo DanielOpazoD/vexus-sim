@@ -68,7 +68,12 @@ const BUDGETS: Array<[RegExp, number]> = [
 // Asset binario contado separadamente; límites por chunk conservados. El saneamiento cloud cuenta también testHooks en el total.
 // 02-10-2026: +8 KiB autorizados para asas, pared y contenido intestinales (decisión 101).
 // El total ahora recorre todo dist, incluido el worklet raíz que antes se omitía.
-const TOTAL_JS_BUDGET = 1024 * KB;
+// 06-10-2026: +4 KiB para doce pares costales y campo esternal compartido CPU/GPU (decisión 166).
+// Medición inicial 1026,9 KiB; conserva todos los chunks, Workers y ganchos dentro del cómputo.
+// 06-10-2026: +1 KiB compartido para sección regional, paridad portal y filtro color (172–173).
+// 06-10-2026: +1 KiB para descarte costal conservador CPU/GLSL (175), medido 1031,4 KiB.
+// 06-10-2026: +1 KiB para registro renal/músculos posteriores compartidos (176), medido 1032,3 KiB.
+const TOTAL_JS_BUDGET = 1033 * KB;
 /** Identifica los ganchos para el informe; todos los chunks y Workers cuentan en el total. */
 const TEST_ONLY = /^testHooks-.*\.js$/;
 

@@ -10,9 +10,11 @@ import {
   TRICUSPID_REGURGITATION,
 } from '../cases';
 import { type START_POINTS } from '../app/startPoints';
+import { prfFromNyquistCms } from '../core/units';
 import type { CaptureResult } from '../doppler/capture';
 import type { PatientState, RespiratoryPattern } from '../physiology/patientState';
 import type { VesselId } from '../physiology/vessels';
+import { CONVEX_C35 } from '../probe/probe';
 import { classifyPortal, classifyVexusC } from '../vexus/classification';
 import { measurePhysiologyTruth } from '../vexus/measurements';
 import { acquire, openSession, placeGate, probeAt } from './support/studentChain';
@@ -32,13 +34,13 @@ interface Territory {
 const TERRITORIES: Territory[] = [
   { kind: 'hepatic', window: 'intercostal', vessels: ['hvRight'] },
   // porta principal (la muestra que recomienda VExUS): corre craneocaudal y la respiración la desliza por su eje
-  { kind: 'portal', window: 'portal', vessels: ['pvTrunk'] },
+  { kind: 'portal', window: 'portalTrunk', vessels: ['pvTrunk'] },
   { kind: 'renal', window: 'renal', vessels: ['interlobarVein1', 'interlobarVein2', 'interlobarVein3'] },
 ];
 
 /**
  * Examen de los territorios con la técnica del operador (puerta dentro de la luz con el mejor ángulo, sin mirar la ventana
- * acústica, longitud ≤ 2·bd y escala hasta el límite de la profundidad: PRF ≤ 0,9·c/2d, hasta 6 kHz, como sube el
+ * acústica, longitud ≤ 2·bd, porta a ±40 cm/s y otros territorios hasta el límite de la profundidad: PRF ≤ 0,9·c/2d, hasta 6 kHz, como sube el
  * operador la escala cuando el flujo se pliega) por la ruta de la aplicación (`support/studentChain.ts`, decisión 93):
  * la puerta de `pwGate`, con la transmisión real, y la captura de «Capturar» tras 8,5 s con la puerta quieta. Hasta la
  * decisión 93 esta prueba usaba una copia de la puerta con la transmisión fija en 0,3 (−10 dB; la real es −29 a −32 dB
@@ -47,16 +49,30 @@ const TERRITORIES: Territory[] = [
 function examine(base: PatientState, respiratoryPattern: RespiratoryPattern = 'apnea-expiratory', territories: Territory[] = TERRITORIES) {
   const session = openSession(base, respiratoryPattern);
   const observed: Record<Territory['kind'], unknown> = { hepatic: null, portal: null, renal: null };
+  let portalTruthPF: number | undefined;
   for (const ter of territories) {
     const contact = probeAt(session, ter.window);
     const best = placeGate(session, contact, ter.vessels, { acoustic: false, maxDepthMm: 170 });
     expect(best, `${base.id}: ${ter.kind} sin vaso en la ventana ${ter.window}`).not.toBeNull();
-    const prfHz = Math.min(6000, Math.floor((0.9 * 1_540_000) / (2 * best!.r)));
+    // A portal scale of ±40 cm/s resolves slow flow; the depth ceiling is not a useful portal preset.
+    const prfHz = Math.min(
+      ter.kind === 'portal' ? prfFromNyquistCms(40, CONVEX_C35.f0Doppler) : 6000,
+      Math.floor((0.9 * 1_540_000) / (2 * best!.r)),
+    );
     const { captures } = acquire(session, contact, best!, ter.kind, { prfHz, seconds: 8.5, gateMm: Math.min(4, 2 * best!.bd) });
     observed[ter.kind] = captures.at(-1)?.m ?? null;
+    if (ter.kind === 'portal') {
+      const beats = captures.at(-1)?.m?.measuredBeats;
+      if (beats?.length) {
+        const last = beats.at(-1)!;
+        // AF varies by beat: compare this capture, before the subsequent renal acquisition.
+        portalTruthPF = measurePhysiologyTruth(session.engine, { fromT: beats[0].tR - 1e-6, toT: last.tR + last.rr + 1e-6 }).portalPF;
+      }
+    }
   }
   const { engine } = session;
   const truth = measurePhysiologyTruth(engine, { fromT: engine.clock.t - 10, toT: engine.clock.t });
+  if (portalTruthPF !== undefined) truth.portalPF = portalTruthPF;
   return {
     truth,
     hepatic: observed.hepatic as CaptureResult['hepatic'] | null,

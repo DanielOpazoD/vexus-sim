@@ -1,4 +1,5 @@
 import type { PatientState } from './patientState';
+import { stepCoupledOutflows } from './coupledOutflow';
 
 /**
  * Red venosa de parámetros concentrados (base D.7, «red mínima propuesta»):
@@ -330,11 +331,14 @@ export class VenousNetwork {
       const rIvc = k.rIvcToRa * collapseResistanceFactor(o.ivcDiameterEqMm / IVC_CRITICAL_DIAMETER_MM);
       // Término resistivo implícito: estable aunque el colapso multiplique R por 10⁴
       // (explícito exigiría h·R/L < 2); para calibres normales difiere en O((h·R/L)²).
-      const aHv = h / k.lHepaticVein;
-      const aRa = h / k.lIvcToRa;
       const dQrv = (o.pRenal - o.pIvc - k.rRenalVein * s.qRenalVein) / k.lRenalVein;
-      s.qHepaticVein = (s.qHepaticVein + aHv * (o.pHepatic - o.pJunction)) / (1 + aHv * rHv);
-      s.qIvcToRa = (s.qIvcToRa + aRa * (o.pIvc - o.pJunction)) / (1 + aRa * rIvc);
+      [s.qHepaticVein, s.qIvcToRa] = stepCoupledOutflows(
+        h,
+        { flow: s.qHepaticVein, pressure: o.pHepatic, resistance: rHv, inertance: k.lHepaticVein },
+        { flow: s.qIvcToRa, pressure: o.pIvc, resistance: rIvc, inertance: k.lIvcToRa },
+        pRa,
+        k.rJunction,
+      );
       s.qRenalVein += dQrv * h;
       // Compartimentos
       s.vSplanchnic += (qArtSp - o.qPortal) * h;

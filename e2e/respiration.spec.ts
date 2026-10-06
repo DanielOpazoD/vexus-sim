@@ -63,7 +63,7 @@ for (const reference of [false, true]) {
     await page.locator('#mode-pw').click();
     expect(
       await page.evaluate(() => {
-        window.__vexusTest!.goToStartPoint('portal');
+        window.__vexusTest!.goToStartPoint('portalTrunk');
         return window.__vexusTest!.placeGate(['pvTrunk']);
       }),
     ).toBe(true);

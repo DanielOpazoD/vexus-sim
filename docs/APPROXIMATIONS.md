@@ -91,3 +91,13 @@ Los controles respiratorios siguen OFF al iniciar. La deformación existente no 
 ## Asas intestinales representativas (decisión 101)
 
 Recorrido yeyunoileal estimado, muestreado en 51 nodos a precisión de almacenamiento de 0,1 mm; no es una segmentación clínica ni reconstruye todo el tubo digestivo. Decisión 102: radio de reposo 7,6–10 mm, pared radial nominal 2 mm, crestas mucosas hasta 1,2 mm cada 8 mm y distribución intramural estimada. Carga de sonda reduce radio local hasta 18 % (0,012/mm de desplazamiento muestreado en el eje de referencia), sin aplanamiento anisótropo ni conservación de volumen. El campo geométrico se comparte entre CPU y GPU; el navegador suaviza su eje para la malla ilustrativa. Las capas se filtran por la PSF existente, sin garantizar cinco bandas visibles. El gas es estático y siempre pertenece a la luz; la grasa mesentérica es un tejido separado. No hay peristalsis ni dinámica gas-líquido, y la piel de referencia se extrapola fuera de sus cortes fuente. Véase `anatomy/BOWEL_MODEL.md` para fuentes, contratos y límites.
+
+La extensión de doce pares costales y el esternón acústico (decisiones 166–167) adaptan LUS MIT y landmarks registrados BodyParts3D. Las formas superiores, uniones y ajuste completo del adulto siguen estimados; ver `anatomy/LOCAL_ANATOMY_RESULT.md` y `anatomy/STERNAL_FRAME_RESULT.md`.
+
+Doppler color: conserva y filtra R1 complejo con [1 2 1]²/16 antes de estimar fase/potencia. Kernel espacial ESTIMADO, no ensembles IQ adquiridos ni calibración contra equipo clínico. La interpolación explícita mantiene continuidad de fase cerca de Nyquist.
+
+Porta intrahepática: ajuste al seleccionar tarjeta estimado para estos adultos: B 150 mm/foco 100 mm/−2 dB/RD65; caja 70–125 mm y anchura 0,42 rad, centro angular dependiente del cuerpo; color ±35 cm/s, +12 dB, filtro 60 Hz. No deriva de máquina clínica; permanece editable y no se reaplica al mover sonda manualmente. La paleta positiva es roja y la negativa azul; el signo procede del haz, no del nombre del vaso.
+
+Cava superior (172): ley regional D=28·sigmoid((P_unión−P_pleural−4)/6) mm, residual 3 mm y área de pared con τ=0,2 s. ESTIMADA para el adulto sintético; requiere validación independiente de diámetros/velocidades y registro de la transición por el hiato. El volumen abdominal y las ondas de la red permanecen iguales.
+
+- Decisión 173: la respuesta de potencia del filtro color es (f²/(f²+fc²))⁴, con f plegada a Nyquist. Su orden/corte son estimados; no equivale a filtrar un ensemble IQ temporal real. El corte cero es identidad.

@@ -308,6 +308,10 @@ export interface Torso {
 }
 
 export interface Rib {
+  /** Número anatómico explícito; el orden de almacenamiento no identifica la costilla. */
+  number?: number;
+  /** Ángulo anterior del extremo libre (rad, π/2 anterior → 3π/2 posterior), solo 11/12. */
+  frontPhi?: number;
   /** Only the source seventh cartilage has measured sections. */
   sourceCartilage?: boolean;
   /** Altura z del arco costal en la línea anterior (φ = π/2) en mm. */
@@ -691,6 +695,12 @@ export function ribCentre(phi: number, rib: Rib, t: Torso): Vec3 {
   const [a, b, y, c] = ribShape(rib, t);
   return [a * Math.cos(phi), y + b * Math.sin(phi), rib.zAnterior + rib.tilt * (0.5 - 0.5 * Math.sin(phi)) + c * Math.cos(phi)];
 }
+/** Cota inferior al arco óseo. El cartílago registrado tiene otro campo: no se descarta. */
+export function ribDistanceLowerBound(p: Vec3, rib: Rib): number {
+  const amplitude = Math.sqrt((rib.tilt / 2) ** 2 + (rib.shape?.[3] ?? 0) ** 2);
+  const dz = Math.max(0, Math.abs(p[2] - rib.zAnterior - rib.tilt / 2) - amplitude);
+  return Math.min(1e3, (dz / rib.halfWidth - 1) * Math.min(rib.halfWidth, rib.halfThickness));
+}
 /** Distancia con signo a una costilla (negativa dentro del hueso). */
 export function sdRib(p: Vec3, rib: Rib, torso: Torso, spine?: Spine): { d: number; cartilage: boolean } {
   const bone = sdRibBone(p, rib, torso, spine);
@@ -720,7 +730,10 @@ function sdRibBone(p: Vec3, rib: Rib, torso: Torso, spine?: Spine): { d: number;
   const qx = Math.abs(dRadial) / rib.halfThickness;
   const qz = Math.abs(dz) / rib.halfWidth;
   const q = Math.sqrt(qx * qx + qz * qz) - 1;
-  const d = q * Math.min(rib.halfThickness, rib.halfWidth);
+  const sectionD = q * Math.min(rib.halfThickness, rib.halfWidth);
+  const angle = phi < 0 ? phi + 2 * Math.PI : phi;
+  // Extremo libre: impide que 11/12 reaparezcan delante del cabo costal.
+  const d = rib.frontPhi === undefined ? sectionD : Math.max(sectionD, (rib.frontPhi - angle) * localR);
   // cartílago solo en el arco anterior, a menos de π/2 − cartilageFromPhi de la línea media (φ = π/2), a los
   // dos lados (antes `φ > cartilageFromPhi`, que en las costillas derechas, φ ∈ (π/2, π], hacía cartílago todo
   // el arco anterolateral: la ventana intercostal sin cortical ni sombra; decisión 62)

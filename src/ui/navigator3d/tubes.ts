@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import type { Tube } from '../../anatomy/primitives';
-import type { AnatomyScene, VesselCaliber } from '../../anatomy/scene';
+import { vesselApScale, type AnatomyScene, type VesselCaliber } from '../../anatomy/scene';
 import type { Vec3 } from '../../core/vec3';
 import { VESSEL_META, type VesselSystem } from '../../physiology/vessels';
 import { CM } from './common';
@@ -69,7 +69,7 @@ export function buildVessels(a: AnatomyScene, caliber: VesselCaliber): THREE.Gro
   const g = new THREE.Group();
   for (const v of a.vessels) {
     const scale = caliber.radiusScale(v.id);
-    const apScale = VESSEL_META[v.id].system === 'ivc' ? caliber.ivcApScale : v.tube.apScale;
+    const apScale = vesselApScale(v.id, v.tube.apScale, caliber);
     const tube: Tube = {
       ...v.tube,
       apScale,

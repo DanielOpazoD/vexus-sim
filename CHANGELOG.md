@@ -7,6 +7,26 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Laboratorio venoso: guardar/importar parámetros JSON versionados, con validación de dominio y protección contra lecturas tardías; no se presentan como grabaciones ni réplicas exactas de señales (165).
+
+- Laboratorio venoso: recorrer las guías conserva FC y compliance venosa personalizadas; el reinicio explícito mantiene su restauración completa (164).
+
+- PW: retiene siete segundos para capturar a PRF alta dentro del dominio del equipo, sin modificar la FFT ni el historial habitual y con memoria acotada (163).
+
+- Tests: errores al preparar las simulaciones ya no pueden confundirse con dos limitaciones esperadas; se conservan controles fisiológicos y se elimina cálculo duplicado (162).
+
+- PW: el equipo y el receptor declaran el mismo corte efectivo del filtro de pared a PRF baja, preservando su respuesta física existente (161).
+
+- CI: separa adquisición y presentación del visor en la validación rápida, manteniendo pruebas, límites y tres repeticiones por caso (160).
+
+- Porta: conserva y muestra la variación de PF entre latidos adquiridos; advierte cruces de umbral sin alterar la mediana ni simular certeza sobre latidos no registrados (159).
+
+- PW principal: cambiar PRF ya no muestra el historial ni marcas antiguas bajo una escala de velocidad incompatible, tampoco estando congelado (158).
+
+- Build: recupera 4863 bytes de presupuesto con empaquetado GLSL reversible; conserva todos los shaders y declara el pequeño aumento de tamaño comprimido (157).
+
+- PW: una pausa de adquisición ya no une muestras antiguas y nuevas en la misma FFT; conserva el historial y reinicia filtro/audio al retomar (156).
+
 - CI: recalibración reproducible del reparto E2E con tres runs completos, hashes de evidencia y medianas verificadas; mantiene todos los tests y rechaza resultados con reintentos (155).
 
 - Visor venoso: barrido visible de 3/6 segundos compartido por PW, ECG y respiración, con cursor limitado al intervalo y adquisición/medición intactas (154).

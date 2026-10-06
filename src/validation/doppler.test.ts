@@ -277,13 +277,9 @@ describe('Volumen de muestra físico (guía §10, §21)', () => {
     expect(engine.sample.resp.diaphragmCaudalMm).toBeGreaterThan(25);
   });
 
-  it('el color convierte la transmisión con las frecuencias del perfil, como la puerta PW (sin exponente fijo)', async () => {
-    const { FRAG_COLOR } = await import('../ultrasound/shaders/passes.glsl');
-    expect(FRAG_COLOR).toContain('pow(max(Tb, 1e-6), uDopplerFreqRatio)');
-    expect(FRAG_COLOR).not.toMatch(/pow\(max\(Tb, 1e-6\), [0-9.]+\)/);
-    const renderer = await import('../ultrasound/renderer?raw');
-    expect(String(renderer.default)).toContain("'uDopplerFreqRatio', this.profile.dopplerEffectiveMHz / this.profile.bEffectiveMHz");
-  });
+  // The old source-string check required B^(fD/fB) and its 1e-6 floor. It described the
+  // approximation removed in decision 174. The independent transmission-prefix GPU oracle
+  // now checks actual frequency-dependent losses, bone/gas barriers and unchanged B mode.
 
   it('la línea de base es solo presentación: no existe ruta desde baselineShift a la cadena de señal', async () => {
     const src = await import('../doppler/pwChain?raw');

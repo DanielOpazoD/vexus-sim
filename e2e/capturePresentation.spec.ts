@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { bootWithoutErrors } from './support';
+import { bootWithoutErrors, budget } from './support';
 
 async function snapshot(page: Page) {
   return page.evaluate(() => {
@@ -86,7 +86,8 @@ async function expectTransformed(page: Page, before: Awaited<ReturnType<typeof s
 test('captura congelada conserva alineación al invertir, desplazar baseline, redimensionar, retroceder cine y cambiar barrido', async ({
   page,
 }) => {
-  test.setTimeout(180_000);
+  // Keep the 180 s work allowance separate from compilation, as the shared CI budget requires.
+  budget(180_000);
   const errors = await bootWithoutErrors(page, '?e2e=1');
   await page
     .locator('button', { hasText: /Apnea\s*esp/ })
@@ -95,7 +96,7 @@ test('captura congelada conserva alineación al invertir, desplazar baseline, re
   await page.keyboard.press('p');
   expect(
     await page.evaluate(() => {
-      window.__vexusTest!.goToStartPoint('portal');
+      window.__vexusTest!.goToStartPoint('portalTrunk');
       return window.__vexusTest!.placeGate(['pvTrunk']);
     }),
   ).toBe(true);
@@ -183,5 +184,31 @@ test('captura congelada conserva alineación al invertir, desplazar baseline, re
   const beforeSweep = await snapshot(page);
   await page.getByRole('group', { name: 'Barrido', exact: true }).getByRole('button', { name: '100', exact: true }).click();
   await expectTransformed(page, beforeSweep);
+  // Changing the acquisition scale while frozen must not relabel old pixels
+  // or the capture overlay. The source signal and physiological clock stay intact.
+  const acquisition = () =>
+    page.evaluate(() => {
+      const s = window.__vexusTest!.sim();
+      return {
+        t: s.physiology.clock.t,
+        frozen: s.frozen,
+        columns: s.spectral.columns.map((c) => [c.t, c.prfHz, c.powerDb.reduce((a, b) => a + b, 0)]),
+      };
+    });
+  const beforeScale = await acquisition();
+  await page
+    .getByRole('slider', { name: 'Escala', exact: true })
+    .last()
+    .evaluate((input) => {
+      // Clear the recorder in the same event as the scale change: an old RAF
+      // must not repopulate it between two browser calls.
+      (window as unknown as { capturePath: [number, number][] }).capturePath = [];
+      (input as HTMLInputElement).value = '60';
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  await expect.poll(async () => (await snapshot(page)).bitmap.length).toBe(0);
+  expect((await snapshot(page)).points).toHaveLength(0);
+  expect(await acquisition()).toEqual(beforeScale);
+  await page.locator('#spectrum').screenshot({ path: test.info().outputPath('pw-new-scale-frozen.png') });
   expect(errors).toEqual([]);
 });

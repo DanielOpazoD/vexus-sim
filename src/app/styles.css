@@ -1302,6 +1302,15 @@ button.mode.active {
   border: 1px solid var(--border);
   border-radius: 8px;
 }
+.venous-experiment input[type='file'] {
+  display: block;
+  max-width: 100%;
+  min-width: 0;
+}
+.venous-experiment > .row > label {
+  min-width: 0;
+  max-width: 100%;
+}
 .venous-experiment fieldset {
   border: 0;
   padding: 0;

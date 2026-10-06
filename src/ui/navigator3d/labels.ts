@@ -50,13 +50,19 @@ const skinNormal = (a: AnatomyScene, phi: number, z: number) => new THREE.Vector
  */
 export function windowLabelPositions(a: AnatomyScene): THREE.Vector3[] {
   const placed: THREE.Vector3[] = [];
-  for (const m of startPointsFor(a.torso)) {
+  const positions: THREE.Vector3[] = [];
+  // La adquisición intrahepática nueva cede espacio a los rótulos previamente calibrados.
+  const ordered = startPointsFor(a.torso)
+    .map((m, i) => ({ m, i }))
+    .sort((a, b) => Number(a.m.id === 'portal') - Number(b.m.id === 'portal'));
+  for (const { m, i } of ordered) {
     const at = surfaceAt(a, m.phi, m.z, 1.01).add(skinNormal(a, m.phi, m.z).multiplyScalar(2.8));
     while (placed.some((q) => Math.abs(q.z - at.z) < LABEL_STEP_CM && Math.hypot(q.x - at.x, q.y - at.y) < LABEL_NEAR_CM))
       at.z += LABEL_STEP_CM;
     placed.push(at);
+    positions[i] = at;
   }
-  return placed;
+  return positions;
 }
 
 export function labelSprite(text: string, color: string): THREE.Sprite {

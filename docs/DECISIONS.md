@@ -6294,6 +6294,10 @@ La métrica material de peritoneo de la decisión 65 conserva su plano renal his
 
 **Verificación.** Controles por debajo de z=0, en el xifoides correcto y a ambos lados de la unión; misma frontera en CPU/GPU/malla, adquisiciones, signos y rechazo de muestras/campos no finitos. Resultados y límites en `anatomy/STERNAL_FRAME_RESULT.md`. No hay cambios fisiológicos ni publicación.
 
+Seguimiento de 166: la CI encontró una puerta arterial renal fija de la pose anterior (θ 0,4266/r 48 mm), ahora fuera del vaso. La prueba adquiere una arteria real con búsqueda ponderada por transmisión y margen interior 0,2 mm, igual al audit pareado existente para arterias de radio 0,5–1,35 mm. Conserva la comprobación del vaso, 1280 partículas y rechazo de certificación venosa; no cambia señal ni umbral clínico.
+
+La comprobación costal heredada suponía seis pares y muestreaba los nuevos arcos como si no tuvieran término craneocaudal ni extremos libres. Sus tres posiciones por lado ahora siguen las elipses declaradas, muestrean cartílago lateral al esternón y los tres tramos óseos de 11–12. Exige 52 puntos óseos y 20 cartilaginosos, acuerdo exacto CPU/GPU. El adulto de referencia conserva los ajustes registrados de 5–10, ajustes explícitos de 11–12 y declara los cuatro arcos superiores como estimados en vez de exigirles una medición inexistente.
+
 ## 168. Adquisición portal intrahepática separada del tronco principal
 
 **Defecto y mecanismo.** La pose lateral anterior sigue demasiado el segmento extrahepático y muestra cava parcial. Se adquiere físicamente hilio/rama derecha sin agrandar vísceras ni ocultar vasos. `portalTrunk` conserva exactamente las poses previas para PW VExUS; el protocolo usa esa ventana con sus restricciones de calidad, puerta de 6 mm y distancia a bifurcación conservadas. `subxiphoid` se identifica como Subcostal · VCI longitudinal, con pose intacta.

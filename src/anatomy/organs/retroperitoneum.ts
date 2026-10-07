@@ -118,6 +118,9 @@ export function quadratusSdf(m: Vec3, insideWallMm: number, dPeriMm: number): nu
   const xLat = Q.xLateralTop + (Q.xLateralBottom - Q.xLateralTop) * f;
   const t = Q.thicknessTop + (Q.thicknessMax - Q.thicknessTop) * smooth01((Q.zTop - m[2]) / (Q.zTop - Q.zPeak));
   return Math.max(
+    // Cerrar también el campo aislado que usa la malla 3D: la prioridad de la
+    // pared en classify no debe ser la única frontera posterior (decisión 181).
+    -insideWallMm / L.wall,
     (insideWallMm - t) / L.wall,
     Q.xMedial - ax,
     (ax - xLat) / L.lateral,
@@ -194,7 +197,7 @@ float quadratusSdf(vec3 m, float insideWall, float dPeri) {
   float f = (QL_Z.x - m.z) / (QL_Z.x - QL_Z.y);
   float t = QL_T.x + (QL_T.y - QL_T.x) * smoothstep(0.0, 1.0, (QL_Z.x - m.z) / (QL_Z.x - QL_Z.z));
   float d = max(max((insideWall - t) / QL_L.x, QL_X.x - ax), max((ax - (QL_X.y + (QL_X.z - QL_X.y) * f)) / QL_L.z, m.z - QL_Z.x));
-  return max(max(d, QL_Z.y - m.z), max(m.y - QL_Z.w, -dPeri / QL_L.y));
+  return max(-insideWall / QL_L.x, max(max(d, QL_Z.y - m.z), max(m.y - QL_Z.w, -dPeri / QL_L.y)));
 }
 float retroFrontY(float ax, float z) {
   float y = RF_A.x + (RF_A.w - RF_A.x) * smoothstep(0.0, 1.0, (ax - RF_A.y) / (RF_A.z - RF_A.y));

@@ -80,6 +80,9 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   bajo el riñón que se desliza. En la hepatomegalia de la congestión grave el hígado ocupa el origen del psoas en
   T12–L1 (hasta 12 mm) y el borde superior del cuadrado (hasta 7 mm): se clasifica antes. La textura de sus fascículos no
   tiene prueba de paridad numérica entre la GPU y su gemelo TS (sí la clasificación).
+  En el atlas, el psoas usa su campo registrado, pero el cuadrado lumbar conserva forma e inserciones estimadas.
+  La decisión 181 cierra su dominio en la pared interna y elimina las protrusiones externas 3D; no valida todavía
+  sus inserciones costales/ilíacas ni su tamaño individual.
 - **Sin cascada torácica de la VCI** (`no-thoracic-waterfall`): la unión cavoauricular transmite
   cualquier caída de la PAD; no existe la meseta de Guyton por colapso de la VCI en la entrada
   torácica. Hallado por fast-check: con hipovolemia (volumen 0,6) y PAD media ≈ 0 la VCI se vacía

@@ -184,3 +184,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [178](DECISIONS.md#L6401) | Abdomen común de referencia: contornos, contactos y acústica explícita | vigente |
 | [179](DECISIONS.md#L6441) | Contacto hepatodiafragmático registrado y suprahepáticas proximales | vigente |
 | [180](DECISIONS.md#L6451) | Caja costal y columna torácica del mismo adulto que el abdomen | vigente |
+| [181](DECISIONS.md#L6465) | Cerrar el campo de los cuadrados lumbares en la pared posterior | vigente |

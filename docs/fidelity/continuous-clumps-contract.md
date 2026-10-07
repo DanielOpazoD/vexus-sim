@@ -26,7 +26,9 @@ en seno y grasa, sin volverlos uniformes ni borrar la cápsula.
 
 **Invariantes y confusores.** Misma anatomía TS/GLSL/3D, calibres, velocidad,
 fisiología, cápsula, PSF, ganancias, semilla, tiempo y fase del receptor. Agrupación
-cero devuelve uno exactamente; control hepático registrado debe ser idéntico.
+cero devuelve uno exactamente; el interior hepático registrado debe ser idéntico
+lejos de interfaces y de la mezcla de la PSF. La grasa de la pared o del campo
+profundo puede cambiar incluso en una ventana hepática y no es control negativo.
 La nueva textura actúa en todos los tejidos con agrupación, no solo en una
 ventana. Carga del Mac, grabación y fase de receptor confunden rendimiento.
 

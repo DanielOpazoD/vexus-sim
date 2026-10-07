@@ -5776,6 +5776,18 @@ La prueba real corresponde al workflow de comparación en legacy y referencia,
 sin ampliar su timeout; sus nuevas capturas y metadatos deben revisarse antes
 de integrar. No se presume equivalencia de píxeles por pasar los tests de orquestación.
 
+### Seguimiento 2026-10-07: registrar la fase adquirida del receptor
+
+**Contexto.** Main `8189d36` y empaquetado `59ec993` daban shaders, poses y muestras iguales, pero solo 3/18 PNG iguales. Los números reales del cine diferían: el ruido axial depende del cuadro, que `setScene` conserva. El control externo registró 18/18 pares idénticos mediante renders ordinarios.
+
+**Opciones.** Reiniciar contadores privados, fijar ruido o retocar PNG invalida el observable. Igualar solo tiempo y pose no basta. El registro se mantiene en las herramientas de comparación, sin intervenir el procesamiento de producción.
+
+**Decisión.** `comparisonState` acepta un primer serial de historia explícito, observa el contador en el cine público y rellena por `sim.render()` sin avanzar fisiología. Tras vaciar historias, el calentamiento y las mediciones deben producir exactamente los seriales solicitados. `portalComparison` adquiere 129–135. Dominio acotado a la primera secuencia de 4096 cuadros; sobrepasar el destino exige una adquisición nueva, nunca retroceder ni inventar el contador. Contrato previo: `docs/fidelity/registered-comparison-contract.md`.
+
+**Consecuencias.** Se registran seriales y relleno; las comparaciones históricas sin fase no demuestran equivalencia de píxeles y se repiten antes de aceptar candidatos. Solo B-mode, no Doppler, modo M ni barridos temporales. Igualdad en una GPU no certifica fidelidad clínica ni identidad entre GPUs; el panel humano y referencias siguen pendientes.
+
+**Verificación.** La e2e compara dos arranques con trabajo previo distinto: el control sin registro diverge y las adquisiciones registradas coinciden. Guarda PNG y estado real. Tests rechazan seriales inválidos/sobrepasados, color/modo M, fallos de reloj y una adquisición cuyo serial no coincide; no cambian umbrales de procesamiento. CI exacta pendiente antes de integrar.
+
 ## 150. Inversión de presentación PW sin invertir el flujo del paciente
 
 **Estado:** vigente.
@@ -6397,15 +6409,3 @@ La conversión global de 174 usa b=1 para absorción, aunque piel, grasa, múscu
 Aceptación: etiquetas de todos los tejidos/tipos de gas; programa A2 de producción en GPU con todos los tejidos y nueve pares de frecuencias, espejo/gas/hueso y B inalterado, error <0,01 dB. Prefijos de cuatro ventanas frente a integración independiente α1·f^b, adquisición portal normal/grave en ambos cuerpos y oráculo complejo con controles negativos. Límites WebGL de uniforms/samplers, grafo y hashes documentan cambio de .w, sin rebajar márgenes ni tolerancias.
 
 Se retira `color-absorption-linear-scaling`; continúan rejilla gruesa, barreras estimadas, ausencia de calibración clínica y estimador color emulado. Las funciones b=1 quedan solo como contrafactual histórico de 174 en tests, sin uso de renderer. Medido 1031,3 KiB ≤1032: coste neto menor tras retirar sampler/conversión, todos los activos/Workers incluidos. No se declara idéntica apertura ni discretización entre PW y color.
-
-## 178. Registrar la fase adquirida del receptor en las comparaciones
-
-**Contexto.** Main `8189d36` y empaquetado `59ec993` daban shaders, poses y muestras iguales, pero solo 3/18 PNG iguales. Los números reales del cine diferían: el ruido axial depende del cuadro, que `setScene` conserva. El control externo registró 18/18 pares idénticos mediante renders ordinarios.
-
-**Opciones.** Reiniciar contadores privados, fijar ruido o retocar PNG invalida el observable. Igualar solo tiempo y pose no basta. El registro se mantiene en las herramientas de comparación, sin intervenir el procesamiento de producción.
-
-**Decisión.** `comparisonState` acepta un primer serial de historia explícito, observa el contador en el cine público y rellena por `sim.render()` sin avanzar fisiología. Tras vaciar historias, el calentamiento y las mediciones deben producir exactamente los seriales solicitados. `portalComparison` adquiere 129–135. Dominio acotado a la primera secuencia de 4096 cuadros; sobrepasar el destino exige una adquisición nueva, nunca retroceder ni inventar el contador. Contrato previo: `docs/fidelity/registered-comparison-contract.md`.
-
-**Consecuencias.** Se registran seriales y relleno; las comparaciones históricas sin fase no demuestran equivalencia de píxeles y se repiten antes de aceptar candidatos. Solo B-mode, no Doppler, modo M ni barridos temporales. Igualdad en una GPU no certifica fidelidad clínica ni identidad entre GPUs; el panel humano y referencias siguen pendientes.
-
-**Verificación.** La e2e compara dos arranques con trabajo previo distinto: el control sin registro diverge y las adquisiciones registradas coinciden. Guarda PNG y estado real. Tests rechazan seriales inválidos/sobrepasados, color/modo M, fallos de reloj y una adquisición cuyo serial no coincide; no cambian umbrales de procesamiento. CI exacta pendiente antes de integrar.

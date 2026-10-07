@@ -153,31 +153,31 @@ Generado por `npm run docs:index` — no editar a mano.
 | [147](DECISIONS.md#L5688) | Matriz hepática exhaustiva sin repetir instrumentación de cobertura | vigente |
 | [148](DECISIONS.md#L5748) | Mostrar el muestreo espectral sin prometer exactitud clínica | vigente |
 | [149](DECISIONS.md#L5780) | Comparar imágenes en un estado fisiológico fijado y registrado | vigente |
-| [150](DECISIONS.md#L5813) | Inversión de presentación PW sin invertir el flujo del paciente | vigente |
-| [151](DECISIONS.md#L5877) | Frecuencia sinusal experimental desde el reloj cardíaco real | vigente |
-| [152](DECISIONS.md#L5907) | Ventanas PW independientes con fallo visible por territorio | vigente |
-| [153](DECISIONS.md#L5940) | Guardas hepáticas tempranas y dos cambios de textura rechazados | vigente |
-| [154](DECISIONS.md#L5976) | Barrido temporal común para inspeccionar PW y ECG sin alterar adquisición | vigente |
-| [155](DECISIONS.md#L6005) | Recalibrar el reparto E2E desde tres ejecuciones completas verificadas | vigente |
-| [156](DECISIONS.md#L6051) | No unir muestras IQ separadas por una pausa de adquisición | vigente |
-| [157](DECISIONS.md#L6079) | Margen de bundle con transporte GLSL reversible de ocho bancos | vigente |
-| [158](DECISIONS.md#L6105) | No rotular un espectro antiguo con el Nyquist de otra adquisición | vigente |
-| [159](DECISIONS.md#L6126) | Mostrar la variación portal de los latidos realmente medidos | vigente |
-| [160](DECISIONS.md#L6152) | Separar adquisición y presentación en la validación rápida | vigente |
-| [161](DECISIONS.md#L6178) | Declarar el corte efectivo del filtro de pared PW | vigente |
-| [162](DECISIONS.md#L6201) | Un fallo esperado no debe esconder una avería de preparación | vigente |
-| [163](DECISIONS.md#L6220) | Retener la ventana de captura PW también a PRF alta | vigente |
-| [164](DECISIONS.md#L6250) | Conservar FC y compliance al recorrer las guías de congestión | vigente |
-| [165](DECISIONS.md#L6272) | Archivos de parámetros venosos con dominio y versión explícitos | vigente |
-| [166](DECISIONS.md#L6301) | Doce pares costales y esternón en la anatomía acústica local | vigente |
-| [167](DECISIONS.md#L6319) | Referencia xifoidea común y contactos medidos antes del clasificador | vigente |
-| [168](DECISIONS.md#L6337) | Adquisición portal intrahepática separada del tronco principal | vigente |
-| [169](DECISIONS.md#L6345) | Interpolación del Doppler color en el plano complejo | vigente |
-| [170](DECISIONS.md#L6355) | Paleta rojo/azul compartida y ajuste de la adquisición intrahepática | vigente |
-| [171](DECISIONS.md#L6365) | Resolver juntos los caudales de la unión cavoauricular | vigente |
-| [172](DECISIONS.md#L6369) | Sección regional de la VCI suprahepática y Q/A común con su anatomía | vigente |
-| [173](DECISIONS.md#L6385) | Filtro color periódico en frecuencia muestreada, identidad al desactivarlo | vigente |
-| [174](DECISIONS.md#L6393) | Conservar las barreras fijas al convertir transmisión para color | vigente |
-| [175](DECISIONS.md#L6401) | Consulta costal con descarte geométrico conservador | vigente |
-| [176](DECISIONS.md#L6407) | Registro renal y muscular posterior coherente con la columna | vigente |
-| [177](DECISIONS.md#L6427) | Integrar la absorción Doppler por tejido sin nuevas texturas | vigente |
+| [150](DECISIONS.md#L5833) | Inversión de presentación PW sin invertir el flujo del paciente | vigente |
+| [151](DECISIONS.md#L5897) | Frecuencia sinusal experimental desde el reloj cardíaco real | vigente |
+| [152](DECISIONS.md#L5927) | Ventanas PW independientes con fallo visible por territorio | vigente |
+| [153](DECISIONS.md#L5960) | Guardas hepáticas tempranas y dos cambios de textura rechazados | vigente |
+| [154](DECISIONS.md#L5996) | Barrido temporal común para inspeccionar PW y ECG sin alterar adquisición | vigente |
+| [155](DECISIONS.md#L6025) | Recalibrar el reparto E2E desde tres ejecuciones completas verificadas | vigente |
+| [156](DECISIONS.md#L6071) | No unir muestras IQ separadas por una pausa de adquisición | vigente |
+| [157](DECISIONS.md#L6099) | Margen de bundle con transporte GLSL reversible de ocho bancos | vigente |
+| [158](DECISIONS.md#L6125) | No rotular un espectro antiguo con el Nyquist de otra adquisición | vigente |
+| [159](DECISIONS.md#L6146) | Mostrar la variación portal de los latidos realmente medidos | vigente |
+| [160](DECISIONS.md#L6172) | Separar adquisición y presentación en la validación rápida | vigente |
+| [161](DECISIONS.md#L6198) | Declarar el corte efectivo del filtro de pared PW | vigente |
+| [162](DECISIONS.md#L6221) | Un fallo esperado no debe esconder una avería de preparación | vigente |
+| [163](DECISIONS.md#L6240) | Retener la ventana de captura PW también a PRF alta | vigente |
+| [164](DECISIONS.md#L6270) | Conservar FC y compliance al recorrer las guías de congestión | vigente |
+| [165](DECISIONS.md#L6292) | Archivos de parámetros venosos con dominio y versión explícitos | vigente |
+| [166](DECISIONS.md#L6321) | Doce pares costales y esternón en la anatomía acústica local | vigente |
+| [167](DECISIONS.md#L6339) | Referencia xifoidea común y contactos medidos antes del clasificador | vigente |
+| [168](DECISIONS.md#L6357) | Adquisición portal intrahepática separada del tronco principal | vigente |
+| [169](DECISIONS.md#L6365) | Interpolación del Doppler color en el plano complejo | vigente |
+| [170](DECISIONS.md#L6375) | Paleta rojo/azul compartida y ajuste de la adquisición intrahepática | vigente |
+| [171](DECISIONS.md#L6385) | Resolver juntos los caudales de la unión cavoauricular | vigente |
+| [172](DECISIONS.md#L6389) | Sección regional de la VCI suprahepática y Q/A común con su anatomía | vigente |
+| [173](DECISIONS.md#L6405) | Filtro color periódico en frecuencia muestreada, identidad al desactivarlo | vigente |
+| [174](DECISIONS.md#L6413) | Conservar las barreras fijas al convertir transmisión para color | vigente |
+| [175](DECISIONS.md#L6421) | Consulta costal con descarte geométrico conservador | vigente |
+| [176](DECISIONS.md#L6427) | Registro renal y muscular posterior coherente con la columna | vigente |
+| [177](DECISIONS.md#L6447) | Integrar la absorción Doppler por tejido sin nuevas texturas | vigente |

@@ -190,3 +190,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [184](DECISIONS.md#L6656) | Contacto continuo y criterios anatómicos de las nueve ventanas | vigente |
 | [185](DECISIONS.md#L6720) | Evidencia reproducible de las nueve ventanas | vigente |
 | [186](DECISIONS.md#L6758) | Ventana epigástrica transhepática y plano venoso renal | vigente |
+| [187](DECISIONS.md#L6795) | Concentración de dispersores continua sin saltos de celda | vigente |

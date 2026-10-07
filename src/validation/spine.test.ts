@@ -388,7 +388,7 @@ describe('columna: cuerpos elípticos con discos (PR119; recuperación provision
     );
     expect(glsl).toContain('if (d.y > d.x) return 0.0;');
     expect(glsl).toContain('float q = length(vec2(r.x * k.y, r.y * k.x)) / kl; return r.x * r.y / (q * q * q);');
-    expect(glsl).toContain('abdominalAtlasSdf(m,10)):max(sb.x,-dBody);');
+    expect(glsl).toContain('uAbdominalAtlasEnabled!=0?abdominalAtlasSdf(m,10):max(sb.x,-dBody);');
     expect(glsl).toContain('float dBody=spineBodySd(m); float dSpine = min(dBody, spineArchSd(m));');
     expect(glsl).toContain(
       'if (dDisc < 0.0) { c.tissue = T_CARTILAGE; c.bd = -dDisc; } else classifyInside(m, withCurtain, depth, tn, dSpine, c);',

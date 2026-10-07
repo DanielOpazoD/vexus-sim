@@ -1,3 +1,4 @@
+import { thoracicAtlas, thoracicValue, thoracicMaterial, thoracicSdf, thoracicFrame } from './thoracicAtlas';
 import { BOWEL_FIELD_REACH_MM, BOWEL_WALL_MM, bowelQuery, bowelGasSdf, bowelRadii } from './organs/bowel';
 import { referenceBody, abdominalBody } from './referenceBody';
 import { SCENE_TUBE_CAPACITY } from './tubeCapacity';
@@ -773,6 +774,10 @@ export class AnatomyScene {
         return { normal: [g[0] / l, g[1] / l, g[2] / l], norm: l, curvature: 0 };
       }
       if (isRibInterface(iface)) {
+        if (this.hasAbdominalAtlas && thoracicAtlas) {
+          const f = thoracicFrame(m);
+          return { ...this.numericGradient(m, thoracicSdf, f.curvature), axis: f.axis };
+        }
         const rib = this.ribs[nearestRib(m, this.ribs, this.torso, this.spine)];
         if (sternumSd(m, this.torso) < ribSd(m, rib, this.torso, this.spine))
           return { ...this.numericGradient(m, (p) => sternumSd(p, this.torso), 0), axis: [0, 0, 1] };
@@ -846,7 +851,22 @@ export class AnatomyScene {
     // pared o justo por debajo; la ósea más cercana da la cortical, el cartílago su pericondrio
     let ribD = 1e3;
     let ribAny = 1e3;
-    if (d >= ribSearchDepth(torso, this.ribs[0]?.scale ?? 1)) {
+    if (this.hasAbdominalAtlas && thoracicAtlas) {
+      const q = thoracicValue(m),
+        material = thoracicMaterial(q.label);
+      ribAny = q.d;
+      ribD = material === 'cartilage' ? 1e3 : q.d;
+      if (q.d < 0)
+        return {
+          final: true,
+          cls: {
+            ...NONE,
+            tissue: material === 'cartilage' ? Tissue.Cartilage : material === 'vertebra' ? Tissue.Vertebra : Tissue.Bone,
+            boundaryDistance: -q.d,
+            ...(material === 'cartilage' ? { interface: Interface.Perichondrium, interfaceDistance: -q.d } : {}),
+          },
+        };
+    } else if (d >= ribSearchDepth(torso, this.ribs[0]?.scale ?? 1)) {
       const sternumD = sternumSd(m, torso);
       if (sternumD < 0) {
         const cartilage = m[2] < STERNUM.zJunctionMm;

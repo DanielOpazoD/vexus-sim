@@ -124,11 +124,11 @@ for name,ids in groups.items():
 # Estimated spleen: oblique ellipsoidal outer envelope with a medial hilar notch.
 # This atlas element set has no spleen; do not present this as source segmentation.
 lo=np.array([55.,-93.,-130.5]);dims=np.array([65,65,88]);grid=np.indices(tuple(dims)).transpose(1,2,3,0)*PITCH+lo
-center=np.array([100.,-40.,-75.]);u=np.array([-.24,-.20,.95]);u/=np.linalg.norm(u)
+center=np.array([95.,-40.,-75.]);u=np.array([-.24,-.20,.95]);u/=np.linalg.norm(u)
 v=np.array([1.,0.,0.]);v-=u*np.dot(u,v);v/=np.linalg.norm(v);w=np.cross(u,v)
 local=np.stack([(grid-center)@u,(grid-center)@v,(grid-center)@w],axis=-1)
 outer=(np.linalg.norm(local/np.array([52.,20.,24.]),axis=-1)-1)*27
-notch=(np.linalg.norm((grid-np.array([79.,-34.,-88.]))/np.array([14.,15.,34.]),axis=-1)-1)*14
+notch=(np.linalg.norm((grid-np.array([74.,-34.,-88.]))/np.array([14.,15.,34.]),axis=-1)-1)*14
 distance=np.maximum(outer,-notch)
 fields.append({'name':'spleen','sourceIds':[],'originMm':lo.tolist(),'dimensions':dims.tolist(),'pitchMm':PITCH,'estimated':True,'estimatedCenterMm':center.tolist(),'estimatedRadiiMm':[52,20,24],'data':np.stack([np.clip(distance,-64,16),np.ones(tuple(dims))],axis=-1).astype('<f2')})
 

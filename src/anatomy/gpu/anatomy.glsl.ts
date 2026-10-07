@@ -1,3 +1,4 @@
+import { THORACIC_GLSL } from '../thoracicAtlas';
 import { SCENE_TUBE_CAPACITY } from '../tubeCapacity';
 import { RESPIRATORY_INVERSE_STEPS } from '../deformation';
 import { BOWEL_TEXELS } from '../organs/bowel';
@@ -121,6 +122,7 @@ struct Cls {
 
 vec4 sceneTexel(int i) { return texelFetch(uSceneTex, ivec2(i % SCENE_TEX_W, i / SCENE_TEX_W), 0); }
 
+${THORACIC_GLSL}
 vec4 ribData(int k) { return sceneTexel(${RIB_BASE} + k * ${RIB_TEXELS}); }
 vec4 ribShapeData(int k) { return sceneTexel(${RIB_BASE} + k * ${RIB_TEXELS} + 1); }
 vec4 ribEndData(int k) { return sceneTexel(${RIB_BASE} + k * ${RIB_TEXELS} + 2); }
@@ -283,12 +285,12 @@ vec2 spineBodyParts(vec3 m) {
   return vec2(sdEllipsoidLocal(vec3(m.xy - uSpine.xy, 0.0), vec3(spineRadii(), 1e3)), abs(t - SPINE_LEVEL * floor(t / SPINE_LEVEL + 0.5)) - 0.5 * SPINE_BODY);
 }
 // los cuerpos, con el borde del platillo redondeado (spineBodySd de TS): la cara de su cortical
-float spineBodySd(vec3 m) { vec2 d = spineBodyParts(m);float b=smoothMax(d.x,d.y,SPINE_RIM);return uAbdominalAtlasEnabled!=0?min(max(b,-60.0-m.z),abdominalAtlasSdf(m,8)):b; }
+float spineBodySd(vec3 m) { vec2 d = spineBodyParts(m);float b=smoothMax(d.x,d.y,SPINE_RIM);if(uAbdominalAtlasEnabled!=0){vec2 q=thoracicValue(m);return min(thoracicMaterial(q.y)==2?q.x:16.0,abdominalAtlasSdf(m,8));}return b; }
 // el arco posterior (spineArchSd de TS)
 float spineArchSd(vec3 m) {
   float ax = abs(m.x - uSpine.x) - uSpineArch.x;
   float ay = abs(m.y - 0.5 * (uSpineArch.y + uSpineArch.z)) - 0.5 * (uSpineArch.z - uSpineArch.y);
-  float d=length(max(vec2(ax,ay),0.0))+min(max(ax,ay),0.0);return uAbdominalAtlasEnabled!=0?max(d,-60.0-m.z):d;
+  float d=length(max(vec2(ax,ay),0.0))+min(max(ax,ay),0.0);return uAbdominalAtlasEnabled!=0?16.0:d;
 }
 // curvatura de la cara de un cuerpo (spineFaceCurvature de TS): la de la elipse en su costado, 0 en los platillos
 float spineFaceCurvature(vec3 m) {
@@ -554,7 +556,10 @@ bool classifyWall(vec3 m, out Cls c, out float depth, out vec3 tn) {
   // Costillas, antes de la grasa subcutánea donde una puede llegar (la grasa no las corta); la ósea más
   // cercana da la cortical al tejido blando de fuera, el cartílago su pericondrio
   float ribD = 1e3; float ribAny = 1e3; int ribI = 0;
-  if (d >= ribSearchDepth()) {
+  if(uAbdominalAtlasEnabled!=0){
+    vec2 q=thoracicValue(m);int material=thoracicMaterial(q.y);ribAny=q.x;ribD=material==1?1e3:q.x;
+    if(q.x<0.0){c.tissue=material==1?T_CARTILAGE:material==2?T_VERTEBRA:T_BONE;c.bd=-q.x;c.n=thoracicGradient(m);if(material==1){c.iface=IF_PERICHONDRIUM;c.ifd=-q.x;thoracicFrame(m,c.tangent,c.kc);}return true;}
+  } else if (d >= ribSearchDepth()) {
     float sternumD = sternumSd(m);
     if (sternumD < 0.0) {
       c.tissue = m.z < STERNUM_JUNCTION ? T_CARTILAGE : T_BONE; c.bd = -sternumD; c.n = tn;
@@ -784,7 +789,7 @@ Cls classifyWith(vec3 m, bool withCurtain) {
   float dSpine = min(dBody, spineArchSd(m));
   if (dSpine < 0.0) { c.tissue = T_VERTEBRA; c.bd = -dSpine; return c; }
   // el disco: el cilindro de los cuerpos fuera del hueso de un cuerpo (spineDistances de TS), también en el borde redondeado
-  float dDisc=uAbdominalAtlasEnabled!=0?min(max(max(sb.x,-originalBody),-60.0-m.z),abdominalAtlasSdf(m,10)):max(sb.x,-dBody);
+  float dDisc=uAbdominalAtlasEnabled!=0?abdominalAtlasSdf(m,10):max(sb.x,-dBody);
   if (dDisc < 0.0) { c.tissue = T_CARTILAGE; c.bd = -dDisc; } else classifyInside(m, withCurtain, depth, tn, dSpine, c);
   // la cortical de los cuerpos en el tejido de fuera del hueso (withSpineFace de TS): su distancia a la frontera cuenta el
   // hueso y el disco; conserva dueños de PR139 y añade solo el disco de PR119 junto al platillo.

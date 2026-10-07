@@ -1,3 +1,4 @@
+import { thoracicAtlas, thoracicValue, thoracicMaterial } from './thoracicAtlas';
 import { abdominalAtlas, abdominalAtlasSdf, hepaticDomeValue } from './abdominalAtlas';
 import { referenceCartilage } from './referenceCartilage';
 import { bodyDepth, bodyGradient, bodySection } from './referenceBody';
@@ -418,6 +419,7 @@ export function spineSlabSd(z: number): number {
 
 /** Distancia con signo a la caja del arco posterior (con las apófisis transversas). */
 export function spineArchSd(p: Vec3, sp: Spine): number {
+  if (thoracicAtlas && abdominalAtlas) return 16;
   const dx = Math.abs(p[0] - sp.x0) - sp.archHalfWidth;
   const cy = 0.5 * (sp.archY0 + sp.archY1);
   const dy = Math.abs(p[1] - cy) - 0.5 * (sp.archY1 - sp.archY0);
@@ -427,6 +429,10 @@ export function spineArchSd(p: Vec3, sp: Spine): number {
 
 /** Distancia con signo a los cuerpos vertebrales (el borde del platillo redondeado): la cara de su cortical. */
 export function spineBodySd(p: Vec3, sp: Spine): number {
+  if (thoracicAtlas && abdominalAtlas) {
+    const q = thoracicValue(p);
+    return Math.min(thoracicMaterial(q.label) === 'vertebra' ? q.d : 16, abdominalAtlasSdf(p, 8));
+  }
   const d = smoothMax(spineEllipseSd(p, sp), spineSlabSd(p[2]), SPINE_SHAPE.rimMm);
   return abdominalAtlas ? Math.min(Math.max(d, -60 - p[2]), abdominalAtlasSdf(p, 8)) : d;
 }
@@ -442,7 +448,12 @@ export function spineDistances(p: Vec3, sp: Spine): { body: number; bone: number
   const e = spineEllipseSd(p, sp);
   const original = smoothMax(e, spineSlabSd(p[2]), SPINE_SHAPE.rimMm);
   const body = spineBodySd(p, sp);
-  const disc = abdominalAtlas ? Math.min(Math.max(e, -original, -60 - p[2]), abdominalAtlasSdf(p, 10)) : Math.max(e, -body);
+  const disc =
+    thoracicAtlas && abdominalAtlas
+      ? abdominalAtlasSdf(p, 10)
+      : abdominalAtlas
+        ? Math.min(Math.max(e, -original, -60 - p[2]), abdominalAtlasSdf(p, 10))
+        : Math.max(e, -body);
   return { body, bone: Math.min(body, spineArchSd(p, sp)), disc };
 }
 

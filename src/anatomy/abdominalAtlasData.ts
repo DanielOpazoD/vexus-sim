@@ -2,9 +2,9 @@
 export const ABDOMINAL_ATLAS = {
   textureDimensions: [338, 217, 280],
   rawBytes: 82147520,
-  gzipBytes: 5035715,
-  sha256Gzip: 'ef56a03cd8446d67aa9c88039d6e7f8d71d1d6563f3262dd4d0e0e62703f8b72',
-  sha256Raw: '1a963ba64c23ffec44da2cdf1cf1ded62e35aca8602ba5d9a5c14070e0796958',
+  gzipBytes: 5036092,
+  sha256Gzip: 'e7bcc2a2400cdaad40255e1d59bc095bcaa5704b999ee897b53f5638bd089f54',
+  sha256Raw: 'fb1a372f2d2f53bd69d2aea95733cb71ea2574ff6222b8471c5f498c9a1fb67d',
 } as const;
 export const ABDOMINAL_FIELDS = [
   { name: 'pancreas', originMm: [-57.0, -34.5, -169.5], dimensions: [94, 48, 63], offset: [244, 97, 119], pitchMm: 1.5 },

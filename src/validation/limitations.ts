@@ -60,6 +60,8 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'renal-pause-resolution-prf',
   'no-spleen',
   'thoracic-skeleton-estimated',
+  'thoracic-atlas-resolution',
+  'thoracic-atlas-static-respiration',
   'fixed-arterial-resistive-index',
   'schematic-static-heart',
   'mediastinal-mirror-normal-approx',

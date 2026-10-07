@@ -219,6 +219,7 @@ export const SCENE_UNIFORMS: readonly UniformSpec[] = [
 export const SCENE_SAMPLERS = [
   { name: 'uSceneTex', type: 'sampler2D', unit: 6 },
   { name: 'uAbdominalAtlas', type: 'sampler3D', unit: 8 },
+  { name: 'uThoracicAtlas', type: 'sampler3D', unit: 9 },
 ] as const;
 
 /** Declaraciones GLSL generadas del esquema y sus samplers. */

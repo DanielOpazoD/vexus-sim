@@ -183,3 +183,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [177](DECISIONS.md#L6393) | Integrar la absorción Doppler por tejido sin nuevas texturas | vigente |
 | [178](DECISIONS.md#L6401) | Abdomen común de referencia: contornos, contactos y acústica explícita | vigente |
 | [179](DECISIONS.md#L6441) | Contacto hepatodiafragmático registrado y suprahepáticas proximales | vigente |
+| [180](DECISIONS.md#L6451) | Caja costal y columna torácica del mismo adulto que el abdomen | vigente |

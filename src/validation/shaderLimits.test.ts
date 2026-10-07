@@ -253,10 +253,20 @@ describe('Límites del shader con margen para crecer', () => {
   // dos de B leen además la pleura parietal de A0 (uHits2) y el rayo único de A (uTrans2), decisión 61.
   it('cada shader de fragmentos declara ≤ 16 samplers; B, A y K, los de su diseño', () => {
     for (const [name, src] of FRAGMENT_SHADERS) expect(samplersOf(src).length, name).toBeLessThanOrEqual(16);
-    expect(samplersOf(FRAG_RAWFIELD)).toEqual(['uSceneTex', 'uAbdominalAtlas', 'uCoupling', 'uTrans0', 'uTrans1', 'uHits2', 'uTrans2']);
+    expect(samplersOf(FRAG_RAWFIELD)).toEqual([
+      'uSceneTex',
+      'uAbdominalAtlas',
+      'uThoracicAtlas',
+      'uCoupling',
+      'uTrans0',
+      'uTrans1',
+      'uHits2',
+      'uTrans2',
+    ]);
     expect(samplersOf(FRAG_RAWFIELD_STEERED)).toEqual([
       'uSceneTex',
       'uAbdominalAtlas',
+      'uThoracicAtlas',
       'uCoupling',
       'uTrans1',
       'uTrans3',

@@ -406,6 +406,7 @@ export class UltrasoundRenderer {
   /** Textura de datos de la escena (cabeceras de tubos + nodos, decisión 24). */
   private sceneTex: WebGLTexture;
   private abdominalTex: WebGLTexture;
+  private thoracicTex: WebGLTexture;
   private sceneData = new Float32Array(SCENE_TEX_W * SCENE_TEX_H * 4);
   /** Cabeceras de TODOS los tubos (`TUBE_HEADER_TEXELS` texels cada una); por cuadro se suben solo las del plano. */
   private headerAll = new Float32Array(MAX_TUBES * TUBE_HEADER_TEXELS * 4);
@@ -549,6 +550,7 @@ export class UltrasoundRenderer {
     this.couplingTex = createTexture(gl, LINES, 1, gl.R32F, gl.RED, gl.FLOAT, gl.LINEAR);
     this.sceneTex = createTexture(gl, SCENE_TEX_W, SCENE_TEX_H, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
     this.abdominalTex = createAbdominalTexture(gl, this.currentScene.hasAbdominalAtlas);
+    this.thoracicTex = createAbdominalTexture(gl, this.currentScene.hasAbdominalAtlas, true);
     this.uploadSceneStatic();
   }
 
@@ -637,6 +639,7 @@ export class UltrasoundRenderer {
     gl.deleteTexture(this.couplingTex);
     gl.deleteTexture(this.sceneTex);
     gl.deleteTexture(this.abdominalTex);
+    gl.deleteTexture(this.thoracicTex);
     if (this.mapPending) gl.deleteSync(this.mapPending.sync);
     if (this.mapPbo) gl.deleteBuffer(this.mapPbo);
     this.mapPending = null;
@@ -752,6 +755,7 @@ export class UltrasoundRenderer {
     uploadSceneUniforms(p, this.sceneValues);
     p.tex(SCENE_SAMPLERS[0].name, SCENE_SAMPLERS[0].unit, this.sceneTex);
     p.tex(SCENE_SAMPLERS[1].name, SCENE_SAMPLERS[1].unit, this.abdominalTex, this.gl.TEXTURE_3D);
+    p.tex(SCENE_SAMPLERS[2].name, SCENE_SAMPLERS[2].unit, this.thoracicTex, this.gl.TEXTURE_3D);
   }
 
   /**

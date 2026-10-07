@@ -1,3 +1,5 @@
+import { THORACIC_ATLAS } from './thoracicAtlasData';
+import { setThoracicAtlas } from './thoracicAtlas';
 import { ABDOMINAL_ATLAS, ABDOMINAL_BODY } from './abdominalAtlasData';
 import { setAbdominalAtlas } from './abdominalAtlas';
 import { setAbdominalBody, validateReferenceBody } from './referenceBody';
@@ -35,9 +37,10 @@ export async function loadPinnedGzip(
 }
 
 export async function loadAbdominalAtlas(): Promise<void> {
-  const [raw, response] = await Promise.all([
+  const [raw, response, skeleton] = await Promise.all([
     loadPinnedGzip(new URL('./abdominal-atlas.gzip.bin?no-inline', import.meta.url), ABDOMINAL_ATLAS),
     fetch(new URL('./abdominal-body.bin?no-inline', import.meta.url)),
+    loadPinnedGzip(new URL('./thoracic-atlas.gzip.bin?no-inline', import.meta.url), THORACIC_ATLAS),
   ]);
   if (!response.ok) throw new Error(`Perfil abdominal: HTTP ${response.status}`);
   const body = new Uint8Array(await response.arrayBuffer());
@@ -46,4 +49,5 @@ export async function loadAbdominalAtlas(): Promise<void> {
   const profile = validateReferenceBody(new Float32Array(body.buffer));
   setAbdominalBody(profile);
   setAbdominalAtlas(new Uint16Array(raw));
+  setThoracicAtlas(new Uint16Array(skeleton));
 }

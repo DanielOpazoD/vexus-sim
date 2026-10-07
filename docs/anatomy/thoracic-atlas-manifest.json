@@ -1,0 +1,1943 @@
+{
+  "sourceArchiveSha256": "9fbc713fffeee924a5a657d9813d84d7eb957bded63adb854931dd5e3eb61c97",
+  "sourceOriginLpsMm": [-0.3152345, -205.92635, 1164.5735],
+  "anteriorOffsetMm": 85.25,
+  "meta": {
+    "textureDimensions": [192, 153, 256],
+    "originMm": [-144.0, -127.5, -163.5],
+    "pitchMm": 1.5,
+    "rawBytes": 30081024,
+    "gzipBytes": 4694326,
+    "sha256Gzip": "fc181309f2c6f6a8b60508f8fb50fd25f1b2ec9f4b890c366e3e186199bb2ffb",
+    "sha256Raw": "973e4c0059b7a4d1912f79ffb6727babb63db86b4c42d21ef737ca4eb444f1ce",
+    "parts": [
+      {
+        "id": "FJ3153",
+        "name": "xiphoid process",
+        "label": 1,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3154",
+        "name": "tenth thoracic vertebra",
+        "label": 2,
+        "material": "vertebra"
+      },
+      {
+        "id": "FJ3155",
+        "name": "eleventh thoracic vertebra",
+        "label": 3,
+        "material": "vertebra"
+      },
+      {
+        "id": "FJ3156",
+        "name": "twelfth thoracic vertebra",
+        "label": 4,
+        "material": "vertebra"
+      },
+      {
+        "id": "FJ3158",
+        "name": "first thoracic vertebra",
+        "label": 5,
+        "material": "vertebra"
+      },
+      {
+        "id": "FJ3160",
+        "name": "second thoracic vertebra",
+        "label": 6,
+        "material": "vertebra"
+      },
+      {
+        "id": "FJ3163",
+        "name": "third thoracic vertebra",
+        "label": 7,
+        "material": "vertebra"
+      },
+      {
+        "id": "FJ3166",
+        "name": "fourth thoracic vertebra",
+        "label": 8,
+        "material": "vertebra"
+      },
+      {
+        "id": "FJ3169",
+        "name": "fifth thoracic vertebra",
+        "label": 9,
+        "material": "vertebra"
+      },
+      {
+        "id": "FJ3171",
+        "name": "sixth thoracic vertebra",
+        "label": 10,
+        "material": "vertebra"
+      },
+      {
+        "id": "FJ3173",
+        "name": "seventh thoracic vertebra",
+        "label": 11,
+        "material": "vertebra"
+      },
+      {
+        "id": "FJ3174",
+        "name": "eighth thoracic vertebra",
+        "label": 12,
+        "material": "vertebra"
+      },
+      {
+        "id": "FJ3175",
+        "name": "ninth thoracic vertebra",
+        "label": 13,
+        "material": "vertebra"
+      },
+      {
+        "id": "FJ3178",
+        "name": "body of sternum",
+        "label": 14,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3225",
+        "name": "left tenth rib",
+        "label": 15,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3226",
+        "name": "left eleventh rib",
+        "label": 16,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3227",
+        "name": "left twelfth rib",
+        "label": 17,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3228",
+        "name": "left first rib",
+        "label": 18,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3229",
+        "name": "left second rib",
+        "label": 19,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3230",
+        "name": "left third rib",
+        "label": 20,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3231",
+        "name": "left fourth rib",
+        "label": 21,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3232",
+        "name": "left fifth rib",
+        "label": 22,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3233",
+        "name": "left sixth rib",
+        "label": 23,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3234",
+        "name": "left seventh rib",
+        "label": 24,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3235",
+        "name": "left eighth rib",
+        "label": 25,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3236",
+        "name": "left ninth rib",
+        "label": 26,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3239",
+        "name": "left first costal cartilage",
+        "label": 27,
+        "material": "cartilage"
+      },
+      {
+        "id": "FJ3242",
+        "name": "left second costal cartilage",
+        "label": 28,
+        "material": "cartilage"
+      },
+      {
+        "id": "FJ3245",
+        "name": "left third costal cartilage",
+        "label": 29,
+        "material": "cartilage"
+      },
+      {
+        "id": "FJ3248",
+        "name": "left fourth costal cartilage",
+        "label": 30,
+        "material": "cartilage"
+      },
+      {
+        "id": "FJ3251",
+        "name": "left fifth costal cartilage",
+        "label": 31,
+        "material": "cartilage"
+      },
+      {
+        "id": "FJ3254",
+        "name": "left sixth costal cartilage",
+        "label": 32,
+        "material": "cartilage"
+      },
+      {
+        "id": "FJ3255",
+        "name": "left seventh costal cartilage",
+        "label": 33,
+        "material": "cartilage"
+      },
+      {
+        "id": "FJ3290",
+        "name": "manubrium",
+        "label": 34,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3330",
+        "name": "right tenth rib",
+        "label": 35,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3331",
+        "name": "right eleventh rib",
+        "label": 36,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3332",
+        "name": "right twelfth rib",
+        "label": 37,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3333",
+        "name": "right first costal cartilage",
+        "label": 38,
+        "material": "cartilage"
+      },
+      {
+        "id": "FJ3334",
+        "name": "right first rib",
+        "label": 39,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3335",
+        "name": "right second costal cartilage",
+        "label": 40,
+        "material": "cartilage"
+      },
+      {
+        "id": "FJ3336",
+        "name": "right second rib",
+        "label": 41,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3337",
+        "name": "right third costal cartilage",
+        "label": 42,
+        "material": "cartilage"
+      },
+      {
+        "id": "FJ3338",
+        "name": "right third rib",
+        "label": 43,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3339",
+        "name": "right fourth costal cartilage",
+        "label": 44,
+        "material": "cartilage"
+      },
+      {
+        "id": "FJ3340",
+        "name": "right fourth rib",
+        "label": 45,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3341",
+        "name": "right fifth costal cartilage",
+        "label": 46,
+        "material": "cartilage"
+      },
+      {
+        "id": "FJ3342",
+        "name": "right fifth rib",
+        "label": 47,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3343",
+        "name": "right sixth costal cartilage",
+        "label": 48,
+        "material": "cartilage"
+      },
+      {
+        "id": "FJ3344",
+        "name": "right sixth rib",
+        "label": 49,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3345",
+        "name": "right seventh costal cartilage",
+        "label": 50,
+        "material": "cartilage"
+      },
+      {
+        "id": "FJ3346",
+        "name": "right seventh rib",
+        "label": 51,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3347",
+        "name": "right eighth rib",
+        "label": 52,
+        "material": "bone"
+      },
+      {
+        "id": "FJ3348",
+        "name": "right ninth rib",
+        "label": 53,
+        "material": "bone"
+      }
+    ]
+  },
+  "sourceParts": [
+    {
+      "id": "FJ3153",
+      "sha256": "d17057ed1dad252a6fa6a3e8d92bc13310cebe0b584df147af0cc4a646f98f3e",
+      "sourceVertices": 495,
+      "sourceFaces": 922,
+      "weldedVertices": 463,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-10.022565499999999, 77.83264999999997, -0.5534999999999854],
+        [10.9191345, 92.67665, 19.926500000000033]
+      ],
+      "closedVolumeMl": 2.45079352609116
+    },
+    {
+      "id": "FJ3154",
+      "sha256": "55fd0b1ec25bc207c5a58cb2aa3d5f2880df6593719ec803c83ac898d3bda358",
+      "sourceVertices": 1584,
+      "sourceFaces": 2790,
+      "weldedVertices": 1395,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-33.341565499999994, -112.85385000000002, -64.80349999999999],
+        [32.5604345, -36.61855000000001, -7.443499999999858]
+      ],
+      "closedVolumeMl": 36.466534725375425
+    },
+    {
+      "id": "FJ3155",
+      "sha256": "7ce892808f37a9c96c74f298334be195cb50bfdbe64bcfa62072141ed38df0a2",
+      "sourceVertices": 1593,
+      "sourceFaces": 2674,
+      "weldedVertices": 1337,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-26.4457655, -107.66745, -88.85349999999994],
+        [25.8745345, -28.143950000000018, -35.303499999999985]
+      ],
+      "closedVolumeMl": 37.56257664974004
+    },
+    {
+      "id": "FJ3156",
+      "sha256": "d78f0563a0c0b5be89284a6d73434998a05dc9dbddb471b49e398c9ef96f07ae",
+      "sourceVertices": 1593,
+      "sourceFaces": 2772,
+      "weldedVertices": 1386,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-22.0711655, -98.11545000000001, -114.61349999999993],
+        [21.3700345, -19.29135000000001, -62.98350000000005]
+      ],
+      "closedVolumeMl": 38.478807835819886
+    },
+    {
+      "id": "FJ3158",
+      "sha256": "57a9cd9f62fc902f2d10f32c83237bba5bee4a24ae323a2b2405d9df68fd585b",
+      "sourceVertices": 1078,
+      "sourceFaces": 1700,
+      "weldedVertices": 850,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-37.0677655, -103.58965, 182.64650000000006],
+        [36.231434500000006, -33.80445000000002, 212.32650000000012]
+      ],
+      "closedVolumeMl": 15.225847093580539
+    },
+    {
+      "id": "FJ3160",
+      "sha256": "f04ca280dc74fdc79afb14e5da1515a1e77762960bb38fab869be0e617348eac",
+      "sourceVertices": 1161,
+      "sourceFaces": 1938,
+      "weldedVertices": 969,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-35.6068655, -108.55585000000002, 162.01649999999995],
+        [34.893634500000005, -38.00055000000002, 195.78649999999993]
+      ],
+      "closedVolumeMl": 17.689278729788775
+    },
+    {
+      "id": "FJ3163",
+      "sha256": "968ed4928160fd54c444aa8c4a2c318fa56368c55c715afcdeaa48445382d3f6",
+      "sourceVertices": 1175,
+      "sourceFaces": 2038,
+      "weldedVertices": 1019,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-32.650865499999995, -119.31624000000002, 137.65650000000005],
+        [32.1561345, -43.940050000000014, 177.27649999999994]
+      ],
+      "closedVolumeMl": 18.681077010997786
+    },
+    {
+      "id": "FJ3166",
+      "sha256": "cd744d75a90dc4d2b38f3b25928656ae2f9b873ea3113d01f91a102290eda5bd",
+      "sourceVertices": 1210,
+      "sourceFaces": 2066,
+      "weldedVertices": 1033,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-35.1464655, -120.47845400000003, 113.16650000000004],
+        [34.5972345, -51.07145000000003, 156.83650000000011]
+      ],
+      "closedVolumeMl": 19.128826287607897
+    },
+    {
+      "id": "FJ3169",
+      "sha256": "7eb98fe2886168196d8a7ee37d1c7a6e7decbc1c09cdf2d4295c13ed7ba3df0c",
+      "sourceVertices": 1321,
+      "sourceFaces": 2280,
+      "weldedVertices": 1140,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-35.836265499999996, -120.69489990000002, 75.19650000000001],
+        [35.2049345, -54.66735, 132.69650000000001]
+      ],
+      "closedVolumeMl": 21.726793049489967
+    },
+    {
+      "id": "FJ3171",
+      "sha256": "7c9c326269edd09bdf02aca90333c61debe4f39c777fbef887751826a54adb9e",
+      "sourceVertices": 1353,
+      "sourceFaces": 2248,
+      "weldedVertices": 1124,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-36.107465499999996, -119.48392000000001, 44.80650000000014],
+        [35.349134500000005, -55.45545000000001, 104.50649999999996]
+      ],
+      "closedVolumeMl": 23.7078123128426
+    },
+    {
+      "id": "FJ3173",
+      "sha256": "1bcf85e649234f976236f81077019ae66971c69c0943992a7ec0072939d42245",
+      "sourceVertices": 1478,
+      "sourceFaces": 2574,
+      "weldedVertices": 1287,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-36.9110655, -120.00485700000002, 14.726499999999987],
+        [36.6358345, -53.69715000000002, 77.22649999999999]
+      ],
+      "closedVolumeMl": 27.92875255291522
+    },
+    {
+      "id": "FJ3174",
+      "sha256": "f5928470229deb2c7579804b883ffeaae611127dac1454caed3b3df93fe8dad6",
+      "sourceVertices": 1392,
+      "sourceFaces": 2424,
+      "weldedVertices": 1212,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-33.344165499999995, -119.74455400000002, -10.823499999999967],
+        [32.467934500000005, -48.64875000000001, 48.47649999999999]
+      ],
+      "closedVolumeMl": 27.965817434130614
+    },
+    {
+      "id": "FJ3175",
+      "sha256": "f1ce32fedb9f84ac37b800b2a182f6701f972fbd8cc01be7732ab3ca3864603e",
+      "sourceVertices": 1443,
+      "sourceFaces": 2586,
+      "weldedVertices": 1293,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-34.079565499999994, -114.52029000000002, -37.94349999999986],
+        [33.3132345, -43.023450000000025, 20.26649999999995]
+      ],
+      "closedVolumeMl": 32.05223841021203
+    },
+    {
+      "id": "FJ3178",
+      "sha256": "32a06946d8eadbe1a847a373abe7499381c0182c72b7c94e3e2a0c3ba7c867e3",
+      "sourceVertices": 3691,
+      "sourceFaces": 4646,
+      "weldedVertices": 2327,
+      "smallBoundaryEdgesBeforeRepair": 24,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-23.2996655, 44.48964999999998, 15.076500000000124],
+        [24.2708345, 93.15564999999998, 125.06650000000013]
+      ],
+      "closedVolumeMl": 56.42800368932394
+    },
+    {
+      "id": "FJ3225",
+      "sha256": "daa25aba7fba3ff691d61cd239f8d49debc84ff871a351051c1d57a192b91dfd",
+      "sourceVertices": 3419,
+      "sourceFaces": 6826,
+      "weldedVertices": 3415,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [15.877534500000001, -109.32185000000001, -141.61349999999993],
+        [122.6642345, -2.96135000000001, -5.583499999999958]
+      ],
+      "closedVolumeMl": 17.0812429131577
+    },
+    {
+      "id": "FJ3226",
+      "sha256": "4bb9d52fdb2c15cb459c2bd08fd58082cdb39d15903cde675313762ea2287fc8",
+      "sourceVertices": 2435,
+      "sourceFaces": 4866,
+      "weldedVertices": 2435,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [16.5942345, -102.71495000000002, -156.51350000000002],
+        [110.3692345, -24.66465000000001, -42.83349999999996]
+      ],
+      "closedVolumeMl": 11.358937593871202
+    },
+    {
+      "id": "FJ3227",
+      "sha256": "83e04b8b6f91e4de57e7b380a2f2c7d6f0bbf284ce76710ca89aa82fb376bd4e",
+      "sourceVertices": 1411,
+      "sourceFaces": 2818,
+      "weldedVertices": 1411,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [17.2055345, -92.66145, -153.24349999999993],
+        [85.53633450000001, -54.60655000000003, -75.41349999999989]
+      ],
+      "closedVolumeMl": 6.440442137906199
+    },
+    {
+      "id": "FJ3228",
+      "sha256": "eb534d19462226e26b91234544f99abe118878a25c125f2a8839341e6769252b",
+      "sourceVertices": 1641,
+      "sourceFaces": 3276,
+      "weldedVertices": 1640,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [14.1156345, -56.25935000000001, 145.49649999999997],
+        [68.7698345, 9.743649999999974, 205.90650000000005]
+      ],
+      "closedVolumeMl": 6.096277779256427
+    },
+    {
+      "id": "FJ3229",
+      "sha256": "b752f038ceba8430f3872897ce69495d7dd74ed8e19c21d3f75d0bc0b156d84f",
+      "sourceVertices": 2862,
+      "sourceFaces": 5594,
+      "weldedVertices": 2799,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [15.0501345, -70.02955000000003, 108.93650000000002],
+        [95.9762345, 46.450649999999996, 194.4565]
+      ],
+      "closedVolumeMl": 14.342159937113976
+    },
+    {
+      "id": "FJ3230",
+      "sha256": "8b42d241c711fe9765b1239be33fcab6b865ab4619b5d05fa98ea245b6075d5c",
+      "sourceVertices": 3637,
+      "sourceFaces": 7254,
+      "weldedVertices": 3629,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [13.0395345, -83.81845000000001, 79.26649999999995],
+        [107.9482345, 58.58064999999999, 171.40650000000005]
+      ],
+      "closedVolumeMl": 17.967795843106103
+    },
+    {
+      "id": "FJ3231",
+      "sha256": "28b852d4813703c5654d0405168e22bf0032632d47b9667b4b16e60ed89a425b",
+      "sourceVertices": 4445,
+      "sourceFaces": 8850,
+      "weldedVertices": 4427,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [13.2209345, -97.48445000000001, 46.52649999999994],
+        [116.59623450000001, 71.51864999999998, 150.77649999999994]
+      ],
+      "closedVolumeMl": 24.893339207485393
+    },
+    {
+      "id": "FJ3232",
+      "sha256": "6fa730aea273685148d3e9d3f52fe450acec4c13d6e3b1b6865e0e9532283abb",
+      "sourceVertices": 4912,
+      "sourceFaces": 9710,
+      "weldedVertices": 4857,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [14.319734500000001, -107.95365000000001, 7.5965000000001055],
+        [126.0832345, 77.01164999999997, 126.74649999999997]
+      ],
+      "closedVolumeMl": 30.0301335004829
+    },
+    {
+      "id": "FJ3233",
+      "sha256": "2a0f1e32b8410b6396bea7ae342a16ae1ac1b77042e70d7e98cabeb7dcf3dfb9",
+      "sourceVertices": 5172,
+      "sourceFaces": 10264,
+      "weldedVertices": 5134,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [13.0906345, -117.03195000000002, -26.673499999999876],
+        [133.3692345, 72.81864999999999, 102.25649999999996]
+      ],
+      "closedVolumeMl": 31.39927227590261
+    },
+    {
+      "id": "FJ3234",
+      "sha256": "638a766f20b64d02095efa845b5ea316624a376acb44c7e4a6d533d4da6ef4db",
+      "sourceVertices": 5054,
+      "sourceFaces": 10032,
+      "weldedVertices": 5018,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [12.697734500000001, -116.17840000000001, -59.38349999999991],
+        [136.0932345, 59.531649999999985, 75.67650000000003]
+      ],
+      "closedVolumeMl": 31.949534236348377
+    },
+    {
+      "id": "FJ3235",
+      "sha256": "81a7215ef6ed923bbad6f07208bbc0ee26ddbaae3b1423f624cae465012d9144",
+      "sourceVertices": 4211,
+      "sourceFaces": 8336,
+      "weldedVertices": 4170,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [12.6856345, -116.10678000000001, -89.92349999999988],
+        [131.9532345, 41.99865, 46.74649999999997]
+      ],
+      "closedVolumeMl": 24.10433183380561
+    },
+    {
+      "id": "FJ3236",
+      "sha256": "3dc292292b9f2bd5e226ac100d3a8db76cba8eb1d9d09533a6e5e871f023e2a8",
+      "sourceVertices": 3805,
+      "sourceFaces": 7576,
+      "weldedVertices": 3790,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [14.8734345, -113.14869000000002, -114.48350000000005],
+        [128.0982345, 14.92564999999999, 20.786499999999933]
+      ],
+      "closedVolumeMl": 21.074088336720237
+    },
+    {
+      "id": "FJ3239",
+      "sha256": "9ca5fdb0582ad2795c9316ab9bb2f89f952b5a8c8fcf92a37efa042fc5c7739c",
+      "sourceVertices": 418,
+      "sourceFaces": 642,
+      "weldedVertices": 323,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [19.8104345, 1.6476499999999845, 132.29649999999992],
+        [56.510534500000006, 30.13565, 155.67650000000003]
+      ],
+      "closedVolumeMl": 3.5553923436763357
+    },
+    {
+      "id": "FJ3242",
+      "sha256": "c83bb88d995837a455e72707e9d5ecb0035ad60d8fd2f6f28d3710b4ef4c9d8e",
+      "sourceVertices": 330,
+      "sourceFaces": 588,
+      "weldedVertices": 296,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [10.517734500000001, 37.07164999999998, 105.5965000000001],
+        [48.3725345, 57.56864999999999, 123.43650000000002]
+      ],
+      "closedVolumeMl": 3.595322371049844
+    },
+    {
+      "id": "FJ3245",
+      "sha256": "ac65f51684b5dbcc3ea82381edae8723cbd9c7b8680bf6149a31dbf0acd26065",
+      "sourceVertices": 328,
+      "sourceFaces": 604,
+      "weldedVertices": 304,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [13.4097345, 50.761649999999975, 77.82650000000012],
+        [51.0378345, 69.39765, 95.41650000000004]
+      ],
+      "closedVolumeMl": 3.4111593132524978
+    },
+    {
+      "id": "FJ3248",
+      "sha256": "3633cb39f1540513872b9477c829d562114dce8d19cba5c99073fe4e3abeb1be",
+      "sourceVertices": 371,
+      "sourceFaces": 658,
+      "weldedVertices": 331,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [14.616934500000001, 63.64964999999998, 46.50649999999996],
+        [60.092034500000004, 77.90064999999998, 70.99649999999997]
+      ],
+      "closedVolumeMl": 4.131073806761161
+    },
+    {
+      "id": "FJ3251",
+      "sha256": "86be490af572a3d8c7f41fd1ed3f4bfac19a9966737bc1275f135f160d8298be",
+      "sourceVertices": 594,
+      "sourceFaces": 1086,
+      "weldedVertices": 545,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [18.030534499999998, 68.64864999999998, 7.036499999999933],
+        [82.34883450000001, 88.36165, 50.66650000000004]
+      ],
+      "closedVolumeMl": 7.434228575347498
+    },
+    {
+      "id": "FJ3254",
+      "sha256": "bc9ca44f2ea1fa9800d7f0a35c4596f41df1750ba9c89910d4f64041131db2bf",
+      "sourceVertices": 815,
+      "sourceFaces": 1498,
+      "weldedVertices": 751,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [14.1774345, 64.49564999999998, -26.99350000000004],
+        [93.3166345, 91.48464999999999, 32.706500000000005]
+      ],
+      "closedVolumeMl": 10.698759046427327
+    },
+    {
+      "id": "FJ3255",
+      "sha256": "97e69ede580a6e81cc42bb54fb22d4752719b61c5fced8ccccfb18ce64996676",
+      "sourceVertices": 1367,
+      "sourceFaces": 2314,
+      "weldedVertices": 1159,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [3.6441945, 50.22764999999998, -61.99350000000004],
+        [108.7722345, 92.53965, 21.836500000000115]
+      ],
+      "closedVolumeMl": 17.66843050821729
+    },
+    {
+      "id": "FJ3290",
+      "sha256": "b847e67db475197cc4510744fef76bafd8e75c50797ca85eb8cd56dd853d61d6",
+      "sourceVertices": 1446,
+      "sourceFaces": 2546,
+      "weldedVertices": 1275,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-27.1344655, 10.124649999999974, 115.69650000000001],
+        [27.7649345, 57.91164999999998, 160.67650000000003]
+      ],
+      "closedVolumeMl": 36.09890124881782
+    },
+    {
+      "id": "FJ3330",
+      "sha256": "0f688dd4e0d20a8328b4763c0acc7582a9beac8fe5c7ce58586db99c6e366945",
+      "sourceVertices": 3415,
+      "sourceFaces": 6820,
+      "weldedVertices": 3412,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-123.3327655, -109.31705000000002, -141.59349999999995],
+        [-16.557665500000002, -2.989350000000016, -5.593499999999949]
+      ],
+      "closedVolumeMl": 17.086660373395027
+    },
+    {
+      "id": "FJ3331",
+      "sha256": "761d6d8713c31d4b9f795c4875da9fc750c913907386489568fdebea15af49c3",
+      "sourceVertices": 2437,
+      "sourceFaces": 4866,
+      "weldedVertices": 2435,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-111.03776549999999, -102.71435000000002, -156.49349999999993],
+        [-17.2810655, -24.658050000000017, -42.84349999999995]
+      ],
+      "closedVolumeMl": 11.35059366278936
+    },
+    {
+      "id": "FJ3332",
+      "sha256": "ece92488a9293cde2d8a8275cee8232326b377811afba888f6147d7217e04e07",
+      "sourceVertices": 1412,
+      "sourceFaces": 2818,
+      "weldedVertices": 1411,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-86.21796549999999, -92.68415000000002, -153.23349999999994],
+        [-17.8972655, -54.579049999999995, -75.4034999999999]
+      ],
+      "closedVolumeMl": 6.446936189342505
+    },
+    {
+      "id": "FJ3333",
+      "sha256": "616b5add6471a3fd2a7297cbebfee18a13866eb165ca0be05c5942ae16bacc10",
+      "sourceVertices": 436,
+      "sourceFaces": 676,
+      "weldedVertices": 340,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-55.872165499999994, 1.494649999999993, 132.33650000000011],
+        [-19.1968655, 30.08064999999999, 155.64650000000006]
+      ],
+      "closedVolumeMl": 3.575940864528335
+    },
+    {
+      "id": "FJ3334",
+      "sha256": "ecef0080744a8422b72b4f52229bd68945692cdef7d6fe2a57043b2155c49d17",
+      "sourceVertices": 1642,
+      "sourceFaces": 3276,
+      "weldedVertices": 1640,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-69.4488655, -56.261750000000006, 145.49649999999997],
+        [-14.7956655, 9.747649999999993, 205.90650000000005]
+      ],
+      "closedVolumeMl": 6.103083994937145
+    },
+    {
+      "id": "FJ3335",
+      "sha256": "065a4969ea4210ce6d3f5838dc2da20f1153de478e02c7a86ced152eab82bf6a",
+      "sourceVertices": 383,
+      "sourceFaces": 658,
+      "weldedVertices": 333,
+      "smallBoundaryEdgesBeforeRepair": 3,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-47.871765499999995, 37.06864999999999, 105.54649999999992],
+        [-9.9293655, 57.58464999999998, 123.44650000000001]
+      ],
+      "closedVolumeMl": 3.6085210014008346
+    },
+    {
+      "id": "FJ3336",
+      "sha256": "e9f527453bb2a48764ac7243d0b9b23e37fb2a85e92cee445972a1a770a5eaa4",
+      "sourceVertices": 2861,
+      "sourceFaces": 5594,
+      "weldedVertices": 2799,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-96.6568655, -70.02345000000003, 108.97649999999999],
+        [-15.734265499999998, 46.48065, 194.4565]
+      ],
+      "closedVolumeMl": 14.344079452433586
+    },
+    {
+      "id": "FJ3337",
+      "sha256": "469513e43364a7212843011c944a9fff22b5b50496a11e739bcdafc70005d3dd",
+      "sourceVertices": 386,
+      "sourceFaces": 652,
+      "weldedVertices": 328,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-50.4089655, 50.74464999999998, 77.80650000000014],
+        [-12.7357655, 69.43164999999999, 95.40650000000005]
+      ],
+      "closedVolumeMl": 3.4271143808233324
+    },
+    {
+      "id": "FJ3338",
+      "sha256": "69dbbcfc72d592aa862621612e7ad1151ada3fa06c5ce51e24731015561ad7ac",
+      "sourceVertices": 3634,
+      "sourceFaces": 7254,
+      "weldedVertices": 3629,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-108.6317655, -83.84735, 79.24649999999997],
+        [-13.708765499999998, 58.59164999999999, 171.39650000000006]
+      ],
+      "closedVolumeMl": 17.958894531136785
+    },
+    {
+      "id": "FJ3339",
+      "sha256": "fc442f6596ca1a7ce18fc2d65cb92dcc1de1951381ebd631223469b6e84923b1",
+      "sourceVertices": 391,
+      "sourceFaces": 694,
+      "weldedVertices": 349,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-59.591565499999994, 63.527649999999994, 46.52649999999994],
+        [-13.995865499999999, 77.91064999999998, 70.98649999999998]
+      ],
+      "closedVolumeMl": 4.139646921719995
+    },
+    {
+      "id": "FJ3340",
+      "sha256": "b9bc6bbb160fd579ed246c3eb145b39f82866dc2dfeebe798f0dba5a2e352597",
+      "sourceVertices": 4435,
+      "sourceFaces": 8832,
+      "weldedVertices": 4418,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-117.2777655, -97.48185000000001, 46.52649999999994],
+        [-14.6966655, 71.51565, 150.77649999999994]
+      ],
+      "closedVolumeMl": 24.850603170433388
+    },
+    {
+      "id": "FJ3341",
+      "sha256": "921b821e925624302d8ab138dfa80a24bf3d9150e006b7ac27a2b5f73d15ab33",
+      "sourceVertices": 652,
+      "sourceFaces": 1168,
+      "weldedVertices": 586,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-81.8505655, 68.63964999999999, 7.036499999999933],
+        [-17.3843655, 88.35964999999999, 50.67650000000003]
+      ],
+      "closedVolumeMl": 7.434879011584493
+    },
+    {
+      "id": "FJ3342",
+      "sha256": "11d403618e4114a5edcd8f2fa4e90ef4e6427b04f4cd3962c59462694b55c443",
+      "sourceVertices": 4910,
+      "sourceFaces": 9710,
+      "weldedVertices": 4857,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-126.76376549999999, -107.94875000000002, 7.586500000000115],
+        [-14.998965499999999, 76.97465, 126.74649999999997]
+      ],
+      "closedVolumeMl": 30.032525587339467
+    },
+    {
+      "id": "FJ3343",
+      "sha256": "3b633ffd599c51c1f00d66442855a047b013bda569fa092ea31ece5fdc289111",
+      "sourceVertices": 971,
+      "sourceFaces": 1546,
+      "weldedVertices": 787,
+      "smallBoundaryEdgesBeforeRepair": 18,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-93.3821655, 64.07264999999998, -27.013500000000022],
+        [-13.5502655, 91.51065, 32.67650000000003]
+      ],
+      "closedVolumeMl": 10.709568528279329
+    },
+    {
+      "id": "FJ3344",
+      "sha256": "67f1f42fea1c289adaf4929716534bad7dfdd136ca0057f05de83d6e20c8f0a8",
+      "sourceVertices": 5168,
+      "sourceFaces": 10246,
+      "weldedVertices": 5125,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-134.0337655, -117.03494, -26.663499999999885],
+        [-14.5220655, 72.82864999999998, 101.12650000000008]
+      ],
+      "closedVolumeMl": 31.34753631618273
+    },
+    {
+      "id": "FJ3345",
+      "sha256": "a4d22796f4ffc6f9ad1b7d620c917be1638244864eca62aec60bd11033ed3041",
+      "sourceVertices": 1538,
+      "sourceFaces": 2450,
+      "weldedVertices": 1233,
+      "smallBoundaryEdgesBeforeRepair": 9,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-109.5937655, 50.09864999999999, -62.01350000000002],
+        [49.8805345, 92.53164999999998, 21.876500000000078]
+      ],
+      "closedVolumeMl": 17.706916387738662
+    },
+    {
+      "id": "FJ3346",
+      "sha256": "91aa56e034fbe6f413c0f15b76d725a1f8efd115aa2900beda6edf43a3ab0c43",
+      "sourceVertices": 5058,
+      "sourceFaces": 10032,
+      "weldedVertices": 5018,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-136.7697655, -116.18944000000002, -59.38349999999991],
+        [-13.3744655, 59.52664999999999, 75.69650000000001]
+      ],
+      "closedVolumeMl": 31.955027267352474
+    },
+    {
+      "id": "FJ3347",
+      "sha256": "43a1591cf1e123ca01f64297a7ce008d679a5f5f26421cc5b69e2232da89d743",
+      "sourceVertices": 4199,
+      "sourceFaces": 8336,
+      "weldedVertices": 4170,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-132.6527655, -116.11186000000001, -89.91349999999989],
+        [-13.3612655, 42.001649999999984, 46.75649999999996]
+      ],
+      "closedVolumeMl": 24.102920559576702
+    },
+    {
+      "id": "FJ3348",
+      "sha256": "7d3a969b778da18eb38b1a64d92e2b90e1730fcb0d7b2bfacd125ff4826876d0",
+      "sourceVertices": 3808,
+      "sourceFaces": 7576,
+      "weldedVertices": 3790,
+      "smallBoundaryEdgesBeforeRepair": 0,
+      "boundaryCaps": [],
+      "registeredBoundsMm": [
+        [-128.7827655, -113.14728000000002, -114.48350000000005],
+        [-15.549365499999999, 14.955649999999991, 20.796499999999924]
+      ],
+      "closedVolumeMl": 21.071728723906052
+    }
+  ],
+  "parts": [
+    {
+      "id": "FJ3153",
+      "name": "xiphoid process",
+      "conceptId": "FMA7488",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3153.obj",
+      "bytes": 56265,
+      "sha256": "d17057ed1dad252a6fa6a3e8d92bc13310cebe0b584df147af0cc4a646f98f3e",
+      "crc32": "19f9b8c5",
+      "subcellFragmentsRemoved": [],
+      "label": 1,
+      "material": "bone",
+      "occupiedVoxels": 726,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 0,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3154",
+      "name": "tenth thoracic vertebra",
+      "conceptId": "FMA10037",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3154.obj",
+      "bytes": 181677,
+      "sha256": "55fd0b1ec25bc207c5a58cb2aa3d5f2880df6593719ec803c83ac898d3bda358",
+      "crc32": "b145b2f2",
+      "subcellFragmentsRemoved": [],
+      "label": 2,
+      "material": "vertebra",
+      "occupiedVoxels": 10819,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 0,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3155",
+      "name": "eleventh thoracic vertebra",
+      "conceptId": "FMA10059",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3155.obj",
+      "bytes": 178073,
+      "sha256": "7ce892808f37a9c96c74f298334be195cb50bfdbe64bcfa62072141ed38df0a2",
+      "crc32": "c8495564",
+      "subcellFragmentsRemoved": [],
+      "label": 3,
+      "material": "vertebra",
+      "occupiedVoxels": 11131,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 0,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3156",
+      "name": "twelfth thoracic vertebra",
+      "conceptId": "FMA10081",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3156.obj",
+      "bytes": 181657,
+      "sha256": "d78f0563a0c0b5be89284a6d73434998a05dc9dbddb471b49e398c9ef96f07ae",
+      "crc32": "cc7b3828",
+      "subcellFragmentsRemoved": [],
+      "label": 4,
+      "material": "vertebra",
+      "occupiedVoxels": 11399,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 0,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3158",
+      "name": "first thoracic vertebra",
+      "conceptId": "FMA9165",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3158.obj",
+      "bytes": 114179,
+      "sha256": "57a9cd9f62fc902f2d10f32c83237bba5bee4a24ae323a2b2405d9df68fd585b",
+      "crc32": "1cd9578c",
+      "subcellFragmentsRemoved": [],
+      "label": 5,
+      "material": "vertebra",
+      "occupiedVoxels": 4521,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 0,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3160",
+      "name": "second thoracic vertebra",
+      "conceptId": "FMA9187",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3160.obj",
+      "bytes": 126576,
+      "sha256": "f04ca280dc74fdc79afb14e5da1515a1e77762960bb38fab869be0e617348eac",
+      "crc32": "eb8fe9e5",
+      "subcellFragmentsRemoved": [],
+      "label": 6,
+      "material": "vertebra",
+      "occupiedVoxels": 5260,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 0,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3163",
+      "name": "third thoracic vertebra",
+      "conceptId": "FMA9209",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3163.obj",
+      "bytes": 130540,
+      "sha256": "968ed4928160fd54c444aa8c4a2c318fa56368c55c715afcdeaa48445382d3f6",
+      "crc32": "6af86753",
+      "subcellFragmentsRemoved": [],
+      "label": 7,
+      "material": "vertebra",
+      "occupiedVoxels": 5508,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 0,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3166",
+      "name": "fourth thoracic vertebra",
+      "conceptId": "FMA9248",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3166.obj",
+      "bytes": 133882,
+      "sha256": "cd744d75a90dc4d2b38f3b25928656ae2f9b873ea3113d01f91a102290eda5bd",
+      "crc32": "53f226c5",
+      "subcellFragmentsRemoved": [],
+      "label": 8,
+      "material": "vertebra",
+      "occupiedVoxels": 5668,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 0,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3169",
+      "name": "fifth thoracic vertebra",
+      "conceptId": "FMA9922",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3169.obj",
+      "bytes": 147917,
+      "sha256": "7eb98fe2886168196d8a7ee37d1c7a6e7decbc1c09cdf2d4295c13ed7ba3df0c",
+      "crc32": "f110c159",
+      "subcellFragmentsRemoved": [],
+      "label": 9,
+      "material": "vertebra",
+      "occupiedVoxels": 6432,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 0,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3171",
+      "name": "sixth thoracic vertebra",
+      "conceptId": "FMA9945",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3171.obj",
+      "bytes": 149094,
+      "sha256": "7c9c326269edd09bdf02aca90333c61debe4f39c777fbef887751826a54adb9e",
+      "crc32": "b03ff57f",
+      "subcellFragmentsRemoved": [],
+      "label": 10,
+      "material": "vertebra",
+      "occupiedVoxels": 7066,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 0,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3173",
+      "name": "seventh thoracic vertebra",
+      "conceptId": "FMA9968",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3173.obj",
+      "bytes": 167619,
+      "sha256": "1bcf85e649234f976236f81077019ae66971c69c0943992a7ec0072939d42245",
+      "crc32": "48233cd2",
+      "subcellFragmentsRemoved": [],
+      "label": 11,
+      "material": "vertebra",
+      "occupiedVoxels": 8277,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 0,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3174",
+      "name": "eighth thoracic vertebra",
+      "conceptId": "FMA9991",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3174.obj",
+      "bytes": 157446,
+      "sha256": "f5928470229deb2c7579804b883ffeaae611127dac1454caed3b3df93fe8dad6",
+      "crc32": "daa7459e",
+      "subcellFragmentsRemoved": [],
+      "label": 12,
+      "material": "vertebra",
+      "occupiedVoxels": 8298,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 0,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3175",
+      "name": "ninth thoracic vertebra",
+      "conceptId": "FMA10014",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3175.obj",
+      "bytes": 166121,
+      "sha256": "f1ce32fedb9f84ac37b800b2a182f6701f972fbd8cc01be7732ab3ca3864603e",
+      "crc32": "7da3efae",
+      "subcellFragmentsRemoved": [
+        [108, 25, 97],
+        [109, 25, 98],
+        [109, 25, 99],
+        [109, 25, 100]
+      ],
+      "label": 13,
+      "material": "vertebra",
+      "occupiedVoxels": 9479,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 0,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3178",
+      "name": "body of sternum",
+      "conceptId": "FMA7487",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3178.obj",
+      "bytes": 374296,
+      "sha256": "32a06946d8eadbe1a847a373abe7499381c0182c72b7c94e3e2a0c3ba7c867e3",
+      "crc32": "1f1a8aae",
+      "subcellFragmentsRemoved": [
+        [81, 135, 142],
+        [82, 131, 148],
+        [109, 133, 156]
+      ],
+      "label": 14,
+      "material": "bone",
+      "occupiedVoxels": 16749,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 9,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3225",
+      "name": "left tenth rib",
+      "conceptId": "FMA8472",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3225.obj",
+      "bytes": 432180,
+      "sha256": "daa25aba7fba3ff691d61cd239f8d49debc84ff871a351051c1d57a192b91dfd",
+      "crc32": "342ed6da",
+      "subcellFragmentsRemoved": [],
+      "label": 15,
+      "material": "bone",
+      "occupiedVoxels": 5079,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 11,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3226",
+      "name": "left eleventh rib",
+      "conceptId": "FMA8532",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3226.obj",
+      "bytes": 304278,
+      "sha256": "4bb9d52fdb2c15cb459c2bd08fd58082cdb39d15903cde675313762ea2287fc8",
+      "crc32": "3676624e",
+      "subcellFragmentsRemoved": [],
+      "label": 16,
+      "material": "bone",
+      "occupiedVoxels": 3378,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 0,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3227",
+      "name": "left twelfth rib",
+      "conceptId": "FMA8534",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3227.obj",
+      "bytes": 170995,
+      "sha256": "83e04b8b6f91e4de57e7b380a2f2c7d6f0bbf284ce76710ca89aa82fb376bd4e",
+      "crc32": "02ea806a",
+      "subcellFragmentsRemoved": [],
+      "label": 17,
+      "material": "bone",
+      "occupiedVoxels": 1901,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 0,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3228",
+      "name": "left first rib",
+      "conceptId": "FMA7987",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3228.obj",
+      "bytes": 200850,
+      "sha256": "eb534d19462226e26b91234544f99abe118878a25c125f2a8839341e6769252b",
+      "crc32": "0e3ffe75",
+      "subcellFragmentsRemoved": [],
+      "label": 18,
+      "material": "bone",
+      "occupiedVoxels": 1819,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 0,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3229",
+      "name": "left second rib",
+      "conceptId": "FMA8012",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3229.obj",
+      "bytes": 355234,
+      "sha256": "b752f038ceba8430f3872897ce69495d7dd74ed8e19c21d3f75d0bc0b156d84f",
+      "crc32": "412c4241",
+      "subcellFragmentsRemoved": [],
+      "label": 19,
+      "material": "bone",
+      "occupiedVoxels": 4208,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 7,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3230",
+      "name": "left third rib",
+      "conceptId": "FMA8039",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3230.obj",
+      "bytes": 460035,
+      "sha256": "8b42d241c711fe9765b1239be33fcab6b865ab4619b5d05fa98ea245b6075d5c",
+      "crc32": "1c139782",
+      "subcellFragmentsRemoved": [],
+      "label": 20,
+      "material": "bone",
+      "occupiedVoxels": 5322,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 2,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3231",
+      "name": "left fourth rib",
+      "conceptId": "FMA8148",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3231.obj",
+      "bytes": 564537,
+      "sha256": "28b852d4813703c5654d0405168e22bf0032632d47b9667b4b16e60ed89a425b",
+      "crc32": "ffe3f7b9",
+      "subcellFragmentsRemoved": [],
+      "label": 21,
+      "material": "bone",
+      "occupiedVoxels": 7369,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 2,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3232",
+      "name": "left fifth rib",
+      "conceptId": "FMA8093",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3232.obj",
+      "bytes": 622390,
+      "sha256": "6fa730aea273685148d3e9d3f52fe450acec4c13d6e3b1b6865e0e9532283abb",
+      "crc32": "8caadafa",
+      "subcellFragmentsRemoved": [],
+      "label": 22,
+      "material": "bone",
+      "occupiedVoxels": 8904,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 4,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3233",
+      "name": "left sixth rib",
+      "conceptId": "FMA8202",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3233.obj",
+      "bytes": 657313,
+      "sha256": "2a0f1e32b8410b6396bea7ae342a16ae1ac1b77042e70d7e98cabeb7dcf3dfb9",
+      "crc32": "c5330a94",
+      "subcellFragmentsRemoved": [],
+      "label": 23,
+      "material": "bone",
+      "occupiedVoxels": 9308,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 7,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3234",
+      "name": "left seventh rib",
+      "conceptId": "FMA8256",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3234.obj",
+      "bytes": 642411,
+      "sha256": "638a766f20b64d02095efa845b5ea316624a376acb44c7e4a6d533d4da6ef4db",
+      "crc32": "846dd9ac",
+      "subcellFragmentsRemoved": [],
+      "label": 24,
+      "material": "bone",
+      "occupiedVoxels": 9468,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 18,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3235",
+      "name": "left eighth rib",
+      "conceptId": "FMA8310",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3235.obj",
+      "bytes": 532786,
+      "sha256": "81a7215ef6ed923bbad6f07208bbc0ee26ddbaae3b1423f624cae465012d9144",
+      "crc32": "599076cb",
+      "subcellFragmentsRemoved": [],
+      "label": 25,
+      "material": "bone",
+      "occupiedVoxels": 7117,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 10,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3236",
+      "name": "left ninth rib",
+      "conceptId": "FMA8391",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3236.obj",
+      "bytes": 481790,
+      "sha256": "3dc292292b9f2bd5e226ac100d3a8db76cba8eb1d9d09533a6e5e871f023e2a8",
+      "crc32": "fe876b82",
+      "subcellFragmentsRemoved": [],
+      "label": 26,
+      "material": "bone",
+      "occupiedVoxels": 6256,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 4,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3239",
+      "name": "left first costal cartilage",
+      "conceptId": "FMA8005",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3239.obj",
+      "bytes": 42790,
+      "sha256": "9ca5fdb0582ad2795c9316ab9bb2f89f952b5a8c8fcf92a37efa042fc5c7739c",
+      "crc32": "3062cf1c",
+      "subcellFragmentsRemoved": [],
+      "label": 27,
+      "material": "cartilage",
+      "occupiedVoxels": 1056,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 38,
+      "bonePrecedenceVoxels": 38
+    },
+    {
+      "id": "FJ3242",
+      "name": "left second costal cartilage",
+      "conceptId": "FMA8031",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3242.obj",
+      "bytes": 36200,
+      "sha256": "c83bb88d995837a455e72707e9d5ecb0035ad60d8fd2f6f28d3710b4ef4c9d8e",
+      "crc32": "ae20719d",
+      "subcellFragmentsRemoved": [],
+      "label": 28,
+      "material": "cartilage",
+      "occupiedVoxels": 1059,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 32,
+      "bonePrecedenceVoxels": 32
+    },
+    {
+      "id": "FJ3245",
+      "name": "left third costal cartilage",
+      "conceptId": "FMA8058",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3245.obj",
+      "bytes": 36602,
+      "sha256": "ac65f51684b5dbcc3ea82381edae8723cbd9c7b8680bf6149a31dbf0acd26065",
+      "crc32": "84240ca5",
+      "subcellFragmentsRemoved": [],
+      "label": 29,
+      "material": "cartilage",
+      "occupiedVoxels": 1000,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 42,
+      "bonePrecedenceVoxels": 42
+    },
+    {
+      "id": "FJ3248",
+      "name": "left fourth costal cartilage",
+      "conceptId": "FMA8167",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3248.obj",
+      "bytes": 40725,
+      "sha256": "3633cb39f1540513872b9477c829d562114dce8d19cba5c99073fe4e3abeb1be",
+      "crc32": "0b2efa74",
+      "subcellFragmentsRemoved": [],
+      "label": 30,
+      "material": "cartilage",
+      "occupiedVoxels": 1213,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 44,
+      "bonePrecedenceVoxels": 44
+    },
+    {
+      "id": "FJ3251",
+      "name": "left fifth costal cartilage",
+      "conceptId": "FMA8112",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3251.obj",
+      "bytes": 66532,
+      "sha256": "86be490af572a3d8c7f41fd1ed3f4bfac19a9966737bc1275f135f160d8298be",
+      "crc32": "f5a9970b",
+      "subcellFragmentsRemoved": [],
+      "label": 31,
+      "material": "cartilage",
+      "occupiedVoxels": 2197,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 50,
+      "bonePrecedenceVoxels": 50
+    },
+    {
+      "id": "FJ3254",
+      "name": "left sixth costal cartilage",
+      "conceptId": "FMA8221",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3254.obj",
+      "bytes": 91695,
+      "sha256": "bc9ca44f2ea1fa9800d7f0a35c4596f41df1750ba9c89910d4f64041131db2bf",
+      "crc32": "453e08ae",
+      "subcellFragmentsRemoved": [],
+      "label": 32,
+      "material": "cartilage",
+      "occupiedVoxels": 3130,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 84,
+      "bonePrecedenceVoxels": 84
+    },
+    {
+      "id": "FJ3255",
+      "name": "left seventh costal cartilage",
+      "conceptId": "FMA8275",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3255.obj",
+      "bytes": 150879,
+      "sha256": "97e69ede580a6e81cc42bb54fb22d4752719b61c5fced8ccccfb18ce64996676",
+      "crc32": "d3733752",
+      "subcellFragmentsRemoved": [[122, 145, 104]],
+      "label": 33,
+      "material": "cartilage",
+      "occupiedVoxels": 5265,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 32,
+      "bonePrecedenceVoxels": 32
+    },
+    {
+      "id": "FJ3290",
+      "name": "manubrium",
+      "conceptId": "FMA7486",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3290.obj",
+      "bytes": 164758,
+      "sha256": "b847e67db475197cc4510744fef76bafd8e75c50797ca85eb8cd56dd853d61d6",
+      "crc32": "526578d8",
+      "subcellFragmentsRemoved": [],
+      "label": 34,
+      "material": "bone",
+      "occupiedVoxels": 10693,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 65,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3330",
+      "name": "right tenth rib",
+      "conceptId": "FMA8445",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3330.obj",
+      "bytes": 434809,
+      "sha256": "0f688dd4e0d20a8328b4763c0acc7582a9beac8fe5c7ce58586db99c6e366945",
+      "crc32": "5573162a",
+      "subcellFragmentsRemoved": [],
+      "label": 35,
+      "material": "bone",
+      "occupiedVoxels": 5054,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 19,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3331",
+      "name": "right eleventh rib",
+      "conceptId": "FMA8531",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3331.obj",
+      "bytes": 306724,
+      "sha256": "761d6d8713c31d4b9f795c4875da9fc750c913907386489568fdebea15af49c3",
+      "crc32": "4fcdd8cb",
+      "subcellFragmentsRemoved": [],
+      "label": 36,
+      "material": "bone",
+      "occupiedVoxels": 3354,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 3,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3332",
+      "name": "right twelfth rib",
+      "conceptId": "FMA8533",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3332.obj",
+      "bytes": 172395,
+      "sha256": "ece92488a9293cde2d8a8275cee8232326b377811afba888f6147d7217e04e07",
+      "crc32": "aaf7302f",
+      "subcellFragmentsRemoved": [],
+      "label": 37,
+      "material": "bone",
+      "occupiedVoxels": 1922,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 0,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3333",
+      "name": "right first costal cartilage",
+      "conceptId": "FMA7875",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3333.obj",
+      "bytes": 45599,
+      "sha256": "616b5add6471a3fd2a7297cbebfee18a13866eb165ca0be05c5942ae16bacc10",
+      "crc32": "37130860",
+      "subcellFragmentsRemoved": [],
+      "label": 38,
+      "material": "cartilage",
+      "occupiedVoxels": 1069,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 68,
+      "bonePrecedenceVoxels": 68
+    },
+    {
+      "id": "FJ3334",
+      "name": "right first rib",
+      "conceptId": "FMA7857",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3334.obj",
+      "bytes": 202346,
+      "sha256": "ecef0080744a8422b72b4f52229bd68945692cdef7d6fe2a57043b2155c49d17",
+      "crc32": "36226669",
+      "subcellFragmentsRemoved": [],
+      "label": 39,
+      "material": "bone",
+      "occupiedVoxels": 1817,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 20,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3335",
+      "name": "right second costal cartilage",
+      "conceptId": "FMA7886",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3335.obj",
+      "bytes": 42019,
+      "sha256": "065a4969ea4210ce6d3f5838dc2da20f1153de478e02c7a86ced152eab82bf6a",
+      "crc32": "77aef7d3",
+      "subcellFragmentsRemoved": [],
+      "label": 40,
+      "material": "cartilage",
+      "occupiedVoxels": 1073,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 5,
+      "bonePrecedenceVoxels": 5
+    },
+    {
+      "id": "FJ3336",
+      "name": "right second rib",
+      "conceptId": "FMA7882",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3336.obj",
+      "bytes": 358351,
+      "sha256": "e9f527453bb2a48764ac7243d0b9b23e37fb2a85e92cee445972a1a770a5eaa4",
+      "crc32": "ad9a3396",
+      "subcellFragmentsRemoved": [],
+      "label": 41,
+      "material": "bone",
+      "occupiedVoxels": 4246,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 2,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3337",
+      "name": "right third costal cartilage",
+      "conceptId": "FMA7913",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3337.obj",
+      "bytes": 42128,
+      "sha256": "469513e43364a7212843011c944a9fff22b5b50496a11e739bcdafc70005d3dd",
+      "crc32": "b7df8cfa",
+      "subcellFragmentsRemoved": [],
+      "label": 42,
+      "material": "cartilage",
+      "occupiedVoxels": 1011,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 2,
+      "bonePrecedenceVoxels": 2
+    },
+    {
+      "id": "FJ3338",
+      "name": "right third rib",
+      "conceptId": "FMA7909",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3338.obj",
+      "bytes": 463529,
+      "sha256": "69dbbcfc72d592aa862621612e7ad1151ada3fa06c5ce51e24731015561ad7ac",
+      "crc32": "9b8b2184",
+      "subcellFragmentsRemoved": [],
+      "label": 43,
+      "material": "bone",
+      "occupiedVoxels": 5315,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 2,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3339",
+      "name": "right fourth costal cartilage",
+      "conceptId": "FMA7976",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3339.obj",
+      "bytes": 43628,
+      "sha256": "fc442f6596ca1a7ce18fc2d65cb92dcc1de1951381ebd631223469b6e84923b1",
+      "crc32": "6311772b",
+      "subcellFragmentsRemoved": [],
+      "label": 44,
+      "material": "cartilage",
+      "occupiedVoxels": 1228,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 1,
+      "bonePrecedenceVoxels": 1
+    },
+    {
+      "id": "FJ3340",
+      "name": "right fourth rib",
+      "conceptId": "FMA7957",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3340.obj",
+      "bytes": 567439,
+      "sha256": "b9bc6bbb160fd579ed246c3eb145b39f82866dc2dfeebe798f0dba5a2e352597",
+      "crc32": "d4ac4ec2",
+      "subcellFragmentsRemoved": [],
+      "label": 45,
+      "material": "bone",
+      "occupiedVoxels": 7343,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 1,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3341",
+      "name": "right fifth costal cartilage",
+      "conceptId": "FMA8070",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3341.obj",
+      "bytes": 73177,
+      "sha256": "921b821e925624302d8ab138dfa80a24bf3d9150e006b7ac27a2b5f73d15ab33",
+      "crc32": "6093fb3d",
+      "subcellFragmentsRemoved": [],
+      "label": 46,
+      "material": "cartilage",
+      "occupiedVoxels": 2208,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 2,
+      "bonePrecedenceVoxels": 2
+    },
+    {
+      "id": "FJ3342",
+      "name": "right fifth rib",
+      "conceptId": "FMA8066",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3342.obj",
+      "bytes": 627176,
+      "sha256": "11d403618e4114a5edcd8f2fa4e90ef4e6427b04f4cd3962c59462694b55c443",
+      "crc32": "863617df",
+      "subcellFragmentsRemoved": [],
+      "label": 47,
+      "material": "bone",
+      "occupiedVoxels": 8887,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 6,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3343",
+      "name": "right sixth costal cartilage",
+      "conceptId": "FMA8194",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3343.obj",
+      "bytes": 103505,
+      "sha256": "3b633ffd599c51c1f00d66442855a047b013bda569fa092ea31ece5fdc289111",
+      "crc32": "a5f1067d",
+      "subcellFragmentsRemoved": [],
+      "label": 48,
+      "material": "cartilage",
+      "occupiedVoxels": 3115,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 29,
+      "bonePrecedenceVoxels": 29
+    },
+    {
+      "id": "FJ3344",
+      "name": "right sixth rib",
+      "conceptId": "FMA8175",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3344.obj",
+      "bytes": 661848,
+      "sha256": "67f1f42fea1c289adaf4929716534bad7dfdd136ca0057f05de83d6e20c8f0a8",
+      "crc32": "910ae548",
+      "subcellFragmentsRemoved": [],
+      "label": 49,
+      "material": "bone",
+      "occupiedVoxels": 9293,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 7,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3345",
+      "name": "right seventh costal cartilage",
+      "conceptId": "FMA8248",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3345.obj",
+      "bytes": 167567,
+      "sha256": "a4d22796f4ffc6f9ad1b7d620c917be1638244864eca62aec60bd11033ed3041",
+      "crc32": "1815d179",
+      "subcellFragmentsRemoved": [],
+      "label": 50,
+      "material": "cartilage",
+      "occupiedVoxels": 5246,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 12,
+      "bonePrecedenceVoxels": 3
+    },
+    {
+      "id": "FJ3346",
+      "name": "right seventh rib",
+      "conceptId": "FMA8229",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3346.obj",
+      "bytes": 647432,
+      "sha256": "91aa56e034fbe6f413c0f15b76d725a1f8efd115aa2900beda6edf43a3ab0c43",
+      "crc32": "cb5a125c",
+      "subcellFragmentsRemoved": [],
+      "label": 51,
+      "material": "bone",
+      "occupiedVoxels": 9486,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 21,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3347",
+      "name": "right eighth rib",
+      "conceptId": "FMA8283",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3347.obj",
+      "bytes": 535785,
+      "sha256": "43a1591cf1e123ca01f64297a7ce008d679a5f5f26421cc5b69e2232da89d743",
+      "crc32": "72171558",
+      "subcellFragmentsRemoved": [],
+      "label": 52,
+      "material": "bone",
+      "occupiedVoxels": 7143,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 7,
+      "bonePrecedenceVoxels": 0
+    },
+    {
+      "id": "FJ3348",
+      "name": "right ninth rib",
+      "conceptId": "FMA8364",
+      "entry": "partof_BP3D_4.0_obj_99/FJ3348.obj",
+      "bytes": 485203,
+      "sha256": "7d3a969b778da18eb38b1a64d92e2b90e1730fcb0d7b2bfacd125ff4826876d0",
+      "crc32": "d23edb56",
+      "subcellFragmentsRemoved": [],
+      "label": 53,
+      "material": "bone",
+      "occupiedVoxels": 6264,
+      "components": 1,
+      "overlapWithEarlierSourceVoxels": 7,
+      "bonePrecedenceVoxels": 0
+    }
+  ],
+  "limitations": [
+    "1.5 mm voxelization; original vertices unmodified; explicit source boundary caps recorded.",
+    "One adult reference; no population or clinical validation.",
+    "Costal cartilages 1\u20137 source only; 8\u201310 distal source rib ends are preserved without invented anterior extensions.",
+    "Skeletal respiratory motion not yet represented."
+  ]
+}

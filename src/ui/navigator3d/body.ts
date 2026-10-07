@@ -1,3 +1,7 @@
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { THORACIC_ATLAS } from '../../anatomy/thoracicAtlasData';
+import { thoracicSurface } from '../../anatomy/abdominalSurface';
+import { THORACIC_SURFACE } from '../../anatomy/thoracicSurfaceData';
 import { referenceCartilage } from '../../anatomy/referenceCartilage';
 import { sternumSd, STERNUM } from '../../anatomy/organs/sternum';
 import { meshFromSdf } from './organs';
@@ -110,6 +114,23 @@ export function buildSkeleton(a: AnatomyScene): THREE.Group {
   const g = new THREE.Group();
   const bone = new THREE.MeshStandardMaterial({ color: 0xe9e2d2, roughness: 0.55 });
   const cartilage = new THREE.MeshStandardMaterial({ color: 0xcfd9e6, roughness: 0.5, transparent: true, opacity: 0.85 });
+  if (a.hasAbdominalAtlas) {
+    if (!thoracicSurface) throw new Error('Esqueleto torácico sin cargar');
+    for (const [i, [offset, count]] of THORACIC_SURFACE.fields.entries()) {
+      // T11/T12 are already rendered from the same registered lumbar field.
+      if (i === 2 || i === 3) continue;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(thoracicSurface.subarray(offset, offset + count * 3), 3));
+      const indexed = mergeVertices(geometry, 1e-4);
+      geometry.dispose();
+      indexed.computeVertexNormals();
+      const mesh = new THREE.Mesh(indexed, THORACIC_ATLAS.materials[i + 1] === 1 ? cartilage : bone);
+      mesh.scale.setScalar(CM);
+      mesh.name = THORACIC_SURFACE.names.split('|')[i];
+      g.add(mesh);
+    }
+    return g;
+  }
   // Solo costillas que existen en la anatomía acústica; unidades mm → cm, sin escala estética del torso.
   for (const rib of a.ribs)
     for (const side of rib.rightOnly ? [-1] : [-1, 1]) {

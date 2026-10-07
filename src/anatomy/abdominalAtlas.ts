@@ -3,7 +3,7 @@ import { ABDOMINAL_ATLAS, ABDOMINAL_FIELDS, HEPATIC_DOME } from './abdominalAtla
 
 /** Half-float source data shared by CPU, GPU and 3D. Never resize an individual organ. */
 export let abdominalAtlas: Uint16Array | undefined;
-const HALF = Float32Array.from({ length: 65536 }, (_, bits) => {
+export const HALF = Float32Array.from({ length: 65536 }, (_, bits) => {
   const sign = bits & 0x8000 ? -1 : 1,
     exponent = (bits >>> 10) & 31,
     mantissa = bits & 1023;

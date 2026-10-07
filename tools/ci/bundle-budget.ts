@@ -60,6 +60,7 @@ const BUDGETS: Array<[RegExp, number]> = [
   [/abdominal-body-.*\.bin$/, 3640],
   [/abdominal-atlas\.gzip-.*\.bin$/, 6 * 1024 * KB],
   [/abdominal-surface\.gzip-.*\.bin$/, 6 * 1024 * KB],
+  [/thoracic-(atlas|surface)\.gzip-.*\.bin$/, 6 * 1024 * KB],
   [/three.*\.js$/, 700 * KB],
   [/^(index|bootstrap)-.*\.js$/, 335 * KB],
   [/\.css$/, 20 * KB],

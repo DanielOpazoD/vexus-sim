@@ -4,6 +4,7 @@ import { CASES } from '../cases';
 import { PhysiologyEngine } from '../physiology/engine';
 import { ANATOMY_GLSL } from '../anatomy/gpu/anatomy.glsl';
 import {
+  SCENE_SAMPLERS,
   SCENE_UNIFORMS,
   SCENE_UNIFORMS_GLSL,
   evaluateSceneUniforms,
@@ -17,7 +18,7 @@ import {
  * tamaño de su tipo para todos los casos.
  */
 const body = ANATOMY_GLSL.replace(SCENE_UNIFORMS_GLSL, '');
-const declared = new Set([...SCENE_UNIFORMS.map((u) => u.name), 'uSceneTex']);
+const declared = new Set([...SCENE_UNIFORMS.map((u) => u.name), ...SCENE_SAMPLERS.map((s) => s.name)]);
 
 it('exige highp al leer coordenadas geométricas RGBA32F', () => {
   expect(SCENE_UNIFORMS_GLSL).toContain('uniform highp sampler2D uSceneTex;');

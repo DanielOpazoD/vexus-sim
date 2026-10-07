@@ -1,4 +1,7 @@
+import { structureIdentity } from '../anatomy/structureIdentity';
 import { setReferenceBody } from '../anatomy/referenceBody';
+import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
+import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
 /// <reference lib="webworker" />
 import type { ProbeCompression } from '../anatomy/compression';
 import { AnatomyQuery } from '../anatomy/query';
@@ -26,7 +29,7 @@ export interface CutMapRequest {
   compression: ProbeCompression | null;
   depthMm: number;
   /** Subconjunto de la muestra fisiológica que la clasificación necesita. */
-  sample: Pick<PhysiologySample, 'resp' | 'ivc' | 'hvRadiusScale' | 'pvRadiusScale' | 'velocities'>;
+  sample: Pick<PhysiologySample, 'resp' | 'ivc' | 'ivcSupra' | 'hvRadiusScale' | 'pvRadiusScale' | 'velocities'>;
   width: number;
   height: number;
 }
@@ -35,6 +38,8 @@ export interface CutMapInit {
   type: 'init';
   patient: PatientState;
   referenceProfile?: Float32Array;
+  abdominalField?: Uint16Array;
+  thoracicField?: Uint16Array;
 }
 
 export interface CutMapResponse {
@@ -43,6 +48,8 @@ export interface CutMapResponse {
   width: number;
   height: number;
   tissue: Uint8Array;
+  /** Organ/digestive region from the same material point, independent of tissue/flow. */
+  structure?: Uint8Array;
   /**
    * Índice de vaso en `scene.vessels` o −1; en la sangre de una cavidad del corazón (decisión 85), −2 − su índice en
    * `HEART_CHAMBER_IDS` (VI, VD, AD, AI).
@@ -74,7 +81,10 @@ self.onmessage = (ev: MessageEvent<CutMapInit | CutMapRequest>) => {
   try {
     if (msg.type === 'init') {
       setReferenceBody(msg.referenceProfile);
-      const scene = new AnatomyScene(msg.patient);
+      setAbdominalAtlas(msg.abdominalField);
+      setThoracicAtlas(msg.thoracicField);
+      // Exact fitted wall from the acquisition, not a second fit without ribs.
+      const scene = new AnatomyScene(msg.patient, msg.referenceProfile);
       query = new AnatomyQuery(scene);
       vesselIndex = new Map(scene.vessels.map((v, i) => [v.id, i]));
       return;
@@ -86,6 +96,7 @@ self.onmessage = (ev: MessageEvent<CutMapInit | CutMapRequest>) => {
     const { width, height, frame, transducer, depthMm } = msg;
     query.setProbeCompression(msg.compression);
     const tissue = new Uint8Array(width * height);
+    const structure = new Uint8Array(width * height);
     const vessel = new Int8Array(width * height);
     const sample = msg.sample as PhysiologySample;
     for (let v = 0; v < height; v++) {
@@ -96,10 +107,11 @@ self.onmessage = (ev: MessageEvent<CutMapInit | CutMapRequest>) => {
         const c = query.classifyWorld(p, sample);
         const i = v * width + u;
         tissue[i] = c.tissue;
+        structure[i] = structureIdentity(c.material, c.tissue, c.interface, query.scene.hasAbdominalAtlas);
         vessel[i] = c.vessel ? (vesselIndex.get(c.vessel) ?? -1) : c.tissue === Tissue.Blood ? chamberCode(c.material) : -1;
       }
     }
-    post({ type: 'map', id: msg.id, width, height, tissue, vessel }, [tissue.buffer, vessel.buffer]);
+    post({ type: 'map', id: msg.id, width, height, tissue, vessel, structure }, [tissue.buffer, vessel.buffer, structure.buffer]);
   } catch (e) {
     post({ type: 'error', id: msg.type === 'map' ? msg.id : -1, message: e instanceof Error ? e.message : String(e) });
   }

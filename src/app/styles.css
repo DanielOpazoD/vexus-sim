@@ -427,9 +427,11 @@ button.secondary.on {
   flex: none;
 }
 .cut-block.collapsed .cut-map {
+  position: relative;
   display: none;
 }
 .cut-map {
+  position: relative;
   flex: 1;
   min-height: 0;
   background: #0f1319;
@@ -1344,4 +1346,17 @@ button.mode.active {
   .venous-experiment fieldset {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+.anatomy-tooltip {
+  position: absolute;
+  z-index: 2;
+  max-width: calc(100% - 8px);
+  padding: 6px 8px;
+  border: 1px solid #5cebd2;
+  border-radius: 5px;
+  background: #10191f;
+  color: #e8fffa;
+  font-size: 12px;
+  pointer-events: none;
 }

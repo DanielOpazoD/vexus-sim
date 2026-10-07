@@ -307,6 +307,44 @@ export class PhysiologyEngine {
         case 'splenicArtery':
           q = 5 * (1 + 1.1 * this.arterialPulse(t));
           break;
+        case 'commonHepaticArtery':
+          q = 3.2 * (1 + 1.1 * this.arterialPulse(t));
+          break;
+        case 'leftGastricArtery':
+          q = 1.8 * (1 + 1.1 * this.arterialPulse(t));
+          break;
+        case 'ima':
+          q = 5 * this.mesentericFastingPulse(t);
+          break;
+        case 'iliacArteryRight':
+        case 'iliacArteryLeft':
+          q = (60 + 90 * this.arterialPulse(t)) * 0.14;
+          break;
+        case 'internalIliacArteryRight':
+        case 'internalIliacArteryLeft':
+          q = (60 + 90 * this.arterialPulse(t)) * 0.04;
+          break;
+        case 'externalIliacArteryRight':
+        case 'externalIliacArteryLeft':
+          q = (60 + 90 * this.arterialPulse(t)) * 0.1;
+          break;
+        case 'iliacVeinRight':
+        case 'iliacVeinLeft':
+          q = out.qLowerBody * 0.25;
+          break;
+        case 'internalIliacVeinRight':
+        case 'internalIliacVeinLeft':
+          q = out.qLowerBody * 0.1;
+          break;
+        case 'externalIliacVeinRight':
+        case 'externalIliacVeinLeft':
+          q = out.qLowerBody * 0.15;
+          break;
+        case 'portalSmv':
+        case 'portalSplenic':
+          q = qPv * (id === 'portalSmv' ? 0.7 : 0.3);
+          areaScale = pvRadiusScale * pvRadiusScale;
+          break;
         case 'sma':
           q = 22 * this.mesentericFastingPulse(t);
           break;

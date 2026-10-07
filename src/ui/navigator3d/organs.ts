@@ -1,10 +1,12 @@
 import { BOWEL_NODES, BOWEL_REST_RADII } from '../../anatomy/organs/bowel';
+import { abdominalSurface } from '../../anatomy/abdominalSurface';
+import { ABDOMINAL_SURFACE } from '../../anatomy/abdominalSurfaceData';
 import * as THREE from 'three';
 import { MarchingCubes } from 'three/examples/jsm/objects/MarchingCubes.js';
 import { kidneyLocal, kidneyOuterSdf, type Kidney } from '../../anatomy/organs/kidney';
 import { gallbladderSdf } from '../../anatomy/organs/gallbladder';
 import { domeFloor, heartOuterSdf } from '../../anatomy/organs/heart';
-import { diaphragmHeight } from '../../anatomy/primitives';
+import { diaphragmSurfaceZ } from '../../anatomy/primitives';
 import { diaphragmRim } from '../../anatomy/diaphragmRim';
 import { COUINAUD_LABEL, couinaudPlanes, couinaudSegment, type CouinaudSegment } from '../../anatomy/couinaud';
 import type { AnatomyScene } from '../../anatomy/scene';
@@ -144,8 +146,10 @@ export function buildKidneyMesh(k: Kidney): THREE.Mesh {
 
 export function buildOrgans(a: AnatomyScene): THREE.Group {
   const g = new THREE.Group();
-  const liver = buildLiverMesh(a);
-  g.add(liver, buildCouinaudLabels(a, liver));
+  if (!a.hasAbdominalAtlas) {
+    const liver = buildLiverMesh(a);
+    g.add(liver, buildCouinaudLabels(a, liver));
+  }
   g.add(buildPosteriorMuscles(a));
   const bowel = variableTube(
     { kind: 'tube', nodes: BOWEL_NODES.map((p, i) => ({ p, r: BOWEL_REST_RADII[i] })).filter(({ p }) => p[2] > -240), apScale: 1 },
@@ -153,11 +157,32 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
     0.85,
   );
   bowel.name = 'Asas yeyunoileales';
-  g.add(bowel);
+  if (!a.hasAbdominalAtlas) g.add(bowel);
+  if (a.hasAbdominalAtlas) {
+    if (!abdominalSurface) throw new Error('Mallas abdominales sin cargar');
+    const colors = [0xd3ab72, 0xcda08b, 0xd8bc76, 0x986991, 0x995d49, 0x985654, 0x985654, 0x78a45f, 0xd8d3bd, 0xa97971, 0xbbb6c6];
+    for (const [i, f] of ABDOMINAL_SURFACE.fields.entries()) {
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(abdominalSurface.subarray(f.offset, f.offset + f.count * 3), 3));
+      geometry.computeVertexNormals();
+      const mesh = new THREE.Mesh(
+        geometry,
+        new THREE.MeshStandardMaterial({
+          color: colors[i],
+          roughness: 0.8,
+          transparent: i !== 8 && i !== 10,
+          opacity: i === 4 ? 0.62 : i === 2 ? 0.65 : i === 7 ? 0.7 : 0.85,
+        }),
+      );
+      mesh.scale.setScalar(CM);
+      mesh.name = f.name;
+      g.add(mesh);
+    }
+  }
   // Diafragma: superficie paramétrica sobre toda la sección del tronco (misma
   // diaphragmHeight que el clasificador: dos hemicúpulas sobre la inserción costal)
-  const nR = 20;
-  const nA = 48;
+  const nR = a.hasAbdominalAtlas ? 96 : 20;
+  const nA = a.hasAbdominalAtlas ? 192 : 48;
   const pos: number[] = [];
   const idx: number[] = [];
   const wall = a.wallThickness();
@@ -168,7 +193,7 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
     for (let i = 0; i <= nA; i++) {
       const x = rim[i][0] * rho;
       const y = cy + (rim[i][1] - cy) * rho;
-      pos.push(x * CM, y * CM, diaphragmHeight(x, y, a.diaphragm, a.torso) * CM);
+      pos.push(x * CM, y * CM, diaphragmSurfaceZ(x, y, a.diaphragm, a.torso) * CM);
     }
   }
   for (let j = 0; j < nR; j++)
@@ -212,11 +237,12 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
     44,
     new THREE.MeshStandardMaterial({ color: 0xb04848, roughness: 0.6, transparent: true, opacity: 0.45, depthWrite: false }),
   );
-  g.add(gb, heart);
+  if (!a.hasAbdominalAtlas) g.add(gb);
+  g.add(heart);
   // Riñones: judía con hilio por marching cubes sobre el MISMO SDF; seno como elipsoide interior
   for (const k of [a.kidneyRight, a.kidneyLeft]) {
     const basis = new THREE.Matrix4().makeBasis(new THREE.Vector3(...k.u), new THREE.Vector3(...k.v), new THREE.Vector3(...k.w));
-    g.add(buildKidneyMesh(k));
+    if (!a.hasAbdominalAtlas) g.add(buildKidneyMesh(k));
     const sinus = new THREE.Mesh(new THREE.SphereGeometry(1, 20, 12), new THREE.MeshStandardMaterial({ color: 0xe0c27a, roughness: 0.6 }));
     sinus.scale.set(k.sinusRadii[0] * CM, k.sinusRadii[1] * CM, k.sinusRadii[2] * CM);
     sinus.position.set(0, k.sinusOffset * CM, 0);
@@ -239,12 +265,13 @@ export function buildPosteriorMuscles(a: AnatomyScene): THREE.Group {
     const lo: Vec3 = [side < 0 ? -110 : 15, -160, -260];
     const hi: Vec3 = [side < 0 ? -15 : 110, -10, -30];
     for (const kind of ['psoas', 'quadratus'] as const) {
+      if (a.hasAbdominalAtlas && kind === 'psoas') continue;
       const field = (p: Vec3) => {
         const local: Vec3 = [p[0], p[1] - offset, p[2]];
         const sideDistance = side < 0 ? p[0] : -p[0];
         if (kind === 'psoas') return Math.max(psoasSdf(local), sideDistance);
         const peri = Math.min(...[a.kidneyRight, a.kidneyLeft].map((k) => perirenalOuterSdf(kidneyLocal(p, k), k)));
-        return Math.max(quadratusSdf(local, -torsoDepth(p, a.torso) - a.wallThickness(), peri), sideDistance);
+        return Math.max(quadratusSdf(a.hasAbdominalAtlas ? p : local, -torsoDepth(p, a.torso) - a.wallThickness(), peri), sideDistance);
       };
       const mesh = meshFromSdf(field, lo, hi, 40, new THREE.MeshStandardMaterial({ color: 0x8f5956, roughness: 0.85 }));
       mesh.name = `${kind === 'psoas' ? 'Psoas mayor' : 'Cuadrado lumbar'} ${side < 0 ? 'derecho' : 'izquierdo'}`;

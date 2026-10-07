@@ -5,7 +5,7 @@ import { bootWithoutErrors, budget } from './support';
 for (const reference of [false, true]) {
   test(`porta hepática: correlación compleja GPU y señal, reference=${reference}`, async ({ page }, info) => {
     budget(180_000);
-    const errors = await bootWithoutErrors(page, `?e2e=app${reference ? '&reference=1' : ''}`);
+    const errors = await bootWithoutErrors(page, `?e2e=app&abdomen=legacy${reference ? '&reference=1' : ''}`);
     const report = await page.evaluate(() => {
       const T = window.__vexusTest!,
         s = T.sim();

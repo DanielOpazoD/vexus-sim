@@ -1,0 +1,22 @@
+# Contacto hepatodiafragmático del atlas: contrato previo
+
+Problema medido en 9c3eaeb: las dos cúpulas estimadas heredadas no están registradas con el hígado abdominal. En 5.639 cruces superiores del campo hepático (z > −45 mm, pendiente < 1), el espacio hasta la cara abdominal del diafragma tiene mediana 33,75 mm, máximo 46,07 mm y mínimo −8,63 mm. La región normal no debe contener esta capa de grasa ficticia ni una penetración macroscópica.
+
+Mecanismo propuesto: derivar una pequeña tabla de altura de la superficie superior del MISMO campo hepático, con transición explícita hacia la cúpula estimada fuera de la superficie diafragmática. Conservar los once campos, etiquetas y posiciones de los órganos, bit por bit. El contrato inicial también preservaba los vasos; la prueba independiente posterior detectó una suprahepática heredada atravesando la nueva superficie. La extensión causal de alcance está registrada en `hepatic-vein-registration.md`: se corrigen únicamente los ejes hepáticos incompatibles, sin cambiar calibres ni fisiología. La nueva tabla es una relación geométrica ESTIMADA de contacto normal; no es una segmentación de diafragma ni integra FJ3131, cuya auditoría sigue bloqueada por intersecciones. Espesor muscular estimado: 2,5 mm. No se añaden funciones educativas ni se retoca la imagen final.
+
+Revisión del mecanismo tras los fallos conservados: el desplazamiento vertical `altura + espesor × pendiente` y la distancia a un plano tangente no conservan el contacto de una superficie curva. La superficie superior usa el nivel hepático +2,5 mm; en el contacto, la distancia es la cáscara del propio campo hepático (`2,5 − SDF`), con transición acotada a la representación por altura entre 6 y 12 mm por debajo de la superficie superior. La superficie del torso 3D resuelve el mismo cero acústico, con un intervalo de búsqueda de ±12 mm; no cambia la tolerancia de aceptación. La cáscara sólo se usa en la región superior soportada, nunca en el polo inferior ni para rellenar otra víscera. Las primeras pruebas fallidas no se reclasifican como aprobaciones.
+
+Antes de aceptar:
+
+- En la región superior de contacto (z > −45 mm, pendiente < 1 y distancia al borde proyectado > 12 mm), comprobar cruces independientes, no sólo nodos usados para construir la tabla: separación normal absoluta <= 1,5 mm, resolución del campo. Conservar los fallos; no ampliar esta tolerancia si falla.
+- Datos de los once campos y todas sus etiquetas idénticos. La tabla se ubica en un plano libre del volumen existente; sin aumentar memoria, unidades de textura ni dimensiones.
+- CPU, GPU, plano anatómico y superficie 3D consumen la misma tabla y deformación respiratoria. Comparar puntos de hígado, diafragma y tórax, incluyendo puntos fuera del parche y casos normal/congestión.
+- Mantener la inserción costal y la geometría legacy/reference. La transición y la pendiente deben ser finitas; no rellenar espacios por prioridad de clasificación.
+- Comprobar las nueve ventanas usando tarjetas y movimientos reales del teclado/deslizadores, con imágenes y registro de la pose resultante. Revisar el acceso a los vasos, sombras costales, cortina pulmonar y reflejos diafragmáticos.
+- La marca física permanece rígida a la sonda, corresponde a la izquierda de pantalla y rota con ella. La orientación estándar es craneal para longitudinal y derecha del paciente para transversal, sin bloquear exploración manual. Cualquier cambio de representación debe preservar el plano y la señal.
+
+Fuentes para comparación visual: AIUM, [Abdomen image resources](https://aium.s3.amazonaws.com/guidelines/abdomen/imageResources.pdf), vistas hepáticas/diafragmáticas; EFSUMB, [Ultrasound of the Liver](https://doi.org/10.37713/ECB02); ACEP, [FAST Sonoguide](https://www.acep.org/sonoguide/basic/fast), marcador craneal en flanco y relaciones del cuadrante superior derecho. No constituyen validación clínica externa del simulador.
+
+Limitaciones que deben declararse: la transición fuera del polo superior, el diafragma izquierdo, corazón, hiatos y capas permanecen aproximaciones. No introducir ni suprimir ascitis/derrame en casos patológicos mediante esta corrección de contacto normal.
+
+El barrido real de las nueve ventanas detectó que tras la porta se conservaba su profundidad en el examen renal/caval siguiente. Las otras tarjetas atlas recuperan 180 mm y foco 90 mm; no sobrescriben ganancia, rango dinámico ni controles de Doppler del operador. Se comprueba la secuencia porta intrahepática → tronco PW → renal → hepatorrenal → cava.

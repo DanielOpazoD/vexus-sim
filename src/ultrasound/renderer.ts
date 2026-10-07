@@ -17,6 +17,8 @@ import { GREY_CURVE, greyOfLevel } from './greyMap';
 import { axialSigmaMm, focalReferenceFwhmMm, txApertureMm } from './beamModel';
 import { ANCHOR_SALT_STEP, ElevationAnchor } from './speckleField';
 import { interfaceUniforms } from './interfaceEcho';
+import { createAbdominalTexture } from './abdominalTexture';
+import { specializeAbdominalShader, specializeSceneShaders } from './sceneShader';
 import {
   GLProgram,
   bindTarget,
@@ -58,7 +60,7 @@ import {
   SCENE_TEX_W,
 } from '../anatomy/gpu/anatomy.glsl';
 import { ribAnteriorEndX, ribShape, tubeShapeTexel } from '../anatomy/primitives';
-import { evaluateSceneUniforms, uploadSceneUniforms, type SceneUniformValues } from '../anatomy/gpu/sceneUniforms';
+import { SCENE_SAMPLERS, evaluateSceneUniforms, uploadSceneUniforms, type SceneUniformValues } from '../anatomy/gpu/sceneUniforms';
 import {
   FRAG_AXIAL,
   FRAG_BLIT,
@@ -231,6 +233,8 @@ export interface FrameInputs {
  * del equipo) y el cuadro de color que pintó G (con él, su capa de color está en el anillo).
  */
 export interface CineFrame {
+  /** Immutable acquisition geometry of the presented frame, also retained in cine. */
+  anatomy?: Pick<FrameInputs, 'sample' | 'frame' | 'compression'>;
   t: number;
   /** Cuadro dibujado (`frameCount`): entre dos guardados puede haber varios, y la persistencia los pesa todos. */
   n: number;
@@ -401,6 +405,8 @@ export class UltrasoundRenderer {
   }
   /** Textura de datos de la escena (cabeceras de tubos + nodos, decisión 24). */
   private sceneTex: WebGLTexture;
+  private abdominalTex: WebGLTexture;
+  private thoracicTex: WebGLTexture;
   private sceneData = new Float32Array(SCENE_TEX_W * SCENE_TEX_H * 4);
   /** Cabeceras de TODOS los tubos (`TUBE_HEADER_TEXELS` texels cada una); por cuadro se suben solo las del plano. */
   private headerAll = new Float32Array(MAX_TUBES * TUBE_HEADER_TEXELS * 4);
@@ -473,27 +479,34 @@ export class UltrasoundRenderer {
     // de compilar, y `linkAll` encarga todos los programas antes de comprobar ninguno (decisión 58)
     gl.getExtension('KHR_parallel_shader_compile');
     this.timer = new GpuPassTimer<PassId>(gl);
-    const p = GLProgram.linkAll(gl, VERT, {
-      transmissionHits: FRAG_TRANS_HITS,
-      transmissionSegments: FRAG_TRANS_SEGMENTS,
-      transmissionPrefix: FRAG_TRANS_PREFIX,
-      transmissionPrefixSteered: FRAG_TRANS_PREFIX_STEERED,
-      transmission: FRAG_TRANSMISSION,
-      transmissionSteered: FRAG_TRANSMISSION_STEERED,
-      rawfield: FRAG_RAWFIELD,
-      rawfieldSteered: FRAG_RAWFIELD_STEERED,
-      axial: FRAG_AXIAL,
-      lateral: FRAG_LATERAL,
-      compound: FRAG_COMPOUND,
-      color: FRAG_COLOR,
-      colorFilter: COLOR_FILTER_GLSL,
-      scanconvert: FRAG_SCANCONVERT,
-      persist: FRAG_PERSIST,
-      blit: FRAG_BLIT,
-      tissuemap: FRAG_TISSUEMAP,
-      mline: FRAG_MLINE,
-      mstrip: FRAG_MSTRIP,
-    });
+    const p = GLProgram.linkAll(
+      gl,
+      VERT,
+      specializeSceneShaders(
+        {
+          transmissionHits: FRAG_TRANS_HITS,
+          transmissionSegments: FRAG_TRANS_SEGMENTS,
+          transmissionPrefix: FRAG_TRANS_PREFIX,
+          transmissionPrefixSteered: FRAG_TRANS_PREFIX_STEERED,
+          transmission: FRAG_TRANSMISSION,
+          transmissionSteered: FRAG_TRANSMISSION_STEERED,
+          rawfield: FRAG_RAWFIELD,
+          rawfieldSteered: FRAG_RAWFIELD_STEERED,
+          axial: FRAG_AXIAL,
+          lateral: FRAG_LATERAL,
+          compound: FRAG_COMPOUND,
+          color: FRAG_COLOR,
+          colorFilter: COLOR_FILTER_GLSL,
+          scanconvert: FRAG_SCANCONVERT,
+          persist: FRAG_PERSIST,
+          blit: FRAG_BLIT,
+          tissuemap: FRAG_TISSUEMAP,
+          mline: FRAG_MLINE,
+          mstrip: FRAG_MSTRIP,
+        },
+        this.currentScene.hasAbdominalAtlas,
+      ),
+    );
     this.pTransHits = p.transmissionHits;
     this.pTransSeg = p.transmissionSegments;
     this.pTransPre = { look0: p.transmissionPrefix, steered: p.transmissionPrefixSteered };
@@ -536,6 +549,8 @@ export class UltrasoundRenderer {
     this.tMap = createTarget(gl, MAP_W, MAP_H, [{ internal: gl.RGBA8, format: gl.RGBA, type: gl.UNSIGNED_BYTE, filter: gl.NEAREST }]);
     this.couplingTex = createTexture(gl, LINES, 1, gl.R32F, gl.RED, gl.FLOAT, gl.LINEAR);
     this.sceneTex = createTexture(gl, SCENE_TEX_W, SCENE_TEX_H, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
+    this.abdominalTex = createAbdominalTexture(gl, this.currentScene.hasAbdominalAtlas);
+    this.thoracicTex = createAbdominalTexture(gl, this.currentScene.hasAbdominalAtlas, true);
     this.uploadSceneStatic();
   }
 
@@ -547,6 +562,8 @@ export class UltrasoundRenderer {
    * columnas del modo M en vuelo.
    */
   setScene(scene: AnatomyScene): void {
+    if (scene.hasAbdominalAtlas !== this.currentScene.hasAbdominalAtlas)
+      throw new Error('El modelo anatómico cambió: reconstruya el renderer');
     const gl = this.gl;
     this.currentScene = scene;
     this.speckleAnchor.reset();
@@ -621,6 +638,8 @@ export class UltrasoundRenderer {
     if (this.tPersist) for (const t of this.tPersist) deleteTarget(gl, t);
     gl.deleteTexture(this.couplingTex);
     gl.deleteTexture(this.sceneTex);
+    gl.deleteTexture(this.abdominalTex);
+    gl.deleteTexture(this.thoracicTex);
     if (this.mapPending) gl.deleteSync(this.mapPending.sync);
     if (this.mapPbo) gl.deleteBuffer(this.mapPbo);
     this.mapPending = null;
@@ -734,7 +753,9 @@ export class UltrasoundRenderer {
       this.sceneValuesCompression = inputs.compression;
     }
     uploadSceneUniforms(p, this.sceneValues);
-    p.tex('uSceneTex', 6, this.sceneTex);
+    p.tex(SCENE_SAMPLERS[0].name, SCENE_SAMPLERS[0].unit, this.sceneTex);
+    p.tex(SCENE_SAMPLERS[1].name, SCENE_SAMPLERS[1].unit, this.abdominalTex, this.gl.TEXTURE_3D);
+    p.tex(SCENE_SAMPLERS[2].name, SCENE_SAMPLERS[2].unit, this.thoracicTex, this.gl.TEXTURE_3D);
   }
 
   /**
@@ -902,6 +923,11 @@ export class UltrasoundRenderer {
     this.afterFrame(inputs);
   }
 
+  /** Anatomical state of the image actually on screen, never the running clock behind an old cine frame. */
+  get displayedAnatomy(): CineFrame['anatomy'] {
+    return (this.cineShownFrame ?? this.lastFrame)?.anatomy;
+  }
+
   /**
    * Tomas del cuadro para el cine y el modo M (decisión 80), tras la presentación y fuera del grafo (no forman la
    * imagen): el cine guarda la envolvente compuesta y el color que convirtió G (≤ `CINE_RATE_HZ`); con el modo M,
@@ -910,6 +936,7 @@ export class UltrasoundRenderer {
   private afterFrame(inputs: FrameInputs): void {
     const c = inputs.color;
     const frame: CineFrame = {
+      anatomy: { sample: inputs.sample, frame: inputs.frame, compression: inputs.compression },
       t: inputs.sample.t,
       n: this.frameCount,
       bmode: inputs.bmode,
@@ -1642,7 +1669,7 @@ export class UltrasoundRenderer {
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, W, H, gl.RGBA, gl.FLOAT, data);
     const f = { internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.NEAREST };
     const target = createTarget(gl, W, H, [f, f, f]);
-    this.pQuery ??= GLProgram.link(gl, VERT, FRAG_QUERY, 'query');
+    this.pQuery ??= GLProgram.link(gl, VERT, specializeAbdominalShader(FRAG_QUERY, this.currentScene.hasAbdominalAtlas), 'query');
     // puntos fuera del plano (equivalencia volumétrica): todos los tubos, sin recorte por losa
     this.updateSceneDynamic(inputs, allTubes);
     bindTarget(gl, target);

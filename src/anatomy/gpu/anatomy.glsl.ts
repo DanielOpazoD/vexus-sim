@@ -1,7 +1,10 @@
+import { THORACIC_GLSL } from '../thoracicAtlas';
+import { SCENE_TUBE_CAPACITY } from '../tubeCapacity';
 import { RESPIRATORY_INVERSE_STEPS } from '../deformation';
 import { BOWEL_TEXELS } from '../organs/bowel';
 import { CARTILAGE_GLSL } from './referenceCartilage.glsl';
 import { CARTILAGE_ROWS } from '../referenceCartilageData';
+import { BODY_MAX_ROWS, BODY_STRIDE } from '../referenceBody';
 /**
  * Fragmento GLSL compartido: la misma anatomía implícita que `anatomy/scene.ts`,
  * evaluada en la GPU a partir de los mismos datos declarativos. Los tubos
@@ -41,7 +44,7 @@ import { ORGAN_GLSL } from '../organs';
 import { DIAPHRAGM_AXIS_CORE, DIAPHRAGM_JOIN_MM, RIB_ANTERIOR_END, SPINE_SHAPE, TUBE_SHAPE } from '../primitives';
 import { MAX_RIBS, SCENE_UNIFORMS_GLSL } from './sceneUniforms';
 
-export const MAX_TUBES = 128;
+export const MAX_TUBES = SCENE_TUBE_CAPACITY;
 export const MAX_NODES = 640;
 /** Texels de la cabecera de cada tubo (H0–H4; H4, la forma orgánica, desde la decisión 90). */
 export const TUBE_HEADER_TEXELS = 5;
@@ -53,7 +56,7 @@ export const MAX_TUBE_SEGMENTS = 8;
 /** Primer téxel de la tabla de compresión de la sonda (decisión 63): tras los nodos de los tubos. */
 export const COMPRESSION_BASE = NODE_BASE + MAX_NODES;
 export const BODY_BASE = COMPRESSION_BASE + PROBE_COMPRESSION.nodes;
-export const RIB_BASE = BODY_BASE + 130;
+export const RIB_BASE = BODY_BASE + Math.ceil((BODY_MAX_ROWS * BODY_STRIDE) / 4);
 /** Tres téxeles por par: z/tilt/sección, forma transversal, extremo y flags. */
 export const RIB_TEXELS = 3;
 export const CARTILAGE_BASE = RIB_BASE + MAX_RIBS * RIB_TEXELS;
@@ -119,22 +122,24 @@ struct Cls {
 
 vec4 sceneTexel(int i) { return texelFetch(uSceneTex, ivec2(i % SCENE_TEX_W, i / SCENE_TEX_W), 0); }
 
+${THORACIC_GLSL}
 vec4 ribData(int k) { return sceneTexel(${RIB_BASE} + k * ${RIB_TEXELS}); }
 vec4 ribShapeData(int k) { return sceneTexel(${RIB_BASE} + k * ${RIB_TEXELS} + 1); }
 vec4 ribEndData(int k) { return sceneTexel(${RIB_BASE} + k * ${RIB_TEXELS} + 2); }
 float bodyValue(int i) { return sceneTexel(${BODY_BASE} + i / 4)[i % 4]; }
 vec4 bodyInfo(float phi, float z, out float dc) {
-  float zz = clamp((z + 160.0) / 40.0, 0.0, 7.0);
-  int row = min(6, int(floor(zz))); float f = zz - float(row);
+  float step = (120.0 - uBodyMinZ) / float(uBodyRows - 1);
+  float zz = clamp((z - uBodyMinZ) / step, 0.0, float(uBodyRows-1));
+  int row = min(uBodyRows-2, int(floor(zz))); float f = zz - float(row);
   float angle = fract(phi / 6.28318530718) * 64.0;
   int i = int(floor(angle)), j = (i + 1) % 64; float g = fract(angle);
   float a = bodyValue(row * 65 + 1 + i), b = bodyValue(row * 65 + 1 + j);
   float c = bodyValue((row + 1) * 65 + 1 + i), d = bodyValue((row + 1) * 65 + 1 + j);
   float r0 = mix(a, b, g), r1 = mix(c, d, g);
   float cy0 = bodyValue(row * 65), cy1 = bodyValue((row + 1) * 65);
-  bool inside = z >= -160.0 && z <= 120.0;
-  dc = inside ? (cy1 - cy0) / 40.0 : 0.0;
-  return vec4(mix(r0, r1, f), mix(b - a, d - c, f) * 64.0 / 6.28318530718, inside ? (r1 - r0) / 40.0 : 0.0, mix(cy0, cy1, f));
+  bool inside = z >= uBodyMinZ && z <= 120.0;
+  dc = inside ? (cy1 - cy0) / step : 0.0;
+  return vec4(mix(r0, r1, f), mix(b - a, d - c, f) * 64.0 / 6.28318530718, inside ? (r1 - r0) / step : 0.0, mix(cy0, cy1, f));
 }
 vec3 bodyGradient(vec3 p) {
   float dc; vec4 centre = bodyInfo(0.0, p.z, dc);
@@ -210,6 +215,8 @@ float domeLift(float x, float y, vec4 dome) {
 
 // Altura del diafragma: inserción costal (0 en el xifoides, −50 en flancos y espalda) +
 // la hemicúpula más alta (misma construcción que primitives.diaphragmHeight)
+vec2 hepaticDomeValue(vec2 p);
+float abdominalAtlasSdf(vec3 p, int k);
 float domeHeight(float x, float y) {
   vec2 uv = vec2(x / uTorso.x, (y - uTorsoY) / uTorso.y);
   float rho = length(uv);
@@ -219,7 +226,9 @@ float domeHeight(float x, float y) {
   float k = ${DIAPHRAGM_JOIN_MM.toFixed(3)} * smoothstep(0.0, ${(2 * DIAPHRAGM_JOIN_MM).toFixed(3)}, 0.5 * (zr + zl) - edge);
   // Branchless: esta función se expande dentro del clasificador y sus gradientes.
   float h = max(k - abs(zr - zl), 0.0) / max(k, 1e-20);
-  return max(zr, zl) + h * h * k * 0.25;
+  float height = max(zr, zl) + h * h * k * 0.25;
+  vec2 contact = hepaticDomeValue(vec2(x,y));
+  return mix(height,contact.x,contact.y);
 }
 
 // Distancia con signo al diafragma (negativa en el tórax) y normal hacia el abdomen.
@@ -230,7 +239,15 @@ float sdDome(vec3 p, out vec3 n) {
   float gy = (domeHeight(p.x, p.y + h) - domeHeight(p.x, p.y - h)) / (2.0 * h);
   float slope = sqrt(1.0 + gx * gx + gy * gy);
   n = normalize(vec3(gx, gy, -1.0)); // apunta hacia abajo (hacia el hígado)
-  return (zd - p.z) / slope;
+  float tangentDistance = (zd - p.z) / slope;
+  if(uAbdominalAtlasEnabled==0)return tangentDistance;
+  float contact=hepaticDomeValue(p.xy).y*(1.0-smoothstep(6.0,12.0,zd-p.z));
+  // faceGradient evaluates the actual shell for interface echoes. Keep the
+  // finite height normal here, including above the source brick (zero gradient).
+  float liverDistance=abdominalAtlasSdf(p,4);
+  float distance=mix(tangentDistance,DIAPHRAGM_MM-liverDistance,contact);
+  float obstacleWeight=1.0-smoothstep(DIAPHRAGM_MM,DIAPHRAGM_MM+1.5,liverDistance);
+  return mix(distance,max(distance,DIAPHRAGM_MM-liverDistance),obstacleWeight);
 }
 
 float sdEllipsoid(vec3 p, vec3 c, vec3 r, float taperX, out vec3 n) {
@@ -261,6 +278,8 @@ float smoothMax(float a, float b, float k) {
   return max(a, b) + h * h * k * 0.25;
 }
 
+float abdominalAtlasSdf(vec3 p, int k);
+
 // Columna (PR119; recuperación provisional de la decisión 103, primitives.SPINE_SHAPE): semiejes de la elipse de los cuerpos (la misma área que el círculo de
 // radio uSpine.z) y (distancia al cilindro elíptico, a los cuerpos en z: positiva en un disco)
 vec2 spineRadii() { return vec2(uSpine.z * SPINE_ASPECT, uSpine.z / SPINE_ASPECT); }
@@ -269,12 +288,12 @@ vec2 spineBodyParts(vec3 m) {
   return vec2(sdEllipsoidLocal(vec3(m.xy - uSpine.xy, 0.0), vec3(spineRadii(), 1e3)), abs(t - SPINE_LEVEL * floor(t / SPINE_LEVEL + 0.5)) - 0.5 * SPINE_BODY);
 }
 // los cuerpos, con el borde del platillo redondeado (spineBodySd de TS): la cara de su cortical
-float spineBodySd(vec3 m) { vec2 d = spineBodyParts(m); return smoothMax(d.x, d.y, SPINE_RIM); }
+float spineBodySd(vec3 m) { vec2 d = spineBodyParts(m);float b=smoothMax(d.x,d.y,SPINE_RIM);if(uAbdominalAtlasEnabled!=0){vec2 q=thoracicValue(m);return min(thoracicMaterial(q.y)==2?q.x:16.0,abdominalAtlasSdf(m,8));}return b; }
 // el arco posterior (spineArchSd de TS)
 float spineArchSd(vec3 m) {
   float ax = abs(m.x - uSpine.x) - uSpineArch.x;
   float ay = abs(m.y - 0.5 * (uSpineArch.y + uSpineArch.z)) - 0.5 * (uSpineArch.z - uSpineArch.y);
-  return length(max(vec2(ax, ay), 0.0)) + min(max(ax, ay), 0.0);
+  float d=length(max(vec2(ax,ay),0.0))+min(max(ax,ay),0.0);return uAbdominalAtlasEnabled!=0?16.0:d;
 }
 // curvatura de la cara de un cuerpo (spineFaceCurvature de TS): la de la elipse en su costado, 0 en los platillos
 float spineFaceCurvature(vec3 m) {
@@ -540,7 +559,10 @@ bool classifyWall(vec3 m, out Cls c, out float depth, out vec3 tn) {
   // Costillas, antes de la grasa subcutánea donde una puede llegar (la grasa no las corta); la ósea más
   // cercana da la cortical al tejido blando de fuera, el cartílago su pericondrio
   float ribD = 1e3; float ribAny = 1e3; int ribI = 0;
-  if (d >= ribSearchDepth()) {
+  if(uAbdominalAtlasEnabled!=0){
+    vec2 q=thoracicValue(m);int material=thoracicMaterial(q.y);ribAny=q.x;ribD=material==1?1e3:q.x;
+    if(q.x<0.0){c.tissue=material==1?T_CARTILAGE:material==2?T_VERTEBRA:T_BONE;c.bd=-q.x;c.n=thoracicGradient(m);if(material==1){c.iface=IF_PERICHONDRIUM;c.ifd=-q.x;thoracicFrame(m,c.tangent,c.kc);}return true;}
+  } else if (d >= ribSearchDepth()) {
     float sternumD = sternumSd(m);
     if (sternumD < 0.0) {
       c.tissue = m.z < STERNUM_JUNCTION ? T_CARTILAGE : T_BONE; c.bd = -sternumD; c.n = tn;
@@ -663,7 +685,8 @@ void classifyInside(vec3 m, bool withCurtain, float depth, vec3 tn, float dSpine
     float inner; float dOuter;
     int region = kidneyQuery(m, k, inner, dOuter);
     float fat = perirenalThicknessMm(kidneyLocal(m, k), k);
-    if (dOuter - fat < dPeri) { dPeri = dOuter - fat; periThin = fat <= PERI.z; }
+    float dFat=uAbdominalAtlasEnabled!=0?perirenalOuterSdf(kidneyLocal(m,k),k):dOuter-fat;
+    if (dFat < dPeri) { dPeri = dFat; periThin = fat <= PERI.z; }
     vec3 kn;
     kidneyOuter(m, k, kn);
     if (dOuter < 0.0) {
@@ -683,21 +706,22 @@ void classifyInside(vec3 m, bool withCurtain, float depth, vec3 tn, float dSpine
       }
       return;
     }
-    if (dOuter < fat) {
+    if (dFat < 0.0) {
       // frente a la boca del hilio, sin cápsula que dibujar (decisión 87): el cambio de dueño de la cara cuenta en bd
       float hc = hilumChannelSdf(kidneyLocal(m, k), k);
-      c.tissue = T_PERIRENAL; c.bd = min(min(dOuter, fat - dOuter), abs(hc)); c.n = kn;
+      c.tissue = T_PERIRENAL; c.bd = min(min(dOuter, -dFat), abs(hc)); c.n = kn;
       // mitad externa de la gruesa: la cara de Morison; la interna y toda la fina (decisión 81: sus dos caras, a 1–2,5 mm,
       // eran dos líneas paralelas), la de la cápsula renal
       bool outerFace = dOuter > 0.5 * fat && fat > PERI.z;
       c.iface = outerFace ? IF_PERIRENAL : (hc > 0.0 ? IF_RENAL_CAPSULE : IF_NONE);
-      c.ifd = outerFace ? fat - dOuter : (hc > 0.0 ? dOuter : 1e3);
+      c.ifd = outerFace ? -dFat : (hc > 0.0 ? dOuter : 1e3);
       if (!outerFace) return;
       // grasa gruesa: su cara externa solo si apoya el hígado (se decide con liverSdf, tras el bucle)
       thickFat = true;
       break;
     }
   }
+  if (!thickFat && abdomenQuery(m, c)) return;
   vec3 ln; float dLiverBase;
   float dLiver = liverSdf(m, ln, dLiverBase);
   // la mitad externa de la grasa gruesa dibuja su cara solo contra el hígado (Morison, a ≤ MORISON_CONTACT_MM de ella);
@@ -737,9 +761,10 @@ void classifyInside(vec3 m, bool withCurtain, float depth, vec3 tn, float dSpine
   // distancia a la frontera cuenta también la columna, que se clasifica antes
   float bdRetro;
   vec3 retroPoint = m - vec3(0.0, uSpine.y + 46.0, 0.0);
-  c.tissue = retroperitoneum(retroPoint, -depth - wall, dPeri, bdRetro);
+  c.tissue = retroperitoneum(retroPoint, uAbdominalAtlasEnabled!=0 ? m : retroPoint, -depth - wall, dPeri, bdRetro);
   c.bd = max(min(min(bdBowel, bdRetro), dSpine), 0.0); c.n = tn;
   if(c.tissue!=T_BOWEL)return;
+  if(uAbdominalAtlasEnabled!=0){vec2 gut=abdominalAtlasValue(m,1);c.tissue= gut.y==3.0 && gut.x<16.0 && gut.x<dLiverBase ? T_MESENTERIC_FAT:T_UNSEGMENTED;c.bd=min(c.bd,1.0);return;}
   vec3 bn,ba,bowelLumenNormal;float dl,br;float d=bowelQuery(m,bn,ba,dl,bowelLumenNormal,br);
   if(d>=BOWEL_REACH){c.tissue=T_MESENTERIC_FAT;c.bd=min(c.bd,d/2.0);return;}
   c.tangent=ba;
@@ -762,11 +787,12 @@ Cls classifyWith(vec3 m, bool withCurtain) {
   // Columna (PR119; recuperación provisional de la decisión 103): el hueso de los cuerpos y del arco, el disco entre dos cuerpos y, en el tejido de alrededor,
   // la cara de su cortical
   vec2 sb = spineBodyParts(m);
-  float dBody = smoothMax(sb.x, sb.y, SPINE_RIM);
+  float originalBody=smoothMax(sb.x,sb.y,SPINE_RIM);
+  float dBody=spineBodySd(m);
   float dSpine = min(dBody, spineArchSd(m));
   if (dSpine < 0.0) { c.tissue = T_VERTEBRA; c.bd = -dSpine; return c; }
   // el disco: el cilindro de los cuerpos fuera del hueso de un cuerpo (spineDistances de TS), también en el borde redondeado
-  float dDisc = max(sb.x, -dBody);
+  float dDisc=uAbdominalAtlasEnabled!=0?abdominalAtlasSdf(m,10):max(sb.x,-dBody);
   if (dDisc < 0.0) { c.tissue = T_CARTILAGE; c.bd = -dDisc; } else classifyInside(m, withCurtain, depth, tn, dSpine, c);
   // la cortical de los cuerpos en el tejido de fuera del hueso (withSpineFace de TS): su distancia a la frontera cuenta el
   // hueso y el disco; conserva dueños de PR139 y añade solo el disco de PR119 junto al platillo.
@@ -774,6 +800,12 @@ Cls classifyWith(vec3 m, bool withCurtain) {
   bool owner = c.tissue == T_RETROFAT || c.tissue == T_PSOAS || c.tissue == T_QUADRATUS || c.tissue == T_MEDIASTINUM || (c.tissue == T_CARTILAGE && dDisc < 0.0);
   if (c.iface == IF_NONE && owner && dBody <= dSpine && dBody < VERTEBRAL_REACH && dBody < c.ifd) {
     c.iface = IF_VERTEBRAL_CORTEX; c.ifd = dBody; c.tangent = vec3(0.0, 0.0, 1.0); c.kc = spineFaceCurvature(m);
+  }
+  if (uAbdominalAtlasEnabled != 0) {
+    vec2 q = thoracicValue(m);
+    if (thoracicMaterial(q.y) == 0 && q.x >= 0.0 && q.x < 1.3 && q.x < c.ifd && c.tissue != T_LUNG && c.tissue != T_FLUID && c.tissue != T_BLOOD) {
+      c.bd = min(c.bd, q.x); c.iface = IF_RIB; c.ifd = q.x; thoracicFrame(m, c.tangent, c.kc);
+    }
   }
   return c;
 }
@@ -791,6 +823,7 @@ float liverInner(vec3 m) {
 // Contorno externo del riñón más cercano (el menor dOuter, como faceSdf('kidneyOuter') de TS):
 // gradiente por diferencias centrales en su marco local, devuelto en el mundo
 vec3 kidneyOuterGradient(vec3 m) {
+  if(uAbdominalAtlasEnabled!=0){int k=abdominalAtlasSdf(m,5)<abdominalAtlasSdf(m,6)?5:6;return abdominalAtlasGradient(m,k)*(2.0*FACE_GRAD_EPS);}
   vec3 q0 = kidneyLocal(m, 0);
   vec3 q1 = kidneyLocal(m, 1);
   int k = kidneyOuterSdf(q0, uKidR[0]) <= kidneyOuterSdf(q1, uKidR[1]) ? 0 : 1;

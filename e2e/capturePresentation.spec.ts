@@ -88,7 +88,7 @@ test('captura congelada conserva alineación al invertir, desplazar baseline, re
 }) => {
   // Keep the 180 s work allowance separate from compilation, as the shared CI budget requires.
   budget(180_000);
-  const errors = await bootWithoutErrors(page, '?e2e=1');
+  const errors = await bootWithoutErrors(page, '?e2e=1&abdomen=legacy');
   await page
     .locator('button', { hasText: /Apnea\s*esp/ })
     .first()

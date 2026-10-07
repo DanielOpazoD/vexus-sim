@@ -4,7 +4,7 @@ import { bootWithoutErrors, budget } from './support';
 
 test('GPU acoustic prefixes integrate tissue-specific Doppler loss without altering B', async ({ page }, info) => {
   budget(240_000);
-  const errors = await bootWithoutErrors(page, '?e2e=1');
+  const errors = await bootWithoutErrors(page, '?e2e=1&abdomen=legacy');
   const report = await page.evaluate(
     (tissues) => {
       const t = window.__vexusTest!,

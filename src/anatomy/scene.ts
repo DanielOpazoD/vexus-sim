@@ -1,8 +1,13 @@
+import { hepaticCostalBody } from './hepaticCostalWall';
+import { thoracicAtlas, thoracicValue, thoracicMaterial, thoracicSdf, thoracicFrame } from './thoracicAtlas';
 import { BOWEL_FIELD_REACH_MM, BOWEL_WALL_MM, bowelQuery, bowelGasSdf, bowelRadii } from './organs/bowel';
-import { referenceBody } from './referenceBody';
+import { referenceBody, abdominalBody } from './referenceBody';
+import { SCENE_TUBE_CAPACITY } from './tubeCapacity';
+import { abdominalAtlasValue, abdominalAtlas } from './abdominalAtlas';
+import { abdomenQuery } from './organs/abdomen';
 import { smoothstep, scale, type Vec3 } from '../core/vec3';
 import type { PatientState } from '../physiology/patientState';
-import { type VesselAreas, type VesselId } from '../physiology/vessels';
+import { ABDOMINAL_VESSEL_RADII, type VesselAreas, type VesselId } from '../physiology/vessels';
 import {
   diaphragmHeight,
   orthonormalBasis,
@@ -238,6 +243,7 @@ export function ribTiltMm(ribNo: number): number {
 }
 
 export class AnatomyScene {
+  readonly hasAbdominalAtlas = !!abdominalAtlas;
   bowelRadii = bowelRadii(null);
   readonly torso: Torso;
   readonly ribs: Rib[];
@@ -274,14 +280,26 @@ export class AnatomyScene {
   /** Esferas envolventes de vasos y conductos, en el mismo orden que la GPU (vasos, luego conductos). */
   readonly tubeBounds: Array<{ center: Vec3; r: number }>;
 
-  constructor(patient: PatientState) {
+  constructor(patient: PatientState, registeredBody?: Float32Array) {
     const fat = patient.habitus.subcutaneousFatMm;
     const muscle = patient.habitus.muscleMm;
     // Tronco 32 × 21 cm (adulto de IMC 25): la VCI queda a ≈ 12–13 cm del xifoides
     // la grasa preperitoneal es la parte más honda del espesor muscular del hábito (decisión 62)
-    this.torso = { a: 160, b: 105, zMin: -300, zMax: 300, skinMm: 2, fatMm: fat, muscleMm: muscle, preperitonealMm: preperitonealMm(fat) };
-    if (referenceBody) {
-      this.torso.profile = referenceBody;
+    this.torso = {
+      a: 160,
+      b: 105,
+      zMin: this.hasAbdominalAtlas ? -440 : -300,
+      zMax: 300,
+      skinMm: 2,
+      fatMm: fat,
+      muscleMm: muscle,
+      preperitonealMm: preperitonealMm(fat),
+    };
+    if (registeredBody ?? (this.hasAbdominalAtlas ? abdominalBody : referenceBody)) {
+      this.torso.profile = registeredBody ?? (this.hasAbdominalAtlas ? abdominalBody : referenceBody);
+      if (this.hasAbdominalAtlas && this.torso.profile && !registeredBody) {
+        this.torso.profile = hepaticCostalBody(this.torso.profile, this.wallThickness(), this.torso.skinMm);
+      }
       this.torso.y0 = -21.106195;
       this.spineReferenceOffset = -14.02345;
     }
@@ -293,6 +311,7 @@ export class AnatomyScene {
       left: { kind: 'dome', x0: 70, y0: -5, rx: 70, ry: 85, apex: 25 },
       edgeZ: -50,
       edgeRise: 50,
+      hepaticContact: this.hasAbdominalAtlas,
     };
     // Columna: cuerpo vertebral de 36 mm justo por detrás de cava y aorta (su cara
     // posterior queda ≈ 5 cm de la piel dorsal, como en un adulto); arco posterior con
@@ -312,8 +331,8 @@ export class AnatomyScene {
     this.ligamentumVenosum = LIGAMENTUM_VENOSUM;
     this.gallbladder = gallbladderBody();
     // Riñones: eje largo con el polo superior medial y posterior; hilio anteromedial.
-    const bR = orthonormalBasis([0.22, -0.18, 1], [1, 0.25, 0]);
-    const bL = orthonormalBasis([-0.22, -0.18, 1], [-1, 0.25, 0]);
+    const bR = orthonormalBasis(this.hasAbdominalAtlas ? [0.00120157, -0.14708338, 0.98912337] : [0.22, -0.18, 1], [1, 0.25, 0]);
+    const bL = orthonormalBasis(this.hasAbdominalAtlas ? [-0.08034499, -0.15237369, 0.98505175] : [-0.22, -0.18, 1], [-1, 0.25, 0]);
     this.kidneyRight = {
       kind: 'kidney',
       center: [-72, -38 + this.spineReferenceOffset, -78],
@@ -332,6 +351,12 @@ export class AnatomyScene {
       sinusOffset: KIDNEY_SINUS.offsetV,
       hilumRadius: 7,
     };
+    if (this.hasAbdominalAtlas) {
+      // Independent source centres (FJ3147/FJ3145), registered at the SAME xiph as skin/GI.
+      // Internal analytic renal architecture remains estimated; it is not source segmentation.
+      this.kidneyRight.center = [-58.6862655, -32.3988, -145.5475];
+      this.kidneyLeft.center = [61.9266845, -40.78815, -127.1065];
+    }
     this.ribs = [];
     // Pares costales 5–10: el 7.º cartílago llega al esternón a la altura del xifoides (z 0).
     // Oblicuidad creciente hacia abajo: la cabeza de la 5.ª está en T5 (≈ 6 cm sobre su
@@ -349,7 +374,7 @@ export class AnatomyScene {
         // elipse de la costilla, 136 × 89 mm), la del reborde costal de las costillas 7–10 (decisión 62)
         cartilageFromPhi: Math.PI / 4,
         rightOnly: false,
-        ...(referenceBody
+        ...(this.torso.profile
           ? (() => {
               const fits = [
                 [130.4834, 94.9904, 65.7365, -59.7209, -8.0953],
@@ -400,7 +425,7 @@ export class AnatomyScene {
         cartilageFromPhi: Number.NaN,
         rightOnly: false,
       });
-    const tree = buildVesselTree(this.kidneyRight, this.kidneyLeft);
+    const tree = buildVesselTree(this.kidneyRight, this.kidneyLeft, this.hasAbdominalAtlas);
     this.vessels = tree.vessels;
     // Ramas de 3.º–4.º orden confinadas al hígado (el SDF ya conoce riñón y vesícula); las madres sin hijas en su extremo,
     // afiladas (decisión 87)
@@ -409,6 +434,7 @@ export class AnatomyScene {
       (m) => -this.liverInteriorMargin(m),
       7,
       (m) => Math.min(this.liverInteriorMargin(m), this.ligamentumVenosumSdf(m)),
+      this.hasAbdominalAtlas ? SCENE_TUBE_CAPACITY - this.vessels.length - tree.ducts.length : Infinity,
     );
     // la forma orgánica de las suprahepáticas y la porta (decisión 90): su semilla es su índice en la lista de la GPU (el H2.w
     // de la textura de escena, la del ruido de su radio) y su clase, la de su sistema
@@ -468,7 +494,7 @@ export class AnatomyScene {
 
   /** Áreas de referencia (mm²) para la fisiología (Q/A). */
   vesselAreas(): VesselAreas {
-    const out = {} as VesselAreas;
+    const out = Object.fromEntries(Object.entries(ABDOMINAL_VESSEL_RADII).map(([id, r]) => [id, Math.PI * r * r])) as VesselAreas;
     for (const v of this.vessels) {
       if (v.flowFactor !== undefined) continue; // las ramas procedurales no definen el área de su id
       const r = v.refRadius;
@@ -556,7 +582,26 @@ export class AnatomyScene {
       d.disc < 0
         ? { ...NONE, tissue: Tissue.Cartilage, boundaryDistance: -d.disc }
         : this.classifyInside(m, caliber, withCurtain, depth, wall.wallMm);
-    return withSpineFace(c, d.bone, d.body, d.disc);
+    const result = withSpineFace(c, d.bone, d.body, d.disc);
+    if (this.hasAbdominalAtlas && thoracicAtlas) {
+      const q = thoracicValue(m);
+      // Cortex belongs to adjacent soft tissue even when the registered rib
+      // is deeper than the estimated wall. Transmission still hides its back.
+      if (
+        thoracicMaterial(q.label) === 'bone' &&
+        q.d >= 0 &&
+        q.d < 1.3 &&
+        q.d < result.interfaceDistance &&
+        ![Tissue.Lung, Tissue.Fluid, Tissue.Blood].includes(result.tissue)
+      )
+        return {
+          ...result,
+          boundaryDistance: Math.min(result.boundaryDistance, q.d),
+          interface: Interface.RibCortex,
+          interfaceDistance: q.d,
+        };
+    }
+    return result;
   }
 
   /** `classify` dentro de la cavidad y fuera de la columna: cortina, tubos, tórax, diafragma y vísceras. */
@@ -612,6 +657,10 @@ export class AnatomyScene {
       };
     const kidney = this.classifyKidneys(m);
     if (kidney.cls) return kidney.cls;
+    if (this.hasAbdominalAtlas) {
+      const abdomen = abdomenQuery(m);
+      if (abdomen) return { ...NONE, ...abdomen };
+    }
     const liver = this.classifyLiver(m, dDome, -depth - wallMm, kidney, dGb - this.gallbladderWallMm);
     if (liver) return liver;
     // Intestino: el «resto». Su distancia a la frontera es la de las interfaces que ganan antes
@@ -623,9 +672,14 @@ export class AnatomyScene {
     // detrás del peritoneo parietal posterior, el retroperitoneo (decisión 81): psoas, cuadrado lumbar y grasa; delante, el
     // intestino. Su distancia a la frontera cuenta también la columna, que se clasifica antes (el psoas la bordea)
     const retroPoint: Vec3 = [m[0], m[1] - this.spineReferenceOffset, m[2]];
-    const [tissue, dRetro] = retroperitoneum(retroPoint, -depth - wallMm, kidney.dPeriMm);
+    const [tissue, dRetro] = retroperitoneum(retroPoint, -depth - wallMm, kidney.dPeriMm, this.hasAbdominalAtlas ? m : retroPoint);
     bd = Math.max(0, Math.min(bd, dRetro, sdSpine(m, this.spine)));
     if (tissue !== Tissue.Bowel) return { ...NONE, tissue, boundaryDistance: bd };
+    if (this.hasAbdominalAtlas) {
+      const gut = abdominalAtlasValue(m, 1);
+      const mesentery = gut.label === 3 && gut.d < 16 && gut.d < this.liverBaseSdf(m);
+      return { ...NONE, tissue: mesentery ? Tissue.MesentericFat : Tissue.UnsegmentedSoftTissue, boundaryDistance: Math.min(bd, 1) };
+    }
     const q = bowelQuery(m, this.bowelRadii),
       dl = q.lumen;
     if (q.d >= BOWEL_FIELD_REACH_MM) return { ...NONE, tissue: Tissue.MesentericFat, boundaryDistance: Math.min(bd, q.d / 2) };
@@ -715,6 +769,14 @@ export class AnatomyScene {
     if (face === undefined) {
       // las caras de la pared y de las costillas (decisión 62) no tienen geometría de faceSdf
       const iface = this.classify(m, caliber).interface;
+      if (this.hasAbdominalAtlas && (isBowelInterface(iface) || iface >= Interface.PancreasCapsule)) {
+        const q = abdomenQuery(m);
+        if (q) {
+          const n = q.boundaryNormal,
+            norm = Math.hypot(...n);
+          return { normal: norm > 0 ? scale(n, 1 / norm) : [0, 1, 0], norm: norm || 1, curvature: 0 };
+        }
+      }
       if (isBowelInterface(iface)) {
         const q = bowelQuery(m, this.bowelRadii),
           n = iface === Interface.BowelSerosa ? q.normal : q.lumenNormal,
@@ -733,6 +795,10 @@ export class AnatomyScene {
         return { normal: [g[0] / l, g[1] / l, g[2] / l], norm: l, curvature: 0 };
       }
       if (isRibInterface(iface)) {
+        if (this.hasAbdominalAtlas && thoracicAtlas) {
+          const f = thoracicFrame(m);
+          return { ...this.numericGradient(m, thoracicSdf, f.curvature), axis: f.axis };
+        }
         const rib = this.ribs[nearestRib(m, this.ribs, this.torso, this.spine)];
         if (sternumSd(m, this.torso) < ribSd(m, rib, this.torso, this.spine))
           return { ...this.numericGradient(m, (p) => sternumSd(p, this.torso), 0), axis: [0, 0, 1] };
@@ -806,7 +872,22 @@ export class AnatomyScene {
     // pared o justo por debajo; la ósea más cercana da la cortical, el cartílago su pericondrio
     let ribD = 1e3;
     let ribAny = 1e3;
-    if (d >= ribSearchDepth(torso, this.ribs[0]?.scale ?? 1)) {
+    if (this.hasAbdominalAtlas && thoracicAtlas) {
+      const q = thoracicValue(m),
+        material = thoracicMaterial(q.label);
+      ribAny = q.d;
+      ribD = material === 'cartilage' ? 1e3 : q.d;
+      if (q.d < 0)
+        return {
+          final: true,
+          cls: {
+            ...NONE,
+            tissue: material === 'cartilage' ? Tissue.Cartilage : material === 'vertebra' ? Tissue.Vertebra : Tissue.Bone,
+            boundaryDistance: -q.d,
+            ...(material === 'cartilage' ? { interface: Interface.Perichondrium, interfaceDistance: -q.d } : {}),
+          },
+        };
+    } else if (d >= ribSearchDepth(torso, this.ribs[0]?.scale ?? 1)) {
       const sternumD = sternumSd(m, torso);
       if (sternumD < 0) {
         const cartilage = m[2] < STERNUM.zJunctionMm;
@@ -937,8 +1018,9 @@ export class AnatomyScene {
       if (dc > k.radii[0] + PERIRENAL.maxMm + 2) continue;
       const kh = kidneyQuery(m, k);
       const fat = perirenalThicknessMm(kidneyLocal(m, k), k);
-      if (kh.dOuter - fat < dPeriMm) {
-        dPeriMm = kh.dOuter - fat;
+      const dFat = this.hasAbdominalAtlas ? perirenalOuterSdf(kidneyLocal(m, k), k) : kh.dOuter - fat;
+      if (dFat < dPeriMm) {
+        dPeriMm = dFat;
         periThin = fat <= PERIRENAL.faceMaxMm;
       }
       if (kh.dOuter < 0) {
@@ -965,7 +1047,7 @@ export class AnatomyScene {
       }
       // Grasa perirrenal (fascia de Gerota) de grosor variable (decisión 68) hasta la impresión renal del hígado: en
       // el receso de Morison la cápsula hepática apoya directamente sobre ella, sin hueco.
-      if (kh.dOuter < fat) {
+      if (dFat < 0) {
         // la mitad externa de la grasa gruesa dibuja la cara de Morison, solo si apoya el hígado (la impresión renal solapa
         // la grasa y la cápsula hepática le cede la cara, `MORISON_CONTACT_MM`); si no, se funde sin línea con la grasa
         // retroperitoneal (antes la gruesa nunca la dibujaba y el 62 % del contacto hígado–grasa quedaba sin línea). La
@@ -975,13 +1057,13 @@ export class AnatomyScene {
         // Frente a la boca del hilio (el canal del seno) no hay cápsula que dibujar: grasa con grasa (decisión 87); la
         // distancia a la frontera cuenta el cambio de dueño de la cara
         const outerFace = kh.dOuter > 0.5 * fat && fat > PERIRENAL.faceMaxMm;
-        const ifd = outerFace ? fat - kh.dOuter : kh.dOuter;
+        const ifd = outerFace ? -dFat : kh.dOuter;
         const hc = hilumChannelSdf(kidneyLocal(m, k), k);
         const face = outerFace ? this.liverSdf(m) <= ifd + MORISON_CONTACT_MM : hc > 0;
         const cls: Classification = {
           ...NONE,
           tissue: Tissue.PerirenalFat,
-          boundaryDistance: Math.min(kh.dOuter, fat - kh.dOuter, Math.abs(hc)),
+          boundaryDistance: Math.min(kh.dOuter, -dFat, Math.abs(hc)),
           interface: face ? (outerFace ? Interface.PerirenalFat : Interface.RenalCapsule) : Interface.None,
           interfaceDistance: face ? ifd : NONE.interfaceDistance,
         };
@@ -1018,7 +1100,7 @@ export class AnatomyScene {
     dGbWallMm: number,
   ): Classification | null {
     const dBase = this.liverBaseSdf(m);
-    const dFissure = this.umbilicalFissureSdf(m, dBase);
+    const dFissure = this.hasAbdominalAtlas ? 1e3 : this.umbilicalFissureSdf(m, dBase);
     const dLiver = smoothMax(dBase, -dFissure, this.umbilicalFissure.roundMm);
     if (dLiver >= 0) {
       // lo excavado por la fisura (dentro del hígado original) es el ligamento redondo

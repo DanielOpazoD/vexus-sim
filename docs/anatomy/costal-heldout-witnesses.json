@@ -1,0 +1,784 @@
+{
+  "sourceArchiveSha256": "9fbc713fffeee924a5a657d9813d84d7eb957bded63adb854931dd5e3eb61c97",
+  "boneInterior": [
+    {
+      "id": "FJ3225",
+      "name": "left tenth rib",
+      "p": [73.10443613090659, -105.01334687359453, -53.40848708686707],
+      "sourceSurfaceDistanceMm": 1.4842871096472465
+    },
+    {
+      "id": "FJ3225",
+      "name": "left tenth rib",
+      "p": [112.1700536294762, -62.37539001031199, -96.08220432609836],
+      "sourceSurfaceDistanceMm": 1.4999999999999847
+    },
+    {
+      "id": "FJ3225",
+      "name": "left tenth rib",
+      "p": [28.27973678813642, -84.92964082870822, -16.781929654698494],
+      "sourceSurfaceDistanceMm": 1.4999999999999998
+    },
+    {
+      "id": "FJ3225",
+      "name": "left tenth rib",
+      "p": [112.62365787020747, -9.902804215686063, -135.82453196349252],
+      "sourceSurfaceDistanceMm": 1.4343372732825639
+    },
+    {
+      "id": "FJ3226",
+      "name": "left eleventh rib",
+      "p": [59.13922676573132, -100.67699582989673, -75.54101399051778],
+      "sourceSurfaceDistanceMm": 1.4999999999999882
+    },
+    {
+      "id": "FJ3226",
+      "name": "left eleventh rib",
+      "p": [79.9535635228063, -84.20475548956475, -105.22754751112765],
+      "sourceSurfaceDistanceMm": 1.4999999999999984
+    },
+    {
+      "id": "FJ3226",
+      "name": "left eleventh rib",
+      "p": [24.535853922085114, -73.6704334680208, -47.22006256090095],
+      "sourceSurfaceDistanceMm": 1.5000000000000016
+    },
+    {
+      "id": "FJ3226",
+      "name": "left eleventh rib",
+      "p": [20.262352350415263, -63.848480647253616, -50.289631022454934],
+      "sourceSurfaceDistanceMm": 1.4979408713968645
+    },
+    {
+      "id": "FJ3227",
+      "name": "left twelfth rib",
+      "p": [67.7378807850371, -87.34206715794649, -126.9038422191135],
+      "sourceSurfaceDistanceMm": 1.4999999999999947
+    },
+    {
+      "id": "FJ3227",
+      "name": "left twelfth rib",
+      "p": [64.45557157949162, -84.76637178998496, -119.28060202175641],
+      "sourceSurfaceDistanceMm": 1.499999999999999
+    },
+    {
+      "id": "FJ3227",
+      "name": "left twelfth rib",
+      "p": [35.54955552621807, -78.41688661099435, -92.4806313611583],
+      "sourceSurfaceDistanceMm": 1.500000000000002
+    },
+    {
+      "id": "FJ3227",
+      "name": "left twelfth rib",
+      "p": [19.858408309845803, -57.099441548939794, -81.31230595693327],
+      "sourceSurfaceDistanceMm": 1.5000000000000056
+    },
+    {
+      "id": "FJ3228",
+      "name": "left first rib",
+      "p": [34.75452909114906, -54.154283702042385, 204.15864610723364],
+      "sourceSurfaceDistanceMm": 1.4794605363318212
+    },
+    {
+      "id": "FJ3228",
+      "name": "left first rib",
+      "p": [33.032819202871686, -46.999099960136206, 193.12484624229955],
+      "sourceSurfaceDistanceMm": 1.5000000000000007
+    },
+    {
+      "id": "FJ3228",
+      "name": "left first rib",
+      "p": [17.071494310703283, -44.344957347246776, 195.40023301728021],
+      "sourceSurfaceDistanceMm": 1.5000000000000009
+    },
+    {
+      "id": "FJ3228",
+      "name": "left first rib",
+      "p": [53.79870579145004, 8.012010734635812, 148.37082324326764],
+      "sourceSurfaceDistanceMm": 1.500000000000001
+    },
+    {
+      "id": "FJ3229",
+      "name": "left second rib",
+      "p": [60.9137125284105, -62.181443969657565, 182.67154070456186],
+      "sourceSurfaceDistanceMm": 1.4999999999999887
+    },
+    {
+      "id": "FJ3229",
+      "name": "left second rib",
+      "p": [38.73216131123561, -65.05023771058606, 183.6796462507103],
+      "sourceSurfaceDistanceMm": 1.500000000000013
+    },
+    {
+      "id": "FJ3229",
+      "name": "left second rib",
+      "p": [91.94647640315685, -27.343174305879767, 155.34822345943326],
+      "sourceSurfaceDistanceMm": 1.4999999999999858
+    },
+    {
+      "id": "FJ3229",
+      "name": "left second rib",
+      "p": [46.12766479667254, 43.526692829750054, 115.42046526245288],
+      "sourceSurfaceDistanceMm": 1.5
+    },
+    {
+      "id": "FJ3230",
+      "name": "left third rib",
+      "p": [75.03307897293122, -78.84346158430519, 157.23487671522233],
+      "sourceSurfaceDistanceMm": 1.4977050004863568
+    },
+    {
+      "id": "FJ3230",
+      "name": "left third rib",
+      "p": [42.529101504196554, -81.5662896597279, 162.01721415231344],
+      "sourceSurfaceDistanceMm": 1.4999999999999942
+    },
+    {
+      "id": "FJ3230",
+      "name": "left third rib",
+      "p": [22.00904006966372, -70.22599649064766, 168.00473942873623],
+      "sourceSurfaceDistanceMm": 1.5000000000000029
+    },
+    {
+      "id": "FJ3230",
+      "name": "left third rib",
+      "p": [51.026855375471044, 55.973714551697384, 82.66239723636862],
+      "sourceSurfaceDistanceMm": 1.5000000000000038
+    },
+    {
+      "id": "FJ3231",
+      "name": "left fourth rib",
+      "p": [15.646126800944383, -68.67982762621517, 147.3238009134175],
+      "sourceSurfaceDistanceMm": 1.499999999999998
+    },
+    {
+      "id": "FJ3231",
+      "name": "left fourth rib",
+      "p": [53.727210703033215, -87.02393293146238, 141.03009894342492],
+      "sourceSurfaceDistanceMm": 1.4268047254535077
+    },
+    {
+      "id": "FJ3231",
+      "name": "left fourth rib",
+      "p": [78.72174802594468, 50.916839688704655, 67.00815434941187],
+      "sourceSurfaceDistanceMm": 1.5000000000000029
+    },
+    {
+      "id": "FJ3231",
+      "name": "left fourth rib",
+      "p": [108.31955524391066, 7.9062497725199705, 72.77057842945483],
+      "sourceSurfaceDistanceMm": 1.5000000000000155
+    },
+    {
+      "id": "FJ3232",
+      "name": "left fifth rib",
+      "p": [120.26388808463787, -49.95841379079225, 69.3872722944981],
+      "sourceSurfaceDistanceMm": 1.5000000000000127
+    },
+    {
+      "id": "FJ3232",
+      "name": "left fifth rib",
+      "p": [91.82517219801366, -96.76417257264042, 98.95896391609972],
+      "sourceSurfaceDistanceMm": 1.5000000000000113
+    },
+    {
+      "id": "FJ3232",
+      "name": "left fifth rib",
+      "p": [86.90966278523476, 60.274063807669215, 25.57827343649219],
+      "sourceSurfaceDistanceMm": 1.5000000000000013
+    },
+    {
+      "id": "FJ3232",
+      "name": "left fifth rib",
+      "p": [16.890979877603417, -73.61671438143144, 118.94597037756785],
+      "sourceSurfaceDistanceMm": 1.4860148813096705
+    },
+    {
+      "id": "FJ3233",
+      "name": "left sixth rib",
+      "p": [105.49821258235602, -91.29093980298703, 58.618835103255655],
+      "sourceSurfaceDistanceMm": 1.5000000000000018
+    },
+    {
+      "id": "FJ3233",
+      "name": "left sixth rib",
+      "p": [67.60790930671875, -115.27094805795949, 70.41320274513414],
+      "sourceSurfaceDistanceMm": 1.4999999999999993
+    },
+    {
+      "id": "FJ3233",
+      "name": "left sixth rib",
+      "p": [30.13993019986996, -97.89547462594567, 88.92006410569086],
+      "sourceSurfaceDistanceMm": 1.4999999999999951
+    },
+    {
+      "id": "FJ3233",
+      "name": "left sixth rib",
+      "p": [91.90217397874771, 68.32312006647844, -25.04705725865601],
+      "sourceSurfaceDistanceMm": 1.4167105179434094
+    },
+    {
+      "id": "FJ3234",
+      "name": "left seventh rib",
+      "p": [131.91149853155642, -29.62218354140721, -11.597380840191772],
+      "sourceSurfaceDistanceMm": 1.5000000000000182
+    },
+    {
+      "id": "FJ3234",
+      "name": "left seventh rib",
+      "p": [119.92938866806793, 40.38616095589309, -41.355905130753584],
+      "sourceSurfaceDistanceMm": 1.5000000000000004
+    },
+    {
+      "id": "FJ3234",
+      "name": "left seventh rib",
+      "p": [52.55415089214076, -107.99470357863743, 46.36133002843714],
+      "sourceSurfaceDistanceMm": 1.4952853589477
+    },
+    {
+      "id": "FJ3234",
+      "name": "left seventh rib",
+      "p": [15.598794300468745, -81.06497312615213, 69.0850050017822],
+      "sourceSurfaceDistanceMm": 1.500000000000002
+    },
+    {
+      "id": "FJ3235",
+      "name": "left eighth rib",
+      "p": [128.0447651303917, -29.972794718392258, -46.378729826339075],
+      "sourceSurfaceDistanceMm": 1.4999999999999825
+    },
+    {
+      "id": "FJ3235",
+      "name": "left eighth rib",
+      "p": [105.37363997708266, -79.10953257207946, -20.155739492503454],
+      "sourceSurfaceDistanceMm": 1.500000000000015
+    },
+    {
+      "id": "FJ3235",
+      "name": "left eighth rib",
+      "p": [57.87442346358123, -111.37467265813984, 17.08815456547683],
+      "sourceSurfaceDistanceMm": 1.499999999999999
+    },
+    {
+      "id": "FJ3235",
+      "name": "left eighth rib",
+      "p": [14.607591855554418, -81.57055689480552, 39.94845052414182],
+      "sourceSurfaceDistanceMm": 1.4999999999999984
+    },
+    {
+      "id": "FJ3236",
+      "name": "left ninth rib",
+      "p": [103.17631196493909, -88.90085021181824, -44.55905170373735],
+      "sourceSurfaceDistanceMm": 1.4999999999999976
+    },
+    {
+      "id": "FJ3236",
+      "name": "left ninth rib",
+      "p": [80.42776041840726, -105.2919515713379, -24.296487414996932],
+      "sourceSurfaceDistanceMm": 1.5000000000000047
+    },
+    {
+      "id": "FJ3236",
+      "name": "left ninth rib",
+      "p": [118.77951875295211, 2.388727331943744, -109.85300719783007],
+      "sourceSurfaceDistanceMm": 1.5000000000000113
+    },
+    {
+      "id": "FJ3236",
+      "name": "left ninth rib",
+      "p": [17.273616629156614, -76.42448143376836, 18.914341520214307],
+      "sourceSurfaceDistanceMm": 1.5000000000000007
+    },
+    {
+      "id": "FJ3330",
+      "name": "right tenth rib",
+      "p": [-116.25530591695669, -7.333314826816793, -129.97836151445483],
+      "sourceSurfaceDistanceMm": 1.5000000000000107
+    },
+    {
+      "id": "FJ3330",
+      "name": "right tenth rib",
+      "p": [-31.594855628264778, -91.1660102969514, -29.92463150705405],
+      "sourceSurfaceDistanceMm": 1.5000000000000016
+    },
+    {
+      "id": "FJ3330",
+      "name": "right tenth rib",
+      "p": [-109.50490156852047, -67.8468378616442, -101.40754343818688],
+      "sourceSurfaceDistanceMm": 1.4999999999999882
+    },
+    {
+      "id": "FJ3330",
+      "name": "right tenth rib",
+      "p": [-88.14242404262949, -96.85792701523788, -66.71603178485375],
+      "sourceSurfaceDistanceMm": 1.4999999999999953
+    },
+    {
+      "id": "FJ3331",
+      "name": "right eleventh rib",
+      "p": [-19.384174808971007, -65.03351811188577, -48.13273473689453],
+      "sourceSurfaceDistanceMm": 1.4999999999999944
+    },
+    {
+      "id": "FJ3331",
+      "name": "right eleventh rib",
+      "p": [-105.93374951895998, -34.26754215597129, -153.71681725461175],
+      "sourceSurfaceDistanceMm": 1.4999999999999927
+    },
+    {
+      "id": "FJ3331",
+      "name": "right eleventh rib",
+      "p": [-90.47408290146446, -75.46530960344724, -110.55412404414504],
+      "sourceSurfaceDistanceMm": 1.5000000000000033
+    },
+    {
+      "id": "FJ3331",
+      "name": "right eleventh rib",
+      "p": [-72.71184941646834, -94.9618459148899, -93.84282624594836],
+      "sourceSurfaceDistanceMm": 1.5000000000000104
+    },
+    {
+      "id": "FJ3332",
+      "name": "right twelfth rib",
+      "p": [-19.41003593393687, -58.4522615266037, -77.61759414957754],
+      "sourceSurfaceDistanceMm": 1.4076758474653657
+    },
+    {
+      "id": "FJ3332",
+      "name": "right twelfth rib",
+      "p": [-34.63189672517539, -72.21926998344148, -91.04832162807706],
+      "sourceSurfaceDistanceMm": 1.5000000000000064
+    },
+    {
+      "id": "FJ3332",
+      "name": "right twelfth rib",
+      "p": [-78.10464009049176, -72.57798747645134, -136.6708792044688],
+      "sourceSurfaceDistanceMm": 1.4999999999999911
+    },
+    {
+      "id": "FJ3332",
+      "name": "right twelfth rib",
+      "p": [-70.3614508823221, -85.67260817977393, -130.0157128556759],
+      "sourceSurfaceDistanceMm": 1.5000000000000047
+    },
+    {
+      "id": "FJ3334",
+      "name": "right first rib",
+      "p": [-54.9150957183169, 8.136404670071974, 148.4402172862064],
+      "sourceSurfaceDistanceMm": 1.5000000000000007
+    },
+    {
+      "id": "FJ3334",
+      "name": "right first rib",
+      "p": [-52.67828399505838, -32.371010649626875, 178.36631320815445],
+      "sourceSurfaceDistanceMm": 1.4999999999999982
+    },
+    {
+      "id": "FJ3334",
+      "name": "right first rib",
+      "p": [-57.47958096334969, -40.594856729701505, 183.97121942302516],
+      "sourceSurfaceDistanceMm": 1.4520144255538865
+    },
+    {
+      "id": "FJ3334",
+      "name": "right first rib",
+      "p": [-36.868766437379314, -54.3936807089343, 202.13942205822732],
+      "sourceSurfaceDistanceMm": 1.500000000000006
+    },
+    {
+      "id": "FJ3336",
+      "name": "right second rib",
+      "p": [-49.23950386568366, 43.345136778068444, 111.32705835596815],
+      "sourceSurfaceDistanceMm": 1.4999999999999958
+    },
+    {
+      "id": "FJ3336",
+      "name": "right second rib",
+      "p": [-27.647019293139454, -57.03949659776366, 186.52169515529678],
+      "sourceSurfaceDistanceMm": 1.4999999999999851
+    },
+    {
+      "id": "FJ3336",
+      "name": "right second rib",
+      "p": [-35.51438063718297, -63.56070550054673, 192.8064597422028],
+      "sourceSurfaceDistanceMm": 1.499999999999986
+    },
+    {
+      "id": "FJ3336",
+      "name": "right second rib",
+      "p": [-70.19271271616799, -58.40836458967587, 178.79972665541365],
+      "sourceSurfaceDistanceMm": 1.500000000000008
+    },
+    {
+      "id": "FJ3338",
+      "name": "right third rib",
+      "p": [-50.57552396824733, 56.12086768979931, 82.64628820605643],
+      "sourceSurfaceDistanceMm": 1.5000000000000042
+    },
+    {
+      "id": "FJ3338",
+      "name": "right third rib",
+      "p": [-20.220950147443858, -67.71526512827907, 161.08332309836933],
+      "sourceSurfaceDistanceMm": 1.5000000000000042
+    },
+    {
+      "id": "FJ3338",
+      "name": "right third rib",
+      "p": [-103.570453663588, -29.168658002819615, 126.25328747825142],
+      "sourceSurfaceDistanceMm": 1.5000000000000053
+    },
+    {
+      "id": "FJ3338",
+      "name": "right third rib",
+      "p": [-93.26137729166284, -65.03949862613831, 146.83472170903252],
+      "sourceSurfaceDistanceMm": 1.5000000000000087
+    },
+    {
+      "id": "FJ3340",
+      "name": "right fourth rib",
+      "p": [-114.09469263441349, -7.941994917002573, 86.80061923200121],
+      "sourceSurfaceDistanceMm": 1.5000000000000127
+    },
+    {
+      "id": "FJ3340",
+      "name": "right fourth rib",
+      "p": [-78.64341964446517, 54.30920032269974, 51.9275211904241],
+      "sourceSurfaceDistanceMm": 1.4999999999999993
+    },
+    {
+      "id": "FJ3340",
+      "name": "right fourth rib",
+      "p": [-63.07833998119775, -93.46645032919626, 141.02827001237532],
+      "sourceSurfaceDistanceMm": 1.4999999999999982
+    },
+    {
+      "id": "FJ3340",
+      "name": "right fourth rib",
+      "p": [-16.948586348333183, -70.86042538958688, 139.72801275289424],
+      "sourceSurfaceDistanceMm": 1.4999999999999976
+    },
+    {
+      "id": "FJ3342",
+      "name": "right fifth rib",
+      "p": [-17.0579025678931, -78.57942180948075, 120.31791468573522],
+      "sourceSurfaceDistanceMm": 1.4999999999999967
+    },
+    {
+      "id": "FJ3342",
+      "name": "right fifth rib",
+      "p": [-53.10808149839238, -97.75575410530988, 109.09990650650981],
+      "sourceSurfaceDistanceMm": 1.4999999999999971
+    },
+    {
+      "id": "FJ3342",
+      "name": "right fifth rib",
+      "p": [-92.23383011134334, -93.8301274629464, 101.86474248314376],
+      "sourceSurfaceDistanceMm": 1.5000000000000007
+    },
+    {
+      "id": "FJ3342",
+      "name": "right fifth rib",
+      "p": [-124.86304728877943, -29.351530899793705, 58.07432557783753],
+      "sourceSurfaceDistanceMm": 1.4999999999999936
+    },
+    {
+      "id": "FJ3344",
+      "name": "right sixth rib",
+      "p": [-89.19610269501403, 68.80178400374571, -8.000548556625223],
+      "sourceSurfaceDistanceMm": 1.5000000000000038
+    },
+    {
+      "id": "FJ3344",
+      "name": "right sixth rib",
+      "p": [-117.01691691722827, 28.371278110398215, 2.67041477334001],
+      "sourceSurfaceDistanceMm": 1.5000000000000007
+    },
+    {
+      "id": "FJ3344",
+      "name": "right sixth rib",
+      "p": [-74.99963961835033, -104.01639618046529, 74.87555631279979],
+      "sourceSurfaceDistanceMm": 1.499999999999991
+    },
+    {
+      "id": "FJ3344",
+      "name": "right sixth rib",
+      "p": [-121.31819372707987, -68.5659080475326, 46.29657668136593],
+      "sourceSurfaceDistanceMm": 1.4999999999999978
+    },
+    {
+      "id": "FJ3346",
+      "name": "right seventh rib",
+      "p": [-15.303044956113359, -88.38104201953462, 70.46551465781582],
+      "sourceSurfaceDistanceMm": 1.5000000000000007
+    },
+    {
+      "id": "FJ3346",
+      "name": "right seventh rib",
+      "p": [-59.49165641349725, -109.774302969991, 43.12074520623798],
+      "sourceSurfaceDistanceMm": 1.500000000000006
+    },
+    {
+      "id": "FJ3346",
+      "name": "right seventh rib",
+      "p": [-119.93942664704193, 41.94691378322144, -41.48812667461525],
+      "sourceSurfaceDistanceMm": 1.4999999999999865
+    },
+    {
+      "id": "FJ3346",
+      "name": "right seventh rib",
+      "p": [-134.8314064940389, -7.542413760022057, -24.129419896951344],
+      "sourceSurfaceDistanceMm": 1.4999999999999822
+    },
+    {
+      "id": "FJ3347",
+      "name": "right eighth rib",
+      "p": [-14.897402178547525, -84.02366033854888, 40.67425917831062],
+      "sourceSurfaceDistanceMm": 1.499999999999997
+    },
+    {
+      "id": "FJ3347",
+      "name": "right eighth rib",
+      "p": [-54.7705920028746, -105.34055507758889, 18.18280246425239],
+      "sourceSurfaceDistanceMm": 1.4999999999999962
+    },
+    {
+      "id": "FJ3347",
+      "name": "right eighth rib",
+      "p": [-121.678476778635, 33.07489455801959, -72.70255759077351],
+      "sourceSurfaceDistanceMm": 1.499999999999998
+    },
+    {
+      "id": "FJ3347",
+      "name": "right eighth rib",
+      "p": [-131.06412849537895, -12.567587087103782, -56.93834448984514],
+      "sourceSurfaceDistanceMm": 1.4999999999999896
+    },
+    {
+      "id": "FJ3348",
+      "name": "right ninth rib",
+      "p": [-17.34160147518959, -76.82274329262133, 18.380034579604974],
+      "sourceSurfaceDistanceMm": 1.4887860598672542
+    },
+    {
+      "id": "FJ3348",
+      "name": "right ninth rib",
+      "p": [-55.34661413347381, -107.6671840681447, -8.098377367338914],
+      "sourceSurfaceDistanceMm": 1.4999999999999973
+    },
+    {
+      "id": "FJ3348",
+      "name": "right ninth rib",
+      "p": [-82.77065670678446, -103.52569886827293, -40.53808663119921],
+      "sourceSurfaceDistanceMm": 1.5000000000000002
+    },
+    {
+      "id": "FJ3348",
+      "name": "right ninth rib",
+      "p": [-110.11740784212478, -78.2045442716991, -54.176585289445875],
+      "sourceSurfaceDistanceMm": 1.4999999999999858
+    }
+  ],
+  "intercostalSpaces": [
+    {
+      "ribs": ["right second rib", "right third rib"],
+      "p": [-89.9943655, -56.661100000000005, 156.06150000000002],
+      "sourceSurfaceDistanceMm": 3.3743399817085358
+    },
+    {
+      "ribs": ["right third rib", "right fourth rib"],
+      "p": [-108.60926549999999, -20.721750000000014, 108.46650000000011],
+      "sourceSurfaceDistanceMm": 6.920474967812573
+    },
+    {
+      "ribs": ["right fourth rib", "right fifth rib"],
+      "p": [-105.2747655, 32.37264999999999, 43.536500000000046],
+      "sourceSurfaceDistanceMm": 4.568816524847971
+    },
+    {
+      "ribs": ["right fifth rib", "right sixth rib"],
+      "p": [-110.3667655, -74.9676, 69.43650000000002],
+      "sourceSurfaceDistanceMm": 8.014114834761113
+    },
+    {
+      "ribs": ["right fifth rib", "right sixth rib"],
+      "p": [-122.07126550000001, -21.046250000000015, 44.05650000000003],
+      "sourceSurfaceDistanceMm": 4.8482587222710025
+    },
+    {
+      "ribs": ["right fifth rib", "right sixth rib"],
+      "p": [-109.8432655, 35.10164999999999, 9.476500000000101],
+      "sourceSurfaceDistanceMm": 7.821525566400849
+    },
+    {
+      "ribs": ["right sixth rib", "right seventh rib"],
+      "p": [-111.6612655, -74.8866, 35.35149999999999],
+      "sourceSurfaceDistanceMm": 9.356600290673247
+    },
+    {
+      "ribs": ["right sixth rib", "right seventh rib"],
+      "p": [-126.52876549999999, -23.27665000000001, 7.0815000000000055],
+      "sourceSurfaceDistanceMm": 7.796082903613578
+    },
+    {
+      "ribs": ["right sixth rib", "right seventh rib"],
+      "p": [-111.6762655, 37.10064999999999, -25.60349999999994],
+      "sourceSurfaceDistanceMm": 6.8152606331865835
+    },
+    {
+      "ribs": ["right seventh rib", "right eighth rib"],
+      "p": [-111.27876549999999, -74.97500000000001, 0.7314999999999827],
+      "sourceSurfaceDistanceMm": 6.652150519644805
+    },
+    {
+      "ribs": ["right seventh rib", "right eighth rib"],
+      "p": [-125.75726549999999, -23.465500000000013, -29.023500000000013],
+      "sourceSurfaceDistanceMm": 8.634851253468968
+    },
+    {
+      "ribs": ["right seventh rib", "right eighth rib"],
+      "p": [-112.84726549999999, 37.34814999999999, -63.14850000000001],
+      "sourceSurfaceDistanceMm": 8.406766773535002
+    },
+    {
+      "ribs": ["right eighth rib", "right ninth rib"],
+      "p": [-109.91026550000001, -74.84240000000001, -36.533500000000004],
+      "sourceSurfaceDistanceMm": 7.551997197662582
+    },
+    {
+      "ribs": ["right eighth rib", "right ninth rib"],
+      "p": [-123.3562655, -21.52110000000001, -70.95849999999996],
+      "sourceSurfaceDistanceMm": 7.85255016351745
+    },
+    {
+      "ribs": ["right eighth rib", "right ninth rib"],
+      "p": [-116.3182655, 25.252149999999986, -89.7935],
+      "sourceSurfaceDistanceMm": 4.86543035095567
+    },
+    {
+      "ribs": ["right ninth rib", "right tenth rib"],
+      "p": [-109.15376549999999, -74.14565000000002, -76.46349999999995],
+      "sourceSurfaceDistanceMm": 7.925565763162781
+    },
+    {
+      "ribs": ["right ninth rib", "right tenth rib"],
+      "p": [-118.4297655, -19.59235000000001, -114.24349999999993],
+      "sourceSurfaceDistanceMm": 3.986850712861283
+    },
+    {
+      "ribs": ["right tenth rib", "right eleventh rib"],
+      "p": [-111.3567655, -21.991650000000014, -141.92849999999993],
+      "sourceSurfaceDistanceMm": 8.301825061067062
+    },
+    {
+      "ribs": ["right eleventh rib", "right twelfth rib"],
+      "p": [-97.1158655, -41.76950000000002, -150.81849999999997],
+      "sourceSurfaceDistanceMm": 6.911877162143244
+    },
+    {
+      "ribs": ["right eleventh rib", "right twelfth rib"],
+      "p": [-96.4588655, -41.60705000000002, -151.2235],
+      "sourceSurfaceDistanceMm": 7.630746122681322
+    },
+    {
+      "ribs": ["left second rib", "left third rib"],
+      "p": [89.16018450000001, -56.864000000000004, 156.1165000000001],
+      "sourceSurfaceDistanceMm": 3.279860633509125
+    },
+    {
+      "ribs": ["left third rib", "left fourth rib"],
+      "p": [99.2315845, -67.74975, 129.16650000000004],
+      "sourceSurfaceDistanceMm": 3.3876766869582955
+    },
+    {
+      "ribs": ["left third rib", "left fourth rib"],
+      "p": [108.3487345, -20.843300000000013, 108.38649999999996],
+      "sourceSurfaceDistanceMm": 7.11797088877963
+    },
+    {
+      "ribs": ["left fourth rib", "left fifth rib"],
+      "p": [105.0917345, 32.070149999999984, 44.05150000000003],
+      "sourceSurfaceDistanceMm": 4.6284711838791095
+    },
+    {
+      "ribs": ["left fifth rib", "left sixth rib"],
+      "p": [110.1387345, -74.93415000000002, 69.37149999999997],
+      "sourceSurfaceDistanceMm": 8.012567451437626
+    },
+    {
+      "ribs": ["left fifth rib", "left sixth rib"],
+      "p": [121.4067345, -21.32460000000001, 43.606500000000096],
+      "sourceSurfaceDistanceMm": 5.345027612471301
+    },
+    {
+      "ribs": ["left fifth rib", "left sixth rib"],
+      "p": [109.8832345, 34.90164999999999, 10.58150000000012],
+      "sourceSurfaceDistanceMm": 8.653604142976219
+    },
+    {
+      "ribs": ["left sixth rib", "left seventh rib"],
+      "p": [110.9777345, -75.06895000000003, 38.55150000000003],
+      "sourceSurfaceDistanceMm": 7.150263649476712
+    },
+    {
+      "ribs": ["left sixth rib", "left seventh rib"],
+      "p": [125.9017345, -22.881400000000014, 8.27150000000006],
+      "sourceSurfaceDistanceMm": 6.738320356202638
+    },
+    {
+      "ribs": ["left sixth rib", "left seventh rib"],
+      "p": [112.17173450000001, 35.692649999999986, -21.143499999999904],
+      "sourceSurfaceDistanceMm": 7.07413540706678
+    },
+    {
+      "ribs": ["left seventh rib", "left eighth rib"],
+      "p": [111.00973450000001, -75.20935000000003, 3.8115000000000236],
+      "sourceSurfaceDistanceMm": 4.38290316951584
+    },
+    {
+      "ribs": ["left seventh rib", "left eighth rib"],
+      "p": [125.0847345, -23.592800000000018, -27.43349999999998],
+      "sourceSurfaceDistanceMm": 7.555196070526698
+    },
+    {
+      "ribs": ["left seventh rib", "left eighth rib"],
+      "p": [112.90723450000002, 36.24964999999999, -59.653499999999894],
+      "sourceSurfaceDistanceMm": 8.367438765412018
+    },
+    {
+      "ribs": ["left eighth rib", "left ninth rib"],
+      "p": [122.6487345, -21.494000000000014, -71.32849999999996],
+      "sourceSurfaceDistanceMm": 7.5513242708704515
+    },
+    {
+      "ribs": ["left eighth rib", "left ninth rib"],
+      "p": [115.6602345, 25.26464999999999, -89.7784999999999],
+      "sourceSurfaceDistanceMm": 4.830096272332427
+    },
+    {
+      "ribs": ["left ninth rib", "left tenth rib"],
+      "p": [117.8987345, -20.219350000000013, -113.35349999999994],
+      "sourceSurfaceDistanceMm": 4.283816720232118
+    },
+    {
+      "ribs": ["left tenth rib", "left eleventh rib"],
+      "p": [110.9427345, -22.84795000000001, -140.97349999999994],
+      "sourceSurfaceDistanceMm": 8.021058722566558
+    },
+    {
+      "ribs": ["left eleventh rib", "left twelfth rib"],
+      "p": [90.66823450000001, -66.32290000000002, -133.55849999999998],
+      "sourceSurfaceDistanceMm": 3.568546169757822
+    },
+    {
+      "ribs": ["left eleventh rib", "left twelfth rib"],
+      "p": [96.54198450000001, -41.840350000000015, -150.58349999999996],
+      "sourceSurfaceDistanceMm": 6.761807809100877
+    },
+    {
+      "ribs": ["left eleventh rib", "left twelfth rib"],
+      "p": [95.6714345, -41.55195000000001, -151.31349999999998],
+      "sourceSurfaceDistanceMm": 7.7582852762992225
+    }
+  ],
+  "method": "Independent original triangle geometry and closed-mesh containment, without acoustic field access; 1.5 mm inward witnesses and spaces >3 mm from all source surfaces."
+}

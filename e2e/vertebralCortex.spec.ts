@@ -8,7 +8,7 @@ checkAfterEach();
 for (const reference of [false, true])
   test(`cortical vertebral: cara, normales y hueso CPU/GPU (${reference ? 'referencia' : 'legacy'})`, async ({ page }, info) => {
     budget(180_000);
-    await bootWithoutErrors(page, reference ? '?e2e=1&reference=1' : '?e2e=1');
+    await bootWithoutErrors(page, reference ? '?e2e=1&abdomen=legacy&reference=1' : '?e2e=1&abdomen=legacy');
     const { spine: s } = await page.evaluate(() => window.__vexusTest!.corticalSamples([]));
     const points: Vec3[] = [];
     for (const z of [-4, -3, -2, -1, 0].map((level) => SPINE_SHAPE.z0Mm + level * SPINE_SHAPE.levelMm))

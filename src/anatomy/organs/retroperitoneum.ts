@@ -1,3 +1,4 @@
+import { abdominalAtlas, abdominalAtlasSdf } from '../abdominalAtlas';
 import type { Vec3 } from '../../core/vec3';
 import { Tissue } from '../tissues';
 import { sdRoundCone } from './kidney';
@@ -59,6 +60,20 @@ export const QUADRATUS = {
   yMax: -30,
 } as const;
 
+/** Atlas: estimated QL anchored to BP3D rib 12 / iliac crest, not to skin.
+ * LAS mm. No segmented QL is present in the pinned source subset (182). */
+export const ATLAS_QUADRATUS = {
+  zTop: -115,
+  zBottom: -215,
+  xMedial: 41,
+  xTop: 86,
+  xBottom: 100,
+  yTop: -64,
+  yBottom: -76,
+  halfThickness: 10,
+  costalSlope: 0.85,
+} as const;
+
 /**
  * Compartimento retroperitoneal: detrás del peritoneo parietal posterior, y < yPeri(|x|, z). Por delante de los grandes
  * vasos y del riñón (y = frontY en |x| ≤ xFront) y hacia fuera baja hasta la pared lateral detrás de la línea axilar
@@ -82,6 +97,7 @@ const smooth01 = (x: number): number => (x <= 0 ? 0 : x >= 1 ? 1 : x * x * (3 - 
 
 /** Distancia con signo al psoas más cercano (mm; negativa dentro). */
 export function psoasSdf(m: Vec3): number {
+  if (abdominalAtlas) return abdominalAtlasSdf(m, 9);
   const q: Vec3 = [Math.abs(m[0]), m[1], m[2]];
   let d = 1e3;
   for (let i = 0; i + 1 < PSOAS_NODES.length; i++) {
@@ -109,6 +125,28 @@ const QL_LIPSCHITZ = {
  * de la pared; `dPeriMm`, la distancia a la cara externa de la grasa perirrenal (el músculo le deja sitio).
  */
 export function quadratusSdf(m: Vec3, insideWallMm: number, dPeriMm: number): number {
+  if (abdominalAtlas) {
+    const q = ATLAS_QUADRATUS,
+      ax = Math.abs(m[0]);
+    const f = (q.zTop - m[2]) / (q.zTop - q.zBottom);
+    const y = q.yTop + (q.yBottom - q.yTop) * f;
+    const lateral = q.xTop + (q.xBottom - q.xTop) * f;
+    const radiusX = Math.max(1, (lateral - q.xMedial) / 2);
+    const section =
+      (Math.hypot((ax - (lateral + q.xMedial) / 2) / radiusX, (m[1] - y) / q.halfThickness) - 1) * Math.min(radiusX, q.halfThickness);
+    return Math.max(
+      section / 1.25,
+      -insideWallMm / 1.25,
+      -dPeriMm / 1.25,
+      q.xMedial - ax,
+      (ax - lateral) / Math.hypot(1, (q.xBottom - q.xTop) / 100),
+      (Math.abs(m[1] - y) - q.halfThickness) / Math.hypot(1, (q.yBottom - q.yTop) / 100),
+      (m[2] - q.zTop + q.costalSlope * (ax - q.xMedial)) / Math.hypot(1, q.costalSlope),
+      q.zBottom - m[2],
+      (1 - abdominalAtlasSdf(m, 8)) / 1.25,
+      (1 - abdominalAtlasSdf(m, 9)) / 1.25,
+    );
+  }
   const Q = QUADRATUS;
   const L = QL_LIPSCHITZ;
   const ax = Math.abs(m[0]);
@@ -116,6 +154,9 @@ export function quadratusSdf(m: Vec3, insideWallMm: number, dPeriMm: number): nu
   const xLat = Q.xLateralTop + (Q.xLateralBottom - Q.xLateralTop) * f;
   const t = Q.thicknessTop + (Q.thicknessMax - Q.thicknessTop) * smooth01((Q.zTop - m[2]) / (Q.zTop - Q.zPeak));
   return Math.max(
+    // Cerrar también el campo aislado que usa la malla 3D: la prioridad de la
+    // pared en classify no debe ser la única frontera posterior (decisión 181).
+    -insideWallMm / L.wall,
     (insideWallMm - t) / L.wall,
     Q.xMedial - ax,
     (ax - xLat) / L.lateral,
@@ -131,7 +172,7 @@ export function retroFrontY(ax: number, z: number): number {
   const R = RETRO_FAT;
   const lat = smooth01((ax - R.xFront) / (R.xLateral - R.xFront));
   const y = R.frontY + (R.yLateral - R.frontY) * lat;
-  return y + (Math.min(y, R.yLow) - y) * smooth01((R.zLow - z) / R.zRamp);
+  return y + (Math.min(y, R.yLow) - y) * smooth01(((abdominalAtlas ? -210 : R.zLow) - z) / R.zRamp);
 }
 
 /**
@@ -155,12 +196,12 @@ export function retroFatSdf(m: Vec3): number {
  * posterior, el «resto» (intestino). Devuelve el tejido y la distancia a la frontera más cercana entre ellos (el psoas
  * gana al cuadrado y los dos a la grasa). `insideWallMm` y `dPeriMm`, como en `quadratusSdf`.
  */
-export function retroperitoneum(m: Vec3, insideWallMm: number, dPeriMm: number): [Tissue, number] {
-  const dP = psoasSdf(m);
+export function retroperitoneum(m: Vec3, insideWallMm: number, dPeriMm: number, compartmentPoint: Vec3 = m): [Tissue, number] {
+  const dP = psoasSdf(abdominalAtlas ? compartmentPoint : m);
   if (dP < 0) return [Tissue.Psoas, -dP];
-  const dQ = quadratusSdf(m, insideWallMm, dPeriMm);
+  const dQ = quadratusSdf(abdominalAtlas ? compartmentPoint : m, insideWallMm, dPeriMm);
   if (dQ < 0) return [Tissue.QuadratusLumborum, Math.min(-dQ, dP)];
-  const dF = retroFatSdf(m);
+  const dF = retroFatSdf(compartmentPoint);
   return dF < 0 ? [Tissue.RetroperitonealFat, Math.min(-dF, dP, dQ)] : [Tissue.Bowel, Math.min(dF, dP, dQ)];
 }
 
@@ -177,38 +218,53 @@ const vec4 PSOAS[${PSOAS_NODES.length}] = vec4[${PSOAS_NODES.length}](${PSOAS_NO
 const vec4 QL_Z = vec4(${f4(Q.zTop)}, ${f4(Q.zBottom)}, ${f4(Q.zPeak)}, ${f4(Q.yMax)});
 const vec4 QL_X = vec4(${f4(Q.xMedial)}, ${f4(Q.xLateralTop)}, ${f4(Q.xLateralBottom)}, 0.0);
 const vec2 QL_T = vec2(${f4(Q.thicknessTop)}, ${f4(Q.thicknessMax)});
-const vec3 QL_L = vec3(${f4(QL_LIPSCHITZ.wall)}, ${f4(QL_LIPSCHITZ.peri)}, ${f4(QL_LIPSCHITZ.lateral)});
+const vec3 QL_L = vec3(${f4(QL_LIPSCHITZ.wall)}, ${f4(QL_LIPSCHITZ.peri)}, ${QL_LIPSCHITZ.lateral.toFixed(8)});
 const vec4 RF_A = vec4(${f4(R.frontY)}, ${f4(R.xFront)}, ${f4(R.xLateral)}, ${f4(R.yLateral)});
 const vec4 RF_B = vec4(${f4(R.zLow)}, ${f4(R.zRamp)}, ${f4(R.yLow)}, ${f4(RETRO_FRONT_LIPSCHITZ)});
 float psoasSdf(vec3 m) {
+  if(uAbdominalAtlasEnabled!=0)return abdominalAtlasSdf(m,9);
   vec3 q = vec3(abs(m.x), m.yz);
   float d = 1e3;
   for (int i = 0; i < ${PSOAS_NODES.length - 1}; i++) d = min(d, sdRoundCone(q, PSOAS[i].xyz, PSOAS[i + 1].xyz, PSOAS[i].w, PSOAS[i + 1].w));
   return d;
 }
 float quadratusSdf(vec3 m, float insideWall, float dPeri) {
+  if(uAbdominalAtlasEnabled!=0){
+    float ax=abs(m.x), f=(${ATLAS_QUADRATUS.zTop.toFixed(1)}-m.z)/100.0;
+    float y=mix(${ATLAS_QUADRATUS.yTop.toFixed(1)},${ATLAS_QUADRATUS.yBottom.toFixed(1)},f);
+    float lateral=mix(${ATLAS_QUADRATUS.xTop.toFixed(1)},${ATLAS_QUADRATUS.xBottom.toFixed(1)},f);
+    float rx=max(1.0,(lateral-${ATLAS_QUADRATUS.xMedial.toFixed(1)})/2.0);
+    float section=(length(vec2((ax-(lateral+${ATLAS_QUADRATUS.xMedial.toFixed(1)})/2.0)/rx,(m.y-y)/${ATLAS_QUADRATUS.halfThickness.toFixed(1)}))-1.0)*min(rx,${ATLAS_QUADRATUS.halfThickness.toFixed(1)});
+    float d=max(section/1.25,max(-insideWall/1.25,-dPeri/1.25));
+    d=max(d,${ATLAS_QUADRATUS.xMedial.toFixed(1)}-ax);
+    d=max(d,(ax-lateral)/${Math.hypot(1, 0.14).toFixed(8)});
+    d=max(d,(abs(m.y-y)-${ATLAS_QUADRATUS.halfThickness.toFixed(1)})/${Math.hypot(1, 0.12).toFixed(8)});
+    d=max(d,(m.z-(${ATLAS_QUADRATUS.zTop.toFixed(1)})+${ATLAS_QUADRATUS.costalSlope.toFixed(2)}*(ax-${ATLAS_QUADRATUS.xMedial.toFixed(1)}))/${Math.hypot(1, 0.85).toFixed(8)});
+    d=max(d,${ATLAS_QUADRATUS.zBottom.toFixed(1)}-m.z);
+    return max(d,max((1.0-abdominalAtlasSdf(m,8))/1.25,(1.0-abdominalAtlasSdf(m,9))/1.25));
+  }
   float ax = abs(m.x);
   float f = (QL_Z.x - m.z) / (QL_Z.x - QL_Z.y);
   float t = QL_T.x + (QL_T.y - QL_T.x) * smoothstep(0.0, 1.0, (QL_Z.x - m.z) / (QL_Z.x - QL_Z.z));
   float d = max(max((insideWall - t) / QL_L.x, QL_X.x - ax), max((ax - (QL_X.y + (QL_X.z - QL_X.y) * f)) / QL_L.z, m.z - QL_Z.x));
-  return max(max(d, QL_Z.y - m.z), max(m.y - QL_Z.w, -dPeri / QL_L.y));
+  return max(-insideWall / QL_L.x, max(max(d, QL_Z.y - m.z), max(m.y - QL_Z.w, -dPeri / QL_L.y)));
 }
 float retroFrontY(float ax, float z) {
   float y = RF_A.x + (RF_A.w - RF_A.x) * smoothstep(0.0, 1.0, (ax - RF_A.y) / (RF_A.z - RF_A.y));
-  return y + (min(y, RF_B.z) - y) * smoothstep(0.0, 1.0, (RF_B.x - z) / RF_B.y);
+  return y + (min(y, RF_B.z) - y) * smoothstep(0.0, 1.0, ((uAbdominalAtlasEnabled!=0?-210.0:RF_B.x) - z) / RF_B.y);
 }
 float retroFatSdf(vec3 m) {
   float ax = abs(m.x);
   return max((m.y - retroFrontY(ax, m.z)) / RF_B.w, ax - RF_A.z);
 }
-int retroperitoneum(vec3 m, float insideWall, float dPeri, out float bd) {
-  float dP = psoasSdf(m);
+int retroperitoneum(vec3 m, vec3 compartmentPoint, float insideWall, float dPeri, out float bd) {
+  float dP=psoasSdf(uAbdominalAtlasEnabled!=0?compartmentPoint:m);
   bd = -dP;
   if (dP < 0.0) return T_PSOAS;
-  float dQ = quadratusSdf(m, insideWall, dPeri);
+  float dQ = quadratusSdf(uAbdominalAtlasEnabled!=0?compartmentPoint:m, insideWall, dPeri);
   bd = min(-dQ, dP);
   if (dQ < 0.0) return T_QUADRATUS;
-  float dF = retroFatSdf(m);
+  float dF = retroFatSdf(compartmentPoint);
   bd = min(abs(dF), min(dP, dQ));
   return dF < 0.0 ? T_RETROFAT : T_BOWEL;
 }

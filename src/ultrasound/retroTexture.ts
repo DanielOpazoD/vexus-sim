@@ -135,7 +135,8 @@ export function fascicleSeptum(m: Vec3, tissue: Tissue): [number, number, number
  */
 export function retroTexture(m: Vec3, tissue: Tissue, dir: Vec3, warp: Warp = IDENTITY_WARP): number {
   if (tissue === Tissue.RenalSinus) return sinusLobules(m);
-  if (tissue === Tissue.RetroperitonealFat || tissue === Tissue.MesentericFat) return visceralFatLobules(m);
+  if (tissue === Tissue.RetroperitonealFat || tissue === Tissue.MesentericFat || tissue === Tissue.UnsegmentedSoftTissue)
+    return visceralFatLobules(m);
   if (tissue !== Tissue.Psoas && tissue !== Tissue.QuadratusLumborum) return 1;
   const s = fascicleSeptum(m, tissue);
   const g = RETRO_TEXTURE.septumBack / TISSUES[tissue].backscatter;
@@ -193,7 +194,7 @@ vec4 fascicleSeptum(vec3 m, int tissue) {
 }
 float retroTexture(vec3 m, int tissue, vec3 dir, Warp w) {
   // lóbulos del seno renal (decisión 87, sinusLobules)
-  if (tissue == T_RETROFAT || tissue == T_MESENTERIC_FAT) return RT_F.w * exp(RT_F.y * (valueNoise(m / RT_F.x, RT_F.z) - 0.5));
+  if (tissue == T_RETROFAT || tissue == T_MESENTERIC_FAT || tissue == T_UNSEGMENTED) return RT_F.w * exp(RT_F.y * (valueNoise(m / RT_F.x, RT_F.z) - 0.5));
   if (tissue == T_RENAL_SINUS) return RT_S.w * exp(RT_S.y * (valueNoise(m / RT_S.x, RT_S.z) - 0.5));
   if (tissue != T_PSOAS && tissue != T_QUADRATUS) return 1.0;
   vec4 s = fascicleSeptum(m, tissue);

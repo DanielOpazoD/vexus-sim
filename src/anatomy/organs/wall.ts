@@ -609,11 +609,13 @@ vec3 wallFaceGradient(vec3 m, int face) {
   return -(torsoDepthGrad(m) + sl.x * wallArcGradient(m) + vec3(0.0, 0.0, sl.y));
 }
 float ribSd(vec3 m, int k) {
+  if(uAbdominalAtlasEnabled!=0)return thoracicSdf(m);
   if (k == MAX_RIBS) return sternumSd(m);
   bool cart; vec3 n;
   return sdRib(m, k, cart, n);
 }
 int nearestRib(vec3 m) {
+  if(uAbdominalAtlasEnabled!=0)return 0;
   int best = MAX_RIBS;
   float bd = sternumSd(m);
   for (int i = 0; i < MAX_RIBS; i++) {
@@ -623,6 +625,7 @@ int nearestRib(vec3 m) {
   return best;
 }
 vec3 ribTangent(vec3 p, int k) {
+  if(uAbdominalAtlasEnabled!=0){vec3 axis;float kappa;thoracicFrame(p,axis,kappa);return axis;}
   if (k == MAX_RIBS) return vec3(0.0, 0.0, 1.0);
   if (ribEndData(k).z > 0.5) { bool cart; vec3 n; sdRib(p, k, cart, n); if (cart) { vec3 tangent; float curvature; referenceCartilage(p, tangent, curvature); return tangent; } }
   vec4 rib = ribData(k), s = ribShapeData(k);
@@ -631,6 +634,7 @@ vec3 ribTangent(vec3 p, int k) {
   return normalize(vec3(-s.x * sin(phi) * mirror, s.y * cos(phi), -0.5 * rib.y * cos(phi) - s.w * sin(phi)));
 }
 float ribCurvature(vec3 p, int k) {
+  if(uAbdominalAtlasEnabled!=0){vec3 axis;float kappa;thoracicFrame(p,axis,kappa);return kappa;}
   if (k == MAX_RIBS) return 0.0;
   if (ribEndData(k).z > 0.5) { bool cart; vec3 n; sdRib(p, k, cart, n); if (cart) { vec3 tangent; float curvature; referenceCartilage(p, tangent, curvature); return curvature; } }
   vec4 rib = ribData(k), s = ribShapeData(k);

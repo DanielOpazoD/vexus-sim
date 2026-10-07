@@ -4,6 +4,8 @@ Este documento existe para que nadie use el simulador más allá de lo que hace.
 verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 `src/validation/limitations.ts` (la suite exige que ambos coincidan).
 
+El abdomen de referencia de la decisión 178 incorpora órganos y soporte posterior del atlas. Las medidas históricas del modelo procedural describen la cohorte `abdomen=legacy`; no validan el nuevo contorno. Sus limitaciones específicas se detallan al final y en [ABDOMINAL_ATLAS.md](anatomy/ABDOMINAL_ATLAS.md).
+
 ## Anatomía y fisiología
 
 - **Solo el riñón derecho tiene vasos interlobares** (`no-left-interlobar-vessels`): el izquierdo
@@ -41,7 +43,7 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   paso al intersticio.
 - **Velocidad uniforme a lo largo de cada tubo** (`uniform-vessel-velocity`): el caudal local escala
   con el área; no hay conservación explícita en bifurcaciones.
-- **El hígado es una forma procedural** (`procedural-liver-shape`): elipsoides recortados por pared,
+- **En la cohorte legacy el hígado es una forma procedural** (`procedural-liver-shape`): elipsoides recortados por pared,
   cúpula y una cara visceral en cuña ajustada a mano (decisión 72), con fosa vesicular, impresión renal, fisura
   umbilical y lámina del ligamento venoso; sin caudado propio ni grasa hiliar (la hepática y el colédoco del hilio van
   por el parénquima); los segmentos de Couinaud son una partición por planos de los vasos (metadatos
@@ -64,7 +66,7 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   mide sigue al volumen de la red con τ = 0,2 s (decisión 73), pero la red calcula presiones y caudales con su volumen
   elástico; los dos diámetros se separan hasta un 14 % en los colapsos rápidos del sano (5 % en la congestión grave),
   con la misma media.
-- **Segmento intestinal representativo y estático** (`bowel-segment-static`): eje estimado, no atlas ni reconstrucción
+- **Segmento intestinal representativo y estático en legacy** (`bowel-segment-static`): eje estimado, no atlas ni reconstrucción
   de todo el tubo digestivo; sin duodeno o colon individualizados o mesenterio vascularizado; pliegues estimados, sin
   peristalsis o desplazamiento de gas/líquido. Contracción radial local estimada, sin aplanamiento anisótropo ni conservación de volumen. Pared y reflectividad por capas estimadas, pendientes de comparación
   clínica. El gas intraluminal participa en transmisión y reverberación; no se interpreta el muestreo como validación
@@ -78,6 +80,9 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
   bajo el riñón que se desliza. En la hepatomegalia de la congestión grave el hígado ocupa el origen del psoas en
   T12–L1 (hasta 12 mm) y el borde superior del cuadrado (hasta 7 mm): se clasifica antes. La textura de sus fascículos no
   tiene prueba de paridad numérica entre la GPU y su gemelo TS (sí la clasificación).
+  En el atlas, el psoas usa su campo registrado. El cuadrado lumbar usa una sección oval estimada en el compartimento lumbar, anclada a la costilla 12 y cresta del adulto registrado (182); sus inserciones y espesor todavía no son una segmentación muscular.
+  La decisión 181 cierra su dominio en la pared interna y elimina las protrusiones externas 3D; no valida todavía
+  sus inserciones costales/ilíacas ni su tamaño individual.
 - **Sin cascada torácica de la VCI** (`no-thoracic-waterfall`): la unión cavoauricular transmite
   cualquier caída de la PAD; no existe la meseta de Guyton por colapso de la VCI en la entrada
   torácica. Hallado por fast-check: con hipovolemia (volumen 0,6) y PAD media ≈ 0 la VCI se vacía
@@ -88,8 +93,8 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 - **Área regional de cava superior estimada** (`ivc-regional-area-estimated`, 172): la cava abdominal conserva un único compartimento de volumen; la unión/entrada auricular usa una sección propia, dependiente de presión de unión menos pleural y retrasada 0,2 s. Q/A, CPU, GPU y 3D comparten esa elipse. La ley regional y la transición gruesa por el hiato requieren calibración/registro independientes; no existe un volumen torácico adicional ni waterfall completo.
 - **Sin movimiento cardíaco transmitido a hígado/cava** (`no-cardiac-tissue-motion`); la
   respiración es el único movimiento tisular, y el corazón (decisión 85) no late.
-- **Sin bazo** (`no-spleen`): la anatomía visceral izquierda permanece incompleta.
-- **Esqueleto torácico estimado** (`thoracic-skeleton-estimated`, decisión 166): existen doce pares funcionales y esternón compartidos en CPU, GPU y 3D. Las costillas 11/12 terminan libremente; sus recorridos se ajustan al diseño LUS (errores máximos de ajuste 2,66 y 0,80 mm, no errores clínicos). Los arcos 5–10 y sus inserciones aproximadas se preservan. Falta registrar el conjunto con un mismo adulto, estrechamiento superior, asimetrías, articulaciones, clavículas/escápulas acústicas y región diafragmática completa. Las superficies costales no tienen tapas ni articulaciones detalladas. Manubrio/cuerpo son hueso y xifoides cartílago estimado; no representa variabilidad de osificación. Ninguna validación clínica independiente está cerrada.
+- **Sin bazo en legacy** (`no-spleen`): el atlas añade un bazo estimado; no es una segmentación fuente.
+- **Esqueleto torácico procedural estimado** (`thoracic-skeleton-estimated`, decisión 166; alternativa sin atlas): existen doce pares funcionales y esternón compartidos en CPU, GPU y 3D. Las costillas 11/12 terminan libremente; sus recorridos se ajustan al diseño LUS (errores máximos de ajuste 2,66 y 0,80 mm, no errores clínicos). Los arcos 5–10 y sus inserciones aproximadas se preservan. Falta registrar el conjunto con un mismo adulto, estrechamiento superior, asimetrías, articulaciones, clavículas/escápulas acústicas y región diafragmática completa. Las superficies costales no tienen tapas ni articulaciones detalladas. Manubrio/cuerpo son hueso y xifoides cartílago estimado; no representa variabilidad de osificación. Ninguna validación clínica independiente está cerrada.
 - **El corazón es un esquema estático** (`schematic-static-heart`, decisión 85): cuatro elipsoides con su miocardio, los
   tabiques y los orificios auriculoventriculares abiertos, sin valvas, sin grandes vasos de la base (vena cava superior,
   raíz aórtica, tronco pulmonar), sin seno coronario ni venas pulmonares; el pericardio es la capa de 1,5 mm del tejido del
@@ -519,9 +524,9 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 
 ## Adulto de referencia en revisión (`?reference=1`)
 
-- `reference-thorax-incomplete`: solo los pares 5–10 conservan el ajuste del atlas. Los pares restantes y el esternón son procedurales estimados, no piezas registradas de los 24 OBJ. El perfil corporal superior sigue limitado y la columna es procedural desplazada; no existe un adulto de referencia reconciliado completo. [Plan y estado](anatomy/TORSO_PROGRESS.md).
-- `reference-skeletal-organ-overlap`: un muestreo denso del esqueleto sin compresión contra los tejidos originales detecta intersecciones con hígado y cinco muestras sanguíneas en la sexta costilla. La precedencia de hueso en el clasificador no elimina este defecto geométrico. No se movieron órganos ni se ensancharon ventanas para ocultarlo. La superficie del séptimo cartílago queda a un mínimo muestreado de 0,39 mm de la piel externa: también necesita reconciliarse con el espesor cutáneo. [Medición](anatomy/reference-relationships-report.json).
-- `reference-cartilage-seventh-only`: solo el séptimo cartílago bilateral tiene secciones medidas en los OBJ incluidos; los otros cartílagos siguen pendientes. Las 16 elipses interpoladas tienen residual de superficie RMS 0,94 mm, p95 2,10 mm, máximo 3,15 mm. Promedio bilateral, extremos cerrados y sección elíptica son aproximaciones; pasar CPU/GLSL no constituye validación clínica.
+- `reference-thorax-incomplete` (alternativa procedural; el adulto abdominal usa el campo de la decisión 180): solo los pares 5–10 conservan el ajuste del atlas. Los pares restantes y el esternón son procedurales estimados, no piezas registradas de los 24 OBJ. El perfil corporal superior sigue limitado y la columna es procedural desplazada; no existe un adulto de referencia reconciliado completo. [Plan y estado](anatomy/TORSO_PROGRESS.md).
+- `reference-skeletal-organ-overlap` (hallazgo del modelo anterior; el campo de la decisión 180 no detecta intersecciones costales interiores con hígado, riñones, bazo ni páncreas en el muestreo declarado): un muestreo denso del esqueleto sin compresión contra los tejidos originales detecta intersecciones con hígado y cinco muestras sanguíneas en la sexta costilla. La precedencia de hueso en el clasificador no elimina este defecto geométrico. No se movieron órganos ni se ensancharon ventanas para ocultarlo. La superficie del séptimo cartílago queda a un mínimo muestreado de 0,39 mm de la piel externa: también necesita reconciliarse con el espesor cutáneo. [Medición](anatomy/reference-relationships-report.json).
+- `reference-cartilage-seventh-only` (alternativa procedural; el adulto abdominal integra los cartílagos fuente 1–7): solo el séptimo cartílago bilateral tiene secciones medidas en los OBJ incluidos; los otros cartílagos siguen pendientes. Las 16 elipses interpoladas tienen residual de superficie RMS 0,94 mm, p95 2,10 mm, máximo 3,15 mm. Promedio bilateral, extremos cerrados y sección elíptica son aproximaciones; pasar CPU/GLSL no constituye validación clínica.
 
 - `reference-diaphragm-incomplete`: el campo actual comparte dos cúpulas asimétricas e inserción periférica continua entre TS/GLSL, pero no distingue tendón central, pilares ni hiatos. El borde 3D sigue ahora la pared interna del campo corporal compartido; esto no reconstruye las inserciones anatómicas por pieza. Respiración coherente entre consumidores no acredita contactos anatómicos bajo movimiento; véase `anatomy/DIAPHRAGM_AUDIT.md`.
 
@@ -557,3 +562,19 @@ verificado en el código a 21-09-2026 y lleva el identificador que lo declara en
 `color-complex-kernel-estimated`: el kernel complejo del color es procesamiento espacial estimado sobre autocorrelación emulada; no se han validado resolución ni mezcla de velocidades contra clips independientes. Ganancia/interpolación pueden extender color junto a paredes y no se añade máscara vascular para esconderlo.
 
 Corregida `color-absorption-linear-scaling` (174→176): A2 integra α_t(fD) por segmento usando los exponentes tisulares vigentes y conserva hueso/gas/espejo fijos. Continúan el muestreo grueso, la aproximación de barreras y la falta de calibración clínica de coeficientes; no se declara paridad de apertura ni idéntico muestreo PW/color. No hay suelo de transmisión 1e-6.
+
+## Abdomen de referencia (decisión 178)
+
+- `abdominal-atlas-reference-adult`: contornos de superficies de un adulto BodyParts3D 4.0 a 1,5 mm; no TC clínica ni población representativa. Los contactos se reconcilian y sus pérdidas de volumen se registran. Incluir todos los elementos digestivos disponibles no prueba longitud humana ni conexiones de cada asa. La fuente no etiqueta separadamente el sigmoides.
+- `abdominal-viscera-internals-estimated`: bazo, capas digestivas, arquitectura renal interna, fascia y gas estático estimados. El volumen residual no segmentado se declara como tal (182): sólo la proximidad al intestino delgado fuente se atribuye a mesenterio estimado. La amplitud acústica residual se conserva. La pared anterior derecha y lateral hepática del adulto atlas se ajusta de forma estimada al campo hepático (183), sin modificar la segmentación fuente ni reconstruir recesos o grasa perihepática real. La malla hepática fuente y su campo discreto pueden diferir hasta una celda: el máximo solapamiento superficial medido con la pared ajustada es 0,75 mm en la revisión 184, frente al paso del atlas de 1,5 mm. No es una medida clínica ni un contacto exacto de todas las superficies. Sin peristalsis, flujo del contenido hueco ni vejiga distendida; el contorno vesical fuente tiene ~76 ml exteriores. El gas puede interponer reverberación/sombra sobre su luz.
+- `abdominal-vascular-branches-estimated`: ejes principales registrados donde hay secciones fuente; conectores y flujos de ramas auxiliares extrapolados. Sin árbol arterial/venoso completo ni conservación en todas las bifurcaciones. Los dos conectores centrales de la arteria esplénica se adaptaron hacia posterior para no atravesar la luz digestiva.
+- `abdominal-liver-size-fixed`: el factor de tamaño hepático de los casos anteriores no deforma el adulto fuente; no se simula su hepatomegalia. El contacto normal superior hígado/diafragma usa la cáscara del campo hepático y una transición estimada (179). La transición periférica, hemidiafragma izquierdo, hiatos y relación con corazón todavía deben reconciliarse externamente.
+- `abdominal-3d-texture-minimum`: la textura 338×217×280 requiere MAX_3D_TEXTURE_SIZE ≥338, por encima del mínimo WebGL2 de 256. Cada copia del campo ocupa ~82 MB, incluida la del Worker; memoria y latencia en dispositivos pequeños no están validadas. La carga dañada o un dispositivo incompatible falla visiblemente, sin cambiar la anatomía silenciosamente.
+
+- `hepatic-contact-estimated`: el diafragma atlas se apoya en la superficie superior del hígado de este adulto mediante su SDF; no es una segmentación muscular. Dominio independiente auditado: superior z > −45 mm, pendiente < 1, margen al borde proyectado > 13,5 mm, tolerancia de resolución 1,5 mm. El obstáculo hepático evita que la aproximación tangente corte el parénquima; la transición al exterior es continua y acotada a 4 mm del campo (182). No certifica contactos periféricos, patológicos ni respiratorios en toda la superficie. La aparición costofrénica del pulmón sigue estimada. Véase `anatomy/hepatic-diaphragm-contract.md`.
+- `hepatic-proximal-veins-partial`: secciones proximales derecha/izquierda de fuente; vena media, conectores y tributarias estimados. Fuente izquierda distal incompatible con el estómago del atlas, conservada como evidencia rechazada. Capacidad de 128 tubos limita las ramas periféricas generadas, sin eliminar vasos principales. Véase `anatomy/hepatic-vein-registration.md`.
+
+- `thoracic-atlas-resolution` (decisión 180): las 24 costillas y 12 vértebras torácicas del adulto registrado sustituyen las elipses, pero el paso de 1,5 mm limita superficies y articulaciones. Distancias a triángulos en banda superficial; cabeza/cuello/tubérculo y torsión conservan la fuente. La prioridad ósea en solapamientos de cartílago y la retirada declarada de fragmentos subcelda son derivaciones, no validación clínica. Faltan cartílagos fuente 8–10, discos torácicos y clavículas/escápulas acústicas.
+- `thoracic-atlas-static-respiration` (decisión 180): el esqueleto permanece fijo mientras se mueve el diafragma. No representa aún elevación/rotación respiratoria de cada arco costal.
+
+- `probe-contact-plane-estimated` (184): el marco rígido de una sonda sobre el perfil registrado usa cuerdas de la misma piel a ±medio espesor elevacional (6,5 mm para el convexo actual), en vez de la normal puntual discontinua de la tabla. La distancia de presión usa un gradiente estimado a ±1 mm sobre esa misma piel para evitar otro salto al cruzar celdas; se conserva la tolerancia de 0,05 mm del solver. No es un ajuste biomecánico de toda la huella ni una superficie cutánea nueva. Piel, espesor y gradientes físicos permanecen compartidos. Se verifican nudos y barridos finos; no se certifica cualquier maniobra ni una frecuencia universal de cuadros. La apposición hepática inferomedial conserva huecos estimados de hasta 9,01 mm en el dominio ampliado auditado; no se declara resuelta por el cambio de marco. Véase `anatomy/vexus-window-acceptance.md`.

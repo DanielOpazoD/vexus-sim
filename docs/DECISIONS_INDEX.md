@@ -180,4 +180,13 @@ Generado por `npm run docs:index` — no editar a mano.
 | [174](DECISIONS.md#L6413) | Conservar las barreras fijas al convertir transmisión para color | vigente |
 | [175](DECISIONS.md#L6421) | Consulta costal con descarte geométrico conservador | vigente |
 | [176](DECISIONS.md#L6427) | Registro renal y muscular posterior coherente con la columna | vigente |
-| [177](DECISIONS.md#L6447) | Integrar la absorción Doppler por tejido sin nuevas texturas | vigente |
+| [177](DECISIONS.md#L6460) | Integrar la absorción Doppler por tejido sin nuevas texturas | vigente |
+| [178](DECISIONS.md#L6468) | Abdomen común de referencia: contornos, contactos y acústica explícita | vigente |
+| [179](DECISIONS.md#L6508) | Contacto hepatodiafragmático registrado y suprahepáticas proximales | vigente |
+| [180](DECISIONS.md#L6518) | Caja costal y columna torácica del mismo adulto que el abdomen | vigente |
+| [181](DECISIONS.md#L6532) | Cerrar el campo de los cuadrados lumbares en la pared posterior | vigente |
+| [182](DECISIONS.md#L6546) | Registro posterior, contacto hepático y lente convexa coherentes | vigente |
+| [183](DECISIONS.md#L6592) | Apposición hepática costal y marcador intercostal posterior | vigente |
+| [184](DECISIONS.md#L6656) | Contacto continuo y criterios anatómicos de las nueve ventanas | vigente |
+| [185](DECISIONS.md#L6720) | Evidencia reproducible de las nueve ventanas | vigente |
+| [186](DECISIONS.md#L6758) | Ventana epigástrica transhepática y plano venoso renal | vigente |

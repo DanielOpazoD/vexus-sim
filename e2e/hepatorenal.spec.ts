@@ -7,7 +7,7 @@ for (const reference of [false, true])
     page,
   }, info) => {
     budget(240_000);
-    await bootWithoutErrors(page, reference ? '?e2e=1&reference=1' : '?e2e=1');
+    await bootWithoutErrors(page, reference ? '?e2e=1&abdomen=legacy&reference=1' : '?e2e=1&abdomen=legacy');
     const card = page.getByRole('button', { name: /^Hepatorrenal/ });
     await card.click();
     await expect(card).toHaveAttribute('aria-current', 'true');

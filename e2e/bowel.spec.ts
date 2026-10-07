@@ -4,7 +4,7 @@ checkAfterEach();
 for (const reference of [false, true])
   test(`asas: luz, gas, pared y serosa coinciden en CPU/GPU (${reference ? 'referencia' : 'legacy'})`, async ({ page }, info) => {
     budget(150_000);
-    const errors = await bootWithoutErrors(page, reference ? '?e2e=1&reference=1' : '?e2e=1');
+    const errors = await bootWithoutErrors(page, reference ? '?e2e=1&abdomen=legacy&reference=1' : '?e2e=1&abdomen=legacy');
     await page.evaluate(() => {
       window.__vexusTest!.setCompound(false);
       window.__vexusTest!.setPose({ phi: Math.PI / 2, z: -112, lift: 0, yaw: Math.PI / 2, rock: 0, tilt: 0 });
@@ -34,7 +34,7 @@ for (const reference of [false, true])
 for (const reference of [false, true])
   test(`asas: compresión local reversible y gemelo GPU (${reference ? 'referencia' : 'legacy'})`, async ({ page }, info) => {
     budget(200_000);
-    await bootWithoutErrors(page, reference ? '?e2e=1&reference=1' : '?e2e=1');
+    await bootWithoutErrors(page, reference ? '?e2e=1&abdomen=legacy&reference=1' : '?e2e=1&abdomen=legacy');
     const measure = async (lift: number) =>
       page.evaluate((lift) => {
         const t = window.__vexusTest!;

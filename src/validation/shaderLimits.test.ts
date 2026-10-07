@@ -244,7 +244,7 @@ describe('Límites del shader con margen para crecer', () => {
     expect(rawSteered.arrays).toEqual(raw.arrays);
     expect(rawSteered.slots).toBe(raw.slots + 2);
     expect(raw.slots).toBeGreaterThan(90);
-    expect(rawSteered.slots).toBeLessThanOrEqual(130);
+    expect(rawSteered.slots).toBeLessThanOrEqual(135); // +3 uniforms and bounded abdomen tables; still <179 WebGL2 guard
   });
 
   // Composición espacial (decisión 58, T7): WebGL2 garantiza 16 unidades de textura por shader de
@@ -253,8 +253,26 @@ describe('Límites del shader con margen para crecer', () => {
   // dos de B leen además la pleura parietal de A0 (uHits2) y el rayo único de A (uTrans2), decisión 61.
   it('cada shader de fragmentos declara ≤ 16 samplers; B, A y K, los de su diseño', () => {
     for (const [name, src] of FRAGMENT_SHADERS) expect(samplersOf(src).length, name).toBeLessThanOrEqual(16);
-    expect(samplersOf(FRAG_RAWFIELD)).toEqual(['uSceneTex', 'uCoupling', 'uTrans0', 'uTrans1', 'uHits2', 'uTrans2']);
-    expect(samplersOf(FRAG_RAWFIELD_STEERED)).toEqual(['uSceneTex', 'uCoupling', 'uTrans1', 'uTrans3', 'uHits2', 'uTrans2']);
+    expect(samplersOf(FRAG_RAWFIELD)).toEqual([
+      'uSceneTex',
+      'uAbdominalAtlas',
+      'uThoracicAtlas',
+      'uCoupling',
+      'uTrans0',
+      'uTrans1',
+      'uHits2',
+      'uTrans2',
+    ]);
+    expect(samplersOf(FRAG_RAWFIELD_STEERED)).toEqual([
+      'uSceneTex',
+      'uAbdominalAtlas',
+      'uThoracicAtlas',
+      'uCoupling',
+      'uTrans1',
+      'uTrans3',
+      'uHits2',
+      'uTrans2',
+    ]);
     // A lee de A0 la dirección reflejada del espejo (uHits1) desde que A2 o1 lleva la refracción (decisión 86)
     expect(samplersOf(FRAG_TRANSMISSION)).toEqual(['uCoupling', 'uPre0', 'uPre1', 'uHits0', 'uHits1']);
     expect(samplersOf(FRAG_TRANSMISSION_STEERED)).toEqual(['uCoupling', 'uPre0', 'uPre1', 'uHits0', 'uHits1', 'uPreSteer', 'uPreSteerX']);

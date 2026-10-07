@@ -6,7 +6,7 @@ checkAfterEach();
 for (const reference of [false, true])
   test(`unión diafragmática y tejidos vecinos CPU/GPU (${reference ? 'referencia' : 'legacy'})`, async ({ page }, info) => {
     budget(180_000);
-    await bootWithoutErrors(page, reference ? '?e2e=1&reference=1' : '?e2e=1');
+    await bootWithoutErrors(page, reference ? '?e2e=1&abdomen=legacy&reference=1' : '?e2e=1&abdomen=legacy');
     const points = await page.evaluate(() => {
       const sim = window.__vexusTest!.sim(),
         cal = sim.anatomy.caliberFor(sim.sample),

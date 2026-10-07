@@ -139,7 +139,15 @@ function setPoseManual(p: Parameters<Simulator['setPose']>[0]): void {
 // Carril izquierdo: ventanas VExUS (la sonda se desliza hasta su punto de partida), ayuda y corte plegable
 const windows = new StartPointCards($('start-points'), {
   onPick: (sp) => {
-    if (sp.id === 'portal') for (const cmd of portalPreset(!!sim().scene.torso.profile, sim().transducer.f0Doppler)) dispatch(cmd);
+    if (sp.id === 'portal' || (sp.id === 'portalTrunk' && sim().scene.hasAbdominalAtlas))
+      for (const cmd of portalPreset(
+        !!sim().scene.torso.profile,
+        sim().transducer.f0Doppler,
+        sim().scene.hasAbdominalAtlas,
+        sp.id === 'portalTrunk',
+      ))
+        dispatch(cmd);
+    else if (sim().scene.hasAbdominalAtlas) dispatch({ type: 'bmode', patch: { depthMm: 180, focusMm: 90 } });
     probeAnimator.goTo(sp);
   },
   getPose: () => sim().pose,
@@ -188,7 +196,8 @@ const input = new ProbeInput(
 // para su primer cuadro; si falla, la aplicación sigue sin él.
 let nav: Navigator3D | null = null;
 void import('./ui/navigator3d')
-  .then(({ Navigator3D }) => {
+  .then(async ({ Navigator3D }) => {
+    if (sim().scene.hasAbdominalAtlas) await (await import('./anatomy/abdominalSurface')).loadAbdominalSurface();
     nav = new Navigator3D(navHost, sim().scene, sim().transducer, {
       getPose: () => sim().pose,
       setPose: setPoseManual,
@@ -417,7 +426,10 @@ function frame(now: number, dt: number): void {
   if (!comparisonOpen) {
     drawOverlay(overlay, s);
     nav?.draw();
-    if (store.get().torso && !gpu.lost) cutMap?.draw(s, now);
+    if (store.get().torso && !gpu.lost) {
+      cutMap?.draw(s, now);
+    }
+    cutMap?.drawHighlight(overlay, s, store.get().torso && !gpu.lost);
     drawTraces(s);
   }
   const t = s.physiology.clock.t;

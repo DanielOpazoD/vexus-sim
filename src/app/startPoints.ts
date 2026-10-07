@@ -180,9 +180,9 @@ const REFERENCE_POSES = {
   intercostal: {
     phi: 3.0,
     z: -50,
-    yaw: 0.991606,
-    rock: 0.326097,
-    tilt: -0.445188,
+    yaw: 0.991606 - Math.PI,
+    rock: -0.326097,
+    tilt: 0.445188,
   },
   subcostal: {
     phi: 1.65,
@@ -226,12 +226,45 @@ const REFERENCE_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
   ...REFERENCE_POSES[sp.id],
   hint:
     sp.id === 'intercostal'
-      ? 'Ventana intercostal derecha del adulto de referencia: marcador oblicuo hacia la axila; afinar entre las superficies costales para ver la VSH derecha.'
+      ? 'Ventana intercostal derecha del adulto de referencia: marcador oblicuo hacia la axila posterior; afinar entre las superficies costales para ver la VSH derecha.'
       : sp.id === 'renal'
         ? 'Ventana renal derecha del adulto de referencia: desde el flanco, afinar el eje largo y colocar la puerta en una vena interlobar visible.'
         : sp.hint,
 }));
+const ABDOMINAL_POSES = {
+  // Intrahepatic IVC in long axis, rather than aiming the whole face at its
+  // thoracic end. Offline compressed rays; fixed organs and real costal field.
+  subxiphoid: { phi: 1.6, z: -40, yaw: -0.02516291680704072, rock: 0.001621690619853046, tilt: -0.0641956706912719 },
+  // Transverse hepatic window above the bowel-gas barrier, without relocating any organ.
+  // The previous caudal plane hid both posterior vessels; contract and native trials precede this adjustment.
+  epigastric: { phi: 1.55, z: -35, yaw: -Math.PI / 2, rock: 0, tilt: 0.15 },
+  intercostal: { phi: 2.5, z: -35, yaw: -1.2, rock: 0.08958884100807597, tilt: 0.15439831127567974 },
+  subcostal: { phi: 2, z: -80, yaw: 0.6280025227578521, rock: 0.3259201915316282, tilt: -0.03886141881794285 },
+  flank: { phi: 3.1, z: -75, yaw: 0.1767952406260464, rock: 0.4707775613505776, tilt: -0.04687503959831865 },
+  // Equivalent acoustic plane with the marked end cranial: yaw − π, rock/tilt sign reversed.
+  // The former pose pointed the marker caudally and mirrored the standard longitudinal orientation.
+  portal: { phi: 3.2499999999999996, z: -65, yaw: -0.3083879194167607, rock: -0.2122189996791038, tilt: 0.0937442490667998 },
+  // A 2.86-degree venous sweep reaches an interlobar lumen with the existing 1.2 mm wall safeguard.
+  // Kidney/vasculature, skin point and in-plane orientation remain registered and unchanged.
+  renal: { phi: 3.15, z: -175, yaw: -0.04682166646295555, rock: 0.37638199977635656, tilt: -0.28301506696896933 },
+  portalTrunk: { phi: 3.05, z: -80, yaw: 0.22135021897142884, rock: -0.13225461110004316, tilt: 0.11100678455374574 },
+  // Recheck actual renal transmission after the continuous pressure correction;
+  // a 2-mm cranial slide clears the grazing rib without altering the skeleton.
+  hepatorenal: { phi: 2.99, z: -113, yaw: -0.24452521426888207, rock: -0.13406390040993016, tilt: -0.3591483268294911 },
+} as const;
+const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
+  ...sp,
+  ...ABDOMINAL_POSES[sp.id],
+  hint:
+    sp.id === 'intercostal'
+      ? 'Ventana hepática intercostal oblicua: marcador hacia la axila posterior y huella a lo largo del espacio. Rota o abanica para adquirir la suprahepática; las costillas conservan cortical y sombra.'
+      : sp.id === 'portal'
+        ? 'Rama portal derecha dentro del hígado desde lateral, marcador craneal. Encuadre de 13 cm y foco a 10 cm; color ±35 cm/s, ganancia 12 dB. Afina entre costillas y ajusta la caja. Para medir VExUS, busca el tronco principal.'
+        : sp.id === 'portalTrunk'
+          ? 'Tronco portal principal para PW, marcador craneal. Encuadre de 16 cm y foco a 13 cm; afina en el hilio y coloca la puerta en el tronco, sin sustituirlo por una rama intrahepática.'
+          : sp.hint,
+}));
 /** Scene-specific presets; legacy tests/torso retain their own poses. */
 export function startPointsFor(torso: Pick<Torso, 'a' | 'b' | 'profile'>): readonly StartPoint[] {
-  return torso.profile ? REFERENCE_POINTS : START_POINTS;
+  return torso.profile && torso.profile.length !== 520 ? ABDOMINAL_POINTS : torso.profile ? REFERENCE_POINTS : START_POINTS;
 }

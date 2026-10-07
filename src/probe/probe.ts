@@ -47,7 +47,8 @@ export interface Transducer {
 export const CONVEX_C35: Transducer = {
   type: 'convex',
   curvatureRadius: 60,
-  footprintMm: 62,
+  // Generic estimated geometry, not a vendor specification.
+  footprintMm: 2 * 60 * Math.sin((34 * Math.PI) / 180),
   elevationMm: 13,
   halfSector: (34 * Math.PI) / 180,
   lines: 192,
@@ -68,7 +69,7 @@ export interface ProbeFrame {
   elevation: Vec3;
   /** Centro de curvatura (origen de las líneas radiales). */
   curvatureCenter: Vec3;
-  /** Normal exterior de la piel bajo la sonda. */
+  /** Normal exterior estimada de la región de apoyo rígido de la sonda. */
   skinNormal: Vec3;
   /** Punto de la piel. */
   skinPoint: Vec3;
@@ -76,7 +77,19 @@ export interface ProbeFrame {
 
 export function probeFrame(pose: ProbePose, torso: Torso, tr: Transducer): ProbeFrame {
   const skinPoint = torsoSkinPoint(pose.phi, pose.z, torso);
-  const n = torsoNormal(skinPoint, torso);
+  // A rigid probe rests on a patch, not on a knot of the sampled skin. Chords
+  // of the SAME surface give a continuous contact plane across profile cells.
+  // The narrow footprint sets the estimated patch; no temporal/image smoothing.
+  const h = tr.elevationMm / 2;
+  const dphi = h / Math.max(40, Math.hypot(skinPoint[0], skinPoint[1] - (torso.y0 ?? 0)));
+  const n = torso.profile
+    ? normalize(
+        cross(
+          sub(torsoSkinPoint(pose.phi + dphi, pose.z, torso), torsoSkinPoint(pose.phi - dphi, pose.z, torso)),
+          sub(torsoSkinPoint(pose.phi, pose.z + h, torso), torsoSkinPoint(pose.phi, pose.z - h, torso)),
+        ),
+      )
+    : torsoNormal(skinPoint, torso);
   let axial = scale(n, -1);
   // lateral inicial: proyección de +z (craneal) sobre el plano tangente
   let lateral = normalize(sub([0, 0, 1], scale(n, dot([0, 0, 1], n))));
@@ -159,9 +172,9 @@ export function probeVelocity(prev: ProbeFrame, next: ProbeFrame, dtSeconds: num
 
 export function clampPose(p: ProbePose): ProbePose {
   return {
-    // Hasta la línea axilar posterior derecha (ventana renal) en decúbito supino
-    phi: clamp(p.phi, -Math.PI * 0.05, Math.PI * 1.2),
-    z: clamp(p.z, -200, 200),
+    // Full circumference permits left splenorenal and posterior renal acquisition.
+    phi: ((((p.phi + Math.PI / 2) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI / 2,
+    z: clamp(p.z, -420, 200),
     lift: clamp(p.lift, -6, 25),
     yaw: ((((p.yaw + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI,
     rock: clamp(p.rock, -0.7, 0.7),

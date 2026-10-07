@@ -57,6 +57,10 @@ const KB = 1024;
 const BUDGETS: Array<[RegExp, number]> = [
   // El perfil corporal conserva sus 2080 bytes; carga solo al activar referencia, sin base64 en JS.
   [/reference-body-.*\.bin$/, 2080],
+  [/abdominal-body-.*\.bin$/, 3640],
+  [/abdominal-atlas\.gzip-.*\.bin$/, 6 * 1024 * KB],
+  [/abdominal-surface\.gzip-.*\.bin$/, 6 * 1024 * KB],
+  [/thoracic-(atlas|surface)\.gzip-.*\.bin$/, 6 * 1024 * KB],
   [/three.*\.js$/, 700 * KB],
   [/^(index|bootstrap)-.*\.js$/, 335 * KB],
   [/\.css$/, 20 * KB],
@@ -73,7 +77,12 @@ const BUDGETS: Array<[RegExp, number]> = [
 // 06-10-2026: +1 KiB compartido para sección regional, paridad portal y filtro color (172–173).
 // 06-10-2026: +1 KiB para descarte costal conservador CPU/GLSL (175), medido 1031,4 KiB.
 // 06-10-2026: +1 KiB para registro renal/músculos posteriores compartidos (176), medido 1032,3 KiB.
-const TOTAL_JS_BUDGET = 1033 * KB;
+// 06-10-2026: registered complete abdomen adds bounded 3D field loading/sampling, pelvic skin
+// and six shared acoustic tissues, full vascular branches and posterior fields.
+// Measured 1063.8 KiB; bounded +37 KiB over 1033, unchanged per-chunk limits.
+// 06-10-2026: +8 KiB for anatomy region identities, correlated hover contours and cine geometry.
+// Measured 1072.2 KiB vs 1065.9 KiB; all per-chunk limits retained.
+const TOTAL_JS_BUDGET = 1078 * KB;
 /** Identifica los ganchos para el informe; todos los chunks y Workers cuentan en el total. */
 const TEST_ONLY = /^testHooks-.*\.js$/;
 

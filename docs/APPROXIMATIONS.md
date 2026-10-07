@@ -112,6 +112,12 @@ Los centros/ejes exteriores renales se registran en la fuente; su seno, pirámid
 
 Los vasos principales usan secciones fuente cuando existen. Ramas y conectores no segmentados y sus repartos de flujo son extrapolaciones; dos conectores esplénicos se ajustaron 10 mm hacia posterior para evitar lumen digestivo. La nueva geometría no constituye calibración de un árbol hemodinámico completo. Los detalles, datos fuente, reproducción y límites de hardware están en `docs/anatomy/ABDOMINAL_ATLAS.md`.
 
+Seguimiento renal: la salida esplénica estimada se revisa al descubrir una
+penetración del polo superior izquierdo. Conserva radios y fisiología;
+su recorrido craneal/anterior es NEEDS_CALIBRATION, no una vena segmentada.
+El [contrato renal/esplénico](anatomy/renal-splenic-relations-contract.md)
+distingue la corrección espacial de la representación ecográfica pendiente.
+
 ## Contacto superior hepático y vasos proximales (179)
 
 La cúpula atlas usa una tabla de altura/soporte derivada de la superficie hepática, y cerca de ella la cáscara SDF de 2,5 mm. La transición entre 6 y 12 mm por debajo de la superficie preserva el dominio superior. Los campos de órganos permanecen idénticos; la malla 3D resuelve el mismo cero acústico. No se integra el activo FJ3131 ni se simula separación patológica por ascitis/derrame con esta corrección normal.

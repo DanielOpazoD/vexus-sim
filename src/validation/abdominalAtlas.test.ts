@@ -15,6 +15,8 @@ import { PhysiologyEngine } from '../physiology/engine';
 import { VenousSpectralAcquisition } from '../app/venousSpectral';
 import { DEFAULT_BMODE } from '../ultrasound/renderer';
 import { loadPinnedGzip } from '../anatomy/loadAbdominalAtlas';
+import { tubeQuery } from '../anatomy/primitives';
+import { wallThicknessMm } from '../anatomy/vesselTree';
 
 const compressed = readFileSync('src/anatomy/abdominal-atlas.gzip.bin');
 const raw = gunzipSync(compressed);
@@ -31,6 +33,31 @@ afterEach(() => {
 });
 
 describe('registered abdomen: actual shipped acoustic data', () => {
+  it('keeps splenic venous lumen and wall outside left renal parenchyma without classifier priority masking', () => {
+    const scene = new AnatomyScene(NORMAL_ADULT);
+    const vein = scene.vesselById.get('portalSplenic')!;
+    // Held-out material point from the user's registered left renal cut.
+    // Old splenic connector crossed cortex here, up to 4.58 mm below its surface.
+    const witness: [number, number, number] = [70.5690118992419, -41.16895683125758, -92.5184253368824];
+    expect(abdominalAtlasSdf(witness, 6)).toBeLessThan(-4);
+    expect(scene.classify(witness, BASELINE_CALIBER).tissue).toBe(Tissue.RenalCortex);
+    const field = ABDOMINAL_FIELDS[6];
+    let occupied = 0;
+    for (let z = 0; z < field.dimensions[2]; z++)
+      for (let y = 0; y < field.dimensions[1]; y++)
+        for (let x = 0; x < field.dimensions[0]; x++) {
+          const p = field.originMm.map((v, i) => v + [x, y, z][i] * field.pitchMm) as [number, number, number];
+          if (abdominalAtlasSdf(p, 6) >= 0) continue;
+          occupied++;
+          // 1.5 is an engineering stress scale, not a claimed normal venous caliber.
+          // Query the actual shaped tube directly: a renal label must not hide overlap.
+          for (const scale of [1, 1.5]) {
+            const hit = tubeQuery(p, vein.tube, scale);
+            expect(hit.d - wallThicknessMm(vein, hit.r)).toBeGreaterThanOrEqual(0);
+          }
+        }
+    expect(occupied).toBeGreaterThan(30_000);
+  });
   it('reconciles false internal hepatic capsule without inventing another organ or flow', () => {
     // Held-out crack in the assembled segment surfaces: old field +0.75 mm (exterior),
     // despite being deep inside the hepatic envelope. It must be parenchyma in the scene.

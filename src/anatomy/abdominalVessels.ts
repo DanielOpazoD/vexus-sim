@@ -245,7 +245,14 @@ const EXTRA: Record<keyof typeof ABDOMINAL_VESSEL_RADII, readonly Vec3[]> = {
     [-10.4, 6.5, -100],
   ],
   portalSplenic: [
-    [77, -46, -83],
+    // Trayecto hiliar estimado: salir del bazo craneal y anterior al polo
+    // renal, antes de dirigirse hacia la cara posterior del páncreas.
+    // La cuerda previa [77,-46,-83] → [61,-19,-108] atravesaba corteza
+    // renal izquierda; no se corrige ocultando el vaso ni moviendo el riñón.
+    // [EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION: no hay vena esplénica
+    // segmentada en el subconjunto BP3D. Véase el contrato renal/esplénico.
+    [90, -43, -74],
+    [75, -19, -95],
     [61, -19, -108],
     [35, -18, -114],
     [10, -12, -112],

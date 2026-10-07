@@ -37,7 +37,7 @@ interface UniformSpec {
 
 export const SCENE_UNIFORMS: readonly UniformSpec[] = [
   { name: 'uBodyRows', type: 'int', value: (s) => [(s.torso.profile?.length ?? 520) / 65] },
-  { name: 'uBodyMinZ', type: 'float', value: (s) => [s.torso.profile?.length === 910 ? -400 : -160] },
+  { name: 'uBodyMinZ', type: 'float', value: (s) => [s.torso.profile && s.torso.profile.length !== 520 ? -400 : -160] },
   { name: 'uAbdominalAtlasEnabled', type: 'int', value: (s) => [s.hasAbdominalAtlas ? 1 : 0] },
   /** a, b, zMin, zMax */
   { name: 'uReferenceBody', type: 'int', value: (s) => [s.torso.profile ? 1 : 0] },

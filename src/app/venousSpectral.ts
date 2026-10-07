@@ -101,6 +101,9 @@ export class VenousSpectralAcquisition {
       // Registered posterior kidney: the arterial plane is 3.5° behind its venous plane.
       // Procedural acquisition retains its audited 2° offset; physiology is untouched.
       const pairedTilt = paired ? ((scene.torso.profile ? 3.5 : 2) * Math.PI) / 180 : 0;
+      // Reversing the registered intercostal marker also reverses local tilt.
+      // Keep the audited physical 2-degree sweep, rather than sweeping away.
+      const hepaticTilt = window === 'intercostal' && hepaticWindow === 'tilted' ? ((scene.torso.profile ? -1 : 1) * Math.PI) / 90 : 0;
       // Audited acquisition pose, not a velocity or brightness correction.
       const contact = probeContact(
         {
@@ -108,7 +111,7 @@ export class VenousSpectralAcquisition {
           z: sp.z,
           yaw: sp.yaw,
           rock: sp.rock ?? 0,
-          tilt: (sp.tilt ?? 0) - pairedTilt + (window === 'intercostal' && hepaticWindow === 'tilted' ? Math.PI / 90 : 0),
+          tilt: (sp.tilt ?? 0) - pairedTilt + hepaticTilt,
           lift: 0,
         },
         tr,

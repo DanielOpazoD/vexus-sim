@@ -1,3 +1,4 @@
+import { hepaticCostalBody } from './hepaticCostalWall';
 import { thoracicAtlas, thoracicValue, thoracicMaterial, thoracicSdf, thoracicFrame } from './thoracicAtlas';
 import { BOWEL_FIELD_REACH_MM, BOWEL_WALL_MM, bowelQuery, bowelGasSdf, bowelRadii } from './organs/bowel';
 import { referenceBody, abdominalBody } from './referenceBody';
@@ -297,10 +298,7 @@ export class AnatomyScene {
     if (this.hasAbdominalAtlas ? abdominalBody : referenceBody) {
       this.torso.profile = this.hasAbdominalAtlas ? abdominalBody : referenceBody;
       if (this.hasAbdominalAtlas && this.torso.profile) {
-        // Assume a 10 mm source wall (estimated, not segmented). Preserve registered viscera,
-        // expand only external skin for the patient's stated wall thickness.
-        const offset = Math.max(0, this.wallThickness() - 10);
-        this.torso.profile = Float32Array.from(this.torso.profile, (r, i) => (i % 65 === 0 ? r : r + offset));
+        this.torso.profile = hepaticCostalBody(this.torso.profile, this.wallThickness(), this.torso.skinMm);
       }
       this.torso.y0 = -21.106195;
       this.spineReferenceOffset = -14.02345;
@@ -584,7 +582,26 @@ export class AnatomyScene {
       d.disc < 0
         ? { ...NONE, tissue: Tissue.Cartilage, boundaryDistance: -d.disc }
         : this.classifyInside(m, caliber, withCurtain, depth, wall.wallMm);
-    return withSpineFace(c, d.bone, d.body, d.disc);
+    const result = withSpineFace(c, d.bone, d.body, d.disc);
+    if (this.hasAbdominalAtlas && thoracicAtlas) {
+      const q = thoracicValue(m);
+      // Cortex belongs to adjacent soft tissue even when the registered rib
+      // is deeper than the estimated wall. Transmission still hides its back.
+      if (
+        thoracicMaterial(q.label) === 'bone' &&
+        q.d >= 0 &&
+        q.d < 1.3 &&
+        q.d < result.interfaceDistance &&
+        ![Tissue.Lung, Tissue.Fluid, Tissue.Blood].includes(result.tissue)
+      )
+        return {
+          ...result,
+          boundaryDistance: Math.min(result.boundaryDistance, q.d),
+          interface: Interface.RibCortex,
+          interfaceDistance: q.d,
+        };
+    }
+    return result;
   }
 
   /** `classify` dentro de la cavidad y fuera de la columna: cortina, tubos, tórax, diafragma y vísceras. */

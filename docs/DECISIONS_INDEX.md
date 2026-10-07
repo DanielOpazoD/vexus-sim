@@ -186,3 +186,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [180](DECISIONS.md#L6451) | Caja costal y columna torácica del mismo adulto que el abdomen | vigente |
 | [181](DECISIONS.md#L6465) | Cerrar el campo de los cuadrados lumbares en la pared posterior | vigente |
 | [182](DECISIONS.md#L6479) | Registro posterior, contacto hepático y lente convexa coherentes | vigente |
+| [183](DECISIONS.md#L6525) | Apposición hepática costal y marcador intercostal posterior | vigente |

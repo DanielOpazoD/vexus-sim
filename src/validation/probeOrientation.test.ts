@@ -23,7 +23,8 @@ it('uses cranial longitudinal/right-patient transverse markers with the same por
   for (const p of points) {
     const fr = probeFrame({ ...p, lift: 0, rock: p.rock ?? 0, tilt: p.tilt ?? 0 }, torso, CONVEX_C35);
     if (p.id === 'epigastric') expect(fr.lateral[0]).toBeLessThan(-0.9);
-    else if (p.id === 'intercostal') expect(fr.lateral[2], 'oblique intercostal marker toward the axilla').toBeGreaterThan(0);
+    else if (p.id === 'intercostal')
+      expect(fr.lateral[1], 'oblique intercostal marker toward the posterior axilla (ACEP)').toBeLessThan(-0.5);
     else expect(fr.lateral[2], p.id).toBeGreaterThan(0.5);
   }
   const p = points.find((p) => p.id === 'portal')!;

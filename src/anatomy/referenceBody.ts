@@ -6,7 +6,8 @@ import type { Vec3 } from '../core/vec3';
  * no una dimensión clínica ni validación humana. */
 export const BODY_ROWS = 8;
 export const ABDOMINAL_BODY_ROWS = 14;
-export const BODY_MAX_ROWS = ABDOMINAL_BODY_ROWS;
+export const COSTAL_BODY_ROWS = 53;
+export const BODY_MAX_ROWS = COSTAL_BODY_ROWS;
 export const BODY_STRIDE = 65;
 export let referenceBody: Float32Array | undefined;
 export let abdominalBody: Float32Array | undefined;
@@ -15,7 +16,10 @@ export function setAbdominalBody(values?: Float32Array): void {
   abdominalBody = values ? validateReferenceBody(values) : undefined;
 }
 export function validateReferenceBody(values: Float32Array): Float32Array {
-  if (![BODY_ROWS * BODY_STRIDE, ABDOMINAL_BODY_ROWS * BODY_STRIDE].includes(values.length) || !values.every(Number.isFinite))
+  if (
+    ![BODY_ROWS * BODY_STRIDE, ABDOMINAL_BODY_ROWS * BODY_STRIDE, COSTAL_BODY_ROWS * BODY_STRIDE].includes(values.length) ||
+    !values.every(Number.isFinite)
+  )
     throw new Error('Referencia corporal inválida');
   for (let i = 0; i < values.length; i++)
     if (i % BODY_STRIDE !== 0 && (values[i] < 40 || values[i] > 300)) throw new Error('Radio corporal fuera del dominio del asset');
@@ -27,8 +31,9 @@ export function setReferenceBody(values?: Float32Array): void {
 /** Radio, derivadas en φ/z, centro Y y su derivada; clamping explícito fuera de los cortes fuente. */
 export function bodySection(phi: number, z: number, data: Float32Array): [number, number, number, number, number] {
   const rows = data.length / BODY_STRIDE,
-    minZ = rows === ABDOMINAL_BODY_ROWS ? -400 : -160;
-  const zz = Math.max(0, Math.min(rows - 1, (z - minZ) / 40));
+    minZ = rows === BODY_ROWS ? -160 : -400;
+  const step = (120 - minZ) / (rows - 1);
+  const zz = Math.max(0, Math.min(rows - 1, (z - minZ) / step));
   const row = Math.min(rows - 2, Math.floor(zz));
   const f = zz - row;
   const angle = ((((phi / (2 * Math.PI)) % 1) + 1) % 1) * 64;
@@ -47,9 +52,9 @@ export function bodySection(phi: number, z: number, data: Float32Array): [number
   return [
     r0 + (r1 - r0) * f,
     (((b - a) * (1 - f) + (d - c) * f) * 64) / (2 * Math.PI),
-    inside ? (r1 - r0) / 40 : 0,
+    inside ? (r1 - r0) / step : 0,
     cy0 + (cy1 - cy0) * f,
-    inside ? (cy1 - cy0) / 40 : 0,
+    inside ? (cy1 - cy0) / step : 0,
   ];
 }
 export function bodyDepth(p: Vec3, data: Float32Array): number {

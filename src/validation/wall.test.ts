@@ -738,7 +738,7 @@ describe('gemelo GLSL (organs/wall.ts y wallTexture.ts)', () => {
     expect(WALL_TEXTURE.faceVariation.length).toBe(LAST_WALL_INTERFACE - FIRST_WALL_INTERFACE + 1);
     // los tejidos de la decisión 81 (psoas, cuadrado lumbar, grasa retroperitoneal) y de la 85 (miocardio y mediastino) van al
     // final: no mueven índices
-    expect(TISSUE_COUNT).toBe(39); // grasa mesentérica añadida sin renumerar tejidos previos
+    expect(TISSUE_COUNT).toBe(40); // tejido no segmentado añadido sin renumerar tejidos previos
   });
 });
 

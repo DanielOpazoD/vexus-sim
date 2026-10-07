@@ -6521,3 +6521,52 @@ exacta en esas fronteras. Calibración idéntica a la previa.
 El build compila pero el gate de bundle falla: 1090,3 KiB > 1078 KiB.
 No se eleva el presupuesto, no hay CI de esta rama ni promoción a main.
 Artefactos locales 226: pruebas, auditoría de poses y capturas del programa.
+
+## 183. Apposición hepática costal y marcador intercostal posterior
+
+**Contexto.** La decisión 182 corrige el nombre del relleno, pero deja unos 30 mm
+entre la cara interna de pared y el hígado en un rayo lateral. Las costillas
+registradas que quedan más profundas que la pared estimada producen atenuación
+ósea sin dueño cortical externo. El marcador intercostal apunta hacia anterior.
+
+**Opciones.** Agrandar el hígado, cubrirlo con grasa o pintar un arco brillante
+oculta el defecto. Se conserva la fuente visceral/vascular/esquelética y se
+reconcilia sólo el contorno corporal estimado y la propiedad de interfaz.
+
+**Decisión.** Contrato previo `anatomy/hepatic-costal-apposition-contract.md`.
+Un perfil de pared interpolado de 53 filas apoya su cara interna sobre el campo
+hepático en el territorio lateral, con resguardo de órganos y hueso. Piel/pared
+siguen estimadas, no una nueva segmentación. Fuera de este territorio se conserva
+el contorno anterior. La textura común CPU/GPU pasa de 7 a 10 filas, sin sampler
+adicional. No se modifica ningún dato binario de anatomía ni parámetro acústico.
+La cortical registrada puede pertenecer al tejido adyacente fuera de la pared;
+la entrada ósea y su transmisión permanecen activas. El marcador de la ventana
+oblicua se invierte rígidamente hacia axila posterior (ACEP); después se recalibra
+la pose atlas sobre el nuevo contorno. La revisión de las nueve ventanas detecta pérdida del
+tronco portal y del encuadre subcostal/hepatorrenal; se reorientan estas poses
+hacia sus vasos y riñón registrados, sin mover tejidos. Las ventanas coronales
+conservan marcador craneal. El barrido virtual hepático mantiene sus 2° físicos con el signo local
+correspondiente al marcador invertido, sin corregir velocidades ni puertas.
+
+**Consecuencias.** El espacio costal evaluado deja de representarse como una capa
+mesentérica. La piel adaptada no certifica anatomía clínica individual; aún falta
+reconciliación costofrénica/respiratoria y revisión ecográfica humana. La malla
+fuente del hígado cruza hasta 0,32 mm la cara interna interpolada en el muestreo
+completo de vértices: discrepancia superficial subcelda del campo de 1,5 mm, no
+contacto geométrico exacto. Los demás órganos fuente quedan dentro de la pared.
+Se conserva el fallo del intento con resguardo uniforme de 2 mm: su separación
+máxima superaba la tolerancia del contrato; no se relaja ésta para aceptarlo.
+
+**Verificación.** Controles negativos conservados en artefactos locales 227.
+42 contactos fuera de retículo cumplen tolerancia de 2,5 mm; cortical anterior
+a hueso auditada en CPU/GPU y sombra de adquisición real. Las 1206 pruebas
+rápidas y 23 regresiones finales de poses/documentación pasan. Se verifican
+16 pruebas nativas distintas de producción (Metal, sin reintentos), incluida
+la cortical con imagen actual adquirida tras descongelar por la interfaz.
+Exploración de 72 poses con mandos reales en nueve ventanas más 24 poses de
+los tres presets recalibrados, normal y congestión grave, sin errores de ejecución.
+Los histogramas CPU/GPU difieren en 25 encuadres por 1–9 muestras de 2048: no
+se declara equivalencia exacta en fronteras ni se usa el conteo como validación clínica.
+Calibración idéntica al registro 226. Tipos, lint y formato pasan. El build compila
+pero su presupuesto sigue rojo: 1092,7 KiB > 1078 KiB. Sin aumento de presupuesto,
+CI de esta rama ni integración a main; entrega exclusivamente local.

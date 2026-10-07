@@ -23,7 +23,7 @@ import { VESSEL_META, type VesselId } from '../physiology/vessels';
  *  - capas de la pared (decisión 62, `organs/wall.ts`): cada muestra de piel, grasa, músculo o grasa
  *    preperitoneal dibuja la cara de su capa más cercana (dermis/grasa, Scarpa, fascia profunda, los dos
  *    planos intermusculares, transversalis: dos lados; peritoneo parietal: la grasa preperitoneal, un lado);
- *  - cortical costal: el tejido blando de la pared junto a la costilla ósea (un lado: el hueso atenúa su
+ *  - cortical costal: el tejido blando adyacente a la costilla ósea, incluso cuando queda más profunda que la pared estimada (un lado: el hueso atenúa su
  *    propio interior); pericondrio: el cartílago (un lado, también su cara profunda).
  * No se dibujan la cara pared/hígado (misma impedancia) ni cápsula renal/corteza, ni hay capa fina.
  */

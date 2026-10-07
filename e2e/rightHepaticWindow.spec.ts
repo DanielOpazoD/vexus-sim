@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { Tissue } from '../src/anatomy/tissues';
 import { bootWithoutErrors, budget } from './support';
 
 test('hepatic obstacle and registered posterior supports agree in actual CPU/GPU acquisition', async ({ page }, info) => {
@@ -21,9 +22,10 @@ test('hepatic obstacle and registered posterior supports agree in actual CPU/GPU
     return { points, cpu, gpu: Array.from(gpu.tissue), normals: Array.from(gpu.normal ?? []), errors: window.__vexusTest!.loggedErrors() };
   });
   await info.attach('registered-supports-and-hepatic-obstacle.json', { body: JSON.stringify(result), contentType: 'application/json' });
-  expect(result.cpu[0]).toBe(4);
-  expect(result.cpu[1]).toBe(39);
-  expect(result.cpu.filter((t) => t === 28).length).toBeGreaterThan(100);
+  expect(result.cpu[0]).toBe(Tissue.Liver);
+  // The reconciled lateral wall now contains the former unsegmented gap point.
+  expect(result.cpu[1]).toBe(Tissue.Fat);
+  expect(result.cpu.filter((t) => t === Tissue.QuadratusLumborum).length).toBeGreaterThan(100);
   expect(result.gpu).toEqual(result.cpu);
   expect(result.normals.every(Number.isFinite)).toBe(true);
   expect(result.errors).toEqual([]);

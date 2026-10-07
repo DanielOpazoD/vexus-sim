@@ -128,7 +128,8 @@ vec4 ribShapeData(int k) { return sceneTexel(${RIB_BASE} + k * ${RIB_TEXELS} + 1
 vec4 ribEndData(int k) { return sceneTexel(${RIB_BASE} + k * ${RIB_TEXELS} + 2); }
 float bodyValue(int i) { return sceneTexel(${BODY_BASE} + i / 4)[i % 4]; }
 vec4 bodyInfo(float phi, float z, out float dc) {
-  float zz = clamp((z - uBodyMinZ) / 40.0, 0.0, float(uBodyRows-1));
+  float step = (120.0 - uBodyMinZ) / float(uBodyRows - 1);
+  float zz = clamp((z - uBodyMinZ) / step, 0.0, float(uBodyRows-1));
   int row = min(uBodyRows-2, int(floor(zz))); float f = zz - float(row);
   float angle = fract(phi / 6.28318530718) * 64.0;
   int i = int(floor(angle)), j = (i + 1) % 64; float g = fract(angle);
@@ -137,8 +138,8 @@ vec4 bodyInfo(float phi, float z, out float dc) {
   float r0 = mix(a, b, g), r1 = mix(c, d, g);
   float cy0 = bodyValue(row * 65), cy1 = bodyValue((row + 1) * 65);
   bool inside = z >= uBodyMinZ && z <= 120.0;
-  dc = inside ? (cy1 - cy0) / 40.0 : 0.0;
-  return vec4(mix(r0, r1, f), mix(b - a, d - c, f) * 64.0 / 6.28318530718, inside ? (r1 - r0) / 40.0 : 0.0, mix(cy0, cy1, f));
+  dc = inside ? (cy1 - cy0) / step : 0.0;
+  return vec4(mix(r0, r1, f), mix(b - a, d - c, f) * 64.0 / 6.28318530718, inside ? (r1 - r0) / step : 0.0, mix(cy0, cy1, f));
 }
 vec3 bodyGradient(vec3 p) {
   float dc; vec4 centre = bodyInfo(0.0, p.z, dc);
@@ -799,6 +800,12 @@ Cls classifyWith(vec3 m, bool withCurtain) {
   bool owner = c.tissue == T_RETROFAT || c.tissue == T_PSOAS || c.tissue == T_QUADRATUS || c.tissue == T_MEDIASTINUM || (c.tissue == T_CARTILAGE && dDisc < 0.0);
   if (c.iface == IF_NONE && owner && dBody <= dSpine && dBody < VERTEBRAL_REACH && dBody < c.ifd) {
     c.iface = IF_VERTEBRAL_CORTEX; c.ifd = dBody; c.tangent = vec3(0.0, 0.0, 1.0); c.kc = spineFaceCurvature(m);
+  }
+  if (uAbdominalAtlasEnabled != 0) {
+    vec2 q = thoracicValue(m);
+    if (thoracicMaterial(q.y) == 0 && q.x >= 0.0 && q.x < 1.3 && q.x < c.ifd && c.tissue != T_LUNG && c.tissue != T_FLUID && c.tissue != T_BLOOD) {
+      c.bd = min(c.bd, q.x); c.iface = IF_RIB; c.ifd = q.x; thoracicFrame(m, c.tangent, c.kc);
+    }
   }
   return c;
 }

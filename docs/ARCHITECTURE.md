@@ -144,7 +144,7 @@ bundle (`tools/ci/bundle-budget.ts`) cuenta en el JS total lo que puede descarga
 quedan fuera, con su límite por chunk.
 
 El trabajador del plano se emite como entrada ES en el mismo grafo de producción
-(`tools/build/sharedCutMapWorker.ts`, decisión 187). La aplicación y el trabajador
+(`tools/build/sharedCutMapWorker.ts`, seguimiento de la decisión 25). La aplicación y el trabajador
 descargan los mismos chunks CPU de anatomía, pero cada entorno conserva su propia
 instancia y recibe paciente, perfil, pose y compresión por mensajes. En desarrollo
 se sirve el módulo TS desde `cutMapWorkerUrl.ts`. El presupuesto sigue contando

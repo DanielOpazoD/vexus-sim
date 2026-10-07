@@ -6687,3 +6687,40 @@ La primera comprobación completa pasa 187 suites pero falla los dos casos
 de `abdominalAcquisition`: `AcousticWindowUnavailableError` en renal. El cambio
 de instrumento no modifica fuentes de anatomía/adquisición ni render; el fallo
 se conserva en `fidelity-loop-20261007/p01-check.log` y bloquea integración.
+
+## 186. Ventana epigástrica transhepática y plano venoso renal
+
+**Contexto.** En el banco basal, gas intestinal oculta ambos vasos posteriores
+en epigastrio. Además, la adquisición venosa renal no encuentra un margen
+parietal de 1,2 mm en normal/grave. La prueba inicial no cargaba atlas torácico;
+con la misma fuente costal del usuario falla igualmente. Una imagen de riñón
+no demuestra que se pueda adquirir una interlobar.
+
+**Opciones.** Suprimir gas, mover órganos o reducir el margen de puerta
+alteraría el problema. Se investigan poses vecinas conservando campos fuente,
+sombras y criterios de adquisición. La selección geométrica no basta: los
+candidatos se capturan con el render real antes del ajuste.
+
+**Decisión.** Solo `ABDOMINAL_POSES` cambia. La entrada epigástrica se desplaza
+45 mm cranealmente con marcador transversal y pequeño abanico; alcanza aorta
+y VCI por hígado, con vértebra detrás. La renal conserva piel, giro y
+basculación, abanicando 0,05 rad hacia la vena. No cambia ningún órgano/vaso,
+señal, sombra ni pose legacy/referencia. Los contratos
+[epigástrico](anatomy/epigastric-acquisition-contract.md) y
+[renal](anatomy/renal-acquisition-contract.md) preceden el código.
+
+**Consecuencias.** Se recupera una entrada epigástrica interpretable y una
+puerta renal con el criterio vigente. Las interfaces punteadas y apariencia
+renal siguen siendo deudas: no se certifica fidelidad por el gate. La revisión
+humana, barridos completos, presupuesto y CI exacta continúan requeridos.
+
+**Verificación.** Los dos controles epigástricos fallan en la base por gas;
+con el ajuste pasan en normal/grave, con hígado anterior, marcador derecho,
+aorta posterior a cava y hueso detrás. Los dos tests de adquisición atlas
+fallan antes y pasan después del abanico renal, sin cambiar 1,2 mm ni sus
+aserciones de sangre/espectro. El banco UI produce cuatro capturas completas
+sin errores sobre `2d2c51f` con árbol modificado/hashes conservados: vasos y
+sombra vertebral epigástricos reconocibles en ambos casos, riñón mantenido en
+plano. Se conservan candidatas rechazadas y resultados previos. `calibrate`,
+tipos y lint pasan. La prueba de otro minificador se rechaza: sube el total
+de 1094,8 a 1146–1148 KiB; se retira la dependencia sin aumentar presupuestos.

@@ -189,3 +189,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [183](DECISIONS.md#L6525) | Apposición hepática costal y marcador intercostal posterior | vigente |
 | [184](DECISIONS.md#L6589) | Contacto continuo y criterios anatómicos de las nueve ventanas | vigente |
 | [185](DECISIONS.md#L6653) | Evidencia reproducible de las nueve ventanas | vigente |
+| [186](DECISIONS.md#L6691) | Ventana epigástrica transhepática y plano venoso renal | vigente |

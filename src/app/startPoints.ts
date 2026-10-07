@@ -235,14 +235,18 @@ const ABDOMINAL_POSES = {
   // Intrahepatic IVC in long axis, rather than aiming the whole face at its
   // thoracic end. Offline compressed rays; fixed organs and real costal field.
   subxiphoid: { phi: 1.6, z: -40, yaw: -0.02516291680704072, rock: 0.001621690619853046, tilt: -0.0641956706912719 },
-  epigastric: { phi: 1.55, z: -80, yaw: -1.572947056125525, rock: 0.1493615263787931, tilt: 0.13328531500949725 },
+  // Transverse hepatic window above the bowel-gas barrier, without relocating any organ.
+  // The previous caudal plane hid both posterior vessels; contract and native trials precede this adjustment.
+  epigastric: { phi: 1.55, z: -35, yaw: -Math.PI / 2, rock: 0, tilt: 0.15 },
   intercostal: { phi: 2.5, z: -35, yaw: -1.2, rock: 0.08958884100807597, tilt: 0.15439831127567974 },
   subcostal: { phi: 2, z: -80, yaw: 0.6280025227578521, rock: 0.3259201915316282, tilt: -0.03886141881794285 },
   flank: { phi: 3.1, z: -75, yaw: 0.1767952406260464, rock: 0.4707775613505776, tilt: -0.04687503959831865 },
   // Equivalent acoustic plane with the marked end cranial: yaw − π, rock/tilt sign reversed.
   // The former pose pointed the marker caudally and mirrored the standard longitudinal orientation.
   portal: { phi: 3.2499999999999996, z: -65, yaw: -0.3083879194167607, rock: -0.2122189996791038, tilt: 0.0937442490667998 },
-  renal: { phi: 3.15, z: -175, yaw: -0.04682166646295555, rock: 0.37638199977635656, tilt: -0.3330150669689693 },
+  // A 2.86-degree venous sweep reaches an interlobar lumen with the existing 1.2 mm wall safeguard.
+  // Kidney/vasculature, skin point and in-plane orientation remain registered and unchanged.
+  renal: { phi: 3.15, z: -175, yaw: -0.04682166646295555, rock: 0.37638199977635656, tilt: -0.28301506696896933 },
   portalTrunk: { phi: 3.05, z: -80, yaw: 0.22135021897142884, rock: -0.13225461110004316, tilt: 0.11100678455374574 },
   // Recheck actual renal transmission after the continuous pressure correction;
   // a 2-mm cranial slide clears the grazing rib without altering the skeleton.

@@ -4,6 +4,7 @@ import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
 import { setAbdominalBody } from '../anatomy/referenceBody';
+import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
 import { VenousSpectralAcquisition } from '../app/venousSpectral';
 import { DEFAULT_BMODE } from '../ultrasound/renderer';
@@ -11,13 +12,16 @@ import { openSession } from './support/studentChain';
 
 const raw = gunzipSync(readFileSync('src/anatomy/abdominal-atlas.gzip.bin'));
 const profile = readFileSync('src/anatomy/abdominal-body.bin');
+const thoracic = gunzipSync(readFileSync('src/anatomy/thoracic-atlas.gzip.bin'));
 beforeEach(() => {
   setAbdominalAtlas(new Uint16Array(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength)));
   setAbdominalBody(new Float32Array(profile.buffer.slice(profile.byteOffset, profile.byteOffset + profile.byteLength)));
+  setThoracicAtlas(new Uint16Array(thoracic.buffer.slice(thoracic.byteOffset, thoracic.byteOffset + thoracic.byteLength)));
 });
 afterEach(() => {
   setAbdominalAtlas();
   setAbdominalBody();
+  setThoracicAtlas();
 });
 
 describe('VExUS through the actual abdominal atlas', () => {

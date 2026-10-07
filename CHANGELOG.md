@@ -9,6 +9,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 - Banco de comparación: registra la fase real del receptor mediante renders ordinarios y conserva el reloj; evita atribuir al modelo diferencias de ruido por distinto trabajo previo (149, seguimiento 2026-10-07).
 
+- Plano anatómico: comparte módulos CPU con la aplicación en el build sin duplicarlos en un bundle del trabajador; conserva estado separado y reduce JavaScript sin ampliar presupuestos (25, seguimiento 2026-10-07).
+
 - Laboratorio venoso: guardar/importar parámetros JSON versionados, con validación de dominio y protección contra lecturas tardías; no se presentan como grabaciones ni réplicas exactas de señales (165).
 
 - Laboratorio venoso: recorrer las guías conserva FC y compliance venosa personalizadas; el reinicio explícito mantiene su restauración completa (164).

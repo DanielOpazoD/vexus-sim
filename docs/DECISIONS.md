@@ -214,6 +214,40 @@ en vuelo, resultado transferido sin copia. Ventajas: cero contención con la GPU
 una comprobación visual continua de la equivalencia TS ↔ GLSL. La pasada `FRAG_TISSUEMAP` se conserva
 (lectura asíncrona) para depuración y para un futuro test de equivalencia.
 
+### Seguimiento 2026-10-07 — Grafo compartido y estado separado
+
+**Contexto.** La base de main `8189d36` descarga 1032,4 KiB de JavaScript frente
+al límite de 1033 KiB. El trabajador del plano lleva 64,3 KiB en un build
+independiente y duplica módulos anatómicos del hilo principal. El candidato atlas
+local `89e0152` alcanza 1094,8 KiB frente a 1078 KiB y no puede integrarse.
+Contrato previo: `docs/fidelity/shared-worker-contract.md`.
+
+**Opciones.** Aumentar presupuestos o excluir activos del total no corrige la
+causa. Empaquetar texto GLSL o añadir anotaciones de pureza no elimina esta
+duplicación. Ejecutar el mapa en el hilo principal añade trabajo al render.
+
+**Decisión.** `sharedCutMapWorker` emite la entrada ES del trabajador en el mismo
+grafo Rolldown de la aplicación. `cutMapWorkerUrl.ts` conserva la URL del módulo
+TS en desarrollo y recibe la URL emitida en producción. Los módulos se comparten
+como archivos descargados, conservando instancias independientes en cada entorno.
+El protocolo, la anatomía y la física no cambian.
+
+**Consecuencias.** En main, el total medido baja a 969,0 KiB; en el candidato atlas
+completo, a 1013,8 KiB. Todos los chunks, trabajadores y ganchos siguen contados,
+y se conservan los límites 1033/1078 KiB de sus respectivas ramas. Esta medición
+no prueba mayor FPS ni resuelve el arranque SwiftShader del atlas. No aporta una
+nueva validación clínica.
+
+**Verificación.** `e2e/sharedWorker.spec.ts` captura las peticiones/respuestas del
+trabajador real en normal y congestión, con cambios de pose y presión por los
+controles del operador. Compara exactamente 1024 puntos de cada mapa con la
+anatomía CPU en el mismo estado de petición y exige un mapa de la pose actual.
+Build, presupuesto, desarrollo/producción y CI protegen imports y descarga; las
+comparaciones de imágenes y shaders deben conservarse como evidencia. El gate
+funcional también pasa en la base: protege la equivalencia al compartir el grafo,
+no detecta por sí solo la duplicación de archivos. El presupuesto existente del
+candidato atlas falla sin este cambio y pasa con él.
+
 ## 26. Componente renal del VExUS emergente
 
 Nuevo compartimento renal en la red venosa (ambos riñones): arteria renal de baja resistencia

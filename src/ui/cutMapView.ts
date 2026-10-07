@@ -12,6 +12,7 @@ import { beamToPixel, pixelToBeam, sectorLayout } from '../ultrasound/sectorGeom
 import type { CutMapError, CutMapInit, CutMapRequest, CutMapResponse } from './cutMapWorker';
 import { errorLog } from '../app/errorLog';
 import { RequestWatchdog } from './requestWatchdog';
+import cutMapWorkerUrl from './cutMapWorkerUrl';
 
 /**
  * «Corte ecográfico · plano de la imagen»: mapa a color de las estructuras que
@@ -394,7 +395,7 @@ export class CutMapView {
     if (!this.worker && nowMs < this.retryAt) return null;
     this.worker?.terminate();
     try {
-      this.worker = new Worker(new URL('./cutMapWorker.ts', import.meta.url), { type: 'module' });
+      this.worker = new Worker(cutMapWorkerUrl, { type: 'module' });
     } catch (e) {
       this.fail(e, nowMs);
       return null;

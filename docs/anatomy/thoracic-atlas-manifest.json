@@ -7,9 +7,9 @@
     "originMm": [-144.0, -127.5, -163.5],
     "pitchMm": 1.5,
     "rawBytes": 30081024,
-    "gzipBytes": 4694326,
-    "sha256Gzip": "fc181309f2c6f6a8b60508f8fb50fd25f1b2ec9f4b890c366e3e186199bb2ffb",
-    "sha256Raw": "973e4c0059b7a4d1912f79ffb6727babb63db86b4c42d21ef737ca4eb444f1ce",
+    "gzipBytes": 4444037,
+    "sha256Gzip": "3b38e80c24ef2711bbb1ce598d3cda204419b52f7cb1703a083f486b9b944f6f",
+    "sha256Raw": "61c6232f4adcc3552466fa014f1a7958c0c3705664f1dde3e539456bf745a2e6",
     "parts": [
       {
         "id": "FJ3153",

@@ -89,7 +89,7 @@ for p in parts:
 lo=np.floor((np.min([m.bounds[0]for m in meshes],axis=0)-6)/PITCH)*PITCH
 hi=np.ceil((np.max([m.bounds[1]for m in meshes],axis=0)+6)/PITCH)*PITCH
 dims=np.rint((hi-lo)/PITCH).astype(int)+1
-occupied=np.zeros(tuple(dims),dtype=bool);labels=np.zeros(tuple(dims),dtype=np.uint8)
+occupied=np.zeros(tuple(dims),dtype=bool);labels=np.zeros(tuple(dims),dtype=np.uint8);part_interiors=[]
 for i,(p,m) in enumerate(zip(parts,meshes)):
  points=interior_voxels(m);indices=np.rint((points-lo)/PITCH).astype(int)
  if not len(indices):raise ValueError('Lost source '+p['id'])
@@ -98,6 +98,7 @@ for i,(p,m) in enumerate(zip(parts,meshes)):
  sizes=np.bincount(components.ravel());small=np.flatnonzero((sizes>0)&(sizes<=8));small=small[small!=0]
  removed=np.argwhere(np.isin(components,small));mask[tuple(removed.T)]=False
  indices=np.argwhere(mask);p['subcellFragmentsRemoved']=removed.tolist()
+ part_interiors.append(indices)
  _,count=ndimage.label(mask)
  p['label']=i+1;p['material']='cartilage' if 'cartilage' in p['name'] else 'vertebra' if 'vertebra' in p['name'] else 'bone'
  p['occupiedVoxels']=len(indices);p['components']=int(count)
@@ -107,18 +108,26 @@ for i,(p,m) in enumerate(zip(parts,meshes)):
  if p['material']=='cartilage':indices=indices[~previous_bone]
  labels[tuple(indices.T)]=i+1;occupied|=mask
  print('VOX',p['name'],len(indices),'components',count,flush=True)
-outside,nearest=ndimage.distance_transform_edt(~occupied,sampling=PITCH,return_indices=True)
-inside=ndimage.distance_transform_edt(occupied,sampling=PITCH)
-label_field=labels[tuple(nearest)]
-distance=np.where(occupied,-inside+PITCH/2,outside-PITCH/2)
-# Accurate triangle distances in the surface band. Binary ray parity supplies sign;
-# no smoothing, closing, voxel bridges or source-vertex movement.
-for p,m in zip(parts,meshes):
- indices=np.argwhere((label_field==p['label'])&(np.abs(distance)<2*PITCH))
- points=lo+indices*PITCH
- exact=TriangleQuery(np.asarray(m.vertices),np.asarray(m.faces)).distance(points)
- distance[tuple(indices.T)]=np.where(occupied[tuple(indices.T)],-exact,exact)
- print('EXACT',p['name'],len(points),flush=True)
+# Refine EACH original part before taking the signed minimum. Refining only
+# the rasterized union misses thin articular slits surrounded by occupied nodes.
+# A minimum of part SDFs preserves the union zero, but is not an exact Euclidean
+# distance to the union exterior deep inside overlapping parts.
+distance=np.full(tuple(dims),16.);label_field=np.zeros(tuple(dims),dtype=np.uint8)
+for p,m,interior in zip(parts,meshes,part_interiors):
+ start=np.maximum(0,interior.min(axis=0)-12);end=np.minimum(dims,interior.max(axis=0)+13)
+ region=tuple(slice(a,b)for a,b in zip(start,end));own=np.zeros(tuple(end-start),dtype=bool)
+ own[tuple((interior-start).T)]=True
+ outside=ndimage.distance_transform_edt(~own,sampling=PITCH);inside=ndimage.distance_transform_edt(own,sampling=PITCH)
+ signed=np.where(own,-inside+PITCH/2,outside-PITCH/2)
+ band=np.argwhere(np.abs(signed)<2*PITCH);candidates=lo+(band+start)*PITCH
+ exact=np.concatenate([trimesh.proximity.closest_point(m,candidates[a:a+256])[1]for a in range(0,len(candidates),256)])
+ probe=np.linspace(0,len(candidates)-1,min(12,len(candidates))).astype(int)
+ check=TriangleQuery(np.asarray(m.vertices),np.asarray(m.faces)).distance(candidates[probe])
+ if not np.allclose(exact[probe],check,rtol=0,atol=1e-6):raise ValueError('Triangle-query disagreement '+p['id'])
+ signed[tuple(band.T)]=np.where(own[tuple(band.T)],-exact,exact)
+ improves=signed<distance[region];distance[region][improves]=signed[improves];label_field[region][improves]=p['label']
+ print('EXACT',p['name'],len(candidates),flush=True)
+label_field[occupied]=labels[occupied]
 field=np.stack([np.clip(distance,-64,16),label_field],axis=-1).astype('<f2')
 raw=field.transpose(2,1,0,3).tobytes();compressed=gzip.compress(raw,compresslevel=9,mtime=0)
 if len(raw)>48*1024*1024 or len(compressed)>6*1024*1024:raise ValueError('Skeletal field exceeds budget')

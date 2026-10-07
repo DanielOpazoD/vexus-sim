@@ -15,10 +15,8 @@ export function buildProbe(tr: Transducer): { probe: THREE.Group; marker: THREE.
   const el = (tr.elevationMm / 2) * CM;
   const halfAng = Math.asin(Math.min(1, half / R));
   // Lente: arco de cilindro de radio R (eje = elevación) centrado en z = −R, abierto hacia +z
-  const lensGeo = new THREE.CylinderGeometry(R, R, el * 2, 40, 1, true, Math.PI / 2 - halfAng, 2 * halfAng);
+  const lensGeo = new THREE.CylinderGeometry(R, R, el * 2, 40, 1, true, -halfAng, 2 * halfAng);
   const lensMesh = new THREE.Mesh(lensGeo, lens);
-  lensMesh.rotation.x = Math.PI / 2; // eje del cilindro (y) → z; theta se mide en el plano x–z
-  lensMesh.rotation.z = 0;
   lensMesh.position.z = -R;
   const sag = R - Math.sqrt(R * R - half * half);
   const head = new THREE.Mesh(new RoundedBoxGeometry(half * 2 + 0.3, el * 2 + 0.4, 2.0, 4, 0.3), shell);

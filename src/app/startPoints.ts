@@ -234,9 +234,9 @@ const REFERENCE_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
 const ABDOMINAL_POSES = {
   subxiphoid: { phi: 1.65, z: -15, yaw: 0.02476, rock: 0.591491, tilt: -0.055956 },
   epigastric: { phi: 1.55, z: -80, yaw: -1.572947056125525, rock: 0.1493615263787931, tilt: 0.13328531500949725 },
-  intercostal: { phi: 2.6999999999999997, z: -35, yaw: 1.4289984516346848, rock: 0.010411158991924034, tilt: -0.15439831127567974 },
+  intercostal: { phi: 2.6, z: -35, yaw: 1.4289984516346848, rock: -0.08958884100807597, tilt: -0.15439831127567974 },
   subcostal: { phi: 2.05, z: -85, yaw: 0.49441274450062855, rock: 0.40920976132648457, tilt: -0.018276745206425554 },
-  flank: { phi: 3.099999999999999, z: -70, yaw: 0.1767952406260464, rock: 0.5707775613505776, tilt: -0.04687503959831865 },
+  flank: { phi: 3.2, z: -90, yaw: 0.1767952406260464, rock: 0.4707775613505776, tilt: -0.04687503959831865 },
   // Equivalent acoustic plane with the marked end cranial: yaw − π, rock/tilt sign reversed.
   // The former pose pointed the marker caudally and mirrored the standard longitudinal orientation.
   portal: { phi: 3.2499999999999996, z: -65, yaw: -0.3083879194167607, rock: -0.2122189996791038, tilt: 0.0937442490667998 },

@@ -2,7 +2,7 @@ import { thoracicAtlas, thoracicValue, thoracicMaterial, thoracicSdf, thoracicFr
 import { BOWEL_FIELD_REACH_MM, BOWEL_WALL_MM, bowelQuery, bowelGasSdf, bowelRadii } from './organs/bowel';
 import { referenceBody, abdominalBody } from './referenceBody';
 import { SCENE_TUBE_CAPACITY } from './tubeCapacity';
-import { abdominalAtlas } from './abdominalAtlas';
+import { abdominalAtlasValue, abdominalAtlas } from './abdominalAtlas';
 import { abdomenQuery } from './organs/abdomen';
 import { smoothstep, scale, type Vec3 } from '../core/vec3';
 import type { PatientState } from '../physiology/patientState';
@@ -658,7 +658,11 @@ export class AnatomyScene {
     const [tissue, dRetro] = retroperitoneum(retroPoint, -depth - wallMm, kidney.dPeriMm, this.hasAbdominalAtlas ? m : retroPoint);
     bd = Math.max(0, Math.min(bd, dRetro, sdSpine(m, this.spine)));
     if (tissue !== Tissue.Bowel) return { ...NONE, tissue, boundaryDistance: bd };
-    if (this.hasAbdominalAtlas) return { ...NONE, tissue: Tissue.MesentericFat, boundaryDistance: Math.min(bd, 1) };
+    if (this.hasAbdominalAtlas) {
+      const gut = abdominalAtlasValue(m, 1);
+      const mesentery = gut.label === 3 && gut.d < 16 && gut.d < this.liverBaseSdf(m);
+      return { ...NONE, tissue: mesentery ? Tissue.MesentericFat : Tissue.UnsegmentedSoftTissue, boundaryDistance: Math.min(bd, 1) };
+    }
     const q = bowelQuery(m, this.bowelRadii),
       dl = q.lumen;
     if (q.d >= BOWEL_FIELD_REACH_MM) return { ...NONE, tissue: Tissue.MesentericFat, boundaryDistance: Math.min(bd, q.d / 2) };

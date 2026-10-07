@@ -185,3 +185,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [179](DECISIONS.md#L6441) | Contacto hepatodiafragmático registrado y suprahepáticas proximales | vigente |
 | [180](DECISIONS.md#L6451) | Caja costal y columna torácica del mismo adulto que el abdomen | vigente |
 | [181](DECISIONS.md#L6465) | Cerrar el campo de los cuadrados lumbares en la pared posterior | vigente |
+| [182](DECISIONS.md#L6479) | Registro posterior, contacto hepático y lente convexa coherentes | vigente |

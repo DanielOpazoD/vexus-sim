@@ -271,7 +271,7 @@ export function buildPosteriorMuscles(a: AnatomyScene): THREE.Group {
         const sideDistance = side < 0 ? p[0] : -p[0];
         if (kind === 'psoas') return Math.max(psoasSdf(local), sideDistance);
         const peri = Math.min(...[a.kidneyRight, a.kidneyLeft].map((k) => perirenalOuterSdf(kidneyLocal(p, k), k)));
-        return Math.max(quadratusSdf(local, -torsoDepth(p, a.torso) - a.wallThickness(), peri), sideDistance);
+        return Math.max(quadratusSdf(a.hasAbdominalAtlas ? p : local, -torsoDepth(p, a.torso) - a.wallThickness(), peri), sideDistance);
       };
       const mesh = meshFromSdf(field, lo, hi, 40, new THREE.MeshStandardMaterial({ color: 0x8f5956, roughness: 0.85 }));
       mesh.name = `${kind === 'psoas' ? 'Psoas mayor' : 'Cuadrado lumbar'} ${side < 0 ? 'derecho' : 'izquierdo'}`;

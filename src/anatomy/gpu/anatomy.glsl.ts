@@ -241,10 +241,12 @@ float sdDome(vec3 p, out vec3 n) {
   float tangentDistance = (zd - p.z) / slope;
   if(uAbdominalAtlasEnabled==0)return tangentDistance;
   float contact=hepaticDomeValue(p.xy).y*(1.0-smoothstep(6.0,12.0,zd-p.z));
-  if(contact<=0.0)return tangentDistance;
   // faceGradient evaluates the actual shell for interface echoes. Keep the
   // finite height normal here, including above the source brick (zero gradient).
-  return mix(tangentDistance,DIAPHRAGM_MM-abdominalAtlasSdf(p,4),contact);
+  float liverDistance=abdominalAtlasSdf(p,4);
+  float distance=mix(tangentDistance,DIAPHRAGM_MM-liverDistance,contact);
+  float obstacleWeight=1.0-smoothstep(DIAPHRAGM_MM,DIAPHRAGM_MM+1.5,liverDistance);
+  return mix(distance,max(distance,DIAPHRAGM_MM-liverDistance),obstacleWeight);
 }
 
 float sdEllipsoid(vec3 p, vec3 c, vec3 r, float taperX, out vec3 n) {
@@ -761,7 +763,7 @@ void classifyInside(vec3 m, bool withCurtain, float depth, vec3 tn, float dSpine
   c.tissue = retroperitoneum(retroPoint, uAbdominalAtlasEnabled!=0 ? m : retroPoint, -depth - wall, dPeri, bdRetro);
   c.bd = max(min(min(bdBowel, bdRetro), dSpine), 0.0); c.n = tn;
   if(c.tissue!=T_BOWEL)return;
-  if(uAbdominalAtlasEnabled!=0){c.tissue=T_MESENTERIC_FAT;c.bd=min(c.bd,1.0);return;}
+  if(uAbdominalAtlasEnabled!=0){vec2 gut=abdominalAtlasValue(m,1);c.tissue= gut.y==3.0 && gut.x<16.0 && gut.x<dLiverBase ? T_MESENTERIC_FAT:T_UNSEGMENTED;c.bd=min(c.bd,1.0);return;}
   vec3 bn,ba,bowelLumenNormal;float dl,br;float d=bowelQuery(m,bn,ba,dl,bowelLumenNormal,br);
   if(d>=BOWEL_REACH){c.tissue=T_MESENTERIC_FAT;c.bd=min(c.bd,d/2.0);return;}
   c.tangent=ba;

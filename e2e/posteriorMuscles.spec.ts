@@ -81,7 +81,10 @@ void main(){value=vec4(quadratusSdf(point,distances.x,distances.y),0,0,1);}`,
       gl.getExtension('WEBGL_lose_context')?.loseContext();
       return { values, error };
     },
-    { source: constants + '\n' + field, inputs },
+    {
+      source: 'const int uAbdominalAtlasEnabled=0; float abdominalAtlasSdf(vec3 p,int k){return 16.0;}\n' + constants + '\n' + field,
+      inputs,
+    },
   );
   let maxError = 0;
   let interior = 0;

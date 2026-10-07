@@ -277,7 +277,15 @@ export function sdDiaphragmSlope(p: Vec3, d: Diaphragm, torso: Torso): [number, 
   const [, support] = hepaticDomeValue(p[0], p[1]),
     t = Math.min(1, Math.max(0, (zd - p[2] - 6) / 6)),
     contact = support * (1 - t * t * (3 - 2 * t));
-  return [tangentDistance + contact * (DIAPHRAGM_THICKNESS_MM - abdominalAtlasSdf(p, 4) - tangentDistance), slope];
+  const liverDistance = abdominalAtlasSdf(p, 4);
+  const distance = tangentDistance + contact * (DIAPHRAGM_THICKNESS_MM - liverDistance - tangentDistance);
+  // A normalized tangent approximation is not a global distance. Near a steep
+  // roof it can put muscle deep inside the source liver. The organ remains the
+  // obstacle, including outside the normal-contact blend.
+  const tObstacle = Math.min(1, Math.max(0, (liverDistance - DIAPHRAGM_THICKNESS_MM) / 1.5));
+  const obstacleWeight = 1 - tObstacle * tObstacle * (3 - 2 * tObstacle);
+  const obstacleDistance = Math.max(distance, DIAPHRAGM_THICKNESS_MM - liverDistance);
+  return [distance + obstacleWeight * (obstacleDistance - distance), slope];
 }
 
 /** Distancia con signo al diafragma: negativa en el tórax (por encima). */

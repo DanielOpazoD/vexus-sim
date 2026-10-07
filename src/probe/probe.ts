@@ -47,7 +47,8 @@ export interface Transducer {
 export const CONVEX_C35: Transducer = {
   type: 'convex',
   curvatureRadius: 60,
-  footprintMm: 62,
+  // Generic estimated geometry, not a vendor specification.
+  footprintMm: 2 * 60 * Math.sin((34 * Math.PI) / 180),
   elevationMm: 13,
   halfSector: (34 * Math.PI) / 180,
   lines: 192,

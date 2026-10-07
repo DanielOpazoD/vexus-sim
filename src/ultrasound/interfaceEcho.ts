@@ -166,7 +166,7 @@ export function faceSiteGain(face: Interface, m: Vec3, scene: WallAcrossScene): 
 }
 /** Actual exterior medium, rather than assuming muscle at every exposed hepatic surface. */
 export function capsuleExteriorGain(tissue: Tissue): number {
-  if (tissue !== Tissue.RetroperitonealFat && tissue !== Tissue.MesentericFat) return 1;
+  if (tissue !== Tissue.RetroperitonealFat && tissue !== Tissue.MesentericFat && tissue !== Tissue.UnsegmentedSoftTissue) return 1;
   return Math.max(1, Math.abs(reflectionCoefficient(Tissue.LiverCapsule, tissue)) / interfaceReflectivity(Interface.LiverCapsule));
 }
 /** Material-space probe beyond the capsule; bounded first-order projection, not a new layer. */
@@ -516,7 +516,7 @@ vec2 interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w, bool with
       // liverInner has an inward gradient in GLSL; the TS faceSdf gradient is outward.
       int exterior = classifyWith(m - fg.xyz * (offset + ${CAPSULE_OUTSIDE_MM.toFixed(1)}), withCurtain).tissue;
       if (exterior == T_RETROFAT) capsuleGain = ${capsuleExteriorGain(Tissue.RetroperitonealFat).toFixed(7)};
-      else if (exterior == T_MESENTERIC_FAT) capsuleGain = ${capsuleExteriorGain(Tissue.MesentericFat).toFixed(7)};
+      else if (exterior == T_MESENTERIC_FAT || exterior == T_UNSEGMENTED) capsuleGain = ${capsuleExteriorGain(Tissue.MesentericFat).toFixed(7)};
     }
   }
   vec3 nm = fg.xyz; // normal material: la inclinación anclada pertenece a este marco

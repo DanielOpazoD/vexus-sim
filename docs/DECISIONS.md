@@ -6475,3 +6475,49 @@ La auditoría superficial posterior refutó el refinamiento de la unión ya rast
 **Verificación.** Control negativo exterior, inspección de todos los vértices contra la pared en ambos cuerpos (error de extracción <1,5 mm), regresión retroperitoneal y paridad/adquisición nativa. Con la contención, el exceso máximo medido respecto de la cara interna baja a 0,014 mm en el procedural y 0,069 mm en el atlas; ninguna superficie queda fuera de la piel. Ambos músculos permanecen presentes.
 
 El nuevo banco GPU aislado conserva el rechazo exterior pero refuta la paridad de 0,001 mm: el redondeo histórico a cuatro decimales de la cota lateral produce un error de 0,001102 mm. Se aumenta sólo la precisión de ese literal GLSL a ocho decimales, sin cambiar la constante CPU ni el umbral del banco. La primera ejecución fallida se conserva; no se presenta como CI verde ni se acepta mediante reintento sin corregir el defecto.
+
+## 182. Registro posterior, contacto hepático y lente convexa coherentes
+
+**Contexto.** La captura intercostal atribuye el espacio perihepático no segmentado
+al mesenterio; una aproximación diafragmática tangente atraviesa hígado a más de
+5 mm de su borde. El QL heredado usa niveles distintos de los huesos importados.
+La lente 3D está girada en otro plano y su apertura de 62 mm no coincide con la
+cuerda de 67,1 mm del sector radial de 68°.
+
+**Opciones.** Agrandar hígado/ocultar interfaces; mover sólo mallas; o corregir
+obstáculos, dominios y registro compartidos, declarando lo que falta segmentar.
+
+**Decisión.** El campo hepático es un obstáculo del diafragma en CPU/GLSL, con
+transición continua acotada a 4 mm. El QL atlas queda entre la inserción estimada
+sobre costilla 12 y cresta ilíaca registrada: sección oval, dorsal al psoas,
+anterior a los arcos lumbares, fuera de hueso, psoas y grasa renal. Su malla usa
+el mismo campo. La lente tiene eje elevacional y arco en el plano acústico; su
+huella genérica se deriva del radio/sector radial, sin cambiar el sector ni
+alegar especificaciones de un fabricante. El residuo sin segmentación no
+recibe nombre de mesenterio fuera del territorio estimado del intestino delgado.
+Se conservan sus parámetros acústicos y la reflectividad capsular efectiva.
+La guía lo muestra gris con aviso de estimación.
+
+La búsqueda geométrica de 180 encuadres conserva el hígado y los vasos:
+intercostal φ2,60/z−35 mm/rock−0,08959, flanco φ3,20/z−90 mm/rock0,47078.
+En 25 rayos directos con paso2 mm, sin atravesar hueso/pulmón, las muestras
+suprahepáticas intercostales pasan de 4 a23, las de cava en flanco de3 a46.
+No son una métrica de sensibilidad clínica ni la transmisión de la apertura.
+
+**Consecuencias.** Datos fuente de todos los órganos/costillas sin cambios.
+No se elimina un artefacto real ni se blanquea la imagen bajando reflectividad.
+El borde capsular periférico, la pared lateral y la entrada del pulmón todavía
+requieren conciliación de superficies y revisión humana independiente; el
+relleno marcado como estimado no constituye anatomía de alta fidelidad.
+
+**Verificación.** Contrato `anatomy/right-hepatic-window-contract.md`; controles
+negativos conservados, campos hepáticos completos, lente vs. orígenes reales de
+rayos, vértices 3D y paridad CPU/GPU. Tipos, lint y formato pasan; 97 pruebas CPU en 13 archivos y 16 pruebas
+de producción nativa Metal pasan, sin reintentos. Exploración de 72 poses
+(nueve ventanas, controles reales ±10° de rotación y ±8° de abanico/basculación;
+normal y congestión grave) sin errores. Once poses muestran diferencias
+de 1–3 muestras de 2048 en fronteras CPU/GPU: no se declara equivalencia
+exacta en esas fronteras. Calibración idéntica a la previa.
+El build compila pero el gate de bundle falla: 1090,3 KiB > 1078 KiB.
+No se eleva el presupuesto, no hay CI de esta rama ni promoción a main.
+Artefactos locales 226: pruebas, auditoría de poses y capturas del programa.

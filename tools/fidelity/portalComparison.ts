@@ -15,6 +15,9 @@ const selectedProfile = process.env.COMPARISON_PROFILE ?? 'both';
 if (!['both', 'legacy', 'reference'].includes(selectedProfile)) throw new Error('COMPARISON_PROFILE debe ser both, legacy o reference');
 const inspiration = process.env.COMPARISON_RESPIRATION === 'inspiration';
 if (process.env.COMPARISON_RESPIRATION && !inspiration) throw new Error('Unsupported comparison respiration');
+const views = inspiration ? (['portal', 'subcostal'] as const) : (['portal', 'intercostal', 'subcostal', 'subxiphoid'] as const);
+const selectedView = process.env.COMPARISON_VIEW;
+if (selectedView && !views.some((id) => id === selectedView)) throw new Error('COMPARISON_VIEW no pertenece al protocolo solicitado');
 const references = selectedProfile === 'both' ? [false, true] : [selectedProfile === 'reference'];
 const out = resolve(process.env.PORTAL_OUT ?? join(tmpdir(), 'vexus-portal-evidence'));
 mkdirSync(out, { recursive: true });
@@ -70,9 +73,7 @@ try {
       });
       for (const reference of references) {
         const profile = reference ? 'reference' : 'legacy';
-        for (const id of inspiration
-          ? (['portal', 'subcostal'] as const)
-          : (['portal', 'intercostal', 'subcostal', 'subxiphoid'] as const)) {
+        for (const id of views.filter((view) => !selectedView || view === selectedView)) {
           await page.goto(`http://127.0.0.1:${port}/?e2e=app${reference ? '&reference=1' : ''}`);
           await page.waitForFunction(() => (window.__vexusTest?.framesRendered() ?? 0) >= 2, undefined, { timeout: 180_000 });
           if ((await page.evaluate(() => !!window.__vexusTest!.sim().scene.torso.profile)) !== reference)
@@ -87,7 +88,7 @@ try {
             targetSeconds: 30,
             view: id,
             frames: 6,
-            historyStartFrame: 129,
+            historyStartFrame: 33,
           });
           const settings = { ...acquisition, preparationTime: prepared.time };
           if (settings.caseId !== 'normal-adult' || settings.time !== 30 || !settings.frozen) throw new Error('Invalid comparison state');
@@ -111,7 +112,7 @@ try {
         results,
         inspiration,
         notes:
-          'PNG original del framebuffer, sin HUD ni retoques. Mismo runner, ventanas y ajustes predeterminados; Siete cuadros adquiridos (129–135: uno de calentamiento y seis medidos), con relleno por render ordinario sin avanzar fisiología. Orden después/antes. Comparación de ingeniería, no validación clínica.',
+          'PNG original del framebuffer, sin HUD ni retoques. Mismo runner, ventanas y ajustes predeterminados; siete cuadros adquiridos (33–39: uno de calentamiento y seis medidos), con relleno por render ordinario sin avanzar fisiología. Orden después/antes. CI distribuye las cuatro ventanas y conserva ambos perfiles y versiones, con el mismo plazo por trabajo. Comparación de ingeniería, no validación clínica.',
       },
       null,
       2,

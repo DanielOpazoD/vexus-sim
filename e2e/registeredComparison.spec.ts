@@ -1,11 +1,11 @@
 import { createHash } from 'node:crypto';
 import { expect, test } from '@playwright/test';
-import { bootWithoutErrors, budget } from './support';
+import { BOOT_MS, budget } from './support';
 import { comparisonState } from '../tools/fidelity/comparisonState';
 import { captureBMode, encodeBMode } from '../tools/fidelity/captureBMode';
 
 test('compara imágenes registradas pese a distinto trabajo del receptor antes de adquirir', async ({ page }, info) => {
-  // Dos arranques y hasta 270 cuadros: conserva el presupuesto de arranque; el trabajo incluye lectura de GPU.
+  // Dos arranques y hasta 78 cuadros: misma historia de siete cuadros, sin trabajo de relleno innecesario.
   budget(360_000, 2);
   const results: {
     raw: ReturnType<typeof comparisonState>;
@@ -14,9 +14,16 @@ test('compara imágenes registradas pese a distinto trabajo del receptor antes d
     hash: string;
   }[] = [];
   for (let trial = 0; trial < 2; trial++) {
-    const errors = await bootWithoutErrors(page, '?e2e=app&reference=1');
-    await page.getByRole('button', { name: 'Apnea espiratoria', exact: true }).click();
+    const errors: string[] = [];
+    page.on('pageerror', (error) => errors.push(error.message));
+    page.on('console', (message) => {
+      if (message.type() === 'error') errors.push(message.text());
+    });
+    await page.goto('/?e2e=app&reference=1');
+    await page.waitForFunction(() => (window.__vexusTest?.framesRendered() ?? 0) >= 2, undefined, { timeout: BOOT_MS });
+    // Congelar inmediatamente: esperar el HUD o clicar antes deja una fase dependiente de la velocidad de la GPU.
     await page.evaluate(comparisonState, { phase: 'prepare' as const, targetSeconds: 5 });
+    await page.getByRole('button', { name: 'Apnea espiratoria', exact: true }).click();
     await page.evaluate((extra) => {
       const sim = window.__vexusTest!.sim(),
         button = document.querySelector<HTMLButtonElement>('#freeze')!;
@@ -45,13 +52,13 @@ test('compara imágenes registradas pese a distinto trabajo del receptor antes d
       targetSeconds: 60,
       view: 'portal' as const,
       frames: 6,
-      historyStartFrame: 129,
+      historyStartFrame: 33,
     });
     expect(registered).toMatchObject({
       time: 60,
       frozen: true,
-      renderedFrame: 135,
-      protocol: { receiverPhaseRegistered: true, receiverPhaseReset: false, historyStartFrame: 129, historyEndFrame: 135, frames: 7 },
+      renderedFrame: 39,
+      protocol: { receiverPhaseRegistered: true, receiverPhaseReset: false, historyStartFrame: 33, historyEndFrame: 39, frames: 7 },
     });
     await captureBMode(page, info.outputPath(`registered-${trial}.png`));
     results.push({ raw, registered, rawHash, hash: await read() });

@@ -31,6 +31,7 @@ jobs:
       fail-fast: false
       matrix:
         profile: [legacy, reference]
+        view: [portal, intercostal, subcostal, subxiphoid]
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
@@ -49,13 +50,14 @@ jobs:
         run: node --import tsx tools/fidelity/portalComparison.ts
         env:
           COMPARISON_PROFILE: ${{ matrix.profile }}
+          COMPARISON_VIEW: ${{ matrix.view }}
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
           PORTAL_OUT: ${{ runner.temp }}/vexus-portal-evidence
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: portal-before-after-${{ matrix.profile }}
+          name: portal-before-after-${{ matrix.profile }}-${{ matrix.view }}
           path: ${{ runner.temp }}/vexus-portal-evidence
           retention-days: 7
           if-no-files-found: warn

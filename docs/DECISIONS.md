@@ -5816,11 +5816,19 @@ de integrar. No se presume equivalencia de píxeles por pasar los tests de orque
 
 **Opciones.** Reiniciar contadores privados, fijar ruido o retocar PNG invalida el observable. Igualar solo tiempo y pose no basta. El registro se mantiene en las herramientas de comparación, sin intervenir el procesamiento de producción.
 
-**Decisión.** `comparisonState` acepta un primer serial de historia explícito, observa el contador en el cine público y rellena por `sim.render()` sin avanzar fisiología. Tras vaciar historias, el calentamiento y las mediciones deben producir exactamente los seriales solicitados. `portalComparison` adquiere 129–135. Dominio acotado a la primera secuencia de 4096 cuadros; sobrepasar el destino exige una adquisición nueva, nunca retroceder ni inventar el contador. Contrato previo: `docs/fidelity/registered-comparison-contract.md`.
+**Decisión.** `comparisonState` acepta un primer serial de historia explícito, observa el contador en el cine público y rellena por `sim.render()` sin avanzar fisiología. Tras vaciar historias, el calentamiento y las mediciones deben producir exactamente los seriales solicitados. `portalComparison` adquiere 33–39; los bancos históricos129–135 conservan su fase original. Dominio acotado a la primera secuencia de 4096 cuadros; sobrepasar el destino exige una adquisición nueva, nunca retroceder ni inventar el contador. Contrato previo: `docs/fidelity/registered-comparison-contract.md`.
 
 **Consecuencias.** Se registran seriales y relleno; las comparaciones históricas sin fase no demuestran equivalencia de píxeles y se repiten antes de aceptar candidatos. Solo B-mode, no Doppler, modo M ni barridos temporales. Igualdad en una GPU no certifica fidelidad clínica ni identidad entre GPUs; el panel humano y referencias siguen pendientes.
 
 **Verificación.** La e2e compara dos arranques con trabajo previo distinto: el control sin registro diverge y las adquisiciones registradas coinciden. Guarda PNG y estado real. Tests rechazan seriales inválidos/sobrepasados, color/modo M, fallos de reloj y una adquisición cuyo serial no coincide; no cambian umbrales de procesamiento. CI exacta pendiente antes de integrar.
+
+### Seguimiento de coste 2026-10-07
+
+**Defecto observado.** CI37652959449, SHA6a7ded2, intento1: ambos perfiles agotaron el plazo vigente de20min. Solo se obtuvieron3 imágenes legacy y1 reference, sin completar antes/después. Cada captura rellenaba120–122cuadros antes de su historia medida. El relleno ordinario conserva causalidad, pero ejecutar hasta el serial129 no aporta un control adicional frente a otro serial común registrado.
+
+**Corrección.** Congelar inmediatamente después de los dos cuadros y ganchos, antes de esperar al HUD o clicar respiración. Adquirir la misma historia de siete cuadros en33–39; el control negativo sigue añadiendo11cuadros y exige divergencia sin registrar e identidad al registrar. Un destino sobrepasado sigue fallando. Distribuir las cuatro ventanas por trabajo junto a los dos perfiles: cada trabajo conserva ambas versiones, procedencia y los mismos20min; el agregado exige todos. No se reinicia el receptor ni se modifica el simulador, los ajustes, las aserciones o el presupuesto de la e2e.
+
+**Verificación pendiente.** Ejecutar control de navegador y banco nuevo, revisar artefactos y CI de un SHA nuevo. El fallo anterior se conserva; no se reintenta para obtener verde. Igualdad de imágenes solo valida el instrumento.
 
 ## 150. Inversión de presentación PW sin invertir el flujo del paciente
 

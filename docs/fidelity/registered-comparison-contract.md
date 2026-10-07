@@ -32,3 +32,7 @@ experimento, no fidelidad clínica ni identidad entre GPUs. Los barridos reales,
 poses vecinas, artefactos, referencias independientes y panel humano siguen siendo
 necesarios. Este contrato precede a la implementación y no certifica los candidatos
 anatómicos anteriores; deben repetirse con el protocolo nuevo.
+
+## Corrección del coste tras refutación CI
+
+CI37652959449 (6a7ded2, intento1) agotó20min en ambos perfiles al rellenar120–122cuadros. Ensayo nuevo: congelar inmediatamente tras dos cuadros/hooks; registrar33–39, siete cuadros con las mismas aserciones. Rechazar exceso igual que antes. Distribuir cuatro ventanas×dos perfiles, sin reducir cobertura ni cambiar20min por trabajo. La e2e mantiene11cuadros extra en el control negativo y su presupuesto original. El render ordinario y todos los invariantes se conservan. No atribuir el coste de relleno a rendimiento clínico; registrar padding y frameMs. Conservar el banco129–135 y las capturas parciales fallidas, sin compararlos como si tuviesen la misma fase. Este contrato precede al nuevo ensayo.

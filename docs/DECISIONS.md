@@ -6649,3 +6649,41 @@ accesibles (80,7 %), con 214 hepáticas y 42,19 mm de extensión radial. Se adop
 esa adquisición; no se cambia el riñón, la sombra ni el contacto corregido.
 La regresión espera ahora el punto exacto antes de medir. Los resultados finales
 se registran sobre el nuevo SHA, separadamente de la ejecución fallida.
+
+## 185. Evidencia reproducible de las nueve ventanas
+
+**Contexto.** El banco anterior recorre cuatro presets y no declara el modo
+anatómico. Una primera captura de VSH tomada antes de concluir la animación
+y ajustes portales heredados muestran que el instrumento puede introducir
+errores de comparación. La auditoría visual sigue encontrando interfaces
+hepáticas segmentadas y una adquisición epigástrica poco reconocible.
+
+**Opciones.** Duplicar las poses o generar ilustraciones separaría la evidencia
+de la adquisición real. Un número fijo de cuadros no acredita asentamiento.
+Una comparación con reloj/historia distintos tampoco aísla un cambio de señal.
+
+**Decisión.** `fidelity:audit` reutiliza `startPointsFor`, `comparisonState` y
+`captureBMode`. Exige atlas/legacy explícito y registra versión, árbol fuente,
+hashes anatómicos, caso, semilla, pose/marco presentado, reloj, compresión,
+respiración, ajustes y GPU. El protocolo UI usa las tarjetas y congelación
+reales; el estático declara el reinicio de historia y un instante físico común.
+Los PNG y manifiestos se guardan fuera del checkout en ejecuciones únicas.
+`acquisitionSnapshot` rechaza cuadros con geometría/tiempo inconsistentes.
+El [contrato previo](fidelity/ITERATIVE_REVIEW.md) fija dominio y refutación.
+
+**Consecuencias.** No cambia anatomía ni render y no añade código al bundle.
+La integridad de adquisición se separa de `clinicalAcceptance: pending`:
+no certifica la ventana ni valida una población. El banco actual cubre dos
+casos y nueve ventanas; aún faltan cines/barridos y referencia clínica reservada.
+
+**Verificación.** 18 adquisiciones UI y 18 estáticas a 30 s sobre `a37cdfe`,
+Metal Apple M4, sin errores del navegador y con procedencia conservada. Los
+fallos iniciales del instrumento se retienen en otras ejecuciones. Cinco
+controles negativos detectan cine atribuido a otra pose, tiempo inconsistente,
+modo/caso incorrecto, color activo, valores no finitos y errores del render.
+Los 16 tests focalizados, tipos, lint y formato pasan. Las verificaciones
+completas y la CI exacta son requisitos separados antes de integrar.
+La primera comprobación completa pasa 187 suites pero falla los dos casos
+de `abdominalAcquisition`: `AcousticWindowUnavailableError` en renal. El cambio
+de instrumento no modifica fuentes de anatomía/adquisición ni render; el fallo
+se conserva en `fidelity-loop-20261007/p01-check.log` y bloquea integración.

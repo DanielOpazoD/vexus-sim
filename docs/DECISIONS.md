@@ -6639,3 +6639,13 @@ con el SHA final y resultados, sin reintentos. El conteo de etiquetas no se
 considera visibilidad acústica ni validación humana. El build compila, pero el
 presupuesto sigue rojo: 1094,7 KiB frente a 1078 KiB. No se cambia el límite;
 esta iteración se entrega localmente y no se integra a main por esa deuda.
+
+La verificación nativa de `e8481ff` detecta una regresión hepatorrenal real:
+sólo 78/126 muestras renales superan 1 % de transmisión (61,9 %, frente al
+criterio instrumental >65 %). Se conserva el fallo normal y grave, sin reducir
+el umbral. Un barrido espacial de 15 poses confirma que desplazar la entrada
+2 mm cranealmente y φ−0,01 despeja la costilla tangencial: 88/109 muestras
+accesibles (80,7 %), con 214 hepáticas y 42,19 mm de extensión radial. Se adopta
+esa adquisición; no se cambia el riñón, la sombra ni el contacto corregido.
+La regresión espera ahora el punto exacto antes de medir. Los resultados finales
+se registran sobre el nuevo SHA, separadamente de la ejecución fallida.

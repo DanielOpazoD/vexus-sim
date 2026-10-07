@@ -9,6 +9,10 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
     await page.locator('.win-card').nth(8).click();
     const f = await page.evaluate(() => window.__vexusTest!.framesRendered());
     await page.waitForFunction((f) => window.__vexusTest!.framesRendered() > f + 70, f);
+    await page.waitForFunction(() => {
+      const p = window.__vexusTest!.sim().pose;
+      return Math.abs(p.phi - 2.99) < 0.00001 && Math.abs(p.z + 113) < 0.00001;
+    });
     await page.locator('#freeze').click();
     const result = await page.evaluate(() => {
       const s = window.__vexusTest!.sim(),

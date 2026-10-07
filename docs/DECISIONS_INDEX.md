@@ -181,3 +181,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [175](DECISIONS.md#L6367) | Consulta costal con descarte geométrico conservador | vigente |
 | [176](DECISIONS.md#L6373) | Registro renal y muscular posterior coherente con la columna | vigente |
 | [177](DECISIONS.md#L6393) | Integrar la absorción Doppler por tejido sin nuevas texturas | vigente |
+| [187](DECISIONS.md#L6401) | Compartir el grafo de anatomía del trabajador sin compartir estado | vigente |

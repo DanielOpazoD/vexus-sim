@@ -143,6 +143,13 @@ navegador 3D (three.js, tras el primer cuadro) ni la pestaña Docente (`codeSpli
 bundle (`tools/ci/bundle-budget.ts`) cuenta en el JS total lo que puede descargar un usuario: los ganchos de prueba
 quedan fuera, con su límite por chunk.
 
+El trabajador del plano se emite como entrada ES en el mismo grafo de producción
+(`tools/build/sharedCutMapWorker.ts`, decisión 187). La aplicación y el trabajador
+descargan los mismos chunks CPU de anatomía, pero cada entorno conserva su propia
+instancia y recibe paciente, perfil, pose y compresión por mensajes. En desarrollo
+se sirve el módulo TS desde `cutMapWorkerUrl.ts`. El presupuesto sigue contando
+todos los archivos JS, incluidos entrada del trabajador y chunks compartidos.
+
 ## Anatomía compartida CPU/GPU
 
 La escena es declarativa (`anatomy/scene.ts`: primitivas y riñones orientados; el árbol vascular y

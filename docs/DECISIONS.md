@@ -6397,3 +6397,37 @@ La conversión global de 174 usa b=1 para absorción, aunque piel, grasa, múscu
 Aceptación: etiquetas de todos los tejidos/tipos de gas; programa A2 de producción en GPU con todos los tejidos y nueve pares de frecuencias, espejo/gas/hueso y B inalterado, error <0,01 dB. Prefijos de cuatro ventanas frente a integración independiente α1·f^b, adquisición portal normal/grave en ambos cuerpos y oráculo complejo con controles negativos. Límites WebGL de uniforms/samplers, grafo y hashes documentan cambio de .w, sin rebajar márgenes ni tolerancias.
 
 Se retira `color-absorption-linear-scaling`; continúan rejilla gruesa, barreras estimadas, ausencia de calibración clínica y estimador color emulado. Las funciones b=1 quedan solo como contrafactual histórico de 174 en tests, sin uso de renderer. Medido 1031,3 KiB ≤1032: coste neto menor tras retirar sampler/conversión, todos los activos/Workers incluidos. No se declara idéntica apertura ni discretización entre PW y color.
+
+## 187. Compartir el grafo de anatomía del trabajador sin compartir estado
+
+**Contexto.** La base de main `8189d36` descarga 1032,4 KiB de JavaScript frente
+al límite de 1033 KiB. El trabajador del plano lleva 64,3 KiB en un build
+independiente y duplica módulos anatómicos del hilo principal. El candidato atlas
+local `89e0152` alcanza 1094,8 KiB frente a 1078 KiB y no puede integrarse.
+Contrato previo: `docs/fidelity/shared-worker-contract.md`.
+
+**Opciones.** Aumentar presupuestos o excluir activos del total no corrige la
+causa. Empaquetar texto GLSL o añadir anotaciones de pureza no elimina esta
+duplicación. Ejecutar el mapa en el hilo principal añade trabajo al render.
+
+**Decisión.** `sharedCutMapWorker` emite la entrada ES del trabajador en el mismo
+grafo Rolldown de la aplicación. `cutMapWorkerUrl.ts` conserva la URL del módulo
+TS en desarrollo y recibe la URL emitida en producción. Los módulos se comparten
+como archivos descargados, conservando instancias independientes en cada entorno.
+El protocolo, la anatomía y la física no cambian.
+
+**Consecuencias.** En main, el total medido baja a 969,0 KiB; en el candidato atlas
+completo, a 1013,8 KiB. Todos los chunks, trabajadores y ganchos siguen contados,
+y se conservan los límites 1033/1078 KiB de sus respectivas ramas. Esta medición
+no prueba mayor FPS ni resuelve el arranque SwiftShader del atlas. No aporta una
+nueva validación clínica.
+
+**Verificación.** `e2e/sharedWorker.spec.ts` captura las peticiones/respuestas del
+trabajador real en normal y congestión, con cambios de pose y presión por los
+controles del operador. Compara exactamente 1024 puntos de cada mapa con la
+anatomía CPU en el mismo estado de petición y exige un mapa de la pose actual.
+Build, presupuesto, desarrollo/producción y CI protegen imports y descarga; las
+comparaciones de imágenes y shaders deben conservarse como evidencia. El gate
+funcional también pasa en la base: protege la equivalencia al compartir el grafo,
+no detecta por sí solo la duplicación de archivos. El presupuesto existente del
+candidato atlas falla sin este cambio y pasa con él.

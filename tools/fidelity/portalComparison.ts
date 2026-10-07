@@ -82,7 +82,13 @@ try {
           if (inspiration) {
             await page.getByRole('button', { name: 'Apnea inspiratoria', exact: true }).click();
           }
-          const acquisition = await page.evaluate(comparisonState, { phase: 'capture' as const, targetSeconds: 30, view: id, frames: 6 });
+          const acquisition = await page.evaluate(comparisonState, {
+            phase: 'capture' as const,
+            targetSeconds: 30,
+            view: id,
+            frames: 6,
+            historyStartFrame: 129,
+          });
           const settings = { ...acquisition, preparationTime: prepared.time };
           if (settings.caseId !== 'normal-adult' || settings.time !== 30 || !settings.frozen) throw new Error('Invalid comparison state');
           if (Math.abs(settings.displacementMm - (inspiration ? 30 : 0)) > 1e-6) throw new Error('Unexpected respiratory displacement');
@@ -105,7 +111,7 @@ try {
         results,
         inspiration,
         notes:
-          'PNG original del framebuffer, sin HUD ni retoques. Mismo runner, ventanas y ajustes predeterminados; seis cuadros de asentamiento. Orden después/antes. Comparación de ingeniería, no validación clínica.',
+          'PNG original del framebuffer, sin HUD ni retoques. Mismo runner, ventanas y ajustes predeterminados; Siete cuadros adquiridos (129–135: uno de calentamiento y seis medidos), con relleno por render ordinario sin avanzar fisiología. Orden después/antes. Comparación de ingeniería, no validación clínica.',
       },
       null,
       2,

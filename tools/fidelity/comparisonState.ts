@@ -1,7 +1,13 @@
 import type { StartPoint } from '../../src/app/startPoints';
 
 /** Self-contained callback for page.evaluate: no module-scoped runtime dependencies. */
-export function comparisonState(args: { phase: 'prepare' | 'capture'; targetSeconds: number; view?: StartPoint['id']; frames?: number }) {
+export function comparisonState(args: {
+  phase: 'prepare' | 'capture';
+  targetSeconds: number;
+  view?: StartPoint['id'];
+  frames?: number;
+  historyStartFrame?: number;
+}) {
   const hooks = window.__vexusTest!;
   const sim = hooks.sim();
   const button = document.querySelector<HTMLButtonElement>('#freeze');
@@ -13,7 +19,11 @@ export function comparisonState(args: { phase: 'prepare' | 'capture'; targetSeco
     button.click();
   }
   if (!sim.frozen) throw new Error('Could not freeze comparison');
+  const start = args.historyStartFrame;
+  if (start !== undefined && (args.phase !== 'capture' || !Number.isSafeInteger(start) || start < 2 || start + frames > 4096))
+    throw new RangeError('Comparison receiver phase is outside the reproducible frame domain');
   let frameMs: number | null = null;
+  let paddingFrames = 0;
   try {
     if (args.phase === 'capture') {
       button.click();
@@ -37,6 +47,17 @@ export function comparisonState(args: { phase: 'prepare' | 'capture'; targetSeco
     if (clock.step !== targetStep || Math.abs(sim.sample.t - args.targetSeconds) > 1e-9)
       throw new Error('Comparison clock did not reach target');
     if (args.phase === 'capture') {
+      if (start !== undefined) {
+        if (sim.color.enabled || sim.mmode.enabled) throw new Error('Receiver phase registration requires B-mode without color');
+        // Ordinary rendering exposes the current serial through public cine metadata.
+        sim.render();
+        sim.renderer.cineSeal();
+        const current = sim.renderer.cineFrame(sim.renderer.cineCount - 1).n;
+        paddingFrames = start - 1 - current;
+        if (!Number.isSafeInteger(current) || current < 1 || paddingFrames < 0)
+          throw new RangeError(`Comparison receiver phase was already passed or is invalid: current=${current}, requested=${start}`);
+        for (let i = 0; i < paddingFrames; i++) sim.render();
+      }
       // Reset compound/persistence/cine history without recompiling programs or changing anatomy.
       sim.renderer.setScene(sim.scene);
       frameMs = hooks.frameCostMs(frames);
@@ -50,6 +71,7 @@ export function comparisonState(args: { phase: 'prepare' | 'capture'; targetSeco
   if (args.phase === 'capture') sim.renderer.cineSeal();
   const frame = args.phase === 'capture' && sim.renderer.cineCount ? sim.renderer.cineFrame(sim.renderer.cineCount - 1) : null;
   if (args.phase === 'capture' && (!frame || frame.t !== sim.sample.t)) throw new Error('Captured image is not at the comparison time');
+  if (start !== undefined && frame?.n !== start + frames) throw new Error('Captured image is not at the registered receiver phase');
   return {
     frameMs,
     pose: { ...sim.pose },
@@ -70,6 +92,10 @@ export function comparisonState(args: { phase: 'prepare' | 'capture'; targetSeco
       targetSeconds: args.targetSeconds,
       frames: args.phase === 'capture' ? frames + 1 : 0,
       receiverPhaseReset: false,
+      receiverPhaseRegistered: start !== undefined,
+      historyStartFrame: start ?? null,
+      historyEndFrame: start === undefined ? null : start + frames,
+      paddingFrames,
     },
   };
 }

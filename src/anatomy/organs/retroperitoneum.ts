@@ -182,7 +182,7 @@ const vec4 PSOAS[${PSOAS_NODES.length}] = vec4[${PSOAS_NODES.length}](${PSOAS_NO
 const vec4 QL_Z = vec4(${f4(Q.zTop)}, ${f4(Q.zBottom)}, ${f4(Q.zPeak)}, ${f4(Q.yMax)});
 const vec4 QL_X = vec4(${f4(Q.xMedial)}, ${f4(Q.xLateralTop)}, ${f4(Q.xLateralBottom)}, 0.0);
 const vec2 QL_T = vec2(${f4(Q.thicknessTop)}, ${f4(Q.thicknessMax)});
-const vec3 QL_L = vec3(${f4(QL_LIPSCHITZ.wall)}, ${f4(QL_LIPSCHITZ.peri)}, ${f4(QL_LIPSCHITZ.lateral)});
+const vec3 QL_L = vec3(${f4(QL_LIPSCHITZ.wall)}, ${f4(QL_LIPSCHITZ.peri)}, ${QL_LIPSCHITZ.lateral.toFixed(8)});
 const vec4 RF_A = vec4(${f4(R.frontY)}, ${f4(R.xFront)}, ${f4(R.xLateral)}, ${f4(R.yLateral)});
 const vec4 RF_B = vec4(${f4(R.zLow)}, ${f4(R.zRamp)}, ${f4(R.yLow)}, ${f4(RETRO_FRONT_LIPSCHITZ)});
 float psoasSdf(vec3 m) {

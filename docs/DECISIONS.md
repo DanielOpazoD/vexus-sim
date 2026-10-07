@@ -6464,8 +6464,14 @@ La auditoría superficial posterior refutó el refinamiento de la unión ya rast
 
 ## 181. Cerrar el campo de los cuadrados lumbares en la pared posterior
 
-**Defecto.** Dos bandas rojizas sobresalían detrás del cuerpo y de la columna. Son las superficies del cuadrado lumbar estimado: el campo aislado admitía profundidades negativas respecto de la pared interna y no tenía frontera posterior. La clasificación acústica resolvía antes la pared y ocultaba la extensión; la extracción 3D no tenía esa precedencia. El control negativo falla en ambos cuerpos: exceso máximo de 91,31 mm en el procedural y 56,20 mm en el atlas, medido contra la cara interna corporal.
+**Contexto.** Dos bandas rojizas sobresalían detrás del cuerpo y de la columna. Son las superficies del cuadrado lumbar estimado: el campo aislado admitía profundidades negativas respecto de la pared interna y no tenía frontera posterior. La clasificación acústica resolvía antes la pared y ocultaba la extensión; la extracción 3D no tenía esa precedencia. El control negativo falla en ambos cuerpos: exceso máximo de 91,31 mm en el procedural y 56,20 mm en el atlas, medido contra la cara interna corporal.
+
+**Opciones.** Ocultar las mallas impide identificar el músculo. Recortar sólo su dibujo deja dos geometrías. La frontera ausente pertenece al campo compartido y no requiere otro atlas o volumen.
 
 **Decisión.** Contrato previo `anatomy/posterior-muscle-contract.md`. Se añade la frontera externa al campo CPU/GLSL con la misma normalización de pared. La malla conserva la función compartida y ambos músculos; no se ocultan ni se recortan sólo en pantalla. Datos y registro de vísceras/costillas, límites y calibración vascular se conservan.
 
-**Aceptación y límites.** Control negativo exterior, inspección de todos los vértices contra la pared en ambos cuerpos (error de extracción <1,5 mm), regresión retroperitoneal y paridad/adquisición nativa. La forma y las inserciones del cuadrado lumbar siguen estimadas; esta reparación del dominio no certifica anatomía individual ni fidelidad clínica. La validación Metal no sustituye CI/SwiftShader ni habilita integración con presupuesto incumplido.
+**Consecuencias.** La forma y las inserciones del cuadrado lumbar siguen estimadas; esta reparación del dominio no certifica anatomía individual ni fidelidad clínica. La validación Metal no sustituye CI/SwiftShader ni habilita integración con presupuesto incumplido.
+
+**Verificación.** Control negativo exterior, inspección de todos los vértices contra la pared en ambos cuerpos (error de extracción <1,5 mm), regresión retroperitoneal y paridad/adquisición nativa. Con la contención, el exceso máximo medido respecto de la cara interna baja a 0,014 mm en el procedural y 0,069 mm en el atlas; ninguna superficie queda fuera de la piel. Ambos músculos permanecen presentes.
+
+El nuevo banco GPU aislado conserva el rechazo exterior pero refuta la paridad de 0,001 mm: el redondeo histórico a cuatro decimales de la cota lateral produce un error de 0,001102 mm. Se aumenta sólo la precisión de ese literal GLSL a ocho decimales, sin cambiar la constante CPU ni el umbral del banco. La primera ejecución fallida se conserva; no se presenta como CI verde ni se acepta mediante reintento sin corregir el defecto.

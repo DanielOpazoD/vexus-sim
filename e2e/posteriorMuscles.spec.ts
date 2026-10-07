@@ -94,11 +94,11 @@ void main(){value=vec4(quadratusSdf(point,distances.x,distances.y),0,0,1);}`,
       expect(result.values[i]).toBeLessThan(0);
     }
   }
-  expect(interior).toBeGreaterThan(0);
-  expect(maxError).toBeLessThan(0.001);
-  expect(result.error).toBe(0);
   await info.attach('quadratus-domain.json', {
     body: JSON.stringify({ count: inputs.length, maxError, interior, inputs, ...result }),
     contentType: 'application/json',
   });
+  expect(interior).toBeGreaterThan(0);
+  expect(maxError).toBeLessThan(0.001);
+  expect(result.error).toBe(0);
 });

@@ -23,13 +23,15 @@ export function hepaticCostalBody(source: Float32Array, wallMm: number, skinMm: 
   const profile = new Float32Array(COSTAL_BODY_ROWS * BODY_STRIDE);
   const padding = Math.max(0, wallMm - 10);
   for (let row = 0; row < COSTAL_BODY_ROWS; row++) {
-    const z = -400 + row * 10;
+    const z = -400 + (row * 520) / (COSTAL_BODY_ROWS - 1);
     const cy = bodySection(0, z, source)[3];
     profile[row * BODY_STRIDE] = cy;
     for (let k = 0; k < 64; k++) {
       const phi = (k * 2 * Math.PI) / 64;
       const inherited = bodySection(phi, z, source)[0] + padding;
-      const weight = smoothstep(1.9, 2.2, phi) * (1 - smoothstep(3.6, 3.9, phi)) * smoothstep(-145, -115, z) * (1 - smoothstep(0, 30, z));
+      // Include the anterior hepatic face used by subcostal acquisition. The
+      // liver crossing and competing source viscera still decide whether to fit.
+      const weight = smoothstep(1.1, 1.4, phi) * (1 - smoothstep(3.6, 3.9, phi)) * smoothstep(-145, -115, z) * (1 - smoothstep(0, 30, z));
       let radius = inherited;
       if (weight > 0) {
         const point = (r: number): Vec3 => [r * Math.cos(phi), cy + r * Math.sin(phi), z];

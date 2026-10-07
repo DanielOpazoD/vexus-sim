@@ -69,7 +69,7 @@ export interface ProbeFrame {
   elevation: Vec3;
   /** Centro de curvatura (origen de las líneas radiales). */
   curvatureCenter: Vec3;
-  /** Normal exterior de la piel bajo la sonda. */
+  /** Normal exterior estimada de la región de apoyo rígido de la sonda. */
   skinNormal: Vec3;
   /** Punto de la piel. */
   skinPoint: Vec3;
@@ -77,7 +77,19 @@ export interface ProbeFrame {
 
 export function probeFrame(pose: ProbePose, torso: Torso, tr: Transducer): ProbeFrame {
   const skinPoint = torsoSkinPoint(pose.phi, pose.z, torso);
-  const n = torsoNormal(skinPoint, torso);
+  // A rigid probe rests on a patch, not on a knot of the sampled skin. Chords
+  // of the SAME surface give a continuous contact plane across profile cells.
+  // The narrow footprint sets the estimated patch; no temporal/image smoothing.
+  const h = tr.elevationMm / 2;
+  const dphi = h / Math.max(40, Math.hypot(skinPoint[0], skinPoint[1] - (torso.y0 ?? 0)));
+  const n = torso.profile
+    ? normalize(
+        cross(
+          sub(torsoSkinPoint(pose.phi + dphi, pose.z, torso), torsoSkinPoint(pose.phi - dphi, pose.z, torso)),
+          sub(torsoSkinPoint(pose.phi, pose.z + h, torso), torsoSkinPoint(pose.phi, pose.z - h, torso)),
+        ),
+      )
+    : torsoNormal(skinPoint, torso);
   let axial = scale(n, -1);
   // lateral inicial: proyección de +z (craneal) sobre el plano tangente
   let lateral = normalize(sub([0, 0, 1], scale(n, dot([0, 0, 1], n))));

@@ -6585,3 +6585,57 @@ Las dos regresiones finales pasan sin reintentos; el total de pruebas nativas
 pertinentes verificadas asciende a18. Pasan tipos, lint de los archivos modificados
 y siete regresiones de orientación/documentación. El presupuesto del build
 continúa incumplido y la entrega sigue siendo local.
+
+## 184. Contacto continuo y criterios anatómicos de las nueve ventanas
+
+**Contexto.** Al deslizar 0,001 mm sobre z−100 mm, la normal puntual del perfil
+subcostal gira 51,38° y el punto a 100 mm cambia 86,70 mm. Después de corregir
+ese marco, un arrastre real encuentra otro salto de 5,74 mm de la cara por
+0,038 mm de deslizamiento: el módulo del gradiente usado para limitar presión
+también es discontinuo. En subcostal persiste separación anterior etiquetada
+como mesenterio y un preset VCI apunta por tórax. El Worker del plano utiliza
+el perfil abdominal crudo y no recibe el atlas costal de la adquisición.
+
+**Opciones.** Fundir cuadros o ocultar tejidos según el nombre de ventana
+rompería la causalidad. Duplicar el ajuste corporal en el Worker conservaría
+inconsistencias de registro. Densificar a 5 mm el perfil no corrige todos los
+contactos y empeora algunos: se conserva ese intento fallido en los artefactos.
+
+**Decisión.** `probeFrame` estima el plano de apoyo sobre cuerdas de la misma
+piel a medio espesor elevacional. `contact.skinGap` estima su escala de distancia
+con diferencias finitas de ±1 mm; la elipse analítica legacy no cambia. Ambos
+son controles espaciales, sin interpolación temporal de imágenes. Se amplía
+el ajuste parietal anterior derecho preservando vísceras/hueso y el campo fuente;
+no se modifican órganos para fabricar una ventana. `cutMapWorker` recibe el
+perfil efectivo y el atlas torácico exactos, y construye la escena con ese
+perfil sin reajustarlo. El picking usa coordenadas polares de la piel registrada.
+Las entradas atlas de VCI longitudinal y VSH se reorientan transhepáticamente;
+la primera se centra en VCI intrahepática con marcador craneal y basculación
+casi neutra, evitando el 56 % de acoplamiento del encuadre anterior.
+
+El [contrato](anatomy/movement-subcostal-contract.md) precede las correcciones.
+La [matriz de aceptación](anatomy/vexus-window-acceptance.md) reúne por ventana
+estructuras esperadas, condicionales e impropias, marcadores, cortical/sombra,
+gris, color y PW, movimientos y validación pendiente. Sirve al objetivo de
+adquisición/anatomía antes de añadir funciones.
+
+**Consecuencias.** Se elimina el giro discontinuo al cruzar celdas y el salto
+reproducido de presión. La normal de apoyo, el perfil corporal y la presión
+siguen estimados: no son una pared biomecánica validada ni prueban fidelidad
+máxima. 36 contactos anteriores derechos cumplen 2,5 mm, tolerancia instrumental
+del atlas de 1,5 mm; el dominio ampliado inferomedial aún tiene tres huecos de
+3,29–9,01 mm. El máximo cruce de la malla hepática fuente con la pared ajustada
+es 0,75 mm, discrepancia subcelda. No se ocultan ni se dan por resueltos estos
+fallos, los ecos capsulares pendientes ni la variabilidad clínica.
+
+**Verificación.** La base `ff932ee` falla los nuevos controles de normal y
+apposición. El test adicional de presión reproduce 5,72 mm sin la corrección
+y pasa con ella; 20 pruebas de apposición/compresión y 1209 pruebas rápidas
+pasan, junto con tipos y lint. Las pruebas de adquisición nativa incluyen Worker
+real, campo central hepático, cortical/sombra, hepatorrenal normal/congestión,
+color portal/inversión y controles de mala adquisición. Los artefactos locales
+`228` conservan capturas, barridos, diferencias CPU/GPU y el informe de entrega
+con el SHA final y resultados, sin reintentos. El conteo de etiquetas no se
+considera visibilidad acústica ni validación humana. El build compila, pero el
+presupuesto sigue rojo: 1094,7 KiB frente a 1078 KiB. No se cambia el límite;
+esta iteración se entrega localmente y no se integra a main por esa deuda.

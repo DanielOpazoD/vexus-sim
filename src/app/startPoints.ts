@@ -232,10 +232,12 @@ const REFERENCE_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
         : sp.hint,
 }));
 const ABDOMINAL_POSES = {
-  subxiphoid: { phi: 1.65, z: -15, yaw: 0.02476, rock: 0.591491, tilt: -0.055956 },
+  // Intrahepatic IVC in long axis, rather than aiming the whole face at its
+  // thoracic end. Offline compressed rays; fixed organs and real costal field.
+  subxiphoid: { phi: 1.6, z: -40, yaw: -0.02516291680704072, rock: 0.001621690619853046, tilt: -0.0641956706912719 },
   epigastric: { phi: 1.55, z: -80, yaw: -1.572947056125525, rock: 0.1493615263787931, tilt: 0.13328531500949725 },
   intercostal: { phi: 2.5, z: -35, yaw: -1.2, rock: 0.08958884100807597, tilt: 0.15439831127567974 },
-  subcostal: { phi: 2.05, z: -85, yaw: 0.7698810981960804, rock: 0.0694104750765201, tilt: -0.4200585024342222 },
+  subcostal: { phi: 2, z: -80, yaw: 0.6280025227578521, rock: 0.3259201915316282, tilt: -0.03886141881794285 },
   flank: { phi: 3.1, z: -75, yaw: 0.1767952406260464, rock: 0.4707775613505776, tilt: -0.04687503959831865 },
   // Equivalent acoustic plane with the marked end cranial: yaw − π, rock/tilt sign reversed.
   // The former pose pointed the marker caudally and mirrored the standard longitudinal orientation.

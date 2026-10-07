@@ -187,3 +187,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [181](DECISIONS.md#L6465) | Cerrar el campo de los cuadrados lumbares en la pared posterior | vigente |
 | [182](DECISIONS.md#L6479) | Registro posterior, contacto hepático y lente convexa coherentes | vigente |
 | [183](DECISIONS.md#L6525) | Apposición hepática costal y marcador intercostal posterior | vigente |
+| [184](DECISIONS.md#L6589) | Contacto continuo y criterios anatómicos de las nueve ventanas | vigente |

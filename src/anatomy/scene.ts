@@ -280,7 +280,7 @@ export class AnatomyScene {
   /** Esferas envolventes de vasos y conductos, en el mismo orden que la GPU (vasos, luego conductos). */
   readonly tubeBounds: Array<{ center: Vec3; r: number }>;
 
-  constructor(patient: PatientState) {
+  constructor(patient: PatientState, registeredBody?: Float32Array) {
     const fat = patient.habitus.subcutaneousFatMm;
     const muscle = patient.habitus.muscleMm;
     // Tronco 32 × 21 cm (adulto de IMC 25): la VCI queda a ≈ 12–13 cm del xifoides
@@ -295,9 +295,9 @@ export class AnatomyScene {
       muscleMm: muscle,
       preperitonealMm: preperitonealMm(fat),
     };
-    if (this.hasAbdominalAtlas ? abdominalBody : referenceBody) {
-      this.torso.profile = this.hasAbdominalAtlas ? abdominalBody : referenceBody;
-      if (this.hasAbdominalAtlas && this.torso.profile) {
+    if (registeredBody ?? (this.hasAbdominalAtlas ? abdominalBody : referenceBody)) {
+      this.torso.profile = registeredBody ?? (this.hasAbdominalAtlas ? abdominalBody : referenceBody);
+      if (this.hasAbdominalAtlas && this.torso.profile && !registeredBody) {
         this.torso.profile = hepaticCostalBody(this.torso.profile, this.wallThickness(), this.torso.skinMm);
       }
       this.torso.y0 = -21.106195;

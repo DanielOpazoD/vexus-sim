@@ -117,3 +117,14 @@ Los vasos principales usan secciones fuente cuando existen. Ramas y conectores n
 La cúpula atlas usa una tabla de altura/soporte derivada de la superficie hepática, y cerca de ella la cáscara SDF de 2,5 mm. La transición entre 6 y 12 mm por debajo de la superficie preserva el dominio superior. Los campos de órganos permanecen idénticos; la malla 3D resuelve el mismo cero acústico. No se integra el activo FJ3131 ni se simula separación patológica por ascitis/derrame con esta corrección normal.
 
 Suprahepáticas: fuentes FJ2416/FJ2415 para las secciones proximales, estimación explícita de sus interpolaciones, vena media y tributarias. Se recalibran dos poses para los nuevos ejes. La marca azul superior es rígida al transductor y visible hacia el operador; la convención ecográfica conserva marca craneal en longitudinal y derecha del paciente en transversal. Porta principal PW mantiene encuadre propio de 160 mm y foco 130 mm tras la vista intrahepática.
+
+### Contacto continuo sobre el perfil corporal registrado (184)
+
+El plano de apoyo de la sonda se estima con cuerdas de la misma piel a ±6,5 mm
+para el espesor elevacional del convexo actual. La escala de distancia usada
+por la presión se estima con diferencias finitas de semiancho 1 mm. Son
+parámetros de discretización/contacto [EXTRAPOLACIÓN PROPIA], no datos de
+biomecánica humana. No alteran los ceros de piel ni los gradientes acústicos
+compartidos CPU/GLSL. El solver conserva su tolerancia numérica de 0,05 mm.
+Los controles de continuidad y sus límites están en
+[aceptación por ventana](anatomy/vexus-window-acceptance.md).

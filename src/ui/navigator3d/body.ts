@@ -14,8 +14,9 @@ import { CM, surfaceAt } from './common';
 /** Piel superelíptica del tronco (misma elipse que `torsoDepth`) y esqueleto procedural. */
 export function buildSkin(a: AnatomyScene): THREE.Mesh {
   const t = a.torso;
-  const nT = 72;
-  const nZ = 40;
+  // Align atlas picking geometry with the registered 64 sectors / 10-mm rows.
+  const nT = a.hasAbdominalAtlas ? 64 : 72;
+  const nZ = a.hasAbdominalAtlas ? 70 : 40;
   const z0 = a.hasAbdominalAtlas ? -430 : -260;
   const z1 = 270;
   const pos: number[] = [];

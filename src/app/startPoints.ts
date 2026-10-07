@@ -242,7 +242,7 @@ const ABDOMINAL_POSES = {
   portal: { phi: 3.2499999999999996, z: -65, yaw: -0.3083879194167607, rock: -0.2122189996791038, tilt: 0.0937442490667998 },
   renal: { phi: 3.15, z: -175, yaw: -0.04682166646295555, rock: 0.37638199977635656, tilt: -0.3330150669689693 },
   portalTrunk: { phi: 3.05, z: -80, yaw: 0.22135021897142884, rock: -0.13225461110004316, tilt: 0.11100678455374574 },
-  hepatorenal: { phi: 3.249999999999999, z: -85, yaw: -0.45697350475283993, rock: -0.6576005548800171, tilt: -0.5305548456838374 },
+  hepatorenal: { phi: 3, z: -115, yaw: -0.24452521426888207, rock: -0.13406390040993016, tilt: -0.3591483268294911 },
 } as const;
 const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
   ...sp,

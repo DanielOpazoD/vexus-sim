@@ -6570,3 +6570,18 @@ se declara equivalencia exacta en fronteras ni se usa el conteo como validación
 Calibración idéntica al registro 226. Tipos, lint y formato pasan. El build compila
 pero su presupuesto sigue rojo: 1092,7 KiB > 1078 KiB. Sin aumento de presupuesto,
 CI de esta rama ni integración a main; entrega exclusivamente local.
+
+La revisión visual posterior refuta el primer preset hepatorrenal de esta
+corrección: atravesar geométricamente el riñón no demuestra que se vea, porque
+una costilla interpuesta lo oculta. Se conserva la captura y el control negativo
+(49 muestras renales con transmisión >1 % en una rejilla de 2048). Se adopta una
+entrada inferior φ3,00/z−115 mm, marcador craneal, con imagen nueva verificada:
+94 de126 muestras renales accesibles, hígado presente (164 muestras) y extensión
+radial de45 mm. Son métricas instrumentales de este encuadre, no validación
+clínica ni medida de la longitud renal. La nueva regresión de adquisición exige
+ambos órganos y disponibilidad acústica en normal/congestión, sin ocultar hueso
+ni reducir su sombra. Persiste sombra costal periférica física.
+Las dos regresiones finales pasan sin reintentos; el total de pruebas nativas
+pertinentes verificadas asciende a18. Pasan tipos, lint de los archivos modificados
+y siete regresiones de orientación/documentación. El presupuesto del build
+continúa incumplido y la entrega sigue siendo local.

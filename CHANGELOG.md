@@ -8,6 +8,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 ### Corregido
 
 - Atlas renal: corrige el conector venoso esplénico estimado que atravesaba el polo superior izquierdo, conservando riñones y calibres; representación ecográfica y validación clínica pendientes (176, seguimiento).
+- Banco de comparación: registra la fase real del receptor mediante renders ordinarios y conserva el reloj; evita atribuir al modelo diferencias de ruido por distinto trabajo previo; distribuye las ventanas y elimina relleno innecesario manteniendo cobertura y plazos (149, seguimiento 2026-10-07).
 
 - Plano anatómico: comparte módulos CPU con la aplicación en el build sin duplicarlos en un bundle del trabajador; conserva estado separado y reduce JavaScript sin ampliar presupuestos (25, seguimiento 2026-10-07).
 

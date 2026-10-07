@@ -2,7 +2,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SimulationClock } from '../core/clock';
 import { comparisonState } from '../../tools/fidelity/comparisonState';
 afterEach(() => vi.unstubAllGlobals());
-function fixture(initialSteps = 4) {
+function fixture(initialSteps = 4, initialFrame = 2) {
+  let serial = initialFrame;
   const clock = new SimulationClock();
   for (let i = 0; i < initialSteps; i++) clock.advance();
   const step = vi.fn(() => clock.advance());
@@ -14,7 +15,12 @@ function fixture(initialSteps = 4) {
     scene: { torso: { profile: null } },
     pose: { phi: 1 },
     bmode: { gainDb: 0 },
-    renderer: { setScene: vi.fn(), cineSeal: vi.fn(), cineCount: 1, cineFrame: () => ({ n: 9, t: clock.t }) },
+    color: { enabled: false },
+    mmode: { enabled: false },
+    render: vi.fn(() => {
+      serial++;
+    }),
+    renderer: { setScene: vi.fn(), cineSeal: vi.fn(), cineCount: 1, cineFrame: () => ({ n: serial, t: clock.t }) },
     get sample() {
       return { t: clock.t, resp: { diaphragmCaudalMm: 0 } };
     },
@@ -35,7 +41,10 @@ function fixture(initialSteps = 4) {
       step();
       sim.probeVelocity = [20, 0, 0];
     }),
-    frameCostMs: vi.fn(() => 8.25),
+    frameCostMs: vi.fn((n: number) => {
+      serial += n + 1;
+      return 8.25;
+    }),
   };
   vi.stubGlobal('window', { __vexusTest: hooks });
   vi.stubGlobal('document', { querySelector: () => button });
@@ -58,6 +67,54 @@ describe('comparaciones visuales con estado y reloj reproducibles', () => {
       results.push(result);
     }
     expect(results[0]).toEqual(results[1]);
+  });
+  it('registra la misma historia con diferentes contadores previos sin modificar el reloj ni el contador privado', () => {
+    const results = [2, 21].map((serial) => {
+      const f = fixture(4, serial);
+      comparisonState({ phase: 'prepare', targetSeconds: 5 });
+      const result = comparisonState({ phase: 'capture', targetSeconds: 30, view: 'portal', historyStartFrame: 65 });
+      expect(f.sim.render).toHaveBeenCalledTimes(64 - serial);
+      expect(f.hooks.frameCostMs).toHaveBeenCalledWith(6);
+      expect(result).toMatchObject({
+        renderedFrame: 71,
+        time: 30,
+        frozen: true,
+        protocol: { receiverPhaseRegistered: true, receiverPhaseReset: false, historyStartFrame: 65, historyEndFrame: 71, frames: 7 },
+      });
+      return result;
+    });
+    expect(results[0].sample).toEqual(results[1].sample);
+    expect(results[0].protocol.paddingFrames).not.toBe(results[1].protocol.paddingFrames);
+  });
+  it('rechaza seriales imposibles, sobrepasados o que no avanzan como se adquirió', () => {
+    for (const historyStartFrame of [NaN, Infinity, 1, 1.5, 4091]) {
+      const f = fixture();
+      comparisonState({ phase: 'prepare', targetSeconds: 5 });
+      expect(() => comparisonState({ phase: 'capture', targetSeconds: 30, view: 'portal', historyStartFrame })).toThrow(RangeError);
+      expect(f.sim.frozen).toBe(true);
+    }
+    const f = fixture(4, 70);
+    comparisonState({ phase: 'prepare', targetSeconds: 5 });
+    expect(() => comparisonState({ phase: 'capture', targetSeconds: 30, view: 'portal', historyStartFrame: 65 })).toThrow('already passed');
+    expect(f.sim.frozen).toBe(true);
+    const g = fixture();
+    comparisonState({ phase: 'prepare', targetSeconds: 5 });
+    g.hooks.frameCostMs.mockImplementation(() => 8.25);
+    expect(() => comparisonState({ phase: 'capture', targetSeconds: 30, view: 'portal', historyStartFrame: 65 })).toThrow(
+      'registered receiver phase',
+    );
+    expect(g.sim.frozen).toBe(true);
+  });
+  it('rechaza registrar Doppler color o modo M como comparación B-mode', () => {
+    for (const mode of ['color', 'mmode'] as const) {
+      const f = fixture();
+      comparisonState({ phase: 'prepare', targetSeconds: 5 });
+      f.sim[mode].enabled = true;
+      expect(() => comparisonState({ phase: 'capture', targetSeconds: 30, view: 'portal', historyStartFrame: 65 })).toThrow(
+        'B-mode without color',
+      );
+      expect(f.sim.frozen).toBe(true);
+    }
   });
   it('una excepción de render deja el caso congelado y se propaga', () => {
     const f = fixture();

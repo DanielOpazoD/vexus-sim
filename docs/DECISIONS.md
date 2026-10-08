@@ -7004,3 +7004,12 @@ adquiere en la nueva pose y reproduce después el cuadro antiguo. Contrasta
 pose adquirida/viva, marco, tiempo, transductor y hash de píxeles originales;
 la comparación estática debe rechazar el estado divergente. Check completo
 y CI de su SHA siguen siendo requisitos independientes de integración.
+
+**Seguimiento: dominio explícito del banco.** El auditor omitía `abdomen`
+al pedir `--anatomy legacy`, pero el arranque actual solo selecciona el modelo
+anterior con `abdomen=legacy`. La captura era del atlas y el control de dominio
+la rechazaba. `windowAudit.ts` conserva ahora en la URL el dominio solicitado,
+tanto `legacy` como `atlas`; no relaja ese control ni cambia la aplicación.
+La reproducción en navegador de ambos dominios y la fuente exacta deben
+acompañar el PR. Una captura anterior solo se acepta por su dominio registrado:
+no se invalida ni se valida retrospectivamente todo un banco por este defecto.

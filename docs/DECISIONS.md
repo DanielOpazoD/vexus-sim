@@ -5173,6 +5173,30 @@ informes completos anteriores. El guard rechaza una versión distinta y los
 contratos previos de reparto/veredicto continúan intactos. Check estándar y
 primera CI completa de la nueva fuente son necesarios para integrar.
 
+#### 124 — Leer el checkout real dentro del contenedor (2026-10-08)
+
+**Contexto.** La primera CI de `a0c43fe`,
+[37770195458](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37770195458),
+descarga el contenedor en 37 s y pasa el guard de versión. Sin embargo, los ocho
+fragmentos fallan antes de ejecutar pruebas: `git rev-parse HEAD` rechaza la
+propiedad del volumen montado. `actions/checkout` escribió la excepción en su
+configuración temporal, distinta de la que leen los comandos posteriores.
+Este fallo se conserva; ninguna prueba E2E de esa ejecución se acepta.
+
+**Decisión.** En el job E2E, inmediatamente tras checkout, registrar únicamente
+`$GITHUB_WORKSPACE` como `safe.directory` en el perfil Git efectivo del
+contenedor y exigir `git rev-parse HEAD == GITHUB_SHA`. No se sustituye el SHA
+leído por una variable ni se permite un comodín de repositorios. Esto afecta
+solo al contenedor efímero de esa ejecución; no cambia configuraciones del Mac,
+permisos de GitHub, protecciones o la verificación de origen de los informes.
+
+**Consecuencias y verificación.** El lector de procedencia y todas las pruebas
+permanecen iguales. Un checkout distinto falla temprano. El presupuesto 40 min,
+ocho fragmentos, un trabajador, aserciones y veredicto están intactos. Se revisan
+el diff acotado, el log de fallo original y la igualdad de objetos Git del
+simulador/tests. La primera CI completa de la fuente corregida sigue siendo
+necesaria; no se reejecuta `a0c43fe` para obtener verde.
+
 ## 125. Promedio PW limitado a una misma rejilla física de adquisición
 
 **Problema.** El promedio 3 × 3 usado antes de medir el espectro combinaba columnas

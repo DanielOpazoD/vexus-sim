@@ -67,7 +67,14 @@ export function abdomenQuery(m: Vec3) {
     curvature: 0,
   };
 }
-export { hepaticDomeValue, abdominalAtlasSdf, abdominalAtlasValue, abdominalAtlasGradient } from '../abdominalAtlas';
+export {
+  registeredDomeHeight,
+  registeredDomeValue,
+  hepaticDomeValue,
+  abdominalAtlasSdf,
+  abdominalAtlasValue,
+  abdominalAtlasGradient,
+} from '../abdominalAtlas';
 export const ABDOMEN_GLSL = /* glsl */ `
 ${ABDOMINAL_ATLAS_GLSL}
 // Shared acoustic layers and static nondependent gas. No assigned flow in a hollow organ.

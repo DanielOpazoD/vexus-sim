@@ -46,6 +46,12 @@ export function registeredDomeHeight(x: number, y: number): number | undefined {
   return a + tx * (b - a);
 }
 
+/** CPU twin of GLSL's height/validity query; scalar callers avoid the result allocation. */
+export function registeredDomeValue(x: number, y: number): [number, number] {
+  const height = registeredDomeHeight(x, y);
+  return height === undefined ? [0, 0] : [height, 1];
+}
+
 /** Estimated hepatic contact surface, sampled in material coordinates like the organs. */
 export function hepaticDomeValue(x: number, y: number): [number, number] {
   const data = abdominalAtlas,

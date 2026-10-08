@@ -6170,6 +6170,40 @@ de tiempo de pared observada ni una reducción de pruebas. Debe contrastarse con
 la ejecución final y su posmerge. Los tres commits y hashes de cada informe quedan
 en el archivo de pesos para repetir el cálculo.
 
+#### 155 — Recalibrar los 87 casos tras agotar el presupuesto de main (2026-10-08)
+
+**Contexto.** En main `084b245`, el run
+[37776977858](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37776977858)
+canceló el fragmento 5 al alcanzar los 40 minutos. Las 11 pruebas imprimieron
+aprobación, pero no se completaron el cierre ni el informe JSON: la última terminó
+a las 13:07:05,475 UTC y la cancelación ocurrió 25,497 s después. En el run previo
+37771651239, entre la última aprobación y el resumen transcurrieron 30,092 s.
+No hay evidencia de un nuevo bloqueo permanente del cierre; el trabajo de pruebas
+consumió el margen disponible. El agregado posterior al merge es rojo y se conserva.
+
+**Decisión.** Aplicar la herramienta de esta decisión, sin cambiarla, a tres
+ejecuciones completas de la colección vigente: 37719578705, 37723071197 y 37771651239. Los 24 ZIP oficiales se verificaron contra sus digest de GitHub;
+los once jobs de cada run terminaron correctamente en el intento 1. El verificador
+exige los 87 IDs actuales una sola vez y sin retries. Los SHA de los informes son
+los checkouts reales (0197b2d, 3ef4b6a y b0db0c9); los árboles de los dos checkouts
+de PR coinciden con sus respectivos heads 6646001 y ee43451. Los hashes íntegros
+de informes/metadatos están en `tools/ci/e2eTimingWeights.json`.
+
+**Medida.** Los pesos anteriores cubrían 73 casos y los otros 14 usaban el coste
+de reserva. Aplicando las mismas medianas actuales a ambos planes, el máximo pasa
+de 2 290 853 a 1 788 137 ms (−21,94%). El trabajo total de los 87 casos sigue siendo
+14 218 746 ms. Es una predicción de reparto, no una reducción del trabajo ni una
+mejora de tiempo de pared demostrada. La ejecución fallida no se usa como
+conjunto completo para calibrar y no se reejecuta para obtener verde.
+
+**Consecuencias y verificación.** Cambian únicamente las pistas de coste y esta
+documentación. Se conservan ocho fragmentos, un trabajador, 40 minutos, todas
+las aserciones y pruebas, los plazos individuales, SwiftShader y la política
+anti-flaky. La recolección nativa de las ocho listas prueba la partición exacta;
+los controles de calibración/veredicto siguen intactos. Es necesaria la primera
+CI de la nueva fuente, más su revisión posterior al merge. No cambia anatomía,
+señal o imagen y no resuelve el arranque del atlas experimental ni la fidelidad.
+
 ## 156. No unir muestras IQ separadas por una pausa de adquisición
 
 **Defecto reproducido.** El procesador espectral conservaba una FFT parcial al

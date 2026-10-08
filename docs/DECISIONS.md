@@ -6451,3 +6451,11 @@ La conversión global de 174 usa b=1 para absorción, aunque piel, grasa, múscu
 Aceptación: etiquetas de todos los tejidos/tipos de gas; programa A2 de producción en GPU con todos los tejidos y nueve pares de frecuencias, espejo/gas/hueso y B inalterado, error <0,01 dB. Prefijos de cuatro ventanas frente a integración independiente α1·f^b, adquisición portal normal/grave en ambos cuerpos y oráculo complejo con controles negativos. Límites WebGL de uniforms/samplers, grafo y hashes documentan cambio de .w, sin rebajar márgenes ni tolerancias.
 
 Se retira `color-absorption-linear-scaling`; continúan rejilla gruesa, barreras estimadas, ausencia de calibración clínica y estimador color emulado. Las funciones b=1 quedan solo como contrafactual histórico de 174 en tests, sin uso de renderer. Medido 1031,3 KiB ≤1032: coste neto menor tras retirar sampler/conversión, todos los activos/Workers incluidos. No se declara idéntica apertura ni discretización entre PW y color.
+
+## 189. Validar fuentes musculares posteriores antes de incorporarlas
+
+**Contexto.** BP3D contiene longísimos con 93 pares CGAL por lado, pese a aristas cerradas. Láminas opuestas coincidentes impiden mapear caras; componentes pequeños no implican ruido descartable.
+**Opciones.** Importar superficies cerradas o limpiar por tamaño ocultaría cruces/cavidades. Ajustar órganos individualmente para encajar una captura cambia relaciones sin sustento.
+**Decisión.** `posterior_source.py` fija fuente/tabla oficial, excluye solo láminas completas explícitas de dos triángulos opuestos y audita CGAL global con testigos originales. Manifiesto y diagnóstico en docs/anatomy; sin promoción de runtime. El número 189 conserva 178–188 para decisiones de ramas anatómicas todavía pendientes.
+**Consecuencias.** Psoas/iliocostales permiten investigar contactos; longísimos rechazados. Cero cruces no aprueba relaciones anatómicas ni apariencia. Separar conflictos de fuente de campos ya reconciliados. No cambia señal, UI, física ni presupuesto.
+**Verificación.** Nueve contratos adversariales y ejecución sobre ocho fuentes con hashes/tablas oficiales. Resultado 0/0/0/0/0/0/93/93 pares; registro original de cruces conservado. Check y CI exacta se documentan en el PR; no son validación clínica.

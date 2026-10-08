@@ -89,7 +89,19 @@ vec2 registeredDomeValue(vec2 p){
   if(uAbdominalAtlasEnabled==0)return vec2(0.0);
   vec2 q=(p-vec2(${REGISTERED_DOME.originMm.join(',')}))/${REGISTERED_DOME.pitchMm.toFixed(1)};
   if(any(lessThan(q,vec2(0.0)))||any(greaterThan(q,vec2(${REGISTERED_DOME.dimensions.map((v) => (v - 1).toFixed(1)).join(',')}))))return vec2(0.0);
-  return vec2(textureLod(uAbdominalAtlas,(vec3(q.yx,0.0)+vec3(${REGISTERED_DOME.offset.map((v) => v.toFixed(1)).join(',')})+0.5)/vec3(${ABDOMINAL_ATLAS.textureDimensions.map((v) => v.toFixed(1)).join(',')}),0.0).r,1.0);
+  // Hardware filtering quantizes fractional texel weights. The nested 0.5 mm
+  // slope and 0.02 mm face differences amplify that error on steep source roofs.
+  // Interpolate the SAME four half-float heights in full shader precision,
+  // matching the scalar CPU ordering; source resolution and geometry stay fixed.
+  ivec2 a=min(ivec2(floor(q)),ivec2(${REGISTERED_DOME.dimensions.map((v) => v - 2).join(',')}));
+  vec2 t=q-vec2(a);
+  ivec3 k=ivec3(a.yx,0)+ivec3(${REGISTERED_DOME.offset.join(',')});
+  float h00=texelFetch(uAbdominalAtlas,k,0).r;
+  float h01=texelFetch(uAbdominalAtlas,k+ivec3(1,0,0),0).r;
+  float h10=texelFetch(uAbdominalAtlas,k+ivec3(0,1,0),0).r;
+  float h11=texelFetch(uAbdominalAtlas,k+ivec3(1,1,0),0).r;
+  float row0=h00+t.y*(h01-h00),row1=h10+t.y*(h11-h10);
+  return vec2(row0+t.x*(row1-row0),1.0);
 }
 vec2 hepaticDomeValue(vec2 p){
   if(uAbdominalAtlasEnabled==0)return vec2(0.0);

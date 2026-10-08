@@ -6901,3 +6901,12 @@ vértices/centroides de vasos/esófago/riñones, cortes de CT independientes,
 Estos instrumentos no certifican contactos completos ni fidelidad clínica.
 El PR conserva fallos, limitaciones y estado real; integración requiere CI
 exacta sin reintentos que oculten fallos y revisión anatómica pendiente.
+
+**Refutación numérica.** El primer ensayo nativo del techo encontró errores
+de norma CPU/GPU de hasta0,367 en el banco de vecinos. La interpolación lineal
+del hardware cuantiza pesos fraccionales; las diferencias centrales anidadas
+de0,5 y0,02mm los amplifican cerca de pendientes pronunciadas. El lector GLSL
+del techo interpola explícitamente sus cuatro nodos RG16F en precisión float,
+con el mismo orden escalar de TS. Conserva nodos y geometría; no se amplían
+las tolerancias. Su coste adicional requiere medición y la prueba original
+debe pasar. Las consultas previas de órganos/contacto permanecen intactas.

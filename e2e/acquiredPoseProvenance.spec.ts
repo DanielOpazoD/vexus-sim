@@ -42,6 +42,8 @@ test('conserva pose adquirida al mover controles congelados y recuperar cine ant
   await page.locator('#freeze').click();
   await page.evaluate(() => {
     const s = window.__vexusTest!.sim();
+    // Use the ordinary setter for the next real acquisition, beyond the aliasing stimulus.
+    s.setPose({ ...s.pose, phi: s.pose.phi + 0.08 });
     for (let i = 0; i < 6; i++) {
       s.advance(s.physiology.clock.dt);
       s.render();
@@ -51,6 +53,8 @@ test('conserva pose adquirida al mover controles congelados y recuperar cine ant
   const current = await page.evaluate(acquisitionSnapshot, 'subxiphoid' as const);
   expect(current.pose).toEqual(current.livePose);
   expect(current.pose).not.toEqual(before.pose);
+  expect(current.frame).not.toEqual(before.frame);
+  expect(await pixels()).not.toBe(oldPixels);
   await page.locator('#cine').fill(String(oldIndex));
   await page.locator('#cine').dispatchEvent('input');
   const replay = await page.evaluate(acquisitionSnapshot, 'subxiphoid' as const);

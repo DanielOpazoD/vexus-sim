@@ -6824,3 +6824,35 @@ la potencia del candidato es 0,9988/0,9986/0,9977 y los saltos <8e−9 dB;
 son mediciones de concentración, no del gris adquirido. La comparación visual
 y el rendimiento requieren el protocolo registrado del contrato antes de
 aceptar el cambio; la revisión externa permanece pendiente.
+
+## 188. Consulta anatómica escalar sin asignaciones por punto
+
+**Contexto.** El lector abdominal y el torácico creaban arrays de coordenadas,
+índices y pesos y una función de indexación en cada punto. La consulta de
+distancia también construía un resultado con etiqueta, aunque el clasificador
+solo necesitara distancia. El plano anatómico96×128 repite estas consultas.
+Los barridos históricos detectaron pérdidas del Worker; esta hipótesis de coste
+se contrasta sin atribuirles una causa exclusivamente a priori.
+
+**Opciones.** Reducir resolución o relajar el watchdog cambia el instrumento.
+Cachés por ventana arriesgan anatomía obsoleta durante movimientos. Reescribir
+la geometría para acelerar modifica la imagen. Se elimina trabajo redundante
+en la consulta del mismo campo, sin cambiar esos parámetros.
+
+**Decisión.** `sourceVolume.ts` comparte la interpolación escalar RG16F de los
+lectores abdominal y torácico. Distancia y etiqueta tienen consultas distintas:
+no se lee identidad cuando solo se necesita distancia. `halfFloat.ts` conserva
+la tabla de decodificación y la exportación `HALF` anterior. Mismos nodos,
+pesos, suma y soporte; sin modificar el GLSL ni los assets.
+
+**Consecuencias.** Menos asignaciones temporales en las consultas CPU usadas
+por el plano, puertas y mediciones. No añade textura, tejido o geometría y no
+certifica fluidez, anatomía posterior ni arranque del atlas en SwiftShader.
+El contrato y el protocolo pareado constan en `docs/fidelity/atlas-query-contract.md`.
+
+**Verificación.** Campo afín analítico con offsets, etiquetas categóricas,
+última celda y exterior en `sourceVolume.test.ts`; pruebas previas de atlas
+conservadas. `tools/fidelity/atlasQueryAudit.ts` compara los módulos reales
+antes/después, todos los lotes intercalados y nueve ventanas con vecinos en
+dos casos. La aceptación requiere además capturas/gestos registrados,
+check/calibración y CI exacta; resultados y limitaciones se registran en el PR.

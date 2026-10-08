@@ -1,27 +1,20 @@
 import type { Vec3 } from '../core/vec3';
-import { HALF } from './abdominalAtlas';
+import { sourceDistance, sourceLabel } from './sourceVolume';
 import { THORACIC_ATLAS as F } from './thoracicAtlasData';
 export let thoracicAtlas: Uint16Array | undefined;
+const VOLUME = { originMm: F.originMm, dimensions: F.textureDimensions, offset: [0, 0, 0], pitchMm: F.pitchMm } as const;
 export function setThoracicAtlas(data?: Uint16Array): void {
   if (data && data.byteLength !== F.rawBytes) throw new Error('Campo torácico incompleto');
   thoracicAtlas = data;
 }
 export function thoracicValue(p: Vec3): { d: number; label: number } {
-  const q = p.map((v, i) => (v - F.originMm[i]) / F.pitchMm);
-  if (!thoracicAtlas || q.some((v, i) => v < 0 || v > F.textureDimensions[i] - 1)) return { d: 16, label: 0 };
-  const [w, h] = F.textureDimensions;
-  const index = (x: number, y: number, z: number) => 2 * (x + w * (y + h * z));
-  const a = q.map((v, i) => Math.min(F.textureDimensions[i] - 2, Math.floor(v))),
-    t = q.map((v, i) => v - a[i]);
-  let d = 0;
-  for (let z = 0; z <= 1; z++)
-    for (let y = 0; y <= 1; y++)
-      for (let x = 0; x <= 1; x++)
-        d +=
-          HALF[thoracicAtlas[index(a[0] + x, a[1] + y, a[2] + z)]] * (x ? t[0] : 1 - t[0]) * (y ? t[1] : 1 - t[1]) * (z ? t[2] : 1 - t[2]);
-  return { d, label: HALF[thoracicAtlas[index(...(q.map(Math.round) as Vec3)) + 1]] };
+  if (!thoracicAtlas) return { d: 16, label: 0 };
+  return {
+    d: sourceDistance(thoracicAtlas, p, VOLUME, F.textureDimensions),
+    label: sourceLabel(thoracicAtlas, p, VOLUME, F.textureDimensions),
+  };
 }
-export const thoracicSdf = (p: Vec3): number => thoracicValue(p).d;
+export const thoracicSdf = (p: Vec3): number => (thoracicAtlas ? sourceDistance(thoracicAtlas, p, VOLUME, F.textureDimensions) : 16);
 export const thoracicMaterial = (label: number): string | undefined => ['bone', 'cartilage', 'vertebra'][F.materials[label] ?? -1];
 export function thoracicGradient(p: Vec3): Vec3 {
   return [0, 1, 2].map((i) => {

@@ -1,17 +1,11 @@
 import type { Vec3 } from '../core/vec3';
 import { ABDOMINAL_ATLAS, ABDOMINAL_FIELDS, HEPATIC_DOME } from './abdominalAtlasData';
+import { HALF } from './halfFloat';
+import { sourceDistance, sourceLabel } from './sourceVolume';
+export { HALF } from './halfFloat';
 
 /** Half-float source data shared by CPU, GPU and 3D. Never resize an individual organ. */
 export let abdominalAtlas: Uint16Array | undefined;
-export const HALF = Float32Array.from({ length: 65536 }, (_, bits) => {
-  const sign = bits & 0x8000 ? -1 : 1,
-    exponent = (bits >>> 10) & 31,
-    mantissa = bits & 1023;
-  return (
-    sign *
-    (exponent === 0 ? mantissa * 2 ** -24 : exponent === 31 ? (mantissa ? NaN : Infinity) : (1 + mantissa / 1024) * 2 ** (exponent - 15))
-  );
-});
 
 export function setAbdominalAtlas(values?: Uint16Array): void {
   if (values && values.byteLength !== ABDOMINAL_ATLAS.rawBytes) throw new Error('Tamaño del atlas abdominal inválido');
@@ -22,22 +16,15 @@ export function abdominalAtlasValue(p: Vec3, field: number): { d: number; label:
   const data = abdominalAtlas,
     f = ABDOMINAL_FIELDS[field];
   if (!data || !f) return { d: 16, label: 0 };
-  const q = p.map((v, i) => (v - f.originMm[i]) / f.pitchMm);
-  if (q.some((v, i) => v < 0 || v > f.dimensions[i] - 1)) return { d: 16, label: 0 };
-  const a = q.map((v, i) => Math.min(f.dimensions[i] - 2, Math.floor(v))),
-    t = q.map((v, i) => v - a[i]);
-  const [w, h] = ABDOMINAL_ATLAS.textureDimensions;
-  const index = (x: number, y: number, z: number) => 2 * ((z + f.offset[2]) * w * h + (y + f.offset[1]) * w + x + f.offset[0]);
-  let d = 0;
-  for (let z = 0; z <= 1; z++)
-    for (let y = 0; y <= 1; y++)
-      for (let x = 0; x <= 1; x++)
-        d += HALF[data[index(a[0] + x, a[1] + y, a[2] + z)]] * (x ? t[0] : 1 - t[0]) * (y ? t[1] : 1 - t[1]) * (z ? t[2] : 1 - t[2]);
-  return { d, label: HALF[data[index(...(q.map(Math.round) as Vec3)) + 1]] };
+  return {
+    d: sourceDistance(data, p, f, ABDOMINAL_ATLAS.textureDimensions),
+    label: sourceLabel(data, p, f, ABDOMINAL_ATLAS.textureDimensions),
+  };
 }
 
 export function abdominalAtlasSdf(p: Vec3, field: number): number {
-  return abdominalAtlasValue(p, field).d;
+  const f = ABDOMINAL_FIELDS[field];
+  return abdominalAtlas && f ? sourceDistance(abdominalAtlas, p, f, ABDOMINAL_ATLAS.textureDimensions) : 16;
 }
 
 /** Estimated hepatic contact surface, sampled in material coordinates like the organs. */

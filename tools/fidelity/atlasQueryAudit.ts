@@ -1,5 +1,5 @@
 /** Offline paired source-reader audit. Does not loosen UI/CI deadlines or certify anatomy. */
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { gunzipSync } from 'node:zlib';
@@ -10,6 +10,12 @@ import type { Vec3 } from '../../src/core/vec3';
 import { START_POINTS, startPointsFor } from '../../src/app/startPoints';
 import { CONVEX_C35, probeFrame, pointOnLine } from '../../src/probe/probe';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../../src/cases';
+import type * as AbdominalReader from '../../src/anatomy/abdominalAtlas';
+import type * as ThoracicReader from '../../src/anatomy/thoracicAtlas';
+import type * as BodyReader from '../../src/anatomy/referenceBody';
+import type * as SceneModule from '../../src/anatomy/scene';
+import type * as AbdominalMeta from '../../src/anatomy/abdominalAtlasData';
+import type * as ThoracicMeta from '../../src/anatomy/thoracicAtlasData';
 
 const [beforeArg, afterArg, output] = process.argv.slice(2);
 if (!beforeArg || !afterArg || !output) throw new Error('Usage: atlasQueryAudit.ts BASELINE_CHECKOUT CANDIDATE_CHECKOUT OUTPUT.json');
@@ -17,12 +23,18 @@ const sha = (bytes: Uint8Array | string) => createHash('sha256').update(bytes).d
 async function load(repo: string) {
   const root = resolve(repo);
   const module = <T>(p: string) => import(pathToFileURL(`${root}/src/${p}.ts`).href) as Promise<T>;
-  const reader = await module<typeof import('../../src/anatomy/abdominalAtlas')>('anatomy/abdominalAtlas');
-  const thoracic = await module<typeof import('../../src/anatomy/thoracicAtlas')>('anatomy/thoracicAtlas');
-  const body = await module<typeof import('../../src/anatomy/referenceBody')>('anatomy/referenceBody');
-  const anatomy = await module<typeof import('../../src/anatomy/scene')>('anatomy/scene');
-  const meta = await module<typeof import('../../src/anatomy/abdominalAtlasData')>('anatomy/abdominalAtlasData');
-  const tmeta = await module<typeof import('../../src/anatomy/thoracicAtlasData')>('anatomy/thoracicAtlasData');
+  const runtimeModuleHashes = Object.fromEntries(
+    ['abdominalAtlas', 'thoracicAtlas', 'sourceVolume', 'halfFloat', 'scene', 'referenceBody'].map((name) => {
+      const file = `${root}/src/anatomy/${name}.ts`;
+      return [name, existsSync(file) ? sha(readFileSync(file)) : null];
+    }),
+  );
+  const reader = await module<typeof AbdominalReader>('anatomy/abdominalAtlas');
+  const thoracic = await module<typeof ThoracicReader>('anatomy/thoracicAtlas');
+  const body = await module<typeof BodyReader>('anatomy/referenceBody');
+  const anatomy = await module<typeof SceneModule>('anatomy/scene');
+  const meta = await module<typeof AbdominalMeta>('anatomy/abdominalAtlasData');
+  const tmeta = await module<typeof ThoracicMeta>('anatomy/thoracicAtlasData');
   const sources: Record<string, string> = {};
   for (const [name, setter] of [
     ['abdominal-atlas.gzip.bin', reader.setAbdominalAtlas],
@@ -45,6 +57,7 @@ async function load(repo: string) {
     meta,
     tmeta,
     sources,
+    runtimeModuleHashes,
     head: execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim(),
     diff: execFileSync('git', ['diff', '--', 'src/anatomy'], { cwd: root, encoding: 'utf8' }),
     glslHashes: [sha(reader.ABDOMINAL_ATLAS_GLSL), sha(thoracic.THORACIC_GLSL)],
@@ -196,6 +209,7 @@ const result = {
   sourceBefore: before.head,
   sourceAfter: after.head,
   candidateDiffSha256: sha(after.diff),
+  runtimeModuleHashes: { before: before.runtimeModuleHashes, after: after.runtimeModuleHashes },
   sources: before.sources,
   glslHashes: before.glslHashes,
   environment: { node: process.version, platform: platform(), arch: arch(), cpu: cpus()[0]?.model },

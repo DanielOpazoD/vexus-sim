@@ -6976,3 +6976,31 @@ además de ausencia de contacto con toda la huella levantada. Pruebas previas
 de compresión y pared conservadas. Adquisiciones pareadas/vecinas, cines,
 check completo y CI exacta se registran en el PR; tests y una captura favorable
 no certifican fidelidad clínica ni continuidad universal.
+
+## 191. Retener pose y transductor del cuadro adquirido
+
+**Contexto.** En capturas congeladas, la animación o el operador puede mover
+la pose viva sin cambiar la imagen. El snapshot leía `sim.pose`, mientras
+marco, señal y cine correspondían a otro instante. Comparar solo marcos no
+detecta controles movidos antes de su siguiente actualización. Dos pares
+izquierdos antiguos quedaron sin registro estricto por esta causa.
+
+**Decisión.** El cuadro presentado y el anillo de cine conservan copias de
+los seis parámetros de pose y del transductor recibidos al adquirir. El
+snapshot versión2 lee esos datos del mismo cuadro que su marco, muestra
+también `livePose`/`liveTransducer` y mantiene ambas procedencias separadas.
+La validación de comparación estática rechaza poses vivas distintas, datos
+no finitos y versiones anteriores sin esa distinción; conserva los demás
+controles de dominio, tiempo, señal, errores y marco.
+
+**Consecuencias.** Permite identificar de forma honesta la adquisición
+antigua aunque el operador explore con imagen congelada. No impide mover
+la sonda, no cambia reloj, física, anatomía ni píxeles, no corrige el preset
+hepatorrenal ni la confluencia cava–AD. Los bancos históricos no se migran
+ni se declaran registrados retrospectivamente.
+
+**Verificación.** Una prueba de navegador muta los controles congelados,
+adquiere en la nueva pose y reproduce después el cuadro antiguo. Contrasta
+pose adquirida/viva, marco, tiempo, transductor y hash de píxeles originales;
+la comparación estática debe rechazar el estado divergente. Check completo
+y CI de su SHA siguen siendo requisitos independientes de integración.

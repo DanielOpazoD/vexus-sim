@@ -194,3 +194,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [188](DECISIONS.md#L6828) | Consulta anatómica escalar sin asignaciones por punto | vigente |
 | [189](DECISIONS.md#L6860) | Techo diafragmático registrado experimental y cero acústico común | vigente |
 | [190](DECISIONS.md#L6941) | Completar el último tramo de búsqueda de la pared bajo la sonda | vigente |
+| [191](DECISIONS.md#L6980) | Retener pose y transductor del cuadro adquirido | vigente |

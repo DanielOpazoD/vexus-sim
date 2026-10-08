@@ -9,6 +9,9 @@ function acquisition() {
   const pose = { phi: 2, z: -80, yaw: 0.2, rock: 0, tilt: 0, lift: 0 };
   const frame = probeFrame(pose, new AnatomyScene(NORMAL_ADULT).torso, CONVEX_C35);
   return {
+    schemaVersion: 2,
+    pose,
+    livePose: { ...pose },
     anatomyMode: 'atlas',
     caseId: 'normal-adult',
     color: { ...DEFAULT_COLOR, enabled: false },
@@ -29,6 +32,13 @@ describe('integridad de la evidencia de adquisición', () => {
     const shot = acquisition();
     shot.currentFrame.face[0] += 2;
     expect(() => validateAcquisition(shot, expected)).toThrow('geometry');
+  });
+  it('rechaza controles movidos antes de actualizar el marco y metadatos históricos ambiguos', () => {
+    const shot = acquisition();
+    shot.livePose.z += 1;
+    expect(shot.currentFrame).toEqual(shot.frame);
+    expect(() => validateAcquisition(shot, expected)).toThrow('pose differs');
+    expect(() => validateAcquisition({ ...acquisition(), schemaVersion: 1 }, expected)).toThrow('provenance');
   });
   it('rechaza anatomía de otro instante y tiempos estáticos incorrectos', () => {
     const shot = acquisition();

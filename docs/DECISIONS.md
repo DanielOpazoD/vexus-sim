@@ -1951,6 +1951,48 @@ equivalencia GLSL = TS con la compresión de cada punto de partida, arranque, ca
 de fidelidad, composición espacial (con la subxifoidea basculada 10° menos), normales, ecos de interfaz, pleura,
 pared, pasada A, moteado al inclinar y girar, fundido del ancla, sin contacto no hay Doppler y color: pasan.
 
+#### 63 — Completar el cruce final de la pared (2026-10-08)
+
+**Contexto.** La adquisición hepatorrenal atlas de4fc5082, pose phi2,99,
+z−113mm, yaw−0,244525/rock−0,134064/tilt−0,359148rad, muestra una línea fina
+desde la pared hacia colon y riñón. Su nodo de contacto27 informa pared a
+69,999mm y acoplamiento0, frente a10,599mm en un barrido independiente de
+0,05mm del mismo perfil. El extremo de su intervalo,11,199mm, ya supera el
+nivel radial28mm de la pared (28,825mm). La búsqueda en pasos de2mm omitía
+la fracción final del intervalo y devolvía ausencia de cruce; eso altera
+contacto y deformación local. No es un nuevo hallazgo anatómico ni una sombra
+que deba pintarse o esconderse.
+
+**Opciones.** Borrar la línea, suavizar la imagen o fijar acoplamiento1
+suprime causas físicas y pérdida real de contacto. Cambiar el preset evita
+el testigo sin resolver la búsqueda. Reducir globalmente el paso cuesta más
+y tampoco garantiza visitar el extremo.
+
+**Decisión.** Cada tramo termina en min(prev+2mm, fin). Se conserva el paso,
+el primer cruce, las18 bisecciones, constantes de gel/presión y el tope de
+búsqueda. El último tramo se visita aunque mida menos de2mm. Contacto,
+deformación, ecografía y plano continúan usando la misma tabla.
+
+**Consecuencias.** Evita pérdidas falsas de contacto y deformaciones locales
+cuando existe un cruce en esa fracción. No cambia la piel fuente, riñón,
+colon o musculatura; una sonda realmente levantada sigue desacoplándose.
+No convierte esta adquisición en una ventana hepatorrenal representativa:
+colon líquido, fascia renal, contacto con psoas y selección del receso siguen
+pendientes. El supuesto inicial de que lift8mm despejaba toda una huella
+inclinada fue refutado; el control negativo verifica hueco>4,5mm en toda la
+huella, sin modificar la física para forzarlo.
+
+**Verificación.** `contactWallCrossing.test.ts` contrasta54 raíces analíticas
+independientes: extremos fraccionarios, intervalos menores que el paso,
+y controles de pared ausente, contacto inicial y primer cruce. Falla con
+el bucle anterior y pasa con el cambio. Se conservan los14 controles de
+compresión existentes. El testigo atlas se investigó en una rama experimental
+separada:35 rayos contra barrido0,025mm,17 pares adquiridos, poses vecinas y
+movimientos reales de nueve ventanas. El arreglo numérico es independiente
+del atlas y no incorpora sus activos, presets ni contratos no validados.
+Check completo y CI del SHA exacto siguen siendo requisitos de integración;
+la mejora de esa línea no certifica la ventana renal ni continuidad universal.
+
 ## 64. Reservada: lámina difusa de la cápsula hepática [Estado: reservada]
 
 Número reservado para la lámina difusa de la cápsula (plan de contornos); ya la citan `capsuleTwin.test.ts`,
@@ -6451,45 +6493,3 @@ La conversión global de 174 usa b=1 para absorción, aunque piel, grasa, múscu
 Aceptación: etiquetas de todos los tejidos/tipos de gas; programa A2 de producción en GPU con todos los tejidos y nueve pares de frecuencias, espejo/gas/hueso y B inalterado, error <0,01 dB. Prefijos de cuatro ventanas frente a integración independiente α1·f^b, adquisición portal normal/grave en ambos cuerpos y oráculo complejo con controles negativos. Límites WebGL de uniforms/samplers, grafo y hashes documentan cambio de .w, sin rebajar márgenes ni tolerancias.
 
 Se retira `color-absorption-linear-scaling`; continúan rejilla gruesa, barreras estimadas, ausencia de calibración clínica y estimador color emulado. Las funciones b=1 quedan solo como contrafactual histórico de 174 en tests, sin uso de renderer. Medido 1031,3 KiB ≤1032: coste neto menor tras retirar sampler/conversión, todos los activos/Workers incluidos. No se declara idéntica apertura ni discretización entre PW y color.
-
-## 190. Completar el último tramo de búsqueda de la pared bajo la sonda
-
-**Contexto.** La adquisición hepatorrenal atlas de4fc5082, pose phi2,99,
-z−113mm, yaw−0,244525/rock−0,134064/tilt−0,359148rad, muestra una línea fina
-desde la pared hacia colon y riñón. Su nodo de contacto27 informa pared a
-69,999mm y acoplamiento0, frente a10,599mm en un barrido independiente de
-0,05mm del mismo perfil. El extremo de su intervalo,11,199mm, ya supera el
-nivel radial28mm de la pared (28,825mm). La búsqueda en pasos de2mm omitía
-la fracción final del intervalo y devolvía ausencia de cruce; eso altera
-contacto y deformación local. No es un nuevo hallazgo anatómico ni una sombra
-que deba pintarse o esconderse.
-
-**Opciones.** Borrar la línea, suavizar la imagen o fijar acoplamiento1
-suprime causas físicas y pérdida real de contacto. Cambiar el preset evita
-el testigo sin resolver la búsqueda. Reducir globalmente el paso cuesta más
-y tampoco garantiza visitar el extremo.
-
-**Decisión.** Cada tramo termina en min(prev+2mm, fin). Se conserva el paso,
-el primer cruce, las18 bisecciones, constantes de gel/presión y el tope de
-búsqueda. El último tramo se visita aunque mida menos de2mm. Contacto,
-deformación, ecografía y plano continúan usando la misma tabla.
-
-**Consecuencias.** Evita pérdidas falsas de contacto y deformaciones locales
-cuando existe un cruce en esa fracción. No cambia la piel fuente, riñón,
-colon o musculatura; una sonda realmente levantada sigue desacoplándose.
-No convierte esta adquisición en una ventana hepatorrenal representativa:
-colon líquido, fascia renal, contacto con psoas y selección del receso siguen
-pendientes. El supuesto inicial de que lift8mm despejaba toda una huella
-inclinada fue refutado; el control negativo verifica hueco>4,5mm en toda la
-huella, sin modificar la física para forzarlo.
-
-**Verificación.** `contactWallCrossing.test.ts` contrasta54 raíces analíticas
-independientes: extremos fraccionarios, intervalos menores que el paso,
-y controles de pared ausente, contacto inicial y primer cruce. Falla con
-el bucle anterior y pasa con el cambio. Se conservan los14 controles de
-compresión existentes. El testigo atlas se investigó en una rama experimental
-separada:35 rayos contra barrido0,025mm,17 pares adquiridos, poses vecinas y
-movimientos reales de nueve ventanas. El arreglo numérico es independiente
-del atlas y no incorpora sus activos, presets ni contratos no validados.
-Check completo y CI del SHA exacto siguen siendo requisitos de integración;
-la mejora de esa línea no certifica la ventana renal ni continuidad universal.

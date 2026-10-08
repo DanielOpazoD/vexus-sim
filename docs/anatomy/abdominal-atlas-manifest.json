@@ -8,9 +8,9 @@
   "pitchMm": 1.5,
   "textureDimensions": [338, 217, 280],
   "rawBytes": 82147520,
-  "gzipBytes": 5080120,
-  "sha256Gzip": "2aa090185848389b00920d44cd336bd1188afec2e3aff4c2c123552177994725",
-  "sha256Raw": "e0de7737e47baf59dd8c13fcd6f339e6e34b73ec8827217890009d8ceb2f6dab",
+  "gzipBytes": 5147482,
+  "sha256Gzip": "dbb6da02ef530332043b9e4461ec6ac3eca7172700c9d467f24fb3a04eeb15d7",
+  "sha256Raw": "9a16b1f550949b120dfdbfe5c688c0479625f2afcab8a3f7d452382499477dda",
   "fields": [
     {
       "name": "pancreas",
@@ -4339,6 +4339,8 @@
     "pitchMm": 1.5,
     "offset": [178, 0, 259],
     "packedXYTransposed": true,
+    "gradientOffset": [178, 0, 260],
+    "gradientMethod": "Central nodal slopes of decoded half-float roof at 1.5 mm pitch (one-sided at table border), bilinearly interpolated; projection guide, not source normals or extra resolution",
     "sourceRays": 14390,
     "harmonicNodes": 9126,
     "sourceBelowCostalRimNodes": 955,
@@ -4358,9 +4360,9 @@
     "clinicalValidation": false,
     "status": "experimental-pending-contacts-images-and-external-validation",
     "limits": "Roof graph and estimated 2.5 mm acoustic shell, not crura, source thickness, hiatal openings or validated clinical anatomy. Whole-source vascular/esophageal contacts remain blocked.",
-    "rawSha256": "e0de7737e47baf59dd8c13fcd6f339e6e34b73ec8827217890009d8ceb2f6dab",
-    "gzipSha256": "2aa090185848389b00920d44cd336bd1188afec2e3aff4c2c123552177994725",
-    "gzipBytes": 5080120,
+    "rawSha256": "9a16b1f550949b120dfdbfe5c688c0479625f2afcab8a3f7d452382499477dda",
+    "gzipSha256": "dbb6da02ef530332043b9e4461ec6ac3eca7172700c9d467f24fb3a04eeb15d7",
+    "gzipBytes": 5147482,
     "rawBytesUnchanged": true
   }
 }

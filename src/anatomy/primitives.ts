@@ -1,5 +1,5 @@
 import { thoracicAtlas, thoracicValue, thoracicMaterial } from './thoracicAtlas';
-import { abdominalAtlas, abdominalAtlasSdf, hepaticDomeValue, registeredDomeHeight } from './abdominalAtlas';
+import { abdominalAtlas, abdominalAtlasSdf, hepaticDomeValue, registeredDomeHeight, registeredDomeSample } from './abdominalAtlas';
 import { referenceCartilage } from './referenceCartilage';
 import { bodyDepth, bodyGradient, bodySection } from './referenceBody';
 import { DIAPHRAGM_THICKNESS_MM } from './tissues';
@@ -268,17 +268,21 @@ export function diaphragmHeight(x: number, y: number, d: Diaphragm, torso: Torso
  * centrales de 0,5 mm; en el borde de una hemicúpula, cuya altura sube con tangente vertical, se dispara).
  */
 export function sdDiaphragmSlope(p: Vec3, d: Diaphragm, torso: Torso): [number, number] {
-  const zd = diaphragmHeight(p[0], p[1], d, torso),
+  const registered = d.hepaticContact ? registeredDomeSample(p[0], p[1]) : undefined;
+  const zd = registered?.[3] ? registered[0] : diaphragmHeight(p[0], p[1], d, torso),
     h = 0.5;
-  const gx = (diaphragmHeight(p[0] + h, p[1], d, torso) - diaphragmHeight(p[0] - h, p[1], d, torso)) / (2 * h),
-    gy = (diaphragmHeight(p[0], p[1] + h, d, torso) - diaphragmHeight(p[0], p[1] - h, d, torso)) / (2 * h),
+  const gx = registered?.[3]
+      ? registered[1]
+      : (diaphragmHeight(p[0] + h, p[1], d, torso) - diaphragmHeight(p[0] - h, p[1], d, torso)) / (2 * h),
+    gy = registered?.[3]
+      ? registered[2]
+      : (diaphragmHeight(p[0], p[1] + h, d, torso) - diaphragmHeight(p[0], p[1] - h, d, torso)) / (2 * h),
     slope = Math.sqrt(1 + gx * gx + gy * gy);
   let tangentDistance = (zd - p[2]) / slope;
-  if (d.hepaticContact && registeredDomeHeight(p[0], p[1]) !== undefined) {
-    // Candidate points remain ON the shared graph, unlike an infinite tangent
-    // plane. Central height slopes are continuous across lattice cells; exact
-    // cell slopes produced discontinuous projections and failed the rim gate.
-    // Three projections give a conservative upper bound, not a global SDF.
+  if (registered?.[3]) {
+    // Three continuous projections to real graph points. Cached nodal slopes
+    // guide the search, while the distance always uses the unchanged roof.
+    // Conservative upper bound; global nearest point is not guaranteed.
     let x = p[0],
       y = p[1],
       height = zd,
@@ -290,12 +294,17 @@ export function sdDiaphragmSlope(p: Vec3, d: Diaphragm, torso: Torso): [number, 
         scale = delta / (1 + dx * dx + dy * dy);
       x = p[0] - dx * scale;
       y = p[1] - dy * scale;
-      height = diaphragmHeight(x, y, d, torso);
-      best = Math.min(best, Math.hypot(x - p[0], y - p[1], height - p[2]));
-      if (i < 2) {
+      const sample = registeredDomeSample(x, y);
+      if (sample[3]) {
+        height = sample[0];
+        dx = sample[1];
+        dy = sample[2];
+      } else {
+        height = diaphragmHeight(x, y, d, torso);
         dx = (diaphragmHeight(x + h, y, d, torso) - diaphragmHeight(x - h, y, d, torso)) / (2 * h);
         dy = (diaphragmHeight(x, y + h, d, torso) - diaphragmHeight(x, y - h, d, torso)) / (2 * h);
       }
+      best = Math.min(best, Math.hypot(x - p[0], y - p[1], height - p[2]));
     }
     tangentDistance = zd < p[2] ? -best : best;
   }

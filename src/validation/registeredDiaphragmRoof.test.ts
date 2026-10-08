@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 import { afterEach, expect, it } from 'vitest';
-import { setAbdominalAtlas, registeredDomeHeight } from '../anatomy/abdominalAtlas';
+import { setAbdominalAtlas, registeredDomeHeight, registeredDomeSample } from '../anatomy/abdominalAtlas';
 import { setAbdominalBody } from '../anatomy/referenceBody';
 import { ABDOMINAL_ATLAS, ABDOMINAL_FIELDS } from '../anatomy/abdominalAtlasData';
 import { diaphragmHeight, diaphragmSurfaceZ, sdDiaphragm, torsoDepth } from '../anatomy/primitives';
@@ -49,6 +49,26 @@ it('does not return to the inherited tall domes at independent source-crossing w
     [51, -18, 6.421334],
   ]) {
     expect(Math.abs(diaphragmHeight(x, y, s.diaphragm, s.torso) - sourceUpper)).toBeLessThan(1.5);
+  }
+});
+it('derives continuous projection slopes from the same decoded height nodes', () => {
+  scene();
+  for (const [x, y] of [
+    [-31.5, -45],
+    [-52.5, -67.5],
+    [51, -18],
+  ]) {
+    const sample = registeredDomeSample(x, y);
+    expect(sample[0]).toBe(registeredDomeHeight(x, y));
+    expect(sample[3]).toBe(1);
+    const dx = (registeredDomeHeight(x + 1.5, y)! - registeredDomeHeight(x - 1.5, y)!) / 3,
+      dy = (registeredDomeHeight(x, y + 1.5)! - registeredDomeHeight(x, y - 1.5)!) / 3;
+    // Half-float derivative storage: <0.05% relative rounding, not a clinical tolerance.
+    expect(Math.abs(sample[1] - dx)).toBeLessThan(0.0006 * Math.abs(dx) + 0.00002);
+    expect(Math.abs(sample[2] - dy)).toBeLessThan(0.0006 * Math.abs(dy) + 0.00002);
+    const a = registeredDomeSample(x - 1e-7, y),
+      b = registeredDomeSample(x + 1e-7, y);
+    expect(Math.max(...a.map((v, i) => Math.abs(v - b[i])))).toBeLessThan(0.0001);
   }
 });
 it('uses the actual acoustic zero even where hepatic normal-contact support is zero', () => {

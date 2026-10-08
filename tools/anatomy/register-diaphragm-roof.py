@@ -22,6 +22,7 @@ BASE_RAW_SHA = 'fb1a372f2d2f53bd69d2aea95733cb71ea2574ff6222b8471c5f498c9a1fb67d
 ORIGIN = np.array([-162., -127.5])
 DIMENSIONS = [217, 143]
 OFFSET = [178, 0, 259]  # XY transposed: 143 x 217 fits a free plane beside digestive tract.
+GRADIENT_OFFSET = [178, 0, 260]
 PITCH = 1.5
 
 
@@ -68,13 +69,14 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, required=True)
     parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--baseline', type=Path, default=ROOT / 'src/anatomy/abdominal-atlas.gzip.bin', help='Pinned pre-roof atlas; keeps regeneration independent of the installed candidate')
     parser.add_argument('--apply', action='store_true', help='Install experimental derivative in this checkout')
     args = parser.parse_args()
     if args.output.exists():
         parser.error('Evidence output must be new')
     manifest_path = ROOT / 'docs/anatomy/abdominal-atlas-manifest.json'
     manifest = json.loads(manifest_path.read_text())
-    raw = gzip.decompress((ROOT / 'src/anatomy/abdominal-atlas.gzip.bin').read_bytes())
+    raw = gzip.decompress(args.baseline.read_bytes())
     if hashlib.sha256(raw).hexdigest() != BASE_RAW_SHA:
         raise ValueError('Roof must derive from the pinned pre-roof atlas')
     atlas = np.frombuffer(raw, dtype='<f2').reshape(*manifest['textureDimensions'][::-1], 2).copy()
@@ -90,13 +92,21 @@ def main():
     final = roof + support * (height - roof)
     x, y, z = OFFSET
     packed_shape = np.array([DIMENSIONS[1], DIMENSIONS[0], 1])
-    for field in manifest['fields'] + [contact]:
-        lo = np.array(field['offset'])
-        hi = lo + np.array(list(field['dimensions']) + ([1] if len(field['dimensions']) == 2 else []))
-        if np.all(np.array(OFFSET) < hi) and np.all(np.array(OFFSET) + packed_shape > lo):
-            raise ValueError('Roof plane overlaps existing anatomy')
+    for offset in [OFFSET, GRADIENT_OFFSET]:
+        for field in manifest['fields'] + [contact]:
+            lo = np.array(field['offset'])
+            hi = lo + np.array(list(field['dimensions']) + ([1] if len(field['dimensions']) == 2 else []))
+            if np.all(np.array(offset) < hi) and np.all(np.array(offset) + packed_shape > lo):
+                raise ValueError('Derived roof plane overlaps existing anatomy')
     atlas[z, y:y + DIMENSIONS[0], x:x + DIMENSIONS[1], 0] = final.T.astype('<f2')
     atlas[z, y:y + DIMENSIONS[0], x:x + DIMENSIONS[1], 1] = np.isfinite(upper).T.astype('<f2')
+    # Smooth nodal slopes of the SAME decoded roof; bilinear interpolation is
+    # continuous across cells. These guide projections, never define extra anatomy.
+    packed_height = final.astype('<f2').astype(float)
+    gy, gx = np.gradient(packed_height, PITCH, edge_order=1)
+    dx, dy, dz = GRADIENT_OFFSET
+    atlas[dz, dy:dy + DIMENSIONS[0], dx:dx + DIMENSIONS[1], 0] = gx.T.astype('<f2')
+    atlas[dz, dy:dy + DIMENSIONS[0], dx:dx + DIMENSIONS[1], 1] = gy.T.astype('<f2')
     previous = np.frombuffer(raw, dtype='<f2').reshape(atlas.shape)
     for field in manifest['fields'] + [contact]:
         fx, fy, fz = field['offset']
@@ -107,7 +117,9 @@ def main():
     compressed = gzip.compress(updated, compresslevel=9, mtime=0)
     report = {'sourceRepairedSha256': SOURCE_SHA, 'sourceAtlasSha256': BASE_RAW_SHA,
               'originMm': ORIGIN.tolist(), 'dimensions': DIMENSIONS, 'pitchMm': PITCH, 'offset': OFFSET,
-              'packedXYTransposed': True, 'sourceRays': int(np.isfinite(upper).sum()),
+              'packedXYTransposed': True, 'gradientOffset': GRADIENT_OFFSET,
+              'gradientMethod': 'Central nodal slopes of decoded half-float roof at 1.5 mm pitch (one-sided at table border), bilinearly interpolated; projection guide, not source normals or extra resolution',
+              'sourceRays': int(np.isfinite(upper).sum()),
               'harmonicNodes': int(unknown.sum()), 'sourceBelowCostalRimNodes': int(((upper < edge) & ~unknown).sum()),
               'method': 'Upper source crossing constrained by existing costal rim; harmonic extension only at missing projection; existing hepatic apposition composed once before half-float packing',
               'costalRimEstimatedParameters': {'a': 160, 'b': 105, 'y0': -21.106195, 'edgeZ': -50, 'edgeRise': 50, 'axisCore': .1},
@@ -130,7 +142,9 @@ def main():
         text = descriptor.read_text()
         for key in ['gzipBytes', 'sha256Raw', 'sha256Gzip']:
             text = re.sub(r'(' + key + r": )('[^']*'|\d+)", lambda m: m[1] + (repr(manifest[key]) if isinstance(manifest[key], str) else str(manifest[key])), text, count=1)
-        text += '\n/** Experimental upper-source graph; missing projection extended, hiatos/crura unvalidated. XY transposed in texture. */\nexport const REGISTERED_DOME = { originMm: [-162, -127.5], dimensions: [217, 143], offset: [178, 0, 259], pitchMm: 1.5 } as const;\n'
+        text = re.sub(r'\n/\*\* Experimental upper-source graph[^\n]*\*/\nexport const REGISTERED_DOME[^\n]*\n?', '\n', text)
+        text = re.sub(r'\nexport const REGISTERED_DOME_GRADIENT[^\n]*\n?', '\n', text)
+        text += '\n/** Experimental upper-source graph; missing projection extended, hiatos/crura unvalidated. XY transposed in texture. */\nexport const REGISTERED_DOME = { originMm: [-162, -127.5], dimensions: [217, 143], offset: [178, 0, 259], pitchMm: 1.5 } as const;\nexport const REGISTERED_DOME_GRADIENT = { offset: [178, 0, 260] } as const;\n'
         descriptor.write_text(text)
     print(json.dumps(report))
 

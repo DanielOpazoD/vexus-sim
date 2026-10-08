@@ -2,9 +2,9 @@
 export const ABDOMINAL_ATLAS = {
   textureDimensions: [338, 217, 280],
   rawBytes: 82147520,
-  gzipBytes: 5080120,
-  sha256Gzip: '2aa090185848389b00920d44cd336bd1188afec2e3aff4c2c123552177994725',
-  sha256Raw: 'e0de7737e47baf59dd8c13fcd6f339e6e34b73ec8827217890009d8ceb2f6dab',
+  gzipBytes: 5147482,
+  sha256Gzip: 'dbb6da02ef530332043b9e4461ec6ac3eca7172700c9d467f24fb3a04eeb15d7',
+  sha256Raw: '9a16b1f550949b120dfdbfe5c688c0479625f2afcab8a3f7d452382499477dda',
 } as const;
 export const ABDOMINAL_FIELDS = [
   { name: 'pancreas', originMm: [-57.0, -34.5, -169.5], dimensions: [94, 48, 63], offset: [244, 97, 119], pitchMm: 1.5 },
@@ -26,3 +26,4 @@ export const HEPATIC_DOME = { originMm: [-124.5, -87], dimensions: [154, 120], o
 
 /** Experimental upper-source graph; missing projection extended, hiatos/crura unvalidated. XY transposed in texture. */
 export const REGISTERED_DOME = { originMm: [-162, -127.5], dimensions: [217, 143], offset: [178, 0, 259], pitchMm: 1.5 } as const;
+export const REGISTERED_DOME_GRADIENT = { offset: [178, 0, 260] } as const;

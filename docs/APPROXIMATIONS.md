@@ -160,7 +160,9 @@ por pieza y normalidad siguen pendientes. Metadatos y reproducción:
 `docs/anatomy/abdominal-atlas-manifest.json`, `tools/anatomy/register-diaphragm-roof.py`.
 
 La distancia al techo registrado consulta tres proyecciones locales a puntos
-del grafo, usando pendientes centrales continuas de0,5mm. Conserva la menor
+del grafo, usando pendientes nodales de paso1,5mm derivadas de la altura
+decodificada e interpoladas bilinealmente de forma continua. Son una guía de
+búsqueda, no normales fuente ni distancia global exacta. Conserva la menor
 distancia obtenida y el signo de la altura: es una cota superior conservadora,
 no un mínimo euclídeo global ni un espesor fuente. Puede omitir parches finos.
 Sustituye una prolongación tangencial que inventaba diafragma hasta40mm por

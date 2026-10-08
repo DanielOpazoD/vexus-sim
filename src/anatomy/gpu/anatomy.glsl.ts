@@ -217,6 +217,7 @@ float domeLift(float x, float y, vec4 dome) {
 // la hemicúpula más alta (misma construcción que primitives.diaphragmHeight)
 vec2 hepaticDomeValue(vec2 p);
 vec2 registeredDomeValue(vec2 p);
+vec4 registeredDomeSample(vec2 p);
 float abdominalAtlasSdf(vec3 p, int k);
 float domeHeight(float x, float y) {
   vec2 registered = registeredDomeValue(vec2(x,y));
@@ -236,22 +237,23 @@ float domeHeight(float x, float y) {
 
 // Distancia con signo al diafragma (negativa en el tórax) y normal hacia el abdomen.
 float sdDome(vec3 p, out vec3 n) {
-  float zd=domeHeight(p.x,p.y),h=0.5;
-  float gx=(domeHeight(p.x+h,p.y)-domeHeight(p.x-h,p.y))/(2.0*h);
-  float gy=(domeHeight(p.x,p.y+h)-domeHeight(p.x,p.y-h))/(2.0*h);
-  float slope=sqrt(1.0+gx*gx+gy*gy);
-  n=normalize(vec3(gx,gy,-1.0));
+  vec4 registered=registeredDomeSample(p.xy);
+  float zd=registered.w>0.0?registered.x:domeHeight(p.x,p.y),h=0.5;
+  float gx=registered.w>0.0?registered.y:(domeHeight(p.x+h,p.y)-domeHeight(p.x-h,p.y))/(2.0*h);
+  float gy=registered.w>0.0?registered.z:(domeHeight(p.x,p.y+h)-domeHeight(p.x,p.y-h))/(2.0*h);
+  float slope=sqrt(1.0+gx*gx+gy*gy);n=normalize(vec3(gx,gy,-1.0));
   float tangentDistance=(zd-p.z)/slope;
-  if(registeredDomeValue(p.xy).y>0.0){
-    // Continuous finite-slope projections to real graph points, same as TS.
+  if(registered.w>0.0){
     vec2 xy=p.xy,g=vec2(gx,gy);float height=zd,best=abs(zd-p.z);
     for(int i=0;i<3;i++){
-      float delta=height-p.z+dot(g,p.xy-xy);
-      xy=p.xy-g*delta/(1.0+dot(g,g));height=domeHeight(xy.x,xy.y);
-      best=min(best,length(vec3(xy-p.xy,height-p.z)));
-      if(i<2){
+      float delta=height-p.z+dot(g,p.xy-xy);xy=p.xy-g*delta/(1.0+dot(g,g));
+      vec4 sample=registeredDomeSample(xy);
+      if(sample.w>0.0){height=sample.x;g=sample.yz;}
+      else{
+        height=domeHeight(xy.x,xy.y);
         g=vec2(domeHeight(xy.x+h,xy.y)-domeHeight(xy.x-h,xy.y),domeHeight(xy.x,xy.y+h)-domeHeight(xy.x,xy.y-h))/(2.0*h);
       }
+      best=min(best,length(vec3(xy-p.xy,height-p.z)));
     }
     tangentDistance=zd<p.z?-best:best;
   }

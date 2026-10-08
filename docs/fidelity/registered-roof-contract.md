@@ -43,7 +43,9 @@ puntos reales del grafo bilineal común. El mínimo de esas distancias es una
 cota superior de la distancia al grafo: evita inventar proximidad a una
 superficie inexistente, pero puede omitir un parche fino si no encuentra el
 mínimo global. No acredita una distancia euclídea exacta ni reconstrucción
-de pilares. Las pendientes centrales de0,5mm mantienen la continuidad; el
+de pilares. Las pendientes nodales del mismo techo se interpolan de forma
+continua en una tabla derivada libre. El ensayo con diferencias centrales
+repetidas0,5mm pasó check/paridad pero falló el Worker3s; no se acepta. El
 ensayo con pendientes exactas por celda falló el borde0,042mm y se conserva
 rechazado. El contacto hepático previo conserva su composición y obstáculo.
 Los cuatro nodos se interpolan explícitamente en GLSL para no amplificar

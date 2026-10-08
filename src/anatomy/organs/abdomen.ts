@@ -70,6 +70,7 @@ export function abdomenQuery(m: Vec3) {
 export {
   registeredDomeHeight,
   registeredDomeValue,
+  registeredDomeSample,
   hepaticDomeValue,
   abdominalAtlasSdf,
   abdominalAtlasValue,

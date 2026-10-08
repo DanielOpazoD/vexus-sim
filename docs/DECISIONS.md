@@ -6926,3 +6926,14 @@ demostrada al eliminar solo esos testigos.
 Las pendientes exactas por celda produjeron una discontinuidad y un residual
 de borde0,042mm: ensayo rechazado. Se usan las mismas diferencias centrales
 continuas de0,5mm, con consultas explícitas a la tabla compartida.
+
+**Refutación de coste.** 76e0cdd pasó check completo y paridad, pero la prueba
+del navegador falló con el Worker del corte sin respuesta dentro de3s. Se
+conserva ese fallo. La tabla libre260 guarda pendientes nodales derivadas de
+las mismas alturas decodificadas: paso1,5mm, interpolación bilineal continua.
+Guían la proyección; no definen normales fuente ni resolución adicional. La
+consulta válida pasa de16lecturas de altura a cuatro muestras de altura/guía,
+y evita repetir la fórmula de cúpulas heredadas. La altura, los once campos,
+el soporte, la textura y su memoria no cambian; la distancia aproximada puede
+variar por las propuestas de búsqueda y exige nuevas imágenes/paridad. No se
+cambia el watchdog ni su presupuesto. Fuera del registro conserva fallback.

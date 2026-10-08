@@ -20,8 +20,10 @@ test('conserva pose adquirida al mover controles congelados y recuperar cine ant
   // Live persistence versus R16F cine reconstruction is a separate signal audit.
   const oldIndex = await page.evaluate(() => window.__vexusTest!.sim().renderer.cineCount - 2);
   expect(oldIndex).toBeGreaterThanOrEqual(1);
+  const oldFrame = await page.evaluate((i) => window.__vexusTest!.sim().renderer.cineFrame(i).n, oldIndex);
   await page.locator('#cine').fill(String(oldIndex));
   await page.locator('#cine').dispatchEvent('input');
+  await expect.poll(() => page.evaluate(() => window.__vexusTest!.sim().renderer.cineShownFrame?.n)).toBe(oldFrame);
   const before = await page.evaluate(acquisitionSnapshot, 'subxiphoid' as const);
   expect(before.schemaVersion).toBe(2);
   validateAcquisition(before, { anatomy: 'atlas', caseId: 'normal-adult' });
@@ -68,6 +70,7 @@ test('conserva pose adquirida al mover controles congelados y recuperar cine ant
   expect(await pixels('current')).not.toBe(oldPixels);
   await page.locator('#cine').fill(String(oldIndex));
   await page.locator('#cine').dispatchEvent('input');
+  await expect.poll(() => page.evaluate(() => window.__vexusTest!.sim().renderer.cineShownFrame?.n)).toBe(oldFrame);
   const replay = await page.evaluate(acquisitionSnapshot, 'subxiphoid' as const);
   expect(replay.pose).toEqual(before.pose);
   expect(replay.transducer).toEqual(before.transducer);

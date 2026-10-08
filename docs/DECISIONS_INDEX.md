@@ -181,4 +181,3 @@ Generado por `npm run docs:index` — no editar a mano.
 | [175](DECISIONS.md#L6421) | Consulta costal con descarte geométrico conservador | vigente |
 | [176](DECISIONS.md#L6427) | Registro renal y muscular posterior coherente con la columna | vigente |
 | [177](DECISIONS.md#L6447) | Integrar la absorción Doppler por tejido sin nuevas texturas | vigente |
-| [189](DECISIONS.md#L6455) | Validar fuentes musculares posteriores antes de incorporarlas | vigente |

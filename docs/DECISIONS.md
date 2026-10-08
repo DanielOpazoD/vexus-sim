@@ -5137,6 +5137,42 @@ esto evita redibujados ocultos entre comprobaciones de limpieza y añade ese est
 
 **Veredicto.** Además del estado de los jobs, el check protegido descarga los ocho informes y exige el mismo SHA/plan, todos los IDs una vez y un único resultado pasado sin retry. Se guardan explícitamente los metadatos ocultos de ejecución. Las pruebas rápidas cubren listas anidadas, incorporación de casos nuevos, determinismo y rechazo de fallos/omisiones/duplicados/reintentos. En la colección de 62 casos, la reducción prevista del tramo más largo es 32,7 %; es una estimación, no un ahorro real ya medido. Detalle en `E2E_COST_BALANCE.md`.
 
+#### 124 — Preparación E2E fijada, presupuesto intacto (2026-10-08)
+
+**Contexto.** En la primera CI de `899fdc3`, ejecución
+[37762865146](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37762865146),
+el fragmento 2 agotó los 40 minutos. La instalación de dependencias de Chromium
+ocupó 9 min 07 s (10:21:12–10:30:19 UTC). Diez pruebas figuran aprobadas en el
+log, pero la última se interrumpió y falta el informe de ejecución completo.
+Núcleo, matrices y los otros siete fragmentos pasan; el agregado permanece rojo.
+No reejecutar esa misma fuente ni aceptar los diez mensajes como informe íntegro.
+
+**Opciones.** Ampliar plazos sacrificaría el presupuesto; repetir la misma CI no
+corrige su preparación variable. Omitir dependencias no garantiza un navegador
+funcional. La imagen oficial de Playwright incorpora navegador y bibliotecas
+para la misma versión, evitando la descarga APT repetida en cada fragmento.
+
+**Decisión.** Los ocho jobs usan `mcr.microsoft.com/playwright:v1.63.0-noble`,
+fijada también por digest de manifiesto
+`sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27`.
+El registro MCR confirma plataformas Linux amd64/arm64. Un guard comprueba que
+el paquete instalado sigue en 1.63.0: una actualización exige revisar imagen y
+digest conjuntamente. Node continúa saliendo de `.nvmrc` y npm del lockfile.
+Referencia oficial: [Playwright en contenedores CI](https://playwright.dev/docs/ci#via-containers).
+
+**Consecuencias.** Conserva 40 minutos, ocho fragmentos, un trabajador, todos
+los tests, aserciones, presupuesto de arranque y reglas anti-flaky. El veredicto
+sigue exigiendo ocho informes íntegros del mismo árbol, sin omisiones ni retries.
+La descarga de imagen y el rendimiento de este entorno deben medirse en su
+primera CI; no se presupone que la prueba interrumpida vaya a pasar. No modifica
+anatomía ni demuestra que el atlas experimental arranque en SwiftShader.
+
+**Verificación.** Digest publicado contrastado con el hash de los bytes del
+manifiesto; versión coincide con el lockfile. Se conservan el log y los siete
+informes completos anteriores. El guard rechaza una versión distinta y los
+contratos previos de reparto/veredicto continúan intactos. Check estándar y
+primera CI completa de la nueva fuente son necesarios para integrar.
+
 ## 125. Promedio PW limitado a una misma rejilla física de adquisición
 
 **Problema.** El promedio 3 × 3 usado antes de medir el espectro combinaba columnas

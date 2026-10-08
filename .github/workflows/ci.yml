@@ -92,6 +92,10 @@ jobs:
   e2e:
     name: extremo a extremo (Chromium + SwiftShader) ${{ matrix.shard }}/${{ strategy.job-total }}
     runs-on: ubuntu-latest
+    # El navegador y sus bibliotecas corresponden al lockfile; no descargar APT en cada fragmento.
+    # CI37762865146 perdió 9 min en esa preparación y agotó el límite sin completar el informe.
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
     # un fragmento ronda los 10–15 min (la equivalencia sola, 3–6); con un reintento, más
     timeout-minutes: 40
     strategy:
@@ -105,19 +109,8 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - name: Versión de Playwright (clave de la caché de navegadores)
-        id: pw
-        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
-      - name: Caché de navegadores de Playwright
-        id: pw-cache
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/ms-playwright
-          key: playwright-${{ runner.os }}-${{ steps.pw.outputs.version }}
-      - if: steps.pw-cache.outputs.cache-hit != 'true'
-        run: npx playwright install --with-deps chromium
-      - if: steps.pw-cache.outputs.cache-hit == 'true'
-        run: npx playwright install-deps chromium
+      - name: El lockfile y la imagen fijada usan el mismo Playwright
+        run: node -e "require('node:assert/strict').equal(require('@playwright/test/package.json').version, '1.63.0', 'Actualizar versión y digest de la imagen E2E junto al lockfile')"
       - run: npx vite build
       - run: node --import tsx tools/ci/run-e2e-shard.ts ${{ matrix.shard }} ${{ strategy.job-total }}
       - name: Guardar los tiempos (duración, arranque y ritmo del bucle de cada prueba)

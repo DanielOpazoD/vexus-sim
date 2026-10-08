@@ -9,14 +9,15 @@ export function acquisitionSnapshot(view: StartPoint['id']) {
   const anatomy = sim.renderer.displayedAnatomy;
   if (!sim.frozen || !shown || !anatomy) throw new Error('Acquisition must be frozen with a presented frame');
   return structuredClone({
-    schemaVersion: 1,
+    schemaVersion: 2,
     view,
     caseId: sim.patient.id,
     seed: sim.patient.seed,
     patient: sim.patient,
     sample: anatomy.sample,
     anatomyMode: sim.scene.hasAbdominalAtlas ? 'atlas' : 'legacy',
-    pose: sim.pose,
+    pose: anatomy.pose,
+    livePose: sim.pose,
     presentedFrame: shown.n,
     loopFrames: hooks.framesRendered(),
     acquiredTimeSeconds: shown.t,
@@ -26,7 +27,8 @@ export function acquisitionSnapshot(view: StartPoint['id']) {
     currentFrame: sim.frame,
     compression: anatomy.compression,
     respiration: { pattern: sim.patient.respiratoryPattern, ...anatomy.sample.resp },
-    transducer: sim.transducer,
+    transducer: anatomy.transducer,
+    liveTransducer: sim.transducer,
     bmode: sim.displayed.bmode,
     color: sim.displayed.color,
     pw: sim.pw,
@@ -51,9 +53,13 @@ export function validateAcquisition(
     | 'errors'
     | 'frame'
     | 'currentFrame'
+    | 'schemaVersion'
+    | 'pose'
+    | 'livePose'
   >,
   expected: { anatomy: string; caseId: string; time?: number },
 ): void {
+  if (snapshot.schemaVersion !== 2) throw new Error('Acquisition lacks separate acquired and live pose provenance');
   if (snapshot.anatomyMode !== expected.anatomy || snapshot.caseId !== expected.caseId) throw new Error('Unexpected acquisition domain');
   if (snapshot.color.enabled) throw new Error('B-mode audit requires color disabled');
   if (!Number.isSafeInteger(snapshot.presentedFrame) || snapshot.presentedFrame < 1) throw new Error('Invalid presented frame');
@@ -62,6 +68,12 @@ export function validateAcquisition(
   if (expected.time !== undefined && Math.abs(snapshot.acquiredTimeSeconds - expected.time) > 1e-9)
     throw new Error('Static acquisition did not reach its requested time');
   if (snapshot.errors.length) throw new Error('Acquisition contains renderer errors');
+  // An animator may change controls while both cached frames remain unchanged.
+  for (const key of ['phi', 'z', 'lift', 'yaw', 'rock', 'tilt'] as const) {
+    const a = snapshot.pose[key],
+      b = snapshot.livePose[key];
+    if (!Number.isFinite(a) || !Number.isFinite(b) || Math.abs(a - b) > 1e-8) throw new Error('Presented pose differs from the live probe');
+  }
   // A cine frame selected before a pose change must not be attributed to the current probe.
   for (const key of ['face', 'axial', 'lateral', 'elevation', 'curvatureCenter'] as const) {
     const a = snapshot.frame[key],

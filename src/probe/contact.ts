@@ -89,7 +89,11 @@ function firstCrossing(depthAt: (r: number) => number, w: number, r0: number, r1
   const step = 2;
   let prev = r0;
   if (depthAt(r0) >= w) return r0;
-  for (let r = r0 + step; r <= r1 + 1e-9; r += step) {
+  // Include the end of the bracket even when its length is not a multiple
+  // of step. measureFace can supply an already-inside near endpoint; missing
+  // that last fraction wrongly reports no wall and loses acoustic contact.
+  while (prev < r1) {
+    const r = Math.min(prev + step, r1);
     if (depthAt(r) >= w) {
       let lo = prev;
       let hi = r;

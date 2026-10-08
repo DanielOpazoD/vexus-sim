@@ -234,7 +234,7 @@ export interface FrameInputs {
  */
 export interface CineFrame {
   /** Immutable acquisition geometry of the presented frame, also retained in cine. */
-  anatomy?: Pick<FrameInputs, 'sample' | 'frame' | 'compression'>;
+  anatomy?: Pick<FrameInputs, 'sample' | 'frame' | 'compression' | 'pose' | 'transducer'>;
   t: number;
   /** Cuadro dibujado (`frameCount`): entre dos guardados puede haber varios, y la persistencia los pesa todos. */
   n: number;
@@ -936,7 +936,14 @@ export class UltrasoundRenderer {
   private afterFrame(inputs: FrameInputs): void {
     const c = inputs.color;
     const frame: CineFrame = {
-      anatomy: { sample: inputs.sample, frame: inputs.frame, compression: inputs.compression },
+      anatomy: {
+        sample: inputs.sample,
+        frame: inputs.frame,
+        compression: inputs.compression,
+        // Live controls can mutate after freezing; retain the actual acquisition inputs.
+        pose: { ...inputs.pose },
+        transducer: { ...inputs.transducer },
+      },
       t: inputs.sample.t,
       n: this.frameCount,
       bmode: inputs.bmode,

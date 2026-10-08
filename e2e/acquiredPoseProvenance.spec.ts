@@ -8,9 +8,21 @@ import { bootWithoutErrors, budget } from './support';
 test('conserva pose adquirida al mover controles congelados y recuperar cine antiguo', async ({ page }, info) => {
   budget(90_000);
   const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
+  await page.evaluate(() => {
+    const s = window.__vexusTest!.sim();
+    for (let i = 0; i < 20; i++) {
+      s.advance(0.05);
+      s.render();
+    }
+  });
   await page.locator('#freeze').click();
+  // Compare the SAME historical reconstruction before/after a new acquisition.
+  // Live persistence versus R16F cine reconstruction is a separate signal audit.
+  const oldIndex = await page.evaluate(() => window.__vexusTest!.sim().renderer.cineCount - 2);
+  expect(oldIndex).toBeGreaterThanOrEqual(1);
+  await page.locator('#cine').fill(String(oldIndex));
+  await page.locator('#cine').dispatchEvent('input');
   const before = await page.evaluate(acquisitionSnapshot, 'subxiphoid' as const);
-  const oldIndex = await page.evaluate(() => window.__vexusTest!.sim().renderer.cineCount - 1);
   expect(before.schemaVersion).toBe(2);
   validateAcquisition(before, { anatomy: 'atlas', caseId: 'normal-adult' });
   const pixels = async (name: string) => {

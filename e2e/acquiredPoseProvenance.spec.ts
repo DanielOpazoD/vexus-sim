@@ -1,5 +1,8 @@
 import { expect, test } from '@playwright/test';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { acquisitionSnapshot, validateAcquisition } from '../tools/fidelity/acquisitionSnapshot';
+import { captureBMode } from '../tools/fidelity/captureBMode';
 import { bootWithoutErrors, budget } from './support';
 
 test('conserva pose adquirida al mover controles congelados y recuperar cine antiguo', async ({ page }, info) => {
@@ -10,18 +13,14 @@ test('conserva pose adquirida al mover controles congelados y recuperar cine ant
   const oldIndex = await page.evaluate(() => window.__vexusTest!.sim().renderer.cineCount - 1);
   expect(before.schemaVersion).toBe(2);
   validateAcquisition(before, { anatomy: 'atlas', caseId: 'normal-adult' });
-  const pixels = () =>
-    page.evaluate(() => {
-      const r = window.__vexusTest!.sim().renderer,
-        gl = r.gl,
-        data = new Uint8Array(r.canvas.width * r.canvas.height * 4);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      gl.readPixels(0, 0, r.canvas.width, r.canvas.height, gl.RGBA, gl.UNSIGNED_BYTE, data);
-      let hash = 2166136261;
-      for (const v of data) hash = Math.imul(hash ^ v, 16777619);
-      return hash;
-    });
-  const oldPixels = await pixels();
+  const pixels = async (name: string) => {
+    const path = info.outputPath(name + '.png');
+    // Read the presented B-mode target, never a discarded browser backbuffer.
+    await captureBMode(page, path);
+    await info.attach(name, { path, contentType: 'image/png' });
+    return createHash('sha256').update(readFileSync(path)).digest('hex');
+  };
+  const oldPixels = await pixels('before');
   await page.evaluate(() => {
     const s = window.__vexusTest!.sim();
     // Mutating the live pose catches aliasing as well as reading the wrong pose.
@@ -34,7 +33,7 @@ test('conserva pose adquirida al mover controles congelados y recuperar cine ant
   expect(moved.livePose).not.toEqual(before.pose);
   expect(moved.frame).toEqual(before.frame);
   expect(moved.acquiredTimeSeconds).toBe(before.acquiredTimeSeconds);
-  expect(await pixels()).toBe(oldPixels);
+  expect(await pixels('frozen-moved')).toBe(oldPixels);
   // Static registered comparisons still reject a presented/current geometry mismatch.
   expect(() => validateAcquisition(moved, { anatomy: 'atlas', caseId: 'normal-adult' })).toThrow(
     'Presented pose differs from the live probe',
@@ -54,7 +53,7 @@ test('conserva pose adquirida al mover controles congelados y recuperar cine ant
   expect(current.pose).toEqual(current.livePose);
   expect(current.pose).not.toEqual(before.pose);
   expect(current.frame).not.toEqual(before.frame);
-  expect(await pixels()).not.toBe(oldPixels);
+  expect(await pixels('current')).not.toBe(oldPixels);
   await page.locator('#cine').fill(String(oldIndex));
   await page.locator('#cine').dispatchEvent('input');
   const replay = await page.evaluate(acquisitionSnapshot, 'subxiphoid' as const);
@@ -63,7 +62,7 @@ test('conserva pose adquirida al mover controles congelados y recuperar cine ant
   expect(replay.presentedFrame).toBe(before.presentedFrame);
   expect(replay.acquiredTimeSeconds).toBe(before.acquiredTimeSeconds);
   expect(replay.livePose).toEqual(current.livePose);
-  expect(await pixels()).toBe(oldPixels);
+  expect(await pixels('replay')).toBe(oldPixels);
   await info.attach('acquired-pose-provenance.json', {
     body: JSON.stringify({ before, moved, current, replay, oldPixels }, null, 2),
     contentType: 'application/json',

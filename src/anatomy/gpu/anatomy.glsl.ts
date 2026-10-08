@@ -247,8 +247,8 @@ float sdDome(vec3 p, out vec3 n) {
     vec2 xy=p.xy,g=vec2(gx,gy);float height=zd,best=abs(zd-p.z);
     for(int i=0;i<3;i++){
       float delta=height-p.z+dot(g,p.xy-xy);xy=p.xy-g*delta/(1.0+dot(g,g));
-      vec4 sample=registeredDomeSample(xy);
-      if(sample.w>0.0){height=sample.x;g=sample.yz;}
+      vec4 roofStep=registeredDomeSample(xy);
+      if(roofStep.w>0.0){height=roofStep.x;g=roofStep.yz;}
       else{
         height=domeHeight(xy.x,xy.y);
         g=vec2(domeHeight(xy.x+h,xy.y)-domeHeight(xy.x-h,xy.y),domeHeight(xy.x,xy.y+h)-domeHeight(xy.x,xy.y-h))/(2.0*h);

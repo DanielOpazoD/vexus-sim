@@ -216,8 +216,12 @@ float domeLift(float x, float y, vec4 dome) {
 // Altura del diafragma: inserción costal (0 en el xifoides, −50 en flancos y espalda) +
 // la hemicúpula más alta (misma construcción que primitives.diaphragmHeight)
 vec2 hepaticDomeValue(vec2 p);
+vec2 registeredDomeValue(vec2 p);
+vec4 registeredDomeSample(vec2 p);
 float abdominalAtlasSdf(vec3 p, int k);
 float domeHeight(float x, float y) {
+  vec2 registered = registeredDomeValue(vec2(x,y));
+  if(registered.y>0.0)return registered.x;
   vec2 uv = vec2(x / uTorso.x, (y - uTorsoY) / uTorso.y);
   float rho = length(uv);
   float edge = uDiaphragm.z + uDiaphragm.w * smoothstep(0.0, ${DIAPHRAGM_AXIS_CORE.toFixed(3)}, rho) * pow(max(0.0, uv.y) / max(rho, 1e-20), 1.5);
@@ -233,13 +237,26 @@ float domeHeight(float x, float y) {
 
 // Distancia con signo al diafragma (negativa en el tórax) y normal hacia el abdomen.
 float sdDome(vec3 p, out vec3 n) {
-  float zd = domeHeight(p.x, p.y);
-  float h = 0.5;
-  float gx = (domeHeight(p.x + h, p.y) - domeHeight(p.x - h, p.y)) / (2.0 * h);
-  float gy = (domeHeight(p.x, p.y + h) - domeHeight(p.x, p.y - h)) / (2.0 * h);
-  float slope = sqrt(1.0 + gx * gx + gy * gy);
-  n = normalize(vec3(gx, gy, -1.0)); // apunta hacia abajo (hacia el hígado)
-  float tangentDistance = (zd - p.z) / slope;
+  vec4 registered=registeredDomeSample(p.xy);
+  float zd=registered.w>0.0?registered.x:domeHeight(p.x,p.y),h=0.5;
+  float gx=registered.w>0.0?registered.y:(domeHeight(p.x+h,p.y)-domeHeight(p.x-h,p.y))/(2.0*h);
+  float gy=registered.w>0.0?registered.z:(domeHeight(p.x,p.y+h)-domeHeight(p.x,p.y-h))/(2.0*h);
+  float slope=sqrt(1.0+gx*gx+gy*gy);n=normalize(vec3(gx,gy,-1.0));
+  float tangentDistance=(zd-p.z)/slope;
+  if(registered.w>0.0){
+    vec2 xy=p.xy,g=vec2(gx,gy);float height=zd,best=abs(zd-p.z);
+    for(int i=0;i<3;i++){
+      float delta=height-p.z+dot(g,p.xy-xy);xy=p.xy-g*delta/(1.0+dot(g,g));
+      vec4 roofStep=registeredDomeSample(xy);
+      if(roofStep.w>0.0){height=roofStep.x;g=roofStep.yz;}
+      else{
+        height=domeHeight(xy.x,xy.y);
+        g=vec2(domeHeight(xy.x+h,xy.y)-domeHeight(xy.x-h,xy.y),domeHeight(xy.x,xy.y+h)-domeHeight(xy.x,xy.y-h))/(2.0*h);
+      }
+      best=min(best,length(vec3(xy-p.xy,height-p.z)));
+    }
+    tangentDistance=zd<p.z?-best:best;
+  }
   if(uAbdominalAtlasEnabled==0)return tangentDistance;
   float contact=hepaticDomeValue(p.xy).y*(1.0-smoothstep(6.0,12.0,zd-p.z));
   // faceGradient evaluates the actual shell for interface echoes. Keep the

@@ -191,3 +191,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [185](DECISIONS.md#L6720) | Evidencia reproducible de las nueve ventanas | vigente |
 | [186](DECISIONS.md#L6758) | Ventana epigástrica transhepática y plano venoso renal | vigente |
 | [187](DECISIONS.md#L6795) | Concentración de dispersores continua sin saltos de celda | vigente |
+| [188](DECISIONS.md#L6828) | Consulta anatómica escalar sin asignaciones por punto | vigente |
+| [189](DECISIONS.md#L6860) | Techo diafragmático registrado experimental y cero acústico común | vigente |

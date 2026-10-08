@@ -6856,3 +6856,48 @@ conservadas. `tools/fidelity/atlasQueryAudit.ts` compara los módulos reales
 antes/después, todos los lotes intercalados y nueve ventanas con vecinos en
 dos casos. La aceptación requiere además capturas/gestos registrados,
 check/calibración y CI exacta; resultados y limitaciones se registran en el PR.
+
+## 189. Techo diafragmático registrado experimental y cero acústico común
+
+**Contexto.** Fuera del soporte hepático del atlas, el techo vuelve a cúpulas
+heredadas incompatibles con la fuente registrada: el testigo X−31/Y−45 pasa
+por 51,12 mm frente a un último cruce fuente en 10,17 mm. Son alturas por
+rayo, no separación clínica. Aparecen cuñas de grasa retroperitoneal en cortes.
+
+**Opciones.** Ajustar dos cúpulas reduce el residual mediano de 29,88 a
+4,07 mm, pero mantiene un máximo de 72,64 mm; se descarta. No ocultar grasa
+por ventana, mover órganos, alisar la fuente entera ni adoptar una fuente con
+conflictos vasculares/esofágicos como si sus hiatos estuvieran validados.
+
+**Decisión.** Variante experimental: `register-diaphragm-roof.py` proyecta
+el último cruce de FJ3131 saneada en el registro LAS común, termina el grafo
+en la inserción costal estimada existente y extiende armónicamente solo el
+dominio sin cruce. Compone el contacto hepático existente y guarda la altura
+en una lámina libre de la misma textura RG16F, con XY transpuesto. No altera
+campos de órganos, etiquetas, soporte de contacto, radios ni fisiología.
+`diaphragmHeight`/GLSL comparten esa tabla. `diaphragmSurfaceZ` resuelve el
+cero del obstáculo hepático también cuando el soporte normal es cero; el
+borde 3D usa ese mismo cero y la pared interna. El primer ensayo borraba
+29 muestras centrales de VCI infra y9 supra; se conserva como rechazado.
+`raInferiorZ` calcula el cruce inferior del elipsoide auricular inclinado
+existente. El recorte de VCI superior al diafragma espera también a alcanzar
+esa entrada; conserva la protección de tabiques y no mueve la AD.
+Precisión de raíz numérica,
+no resolución anatómica añadida.
+
+**Consecuencias.** Es un grafo de techo y una cáscara acústica estimada, no
+el diafragma completo: cruras, hiatos, espesores fuente e inserciones por
+pieza siguen sin validar. La extensión sin cruce no acredita normalidad.
+La separación renal-fascial y las fuentes musculares siguen abiertas;
+se conserva el ensayo rechazado que fragmentó psoas. No añade textura ni
+memoria volumétrica; el coste de consultas, arranque y gesto debe medirse.
+
+**Verificación.** Hashes independientes de los once campos previos,
+testigos de cruces fuente fuera de la transición hepática, testigos rechazados
+de cero 3D y borde registrado en `registeredDiaphragmRoof.test.ts`; paridad
+CPU/GPU y normales en `registeredRoof.spec.ts`. Auditoría de todos los
+vértices/centroides de vasos/esófago/riñones, cortes de CT independientes,
+3065 ceros y96 bordes, adquisiciones antes/después y barridos registrados.
+Estos instrumentos no certifican contactos completos ni fidelidad clínica.
+El PR conserva fallos, limitaciones y estado real; integración requiere CI
+exacta sin reintentos que oculten fallos y revisión anatómica pendiente.

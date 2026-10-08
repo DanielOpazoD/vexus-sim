@@ -146,3 +146,29 @@ NEEDS_CALIBRATION. No son concentración ni tamaño de lobulillos humanos
 medidos. No cambia seno/cápsula/riñón/vasos como geometría, ni Doppler o flujo.
 El [contrato](fidelity/continuous-clumps-contract.md) exige comparables, movimientos
 y controles; estadística y continuidad numérica no equivalen a fidelidad clínica.
+
+### Techo registrado experimental (decisión 189)
+
+[EXTRAPOLACIÓN PROPIA / NEEDS_CALIBRATION] El último cruce vertical de la
+fuente diafragmática saneada, limitado por la inserción costal existente,
+es un **grafo de techo**, no la segmentación completa del diafragma.
+La extensión armónica en dominio sin cruce no reconstruye hiatos, pilares
+ni tendón. La cáscara de2,5mm y el contacto hepático heredado permanecen
+estimados. No usa HU como ecogenicidad, ni ajusta órganos al CT de otra
+persona. Los contactos vasculares/esofágicos fuente, fascia renal, inserciones
+por pieza y normalidad siguen pendientes. Metadatos y reproducción:
+`docs/anatomy/abdominal-atlas-manifest.json`, `tools/anatomy/register-diaphragm-roof.py`.
+
+La entrada inferior de la AD (`raInferiorZ`) es la intersección cuadrática
+con el elipsoide inclinado existente, no una aurícula segmentada ni un hiato
+cavo validado. Fuera de su proyección usa el polo inferior como límite de
+aproximación, sin inventar un orificio. Evita que bajar la cúpula elimine
+la VCI antes de la AD; mantiene el recorte superior y tabiques previos.
+El registro corazón–diafragma y su normalidad siguen pendientes.
+
+El permiso de aproximación a la AD se limita además al labio inferior
+`RA_APPROACH_TOP_Z`: polo inferior del elipsoide inclinado más el grosor
+previo del orificio VCI. Es una extrapolación del modelo existente, no un
+orificio segmentado. La variante sin este límite invadió una pared miocárdica
+con cava dilatada y permanece rechazada. No se cambian radios ni se relaja
+su test de protección miocárdica/septal. Revisión anatómica externa pendiente.

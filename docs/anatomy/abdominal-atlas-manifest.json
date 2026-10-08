@@ -8,9 +8,9 @@
   "pitchMm": 1.5,
   "textureDimensions": [338, 217, 280],
   "rawBytes": 82147520,
-  "gzipBytes": 5036092,
-  "sha256Gzip": "e7bcc2a2400cdaad40255e1d59bc095bcaa5704b999ee897b53f5638bd089f54",
-  "sha256Raw": "fb1a372f2d2f53bd69d2aea95733cb71ea2574ff6222b8471c5f498c9a1fb67d",
+  "gzipBytes": 5080120,
+  "sha256Gzip": "2aa090185848389b00920d44cd336bd1188afec2e3aff4c2c123552177994725",
+  "sha256Raw": "e0de7737e47baf59dd8c13fcd6f339e6e34b73ec8827217890009d8ceb2f6dab",
   "fields": [
     {
       "name": "pancreas",
@@ -4330,5 +4330,37 @@
     "reason": "Registered ribs 9/10 intersected estimated spleen (207 deep bone nodes, 3.18 mm penetration). Source liver, kidneys, pancreas and all other field bytes retained exactly.",
     "oldCenterMm": [100, -40, -75],
     "newCenterMm": [95.0, -40.0, -75.0]
+  },
+  "registeredDiaphragmRoof": {
+    "sourceRepairedSha256": "581c17df0c5b9469d4a0081550652b288f9bac03233ce810c81a85140e6dada3",
+    "sourceAtlasSha256": "fb1a372f2d2f53bd69d2aea95733cb71ea2574ff6222b8471c5f498c9a1fb67d",
+    "originMm": [-162.0, -127.5],
+    "dimensions": [217, 143],
+    "pitchMm": 1.5,
+    "offset": [178, 0, 259],
+    "packedXYTransposed": true,
+    "sourceRays": 14390,
+    "harmonicNodes": 9126,
+    "sourceBelowCostalRimNodes": 955,
+    "method": "Upper source crossing constrained by existing costal rim; harmonic extension only at missing projection; existing hepatic apposition composed once before half-float packing",
+    "costalRimEstimatedParameters": {
+      "a": 160,
+      "b": 105,
+      "y0": -21.106195,
+      "edgeZ": -50,
+      "edgeRise": 50,
+      "axisCore": 0.1
+    },
+    "organFieldsBitwiseUnchanged": true,
+    "contactSupportBitwiseUnchanged": true,
+    "sourceVerticesMoved": false,
+    "fullDiaphragmSourceIntegrated": false,
+    "clinicalValidation": false,
+    "status": "experimental-pending-contacts-images-and-external-validation",
+    "limits": "Roof graph and estimated 2.5 mm acoustic shell, not crura, source thickness, hiatal openings or validated clinical anatomy. Whole-source vascular/esophageal contacts remain blocked.",
+    "rawSha256": "e0de7737e47baf59dd8c13fcd6f339e6e34b73ec8827217890009d8ceb2f6dab",
+    "gzipSha256": "2aa090185848389b00920d44cd336bd1188afec2e3aff4c2c123552177994725",
+    "gzipBytes": 5080120,
+    "rawBytesUnchanged": true
   }
 }

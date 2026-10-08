@@ -216,8 +216,11 @@ float domeLift(float x, float y, vec4 dome) {
 // Altura del diafragma: inserción costal (0 en el xifoides, −50 en flancos y espalda) +
 // la hemicúpula más alta (misma construcción que primitives.diaphragmHeight)
 vec2 hepaticDomeValue(vec2 p);
+vec2 registeredDomeValue(vec2 p);
 float abdominalAtlasSdf(vec3 p, int k);
 float domeHeight(float x, float y) {
+  vec2 registered = registeredDomeValue(vec2(x,y));
+  if(registered.y>0.0)return registered.x;
   vec2 uv = vec2(x / uTorso.x, (y - uTorsoY) / uTorso.y);
   float rho = length(uv);
   float edge = uDiaphragm.z + uDiaphragm.w * smoothstep(0.0, ${DIAPHRAGM_AXIS_CORE.toFixed(3)}, rho) * pow(max(0.0, uv.y) / max(rho, 1e-20), 1.5);

@@ -1,5 +1,5 @@
 import type { Vec3 } from '../core/vec3';
-import { ABDOMINAL_ATLAS, ABDOMINAL_FIELDS, HEPATIC_DOME } from './abdominalAtlasData';
+import { ABDOMINAL_ATLAS, ABDOMINAL_FIELDS, HEPATIC_DOME, REGISTERED_DOME } from './abdominalAtlasData';
 import { HALF } from './halfFloat';
 import { sourceDistance, sourceLabel } from './sourceVolume';
 export { HALF } from './halfFloat';
@@ -25,6 +25,25 @@ export function abdominalAtlasValue(p: Vec3, field: number): { d: number; label:
 export function abdominalAtlasSdf(p: Vec3, field: number): number {
   const f = ABDOMINAL_FIELDS[field];
   return abdominalAtlas && f ? sourceDistance(abdominalAtlas, p, f, ABDOMINAL_ATLAS.textureDimensions) : 16;
+}
+
+/** Upper-source roof approximation, including the same hepatic contact. Not crura or hiatal openings. */
+export function registeredDomeHeight(x: number, y: number): number | undefined {
+  const data = abdominalAtlas,
+    f = REGISTERED_DOME,
+    qx = (x - f.originMm[0]) / f.pitchMm,
+    qy = (y - f.originMm[1]) / f.pitchMm;
+  if (!data || qx < 0 || qy < 0 || qx > f.dimensions[0] - 1 || qy > f.dimensions[1] - 1) return undefined;
+  const ix = Math.min(f.dimensions[0] - 2, Math.floor(qx)),
+    iy = Math.min(f.dimensions[1] - 2, Math.floor(qy)),
+    tx = qx - ix,
+    ty = qy - iy,
+    [w, h] = ABDOMINAL_ATLAS.textureDimensions,
+    // XY is transposed in the free plane; organ bricks and contact support are unchanged.
+    k = 2 * (f.offset[2] * w * h + (f.offset[1] + ix) * w + f.offset[0] + iy),
+    a = HALF[data[k]] + ty * (HALF[data[k + 2]] - HALF[data[k]]),
+    b = HALF[data[k + 2 * w]] + ty * (HALF[data[k + 2 * w + 2]] - HALF[data[k + 2 * w]]);
+  return a + tx * (b - a);
 }
 
 /** Estimated hepatic contact surface, sampled in material coordinates like the organs. */
@@ -60,6 +79,12 @@ export function abdominalAtlasGradient(p: Vec3, field: number): Vec3 {
 }
 
 export const ABDOMINAL_ATLAS_GLSL = /* glsl */ `
+vec2 registeredDomeValue(vec2 p){
+  if(uAbdominalAtlasEnabled==0)return vec2(0.0);
+  vec2 q=(p-vec2(${REGISTERED_DOME.originMm.join(',')}))/${REGISTERED_DOME.pitchMm.toFixed(1)};
+  if(any(lessThan(q,vec2(0.0)))||any(greaterThan(q,vec2(${REGISTERED_DOME.dimensions.map((v) => (v - 1).toFixed(1)).join(',')}))))return vec2(0.0);
+  return vec2(textureLod(uAbdominalAtlas,(vec3(q.yx,0.0)+vec3(${REGISTERED_DOME.offset.map((v) => v.toFixed(1)).join(',')})+0.5)/vec3(${ABDOMINAL_ATLAS.textureDimensions.map((v) => v.toFixed(1)).join(',')}),0.0).r,1.0);
+}
 vec2 hepaticDomeValue(vec2 p){
   if(uAbdominalAtlasEnabled==0)return vec2(0.0);
   vec2 q=(p-vec2(${HEPATIC_DOME.originMm.join(',')}))/${HEPATIC_DOME.pitchMm.toFixed(1)};

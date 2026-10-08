@@ -159,6 +159,17 @@ persona. Los contactos vasculares/esofágicos fuente, fascia renal, inserciones
 por pieza y normalidad siguen pendientes. Metadatos y reproducción:
 `docs/anatomy/abdominal-atlas-manifest.json`, `tools/anatomy/register-diaphragm-roof.py`.
 
+La distancia al techo registrado consulta tres proyecciones locales a puntos
+del grafo, usando pendientes centrales continuas de0,5mm. Conserva la menor
+distancia obtenida y el signo de la altura: es una cota superior conservadora,
+no un mínimo euclídeo global ni un espesor fuente. Puede omitir parches finos.
+Sustituye una prolongación tangencial que inventaba diafragma hasta40mm por
+debajo del nodo más inferior. El ensayo con pendientes exactas por celda
+rompía la continuidad del borde y se rechazó. El filtrado explícito GLSL de
+los mismos cuatro nodos evita amplificar su precisión limitada al diferenciar.
+La aceptación exige cines, controles de continuidad, contactos y rendimiento;
+no se acredita por paridad numérica o un testigo reparado.
+
 La entrada inferior de la AD (`raInferiorZ`) es la intersección cuadrática
 con el elipsoide inclinado existente, no una aurícula segmentada ni un hiato
 cavo validado. Fuera de su proyección usa el polo inferior como límite de

@@ -35,6 +35,20 @@ volumen, pilares ni hiatos. Este techo no demuestra reconciliación completa
 ni fascia renal. El ensayo renal anterior que cambia2→5piezas cerradas se
 conserva rechazado. Un gráfico mejor, un test o CI verde no lo resuelven.
 
+La primera adquisición pareada mantuvo bandas brillantes profundas. El banco
+de vecinos encontró tejido diafragmático hasta z−90mm pese a que el nodo más
+inferior del techo está en z−50mm: prolongación tangencial, no tejido fuente.
+Se conserva ese rechazo. La variante consulta tres proyecciones locales a
+puntos reales del grafo bilineal común. El mínimo de esas distancias es una
+cota superior de la distancia al grafo: evita inventar proximidad a una
+superficie inexistente, pero puede omitir un parche fino si no encuentra el
+mínimo global. No acredita una distancia euclídea exacta ni reconstrucción
+de pilares. Las pendientes centrales de0,5mm mantienen la continuidad; el
+ensayo con pendientes exactas por celda falló el borde0,042mm y se conserva
+rechazado. El contacto hepático previo conserva su composición y obstáculo.
+Los cuatro nodos se interpolan explícitamente en GLSL para no amplificar
+la precisión limitada del filtrado al diferenciar; tolerancias intactas.
+
 Validación obligatoria: hashes de11campos, perfiles y vecinos de tres planos,
 ceros3D y borde, contactos de vasos/esófago/riñones (muestreo no es prueba
 completa), continuidad de todos los ejes vasculares, control miocárdico/septal

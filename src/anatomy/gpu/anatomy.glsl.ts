@@ -236,13 +236,25 @@ float domeHeight(float x, float y) {
 
 // Distancia con signo al diafragma (negativa en el tórax) y normal hacia el abdomen.
 float sdDome(vec3 p, out vec3 n) {
-  float zd = domeHeight(p.x, p.y);
-  float h = 0.5;
-  float gx = (domeHeight(p.x + h, p.y) - domeHeight(p.x - h, p.y)) / (2.0 * h);
-  float gy = (domeHeight(p.x, p.y + h) - domeHeight(p.x, p.y - h)) / (2.0 * h);
-  float slope = sqrt(1.0 + gx * gx + gy * gy);
-  n = normalize(vec3(gx, gy, -1.0)); // apunta hacia abajo (hacia el hígado)
-  float tangentDistance = (zd - p.z) / slope;
+  float zd=domeHeight(p.x,p.y),h=0.5;
+  float gx=(domeHeight(p.x+h,p.y)-domeHeight(p.x-h,p.y))/(2.0*h);
+  float gy=(domeHeight(p.x,p.y+h)-domeHeight(p.x,p.y-h))/(2.0*h);
+  float slope=sqrt(1.0+gx*gx+gy*gy);
+  n=normalize(vec3(gx,gy,-1.0));
+  float tangentDistance=(zd-p.z)/slope;
+  if(registeredDomeValue(p.xy).y>0.0){
+    // Continuous finite-slope projections to real graph points, same as TS.
+    vec2 xy=p.xy,g=vec2(gx,gy);float height=zd,best=abs(zd-p.z);
+    for(int i=0;i<3;i++){
+      float delta=height-p.z+dot(g,p.xy-xy);
+      xy=p.xy-g*delta/(1.0+dot(g,g));height=domeHeight(xy.x,xy.y);
+      best=min(best,length(vec3(xy-p.xy,height-p.z)));
+      if(i<2){
+        g=vec2(domeHeight(xy.x+h,xy.y)-domeHeight(xy.x-h,xy.y),domeHeight(xy.x,xy.y+h)-domeHeight(xy.x,xy.y-h))/(2.0*h);
+      }
+    }
+    tangentDistance=zd<p.z?-best:best;
+  }
   if(uAbdominalAtlasEnabled==0)return tangentDistance;
   float contact=hepaticDomeValue(p.xy).y*(1.0-smoothstep(6.0,12.0,zd-p.z));
   // faceGradient evaluates the actual shell for interface echoes. Keep the

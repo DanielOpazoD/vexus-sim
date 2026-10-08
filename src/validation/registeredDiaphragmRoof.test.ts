@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { createHash } from 'node:crypto';
 import { afterEach, expect, it } from 'vitest';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
+import { setAbdominalAtlas, registeredDomeHeight } from '../anatomy/abdominalAtlas';
 import { setAbdominalBody } from '../anatomy/referenceBody';
 import { ABDOMINAL_ATLAS, ABDOMINAL_FIELDS } from '../anatomy/abdominalAtlasData';
 import { diaphragmHeight, diaphragmSurfaceZ, sdDiaphragm, torsoDepth } from '../anatomy/primitives';
@@ -60,6 +60,22 @@ it('uses the actual acoustic zero even where hepatic normal-contact support is z
   ]) {
     const z = diaphragmSurfaceZ(x, y, s.diaphragm, s.torso);
     expect(Math.abs(sdDiaphragm([x, y, z], s.diaphragm, s.torso))).toBeLessThan(0.001);
+  }
+});
+it('does not extrude a steep finite roof into phantom diaphragm far below its lowest node', () => {
+  const s = scene();
+  // Rejected acquired-interface witnesses: the tangent field claimed diaphragm
+  // at z−63..−90 although every packed roof node is at or above z−50 mm.
+  // Any Euclidean point-to-graph distance has this independent vertical bound.
+  expect(registeredDomeHeight(-162, -127.5)).toBe(-50);
+  for (const p of [
+    [-30.84, -58.43, -62.71952621609671],
+    [-30.84, -58.43, -72.99488274293253],
+    [-30.84, -58.43, -85.83907840802567],
+    [-30.06, -58.43, -90.38077863369836],
+  ] as Vec3[]) {
+    expect(sdDiaphragm(p, s.diaphragm, s.torso)).toBeGreaterThanOrEqual(-50 - p[2] - 1e-6);
+    expect(s.classify(p, BASELINE_CALIBER, false).tissue).not.toBe(Tissue.Diaphragm);
   }
 });
 it('keeps the registered rim on both the acoustic zero and internal body boundary', () => {

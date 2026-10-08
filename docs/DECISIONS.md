@@ -6910,3 +6910,19 @@ del techo interpola explícitamente sus cuatro nodos RG16F en precisión float,
 con el mismo orden escalar de TS. Conserva nodos y geometría; no se amplían
 las tolerancias. Su coste adicional requiere medición y la prueba original
 debe pasar. Las consultas previas de órganos/contacto permanecen intactas.
+
+**Refutación geométrica.** Una paridad correcta no validó el techo: el campo
+tangencial daba diafragma en z−63..−90mm, aunque todos sus nodos son z≥−50mm.
+La normalización local prolongaba planos pendientes fuera de su superficie.
+La variante usa tres proyecciones locales a puntos del grafo bilineal común
+y conserva el menor recorrido euclídeo obtenido, con signo de la altura.
+Es una cota superior de la distancia al grafo, no un mínimo global garantizado:
+puede omitir un parche fino, pero no inventa proximidad a un punto inexistente.
+Se conserva el contacto/obstáculo hepático y el modelo legacy. La pendiente
+bilineal sirve a la proyección; el eco diferencia la distancia efectiva como
+antes. Los testigos profundos rechazados quedan protegidos. Capturas, cines,
+contactos y rendimiento requieren nuevo contraste; no se da fidelidad por
+demostrada al eliminar solo esos testigos.
+Las pendientes exactas por celda produjeron una discontinuidad y un residual
+de borde0,042mm: ensayo rechazado. Se usan las mismas diferencias centrales
+continuas de0,5mm, con consultas explícitas a la tabla compartida.

@@ -1951,6 +1951,48 @@ equivalencia GLSL = TS con la compresión de cada punto de partida, arranque, ca
 de fidelidad, composición espacial (con la subxifoidea basculada 10° menos), normales, ecos de interfaz, pleura,
 pared, pasada A, moteado al inclinar y girar, fundido del ancla, sin contacto no hay Doppler y color: pasan.
 
+#### 63 — Completar el cruce final de la pared (2026-10-08)
+
+**Contexto.** La adquisición hepatorrenal atlas de4fc5082, pose phi2,99,
+z−113mm, yaw−0,244525/rock−0,134064/tilt−0,359148rad, muestra una línea fina
+desde la pared hacia colon y riñón. Su nodo de contacto27 informa pared a
+69,999mm y acoplamiento0, frente a10,599mm en un barrido independiente de
+0,05mm del mismo perfil. El extremo de su intervalo,11,199mm, ya supera el
+nivel radial28mm de la pared (28,825mm). La búsqueda en pasos de2mm omitía
+la fracción final del intervalo y devolvía ausencia de cruce; eso altera
+contacto y deformación local. No es un nuevo hallazgo anatómico ni una sombra
+que deba pintarse o esconderse.
+
+**Opciones.** Borrar la línea, suavizar la imagen o fijar acoplamiento1
+suprime causas físicas y pérdida real de contacto. Cambiar el preset evita
+el testigo sin resolver la búsqueda. Reducir globalmente el paso cuesta más
+y tampoco garantiza visitar el extremo.
+
+**Decisión.** Cada tramo termina en min(prev+2mm, fin). Se conserva el paso,
+el primer cruce, las18 bisecciones, constantes de gel/presión y el tope de
+búsqueda. El último tramo se visita aunque mida menos de2mm. Contacto,
+deformación, ecografía y plano continúan usando la misma tabla.
+
+**Consecuencias.** Evita pérdidas falsas de contacto y deformaciones locales
+cuando existe un cruce en esa fracción. No cambia la piel fuente, riñón,
+colon o musculatura; una sonda realmente levantada sigue desacoplándose.
+No convierte esta adquisición en una ventana hepatorrenal representativa:
+colon líquido, fascia renal, contacto con psoas y selección del receso siguen
+pendientes. El supuesto inicial de que lift8mm despejaba toda una huella
+inclinada fue refutado; el control negativo verifica hueco>4,5mm en toda la
+huella, sin modificar la física para forzarlo.
+
+**Verificación.** `contactWallCrossing.test.ts` contrasta54 raíces analíticas
+independientes: extremos fraccionarios, intervalos menores que el paso,
+y controles de pared ausente, contacto inicial y primer cruce. Falla con
+el bucle anterior y pasa con el cambio. Se conservan los14 controles de
+compresión existentes. El testigo atlas se investigó en una rama experimental
+separada:35 rayos contra barrido0,025mm,17 pares adquiridos, poses vecinas y
+movimientos reales de nueve ventanas. El arreglo numérico es independiente
+del atlas y no incorpora sus activos, presets ni contratos no validados.
+Check completo y CI del SHA exacto siguen siendo requisitos de integración;
+la mejora de esa línea no certifica la ventana renal ni continuidad universal.
+
 ## 64. Reservada: lámina difusa de la cápsula hepática [Estado: reservada]
 
 Número reservado para la lámina difusa de la cápsula (plan de contornos); ya la citan `capsuleTwin.test.ts`,
@@ -5094,6 +5136,66 @@ esto evita redibujados ocultos entre comprobaciones de limpieza y añade ese est
 **Decisión.** La colección actual completa se reparte con costes medianos de tres ejecuciones verificadas, asignando primero los más largos al runner menos cargado. Las listas nativas de Playwright se vuelven a recolectar para probar su igualdad exacta por ID. Pesos ausentes usan un coste de reserva; nunca excluyen pruebas. Se conservan ocho corredores, un worker y todas las aserciones, timeouts y reglas anti-flaky.
 
 **Veredicto.** Además del estado de los jobs, el check protegido descarga los ocho informes y exige el mismo SHA/plan, todos los IDs una vez y un único resultado pasado sin retry. Se guardan explícitamente los metadatos ocultos de ejecución. Las pruebas rápidas cubren listas anidadas, incorporación de casos nuevos, determinismo y rechazo de fallos/omisiones/duplicados/reintentos. En la colección de 62 casos, la reducción prevista del tramo más largo es 32,7 %; es una estimación, no un ahorro real ya medido. Detalle en `E2E_COST_BALANCE.md`.
+
+#### 124 — Preparación E2E fijada, presupuesto intacto (2026-10-08)
+
+**Contexto.** En la primera CI de `899fdc3`, ejecución
+[37762865146](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37762865146),
+el fragmento 2 agotó los 40 minutos. La instalación de dependencias de Chromium
+ocupó 9 min 07 s (10:21:12–10:30:19 UTC). Diez pruebas figuran aprobadas en el
+log, pero la última se interrumpió y falta el informe de ejecución completo.
+Núcleo, matrices y los otros siete fragmentos pasan; el agregado permanece rojo.
+No reejecutar esa misma fuente ni aceptar los diez mensajes como informe íntegro.
+
+**Opciones.** Ampliar plazos sacrificaría el presupuesto; repetir la misma CI no
+corrige su preparación variable. Omitir dependencias no garantiza un navegador
+funcional. La imagen oficial de Playwright incorpora navegador y bibliotecas
+para la misma versión, evitando la descarga APT repetida en cada fragmento.
+
+**Decisión.** Los ocho jobs usan `mcr.microsoft.com/playwright:v1.63.0-noble`,
+fijada también por digest de manifiesto
+`sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27`.
+El registro MCR confirma plataformas Linux amd64/arm64. Un guard comprueba que
+el paquete instalado sigue en 1.63.0: una actualización exige revisar imagen y
+digest conjuntamente. Node continúa saliendo de `.nvmrc` y npm del lockfile.
+Referencia oficial: [Playwright en contenedores CI](https://playwright.dev/docs/ci#via-containers).
+
+**Consecuencias.** Conserva 40 minutos, ocho fragmentos, un trabajador, todos
+los tests, aserciones, presupuesto de arranque y reglas anti-flaky. El veredicto
+sigue exigiendo ocho informes íntegros del mismo árbol, sin omisiones ni retries.
+La descarga de imagen y el rendimiento de este entorno deben medirse en su
+primera CI; no se presupone que la prueba interrumpida vaya a pasar. No modifica
+anatomía ni demuestra que el atlas experimental arranque en SwiftShader.
+
+**Verificación.** Digest publicado contrastado con el hash de los bytes del
+manifiesto; versión coincide con el lockfile. Se conservan el log y los siete
+informes completos anteriores. El guard rechaza una versión distinta y los
+contratos previos de reparto/veredicto continúan intactos. Check estándar y
+primera CI completa de la nueva fuente son necesarios para integrar.
+
+#### 124 — Leer el checkout real dentro del contenedor (2026-10-08)
+
+**Contexto.** La primera CI de `a0c43fe`,
+[37770195458](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37770195458),
+descarga el contenedor en 37 s y pasa el guard de versión. Sin embargo, los ocho
+fragmentos fallan antes de ejecutar pruebas: `git rev-parse HEAD` rechaza la
+propiedad del volumen montado. `actions/checkout` escribió la excepción en su
+configuración temporal, distinta de la que leen los comandos posteriores.
+Este fallo se conserva; ninguna prueba E2E de esa ejecución se acepta.
+
+**Decisión.** En el job E2E, inmediatamente tras checkout, registrar únicamente
+`$GITHUB_WORKSPACE` como `safe.directory` en el perfil Git efectivo del
+contenedor y exigir `git rev-parse HEAD == GITHUB_SHA`. No se sustituye el SHA
+leído por una variable ni se permite un comodín de repositorios. Esto afecta
+solo al contenedor efímero de esa ejecución; no cambia configuraciones del Mac,
+permisos de GitHub, protecciones o la verificación de origen de los informes.
+
+**Consecuencias y verificación.** El lector de procedencia y todas las pruebas
+permanecen iguales. Un checkout distinto falla temprano. El presupuesto 40 min,
+ocho fragmentos, un trabajador, aserciones y veredicto están intactos. Se revisan
+el diff acotado, el log de fallo original y la igualdad de objetos Git del
+simulador/tests. La primera CI completa de la fuente corregida sigue siendo
+necesaria; no se reejecuta `a0c43fe` para obtener verde.
 
 ## 125. Promedio PW limitado a una misma rejilla física de adquisición
 

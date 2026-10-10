@@ -58,6 +58,12 @@ al build servido; comprobar esa procedencia es responsabilidad del runner.
 conserva los tiempos originales y restaura el cuadro seleccionado. No asigna
 una tasa de adquisición fija. El cine reconstruye envolvente R16F y persistencia:
 no equivale exactamente a cada cuadro en vivo descartado entre guardados.
+La selección, presentación y lectura de cada cuadro ocurren en una evaluación
+atómica. Las pruebas esperan adquisiciones del bucle real en vez de agregar
+renderizados manuales redundantes. Las capturas de tarjetas hepáticas se congelan
+después de llegar a su pose, exigen que esa pose sea la adquirida y conservan
+tanto el framebuffer con metadatos como la interfaz completa. Se mantienen los
+plazos y todas las comprobaciones; un resultado que pasa al reintentar no se acepta.
 Para repetir una adquisición controlada se usa `comparisonState`, registrando
 tiempo, fase del receptor, historia de composición/persistencia y ajustes.
 

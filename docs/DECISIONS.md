@@ -6615,6 +6615,13 @@ controles negativos. `registeredAcquisition.spec.ts` contrasta el mismo framebuf
 antes/después de mover controles y de una nueva adquisición. NiBabel y capturas/cines reales
 complementan la verificación técnica; CI verde no certifica fidelidad clínica.
 
+**Fallo conservado y corrección de adquisición.** El primer SHAa699ca3 agotó el plazo
+del cine con SwiftShader; una tarjeta hepática solo pasó en reintento automático y
+la CI se mantuvo roja. Selección, presentación y lectura del cine ahora son atómicas;
+la prueba utiliza cuadros del bucle real en vez de diez renderizados manuales extra.
+Las tarjetas se capturan congeladas, verificando pose adquirida y conservando PNG
+del framebuffer, metadatos e interfaz. No se amplían plazos ni se eliminan controles.
+
 ## 177. Integrar la absorción Doppler por tejido sin nuevas texturas
 
 La conversión global de 174 usa b=1 para absorción, aunque piel, grasa, músculo y sangre tienen otros exponentes. A1 empaqueta gas+4·tejido en .w (entero float32 exacto); todos sus consumidores decodifican gas. A2 integra α_t(fD)/α_t(fB) por segmento, conserva espejo/gas y entrada ósea fijos, y entrega pérdida Doppler total en su .w auxiliar. F lee ese prefijo directamente, retirando el sampler B y la conversión global. Nueve vec4 de ratios (33 tejidos), sin nueva textura/pasada. Contrato previo: `anatomy/TISSUE_DOPPLER_PREFIX_CONTRACT.md`.

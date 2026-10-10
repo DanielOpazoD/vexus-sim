@@ -9,18 +9,14 @@ import {
 } from '../tools/fidelity/registeredAcquisition';
 import { CtCaseFrame, NATIVE_RAS_TO_LAS } from '../tools/anatomy/ctFrame';
 import { beamToPixel } from '../src/ultrasound/sectorGeometry';
-import { bootWithoutErrors, budget } from './support';
+import { bootWithoutErrors, budget, withinFrames } from './support';
 
 test('el cine y el plano conservan la adquisición y rechazan un TAC de otra procedencia', async ({ page }, info) => {
   const sourceSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
   budget(90_000);
   const errors = await bootWithoutErrors(page, '?e2e=app');
-  await page.evaluate(() => {
-    const s = window.__vexusTest!.sim();
-    for (let i = 0; i < 6; i++) {
-      s.advance(0.05);
-      s.render();
-    }
+  await withinFrames(page, 12, 'tres adquisiciones reales anteriores al movimiento', async () => {
+    return (await page.evaluate(() => window.__vexusTest!.sim().renderer.cineCount)) >= 3 || 'cine todavía sin tres cuadros';
   });
   await page.locator('#freeze').click();
   const oldIndex = await page.evaluate(() => window.__vexusTest!.sim().renderer.cineCount - 2);
@@ -69,10 +65,15 @@ test('el cine y el plano conservan la adquisición y rechazan un TAC de otra pro
   await page.evaluate(() => {
     const s = window.__vexusTest!.sim();
     s.setPose({ ...s.pose, phi: s.pose.phi + 0.08 });
-    for (let i = 0; i < 4; i++) {
-      s.advance(0.05);
-      s.render();
-    }
+  });
+  await withinFrames(page, 4, 'adquisición real de la nueva pose', async () => {
+    return (
+      (await page.evaluate((previous) => {
+        const s = window.__vexusTest!.sim(),
+          f = s.renderer.displayedFrame;
+        return f?.anatomy.pose.phi === s.pose.phi && f.n > previous;
+      }, oldNumber)) || 'imagen aún no adquirida con la pose nueva'
+    );
   });
   await page.locator('#freeze').click();
   const current = await page.evaluate(acquiredState);

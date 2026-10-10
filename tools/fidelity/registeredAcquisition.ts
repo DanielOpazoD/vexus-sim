@@ -7,9 +7,19 @@ import { encodeBMode } from './captureBMode';
 import type { CtCaseFrame } from '../anatomy/ctFrame';
 
 /** Callback autocontenido: geometría del framebuffer mostrado, nunca controles actuales. */
-export function acquiredState() {
+export function acquiredState(selection?: { index: number; expected: number; caseId: string } | void) {
   const h = window.__vexusTest!;
   const s = h.sim();
+  if (selection) {
+    const r = s.renderer;
+    if (!s.frozen || s.patient.id !== selection.caseId || r.cineFrame(selection.index).n !== selection.expected)
+      throw new Error('Cine cambió durante exportación');
+    const slider = document.querySelector('#cine');
+    if (!(slider instanceof HTMLInputElement)) throw new Error('Selector del cine ausente');
+    slider.value = String(selection.index);
+    slider.dispatchEvent(new Event('input', { bubbles: true }));
+    r.showCine(selection.index);
+  }
   const f = s.renderer.displayedFrame;
   if (!s.frozen || !f || f.color.enabled) throw new Error('Exportación requiere B-mode congelado presentado');
   if (f.t !== f.anatomy.sample.t || f.anatomy.seed !== s.patient.seed) throw new Error('Procedencia adquirida contradictoria');
@@ -58,9 +68,14 @@ export function acquiredPixelVoxel(
 }
 
 /** Lee señal y procedencia en una sola evaluación; escribe PNG y sidecar con hashes de contenido. */
-export async function exportAcquiredFrame(page: Page, prefix: string, sourceSha: string) {
+export async function exportAcquiredFrame(
+  page: Page,
+  prefix: string,
+  sourceSha: string,
+  selection?: { index: number; expected: number; caseId: string },
+) {
   if (!/^[a-f0-9]{40}$/.test(sourceSha)) throw new Error('SHA de código exacto requerido');
-  const state = await page.evaluate(acquiredState);
+  const state = await page.evaluate(acquiredState, selection);
   if (state.errors.length) throw new Error('Adquisición con errores del simulador');
   const { image, ...metadata } = state;
   const png = encodeBMode(image.width, image.height, image.gray);
@@ -94,22 +109,12 @@ export async function exportAcquiredCine(page: Page, prefix: string, sourceSha: 
   const frames = [];
   try {
     for (let i = 0; i < initial.frames.length; i++) {
-      await page.evaluate(
-        ({ index, expected, caseId }) => {
-          const s = window.__vexusTest!.sim(),
-            r = s.renderer;
-          if (!s.frozen || s.patient.id !== caseId || r.cineFrame(index).n !== expected) throw new Error('Cine cambió durante exportación');
-          // El bucle UI vuelve a presentar su selector: sincronizarlo evita una carrera entre evaluaciones.
-          const slider = document.querySelector('#cine');
-          if (!(slider instanceof HTMLInputElement)) throw new Error('Selector del cine ausente');
-          slider.value = String(index);
-          slider.dispatchEvent(new Event('input', { bubbles: true }));
-          r.showCine(index);
-        },
-        { index: i, expected: initial.frames[i], caseId: initial.caseId },
-      );
       const file = prefix + '-' + String(i).padStart(3, '0');
-      frames.push({ file, ...(await exportAcquiredFrame(page, file, sourceSha)) });
+      // Selección, presentación y lectura atómicas: ningún tick puede interponer otra imagen.
+      frames.push({
+        file,
+        ...(await exportAcquiredFrame(page, file, sourceSha, { index: i, expected: initial.frames[i], caseId: initial.caseId })),
+      });
     }
   } finally {
     await page.evaluate(

@@ -98,6 +98,9 @@ test('el cine y el plano conservan la adquisición y rechazan un TAC de otra pro
   });
   const cine = await exportAcquiredCine(page, info.outputPath('sequence'), sourceSha);
   expect(cine.frames.map((f) => ({ n: f.frameNumber, t: f.acquiredTimeSeconds }))).toEqual(expectedCine);
+  expect(cine.presentationInterleaving).toBe(false);
+  expect(cine.batches.reduce((n, b) => n + b.count, 0)).toBe(expectedCine.length);
+  expect(cine.batches.every((b) => b.loopFramesDuringRead === 0 && b.restored === oldNumber)).toBe(true);
   await expect.poll(() => page.evaluate(() => window.__vexusTest!.sim().renderer.displayedFrame?.n)).toBe(oldNumber);
   expect((await exportAcquiredFrame(page, info.outputPath('after-cine-export'), sourceSha)).pngSha256).toBe(first.pngSha256);
   await info.attach('cine-manifest', { path: info.outputPath('sequence-cine.json'), contentType: 'application/json' });

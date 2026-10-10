@@ -58,8 +58,18 @@ al build servido; comprobar esa procedencia es responsabilidad del runner.
 conserva los tiempos originales y restaura el cuadro seleccionado. No asigna
 una tasa de adquisición fija. El cine reconstruye envolvente R16F y persistencia:
 no equivale exactamente a cada cuadro en vivo descartado entre guardados.
-La selección, presentación y lectura de cada cuadro ocurren en una evaluación
-atómica. Las pruebas esperan adquisiciones del bucle real en vez de agregar
+La selección, presentación y lectura ocurren en lotes atómicos de hasta ocho
+cuadros, con restauración del original antes de ceder el hilo al bucle de UI.
+El límite acota memoria/transferencia del banco; no es un umbral físico ni reduce
+el cine: se exporta todo el anillo. El manifiesto registra cada lote y comprueba
+que ningún cuadro del bucle se intercaló dentro de sus lecturas. La CI1da1283
+demostró que hacer una llamada remota por cuadro todavía agotaba270s con
+SwiftShader, en primera ejecución y reintento automático. Ese fallo se conserva.
+Los grises se transportan como bytes en base64 y se decodifican antes del PNG:
+evita el array JSON de números, sin compresión de imagen ni pérdida de píxeles.
+Se contrasta cada PNG y su geometría con el protocolo anterior sobre el mismo cine;
+la mejora del coste debe verificarse en el corredor, no inferirse del nombre del formato.
+Las pruebas esperan adquisiciones del bucle real en vez de agregar
 renderizados manuales redundantes. Las capturas de tarjetas hepáticas se congelan
 después de llegar a su pose, exigen que esa pose sea la adquirida y conservan
 tanto el framebuffer con metadatos como la interfaz completa. Se mantienen los

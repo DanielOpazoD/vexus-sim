@@ -6622,6 +6622,19 @@ la prueba utiliza cuadros del bucle real en vez de diez renderizados manuales ex
 Las tarjetas se capturan congeladas, verificando pose adquirida y conservando PNG
 del framebuffer, metadatos e interfaz. No se amplían plazos ni se eliminan controles.
 
+**Segundo fallo conservado.** CI38084102891, SHA1da1283, volvió a agotar270s
+durante la exportación completa, tanto primero como en reintento; el fragmento6
+fue cancelado a40min y su informe quedó incompleto. La lectura por cuadro permitía
+intercalar presentación entre llamadas remotas. El banco ahora agrupa hasta ocho
+lecturas del mismo anillo en una operación, restituyendo el original antes de
+ceder el hilo. Acota memoria, conserva todos los cuadros y registra ausencia de
+intercalación por lote. El contraste emparejado exige PNG y geometría idénticos;
+la CI exacta debe aprobar al primer intento con los mismos plazos.
+Agrupar por sí solo conservó los diez PNG/marcos, pero no redujo tiempo en el
+control nativo (9,5s frente a7,9s): esa hipótesis de rendimiento no se acepta.
+El transporte de grises pasa de números JSON a bytes base64 sin pérdida, con
+decodificación antes del mismo PNG; se repite el contraste de todos los cuadros.
+
 ## 177. Integrar la absorción Doppler por tejido sin nuevas texturas
 
 La conversión global de 174 usa b=1 para absorción, aunque piel, grasa, músculo y sangre tienen otros exponentes. A1 empaqueta gas+4·tejido en .w (entero float32 exacto); todos sus consumidores decodifican gas. A2 integra α_t(fD)/α_t(fB) por segmento, conserva espejo/gas y entrada ósea fijos, y entrega pérdida Doppler total en su .w auxiliar. F lee ese prefijo directamente, retirando el sampler B y la conversión global. Nueve vec4 de ratios (33 tejidos), sin nueva textura/pasada. Contrato previo: `anatomy/TISSUE_DOPPLER_PREFIX_CONTRACT.md`.

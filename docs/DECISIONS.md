@@ -6592,6 +6592,49 @@ En la cabeza `867d55f`, la captura vertebral de referencia completó todas sus e
 
 **Verificación.** Siete controles offline con phantom de coordenadas y entradas negativas: volumen/centro físico conocidos, desplazamiento de rejilla, unidades erróneas, qform/sform contradictorios, affine de respaldo sin orientación del paciente, clase conjunta y máscara multicategoría. Auditorías locales de s0028 e IRCAD 11 conservan los originales y sus fragmentos; los resultados no implican adopción de la anatomía. Las dependencias Python tienen versiones fijadas y se ejecutan fuera del navegador; la CI habitual no sustituye estos controles ni la revisión clínica.
 
+### Seguimiento del registro común: TAC y procedencia del cine (10-10-2026)
+
+**Contexto.** La auditoría TAC conserva una rejilla física de cada caso, pero el cine integrado
+no conserva pose, marco efectivo, transductor, compresión ni muestra. Una revisión histórica
+puede atribuir su imagen al plano actual; cambiar RAS/LAS tampoco alinea individuos distintos.
+
+**Opciones.** Ajustar cada órgano o superponer las fuentes por convención de ejes rompe sus
+relaciones. Importar todo el atlas pendiente extiende el alcance y conserva su bloqueo de arranque.
+
+**Decisión.** `CtCaseFrame` conserva una sola transformación e inversa para todos los tejidos
+TAC, con identificador de fuente/rejilla/registro. `CineFrame.anatomy` copia inputs adquiridos;
+`displayedFrame` guía corte, abanico y comparación CPU/GPU. `registeredAcquisition` exporta PNG,
+metadatos y cine con hashes y tiempos originales. Las fuentes ajenas y la deformación material
+sin inversa verificada se rechazan antes de superponer. Contrato: `docs/anatomia/ct-common-frame.md`.
+
+**Consecuencias.** Se corrige la procedencia histórica, con una copia de datos planos por cuadro;
+no cambian señal, órganos ni fisiología. La incorporación clínica del TAC permanece pendiente.
+
+**Verificación.** `ctCommonFrame.test.ts` comprueba phantom anisotrópico oblicuo, inversa y
+controles negativos. `registeredAcquisition.spec.ts` contrasta el mismo framebuffer histórico
+antes/después de mover controles y de una nueva adquisición. NiBabel y capturas/cines reales
+complementan la verificación técnica; CI verde no certifica fidelidad clínica.
+
+**Fallo conservado y corrección de adquisición.** El primer SHAa699ca3 agotó el plazo
+del cine con SwiftShader; una tarjeta hepática solo pasó en reintento automático y
+la CI se mantuvo roja. Selección, presentación y lectura del cine ahora son atómicas;
+la prueba utiliza cuadros del bucle real en vez de diez renderizados manuales extra.
+Las tarjetas se capturan congeladas, verificando pose adquirida y conservando PNG
+del framebuffer, metadatos e interfaz. No se amplían plazos ni se eliminan controles.
+
+**Segundo fallo conservado.** CI38084102891, SHA1da1283, volvió a agotar270s
+durante la exportación completa, tanto primero como en reintento; el fragmento6
+fue cancelado a40min y su informe quedó incompleto. La lectura por cuadro permitía
+intercalar presentación entre llamadas remotas. El banco ahora agrupa hasta ocho
+lecturas del mismo anillo en una operación, restituyendo el original antes de
+ceder el hilo. Acota memoria, conserva todos los cuadros y registra ausencia de
+intercalación por lote. El contraste emparejado exige PNG y geometría idénticos;
+la CI exacta debe aprobar al primer intento con los mismos plazos.
+Agrupar por sí solo conservó los diez PNG/marcos, pero no redujo tiempo en el
+control nativo (9,5s frente a7,9s): esa hipótesis de rendimiento no se acepta.
+El transporte de grises pasa de números JSON a bytes base64 sin pérdida, con
+decodificación antes del mismo PNG; se repite el contraste de todos los cuadros.
+
 ## 177. Integrar la absorción Doppler por tejido sin nuevas texturas
 
 La conversión global de 174 usa b=1 para absorción, aunque piel, grasa, músculo y sangre tienen otros exponentes. A1 empaqueta gas+4·tejido en .w (entero float32 exacto); todos sus consumidores decodifican gas. A2 integra α_t(fD)/α_t(fB) por segmento, conserva espejo/gas y entrada ósea fijos, y entrega pérdida Doppler total en su .w auxiliar. F lee ese prefijo directamente, retirando el sampler B y la conversión global. Nueve vec4 de ratios (33 tejidos), sin nueva textura/pasada. Contrato previo: `anatomy/TISSUE_DOPPLER_PREFIX_CONTRACT.md`.

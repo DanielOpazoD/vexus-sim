@@ -30,6 +30,14 @@ export function registeredPoint(p: Triple, r: Registration): Triple {
   return r.axes.map((row, a) => row.reduce((sum, v, i) => sum + v * (p[i] - r.sourceOrigin[i]) * scale, r.targetOriginMm[a])) as Triple;
 }
 
+/** Inversa del MISMO registro de caso; no vuelve a ajustar el órgano ni el punto. */
+export function sourcePoint(p: Triple, r: Registration): Triple {
+  validateRegistration(r);
+  if (p.length !== 3 || !p.every(Number.isFinite)) throw new Error('Punto no finito o de dimensión inválida');
+  const scale = r.sourceUnit === 'cm' ? 10 : 1;
+  return r.sourceOrigin.map((v, i) => v + r.axes.reduce((sum, row, a) => sum + row[i] * (p[a] - r.targetOriginMm[a]), 0) / scale) as Triple;
+}
+
 export function registeredNormal(n: Triple, r: Registration): Triple {
   validateRegistration(r);
   if (n.length !== 3 || !n.every(Number.isFinite)) throw new Error('Normal no finita o de dimensión inválida');

@@ -346,8 +346,9 @@ export class Navigator3D {
   draw(): void {
     if (this.disposed) return;
     this.fitSize();
-    const pose = this.opts.getPose();
-    const key = `${pose.phi.toFixed(4)}|${pose.z.toFixed(2)}|${pose.yaw.toFixed(4)}|${pose.rock.toFixed(4)}|${pose.tilt.toFixed(4)}|${pose.lift.toFixed(2)}`;
+    const fr = this.opts.getFrame();
+    // Un cine anterior cambia el plano adquirido aunque los controles permanezcan quietos.
+    const key = [...fr.face, ...fr.axial, ...fr.lateral].map((v) => v.toFixed(4)).join('|');
     const resp = this.opts.getRespCaudalMm();
     const depth = this.opts.getDepthMm();
     if (key !== this.lastPoseKey || Math.abs(resp - this.lastResp) > 0.3 || depth !== this.lastDepth) {
@@ -364,7 +365,6 @@ export class Navigator3D {
       this.respiratoryMotion = bindRespiratoryMotion([this.organs, this.vessels], (m) => this.anatomy.respiratoryWeight(m));
     this.respiratoryMotion?.apply(resp);
     // sonda: base (lateral, elevación, axial) → (x, y, z) locales
-    const fr = this.opts.getFrame();
     this.probe.position.set(fr.face[0] * CM, fr.face[1] * CM, fr.face[2] * CM);
     this.probe.setRotationFromMatrix(
       new THREE.Matrix4().makeBasis(new THREE.Vector3(...fr.lateral), new THREE.Vector3(...fr.elevation), new THREE.Vector3(...fr.axial)),

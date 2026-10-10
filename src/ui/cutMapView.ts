@@ -1,7 +1,8 @@
+import type { ProbeCompression } from '../anatomy/compression';
 import { referenceBody } from '../anatomy/referenceBody';
 import type { Simulator } from '../app/simulator';
 import type { PhysiologySample } from '../physiology/engine';
-import type { ProbeFrame } from '../probe/probe';
+import type { ProbeFrame, ProbePose, Transducer } from '../probe/probe';
 import { Tissue } from '../anatomy/tissues';
 import { VESSEL_META, type VesselId, type VesselSystem } from '../physiology/vessels';
 import { beamToPixel, pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
@@ -16,6 +17,16 @@ import cutMapWorkerUrl from './cutMapWorkerUrl';
  * Worker con la misma anatomía TypeScript que el Doppler y las mediciones
  * (decisión 25), así que es una guía honesta de lo que el alumno está viendo.
  */
+interface MapInputs {
+  frameNumber: number;
+  sample: PhysiologySample;
+  frame: ProbeFrame;
+  transducer: Transducer;
+  compression: ProbeCompression;
+  pose: ProbePose;
+  depthMm: number;
+}
+
 const MAP_W = 96;
 const MAP_H = 128;
 const TISSUE_COLOR: Record<number, [number, number, number]> = {
@@ -157,8 +168,8 @@ export class CutMapView {
   private map: CutMapResponse | null = null;
   private mapDirty = false;
   /** Instante (muestra, marco, profundidad) con el que se pidió cada mapa, por id. */
-  private pendingInputs: { id: number; sample: PhysiologySample; frame: ProbeFrame; depthMm: number } | null = null;
-  private mapInputs: { sample: PhysiologySample; frame: ProbeFrame; depthMm: number } | null = null;
+  private pendingInputs: (MapInputs & { id: number }) | null = null;
+  private mapInputs: MapInputs | null = null;
 
   constructor(private readonly canvas: HTMLCanvasElement) {}
 
@@ -167,7 +178,7 @@ export class CutMapView {
    * exacto (muestra fisiológica, marco de la sonda, profundidad) con el que se
    * calculó, para que la comprobación TS ↔ GLSL compare el MISMO instante.
    */
-  get lastMap(): { map: CutMapResponse; sample: PhysiologySample; frame: ProbeFrame; depthMm: number } | null {
+  get lastMap(): (MapInputs & { map: CutMapResponse }) | null {
     return this.map && this.mapInputs ? { map: this.map, ...this.mapInputs } : null;
   }
 
@@ -235,6 +246,8 @@ export class CutMapView {
 
   /** Pide un mapa nuevo a ≤ `hz` veces por segundo y dibuja el último recibido. */
   draw(sim: Simulator, nowMs: number, hz = 8): void {
+    const shown = sim.renderer.displayedFrame;
+    if (!shown) return;
     // Vigilante: una petición sin respuesta en 3 s de hilo principal en marcha cuenta como caída del Worker
     if (this.pending && this.watchdog.expired(nowMs))
       this.fail(new Error('el Worker del corte no responde (3 s de hilo principal)'), nowMs);
@@ -243,22 +256,32 @@ export class CutMapView {
       this.lastUpdate = nowMs;
       this.pending = true;
       this.watchdog.start(nowMs);
-      const s = sim.sample;
+      const at = shown.anatomy;
+      const s = at.sample;
       const req: CutMapRequest = {
         type: 'map',
         id: ++this.requestId,
-        frame: sim.frame,
-        transducer: sim.transducer,
-        compression: sim.contact,
-        depthMm: sim.bmode.depthMm,
+        frame: at.frame,
+        transducer: at.transducer,
+        compression: at.compression,
+        depthMm: shown.bmode.depthMm,
         sample: { resp: s.resp, ivc: s.ivc, hvRadiusScale: s.hvRadiusScale, pvRadiusScale: s.pvRadiusScale, velocities: s.velocities },
         width: MAP_W,
         height: MAP_H,
       };
       worker.postMessage(req);
-      this.pendingInputs = { id: req.id, sample: s, frame: sim.frame, depthMm: sim.bmode.depthMm };
+      this.pendingInputs = {
+        id: req.id,
+        frameNumber: shown.n,
+        sample: s,
+        frame: at.frame,
+        transducer: at.transducer,
+        compression: at.compression,
+        pose: at.pose,
+        depthMm: shown.bmode.depthMm,
+      };
     }
-    if (!this.mapDirty || !this.map) return;
+    if (!this.mapDirty || !this.map || !this.mapInputs) return;
     // Corte plegado: los mapas se siguen pidiendo (la comprobación TS ↔ GLSL los usa), pero el último solo se
     // pinta cuando el lienzo vuelve a verse
     if (this.canvas.clientHeight === 0) return;
@@ -269,8 +292,9 @@ export class CutMapView {
     const W = this.canvas.width;
     const H = this.canvas.height;
     if (W === 0 || H === 0) return;
-    const tr = sim.transducer;
-    const depth = sim.bmode.depthMm;
+    this.canvas.dataset.acquiredFrame = String(this.mapInputs.frameNumber);
+    const tr = this.mapInputs.transducer;
+    const depth = this.mapInputs.depthMm;
     const layout = sectorLayout(W, H, tr, depth, 6);
     if (!this.img || this.img.width !== W || this.img.height !== H) this.img = ctx.createImageData(W, H);
     const px = this.img.data;

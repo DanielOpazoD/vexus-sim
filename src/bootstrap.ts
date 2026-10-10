@@ -192,10 +192,10 @@ void import('./ui/navigator3d')
     nav = new Navigator3D(navHost, sim().scene, sim().transducer, {
       getPose: () => sim().pose,
       setPose: setPoseManual,
-      getFrame: () => sim().frame,
-      getDepthMm: () => sim().bmode.depthMm,
-      getRespCaudalMm: () => sim().sample.resp.diaphragmCaudalMm,
-      getCaliber: () => sim().anatomy.caliberFor(sim().sample),
+      getFrame: () => sim().renderer.displayedFrame?.anatomy.frame ?? sim().frame,
+      getDepthMm: () => sim().renderer.displayedFrame?.bmode.depthMm ?? sim().bmode.depthMm,
+      getRespCaudalMm: () => (sim().renderer.displayedFrame?.anatomy.sample ?? sim().sample).resp.diaphragmCaudalMm,
+      getCaliber: () => sim().anatomy.caliberFor(sim().renderer.displayedFrame?.anatomy.sample ?? sim().sample),
     });
     nav.setStudentMode(!store.get().debug);
   })

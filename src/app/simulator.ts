@@ -331,14 +331,21 @@ export class Simulator {
    * TS ↔ GLSL no confunde calibre pulsátil o respiración con desacuerdo.
    * Solo docente/depuración.
    */
-  gpuTissueMap(at: { sample: PhysiologySample; frame: ProbeFrame; depthMm: number }): ReturnType<UltrasoundRenderer['tissueMap']> {
+  gpuTissueMap(at: {
+    sample: PhysiologySample;
+    frame: ProbeFrame;
+    depthMm: number;
+    compression?: ProbeCompression;
+    transducer?: Transducer;
+    pose?: ProbePose;
+  }): ReturnType<UltrasoundRenderer['tissueMap']> {
     const s = at.sample;
     return this.renderer.tissueMap({
       sample: s,
       frame: at.frame,
-      pose: this.pose,
-      compression: this.lastContact,
-      transducer: this.transducer,
+      pose: at.pose ?? this.pose,
+      compression: at.compression ?? this.lastContact,
+      transducer: at.transducer ?? this.transducer,
       caliber: this.anatomy.caliberFor(s),
       probeVelocity: this.probeVel,
       bmode: { ...this.bmode, depthMm: at.depthMm },

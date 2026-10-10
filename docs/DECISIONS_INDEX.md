@@ -180,4 +180,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [174](DECISIONS.md#L6549) | Conservar las barreras fijas al convertir transmisión para color | vigente |
 | [175](DECISIONS.md#L6557) | Consulta costal con descarte geométrico conservador | vigente |
 | [176](DECISIONS.md#L6563) | Registro renal y muscular posterior coherente con la columna | vigente |
-| [177](DECISIONS.md#L6595) | Integrar la absorción Doppler por tejido sin nuevas texturas | vigente |
+| [177](DECISIONS.md#L6618) | Integrar la absorción Doppler por tejido sin nuevas texturas | vigente |

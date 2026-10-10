@@ -84,36 +84,49 @@ export async function exportAcquiredFrame(page: Page, prefix: string, sourceSha:
 
 /** Secuencia adquirida, con tiempos originales y restauración del cuadro seleccionado. No inventa fps. */
 export async function exportAcquiredCine(page: Page, prefix: string, sourceSha: string) {
+  if (!/^[a-f0-9]{40}$/.test(sourceSha)) throw new Error('SHA de código exacto requerido');
   const initial = await page.evaluate(() => {
     const s = window.__vexusTest!.sim(),
       r = s.renderer;
     if (!s.frozen || !r.displayedFrame || !r.cineCount) throw new Error('Cine exportable requiere congelación');
-    return { selected: r.displayedFrame.n, frames: Array.from({ length: r.cineCount }, (_, i) => r.cineFrame(i).n) };
+    return { caseId: s.patient.id, selected: r.displayedFrame.n, frames: Array.from({ length: r.cineCount }, (_, i) => r.cineFrame(i).n) };
   });
   const frames = [];
   try {
     for (let i = 0; i < initial.frames.length; i++) {
       await page.evaluate(
-        ({ index, expected }) => {
+        ({ index, expected, caseId }) => {
           const s = window.__vexusTest!.sim(),
             r = s.renderer;
-          if (!s.frozen || r.cineFrame(index).n !== expected) throw new Error('Cine cambió durante exportación');
+          if (!s.frozen || s.patient.id !== caseId || r.cineFrame(index).n !== expected) throw new Error('Cine cambió durante exportación');
+          // El bucle UI vuelve a presentar su selector: sincronizarlo evita una carrera entre evaluaciones.
+          const slider = document.querySelector('#cine');
+          if (!(slider instanceof HTMLInputElement)) throw new Error('Selector del cine ausente');
+          slider.value = String(index);
+          slider.dispatchEvent(new Event('input', { bubbles: true }));
           r.showCine(index);
         },
-        { index: i, expected: initial.frames[i] },
+        { index: i, expected: initial.frames[i], caseId: initial.caseId },
       );
       const file = prefix + '-' + String(i).padStart(3, '0');
       frames.push({ file, ...(await exportAcquiredFrame(page, file, sourceSha)) });
     }
   } finally {
-    await page.evaluate((expected) => {
-      const s = window.__vexusTest!.sim(),
-        r = s.renderer;
-      if (!s.frozen) throw new Error('Exportación perdió congelación');
-      const i = Array.from({ length: r.cineCount }, (_, j) => j).find((j) => r.cineFrame(j).n === expected);
-      if (i === undefined) throw new Error('Cuadro original del cine ya no existe');
-      r.showCine(i);
-    }, initial.selected);
+    await page.evaluate(
+      ({ expected, caseId }) => {
+        const s = window.__vexusTest!.sim(),
+          r = s.renderer;
+        if (!s.frozen || s.patient.id !== caseId) throw new Error('Exportación perdió congelación o caso');
+        const i = Array.from({ length: r.cineCount }, (_, j) => j).find((j) => r.cineFrame(j).n === expected);
+        if (i === undefined) throw new Error('Cuadro original del cine ya no existe');
+        const slider = document.querySelector('#cine');
+        if (!(slider instanceof HTMLInputElement)) throw new Error('Selector del cine ausente');
+        slider.value = String(i);
+        slider.dispatchEvent(new Event('input', { bubbles: true }));
+        r.showCine(i);
+      },
+      { expected: initial.selected, caseId: initial.caseId },
+    );
   }
   if (frames.some((f, i) => f.frameNumber !== initial.frames[i])) throw new Error('Identidad del cine exportado cambió');
   const manifest = {

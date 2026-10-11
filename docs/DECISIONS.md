@@ -7049,6 +7049,16 @@ umbrales; barridos nativos y `npm run check` del SHA exacto se documentan en la 
 
 **Decisión.** A0 utiliza un estado de refinamiento que visita exactamente los seis puntos de bisección originales a través del mismo sitio de clasificación. El índice regular no cambia durante refinamiento; se conserva normal del último punto pulmonar, fronteras, dirección reflejada y actualización de gas. El techo mantiene1024 vueltas regulares más seis de refinamiento, sin agregar muestras regulares. El campo, la clasificación común, geometría, pared, color, resolución y todas las otras pasadas conservan su código original.
 
-**Consecuencias.** No es una segunda anatomía ni un filtro de imagen. La CPU conserva su algoritmo independiente. El rendimiento es una hipótesis hasta observar el arranque del atlas y su CI Linux; el kernel sintético no certifica fidelidad clínica ni estabilidad de todas las poses. Una diferencia en impactos, dirección o imágenes comparables obliga a rechazar el ensayo.
+**Consecuencias.** No es una segunda anatomía ni un filtro de imagen. La CPU conserva su algoritmo independiente. Ensayo rechazado:25978ad vuelve a agotar180s antes de hooks/dos cuadros; se retira la variante y se conservan su patch y controles. el kernel sintético no certifica fidelidad clínica ni estabilidad de todas las poses. Una diferencia en impactos, dirección o imágenes comparables obliga a rechazar el ensayo.
 
 **Verificación.** e2e/transmissionMirrorState.spec.ts ejecuta el cuerpo real de A0 contra el cuerpo anterior congelado y planos analíticos de pulmón, gas, hueso y cortina, con cinco densidades, dos profundidades y caso de límite de iteraciones. Compara exactamente las tres salidas y verifica dirección y distancia del espejo contra planos independientes. Primer banco nativo de60 casos:46.080 valores idénticos; el banco ampliado y las adquisiciones completas se registran por SHA. Mantener plazos, pruebas, presupuestos y protecciones.
+
+## 197. Ensayo del límite de marcha derivado de la rejilla
+
+**Contexto.** Las variantes195–196 no resuelven el bloqueo. Unificar una consulta anatómica y retirar metadatos no consumidos no prueba que esa sea la causa. El cuerpo de A0 vuelve a4c; cada fila de su marcha regular consume como máximo dos vueltas por cortina.
+
+**Decisión.** Ensayar min(1024,2*n) como límite exterior, donde n procede de la uniforme original uCoarseN. Se preservan máximo, todas las muestras posibles, bisección original, clasificación común y salidas. El cambio evita un límite totalmente constante sin afirmar todavía qué hace el compilador.
+
+**Consecuencias.** No cambia geometría, órganos, rayos, resolución, física, otras pasadas o presupuestos. No se aprueba por tests verdes: exige arranque real, campos e imágenes comparables. Se retirará si no mejora el bloqueo o si cambia un observable. Se conserva la discrepancia del instrumento de trigonometría doble/GLSL, sin esconderla ni ampliar umbrales.
+
+**Verificación.** Los controles heredados de clasificación, jacobiana y bisección se mantienen intactos. Contrato y primeras ejecuciones antes/después por SHA en la evidencia externa. Mac y Linux siguen siendo entornos distintos; fidelidad externa pendiente.

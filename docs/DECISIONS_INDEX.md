@@ -199,4 +199,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [193](DECISIONS.md#L6996) | Recupera coherencia entre pose, contacto y haz en la revisión del atlas | vigente |
 | [194](DECISIONS.md#L7026) | Observar el arranque del atlas antes de optimizarlo | vigente |
 | [195](DECISIONS.md#L7036) | Ensayo acotado de metadatos de cara no consumidos por A0 | vigente |
-| [196](DECISIONS.md#L7047) | Un sitio de clasificación para marcha y bisección del espejo | vigente |
+| [196](DECISIONS.md#L7046) | Un sitio de clasificación para marcha y bisección del espejo | vigente |
+| [197](DECISIONS.md#L7057) | Ensayo del límite de marcha derivado de la rejilla | vigente |

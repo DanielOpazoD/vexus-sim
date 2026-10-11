@@ -222,35 +222,14 @@ void main() {
   bool behind = false;
   float lungDb = 0.0;
   int s = -1;
-  int refine = -1;
-  int regularIterations = 0;
-  float refineLo = 0.0, refineHi = 0.0;
-  vec3 refineNormal = dir0;
-  // La bisección del espejo usa la misma llamada anatómica de la marcha. Sus seis
-  // muestras originales se añaden al límite; marcha/cortina conservan1024 vueltas.
-  for (int it = 0; it < 1024 + ${MIRROR_BISECTION_STEPS}; it++) {
-    bool refining = refine >= 0;
-    if (!refining) {
-      if (regularIterations >= 1024) break;
-      regularIterations++;
-    }
-    if (!behind && !refining) s++;
+  // Cada fila consume una o dos vueltas (cortina); conserva el techo original.
+  for (int it = 0; it < min(1024, 2 * n); it++) {
+    if (!behind) s++;
     if (s >= n) break;
-    float r = refining ? 0.5 * (refineLo + refineHi) : (float(s) + 0.5) * step;
-    vec3 p = !refining && mirrorSeg >= 0.0 ? hitPoint + dir * (r - hitR) : origin + dir * r;
+    float r = (float(s) + 0.5) * step;
+    vec3 p = mirrorSeg >= 0.0 ? hitPoint + dir * (r - hitR) : origin + dir * r;
     vec3 m = toMaterial(p);
-    Cls c = classifyWith(m, refining || !behind);
-    if (refining) {
-      if (c.tissue == T_LUNG) { refineHi = r; refineNormal = c.n; } else refineLo = r;
-      refine++;
-      if (refine == ${MIRROR_BISECTION_STEPS}) {
-        mirrorSeg = float(s); hitR = 0.5 * (refineLo + refineHi); hitPoint = origin + dir * hitR;
-        dir = mirrorDirection(dir, refineNormal, anatomyWarpAt(hitPoint, toMaterial(hitPoint)));
-        if (gasSeg < 0.0) { gasSeg = float(s); gasKind = 1.0; }
-        refine = -1;
-      }
-      continue;
-    }
+    Cls c = classifyWith(m, !behind);
     if (behind) {
       // ΔL: lo que el gas de la cortina cuesta de más frente al tejido de detrás
       curtainDb += lungDb - segmentDb(c.tissue, step);
@@ -295,10 +274,17 @@ void main() {
         // Cruce exacto con la pleura (decisión 57): bisección entre la muestra gruesa anterior (que no es
         // pulmón) y esta. Antes el espejo quedaba en el centro de la primera celda de pulmón (0–1,1 mm
         // dentro) y dejaba una costura negra entre el diafragma y su imagen especular.
-        refineLo = max(r - step, 0.0);
-        refineHi = r;
-        refineNormal = c.n;
-        refine = 0;
+        float lo = max(r - step, 0.0);
+        float hi = r;
+        vec3 nn = c.n;
+        for (int it = 0; it < ${MIRROR_BISECTION_STEPS}; it++) {
+          float mid = 0.5 * (lo + hi);
+          Cls cm = classify(toMaterial(origin + dir * mid));
+          if (cm.tissue == T_LUNG) { hi = mid; nn = cm.n; } else lo = mid;
+        }
+        mirrorSeg = float(s); hitR = 0.5 * (lo + hi); hitPoint = origin + dir * hitR;
+        dir = mirrorDirection(dir, nn, anatomyWarpAt(hitPoint, toMaterial(hitPoint)));
+        if (gasSeg < 0.0) { gasSeg = float(s); gasKind = 1.0; }
         continue;
       }
       if (gasSeg < 0.0) { gasSeg = float(s); gasKind = 2.0; }

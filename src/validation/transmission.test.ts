@@ -186,10 +186,7 @@ describe('Espejo en el cruce exacto con el pulmón', () => {
 
   it('A0 hace la bisección con el número de pasos de TS y A2 publica el espejo exacto desde su alcance', () => {
     expect(FRAG_TRANS_HITS).toContain(`for (int it = 0; it < ${MIRROR_BISECTION_STEPS}; it++)`);
-    expect(FRAG_TRANS_HITS).toContain(`if (refine == ${MIRROR_BISECTION_STEPS}) {`);
-    expect(FRAG_TRANS_HITS).toContain('mirrorSeg = float(s); hitR = 0.5 * (refineLo + refineHi);');
-    expect(FRAG_TRANS_HITS).toContain('if (regularIterations >= 1024) break;');
-    expect(FRAG_TRANS_HITS).toContain(`it < 1024 + ${MIRROR_BISECTION_STEPS}`);
+    expect(FRAG_TRANS_HITS).toContain('mirrorSeg = float(s); hitR = 0.5 * (lo + hi);');
     // la pasada B necesita el espejo desde r_m − alcance del eco pleural, y lo refleja solo tras r_m
     expect(FRAG_TRANS_PREFIX).toContain(`h1.w < (kf + 1.0) * step + ${IFACE_REACH_MM.toFixed(4)} ? h1.w : -1.0`);
     expect(FRAG_TRANS_PREFIX).toContain('(h0.y == h0.x ? h1.w : (h0.y + 0.5) * step)');

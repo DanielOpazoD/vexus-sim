@@ -21,21 +21,30 @@ import { COMPOUND } from '../ultrasound/compound';
 import { STEERED_APERTURE_GLSL } from '../ultrasound/aperture';
 import { SPECKLE_LOOK_GLSL } from '../ultrasound/speckleField';
 import { STEERING_GLSL } from '../ultrasound/steering';
-import { STEERED_PREFIX_GLSL } from '../ultrasound/transmission';
+import { MIRROR_BISECTION_STEPS, STEERED_PREFIX_GLSL } from '../ultrasound/transmission';
 
 /** Excepción acotada: una jacobiana analítica al primer impacto, nunca por muestra. */
 function withoutSingleMirrorWarp(src: string): string {
-  const guard = 'if (c.tissue == T_LUNG && mirrorSeg < 0.0) {';
+  const firstGuard = 'if (c.tissue == T_LUNG && mirrorSeg < 0.0) {';
+  const guard = `if (refine == ${MIRROR_BISECTION_STEPS}) {`;
   const call = 'anatomyWarpAt(hitPoint, toMaterial(hitPoint))';
-  const start = src.indexOf(guard);
-  if (start < 0 || src.indexOf(guard, start + 1) >= 0) throw new Error('Falta guarda única del espejo');
-  let end = start + guard.length,
-    depth = 1;
-  for (; end < src.length && depth; end++) {
-    if (src[end] === '{') depth++;
-    if (src[end] === '}') depth--;
-  }
-  const block = src.slice(start, end);
+  const blockAt = (text: string): string => {
+    const start = src.indexOf(text);
+    if (start < 0 || src.indexOf(text, start + 1) >= 0) throw new Error('Falta guarda única del espejo');
+    let end = start + text.length,
+      depth = 1;
+    for (; end < src.length && depth; end++) {
+      if (src[end] === '{') depth++;
+      if (src[end] === '}') depth--;
+    }
+    return src.slice(start, end);
+  };
+  // Solo el primer pulmón inicia el estado. La jacobiana exige completar los seis
+  // pasos y cerrar ese estado, nunca se evalúa durante sus muestras ni en otros bucles.
+  const first = blockAt(firstGuard);
+  const block = blockAt(guard);
+  if (!first.includes('refine = 0;') || src.split('refine = 0;').length !== 2 || !block.includes('refine = -1;'))
+    throw new Error('Estado del espejo sin inicio único o cierre');
   const assignment = block.indexOf('mirrorSeg = float(s);');
   if (assignment < 0 || block.indexOf(call) < assignment || src.split(call).length !== 2)
     throw new Error('La jacobiana debe quedar después de marcar el único impacto');
@@ -396,10 +405,10 @@ describe('Límites del shader con margen para crecer', () => {
   // (LLVM) de SwiftShader crece con el código inlineado y se dispara con código pesado dentro de un bucle. La
   // decisión 61 metió faceGradient (6–8 distancias, ~67 kB) en el bucle de las muestras del medio de B: el
   // primer dibujo de B pasó de 6 s a 128 s y el vigilante de la GPU de Chrome perdía el contexto al arrancar.
-  // Estas cotas son las de main a9520b8 (A0 2 copias de classify, A1 1, B 3, color, consulta y mapa 1).
+  // Estas cotas son las de main a9520b8 (A0 pasa de2 a1 copia de classify (decisión196), A1 1, B 3, color, consulta y mapa 1).
   it('ningún shader inlinea classify más veces que antes de la decisión 61, ni faceGradient dentro de un bucle', () => {
     const budget: Record<string, number> = {
-      FRAG_TRANS_HITS: 2,
+      FRAG_TRANS_HITS: 1,
       FRAG_TRANS_SEGMENTS: 1,
       FRAG_RAWFIELD: 3,
       FRAG_RAWFIELD_STEERED: 3,
@@ -450,11 +459,14 @@ describe('Límites del shader con margen para crecer', () => {
     ).toThrow();
     expect(() => withoutSingleMirrorWarp(src.replace('mirrorSeg = float(s);', 'mirrorSeg = -1.0;'))).toThrow();
     expect(() => withoutSingleMirrorWarp(src + 'anatomyWarpAt(hitPoint, toMaterial(hitPoint))')).toThrow();
+    expect(() => withoutSingleMirrorWarp(src.replace(`if (refine == ${MIRROR_BISECTION_STEPS}) {`, 'if (refine >= 0) {'))).toThrow();
+    expect(() => withoutSingleMirrorWarp(src.replace('refine = -1;', 'refine = 0;'))).toThrow();
+    expect(() => withoutSingleMirrorWarp(src + 'refine = 0;')).toThrow();
     expect(() =>
       withoutSingleMirrorWarp(
         src.replace(
-          'dir = mirrorDirection(dir, nn, anatomyWarpAt(hitPoint, toMaterial(hitPoint)));',
-          'for (int bad = 0; bad < 2; bad++) { dir = mirrorDirection(dir, nn, anatomyWarpAt(hitPoint, toMaterial(hitPoint))); }',
+          'dir = mirrorDirection(dir, refineNormal, anatomyWarpAt(hitPoint, toMaterial(hitPoint)));',
+          'for (int bad = 0; bad < 2; bad++) { dir = mirrorDirection(dir, refineNormal, anatomyWarpAt(hitPoint, toMaterial(hitPoint))); }',
         ),
       ),
     ).toThrow();

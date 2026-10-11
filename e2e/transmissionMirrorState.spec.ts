@@ -25,7 +25,7 @@ test('actual A0 preserves phantom hits and analytical reflection', async ({ page
         return s;
       };
       const programs = [shader.before, shader.after].map((f) => {
-        const p = gl.createProgram()!;
+        const p = gl.createProgram();
         gl.attachShader(p, compile(gl.VERTEX_SHADER, shader.VERT));
         gl.attachShader(p, compile(gl.FRAGMENT_SHADER, f));
         gl.linkProgram(p);
@@ -33,10 +33,10 @@ test('actual A0 preserves phantom hits and analytical reflection', async ({ page
         return p;
       });
       const W = 64,
-        fbo = gl.createFramebuffer()!;
+        fbo = gl.createFramebuffer();
       gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
       for (let i = 0; i < 3; i++) {
-        const t = gl.createTexture()!;
+        const t = gl.createTexture();
         gl.bindTexture(gl.TEXTURE_2D, t);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, W, 1, 0, gl.RGBA, gl.FLOAT, null);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
@@ -55,7 +55,7 @@ test('actual A0 preserves phantom hits and analytical reflection', async ({ page
           [0, 0, 0, 1],
           [0, 0, 0, 2],
         ],
-        records: any[] = [];
+        records: Array<{ fixture: number[]; coarse: number; depth: number; maxDifference: number }> = [];
       let comparedValues = 0,
         maxDifference = 0,
         maxMirrorError = 0;
@@ -105,7 +105,7 @@ test('actual A0 preserves phantom hits and analytical reflection', async ({ page
         comparedValues,
         maxDifference,
         maxMirrorError,
-        renderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER),
+        renderer: String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)),
         clinicalAcceptance: false,
         limits:
           'Synthetic planes exercise actual A0. These are neither full anatomical acquisitions nor independent validation of the atlas.',

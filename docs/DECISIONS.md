@@ -7039,6 +7039,16 @@ umbrales; barridos nativos y `npm run check` del SHA exacto se documentan en la 
 
 **Decisión.** Ensayar una opción de classifyWith que omite solo el postproceso de caras costales y cortical vertebral al consultar A0. A0 consume tejido y normal pulmonar, no iface/ifd/tangent/kc de ese postproceso. Clasificación común de pared, interior, órganos, vasos, obstáculos y normal permanece igual; todas las otras pasadas conservan metadatos completos por la sobrecarga original. No se introduce otra anatomía.
 
-**Consecuencias.** Es una hipótesis de coste, pendiente de aceptación por readback real, arranque, nueve adquisiciones pareadas, vecinos portales A/B y controles de clasificación. No se considera una corrección demostrada hasta registrar estos resultados. Si no mejora el bloqueo o cambia un observable consumido, conservar y rechazar el ensayo; no ampliar límites ni debilitar pruebas. SwiftShader local tampoco certifica el corredor Linux.
+**Consecuencias.** Ensayo rechazado: fuente320e522 vuelve a agotar180s sin hooks ni segundo cuadro. Se conserva su patch y se retira la variante; no se concluye una causa del coste por este resultado. No se considera una corrección demostrada hasta registrar estos resultados. Si no mejora el bloqueo o cambia un observable consumido, conservar y rechazar el ensayo; no ampliar límites ni debilitar pruebas. SwiftShader local tampoco certifica el corredor Linux.
 
 **Verificación.** Contrato y resultados se registran por SHA en la evidencia externa; conservar también ensayos de instrumentos descartados. El check y CI exactos siguen siendo requisitos separados de la fidelidad anatómica externa.
+
+## 196. Un sitio de clasificación para marcha y bisección del espejo
+
+**Contexto.** El readback compatible de4c2892c no completa A0 en210s del diagnóstico; el arranque ordinario falla a180s. El shader llamaba al clasificador común en la marcha y además en un bucle interior de bisección del espejo. Una anatomía compleja puede expandirse dos veces; su coste no se evita ocultando tejidos. La variante de metadatos195 se rechazó por no resolver el bloqueo.
+
+**Decisión.** A0 utiliza un estado de refinamiento que visita exactamente los seis puntos de bisección originales a través del mismo sitio de clasificación. El índice regular no cambia durante refinamiento; se conserva normal del último punto pulmonar, fronteras, dirección reflejada y actualización de gas. El techo mantiene1024 vueltas regulares más seis de refinamiento, sin agregar muestras regulares. El campo, la clasificación común, geometría, pared, color, resolución y todas las otras pasadas conservan su código original.
+
+**Consecuencias.** No es una segunda anatomía ni un filtro de imagen. La CPU conserva su algoritmo independiente. El rendimiento es una hipótesis hasta observar el arranque del atlas y su CI Linux; el kernel sintético no certifica fidelidad clínica ni estabilidad de todas las poses. Una diferencia en impactos, dirección o imágenes comparables obliga a rechazar el ensayo.
+
+**Verificación.** e2e/transmissionMirrorState.spec.ts ejecuta el cuerpo real de A0 contra el cuerpo anterior congelado y planos analíticos de pulmón, gas, hueso y cortina, con cinco densidades, dos profundidades y caso de límite de iteraciones. Compara exactamente las tres salidas y verifica dirección y distancia del espejo contra planos independientes. Primer banco nativo de60 casos:46.080 valores idénticos; el banco ampliado y las adquisiciones completas se registran por SHA. Mantener plazos, pruebas, presupuestos y protecciones.

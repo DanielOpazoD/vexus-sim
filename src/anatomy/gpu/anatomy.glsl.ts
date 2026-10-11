@@ -796,7 +796,7 @@ void classifyInside(vec3 m, bool withCurtain, float depth, vec3 tn, float dSpine
 }
 
 // withCurtain = false: sin la cortina (decisión 61), lo de detrás de la lámina; gemelo classify(m, cal, false)
-Cls classifyWith(vec3 m, bool withCurtain, bool withFaceMetadata) {
+Cls classifyWith(vec3 m, bool withCurtain) {
   Cls c;
   float depth;
   vec3 tn;
@@ -811,9 +811,6 @@ Cls classifyWith(vec3 m, bool withCurtain, bool withFaceMetadata) {
   // el disco: el cilindro de los cuerpos fuera del hueso de un cuerpo (spineDistances de TS), también en el borde redondeado
   float dDisc=uAbdominalAtlasEnabled!=0?abdominalAtlasSdf(m,10):max(sb.x,-dBody);
   if (dDisc < 0.0) { c.tissue = T_CARTILAGE; c.bd = -dDisc; } else classifyInside(m, withCurtain, depth, tn, dSpine, c);
-  // A0 only consumes tissue and the lung normal. Preserve the common classification;
-  // omit its unused face metadata, never a tissue, interface geometry or acoustic obstacle.
-  if (withFaceMetadata) {
   // la cortical de los cuerpos en el tejido de fuera del hueso (withSpineFace de TS): su distancia a la frontera cuenta el
   // hueso y el disco; conserva dueños de PR139 y añade solo el disco de PR119 junto al platillo.
   c.bd = min(c.bd, min(dSpine, abs(dDisc)));
@@ -827,11 +824,9 @@ Cls classifyWith(vec3 m, bool withCurtain, bool withFaceMetadata) {
       c.bd = min(c.bd, q.x); c.iface = IF_RIB; c.ifd = q.x; thoracicFrame(m, c.tangent, c.kc);
     }
   }
-  }
   return c;
 }
 
-Cls classifyWith(vec3 m, bool withCurtain) { return classifyWith(m, withCurtain, true); }
 Cls classify(vec3 m) { return classifyWith(m, true); }
 
 // −faceSdf('liverSurface') de TS: margen hacia dentro del parénquima (hígado, cúpula y pared), la

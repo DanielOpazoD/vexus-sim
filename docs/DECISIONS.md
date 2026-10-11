@@ -6666,3 +6666,36 @@ Se retira `color-absorption-linear-scaling`; continúan rejilla gruesa, barreras
 **Consecuencias.** Se recupera una posición antes bloqueada, sin desplazar órganos o cambiar los parámetros acústicos. Grasa/fascias, sombras, reconocimiento ecográfico y Doppler renal izquierdo requieren contraste independiente. El atlas219 es un dominio aparte sin aceptación; esta corrección de acceso no lo certifica ni integra. El estudio TAC muscular continúa con hipótesis de fuente conservadas.
 
 **Verificación.** `bilateralFlankAccess.test.ts` compara el contacto y todos los ejes físicos del haz solicitados contra los realmente obtenidos, tanto en superficie procedural como de referencia asimétrica. El testigo anterior producía el desplazamiento de 45,97/7,70mm; el corregido debe ser cero dentro de tolerancia numérica. Se conservan las nueve posiciones. El informe local registra el ensayo nativo anterior, imágenes y poses; los barridos corregidos, check completo y CI del SHA exacto son requisitos posteriores para integrar, no se dan por aprobados en esta decisión.
+
+## 179. Contacto actual sin borrar la velocidad del último paso físico
+
+**Contexto.** Los barridos renales registrados detectaron doce imágenes iniciales
+cuya pose declarada era nueva y cuyo marco/contacto aún correspondía a la pose
+anterior. `setPose` sólo asignaba la pose; `advance(0)` no integraba pasos y
+`render()` combinaba esa pose con `lastFrame` anterior. El protocolo rechazó esos
+inicios. Dos controles independientes reproducen el desacuerdo sobre el cuerpo
+procedural y sobre el perfil corporal de referencia. No demuestra que todo gesto
+de la aplicación tenga ese defecto: el bucle habitual avanza antes de dibujar.
+
+**Opciones.** Exigir pasos fisiológicos adicionales en cada herramienta de
+adquisición evita el caso, pero oculta el contrato incorrecto y altera el
+instante estudiado. Reemplazar el marco cinemático al dibujar borraría el
+desplazamiento que debe recibir la estimación de velocidad del Doppler.
+
+**Decisión.** `setPose` sincroniza el contacto/compresión sobre la piel real y
+`Simulator.frame` y el render leen ese marco efectivo. El contacto de una pose
+idéntica se reutiliza. `lastFrame` conserva el marco del último avance físico;
+la velocidad y la generación de IQ siguen calculándose en `advance`, con el
+reloj único y el mismo algoritmo. La imagen congelada conserva su adquisición.
+
+**Consecuencias.** Un render entre pasos puede representar el contacto de la
+pose actual sin inventar tiempo ni muestras Doppler. No certifica fluidez,
+latencia, fascias, orientación clínica, morfología ni calidad de la imagen.
+No añade anatomía, temporizadores ni interfaces de usuario.
+
+**Verificación.** `frameContactCoherence.test.ts` recalcula el contacto físico
+independientemente para seis movimientos, en ambos cuerpos, sin avanzar el
+reloj (dos pruebas fallan sin la corrección); también compara la velocidad y
+la muestra fisiológica con/sin renders intermedios, la reutilización del
+contacto quieto y la conservación de una imagen congelada. La adquisición
+nativa y el check completo deben contrastarse antes de integrar.

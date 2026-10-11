@@ -182,3 +182,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [176](DECISIONS.md#L6563) | Registro renal y muscular posterior coherente con la columna | vigente |
 | [177](DECISIONS.md#L6650) | Integrar la absorción Doppler por tejido sin nuevas texturas | vigente |
 | [178](DECISIONS.md#L6658) | Alcance axilar posterior bilateral sin desplazar órganos | vigente |
+| [179](DECISIONS.md#L6670) | Contacto actual sin borrar la velocidad del último paso físico | vigente |

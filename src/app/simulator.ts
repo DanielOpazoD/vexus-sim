@@ -132,6 +132,7 @@ export class Simulator {
   /** Instantánea inmutable que asigna `EquipmentController` (sobrevive a los cambios de caso). */
   equipment: EquipmentSettings = defaultEquipment();
   frozen = false;
+  /** Marco del último avance físico, conservado para estimar la velocidad aunque se dibuje entre pasos. */
   private lastFrame: ProbeFrame;
   /** Contacto de la sonda del cuadro (decisión 63): el marco efectivo (hundido), la compresión y el acoplamiento. */
   private lastContact: ProbeContact;
@@ -198,7 +199,7 @@ export class Simulator {
   }
   /** Marco efectivo de la sonda: el de la pose hundido lo que aprieta el operador (decisión 63). */
   get frame(): ProbeFrame {
-    return this.lastFrame;
+    return this.lastContact.frame;
   }
   /** Contacto de la sonda del último marco (decisión 63): la misma compresión que ven la CPU y la GPU. */
   get contact(): ProbeContact {
@@ -210,6 +211,15 @@ export class Simulator {
 
   setPose(p: ProbePose): void {
     this.pose = clampPose(p);
+    this.syncProbeContact();
+  }
+
+  /** El contacto depende de la pose, no de que el reloj haya integrado otro paso (decisión 179). */
+  private syncProbeContact(): void {
+    if (samePose(this.pose, this.contactPose)) return;
+    this.lastContact = probeContact(this.pose, this.transducer, this.scene.torso);
+    this.contactPose = this.pose;
+    this.anatomy.setProbeCompression(this.lastContact);
   }
 
   /** Reconstruye el renderizador tras una pérdida de contexto GPU; el estado del paciente se conserva. */
@@ -236,11 +246,7 @@ export class Simulator {
     // la compresión sigue a la sonda (decisión 63): todo el cuadro (CPU, GPU, puerta) ve el mismo tejido y el
     // mismo marco, el efectivo (la sonda hundida). Con la sonda quieta el contacto no cambia (sale solo de la
     // pose): se reutiliza
-    if (!samePose(this.pose, this.contactPose)) {
-      this.lastContact = probeContact(this.pose, this.transducer, this.scene.torso);
-      this.contactPose = this.pose;
-      this.anatomy.setProbeCompression(this.lastContact);
-    }
+    this.syncProbeContact();
     // Sonda: velocidad estimada entre cuadros (clutter y destello por movimiento)
     const newFrame = this.lastContact.frame;
     const dtFrame = Math.max(1e-3, clock.t - this.lastFrameT + steps * clock.dt);
@@ -309,7 +315,7 @@ export class Simulator {
     this.renderer.render(
       {
         sample: s,
-        frame: this.lastFrame,
+        frame: this.lastContact.frame,
         pose: this.pose,
         compression: this.lastContact,
         transducer: this.transducer,

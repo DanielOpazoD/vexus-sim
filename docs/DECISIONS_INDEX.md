@@ -201,3 +201,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [195](DECISIONS.md#L7038) | Ensayo acotado de metadatos de cara no consumidos por A0 | vigente |
 | [196](DECISIONS.md#L7050) | Un sitio de clasificación para marcha y bisección del espejo | vigente |
 | [197](DECISIONS.md#L7062) | Ensayo del límite de marcha derivado de la rejilla | vigente |
+| [198](DECISIONS.md#L7074) | Selección persistente, contornos continuos y traslación rígida de la sonda | vigente |

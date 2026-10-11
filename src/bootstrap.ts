@@ -30,6 +30,7 @@ import type { Navigator3D } from './ui/navigator3d';
 import { setPressed } from './ui/controls';
 import { ControlPanel, tabAfterMode } from './ui/panel';
 import { ProbeInput } from './ui/probeInput';
+import { translateProbe } from './probe/translation';
 import { StartPointCards } from './ui/startPointCards';
 import { compoundActive } from './ultrasound/compound';
 import { markStartup } from './app/startupTrace';
@@ -199,6 +200,7 @@ const input = new ProbeInput(
   () => sim().pose,
   setPoseManual,
   () => !store.get().frozen,
+  (p, phi, z) => translateProbe(p, phi, z, sim().scene.torso, sim().transducer),
 );
 // Navegador 3D (three.js, ~560 kB) con carga diferida: la imagen ecográfica no lo necesita
 // para su primer cuadro; si falla, la aplicación sigue sin él.

@@ -23,7 +23,9 @@ test('identifica y demarca hígado/porta sin alterar señal; sale, cambia plano 
   budget(180_000);
   const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
   await page.locator('.win-card').filter({ hasText: 'Porta · intrahepática' }).click();
-  await page.waitForFunction(() => Math.abs(window.__vexusTest!.sim().pose.phi - 3.25) < 0.0001, undefined, { timeout: 90_000 });
+  await page.waitForFunction(() => Math.abs(window.__vexusTest!.sim().pose.phi - (173 * Math.PI) / 180) < 0.0001, undefined, {
+    timeout: 90_000,
+  });
   await page.evaluate(() => {
     const s = window.__vexusTest!.sim();
     for (let i = 0; i < 6; i++) {

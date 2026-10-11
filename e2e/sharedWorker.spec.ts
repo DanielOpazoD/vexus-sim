@@ -84,6 +84,11 @@ test('el trabajador modular conserva clasificación y estado separado al cambiar
             points++;
             if (Number(c.tissue) !== map.tissue[v * map.width + u])
               mismatches.push({ u, v, main: c.tissue, worker: map.tissue[v * map.width + u] });
+            if (c.vessel) {
+              const expected = sim.scene.vessels.findIndex((v) => v.id === c.vessel);
+              if (expected !== map.vessel[v * map.width + u])
+                mismatches.push({ u, v, mainVessel: expected, workerVessel: map.vessel[v * map.width + u] });
+            }
           }
       } finally {
         sim.anatomy.setProbeCompression(sim.contact);

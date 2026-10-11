@@ -39,7 +39,9 @@ export function registerDevtools(
         window.__vexusTest = m.createTestHooks(getSim, dispatch, loopFrames);
         markStartup('hooks:ready');
       })
-      .catch((e: unknown) => errorLog.report('ui', e));
+      .catch((e: unknown) => {
+        errorLog.report('ui', e);
+      });
   }
   if (!import.meta.env.DEV) return ready;
   window.__sim = getSim;

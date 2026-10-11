@@ -42,7 +42,7 @@ it('uses cranial longitudinal, posterior intercostal and right-patient transvers
   expect(selected.yaw).toBe((-72 * Math.PI) / 180);
   expect(selected.tilt).toBe((-2 * Math.PI) / 180);
   expect(selected.rock).toBe((-6 * Math.PI) / 180);
-  const now = probeFrame({ ...p, lift: 0, rock: p.rock!, tilt: p.tilt! }, torso, CONVEX_C35),
+  const now = probeFrame({ ...p, lift: 0, rock: p.rock, tilt: p.tilt }, torso, CONVEX_C35),
     old = probeFrame({ ...p, lift: 0, yaw: 2.8332047341730324, rock: 0.2122189996791038, tilt: -0.0937442490667998 }, torso, CONVEX_C35);
   for (const theta of [-0.55, -0.3, 0, 0.3, 0.55])
     for (const r of [0, 50, 100, 130]) {

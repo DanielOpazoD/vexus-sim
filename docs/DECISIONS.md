@@ -6700,6 +6700,36 @@ la muestra fisiológica con/sin renders intermedios, la reutilización del
 contacto quieto y la conservación de una imagen congelada. La adquisición
 nativa y el check completo deben contrastarse antes de integrar.
 
+## 180. Conservar etapas de arranque antes de disponer de los ganchos
+
+**Contexto.** PR219 conserva dos arranques atlas fallidos de Linux y una
+ejecución cancelada. Las trazas originales muestran hooks ausentes, pero eso
+no determina si falla la construcción de la sesión, el navegador3D o el primer
+cuadro. Los controles software del Mac tampoco arrancan main, por lo que no
+permiten atribuir una causa exclusiva al atlas.
+
+**Opciones.** Aumentar180s u omitir el torso escondería el bloqueo. Un informe
+que dependa de consultar la página después del fallo pierde evidencia si su
+hilo está bloqueado. Perfilar cada cuadro añade coste innecesario al examen.
+
+**Decisión.** `startupTrace` emite una vez cada etapa de composición y de los
+dos primeros cuadros cuando se solicitan hooks o `startupTrace`. Playwright
+recoge las entradas antes de navegar y las adjunta al arranque, incluso al
+fallar, sin otra consulta a la página. El examen habitual no consulta el reloj
+de diagnóstico ni emite entradas. El cargador previo a `bootstrap` conserva
+su frontera de capas; un bloqueo anterior puede dejar una lista vacía.
+
+**Consecuencias.** La siguiente investigación tendrá etapas y tiempos de
+navegación observados, separados del reloj físico. No cambia la inicialización,
+el timeout, las aserciones, las imágenes, el movimiento ni la anatomía. Las
+etapas acotan una operación pendiente; no identifican por sí solas una causa
+CPU/GPU, ni certifican que el atlas arranque o que tenga fidelidad anatómica.
+
+**Verificación.** `startupTrace.test.ts` conserva la entrada previa a una
+operación fallida, rechaza datos inválidos y comprueba ausencia de trabajo sin
+diagnóstico. Controles nativos emparejados y un bloqueo controlado del contexto
+complementan esas pruebas; la integración exige check y CI exactos completos.
+
 ## 181. Reconciliar el atlas con la adquisición y los límites vigentes
 
 **Contexto.** La rama del atlas `0d6ed0a` quedó detrás de main. Ocho conflictos
@@ -6721,6 +6751,8 @@ su intervalo, sin modificar órganos; permanece el control bilateral de main.
 Ambas familias de pruebas musculares se mantienen en archivos separados.
 El total JavaScript vuelve al presupuesto original de1033 KiB; las cotas por
 chunk y el plazo SwiftShader quedan intactos.
+El diagnóstico de180 registra también la carga de las superficies diferidas
+antes de la construcción del navegador, sin alterar el orden de arranque.
 
 **Consecuencias.** El atlas sigue siendo una derivación de BodyParts3D,
 con QL, mesenterio y otros territorios estimados. Los TAC de otros individuos

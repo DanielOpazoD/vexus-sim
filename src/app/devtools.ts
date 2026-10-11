@@ -1,6 +1,7 @@
 import type { EquipmentCommand } from './equipment';
 import type { Simulator } from './simulator';
 import type { TestHooks } from './testHooks';
+import { markStartup } from './startupTrace';
 
 /**
  * Ganchos de depuración en `window`, solo en desarrollo (`import.meta.env.DEV`):
@@ -30,7 +31,11 @@ export function registerDevtools(
 ): void {
   if (import.meta.env.DEV || new URLSearchParams(location.search).has('e2e')) {
     // Carga diferida: el código de prueba no entra en el bundle principal
-    void import('./testHooks').then((m) => (window.__vexusTest = m.createTestHooks(getSim, dispatch, loopFrames)));
+    markStartup('hooks:import');
+    void import('./testHooks').then((m) => {
+      window.__vexusTest = m.createTestHooks(getSim, dispatch, loopFrames);
+      markStartup('hooks:ready');
+    });
   }
   if (!import.meta.env.DEV) return;
   window.__sim = getSim;

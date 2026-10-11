@@ -243,7 +243,8 @@ const ABDOMINAL_POSES = {
   flank: { phi: 3.1, z: -75, yaw: 0.1767952406260464, rock: 0.4707775613505776, tilt: -0.04687503959831865 },
   // Equivalent acoustic plane with the marked end cranial: yaw − π, rock/tilt sign reversed.
   // The former pose pointed the marker caudally and mirrored the standard longitudinal orientation.
-  portal: { phi: 3.2499999999999996, z: -65, yaw: -0.3083879194167607, rock: -0.2122189996791038, tilt: 0.0937442490667998 },
+  // Pose de rótulos redondeados elegida por Daniel en esta misma versión.
+  portal: { phi: (173 * Math.PI) / 180, z: -40, yaw: (-72 * Math.PI) / 180, rock: (-6 * Math.PI) / 180, tilt: (-2 * Math.PI) / 180 },
   // A 2.86-degree venous sweep reaches an interlobar lumen with the existing 1.2 mm wall safeguard.
   // Kidney/vasculature, skin point and in-plane orientation remain registered and unchanged.
   renal: { phi: 3.15, z: -175, yaw: -0.04682166646295555, rock: 0.37638199977635656, tilt: -0.28301506696896933 },

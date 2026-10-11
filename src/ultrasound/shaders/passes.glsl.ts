@@ -190,7 +190,6 @@ float echoFrequency(float r) { return 1.0 / (1.0 + uBeamTx.w * max(r, 0.0)); }
 export const FRAG_TRANS_HITS = /* glsl */ `#version 300 es
 precision highp float;
 precision highp int;
-#define VEXUS_TRANSMISSION_TYPES 1
 ${ANATOMY_GLSL}
 ${BEAM_GLSL}
 ${MIRROR_DIRECTION_GLSL}
@@ -223,7 +222,7 @@ void main() {
   bool behind = false;
   float lungDb = 0.0;
   int s = -1;
-  for (int it = 0; it < 1024; it++) {
+  for (int it = 0; it < min(1024, 2 * n); it++) {
     if (!behind) s++;
     if (s >= n) break;
     float r = (float(s) + 0.5) * step;

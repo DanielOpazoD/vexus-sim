@@ -6835,7 +6835,7 @@ de cuadro congelado, ambas suites musculares y contacto analítico/atlas;
 arranque SwiftShader y adquisiciones comparables. Cada resultado se
 registra con SHA, primer intento y limitaciones en el plan local.
 
-## 201. Transportar descriptores del atlas en la textura común de escena
+## 201. Transportar descriptores del atlas en la textura común de escena [Estado: experimento rechazado; restaurado por203]
 
 **Contexto.** El arranque ordenado393356b obtuvo vistas y dos cuadros
 software a34,48s, pero la interacción Congelar agotó240s. Quedó un hilo
@@ -6864,7 +6864,7 @@ TS/GPU, imágenes B/color al mismo pose/instante/receptor y arranque usable
 sin reintentos ni cambios de plazo. El resultado se registra por SHA y no
 constituye validación clínica externa.
 
-## 202. Dependencias de cara explícitas para la pasada de impactos
+## 202. Dependencias de cara explícitas para la pasada de impactos [Estado: experimento rechazado; restaurado por203]
 
 **Contexto.** El transporte de descriptores98b358e conserva cinco controles
 nativos, pero no resuelve el bloqueo software: Congelar vence240s y se
@@ -6891,3 +6891,32 @@ Si cambia algún observable acústico o sigue el bloqueo, no integrar.
 congelada y movimientos, equivalencia y pares B/color registrados. El
 arranque debe permitir Congelar mediante clic normal con plazos originales;
 no se acepta solo un contador de cuadros ni el resultado nativo del Mac.
+
+## 203. Contrastar arranque ordenado y límite uniforme de la marcha
+
+**Contexto.** Tres ensayos permitieron observar vistas/dos cuadros, pero
+Congelar siguió venciendo240s con cuatro cuadros software. El resultado
+no acepta usabilidad. Se retiran descriptores/derivadas experimentales de
+201–202; los originales7c79bfe se restauran. El ensayo histórico197 lograba
+dos cuadros, pero el navegador se construía después de trabajo acústico.
+La combinación con199 se contrasta ahora, sin inferir suficiencia del pasado.
+
+**Opciones.** Reintentar una misma fuente, ampliar plazos, forzar la acción
+o esconder el torso no resuelve la causa. Se conserva evidencia negativa.
+
+**Decisión.** A0 conserva las funciones originales y reemplaza solo su
+cota literal1024 por min(1024,2*n), con n de la misma rejilla uCoarseN. Cada
+muestra usa una vuelta o dos si se necesita tejido tras la cortina: nunca
+se reduce el trabajo necesario. La bisección sigue dentro, sin cambios de
+seis muestras, normales, espejo ni jacobiana. Mantener orden de inicio199.
+
+**Consecuencias.** La cota depende del uniform para evitar una expansión
+constante excesiva del programa. No se afirma aún ahorro ni arranque usable.
+Restaurar gradientes/metadata de201–202 mantiene todos los campos y los
+presupuestos originales. Source/gates y controles nativos/software separados.
+
+**Verificación.** Mismos shaders/bancos salvo límite exterior, cero cambios
+en los datos anatómicos; check/build y pares acústicos registrados. El clic
+normal y captura deben completar dentro del plazo vigente; el contador de
+cuadros por sí solo no acepta el resultado. CI exacta de primer resultado
+permanece obligatoria para integrar.

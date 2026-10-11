@@ -1,5 +1,4 @@
 import { THORACIC_GLSL } from '../thoracicAtlas';
-import { ABDOMINAL_FIELD_TEXELS } from '../abdominalAtlasDescriptors';
 import { SCENE_TUBE_CAPACITY } from '../tubeCapacity';
 import { RESPIRATORY_INVERSE_STEPS } from '../deformation';
 import { BOWEL_TEXELS } from '../organs/bowel';
@@ -62,8 +61,7 @@ export const RIB_BASE = BODY_BASE + Math.ceil((BODY_MAX_ROWS * BODY_STRIDE) / 4)
 export const RIB_TEXELS = 3;
 export const CARTILAGE_BASE = RIB_BASE + MAX_RIBS * RIB_TEXELS;
 export const BOWEL_BASE = CARTILAGE_BASE + CARTILAGE_ROWS.length;
-export const ATLAS_FIELD_BASE = BOWEL_BASE + BOWEL_TEXELS;
-export const SCENE_TEX_H = Math.ceil((ATLAS_FIELD_BASE + ABDOMINAL_FIELD_TEXELS) / SCENE_TEX_W);
+export const SCENE_TEX_H = Math.ceil((BOWEL_BASE + BOWEL_TEXELS) / SCENE_TEX_W);
 export { MAX_RIBS } from './sceneUniforms';
 
 const TISSUE_DEFINES = Object.entries(TISSUE_GLSL_NAME)
@@ -75,9 +73,6 @@ const INTERFACE_DEFINES = Object.entries(INTERFACE_GLSL_NAME)
   .join('\n');
 
 export const ANATOMY_GLSL = /* glsl */ `
-#ifndef VEXUS_TRANSMISSION_TYPES
-#define VEXUS_TRANSMISSION_TYPES 0
-#endif
 #define MAX_TUBES ${MAX_TUBES}
 #define MAX_NODES ${MAX_NODES}
 #define SCENE_TEX_W ${SCENE_TEX_W}
@@ -86,7 +81,6 @@ export const ANATOMY_GLSL = /* glsl */ `
 #define TUBE_HDR ${TUBE_HEADER_TEXELS}
 #define COMP_BASE ${NODE_BASE + MAX_NODES}
 #define BOWEL_BASE ${BOWEL_BASE}
-#define ATLAS_FIELD_BASE ${ATLAS_FIELD_BASE}
 #define MAX_RIBS ${MAX_RIBS}
 ${TISSUE_DEFINES}
 ${INTERFACE_DEFINES}

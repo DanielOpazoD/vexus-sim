@@ -18,7 +18,6 @@ import { axialSigmaMm, focalReferenceFwhmMm, txApertureMm } from './beamModel';
 import { ANCHOR_SALT_STEP, ElevationAnchor } from './speckleField';
 import { interfaceUniforms } from './interfaceEcho';
 import { createAbdominalTexture } from './abdominalTexture';
-import { writeAbdominalFieldDescriptors } from '../anatomy/abdominalAtlasDescriptors';
 import { specializeAbdominalShader, specializeSceneShaders } from './sceneShader';
 import {
   GLProgram,
@@ -50,7 +49,6 @@ import {
   RIB_BASE,
   RIB_TEXELS,
   CARTILAGE_BASE,
-  ATLAS_FIELD_BASE,
   COMPRESSION_BASE,
   BOWEL_BASE,
   MAX_NODES,
@@ -696,7 +694,6 @@ export class UltrasoundRenderer {
     BOWEL_BOUNDS.forEach((row, i) => this.sceneData.set(row, (BOWEL_BASE + i) * 4));
     BOWEL_NODES.forEach((p, i) => this.sceneData.set([...p, BOWEL_ARC[i]], (BOWEL_BASE + BOWEL_GROUPS + i) * 4));
     s.bowelRadii.forEach((r, i) => this.sceneData.set([r, 0, 0, 0], (BOWEL_BASE + BOWEL_GROUPS + BOWEL_NODES.length + i) * 4));
-    writeAbdominalFieldDescriptors(this.sceneData, ATLAS_FIELD_BASE);
     this.tubeCountTotal = tubes.length;
     if (this.tubeCountTotal > MAX_TUBES) throw new Error('Demasiados tubos para el shader');
     let n = 0;

@@ -7022,3 +7022,13 @@ con el nuevo contacto; velocidad preservada, congelación intacta y contacto reu
 pose idéntica. La primera recuperación del mecanismo también detectó el redondeo de la pose,
 que se conserva como experimento rechazado. Doce controles focalizados pasan sin modificar
 umbrales; barridos nativos y `npm run check` del SHA exacto se documentan en la evidencia del PR.
+
+## 194. Observar el arranque del atlas antes de optimizarlo
+
+**Contexto.** La revisión atlas34 no contiene el observador integrado por PR234. En el SHA7fba26e las tres adquisiciones venosas independientes vuelven a agotar180s antes de hooks/dos cuadros. El control nativo favorable no demuestra arranque en SwiftShader.
+
+**Decisión.** Recuperar el registrador y adjunto host de main/a8570c7 y conservar las etapas alrededor del arranque específico del atlas. Añadir inicio y final de carga de las superficies abdominal y torácica. El host conserva la última etapa recibida incluso cuando el hilo de la página deja de responder; no fabrica una etapa posterior ni exige hooks para informar el fallo.
+
+**Consecuencias.** La traza solo se activa con e2e/startupTrace. No interviene en anatomía, físico, reloj, imagen, calidad, resolución ni presupuestos. No amplía el límite180s de CI y no reejecuta CI fallida. Identifica costes pendientes de medición; no afirma todavía una causa del bloqueo ni corrige fidelidad clínica.
+
+**Verificación.** Catorce controles focalizados pasan en la primera ejecución: etapas únicas, reloj desactivado fuera del diagnóstico, conservación de la última etapa antes de una excepción, capas del torso y coherencia del marco/contacto. La evidencia externa registra la primera adquisición SwiftShader y el control nativo por separado, con fuente exacta, opciones y limitaciones de transferencia Mac/Linux.

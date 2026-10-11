@@ -6654,3 +6654,15 @@ La conversión global de 174 usa b=1 para absorción, aunque piel, grasa, múscu
 Aceptación: etiquetas de todos los tejidos/tipos de gas; programa A2 de producción en GPU con todos los tejidos y nueve pares de frecuencias, espejo/gas/hueso y B inalterado, error <0,01 dB. Prefijos de cuatro ventanas frente a integración independiente α1·f^b, adquisición portal normal/grave en ambos cuerpos y oráculo complejo con controles negativos. Límites WebGL de uniforms/samplers, grafo y hashes documentan cambio de .w, sin rebajar márgenes ni tolerancias.
 
 Se retira `color-absorption-linear-scaling`; continúan rejilla gruesa, barreras estimadas, ausencia de calibración clínica y estimador color emulado. Las funciones b=1 quedan solo como contrafactual histórico de 174 en tests, sin uso de renderer. Medido 1031,3 KiB ≤1032: coste neto menor tras retirar sampler/conversión, todos los activos/Workers incluidos. No se declara idéntica apertura ni discretización entre PW y color.
+
+## 178. Alcance axilar posterior bilateral sin desplazar órganos
+
+**Contexto.** El límite de `clampPose` permite φ216° derecho pero sólo φ−9° izquierdo. La posición contralateral del punto renal queda recortada: su contacto se desplaza 45,97mm en el cuerpo procedural y 7,70mm en el de referencia. Un arrastre real en Metal confirma que la sonda se detiene aunque el operador continúe desplazándola. Es una restricción de exploración, además de las deudas de geometría y acústica renales.
+
+**Opciones.** Desplazar el riñón para que aparezca desde una posición permitida falsearía la anatomía. Cambiar todas las ventanas o permitir una vuelta completa no es necesario para recuperar el alcance contralateral supino. Se conserva el límite derecho y se hace simétrico el izquierdo.
+
+**Decisión.** Extender el límite inferior de φ de −0,05π a −0,2π, reflexión del límite superior 1,2π (`φizquierdo = π − φderecho`). Es un límite del modelo de exploración, no un valor clínico ni una aceptación de la ventana izquierda. La misma pose se propaga a contacto, haz, torso, plano anatómico y adquisición. Las nueve posiciones de partida siguen dentro del intervalo.
+
+**Consecuencias.** Se recupera una posición antes bloqueada, sin desplazar órganos o cambiar los parámetros acústicos. Grasa/fascias, sombras, reconocimiento ecográfico y Doppler renal izquierdo requieren contraste independiente. El atlas219 es un dominio aparte sin aceptación; esta corrección de acceso no lo certifica ni integra. El estudio TAC muscular continúa con hipótesis de fuente conservadas.
+
+**Verificación.** `bilateralFlankAccess.test.ts` compara el contacto y todos los ejes físicos del haz solicitados contra los realmente obtenidos, tanto en superficie procedural como de referencia asimétrica. El testigo anterior producía el desplazamiento de 45,97/7,70mm; el corregido debe ser cero dentro de tolerancia numérica. Se conservan las nueve posiciones. El informe local registra el ensayo nativo anterior, imágenes y poses; los barridos corregidos, check completo y CI del SHA exacto son requisitos posteriores para integrar, no se dan por aprobados en esta decisión.

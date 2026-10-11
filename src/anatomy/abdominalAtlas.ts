@@ -145,9 +145,10 @@ vec2 hepaticDomeValue(vec2 p){
 // Distance uses WebGL2 RG16F linear filtering of the same source lattice; categorical labels stay nearest.
 vec2 abdominalAtlasValue(vec3 p, int k){
   if(uAbdominalAtlasEnabled==0)return vec2(16.0,0.0); 
-  vec3 lo,dim,off; 
-  ${ABDOMINAL_FIELDS.map((f, i) => `${i ? 'else ' : ''}if(k==${i}){lo=vec3(${f.originMm.map((v) => v.toFixed(3)).join(',')}); dim=vec3(${f.dimensions.map((v) => v.toFixed(1)).join(',')}); off=vec3(${f.offset.map((v) => v.toFixed(1)).join(',')}); }`).join('\n')}
-  else return vec2(16.0,0.0); 
+  if(k<0||k>=${ABDOMINAL_FIELDS.length})return vec2(16.0,0.0);
+  vec3 lo=sceneTexel(ATLAS_FIELD_BASE+3*k).xyz;
+  vec3 dim=sceneTexel(ATLAS_FIELD_BASE+3*k+1).xyz;
+  vec3 off=sceneTexel(ATLAS_FIELD_BASE+3*k+2).xyz;
   vec3 q=(p-lo)/1.5; 
   if(any(lessThan(q,vec3(0.0)))||any(greaterThan(q,dim-1.0)))return vec2(16.0,0.0); 
   // Normalized texel-center coordinates; linear filtering stays inside the selected brick.

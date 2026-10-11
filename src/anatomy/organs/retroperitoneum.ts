@@ -41,7 +41,8 @@ export const PSOAS_NODES: ReadonlyArray<readonly [number, number, number, number
  * Donde el riñón apoya en la pared (su grasa perirrenal gruesa de detrás, decisión 68, llega a ella) el músculo le
  * deja sitio: el modelo tiene la pared posterior de 28 mm y el riñón más cerca de la piel que en un adulto real. Lo
  * decide el orden de `classify` (el riñón y su grasa van antes); el término de la grasa en `quadratusSdf` deja su
- * distancia fuera de ella y hace que la distancia a la frontera la cuente.
+ * distancia fuera de ella y hace que la distancia a la frontera la cuente. Su soporte también se cierra en la cara
+ * interna de la pared, antes de la prioridad del clasificador y de extraer la malla 3D.
  */
 export const QUADRATUS = {
   /** z del borde craneal (12.ª costilla) y caudal (cresta ilíaca). */

@@ -132,7 +132,7 @@ export class Simulator {
   /** Instantánea inmutable que asigna `EquipmentController` (sobrevive a los cambios de caso). */
   equipment: EquipmentSettings = defaultEquipment();
   frozen = false;
-  /** Marco del último avance físico, conservado para la velocidad Doppler. */
+  /** Marco del último avance físico, conservado para estimar la velocidad aunque se dibuje entre pasos. */
   private lastFrame: ProbeFrame;
   /** Contacto de la sonda del cuadro (decisión 63): el marco efectivo (hundido), la compresión y el acoplamiento. */
   private lastContact: ProbeContact;
@@ -214,7 +214,7 @@ export class Simulator {
     this.syncProbeContact();
   }
 
-  /** La pose determina el contacto, aunque aún no se integre otro paso físico (193/179). */
+  /** El contacto depende de la pose, no de que el reloj haya integrado otro paso (decisión 179). */
   private syncProbeContact(): void {
     if (samePose(this.pose, this.contactPose)) return;
     this.lastContact = probeContact(this.pose, this.transducer, this.scene.torso);
@@ -337,14 +337,21 @@ export class Simulator {
    * TS ↔ GLSL no confunde calibre pulsátil o respiración con desacuerdo.
    * Solo docente/depuración.
    */
-  gpuTissueMap(at: { sample: PhysiologySample; frame: ProbeFrame; depthMm: number }): ReturnType<UltrasoundRenderer['tissueMap']> {
+  gpuTissueMap(at: {
+    sample: PhysiologySample;
+    frame: ProbeFrame;
+    depthMm: number;
+    compression?: ProbeCompression;
+    transducer?: Transducer;
+    pose?: ProbePose;
+  }): ReturnType<UltrasoundRenderer['tissueMap']> {
     const s = at.sample;
     return this.renderer.tissueMap({
       sample: s,
       frame: at.frame,
-      pose: this.pose,
-      compression: this.lastContact,
-      transducer: this.transducer,
+      pose: at.pose ?? this.pose,
+      compression: at.compression ?? this.lastContact,
+      transducer: at.transducer ?? this.transducer,
       caliber: this.anatomy.caliberFor(s),
       probeVelocity: this.probeVel,
       bmode: { ...this.bmode, depthMm: at.depthMm },

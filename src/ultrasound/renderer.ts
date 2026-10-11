@@ -18,6 +18,7 @@ import { axialSigmaMm, focalReferenceFwhmMm, txApertureMm } from './beamModel';
 import { ANCHOR_SALT_STEP, ElevationAnchor } from './speckleField';
 import { interfaceUniforms } from './interfaceEcho';
 import { createAbdominalTexture } from './abdominalTexture';
+import { writeAbdominalFieldDescriptors } from '../anatomy/abdominalAtlasDescriptors';
 import { specializeAbdominalShader, specializeSceneShaders } from './sceneShader';
 import {
   GLProgram,
@@ -49,6 +50,7 @@ import {
   RIB_BASE,
   RIB_TEXELS,
   CARTILAGE_BASE,
+  ATLAS_FIELD_BASE,
   COMPRESSION_BASE,
   BOWEL_BASE,
   MAX_NODES,
@@ -233,8 +235,8 @@ export interface FrameInputs {
  * del equipo) y el cuadro de color que pintó G (con él, su capa de color está en el anillo).
  */
 export interface CineFrame {
-  /** Immutable acquisition geometry of the presented frame, also retained in cine. */
-  anatomy?: Pick<FrameInputs, 'sample' | 'frame' | 'compression'>;
+  /** Geometría y estado adquiridos; los controles en vivo pueden cambiar después de congelar. */
+  anatomy: Pick<FrameInputs, 'sample' | 'frame' | 'compression' | 'pose' | 'transducer' | 'seed'>;
   t: number;
   /** Cuadro dibujado (`frameCount`): entre dos guardados puede haber varios, y la persistencia los pesa todos. */
   n: number;
@@ -694,6 +696,7 @@ export class UltrasoundRenderer {
     BOWEL_BOUNDS.forEach((row, i) => this.sceneData.set(row, (BOWEL_BASE + i) * 4));
     BOWEL_NODES.forEach((p, i) => this.sceneData.set([...p, BOWEL_ARC[i]], (BOWEL_BASE + BOWEL_GROUPS + i) * 4));
     s.bowelRadii.forEach((r, i) => this.sceneData.set([r, 0, 0, 0], (BOWEL_BASE + BOWEL_GROUPS + BOWEL_NODES.length + i) * 4));
+    writeAbdominalFieldDescriptors(this.sceneData, ATLAS_FIELD_BASE);
     this.tubeCountTotal = tubes.length;
     if (this.tubeCountTotal > MAX_TUBES) throw new Error('Demasiados tubos para el shader');
     let n = 0;
@@ -924,7 +927,7 @@ export class UltrasoundRenderer {
   }
 
   /** Anatomical state of the image actually on screen, never the running clock behind an old cine frame. */
-  get displayedAnatomy(): CineFrame['anatomy'] {
+  get displayedAnatomy(): CineFrame['anatomy'] | undefined {
     return (this.cineShownFrame ?? this.lastFrame)?.anatomy;
   }
 
@@ -936,7 +939,14 @@ export class UltrasoundRenderer {
   private afterFrame(inputs: FrameInputs): void {
     const c = inputs.color;
     const frame: CineFrame = {
-      anatomy: { sample: inputs.sample, frame: inputs.frame, compression: inputs.compression },
+      anatomy: structuredClone({
+        sample: inputs.sample,
+        frame: inputs.frame,
+        compression: inputs.compression,
+        pose: inputs.pose,
+        transducer: inputs.transducer,
+        seed: inputs.seed,
+      }),
       t: inputs.sample.t,
       n: this.frameCount,
       bmode: inputs.bmode,
@@ -1018,6 +1028,11 @@ export class UltrasoundRenderer {
   /** Cuadro del cine en pantalla, o null en vivo. */
   get cineShownFrame(): CineFrame | null {
     return this.cineShown ? this.cine.at(this.cineShown.index) : null;
+  }
+
+  /** Procedencia del framebuffer presentado, tanto en vivo como al reproducir cine. */
+  get displayedFrame(): CineFrame | null {
+    return this.cineShownFrame ?? this.lastFrame;
   }
 
   /**

@@ -222,8 +222,7 @@ void main() {
   bool behind = false;
   float lungDb = 0.0;
   int s = -1;
-  // Cada fila consume una o dos vueltas (cortina); conserva el techo original.
-  for (int it = 0; it < min(1024, 2 * n); it++) {
+  for (int it = 0; it < 1024; it++) {
     if (!behind) s++;
     if (s >= n) break;
     float r = (float(s) + 0.5) * step;

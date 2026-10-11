@@ -7027,6 +7027,8 @@ umbrales; barridos nativos y `npm run check` del SHA exacto se documentan en la 
 
 **Contexto.** La revisión atlas34 no contiene el observador integrado por PR234. En el SHA7fba26e las tres adquisiciones venosas independientes vuelven a agotar180s antes de hooks/dos cuadros. El control nativo favorable no demuestra arranque en SwiftShader.
 
+**Opciones.** Recuperar el observador ya revisado de main evita otra instrumentación de producción; solo se añaden dos etapas específicas de carga atlas.
+
 **Decisión.** Recuperar el registrador y adjunto host de main/a8570c7 y conservar las etapas alrededor del arranque específico del atlas. Añadir inicio y final de carga de las superficies abdominal y torácica. El host conserva la última etapa recibida incluso cuando el hilo de la página deja de responder; no fabrica una etapa posterior ni exige hooks para informar el fallo.
 
 **Consecuencias.** La traza solo se activa con e2e/startupTrace. No interviene en anatomía, físico, reloj, imagen, calidad, resolución ni presupuestos. No amplía el límite180s de CI y no reejecuta CI fallida. Identifica costes pendientes de medición; no afirma todavía una causa del bloqueo ni corrige fidelidad clínica.
@@ -7036,6 +7038,8 @@ umbrales; barridos nativos y `npm run check` del SHA exacto se documentan en la 
 ## 195. Ensayo acotado de metadatos de cara no consumidos por A0
 
 **Contexto.** Con RAF suspendido y lectura compatible de un píxel por pasada, el atlas4c se bloquea antes de completar transmisiónHits; ninguna pasada posterior se ejecuta. Los tiempos previos de gl.finish se rechazan: eran envíos, no finalización demostrada. No se separa todavía compilación de ejecución.
+
+**Opciones.** No omitir consultas anatómicas ni bajar resolución; ensayar únicamente metadatos no leídos por A0.
 
 **Decisión.** Ensayar una opción de classifyWith que omite solo el postproceso de caras costales y cortical vertebral al consultar A0. A0 consume tejido y normal pulmonar, no iface/ifd/tangent/kc de ese postproceso. Clasificación común de pared, interior, órganos, vasos, obstáculos y normal permanece igual; todas las otras pasadas conservan metadatos completos por la sobrecarga original. No se introduce otra anatomía.
 
@@ -7047,9 +7051,11 @@ umbrales; barridos nativos y `npm run check` del SHA exacto se documentan en la 
 
 **Contexto.** El readback compatible de4c2892c no completa A0 en210s del diagnóstico; el arranque ordinario falla a180s. El shader llamaba al clasificador común en la marcha y además en un bucle interior de bisección del espejo. Una anatomía compleja puede expandirse dos veces; su coste no se evita ocultando tejidos. La variante de metadatos195 se rechazó por no resolver el bloqueo.
 
+**Opciones.** Mantener un clasificador común; compartir solo el punto de llamada en vez de introducir un campo paralelo.
+
 **Decisión.** A0 utiliza un estado de refinamiento que visita exactamente los seis puntos de bisección originales a través del mismo sitio de clasificación. El índice regular no cambia durante refinamiento; se conserva normal del último punto pulmonar, fronteras, dirección reflejada y actualización de gas. El techo mantiene1024 vueltas regulares más seis de refinamiento, sin agregar muestras regulares. El campo, la clasificación común, geometría, pared, color, resolución y todas las otras pasadas conservan su código original.
 
-**Consecuencias.** No es una segunda anatomía ni un filtro de imagen. La CPU conserva su algoritmo independiente. Ensayo rechazado:25978ad vuelve a agotar180s antes de hooks/dos cuadros; se retira la variante y se conservan su patch y controles. el kernel sintético no certifica fidelidad clínica ni estabilidad de todas las poses. Una diferencia en impactos, dirección o imágenes comparables obliga a rechazar el ensayo.
+**Consecuencias.** No es una segunda anatomía ni un filtro de imagen. La CPU conserva su algoritmo independiente. Ensayo rechazado:25978ad vuelve a agotar180s antes de hooks/dos cuadros; se retira la variante y se conservan su patch y controles. El kernel sintético no certifica fidelidad clínica ni estabilidad de todas las poses. Una diferencia en impactos, dirección o imágenes comparables obliga a rechazar el ensayo.
 
 **Verificación.** e2e/transmissionMirrorState.spec.ts ejecuta el cuerpo real de A0 contra el cuerpo anterior congelado y planos analíticos de pulmón, gas, hueso y cortina, con cinco densidades, dos profundidades y caso de límite de iteraciones. Compara exactamente las tres salidas y verifica dirección y distancia del espejo contra planos independientes. Primer banco nativo de60 casos:46.080 valores idénticos; el banco ampliado y las adquisiciones completas se registran por SHA. Mantener plazos, pruebas, presupuestos y protecciones.
 
@@ -7057,8 +7063,10 @@ umbrales; barridos nativos y `npm run check` del SHA exacto se documentan en la 
 
 **Contexto.** Las variantes195–196 no resuelven el bloqueo. Unificar una consulta anatómica y retirar metadatos no consumidos no prueba que esa sea la causa. El cuerpo de A0 vuelve a4c; cada fila de su marcha regular consume como máximo dos vueltas por cortina.
 
+**Opciones.** Una cota uniforme mínima conserva las muestras. Los tres ensayos fallidos obligan a detener optimizaciones especulativas y obtener una reproducción acotada de coste.
+
 **Decisión.** Ensayar min(1024,2*n) como límite exterior, donde n procede de la uniforme original uCoarseN. Se preservan máximo, todas las muestras posibles, bisección original, clasificación común y salidas. El cambio evita un límite totalmente constante sin afirmar todavía qué hace el compilador.
 
-**Consecuencias.** No cambia geometría, órganos, rayos, resolución, física, otras pasadas o presupuestos. No se aprueba por tests verdes: exige arranque real, campos e imágenes comparables. Se retirará si no mejora el bloqueo o si cambia un observable. Se conserva la discrepancia del instrumento de trigonometría doble/GLSL, sin esconderla ni ampliar umbrales.
+**Consecuencias.** Ensayo rechazado:689bcc6 emite segundo cuadro y hooks, pero la página sigue bloqueada y agota el presupuesto ordinario de la prueba240s (180s de arranque más60s de trabajo). No completa la comprobación de arranque; se conserva la evidencia y se retira también este límite. No cambia geometría, órganos, rayos, resolución, física, otras pasadas o presupuestos. No se aprueba por tests verdes: exige arranque real, campos e imágenes comparables. Se retirará si no mejora el bloqueo o si cambia un observable. Se conserva la discrepancia del instrumento de trigonometría doble/GLSL, sin esconderla ni ampliar umbrales.
 
 **Verificación.** Los controles heredados de clasificación, jacobiana y bisección se mantienen intactos. Contrato y primeras ejecuciones antes/después por SHA en la evidencia externa. Mac y Linux siguen siendo entornos distintos; fidelidad externa pendiente.

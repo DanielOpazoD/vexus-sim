@@ -23,11 +23,23 @@ test('clic fija órgano sobre mapas nuevos; salir conserva, Escape y paciente ca
   budget(90_000);
   const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
   await page.locator('.win-card').filter({ hasText: 'Porta · intrahepática' }).click();
+  const target = {
+    phi: (173 * Math.PI) / 180,
+    z: -40,
+    yaw: (-72 * Math.PI) / 180,
+    tilt: (-2 * Math.PI) / 180,
+    rock: (-6 * Math.PI) / 180,
+  };
   await withinFrames(
     page,
     100,
     'portal',
-    async () => (await page.evaluate(() => Math.abs(window.__vexusTest!.sim().pose.z + 40) < 1e-8)) || 'pose en tránsito',
+    async () =>
+      (await page.evaluate(
+        (target) =>
+          Object.entries(target).every(([key, value]) => Math.abs(Reflect.get(window.__vexusTest!.sim().pose, key) - value) < 1e-8),
+        target,
+      )) || 'posición o ángulos en tránsito',
   );
   await page.locator('#freeze').click();
   await expect.poll(() => pointAtLiver(page)).not.toBeNull();
@@ -69,11 +81,17 @@ test('arrastre real3D conserva ejes en el paciente; girar sigue siendo un gesto 
   budget(90_000);
   const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
   await page.locator('.win-card').filter({ hasText: 'Hepatorrenal' }).click();
+  const target = { phi: 2.99, z: -113, yaw: -0.24452521426888207, rock: -0.13406390040993016, tilt: -0.3591483268294911 };
   await withinFrames(
     page,
     100,
     'hepatorrenal',
-    async () => (await page.evaluate(() => Math.abs(window.__vexusTest!.sim().pose.z + 113) < 1e-8)) || 'pose en tránsito',
+    async () =>
+      (await page.evaluate(
+        (target) =>
+          Object.entries(target).every(([key, value]) => Math.abs(Reflect.get(window.__vexusTest!.sim().pose, key) - value) < 1e-8),
+        target,
+      )) || 'posición o ángulos en tránsito',
   );
   const nav = await page.locator('#nav3d canvas').boundingBox();
   expect(nav).not.toBeNull();

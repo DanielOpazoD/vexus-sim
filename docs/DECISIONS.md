@@ -6635,6 +6635,18 @@ control nativo (9,5s frente a7,9s): esa hipótesis de rendimiento no se acepta.
 El transporte de grises pasa de números JSON a bytes base64 sin pérdida, con
 decodificación antes del mismo PNG; se repite el contraste de todos los cuadros.
 
+### Seguimiento de 176: cerrar el soporte posterior muscular antes del renderizado (10-10-2026)
+
+**Contexto.** El QL estimado en main c9421cb carecía de frontera contra la pared posterior. La precedencia del clasificador ocultaba el defecto en el corte, pero la extracción de la misma función emitía mallas hasta 91,63 mm fuera de la pared interna procedural y 72,29 mm en referencia. Testigo [65,−150,−130]: interior del campo muscular en espacio exterior. La auditoría histórica del atlas pendiente no sustituye la comprobación de main.
+
+**Opciones.** Ocultar las mallas, recortar sólo 3D o desplazar riñones mantendría fuentes divergentes o relaciones alteradas. Añadir una fascia sin fuente/resolución compatible no certifica el compartimento renal.
+
+**Decisión.** Cerrar quadratusSdf en la cara interna de la pared, usando la cota de gradiente existente en TS/GLSL. Una misma frontera alimenta adquisición y MarchingCubes. Agregar ct_posterior_reference.py para medir riñón–músculos–hígado–columna–costillas en rejilla TAC original con hashes, testigos y rayos AP explícitos; no registrar otro individuo ni inferir fascias de una intensidad.
+
+**Consecuencias.** Desaparecen las extensiones posteriores, sin mover órganos o fuentes óseas ni introducir líneas por ventana. El QL, grasa y fascias siguen estimados; el atlas de PR219 y sus contactos requieren trabajo separado. Objetivos 2/3/7/8 de MISION, con límite clínico abierto. s0028 no certifica normalidad; s0440 sigue reservado.
+
+**Verificación.** Antes/después en ambos cuerpos: 12.958/9.781 muestras exteriores→0, interiores 1.334/1.909 conservadas. Máxima desviación de vértices corregidos 0,033 mm frente a pared interna, no tolerancia clínica. posteriorMuscleGeometry.test.ts protege superficie 3D real y negativo fuera de pared; paridad y calibración habituales conservadas. Cuatro controles Python independientes cubren física de centros oblicuos/anisotrópicos, adyacencia, vacío y rechazo de rayos AP oblicuos. Documento docs/anatomia/posterior-renal-ct.md registra fuentes y límites; adquisiciones comparables y CI exacta siguen como puertas de integración.
+
 ## 177. Integrar la absorción Doppler por tejido sin nuevas texturas
 
 La conversión global de 174 usa b=1 para absorción, aunque piel, grasa, músculo y sangre tienen otros exponentes. A1 empaqueta gas+4·tejido en .w (entero float32 exacto); todos sus consumidores decodifican gas. A2 integra α_t(fD)/α_t(fB) por segmento, conserva espejo/gas y entrada ósea fijos, y entrega pérdida Doppler total en su .w auxiliar. F lee ese prefijo directamente, retirando el sampler B y la conversión global. Nueve vec4 de ratios (33 tejidos), sin nueva textura/pasada. Contrato previo: `anatomy/TISSUE_DOPPLER_PREFIX_CONTRACT.md`.

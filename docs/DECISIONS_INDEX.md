@@ -184,3 +184,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [178](DECISIONS.md#L6658) | Alcance axilar posterior bilateral sin desplazar órganos | vigente |
 | [179](DECISIONS.md#L6670) | Contacto actual sin borrar la velocidad del último paso físico | vigente |
 | [180](DECISIONS.md#L6703) | Conservar etapas de arranque antes de disponer de los ganchos | vigente |
+| [181](DECISIONS.md#L6733) | Copiar la posición exacta y los ajustes actuales del transductor | vigente |

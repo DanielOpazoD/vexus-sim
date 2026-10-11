@@ -4,6 +4,7 @@ import { button, note, row, slider } from '../controls';
 import type { PanelContext } from './context';
 import { sweepRow } from './dopplerTab';
 import { buildImageAdvanced, buildImageBasics, IMAGE_ADVANCED_INFO } from './imageControls';
+import { buildProbePositionCopy } from './probePosition';
 
 /**
  * Pestaña Adquirir: lo que se toca mientras se busca y se sostiene la ventana — la imagen (profundidad,
@@ -88,7 +89,7 @@ export function buildAcquireTab(ctx: PanelContext, p: HTMLElement): HTMLElement 
     sync: () =>
       (pos.textContent = `φ ${((s().pose.phi * 180) / Math.PI).toFixed(0)}° · z ${(s().pose.z / 10).toFixed(1)} cm · acoplamiento ${(s().renderer.meanCoupling() * 100).toFixed(0)} %`),
   });
-  ctx.track(button(row(probe), 'Reiniciar sonda', () => s().setPose({ ...s().pose, yaw: 0, rock: 0, tilt: 0, lift: 0 })));
+  buildProbePositionCopy(ctx, probe);
 
   buildRespirationControls(ctx, p);
 

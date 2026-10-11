@@ -6729,3 +6729,36 @@ CPU/GPU, ni certifican que el atlas arranque o que tenga fidelidad anatómica.
 operación fallida, rechaza datos inválidos y comprueba ausencia de trabajo sin
 diagnóstico. Controles nativos emparejados y un bloqueo controlado del contexto
 complementan esas pruebas; la integración exige check y CI exactos completos.
+
+## 181. Copiar la posición exacta y los ajustes actuales del transductor
+
+**Contexto.** Daniel eligió una ventana portal en una captura cuyos mandos
+redondean los ángulos al grado y la altura a0,1cm. Esa captura no conserva
+la pose precisa ni distingue los mandos actuales de una imagen del cine.
+
+**Opciones.** Copiar solo las etiquetas pierde precisión y contexto. Una
+exportación de adquisición completa ya tiene otras responsabilidades;
+no se presenta una pose sola como reproducción del historial hemodinámico.
+
+**Decisión.** Adquirir → Sonda ofrece «Copiar posición». `probePositionText`
+serializa los seis números originales, unidades, versión, dominio anatómico,
+perfil de sonda, caso sintético, respiración, reloj y equipo completo al
+pulsar. Los grados son una lectura auxiliar. El alcance del JSON es
+`current-probe-and-equipment`: los mandos vivos. Con imagen congelada lo
+indica también el mensaje. `writeText` se llama desde el gesto del usuario;
+una denegación o ausencia ofrece el mismo texto seleccionado para copia
+manual. No lee el portapapeles, no añade dependencias ni cambia física.
+
+**Consecuencias.** El dueño puede compartir posiciones sin transcribir
+rótulos. Fuente y dominio evitan aplicar la pose de un cuerpo a otro.
+No incluye el historial de intervenciones ni sustituye las adquisiciones
+registradas de fidelidad. La copia de una imagen congelada conserva los
+mandos actuales, no atribuye al cine una pose que no adquirió.
+
+**Verificación.** Un control de serialización conserva precisión, equipo
+y la instantánea del clic después de cambiar los datos vivos. La e2e
+comprueba el botón y la imagen congelada sin mutación de señal ni reloj;
+intercepta solo la escritura de este control para no leer el portapapeles
+del usuario. Denegación y API ausente producen texto enfocado y seleccionado,
+sin afirmar éxito. Navegador nativo, check completo y CI exacta son gates.
+Referencia API: https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/writeText.

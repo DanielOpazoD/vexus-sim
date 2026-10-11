@@ -159,8 +159,9 @@ export function probeVelocity(prev: ProbeFrame, next: ProbeFrame, dtSeconds: num
 
 export function clampPose(p: ProbePose): ProbePose {
   return {
-    // Hasta la línea axilar posterior derecha (ventana renal) en decúbito supino
-    phi: clamp(p.phi, -Math.PI * 0.05, Math.PI * 1.2),
+    // Alcance axilar posterior bilateral en decúbito supino: el límite izquierdo
+    // es la reflexión del derecho (φ izquierdo = π − φ derecho).
+    phi: clamp(p.phi, -Math.PI * 0.2, Math.PI * 1.2),
     z: clamp(p.z, -200, 200),
     lift: clamp(p.lift, -6, 25),
     yaw: ((((p.yaw + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI,

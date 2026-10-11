@@ -1,4 +1,3 @@
-import { referenceBody } from '../anatomy/referenceBody';
 import { STRUCTURE_LABELS } from '../anatomy/structureIdentity';
 import { maskBoundary } from './anatomyContour';
 import { abdominalAtlas } from '../anatomy/abdominalAtlas';

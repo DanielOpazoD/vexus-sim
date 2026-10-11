@@ -32,6 +32,9 @@ import { ControlPanel, tabAfterMode } from './ui/panel';
 import { ProbeInput } from './ui/probeInput';
 import { StartPointCards } from './ui/startPointCards';
 import { compoundActive } from './ultrasound/compound';
+import { markStartup } from './app/startupTrace';
+
+markStartup('bootstrap:begin');
 
 /**
  * Raíz de composición (Fase 1): crea la sesión de simulación, el estado de UI y las vistas, y
@@ -94,7 +97,9 @@ function fatal(message: string): never {
 // Preview revisable: aún no sustituye el adulto por defecto sin validar todas las ventanas.
 let session: SimulationSession;
 try {
+  markStartup('simulation:begin');
   session = new SimulationSession(glCanvas, CASE_IDS[0]);
+  markStartup('simulation:ready');
 } catch (e) {
   fatal(errorMessage(e));
 }
@@ -119,13 +124,16 @@ const mview = new MModeView(mCanvas);
 // Mapa del plano (el corte del carril izquierdo) con carga diferida, como el navegador 3D: la imagen no lo necesita
 // para su primer cuadro y el chunk principal no carga su código; si falla, la aplicación sigue sin él.
 let cutMap: CutMapView | null = null;
+markStartup('cut:import');
 void import('./ui/cutMapView')
   .then(({ CutMapView }) => {
     cutMap = new CutMapView(cutCanvas);
     cutMap.setLabels(store.get().debug);
+    markStartup('cut:ready');
   })
   .catch((e: unknown) => errorLog.report('corte', e));
 const panel = new ControlPanel($('panel'), sim, store, dispatch);
+markStartup('controls:ready');
 panel.onCapture = () => drawTraces(sim());
 session.equipment.subscribe(() => panel.sync());
 const probeAnimator = new ProbeAnimator(
@@ -187,8 +195,10 @@ const input = new ProbeInput(
 // Navegador 3D (three.js, ~560 kB) con carga diferida: la imagen ecográfica no lo necesita
 // para su primer cuadro; si falla, la aplicación sigue sin él.
 let nav: Navigator3D | null = null;
+markStartup('navigator:import');
 void import('./ui/navigator3d')
   .then(({ Navigator3D }) => {
+    markStartup('navigator:construct');
     nav = new Navigator3D(navHost, sim().scene, sim().transducer, {
       getPose: () => sim().pose,
       setPose: setPoseManual,
@@ -198,6 +208,7 @@ void import('./ui/navigator3d')
       getCaliber: () => sim().anatomy.caliberFor(sim().renderer.displayedFrame?.anatomy.sample ?? sim().sample),
     });
     nav.setStudentMode(!store.get().debug);
+    markStartup('navigator:ready');
   })
   .catch((e: unknown) => errorLog.report('navegador3d', e));
 registerDevtools(
@@ -400,23 +411,30 @@ function drawTraces(s: Simulator): void {
 }
 
 function frame(now: number, dt: number): void {
+  if (loopFrames === 0) markStartup('frame:begin');
   const s = sim();
   fitCanvases();
   input.tick(dt);
   probeAnimator.tick(dt);
+  if (loopFrames === 0) markStartup('advance:begin');
   s.advance(dt);
+  if (loopFrames === 0) markStartup('advance:ready');
   const comparisonOpen = panel.venousComparisonOpen;
   if (comparisonOpen) panel.renderVenous();
   // El visor es modal: no gastar GPU en imágenes ocultas. El reloj y la adquisición IQ
   // siguen en advance; al cerrar se vuelve a dibujar el estado actual, sin cambiar frozen.
   // Si ya se adquiría M, mantener sus columnas y cine: no fabricar un hueco temporal.
   if ((!comparisonOpen || s.mmode.enabled) && !gpu.lost) {
+    if (loopFrames === 0) markStartup('ultrasound:begin');
     s.render();
+    if (loopFrames === 0) markStartup('ultrasound:ready');
     cine.tick();
   }
   if (!comparisonOpen) {
     drawOverlay(overlay, s);
+    if (loopFrames === 0 && nav) markStartup('navigator:draw');
     nav?.draw();
+    if (loopFrames === 0 && nav) markStartup('navigator:drawn');
     if (store.get().torso && !gpu.lost) cutMap?.draw(s, now);
     drawTraces(s);
   }
@@ -466,6 +484,8 @@ function frame(now: number, dt: number): void {
     windows.sync();
   }
   loopFrames++;
+  if (loopFrames === 1) markStartup('frame:first');
+  if (loopFrames === 2) markStartup('frame:second');
 }
 
 function loop(now: number): void {
@@ -490,4 +510,5 @@ function loop(now: number): void {
   requestAnimationFrame(loop);
 }
 fitCanvases();
+markStartup('loop:scheduled');
 requestAnimationFrame(loop);

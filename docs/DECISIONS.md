@@ -7032,3 +7032,13 @@ umbrales; barridos nativos y `npm run check` del SHA exacto se documentan en la 
 **Consecuencias.** La traza solo se activa con e2e/startupTrace. No interviene en anatomía, físico, reloj, imagen, calidad, resolución ni presupuestos. No amplía el límite180s de CI y no reejecuta CI fallida. Identifica costes pendientes de medición; no afirma todavía una causa del bloqueo ni corrige fidelidad clínica.
 
 **Verificación.** Catorce controles focalizados pasan en la primera ejecución: etapas únicas, reloj desactivado fuera del diagnóstico, conservación de la última etapa antes de una excepción, capas del torso y coherencia del marco/contacto. La evidencia externa registra la primera adquisición SwiftShader y el control nativo por separado, con fuente exacta, opciones y limitaciones de transferencia Mac/Linux.
+
+## 195. Ensayo acotado de metadatos de cara no consumidos por A0
+
+**Contexto.** Con RAF suspendido y lectura compatible de un píxel por pasada, el atlas4c se bloquea antes de completar transmisiónHits; ninguna pasada posterior se ejecuta. Los tiempos previos de gl.finish se rechazan: eran envíos, no finalización demostrada. No se separa todavía compilación de ejecución.
+
+**Decisión.** Ensayar una opción de classifyWith que omite solo el postproceso de caras costales y cortical vertebral al consultar A0. A0 consume tejido y normal pulmonar, no iface/ifd/tangent/kc de ese postproceso. Clasificación común de pared, interior, órganos, vasos, obstáculos y normal permanece igual; todas las otras pasadas conservan metadatos completos por la sobrecarga original. No se introduce otra anatomía.
+
+**Consecuencias.** Es una hipótesis de coste, pendiente de aceptación por readback real, arranque, nueve adquisiciones pareadas, vecinos portales A/B y controles de clasificación. No se considera una corrección demostrada hasta registrar estos resultados. Si no mejora el bloqueo o cambia un observable consumido, conservar y rechazar el ensayo; no ampliar límites ni debilitar pruebas. SwiftShader local tampoco certifica el corredor Linux.
+
+**Verificación.** Contrato y resultados se registran por SHA en la evidencia externa; conservar también ensayos de instrumentos descartados. El check y CI exactos siguen siendo requisitos separados de la fidelidad anatómica externa.

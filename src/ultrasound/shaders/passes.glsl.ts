@@ -228,7 +228,7 @@ void main() {
     float r = (float(s) + 0.5) * step;
     vec3 p = mirrorSeg >= 0.0 ? hitPoint + dir * (r - hitR) : origin + dir * r;
     vec3 m = toMaterial(p);
-    Cls c = classifyWith(m, !behind);
+    Cls c = classifyWith(m, !behind, false);
     if (behind) {
       // ΔL: lo que el gas de la cortina cuesta de más frente al tejido de detrás
       curtainDb += lungDb - segmentDb(c.tissue, step);
@@ -278,7 +278,7 @@ void main() {
         vec3 nn = c.n;
         for (int it = 0; it < ${MIRROR_BISECTION_STEPS}; it++) {
           float mid = 0.5 * (lo + hi);
-          Cls cm = classify(toMaterial(origin + dir * mid));
+          Cls cm = classifyWith(toMaterial(origin + dir * mid), true, false);
           if (cm.tissue == T_LUNG) { hi = mid; nn = cm.n; } else lo = mid;
         }
         mirrorSeg = float(s); hitR = 0.5 * (lo + hi); hitPoint = origin + dir * hitR;

@@ -197,4 +197,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [191](DECISIONS.md#L6980) | Posición portal escogida y copia exacta de los mandos | vigente |
 | [192](DECISIONS.md#L6988) | Encuadrar la rama portal escogida con la caja de color | vigente |
 | [193](DECISIONS.md#L6996) | Recupera coherencia entre pose, contacto y haz en la revisión del atlas | vigente |
-| [194](DECISIONS.md#L7027) | Observar el arranque del atlas antes de optimizarlo | vigente |
+| [194](DECISIONS.md#L7026) | Observar el arranque del atlas antes de optimizarlo | vigente |
+| [195](DECISIONS.md#L7037) | Ensayo acotado de metadatos de cara no consumidos por A0 | vigente |

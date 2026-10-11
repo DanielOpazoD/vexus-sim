@@ -126,7 +126,7 @@ const mview = new MModeView(mCanvas);
 // para su primer cuadro y el chunk principal no carga su código; si falla, la aplicación sigue sin él.
 let cutMap: CutMapView | null = null;
 markStartup('cut:import');
-void import('./ui/cutMapView')
+const cutReady = import('./ui/cutMapView')
   .then(({ CutMapView }) => {
     cutMap = new CutMapView(cutCanvas);
     cutMap.setLabels(store.get().debug);
@@ -202,11 +202,12 @@ const input = new ProbeInput(
   () => !store.get().frozen,
   (p, phi, z) => translateProbe(p, phi, z, sim().scene.torso, sim().transducer),
 );
-// Navegador 3D (three.js, ~560 kB) con carga diferida: la imagen ecográfica no lo necesita
-// para su primer cuadro; si falla, la aplicación sigue sin él.
+// Preparar el segundo contexto y su primer dibujo antes de enviar trabajo
+// acústico continuo: las cargas diferidas no deben competir con esa cola GPU.
+// Si una vista opcional falla se informa y la ecografía sigue disponible.
 let nav: Navigator3D | null = null;
 markStartup('navigator:import');
-void import('./ui/navigator3d')
+const navigationReady = import('./ui/navigator3d')
   .then(async ({ Navigator3D }) => {
     if (sim().scene.hasAbdominalAtlas) {
       markStartup('navigator:surface-begin');
@@ -223,10 +224,13 @@ void import('./ui/navigator3d')
       getCaliber: () => sim().anatomy.caliberFor(sim().sample),
     });
     nav.setStudentMode(!store.get().debug);
+    markStartup('navigator:draw');
+    nav.draw();
+    markStartup('navigator:drawn');
     markStartup('navigator:ready');
   })
   .catch((e: unknown) => errorLog.report('navegador3d', e));
-registerDevtools(
+const hooksReady = registerDevtools(
   sim,
   () => ({ nav, cutMap, spectrogram }),
   dispatch,
@@ -528,5 +532,9 @@ function loop(now: number): void {
   requestAnimationFrame(loop);
 }
 fitCanvases();
-markStartup('loop:scheduled');
-requestAnimationFrame(loop);
+void Promise.all([cutReady, navigationReady, hooksReady]).then(() => {
+  // La carga no es tiempo físico del paciente; el primer dt empieza aquí.
+  last = performance.now();
+  markStartup('loop:scheduled');
+  requestAnimationFrame(loop);
+});

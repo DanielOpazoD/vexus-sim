@@ -7082,3 +7082,34 @@ umbrales; barridos nativos y `npm run check` del SHA exacto se documentan en la 
 **Consecuencias.** La selección no cambia señal, pose ni equipo. El contorno es una guía de resolución96×128, no un borde clínico segmentado ni una mejora del B-mode. Los números de los mandos locales pueden cambiar durante una traslación rígida. Persiste la revisión del preset hepatorrenal y sus relaciones con colon, costillas y retroperitoneo. El primer ensayo de interacción detectó un timeout del trabajador del corte bajo carga alta; el resultado fallido se conserva. El mapa ahora usa la misma inversa respiratoria/compresión y `scene.classify`, sin calcular velocidades que no consume; no cambia campos, rejilla, frecuencia ni watchdog3s. El diagnóstico Node de12.288 puntos conserva exactamente tejido, interfaz, vaso, identidad y coordenada material; mejora el coste observado, sin demostrar por sí solo la causa completa del timeout.
 
 **Verificación.** `probeTranslation.test.ts` comprueba ejes y rayos en las nueve poses y el límite de movimiento. `anatomyContour.test.ts` conserva islas, huecos y separación diagonal. `explorationFidelity.spec.ts` recorre clic/salida/Escape/vivo/paciente, conserva la señal congelada y verifica un arrastre3D real y un giro explícito. `sharedWorker.spec.ts` compara clasificación e índices vasculares del trabajador con la consulta común. Imágenes, candidatos rechazados, primeros fallos y límites se documentan en el plan local. La validación nativa no reemplaza CI SwiftShader ni revisión clínica independiente; la rama atlas sigue sin integrar en main.
+
+## 199. Preparar vistas y primer dibujo del torso antes del bucle acústico
+
+**Contexto.** En el primer intento CI38177697362 de7c79bfe, las etapas
+registran dos cuadros acústicos a16,49s, pero no completan las cargas de corte,
+navegador ni hooks antes de180s. La ausencia de hooks no demuestra un fallo
+de clasificación. Crear o dibujar otro contexto tras enviar trabajo continuo
+puede bloquear llamadas sincrónicas del driver. Es una hipótesis contrastable,
+no una causa Linux demostrada solo por pruebas en Mac.
+
+**Opciones.** Aumentar plazos, desactivar torso, reducir campos o arrancar
+tests con otro modelo no corrige la dependencia. Esperar solo al constructor
+deja el primer render3D compitiendo con la cola acústica.
+
+**Decisión.** `bootstrap` conserva imports diferidos, espera corte, hooks y
+navegador con su primer dibujo real antes de programar RAF. Los errores
+opcionales se registran y la adquisición puede arrancar sin esa vista.
+`registerDevtools` devuelve su promesa de carga; fuera de desarrollo/e2e
+resuelve sin importar código de prueba. El primer dt empieza después de la
+carga, sin avanzar el paciente durante el arranque.
+
+**Consecuencias.** El coste del torso se paga antes de la ecografía. Los
+shaders, datos, muestras, resolución, presupuestos, umbrales y protecciones
+permanecen. El orden no certifica rendimiento ni fidelidad clínica. Los
+conflictos de la pila con main y su integración siguen exigiendo revisión.
+
+**Verificación.** `startupReady.spec.ts` exige torso/corte/hooks disponibles,
+dos cuadros reales, imagen congelable y captura sin errores en atlas. La
+adquisición venosa existente sigue comprobando ambos pacientes y modelos.
+Se conservan logs fallidos y se comprueban controles comparables y toda CI
+del SHA nuevo sin reintentar una ejecución roja para obtener aceptación.

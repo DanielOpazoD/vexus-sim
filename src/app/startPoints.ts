@@ -258,7 +258,7 @@ const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
     sp.id === 'intercostal'
       ? 'Ventana hepática intercostal oblicua: marcador hacia la axila posterior y huella a lo largo del espacio. Rota o abanica para adquirir la suprahepática; las costillas conservan cortical y sombra.'
       : sp.id === 'portal'
-        ? 'Rama portal derecha dentro del hígado desde lateral, marcador craneal. Encuadre de 13 cm y foco a 10 cm; color ±35 cm/s, ganancia 12 dB. Afina entre costillas y ajusta la caja. Para medir VExUS, busca el tronco principal.'
+        ? 'Rama portal derecha dentro del hígado desde lateral. Encuadre de 13 cm y foco a 10 cm; color ±35 cm/s, ganancia 12 dB. Afina entre costillas y ajusta la caja. Para medir VExUS, busca el tronco principal.'
         : sp.id === 'portalTrunk'
           ? 'Tronco portal principal para PW, marcador craneal. Encuadre de 16 cm y foco a 13 cm; afina en el hilio y coloca la puerta en el tronco, sin sustituirlo por una rama intrahepática.'
           : sp.hint,

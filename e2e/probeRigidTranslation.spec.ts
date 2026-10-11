@@ -4,7 +4,7 @@ import { bootWithoutErrors, budget, withinFrames } from './support';
 for (const reference of [false, true])
   test(`deslizar conserva tres ejes y girar es explícito, referencia=${reference}`, async ({ page }, info) => {
     budget(90_000);
-    const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=legacy' + (reference ? '&reference=1' : ''));
+    const errors = await bootWithoutErrors(page, '?e2e=app' + (reference ? '&reference=1' : ''));
     await page.locator('.win-card').filter({ hasText: 'Hepatorrenal' }).click();
     const target = { phi: 3.2, z: -80, yaw: reference ? 0 : -0.1, rock: reference ? -0.2 : 0.1, tilt: -0.4 };
     await withinFrames(

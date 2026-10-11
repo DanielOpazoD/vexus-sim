@@ -8,8 +8,6 @@ export const STARTUP_STAGES = [
   'cut:import',
   'cut:ready',
   'navigator:import',
-  'navigator:surface-begin',
-  'navigator:surface-ready',
   'navigator:construct',
   'navigator:ready',
   'hooks:import',

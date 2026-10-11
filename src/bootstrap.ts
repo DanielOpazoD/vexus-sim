@@ -126,7 +126,7 @@ const mview = new MModeView(mCanvas);
 // para su primer cuadro y el chunk principal no carga su código; si falla, la aplicación sigue sin él.
 let cutMap: CutMapView | null = null;
 markStartup('cut:import');
-const cutReady = import('./ui/cutMapView')
+void import('./ui/cutMapView')
   .then(({ CutMapView }) => {
     cutMap = new CutMapView(cutCanvas);
     cutMap.setLabels(store.get().debug);
@@ -148,15 +148,7 @@ function setPoseManual(p: Parameters<Simulator['setPose']>[0]): void {
 // Carril izquierdo: ventanas VExUS (la sonda se desliza hasta su punto de partida), ayuda y corte plegable
 const windows = new StartPointCards($('start-points'), {
   onPick: (sp) => {
-    if (sp.id === 'portal' || (sp.id === 'portalTrunk' && sim().scene.hasAbdominalAtlas))
-      for (const cmd of portalPreset(
-        !!sim().scene.torso.profile,
-        sim().transducer.f0Doppler,
-        sim().scene.hasAbdominalAtlas,
-        sp.id === 'portalTrunk',
-      ))
-        dispatch(cmd);
-    else if (sim().scene.hasAbdominalAtlas) dispatch({ type: 'bmode', patch: { depthMm: 180, focusMm: 90 } });
+    if (sp.id === 'portal') for (const cmd of portalPreset(!!sim().scene.torso.profile, sim().transducer.f0Doppler)) dispatch(cmd);
     probeAnimator.goTo(sp);
   },
   getPose: () => sim().pose,
@@ -202,18 +194,12 @@ const input = new ProbeInput(
   () => !store.get().frozen,
   (p, phi, z) => translateProbe(p, phi, z, sim().scene.torso, sim().transducer),
 );
-// Preparar el segundo contexto y su primer dibujo antes de enviar trabajo
-// acústico continuo: las cargas diferidas no deben competir con esa cola GPU.
-// Si una vista opcional falla se informa y la ecografía sigue disponible.
+// Navegador 3D (three.js, ~560 kB) con carga diferida: la imagen ecográfica no lo necesita
+// para su primer cuadro; si falla, la aplicación sigue sin él.
 let nav: Navigator3D | null = null;
 markStartup('navigator:import');
-const navigationReady = import('./ui/navigator3d')
-  .then(async ({ Navigator3D }) => {
-    if (sim().scene.hasAbdominalAtlas) {
-      markStartup('navigator:surface-begin');
-      await (await import('./anatomy/abdominalSurface')).loadAbdominalSurface();
-      markStartup('navigator:surface-ready');
-    }
+void import('./ui/navigator3d')
+  .then(({ Navigator3D }) => {
     markStartup('navigator:construct');
     nav = new Navigator3D(navHost, sim().scene, sim().transducer, {
       getPose: () => sim().pose,
@@ -224,13 +210,10 @@ const navigationReady = import('./ui/navigator3d')
       getCaliber: () => sim().anatomy.caliberFor(sim().renderer.displayedFrame?.anatomy.sample ?? sim().sample),
     });
     nav.setStudentMode(!store.get().debug);
-    markStartup('navigator:draw');
-    nav.draw();
-    markStartup('navigator:drawn');
     markStartup('navigator:ready');
   })
   .catch((e: unknown) => errorLog.report('navegador3d', e));
-const hooksReady = registerDevtools(
+registerDevtools(
   sim,
   () => ({ nav, cutMap, spectrogram }),
   dispatch,
@@ -454,10 +437,7 @@ function frame(now: number, dt: number): void {
     if (loopFrames === 0 && nav) markStartup('navigator:draw');
     nav?.draw();
     if (loopFrames === 0 && nav) markStartup('navigator:drawn');
-    if (store.get().torso && !gpu.lost) {
-      cutMap?.draw(s, now);
-    }
-    cutMap?.drawHighlight(overlay, s, store.get().torso && !gpu.lost);
+    if (store.get().torso && !gpu.lost) cutMap?.draw(s, now);
     drawTraces(s);
   }
   const t = s.physiology.clock.t;
@@ -532,9 +512,5 @@ function loop(now: number): void {
   requestAnimationFrame(loop);
 }
 fitCanvases();
-void Promise.all([cutReady, navigationReady, hooksReady]).then(() => {
-  // La carga no es tiempo físico del paciente; el primer dt empieza aquí.
-  last = performance.now();
-  markStartup('loop:scheduled');
-  requestAnimationFrame(loop);
-});
+markStartup('loop:scheduled');
+requestAnimationFrame(loop);

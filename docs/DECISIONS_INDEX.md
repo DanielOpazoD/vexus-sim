@@ -186,8 +186,3 @@ Generado por `npm run docs:index` — no editar a mano.
 | [180](DECISIONS.md#L6703) | Conservar etapas de arranque antes de disponer de los ganchos | vigente |
 | [181](DECISIONS.md#L6733) | Copiar la posición exacta y los ajustes actuales del transductor | vigente |
 | [182](DECISIONS.md#L6766) | Deslizar la sonda conserva los ejes en el paciente | vigente |
-| [199](DECISIONS.md#L6778) | Preparar vistas y primer dibujo del torso antes del bucle acústico | vigente |
-| [200](DECISIONS.md#L6809) | Reconciliar la revisión atlas con adquisiciones inmutables de main | vigente |
-| [201](DECISIONS.md#L6838) | Transportar descriptores del atlas en la textura común de escena | experimento rechazado; restaurado por203 |
-| [202](DECISIONS.md#L6867) | Dependencias de cara explícitas para la pasada de impactos | experimento rechazado; restaurado por203 |
-| [203](DECISIONS.md#L6895) | Contrastar arranque ordenado y límite uniforme de la marcha | vigente |

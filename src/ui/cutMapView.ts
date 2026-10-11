@@ -1,9 +1,6 @@
-import { STRUCTURE_LABELS } from '../anatomy/structureIdentity';
-import { maskContours } from './anatomyContour';
-import { abdominalAtlas } from '../anatomy/abdominalAtlas';
-import { thoracicAtlas } from '../anatomy/thoracicAtlas';
-import type { Simulator } from '../app/simulator';
 import type { ProbeCompression } from '../anatomy/compression';
+import { referenceBody } from '../anatomy/referenceBody';
+import type { Simulator } from '../app/simulator';
 import type { PhysiologySample } from '../physiology/engine';
 import type { ProbeFrame, ProbePose, Transducer } from '../probe/probe';
 import { Tissue } from '../anatomy/tissues';
@@ -33,12 +30,6 @@ interface MapInputs {
 const MAP_W = 96;
 const MAP_H = 128;
 const TISSUE_COLOR: Record<number, [number, number, number]> = {
-  [Tissue.Pancreas]: [213, 172, 113],
-  [Tissue.Spleen]: [153, 94, 126],
-  [Tissue.GutSubmucosa]: [220, 199, 153],
-  [Tissue.GutMuscularis]: [141, 99, 104],
-  [Tissue.SoftCapsule]: [218, 201, 171],
-  [Tissue.BladderWall]: [167, 182, 132],
   [Tissue.Air]: [15, 17, 22],
   [Tissue.Skin]: [200, 170, 150],
   [Tissue.Fat]: [214, 190, 110],
@@ -72,26 +63,8 @@ const TISSUE_COLOR: Record<number, [number, number, number]> = {
   [Tissue.Myocardium]: [150, 62, 78],
   [Tissue.Mediastinum]: [196, 170, 112],
   [Tissue.MesentericFat]: [212, 183, 112],
-  [Tissue.UnsegmentedSoftTissue]: [116, 116, 116],
 };
 const TISSUE_LABEL: Record<number, string> = {
-  [Tissue.Air]: 'aire',
-  [Tissue.Skin]: 'piel',
-  [Tissue.LiverCapsule]: 'cápsula hepática',
-  [Tissue.RenalMedulla]: 'médula renal',
-  [Tissue.RenalCapsule]: 'cápsula renal',
-  [Tissue.PerirenalFat]: 'grasa perirrenal',
-  [Tissue.Blood]: 'sangre',
-  [Tissue.VesselWallPortal]: 'pared portal',
-  [Tissue.VesselWallThin]: 'pared venosa',
-  [Tissue.ArteryWall]: 'pared arterial',
-  [Tissue.BileDuctWall]: 'pared biliar',
-  [Tissue.SoftCapsule]: 'cápsula',
-  [Tissue.Pancreas]: 'páncreas',
-  [Tissue.Spleen]: 'bazo',
-  [Tissue.GutSubmucosa]: 'pared intestinal',
-  [Tissue.GutMuscularis]: 'pared intestinal',
-  [Tissue.BladderWall]: 'vejiga',
   [Tissue.Liver]: 'hígado',
   [Tissue.Fat]: 'grasa',
   [Tissue.Muscle]: 'músculo',
@@ -104,7 +77,7 @@ const TISSUE_LABEL: Record<number, string> = {
   [Tissue.RenalPelvis]: 'pelvis',
   [Tissue.Bowel]: 'intestino',
   [Tissue.BowelGas]: 'gas',
-  [Tissue.Fluid]: 'líquido',
+  [Tissue.Fluid]: 'vesícula',
   [Tissue.Cartilage]: 'cartílago',
   [Tissue.RenalCortex]: 'riñón',
   [Tissue.RenalSinus]: 'seno renal',
@@ -114,7 +87,6 @@ const TISSUE_LABEL: Record<number, string> = {
   [Tissue.Myocardium]: 'miocardio',
   [Tissue.Mediastinum]: 'mediastino',
   [Tissue.MesentericFat]: 'grasa mesentérica',
-  [Tissue.UnsegmentedSoftTissue]: 'tejido no segmentado · estimado',
 };
 /** Cavidades del corazón (decisión 85), en el orden de `HEART_CHAMBER_IDS`: rótulo y color (derechas azules, izquierdas rojas). */
 const CHAMBER: ReadonlyArray<{ label: string; color: [number, number, number] }> = [
@@ -134,8 +106,6 @@ const SYSTEM_COLOR: Record<VesselSystem, [number, number, number]> = {
   renalVein: [90, 140, 220],
   interlobarArtery: [240, 90, 90],
   interlobarVein: [90, 140, 220],
-  systemicArtery: [240, 90, 90],
-  systemicVein: [80, 130, 220],
 };
 const vesselColor = (id: VesselId): [number, number, number] => SYSTEM_COLOR[VESSEL_META[id].system];
 const VESSEL_LABEL: Record<VesselId, string> = {
@@ -171,23 +141,6 @@ const VESSEL_LABEL: Record<VesselId, string> = {
   celiacTrunk: 'tronco celíaco',
   splenicArtery: 'art. esplénica',
   sma: 'AMS',
-  leftGastricArtery: 'gástrica izda.',
-  commonHepaticArtery: 'hepática común',
-  ima: 'AMI',
-  portalSmv: 'VMS',
-  portalSplenic: 'v. esplénica',
-  iliacArteryRight: 'ilíaca dcha.',
-  iliacArteryLeft: 'ilíaca izda.',
-  internalIliacArteryRight: 'ilíaca dcha.',
-  internalIliacArteryLeft: 'ilíaca izda.',
-  externalIliacArteryRight: 'ilíaca dcha.',
-  externalIliacArteryLeft: 'ilíaca izda.',
-  iliacVeinRight: 'ilíaca dcha.',
-  iliacVeinLeft: 'ilíaca izda.',
-  internalIliacVeinRight: 'ilíaca dcha.',
-  internalIliacVeinLeft: 'ilíaca izda.',
-  externalIliacVeinRight: 'ilíaca dcha.',
-  externalIliacVeinLeft: 'ilíaca izda.',
 };
 
 /** Tejido «sangre» como número (el mapa del Worker es un Uint8Array). */
@@ -218,197 +171,7 @@ export class CutMapView {
   private pendingInputs: (MapInputs & { id: number }) | null = null;
   private mapInputs: MapInputs | null = null;
 
-  private readonly tooltip: HTMLDivElement;
-  private hover: { x: number; y: number } | null = null;
-  private selected: { key: string; label: string; contours: ReturnType<typeof maskContours> } | null = null;
-  private pinned: { key: string; label: string } | null = null;
-  private selectionMap: CutMapResponse | null = null;
-  private drawn: {
-    map: CutMapResponse;
-    inputs: NonNullable<CutMapView['mapInputs']>;
-    scene: Simulator['scene'];
-    transducer: Simulator['transducer'];
-  } | null = null;
-
-  constructor(private readonly canvas: HTMLCanvasElement) {
-    this.tooltip = document.createElement('div');
-    this.tooltip.className = 'anatomy-tooltip';
-    this.tooltip.setAttribute('role', 'tooltip');
-    this.tooltip.hidden = true;
-    canvas.parentElement?.append(this.tooltip);
-    canvas.addEventListener('pointermove', this.onHover);
-    canvas.addEventListener('pointerleave', this.onLeave);
-    canvas.addEventListener('click', this.onClick);
-    canvas.addEventListener('keydown', this.onKey);
-    canvas.tabIndex = 0;
-    canvas.setAttribute('aria-label', 'Plano anatómico. Clic para fijar una estructura; Escape para quitar la selección.');
-  }
-
-  private onHover = (event: PointerEvent): void => {
-    const box = this.canvas.getBoundingClientRect();
-    if (!box.width || !box.height) return;
-    this.hover = { x: (event.clientX - box.left) / box.width, y: (event.clientY - box.top) / box.height };
-    this.tooltip.style.left = `${Math.max(4, Math.min(box.width - 220, event.clientX - box.left + 10))}px`;
-    this.tooltip.style.top = `${Math.max(4, Math.min(box.height - 45, event.clientY - box.top - 40))}px`;
-    this.mapDirty = true;
-  };
-
-  private onLeave = (): void => {
-    this.hover = null;
-    if (!this.pinned) this.selected = null;
-    this.tooltip.hidden = !this.pinned;
-    delete this.canvas.dataset.hoverKey;
-    this.mapDirty = true;
-  };
-
-  private clearSelection(): void {
-    this.pinned = null;
-    delete this.canvas.dataset.selectedKey;
-    this.onLeave();
-  }
-
-  private onClick = (event: MouseEvent): void => {
-    const box = this.canvas.getBoundingClientRect();
-    this.hover = { x: (event.clientX - box.left) / box.width, y: (event.clientY - box.top) / box.height };
-    const identity = this.identityUnderPointer();
-    if (!identity || identity.key === this.pinned?.key) this.clearSelection();
-    else {
-      this.pinned = identity;
-      this.canvas.dataset.selectedKey = identity.key;
-      this.mapDirty = true;
-    }
-    this.canvas.focus({ preventScroll: true });
-  };
-
-  private onKey = (event: KeyboardEvent): void => {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      this.clearSelection();
-    }
-  };
-
-  private identityUnderPointer(): { key: string; label: string } | null {
-    const drawn = this.drawn;
-    if (!this.hover || !drawn || !this.canvas.clientHeight || !this.canvas.clientWidth) return null;
-    const tr = drawn.transducer,
-      depth = drawn.inputs.depthMm;
-    const layout = sectorLayout(this.canvas.width, this.canvas.height, tr, depth, 6);
-    const beam = pixelToBeam(layout, tr, depth, this.hover.x * this.canvas.width, this.hover.y * this.canvas.height);
-    if (!beam) return null;
-    const map = drawn.map;
-    const u = Math.min(map.width - 1, Math.floor(((beam.theta + tr.halfSector) / (2 * tr.halfSector)) * map.width));
-    const v = Math.min(map.height - 1, Math.floor((beam.r / depth) * map.height));
-    return this.keyAt(map, v * map.width + u, drawn.scene);
-  }
-
-  private keyAt(map: CutMapResponse, index: number, scene: Simulator['scene']): { key: string; label: string } {
-    const vi = map.vessel[index],
-      tissue = map.tissue[index],
-      region = map.structure?.[index] ?? 0;
-    if (tissue === BLOOD_ID && vi >= 0 && scene.vessels[vi]) {
-      const id = scene.vessels[vi].id;
-      const side = /Right$/.test(id) ? ' · derecha' : /Left$/.test(id) ? ' · izquierda' : '';
-      return { key: `v:${id}`, label: `${VESSEL_LABEL[id]}${side}` };
-    }
-    if (tissue === BLOOD_ID && vi <= -2 && CHAMBER[-2 - vi]) return { key: `c:${vi}`, label: CHAMBER[-2 - vi].label };
-    if (region && STRUCTURE_LABELS[region]) return { key: `o:${region}`, label: STRUCTURE_LABELS[region] };
-    return { key: `t:${tissue}`, label: TISSUE_LABEL[tissue] ?? 'Tejido del modelo' };
-  }
-
-  private matchesShown(sim: Simulator): boolean {
-    const shown = sim.renderer.displayedAnatomy,
-      drawn = this.drawn;
-    if (!shown || !drawn || drawn.scene !== sim.scene || drawn.inputs.depthMm !== sim.displayed.bmode.depthMm) return false;
-    const xComp = drawn.inputs.compression,
-      yComp = shown.compression;
-    if (xComp.nodes.length !== yComp.nodes.length || Math.abs(xComp.plateMm - yComp.plateMm) > 1e-6) return false;
-    for (let i = 0; i < xComp.nodes.length; i++) if (xComp.nodes[i].some((v, j) => Math.abs(v - yComp.nodes[i][j]) > 1e-6)) return false;
-    for (const key of ['curvatureCenter', 'axial', 'lateral'] as const)
-      if (shown.frame[key].some((v, i) => Math.abs(v - drawn.inputs.frame[key][i]) > 1e-6)) return false;
-    const a = drawn.inputs.sample,
-      b = shown.sample;
-    if (Math.abs(a.resp.diaphragmCaudalMm - b.resp.diaphragmCaudalMm) > 0.5) return false;
-    for (const key of ['ivc', 'ivcSupra'] as const) {
-      const x = a[key] ?? a.ivc,
-        y = b[key] ?? b.ivc;
-      if (Math.abs(x.dApMm - y.dApMm) > 0.5 || Math.abs(x.dLatMm - y.dLatMm) > 0.5) return false;
-    }
-    return Math.abs(a.hvRadiusScale - b.hvRadiusScale) * 40 <= 0.5 && Math.abs(a.pvRadiusScale - b.pvRadiusScale) * 40 <= 0.5;
-  }
-
-  private updateSelection(sim: Simulator): void {
-    const previous = this.selected;
-    // La identidad fijada sobrevive a la espera; el overlay solo se pinta
-    // cuando el mapa corresponde al cuadro mostrado (matchesShown).
-    this.selected = null;
-    delete this.canvas.dataset.hoverKey;
-    this.tooltip.hidden = true;
-    const drawn = this.drawn;
-    if (!drawn) return;
-    const identity = this.pinned ?? this.identityUnderPointer();
-    if (!identity) return;
-    const map = drawn.map;
-    if (previous?.key === identity.key && this.selectionMap === map) {
-      this.selected = previous;
-    } else {
-      const mask = new Uint8Array(map.tissue.length);
-      for (let i = 0; i < mask.length; i++)
-        mask[i] = Number(
-          identity.key.startsWith('o:')
-            ? `o:${map.structure?.[i] ?? 0}` === identity.key
-            : this.keyAt(map, i, sim.scene).key === identity.key,
-        );
-      this.selected = { ...identity, contours: maskContours(mask, map.width, map.height) };
-      this.selectionMap = map;
-    }
-    this.canvas.dataset.hoverKey = identity.key;
-    this.tooltip.textContent = `${identity.label} · ${this.pinned ? 'fijado · clic o Esc para quitar' : 'guía anatómica · clic para fijar'}`;
-    this.tooltip.hidden = false;
-  }
-
-  private paintContour(ctx: CanvasRenderingContext2D, sim: Simulator, onUltrasound: boolean): void {
-    if (!this.selected || !this.drawn) return;
-    const { inputs } = this.drawn,
-      tr = sim.transducer;
-    const layout = onUltrasound ? sim.renderer.display : sectorLayout(this.canvas.width, this.canvas.height, tr, inputs.depthMm, 6);
-    const at = (u: number, v: number) => beamToPixel(layout, tr, -tr.halfSector + 2 * tr.halfSector * u, v * inputs.depthMm);
-    const dpr = onUltrasound ? Math.min(2, window.devicePixelRatio || 1) : 1;
-    ctx.save();
-    ctx.strokeStyle = '#5cebd2';
-    ctx.lineWidth = 1.5 * dpr;
-    ctx.setLineDash([]);
-    ctx.lineJoin = 'round';
-    ctx.lineCap = 'round';
-    ctx.beginPath();
-    for (const contour of this.selected.contours) {
-      const points = contour.map(([u, v]) => at(u, v));
-      if (points.length < 3) continue;
-      const last = points[points.length - 1],
-        first = points[0];
-      ctx.moveTo((last.x + first.x) / 2, (last.y + first.y) / 2);
-      // Redondeo de presentación dentro de una celda; no interpola anatomía.
-      for (let i = 0; i < points.length; i++) {
-        const a = points[i],
-          b = points[(i + 1) % points.length];
-        ctx.quadraticCurveTo(a.x, a.y, (a.x + b.x) / 2, (a.y + b.y) / 2);
-      }
-      ctx.closePath();
-    }
-    ctx.stroke();
-    ctx.restore();
-  }
-
-  /** An annotation on the actual presented image; it never writes the image, color field or patient. */
-  drawHighlight(canvas: HTMLCanvasElement, sim: Simulator, enabled = true): void {
-    if (!enabled) this.clearSelection();
-    this.updateSelection(sim);
-    delete canvas.dataset.anatomyHover;
-    if (!this.selected || !this.matchesShown(sim)) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    this.paintContour(ctx, sim, true);
-    canvas.dataset.anatomyHover = this.selected.label;
-  }
+  constructor(private readonly canvas: HTMLCanvasElement) {}
 
   /**
    * Último mapa recibido del Worker (anatomía TypeScript) junto con el instante
@@ -422,11 +185,6 @@ export class CutMapView {
   dispose(): void {
     this.worker?.terminate();
     this.worker = null;
-    this.canvas.removeEventListener('pointermove', this.onHover);
-    this.canvas.removeEventListener('pointerleave', this.onLeave);
-    this.canvas.removeEventListener('click', this.onClick);
-    this.canvas.removeEventListener('keydown', this.onKey);
-    this.tooltip.remove();
   }
 
   /** El corte está degradado: el Worker falló y se espera al siguiente reintento. */
@@ -457,18 +215,8 @@ export class CutMapView {
       return null;
     }
     this.workerPatient = key;
-    this.map = null;
-    this.mapInputs = null;
-    this.drawn = null;
-    this.clearSelection();
     this.pending = false;
-    const init: CutMapInit = {
-      type: 'init',
-      referenceProfile: sim.scene.torso.profile,
-      patient: sim.patient,
-      abdominalField: sim.scene.hasAbdominalAtlas ? abdominalAtlas : undefined,
-      thoracicField: thoracicAtlas,
-    };
+    const init: CutMapInit = { type: 'init', referenceProfile: referenceBody, patient: sim.patient };
     this.worker.postMessage(init);
     this.worker.onmessage = (ev: MessageEvent<CutMapResponse | CutMapError>) => {
       if (ev.data.type === 'error') {
@@ -504,7 +252,7 @@ export class CutMapView {
     if (this.pending && this.watchdog.expired(nowMs))
       this.fail(new Error('el Worker del corte no responde (3 s de hilo principal)'), nowMs);
     const worker = this.ensureWorker(sim, nowMs);
-    if (worker && shown && !this.pending && nowMs - this.lastUpdate >= 1000 / hz) {
+    if (worker && !this.pending && nowMs - this.lastUpdate >= 1000 / hz) {
       this.lastUpdate = nowMs;
       this.pending = true;
       this.watchdog.start(nowMs);
@@ -517,14 +265,7 @@ export class CutMapView {
         transducer: at.transducer,
         compression: at.compression,
         depthMm: shown.bmode.depthMm,
-        sample: {
-          resp: s.resp,
-          ivc: s.ivc,
-          ivcSupra: s.ivcSupra,
-          hvRadiusScale: s.hvRadiusScale,
-          pvRadiusScale: s.pvRadiusScale,
-          velocities: s.velocities,
-        },
+        sample: { resp: s.resp, ivc: s.ivc, hvRadiusScale: s.hvRadiusScale, pvRadiusScale: s.pvRadiusScale, velocities: s.velocities },
         width: MAP_W,
         height: MAP_H,
       };
@@ -554,7 +295,6 @@ export class CutMapView {
     this.canvas.dataset.acquiredFrame = String(this.mapInputs.frameNumber);
     const tr = this.mapInputs.transducer;
     const depth = this.mapInputs.depthMm;
-    this.drawn = { map, inputs: this.mapInputs, scene: sim.scene, transducer: tr };
     const layout = sectorLayout(W, H, tr, depth, 6);
     if (!this.img || this.img.width !== W || this.img.height !== H) this.img = ctx.createImageData(W, H);
     const px = this.img.data;
@@ -617,8 +357,6 @@ export class CutMapView {
       const { x, y } = beamToPixel(layout, tr, tr.halfSector, rr);
       ctx.fillText(String(cm), Math.max(2, x - 16), y);
     }
-    this.updateSelection(sim);
-    this.paintContour(ctx, sim, false);
     // rótulos (el alumno no los ve: identificar la estructura es parte del examen)
     if (!this.labels) return;
     ctx.font = `bold ${Math.round(11 * (W / 300))}px sans-serif`;

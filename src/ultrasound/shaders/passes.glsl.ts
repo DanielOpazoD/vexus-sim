@@ -222,7 +222,7 @@ void main() {
   bool behind = false;
   float lungDb = 0.0;
   int s = -1;
-  for (int it = 0; it < min(1024, 2 * n); it++) {
+  for (int it = 0; it < 1024; it++) {
     if (!behind) s++;
     if (s >= n) break;
     float r = (float(s) + 0.5) * step;
@@ -547,7 +547,7 @@ vec2 fieldForPhBase(vec3 m, float se, int tissue, float ph0, vec3 g, vec3 b0, Wa
   if (tissue == T_BOWEL) het *= restTexture(m);
   // tríadas portales finas del hígado (decisión 78, portalTriads.ts), con el brillo de su vaina según esta mirada
   // (decisión 89)
-  if (tissue == T_LIVER && uAbdominalAtlasEnabled == 0) het *= portalTriad(m, normalize(b0 + g / lookK2));
+  if (tissue == T_LIVER) het *= portalTriad(m, normalize(b0 + g / lookK2));
   return f * tissueBack(tissue) * het;
 }
 // con los septos del psoas y del cuadrado (decisión 81) en la dirección de esta mirada (b_0 + g/lookK2, como la pared);
@@ -829,7 +829,7 @@ vec2 fieldForBase(vec3 m, float se, int tissue, vec3 dir, Warp w) {
   if (tissue == T_BOWEL) het *= restTexture(m);
   // tríadas portales finas del hígado (decisión 78, portalTriads.ts), con el brillo de su vaina según la incidencia del
   // haz (decisión 89: en parte especular)
-  if (tissue == T_LIVER && uAbdominalAtlasEnabled == 0) het *= portalTriad(m, dir);
+  if (tissue == T_LIVER) het *= portalTriad(m, dir);
   return f * tissueBack(tissue) * het;
 }
 // Con los septos de los fascículos del psoas y del cuadrado lumbar (decisión 81, retroTexture.ts): la muestra del medio

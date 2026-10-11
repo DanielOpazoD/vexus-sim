@@ -20,8 +20,6 @@ const EXPECTED: Record<ProtocolVessel, readonly VesselSystem[]> = {
 
 /** Nombre del sistema para el alumno, con su artículo. */
 export const VESSEL_SYSTEM_TEXT: Record<VesselSystem, string> = {
-  systemicArtery: 'arteria sistémica',
-  systemicVein: 'vena sistémica',
   ivc: 'la VCI',
   hepaticVein: 'una suprahepática',
   portal: 'la porta',

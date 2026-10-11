@@ -84,12 +84,6 @@ test('el trabajador modular conserva clasificación y estado separado al cambiar
             points++;
             if (Number(c.tissue) !== map.tissue[v * map.width + u])
               mismatches.push({ u, v, main: c.tissue, worker: map.tissue[v * map.width + u] });
-            if (c.vessel) {
-              // Las ramas procedurales comparten ID; comparar la identidad
-              // vascular, no suponer que el primer índice es el único válido.
-              const actual = sim.scene.vessels[map.vessel[v * map.width + u]]?.id;
-              if (c.vessel !== actual) mismatches.push({ u, v, mainVessel: c.vessel, workerVessel: actual });
-            }
           }
       } finally {
         sim.anatomy.setProbeCompression(sim.contact);

@@ -1,8 +1,5 @@
-import { thoracicAtlas, thoracicValue, thoracicMaterial } from './thoracicAtlas';
-import { abdominalAtlas, abdominalAtlasSdf, hepaticDomeValue, registeredDomeHeight, registeredDomeSample } from './abdominalAtlas';
 import { referenceCartilage } from './referenceCartilage';
 import { bodyDepth, bodyGradient, bodySection } from './referenceBody';
-import { DIAPHRAGM_THICKNESS_MM } from './tissues';
 import type { Vec3 } from '../core/vec3';
 
 /**
@@ -213,8 +210,6 @@ export interface Diaphragm {
   /** Altura de la inserción en el flanco/espalda y ascenso hacia el xifoides (mm). */
   edgeZ: number;
   edgeRise: number;
-  /** Estimated apposition to the registered hepatic superior surface; atlas only. */
-  hepaticContact?: boolean;
 }
 
 /** Altura de la línea de inserción costal en el ángulo φ del tronco. */
@@ -246,10 +241,6 @@ export function diaphragmInteriorEdgeZ(x: number, y: number, d: Diaphragm, t: To
 
 /** Altura del mismo diafragma continuo: mezcla local de cúpulas, sin mover sus ápices ni sus parámetros. */
 export function diaphragmHeight(x: number, y: number, d: Diaphragm, torso: Torso): number {
-  if (d.hepaticContact) {
-    const registered = registeredDomeHeight(x, y);
-    if (registered !== undefined) return registered;
-  }
   const edge = diaphragmInteriorEdgeZ(x, y, d, torso);
   const zr = edge + Math.max(0, d.right.apex - edge) * domeLift(x, y, d.right);
   const zl = edge + Math.max(0, d.left.apex - edge) * domeLift(x, y, d.left);
@@ -257,10 +248,7 @@ export function diaphragmHeight(x: number, y: number, d: Diaphragm, torso: Torso
   // sin añadir el k/4 que smoothMax produciría entre dos ceros.
   const t = Math.min(1, Math.max(0, ((zr + zl) * 0.5 - edge) / (2 * DIAPHRAGM_JOIN_MM)));
   const join = DIAPHRAGM_JOIN_MM * t * t * (3 - 2 * t);
-  const height = join > 0 ? smoothMax(zr, zl, join) : edge;
-  if (!d.hepaticContact) return height;
-  const [contactHeight, support] = hepaticDomeValue(x, y);
-  return height + support * (contactHeight - height);
+  return join > 0 ? smoothMax(zr, zl, join) : edge;
 }
 
 /**
@@ -268,88 +256,17 @@ export function diaphragmHeight(x: number, y: number, d: Diaphragm, torso: Torso
  * centrales de 0,5 mm; en el borde de una hemicúpula, cuya altura sube con tangente vertical, se dispara).
  */
 export function sdDiaphragmSlope(p: Vec3, d: Diaphragm, torso: Torso): [number, number] {
-  const registered = d.hepaticContact ? registeredDomeSample(p[0], p[1]) : undefined;
-  const zd = registered?.[3] ? registered[0] : diaphragmHeight(p[0], p[1], d, torso),
-    h = 0.5;
-  const gx = registered?.[3]
-      ? registered[1]
-      : (diaphragmHeight(p[0] + h, p[1], d, torso) - diaphragmHeight(p[0] - h, p[1], d, torso)) / (2 * h),
-    gy = registered?.[3]
-      ? registered[2]
-      : (diaphragmHeight(p[0], p[1] + h, d, torso) - diaphragmHeight(p[0], p[1] - h, d, torso)) / (2 * h),
-    slope = Math.sqrt(1 + gx * gx + gy * gy);
-  let tangentDistance = (zd - p[2]) / slope;
-  if (registered?.[3]) {
-    // Three continuous projections to real graph points. Cached nodal slopes
-    // guide the search, while the distance always uses the unchanged roof.
-    // Conservative upper bound; global nearest point is not guaranteed.
-    let x = p[0],
-      y = p[1],
-      height = zd,
-      dx = gx,
-      dy = gy,
-      best = Math.abs(zd - p[2]);
-    for (let i = 0; i < 3; i++) {
-      const delta = height - p[2] + dx * (p[0] - x) + dy * (p[1] - y),
-        scale = delta / (1 + dx * dx + dy * dy);
-      x = p[0] - dx * scale;
-      y = p[1] - dy * scale;
-      const sample = registeredDomeSample(x, y);
-      if (sample[3]) {
-        height = sample[0];
-        dx = sample[1];
-        dy = sample[2];
-      } else {
-        height = diaphragmHeight(x, y, d, torso);
-        dx = (diaphragmHeight(x + h, y, d, torso) - diaphragmHeight(x - h, y, d, torso)) / (2 * h);
-        dy = (diaphragmHeight(x, y + h, d, torso) - diaphragmHeight(x, y - h, d, torso)) / (2 * h);
-      }
-      best = Math.min(best, Math.hypot(x - p[0], y - p[1], height - p[2]));
-    }
-    tangentDistance = zd < p[2] ? -best : best;
-  }
-  if (!d.hepaticContact) return [tangentDistance, slope];
-  // Close to the superior contact, the diaphragm is the 2.5 mm shell of the
-  // actual hepatic distance field. A tangent-plane offset alone separates or
-  // cuts curved liver surfaces. Outside this bounded shell keep the height field.
-  const [, support] = hepaticDomeValue(p[0], p[1]),
-    t = Math.min(1, Math.max(0, (zd - p[2] - 6) / 6)),
-    contact = support * (1 - t * t * (3 - 2 * t));
-  const liverDistance = abdominalAtlasSdf(p, 4);
-  const distance = tangentDistance + contact * (DIAPHRAGM_THICKNESS_MM - liverDistance - tangentDistance);
-  // A normalized tangent approximation is not a global distance. Near a steep
-  // roof it can put muscle deep inside the source liver. The organ remains the
-  // obstacle, including outside the normal-contact blend.
-  const tObstacle = Math.min(1, Math.max(0, (liverDistance - DIAPHRAGM_THICKNESS_MM) / 1.5));
-  const obstacleWeight = 1 - tObstacle * tObstacle * (3 - 2 * tObstacle);
-  const obstacleDistance = Math.max(distance, DIAPHRAGM_THICKNESS_MM - liverDistance);
-  return [distance + obstacleWeight * (obstacleDistance - distance), slope];
+  const zd = diaphragmHeight(p[0], p[1], d, torso);
+  const h = 0.5;
+  const gx = (diaphragmHeight(p[0] + h, p[1], d, torso) - diaphragmHeight(p[0] - h, p[1], d, torso)) / (2 * h);
+  const gy = (diaphragmHeight(p[0], p[1] + h, d, torso) - diaphragmHeight(p[0], p[1] - h, d, torso)) / (2 * h);
+  const slope = Math.sqrt(1 + gx * gx + gy * gy);
+  return [(zd - p[2]) / slope, slope];
 }
 
 /** Distancia con signo al diafragma: negativa en el tórax (por encima). */
 export function sdDiaphragm(p: Vec3, d: Diaphragm, torso: Torso): number {
   return sdDiaphragmSlope(p, d, torso)[0];
-}
-
-/** Navigator samples the zero of the same acoustic shell, not a separate smoothed roof. */
-export function diaphragmSurfaceZ(x: number, y: number, d: Diaphragm, torso: Torso): number {
-  const height = diaphragmHeight(x, y, d, torso);
-  if (!d.hepaticContact || Math.abs(sdDiaphragm([x, y, height], d, torso)) <= 1e-8) return height;
-  // At −12 mm the shell support vanishes by construction; above the sheet both
-  // distances are negative. This bracket follows the contact support, not a fit.
-  let lo = height - 12,
-    // The liver obstacle also operates where normal-contact support is zero.
-    // Its upper level is bounded by the same hepatic parallel-surface table.
-    hi = Math.max(height, hepaticDomeValue(x, y)[0]) + 12;
-  if (sdDiaphragm([x, y, lo], d, torso) < 0 || sdDiaphragm([x, y, hi], d, torso) > 0)
-    throw new Error('Diaphragm surface exceeds its registered contact bracket');
-  // Numerical root precision keeps the body/rim solve stable; it adds no source resolution.
-  for (let i = 0; i < 24; i++) {
-    const z = (lo + hi) / 2;
-    if (sdDiaphragm([x, y, z], d, torso) > 0) lo = z;
-    else hi = z;
-  }
-  return (lo + hi) / 2;
 }
 
 export interface CylinderZ {
@@ -468,22 +385,15 @@ export function spineSlabSd(z: number): number {
 
 /** Distancia con signo a la caja del arco posterior (con las apófisis transversas). */
 export function spineArchSd(p: Vec3, sp: Spine): number {
-  if (thoracicAtlas && abdominalAtlas) return 16;
   const dx = Math.abs(p[0] - sp.x0) - sp.archHalfWidth;
   const cy = 0.5 * (sp.archY0 + sp.archY1);
   const dy = Math.abs(p[1] - cy) - 0.5 * (sp.archY1 - sp.archY0);
-  const d = Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) + Math.min(Math.max(dx, dy), 0);
-  return abdominalAtlas ? Math.max(d, -60 - p[2]) : d;
+  return Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) + Math.min(Math.max(dx, dy), 0);
 }
 
 /** Distancia con signo a los cuerpos vertebrales (el borde del platillo redondeado): la cara de su cortical. */
 export function spineBodySd(p: Vec3, sp: Spine): number {
-  if (thoracicAtlas && abdominalAtlas) {
-    const q = thoracicValue(p);
-    return Math.min(thoracicMaterial(q.label) === 'vertebra' ? q.d : 16, abdominalAtlasSdf(p, 8));
-  }
-  const d = smoothMax(spineEllipseSd(p, sp), spineSlabSd(p[2]), SPINE_SHAPE.rimMm);
-  return abdominalAtlas ? Math.min(Math.max(d, -60 - p[2]), abdominalAtlasSdf(p, 8)) : d;
+  return smoothMax(spineEllipseSd(p, sp), spineSlabSd(p[2]), SPINE_SHAPE.rimMm);
 }
 
 /**
@@ -495,15 +405,8 @@ export function spineBodySd(p: Vec3, sp: Spine): number {
  */
 export function spineDistances(p: Vec3, sp: Spine): { body: number; bone: number; disc: number } {
   const e = spineEllipseSd(p, sp);
-  const original = smoothMax(e, spineSlabSd(p[2]), SPINE_SHAPE.rimMm);
-  const body = spineBodySd(p, sp);
-  const disc =
-    thoracicAtlas && abdominalAtlas
-      ? abdominalAtlasSdf(p, 10)
-      : abdominalAtlas
-        ? Math.min(Math.max(e, -original, -60 - p[2]), abdominalAtlasSdf(p, 10))
-        : Math.max(e, -body);
-  return { body, bone: Math.min(body, spineArchSd(p, sp)), disc };
+  const body = smoothMax(e, spineSlabSd(p[2]), SPINE_SHAPE.rimMm);
+  return { body, bone: Math.min(body, spineArchSd(p, sp)), disc: Math.max(e, -body) };
 }
 
 /** Distancia a cuerpos ∪ arco. blendMm=0 conserva el hueso; >0 solo suaviza la envolvente de exclusión de órganos. */

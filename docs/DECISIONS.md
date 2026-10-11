@@ -6851,3 +6851,31 @@ capacidad y registros externos intactos; guardas GLSL originales, equivalencia
 TS/GPU, imágenes B/color al mismo pose/instante/receptor y arranque usable
 sin reintentos ni cambios de plazo. El resultado se registra por SHA y no
 constituye validación clínica externa.
+
+## 202. Dependencias de cara explícitas para la pasada de impactos
+
+**Contexto.** El transporte de descriptores98b358e conserva cinco controles
+nativos, pero no resuelve el bloqueo software: Congelar vence240s y se
+observan cuatro cuadros. Se conserva el resultado fallido. A0 solo lee
+tipo de tejido y normal pulmonar para reflexión; no consume normales de
+vísceras abdominales, cortical/cartílago ni eje/curvatura de esas caras.
+
+**Opciones.** Quitar órganos, impedir reflejos, reducir rayos o forzar clics
+en pruebas ocultaría el defecto. El ensayo histórico de omitir solo la
+metadata final no retiraba los gradientes internos de estos campos.
+
+**Decisión.** La macro VEXUS_TRANSMISSION_TYPES se activa exclusivamente
+en FRAG_TRANS_HITS. Excluye gradientes abdominales y torácicos no
+consumidos por A0; el estado de tejido/distancias y la normal pulmonar
+de sdDome/cortina siguen completos. Los demás programas conservan
+funciones íntegras. No se cambia bisección, trigonometría ni atenuación.
+
+**Consecuencias.** Menor código derivativo en la búsqueda de impactos.
+El coste y la suficiencia permanecen experimentales hasta contrastar
+impactos/reflexión, señal al mismo estado e interacción software real.
+Si cambia algún observable acústico o sigue el bloqueo, no integrar.
+
+**Verificación.** Guardas originales de shaders/build, controles de señal
+congelada y movimientos, equivalencia y pares B/color registrados. El
+arranque debe permitir Congelar mediante clic normal con plazos originales;
+no se acepta solo un contador de cuadros ni el resultado nativo del Mac.

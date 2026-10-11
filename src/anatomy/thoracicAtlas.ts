@@ -64,12 +64,23 @@ float thoracicSdf(vec3 p) { return thoracicValue(p).x; }
 const int THORACIC_MATERIALS[${F.materials.length}]=int[${F.materials.length}](${F.materials.join(',')});
 int thoracicMaterial(float label){return THORACIC_MATERIALS[clamp(int(label+.5),0,${F.materials.length - 1})];}
 
-vec3 thoracicGradient(vec3 p){vec2 h=vec2(.25,0);return vec3(thoracicSdf(p+h.xyy)-thoracicSdf(p-h.xyy),thoracicSdf(p+h.yxy)-thoracicSdf(p-h.yxy),thoracicSdf(p+h.yyx)-thoracicSdf(p-h.yyx))/.5;}
+vec3 thoracicGradient(vec3 p){
+#if VEXUS_TRANSMISSION_TYPES
+  // Normal cortical/cartilaginosa no consumida por la búsqueda de impactos A0.
+  return vec3(0.0,1.0,0.0);
+#else
+  vec2 h=vec2(.25,0);return vec3(thoracicSdf(p+h.xyy)-thoracicSdf(p-h.xyy),thoracicSdf(p+h.yxy)-thoracicSdf(p-h.yxy),thoracicSdf(p+h.yyx)-thoracicSdf(p-h.yyx))/.5;
+#endif
+}
 void thoracicFrame(vec3 p,out vec3 axis,out float curvature){
+#if VEXUS_TRANSMISSION_TYPES
+  axis=vec3(0.0,0.0,1.0);curvature=0.0;
+#else
   vec3 g=thoracicGradient(p);float gn=length(g);if(gn<1e-6){axis=vec3(0,0,1);curvature=0.0;return;}vec3 n=g/gn;
   vec3 u=abs(n.z)<.9?vec3(-n.y,n.x,0):vec3(0,-n.z,n.y);u/=max(length(u),1e-6);vec3 v=cross(n,u);float h=${(2 * F.pitchMm).toFixed(1)};vec3 U=h*u,V=h*v;float d=thoracicSdf(p);
   float a=(thoracicSdf(p+U)+thoracicSdf(p-U)-2.0*d)/(h*h),c=(thoracicSdf(p+V)+thoracicSdf(p-V)-2.0*d)/(h*h),b=(thoracicSdf(p+U+V)-thoracicSdf(p+U-V)-thoracicSdf(p-U+V)+thoracicSdf(p-U-V))/(4.0*h*h);
   float theta=.5*atan(2.0*b,a-c),co=cos(theta),si=sin(theta),hi=.5*(a+c+length(vec2(a-c,2.0*b))),lo=.5*(a+c-length(vec2(a-c,2.0*b)));
   axis=abs(hi)<abs(lo)?co*u+si*v:-si*u+co*v;curvature=max(abs(lo),abs(hi))/gn;
+#endif
 }
 `;

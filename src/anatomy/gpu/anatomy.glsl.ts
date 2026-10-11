@@ -75,6 +75,9 @@ const INTERFACE_DEFINES = Object.entries(INTERFACE_GLSL_NAME)
   .join('\n');
 
 export const ANATOMY_GLSL = /* glsl */ `
+#ifndef VEXUS_TRANSMISSION_TYPES
+#define VEXUS_TRANSMISSION_TYPES 0
+#endif
 #define MAX_TUBES ${MAX_TUBES}
 #define MAX_NODES ${MAX_NODES}
 #define SCENE_TEX_W ${SCENE_TEX_W}

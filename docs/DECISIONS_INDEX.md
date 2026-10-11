@@ -188,3 +188,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [199](DECISIONS.md#L6766) | Preparar vistas y primer dibujo del torso antes del bucle acústico | vigente |
 | [200](DECISIONS.md#L6797) | Reconciliar la revisión atlas con adquisiciones inmutables de main | vigente |
 | [201](DECISIONS.md#L6826) | Transportar descriptores del atlas en la textura común de escena | vigente |
+| [202](DECISIONS.md#L6855) | Dependencias de cara explícitas para la pasada de impactos | vigente |

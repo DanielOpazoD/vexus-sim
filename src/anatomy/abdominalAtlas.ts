@@ -158,7 +158,12 @@ vec2 abdominalAtlasValue(vec3 p, int k){
 }
 float abdominalAtlasSdf(vec3 p, int k){return abdominalAtlasValue(p,k).x; }
 vec3 abdominalAtlasGradient(vec3 p, int k){
+#if VEXUS_TRANSMISSION_TYPES
+  // A0 solo consume normales pulmonares; estos campos son vísceras abdominales.
+  return vec3(0.0,1.0,0.0);
+#else
   vec2 h=vec2(0.25,0.0); 
   return vec3(abdominalAtlasSdf(p+h.xyy,k)-abdominalAtlasSdf(p-h.xyy,k),abdominalAtlasSdf(p+h.yxy,k)-abdominalAtlasSdf(p-h.yxy,k),abdominalAtlasSdf(p+h.yyx,k)-abdominalAtlasSdf(p-h.yyx,k))/0.5; 
+#endif
 }
 `;

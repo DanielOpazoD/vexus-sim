@@ -6774,3 +6774,35 @@ Referencia API: https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/write
 **Consecuencias.** Los mandos locales pueden cambiar porque representan orientación respecto de la piel. No cambia anatomía, presets, transductor, señal ni fisiología. La orientación fija no garantiza contacto de toda la huella ni conserva un órgano dentro del nuevo plano. Se conserva la física de contacto/compresión y la velocidad Doppler del movimiento. La guía de selección del atlas queda en otra revisión; este PR no depende de su integración ni cambia el servidor3024.
 
 **Verificación.** `probeTranslation.test.ts` contrasta tres ejes y rayos en las nueve poses sobre piel de referencia y prueba el límite con un desplazamiento grande. `probeRigidTranslation.spec.ts` registra eventos reales en cuerpos legacy/referencia, giro explícito y ausencia de errores. El check estándar completo y CI exacta de primer resultado son gates; los resultados nativos y los límites se registran por SHA en el plan local. No se declara fluidez global ni validación anatómica externa.
+
+## 183. Selección persistente y contornos de la guía desde la anatomía adquirida
+
+**Contexto.** En el plano de la imagen, retirar el puntero o recibir otro mapa
+perdía la selección; los segmentos discretos no formaban un contorno
+continuo. La revisión237 estaba apilada sobre un atlas experimental cuyo
+arranque software falló; incorporarlo traía226archivos sin ese gate.
+
+**Opciones.** Importar la pila no validada confunde una corrección de guía
+con reconstrucción anatómica. Ocultar fallos de atlas o relajar sus tests no
+resuelve la dependencia. Se preserva esa fuente y sus ensayos en sus ramas.
+
+**Decisión.** Integrar la guía sobre main actual, desde la misma coordenada
+material/clasificación y la instantánea adquirida inmutable (181–182).
+Clic fija identidad; salir/mapas nuevos no la borran. Escape, repetición
+del clic y cambio de paciente cancelan. Contornos cerrados por marching
+squares y redondeo de hasta una celda; conservar huecos/islas reales.
+La guía marca el B-mode solo si corresponde al cuadro mostrado/cine.
+
+**Consecuencias.** Solo hígado, riñones y vesícula tienen identidad de órgano
+cuando el clasificador demuestra su tejido/interfaz; vasos/cavidades y los
+demás tejidos mantienen sus identidades. Líquido sin interfaz biliar se
+nombra contenido líquido, no siempre vesícula. No se añaden órganos,
+campos, patrones acústicos ni se certifica fidelidad por suavizar una guía.
+El trabajador evita velocidades no consumidas;96×128/hz/watchdog3s intactos.
+No cambia el dominio anatómico de main ni la revisión atlas oficial3024.
+
+**Verificación.** Topología de contornos; centros renales/interfaz biliar;
+clic/mapas/salida/Escape/paciente en cuerpos legacy/referencia con señal
+congelada inmutable; hover/vaso/cine; igualdad exacta trabajador/consulta
+en2048 puntos de dos casos. Toda la suite original permanece. CI exacta
+sin reintentos es obligatoria; el atlas y sus validaciones siguen pendientes.

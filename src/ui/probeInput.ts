@@ -30,6 +30,7 @@ export class ProbeInput {
     private readonly getPose: () => ProbePose,
     private readonly setPose: (p: ProbePose) => void,
     private readonly live: () => boolean = () => true,
+    private readonly translate: (pose: ProbePose, phi: number, z: number) => ProbePose = (pose, phi, z) => ({ ...pose, phi, z }),
   ) {
     el.addEventListener('pointerdown', this.onDown);
     window.addEventListener('pointermove', this.onMove);
@@ -70,7 +71,7 @@ export class ProbeInput {
       const dy = e.clientY - prev.y;
       this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
       const p = this.getPose();
-      if (this.touches.size === 1) this.setPose({ ...p, phi: p.phi - dx * 0.004, z: p.z - dy * 0.35 });
+      if (this.touches.size === 1) this.setPose(this.translate(p, p.phi - dx * 0.004, p.z - dy * 0.35));
       else this.setPose({ ...p, rock: p.rock + dx * 0.004, tilt: p.tilt + dy * 0.004 });
       return;
     }
@@ -84,7 +85,7 @@ export class ProbeInput {
     if (this.dragging === 'slide') {
       // A la derecha de la pantalla → hacia el marcador (craneal por defecto) no:
       // deslizar en pantalla mueve la sonda sobre la piel en el mismo sentido visual.
-      this.setPose({ ...p, phi: p.phi - dx * 0.0035 * fine, z: p.z - dy * 0.3 * fine });
+      this.setPose(this.translate(p, p.phi - dx * 0.0035 * fine, p.z - dy * 0.3 * fine));
     } else {
       this.setPose({ ...p, rock: p.rock + dx * 0.004 * fine, tilt: p.tilt + dy * 0.004 * fine });
     }
@@ -106,7 +107,8 @@ export class ProbeInput {
   /** Integra las teclas mantenidas (llamar cada cuadro con dt en segundos); sin una tecla de movimiento no toca la pose. */
   tick(dt: number): void {
     if (!this.live() || ![...this.keys].some((k) => MOVE_KEYS.has(k))) return;
-    const p = { ...this.getPose() };
+    const original = this.getPose();
+    let p = { ...original };
     const fine = this.keys.has('shift') ? 0.3 : 1;
     const slide = 40 * dt * fine; // mm/s
     const rot = 0.9 * dt * fine; // rad/s
@@ -114,6 +116,7 @@ export class ProbeInput {
     if (this.keys.has('d')) p.phi -= slide * 0.008;
     if (this.keys.has('w')) p.z += slide;
     if (this.keys.has('s')) p.z -= slide;
+    if (p.phi !== original.phi || p.z !== original.z) p = this.translate(original, p.phi, p.z);
     if (this.keys.has('q')) p.yaw -= rot;
     if (this.keys.has('e')) p.yaw += rot;
     if (this.keys.has('arrowleft')) p.rock -= rot;

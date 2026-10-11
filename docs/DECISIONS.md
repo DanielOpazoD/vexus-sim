@@ -6992,3 +6992,33 @@ no certifican fidelidad clínica ni continuidad universal.
 **Decisión.** Solo el ajuste de la tarjeta portal intrahepática del atlas toma r47,5–102,5mm, centro75mm y la misma amplitud55mm. `portalPreset` conserva los ajustes de referencia/legacy y del tronco principal, ángulos de caja, PRF, filtro y ganancia. Es un encuadre empírico para esta fuente y pose, no un valor anatómico universal.
 **Consecuencias.** La caja incluye más de la rama intrahepática; el usuario puede desplazarla. No cambia anatomía, circulación ni la puerta PW; la rama intrahepática no sustituye automáticamente la medición del tronco principal para VExUS. Persiste el bloqueo de integración del atlas y la revisión clínica externa.
 **Verificación.** Contrato y evidencia del experimento local en el plan externo de fidelidad: comparación con el mismo cuadro/estado y control de señal a igual caja, dos casos, poses vecinas, invariantes de ajustes de otros dominios y presupuesto original. No aceptar solo una captura favorable.
+
+## 193. Recupera coherencia entre pose, contacto y haz en la revisión del atlas
+
+**Contexto.** El atlas34 usado para revisar la pose portal conserva el simulador anterior a
+PR233/main18. `setPose` cambia los mandos, pero `frame`, compresión CPU y render siguen con
+el contacto anterior hasta el siguiente paso físico. Una prueba sobre la base0c reproduce
+el desfase en legacy, referencia y atlas. Es distinto de la pérdida de una rama al salir
+físicamente del plano: esta corrección no intenta mantener visible una Y.
+
+**Opciones.** Suavizar imágenes, ensanchar vasos o mover el hígado ocultaría el defecto.
+Copiar todo main cambiaría campos del atlas y otras adquisiciones. Se recupera el mecanismo
+acotado de PR233, conservando la anatomía34 y ampliando el control al atlas.
+
+**Decisión.** `Simulator.setPose` sincroniza el contacto; adquisición y consulta pública de
+marco usan ese contacto. El marco del último avance se conserva para estimar velocidad
+Doppler. Los ángulos que ya pertenecen al intervalo canónico conservan su número exacto en
+`clampPose`: el módulo innecesario cambiaba bits y recalculaba contacto en una pose idéntica.
+Las poses fuera del intervalo siguen envolviéndose. No cambia anatomía, haz, color o fisiología.
+
+**Consecuencias.** Un dibujo entre pasos adquiere el plano actual. Mover los mandos con la
+imagen congelada mantiene el cine adquirido. La corrección no certifica continuidad vascular,
+TAC contrastado ni normalidad anatómica; estas requieren barridos, reconocimiento y comparación
+independiente. Esta rama de revisión no es integrable contra la base temporal34; falta
+reconciliar atlas y main y resolver el arranque SwiftShader.
+
+**Verificación.** `frameContactCoherence.test.ts`: los tres dominios fallan antes y pasan
+con el nuevo contacto; velocidad preservada, congelación intacta y contacto reutilizado en una
+pose idéntica. La primera recuperación del mecanismo también detectó el redondeo de la pose,
+que se conserva como experimento rechazado. Doce controles focalizados pasan sin modificar
+umbrales; barridos nativos y `npm run check` del SHA exacto se documentan en la evidencia del PR.

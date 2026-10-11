@@ -195,3 +195,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [189](DECISIONS.md#L6860) | Techo diafragmático registrado experimental y cero acústico común | vigente |
 | [190](DECISIONS.md#L6941) | Completar el último tramo de búsqueda de la pared bajo la sonda | vigente |
 | [191](DECISIONS.md#L6980) | Posición portal escogida y copia exacta de los mandos | vigente |
+| [192](DECISIONS.md#L6988) | Encuadrar la rama portal escogida con la caja de color | vigente |

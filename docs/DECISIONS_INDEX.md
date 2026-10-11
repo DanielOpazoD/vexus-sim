@@ -185,3 +185,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [179](DECISIONS.md#L6670) | Contacto actual sin borrar la velocidad del último paso físico | vigente |
 | [180](DECISIONS.md#L6703) | Conservar etapas de arranque antes de disponer de los ganchos | vigente |
 | [181](DECISIONS.md#L6733) | Copiar la posición exacta y los ajustes actuales del transductor | vigente |
+| [182](DECISIONS.md#L6766) | Deslizar la sonda conserva los ejes en el paciente | vigente |

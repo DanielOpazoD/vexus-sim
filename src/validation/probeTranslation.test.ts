@@ -1,15 +1,20 @@
-import { expect, it } from 'vitest';
+import { afterEach, expect, it } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
 import { CONVEX_C35, probeFrame, pointOnLine, clampPose } from '../probe/probe';
 import { translateProbe } from '../probe/translation';
 import { startPointsFor } from '../app/startPoints';
+import { setReferenceBody } from '../anatomy/referenceBody';
+
+afterEach(() => setReferenceBody());
 
 it('translates rays rigidly over sampled skin without aiming or changing their directions', () => {
-  const raw = readFileSync('src/anatomy/abdominal-body.bin');
+  const raw = readFileSync('src/anatomy/reference-body.bin');
   const profile = new Float32Array(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength));
-  const torso = new AnatomyScene(NORMAL_ADULT, profile).torso;
+  setReferenceBody(profile);
+  const torso = new AnatomyScene(NORMAL_ADULT).torso;
+  expect(torso.profile).toBe(profile);
   for (const sp of startPointsFor(torso)) {
     const original = { ...sp, lift: 0, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 };
     const old = probeFrame(original, torso, CONVEX_C35);

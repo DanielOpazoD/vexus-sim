@@ -6763,6 +6763,18 @@ del usuario. Denegación y API ausente producen texto enfocado y seleccionado,
 sin afirmar éxito. Navegador nativo, check completo y CI exacta son gates.
 Referencia API: https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/writeText.
 
+## 182. Deslizar la sonda conserva los ejes en el paciente
+
+**Contexto.** Los ángulos de la pose son relativos a la piel. Cambiar phi/z manteniéndolos hace girar el haz sobre una pared curva, aunque el gesto solo traslada la sonda. En la revisión local atlas se observaron cambios axiales9,61–24,28° en tres arrastres; esa revisión está bloqueada por su CI y no debe importarse para resolver este comportamiento independiente.
+
+**Opciones.** Importar el atlas y su guía retrasaría una corrección que no requiere sus campos. Mantener la imagen de un órgano tras el deslizamiento ocultaría que el plano se ha trasladado. Se cambia únicamente la cinemática de entrada.
+
+**Decisión.** `translateProbe` conserva axial, lateral y elevación en coordenadas del paciente y los reexpresa en el marco cutáneo del nuevo apoyo. Ratón, tacto y teclado usan la misma función; girar, bascular e inclinar siguen siendo gestos explícitos. Si la orientación exigiría superar los límites existentes, la traslación se detiene en el último apoyo representable. No se truncan ángulos silenciosamente.
+
+**Consecuencias.** Los mandos locales pueden cambiar porque representan orientación respecto de la piel. No cambia anatomía, presets, transductor, señal ni fisiología. La orientación fija no garantiza contacto de toda la huella ni conserva un órgano dentro del nuevo plano. Se conserva la física de contacto/compresión y la velocidad Doppler del movimiento. La guía de selección del atlas queda en otra revisión; este PR no depende de su integración ni cambia el servidor3024.
+
+**Verificación.** `probeTranslation.test.ts` contrasta tres ejes y rayos en las nueve poses sobre piel de referencia y prueba el límite con un desplazamiento grande. `probeRigidTranslation.spec.ts` registra eventos reales en cuerpos legacy/referencia, giro explícito y ausencia de errores. El check estándar completo y CI exacta de primer resultado son gates; los resultados nativos y los límites se registran por SHA en el plan local. No se declara fluidez global ni validación anatómica externa.
+
 ## 199. Preparar vistas y primer dibujo del torso antes del bucle acústico
 
 **Contexto.** En el primer intento CI38177697362 de7c79bfe, las etapas

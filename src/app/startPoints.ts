@@ -241,8 +241,6 @@ const ABDOMINAL_POSES = {
   intercostal: { phi: 2.5, z: -35, yaw: -1.2, rock: 0.08958884100807597, tilt: 0.15439831127567974 },
   subcostal: { phi: 2, z: -80, yaw: 0.6280025227578521, rock: 0.3259201915316282, tilt: -0.03886141881794285 },
   flank: { phi: 3.1, z: -75, yaw: 0.1767952406260464, rock: 0.4707775613505776, tilt: -0.04687503959831865 },
-  // Equivalent acoustic plane with the marked end cranial: yaw − π, rock/tilt sign reversed.
-  // The former pose pointed the marker caudally and mirrored the standard longitudinal orientation.
   // Pose de rótulos redondeados elegida por Daniel en esta misma versión.
   portal: { phi: (173 * Math.PI) / 180, z: -40, yaw: (-72 * Math.PI) / 180, rock: (-6 * Math.PI) / 180, tilt: (-2 * Math.PI) / 180 },
   // A 2.86-degree venous sweep reaches an interlobar lumen with the existing 1.2 mm wall safeguard.

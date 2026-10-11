@@ -6976,3 +6976,11 @@ además de ausencia de contacto con toda la huella levantada. Pruebas previas
 de compresión y pared conservadas. Adquisiciones pareadas/vecinas, cines,
 check completo y CI exacta se registran en el PR; tests y una captura favorable
 no certifican fidelidad clínica ni continuidad universal.
+
+## 191. Posición portal escogida y copia exacta de los mandos
+
+**Contexto.** Daniel selecciona una adquisición portal del atlas de34ba98e: φ173°, z−40mm, yaw−72°, tilt−2°, rock−6° y presión0mm. Los rótulos redondeados de su captura no permiten recuperar más precisión.
+**Opciones.** Se descarta cambiar de atlas durante este ajuste:26cd7b7 contiene datos y campos distintos. Una captura o rótulo redondeado no sustituye la posición exacta.
+**Decisión.** `ABDOMINAL_POSES.portal` toma los valores seleccionados. `probePositionText` y `buildProbePositionCopy` ofrecen JSON con seis mandos exactos, unidades, versión, dominio, transductor, caso, reloj, respiración y equipo completo desde Adquirir → Sonda. Se conserva la anatomía original de34ba98e y las otras ocho poses.
+**Consecuencias.** Esta rama es una revisión local del atlas experimental, sin integración en main ni validación anatómica externa. La copia describe los mandos actuales, no el cuadro congelado ni el historial hemodinámico. Si escribir al portapapeles falla, ofrece selección manual sin afirmar éxito; no lee el portapapeles. La posición del dueño no certifica anatomía vascular ni corrige los bloqueos de CI del atlas.
+**Verificación.** `probePosition.test.ts` conserva precisión y el estado al pulsar. `e2e/probePosition.spec.ts` cubre imagen congelada, controles, escritura denegada y API ausente. La revisión local registra imágenes y movimientos físicos; los resultados y límites van en el plan de fidelidad externo, sin atribuir a esta fuente metadatos de adquisición que no expone.

@@ -1,0 +1,32 @@
+{
+  "sourceSha": "33a6685333ee5d7649d81a1dadfb01e84f592b11",
+  "baseObserverSha": "4c2892c01978ad623b6245aeb4659acdfb113e76",
+  "shadersAndGuardsIdentical": true,
+  "paths": [
+    {
+      "path": "src/anatomy/gpu/anatomy.glsl.ts",
+      "beforeSha256": "ce8ed2aecc364d0dd45976e68b19e5f6a6594432aecebe3268a01282f39004c2",
+      "finalSha256": "ce8ed2aecc364d0dd45976e68b19e5f6a6594432aecebe3268a01282f39004c2",
+      "identical": true
+    },
+    {
+      "path": "src/ultrasound/shaders/passes.glsl.ts",
+      "beforeSha256": "ced791608420756f6db4f935781d6ca2ab4eeabcb7dd9bd6353c8938044ef36a",
+      "finalSha256": "ced791608420756f6db4f935781d6ca2ab4eeabcb7dd9bd6353c8938044ef36a",
+      "identical": true
+    },
+    {
+      "path": "src/validation/transmission.test.ts",
+      "beforeSha256": "38d33058fbc1c0e0e55bfeab448e9fb354c6e6bef1a9d1725d764a2caf3e797f",
+      "finalSha256": "38d33058fbc1c0e0e55bfeab448e9fb354c6e6bef1a9d1725d764a2caf3e797f",
+      "identical": true
+    },
+    {
+      "path": "src/validation/shaderLimits.test.ts",
+      "beforeSha256": "8055ecb2348b1c0cc05533db31b5add488da94540f2391fae9ba676af79cc543",
+      "finalSha256": "8055ecb2348b1c0cc05533db31b5add488da94540f2391fae9ba676af79cc543",
+      "identical": true
+    }
+  ],
+  "noAcceptedCostChange": true
+}

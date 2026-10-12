@@ -1,3 +1,4 @@
+import { acquisitionJson } from './acquisitionJson';
 /** Reproducible nine-window evidence; captures actual UI/framebuffer, never generated illustrations. */
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -148,7 +149,7 @@ try {
           clinicalAcceptance: 'pending',
         };
         rows.push(item);
-        writeFileSync(join(runOut, `${stem}.json`), JSON.stringify(item, null, 2) + '\n');
+        writeFileSync(join(runOut, `${stem}.json`), acquisitionJson(item));
         console.log(`${caseId}/${view}: captured ${snapshot.presentedFrame} at ${snapshot.acquiredTimeSeconds}s; clinical review pending`);
       } catch (error) {
         await page.screenshot({ path: join(runOut, `${stem}-failed.png`) }).catch(() => undefined);

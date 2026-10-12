@@ -189,3 +189,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [183](DECISIONS.md#L6789) | Selección persistente y contornos de la guía desde la anatomía adquirida | vigente |
 | [184](DECISIONS.md#L6834) | Confirmar en GPU el primer cuadro de los ensayos | vigente |
 | [185](DECISIONS.md#L6846) | Admitir una pareja renal sin confundir paciente y plano | vigente |
+| [186](DECISIONS.md#L6858) | Concentración continua del medio dispersor en la rama principal | vigente |

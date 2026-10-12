@@ -6843,3 +6843,15 @@ solicita rerun de esa CI; una corrección nueva requiere otro SHA.
 **Consecuencias.** No cambia la imagen del simulador ni el navegador. Facilita detectar errores de referencia antes de ajustar anatomía. Los datos y acuerdos quedan fuera del repo; el campo de procedencia no otorga permisos. Un conjunto de dos pacientes solo puede ser un piloto, sin certificación de normalidad o fidelidad general.
 
 **Verificación.** Controles sintéticos de paciente/lado/archivo equivocado, máscara desplazada y codificación incorrecta; admisión incompleta no se convierte en éxito clínico. Workflow offline ejecuta también los auditores CT existentes, sin imágenes de pacientes. La CI principal y sus presupuestos permanecen intactos. Contrato y fuentes en `docs/fidelity/paired-renal-reference.md`.
+
+## 187. Registro renal rígido con hitos reservados y escala fija
+
+**Contexto.** TAC y US del mismo paciente usan marcos propios. Elegir cortes visualmente o minimizar el error de todos los hitos confunde el ajuste con validación. Un conjunto reflejado puede ajustar tres puntos coplanares perfectamente y seguir siendo incorrecto fuera de ese plano.
+
+**Opciones.** El artículo TRUSTED inicializa con similitud (incluye escala); deformar o escalar desde el comienzo puede ocultar la diferencia de tamaño que queremos medir. No se pretende reproducir ese benchmark ni elegir automáticamente una solución clínica.
+
+**Decisión.** Inicialización rígida US-world→CT-world en mm mediante Kabsch con rotación propia, escala1, IDs3/4/5 para ajustar. IDs1/2/6/7 se reservan; pelvis1 informa TRE separado. Hashes enlazan admisión, imagen y hitos; se rechazan cruces de paciente/lado/modalidad, archivos cambiados, marcos ambiguos, puntos fuera del FOV y triángulos degenerados. Se conserva también la matriz inversa.
+
+**Consecuencias.** Permite detectar errores independientes del ajuste y preparar cortes comparables. Respiración, postura y compresión pueden impedir un registro rígido útil. Los hitos reservados comparten anotadores; no son validación externa. No hay umbral clínico inventado ni aceptación automática, y no se transforma la anatomía del simulador.
+
+**Verificación.** Rotación/traslación analíticas, pelvis desplazada que no modifica el ajuste, reflexión con ajuste perfecto y TRE24mm, escala distinta con residuo persistente, marcos/hash/lado/FOV erróneos. Contrato y uso en `docs/fidelity/paired-renal-registration.md`; la aplicación a pacientes y sus discrepancias se registra fuera de Git.

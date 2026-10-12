@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { bootWithoutErrors, budget } from './support';
+import { bootWithoutErrors, budget, withinFrames } from './support';
 
 async function pointAt(page: Page, rgb: number[]) {
   const p = await page.locator('#cutmap').evaluate((el, color) => {
@@ -21,9 +21,19 @@ async function pointAt(page: Page, rgb: number[]) {
 
 test('identifica y demarca hígado/porta sin alterar señal; sale, cambia plano y revisa cine', async ({ page }, info) => {
   budget(180_000);
-  const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
+  const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=legacy');
   await page.locator('.win-card').filter({ hasText: 'Porta · intrahepática' }).click();
-  await page.waitForFunction(() => Math.abs(window.__vexusTest!.sim().pose.phi - 3.25) < 0.0001, undefined, { timeout: 90_000 });
+  await withinFrames(page, 100, 'pose portal completa', async () => {
+    const p = await page.evaluate(() => window.__vexusTest!.sim().pose);
+    return (
+      (Math.abs(p.phi - 3.5) < 1e-8 &&
+        Math.abs(p.z + 90) < 1e-8 &&
+        Math.abs(p.yaw - 0.7) < 1e-8 &&
+        Math.abs(p.rock - 0.2) < 1e-8 &&
+        Math.abs(p.tilt + 0.4) < 1e-8) ||
+      'animación en curso'
+    );
+  });
   await page.evaluate(() => {
     const s = window.__vexusTest!.sim();
     for (let i = 0; i < 6; i++) {
@@ -36,26 +46,23 @@ test('identifica y demarca hígado/porta sin alterar señal; sale, cambia plano 
   const snapshot = () =>
     page.evaluate(() => {
       const s = window.__vexusTest!.sim(),
-        gl = s.renderer.gl,
-        c = s.renderer.canvas;
-      const pixels = new Uint8Array(c.width * c.height * 4);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      gl.readPixels(0, 0, c.width, c.height, gl.RGBA, gl.UNSIGNED_BYTE, pixels);
+        pixels = s.renderer.readDisplay().gray;
       let hash = 2166136261;
       for (const v of pixels) hash = Math.imul(hash ^ v, 16777619);
       return { hash, pose: s.pose, equipment: s.equipment };
     });
-  await expect
-    .poll(() =>
-      page.locator('#cutmap').evaluate((el) => {
-        const c = el as HTMLCanvasElement;
-        return c
-          .getContext('2d')!
-          .getImageData(0, 0, c.width, c.height)
-          .data.some((v) => v === 140);
-      }),
-    )
-    .toBe(true);
+  await withinFrames(page, 30, 'mapa visible del cuadro congelado con parénquima hepático', async () =>
+    page.locator('#cutmap').evaluate((el) => {
+      const c = el as HTMLCanvasElement,
+        shown = window.__vexusTest!.sim().renderer.displayedFrame!,
+        data = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+      let liver = 0;
+      for (let k = 0; k < data.length; k += 4) if (data[k] === 140 && data[k + 1] === 90 && data[k + 2] === 60) liver++;
+      // Guarda de mapa presente, no umbral de fidelidad: más de una celda aislada
+      // o un componente de color casual; además pertenece al cuadro presentado.
+      return (liver > 50 && c.dataset.acquiredFrame === String(shown.n)) || 'mapa aún pendiente del cuadro';
+    }),
+  );
   const before = await snapshot();
   await pointAt(page, [140, 90, 60]);
   await expect(page.locator('.anatomy-tooltip')).toContainText('Hígado');
@@ -84,7 +91,7 @@ test('identifica y demarca hígado/porta sin alterar señal; sale, cambia plano 
 
   const old = await page.evaluate(() => {
     const s = window.__vexusTest!.sim();
-    return { index: s.renderer.cineCount - 1, frame: s.renderer.displayedAnatomy!.frame };
+    return { index: s.renderer.cineCount - 1, frame: s.renderer.displayedFrame!.anatomy.frame };
   });
   await page.locator('#freeze').click();
   await page.evaluate(() => {
@@ -98,7 +105,7 @@ test('identifica y demarca hígado/porta sin alterar señal; sale, cambia plano 
   await page.locator('#freeze').click();
   await page.locator('#cine').fill(String(old.index));
   await page.locator('#cine').dispatchEvent('input');
-  await expect.poll(() => page.evaluate(() => window.__vexusTest!.sim().renderer.displayedAnatomy!.frame)).toEqual(old.frame);
+  await expect.poll(() => page.evaluate(() => window.__vexusTest!.sim().renderer.displayedFrame!.anatomy.frame)).toEqual(old.frame);
   await expect
     .poll(async () => {
       await pointAt(page, [140, 90, 60]);

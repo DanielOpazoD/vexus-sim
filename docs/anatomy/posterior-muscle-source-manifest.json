@@ -1,0 +1,79 @@
+{
+  "version": 1,
+  "credit": "\u00a9DBCLS BodyParts3D 4.0, CC BY 4.0",
+  "officialLabelTableSha256": "a3de74423f943b0d724ae8f59b3a817f87c423a544f8db98113b1980817cbeaf",
+  "parts": [
+    {
+      "id": "FJ1431",
+      "name": "right psoas major",
+      "sha256": "23cb656d80cc3111912a94369811e3127328a07bed36d02df15c46c9c1014d4f",
+      "excludedZeroVolumeSheetFaceIndices": [3990, 3997, 4000, 4001, 4232, 4233, 4466, 4468, 4541, 4542],
+      "sourceArchive": "partof_BP3D_4.0_obj_99.zip"
+    },
+    {
+      "id": "FJ1431M",
+      "name": "left psoas major",
+      "sha256": "a7bcefff079b0bbff8eb0c284bfa2ca07b1b2199dec0b1419f3ebd3d20b2e576",
+      "excludedZeroVolumeSheetFaceIndices": [3990, 3997, 4000, 4001, 4232, 4233, 4466, 4468, 4541, 4542],
+      "sourceArchive": "partof_BP3D_4.0_obj_99.zip"
+    },
+    {
+      "id": "FJ1527",
+      "name": "right iliocostalis lumborum",
+      "sha256": "8a15295f08faac150ee5f16fe1035398dcfa60d3cba8b42b504b53764032b718",
+      "excludedZeroVolumeSheetFaceIndices": [3024, 3026, 3471, 3473, 11110, 11111, 12387, 12388],
+      "sourceArchive": "isa_BP3D_4.0_obj_99.zip"
+    },
+    {
+      "id": "FJ1527M",
+      "name": "left iliocostalis lumborum",
+      "sha256": "1c7f20b34a9639d1996e3ec18873beb6dc114169ae1d310e88e2c3d8b1ff2133",
+      "excludedZeroVolumeSheetFaceIndices": [3024, 3026, 3471, 3473, 11110, 11111, 12387, 12388],
+      "sourceArchive": "isa_BP3D_4.0_obj_99.zip"
+    },
+    {
+      "id": "FJ1528",
+      "name": "right iliocostalis thoracis",
+      "sha256": "0ee5ad819949cd4197dd96b00373547b42f7e1831b2add6baea4baf3661f38fa",
+      "excludedZeroVolumeSheetFaceIndices": [723, 724, 1175, 1176, 2596, 2597],
+      "sourceArchive": "isa_BP3D_4.0_obj_99.zip"
+    },
+    {
+      "id": "FJ1528M",
+      "name": "left iliocostalis thoracis",
+      "sha256": "02a7addd5329689094506095570a458982b6dfc2f9509392bf310807183e3df7",
+      "excludedZeroVolumeSheetFaceIndices": [723, 724, 1175, 1176, 2596, 2597],
+      "sourceArchive": "isa_BP3D_4.0_obj_99.zip"
+    },
+    {
+      "id": "FJ1535",
+      "name": "right longissimus thoracis",
+      "sha256": "b555761d298a4bea88a05d2067b0cfff507522546bfc0dcb9b3bad576a3449fa",
+      "excludedZeroVolumeSheetFaceIndices": [169, 170, 1277, 1285, 7379, 7381, 12836, 12837],
+      "sourceArchive": "isa_BP3D_4.0_obj_99.zip"
+    },
+    {
+      "id": "FJ1535M",
+      "name": "left longissimus thoracis",
+      "sha256": "d238f10400abb5754b2ef1e920eacc720b69835cd31a229ef3d68468f4064a57",
+      "excludedZeroVolumeSheetFaceIndices": [169, 170, 1277, 1285, 7379, 7381, 12836, 12837],
+      "sourceArchive": "isa_BP3D_4.0_obj_99.zip"
+    }
+  ],
+  "clinicalValidation": false,
+  "sources": {
+    "isa": {
+      "archiveUrl": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/isa_BP3D_4.0_obj_99.zip",
+      "archiveBytes": 142903898,
+      "wholeArchiveChecksumVerified": false,
+      "memberCrcAndShaVerified": true
+    },
+    "partof": {
+      "archiveUrl": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/partof_BP3D_4.0_obj_99.zip",
+      "archiveBytes": 64888505,
+      "archiveSha256": "9fbc713fffeee924a5a657d9813d84d7eb957bded63adb854931dd5e3eb61c97",
+      "wholeArchiveChecksumVerified": true
+    },
+    "labelsUrl": "https://dbarchive.biosciencedbc.jp/data/bodyparts3d/LATEST/isa_element_parts.txt"
+  }
+}

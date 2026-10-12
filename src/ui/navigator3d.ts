@@ -3,6 +3,7 @@ import * as THREE from 'three';
 import type { AnatomyScene, VesselCaliber } from '../anatomy/scene';
 import { bindRespiratoryMotion } from './navigator3d/respiratoryMotion';
 import type { ProbeFrame, ProbePose, Transducer } from '../probe/probe';
+import { translateProbe } from '../probe/translation';
 import { buildAnatomyGroups } from './navigator3d/anatomyGroups';
 import { CM, disposeObject } from './navigator3d/common';
 import { buildFan, buildProbe, updateFan } from './navigator3d/probe';
@@ -135,6 +136,8 @@ export class Navigator3D {
     el.addEventListener('pointerdown', this.onDown);
     window.addEventListener('pointermove', this.onMove);
     window.addEventListener('pointerup', this.onUp);
+    window.addEventListener('pointercancel', this.onUp);
+    el.addEventListener('lostpointercapture', this.onUp);
     el.addEventListener('wheel', this.onWheel, { passive: false });
     el.addEventListener('contextmenu', (e) => e.preventDefault());
     el.addEventListener('pointermove', this.onHover);
@@ -170,6 +173,7 @@ export class Navigator3D {
     this.releaseRetired();
     window.removeEventListener('pointermove', this.onMove);
     window.removeEventListener('pointerup', this.onUp);
+    window.removeEventListener('pointercancel', this.onUp);
     this.respiratoryMotion = null;
     this.renderer.dispose();
     this.renderer.domElement.remove();
@@ -245,6 +249,7 @@ export class Navigator3D {
   };
 
   private onDown = (e: PointerEvent): void => {
+    if (e.button !== 0 && e.button !== 2) return;
     e.preventDefault();
     this.renderer.domElement.setPointerCapture(e.pointerId);
     this.lastX = e.clientX;
@@ -278,7 +283,7 @@ export class Navigator3D {
           let dphi = hit.phi - this.lastPhi;
           if (dphi > Math.PI) dphi -= 2 * Math.PI;
           if (dphi < -Math.PI) dphi += 2 * Math.PI;
-          this.opts.setPose({ ...p, phi: p.phi + dphi, z: p.z + (hit.z - this.lastZ) });
+          this.opts.setPose(translateProbe(p, p.phi + dphi, p.z + (hit.z - this.lastZ), this.anatomy.torso, this.transducer));
           this.lastPhi = hit.phi;
           this.lastZ = hit.z;
         }
@@ -352,8 +357,9 @@ export class Navigator3D {
   draw(): void {
     if (this.disposed) return;
     this.fitSize();
-    const pose = this.opts.getPose();
-    const key = `${pose.phi.toFixed(4)}|${pose.z.toFixed(2)}|${pose.yaw.toFixed(4)}|${pose.rock.toFixed(4)}|${pose.tilt.toFixed(4)}|${pose.lift.toFixed(2)}`;
+    const fr = this.opts.getFrame();
+    // Un cine anterior cambia el plano adquirido aunque los controles permanezcan quietos.
+    const key = [...fr.face, ...fr.axial, ...fr.lateral].map((v) => v.toFixed(4)).join('|');
     const resp = this.opts.getRespCaudalMm();
     const depth = this.opts.getDepthMm();
     if (key !== this.lastPoseKey || Math.abs(resp - this.lastResp) > 0.3 || depth !== this.lastDepth) {
@@ -370,7 +376,6 @@ export class Navigator3D {
       this.respiratoryMotion = bindRespiratoryMotion([this.organs, this.vessels], (m) => this.anatomy.respiratoryWeight(m));
     this.respiratoryMotion?.apply(resp);
     // sonda: base (lateral, elevación, axial) → (x, y, z) locales
-    const fr = this.opts.getFrame();
     this.probe.position.set(fr.face[0] * CM, fr.face[1] * CM, fr.face[2] * CM);
     this.probe.setRotationFromMatrix(
       new THREE.Matrix4().makeBasis(new THREE.Vector3(...fr.lateral), new THREE.Vector3(...fr.elevation), new THREE.Vector3(...fr.axial)),

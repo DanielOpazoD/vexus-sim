@@ -1,0 +1,28 @@
+name: Referencias renales offline
+on:
+  pull_request:
+    paths:
+      - 'tools/anatomy/**'
+      - '.github/workflows/renal-reference.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tools/anatomy/**'
+      - '.github/workflows/renal-reference.yml'
+permissions:
+  contents: read
+jobs:
+  reference:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: '3.14'
+      - run: python -m pip install -r tools/anatomy/ct-reference-requirements.txt
+      - name: Controles sintéticos, sin acceso a pacientes
+        run: |
+          python tools/anatomy/ct_vascular_reference_test.py
+          python tools/anatomy/ct_posterior_reference_test.py
+          python tools/anatomy/paired_renal_reference_test.py

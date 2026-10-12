@@ -101,3 +101,13 @@ Porta intrahepática: ajuste al seleccionar tarjeta estimado para estos adultos:
 Cava superior (172): ley regional D=28·sigmoid((P_unión−P_pleural−4)/6) mm, residual 3 mm y área de pared con τ=0,2 s. ESTIMADA para el adulto sintético; requiere validación independiente de diámetros/velocidades y registro de la transición por el hiato. El volumen abdominal y las ondas de la red permanecen iguales.
 
 - Decisión 173: la respuesta de potencia del filtro color es (f²/(f²+fc²))⁴, con f plegada a Nyquist. Su orden/corte son estimados; no equivale a filtrar un ensemble IQ temporal real. El corte cero es identidad.
+
+## Concentración continua de dispersores (decisión 186)
+
+Los tejidos con `speckleClump > 0` interpolan potencia positiva de ocho nodos
+con smoothstep y recuperan amplitud. La media de conjunto permanece uno y
+el contraste baja respecto de celdas constantes, sin borrar heterogeneidad.
+Paso de 1,2 mm, agrupación por tejido y kernel: [EXTRAPOLACIÓN PROPIA] /
+NEEDS_CALIBRATION. No son lobulillos medidos ni cambia la geometría de órganos.
+El [contrato](fidelity/continuous-clumps-contract.md) exige imágenes comparables,
+movimientos y controles; continuidad matemática no certifica fidelidad clínica.

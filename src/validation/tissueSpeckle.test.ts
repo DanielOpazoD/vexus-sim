@@ -3,7 +3,9 @@ import { TISSUES, Tissue } from '../anatomy/tissues';
 import type { Vec3 } from '../core/vec3';
 import {
   ElevationAnchor,
+  CLUMP_CELL_MM,
   TISSUE_SALT_STEP,
+  clumpGain,
   anchoredClumpGain,
   heterogeneityDb,
   speckleSliceField,
@@ -50,6 +52,40 @@ const snr = (amp: number[]) => {
 };
 
 describe('moteado por tejido (decisión 56)', () => {
+  it('la concentración no salta en caras de celda sin interfaz anatómica, en ninguno de los tres ejes', () => {
+    let worstDb = 0;
+    // Testigos de caras, no de centros: la implementación previa salta aunque ε tienda a cero.
+    // ±0,00001 mm y 0,001 dB son tolerancias numéricas; no calibración de resolución clínica.
+    for (const clump of [0.5, 0.6, 1])
+      for (let axis = 0; axis < 3; axis++)
+        for (let i = -20; i <= 20; i++) {
+          const a: Vec3 = [13.17, -7.39, 4.21];
+          a[axis] = i * CLUMP_CELL_MM - 0.00001;
+          const b: Vec3 = [...a];
+          b[axis] += 0.00002;
+          worstDb = Math.max(worstDb, Math.abs(20 * Math.log10(clumpGain(a, clump, SEED) / clumpGain(b, clump, SEED))));
+        }
+    expect(worstDb).toBeLessThan(0.001);
+  });
+
+  it('conserva potencia media, heterogeneidad y retorno material sin cambiar el tejido de agrupación cero', () => {
+    let seed = 20261007;
+    const rnd = () => ((seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0) + 0.5) / 4294967296;
+    const points: Vec3[] = Array.from({ length: 20000 }, () => [rnd() * 300 - 150, rnd() * 300 - 150, rnd() * 300 - 150]);
+    for (const clump of [0.5, 0.6, 1]) {
+      const powers = points.map((p) => clumpGain(p, clump, SEED) ** 2);
+      const mean = powers.reduce((sum, p) => sum + p, 0) / powers.length;
+      // 5 % cubre el muestreo finito independiente; ningún promedio por ventana corrige el campo.
+      expect(mean).toBeGreaterThan(0.95);
+      expect(mean).toBeLessThan(1.05);
+      expect(Math.max(...powers) - Math.min(...powers)).toBeGreaterThan(0.5);
+    }
+    for (const p of points.slice(0, 100)) {
+      expect(clumpGain(p, 0, SEED)).toBe(1);
+      expect(clumpGain([...p], 1, SEED)).toBe(clumpGain(p, 1, SEED));
+    }
+  });
+
   it('cada tejido es otra población: el moteado no continúa a través de un borde', () => {
     // la independencia se mide en el campo complejo (parte real): la magnitud de un campo
     // interpolado en retícula comparte entre realizaciones la modulación de varianza por posición

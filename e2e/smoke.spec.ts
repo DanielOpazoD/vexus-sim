@@ -44,9 +44,12 @@ test('arranca, renderiza cuadros y no emite errores', async ({ page }) => {
     const control = { polls: 0, release: false };
     (window as Window & { gpuStartupTest: typeof control }).gpuStartupTest = control;
     const proto = WebGL2RenderingContext.prototype;
-    const fence = proto.fenceSync,
-      wait = proto.clientWaitSync,
-      debug = console.debug;
+    // Los originales se invocan exclusivamente con .call(this, ...) para conservar su contexto GL.
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const fence = proto.fenceSync;
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const wait = proto.clientWaitSync;
+    const debug = console.debug.bind(console);
     let armed = false,
       held: WebGLSync | null = null;
     console.debug = (...args: unknown[]) => {

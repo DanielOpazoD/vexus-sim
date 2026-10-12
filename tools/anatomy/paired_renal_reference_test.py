@@ -61,6 +61,35 @@ class PairedIntakeTests(unittest.TestCase):
         label.set_sform(moved); nib.save(label, path)
         with self.assertRaisesRegex(ValueError, "rejilla"): inspect_annotation(path, image, 255, None)
 
+    def test_nonfinite_and_invalid_values_after_first_slab_are_rejected(self):
+        affine = np.eye(4)
+        image = nib.Nifti1Image(np.ones((2, 3, 35), dtype=np.uint8), affine)
+        image.header.set_xyzt_units("mm")
+        for invalid in [2, np.nan, np.inf]:
+            values = np.zeros(image.shape, dtype=np.float32); values[0, 0, 0] = 1; values[1, 2, 34] = invalid
+            label = nib.Nifti1Image(values, affine); label.header.set_xyzt_units("mm")
+            path = self.root/"late-invalid.nii.gz"; nib.save(label, path)
+            with self.subTest(invalid=invalid), self.assertRaisesRegex(ValueError, "codificación"):
+                inspect_annotation(path, image, 1, None)
+
+    def test_roundoff_is_explicit_bounded_and_preserves_source(self):
+        image = nib.Nifti1Image(np.ones((2, 3, 35), dtype=np.uint8), np.eye(4))
+        image.header.set_xyzt_units("mm")
+        values = np.full(image.shape, 2.842170943040401e-14); values[1, 2, 34] = 1-2.842170943040401e-14
+        label = nib.Nifti1Image(values, image.affine); label.header.set_xyzt_units("mm")
+        path = self.root/"roundoff.nii.gz"; nib.save(label, path); original = file_hash(path)
+        with self.assertRaisesRegex(ValueError, "codificación"): inspect_annotation(path, image, 1, None)
+        for tolerance, evidence in [(1e-12, None), (.1, "cannot justify a segmentation threshold")]:
+            with self.assertRaisesRegex(ValueError, "Tolerancia"):
+                inspect_annotation(path, image, 1, None, tolerance, evidence)
+        result = inspect_annotation(path, image, 1, None, 1e-12, "synthetic representation error")
+        self.assertEqual(result["occupiedVoxels"], 1)
+        self.assertAlmostEqual(result["maxCodingResidual"], 2.842170943040401e-14, delta=1e-20)
+        self.assertEqual(file_hash(path), original)
+        values[1, 2, 33] = .01; label = nib.Nifti1Image(values, image.affine); label.header.set_xyzt_units("mm"); nib.save(label, path)
+        with self.assertRaisesRegex(ValueError, "codificación"):
+            inspect_annotation(path, image, 1, None, 1e-12, "cannot conceal a fractional mask")
+
     def test_role_and_access_cannot_disappear(self):
         for key in ["role", "accessEvidence", "source"]:
             value = self.manifest.pop(key)

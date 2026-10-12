@@ -63,3 +63,17 @@ vasos vecinos no aparecen etiquetados por tener una máscara renal.
 Fuentes: [TRUSTED, Scientific Data](https://www.nature.com/articles/s41597-025-04467-1)
 y [afines NIfTI de NiBabel](https://nipy.org/nibabel/nifti_images.html). TRUSTED exige
 acuerdo de uso firmado antes de descargar; el repositorio no distribuye pacientes.
+
+## Memoria y redondeo explícito
+
+Las máscaras originales TRUSTED pueden ocupar unos5GB al decodificarse como
+float64 aunque el archivo gzip sea pequeño. Se leen bloques contiguos de16
+cortes con el gzip abierto, sin materializar la máscara entera.
+
+El valor predeterminado exige exactamente0 y el foreground declarado. Algunas
+máscaras locales muestran residuos de representación de2,84217e−14 alrededor
+de0/1. Solo con evidencia explícita se permite `roundoffTolerance` (entre0 y1e−8)
+y `roundoffEvidence`; el informe conserva tolerancia y máximo residuo observado.
+Para el piloto se declara1e−12. Este límite numérico no es un umbral de
+segmentación: valores intermedios como0,01 siguen rechazándose, y los archivos
+originales no se reescriben. No se acepta una máscara probabilística como binaria.

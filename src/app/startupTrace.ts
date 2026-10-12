@@ -20,6 +20,9 @@ export const STARTUP_STAGES = [
   'advance:ready',
   'ultrasound:begin',
   'ultrasound:ready',
+  'ultrasound:gpu-submitted',
+  'ultrasound:gpu-ready',
+  'ultrasound:gpu-failed',
   'navigator:draw',
   'navigator:drawn',
   'frame:first',
@@ -58,8 +61,11 @@ export function startupEntry(message: string): StartupEntry | null {
   }
 }
 
+export const startupTraceEnabled =
+  typeof location !== 'undefined' && ['e2e', 'startupTrace'].some((key) => new URLSearchParams(location.search).has(key));
+
 export const markStartup = startupRecorder(
-  typeof location !== 'undefined' && ['e2e', 'startupTrace'].some((key) => new URLSearchParams(location.search).has(key)),
+  startupTraceEnabled,
   (message) => console.debug(message),
   () => performance.now(),
 );

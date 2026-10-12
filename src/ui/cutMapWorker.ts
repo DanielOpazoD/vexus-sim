@@ -48,8 +48,8 @@ export interface CutMapResponse {
   width: number;
   height: number;
   tissue: Uint8Array;
-  /** Organ/digestive region from the same material point, independent of tissue/flow. */
-  structure?: Uint8Array;
+  /** Órgano del clasificador común, independiente del tejido y vaso. */
+  structure: Uint8Array;
   /**
    * Índice de vaso en `scene.vessels` o −1; en la sangre de una cavidad del corazón (decisión 85), −2 − su índice en
    * `HEART_CHAMBER_IDS` (VI, VD, AD, AI).
@@ -96,19 +96,21 @@ self.onmessage = (ev: MessageEvent<CutMapInit | CutMapRequest>) => {
     const { width, height, frame, transducer, depthMm } = msg;
     query.setProbeCompression(msg.compression);
     const tissue = new Uint8Array(width * height);
-    const structure = new Uint8Array(width * height);
     const vessel = new Int8Array(width * height);
+    const structure = new Uint8Array(width * height);
     const sample = msg.sample as PhysiologySample;
+    const caliber = query.caliberFor(sample);
     for (let v = 0; v < height; v++) {
       const r = (depthMm * (v + 0.5)) / height;
       for (let u = 0; u < width; u++) {
         const theta = -transducer.halfSector + (2 * transducer.halfSector * (u + 0.5)) / width;
         const p = pointOnLine(frame, transducer, theta, r);
-        const c = query.classifyWorld(p, sample);
+        const material = query.deformation.toMaterial(p, sample.resp);
+        const c = query.scene.classify(material, caliber);
         const i = v * width + u;
         tissue[i] = c.tissue;
-        structure[i] = structureIdentity(c.material, c.tissue, c.interface, query.scene.hasAbdominalAtlas);
-        vessel[i] = c.vessel ? (vesselIndex.get(c.vessel) ?? -1) : c.tissue === Tissue.Blood ? chamberCode(c.material) : -1;
+        structure[i] = structureIdentity(material, c.tissue, c.interface, query.scene);
+        vessel[i] = c.vessel ? (vesselIndex.get(c.vessel) ?? -1) : c.tissue === Tissue.Blood ? chamberCode(material) : -1;
       }
     }
     post({ type: 'map', id: msg.id, width, height, tissue, vessel, structure }, [tissue.buffer, vessel.buffer, structure.buffer]);

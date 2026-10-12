@@ -6730,39 +6730,127 @@ operación fallida, rechaza datos inválidos y comprueba ausencia de trabajo sin
 diagnóstico. Controles nativos emparejados y un bloqueo controlado del contexto
 complementan esas pruebas; la integración exige check y CI exactos completos.
 
-## 181. Reconciliar el atlas con la adquisición y los límites vigentes
+**Suplemento de evidencia incremental (12-10-2026).** En PR241, grupo2/8,
+selección reference agotó300s, pasó al reintentar y el grupo fue cancelado a40min.
+El informe JSON final no se conservó y el log no identifica la operación que
+agotó el plazo. `run-e2e-shard` fija SHA y destino; `bootWithoutErrors` escribe
+cada etapa recibida en `.validation/e2e-startup.jsonl` desde el host, con id de
+prueba, consulta, intento y tiempo del host. El artefacto se guarda aun al
+cancelarse. Un prefijo incompleto no declara éxito: el informe íntegro y el
+veredicto protegido siguen siendo obligatorios. No modifica el reparto, los
+límites, las aserciones ni el runtime. El control termina el proceso escritor
+tras una etapa y exige que sobreviva sin fabricar la finalización del arranque.
 
-**Contexto.** La rama del atlas `0d6ed0a` quedó detrás de main. Ocho conflictos
-afectan decisiones, pruebas, soporte muscular, pose, cine y plano anatómico.
-El arranque Linux sigue bloqueado; el Mac nativo no sustituye esa evidencia.
-Las decisiones178–186 de aquella rama colisionan con IDs incorporados después
-en main y se conservan, sin renumerarlas, en
-[su registro histórico](anatomy/atlas-branch-decisions-0d6ed0a.md).
+## 181. Copiar la posición exacta y los ajustes actuales del transductor
 
-**Opciones.** Elegir una rama completa perdería controles físicos o el atlas.
-Reintentar CI, ampliar plazos o aumentar el bundle ocultaría requisitos de
-integración. Se reconcilian contratos y controles antes de investigar el
-arranque, sin atribuir al atlas una causa todavía no discriminada.
+**Contexto.** Daniel eligió una ventana portal en una captura cuyos mandos
+redondean los ángulos al grado y la altura a0,1cm. Esa captura no conserva
+la pose precisa ni distingue los mandos actuales de una imagen del cine.
 
-**Decisión.** Cine y plano usan la adquisición inmutable completa de main,
-conservando `ivcSupra`, identidades y contorno de hover del atlas. El acceso
-circunferencial y pélvico del atlas conserva exactamente las poses dentro de
-su intervalo, sin modificar órganos; permanece el control bilateral de main.
-Ambas familias de pruebas musculares se mantienen en archivos separados.
-El total JavaScript vuelve al presupuesto original de1033 KiB; las cotas por
-chunk y el plazo SwiftShader quedan intactos.
-El diagnóstico de180 registra también la carga de las superficies diferidas
-antes de la construcción del navegador, sin alterar el orden de arranque.
+**Opciones.** Copiar solo las etiquetas pierde precisión y contexto. Una
+exportación de adquisición completa ya tiene otras responsabilidades;
+no se presenta una pose sola como reproducción del historial hemodinámico.
 
-**Consecuencias.** El atlas sigue siendo una derivación de BodyParts3D,
-con QL, mesenterio y otros territorios estimados. Los TAC de otros individuos
-son referencias comparativas; no se trasladan sus fronteras al atlas como si
-fueran el mismo sujeto. No se declara resuelto el arranque, integrada esta
-reconciliación ni contrastada la fidelidad anatómica por el mero merge local.
+**Decisión.** Adquirir → Sonda ofrece «Copiar posición». `probePositionText`
+serializa los seis números originales, unidades, versión, dominio anatómico,
+perfil de sonda, caso sintético, respiración, reloj y equipo completo al
+pulsar. Los grados son una lectura auxiliar. El alcance del JSON es
+`current-probe-and-equipment`: los mandos vivos. Con imagen congelada lo
+indica también el mensaje. `writeText` se llama desde el gesto del usuario;
+una denegación o ausencia ofrece el mismo texto seleccionado para copia
+manual. No lee el portapapeles, no añade dependencias ni cambia física.
 
-**Verificación.** Tipos y22 controles dirigidos de adquisición, capas,
-contención muscular y acceso bilateral pasan después de resolver los
-conflictos. Una discrepancia de tipo del getter antes del primer cuadro se
-corrige conservando la obligatoriedad del estado adquirido de cada cuadro.
-Build con presupuesto original, check completo, calibración, adquisiciones
-comparables del atlas y CI exacta permanecen como gates posteriores.
+**Consecuencias.** El dueño puede compartir posiciones sin transcribir
+rótulos. Fuente y dominio evitan aplicar la pose de un cuerpo a otro.
+No incluye el historial de intervenciones ni sustituye las adquisiciones
+registradas de fidelidad. La copia de una imagen congelada conserva los
+mandos actuales, no atribuye al cine una pose que no adquirió.
+
+**Verificación.** Un control de serialización conserva precisión, equipo
+y la instantánea del clic después de cambiar los datos vivos. La e2e
+comprueba el botón y la imagen congelada sin mutación de señal ni reloj;
+intercepta solo la escritura de este control para no leer el portapapeles
+del usuario. Denegación y API ausente producen texto enfocado y seleccionado,
+sin afirmar éxito. Navegador nativo, check completo y CI exacta son gates.
+Referencia API: https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/writeText.
+
+## 182. Deslizar la sonda conserva los ejes en el paciente
+
+**Contexto.** Los ángulos de la pose son relativos a la piel. Cambiar phi/z manteniéndolos hace girar el haz sobre una pared curva, aunque el gesto solo traslada la sonda. En la revisión local atlas se observaron cambios axiales9,61–24,28° en tres arrastres; esa revisión está bloqueada por su CI y no debe importarse para resolver este comportamiento independiente.
+
+**Opciones.** Importar el atlas y su guía retrasaría una corrección que no requiere sus campos. Mantener la imagen de un órgano tras el deslizamiento ocultaría que el plano se ha trasladado. Se cambia únicamente la cinemática de entrada.
+
+**Decisión.** `translateProbe` conserva axial, lateral y elevación en coordenadas del paciente y los reexpresa en el marco cutáneo del nuevo apoyo. Ratón, tacto y teclado usan la misma función; girar, bascular e inclinar siguen siendo gestos explícitos. Si la orientación exigiría superar los límites existentes, la traslación se detiene en el último apoyo representable. No se truncan ángulos silenciosamente.
+
+**Consecuencias.** Los mandos locales pueden cambiar porque representan orientación respecto de la piel. No cambia anatomía, presets, transductor, señal ni fisiología. La orientación fija no garantiza contacto de toda la huella ni conserva un órgano dentro del nuevo plano. Se conserva la física de contacto/compresión y la velocidad Doppler del movimiento. La guía de selección del atlas queda en otra revisión; este PR no depende de su integración ni cambia el servidor3024.
+
+**Verificación.** `probeTranslation.test.ts` contrasta tres ejes y rayos en las nueve poses sobre piel de referencia y prueba el límite con un desplazamiento grande. `probeRigidTranslation.spec.ts` registra eventos reales en cuerpos legacy/referencia, giro explícito y ausencia de errores. El check estándar completo y CI exacta de primer resultado son gates; los resultados nativos y los límites se registran por SHA en el plan local. No se declara fluidez global ni validación anatómica externa.
+
+## 183. Selección persistente y contornos de la guía desde la anatomía adquirida
+
+**Contexto.** En el plano de la imagen, retirar el puntero o recibir otro mapa
+perdía la selección; los segmentos discretos no formaban un contorno
+continuo. La revisión237 estaba apilada sobre un atlas experimental cuyo
+arranque software falló; incorporarlo traía226archivos sin ese gate.
+
+**Opciones.** Importar la pila no validada confunde una corrección de guía
+con reconstrucción anatómica. Ocultar fallos de atlas o relajar sus tests no
+resuelve la dependencia. Se preserva esa fuente y sus ensayos en sus ramas.
+
+**Decisión.** Integrar la guía sobre main actual, desde la misma coordenada
+material/clasificación y la instantánea adquirida inmutable (181–182).
+Clic fija identidad; salir/mapas nuevos no la borran. Escape, repetición
+del clic y cambio de paciente cancelan. Contornos cerrados por marching
+squares y redondeo de hasta una celda; conservar huecos/islas reales.
+La guía marca el B-mode solo si corresponde al cuadro mostrado/cine.
+
+**Consecuencias.** Solo hígado, riñones y vesícula tienen identidad de órgano
+cuando el clasificador demuestra su tejido/interfaz; vasos/cavidades y los
+demás tejidos mantienen sus identidades. Líquido sin interfaz biliar se
+nombra contenido líquido, no siempre vesícula. No se añaden órganos,
+campos, patrones acústicos ni se certifica fidelidad por suavizar una guía.
+El trabajador evita velocidades no consumidas;96×128/hz/watchdog3s intactos.
+No cambia el dominio anatómico de main ni la revisión atlas oficial3024.
+
+**Verificación.** Topología de contornos; centros renales/interfaz biliar;
+clic/mapas/salida/Escape/paciente en cuerpos legacy/referencia con señal
+congelada inmutable; hover/vaso/cine; igualdad exacta trabajador/consulta
+en2048 puntos de dos casos. Toda la suite original permanece. CI exacta
+sin reintentos es obligatoria; el atlas y sus validaciones siguen pendientes.
+
+**Corrección tras la primera CI.** En a390466 fallaron hover y selección de
+referencia antes de actuar sobre la guía: el bitmap visible no contenía
+hígado tras Congelar. Redimensionar un canvas borra sus píxeles, pero la
+copia adquirida no se repintaba mientras llegaba otro mapa. El control
+de navegador reproduce el defecto en una tarea JS, con una petición real
+en vuelo: copia del mismo mapa, bitmap presente antes y vacío después.
+Se repinta la copia cuando cambia el tamaño, sin esperar otra respuesta.
+Las nuevas esperas de adquisición se expresan en30 cuadros completos,
+con cuadro adquirido coincidente y guardas de tejido explícitas, siguiendo
+CONTRIBUTING. Se conservan los presupuestos totales, el fallo de primer
+intento y su reintento diagnóstico automático también fallido. No se
+solicita rerun de esa CI; una corrección nueva requiere otro SHA.
+
+## 184. Confirmar en GPU el primer cuadro de los ensayos
+
+**Contexto.** Los ensayos Atlas del 11–12-10-2026 llegaron a dos vueltas JavaScript aunque la primera pasada acústica aún no completaba una lectura. `framesRendered` cuenta vueltas del bucle; no acredita ejecución GPU. Una microprueba del shader A0 de `4fbe738` enlazó en menos de100ms, pero no completó un destino de1píxel con cero muestras dinámicas dentro del protocolo de150s. Es evidencia de primer uso pendiente, no de fidelidad ni una medida representativa de cadencia.
+
+**Opciones.** `readPixels` o `finish` bloquearían la CPU; aceptar dos vueltas conserva el falso positivo. Una valla por cada cuadro agregaría instrumentación innecesaria para este defecto. Cambiar plazos, muestras o anatomía no resuelve la validez de la evidencia.
+
+**Decisión.** `FirstGpuFrame` coloca una única valla tras el primer `Simulator.render()` en modo `e2e`/`startupTrace`, hace `flush` y consulta `clientWaitSync(sync,0,0)` una vez por vuelta. Solo `ALREADY_SIGNALED` y `CONDITION_SATISFIED` registran `ultrasound:gpu-ready`. Una valla nula, un estado desconocido, `WAIT_FAILED` o pérdida de contexto registran fallo. `bootWithoutErrors` exige la señal además de las dos vueltas JS, dentro del mismo `BOOT_MS`. La traza se conserva desde el host aunque la página deje de responder. En uso normal no se crea la valla.
+
+**Consecuencias.** Se distingue trabajo enviado de ejecución completada, sin cambiar reloj, física, anatomía, shaders o presupuestos. El contador existente conserva su significado de vueltas JS. La valla acredita finalización de órdenes anteriores en el contexto ecográfico, no ausencia de errores de dibujo, una imagen visible correcta, la pose adquirida ni fidelidad clínica. Los controles de consola, imágenes y adquisiciones siguen siendo necesarios. Tampoco repara por sí misma el coste del Atlas. El tiempo observado incluye cola y frecuencia de consulta; no se presenta como tiempo puro de GPU.
+
+**Verificación.** `firstGpuFrame.test.ts` retiene cuatro vueltas con la valla pendiente y comprueba señal única, ausencia de reintentos, liberación de la valla y rechazo de los fallos. El humo real retiene la primera valla durante al menos tres consultas, comprueba que dos vueltas JS no completan el arranque y después permite la señal real de la GPU; todos los arranques que usan `bootWithoutErrors` exigen la señal. Referencia de la API: [WebGL2 clientWaitSync](https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext/clientWaitSync), estados y consulta con timeout cero; [WebGL best practices](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices), envío con flush y sincronización sin espera activa. La evidencia de ejecución y la CI corresponden al SHA que se enlace en el PR; no se infieren de esta descripción.
+
+## 185. Admitir una pareja renal sin confundir paciente y plano
+
+**Contexto.** La lectura local de TRUSTED recuperó TAC y US 3D del paciente 418 antes de terminar el ZIP. Sus marcos y dimensiones difieren: TAC512×512×535 y US1024×768×791. Compartir identificador no prueba alineación; las máscaras TAC incluyen ambos riñones y las US todavía pueden faltar.
+
+**Opciones.** Cargar toda la base o copiar datos clínicos al repo aumenta coste y exposición sin resolver coordenadas. Un simple visor acepta archivos intercambiados. Reutilizar el auditor vascular sin adaptación confundiría la máscara renal bilateral y la codificación0/255 con etiquetas individuales.
+
+**Decisión.** Admisión offline con NiBabel y dependencias científicas ya fijadas. Se verifican SHA-256 por archivo, nombre TRUSTED, paciente/lado, unidades, afines, valores finitos, rango no constante y rejilla/codificación declarada de cada anotación. Se conservan dos marcos y se informa de anotaciones incompletas. El informe siempre deja registro y aceptación clínica pendientes. Las máscaras se leen en bloques, evitando materializar float64 de5GB; una tolerancia de redondeo opcional, acotada a1e−8 y con evidencia obligatoria, conserva el máximo residuo y nunca modifica la fuente. El valor predeterminado sigue siendo exacto.
+
+**Consecuencias.** No cambia la imagen del simulador ni el navegador. Facilita detectar errores de referencia antes de ajustar anatomía. Los datos y acuerdos quedan fuera del repo; el campo de procedencia no otorga permisos. Un conjunto de dos pacientes solo puede ser un piloto, sin certificación de normalidad o fidelidad general.
+
+**Verificación.** Controles sintéticos de paciente/lado/archivo equivocado, máscara desplazada y codificación incorrecta; admisión incompleta no se convierte en éxito clínico. Workflow offline ejecuta también los auditores CT existentes, sin imágenes de pacientes. La CI principal y sus presupuestos permanecen intactos. Contrato y fuentes en `docs/fidelity/paired-renal-reference.md`.

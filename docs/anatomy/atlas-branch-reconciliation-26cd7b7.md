@@ -9,7 +9,7 @@ afectan decisiones, pruebas, soporte muscular, pose, cine y plano anatómico.
 El arranque Linux sigue bloqueado; el Mac nativo no sustituye esa evidencia.
 Las decisiones178–186 de aquella rama colisionan con IDs incorporados después
 en main y se conservan, sin renumerarlas, en
-[su registro histórico](anatomy/atlas-branch-decisions-0d6ed0a.md).
+[su registro histórico](atlas-branch-decisions-0d6ed0a.md).
 
 **Opciones.** Elegir una rama completa perdería controles físicos o el atlas.
 Reintentar CI, ampliar plazos o aumentar el bundle ocultaría requisitos de

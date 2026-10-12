@@ -898,6 +898,18 @@ input[type='range'] {
   line-height: 16px;
   color: var(--muted);
 }
+.probe-position-text {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  padding: 8px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font: 12px var(--mono);
+  resize: vertical;
+}
 /* Estado del lazo cerrado en la pestaña Docente: la magnitud a la izquierda y su valor a la derecha */
 .loop-state {
   display: grid;
@@ -1347,7 +1359,6 @@ button.mode.active {
     grid-template-columns: minmax(0, 1fr);
   }
 }
-
 .anatomy-tooltip {
   position: absolute;
   z-index: 2;
@@ -1359,4 +1370,8 @@ button.mode.active {
   color: #e8fffa;
   font-size: 12px;
   pointer-events: none;
+}
+
+.cut-map {
+  position: relative;
 }

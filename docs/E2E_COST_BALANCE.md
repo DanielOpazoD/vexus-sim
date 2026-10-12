@@ -7,14 +7,14 @@ En el run 37157782934, el fragmento 6 acumuló 1597,8 s de pruebas, frente a
 pruebas GPU costosas quedaron juntas. Todos los tests pasaron una vez, sin retry.
 No se atribuye esa diferencia a un fallo del producto ni se amplían sus plazos.
 
-Los pesos son la mediana en milisegundos de tres ejecuciones completas verificadas:
+El conjunto original de pesos fue la mediana en milisegundos de tres ejecuciones completas verificadas:
 
 - https://github.com/DanielOpazoD/vexus-sim/actions/runs/37155688621
 - https://github.com/DanielOpazoD/vexus-sim/actions/runs/37157495221
 - https://github.com/DanielOpazoD/vexus-sim/actions/runs/37157782934
 
-`tools/ci/e2eTimingWeights.json` conserva los SHA y los 62 IDs con historia.
-La suite actual tiene 62 pruebas; cualquier prueba nueva entra con el coste mediano. Los pesos
+En aquel conjunto se conservaron los SHA y los 62 IDs con historia.
+Entonces había 62 pruebas; cualquier prueba nueva entra con el coste mediano. Los pesos
 son pistas de planificación: nunca determinan qué pruebas se incluyen.
 
 ## Cambio
@@ -61,3 +61,31 @@ observadas al plan balanceado calculado con los tres runs anteriores, el máximo
 resulta 1088,9 s (28,6 % menos). Es una estimación contrafactual con datos nuevos,
 no una ejecución del plan nuevo ni una garantía de ahorro en tiempo de pared.
 No se usaron esos resultados para elegir o eliminar pruebas.
+
+## Colección vigente: 87 casos, 8 de octubre de 2026
+
+El run de main 37776977858 agotó los 40 minutos en el fragmento 5 antes de producir
+el informe final. Sus once mensajes de aprobación no constituyen una ejecución
+completa aceptable. El cierre anterior tardó 30,092 s; en el run cancelado quedaban
+25,497 s. No se reejecuta, ni se infiere un cuelgue permanente por esa cancelación.
+
+La herramienta `tools/ci/recalibrate-e2e.ts` verificó tres ejecuciones completas
+de los mismos 87 IDs, todas en intento 1 y sin reintentos de pruebas:
+
+- [37719578705](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37719578705)
+- [37723071197](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37723071197)
+- [37771651239](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37771651239)
+
+Los 24 ZIP oficiales coinciden con los digest publicados. El archivo de pesos
+conserva SHA del checkout real y hashes de informes/metadatos. En los runs de PR,
+el checkout de integración y el head tienen el mismo árbol. Los pesos anteriores
+cubrían 73 casos; los 14 nuevos recibían un coste genérico, incluso el flujo de
+comparación registrada que ahora tarda unos 9,6 minutos en SwiftShader.
+
+Con las mismas medianas actuales, el máximo calculado del plan anterior es
+2 290 853 ms y el del nuevo es 1 788 137 ms (−21,94%). La suma sigue siendo
+14 218 746 ms. Estas cifras excluyen instalación, cierre y artefactos, y no
+garantizan tiempos futuros. La primera CI del nuevo SHA y la posterior al merge
+deben terminar íntegramente; la CI fallida queda conservada. No cambia la
+cantidad de pruebas, workers, fragmentos, timeouts, aserciones ni condiciones
+del agregado. Tampoco cambia el simulador o certifica fidelidad clínica.

@@ -27,3 +27,6 @@ e2e-results.json
 
 # Informes de las dos fases de validación
 .validation/
+
+# Caché de herramientas Python offline
+__pycache__/

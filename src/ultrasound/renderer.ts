@@ -233,8 +233,8 @@ export interface FrameInputs {
  * del equipo) y el cuadro de color que pintó G (con él, su capa de color está en el anillo).
  */
 export interface CineFrame {
-  /** Immutable acquisition geometry of the presented frame, also retained in cine. */
-  anatomy?: Pick<FrameInputs, 'sample' | 'frame' | 'compression' | 'pose' | 'transducer'>;
+  /** Geometría y estado adquiridos; los controles en vivo pueden cambiar después de congelar. */
+  anatomy: Pick<FrameInputs, 'sample' | 'frame' | 'compression' | 'pose' | 'transducer' | 'seed'>;
   t: number;
   /** Cuadro dibujado (`frameCount`): entre dos guardados puede haber varios, y la persistencia los pesa todos. */
   n: number;
@@ -924,7 +924,7 @@ export class UltrasoundRenderer {
   }
 
   /** Anatomical state of the image actually on screen, never the running clock behind an old cine frame. */
-  get displayedAnatomy(): CineFrame['anatomy'] {
+  get displayedAnatomy(): CineFrame['anatomy'] | undefined {
     return (this.cineShownFrame ?? this.lastFrame)?.anatomy;
   }
 
@@ -936,14 +936,14 @@ export class UltrasoundRenderer {
   private afterFrame(inputs: FrameInputs): void {
     const c = inputs.color;
     const frame: CineFrame = {
-      anatomy: {
+      anatomy: structuredClone({
         sample: inputs.sample,
         frame: inputs.frame,
         compression: inputs.compression,
-        // Live controls can mutate after freezing; retain the actual acquisition inputs.
-        pose: { ...inputs.pose },
-        transducer: { ...inputs.transducer },
-      },
+        pose: inputs.pose,
+        transducer: inputs.transducer,
+        seed: inputs.seed,
+      }),
       t: inputs.sample.t,
       n: this.frameCount,
       bmode: inputs.bmode,
@@ -1025,6 +1025,11 @@ export class UltrasoundRenderer {
   /** Cuadro del cine en pantalla, o null en vivo. */
   get cineShownFrame(): CineFrame | null {
     return this.cineShown ? this.cine.at(this.cineShown.index) : null;
+  }
+
+  /** Procedencia del framebuffer presentado, tanto en vivo como al reproducir cine. */
+  get displayedFrame(): CineFrame | null {
+    return this.cineShownFrame ?? this.lastFrame;
   }
 
   /**

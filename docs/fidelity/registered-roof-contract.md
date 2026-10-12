@@ -62,3 +62,7 @@ externa y adquisición clínica comparativa siguen abiertas.
 Estado y evidencias se registran en el PR y en el circuito local de fidelidad.
 El cambio es experimental hasta resolver contactos, imágenes/cines, rendimiento,
 dependencias y CI; no se considera finalizada la corrección geométrica completa.
+
+La [historia original de PR224](../anatomy/atlas-branch-roof-4fc5082.md)
+conserva sus decisiones188/189 sin renumerar. Su reconciliación con main
+requiere nuevas pruebas del SHA exacto; las mediciones anteriores son históricas.

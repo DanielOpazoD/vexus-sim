@@ -78,9 +78,13 @@ test('arranca, renderiza cuadros y no emite errores', async ({ page }) => {
     return errors;
   });
   const negativeControl = async (): Promise<void> => {
-    await page.waitForFunction(() => ((window as Window & { gpuStartupTest?: { polls: number } }).gpuStartupTest?.polls ?? 0) >= 3, null, {
-      timeout: BOOT_MS,
-    });
+    await page.waitForFunction(
+      () =>
+        ((window as Window & { gpuStartupTest?: { polls: number } }).gpuStartupTest?.polls ?? 0) >= 3 &&
+        (window.__vexusTest?.framesRendered() ?? 0) >= 2,
+      null,
+      { timeout: BOOT_MS },
+    );
     expect(await page.evaluate(() => window.__vexusTest!.framesRendered())).toBeGreaterThanOrEqual(2);
     expect(gpuStages).toEqual(['ultrasound:gpu-submitted']);
     expect(bootCompleted).toBe(false);

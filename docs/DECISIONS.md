@@ -6866,3 +6866,39 @@ solicita rerun de esa CI; una corrección nueva requiere otro SHA.
 **Consecuencias.** Desaparece la discontinuidad matemática de concentración; eso no garantiza fluidez de toda la imagen ni anatomía renal correcta. El coste de ocho nodos requiere medir rendimiento. Paso/kernel/agrupación siguen NEEDS_CALIBRATION. No se integra el resto del PR222 ni se presenta el cambio como validado clínicamente.
 
 **Verificación.** Testigos a ambos lados de caras en tres ejes, potencia media en puntos reservados, retorno material y control de agrupación cero. Comparación registrada antes/después y GPU en versión actual, conservando discrepancias y controles negativos. Contrato en `docs/fidelity/continuous-clumps-contract.md`; cifras, capturas y CI exacta deben acompañar el PR.
+
+## 187. Registro renal rígido con hitos reservados y escala fija
+
+**Contexto.** TAC y US del mismo paciente usan marcos propios. Elegir cortes visualmente o minimizar el error de todos los hitos confunde el ajuste con validación. Un conjunto reflejado puede ajustar tres puntos coplanares perfectamente y seguir siendo incorrecto fuera de ese plano.
+
+**Opciones.** El artículo TRUSTED inicializa con similitud (incluye escala); deformar o escalar desde el comienzo puede ocultar la diferencia de tamaño que queremos medir. No se pretende reproducir ese benchmark ni elegir automáticamente una solución clínica.
+
+**Decisión.** Inicialización rígida US-world→CT-world en mm mediante Kabsch con rotación propia, escala1, IDs3/4/5 para ajustar. IDs1/2/6/7 se reservan; pelvis1 informa TRE separado. Hashes enlazan admisión, imagen y hitos; se rechazan cruces de paciente/lado/modalidad, archivos cambiados, marcos ambiguos, puntos fuera del FOV y triángulos degenerados. Se conserva también la matriz inversa.
+
+**Consecuencias.** Permite detectar errores independientes del ajuste y preparar cortes comparables. Respiración, postura y compresión pueden impedir un registro rígido útil. Los hitos reservados comparten anotadores; no son validación externa. No hay umbral clínico inventado ni aceptación automática, y no se transforma la anatomía del simulador.
+
+**Verificación.** Rotación/traslación analíticas, pelvis desplazada que no modifica el ajuste, reflexión con ajuste perfecto y TRE24mm, escala distinta con residuo persistente, marcos/hash/lado/FOV erróneos. Contrato y uso en `docs/fidelity/paired-renal-registration.md`; la aplicación a pacientes y sus discrepancias se registra fuera de Git.
+
+## 188. TAC remuestreado en los centros físicos del plano US
+
+**Contexto.** Dos cortes elegidos visualmente pueden parecerse y aun así no corresponder al mismo plano. Redimensionarlos para igualar contornos oculta diferencias de escala. Fuera del volumen TAC no hay tejido medido.
+
+**Opciones.** Capturas paralelas de MPR no resuelven la relación física. Una superposición de grises TAC y US sugiere una similitud acústica que no existe. No se cambia anatomía ni se sintetiza ecografía a partir de HU.
+
+**Decisión.** Para cada centro de pixel del corte US, aplicar affineUS, inicialización rígida US→CT y affineCT inverso. Interpolación lineal solo del TAC; US conserva muestras originales. Una máscara explícita marca soporte TAC, con NaN/violeta fuera. Figura a escala física con procedencia, plano y TRE/RMS de registro visibles.
+
+**Consecuencias.** Se pueden examinar discrepancias en cortes vecinos y proponer cambios desde evidencia espacial. Un registro matemático no asegura alineación anatómica; los rótulos de equipo incluidos en US impiden métricas acústicas sin máscara adicional. Los ejes de adquisición no se etiquetan como planos anatómicos del paciente. No se utiliza el sujeto reservado para afinar parámetros.
+
+**Verificación.** Phantom físico x+2y+3z con voxeles anisótropos, rotación y traslación conocidas, tres ejes, bordes parciales, escala/reflexión rechazadas. Integración identidad conserva valores y mm/pixel; registro de otra admisión o imágenes modificadas se rechazan. Contrato en `docs/fidelity/paired-renal-plane-review.md`; las figuras clínicas y discrepancias permanecen locales.
+
+## 189. Identidad canónica de los módulos GLSL de Three
+
+**Contexto.** En ramas aisladas con `node_modules` compartido por enlace simbólico, Vite entrega el identificador real del módulo pero el minificador lo había indexado por la ruta del checkout. El mismo código GLSL se rechaza como fuente distinta. La reproducción usa un único paquete Three: solo cambia el alias del sistema de archivos.
+
+**Opciones.** Copiar o reinstalar dependencias en cada rama aumenta coste de revisión. Desactivar el minificador, aceptar módulos desconocidos o subir presupuestos debilita controles ajenos al defecto. No se modifica la estrategia de renombrado.
+
+**Decisión.** Canonizar con `realpathSync` tanto los archivos al construir el mapa como el identificador al transformar. Permanece la comprobación de identidad de contenido y la conservación de contratos dinámicos ToneMapping.
+
+**Consecuencias.** Ramas con el mismo paquete físico pueden compartir dependencias sin romper el build. No se acelera la GPU ni se cambia señal/anatomía por esta corrección. No cubre instalaciones sin `node_modules` ni rutas virtuales de paquetes distintos.
+
+**Verificación.** Un checkout sintético con symlink reproduce el fallo anterior y ahora produce el mismo código que el identificador resuelto. Alterar el contenido después de construir el mapa sigue fallando. El contrato ToneMapping anterior permanece. Build y presupuesto se comprueban sin aumentar límites; la CI exacta debe seguir verde.

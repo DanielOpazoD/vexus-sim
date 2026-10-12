@@ -6890,3 +6890,15 @@ solicita rerun de esa CI; una corrección nueva requiere otro SHA.
 **Consecuencias.** Se pueden examinar discrepancias en cortes vecinos y proponer cambios desde evidencia espacial. Un registro matemático no asegura alineación anatómica; los rótulos de equipo incluidos en US impiden métricas acústicas sin máscara adicional. Los ejes de adquisición no se etiquetan como planos anatómicos del paciente. No se utiliza el sujeto reservado para afinar parámetros.
 
 **Verificación.** Phantom físico x+2y+3z con voxeles anisótropos, rotación y traslación conocidas, tres ejes, bordes parciales, escala/reflexión rechazadas. Integración identidad conserva valores y mm/pixel; registro de otra admisión o imágenes modificadas se rechazan. Contrato en `docs/fidelity/paired-renal-plane-review.md`; las figuras clínicas y discrepancias permanecen locales.
+
+## 189. Identidad canónica de los módulos GLSL de Three
+
+**Contexto.** En ramas aisladas con `node_modules` compartido por enlace simbólico, Vite entrega el identificador real del módulo pero el minificador lo había indexado por la ruta del checkout. El mismo código GLSL se rechaza como fuente distinta. La reproducción usa un único paquete Three: solo cambia el alias del sistema de archivos.
+
+**Opciones.** Copiar o reinstalar dependencias en cada rama aumenta coste de revisión. Desactivar el minificador, aceptar módulos desconocidos o subir presupuestos debilita controles ajenos al defecto. No se modifica la estrategia de renombrado.
+
+**Decisión.** Canonizar con `realpathSync` tanto los archivos al construir el mapa como el identificador al transformar. Permanece la comprobación de identidad de contenido y la conservación de contratos dinámicos ToneMapping.
+
+**Consecuencias.** Ramas con el mismo paquete físico pueden compartir dependencias sin romper el build. No se acelera la GPU ni se cambia señal/anatomía por esta corrección. No cubre instalaciones sin `node_modules` ni rutas virtuales de paquetes distintos.
+
+**Verificación.** Un checkout sintético con symlink reproduce el fallo anterior y ahora produce el mismo código que el identificador resuelto. Alterar el contenido después de construir el mapa sigue fallando. El contrato ToneMapping anterior permanece. Build y presupuesto se comprueban sin aumentar límites; la CI exacta debe seguir verde.

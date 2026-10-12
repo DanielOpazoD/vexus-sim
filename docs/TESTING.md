@@ -188,3 +188,19 @@ un timeout o una regresión sin investigar.
 6. Revisar el diff, comprobar la nueva partición y seguir la CI completa y el
    posmerge. Comparar predicción y ejecución real: una estimación más equilibrada
    no demuestra por sí sola menor tiempo de pared ni menos consumo total.
+
+### Etapas de arranque en grupos cancelados
+
+El runner escribe `.validation/e2e-startup.jsonl` de forma incremental en el
+host. Cada arranque conserva SHA, id de prueba, consulta, reintento, etapas del
+navegador y tiempo transcurrido del host. Una cancelación puede dejar solo un
+prefijo: sirve para localizar la última operación observada, nunca para aceptar
+el arranque ni la ejecución E2E. El artefacto `e2e-tiempos-N` conserva ese prefijo
+junto a la identidad del grupo, incluso si no pudo generarse el informe final.
+Los requisitos del veredicto y el rechazo de reintentos siguen intactos.
+
+Para un diagnóstico local fuera del runner, declarar `E2E_SOURCE_SHA` con el
+SHA del checkout y `E2E_STARTUP_EVIDENCE` con el destino deseado. Sin destino no
+se escribe evidencia incremental; los adjuntos de Playwright se mantienen.
+Estos registros no contienen imágenes, muestras ni datos clínicos. No prueban
+el coste de compilación ni la causa de una etapa larga por sí solos.

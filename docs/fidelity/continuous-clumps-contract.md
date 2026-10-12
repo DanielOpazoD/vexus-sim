@@ -1,6 +1,12 @@
 # Grumos continuos del medio dispersor — contrato previo
 
-Fuente previa: `0d6ed0ae28dc6527000121d7587441bd27b9a051`, atlas abdominal.
+Fuente de la comparación original: `0f3d5d03aaadfa4a684095ed25aa3801090814e1`, rama principal.
+Base de integración actual: `d4e99d2022ea840dc74837e5c99091a34ca5838b`.
+La actualización incorpora la conservación incremental de etapas de arranque;
+no convierte las mediciones originales en nuevas mediciones de esta base ni
+declara corregido el timeout previo de selección en Linux.
+Se aísla el mecanismo del PR222 (borrador Atlas); su evidencia histórica no
+sustituye la evaluación en esta versión.
 
 **Defecto y aprendizaje.** La ganancia de los grumos usa un hash del piso de
 cada coordenada: cambia instantáneamente al cruzar una cara de la retícula de
@@ -43,3 +49,11 @@ obligatorios. Referencia independiente: [ACEP, renal](https://www.acep.org/sonog
 para seno ecogénico, corteza gris y cubierta perirrenal; no calibra estadística.
 Los clips clínicos comparables, phantom y panel humano independiente permanecen
 pendientes. El cambio no declara resuelto el límite riñón–músculo ni máxima fidelidad.
+
+## Procedencia de la variante Atlas
+
+El [contrato original de PR222](continuous-clumps-atlas-contract-3e703b8.md)
+conserva su fuente `0d6ed0a`. Su [decisión 187 histórica](../anatomy/atlas-branch-clumps-3e703b8.md)
+se conserva sin renumerar. PR241 ya incorporó el mismo mecanismo y sus guardas
+en main; la reconciliación de PR222 aporta trazabilidad, sin duplicar el cambio
+ni convertir las mediciones históricas en validación de la nueva integración.

@@ -54,3 +54,7 @@ La importación de músculos paravertebrales necesita saneamiento de su fuente
 y reconciliación de contactos: el diagnóstico CGAL encontró75 pares de cruces
 en el componente principal de cada longísimo fuente. No se importan superficies
 inválidas para mejorar una captura.
+
+La [historia original de PR224](../anatomy/atlas-branch-roof-4fc5082.md)
+conserva sus decisiones188/189 sin renumerar. Su reconciliación con main
+requiere nuevas pruebas del SHA exacto; las mediciones anteriores son históricas.

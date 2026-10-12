@@ -6838,7 +6838,7 @@ solicita rerun de esa CI; una corrección nueva requiere otro SHA.
 
 **Opciones.** Cargar toda la base o copiar datos clínicos al repo aumenta coste y exposición sin resolver coordenadas. Un simple visor acepta archivos intercambiados. Reutilizar el auditor vascular sin adaptación confundiría la máscara renal bilateral y la codificación0/255 con etiquetas individuales.
 
-**Decisión.** Admisión offline con NiBabel y dependencias científicas ya fijadas. Se verifican SHA-256 por archivo, nombre TRUSTED, paciente/lado, unidades, afines, valores finitos, rango no constante y rejilla/codificación declarada de cada anotación. Se conservan dos marcos y se informa de anotaciones incompletas. El informe siempre deja registro y aceptación clínica pendientes.
+**Decisión.** Admisión offline con NiBabel y dependencias científicas ya fijadas. Se verifican SHA-256 por archivo, nombre TRUSTED, paciente/lado, unidades, afines, valores finitos, rango no constante y rejilla/codificación declarada de cada anotación. Se conservan dos marcos y se informa de anotaciones incompletas. El informe siempre deja registro y aceptación clínica pendientes. Las máscaras se leen en bloques, evitando materializar float64 de5GB; una tolerancia de redondeo opcional, acotada a1e−8 y con evidencia obligatoria, conserva el máximo residuo y nunca modifica la fuente. El valor predeterminado sigue siendo exacto.
 
 **Consecuencias.** No cambia la imagen del simulador ni el navegador. Facilita detectar errores de referencia antes de ajustar anatomía. Los datos y acuerdos quedan fuera del repo; el campo de procedencia no otorga permisos. Un conjunto de dos pacientes solo puede ser un piloto, sin certificación de normalidad o fidelidad general.
 

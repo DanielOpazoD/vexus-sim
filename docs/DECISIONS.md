@@ -6819,3 +6819,15 @@ con cuadro adquirido coincidente y guardas de tejido explícitas, siguiendo
 CONTRIBUTING. Se conservan los presupuestos totales, el fallo de primer
 intento y su reintento diagnóstico automático también fallido. No se
 solicita rerun de esa CI; una corrección nueva requiere otro SHA.
+
+## 184. Confirmar en GPU el primer cuadro de los ensayos
+
+**Contexto.** Los ensayos Atlas del 11–12-10-2026 llegaron a dos vueltas JavaScript aunque la primera pasada acústica aún no completaba una lectura. `framesRendered` cuenta vueltas del bucle; no acredita ejecución GPU. Una microprueba del shader A0 de `4fbe738` enlazó en menos de100ms, pero no completó un destino de1píxel con cero muestras dinámicas dentro del protocolo de150s. Es evidencia de primer uso pendiente, no de fidelidad ni una medida representativa de cadencia.
+
+**Opciones.** `readPixels` o `finish` bloquearían la CPU; aceptar dos vueltas conserva el falso positivo. Una valla por cada cuadro agregaría instrumentación innecesaria para este defecto. Cambiar plazos, muestras o anatomía no resuelve la validez de la evidencia.
+
+**Decisión.** `FirstGpuFrame` coloca una única valla tras el primer `Simulator.render()` en modo `e2e`/`startupTrace`, hace `flush` y consulta `clientWaitSync(sync,0,0)` una vez por vuelta. Solo `ALREADY_SIGNALED` y `CONDITION_SATISFIED` registran `ultrasound:gpu-ready`. Una valla nula, un estado desconocido, `WAIT_FAILED` o pérdida de contexto registran fallo. `bootWithoutErrors` exige la señal además de las dos vueltas JS, dentro del mismo `BOOT_MS`. La traza se conserva desde el host aunque la página deje de responder. En uso normal no se crea la valla.
+
+**Consecuencias.** Se distingue trabajo enviado de ejecución completada, sin cambiar reloj, física, anatomía, shaders o presupuestos. El contador existente conserva su significado de vueltas JS. La valla acredita finalización de órdenes anteriores en el contexto ecográfico, no ausencia de errores de dibujo, una imagen visible correcta, la pose adquirida ni fidelidad clínica. Los controles de consola, imágenes y adquisiciones siguen siendo necesarios. Tampoco repara por sí misma el coste del Atlas. El tiempo observado incluye cola y frecuencia de consulta; no se presenta como tiempo puro de GPU.
+
+**Verificación.** `firstGpuFrame.test.ts` retiene cuatro vueltas con la valla pendiente y comprueba señal única, ausencia de reintentos, liberación de la valla y rechazo de los fallos. El humo real retiene la primera valla durante al menos tres consultas, comprueba que dos vueltas JS no completan el arranque y después permite la señal real de la GPU; todos los arranques que usan `bootWithoutErrors` exigen la señal. Referencia de la API: [WebGL2 clientWaitSync](https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext/clientWaitSync), estados y consulta con timeout cero; [WebGL best practices](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices), envío con flush y sincronización sin espera activa. La evidencia de ejecución y la CI corresponden al SHA que se enlace en el PR; no se infieren de esta descripción.

@@ -187,3 +187,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [181](DECISIONS.md#L6733) | Copiar la posición exacta y los ajustes actuales del transductor | vigente |
 | [182](DECISIONS.md#L6766) | Deslizar la sonda conserva los ejes en el paciente | vigente |
 | [183](DECISIONS.md#L6778) | Selección persistente y contornos de la guía desde la anatomía adquirida | vigente |
+| [184](DECISIONS.md#L6823) | Confirmar en GPU el primer cuadro de los ensayos | vigente |

@@ -33,7 +33,7 @@ const paces = new WeakMap<Page, { bootMs: number; t0: number; f0: number }>();
 
 /**
  * Arranca la aplicación con los ganchos de prueba (`?e2e=1`: pose por defecto y fundamental; `?e2e=app`: como el
- * usuario) y espera sus dos primeros cuadros. Devuelve la lista de errores de página y de consola, que cada prueba
+ * usuario) y espera dos vueltas JS y la finalización GPU del primer cuadro. Devuelve la lista de errores de página y de consola, que cada prueba
  * exige vacía al final.
  */
 export async function bootWithoutErrors(page: Page, query = '?e2e=1'): Promise<string[]> {
@@ -54,13 +54,20 @@ export async function bootWithoutErrors(page: Page, query = '?e2e=1'): Promise<s
   let bootCompleted = false;
   try {
     await page.goto(`/${query}`);
-    // los ganchos se cargan de forma diferida (import dinámico); el arranque acaba con dos cuadros del bucle
+    // Dos vueltas JS pueden haber encolado trabajo que aún no completó la GPU.
+    // La valla se registra en el host; el adjunto conserva el bloqueo aun sin respuesta de la página.
     await expect
-      .poll(() => page.evaluate(() => (typeof window.__vexusTest === 'object' ? window.__vexusTest.framesRendered() : -1)), {
-        timeout: BOOT_MS,
-        message: 'arranque: ganchos cargados y dos cuadros del bucle',
-      })
-      .toBeGreaterThanOrEqual(2);
+      .poll(
+        async () => ({
+          frames: (await page.evaluate(() => window.__vexusTest?.framesRendered() ?? -1)) >= 2,
+          gpu: startup.some((entry) => entry.stage === 'ultrasound:gpu-ready'),
+        }),
+        {
+          timeout: BOOT_MS,
+          message: 'arranque: dos vueltas JS y primer cuadro confirmado por la GPU',
+        },
+      )
+      .toEqual({ frames: true, gpu: true });
     // El estado se escribe en el primer cuadro con más de250ms desde el anterior.
     await withinFrames(page, 30, 'estado con fps', async () => {
       const s = (await page.locator('#status').textContent()) ?? '';

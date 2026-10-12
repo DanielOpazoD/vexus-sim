@@ -26,3 +26,4 @@ jobs:
           python tools/anatomy/ct_vascular_reference_test.py
           python tools/anatomy/ct_posterior_reference_test.py
           python tools/anatomy/paired_renal_reference_test.py
+          python tools/anatomy/paired_renal_registration_test.py

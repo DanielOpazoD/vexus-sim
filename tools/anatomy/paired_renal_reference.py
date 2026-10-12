@@ -56,19 +56,38 @@ def inspect_volume(path, evidence):
     }
 
 
-def inspect_annotation(path, image, foreground, evidence):
+def inspect_annotation(path, image, foreground, evidence, roundoff=0, roundoff_evidence=None):
     if foreground not in (1, 255):
         raise ValueError("Codificación de máscara debe declarar 1 o 255")
-    label = nib.load(path)
+    if not np.isfinite(roundoff) or not 0 <= roundoff <= 1e-8 or (roundoff and not roundoff_evidence):
+        raise ValueError("Tolerancia numérica fuera de límite o sin evidencia; no sustituye un umbral de segmentación")
+    label = nib.load(path, keep_file_open=True)
     geometry_matches(label, image, evidence)
-    values = np.asanyarray(label.dataobj)
-    if not np.isfinite(values).all() or not np.isin(values, [0, foreground]).all():
-        raise ValueError("Máscara contradice su codificación; no umbralizar silenciosamente")
-    count = int(np.count_nonzero(values == foreground))
+    count = 0; max_residual = 0.
+    # Slabs contiguos del último eje: evitan que np.isin cree temporales int64
+    # de varios GB para máscaras US de cientos de millones de voxeles.
+    # El proxy conserva el gzip abierto; cortes consecutivos avanzan sin reiniciar
+    # la descompresión. No materializar máscaras float64 de ~5 GB enteras.
+    for first in range(0, label.shape[2], 16):
+        slab = np.asanyarray(label.dataobj[..., first:first+16])
+        if roundoff:
+            on = np.abs(slab - foreground) <= roundoff
+            residual = np.abs(slab - np.where(on, foreground, 0))
+            if not np.isfinite(residual).all() or np.any(residual > roundoff):
+                raise ValueError("Máscara contradice su codificación; no umbralizar silenciosamente")
+            max_residual = max(max_residual, float(residual.max()))
+        else:
+            on = slab == foreground
+            # También rechaza NaN/Inf: ambos son distintos de 0 y del foreground.
+            if np.any((slab != 0) & ~on):
+                raise ValueError("Máscara contradice su codificación; no umbralizar silenciosamente")
+        count += int(np.count_nonzero(on))
     if not count:
         raise ValueError("Máscara vacía")
     return {"sha256": file_hash(path), "foregroundValue": foreground,
-            "occupiedVoxels": count, "gridMatchesImage": True}
+            "occupiedVoxels": count, "gridMatchesImage": True,
+            "roundoffTolerance": roundoff, "maxCodingResidual": max_residual,
+            "roundoffEvidence": roundoff_evidence, "sourceRewritten": False}
 
 
 def audit(manifest_path):
@@ -100,7 +119,8 @@ def audit(manifest_path):
                 raise ValueError("Anotador desconocido")
             annotations[name] = inspect_annotation(
                 verified_file(manifest_path.parent, annotation), image,
-                annotation["foregroundValue"], evidence)
+                annotation["foregroundValue"], evidence,
+                annotation.get("roundoffTolerance", 0), annotation.get("roundoffEvidence"))
         results[modality] = {**info, "annotations": annotations,
                             "annotationScope": "both-kidneys" if modality == "ct" else side,
                             "annotationStatus": "complete" if len(annotations) == 3 else "incomplete"}

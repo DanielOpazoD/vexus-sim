@@ -126,6 +126,7 @@ jobs:
           path: |
             e2e-results.json
             .validation/e2e-execution.json
+            .validation/e2e-startup.jsonl
           retention-days: 14
       - name: Guardar las capturas intestinales
         if: always()

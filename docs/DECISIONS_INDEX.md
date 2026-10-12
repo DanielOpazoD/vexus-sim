@@ -184,10 +184,10 @@ Generado por `npm run docs:index` — no editar a mano.
 | [178](DECISIONS.md#L6658) | Alcance axilar posterior bilateral sin desplazar órganos | vigente |
 | [179](DECISIONS.md#L6670) | Contacto actual sin borrar la velocidad del último paso físico | vigente |
 | [180](DECISIONS.md#L6703) | Conservar etapas de arranque antes de disponer de los ganchos | vigente |
-| [181](DECISIONS.md#L6733) | Copiar la posición exacta y los ajustes actuales del transductor | vigente |
-| [182](DECISIONS.md#L6766) | Deslizar la sonda conserva los ejes en el paciente | vigente |
-| [183](DECISIONS.md#L6778) | Selección persistente y contornos de la guía desde la anatomía adquirida | vigente |
-| [184](DECISIONS.md#L6823) | Confirmar en GPU el primer cuadro de los ensayos | vigente |
-| [185](DECISIONS.md#L6835) | Admitir una pareja renal sin confundir paciente y plano | vigente |
-| [186](DECISIONS.md#L6847) | Concentración continua del medio dispersor en la rama principal | vigente |
-| [187](DECISIONS.md#L6859) | Registro renal rígido con hitos reservados y escala fija | vigente |
+| [181](DECISIONS.md#L6744) | Copiar la posición exacta y los ajustes actuales del transductor | vigente |
+| [182](DECISIONS.md#L6777) | Deslizar la sonda conserva los ejes en el paciente | vigente |
+| [183](DECISIONS.md#L6789) | Selección persistente y contornos de la guía desde la anatomía adquirida | vigente |
+| [184](DECISIONS.md#L6834) | Confirmar en GPU el primer cuadro de los ensayos | vigente |
+| [185](DECISIONS.md#L6846) | Admitir una pareja renal sin confundir paciente y plano | vigente |
+| [186](DECISIONS.md#L6858) | Concentración continua del medio dispersor en la rama principal | vigente |
+| [187](DECISIONS.md#L6870) | Registro renal rígido con hitos reservados y escala fija | vigente |

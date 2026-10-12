@@ -1,0 +1,3 @@
+-r ct-reference-requirements.txt
+# Figuras científicas offline; no se incorpora al navegador.
+matplotlib==3.11.2

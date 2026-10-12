@@ -1,3 +1,4 @@
+import { acquisitionJson } from './acquisitionJson';
 import { createHash } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 import type { Page } from '@playwright/test';
@@ -118,18 +119,13 @@ function writeAcquiredFrame(state: AcquiredState, prefix: string, sourceSha: str
   const { image, ...metadata } = state;
   const png = encodeBMode(image.width, image.height, Buffer.from(image.grayBase64, 'base64'));
   const hash = (b: Buffer | string) => createHash('sha256').update(b).digest('hex');
-  const json =
-    JSON.stringify(
-      {
-        ...metadata,
-        sourceSha,
-        image: { width: image.width, height: image.height, pngSha256: hash(png) },
-        anatomyFrameId: null,
-        ctRegistrationAccepted: false,
-      },
-      null,
-      2,
-    ) + '\n';
+  const json = acquisitionJson({
+    ...metadata,
+    sourceSha,
+    image: { width: image.width, height: image.height, pngSha256: hash(png) },
+    anatomyFrameId: null,
+    ctRegistrationAccepted: false,
+  });
   writeFileSync(prefix + '.png', png);
   writeFileSync(prefix + '.json', json);
   return { pngSha256: hash(png), metadataSha256: hash(json), frameNumber: state.frame.n, acquiredTimeSeconds: state.frame.t };

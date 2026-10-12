@@ -71,11 +71,14 @@ function skinGap(q: Vec3, t: Torso): number {
 }
 
 /** Primer cruce (mm a lo largo de la línea) del nivel `w` de profundidad radial en [r0, r1], o null. */
-function firstCrossing(depthAt: (r: number) => number, w: number, r0: number, r1: number): number | null {
+export function firstCrossing(depthAt: (r: number) => number, w: number, r0: number, r1: number): number | null {
   const step = 2;
   let prev = r0;
   if (depthAt(r0) >= w) return r0;
-  for (let r = r0 + step; r <= r1 + 1e-9; r += step) {
+  // Visit the supplied endpoint even when the final bracket is shorter than
+  // step. Omitting it can report no wall despite depthAt(r1) already being inside.
+  while (prev < r1) {
+    const r = Math.min(prev + step, r1);
     if (depthAt(r) >= w) {
       let lo = prev;
       let hi = r;

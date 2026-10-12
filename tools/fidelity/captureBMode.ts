@@ -5,7 +5,7 @@ import type { Page } from '@playwright/test';
 const { PNG } = createRequire(import.meta.url)('playwright-core/lib/utilsBundle') as {
   PNG: { sync: { write: (image: { width: number; height: number; data: Buffer }) => Buffer } };
 };
-export function encodeBMode(width: number, height: number, gray: readonly number[]): Buffer {
+export function encodeBMode(width: number, height: number, gray: ArrayLike<number>): Buffer {
   if (!Number.isInteger(width) || !Number.isInteger(height) || width < 1 || height < 1 || gray.length !== width * height)
     throw new Error('Dimensiones de B-mode inválidas');
   const data = Buffer.alloc(gray.length * 4);

@@ -1,0 +1,748 @@
+{
+  "manifestSha256": "332b0f0e4c1716765b767b7e199488fadcf4c3b8b9dc1ce677793ab5e18be335",
+  "cgalVersion": "6.0.1.post202410241521",
+  "officialLabelsVerified": true,
+  "parts": [
+    {
+      "id": "FJ1431",
+      "name": "right psoas major",
+      "sha256": "23cb656d80cc3111912a94369811e3127328a07bed36d02df15c46c9c1014d4f",
+      "sourceBytesVerified": true,
+      "registration": {
+        "originLpsMm": [-0.3152345, -205.92635, 1164.5735],
+        "axisSigns": [1, -1, 1],
+        "targetOriginMm": [0, 85.25, 0],
+        "reversedWinding": true,
+        "organSpecificTransform": false
+      },
+      "excludedSheets": [
+        {
+          "sourceFaceIndices": [3990, 3997],
+          "sourceTrianglesLasMm": [
+            [
+              [-20.5170655, -19.87235000000001, -148.5235],
+              [-20.5656655, -19.86035000000001, -148.45349999999996],
+              [-20.5162655, -19.81835000000001, -148.46349999999995]
+            ],
+            [
+              [-20.5162655, -19.81835000000001, -148.46349999999995],
+              [-20.5656655, -19.86035000000001, -148.45349999999996],
+              [-20.5170655, -19.87235000000001, -148.5235]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [4000, 4001],
+          "sourceTrianglesLasMm": [
+            [
+              [-20.1741655, -18.974350000000015, -148.48349999999994],
+              [-20.1727655, -18.83035000000001, -148.2835],
+              [-20.1590655, -18.94635000000001, -148.2735]
+            ],
+            [
+              [-20.1590655, -18.94635000000001, -148.2735],
+              [-20.1727655, -18.83035000000001, -148.2835],
+              [-20.1741655, -18.974350000000015, -148.48349999999994]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [4232, 4233],
+          "sourceTrianglesLasMm": [
+            [
+              [-18.3374655, -18.670350000000013, -145.5435],
+              [-18.447965500000002, -18.783350000000013, -145.5335],
+              [-18.4451655, -18.645350000000008, -145.39350000000002]
+            ],
+            [
+              [-18.3374655, -18.670350000000013, -145.5435],
+              [-18.4451655, -18.645350000000008, -145.39350000000002],
+              [-18.447965500000002, -18.783350000000013, -145.5335]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [4541, 4542],
+          "sourceTrianglesLasMm": [
+            [
+              [-17.7469655, -30.49775000000001, -96.34349999999995],
+              [-17.751265500000002, -30.491050000000016, -96.35349999999994],
+              [-17.746565500000003, -30.491550000000018, -96.35349999999994]
+            ],
+            [
+              [-17.751265500000002, -30.491050000000016, -96.35349999999994],
+              [-17.7469655, -30.49775000000001, -96.34349999999995],
+              [-17.746565500000003, -30.491550000000018, -96.35349999999994]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [4466, 4468],
+          "sourceTrianglesLasMm": [
+            [
+              [-16.734665500000002, -18.98735000000002, -142.7935],
+              [-16.7378655, -19.016350000000017, -142.73349999999994],
+              [-16.769665500000002, -18.977350000000015, -142.74349999999993]
+            ],
+            [
+              [-16.769665500000002, -18.977350000000015, -142.74349999999993],
+              [-16.7378655, -19.016350000000017, -142.73349999999994],
+              [-16.734665500000002, -18.98735000000002, -142.7935]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        }
+      ],
+      "nonManifoldVertexLinks": [],
+      "topologyFailures": [],
+      "cgalMappingError": null,
+      "validForContactInvestigation": true,
+      "componentsRequireInterpretation": true,
+      "anatomicalContactsVerified": false,
+      "runtimePromoted": false,
+      "clinicalValidation": false,
+      "sourceComponents": 4,
+      "selfIntersectionPairCount": 0
+    },
+    {
+      "id": "FJ1431M",
+      "name": "left psoas major",
+      "sha256": "a7bcefff079b0bbff8eb0c284bfa2ca07b1b2199dec0b1419f3ebd3d20b2e576",
+      "sourceBytesVerified": true,
+      "registration": {
+        "originLpsMm": [-0.3152345, -205.92635, 1164.5735],
+        "axisSigns": [1, -1, 1],
+        "targetOriginMm": [0, 85.25, 0],
+        "reversedWinding": true,
+        "organSpecificTransform": false
+      },
+      "excludedSheets": [
+        {
+          "sourceFaceIndices": [4466, 4468],
+          "sourceTrianglesLasMm": [
+            [
+              [17.3651345, -18.98735000000002, -142.7935],
+              [17.4001345, -18.977350000000015, -142.74349999999993],
+              [17.3683345, -19.016350000000017, -142.73349999999994]
+            ],
+            [
+              [17.4001345, -18.977350000000015, -142.74349999999993],
+              [17.3651345, -18.98735000000002, -142.7935],
+              [17.3683345, -19.016350000000017, -142.73349999999994]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [4541, 4542],
+          "sourceTrianglesLasMm": [
+            [
+              [18.3774345, -30.49775000000001, -96.34349999999995],
+              [18.3770345, -30.491550000000018, -96.35349999999994],
+              [18.3817345, -30.491050000000016, -96.35349999999994]
+            ],
+            [
+              [18.3817345, -30.491050000000016, -96.35349999999994],
+              [18.3770345, -30.491550000000018, -96.35349999999994],
+              [18.3774345, -30.49775000000001, -96.34349999999995]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [4232, 4233],
+          "sourceTrianglesLasMm": [
+            [
+              [18.9679345, -18.670350000000013, -145.5435],
+              [19.0756345, -18.645350000000008, -145.39350000000002],
+              [19.0784345, -18.783350000000013, -145.5335]
+            ],
+            [
+              [18.9679345, -18.670350000000013, -145.5435],
+              [19.0784345, -18.783350000000013, -145.5335],
+              [19.0756345, -18.645350000000008, -145.39350000000002]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [4000, 4001],
+          "sourceTrianglesLasMm": [
+            [
+              [20.8046345, -18.974350000000015, -148.48349999999994],
+              [20.7895345, -18.94635000000001, -148.2735],
+              [20.8032345, -18.83035000000001, -148.2835]
+            ],
+            [
+              [20.7895345, -18.94635000000001, -148.2735],
+              [20.8046345, -18.974350000000015, -148.48349999999994],
+              [20.8032345, -18.83035000000001, -148.2835]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [3990, 3997],
+          "sourceTrianglesLasMm": [
+            [
+              [21.1475345, -19.87235000000001, -148.5235],
+              [21.146734499999997, -19.81835000000001, -148.46349999999995],
+              [21.1961345, -19.86035000000001, -148.45349999999996]
+            ],
+            [
+              [21.146734499999997, -19.81835000000001, -148.46349999999995],
+              [21.1475345, -19.87235000000001, -148.5235],
+              [21.1961345, -19.86035000000001, -148.45349999999996]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        }
+      ],
+      "nonManifoldVertexLinks": [],
+      "topologyFailures": [],
+      "cgalMappingError": null,
+      "validForContactInvestigation": true,
+      "componentsRequireInterpretation": true,
+      "anatomicalContactsVerified": false,
+      "runtimePromoted": false,
+      "clinicalValidation": false,
+      "sourceComponents": 4,
+      "selfIntersectionPairCount": 0
+    },
+    {
+      "id": "FJ1527",
+      "name": "right iliocostalis lumborum",
+      "sha256": "8a15295f08faac150ee5f16fe1035398dcfa60d3cba8b42b504b53764032b718",
+      "sourceBytesVerified": true,
+      "registration": {
+        "originLpsMm": [-0.3152345, -205.92635, 1164.5735],
+        "axisSigns": [1, -1, 1],
+        "targetOriginMm": [0, 85.25, 0],
+        "reversedWinding": true,
+        "organSpecificTransform": false
+      },
+      "excludedSheets": [
+        {
+          "sourceFaceIndices": [12387, 12388],
+          "sourceTrianglesLasMm": [
+            [
+              [-75.20086549999999, -104.50405, -85.02350000000001],
+              [-75.3730655, -104.34545000000003, -84.95350000000008],
+              [-75.29246549999999, -104.44245000000001, -85.11349999999993]
+            ],
+            [
+              [-75.3730655, -104.34545000000003, -84.95350000000008],
+              [-75.20086549999999, -104.50405, -85.02350000000001],
+              [-75.29246549999999, -104.44245000000001, -85.11349999999993]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [11110, 11111],
+          "sourceTrianglesLasMm": [
+            [
+              [-66.9697655, -90.04905000000002, -218.83749999999998],
+              [-66.94746549999999, -89.95465000000002, -218.88749999999993],
+              [-67.0111655, -89.98415, -218.87649999999996]
+            ],
+            [
+              [-66.9697655, -90.04905000000002, -218.83749999999998],
+              [-67.0111655, -89.98415, -218.87649999999996],
+              [-66.94746549999999, -89.95465000000002, -218.88749999999993]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [3471, 3473],
+          "sourceTrianglesLasMm": [
+            [
+              [-15.1662655, -120.65101900000002, -310.0915],
+              [-15.203265499999999, -120.59820000000002, -310.0665],
+              [-15.2120655, -120.64949000000001, -310.1155]
+            ],
+            [
+              [-15.2120655, -120.64949000000001, -310.1155],
+              [-15.203265499999999, -120.59820000000002, -310.0665],
+              [-15.1662655, -120.65101900000002, -310.0915]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [3024, 3026],
+          "sourceTrianglesLasMm": [
+            [
+              [-12.651565499999998, -118.5524, -332.55549999999994],
+              [-12.6487655, -118.56388000000001, -332.56949999999995],
+              [-12.647665499999999, -118.55671000000001, -332.57349999999997]
+            ],
+            [
+              [-12.647665499999999, -118.55671000000001, -332.57349999999997],
+              [-12.6487655, -118.56388000000001, -332.56949999999995],
+              [-12.651565499999998, -118.5524, -332.55549999999994]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        }
+      ],
+      "nonManifoldVertexLinks": [],
+      "topologyFailures": [],
+      "cgalMappingError": null,
+      "validForContactInvestigation": true,
+      "componentsRequireInterpretation": true,
+      "anatomicalContactsVerified": false,
+      "runtimePromoted": false,
+      "clinicalValidation": false,
+      "sourceComponents": 11,
+      "selfIntersectionPairCount": 0
+    },
+    {
+      "id": "FJ1527M",
+      "name": "left iliocostalis lumborum",
+      "sha256": "1c7f20b34a9639d1996e3ec18873beb6dc114169ae1d310e88e2c3d8b1ff2133",
+      "sourceBytesVerified": true,
+      "registration": {
+        "originLpsMm": [-0.3152345, -205.92635, 1164.5735],
+        "axisSigns": [1, -1, 1],
+        "targetOriginMm": [0, 85.25, 0],
+        "reversedWinding": true,
+        "organSpecificTransform": false
+      },
+      "excludedSheets": [
+        {
+          "sourceFaceIndices": [3024, 3026],
+          "sourceTrianglesLasMm": [
+            [
+              [13.2820345, -118.5524, -332.55549999999994],
+              [13.2781345, -118.55671000000001, -332.57349999999997],
+              [13.279234500000001, -118.56388000000001, -332.56949999999995]
+            ],
+            [
+              [13.2781345, -118.55671000000001, -332.57349999999997],
+              [13.2820345, -118.5524, -332.55549999999994],
+              [13.279234500000001, -118.56388000000001, -332.56949999999995]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [3471, 3473],
+          "sourceTrianglesLasMm": [
+            [
+              [15.796734500000001, -120.65101900000002, -310.0915],
+              [15.842534500000001, -120.64949000000001, -310.1155],
+              [15.8337345, -120.59820000000002, -310.0665]
+            ],
+            [
+              [15.842534500000001, -120.64949000000001, -310.1155],
+              [15.796734500000001, -120.65101900000002, -310.0915],
+              [15.8337345, -120.59820000000002, -310.0665]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [11110, 11111],
+          "sourceTrianglesLasMm": [
+            [
+              [67.6002345, -90.04905000000002, -218.83749999999998],
+              [67.64163450000001, -89.98415, -218.87649999999996],
+              [67.5779345, -89.95465000000002, -218.88749999999993]
+            ],
+            [
+              [67.6002345, -90.04905000000002, -218.83749999999998],
+              [67.5779345, -89.95465000000002, -218.88749999999993],
+              [67.64163450000001, -89.98415, -218.87649999999996]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [12387, 12388],
+          "sourceTrianglesLasMm": [
+            [
+              [75.8313345, -104.50405, -85.02350000000001],
+              [75.9229345, -104.44245000000001, -85.11349999999993],
+              [76.0035345, -104.34545000000003, -84.95350000000008]
+            ],
+            [
+              [76.0035345, -104.34545000000003, -84.95350000000008],
+              [75.9229345, -104.44245000000001, -85.11349999999993],
+              [75.8313345, -104.50405, -85.02350000000001]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        }
+      ],
+      "nonManifoldVertexLinks": [],
+      "topologyFailures": [],
+      "cgalMappingError": null,
+      "validForContactInvestigation": true,
+      "componentsRequireInterpretation": true,
+      "anatomicalContactsVerified": false,
+      "runtimePromoted": false,
+      "clinicalValidation": false,
+      "sourceComponents": 11,
+      "selfIntersectionPairCount": 0
+    },
+    {
+      "id": "FJ1528",
+      "name": "right iliocostalis thoracis",
+      "sha256": "0ee5ad819949cd4197dd96b00373547b42f7e1831b2add6baea4baf3661f38fa",
+      "sourceBytesVerified": true,
+      "registration": {
+        "originLpsMm": [-0.3152345, -205.92635, 1164.5735],
+        "axisSigns": [1, -1, 1],
+        "targetOriginMm": [0, 85.25, 0],
+        "reversedWinding": true,
+        "organSpecificTransform": false
+      },
+      "excludedSheets": [
+        {
+          "sourceFaceIndices": [2596, 2597],
+          "sourceTrianglesLasMm": [
+            [
+              [-80.4190655, -89.80075000000002, 135.6165000000001],
+              [-80.4053655, -89.79925000000003, 135.6065000000001],
+              [-80.3918655, -89.82425, 135.63650000000007]
+            ],
+            [
+              [-80.3918655, -89.82425, 135.63650000000007],
+              [-80.4053655, -89.79925000000003, 135.6065000000001],
+              [-80.4190655, -89.80075000000002, 135.6165000000001]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [723, 724],
+          "sourceTrianglesLasMm": [
+            [
+              [-57.908365499999995, -78.99705, 168.41650000000004],
+              [-57.8853655, -78.95655000000002, 168.44650000000001],
+              [-57.8206655, -79.10745000000003, 168.56650000000013]
+            ],
+            [
+              [-57.8206655, -79.10745000000003, 168.56650000000013],
+              [-57.8853655, -78.95655000000002, 168.44650000000001],
+              [-57.908365499999995, -78.99705, 168.41650000000004]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [1175, 1176],
+          "sourceTrianglesLasMm": [
+            [
+              [-42.1604655, -80.75805000000003, -103.38349999999991],
+              [-42.1817655, -80.76115000000001, -103.38349999999991],
+              [-42.160965499999996, -80.75505000000001, -103.3934999999999]
+            ],
+            [
+              [-42.1817655, -80.76115000000001, -103.38349999999991],
+              [-42.1604655, -80.75805000000003, -103.38349999999991],
+              [-42.160965499999996, -80.75505000000001, -103.3934999999999]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        }
+      ],
+      "nonManifoldVertexLinks": [],
+      "topologyFailures": [],
+      "cgalMappingError": null,
+      "validForContactInvestigation": true,
+      "componentsRequireInterpretation": true,
+      "anatomicalContactsVerified": false,
+      "runtimePromoted": false,
+      "clinicalValidation": false,
+      "sourceComponents": 2,
+      "selfIntersectionPairCount": 0
+    },
+    {
+      "id": "FJ1528M",
+      "name": "left iliocostalis thoracis",
+      "sha256": "02a7addd5329689094506095570a458982b6dfc2f9509392bf310807183e3df7",
+      "sourceBytesVerified": true,
+      "registration": {
+        "originLpsMm": [-0.3152345, -205.92635, 1164.5735],
+        "axisSigns": [1, -1, 1],
+        "targetOriginMm": [0, 85.25, 0],
+        "reversedWinding": true,
+        "organSpecificTransform": false
+      },
+      "excludedSheets": [
+        {
+          "sourceFaceIndices": [1175, 1176],
+          "sourceTrianglesLasMm": [
+            [
+              [42.790934500000006, -80.75805000000003, -103.38349999999991],
+              [42.7914345, -80.75505000000001, -103.3934999999999],
+              [42.8122345, -80.76115000000001, -103.38349999999991]
+            ],
+            [
+              [42.8122345, -80.76115000000001, -103.38349999999991],
+              [42.7914345, -80.75505000000001, -103.3934999999999],
+              [42.790934500000006, -80.75805000000003, -103.38349999999991]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [723, 724],
+          "sourceTrianglesLasMm": [
+            [
+              [58.5388345, -78.99705, 168.41650000000004],
+              [58.4511345, -79.10745000000003, 168.56650000000013],
+              [58.515834500000004, -78.95655000000002, 168.44650000000001]
+            ],
+            [
+              [58.4511345, -79.10745000000003, 168.56650000000013],
+              [58.5388345, -78.99705, 168.41650000000004],
+              [58.515834500000004, -78.95655000000002, 168.44650000000001]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [2596, 2597],
+          "sourceTrianglesLasMm": [
+            [
+              [81.04953450000001, -89.80075000000002, 135.6165000000001],
+              [81.0223345, -89.82425, 135.63650000000007],
+              [81.0358345, -89.79925000000003, 135.6065000000001]
+            ],
+            [
+              [81.0223345, -89.82425, 135.63650000000007],
+              [81.04953450000001, -89.80075000000002, 135.6165000000001],
+              [81.0358345, -89.79925000000003, 135.6065000000001]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        }
+      ],
+      "nonManifoldVertexLinks": [],
+      "topologyFailures": [],
+      "cgalMappingError": null,
+      "validForContactInvestigation": true,
+      "componentsRequireInterpretation": true,
+      "anatomicalContactsVerified": false,
+      "runtimePromoted": false,
+      "clinicalValidation": false,
+      "sourceComponents": 2,
+      "selfIntersectionPairCount": 0
+    },
+    {
+      "id": "FJ1535",
+      "name": "right longissimus thoracis",
+      "sha256": "b555761d298a4bea88a05d2067b0cfff507522546bfc0dcb9b3bad576a3449fa",
+      "sourceBytesVerified": true,
+      "registration": {
+        "originLpsMm": [-0.3152345, -205.92635, 1164.5735],
+        "axisSigns": [1, -1, 1],
+        "targetOriginMm": [0, 85.25, 0],
+        "reversedWinding": true,
+        "organSpecificTransform": false
+      },
+      "excludedSheets": [
+        {
+          "sourceFaceIndices": [1277, 1285],
+          "sourceTrianglesLasMm": [
+            [
+              [-60.271365499999995, -114.45101000000003, 78.08650000000011],
+              [-60.071065499999996, -114.41102000000001, 77.98649999999998],
+              [-60.0820655, -114.56945000000002, 78.05650000000014]
+            ],
+            [
+              [-60.0820655, -114.56945000000002, 78.05650000000014],
+              [-60.071065499999996, -114.41102000000001, 77.98649999999998],
+              [-60.271365499999995, -114.45101000000003, 78.08650000000011]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [169, 170],
+          "sourceTrianglesLasMm": [
+            [
+              [-59.519465499999995, -108.14535000000001, -41.86349999999993],
+              [-59.4482655, -108.21705, -41.893499999999904],
+              [-59.4763655, -108.11815000000001, -42.12349999999992]
+            ],
+            [
+              [-59.4482655, -108.21705, -41.893499999999904],
+              [-59.519465499999995, -108.14535000000001, -41.86349999999993],
+              [-59.4763655, -108.11815000000001, -42.12349999999992]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [7379, 7381],
+          "sourceTrianglesLasMm": [
+            [
+              [-19.524365500000002, -79.66525000000001, -244.6255],
+              [-19.498365500000002, -79.66035000000002, -244.63850000000002],
+              [-19.524365500000002, -79.71675000000002, -244.66449999999998]
+            ],
+            [
+              [-19.498365500000002, -79.66035000000002, -244.63850000000002],
+              [-19.524365500000002, -79.66525000000001, -244.6255],
+              [-19.524365500000002, -79.71675000000002, -244.66449999999998]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [12836, 12837],
+          "sourceTrianglesLasMm": [
+            [
+              [-16.6208655, -85.89605, -150.48349999999994],
+              [-16.5616655, -85.91595000000001, -150.43349999999998],
+              [-16.559165500000002, -85.93305000000001, -150.49349999999993]
+            ],
+            [
+              [-16.6208655, -85.89605, -150.48349999999994],
+              [-16.559165500000002, -85.93305000000001, -150.49349999999993],
+              [-16.5616655, -85.91595000000001, -150.43349999999998]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        }
+      ],
+      "nonManifoldVertexLinks": [],
+      "topologyFailures": [],
+      "cgalMappingError": null,
+      "validForContactInvestigation": false,
+      "componentsRequireInterpretation": true,
+      "anatomicalContactsVerified": false,
+      "runtimePromoted": false,
+      "clinicalValidation": false,
+      "sourceComponents": 10,
+      "selfIntersectionPairCount": 93
+    },
+    {
+      "id": "FJ1535M",
+      "name": "left longissimus thoracis",
+      "sha256": "d238f10400abb5754b2ef1e920eacc720b69835cd31a229ef3d68468f4064a57",
+      "sourceBytesVerified": true,
+      "registration": {
+        "originLpsMm": [-0.3152345, -205.92635, 1164.5735],
+        "axisSigns": [1, -1, 1],
+        "targetOriginMm": [0, 85.25, 0],
+        "reversedWinding": true,
+        "organSpecificTransform": false
+      },
+      "excludedSheets": [
+        {
+          "sourceFaceIndices": [12836, 12837],
+          "sourceTrianglesLasMm": [
+            [
+              [17.2513345, -85.89605, -150.48349999999994],
+              [17.1896345, -85.93305000000001, -150.49349999999993],
+              [17.192134499999998, -85.91595000000001, -150.43349999999998]
+            ],
+            [
+              [17.2513345, -85.89605, -150.48349999999994],
+              [17.192134499999998, -85.91595000000001, -150.43349999999998],
+              [17.1896345, -85.93305000000001, -150.49349999999993]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [7379, 7381],
+          "sourceTrianglesLasMm": [
+            [
+              [20.1548345, -79.66525000000001, -244.6255],
+              [20.1548345, -79.71675000000002, -244.66449999999998],
+              [20.1288345, -79.66035000000002, -244.63850000000002]
+            ],
+            [
+              [20.1288345, -79.66035000000002, -244.63850000000002],
+              [20.1548345, -79.71675000000002, -244.66449999999998],
+              [20.1548345, -79.66525000000001, -244.6255]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [169, 170],
+          "sourceTrianglesLasMm": [
+            [
+              [60.1499345, -108.14535000000001, -41.86349999999993],
+              [60.106834500000005, -108.11815000000001, -42.12349999999992],
+              [60.0787345, -108.21705, -41.893499999999904]
+            ],
+            [
+              [60.0787345, -108.21705, -41.893499999999904],
+              [60.106834500000005, -108.11815000000001, -42.12349999999992],
+              [60.1499345, -108.14535000000001, -41.86349999999993]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        },
+        {
+          "sourceFaceIndices": [1277, 1285],
+          "sourceTrianglesLasMm": [
+            [
+              [60.9018345, -114.45101000000003, 78.08650000000011],
+              [60.712534500000004, -114.56945000000002, 78.05650000000014],
+              [60.7015345, -114.41102000000001, 77.98649999999998]
+            ],
+            [
+              [60.712534500000004, -114.56945000000002, 78.05650000000014],
+              [60.9018345, -114.45101000000003, 78.08650000000011],
+              [60.7015345, -114.41102000000001, 77.98649999999998]
+            ]
+          ],
+          "reason": "Exact opposite coincident triangles enclose zero geometric volume"
+        }
+      ],
+      "nonManifoldVertexLinks": [],
+      "topologyFailures": [],
+      "cgalMappingError": null,
+      "validForContactInvestigation": false,
+      "componentsRequireInterpretation": true,
+      "anatomicalContactsVerified": false,
+      "runtimePromoted": false,
+      "clinicalValidation": false,
+      "sourceComponents": 10,
+      "selfIntersectionPairCount": 93
+    }
+  ],
+  "runtimePromoted": false,
+  "clinicalValidation": false,
+  "localExplorationNotAccepted": {
+    "FJ1535": {
+      "initialPairs": 93,
+      "remainingPairs": 20,
+      "verticesMoved": false,
+      "finalDeviationCertificate": false,
+      "acceptance": "Rejected for runtime; intersections remain."
+    }
+  },
+  "modelContactQualification": {
+    "modelSha": "f7c0e06f55a82c2c94e34994439db9f1dc019c86",
+    "mainShaAtReview": "9b0e92a50ff21c3938da3ee203f887f01544778d",
+    "modelIsUnmergedAtlasCandidate": true,
+    "rawPsoasToKidneySampleOverlapMl": {
+      "right": 10.935,
+      "left": 4.694625
+    },
+    "currentDerivedPsoasSharedNegativeSamples": {
+      "kidneyRight": 0,
+      "kidneyLeft": 0,
+      "lumbarSacralBone": 0
+    },
+    "pointsInControl": 148916,
+    "limits": "Sampling at 1.5 mm; raw source conflicts are not evidence that current reconciled support overlaps. No exact contact-volume or normality claim."
+  },
+  "fullReportSha256": "0cef0fcc91b30e213dcf28a543e2a6fd21f583feec2a3a5b1cfae30ec5f63e41",
+  "fullReportSource": "Local explicit source audit; reproduction command in POSTERIOR_SOURCE_GATE.md"
+}

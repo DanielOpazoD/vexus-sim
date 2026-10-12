@@ -214,6 +214,40 @@ en vuelo, resultado transferido sin copia. Ventajas: cero contención con la GPU
 una comprobación visual continua de la equivalencia TS ↔ GLSL. La pasada `FRAG_TISSUEMAP` se conserva
 (lectura asíncrona) para depuración y para un futuro test de equivalencia.
 
+### Seguimiento 2026-10-07 — Grafo compartido y estado separado
+
+**Contexto.** La base de main `8189d36` descarga 1032,4 KiB de JavaScript frente
+al límite de 1033 KiB. El trabajador del plano lleva 64,3 KiB en un build
+independiente y duplica módulos anatómicos del hilo principal. El candidato atlas
+local `89e0152` alcanza 1094,8 KiB frente a 1078 KiB y no puede integrarse.
+Contrato previo: `docs/fidelity/shared-worker-contract.md`.
+
+**Opciones.** Aumentar presupuestos o excluir activos del total no corrige la
+causa. Empaquetar texto GLSL o añadir anotaciones de pureza no elimina esta
+duplicación. Ejecutar el mapa en el hilo principal añade trabajo al render.
+
+**Decisión.** `sharedCutMapWorker` emite la entrada ES del trabajador en el mismo
+grafo Rolldown de la aplicación. `cutMapWorkerUrl.ts` conserva la URL del módulo
+TS en desarrollo y recibe la URL emitida en producción. Los módulos se comparten
+como archivos descargados, conservando instancias independientes en cada entorno.
+El protocolo, la anatomía y la física no cambian.
+
+**Consecuencias.** En main, el total medido baja a 969,0 KiB; en el candidato atlas
+completo, a 1013,8 KiB. Todos los chunks, trabajadores y ganchos siguen contados,
+y se conservan los límites 1033/1078 KiB de sus respectivas ramas. Esta medición
+no prueba mayor FPS ni resuelve el arranque SwiftShader del atlas. No aporta una
+nueva validación clínica.
+
+**Verificación.** `e2e/sharedWorker.spec.ts` captura las peticiones/respuestas del
+trabajador real en normal y congestión, con cambios de pose y presión por los
+controles del operador. Compara exactamente 1024 puntos de cada mapa con la
+anatomía CPU en el mismo estado de petición y exige un mapa de la pose actual.
+Build, presupuesto, desarrollo/producción y CI protegen imports y descarga; las
+comparaciones de imágenes y shaders deben conservarse como evidencia. El gate
+funcional también pasa en la base: protege la equivalencia al compartir el grafo,
+no detecta por sí solo la duplicación de archivos. El presupuesto existente del
+candidato atlas falla sin este cambio y pasa con él.
+
 ## 26. Componente renal del VExUS emergente
 
 Nuevo compartimento renal en la red venosa (ambos riñones): arteria renal de baja resistencia
@@ -1916,6 +1950,48 @@ huella del main de B y `warpAt` fuera de todo bucle. e2e con SwiftShader (en el 
 equivalencia GLSL = TS con la compresión de cada punto de partida, arranque, cambio de caso, Medir, Rayleigh, banco
 de fidelidad, composición espacial (con la subxifoidea basculada 10° menos), normales, ecos de interfaz, pleura,
 pared, pasada A, moteado al inclinar y girar, fundido del ancla, sin contacto no hay Doppler y color: pasan.
+
+#### 63 — Completar el cruce final de la pared (2026-10-08)
+
+**Contexto.** La adquisición hepatorrenal atlas de4fc5082, pose phi2,99,
+z−113mm, yaw−0,244525/rock−0,134064/tilt−0,359148rad, muestra una línea fina
+desde la pared hacia colon y riñón. Su nodo de contacto27 informa pared a
+69,999mm y acoplamiento0, frente a10,599mm en un barrido independiente de
+0,05mm del mismo perfil. El extremo de su intervalo,11,199mm, ya supera el
+nivel radial28mm de la pared (28,825mm). La búsqueda en pasos de2mm omitía
+la fracción final del intervalo y devolvía ausencia de cruce; eso altera
+contacto y deformación local. No es un nuevo hallazgo anatómico ni una sombra
+que deba pintarse o esconderse.
+
+**Opciones.** Borrar la línea, suavizar la imagen o fijar acoplamiento1
+suprime causas físicas y pérdida real de contacto. Cambiar el preset evita
+el testigo sin resolver la búsqueda. Reducir globalmente el paso cuesta más
+y tampoco garantiza visitar el extremo.
+
+**Decisión.** Cada tramo termina en min(prev+2mm, fin). Se conserva el paso,
+el primer cruce, las18 bisecciones, constantes de gel/presión y el tope de
+búsqueda. El último tramo se visita aunque mida menos de2mm. Contacto,
+deformación, ecografía y plano continúan usando la misma tabla.
+
+**Consecuencias.** Evita pérdidas falsas de contacto y deformaciones locales
+cuando existe un cruce en esa fracción. No cambia la piel fuente, riñón,
+colon o musculatura; una sonda realmente levantada sigue desacoplándose.
+No convierte esta adquisición en una ventana hepatorrenal representativa:
+colon líquido, fascia renal, contacto con psoas y selección del receso siguen
+pendientes. El supuesto inicial de que lift8mm despejaba toda una huella
+inclinada fue refutado; el control negativo verifica hueco>4,5mm en toda la
+huella, sin modificar la física para forzarlo.
+
+**Verificación.** `contactWallCrossing.test.ts` contrasta54 raíces analíticas
+independientes: extremos fraccionarios, intervalos menores que el paso,
+y controles de pared ausente, contacto inicial y primer cruce. Falla con
+el bucle anterior y pasa con el cambio. Se conservan los14 controles de
+compresión existentes. El testigo atlas se investigó en una rama experimental
+separada:35 rayos contra barrido0,025mm,17 pares adquiridos, poses vecinas y
+movimientos reales de nueve ventanas. El arreglo numérico es independiente
+del atlas y no incorpora sus activos, presets ni contratos no validados.
+Check completo y CI del SHA exacto siguen siendo requisitos de integración;
+la mejora de esa línea no certifica la ventana renal ni continuidad universal.
 
 ## 64. Reservada: lámina difusa de la cápsula hepática [Estado: reservada]
 
@@ -5061,6 +5137,66 @@ esto evita redibujados ocultos entre comprobaciones de limpieza y añade ese est
 
 **Veredicto.** Además del estado de los jobs, el check protegido descarga los ocho informes y exige el mismo SHA/plan, todos los IDs una vez y un único resultado pasado sin retry. Se guardan explícitamente los metadatos ocultos de ejecución. Las pruebas rápidas cubren listas anidadas, incorporación de casos nuevos, determinismo y rechazo de fallos/omisiones/duplicados/reintentos. En la colección de 62 casos, la reducción prevista del tramo más largo es 32,7 %; es una estimación, no un ahorro real ya medido. Detalle en `E2E_COST_BALANCE.md`.
 
+#### 124 — Preparación E2E fijada, presupuesto intacto (2026-10-08)
+
+**Contexto.** En la primera CI de `899fdc3`, ejecución
+[37762865146](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37762865146),
+el fragmento 2 agotó los 40 minutos. La instalación de dependencias de Chromium
+ocupó 9 min 07 s (10:21:12–10:30:19 UTC). Diez pruebas figuran aprobadas en el
+log, pero la última se interrumpió y falta el informe de ejecución completo.
+Núcleo, matrices y los otros siete fragmentos pasan; el agregado permanece rojo.
+No reejecutar esa misma fuente ni aceptar los diez mensajes como informe íntegro.
+
+**Opciones.** Ampliar plazos sacrificaría el presupuesto; repetir la misma CI no
+corrige su preparación variable. Omitir dependencias no garantiza un navegador
+funcional. La imagen oficial de Playwright incorpora navegador y bibliotecas
+para la misma versión, evitando la descarga APT repetida en cada fragmento.
+
+**Decisión.** Los ocho jobs usan `mcr.microsoft.com/playwright:v1.63.0-noble`,
+fijada también por digest de manifiesto
+`sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27`.
+El registro MCR confirma plataformas Linux amd64/arm64. Un guard comprueba que
+el paquete instalado sigue en 1.63.0: una actualización exige revisar imagen y
+digest conjuntamente. Node continúa saliendo de `.nvmrc` y npm del lockfile.
+Referencia oficial: [Playwright en contenedores CI](https://playwright.dev/docs/ci#via-containers).
+
+**Consecuencias.** Conserva 40 minutos, ocho fragmentos, un trabajador, todos
+los tests, aserciones, presupuesto de arranque y reglas anti-flaky. El veredicto
+sigue exigiendo ocho informes íntegros del mismo árbol, sin omisiones ni retries.
+La descarga de imagen y el rendimiento de este entorno deben medirse en su
+primera CI; no se presupone que la prueba interrumpida vaya a pasar. No modifica
+anatomía ni demuestra que el atlas experimental arranque en SwiftShader.
+
+**Verificación.** Digest publicado contrastado con el hash de los bytes del
+manifiesto; versión coincide con el lockfile. Se conservan el log y los siete
+informes completos anteriores. El guard rechaza una versión distinta y los
+contratos previos de reparto/veredicto continúan intactos. Check estándar y
+primera CI completa de la nueva fuente son necesarios para integrar.
+
+#### 124 — Leer el checkout real dentro del contenedor (2026-10-08)
+
+**Contexto.** La primera CI de `a0c43fe`,
+[37770195458](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37770195458),
+descarga el contenedor en 37 s y pasa el guard de versión. Sin embargo, los ocho
+fragmentos fallan antes de ejecutar pruebas: `git rev-parse HEAD` rechaza la
+propiedad del volumen montado. `actions/checkout` escribió la excepción en su
+configuración temporal, distinta de la que leen los comandos posteriores.
+Este fallo se conserva; ninguna prueba E2E de esa ejecución se acepta.
+
+**Decisión.** En el job E2E, inmediatamente tras checkout, registrar únicamente
+`$GITHUB_WORKSPACE` como `safe.directory` en el perfil Git efectivo del
+contenedor y exigir `git rev-parse HEAD == GITHUB_SHA`. No se sustituye el SHA
+leído por una variable ni se permite un comodín de repositorios. Esto afecta
+solo al contenedor efímero de esa ejecución; no cambia configuraciones del Mac,
+permisos de GitHub, protecciones o la verificación de origen de los informes.
+
+**Consecuencias y verificación.** El lector de procedencia y todas las pruebas
+permanecen iguales. Un checkout distinto falla temprano. El presupuesto 40 min,
+ocho fragmentos, un trabajador, aserciones y veredicto están intactos. Se revisan
+el diff acotado, el log de fallo original y la igualdad de objetos Git del
+simulador/tests. La primera CI completa de la fuente corregida sigue siendo
+necesaria; no se reejecuta `a0c43fe` para obtener verde.
+
 ## 125. Promedio PW limitado a una misma rejilla física de adquisición
 
 **Problema.** El promedio 3 × 3 usado antes de medir el espectro combinaba columnas
@@ -5776,6 +5912,26 @@ La prueba real corresponde al workflow de comparación en legacy y referencia,
 sin ampliar su timeout; sus nuevas capturas y metadatos deben revisarse antes
 de integrar. No se presume equivalencia de píxeles por pasar los tests de orquestación.
 
+### Seguimiento 2026-10-07: registrar la fase adquirida del receptor
+
+**Contexto.** Main `8189d36` y empaquetado `59ec993` daban shaders, poses y muestras iguales, pero solo 3/18 PNG iguales. Los números reales del cine diferían: el ruido axial depende del cuadro, que `setScene` conserva. El control externo registró 18/18 pares idénticos mediante renders ordinarios.
+
+**Opciones.** Reiniciar contadores privados, fijar ruido o retocar PNG invalida el observable. Igualar solo tiempo y pose no basta. El registro se mantiene en las herramientas de comparación, sin intervenir el procesamiento de producción.
+
+**Decisión.** `comparisonState` acepta un primer serial de historia explícito, observa el contador en el cine público y rellena por `sim.render()` sin avanzar fisiología. Tras vaciar historias, el calentamiento y las mediciones deben producir exactamente los seriales solicitados. `portalComparison` adquiere 33–39; los bancos históricos129–135 conservan su fase original. Dominio acotado a la primera secuencia de 4096 cuadros; sobrepasar el destino exige una adquisición nueva, nunca retroceder ni inventar el contador. Contrato previo: `docs/fidelity/registered-comparison-contract.md`.
+
+**Consecuencias.** Se registran seriales y relleno; las comparaciones históricas sin fase no demuestran equivalencia de píxeles y se repiten antes de aceptar candidatos. Solo B-mode, no Doppler, modo M ni barridos temporales. Igualdad en una GPU no certifica fidelidad clínica ni identidad entre GPUs; el panel humano y referencias siguen pendientes.
+
+**Verificación.** La e2e compara dos arranques con trabajo previo distinto: el control sin registro diverge y las adquisiciones registradas coinciden. Guarda PNG y estado real. Tests rechazan seriales inválidos/sobrepasados, color/modo M, fallos de reloj y una adquisición cuyo serial no coincide; no cambian umbrales de procesamiento. CI exacta pendiente antes de integrar.
+
+### Seguimiento de coste 2026-10-07
+
+**Defecto observado.** CI37652959449, SHA6a7ded2, intento1: ambos perfiles agotaron el plazo vigente de20min. Solo se obtuvieron3 imágenes legacy y1 reference, sin completar antes/después. Cada captura rellenaba120–122cuadros antes de su historia medida. El relleno ordinario conserva causalidad, pero ejecutar hasta el serial129 no aporta un control adicional frente a otro serial común registrado.
+
+**Corrección.** Congelar inmediatamente después de los dos cuadros y ganchos, antes de esperar al HUD o clicar respiración. Adquirir la misma historia de siete cuadros en33–39; el control negativo sigue añadiendo11cuadros y exige divergencia sin registrar e identidad al registrar. Un destino sobrepasado sigue fallando. Distribuir las cuatro ventanas por trabajo junto a los dos perfiles: cada trabajo conserva ambas versiones, procedencia y los mismos20min; el agregado exige todos. No se reinicia el receptor ni se modifica el simulador, los ajustes, las aserciones o el presupuesto de la e2e.
+
+**Verificación pendiente.** Ejecutar control de navegador y banco nuevo, revisar artefactos y CI de un SHA nuevo. El fallo anterior se conserva; no se reintenta para obtener verde. Igualdad de imágenes solo valida el instrumento.
+
 ## 150. Inversión de presentación PW sin invertir el flujo del paciente
 
 **Estado:** vigente.
@@ -6013,6 +6169,40 @@ el mismo trabajo total de 8 667 702 ms. Es una predicción de reparto, no una me
 de tiempo de pared observada ni una reducción de pruebas. Debe contrastarse con
 la ejecución final y su posmerge. Los tres commits y hashes de cada informe quedan
 en el archivo de pesos para repetir el cálculo.
+
+#### 155 — Recalibrar los 87 casos tras agotar el presupuesto de main (2026-10-08)
+
+**Contexto.** En main `084b245`, el run
+[37776977858](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37776977858)
+canceló el fragmento 5 al alcanzar los 40 minutos. Las 11 pruebas imprimieron
+aprobación, pero no se completaron el cierre ni el informe JSON: la última terminó
+a las 13:07:05,475 UTC y la cancelación ocurrió 25,497 s después. En el run previo
+37771651239, entre la última aprobación y el resumen transcurrieron 30,092 s.
+No hay evidencia de un nuevo bloqueo permanente del cierre; el trabajo de pruebas
+consumió el margen disponible. El agregado posterior al merge es rojo y se conserva.
+
+**Decisión.** Aplicar la herramienta de esta decisión, sin cambiarla, a tres
+ejecuciones completas de la colección vigente: 37719578705, 37723071197 y 37771651239. Los 24 ZIP oficiales se verificaron contra sus digest de GitHub;
+los once jobs de cada run terminaron correctamente en el intento 1. El verificador
+exige los 87 IDs actuales una sola vez y sin retries. Los SHA de los informes son
+los checkouts reales (0197b2d, 3ef4b6a y b0db0c9); los árboles de los dos checkouts
+de PR coinciden con sus respectivos heads 6646001 y ee43451. Los hashes íntegros
+de informes/metadatos están en `tools/ci/e2eTimingWeights.json`.
+
+**Medida.** Los pesos anteriores cubrían 73 casos y los otros 14 usaban el coste
+de reserva. Aplicando las mismas medianas actuales a ambos planes, el máximo pasa
+de 2 290 853 a 1 788 137 ms (−21,94%). El trabajo total de los 87 casos sigue siendo
+14 218 746 ms. Es una predicción de reparto, no una reducción del trabajo ni una
+mejora de tiempo de pared demostrada. La ejecución fallida no se usa como
+conjunto completo para calibrar y no se reejecuta para obtener verde.
+
+**Consecuencias y verificación.** Cambian únicamente las pistas de coste y esta
+documentación. Se conservan ocho fragmentos, un trabajador, 40 minutos, todas
+las aserciones y pruebas, los plazos individuales, SwiftShader y la política
+anti-flaky. La recolección nativa de las ocho listas prueba la partición exacta;
+los controles de calibración/veredicto siguen intactos. Es necesaria la primera
+CI de la nueva fuente, más su revisión posterior al merge. No cambia anatomía,
+señal o imagen y no resuelve el arranque del atlas experimental ni la fidelidad.
 
 ## 156. No unir muestras IQ separadas por una pausa de adquisición
 
@@ -6390,6 +6580,73 @@ La CI de 1a73aec detectó dos fixtures aún ligados a la pose anterior: renalArt
 
 En la cabeza `867d55f`, la captura vertebral de referencia completó todas sus etapas y subió su evidencia, pero su trabajo terminó cancelado al alcanzar el límite de 15 minutos. La captura 3D legacy agotó el límite de 20 minutos durante la instalación de Chromium, antes de ejecutar código del simulador. Se conservan los flujos fallidos [vertebral](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37476439750) y [órganos](https://github.com/DanielOpazoD/vexus-sim/actions/runs/37476439709). Ambos trabajos de captura tienen ahora un límite de infraestructura de 30 minutos; no cambian planos, número de cuadros, comprobaciones, tolerancias ni aceptación del agregado. La nueva cabeza exige una ejecución completa verde antes de fusionarse.
 
+### Seguimiento de 176: auditar referencias vasculares TAC antes de registrar anatomía (10-10-2026)
+
+**Contexto.** La geometría vascular necesita contraste con TAC original sin perder las relaciones con hígado, riñones y columna. TotalSegmentator s0028 ofrece abdomen y pelvis, pero porta/esplénica es una clase conjunta y no incluye suprahepáticas separadas. IRCAD 11 ofrece etiquetas más ramificadas; cava incluye ramas intrahepáticas, sin identidades venosas independientes. La fase de contraste no está documentada en ninguno. Tener máscaras o intensidades compatibles con realce no certifica normalidad ni fidelidad ecográfica.
+
+**Opciones.** Usar las máscaras directamente, corregir su posición por órgano o traducir HU a brillo ecográfico omite errores de coordenadas, identidad y física. Se elige auditar primero datos del mismo caso en su rejilla original y conservar explícitamente los límites.
+
+**Decisión.** `tools/anatomy/ct_vascular_reference.py` comprueba transformaciones físicas codificadas, unidades, concordancia qform/sform y rejilla compartida; rechaza máscaras multicategoría. Registra hashes, componentes sin unir, límites del campo, centroides, volúmenes, intensidades y etiquetas pendientes. La conversión RAS→LAS solo invierte X, sin registrar personas ni mover órganos. `docs/anatomia/ct-vascular-reference.md` documenta el contrato, las fuentes y el circuito posterior. Los datos y adaptaciones IRCAD permanecen fuera del repositorio por su licencia CC BY-NC-ND; esta herramienta no descarga ni distribuye datos.
+
+**Consecuencias.** No cambia el alumno, la anatomía de ejecución, la señal ni el bundle. El circuito offline permite detectar referencias incompatibles antes de una corrección común TS/GLSL. Sigue pendiente separar y revisar ramas, registrar el caso completo, contrastar imágenes/cines y obtener evaluación externa. Una etiqueta ausente no demuestra que el vaso falte del TAC. Las decisiones numeradas existentes se conservan; este seguimiento offline prepara evidencia para el registro de 176 sin adoptar otra anatomía.
+
+**Verificación.** Siete controles offline con phantom de coordenadas y entradas negativas: volumen/centro físico conocidos, desplazamiento de rejilla, unidades erróneas, qform/sform contradictorios, affine de respaldo sin orientación del paciente, clase conjunta y máscara multicategoría. Auditorías locales de s0028 e IRCAD 11 conservan los originales y sus fragmentos; los resultados no implican adopción de la anatomía. Las dependencias Python tienen versiones fijadas y se ejecutan fuera del navegador; la CI habitual no sustituye estos controles ni la revisión clínica.
+
+### Seguimiento del registro común: TAC y procedencia del cine (10-10-2026)
+
+**Contexto.** La auditoría TAC conserva una rejilla física de cada caso, pero el cine integrado
+no conserva pose, marco efectivo, transductor, compresión ni muestra. Una revisión histórica
+puede atribuir su imagen al plano actual; cambiar RAS/LAS tampoco alinea individuos distintos.
+
+**Opciones.** Ajustar cada órgano o superponer las fuentes por convención de ejes rompe sus
+relaciones. Importar todo el atlas pendiente extiende el alcance y conserva su bloqueo de arranque.
+
+**Decisión.** `CtCaseFrame` conserva una sola transformación e inversa para todos los tejidos
+TAC, con identificador de fuente/rejilla/registro. `CineFrame.anatomy` copia inputs adquiridos;
+`displayedFrame` guía corte, abanico y comparación CPU/GPU. `registeredAcquisition` exporta PNG,
+metadatos y cine con hashes y tiempos originales. Las fuentes ajenas y la deformación material
+sin inversa verificada se rechazan antes de superponer. Contrato: `docs/anatomia/ct-common-frame.md`.
+
+**Consecuencias.** Se corrige la procedencia histórica, con una copia de datos planos por cuadro;
+no cambian señal, órganos ni fisiología. La incorporación clínica del TAC permanece pendiente.
+
+**Verificación.** `ctCommonFrame.test.ts` comprueba phantom anisotrópico oblicuo, inversa y
+controles negativos. `registeredAcquisition.spec.ts` contrasta el mismo framebuffer histórico
+antes/después de mover controles y de una nueva adquisición. NiBabel y capturas/cines reales
+complementan la verificación técnica; CI verde no certifica fidelidad clínica.
+
+**Fallo conservado y corrección de adquisición.** El primer SHAa699ca3 agotó el plazo
+del cine con SwiftShader; una tarjeta hepática solo pasó en reintento automático y
+la CI se mantuvo roja. Selección, presentación y lectura del cine ahora son atómicas;
+la prueba utiliza cuadros del bucle real en vez de diez renderizados manuales extra.
+Las tarjetas se capturan congeladas, verificando pose adquirida y conservando PNG
+del framebuffer, metadatos e interfaz. No se amplían plazos ni se eliminan controles.
+
+**Segundo fallo conservado.** CI38084102891, SHA1da1283, volvió a agotar270s
+durante la exportación completa, tanto primero como en reintento; el fragmento6
+fue cancelado a40min y su informe quedó incompleto. La lectura por cuadro permitía
+intercalar presentación entre llamadas remotas. El banco ahora agrupa hasta ocho
+lecturas del mismo anillo en una operación, restituyendo el original antes de
+ceder el hilo. Acota memoria, conserva todos los cuadros y registra ausencia de
+intercalación por lote. El contraste emparejado exige PNG y geometría idénticos;
+la CI exacta debe aprobar al primer intento con los mismos plazos.
+Agrupar por sí solo conservó los diez PNG/marcos, pero no redujo tiempo en el
+control nativo (9,5s frente a7,9s): esa hipótesis de rendimiento no se acepta.
+El transporte de grises pasa de números JSON a bytes base64 sin pérdida, con
+decodificación antes del mismo PNG; se repite el contraste de todos los cuadros.
+
+### Seguimiento de 176: cerrar el soporte posterior muscular antes del renderizado (10-10-2026)
+
+**Contexto.** El QL estimado en main c9421cb carecía de frontera contra la pared posterior. La precedencia del clasificador ocultaba el defecto en el corte, pero la extracción de la misma función emitía mallas hasta 91,63 mm fuera de la pared interna procedural y 72,29 mm en referencia. Testigo [65,−150,−130]: interior del campo muscular en espacio exterior. La auditoría histórica del atlas pendiente no sustituye la comprobación de main.
+
+**Opciones.** Ocultar las mallas, recortar sólo 3D o desplazar riñones mantendría fuentes divergentes o relaciones alteradas. Añadir una fascia sin fuente/resolución compatible no certifica el compartimento renal.
+
+**Decisión.** Cerrar quadratusSdf en la cara interna de la pared, usando la cota de gradiente existente en TS/GLSL. Una misma frontera alimenta adquisición y MarchingCubes. Agregar ct_posterior_reference.py para medir riñón–músculos–hígado–columna–costillas en rejilla TAC original con hashes, testigos y rayos AP explícitos; no registrar otro individuo ni inferir fascias de una intensidad.
+
+**Consecuencias.** Desaparecen las extensiones posteriores, sin mover órganos o fuentes óseas ni introducir líneas por ventana. El QL, grasa y fascias siguen estimados; el atlas de PR219 y sus contactos requieren trabajo separado. Objetivos 2/3/7/8 de MISION, con límite clínico abierto. s0028 no certifica normalidad; s0440 sigue reservado.
+
+**Verificación.** Antes/después en ambos cuerpos: 12.958/9.781 muestras exteriores→0, interiores 1.334/1.909 conservadas. Máxima desviación de vértices corregidos 0,033 mm frente a pared interna, no tolerancia clínica. posteriorMuscleGeometry.test.ts protege superficie 3D real y negativo fuera de pared; paridad y calibración habituales conservadas. Cuatro controles Python independientes cubren física de centros oblicuos/anisotrópicos, adyacencia, vacío y rechazo de rayos AP oblicuos. Documento docs/anatomia/posterior-renal-ct.md registra fuentes y límites; adquisiciones comparables y CI exacta siguen como puertas de integración.
+
 ## 177. Integrar la absorción Doppler por tejido sin nuevas texturas
 
 La conversión global de 174 usa b=1 para absorción, aunque piel, grasa, músculo y sangre tienen otros exponentes. A1 empaqueta gas+4·tejido en .w (entero float32 exacto); todos sus consumidores decodifican gas. A2 integra α_t(fD)/α_t(fB) por segmento, conserva espejo/gas y entrada ósea fijos, y entrega pérdida Doppler total en su .w auxiliar. F lee ese prefijo directamente, retirando el sampler B y la conversión global. Nueve vec4 de ratios (33 tejidos), sin nueva textura/pasada. Contrato previo: `anatomy/TISSUE_DOPPLER_PREFIX_CONTRACT.md`.
@@ -6397,3 +6654,203 @@ La conversión global de 174 usa b=1 para absorción, aunque piel, grasa, múscu
 Aceptación: etiquetas de todos los tejidos/tipos de gas; programa A2 de producción en GPU con todos los tejidos y nueve pares de frecuencias, espejo/gas/hueso y B inalterado, error <0,01 dB. Prefijos de cuatro ventanas frente a integración independiente α1·f^b, adquisición portal normal/grave en ambos cuerpos y oráculo complejo con controles negativos. Límites WebGL de uniforms/samplers, grafo y hashes documentan cambio de .w, sin rebajar márgenes ni tolerancias.
 
 Se retira `color-absorption-linear-scaling`; continúan rejilla gruesa, barreras estimadas, ausencia de calibración clínica y estimador color emulado. Las funciones b=1 quedan solo como contrafactual histórico de 174 en tests, sin uso de renderer. Medido 1031,3 KiB ≤1032: coste neto menor tras retirar sampler/conversión, todos los activos/Workers incluidos. No se declara idéntica apertura ni discretización entre PW y color.
+
+## 178. Alcance axilar posterior bilateral sin desplazar órganos
+
+**Contexto.** El límite de `clampPose` permite φ216° derecho pero sólo φ−9° izquierdo. La posición contralateral del punto renal queda recortada: su contacto se desplaza 45,97mm en el cuerpo procedural y 7,70mm en el de referencia. Un arrastre real en Metal confirma que la sonda se detiene aunque el operador continúe desplazándola. Es una restricción de exploración, además de las deudas de geometría y acústica renales.
+
+**Opciones.** Desplazar el riñón para que aparezca desde una posición permitida falsearía la anatomía. Cambiar todas las ventanas o permitir una vuelta completa no es necesario para recuperar el alcance contralateral supino. Se conserva el límite derecho y se hace simétrico el izquierdo.
+
+**Decisión.** Extender el límite inferior de φ de −0,05π a −0,2π, reflexión del límite superior 1,2π (`φizquierdo = π − φderecho`). Es un límite del modelo de exploración, no un valor clínico ni una aceptación de la ventana izquierda. La misma pose se propaga a contacto, haz, torso, plano anatómico y adquisición. Las nueve posiciones de partida siguen dentro del intervalo.
+
+**Consecuencias.** Se recupera una posición antes bloqueada, sin desplazar órganos o cambiar los parámetros acústicos. Grasa/fascias, sombras, reconocimiento ecográfico y Doppler renal izquierdo requieren contraste independiente. El atlas219 es un dominio aparte sin aceptación; esta corrección de acceso no lo certifica ni integra. El estudio TAC muscular continúa con hipótesis de fuente conservadas.
+
+**Verificación.** `bilateralFlankAccess.test.ts` compara el contacto y todos los ejes físicos del haz solicitados contra los realmente obtenidos, tanto en superficie procedural como de referencia asimétrica. El testigo anterior producía el desplazamiento de 45,97/7,70mm; el corregido debe ser cero dentro de tolerancia numérica. Se conservan las nueve posiciones. El informe local registra el ensayo nativo anterior, imágenes y poses; los barridos corregidos, check completo y CI del SHA exacto son requisitos posteriores para integrar, no se dan por aprobados en esta decisión.
+
+## 179. Contacto actual sin borrar la velocidad del último paso físico
+
+**Contexto.** Los barridos renales registrados detectaron doce imágenes iniciales
+cuya pose declarada era nueva y cuyo marco/contacto aún correspondía a la pose
+anterior. `setPose` sólo asignaba la pose; `advance(0)` no integraba pasos y
+`render()` combinaba esa pose con `lastFrame` anterior. El protocolo rechazó esos
+inicios. Dos controles independientes reproducen el desacuerdo sobre el cuerpo
+procedural y sobre el perfil corporal de referencia. No demuestra que todo gesto
+de la aplicación tenga ese defecto: el bucle habitual avanza antes de dibujar.
+
+**Opciones.** Exigir pasos fisiológicos adicionales en cada herramienta de
+adquisición evita el caso, pero oculta el contrato incorrecto y altera el
+instante estudiado. Reemplazar el marco cinemático al dibujar borraría el
+desplazamiento que debe recibir la estimación de velocidad del Doppler.
+
+**Decisión.** `setPose` sincroniza el contacto/compresión sobre la piel real y
+`Simulator.frame` y el render leen ese marco efectivo. El contacto de una pose
+idéntica se reutiliza. `lastFrame` conserva el marco del último avance físico;
+la velocidad y la generación de IQ siguen calculándose en `advance`, con el
+reloj único y el mismo algoritmo. La imagen congelada conserva su adquisición.
+
+**Consecuencias.** Un render entre pasos puede representar el contacto de la
+pose actual sin inventar tiempo ni muestras Doppler. No certifica fluidez,
+latencia, fascias, orientación clínica, morfología ni calidad de la imagen.
+No añade anatomía, temporizadores ni interfaces de usuario.
+
+**Verificación.** `frameContactCoherence.test.ts` recalcula el contacto físico
+independientemente para seis movimientos, en ambos cuerpos, sin avanzar el
+reloj (dos pruebas fallan sin la corrección); también compara la velocidad y
+la muestra fisiológica con/sin renders intermedios, la reutilización del
+contacto quieto y la conservación de una imagen congelada. La adquisición
+nativa y el check completo deben contrastarse antes de integrar.
+
+## 180. Conservar etapas de arranque antes de disponer de los ganchos
+
+**Contexto.** PR219 conserva dos arranques atlas fallidos de Linux y una
+ejecución cancelada. Las trazas originales muestran hooks ausentes, pero eso
+no determina si falla la construcción de la sesión, el navegador3D o el primer
+cuadro. Los controles software del Mac tampoco arrancan main, por lo que no
+permiten atribuir una causa exclusiva al atlas.
+
+**Opciones.** Aumentar180s u omitir el torso escondería el bloqueo. Un informe
+que dependa de consultar la página después del fallo pierde evidencia si su
+hilo está bloqueado. Perfilar cada cuadro añade coste innecesario al examen.
+
+**Decisión.** `startupTrace` emite una vez cada etapa de composición y de los
+dos primeros cuadros cuando se solicitan hooks o `startupTrace`. Playwright
+recoge las entradas antes de navegar y las adjunta al arranque, incluso al
+fallar, sin otra consulta a la página. El examen habitual no consulta el reloj
+de diagnóstico ni emite entradas. El cargador previo a `bootstrap` conserva
+su frontera de capas; un bloqueo anterior puede dejar una lista vacía.
+
+**Consecuencias.** La siguiente investigación tendrá etapas y tiempos de
+navegación observados, separados del reloj físico. No cambia la inicialización,
+el timeout, las aserciones, las imágenes, el movimiento ni la anatomía. Las
+etapas acotan una operación pendiente; no identifican por sí solas una causa
+CPU/GPU, ni certifican que el atlas arranque o que tenga fidelidad anatómica.
+
+**Verificación.** `startupTrace.test.ts` conserva la entrada previa a una
+operación fallida, rechaza datos inválidos y comprueba ausencia de trabajo sin
+diagnóstico. Controles nativos emparejados y un bloqueo controlado del contexto
+complementan esas pruebas; la integración exige check y CI exactos completos.
+
+**Suplemento de evidencia incremental (12-10-2026).** En PR241, grupo2/8,
+selección reference agotó300s, pasó al reintentar y el grupo fue cancelado a40min.
+El informe JSON final no se conservó y el log no identifica la operación que
+agotó el plazo. `run-e2e-shard` fija SHA y destino; `bootWithoutErrors` escribe
+cada etapa recibida en `.validation/e2e-startup.jsonl` desde el host, con id de
+prueba, consulta, intento y tiempo del host. El artefacto se guarda aun al
+cancelarse. Un prefijo incompleto no declara éxito: el informe íntegro y el
+veredicto protegido siguen siendo obligatorios. No modifica el reparto, los
+límites, las aserciones ni el runtime. El control termina el proceso escritor
+tras una etapa y exige que sobreviva sin fabricar la finalización del arranque.
+
+## 181. Copiar la posición exacta y los ajustes actuales del transductor
+
+**Contexto.** Daniel eligió una ventana portal en una captura cuyos mandos
+redondean los ángulos al grado y la altura a0,1cm. Esa captura no conserva
+la pose precisa ni distingue los mandos actuales de una imagen del cine.
+
+**Opciones.** Copiar solo las etiquetas pierde precisión y contexto. Una
+exportación de adquisición completa ya tiene otras responsabilidades;
+no se presenta una pose sola como reproducción del historial hemodinámico.
+
+**Decisión.** Adquirir → Sonda ofrece «Copiar posición». `probePositionText`
+serializa los seis números originales, unidades, versión, dominio anatómico,
+perfil de sonda, caso sintético, respiración, reloj y equipo completo al
+pulsar. Los grados son una lectura auxiliar. El alcance del JSON es
+`current-probe-and-equipment`: los mandos vivos. Con imagen congelada lo
+indica también el mensaje. `writeText` se llama desde el gesto del usuario;
+una denegación o ausencia ofrece el mismo texto seleccionado para copia
+manual. No lee el portapapeles, no añade dependencias ni cambia física.
+
+**Consecuencias.** El dueño puede compartir posiciones sin transcribir
+rótulos. Fuente y dominio evitan aplicar la pose de un cuerpo a otro.
+No incluye el historial de intervenciones ni sustituye las adquisiciones
+registradas de fidelidad. La copia de una imagen congelada conserva los
+mandos actuales, no atribuye al cine una pose que no adquirió.
+
+**Verificación.** Un control de serialización conserva precisión, equipo
+y la instantánea del clic después de cambiar los datos vivos. La e2e
+comprueba el botón y la imagen congelada sin mutación de señal ni reloj;
+intercepta solo la escritura de este control para no leer el portapapeles
+del usuario. Denegación y API ausente producen texto enfocado y seleccionado,
+sin afirmar éxito. Navegador nativo, check completo y CI exacta son gates.
+Referencia API: https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/writeText.
+
+## 182. Deslizar la sonda conserva los ejes en el paciente
+
+**Contexto.** Los ángulos de la pose son relativos a la piel. Cambiar phi/z manteniéndolos hace girar el haz sobre una pared curva, aunque el gesto solo traslada la sonda. En la revisión local atlas se observaron cambios axiales9,61–24,28° en tres arrastres; esa revisión está bloqueada por su CI y no debe importarse para resolver este comportamiento independiente.
+
+**Opciones.** Importar el atlas y su guía retrasaría una corrección que no requiere sus campos. Mantener la imagen de un órgano tras el deslizamiento ocultaría que el plano se ha trasladado. Se cambia únicamente la cinemática de entrada.
+
+**Decisión.** `translateProbe` conserva axial, lateral y elevación en coordenadas del paciente y los reexpresa en el marco cutáneo del nuevo apoyo. Ratón, tacto y teclado usan la misma función; girar, bascular e inclinar siguen siendo gestos explícitos. Si la orientación exigiría superar los límites existentes, la traslación se detiene en el último apoyo representable. No se truncan ángulos silenciosamente.
+
+**Consecuencias.** Los mandos locales pueden cambiar porque representan orientación respecto de la piel. No cambia anatomía, presets, transductor, señal ni fisiología. La orientación fija no garantiza contacto de toda la huella ni conserva un órgano dentro del nuevo plano. Se conserva la física de contacto/compresión y la velocidad Doppler del movimiento. La guía de selección del atlas queda en otra revisión; este PR no depende de su integración ni cambia el servidor3024.
+
+**Verificación.** `probeTranslation.test.ts` contrasta tres ejes y rayos en las nueve poses sobre piel de referencia y prueba el límite con un desplazamiento grande. `probeRigidTranslation.spec.ts` registra eventos reales en cuerpos legacy/referencia, giro explícito y ausencia de errores. El check estándar completo y CI exacta de primer resultado son gates; los resultados nativos y los límites se registran por SHA en el plan local. No se declara fluidez global ni validación anatómica externa.
+
+## 183. Selección persistente y contornos de la guía desde la anatomía adquirida
+
+**Contexto.** En el plano de la imagen, retirar el puntero o recibir otro mapa
+perdía la selección; los segmentos discretos no formaban un contorno
+continuo. La revisión237 estaba apilada sobre un atlas experimental cuyo
+arranque software falló; incorporarlo traía226archivos sin ese gate.
+
+**Opciones.** Importar la pila no validada confunde una corrección de guía
+con reconstrucción anatómica. Ocultar fallos de atlas o relajar sus tests no
+resuelve la dependencia. Se preserva esa fuente y sus ensayos en sus ramas.
+
+**Decisión.** Integrar la guía sobre main actual, desde la misma coordenada
+material/clasificación y la instantánea adquirida inmutable (181–182).
+Clic fija identidad; salir/mapas nuevos no la borran. Escape, repetición
+del clic y cambio de paciente cancelan. Contornos cerrados por marching
+squares y redondeo de hasta una celda; conservar huecos/islas reales.
+La guía marca el B-mode solo si corresponde al cuadro mostrado/cine.
+
+**Consecuencias.** Solo hígado, riñones y vesícula tienen identidad de órgano
+cuando el clasificador demuestra su tejido/interfaz; vasos/cavidades y los
+demás tejidos mantienen sus identidades. Líquido sin interfaz biliar se
+nombra contenido líquido, no siempre vesícula. No se añaden órganos,
+campos, patrones acústicos ni se certifica fidelidad por suavizar una guía.
+El trabajador evita velocidades no consumidas;96×128/hz/watchdog3s intactos.
+No cambia el dominio anatómico de main ni la revisión atlas oficial3024.
+
+**Verificación.** Topología de contornos; centros renales/interfaz biliar;
+clic/mapas/salida/Escape/paciente en cuerpos legacy/referencia con señal
+congelada inmutable; hover/vaso/cine; igualdad exacta trabajador/consulta
+en2048 puntos de dos casos. Toda la suite original permanece. CI exacta
+sin reintentos es obligatoria; el atlas y sus validaciones siguen pendientes.
+
+**Corrección tras la primera CI.** En a390466 fallaron hover y selección de
+referencia antes de actuar sobre la guía: el bitmap visible no contenía
+hígado tras Congelar. Redimensionar un canvas borra sus píxeles, pero la
+copia adquirida no se repintaba mientras llegaba otro mapa. El control
+de navegador reproduce el defecto en una tarea JS, con una petición real
+en vuelo: copia del mismo mapa, bitmap presente antes y vacío después.
+Se repinta la copia cuando cambia el tamaño, sin esperar otra respuesta.
+Las nuevas esperas de adquisición se expresan en30 cuadros completos,
+con cuadro adquirido coincidente y guardas de tejido explícitas, siguiendo
+CONTRIBUTING. Se conservan los presupuestos totales, el fallo de primer
+intento y su reintento diagnóstico automático también fallido. No se
+solicita rerun de esa CI; una corrección nueva requiere otro SHA.
+
+## 184. Confirmar en GPU el primer cuadro de los ensayos
+
+**Contexto.** Los ensayos Atlas del 11–12-10-2026 llegaron a dos vueltas JavaScript aunque la primera pasada acústica aún no completaba una lectura. `framesRendered` cuenta vueltas del bucle; no acredita ejecución GPU. Una microprueba del shader A0 de `4fbe738` enlazó en menos de100ms, pero no completó un destino de1píxel con cero muestras dinámicas dentro del protocolo de150s. Es evidencia de primer uso pendiente, no de fidelidad ni una medida representativa de cadencia.
+
+**Opciones.** `readPixels` o `finish` bloquearían la CPU; aceptar dos vueltas conserva el falso positivo. Una valla por cada cuadro agregaría instrumentación innecesaria para este defecto. Cambiar plazos, muestras o anatomía no resuelve la validez de la evidencia.
+
+**Decisión.** `FirstGpuFrame` coloca una única valla tras el primer `Simulator.render()` en modo `e2e`/`startupTrace`, hace `flush` y consulta `clientWaitSync(sync,0,0)` una vez por vuelta. Solo `ALREADY_SIGNALED` y `CONDITION_SATISFIED` registran `ultrasound:gpu-ready`. Una valla nula, un estado desconocido, `WAIT_FAILED` o pérdida de contexto registran fallo. `bootWithoutErrors` exige la señal además de las dos vueltas JS, dentro del mismo `BOOT_MS`. La traza se conserva desde el host aunque la página deje de responder. En uso normal no se crea la valla.
+
+**Consecuencias.** Se distingue trabajo enviado de ejecución completada, sin cambiar reloj, física, anatomía, shaders o presupuestos. El contador existente conserva su significado de vueltas JS. La valla acredita finalización de órdenes anteriores en el contexto ecográfico, no ausencia de errores de dibujo, una imagen visible correcta, la pose adquirida ni fidelidad clínica. Los controles de consola, imágenes y adquisiciones siguen siendo necesarios. Tampoco repara por sí misma el coste del Atlas. El tiempo observado incluye cola y frecuencia de consulta; no se presenta como tiempo puro de GPU.
+
+**Verificación.** `firstGpuFrame.test.ts` retiene cuatro vueltas con la valla pendiente y comprueba señal única, ausencia de reintentos, liberación de la valla y rechazo de los fallos. El humo real retiene la primera valla durante al menos tres consultas, comprueba que dos vueltas JS no completan el arranque y después permite la señal real de la GPU; todos los arranques que usan `bootWithoutErrors` exigen la señal. Referencia de la API: [WebGL2 clientWaitSync](https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext/clientWaitSync), estados y consulta con timeout cero; [WebGL best practices](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices), envío con flush y sincronización sin espera activa. La evidencia de ejecución y la CI corresponden al SHA que se enlace en el PR; no se infieren de esta descripción.
+
+## 185. Admitir una pareja renal sin confundir paciente y plano
+
+**Contexto.** La lectura local de TRUSTED recuperó TAC y US 3D del paciente 418 antes de terminar el ZIP. Sus marcos y dimensiones difieren: TAC512×512×535 y US1024×768×791. Compartir identificador no prueba alineación; las máscaras TAC incluyen ambos riñones y las US todavía pueden faltar.
+
+**Opciones.** Cargar toda la base o copiar datos clínicos al repo aumenta coste y exposición sin resolver coordenadas. Un simple visor acepta archivos intercambiados. Reutilizar el auditor vascular sin adaptación confundiría la máscara renal bilateral y la codificación0/255 con etiquetas individuales.
+
+**Decisión.** Admisión offline con NiBabel y dependencias científicas ya fijadas. Se verifican SHA-256 por archivo, nombre TRUSTED, paciente/lado, unidades, afines, valores finitos, rango no constante y rejilla/codificación declarada de cada anotación. Se conservan dos marcos y se informa de anotaciones incompletas. El informe siempre deja registro y aceptación clínica pendientes. Las máscaras se leen en bloques, evitando materializar float64 de5GB; una tolerancia de redondeo opcional, acotada a1e−8 y con evidencia obligatoria, conserva el máximo residuo y nunca modifica la fuente. El valor predeterminado sigue siendo exacto.
+
+**Consecuencias.** No cambia la imagen del simulador ni el navegador. Facilita detectar errores de referencia antes de ajustar anatomía. Los datos y acuerdos quedan fuera del repo; el campo de procedencia no otorga permisos. Un conjunto de dos pacientes solo puede ser un piloto, sin certificación de normalidad o fidelidad general.
+
+**Verificación.** Controles sintéticos de paciente/lado/archivo equivocado, máscara desplazada y codificación incorrecta; admisión incompleta no se convierte en éxito clínico. Workflow offline ejecuta también los auditores CT existentes, sin imágenes de pacientes. La CI principal y sus presupuestos permanecen intactos. Contrato y fuentes en `docs/fidelity/paired-renal-reference.md`.

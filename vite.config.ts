@@ -8,6 +8,7 @@ import { threeGlslCompact } from './tools/build/threeGlslCompact';
 import { glslUniformNames } from './tools/build/glslUniformNames';
 import { glslPacking } from './tools/build/glslPacking';
 import { marchingTable } from './tools/build/marchingTable';
+import { sharedCutMapWorker } from './tools/build/sharedCutMapWorker';
 import { coverageFiles } from './tools/ci/coveragePartition';
 
 /**
@@ -49,7 +50,7 @@ export default defineConfig({
   // Source modules expose tagged GLSL to the token-preserving compactor; no vendor fork.
   resolve: { alias: [{ find: /^three$/, replacement: join(ROOT, 'node_modules/three/src/Three.js') }] },
   // el texto de los shaders sin comentarios, sangría, nombres largos ni espacios de más en el build (tools/build/glslMinify.ts)
-  plugins: [glslMinify(), glslUniformNames(), threeGlslCompact(), marchingTable(), glslPacking()],
+  plugins: [glslMinify(), glslUniformNames(), threeGlslCompact(), marchingTable(), glslPacking(), sharedCutMapWorker()],
   define: {
     __APP_VERSION__: JSON.stringify(PKG.version),
     __GIT_COMMIT__: JSON.stringify(process.env['GITHUB_SHA']?.slice(0, 7) ?? gitCommit()),

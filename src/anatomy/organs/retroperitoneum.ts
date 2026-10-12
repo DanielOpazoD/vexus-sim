@@ -40,7 +40,8 @@ export const PSOAS_NODES: ReadonlyArray<readonly [number, number, number, number
  * Donde el riñón apoya en la pared (su grasa perirrenal gruesa de detrás, decisión 68, llega a ella) el músculo le
  * deja sitio: el modelo tiene la pared posterior de 28 mm y el riñón más cerca de la piel que en un adulto real. Lo
  * decide el orden de `classify` (el riñón y su grasa van antes); el término de la grasa en `quadratusSdf` deja su
- * distancia fuera de ella y hace que la distancia a la frontera la cuente.
+ * distancia fuera de ella y hace que la distancia a la frontera la cuente. Su soporte también se cierra en la cara
+ * interna de la pared, antes de la prioridad del clasificador y de extraer la malla 3D.
  */
 export const QUADRATUS = {
   /** z del borde craneal (12.ª costilla) y caudal (cresta ilíaca). */
@@ -117,6 +118,9 @@ export function quadratusSdf(m: Vec3, insideWallMm: number, dPeriMm: number): nu
   const t = Q.thicknessTop + (Q.thicknessMax - Q.thicknessTop) * smooth01((Q.zTop - m[2]) / (Q.zTop - Q.zPeak));
   return Math.max(
     (insideWallMm - t) / L.wall,
+    // Cerrar el soporte en la cara interna: la precedencia de piel/pared en
+    // classify no puede corregir el campo que también extrae el torso 3D.
+    -insideWallMm / L.wall,
     Q.xMedial - ax,
     (ax - xLat) / L.lateral,
     m[2] - Q.zTop,
@@ -191,7 +195,7 @@ float quadratusSdf(vec3 m, float insideWall, float dPeri) {
   float f = (QL_Z.x - m.z) / (QL_Z.x - QL_Z.y);
   float t = QL_T.x + (QL_T.y - QL_T.x) * smoothstep(0.0, 1.0, (QL_Z.x - m.z) / (QL_Z.x - QL_Z.z));
   float d = max(max((insideWall - t) / QL_L.x, QL_X.x - ax), max((ax - (QL_X.y + (QL_X.z - QL_X.y) * f)) / QL_L.z, m.z - QL_Z.x));
-  return max(max(d, QL_Z.y - m.z), max(m.y - QL_Z.w, -dPeri / QL_L.y));
+  return max(max(max(d, -insideWall / QL_L.x), QL_Z.y - m.z), max(m.y - QL_Z.w, -dPeri / QL_L.y));
 }
 float retroFrontY(float ax, float z) {
   float y = RF_A.x + (RF_A.w - RF_A.x) * smoothstep(0.0, 1.0, (ax - RF_A.y) / (RF_A.z - RF_A.y));

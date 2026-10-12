@@ -10,6 +10,12 @@ indica que estos últimos ya están en el marco de adquisición. Declarar
 `image-world-RAS-mm` solo después de comprobar orientación, unidades y FOV; no
 convertir índices de voxel en mm por cambiar el nombre del campo.
 
+Los sufijos `1` y `2` en `418R1_ldkUS.txt` y `418R2_ldkUS.txt` identifican
+a los anotadores del mismo volumen; el consenso usa `418R_ldkUS.txt`.
+No son números de adquisición. El [código fuente de TRUSTED](https://github.com/IRCAD/trusted_code_nsd/blob/main/src/trusted_datapaper_ds/dataprocessing/estimate_gtldks.py)
+construye esos nombres y asigna `annotatorID` 1/2. Cada conjunto sigue
+vinculado al hash de su imagen admitida y al marco físico comprobado.
+
 Manifiesto local (todos los hashes son SHA-256 completos del contenido):
 
 ```json

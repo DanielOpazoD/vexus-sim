@@ -69,10 +69,14 @@ export async function bootWithoutErrors(page: Page, query = '?e2e=1&abdomen=lega
     // La valla se registra en el host; el adjunto conserva el bloqueo aun sin respuesta de la página.
     await expect
       .poll(
-        async () => ({
-          frames: (await page.evaluate(() => window.__vexusTest?.framesRendered() ?? -1)) >= 2,
-          gpu: startup.some((entry) => entry.stage === 'ultrasound:gpu-ready'),
-        }),
+        async () => {
+          if (startup.some((entry) => entry.stage === 'ultrasound:gpu-failed'))
+            throw new Error('arranque: ultrasound:gpu-failed; el primer cuadro no puede completar');
+          return {
+            frames: (await page.evaluate(() => window.__vexusTest?.framesRendered() ?? -1)) >= 2,
+            gpu: startup.some((entry) => entry.stage === 'ultrasound:gpu-ready'),
+          };
+        },
         {
           timeout: BOOT_MS,
           message: 'arranque: dos vueltas JS y primer cuadro confirmado por la GPU',

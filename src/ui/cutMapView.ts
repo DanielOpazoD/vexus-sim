@@ -221,6 +221,7 @@ export class CutMapView {
   private readonly tooltip: HTMLDivElement;
   private hover: { x: number; y: number } | null = null;
   private selected: { key: string; label: string; contours: ReturnType<typeof maskContours> } | null = null;
+  private shownSim: Simulator | null = null;
   private pinned: { key: string; label: string } | null = null;
   private selectionMap: CutMapResponse | null = null;
   private drawn: {
@@ -268,6 +269,7 @@ export class CutMapView {
   }
 
   private onClick = (event: MouseEvent): void => {
+    if (!this.shownSim || !this.matchesShown(this.shownSim)) return;
     const box = this.canvas.getBoundingClientRect();
     this.hover = { x: (event.clientX - box.left) / box.width, y: (event.clientY - box.top) / box.height };
     const identity = this.identityUnderPointer();
@@ -289,6 +291,7 @@ export class CutMapView {
 
   private identityUnderPointer(): { key: string; label: string } | null {
     const drawn = this.drawn;
+    if (!this.shownSim || !this.matchesShown(this.shownSim)) return null;
     if (!this.hover || !drawn || !this.canvas.clientHeight || !this.canvas.clientWidth) return null;
     const tr = drawn.transducer,
       depth = drawn.inputs.depthMm;
@@ -400,6 +403,7 @@ export class CutMapView {
 
   /** An annotation on the actual presented image; it never writes the image, color field or patient. */
   drawHighlight(canvas: HTMLCanvasElement, sim: Simulator, enabled = true): void {
+    this.shownSim = sim;
     if (!enabled) this.clearSelection();
     this.updateSelection(sim);
     delete canvas.dataset.anatomyHover;
@@ -498,6 +502,7 @@ export class CutMapView {
 
   /** Pide un mapa nuevo a ≤ `hz` veces por segundo y dibuja el último recibido. */
   draw(sim: Simulator, nowMs: number, hz = 8): void {
+    this.shownSim = sim;
     const shown = sim.renderer.displayedFrame;
     if (!shown) return;
     // Vigilante: una petición sin respuesta en 3 s de hilo principal en marcha cuenta como caída del Worker

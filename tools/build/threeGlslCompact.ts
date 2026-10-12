@@ -1,5 +1,5 @@
 import type { Plugin } from 'vite';
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { prepareGlslMangle, transformWithMangle, type GlslMangleContext, type SourceModule } from './glslMinify';
 
@@ -21,7 +21,7 @@ export function threeGlslCompact(): Plugin {
         for (const item of readdirSync(dir, { withFileTypes: true })) {
           const path = join(dir, item.name);
           if (item.isDirectory()) visit(path);
-          else if (item.name.endsWith('.js')) modules.push({ path, code: readFileSync(path, 'utf8') });
+          else if (item.name.endsWith('.js')) modules.push({ path: realpathSync(path), code: readFileSync(path, 'utf8') });
         }
       };
       visit(join(root, 'node_modules/three/src/renderers')); // Includes WebGL prefix/replacement strings and all uniform-binding contracts.
@@ -33,7 +33,7 @@ export function threeGlslCompact(): Plugin {
     transform(code, id) {
       if (!/node_modules\/three\/src\/renderers\/shaders\/(?:ShaderChunk|ShaderLib)\/[^/]+\.glsl\.js$/.test(id.replaceAll('\\', '/')))
         return null;
-      return { code: transformWithMangle(code, id, context, { compact: true }), map: null };
+      return { code: transformWithMangle(code, realpathSync(id), context, { compact: true }), map: null };
     },
   };
 }

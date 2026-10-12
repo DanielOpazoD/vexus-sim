@@ -1,11 +1,11 @@
 import { STRUCTURE_LABELS } from '../anatomy/structureIdentity';
-import { maskBoundary } from './anatomyContour';
+import { maskContours } from './anatomyContour';
 import { abdominalAtlas } from '../anatomy/abdominalAtlas';
 import { thoracicAtlas } from '../anatomy/thoracicAtlas';
 import type { Simulator } from '../app/simulator';
 import type { ProbeCompression } from '../anatomy/compression';
 import type { PhysiologySample } from '../physiology/engine';
-import type { ProbeFrame } from '../probe/probe';
+import type { ProbeFrame, ProbePose, Transducer } from '../probe/probe';
 import { Tissue } from '../anatomy/tissues';
 import { VESSEL_META, type VesselId, type VesselSystem } from '../physiology/vessels';
 import { beamToPixel, pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
@@ -20,6 +20,16 @@ import cutMapWorkerUrl from './cutMapWorkerUrl';
  * Worker con la misma anatomía TypeScript que el Doppler y las mediciones
  * (decisión 25), así que es una guía honesta de lo que el alumno está viendo.
  */
+interface MapInputs {
+  frameNumber: number;
+  sample: PhysiologySample;
+  frame: ProbeFrame;
+  transducer: Transducer;
+  compression: ProbeCompression;
+  pose: ProbePose;
+  depthMm: number;
+}
+
 const MAP_W = 96;
 const MAP_H = 128;
 const TISSUE_COLOR: Record<number, [number, number, number]> = {
@@ -205,20 +215,20 @@ export class CutMapView {
   private map: CutMapResponse | null = null;
   private mapDirty = false;
   /** Instante (muestra, marco, profundidad) con el que se pidió cada mapa, por id. */
-  private pendingInputs: {
-    id: number;
-    sample: PhysiologySample;
-    frame: ProbeFrame;
-    compression: ProbeCompression;
-    depthMm: number;
-  } | null = null;
-  private mapInputs: { sample: PhysiologySample; frame: ProbeFrame; compression: ProbeCompression; depthMm: number } | null = null;
+  private pendingInputs: (MapInputs & { id: number }) | null = null;
+  private mapInputs: MapInputs | null = null;
 
   private readonly tooltip: HTMLDivElement;
   private hover: { x: number; y: number } | null = null;
-  private selected: { key: string; label: string; mask: Uint8Array; edges: ReturnType<typeof maskBoundary> } | null = null;
+  private selected: { key: string; label: string; contours: ReturnType<typeof maskContours> } | null = null;
+  private pinned: { key: string; label: string } | null = null;
   private selectionMap: CutMapResponse | null = null;
-  private drawn: { map: CutMapResponse; inputs: NonNullable<CutMapView['mapInputs']>; scene: Simulator['scene'] } | null = null;
+  private drawn: {
+    map: CutMapResponse;
+    inputs: NonNullable<CutMapView['mapInputs']>;
+    scene: Simulator['scene'];
+    transducer: Simulator['transducer'];
+  } | null = null;
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     this.tooltip = document.createElement('div');
@@ -228,31 +238,75 @@ export class CutMapView {
     canvas.parentElement?.append(this.tooltip);
     canvas.addEventListener('pointermove', this.onHover);
     canvas.addEventListener('pointerleave', this.onLeave);
+    canvas.addEventListener('click', this.onClick);
+    canvas.addEventListener('keydown', this.onKey);
+    canvas.tabIndex = 0;
+    canvas.setAttribute('aria-label', 'Plano anatómico. Clic para fijar una estructura; Escape para quitar la selección.');
   }
 
   private onHover = (event: PointerEvent): void => {
     const box = this.canvas.getBoundingClientRect();
     if (!box.width || !box.height) return;
     this.hover = { x: (event.clientX - box.left) / box.width, y: (event.clientY - box.top) / box.height };
-    this.tooltip.style.left = `${Math.min(box.width - 140, Math.max(4, event.clientX - box.left + 10))}px`;
+    this.tooltip.style.left = `${Math.max(4, Math.min(box.width - 220, event.clientX - box.left + 10))}px`;
     this.tooltip.style.top = `${Math.max(4, Math.min(box.height - 45, event.clientY - box.top - 40))}px`;
     this.mapDirty = true;
   };
 
   private onLeave = (): void => {
     this.hover = null;
-    this.selected = null;
-    this.tooltip.hidden = true;
+    if (!this.pinned) this.selected = null;
+    this.tooltip.hidden = !this.pinned;
     delete this.canvas.dataset.hoverKey;
     this.mapDirty = true;
   };
 
-  private keyAt(map: CutMapResponse, index: number, sim: Simulator): { key: string; label: string } {
+  private clearSelection(): void {
+    this.pinned = null;
+    delete this.canvas.dataset.selectedKey;
+    this.onLeave();
+  }
+
+  private onClick = (event: MouseEvent): void => {
+    const box = this.canvas.getBoundingClientRect();
+    this.hover = { x: (event.clientX - box.left) / box.width, y: (event.clientY - box.top) / box.height };
+    const identity = this.identityUnderPointer();
+    if (!identity || identity.key === this.pinned?.key) this.clearSelection();
+    else {
+      this.pinned = identity;
+      this.canvas.dataset.selectedKey = identity.key;
+      this.mapDirty = true;
+    }
+    this.canvas.focus({ preventScroll: true });
+  };
+
+  private onKey = (event: KeyboardEvent): void => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.clearSelection();
+    }
+  };
+
+  private identityUnderPointer(): { key: string; label: string } | null {
+    const drawn = this.drawn;
+    if (!this.hover || !drawn || !this.canvas.clientHeight || !this.canvas.clientWidth) return null;
+    const tr = drawn.transducer,
+      depth = drawn.inputs.depthMm;
+    const layout = sectorLayout(this.canvas.width, this.canvas.height, tr, depth, 6);
+    const beam = pixelToBeam(layout, tr, depth, this.hover.x * this.canvas.width, this.hover.y * this.canvas.height);
+    if (!beam) return null;
+    const map = drawn.map;
+    const u = Math.min(map.width - 1, Math.floor(((beam.theta + tr.halfSector) / (2 * tr.halfSector)) * map.width));
+    const v = Math.min(map.height - 1, Math.floor((beam.r / depth) * map.height));
+    return this.keyAt(map, v * map.width + u, drawn.scene);
+  }
+
+  private keyAt(map: CutMapResponse, index: number, scene: Simulator['scene']): { key: string; label: string } {
     const vi = map.vessel[index],
       tissue = map.tissue[index],
       region = map.structure?.[index] ?? 0;
-    if (tissue === BLOOD_ID && vi >= 0 && sim.scene.vessels[vi]) {
-      const id = sim.scene.vessels[vi].id;
+    if (tissue === BLOOD_ID && vi >= 0 && scene.vessels[vi]) {
+      const id = scene.vessels[vi].id;
       const side = /Right$/.test(id) ? ' · derecha' : /Left$/.test(id) ? ' · izquierda' : '';
       return { key: `v:${id}`, label: `${VESSEL_LABEL[id]}${side}` };
     }
@@ -262,7 +316,7 @@ export class CutMapView {
   }
 
   private matchesShown(sim: Simulator): boolean {
-    const shown = sim.renderer.displayedAnatomy,
+    const shown = sim.renderer.displayedFrame?.anatomy,
       drawn = this.drawn;
     if (!shown || !drawn || drawn.scene !== sim.scene || drawn.inputs.depthMm !== sim.displayed.bmode.depthMm) return false;
     const xComp = drawn.inputs.compression,
@@ -284,35 +338,31 @@ export class CutMapView {
 
   private updateSelection(sim: Simulator): void {
     const previous = this.selected;
-    // Redraw the map if a previously valid contour is withdrawn between Worker responses.
-    if (previous && !this.matchesShown(sim)) this.mapDirty = true;
+    // La identidad fijada sobrevive a la espera; el overlay solo se pinta
+    // cuando el mapa corresponde al cuadro mostrado (matchesShown).
     this.selected = null;
     delete this.canvas.dataset.hoverKey;
     this.tooltip.hidden = true;
     const drawn = this.drawn;
-    if (!this.hover || !drawn || !this.canvas.clientHeight || !this.canvas.clientWidth || !this.matchesShown(sim)) return;
-    const tr = sim.transducer,
-      depth = drawn.inputs.depthMm;
-    const layout = sectorLayout(this.canvas.width, this.canvas.height, tr, depth, 6);
-    const beam = pixelToBeam(layout, tr, depth, this.hover.x * this.canvas.width, this.hover.y * this.canvas.height);
-    if (!beam) return;
-    const map = drawn.map,
-      u = Math.min(map.width - 1, Math.floor(((beam.theta + tr.halfSector) / (2 * tr.halfSector)) * map.width));
-    const v = Math.min(map.height - 1, Math.floor((beam.r / depth) * map.height));
-    const identity = this.keyAt(map, v * map.width + u, sim),
-      mask = new Uint8Array(map.tissue.length);
+    if (!drawn) return;
+    const identity = this.pinned ?? this.identityUnderPointer();
+    if (!identity) return;
+    const map = drawn.map;
     if (previous?.key === identity.key && this.selectionMap === map) {
       this.selected = previous;
     } else {
+      const mask = new Uint8Array(map.tissue.length);
       for (let i = 0; i < mask.length; i++)
         mask[i] = Number(
-          identity.key.startsWith('o:') ? `o:${map.structure?.[i] ?? 0}` === identity.key : this.keyAt(map, i, sim).key === identity.key,
+          identity.key.startsWith('o:')
+            ? `o:${map.structure?.[i] ?? 0}` === identity.key
+            : this.keyAt(map, i, sim.scene).key === identity.key,
         );
-      this.selected = { ...identity, mask, edges: maskBoundary(mask, map.width, map.height) };
+      this.selected = { ...identity, contours: maskContours(mask, map.width, map.height) };
       this.selectionMap = map;
     }
     this.canvas.dataset.hoverKey = identity.key;
-    this.tooltip.textContent = `${identity.label} · guía anatómica`;
+    this.tooltip.textContent = `${identity.label} · ${this.pinned ? 'fijado · clic o Esc para quitar' : 'guía anatómica · clic para fijar'}`;
     this.tooltip.hidden = false;
   }
 
@@ -326,13 +376,23 @@ export class CutMapView {
     ctx.save();
     ctx.strokeStyle = '#5cebd2';
     ctx.lineWidth = 1.5 * dpr;
-    ctx.setLineDash([5 * dpr, 3 * dpr]);
+    ctx.setLineDash([]);
+    ctx.lineJoin = 'round';
+    ctx.lineCap = 'round';
     ctx.beginPath();
-    for (const [u0, v0, u1, v1] of this.selected.edges) {
-      const a = at(u0, v0),
-        b = at(u1, v1);
-      ctx.moveTo(a.x, a.y);
-      ctx.lineTo(b.x, b.y);
+    for (const contour of this.selected.contours) {
+      const points = contour.map(([u, v]) => at(u, v));
+      if (points.length < 3) continue;
+      const last = points[points.length - 1],
+        first = points[0];
+      ctx.moveTo((last.x + first.x) / 2, (last.y + first.y) / 2);
+      // Redondeo de presentación dentro de una celda; no interpola anatomía.
+      for (let i = 0; i < points.length; i++) {
+        const a = points[i],
+          b = points[(i + 1) % points.length];
+        ctx.quadraticCurveTo(a.x, a.y, (a.x + b.x) / 2, (a.y + b.y) / 2);
+      }
+      ctx.closePath();
     }
     ctx.stroke();
     ctx.restore();
@@ -340,7 +400,7 @@ export class CutMapView {
 
   /** An annotation on the actual presented image; it never writes the image, color field or patient. */
   drawHighlight(canvas: HTMLCanvasElement, sim: Simulator, enabled = true): void {
-    if (!enabled) this.onLeave();
+    if (!enabled) this.clearSelection();
     this.updateSelection(sim);
     delete canvas.dataset.anatomyHover;
     if (!this.selected || !this.matchesShown(sim)) return;
@@ -355,13 +415,7 @@ export class CutMapView {
    * exacto (muestra fisiológica, marco de la sonda, profundidad) con el que se
    * calculó, para que la comprobación TS ↔ GLSL compare el MISMO instante.
    */
-  get lastMap(): {
-    map: CutMapResponse;
-    sample: PhysiologySample;
-    frame: ProbeFrame;
-    compression: ProbeCompression;
-    depthMm: number;
-  } | null {
+  get lastMap(): (MapInputs & { map: CutMapResponse }) | null {
     return this.map && this.mapInputs ? { map: this.map, ...this.mapInputs } : null;
   }
 
@@ -370,6 +424,8 @@ export class CutMapView {
     this.worker = null;
     this.canvas.removeEventListener('pointermove', this.onHover);
     this.canvas.removeEventListener('pointerleave', this.onLeave);
+    this.canvas.removeEventListener('click', this.onClick);
+    this.canvas.removeEventListener('keydown', this.onKey);
     this.tooltip.remove();
   }
 
@@ -404,7 +460,7 @@ export class CutMapView {
     this.map = null;
     this.mapInputs = null;
     this.drawn = null;
-    this.onLeave();
+    this.clearSelection();
     this.pending = false;
     const init: CutMapInit = {
       type: 'init',
@@ -442,23 +498,25 @@ export class CutMapView {
 
   /** Pide un mapa nuevo a ≤ `hz` veces por segundo y dibuja el último recibido. */
   draw(sim: Simulator, nowMs: number, hz = 8): void {
+    const shown = sim.renderer.displayedFrame;
+    if (!shown) return;
     // Vigilante: una petición sin respuesta en 3 s de hilo principal en marcha cuenta como caída del Worker
     if (this.pending && this.watchdog.expired(nowMs))
       this.fail(new Error('el Worker del corte no responde (3 s de hilo principal)'), nowMs);
     const worker = this.ensureWorker(sim, nowMs);
-    const shown = sim.renderer.displayedAnatomy;
     if (worker && shown && !this.pending && nowMs - this.lastUpdate >= 1000 / hz) {
       this.lastUpdate = nowMs;
       this.pending = true;
       this.watchdog.start(nowMs);
-      const s = shown.sample;
+      const at = shown.anatomy;
+      const s = at.sample;
       const req: CutMapRequest = {
         type: 'map',
         id: ++this.requestId,
-        frame: shown.frame,
-        transducer: sim.transducer,
-        compression: shown.compression,
-        depthMm: sim.displayed.bmode.depthMm,
+        frame: at.frame,
+        transducer: at.transducer,
+        compression: at.compression,
+        depthMm: shown.bmode.depthMm,
         sample: {
           resp: s.resp,
           ivc: s.ivc,
@@ -473,13 +531,19 @@ export class CutMapView {
       worker.postMessage(req);
       this.pendingInputs = {
         id: req.id,
+        frameNumber: shown.n,
         sample: s,
-        frame: shown.frame,
-        compression: shown.compression,
-        depthMm: sim.displayed.bmode.depthMm,
+        frame: at.frame,
+        transducer: at.transducer,
+        compression: at.compression,
+        pose: at.pose,
+        depthMm: shown.bmode.depthMm,
       };
     }
-    if (!this.mapDirty || !this.map) return;
+    // Cambiar width/height borra el bitmap del canvas. La copia adquirida
+    // sigue siendo válida aunque el Worker todavía tenga una petición en vuelo.
+    if (this.img && (this.img.width !== this.canvas.width || this.img.height !== this.canvas.height)) this.mapDirty = true;
+    if (!this.mapDirty || !this.map || !this.mapInputs) return;
     // Corte plegado: los mapas se siguen pidiendo (la comprobación TS ↔ GLSL los usa), pero el último solo se
     // pinta cuando el lienzo vuelve a verse
     if (this.canvas.clientHeight === 0) return;
@@ -490,9 +554,10 @@ export class CutMapView {
     const W = this.canvas.width;
     const H = this.canvas.height;
     if (W === 0 || H === 0) return;
-    const tr = sim.transducer;
-    const depth = this.mapInputs?.depthMm ?? sim.displayed.bmode.depthMm;
-    if (this.mapInputs) this.drawn = { map, inputs: this.mapInputs, scene: sim.scene };
+    this.canvas.dataset.acquiredFrame = String(this.mapInputs.frameNumber);
+    const tr = this.mapInputs.transducer;
+    const depth = this.mapInputs.depthMm;
+    this.drawn = { map, inputs: this.mapInputs, scene: sim.scene, transducer: tr };
     const layout = sectorLayout(W, H, tr, depth, 6);
     if (!this.img || this.img.width !== W || this.img.height !== H) this.img = ctx.createImageData(W, H);
     const px = this.img.data;

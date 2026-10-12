@@ -24,8 +24,7 @@ if (out === process.cwd() || out.startsWith(process.cwd() + '/')) throw new Erro
 const baseUrl = new URL(args.get('url') ?? 'http://127.0.0.1:6600');
 if (!['localhost', '127.0.0.1', '[::1]'].includes(baseUrl.hostname)) throw new Error('Audit requires a local server');
 baseUrl.searchParams.set('e2e', 'app');
-if (anatomy === 'atlas') baseUrl.searchParams.set('abdomen', 'atlas');
-else baseUrl.searchParams.delete('abdomen');
+baseUrl.searchParams.set('abdomen', anatomy!);
 const views = (args.get('views')?.split(',') ?? START_POINTS.map((p) => p.id)) as StartPoint['id'][];
 if (!views.length || new Set(views).size !== views.length || views.some((v) => !START_POINTS.some((p) => p.id === v)))
   throw new Error('Unknown/repeated window');

@@ -174,12 +174,12 @@ export function clampPose(p: ProbePose): ProbePose {
   return {
     // Full circumference permits left splenorenal and posterior renal acquisition.
     phi:
-      p.phi >= -Math.PI / 2 && p.phi < (3 * Math.PI) / 2
+      p.phi >= -Math.PI / 2 && p.phi < Math.PI * 1.5
         ? p.phi
         : ((((p.phi + Math.PI / 2) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI / 2,
     z: clamp(p.z, -420, 200),
     lift: clamp(p.lift, -6, 25),
-    yaw: p.yaw >= -Math.PI && p.yaw < Math.PI ? p.yaw : ((((p.yaw + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI,
+    yaw: ((((p.yaw + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI,
     rock: clamp(p.rock, -0.7, 0.7),
     tilt: clamp(p.tilt, -0.7, 0.7),
   };

@@ -2,6 +2,7 @@ import { abdominalAtlasSdf, abdominalAtlasValue } from './abdominalAtlas';
 import { Interface } from './interfaces';
 import { Tissue } from './tissues';
 import type { Vec3 } from '../core/vec3';
+import type { AnatomyScene } from './scene';
 
 /** Stable anatomical regions, separate from the acoustic tissue and vascular identity. */
 export const STRUCTURE_LABELS = [
@@ -24,15 +25,17 @@ export const STRUCTURE_LABELS = [
   'Recto',
 ] as const;
 
-export function structureIdentity(p: Vec3, tissue: Tissue, iface: Interface, atlas: boolean): number {
+export function structureIdentity(p: Vec3, tissue: Tissue, iface: Interface, scene: AnatomyScene): number {
   if (tissue === Tissue.Liver || tissue === Tissue.LiverCapsule) return 1;
-  if ([Tissue.RenalCortex, Tissue.RenalMedulla, Tissue.RenalSinus, Tissue.RenalCapsule, Tissue.RenalPelvis].includes(tissue))
-    return p[0] < 0 ? 2 : 3;
+  if ([Tissue.RenalCortex, Tissue.RenalMedulla, Tissue.RenalSinus, Tissue.RenalCapsule, Tissue.RenalPelvis].includes(tissue)) {
+    const d = (center: Vec3) => center.reduce((sum, value, i) => sum + (value - p[i]) ** 2, 0);
+    return d(scene.kidneyRight.center) <= d(scene.kidneyLeft.center) ? 2 : 3;
+  }
   if (iface === Interface.GallbladderLumen) return 4;
   if (tissue === Tissue.Pancreas) return 5;
   if (tissue === Tissue.Spleen) return 6;
   if (tissue === Tissue.BladderWall) return 7;
-  if (!atlas) return 0;
+  if (!scene.hasAbdominalAtlas) return 0;
   if (tissue === Tissue.Blood) {
     if (abdominalAtlasSdf(p, 4) < 0) return 1;
     if (abdominalAtlasSdf(p, 5) < 0) return 2;

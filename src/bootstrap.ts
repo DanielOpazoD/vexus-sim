@@ -30,9 +30,11 @@ import type { Navigator3D } from './ui/navigator3d';
 import { setPressed } from './ui/controls';
 import { ControlPanel, tabAfterMode } from './ui/panel';
 import { ProbeInput } from './ui/probeInput';
+import { translateProbe } from './probe/translation';
 import { StartPointCards } from './ui/startPointCards';
 import { compoundActive } from './ultrasound/compound';
-import { markStartup } from './app/startupTrace';
+import { markStartup, startupTraceEnabled } from './app/startupTrace';
+import { FirstGpuFrame } from './app/firstGpuFrame';
 
 markStartup('bootstrap:begin');
 
@@ -199,6 +201,7 @@ const input = new ProbeInput(
   () => sim().pose,
   setPoseManual,
   () => !store.get().frozen,
+  (p, phi, z) => translateProbe(p, phi, z, sim().scene.torso, sim().transducer),
 );
 // Navegador 3D (three.js, ~560 kB) con carga diferida: la imagen ecográfica no lo necesita
 // para su primer cuadro; si falla, la aplicación sigue sin él.
@@ -207,18 +210,18 @@ markStartup('navigator:import');
 void import('./ui/navigator3d')
   .then(async ({ Navigator3D }) => {
     if (sim().scene.hasAbdominalAtlas) {
-      markStartup('navigator:surface-begin');
+      markStartup('navigator:surface:begin');
       await (await import('./anatomy/abdominalSurface')).loadAbdominalSurface();
-      markStartup('navigator:surface-ready');
+      markStartup('navigator:surface:ready');
     }
     markStartup('navigator:construct');
     nav = new Navigator3D(navHost, sim().scene, sim().transducer, {
       getPose: () => sim().pose,
       setPose: setPoseManual,
-      getFrame: () => sim().frame,
-      getDepthMm: () => sim().bmode.depthMm,
-      getRespCaudalMm: () => sim().sample.resp.diaphragmCaudalMm,
-      getCaliber: () => sim().anatomy.caliberFor(sim().sample),
+      getFrame: () => sim().renderer.displayedFrame?.anatomy.frame ?? sim().frame,
+      getDepthMm: () => sim().renderer.displayedFrame?.bmode.depthMm ?? sim().bmode.depthMm,
+      getRespCaudalMm: () => (sim().renderer.displayedFrame?.anatomy.sample ?? sim().sample).resp.diaphragmCaudalMm,
+      getCaliber: () => sim().anatomy.caliberFor(sim().renderer.displayedFrame?.anatomy.sample ?? sim().sample),
     });
     nav.setStudentMode(!store.get().debug);
     markStartup('navigator:ready');
@@ -402,8 +405,9 @@ let last = performance.now();
 let frames = 0;
 let frameTime = 0;
 let lastStatus = 0;
-/** Cuadros completos del bucle (nunca se reinicia): la e2e espera cuadros, no segundos (`framesRendered`). */
+/** Vueltas completas de JS (nunca se reinicia); la valla confirma aparte el primer cuadro GPU. */
 let loopFrames = 0;
+const firstGpuFrame = new FirstGpuFrame(startupTraceEnabled, markStartup);
 const errorBudget = new ErrorBudget();
 let loopDegraded = false;
 const heartRate = new HeartRateDisplay();
@@ -424,6 +428,7 @@ function drawTraces(s: Simulator): void {
 }
 
 function frame(now: number, dt: number): void {
+  firstGpuFrame.poll();
   if (loopFrames === 0) markStartup('frame:begin');
   const s = sim();
   fitCanvases();
@@ -441,6 +446,7 @@ function frame(now: number, dt: number): void {
     if (loopFrames === 0) markStartup('ultrasound:begin');
     s.render();
     if (loopFrames === 0) markStartup('ultrasound:ready');
+    firstGpuFrame.submit(s.renderer.gl);
     cine.tick();
   }
   if (!comparisonOpen) {
@@ -448,9 +454,7 @@ function frame(now: number, dt: number): void {
     if (loopFrames === 0 && nav) markStartup('navigator:draw');
     nav?.draw();
     if (loopFrames === 0 && nav) markStartup('navigator:drawn');
-    if (store.get().torso && !gpu.lost) {
-      cutMap?.draw(s, now);
-    }
+    if (store.get().torso && !gpu.lost) cutMap?.draw(s, now);
     cutMap?.drawHighlight(overlay, s, store.get().torso && !gpu.lost);
     drawTraces(s);
   }

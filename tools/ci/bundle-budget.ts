@@ -82,7 +82,8 @@ const BUDGETS: Array<[RegExp, number]> = [
 // Measured 1063.8 KiB; bounded +37 KiB over 1033, unchanged per-chunk limits.
 // 06-10-2026: +8 KiB for anatomy region identities, correlated hover contours and cine geometry.
 // Measured 1072.2 KiB vs 1065.9 KiB; all per-chunk limits retained.
-const TOTAL_JS_BUDGET = 1078 * KB;
+// Integración: se conserva el presupuesto original de main, sin ampliación.
+const TOTAL_JS_BUDGET = 1033 * KB;
 /** Identifica los ganchos para el informe; todos los chunks y Workers cuentan en el total. */
 const TEST_ONLY = /^testHooks-.*\.js$/;
 

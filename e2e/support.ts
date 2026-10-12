@@ -1,5 +1,6 @@
 import { expect, test, type ConsoleMessage, type Page } from '@playwright/test';
 import { startupEntry, type StartupEntry } from '../src/app/startupTrace';
+import { startupEvidenceSink } from '../tools/ci/e2eStartupEvidence';
 
 /**
  * Esperas de la e2e. Corre con SwiftShader (WebGL2 por CPU: el corredor de GitHub no tiene GPU) y lo que tarda un
@@ -45,10 +46,20 @@ export async function bootWithoutErrors(page: Page, query = '?e2e=1'): Promise<s
   // el registro de errores de la página anterior (una prueba con dos arranques) se guarda antes de dejarla
   await stashLoggedErrors(page);
   const t0 = Date.now();
+  const evidence = startupEvidenceSink(process.env.E2E_STARTUP_EVIDENCE, {
+    sourceSha: process.env.E2E_SOURCE_SHA ?? '',
+    testId: test.info().testId,
+    retry: test.info().retry,
+    query,
+  });
+  evidence({ type: 'boot:begin' });
   const startup: StartupEntry[] = [];
   const collectStartup = (message: ConsoleMessage): void => {
     const entry = startupEntry(message.text());
-    if (entry) startup.push(entry);
+    if (entry) {
+      startup.push(entry);
+      evidence({ type: 'boot:stage', entry });
+    }
   };
   page.on('console', collectStartup);
   let bootCompleted = false;
@@ -76,6 +87,7 @@ export async function bootWithoutErrors(page: Page, query = '?e2e=1'): Promise<s
     bootCompleted = true;
   } finally {
     page.off('console', collectStartup);
+    evidence({ type: 'boot:end', completed: bootCompleted });
     // Ya está en el proceso de Playwright: conserva la última etapa aunque
     // el hilo de la página esté bloqueado y no pueda contestar page.evaluate.
     await test.info().attach('startup-stages', {

@@ -16,10 +16,12 @@ test('el mapa adquirido se repinta al redimensionar con una petición real aún 
       .map((x) => x.name)
       .find((x) => /\/assets\/cutMapView-/.test(x));
     if (!url) throw new Error('módulo real de la guía no cargado');
-    const mod: Record<string, unknown> = await import(url);
+    const loaded: unknown = await import(url);
+    const mod = loaded as Record<string, unknown>;
     const Constructor = Object.values(mod).find((x) => {
+      if (typeof x !== 'function') return false;
       const prototype = (x as { prototype?: object }).prototype;
-      return typeof x === 'function' && !!prototype && 'draw' in prototype && 'lastMap' in prototype;
+      return !!prototype && 'draw' in prototype && 'lastMap' in prototype;
     }) as new (canvas: HTMLCanvasElement) => CutMapView;
     const canvas = document.createElement('canvas');
     canvas.width = 300;
@@ -39,6 +41,11 @@ test('el mapa adquirido se repinta al redimensionar con una petición real aún 
     const { view, canvas } = window.__resizeMap!,
       s = window.__vexusTest!.sim();
     const pixels = () => Array.from(canvas.getContext('2d')!.getImageData(0, 0, canvas.width, canvas.height).data);
+    const liverPixels = (data: number[]) => {
+      let n = 0;
+      for (let i = 0; i < data.length; i += 4) if (data[i] === 140 && data[i + 1] === 90 && data[i + 2] === 60) n++;
+      return n;
+    };
     const now = performance.now();
     view.draw(s, now);
     const before = pixels(),
@@ -53,11 +60,20 @@ test('el mapa adquirido se repinta al redimensionar con una petición real aún 
     view.dispose();
     canvas.remove();
     delete window.__resizeMap;
-    return { beforeNonzero: before.some((x) => x !== 0), afterNonzero: after.some((x) => x !== 0), sameMap };
+    return {
+      beforeNonzero: before.some((x) => x !== 0),
+      afterNonzero: after.some((x) => x !== 0),
+      sameMap,
+      beforeLiver: liverPixels(before),
+      afterLiver: liverPixels(after),
+    };
   });
   await info.attach('resize-proof', { body: JSON.stringify(result), contentType: 'application/json' });
   expect(result.beforeNonzero).toBe(true);
   expect(result.sameMap).toBe(true);
   expect(result.afterNonzero).toBe(true);
+  // Presencia de parénquima en la copia, no solo un fondo opaco recién pintado.
+  expect(result.beforeLiver).toBeGreaterThan(50);
+  expect(result.afterLiver).toBeGreaterThan(50);
   expect(errors).toEqual([]);
 });

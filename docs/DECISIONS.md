@@ -6831,3 +6831,15 @@ solicita rerun de esa CI; una corrección nueva requiere otro SHA.
 **Consecuencias.** Se distingue trabajo enviado de ejecución completada, sin cambiar reloj, física, anatomía, shaders o presupuestos. El contador existente conserva su significado de vueltas JS. La valla acredita finalización de órdenes anteriores en el contexto ecográfico, no ausencia de errores de dibujo, una imagen visible correcta, la pose adquirida ni fidelidad clínica. Los controles de consola, imágenes y adquisiciones siguen siendo necesarios. Tampoco repara por sí misma el coste del Atlas. El tiempo observado incluye cola y frecuencia de consulta; no se presenta como tiempo puro de GPU.
 
 **Verificación.** `firstGpuFrame.test.ts` retiene cuatro vueltas con la valla pendiente y comprueba señal única, ausencia de reintentos, liberación de la valla y rechazo de los fallos. El humo real retiene la primera valla durante al menos tres consultas, comprueba que dos vueltas JS no completan el arranque y después permite la señal real de la GPU; todos los arranques que usan `bootWithoutErrors` exigen la señal. Referencia de la API: [WebGL2 clientWaitSync](https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext/clientWaitSync), estados y consulta con timeout cero; [WebGL best practices](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices), envío con flush y sincronización sin espera activa. La evidencia de ejecución y la CI corresponden al SHA que se enlace en el PR; no se infieren de esta descripción.
+
+## 189. Identidad canónica de los módulos GLSL de Three
+
+**Contexto.** En ramas aisladas con `node_modules` compartido por enlace simbólico, Vite entrega el identificador real del módulo pero el minificador lo había indexado por la ruta del checkout. El mismo código GLSL se rechaza como fuente distinta. La reproducción usa un único paquete Three: solo cambia el alias del sistema de archivos.
+
+**Opciones.** Copiar o reinstalar dependencias en cada rama aumenta coste de revisión. Desactivar el minificador, aceptar módulos desconocidos o subir presupuestos debilita controles ajenos al defecto. No se modifica la estrategia de renombrado.
+
+**Decisión.** Canonizar con `realpathSync` tanto los archivos al construir el mapa como el identificador al transformar. Permanece la comprobación de identidad de contenido y la conservación de contratos dinámicos ToneMapping.
+
+**Consecuencias.** Ramas con el mismo paquete físico pueden compartir dependencias sin romper el build. No se acelera la GPU ni se cambia señal/anatomía por esta corrección. No cubre instalaciones sin `node_modules` ni rutas virtuales de paquetes distintos.
+
+**Verificación.** Un checkout sintético con symlink reproduce el fallo anterior y ahora produce el mismo código que el identificador resuelto. Alterar el contenido después de construir el mapa sigue fallando. El contrato ToneMapping anterior permanece. Build y presupuesto se comprueban sin aumentar límites; la CI exacta debe seguir verde.

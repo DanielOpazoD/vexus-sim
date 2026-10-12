@@ -6855,3 +6855,15 @@ solicita rerun de esa CI; una corrección nueva requiere otro SHA.
 **Consecuencias.** Permite detectar errores independientes del ajuste y preparar cortes comparables. Respiración, postura y compresión pueden impedir un registro rígido útil. Los hitos reservados comparten anotadores; no son validación externa. No hay umbral clínico inventado ni aceptación automática, y no se transforma la anatomía del simulador.
 
 **Verificación.** Rotación/traslación analíticas, pelvis desplazada que no modifica el ajuste, reflexión con ajuste perfecto y TRE24mm, escala distinta con residuo persistente, marcos/hash/lado/FOV erróneos. Contrato y uso en `docs/fidelity/paired-renal-registration.md`; la aplicación a pacientes y sus discrepancias se registra fuera de Git.
+
+## 188. TAC remuestreado en los centros físicos del plano US
+
+**Contexto.** Dos cortes elegidos visualmente pueden parecerse y aun así no corresponder al mismo plano. Redimensionarlos para igualar contornos oculta diferencias de escala. Fuera del volumen TAC no hay tejido medido.
+
+**Opciones.** Capturas paralelas de MPR no resuelven la relación física. Una superposición de grises TAC y US sugiere una similitud acústica que no existe. No se cambia anatomía ni se sintetiza ecografía a partir de HU.
+
+**Decisión.** Para cada centro de pixel del corte US, aplicar affineUS, inicialización rígida US→CT y affineCT inverso. Interpolación lineal solo del TAC; US conserva muestras originales. Una máscara explícita marca soporte TAC, con NaN/violeta fuera. Figura a escala física con procedencia, plano y TRE/RMS de registro visibles.
+
+**Consecuencias.** Se pueden examinar discrepancias en cortes vecinos y proponer cambios desde evidencia espacial. Un registro matemático no asegura alineación anatómica; los rótulos de equipo incluidos en US impiden métricas acústicas sin máscara adicional. Los ejes de adquisición no se etiquetan como planos anatómicos del paciente. No se utiliza el sujeto reservado para afinar parámetros.
+
+**Verificación.** Phantom físico x+2y+3z con voxeles anisótropos, rotación y traslación conocidas, tres ejes, bordes parciales, escala/reflexión rechazadas. Integración identidad conserva valores y mm/pixel; registro de otra admisión o imágenes modificadas se rechazan. Contrato en `docs/fidelity/paired-renal-plane-review.md`; las figuras clínicas y discrepancias permanecen locales.

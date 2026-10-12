@@ -190,3 +190,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [184](DECISIONS.md#L6823) | Confirmar en GPU el primer cuadro de los ensayos | vigente |
 | [185](DECISIONS.md#L6835) | Admitir una pareja renal sin confundir paciente y plano | vigente |
 | [187](DECISIONS.md#L6847) | Registro renal rígido con hitos reservados y escala fija | vigente |
+| [188](DECISIONS.md#L6859) | TAC remuestreado en los centros físicos del plano US | vigente |

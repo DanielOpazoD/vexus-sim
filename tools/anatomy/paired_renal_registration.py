@@ -75,6 +75,9 @@ def audit(manifest_path):
         if entry.get("frame") != "image-world-RAS-mm" or entry.get("imageSha256") != image["sha256"]:
             raise ValueError("Marco de hitos sin vinculación a la imagen admitida")
         source = verified_file(path.parent, entry)
+        # TRUSTED 1/2 identifica al anotador, no una adquisición distinta:
+        # IRCAD/trusted_code_nsd, dataprocessing/estimate_gtldks.py.
+        # La imagen admitida conserva su propio hash, obligatorio arriba.
         expected = re.escape(admitted["patientId"] + admitted["side"]) + r"[12]?_ldk" + modality.upper() + r"\.txt"
         if not re.fullmatch(expected, source.name):
             raise ValueError("Nombre de hitos contradice paciente/lado/modalidad")

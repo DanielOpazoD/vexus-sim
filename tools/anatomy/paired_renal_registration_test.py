@@ -95,6 +95,21 @@ class RegistrationAdmissionTests(unittest.TestCase):
         self.spec["us"]["path"] = "418L_ldkUS.txt"
         with self.assertRaisesRegex(ValueError, "Nombre de hitos"): self.run_audit()
 
+    def test_numbered_landmarks_are_annotators_of_the_same_admitted_image(self):
+        original = self.run_audit()
+        for annotator in (1, 2):
+            for modality in ("ct", "us"):
+                entry = self.spec[modality]
+                old = self.root/entry["path"]
+                new = self.root/f"418R{annotator}_ldk{modality.upper()}.txt"
+                old.rename(new); entry["path"] = new.name
+            with self.subTest(annotator=annotator):
+                result = self.run_audit()
+                self.assertEqual(result["admissionSha256"], original["admissionSha256"])
+                self.assertEqual(result["usWorldToCtWorldMm"], original["usWorldToCtWorldMm"])
+                for modality in ("ct", "us"):
+                    self.assertEqual(result["sources"][modality]["imageSha256"], "b"*64)
+
     def test_outside_volume_and_changed_admission_rejected(self):
         path = self.root/"418R_ldkUS.txt"; points = np.loadtxt(path); points[0, 2] = 1000
         np.savetxt(path, points); self.spec["us"]["sha256"] = file_hash(path)

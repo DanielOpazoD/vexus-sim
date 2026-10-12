@@ -6832,6 +6832,18 @@ solicita rerun de esa CI; una corrección nueva requiere otro SHA.
 
 **Verificación.** `firstGpuFrame.test.ts` retiene cuatro vueltas con la valla pendiente y comprueba señal única, ausencia de reintentos, liberación de la valla y rechazo de los fallos. El humo real retiene la primera valla durante al menos tres consultas, comprueba que dos vueltas JS no completan el arranque y después permite la señal real de la GPU; todos los arranques que usan `bootWithoutErrors` exigen la señal. Referencia de la API: [WebGL2 clientWaitSync](https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext/clientWaitSync), estados y consulta con timeout cero; [WebGL best practices](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices), envío con flush y sincronización sin espera activa. La evidencia de ejecución y la CI corresponden al SHA que se enlace en el PR; no se infieren de esta descripción.
 
+## 185. Admitir una pareja renal sin confundir paciente y plano
+
+**Contexto.** La lectura local de TRUSTED recuperó TAC y US 3D del paciente 418 antes de terminar el ZIP. Sus marcos y dimensiones difieren: TAC512×512×535 y US1024×768×791. Compartir identificador no prueba alineación; las máscaras TAC incluyen ambos riñones y las US todavía pueden faltar.
+
+**Opciones.** Cargar toda la base o copiar datos clínicos al repo aumenta coste y exposición sin resolver coordenadas. Un simple visor acepta archivos intercambiados. Reutilizar el auditor vascular sin adaptación confundiría la máscara renal bilateral y la codificación0/255 con etiquetas individuales.
+
+**Decisión.** Admisión offline con NiBabel y dependencias científicas ya fijadas. Se verifican SHA-256 por archivo, nombre TRUSTED, paciente/lado, unidades, afines, valores finitos, rango no constante y rejilla/codificación declarada de cada anotación. Se conservan dos marcos y se informa de anotaciones incompletas. El informe siempre deja registro y aceptación clínica pendientes. Las máscaras se leen en bloques, evitando materializar float64 de5GB; una tolerancia de redondeo opcional, acotada a1e−8 y con evidencia obligatoria, conserva el máximo residuo y nunca modifica la fuente. El valor predeterminado sigue siendo exacto.
+
+**Consecuencias.** No cambia la imagen del simulador ni el navegador. Facilita detectar errores de referencia antes de ajustar anatomía. Los datos y acuerdos quedan fuera del repo; el campo de procedencia no otorga permisos. Un conjunto de dos pacientes solo puede ser un piloto, sin certificación de normalidad o fidelidad general.
+
+**Verificación.** Controles sintéticos de paciente/lado/archivo equivocado, máscara desplazada y codificación incorrecta; admisión incompleta no se convierte en éxito clínico. Workflow offline ejecuta también los auditores CT existentes, sin imágenes de pacientes. La CI principal y sus presupuestos permanecen intactos. Contrato y fuentes en `docs/fidelity/paired-renal-reference.md`.
+
 ## 186. Concentración continua del medio dispersor en la rama principal
 
 **Contexto.** La rama principal conserva `clumpGain` constante dentro de celdas de1,2mm. Al cruzar una cara cambia la concentración sin una interfaz anatómica. El PR222 contiene una corrección aislable, pero su rama Atlas depende de otros cambios y no reúne condiciones de integración. Las pruebas y capturas antiguas no demuestran el comportamiento de main actual.

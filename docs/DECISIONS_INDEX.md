@@ -188,4 +188,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [182](DECISIONS.md#L6766) | Deslizar la sonda conserva los ejes en el paciente | vigente |
 | [183](DECISIONS.md#L6778) | Selección persistente y contornos de la guía desde la anatomía adquirida | vigente |
 | [184](DECISIONS.md#L6823) | Confirmar en GPU el primer cuadro de los ensayos | vigente |
-| [186](DECISIONS.md#L6835) | Concentración continua del medio dispersor en la rama principal | vigente |
+| [185](DECISIONS.md#L6835) | Admitir una pareja renal sin confundir paciente y plano | vigente |
+| [186](DECISIONS.md#L6847) | Concentración continua del medio dispersor en la rama principal | vigente |

@@ -100,3 +100,14 @@ umbrales; barridos nativos y `npm run check` del SHA exacto se documentan en la 
 **Consecuencias.** Ensayo rechazado:689bcc6 emite segundo cuadro y hooks, pero la página sigue bloqueada y agota el presupuesto ordinario de la prueba240s (180s de arranque más60s de trabajo). No completa la comprobación de arranque; se conserva la evidencia y se retira también este límite. No cambia geometría, órganos, rayos, resolución, física, otras pasadas o presupuestos. No se aprueba por tests verdes: exige arranque real, campos e imágenes comparables. Se retirará si no mejora el bloqueo o si cambia un observable. Se conserva la discrepancia del instrumento de trigonometría doble/GLSL, sin esconderla ni ampliar umbrales.
 
 **Verificación.** Los controles heredados de clasificación, jacobiana y bisección se mantienen intactos. Contrato y primeras ejecuciones antes/después por SHA en la evidencia externa. Mac y Linux siguen siendo entornos distintos; fidelidad externa pendiente.
+
+### Reconciliación local del 12 de octubre de2026
+
+Los controles de navegación de `atlasAnatomyHover` y `portalPresentation` conservaban
+la pose portal anterior (phi3,25 y z−65mm), incompatible con la tarjeta adoptada
+en191. Se sincronizan únicamente sus coordenadas esperadas con la pose elegida
+(phi173°, z−40mm, yaw−72°, rock−6°, tilt−2°). No se cambian tolerancias, plazos,
+recuentos de cuadros, dominios ni controles de señal/color. La comprobación
+unitaria del preset y los20rayos de la pose histórica se conservan. El recorrido
+de navegador completo sigue pendiente del arranque Atlas; colección y tipos
+no lo sustituyen.

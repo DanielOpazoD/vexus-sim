@@ -18,9 +18,9 @@ for (const reference of [false, true, 'atlas'] as const)
         () => {
           const p = window.__vexusTest!.sim().pose;
           return (
-            Math.abs(p.phi - (window.__vexusTest!.sim().scene.hasAbdominalAtlas ? 3.25 : 3.5)) < 0.0001 &&
+            Math.abs(p.phi - (window.__vexusTest!.sim().scene.hasAbdominalAtlas ? (173 * Math.PI) / 180 : 3.5)) < 0.0001 &&
             Math.abs(
-              p.z - (window.__vexusTest!.sim().scene.hasAbdominalAtlas ? -65 : window.__vexusTest!.sim().scene.torso.profile ? -60 : -90),
+              p.z - (window.__vexusTest!.sim().scene.hasAbdominalAtlas ? -40 : window.__vexusTest!.sim().scene.torso.profile ? -60 : -90),
             ) < 0.01
           );
         },

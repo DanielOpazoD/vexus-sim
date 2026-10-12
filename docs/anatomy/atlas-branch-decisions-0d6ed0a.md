@@ -217,8 +217,8 @@ Las entradas atlas de VCI longitudinal y VSH se reorientan transhepáticamente;
 la primera se centra en VCI intrahepática con marcador craneal y basculación
 casi neutra, evitando el 56 % de acoplamiento del encuadre anterior.
 
-El [contrato](anatomy/movement-subcostal-contract.md) precede las correcciones.
-La [matriz de aceptación](anatomy/vexus-window-acceptance.md) reúne por ventana
+El [contrato](movement-subcostal-contract.md) precede las correcciones.
+La [matriz de aceptación](vexus-window-acceptance.md) reúne por ventana
 estructuras esperadas, condicionales e impropias, marcadores, cortical/sombra,
 gris, color y PW, movimientos y validación pendiente. Sirve al objetivo de
 adquisición/anatomía antes de añadir funciones.
@@ -273,7 +273,7 @@ respiración, ajustes y GPU. El protocolo UI usa las tarjetas y congelación
 reales; el estático declara el reinicio de historia y un instante físico común.
 Los PNG y manifiestos se guardan fuera del checkout en ejecuciones únicas.
 `acquisitionSnapshot` rechaza cuadros con geometría/tiempo inconsistentes.
-El [contrato previo](fidelity/ITERATIVE_REVIEW.md) fija dominio y refutación.
+El [contrato previo](../fidelity/ITERATIVE_REVIEW.md) fija dominio y refutación.
 
 **Consecuencias.** No cambia anatomía ni render y no añade código al bundle.
 La integridad de adquisición se separa de `clinicalAcceptance: pending`:
@@ -310,8 +310,8 @@ candidatos se capturan con el render real antes del ajuste.
 y VCI por hígado, con vértebra detrás. La renal conserva piel, giro y
 basculación, abanicando 0,05 rad hacia la vena. No cambia ningún órgano/vaso,
 señal, sombra ni pose legacy/referencia. Los contratos
-[epigástrico](anatomy/epigastric-acquisition-contract.md) y
-[renal](anatomy/renal-acquisition-contract.md) preceden el código.
+[epigástrico](epigastric-acquisition-contract.md) y
+[renal](renal-acquisition-contract.md) preceden el código.
 
 **Consecuencias.** Se recupera una entrada epigástrica interpretable y una
 puerta renal con el criterio vigente. Las interfaces punteadas y apariencia

@@ -78,3 +78,15 @@ adquiere en la nueva pose y reproduce después el cuadro antiguo. Contrasta
 pose adquirida/viva, marco, tiempo, transductor y hash de píxeles originales;
 la comparación estática debe rechazar el estado divergente. Check completo
 y CI de su SHA siguen siendo requisitos independientes de integración.
+
+### Exportación JSON del límite plano — 12 de octubre de2026
+
+Los objetos de adquisición conservan `curvatureRadius=Infinity` en memoria.
+Los sidecars de cuadro/cine y del auditor se escriben con
+`numberEncoding: finite-numbers-or-planar-curvature-v1`: un radio finito sigue
+siendo un número en milímetros y el infinito positivo se representa por la
+cadena `planar`. El lector debe interpretar esa etiqueta como límite plano,
+nunca como radio cero ni dato ausente. El hash se calcula sobre esos mismos
+bytes; los demás números no finitos se rechazan antes de escribir archivos.
+Se conserva la evidencia roja del exportador anterior (radio convertido a
+`null`); no se reescriben ni validan retrospectivamente sidecars históricos.

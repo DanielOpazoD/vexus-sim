@@ -438,6 +438,7 @@ function frame(now: number, dt: number): void {
     nav?.draw();
     if (loopFrames === 0 && nav) markStartup('navigator:drawn');
     if (store.get().torso && !gpu.lost) cutMap?.draw(s, now);
+    cutMap?.drawHighlight(overlay, s, store.get().torso && !gpu.lost);
     drawTraces(s);
   }
   const t = s.physiology.clock.t;

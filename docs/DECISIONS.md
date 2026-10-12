@@ -6854,3 +6854,15 @@ solicita rerun de esa CI; una corrección nueva requiere otro SHA.
 **Consecuencias.** No cambia la imagen del simulador ni el navegador. Facilita detectar errores de referencia antes de ajustar anatomía. Los datos y acuerdos quedan fuera del repo; el campo de procedencia no otorga permisos. Un conjunto de dos pacientes solo puede ser un piloto, sin certificación de normalidad o fidelidad general.
 
 **Verificación.** Controles sintéticos de paciente/lado/archivo equivocado, máscara desplazada y codificación incorrecta; admisión incompleta no se convierte en éxito clínico. Workflow offline ejecuta también los auditores CT existentes, sin imágenes de pacientes. La CI principal y sus presupuestos permanecen intactos. Contrato y fuentes en `docs/fidelity/paired-renal-reference.md`.
+
+## 186. Concentración continua del medio dispersor en la rama principal
+
+**Contexto.** La rama principal conserva `clumpGain` constante dentro de celdas de1,2mm. Al cruzar una cara cambia la concentración sin una interfaz anatómica. El PR222 contiene una corrección aislable, pero su rama Atlas depende de otros cambios y no reúne condiciones de integración. Las pruebas y capturas antiguas no demuestran el comportamiento de main actual.
+
+**Opciones.** Esperar todo Atlas retrasa una corrección independiente. Uniformar el seno renal o bajar ganancia oculta el mecanismo. Interpolar amplitud sesga potencia. No se introducen ajustes por pose, órgano o ventana.
+
+**Decisión.** Incorporar únicamente el campo continuo: interpolación convexa smoothstep de potencia positiva en ocho nodos, raíz para amplitud. Los gemelos TS/GLSL y el anclaje material se mantienen juntos. La anatomía compartida, reloj, Doppler y PSF permanecen iguales.
+
+**Consecuencias.** Desaparece la discontinuidad matemática de concentración; eso no garantiza fluidez de toda la imagen ni anatomía renal correcta. El coste de ocho nodos requiere medir rendimiento. Paso/kernel/agrupación siguen NEEDS_CALIBRATION. No se integra el resto del PR222 ni se presenta el cambio como validado clínicamente.
+
+**Verificación.** Testigos a ambos lados de caras en tres ejes, potencia media en puntos reservados, retorno material y control de agrupación cero. Comparación registrada antes/después y GPU en versión actual, conservando discrepancias y controles negativos. Contrato en `docs/fidelity/continuous-clumps-contract.md`; cifras, capturas y CI exacta deben acompañar el PR.

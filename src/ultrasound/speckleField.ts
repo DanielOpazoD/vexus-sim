@@ -412,17 +412,32 @@ export function heterogeneityDb(m: Vec3, seed: number): number {
 }
 
 /**
- * Grumos de dispersores (`clumpGain`): la potencia se multiplica por P = exp(σz)/E[exp(σz)] con z
- * uniforme de varianza 1 (log-uniforme, media 1) en células de CLUMP_CELL_MM, σ = `clump` en nepers.
+ * Grumos de dispersores (`clumpGain`): cada nodo lleva P = exp(σz)/E[exp(σz)] con z
+ * uniforme de varianza 1 (log-uniforme, media 1), σ = `clump` en nepers. La potencia se interpola
+ * con smoothstep entre ocho nodos: campo C1, positivo y de media 1 (pesos convexos, sin corrección
+ * por pose). Antes era constante por celda y saltaba al cruzar sus caras. Paso y kernel son
+ * [EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION; contrato en docs/fidelity/continuous-clumps-contract.md.
  * Con `clump` = 0 no hace nada (moteado plenamente desarrollado, Rayleigh); con más, pocos
  * dispersores dominan (estadística K), como la grasa del seno renal. `q` es la coordenada ya anclada.
  */
 export function clumpGain(q: Vec3, clump: number, seed: number, salt = 0): number {
   if (clump <= 0) return 1;
-  const u =
-    hash13([Math.floor(q[0] / CLUMP_CELL_MM) + seed + 29 + salt, Math.floor(q[1] / CLUMP_CELL_MM), Math.floor(q[2] / CLUMP_CELL_MM)]) - 0.5;
   const a = clump * Math.sqrt(3);
-  return Math.sqrt(Math.exp(clump * Math.sqrt(12) * u) / (Math.sinh(a) / a));
+  const mean = Math.sinh(a) / a;
+  const p: Vec3 = [q[0] / CLUMP_CELL_MM, q[1] / CLUMP_CELL_MM, q[2] / CLUMP_CELL_MM];
+  const c: Vec3 = [Math.floor(p[0]), Math.floor(p[1]), Math.floor(p[2])];
+  const s = p.map((v, i) => {
+    const t = v - c[i];
+    return t * t * (3 - 2 * t);
+  });
+  const power = (dx: number, dy: number, dz: number) =>
+    Math.exp(clump * Math.sqrt(12) * (hash13([c[0] + dx + seed + 29 + salt, c[1] + dy, c[2] + dz]) - 0.5)) / mean;
+  const mix = (v: number, w: number, t: number) => v + (w - v) * t;
+  const x00 = mix(power(0, 0, 0), power(1, 0, 0), s[0]);
+  const x10 = mix(power(0, 1, 0), power(1, 1, 0), s[0]);
+  const x01 = mix(power(0, 0, 1), power(1, 0, 1), s[0]);
+  const x11 = mix(power(0, 1, 1), power(1, 1, 1), s[0]);
+  return Math.sqrt(mix(mix(x00, x10, s[1]), mix(x01, x11, s[1]), s[2]));
 }
 
 /**
@@ -541,10 +556,22 @@ float valueNoise(vec3 q, float salt) {
 float hetGain(vec3 m) {
   return pow(10.0, (valueNoise(m / HET_CELL_MM, uSeed + 11.0) - 0.5) * HET_SCALE_DB / 20.0);
 }
+float clumpNodePower(vec3 c, float scale, float mean, float salt) {
+  float u = hash13(c + vec3(uSeed + 29.0 + salt, 0.0, 0.0)) - 0.5;
+  return exp(scale * u) / mean;
+}
 float clumpGain(vec3 q, float clump, float salt) {
-  float u = hash13(vec3(floor(q.x / CLUMP_CELL_MM) + uSeed + 29.0 + salt, floor(q.y / CLUMP_CELL_MM), floor(q.z / CLUMP_CELL_MM))) - 0.5;
-  float a = clump * sqrt(3.0);
-  return sqrt(exp(clump * sqrt(12.0) * u) / (sinh(a) / a));
+  if (clump <= 0.0) return 1.0;
+  vec3 p = q / CLUMP_CELL_MM;
+  vec3 c = floor(p);
+  vec3 s = p - c;
+  s = s * s * (3.0 - 2.0 * s);
+  float a = clump * sqrt(3.0), mean = sinh(a) / a, scale = clump * sqrt(12.0);
+  float x00 = mix(clumpNodePower(c, scale, mean, salt), clumpNodePower(c + vec3(1, 0, 0), scale, mean, salt), s.x);
+  float x10 = mix(clumpNodePower(c + vec3(0, 1, 0), scale, mean, salt), clumpNodePower(c + vec3(1, 1, 0), scale, mean, salt), s.x);
+  float x01 = mix(clumpNodePower(c + vec3(0, 0, 1), scale, mean, salt), clumpNodePower(c + vec3(1, 0, 1), scale, mean, salt), s.x);
+  float x11 = mix(clumpNodePower(c + vec3(0, 1, 1), scale, mean, salt), clumpNodePower(c + vec3(1, 1, 1), scale, mean, salt), s.x);
+  return sqrt(mix(mix(x00, x10, s.y), mix(x01, x11, s.y), s.z));
 }
 float clumpAt(vec3 m, float se, float clump, float salt, vec3 e, vec3 pivot) {
   float across = dot(m - pivot, e);

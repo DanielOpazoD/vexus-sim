@@ -6832,6 +6832,54 @@ solicita rerun de esa CI; una corrección nueva requiere otro SHA.
 
 **Verificación.** `firstGpuFrame.test.ts` retiene cuatro vueltas con la valla pendiente y comprueba señal única, ausencia de reintentos, liberación de la valla y rechazo de los fallos. El humo real retiene la primera valla durante al menos tres consultas, comprueba que dos vueltas JS no completan el arranque y después permite la señal real de la GPU; todos los arranques que usan `bootWithoutErrors` exigen la señal. Referencia de la API: [WebGL2 clientWaitSync](https://developer.mozilla.org/en-US/docs/Web/API/WebGL2RenderingContext/clientWaitSync), estados y consulta con timeout cero; [WebGL best practices](https://developer.mozilla.org/en-US/docs/Web/API/WebGL_API/WebGL_best_practices), envío con flush y sincronización sin espera activa. La evidencia de ejecución y la CI corresponden al SHA que se enlace en el PR; no se infieren de esta descripción.
 
+## 185. Admitir una pareja renal sin confundir paciente y plano
+
+**Contexto.** La lectura local de TRUSTED recuperó TAC y US 3D del paciente 418 antes de terminar el ZIP. Sus marcos y dimensiones difieren: TAC512×512×535 y US1024×768×791. Compartir identificador no prueba alineación; las máscaras TAC incluyen ambos riñones y las US todavía pueden faltar.
+
+**Opciones.** Cargar toda la base o copiar datos clínicos al repo aumenta coste y exposición sin resolver coordenadas. Un simple visor acepta archivos intercambiados. Reutilizar el auditor vascular sin adaptación confundiría la máscara renal bilateral y la codificación0/255 con etiquetas individuales.
+
+**Decisión.** Admisión offline con NiBabel y dependencias científicas ya fijadas. Se verifican SHA-256 por archivo, nombre TRUSTED, paciente/lado, unidades, afines, valores finitos, rango no constante y rejilla/codificación declarada de cada anotación. Se conservan dos marcos y se informa de anotaciones incompletas. El informe siempre deja registro y aceptación clínica pendientes. Las máscaras se leen en bloques, evitando materializar float64 de5GB; una tolerancia de redondeo opcional, acotada a1e−8 y con evidencia obligatoria, conserva el máximo residuo y nunca modifica la fuente. El valor predeterminado sigue siendo exacto.
+
+**Consecuencias.** No cambia la imagen del simulador ni el navegador. Facilita detectar errores de referencia antes de ajustar anatomía. Los datos y acuerdos quedan fuera del repo; el campo de procedencia no otorga permisos. Un conjunto de dos pacientes solo puede ser un piloto, sin certificación de normalidad o fidelidad general.
+
+**Verificación.** Controles sintéticos de paciente/lado/archivo equivocado, máscara desplazada y codificación incorrecta; admisión incompleta no se convierte en éxito clínico. Workflow offline ejecuta también los auditores CT existentes, sin imágenes de pacientes. La CI principal y sus presupuestos permanecen intactos. Contrato y fuentes en `docs/fidelity/paired-renal-reference.md`.
+
+## 186. Concentración continua del medio dispersor en la rama principal
+
+**Contexto.** La rama principal conserva `clumpGain` constante dentro de celdas de1,2mm. Al cruzar una cara cambia la concentración sin una interfaz anatómica. El PR222 contiene una corrección aislable, pero su rama Atlas depende de otros cambios y no reúne condiciones de integración. Las pruebas y capturas antiguas no demuestran el comportamiento de main actual.
+
+**Opciones.** Esperar todo Atlas retrasa una corrección independiente. Uniformar el seno renal o bajar ganancia oculta el mecanismo. Interpolar amplitud sesga potencia. No se introducen ajustes por pose, órgano o ventana.
+
+**Decisión.** Incorporar únicamente el campo continuo: interpolación convexa smoothstep de potencia positiva en ocho nodos, raíz para amplitud. Los gemelos TS/GLSL y el anclaje material se mantienen juntos. La anatomía compartida, reloj, Doppler y PSF permanecen iguales.
+
+**Consecuencias.** Desaparece la discontinuidad matemática de concentración; eso no garantiza fluidez de toda la imagen ni anatomía renal correcta. El coste de ocho nodos requiere medir rendimiento. Paso/kernel/agrupación siguen NEEDS_CALIBRATION. No se integra el resto del PR222 ni se presenta el cambio como validado clínicamente.
+
+**Verificación.** Testigos a ambos lados de caras en tres ejes, potencia media en puntos reservados, retorno material y control de agrupación cero. Comparación registrada antes/después y GPU en versión actual, conservando discrepancias y controles negativos. Contrato en `docs/fidelity/continuous-clumps-contract.md`; cifras, capturas y CI exacta deben acompañar el PR.
+
+## 187. Registro renal rígido con hitos reservados y escala fija
+
+**Contexto.** TAC y US del mismo paciente usan marcos propios. Elegir cortes visualmente o minimizar el error de todos los hitos confunde el ajuste con validación. Un conjunto reflejado puede ajustar tres puntos coplanares perfectamente y seguir siendo incorrecto fuera de ese plano.
+
+**Opciones.** El artículo TRUSTED inicializa con similitud (incluye escala); deformar o escalar desde el comienzo puede ocultar la diferencia de tamaño que queremos medir. No se pretende reproducir ese benchmark ni elegir automáticamente una solución clínica.
+
+**Decisión.** Inicialización rígida US-world→CT-world en mm mediante Kabsch con rotación propia, escala1, IDs3/4/5 para ajustar. IDs1/2/6/7 se reservan; pelvis1 informa TRE separado. Hashes enlazan admisión, imagen y hitos; se rechazan cruces de paciente/lado/modalidad, archivos cambiados, marcos ambiguos, puntos fuera del FOV y triángulos degenerados. Se conserva también la matriz inversa.
+
+**Consecuencias.** Permite detectar errores independientes del ajuste y preparar cortes comparables. Respiración, postura y compresión pueden impedir un registro rígido útil. Los hitos reservados comparten anotadores; no son validación externa. No hay umbral clínico inventado ni aceptación automática, y no se transforma la anatomía del simulador.
+
+**Verificación.** Rotación/traslación analíticas, pelvis desplazada que no modifica el ajuste, reflexión con ajuste perfecto y TRE24mm, escala distinta con residuo persistente, marcos/hash/lado/FOV erróneos. Contrato y uso en `docs/fidelity/paired-renal-registration.md`; la aplicación a pacientes y sus discrepancias se registra fuera de Git.
+
+## 188. TAC remuestreado en los centros físicos del plano US
+
+**Contexto.** Dos cortes elegidos visualmente pueden parecerse y aun así no corresponder al mismo plano. Redimensionarlos para igualar contornos oculta diferencias de escala. Fuera del volumen TAC no hay tejido medido.
+
+**Opciones.** Capturas paralelas de MPR no resuelven la relación física. Una superposición de grises TAC y US sugiere una similitud acústica que no existe. No se cambia anatomía ni se sintetiza ecografía a partir de HU.
+
+**Decisión.** Para cada centro de pixel del corte US, aplicar affineUS, inicialización rígida US→CT y affineCT inverso. Interpolación lineal solo del TAC; US conserva muestras originales. Una máscara explícita marca soporte TAC, con NaN/violeta fuera. Figura a escala física con procedencia, plano y TRE/RMS de registro visibles.
+
+**Consecuencias.** Se pueden examinar discrepancias en cortes vecinos y proponer cambios desde evidencia espacial. Un registro matemático no asegura alineación anatómica; los rótulos de equipo incluidos en US impiden métricas acústicas sin máscara adicional. Los ejes de adquisición no se etiquetan como planos anatómicos del paciente. No se utiliza el sujeto reservado para afinar parámetros.
+
+**Verificación.** Phantom físico x+2y+3z con voxeles anisótropos, rotación y traslación conocidas, tres ejes, bordes parciales, escala/reflexión rechazadas. Integración identidad conserva valores y mm/pixel; registro de otra admisión o imágenes modificadas se rechazan. Contrato en `docs/fidelity/paired-renal-plane-review.md`; las figuras clínicas y discrepancias permanecen locales.
+
 ## 189. Identidad canónica de los módulos GLSL de Three
 
 **Contexto.** En ramas aisladas con `node_modules` compartido por enlace simbólico, Vite entrega el identificador real del módulo pero el minificador lo había indexado por la ruta del checkout. El mismo código GLSL se rechaza como fuente distinta. La reproducción usa un único paquete Three: solo cambia el alias del sistema de archivos.

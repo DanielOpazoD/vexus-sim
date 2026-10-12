@@ -6730,6 +6730,17 @@ operación fallida, rechaza datos inválidos y comprueba ausencia de trabajo sin
 diagnóstico. Controles nativos emparejados y un bloqueo controlado del contexto
 complementan esas pruebas; la integración exige check y CI exactos completos.
 
+**Suplemento de evidencia incremental (12-10-2026).** En PR241, grupo2/8,
+selección reference agotó300s, pasó al reintentar y el grupo fue cancelado a40min.
+El informe JSON final no se conservó y el log no identifica la operación que
+agotó el plazo. `run-e2e-shard` fija SHA y destino; `bootWithoutErrors` escribe
+cada etapa recibida en `.validation/e2e-startup.jsonl` desde el host, con id de
+prueba, consulta, intento y tiempo del host. El artefacto se guarda aun al
+cancelarse. Un prefijo incompleto no declara éxito: el informe íntegro y el
+veredicto protegido siguen siendo obligatorios. No modifica el reparto, los
+límites, las aserciones ni el runtime. El control termina el proceso escritor
+tras una etapa y exige que sobreviva sin fabricar la finalización del arranque.
+
 ## 181. Copiar la posición exacta y los ajustes actuales del transductor
 
 **Contexto.** Daniel eligió una ventana portal en una captura cuyos mandos

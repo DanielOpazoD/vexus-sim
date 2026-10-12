@@ -1,6 +1,10 @@
 # Grumos continuos del medio dispersor — contrato previo
 
-Fuente actual: `0f3d5d03aaadfa4a684095ed25aa3801090814e1`, rama principal.
+Fuente de la comparación original: `0f3d5d03aaadfa4a684095ed25aa3801090814e1`, rama principal.
+Base de integración actual: `d4e99d2022ea840dc74837e5c99091a34ca5838b`.
+La actualización incorpora la conservación incremental de etapas de arranque;
+no convierte las mediciones originales en nuevas mediciones de esta base ni
+declara corregido el timeout previo de selección en Linux.
 Se aísla el mecanismo del PR222 (borrador Atlas); su evidencia histórica no
 sustituye la evaluación en esta versión.
 

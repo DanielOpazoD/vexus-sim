@@ -5,6 +5,10 @@ sin renumerar. Main ya contiene el cruce terminal y una instantánea profunda
 del cuadro, incluida la semilla; esta reconciliación conserva ese contrato.
 La nueva integración requiere CI exacta y no valida retrospectivamente bancos.
 
+La reconciliación usa snapshot versión3: `seed` procede del cuadro adquirido y
+`liveSeed` conserva el valor vivo. El banco estático rechaza diferencias y datos
+no finitos; versiones1/2 permanecen históricas y no se migran retrospectivamente.
+
 ## 190. Completar el último tramo de búsqueda de la pared bajo la sonda
 
 **Contexto.** La adquisición hepatorrenal atlas de4fc5082, pose phi2,99,

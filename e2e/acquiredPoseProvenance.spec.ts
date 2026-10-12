@@ -25,7 +25,7 @@ test('conserva pose adquirida al mover controles congelados y recuperar cine ant
   await page.locator('#cine').dispatchEvent('input');
   await expect.poll(() => page.evaluate(() => window.__vexusTest!.sim().renderer.cineShownFrame?.n)).toBe(oldFrame);
   const before = await page.evaluate(acquisitionSnapshot, 'subxiphoid' as const);
-  expect(before.schemaVersion).toBe(2);
+  expect(before.schemaVersion).toBe(3);
   validateAcquisition(before, { anatomy: 'atlas', caseId: 'normal-adult' });
   const pixels = async (name: string) => {
     const path = info.outputPath(name + '.png');

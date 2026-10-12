@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest';
-import { validateAcquisition } from '../../tools/fidelity/acquisitionSnapshot';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { acquisitionSnapshot, validateAcquisition } from '../../tools/fidelity/acquisitionSnapshot';
 import { probeFrame, CONVEX_C35 } from '../probe/probe';
 import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
@@ -9,7 +9,9 @@ function acquisition() {
   const pose = { phi: 2, z: -80, yaw: 0.2, rock: 0, tilt: 0, lift: 0 };
   const frame = probeFrame(pose, new AnatomyScene(NORMAL_ADULT).torso, CONVEX_C35);
   return {
-    schemaVersion: 2,
+    schemaVersion: 3,
+    seed: NORMAL_ADULT.seed,
+    liveSeed: NORMAL_ADULT.seed,
     pose,
     livePose: { ...pose },
     anatomyMode: 'atlas',
@@ -24,7 +26,41 @@ function acquisition() {
   };
 }
 const expected = { anatomy: 'atlas', caseId: 'normal-adult', time: 2 };
+afterEach(() => vi.unstubAllGlobals());
 describe('integridad de la evidencia de adquisición', () => {
+  it('exporta la semilla adquirida aunque cambie la semilla viva durante una imagen congelada', () => {
+    const shot = acquisition();
+    const acquiredSeed = 73;
+    const liveSeed = 91;
+    const anatomy = { pose: shot.pose, frame: shot.frame, compression: {}, sample: { t: 2, resp: {} }, seed: acquiredSeed };
+    vi.stubGlobal('window', {
+      __vexusTest: {
+        sim: () => ({
+          frozen: true,
+          patient: { ...NORMAL_ADULT, seed: liveSeed },
+          pose: shot.livePose,
+          frame: shot.currentFrame,
+          sample: { t: 2 },
+          scene: { hasAbdominalAtlas: true },
+          physiology: { clock: { step: 50, dt: 0.04 } },
+          renderer: { displayedAnatomy: anatomy, cineShownFrame: { n: 31, t: 2 }, compoundState: () => ({}) },
+          displayed: { bmode: {}, color: shot.color },
+        }),
+        framesRendered: () => 31,
+        loggedErrors: () => [],
+      },
+    });
+    vi.stubGlobal('innerWidth', 1280);
+    vi.stubGlobal('innerHeight', 800);
+    vi.stubGlobal('devicePixelRatio', 1);
+    const snapshot = acquisitionSnapshot('subxiphoid');
+    expect(snapshot.seed).toBe(acquiredSeed);
+    expect(snapshot.liveSeed).toBe(liveSeed);
+    expect(() => validateAcquisition(snapshot, expected)).toThrow('seed differs');
+    for (const value of [NaN, Infinity])
+      expect(() => validateAcquisition({ ...acquisition(), seed: value }, expected)).toThrow('seed differs');
+    expect(() => validateAcquisition({ ...acquisition(), schemaVersion: 2 }, expected)).toThrow('provenance');
+  });
   it('acepta geometría presentada y tiempo coincidentes sin exigir igualdad de contador RAF', () => {
     expect(() => validateAcquisition(acquisition(), expected)).not.toThrow();
   });

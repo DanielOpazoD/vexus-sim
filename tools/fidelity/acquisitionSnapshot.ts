@@ -59,12 +59,35 @@ export function validateAcquisition(
     | 'livePose'
     | 'seed'
     | 'liveSeed'
+    | 'transducer'
+    | 'liveTransducer'
   >,
   expected: { anatomy: string; caseId: string; time?: number },
 ): void {
   if (snapshot.schemaVersion !== 3) throw new Error('Acquisition lacks separate acquired and live pose/seed provenance');
   if (!Number.isFinite(snapshot.seed) || !Number.isFinite(snapshot.liveSeed) || snapshot.seed !== snapshot.liveSeed)
     throw new Error('Presented seed differs from the live patient');
+  const acquired = snapshot.transducer,
+    live = snapshot.liveTransducer;
+  if (!acquired || !live || !['convex', 'phased'].includes(acquired.type) || acquired.type !== live.type)
+    throw new Error('Invalid or different transducer provenance');
+  for (const key of [
+    'curvatureRadius',
+    'footprintMm',
+    'elevationMm',
+    'halfSector',
+    'lines',
+    'f0B',
+    'f0Doppler',
+    'elevationFocusMm',
+  ] as const) {
+    const a = acquired[key],
+      b = live[key];
+    // An infinite radius is the documented planar limit; other settings must be finite.
+    if (!(Number.isFinite(a) || (key === 'curvatureRadius' && a === Infinity)) || a !== b)
+      throw new Error('Presented transducer differs from the live profile');
+  }
+  if (!Number.isSafeInteger(acquired.lines) || acquired.lines < 1) throw new Error('Invalid transducer line count');
   if (snapshot.anatomyMode !== expected.anatomy || snapshot.caseId !== expected.caseId) throw new Error('Unexpected acquisition domain');
   if (snapshot.color.enabled) throw new Error('B-mode audit requires color disabled');
   if (!Number.isSafeInteger(snapshot.presentedFrame) || snapshot.presentedFrame < 1) throw new Error('Invalid presented frame');

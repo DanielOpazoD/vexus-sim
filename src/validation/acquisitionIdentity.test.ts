@@ -12,6 +12,8 @@ function acquisition() {
     schemaVersion: 3,
     seed: NORMAL_ADULT.seed,
     liveSeed: NORMAL_ADULT.seed,
+    transducer: structuredClone(CONVEX_C35),
+    liveTransducer: structuredClone(CONVEX_C35),
     pose,
     livePose: { ...pose },
     anatomyMode: 'atlas',
@@ -32,13 +34,21 @@ describe('integridad de la evidencia de adquisición', () => {
     const shot = acquisition();
     const acquiredSeed = 73;
     const liveSeed = 91;
-    const anatomy = { pose: shot.pose, frame: shot.frame, compression: {}, sample: { t: 2, resp: {} }, seed: acquiredSeed };
+    const anatomy = {
+      pose: shot.pose,
+      frame: shot.frame,
+      compression: {},
+      sample: { t: 2, resp: {} },
+      seed: acquiredSeed,
+      transducer: shot.transducer,
+    };
     vi.stubGlobal('window', {
       __vexusTest: {
         sim: () => ({
           frozen: true,
           patient: { ...NORMAL_ADULT, seed: liveSeed },
           pose: shot.livePose,
+          transducer: shot.liveTransducer,
           frame: shot.currentFrame,
           sample: { t: 2 },
           scene: { hasAbdominalAtlas: true },
@@ -63,6 +73,17 @@ describe('integridad de la evidencia de adquisición', () => {
   });
   it('acepta geometría presentada y tiempo coincidentes sin exigir igualdad de contador RAF', () => {
     expect(() => validateAcquisition(acquisition(), expected)).not.toThrow();
+  });
+  it('rechaza perfiles de transductor distintos o incompletos aunque coincidan pose y marco', () => {
+    const shot = acquisition();
+    shot.liveTransducer.f0B += 1;
+    expect(shot.currentFrame).toEqual(shot.frame);
+    expect(() => validateAcquisition(shot, expected)).toThrow('transducer');
+    for (const value of [NaN, Infinity])
+      expect(() => validateAcquisition({ ...acquisition(), liveTransducer: { ...CONVEX_C35, lines: value } }, expected)).toThrow(
+        'transducer',
+      );
+    expect(() => validateAcquisition({ ...acquisition(), transducer: undefined! }, expected)).toThrow('transducer');
   });
   it('rechaza un cuadro de cine anterior atribuido a una sonda desplazada', () => {
     const shot = acquisition();

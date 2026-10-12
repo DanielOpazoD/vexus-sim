@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { Tissue } from '../src/anatomy/tissues';
+import { startupEntry } from '../src/app/startupTrace';
 import {
   BOOT_MS,
   bootWithoutErrors,
@@ -33,7 +34,68 @@ const contains = (page: Page, sel: string, text: string | RegExp) => async (): P
 
 test('arranca, renderiza cuadros y no emite errores', async ({ page }) => {
   budget(60_000);
-  const errors = await bootWithoutErrors(page);
+  const gpuStages: string[] = [];
+  page.on('console', (message) => {
+    const stage = startupEntry(message.text())?.stage;
+    if (stage?.startsWith('ultrasound:gpu-')) gpuStages.push(stage);
+  });
+  // Control negativo: el bucle sigue, pero la primera valla aún no puede dar éxito.
+  await page.addInitScript(() => {
+    const control = { polls: 0, release: false };
+    Object.assign(window, { gpuStartupTest: control });
+    const proto = WebGL2RenderingContext.prototype;
+    // Los originales se invocan exclusivamente con .call(this, ...) para conservar su contexto GL.
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const fence = proto.fenceSync;
+    // eslint-disable-next-line @typescript-eslint/unbound-method
+    const wait = proto.clientWaitSync;
+    const debug = console.debug.bind(console);
+    let armed = false,
+      held: WebGLSync | null = null;
+    console.debug = (...args: unknown[]) => {
+      if (typeof args[0] === 'string' && args[0].includes('"stage":"ultrasound:gpu-submitted"')) armed = true;
+      debug(...args);
+    };
+    proto.fenceSync = function (condition, flags) {
+      const sync = fence.call(this, condition, flags);
+      if (armed) {
+        held = sync;
+        armed = false;
+      }
+      return sync;
+    };
+    proto.clientWaitSync = function (sync, flags, timeout) {
+      if (sync === held && !control.release) {
+        control.polls++;
+        return this.TIMEOUT_EXPIRED;
+      }
+      return wait.call(this, sync, flags, timeout);
+    };
+  });
+  let bootCompleted = false;
+  const boot = bootWithoutErrors(page).then((errors) => {
+    bootCompleted = true;
+    return errors;
+  });
+  const negativeControl = async (): Promise<void> => {
+    await page.waitForFunction(
+      () =>
+        ((window as Window & { gpuStartupTest?: { polls: number } }).gpuStartupTest?.polls ?? 0) >= 3 &&
+        (window.__vexusTest?.framesRendered() ?? 0) >= 2,
+      null,
+      { timeout: BOOT_MS },
+    );
+    expect(await page.evaluate(() => window.__vexusTest!.framesRendered())).toBeGreaterThanOrEqual(2);
+    expect(gpuStages).toEqual(['ultrasound:gpu-submitted']);
+    expect(bootCompleted).toBe(false);
+    await page.evaluate(() => {
+      const control = (window as Window & { gpuStartupTest?: { release: boolean } }).gpuStartupTest;
+      if (!control) throw new Error('Falta el control de valla');
+      control.release = true;
+    });
+  };
+  const [errors] = await Promise.all([boot, negativeControl()]);
+  expect(gpuStages).toEqual(['ultrasound:gpu-submitted', 'ultrasound:gpu-ready']);
   // El reloj de simulación avanza con los cuadros (≤ 0,25 s por cuadro): en tres cuadros, algo; los fps redondeados
   // pueden ser 0 con SwiftShader y no se exigen
   await clockRuns(page, 'el reloj de la simulación avanza con cuadros completos');

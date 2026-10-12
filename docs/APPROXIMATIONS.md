@@ -135,17 +135,15 @@ compartidos CPU/GLSL. El solver conserva su tolerancia numérica de 0,05 mm.
 Los controles de continuidad y sus límites están en
 [aceptación por ventana](anatomy/vexus-window-acceptance.md).
 
-## Concentración continua de dispersores (decisión 187)
+## Concentración continua de dispersores (decisión 186)
 
-Los grumos de los tejidos con `speckleClump > 0` interpolan potencia positiva de
-ocho nodos con smoothstep y recuperan amplitud con raíz cuadrada. Su media de
-conjunto permanece uno; el contraste baja respecto de celdas constantes, sin
-borrar la heterogeneidad ni modificar la retrodispersión nominal. El paso de
-1,2 mm, agrupación por tejido y kernel son [EXTRAPOLACIÓN PROPIA] /
-NEEDS_CALIBRATION. No son concentración ni tamaño de lobulillos humanos
-medidos. No cambia seno/cápsula/riñón/vasos como geometría, ni Doppler o flujo.
-El [contrato](fidelity/continuous-clumps-contract.md) exige comparables, movimientos
-y controles; estadística y continuidad numérica no equivalen a fidelidad clínica.
+Los tejidos con `speckleClump > 0` interpolan potencia positiva de ocho nodos
+con smoothstep y recuperan amplitud. La media de conjunto permanece uno y
+el contraste baja respecto de celdas constantes, sin borrar heterogeneidad.
+Paso de 1,2 mm, agrupación por tejido y kernel: [EXTRAPOLACIÓN PROPIA] /
+NEEDS_CALIBRATION. No son lobulillos medidos ni cambia la geometría de órganos.
+El [contrato](fidelity/continuous-clumps-contract.md) exige imágenes comparables,
+movimientos y controles; continuidad matemática no certifica fidelidad clínica.
 
 ### Techo registrado experimental (decisión 189)
 

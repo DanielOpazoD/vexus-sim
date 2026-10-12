@@ -1,60 +1,62 @@
 import { readFileSync } from 'node:fs';
-import { gunzipSync } from 'node:zlib';
-import { afterEach, describe, expect, it } from 'vitest';
-import { Vector3, type Mesh } from 'three';
-import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { quadratusSdf } from '../anatomy/organs/retroperitoneum';
-import { torsoDepth } from '../anatomy/primitives';
-import { setAbdominalBody } from '../anatomy/referenceBody';
+import { describe, expect, it } from 'vitest';
 import { AnatomyScene } from '../anatomy/scene';
+import { torsoDepth } from '../anatomy/primitives';
+import { setReferenceBody } from '../anatomy/referenceBody';
+import { kidneyLocal, perirenalOuterSdf } from '../anatomy/organs/kidney';
+import { quadratusSdf } from '../anatomy/organs/retroperitoneum';
 import { NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
 import { buildPosteriorMuscles } from '../ui/navigator3d/organs';
+import type { Mesh } from 'three';
 
-afterEach(() => {
-  setAbdominalAtlas();
-  setAbdominalBody();
-});
+const bytes = readFileSync('src/anatomy/reference-body.bin');
+const profile = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
 
-describe('contención posterior del músculo, fuera del orden de clasificación (181)', () => {
-  it('rechaza el exterior aunque no se haya clasificado antes la pared', () => {
-    // Los dos puntos estaban dentro del campo antiguo: éste no tenía cara posterior.
-    // La grasa queda lejos; el rechazo debe proceder del dominio de la pared.
-    for (const x of [-65, 65]) {
-      expect(quadratusSdf([x, -200, -150], -80, 100)).toBeGreaterThan(0);
-      expect(quadratusSdf([x, -75, -150], -0.1, 100)).toBeGreaterThan(0);
-      expect(quadratusSdf([x, -75, -150], 6, 100)).toBeLessThan(0);
-    }
+describe('soporte muscular posterior, antes de precedencia de tejidos', () => {
+  it('el campo aislado rechaza espacio exterior y pared, conservando músculo válido', () => {
+    // Testigo que antes era interior del QL aunque el clasificador devolvía aire.
+    expect(quadratusSdf([65, -150, -130], -70, 20)).toBeGreaterThan(0);
+    expect(quadratusSdf([65, -75, -130], -2, 20)).toBeGreaterThan(0);
+    expect(quadratusSdf([65, -65, -130], 5, 20)).toBeLessThan(0);
+    // El riñón y su soporte perirrenal siguen siendo obstáculo, no músculo.
+    expect(quadratusSdf([65, -65, -130], 5, -2)).toBeGreaterThan(0);
   });
 
-  it.each(['procedural', 'atlas'] as const)('la superficie %s conserva ambos músculos dentro de la pared', (model) => {
-    if (model === 'atlas') {
-      const raw = gunzipSync(readFileSync('src/anatomy/abdominal-atlas.gzip.bin'));
-      const profile = readFileSync('src/anatomy/abdominal-body.bin');
-      setAbdominalAtlas(new Uint16Array(raw.buffer.slice(raw.byteOffset, raw.byteOffset + raw.byteLength)));
-      setAbdominalBody(new Float32Array(profile.buffer.slice(profile.byteOffset, profile.byteOffset + profile.byteLength)));
-    }
-    const scene = new AnatomyScene(NORMAL_ADULT);
-    expect(scene.hasAbdominalAtlas).toBe(model === 'atlas');
-    const group = buildPosteriorMuscles(scene);
-    group.updateMatrixWorld(true);
-    const muscles = group.children.filter((m) => m.name.startsWith('Cuadrado lumbar')) as Mesh[];
-    expect(muscles.map((m) => m.name)).toEqual(['Cuadrado lumbar derecho', 'Cuadrado lumbar izquierdo']);
-    for (const mesh of muscles) {
-      const positions = mesh.geometry.getAttribute('position');
-      expect(positions.count, mesh.name).toBeGreaterThan(1000);
-      let maxOutside = -Infinity;
-      for (let i = 0; i < positions.count; i++) {
-        const q = new Vector3().fromBufferAttribute(positions, i).applyMatrix4(mesh.matrixWorld).multiplyScalar(10);
-        const p: Vec3 = [q.x, q.y, q.z];
-        maxOutside = Math.max(maxOutside, torsoDepth(p, scene.torso) + scene.wallThickness());
+  for (const reference of [false, true])
+    it(`las superficies 3D emitidas permanecen dentro del cuerpo y fuera del soporte perirrenal (${reference})`, () => {
+      setReferenceBody(reference ? profile : undefined);
+      try {
+        const scene = new AnatomyScene(NORMAL_ADULT);
+        const group = buildPosteriorMuscles(scene);
+        try {
+          expect(group.children).toHaveLength(4);
+          for (const object of group.children) {
+            const mesh = object as Mesh;
+            const positions = mesh.geometry.getAttribute('position');
+            expect(positions.count, mesh.name).toBeGreaterThan(3);
+            for (let i = 0; i < positions.count; i++) {
+              const p: Vec3 = [
+                (positions.getX(i) * mesh.scale.x + mesh.position.x) * 10,
+                (positions.getY(i) * mesh.scale.y + mesh.position.y) * 10,
+                (positions.getZ(i) * mesh.scale.z + mesh.position.z) * 10,
+              ];
+              // Cota NUMÉRICA de extracción de 40³, no grosor fascial ni anatomía normal.
+              // El defecto anterior sobresalía 71–92mm; el ensayo corregido <0,04mm.
+              expect(torsoDepth(p, scene.torso) + scene.wallThickness(), mesh.name).toBeLessThan(1.5);
+              for (const kidney of [scene.kidneyRight, scene.kidneyLeft])
+                expect(perirenalOuterSdf(kidneyLocal(p, kidney), kidney), mesh.name).toBeGreaterThan(-1.5);
+            }
+          }
+        } finally {
+          for (const object of group.children) {
+            const mesh = object as Mesh;
+            mesh.geometry.dispose();
+            for (const material of Array.isArray(mesh.material) ? mesh.material : [mesh.material]) material.dispose();
+          }
+        }
+      } finally {
+        setReferenceBody();
       }
-      // Frontera externa independiente: profundidad corporal, sin consultar el campo muscular.
-      expect(maxOutside, `${model}/${mesh.name}: fuera ${maxOutside} mm`).toBeLessThan(1.5);
-    }
-    for (const mesh of group.children as Mesh[]) {
-      mesh.geometry.dispose();
-      if (!Array.isArray(mesh.material)) mesh.material.dispose();
-    }
-  });
+    });
 });

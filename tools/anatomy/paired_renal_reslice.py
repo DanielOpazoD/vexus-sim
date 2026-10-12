@@ -26,6 +26,19 @@ def rigid_matrix(value):
     return matrix
 
 
+def plane_spacing(affine, axes):
+    """La figura rectangular no puede representar una rejilla US con cizalla."""
+    basis = np.asarray(affine)[:3, axes]
+    spacing = np.linalg.norm(basis, axis=0)
+    if not np.isfinite(basis).all() or np.any(spacing <= 0):
+        raise ValueError("Base física del plano inválida")
+    # Tolerancia al redondeo float32 del NIfTI; no precisión anatómica.
+    cosine = np.dot(basis[:, 0], basis[:, 1]) / np.prod(spacing)
+    if abs(cosine) > 1e-6:
+        raise ValueError("Plano US no ortogonal: no dibujar cizalla como píxeles rectangulares")
+    return spacing
+
+
 def reslice(ct, ct_affine, us_shape, us_affine, transform, axis, index):
     """Devuelve los otros dos ejes US en su orden nativo; centros de voxel, sin resize."""
     if len(ct.shape) != 3 or len(us_shape) != 3 or axis not in (0, 1, 2):
@@ -73,11 +86,12 @@ def review(manifest_path):
         images[modality] = nib.load(image_path)
     ct, us = images["ct"], images["us"]
     axis, index = spec["axis"], spec["index"]
+    if axis not in (0, 1, 2): raise ValueError("Eje US 0/1/2 requerido")
+    spacing = plane_spacing(us.affine, [i for i in range(3) if i != axis])
     ct_slice, valid, others = reslice(np.asanyarray(ct.dataobj), ct.affine, us.shape, us.affine,
                                     registration["usWorldToCtWorldMm"], axis, index)
     selection = [slice(None)]*3; selection[axis] = index
     us_slice = np.asarray(us.dataobj[tuple(selection)])
-    spacing = np.linalg.norm(us.affine[:3, others], axis=0)
     metadata = {"schemaVersion": 1, "manifestSha256": file_hash(path),
                 "admissionSha256": spec["admission"]["sha256"],
                 "registrationSha256": spec["registration"]["sha256"],

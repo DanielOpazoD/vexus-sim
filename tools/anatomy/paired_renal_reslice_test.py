@@ -5,7 +5,7 @@ import tempfile
 from pathlib import Path
 import nibabel as nib
 import numpy as np
-from paired_renal_reslice import reslice, rigid_matrix, review
+from paired_renal_reslice import reslice, rigid_matrix, review, plane_spacing
 from paired_renal_reference import audit, file_hash
 
 
@@ -47,6 +47,13 @@ class ResliceTests(unittest.TestCase):
         for scale in [-1, 1.01, float('nan')]:
             invalid = np.eye(4); invalid[0, 0] = scale
             with self.assertRaises(ValueError): rigid_matrix(invalid)
+
+    def test_oblique_pixels_keep_lengths_but_shear_is_not_drawn_as_rectangular(self):
+        rotated = self.transform @ self.us_affine
+        np.testing.assert_allclose(plane_spacing(rotated, [0, 2]), [.7, 1.3])
+        sheared = np.eye(4); sheared[0, 2] = .25
+        with self.assertRaisesRegex(ValueError, "no ortogonal"):
+            plane_spacing(sheared, [0, 2])
 
 
 class ReviewChainTests(unittest.TestCase):

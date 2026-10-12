@@ -31,6 +31,8 @@ plano, fracción válida y errores de registro. Fuera del soporte TAC es NaN,
 representado en violeta; no se interpreta como líquido, sombra ni aire.
 La ventana de intensidad TAC es configurable con `--ct-low` / `--ct-high`.
 No se ecualizan imágenes ni se ajustan tamaños para mejorar la similitud.
+Se admiten planos oblicuos con ejes ortogonales. Una rejilla US con cizalla
+se rechaza para no dibujar ángulos físicos falsos como píxeles rectangulares.
 
 ## Circuito de evaluación
 

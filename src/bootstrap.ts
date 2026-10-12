@@ -33,7 +33,8 @@ import { ProbeInput } from './ui/probeInput';
 import { translateProbe } from './probe/translation';
 import { StartPointCards } from './ui/startPointCards';
 import { compoundActive } from './ultrasound/compound';
-import { markStartup } from './app/startupTrace';
+import { markStartup, startupTraceEnabled } from './app/startupTrace';
+import { FirstGpuFrame } from './app/firstGpuFrame';
 
 markStartup('bootstrap:begin');
 
@@ -391,8 +392,9 @@ let last = performance.now();
 let frames = 0;
 let frameTime = 0;
 let lastStatus = 0;
-/** Cuadros completos del bucle (nunca se reinicia): la e2e espera cuadros, no segundos (`framesRendered`). */
+/** Vueltas completas de JS (nunca se reinicia); la valla confirma aparte el primer cuadro GPU. */
 let loopFrames = 0;
+const firstGpuFrame = new FirstGpuFrame(startupTraceEnabled, markStartup);
 const errorBudget = new ErrorBudget();
 let loopDegraded = false;
 const heartRate = new HeartRateDisplay();
@@ -413,6 +415,7 @@ function drawTraces(s: Simulator): void {
 }
 
 function frame(now: number, dt: number): void {
+  firstGpuFrame.poll();
   if (loopFrames === 0) markStartup('frame:begin');
   const s = sim();
   fitCanvases();
@@ -430,6 +433,7 @@ function frame(now: number, dt: number): void {
     if (loopFrames === 0) markStartup('ultrasound:begin');
     s.render();
     if (loopFrames === 0) markStartup('ultrasound:ready');
+    firstGpuFrame.submit(s.renderer.gl);
     cine.tick();
   }
   if (!comparisonOpen) {

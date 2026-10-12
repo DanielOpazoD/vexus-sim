@@ -6806,3 +6806,16 @@ clic/mapas/salida/Escape/paciente en cuerpos legacy/referencia con señal
 congelada inmutable; hover/vaso/cine; igualdad exacta trabajador/consulta
 en2048 puntos de dos casos. Toda la suite original permanece. CI exacta
 sin reintentos es obligatoria; el atlas y sus validaciones siguen pendientes.
+
+**Corrección tras la primera CI.** En a390466 fallaron hover y selección de
+referencia antes de actuar sobre la guía: el bitmap visible no contenía
+hígado tras Congelar. Redimensionar un canvas borra sus píxeles, pero la
+copia adquirida no se repintaba mientras llegaba otro mapa. El control
+de navegador reproduce el defecto en una tarea JS, con una petición real
+en vuelo: copia del mismo mapa, bitmap presente antes y vacío después.
+Se repinta la copia cuando cambia el tamaño, sin esperar otra respuesta.
+Las nuevas esperas de adquisición se expresan en30 cuadros completos,
+con cuadro adquirido coincidente y guardas de tejido explícitas, siguiendo
+CONTRIBUTING. Se conservan los presupuestos totales, el fallo de primer
+intento y su reintento diagnóstico automático también fallido. No se
+solicita rerun de esa CI; una corrección nueva requiere otro SHA.

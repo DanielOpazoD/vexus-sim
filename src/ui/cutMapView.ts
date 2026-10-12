@@ -503,6 +503,9 @@ export class CutMapView {
         depthMm: shown.bmode.depthMm,
       };
     }
+    // Cambiar width/height borra el bitmap del canvas. La copia adquirida
+    // sigue siendo válida aunque el Worker todavía tenga una petición en vuelo.
+    if (this.img && (this.img.width !== this.canvas.width || this.img.height !== this.canvas.height)) this.mapDirty = true;
     if (!this.mapDirty || !this.map || !this.mapInputs) return;
     // Corte plegado: los mapas se siguen pidiendo (la comprobación TS ↔ GLSL los usa), pero el último solo se
     // pinta cuando el lienzo vuelve a verse

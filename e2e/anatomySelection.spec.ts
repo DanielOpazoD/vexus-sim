@@ -36,7 +36,12 @@ for (const reference of [false, true])
       }, sp),
     );
     await page.locator('#freeze').click();
-    await expect.poll(() => liverPoint(page)).not.toBeNull();
+    await withinFrames(page, 30, 'mapa hepático del cuadro congelado', async () => {
+      const matches = await page
+        .locator('#cutmap')
+        .evaluate((el) => el.dataset.acquiredFrame === String(window.__vexusTest!.sim().renderer.displayedFrame!.n));
+      return (matches && (await liverPoint(page)) !== null) || 'mapa aún pendiente del cuadro';
+    });
     const snapshot = () =>
       page.evaluate(() => {
         const s = window.__vexusTest!.sim();

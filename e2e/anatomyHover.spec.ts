@@ -51,17 +51,18 @@ test('identifica y demarca hígado/porta sin alterar señal; sale, cambia plano 
       for (const v of pixels) hash = Math.imul(hash ^ v, 16777619);
       return { hash, pose: s.pose, equipment: s.equipment };
     });
-  await expect
-    .poll(() =>
-      page.locator('#cutmap').evaluate((el) => {
-        const c = el as HTMLCanvasElement;
-        return c
-          .getContext('2d')!
-          .getImageData(0, 0, c.width, c.height)
-          .data.some((v) => v === 140);
-      }),
-    )
-    .toBe(true);
+  await withinFrames(page, 30, 'mapa visible del cuadro congelado con parénquima hepático', async () =>
+    page.locator('#cutmap').evaluate((el) => {
+      const c = el as HTMLCanvasElement,
+        shown = window.__vexusTest!.sim().renderer.displayedFrame!,
+        data = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+      let liver = 0;
+      for (let k = 0; k < data.length; k += 4) if (data[k] === 140 && data[k + 1] === 90 && data[k + 2] === 60) liver++;
+      // Guarda de mapa presente, no umbral de fidelidad: más de una celda aislada
+      // o un componente de color casual; además pertenece al cuadro presentado.
+      return (liver > 50 && c.dataset.acquiredFrame === String(shown.n)) || 'mapa aún pendiente del cuadro';
+    }),
+  );
   const before = await snapshot();
   await pointAt(page, [140, 90, 60]);
   await expect(page.locator('.anatomy-tooltip')).toContainText('Hígado');

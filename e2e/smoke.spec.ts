@@ -42,7 +42,7 @@ test('arranca, renderiza cuadros y no emite errores', async ({ page }) => {
   // Control negativo: el bucle sigue, pero la primera valla aún no puede dar éxito.
   await page.addInitScript(() => {
     const control = { polls: 0, release: false };
-    (window as Window & { gpuStartupTest: typeof control }).gpuStartupTest = control;
+    Object.assign(window, { gpuStartupTest: control });
     const proto = WebGL2RenderingContext.prototype;
     // Los originales se invocan exclusivamente con .call(this, ...) para conservar su contexto GL.
     // eslint-disable-next-line @typescript-eslint/unbound-method
@@ -89,7 +89,9 @@ test('arranca, renderiza cuadros y no emite errores', async ({ page }) => {
     expect(gpuStages).toEqual(['ultrasound:gpu-submitted']);
     expect(bootCompleted).toBe(false);
     await page.evaluate(() => {
-      (window as Window & { gpuStartupTest: { release: boolean } }).gpuStartupTest.release = true;
+      const control = (window as Window & { gpuStartupTest?: { release: boolean } }).gpuStartupTest;
+      if (!control) throw new Error('Falta el control de valla');
+      control.release = true;
     });
   };
   const [errors] = await Promise.all([boot, negativeControl()]);

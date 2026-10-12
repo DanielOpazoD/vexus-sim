@@ -62,9 +62,15 @@ def inspect_annotation(path, image, foreground, evidence):
     label = nib.load(path)
     geometry_matches(label, image, evidence)
     values = np.asanyarray(label.dataobj)
-    if not np.isfinite(values).all() or not np.isin(values, [0, foreground]).all():
-        raise ValueError("Máscara contradice su codificación; no umbralizar silenciosamente")
-    count = int(np.count_nonzero(values == foreground))
+    count = 0
+    # Slabs contiguos del último eje: evitan que np.isin cree temporales int64
+    # de varios GB para máscaras US de cientos de millones de voxeles.
+    for first in range(0, values.shape[2], 16):
+        slab = values[..., first:first+16]
+        # También rechaza NaN/Inf: ambos son distintos de 0 y del foreground.
+        if np.any((slab != 0) & (slab != foreground)):
+            raise ValueError("Máscara contradice su codificación; no umbralizar silenciosamente")
+        count += int(np.count_nonzero(slab == foreground))
     if not count:
         raise ValueError("Máscara vacía")
     return {"sha256": file_hash(path), "foregroundValue": foreground,

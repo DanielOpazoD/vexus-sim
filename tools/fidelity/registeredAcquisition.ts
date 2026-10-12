@@ -40,11 +40,11 @@ export function acquiredState(
     for (let first = 0; first < image.gray.length; first += 32768)
       binary += String.fromCharCode(...image.gray.subarray(first, first + 32768));
     return structuredClone({
-      schemaVersion: 1,
+      schemaVersion: 2,
       caseId: s.patient.id,
       patient: s.patient,
       anatomyFrameId: null as string | null,
-      anatomyDomain: s.scene.torso.profile ? 'bodyparts3d-profile' : 'procedural',
+      anatomyDomain: s.scene.hasAbdominalAtlas ? 'abdominal-atlas' : s.scene.torso.profile ? 'bodyparts3d-profile' : 'procedural',
       frame: f,
       livePose: s.pose,
       liveFrame: s.frame,

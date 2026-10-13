@@ -1,4 +1,4 @@
-import type { TubeGrid } from './tubeGrid';
+import { TUBE_GRID_PITCH_MM, type TubeGrid } from './tubeGrid';
 import type { ProbeCompression } from '../compression';
 import { RespiratoryDeformation } from '../deformation';
 import { GALLBLADDER_NODES } from '../organs/gallbladder';
@@ -25,7 +25,7 @@ export interface UniformContext {
   sample: PhysiologySample;
   tubeCount: number;
   /** Índice conservador de los tubos compactos; ausente: recorrido completo. */
-  tubeGrid?: Pick<TubeGrid, 'origin' | 'size'> | null;
+  tubeGrid?: Pick<TubeGrid, 'origin' | 'size' | 'pitch'> | null;
   /** Contacto de la sonda del cuadro (decisión 63); null: sin compresión (uCompC.w = 0). */
   compression: ProbeCompression | null;
 }
@@ -184,6 +184,7 @@ export const SCENE_UNIFORMS: readonly UniformSpec[] = [
   },
   /** tubos en la lista del cuadro */
   { name: 'uTubeCount', type: 'int', value: (_s, c) => [c.tubeCount] },
+  { name: 'uTubeGridPitch', type: 'float', value: (_, c) => [c.tubeGrid?.pitch ?? TUBE_GRID_PITCH_MM] },
   { name: 'uTubeGridEnabled', type: 'int', value: (_s, c) => [c.tubeGrid ? 1 : 0] },
   { name: 'uTubeGridOrigin', type: 'vec3', value: (_s, c) => c.tubeGrid?.origin ?? [0, 0, 0] },
   { name: 'uTubeGridSize', type: 'vec3', value: (_s, c) => c.tubeGrid?.size ?? [1, 1, 1] },

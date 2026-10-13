@@ -21,7 +21,7 @@ import {
   CURTAIN_CONTIGUOUS_SEGMENTS,
   CURTAIN_GAS_KIND,
   CURTAIN_RECORD_MM,
-  PLEURA_GLSL,
+  pleuraGlsl,
   PLEURA_STEER_GUESS_MM,
   PLEURA_STEER_ITERATIONS,
 } from '../pleura';
@@ -726,7 +726,8 @@ export const FRAG_TRANSMISSION_STEERED = transmissionShader('steered');
  * mirada 0 no la lleva. Gemelo de la geometría (punto, dirección, pleura, reverberación, anclas, alcance,
  * cortina): `steeredSample` (`steering.ts`); `steeredSample.test.ts` fija estas líneas.
  */
-export const STEERED_FIELD_GLSL = /* glsl */ `
+function steeredFieldGlsl(mediumBody?: string, cached = false): string {
+  return /* glsl */ `
 ${SPECKLE_LOOK_GLSL}
 ${STEERING_GLSL}
 const int PLEURA_STEER_ITERATIONS = ${PLEURA_STEER_ITERATIONS};
@@ -778,9 +779,11 @@ float steeredT(float phiK, float a, float x, bool ray) {
 }
 // mediumField y wallField con la fase de la mirada por nodo
 vec2 mediumFieldPh(vec3 p, vec3 dir, float r, float se, bool withCurtain, float ph0, vec3 g, out float spec) {
-  vec3 m = toMaterial(p);
+${
+  mediumBody ??
+  /* glsl */ `  vec3 m = toMaterial(p);
   Warp w = anatomyWarpAt(p, m);
-  Cls c = classifyWith(m, withCurtain);
+  Cls c = ${cached ? 'rawClass()' : 'classifyWith(m, withCurtain)'};
   vec2 f0 = fieldForPh(m, se, c.tissue, ph0, g, normalize(p - uCurvC), w);
   vec3 p1 = p + uElev * se, p2 = p - uElev * se;
   vec3 m1 = toMaterial(p1), m2 = toMaterial(p2);
@@ -794,9 +797,10 @@ vec2 mediumFieldPh(vec3 p, vec3 dir, float r, float se, bool withCurtain, float 
   // densidad de dispersores (decisión 89), del material: la misma en todas las miradas
   field *= densityGain(m, c.tissue);
   // eco de interfaz (decisiones 57 y 65), como mediumField: la difusa sobre el fasor de esta mirada y la especular aparte
-  vec2 e = interfaceEcho(c, m, dir, r, se, w, withCurtain);
+  vec2 e = ${cached ? 'texelFetch(uRawEcho, ivec2(gl_FragCoord.xy), 0).xy' : 'interfaceEcho(c, m, dir, r, se, w, withCurtain)'};
   spec = e.x;
-  return field * (1.0 + e.y / max(length(field), 1e-6));
+  return field * (1.0 + e.y / max(length(field), 1e-6));`
+}
 }
 vec2 wallFieldPh(vec3 p, vec3 dir, float se, float ph0, vec3 g, Warp w) {
   vec3 m = toMaterial(p);
@@ -949,6 +953,8 @@ vec2 steeredField() {
   return out2;
 }
 `;
+}
+export const STEERED_FIELD_GLSL = steeredFieldGlsl();
 
 /**
  * Pasada B: campo complejo crudo por muestra de haz — dispersores persistentes
@@ -959,7 +965,38 @@ vec2 steeredField() {
  * siempre) y el de las miradas ±θ (`FRAG_RAWFIELD_STEERED`: la muestra de la rejilla común formada por la
  * línea dirigida que pasa por ella, `steeredField`). Comparten todo salvo sus entradas y su `main`.
  */
-function rawFieldShader(look: Look): string {
+// Staged Atlas B reuses the same main/beam geometry in every pass. Only the medium body
+// and outputs vary; the driver removes the unused oField work in class/echo passes.
+// Each look retains three classifier source copies in total: center, capsule exterior, elevation.
+type RawFieldStage = 'direct' | 'class' | 'echo' | 'cached';
+function rawFieldShader(look: Look, stage: RawFieldStage = 'direct'): string {
+  const mediumBody =
+    stage === 'class'
+      ? /* glsl */ `
+    Cls c = classifyWith(toMaterial(p), withCurtain);
+    oClass0 = vec4(float(c.tissue), c.bd, float(c.iface), c.ifd);
+    oClass1 = vec4(c.n, c.kc);
+    oClass2 = vec4(c.tangent, 0.0);
+    spec = 0.0;
+    return vec2(0.0);`
+      : stage === 'echo'
+        ? /* glsl */ `
+    vec3 m = toMaterial(p);
+    oEcho = interfaceEcho(rawClass(), m, dir, r, se, anatomyWarpAt(p, m), withCurtain);
+    spec = 0.0;
+    return vec2(0.0);`
+        : undefined;
+  const output =
+    stage === 'class'
+      ? `vec2 oField;
+layout(location=0) out vec4 oClass0;
+layout(location=1) out vec4 oClass1;
+layout(location=2) out vec4 oClass2;`
+      : stage === 'echo'
+        ? 'vec2 oField; out vec2 oEcho;'
+        : 'out vec2 oField;';
+  const init = stage === 'class' ? 'oClass0=vec4(0.0);oClass1=vec4(0.0);oClass2=vec4(0.0);' : stage === 'echo' ? 'oEcho=vec2(0.0);' : '';
+
   return /* glsl */ `#version 300 es
 precision highp float;
 precision highp int;
@@ -980,7 +1017,25 @@ uniform float uAnchorW;
 uniform vec4 uTissueClump4[${TISSUE_VEC4}];
 ${RECEIVER_GLSL}${HARMONIC_GLSL}
 in vec2 vUv;
-out vec2 oField;
+${output}
+${
+  stage === 'echo' || stage === 'cached'
+    ? /* glsl */ `
+uniform sampler2D uRawClass0;
+uniform sampler2D uRawClass1;
+uniform sampler2D uRawClass2;
+uniform sampler2D uRawEcho;
+Cls rawClass() {
+  ivec2 q=ivec2(gl_FragCoord.xy);
+  vec4 a=texelFetch(uRawClass0,q,0),b=texelFetch(uRawClass1,q,0),d=texelFetch(uRawClass2,q,0);
+  Cls c;
+  c.tissue=int(a.x);c.bd=a.y;c.iface=int(a.z);c.ifd=a.w;c.n=b.xyz;c.kc=b.w;c.tangent=d.xyz;
+  // Flow-only fields are not consumed by the medium or interface echo.
+  c.vessel=-1;c.rho=0.0;c.uRef=0.0;c.rRef=0.0;c.profN=0.0;
+  return c;
+}`
+    : ''
+}
 ${ELEV_SIGMA_GLSL}${LATERAL_PSF_GLSL}
 ${SPECKLE_TISSUE_GLSL}
 ${WALL_TEXTURE_GLSL}
@@ -1053,8 +1108,8 @@ ivec2 elevationTissues(vec3 plus, vec3 minus, float se, Cls center, bool withCur
   }
   return tissues;
 }
-${PLEURA_GLSL}
-${look === 'steered' ? STEERED_RAW_MAIN_GLSL : LOOK0_RAW_MAIN_GLSL}`;
+${pleuraGlsl(mediumBody, stage === 'cached')}
+${look === 'steered' ? steeredRawMainGlsl(mediumBody, stage === 'cached', init) : look0RawMainGlsl(init)}`;
 }
 
 /** Entradas de B en la mirada 0: A o0 (transmisión e impactos) y A o1 (dirección reflejada, tipo de gas). */
@@ -1075,9 +1130,10 @@ uniform float uLookSalt;    // sal del transitorio y de la cola de la mirada (co
  * donde la fracción del haz que da en el pulmón (fAir) dibuja la línea pleural, sus réplicas, la serie de
  * reverberaciones de la pared y el deslizamiento, y el resto ve el tejido de detrás de la lámina de pulmón.
  */
-const LOOK0_RAW_MAIN_GLSL = /* glsl */ `
+function look0RawMainGlsl(init: string): string {
+  return /* glsl */ `
 void main() {
-  float theta = lineTheta(vUv.x);
+${init ? `  ${init}\n` : ''}  float theta = lineTheta(vUv.x);
   vec3 dir0 = lineDir(theta);
   float r = vUv.y * uDepth;
   // Transmisión interpolada en profundidad (transLerp: sin mezclar a través de la entrada en un hueso, decisión 88);
@@ -1195,18 +1251,27 @@ void main() {
   oField = out2;
 }
 `;
+}
 
 /** main de B en una mirada dirigida: solo la rama dirigida (decisión 58). */
-const STEERED_RAW_MAIN_GLSL = /* glsl */ `${STEERED_FIELD_GLSL}
+function steeredRawMainGlsl(mediumBody: string | undefined, cached: boolean, init: string): string {
+  return /* glsl */ `${steeredFieldGlsl(mediumBody, cached)}
 void main() {
-  oField = steeredField();
+${init ? `  ${init}\n` : ''}  oField = steeredField();
 }
 `;
+}
 
 /** Pasada B de la mirada 0: la de antes de la composición, sin nada de la dirigida (decisión 58). */
 export const FRAG_RAWFIELD = rawFieldShader('look0');
 /** Pasada B de las miradas ±θ: la rama dirigida sobre el mismo preludio. */
 export const FRAG_RAWFIELD_STEERED = rawFieldShader('steered');
+export const FRAG_RAWFIELD_CLASS = rawFieldShader('look0', 'class');
+export const FRAG_RAWFIELD_CLASS_STEERED = rawFieldShader('steered', 'class');
+export const FRAG_RAWFIELD_ECHO = rawFieldShader('look0', 'echo');
+export const FRAG_RAWFIELD_ECHO_STEERED = rawFieldShader('steered', 'echo');
+export const FRAG_RAWFIELD_CACHED = rawFieldShader('look0', 'cached');
+export const FRAG_RAWFIELD_CACHED_STEERED = rawFieldShader('steered', 'cached');
 
 /**
  * Pasada C: convolución axial gaussiana (pulso) sobre el campo complejo, más las réplicas de reverberación de la

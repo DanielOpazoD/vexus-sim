@@ -343,7 +343,10 @@ describe('Forma orgánica de los vasos (decisión 90)', () => {
     // el JIT de SwiftShader (la e2e y el CI) desenrollaba el bucle de segmentos con la cota constante y un cuerpo corto, en
     // cada copia de classify: el arranque pasaba de ~55 s a ~110 s con la máquina cargada (decisión 90)
     const glsl = ANATOMY_GLSL.replace(/\s+/g, ' ');
-    const tubeLoop = glsl.slice(glsl.indexOf('for (int t = 0; t < MAX_TUBES; t++)'), glsl.indexOf('if (bestT >= 0) tubeFace('));
+    const tubeLoop = glsl.slice(
+      glsl.indexOf('for (int candidate = 0; candidate < MAX_TUBES; candidate++)'),
+      glsl.indexOf('if (bestT >= 0) tubeFace('),
+    );
     expect(tubeLoop).toContain('tubeQuery(m, t,');
     expect(tubeLoop).not.toContain('tubeFace(');
     expect(glsl.match(/tubeFace\(m, /g)).toHaveLength(1);

@@ -63,10 +63,10 @@ describe('reparto E2E íntegro y sin concurrencia dentro de SwiftShader', () => 
     expect(() => verifyShardPlans(['a', 'new'], [['a']])).toThrow();
     expect(() => verifyShardPlans(['a', 'new'], [['a'], ['new']])).not.toThrow();
   });
-  it('CI usa ocho runners y mantiene un worker, todos los gates y la política anti-flaky', () => {
+  it('CI usa doce runners y mantiene un worker, todos los gates y la política anti-flaky', () => {
     const ci = readFileSync('.github/workflows/ci.yml', 'utf8'),
       config = readFileSync('playwright.config.ts', 'utf8');
-    expect(browserShardCount(ci)).toBe(8);
+    expect(browserShardCount(ci)).toBe(12);
     expect(ci).toContain('node --import tsx tools/ci/verify-e2e-shards.ts');
     expect(ci).toContain('needs: [check, matrix-validation, e2e]');
     expect(ci).toContain('needs.matrix-validation.result');

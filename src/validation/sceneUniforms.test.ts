@@ -38,6 +38,26 @@ describe('Esquema de uniforms de la escena', () => {
     for (const name of declared) expect(used.has(name), `${name} declarado pero sin uso`).toBe(true);
   });
 
+  it('sube el índice conservador y vuelve al recorrido completo cuando no hay índice', () => {
+    const scene = new AnatomyScene(CASES[0]);
+    const sample = new PhysiologyEngine(CASES[0], scene.vesselAreas()).step();
+    for (const tubeGrid of [{ origin: [-32, 64, -96], size: [4, 5, 6] } as const, null]) {
+      const context = tubeGrid ? { origin: [...tubeGrid.origin], size: [...tubeGrid.size] } : null;
+      const values = evaluateSceneUniforms(scene, {
+        sample,
+        tubeCount: 40,
+        compression: null,
+        tubeGrid: context as { origin: [number, number, number]; size: [number, number, number] } | null,
+      });
+      const value = (name: string) => Array.from(values.find((v) => v.spec.name === name)!.data);
+      expect(value('uTubeGridEnabled')).toEqual([tubeGrid ? 1 : 0]);
+      expect(value('uTubeGridOrigin')).toEqual(tubeGrid?.origin ?? [0, 0, 0]);
+      expect(value('uTubeGridSize')).toEqual(tubeGrid?.size ?? [1, 1, 1]);
+    }
+    expect(SCENE_SAMPLERS.find((s) => s.name === 'uTubeGrid')).toEqual({ name: 'uTubeGrid', type: 'sampler2D', unit: 15 });
+    expect(SCENE_UNIFORMS_GLSL).toContain('uniform highp sampler2D uTubeGrid;');
+  });
+
   it('cada caso da valores finitos del tamaño correcto y la subida llama al setter del tipo', () => {
     for (const c of CASES) {
       const scene = new AnatomyScene(c);

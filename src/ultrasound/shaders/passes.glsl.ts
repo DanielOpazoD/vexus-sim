@@ -3,10 +3,10 @@ import { COLOR_MAP_GLSL } from '../colorMap';
 import { COLOR_WALL_FILTER_GLSL } from '../colorWallFilter';
 import { SEGMENT_TAG_STRIDE } from '../segmentTag';
 import { C_RECONSTRUCTION_MM_S } from '../../core/units';
-import { ANATOMY_GLSL } from '../../anatomy/gpu/anatomy.glsl';
+import { ANATOMY_GLSL, anatomyGlsl } from '../../anatomy/gpu/anatomy.glsl';
 import { APERTURE_GLSL, REFRACTION_GLSL, STEERED_APERTURE_GLSL } from '../aperture';
 import { COMPOUND, COMPOUND_GLSL } from '../compound';
-import { IFACE_REACH_MM, INTERFACE_ECHO_GLSL } from '../interfaceEcho';
+import { IFACE_REACH_MM, interfaceEchoGlsl } from '../interfaceEcho';
 import {
   BONE_ENTRY_DB,
   GAS_DB_PER_CM,
@@ -734,7 +734,7 @@ function fieldForGlsl(phased = false): string {
   const phase = phased ? 'ph0, g, ' : '';
   const direction = phased ? 'normalize(b0 + g / lookK2)' : 'dir';
   return /* glsl */ `vec2 ${base}(vec3 m, float se, int tissue, ${parameters}Warp w) {
-  vec2 f = ${speckle}(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP, ${phase} strongScatter(tissue));
+  vec2 f = ${speckle}(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP, ${phase}strongScatter(tissue));
   // Heterogeneidad lenta y continua del parénquima (desviación 1,15 dB a ~1,6 ciclos/cm) [EXTRAPOLACIÓN PROPIA]
   float het = 1.0;
   if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX || tissue == T_PSOAS || tissue == T_QUADRATUS) het = hetGain(m);
@@ -991,7 +991,7 @@ ivec2 elevationTissues(vec3 plus, vec3 minus, float se, Cls center, bool withCur
   return tissues;
 }
 `;
-type RawFieldStage = 'direct' | 'class' | 'elevation' | 'echo' | 'cached';
+type RawFieldStage = 'direct' | 'class' | 'elevation' | 'gradient' | 'echo' | 'cached';
 function rawFieldShader(look: Look, stage: RawFieldStage = 'direct'): string {
   const mediumBody =
     stage === 'class'
@@ -1009,13 +1009,18 @@ function rawFieldShader(look: Look, stage: RawFieldStage = 'direct'): string {
     oElevation = c.bd > se + 0.5 ? float(c.tissue) : float(classifyWith(toMaterial(side), withCurtain).tissue);
     spec = 0.0;
     return vec2(0.0);`
-        : stage === 'echo'
+        : stage === 'gradient'
           ? /* glsl */ `
+    oGradient = faceGradient(rawClass(), toMaterial(p));
+    spec = 0.0;
+    return vec2(0.0);`
+          : stage === 'echo'
+            ? /* glsl */ `
     vec3 m = toMaterial(p);
     oEcho = interfaceEcho(rawClass(), m, dir, r, se, anatomyWarpAt(p, m), withCurtain);
     spec = 0.0;
     return vec2(0.0);`
-          : undefined;
+            : undefined;
   const output =
     stage === 'class'
       ? `vec2 oField;
@@ -1024,20 +1029,24 @@ layout(location=1) out vec4 oClass1;
 layout(location=2) out vec4 oClass2;`
       : stage === 'elevation'
         ? 'vec2 oField; out float oElevation;'
-        : stage === 'echo'
-          ? 'vec2 oField; out vec2 oEcho;'
-          : 'out vec2 oField;';
+        : stage === 'gradient'
+          ? 'vec2 oField; out vec4 oGradient;'
+          : stage === 'echo'
+            ? 'vec2 oField; out vec2 oEcho;'
+            : 'out vec2 oField;';
   const init =
     stage === 'class'
       ? 'oClass0=vec4(0.0);oClass1=vec4(0.0);oClass2=vec4(0.0);'
       : stage === 'elevation'
         ? 'oElevation=0.0;'
-        : stage === 'echo'
-          ? 'oEcho=vec2(0.0);'
-          : '';
+        : stage === 'gradient'
+          ? 'oGradient=vec4(0.0);'
+          : stage === 'echo'
+            ? 'oEcho=vec2(0.0);'
+            : '';
 
   return /* glsl */ `${INTEGER_SHADER_HEADER_GLSL}
-${ANATOMY_GLSL}
+${stage === 'gradient' ? anatomyGlsl(true) : ANATOMY_GLSL}
 ${BEAM_GEOMETRY_GLSL}
 ${TISSUE_BACK_GLSL}
 ${look === 'steered' ? STEERED_RAW_INPUTS_GLSL : LOOK0_RAW_INPUTS_GLSL}${TRANSMISSION_LERP_GLSL}
@@ -1055,14 +1064,14 @@ uniform vec4 uTissueClump4[${TISSUE_VEC4}];
 ${RECEIVER_GLSL}${HARMONIC_GLSL}
 in vec2 vUv;
 ${output}
-${stage === 'elevation' || stage === 'echo' || stage === 'cached' ? RAW_CLASS_CACHE_GLSL : ''}
+${stage === 'elevation' || stage === 'gradient' || stage === 'echo' || stage === 'cached' ? RAW_CLASS_CACHE_GLSL : ''}
 ${ELEV_SIGMA_GLSL}${LATERAL_PSF_GLSL}
 ${SPECKLE_TISSUE_GLSL}
 ${WALL_TEXTURE_GLSL}
 ${REST_TEXTURE_GLSL}
 ${PORTAL_TRIADS_GLSL}
 ${RETRO_TEXTURE_GLSL}
-${INTERFACE_ECHO_GLSL}
+${interfaceEchoGlsl(stage === 'echo')}
 ${WALL_FACE_ECHO_GLSL}
 
 // Campo de dispersores con la célula ELEVACIONAL igual al grosor de corte: la
@@ -1255,6 +1264,8 @@ export const FRAG_RAWFIELD_ELEVATION = rawFieldShader('look0', 'elevation');
 export const FRAG_RAWFIELD_ELEVATION_STEERED = rawFieldShader('steered', 'elevation');
 export const FRAG_RAWFIELD_CLASS = rawFieldShader('look0', 'class');
 export const FRAG_RAWFIELD_CLASS_STEERED = rawFieldShader('steered', 'class');
+export const FRAG_RAWFIELD_GRADIENT = rawFieldShader('look0', 'gradient');
+export const FRAG_RAWFIELD_GRADIENT_STEERED = rawFieldShader('steered', 'gradient');
 export const FRAG_RAWFIELD_ECHO = rawFieldShader('look0', 'echo');
 export const FRAG_RAWFIELD_ECHO_STEERED = rawFieldShader('steered', 'echo');
 export const FRAG_RAWFIELD_CACHED = rawFieldShader('look0', 'cached');

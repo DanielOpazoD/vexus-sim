@@ -121,10 +121,6 @@ struct Cls {
   float profN;
 };
 
-uniform sampler2D uTubeGrid;
-uniform int uTubeGridEnabled;
-uniform vec3 uTubeGridOrigin;
-uniform vec3 uTubeGridSize;
 vec2 tubeGridTexel(int i) { int w=textureSize(uTubeGrid,0).x; return texelFetch(uTubeGrid,ivec2(i%w,i/w),0).rg; }
 ivec2 tubeCandidates(vec3 m) {
   if(uTubeGridEnabled==0) return ivec2(0,uTubeCount);

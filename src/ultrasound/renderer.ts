@@ -389,6 +389,7 @@ export class UltrasoundRenderer {
   private sceneValuesFor: FrameInputs['sample'] | null = null;
   private sceneValuesCompression: ProbeCompression | null = null;
   private sceneValuesTubes = -1;
+  private sceneValuesGrid: TubeGrid | null = null;
   private tMap: RenderTarget;
   private mapPixels = new Uint8Array(0);
   private mapPbo: WebGLBuffer | null = null;
@@ -838,23 +839,23 @@ export class UltrasoundRenderer {
     if (
       this.sceneValuesFor !== inputs.sample ||
       this.sceneValuesTubes !== this.tubeCount ||
+      this.sceneValuesGrid !== this.tubeGrid ||
       this.sceneValuesCompression !== inputs.compression
     ) {
       this.sceneValues = evaluateSceneUniforms(this.currentScene, {
         sample: inputs.sample,
         tubeCount: this.tubeCount,
+        tubeGrid: this.tubeGrid,
         compression: inputs.compression,
       });
       this.sceneValuesFor = inputs.sample;
       this.sceneValuesTubes = this.tubeCount;
+      this.sceneValuesGrid = this.tubeGrid;
       if (this.sceneValuesCompression !== inputs.compression) this.uploadCompressionTable(inputs.compression);
       this.sceneValuesCompression = inputs.compression;
     }
     uploadSceneUniforms(p, this.sceneValues);
-    p.tex('uTubeGrid', 15, this.tubeGridTex);
-    p.i('uTubeGridEnabled', this.tubeGrid ? 1 : 0);
-    p.v3('uTubeGridOrigin', this.tubeGrid?.origin ?? [0, 0, 0]);
-    p.v3('uTubeGridSize', this.tubeGrid?.size ?? [1, 1, 1]);
+    p.tex(SCENE_SAMPLERS[3].name, SCENE_SAMPLERS[3].unit, this.tubeGridTex);
     p.tex(SCENE_SAMPLERS[0].name, SCENE_SAMPLERS[0].unit, this.sceneTex);
     p.tex(SCENE_SAMPLERS[1].name, SCENE_SAMPLERS[1].unit, this.abdominalTex, this.gl.TEXTURE_3D);
     p.tex(SCENE_SAMPLERS[2].name, SCENE_SAMPLERS[2].unit, this.thoracicTex, this.gl.TEXTURE_3D);

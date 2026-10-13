@@ -196,6 +196,8 @@ Generado por `npm run docs:index` — no editar a mano.
 | [190](DECISIONS.md#L6906) | Descomponer los impactos Atlas en SwiftShader | vigente |
 | [191](DECISIONS.md#L6916) | Separar clasificación, eco y campo crudo Atlas en SwiftShader | vigente |
 | [192](DECISIONS.md#L6926) | Sacar la clasificación de elevación del bucle del campo crudo | vigente |
-| [194](DECISIONS.md#L6936) | Índice conservador de las envolventes vasculares y modelos explícitos en E2E | vigente |
-| [195](DECISIONS.md#L6952) | Doce grupos para la colección E2E del Atlas | vigente |
-| [196](DECISIONS.md#L6964) | Reconstruir WebGL sin borrar recursos de la generación perdida | vigente |
+| [193](DECISIONS.md#L6936) | Compartir plantillas GLSL sin cambiar los programas generados | vigente |
+| [194](DECISIONS.md#L6946) | Índice conservador de las envolventes vasculares y modelos explícitos en E2E | vigente |
+| [195](DECISIONS.md#L6962) | Doce grupos para la colección E2E del Atlas | vigente |
+| [196](DECISIONS.md#L6974) | Reconstruir WebGL sin borrar recursos de la generación perdida | vigente |
+| [197](DECISIONS.md#L6986) | Secuencias GLSL de transporte sin pérdida | vigente |

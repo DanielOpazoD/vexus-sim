@@ -315,13 +315,14 @@ describe('dos programas por pasada con miradas (WebGL falso)', () => {
     }
   });
 
-  it('la pérdida de contexto: la reconstrucción libera los seis programas y el renderizador nuevo usa los suyos', () => {
+  it('la pérdida de contexto: no borra identificadores invalidados y el renderizador nuevo usa y libera los suyos', () => {
     const { sim, frame, deleted, canvas } = rig(true);
     const before = [frame(), frame()];
     const old = new Set(before.flatMap((f) => PAIR_IDS.map((id) => f[id].program)));
     expect(old.size).toBe(6);
     sim.rebuildRenderer(canvas);
-    for (const p of old) expect(deleted.has(p!)).toBe(true);
+    // El navegador invalida la generación perdida; borrarla tras restaurar produce INVALID_OPERATION.
+    for (const p of old) expect(deleted.has(p!)).toBe(false);
     // el anillo empieza de nuevo: la mirada 0 y luego +θ, con programas nuevos y vivos
     const after = [frame(), frame()];
     after.forEach((f, look) => {
@@ -331,6 +332,9 @@ describe('dos programas por pasada con miradas (WebGL falso)', () => {
         expect(deleted.has(f[id].program!)).toBe(false);
       }
     });
+    sim.dispose();
+    for (const f of after) for (const id of PAIR_IDS) expect(deleted.has(f[id].program!)).toBe(true);
+    for (const p of old) expect(deleted.has(p!)).toBe(false);
   });
 });
 

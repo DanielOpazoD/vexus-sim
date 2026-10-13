@@ -374,8 +374,7 @@ float curtainSteerWeight(float r, float D, float fAir) { return D > 0.0 && fAir 
  * `elevSigma`, `lateralSigmaMm`, `fieldFor`, `anchoredClump`, `interfaceEcho`, `wallFaceEchoFlat`,
  * `scattererField`, `uSeed`, `uElev` y `uCurtain`). Lleva `CURTAIN_AIR_GLSL` (y con él `uHits2`).
  */
-export function pleuraGlsl(mediumBody?: string, cached = false): string {
-  return /* glsl */ `${CURTAIN_AIR_GLSL}
+export const PLEURA_GLSL = /* glsl */ `${CURTAIN_AIR_GLSL}
 uniform sampler2D uTrans2; // A o2: rayo único (x la mirada 0, y la dirigida): tope de la transmisión sin la lámina; z la
                            // fracción del haz que sobrevive a los huesos y w la de los especulares (decisiones 88 y 91)
 const float PLEURA_RP = ${glslFloat(PLEURA_RP)};
@@ -415,11 +414,9 @@ vec2 slidingField(vec3 pD, float h, float salt) {
 // especular va aparte (spec): la pasada B la multiplica por la de sus pares en la apertura (A o2.w, decisión 91; en las
 // líneas de la cortina, por la del rayo central, decisión 88).
 vec2 mediumField(vec3 p, vec3 dir, float r, float se, bool withCurtain, out float spec) {
-${
-  mediumBody ??
-  /* glsl */ `  vec3 m = toMaterial(p);
+  vec3 m = toMaterial(p);
   Warp w = anatomyWarpAt(p, m);
-  Cls c = ${cached ? 'rawClass()' : 'classifyWith(m, withCurtain)'};
+  Cls c = classifyWith(m, withCurtain);
   vec2 f0 = fieldFor(m, se, c.tissue, normalize(p - uCurvC), w);
   vec3 p1 = p + uElev * se, p2 = p - uElev * se;
   vec3 m1 = toMaterial(p1), m2 = toMaterial(p2);
@@ -434,10 +431,9 @@ ${
   field *= densityGain(m, c.tissue);
   // eco de interfaz (decisiones 57 y 65): la especular, real (fase 0 común a la cara), y la difusa sobre el fasor
   // unidad del moteado de la muestra (incoherente, anclada)
-  vec2 e = ${cached ? 'texelFetch(uRawEcho, ivec2(gl_FragCoord.xy), 0).xy' : 'interfaceEcho(c, m, dir, r, se, w, withCurtain)'};
+  vec2 e = interfaceEcho(c, m, dir, r, se, w, withCurtain);
   spec = e.x;
-  return field * (1.0 + e.y / max(length(field), 1e-6));`
-}
+  return field * (1.0 + e.y / max(length(field), 1e-6));
 }
 // La pared que copia la serie (decisión 61) en p, con el camino en dir: el prefijo de la pared de classify (piel,
 // costillas y las capas de la decisión 62, sin órganos ni tubos: la muestra está antes de la pleura), moteado
@@ -461,5 +457,3 @@ vec2 wallField(vec3 p, vec3 dir, float se, Warp w) {
   return field + vec2(WALL_COPY_FACE_GAIN * wallFaceEchoFlat(c, m, dir, w), 0.0);
 }
 `;
-}
-export const PLEURA_GLSL = pleuraGlsl();

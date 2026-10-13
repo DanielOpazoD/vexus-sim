@@ -1,7 +1,5 @@
 import { STRUCTURE_LABELS } from '../anatomy/structureIdentity';
 import { maskContours } from './anatomyContour';
-import { abdominalAtlas } from '../anatomy/abdominalAtlas';
-import { thoracicAtlas } from '../anatomy/thoracicAtlas';
 import type { Simulator } from '../app/simulator';
 import type { ProbeCompression } from '../anatomy/compression';
 import type { PhysiologySample } from '../physiology/engine';
@@ -33,12 +31,6 @@ interface MapInputs {
 const MAP_W = 96;
 const MAP_H = 128;
 const TISSUE_COLOR: Record<number, [number, number, number]> = {
-  [Tissue.Pancreas]: [213, 172, 113],
-  [Tissue.Spleen]: [153, 94, 126],
-  [Tissue.GutSubmucosa]: [220, 199, 153],
-  [Tissue.GutMuscularis]: [141, 99, 104],
-  [Tissue.SoftCapsule]: [218, 201, 171],
-  [Tissue.BladderWall]: [167, 182, 132],
   [Tissue.Air]: [15, 17, 22],
   [Tissue.Skin]: [200, 170, 150],
   [Tissue.Fat]: [214, 190, 110],
@@ -72,7 +64,6 @@ const TISSUE_COLOR: Record<number, [number, number, number]> = {
   [Tissue.Myocardium]: [150, 62, 78],
   [Tissue.Mediastinum]: [196, 170, 112],
   [Tissue.MesentericFat]: [212, 183, 112],
-  [Tissue.UnsegmentedSoftTissue]: [116, 116, 116],
 };
 const TISSUE_LABEL: Record<number, string> = {
   [Tissue.Air]: 'aire',
@@ -86,12 +77,6 @@ const TISSUE_LABEL: Record<number, string> = {
   [Tissue.VesselWallThin]: 'pared venosa',
   [Tissue.ArteryWall]: 'pared arterial',
   [Tissue.BileDuctWall]: 'pared biliar',
-  [Tissue.SoftCapsule]: 'cápsula',
-  [Tissue.Pancreas]: 'páncreas',
-  [Tissue.Spleen]: 'bazo',
-  [Tissue.GutSubmucosa]: 'pared intestinal',
-  [Tissue.GutMuscularis]: 'pared intestinal',
-  [Tissue.BladderWall]: 'vejiga',
   [Tissue.Liver]: 'hígado',
   [Tissue.Fat]: 'grasa',
   [Tissue.Muscle]: 'músculo',
@@ -114,7 +99,6 @@ const TISSUE_LABEL: Record<number, string> = {
   [Tissue.Myocardium]: 'miocardio',
   [Tissue.Mediastinum]: 'mediastino',
   [Tissue.MesentericFat]: 'grasa mesentérica',
-  [Tissue.UnsegmentedSoftTissue]: 'tejido no segmentado · estimado',
 };
 /** Cavidades del corazón (decisión 85), en el orden de `HEART_CHAMBER_IDS`: rótulo y color (derechas azules, izquierdas rojas). */
 const CHAMBER: ReadonlyArray<{ label: string; color: [number, number, number] }> = [
@@ -134,8 +118,6 @@ const SYSTEM_COLOR: Record<VesselSystem, [number, number, number]> = {
   renalVein: [90, 140, 220],
   interlobarArtery: [240, 90, 90],
   interlobarVein: [90, 140, 220],
-  systemicArtery: [240, 90, 90],
-  systemicVein: [80, 130, 220],
 };
 const vesselColor = (id: VesselId): [number, number, number] => SYSTEM_COLOR[VESSEL_META[id].system];
 const VESSEL_LABEL: Record<VesselId, string> = {
@@ -171,23 +153,6 @@ const VESSEL_LABEL: Record<VesselId, string> = {
   celiacTrunk: 'tronco celíaco',
   splenicArtery: 'art. esplénica',
   sma: 'AMS',
-  leftGastricArtery: 'gástrica izda.',
-  commonHepaticArtery: 'hepática común',
-  ima: 'AMI',
-  portalSmv: 'VMS',
-  portalSplenic: 'v. esplénica',
-  iliacArteryRight: 'ilíaca dcha.',
-  iliacArteryLeft: 'ilíaca izda.',
-  internalIliacArteryRight: 'ilíaca dcha.',
-  internalIliacArteryLeft: 'ilíaca izda.',
-  externalIliacArteryRight: 'ilíaca dcha.',
-  externalIliacArteryLeft: 'ilíaca izda.',
-  iliacVeinRight: 'ilíaca dcha.',
-  iliacVeinLeft: 'ilíaca izda.',
-  internalIliacVeinRight: 'ilíaca dcha.',
-  internalIliacVeinLeft: 'ilíaca izda.',
-  externalIliacVeinRight: 'ilíaca dcha.',
-  externalIliacVeinLeft: 'ilíaca izda.',
 };
 
 /** Tejido «sangre» como número (el mapa del Worker es un Uint8Array). */
@@ -221,7 +186,6 @@ export class CutMapView {
   private readonly tooltip: HTMLDivElement;
   private hover: { x: number; y: number } | null = null;
   private selected: { key: string; label: string; contours: ReturnType<typeof maskContours> } | null = null;
-  private shownSim: Simulator | null = null;
   private pinned: { key: string; label: string } | null = null;
   private selectionMap: CutMapResponse | null = null;
   private drawn: {
@@ -269,7 +233,6 @@ export class CutMapView {
   }
 
   private onClick = (event: MouseEvent): void => {
-    if (!this.shownSim || !this.matchesShown(this.shownSim)) return;
     const box = this.canvas.getBoundingClientRect();
     this.hover = { x: (event.clientX - box.left) / box.width, y: (event.clientY - box.top) / box.height };
     const identity = this.identityUnderPointer();
@@ -291,7 +254,6 @@ export class CutMapView {
 
   private identityUnderPointer(): { key: string; label: string } | null {
     const drawn = this.drawn;
-    if (!this.shownSim || !this.matchesShown(this.shownSim)) return null;
     if (!this.hover || !drawn || !this.canvas.clientHeight || !this.canvas.clientWidth) return null;
     const tr = drawn.transducer,
       depth = drawn.inputs.depthMm;
@@ -403,7 +365,6 @@ export class CutMapView {
 
   /** An annotation on the actual presented image; it never writes the image, color field or patient. */
   drawHighlight(canvas: HTMLCanvasElement, sim: Simulator, enabled = true): void {
-    this.shownSim = sim;
     if (!enabled) this.clearSelection();
     this.updateSelection(sim);
     delete canvas.dataset.anatomyHover;
@@ -470,8 +431,6 @@ export class CutMapView {
       type: 'init',
       referenceProfile: sim.scene.torso.profile,
       patient: sim.patient,
-      abdominalField: sim.scene.hasAbdominalAtlas ? abdominalAtlas : undefined,
-      thoracicField: thoracicAtlas,
     };
     this.worker.postMessage(init);
     this.worker.onmessage = (ev: MessageEvent<CutMapResponse | CutMapError>) => {
@@ -502,7 +461,6 @@ export class CutMapView {
 
   /** Pide un mapa nuevo a ≤ `hz` veces por segundo y dibuja el último recibido. */
   draw(sim: Simulator, nowMs: number, hz = 8): void {
-    this.shownSim = sim;
     const shown = sim.renderer.displayedFrame;
     if (!shown) return;
     // Vigilante: una petición sin respuesta en 3 s de hilo principal en marcha cuenta como caída del Worker

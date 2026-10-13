@@ -4,17 +4,11 @@ on:
     paths:
       - 'tools/anatomy/**'
       - '.github/workflows/renal-reference.yml'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.nvmrc'
   push:
     branches: [main]
     paths:
       - 'tools/anatomy/**'
       - '.github/workflows/renal-reference.yml'
-      - 'package.json'
-      - 'package-lock.json'
-      - '.nvmrc'
 permissions:
   contents: read
 jobs:
@@ -23,11 +17,6 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-      - run: npm ci
       - uses: actions/setup-python@v7
         with:
           python-version: '3.14'

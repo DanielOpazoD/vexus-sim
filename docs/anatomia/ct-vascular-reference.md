@@ -41,7 +41,6 @@ contrato de entrada (las etiquetas deben describir la fuente real):
 {
   "source": {
     "dataset": "TotalSegmentator",
-    "version": "3",
     "case": "s0028",
     "role": "fit",
     "url": "https://doi.org/10.5281/zenodo.22688904",
@@ -67,8 +66,6 @@ contrato de entrada (las etiquetas deben describir la fuente real):
   "requiredIdentities": ["aorta", "inferior_vena_cava", "portal", "hepatic_veins"]
 }
 ```
-
-`source.dataset`, `source.version` y `source.case` deben ser cadenas no vacías de la fuente efectivamente usada. La auditoría rechaza su ausencia antes de leer el TAC y conserva estos valores sin inferirlos; su salida puede pasarse directamente a `CtCaseFrame`. Para fuentes sin versión publicada, documentar un identificador verificable de la edición o distribución concreta; no inventar una versión para completar el manifiesto.
 
 `missingRequiredIdentities` indica qué identidades no tienen una etiqueta fuente
 independiente, presente y no vacía. No demuestra que el vaso esté ausente del TAC.

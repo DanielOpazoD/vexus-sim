@@ -1,5 +1,4 @@
 import type { Vec3 } from '../../core/vec3';
-import { abdominalAtlas, abdominalAtlasSdf } from '../abdominalAtlas';
 import { sdEllipsoid, spineEllipseSd, spineArchSd, smoothMax, smoothMin, type Ellipsoid, type Spine, type Torso } from '../primitives';
 import { gallbladderSdf, type GallbladderShape } from './gallbladder';
 import { RENAL_IMPRESSION_OVERLAP_MM, kidneyLocal, perirenalOuterSdf, type Kidney } from './kidney';
@@ -205,7 +204,6 @@ export function visceralFaceDistance(m: Vec3, vf: VisceralFace, torso: Torso, wa
 
 /** Hígado sin la fisura umbilical (lo que la fisura excava se clasifica como ligamento redondo). */
 export function liverBaseSdf(m: Vec3, s: LiverShape): number {
-  if (abdominalAtlas) return abdominalAtlasSdf(m, 4);
   let d = smoothMin(sdEllipsoid(m, s.liver), sdEllipsoid(m, s.liverLeft), s.liverBlendMm);
   d = smoothMax(d, -visceralFaceDistance(m, s.visceralFace, s.torso, s.wallThickness()).d, s.visceralFace.edgeRoundMm);
   d = smoothMax(d, medialCutDistance(m), MEDIAL_CUT.roundMm);
@@ -225,7 +223,6 @@ export function liverBaseSdf(m: Vec3, s: LiverShape): number {
  * cara visceral en cuña, impresión renal, fosa vesicular y fisura umbilical.
  */
 export function liverSdf(m: Vec3, s: LiverShape): number {
-  if (abdominalAtlas) return abdominalAtlasSdf(m, 4);
   const dBase = liverBaseSdf(m, s);
   return smoothMax(dBase, -umbilicalFissureSdf(m, dBase, s.umbilicalFissure), s.umbilicalFissure.roundMm);
 }
@@ -329,7 +326,6 @@ vec3 medialCutNormal(vec3 m) {
 }
 
 float liverSdf(vec3 m, out vec3 n, out float dBase) {
-  if(uAbdominalAtlasEnabled!=0){dBase=abdominalAtlasSdf(m,4);n=abdominalAtlasGradient(m,4);return dBase;}
   vec3 ln; vec3 ln2;
   float dR = sdEllipsoid(m, uLiverC, uLiverR, uLiverTaper, ln);
   float dL = sdEllipsoid(m, uLiverLC, uLiverLR, uLiverLTaper, ln2);
@@ -358,7 +354,6 @@ float liverSdf(vec3 m, out vec3 n, out float dBase) {
 }
 
 float liverSdf(vec3 m, out float dBase) {
-  if(uAbdominalAtlasEnabled!=0){dBase=abdominalAtlasSdf(m,4);return dBase;}
   vec3 ln;
   float dR = sdEllipsoid(m, uLiverC, uLiverR, uLiverTaper, ln);
   float dL = sdEllipsoid(m, uLiverLC, uLiverLR, uLiverLTaper, ln);

@@ -244,7 +244,7 @@ describe('Límites del shader con margen para crecer', () => {
     expect(rawSteered.arrays).toEqual(raw.arrays);
     expect(rawSteered.slots).toBe(raw.slots + 2);
     expect(raw.slots).toBeGreaterThan(90);
-    expect(rawSteered.slots).toBeLessThanOrEqual(135); // +3 uniforms and bounded abdomen tables; still <179 WebGL2 guard
+    expect(rawSteered.slots).toBeLessThanOrEqual(130);
   });
 
   // Composición espacial (decisión 58, T7): WebGL2 garantiza 16 unidades de textura por shader de
@@ -253,26 +253,8 @@ describe('Límites del shader con margen para crecer', () => {
   // dos de B leen además la pleura parietal de A0 (uHits2) y el rayo único de A (uTrans2), decisión 61.
   it('cada shader de fragmentos declara ≤ 16 samplers; B, A y K, los de su diseño', () => {
     for (const [name, src] of FRAGMENT_SHADERS) expect(samplersOf(src).length, name).toBeLessThanOrEqual(16);
-    expect(samplersOf(FRAG_RAWFIELD)).toEqual([
-      'uSceneTex',
-      'uAbdominalAtlas',
-      'uThoracicAtlas',
-      'uCoupling',
-      'uTrans0',
-      'uTrans1',
-      'uHits2',
-      'uTrans2',
-    ]);
-    expect(samplersOf(FRAG_RAWFIELD_STEERED)).toEqual([
-      'uSceneTex',
-      'uAbdominalAtlas',
-      'uThoracicAtlas',
-      'uCoupling',
-      'uTrans1',
-      'uTrans3',
-      'uHits2',
-      'uTrans2',
-    ]);
+    expect(samplersOf(FRAG_RAWFIELD)).toEqual(['uSceneTex', 'uCoupling', 'uTrans0', 'uTrans1', 'uHits2', 'uTrans2']);
+    expect(samplersOf(FRAG_RAWFIELD_STEERED)).toEqual(['uSceneTex', 'uCoupling', 'uTrans1', 'uTrans3', 'uHits2', 'uTrans2']);
     // A lee de A0 la dirección reflejada del espejo (uHits1) desde que A2 o1 lleva la refracción (decisión 86)
     expect(samplersOf(FRAG_TRANSMISSION)).toEqual(['uCoupling', 'uPre0', 'uPre1', 'uHits0', 'uHits1']);
     expect(samplersOf(FRAG_TRANSMISSION_STEERED)).toEqual(['uCoupling', 'uPre0', 'uPre1', 'uHits0', 'uHits1', 'uPreSteer', 'uPreSteerX']);
@@ -400,19 +382,9 @@ describe('Límites del shader con margen para crecer', () => {
   it('ningún shader inlinea classify más veces que antes de la decisión 61, ni faceGradient dentro de un bucle', () => {
     const budget: Record<string, number> = {
       FRAG_TRANS_HITS: 2,
-      // Decision190 splits A0's existing two classifier copies between two programs.
-      // Native A0 keeps its original cap; staged programs may not classify inside a loop.
-      FRAG_TRANS_HITS_GRID: 1,
-      FRAG_TRANS_HITS_REFINE: 1,
       FRAG_TRANS_SEGMENTS: 1,
       FRAG_RAWFIELD: 3,
       FRAG_RAWFIELD_STEERED: 3,
-      FRAG_RAWFIELD_CLASS: 1,
-      FRAG_RAWFIELD_CLASS_STEERED: 1,
-      FRAG_RAWFIELD_ECHO: 1,
-      FRAG_RAWFIELD_ECHO_STEERED: 1,
-      FRAG_RAWFIELD_CACHED: 1,
-      FRAG_RAWFIELD_CACHED_STEERED: 1,
       FRAG_COLOR: 1,
       FRAG_QUERY: 1,
       FRAG_TISSUEMAP: 1,
@@ -435,31 +407,6 @@ describe('Límites del shader con margen para crecer', () => {
         expect(reaches(g, body, 'facetTilt'), `${name}: facetTilt en un bucle`).toBe(false);
       }
     }
-    for (const suffix of ['', '_STEERED']) {
-      const stages = ['CLASS', 'ECHO', 'CACHED'].map((stage) => {
-        const name = `FRAG_RAWFIELD_${stage}${suffix}` as keyof typeof PASSES;
-        return glslCallGraph(PASSES[name] as string);
-      });
-      expect(stages.reduce((copies, graph) => copies + inlinedCopies(graph, 'main', 'classifyWith'), 0)).toBe(budget.FRAG_RAWFIELD);
-    }
-    const staged = [
-      PASSES.FRAG_TRANS_HITS_GRID,
-      PASSES.FRAG_TRANS_HITS_INITIAL,
-      PASSES.FRAG_TRANS_HITS_REFINE,
-      PASSES.FRAG_TRANS_HITS_FINISH,
-    ].map(glslCallGraph);
-    expect(staged.reduce((copies, graph) => copies + inlinedCopies(graph, 'main', 'classifyWith'), 0)).toBe(budget.FRAG_TRANS_HITS);
-    for (const graph of staged)
-      for (const body of loopBodies(graph)) expect(reaches(graph, body, 'classifyWith'), 'staged A0 classification in loop').toBe(false);
-    // Negative control: putting refinement back in a GPU loop restores the observed compiler hazard.
-    const loopedRefinement = PASSES.FRAG_TRANS_HITS_REFINE.replace(
-      'Cls c=classify(toMaterial(origin+dir0*mid));',
-      'for(int again=0;again<6;again++){Cls c=classify(toMaterial(origin+dir0*mid));}',
-    );
-    expect(loopedRefinement).not.toBe(PASSES.FRAG_TRANS_HITS_REFINE);
-    expect(loopBodies(glslCallGraph(loopedRefinement)).some((body) => reaches(glslCallGraph(loopedRefinement), body, 'classifyWith'))).toBe(
-      true,
-    );
     // el detector ve la regresión: la pared que copia la serie con la textura del retroperitoneo (fieldFor, no la base)
     const wallInLoop = FRAG_RAWFIELD.replace(
       'vec2 field = fieldForBase(m, se, c.tissue, normalize(p - uCurvC), w);',

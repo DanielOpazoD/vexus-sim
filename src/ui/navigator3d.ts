@@ -1,4 +1,3 @@
-import { bodySection } from '../anatomy/referenceBody';
 import * as THREE from 'three';
 import type { AnatomyScene, VesselCaliber } from '../anatomy/scene';
 import { bindRespiratoryMotion } from './navigator3d/respiratoryMotion';
@@ -230,12 +229,7 @@ export class Navigator3D {
     if (!hits.length) return null;
     const p = this.world.worldToLocal(hits[0].point.clone()); // → marco anatómico
     const t = this.anatomy.torso;
-    const z = p.z / CM;
-    const cy = t.profile ? bodySection(0, z, t.profile)[3] : (t.y0 ?? 0);
-    return {
-      phi: t.profile ? Math.atan2(p.y / CM - cy, p.x / CM) : Math.atan2((p.y / CM - cy) / t.b, p.x / CM / t.a),
-      z,
-    };
+    return { phi: Math.atan2(p.y / CM / t.b, p.x / CM / t.a), z: p.z / CM };
   }
 
   private hitMarker(e: PointerEvent): boolean {

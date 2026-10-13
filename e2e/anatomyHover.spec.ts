@@ -21,7 +21,7 @@ async function pointAt(page: Page, rgb: number[]) {
 
 test('identifica y demarca hígado/porta sin alterar señal; sale, cambia plano y revisa cine', async ({ page }, info) => {
   budget(180_000);
-  const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=legacy');
+  const errors = await bootWithoutErrors(page, '?e2e=app');
   await page.locator('.win-card').filter({ hasText: 'Porta · intrahepática' }).click();
   await withinFrames(page, 100, 'pose portal completa', async () => {
     const p = await page.evaluate(() => window.__vexusTest!.sim().pose);

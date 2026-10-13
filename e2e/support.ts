@@ -37,7 +37,7 @@ const paces = new WeakMap<Page, { bootMs: number; t0: number; f0: number }>();
  * usuario) y espera dos vueltas JS y la finalización GPU del primer cuadro. Devuelve la lista de errores de página y de consola, que cada prueba
  * exige vacía al final.
  */
-export async function bootWithoutErrors(page: Page, query = '?e2e=1&abdomen=legacy'): Promise<string[]> {
+export async function bootWithoutErrors(page: Page, query = '?e2e=1'): Promise<string[]> {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
   page.on('console', (m) => {
@@ -69,14 +69,10 @@ export async function bootWithoutErrors(page: Page, query = '?e2e=1&abdomen=lega
     // La valla se registra en el host; el adjunto conserva el bloqueo aun sin respuesta de la página.
     await expect
       .poll(
-        async () => {
-          if (startup.some((entry) => entry.stage === 'ultrasound:gpu-failed'))
-            throw new Error('arranque: ultrasound:gpu-failed; el primer cuadro no puede completar');
-          return {
-            frames: (await page.evaluate(() => window.__vexusTest?.framesRendered() ?? -1)) >= 2,
-            gpu: startup.some((entry) => entry.stage === 'ultrasound:gpu-ready'),
-          };
-        },
+        async () => ({
+          frames: (await page.evaluate(() => window.__vexusTest?.framesRendered() ?? -1)) >= 2,
+          gpu: startup.some((entry) => entry.stage === 'ultrasound:gpu-ready'),
+        }),
         {
           timeout: BOOT_MS,
           message: 'arranque: dos vueltas JS y primer cuadro confirmado por la GPU',

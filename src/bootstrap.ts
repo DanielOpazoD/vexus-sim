@@ -149,15 +149,7 @@ function setPoseManual(p: Parameters<Simulator['setPose']>[0]): void {
 // Carril izquierdo: ventanas VExUS (la sonda se desliza hasta su punto de partida), ayuda y corte plegable
 const windows = new StartPointCards($('start-points'), {
   onPick: (sp) => {
-    if (sp.id === 'portal' || (sp.id === 'portalTrunk' && sim().scene.hasAbdominalAtlas))
-      for (const cmd of portalPreset(
-        !!sim().scene.torso.profile,
-        sim().transducer.f0Doppler,
-        sim().scene.hasAbdominalAtlas,
-        sp.id === 'portalTrunk',
-      ))
-        dispatch(cmd);
-    else if (sim().scene.hasAbdominalAtlas) dispatch({ type: 'bmode', patch: { depthMm: 180, focusMm: 90 } });
+    if (sp.id === 'portal') for (const cmd of portalPreset(!!sim().scene.torso.profile, sim().transducer.f0Doppler)) dispatch(cmd);
     probeAnimator.goTo(sp);
   },
   getPose: () => sim().pose,
@@ -208,12 +200,7 @@ const input = new ProbeInput(
 let nav: Navigator3D | null = null;
 markStartup('navigator:import');
 void import('./ui/navigator3d')
-  .then(async ({ Navigator3D }) => {
-    if (sim().scene.hasAbdominalAtlas) {
-      markStartup('navigator:surface:begin');
-      await (await import('./anatomy/abdominalSurface')).loadAbdominalSurface();
-      markStartup('navigator:surface:ready');
-    }
+  .then(({ Navigator3D }) => {
     markStartup('navigator:construct');
     nav = new Navigator3D(navHost, sim().scene, sim().transducer, {
       getPose: () => sim().pose,

@@ -1,4 +1,4 @@
-import { buildTubeGrid, TUBE_GRID_WIDTH, type TubeGrid, type TubeSphere } from '../anatomy/gpu/tubeGrid';
+import { buildTubeGrid, tubeGridReach, tubeGridRegions, TUBE_GRID_WIDTH, type TubeGrid, type TubeSphere } from '../anatomy/gpu/tubeGrid';
 import { segmentGasKind } from './segmentTag';
 import { BOWEL_NODES, BOWEL_BOUNDS, BOWEL_GROUPS, BOWEL_ARC } from '../anatomy/organs/bowel';
 import { CARTILAGE_ROWS } from '../anatomy/referenceCartilageData';
@@ -440,6 +440,7 @@ export class UltrasoundRenderer {
   private tubeGridTex: WebGLTexture;
   private tubeGrid: TubeGrid | null = null;
   private tubeGridKey = '';
+  private tubeMaxRadii: number[] = [];
   private abdominalTex: WebGLTexture;
   private thoracicTex: WebGLTexture;
   private sceneData = new Float32Array(SCENE_TEX_W * SCENE_TEX_H * 4);
@@ -793,6 +794,7 @@ export class UltrasoundRenderer {
     s.bowelRadii.forEach((r, i) => this.sceneData.set([r, 0, 0, 0], (BOWEL_BASE + BOWEL_GROUPS + BOWEL_NODES.length + i) * 4));
     this.tubeGridKey = '';
     this.tubeGrid = null;
+    this.tubeMaxRadii = tubes.map(({ tube }) => Math.max(...tube.nodes.map((node) => Math.fround(node.r))));
     this.tubeCountTotal = tubes.length;
     if (this.tubeCountTotal > MAX_TUBES) throw new Error('Demasiados tubos para el shader');
     let n = 0;
@@ -924,15 +926,23 @@ export class UltrasoundRenderer {
       kept++;
     }
     this.tubeCount = kept;
-    // Caliber and velocity still update every frame; only immutable sphere membership is cached.
-    const key = keptIds.join(',');
+    // Every reach rounds UP; changing caliber/shape invalidates the index before drawing.
+    const reaches =
+      this.transmissionHitsPipeline === 'staged-atlas'
+        ? keptIds.map((original, compact) => tubeGridReach(this.sceneData, this.tubeMaxRadii[original], compact * TUBE_HEADER_TEXELS * 4))
+        : [];
+    const key = keptIds.join(',') + ';' + reaches.join(',');
     if (this.transmissionHitsPipeline === 'staged-atlas' && key !== this.tubeGridKey) {
       this.tubeGridKey = key;
       const spheres = keptIds.map((_, i): TubeSphere => {
         const j = (i * TUBE_HEADER_TEXELS + 3) * 4;
         return [this.sceneData[j], this.sceneData[j + 1], this.sceneData[j + 2], this.sceneData[j + 3]];
       });
-      this.tubeGrid = buildTubeGrid(spheres);
+      const regions = keptIds.map((_, compact) => {
+        const at = compact * TUBE_HEADER_TEXELS * 4;
+        return tubeGridRegions(this.sceneData, (NODE_BASE + this.sceneData[at]) * 4, this.sceneData[at + 1], reaches[compact]);
+      });
+      this.tubeGrid = buildTubeGrid(spheres, regions, 16) ?? buildTubeGrid(spheres, regions);
       if (this.tubeGrid) {
         const gl = this.gl;
         gl.bindTexture(gl.TEXTURE_2D, this.tubeGridTex);

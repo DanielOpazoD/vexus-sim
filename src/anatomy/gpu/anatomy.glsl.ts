@@ -73,7 +73,20 @@ const INTERFACE_DEFINES = Object.entries(INTERFACE_GLSL_NAME)
   .map(([index, name]) => `#define ${name} ${index}`)
   .join('\n');
 
-export const ANATOMY_GLSL = /* glsl */ `
+// A staged gradient evaluates the same central difference pair once per axis.
+// The negative w tag asks the echo pass to normalize the assembled vector.
+function centralFaceGradientGlsl(fn: string, axis: boolean): string {
+  return axis
+    ? /* glsl */ `
+    vec3 d = vec3(0.0); d[uGradientAxis] = FACE_GRAD_EPS;
+    return vec4(vec3(${fn}(m + d) - ${fn}(m - d)), -1.0);`
+    : /* glsl */ `
+    g = vec3(${fn}(m + h.xyy) - ${fn}(m - h.xyy),
+             ${fn}(m + h.yxy) - ${fn}(m - h.yxy),
+             ${fn}(m + h.yyx) - ${fn}(m - h.yyx));`;
+}
+export function anatomyGlsl(axisGradient = false): string {
+  return /* glsl */ `
 #define MAX_TUBES ${MAX_TUBES}
 #define MAX_NODES ${MAX_NODES}
 #define SCENE_TEX_W ${SCENE_TEX_W}
@@ -892,24 +905,21 @@ float domeSd(vec3 m) { vec3 n; return sdDome(m, n); }
 // en la grasa o la de la altura de la cúpula, y la norma de la distancia se aparta de 1 en las fusiones, junto al
 // hilio y lejos de la pleura. Cuesta 6–8 evaluaciones: la pasada B solo lo pide en las muestras al alcance de su cara.
 // Gemelo TS: AnatomyScene.faceGradient.
+${axisGradient ? 'uniform int uGradientAxis;' : ''}
 vec4 faceGradient(Cls c, vec3 m) {
   vec2 h = vec2(FACE_GRAD_EPS, 0.0);
   vec3 g;
   if (c.iface == IF_VERTEBRAL_CORTEX) {
     // Gradiente del cuerpo segmentado, también junto al platillo dentro de un disco.
-    g = vec3(spineBodySd(m + h.xyy) - spineBodySd(m - h.xyy), spineBodySd(m + h.yxy) - spineBodySd(m - h.yxy), spineBodySd(m + h.yyx) - spineBodySd(m - h.yyx));
+    ${centralFaceGradientGlsl('spineBodySd', axisGradient)}
   } else if (c.tissue == T_CAPSULE) {
-    g = vec3(liverInner(m + h.xyy) - liverInner(m - h.xyy),
-             liverInner(m + h.yxy) - liverInner(m - h.yxy),
-             liverInner(m + h.yyx) - liverInner(m - h.yyx));
+    ${centralFaceGradientGlsl('liverInner', axisGradient)}
   } else if (c.iface == IF_PERIRENAL) {
     g = perirenalOuterGradient(m);
   } else if (c.tissue == T_RENAL_CAPSULE || c.tissue == T_PERIRENAL) {
     g = kidneyOuterGradient(m);
   } else if (c.tissue == T_DIAPHRAGM) {
-    g = vec3(domeSd(m + h.xyy) - domeSd(m - h.xyy),
-             domeSd(m + h.yxy) - domeSd(m - h.yxy),
-             domeSd(m + h.yyx) - domeSd(m - h.yyx));
+    ${centralFaceGradientGlsl('domeSd', axisGradient)}
   } else if (c.iface == IF_GALLBLADDER) {
     // El gradiente exacto ya salió de classify; conserva su norma y evita seis consultas.
     float l = length(c.n);
@@ -992,3 +1002,5 @@ vec2 scattererFieldS(vec3 m, float h, float salt, vec3 s) {
 }
 vec2 scattererField(vec3 m, float h, float salt) { return scattererFieldS(m, h, salt, vec3(0.0, 1.0, 1.0)); }
 `;
+}
+export const ANATOMY_GLSL = anatomyGlsl();

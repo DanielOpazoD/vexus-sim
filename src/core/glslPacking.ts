@@ -564,6 +564,21 @@ export const GLSL_PHRASES = [
   'vec2(0.0)',
   ') || defined',
   'else if(',
+  '=min(min(',
+  '(m);if(',
+  '6.2831853*',
+  '*2.0*0.511664*',
+  '*2.0*0.429043*',
+  'vec3(0,1,',
+  '=0.0;float',
+  ';out vec4 oColor;',
+  '#elif defined(',
+  '#include <uv_vertex>',
+  'varying vec3 vViewPosition;',
+  ',scale,mean,',
+  ';return vec4(',
+  '#include <morphtarget_vertex>',
+  '#include <logdepthbuf_vertex>',
 ] as const;
 export const GLSL_MARKERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_$';
 const GLSL_BANKS = ['', '~', '!', ':', ';', '?', '%', '=', '+'];

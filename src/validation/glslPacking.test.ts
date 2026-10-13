@@ -2,7 +2,7 @@ import { dirname, join } from 'node:path';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { GLSL_WORDS, GLSL_MARKERS, glslMarker, unpackGlsl } from '../core/glslPacking';
+import { GLSL_WORDS, GLSL_PHRASES, GLSL_MARKERS, glslMarker, unpackGlsl } from '../core/glslPacking';
 import { glslPacking, packGlslTemplates } from '../../tools/build/glslPacking';
 import { threeGlslCompact } from '../../tools/build/threeGlslCompact';
 import { prepareGlslMangle, readSources, transformWithMangle } from '../../tools/build/glslMinify';
@@ -19,7 +19,12 @@ describe('transporte GLSL sin pérdida', () => {
     expect([256, 319, 320, 383, 384, 447, 448, 511].map(glslMarker)).toEqual(['@;A', '@;$', '@?A', '@?$', '@%A', '@%$', '@=A', '@=$']);
     expect(new Set(GLSL_WORDS.map((_, i) => glslMarker(i))).size).toBe(GLSL_WORDS.length);
     expect(unpackGlsl('@~! @~~A @:! @::A')).toBe('@~! @~~A @:! @::A');
-    for (const index of [-1, 512, NaN, 0.5]) expect(() => glslMarker(index)).toThrow(RangeError);
+    expect(GLSL_WORDS).toHaveLength(512);
+    expect(GLSL_PHRASES.length).toBeLessThanOrEqual(GLSL_MARKERS.length);
+    expect(unpackGlsl(GLSL_PHRASES.map((_, i) => glslMarker(512 + i)).join('\n'))).toBe(GLSL_PHRASES.join('\n'));
+    expect([512, 575].map(glslMarker)).toEqual(['@+A', '@+$']);
+    expect(unpackGlsl('@+! @++A')).toBe('@+! @++A');
+    for (const index of [-1, 576, NaN, 0.5]) expect(() => glslMarker(index)).toThrow(RangeError);
   });
   it('decodifica los diez tokens adicionales sin renombrar identificadores', () => {
     expect(unpackGlsl('@Q @R @S @T @U @V @W @X @Y @Z')).toBe(
@@ -56,7 +61,19 @@ describe('transporte GLSL sin pérdida', () => {
     const bindings = bindingNames(sources.map((s) => s.code).join('\n'));
     const compact = (p: string, c: string) => compactBindings(transformWithMangle(c, p, ctx, { compact: true }), bindings);
     const entry = join(root, 'src/ultrasound/shaders/passes.glsl.ts');
+    // El diccionario de transporte también se escanea como JS: sus frases no deben reservar
+    // nombres nuevos ni cambiar los programas antes de aplicar el empaquetado.
+    const withoutPhrases = sources.map((s) =>
+      s.path === join(root, 'src/core/glslPacking.ts')
+        ? { ...s, code: s.code.replace(/export const GLSL_PHRASES = \[[\s\S]*?\] as const;/, 'export const GLSL_PHRASES = [] as const;') }
+        : s,
+    );
+    const withoutPhraseNames = prepareGlslMangle(withoutPhrases);
+    const baseline = loadShaderGraph(entry, map, (p, c) =>
+      compactBindings(transformWithMangle(c, p, withoutPhraseNames, { compact: true }), bindings),
+    );
     const before = loadShaderGraph(entry, map, compact);
+    expect(before).toEqual(baseline);
     const after = loadShaderGraph(entry, map, (p, c) => packGlslTemplates(compact(p, c), p, root));
     let programs = 0,
       saved = 0;

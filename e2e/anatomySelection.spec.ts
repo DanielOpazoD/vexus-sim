@@ -19,10 +19,19 @@ async function liverPoint(page: Page) {
   });
 }
 
-for (const reference of [false, true])
-  test(`clic permanece en mapas/cine y salir; cancelación explícita sin alterar señal, referencia=${reference}`, async ({ page }, info) => {
+for (const model of ['legacy', 'reference', 'atlas'] as const)
+  test(`clic permanece en mapas/cine y salir; cancelación explícita sin alterar señal, modelo=${model}`, async ({ page }, info) => {
     budget(120_000);
-    const errors = await bootWithoutErrors(page, '?e2e=app' + (reference ? '&reference=1' : ''));
+    // Atlas is the default: reference=1 alone no longer selects the historical torso.
+    const errors = await bootWithoutErrors(
+      page,
+      `?e2e=app&abdomen=${model === 'atlas' ? 'atlas' : 'legacy'}${model === 'reference' ? '&reference=1' : ''}`,
+    );
+    const observedModel = await page.evaluate(() => {
+      const scene = window.__vexusTest!.sim().scene;
+      return scene.hasAbdominalAtlas ? 'atlas' : scene.torso.profile ? 'reference' : 'legacy';
+    });
+    expect(observedModel).toBe(model);
     const torso = await page.evaluate(() => window.__vexusTest!.sim().scene.torso);
     const sp = startPointsFor(torso).find((x) => x.id === 'portal')!;
     await page.locator('.win-card').filter({ hasText: 'Porta · intrahepática' }).click();

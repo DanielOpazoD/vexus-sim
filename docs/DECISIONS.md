@@ -6935,8 +6935,62 @@ Los controladores nativos identificados conservan la marcha A0 original. Si el n
 
 ## 193. Compartir plantillas GLSL sin cambiar los programas generados
 
+**Estado.** Decisión documentada en la rama del techo registrado (#224); su código y aceptación permanecen en esa rama. Se conserva aquí su número histórico antes de las decisiones194–197.
+
 **Contexto.** Integrar la elevación por etapas de la decisión192 en el techo registrado supera el presupuesto total de JavaScript:1034,1KiB frente al límite1033KiB. Parte del texto empaquetado repite las variantes central y dirigida de los campos y sus cabeceras.
 
 **Decisión.** Compartir las plantillas de campo, pared y cabeceras de precisión entre las variantes, manteniendo las expresiones originales. Marcar como GLSL las tres tablas renales existentes para que el minificador ya instalado procese sus declaraciones y usos. No cambia ningún dato renal, fórmula, muestra, resolución, presupuesto ni plazo. Los nombres usados por cadenas JavaScript siguen protegidos globalmente; las tres tablas etiquetadas dejan de ser ejemplos de consumidores externos en esa guarda.
 
 **Verificación y límites.** Los32fragmentos exportados antes y después tienen idénticos tokens al retirar comentarios y espacios. Pasan85controles existentes de minificación, renombrado, compactación, bindings, límites de shader y grafo de pasadas. La guarda coteja además los programas completos transformados con el mapa de nombres y conserva todas las cadenas JavaScript fuera del renombrado. El build vuelve al presupuesto1033KiB. La revisión independiente del código no encontró defectos accionables. Estas comprobaciones no sustituyen el check completo, las pruebas de navegador ni la CI exacta antes de integrar. No se afirma aceptación clínica del techo ni de las aproximaciones renales.
+
+## 194. Índice conservador de las envolventes vasculares y modelos explícitos en E2E
+
+**Contexto.** CI38370475018, sobre c25ffeb, conserva fallos individuales de ritmo y los ocho grupos agotan 40 minutos. Cada muestra del clasificador recorre las mismas esferas de todos los tubos compactados. En la reproducción local, la prueba de traslación además esperaba el preset hepatorrenal histórico pese a cargar el Atlas: `reference=1` por sí solo ya no selecciona el torso anterior.
+
+**Opciones.** Se descartan aumentar plazos, reducir muestras o conservar clasificaciones de cuadros anteriores. El primer ensayo de índice, anterior a la corrección de elevación 192, falló el arranque y se conserva como experimento rechazado. El índice se vuelve a evaluar sobre la elevación corregida.
+
+**Decisión.** La ruta Atlas por etapas indexa las mismas esferas conservadoras en celdas de 32 mm con margen de 1 mm. Cada celda conserva el orden ascendente de los tubos compactados. El shader conserva el descarte por esfera, las distancias y las reglas de selección. Entradas no válidas, vacías o demasiado grandes mantienen el bucle completo. La ruta nativa conserva el índice desactivado.
+
+El índice depende de las envolventes invariantes del material y del conjunto compacto visible; se invalida al cambiar la escena o esa lista. Calibres, formas y velocidades se actualizan cada cuadro. La textura RG32F usa la unidad 15 y se libera con el renderer. La actualización dinámica precede a los uniforms en render, mapa y consultas.
+
+Las E2E de selección y traslación eligen explícitamente los modelos legacy, reference y Atlas, comprueban cuál cargó y mantienen las exigencias de señal, persistencia, cancelación, orientación y movimiento. Los dos modelos históricos recuperan su cobertura real; el Atlas recibe un caso adicional en cada archivo. No cambia ningún preset ni plazo.
+
+**Consecuencias.** No cambian anatomía, física, resolución, muestras ni presupuestos. No hay caché temporal de clasificaciones. La verificación técnica no acredita fidelidad clínica ni elimina NEEDS_CALIBRATION.
+
+**Verificación.** 61 controles focalizados y build de 1031,9/1033 KiB pasan. En 60 adquisiciones congeladas con Metal —dos casos, cinco ventanas, dos compresiones y tres miradas— el índice y el bucle completo producen los mismos impactos y campo crudo, bit por bit, sin errores WebGL ni valores no finitos. La prueba hepática grave original pasa con SwiftShader, CI=true, un trabajador y cero reintentos. Otras cinco regresiones originales pasan; el fallo de traslación por modelo equivocado queda conservado. La revisión independiente confirma el orden de actualización y no identifica defectos accionables. El check completo posterior detectó declaraciones del índice fuera del esquema único y expectativas obsoletas del bucle, grafo, restauración y número de grupos; se conserva el fallo y se integran los uniforms, valores y sampler en el esquema existente. La invalidación de valores incluye la identidad del índice. Las pruebas mantienen el descarte, la cara fuera del bucle, las lecturas de escena, la liberación normal y los gates completos. La suite completa y la CI del SHA final siguen siendo condiciones de integración.
+
+## 195. Doce grupos para la colección E2E del Atlas
+
+**Contexto.** Las CI verdes 38361760302 y 38366458518 ejecutaron las 96 pruebas de main exactamente una vez, sin reintentos. Sus duraciones suman 253,3 y 244,7 minutos; algunos grupos tardan 37–38 minutos. La colección del Atlas crece a 121 pruebas tras hacer explícitos los tres modelos de la decisión 194. En CI38370475018 los ocho grupos se interrumpieron a los 40 minutos y no produjeron informes finales completos.
+
+**Opciones.** Repartir mejor no corrige los fallos individuales: se mantiene la corrección de rendimiento y de selección de modelo de la decisión 194. Tampoco se amplían los plazos ni se omiten pruebas para encajar la colección.
+
+**Decisión.** Se distribuye la misma colección completa entre doce corredores con un trabajador por corredor. El plan ponderado sigue recolectando las listas reales de Playwright y verifica una unión exacta, sin duplicados ni omisiones. Se conservan los 40 minutos por trabajo, todos los plazos individuales, failOnFlakyTests y la exigencia de cero reintentos en el veredicto protegido.
+
+**Consecuencias.** Aumenta el paralelismo disponible; cada prueba sigue ejecutándose una vez. No se considera verde una ejecución incompleta, reintentada o fallida. Los auxiliares y la cobertura siguen siendo obligatorios.
+
+**Verificación.** El verificador del repositorio deriva el número de grupos de la matriz efectiva, exige un informe de ejecución por grupo y reconcilia los IDs con el checkout real de CI. La validación de la colección y el resultado remoto del SHA final deben acompañar la integración.
+
+## 196. Reconstruir WebGL sin borrar recursos de la generación perdida
+
+**Contexto.** La E2E original de recuperación falla en CI38370475018 y en SwiftShader local sobre el índice de la decisión 194. El arranque termina, pero tras restaurar el contexto queda el aviso «No se pudo recuperar la GPU: No se pudo subir el atlas abdominal», incluso con el torso histórico. No es un plazo de compilación agotado.
+
+**Opciones.** Se descartan ampliar el plazo, retirar la comprobación de subida del Atlas o vaciar silenciosamente los errores WebGL. Un diagnóstico aislado en Metal reproduce el fallo; al registrar y consumir los errores inmediatamente después de cada borrado de recursos viejos, aparecen INVALID_OPERATION y desaparece el fallo posterior de subida. Ese drenaje es solo un instrumento causal y no se adopta.
+
+**Decisión.** `Simulator.rebuildRenderer`, llamado exclusivamente al restaurar el contexto perdido, construye el nuevo renderer sin ejecutar `dispose` sobre los identificadores de la generación anterior. El navegador ya invalidó sus recursos. El renderer viejo deja de estar referenciado; el cierre normal de un renderer vigente conserva toda su liberación explícita.
+
+**Consecuencias.** La subida del Atlas sigue comprobando errores; no se ocultan fallos ni se cambia la señal, el paciente o el reloj. La regresión exige recuperación efectiva y avance de cuadros tanto para legacy como para Atlas, con los mismos plazos, registro del evento de pérdida y ausencia de errores adicionales. La colección completa pasa a 122 pruebas.
+
+**Verificación.** Se conservan la traza del fallo original en SwiftShader y las dos ejecuciones diagnósticas en Metal, una sin intervención y otra con lectura de errores por operación. La corrección debe pasar las E2E sin instrumentación, el check completo y la CI del SHA final antes de integrarse.
+
+## 197. Secuencias GLSL de transporte sin pérdida
+
+**Contexto.** Las pasadas adicionales necesarias para contener la compilación en SwiftShader dejan poco margen en el presupuesto de 1033 KiB. En el experimento de gradiente de #224 el build de 1034,4 KiB lo excede. Ampliar solo el diccionario de palabras ofrece unos 818 bytes estimados; cambiar su representación a una cadena dividida no aporta una reducción efectiva suficiente.
+
+**Opciones.** Se conserva el presupuesto y se descartan reducir física, muestras, comprobaciones o dependencias de la colección. Un primer grupo de secuencias contenía nombres cortos reservados del compactador de uniforms: la guarda existente rechazó esa colisión. Se retiran esas entradas, sin modificar la guarda. La comparación con el commit anterior detectó además siete secuencias que reservaban identificadores nuevos y cambiaban el mapa global de nombres GLSL; también se descartan y se añade una regresión contra ese efecto.
+
+**Decisión.** El empaquetado existente añade 49 secuencias estáticas de varios tokens, en un noveno banco con prefijo `+`. Los 512 códigos de palabra anteriores mantienen su correspondencia. El build codifica primero palabras y luego sustituye secuencias literales; el decodificador restaura el texto original en una sola pasada antes de compilar GLSL. Las interpolaciones conservan evaluación, coerción y orden; las piezas con barras de escape, marcadores o comillas de plantilla siguen fuera del empaquetado.
+
+**Consecuencias.** Cambia exclusivamente el transporte del texto, sin cambiar ecuaciones, geometría ni programas decodificados. No añade dependencias ni trabajo por cuadro. Las secuencias que dejan de aparecer simplemente dejan de ahorrar bytes.
+
+**Verificación.** El experimento inicial de #224 pasó 70 controles focalizados; el diccionario final debe revalidarse con el check completo. Los 35 exports, incluidos 33 programas ensamblados de #219, coinciden byte por byte con el commit anterior db00f8e. La comparación incluye todos los programas propios ensamblados y más de cien exports GLSL de Three, idénticos byte por byte frente al build sin empaquetar. Los códigos anteriores, límites, prefijos inválidos y coerción conservan sus guardas. La revisión independiente no encuentra defectos accionables. La integración exige además comparar los programas con el commit anterior y ejecutar el check completo del SHA final; esta reducción no acredita fidelidad clínica.

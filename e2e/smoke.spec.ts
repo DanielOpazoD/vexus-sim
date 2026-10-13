@@ -345,26 +345,27 @@ test('modos por teclado, pestaña Medir y captura de una medición', async ({ pa
   expect(errors).toEqual([]);
 });
 
-test('sobrevive a la pérdida del contexto WebGL: avisa, se recupera y el reloj sigue', async ({ page }) => {
-  // la recuperación vuelve a compilar todos los programas: dos arranques
-  budget(60_000, 2);
-  const errors = await bootWithoutErrors(page);
-  // la pérdida provocada queda en el registro de errores de la aplicación, como debe
-  expectLoggedErrors(page, [/^gpu: contexto WebGL perdido$/]);
-  await page.evaluate(() => {
-    const gl = (document.getElementById('gl') as HTMLCanvasElement).getContext('webgl2')!;
-    const ext = gl.getExtension('WEBGL_lose_context')!;
-    (window as unknown as { __lc: WEBGL_lose_context }).__lc = ext;
-    ext.loseContext();
+for (const model of ['legacy', 'atlas'] as const)
+  test(`sobrevive a la pérdida del contexto WebGL: avisa, se recupera y el reloj sigue (${model})`, async ({ page }) => {
+    // la recuperación vuelve a compilar todos los programas: dos arranques
+    budget(60_000, 2);
+    const errors = await bootWithoutErrors(page, `?e2e=1&abdomen=${model}`);
+    // la pérdida provocada queda en el registro de errores de la aplicación, como debe
+    expectLoggedErrors(page, [/^gpu: contexto WebGL perdido$/]);
+    await page.evaluate(() => {
+      const gl = (document.getElementById('gl') as HTMLCanvasElement).getContext('webgl2')!;
+      const ext = gl.getExtension('WEBGL_lose_context')!;
+      (window as unknown as { __lc: WEBGL_lose_context }).__lc = ext;
+      ext.loseContext();
+    });
+    // el evento de pérdida llega del proceso de la GPU, sin cuadros de por medio
+    await expect(page.locator('.banner')).toContainText('Contexto GPU perdido', { timeout: 30_000 });
+    await page.evaluate(() => (window as unknown as { __lc: WEBGL_lose_context }).__lc.restoreContext());
+    // recompila los programas, como al arrancar
+    await expect(page.locator('.banner')).toHaveCount(0, { timeout: BOOT_MS });
+    await clockRuns(page, 'el reloj sigue, con cuadros completos, tras recuperar el contexto');
+    expect(errors).toEqual([]);
   });
-  // el evento de pérdida llega del proceso de la GPU, sin cuadros de por medio
-  await expect(page.locator('.banner')).toContainText('Contexto GPU perdido', { timeout: 30_000 });
-  await page.evaluate(() => (window as unknown as { __lc: WEBGL_lose_context }).__lc.restoreContext());
-  // recompila los programas, como al arrancar
-  await expect(page.locator('.banner')).toHaveCount(0, { timeout: BOOT_MS });
-  await clockRuns(page, 'el reloj sigue, con cuadros completos, tras recuperar el contexto');
-  expect(errors).toEqual([]);
-});
 
 test('el speckle del parénquima hepático tiene la estadística del hígado: casi de Rayleigh, con la cola de sus dispersores fuertes', async ({
   page,

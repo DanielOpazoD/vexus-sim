@@ -1,3 +1,4 @@
+import type { TubeGrid } from './tubeGrid';
 import type { ProbeCompression } from '../compression';
 import { RespiratoryDeformation } from '../deformation';
 import { GALLBLADDER_NODES } from '../organs/gallbladder';
@@ -23,6 +24,8 @@ const SIZE: Record<GlslType, number> = { float: 1, int: 1, vec2: 2, vec3: 3, vec
 export interface UniformContext {
   sample: PhysiologySample;
   tubeCount: number;
+  /** Índice conservador de los tubos compactos; ausente: recorrido completo. */
+  tubeGrid?: Pick<TubeGrid, 'origin' | 'size'> | null;
   /** Contacto de la sonda del cuadro (decisión 63); null: sin compresión (uCompC.w = 0). */
   compression: ProbeCompression | null;
 }
@@ -181,6 +184,9 @@ export const SCENE_UNIFORMS: readonly UniformSpec[] = [
   },
   /** tubos en la lista del cuadro */
   { name: 'uTubeCount', type: 'int', value: (_s, c) => [c.tubeCount] },
+  { name: 'uTubeGridEnabled', type: 'int', value: (_s, c) => [c.tubeGrid ? 1 : 0] },
+  { name: 'uTubeGridOrigin', type: 'vec3', value: (_s, c) => c.tubeGrid?.origin ?? [0, 0, 0] },
+  { name: 'uTubeGridSize', type: 'vec3', value: (_s, c) => c.tubeGrid?.size ?? [1, 1, 1] },
   {
     name: 'uResp',
     type: 'vec4',
@@ -220,6 +226,7 @@ export const SCENE_SAMPLERS = [
   { name: 'uSceneTex', type: 'sampler2D', unit: 6 },
   { name: 'uAbdominalAtlas', type: 'sampler3D', unit: 8 },
   { name: 'uThoracicAtlas', type: 'sampler3D', unit: 9 },
+  { name: 'uTubeGrid', type: 'sampler2D', unit: 15 },
 ] as const;
 
 /** Declaraciones GLSL generadas del esquema y sus samplers. */

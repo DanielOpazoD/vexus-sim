@@ -1,6 +1,6 @@
 import { dirname, join, relative } from 'node:path';
 import type { Plugin } from 'vite';
-import { GLSL_WORDS, glslMarker } from '../../src/core/glslPacking';
+import { GLSL_WORDS, GLSL_PHRASES, glslMarker } from '../../src/core/glslPacking';
 import { findGlslTemplates, scanModule } from './glslMinify';
 
 /** Encode static pieces only: dynamic interpolations retain their original evaluation/coercion. */
@@ -11,12 +11,16 @@ export function packGlslTemplates(code: string, id: string, root: string): strin
   let used = false;
   let out = code;
   const words = new RegExp(`\\b(?:${GLSL_WORDS.join('|')})\\b`, 'g');
+  const encodeWords = (source: string) =>
+    source.replace(words, (word) => glslMarker(GLSL_WORDS.indexOf(word as (typeof GLSL_WORDS)[number])));
+  const phrases = GLSL_PHRASES.map((phrase, i) => [encodeWords(phrase), glslMarker(512 + i)] as const);
   for (const t of findGlslTemplates(code).reverse()) {
     const parts = t.statics.map((raw) => {
       // Preserve JS escapes literally; marker collisions remain on the ordinary path.
       if (/[\\@`]/.test(raw)) return raw;
       const cooked = raw.replace(/\r\n?/g, '\n');
-      const packed = cooked.replace(words, (word) => glslMarker(GLSL_WORDS.indexOf(word as (typeof GLSL_WORDS)[number])));
+      let packed = encodeWords(cooked);
+      for (const [phrase, marker] of phrases) packed = packed.split(phrase).join(marker);
       const expression = '${' + alias + '(' + JSON.stringify(packed) + ')}';
       if (expression.length + 16 >= raw.length) return raw;
       used = true;

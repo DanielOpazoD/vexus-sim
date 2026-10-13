@@ -513,8 +513,60 @@ export const GLSL_WORDS = [
   'FINGER',
   'fwidth',
 ] as const;
+/** Frequent static sequences; transport only, expanded byte-for-byte before compilation. */
+export const GLSL_PHRASES = [
+  'const in vec3',
+  'const in float',
+  'void main(){',
+  'vec3(0.0)',
+  'for(int i=0;',
+  '0.0,1.0',
+  '#if defined(',
+  ') || defined(',
+  '#include <common>',
+  '(vec3 m){',
+  ';for(int',
+  ',1)).xy;',
+  ';layout(location=',
+  ',ivec2(line,',
+  'vec2(0.0);',
+  ',out float',
+  '}else if(',
+  '){c.tissue=',
+  ';c.ifd=',
+  '>=0.0&&',
+  ')out vec4',
+  '(vec3 p,int k',
+  '(vec3 m,float',
+  ',out vec3',
+  'withCurtain)',
+  'uniform float opacity;',
+  '*(3.0-2.0*',
+  'classifyWith(',
+  '#include <begin_vertex>',
+  '0.0);float',
+  '#include <project_vertex>',
+  '+0.5)*step',
+  '#pragma unroll_loop_end',
+  'registered.',
+  'vec4 h=vec4(diffuse,',
+  '#pragma unroll_loop_start',
+  '++){if(',
+  '0.0,0.0',
+  ',1.0);}',
+  ')/(2.0*',
+  'vec3(0.0,',
+  '0.0);vec3',
+  '1.0,0.0)',
+  ',bool withCurtain',
+  ',vec3(0.0',
+  ',0),0);',
+  'vec2(0.0)',
+  ') || defined',
+  'else if(',
+] as const;
 export const GLSL_MARKERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_$';
-const GLSL_BANKS = ['', '~', '!', ':', ';', '?', '%', '='];
+const GLSL_BANKS = ['', '~', '!', ':', ';', '?', '%', '=', '+'];
 /** Stable short codes for the first bank; a prefix selects subsequent banks without changing existing codes. */
 export function glslMarker(index: number): string {
   if (!Number.isInteger(index) || index < 0 || index >= GLSL_BANKS.length * GLSL_MARKERS.length)
@@ -522,8 +574,8 @@ export function glslMarker(index: number): string {
   return '@' + GLSL_BANKS[Math.floor(index / GLSL_MARKERS.length)] + GLSL_MARKERS[index % GLSL_MARKERS.length];
 }
 export function unpackGlsl(s: string): string {
-  return s.replace(
-    /@([~!:;?%=]?)([A-Za-z0-9_$])/g,
-    (original, bank: string, c: string) => GLSL_WORDS[GLSL_MARKERS.indexOf(c) + GLSL_BANKS.indexOf(bank) * GLSL_MARKERS.length] ?? original,
-  );
+  return s.replace(/@([~!:;?%=+]?)([A-Za-z0-9_$])/g, (original, bank: string, c: string) => {
+    const index = GLSL_MARKERS.indexOf(c) + GLSL_BANKS.indexOf(bank) * GLSL_MARKERS.length;
+    return (index < 512 ? GLSL_WORDS[index] : GLSL_PHRASES[index - 512]) ?? original;
+  });
 }

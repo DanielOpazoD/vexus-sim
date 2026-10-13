@@ -1,3 +1,4 @@
+import { buildTubeGrid, TUBE_GRID_WIDTH, type TubeGrid, type TubeSphere } from '../anatomy/gpu/tubeGrid';
 import { segmentGasKind } from './segmentTag';
 import { BOWEL_NODES, BOWEL_BOUNDS, BOWEL_GROUPS, BOWEL_ARC } from '../anatomy/organs/bowel';
 import { CARTILAGE_ROWS } from '../anatomy/referenceCartilageData';
@@ -388,6 +389,7 @@ export class UltrasoundRenderer {
   private sceneValuesFor: FrameInputs['sample'] | null = null;
   private sceneValuesCompression: ProbeCompression | null = null;
   private sceneValuesTubes = -1;
+  private sceneValuesGrid: TubeGrid | null = null;
   private tMap: RenderTarget;
   private mapPixels = new Uint8Array(0);
   private mapPbo: WebGLBuffer | null = null;
@@ -435,6 +437,9 @@ export class UltrasoundRenderer {
   }
   /** Textura de datos de la escena (cabeceras de tubos + nodos, decisión 24). */
   private sceneTex: WebGLTexture;
+  private tubeGridTex: WebGLTexture;
+  private tubeGrid: TubeGrid | null = null;
+  private tubeGridKey = '';
   private abdominalTex: WebGLTexture;
   private thoracicTex: WebGLTexture;
   private sceneData = new Float32Array(SCENE_TEX_W * SCENE_TEX_H * 4);
@@ -625,6 +630,7 @@ export class UltrasoundRenderer {
     this.tColorRaw = createTarget(gl, COLOR_W, COLOR_H, [f]);
     this.tMap = createTarget(gl, MAP_W, MAP_H, [{ internal: gl.RGBA8, format: gl.RGBA, type: gl.UNSIGNED_BYTE, filter: gl.NEAREST }]);
     this.couplingTex = createTexture(gl, LINES, 1, gl.R32F, gl.RED, gl.FLOAT, gl.LINEAR);
+    this.tubeGridTex = createTexture(gl, 1, 1, gl.RG32F, gl.RG, gl.FLOAT, gl.NEAREST);
     this.sceneTex = createTexture(gl, SCENE_TEX_W, SCENE_TEX_H, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
     this.abdominalTex = createAbdominalTexture(gl, this.currentScene.hasAbdominalAtlas);
     this.thoracicTex = createAbdominalTexture(gl, this.currentScene.hasAbdominalAtlas, true);
@@ -671,9 +677,9 @@ export class UltrasoundRenderer {
   }
 
   /**
-   * Libera programas, texturas, FBO y el PBO del mapa. Obligatorio al reconstruir tras una
-   * pérdida de contexto o al cerrar: el canvas es el mismo y los recursos no liberados se
-   * acumulan en la GPU. (El cambio de caso usa `setScene`.)
+   * Libera programas, texturas, FBO y el PBO del mapa al cerrar un renderer vigente.
+   * Tras perder el contexto, sus recursos ya son inválidos: la reconstrucción no debe
+   * borrarlos sobre el contexto restaurado. (El cambio de caso usa `setScene`.)
    */
   dispose(): void {
     const gl = this.gl;
@@ -728,6 +734,7 @@ export class UltrasoundRenderer {
     if (this.tPersist) for (const t of this.tPersist) deleteTarget(gl, t);
     gl.deleteTexture(this.couplingTex);
     gl.deleteTexture(this.sceneTex);
+    gl.deleteTexture(this.tubeGridTex);
     gl.deleteTexture(this.abdominalTex);
     gl.deleteTexture(this.thoracicTex);
     if (this.mapPending) gl.deleteSync(this.mapPending.sync);
@@ -784,6 +791,8 @@ export class UltrasoundRenderer {
     BOWEL_BOUNDS.forEach((row, i) => this.sceneData.set(row, (BOWEL_BASE + i) * 4));
     BOWEL_NODES.forEach((p, i) => this.sceneData.set([...p, BOWEL_ARC[i]], (BOWEL_BASE + BOWEL_GROUPS + i) * 4));
     s.bowelRadii.forEach((r, i) => this.sceneData.set([r, 0, 0, 0], (BOWEL_BASE + BOWEL_GROUPS + BOWEL_NODES.length + i) * 4));
+    this.tubeGridKey = '';
+    this.tubeGrid = null;
     this.tubeCountTotal = tubes.length;
     if (this.tubeCountTotal > MAX_TUBES) throw new Error('Demasiados tubos para el shader');
     let n = 0;
@@ -830,19 +839,23 @@ export class UltrasoundRenderer {
     if (
       this.sceneValuesFor !== inputs.sample ||
       this.sceneValuesTubes !== this.tubeCount ||
+      this.sceneValuesGrid !== this.tubeGrid ||
       this.sceneValuesCompression !== inputs.compression
     ) {
       this.sceneValues = evaluateSceneUniforms(this.currentScene, {
         sample: inputs.sample,
         tubeCount: this.tubeCount,
+        tubeGrid: this.tubeGrid,
         compression: inputs.compression,
       });
       this.sceneValuesFor = inputs.sample;
       this.sceneValuesTubes = this.tubeCount;
+      this.sceneValuesGrid = this.tubeGrid;
       if (this.sceneValuesCompression !== inputs.compression) this.uploadCompressionTable(inputs.compression);
       this.sceneValuesCompression = inputs.compression;
     }
     uploadSceneUniforms(p, this.sceneValues);
+    p.tex(SCENE_SAMPLERS[3].name, SCENE_SAMPLERS[3].unit, this.tubeGridTex);
     p.tex(SCENE_SAMPLERS[0].name, SCENE_SAMPLERS[0].unit, this.sceneTex);
     p.tex(SCENE_SAMPLERS[1].name, SCENE_SAMPLERS[1].unit, this.abdominalTex, this.gl.TEXTURE_3D);
     p.tex(SCENE_SAMPLERS[2].name, SCENE_SAMPLERS[2].unit, this.thoracicTex, this.gl.TEXTURE_3D);
@@ -885,6 +898,7 @@ export class UltrasoundRenderer {
     const fr = inputs.frame;
     const total = this.tubeCountTotal;
     let kept = 0;
+    const keptIds: number[] = [];
     for (let i = 0; i < total; i++) {
       const b = s.tubeBounds[i];
       const d =
@@ -906,9 +920,25 @@ export class UltrasoundRenderer {
         // H4: la forma orgánica con la dilatación del instante (la vena distendida se redondea, decisión 90)
         if (v.tube.shape) this.sceneData.set(tubeShapeTexel(v.tube, scale), dst + 16);
       }
+      keptIds.push(i);
       kept++;
     }
     this.tubeCount = kept;
+    // Caliber and velocity still update every frame; only immutable sphere membership is cached.
+    const key = keptIds.join(',');
+    if (this.transmissionHitsPipeline === 'staged-atlas' && key !== this.tubeGridKey) {
+      this.tubeGridKey = key;
+      const spheres = keptIds.map((_, i): TubeSphere => {
+        const j = (i * TUBE_HEADER_TEXELS + 3) * 4;
+        return [this.sceneData[j], this.sceneData[j + 1], this.sceneData[j + 2], this.sceneData[j + 3]];
+      });
+      this.tubeGrid = buildTubeGrid(spheres);
+      if (this.tubeGrid) {
+        const gl = this.gl;
+        gl.bindTexture(gl.TEXTURE_2D, this.tubeGridTex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG32F, TUBE_GRID_WIDTH, this.tubeGrid.height, 0, gl.RG, gl.FLOAT, this.tubeGrid.data);
+      }
+    }
     const gl = this.gl;
     gl.bindTexture(gl.TEXTURE_2D, this.sceneTex);
     // Solo las cabeceras (NODE_BASE texels) cambian por cuadro

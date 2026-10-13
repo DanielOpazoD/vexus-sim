@@ -1,3 +1,4 @@
+import { buildTubeGrid, TUBE_GRID_PITCH_MM, type TubeGrid } from './gpu/tubeGrid';
 import { hepaticCostalBody } from './hepaticCostalWall';
 import { thoracicAtlas, thoracicValue, thoracicMaterial, thoracicSdf, thoracicFrame } from './thoracicAtlas';
 import { BOWEL_FIELD_REACH_MM, BOWEL_WALL_MM, bowelQuery, bowelGasSdf, bowelRadii } from './organs/bowel';
@@ -279,6 +280,8 @@ export class AnatomyScene {
   readonly vesselById: Map<VesselId, VesselDef>;
   /** Esferas envolventes de vasos y conductos, en el mismo orden que la GPU (vasos, luego conductos). */
   readonly tubeBounds: Array<{ center: Vec3; r: number }>;
+  /** Conservative material-space candidates; the original sphere test and tie order still decide. */
+  private readonly cpuTubeGrid: TubeGrid | null;
 
   constructor(patient: PatientState, registeredBody?: Float32Array) {
     const fat = patient.habitus.subcutaneousFatMm;
@@ -449,6 +452,9 @@ export class AnatomyScene {
       ...this.vessels.map((v) => tubeBoundingSphere(v.tube, v.wallMm + 2)),
       ...this.ducts.map((d) => tubeBoundingSphere(d.tube, d.wallMm + 2)),
     ];
+    this.cpuTubeGrid = this.hasAbdominalAtlas
+      ? buildTubeGrid(this.tubeBounds.map(({ center, r }) => [center[0], center[1], center[2], r]))
+      : null;
   }
 
   /** Distancia con signo a la cara visceral (positiva dentro del hígado, por encima de ella). */
@@ -939,22 +945,34 @@ export class AnatomyScene {
   private bestTube(m: Vec3, caliber: VesselCaliber): BestTube | null {
     let bestVessel: ({ def: VesselDef } & TubeFound) | null = null;
     let bestDuct: ({ def: DuctDef } & TubeFound) | null = null;
-    for (let i = 0; i < this.vessels.length; i++) {
+    const grid = m.every(Number.isFinite) ? this.cpuTubeGrid : null;
+    let first = 0,
+      count = this.tubeBounds.length;
+    if (grid) {
+      const x = Math.floor((m[0] - grid.origin[0]) / TUBE_GRID_PITCH_MM);
+      const y = Math.floor((m[1] - grid.origin[1]) / TUBE_GRID_PITCH_MM);
+      const z = Math.floor((m[2] - grid.origin[2]) / TUBE_GRID_PITCH_MM);
+      if (x < 0 || y < 0 || z < 0 || x >= grid.size[0] || y >= grid.size[1] || z >= grid.size[2]) return null;
+      const cell = 2 * (x + grid.size[0] * (y + grid.size[1] * z));
+      first = grid.data[cell];
+      count = grid.data[cell + 1];
+    }
+    for (let candidate = 0; candidate < count; candidate++) {
+      const i = grid ? grid.data[2 * (first + candidate)] : candidate;
       const b = this.tubeBounds[i];
       if (Math.hypot(m[0] - b.center[0], m[1] - b.center[1], m[2] - b.center[2]) > b.r) continue;
-      const def = this.vessels[i];
-      const scale = caliber.radiusScale(def.id);
-      const apScale = vesselApScale(def.id, def.tube.apScale, caliber);
-      const tube = apScale === def.tube.apScale ? def.tube : { ...def.tube, apScale };
-      const hit = tubeQuery(m, tube, scale);
-      if (hit.d < wallThicknessMm(def, hit.r) && (!bestVessel || hit.d < bestVessel.hit.d)) bestVessel = { def, hit, tube, scale };
-    }
-    for (let i = 0; i < this.ducts.length; i++) {
-      const b = this.tubeBounds[this.vessels.length + i];
-      if (Math.hypot(m[0] - b.center[0], m[1] - b.center[1], m[2] - b.center[2]) > b.r) continue;
-      const def = this.ducts[i];
-      const hit = tubeQuery(m, def.tube, 1);
-      if (hit.d < def.wallMm && (!bestDuct || hit.d < bestDuct.hit.d)) bestDuct = { def, hit, tube: def.tube, scale: 1 };
+      if (i < this.vessels.length) {
+        const def = this.vessels[i];
+        const scale = caliber.radiusScale(def.id);
+        const apScale = vesselApScale(def.id, def.tube.apScale, caliber);
+        const tube = apScale === def.tube.apScale ? def.tube : { ...def.tube, apScale };
+        const hit = tubeQuery(m, tube, scale);
+        if (hit.d < wallThicknessMm(def, hit.r) && (!bestVessel || hit.d < bestVessel.hit.d)) bestVessel = { def, hit, tube, scale };
+      } else {
+        const def = this.ducts[i - this.vessels.length];
+        const hit = tubeQuery(m, def.tube, 1);
+        if (hit.d < def.wallMm && (!bestDuct || hit.d < bestDuct.hit.d)) bestDuct = { def, hit, tube: def.tube, scale: 1 };
+      }
     }
     if (bestDuct && (!bestVessel || bestDuct.hit.d < bestVessel.hit.d)) return { kind: 'duct', ...bestDuct };
     return bestVessel ? { kind: 'vessel', ...bestVessel } : null;

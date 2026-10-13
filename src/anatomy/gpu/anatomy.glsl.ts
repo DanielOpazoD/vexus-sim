@@ -1,3 +1,4 @@
+import { TUBE_GRID_PITCH_MM } from './tubeGrid';
 import { THORACIC_GLSL } from '../thoracicAtlas';
 import { SCENE_TUBE_CAPACITY } from '../tubeCapacity';
 import { RESPIRATORY_INVERSE_STEPS } from '../deformation';
@@ -120,6 +121,17 @@ struct Cls {
   float profN;
 };
 
+uniform sampler2D uTubeGrid;
+uniform int uTubeGridEnabled;
+uniform vec3 uTubeGridOrigin;
+uniform vec3 uTubeGridSize;
+vec2 tubeGridTexel(int i) { int w=textureSize(uTubeGrid,0).x; return texelFetch(uTubeGrid,ivec2(i%w,i/w),0).rg; }
+ivec2 tubeCandidates(vec3 m) {
+  if(uTubeGridEnabled==0) return ivec2(0,uTubeCount);
+  ivec3 q=ivec3(floor((m-uTubeGridOrigin)/${TUBE_GRID_PITCH_MM.toFixed(1)})),size=ivec3(uTubeGridSize);
+  if(any(lessThan(q,ivec3(0)))||any(greaterThanEqual(q,size)))return ivec2(0);
+  return ivec2(tubeGridTexel(q.x+size.x*(q.y+size.y*q.z)));
+}
 vec4 sceneTexel(int i) { return texelFetch(uSceneTex, ivec2(i % SCENE_TEX_W, i / SCENE_TEX_W), 0); }
 
 ${THORACIC_GLSL}
@@ -612,8 +624,10 @@ void classifyInside(vec3 m, bool withCurtain, float depth, vec3 tn, float dSpine
   }
   // Vasos y conductos (descarte por esfera envolvente)
   int bestT = -1; float bestD = 1e9; float bRho; float bR; int bSeg = 0; float bSegS = 0.0; float bSegArc = 0.0;
-  for (int t = 0; t < MAX_TUBES; t++) {
-    if (t >= uTubeCount) break;
+  ivec2 candidates=tubeCandidates(m);
+  for (int candidate = 0; candidate < MAX_TUBES; candidate++) {
+    if (candidate >= candidates.y) break;
+    int t=uTubeGridEnabled!=0?int(tubeGridTexel(candidates.x+candidate).x):candidate;
     vec4 bs = sceneTexel(t * TUBE_HDR + 3);
     if (distance(m, bs.xyz) > bs.w) continue;
     float rho; float rl; int sg; float ss; float sa;

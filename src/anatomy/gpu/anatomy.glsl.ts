@@ -1,5 +1,4 @@
 import { GALLBLADDER_WALL_MM } from '../organs/gallbladder';
-import { TUBE_GRID_PITCH_MM } from './tubeGrid';
 import { THORACIC_GLSL } from '../thoracicAtlas';
 import { SCENE_TUBE_CAPACITY } from '../tubeCapacity';
 import { RESPIRATORY_INVERSE_STEPS } from '../deformation';
@@ -138,7 +137,7 @@ struct Cls {
 vec2 tubeGridTexel(int i) { int w=textureSize(uTubeGrid,0).x; return texelFetch(uTubeGrid,ivec2(i%w,i/w),0).rg; }
 ivec2 tubeCandidates(vec3 m) {
   if(uTubeGridEnabled==0) return ivec2(0,uTubeCount);
-  ivec3 q=ivec3(floor((m-uTubeGridOrigin)/${TUBE_GRID_PITCH_MM.toFixed(1)})),size=ivec3(uTubeGridSize);
+  ivec3 q=ivec3(floor((m-uTubeGridOrigin)/uTubeGridPitch)),size=ivec3(uTubeGridSize);
   if(any(lessThan(q,ivec3(0)))||any(greaterThanEqual(q,size)))return ivec2(0);
   return ivec2(tubeGridTexel(q.x+size.x*(q.y+size.y*q.z)));
 }

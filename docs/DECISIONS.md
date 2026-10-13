@@ -6960,3 +6960,15 @@ Las E2E de selección y traslación eligen explícitamente los modelos legacy, r
 **Consecuencias.** Aumenta el paralelismo disponible; cada prueba sigue ejecutándose una vez. No se considera verde una ejecución incompleta, reintentada o fallida. Los auxiliares y la cobertura siguen siendo obligatorios.
 
 **Verificación.** El verificador del repositorio deriva el número de grupos de la matriz efectiva, exige un informe de ejecución por grupo y reconcilia los IDs con el checkout real de CI. La validación de la colección y el resultado remoto del SHA final deben acompañar la integración.
+
+## 196. Reconstruir WebGL sin borrar recursos de la generación perdida
+
+**Contexto.** La E2E original de recuperación falla en CI38370475018 y en SwiftShader local sobre el índice de la decisión 194. El arranque termina, pero tras restaurar el contexto queda el aviso «No se pudo recuperar la GPU: No se pudo subir el atlas abdominal», incluso con el torso histórico. No es un plazo de compilación agotado.
+
+**Opciones.** Se descartan ampliar el plazo, retirar la comprobación de subida del Atlas o vaciar silenciosamente los errores WebGL. Un diagnóstico aislado en Metal reproduce el fallo; al registrar y consumir los errores inmediatamente después de cada borrado de recursos viejos, aparecen INVALID_OPERATION y desaparece el fallo posterior de subida. Ese drenaje es solo un instrumento causal y no se adopta.
+
+**Decisión.** `Simulator.rebuildRenderer`, llamado exclusivamente al restaurar el contexto perdido, construye el nuevo renderer sin ejecutar `dispose` sobre los identificadores de la generación anterior. El navegador ya invalidó sus recursos. El renderer viejo deja de estar referenciado; el cierre normal de un renderer vigente conserva toda su liberación explícita.
+
+**Consecuencias.** La subida del Atlas sigue comprobando errores; no se ocultan fallos ni se cambia la señal, el paciente o el reloj. La regresión exige recuperación efectiva y avance de cuadros tanto para legacy como para Atlas, con los mismos plazos, registro del evento de pérdida y ausencia de errores adicionales. La colección completa pasa a 122 pruebas.
+
+**Verificación.** Se conservan la traza del fallo original en SwiftShader y las dos ejecuciones diagnósticas en Metal, una sin intervención y otra con lectura de errores por operación. La corrección debe pasar las E2E sin instrumentación, el check completo y la CI del SHA final antes de integrarse.

@@ -676,9 +676,9 @@ export class UltrasoundRenderer {
   }
 
   /**
-   * Libera programas, texturas, FBO y el PBO del mapa. Obligatorio al reconstruir tras una
-   * pérdida de contexto o al cerrar: el canvas es el mismo y los recursos no liberados se
-   * acumulan en la GPU. (El cambio de caso usa `setScene`.)
+   * Libera programas, texturas, FBO y el PBO del mapa al cerrar un renderer vigente.
+   * Tras perder el contexto, sus recursos ya son inválidos: la reconstrucción no debe
+   * borrarlos sobre el contexto restaurado. (El cambio de caso usa `setScene`.)
    */
   dispose(): void {
     const gl = this.gl;

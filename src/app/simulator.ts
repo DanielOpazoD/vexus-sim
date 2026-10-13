@@ -224,7 +224,8 @@ export class Simulator {
 
   /** Reconstruye el renderizador tras una pérdida de contexto GPU; el estado del paciente se conserva. */
   rebuildRenderer(canvas: HTMLCanvasElement): void {
-    this.renderer.dispose();
+    // The browser already released the lost context's resources. Deleting those
+    // invalid handles after restoration sets INVALID_OPERATION in the new context.
     this.renderer = new UltrasoundRenderer(canvas, this.scene, this.profile);
   }
 

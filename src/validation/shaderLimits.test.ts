@@ -411,8 +411,10 @@ describe('Límites del shader con margen para crecer', () => {
       FRAG_RAWFIELD_CLASS_STEERED: 1,
       FRAG_RAWFIELD_ECHO: 1,
       FRAG_RAWFIELD_ECHO_STEERED: 1,
-      FRAG_RAWFIELD_CACHED: 1,
-      FRAG_RAWFIELD_CACHED_STEERED: 1,
+      FRAG_RAWFIELD_CACHED: 0,
+      FRAG_RAWFIELD_CACHED_STEERED: 0,
+      FRAG_RAWFIELD_ELEVATION: 1,
+      FRAG_RAWFIELD_ELEVATION_STEERED: 1,
       FRAG_COLOR: 1,
       FRAG_QUERY: 1,
       FRAG_TISSUEMAP: 1,
@@ -436,11 +438,14 @@ describe('Límites del shader con margen para crecer', () => {
       }
     }
     for (const suffix of ['', '_STEERED']) {
-      const stages = ['CLASS', 'ECHO', 'CACHED'].map((stage) => {
+      const stages = ['CLASS', 'ELEVATION', 'ECHO', 'CACHED'].map((stage) => {
         const name = `FRAG_RAWFIELD_${stage}${suffix}` as keyof typeof PASSES;
         return glslCallGraph(PASSES[name] as string);
       });
       expect(stages.reduce((copies, graph) => copies + inlinedCopies(graph, 'main', 'classifyWith'), 0)).toBe(budget.FRAG_RAWFIELD);
+      const elevation = stages[1];
+      for (const body of loopBodies(elevation))
+        expect(reaches(elevation, body, 'classifyWith'), `elevation${suffix}: classifier outside loops`).toBe(false);
     }
     const staged = [
       PASSES.FRAG_TRANS_HITS_GRID,

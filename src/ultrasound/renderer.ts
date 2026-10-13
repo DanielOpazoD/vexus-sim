@@ -70,6 +70,8 @@ import {
   FRAG_MLINE,
   FRAG_MSTRIP,
   FRAG_PERSIST,
+  FRAG_RAWFIELD_ELEVATION,
+  FRAG_RAWFIELD_ELEVATION_STEERED,
   FRAG_RAWFIELD_CLASS,
   FRAG_RAWFIELD_CLASS_STEERED,
   FRAG_RAWFIELD_ECHO,
@@ -359,7 +361,14 @@ export class UltrasoundRenderer {
   private pTransPre: LookPrograms;
   private pTrans: LookPrograms;
   private pRaw: LookPrograms;
-  private rawStages: { classes: LookPrograms; echo: LookPrograms; classTarget: RenderTarget; echoTarget: RenderTarget } | null = null;
+  private rawStages: {
+    classes: LookPrograms;
+    elevation: LookPrograms;
+    echo: LookPrograms;
+    classTarget: RenderTarget;
+    elevationTarget: RenderTarget;
+    echoTarget: RenderTarget;
+  } | null = null;
   private pAxial: GLProgram;
   private pLateral: GLProgram;
   private pCompound: GLProgram;
@@ -518,6 +527,8 @@ export class UltrasoundRenderer {
     const rawFragments: Record<string, string> =
       this.transmissionHitsPipeline === 'staged-atlas'
         ? {
+            rawElevation: FRAG_RAWFIELD_ELEVATION,
+            rawElevationSteered: FRAG_RAWFIELD_ELEVATION_STEERED,
             rawClass: FRAG_RAWFIELD_CLASS,
             rawClassSteered: FRAG_RAWFIELD_CLASS_STEERED,
             rawEcho: FRAG_RAWFIELD_ECHO,
@@ -596,8 +607,12 @@ export class UltrasoundRenderer {
     if (this.transmissionHitsPipeline === 'staged-atlas')
       this.rawStages = {
         classes: { look0: p.rawClass, steered: p.rawClassSteered },
+        elevation: { look0: p.rawElevation, steered: p.rawElevationSteered },
         echo: { look0: p.rawEcho, steered: p.rawEchoSteered },
         classTarget: createTarget(gl, LINES, FINE_DEPTH, [f, f, f]),
+        elevationTarget: createTarget(gl, 2 * LINES, FINE_DEPTH, [
+          { internal: gl.R32F, format: gl.RED, type: gl.FLOAT, filter: gl.NEAREST },
+        ]),
         echoTarget: createTarget(gl, LINES, FINE_DEPTH, [f2]),
       };
     // C deja el campo y, en su segundo adjunto, el ruido del receptor de cada línea (decisión 89)
@@ -666,7 +681,14 @@ export class UltrasoundRenderer {
       ...(this.pTransHits ? [this.pTransHits] : []),
       ...(this.atlasHitStages ? Object.values(this.atlasHitStages.programs) : []),
       ...(this.rawStages
-        ? [this.rawStages.classes.look0, this.rawStages.classes.steered, this.rawStages.echo.look0, this.rawStages.echo.steered]
+        ? [
+            this.rawStages.classes.look0,
+            this.rawStages.classes.steered,
+            this.rawStages.elevation.look0,
+            this.rawStages.elevation.steered,
+            this.rawStages.echo.look0,
+            this.rawStages.echo.steered,
+          ]
         : []),
       this.pTransSeg,
       ...[this.pTransPre, this.pTrans, this.pRaw].flatMap((l) => [l.look0, l.steered]),
@@ -692,7 +714,7 @@ export class UltrasoundRenderer {
       this.tSeg,
       this.tPre,
       this.tTrans,
-      ...(this.rawStages ? [this.rawStages.classTarget, this.rawStages.echoTarget] : []),
+      ...(this.rawStages ? [this.rawStages.classTarget, this.rawStages.elevationTarget, this.rawStages.echoTarget] : []),
       this.tRaw,
       this.tAxial,
       ...this.tEnvLooks,
@@ -1444,7 +1466,7 @@ export class UltrasoundRenderer {
     const steered = this.steeredLook();
     const an = this.speckleAnchor.update(inputs.frame.face, inputs.frame.elevation, inputs.sample.t);
     this.lastAnchorWeight = an.w;
-    const draw = (p: GLProgram, target: RenderTarget, readClass: boolean, readEcho: boolean): void => {
+    const draw = (p: GLProgram, target: RenderTarget, readClass: boolean, readEcho: boolean, side = 0): void => {
       bindTarget(gl, target);
       p.use();
       this.setSceneUniforms(p, inputs);
@@ -1488,11 +1510,20 @@ export class UltrasoundRenderer {
         p.tex('uRawClass1', 11, this.rawStages.classTarget.textures[1]);
         p.tex('uRawClass2', 12, this.rawStages.classTarget.textures[2]);
       }
-      if (readEcho && this.rawStages) p.tex('uRawEcho', 13, this.rawStages.echoTarget.textures[0]);
+      if (readEcho && this.rawStages) {
+        p.tex('uRawEcho', 13, this.rawStages.echoTarget.textures[0]);
+        p.tex('uRawElevation', 14, this.rawStages.elevationTarget.textures[0]);
+      }
+      if (side) {
+        p.f('uElevationSide', side);
+        gl.viewport(side > 0 ? 0 : this.lines, 0, this.lines, FINE_DEPTH);
+      }
       drawFullscreen(gl);
     };
     if (this.rawStages) {
       draw(this.lookProgram(this.rawStages.classes), this.rawStages.classTarget, false, false);
+      // Fixed raster state for both tiles avoids a second software GPU pipeline compilation.
+      for (const side of [1, -1]) draw(this.lookProgram(this.rawStages.elevation), this.rawStages.elevationTarget, true, false, side);
       draw(this.lookProgram(this.rawStages.echo), this.rawStages.echoTarget, true, false);
     }
     draw(this.lookProgram(this.pRaw), this.tRaw, !!this.rawStages, !!this.rawStages);

@@ -481,8 +481,10 @@ describe('Renombrado del GLSL en el build: el fuente real', () => {
   it('nada de lo que nombra una cadena JS de src/ se renombra (los uniforms que sube el renderer, los #define de TISSUE_DEFINES…)', () => {
     const inStrings = new Set<string>();
     for (const m of SOURCES) for (const n of scanModule(m.code, m.path).stringNames) inStrings.add(n);
-    for (const n of ['uDepth', 'uSceneTex', 'uTorso', 'T_LIVER', 'IF_NONE', 'NOTCH', 'PELVIS', 'N_PYR'])
-      expect(inStrings.has(n), n).toBe(true);
+    for (const n of ['uDepth', 'uSceneTex', 'uTorso', 'T_LIVER', 'IF_NONE']) expect(inStrings.has(n), n).toBe(true);
+    // These three tables are now explicitly GLSL, not external JS consumers. Their
+    // declarations and every use are verified in all assembled programs below.
+    for (const n of ['NOTCH', 'PELVIS', 'N_PYR']) expect(inStrings.has(n), n).toBe(false);
     expect([...CTX.map.names.keys()].filter((n) => inStrings.has(n))).toEqual([]);
   });
 

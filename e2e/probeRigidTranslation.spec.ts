@@ -1,12 +1,24 @@
 import { expect, test } from '@playwright/test';
 import { bootWithoutErrors, budget, withinFrames } from './support';
 
-for (const reference of [false, true])
-  test(`deslizar conserva tres ejes y girar es explícito, referencia=${reference}`, async ({ page }, info) => {
+for (const model of ['legacy', 'reference', 'atlas'] as const)
+  test(`deslizar conserva tres ejes y girar es explícito, modelo=${model}`, async ({ page }, info) => {
     budget(90_000);
-    const errors = await bootWithoutErrors(page, '?e2e=app' + (reference ? '&reference=1' : ''));
+    // Atlas is the default: reference=1 alone no longer selects the historical torso.
+    const errors = await bootWithoutErrors(
+      page,
+      `?e2e=app&abdomen=${model === 'atlas' ? 'atlas' : 'legacy'}${model === 'reference' ? '&reference=1' : ''}`,
+    );
+    const observedModel = await page.evaluate(() => {
+      const scene = window.__vexusTest!.sim().scene;
+      return scene.hasAbdominalAtlas ? 'atlas' : scene.torso.profile ? 'reference' : 'legacy';
+    });
+    expect(observedModel).toBe(model);
     await page.locator('.win-card').filter({ hasText: 'Hepatorrenal' }).click();
-    const target = { phi: 3.2, z: -80, yaw: reference ? 0 : -0.1, rock: reference ? -0.2 : 0.1, tilt: -0.4 };
+    const target =
+      model === 'atlas'
+        ? { phi: 2.99, z: -113, yaw: -0.24452521426888207, rock: -0.13406390040993016, tilt: -0.3591483268294911 }
+        : { phi: 3.2, z: -80, yaw: model === 'reference' ? 0 : -0.1, rock: model === 'reference' ? -0.2 : 0.1, tilt: -0.4 };
     await withinFrames(
       page,
       100,
@@ -40,7 +52,7 @@ for (const reference of [false, true])
     expect(Math.abs(after.pose.phi - before.pose.phi) + Math.abs(after.pose.z - before.pose.z)).toBeGreaterThan(1);
     await page.screenshot({ path: info.outputPath('translation.png') });
     await info.attach('translation-frames', {
-      body: JSON.stringify({ reference, before, records, after }),
+      body: JSON.stringify({ model, before, records, after }),
       contentType: 'application/json',
     });
     await page.mouse.wheel(0, 100);

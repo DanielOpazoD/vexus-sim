@@ -5,6 +5,12 @@ El mecanismo CPU/GLSL y sus guardas fueron extraídos e integrados en main por P
 la decisión canónica de main es 186. Esta reconciliación conserva la procedencia
 y no constituye una segunda modificación del campo ni aceptación clínica del Atlas.
 
+La integración documental se aísla sobre `main` `6da9fbe6f77e70145ae1749ca4d345c747f80c88`.
+El diff frente a esa base contiene solo los tres documentos de procedencia; la rama
+Atlas de origen continúa en PR219 y no es la base de aceptación de este archivo.
+Las comparaciones de integración deben usar la base actual del PR, sin mezclar
+un arranque Atlas histórico con el dominio procedural de esta integración.
+
 ## 187. Concentración de dispersores continua sin saltos de celda
 
 **Contexto.** `clumpGain` era constante en celdas de 1,2 mm. En caras

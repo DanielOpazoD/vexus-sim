@@ -726,6 +726,29 @@ export const FRAG_TRANSMISSION_STEERED = transmissionShader('steered');
  * mirada 0 no la lleva. Gemelo de la geometría (punto, dirección, pleura, reverberación, anclas, alcance,
  * cortina): `steeredSample` (`steering.ts`); `steeredSample.test.ts` fija estas líneas.
  */
+// Keep this template outside the containing GLSL template so the build compacts it.
+function steeredMediumFieldGlsl(cached: boolean): string {
+  return /* glsl */ `  vec3 m = toMaterial(p);
+  Warp w = anatomyWarpAt(p, m);
+  Cls c = ${cached ? 'rawClass()' : 'classifyWith(m, withCurtain)'};
+  vec2 f0 = fieldForPh(m, se, c.tissue, ph0, g, normalize(p - uCurvC), w);
+  vec3 p1 = p + uElev * se, p2 = p - uElev * se;
+  vec3 m1 = toMaterial(p1), m2 = toMaterial(p2);
+  ivec2 sideT = elevationTissues(m1, m2, se, c, withCurtain);
+  vec2 f1 = fieldForPh(m1, se, sideT.x, ph0, g, normalize(p1 - uCurvC), w);
+  vec2 f2 = fieldForPh(m2, se, sideT.y, ph0, g, normalize(p2 - uCurvC), w);
+  float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
+  vec2 field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
+  float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
+  if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
+  // densidad de dispersores (decisión 89), del material: la misma en todas las miradas
+  field *= densityGain(m, c.tissue);
+  // eco de interfaz (decisiones 57 y 65), como mediumField: la difusa sobre el fasor de esta mirada y la especular aparte
+  vec2 e = ${cached ? 'texelFetch(uRawEcho, ivec2(gl_FragCoord.xy), 0).xy' : 'interfaceEcho(c, m, dir, r, se, w, withCurtain)'};
+  spec = e.x;
+  return field * (1.0 + e.y / max(length(field), 1e-6));`;
+}
+
 function steeredFieldGlsl(mediumBody?: string, cached = false): string {
   return /* glsl */ `
 ${SPECKLE_LOOK_GLSL}
@@ -779,28 +802,7 @@ float steeredT(float phiK, float a, float x, bool ray) {
 }
 // mediumField y wallField con la fase de la mirada por nodo
 vec2 mediumFieldPh(vec3 p, vec3 dir, float r, float se, bool withCurtain, float ph0, vec3 g, out float spec) {
-${
-  mediumBody ??
-  /* glsl */ `  vec3 m = toMaterial(p);
-  Warp w = anatomyWarpAt(p, m);
-  Cls c = ${cached ? 'rawClass()' : 'classifyWith(m, withCurtain)'};
-  vec2 f0 = fieldForPh(m, se, c.tissue, ph0, g, normalize(p - uCurvC), w);
-  vec3 p1 = p + uElev * se, p2 = p - uElev * se;
-  vec3 m1 = toMaterial(p1), m2 = toMaterial(p2);
-  ivec2 sideT = elevationTissues(m1, m2, se, c, withCurtain);
-  vec2 f1 = fieldForPh(m1, se, sideT.x, ph0, g, normalize(p1 - uCurvC), w);
-  vec2 f2 = fieldForPh(m2, se, sideT.y, ph0, g, normalize(p2 - uCurvC), w);
-  float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
-  vec2 field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
-  float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
-  if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
-  // densidad de dispersores (decisión 89), del material: la misma en todas las miradas
-  field *= densityGain(m, c.tissue);
-  // eco de interfaz (decisiones 57 y 65), como mediumField: la difusa sobre el fasor de esta mirada y la especular aparte
-  vec2 e = ${cached ? 'texelFetch(uRawEcho, ivec2(gl_FragCoord.xy), 0).xy' : 'interfaceEcho(c, m, dir, r, se, w, withCurtain)'};
-  spec = e.x;
-  return field * (1.0 + e.y / max(length(field), 1e-6));`
-}
+${mediumBody ?? steeredMediumFieldGlsl(cached)}
 }
 vec2 wallFieldPh(vec3 p, vec3 dir, float se, float ph0, vec3 g, Warp w) {
   vec3 m = toMaterial(p);
@@ -968,6 +970,20 @@ export const STEERED_FIELD_GLSL = steeredFieldGlsl();
 // Staged Atlas B reuses the same main/beam geometry in every pass. Only the medium body
 // and outputs vary; the driver removes the unused oField work in class/echo passes.
 // Each look retains three classifier source copies in total: center, capsule exterior, elevation.
+const RAW_CLASS_CACHE_GLSL = /* glsl */ `
+uniform sampler2D uRawClass0;
+uniform sampler2D uRawClass1;
+uniform sampler2D uRawClass2;
+uniform sampler2D uRawEcho;
+Cls rawClass() {
+  ivec2 q=ivec2(gl_FragCoord.xy);
+  vec4 a=texelFetch(uRawClass0,q,0),b=texelFetch(uRawClass1,q,0),d=texelFetch(uRawClass2,q,0);
+  Cls c;
+  c.tissue=int(a.x);c.bd=a.y;c.iface=int(a.z);c.ifd=a.w;c.n=b.xyz;c.kc=b.w;c.tangent=d.xyz;
+  // Flow-only fields are not consumed by the medium or interface echo.
+  c.vessel=-1;c.rho=0.0;c.uRef=0.0;c.rRef=0.0;c.profN=0.0;
+  return c;
+}`;
 type RawFieldStage = 'direct' | 'class' | 'echo' | 'cached';
 function rawFieldShader(look: Look, stage: RawFieldStage = 'direct'): string {
   const mediumBody =
@@ -1018,24 +1034,7 @@ uniform vec4 uTissueClump4[${TISSUE_VEC4}];
 ${RECEIVER_GLSL}${HARMONIC_GLSL}
 in vec2 vUv;
 ${output}
-${
-  stage === 'echo' || stage === 'cached'
-    ? /* glsl */ `
-uniform sampler2D uRawClass0;
-uniform sampler2D uRawClass1;
-uniform sampler2D uRawClass2;
-uniform sampler2D uRawEcho;
-Cls rawClass() {
-  ivec2 q=ivec2(gl_FragCoord.xy);
-  vec4 a=texelFetch(uRawClass0,q,0),b=texelFetch(uRawClass1,q,0),d=texelFetch(uRawClass2,q,0);
-  Cls c;
-  c.tissue=int(a.x);c.bd=a.y;c.iface=int(a.z);c.ifd=a.w;c.n=b.xyz;c.kc=b.w;c.tangent=d.xyz;
-  // Flow-only fields are not consumed by the medium or interface echo.
-  c.vessel=-1;c.rho=0.0;c.uRef=0.0;c.rRef=0.0;c.profN=0.0;
-  return c;
-}`
-    : ''
-}
+${stage === 'echo' || stage === 'cached' ? RAW_CLASS_CACHE_GLSL : ''}
 ${ELEV_SIGMA_GLSL}${LATERAL_PSF_GLSL}
 ${SPECKLE_TISSUE_GLSL}
 ${WALL_TEXTURE_GLSL}

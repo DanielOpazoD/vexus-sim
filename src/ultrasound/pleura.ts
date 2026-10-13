@@ -382,7 +382,7 @@ function mediumFieldGlsl(cached: boolean): string {
   vec2 f0 = fieldFor(m, se, c.tissue, normalize(p - uCurvC), w);
   vec3 p1 = p + uElev * se, p2 = p - uElev * se;
   vec3 m1 = toMaterial(p1), m2 = toMaterial(p2);
-  ivec2 sideT = elevationTissues(m1, m2, se, c, withCurtain);
+  ivec2 sideT = ${cached ? 'rawElevation()' : 'elevationTissues(m1, m2, se, c, withCurtain)'};
   vec2 f1 = fieldFor(m1, se, sideT.x, normalize(p1 - uCurvC), w);
   vec2 f2 = fieldFor(m2, se, sideT.y, normalize(p2 - uCurvC), w);
   float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));

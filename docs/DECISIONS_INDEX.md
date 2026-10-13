@@ -196,3 +196,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [190](DECISIONS.md#L6906) | Descomponer los impactos Atlas en SwiftShader | vigente |
 | [191](DECISIONS.md#L6916) | Separar clasificación, eco y campo crudo Atlas en SwiftShader | vigente |
 | [192](DECISIONS.md#L6926) | Sacar la clasificación de elevación del bucle del campo crudo | vigente |
+| [193](DECISIONS.md#L6936) | Compartir plantillas GLSL sin cambiar los programas generados | vigente |

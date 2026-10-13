@@ -201,4 +201,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [195](DECISIONS.md#L6962) | Doce grupos para la colección E2E del Atlas | vigente |
 | [196](DECISIONS.md#L6974) | Reconstruir WebGL sin borrar recursos de la generación perdida | vigente |
 | [197](DECISIONS.md#L6986) | Secuencias GLSL de transporte sin pérdida | vigente |
-| [198](DECISIONS.md#L6999) | Gradiente por ejes en la ruta Atlas de SwiftShader | vigente |
+| [198](DECISIONS.md#L6998) | Gradiente por ejes en la ruta Atlas de SwiftShader | vigente |

@@ -734,7 +734,7 @@ function fieldForGlsl(phased = false): string {
   const phase = phased ? 'ph0, g, ' : '';
   const direction = phased ? 'normalize(b0 + g / lookK2)' : 'dir';
   return /* glsl */ `vec2 ${base}(vec3 m, float se, int tissue, ${parameters}Warp w) {
-  vec2 f = ${speckle}(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP, ${phase} strongScatter(tissue));
+  vec2 f = ${speckle}(m, uLattice, se, float(tissue) * TISSUE_SALT_STEP, ${phase}strongScatter(tissue));
   // Heterogeneidad lenta y continua del parénquima (desviación 1,15 dB a ~1,6 ciclos/cm) [EXTRAPOLACIÓN PROPIA]
   float het = 1.0;
   if (tissue == T_LIVER || tissue == T_MUSCLE || tissue == T_BOWEL || tissue == T_RENAL_CORTEX || tissue == T_PSOAS || tissue == T_QUADRATUS) het = hetGain(m);

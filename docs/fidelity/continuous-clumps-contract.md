@@ -49,3 +49,11 @@ obligatorios. Referencia independiente: [ACEP, renal](https://www.acep.org/sonog
 para seno ecogénico, corteza gris y cubierta perirrenal; no calibra estadística.
 Los clips clínicos comparables, phantom y panel humano independiente permanecen
 pendientes. El cambio no declara resuelto el límite riñón–músculo ni máxima fidelidad.
+
+## Procedencia de la variante Atlas
+
+El [contrato original de PR222](continuous-clumps-atlas-contract-3e703b8.md)
+conserva su fuente `0d6ed0a`. Su [decisión 187 histórica](../anatomy/atlas-branch-clumps-3e703b8.md)
+se conserva sin renumerar. PR241 ya incorporó el mismo mecanismo y sus guardas
+en main; la reconciliación de PR222 aporta trazabilidad, sin duplicar el cambio
+ni convertir las mediciones históricas en validación de la nueva integración.

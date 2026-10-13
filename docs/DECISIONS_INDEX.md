@@ -194,3 +194,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [188](DECISIONS.md#L6882) | TAC remuestreado en los centros físicos del plano US | vigente |
 | [189](DECISIONS.md#L6894) | Identidad canónica de los módulos GLSL de Three | vigente |
 | [190](DECISIONS.md#L6906) | Descomponer los impactos Atlas en SwiftShader | vigente |
+| [191](DECISIONS.md#L6916) | Separar clasificación, eco y campo crudo Atlas en SwiftShader | vigente |

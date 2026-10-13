@@ -6995,7 +6995,6 @@ Las E2E de selección y traslación eligen explícitamente los modelos legacy, r
 
 **Verificación.** El experimento inicial de #224 pasó 70 controles focalizados; el diccionario final debe revalidarse con el check completo. Los 35 exports, incluidos 33 programas ensamblados de #219, coinciden byte por byte con el commit anterior db00f8e. La comparación incluye todos los programas propios ensamblados y más de cien exports GLSL de Three, idénticos byte por byte frente al build sin empaquetar. Los códigos anteriores, límites, prefijos inválidos y coerción conservan sus guardas. La revisión independiente no encuentra defectos accionables. La integración exige además comparar los programas con el commit anterior y ejecutar el check completo del SHA final; esta reducción no acredita fidelidad clínica.
 
-
 ## 198. Gradiente por ejes en la ruta Atlas de SwiftShader
 
 **Contexto.** El techo diafragmático registrado de #224 conserva una fuente común, pero su E2E original agota el arranque de 180 segundos en SwiftShader después de incorporar el índice vascular y el empaquetado de #219. El candidato 1a413fd tarda 180355 ms sin completar el arranque; se conserva ese fallo. No se amplían plazos, se reducen muestras ni se acepta Metal como sustituto de SwiftShader.

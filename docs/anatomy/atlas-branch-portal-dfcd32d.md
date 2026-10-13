@@ -111,3 +111,18 @@ recuentos de cuadros, dominios ni controles de señal/color. La comprobación
 unitaria del preset y los20rayos de la pose histórica se conservan. El recorrido
 de navegador completo sigue pendiente del arranque Atlas; colección y tipos
 no lo sustituyen.
+
+### Control negativo de color ligado a la pose
+
+El ensayo nativo con la pose completa de191 pasó selección, llenado, inversión y
+filtro, pero falló al exigir que la antigua región de35–50mm no contuviera sangre.
+La clasificación CPU de sus15360centros identificó144muestras de vena hepática
+anterior derecha en el caso normal y394en congestión grave (t=30s). No era una
+región avascular en esta pose. Se traslada solo el control Atlas a la pared
+superficial de15–25mm, con los mismos ángulos−0,25/−0,12rad: ambos casos muestran
+tejido y cero centros vasculares. La prueba verifica ahora esa condición con el
+clasificador CPU, exige que los15360centros Atlas sean grasa o músculo (no aire),
+y después exige cero sangre y cero señal GPU durante los mismos
+cuatro cuadros. Conserva los límites de llenado, inversión y filtro, la región
+histórica de los otros dominios, los plazos y los reintentos. No cambia el preset,
+la anatomía ni el renderizador. La corrida SwiftShader debe verificarse aparte.

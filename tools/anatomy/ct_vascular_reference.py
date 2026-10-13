@@ -81,6 +81,11 @@ def summarize(mask, affine, ct):
 def audit(manifest_path):
     manifest_path = Path(manifest_path).resolve()
     manifest = json.loads(manifest_path.read_text())
+    source = manifest.get("source")
+    if not isinstance(source, dict) or any(
+            not isinstance(source.get(key), str) or not source[key].strip()
+            for key in ("dataset", "version", "case")):
+        raise ValueError("Referencia TAC sin procedencia exacta: dataset, version y case son obligatorios")
     base = manifest_path.parent
     evidence = manifest.get("millimeterEvidence")
     ct_path = (base / manifest["ct"]).resolve()

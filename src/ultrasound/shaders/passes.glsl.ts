@@ -734,7 +734,7 @@ function steeredMediumFieldGlsl(cached: boolean): string {
   vec2 f0 = fieldForPh(m, se, c.tissue, ph0, g, normalize(p - uCurvC), w);
   vec3 p1 = p + uElev * se, p2 = p - uElev * se;
   vec3 m1 = toMaterial(p1), m2 = toMaterial(p2);
-  ivec2 sideT = elevationTissues(m1, m2, se, c, withCurtain);
+  ivec2 sideT = ${cached ? 'rawElevation()' : 'elevationTissues(m1, m2, se, c, withCurtain)'};
   vec2 f1 = fieldForPh(m1, se, sideT.x, ph0, g, normalize(p1 - uCurvC), w);
   vec2 f2 = fieldForPh(m2, se, sideT.y, ph0, g, normalize(p2 - uCurvC), w);
   float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
@@ -975,8 +975,15 @@ uniform sampler2D uRawClass0;
 uniform sampler2D uRawClass1;
 uniform sampler2D uRawClass2;
 uniform sampler2D uRawEcho;
+uniform sampler2D uRawElevation;
+uniform float uElevationSide;
+ivec2 rawElevation() {
+  ivec2 q=ivec2(gl_FragCoord.xy), d=ivec2(textureSize(uRawClass0,0).x,0);
+  return ivec2(texelFetch(uRawElevation,q,0).r,texelFetch(uRawElevation,q+d,0).r);
+}
 Cls rawClass() {
   ivec2 q=ivec2(gl_FragCoord.xy);
+  q.x %= textureSize(uRawClass0,0).x;
   vec4 a=texelFetch(uRawClass0,q,0),b=texelFetch(uRawClass1,q,0),d=texelFetch(uRawClass2,q,0);
   Cls c;
   c.tissue=int(a.x);c.bd=a.y;c.iface=int(a.z);c.ifd=a.w;c.n=b.xyz;c.kc=b.w;c.tangent=d.xyz;
@@ -984,7 +991,24 @@ Cls rawClass() {
   c.vessel=-1;c.rho=0.0;c.uRef=0.0;c.rRef=0.0;c.profN=0.0;
   return c;
 }`;
-type RawFieldStage = 'direct' | 'class' | 'echo' | 'cached';
+const ELEVATION_TISSUES_GLSL = /* glsl */ `
+// Plano lateral en elevación: si el plano central está lejos de toda interfaz
+// (bd > desplazamiento), el tejido es el mismo y se ahorra la clasificación. Bajo la pleura de la
+// cortina (decisión 61) el tejido es el de detrás de la lámina de pulmón (withCurtain = false). Una sola
+// copia del clasificador para los dos planos; el campo se evalúa después, fuera del bucle.
+// Clasificar los dos planos en un bucle pequeño comparte una copia del clasificador.
+// El campo, sus texturas, warpAt y el eco siguen fuera de bucles (guarda de compilación).
+ivec2 elevationTissues(vec3 plus, vec3 minus, float se, Cls center, bool withCurtain) {
+  if (center.bd > se + 0.5) return ivec2(center.tissue);
+  ivec2 tissues;
+  for (int i = 0; i < 2; i++) {
+    vec3 m = i == 0 ? plus : minus;
+    tissues[i] = classifyWith(m, withCurtain).tissue;
+  }
+  return tissues;
+}
+`;
+type RawFieldStage = 'direct' | 'class' | 'elevation' | 'echo' | 'cached';
 function rawFieldShader(look: Look, stage: RawFieldStage = 'direct'): string {
   const mediumBody =
     stage === 'class'
@@ -995,23 +1019,39 @@ function rawFieldShader(look: Look, stage: RawFieldStage = 'direct'): string {
     oClass2 = vec4(c.tangent, 0.0);
     spec = 0.0;
     return vec2(0.0);`
-      : stage === 'echo'
+      : stage === 'elevation'
         ? /* glsl */ `
+    Cls c = rawClass();
+    vec3 side = uElevationSide > 0.0 ? p + uElev * se : p - uElev * se;
+    oElevation = c.bd > se + 0.5 ? float(c.tissue) : float(classifyWith(toMaterial(side), withCurtain).tissue);
+    spec = 0.0;
+    return vec2(0.0);`
+        : stage === 'echo'
+          ? /* glsl */ `
     vec3 m = toMaterial(p);
     oEcho = interfaceEcho(rawClass(), m, dir, r, se, anatomyWarpAt(p, m), withCurtain);
     spec = 0.0;
     return vec2(0.0);`
-        : undefined;
+          : undefined;
   const output =
     stage === 'class'
       ? `vec2 oField;
 layout(location=0) out vec4 oClass0;
 layout(location=1) out vec4 oClass1;
 layout(location=2) out vec4 oClass2;`
-      : stage === 'echo'
-        ? 'vec2 oField; out vec2 oEcho;'
-        : 'out vec2 oField;';
-  const init = stage === 'class' ? 'oClass0=vec4(0.0);oClass1=vec4(0.0);oClass2=vec4(0.0);' : stage === 'echo' ? 'oEcho=vec2(0.0);' : '';
+      : stage === 'elevation'
+        ? 'vec2 oField; out float oElevation;'
+        : stage === 'echo'
+          ? 'vec2 oField; out vec2 oEcho;'
+          : 'out vec2 oField;';
+  const init =
+    stage === 'class'
+      ? 'oClass0=vec4(0.0);oClass1=vec4(0.0);oClass2=vec4(0.0);'
+      : stage === 'elevation'
+        ? 'oElevation=0.0;'
+        : stage === 'echo'
+          ? 'oEcho=vec2(0.0);'
+          : '';
 
   return /* glsl */ `#version 300 es
 precision highp float;
@@ -1034,7 +1074,7 @@ uniform vec4 uTissueClump4[${TISSUE_VEC4}];
 ${RECEIVER_GLSL}${HARMONIC_GLSL}
 in vec2 vUv;
 ${output}
-${stage === 'echo' || stage === 'cached' ? RAW_CLASS_CACHE_GLSL : ''}
+${stage === 'elevation' || stage === 'echo' || stage === 'cached' ? RAW_CLASS_CACHE_GLSL : ''}
 ${ELEV_SIGMA_GLSL}${LATERAL_PSF_GLSL}
 ${SPECKLE_TISSUE_GLSL}
 ${WALL_TEXTURE_GLSL}
@@ -1092,21 +1132,7 @@ vec2 fieldFor(vec3 m, float se, int tissue, vec3 dir, Warp w) {
   return fieldForBase(m, se, tissue, dir, w) * retroTexture(m, tissue, dir, w);
 }
 
-// Plano lateral en elevación: si el plano central está lejos de toda interfaz
-// (bd > desplazamiento), el tejido es el mismo y se ahorra la clasificación. Bajo la pleura de la
-// cortina (decisión 61) el tejido es el de detrás de la lámina de pulmón (withCurtain = false). Una sola
-// copia del clasificador para los dos planos; el campo se evalúa después, fuera del bucle.
-// Clasificar los dos planos en un bucle pequeño comparte una copia del clasificador.
-// El campo, sus texturas, warpAt y el eco siguen fuera de bucles (guarda de compilación).
-ivec2 elevationTissues(vec3 plus, vec3 minus, float se, Cls center, bool withCurtain) {
-  if (center.bd > se + 0.5) return ivec2(center.tissue);
-  ivec2 tissues;
-  for (int i = 0; i < 2; i++) {
-    vec3 m = i == 0 ? plus : minus;
-    tissues[i] = classifyWith(m, withCurtain).tissue;
-  }
-  return tissues;
-}
+${stage === 'direct' ? ELEVATION_TISSUES_GLSL : ''}
 ${pleuraGlsl(mediumBody, stage === 'cached')}
 ${look === 'steered' ? steeredRawMainGlsl(mediumBody, stage === 'cached', init) : look0RawMainGlsl(init)}`;
 }
@@ -1265,6 +1291,8 @@ ${init ? `  ${init}\n` : ''}  oField = steeredField();
 export const FRAG_RAWFIELD = rawFieldShader('look0');
 /** Pasada B de las miradas ±θ: la rama dirigida sobre el mismo preludio. */
 export const FRAG_RAWFIELD_STEERED = rawFieldShader('steered');
+export const FRAG_RAWFIELD_ELEVATION = rawFieldShader('look0', 'elevation');
+export const FRAG_RAWFIELD_ELEVATION_STEERED = rawFieldShader('steered', 'elevation');
 export const FRAG_RAWFIELD_CLASS = rawFieldShader('look0', 'class');
 export const FRAG_RAWFIELD_CLASS_STEERED = rawFieldShader('steered', 'class');
 export const FRAG_RAWFIELD_ECHO = rawFieldShader('look0', 'echo');

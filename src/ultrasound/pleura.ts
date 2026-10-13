@@ -375,16 +375,18 @@ float curtainSteerWeight(float r, float D, float fAir) { return D > 0.0 && fAir 
  * `scattererField`, `uSeed`, `uElev` y `uCurtain`). Lleva `CURTAIN_AIR_GLSL` (y con él `uHits2`).
  */
 // Keep this template outside the containing GLSL template so the build compacts it.
-function mediumFieldGlsl(cached: boolean): string {
+export function mediumFieldGlsl(cached: boolean, phased = false): string {
+  const field = phased ? 'fieldForPh' : 'fieldFor';
+  const phase = phased ? 'ph0, g, ' : '';
   return /* glsl */ `  vec3 m = toMaterial(p);
   Warp w = anatomyWarpAt(p, m);
   Cls c = ${cached ? 'rawClass()' : 'classifyWith(m, withCurtain)'};
-  vec2 f0 = fieldFor(m, se, c.tissue, normalize(p - uCurvC), w);
+  vec2 f0 = ${field}(m, se, c.tissue, ${phase}normalize(p - uCurvC), w);
   vec3 p1 = p + uElev * se, p2 = p - uElev * se;
   vec3 m1 = toMaterial(p1), m2 = toMaterial(p2);
-  ivec2 sideT = elevationTissues(m1, m2, se, c, withCurtain);
-  vec2 f1 = fieldFor(m1, se, sideT.x, normalize(p1 - uCurvC), w);
-  vec2 f2 = fieldFor(m2, se, sideT.y, normalize(p2 - uCurvC), w);
+  ivec2 sideT = ${cached ? 'rawElevation()' : 'elevationTissues(m1, m2, se, c, withCurtain)'};
+  vec2 f1 = ${field}(m1, se, sideT.x, ${phase}normalize(p1 - uCurvC), w);
+  vec2 f2 = ${field}(m2, se, sideT.y, ${phase}normalize(p2 - uCurvC), w);
   float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
   vec2 field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
   float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
@@ -396,6 +398,20 @@ function mediumFieldGlsl(cached: boolean): string {
   vec2 e = ${cached ? 'texelFetch(uRawEcho, ivec2(gl_FragCoord.xy), 0).xy' : 'interfaceEcho(c, m, dir, r, se, w, withCurtain)'};
   spec = e.x;
   return field * (1.0 + e.y / max(length(field), 1e-6));`;
+}
+
+export function wallFieldBodyGlsl(phased = false): string {
+  const base = phased ? 'fieldForPhBase' : 'fieldForBase';
+  const phase = phased ? 'ph0, g, ' : '';
+  return /* glsl */ `  vec3 m = toMaterial(p);
+  Cls c;
+  float depth;
+  vec3 tn;
+  if (!classifyWall(m, c, depth, tn)) { c.tissue = T_FAT; c.n = tn; }
+  vec2 field = ${base}(m, se, c.tissue, ${phase}normalize(p - uCurvC), w);
+  float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
+  if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
+  return field + vec2(WALL_COPY_FACE_GAIN * wallFaceEchoFlat(c, m, dir, w), 0.0);`;
 }
 
 export function pleuraGlsl(mediumBody?: string, cached = false): string {
@@ -452,15 +468,7 @@ ${mediumBody ?? mediumFieldGlsl(cached)}
 // dispara con código pesado en un bucle (faceGradient no puede ir aquí). w: la jacobiana de la compresión de la
 // sonda en la pleura de la línea (decisión 63): la de la pared de encima, sin calcularla otra vez en el bucle.
 vec2 wallField(vec3 p, vec3 dir, float se, Warp w) {
-  vec3 m = toMaterial(p);
-  Cls c;
-  float depth;
-  vec3 tn;
-  if (!classifyWall(m, c, depth, tn)) { c.tissue = T_FAT; c.n = tn; }
-  vec2 field = fieldForBase(m, se, c.tissue, normalize(p - uCurvC), w);
-  float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
-  if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
-  return field + vec2(WALL_COPY_FACE_GAIN * wallFaceEchoFlat(c, m, dir, w), 0.0);
+${wallFieldBodyGlsl()}
 }
 `;
 }

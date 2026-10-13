@@ -70,6 +70,12 @@ import {
   FRAG_MLINE,
   FRAG_MSTRIP,
   FRAG_PERSIST,
+  FRAG_RAWFIELD_CLASS,
+  FRAG_RAWFIELD_CLASS_STEERED,
+  FRAG_RAWFIELD_ECHO,
+  FRAG_RAWFIELD_ECHO_STEERED,
+  FRAG_RAWFIELD_CACHED,
+  FRAG_RAWFIELD_CACHED_STEERED,
   FRAG_RAWFIELD,
   FRAG_RAWFIELD_STEERED,
   FRAG_SCANCONVERT,
@@ -353,6 +359,7 @@ export class UltrasoundRenderer {
   private pTransPre: LookPrograms;
   private pTrans: LookPrograms;
   private pRaw: LookPrograms;
+  private rawStages: { classes: LookPrograms; echo: LookPrograms; classTarget: RenderTarget; echoTarget: RenderTarget } | null = null;
   private pAxial: GLProgram;
   private pLateral: GLProgram;
   private pCompound: GLProgram;
@@ -507,6 +514,18 @@ export class UltrasoundRenderer {
             a0Finish: FRAG_TRANS_HITS_FINISH,
           }
         : { transmissionHits: FRAG_TRANS_HITS };
+    // Keep native/legacy B unchanged. Staging is selected by the actual renderer, never by a test URL.
+    const rawFragments: Record<string, string> =
+      this.transmissionHitsPipeline === 'staged-atlas'
+        ? {
+            rawClass: FRAG_RAWFIELD_CLASS,
+            rawClassSteered: FRAG_RAWFIELD_CLASS_STEERED,
+            rawEcho: FRAG_RAWFIELD_ECHO,
+            rawEchoSteered: FRAG_RAWFIELD_ECHO_STEERED,
+            rawfield: FRAG_RAWFIELD_CACHED,
+            rawfieldSteered: FRAG_RAWFIELD_CACHED_STEERED,
+          }
+        : { rawfield: FRAG_RAWFIELD, rawfieldSteered: FRAG_RAWFIELD_STEERED };
     const p: Record<string, GLProgram> = GLProgram.linkAll(
       gl,
       VERT,
@@ -518,8 +537,7 @@ export class UltrasoundRenderer {
           transmissionPrefixSteered: FRAG_TRANS_PREFIX_STEERED,
           transmission: FRAG_TRANSMISSION,
           transmissionSteered: FRAG_TRANSMISSION_STEERED,
-          rawfield: FRAG_RAWFIELD,
-          rawfieldSteered: FRAG_RAWFIELD_STEERED,
+          ...rawFragments,
           axial: FRAG_AXIAL,
           lateral: FRAG_LATERAL,
           compound: FRAG_COMPOUND,
@@ -575,6 +593,13 @@ export class UltrasoundRenderer {
     this.tPre = createTarget(gl, LINES, COARSE_DEPTH, [fn, fn, fn, fn]);
     this.tTrans = createTarget(gl, LINES, COARSE_DEPTH, [f, fn, f, f]);
     this.tRaw = createTarget(gl, LINES, FINE_DEPTH, [f2]);
+    if (this.transmissionHitsPipeline === 'staged-atlas')
+      this.rawStages = {
+        classes: { look0: p.rawClass, steered: p.rawClassSteered },
+        echo: { look0: p.rawEcho, steered: p.rawEchoSteered },
+        classTarget: createTarget(gl, LINES, FINE_DEPTH, [f, f, f]),
+        echoTarget: createTarget(gl, LINES, FINE_DEPTH, [f2]),
+      };
     // C deja el campo y, en su segundo adjunto, el ruido del receptor de cada línea (decisión 89)
     this.tAxial = createTarget(gl, LINES, FINE_DEPTH, [f2, f2]);
     // anillo de miradas: K las lee con texelFetch, en la misma celda
@@ -640,6 +665,9 @@ export class UltrasoundRenderer {
     for (const p of [
       ...(this.pTransHits ? [this.pTransHits] : []),
       ...(this.atlasHitStages ? Object.values(this.atlasHitStages.programs) : []),
+      ...(this.rawStages
+        ? [this.rawStages.classes.look0, this.rawStages.classes.steered, this.rawStages.echo.look0, this.rawStages.echo.steered]
+        : []),
       this.pTransSeg,
       ...[this.pTransPre, this.pTrans, this.pRaw].flatMap((l) => [l.look0, l.steered]),
       this.pAxial,
@@ -664,6 +692,7 @@ export class UltrasoundRenderer {
       this.tSeg,
       this.tPre,
       this.tTrans,
+      ...(this.rawStages ? [this.rawStages.classTarget, this.rawStages.echoTarget] : []),
       this.tRaw,
       this.tAxial,
       ...this.tEnvLooks,
@@ -1413,47 +1442,60 @@ export class UltrasoundRenderer {
     const gl = this.gl;
     const tr = inputs.transducer;
     const steered = this.steeredLook();
-    const p = this.lookProgram(this.pRaw);
-    bindTarget(gl, this.tRaw);
-    p.use();
-    this.setSceneUniforms(p, inputs);
-    this.setBeamUniforms(p, inputs);
-    if (steered) {
-      // la dirigida lee A o1 (la dirección reflejada de la línea del espejo) y o3 (su camino), no o0
-      p.tex('uTrans1', 1, this.tTrans.textures[1]);
-      p.tex('uTrans3', 2, this.tTrans.textures[3]);
-      this.setSteerUniforms(p, inputs);
-      p.f('uLookSalt', this.look?.salt ?? 0);
-    } else {
-      p.tex('uTrans0', 0, this.tTrans.textures[0]);
-      p.tex('uTrans1', 1, this.tTrans.textures[1]);
-    }
-    // la pleura parietal de A0 (decisión 61): su cruce, el borde de la cortina y la pérdida de la lámina; y el
-    // rayo único de A (tope de la transmisión sin la lámina)
-    p.tex('uHits2', 3, this.tHits.textures[2]);
-    p.tex('uTrans2', 4, this.tTrans.textures[2]);
-    p.f('uSeed', (inputs.seed % 1000) / 7.0);
-    p.f('uLattice', 0.42);
-    p.f('uElevSigma0', ELEV_SIGMA0_MM);
-    p.f('uElevFocus', tr.elevationFocusMm);
-    p.f('uElevHarmonic', inputs.bmode.harmonic ? 1 : 0);
-    // el transitorio, de banda fundamental, se rechaza en armónica (decisión 77); el ruido del receptor va en C y D
-    p.f('uTransientGain', transientGain(inputs.bmode.harmonic));
-    p.v2('uHarmonicNear', ...harmonicNearUniform(inputs.bmode.harmonic));
     const an = this.speckleAnchor.update(inputs.frame.face, inputs.frame.elevation, inputs.sample.t);
     this.lastAnchorWeight = an.w;
-    p.v3('uAnchorE0', an.a.e);
-    p.v3('uAnchorP0', an.a.p);
-    p.v3('uAnchorE1', an.b.e);
-    p.v3('uAnchorP1', an.b.p);
-    p.v2('uAnchorSalt', an.a.parity * ANCHOR_SALT_STEP, an.b.parity * ANCHOR_SALT_STEP);
-    p.f('uAnchorW', an.w);
-    p.v4v('uTissueClump4', this.clump);
-    // eco de interfaz (decisión 57): tabla de caras y PSF lateral para la coherencia de curvatura
-    p.v4v('uIface', this.ifaceUniforms);
-    p.f('uIfaceK0', this.ifaceK0);
-    this.setLateralPsfUniforms(p, inputs);
-    drawFullscreen(gl);
+    const draw = (p: GLProgram, target: RenderTarget, readClass: boolean, readEcho: boolean): void => {
+      bindTarget(gl, target);
+      p.use();
+      this.setSceneUniforms(p, inputs);
+      this.setBeamUniforms(p, inputs);
+      if (steered) {
+        // la dirigida lee A o1 (la dirección reflejada de la línea del espejo) y o3 (su camino), no o0
+        p.tex('uTrans1', 1, this.tTrans.textures[1]);
+        p.tex('uTrans3', 2, this.tTrans.textures[3]);
+        this.setSteerUniforms(p, inputs);
+        p.f('uLookSalt', this.look?.salt ?? 0);
+      } else {
+        p.tex('uTrans0', 0, this.tTrans.textures[0]);
+        p.tex('uTrans1', 1, this.tTrans.textures[1]);
+      }
+      // la pleura parietal de A0 (decisión 61): su cruce, el borde de la cortina y la pérdida de la lámina; y el
+      // rayo único de A (tope de la transmisión sin la lámina)
+      p.tex('uHits2', 3, this.tHits.textures[2]);
+      p.tex('uTrans2', 4, this.tTrans.textures[2]);
+      p.f('uSeed', (inputs.seed % 1000) / 7.0);
+      p.f('uLattice', 0.42);
+      p.f('uElevSigma0', ELEV_SIGMA0_MM);
+      p.f('uElevFocus', tr.elevationFocusMm);
+      p.f('uElevHarmonic', inputs.bmode.harmonic ? 1 : 0);
+      // el transitorio, de banda fundamental, se rechaza en armónica (decisión 77); el ruido del receptor va en C y D
+      p.f('uTransientGain', transientGain(inputs.bmode.harmonic));
+      p.v2('uHarmonicNear', ...harmonicNearUniform(inputs.bmode.harmonic));
+      p.v3('uAnchorE0', an.a.e);
+      p.v3('uAnchorP0', an.a.p);
+      p.v3('uAnchorE1', an.b.e);
+      p.v3('uAnchorP1', an.b.p);
+      p.v2('uAnchorSalt', an.a.parity * ANCHOR_SALT_STEP, an.b.parity * ANCHOR_SALT_STEP);
+      p.f('uAnchorW', an.w);
+      p.v4v('uTissueClump4', this.clump);
+      // eco de interfaz (decisión 57): tabla de caras y PSF lateral para la coherencia de curvatura
+      p.v4v('uIface', this.ifaceUniforms);
+      p.f('uIfaceK0', this.ifaceK0);
+      this.setLateralPsfUniforms(p, inputs);
+      if (readClass && this.rawStages) {
+        // Literal binding names are required by the production GLSL uniform compactor.
+        p.tex('uRawClass0', 10, this.rawStages.classTarget.textures[0]);
+        p.tex('uRawClass1', 11, this.rawStages.classTarget.textures[1]);
+        p.tex('uRawClass2', 12, this.rawStages.classTarget.textures[2]);
+      }
+      if (readEcho && this.rawStages) p.tex('uRawEcho', 13, this.rawStages.echoTarget.textures[0]);
+      drawFullscreen(gl);
+    };
+    if (this.rawStages) {
+      draw(this.lookProgram(this.rawStages.classes), this.rawStages.classTarget, false, false);
+      draw(this.lookProgram(this.rawStages.echo), this.rawStages.echoTarget, true, false);
+    }
+    draw(this.lookProgram(this.pRaw), this.tRaw, !!this.rawStages, !!this.rawStages);
   }
 
   /** Ecos parásitos del modo (decisión 76): de la pared del paciente de la escena y del modo de imagen. */

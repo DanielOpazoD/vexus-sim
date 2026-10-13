@@ -41,15 +41,20 @@ describe('Esquema de uniforms de la escena', () => {
   it('sube el índice conservador y vuelve al recorrido completo cuando no hay índice', () => {
     const scene = new AnatomyScene(CASES[0]);
     const sample = new PhysiologyEngine(CASES[0], scene.vesselAreas()).step();
-    for (const tubeGrid of [{ origin: [-32, 64, -96], size: [4, 5, 6] } as const, null]) {
-      const context = tubeGrid ? { origin: [...tubeGrid.origin], size: [...tubeGrid.size] } : null;
+    for (const tubeGrid of [
+      { origin: [-32, 64, -96], size: [4, 5, 6], pitch: 16 } as const,
+      { origin: [-32, 64, -96], size: [4, 5, 6], pitch: 32 } as const,
+      null,
+    ]) {
+      const context = tubeGrid ? { origin: [...tubeGrid.origin], size: [...tubeGrid.size], pitch: tubeGrid.pitch } : null;
       const values = evaluateSceneUniforms(scene, {
         sample,
         tubeCount: 40,
         compression: null,
-        tubeGrid: context as { origin: [number, number, number]; size: [number, number, number] } | null,
+        tubeGrid: context as { origin: [number, number, number]; size: [number, number, number]; pitch: number } | null,
       });
       const value = (name: string) => Array.from(values.find((v) => v.spec.name === name)!.data);
+      expect(value('uTubeGridPitch')).toEqual([tubeGrid?.pitch ?? 32]);
       expect(value('uTubeGridEnabled')).toEqual([tubeGrid ? 1 : 0]);
       expect(value('uTubeGridOrigin')).toEqual(tubeGrid?.origin ?? [0, 0, 0]);
       expect(value('uTubeGridSize')).toEqual(tubeGrid?.size ?? [1, 1, 1]);

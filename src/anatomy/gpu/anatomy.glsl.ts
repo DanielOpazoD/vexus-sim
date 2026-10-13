@@ -1,3 +1,4 @@
+import { GALLBLADDER_WALL_MM } from '../organs/gallbladder';
 import { TUBE_GRID_PITCH_MM } from './tubeGrid';
 import { THORACIC_GLSL } from '../thoracicAtlas';
 import { SCENE_TUBE_CAPACITY } from '../tubeCapacity';
@@ -712,7 +713,11 @@ void classifyInside(vec3 m, bool withCurtain, float depth, vec3 tn, float dSpine
     return;
   }
   vec3 gn;
-  float dGb = gallbladderSdf(m, gn);
+  float dGb;
+  if (uAbdominalAtlasEnabled != 0) {
+    dGb = abdominalAtlasSdf(m, 7) + ${GALLBLADDER_WALL_MM.toFixed(3)};
+    if (dGb < 0.0 || dGb < uGbExtra.y) gn = abdominalAtlasGradient(m, 7);
+  } else dGb = gallbladderSdf(m, gn);
   if (dGb < 0.0) { c.tissue = T_FLUID; c.bd = -dGb; c.n = gn; c.iface = IF_GALLBLADDER; c.ifd = -dGb; return; }
   if (dGb < uGbExtra.y) { c.tissue = T_BILEWALL; c.bd = min(dGb, uGbExtra.y - dGb); c.n = gn; c.iface = IF_GALLBLADDER; c.ifd = dGb; return; }
   // Riñones; dPeri = distancia a la cara externa de la grasa perirrenal y periThin, si esa grasa es fina (la cápsula
@@ -728,7 +733,7 @@ void classifyInside(vec3 m, bool withCurtain, float depth, vec3 tn, float dSpine
     float dFat=uAbdominalAtlasEnabled!=0?perirenalOuterSdf(kidneyLocal(m,k),k):dOuter-fat;
     if (dFat < dPeri) { dPeri = dFat; periThin = fat <= PERI.z; }
     vec3 kn;
-    kidneyOuter(m, k, kn);
+    if (dOuter < 0.0 || dFat < 0.0) kidneyOuter(m, k, kn);
     if (dOuter < 0.0) {
       // 4: los vasos arcuatos (decisión 87), pared arterial sin luz
       c.tissue = region == 4 ? T_ARTERYWALL : (region == 3 ? T_RENAL_PELVIS : (region == 2 ? T_RENAL_SINUS : (region == 1 ? T_RENAL_MEDULLA : T_RENAL_CORTEX)));
@@ -762,8 +767,11 @@ void classifyInside(vec3 m, bool withCurtain, float depth, vec3 tn, float dSpine
     }
   }
   if (!thickFat && abdomenQuery(m, c)) return;
-  vec3 ln; float dLiverBase;
-  float dLiver = liverSdf(m, ln, dLiverBase);
+  vec3 ln; float dLiverBase; float dLiver;
+  if (uAbdominalAtlasEnabled != 0) {
+    dLiverBase = abdominalAtlasSdf(m, 4); dLiver = dLiverBase;
+    if (!thickFat && dLiver < 0.0) ln = abdominalAtlasGradient(m, 4);
+  } else dLiver = liverSdf(m, ln, dLiverBase);
   // la mitad externa de la grasa gruesa dibuja su cara solo contra el hígado (Morison, a ≤ MORISON_CONTACT_MM de ella);
   // si no, se funde sin línea con la grasa retroperitoneal
   if (thickFat) {

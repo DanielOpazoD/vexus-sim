@@ -22,18 +22,36 @@ export function abdominalAtlasValue(p: Vec3, field: number): { d: number; label:
   const data = abdominalAtlas,
     f = ABDOMINAL_FIELDS[field];
   if (!data || !f) return { d: 16, label: 0 };
-  const q = p.map((v, i) => (v - f.originMm[i]) / f.pitchMm);
-  if (q.some((v, i) => v < 0 || v > f.dimensions[i] - 1)) return { d: 16, label: 0 };
-  const a = q.map((v, i) => Math.min(f.dimensions[i] - 2, Math.floor(v))),
-    t = q.map((v, i) => v - a[i]);
+  // Scalar coordinates avoid allocating temporary vectors and an index closure for every voxel query.
+  const queryX = (p[0] - f.originMm[0]) / f.pitchMm;
+  const queryY = (p[1] - f.originMm[1]) / f.pitchMm;
+  const queryZ = (p[2] - f.originMm[2]) / f.pitchMm;
+  if (
+    queryX < 0 ||
+    queryY < 0 ||
+    queryZ < 0 ||
+    queryX > f.dimensions[0] - 1 ||
+    queryY > f.dimensions[1] - 1 ||
+    queryZ > f.dimensions[2] - 1
+  )
+    return { d: 16, label: 0 };
+  const cornerX = Math.min(f.dimensions[0] - 2, Math.floor(queryX));
+  const cornerY = Math.min(f.dimensions[1] - 2, Math.floor(queryY));
+  const cornerZ = Math.min(f.dimensions[2] - 2, Math.floor(queryZ));
+  const fractionX = queryX - cornerX,
+    fractionY = queryY - cornerY,
+    fractionZ = queryZ - cornerZ;
   const [w, h] = ABDOMINAL_ATLAS.textureDimensions;
-  const index = (x: number, y: number, z: number) => 2 * ((z + f.offset[2]) * w * h + (y + f.offset[1]) * w + x + f.offset[0]);
+  const [offsetX, offsetY, offsetZ] = f.offset;
   let d = 0;
   for (let z = 0; z <= 1; z++)
     for (let y = 0; y <= 1; y++)
-      for (let x = 0; x <= 1; x++)
-        d += HALF[data[index(a[0] + x, a[1] + y, a[2] + z)]] * (x ? t[0] : 1 - t[0]) * (y ? t[1] : 1 - t[1]) * (z ? t[2] : 1 - t[2]);
-  return { d, label: HALF[data[index(...(q.map(Math.round) as Vec3)) + 1]] };
+      for (let x = 0; x <= 1; x++) {
+        const index = 2 * ((cornerZ + z + offsetZ) * w * h + (cornerY + y + offsetY) * w + cornerX + x + offsetX);
+        d += HALF[data[index]] * (x ? fractionX : 1 - fractionX) * (y ? fractionY : 1 - fractionY) * (z ? fractionZ : 1 - fractionZ);
+      }
+  const labelIndex = 2 * ((Math.round(queryZ) + offsetZ) * w * h + (Math.round(queryY) + offsetY) * w + Math.round(queryX) + offsetX);
+  return { d, label: HALF[data[labelIndex + 1]] };
 }
 
 export function abdominalAtlasSdf(p: Vec3, field: number): number {

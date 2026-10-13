@@ -26,7 +26,7 @@ export function bindPopover(toggle: HTMLButtonElement, pop: HTMLElement): void {
   };
   if (pop.id) toggle.setAttribute('aria-controls', pop.id);
   set(!pop.hidden);
-  toggle.addEventListener('click', () => set(pop.hidden));
+  toggle.addEventListener('click', () => set(Boolean(pop.hidden)));
   document.addEventListener('pointerdown', (e) => {
     const target = e.target as Node | null;
     if (!pop.hidden && target && !pop.contains(target) && !toggle.contains(target)) set(false);

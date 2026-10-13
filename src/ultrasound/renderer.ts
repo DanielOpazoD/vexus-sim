@@ -43,7 +43,7 @@ import { CompoundRing, compoundActive, lookTheta, type CompoundLook } from './co
 import { CINE_FRAMES, CineRing, persistenceReplay } from './cine';
 import { M_COLUMNS, M_SAMPLES, MColumnRing, mLineU } from './mmode';
 import { lookWavenumber } from './steering';
-import type { SegmentGrid } from './transmission';
+import { MIRROR_BISECTION_STEPS, type SegmentGrid } from './transmission';
 import {
   BODY_BASE,
   RIB_BASE,
@@ -77,6 +77,10 @@ import {
   FRAG_QUERY,
   FRAG_TRIAD_QUERY,
   FRAG_TRANS_HITS,
+  FRAG_TRANS_HITS_GRID,
+  FRAG_TRANS_HITS_INITIAL,
+  FRAG_TRANS_HITS_REFINE,
+  FRAG_TRANS_HITS_FINISH,
   FRAG_TRANS_PREFIX,
   FRAG_TRANS_PREFIX_STEERED,
   FRAG_TRANS_SEGMENTS,
@@ -332,9 +336,19 @@ interface LookPrograms {
   steered: GLProgram;
 }
 
+interface AtlasHitStages {
+  programs: Record<'grid' | 'initial' | 'refine' | 'finish', GLProgram>;
+  grid: RenderTarget;
+  initial: RenderTarget;
+  refine: [RenderTarget, RenderTarget];
+}
+
 export class UltrasoundRenderer {
   readonly gl: WebGL2RenderingContext;
-  private pTransHits: GLProgram;
+  /** Same A0 discretization; SwiftShader needs classification outside its per-line loop. */
+  readonly transmissionHitsPipeline: 'line' | 'staged-atlas';
+  private pTransHits: GLProgram | null;
+  private atlasHitStages: AtlasHitStages | null;
   private pTransSeg: GLProgram;
   private pTransPre: LookPrograms;
   private pTrans: LookPrograms;
@@ -473,18 +487,32 @@ export class UltrasoundRenderer {
     const gl = canvas.getContext('webgl2', { antialias: false, premultipliedAlpha: false, preserveDrawingBuffer: false });
     if (!gl) throw new Error('WebGL2 no disponible');
     this.gl = gl;
+    // Renderer identity may be hidden by browser policy; choose the bootable path when unknown.
+    const debug = gl.getExtension('WEBGL_debug_renderer_info');
+    const renderer = debug ? String(gl.getParameter(debug.UNMASKED_RENDERER_WEBGL)) : '';
+    this.transmissionHitsPipeline =
+      currentScene.hasAbdominalAtlas && (!renderer || /SwiftShader/i.test(renderer)) ? 'staged-atlas' : 'line';
     if (!gl.getExtension('EXT_color_buffer_float')) throw new Error('EXT_color_buffer_float no disponible');
     gl.getExtension('OES_texture_float_linear');
     // compilación en hilos de fondo del navegador (opcional; sin ella, el mismo lote en serie): se pide antes
     // de compilar, y `linkAll` encarga todos los programas antes de comprobar ninguno (decisión 58)
     gl.getExtension('KHR_parallel_shader_compile');
     this.timer = new GpuPassTimer<PassId>(gl);
-    const p = GLProgram.linkAll(
+    const hitFragments: Record<string, string> =
+      this.transmissionHitsPipeline === 'staged-atlas'
+        ? {
+            a0Grid: FRAG_TRANS_HITS_GRID,
+            a0Initial: FRAG_TRANS_HITS_INITIAL,
+            a0Refine: FRAG_TRANS_HITS_REFINE,
+            a0Finish: FRAG_TRANS_HITS_FINISH,
+          }
+        : { transmissionHits: FRAG_TRANS_HITS };
+    const p: Record<string, GLProgram> = GLProgram.linkAll(
       gl,
       VERT,
       specializeSceneShaders(
         {
-          transmissionHits: FRAG_TRANS_HITS,
+          ...hitFragments,
           transmissionSegments: FRAG_TRANS_SEGMENTS,
           transmissionPrefix: FRAG_TRANS_PREFIX,
           transmissionPrefixSteered: FRAG_TRANS_PREFIX_STEERED,
@@ -507,7 +535,7 @@ export class UltrasoundRenderer {
         this.currentScene.hasAbdominalAtlas,
       ),
     );
-    this.pTransHits = p.transmissionHits;
+    this.pTransHits = p['transmissionHits'] ?? null;
     this.pTransSeg = p.transmissionSegments;
     this.pTransPre = { look0: p.transmissionPrefix, steered: p.transmissionPrefixSteered };
     this.pTrans = { look0: p.transmission, steered: p.transmissionSteered };
@@ -534,6 +562,15 @@ export class UltrasoundRenderer {
     const fn = { internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.NEAREST };
     // A0: espejo e impactos (0 y 1) y la pleura parietal de cada línea (2, decisión 61), que lee la pasada B
     this.tHits = createTarget(gl, LINES, 1, [fn, fn, fn]);
+    this.atlasHitStages =
+      this.transmissionHitsPipeline === 'staged-atlas'
+        ? {
+            programs: { grid: p['a0Grid'], initial: p['a0Initial'], refine: p['a0Refine'], finish: p['a0Finish'] },
+            grid: createTarget(gl, LINES, COARSE_DEPTH * 2, [fn]),
+            initial: createTarget(gl, LINES, 1, [fn, fn, fn]),
+            refine: [createTarget(gl, LINES, 1, [fn, fn]), createTarget(gl, LINES, 1, [fn, fn])],
+          }
+        : null;
     this.tSeg = createTarget(gl, LINES, COARSE_DEPTH, [fn]);
     this.tPre = createTarget(gl, LINES, COARSE_DEPTH, [fn, fn, fn, fn]);
     this.tTrans = createTarget(gl, LINES, COARSE_DEPTH, [f, fn, f, f]);
@@ -601,7 +638,8 @@ export class UltrasoundRenderer {
   dispose(): void {
     const gl = this.gl;
     for (const p of [
-      this.pTransHits,
+      ...(this.pTransHits ? [this.pTransHits] : []),
+      ...(this.atlasHitStages ? Object.values(this.atlasHitStages.programs) : []),
       this.pTransSeg,
       ...[this.pTransPre, this.pTrans, this.pRaw].flatMap((l) => [l.look0, l.steered]),
       this.pAxial,
@@ -622,6 +660,7 @@ export class UltrasoundRenderer {
     this.timer.dispose();
     for (const t of [
       this.tHits,
+      ...(this.atlasHitStages ? [this.atlasHitStages.grid, this.atlasHitStages.initial, ...this.atlasHitStages.refine] : []),
       this.tSeg,
       this.tPre,
       this.tTrans,
@@ -1231,12 +1270,55 @@ export class UltrasoundRenderer {
 
   // A0 — primeros impactos por línea (una marcha por línea)
   private passTransmissionHits(inputs: FrameInputs): void {
+    if (this.atlasHitStages) return this.passAtlasTransmissionHits(inputs, this.atlasHitStages);
+    if (!this.pTransHits) throw new Error('Missing transmission hits program');
     const gl = this.gl;
     bindTarget(gl, this.tHits);
     this.pTransHits.use();
     this.setSceneUniforms(this.pTransHits, inputs);
     this.setBeamUniforms(this.pTransHits, inputs);
     this.pTransHits.f('uCoarseN', COARSE_DEPTH);
+    drawFullscreen(gl);
+  }
+
+  /**
+   * SwiftShader compiles the nested anatomy classifier in A0's per-line loop too slowly to boot.
+   * Classify the same coarse centers in a 2D target, reduce each line, refine its first mirror with
+   * six draws, then classify the reflected centers. Keep native drivers on the original A0.
+   */
+  private passAtlasTransmissionHits(inputs: FrameInputs, stages: AtlasHitStages): void {
+    const gl = this.gl;
+    const setup = (p: GLProgram, target: RenderTarget, previous: RenderTarget) => {
+      bindTarget(gl, target);
+      p.use();
+      this.setSceneUniforms(p, inputs);
+      this.setBeamUniforms(p, inputs);
+      p.f('uCoarseN', COARSE_DEPTH);
+      p.tex('uA0Initial0', 0, stages.initial.textures[0]);
+      p.tex('uA0Initial1', 1, stages.initial.textures[1]);
+      p.tex('uA0Initial2', 2, stages.initial.textures[2]);
+      p.tex('uA0Refine0', 3, previous.textures[0]);
+      p.tex('uA0Refine1', 4, previous.textures[1]);
+      p.tex('uA0Grid', 5, stages.grid.textures[0]);
+    };
+    setup(stages.programs.grid, stages.grid, stages.refine[1]);
+    stages.programs.grid.i('uA0ReflectedGrid', 0);
+    drawFullscreen(gl);
+    setup(stages.programs.initial, stages.initial, stages.refine[1]);
+    drawFullscreen(gl);
+    let previous = stages.refine[1];
+    for (let iteration = 0; iteration < MIRROR_BISECTION_STEPS; iteration++) {
+      const target = stages.refine[iteration % 2];
+      setup(stages.programs.refine, target, previous);
+      stages.programs.refine.i('uA0Refinement', iteration);
+      drawFullscreen(gl);
+      previous = target;
+    }
+    setup(stages.programs.grid, stages.grid, previous);
+    stages.programs.grid.i('uA0ReflectedGrid', 1);
+    gl.viewport(0, 0, this.lines, COARSE_DEPTH);
+    drawFullscreen(gl);
+    setup(stages.programs.finish, this.tHits, previous);
     drawFullscreen(gl);
   }
 

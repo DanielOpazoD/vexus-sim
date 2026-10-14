@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { bootWithoutErrors, budget } from './support';
+import { bootWithoutErrors, budget, windowAcquired, withinFrames } from './support';
 import type { CutMapInit, CutMapRequest, CutMapResponse } from '../src/ui/cutMapWorker';
 
 interface WorkerWitness {
@@ -28,10 +28,17 @@ test('the anatomical worker receives the exact acquisition wall and costal atlas
   });
   const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
   await page.locator('.win-card').nth(2).click();
-  await page.waitForFunction(() => {
-    const witness = (window as typeof window & { mapWitness: WorkerWitness }).mapWitness;
-    return !!witness.map && window.__vexusTest!.framesRendered() > 50;
-  });
+  await windowAcquired(page, 'intercostal');
+  await withinFrames(page, 30, 'mapa del plano intercostal adquirido', async () =>
+    page.evaluate(() => {
+      const witness = (window as typeof window & { mapWitness: WorkerWitness }).mapWitness;
+      const request = witness.map && witness.requests[witness.map.id];
+      return (
+        (!!request && JSON.stringify(request.frame) === JSON.stringify(window.__vexusTest!.sim().renderer.displayedAnatomy!.frame)) ||
+        'mapa de otra pose'
+      );
+    }),
+  );
   await page.locator('#freeze').click();
   const report = await page.evaluate(() => {
     const s = window.__vexusTest!.sim(),
@@ -81,15 +88,7 @@ for (const [index, target] of [
     budget(180000);
     const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
     await page.locator('.win-card').nth(index).click();
-    await page.waitForFunction(
-      ({ z, yaw }) => {
-        const p = window.__vexusTest!.sim().pose;
-        return Math.abs(p.z - z) < 0.00001 && Math.abs(p.yaw - yaw) < 0.00001;
-      },
-      index === 0 ? { z: -40, yaw: -0.02516291680704072 } : { z: -80, yaw: 0.6280025227578521 },
-    );
-    const f = await page.evaluate(() => window.__vexusTest!.framesRendered());
-    await page.waitForFunction((n) => window.__vexusTest!.framesRendered() > n + 45, f);
+    await windowAcquired(page, index === 0 ? 'subxiphoid' : 'subcostal');
     const report = await page.evaluate((target) => {
       const s = window.__vexusTest!.sim(),
         a = s.renderer.displayedAnatomy!,
@@ -138,7 +137,17 @@ for (const [index, target] of [
       await input.focus();
       for (let k = 0; k < 4; k++) await input.press('ArrowRight');
       const before = await page.evaluate(() => window.__vexusTest!.framesRendered());
-      await page.waitForFunction((n) => window.__vexusTest!.framesRendered() > n + 3, before);
+      await withinFrames(page, 4, `adquisición del movimiento manual ${name}`, async () =>
+        page.evaluate((before) => {
+          const h = window.__vexusTest!,
+            s = h.sim(),
+            acquired = s.renderer.displayedAnatomy;
+          return (
+            (h.framesRendered() > before && !!acquired && JSON.stringify(acquired.pose) === JSON.stringify(s.pose)) ||
+            'pose manual aún no adquirida'
+          );
+        }, before),
+      );
       for (let k = 0; k < 4; k++) await input.press('ArrowLeft');
     }
     await page.screenshot({ path: info.outputPath('subcostal-after-manual-movements.png') });

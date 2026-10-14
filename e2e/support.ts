@@ -1,3 +1,4 @@
+import { startPointsFor, type StartPoint } from '../src/app/startPoints';
 import { expect, test, type ConsoleMessage, type Page } from '@playwright/test';
 import { startupEntry, type StartupEntry } from '../src/app/startupTrace';
 import { startupEvidenceSink } from '../tools/ci/e2eStartupEvidence';
@@ -22,6 +23,27 @@ export const BOOT_MS = process.env.CI ? 180_000 : 300_000;
 /** Plazo de una prueba: `boots` arranques más `workMs` de trabajo (medido en el corredor, con margen ×2 o más). */
 export function budget(workMs: number, boots = 1): void {
   test.setTimeout(boots * BOOT_MS + workMs);
+}
+
+/** Wait for the selected physical pose to be acquired, not fifty unnecessary software-rendered frames. */
+export async function windowAcquired(page: Page, id: StartPoint['id']) {
+  const torso = await page.evaluate(() => {
+    const t = window.__vexusTest!.sim().scene.torso;
+    return { a: t.a, b: t.b, profile: Array.from(t.profile!) };
+  });
+  const target = startPointsFor({ ...torso, profile: new Float32Array(torso.profile) }).find((p) => p.id === id)!;
+  const expected = { phi: target.phi, z: target.z, yaw: target.yaw, rock: target.rock ?? 0, tilt: target.tilt ?? 0, lift: 0 };
+  // ProbeAnimator converges in simulation time and snaps all six fields to the target.
+  // Require BOTH the current probe and the displayed acquisition, with the existing test budget unchanged.
+  await withinSimSeconds(page, 3, `pose adquirida de ${id}`, async () =>
+    page.evaluate((expected) => {
+      const s = window.__vexusTest!.sim(),
+        a = s.renderer.displayedAnatomy;
+      const matches = (pose: typeof expected) =>
+        (Object.keys(expected) as Array<keyof typeof expected>).every((k) => Math.abs(pose[k] - expected[k]) < 1e-10);
+      return (!!a && matches(s.pose) && matches(a.pose)) || 'sonda o adquisición aún en transición';
+    }, expected),
+  );
 }
 
 /** Cuadros completos del bucle de la aplicación desde el arranque (no cuenta los que dibujan los ganchos). */

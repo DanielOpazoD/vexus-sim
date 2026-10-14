@@ -198,7 +198,7 @@ Generado por `npm run docs:index` — no editar a mano.
 | [192](DECISIONS.md#L6930) | Sacar la clasificación de elevación del bucle del campo crudo | vigente |
 | [193](DECISIONS.md#L6940) | Compartir plantillas GLSL sin cambiar los programas generados | vigente |
 | [194](DECISIONS.md#L6950) | Índice conservador de las envolventes vasculares y modelos explícitos en E2E | vigente |
-| [195](DECISIONS.md#L6980) | Doce grupos para la colección E2E del Atlas | vigente |
-| [196](DECISIONS.md#L6992) | Reconstruir WebGL sin borrar recursos de la generación perdida | vigente |
-| [197](DECISIONS.md#L7004) | Secuencias GLSL de transporte sin pérdida | vigente |
-| [198](DECISIONS.md#L7016) | Gradiente por ejes en la ruta Atlas de SwiftShader | vigente |
+| [195](DECISIONS.md#L6984) | Doce grupos para la colección E2E del Atlas | vigente |
+| [196](DECISIONS.md#L6996) | Reconstruir WebGL sin borrar recursos de la generación perdida | vigente |
+| [197](DECISIONS.md#L7008) | Secuencias GLSL de transporte sin pérdida | vigente |
+| [198](DECISIONS.md#L7020) | Gradiente por ejes en la ruta Atlas de SwiftShader | vigente |

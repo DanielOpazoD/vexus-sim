@@ -1,5 +1,27 @@
-import { expect, test } from '@playwright/test';
-import { bootWithoutErrors, budget } from './support';
+import { expect, test, type Page } from '@playwright/test';
+import { startPointsFor, type StartPoint } from '../src/app/startPoints';
+import { bootWithoutErrors, budget, withinSimSeconds } from './support';
+
+/** Wait for the selected physical pose to be acquired, not fifty unnecessary software-rendered frames. */
+async function windowAcquired(page: Page, id: StartPoint['id']) {
+  const torso = await page.evaluate(() => {
+    const t = window.__vexusTest!.sim().scene.torso;
+    return { a: t.a, b: t.b, profile: Array.from(t.profile!) };
+  });
+  const target = startPointsFor({ ...torso, profile: new Float32Array(torso.profile) }).find((p) => p.id === id)!;
+  const expected = { phi: target.phi, z: target.z, yaw: target.yaw, rock: target.rock ?? 0, tilt: target.tilt ?? 0, lift: 0 };
+  // ProbeAnimator converges in simulation time and snaps all six fields to the target.
+  // Require BOTH the current probe and the displayed acquisition, with the existing test budget unchanged.
+  await withinSimSeconds(page, 3, `pose adquirida de ${id}`, async () =>
+    page.evaluate((expected) => {
+      const s = window.__vexusTest!.sim(),
+        a = s.renderer.displayedAnatomy;
+      const matches = (pose: typeof expected) =>
+        (Object.keys(expected) as Array<keyof typeof expected>).every((k) => Math.abs(pose[k] - expected[k]) < 1e-10);
+      return (!!a && matches(s.pose) && matches(a.pose)) || 'sonda o adquisición aún en transición';
+    }, expected),
+  );
+}
 
 for (const caseId of ['normal-adult', 'severe-congestion'])
   test(`registered hepatic contact agrees across the production classifiers (${caseId})`, async ({ page }, info) => {
@@ -7,8 +29,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
     const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
     if (caseId !== 'normal-adult') await page.selectOption('#case-select', caseId);
     await page.locator('.win-card').nth(3).click();
-    const f = await page.evaluate(() => window.__vexusTest!.framesRendered());
-    await page.waitForFunction((f) => window.__vexusTest!.framesRendered() > f + 50, f, { timeout: 120_000 });
+    await windowAcquired(page, 'subcostal');
     await page.locator('#freeze').click();
     const result = await page.evaluate(() => {
       const s = window.__vexusTest!.sim(),
@@ -76,8 +97,7 @@ test('main portal PW window restores its own depth after the intrahepatic window
   await expect(page.getByLabel('Profundidad', { exact: true })).toHaveValue('130');
   await page.locator('.win-card').nth(6).click();
   await expect(page.getByLabel('Profundidad', { exact: true })).toHaveValue('160');
-  const f = await page.evaluate(() => window.__vexusTest!.framesRendered());
-  await page.waitForFunction((f) => window.__vexusTest!.framesRendered() > f + 50, f, { timeout: 120_000 });
+  await windowAcquired(page, 'portalTrunk');
   await page.locator('#freeze').click();
   const result = await page.evaluate(() => {
     const s = window.__vexusTest!.sim(),

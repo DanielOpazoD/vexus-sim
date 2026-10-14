@@ -35,6 +35,7 @@ function fakePanel(sim: object, debug = false) {
     tool: 'none',
   });
   const ctx: PanelContext = {
+    setPose: vi.fn(),
     sim: () => sim as unknown as Simulator,
     store,
     dispatch: () => undefined,

@@ -66,6 +66,7 @@ export class ControlPanel implements PanelContext {
     readonly sim: () => Simulator,
     readonly store: Store,
     readonly dispatch: (cmd: EquipmentCommand) => void,
+    readonly setPose: Simulator['setPose'],
   ) {
     root.innerHTML = '';
     const bar = document.createElement('div');

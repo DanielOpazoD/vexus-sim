@@ -20,7 +20,7 @@ test('el trabajador modular conserva clasificación y estado separado al cambiar
     if (typeof original !== 'function') throw new Error('Worker.postMessage no disponible');
     Worker.prototype.postMessage = function (message: unknown, transfer: Transferable[] | StructuredSerializeOptions = []) {
       const packet = message as CutMapInit | CutMapRequest;
-      if (packet.type === 'init' && 'patient' in packet) {
+      if ('patient' in packet) {
         const witness: SharedMapWitness = { init: packet, requests: {} };
         window.sharedMapWitness = witness;
         this.addEventListener('message', (ev: MessageEvent<CutMapResponse>) => {

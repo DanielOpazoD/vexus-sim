@@ -17,6 +17,7 @@ function mount() {
   const syncables: Syncable[] = [];
   const host = new FakeElement('div');
   const ctx: PanelContext = {
+    setPose: vi.fn(),
     sim: () => ({ patient }) as Simulator,
     store: new Store({
       mode: 'B',

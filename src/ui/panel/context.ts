@@ -19,6 +19,8 @@ export interface SectionOptions {
  */
 export interface PanelContext {
   sim: () => Simulator;
+  /** Manual probe input cancels any automatic window transition. */
+  setPose: Simulator['setPose'];
   store: Store;
   /** Único camino para cambiar el equipo: comandos normalizados por `EquipmentController`. */
   dispatch(cmd: EquipmentCommand): void;

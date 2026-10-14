@@ -134,7 +134,7 @@ void import('./ui/cutMapView')
     markStartup('cut:ready');
   })
   .catch((e: unknown) => errorLog.report('corte', e));
-const panel = new ControlPanel($('panel'), sim, store, dispatch);
+const panel = new ControlPanel($('panel'), sim, store, dispatch, setPoseManual);
 markStartup('controls:ready');
 panel.onCapture = () => drawTraces(sim());
 session.equipment.subscribe(() => panel.sync());

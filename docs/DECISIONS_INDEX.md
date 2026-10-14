@@ -193,3 +193,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [187](DECISIONS.md#L6870) | Registro renal rígido con hitos reservados y escala fija | vigente |
 | [188](DECISIONS.md#L6882) | TAC remuestreado en los centros físicos del plano US | vigente |
 | [189](DECISIONS.md#L6894) | Identidad canónica de los módulos GLSL de Three | vigente |
+| [199](DECISIONS.md#L6906) | Gradiente de velocidad color sin pedestal brillante | vigente |

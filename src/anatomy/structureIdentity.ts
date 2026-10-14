@@ -42,7 +42,17 @@ export function structureIdentity(p: Vec3, tissue: Tissue, iface: Interface, sce
     if (abdominalAtlasSdf(p, 6) < 0) return 3;
     return 0;
   }
-  if (![Tissue.Fluid, Tissue.Bowel, Tissue.BowelGas, Tissue.GutMuscularis, Tissue.GutSubmucosa, Tissue.SoftCapsule].includes(tissue))
+  if (
+    ![
+      Tissue.Fluid,
+      Tissue.ColonicContents,
+      Tissue.Bowel,
+      Tissue.BowelGas,
+      Tissue.GutMuscularis,
+      Tissue.GutSubmucosa,
+      Tissue.SoftCapsule,
+    ].includes(tissue)
+  )
     return 0;
   for (const [field, id] of [
     [0, 5],

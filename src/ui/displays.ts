@@ -402,7 +402,7 @@ function drawColorScale(ctx: CanvasRenderingContext2D, W: number, H: number, sim
     // i = 0 arriba (+Nyquist, hacia la sonda); h/2 la línea de base
     const v = 1 - (2 * i) / (h - 1);
     const toward = v >= 0 !== inv;
-    const [r, g, b] = Math.abs(v) < 0.02 ? [0, 0, 0] : colorMapRgb(toward, Math.abs(v));
+    const [r, g, b] = colorMapRgb(toward, Math.abs(v));
     ctx.fillStyle = `rgb(${r},${g},${b})`;
     ctx.fillRect(x, y0 + i, w, 1);
   }

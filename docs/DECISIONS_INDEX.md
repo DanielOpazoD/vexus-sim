@@ -202,3 +202,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [196](DECISIONS.md#L6996) | Reconstruir WebGL sin borrar recursos de la generación perdida | vigente |
 | [197](DECISIONS.md#L7008) | Secuencias GLSL de transporte sin pérdida | vigente |
 | [198](DECISIONS.md#L7020) | Gradiente por ejes en la ruta Atlas de SwiftShader | vigente |
+| [199](DECISIONS.md#L7034) | Gradiente de velocidad color sin pedestal brillante | vigente |

@@ -1,0 +1,51 @@
+name: Diagnóstico de adquisición SwiftShader
+on:
+  pull_request:
+    paths:
+      - 'tools/fidelity/acquisitionTiming.ts'
+      - '.github/workflows/acquisition-timing.yml'
+permissions:
+  contents: read
+concurrency:
+  group: acquisition-timing-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  profile:
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        scenario: [portal, severe-contact]
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: node -e "require('node:assert/strict').equal(require('@playwright/test/package.json').version, '1.63.0')"
+      - run: npx vite build
+      - name: Coste por programa sobre el escenario original
+        env:
+          SCENARIO: ${{ matrix.scenario }}
+        run: |
+          node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 6614 --strictPort > /tmp/vexus-preview.log 2>&1 &
+          preview_pid=$!
+          trap 'kill "$preview_pid"' EXIT
+          node --input-type=module -e 'for(let i=0;i<100;i++){try{if((await fetch("http://127.0.0.1:6614")).ok)process.exit(0)}catch{}await new Promise(r=>setTimeout(r,200))}process.exit(1)'
+          node tools/fidelity/acquisitionTiming.ts 'http://127.0.0.1:6614/?e2e=app&abdomen=atlas' ".validation/timing-$SCENARIO" "$SCENARIO"
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: acquisition-timing-${{ matrix.scenario }}
+          include-hidden-files: true
+          path: .validation/timing-*
+          retention-days: 14
+          if-no-files-found: error

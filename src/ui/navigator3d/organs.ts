@@ -18,6 +18,32 @@ import { perirenalOuterSdf } from '../../anatomy/organs/kidney';
 import { torsoDepth } from '../../anatomy/primitives';
 import { variableTube } from './tubes';
 
+/** Smooth lighting across duplicated triangle vertices; never moves the acoustic contour. */
+export function smoothSurfaceNormals(g: THREE.BufferGeometry): void {
+  const p = g.getAttribute('position'),
+    n = g.getAttribute('normal');
+  const groups = new Map<string, Vec3>(),
+    keys: string[] = [];
+  for (let i = 0; i < p.count; i++) {
+    // One-micrometre quantization relative to millimetre atlas coordinates.
+    const key = [p.getX(i), p.getY(i), p.getZ(i)].map((x) => x.toFixed(3)).join(',');
+    keys.push(key);
+    let sum = groups.get(key);
+    if (!sum) {
+      sum = [0, 0, 0];
+      groups.set(key, sum);
+    }
+    sum[0] += n.getX(i);
+    sum[1] += n.getY(i);
+    sum[2] += n.getZ(i);
+  }
+  for (let i = 0; i < n.count; i++) {
+    const sum = groups.get(keys[i])!,
+      length = Math.hypot(...sum) || 1;
+    n.setXYZ(i, sum[0] / length, sum[1] / length, sum[2] / length);
+  }
+}
+
 /**
  * Malla por marching cubes de un campo implícito (mm, marco anatómico) dentro de una
  * caja: la MISMA función que corta el haz, así el 3D no puede divergir del corte.
@@ -161,17 +187,20 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
   if (a.hasAbdominalAtlas) {
     if (!abdominalSurface) throw new Error('Mallas abdominales sin cargar');
     const colors = [0xd3ab72, 0xcda08b, 0xd8bc76, 0x986991, 0x995d49, 0x985654, 0x985654, 0x78a45f, 0xd8d3bd, 0xa97971, 0xbbb6c6];
-    for (const [i, f] of ABDOMINAL_SURFACE.fields.entries()) {
+    for (const [i, f] of [...ABDOMINAL_SURFACE.fields, ...ABDOMINAL_SURFACE.envelopes].entries()) {
+      const envelope = 'fascia' in f;
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(abdominalSurface.subarray(f.offset, f.offset + f.count * 3), 3));
       geometry.computeVertexNormals();
+      if (envelope || [5, 6, 9].includes(i)) smoothSurfaceNormals(geometry);
       const mesh = new THREE.Mesh(
         geometry,
         new THREE.MeshStandardMaterial({
-          color: colors[i],
+          color: envelope ? (f.fascia ? 0xe9dfc5 : 0xd8bc76) : colors[i],
           roughness: 0.8,
-          transparent: i !== 8 && i !== 10,
-          opacity: i === 4 ? 0.62 : i === 2 ? 0.65 : i === 7 ? 0.7 : 0.85,
+          transparent: ![5, 6, 8, 9, 10].includes(i),
+          depthWrite: !envelope,
+          opacity: envelope ? (f.fascia ? 0.12 : 0.24) : [5, 6, 9].includes(i) ? 1 : i === 4 ? 0.62 : i === 2 ? 0.65 : i === 7 ? 0.7 : 0.85,
         }),
       );
       mesh.scale.setScalar(CM);

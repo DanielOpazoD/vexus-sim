@@ -8,9 +8,9 @@
   "pitchMm": 1.5,
   "textureDimensions": [338, 217, 280],
   "rawBytes": 82147520,
-  "gzipBytes": 5147482,
-  "sha256Gzip": "dbb6da02ef530332043b9e4461ec6ac3eca7172700c9d467f24fb3a04eeb15d7",
-  "sha256Raw": "9a16b1f550949b120dfdbfe5c688c0479625f2afcab8a3f7d452382499477dda",
+  "gzipBytes": 5160485,
+  "sha256Gzip": "6759c6dff4a0a526e07325504369e5aab02d115f60ca3a06ce39349e841785b0",
+  "sha256Raw": "880f9434fb0d56b9229995525797de402b99386f3ac7b0361e4868487a7c8a19",
   "fields": [
     {
       "name": "pancreas",
@@ -212,7 +212,7 @@
         [114.07223450000001, -1.110350000000011, -65.83349999999996]
       ],
       "components": 6,
-      "representedVolumeMl": 326.08575,
+      "representedVolumeMl": 318.0465,
       "offset": [0, 138, 0]
     },
     {
@@ -4364,5 +4364,18 @@
     "gzipSha256": "dbb6da02ef530332043b9e4461ec6ac3eca7172700c9d467f24fb3a04eeb15d7",
     "gzipBytes": 5147482,
     "rawBytesUnchanged": true
+  },
+  "renalBedReconstruction": {
+    "inputRawSha256": "9a16b1f550949b120dfdbfe5c688c0479625f2afcab8a3f7d452382499477dda",
+    "clearanceMm": 2,
+    "status": "ESTIMATED / NEEDS_CALIBRATION",
+    "method": "max(psoas SDF, 2 - renal SDF), source lattice; kidney unchanged",
+    "modifiedField": "psoas",
+    "changedSamples": 17862,
+    "sourceOccupiedCenters": 96618,
+    "derivedOccupiedCenters": 94236,
+    "removedVolumeMl": 8.03925,
+    "reference": "https://training.seer.cancer.gov/kidney/anatomy/",
+    "limitation": "Source has no segmented renal fascia or perirenal fat; 2 mm is a bounded reconstruction, not a normal-population thickness."
   }
 }

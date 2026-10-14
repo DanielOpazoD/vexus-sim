@@ -87,7 +87,7 @@ const TISSUE_LABEL: Record<number, string> = {
   [Tissue.VesselWallThin]: 'pared venosa',
   [Tissue.ArteryWall]: 'pared arterial',
   [Tissue.BileDuctWall]: 'pared biliar',
-  [Tissue.SoftCapsule]: 'cápsula',
+  [Tissue.SoftCapsule]: 'fascia / cápsula visceral',
   [Tissue.Pancreas]: 'páncreas',
   [Tissue.Spleen]: 'bazo',
   [Tissue.GutSubmucosa]: 'pared intestinal',

@@ -205,3 +205,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [199](DECISIONS.md#L7034) | Gradiente de velocidad color sin pedestal brillante | vigente |
 | [200](DECISIONS.md#L7044) | Contenido colónico separado del líquido simple | vigente |
 | [201](DECISIONS.md#L7054) | Seno renal menos apelmazado y revisión del apoyo muscular | vigente |
+| [202](DECISIONS.md#L7066) | Lecho renal con grasa y fascia volumétricas | vigente |

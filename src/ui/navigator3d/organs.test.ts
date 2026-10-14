@@ -1,0 +1,20 @@
+import { expect, it } from 'vitest';
+import { BufferGeometry, Float32BufferAttribute } from 'three';
+import { smoothSurfaceNormals } from './organs';
+it('smooths shared renal surface lighting without changing geometry or joining nearby separate surfaces', () => {
+  const points = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0.01, 0, 0, 0.01, 1, 0, 0.01, 0, 1]);
+  const g = new BufferGeometry();
+  g.setAttribute('position', new Float32BufferAttribute(points, 3));
+  g.computeVertexNormals();
+  smoothSurfaceNormals(g);
+  expect(g.getAttribute('position').array).toEqual(points);
+  expect(g.index).toBeNull();
+  const n = g.getAttribute('normal');
+  expect(n.getX(0)).toBeCloseTo(Math.SQRT1_2, 6);
+  expect(n.getZ(0)).toBeCloseTo(Math.SQRT1_2, 6);
+  expect(n.getX(0)).toBe(n.getX(3));
+  expect(n.getZ(0)).toBe(n.getZ(3));
+  expect(n.getX(6)).toBe(1);
+  expect(n.getZ(6)).toBe(0);
+  g.dispose();
+});

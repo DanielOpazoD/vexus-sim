@@ -1,5 +1,6 @@
 import { expect, it } from 'vitest';
-import { BufferGeometry, Float32BufferAttribute } from 'three';
+import { BufferGeometry, Float32BufferAttribute, Group, Mesh } from 'three';
+import { bindRespiratoryMotion } from './respiratoryMotion';
 import { smoothSurfaceNormals } from './organs';
 it('smooths shared renal surface lighting without changing geometry or joining nearby separate surfaces', () => {
   const points = new Float32Array([0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0.01, 0, 0, 0.01, 1, 0, 0.01, 0, 1]);
@@ -8,13 +9,21 @@ it('smooths shared renal surface lighting without changing geometry or joining n
   g.computeVertexNormals();
   smoothSurfaceNormals(g);
   expect(g.getAttribute('position').array).toEqual(points);
-  expect(g.index).toBeNull();
+  expect(Array.from(g.index!.array)).toEqual([0, 1, 2, 0, 2, 5, 6, 7, 8]);
   const n = g.getAttribute('normal');
   expect(n.getX(0)).toBeCloseTo(Math.SQRT1_2, 6);
   expect(n.getZ(0)).toBeCloseTo(Math.SQRT1_2, 6);
-  expect(n.getX(0)).toBe(n.getX(3));
-  expect(n.getZ(0)).toBe(n.getZ(3));
+
   expect(n.getX(6)).toBe(1);
   expect(n.getZ(6)).toBe(0);
+  const root = new Group();
+  root.add(new Mesh(g));
+  const binding = bindRespiratoryMotion([root], () => 0.5);
+  binding.apply(10);
+  // Recomputing normals during breathing must keep the shared edge smooth.
+  expect(n.getX(0)).toBeCloseTo(Math.SQRT1_2, 6);
+  expect(n.getZ(0)).toBeCloseTo(Math.SQRT1_2, 6);
+  binding.apply(0);
+  expect(g.getAttribute('position').array).toEqual(points);
   g.dispose();
 });

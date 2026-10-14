@@ -18,30 +18,21 @@ import { perirenalOuterSdf } from '../../anatomy/organs/kidney';
 import { torsoDepth } from '../../anatomy/primitives';
 import { variableTube } from './tubes';
 
-/** Smooth lighting across duplicated triangle vertices; never moves the acoustic contour. */
+/** Share coincident vertices so smooth lighting survives respiratory deformation.
+ * Only positions are present on these atlas meshes; never weld textured seams.
+ */
 export function smoothSurfaceNormals(g: THREE.BufferGeometry): void {
   const p = g.getAttribute('position'),
-    n = g.getAttribute('normal');
-  const groups = new Map<string, Vec3>(),
-    keys: string[] = [];
+    groups = new Map<string, number>(),
+    indices: number[] = [];
   for (let i = 0; i < p.count; i++) {
-    // One-micrometre quantization relative to millimetre atlas coordinates.
+    // One micrometre in millimetre atlas coordinates, well below source resolution.
     const key = [p.getX(i), p.getY(i), p.getZ(i)].map((x) => x.toFixed(3)).join(',');
-    keys.push(key);
-    let sum = groups.get(key);
-    if (!sum) {
-      sum = [0, 0, 0];
-      groups.set(key, sum);
-    }
-    sum[0] += n.getX(i);
-    sum[1] += n.getY(i);
-    sum[2] += n.getZ(i);
+    if (!groups.has(key)) groups.set(key, i);
+    indices.push(groups.get(key)!);
   }
-  for (let i = 0; i < n.count; i++) {
-    const sum = groups.get(keys[i])!,
-      length = Math.hypot(...sum) || 1;
-    n.setXYZ(i, sum[0] / length, sum[1] / length, sum[2] / length);
-  }
+  g.setIndex(indices);
+  g.computeVertexNormals();
 }
 
 /**

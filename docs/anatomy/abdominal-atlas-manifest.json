@@ -8,9 +8,9 @@
   "pitchMm": 1.5,
   "textureDimensions": [338, 217, 280],
   "rawBytes": 82147520,
-  "gzipBytes": 5160485,
-  "sha256Gzip": "6759c6dff4a0a526e07325504369e5aab02d115f60ca3a06ce39349e841785b0",
-  "sha256Raw": "880f9434fb0d56b9229995525797de402b99386f3ac7b0361e4868487a7c8a19",
+  "gzipBytes": 5806258,
+  "sha256Gzip": "69736eb288dca7c0ca947a5c9244b98d5d4fa25057ad84a2e200a470d1f3aac0",
+  "sha256Raw": "b63ae6da6bda7ce4758297037dce45b5cb6fce3dca5ffbe5d88e319257e599e8",
   "fields": [
     {
       "name": "pancreas",
@@ -156,7 +156,7 @@
         [-30.112365500000003, -8.82135000000001, -93.33349999999996]
       ],
       "components": 1,
-      "representedVolumeMl": 106.842375,
+      "representedVolumeMl": 106.822125,
       "offset": [178, 163, 119]
     },
     {
@@ -170,7 +170,7 @@
         [90.6982345, -20.49135000000001, -74.13349999999991]
       ],
       "components": 1,
-      "representedVolumeMl": 103.818375,
+      "representedVolumeMl": 103.7745,
       "offset": [231, 163, 119]
     },
     {
@@ -212,7 +212,7 @@
         [114.07223450000001, -1.110350000000011, -65.83349999999996]
       ],
       "components": 6,
-      "representedVolumeMl": 318.0465,
+      "representedVolumeMl": 317.968875,
       "offset": [0, 138, 0]
     },
     {
@@ -4369,13 +4369,42 @@
     "inputRawSha256": "9a16b1f550949b120dfdbfe5c688c0479625f2afcab8a3f7d452382499477dda",
     "clearanceMm": 2,
     "status": "ESTIMATED / NEEDS_CALIBRATION",
-    "method": "max(psoas SDF, 2 - renal SDF), source lattice; kidney unchanged",
-    "modifiedField": "psoas",
-    "changedSamples": 17862,
-    "sourceOccupiedCenters": 96618,
-    "derivedOccupiedCenters": 94236,
-    "removedVolumeMl": 8.03925,
+    "method": "bounded Gaussian regularization, then max(psoas SDF, 2 - renal SDF); shared acoustic and 3D fields",
+    "modifiedFields": ["kidneyRight", "kidneyLeft", "psoas"],
+    "regularization": [
+      {
+        "field": "kidneyRight",
+        "sigmaMm": 1.5,
+        "maxFieldChangeMm": 1.2421875,
+        "surfaceBandP95ChangeMm": 0.5625,
+        "sourceOccupiedCenters": 31657,
+        "smoothedOccupiedCenters": 31651,
+        "volumeOffsetMm": 0.08847389370203018
+      },
+      {
+        "field": "kidneyLeft",
+        "sigmaMm": 1.5,
+        "maxFieldChangeMm": 1.3203125,
+        "surfaceBandP95ChangeMm": 0.5625,
+        "sourceOccupiedCenters": 30761,
+        "smoothedOccupiedCenters": 30748,
+        "volumeOffsetMm": 0.05171428993344307
+      },
+      {
+        "field": "psoas",
+        "sigmaMm": 1.5,
+        "maxFieldChangeMm": 1.5,
+        "surfaceBandP95ChangeMm": 0.640625,
+        "sourceOccupiedCenters": 96618,
+        "smoothedOccupiedCenters": 96493,
+        "volumeOffsetMm": 0.14501598477363586
+      }
+    ],
+    "changedSamples": 17485,
+    "sourceOccupiedCenters": 96493,
+    "derivedOccupiedCenters": 94213,
+    "removedVolumeMl": 7.695,
     "reference": "https://training.seer.cancer.gov/kidney/anatomy/",
-    "limitation": "Source has no segmented renal fascia or perirenal fat; 2 mm is a bounded reconstruction, not a normal-population thickness."
+    "limitation": "Source has no segmented renal fascia or perirenal fat; 2 mm is a bounded reconstruction, not a normal-population thickness. Regularization suppresses lattice artifacts, not a patient-specific shape correction."
   }
 }

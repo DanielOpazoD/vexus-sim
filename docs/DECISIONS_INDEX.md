@@ -204,3 +204,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [198](DECISIONS.md#L7020) | Gradiente por ejes en la ruta Atlas de SwiftShader | vigente |
 | [199](DECISIONS.md#L7034) | Gradiente de velocidad color sin pedestal brillante | vigente |
 | [200](DECISIONS.md#L7044) | Contenido colónico separado del líquido simple | vigente |
+| [201](DECISIONS.md#L7054) | Seno renal menos apelmazado y revisión del apoyo muscular | vigente |

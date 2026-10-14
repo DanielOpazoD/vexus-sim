@@ -37,3 +37,11 @@ Local validation on 2026-10-14:
   similar (renal 1.544 → 1.540; hepatorenal 1.524 → 1.522, 0–255 scale).
 - Typecheck/build, fixed asset budgets and lint pass. This is local evidence,
   not remote CI, clinical validation, or a performance benchmark.
+
+The subsequent material refinement uses rest-space vertex albedo on kidneys and
+psoas: continuous value noise at a 3 mm scale, elongated to 18 mm longitudinally
+for muscle, with bounded low contrast. These are illustrative material scales,
+not measured anatomical detail. The psoas uses a more matte material; renal
+capsule roughness is retained. Colors are generated once alongside vertex
+indexing, then move with respiration. Fat/fascia materials, positions, acoustic
+fields and ultrasound shaders are unchanged.

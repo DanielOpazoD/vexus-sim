@@ -17,20 +17,28 @@ import { psoasSdf, quadratusSdf } from '../../anatomy/organs/retroperitoneum';
 import { perirenalOuterSdf } from '../../anatomy/organs/kidney';
 import { torsoDepth } from '../../anatomy/primitives';
 import { variableTube } from './tubes';
+import { valueNoise } from '../../ultrasound/speckleField';
 
 /** Share coincident vertices so smooth lighting survives respiratory deformation.
  * Only positions are present on these atlas meshes; never weld textured seams.
+ * Optional albedo: false = renal mottling, true = longitudinal muscle variation.
+ * Omitting it preserves the existing material (including fat and fascia).
  */
-export function smoothSurfaceNormals(g: THREE.BufferGeometry): void {
+export function prepareOrganSurface(g: THREE.BufferGeometry, muscle?: boolean): void {
   const p = g.getAttribute('position'),
     groups = new Map<string, number>(),
-    indices: number[] = [];
+    indices: number[] = [],
+    colors = muscle !== undefined && new Float32Array(p.count * 3);
   for (let i = 0; i < p.count; i++) {
     // One micrometre in millimetre atlas coordinates, well below source resolution.
-    const key = [p.getX(i), p.getY(i), p.getZ(i)].map((x) => x.toFixed(3)).join(',');
-    if (!groups.has(key)) groups.set(key, i);
-    indices.push(groups.get(key)!);
+    const q: Vec3 = [p.getX(i), p.getY(i), p.getZ(i)],
+      key = q.map((x) => x.toFixed(3)).join();
+    // Illustrative albedo fixed to rest-space mm; never alters acoustic tissue or position.
+    if (colors) colors.fill(0.8 + 0.3 * valueNoise(q.map((x, j) => x / (muscle && j === 2 ? 18 : 3)) as Vec3, 71), i * 3, i * 3 + 3);
+    indices.push(groups.get(key) ?? i);
+    groups.set(key, indices[i]);
   }
+  if (colors) g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
   g.setIndex(indices);
   g.computeVertexNormals();
 }
@@ -177,21 +185,23 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
   if (!a.hasAbdominalAtlas) g.add(bowel);
   if (a.hasAbdominalAtlas) {
     if (!abdominalSurface) throw new Error('Mallas abdominales sin cargar');
-    const colors = [0xd3ab72, 0xcda08b, 0xd8bc76, 0x986991, 0x995d49, 0x985654, 0x985654, 0x78a45f, 0xd8d3bd, 0xa97971, 0xbbb6c6];
+    const colors = [0xd3ab72, 0xcda08b, 0xd8bc76, 0x986991, 0x995d49, 0x914849, 0x914849, 0x78a45f, 0xd8d3bd, 0xa4665b, 0xbbb6c6];
     for (const [i, f] of [...ABDOMINAL_SURFACE.fields, ...ABDOMINAL_SURFACE.envelopes].entries()) {
       const envelope = 'fascia' in f;
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(abdominalSurface.subarray(f.offset, f.offset + f.count * 3), 3));
-      geometry.computeVertexNormals();
-      if (envelope || [5, 6, 9].includes(i)) smoothSurfaceNormals(geometry);
+      const textured = [5, 6, 9].includes(i);
+      if (envelope || textured) prepareOrganSurface(geometry, textured ? i === 9 : undefined);
+      else geometry.computeVertexNormals();
       const mesh = new THREE.Mesh(
         geometry,
         new THREE.MeshStandardMaterial({
           color: envelope ? (f.fascia ? 0xe9dfc5 : 0xd8bc76) : colors[i],
-          roughness: 0.8,
-          transparent: ![5, 6, 8, 9, 10].includes(i),
+          roughness: i === 9 ? 0.94 : 0.8,
+          vertexColors: textured,
+          transparent: !(textured || i === 8 || i === 10),
           depthWrite: !envelope,
-          opacity: envelope ? (f.fascia ? 0.12 : 0.24) : [5, 6, 9].includes(i) ? 1 : i === 4 ? 0.62 : i === 2 ? 0.65 : i === 7 ? 0.7 : 0.85,
+          opacity: envelope ? (f.fascia ? 0.12 : 0.24) : textured ? 1 : i === 4 ? 0.62 : i === 2 ? 0.65 : i === 7 ? 0.7 : 0.85,
         }),
       );
       mesh.scale.setScalar(CM);

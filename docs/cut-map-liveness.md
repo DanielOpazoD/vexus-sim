@@ -8,6 +8,8 @@ La vista abandona la petición anterior antes de consultar su vigilante. Conserv
 
 Los deslizadores y el botón de reinicio de sonda pasan por la misma entrada manual que los gestos: cancelan la transición automática hacia una ventana. Antes la animación podía sobrescribir el ajuste manual en el cuadro siguiente.
 
+El corte conserva su cadencia máxima de 8 Hz y una sola petición en vuelo; toma la adquisición más reciente al quedar disponible. Una adquisición congelada o de cine que ya tiene mapa no vuelve a clasificarse. Se compara la identidad de su instantánea, no solo el contador de cuadros, que puede reiniciarse al recuperar la GPU. Esto no detiene el repintado por cambios de tamaño, rótulos o selección.
+
 ## Verificación local
 
 - Regresión con dos vistas vivas, alternancia normal/congestión severa y rotación, inclinación y basculación.
@@ -15,5 +17,6 @@ Los deslizadores y el botón de reinicio de sonda pasan por la misma entrada man
 - Cambio de paciente durante otro cálculo pesado: se abandona el mapa anterior y se recibe el nuevo, sin otra copia de los atlas.
 - Regresión de los cuatro deslizadores durante la animación: falla en f40c890 porque la pose manual cambia sola.
 - Vigilante de un trabajador sin avance, errores obsoletos, reinicio del mismo caso y fallo de inicialización; paridad del clasificador, volumen renal/grasa/fascia CPU–GPU, redimensionado y procedencia del cine.
+- Barridos de ±6° en rotación, inclinación y basculación en renal y hepatorrenal con dos vistas vivas. Se espera a que el plano inicial y los controles correspondan a la ventana antes de medir; se registra la separación geométrica entre corte pintado y ecografía adquirida. Al detenerse, se comprueban 256 puntos GPU por ventana y vista y se exige que la imagen congelada deje de generar peticiones.
 
 No cambia la geometría, los materiales, los campos anatómicos ni el algoritmo de formación de la ecografía. Las pruebas locales con Metal no sustituyen CI con SwiftShader ni validación clínica.

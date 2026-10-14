@@ -479,16 +479,17 @@ export class CutMapView {
       thoracicField: first ? thoracicAtlas : undefined,
     };
     worker.onmessage = (ev: MessageEvent<CutMapResponse | CutMapError | CutMapProgress>) => {
-      if (this.worker !== worker || ev.data.id !== this.requestId) return;
-      if (ev.data.type === 'error') {
-        this.fail(new Error(ev.data.message), performance.now());
+      const message = ev.data;
+      if (this.worker !== worker || message.id !== this.requestId) return;
+      if (message.type === 'error') {
+        this.fail(new Error(message.message), performance.now());
         return;
       }
-      if (ev.data.type === 'progress') {
+      if (message.type === 'progress') {
         this.watchdog.start(performance.now());
         return;
       }
-      this.map = ev.data;
+      this.map = message;
       this.mapInputs = this.pendingInputs;
       this.mapDirty = true;
       this.pendingInputs = null;
@@ -497,10 +498,10 @@ export class CutMapView {
     };
     worker.onerror = (ev) => {
       ev.preventDefault();
-      if (this.worker === worker) this.fail(new Error(ev.message || 'el Worker del corte se detuvo'), performance.now());
+      if (this.worker === worker) this.fail(new Error(ev.message || 'Worker del corte detenido'), performance.now());
     };
     worker.postMessage(init);
-    return this.worker;
+    return worker;
   }
 
   /** Muestra u oculta los rótulos; el lienzo lo refleja en `data-labels` (pruebas de extremo a extremo). */
@@ -509,7 +510,7 @@ export class CutMapView {
     this.canvas.dataset.labels = on ? '1' : '0';
   }
 
-  /** Pide un mapa nuevo a ≤ `hz` veces por segundo y dibuja el último recibido. */
+  /** Pide la adquisición más reciente a ≤ `hz` veces por segundo; reutiliza las instantáneas congeladas. */
   draw(sim: Simulator, nowMs: number, hz = 8): void {
     this.shownSim = sim;
     const shown = sim.renderer.displayedFrame;
@@ -517,8 +518,15 @@ export class CutMapView {
     // Discard the previous scene before checking its outstanding request.
     const worker = this.ensureWorker(sim, nowMs);
     // Three active seconds without completed rows still detect a stalled worker.
-    if (this.pendingInputs && this.watchdog.expired(nowMs)) this.fail(new Error('el Worker del corte no responde (3 s sin avance)'), nowMs);
-    if (worker && this.worker === worker && !this.pendingInputs && nowMs - this.lastUpdate >= 1000 / hz) {
+    if (this.pendingInputs && this.watchdog.expired(nowMs)) this.fail(new Error('corte sin avance durante 3 s'), nowMs);
+    // The acquired frame object stays identical in freeze/cine; counters can restart after GPU recovery.
+    if (
+      worker &&
+      this.worker === worker &&
+      !this.pendingInputs &&
+      shown.anatomy.frame !== this.mapInputs?.frame &&
+      nowMs - this.lastUpdate >= 1000 / hz
+    ) {
       this.lastUpdate = nowMs;
       this.watchdog.start(nowMs);
       // Keep one acquired snapshot for both the worker and presentation.

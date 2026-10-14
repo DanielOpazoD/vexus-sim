@@ -32,7 +32,13 @@ function fixture() {
   const sim = {
     patient: { id: 'normal-adult' },
     scene: { torso: {} },
-    renderer: { displayedFrame: { anatomy: { sample: {} }, bmode: { depthMm: 160 } } },
+    renderer: {
+      displayedFrame: {
+        n: 1,
+        anatomy: { sample: {}, frame: {}, pose: { phi: 0, z: 0, lift: 0, yaw: 0, tilt: 0, rock: 0 } },
+        bmode: { depthMm: 160 },
+      },
+    },
   } as unknown as Simulator;
   const report = vi.spyOn(errorLog, 'report');
   return { view, sim, workers, report };
@@ -48,6 +54,48 @@ it('abandons an overdue old case before checking its watchdog and reuses the loa
   expect(workers).toHaveLength(1);
   expect(workers[0].terminate).not.toHaveBeenCalled();
   expect(workers[0].postMessage.mock.calls.at(-2)?.[0]).toMatchObject({ patient: { id: 'severe-congestion' } });
+  view.dispose();
+});
+
+it('does not reclassify the same frozen acquisition', () => {
+  const { view, sim, workers } = fixture();
+  view.draw(sim, 1000);
+  const request = workers[0].postMessage.mock.calls.at(-1)![0];
+  workers[0].onmessage({ data: { type: 'map', id: request.id } });
+  view.draw(sim, 5000);
+  expect(workers[0].postMessage.mock.calls.filter(([m]) => m.type === 'map')).toHaveLength(1);
+  view.dispose();
+});
+
+it('keeps the idle physiological cadence and accepts fresh snapshots even with repeated frame counters', () => {
+  const { view, sim, workers } = fixture();
+  view.draw(sim, 1000);
+  const request = workers[0].postMessage.mock.calls.at(-1)![0];
+  workers[0].onmessage({ data: { type: 'map', id: request.id } });
+  const shown = sim.renderer.displayedFrame!;
+  shown.anatomy = { ...shown.anatomy, frame: { ...shown.anatomy.frame } };
+  view.draw(sim, 1020);
+  expect(workers[0].postMessage.mock.calls.filter(([m]) => m.type === 'map')).toHaveLength(1);
+  view.draw(sim, 1125);
+  expect(workers[0].postMessage.mock.calls.filter(([m]) => m.type === 'map')).toHaveLength(2);
+  view.dispose();
+});
+
+it('coalesces movement during a pending cut and sends only the latest acquisition afterwards', () => {
+  const { view, sim, workers } = fixture();
+  view.draw(sim, 1000);
+  const request = workers[0].postMessage.mock.calls.at(-1)![0];
+  const shown = sim.renderer.displayedFrame!;
+  for (const t of [1020, 1040]) {
+    shown.n++;
+    shown.anatomy = { ...shown.anatomy, frame: { ...shown.anatomy.frame }, pose: { ...shown.anatomy.pose, tilt: t / 10000 } };
+    view.draw(sim, t);
+  }
+  expect(workers[0].postMessage.mock.calls.filter(([m]) => m.type === 'map')).toHaveLength(1);
+  workers[0].onmessage({ data: { type: 'map', id: request.id } });
+  view.draw(sim, 1125);
+  expect(workers[0].postMessage.mock.calls.at(-1)![0]).toMatchObject({ pose: shown.anatomy.pose });
+  expect(workers[0].postMessage.mock.calls.filter(([m]) => m.type === 'map')).toHaveLength(2);
   view.dispose();
 });
 

@@ -147,8 +147,11 @@ try {
           integrity: 'verified',
           clinicalAcceptance: 'pending',
         };
-        rows.push(item);
-        writeFileSync(join(runOut, `${stem}.json`), acquisitionJson(item));
+        const json = acquisitionJson(item);
+        writeFileSync(join(runOut, `${stem}.json`), json);
+        // El manifiesto conserva los mismos centinelas que el sidecar y solo acepta escrituras completas.
+        const encoded: unknown = JSON.parse(json);
+        rows.push(encoded);
         console.log(`${caseId}/${view}: captured ${snapshot.presentedFrame} at ${snapshot.acquiredTimeSeconds}s; clinical review pending`);
       } catch (error) {
         await page.screenshot({ path: join(runOut, `${stem}-failed.png`) }).catch(() => undefined);

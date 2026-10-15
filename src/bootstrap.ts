@@ -226,9 +226,23 @@ const navigatorReady = import('./ui/navigator3d')
       getCaliber: () => sim().anatomy.caliberFor(sim().renderer.displayedFrame?.anatomy.sample ?? sim().sample),
     });
     nav.setStudentMode(!store.get().debug);
+    // El primer dibujo prepara programas y buffers de Three. Hacerlo tras
+    // s.render() intercala sus consultas síncronas con la adquisición en vuelo.
+    markStartup('navigator:draw');
+    nav.draw();
+    markStartup('navigator:drawn');
     markStartup('navigator:ready');
   })
-  .catch((e: unknown) => errorLog.report('navegador3d', e));
+  .catch((e: unknown) => {
+    errorLog.report('navegador3d', e);
+    const failed = nav;
+    nav = null;
+    try {
+      failed?.dispose();
+    } catch (cleanupError) {
+      errorLog.report('navegador3d', cleanupError);
+    }
+  });
 registerDevtools(
   sim,
   () => ({ nav, cutMap, spectrogram }),

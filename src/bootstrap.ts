@@ -436,6 +436,12 @@ const errorBudget = new ErrorBudget();
 let loopDegraded = false;
 const heartRate = new HeartRateDisplay();
 let eqPrevCpu: CutMapView['lastMap'] = null;
+let presentationDirty = true;
+let presentedCpuState: unknown[] = [];
+// An unchanged 2D canvas must not keep submitting compositor work while the
+// software GPU is busy. Input still invalidates annotations in that same turn.
+for (const event of ['pointermove', 'pointerleave', 'input', 'click', 'keydown', 'wheel', 'scroll', 'resize'])
+  window.addEventListener(event, () => (presentationDirty = true), true);
 
 /** Una referencia de presentación para historial y captura; también se publica al pulsar Capturar. */
 function drawTraces(s: Simulator, allowGpu = true): void {
@@ -454,9 +460,33 @@ function drawTraces(s: Simulator, allowGpu = true): void {
 
 /** Presentar el estado adquirido en CPU no necesita otra adquisición ni otro dibujo 3D. */
 function drawAcquiredViews(s: Simulator, now: number, allowGpu: boolean): void {
+  fitTraceCanvases();
+  // Always service the Worker, including progress, cancellation and new maps.
+  if (store.get().torso && !gpu.lost) cutMap?.draw(s, now);
+  const state = [
+    s,
+    s.renderer.displayedFrame,
+    s.equipment,
+    store.get(),
+    s.physiology.clock.t,
+    cutMap?.lastMap?.map,
+    panel.captureOverlay,
+    panel.mMarks,
+    overlay.width,
+    overlay.height,
+    ecgCanvas.width,
+    ecgCanvas.height,
+    spectrumCanvas.width,
+    spectrumCanvas.height,
+    mCanvas.width,
+    mCanvas.height,
+    allowGpu && s.mmode.enabled,
+  ];
+  if (!presentationDirty && state.every((value, i) => value === presentedCpuState[i])) return;
+  presentationDirty = false;
+  presentedCpuState = state;
   drawTraces(s, allowGpu);
   drawOverlay(overlay, s);
-  if (store.get().torso && !gpu.lost) cutMap?.draw(s, now);
   cutMap?.drawHighlight(overlay, s, store.get().torso && !gpu.lost);
 }
 

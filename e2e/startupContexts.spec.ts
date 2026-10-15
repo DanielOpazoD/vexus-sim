@@ -10,6 +10,8 @@ declare global {
       navigatorDraws: number;
       overlappingFrames: number;
       lateFramebufferChecks: number;
+      overlayPaints: number;
+      frozenOverlay?: Uint8ClampedArray;
     };
   }
 }
@@ -24,7 +26,13 @@ test('initializes both real WebGL contexts before acquisition and retains the 3D
       navigatorDraws: 0,
       overlappingFrames: 0,
       lateFramebufferChecks: 0,
+      overlayPaints: 0,
     });
+    const clearRect = CanvasRenderingContext2D.prototype.clearRect;
+    CanvasRenderingContext2D.prototype.clearRect = function (...args) {
+      if (this.canvas.id === 'overlay') observed.overlayPaints++;
+      Reflect.apply(clearRect, this, args);
+    };
     const pending = new Set<WebGLSync>();
     let lastFrame = -2;
     const checkFramebufferStatus: unknown = Reflect.get(WebGL2RenderingContext.prototype, 'checkFramebufferStatus');
@@ -99,6 +107,35 @@ test('initializes both real WebGL contexts before acquisition and retains the 3D
   );
   await page.locator('#freeze').click();
   await page.locator('#nav3d canvas').screenshot({ path: info.outputPath('navigator-after-case-change.png') });
+  await withinFrames(page, 90, 'el corte congelado ya corresponde al cuadro mostrado', async () =>
+    page.evaluate(() =>
+      Number(document.querySelector<HTMLElement>('#cutmap')!.dataset.acquiredFrame) === window.__vexusTest!.sim().renderer.displayedFrame!.n
+        ? true
+        : 'corte pendiente',
+    ),
+  );
+  const frozen = await page.evaluate(() => {
+    const c = document.querySelector<HTMLCanvasElement>('#overlay')!;
+    window.startupContexts.frozenOverlay = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+    return {
+      paints: window.startupContexts.overlayPaints,
+      n: window.__vexusTest!.sim().renderer.displayedFrame!.n,
+      f: window.__vexusTest!.framesRendered(),
+    };
+  });
+  await withinFrames(page, 45, 'la imagen congelada conserva su bitmap sin repintados redundantes', async () =>
+    page.evaluate((f) => window.__vexusTest!.framesRendered() >= f + 30 || 'pendiente', frozen.f),
+  );
+  const stable = await page.evaluate(() => {
+    const c = document.querySelector<HTMLCanvasElement>('#overlay')!;
+    const pixels = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+    return {
+      paints: window.startupContexts.overlayPaints,
+      n: window.__vexusTest!.sim().renderer.displayedFrame!.n,
+      samePixels: pixels.every((v, i) => v === window.startupContexts.frozenOverlay![i]),
+    };
+  });
+  expect(stable).toEqual({ paints: frozen.paints, n: frozen.n, samePixels: true });
   await info.attach('context-order.json', { body: JSON.stringify(initial), contentType: 'application/json' });
   expect(errors).toEqual([]);
   expect(await page.evaluate(() => window.__vexusTest!.loggedErrors())).toEqual([]);

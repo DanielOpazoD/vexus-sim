@@ -20,11 +20,11 @@ describe('transporte GLSL sin pérdida', () => {
     expect(new Set(GLSL_WORDS.map((_, i) => glslMarker(i))).size).toBe(GLSL_WORDS.length);
     expect(unpackGlsl('@~! @~~A @:! @::A')).toBe('@~! @~~A @:! @::A');
     expect(GLSL_WORDS).toHaveLength(512);
-    expect(GLSL_PHRASES.length).toBeLessThanOrEqual(GLSL_MARKERS.length);
+    expect(GLSL_PHRASES.length).toBeLessThanOrEqual(2 * GLSL_MARKERS.length);
     expect(unpackGlsl(GLSL_PHRASES.map((_, i) => glslMarker(512 + i)).join('\n'))).toBe(GLSL_PHRASES.join('\n'));
-    expect([512, 575].map(glslMarker)).toEqual(['@+A', '@+$']);
-    expect(unpackGlsl('@+! @++A')).toBe('@+! @++A');
-    for (const index of [-1, 576, NaN, 0.5]) expect(() => glslMarker(index)).toThrow(RangeError);
+    expect([512, 575, 576, 639].map(glslMarker)).toEqual(['@+A', '@+$', '@^A', '@^$']);
+    expect(unpackGlsl('@+! @++A @^! @^^A')).toBe('@+! @++A @^! @^^A');
+    for (const index of [-1, 640, NaN, 0.5]) expect(() => glslMarker(index)).toThrow(RangeError);
   });
   it('decodifica los diez tokens adicionales sin renombrar identificadores', () => {
     expect(unpackGlsl('@Q @R @S @T @U @V @W @X @Y @Z')).toBe(

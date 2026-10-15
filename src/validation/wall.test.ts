@@ -346,8 +346,7 @@ describe('capas de la pared (decisión 62)', () => {
       }
     expect(checked).toBeGreaterThanOrEqual(8);
     // las caras de pared y de costilla no tienen geometría de faceSdf (se tratan aparte)
-    for (const f of [...WALL_FACES, Interface.RibCortex, Interface.Perichondrium, Interface.RenalFascia])
-      expect(faceGeometryOf(f)).toBeNull();
+    for (const f of [...WALL_FACES, Interface.RibCortex, Interface.Perichondrium]) expect(faceGeometryOf(f)).toBeNull();
   });
 });
 
@@ -529,7 +528,7 @@ describe('caras nuevas en la tabla de la decisión 57', () => {
     expect(Interface.RenalFascia).toBe(29); // los identificadores anteriores se conservan
     expect(Interface.SkinFat).toBe(Interface.PleuraWall + 1);
     expect(Object.keys(INTERFACES)).toHaveLength(INTERFACE_COUNT);
-    for (const f of [...WALL_FACES, Interface.RibCortex, Interface.Perichondrium]) {
+    for (const f of [...WALL_FACES, Interface.RibCortex, Interface.Perichondrium, Interface.RenalFascia]) {
       expect(INTERFACE_SOURCES[f].length, Interface[f]).toBeGreaterThan(20);
       expect(interfaceReflectivity(f), Interface[f]).toBeGreaterThan(0.02);
       expect(ANATOMY_GLSL, Interface[f]).toContain(`#define ${INTERFACE_GLSL_NAME[f]} ${f}`);

@@ -174,30 +174,30 @@ Generado por `npm run docs:index` — no editar a mano.
 | [168](DECISIONS.md#L6497) | Adquisición portal intrahepática separada del tronco principal | vigente |
 | [169](DECISIONS.md#L6505) | Interpolación del Doppler color en el plano complejo | vigente |
 | [170](DECISIONS.md#L6515) | Paleta rojo/azul compartida y ajuste de la adquisición intrahepática | vigente |
-| [171](DECISIONS.md#L6525) | Resolver juntos los caudales de la unión cavoauricular | vigente |
-| [172](DECISIONS.md#L6529) | Sección regional de la VCI suprahepática y Q/A común con su anatomía | vigente |
-| [173](DECISIONS.md#L6545) | Filtro color periódico en frecuencia muestreada, identidad al desactivarlo | vigente |
-| [174](DECISIONS.md#L6553) | Conservar las barreras fijas al convertir transmisión para color | vigente |
-| [175](DECISIONS.md#L6561) | Consulta costal con descarte geométrico conservador | vigente |
-| [176](DECISIONS.md#L6567) | Registro renal y muscular posterior coherente con la columna | vigente |
-| [177](DECISIONS.md#L6654) | Integrar la absorción Doppler por tejido sin nuevas texturas | vigente |
-| [178](DECISIONS.md#L6662) | Alcance axilar posterior bilateral sin desplazar órganos | vigente |
-| [179](DECISIONS.md#L6674) | Contacto actual sin borrar la velocidad del último paso físico | vigente |
-| [180](DECISIONS.md#L6707) | Conservar etapas de arranque antes de disponer de los ganchos | vigente |
-| [181](DECISIONS.md#L6748) | Copiar la posición exacta y los ajustes actuales del transductor | vigente |
-| [182](DECISIONS.md#L6781) | Deslizar la sonda conserva los ejes en el paciente | vigente |
-| [183](DECISIONS.md#L6793) | Selección persistente y contornos de la guía desde la anatomía adquirida | vigente |
-| [184](DECISIONS.md#L6838) | Confirmar en GPU el primer cuadro de los ensayos | vigente |
-| [185](DECISIONS.md#L6850) | Admitir una pareja renal sin confundir paciente y plano | vigente |
-| [186](DECISIONS.md#L6862) | Concentración continua del medio dispersor en la rama principal | vigente |
-| [187](DECISIONS.md#L6874) | Registro renal rígido con hitos reservados y escala fija | vigente |
-| [188](DECISIONS.md#L6886) | TAC remuestreado en los centros físicos del plano US | vigente |
-| [189](DECISIONS.md#L6898) | Identidad canónica de los módulos GLSL de Three | vigente |
-| [190](DECISIONS.md#L6910) | Descomponer los impactos Atlas en SwiftShader | vigente |
-| [191](DECISIONS.md#L6920) | Separar clasificación, eco y campo crudo Atlas en SwiftShader | vigente |
-| [192](DECISIONS.md#L6930) | Sacar la clasificación de elevación del bucle del campo crudo | vigente |
-| [193](DECISIONS.md#L6940) | Compartir plantillas GLSL sin cambiar los programas generados | vigente |
-| [194](DECISIONS.md#L6950) | Índice conservador de las envolventes vasculares y modelos explícitos en E2E | vigente |
-| [195](DECISIONS.md#L6984) | Doce grupos para la colección E2E del Atlas | vigente |
-| [196](DECISIONS.md#L6996) | Reconstruir WebGL sin borrar recursos de la generación perdida | vigente |
-| [197](DECISIONS.md#L7008) | Secuencias GLSL de transporte sin pérdida | vigente |
+| [171](DECISIONS.md#L6535) | Resolver juntos los caudales de la unión cavoauricular | vigente |
+| [172](DECISIONS.md#L6539) | Sección regional de la VCI suprahepática y Q/A común con su anatomía | vigente |
+| [173](DECISIONS.md#L6555) | Filtro color periódico en frecuencia muestreada, identidad al desactivarlo | vigente |
+| [174](DECISIONS.md#L6563) | Conservar las barreras fijas al convertir transmisión para color | vigente |
+| [175](DECISIONS.md#L6571) | Consulta costal con descarte geométrico conservador | vigente |
+| [176](DECISIONS.md#L6577) | Registro renal y muscular posterior coherente con la columna | vigente |
+| [177](DECISIONS.md#L6664) | Integrar la absorción Doppler por tejido sin nuevas texturas | vigente |
+| [178](DECISIONS.md#L6672) | Alcance axilar posterior bilateral sin desplazar órganos | vigente |
+| [179](DECISIONS.md#L6684) | Contacto actual sin borrar la velocidad del último paso físico | vigente |
+| [180](DECISIONS.md#L6717) | Conservar etapas de arranque antes de disponer de los ganchos | vigente |
+| [181](DECISIONS.md#L6758) | Copiar la posición exacta y los ajustes actuales del transductor | vigente |
+| [182](DECISIONS.md#L6791) | Deslizar la sonda conserva los ejes en el paciente | vigente |
+| [183](DECISIONS.md#L6803) | Selección persistente y contornos de la guía desde la anatomía adquirida | vigente |
+| [184](DECISIONS.md#L6848) | Confirmar en GPU el primer cuadro de los ensayos | vigente |
+| [185](DECISIONS.md#L6860) | Admitir una pareja renal sin confundir paciente y plano | vigente |
+| [186](DECISIONS.md#L6872) | Concentración continua del medio dispersor en la rama principal | vigente |
+| [187](DECISIONS.md#L6884) | Registro renal rígido con hitos reservados y escala fija | vigente |
+| [188](DECISIONS.md#L6896) | TAC remuestreado en los centros físicos del plano US | vigente |
+| [189](DECISIONS.md#L6908) | Identidad canónica de los módulos GLSL de Three | vigente |
+| [190](DECISIONS.md#L6920) | Descomponer los impactos Atlas en SwiftShader | vigente |
+| [191](DECISIONS.md#L6930) | Separar clasificación, eco y campo crudo Atlas en SwiftShader | vigente |
+| [192](DECISIONS.md#L6940) | Sacar la clasificación de elevación del bucle del campo crudo | vigente |
+| [193](DECISIONS.md#L6950) | Compartir plantillas GLSL sin cambiar los programas generados | vigente |
+| [194](DECISIONS.md#L6960) | Índice conservador de las envolventes vasculares y modelos explícitos en E2E | vigente |
+| [195](DECISIONS.md#L6994) | Doce grupos para la colección E2E del Atlas | vigente |
+| [196](DECISIONS.md#L7006) | Reconstruir WebGL sin borrar recursos de la generación perdida | vigente |
+| [197](DECISIONS.md#L7018) | Secuencias GLSL de transporte sin pérdida | vigente |

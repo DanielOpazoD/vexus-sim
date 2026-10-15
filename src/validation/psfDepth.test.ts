@@ -16,14 +16,28 @@ import {
 } from '../ultrasound/beamModel';
 import { focalGain, frequencyRatio } from '../ultrasound/beamEcho';
 import {
-  FRAG_AXIAL,
-  FRAG_COLOR,
-  FRAG_LATERAL,
-  FRAG_RAWFIELD,
-  FRAG_RAWFIELD_STEERED,
-  FRAG_TRANSMISSION,
-  LATERAL_PSF_GLSL,
+  FRAG_AXIAL as SOURCE_FRAG_AXIAL,
+  FRAG_COLOR as SOURCE_FRAG_COLOR,
+  FRAG_LATERAL as SOURCE_FRAG_LATERAL,
+  FRAG_RAWFIELD as SOURCE_FRAG_RAWFIELD,
+  FRAG_RAWFIELD_STEERED as SOURCE_FRAG_RAWFIELD_STEERED,
+  FRAG_TRANSMISSION as SOURCE_FRAG_TRANSMISSION,
+  LATERAL_PSF_GLSL as SOURCE_LATERAL_PSF_GLSL,
 } from '../ultrasound/shaders/passes.glsl';
+import { specializeSceneShaders } from '../ultrasound/sceneShader';
+const { FRAG_AXIAL, FRAG_COLOR, FRAG_LATERAL, FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED, FRAG_TRANSMISSION, LATERAL_PSF_GLSL } =
+  specializeSceneShaders(
+    {
+      FRAG_AXIAL: SOURCE_FRAG_AXIAL,
+      FRAG_COLOR: SOURCE_FRAG_COLOR,
+      FRAG_LATERAL: SOURCE_FRAG_LATERAL,
+      FRAG_RAWFIELD: SOURCE_FRAG_RAWFIELD,
+      FRAG_RAWFIELD_STEERED: SOURCE_FRAG_RAWFIELD_STEERED,
+      FRAG_TRANSMISSION: SOURCE_FRAG_TRANSMISSION,
+      LATERAL_PSF_GLSL: SOURCE_LATERAL_PSF_GLSL,
+    },
+    false,
+  );
 import { refractionBeam } from '../ultrasound/aperture';
 import { INTERFACE_ECHO_GLSL } from '../ultrasound/interfaceEcho';
 import { bmodeBeam, CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';

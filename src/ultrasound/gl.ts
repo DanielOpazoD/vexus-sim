@@ -92,10 +92,10 @@ export class GLProgram {
   dispose(): void {
     this.gl.deleteProgram(this.program);
   }
-  tex(name: string, unit: number, texture: WebGLTexture): void {
+  tex(name: string, unit: number, texture: WebGLTexture, target?: number): void {
     const gl = this.gl;
     gl.activeTexture(gl.TEXTURE0 + unit);
-    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.bindTexture(target ?? gl.TEXTURE_2D, texture);
     gl.uniform1i(this.loc(name), unit);
   }
 }

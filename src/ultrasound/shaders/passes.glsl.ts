@@ -21,7 +21,7 @@ import {
   CURTAIN_CONTIGUOUS_SEGMENTS,
   CURTAIN_GAS_KIND,
   CURTAIN_RECORD_MM,
-  PLEURA_GLSL,
+  pleuraGlsl,
   PLEURA_STEER_GUESS_MM,
   PLEURA_STEER_ITERATIONS,
 } from '../pleura';
@@ -297,6 +297,205 @@ void main() {
 }
 `;
 
+const A0_STAGED_COMMON = /* glsl */ `#version 300 es
+precision highp float;
+precision highp int;
+${ANATOMY_GLSL}
+${BEAM_GLSL}
+${MIRROR_DIRECTION_GLSL}
+uniform float uCoarseN;
+uniform sampler2D uA0Initial0;
+uniform sampler2D uA0Initial1;
+uniform sampler2D uA0Initial2;
+uniform sampler2D uA0Refine0;
+uniform sampler2D uA0Refine1;
+in vec2 vUv;
+// Every value remains in the original highp/RGBA32F domain.
+vec4 a0Reflected(vec3 origin, vec3 dir0, int line) {
+  vec4 h = texelFetch(uA0Initial0, ivec2(line,0),0);
+  if (h.x < 0.0) return vec4(dir0,0.0);
+  vec4 normalLo = texelFetch(uA0Refine0,ivec2(line,0),0);
+  float hi = texelFetch(uA0Refine1,ivec2(line,0),0).x;
+  float hitR = 0.5 * (normalLo.w + hi);
+  vec3 hitPoint = origin + dir0 * hitR;
+  return vec4(mirrorDirection(dir0,normalLo.xyz,anatomyWarpAt(hitPoint,toMaterial(hitPoint))),hitR);
+}
+`;
+
+export const FRAG_TRANS_HITS_GRID = /* glsl */ `${A0_STAGED_COMMON}
+uniform int uA0ReflectedGrid;
+out vec4 oGrid;
+void main() {
+  int line = int(gl_FragCoord.x), n = int(uCoarseN), row = int(gl_FragCoord.y);
+  bool behind = row >= n;
+  int s = behind ? row - n : row;
+  vec3 dir0 = lineDir(lineTheta(vUv.x));
+  vec3 origin = pointOnLine(dir0,0.0);
+  float r = (float(s)+0.5) * (uDepth/uCoarseN);
+  vec3 p = origin + dir0*r;
+  if (uA0ReflectedGrid != 0) {
+    vec4 h = texelFetch(uA0Initial0,ivec2(line,0),0);
+    if (h.x >= 0.0 && float(s) > h.x) {
+      vec4 reflected = a0Reflected(origin,dir0,line);
+      p = origin + dir0*reflected.w + reflected.xyz*(r-reflected.w);
+    }
+  }
+  Cls c = classifyWith(toMaterial(p),!behind);
+  oGrid = vec4(float(c.tissue),c.n);
+}
+`;
+
+export const FRAG_TRANS_HITS_REFINE = /* glsl */ `${A0_STAGED_COMMON}
+uniform int uA0Refinement;
+layout(location=0) out vec4 oNormalLo;
+layout(location=1) out vec4 oHi;
+void main() {
+  int line=int(gl_FragCoord.x);
+  vec4 h=texelFetch(uA0Initial0,ivec2(line,0),0);
+  vec4 original=texelFetch(uA0Initial1,ivec2(line,0),0);
+  float step=uDepth/uCoarseN;
+  float lo=max(original.w-step,0.0),hi=original.w;
+  vec3 nn=original.xyz;
+  if(uA0Refinement!=0) {
+    vec4 previous=texelFetch(uA0Refine0,ivec2(line,0),0);
+    nn=previous.xyz;lo=previous.w;hi=texelFetch(uA0Refine1,ivec2(line,0),0).x;
+  }
+  if(h.x>=0.0) {
+    vec3 dir0=lineDir(lineTheta(vUv.x)),origin=pointOnLine(dir0,0.0);
+    float mid=0.5*(lo+hi);
+    Cls c=classify(toMaterial(origin+dir0*mid));
+    if(c.tissue==T_LUNG){hi=mid;nn=c.n;}else lo=mid;
+  }
+  oNormalLo=vec4(nn,lo);oHi=vec4(hi,0.0,0.0,0.0);
+}
+`;
+
+export const FRAG_TRANS_HITS_FINISH = /* glsl */ `${A0_STAGED_COMMON}
+uniform sampler2D uA0Grid;
+layout(location=0) out vec4 h0;
+layout(location=1) out vec4 h1;
+layout(location=2) out vec4 h2;
+void main() {
+  int line=int(gl_FragCoord.x),n=int(uCoarseN);
+  h0=texelFetch(uA0Initial0,ivec2(line,0),0);
+  h2=texelFetch(uA0Initial2,ivec2(line,0),0);
+  vec3 dir0=lineDir(lineTheta(vUv.x)),origin=pointOnLine(dir0,0.0);
+  h1=a0Reflected(origin,dir0,line);
+  if(h0.x<0.0)return;
+  for(int s=0;s<512;s++){
+    if(s>=n)break;
+    if(float(s)<=h0.x)continue;
+    int tissue=int(texelFetch(uA0Grid,ivec2(line,s),0).x);
+    float flag=tissueFlag(tissue);
+    if(flag>0.5&&flag<1.5){if(h0.y<0.0){h0.y=float(s);h0.w=2.0;}}
+    else if(flag>1.5&&h0.z<0.0)h0.z=float(s);
+  }
+}
+`;
+
+export const FRAG_TRANS_HITS_INITIAL = /* glsl */ `#version 300 es
+precision highp float;
+precision highp int;
+${ANATOMY_GLSL}
+${BEAM_GLSL}
+${MIRROR_DIRECTION_GLSL}
+uniform sampler2D uA0Grid;
+uniform float uCoarseN;
+in vec2 vUv;
+layout(location = 0) out vec4 h0; // (segmento del espejo, del primer gas, del primer hueso, tipo de gas)
+layout(location = 1) out vec4 h1; // (dirección reflejada, r del espejo)
+layout(location = 2) out vec4 h2; // pleura parietal (decisión 61): (D, dz, ΔL dB, 3 + 4·(último seg. de la cortina + 1))
+// dB ida y vuelta del segmento con la regla de A1
+float segmentDb(int t, float step) {
+  float flag = tissueFlag(t);
+  return flag > 0.5 && flag < 1.5 ? ${glslFloat(GAS_DB_PER_CM)} * step / 10.0 : 2.0 * tissueAlpha(t) * (step / 10.0);
+}
+void main() {
+  vec3 dir0 = lineDir(lineTheta(vUv.x));
+  float step = uDepth / uCoarseN;
+  int n = int(uCoarseN);
+  vec3 origin = pointOnLine(dir0, 0.0);
+  vec3 dir = dir0;
+  vec3 hitPoint = origin;
+  float hitR = 0.0;
+  float mirrorSeg = -1.0, gasSeg = -1.0, boneSeg = -1.0, gasKind = 0.0;
+  float pleuraD = -1.0, pleuraDz = 0.0, curtainDb = 0.0, prevInside = -1.0, curtainLast = -1.0;
+  bool entered = false;
+  bool curtainRun = false;
+  bool crossed = false;
+  // Una sola clasificación por vuelta (classifyWith inlineado una vez, como classify antes de la decisión 61):
+  // tras una muestra de la lámina de la cortina, la vuelta siguiente (behind) clasifica la misma muestra sin la
+  // cortina, lo de detrás de la lámina, y suma su ΔL. Hasta 2·512 vueltas para 512 muestras.
+  bool behind = false;
+  float lungDb = 0.0;
+  int s = -1;
+  for (int it = 0; it < 1024; it++) {
+    if (!behind) s++;
+    if (s >= n) break;
+    float r = (float(s) + 0.5) * step;
+    vec3 p = mirrorSeg >= 0.0 ? hitPoint + dir * (r - hitR) : origin + dir * r;
+    vec3 m = toMaterial(p);
+    vec4 cached = texelFetch(uA0Grid, ivec2(int(gl_FragCoord.x), s + (behind ? n : 0)), 0);
+    Cls c; c.tissue = int(cached.x); c.n = cached.yzw;
+    if (behind) {
+      // ΔL: lo que el gas de la cortina cuesta de más frente al tejido de detrás
+      curtainDb += lungDb - segmentDb(c.tissue, step);
+      behind = false;
+      continue;
+    }
+    // Pleura parietal: primer cruce exacto de la cara interna de la pared, si cae en el receso cerca del borde
+    if (mirrorSeg < 0.0 && !crossed) {
+      float inside = insideWallMm(m);
+      if (inside >= 0.0 && prevInside < 0.0) {
+        crossed = true;
+        float lo = max(r - step, 0.0);
+        float hi = r;
+        for (int it = 0; it < ${MIRROR_BISECTION_STEPS}; it++) {
+          float mid = 0.5 * (lo + hi);
+          if (insideWallMm(toMaterial(origin + dir0 * mid)) >= 0.0) hi = mid; else lo = mid;
+        }
+        float rp = 0.5 * (lo + hi);
+        float dz = lungCurtainEdgeMm(toMaterial(origin + dir0 * rp));
+        if (dz > -${glslFloat(CURTAIN_RECORD_MM)}) { pleuraD = rp; pleuraDz = dz; }
+      }
+      prevInside = inside;
+    }
+    // Hueco entre la cara convexa y la piel: gel de acoplamiento (el acoplamiento va aparte).
+    if (c.tissue == T_AIR && !entered) continue;
+    entered = true;
+    float flag = tissueFlag(c.tissue);
+    // pulmón que toca la pared en el receso (la cortina o el tórax) y el que le sigue pegado (aire con aire),
+    // solo si su pleura está registrada y el pulmón empieza pegado a ella (si el cruce cae fuera de la huella, o
+    // la línea roza el borde y llega al pulmón del receso mucho más hondo, el modelo de antes: el espejo)
+    curtainRun = c.tissue == T_LUNG && mirrorSeg < 0.0 && (curtainRun || (pleuraD >= 0.0 && float(s) * step <= pleuraD + ${glslFloat(CURTAIN_CONTIGUOUS_SEGMENTS)} * step && inLungRecess(m, insideWallMm(m))));
+    if (flag > 0.5 && flag < 1.5) {
+      if (curtainRun) {
+        // ni espejo ni impacto de gas; en la lámina, la vuelta siguiente clasifica lo de detrás (ΔL). Fuera de ella
+        // (el pulmón del tórax que le sigue pegado) classifyWith sin la cortina da el mismo pulmón: ΔL 0, sin vuelta
+        lungDb = segmentDb(c.tissue, step);
+        curtainLast = float(s);
+        behind = lungCurtainDistance(m, insideWallMm(m)) >= 0.0;
+        continue;
+      }
+      if (c.tissue == T_LUNG && mirrorSeg < 0.0) {
+        // Cruce exacto con la pleura (decisión 57): bisección entre la muestra gruesa anterior (que no es
+        // pulmón) y esta. Antes el espejo quedaba en el centro de la primera celda de pulmón (0–1,1 mm
+        // dentro) y dejaba una costura negra entre el diafragma y su imagen especular.
+        mirrorSeg = float(s); hitR = r; dir = c.n;
+        if (gasSeg < 0.0) { gasSeg = float(s); gasKind = 1.0; }
+        break;
+      }
+      if (gasSeg < 0.0) { gasSeg = float(s); gasKind = 2.0; }
+      continue;
+    }
+    if (flag > 1.5 && boneSeg < 0.0) boneSeg = float(s);
+  }
+  h0 = vec4(mirrorSeg, gasSeg, boneSeg, gasKind);
+  h1 = vec4(dir, hitR);
+  h2 = pleuraD >= 0.0 ? vec4(pleuraD, pleuraDz, curtainDb, ${glslFloat(CURTAIN_GAS_KIND)} + 4.0 * (curtainLast + 1.0)) : vec4(-1.0, 0.0, 0.0, 0.0);
+}
+`;
+
 export const FRAG_TRANS_SEGMENTS = /* glsl */ `#version 300 es
 precision highp float;
 precision highp int;
@@ -527,7 +726,31 @@ export const FRAG_TRANSMISSION_STEERED = transmissionShader('steered');
  * mirada 0 no la lleva. Gemelo de la geometría (punto, dirección, pleura, reverberación, anclas, alcance,
  * cortina): `steeredSample` (`steering.ts`); `steeredSample.test.ts` fija estas líneas.
  */
-export const STEERED_FIELD_GLSL = /* glsl */ `
+// Keep this template outside the containing GLSL template so the build compacts it.
+function steeredMediumFieldGlsl(cached: boolean): string {
+  return /* glsl */ `  vec3 m = toMaterial(p);
+  Warp w = anatomyWarpAt(p, m);
+  Cls c = ${cached ? 'rawClass()' : 'classifyWith(m, withCurtain)'};
+  vec2 f0 = fieldForPh(m, se, c.tissue, ph0, g, normalize(p - uCurvC), w);
+  vec3 p1 = p + uElev * se, p2 = p - uElev * se;
+  vec3 m1 = toMaterial(p1), m2 = toMaterial(p2);
+  ivec2 sideT = ${cached ? 'rawElevation()' : 'elevationTissues(m1, m2, se, c, withCurtain)'};
+  vec2 f1 = fieldForPh(m1, se, sideT.x, ph0, g, normalize(p1 - uCurvC), w);
+  vec2 f2 = fieldForPh(m2, se, sideT.y, ph0, g, normalize(p2 - uCurvC), w);
+  float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
+  vec2 field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
+  float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
+  if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
+  // densidad de dispersores (decisión 89), del material: la misma en todas las miradas
+  field *= densityGain(m, c.tissue);
+  // eco de interfaz (decisiones 57 y 65), como mediumField: la difusa sobre el fasor de esta mirada y la especular aparte
+  vec2 e = ${cached ? 'texelFetch(uRawEcho, ivec2(gl_FragCoord.xy), 0).xy' : 'interfaceEcho(c, m, dir, r, se, w, withCurtain)'};
+  spec = e.x;
+  return field * (1.0 + e.y / max(length(field), 1e-6));`;
+}
+
+function steeredFieldGlsl(mediumBody?: string, cached = false): string {
+  return /* glsl */ `
 ${SPECKLE_LOOK_GLSL}
 ${STEERING_GLSL}
 const int PLEURA_STEER_ITERATIONS = ${PLEURA_STEER_ITERATIONS};
@@ -547,7 +770,7 @@ vec2 fieldForPhBase(vec3 m, float se, int tissue, float ph0, vec3 g, vec3 b0, Wa
   if (tissue == T_BOWEL) het *= restTexture(m);
   // tríadas portales finas del hígado (decisión 78, portalTriads.ts), con el brillo de su vaina según esta mirada
   // (decisión 89)
-  if (tissue == T_LIVER) het *= portalTriad(m, normalize(b0 + g / lookK2));
+  if (tissue == T_LIVER && uAbdominalAtlasEnabled == 0) het *= portalTriad(m, normalize(b0 + g / lookK2));
   return f * tissueBack(tissue) * het;
 }
 // con los septos del psoas y del cuadrado (decisión 81) en la dirección de esta mirada (b_0 + g/lookK2, como la pared);
@@ -579,25 +802,7 @@ float steeredT(float phiK, float a, float x, bool ray) {
 }
 // mediumField y wallField con la fase de la mirada por nodo
 vec2 mediumFieldPh(vec3 p, vec3 dir, float r, float se, bool withCurtain, float ph0, vec3 g, out float spec) {
-  vec3 m = toMaterial(p);
-  Warp w = anatomyWarpAt(p, m);
-  Cls c = classifyWith(m, withCurtain);
-  vec2 f0 = fieldForPh(m, se, c.tissue, ph0, g, normalize(p - uCurvC), w);
-  vec3 p1 = p + uElev * se, p2 = p - uElev * se;
-  vec3 m1 = toMaterial(p1), m2 = toMaterial(p2);
-  ivec2 sideT = elevationTissues(m1, m2, se, c, withCurtain);
-  vec2 f1 = fieldForPh(m1, se, sideT.x, ph0, g, normalize(p1 - uCurvC), w);
-  vec2 f2 = fieldForPh(m2, se, sideT.y, ph0, g, normalize(p2 - uCurvC), w);
-  float sideMag = 0.5 * length(f0) + 0.25 * (length(f1) + length(f2));
-  vec2 field = length(f0) > 1e-6 ? f0 * (sideMag / length(f0)) : f0;
-  float clump = uTissueClump4[c.tissue / 4][c.tissue % 4];
-  if (clump > 0.0) field *= anchoredClump(m, se, clump, float(c.tissue) * TISSUE_SALT_STEP);
-  // densidad de dispersores (decisión 89), del material: la misma en todas las miradas
-  field *= densityGain(m, c.tissue);
-  // eco de interfaz (decisiones 57 y 65), como mediumField: la difusa sobre el fasor de esta mirada y la especular aparte
-  vec2 e = interfaceEcho(c, m, dir, r, se, w, withCurtain);
-  spec = e.x;
-  return field * (1.0 + e.y / max(length(field), 1e-6));
+${mediumBody ?? steeredMediumFieldGlsl(cached)}
 }
 vec2 wallFieldPh(vec3 p, vec3 dir, float se, float ph0, vec3 g, Warp w) {
   vec3 m = toMaterial(p);
@@ -750,6 +955,8 @@ vec2 steeredField() {
   return out2;
 }
 `;
+}
+export const STEERED_FIELD_GLSL = steeredFieldGlsl();
 
 /**
  * Pasada B: campo complejo crudo por muestra de haz — dispersores persistentes
@@ -760,7 +967,92 @@ vec2 steeredField() {
  * siempre) y el de las miradas ±θ (`FRAG_RAWFIELD_STEERED`: la muestra de la rejilla común formada por la
  * línea dirigida que pasa por ella, `steeredField`). Comparten todo salvo sus entradas y su `main`.
  */
-function rawFieldShader(look: Look): string {
+// Staged Atlas B reuses the same main/beam geometry in every pass. Only the medium body
+// and outputs vary; the driver removes the unused oField work in class/echo passes.
+// Each look retains three classifier source copies in total: center, capsule exterior, elevation.
+const RAW_CLASS_CACHE_GLSL = /* glsl */ `
+uniform sampler2D uRawClass0;
+uniform sampler2D uRawClass1;
+uniform sampler2D uRawClass2;
+uniform sampler2D uRawEcho;
+uniform sampler2D uRawElevation;
+uniform float uElevationSide;
+ivec2 rawElevation() {
+  ivec2 q=ivec2(gl_FragCoord.xy), d=ivec2(textureSize(uRawClass0,0).x,0);
+  return ivec2(texelFetch(uRawElevation,q,0).r,texelFetch(uRawElevation,q+d,0).r);
+}
+Cls rawClass() {
+  ivec2 q=ivec2(gl_FragCoord.xy);
+  q.x %= textureSize(uRawClass0,0).x;
+  vec4 a=texelFetch(uRawClass0,q,0),b=texelFetch(uRawClass1,q,0),d=texelFetch(uRawClass2,q,0);
+  Cls c;
+  c.tissue=int(a.x);c.bd=a.y;c.iface=int(a.z);c.ifd=a.w;c.n=b.xyz;c.kc=b.w;c.tangent=d.xyz;
+  // Flow-only fields are not consumed by the medium or interface echo.
+  c.vessel=-1;c.rho=0.0;c.uRef=0.0;c.rRef=0.0;c.profN=0.0;
+  return c;
+}`;
+const ELEVATION_TISSUES_GLSL = /* glsl */ `
+// Plano lateral en elevación: si el plano central está lejos de toda interfaz
+// (bd > desplazamiento), el tejido es el mismo y se ahorra la clasificación. Bajo la pleura de la
+// cortina (decisión 61) el tejido es el de detrás de la lámina de pulmón (withCurtain = false). Una sola
+// copia del clasificador para los dos planos; el campo se evalúa después, fuera del bucle.
+// Clasificar los dos planos en un bucle pequeño comparte una copia del clasificador.
+// El campo, sus texturas, warpAt y el eco siguen fuera de bucles (guarda de compilación).
+ivec2 elevationTissues(vec3 plus, vec3 minus, float se, Cls center, bool withCurtain) {
+  if (center.bd > se + 0.5) return ivec2(center.tissue);
+  ivec2 tissues;
+  for (int i = 0; i < 2; i++) {
+    vec3 m = i == 0 ? plus : minus;
+    tissues[i] = classifyWith(m, withCurtain).tissue;
+  }
+  return tissues;
+}
+`;
+type RawFieldStage = 'direct' | 'class' | 'elevation' | 'echo' | 'cached';
+function rawFieldShader(look: Look, stage: RawFieldStage = 'direct'): string {
+  const mediumBody =
+    stage === 'class'
+      ? /* glsl */ `
+    Cls c = classifyWith(toMaterial(p), withCurtain);
+    oClass0 = vec4(float(c.tissue), c.bd, float(c.iface), c.ifd);
+    oClass1 = vec4(c.n, c.kc);
+    oClass2 = vec4(c.tangent, 0.0);
+    spec = 0.0;
+    return vec2(0.0);`
+      : stage === 'elevation'
+        ? /* glsl */ `
+    Cls c = rawClass();
+    vec3 side = uElevationSide > 0.0 ? p + uElev * se : p - uElev * se;
+    oElevation = c.bd > se + 0.5 ? float(c.tissue) : float(classifyWith(toMaterial(side), withCurtain).tissue);
+    spec = 0.0;
+    return vec2(0.0);`
+        : stage === 'echo'
+          ? /* glsl */ `
+    vec3 m = toMaterial(p);
+    oEcho = interfaceEcho(rawClass(), m, dir, r, se, anatomyWarpAt(p, m), withCurtain);
+    spec = 0.0;
+    return vec2(0.0);`
+          : undefined;
+  const output =
+    stage === 'class'
+      ? `vec2 oField;
+layout(location=0) out vec4 oClass0;
+layout(location=1) out vec4 oClass1;
+layout(location=2) out vec4 oClass2;`
+      : stage === 'elevation'
+        ? 'vec2 oField; out float oElevation;'
+        : stage === 'echo'
+          ? 'vec2 oField; out vec2 oEcho;'
+          : 'out vec2 oField;';
+  const init =
+    stage === 'class'
+      ? 'oClass0=vec4(0.0);oClass1=vec4(0.0);oClass2=vec4(0.0);'
+      : stage === 'elevation'
+        ? 'oElevation=0.0;'
+        : stage === 'echo'
+          ? 'oEcho=vec2(0.0);'
+          : '';
+
   return /* glsl */ `#version 300 es
 precision highp float;
 precision highp int;
@@ -781,7 +1073,8 @@ uniform float uAnchorW;
 uniform vec4 uTissueClump4[${TISSUE_VEC4}];
 ${RECEIVER_GLSL}${HARMONIC_GLSL}
 in vec2 vUv;
-out vec2 oField;
+${output}
+${stage === 'elevation' || stage === 'echo' || stage === 'cached' ? RAW_CLASS_CACHE_GLSL : ''}
 ${ELEV_SIGMA_GLSL}${LATERAL_PSF_GLSL}
 ${SPECKLE_TISSUE_GLSL}
 ${WALL_TEXTURE_GLSL}
@@ -829,7 +1122,7 @@ vec2 fieldForBase(vec3 m, float se, int tissue, vec3 dir, Warp w) {
   if (tissue == T_BOWEL) het *= restTexture(m);
   // tríadas portales finas del hígado (decisión 78, portalTriads.ts), con el brillo de su vaina según la incidencia del
   // haz (decisión 89: en parte especular)
-  if (tissue == T_LIVER) het *= portalTriad(m, dir);
+  if (tissue == T_LIVER && uAbdominalAtlasEnabled == 0) het *= portalTriad(m, dir);
   return f * tissueBack(tissue) * het;
 }
 // Con los septos de los fascículos del psoas y del cuadrado lumbar (decisión 81, retroTexture.ts): la muestra del medio
@@ -839,23 +1132,9 @@ vec2 fieldFor(vec3 m, float se, int tissue, vec3 dir, Warp w) {
   return fieldForBase(m, se, tissue, dir, w) * retroTexture(m, tissue, dir, w);
 }
 
-// Plano lateral en elevación: si el plano central está lejos de toda interfaz
-// (bd > desplazamiento), el tejido es el mismo y se ahorra la clasificación. Bajo la pleura de la
-// cortina (decisión 61) el tejido es el de detrás de la lámina de pulmón (withCurtain = false). Una sola
-// copia del clasificador para los dos planos; el campo se evalúa después, fuera del bucle.
-// Clasificar los dos planos en un bucle pequeño comparte una copia del clasificador.
-// El campo, sus texturas, warpAt y el eco siguen fuera de bucles (guarda de compilación).
-ivec2 elevationTissues(vec3 plus, vec3 minus, float se, Cls center, bool withCurtain) {
-  if (center.bd > se + 0.5) return ivec2(center.tissue);
-  ivec2 tissues;
-  for (int i = 0; i < 2; i++) {
-    vec3 m = i == 0 ? plus : minus;
-    tissues[i] = classifyWith(m, withCurtain).tissue;
-  }
-  return tissues;
-}
-${PLEURA_GLSL}
-${look === 'steered' ? STEERED_RAW_MAIN_GLSL : LOOK0_RAW_MAIN_GLSL}`;
+${stage === 'direct' ? ELEVATION_TISSUES_GLSL : ''}
+${pleuraGlsl(mediumBody, stage === 'cached')}
+${look === 'steered' ? steeredRawMainGlsl(mediumBody, stage === 'cached', init) : look0RawMainGlsl(init)}`;
 }
 
 /** Entradas de B en la mirada 0: A o0 (transmisión e impactos) y A o1 (dirección reflejada, tipo de gas). */
@@ -876,9 +1155,10 @@ uniform float uLookSalt;    // sal del transitorio y de la cola de la mirada (co
  * donde la fracción del haz que da en el pulmón (fAir) dibuja la línea pleural, sus réplicas, la serie de
  * reverberaciones de la pared y el deslizamiento, y el resto ve el tejido de detrás de la lámina de pulmón.
  */
-const LOOK0_RAW_MAIN_GLSL = /* glsl */ `
+function look0RawMainGlsl(init: string): string {
+  return /* glsl */ `
 void main() {
-  float theta = lineTheta(vUv.x);
+${init ? `  ${init}\n` : ''}  float theta = lineTheta(vUv.x);
   vec3 dir0 = lineDir(theta);
   float r = vUv.y * uDepth;
   // Transmisión interpolada en profundidad (transLerp: sin mezclar a través de la entrada en un hueso, decisión 88);
@@ -996,18 +1276,29 @@ void main() {
   oField = out2;
 }
 `;
+}
 
 /** main de B en una mirada dirigida: solo la rama dirigida (decisión 58). */
-const STEERED_RAW_MAIN_GLSL = /* glsl */ `${STEERED_FIELD_GLSL}
+function steeredRawMainGlsl(mediumBody: string | undefined, cached: boolean, init: string): string {
+  return /* glsl */ `${steeredFieldGlsl(mediumBody, cached)}
 void main() {
-  oField = steeredField();
+${init ? `  ${init}\n` : ''}  oField = steeredField();
 }
 `;
+}
 
 /** Pasada B de la mirada 0: la de antes de la composición, sin nada de la dirigida (decisión 58). */
 export const FRAG_RAWFIELD = rawFieldShader('look0');
 /** Pasada B de las miradas ±θ: la rama dirigida sobre el mismo preludio. */
 export const FRAG_RAWFIELD_STEERED = rawFieldShader('steered');
+export const FRAG_RAWFIELD_ELEVATION = rawFieldShader('look0', 'elevation');
+export const FRAG_RAWFIELD_ELEVATION_STEERED = rawFieldShader('steered', 'elevation');
+export const FRAG_RAWFIELD_CLASS = rawFieldShader('look0', 'class');
+export const FRAG_RAWFIELD_CLASS_STEERED = rawFieldShader('steered', 'class');
+export const FRAG_RAWFIELD_ECHO = rawFieldShader('look0', 'echo');
+export const FRAG_RAWFIELD_ECHO_STEERED = rawFieldShader('steered', 'echo');
+export const FRAG_RAWFIELD_CACHED = rawFieldShader('look0', 'cached');
+export const FRAG_RAWFIELD_CACHED_STEERED = rawFieldShader('steered', 'cached');
 
 /**
  * Pasada C: convolución axial gaussiana (pulso) sobre el campo complejo, más las réplicas de reverberación de la

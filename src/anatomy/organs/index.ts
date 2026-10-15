@@ -8,6 +8,7 @@ import * as lungCurtain from './lungCurtain';
 import * as retroperitoneum from './retroperitoneum';
 import * as wall from './wall';
 import * as sternum from './sternum';
+import * as abdomen from './abdomen';
 
 /**
  * Registro de módulos de órgano (decisión 46). Cada módulo reúne en UN archivo la geometría,
@@ -28,6 +29,7 @@ export interface OrganModule {
 }
 
 export const ORGAN_MODULES: readonly OrganModule[] = [
+  { id: 'abdomen', exports: abdomen, glsl: abdomen.ABDOMEN_GLSL },
   { id: 'bowel', exports: bowel, glsl: bowel.BOWEL_GLSL },
   { id: 'sternum', exports: sternum, glsl: sternum.STERNUM_GLSL },
   {
@@ -68,6 +70,7 @@ export const ORGAN_MODULES: readonly OrganModule[] = [
 
 /** Solo fuentes GLSL en producción: el registro de validación no debe retener namespaces TS completos. */
 export const ORGAN_GLSL = [
+  abdomen.ABDOMEN_GLSL,
   bowel.BOWEL_GLSL,
   sternum.STERNUM_GLSL,
   wall.WALL_GLSL,

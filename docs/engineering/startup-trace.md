@@ -24,3 +24,9 @@ con historia equivalente; o el examen habitual activa trabajo de diagnóstico.
 emparejadas, cuatro controles puros, capas, check y CI exactos. La traza puede
 estar vacía si falla el cargador o la evaluación de módulos antes de bootstrap.
 Esta iteración no acepta el arranque del PR219 ni modifica sus defectos clínicos.
+
+En la rama del atlas se registran además `navigator:surface:begin` y
+`navigator:surface:ready` alrededor de su carga original, antes de construir
+el navegador. Una etapa abierta señala una operación pendiente; no demuestra
+por sí sola que ella sea la causa de un fallo Linux. La carga del volumen
+anterior a bootstrap sigue fuera del alcance y no se modifica su orden.

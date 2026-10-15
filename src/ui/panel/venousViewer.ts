@@ -236,7 +236,7 @@ export class VenousViewer {
           const options = hepatic
             ? [
                 ['standard', 'Habitual'],
-                ['tilted', 'Inclinación +2°'],
+                ['tilted', 'Inclinación 2°'],
               ]
             : [
                 ['venous', 'Vena: medición'],

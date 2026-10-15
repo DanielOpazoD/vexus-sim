@@ -3,7 +3,7 @@ import { bootWithoutErrors, budget } from './support';
 
 test('la cortical izquierda conserva normales espejo y obstruye el haz real', async ({ page }, info) => {
   budget(150_000);
-  const errors = await bootWithoutErrors(page, '?e2e=1&torso=legacy');
+  const errors = await bootWithoutErrors(page, '?e2e=1&abdomen=legacy&torso=legacy');
   const report = await page.evaluate(() => {
     const T = window.__vexusTest!;
     const sim = T.sim();

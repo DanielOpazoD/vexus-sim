@@ -1,3 +1,4 @@
+import { buildTubeGrid, tubeGridReach, tubeGridRegions, TUBE_GRID_WIDTH, type TubeGrid, type TubeSphere } from '../anatomy/gpu/tubeGrid';
 import { segmentGasKind } from './segmentTag';
 import { BOWEL_NODES, BOWEL_BOUNDS, BOWEL_GROUPS, BOWEL_ARC } from '../anatomy/organs/bowel';
 import { CARTILAGE_ROWS } from '../anatomy/referenceCartilageData';
@@ -17,6 +18,8 @@ import { GREY_CURVE, greyOfLevel } from './greyMap';
 import { axialSigmaMm, focalReferenceFwhmMm, txApertureMm } from './beamModel';
 import { ANCHOR_SALT_STEP, ElevationAnchor } from './speckleField';
 import { interfaceUniforms } from './interfaceEcho';
+import { createAbdominalTexture } from './abdominalTexture';
+import { specializeAbdominalShader, specializeSceneShaders } from './sceneShader';
 import {
   GLProgram,
   bindTarget,
@@ -41,7 +44,7 @@ import { CompoundRing, compoundActive, lookTheta, type CompoundLook } from './co
 import { CINE_FRAMES, CineRing, persistenceReplay } from './cine';
 import { M_COLUMNS, M_SAMPLES, MColumnRing, mLineU } from './mmode';
 import { lookWavenumber } from './steering';
-import type { SegmentGrid } from './transmission';
+import { MIRROR_BISECTION_STEPS, type SegmentGrid } from './transmission';
 import {
   BODY_BASE,
   RIB_BASE,
@@ -58,7 +61,7 @@ import {
   SCENE_TEX_W,
 } from '../anatomy/gpu/anatomy.glsl';
 import { ribAnteriorEndX, ribShape, tubeShapeTexel } from '../anatomy/primitives';
-import { evaluateSceneUniforms, uploadSceneUniforms, type SceneUniformValues } from '../anatomy/gpu/sceneUniforms';
+import { SCENE_SAMPLERS, evaluateSceneUniforms, uploadSceneUniforms, type SceneUniformValues } from '../anatomy/gpu/sceneUniforms';
 import {
   FRAG_AXIAL,
   FRAG_BLIT,
@@ -68,6 +71,14 @@ import {
   FRAG_MLINE,
   FRAG_MSTRIP,
   FRAG_PERSIST,
+  FRAG_RAWFIELD_ELEVATION,
+  FRAG_RAWFIELD_ELEVATION_STEERED,
+  FRAG_RAWFIELD_CLASS,
+  FRAG_RAWFIELD_CLASS_STEERED,
+  FRAG_RAWFIELD_ECHO,
+  FRAG_RAWFIELD_ECHO_STEERED,
+  FRAG_RAWFIELD_CACHED,
+  FRAG_RAWFIELD_CACHED_STEERED,
   FRAG_RAWFIELD,
   FRAG_RAWFIELD_STEERED,
   FRAG_SCANCONVERT,
@@ -75,6 +86,10 @@ import {
   FRAG_QUERY,
   FRAG_TRIAD_QUERY,
   FRAG_TRANS_HITS,
+  FRAG_TRANS_HITS_GRID,
+  FRAG_TRANS_HITS_INITIAL,
+  FRAG_TRANS_HITS_REFINE,
+  FRAG_TRANS_HITS_FINISH,
   FRAG_TRANS_PREFIX,
   FRAG_TRANS_PREFIX_STEERED,
   FRAG_TRANS_SEGMENTS,
@@ -330,13 +345,31 @@ interface LookPrograms {
   steered: GLProgram;
 }
 
+interface AtlasHitStages {
+  programs: Record<'grid' | 'initial' | 'refine' | 'finish', GLProgram>;
+  grid: RenderTarget;
+  initial: RenderTarget;
+  refine: [RenderTarget, RenderTarget];
+}
+
 export class UltrasoundRenderer {
   readonly gl: WebGL2RenderingContext;
-  private pTransHits: GLProgram;
+  /** Same A0 discretization; SwiftShader needs classification outside its per-line loop. */
+  readonly transmissionHitsPipeline: 'line' | 'staged-atlas';
+  private pTransHits: GLProgram | null;
+  private atlasHitStages: AtlasHitStages | null;
   private pTransSeg: GLProgram;
   private pTransPre: LookPrograms;
   private pTrans: LookPrograms;
   private pRaw: LookPrograms;
+  private rawStages: {
+    classes: LookPrograms;
+    elevation: LookPrograms;
+    echo: LookPrograms;
+    classTarget: RenderTarget;
+    elevationTarget: RenderTarget;
+    echoTarget: RenderTarget;
+  } | null = null;
   private pAxial: GLProgram;
   private pLateral: GLProgram;
   private pCompound: GLProgram;
@@ -356,6 +389,7 @@ export class UltrasoundRenderer {
   private sceneValuesFor: FrameInputs['sample'] | null = null;
   private sceneValuesCompression: ProbeCompression | null = null;
   private sceneValuesTubes = -1;
+  private sceneValuesGrid: TubeGrid | null = null;
   private tMap: RenderTarget;
   private mapPixels = new Uint8Array(0);
   private mapPbo: WebGLBuffer | null = null;
@@ -403,6 +437,12 @@ export class UltrasoundRenderer {
   }
   /** Textura de datos de la escena (cabeceras de tubos + nodos, decisión 24). */
   private sceneTex: WebGLTexture;
+  private tubeGridTex: WebGLTexture;
+  private tubeGrid: TubeGrid | null = null;
+  private tubeGridKey = '';
+  private tubeMaxRadii: number[] = [];
+  private abdominalTex: WebGLTexture;
+  private thoracicTex: WebGLTexture;
   private sceneData = new Float32Array(SCENE_TEX_W * SCENE_TEX_H * 4);
   /** Cabeceras de TODOS los tubos (`TUBE_HEADER_TEXELS` texels cada una); por cuadro se suben solo las del plano. */
   private headerAll = new Float32Array(MAX_TUBES * TUBE_HEADER_TEXELS * 4);
@@ -469,34 +509,68 @@ export class UltrasoundRenderer {
     const gl = canvas.getContext('webgl2', { antialias: false, premultipliedAlpha: false, preserveDrawingBuffer: false });
     if (!gl) throw new Error('WebGL2 no disponible');
     this.gl = gl;
+    // Renderer identity may be hidden by browser policy; choose the bootable path when unknown.
+    const debug = gl.getExtension('WEBGL_debug_renderer_info');
+    const renderer = debug ? String(gl.getParameter(debug.UNMASKED_RENDERER_WEBGL)) : '';
+    this.transmissionHitsPipeline =
+      currentScene.hasAbdominalAtlas && (!renderer || /SwiftShader/i.test(renderer)) ? 'staged-atlas' : 'line';
     if (!gl.getExtension('EXT_color_buffer_float')) throw new Error('EXT_color_buffer_float no disponible');
     gl.getExtension('OES_texture_float_linear');
     // compilación en hilos de fondo del navegador (opcional; sin ella, el mismo lote en serie): se pide antes
     // de compilar, y `linkAll` encarga todos los programas antes de comprobar ninguno (decisión 58)
     gl.getExtension('KHR_parallel_shader_compile');
     this.timer = new GpuPassTimer<PassId>(gl);
-    const p = GLProgram.linkAll(gl, VERT, {
-      transmissionHits: FRAG_TRANS_HITS,
-      transmissionSegments: FRAG_TRANS_SEGMENTS,
-      transmissionPrefix: FRAG_TRANS_PREFIX,
-      transmissionPrefixSteered: FRAG_TRANS_PREFIX_STEERED,
-      transmission: FRAG_TRANSMISSION,
-      transmissionSteered: FRAG_TRANSMISSION_STEERED,
-      rawfield: FRAG_RAWFIELD,
-      rawfieldSteered: FRAG_RAWFIELD_STEERED,
-      axial: FRAG_AXIAL,
-      lateral: FRAG_LATERAL,
-      compound: FRAG_COMPOUND,
-      color: FRAG_COLOR,
-      colorFilter: COLOR_FILTER_GLSL,
-      scanconvert: FRAG_SCANCONVERT,
-      persist: FRAG_PERSIST,
-      blit: FRAG_BLIT,
-      tissuemap: FRAG_TISSUEMAP,
-      mline: FRAG_MLINE,
-      mstrip: FRAG_MSTRIP,
-    });
-    this.pTransHits = p.transmissionHits;
+    const hitFragments: Record<string, string> =
+      this.transmissionHitsPipeline === 'staged-atlas'
+        ? {
+            a0Grid: FRAG_TRANS_HITS_GRID,
+            a0Initial: FRAG_TRANS_HITS_INITIAL,
+            a0Refine: FRAG_TRANS_HITS_REFINE,
+            a0Finish: FRAG_TRANS_HITS_FINISH,
+          }
+        : { transmissionHits: FRAG_TRANS_HITS };
+    // Keep native/legacy B unchanged. Staging is selected by the actual renderer, never by a test URL.
+    const rawFragments: Record<string, string> =
+      this.transmissionHitsPipeline === 'staged-atlas'
+        ? {
+            rawElevation: FRAG_RAWFIELD_ELEVATION,
+            rawElevationSteered: FRAG_RAWFIELD_ELEVATION_STEERED,
+            rawClass: FRAG_RAWFIELD_CLASS,
+            rawClassSteered: FRAG_RAWFIELD_CLASS_STEERED,
+            rawEcho: FRAG_RAWFIELD_ECHO,
+            rawEchoSteered: FRAG_RAWFIELD_ECHO_STEERED,
+            rawfield: FRAG_RAWFIELD_CACHED,
+            rawfieldSteered: FRAG_RAWFIELD_CACHED_STEERED,
+          }
+        : { rawfield: FRAG_RAWFIELD, rawfieldSteered: FRAG_RAWFIELD_STEERED };
+    const p: Record<string, GLProgram> = GLProgram.linkAll(
+      gl,
+      VERT,
+      specializeSceneShaders(
+        {
+          ...hitFragments,
+          transmissionSegments: FRAG_TRANS_SEGMENTS,
+          transmissionPrefix: FRAG_TRANS_PREFIX,
+          transmissionPrefixSteered: FRAG_TRANS_PREFIX_STEERED,
+          transmission: FRAG_TRANSMISSION,
+          transmissionSteered: FRAG_TRANSMISSION_STEERED,
+          ...rawFragments,
+          axial: FRAG_AXIAL,
+          lateral: FRAG_LATERAL,
+          compound: FRAG_COMPOUND,
+          color: FRAG_COLOR,
+          colorFilter: COLOR_FILTER_GLSL,
+          scanconvert: FRAG_SCANCONVERT,
+          persist: FRAG_PERSIST,
+          blit: FRAG_BLIT,
+          tissuemap: FRAG_TISSUEMAP,
+          mline: FRAG_MLINE,
+          mstrip: FRAG_MSTRIP,
+        },
+        this.currentScene.hasAbdominalAtlas,
+      ),
+    );
+    this.pTransHits = p['transmissionHits'] ?? null;
     this.pTransSeg = p.transmissionSegments;
     this.pTransPre = { look0: p.transmissionPrefix, steered: p.transmissionPrefixSteered };
     this.pTrans = { look0: p.transmission, steered: p.transmissionSteered };
@@ -523,10 +597,30 @@ export class UltrasoundRenderer {
     const fn = { internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.NEAREST };
     // A0: espejo e impactos (0 y 1) y la pleura parietal de cada línea (2, decisión 61), que lee la pasada B
     this.tHits = createTarget(gl, LINES, 1, [fn, fn, fn]);
+    this.atlasHitStages =
+      this.transmissionHitsPipeline === 'staged-atlas'
+        ? {
+            programs: { grid: p['a0Grid'], initial: p['a0Initial'], refine: p['a0Refine'], finish: p['a0Finish'] },
+            grid: createTarget(gl, LINES, COARSE_DEPTH * 2, [fn]),
+            initial: createTarget(gl, LINES, 1, [fn, fn, fn]),
+            refine: [createTarget(gl, LINES, 1, [fn, fn]), createTarget(gl, LINES, 1, [fn, fn])],
+          }
+        : null;
     this.tSeg = createTarget(gl, LINES, COARSE_DEPTH, [fn]);
     this.tPre = createTarget(gl, LINES, COARSE_DEPTH, [fn, fn, fn, fn]);
     this.tTrans = createTarget(gl, LINES, COARSE_DEPTH, [f, fn, f, f]);
     this.tRaw = createTarget(gl, LINES, FINE_DEPTH, [f2]);
+    if (this.transmissionHitsPipeline === 'staged-atlas')
+      this.rawStages = {
+        classes: { look0: p.rawClass, steered: p.rawClassSteered },
+        elevation: { look0: p.rawElevation, steered: p.rawElevationSteered },
+        echo: { look0: p.rawEcho, steered: p.rawEchoSteered },
+        classTarget: createTarget(gl, LINES, FINE_DEPTH, [f, f, f]),
+        elevationTarget: createTarget(gl, 2 * LINES, FINE_DEPTH, [
+          { internal: gl.R32F, format: gl.RED, type: gl.FLOAT, filter: gl.NEAREST },
+        ]),
+        echoTarget: createTarget(gl, LINES, FINE_DEPTH, [f2]),
+      };
     // C deja el campo y, en su segundo adjunto, el ruido del receptor de cada línea (decisión 89)
     this.tAxial = createTarget(gl, LINES, FINE_DEPTH, [f2, f2]);
     // anillo de miradas: K las lee con texelFetch, en la misma celda
@@ -537,7 +631,10 @@ export class UltrasoundRenderer {
     this.tColorRaw = createTarget(gl, COLOR_W, COLOR_H, [f]);
     this.tMap = createTarget(gl, MAP_W, MAP_H, [{ internal: gl.RGBA8, format: gl.RGBA, type: gl.UNSIGNED_BYTE, filter: gl.NEAREST }]);
     this.couplingTex = createTexture(gl, LINES, 1, gl.R32F, gl.RED, gl.FLOAT, gl.LINEAR);
+    this.tubeGridTex = createTexture(gl, 1, 1, gl.RG32F, gl.RG, gl.FLOAT, gl.NEAREST);
     this.sceneTex = createTexture(gl, SCENE_TEX_W, SCENE_TEX_H, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
+    this.abdominalTex = createAbdominalTexture(gl, this.currentScene.hasAbdominalAtlas);
+    this.thoracicTex = createAbdominalTexture(gl, this.currentScene.hasAbdominalAtlas, true);
     this.uploadSceneStatic();
   }
 
@@ -549,6 +646,8 @@ export class UltrasoundRenderer {
    * columnas del modo M en vuelo.
    */
   setScene(scene: AnatomyScene): void {
+    if (scene.hasAbdominalAtlas !== this.currentScene.hasAbdominalAtlas)
+      throw new Error('El modelo anatómico cambió: reconstruya el renderer');
     const gl = this.gl;
     this.currentScene = scene;
     this.speckleAnchor.reset();
@@ -579,14 +678,25 @@ export class UltrasoundRenderer {
   }
 
   /**
-   * Libera programas, texturas, FBO y el PBO del mapa. Obligatorio al reconstruir tras una
-   * pérdida de contexto o al cerrar: el canvas es el mismo y los recursos no liberados se
-   * acumulan en la GPU. (El cambio de caso usa `setScene`.)
+   * Libera programas, texturas, FBO y el PBO del mapa al cerrar un renderer vigente.
+   * Tras perder el contexto, sus recursos ya son inválidos: la reconstrucción no debe
+   * borrarlos sobre el contexto restaurado. (El cambio de caso usa `setScene`.)
    */
   dispose(): void {
     const gl = this.gl;
     for (const p of [
-      this.pTransHits,
+      ...(this.pTransHits ? [this.pTransHits] : []),
+      ...(this.atlasHitStages ? Object.values(this.atlasHitStages.programs) : []),
+      ...(this.rawStages
+        ? [
+            this.rawStages.classes.look0,
+            this.rawStages.classes.steered,
+            this.rawStages.elevation.look0,
+            this.rawStages.elevation.steered,
+            this.rawStages.echo.look0,
+            this.rawStages.echo.steered,
+          ]
+        : []),
       this.pTransSeg,
       ...[this.pTransPre, this.pTrans, this.pRaw].flatMap((l) => [l.look0, l.steered]),
       this.pAxial,
@@ -607,9 +717,11 @@ export class UltrasoundRenderer {
     this.timer.dispose();
     for (const t of [
       this.tHits,
+      ...(this.atlasHitStages ? [this.atlasHitStages.grid, this.atlasHitStages.initial, ...this.atlasHitStages.refine] : []),
       this.tSeg,
       this.tPre,
       this.tTrans,
+      ...(this.rawStages ? [this.rawStages.classTarget, this.rawStages.elevationTarget, this.rawStages.echoTarget] : []),
       this.tRaw,
       this.tAxial,
       ...this.tEnvLooks,
@@ -623,6 +735,9 @@ export class UltrasoundRenderer {
     if (this.tPersist) for (const t of this.tPersist) deleteTarget(gl, t);
     gl.deleteTexture(this.couplingTex);
     gl.deleteTexture(this.sceneTex);
+    gl.deleteTexture(this.tubeGridTex);
+    gl.deleteTexture(this.abdominalTex);
+    gl.deleteTexture(this.thoracicTex);
     if (this.mapPending) gl.deleteSync(this.mapPending.sync);
     if (this.mapPbo) gl.deleteBuffer(this.mapPbo);
     this.mapPending = null;
@@ -677,6 +792,9 @@ export class UltrasoundRenderer {
     BOWEL_BOUNDS.forEach((row, i) => this.sceneData.set(row, (BOWEL_BASE + i) * 4));
     BOWEL_NODES.forEach((p, i) => this.sceneData.set([...p, BOWEL_ARC[i]], (BOWEL_BASE + BOWEL_GROUPS + i) * 4));
     s.bowelRadii.forEach((r, i) => this.sceneData.set([r, 0, 0, 0], (BOWEL_BASE + BOWEL_GROUPS + BOWEL_NODES.length + i) * 4));
+    this.tubeGridKey = '';
+    this.tubeGrid = null;
+    this.tubeMaxRadii = tubes.map(({ tube }) => Math.max(...tube.nodes.map((node) => Math.fround(node.r))));
     this.tubeCountTotal = tubes.length;
     if (this.tubeCountTotal > MAX_TUBES) throw new Error('Demasiados tubos para el shader');
     let n = 0;
@@ -723,20 +841,26 @@ export class UltrasoundRenderer {
     if (
       this.sceneValuesFor !== inputs.sample ||
       this.sceneValuesTubes !== this.tubeCount ||
+      this.sceneValuesGrid !== this.tubeGrid ||
       this.sceneValuesCompression !== inputs.compression
     ) {
       this.sceneValues = evaluateSceneUniforms(this.currentScene, {
         sample: inputs.sample,
         tubeCount: this.tubeCount,
+        tubeGrid: this.tubeGrid,
         compression: inputs.compression,
       });
       this.sceneValuesFor = inputs.sample;
       this.sceneValuesTubes = this.tubeCount;
+      this.sceneValuesGrid = this.tubeGrid;
       if (this.sceneValuesCompression !== inputs.compression) this.uploadCompressionTable(inputs.compression);
       this.sceneValuesCompression = inputs.compression;
     }
     uploadSceneUniforms(p, this.sceneValues);
-    p.tex('uSceneTex', 6, this.sceneTex);
+    p.tex(SCENE_SAMPLERS[3].name, SCENE_SAMPLERS[3].unit, this.tubeGridTex);
+    p.tex(SCENE_SAMPLERS[0].name, SCENE_SAMPLERS[0].unit, this.sceneTex);
+    p.tex(SCENE_SAMPLERS[1].name, SCENE_SAMPLERS[1].unit, this.abdominalTex, this.gl.TEXTURE_3D);
+    p.tex(SCENE_SAMPLERS[2].name, SCENE_SAMPLERS[2].unit, this.thoracicTex, this.gl.TEXTURE_3D);
   }
 
   /**
@@ -776,6 +900,7 @@ export class UltrasoundRenderer {
     const fr = inputs.frame;
     const total = this.tubeCountTotal;
     let kept = 0;
+    const keptIds: number[] = [];
     for (let i = 0; i < total; i++) {
       const b = s.tubeBounds[i];
       const d =
@@ -797,9 +922,33 @@ export class UltrasoundRenderer {
         // H4: la forma orgánica con la dilatación del instante (la vena distendida se redondea, decisión 90)
         if (v.tube.shape) this.sceneData.set(tubeShapeTexel(v.tube, scale), dst + 16);
       }
+      keptIds.push(i);
       kept++;
     }
     this.tubeCount = kept;
+    // Every reach rounds UP; changing caliber/shape invalidates the index before drawing.
+    const reaches =
+      this.transmissionHitsPipeline === 'staged-atlas'
+        ? keptIds.map((original, compact) => tubeGridReach(this.sceneData, this.tubeMaxRadii[original], compact * TUBE_HEADER_TEXELS * 4))
+        : [];
+    const key = keptIds.join(',') + ';' + reaches.join(',');
+    if (this.transmissionHitsPipeline === 'staged-atlas' && key !== this.tubeGridKey) {
+      this.tubeGridKey = key;
+      const spheres = keptIds.map((_, i): TubeSphere => {
+        const j = (i * TUBE_HEADER_TEXELS + 3) * 4;
+        return [this.sceneData[j], this.sceneData[j + 1], this.sceneData[j + 2], this.sceneData[j + 3]];
+      });
+      const regions = keptIds.map((_, compact) => {
+        const at = compact * TUBE_HEADER_TEXELS * 4;
+        return tubeGridRegions(this.sceneData, (NODE_BASE + this.sceneData[at]) * 4, this.sceneData[at + 1], reaches[compact]);
+      });
+      this.tubeGrid = buildTubeGrid(spheres, regions, 16) ?? buildTubeGrid(spheres, regions);
+      if (this.tubeGrid) {
+        const gl = this.gl;
+        gl.bindTexture(gl.TEXTURE_2D, this.tubeGridTex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RG32F, TUBE_GRID_WIDTH, this.tubeGrid.height, 0, gl.RG, gl.FLOAT, this.tubeGrid.data);
+      }
+    }
     const gl = this.gl;
     gl.bindTexture(gl.TEXTURE_2D, this.sceneTex);
     // Solo las cabeceras (NODE_BASE texels) cambian por cuadro
@@ -902,6 +1051,11 @@ export class UltrasoundRenderer {
       this.timer.end();
     }
     this.afterFrame(inputs);
+  }
+
+  /** Anatomical state of the image actually on screen, never the running clock behind an old cine frame. */
+  get displayedAnatomy(): CineFrame['anatomy'] | undefined {
+    return (this.cineShownFrame ?? this.lastFrame)?.anatomy;
   }
 
   /**
@@ -1207,12 +1361,55 @@ export class UltrasoundRenderer {
 
   // A0 — primeros impactos por línea (una marcha por línea)
   private passTransmissionHits(inputs: FrameInputs): void {
+    if (this.atlasHitStages) return this.passAtlasTransmissionHits(inputs, this.atlasHitStages);
+    if (!this.pTransHits) throw new Error('Missing transmission hits program');
     const gl = this.gl;
     bindTarget(gl, this.tHits);
     this.pTransHits.use();
     this.setSceneUniforms(this.pTransHits, inputs);
     this.setBeamUniforms(this.pTransHits, inputs);
     this.pTransHits.f('uCoarseN', COARSE_DEPTH);
+    drawFullscreen(gl);
+  }
+
+  /**
+   * SwiftShader compiles the nested anatomy classifier in A0's per-line loop too slowly to boot.
+   * Classify the same coarse centers in a 2D target, reduce each line, refine its first mirror with
+   * six draws, then classify the reflected centers. Keep native drivers on the original A0.
+   */
+  private passAtlasTransmissionHits(inputs: FrameInputs, stages: AtlasHitStages): void {
+    const gl = this.gl;
+    const setup = (p: GLProgram, target: RenderTarget, previous: RenderTarget) => {
+      bindTarget(gl, target);
+      p.use();
+      this.setSceneUniforms(p, inputs);
+      this.setBeamUniforms(p, inputs);
+      p.f('uCoarseN', COARSE_DEPTH);
+      p.tex('uA0Initial0', 0, stages.initial.textures[0]);
+      p.tex('uA0Initial1', 1, stages.initial.textures[1]);
+      p.tex('uA0Initial2', 2, stages.initial.textures[2]);
+      p.tex('uA0Refine0', 3, previous.textures[0]);
+      p.tex('uA0Refine1', 4, previous.textures[1]);
+      p.tex('uA0Grid', 5, stages.grid.textures[0]);
+    };
+    setup(stages.programs.grid, stages.grid, stages.refine[1]);
+    stages.programs.grid.i('uA0ReflectedGrid', 0);
+    drawFullscreen(gl);
+    setup(stages.programs.initial, stages.initial, stages.refine[1]);
+    drawFullscreen(gl);
+    let previous = stages.refine[1];
+    for (let iteration = 0; iteration < MIRROR_BISECTION_STEPS; iteration++) {
+      const target = stages.refine[iteration % 2];
+      setup(stages.programs.refine, target, previous);
+      stages.programs.refine.i('uA0Refinement', iteration);
+      drawFullscreen(gl);
+      previous = target;
+    }
+    setup(stages.programs.grid, stages.grid, previous);
+    stages.programs.grid.i('uA0ReflectedGrid', 1);
+    gl.viewport(0, 0, this.lines, COARSE_DEPTH);
+    drawFullscreen(gl);
+    setup(stages.programs.finish, this.tHits, previous);
     drawFullscreen(gl);
   }
 
@@ -1307,47 +1504,69 @@ export class UltrasoundRenderer {
     const gl = this.gl;
     const tr = inputs.transducer;
     const steered = this.steeredLook();
-    const p = this.lookProgram(this.pRaw);
-    bindTarget(gl, this.tRaw);
-    p.use();
-    this.setSceneUniforms(p, inputs);
-    this.setBeamUniforms(p, inputs);
-    if (steered) {
-      // la dirigida lee A o1 (la dirección reflejada de la línea del espejo) y o3 (su camino), no o0
-      p.tex('uTrans1', 1, this.tTrans.textures[1]);
-      p.tex('uTrans3', 2, this.tTrans.textures[3]);
-      this.setSteerUniforms(p, inputs);
-      p.f('uLookSalt', this.look?.salt ?? 0);
-    } else {
-      p.tex('uTrans0', 0, this.tTrans.textures[0]);
-      p.tex('uTrans1', 1, this.tTrans.textures[1]);
-    }
-    // la pleura parietal de A0 (decisión 61): su cruce, el borde de la cortina y la pérdida de la lámina; y el
-    // rayo único de A (tope de la transmisión sin la lámina)
-    p.tex('uHits2', 3, this.tHits.textures[2]);
-    p.tex('uTrans2', 4, this.tTrans.textures[2]);
-    p.f('uSeed', (inputs.seed % 1000) / 7.0);
-    p.f('uLattice', 0.42);
-    p.f('uElevSigma0', ELEV_SIGMA0_MM);
-    p.f('uElevFocus', tr.elevationFocusMm);
-    p.f('uElevHarmonic', inputs.bmode.harmonic ? 1 : 0);
-    // el transitorio, de banda fundamental, se rechaza en armónica (decisión 77); el ruido del receptor va en C y D
-    p.f('uTransientGain', transientGain(inputs.bmode.harmonic));
-    p.v2('uHarmonicNear', ...harmonicNearUniform(inputs.bmode.harmonic));
     const an = this.speckleAnchor.update(inputs.frame.face, inputs.frame.elevation, inputs.sample.t);
     this.lastAnchorWeight = an.w;
-    p.v3('uAnchorE0', an.a.e);
-    p.v3('uAnchorP0', an.a.p);
-    p.v3('uAnchorE1', an.b.e);
-    p.v3('uAnchorP1', an.b.p);
-    p.v2('uAnchorSalt', an.a.parity * ANCHOR_SALT_STEP, an.b.parity * ANCHOR_SALT_STEP);
-    p.f('uAnchorW', an.w);
-    p.v4v('uTissueClump4', this.clump);
-    // eco de interfaz (decisión 57): tabla de caras y PSF lateral para la coherencia de curvatura
-    p.v4v('uIface', this.ifaceUniforms);
-    p.f('uIfaceK0', this.ifaceK0);
-    this.setLateralPsfUniforms(p, inputs);
-    drawFullscreen(gl);
+    const draw = (p: GLProgram, target: RenderTarget, readClass: boolean, readEcho: boolean, side = 0): void => {
+      bindTarget(gl, target);
+      p.use();
+      this.setSceneUniforms(p, inputs);
+      this.setBeamUniforms(p, inputs);
+      if (steered) {
+        // la dirigida lee A o1 (la dirección reflejada de la línea del espejo) y o3 (su camino), no o0
+        p.tex('uTrans1', 1, this.tTrans.textures[1]);
+        p.tex('uTrans3', 2, this.tTrans.textures[3]);
+        this.setSteerUniforms(p, inputs);
+        p.f('uLookSalt', this.look?.salt ?? 0);
+      } else {
+        p.tex('uTrans0', 0, this.tTrans.textures[0]);
+        p.tex('uTrans1', 1, this.tTrans.textures[1]);
+      }
+      // la pleura parietal de A0 (decisión 61): su cruce, el borde de la cortina y la pérdida de la lámina; y el
+      // rayo único de A (tope de la transmisión sin la lámina)
+      p.tex('uHits2', 3, this.tHits.textures[2]);
+      p.tex('uTrans2', 4, this.tTrans.textures[2]);
+      p.f('uSeed', (inputs.seed % 1000) / 7.0);
+      p.f('uLattice', 0.42);
+      p.f('uElevSigma0', ELEV_SIGMA0_MM);
+      p.f('uElevFocus', tr.elevationFocusMm);
+      p.f('uElevHarmonic', inputs.bmode.harmonic ? 1 : 0);
+      // el transitorio, de banda fundamental, se rechaza en armónica (decisión 77); el ruido del receptor va en C y D
+      p.f('uTransientGain', transientGain(inputs.bmode.harmonic));
+      p.v2('uHarmonicNear', ...harmonicNearUniform(inputs.bmode.harmonic));
+      p.v3('uAnchorE0', an.a.e);
+      p.v3('uAnchorP0', an.a.p);
+      p.v3('uAnchorE1', an.b.e);
+      p.v3('uAnchorP1', an.b.p);
+      p.v2('uAnchorSalt', an.a.parity * ANCHOR_SALT_STEP, an.b.parity * ANCHOR_SALT_STEP);
+      p.f('uAnchorW', an.w);
+      p.v4v('uTissueClump4', this.clump);
+      // eco de interfaz (decisión 57): tabla de caras y PSF lateral para la coherencia de curvatura
+      p.v4v('uIface', this.ifaceUniforms);
+      p.f('uIfaceK0', this.ifaceK0);
+      this.setLateralPsfUniforms(p, inputs);
+      if (readClass && this.rawStages) {
+        // Literal binding names are required by the production GLSL uniform compactor.
+        p.tex('uRawClass0', 10, this.rawStages.classTarget.textures[0]);
+        p.tex('uRawClass1', 11, this.rawStages.classTarget.textures[1]);
+        p.tex('uRawClass2', 12, this.rawStages.classTarget.textures[2]);
+      }
+      if (readEcho && this.rawStages) {
+        p.tex('uRawEcho', 13, this.rawStages.echoTarget.textures[0]);
+        p.tex('uRawElevation', 14, this.rawStages.elevationTarget.textures[0]);
+      }
+      if (side) {
+        p.f('uElevationSide', side);
+        gl.viewport(side > 0 ? 0 : this.lines, 0, this.lines, FINE_DEPTH);
+      }
+      drawFullscreen(gl);
+    };
+    if (this.rawStages) {
+      draw(this.lookProgram(this.rawStages.classes), this.rawStages.classTarget, false, false);
+      // Fixed raster state for both tiles avoids a second software GPU pipeline compilation.
+      for (const side of [1, -1]) draw(this.lookProgram(this.rawStages.elevation), this.rawStages.elevationTarget, true, false, side);
+      draw(this.lookProgram(this.rawStages.echo), this.rawStages.echoTarget, true, false);
+    }
+    draw(this.lookProgram(this.pRaw), this.tRaw, !!this.rawStages, !!this.rawStages);
   }
 
   /** Ecos parásitos del modo (decisión 76): de la pared del paciente de la escena y del modo de imagen. */
@@ -1657,7 +1876,7 @@ export class UltrasoundRenderer {
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, W, H, gl.RGBA, gl.FLOAT, data);
     const f = { internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.NEAREST };
     const target = createTarget(gl, W, H, [f, f, f]);
-    this.pQuery ??= GLProgram.link(gl, VERT, FRAG_QUERY, 'query');
+    this.pQuery ??= GLProgram.link(gl, VERT, specializeAbdominalShader(FRAG_QUERY, this.currentScene.hasAbdominalAtlas), 'query');
     // puntos fuera del plano (equivalencia volumétrica): todos los tubos, sin recorte por losa
     this.updateSceneDynamic(inputs, allTubes);
     bindTarget(gl, target);

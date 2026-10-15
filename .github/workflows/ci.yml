@@ -86,7 +86,7 @@ jobs:
           if-no-files-found: error
 
   # En paralelo con `check` (no depende de él): el tiempo total de CI es el del más lento.
-  # Repartida en ocho fragmentos, cada uno con un solo trabajador (playwright.config.ts): SwiftShader usa todos los
+  # Repartida en doce fragmentos, cada uno con un solo trabajador (playwright.config.ts): SwiftShader usa todos los
   # núcleos del corredor en cada cuadro, y con dos trabajadores por corredor las pruebas se disputaban la CPU, tardaban
   # el doble y agotaban sus plazos a días alternos (79 % de ejecuciones de main en rojo, septiembre de 2026).
   e2e:
@@ -96,12 +96,13 @@ jobs:
     # CI37762865146 perdió 9 min en esa preparación y agotó el límite sin completar el informe.
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
-    # un fragmento ronda los 10–15 min (la equivalencia sola, 3–6); con un reintento, más
+    # 96 pruebas de main consumieron 245–253 min acumulados en CI38361760302/38366458518.
+    # El Atlas añade 25 casos: doce corredores, sin ampliar los 40 min ni los plazos individuales.
     timeout-minutes: 40
     strategy:
       fail-fast: false
       matrix:
-        shard: [1, 2, 3, 4, 5, 6, 7, 8]
+        shard: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
     steps:
       - uses: actions/checkout@v7
       - name: Checkout del contenedor con ruta y SHA explícitos

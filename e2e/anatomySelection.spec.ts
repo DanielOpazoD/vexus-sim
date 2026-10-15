@@ -19,10 +19,19 @@ async function liverPoint(page: Page) {
   });
 }
 
-for (const reference of [false, true])
-  test(`clic permanece en mapas/cine y salir; cancelación explícita sin alterar señal, referencia=${reference}`, async ({ page }, info) => {
+for (const model of ['legacy', 'reference', 'atlas'] as const)
+  test(`clic permanece en mapas/cine y salir; cancelación explícita sin alterar señal, modelo=${model}`, async ({ page }, info) => {
     budget(120_000);
-    const errors = await bootWithoutErrors(page, '?e2e=app' + (reference ? '&reference=1' : ''));
+    // Atlas is the default: reference=1 alone no longer selects the historical torso.
+    const errors = await bootWithoutErrors(
+      page,
+      `?e2e=app&abdomen=${model === 'atlas' ? 'atlas' : 'legacy'}${model === 'reference' ? '&reference=1' : ''}`,
+    );
+    const observedModel = await page.evaluate(() => {
+      const scene = window.__vexusTest!.sim().scene;
+      return scene.hasAbdominalAtlas ? 'atlas' : scene.torso.profile ? 'reference' : 'legacy';
+    });
+    expect(observedModel).toBe(model);
     const torso = await page.evaluate(() => window.__vexusTest!.sim().scene.torso);
     const sp = startPointsFor(torso).find((x) => x.id === 'portal')!;
     await page.locator('.win-card').filter({ hasText: 'Porta · intrahepática' }).click();
@@ -61,15 +70,29 @@ for (const reference of [false, true])
     await page.mouse.click(point.x, point.y);
     await page.mouse.move(750, 25);
     await page.locator('#freeze').click();
-    const f = await page.evaluate(() => window.__vexusTest!.framesRendered());
-    await withinFrames(page, 30, 'selección sobre mapas vivos', async () => {
-      const next = await page.evaluate(() => window.__vexusTest!.framesRendered());
-      return next >= f + 20 || 'faltan cuadros';
+    let previousMap = await page.locator('#cutmap').getAttribute('data-acquired-frame');
+    let renewedMaps = 0;
+    // Two actually replaced maps prove persistence; a fixed JS-frame count need not contain a new map.
+    await withinFrames(page, 30, 'selección sobre dos mapas vivos nuevos', async () => {
+      const next = await page.locator('#cutmap').getAttribute('data-acquired-frame');
+      if (next && next !== previousMap) {
+        renewedMaps++;
+        previousMap = next;
+      }
+      expect(await page.locator('#cutmap').getAttribute('data-selected-key')).toBe('o:1');
+      return renewedMaps >= 2 || 'faltan mapas adquiridos';
     });
     await expect(page.locator('#cutmap')).toHaveAttribute('data-selected-key', 'o:1');
     await page.selectOption('#case-select', 'severe-congestion');
-    await expect(page.locator('#cutmap')).not.toHaveAttribute('data-selected-key');
-    await expect(page.locator('#overlay')).not.toHaveAttribute('data-anatomy-hover');
+    await withinFrames(page, 3, 'selección borrada al presentar el nuevo paciente', async () =>
+      page.evaluate(
+        () =>
+          (window.__vexusTest!.sim().patient.id === 'severe-congestion' &&
+            !document.querySelector('#cutmap')!.hasAttribute('data-selected-key') &&
+            !document.querySelector('#overlay')!.hasAttribute('data-anatomy-hover')) ||
+          'selección del paciente anterior pendiente',
+      ),
+    );
     expect(errors).toEqual([]);
     expect(await page.evaluate(() => window.__vexusTest!.loggedErrors())).toEqual([]);
   });

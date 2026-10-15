@@ -427,9 +427,11 @@ button.secondary.on {
   flex: none;
 }
 .cut-block.collapsed .cut-map {
+  position: relative;
   display: none;
 }
 .cut-map {
+  position: relative;
   flex: 1;
   min-height: 0;
   background: #0f1319;

@@ -25,7 +25,7 @@ describe('séptimo cartílago fuente, sin prolongación inventada de los arcos �
     expect(CARTILAGE_X1).toBeCloseTo(source.x1, 7);
     expect(source.source.map((s) => s.element)).toEqual(['FJ3345', 'FJ3255']);
     expect(source.surfaceResidualMm.p95).toBeLessThan(3);
-    expect(SCENE_TEX_H).toBe(7); // datos intestinales añadidos después del cartílago, sin mover su registro
+    expect(SCENE_TEX_H).toBe(10); // perfil costal de 53 filas; se conserva el registro y la capacidad del cartílago
     expect(CARTILAGE_BASE + CARTILAGE_ROWS.length).toBeLessThanOrEqual(SCENE_TEX_W * SCENE_TEX_H);
   });
   it('clasifica también los extremos superficiales, con pericondrio y reflexión bilateral', () => {

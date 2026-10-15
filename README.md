@@ -128,3 +128,5 @@ verdad, grados 0/3/1), propiedades del motor con fast-check, límites del shader
 `docs/GLOSSARY.md`, estrategia de pruebas en `docs/TESTING.md`.
 
 Véase el informe de cierre de cada iteración en `docs/DECISIONS.md`.
+Los criterios anatómicos, ecográficos y de adquisición por ventana se reúnen en
+[`docs/anatomy/vexus-window-acceptance.md`](docs/anatomy/vexus-window-acceptance.md).

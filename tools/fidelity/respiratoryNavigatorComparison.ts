@@ -66,16 +66,23 @@ try {
       });
       for (const reference of references) {
         const profile = reference ? 'reference' : 'legacy';
-        await page.goto(`http://127.0.0.1:${port}/?e2e=app&docente=1${reference ? '&reference=1' : ''}`);
+        await page.goto(`http://127.0.0.1:${port}/?e2e=app&abdomen=legacy&docente=1${reference ? '&reference=1' : ''}`);
         await page.waitForFunction(() => (window.__vexusTest?.framesRendered() ?? 0) >= 2, undefined, { timeout: 180_000 });
         await page.locator('#nav3d canvas').waitFor({ state: 'visible', timeout: 180_000 });
         if ((await page.evaluate(() => !!window.__vexusTest!.sim().scene.torso.profile)) !== reference)
           throw new Error('El perfil corporal cargado no coincide con el solicitado');
         await page.locator('#freeze').evaluate((button: HTMLButtonElement) => button.click());
         await page.locator('#debug-toggle').check();
-        // Teacher mode changes 3D materials/layers; wait for its render before another pointer action.
+        // Two loop frames may precede the async CPU/GPU map. Wait for the teacher's
+        // completed comparison before a pointer action competes with its first GPU draw.
         const teacherFrame = await page.evaluate(() => window.__vexusTest!.framesRendered());
-        await page.waitForFunction((n) => window.__vexusTest!.framesRendered() >= n + 2, teacherFrame, { timeout: 180_000 });
+        await page.waitForFunction(
+          (n) =>
+            window.__vexusTest!.framesRendered() >= n + 2 &&
+            document.querySelector('#tabpanel-docente .debug')?.textContent?.includes('ANATOMÍA TS ↔ GLSL: acuerdo'),
+          teacherFrame,
+          { timeout: 180_000 },
+        );
         await page.getByRole('tab', { name: 'Adquirir', exact: true }).click();
         await page.locator('#nav-layers').click();
         await page.locator('#layer-skin').uncheck();

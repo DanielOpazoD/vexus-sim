@@ -1,5 +1,8 @@
+import { thoracicAtlas, thoracicValue, thoracicMaterial } from './thoracicAtlas';
+import { abdominalAtlas, abdominalAtlasSdf, hepaticDomeValue } from './abdominalAtlas';
 import { referenceCartilage } from './referenceCartilage';
 import { bodyDepth, bodyGradient, bodySection } from './referenceBody';
+import { DIAPHRAGM_THICKNESS_MM } from './tissues';
 import type { Vec3 } from '../core/vec3';
 
 /**
@@ -210,6 +213,8 @@ export interface Diaphragm {
   /** Altura de la inserción en el flanco/espalda y ascenso hacia el xifoides (mm). */
   edgeZ: number;
   edgeRise: number;
+  /** Estimated apposition to the registered hepatic superior surface; atlas only. */
+  hepaticContact?: boolean;
 }
 
 /** Altura de la línea de inserción costal en el ángulo φ del tronco. */
@@ -248,7 +253,10 @@ export function diaphragmHeight(x: number, y: number, d: Diaphragm, torso: Torso
   // sin añadir el k/4 que smoothMax produciría entre dos ceros.
   const t = Math.min(1, Math.max(0, ((zr + zl) * 0.5 - edge) / (2 * DIAPHRAGM_JOIN_MM)));
   const join = DIAPHRAGM_JOIN_MM * t * t * (3 - 2 * t);
-  return join > 0 ? smoothMax(zr, zl, join) : edge;
+  const height = join > 0 ? smoothMax(zr, zl, join) : edge;
+  if (!d.hepaticContact) return height;
+  const [contactHeight, support] = hepaticDomeValue(x, y);
+  return height + support * (contactHeight - height);
 }
 
 /**
@@ -261,12 +269,46 @@ export function sdDiaphragmSlope(p: Vec3, d: Diaphragm, torso: Torso): [number, 
   const gx = (diaphragmHeight(p[0] + h, p[1], d, torso) - diaphragmHeight(p[0] - h, p[1], d, torso)) / (2 * h);
   const gy = (diaphragmHeight(p[0], p[1] + h, d, torso) - diaphragmHeight(p[0], p[1] - h, d, torso)) / (2 * h);
   const slope = Math.sqrt(1 + gx * gx + gy * gy);
-  return [(zd - p[2]) / slope, slope];
+  const tangentDistance = (zd - p[2]) / slope;
+  if (!d.hepaticContact) return [tangentDistance, slope];
+  // Close to the superior contact, the diaphragm is the 2.5 mm shell of the
+  // actual hepatic distance field. A tangent-plane offset alone separates or
+  // cuts curved liver surfaces. Outside this bounded shell keep the height field.
+  const [, support] = hepaticDomeValue(p[0], p[1]),
+    t = Math.min(1, Math.max(0, (zd - p[2] - 6) / 6)),
+    contact = support * (1 - t * t * (3 - 2 * t));
+  const liverDistance = abdominalAtlasSdf(p, 4);
+  const distance = tangentDistance + contact * (DIAPHRAGM_THICKNESS_MM - liverDistance - tangentDistance);
+  // A normalized tangent approximation is not a global distance. Near a steep
+  // roof it can put muscle deep inside the source liver. The organ remains the
+  // obstacle, including outside the normal-contact blend.
+  const tObstacle = Math.min(1, Math.max(0, (liverDistance - DIAPHRAGM_THICKNESS_MM) / 1.5));
+  const obstacleWeight = 1 - tObstacle * tObstacle * (3 - 2 * tObstacle);
+  const obstacleDistance = Math.max(distance, DIAPHRAGM_THICKNESS_MM - liverDistance);
+  return [distance + obstacleWeight * (obstacleDistance - distance), slope];
 }
 
 /** Distancia con signo al diafragma: negativa en el tórax (por encima). */
 export function sdDiaphragm(p: Vec3, d: Diaphragm, torso: Torso): number {
   return sdDiaphragmSlope(p, d, torso)[0];
+}
+
+/** Navigator samples the zero of the same acoustic shell, not a separate smoothed roof. */
+export function diaphragmSurfaceZ(x: number, y: number, d: Diaphragm, torso: Torso): number {
+  const height = diaphragmHeight(x, y, d, torso);
+  if (!d.hepaticContact || hepaticDomeValue(x, y)[1] === 0) return height;
+  // At −12 mm the shell support vanishes by construction; above the sheet both
+  // distances are negative. This bracket follows the contact support, not a fit.
+  let lo = height - 12,
+    hi = height + 12;
+  if (sdDiaphragm([x, y, lo], d, torso) < 0 || sdDiaphragm([x, y, hi], d, torso) > 0)
+    throw new Error('Diaphragm surface exceeds its registered contact bracket');
+  for (let i = 0; i < 18; i++) {
+    const z = (lo + hi) / 2;
+    if (sdDiaphragm([x, y, z], d, torso) > 0) lo = z;
+    else hi = z;
+  }
+  return (lo + hi) / 2;
 }
 
 export interface CylinderZ {
@@ -385,15 +427,22 @@ export function spineSlabSd(z: number): number {
 
 /** Distancia con signo a la caja del arco posterior (con las apófisis transversas). */
 export function spineArchSd(p: Vec3, sp: Spine): number {
+  if (thoracicAtlas && abdominalAtlas) return 16;
   const dx = Math.abs(p[0] - sp.x0) - sp.archHalfWidth;
   const cy = 0.5 * (sp.archY0 + sp.archY1);
   const dy = Math.abs(p[1] - cy) - 0.5 * (sp.archY1 - sp.archY0);
-  return Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) + Math.min(Math.max(dx, dy), 0);
+  const d = Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) + Math.min(Math.max(dx, dy), 0);
+  return abdominalAtlas ? Math.max(d, -60 - p[2]) : d;
 }
 
 /** Distancia con signo a los cuerpos vertebrales (el borde del platillo redondeado): la cara de su cortical. */
 export function spineBodySd(p: Vec3, sp: Spine): number {
-  return smoothMax(spineEllipseSd(p, sp), spineSlabSd(p[2]), SPINE_SHAPE.rimMm);
+  if (thoracicAtlas && abdominalAtlas) {
+    const q = thoracicValue(p);
+    return Math.min(thoracicMaterial(q.label) === 'vertebra' ? q.d : 16, abdominalAtlasSdf(p, 8));
+  }
+  const d = smoothMax(spineEllipseSd(p, sp), spineSlabSd(p[2]), SPINE_SHAPE.rimMm);
+  return abdominalAtlas ? Math.min(Math.max(d, -60 - p[2]), abdominalAtlasSdf(p, 8)) : d;
 }
 
 /**
@@ -405,8 +454,15 @@ export function spineBodySd(p: Vec3, sp: Spine): number {
  */
 export function spineDistances(p: Vec3, sp: Spine): { body: number; bone: number; disc: number } {
   const e = spineEllipseSd(p, sp);
-  const body = smoothMax(e, spineSlabSd(p[2]), SPINE_SHAPE.rimMm);
-  return { body, bone: Math.min(body, spineArchSd(p, sp)), disc: Math.max(e, -body) };
+  const original = smoothMax(e, spineSlabSd(p[2]), SPINE_SHAPE.rimMm);
+  const body = spineBodySd(p, sp);
+  const disc =
+    thoracicAtlas && abdominalAtlas
+      ? abdominalAtlasSdf(p, 10)
+      : abdominalAtlas
+        ? Math.min(Math.max(e, -original, -60 - p[2]), abdominalAtlasSdf(p, 10))
+        : Math.max(e, -body);
+  return { body, bone: Math.min(body, spineArchSd(p, sp)), disc };
 }
 
 /** Distancia a cuerpos ∪ arco. blendMm=0 conserva el hueso; >0 solo suaviza la envolvente de exclusión de órganos. */

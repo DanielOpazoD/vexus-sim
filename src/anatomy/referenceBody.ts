@@ -5,10 +5,22 @@ import type { Vec3 } from '../core/vec3';
  * La interpolación de sectores sin piel torácica identificada es una aproximación declarada,
  * no una dimensión clínica ni validación humana. */
 export const BODY_ROWS = 8;
+export const ABDOMINAL_BODY_ROWS = 14;
+export const COSTAL_BODY_ROWS = 53;
+export const BODY_MAX_ROWS = COSTAL_BODY_ROWS;
 export const BODY_STRIDE = 65;
 export let referenceBody: Float32Array | undefined;
+export let abdominalBody: Float32Array | undefined;
+export function setAbdominalBody(values?: Float32Array): void {
+  if (values && values.length !== ABDOMINAL_BODY_ROWS * BODY_STRIDE) throw new Error('Perfil abdominal inválido');
+  abdominalBody = values ? validateReferenceBody(values) : undefined;
+}
 export function validateReferenceBody(values: Float32Array): Float32Array {
-  if (values.length !== BODY_ROWS * BODY_STRIDE || !values.every(Number.isFinite)) throw new Error('Referencia corporal inválida');
+  if (
+    ![BODY_ROWS * BODY_STRIDE, ABDOMINAL_BODY_ROWS * BODY_STRIDE, COSTAL_BODY_ROWS * BODY_STRIDE].includes(values.length) ||
+    !values.every(Number.isFinite)
+  )
+    throw new Error('Referencia corporal inválida');
   for (let i = 0; i < values.length; i++)
     if (i % BODY_STRIDE !== 0 && (values[i] < 40 || values[i] > 300)) throw new Error('Radio corporal fuera del dominio del asset');
   return values;
@@ -18,8 +30,11 @@ export function setReferenceBody(values?: Float32Array): void {
 }
 /** Radio, derivadas en φ/z, centro Y y su derivada; clamping explícito fuera de los cortes fuente. */
 export function bodySection(phi: number, z: number, data: Float32Array): [number, number, number, number, number] {
-  const zz = Math.max(0, Math.min(BODY_ROWS - 1, (z + 160) / 40));
-  const row = Math.min(BODY_ROWS - 2, Math.floor(zz));
+  const rows = data.length / BODY_STRIDE,
+    minZ = rows === BODY_ROWS ? -160 : -400;
+  const step = (120 - minZ) / (rows - 1);
+  const zz = Math.max(0, Math.min(rows - 1, (z - minZ) / step));
+  const row = Math.min(rows - 2, Math.floor(zz));
   const f = zz - row;
   const angle = ((((phi / (2 * Math.PI)) % 1) + 1) % 1) * 64;
   const i = Math.floor(angle),
@@ -33,13 +48,13 @@ export function bodySection(phi: number, z: number, data: Float32Array): [number
     r1 = c + (d - c) * g;
   const cy0 = data[row * BODY_STRIDE],
     cy1 = data[(row + 1) * BODY_STRIDE];
-  const inside = z >= -160 && z <= 120;
+  const inside = z >= minZ && z <= 120;
   return [
     r0 + (r1 - r0) * f,
     (((b - a) * (1 - f) + (d - c) * f) * 64) / (2 * Math.PI),
-    inside ? (r1 - r0) / 40 : 0,
+    inside ? (r1 - r0) / step : 0,
     cy0 + (cy1 - cy0) * f,
-    inside ? (cy1 - cy0) / 40 : 0,
+    inside ? (cy1 - cy0) / step : 0,
   ];
 }
 export function bodyDepth(p: Vec3, data: Float32Array): number {

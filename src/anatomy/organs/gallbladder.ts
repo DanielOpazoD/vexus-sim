@@ -1,5 +1,6 @@
 import { sub, scale, dot, length, add, type Vec3 } from '../../core/vec3';
 import { smoothMin } from '../primitives';
+import { abdominalAtlas, abdominalAtlasSdf, abdominalAtlasGradient } from '../abdominalAtlas';
 
 /**
  * Vesícula biliar como módulo de órgano (decisiones 41, 46 y 67): pera curvada en su fosa (cara visceral
@@ -90,6 +91,7 @@ export function gbSegmentGradient(m: Vec3, a: GallbladderNode, b: GallbladderNod
 
 /** Gradiente de la misma unión suave, sin normalizar: su norma calibra el grosor del eco. */
 export function gallbladderGradient(m: Vec3, g: GallbladderShape): Vec3 {
+  if (abdominalAtlas) return abdominalAtlasGradient(m, 7);
   const n = g.nodes;
   let d = gbSegment(m, n[0], n[1]);
   let grad = gbSegmentGradient(m, n[0], n[1]);
@@ -105,6 +107,7 @@ export function gallbladderGradient(m: Vec3, g: GallbladderShape): Vec3 {
 
 /** Distancia con signo a la luz vesicular (negativa dentro; la pared va de 0 a `wallMm`). */
 export function gallbladderSdf(m: Vec3, g: GallbladderShape): number {
+  if (abdominalAtlas) return abdominalAtlasSdf(m, 7) + GALLBLADDER_WALL_MM;
   const n = g.nodes;
   let d = gbSegment(m, n[0], n[1]);
   for (let i = 1; i < n.length - 1; i++) d = smoothMin(d, gbSegment(m, n[i], n[i + 1]), g.blendMm);
@@ -132,6 +135,7 @@ float gbSegment(vec3 m, vec4 a, vec4 b, out vec3 g) {
 
 
 float gallbladderSdf(vec3 m, out vec3 n) {
+  if(uAbdominalAtlasEnabled!=0){n=abdominalAtlasGradient(m,7);return abdominalAtlasSdf(m,7)+${GALLBLADDER_WALL_MM.toFixed(3)};}
   vec3 g;
   float d = gbSegment(m, uGbNodes[0], uGbNodes[1], n);
   for (int i = 1; i < ${GALLBLADDER_NODES - 1}; i++) {

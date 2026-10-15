@@ -10,6 +10,11 @@ const INTERMUSCULAR = 'fascia con grasa entre dos músculos: 2Γ·sen(kt) con Γ
 const WALL = 'Z de TISSUES (IT’IS); suelo por la pared vascular (IT’IS «blood vessel wall», |R| ≈ 0,024) [LITERATURA aprox.]';
 /** Scientific provenance, retained in source without shipping unused prose in each scene worker. */
 export const INTERFACE_SOURCES: Readonly<Record<Interface, string>> = {
+  [Interface.PancreasCapsule]: 'BodyParts3D registered surface; effective reflection/roughness ESTIMATED, requires ultrasound calibration.',
+  [Interface.SpleenCapsule]:
+    'Estimated oblique splenic envelope and effective capsular reflectivity; no spleen element in the downloaded atlas set.',
+  [Interface.BladderLumen]:
+    'Registered bladder surface, resting wall offset and effective urothelial reflection ESTIMATED; partly filled source anatomy.',
   [Interface.VertebralCortex]:
     'Garra et al., Ultrasound Med Biol 2009, doi:10.1016/j.ultrasmedbio.2008.06.004: reflexión anterior observada. Rugosidad y pendiente extrapoladas de cortical costal, no medidas; modelo opaco sin esponjosa resuelta.',
   [Interface.None]: '—',

@@ -1,3 +1,4 @@
+import { registerAbdominalVessels } from './abdominalVessels';
 import { SeededRandom } from '../core/random';
 import { add, cross, dist, normalize, rotateAxis, scale, sub, type Vec3 } from '../core/vec3';
 import { VESSEL_META, type CaliberLaw, type VesselId } from '../physiology/vessels';
@@ -66,7 +67,11 @@ export interface DuctDef {
  * decisión 22). Los vasos renales e interlobares se construyen en el marco local
  * del riñón (`kidneyWorld`) para que sigan a la primitiva si esta cambia.
  */
-export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vessels: VesselDef[]; ducts: DuctDef[] } {
+export function buildVesselTree(
+  kidneyRight: Kidney,
+  kidneyLeft: Kidney,
+  registeredAbdomen = false,
+): { vessels: VesselDef[]; ducts: DuctDef[] } {
   const tube = (nodes: Array<[Vec3, number]>, apScale = 1): Tube => ({
     kind: 'tube',
     nodes: nodes.map(([p, r]) => ({ p, r })),
@@ -543,6 +548,7 @@ export function buildVesselTree(kidneyRight: Kidney, kidneyLeft: Kidney): { vess
       wallMm: 0.6,
     },
   ];
+  if (registeredAbdomen) registerAbdominalVessels(vessels, ducts);
   return { vessels, ducts };
 }
 
@@ -608,6 +614,8 @@ export function buildHepaticBranches(
   seed = 7,
   /** Holgura para la pared de la rama (mm, positiva dentro): por defecto −liverSdf; la escena añade las fisuras. */
   clearance: (m: Vec3) => number = (m) => -liverSdf(m),
+  /** Estimated peripheral branches must fit the shared scene capacity. */
+  branchCapacity = Infinity,
 ): { branches: VesselDef[]; parents: VesselDef[] } {
   const rng = new SeededRandom(seed);
   const out: VesselDef[] = [];
@@ -671,8 +679,9 @@ export function buildHepaticBranches(
     depth: number,
     peripheralFirst: boolean,
   ): void => {
-    if (depth > 2 || liverSdf(origin) > -2) return; // el origen también debe estar en el parénquima
+    if (depth > 2 || out.length >= branchCapacity || liverSdf(origin) > -2) return; // el origen también debe estar en el parénquima
     for (let k = 0; k < 2; k++) {
+      if (out.length >= branchCapacity) return;
       // eje perpendicular aleatorio; ángulo de bifurcación alterno, y si esa dirección
       // sale del hígado se prueba la simétrica (el árbol real se acomoda a la cápsula)
       const rnd: Vec3 = normalize([rng.float() - 0.5, rng.float() - 0.5, rng.float() - 0.5]);

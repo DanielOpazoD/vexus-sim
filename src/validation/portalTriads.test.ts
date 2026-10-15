@@ -198,18 +198,22 @@ describe('Tríadas portales finas (decisión 78)', () => {
     expect(Math.abs(corr(R, G))).toBeLessThan(0.15);
   });
 
-  it('la pasada B lleva la misma fórmula, con las constantes de TS, y la aplica solo al hígado', () => {
+  it('la pasada B conserva la fórmula histórica sólo en el hígado sin atlas registrado', () => {
     for (const frag of [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED]) {
       expect(frag).toContain(PORTAL_TRIADS_GLSL);
       // una llamada por programa de campo (fieldFor; el dirigido también fieldForPh) y siempre tras T_LIVER, con el haz
       // en el punto (decisión 89): la radial de la mirada 0 y la dirección de la mirada en el dirigido
       const calls = frag.match(/portalTriad\(/g)?.length ?? 0;
-      const guarded = frag.match(/if \(tissue == T_LIVER\) het \*= portalTriad\(m, [^;]+\);/g)?.length ?? 0;
+      const guarded = frag.match(/if \(tissue == T_LIVER && uAbdominalAtlasEnabled == 0\) het \*= portalTriad\(m, [^;]+\);/g)?.length ?? 0;
       expect(calls - 1).toBe(guarded); // − la definición
-      expect(frag).toContain('if (tissue == T_LIVER) het *= portalTriad(m, dir);');
+      expect(frag).toContain('if (tissue == T_LIVER && uAbdominalAtlasEnabled == 0) het *= portalTriad(m, dir);');
     }
-    expect(FRAG_RAWFIELD_STEERED).toContain('if (tissue == T_LIVER) het *= portalTriad(m, normalize(b0 + g / lookK2));');
-    expect(FRAG_RAWFIELD_STEERED.match(/if \(tissue == T_LIVER\) het \*= portalTriad\(m, [^;]+\);/g)).toHaveLength(2);
+    expect(FRAG_RAWFIELD_STEERED).toContain(
+      'if (tissue == T_LIVER && uAbdominalAtlasEnabled == 0) het *= portalTriad(m, normalize(b0 + g / lookK2));',
+    );
+    expect(
+      FRAG_RAWFIELD_STEERED.match(/if \(tissue == T_LIVER && uAbdominalAtlasEnabled == 0\) het \*= portalTriad\(m, [^;]+\);/g),
+    ).toHaveLength(2);
     // las constantes salen de PORTAL_TRIADS, no de literales escritos a mano
     const P = PORTAL_TRIADS;
     expect(PORTAL_TRIADS_GLSL).toContain(`const float TRIAD_CELL = ${P.cellMm.toFixed(4)};`);

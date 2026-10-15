@@ -20,7 +20,7 @@ for (const reference of [false, true])
     // (600 s: la ventana de la porta, decisión 69, suma un quinto barrido por caso; la epigástrica y la subcostal,
     // decisión 83, un sexto y un séptimo), más el arranque (la compilación con SwiftShader, `BOOT_MS`)
     budget(600_000);
-    await page.goto(reference ? '/?e2e=1&reference=1' : '/?e2e=1');
+    await page.goto(reference ? '/?e2e=1&abdomen=legacy&reference=1' : '/?e2e=1&abdomen=legacy');
     await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: BOOT_MS });
     for (const id of CASES) {
       await page.selectOption('#case-select', id);
@@ -119,7 +119,7 @@ test('las tríadas portales de la GPU son las del gemelo TS, punto a punto (deci
   // arranca la aplicación (SwiftShader compila todos los programas, `BOOT_MS`) y luego compila el programa de consulta
   // (42–66 s en total en el corredor de GitHub con dos trabajadores)
   budget(120_000);
-  await page.goto('/?e2e=1');
+  await page.goto('/?e2e=1&abdomen=legacy');
   await expect(page.locator('#status')).toContainText(/\d+ fps/, { timeout: BOOT_MS });
   await expect.poll(() => page.evaluate(() => typeof window.__vexusTest?.triadParity), { timeout: 30_000 }).toBe('function');
   const r = await page.evaluate(() => window.__vexusTest!.triadParity());

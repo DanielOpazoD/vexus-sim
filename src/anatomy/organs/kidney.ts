@@ -1,4 +1,5 @@
 import type { Vec3 } from '../../core/vec3';
+import { abdominalAtlas, abdominalAtlasSdf } from '../abdominalAtlas';
 import { sdEllipsoidLocal, smoothMax, smoothMin } from '../primitives';
 
 /**
@@ -205,7 +206,13 @@ export function perirenalThicknessMm(q: Vec3, k: Kidney): number {
 
 /** Distancia con signo a la cara externa de la grasa perirrenal (marco local): el contorno menos el grosor local. */
 export function perirenalOuterSdf(q: Vec3, k: Kidney): number {
-  return kidneyOuterSdf(q, k) - perirenalThicknessMm(q, k);
+  let d = kidneyOuterSdf(q, k) - perirenalThicknessMm(q, k);
+  if (abdominalAtlas && d < 2) {
+    const p = kidneyWorld(q, k);
+    // The fat compartment conforms to neighboring viscera in the shared physical field.
+    for (const field of [0, 1, 2, 3, 4, 7, 8, 9, 10]) d = Math.max(d, -abdominalAtlasSdf(p, field));
+  }
+  return d;
 }
 
 /**
@@ -254,6 +261,7 @@ export const HILUM_NOTCH = { offsetV: 6, radii: [24, 16, 13] as Vec3, roundMm: 6
 
 /** Contorno externo del riñón: elipsoide con escotadura hiliar (forma de judía). */
 export function kidneyOuterSdf(q: Vec3, k: Kidney): number {
+  if (abdominalAtlas) return abdominalAtlasSdf(kidneyWorld(q, k), k.center[0] < 0 ? 5 : 6);
   const ell = sdEllipsoidLocal(q, k.radii);
   const notch = sdEllipsoidLocal([q[0], q[1] - (k.radii[1] + HILUM_NOTCH.offsetV), q[2]], HILUM_NOTCH.radii);
   return smoothMax(ell, -notch, HILUM_NOTCH.roundMm);
@@ -393,6 +401,7 @@ float kidneyOuterSdf(vec3 q, vec3 r) {
 
 // Distancia externa del riñón k y normal en el mundo (solo GPU: la clasificación TS no usa normales)
 float kidneyOuter(vec3 p, int k, out vec3 n) {
+  if(uAbdominalAtlasEnabled!=0){n=abdominalAtlasGradient(p,k+5);return abdominalAtlasSdf(p,k+5);}
   vec3 q = kidneyLocal(p, k);
   vec3 r = uKidR[k];
   vec3 nl = normalize(q / (r * r) + vec3(1e-6));
@@ -428,6 +437,12 @@ float perirenalThicknessMm(vec3 q, int k) {
 
 // Cara externa de la grasa perirrenal del riñón k (marco local)
 float perirenalOuterSdf(vec3 q, int k) {
+  if(uAbdominalAtlasEnabled!=0){
+    vec3 p=uKidC[k]+uKidU[k]*q.x+uKidV[k]*q.y+uKidW[k]*q.z;
+    float d=abdominalAtlasSdf(p,k+5)-perirenalThicknessMm(q,k);
+    if(d<2.0){for(int field=0;field<11;field++){if(field==5||field==6)continue;d=max(d,-abdominalAtlasSdf(p,field));}}
+    return d;
+  }
   return kidneyOuterSdf(q, uKidR[k]) - perirenalThicknessMm(q, k);
 }
 
@@ -448,7 +463,7 @@ float kidneySinusSdf(vec3 q, int k) {
 // Región interna: 0 corteza, 1 médula, 2 seno, 3 pelvis, 4 arcuatos (decisión 87); devuelve la distancia interna mínima
 int kidneyQuery(vec3 p, int k, out float inner, out float dOuter) {
   vec3 q = kidneyLocal(p, k);
-  dOuter = kidneyOuterSdf(q, uKidR[k]);
+  dOuter = uAbdominalAtlasEnabled!=0?abdominalAtlasSdf(p,k+5):kidneyOuterSdf(q, uKidR[k]);
   if (dOuter >= 0.0) { inner = -dOuter; return 0; }
   float dSinus = kidneySinusSdf(q, k);
   if (dSinus < 0.0) {

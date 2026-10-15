@@ -1,9 +1,11 @@
 import { loadReferenceBody } from './anatomy/loadReferenceBody';
+import { loadAbdominalAtlas } from './anatomy/loadAbdominalAtlas';
 
 // No scene or worker exists until the reference field has loaded successfully.
 // An explicit legacy torso remains available for comparisons and regression fixtures.
 async function start(): Promise<void> {
   try {
+    if (new URLSearchParams(location.search).get('abdomen') !== 'legacy') await loadAbdominalAtlas();
     if (new URLSearchParams(location.search).get('reference') === '1') await loadReferenceBody();
     await import('./bootstrap');
   } catch (error) {

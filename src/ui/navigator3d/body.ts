@@ -1,3 +1,7 @@
+import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
+import { THORACIC_ATLAS } from '../../anatomy/thoracicAtlasData';
+import { thoracicSurface } from '../../anatomy/abdominalSurface';
+import { THORACIC_SURFACE } from '../../anatomy/thoracicSurfaceData';
 import { referenceCartilage } from '../../anatomy/referenceCartilage';
 import { sternumSd, STERNUM } from '../../anatomy/organs/sternum';
 import { meshFromSdf } from './organs';
@@ -10,9 +14,10 @@ import { CM, surfaceAt } from './common';
 /** Piel superelíptica del tronco (misma elipse que `torsoDepth`) y esqueleto procedural. */
 export function buildSkin(a: AnatomyScene): THREE.Mesh {
   const t = a.torso;
-  const nT = 72;
-  const nZ = 40;
-  const z0 = -260;
+  // Align atlas picking geometry with the registered 64 sectors / 10-mm rows.
+  const nT = a.hasAbdominalAtlas ? 64 : 72;
+  const nZ = a.hasAbdominalAtlas ? 70 : 40;
+  const z0 = a.hasAbdominalAtlas ? -430 : -260;
   const z1 = 270;
   const pos: number[] = [];
   const idx: number[] = [];
@@ -110,6 +115,23 @@ export function buildSkeleton(a: AnatomyScene): THREE.Group {
   const g = new THREE.Group();
   const bone = new THREE.MeshStandardMaterial({ color: 0xe9e2d2, roughness: 0.55 });
   const cartilage = new THREE.MeshStandardMaterial({ color: 0xcfd9e6, roughness: 0.5, transparent: true, opacity: 0.85 });
+  if (a.hasAbdominalAtlas) {
+    if (!thoracicSurface) throw new Error('Esqueleto torácico sin cargar');
+    for (const [i, [offset, count]] of THORACIC_SURFACE.fields.entries()) {
+      // T11/T12 are already rendered from the same registered lumbar field.
+      if (i === 2 || i === 3) continue;
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(thoracicSurface.subarray(offset, offset + count * 3), 3));
+      const indexed = mergeVertices(geometry, 1e-4);
+      geometry.dispose();
+      indexed.computeVertexNormals();
+      const mesh = new THREE.Mesh(indexed, THORACIC_ATLAS.materials[i + 1] === 1 ? cartilage : bone);
+      mesh.scale.setScalar(CM);
+      mesh.name = THORACIC_SURFACE.names.split('|')[i];
+      g.add(mesh);
+    }
+    return g;
+  }
   // Solo costillas que existen en la anatomía acústica; unidades mm → cm, sin escala estética del torso.
   for (const rib of a.ribs)
     for (const side of rib.rightOnly ? [-1] : [-1, 1]) {
@@ -140,6 +162,7 @@ export function buildSkeleton(a: AnatomyScene): THREE.Group {
   // los cuerpos vertebrales de la imagen (PR119; recuperación provisional de la decisión 103): sección elíptica, uno cada `levelMm` con el disco entre ellos
   const { aspect, levelMm, bodyMm, z0Mm } = SPINE_SHAPE;
   for (let z = z0Mm - levelMm * Math.floor((z0Mm + 240) / levelMm); z <= 280; z += levelMm) {
+    if (a.hasAbdominalAtlas && z < -60) continue;
     const body = new THREE.Mesh(new THREE.CylinderGeometry(a.spine.r * CM, a.spine.r * CM, bodyMm * CM, 20), bone);
     body.scale.set(aspect, 1, 1 / aspect);
     body.rotation.x = Math.PI / 2;

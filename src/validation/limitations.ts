@@ -5,6 +5,11 @@
  * resuelve, se borra de aquí y del documento en el mismo cambio.
  */
 export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
+  'abdominal-atlas-reference-adult',
+  'abdominal-viscera-internals-estimated',
+  'abdominal-vascular-branches-estimated',
+  'abdominal-liver-size-fixed',
+  'abdominal-3d-texture-minimum',
   'reference-thorax-incomplete',
   'reference-diaphragm-incomplete',
   'reference-skeletal-organ-overlap',
@@ -55,6 +60,8 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'renal-pause-resolution-prf',
   'no-spleen',
   'thoracic-skeleton-estimated',
+  'thoracic-atlas-resolution',
+  'thoracic-atlas-static-respiration',
   'fixed-arterial-resistive-index',
   'schematic-static-heart',
   'mediastinal-mirror-normal-approx',
@@ -76,6 +83,7 @@ export const KNOWN_LIMITATIONS: ReadonlySet<string> = new Set([
   'wall-generic-layers',
   'speckle-anchor-orientation',
   'probe-compression-kinematic',
+  'probe-contact-plane-estimated',
   'probe-compression-in-plane',
   'm-mode-frame-rate',
   'm-mode-lumen-blooming',

@@ -16,7 +16,7 @@ for (let x = -92.13; x < -25; x += 2.1)
 for (const reference of [false, true])
   test(`pared vesicular: gradiente de la unión suave CPU/GPU (${reference ? 'referencia' : 'legacy'})`, async ({ page }, info) => {
     budget(180_000);
-    await bootWithoutErrors(page, reference ? '?e2e=1&reference=1' : '?e2e=1');
+    await bootWithoutErrors(page, reference ? '?e2e=1&abdomen=legacy&reference=1' : '?e2e=1&abdomen=legacy');
     const { rows } = await page.evaluate((p) => window.__vexusTest!.corticalSamples(p), points);
     let n = 0,
       minDot = 1,

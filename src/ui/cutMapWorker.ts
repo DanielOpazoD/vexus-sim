@@ -1,5 +1,7 @@
 import { structureIdentity } from '../anatomy/structureIdentity';
 import { setReferenceBody } from '../anatomy/referenceBody';
+import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
+import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
 /// <reference lib="webworker" />
 import type { ProbeCompression } from '../anatomy/compression';
 import { AnatomyQuery } from '../anatomy/query';
@@ -36,6 +38,8 @@ export interface CutMapInit {
   type: 'init';
   patient: PatientState;
   referenceProfile?: Float32Array;
+  abdominalField?: Uint16Array;
+  thoracicField?: Uint16Array;
 }
 
 export interface CutMapResponse {
@@ -77,7 +81,10 @@ self.onmessage = (ev: MessageEvent<CutMapInit | CutMapRequest>) => {
   try {
     if (msg.type === 'init') {
       setReferenceBody(msg.referenceProfile);
-      const scene = new AnatomyScene(msg.patient);
+      setAbdominalAtlas(msg.abdominalField);
+      setThoracicAtlas(msg.thoracicField);
+      // Exact fitted wall from the acquisition, not a second fit without ribs.
+      const scene = new AnatomyScene(msg.patient, msg.referenceProfile);
       query = new AnatomyQuery(scene);
       vesselIndex = new Map(scene.vessels.map((v, i) => [v.id, i]));
       return;

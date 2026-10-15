@@ -74,7 +74,7 @@ try {
       for (const reference of references) {
         const profile = reference ? 'reference' : 'legacy';
         for (const id of views.filter((view) => !selectedView || view === selectedView)) {
-          await page.goto(`http://127.0.0.1:${port}/?e2e=app${reference ? '&reference=1' : ''}`);
+          await page.goto(`http://127.0.0.1:${port}/?e2e=app&abdomen=legacy${reference ? '&reference=1' : ''}`);
           await page.waitForFunction(() => (window.__vexusTest?.framesRendered() ?? 0) >= 2, undefined, { timeout: 180_000 });
           if ((await page.evaluate(() => !!window.__vexusTest!.sim().scene.torso.profile)) !== reference)
             throw new Error('El perfil corporal cargado no coincide con el solicitado');

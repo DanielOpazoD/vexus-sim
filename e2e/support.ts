@@ -1,3 +1,4 @@
+import { startPointsFor, type StartPoint } from '../src/app/startPoints';
 import { expect, test, type ConsoleMessage, type Page } from '@playwright/test';
 import { startupEntry, type StartupEntry } from '../src/app/startupTrace';
 import { startupEvidenceSink } from '../tools/ci/e2eStartupEvidence';
@@ -24,6 +25,27 @@ export function budget(workMs: number, boots = 1): void {
   test.setTimeout(boots * BOOT_MS + workMs);
 }
 
+/** Wait for the selected physical pose to be acquired, not fifty unnecessary software-rendered frames. */
+export async function windowAcquired(page: Page, id: StartPoint['id']) {
+  const torso = await page.evaluate(() => {
+    const t = window.__vexusTest!.sim().scene.torso;
+    return { a: t.a, b: t.b, profile: Array.from(t.profile!) };
+  });
+  const target = startPointsFor({ ...torso, profile: new Float32Array(torso.profile) }).find((p) => p.id === id)!;
+  const expected = { phi: target.phi, z: target.z, yaw: target.yaw, rock: target.rock ?? 0, tilt: target.tilt ?? 0, lift: 0 };
+  // ProbeAnimator converges in simulation time and snaps all six fields to the target.
+  // Require BOTH the current probe and the displayed acquisition, with the existing test budget unchanged.
+  await withinSimSeconds(page, 3, `pose adquirida de ${id}`, async () =>
+    page.evaluate((expected) => {
+      const s = window.__vexusTest!.sim(),
+        a = s.renderer.displayedAnatomy;
+      const matches = (pose: typeof expected) =>
+        (Object.keys(expected) as Array<keyof typeof expected>).every((k) => Math.abs(pose[k] - expected[k]) < 1e-10);
+      return (!!a && matches(s.pose) && matches(a.pose)) || 'sonda o adquisición aún en transición';
+    }, expected),
+  );
+}
+
 /** Cuadros completos del bucle de la aplicación desde el arranque (no cuenta los que dibujan los ganchos). */
 export const framesRendered = (page: Page): Promise<number> => page.evaluate(() => window.__vexusTest!.framesRendered());
 
@@ -37,7 +59,7 @@ const paces = new WeakMap<Page, { bootMs: number; t0: number; f0: number }>();
  * usuario) y espera dos vueltas JS y la finalización GPU del primer cuadro. Devuelve la lista de errores de página y de consola, que cada prueba
  * exige vacía al final.
  */
-export async function bootWithoutErrors(page: Page, query = '?e2e=1'): Promise<string[]> {
+export async function bootWithoutErrors(page: Page, query = '?e2e=1&abdomen=legacy'): Promise<string[]> {
   const errors: string[] = [];
   page.on('pageerror', (e) => errors.push(`pageerror: ${e.message}`));
   page.on('console', (m) => {
@@ -69,10 +91,14 @@ export async function bootWithoutErrors(page: Page, query = '?e2e=1'): Promise<s
     // La valla se registra en el host; el adjunto conserva el bloqueo aun sin respuesta de la página.
     await expect
       .poll(
-        async () => ({
-          frames: (await page.evaluate(() => window.__vexusTest?.framesRendered() ?? -1)) >= 2,
-          gpu: startup.some((entry) => entry.stage === 'ultrasound:gpu-ready'),
-        }),
+        async () => {
+          if (startup.some((entry) => entry.stage === 'ultrasound:gpu-failed'))
+            throw new Error('arranque: ultrasound:gpu-failed; el primer cuadro no puede completar');
+          return {
+            frames: (await page.evaluate(() => window.__vexusTest?.framesRendered() ?? -1)) >= 2,
+            gpu: startup.some((entry) => entry.stage === 'ultrasound:gpu-ready'),
+          };
+        },
         {
           timeout: BOOT_MS,
           message: 'arranque: dos vueltas JS y primer cuadro confirmado por la GPU',

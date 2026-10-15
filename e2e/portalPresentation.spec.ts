@@ -2,19 +2,27 @@ import { expect, test } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
 import { bootWithoutErrors, budget } from './support';
 
-for (const reference of [false, true])
+for (const reference of [false, true, 'atlas'] as const)
   for (const severe of [false, true]) {
     test(`porta: tarjeta real, rojo y sensibilidad, reference=${reference}, severe=${severe}`, async ({ page }, info) => {
       // 33 full production renders plus UI/boot: the reference body took >6 min
       // on SwiftShader. Preserve every frame/assertion; allow 6 min work + BOOT.
       budget(360_000);
-      const errors = await bootWithoutErrors(page, `?e2e=app${reference ? '&reference=1' : ''}`);
+      const errors = await bootWithoutErrors(
+        page,
+        `?e2e=app&abdomen=${reference === 'atlas' ? 'atlas' : 'legacy'}${reference === true ? '&reference=1' : ''}`,
+      );
       if (severe) await page.selectOption('#case-select', 'severe-congestion');
       await page.locator('.win-card').filter({ hasText: 'Porta · intrahepática' }).click();
       await page.waitForFunction(
         () => {
           const p = window.__vexusTest!.sim().pose;
-          return Math.abs(p.phi - 3.5) < 0.0001 && Math.abs(p.z - (window.__vexusTest!.sim().scene.torso.profile ? -60 : -90)) < 0.01;
+          return (
+            Math.abs(p.phi - (window.__vexusTest!.sim().scene.hasAbdominalAtlas ? 3.25 : 3.5)) < 0.0001 &&
+            Math.abs(
+              p.z - (window.__vexusTest!.sim().scene.hasAbdominalAtlas ? -65 : window.__vexusTest!.sim().scene.torso.profile ? -60 : -90),
+            ) < 0.01
+          );
         },
         undefined,
         { timeout: 90_000 },
@@ -140,7 +148,7 @@ for (const reference of [false, true])
         };
       });
       const tag = JSON.stringify(report);
-      expect(bmode.depthMm).toBe(150);
+      expect(bmode.depthMm).toBe(reference === 'atlas' ? 130 : 150);
       expect(report.settings.gainDb).toBe(12);
       expect(
         report.after.every((f) => f.blood > 100),

@@ -67,7 +67,21 @@ const PRESS_ITERATIONS = 8;
 
 /** Hueco con signo (mm) del punto q a la piel sin deformar, por la normal de la piel (< 0: dentro). */
 function skinGap(q: Vec3, t: Torso): number {
-  return torsoDepth(q, t) / Math.max(1e-6, length(torsoDepthGradient(q, t)));
+  // The sampled skin is continuous, its cellwise analytic gradient is not.
+  // Contact distance needs a continuous scale too, otherwise the pressure cap
+  // jumps at a cell boundary. A 1-mm half-width estimates that scale on the
+  // SAME skin; it does not change its zero or the acquisition gradient. (184)
+  const h = 1;
+  const gradient = t.profile
+    ? ([0, 1, 2].map((i) => {
+        const a: Vec3 = [...q],
+          b: Vec3 = [...q];
+        a[i] += h;
+        b[i] -= h;
+        return (torsoDepth(a, t) - torsoDepth(b, t)) / (2 * h);
+      }) as Vec3)
+    : torsoDepthGradient(q, t);
+  return torsoDepth(q, t) / Math.max(1e-6, length(gradient));
 }
 
 /** Primer cruce (mm a lo largo de la línea) del nivel `w` de profundidad radial en [r0, r1], o null. */

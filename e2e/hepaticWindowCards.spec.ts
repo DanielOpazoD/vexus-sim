@@ -6,7 +6,7 @@ import { bootWithoutErrors, budget } from './support';
 for (const reference of [false, true]) {
   test(`ventanas hepáticas: rama, tronco PW y cava longitudinal, reference=${reference}`, async ({ page }, info) => {
     budget(180_000);
-    const errors = await bootWithoutErrors(page, `?e2e=app${reference ? '&reference=1' : ''}`);
+    const errors = await bootWithoutErrors(page, `?e2e=app&abdomen=legacy${reference ? '&reference=1' : ''}`);
     const sourceSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
     const capture = async (name: string) => {
       // La captura documenta una adquisición concreta; no espera al compositor con el rayo vivo cambiando.

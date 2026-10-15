@@ -6,7 +6,7 @@ import { bootWithoutErrors, budget, checkAfterEach, withinFrames } from './suppo
 checkAfterEach();
 test('comparación venosa: reloj único, cursor, pausa, escala y cierre accesible sin cambiar al paciente', async ({ page }, info) => {
   budget(120_000);
-  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  const errors = await bootWithoutErrors(page, '?e2e=1&abdomen=legacy&docente=1');
   await page.locator('#debug-toggle').check({ force: true });
   await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
   await page.evaluate(() => window.__vexusTest!.advance(8));
@@ -105,7 +105,7 @@ test('comparación venosa: reloj único, cursor, pausa, escala y cierre accesibl
 
 test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala independiente', async ({ page }, info) => {
   budget(120_000);
-  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  const errors = await bootWithoutErrors(page, '?e2e=1&abdomen=legacy&docente=1');
   await page.locator('#debug-toggle').check({ force: true });
   await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
   await page.evaluate(() => window.__vexusTest!.advance(30));
@@ -326,7 +326,7 @@ test('PW comparado: potencia espectral real, ECG, marcas opcionales y escala ind
 
 test('PW comparado: calidad visible sin marcas y recuperación al ampliar escala renal', async ({ page }, info) => {
   budget(240_000);
-  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  const errors = await bootWithoutErrors(page, '?e2e=1&abdomen=legacy&docente=1');
   await page.selectOption('#case-select', 'severe-congestion');
   await page
     .locator('button', { hasText: /Apnea\s*esp/ })
@@ -376,7 +376,7 @@ test('PW comparado: calidad visible sin marcas y recuperación al ampliar escala
 
 test('laboratorio venoso: parámetros físicos, progresión calculada y aislamiento del paciente', async ({ page }, info) => {
   budget(120_000);
-  const errors = await bootWithoutErrors(page, '?e2e=1&docente=1');
+  const errors = await bootWithoutErrors(page, '?e2e=1&abdomen=legacy&docente=1');
   await page.locator('#debug-toggle').check({ force: true });
   await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
   await page.locator('#freeze').click({ force: true });

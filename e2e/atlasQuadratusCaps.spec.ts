@@ -76,7 +76,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
             errors: window.__vexusTest!.loggedErrors(),
           };
         },
-        { points, witnesses, muscle: Tissue.QuadratusLumborum, fat: Tissue.RetroperitonealFat },
+        { points, witnesses, muscle: Number(Tissue.QuadratusLumborum), fat: Number(Tissue.RetroperitonealFat) },
       );
       reports.push({ control, ...result });
       expect(result.tested).toBeGreaterThan(250);

@@ -1,4 +1,5 @@
 import { buildTubeGrid, tubeGridReach, tubeGridRegions, TUBE_GRID_WIDTH, type TubeGrid, type TubeSphere } from '../anatomy/gpu/tubeGrid';
+import { assembleQueryGradient } from './queryGradient';
 import { segmentGasKind } from './segmentTag';
 import { BOWEL_NODES, BOWEL_BOUNDS, BOWEL_GROUPS, BOWEL_ARC } from '../anatomy/organs/bowel';
 import { CARTILAGE_ROWS } from '../anatomy/referenceCartilageData';
@@ -86,6 +87,8 @@ import {
   FRAG_SCANCONVERT,
   FRAG_TISSUEMAP,
   FRAG_QUERY,
+  FRAG_QUERY_CLASS,
+  FRAG_QUERY_GRADIENT,
   FRAG_TRIAD_QUERY,
   FRAG_TRANS_HITS,
   FRAG_TRANS_HITS_GRID,
@@ -386,6 +389,7 @@ export class UltrasoundRenderer {
   private pMLine: GLProgram;
   private pMStrip: GLProgram;
   private pQuery: GLProgram | null = null;
+  private pQueryGrad: GLProgram | null = null;
   private pTriadQuery: GLProgram | null = null;
   /** Tiempo de GPU por pasada (asíncrono; null sin la extensión). */
   private readonly timer: GpuPassTimer<PassId>;
@@ -723,6 +727,7 @@ export class UltrasoundRenderer {
     ])
       p.dispose();
     this.pQuery?.dispose();
+    this.pQueryGrad?.dispose();
     this.pTriadQuery?.dispose();
     this.timer.dispose();
     for (const t of [
@@ -1885,6 +1890,19 @@ export class UltrasoundRenderer {
     return this.mapLast;
   }
 
+  /** Recursos temporales de las consultas puntuales; los dos bancos usan el mismo formato. */
+  private queryTarget(points: Float32Array, outputs: number): [WebGLTexture, RenderTarget] {
+    const gl = this.gl,
+      width = 256,
+      height = Math.max(1, Math.ceil(points.length / 3 / width));
+    const data = new Float32Array(width * height * 4);
+    for (let i = 0; i < Math.floor(points.length / 3); i++) data.set([points[i * 3], points[i * 3 + 1], points[i * 3 + 2], 1], i * 4);
+    const pointsTexture = createTexture(gl, width, height, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
+    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, width, height, gl.RGBA, gl.FLOAT, data);
+    const f = { internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.NEAREST };
+    return [pointsTexture, createTarget(gl, width, height, Array(outputs).fill(f))];
+  }
+
   /**
    * Consulta síncrona de la anatomía GLSL en una lista de puntos del mundo (xyz por
    * punto). Solo para pruebas y el gate de equivalencia TS ↔ GLSL: lee de la GPU de
@@ -1895,37 +1913,58 @@ export class UltrasoundRenderer {
   queryPoints(points: Float32Array, inputs: FrameInputs, allTubes = false, opts: { normals?: boolean } = {}): GpuPointQuery {
     const gl = this.gl;
     const n = Math.floor(points.length / 3);
-    const W = 256;
-    const H = Math.max(1, Math.ceil(n / W));
-    const data = new Float32Array(W * H * 4);
-    for (let i = 0; i < n; i++) data.set([points[i * 3], points[i * 3 + 1], points[i * 3 + 2], 1], i * 4);
-    const pts = createTexture(gl, W, H, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
-    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, W, H, gl.RGBA, gl.FLOAT, data);
-    const f = { internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.NEAREST };
-    const target = createTarget(gl, W, H, [f, f, f]);
-    this.pQuery ??= GLProgram.link(gl, VERT, specializeAbdominalShader(FRAG_QUERY, this.currentScene.hasAbdominalAtlas), 'query');
-    // puntos fuera del plano (equivalencia volumétrica): todos los tubos, sin recorte por losa
-    this.updateSceneDynamic(inputs, allTubes);
-    bindTarget(gl, target);
-    this.pQuery.use();
-    this.setSceneUniforms(this.pQuery, inputs);
-    this.setBeamUniforms(this.pQuery, inputs);
-    this.pQuery.tex('uPoints', 0, pts);
-    drawFullscreen(gl);
-    const out0 = new Float32Array(W * H * 4);
-    const out1 = new Float32Array(W * H * 4);
-    gl.readBuffer(gl.COLOR_ATTACHMENT0);
-    gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, out0);
-    gl.readBuffer(gl.COLOR_ATTACHMENT1);
-    gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, out1);
-    const out2 = opts.normals ? new Float32Array(W * H * 4) : null;
-    if (out2) {
-      gl.readBuffer(gl.COLOR_ATTACHMENT2);
-      gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, out2);
+    const [pts, target] = this.queryTarget(points, 3);
+    const { width: W, height: H } = target;
+    const f = target.formats[0];
+    // La ruta es readonly: se fija una vez al construir este renderer.
+    const staged = this.transmissionHitsPipeline === 'staged-atlas';
+    let gradient: RenderTarget | null = null;
+    let out0: Float32Array,
+      out1: Float32Array,
+      out2: Float32Array | null = null;
+    try {
+      this.pQuery ??= GLProgram.link(
+        gl,
+        VERT,
+        specializeAbdominalShader(staged ? FRAG_QUERY_CLASS : FRAG_QUERY, this.currentScene.hasAbdominalAtlas),
+        'query',
+      );
+      // Puntos fuera del plano: todos los tubos, sin recorte por losa.
+      this.updateSceneDynamic(inputs, allTubes);
+      bindTarget(gl, target);
+      this.pQuery.use();
+      this.setSceneUniforms(this.pQuery, inputs);
+      this.setBeamUniforms(this.pQuery, inputs);
+      this.pQuery.tex('uPoints', 0, pts);
+      drawFullscreen(gl);
+      out0 = this.readRgba(target, 0);
+      out1 = this.readRgba(target, 1);
+      if (opts.normals) {
+        out2 = this.readRgba(target, 2);
+        if (staged) {
+          this.pQueryGrad ??= GLProgram.link(gl, VERT, specializeAbdominalShader(FRAG_QUERY_GRADIENT, true), 'queryGradient');
+          gradient = createTarget(gl, W, H, [f]);
+          const axes: Float32Array[] = [];
+          this.pQueryGrad.use();
+          this.setSceneUniforms(this.pQueryGrad, inputs);
+          this.pQueryGrad.tex('uPoints', 0, pts);
+          ['uRawClass0', 'uRawClass1', 'uRawClass2'].forEach((name, i) => this.pQueryGrad!.tex(name, 10 + i, target.textures[i]));
+          for (let axis = 0; axis < 3; axis++) {
+            bindTarget(gl, gradient);
+            this.pQueryGrad.i('uGradientAxis', axis);
+            drawFullscreen(gl);
+            axes.push(this.readRgba(gradient, 0));
+          }
+          out2 = assembleQueryGradient(axes, out2);
+        }
+      }
+      if (gl.isContextLost()) throw new Error('Consulta GPU: contexto perdido');
+    } finally {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      if (gradient) deleteTarget(gl, gradient);
+      deleteTarget(gl, target);
+      gl.deleteTexture(pts);
     }
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    deleteTarget(gl, target);
-    gl.deleteTexture(pts);
     const tissue = new Int32Array(n);
     const vessel = new Int32Array(n);
     const velocity = new Float32Array(n * 3);
@@ -1944,7 +1983,7 @@ export class UltrasoundRenderer {
         gradNorm[i] = out2[i * 4 + 3];
       }
     }
-    return normal ? { tissue, vessel, velocity, iface, ifd, normal, gradNorm } : { tissue, vessel, velocity, iface, ifd };
+    return { tissue, vessel, velocity, iface, ifd, ...(normal ? { normal, gradNorm } : {}) };
   }
 
   /**
@@ -1954,27 +1993,22 @@ export class UltrasoundRenderer {
   queryTriads(points: Float32Array): Float32Array {
     const gl = this.gl;
     const n = Math.floor(points.length / 3);
-    const W = 256;
-    const H = Math.max(1, Math.ceil(n / W));
-    const data = new Float32Array(W * H * 4);
-    for (let i = 0; i < n; i++) data.set([points[i * 3], points[i * 3 + 1], points[i * 3 + 2], 1], i * 4);
-    const pts = createTexture(gl, W, H, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
-    gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, W, H, gl.RGBA, gl.FLOAT, data);
-    const target = createTarget(gl, W, H, [{ internal: gl.RGBA32F, format: gl.RGBA, type: gl.FLOAT, filter: gl.NEAREST }]);
-    this.pTriadQuery ??= GLProgram.link(gl, VERT, FRAG_TRIAD_QUERY, 'triadQuery');
-    bindTarget(gl, target);
-    this.pTriadQuery.use();
-    this.pTriadQuery.tex('uPoints', 0, pts);
-    drawFullscreen(gl);
-    const out = new Float32Array(W * H * 4);
-    gl.readBuffer(gl.COLOR_ATTACHMENT0);
-    gl.readPixels(0, 0, W, H, gl.RGBA, gl.FLOAT, out);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    deleteTarget(gl, target);
-    gl.deleteTexture(pts);
-    const g = new Float32Array(n);
-    for (let i = 0; i < n; i++) g[i] = out[i * 4];
-    return g;
+    const [pts, target] = this.queryTarget(points, 1);
+    try {
+      this.pTriadQuery ??= GLProgram.link(gl, VERT, FRAG_TRIAD_QUERY, 'triadQuery');
+      bindTarget(gl, target);
+      this.pTriadQuery.use();
+      this.pTriadQuery.tex('uPoints', 0, pts);
+      drawFullscreen(gl);
+      const out = this.readRgba(target, 0);
+      const g = new Float32Array(n);
+      for (let i = 0; i < n; i++) g[i] = out[i * 4];
+      return g;
+    } finally {
+      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+      deleteTarget(gl, target);
+      gl.deleteTexture(pts);
+    }
   }
 
   /**
@@ -1988,12 +2022,7 @@ export class UltrasoundRenderer {
 
   /** Campo del último cuadro de color (RGBA: frecuencia, potencia, fracción de sangre). Solo pruebas: lectura bloqueante. */
   readColorField(source: 'filtered' | 'raw' = 'filtered'): { width: number; height: number; data: Float32Array } {
-    const gl = this.gl;
-    const px = new Float32Array(COLOR_W * COLOR_H * 4);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, (source === 'raw' ? this.tColorRaw : this.tColor).fbo);
-    gl.readBuffer(gl.COLOR_ATTACHMENT0);
-    gl.readPixels(0, 0, COLOR_W, COLOR_H, gl.RGBA, gl.FLOAT, px);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    const px = this.readRgba(source === 'raw' ? this.tColorRaw : this.tColor, 0);
     for (let i = 0; i < px.length; i += 4) {
       const power = Math.hypot(px[i], px[i + 1]);
       px[i] = (Math.atan2(px[i + 1], px[i]) * (this.lastColorFrame?.prf ?? 0)) / (2 * Math.PI);

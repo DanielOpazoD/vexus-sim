@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Lecho renal Atlas: redondea en el campo compartido los extremos artificialmente angulosos del cuadrado lumbar y extrae superficies 3D cerradas con el mismo número de muestras; conserva riñones, grasa perirrenal y psoas (203).
+
 - Atlas renal: corrige el conector venoso esplénico estimado que atravesaba el polo superior izquierdo, conservando riñones y calibres; representación ecográfica y validación clínica pendientes (176, seguimiento).
 - Banco de comparación: registra la fase real del receptor mediante renders ordinarios y conserva el reloj; evita atribuir al modelo diferencias de ruido por distinto trabajo previo; distribuye las ventanas y elimina relleno innecesario manteniendo cobertura y plazos (149, seguimiento 2026-10-07).
 

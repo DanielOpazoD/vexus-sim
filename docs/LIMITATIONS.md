@@ -80,7 +80,7 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   bajo el riñón que se desliza. En la hepatomegalia de la congestión grave el hígado ocupa el origen del psoas en
   T12–L1 (hasta 12 mm) y el borde superior del cuadrado (hasta 7 mm): se clasifica antes. La textura de sus fascículos no
   tiene prueba de paridad numérica entre la GPU y su gemelo TS (sí la clasificación).
-  En el atlas, el psoas usa su campo registrado. El cuadrado lumbar usa una sección oval estimada en el compartimento lumbar, anclada a la costilla 12 y cresta del adulto registrado (182); sus inserciones y espesor todavía no son una segmentación muscular.
+  En el atlas, el psoas usa su campo registrado. El cuadrado lumbar usa una sección oval estimada en el compartimento lumbar, anclada a la costilla 12 y cresta del adulto registrado (182); sus inserciones y espesor todavía no son una segmentación muscular. Sus extremos usan una transición interior (203), sin ampliar esos límites; el redondeo tampoco es una inserción tendinosa segmentada ni una dimensión poblacional.
   La decisión 181 cierra su dominio en la pared interna y elimina las protrusiones externas 3D; no valida todavía
   sus inserciones costales/ilíacas ni su tamaño individual.
 - **Sin cascada torácica de la VCI** (`no-thoracic-waterfall`): la unión cavoauricular transmite

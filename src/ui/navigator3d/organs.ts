@@ -13,7 +13,7 @@ import type { AnatomyScene } from '../../anatomy/scene';
 import type { Vec3 } from '../../core/vec3';
 import { CM } from './common';
 import { labelSprite } from './labels';
-import { psoasSdf, quadratusSdf } from '../../anatomy/organs/retroperitoneum';
+import { ATLAS_QUADRATUS, psoasSdf, quadratusSdf } from '../../anatomy/organs/retroperitoneum';
 import { perirenalOuterSdf } from '../../anatomy/organs/kidney';
 import { torsoDepth } from '../../anatomy/primitives';
 import { variableTube } from './tubes';
@@ -292,8 +292,18 @@ export function buildPosteriorMuscles(a: AnatomyScene): THREE.Group {
   const group = new THREE.Group(),
     offset = a.spine.y0 + 46;
   for (const side of [-1, 1]) {
-    const lo: Vec3 = [side < 0 ? -110 : 15, -160, -260];
-    const hi: Vec3 = [side < 0 ? -15 : 110, -10, -30];
+    const q = ATLAS_QUADRATUS;
+    // Resolver el contorno compartido con el mismo trabajo 40³: el campo Atlas
+    // ocupa ~100 mm frente al cubo legacy de 230 mm. MarchingCubes omite celdas
+    // de borde: reservar dos celdas exteriores completas. Este collar es soporte
+    // de extracción; no representa una separación adiposa anatómica.
+    const padding = (2 * (q.zTop - q.zBottom)) / (40 - 4);
+    const lo: Vec3 = a.hasAbdominalAtlas
+      ? [side < 0 ? -q.xBottom - padding : q.xMedial - padding, q.yBottom - q.halfThickness - padding, q.zBottom - padding]
+      : [side < 0 ? -110 : 15, -160, -260];
+    const hi: Vec3 = a.hasAbdominalAtlas
+      ? [side < 0 ? -q.xMedial + padding : q.xBottom + padding, q.yTop + q.halfThickness + padding, q.zTop + padding]
+      : [side < 0 ? -15 : 110, -10, -30];
     for (const kind of ['psoas', 'quadratus'] as const) {
       if (a.hasAbdominalAtlas && kind === 'psoas') continue;
       const field = (p: Vec3) => {
@@ -304,6 +314,7 @@ export function buildPosteriorMuscles(a: AnatomyScene): THREE.Group {
         return Math.max(quadratusSdf(a.hasAbdominalAtlas ? p : local, -torsoDepth(p, a.torso) - a.wallThickness(), peri), sideDistance);
       };
       const mesh = meshFromSdf(field, lo, hi, 40, new THREE.MeshStandardMaterial({ color: 0x8f5956, roughness: 0.85 }));
+      if (a.hasAbdominalAtlas) prepareOrganSurface(mesh.geometry);
       mesh.name = `${kind === 'psoas' ? 'Psoas mayor' : 'Cuadrado lumbar'} ${side < 0 ? 'derecho' : 'izquierdo'}`;
       group.add(mesh);
     }

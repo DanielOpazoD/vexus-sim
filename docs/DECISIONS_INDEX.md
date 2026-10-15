@@ -206,3 +206,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [200](DECISIONS.md#L7060) | Contenido colónico separado del líquido simple | vigente |
 | [201](DECISIONS.md#L7070) | Seno renal menos apelmazado y revisión del apoyo muscular | vigente |
 | [202](DECISIONS.md#L7082) | Lecho renal con grasa y fascia volumétricas | vigente |
+| [203](DECISIONS.md#L7098) | Extremos musculares continuos en el lecho renal Atlas | vigente |

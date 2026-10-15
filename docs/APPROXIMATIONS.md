@@ -183,3 +183,16 @@ previo del orificio VCI. Es una extrapolación del modelo existente, no un
 orificio segmentado. La variante sin este límite invadió una pared miocárdica
 con cava dilatada y permanece rechazada. No se cambian radios ni se relaja
 su test de protección miocárdica/septal. Revisión anatómica externa pendiente.
+
+## Extremos del cuadrado lumbar Atlas (203)
+
+El redondeo entre la sección oval y los planos terminales conserva los límites
+estimados de 182. Usa un máximo suave interior de anchura 8 mm, derivada de
+`ATLAS_QUADRATUS.halfThickness / 1.25`. Aumenta el valor del campo como máximo
+2 mm; esa cifra no es una distancia euclídea ni un grosor anatómico. No expande
+el soporte ni modifica los campos renal, adiposo o del psoas. La franja liberada
+recibe la clasificación retroperitoneal existente, sin una línea acústica añadida.
+Es **EXTRAPOLACIÓN PROPIA / NEEDS_CALIBRATION**, no una inserción muscular o
+fascial segmentada. La malla 3D se extrae del mismo campo con 40³ muestras y un
+collar exterior de dos celdas para evitar superficies abiertas. Su iluminación
+comparte vértices coincidentes; no desplaza órganos ni suaviza la ecografía.

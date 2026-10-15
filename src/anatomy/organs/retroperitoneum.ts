@@ -135,15 +135,22 @@ export function quadratusSdf(m: Vec3, insideWallMm: number, dPeriMm: number): nu
     const radiusX = Math.max(1, (lateral - q.xMedial) / 2);
     const section =
       (Math.hypot((ax - (lateral + q.xMedial) / 2) / radiusX, (m[1] - y) / q.halfThickness) - 1) * Math.min(radiusX, q.halfThickness);
+    const radial = section / 1.25;
+    const terminal = Math.max((m[2] - q.zTop + q.costalSlope * (ax - q.xMedial)) / Math.hypot(1, q.costalSlope), q.zBottom - m[2]);
+    // Redondeo interior estimado de los planos existentes, sin nuevas inserciones.
+    // El máximo suave conserva los límites y el núcleo, suma hasta 2 mm al valor
+    // del campo y mantiene pesos convexos para el gradiente. Esa variación del
+    // campo no acota el desplazamiento euclídeo de la superficie.
+    const blend = q.halfThickness / 1.25;
+    const h = Math.max(1 - Math.abs(radial - terminal) / blend, 0);
+    const rounded = Math.max(radial, terminal) + (blend * h * h) / 4;
     return Math.max(
-      section / 1.25,
+      rounded,
       -insideWallMm / 1.25,
       -dPeriMm / 1.25,
       q.xMedial - ax,
       (ax - lateral) / Math.hypot(1, (q.xBottom - q.xTop) / 100),
       (Math.abs(m[1] - y) - q.halfThickness) / Math.hypot(1, (q.yBottom - q.yTop) / 100),
-      (m[2] - q.zTop + q.costalSlope * (ax - q.xMedial)) / Math.hypot(1, q.costalSlope),
-      q.zBottom - m[2],
       (1 - abdominalAtlasSdf(m, 8)) / 1.25,
       (1 - abdominalAtlasSdf(m, 9)) / 1.25,
     );
@@ -239,12 +246,13 @@ float quadratusSdf(vec3 m, float insideWall, float dPeri) {
     float lateral=mix(${ATLAS_QUADRATUS.xTop.toFixed(1)},${ATLAS_QUADRATUS.xBottom.toFixed(1)},f);
     float rx=max(1.0,(lateral-${ATLAS_QUADRATUS.xMedial.toFixed(1)})/2.0);
     float section=(length(vec2((ax-(lateral+${ATLAS_QUADRATUS.xMedial.toFixed(1)})/2.0)/rx,(m.y-y)/${ATLAS_QUADRATUS.halfThickness.toFixed(1)}))-1.0)*min(rx,${ATLAS_QUADRATUS.halfThickness.toFixed(1)});
-    float d=max(section/1.25,max(-insideWall/1.25,-dPeri/1.25));
+    float terminal=max((m.z-(${ATLAS_QUADRATUS.zTop.toFixed(1)})+${ATLAS_QUADRATUS.costalSlope.toFixed(2)}*(ax-${ATLAS_QUADRATUS.xMedial.toFixed(1)}))/${Math.hypot(1, ATLAS_QUADRATUS.costalSlope).toFixed(8)},${ATLAS_QUADRATUS.zBottom.toFixed(1)}-m.z);
+    float capH=max(1.0-abs(section/1.25-terminal)/${(ATLAS_QUADRATUS.halfThickness / 1.25).toFixed(1)},0.0);
+    float rounded=max(section/1.25,terminal)+${(ATLAS_QUADRATUS.halfThickness / 1.25 / 4).toFixed(1)}*capH*capH;
+    float d=max(rounded,max(-insideWall/1.25,-dPeri/1.25));
     d=max(d,${ATLAS_QUADRATUS.xMedial.toFixed(1)}-ax);
     d=max(d,(ax-lateral)/${Math.hypot(1, 0.14).toFixed(8)});
     d=max(d,(abs(m.y-y)-${ATLAS_QUADRATUS.halfThickness.toFixed(1)})/${Math.hypot(1, 0.12).toFixed(8)});
-    d=max(d,(m.z-(${ATLAS_QUADRATUS.zTop.toFixed(1)})+${ATLAS_QUADRATUS.costalSlope.toFixed(2)}*(ax-${ATLAS_QUADRATUS.xMedial.toFixed(1)}))/${Math.hypot(1, 0.85).toFixed(8)});
-    d=max(d,${ATLAS_QUADRATUS.zBottom.toFixed(1)}-m.z);
     return max(d,max((1.0-abdominalAtlasSdf(m,8))/1.25,(1.0-abdominalAtlasSdf(m,9))/1.25));
   }
   float ax = abs(m.x);

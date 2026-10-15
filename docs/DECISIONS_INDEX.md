@@ -174,22 +174,22 @@ Generado por `npm run docs:index` — no editar a mano.
 | [168](DECISIONS.md#L6493) | Adquisición portal intrahepática separada del tronco principal | vigente |
 | [169](DECISIONS.md#L6501) | Interpolación del Doppler color en el plano complejo | vigente |
 | [170](DECISIONS.md#L6511) | Paleta rojo/azul compartida y ajuste de la adquisición intrahepática | vigente |
-| [171](DECISIONS.md#L6521) | Resolver juntos los caudales de la unión cavoauricular | vigente |
-| [172](DECISIONS.md#L6525) | Sección regional de la VCI suprahepática y Q/A común con su anatomía | vigente |
-| [173](DECISIONS.md#L6541) | Filtro color periódico en frecuencia muestreada, identidad al desactivarlo | vigente |
-| [174](DECISIONS.md#L6549) | Conservar las barreras fijas al convertir transmisión para color | vigente |
-| [175](DECISIONS.md#L6557) | Consulta costal con descarte geométrico conservador | vigente |
-| [176](DECISIONS.md#L6563) | Registro renal y muscular posterior coherente con la columna | vigente |
-| [177](DECISIONS.md#L6650) | Integrar la absorción Doppler por tejido sin nuevas texturas | vigente |
-| [178](DECISIONS.md#L6658) | Alcance axilar posterior bilateral sin desplazar órganos | vigente |
-| [179](DECISIONS.md#L6670) | Contacto actual sin borrar la velocidad del último paso físico | vigente |
-| [180](DECISIONS.md#L6703) | Conservar etapas de arranque antes de disponer de los ganchos | vigente |
-| [181](DECISIONS.md#L6744) | Copiar la posición exacta y los ajustes actuales del transductor | vigente |
-| [182](DECISIONS.md#L6777) | Deslizar la sonda conserva los ejes en el paciente | vigente |
-| [183](DECISIONS.md#L6789) | Selección persistente y contornos de la guía desde la anatomía adquirida | vigente |
-| [184](DECISIONS.md#L6834) | Confirmar en GPU el primer cuadro de los ensayos | vigente |
-| [185](DECISIONS.md#L6846) | Admitir una pareja renal sin confundir paciente y plano | vigente |
-| [186](DECISIONS.md#L6858) | Concentración continua del medio dispersor en la rama principal | vigente |
-| [187](DECISIONS.md#L6870) | Registro renal rígido con hitos reservados y escala fija | vigente |
-| [188](DECISIONS.md#L6882) | TAC remuestreado en los centros físicos del plano US | vigente |
-| [189](DECISIONS.md#L6894) | Identidad canónica de los módulos GLSL de Three | vigente |
+| [171](DECISIONS.md#L6531) | Resolver juntos los caudales de la unión cavoauricular | vigente |
+| [172](DECISIONS.md#L6535) | Sección regional de la VCI suprahepática y Q/A común con su anatomía | vigente |
+| [173](DECISIONS.md#L6551) | Filtro color periódico en frecuencia muestreada, identidad al desactivarlo | vigente |
+| [174](DECISIONS.md#L6559) | Conservar las barreras fijas al convertir transmisión para color | vigente |
+| [175](DECISIONS.md#L6567) | Consulta costal con descarte geométrico conservador | vigente |
+| [176](DECISIONS.md#L6573) | Registro renal y muscular posterior coherente con la columna | vigente |
+| [177](DECISIONS.md#L6660) | Integrar la absorción Doppler por tejido sin nuevas texturas | vigente |
+| [178](DECISIONS.md#L6668) | Alcance axilar posterior bilateral sin desplazar órganos | vigente |
+| [179](DECISIONS.md#L6680) | Contacto actual sin borrar la velocidad del último paso físico | vigente |
+| [180](DECISIONS.md#L6713) | Conservar etapas de arranque antes de disponer de los ganchos | vigente |
+| [181](DECISIONS.md#L6754) | Copiar la posición exacta y los ajustes actuales del transductor | vigente |
+| [182](DECISIONS.md#L6787) | Deslizar la sonda conserva los ejes en el paciente | vigente |
+| [183](DECISIONS.md#L6799) | Selección persistente y contornos de la guía desde la anatomía adquirida | vigente |
+| [184](DECISIONS.md#L6844) | Confirmar en GPU el primer cuadro de los ensayos | vigente |
+| [185](DECISIONS.md#L6856) | Admitir una pareja renal sin confundir paciente y plano | vigente |
+| [186](DECISIONS.md#L6868) | Concentración continua del medio dispersor en la rama principal | vigente |
+| [187](DECISIONS.md#L6880) | Registro renal rígido con hitos reservados y escala fija | vigente |
+| [188](DECISIONS.md#L6892) | TAC remuestreado en los centros físicos del plano US | vigente |
+| [189](DECISIONS.md#L6904) | Identidad canónica de los módulos GLSL de Three | vigente |

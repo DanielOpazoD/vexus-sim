@@ -520,7 +520,7 @@ export class CutMapView {
     this.canvas.dataset.labels = on ? '1' : '0';
   }
 
-  /** Pide la adquisición más reciente a ≤ `hz` veces por segundo; reutiliza las instantáneas congeladas. */
+  /** Sigue el movimiento adquirido; `hz` limita solo el refresco fisiológico con la sonda quieta. */
   draw(sim: Simulator, nowMs: number, hz = 8): void {
     this.shownSim = sim;
     const shown = sim.renderer.displayedFrame;
@@ -529,13 +529,18 @@ export class CutMapView {
     const worker = this.ensureWorker(sim, nowMs);
     // Three active seconds without completed rows still detect a stalled worker.
     if (this.pendingInputs && this.watchdog.expired(nowMs)) this.fail(new Error('corte sin avance durante 3 s'), nowMs);
+    const previous = this.mapInputs;
+    const geometryChanged =
+      previous &&
+      (shown.bmode.depthMm !== previous.depthMm ||
+        (Object.keys(shown.anatomy.pose) as (keyof ProbePose)[]).some((key) => shown.anatomy.pose[key] !== previous.pose[key]));
     // The acquired frame object stays identical in freeze/cine; counters can restart after GPU recovery.
     if (
       worker &&
       this.worker === worker &&
       !this.pendingInputs &&
       shown.anatomy.frame !== this.mapInputs?.frame &&
-      nowMs - this.lastUpdate >= 1000 / hz
+      (geometryChanged || nowMs - this.lastUpdate >= 1000 / hz)
     ) {
       this.lastUpdate = nowMs;
       this.watchdog.start(nowMs);

@@ -133,6 +133,64 @@ it('coalesces movement during a pending cut and sends only the latest acquisitio
   view.dispose();
 });
 
+it.each(['phi', 'z', 'lift', 'yaw', 'tilt', 'rock'] as const)(
+  'requests acquired %s movement without waiting for the idle cadence',
+  (key) => {
+    const { view, sim, workers } = fixture();
+    view.draw(sim, 1000);
+    const request = workers[0].postMessage.mock.calls.at(-1)![0];
+    const shown = sim.renderer.displayedFrame!;
+    // Multiple newer acquisitions arrive during one calculation. Keep the
+    // worker bounded, then request the latest acquired pose on its next turn.
+    for (const step of [1, 2]) {
+      shown.n++;
+      shown.anatomy = { ...shown.anatomy, frame: { ...shown.anatomy.frame }, pose: { ...shown.anatomy.pose, [key]: step * 0.01 } };
+      view.draw(sim, 1000 + step * 5);
+    }
+    expect(workers[0].postMessage.mock.calls.filter(([m]) => m.type === 'map')).toHaveLength(1);
+    workers[0].onmessage({ data: { type: 'map', id: request.id } });
+    view.draw(sim, 1020);
+    expect(workers[0].postMessage.mock.calls.filter(([m]) => m.type === 'map')).toHaveLength(2);
+    expect(workers[0].postMessage.mock.calls.at(-1)![0]).toMatchObject({ pose: shown.anatomy.pose });
+    view.dispose();
+  },
+);
+
+it('updates acquired depth immediately while preserving the snapshot and grid', () => {
+  const { view, sim, workers } = fixture();
+  view.draw(sim, 1000);
+  const request = workers[0].postMessage.mock.calls.at(-1)![0];
+  workers[0].onmessage({ data: { type: 'map', id: request.id } });
+  const shown = sim.renderer.displayedFrame!;
+  shown.anatomy = { ...shown.anatomy, frame: { ...shown.anatomy.frame } };
+  shown.bmode = { ...shown.bmode, depthMm: 200 };
+  view.draw(sim, 1020);
+  expect(workers[0].postMessage.mock.calls.filter(([m]) => m.type === 'map')).toHaveLength(2);
+  expect(workers[0].postMessage.mock.calls.at(-1)![0]).toMatchObject({
+    frame: shown.anatomy.frame,
+    sample: shown.anatomy.sample,
+    depthMm: 200,
+    width: 96,
+    height: 128,
+  });
+  view.dispose();
+});
+
+it('waits for the acquired pose instead of sending a newer live gesture to the worker', () => {
+  const { view, sim, workers } = fixture();
+  view.draw(sim, 1000);
+  const request = workers[0].postMessage.mock.calls.at(-1)![0];
+  workers[0].onmessage({ data: { type: 'map', id: request.id } });
+  const shown = sim.renderer.displayedFrame!;
+  sim.pose = { ...shown.anatomy.pose, z: 20 };
+  shown.anatomy = { ...shown.anatomy, frame: { ...shown.anatomy.frame } };
+  view.draw(sim, 1020);
+  expect(workers[0].postMessage.mock.calls.filter(([m]) => m.type === 'map')).toHaveLength(1);
+  view.draw(sim, 1125);
+  expect(workers[0].postMessage.mock.calls.at(-1)![0]).toMatchObject({ pose: shown.anatomy.pose });
+  view.dispose();
+});
+
 it('reinitializes a new scene even when the patient id is unchanged and ignores obsolete errors', () => {
   const { view, sim, workers, report } = fixture();
   view.draw(sim, 1000);

@@ -24,10 +24,12 @@ function mount() {
     cineCount: frames.length,
     cineFrame: (i: number) => frames[i],
     cineShownFrame: null as (typeof frames)[number] | null,
+    displayedFrame: frames[2],
     cineSeal: vi.fn(),
     cineExit: vi.fn(),
     showCine: vi.fn((i: number) => {
       renderer.cineShownFrame = frames[i];
+      renderer.displayedFrame = frames[i];
     }),
   };
   const store = new Store({
@@ -55,7 +57,9 @@ function mount() {
 
 it('presents the chosen historical acquisition and its trace cursor in the input event without another GPU loop', () => {
   const { cine, slider, label, renderer, frames } = mount();
-  expect(renderer.cineShownFrame).toBe(frames[2]);
+  expect(renderer.displayedFrame).toBe(frames[2]);
+  expect(renderer.showCine).not.toHaveBeenCalled();
+  expect(cine.cursorT()).toBe(3);
   slider.value = '0';
   slider.dispatch('input');
   // No tick/advance/render is called: a busy live frame cannot retain newer geometry.

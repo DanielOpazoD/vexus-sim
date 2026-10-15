@@ -33,7 +33,8 @@ test('initializes both real WebGL contexts before acquisition and retains the 3D
       ultrasoundDraws: 0,
       reservationReady: false,
     });
-    const clearRect = CanvasRenderingContext2D.prototype.clearRect;
+    const clearRect: unknown = Reflect.get(CanvasRenderingContext2D.prototype, 'clearRect');
+    if (typeof clearRect !== 'function') throw new Error('Canvas.clearRect unavailable');
     CanvasRenderingContext2D.prototype.clearRect = function (...args) {
       if (this.canvas.id === 'overlay') observed.overlayPaints++;
       Reflect.apply(clearRect, this, args);

@@ -1,3 +1,4 @@
+import { RENAL_FASCIA_MM, RENAL_ATLAS_GRADIENT_EPS_MM } from '../organs/kidney';
 import { GALLBLADDER_WALL_MM } from '../organs/gallbladder';
 import { THORACIC_GLSL } from '../thoracicAtlas';
 import { SCENE_TUBE_CAPACITY } from '../tubeCapacity';
@@ -756,10 +757,16 @@ void classifyInside(vec3 m, bool withCurtain, float depth, vec3 tn, float dSpine
       c.tissue = T_PERIRENAL; c.bd = min(min(dOuter, -dFat), abs(hc)); c.n = kn;
       // mitad externa de la gruesa: la cara de Morison; la interna y toda la fina (decisión 81: sus dos caras, a 1–2,5 mm,
       // eran dos líneas paralelas), la de la cápsula renal
-      bool outerFace = dOuter > 0.5 * fat && fat > PERI.z;
-      c.iface = outerFace ? IF_PERIRENAL : (hc > 0.0 ? IF_RENAL_CAPSULE : IF_NONE);
+      float thickness = uAbdominalAtlasEnabled!=0 ? dOuter-dFat : fat;
+      bool outerFace = dOuter > 0.5 * thickness && thickness > PERI.z;
+      bool envelope = uAbdominalAtlasEnabled != 0;
+      if (envelope) {
+        if (-dFat < ${RENAL_FASCIA_MM}) c.tissue = T_SOFT_CAPSULE;
+        c.bd = min(c.bd,abs(dFat+${RENAL_FASCIA_MM}));
+      }
+      c.iface = outerFace ? (envelope ? IF_RENAL_FASCIA : IF_PERIRENAL) : (hc > 0.0 ? IF_RENAL_CAPSULE : IF_NONE);
       c.ifd = outerFace ? -dFat : (hc > 0.0 ? dOuter : 1e3);
-      if (!outerFace) return;
+      if (!outerFace || envelope) return;
       // grasa gruesa: su cara externa solo si apoya el hígado (se decide con liverSdf, tras el bucle)
       thickFat = true;
       break;
@@ -834,7 +841,6 @@ Cls classifyWith(vec3 m, bool withCurtain) {
   // Columna (PR119; recuperación provisional de la decisión 103): el hueso de los cuerpos y del arco, el disco entre dos cuerpos y, en el tejido de alrededor,
   // la cara de su cortical
   vec2 sb = spineBodyParts(m);
-  float originalBody=smoothMax(sb.x,sb.y,SPINE_RIM);
   float dBody=spineBodySd(m);
   float dSpine = min(dBody, spineArchSd(m));
   if (dSpine < 0.0) { c.tissue = T_VERTEBRA; c.bd = -dSpine; return c; }
@@ -887,15 +893,13 @@ vec3 kidneyOuterGradient(vec3 m) {
 // la superficie es el contorno menos el grosor local, no el contorno: su propio gradiente por diferencias centrales en
 // el marco local, devuelto en el mundo (antes, el del contorno renal: 9° de error en el p90 y 15,9° en el máximo)
 vec3 perirenalOuterGradient(vec3 m) {
-  vec3 q0 = kidneyLocal(m, 0);
-  vec3 q1 = kidneyLocal(m, 1);
-  int k = perirenalOuterSdf(q0, 0) <= perirenalOuterSdf(q1, 1) ? 0 : 1;
-  vec3 q = k == 0 ? q0 : q1;
-  vec2 h = vec2(FACE_GRAD_EPS, 0.0);
-  vec3 g = vec3(perirenalOuterSdf(q + h.xyy, k) - perirenalOuterSdf(q - h.xyy, k),
-                perirenalOuterSdf(q + h.yxy, k) - perirenalOuterSdf(q - h.yxy, k),
-                perirenalOuterSdf(q + h.yyx, k) - perirenalOuterSdf(q - h.yyx, k));
-  return uKidU[k] * g.x + uKidV[k] * g.y + uKidW[k] * g.z;
+  int k = perirenalOuterSdf(kidneyLocal(m,0), 0) <= perirenalOuterSdf(kidneyLocal(m,1), 1) ? 0 : 1;
+  // Use material-world axes, as CPU faceSdf: rotated differences disagree at voxel/clipping seams.
+  float eps = uAbdominalAtlasEnabled != 0 ? ${RENAL_ATLAS_GRADIENT_EPS_MM} : FACE_GRAD_EPS;
+  vec2 h = vec2(eps, 0.0);
+  return (FACE_GRAD_EPS/eps) * vec3(perirenalOuterSdf(kidneyLocal(m+h.xyy,k),k)-perirenalOuterSdf(kidneyLocal(m-h.xyy,k),k),
+              perirenalOuterSdf(kidneyLocal(m+h.yxy,k),k)-perirenalOuterSdf(kidneyLocal(m-h.yxy,k),k),
+              perirenalOuterSdf(kidneyLocal(m+h.yyx,k),k)-perirenalOuterSdf(kidneyLocal(m-h.yyx,k),k));
 }
 
 // Distancia de la cúpula sin su normal (el gradiente numérico de faceGradient; la vesícula tiene su sobrecarga
@@ -921,9 +925,9 @@ vec4 faceGradient(Cls c, vec3 m) {
     ${centralFaceGradientGlsl('spineBodySd', axisGradient)}
   } else if (c.tissue == T_CAPSULE) {
     ${centralFaceGradientGlsl('liverInner', axisGradient)}
-  } else if (c.iface == IF_PERIRENAL) {
+  } else if (c.iface == IF_PERIRENAL || c.iface == IF_RENAL_FASCIA) {
     g = perirenalOuterGradient(m);
-  } else if (c.tissue == T_RENAL_CAPSULE || c.tissue == T_PERIRENAL) {
+  } else if (c.iface == IF_RENAL_CAPSULE || c.tissue == T_PERIRENAL) {
     g = kidneyOuterGradient(m);
   } else if (c.tissue == T_DIAPHRAGM) {
     ${centralFaceGradientGlsl('domeSd', axisGradient)}

@@ -1,0 +1,2659 @@
+{
+  "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+  "beforeSha": "9f872072dca3332f8cd14441de357161218a71d7",
+  "BmodeIdentical": true,
+  "sameBoxSignalIdentical": true,
+  "clinicalAcceptance": false,
+  "limits": "A/B matched clock/frame/equipment in controls;12 small neighbor poses per case. No external vascular calibration, no full exploration-domain acceptance.",
+  "records": [
+    {
+      "sourceSha": "9f872072dca3332f8cd14441de357161218a71d7",
+      "caseId": "normal-adult",
+      "variant": "B",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": false,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 70,
+          "r1": 125,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 30,
+        "step": 7500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7260090263055948,
+      "acquiredPoseAvailable": false,
+      "graySha256": "8eb68e4d049ce0b6e817e553d2196c0cb294ac60b3f894f275d6964e01e45aa5",
+      "png": "9f87207-normal-adult-B.png"
+    },
+    {
+      "sourceSha": "9f872072dca3332f8cd14441de357161218a71d7",
+      "caseId": "normal-adult",
+      "variant": "default",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 70,
+          "r1": 125,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 32,
+        "step": 8000,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7260090263055948,
+      "acquiredPoseAvailable": false,
+      "graySha256": "539abb5d1ce8775e4617a21865437d6d393982510e23d9c014199b0795cd8f03",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "9f87207-normal-adult-default.png"
+    },
+    {
+      "sourceSha": "9f872072dca3332f8cd14441de357161218a71d7",
+      "caseId": "normal-adult",
+      "variant": "common-box",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 34,
+        "step": 8500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7260090263055948,
+      "acquiredPoseAvailable": false,
+      "graySha256": "6bce6f88ded1250a9ac4649cc78591c08a9a6e80f5745e8e3442ceeefc45a793",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "9f87207-normal-adult-common-box.png"
+    },
+    {
+      "sourceSha": "9f872072dca3332f8cd14441de357161218a71d7",
+      "caseId": "severe-congestion",
+      "variant": "B",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": false,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 70,
+          "r1": 125,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 30,
+        "step": 7500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7260090263055948,
+      "acquiredPoseAvailable": false,
+      "graySha256": "645f0a6b5c31d1b9dc87045b7488a32e174d0e3fe34e1655e30b3271033cd9fd",
+      "png": "9f87207-severe-congestion-B.png"
+    },
+    {
+      "sourceSha": "9f872072dca3332f8cd14441de357161218a71d7",
+      "caseId": "severe-congestion",
+      "variant": "default",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 70,
+          "r1": 125,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 32,
+        "step": 8000,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7260090263055948,
+      "acquiredPoseAvailable": false,
+      "graySha256": "fa1ec90e8f521bc5bc244689e4b22d175728a2f662abbb8da55b6fd83d3fab6d",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "9f87207-severe-congestion-default.png"
+    },
+    {
+      "sourceSha": "9f872072dca3332f8cd14441de357161218a71d7",
+      "caseId": "severe-congestion",
+      "variant": "common-box",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 34,
+        "step": 8500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7260090263055948,
+      "acquiredPoseAvailable": false,
+      "graySha256": "2797c6ec3b9785c68f1cc14e8ec6f05165333c52e8ffc9c17a860d383ecc5097",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "9f87207-severe-congestion-common-box.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "normal-adult",
+      "variant": "B",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": false,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 30,
+        "step": 7500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7260090263055948,
+      "acquiredPoseAvailable": false,
+      "graySha256": "8eb68e4d049ce0b6e817e553d2196c0cb294ac60b3f894f275d6964e01e45aa5",
+      "png": "32f1c6b-normal-adult-B.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "normal-adult",
+      "variant": "default",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 32,
+        "step": 8000,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7260090263055948,
+      "acquiredPoseAvailable": false,
+      "graySha256": "b9e524e57773c74ba93c92ac30267f4c483ce63363df2efa1d889863811b3a63",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-normal-adult-default.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "normal-adult",
+      "variant": "common-box",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 34,
+        "step": 8500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7260090263055948,
+      "acquiredPoseAvailable": false,
+      "graySha256": "6bce6f88ded1250a9ac4649cc78591c08a9a6e80f5745e8e3442ceeefc45a793",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-normal-adult-common-box.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "normal-adult",
+      "variant": "phi-",
+      "inputPose": {
+        "phi": 3.0019663134302466,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 36,
+        "step": 9000,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7260090263055948,
+      "acquiredPoseAvailable": false,
+      "graySha256": "f1953ffadd1399d7a94d0adb6fd02ae2b1ff0ff749a150701630dd3d7974f475",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-normal-adult-phi-.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "normal-adult",
+      "variant": "phi+",
+      "inputPose": {
+        "phi": 3.0368728984701328,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 38,
+        "step": 9500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7267861709487988,
+      "acquiredPoseAvailable": false,
+      "graySha256": "2b4979898a27c1d12ed7d5fc6fc8d2739563f00aced09f5ba52fd6cd14bfa2df",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-normal-adult-phi+.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "normal-adult",
+      "variant": "z-",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -42,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 40,
+        "step": 10000,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7259823433317555,
+      "acquiredPoseAvailable": false,
+      "graySha256": "76fcef8227919854e8ad369e7bbb495943bf2a62ef069ecbc717414a88b85d6f",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-normal-adult-z-.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "normal-adult",
+      "variant": "z+",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -38,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 42,
+        "step": 10500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7309127069411261,
+      "acquiredPoseAvailable": false,
+      "graySha256": "94a351180b7c47a0cbd21c5f5c8c448f844d1a36493df4b7f7017c8dcaa76a32",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-normal-adult-z+.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "normal-adult",
+      "variant": "yaw-",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2740903539558612,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 44,
+        "step": 11000,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7260090263055948,
+      "acquiredPoseAvailable": false,
+      "graySha256": "589884476540f1167275e6c9c1df4f28493bf99f4caf8aa9926c712e0a843598",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-normal-adult-yaw-.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "normal-adult",
+      "variant": "yaw+",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2391837689159733,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 46,
+        "step": 11500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7264649610478955,
+      "acquiredPoseAvailable": false,
+      "graySha256": "bc9175e4a26459751aa25e4462e18fdc13d5a3362e95dab3c1b3e04ce90e11fa",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-normal-adult-yaw+.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "normal-adult",
+      "variant": "tilt-",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.05235987755982989
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 48,
+        "step": 12000,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7260090263055948,
+      "acquiredPoseAvailable": false,
+      "graySha256": "36df8f3a3be79f6f8e68ae3fc28d47a6bd7744ad4b6e16761a129f2c34ebd92d",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-normal-adult-tilt-.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "normal-adult",
+      "variant": "tilt+",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.017453292519943295
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 50,
+        "step": 12500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7261399420925349,
+      "acquiredPoseAvailable": false,
+      "graySha256": "be7a18a5d250ff86604cc923c3999b21a65004abbeb949b42a427f5d9c6648ad",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-normal-adult-tilt+.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "normal-adult",
+      "variant": "rock-",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.12217304763960306,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 52,
+        "step": 13000,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7313366330878731,
+      "acquiredPoseAvailable": false,
+      "graySha256": "5fcf2dc4099169452548843a04c99ae694df8d50435dade691859bd7bfb788ba",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-normal-adult-rock-.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "normal-adult",
+      "variant": "rock+",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.08726646259971647,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 54,
+        "step": 13500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7297410786365314,
+      "acquiredPoseAvailable": false,
+      "graySha256": "c93382cf305f3757c6500ec1879e35154e267ef8dbc17355a4b58aa7c1882c35",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-normal-adult-rock+.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "normal-adult",
+      "variant": "lift-",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": -0.5,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 56,
+        "step": 14000,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7348430361889768,
+      "acquiredPoseAvailable": false,
+      "graySha256": "eb125591262cd5932aa50a28436af0128a6114dc205d1fdedec8931dc87a269d",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-normal-adult-lift-.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "normal-adult",
+      "variant": "lift+",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0.5,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 58,
+        "step": 14500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.6932098401822865,
+      "acquiredPoseAvailable": false,
+      "graySha256": "36c8f6185b5392bcbe25668579b47676acf1c72f3c96f88c4ae30cb71eb36b62",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-normal-adult-lift+.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "severe-congestion",
+      "variant": "B",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": false,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 30,
+        "step": 7500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7260090263055948,
+      "acquiredPoseAvailable": false,
+      "graySha256": "645f0a6b5c31d1b9dc87045b7488a32e174d0e3fe34e1655e30b3271033cd9fd",
+      "png": "32f1c6b-severe-congestion-B.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "severe-congestion",
+      "variant": "default",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 32,
+        "step": 8000,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7260090263055948,
+      "acquiredPoseAvailable": false,
+      "graySha256": "3a5078902a74abfca3c12b19ea973e86f8f464b9497cbc87814ff86530f6a734",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-severe-congestion-default.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "severe-congestion",
+      "variant": "common-box",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 34,
+        "step": 8500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7260090263055948,
+      "acquiredPoseAvailable": false,
+      "graySha256": "2797c6ec3b9785c68f1cc14e8ec6f05165333c52e8ffc9c17a860d383ecc5097",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-severe-congestion-common-box.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "severe-congestion",
+      "variant": "phi-",
+      "inputPose": {
+        "phi": 3.0019663134302466,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 36,
+        "step": 9000,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7242854126670863,
+      "acquiredPoseAvailable": false,
+      "graySha256": "c9aa66133d35303eeebda887afe5b6405cd5938fc942cc2f68a81dc1599e5b61",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-severe-congestion-phi-.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "severe-congestion",
+      "variant": "phi+",
+      "inputPose": {
+        "phi": 3.0368728984701328,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 38,
+        "step": 9500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7260090263055948,
+      "acquiredPoseAvailable": false,
+      "graySha256": "b1f3b3900151e841754442f3ced2d34e0a4c289cb084488acd374a87d8c9d1d9",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-severe-congestion-phi+.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "severe-congestion",
+      "variant": "z-",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -42,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 40,
+        "step": 10000,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.720344261576732,
+      "acquiredPoseAvailable": false,
+      "graySha256": "fd86a08e4699af7bd4b45cf154d9f3456ffe17e6f25bed5db29a63ba264b7e31",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-severe-congestion-z-.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "severe-congestion",
+      "variant": "z+",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -38,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 42,
+        "step": 10500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7260090263055948,
+      "acquiredPoseAvailable": false,
+      "graySha256": "1f8583b8c3eb67cd28eb616f9c4817a2b3898624b3b8e78fa7fea48158478094",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-severe-congestion-z+.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "severe-congestion",
+      "variant": "yaw-",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2740903539558612,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 44,
+        "step": 11000,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7246500823724394,
+      "acquiredPoseAvailable": false,
+      "graySha256": "d3b85404187932427869cd5e82776bf173a401f3dee47cfc2e4f3893f0041b82",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-severe-congestion-yaw-.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "severe-congestion",
+      "variant": "yaw+",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2391837689159733,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 46,
+        "step": 11500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7260090263055948,
+      "acquiredPoseAvailable": false,
+      "graySha256": "4c2aee06bf9bd3dfb2d76ab3a135bef24dbc8ab4f9dd09dbc4bd532fabecf167",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-severe-congestion-yaw+.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "severe-congestion",
+      "variant": "tilt-",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.05235987755982989
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 48,
+        "step": 12000,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7248792261816561,
+      "acquiredPoseAvailable": false,
+      "graySha256": "922a52c367dbafddda7ca785fc83d38a51540d0c77d935abe5709427a6142c5b",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-severe-congestion-tilt-.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "severe-congestion",
+      "variant": "tilt+",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.017453292519943295
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 50,
+        "step": 12500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7260090263055948,
+      "acquiredPoseAvailable": false,
+      "graySha256": "a9f3d5830041418836f6b0dd39913a0a1aa39eb905c2bae8b36c9051778d6028",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-severe-congestion-tilt+.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "severe-congestion",
+      "variant": "rock-",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.12217304763960306,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 52,
+        "step": 13000,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7196191309099428,
+      "acquiredPoseAvailable": false,
+      "graySha256": "a660e30be8f1e99e54b83714121b459b198d8a693a3478d6ef41f765a10c5b32",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-severe-congestion-rock-.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "severe-congestion",
+      "variant": "rock+",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0,
+        "yaw": -1.2566370614359172,
+        "rock": -0.08726646259971647,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 54,
+        "step": 13500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7174123185444236,
+      "acquiredPoseAvailable": false,
+      "graySha256": "81208ab22ee2f950d996f91530ec7e02a839e75b6b811183cb1c3f941f06feba",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-severe-congestion-rock+.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "severe-congestion",
+      "variant": "lift-",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": -0.5,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 56,
+        "step": 14000,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.7263629785296265,
+      "acquiredPoseAvailable": false,
+      "graySha256": "e1da545c4debf20c72a554801c2747e048884e55d027104cead8519ce04341cf",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-severe-congestion-lift-.png"
+    },
+    {
+      "sourceSha": "32f1c6bcc7e7188d490a8b83ad866e7208c6f93d",
+      "caseId": "severe-congestion",
+      "variant": "lift+",
+      "inputPose": {
+        "phi": 3.0194196059501905,
+        "z": -40,
+        "lift": 0.5,
+        "yaw": -1.2566370614359172,
+        "rock": -0.10471975511965977,
+        "tilt": -0.03490658503988659
+      },
+      "equipment": {
+        "bmode": {
+          "depthMm": 130,
+          "focusMm": 100,
+          "gainDb": -2,
+          "tgcDb": [0, 0, 0, 0, 0, 0, 0, 0],
+          "dynamicRangeDb": 65,
+          "persistence": 0.35,
+          "compound": true,
+          "harmonic": true
+        },
+        "color": {
+          "enabled": true,
+          "theta0": -0.2,
+          "theta1": 0.2,
+          "r0": 47.5,
+          "r1": 102.5,
+          "prfHz": 2272.7272727272725,
+          "wallFilterHz": 60,
+          "gainDb": 12,
+          "invert": false,
+          "ensemble": 8
+        },
+        "pw": {
+          "enabled": false,
+          "theta": 0,
+          "depthMm": 90,
+          "gateMm": 4,
+          "prfHz": 2600,
+          "wallFilterHz": 25,
+          "baselineShift": 0,
+          "invert": false,
+          "angleCorrection": 0,
+          "gainDb": 0,
+          "sweepMmS": 50
+        },
+        "mmode": {
+          "enabled": false,
+          "theta": 0
+        }
+      },
+      "clock": {
+        "time": 58,
+        "step": 14500,
+        "dt": 0.004
+      },
+      "layout": {
+        "apexX": 516,
+        "apexY": -229.83399115930692,
+        "scale": 4.7813271483445865,
+        "width": 1032,
+        "height": 971
+      },
+      "coupling": 0.6930371698059995,
+      "acquiredPoseAvailable": false,
+      "graySha256": "f7b1e91d8c538f0674853d56e2457ab43a09a9d75e4d9990e9e19ec7be3c078b",
+      "colorFieldDimensions": {
+        "width": 96,
+        "height": 160
+      },
+      "png": "32f1c6b-severe-congestion-lift+.png"
+    }
+  ],
+  "evidenceScope": "Native Mac acquisition framing; contains original unmodified captures in labelled galleries. Does not certify hemodynamic behavior, acquired pose metadata, Linux startup or external clinical fidelity."
+}

@@ -1,0 +1,81 @@
+{
+  "clinicalAcceptance": false,
+  "objectiveComplete": false,
+  "results": [
+    {
+      "sourceSha": "4c2892c01978ad623b6245aeb4659acdfb113e76",
+      "experiment": "swift",
+      "accepted": false,
+      "passed": false,
+      "durationMs": 180353,
+      "bootLimitMs": 180000,
+      "retries": 0,
+      "lastEvent": {
+        "hostMs": 14483,
+        "type": "debug",
+        "message": "[vexus:startup] {\"stage\":\"frame:first\",\"timeMs\":14455.099999904633}"
+      },
+      "proof": "swift-results/startup-first-atlas-startu-1929f-actual-stages-without-hooks-swift/host-proof.json"
+    },
+    {
+      "sourceSha": "320e5220936170a26093f2b77b4dc2aaefa287a1",
+      "experiment": "compact-swift",
+      "accepted": false,
+      "passed": false,
+      "durationMs": 180297,
+      "bootLimitMs": 180000,
+      "retries": 0,
+      "lastEvent": {
+        "hostMs": 15439,
+        "type": "debug",
+        "message": "[vexus:startup] {\"stage\":\"frame:first\",\"timeMs\":15424.799999952316}"
+      },
+      "proof": "compact-swift-results/startup-first-atlas-startu-1929f-actual-stages-without-hooks-swift/host-proof.json"
+    },
+    {
+      "sourceSha": "25978ad1ab9e5f6bc6965adc0b1377fcd86e8d5f",
+      "experiment": "single-call-swift",
+      "accepted": false,
+      "passed": false,
+      "durationMs": 180522,
+      "bootLimitMs": 180000,
+      "retries": 0,
+      "lastEvent": {
+        "hostMs": 18228,
+        "type": "debug",
+        "message": "[vexus:startup] {\"stage\":\"frame:first\",\"timeMs\":18184.700000047684}"
+      },
+      "proof": "single-call-swift-results/startup-first-atlas-startu-1929f-actual-stages-without-hooks-swift/host-proof.json"
+    },
+    {
+      "sourceSha": "689bcc672ec8dee982fa190fc6e58bd73fb0f8ea",
+      "experiment": "uniform-bound-swift",
+      "accepted": false,
+      "passed": false,
+      "durationMs": 245010,
+      "bootLimitMs": 180000,
+      "testBudgetMs": 240000,
+      "retries": 0,
+      "lastEvent": {
+        "hostMs": 29048,
+        "type": "debug",
+        "message": "[vexus:startup] {\"stage\":\"navigator:construct\",\"timeMs\":28881.900000095367}"
+      },
+      "partialProgress": "second frame and hooks stages emitted; main context then remains blocked, no completed boot proof",
+      "proof": "uniform-bound-swift-results/startup-first-atlas-startu-1929f-actual-stages-without-hooks-swift/host-proof.json"
+    }
+  ],
+  "kernelLocation": "Separate RAF-suspended compatible readPixels instrument does not complete transmissionHits; shader source is common anatomy. No later pass executes in that diagnostic.",
+  "attributionLimit": "CPU profile is in SwiftShader but optimized stripped symbols do not separate JIT from execution. JS submission timings rejected as GPU completion. Mac not Linux.",
+  "calibrationContradiction": {
+    "result": "failed, not hidden",
+    "sourceLog": "trig-witness-first.log",
+    "fixture": [50, 0, 0, 0],
+    "coarse": 32,
+    "depthMm": 120,
+    "line": 22,
+    "actualMirrorMm": 50.712890625,
+    "doublePrecisionReferenceMm": 50.674004448125224,
+    "note": "Existing/new diagnostic physical tolerances were not relaxed. Cause of this analytic discrepancy not proven."
+  }
+}

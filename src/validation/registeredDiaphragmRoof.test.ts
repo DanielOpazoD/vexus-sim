@@ -13,6 +13,7 @@ import type { Vec3 } from '../core/vec3';
 import { raInferiorZ, raSdf } from '../anatomy/organs/heart';
 import { NORMAL_ADULT } from '../cases';
 import preserved from './fixtures/registered-roof-preserved-fields.json';
+import renalBed from './fixtures/renal-bed-preserved-fields.json';
 const raw = gunzipSync(readFileSync('src/anatomy/abdominal-atlas.gzip.bin'));
 const body = readFileSync('src/anatomy/abdominal-body.bin');
 afterEach(() => {
@@ -24,19 +25,31 @@ function scene(): AnatomyScene {
   setAbdominalBody(new Float32Array(body.buffer.slice(body.byteOffset, body.byteOffset + body.byteLength)));
   return new AnatomyScene(NORMAL_ADULT);
 }
-it('preserves every organ distance and categorical label from the pinned pre-roof atlas', () => {
+it('preserves unmodified organ fields and every label while pinning the reconstructed renal bed', () => {
   const [w, h] = ABDOMINAL_ATLAS.textureDimensions;
   expect(preserved.baselineAtlasSha256).toBe('fb1a372f2d2f53bd69d2aea95733cb71ea2574ff6222b8471c5f498c9a1fb67d');
+  expect(renalBed.sourceRawSha256).toBe('9a16b1f550949b120dfdbfe5c688c0479625f2afcab8a3f7d452382499477dda');
+  expect(renalBed.derivedRawSha256).toBe(ABDOMINAL_ATLAS.sha256Raw);
+  expect(Object.keys(renalBed.modifiedFieldSha256).sort()).toEqual(['kidneyLeft', 'kidneyRight', 'psoas']);
+  const revised: Partial<Record<(typeof ABDOMINAL_FIELDS)[number]['name'], string>> = renalBed.modifiedFieldSha256;
   for (const f of ABDOMINAL_FIELDS) {
     const hash = createHash('sha256'),
       [x, y, z] = f.offset,
       [nx, ny, nz] = f.dimensions;
+    const labels = Buffer.alloc(nx * ny * nz * 2);
+    let labelOffset = 0;
     for (let k = z; k < z + nz; k++)
       for (let j = y; j < y + ny; j++) {
         const start = 4 * (k * w * h + j * w + x);
         hash.update(raw.subarray(start, start + 4 * nx));
+        for (let i = 0; i < nx; i++) {
+          labels.writeUInt16LE(raw.readUInt16LE(start + 4 * i + 2), labelOffset);
+          labelOffset += 2;
+        }
       }
-    expect(hash.digest('hex'), f.name).toBe(preserved.fieldSha256[f.name]);
+    // Only the two renal distance fields and psoas may differ; label hashes come from the pinned pre-reconstruction source.
+    expect(hash.digest('hex'), f.name).toBe(revised[f.name] ?? preserved.fieldSha256[f.name]);
+    expect(createHash('sha256').update(labels).digest('hex'), `${f.name} labels`).toBe(renalBed.preservedLabelSha256[f.name]);
   }
 });
 it('does not return to the inherited tall domes at independent source-crossing witnesses', () => {

@@ -16,9 +16,9 @@ export function buildSkin(a: AnatomyScene): THREE.Mesh {
   const t = a.torso;
   // Align atlas picking geometry with the registered 64 sectors / 10-mm rows.
   const nT = a.hasAbdominalAtlas ? 64 : 72;
-  const nZ = a.hasAbdominalAtlas ? 70 : 40;
-  const z0 = a.hasAbdominalAtlas ? -430 : -260;
-  const z1 = 270;
+  const z0 = t.zMin;
+  const z1 = t.zMax;
+  const nZ = a.hasAbdominalAtlas ? Math.ceil((z1 - z0) / 10) : 40;
   const pos: number[] = [];
   const idx: number[] = [];
   for (let j = 0; j <= nZ; j++) {

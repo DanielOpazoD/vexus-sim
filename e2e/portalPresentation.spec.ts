@@ -1,5 +1,6 @@
 import { expect, test } from '@playwright/test';
 import { writeFileSync } from 'node:fs';
+import { Tissue } from '../src/anatomy/tissues';
 import { bootWithoutErrors, budget } from './support';
 
 for (const reference of [false, true, 'atlas'] as const)
@@ -18,9 +19,9 @@ for (const reference of [false, true, 'atlas'] as const)
         () => {
           const p = window.__vexusTest!.sim().pose;
           return (
-            Math.abs(p.phi - (window.__vexusTest!.sim().scene.hasAbdominalAtlas ? 3.25 : 3.5)) < 0.0001 &&
+            Math.abs(p.phi - (window.__vexusTest!.sim().scene.hasAbdominalAtlas ? (173 * Math.PI) / 180 : 3.5)) < 0.0001 &&
             Math.abs(
-              p.z - (window.__vexusTest!.sim().scene.hasAbdominalAtlas ? -65 : window.__vexusTest!.sim().scene.torso.profile ? -60 : -90),
+              p.z - (window.__vexusTest!.sim().scene.hasAbdominalAtlas ? -40 : window.__vexusTest!.sim().scene.torso.profile ? -60 : -90),
             ) < 0.01
           );
         },
@@ -39,7 +40,7 @@ for (const reference of [false, true, 'atlas'] as const)
       await page.screenshot({ path: info.outputPath('portal-bmode.png') });
       await page.locator('#freeze').click();
       await page.locator('#mode-color').click();
-      const report = await page.evaluate(() => {
+      const capture = ({ fat, muscle }: { fat: Tissue; muscle: Tissue }) => {
         const s = window.__vexusTest!.sim(),
           saved = { ...s.color };
         const point = (theta: number, r: number): [number, number, number] => {
@@ -116,7 +117,25 @@ for (const reference of [false, true, 'atlas'] as const)
         const field2 = s.renderer.readColorField().data;
         let inversionError = 0;
         for (let k = 0; k < field.length; k++) inversionError = Math.max(inversionError, Math.abs(field[k] - field2[k]));
-        s.equipment = { ...s.equipment, color: { ...saved, theta0: -0.25, theta1: -0.12, r0: 35, r1: 50 } };
+        // The 173° Atlas pose crosses a hepatic vein at the old 35–50 mm control.
+        // Use its superficial wall and independently prove that the control is avascular.
+        const emptyRoi = {
+          theta0: -0.25,
+          theta1: -0.12,
+          r0: s.scene.hasAbdominalAtlas ? 15 : 35,
+          r1: s.scene.hasAbdominalAtlas ? 25 : 50,
+        };
+        let controlVesselSamples = 0,
+          controlWallSamples = 0;
+        for (let y = 0; y < 160; y++)
+          for (let x = 0; x < 96; x++) {
+            const theta = emptyRoi.theta0 + ((x + 0.5) / 96) * (emptyRoi.theta1 - emptyRoi.theta0),
+              r = emptyRoi.r0 + ((y + 0.5) / 160) * (emptyRoi.r1 - emptyRoi.r0);
+            const classified = s.anatomy.classifyWorld(point(theta, r), s.sample);
+            if (classified.vessel) controlVesselSamples++;
+            if (classified.tissue === fat || classified.tissue === muscle) controlWallSamples++;
+          }
+        s.equipment = { ...s.equipment, color: { ...saved, ...emptyRoi } };
         let emptyBlood = 0,
           emptyAbove = 0;
         for (let i = 0; i < 4; i++) {
@@ -142,11 +161,15 @@ for (const reference of [false, true, 'atlas'] as const)
           direct,
           inverted,
           inversionError,
+          emptyRoi,
+          controlVesselSamples,
+          controlWallSamples,
           emptyBlood,
           emptyAbove,
           highFilter,
         };
-      });
+      };
+      const report = await page.evaluate(capture, { fat: Tissue.Fat, muscle: Tissue.Muscle });
       const tag = JSON.stringify(report);
       expect(bmode.depthMm).toBe(reference === 'atlas' ? 130 : 150);
       expect(report.settings.gainDb).toBe(12);
@@ -161,6 +184,8 @@ for (const reference of [false, true, 'atlas'] as const)
       expect(report.direct.yellow, tag).toBe(0);
       expect(report.inverted.blue, tag).toBeGreaterThan(report.direct.blue);
       expect(report.inversionError, tag).toBe(0);
+      expect(report.controlVesselSamples, tag).toBe(0);
+      if (reference === 'atlas') expect(report.controlWallSamples, tag).toBe(96 * 160);
       expect(report.emptyBlood, tag).toBe(0);
       expect(report.emptyAbove, tag).toBe(0);
       expect(report.highFilter.filled, tag).toBeLessThan(report.after[0].filled);

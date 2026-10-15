@@ -178,14 +178,14 @@ jobs:
           node-version-file: .nvmrc
           cache: npm
       - run: npm ci
-      - uses: actions/download-artifact@v8.0.1
+      - uses: actions/download-artifact@v8.0.2
         with:
           pattern: validation-*
           path: .validation
           merge-multiple: true
       - name: Ambas fases, mismo SHA e informes íntegros, sin omisiones
         run: npm run test:coverage:verify
-      - uses: actions/download-artifact@v8.0.1
+      - uses: actions/download-artifact@v8.0.2
         with:
           pattern: e2e-tiempos-*
           path: e2e-evidence

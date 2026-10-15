@@ -13,10 +13,35 @@ import type { AnatomyScene } from '../../anatomy/scene';
 import type { Vec3 } from '../../core/vec3';
 import { CM } from './common';
 import { labelSprite } from './labels';
-import { psoasSdf, quadratusSdf } from '../../anatomy/organs/retroperitoneum';
+import { ATLAS_QUADRATUS, psoasSdf, quadratusSdf } from '../../anatomy/organs/retroperitoneum';
 import { perirenalOuterSdf } from '../../anatomy/organs/kidney';
 import { torsoDepth } from '../../anatomy/primitives';
 import { variableTube } from './tubes';
+import { valueNoise } from '../../ultrasound/speckleField';
+
+/** Share coincident vertices so smooth lighting survives respiratory deformation.
+ * Only positions are present on these atlas meshes; never weld textured seams.
+ * Optional albedo: false = renal mottling, true = longitudinal muscle variation.
+ * Omitting it preserves the existing material (including fat and fascia).
+ */
+export function prepareOrganSurface(g: THREE.BufferGeometry, muscle?: boolean): void {
+  const p = g.getAttribute('position'),
+    groups = new Map<string, number>(),
+    indices: number[] = [],
+    colors = muscle !== undefined && new Float32Array(p.count * 3);
+  for (let i = 0; i < p.count; i++) {
+    // One micrometre in millimetre atlas coordinates, well below source resolution.
+    const q: Vec3 = [p.getX(i), p.getY(i), p.getZ(i)],
+      key = q.map((x) => x.toFixed(3)).join();
+    // Illustrative albedo fixed to rest-space mm; never alters acoustic tissue or position.
+    if (colors) colors.fill(0.8 + 0.3 * valueNoise(q.map((x, j) => x / (muscle && j === 2 ? 18 : 3)) as Vec3, 71), i * 3, i * 3 + 3);
+    indices.push(groups.get(key) ?? i);
+    groups.set(key, indices[i]);
+  }
+  if (colors) g.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  g.setIndex(indices);
+  g.computeVertexNormals();
+}
 
 /**
  * Malla por marching cubes de un campo implícito (mm, marco anatómico) dentro de una
@@ -160,18 +185,23 @@ export function buildOrgans(a: AnatomyScene): THREE.Group {
   if (!a.hasAbdominalAtlas) g.add(bowel);
   if (a.hasAbdominalAtlas) {
     if (!abdominalSurface) throw new Error('Mallas abdominales sin cargar');
-    const colors = [0xd3ab72, 0xcda08b, 0xd8bc76, 0x986991, 0x995d49, 0x985654, 0x985654, 0x78a45f, 0xd8d3bd, 0xa97971, 0xbbb6c6];
-    for (const [i, f] of ABDOMINAL_SURFACE.fields.entries()) {
+    const colors = [0xd3ab72, 0xcda08b, 0xd8bc76, 0x986991, 0x995d49, 0x914849, 0x914849, 0x78a45f, 0xd8d3bd, 0xa4665b, 0xbbb6c6];
+    for (const [i, f] of [...ABDOMINAL_SURFACE.fields, ...ABDOMINAL_SURFACE.envelopes].entries()) {
+      const envelope = 'fascia' in f;
       const geometry = new THREE.BufferGeometry();
       geometry.setAttribute('position', new THREE.BufferAttribute(abdominalSurface.subarray(f.offset, f.offset + f.count * 3), 3));
-      geometry.computeVertexNormals();
+      const textured = [5, 6, 9].includes(i);
+      if (envelope || textured) prepareOrganSurface(geometry, textured ? i === 9 : undefined);
+      else geometry.computeVertexNormals();
       const mesh = new THREE.Mesh(
         geometry,
         new THREE.MeshStandardMaterial({
-          color: colors[i],
-          roughness: 0.8,
-          transparent: i !== 8 && i !== 10,
-          opacity: i === 4 ? 0.62 : i === 2 ? 0.65 : i === 7 ? 0.7 : 0.85,
+          color: envelope ? (f.fascia ? 0xe9dfc5 : 0xd8bc76) : colors[i],
+          roughness: i === 9 ? 0.94 : 0.8,
+          vertexColors: textured,
+          transparent: !(textured || i === 8 || i === 10),
+          depthWrite: !envelope,
+          opacity: envelope ? (f.fascia ? 0.12 : 0.24) : textured ? 1 : i === 4 ? 0.62 : i === 2 ? 0.65 : i === 7 ? 0.7 : 0.85,
         }),
       );
       mesh.scale.setScalar(CM);
@@ -262,8 +292,18 @@ export function buildPosteriorMuscles(a: AnatomyScene): THREE.Group {
   const group = new THREE.Group(),
     offset = a.spine.y0 + 46;
   for (const side of [-1, 1]) {
-    const lo: Vec3 = [side < 0 ? -110 : 15, -160, -260];
-    const hi: Vec3 = [side < 0 ? -15 : 110, -10, -30];
+    const q = ATLAS_QUADRATUS;
+    // Resolver el contorno compartido con el mismo trabajo 40³: el campo Atlas
+    // ocupa ~100 mm frente al cubo legacy de 230 mm. MarchingCubes omite celdas
+    // de borde: reservar dos celdas exteriores completas. Este collar es soporte
+    // de extracción; no representa una separación adiposa anatómica.
+    const padding = (2 * (q.zTop - q.zBottom)) / (40 - 4);
+    const lo: Vec3 = a.hasAbdominalAtlas
+      ? [side < 0 ? -q.xBottom - padding : q.xMedial - padding, q.yBottom - q.halfThickness - padding, q.zBottom - padding]
+      : [side < 0 ? -110 : 15, -160, -260];
+    const hi: Vec3 = a.hasAbdominalAtlas
+      ? [side < 0 ? -q.xMedial + padding : q.xBottom + padding, q.yTop + q.halfThickness + padding, q.zTop + padding]
+      : [side < 0 ? -15 : 110, -10, -30];
     for (const kind of ['psoas', 'quadratus'] as const) {
       if (a.hasAbdominalAtlas && kind === 'psoas') continue;
       const field = (p: Vec3) => {
@@ -274,6 +314,7 @@ export function buildPosteriorMuscles(a: AnatomyScene): THREE.Group {
         return Math.max(quadratusSdf(a.hasAbdominalAtlas ? p : local, -torsoDepth(p, a.torso) - a.wallThickness(), peri), sideDistance);
       };
       const mesh = meshFromSdf(field, lo, hi, 40, new THREE.MeshStandardMaterial({ color: 0x8f5956, roughness: 0.85 }));
+      if (a.hasAbdominalAtlas) prepareOrganSurface(mesh.geometry);
       mesh.name = `${kind === 'psoas' ? 'Psoas mayor' : 'Cuadrado lumbar'} ${side < 0 ? 'derecho' : 'izquierdo'}`;
       group.add(mesh);
     }

@@ -1,0 +1,7 @@
+{
+  "atUtc": "2026-10-11T19:40:16.492663+00:00",
+  "sourceSha": "33a6685333ee5d7649d81a1dadfb01e84f592b11",
+  "reason": "Nine-window and matched-viewport portal protocols fail because live receiver already passed the prescribed256 phase while host UI waits. Source images/dimensions/state not mutated to mask failure. First errors remain.",
+  "systemObservation": "Mac load averages205.92/91.25/69.17; foreign workloads preserved. Timing impact plausible, not proven causal.",
+  "correction": "Freeze through actual UI at first hook/two-frame availability, let pose animation tick while frozen, then controlled capture retains guard, t30 and receiver256+8. No phase reset, no tolerance/time-budget change and no CI rerun. This is a controlled acquisition protocol, not a manual sweep."
+}

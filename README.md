@@ -63,7 +63,9 @@ Torso 3D.
   ⇧+arrastrar bascula; ⌥+arrastrar inclina; botón derecho orbita; ⌘/Ctrl+rueda hace zoom. También se
   puede arrastrar sobre la imagen y con el teclado (`W A S D` deslizar, `Q E` rotar, `← →` bascular,
   `↑ ↓` inclinar, `R F` presión, `⇧` fino). La chuleta de gestos y teclado está detrás del «?» del
-  navegador.
+  navegador. El arrastre iniciado en la piel continúa fuera de la silueta para rodear el tronco. Las tres
+  rotaciones permiten vueltas completas; al deslizar se conserva la orientación del haz y puede hacer falta
+  reorientar la cara para recuperar contacto.
 - **Consola**: _Adquirir_ (imagen: profundidad, ganancia y foco; sonda; respiración; y, plegado,
   lo avanzado: rango dinámico, persistencia, composición espacial y TGC de 8 bandas), _Doppler_
   (contextual: color o PW, con lo avanzado plegado), _Medir_ (protocolo VExUS: VCI con calibrador,

@@ -8,7 +8,7 @@ export function buildProbePositionCopy(ctx: PanelContext, parent: HTMLElement): 
   const copy = button(actions, 'Copiar posición', () => {
     void writePosition();
   });
-  ctx.track(button(actions, 'Reiniciar sonda', () => ctx.sim().setPose({ ...ctx.sim().pose, yaw: 0, rock: 0, tilt: 0, lift: 0 })));
+  ctx.track(button(actions, 'Reiniciar sonda', () => ctx.setPose({ ...ctx.sim().pose, yaw: 0, rock: 0, tilt: 0, lift: 0 })));
   const status = note(parent);
   status.setAttribute('role', 'status');
   const manual = document.createElement('textarea');

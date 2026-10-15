@@ -39,19 +39,19 @@ export class ProbeAnimator {
     const k = Math.min(1, dt * 3.5);
     const next: ProbePose = {
       ...p,
-      phi: p.phi + (t.phi - p.phi) * k,
+      phi: p.phi + arc(t.phi, p.phi) * k,
       z: p.z + (t.z - p.z) * k,
       yaw: p.yaw + arc(t.yaw, p.yaw) * k,
-      rock: p.rock + (t.rock - p.rock) * k,
-      tilt: p.tilt + (t.tilt - p.tilt) * k,
+      rock: p.rock + arc(t.rock, p.rock) * k,
+      tilt: p.tilt + arc(t.tilt, p.tilt) * k,
       lift: p.lift * (1 - k),
     };
     const arrived =
-      Math.abs(t.phi - next.phi) < 0.003 &&
+      Math.abs(arc(t.phi, next.phi)) < 0.003 &&
       Math.abs(t.z - next.z) < 0.5 &&
       Math.abs(arc(t.yaw, next.yaw)) < 0.005 &&
-      Math.abs(t.rock - next.rock) < 0.005 &&
-      Math.abs(t.tilt - next.tilt) < 0.005 &&
+      Math.abs(arc(t.rock, next.rock)) < 0.005 &&
+      Math.abs(arc(t.tilt, next.tilt)) < 0.005 &&
       Math.abs(next.lift) < 0.5;
     if (!arrived) {
       this.setPose(next);

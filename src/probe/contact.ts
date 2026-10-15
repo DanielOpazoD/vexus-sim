@@ -8,7 +8,7 @@ import {
   type ProbeCompression,
 } from '../anatomy/compression';
 import { torsoDepth, torsoDepthGradient, type Torso } from '../anatomy/primitives';
-import { length, smoothstep, type Vec3 } from '../core/vec3';
+import { dot, length, smoothstep, type Vec3 } from '../core/vec3';
 import { probeFrame, skinSoftness, type ProbeFrame, type ProbePose, type Transducer } from './probe';
 
 /**
@@ -189,7 +189,10 @@ function measureFace(frame: ProbeFrame, tr: Transducer, t: Torso, W: number): Fa
     );
     penetration = Math.max(penetration, -skinGap(E, t));
     const depthAt = (r: number): number => -torsoDepth([E[0] + dir[0] * r, E[1] + dir[1] * r, E[2] + dir[2] * r], t);
-    const rs = skinEntry(E, dir, t, -60, 200);
+    // A backwards-facing element cannot couple by finding skin behind its
+    // transmitter. The negative search interval represents indentation only;
+    // it must not turn an outward beam into an internal ultrasound source.
+    const rs = dot(dir, frame.skinNormal) >= 0 ? null : skinEntry(E, dir, t, -60, 200);
     // a lo largo de la línea la pared mide al menos ~W: la búsqueda de su cara interna empieza cerca
     const near = rs === null ? 0 : rs + 0.9 * W;
     const rW =

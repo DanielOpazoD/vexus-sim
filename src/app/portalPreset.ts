@@ -18,8 +18,9 @@ export function portalPreset(
       patch: {
         theta0: abdominalAtlas ? -0.2 : reference ? 0.1 : -0.1,
         theta1: abdominalAtlas ? 0.2 : reference ? 0.52 : 0.32,
-        r0: trunk ? 110 : 70,
-        r1: trunk ? 155 : 125,
+        // Empirical framing of the selected oblique portal plane; anatomy and flow are unchanged.
+        r0: trunk ? 110 : abdominalAtlas ? 47.5 : 70,
+        r1: trunk ? 155 : abdominalAtlas ? 102.5 : 125,
         prfHz: (4 * f0Doppler * 350) / 1_540_000,
         gainDb: 12,
         wallFilterHz: 60,

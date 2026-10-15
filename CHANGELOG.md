@@ -7,6 +7,12 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Sonda: elimina las paradas de traslación a 40° y al salir de la silueta 3D; permite las tres rotaciones completas, cruza la costura posterior y comparte los extremos del torso con el apoyo y su piel. Conserva los ejes al deslizar y descarta el acoplamiento de elementos orientados hacia fuera (205).
+
+- Arranque con varias vistas: prepara ambos contextos antes de adquirir y limita cada vista a un cuadro GPU en vuelo mediante consultas sin espera; conserva el 3D y su fallback informado (204).
+
+- Lecho renal Atlas: redondea en el campo compartido los extremos artificialmente angulosos del cuadrado lumbar y extrae superficies 3D cerradas con el mismo número de muestras; conserva riñones, grasa perirrenal y psoas (203).
+
 - Atlas renal: corrige el conector venoso esplénico estimado que atravesaba el polo superior izquierdo, conservando riñones y calibres; representación ecográfica y validación clínica pendientes (176, seguimiento).
 - Banco de comparación: registra la fase real del receptor mediante renders ordinarios y conserva el reloj; evita atribuir al modelo diferencias de ruido por distinto trabajo previo; distribuye las ventanas y elimina relleno innecesario manteniendo cobertura y plazos (149, seguimiento 2026-10-07).
 

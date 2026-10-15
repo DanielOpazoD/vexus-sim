@@ -182,11 +182,11 @@ export class Simulator {
     return this.equipment.mmode;
   }
   /**
-   * Ajustes de la imagen en pantalla: los del equipo o, con un cuadro del cine a la vista (decisión 80), los
-   * de ese cuadro (profundidad, foco y caja de color con que se formó).
+   * Ajustes del cuadro adquirido en pantalla, también entre adquisiciones y en cine.
+   * Antes del primer cuadro se usan los del equipo.
    */
   get displayed(): { bmode: Readonly<BModeSettings>; color: Readonly<ColorSettings> } {
-    return (this.frozen && this.renderer.cineShownFrame) || this.equipment;
+    return this.renderer.displayedFrame ?? this.equipment;
   }
   get spectral(): PwDopplerChain['spectral'] {
     return this.pwChain.spectral;
@@ -210,7 +210,7 @@ export class Simulator {
   }
 
   setPose(p: ProbePose): void {
-    this.pose = clampPose(p);
+    this.pose = clampPose(p, this.scene.torso);
     this.syncProbeContact();
   }
 

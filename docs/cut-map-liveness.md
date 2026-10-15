@@ -1,0 +1,26 @@
+# Corte continuo al mover la sonda y cambiar de caso
+
+El trabajador clasificaba toda la rejilla en una sola tarea. Un cálculo lento podía superar los 3 s del vigilante aun estando sano; la terminación descartaba el trabajo y volvía a cargar los atlas. Cada cambio de caso copiaba también 112.228.544 bytes en el modo atlas.
+
+El trabajador ahora conserva esos datos inmutables y reconstruye solo la escena del paciente. Clasifica filas con el mismo algoritmo, resolución y muestra adquirida. Tras unos 16 ms de cálculo comunica las filas completadas y cede el hilo; un cambio de escena puede cancelar el corte anterior. No publica mapas parciales. El vigilante sigue detectando 3 s activos sin avance, con el límite por cuadro anterior. Las respuestas se comprueban por trabajador y petición, incluidos los errores, y un reinicio del mismo caso invalida su escena anterior.
+
+La vista abandona la petición anterior antes de consultar su vigilante. Conserva una sola petición en vuelo; al terminar toma la adquisición más reciente, sin acumular movimientos en una cola. El mapa y su procedencia usan la misma instantánea adquirida, también en congelación y cine.
+
+La confirmación de una nueva sesión notifica inmediatamente al Worker activo, antes de reconstruir el 3D. No espera al siguiente cuadro: la limitación de cuadros GPU puede retrasarlo y permitir que termine un cálculo del paciente anterior. Cada inicialización reserva ahora su propio id, de modo que las respuestas antiguas quedan invalidadas también entre adquisiciones. Un fallo de la inicialización vigente se informa aunque todavía no haya una petición de mapa; los fallos de escenas ya sustituidas se descartan.
+
+El repintado CPU del mapa y la demarcación continúa entre adquisiciones GPU. Así una respuesta ya calculada puede presentarse al recorrer cine sin esperar otro render ecográfico. Sus guías conservan el transductor y los ajustes del cuadro adquirido; cambiar mandos no relabela por adelantado los píxeles anteriores.
+
+Los deslizadores y el botón de reinicio de sonda pasan por la misma entrada manual que los gestos: cancelan la transición automática hacia una ventana. Antes la animación podía sobrescribir el ajuste manual en el cuadro siguiente.
+
+El corte conserva su cadencia máxima de 8 Hz y una sola petición en vuelo; toma la adquisición más reciente al quedar disponible. Una adquisición congelada o de cine que ya tiene mapa no vuelve a clasificarse. Se compara la identidad de su instantánea, no solo el contador de cuadros, que puede reiniciarse al recuperar la GPU. Esto no detiene el repintado por cambios de tamaño, rótulos o selección.
+
+## Verificación local
+
+- Regresión con dos vistas vivas, alternancia normal/congestión severa y rotación, inclinación y basculación.
+- Carga controlada: una petición usa una rejilla 16 veces mayor por eje, con el clasificador real. La referencia f40c890 cancela el trabajo por timeout; el candidato lo completa con progreso. Es una prueba de resistencia, no una medición de latencia de la rejilla normal.
+- Cambio de paciente durante otro cálculo pesado: se abandona el mapa anterior y se recibe el nuevo, sin otra copia de los atlas.
+- Regresión de los cuatro deslizadores durante la animación: falla en f40c890 porque la pose manual cambia sola.
+- Vigilante de un trabajador sin avance, errores obsoletos, reinicio del mismo caso y fallo de inicialización; paridad del clasificador, volumen renal/grasa/fascia CPU–GPU, redimensionado y procedencia del cine.
+- Barridos de ±6° en rotación, inclinación y basculación en renal y hepatorrenal con dos vistas vivas. Se espera a que el plano inicial y los controles correspondan a la ventana antes de medir; se registra la separación geométrica entre corte pintado y ecografía adquirida. Al detenerse, se comprueban 256 puntos GPU por ventana y vista y se exige que la imagen congelada deje de generar peticiones.
+
+No cambia la geometría, los materiales, los campos anatómicos ni el algoritmo de formación de la ecografía. Las pruebas locales con Metal no sustituyen CI con SwiftShader ni validación clínica.

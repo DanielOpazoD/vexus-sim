@@ -202,3 +202,10 @@ Generado por `npm run docs:index` — no editar a mano.
 | [196](DECISIONS.md#L7006) | Reconstruir WebGL sin borrar recursos de la generación perdida | vigente |
 | [197](DECISIONS.md#L7018) | Secuencias GLSL de transporte sin pérdida | vigente |
 | [198](DECISIONS.md#L7030) | Gradiente por ejes en la ruta Atlas de SwiftShader | vigente |
+| [199](DECISIONS.md#L7050) | Gradiente de velocidad color sin pedestal brillante | vigente |
+| [200](DECISIONS.md#L7060) | Contenido colónico separado del líquido simple | vigente |
+| [201](DECISIONS.md#L7070) | Seno renal menos apelmazado y revisión del apoyo muscular | vigente |
+| [202](DECISIONS.md#L7082) | Lecho renal con grasa y fascia volumétricas | vigente |
+| [203](DECISIONS.md#L7098) | Extremos musculares continuos en el lecho renal Atlas | vigente |
+| [204](DECISIONS.md#L7112) | Arranque de ambas vistas sin acumular cuadros GPU | vigente |
+| [205](DECISIONS.md#L7144) | Traslación sin topes angulares ni bloqueo de silueta | vigente |

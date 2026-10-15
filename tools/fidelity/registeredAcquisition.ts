@@ -1,3 +1,4 @@
+import { acquisitionJson } from './acquisitionJson';
 import { createHash } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 import type { Page } from '@playwright/test';
@@ -40,11 +41,11 @@ export function acquiredState(
     for (let first = 0; first < image.gray.length; first += 32768)
       binary += String.fromCharCode(...image.gray.subarray(first, first + 32768));
     return structuredClone({
-      schemaVersion: 1,
+      schemaVersion: 2,
       caseId: s.patient.id,
       patient: s.patient,
       anatomyFrameId: null as string | null,
-      anatomyDomain: s.scene.torso.profile ? 'bodyparts3d-profile' : 'procedural',
+      anatomyDomain: s.scene.hasAbdominalAtlas ? 'abdominal-atlas' : s.scene.torso.profile ? 'bodyparts3d-profile' : 'procedural',
       frame: f,
       livePose: s.pose,
       liveFrame: s.frame,
@@ -118,18 +119,13 @@ function writeAcquiredFrame(state: AcquiredState, prefix: string, sourceSha: str
   const { image, ...metadata } = state;
   const png = encodeBMode(image.width, image.height, Buffer.from(image.grayBase64, 'base64'));
   const hash = (b: Buffer | string) => createHash('sha256').update(b).digest('hex');
-  const json =
-    JSON.stringify(
-      {
-        ...metadata,
-        sourceSha,
-        image: { width: image.width, height: image.height, pngSha256: hash(png) },
-        anatomyFrameId: null,
-        ctRegistrationAccepted: false,
-      },
-      null,
-      2,
-    ) + '\n';
+  const json = acquisitionJson({
+    ...metadata,
+    sourceSha,
+    image: { width: image.width, height: image.height, pngSha256: hash(png) },
+    anatomyFrameId: null,
+    ctRegistrationAccepted: false,
+  });
   writeFileSync(prefix + '.png', png);
   writeFileSync(prefix + '.json', json);
   return { pngSha256: hash(png), metadataSha256: hash(json), frameNumber: state.frame.n, acquiredTimeSeconds: state.frame.t };

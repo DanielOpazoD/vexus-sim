@@ -50,6 +50,11 @@ test('el mapa adquirido se repinta al redimensionar con una petición real aún 
     view.draw(s, now);
     const before = pixels(),
       map = view.lastMap!.map;
+    // Acquire a genuinely new frame: frozen frames are now classified only once.
+    s.frozen = false;
+    s.advance(0.05);
+    s.render();
+    s.frozen = true;
     // Petición real vencida por cadencia. Su respuesta no puede entrar dentro
     // de esta tarea JS: se comprueba la copia adquirida, sin simular la anatomía.
     view.draw(s, now + 1000);

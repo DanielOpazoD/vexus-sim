@@ -58,6 +58,22 @@ describe('registered abdomen: actual shipped acoustic data', () => {
         }
     expect(occupied).toBeGreaterThan(30_000);
   });
+  it('keeps the source psoas outside both source kidneys without classifier priority masking', () => {
+    for (const field of [5, 6]) {
+      const f = ABDOMINAL_FIELDS[field];
+      let occupied = 0;
+      for (let z = 0; z < f.dimensions[2]; z++)
+        for (let y = 0; y < f.dimensions[1]; y++)
+          for (let x = 0; x < f.dimensions[0]; x++) {
+            const p = f.originMm.map((v, i) => v + [x, y, z][i] * f.pitchMm) as [number, number, number];
+            if (abdominalAtlasSdf(p, field) >= 0) continue;
+            occupied++;
+            expect(abdominalAtlasSdf(p, 9), `${f.name}: ${p.join(',')}`).toBeGreaterThanOrEqual(0);
+          }
+      expect(occupied).toBeGreaterThan(30_000);
+    }
+    // Source-grid exclusion does not establish a resolved fascial layer or clinical clearance.
+  });
   it('reconciles false internal hepatic capsule without inventing another organ or flow', () => {
     // Held-out crack in the assembled segment surfaces: old field +0.75 mm (exterior),
     // despite being deep inside the hepatic envelope. It must be parenchyma in the scene.

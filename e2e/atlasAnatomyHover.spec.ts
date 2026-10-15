@@ -26,11 +26,11 @@ test('Atlas: identifica y demarca hígado/porta sin alterar señal; sale, cambia
   await withinFrames(page, 100, 'pose portal completa', async () => {
     const p = await page.evaluate(() => window.__vexusTest!.sim().pose);
     return (
-      (Math.abs(p.phi - 3.25) < 1e-8 &&
-        Math.abs(p.z + 65) < 1e-8 &&
-        Math.abs(p.yaw + 0.3083879194167607) < 1e-8 &&
-        Math.abs(p.rock + 0.2122189996791038) < 1e-8 &&
-        Math.abs(p.tilt - 0.0937442490667998) < 1e-8) ||
+      (Math.abs(p.phi - (173 * Math.PI) / 180) < 1e-8 &&
+        Math.abs(p.z + 40) < 1e-8 &&
+        Math.abs(p.yaw + (72 * Math.PI) / 180) < 1e-8 &&
+        Math.abs(p.rock + (6 * Math.PI) / 180) < 1e-8 &&
+        Math.abs(p.tilt + (2 * Math.PI) / 180) < 1e-8) ||
       'animación en curso'
     );
   });

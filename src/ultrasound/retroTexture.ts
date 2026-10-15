@@ -33,16 +33,14 @@ export const RETRO_TEXTURE = {
 } as const;
 
 /**
- * Seno renal (decisión 87): grasa en lóbulos de milímetros con tabiques fibrosos, vasos segmentarios y cálices colapsados,
- * ecogénica y heterogénea («lo más ecogénico, heterogéneo»: revisión 25-09, Radiopaedia). Factor log-normal anclado de un
- * ruido de valor, `norm`·exp(a·(n − 0,5)) en células de `cellMm`, con sal fija (anatomía, no moteado): la desviación de n es
- * 0,186, así que a = 4 da 6,4 dB de desviación, y `norm` = 1/√E[exp(2a(n − 0,5))] (2·10⁶ puntos) deja la potencia media en
- * 1 (la amplitud media, en 0,79): la retrodispersión de `TISSUES` es la media del seno en la imagen y en la puerta PW, que
- * no lleva la textura [ESTIMADO: la heterogeneidad, sobre las referencias reales del juez ciego, donde la desviación del
- * gris del seno es 3 veces la del hígado]. Encima van los grumos del tejido (decisión 56). Antes era el moteado del hígado
- * más brillante.
+ * Seno renal: modulación lobular material de 3 mm, además del moteado y los grumos existentes.
+ * Decisión 201: reducir gain de 4 a 2 (~6,4 a ~3,2 dB de desviación) evita islas gruesas
+ * dominantes en los barridos renal/hepatorrenal. norm conserva E[amplitud²] ≈ 1; no cambia
+ * la retrodispersión basal ni compensa por ventana, pose o profundidad.
+ * NEEDS_CALIBRATION: escala, dispersión y modelo log-normal son estimados. ACEP respalda
+ * el seno central ecogénico, no estos parámetros ni una segmentación de sus componentes.
  */
-export const SINUS_TEXTURE = { cellMm: 3, gain: 4, salt: 57.3, norm: 0.615 } as const;
+export const SINUS_TEXTURE = { cellMm: 3, gain: 2, salt: 57.3, norm: 0.875 } as const;
 
 /** Factor de amplitud de los lóbulos del seno renal en el punto material `m` (potencia media 1). */
 export function sinusLobules(m: Vec3): number {

@@ -19,9 +19,23 @@ export function bindCine(opts: {
   const { bar, slider, label, freezeButton, host, getSim, store } = opts;
   let pos = 0;
   const count = () => getSim().renderer.cineCount;
-  const go = (i: number) => {
+  const present = (drawFrame = true) => {
+    const r = getSim().renderer;
+    const n = count();
+    if (!store.get().frozen || !n) return;
+    if (drawFrame) r.showCine(pos);
+    const text = `${(r.cineFrame(pos).t - r.cineFrame(n - 1).t).toFixed(2).replace('-', '−').replace('.', ',')} s`;
+    if (label.textContent !== text) {
+      label.textContent = text;
+      slider.setAttribute('aria-valuetext', text);
+    }
+  };
+  const go = (i: number, drawFrame = true) => {
     pos = Math.min(count() - 1, Math.max(0, i));
     slider.value = String(pos);
+    // Present the selected acquired frame in this UI event. A pending live GPU
+    // acquisition must not defer the cine's geometry/cursor to the next frame.
+    present(drawFrame);
   };
   /**
    * Al congelar o descongelar (y con otro simulador o renderizador): el cine entero, en su último cuadro. Al
@@ -38,7 +52,9 @@ export function bindCine(opts: {
     const n = count();
     bar.hidden = !frozen || n === 0;
     slider.max = String(Math.max(0, n - 1));
-    go(n - 1);
+    // Freezing already displays the latest live target. Do not enqueue a
+    // duplicate presentation while its acquisition fence may still be pending.
+    go(n - 1, false);
   };
   store.subscribe((st, prev) => {
     if (st.frozen !== prev.frozen) sync();
@@ -64,18 +80,7 @@ export function bindCine(opts: {
   );
   return {
     sync,
-    tick: () => {
-      const r = getSim().renderer;
-      const n = count();
-      if (!store.get().frozen || !n) return;
-      r.showCine(pos);
-      // instante respecto al cuadro congelado, con coma decimal y signo menos tipográfico
-      const text = `${(r.cineFrame(pos).t - r.cineFrame(n - 1).t).toFixed(2).replace('-', '−').replace('.', ',')} s`;
-      if (label.textContent !== text) {
-        label.textContent = text;
-        slider.setAttribute('aria-valuetext', text);
-      }
-    },
-    cursorT: () => (store.get().frozen ? (getSim().renderer.cineShownFrame?.t ?? null) : null),
+    tick: () => present(),
+    cursorT: () => (store.get().frozen ? (getSim().renderer.displayedFrame?.t ?? null) : null),
   };
 }

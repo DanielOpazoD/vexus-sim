@@ -1038,6 +1038,9 @@ export class UltrasoundRenderer {
    * cuesta nada.
    */
   render(inputs: FrameInputs, repeat?: PassRepeat): void {
+    // Crear y comprobar los FBO antes de encolar las pasadas costosas. Al hacerlo
+    // dentro de G, checkFramebufferStatus espera también al trabajo de A–F.
+    this.ensureDisplayTargets();
     this.frameCount++;
     this.timer.poll();
     this.updateCoupling(inputs);

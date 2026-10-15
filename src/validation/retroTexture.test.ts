@@ -141,7 +141,7 @@ describe('Lóbulos del seno renal (decisión 87)', () => {
         }
   const db = (f: number) => 20 * Math.log10(f);
 
-  it('factor log-normal anclado, igual con cualquier haz, de potencia media 1 y ~6,4 dB de desviación a la escala de 3 mm', () => {
+  it('factor log-normal anclado, igual con cualquier haz, de potencia media 1 y ~3,2 dB de desviación a la escala de 3 mm', () => {
     expect(sinus.length).toBeGreaterThan(3000);
     for (const m of sinus.slice(0, 200)) {
       const f = retroTexture(m, Tissue.RenalSinus, [0, 1, 0]);
@@ -166,8 +166,8 @@ describe('Lóbulos del seno renal (decisión 87)', () => {
     expect(p1 / N).toBeGreaterThan(0.95);
     expect(p1 / N).toBeLessThan(1.05);
     const sd = Math.sqrt(d2 / N - (d1 / N) ** 2);
-    expect(sd).toBeGreaterThan(5.8);
-    expect(sd).toBeLessThan(7);
+    expect(sd).toBeGreaterThan(2.9);
+    expect(sd).toBeLessThan(3.5);
     // en los dos senos, la potencia media sigue en 1 ± 10 %
     const pw = sinus.reduce((a, m) => a + sinusLobules(m) ** 2, 0) / sinus.length;
     expect(Math.abs(pw - 1)).toBeLessThan(0.1);
@@ -182,6 +182,17 @@ describe('Lóbulos del seno renal (decisión 87)', () => {
     let cov = 0;
     for (let i = 0; i < d.length; i++) cov += (d[i] - md) * (far[i] - mf);
     expect(Math.abs(cov / d.length / (sdS * sdS))).toBeLessThan(0.15);
+  });
+
+  it('no introduce saltos de textura al cruzar las caras de células materiales', () => {
+    for (let axis = 0; axis < 3; axis++)
+      for (let cell = -12; cell <= 12; cell++) {
+        const m: Vec3 = [-58.7, -32.4, -145.5];
+        m[axis] = cell * SINUS_TEXTURE.cellMm - 1e-5;
+        const before = db(sinusLobules(m));
+        m[axis] += 2e-5;
+        expect(Math.abs(db(sinusLobules(m)) - before)).toBeLessThan(0.001);
+      }
   });
 
   it('el seno es lo más ecogénico del riñón: ≥ 12 dB sobre el hígado y ≥ 4 dB sobre la grasa perirrenal', () => {

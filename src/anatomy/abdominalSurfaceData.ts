@@ -1,21 +1,38 @@
 /** Generated from the acoustic signed-distance field. */
+import { ABDOMINAL_FIELDS } from './abdominalAtlasData';
 export const ABDOMINAL_SURFACE = {
-  sourceFieldSha256: '9a16b1f550949b120dfdbfe5c688c0479625f2afcab8a3f7d452382499477dda',
-  rawBytes: 28751472,
-  gzipBytes: 4620044,
-  sha256Gzip: 'ce59bfacd4698e2cc65cbae8dfbbdb8790ae8cb0a2e5f726f1465eacb9ace1cf',
-  sha256Raw: 'b087bb06b2aef90885381648a52b8850302f4a21009ba7776ed6fcfd095585a0',
-  fields: [
-    { name: 'pancreas', offset: 0, count: 48924 },
-    { name: 'digestiveTract', offset: 146772, count: 1035840 },
-    { name: 'bladder', offset: 3254292, count: 37548 },
-    { name: 'spleen', offset: 3366936, count: 48132 },
-    { name: 'liver', offset: 3511332, count: 345984 },
-    { name: 'kidneyRight', offset: 4549284, count: 54936 },
-    { name: 'kidneyLeft', offset: 4714092, count: 54144 },
-    { name: 'gallbladder', offset: 4876524, count: 15468 },
-    { name: 'lumbarSacralBone', offset: 4922928, count: 433464 },
-    { name: 'psoas', offset: 6223320, count: 240024 },
-    { name: 'lumbarDiscs', offset: 6943392, count: 81492 },
-  ],
+  sourceFieldSha256: 'b63ae6da6bda7ce4758297037dce45b5cb6fce3dca5ffbe5d88e319257e599e8',
+  rawBytes: 32102928,
+  gzipBytes: 5475809,
+  sha256Gzip: '006b54d49c4141bf4ba43ce077a369383bccf408b63507e2051a4742ddfaa9d6',
+  sha256Raw: 'fa03af07b192d93eb53d150e46ea59e19291b9064e951edbf31a29b0ad96e80d',
+  fields: (
+    [
+      [0, 48924],
+      [146772, 1035840],
+      [3254292, 37548],
+      [3366936, 48132],
+      [3511332, 345984],
+      [4549284, 54420],
+      [4712544, 53700],
+      [4873644, 15468],
+      [4920048, 433464],
+      [6220440, 227832],
+      [6903936, 81492],
+    ] as const
+  ).map(([offset, count], i) => ({ name: ABDOMINAL_FIELDS[i].name, offset, count })),
+  envelopes: (
+    [
+      [7148412, 73824, 0, false],
+      [7369884, 75528, 0, true],
+      [7596468, 70716, 1, false],
+      [7808616, 72372, 1, true],
+    ] as const
+  ).map(([offset, count, side, fascia]) => ({
+    offset,
+    count,
+    side,
+    fascia,
+    name: (fascia ? 'Fascia renal ' : 'Grasa perirrenal ') + (side ? 'izquierda' : 'derecha'),
+  })),
 } as const;

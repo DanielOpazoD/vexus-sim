@@ -1,3 +1,4 @@
+import { acquisitionJson } from './acquisitionJson';
 /** Reproducible nine-window evidence; captures actual UI/framebuffer, never generated illustrations. */
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
@@ -24,8 +25,7 @@ if (out === process.cwd() || out.startsWith(process.cwd() + '/')) throw new Erro
 const baseUrl = new URL(args.get('url') ?? 'http://127.0.0.1:6600');
 if (!['localhost', '127.0.0.1', '[::1]'].includes(baseUrl.hostname)) throw new Error('Audit requires a local server');
 baseUrl.searchParams.set('e2e', 'app');
-if (anatomy === 'atlas') baseUrl.searchParams.set('abdomen', 'atlas');
-else baseUrl.searchParams.delete('abdomen');
+baseUrl.searchParams.set('abdomen', anatomy!);
 const views = (args.get('views')?.split(',') ?? START_POINTS.map((p) => p.id)) as StartPoint['id'][];
 if (!views.length || new Set(views).size !== views.length || views.some((v) => !START_POINTS.some((p) => p.id === v)))
   throw new Error('Unknown/repeated window');
@@ -147,8 +147,11 @@ try {
           integrity: 'verified',
           clinicalAcceptance: 'pending',
         };
-        rows.push(item);
-        writeFileSync(join(runOut, `${stem}.json`), JSON.stringify(item, null, 2) + '\n');
+        const json = acquisitionJson(item);
+        writeFileSync(join(runOut, `${stem}.json`), json);
+        // El manifiesto conserva los mismos centinelas que el sidecar y solo acepta escrituras completas.
+        const encoded: unknown = JSON.parse(json);
+        rows.push(encoded);
         console.log(`${caseId}/${view}: captured ${snapshot.presentedFrame} at ${snapshot.acquiredTimeSeconds}s; clinical review pending`);
       } catch (error) {
         await page.screenshot({ path: join(runOut, `${stem}-failed.png`) }).catch(() => undefined);

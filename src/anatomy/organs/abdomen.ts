@@ -56,10 +56,19 @@ export function abdomenQuery(m: Vec3) {
       boundaryNormal: n,
       curvature: 0,
     };
+  // Source labels 5–9 are cecum/colon/rectum. Their non-gaseous contents are
+  // an estimated particulate suspension; source geometry and gas placement stay fixed.
   const gas = inner < 0 && digestiveGasPlane(m, label) > 0;
   const iface = Math.abs(d) < Math.abs(inner) ? Interface.BowelSerosa : Interface.BowelLumen;
   return {
-    tissue: inner >= 0 ? digestiveWallTissue(-d / wall) : gas ? Tissue.BowelGas : Tissue.Fluid,
+    tissue:
+      inner >= 0
+        ? digestiveWallTissue(-d / wall)
+        : gas
+          ? Tissue.BowelGas
+          : label >= 5 && label <= 9
+            ? Tissue.ColonicContents
+            : Tissue.Fluid,
     boundaryDistance: Math.min(-d, Math.abs(inner), inner < 0 ? Math.abs(digestiveGasPlane(m, label)) / 2 : wall * 0.03) / 2,
     interface: iface,
     interfaceDistance: Math.abs(iface === Interface.BowelSerosa ? d : inner),
@@ -95,7 +104,7 @@ bool abdomenQuery(vec3 m,inout Cls c){
   float wall=field==2?2.5:digestiveWallMm(label),inner=d+wall; 
   if(field==2){c.tissue=inner<0.0?T_FLUID:T_BLADDER_WALL; c.bd=min(-d,abs(inner))/2.0; c.iface=IF_BLADDER_LUMEN; c.ifd=abs(inner); return true; }
   bool gas=inner<0.0&&digestiveGasPlane(m,label)>0.0; 
-  c.tissue=inner>=0.0?digestiveWallTissue(-d/wall):gas?T_BOWELGAS:T_FLUID; 
+  c.tissue=inner>=0.0?digestiveWallTissue(-d/wall):gas?T_BOWELGAS:label>=5.0&&label<=9.0?T_COLONIC_CONTENTS:T_FLUID;
   c.bd=min(min(-d,abs(inner)),inner<0.0?abs(digestiveGasPlane(m,label))/2.0:wall*0.03)/2.0; 
   c.iface=abs(d)<abs(inner)?IF_BOWEL_SEROSA:IF_BOWEL_LUMEN; c.ifd=abs(c.iface==IF_BOWEL_SEROSA?d:inner); return true; 
 }

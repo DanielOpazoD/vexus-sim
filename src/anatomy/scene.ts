@@ -63,6 +63,7 @@ import {
 } from './organs/liverLigaments';
 import { domeFloor, heartFloor, heartOuterSdf, ivcAtrium, thorax } from './organs/heart';
 import { inLungCurtain, inLungRecess, lungCurtainDistance, lungCurtainEdgeMm } from './organs/lungCurtain';
+import { RENAL_FASCIA_MM, RENAL_ATLAS_GRADIENT_EPS_MM } from './organs/kidney';
 import { retroperitoneum } from './organs/retroperitoneum';
 import { sternumSd, STERNUM } from './organs/sternum';
 import {
@@ -178,7 +179,7 @@ export function faceGeometryOf(i: Interface): FaceGeometry | null {
   if (i === Interface.GallbladderLumen) return 'gallbladder';
   if (i === Interface.LiverCapsule) return 'liverSurface';
   if (i === Interface.DiaphragmLiver) return 'dome';
-  if (i === Interface.PerirenalFat) return 'perirenalOuter';
+  if (i === Interface.PerirenalFat || i === Interface.RenalFascia) return 'perirenalOuter';
   if (i === Interface.Pericardium) return 'pericardium';
   if (i === Interface.VertebralCortex) return 'spine';
   return 'kidneyOuter';
@@ -775,7 +776,7 @@ export class AnatomyScene {
     if (face === undefined) {
       // las caras de la pared y de las costillas (decisión 62) no tienen geometría de faceSdf
       const iface = this.classify(m, caliber).interface;
-      if (this.hasAbdominalAtlas && (isBowelInterface(iface) || iface >= Interface.PancreasCapsule)) {
+      if (this.hasAbdominalAtlas && (isBowelInterface(iface) || (iface >= Interface.PancreasCapsule && iface <= Interface.BladderLumen))) {
         const q = abdomenQuery(m);
         if (q) {
           const n = q.boundaryNormal,
@@ -830,12 +831,18 @@ export class AnatomyScene {
     // la columna (PR119; recuperación provisional de la decisión 103): el costado de los cuerpos es un cilindro en z, con la curvatura de su elipse
     if (geometry === 'spine')
       return { ...this.numericGradient(m, (p) => spineBodySd(p, this.spine), spineFaceCurvature(m, this.spine)), axis: [0, 0, 1] };
-    return this.numericGradient(m, (p) => this.faceSdf(p, caliber, geometry)!, 0);
+    return this.numericGradient(
+      m,
+      (p) => this.faceSdf(p, caliber, geometry)!,
+      0,
+      this.hasAbdominalAtlas && (geometry === 'perirenalOuter' || geometry === 'kidneyOuter')
+        ? RENAL_ATLAS_GRADIENT_EPS_MM
+        : FACE_GRADIENT_EPS_MM,
+    );
   }
 
   /** Gradiente por diferencias centrales de paso `FACE_GRADIENT_EPS_MM` (el de la GPU) de una distancia. */
-  private numericGradient(m: Vec3, sd: (p: Vec3) => number, curvature: number): FaceGradient {
-    const h = FACE_GRADIENT_EPS_MM;
+  private numericGradient(m: Vec3, sd: (p: Vec3) => number, curvature: number, h = FACE_GRADIENT_EPS_MM): FaceGradient {
     const g: Vec3 = [0, 0, 0];
     for (let a = 0; a < 3; a++) {
       const plus: Vec3 = [m[0], m[1], m[2]];
@@ -1074,15 +1081,23 @@ export class AnatomyScene {
         // cápsula hepática le sigue cediendo la suya
         // Frente a la boca del hilio (el canal del seno) no hay cápsula que dibujar: grasa con grasa (decisión 87); la
         // distancia a la frontera cuenta el cambio de dueño de la cara
-        const outerFace = kh.dOuter > 0.5 * fat && fat > PERIRENAL.faceMaxMm;
+        const thickness = this.hasAbdominalAtlas ? kh.dOuter - dFat : fat;
+        const outerFace = kh.dOuter > 0.5 * thickness && thickness > PERIRENAL.faceMaxMm;
         const ifd = outerFace ? -dFat : kh.dOuter;
         const hc = hilumChannelSdf(kidneyLocal(m, k), k);
-        const face = outerFace ? this.liverSdf(m) <= ifd + MORISON_CONTACT_MM : hc > 0;
+        const envelope = this.hasAbdominalAtlas;
+        const face = outerFace ? envelope || this.liverSdf(m) <= ifd + MORISON_CONTACT_MM : hc > 0;
         const cls: Classification = {
           ...NONE,
-          tissue: Tissue.PerirenalFat,
-          boundaryDistance: Math.min(kh.dOuter, -dFat, Math.abs(hc)),
-          interface: face ? (outerFace ? Interface.PerirenalFat : Interface.RenalCapsule) : Interface.None,
+          tissue: envelope && -dFat < RENAL_FASCIA_MM ? Tissue.SoftCapsule : Tissue.PerirenalFat,
+          boundaryDistance: Math.min(kh.dOuter, -dFat, Math.abs(hc), envelope ? Math.abs(dFat + RENAL_FASCIA_MM) : Infinity),
+          interface: face
+            ? outerFace
+              ? envelope
+                ? Interface.RenalFascia
+                : Interface.PerirenalFat
+              : Interface.RenalCapsule
+            : Interface.None,
           interfaceDistance: face ? ifd : NONE.interfaceDistance,
         };
         return { cls, dPeriMm, periThin };

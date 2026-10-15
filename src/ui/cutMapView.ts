@@ -9,7 +9,7 @@ import type { ProbeFrame, ProbePose, Transducer } from '../probe/probe';
 import { Tissue } from '../anatomy/tissues';
 import { VESSEL_META, type VesselId, type VesselSystem } from '../physiology/vessels';
 import { beamToPixel, pixelToBeam, sectorLayout } from '../ultrasound/sectorGeometry';
-import type { CutMapError, CutMapInit, CutMapRequest, CutMapResponse } from './cutMapWorker';
+import type { CutMapError, CutMapInit, CutMapProgress, CutMapRequest, CutMapResponse } from './cutMapWorker';
 import { errorLog } from '../app/errorLog';
 import { RequestWatchdog } from './requestWatchdog';
 import cutMapWorkerUrl from './cutMapWorkerUrl';
@@ -54,6 +54,7 @@ const TISSUE_COLOR: Record<number, [number, number, number]> = {
   [Tissue.Bowel]: [120, 130, 90],
   [Tissue.BowelGas]: [70, 75, 70],
   [Tissue.Fluid]: [60, 190, 170],
+  [Tissue.ColonicContents]: [168, 148, 82],
   [Tissue.ArteryWall]: [230, 90, 90],
   [Tissue.Cartilage]: [200, 210, 200],
   [Tissue.RenalCortex]: [150, 100, 90],
@@ -86,7 +87,7 @@ const TISSUE_LABEL: Record<number, string> = {
   [Tissue.VesselWallThin]: 'pared venosa',
   [Tissue.ArteryWall]: 'pared arterial',
   [Tissue.BileDuctWall]: 'pared biliar',
-  [Tissue.SoftCapsule]: 'cápsula',
+  [Tissue.SoftCapsule]: 'fascia / cápsula visceral',
   [Tissue.Pancreas]: 'páncreas',
   [Tissue.Spleen]: 'bazo',
   [Tissue.GutSubmucosa]: 'pared intestinal',
@@ -105,6 +106,7 @@ const TISSUE_LABEL: Record<number, string> = {
   [Tissue.Bowel]: 'intestino',
   [Tissue.BowelGas]: 'gas',
   [Tissue.Fluid]: 'líquido',
+  [Tissue.ColonicContents]: 'contenido colónico · estimado',
   [Tissue.Cartilage]: 'cartílago',
   [Tissue.RenalCortex]: 'riñón',
   [Tissue.RenalSinus]: 'seno renal',
@@ -194,7 +196,7 @@ const VESSEL_LABEL: Record<VesselId, string> = {
 const BLOOD_ID: number = Tissue.Blood;
 
 /**
- * Tiempo máximo de una petición al Worker antes de darlo por caído (ms), con el hilo principal en marcha
+ * Tiempo máximo sin filas completadas antes de dar el Worker por caído (ms), con el hilo principal en marcha
  * (`RequestWatchdog`: a lo sumo 250 ms por cuadro, así que un cuadro largo no cuenta entero).
  */
 const WORKER_TIMEOUT_MS = 3000;
@@ -205,8 +207,7 @@ export class CutMapView {
   private img: ImageData | null = null;
   private lastUpdate = -1;
   private worker: Worker | null = null;
-  private workerPatient: string | null = null;
-  private pending = false;
+  private workerScene: Simulator['scene'] | null = null;
   private readonly watchdog = new RequestWatchdog(WORKER_TIMEOUT_MS);
   /** Fallos consecutivos del Worker (error, caída o tiempo agotado) y próximo reintento. */
   private failures = 0;
@@ -215,7 +216,7 @@ export class CutMapView {
   private map: CutMapResponse | null = null;
   private mapDirty = false;
   /** Instante (muestra, marco, profundidad) con el que se pidió cada mapa, por id. */
-  private pendingInputs: (MapInputs & { id: number }) | null = null;
+  private pendingInputs: MapInputs | null = null;
   private mapInputs: MapInputs | null = null;
 
   private readonly tooltip: HTMLDivElement;
@@ -372,7 +373,7 @@ export class CutMapView {
   private paintContour(ctx: CanvasRenderingContext2D, sim: Simulator, onUltrasound: boolean): void {
     if (!this.selected || !this.drawn) return;
     const { inputs } = this.drawn,
-      tr = sim.transducer;
+      tr = this.drawn.transducer;
     const layout = onUltrasound ? sim.renderer.display : sectorLayout(this.canvas.width, this.canvas.height, tr, inputs.depthMm, 6);
     const at = (u: number, v: number) => beamToPixel(layout, tr, -tr.halfSector + 2 * tr.halfSector * u, v * inputs.depthMm);
     const dpr = onUltrasound ? Math.min(2, window.devicePixelRatio || 1) : 1;
@@ -446,52 +447,71 @@ export class CutMapView {
     this.retryAt = nowMs + Math.min(30_000, 1000 * 2 ** (this.failures - 1));
     this.worker?.terminate();
     this.worker = null;
-    this.pending = false;
+    this.pendingInputs = null;
   }
 
   private ensureWorker(sim: Simulator, nowMs: number): Worker | null {
-    const key = sim.patient.id;
-    if (this.worker && this.workerPatient === key) return this.worker;
+    if (this.worker && this.workerScene === sim.scene) return this.worker;
     if (!this.worker && nowMs < this.retryAt) return null;
-    this.worker?.terminate();
+    const first = !this.worker;
     try {
-      this.worker = new Worker(cutMapWorkerUrl, { type: 'module' });
+      this.worker ??= new Worker(cutMapWorkerUrl, { type: 'module' });
     } catch (e) {
       this.fail(e, nowMs);
       return null;
     }
-    this.workerPatient = key;
+    const worker = this.worker;
+    this.workerScene = sim.scene;
+    this.watchdog.stop();
     this.map = null;
     this.mapInputs = null;
+    this.pendingInputs = null;
     this.drawn = null;
     this.clearSelection();
-    this.pending = false;
+    this.lastUpdate = -Infinity;
     const init: CutMapInit = {
-      type: 'init',
+      type: first ? 'init' : 'patient',
+      // Reservar su id ahora invalida respuestas anteriores aunque la GPU
+      // retrase la primera adquisición de esta escena.
+      id: ++this.requestId,
       referenceProfile: sim.scene.torso.profile,
       patient: sim.patient,
-      abdominalField: sim.scene.hasAbdominalAtlas ? abdominalAtlas : undefined,
-      thoracicField: thoracicAtlas,
+      abdominalField: first && sim.scene.hasAbdominalAtlas ? abdominalAtlas : undefined,
+      thoracicField: first ? thoracicAtlas : undefined,
     };
-    this.worker.postMessage(init);
-    this.worker.onmessage = (ev: MessageEvent<CutMapResponse | CutMapError>) => {
-      if (ev.data.type === 'error') {
-        this.fail(new Error(ev.data.message), performance.now());
+    worker.onmessage = (ev: MessageEvent<CutMapResponse | CutMapError | CutMapProgress>) => {
+      const message = ev.data;
+      if (this.worker !== worker) return;
+      if (message.type === 'error') {
+        // La inicialización puede fallar antes del siguiente cuadro adquirido.
+        if (message.id !== this.requestId && message.id !== init.id) return;
+        this.fail(new Error(message.message), performance.now());
         return;
       }
-      if (ev.data.id !== this.requestId) return;
-      this.map = ev.data;
-      if (this.pendingInputs?.id === ev.data.id) this.mapInputs = this.pendingInputs;
+      if (message.id !== this.requestId) return;
+      if (message.type === 'progress') {
+        this.watchdog.start(performance.now());
+        return;
+      }
+      this.map = message;
+      this.mapInputs = this.pendingInputs;
       this.mapDirty = true;
-      this.pending = false;
+      this.pendingInputs = null;
       this.watchdog.stop();
       this.failures = 0;
     };
-    this.worker.onerror = (ev) => {
+    worker.onerror = (ev) => {
       ev.preventDefault();
-      this.fail(new Error(ev.message || 'el Worker del corte se detuvo'), performance.now());
+      if (this.worker === worker) this.fail(new Error(ev.message || 'Worker del corte detenido'), performance.now());
     };
-    return this.worker;
+    worker.postMessage(init);
+    return worker;
+  }
+
+  /** Cancelar el cálculo anterior al confirmar la sesión, sin esperar a la GPU. */
+  onSimulatorChanged(sim: Simulator): void {
+    if (!this.worker || this.workerScene === sim.scene) return;
+    this.ensureWorker(sim, performance.now());
   }
 
   /** Muestra u oculta los rótulos; el lienzo lo refleja en `data-labels` (pruebas de extremo a extremo). */
@@ -500,50 +520,36 @@ export class CutMapView {
     this.canvas.dataset.labels = on ? '1' : '0';
   }
 
-  /** Pide un mapa nuevo a ≤ `hz` veces por segundo y dibuja el último recibido. */
+  /** Pide la adquisición más reciente a ≤ `hz` veces por segundo; reutiliza las instantáneas congeladas. */
   draw(sim: Simulator, nowMs: number, hz = 8): void {
     this.shownSim = sim;
     const shown = sim.renderer.displayedFrame;
     if (!shown) return;
-    // Vigilante: una petición sin respuesta en 3 s de hilo principal en marcha cuenta como caída del Worker
-    if (this.pending && this.watchdog.expired(nowMs))
-      this.fail(new Error('el Worker del corte no responde (3 s de hilo principal)'), nowMs);
+    // Discard the previous scene before checking its outstanding request.
     const worker = this.ensureWorker(sim, nowMs);
-    if (worker && shown && !this.pending && nowMs - this.lastUpdate >= 1000 / hz) {
+    // Three active seconds without completed rows still detect a stalled worker.
+    if (this.pendingInputs && this.watchdog.expired(nowMs)) this.fail(new Error('corte sin avance durante 3 s'), nowMs);
+    // The acquired frame object stays identical in freeze/cine; counters can restart after GPU recovery.
+    if (
+      worker &&
+      this.worker === worker &&
+      !this.pendingInputs &&
+      shown.anatomy.frame !== this.mapInputs?.frame &&
+      nowMs - this.lastUpdate >= 1000 / hz
+    ) {
       this.lastUpdate = nowMs;
-      this.pending = true;
       this.watchdog.start(nowMs);
-      const at = shown.anatomy;
-      const s = at.sample;
-      const req: CutMapRequest = {
+      // Keep one acquired snapshot for both the worker and presentation.
+      const req = {
         type: 'map',
         id: ++this.requestId,
-        frame: at.frame,
-        transducer: at.transducer,
-        compression: at.compression,
+        ...shown.anatomy,
         depthMm: shown.bmode.depthMm,
-        sample: {
-          resp: s.resp,
-          ivc: s.ivc,
-          ivcSupra: s.ivcSupra,
-          hvRadiusScale: s.hvRadiusScale,
-          pvRadiusScale: s.pvRadiusScale,
-          velocities: s.velocities,
-        },
         width: MAP_W,
         height: MAP_H,
-      };
+      } satisfies CutMapRequest;
+      this.pendingInputs = { ...req, frameNumber: shown.n };
       worker.postMessage(req);
-      this.pendingInputs = {
-        id: req.id,
-        frameNumber: shown.n,
-        sample: s,
-        frame: at.frame,
-        transducer: at.transducer,
-        compression: at.compression,
-        pose: at.pose,
-        depthMm: shown.bmode.depthMm,
-      };
     }
     // Cambiar width/height borra el bitmap del canvas. La copia adquirida
     // sigue siendo válida aunque el Worker todavía tenga una petición en vuelo.

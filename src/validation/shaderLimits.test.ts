@@ -244,7 +244,9 @@ describe('Límites del shader con margen para crecer', () => {
     expect(rawSteered.arrays).toEqual(raw.arrays);
     expect(rawSteered.slots).toBe(raw.slots + 2);
     expect(raw.slots).toBeGreaterThan(90);
-    expect(rawSteered.slots).toBeLessThanOrEqual(135); // +3 uniforms and bounded abdomen tables; still <179 WebGL2 guard
+    // Material and interface tables grow with their declared rows. Keep the non-table
+    // budget fixed; the independent absolute 179-slot WebGL2 guard above is unchanged.
+    expect(rawSteered.slots - 2 * TISSUE_VEC4 - INTERFACE_COUNT).toBeLessThanOrEqual(86);
   });
 
   // Composición espacial (decisión 58, T7): WebGL2 garantiza 16 unidades de textura por shader de

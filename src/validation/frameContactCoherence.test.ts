@@ -1,6 +1,8 @@
 import { readFileSync } from 'node:fs';
+import { gunzipSync } from 'node:zlib';
+import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
 import { describe, expect, it } from 'vitest';
-import { setReferenceBody } from '../anatomy/referenceBody';
+import { setAbdominalBody, setReferenceBody } from '../anatomy/referenceBody';
 import { Simulator } from '../app/simulator';
 import { NORMAL_ADULT } from '../cases';
 import { clonePatient } from '../physiology/patientState';
@@ -10,13 +12,19 @@ import type { FrameInputs, UltrasoundRenderer } from '../ultrasound/renderer';
 
 const bytes = readFileSync('src/anatomy/reference-body.bin');
 const profile = new Float32Array(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength));
+const atlasBytes = gunzipSync(readFileSync('src/anatomy/abdominal-atlas.gzip.bin'));
+const atlas = new Uint16Array(atlasBytes.buffer.slice(atlasBytes.byteOffset, atlasBytes.byteOffset + atlasBytes.byteLength));
+const bodyBytes = readFileSync('src/anatomy/abdominal-body.bin');
+const body = new Float32Array(bodyBytes.buffer.slice(bodyBytes.byteOffset, bodyBytes.byteOffset + bodyBytes.byteLength));
 
 function rig() {
   const frames: FrameInputs[] = [];
   const renderer = {
+    displayedFrame: null as Pick<FrameInputs, 'bmode' | 'color'> | null,
     setScene() {},
     render(inputs: FrameInputs) {
       frames.push(inputs);
+      this.displayedFrame = { bmode: inputs.bmode, color: inputs.color };
     },
   };
   const sim = new Simulator(clonePatient(NORMAL_ADULT), {} as HTMLCanvasElement, undefined, renderer as unknown as UltrasoundRenderer);
@@ -24,9 +32,31 @@ function rig() {
 }
 
 describe('pose, contacto y adquisición pertenecen al mismo cuadro', () => {
-  for (const reference of [false, true]) {
-    it(`un movimiento entre pasos físicos actualiza el haz sin avanzar el reloj (${reference})`, () => {
-      setReferenceBody(reference ? profile : undefined);
+  it('conserva los ajustes de la imagen adquirida mientras los nuevos controles esperan otra adquisición', () => {
+    const { sim, frames } = rig();
+    expect(sim.displayed).toBe(sim.equipment);
+    sim.render();
+    const acquired = sim.displayed;
+    sim.equipment = {
+      ...sim.equipment,
+      bmode: { ...sim.bmode, depthMm: sim.bmode.depthMm + 20, focusMm: sim.bmode.focusMm + 10 },
+      color: { ...sim.color, invert: !sim.color.invert },
+    };
+    expect(sim.displayed).toBe(acquired);
+    expect(sim.displayed.bmode.depthMm).not.toBe(sim.bmode.depthMm);
+    expect(sim.displayed.color.invert).not.toBe(sim.color.invert);
+    expect(frames).toHaveLength(1);
+    expect(sim.physiology.clock.t).toBe(0);
+    sim.render();
+    expect(sim.displayed.bmode).toBe(sim.bmode);
+    expect(sim.displayed.color).toBe(sim.color);
+  });
+
+  for (const domain of ['legacy', 'reference', 'atlas'] as const) {
+    it(`un movimiento entre pasos físicos actualiza el haz sin avanzar el reloj (${domain})`, () => {
+      setReferenceBody(domain === 'reference' ? profile : undefined);
+      setAbdominalBody(domain === 'atlas' ? body : undefined);
+      setAbdominalAtlas(domain === 'atlas' ? atlas : undefined);
       try {
         const { sim, frames } = rig();
         const sample = sim.sample;
@@ -55,6 +85,8 @@ describe('pose, contacto y adquisición pertenecen al mismo cuadro', () => {
         }
       } finally {
         setReferenceBody();
+        setAbdominalBody();
+        setAbdominalAtlas();
       }
     });
   }

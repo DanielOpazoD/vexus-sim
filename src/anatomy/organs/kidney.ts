@@ -168,6 +168,11 @@ export const PYRAMID_BD =
  * el hígado (Morison, a ≤ `MORISON_CONTACT_MM`: la cápsula hepática le cede la cara); si no (detrás, hacia el hilio, en
  * los polos) se confunde con la grasa retroperitoneal sin línea, como en un equipo.
  */
+/** Estimated collagen envelope, distinct from the renal capsule; not segmented in BP3D. */
+export const RENAL_FASCIA_MM = 0.3;
+/** Atlas texture interpolation needs a wider stencil than analytic surfaces. */
+export const RENAL_ATLAS_GRADIENT_EPS_MM = 0.25;
+
 export const PERIRENAL = { minMm: 1, maxMm: 9, faceMaxMm: 2.5 } as const;
 
 /**

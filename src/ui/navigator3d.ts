@@ -1,4 +1,5 @@
 import { bodySection } from '../anatomy/referenceBody';
+import { torsoSkinPoint } from '../anatomy/primitives';
 import * as THREE from 'three';
 import type { AnatomyScene, VesselCaliber } from '../anatomy/scene';
 import { bindRespiratoryMotion } from './navigator3d/respiratoryMotion';
@@ -72,8 +73,7 @@ export class Navigator3D {
   private dragging: 'slide' | 'rotate' | 'rock' | 'tilt' | 'orbit' | null = null;
   private lastX = 0;
   private lastY = 0;
-  private lastPhi = 0;
-  private lastZ = 0;
+  private slideScale = { phiPerPixel: 0, zPerPixel: 0 };
   private dirty = true;
   private lastResp = -1;
   private respiratoryMotion: ReturnType<typeof bindRespiratoryMotion> | null = null;
@@ -255,15 +255,27 @@ export class Navigator3D {
     this.lastX = e.clientX;
     this.lastY = e.clientY;
     if (e.button === 2) this.dragging = 'orbit';
-    else if (this.hitMarker(e)) this.dragging = 'rotate';
     else if (e.shiftKey) this.dragging = 'rock';
     else if (e.altKey) this.dragging = 'tilt';
+    else if (this.hitMarker(e)) this.dragging = 'rotate';
     else {
       const hit = this.hitSkin(e);
       if (hit) {
         this.dragging = 'slide';
-        this.lastPhi = hit.phi;
-        this.lastZ = hit.z;
+        const skin = torsoSkinPoint(hit.phi, hit.z, this.anatomy.torso);
+        const point = this.world.localToWorld(new THREE.Vector3(...skin).multiplyScalar(CM));
+        const height = this.renderer.domElement.getBoundingClientRect().height;
+        const mmPerPixel =
+          (2 * this.camera.position.distanceTo(point) * Math.tan((this.camera.fov * Math.PI) / 360)) / (Math.max(1, height) * CM);
+        const cy = this.anatomy.torso.profile ? bodySection(0, hit.z, this.anatomy.torso.profile)[3] : (this.anatomy.torso.y0 ?? 0);
+        // Relative cylindrical drag: the camera sets scale, not a second skin
+        // hit. Capture keeps the gesture moving past the silhouette and around
+        // the back, where ray picking otherwise pins the probe at the outline.
+        this.slideScale = {
+          // world mirrors anatomical x: a rightward gesture decreases phi.
+          phiPerPixel: -mmPerPixel / Math.max(40, Math.hypot(skin[0], skin[1] - cy)),
+          zPerPixel: mmPerPixel / Math.cos(this.orbit.elevation),
+        };
       } else this.dragging = 'orbit';
     }
   };
@@ -277,16 +289,15 @@ export class Navigator3D {
     const p = this.opts.getPose();
     switch (this.dragging) {
       case 'slide': {
-        const hit = this.hitSkin(e);
-        if (hit) {
-          // por diferencias: la sonda no salta al punto bajo el cursor
-          let dphi = hit.phi - this.lastPhi;
-          if (dphi > Math.PI) dphi -= 2 * Math.PI;
-          if (dphi < -Math.PI) dphi += 2 * Math.PI;
-          this.opts.setPose(translateProbe(p, p.phi + dphi, p.z + (hit.z - this.lastZ), this.anatomy.torso, this.transducer));
-          this.lastPhi = hit.phi;
-          this.lastZ = hit.z;
-        }
+        this.opts.setPose(
+          translateProbe(
+            p,
+            p.phi + dx * this.slideScale.phiPerPixel,
+            p.z - dy * this.slideScale.zPerPixel,
+            this.anatomy.torso,
+            this.transducer,
+          ),
+        );
         break;
       }
       case 'rotate':

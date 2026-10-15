@@ -80,7 +80,7 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   bajo el riñón que se desliza. En la hepatomegalia de la congestión grave el hígado ocupa el origen del psoas en
   T12–L1 (hasta 12 mm) y el borde superior del cuadrado (hasta 7 mm): se clasifica antes. La textura de sus fascículos no
   tiene prueba de paridad numérica entre la GPU y su gemelo TS (sí la clasificación).
-  En el atlas, el psoas usa su campo registrado. El cuadrado lumbar usa una sección oval estimada en el compartimento lumbar, anclada a la costilla 12 y cresta del adulto registrado (182); sus inserciones y espesor todavía no son una segmentación muscular.
+  En el atlas, el psoas usa su campo registrado. El cuadrado lumbar usa una sección oval estimada en el compartimento lumbar, anclada a la costilla 12 y cresta del adulto registrado (182); sus inserciones y espesor todavía no son una segmentación muscular. Sus extremos usan una transición interior (203), sin ampliar esos límites; el redondeo tampoco es una inserción tendinosa segmentada ni una dimensión poblacional.
   La decisión 181 cierra su dominio en la pared interna y elimina las protrusiones externas 3D; no valida todavía
   sus inserciones costales/ilíacas ni su tamaño individual.
 - **Sin cascada torácica de la VCI** (`no-thoracic-waterfall`): la unión cavoauricular transmite
@@ -328,12 +328,13 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   velocidad del tejido por el movimiento de la sonda (el Doppler no ve el arrastre). Los gemelos de imagen de la pared,
   la pleura y el contorno del hígado (`wallTwin`, `pleuraTwin`, `liverContour`) siguen sobre el tronco rígido con el
   marco de la pose sin hundir.
-- **La sonda no bascula ni se inclina más de 40°** (`probe-angle-40deg`): `clampPose` limita la basculación y la
-  inclinación a ±0,7 rad. El «conejo» subxifoideo (las tres suprahepáticas en abanico hasta la VCI), que en un paciente
-  sale con la sonda casi plana bajo el xifoides y el haz muy basculado hacia la cabeza, aquí no se forma entero:
-  abanicando la transversa epigástrica 26° hacia la cabeza (decisión 83) las suprahepáticas se acercan a la VCI cortadas
-  de través (la derecha y la media a 1 y 3 mm; la izquierda a 9 mm y con un tercio tras el pulmón), y la VSH media en eje
-  largo, con un ángulo Doppler útil, se busca desde debajo del reborde costal (la subcostal).
+- **Orientaciones amplias y contacto** (205): se retiró el límite artificial de ±0,7 rad (`probe-angle-40deg`). Las
+  tres rotaciones son periódicas y el apoyo recorre toda la circunferencia y la altura del tronco modelado. Una
+  traslación conserva la orientación en el paciente: al rodearlo puede dejar la cara hacia fuera y perder el
+  acoplamiento; el operador debe reorientarla. Los elementos que emiten hacia fuera no consiguen contacto por
+  encontrar piel detrás de la cara. La libertad de movimiento no acredita la imagen del «conejo» subxifoideo completo
+  ni otras ventanas extremas: siguen pendientes de evaluación visual y anatómica con el contacto efectivo. La piel
+  fuera de los cortes fuente conserva su extrapolación declarada; no se añade anatomía por ampliar el recorrido.
 - **La compresión solo mueve el tejido a lo largo de las líneas de la cara** (`probe-compression-in-plane`,
   decisión 63): es radial en el plano de la cara (el tejido no se desliza ni se cizalla de lado: el hígado, casi
   incompresible, se comprime a lo largo de la línea hasta un 20 % bajo la pared y a lo ancho se abre hasta 1,4× en

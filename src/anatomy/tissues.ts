@@ -63,10 +63,12 @@ export enum Tissue {
   BladderWall = 38,
   /** Residual atlas volume, not a segmented named compartment (182). */
   UnsegmentedSoftTissue = 39,
+  /** Non-gaseous colonic contents: estimated particulate suspension, not clear fluid. */
+  ColonicContents = 40,
 }
 
-/** Forty tissues, including explicit uncertainty for unsegmented atlas residuals. */
-export const TISSUE_COUNT = 40;
+/** Append-only acoustic material identifiers shared by CPU and GPU. */
+export const TISSUE_COUNT = 41;
 
 /**
  * Nombre de cada tejido en GLSL (`#define T_… índice`). Se genera desde aquí
@@ -114,6 +116,7 @@ export const TISSUE_GLSL_NAME: Record<Tissue, string> = {
   [Tissue.SoftCapsule]: 'T_SOFT_CAPSULE',
   [Tissue.BladderWall]: 'T_BLADDER_WALL',
   [Tissue.UnsegmentedSoftTissue]: 'T_UNSEGMENTED',
+  [Tissue.ColonicContents]: 'T_COLONIC_CONTENTS',
 };
 
 /** Lámina diafragmática bajo la cúpula (mm); la misma en TS, GLSL y el navegador 3D. */
@@ -250,6 +253,21 @@ export const TISSUES: TissueProps[] = [
     gas: false,
     bone: false,
     speckleClump: 0.5,
+  },
+  // EFSUMB normal colon: luminal stool and gas, not a uniformly anechoic liquid reservoir.
+  // NEEDS_CALIBRATION: effective particulate suspension, with the existing fluid c/rho proxy.
+  // Attenuation, scattering and clumping below are estimated, not measured fecal properties.
+  // Gas remains a separate material; no window-specific texture or assigned vascular flow.
+  {
+    name: 'contenido colónico (estimado)',
+    c: 1482,
+    rho: 994,
+    alpha1: 0.5,
+    b: 1,
+    backscatter: 1.5,
+    gas: false,
+    bone: false,
+    speckleClump: 1.0,
   },
 ];
 

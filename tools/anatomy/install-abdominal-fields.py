@@ -24,5 +24,6 @@ metadata={k:manifest[k]for k in ['textureDimensions','rawBytes','gzipBytes','sha
 (root/'src/anatomy/abdominal-atlas.gzip.bin').write_bytes(compressed)
 (root/'docs/anatomy/abdominal-atlas-manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
 text='/** Generated registered atlas descriptors; full provenance in docs/anatomy. */\n'
-for name,value in [('ABDOMINAL_ATLAS',metadata),('ABDOMINAL_FIELDS',fields),('ABDOMINAL_BODY',{'bytes':body['bytes'],'sha256':body['sha256']})]:text+='export const '+name+' = '+json.dumps(value)+' as const;\n'
+for name,value in [('ABDOMINAL_ATLAS',metadata),('ABDOMINAL_BODY',{'bytes':body['bytes'],'sha256':body['sha256']})]:text+='export const '+name+' = '+json.dumps(value)+' as const;\n'
+text+='export const ABDOMINAL_FIELDS = ('+json.dumps([[f[k] for k in ['name','originMm','dimensions','offset','pitchMm']] for f in fields])+' as const).map(([name, originMm, dimensions, offset, pitchMm]) => ({name, originMm, dimensions, offset, pitchMm}));\n'
 (root/'src/anatomy/abdominalAtlasData.ts').write_text(text)

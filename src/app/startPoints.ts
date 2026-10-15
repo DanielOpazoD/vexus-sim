@@ -46,7 +46,7 @@ export const START_POINTS: readonly StartPoint[] = [
     // cuerpo vertebral centrado en la base con su sombra; el cartílago del reborde costal derecho asoma en la esquina
     // del campo cercano. Deslizando hacia los pies salen de la cara anterior de la aorta el celíaco (1 cm) y la AMS
     // (2,4 cm); abanicando el haz 26° hacia la cabeza la derecha y la media llegan a la VCI y la izquierda se acerca,
-    // cortadas de través (el «conejo» entero pide más de los 40° que bascula la sonda: `probe-angle-40deg`).
+    // cortadas de través (observación de la decisión 83 con el antiguo límite de 40°, retirado en la 205).
     phi: Math.PI / 2,
     z: -20,
     yaw: -Math.PI / 2,
@@ -241,9 +241,8 @@ const ABDOMINAL_POSES = {
   intercostal: { phi: 2.5, z: -35, yaw: -1.2, rock: 0.08958884100807597, tilt: 0.15439831127567974 },
   subcostal: { phi: 2, z: -80, yaw: 0.6280025227578521, rock: 0.3259201915316282, tilt: -0.03886141881794285 },
   flank: { phi: 3.1, z: -75, yaw: 0.1767952406260464, rock: 0.4707775613505776, tilt: -0.04687503959831865 },
-  // Equivalent acoustic plane with the marked end cranial: yaw − π, rock/tilt sign reversed.
-  // The former pose pointed the marker caudally and mirrored the standard longitudinal orientation.
-  portal: { phi: 3.2499999999999996, z: -65, yaw: -0.3083879194167607, rock: -0.2122189996791038, tilt: 0.0937442490667998 },
+  // Pose de rótulos redondeados elegida por Daniel en esta misma versión.
+  portal: { phi: (173 * Math.PI) / 180, z: -40, yaw: (-72 * Math.PI) / 180, rock: (-6 * Math.PI) / 180, tilt: (-2 * Math.PI) / 180 },
   // A 2.86-degree venous sweep reaches an interlobar lumen with the existing 1.2 mm wall safeguard.
   // Kidney/vasculature, skin point and in-plane orientation remain registered and unchanged.
   renal: { phi: 3.15, z: -175, yaw: -0.04682166646295555, rock: 0.37638199977635656, tilt: -0.28301506696896933 },
@@ -259,7 +258,7 @@ const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
     sp.id === 'intercostal'
       ? 'Ventana hepática intercostal oblicua: marcador hacia la axila posterior y huella a lo largo del espacio. Rota o abanica para adquirir la suprahepática; las costillas conservan cortical y sombra.'
       : sp.id === 'portal'
-        ? 'Rama portal derecha dentro del hígado desde lateral, marcador craneal. Encuadre de 13 cm y foco a 10 cm; color ±35 cm/s, ganancia 12 dB. Afina entre costillas y ajusta la caja. Para medir VExUS, busca el tronco principal.'
+        ? 'Rama portal derecha dentro del hígado desde lateral. Encuadre de 13 cm y foco a 10 cm; color ±35 cm/s, ganancia 12 dB. Afina entre costillas y ajusta la caja. Para medir VExUS, busca el tronco principal.'
         : sp.id === 'portalTrunk'
           ? 'Tronco portal principal para PW, marcador craneal. Encuadre de 16 cm y foco a 13 cm; afina en el hilio y coloca la puerta en el tronco, sin sustituirlo por una rama intrahepática.'
           : sp.hint,

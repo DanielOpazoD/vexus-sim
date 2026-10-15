@@ -7,7 +7,7 @@ async function start(): Promise<void> {
   try {
     if (new URLSearchParams(location.search).get('abdomen') !== 'legacy') await loadAbdominalAtlas();
     if (new URLSearchParams(location.search).get('reference') === '1') await loadReferenceBody();
-    await import('./bootstrap');
+    await (await import('./bootstrap')).start();
   } catch (error) {
     const message = document.createElement('div');
     message.className = 'error';

@@ -66,11 +66,37 @@ test('manual probe sliders retain the requested pose during an automatic window 
       .nth(i % 2 ? 2 : 8)
       .click();
     await page.getByRole('slider', { name, exact: true }).press('ArrowRight');
-    const manual = await page.evaluate(() => ({ pose: window.__vexusTest!.sim().pose, frame: window.__vexusTest!.framesRendered() }));
-    await withinFrames(page, 45, 'varios cuadros tras el ajuste manual', async () =>
-      page.evaluate((f) => window.__vexusTest!.framesRendered() >= f + 20 || 'pendiente', manual.frame),
-    );
-    expect(await page.evaluate(() => window.__vexusTest!.sim().pose)).toEqual(manual.pose);
+    const manual = await page.evaluate(() => {
+      const s = window.__vexusTest!.sim();
+      return { pose: s.pose, frame: s.frame, n: s.renderer.displayedFrame!.n };
+    });
+    let previous = manual.n;
+    // Observe two NEW acquisitions, rather than paying for twenty idle GPU
+    // frames. Each ordinary frame runs the animator; a missing cancellation
+    // changes the probe immediately. The model separately checks 80 ticks.
+    for (let acquisition = 0; acquisition < 2; acquisition++) {
+      await withinFrames(page, 45, 'nueva adquisición tras el ajuste manual', async () =>
+        page.evaluate((n) => window.__vexusTest!.sim().renderer.displayedFrame!.n > n || 'pendiente', previous),
+      );
+      const actual = await page.evaluate(() => {
+        const s = window.__vexusTest!.sim(),
+          shown = s.renderer.displayedFrame!;
+        // Synchronize the real presented target, not a JS frame counter.
+        const image = s.renderer.readDisplay();
+        return {
+          pose: s.pose,
+          acquiredPose: shown.anatomy.pose,
+          frame: shown.anatomy.frame,
+          n: shown.n,
+          signal: image.gray.some((v) => v > 0),
+        };
+      });
+      expect(actual.pose).toEqual(manual.pose);
+      expect(actual.acquiredPose).toEqual(manual.pose);
+      expect(actual.frame).toEqual(manual.frame);
+      expect(actual.signal).toBe(true);
+      previous = actual.n;
+    }
   }
   expect(errors).toEqual([]);
 });

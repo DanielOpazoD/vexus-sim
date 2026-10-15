@@ -70,9 +70,11 @@ describe('Animación hacia un punto de partida', () => {
     a.tick(1 / 60);
     a.cancel();
     const frozen = { ...pose };
-    a.tick(1 / 60);
-    expect(a.active).toBe(false);
-    expect(pose).toEqual(frozen);
+    for (let frame = 0; frame < 80; frame++) {
+      a.tick(0.25);
+      expect(a.active).toBe(false);
+      expect(pose).toEqual(frozen);
+    }
   });
 
   it('cruza la costura posterior por el arco corto desde ambos lados, aun con giros amplios', () => {

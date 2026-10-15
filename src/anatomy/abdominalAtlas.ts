@@ -1,17 +1,11 @@
 import type { Vec3 } from '../core/vec3';
-import { ABDOMINAL_ATLAS, ABDOMINAL_FIELDS, HEPATIC_DOME } from './abdominalAtlasData';
+import { ABDOMINAL_ATLAS, ABDOMINAL_FIELDS, HEPATIC_DOME, REGISTERED_DOME, REGISTERED_DOME_GRADIENT } from './abdominalAtlasData';
+import { HALF } from './halfFloat';
+import { sourceDistance, sourceLabel } from './sourceVolume';
+export { HALF } from './halfFloat';
 
 /** Half-float source data shared by CPU, GPU and 3D. Never resize an individual organ. */
 export let abdominalAtlas: Uint16Array | undefined;
-export const HALF = Float32Array.from({ length: 65536 }, (_, bits) => {
-  const sign = bits & 0x8000 ? -1 : 1,
-    exponent = (bits >>> 10) & 31,
-    mantissa = bits & 1023;
-  return (
-    sign *
-    (exponent === 0 ? mantissa * 2 ** -24 : exponent === 31 ? (mantissa ? NaN : Infinity) : (1 + mantissa / 1024) * 2 ** (exponent - 15))
-  );
-});
 
 export function setAbdominalAtlas(values?: Uint16Array): void {
   if (values && values.byteLength !== ABDOMINAL_ATLAS.rawBytes) throw new Error('Tamaño del atlas abdominal inválido');
@@ -22,40 +16,63 @@ export function abdominalAtlasValue(p: Vec3, field: number): { d: number; label:
   const data = abdominalAtlas,
     f = ABDOMINAL_FIELDS[field];
   if (!data || !f) return { d: 16, label: 0 };
-  // Scalar coordinates avoid allocating temporary vectors and an index closure for every voxel query.
-  const queryX = (p[0] - f.originMm[0]) / f.pitchMm;
-  const queryY = (p[1] - f.originMm[1]) / f.pitchMm;
-  const queryZ = (p[2] - f.originMm[2]) / f.pitchMm;
-  if (
-    queryX < 0 ||
-    queryY < 0 ||
-    queryZ < 0 ||
-    queryX > f.dimensions[0] - 1 ||
-    queryY > f.dimensions[1] - 1 ||
-    queryZ > f.dimensions[2] - 1
-  )
-    return { d: 16, label: 0 };
-  const cornerX = Math.min(f.dimensions[0] - 2, Math.floor(queryX));
-  const cornerY = Math.min(f.dimensions[1] - 2, Math.floor(queryY));
-  const cornerZ = Math.min(f.dimensions[2] - 2, Math.floor(queryZ));
-  const fractionX = queryX - cornerX,
-    fractionY = queryY - cornerY,
-    fractionZ = queryZ - cornerZ;
-  const [w, h] = ABDOMINAL_ATLAS.textureDimensions;
-  const [offsetX, offsetY, offsetZ] = f.offset;
-  let d = 0;
-  for (let z = 0; z <= 1; z++)
-    for (let y = 0; y <= 1; y++)
-      for (let x = 0; x <= 1; x++) {
-        const index = 2 * ((cornerZ + z + offsetZ) * w * h + (cornerY + y + offsetY) * w + cornerX + x + offsetX);
-        d += HALF[data[index]] * (x ? fractionX : 1 - fractionX) * (y ? fractionY : 1 - fractionY) * (z ? fractionZ : 1 - fractionZ);
-      }
-  const labelIndex = 2 * ((Math.round(queryZ) + offsetZ) * w * h + (Math.round(queryY) + offsetY) * w + Math.round(queryX) + offsetX);
-  return { d, label: HALF[data[labelIndex + 1]] };
+  return {
+    d: sourceDistance(data, p, f, ABDOMINAL_ATLAS.textureDimensions),
+    label: sourceLabel(data, p, f, ABDOMINAL_ATLAS.textureDimensions),
+  };
 }
 
 export function abdominalAtlasSdf(p: Vec3, field: number): number {
-  return abdominalAtlasValue(p, field).d;
+  const f = ABDOMINAL_FIELDS[field];
+  return abdominalAtlas && f ? sourceDistance(abdominalAtlas, p, f, ABDOMINAL_ATLAS.textureDimensions) : 16;
+}
+
+/** Upper-source roof approximation, including the same hepatic contact. Not crura or hiatal openings. */
+export function registeredDomeHeight(x: number, y: number): number | undefined {
+  const data = abdominalAtlas,
+    f = REGISTERED_DOME,
+    qx = (x - f.originMm[0]) / f.pitchMm,
+    qy = (y - f.originMm[1]) / f.pitchMm;
+  if (!data || qx < 0 || qy < 0 || qx > f.dimensions[0] - 1 || qy > f.dimensions[1] - 1) return undefined;
+  const ix = Math.min(f.dimensions[0] - 2, Math.floor(qx)),
+    iy = Math.min(f.dimensions[1] - 2, Math.floor(qy)),
+    tx = qx - ix,
+    ty = qy - iy,
+    [w, h] = ABDOMINAL_ATLAS.textureDimensions,
+    // XY is transposed in the free plane; organ bricks and contact support are unchanged.
+    k = 2 * (f.offset[2] * w * h + (f.offset[1] + ix) * w + f.offset[0] + iy),
+    a = HALF[data[k]] + ty * (HALF[data[k + 2]] - HALF[data[k]]),
+    b = HALF[data[k + 2 * w]] + ty * (HALF[data[k + 2 * w + 2]] - HALF[data[k + 2 * w]]);
+  return a + tx * (b - a);
+}
+
+/** CPU twin of GLSL's height/validity query; scalar callers avoid the result allocation. */
+export function registeredDomeValue(x: number, y: number): [number, number] {
+  const height = registeredDomeHeight(x, y);
+  return height === undefined ? [0, 0] : [height, 1];
+}
+
+/** Same graph and continuous derived nodal slopes; guide only, not independent anatomy. */
+export function registeredDomeSample(x: number, y: number): [number, number, number, number] {
+  const data = abdominalAtlas,
+    f = REGISTERED_DOME,
+    qx = (x - f.originMm[0]) / f.pitchMm,
+    qy = (y - f.originMm[1]) / f.pitchMm;
+  if (!data || qx < 0 || qy < 0 || qx > f.dimensions[0] - 1 || qy > f.dimensions[1] - 1) return [0, 0, 0, 0];
+  const ix = Math.min(f.dimensions[0] - 2, Math.floor(qx)),
+    iy = Math.min(f.dimensions[1] - 2, Math.floor(qy)),
+    tx = qx - ix,
+    ty = qy - iy,
+    [w, h] = ABDOMINAL_ATLAS.textureDimensions,
+    k = 2 * (f.offset[2] * w * h + (f.offset[1] + ix) * w + f.offset[0] + iy),
+    g = k + 2 * w * h * (REGISTERED_DOME_GRADIENT.offset[2] - f.offset[2]),
+    ha = HALF[data[k]] + ty * (HALF[data[k + 2]] - HALF[data[k]]),
+    hb = HALF[data[k + 2 * w]] + ty * (HALF[data[k + 2 * w + 2]] - HALF[data[k + 2 * w]]),
+    xa = HALF[data[g]] + ty * (HALF[data[g + 2]] - HALF[data[g]]),
+    xb = HALF[data[g + 2 * w]] + ty * (HALF[data[g + 2 * w + 2]] - HALF[data[g + 2 * w]]),
+    ya = HALF[data[g + 1]] + ty * (HALF[data[g + 3]] - HALF[data[g + 1]]),
+    yb = HALF[data[g + 2 * w + 1]] + ty * (HALF[data[g + 2 * w + 3]] - HALF[data[g + 2 * w + 1]]);
+  return [ha + tx * (hb - ha), xa + tx * (xb - xa), ya + tx * (yb - ya), 1];
 }
 
 /** Estimated hepatic contact surface, sampled in material coordinates like the organs. */
@@ -91,6 +108,33 @@ export function abdominalAtlasGradient(p: Vec3, field: number): Vec3 {
 }
 
 export const ABDOMINAL_ATLAS_GLSL = /* glsl */ `
+vec4 registeredDomeSample(vec2 p){
+  if(uAbdominalAtlasEnabled==0)return vec4(0.0);
+  vec2 q=(p-vec2(${REGISTERED_DOME.originMm.join(',')}))/${REGISTERED_DOME.pitchMm.toFixed(1)};
+  if(any(lessThan(q,vec2(0.0)))||any(greaterThan(q,vec2(${REGISTERED_DOME.dimensions.map((v) => (v - 1).toFixed(1)).join(',')}))))return vec4(0.0);
+  // Hardware filtering quantizes fractional texel weights. The nested 0.5 mm
+  // slope and 0.02 mm face differences amplify that error on steep source roofs.
+  // Interpolate the SAME four half-float heights in full shader precision,
+  // matching the scalar CPU ordering; source resolution and geometry stay fixed.
+  ivec2 a=min(ivec2(floor(q)),ivec2(${REGISTERED_DOME.dimensions.map((v) => v - 2).join(',')}));
+  vec2 t=q-vec2(a);
+  ivec3 k=ivec3(a.yx,0)+ivec3(${REGISTERED_DOME.offset.join(',')});
+  float h00=texelFetch(uAbdominalAtlas,k,0).r;
+  float h01=texelFetch(uAbdominalAtlas,k+ivec3(1,0,0),0).r;
+  float h10=texelFetch(uAbdominalAtlas,k+ivec3(0,1,0),0).r;
+  float h11=texelFetch(uAbdominalAtlas,k+ivec3(1,1,0),0).r;
+  float row0=h00+t.y*(h01-h00),row1=h10+t.y*(h11-h10);
+  ivec3 g=k+ivec3(0,0,${REGISTERED_DOME_GRADIENT.offset[2] - REGISTERED_DOME.offset[2]});
+  vec2 ga=texelFetch(uAbdominalAtlas,g,0).rg;
+  vec2 gb=texelFetch(uAbdominalAtlas,g+ivec3(1,0,0),0).rg;
+  vec2 gc=texelFetch(uAbdominalAtlas,g+ivec3(0,1,0),0).rg;
+  vec2 gd=texelFetch(uAbdominalAtlas,g+ivec3(1,1,0),0).rg;
+  vec2 g0=ga+t.y*(gb-ga),g1=gc+t.y*(gd-gc);
+  return vec4(row0+t.x*(row1-row0),g0+t.x*(g1-g0),1.0);
+}
+vec2 registeredDomeValue(vec2 p){
+  return registeredDomeSample(p).xw;
+}
 vec2 hepaticDomeValue(vec2 p){
   if(uAbdominalAtlasEnabled==0)return vec2(0.0);
   vec2 q=(p-vec2(${HEPATIC_DOME.originMm.join(',')}))/${HEPATIC_DOME.pitchMm.toFixed(1)};

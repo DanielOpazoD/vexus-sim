@@ -434,7 +434,23 @@ export const IFACE_DIFFUSE_PER_A = FACET.diffuse / (2 * IFACE_BETA * 10 ** (IFAC
  * `quadratusSdf` y `uElev` de la anatomía y del haz, `lateralSigmaMm` de `LATERAL_PSF_GLSL`, `wallFaceGain` de
  * `WALL_TEXTURE_GLSL` y `valueNoise` de `SPECKLE_TISSUE_GLSL`). `se` es la σ elevacional de UNA vía (`elevSigma`).
  */
-export const INTERFACE_ECHO_GLSL = /* glsl */ `
+const CACHED_FACE_GRADIENT_GLSL = /* glsl */ `
+uniform highp sampler2D uRawGradient;
+vec4 cachedFaceGradient(Cls c) {
+  ivec2 q = ivec2(gl_FragCoord.xy);
+  vec4 v = texelFetch(uRawGradient, q, 0);
+  if (v.w >= 0.0) return v;
+  int width = textureSize(uRawGradient, 0).x / 3;
+  v.y = texelFetch(uRawGradient, q + ivec2(width, 0), 0).x;
+  v.z = texelFetch(uRawGradient, q + ivec2(2 * width, 0), 0).x;
+  float lg = length(v.xyz);
+  if (lg > 0.0) return vec4(v.xyz / lg, lg / (2.0 * FACE_GRAD_EPS));
+  float ln = length(c.n);
+  return ln > 0.0 ? vec4(c.n / ln, 1.0) : vec4(0.0, 1.0, 0.0, 1.0);
+}`;
+export function interfaceEchoGlsl(cachedGradient = false): string {
+  return /* glsl */ `
+${cachedGradient ? CACHED_FACE_GRADIENT_GLSL : ''}
 ${FACET_COSINE_GLSL}
 uniform vec4 uIface[${INTERFACE_COUNT}]; // (A, 2·k0·σz, 1/(4s²), dos lados) — interfaceEcho.ts
 uniform float uIfaceK0;                 // 2π/λ (1/mm)
@@ -508,7 +524,7 @@ vec2 interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w, bool with
   // del resto se acota (IFACE_GRAD_MAX); la compresión la multiplica a lo sumo por warpBound
   float gBound = (c.iface <= IF_LAST_TUBE ? length(c.n) : IFACE_GRAD_MAX) * warpBound(w);
   if (c.ifd > (uIface[c.iface].w > 0.5 ? IFACE_REACH : IFACE_SHIFT + IFACE_REACH) * gBound) return vec2(0.0);
-  vec4 fg = faceGradient(c, m);
+  vec4 fg = ${cachedGradient ? 'cachedFaceGradient(c)' : 'faceGradient(c, m)'};
   float capsuleGain = 1.0;
   if (c.iface == IF_LIVER_CAPSULE && fg.w > 1e-6) {
     float offset = c.ifd / fg.w;
@@ -557,3 +573,5 @@ float pleuraEcho(float delta, vec3 d0, vec3 dR) {
   return interfaceProfileEcho(IF_PLEURA, sqrt(max(0.0, 0.5 * (1.0 - dot(d0, dR)))), 1.0, delta);
 }
 `;
+}
+export const INTERFACE_ECHO_GLSL = interfaceEchoGlsl();

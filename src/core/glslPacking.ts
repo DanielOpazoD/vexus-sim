@@ -564,9 +564,44 @@ export const GLSL_PHRASES = [
   'vec2(0.0)',
   ') || defined',
   'else if(',
+  '=min(min(',
+  '(m);if(',
+  '6.2831853*',
+  '*2.0*0.511664*',
+  '*2.0*0.429043*',
+  'vec3(0,1,',
+  '=0.0;float',
+  ';out vec4 oColor;',
+  '#elif defined(',
+  '#include <uv_vertex>',
+  'varying vec3 vViewPosition;',
+  ',scale,mean,',
+  ';return vec4(',
+  '#include <morphtarget_vertex>',
+  '#include <logdepthbuf_vertex>',
+  '>\n#include <',
+  '\n#endif\n#ifdef ',
+  ';\n#endif\n#',
+  ';uniform float ',
+  '\n#endif\n#endif\n',
+  ');\n#endif\n',
+  '\nuniform sampler2D ',
+  ';\n#else\n',
+  ';\nconst float ',
+  '\n#endif\n#if ',
+  ';\n#include <',
+  '\nuniform float ',
+  '\nuniform mat3 ',
+  ';uniform sampler2D ',
+  '));}float ',
+  ';}\n#endif\n',
+  '\nvarying vec2 ',
+  ';varying vec2 ',
+  '0.0)return ',
+  ';c.bd=min(',
 ] as const;
 export const GLSL_MARKERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_$';
-const GLSL_BANKS = ['', '~', '!', ':', ';', '?', '%', '=', '+'];
+const GLSL_BANKS = ['', '~', '!', ':', ';', '?', '%', '=', '+', '^'];
 /** Stable short codes for the first bank; a prefix selects subsequent banks without changing existing codes. */
 export function glslMarker(index: number): string {
   if (!Number.isInteger(index) || index < 0 || index >= GLSL_BANKS.length * GLSL_MARKERS.length)
@@ -574,7 +609,7 @@ export function glslMarker(index: number): string {
   return '@' + GLSL_BANKS[Math.floor(index / GLSL_MARKERS.length)] + GLSL_MARKERS[index % GLSL_MARKERS.length];
 }
 export function unpackGlsl(s: string): string {
-  return s.replace(/@([~!:;?%=+]?)([A-Za-z0-9_$])/g, (original, bank: string, c: string) => {
+  return s.replace(/@([~!:;?%=+^]?)([A-Za-z0-9_$])/g, (original, bank: string, c: string) => {
     const index = GLSL_MARKERS.indexOf(c) + GLSL_BANKS.indexOf(bank) * GLSL_MARKERS.length;
     return (index < 512 ? GLSL_WORDS[index] : GLSL_PHRASES[index - 512]) ?? original;
   });

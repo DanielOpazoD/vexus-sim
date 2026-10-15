@@ -369,7 +369,7 @@ export function kidneyQuery(p: Vec3, k: Kidney): KidneyHit {
 
 const f4 = (v: number) => v.toFixed(4);
 const vec3s = (v: Vec3) => `vec3(${f4(v[0])}, ${f4(v[1])}, ${f4(v[2])})`;
-const PYRAMID_TABLE = `#define N_PYR ${PYRAMIDS.length}
+const PYRAMID_TABLE = /* glsl */ `#define N_PYR ${PYRAMIDS.length}
 const vec4 PYRA[N_PYR] = vec4[N_PYR](${PYRAMIDS.map((p) => `vec4(${vec3s(p.apex)}, ${f4(p.apexR)})`).join(', ')});
 const vec4 PYRB[N_PYR] = vec4[N_PYR](${PYRAMIDS.map((p) => `vec4(${vec3s(p.base)}, ${f4(p.baseR)})`).join(', ')});
 const vec3 FINGA[N_PYR] = vec3[N_PYR](${SINUS_FINGERS.map((f) => vec3s(f.a)).join(', ')});
@@ -378,8 +378,8 @@ const vec4 FINGER = vec4(${f4(SINUS_FINGER.radiusMm)}, ${f4(SINUS_FINGER.blendMm
 const vec3 ARC = vec3(${f4(ARCUATE.halfMm)}, ${f4(ARCUATE.rimMm)}, ${f4(PYRAMID_BD)});
 const vec3 PERI = vec3(${f4(PERIRENAL.minMm)}, ${f4(PERIRENAL.maxMm)}, ${f4(PERIRENAL.faceMaxMm)});
 const float PERI_SOFT = ${f4(PERIRENAL_SOFT)};`;
-const PELVIS = `const vec4 PELVIS = vec4(${RENAL_PELVIS.radii[0].toFixed(1)}, ${RENAL_PELVIS.radii[1].toFixed(1)}, ${RENAL_PELVIS.radii[2].toFixed(1)}, ${RENAL_PELVIS.offsetV.toFixed(1)}); const float RENAL_CAPSULE_MM = ${RENAL_CAPSULE_MM.toFixed(2)};`;
-const NOTCH = `const vec4 NOTCH = vec4(${HILUM_NOTCH.radii[0].toFixed(1)}, ${HILUM_NOTCH.radii[1].toFixed(1)}, ${HILUM_NOTCH.radii[2].toFixed(1)}, ${HILUM_NOTCH.offsetV.toFixed(1)}); const float NOTCH_ROUND = ${HILUM_NOTCH.roundMm.toFixed(1)};`;
+const PELVIS = /* glsl */ `const vec4 PELVIS = vec4(${RENAL_PELVIS.radii[0].toFixed(1)}, ${RENAL_PELVIS.radii[1].toFixed(1)}, ${RENAL_PELVIS.radii[2].toFixed(1)}, ${RENAL_PELVIS.offsetV.toFixed(1)}); const float RENAL_CAPSULE_MM = ${RENAL_CAPSULE_MM.toFixed(2)};`;
+const NOTCH = /* glsl */ `const vec4 NOTCH = vec4(${HILUM_NOTCH.radii[0].toFixed(1)}, ${HILUM_NOTCH.radii[1].toFixed(1)}, ${HILUM_NOTCH.radii[2].toFixed(1)}, ${HILUM_NOTCH.offsetV.toFixed(1)}); const float NOTCH_ROUND = ${HILUM_NOTCH.roundMm.toFixed(1)};`;
 
 /** Gemelo GLSL: `kidneyQuery` devuelve la región (0 corteza, 1 médula, 2 seno, 3 pelvis, 4 arcuatos). */
 export const KIDNEY_GLSL = /* glsl */ `

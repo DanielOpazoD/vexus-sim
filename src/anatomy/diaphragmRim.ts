@@ -1,4 +1,4 @@
-import { diaphragmHeight, torsoDepth, type Diaphragm, type Torso } from './primitives';
+import { diaphragmSurfaceZ, torsoDepth, type Diaphragm, type Torso } from './primitives';
 import type { Vec3 } from '../core/vec3';
 
 /** Borde del diafragma existente en la pared corporal interna, en mm materiales.
@@ -10,7 +10,7 @@ export function diaphragmRim(phi: number, d: Diaphragm, torso: Torso, wallMm: nu
   const point = (r: number): Vec3 => {
     const x = r * c,
       y = cy + r * s;
-    return [x, y, diaphragmHeight(x, y, d, torso)];
+    return [x, y, diaphragmSurfaceZ(x, y, d, torso)];
   };
   const depth = (r: number): number => torsoDepth(point(r), torso) + wallMm;
   let lo = 0,

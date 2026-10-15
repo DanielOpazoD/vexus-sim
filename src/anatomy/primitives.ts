@@ -1,5 +1,5 @@
 import { thoracicAtlas, thoracicValue, thoracicMaterial } from './thoracicAtlas';
-import { abdominalAtlas, abdominalAtlasSdf, hepaticDomeValue } from './abdominalAtlas';
+import { abdominalAtlas, abdominalAtlasSdf, hepaticDomeValue, registeredDomeHeight, registeredDomeSample } from './abdominalAtlas';
 import { referenceCartilage } from './referenceCartilage';
 import { bodyDepth, bodyGradient, bodySection } from './referenceBody';
 import { DIAPHRAGM_THICKNESS_MM } from './tissues';
@@ -246,6 +246,10 @@ export function diaphragmInteriorEdgeZ(x: number, y: number, d: Diaphragm, t: To
 
 /** Altura del mismo diafragma continuo: mezcla local de cúpulas, sin mover sus ápices ni sus parámetros. */
 export function diaphragmHeight(x: number, y: number, d: Diaphragm, torso: Torso): number {
+  if (d.hepaticContact) {
+    const registered = registeredDomeHeight(x, y);
+    if (registered !== undefined) return registered;
+  }
   const edge = diaphragmInteriorEdgeZ(x, y, d, torso);
   const zr = edge + Math.max(0, d.right.apex - edge) * domeLift(x, y, d.right);
   const zl = edge + Math.max(0, d.left.apex - edge) * domeLift(x, y, d.left);
@@ -264,12 +268,46 @@ export function diaphragmHeight(x: number, y: number, d: Diaphragm, torso: Torso
  * centrales de 0,5 mm; en el borde de una hemicúpula, cuya altura sube con tangente vertical, se dispara).
  */
 export function sdDiaphragmSlope(p: Vec3, d: Diaphragm, torso: Torso): [number, number] {
-  const zd = diaphragmHeight(p[0], p[1], d, torso);
-  const h = 0.5;
-  const gx = (diaphragmHeight(p[0] + h, p[1], d, torso) - diaphragmHeight(p[0] - h, p[1], d, torso)) / (2 * h);
-  const gy = (diaphragmHeight(p[0], p[1] + h, d, torso) - diaphragmHeight(p[0], p[1] - h, d, torso)) / (2 * h);
-  const slope = Math.sqrt(1 + gx * gx + gy * gy);
-  const tangentDistance = (zd - p[2]) / slope;
+  const registered = d.hepaticContact ? registeredDomeSample(p[0], p[1]) : undefined;
+  const zd = registered?.[3] ? registered[0] : diaphragmHeight(p[0], p[1], d, torso),
+    h = 0.5;
+  const gx = registered?.[3]
+      ? registered[1]
+      : (diaphragmHeight(p[0] + h, p[1], d, torso) - diaphragmHeight(p[0] - h, p[1], d, torso)) / (2 * h),
+    gy = registered?.[3]
+      ? registered[2]
+      : (diaphragmHeight(p[0], p[1] + h, d, torso) - diaphragmHeight(p[0], p[1] - h, d, torso)) / (2 * h),
+    slope = Math.sqrt(1 + gx * gx + gy * gy);
+  let tangentDistance = (zd - p[2]) / slope;
+  if (registered?.[3]) {
+    // Three continuous projections to real graph points. Cached nodal slopes
+    // guide the search, while the distance always uses the unchanged roof.
+    // Conservative upper bound; global nearest point is not guaranteed.
+    let x = p[0],
+      y = p[1],
+      height = zd,
+      dx = gx,
+      dy = gy,
+      best = Math.abs(zd - p[2]);
+    for (let i = 0; i < 3; i++) {
+      const delta = height - p[2] + dx * (p[0] - x) + dy * (p[1] - y),
+        scale = delta / (1 + dx * dx + dy * dy);
+      x = p[0] - dx * scale;
+      y = p[1] - dy * scale;
+      const sample = registeredDomeSample(x, y);
+      if (sample[3]) {
+        height = sample[0];
+        dx = sample[1];
+        dy = sample[2];
+      } else {
+        height = diaphragmHeight(x, y, d, torso);
+        dx = (diaphragmHeight(x + h, y, d, torso) - diaphragmHeight(x - h, y, d, torso)) / (2 * h);
+        dy = (diaphragmHeight(x, y + h, d, torso) - diaphragmHeight(x, y - h, d, torso)) / (2 * h);
+      }
+      best = Math.min(best, Math.hypot(x - p[0], y - p[1], height - p[2]));
+    }
+    tangentDistance = zd < p[2] ? -best : best;
+  }
   if (!d.hepaticContact) return [tangentDistance, slope];
   // Close to the superior contact, the diaphragm is the 2.5 mm shell of the
   // actual hepatic distance field. A tangent-plane offset alone separates or
@@ -296,14 +334,17 @@ export function sdDiaphragm(p: Vec3, d: Diaphragm, torso: Torso): number {
 /** Navigator samples the zero of the same acoustic shell, not a separate smoothed roof. */
 export function diaphragmSurfaceZ(x: number, y: number, d: Diaphragm, torso: Torso): number {
   const height = diaphragmHeight(x, y, d, torso);
-  if (!d.hepaticContact || hepaticDomeValue(x, y)[1] === 0) return height;
+  if (!d.hepaticContact || Math.abs(sdDiaphragm([x, y, height], d, torso)) <= 1e-8) return height;
   // At −12 mm the shell support vanishes by construction; above the sheet both
   // distances are negative. This bracket follows the contact support, not a fit.
   let lo = height - 12,
-    hi = height + 12;
+    // The liver obstacle also operates where normal-contact support is zero.
+    // Its upper level is bounded by the same hepatic parallel-surface table.
+    hi = Math.max(height, hepaticDomeValue(x, y)[0]) + 12;
   if (sdDiaphragm([x, y, lo], d, torso) < 0 || sdDiaphragm([x, y, hi], d, torso) > 0)
     throw new Error('Diaphragm surface exceeds its registered contact bracket');
-  for (let i = 0; i < 18; i++) {
+  // Numerical root precision keeps the body/rim solve stable; it adds no source resolution.
+  for (let i = 0; i < 24; i++) {
     const z = (lo + hi) / 2;
     if (sdDiaphragm([x, y, z], d, torso) > 0) lo = z;
     else hi = z;

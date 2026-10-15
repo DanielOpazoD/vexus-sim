@@ -1,0 +1,16 @@
+{
+  "baselineAtlasSha256": "fb1a372f2d2f53bd69d2aea95733cb71ea2574ff6222b8471c5f498c9a1fb67d",
+  "fieldSha256": {
+    "pancreas": "ae606b0896c2c5989e583dc5c4d5c49820d08b38444d8a433c989d302a44c816",
+    "digestiveTract": "99b05f5a629a2e1d60dc351c69b066b53bd17ed3e8013b29d1bab13e2667b6d7",
+    "bladder": "f09e2466446b1d9c140670f0a05cea494dc3490bb4103a465d1bd9f16951b7bb",
+    "spleen": "8f46cea3d46edc4d5d276f3751a8d2bb8e3ce64180b19eb136cd7f6ae52b2047",
+    "liver": "6e3f0ed038ab3ec6184e2e46b6845deab9b0fe94275a1c9086d9b8c46b528da6",
+    "kidneyRight": "68acb1024e02551914485a3e4498baeb3137769248beb9092d5d168123ad8e42",
+    "kidneyLeft": "8a36dbb0cdb5aba691008ad26f08d32ae6d5118c6e62aebacf837120310d86a6",
+    "gallbladder": "8c40fd362d6f7b9e8e1c4894366b1cfc3ad1de3223491f2af643cfb2d561846f",
+    "lumbarSacralBone": "9bfdfcf8fe30d4216362665e6310877e6980ba5bd264ed7e89d7158a850c9bd6",
+    "psoas": "91dbfa4ccb4cb7e3fe1bbfcd246721a2c544e9883f7a3da3743904c2e34a2ec1",
+    "lumbarDiscs": "0f7469c141a40e4d0012f9d6acaa47675a0827cb3b70480a59a4d7c2ecc91ee1"
+  }
+}

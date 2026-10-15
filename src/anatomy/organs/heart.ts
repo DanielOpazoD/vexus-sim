@@ -68,6 +68,9 @@ export const HEART_WALLS = { lv: 8, rv: 4, ra: 2, la: 2.5, ivs: 9, ias: 4, avs: 
  * corazón.
  */
 export const IVC_ORIFICE_MM = HEART_WALLS.pericardium + HEART_WALLS.ra + 1.5;
+/** Estimated inferior approach lip, derived from the existing atrium and orifice thickness. */
+export const RA_APPROACH_TOP_Z =
+  HEART_CAVITIES.ra.c[2] - Math.hypot(HEART_CAVITIES.ra.r[1] * RA_TILT[1], HEART_CAVITIES.ra.r[2] * RA_TILT[0]) + IVC_ORIFICE_MM;
 
 /**
  * Mediastino: grasa alrededor del saco (mm), unión suave con la columna (mm), grasa de los ángulos cardiofrénicos (en la
@@ -130,6 +133,21 @@ export function raSdf(m: Vec3): number {
   return sdEllipsoidLocal(raFrame(m), CAV.ra.r);
 }
 
+/** Inferior crossing of the existing tilted RA at this XY, without moving its geometry.
+ * Outside its projection, the lowest pole bounds the approach; no atrial opening is invented.
+ */
+export function raInferiorZ(x: number, y: number): number {
+  const [c, s] = RA_TILT,
+    [rx, ry, rz] = CAV.ra.r,
+    dx = x - CAV.ra.c[0],
+    dy = y - CAV.ra.c[1],
+    a = (s * s) / (ry * ry) + (c * c) / (rz * rz),
+    b = 2 * dy * c * s * (1 / (rz * rz) - 1 / (ry * ry)),
+    cc = (dx * dx) / (rx * rx) + dy * dy * ((c * c) / (ry * ry) + (s * s) / (rz * rz)) - 1,
+    discriminant = b * b - 4 * a * cc;
+  return CAV.ra.c[2] + (discriminant >= 0 ? (-b - Math.sqrt(discriminant)) / (2 * a) : -Math.hypot(ry * s, rz * c));
+}
+
 /**
  * La VCI junto a la aurícula (en `classify`, tras hallar el tubo de la VCI; `floor` = `heartFloor`): la cavidad de la AD,
  * con sus tabiques tallados y recortada por la cúpula, y si el punto está fuera de ella a más de `IVC_ORIFICE_MM` sobre la
@@ -139,7 +157,14 @@ export function raSdf(m: Vec3): number {
 export function ivcAtrium(m: Vec3, floor: number): { cavity: number; outside: boolean; cut: number } {
   const ra = heartChambers(m)[2];
   const cavity = Math.max(ra, floor + W.pericardium + W.ra);
-  return { cavity, outside: ra >= 0 && floor < -IVC_ORIFICE_MM, cut: Math.min(cavity, Math.max(-ra, floor + IVC_ORIFICE_MM)) };
+  const approach = Math.min(raInferiorZ(m[0], m[1]), RA_APPROACH_TOP_Z) - m[2];
+  // A diaphragm below the inherited atrium must not delete the intervening cava.
+  // Above the actual atrial entry, the original septal/outer exclusion remains.
+  return {
+    cavity,
+    outside: ra >= 0 && floor < -IVC_ORIFICE_MM && approach < 0,
+    cut: Math.min(cavity, Math.max(-ra, floor + IVC_ORIFICE_MM, approach)),
+  };
 }
 
 /**
@@ -256,10 +281,21 @@ vec4 heartChambers(vec3 m) {
 }
 // (cavidad de la AD tallada y recortada por el suelo hF, fuera de ella a más de IVC_ORIFICE_MM sobre él (1/0), cota de sus
 // fronteras)
+float raInferiorZ(vec2 p) {
+  vec2 d=p-HV[7].xy;
+  vec3 r=HV[8];
+  float c=HW[5].z,s=HW[5].w;
+  float a=s*s/(r.y*r.y)+c*c/(r.z*r.z);
+  float b=2.0*d.y*c*s*(1.0/(r.z*r.z)-1.0/(r.y*r.y));
+  float cc=d.x*d.x/(r.x*r.x)+d.y*d.y*(c*c/(r.y*r.y)+s*s/(r.z*r.z))-1.0;
+  float disc=b*b-4.0*a*cc;
+  return HV[7].z+(disc>=0.0?(-b-sqrt(disc))/(2.0*a):-length(vec2(r.y*s,r.z*c)));
+}
 vec3 ivcAtrium(vec3 m, float hF) {
   float ra = heartChambers(m).z;
   float cavity = max(ra, hF + HW[1].w + HW[0].z);
-  return vec3(cavity, ra >= 0.0 && hF < -HW[5].y ? 1.0 : 0.0, min(cavity, max(-ra, hF + HW[5].y)));
+  float approach=min(raInferiorZ(m.xy),${RA_APPROACH_TOP_Z.toFixed(8)})-m.z;
+  return vec3(cavity, ra >= 0.0 && hF < -HW[5].y && approach < 0.0 ? 1.0 : 0.0, min(cavity, max(max(-ra, hF + HW[5].y),approach)));
 }
 int thorax(vec3 m, float dDome, out float bd, out float ifd, inout vec3 n) {
   ifd = 1e3;

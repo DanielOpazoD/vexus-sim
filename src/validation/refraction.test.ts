@@ -70,9 +70,11 @@ function lensRow(tissue: Tissue, a: number, z0: number, r: number): { gainDb: nu
 }
 
 describe('refracción en las luces líquidas (decisión 86)', () => {
-  it('el camino de más sale de la c de TISSUES: sangre y bilis, frente al hígado que las rodea; nada más refracta', () => {
+  it('el camino de más sale de la c de TISSUES: sangre, bilis y contenido colónico, frente al hígado que los rodea; nada más refracta', () => {
     expect(lumenExcessPerMm(Tissue.Blood)).toBeCloseTo(TISSUES[Tissue.Liver].c / TISSUES[Tissue.Blood].c - 1, 15);
     expect(lumenExcessPerMm(Tissue.Fluid)).toBeCloseTo(TISSUES[Tissue.Liver].c / TISSUES[Tissue.Fluid].c - 1, 15);
+    expect(lumenExcessPerMm(Tissue.ColonicContents)).toBeCloseTo(TISSUES[Tissue.Liver].c / TISSUES[Tissue.ColonicContents].c - 1, 15);
+    expect(lumenExcessPerMm(Tissue.ColonicContents)).toBe(lumenExcessPerMm(Tissue.Fluid));
     // la sangre apenas (0,5 %: 1578 frente a 1586 m/s); la bilis de la tabla, 7 % (agua a 20 °C: ver LIMITATIONS)
     expect(lumenExcessPerMm(Tissue.Blood)).toBeGreaterThan(0.004);
     expect(lumenExcessPerMm(Tissue.Blood)).toBeLessThan(0.006);
@@ -91,7 +93,7 @@ describe('refracción en las luces líquidas (decisión 86)', () => {
     // A1 lleva las mismas constantes
     const glsl = lumenExcessGlsl('t');
     expect(glsl).toContain(`t == T_BLOOD ? ${lumenExcessPerMm(Tissue.Blood)}`);
-    expect(glsl).toContain(`t == T_FLUID ? ${lumenExcessPerMm(Tissue.Fluid)}`);
+    expect(glsl).toContain(`(t == T_FLUID || t == T_COLONIC_CONTENTS) ? ${lumenExcessPerMm(Tissue.Fluid)}`);
   });
 
   it('sin luces la ganancia es 1 exacto, también junto a los bordes del sector', () => {

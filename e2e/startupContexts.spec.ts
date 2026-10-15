@@ -195,14 +195,27 @@ test('initializes both real WebGL contexts before acquisition and retains the 3D
   );
   const stable = await page.evaluate(() => {
     const c = document.querySelector<HTMLCanvasElement>('#overlay')!;
-    const pixels = c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data;
+    const ctx = c.getContext('2d')!;
+    const pixels = ctx.getImageData(0, 0, c.width, c.height).data;
+    const before = window.startupContexts.frozenOverlay!;
+    let changedChannels = 0;
+    const examples: Array<{ i: number; before: number; after: number }> = [];
+    for (let i = 0; i < pixels.length; i++)
+      if (pixels[i] !== before[i]) {
+        changedChannels++;
+        if (examples.length < 8) examples.push({ i, before: before[i], after: pixels[i] });
+      }
     return {
-      paints: window.startupContexts.overlayPaints,
-      n: window.__vexusTest!.sim().renderer.displayedFrame!.n,
-      samePixels: pixels.every((v, i) => v === window.startupContexts.frozenOverlay![i]),
+      result: {
+        paints: window.startupContexts.overlayPaints,
+        n: window.__vexusTest!.sim().renderer.displayedFrame!.n,
+        samePixels: changedChannels === 0,
+      },
+      bitmap: { width: c.width, height: c.height, attributes: ctx.getContextAttributes(), changedChannels, examples },
     };
   });
-  expect(stable).toEqual({ paints: frozen.paints, n: frozen.n, samePixels: true });
+  await info.attach('overlay-persistence.json', { body: JSON.stringify(stable), contentType: 'application/json' });
+  expect(stable.result).toEqual({ paints: frozen.paints, n: frozen.n, samePixels: true });
   await info.attach('context-order.json', { body: JSON.stringify(initial), contentType: 'application/json' });
   expect(errors).toEqual([]);
   expect(await page.evaluate(() => window.__vexusTest!.loggedErrors())).toEqual([]);

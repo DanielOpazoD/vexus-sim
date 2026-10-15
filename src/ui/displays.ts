@@ -11,7 +11,8 @@ import { overlayOnSpectrum, spectrumRowOf, type CaptureOverlay } from './capture
  * son los de la imagen en pantalla (con el cine, los de su cuadro: decisión 80).
  */
 export function drawOverlay(canvas: HTMLCanvasElement, sim: Simulator): void {
-  const ctx = canvas.getContext('2d');
+  // Keep the cached annotation bitmap on the same readback path when inspected/exported.
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
   if (!ctx) return;
   const W = canvas.width;
   const H = canvas.height;

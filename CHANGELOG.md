@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Corte anatómico: sigue las nuevas poses adquiridas sin esperar la cadencia de reposo de 8 Hz; conserva una petición en vuelo, la rejilla y el modelo compartido durante el recorrido libre (206).
+
 - Sonda: elimina las paradas de traslación a 40° y al salir de la silueta 3D; permite las tres rotaciones completas, cruza la costura posterior y comparte los extremos del torso con el apoyo y su piel. Conserva los ejes al deslizar y descarta el acoplamiento de elementos orientados hacia fuera (205).
 
 - Arranque con varias vistas: prepara ambos contextos antes de adquirir y limita cada vista a un cuadro GPU en vuelo mediante consultas sin espera; conserva el 3D y su fallback informado (204).

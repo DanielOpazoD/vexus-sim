@@ -421,6 +421,7 @@ describe('Límites del shader con margen para crecer', () => {
       FRAG_RAWFIELD_ELEVATION_STEERED: 1,
       FRAG_COLOR: 1,
       FRAG_QUERY: 1,
+      FRAG_QUERY_CLASS: 1,
       FRAG_TISSUEMAP: 1,
     };
     for (const [name, src] of FRAGMENT_SHADERS) {

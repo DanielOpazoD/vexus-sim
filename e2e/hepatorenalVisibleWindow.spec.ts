@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { bootWithoutErrors, budget } from './support';
+import { bootWithoutErrors, budget, windowAcquired } from './support';
 
 for (const caseId of ['normal-adult', 'severe-congestion'])
   test(`hepatorenal preset shows liver and acoustically accessible kidney (${caseId})`, async ({ page }, info) => {
@@ -7,12 +7,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
     const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
     if (caseId !== 'normal-adult') await page.selectOption('#case-select', caseId);
     await page.locator('.win-card').nth(8).click();
-    const f = await page.evaluate(() => window.__vexusTest!.framesRendered());
-    await page.waitForFunction((f) => window.__vexusTest!.framesRendered() > f + 70, f);
-    await page.waitForFunction(() => {
-      const p = window.__vexusTest!.sim().pose;
-      return Math.abs(p.phi - 2.99) < 0.00001 && Math.abs(p.z + 113) < 0.00001;
-    });
+    await windowAcquired(page, 'hepatorenal');
     await page.locator('#freeze').click();
     const result = await page.evaluate(() => {
       const s = window.__vexusTest!.sim(),

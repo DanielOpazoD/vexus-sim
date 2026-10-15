@@ -67,6 +67,40 @@ it('does not reclassify the same frozen acquisition', () => {
   view.dispose();
 });
 
+it('cancels the previous scene immediately without waiting for another acquired frame', () => {
+  const { view, sim, workers, report } = fixture();
+  view.draw(sim, 1000);
+  const old = workers[0].postMessage.mock.calls.at(-1)![0];
+  const next = { ...sim, scene: { ...sim.scene }, patient: { ...sim.patient, id: 'severe-congestion' } } as Simulator;
+  view.onSimulatorChanged(next);
+  expect(workers).toHaveLength(1);
+  expect(workers[0].postMessage.mock.calls.at(-1)![0]).toMatchObject({ type: 'patient', patient: { id: 'severe-congestion' } });
+  expect(workers[0].postMessage.mock.calls.filter(([m]) => m.type === 'map')).toHaveLength(1);
+  workers[0].onmessage({ data: { type: 'error', id: old.id, message: 'obsolete scene' } });
+  workers[0].onmessage({ data: { type: 'map', id: old.id } });
+  expect(report).not.toHaveBeenCalled();
+  expect(view.lastMap).toBeNull();
+  view.draw(next, 1250);
+  expect(workers[0].postMessage.mock.calls.filter(([m]) => 'patient' in m)).toHaveLength(2);
+  expect(workers[0].postMessage.mock.calls.at(-1)![0].id).toBeGreaterThan(old.id);
+  view.dispose();
+});
+
+it('reports initialization failure between a scene change and its next acquired frame', () => {
+  const { view, sim, workers, report } = fixture();
+  view.draw(sim, 1000);
+  view.onSimulatorChanged({ ...sim, scene: { ...sim.scene } } as Simulator);
+  const obsolete = workers[0].postMessage.mock.calls.at(-1)![0];
+  view.onSimulatorChanged({ ...sim, scene: { ...sim.scene } } as Simulator);
+  const init = workers[0].postMessage.mock.calls.at(-1)![0];
+  workers[0].onmessage({ data: { type: 'error', id: obsolete.id, message: 'obsolete initialization' } });
+  expect(report).not.toHaveBeenCalled();
+  workers[0].onmessage({ data: { type: 'error', id: init.id, message: 'invalid next scene' } });
+  expect(report).toHaveBeenCalledOnce();
+  expect(workers[0].terminate).toHaveBeenCalledOnce();
+  view.dispose();
+});
+
 it('keeps the idle physiological cadence and accepts fresh snapshots even with repeated frame counters', () => {
   const { view, sim, workers } = fixture();
   view.draw(sim, 1000);

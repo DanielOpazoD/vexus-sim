@@ -471,8 +471,9 @@ export class CutMapView {
     this.lastUpdate = -Infinity;
     const init: CutMapInit = {
       type: first ? 'init' : 'patient',
-      // Initialization and its first map share an id, including init failures.
-      id: this.requestId + 1,
+      // Reservar su id ahora invalida respuestas anteriores aunque la GPU
+      // retrase la primera adquisición de esta escena.
+      id: ++this.requestId,
       referenceProfile: sim.scene.torso.profile,
       patient: sim.patient,
       abdominalField: first && sim.scene.hasAbdominalAtlas ? abdominalAtlas : undefined,
@@ -480,11 +481,14 @@ export class CutMapView {
     };
     worker.onmessage = (ev: MessageEvent<CutMapResponse | CutMapError | CutMapProgress>) => {
       const message = ev.data;
-      if (this.worker !== worker || message.id !== this.requestId) return;
+      if (this.worker !== worker) return;
       if (message.type === 'error') {
+        // La inicialización puede fallar antes del siguiente cuadro adquirido.
+        if (message.id !== this.requestId && message.id !== init.id) return;
         this.fail(new Error(message.message), performance.now());
         return;
       }
+      if (message.id !== this.requestId) return;
       if (message.type === 'progress') {
         this.watchdog.start(performance.now());
         return;
@@ -502,6 +506,12 @@ export class CutMapView {
     };
     worker.postMessage(init);
     return worker;
+  }
+
+  /** Cancelar el cálculo anterior al confirmar la sesión, sin esperar a la GPU. */
+  onSimulatorChanged(sim: Simulator): void {
+    if (!this.worker || this.workerScene === sim.scene) return;
+    this.ensureWorker(sim, performance.now());
   }
 
   /** Muestra u oculta los rótulos; el lienzo lo refleja en `data-labels` (pruebas de extremo a extremo). */

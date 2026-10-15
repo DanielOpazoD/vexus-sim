@@ -250,6 +250,7 @@ registerDevtools(
   () => loopFrames,
 );
 session.onSimulatorChanged((next) => {
+  cutMap?.onSimulatorChanged(next);
   nav?.setAnatomy(next.scene);
   spectrogram.reset();
   mview.reset();

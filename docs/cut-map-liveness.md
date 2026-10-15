@@ -6,6 +6,8 @@ El trabajador ahora conserva esos datos inmutables y reconstruye solo la escena 
 
 La vista abandona la petición anterior antes de consultar su vigilante. Conserva una sola petición en vuelo; al terminar toma la adquisición más reciente, sin acumular movimientos en una cola. El mapa y su procedencia usan la misma instantánea adquirida, también en congelación y cine.
 
+La confirmación de una nueva sesión notifica inmediatamente al Worker activo, antes de reconstruir el 3D. No espera al siguiente cuadro: la limitación de cuadros GPU puede retrasarlo y permitir que termine un cálculo del paciente anterior. Cada inicialización reserva ahora su propio id, de modo que las respuestas antiguas quedan invalidadas también entre adquisiciones. Un fallo de la inicialización vigente se informa aunque todavía no haya una petición de mapa; los fallos de escenas ya sustituidas se descartan.
+
 Los deslizadores y el botón de reinicio de sonda pasan por la misma entrada manual que los gestos: cancelan la transición automática hacia una ventana. Antes la animación podía sobrescribir el ajuste manual en el cuadro siguiente.
 
 El corte conserva su cadencia máxima de 8 Hz y una sola petición en vuelo; toma la adquisición más reciente al quedar disponible. Una adquisición congelada o de cine que ya tiene mapa no vuelve a clasificarse. Se compara la identidad de su instantánea, no solo el contador de cuadros, que puede reiniciarse al recuperar la GPU. Esto no detiene el repintado por cambios de tamaño, rótulos o selección.

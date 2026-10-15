@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import type { CutMapInit, CutMapRequest, CutMapResponse } from '../src/ui/cutMapWorker';
-import { bootWithoutErrors, budget, withinFrames } from './support';
+import { bootWithoutErrors, budget, windowAcquired, withinFrames } from './support';
 
 interface AcquiredCut {
   request: CutMapRequest;
@@ -64,6 +64,9 @@ test('renal and hepatorenal sweeps retain acquisition geometry with two views an
     for (const windowId of ['renal', 'hepatorenal'] as const) {
       for (const p of pages) await p.evaluate((id) => window.__vexusTest!.goToStartPoint(id), windowId);
       for (const p of pages) {
+        // A fast cut can match an intermediate animation frame. Require the
+        // requested physical destination before capturing the angle baseline.
+        await windowAcquired(p, windowId);
         await withinFrames(p, 90, 'plano inicial de la ventana antes de medir el barrido', async () =>
           p.evaluate(() => {
             const s = window.__vexusTest!.sim();

@@ -272,7 +272,8 @@ export class Navigator3D {
         // hit. Capture keeps the gesture moving past the silhouette and around
         // the back, where ray picking otherwise pins the probe at the outline.
         this.slideScale = {
-          phiPerPixel: mmPerPixel / Math.max(40, Math.hypot(skin[0], skin[1] - cy)),
+          // world mirrors anatomical x: a rightward gesture decreases phi.
+          phiPerPixel: -mmPerPixel / Math.max(40, Math.hypot(skin[0], skin[1] - cy)),
           zPerPixel: mmPerPixel / Math.cos(this.orbit.elevation),
         };
       } else this.dragging = 'orbit';

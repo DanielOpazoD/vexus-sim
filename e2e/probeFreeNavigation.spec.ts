@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import type { Camera, Matrix4, Vector3 } from 'three';
 import type { CutMapInit, CutMapRequest, CutMapResponse } from '../src/ui/cutMapWorker';
 import type { ProbePose } from '../src/probe/probe';
 import { bootWithoutErrors, budget, withinFrames } from './support';
@@ -8,6 +9,7 @@ interface NavigatorWitness {
   faceErrorMm: number;
   axisError: number;
   fanErrorMm: number;
+  screenX: number;
 }
 declare global {
   interface Window {
@@ -57,7 +59,8 @@ async function observeNavigator(page: Page) {
     Navigator3D.prototype.draw = function () {
       Reflect.apply(draw, this, []);
       const nav = this as unknown as {
-        probe: { matrix: { elements: number[] }; position: { toArray(): number[] } };
+        probe: { matrix: { elements: number[] }; matrixWorld: Matrix4; position: { toArray(): number[]; clone(): Vector3 } };
+        camera: Camera;
         fan: { geometry: { getAttribute(name: string): { getX(i: number): number; getY(i: number): number; getZ(i: number): number } } };
       };
       const shown = window.__vexusTest!.sim().renderer.displayedFrame!;
@@ -85,6 +88,7 @@ async function observeNavigator(page: Page) {
         faceErrorMm: Math.hypot(...face.map((v, i) => v - f.face[i])),
         axisError,
         fanErrorMm,
+        screenX: nav.probe.position.clone().setFromMatrixPosition(nav.probe.matrixWorld).project(nav.camera).x,
       };
     };
   });
@@ -188,9 +192,10 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
         const s = window.__vexusTest!.sim();
         s.setPose({ phi: start.phi, z: start.z, yaw: 0.2, rock: 0, tilt: 0, lift: 0 });
       }, start);
+      await acquired(page);
       const before = await page.evaluate(() => {
         const s = window.__vexusTest!.sim();
-        return { pose: s.pose, frame: s.frame };
+        return { pose: s.pose, frame: s.frame, screenX: window.freeNavigation.navigator!.screenX };
       });
       const nav = (await page.locator('#nav3d canvas').boundingBox())!;
       let grab: { x: number; y: number } | undefined;
@@ -213,11 +218,16 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
         travel = 0;
       for (let step = 1; step <= 8; step++) {
         await page.mouse.move(grab!.x + (dx * step) / 8, grab!.y - (20 * step) / 8);
+        if (index === 0 && step === 1) {
+          await acquired(page);
+          const screenX = await page.evaluate(() => window.freeNavigation.navigator!.screenX);
+          expect(screenX, 'the actual mirrored 3D probe follows the rightward pointer').toBeGreaterThan(before.screenX);
+        }
         const moved = await page.evaluate(() => {
           const s = window.__vexusTest!.sim();
           return { pose: s.pose, frame: s.frame };
         });
-        const arc = Math.atan2(Math.sin(moved.pose.phi - previous), Math.cos(moved.pose.phi - previous));
+        const arc = -Math.atan2(Math.sin(moved.pose.phi - previous), Math.cos(moved.pose.phi - previous));
         expect(arc, `${start.name}: step ${step} remains movable`).toBeGreaterThan(0.01);
         travel += arc;
         previous = moved.pose.phi;

@@ -58,7 +58,7 @@ con `SimulationSession.reloadCase`.
 
 ## Composición
 
-`src/main.ts` carga el asset solo con `?reference=1` y después importa `src/bootstrap.ts`, la raíz de composición del navegador. El estado y las matemáticas de `anatomy/referenceBody.ts` no importan el cargador ni la UI. La matriz permite `main → anatomy/bootstrap`; `bootstrap` recibe las mismas dependencias de composición que antes tenía `main`, y ninguna capa del motor puede importar `bootstrap`.
+`src/main.ts` carga los atlas (o el cuerpo de referencia con `?reference=1`) y después inicia `src/bootstrap.ts`. Su función `start` reserva la preparación GPU antes de construir la sesión y las vistas. El estado y las matemáticas de `anatomy/referenceBody.ts` no importan el cargador ni la UI. La matriz permite `main → anatomy/bootstrap`; `bootstrap` recibe las mismas dependencias de composición que antes tenía `main`, y ninguna capa del motor puede importar `bootstrap`.
 
 `src/bootstrap.ts` solo compone: `SimulationSession` (`app/session.ts`) es dueña del `Simulator` vivo y
 del `EquipmentController` (`app/equipment.ts`, estado del ecógrafo por comandos con invariantes);

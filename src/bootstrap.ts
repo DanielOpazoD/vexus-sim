@@ -203,11 +203,12 @@ const input = new ProbeInput(
   () => !store.get().frozen,
   (p, phi, z) => translateProbe(p, phi, z, sim().scene.torso, sim().transducer),
 );
-// Navegador 3D (three.js, ~560 kB) con carga diferida: la imagen ecográfica no lo necesita
-// para su primer cuadro; si falla, la aplicación sigue sin él.
+// Preparar ambos contextos antes de encolar adquisiciones: crear el contexto 3D
+// con ecografías ya en vuelo puede forzar una espera síncrona en SwiftShader. La carga
+// sigue en su chunk; si falla, se informa y el bucle ecográfico continúa.
 let nav: Navigator3D | null = null;
 markStartup('navigator:import');
-void import('./ui/navigator3d')
+const navigatorReady = import('./ui/navigator3d')
   .then(async ({ Navigator3D }) => {
     if (sim().scene.hasAbdominalAtlas) {
       markStartup('navigator:surface:begin');
@@ -529,6 +530,8 @@ function loop(now: number): void {
   }
   requestAnimationFrame(loop);
 }
-fitCanvases();
-markStartup('loop:scheduled');
-requestAnimationFrame(loop);
+void navigatorReady.then(() => {
+  fitCanvases();
+  markStartup('loop:scheduled');
+  requestAnimationFrame(loop);
+});

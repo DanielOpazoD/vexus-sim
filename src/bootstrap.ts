@@ -36,8 +36,7 @@ import { compoundActive } from './ultrasound/compound';
 import { markStartup, startupTraceEnabled } from './app/startupTrace';
 import { FirstGpuFrame } from './app/firstGpuFrame';
 import { GpuFramePacer } from './app/gpuFramePacer';
-
-markStartup('bootstrap:begin');
+import { gpuPageTurns as gpuTurns } from './app/gpuPageTurns';
 
 /**
  * Raíz de composición (Fase 1): crea la sesión de simulación, el estado de UI y las vistas, y
@@ -89,6 +88,7 @@ const store = new Store(
 );
 
 function fatal(message: string): never {
+  gpuTurns.dispose();
   document.body.innerHTML = '';
   const d = document.createElement('div');
   d.className = 'error';
@@ -439,9 +439,9 @@ let eqPrevCpu: CutMapView['lastMap'] = null;
 let presentationDirty = true;
 let presentedCpuState: unknown[] = [];
 // An unchanged 2D canvas must not keep submitting compositor work while the
-// software GPU is busy. Input still invalidates annotations in that same turn.
-for (const event of ['pointermove', 'pointerleave', 'input', 'click', 'keydown', 'wheel', 'scroll', 'resize'])
-  window.addEventListener(event, () => (presentationDirty = true), true);
+// software GPU is busy. Cut interaction invalidates its annotation in that turn.
+for (const event of ['pointermove', 'pointerleave', 'click', 'keydown'])
+  cutCanvas.addEventListener(event, () => (presentationDirty = true), true);
 
 /** Una referencia de presentación para historial y captura; también se publica al pulsar Capturar. */
 function drawTraces(s: Simulator, allowGpu = true): void {
@@ -472,6 +472,7 @@ function drawAcquiredViews(s: Simulator, now: number, allowGpu: boolean): void {
     cutMap?.lastMap?.map,
     panel.captureOverlay,
     panel.mMarks,
+    panel.mMarks.length,
     overlay.width,
     overlay.height,
     ecgCanvas.width,
@@ -562,16 +563,14 @@ function frame(now: number, dt: number): void {
     panel.sync(); // la pose y el acoplamiento cambian con el ratón; el equipo avisa por su cuenta
     windows.sync();
   }
-  if (!gpu.lost) gpuFramePacer.submit(s.renderer.gl);
-  loopFrames++;
-  if (loopFrames === 1) markStartup('frame:first');
-  if (loopFrames === 2) markStartup('frame:second');
 }
 
 function loop(now: number): void {
   try {
     firstGpuFrame.poll();
-    if (!gpuFramePacer.ready()) {
+    const gpuReady = gpuFramePacer.ready();
+    if (!gpuFramePacer.inFlight) gpuTurns.completed();
+    if (!gpuReady || !gpuTurns.ready) {
       // El Worker, los rótulos y las franjas 2D siguen presentando la instantánea
       // disponible. No encolar ecografía, 3D ni la conversión GPU del modo M.
       if (!panel.venousComparisonOpen) drawAcquiredViews(sim(), now, false);
@@ -581,12 +580,23 @@ function loop(now: number): void {
     // Acumular el tiempo entre cuadros adquiridos, con el mismo techo de 0,25 s.
     const dt = Math.min(0.25, (now - last) / 1000);
     last = now;
-    frame(now, dt);
+    try {
+      frame(now, dt);
+    } finally {
+      // Drain even a partially submitted frame before another page prepares
+      // contexts. No lease is released merely because JS returned or threw.
+      if (!gpu.lost) gpuFramePacer.submit(sim().renderer.gl);
+      gpuTurns.submitted();
+    }
+    loopFrames++;
+    if (loopFrames === 1) markStartup('frame:first');
+    if (loopFrames === 2) markStartup('frame:second');
     if (loopDegraded) {
       loopDegraded = false; // se recuperó: el aviso de error persistente ya no aplica
       if (!gpu.lost) banner.hide();
     }
   } catch (e) {
+    if (!gpuFramePacer.inFlight) gpuTurns.dispose();
     errorLog.report(e instanceof NonFiniteStateError ? 'fisiología' : 'bucle', e);
     if (errorBudget.fail(now)) {
       // Error persistente: avisar y reintentar a 1 Hz en vez de detener la aplicación para siempre

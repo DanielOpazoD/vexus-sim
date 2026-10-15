@@ -599,6 +599,10 @@ export const GLSL_PHRASES = [
   ';varying vec2 ',
   '0.0)return ',
   ';c.bd=min(',
+  'max(0.0,',
+  '=C(dot(',
+  '.x);float ',
+  ';in vec2 vUv',
 ] as const;
 export const GLSL_MARKERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_$';
 const GLSL_BANKS = ['', '~', '!', ':', ';', '?', '%', '=', '+', '^'];

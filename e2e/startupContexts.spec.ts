@@ -12,6 +12,9 @@ declare global {
       lateFramebufferChecks: number;
       overlayPaints: number;
       frozenOverlay?: Uint8ClampedArray;
+      ultrasoundDraws: number;
+      reservationReady: boolean;
+      releaseReservation?: () => void;
     };
   }
 }
@@ -27,6 +30,8 @@ test('initializes both real WebGL contexts before acquisition and retains the 3D
       overlappingFrames: 0,
       lateFramebufferChecks: 0,
       overlayPaints: 0,
+      ultrasoundDraws: 0,
+      reservationReady: false,
     });
     const clearRect = CanvasRenderingContext2D.prototype.clearRect;
     CanvasRenderingContext2D.prototype.clearRect = function (...args) {
@@ -68,6 +73,7 @@ test('initializes both real WebGL contexts before acquisition and retains the 3D
       Reflect.set(WebGL2RenderingContext.prototype, name, function (this: WebGL2RenderingContext, ...args: number[]) {
         if (this.canvas instanceof HTMLCanvasElement) {
           if (this.canvas.id === 'gl') {
+            observed.ultrasoundDraws++;
             observed.firstUltrasoundDraw ??= performance.now();
             const frame = window.__vexusTest?.framesRendered() ?? -1;
             if (frame !== lastFrame && pending.size) observed.overlappingFrames++;
@@ -105,6 +111,66 @@ test('initializes both real WebGL contexts before acquisition and retains the 3D
   await withinFrames(page, 45, 'el 3D sigue dibujando al cambiar de paciente', async () =>
     page.evaluate((n) => window.startupContexts.navigatorDraws > n || 'render 3D pendiente', initial.navigatorDraws),
   );
+  // A real origin-scoped exclusive reservation represents another page's GPU
+  // preparation. Do not fabricate a fence signal or a rendered frame.
+  await page.evaluate(() => {
+    void navigator.locks.request(
+      'vexus-gpu-preparation',
+      { mode: 'exclusive' },
+      () =>
+        new Promise<void>((release) => {
+          window.startupContexts.reservationReady = true;
+          window.startupContexts.releaseReservation = () => {
+            window.startupContexts.reservationReady = false;
+            release();
+          };
+        }),
+    );
+  });
+  await withinFrames(page, 90, 'la preparación obtiene la GPU tras drenar las adquisiciones reales', async () =>
+    page.evaluate(() => window.startupContexts.reservationReady || 'reserva pendiente'),
+  );
+  const held = await page.evaluate(() => ({
+    n: window.__vexusTest!.sim().renderer.displayedFrame!.n,
+    loops: window.__vexusTest!.framesRendered(),
+    time: window.__vexusTest!.sim().physiology.clock.t,
+    ultrasoundDraws: window.startupContexts.ultrasoundDraws,
+    navigatorDraws: window.startupContexts.navigatorDraws,
+  }));
+  await page.getByRole('slider', { name: 'Rotación', exact: true }).press('ArrowRight');
+  const requested = await page.evaluate(() => window.__vexusTest!.sim().pose);
+  const during = await page.evaluate(async () => {
+    for (let i = 0; i < 30; i++) await new Promise(requestAnimationFrame);
+    return {
+      n: window.__vexusTest!.sim().renderer.displayedFrame!.n,
+      loops: window.__vexusTest!.framesRendered(),
+      time: window.__vexusTest!.sim().physiology.clock.t,
+      ultrasoundDraws: window.startupContexts.ultrasoundDraws,
+      navigatorDraws: window.startupContexts.navigatorDraws,
+    };
+  });
+  expect(during).toEqual(held);
+  await page.evaluate(() => window.startupContexts.releaseReservation!());
+  await withinFrames(page, 45, 'la adquisición responde al gesto manual al liberarse la preparación', async () =>
+    page.evaluate(
+      ({ n, pose }) => {
+        const shown = window.__vexusTest!.sim().renderer.displayedFrame!;
+        return (shown.n > n && JSON.stringify(shown.anatomy.pose) === JSON.stringify(pose)) || 'adquisición pendiente';
+      },
+      { n: held.n, pose: requested },
+    ),
+  );
+  expect(
+    await page.evaluate(
+      () =>
+        window
+          .__vexusTest!.sim()
+          .renderer.readDisplay()
+          .gray.filter((v) => v > 0).length,
+    ),
+  ).toBeGreaterThan(1000);
+  expect(await page.evaluate(() => window.startupContexts.navigatorDraws)).toBeGreaterThan(held.navigatorDraws);
+  await info.attach('gpu-reservation.json', { body: JSON.stringify({ held, during, requested }), contentType: 'application/json' });
   await page.locator('#freeze').click();
   await page.locator('#nav3d canvas').screenshot({ path: info.outputPath('navigator-after-case-change.png') });
   await withinFrames(page, 90, 'el corte congelado ya corresponde al cuadro mostrado', async () =>

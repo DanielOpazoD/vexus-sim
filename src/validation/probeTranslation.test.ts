@@ -33,15 +33,15 @@ it('translates rays rigidly over sampled skin without aiming or changing their d
   }
 });
 
-it('stops a large slide at the existing angle limit rather than rotating silently', () => {
+it('reaches the full large slide beyond the former angle stop without rotating the rays', () => {
   const torso = new AnatomyScene(NORMAL_ADULT).torso;
   const p = { phi: Math.PI, z: -100, lift: 0, yaw: 0, rock: 0, tilt: 0 };
   const old = probeFrame(p, torso, CONVEX_C35);
   const moved = translateProbe(p, p.phi + 1.4, p.z, torso, CONVEX_C35);
   expect(moved.phi).toBeGreaterThan(p.phi);
-  expect(moved.phi).toBeLessThan(p.phi + 1.4);
+  expect(moved.phi).toBe(p.phi + 1.4);
   expect(moved.z).toBe(p.z);
-  expect(Math.max(Math.abs(moved.rock), Math.abs(moved.tilt))).toBeCloseTo(0.7, 5);
+  expect(Math.max(Math.abs(moved.rock), Math.abs(moved.tilt))).toBeGreaterThan(0.7);
   const now = probeFrame(clampPose(moved), torso, CONVEX_C35);
   for (const axis of ['axial', 'lateral', 'elevation'] as const)
     for (let i = 0; i < 3; i++) expect(now[axis][i]).toBeCloseTo(old[axis][i], 10);

@@ -46,7 +46,7 @@ export const START_POINTS: readonly StartPoint[] = [
     // cuerpo vertebral centrado en la base con su sombra; el cartílago del reborde costal derecho asoma en la esquina
     // del campo cercano. Deslizando hacia los pies salen de la cara anterior de la aorta el celíaco (1 cm) y la AMS
     // (2,4 cm); abanicando el haz 26° hacia la cabeza la derecha y la media llegan a la VCI y la izquierda se acerca,
-    // cortadas de través (el «conejo» entero pide más de los 40° que bascula la sonda: `probe-angle-40deg`).
+    // cortadas de través (observación de la decisión 83 con el antiguo límite de 40°, retirado en la 205).
     phi: Math.PI / 2,
     z: -20,
     yaw: -Math.PI / 2,

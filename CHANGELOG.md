@@ -7,6 +7,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Sonda: elimina las paradas de traslación a 40° y al salir de la silueta 3D; permite las tres rotaciones completas, cruza la costura posterior y comparte los extremos del torso con el apoyo y su piel. Conserva los ejes al deslizar y descarta el acoplamiento de elementos orientados hacia fuera (205).
+
 - Arranque con varias vistas: prepara ambos contextos antes de adquirir y limita cada vista a un cuadro GPU en vuelo mediante consultas sin espera; conserva el 3D y su fallback informado (204).
 
 - Lecho renal Atlas: redondea en el campo compartido los extremos artificialmente angulosos del cuadrado lumbar y extrae superficies 3D cerradas con el mismo número de muestras; conserva riñones, grasa perirrenal y psoas (203).

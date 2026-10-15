@@ -210,7 +210,7 @@ export class Simulator {
   }
 
   setPose(p: ProbePose): void {
-    this.pose = clampPose(p);
+    this.pose = clampPose(p, this.scene.torso);
     this.syncProbeContact();
   }
 

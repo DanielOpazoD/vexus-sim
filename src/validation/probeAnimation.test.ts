@@ -12,18 +12,20 @@ const byId = (id: StartPoint['id']) => START_POINTS.find((s) => s.id === id)!;
 function slide(from: ProbePose, to: StartPoint, dt = 1 / 60, maxS = 10) {
   let pose = clampPose(from);
   let yawTravel = 0;
+  let phiTravel = 0;
   const a = new ProbeAnimator(
     () => pose,
     (p) => {
       const next = clampPose(p);
       yawTravel += Math.abs(Math.atan2(Math.sin(next.yaw - pose.yaw), Math.cos(next.yaw - pose.yaw)));
+      phiTravel += Math.abs(Math.atan2(Math.sin(next.phi - pose.phi), Math.cos(next.phi - pose.phi)));
       pose = next;
     },
   );
   a.goTo(to);
   let s = 0;
   for (; a.active && s < maxS; s += dt) a.tick(dt);
-  return { pose, seconds: s, yawTravel, active: a.active };
+  return { pose, seconds: s, yawTravel, phiTravel, active: a.active };
 }
 
 describe('Animación hacia un punto de partida', () => {
@@ -71,5 +73,17 @@ describe('Animación hacia un punto de partida', () => {
     a.tick(1 / 60);
     expect(a.active).toBe(false);
     expect(pose).toEqual(frozen);
+  });
+
+  it('cruza la costura posterior por el arco corto desde ambos lados, aun con giros amplios', () => {
+    const renal = byId('renal');
+    for (const phi of [-Math.PI / 2 + 0.02, Math.PI * 1.5 - 0.02]) {
+      const from = { phi, z: -100, yaw: 2.9, rock: 2.8, tilt: -2.9, lift: 0 };
+      const result = slide(from, renal);
+      const expectedArc = Math.abs(Math.atan2(Math.sin(renal.phi - phi), Math.cos(renal.phi - phi)));
+      expect(result.phiTravel).toBeCloseTo(expectedArc, 10);
+      expect(result.active).toBe(false);
+      expect(result.pose).toEqual(clampPose({ ...renal, lift: 0, rock: renal.rock ?? 0, tilt: renal.tilt ?? 0 }));
+    }
   });
 });

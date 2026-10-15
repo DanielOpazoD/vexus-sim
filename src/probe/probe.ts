@@ -170,18 +170,23 @@ export function probeVelocity(prev: ProbeFrame, next: ProbeFrame, dtSeconds: num
   return scale(sub(next.face, prev.face), 1 / dtSeconds);
 }
 
-export function clampPose(p: ProbePose): ProbePose {
+export function clampPose(p: ProbePose, torso?: Torso): ProbePose {
+  if (![p.phi, p.z, p.lift, p.yaw, p.rock, p.tilt].every(Number.isFinite)) throw new RangeError('La pose de la sonda debe ser finita');
+  // Every rotation is periodic. An angular stop here also stops a rigid slide
+  // when the new skin normal needs a larger local angle, even far from z bounds.
+  const angle = (v: number) =>
+    v >= -Math.PI && v < Math.PI ? v : ((((v + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI;
   return {
     // Full circumference permits left splenorenal and posterior renal acquisition.
     phi:
       p.phi >= -Math.PI / 2 && p.phi < Math.PI * 1.5
         ? p.phi
         : ((((p.phi + Math.PI / 2) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI / 2,
-    z: clamp(p.z, -420, 200),
+    z: clamp(p.z, torso?.zMin ?? -420, torso?.zMax ?? 200),
     lift: clamp(p.lift, -6, 25),
     yaw: ((((p.yaw + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI,
-    rock: clamp(p.rock, -0.7, 0.7),
-    tilt: clamp(p.tilt, -0.7, 0.7),
+    rock: angle(p.rock),
+    tilt: angle(p.tilt),
   };
 }
 

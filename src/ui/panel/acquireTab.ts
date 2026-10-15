@@ -21,7 +21,7 @@ export function buildAcquireTab(ctx: PanelContext, p: HTMLElement): HTMLElement 
   buildImageBasics(ctx, ctx.section(p, 'Imagen', { info: 'También con el teclado: [ ] profundidad · − + ganancia.' }));
 
   const probe = ctx.section(p, 'Sonda', {
-    info: 'Arrastra sobre la imagen o el 3D para mover la sonda; los deslizadores la afinan. Teclado: W A S D deslizar · Q E rotar · ← → bascular · ↑ ↓ inclinar · R F presión · ⇧ fino.',
+    info: 'Arrastra sobre la imagen o desde la piel 3D para deslizar alrededor del tronco, incluso fuera de su silueta. Los tres ángulos permiten vueltas completas; si la cara apunta hacia fuera pierde contacto. Teclado: W A S D deslizar · Q E rotar · ← → bascular · ↑ ↓ inclinar · R F presión · ⇧ fino.',
   });
   const deg = (v: number) => `${v.toFixed(0)}°`;
   ctx.track(
@@ -44,8 +44,8 @@ export function buildAcquireTab(ctx: PanelContext, p: HTMLElement): HTMLElement 
       probe,
       {
         label: 'Inclinación',
-        min: -40,
-        max: 40,
+        min: -180,
+        max: 180,
         step: 1,
         get: () => (s().pose.tilt * 180) / Math.PI,
         set: (v) => ctx.setPose({ ...s().pose, tilt: (v * Math.PI) / 180 }),
@@ -59,8 +59,8 @@ export function buildAcquireTab(ctx: PanelContext, p: HTMLElement): HTMLElement 
       probe,
       {
         label: 'Basculación',
-        min: -40,
-        max: 40,
+        min: -180,
+        max: 180,
         step: 1,
         get: () => (s().pose.rock * 180) / Math.PI,
         set: (v) => ctx.setPose({ ...s().pose, rock: (v * Math.PI) / 180 }),

@@ -32,20 +32,29 @@ describe('Adquisiciones sin cola de cuadros GPU', () => {
     expect(() => pacer.submit(context)).toThrow('en vuelo');
     expect(gl.fenceSync).toHaveBeenCalledOnce();
     gl.clientWaitSync.mockReturnValue(signal);
-    expect(pacer.ready()).toBe(true);
+    expect(pacer.ready()).toBe(false);
     expect(pacer.ready()).toBe(true);
     expect(gl.deleteSync).toHaveBeenCalledExactlyOnceWith(sync);
     pacer.submit(context);
     expect(gl.fenceSync).toHaveBeenCalledTimes(2);
   });
 
+  it('no añade una RAF si la GPU termina antes de la primera consulta', () => {
+    const { pacer, gl, context, sync } = fixture();
+    pacer.submit(context);
+    gl.clientWaitSync.mockReturnValue(gl.ALREADY_SIGNALED);
+    expect(pacer.ready()).toBe(true);
+    expect(gl.deleteSync).toHaveBeenCalledExactlyOnceWith(sync);
+  });
+
   it('libera la valla de un contexto perdido y permite adquirir tras recuperarlo', () => {
     const { pacer, gl, context, sync } = fixture();
     pacer.submit(context);
+    expect(pacer.ready()).toBe(false);
     gl.isContextLost.mockReturnValue(true);
     expect(pacer.ready()).toBe(true);
     pacer.submit(context);
-    expect(gl.clientWaitSync).not.toHaveBeenCalled();
+    expect(gl.clientWaitSync).toHaveBeenCalledOnce();
     expect(gl.deleteSync).toHaveBeenCalledExactlyOnceWith(sync);
     expect(gl.fenceSync).toHaveBeenCalledOnce();
     gl.isContextLost.mockReturnValue(false);

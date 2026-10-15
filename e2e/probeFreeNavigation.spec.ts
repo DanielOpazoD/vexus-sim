@@ -97,11 +97,12 @@ async function acquired(page: Page) {
         a = s.renderer.displayedFrame;
       if (!a) return 'sin adquisición';
       const samePose = (Object.keys(s.pose) as Array<keyof ProbePose>).every((key) => s.pose[key] === a.anatomy.pose[key]);
+      const cutFrame = Number(document.querySelector<HTMLElement>('#cutmap')!.dataset.acquiredFrame);
+      // A live asynchronous map may trail by a frame. Freeze the acquired pose
+      // first, then require that exact acquisition in every presentation.
       return (
-        (samePose &&
-          window.freeNavigation.navigator?.n === a.n &&
-          Number(document.querySelector<HTMLElement>('#cutmap')!.dataset.acquiredFrame) === a.n) ||
-        'pendiente'
+        (samePose && window.freeNavigation.navigator?.n === a.n && (!s.frozen || cutFrame === a.n)) ||
+        `pose=${samePose}, US=${a.n}, 3D=${window.freeNavigation.navigator?.n}, corte=${cutFrame}, frozen=${s.frozen}`
       );
     }),
   );

@@ -1714,7 +1714,8 @@ void main() {
  * compara con el gradiente de `faceSdf` de TS). La tercera salida solo se lee si se pide
  * (`queryPoints(…, { normals })`).
  */
-export const FRAG_QUERY = /* glsl */ `${INTEGER_SHADER_HEADER_GLSL}
+function queryShader(staged: boolean): string {
+  return /* glsl */ `${INTEGER_SHADER_HEADER_GLSL}
 ${ANATOMY_GLSL}
 ${BEAM_GLSL}
 uniform sampler2D uPoints;
@@ -1728,7 +1729,29 @@ void main() {
   vec3 v = c.tissue == T_BLOOD ? bloodVelocity(c) : vec3(0.0);
   o0 = vec4(float(c.tissue), float(c.vessel), c.bd, c.ifd);
   o1 = vec4(v, float(c.iface));
-  o2 = faceGradient(c, m);
+  o2 = ${staged ? 'vec4(c.n, 0.0)' : 'faceGradient(c, m)'};
+}
+`;
+}
+export const FRAG_QUERY = queryShader(false);
+export const FRAG_QUERY_CLASS = queryShader(true);
+
+/** Consulta del mismo gradiente por eje; la clasificación ya está adquirida. */
+export const FRAG_QUERY_GRADIENT = /* glsl */ `${INTEGER_SHADER_HEADER_GLSL}
+${anatomyGlsl(true)}
+uniform sampler2D uPoints;
+uniform sampler2D uRawClass0;
+uniform sampler2D uRawClass1;
+uniform sampler2D uRawClass2;
+out vec4 oGradient;
+void main() {
+  ivec2 q = ivec2(gl_FragCoord.xy);
+  Cls c;
+  c.tissue = int(texelFetch(uRawClass0, q, 0).x);
+  c.iface = int(texelFetch(uRawClass1, q, 0).w);
+  c.n = texelFetch(uRawClass2, q, 0).xyz;
+  vec3 m = toMaterial(texelFetch(uPoints, q, 0).xyz);
+  oGradient = faceGradient(c, m);
 }
 `;
 

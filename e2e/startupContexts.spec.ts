@@ -7,6 +7,7 @@ declare global {
       contexts: Array<{ canvas: HTMLCanvasElement; readyAt: number }>;
       firstUltrasoundDraw: number | null;
       navigatorDraws: number;
+      overlappingFrames: number;
     };
   }
 }
@@ -14,7 +15,26 @@ declare global {
 test('initializes both real WebGL contexts before acquisition and retains the 3D view on case change', async ({ page }, info) => {
   budget(90_000);
   await page.addInitScript(() => {
-    const observed: Window['startupContexts'] = (window.startupContexts = { contexts: [], firstUltrasoundDraw: null, navigatorDraws: 0 });
+    const observed: Window['startupContexts'] = (window.startupContexts = {
+      contexts: [],
+      firstUltrasoundDraw: null,
+      navigatorDraws: 0,
+      overlappingFrames: 0,
+    });
+    const pending = new Set<WebGLSync>();
+    let lastFrame = -2;
+    for (const name of ['fenceSync', 'deleteSync'] as const) {
+      const original: unknown = Reflect.get(WebGL2RenderingContext.prototype, name);
+      if (typeof original !== 'function') throw new Error(`WebGL.${name} unavailable`);
+      Reflect.set(WebGL2RenderingContext.prototype, name, function (this: WebGL2RenderingContext, ...args: unknown[]) {
+        const result: unknown = Reflect.apply(original, this, args);
+        if (this.canvas instanceof HTMLCanvasElement && this.canvas.id === 'gl') {
+          if (name === 'fenceSync' && result) pending.add(result);
+          if (name === 'deleteSync') pending.delete(args[0] as WebGLSync);
+        }
+        return result;
+      });
+    }
     const getContext: unknown = Reflect.get(HTMLCanvasElement.prototype, 'getContext');
     if (typeof getContext !== 'function') throw new Error('Canvas.getContext unavailable');
     Reflect.set(HTMLCanvasElement.prototype, 'getContext', function (this: HTMLCanvasElement, kind: string, options?: unknown) {
@@ -27,7 +47,12 @@ test('initializes both real WebGL contexts before acquisition and retains the 3D
       if (typeof original !== 'function') throw new Error(`WebGL.${name} unavailable`);
       Reflect.set(WebGL2RenderingContext.prototype, name, function (this: WebGL2RenderingContext, ...args: number[]) {
         if (this.canvas instanceof HTMLCanvasElement) {
-          if (this.canvas.id === 'gl') observed.firstUltrasoundDraw ??= performance.now();
+          if (this.canvas.id === 'gl') {
+            observed.firstUltrasoundDraw ??= performance.now();
+            const frame = window.__vexusTest?.framesRendered() ?? -1;
+            if (frame !== lastFrame && pending.size) observed.overlappingFrames++;
+            lastFrame = frame;
+          }
           if (this.canvas.parentElement?.id === 'nav3d') observed.navigatorDraws++;
         }
         Reflect.apply(original, this, args);
@@ -39,6 +64,7 @@ test('initializes both real WebGL contexts before acquisition and retains the 3D
     contexts: window.startupContexts.contexts.map(({ canvas, readyAt }) => ({ id: canvas.id, parent: canvas.parentElement?.id, readyAt })),
     firstUltrasoundDraw: window.startupContexts.firstUltrasoundDraw!,
     navigatorDraws: window.startupContexts.navigatorDraws,
+    overlappingFrames: window.startupContexts.overlappingFrames,
   }));
   expect(initial.contexts).toHaveLength(2);
   expect(initial.contexts.some((c) => c.id === 'gl')).toBe(true);
@@ -47,6 +73,7 @@ test('initializes both real WebGL contexts before acquisition and retains the 3D
   // se observa en WebGL real y no depende de un umbral de velocidad.
   for (const c of initial.contexts) expect(c.readyAt).toBeLessThanOrEqual(initial.firstUltrasoundDraw);
   expect(initial.navigatorDraws).toBeGreaterThan(0);
+  expect(initial.overlappingFrames).toBe(0);
   await page.selectOption('#case-select', 'severe-congestion');
   await withinFrames(page, 45, 'el 3D sigue dibujando al cambiar de paciente', async () =>
     page.evaluate((n) => window.startupContexts.navigatorDraws > n || 'render 3D pendiente', initial.navigatorDraws),
@@ -56,6 +83,7 @@ test('initializes both real WebGL contexts before acquisition and retains the 3D
   await info.attach('context-order.json', { body: JSON.stringify(initial), contentType: 'application/json' });
   expect(errors).toEqual([]);
   expect(await page.evaluate(() => window.__vexusTest!.loggedErrors())).toEqual([]);
+  expect(await page.evaluate(() => window.startupContexts.overlappingFrames)).toBe(0);
 });
 
 test('reports a failed 3D module and still starts the ultrasound loop', async ({ page }) => {

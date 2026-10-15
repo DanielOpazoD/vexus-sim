@@ -7,7 +7,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
-- Arranque: prepara los contextos ecográfico y 3D antes de empezar las adquisiciones para evitar inicializar el navegador con trabajo ecográfico en vuelo; conserva el fallback informado si el módulo 3D falla (204).
+- Arranque con varias vistas: prepara ambos contextos antes de adquirir y limita cada vista a un cuadro GPU en vuelo mediante consultas sin espera; conserva el 3D y su fallback informado (204).
 
 - Lecho renal Atlas: redondea en el campo compartido los extremos artificialmente angulosos del cuadrado lumbar y extrae superficies 3D cerradas con el mismo número de muestras; conserva riñones, grasa perirrenal y psoas (203).
 

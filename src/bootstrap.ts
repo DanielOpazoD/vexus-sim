@@ -35,6 +35,7 @@ import { StartPointCards } from './ui/startPointCards';
 import { compoundActive } from './ultrasound/compound';
 import { markStartup, startupTraceEnabled } from './app/startupTrace';
 import { FirstGpuFrame } from './app/firstGpuFrame';
+import { GpuFramePacer } from './app/gpuFramePacer';
 
 markStartup('bootstrap:begin');
 
@@ -409,6 +410,7 @@ let lastStatus = 0;
 /** Vueltas completas de JS (nunca se reinicia); la valla confirma aparte el primer cuadro GPU. */
 let loopFrames = 0;
 const firstGpuFrame = new FirstGpuFrame(startupTraceEnabled, markStartup);
+const gpuFramePacer = new GpuFramePacer();
 const errorBudget = new ErrorBudget();
 let loopDegraded = false;
 const heartRate = new HeartRateDisplay();
@@ -429,7 +431,6 @@ function drawTraces(s: Simulator): void {
 }
 
 function frame(now: number, dt: number): void {
-  firstGpuFrame.poll();
   if (loopFrames === 0) markStartup('frame:begin');
   const s = sim();
   fitCanvases();
@@ -504,15 +505,22 @@ function frame(now: number, dt: number): void {
     panel.sync(); // la pose y el acoplamiento cambian con el ratón; el equipo avisa por su cuenta
     windows.sync();
   }
+  if (!gpu.lost) gpuFramePacer.submit(s.renderer.gl);
   loopFrames++;
   if (loopFrames === 1) markStartup('frame:first');
   if (loopFrames === 2) markStartup('frame:second');
 }
 
 function loop(now: number): void {
-  const dt = Math.min(0.25, (now - last) / 1000);
-  last = now;
   try {
+    firstGpuFrame.poll();
+    if (!gpuFramePacer.ready()) {
+      requestAnimationFrame(loop);
+      return;
+    }
+    // Acumular el tiempo entre cuadros adquiridos, con el mismo techo de 0,25 s.
+    const dt = Math.min(0.25, (now - last) / 1000);
+    last = now;
     frame(now, dt);
     if (loopDegraded) {
       loopDegraded = false; // se recuperó: el aviso de error persistente ya no aplica

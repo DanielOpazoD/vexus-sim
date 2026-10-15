@@ -20,9 +20,11 @@ const body = new Float32Array(bodyBytes.buffer.slice(bodyBytes.byteOffset, bodyB
 function rig() {
   const frames: FrameInputs[] = [];
   const renderer = {
+    displayedFrame: null as Pick<FrameInputs, 'bmode' | 'color'> | null,
     setScene() {},
     render(inputs: FrameInputs) {
       frames.push(inputs);
+      this.displayedFrame = { bmode: inputs.bmode, color: inputs.color };
     },
   };
   const sim = new Simulator(clonePatient(NORMAL_ADULT), {} as HTMLCanvasElement, undefined, renderer as unknown as UltrasoundRenderer);
@@ -30,6 +32,26 @@ function rig() {
 }
 
 describe('pose, contacto y adquisición pertenecen al mismo cuadro', () => {
+  it('conserva los ajustes de la imagen adquirida mientras los nuevos controles esperan otra adquisición', () => {
+    const { sim, frames } = rig();
+    expect(sim.displayed).toBe(sim.equipment);
+    sim.render();
+    const acquired = sim.displayed;
+    sim.equipment = {
+      ...sim.equipment,
+      bmode: { ...sim.bmode, depthMm: sim.bmode.depthMm + 20, focusMm: sim.bmode.focusMm + 10 },
+      color: { ...sim.color, invert: !sim.color.invert },
+    };
+    expect(sim.displayed).toBe(acquired);
+    expect(sim.displayed.bmode.depthMm).not.toBe(sim.bmode.depthMm);
+    expect(sim.displayed.color.invert).not.toBe(sim.color.invert);
+    expect(frames).toHaveLength(1);
+    expect(sim.physiology.clock.t).toBe(0);
+    sim.render();
+    expect(sim.displayed.bmode).toBe(sim.bmode);
+    expect(sim.displayed.color).toBe(sim.color);
+  });
+
   for (const domain of ['legacy', 'reference', 'atlas'] as const) {
     it(`un movimiento entre pasos físicos actualiza el haz sin avanzar el reloj (${domain})`, () => {
       setReferenceBody(domain === 'reference' ? profile : undefined);

@@ -373,7 +373,7 @@ export class CutMapView {
   private paintContour(ctx: CanvasRenderingContext2D, sim: Simulator, onUltrasound: boolean): void {
     if (!this.selected || !this.drawn) return;
     const { inputs } = this.drawn,
-      tr = sim.transducer;
+      tr = this.drawn.transducer;
     const layout = onUltrasound ? sim.renderer.display : sectorLayout(this.canvas.width, this.canvas.height, tr, inputs.depthMm, 6);
     const at = (u: number, v: number) => beamToPixel(layout, tr, -tr.halfSector + 2 * tr.halfSector * u, v * inputs.depthMm);
     const dpr = onUltrasound ? Math.min(2, window.devicePixelRatio || 1) : 1;

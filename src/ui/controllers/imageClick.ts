@@ -32,7 +32,7 @@ export function bindImageClick(opts: {
   const lineTheta = (px: number, py: number) => {
     const s = getSim();
     const d = s.renderer.display;
-    const hs = s.transducer.halfSector;
+    const hs = (s.renderer.displayedFrame?.anatomy.transducer ?? s.transducer).halfSector;
     return Math.min(hs, Math.max(-hs, -Math.atan2(px - d.apexX, py - d.apexY)));
   };
   // la línea M se agarra a ≤ 10 px: antes que la sonda (fase de captura) y sin clic al soltarla; no con la imagen
@@ -44,7 +44,7 @@ export function bindImageClick(opts: {
       if (!s.mmode.enabled || s.frozen || e.button !== 0 || e.metaKey || e.ctrlKey || e.altKey || onControl(e)) return;
       if (store.get().tool !== 'none') return;
       const { px, py, dpr } = at(e);
-      const tr = s.transducer;
+      const tr = s.renderer.displayedFrame?.anatomy.transducer ?? s.transducer;
       const a = s.renderer.beamToPixel(s.mmode.theta, 0, tr);
       const b = s.renderer.beamToPixel(s.mmode.theta, s.displayed.bmode.depthMm, tr);
       const L2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2 || 1;
@@ -73,7 +73,8 @@ export function bindImageClick(opts: {
     if (onControl(e)) return;
     const sim = getSim();
     const { px, py } = at(e);
-    const beam = sim.renderer.pixelToBeam(px, py, sim.transducer, sim.displayed.bmode.depthMm);
+    const tr = sim.renderer.displayedFrame?.anatomy.transducer ?? sim.transducer;
+    const beam = sim.renderer.pixelToBeam(px, py, tr, sim.displayed.bmode.depthMm);
     if (!beam) return;
     if (store.get().tool === 'caliper' || e.metaKey || e.ctrlKey) {
       if (!caliperA) {

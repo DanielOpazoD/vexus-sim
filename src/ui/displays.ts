@@ -16,7 +16,7 @@ export function drawOverlay(canvas: HTMLCanvasElement, sim: Simulator): void {
   const W = canvas.width;
   const H = canvas.height;
   ctx.clearRect(0, 0, W, H);
-  const tr = sim.transducer;
+  const tr = sim.renderer.displayedFrame?.anatomy.transducer ?? sim.transducer;
   const shown = sim.displayed;
   const depth = shown.bmode.depthMm;
   // Regla de profundidad (cada cm) en el borde derecho del sector
@@ -391,7 +391,8 @@ function drawCaptureOverlay(
  * negro en la línea de base y ±Nyquist en cm/s en los extremos (con «Invertir mapa» se intercambian los colores).
  */
 function drawColorScale(ctx: CanvasRenderingContext2D, W: number, H: number, sim: Simulator): void {
-  const nyq = Math.round(nyquistVelocityCms(sim.displayed.color.prfHz, sim.transducer.f0Doppler));
+  const tr = sim.renderer.displayedFrame?.anatomy.transducer ?? sim.transducer;
+  const nyq = Math.round(nyquistVelocityCms(sim.displayed.color.prfHz, tr.f0Doppler));
   const s = H / 800;
   const x = Math.round(12 * s);
   const w = Math.max(6, Math.round(9 * s));

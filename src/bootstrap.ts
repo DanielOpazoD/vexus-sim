@@ -403,6 +403,12 @@ function fitCanvases(): void {
     overlay.width = w;
     overlay.height = h;
   }
+  fitTraceCanvases();
+}
+
+/** La consola y sus capturas pueden hacerse visibles entre adquisiciones GPU. */
+function fitTraceCanvases(): void {
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
   for (const c of [ecgCanvas, spectrumCanvas, pwScaleCanvas, mCanvas, cutCanvas]) {
     // el corte se calcula por píxel en CPU: resolución 1× basta
     const k = c === cutCanvas ? 1 : dpr;
@@ -432,7 +438,8 @@ const heartRate = new HeartRateDisplay();
 let eqPrevCpu: CutMapView['lastMap'] = null;
 
 /** Una referencia de presentación para historial y captura; también se publica al pulsar Capturar. */
-function drawTraces(s: Simulator): void {
+function drawTraces(s: Simulator, allowGpu = true): void {
+  fitTraceCanvases();
   const t = s.physiology.clock.t;
   // el ECG siempre está a la vista (el espectro, solo con PW; la franja M, con el modo M) y comparte con ellos el
   // eje de tiempo; con el cine llevan el cursor de su cuadro y se desplazan con él (decisión 80)
@@ -442,7 +449,15 @@ function drawTraces(s: Simulator): void {
   drawEcg(ecgCanvas, s, secondsVisible, tRight, cursorT);
   spectrogram.draw(s, s.spectral.columns, tRight, secondsVisible, cursorT, panel.captureOverlay);
   if (s.pw.enabled) drawVelocityRuler(pwScaleCanvas, s.pwNyquistCms(), s.pw.baselineShift, s.pw.invert);
-  if (s.mmode.enabled && !gpu.lost) mview.draw(s.renderer, tRight, secondsVisible, cursorT, panel.mMarks);
+  if (allowGpu && s.mmode.enabled && !gpu.lost) mview.draw(s.renderer, tRight, secondsVisible, cursorT, panel.mMarks);
+}
+
+/** Presentar el estado adquirido en CPU no necesita otra adquisición ni otro dibujo 3D. */
+function drawAcquiredViews(s: Simulator, now: number, allowGpu: boolean): void {
+  drawTraces(s, allowGpu);
+  drawOverlay(overlay, s);
+  if (store.get().torso && !gpu.lost) cutMap?.draw(s, now);
+  cutMap?.drawHighlight(overlay, s, store.get().torso && !gpu.lost);
 }
 
 function frame(now: number, dt: number): void {
@@ -467,13 +482,10 @@ function frame(now: number, dt: number): void {
     cine.tick();
   }
   if (!comparisonOpen) {
-    drawOverlay(overlay, s);
     if (loopFrames === 0 && nav) markStartup('navigator:draw');
     nav?.draw();
     if (loopFrames === 0 && nav) markStartup('navigator:drawn');
-    if (store.get().torso && !gpu.lost) cutMap?.draw(s, now);
-    cutMap?.drawHighlight(overlay, s, store.get().torso && !gpu.lost);
-    drawTraces(s);
+    drawAcquiredViews(s, now, true);
   }
   const t = s.physiology.clock.t;
   const h = hudText({
@@ -530,6 +542,9 @@ function loop(now: number): void {
   try {
     firstGpuFrame.poll();
     if (!gpuFramePacer.ready()) {
+      // El Worker, los rótulos y las franjas 2D siguen presentando la instantánea
+      // disponible. No encolar ecografía, 3D ni la conversión GPU del modo M.
+      if (!panel.venousComparisonOpen) drawAcquiredViews(sim(), now, false);
       requestAnimationFrame(loop);
       return;
     }

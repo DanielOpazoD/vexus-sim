@@ -26,6 +26,7 @@ export default defineConfig({
       ? undefined
       : {
           ...base.webServer,
+          cwd: root,
           command: 'node node_modules/vite/bin/vite.js preview --host 127.0.0.1 --port 6609 --strictPort',
           url: 'http://127.0.0.1:6609',
           reuseExistingServer: false,

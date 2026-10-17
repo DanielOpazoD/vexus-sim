@@ -7407,3 +7407,35 @@ El control negativo con la pose Atlas anterior falla porque no encuentra la rama
 plano; se restauró la pose nueva antes de validar. El selector verifica nombre/logo cargado; la adaptación conserva sus tamaños originales. La
 aceptación requiere `check`, inspección de navegador y la CI protegida sobre el head publicado.
 Los resultados negativos del vigilante del corte y del transporte PW de rondas previas permanecen abiertos.
+
+## 214. Leyenda Color legible en píxeles CSS y ligada al cuadro adquirido
+
+**Contexto.** En la vista tríplex de 1280 × 720, la escala usaba `H/800`: sus cifras descendían a unos
+5 px CSS. Su legibilidad dependía de la altura del sector, también en pantallas de alta densidad.
+El degradado ya existía y compartía
+`colorMapRgb` con el shader; el defecto era su presentación, no la estimación Doppler.
+
+**Opciones.** Una leyenda CSS independiente duplicaría la paleta y podría separarse del cuadro congelado.
+Un gradiente lineal rojo/negro/azul tampoco reproduce la compresión de magnitud de la imagen.
+Se conserva el overlay y el mapa existente, con dimensiones referidas al ancho CSS del lienzo.
+
+**Decisión.** `drawColorScale` conserva el muestreo de `colorMapRgb`, PRF e inversión de `sim.displayed`
+y frecuencia Doppler del transductor adquirido. La barra mide aproximadamente 12 × 113 px CSS,
+con texto de 12 px, cero central negro explícito, extremos ±Nyquist y unidad cm/s en la esquina.
+La fila central es impar para representar exactamente velocidad cero. Son dimensiones de interfaz,
+no constantes clínicas. Objetivos 2, 5 y 6 de la misión.
+
+**Consecuencias.** Activar PW o redimensionar ya no encoge la escala. No cambian anatomía, flujo,
+resolución, física, paleta del vaso, plazos ni presupuestos. El realismo de tejido y espectro sigue
+requiriendo comparación externa. El fallo posterior al merge260 de `renalCutTracking` (mando −3°
+frente a pose −14,0103°) se conserva como pendiente; esta corrección de leyenda no acredita su resolución.
+La consulta Modern Web Guidance falló por certificado de la red; se consultó el
+[contrato de bitmap y tamaño CSS de Canvas del estándar HTML](https://html.spec.whatwg.org/multipage/canvas.html#the-canvas-element).
+Browser plugin not available; se usan Playwright existente y navegador integrado mediante CUA.
+
+**Verificación.** `colorLegend.spec.ts` inspecciona cada fila real del bitmap contra la paleta compartida,
+legibilidad, cero, extremos, inversión, PRF congelada, redimensionado y retorno a B, en escritorio DPR 1
+y móvil DPR 2. El control negativo usa el build anterior. `dopplerInteraction` protege el arrastre
+en vivo y el reinicio a 2D; `probeFreeNavigation` protege 3D/corte/ecografía durante movimiento desde
+seis coordenadas y ambos pacientes, además del acceso portal subcostal con PW activo. Se exige
+`npm run check` y CI completa sobre el head publicado antes de fusionar.

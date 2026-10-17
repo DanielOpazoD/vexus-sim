@@ -209,4 +209,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [203](DECISIONS.md#L7098) | Extremos musculares continuos en el lecho renal Atlas | vigente |
 | [204](DECISIONS.md#L7112) | Arranque de ambas vistas sin acumular cuadros GPU | vigente |
 | [205](DECISIONS.md#L7144) | Traslación sin topes angulares ni bloqueo de silueta | vigente |
-| [206](DECISIONS.md#L7182) | Corte sin espera de reposo durante el movimiento adquirido | vigente |
+| [206](DECISIONS.md#L7184) | Corte sin espera de reposo durante el movimiento adquirido | vigente |
+| [207](DECISIONS.md#L7200) | Continuidad canónica y reproducciones locales sin sobrescribir evidencia | vigente |

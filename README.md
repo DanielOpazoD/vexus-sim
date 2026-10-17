@@ -27,9 +27,13 @@ criterios para decidir están en [`docs/MISION.md`](docs/MISION.md).
 
 ## Ejecutar
 
+Para retomar trabajo: [continuidad](docs/CONTINUIDAD.md),
+[entorno y mediciones](docs/engineering/workspace.md) y [contribución](CONTRIBUTING.md).
+`npm run workspace:doctor` comprueba el entorno local sin instalar ni modificar nada.
+
 ```bash
-npm install
-npm run dev        # http://localhost:6600
+./tools/workspace/run.sh npm ci
+./tools/workspace/run.sh npm run dev        # http://localhost:6600
 ```
 
 | Comando              | Qué hace                                                                                   |

@@ -15,7 +15,7 @@ main ──●──●──●──●──●──●──►   siempre v
 - **Pull request** por cada rama, con la plantilla (`.github/pull_request_template.md`): qué
   cambia, número de decisión, cómo se verificó. Se integra con _squash_ o _merge_ normal, nunca
   con historia reescrita de `main`, y **solo con la CI en verde**: el check «CI verde (check + e2e)»
-  (el trabajo `check` y los cinco fragmentos de la e2e). Una prueba que solo pasa al reintentarla
+  (core/build, matrices IQ y todos los fragmentos E2E definidos en `.github/workflows/ci.yml`). Una prueba que solo pasa al reintentarla
   hace fallar la ejecución (`failOnFlakyTests`): no es verde. Una corrida local no sustituye a la CI.
 - **Comentario de verificación**: enlaza la ejecución real de la CI sobre el último commit del PR
   (`gh pr checks <n>` da el enlace de cada check) y dice qué más se miró (navegador, cifras). «Verde
@@ -39,15 +39,23 @@ chore(ci): workflow con npm run check
 Ámbitos: `core`, `physiology`, `anatomy`, `probe`, `ultrasound`, `doppler`, `audio`, `vexus`,
 `cases`, `app`, `ui`, `tools`, `ci`, `docs`.
 
+## Preparar el entorno
+
+Node 24, fijado en `.nvmrc`, es el entorno validado. Desde cualquier directorio puedes invocar
+`/ruta/al/repo/tools/workspace/run.sh npm ci`; el wrapper entra en la raíz y selecciona el Node
+instalado mediante nvm, sin instalar versiones ni cambiar tu configuración global.
+Después: `npm run workspace:doctor`. Ver `docs/engineering/workspace.md`.
+
 ## Antes de abrir un PR
 
 ```bash
 npm run check
 ```
 
-Ejecuta lint, tipos, **todas** las pruebas (rápidas y lentas), build y presupuesto de bundle
-(en local ~2–5 min con la máquina libre; en la CI de GitHub, 6–15 min el trabajo `check` y 10–20 la ejecución
-entera con la e2e).
+Ejecuta formato, lint, tipos, **todas** las pruebas (rápidas y lentas), cobertura, build y presupuesto
+de bundle. La duración depende de la carga y el backend: el último cierre local necesitó unos 13 minutos
+y el grupo E2E más largo de CI unos 32. Son observaciones, no plazos ni garantías.
+Usa una sola carga intensiva local a la vez y conserva el código de salida.
 No se acepta `npm run check | grep …`: el código de salida es lo que cuenta. Si el cambio toca
 la anatomía, también:
 
@@ -70,7 +78,7 @@ a qué objetivo sirve; un cambio que no sirve a ninguno no entra.
    rechaza.
 2. **Un solo reloj** (`core/clock.ts`); todo lo temporal deriva de él.
 3. **Anatomía compartida TS ↔ GLSL**: cualquier cambio en `anatomy/scene.ts` o
-   `anatomy/primitives.ts` se replica en `ultrasound/shaders/anatomy.glsl.ts` y se fija con un
+   `anatomy/primitives.ts` se replica en `anatomy/gpu/anatomy.glsl.ts` y se fija con un
    punto en `validation/anatomy.test.ts`.
 4. **Valores clínicos**: no se inventan. Lo que no está en la base de conocimiento se etiqueta
    `[EXTRAPOLACIÓN PROPIA]` / `NEEDS_CALIBRATION` en el código y en `docs/APPROXIMATIONS.md`.
@@ -87,7 +95,7 @@ a qué objetivo sirve; un cambio que no sirve a ninguno no entra.
   suite rápida y entra en `test:slow` / `test:all`.
 - Sin WebGL ni DOM en los tests unitarios: todo lo físico se prueba en TypeScript puro. Lo que solo
   el navegador puede ver (arranque, render, cableado de la UI) va en `e2e/` (Playwright, `npm run
-e2e`; CI lo ejecuta en paralelo con `check`, en cinco fragmentos de un trabajador con SwiftShader).
+e2e`; CI lo ejecuta en paralelo con `check`, en los fragmentos definidos en `ci.yml`, de un trabajador cada uno con SwiftShader).
 - En la e2e se espera en cuadros del bucle o en tiempo de simulación (`withinFrames`,
   `withinSimSeconds` y el gancho `framesRendered`, `e2e/support.ts`), nunca «n segundos de reloj»:
   con SwiftShader un cuadro tarda de décimas a varios segundos según el corredor. Los plazos en
@@ -113,7 +121,7 @@ cuando son términos técnicos de programación; comentarios en español.
 
 ## Herramientas locales
 
-- `npm install` activa el hook `.githooks/pre-push` (tipos + pruebas rápidas antes de empujar).
+- `npm ci` activa el hook `.githooks/pre-push` (tipos + pruebas rápidas antes de empujar).
 - Dependabot abre cada lunes una PR agrupada por ecosistema; entra si CI (check + e2e) está verde.
 - ESLint usa las reglas con información de tipos (`recommendedTypeChecked`).
 

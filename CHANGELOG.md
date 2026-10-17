@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Entorno: continuidad canónica, diagnóstico Node/Git/dependencias y perfiles locales Metal/SwiftShader con evidencias separadas, sin cambiar el simulador ni los controles de CI (207).
+
 ### Corregido
 
 - Corte anatómico: sigue las nuevas poses adquiridas sin esperar la cadencia de reposo de 8 Hz; conserva una petición en vuelo, la rejilla y el modelo compartido durante el recorrido libre (206).

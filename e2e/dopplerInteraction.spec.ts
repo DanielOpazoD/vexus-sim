@@ -59,7 +59,11 @@ async function observeOverlay(page: Page): Promise<void> {
       fillText(...args);
     };
     ctx.stroke = () => {
-      window.dopplerPaths.strokes.push({ width: ctx.lineWidth, color: String(ctx.strokeStyle), points: path.length });
+      window.dopplerPaths.strokes.push({
+        width: ctx.lineWidth,
+        color: typeof ctx.strokeStyle === 'string' ? ctx.strokeStyle : 'gradient/pattern',
+        points: path.length,
+      });
       if (ctx.strokeStyle === '#7ff0d8' && ctx.lineWidth === 2) window.dopplerPaths.gate = path.slice();
       // Chromium guarda el grosor en float: 1.2 no vuelve como el mismo double.
       // El color identifica este contorno; abajo se comprueban sus 50 vértices y esquinas.
@@ -107,13 +111,18 @@ async function readyLayout(page: Page) {
       const wrap = document.querySelector<HTMLElement>('#sector-wrap')!;
       const s = window.__vexusTest!.sim();
       const d = s.renderer.display;
+      const rect = wrap.getBoundingClientRect();
       return (
         (canvas.width === d.width &&
           canvas.height === d.height &&
           canvas.height === Math.max(240, Math.floor(canvas.clientHeight * Math.min(2, devicePixelRatio)))) ||
         `presentación pendiente: ${JSON.stringify({
           canvas: { width: canvas.width, height: canvas.height, clientWidth: canvas.clientWidth, clientHeight: canvas.clientHeight },
-          sectorWrap: { clientWidth: wrap.clientWidth, clientHeight: wrap.clientHeight, rect: wrap.getBoundingClientRect().toJSON() },
+          sectorWrap: {
+            clientWidth: wrap.clientWidth,
+            clientHeight: wrap.clientHeight,
+            rect: { x: rect.x, y: rect.y, width: rect.width, height: rect.height },
+          },
           display: d,
           dpr: devicePixelRatio,
           gpu: window.dopplerGpu,

@@ -7,8 +7,8 @@ import type { SpectralColumn } from '../doppler/spectral';
 import { overlayOnSpectrum, spectrumRowOf, type CaptureOverlay } from './captureOverlay';
 
 /**
- * Gráficos vectoriales sobre el sector: regla, marcador, foco, cuadro, puerta y línea M. La regla, el foco y la caja
- * son los de la imagen en pantalla (con el cine, los de su cuadro: decisión 80).
+ * Gráficos vectoriales sobre el sector. Regla y foco corresponden al cuadro adquirido; la caja es un control
+ * vivo, igual que la puerta PW. Congelada o en cine conserva la caja del cuadro mostrado (decisión 80).
  */
 export function drawOverlay(canvas: HTMLCanvasElement, sim: Simulator): void {
   // Keep the cached annotation bitmap on the same readback path when inspected/exported.
@@ -51,9 +51,9 @@ export function drawOverlay(canvas: HTMLCanvasElement, sim: Simulator): void {
   ctx.lineTo(fp.x - 5, fp.y + 4);
   ctx.closePath();
   ctx.fill();
-  // Cuadro de color
-  if (shown.color.enabled) {
-    const c = shown.color;
+  // El contorno responde al equipo sin esperar a la GPU; los píxeles y la escala siguen siendo los adquiridos.
+  const c = sim.frozen ? shown.color : sim.color;
+  if (c.enabled) {
     ctx.strokeStyle = '#ffd166';
     ctx.lineWidth = 1.2;
     ctx.beginPath();
@@ -71,8 +71,8 @@ export function drawOverlay(canvas: HTMLCanvasElement, sim: Simulator): void {
     }
     ctx.closePath();
     ctx.stroke();
-    drawColorScale(ctx, W, H, sim);
   }
+  if (shown.color.enabled) drawColorScale(ctx, W, H, sim);
   // Línea M (decisión 80): de la cara al fondo, con un asa arriba para arrastrarla
   if (sim.mmode.enabled) {
     const a = sim.renderer.beamToPixel(sim.mmode.theta, 0, tr);

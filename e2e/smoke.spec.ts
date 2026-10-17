@@ -294,7 +294,45 @@ test('modos por teclado, pestaña Medir y captura de una medición', async ({ pa
       button.addEventListener(
         'click',
         () => {
-          button.setAttribute('data-capture-result', document.querySelector('.result')?.textContent ?? '');
+          const result = document.querySelector('.result')?.textContent ?? '';
+          button.setAttribute('data-capture-result', result);
+          // Preserve the failing acquisition in this same event. Successful captures
+          // keep their original timing; diagnostics neither retry nor replace the assertion.
+          if (result.includes('VSH: no medible: la onda cambia entre latidos')) {
+            const hooks = window.__vexusTest!;
+            const sim = hooks.sim();
+            const t = sim.physiology.clock.t;
+            Object.assign(button, {
+              captureDiagnostic: JSON.stringify({
+                formatVersion: 1,
+                result,
+                t,
+                frames: hooks.framesRendered(),
+                patient: sim.patient,
+                atlas: sim.scene.hasAbdominalAtlas,
+                pose: sim.pose,
+                frame: sim.frame,
+                probeVelocity: sim.probeVelocity,
+                frozen: sim.frozen,
+                paused: sim.physiology.clock.paused,
+                equipment: sim.equipment,
+                sample: sim.sample,
+                gateInfo: sim.gateInfo,
+                composition: sim.sampleVolume.lastComposition,
+                gateTrack: sim.gateTrack,
+                beats: sim.physiology.rhythm.beatsBetween(t - 7, t),
+                opts: {
+                  f0Hz: sim.transducer.f0Doppler,
+                  angleCorrectionRad: sim.pw.angleCorrection,
+                  invert: sim.pw.invert,
+                  fftSize: sim.spectral.fftSize,
+                  wallFilterHz: sim.pw.wallFilterHz,
+                  gainDb: sim.pw.gainDb,
+                },
+                columns: sim.spectral.columns.map((column) => ({ ...column, powerDb: Array.from(column.powerDb) })),
+              }),
+            });
+          }
         },
         { once: true },
       );
@@ -302,7 +340,17 @@ test('modos por teclado, pestaña Medir y captura de una medición', async ({ pa
     const button = page.getByRole('button', { name: 'Capturar' });
     const handle = await button.elementHandle();
     await button.click();
-    return handle.getAttribute('data-capture-result');
+    const result = await handle.getAttribute('data-capture-result');
+    if (result?.includes('VSH: no medible: la onda cambia entre latidos')) {
+      try {
+        const body = await handle.evaluate((element) => (element as Element & { captureDiagnostic?: string }).captureDiagnostic);
+        if (body) await test.info().attach('hepatic-inconsistent-acquisition', { body, contentType: 'application/json' });
+      } catch (error) {
+        // The original measurement assertion must still report the failure if evidence collection fails.
+        test.info().annotations.push({ type: 'capture-diagnostic-error', description: String(error) });
+      }
+    }
+    return result;
   };
   // Ventana intercostal (la del protocolo) y la puerta sobre la suprahepática en un punto sin
   // sombras (técnica del operador); 7 s de espectro sin renderizar (`advance`: tiempo de simulación, no de reloj).

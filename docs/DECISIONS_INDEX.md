@@ -213,3 +213,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [207](DECISIONS.md#L7200) | Continuidad canónica y reproducciones locales sin sobrescribir evidencia | vigente |
 | [208](DECISIONS.md#L7212) | Rotar la reclasificación PW sin resolver población pierde señal renal — experimento rechazado | vigente |
 | [209](DECISIONS.md#L7245) | El mando de presión comparte los límites reales de separación y hundimiento | vigente |
+| [210](DECISIONS.md#L7266) | Interfaz clara y espacio de examen adaptable sin perder adquisición | vigente |
+| [211](DECISIONS.md#L7298) | Doppler durante el arrastre y nueva ventana en 2D | vigente |

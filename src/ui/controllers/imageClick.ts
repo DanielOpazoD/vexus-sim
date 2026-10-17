@@ -3,10 +3,8 @@ import type { Simulator } from '../../app/simulator';
 import type { Store } from '../../app/store';
 
 /**
- * Clic sobre la imagen: calibrador de la VCI (herramienta activa o ⌘/Ctrl), puerta PW, línea M (decisión 80) o
- * centro de la caja de color. Un arrastre (> 4 px o > 400 ms) no es un clic: mueve la sonda, salvo que empiece
- * sobre la línea M, que entonces se arrastra. Con la imagen congelada el clic solo mide: la puerta, la línea M y la
- * caja se quedan como en la imagen.
+ * Clic para medir; arrastre primario del ratón para colocar Doppler en vivo (caja y puerta juntas en tríplex).
+ * La línea M se arrastra desde su asa. Los otros gestos siguen moviendo la sonda. Congelada, la imagen solo mide.
  */
 export function bindImageClick(opts: {
   host: HTMLElement;
@@ -19,7 +17,7 @@ export function bindImageClick(opts: {
   const { host, canvas, getSim, store, setIvcCaliper, dispatch } = opts;
   let caliperA: { x: number; y: number } | null = null;
   let downAt: { x: number; y: number; t: number } | null = null;
-  let dragLine: number | null = null;
+  let drag: { id: number; mode: string } | null = null;
   /** Punto del evento en píxeles del lienzo. */
   const at = (e: MouseEvent) => {
     const rect = canvas.getBoundingClientRect();
@@ -28,55 +26,21 @@ export function bindImageClick(opts: {
   };
   /** El evento empezó sobre un control (el deslizador del cine): no es un clic ni un arrastre de la imagen. */
   const onControl = (e: Event) => !!(e.target as Element | null)?.closest('#cine-bar, button, input, select');
+  const transducer = () => getSim().renderer.displayedFrame?.anatomy.transducer ?? getSim().transducer;
   /** Ángulo de línea del punto, acotado al sector (la línea M se arrastra también fuera de él). */
   const lineTheta = (px: number, py: number) => {
     const s = getSim();
     const d = s.renderer.display;
-    const hs = (s.renderer.displayedFrame?.anatomy.transducer ?? s.transducer).halfSector;
+    const hs = transducer().halfSector;
     return Math.min(hs, Math.max(-hs, -Math.atan2(px - d.apexX, py - d.apexY)));
   };
-  // la línea M se agarra a ≤ 10 px: antes que la sonda (fase de captura) y sin clic al soltarla; no con la imagen
-  // congelada, con un modificador (calibrador, basculación) ni sobre los controles (el deslizador del cine)
-  host.addEventListener(
-    'pointerdown',
-    (e) => {
-      const s = getSim();
-      if (!s.mmode.enabled || s.frozen || e.button !== 0 || e.metaKey || e.ctrlKey || e.altKey || onControl(e)) return;
-      if (store.get().tool !== 'none') return;
-      const { px, py, dpr } = at(e);
-      const tr = s.renderer.displayedFrame?.anatomy.transducer ?? s.transducer;
-      const a = s.renderer.beamToPixel(s.mmode.theta, 0, tr);
-      const b = s.renderer.beamToPixel(s.mmode.theta, s.displayed.bmode.depthMm, tr);
-      const L2 = (b.x - a.x) ** 2 + (b.y - a.y) ** 2 || 1;
-      const u = Math.min(1, Math.max(0, ((px - a.x) * (b.x - a.x) + (py - a.y) * (b.y - a.y)) / L2));
-      if (Math.hypot(px - a.x - u * (b.x - a.x), py - a.y - u * (b.y - a.y)) > 10 * dpr) return;
-      e.stopPropagation();
-      host.setPointerCapture(e.pointerId);
-      dragLine = e.pointerId;
-      downAt = null;
-    },
-    { capture: true },
-  );
-  host.addEventListener('pointermove', (e) => {
-    if (dragLine !== e.pointerId || getSim().frozen) return;
-    const { px, py } = at(e);
-    dispatch({ type: 'placeMLine', theta: lineTheta(px, py) });
-  });
-  const endDrag = (e: PointerEvent) => {
-    if (dragLine === e.pointerId) dragLine = null;
-  };
-  host.addEventListener('pointerup', endDrag);
-  host.addEventListener('pointercancel', endDrag);
-  host.addEventListener('pointerdown', (e) => (downAt = { x: e.clientX, y: e.clientY, t: performance.now() }));
-  host.addEventListener('click', (e) => {
-    if (!downAt || Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 4 || performance.now() - downAt.t > 400) return;
-    if (onControl(e)) return;
+  const place = (e: MouseEvent, coupled = false): boolean => {
     const sim = getSim();
     const { px, py } = at(e);
-    const tr = sim.renderer.displayedFrame?.anatomy.transducer ?? sim.transducer;
+    const tr = transducer();
     const beam = sim.renderer.pixelToBeam(px, py, tr, sim.displayed.bmode.depthMm);
-    if (!beam) return;
-    if (store.get().tool === 'caliper' || e.metaKey || e.ctrlKey) {
+    if (!beam) return false;
+    if (!coupled && (store.get().tool === 'caliper' || e.metaKey || e.ctrlKey)) {
       if (!caliperA) {
         caliperA = { x: px, y: py };
         setIvcCaliper(null);
@@ -85,12 +49,57 @@ export function bindImageClick(opts: {
         caliperA = null;
         store.set({ tool: 'none' });
       }
-      return;
+      return true;
     }
-    if (sim.frozen) return;
-    if (sim.pw.enabled) dispatch({ type: 'placeGate', theta: beam.theta, r: beam.r });
+    if (sim.frozen) return false;
+    if (sim.pw.enabled) dispatch({ type: 'placeGate', theta: beam.theta, r: beam.r, withColorBox: coupled });
     else if (sim.mmode.enabled) dispatch({ type: 'placeMLine', theta: beam.theta });
     else if (sim.color.enabled) dispatch({ type: 'centerColorBox', theta: beam.theta, r: beam.r });
+    return true;
+  };
+  // Capturar antes que ProbeInput: el arrastre del control nunca traslada la sonda.
+  host.addEventListener(
+    'pointerdown',
+    (e) => {
+      const s = getSim();
+      if (s.frozen || e.button !== 0 || e.metaKey || e.ctrlKey || e.altKey || onControl(e) || store.get().tool !== 'none') return;
+      if (s.mmode.enabled) {
+        const { px, py, dpr } = at(e);
+        const tr = transducer();
+        const a = s.renderer.beamToPixel(s.mmode.theta, 0, tr);
+        const b = s.renderer.beamToPixel(s.mmode.theta, s.displayed.bmode.depthMm, tr);
+        const dx = b.x - a.x,
+          dy = b.y - a.y;
+        const L2 = dx ** 2 + dy ** 2 || 1;
+        const u = Math.min(1, Math.max(0, ((px - a.x) * dx + (py - a.y) * dy) / L2));
+        if (Math.hypot(px - a.x - u * dx, py - a.y - u * dy) > 10 * dpr) return;
+      } else if (e.pointerType !== 'mouse' || !(s.pw.enabled || s.color.enabled) || !place(e, true)) return;
+      e.stopPropagation();
+      host.setPointerCapture(e.pointerId);
+      drag = { id: e.pointerId, mode: store.get().mode };
+      downAt = null;
+    },
+    { capture: true },
+  );
+  host.addEventListener('pointermove', (e) => {
+    if (drag?.id !== e.pointerId) return;
+    if (getSim().frozen || store.get().tool !== 'none' || store.get().mode !== drag.mode) {
+      drag = null;
+      return;
+    }
+    if (drag.mode === 'M') {
+      const { px, py } = at(e);
+      dispatch({ type: 'placeMLine', theta: lineTheta(px, py) });
+    } else place(e, true);
+  });
+  const endDrag = (e: PointerEvent) => {
+    if (drag?.id === e.pointerId) drag = null;
+  };
+  for (const event of ['pointerup', 'pointercancel', 'lostpointercapture'] as const) host.addEventListener(event, endDrag);
+  host.addEventListener('pointerdown', (e) => (downAt = { x: e.clientX, y: e.clientY, t: performance.now() }));
+  host.addEventListener('click', (e) => {
+    if (!downAt || Math.hypot(e.clientX - downAt.x, e.clientY - downAt.y) > 4 || performance.now() - downAt.t > 400 || onControl(e)) return;
+    place(e);
   });
   return { cancelCaliper: () => (caliperA = null) };
 }

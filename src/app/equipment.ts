@@ -53,8 +53,8 @@ export type EquipmentCommand =
   | { type: 'centerColorBox'; theta: number; r: number }
   /** Escala la caja de color alrededor de su centro. */
   | { type: 'scaleColorBox'; factor: number }
-  /** Coloca el centro de la puerta PW en (θ, r). */
-  | { type: 'placeGate'; theta: number; r: number }
+  /** Coloca la puerta PW; el arrastre en tríplex centra también la caja, incluso dentro de ella. */
+  | { type: 'placeGate'; theta: number; r: number; withColorBox?: boolean }
   /** Coloca la línea M (decisión 80) en el ángulo de línea θ. */
   | { type: 'placeMLine'; theta: number };
 
@@ -207,6 +207,7 @@ export function reduceEquipment(e: EquipmentSettings, cmd: EquipmentCommand, ctx
     }
     case 'placeGate':
       next = { ...e, pw: { ...e.pw, theta: cmd.theta, depthMm: cmd.r } };
+      if (cmd.withColorBox && e.color.enabled && e.pw.enabled) next = centerBox(next, cmd.theta, cmd.r);
       break;
     case 'placeMLine':
       next = { ...e, mmode: { ...e.mmode, theta: cmd.theta } };

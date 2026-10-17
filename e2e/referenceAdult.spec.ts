@@ -41,10 +41,11 @@ test('el adulto de referencia carga el mismo campo corporal para imagen y consul
     'portalTrunk',
     'renal',
     'hepatorenal',
+    'portalSubcostal',
   ]);
   for (const row of result.windows) {
     expect(row.interiorAgreement, row.id).toBe(1);
-    // Las siete ventanas vasculares mantienen su cobertura de sangre. La nueva vista
+    // Las ventanas vasculares mantienen su cobertura de sangre. La vista
     // parenquimatosa se valida con corteza/hígado en hepatorenal.spec.ts, sin inventar vasos.
     if (row.id !== 'hepatorenal') expect(row.bloodCells, row.id).toBeGreaterThan(0);
     expect(row.vesselAgreement, row.id).toBe(1);

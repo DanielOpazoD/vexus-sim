@@ -115,3 +115,12 @@ el modo. La aceptación de esta ronda exige check completo, inspección visual y
 Al cerrar una nueva entrega, añadir aquí su referencia comprobada y límites. Conservar los cierres
 previos como historia, retirar tareas ya terminadas del estado operativo y fechar toda afirmación
 que dependa de GitHub, procesos o pestañas.
+
+### Observación local durante la ronda212
+
+Una corrida SwiftShader de seis pruebas registró cinco aprobadas y un error «corte sin avance durante
+3 s» al exportar la porta intrahepática del modelo reference, antes de entrar al acceso subcostal
+nuevo. La pose y el vigilante del corte no cambian en esta ronda. Un control de esa adquisición sobre
+main203f6b3 pasó; por tanto no se aisló la causa y no se declara reparada ni se atribuye al entorno.
+Se conservan ambos originales. La aceptación sigue dependiendo de la CI completa del head final;
+un resultado verde posterior no convierte esa corrida local fallida en aprobada.

@@ -216,3 +216,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [210](DECISIONS.md#L7266) | Interfaz clara y espacio de examen adaptable sin perder adquisición | vigente |
 | [211](DECISIONS.md#L7298) | Doppler durante el arrastre y nueva ventana en 2D | vigente |
 | [212](DECISIONS.md#L7328) | Selector por territorio y acceso portal subcostal anterior | vigente |
+| [213](DECISIONS.md#L7365) | VExUS LAB y porta subcostal derecha con el esqueleto completo | vigente |

@@ -1,0 +1,106 @@
+{
+  "decision": 213,
+  "baselineCommit": "cf584e47ac9edd98b8f72a02ad80df8ba9f89c4b",
+  "method": "Offline geometry/transmission selection, then 8.5s IQ acquisition; same pose for both patients; both abdominal and thoracic fields loaded; actual costal labels7\u201310, inferior meridian projection and estimated8mm support margin. No anatomy/flow/shader changes.",
+  "searchDomain": {
+    "phiRad": [0.35, 3.3],
+    "zMm": [-150, -35]
+  },
+  "geometricCandidates": 393,
+  "subcostalRightCandidates": 187,
+  "beforeAtlas": {
+    "pose": {
+      "phi": 1.65,
+      "z": -55,
+      "yaw": -0.292365,
+      "rock": -0.312705,
+      "tilt": -0.079291
+    },
+    "target": "pvTrunk",
+    "cosAngle": 0.6022974133413701,
+    "angleDeg": 52.9653844385904,
+    "scope": "previous offline result, no thoracic field; historical comparison, not a paired clinical benchmark"
+  },
+  "selected": {
+    "pose": {
+      "phi": 2.8500000000000014,
+      "z": -95,
+      "lift": 0,
+      "yaw": -1.211765194696763,
+      "rock": -0.009266432526945935,
+      "tilt": 0.15798649836822976
+    },
+    "results": [
+      {
+        "patient": "normal-adult",
+        "gate": {
+          "theta": 0.006588054321928313,
+          "r": 82.5,
+          "bd": 3.4140161987255713,
+          "cosAngle": 0.8749115258212177,
+          "vessel": "pvRight"
+        },
+        "transmission": 0.07753398813497367,
+        "rightFraction": 1,
+        "weights": {
+          "pvRight": 263.9945168992009
+        },
+        "capture": {
+          "PF": 14.375174923033995,
+          "quality": {
+            "beats": 4,
+            "validBeats": 4,
+            "edgeEnergyFraction": 0,
+            "wrappedBeats": 0,
+            "bloodColumns": 1,
+            "issue": null
+          },
+          "vMin": 21.40516304347821,
+          "vMax": 24.9517663043478
+        }
+      },
+      {
+        "patient": "severe-congestion",
+        "gate": {
+          "theta": 0.006588054321928313,
+          "r": 84,
+          "bd": 3.5922281422308693,
+          "cosAngle": 0.8748664892422064,
+          "vessel": "pvRight"
+        },
+        "transmission": 0.07606900776292445,
+        "rightFraction": 1,
+        "weights": {
+          "pvRight": 265.5912573362628
+        },
+        "capture": {
+          "PF": 70.84260945827435,
+          "quality": {
+            "beats": 4,
+            "validBeats": 4,
+            "edgeEnergyFraction": 0,
+            "wrappedBeats": 0,
+            "bloodColumns": 1,
+            "issue": null
+          },
+          "vMin": 8.91358695652173,
+          "vMax": 30.507065217391325
+        }
+      }
+    ]
+  },
+  "sourceHashes": {
+    "source-subcostal-atlas-right.json": "a5e6125977263387b63a5ab218f5877d11cfda5f40b1f2d9b114af145a5dc442",
+    "ranked-subcostal-atlas-right.json": "ab5e64b7aeaef85075e8b3aa77e0c5182017fbed08788e14325a5b9f6b7dc8b1",
+    "find-portal-skeleton.mts": "3504ba8c0ea42fee44788f4cd316a23193a09f232929796e53317b64549d46fa",
+    "filter-subcostal-source.mts": "b56384579411ace25a00bdaad2fc3a320774a4cde6413e49b76a6b6a348c309a",
+    "rank-subcostal-atlas.mts": "311c344f5635a39c49aef38fcc2e0c9e4a767f29ebd91b6e5873d9fbbe650b84"
+  },
+  "limits": [
+    "Synthetic anatomy and signal; no independent human calibration.",
+    "Right branch and main trunk are separate identities; not a claim of clinical interchangeability.",
+    "Legacy/reference retain prior trunk poses.",
+    "Best1\u201313degree lateral candidates rejected as intercostal.",
+    "Prior PW transport/repopulation and intermittent cut watchdog remain unresolved."
+  ]
+}

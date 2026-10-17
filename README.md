@@ -1,4 +1,4 @@
-# VExUS Sim — simulador ecográfico de congestión venosa
+# VExUS LAB — simulador ecográfico de congestión venosa
 
 Simulador web de VExUS (Venous Excess Ultrasound Score) construido como una **cadena causal**:
 

@@ -1,4 +1,4 @@
-# Continuidad de VExUS Sim
+# Continuidad de VExUS LAB
 
 ## Alcance vigente al 17 de octubre de 2026
 
@@ -8,8 +8,9 @@ registra 18 adquisiciones del atlas (nueve ventanas y dos pacientes), rechaza un
 pierde la señal renal de referencia (208) y unifica los límites del mando de presión con la pose (209).
 La siguiente ronda aborda interfaz clara y disposición adaptable (210), con invariantes de adquisición.
 El usuario añadió arrastre Doppler en vivo y regreso a 2D al elegir otra ventana (211).
-Ambas se integraron en PR258 con CI completa. La ronda actual simplifica el selector por territorio
-y añade un acceso portal subcostal anterior sobre la anatomía fija (212); aún requiere su propio cierre.
+Ambas se integraron en PR258 con CI completa. PR259 integró el selector por territorio y el acceso portal subcostal anterior (212). La ronda actual
+213 añade el nombre/logo VExUS LAB y mejora el acceso subcostal Atlas hacia la rama portal derecha.
+El cierre 213 sigue pendiente de su CI protegida y fusión.
 Se conserva el circuito de PR pequeño, evidencia antes/después y CI completa antes de integrar.
 
 Este documento es el punto de entrada. `CONTRIBUTING.md` define el procedimiento de aceptación;
@@ -19,20 +20,18 @@ las pestañas abiertas y los JSON de una sesión son antecedentes, no estado viv
 ## Último cierre funcional acreditado
 
 - Repositorio: [DanielOpazoD/vexus-sim](https://github.com/DanielOpazoD/vexus-sim).
-- [PR258](https://github.com/DanielOpazoD/vexus-sim/pull/258), fusionado el 17 de octubre a las
-  19:38:18 UTC: interfaz clara/adaptable (210) y arrastre Doppler/cambio de ventana en 2D (211).
-  Head `18cb7ac1b238a0b0ca02786ad411c7380654840e`; main
-  `203f6b35ea1874d70020b6e4cc49189b8cd94343`.
-- Árbol `e4e82269c5df0d7b7dfbe66ea60d06f0383ccd46`, idéntico al merge probado
-  `1ae657417dd35f5a3a2c5d4796668ec32bb0c34b`.
-- [CI del cierre](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39060965556): 15 trabajos
-  aprobados; 144 E2E únicas, una ejecución por prueba y cero reintentos entre 12 informes originales.
-  Core: 1.518 aprobadas y 10 fallos esperados; matrices: 54 aprobadas y un fallo esperado.
-  Verificadores de fuente e informes aprobados. Validaciones adicionales venosa y de estabilidad PW
-  también verdes; sus alcances y originales constan en el PR.
-- Comprobación local del head: check completo, dos pruebas Doppler SwiftShader y seis pruebas Metal
-  de coherencia/adaptación, sin reintentos. Adaptación verificada entre 320 y 1.600 px; los lienzos y
-  la adquisición congelada se conservan al redimensionar. El anterior desborde móvil queda corregido.
+- [PR259](https://github.com/DanielOpazoD/vexus-sim/pull/259), fusionado el 17 de octubre a las
+  21:31:42 UTC: selector por territorio y porta subcostal (212). Head
+  `ad44bb2ac572623c9be52deea511b7a916034283`; main `cf584e47ac9edd98b8f72a02ad80df8ba9f89c4b`.
+- Árbol `453c0dc9e2e25aed33e91d26b3c9391f9eff4416`, idéntico al merge probado
+  `a108dd4b7a9c5b915fca71e4a8fdaf7c97d1a509`.
+- [CI del cierre](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39068831739): 15 trabajos
+  aprobados; 145 E2E únicas, una ejecución por prueba y cero reintentos entre 12 informes originales.
+  Core: 1.525 aprobadas y 10 fallos esperados; matrices: 54 aprobadas y un fallo esperado.
+  Verificadores de fuente e informes aprobados. Se conservan la primera CI fallida por inventarios
+  de poses incompletos y el negativo SwiftShader del vigilante del corte.
+- [PR258](https://github.com/DanielOpazoD/vexus-sim/pull/258) integró interfaz clara/adaptable (210)
+  y arrastre Doppler/cambio de ventana en 2D (211), con adaptación entre 320 y 1.600 px.
 - [PR257](https://github.com/DanielOpazoD/vexus-sim/pull/257) conserva el cierre anterior de presión
   (209) y el experimento PW rechazado (208). La entrega nueva no resuelve su transporte/reposición.
 - Al iniciar la ronda 212, GitHub no tenía PR abiertos y `origin/main` seguía en `203f6b3`.
@@ -66,7 +65,7 @@ La espera del barrido renal/hepatorrenal se fortaleció con `windowAcquired` ant
 ángulos: corte y marco podían coincidir durante la animación anterior al destino. El cierre pasó
 también con dos vistas en SwiftShader: 502.232 ms en CI frente al plazo original de 540.000 ms.
 
-## Ronda en curso: selector por territorio (212)
+## Selector aceptado (212) y ronda VExUS LAB (213)
 
 El selector ofrece ocho accesos en cuatro grupos: Porta (intrahepática/subcostal), Suprahepáticas
 (intercostal/subcostal), VCI (eje corto/largo) y Renal (focalizada/hepatorrenal). Menú y marcas 3D
@@ -82,7 +81,12 @@ Son controles del simulador; no constituyen calibración humana ni validación c
 
 Al elegir el acceso subcostal portal se usan 15 cm y foco a 10 cm. Se conserva el regreso a 2D,
 salida de cine/congelación y cancelación de medición pendiente; mover la sonda libremente conserva
-el modo. La aceptación de esta ronda exige check completo, inspección visual y CI protegida.
+el modo. La ronda 212 se integró con check y CI completa. En 213 solo cambia el apoyo Atlas: bajo el reborde
+subcostal derecho, rama `pvRight`, φ 2,85, z −95 mm. El barrido incluye el esqueleto real y descarta
+los candidatos intercostales; mejora el ángulo de unos 53° a 29° en la referencia sintética. La puerta
+adquirida es 100 % derecha en ambos pacientes, PF 14,38/70,84 %, con calidad útil. Legacy/reference
+conservan el tronco anterior. Ver decisión 213 y `docs/evidence/portal-subcostal-213.json`.
+La aceptación 213 exige check completo, inspección visual y CI protegida sobre el head final.
 
 ## Límites y resultados que no deben perderse
 

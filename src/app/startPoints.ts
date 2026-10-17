@@ -178,7 +178,7 @@ export const START_POINTS: readonly StartPoint[] = [
     yaw: -0.494953,
     rock: 0.465943,
     tilt: -0.031699,
-    hint: 'Tronco portal desde el reborde subcostal anterior. Afina el hilio y coloca PW lejos de la bifurcación. 15 cm y foco a 10 cm.',
+    hint: 'Porta desde el reborde subcostal. Busca el tramo longitudinal y coloca PW dentro de su luz, lejos de bifurcaciones. 15 cm y foco a 10 cm.',
   },
 ];
 
@@ -273,10 +273,16 @@ const ABDOMINAL_POSES = {
   // Recheck actual renal transmission after the continuous pressure correction;
   // a 2-mm cranial slide clears the grazing rib without altering the skeleton.
   hepatorenal: { phi: 2.99, z: -113, yaw: -0.24452521426888207, rock: -0.13406390040993016, tilt: -0.3591483268294911 },
-  portalSubcostal: { phi: 1.65, z: -55, yaw: -0.292365, rock: -0.312705, tilt: -0.079291 },
+  // [EXTRAPOLACIÓN PROPIA] Reborde derecho registrado; rama portal derecha, no tronco (213).
+  portalSubcostal: { phi: 2.85, z: -95, yaw: -1.211765, rock: -0.009266, tilt: 0.157986 },
 } as const;
 const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
   ...sp,
+  ...(sp.id === 'portalSubcostal'
+    ? {
+        hint: 'Rama portal derecha desde el reborde subcostal derecho. Tramo longitudinal para PW dentro de la luz, lejos de bifurcaciones. 15 cm y foco a 10 cm.',
+      }
+    : {}),
   ...ABDOMINAL_POSES[sp.id],
   hint:
     sp.id === 'intercostal'

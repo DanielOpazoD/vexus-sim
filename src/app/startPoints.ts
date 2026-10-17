@@ -178,7 +178,7 @@ export const START_POINTS: readonly StartPoint[] = [
     yaw: -0.494953,
     rock: 0.465943,
     tilt: -0.031699,
-    hint: 'Porta desde el reborde subcostal. Busca el tramo longitudinal y coloca PW dentro de su luz, lejos de bifurcaciones. 15 cm y foco a 10 cm.',
+    hint: 'Porta subcostal: PW en el tronco, lejos de la bifurcación. 15 cm; foco 10 cm.',
   },
 ];
 
@@ -249,7 +249,7 @@ const REFERENCE_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
   ...REFERENCE_POSES[sp.id],
   hint:
     sp.id === 'portalSubcostal'
-      ? 'Rama portal derecha desde el reborde subcostal derecho. Tramo longitudinal para PW dentro de la luz, lejos de bifurcaciones. 15 cm y foco a 10 cm.'
+      ? 'Rama portal derecha desde subcostal derecho. PW en la luz, lejos de bifurcaciones. 15 cm; foco 10 cm.'
       : sp.id === 'intercostal'
         ? 'Intercostal derecha: marcador hacia la axila posterior. Afina entre costillas hasta la suprahepática derecha.'
         : sp.id === 'renal'
@@ -283,7 +283,7 @@ const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
   ...ABDOMINAL_POSES[sp.id],
   hint:
     sp.id === 'portalSubcostal'
-      ? 'Rama portal derecha desde el reborde subcostal derecho. Tramo longitudinal para PW dentro de la luz, lejos de bifurcaciones. 15 cm y foco a 10 cm.'
+      ? 'Rama portal derecha desde subcostal derecho. PW en la luz, lejos de bifurcaciones. 15 cm; foco 10 cm.'
       : sp.id === 'intercostal'
         ? 'Intercostal derecha, marcador hacia la axila posterior. Rota o abanica para adquirir la suprahepática entre costillas.'
         : sp.id === 'portal'

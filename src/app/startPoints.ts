@@ -178,7 +178,7 @@ export const START_POINTS: readonly StartPoint[] = [
     yaw: -0.494953,
     rock: 0.465943,
     tilt: -0.031699,
-    hint: 'Tronco portal desde el reborde subcostal anterior. Afina el hilio y coloca PW lejos de la bifurcación. 15 cm y foco a 10 cm.',
+    hint: 'Porta subcostal: PW en el tronco, lejos de la bifurcación. 15 cm; foco 10 cm.',
   },
 ];
 
@@ -248,11 +248,13 @@ const REFERENCE_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
   ...sp,
   ...REFERENCE_POSES[sp.id],
   hint:
-    sp.id === 'intercostal'
-      ? 'Intercostal derecha: marcador hacia la axila posterior. Afina entre costillas hasta la suprahepática derecha.'
-      : sp.id === 'renal'
-        ? 'Desde el flanco derecho, afina el eje largo renal y una vena interlobar para PW.'
-        : sp.hint,
+    sp.id === 'portalSubcostal'
+      ? 'Rama portal derecha desde subcostal derecho. PW en la luz, lejos de bifurcaciones. 15 cm; foco 10 cm.'
+      : sp.id === 'intercostal'
+        ? 'Intercostal derecha: marcador hacia la axila posterior. Afina entre costillas hasta la suprahepática derecha.'
+        : sp.id === 'renal'
+          ? 'Desde el flanco derecho, afina el eje largo renal y una vena interlobar para PW.'
+          : sp.hint,
 }));
 const ABDOMINAL_POSES = {
   // Intrahepatic IVC in long axis, rather than aiming the whole face at its
@@ -273,19 +275,22 @@ const ABDOMINAL_POSES = {
   // Recheck actual renal transmission after the continuous pressure correction;
   // a 2-mm cranial slide clears the grazing rib without altering the skeleton.
   hepatorenal: { phi: 2.99, z: -113, yaw: -0.24452521426888207, rock: -0.13406390040993016, tilt: -0.3591483268294911 },
-  portalSubcostal: { phi: 1.65, z: -55, yaw: -0.292365, rock: -0.312705, tilt: -0.079291 },
+  // [EXTRAPOLACIÓN PROPIA] Reborde derecho registrado; rama portal derecha, no tronco (213).
+  portalSubcostal: { phi: 2.85, z: -95, yaw: -0.622104, rock: 0.080718, tilt: 0.136272 },
 } as const;
 const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
   ...sp,
   ...ABDOMINAL_POSES[sp.id],
   hint:
-    sp.id === 'intercostal'
-      ? 'Intercostal derecha, marcador hacia la axila posterior. Rota o abanica para adquirir la suprahepática entre costillas.'
-      : sp.id === 'portal'
-        ? 'Rama portal intrahepática desde lateral. 13 cm, foco a 10 cm, Color ±35 cm/s y ganancia 12 dB. Para medir VExUS, usa el tronco principal.'
-        : sp.id === 'portalTrunk'
-          ? 'Tronco portal principal desde lateral: 16 cm y foco a 13 cm. Afina el hilio y coloca la puerta en el tronco.'
-          : sp.hint,
+    sp.id === 'portalSubcostal'
+      ? 'Rama portal derecha desde subcostal derecho. PW en la luz, lejos de bifurcaciones. 15 cm; foco 10 cm.'
+      : sp.id === 'intercostal'
+        ? 'Intercostal derecha, marcador hacia la axila posterior. Rota o abanica para adquirir la suprahepática entre costillas.'
+        : sp.id === 'portal'
+          ? 'Rama portal intrahepática desde lateral. 13 cm, foco a 10 cm, Color ±35 cm/s y ganancia 12 dB. Para medir VExUS, usa el tronco principal.'
+          : sp.id === 'portalTrunk'
+            ? 'Tronco portal principal desde lateral: 16 cm y foco a 13 cm. Afina el hilio y coloca la puerta en el tronco.'
+            : sp.hint,
 }));
 /** Scene-specific presets; legacy tests/torso retain their own poses. */
 export function startPointsFor(torso: Pick<Torso, 'a' | 'b' | 'profile'>): readonly StartPoint[] {

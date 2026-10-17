@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import type { Camera, Matrix4, Vector3 } from 'three';
 import type { CutMapInit, CutMapRequest, CutMapResponse } from '../src/ui/cutMapWorker';
 import type { ProbePose } from '../src/probe/probe';
-import { bootWithoutErrors, budget, withinFrames } from './support';
+import { bootWithoutErrors, budget, windowAcquired, withinFrames, withinSimSeconds } from './support';
 
 interface NavigatorWitness {
   n: number;
@@ -265,4 +265,44 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
     await info.attach('six-region-navigation', { body: JSON.stringify({ caseId, records }), contentType: 'application/json' });
     expect(errors).toEqual([]);
     expect(await page.evaluate(() => window.__vexusTest!.loggedErrors())).toEqual([]);
+  });
+
+for (const caseId of ['normal-adult', 'severe-congestion'])
+  test(`subcostal right portal acquisition retains 3D and cut geometry while moving, ${caseId}`, async ({ page }, info) => {
+    budget(180_000);
+    await observe(page);
+    const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
+    if (caseId !== 'normal-adult') await page.selectOption('#case-select', caseId);
+    await observeNavigator(page);
+    await page.locator('[data-window="portalSubcostal"]').click();
+    await windowAcquired(page, 'portalSubcostal');
+    await page.locator('#mode-color').click();
+    await page.locator('#mode-pw').click();
+    expect(await page.evaluate(() => window.__vexusTest!.placeGate(['pvRight']))).toBe(true);
+    await withinSimSeconds(page, 5, 'PW adquiere cuatro segundos de espectro portal', async () =>
+      page.evaluate(() => {
+        const columns = window.__vexusTest!.sim().spectral.columns;
+        return (columns.length > 1 && columns.at(-1)!.t - columns[0].t >= 4) || 'espectro pendiente';
+      }),
+    );
+    const records = [await parity(page)];
+    await page.screenshot({ path: info.outputPath(`porta-subcostal-${caseId}.png`) });
+    await page.locator('#freeze').click();
+    await page.getByRole('tab', { name: 'Adquirir', exact: true }).click();
+    // Real controls rotate the same acquired plane; no anatomy or image substitute.
+    for (const name of ['Rotación', 'Basculación', 'Inclinación']) {
+      const slider = page.getByRole('slider', { name, exact: true });
+      await slider.fill(String(Number(await slider.inputValue()) + 5));
+    }
+    records.push(await parity(page));
+    await page.locator('#freeze').click();
+    await page.evaluate(() => {
+      const s = window.__vexusTest!.sim();
+      s.setPose({ ...s.pose, phi: s.pose.phi - 0.04, z: s.pose.z + 4 });
+    });
+    records.push(await parity(page));
+    expect(await page.evaluate(() => window.__vexusTest!.sim().pw.enabled)).toBe(true);
+    expect(errors).toEqual([]);
+    expect(await page.evaluate(() => window.__vexusTest!.loggedErrors())).toEqual([]);
+    await info.attach('subcostal-portal-motion.json', { body: JSON.stringify({ caseId, records }), contentType: 'application/json' });
   });

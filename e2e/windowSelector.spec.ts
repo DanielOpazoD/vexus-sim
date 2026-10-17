@@ -5,6 +5,9 @@ test('el selector ofrece ocho accesos en cuatro territorios y Enter abre la port
   budget(120_000);
   const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
   await expect(page.getByRole('heading', { name: 'Ventanas', exact: true })).toBeVisible();
+  await expect(page).toHaveTitle('VExUS LAB');
+  await expect(page.locator('.brand')).toHaveText('VExUS LAB');
+  expect(await page.locator('.brand img').evaluate((img: HTMLImageElement) => img.complete && img.naturalWidth > 0)).toBe(true);
   const menu = page.locator('#start-points');
   const expected = [
     ['Porta', ['Intrahepática', 'Subcostal']],

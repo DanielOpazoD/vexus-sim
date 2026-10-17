@@ -7361,3 +7361,49 @@ contraste, compresión y rótulos conservan sus umbrales. Navegador comprueba lo
 Tab/Enter, preset, regreso a 2D, corte correspondiente al cuadro adquirido y paridad GPU del lumen
 portal; siguen los barridos desde seis coordenadas y ambos pacientes. La aceptación requiere
 `npm run check`, revisión visual y CI completa del árbol publicado; el PR enlaza los originales.
+
+## 213. VExUS LAB y porta subcostal derecha con el esqueleto completo
+
+**Contexto.** El usuario nombra el simulador VExUS LAB y pide un logo. También pide buscar la porta
+en toda el área subcostal, incluidas ramas principales, para mejorar su alineación con el haz PW.
+El preset Atlas anterior era central, con coseno ≈0,60 (≈53°) en el barrido previo. El arnés de esa
+ronda cargaba el abdomen, pero omitía el esqueleto torácico que sí carga la aplicación.
+
+**Opciones.** Mantener la búsqueda central restringía el acceso; elegir solo el menor ángulo
+aceptaba espacios intercostales (1–13°) como si fueran subcostales. Se rechazan esos candidatos.
+No se modifican vasos, órganos, flujo, umbrales clínicos ni señal para mejorar el encuadre.
+
+**Decisión.** La marca visible es VExUS LAB, con un símbolo de sector/árbol venoso generado mediante
+ImageGen, derivados PNG transparentes de 256/64 px y nombre como texto accesible. El original y el
+prompt quedan en la evidencia local; los recursos usados por la app viven en `public/brand`.
+
+El barrido Atlas abarca φ 0,35–3,3 rad y z −150 a −35 mm, carga abdomen y tórax y comprueba la
+transmisión real. Excluye el apoyo por encima de la proyección inferior de las costillas 7–10 del
+campo registrado, con margen estimado de 8 mm. De 393 candidatos geométricos quedan 187 accesos
+subcostales derechos con transmisión útil. Se selecciona φ 2,85, z −95 mm, yaw −0,622104,
+rock 0,080718 y tilt 0,136272: rama `pvRight`, coseno ≈0,876 (≈29°) en ambos pacientes.
+Una misma pose sirve a ambos, sin escogerla por PF. Las adquisiciones posteriores de 8,5 s dan
+100 % de composición derecha ponderada, calidad útil, PF normal 13,71 % y severa 70,70 %.
+La búsqueda, sus límites y recibos resumidos constan en `docs/evidence/portal-subcostal-213.json`.
+Legacy y reference conservan sus poses y contratos de tronco de 212. La primera rotación del
+plano no cumplía el contrato craneal del marcador (0,344 <0,5): se corrige la orientación, sin
+rebajar esa prueba; el marcador pasa a 0,770 y el coseno se mantiene en 0,876.
+
+**Consecuencias.** El acceso es más lateral y la rama se ve longitudinal con mayor componente
+Doppler. Se conservan 15 cm, foco a 10 cm, movimiento continuo y reset a 2D al elegir ventana.
+La identidad adquirida sigue siendo la rama derecha; no se la declara clínicamente intercambiable
+con el tronco. La selección y el margen son **EXTRAPOLACIÓN PROPIA**, no calibración humana.
+La guía de [la Sociedad Polaca de Ultrasonido](https://pmc.ncbi.nlm.nih.gov/articles/PMC4579749/)
+describe el acceso subcostal para la porta y su rama derecha; la revisión de
+[VExUS](https://doi.org/10.1186/s13089-024-00396-z) mantiene el tronco como sitio de medida del protocolo.
+La orientación en pantalla no sustituye al ángulo haz/flujo.
+
+**Verificación.** `portalSubcostalWindow.test.ts` carga el esqueleto real, exige apoyo bajo reborde,
+coseno Atlas ≥0,75 (más fuerte que el anterior ≥0,5), territorio >90 %, transmisión >0,01 y
+conserva calidad/PF/flujo anterógrado en seis combinaciones. La E2E de contacto compara ahora la
+rama derecha visible con el clasificador GPU; las nuevas pruebas de navegación comparan corte,
+abanico y sonda 3D contra la adquisición tras rotación y traslación, con Color/PW y ambos pacientes.
+El control negativo con la pose Atlas anterior falla porque no encuentra la rama derecha en ese
+plano; se restauró la pose nueva antes de validar. El selector verifica nombre/logo cargado; la adaptación conserva sus tamaños originales. La
+aceptación requiere `check`, inspección de navegador y la CI protegida sobre el head publicado.
+Los resultados negativos del vigilante del corte y del transporte PW de rondas previas permanecen abiertos.

@@ -91,7 +91,7 @@ test('subcostal portal window restores its own depth after the intrahepatic wind
           (x, i) => x + (s.transducer.curvatureRadius + r) * (a.frame.axial[i] * Math.cos(theta) + a.frame.lateral[i] * Math.sin(theta)),
         ) as [number, number, number];
         const q = s.anatomy.classifyWorld(p, a.sample);
-        if (q.vessel === 'pvTrunk') {
+        if (q.vessel === 'pvRight') {
           hits.push({ theta, r });
           if (q.boundaryDistance > 1.2) {
             inner.push(...p);
@@ -109,8 +109,8 @@ test('subcostal portal window restores its own depth after the intrahepatic wind
       errors: window.__vexusTest!.loggedErrors(),
     };
   });
-  await info.attach('main-portal-window.json', { body: JSON.stringify(result, null, 2), contentType: 'application/json' });
-  await page.screenshot({ path: info.outputPath('main-portal-window.png') });
+  await info.attach('right-portal-subcostal-window.json', { body: JSON.stringify(result, null, 2), contentType: 'application/json' });
+  await page.screenshot({ path: info.outputPath('right-portal-subcostal-window.png') });
   expect(result.depth).toBe(150);
   expect(result.focus).toBe(100);
   expect(result.hits.length).toBeGreaterThan(20);

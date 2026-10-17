@@ -2,7 +2,7 @@ import { expect, test, type Page } from '@playwright/test';
 import type { Camera, Matrix4, Vector3 } from 'three';
 import type { CutMapInit, CutMapRequest, CutMapResponse } from '../src/ui/cutMapWorker';
 import type { ProbePose } from '../src/probe/probe';
-import { bootWithoutErrors, budget, windowAcquired, withinFrames } from './support';
+import { bootWithoutErrors, budget, windowAcquired, withinFrames, withinSimSeconds } from './support';
 
 interface NavigatorWitness {
   n: number;
@@ -279,9 +279,16 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
     await page.locator('#mode-color').click();
     await page.locator('#mode-pw').click();
     expect(await page.evaluate(() => window.__vexusTest!.placeGate(['pvRight']))).toBe(true);
+    await withinSimSeconds(page, 5, 'PW adquiere cuatro segundos de espectro portal', async () =>
+      page.evaluate(() => {
+        const columns = window.__vexusTest!.sim().spectral.columns;
+        return (columns.length > 1 && columns.at(-1)!.t - columns[0].t >= 4) || 'espectro pendiente';
+      }),
+    );
     const records = [await parity(page)];
     await page.screenshot({ path: info.outputPath(`porta-subcostal-${caseId}.png`) });
     await page.locator('#freeze').click();
+    await page.getByRole('tab', { name: 'Adquirir', exact: true }).click();
     // Real controls rotate the same acquired plane; no anatomy or image substitute.
     for (const name of ['Rotación', 'Basculación', 'Inclinación']) {
       const slider = page.getByRole('slider', { name, exact: true });

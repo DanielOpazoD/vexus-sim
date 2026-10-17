@@ -9,6 +9,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Interfaz: fondo claro, mandos legibles y examen adaptable desde 320 px; corrige el colapso de la imagen y el desborde móvil, conservando los lienzos y la adquisición al redimensionar (210).
+
 - Sonda: el mando de presión utiliza los límites físicos compartidos, de separación 25 mm a hundimiento 6 mm, sin ofrecer hundimientos que la pose recorta (209).
 
 - Corte anatómico: sigue las nuevas poses adquiridas sin esperar la cadencia de reposo de 8 Hz; conserva una petición en vuelo, la rejilla y el modelo compartido durante el recorrido libre (206).

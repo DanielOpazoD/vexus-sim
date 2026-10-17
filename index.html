@@ -26,6 +26,66 @@
         <span id="build-info" class="build-info" title="Versión y commit"></span>
       </header>
 
+      <main class="center">
+        <div class="display-wrap" id="sector-wrap">
+          <canvas id="gl"></canvas>
+          <canvas id="overlay"></canvas>
+          <div class="img-hud">
+            <div class="hud-tl" id="hud-tl"></div>
+            <div class="hud-tr" id="hud-tr"></div>
+            <div class="hud-br" id="hud-br"></div>
+          </div>
+          <div class="disclaimer">
+            Simulador educativo con pacientes sintéticos. No utilizar para diagnóstico ni toma de decisiones clínicas.
+          </div>
+          <div id="cine-bar" class="cine-bar" hidden>
+            <input type="range" id="cine" min="0" max="0" step="1" value="0" aria-label="Cuadro del cine (← →)" />
+            <span id="cine-time" aria-hidden="true">0,00 s</span>
+          </div>
+        </div>
+        <div class="traces">
+          <canvas id="ecg" class="ecg"></canvas>
+          <canvas id="spectrum" class="spectrum"></canvas>
+          <canvas id="pw-scale" class="pw-scale" role="img" aria-label="Escala PW en cm/s"></canvas>
+          <canvas id="mmode" class="mmode" role="img" aria-label="Modo M: profundidad frente a tiempo"></canvas>
+        </div>
+      </main>
+
+      <footer class="modebar" role="toolbar" aria-label="Modo y equipo">
+        <div class="modes" role="group" aria-label="Modo de imagen">
+          <button id="mode-b" class="mode active" title="Modo B (2)" aria-pressed="true">2D</button>
+          <button id="mode-m" class="mode" title="Modo M (M): línea M sobre la imagen y su franja" aria-pressed="false">M</button>
+          <button id="mode-color" class="mode" title="Doppler color (C)" aria-pressed="false">Color</button>
+          <button id="mode-pw" class="mode" title="Doppler pulsado (P); con Color, tríplex" aria-pressed="false">PW</button>
+        </div>
+        <span id="ctx-chip" class="ctx-chip"></span>
+        <span class="spacer"></span>
+        <button id="freeze" class="secondary" title="Congelar la imagen (Espacio)" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9" />
+            <path d="m9.5 4.5 2.5 2 2.5-2M9.5 19.5l2.5-2 2.5 2" />
+          </svg>
+          Congelar
+        </button>
+        <button id="audio-toggle" class="secondary" title="Audio Doppler" aria-pressed="false">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 9v6h4l5 4V5L8 9H4Z" />
+            <path class="wave" d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11" />
+          </svg>
+          Audio
+        </button>
+        <button id="torso-toggle" class="secondary on" title="Carril izquierdo: ventanas, 3D y corte (H)" aria-pressed="true">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3 20 7.5v9L12 21l-8-4.5v-9L12 3Z" />
+            <path d="M12 12 20 7.5M12 12v9M12 12 4 7.5" />
+          </svg>
+          Torso 3D
+        </button>
+        <span id="status" class="modebar-status" aria-live="off"></span>
+      </footer>
+
+      <aside class="right" id="panel"></aside>
+
       <aside class="left" id="left-rail" aria-label="Ventanas, navegador 3D y corte">
         <section class="rail-block windows-block" aria-labelledby="windows-title">
           <div class="rail-head">
@@ -120,66 +180,6 @@
           <div class="cut-map" id="cut-body"><canvas id="cutmap"></canvas></div>
         </section>
       </aside>
-
-      <main class="center">
-        <div class="display-wrap" id="sector-wrap">
-          <canvas id="gl"></canvas>
-          <canvas id="overlay"></canvas>
-          <div class="img-hud">
-            <div class="hud-tl" id="hud-tl"></div>
-            <div class="hud-tr" id="hud-tr"></div>
-            <div class="hud-br" id="hud-br"></div>
-          </div>
-          <div class="disclaimer">
-            Simulador educativo con pacientes sintéticos. No utilizar para diagnóstico ni toma de decisiones clínicas.
-          </div>
-          <div id="cine-bar" class="cine-bar" hidden>
-            <input type="range" id="cine" min="0" max="0" step="1" value="0" aria-label="Cuadro del cine (← →)" />
-            <span id="cine-time" aria-hidden="true">0,00 s</span>
-          </div>
-        </div>
-        <div class="traces">
-          <canvas id="ecg" class="ecg"></canvas>
-          <canvas id="spectrum" class="spectrum"></canvas>
-          <canvas id="pw-scale" class="pw-scale" role="img" aria-label="Escala PW en cm/s"></canvas>
-          <canvas id="mmode" class="mmode" role="img" aria-label="Modo M: profundidad frente a tiempo"></canvas>
-        </div>
-      </main>
-
-      <aside class="right" id="panel"></aside>
-
-      <footer class="modebar" role="toolbar" aria-label="Modo y equipo">
-        <div class="modes" role="group" aria-label="Modo de imagen">
-          <button id="mode-b" class="mode active" title="Modo B (2)" aria-pressed="true">2D</button>
-          <button id="mode-m" class="mode" title="Modo M (M): línea M sobre la imagen y su franja" aria-pressed="false">M</button>
-          <button id="mode-color" class="mode" title="Doppler color (C)" aria-pressed="false">Color</button>
-          <button id="mode-pw" class="mode" title="Doppler pulsado (P); con Color, tríplex" aria-pressed="false">PW</button>
-        </div>
-        <span id="ctx-chip" class="ctx-chip"></span>
-        <span class="spacer"></span>
-        <button id="freeze" class="secondary" title="Congelar la imagen (Espacio)" aria-pressed="false">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3v18M4.2 7.5l15.6 9M4.2 16.5l15.6-9" />
-            <path d="m9.5 4.5 2.5 2 2.5-2M9.5 19.5l2.5-2 2.5 2" />
-          </svg>
-          Congelar
-        </button>
-        <button id="audio-toggle" class="secondary" title="Audio Doppler" aria-pressed="false">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 9v6h4l5 4V5L8 9H4Z" />
-            <path class="wave" d="M16.5 9a4 4 0 0 1 0 6M19 6.5a7.5 7.5 0 0 1 0 11" />
-          </svg>
-          Audio
-        </button>
-        <button id="torso-toggle" class="secondary on" title="Carril izquierdo: ventanas, 3D y corte (H)" aria-pressed="true">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3 20 7.5v9L12 21l-8-4.5v-9L12 3Z" />
-            <path d="M12 12 20 7.5M12 12v9M12 12 4 7.5" />
-          </svg>
-          Torso 3D
-        </button>
-        <span id="status" class="modebar-status" aria-live="off"></span>
-      </footer>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

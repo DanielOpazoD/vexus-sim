@@ -6,6 +6,7 @@ El usuario pausó el desarrollo funcional para ordenar el entorno y autorizó es
 autonomía. El 17 de octubre autorizó retomar fidelidad externa y coherencia interna. La primera ronda
 registra 18 adquisiciones del atlas (nueve ventanas y dos pacientes), rechaza una rotación PW que
 pierde la señal renal de referencia (208) y unifica los límites del mando de presión con la pose (209).
+La siguiente ronda aborda interfaz clara y disposición adaptable (210), con invariantes de adquisición.
 Se conserva el circuito de PR pequeño, evidencia antes/después y CI completa antes de integrar.
 
 Este documento es el punto de entrada. `CONTRIBUTING.md` define el procedimiento de aceptación;
@@ -15,19 +16,25 @@ las pestañas abiertas y los JSON de una sesión son antecedentes, no estado viv
 ## Último cierre funcional acreditado
 
 - Repositorio: [DanielOpazoD/vexus-sim](https://github.com/DanielOpazoD/vexus-sim).
-- [PR254](https://github.com/DanielOpazoD/vexus-sim/pull/254): integrado el trabajo acumulado de
-  anatomía compartida, movimiento libre y arranque con dos vistas.
-- [PR255](https://github.com/DanielOpazoD/vexus-sim/pull/255): fusionado el 15 de octubre a las
-  20:40:05 UTC. Head `7539a31a07b24d7a660c886892c39180bf45f781`; merge en main
-  `70d1d0df1b7ca65818a430e3e40e9de2732eb336`.
-- Árbol del cierre: `9f8b8304967d26ea4818257453205f34e046cf70`, idéntico al head y al merge probado
-  `8a954a65413f4567fb22843042d9ea945cc8db8b`.
-- [CI del cierre](https://github.com/DanielOpazoD/vexus-sim/actions/runs/38799555332): 15 trabajos
-  aprobados; 139 E2E únicas, una ejecución por prueba y cero reintentos entre 12 informes originales.
-  Core: 1.514 aprobadas y 10 fallos esperados; matrices: 54 aprobadas y un fallo esperado.
+- [PR257](https://github.com/DanielOpazoD/vexus-sim/pull/257), fusionado el 17 de octubre a las
+  17:35:59 UTC: límites compartidos del mando de presión (209) y evidencia del experimento PW
+  rechazado (208). Head `dba48ab3da6aef9af4e0d05561de975c567d9822`; main
+  `b1cced43936678a7d17ccda911321cd4d79b7815`.
+- Árbol `2001078b233c8bc25e984ca656373379eae8e6f3`, idéntico al merge probado
+  `e40ed01488d4c68930e99ca40dac386a7e1836c9`.
+- [CI del cierre](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39052321451): 15 trabajos
+  aprobados; 141 E2E únicas, una ejecución por prueba y cero reintentos entre 12 informes originales.
+  Core: 1.517 aprobadas y 10 fallos esperados; matrices: 54 aprobadas y un fallo esperado.
   Informes y procedencia comprobados con los verificadores del repo.
-- El 16 de octubre se volvió a consultar GitHub: ese main seguía vigente y no había PR abiertos.
-  Es una observación fechada; volver a consultar antes de actuar.
+- Coherencia en Metal: seis coordenadas × dos pacientes, traslación y todos los ángulos;
+  2.560 puntos corte/GPU sin discrepancias y 4.254 puntos de envoltura renal concordantes.
+  Dos vistas SwiftShader: 509.591 ms bajo el plazo original de 540.000 ms.
+- El 17 de octubre, antes de la siguiente iteración visual, GitHub no tenía PR abiertos y
+  `origin/main` seguía en `b1cced4`. Es una observación fechada, no estado vivo.
+- Cierres anteriores: [PR254](https://github.com/DanielOpazoD/vexus-sim/pull/254), anatomía/movimiento/arranque;
+  [PR255](https://github.com/DanielOpazoD/vexus-sim/pull/255), corte durante movimiento;
+  [PR256](https://github.com/DanielOpazoD/vexus-sim/pull/256), entorno y continuidad.
+  La evidencia de PR255 sigue en `docs/evidence/session-20261015/`.
 - No se realizó despliegue, release ni etiqueta durante ese cierre.
 
 ## Qué funciona y qué se decidió
@@ -63,7 +70,7 @@ también con dos vistas en SwiftShader: 502.232 ms en CI frente al plazo origina
 - La disposición móvil 390×844 tenía desborde previo; no quedó aprobada una adaptación móvil.
 - Un perfil exploratorio del HUD no demostró la causa del timeout ni produjo un cambio integrado.
 - La paridad del modelo y las pruebas automatizadas no acreditan validación clínica independiente.
-- El margen del bundle del cierre era pequeño: 1.032,6 / 1.033 KiB. Se mantiene el presupuesto.
+- El margen del bundle del cierre era pequeño: 1.032,7 / 1.033 KiB. Se mantiene el presupuesto.
 
 ## Retomar sin reconstruir el chat
 

@@ -7262,3 +7262,35 @@ La presión sigue siendo desplazamiento en mm, no una fuerza medida. La navegaci
 atlas: extremos, valor presentado, pose adquirida y regreso a contacto, con errores vacíos. Se
 conserva su ejecución negativa contra el build anterior. La aceptación exige check completo,
 seguimiento/paridad 3D-corte-adquisición y CI íntegra del SHA publicado, sin ampliar plazos o bajar física.
+
+## 210. Interfaz clara y espacio de examen adaptable sin perder adquisición
+
+**Contexto.** El usuario pide fondo claro y uso simple. El main `b1cced4` conserva tres columnas incluso
+con 390 px disponibles: IAB midió 745 px de documento y 0 px de imagen central. El mando de presión
+podía probarse por DOM sin que eso acreditase una interfaz móvil usable. La captura anterior y la nueva
+regresión conservan ese negativo.
+
+**Opciones.** Cambiar solo colores deja el defecto de geometría. Ocultar el desborde recorta mandos.
+Duplicar controles o recrear lienzos en una navegación móvil introduce estado y riesgo innecesarios.
+Se conserva una sola instancia y se reorganiza el documento con CSS; las superficies de adquisición
+mantienen su paleta oscura.
+
+**Decisión.** `styles.css` define chrome blanco, texto oscuro y acento azul verdoso. Hasta 1000 px,
+imagen y trazas, modos, consola y anatomía se apilan con desplazamiento vertical. El orden de nodos
+en `index.html` sigue ese flujo para teclado; las posiciones de escritorio son explícitas. Cabecera,
+HUD, cine, menús y mandos envuelven su contenido, con alturas útiles para imagen, 3D y corte.
+Los fondos de los avisos sobre imagen conservan contraste incluso contra un eco blanco. No se
+introducen dependencias, imágenes rasterizadas de interfaz ni cambios en física, señal o geometría.
+
+**Consecuencias.** El mismo examen conserva controles y cuadro congelado al redimensionar; la columna
+central deja de colapsar. En móvil, consola y anatomía se alcanzan desplazándose verticalmente; no se
+presenta como control simultáneo equivalente a un escritorio. No acredita fidelidad clínica externa
+ni resuelve el transporte PW de la decisión208. El presupuesto de CSS/JS y los plazos se mantienen.
+
+**Verificación.** `responsiveWorkspace.spec.ts` comprueba 320,390,768,1280 y1600 px, cajas y desborde
+reales (incluidos controles y HUD), contraste computado sobre el peor fondo del lienzo, secuencia Tab,
+pestañas/modos y plegados; exige conservar reloj, pose y cuadro adquirido congelados. La ejecución
+contra el main anterior falla por desborde y lienzos de ancho cero. Se conservan además los contratos
+CSS existentes y las pruebas de presión, mapa al redimensionar y movimiento libre entre seis
+coordenadas en ambos pacientes. El cierre exige `npm run check`, inspección de navegador y CI completa
+sobre el árbol publicado; los resultados se enlazan en el PR y en continuidad tras verificarse.

@@ -211,3 +211,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [205](DECISIONS.md#L7144) | Traslación sin topes angulares ni bloqueo de silueta | vigente |
 | [206](DECISIONS.md#L7184) | Corte sin espera de reposo durante el movimiento adquirido | vigente |
 | [207](DECISIONS.md#L7200) | Continuidad canónica y reproducciones locales sin sobrescribir evidencia | vigente |
+| [208](DECISIONS.md#L7212) | Rotar la reclasificación PW sin resolver población pierde señal renal — experimento rechazado | vigente |
+| [209](DECISIONS.md#L7245) | El mando de presión comparte los límites reales de separación y hundimiento | vigente |

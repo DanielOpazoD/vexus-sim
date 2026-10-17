@@ -7208,3 +7208,57 @@ El hook completo detecta la importación directa `main → app` del coordinador 
 **Consecuencias.** El desarrollo funcional sigue pausado por el usuario; se autoriza ordenar e integrar el entorno. No se cambia el soporte formal de Node 22, se instala software ni se añade una política de eliminación. Los artefactos originales y los duplicados preservados se conservan con clasificación y hashes seleccionados. Las decisiones y enlaces fechados son historia; GitHub, procesos y pestañas se revalidan al usarlos.
 
 **Verificación.** `workspaceTools.test.ts` protege rechazo de overrides que desvíen informes o controles, fuentes no locales y conservación byte a byte de una carpeta previa mediante una invocación real del CLI que debe fallar antes de lanzar navegador. El wrapper se comprueba desde otro directorio y conserva el código de salida. La recolección focalizada no se presenta como ejecución E2E. La integración requiere el check y la CI completa del head publicado, igual que cualquier PR.
+
+## 208. Rotar la reclasificación PW sin resolver población pierde señal renal — experimento rechazado
+
+**Contexto.** El usuario reanuda el desarrollo el 17-10-2026. En `b6f0447`, `(j + tick / 8) % 4`
+visita siempre el mismo cuarto en los ticks divisibles por 96. Como línea de base visual del estado
+actual se registran nueve ventanas × dos pacientes del atlas en Apple M4/Metal: 18 adquisiciones
+con identidad verificada, sin errores. Son capturas B de protocolo UI; no son un juicio clínico ni
+una comparación estática entre versiones.
+
+**Opciones y experimento.** Cambiar el turno a `tick / 96` conserva el coste por lote y las rampas
+de identidad. Siete regresiones nuevas de frontera fallan antes; después pasan ocho nuevas y nueve
+de densidad/caché, además de 31 pruebas Doppler/renal existentes. Sin embargo, el check completo
+falla en `referenceAcquisition.test.ts`: la puerta renal normal devuelve `no-signal`. Los otros
+1524 tests ordinarios y diez fallos esperados no convierten esa corrida en aprobada.
+
+**Refutación.** Con la misma puerta quieta y apnea, a 9,5 s el peso de sangre es 0,00034 en la
+rotación frente a 0,06984 de una siembra nueva (0,04347 en el código anterior). La fracción también
+decae. La visita justa a grupos no conserva por sí sola la población transportada; una prueba de
+frontera sin flujo no basta para aceptar el modelo con flujo real.
+
+**Decisión.** No integrar la rotación aislada, no relajar calidad, no aumentar ganancia ni cambiar
+la prueba renal para obtener verde. Se restaura el código PW original y se conserva
+`thin-vessel-sample-volume-lag`. La siguiente propuesta necesita transporte/reposición coherentes,
+transiciones sin artefactos y recuperación frente a siembra nueva, además de las capturas actuales.
+
+**Consecuencias.** Esta ronda no corrige la población PW ni acredita mayor fidelidad clínica.
+El resultado negativo fija la condición que debe resolver una futura corrección y evita aceptar
+una mejora local del fantoma que degrada la adquisición renal completa.
+
+**Verificación y continuidad.** Patch, fantoma, JSON rojos/verdes, check fallido y comparación
+renal quedan en `work/fidelity-cycle-20261017-evidence` de esta sesión. Las 18 capturas y sus hashes
+tienen una copia portátil en `outputs/fidelity-20261017/Referencia-atlas.md`. Los experimentos no
+aceptados no entran en la aplicación ni se presentan como mejora de fidelidad visual.
+
+## 209. El mando de presión comparte los límites reales de separación y hundimiento
+
+**Contexto.** El mando anunciaba presión de −6 a 12 mm, con `lift = −presión`, mientras la pose
+solo admitía lift de −6 a 25 mm. Por encima de 6 mm el mando se recortaba; además ocultaba parte
+de la separación ya permitida por el modelo. Es incoherencia de control, no calibración biomecánica.
+
+**Opciones.** Ampliar el hundimiento para alcanzar 12 mm cambiaría compresión y adquisición.
+Conservar dos pares de constantes mantendría la divergencia. El control se deriva del dominio existente.
+
+**Decisión.** `PROBE_LIFT_LIMITS` fija los mismos −6..25 mm que `clampPose` ya aplicaba. El mando
+invierte signo y extremos: −25..6 mm. No cambia la ley de contacto, la deformación, las rotaciones
+ni el dominio de traslación. Home y End mandan extremos que la adquisición puede ejecutar.
+
+**Consecuencias.** Se elimina el tramo ficticio de hundimiento y se expone toda la separación.
+La presión sigue siendo desplazamiento en mm, no una fuerza medida. La navegación continúa libre.
+
+**Verificación.** `probePressure.spec.ts` usa el control y teclado reales en ambos pacientes del
+atlas: extremos, valor presentado, pose adquirida y regreso a contacto, con errores vacíos. Se
+conserva su ejecución negativa contra el build anterior. La aceptación exige check completo,
+seguimiento/paridad 3D-corte-adquisición y CI íntegra del SHA publicado, sin ampliar plazos o bajar física.

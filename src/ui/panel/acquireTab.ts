@@ -1,5 +1,6 @@
 import { caseDisplayLabel } from '../../app/blindMode';
 import type { RespiratoryPattern } from '../../physiology/patientState';
+import { PROBE_LIFT_LIMITS } from '../../probe/probe';
 import { button, note, row, slider } from '../controls';
 import type { PanelContext } from './context';
 import { sweepRow } from './dopplerTab';
@@ -74,8 +75,8 @@ export function buildAcquireTab(ctx: PanelContext, p: HTMLElement): HTMLElement 
       probe,
       {
         label: 'Presión',
-        min: -6,
-        max: 12,
+        min: -PROBE_LIFT_LIMITS.max,
+        max: -PROBE_LIFT_LIMITS.min,
         step: 0.5,
         get: () => -s().pose.lift,
         set: (v) => ctx.setPose({ ...s().pose, lift: -v }),

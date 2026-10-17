@@ -196,3 +196,13 @@ Es **EXTRAPOLACIÓN PROPIA / NEEDS_CALIBRATION**, no una inserción muscular o
 fascial segmentada. La malla 3D se extrae del mismo campo con 40³ muestras y un
 collar exterior de dos celdas para evitar superficies abiertas. Su iluminación
 comparte vértices coincidentes; no desplaza órganos ni suaviza la ecografía.
+
+## Acceso portal subcostal del selector (212)
+
+Las poses `portalSubcostal` de los modelos legacy, reference y atlas se estiman mediante búsqueda
+sobre su anatomía fija. Una misma pose por modelo se comprueba en ambos pacientes: transmisión,
+ángulo, predominio del tronco en la puerta PSF y adquisición IQ. El encuadre de 150 mm, foco de
+100 mm y caja Color son ajustes iniciales estimados del equipo; el usuario puede modificarlos.
+No son coordenadas humanas normalizadas ni acreditan el acceso en una persona real. Para calibrar,
+se necesitan adquisiciones subcostales independientes con posición/orientación documentadas y
+revisión experta del plano; no se deben desplazar órganos ni cambiar el flujo para ajustar la imagen.

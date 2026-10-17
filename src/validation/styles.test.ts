@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { START_POINTS } from '../app/startPoints';
+import { WINDOW_GROUPS } from '../app/windowGroups';
 
 /**
  * Invariantes de la disposición (rejilla de tres columnas) que un e2e con
@@ -71,23 +72,21 @@ function px(decls: string, prop: string): number {
 }
 
 describe('Carril: las tarjetas de las ventanas (decisiones 75 y 83)', () => {
-  it('las tarjetas conservan su tamaño y el carril desplazable no crece: miden 40 px (32 en pantallas bajas) y la lista deja al navegador 3D su sitio', () => {
-    const n = START_POINTS.length;
-    const gap = px(rule('.windows'), 'gap');
-    // dos líneas, el relleno vertical y el borde de 1 px
-    const cardPx = (card: string, text: string) => 2 * px(text, 'line-height') + 2 * px(card, 'padding') + 2;
-    const tall = cardPx(rule('.win-card'), rule('.win-name,\n.win-sub'));
-    const low = cardPx(mediaRule('(max-height: 860px)', '.win-card'), mediaRule('(max-height: 860px)', '.win-name,\n  .win-sub'));
-    expect(tall).toBe(40);
-    expect(low).toBe(32);
-    // Con GPU a 1600 × 1000 y 1280 × 800 el lienzo del 3D queda en 306 y 232 px (346 y 257 con las cinco ventanas de
-    // la decisión 75): una ventana más pide rehacer el carril, no apretarlo más
+  it('los cuatro grupos y sus ocho accesos caben en el carril bajo sin reducir texto, foco ni área de pulsación', () => {
+    expect(WINDOW_GROUPS).toHaveLength(4);
+    expect(WINDOW_GROUPS.reduce((n, group) => n + group.windows.length, 0)).toBe(8);
+    expect(ownRule('.win-options')).toMatch(/grid-template-columns:\s*repeat\(2, minmax\(0, 1fr\)\)/);
+    const buttonHeight = px(ownRule('.win-card'), 'min-height');
+    expect(buttonHeight).toBeGreaterThanOrEqual(32);
+    expect(px(ownRule('.win-name'), 'font-size')).toBeGreaterThanOrEqual(12);
+    expect(px(ownRule('.win-group-title'), 'font-size')).toBeGreaterThanOrEqual(12);
+    // Cada grupo: título (14 px) + margen (2 px) + una fila de botones (32 px).
+    const groupHeight = px(ownRule('.win-group-title'), 'line-height') + 2 + buttonHeight;
+    const contentHeight = 4 * groupHeight + 3 * px(rule('.windows'), 'gap') + 8;
+    expect(contentHeight).toBeLessThanOrEqual(px(mediaRule('(max-height: 860px)', '.windows'), 'max-height'));
     expect(rule('.windows')).toMatch(/overflow-y:\s*auto/);
-    expect(Math.min(n * tall + (n - 1) * gap, px(rule('.windows'), 'max-height'))).toBeLessThanOrEqual(290);
-    expect(Math.min(n * low + (n - 1) * gap, px(mediaRule('(max-height: 860px)', '.windows'), 'max-height'))).toBeLessThanOrEqual(230);
-    // texto de 12 px o más (objetivo 6 de la misión)
-    expect(px(ownRule('.win-sub'), 'font-size')).toBeGreaterThanOrEqual(12);
-    // el contorno del foco, que sobresale al hueco de 1 px, se pinta por encima de la tarjeta siguiente
+    expect(px(rule('.windows'), 'max-height')).toBeLessThanOrEqual(290);
+    expect(px(mediaRule('(max-height: 860px)', '.windows'), 'max-height')).toBeLessThanOrEqual(230);
     expect(ownRule('.win-card:focus-visible')).toMatch(/z-index:\s*[1-9]/);
     expect(ownRule('.win-card:focus-visible')).toMatch(/position:\s*relative/);
   });
@@ -99,7 +98,6 @@ describe('Carril: las tarjetas de las ventanas (decisiones 75 y 83)', () => {
       if (!m) throw new Error(`--${name} no encontrado`);
       return m[1];
     };
-    const resolve = (v: string) => (v.startsWith('var(') ? token(/var\(--([\w-]+)\)/.exec(v)![1]) : v);
     const rgb = (hex: string) => [1, 3, 5].map((i) => parseInt(hex.slice(i, i + 2), 16));
     const luminance = (c: number[]) =>
       c
@@ -115,13 +113,10 @@ describe('Carril: las tarjetas de las ventanas (decisiones 75 y 83)', () => {
     expect(mix).not.toBeNull();
     const f = Number(mix![1]) / 100;
     const panel = rgb(token('panel'));
-    // el color de la línea en la tarjeta actual: su regla propia o, si no la hay, el de todas las líneas
-    const subRule = css.includes('.win-card.current .win-sub') ? ownRule('.win-card.current .win-sub') : ownRule('.win-sub');
-    const sub = rgb(resolve(/color:\s*([^;]+);/.exec(subRule)![1].trim()));
     const text = rgb(token('text'));
+    expect(contrast(rgb(token('muted')), panel), 'títulos de territorio').toBeGreaterThanOrEqual(4.5);
     for (const sp of START_POINTS) {
       const bg = rgb(sp.color).map((c, i) => f * c + (1 - f) * panel[i]);
-      expect(contrast(sub, bg), `${sp.id}: línea`).toBeGreaterThanOrEqual(4.5);
       expect(contrast(text, bg), `${sp.id}: nombre`).toBeGreaterThanOrEqual(4.5);
     }
   });

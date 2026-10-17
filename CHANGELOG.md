@@ -9,6 +9,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Ventanas: selector compacto por territorio con ocho accesos; añade una porta subcostal anterior real en los tres modelos, conservando el movimiento libre y la lista compartida con 3D (212).
+
 - Doppler: puerta PW y caja de color se arrastran en vivo, juntas en tríplex; elegir otra ventana inicia una nueva adquisición 2D y cancela la medición pendiente (211).
 
 - Interfaz: fondo claro, mandos legibles y examen adaptable desde 320 px; corrige el colapso de la imagen y el desborde móvil, conservando los lienzos y la adquisición al redimensionar (210).

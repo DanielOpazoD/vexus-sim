@@ -135,8 +135,10 @@ test('lo que ve el usuario (?e2e=app&abdomen=legacy): subxifoidea en armónica c
   const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=legacy');
   await withinFrames(page, 2, 'HUD en armónica con composición', contains(page, '#hud-tr', /THI 3,5 MHz[\s\S]*CX/));
   await withinFrames(page, 20, 'la tarjeta subxifoidea resaltada', async () => {
-    const cur = await page.locator('.win-card[aria-current="true"]').allTextContents();
-    return (cur.length === 1 && cur[0].includes('VCI longitudinal')) || `resaltadas: ${JSON.stringify(cur)}`;
+    const cur = await page
+      .locator('.win-card[aria-current="true"]')
+      .evaluateAll((cards) => cards.map((card) => (card as HTMLElement).dataset.window));
+    return (cur.length === 1 && cur[0] === 'subxiphoid') || `resaltadas: ${JSON.stringify(cur)}`;
   });
   const s = await page.evaluate(() => {
     const T = window.__vexusTest!;
@@ -168,7 +170,7 @@ test('lo que ve el usuario (?e2e=app&abdomen=legacy): subxifoidea en armónica c
 test('ventanas (decisión 83): Intro en una tarjeta, mantenida como con el dedo, desliza la sonda hasta su ventana', async ({ page }) => {
   budget(90_000);
   const errors = await bootWithoutErrors(page);
-  const card = page.locator('.win-card', { hasText: 'Epigástrico' });
+  const card = page.locator('[data-window="epigastric"]');
   const readout = page.getByText(/^φ -?\d+° · z -?[\d.]+ cm · acoplamiento/);
   const readoutIs = (want: string, yes: boolean) => async (): Promise<true | string> => {
     const s = (await readout.textContent()) ?? '';

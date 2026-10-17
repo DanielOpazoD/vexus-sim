@@ -355,8 +355,7 @@ button.secondary {
 [aria-expanded='false'] > .chevron {
   transform: rotate(-45deg);
 }
-/* Tarjetas de ventanas: anillo del color del 3D, nombre y lo que muestra. Ventanas con lista desplazable (decisión 104): cada tarjeta
-   mide 40 px (dos líneas de 16 px) y 32 px en pantallas bajas, para no quitarle al navegador 3D más de lo necesario */
+/* Cuatro territorios, dos accesos por fila. La ayuda larga queda en el tooltip. */
 .windows-block {
   flex: none;
 }
@@ -365,49 +364,50 @@ button.secondary {
   overflow-y: auto;
   scrollbar-gutter: stable;
   display: grid;
-  gap: 1px;
+  gap: 6px;
   padding: 0 8px 8px;
+}
+.win-group-title {
+  margin: 0 0 2px;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 14px;
+  font-weight: 600;
+}
+.win-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px;
 }
 .win-card {
   --win: var(--accent);
-  display: grid;
-  grid-template-columns: 16px minmax(0, 1fr);
-  column-gap: 8px;
+  display: flex;
   align-items: center;
+  gap: 6px;
   width: 100%;
-  padding: 3px 8px;
+  min-height: 32px;
+  padding: 6px;
   text-align: left;
   background: transparent;
   border: 1px solid transparent;
   border-radius: 8px;
 }
-
-/* Con 1 px entre tarjetas el contorno del foco (1 px fuera) cae sobre la siguiente, que se pinta después: por encima */
 .win-card:focus-visible {
   position: relative;
   z-index: 1;
 }
 .win-ring {
-  grid-row: 1 / span 2;
-  justify-self: center;
-  width: 12px;
-  height: 12px;
-  border: 2.5px solid var(--win);
+  flex: none;
+  width: 10px;
+  height: 10px;
+  border: 2px solid var(--win);
   border-radius: 50%;
 }
-.win-name,
-.win-sub {
-  line-height: 16px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
 .win-name {
-  font-weight: 600;
-}
-.win-sub {
+  min-width: 0;
   font-size: 12px;
-  color: var(--muted);
+  line-height: 16px;
+  font-weight: 600;
 }
 .win-card.current {
   background: color-mix(in srgb, var(--win) 13%, transparent);
@@ -415,11 +415,6 @@ button.secondary {
 }
 .win-card.current .win-ring {
   background: var(--win);
-}
-/* Sobre el tinte de la ventana actual el gris de la línea no llega a 4,5:1 con los colores claros (la lima de la
-   subcostal, 4,48:1): en la tarjeta actual lleva el color del texto */
-.win-card.current .win-sub {
-  color: var(--text);
 }
 /* Navegador 3D ≈ 60 % y corte ≈ 40 % del alto restante; el corte se pliega */
 .nav-block {
@@ -541,13 +536,6 @@ button.secondary {
   }
   .rail-head {
     height: 32px;
-  }
-  .win-card {
-    padding: 0 8px;
-  }
-  .win-name,
-  .win-sub {
-    line-height: 15px;
   }
   .menu.down,
   .popover {

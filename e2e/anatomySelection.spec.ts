@@ -34,7 +34,7 @@ for (const model of ['legacy', 'reference', 'atlas'] as const)
     expect(observedModel).toBe(model);
     const torso = await page.evaluate(() => window.__vexusTest!.sim().scene.torso);
     const sp = startPointsFor(torso).find((x) => x.id === 'portal')!;
-    await page.locator('.win-card').filter({ hasText: 'Porta · intrahepática' }).click();
+    await page.locator('[data-window="portal"]').click();
     await withinFrames(page, 100, 'preset completo', async () =>
       page.evaluate((sp) => {
         const p = window.__vexusTest!.sim().pose;

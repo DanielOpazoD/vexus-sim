@@ -74,6 +74,8 @@ export function placeGate(
 
 export interface AcquireOptions {
   prfHz: number;
+  /** Foco del equipo de la adquisición; por defecto el existente. */
+  focusMm?: number;
   /** Longitud de la puerta (mm): la del equipo por defecto, 4. */
   gateMm?: number;
   gainDb?: number;
@@ -118,7 +120,7 @@ export function acquire<K extends ProtocolVessel>(
     for (let i = 0; i < 8; i++) {
       const s = engine.step();
       if (i === 0) {
-        const { gate } = pwGate(anatomy, contact.frame, contact, PROFILE, DEFAULT_BMODE.focusMm, cursor, s);
+        const { gate } = pwGate(anatomy, contact.frame, contact, PROFILE, o.focusMm ?? DEFAULT_BMODE.focusMm, cursor, s);
         chain.setGate(gate, s);
         track.push({ t: s.t, vessels: chain.sampleVolume.lastComposition.vessels });
       }

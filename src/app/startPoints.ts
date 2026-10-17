@@ -8,7 +8,17 @@ import type { Torso } from '../anatomy/primitives';
  * π/2 = anterior), z en mm.
  */
 export interface StartPoint {
-  id: 'subxiphoid' | 'epigastric' | 'intercostal' | 'subcostal' | 'flank' | 'portal' | 'portalTrunk' | 'renal' | 'hepatorenal';
+  id:
+    | 'subxiphoid'
+    | 'epigastric'
+    | 'intercostal'
+    | 'subcostal'
+    | 'flank'
+    | 'portal'
+    | 'portalTrunk'
+    | 'renal'
+    | 'hepatorenal'
+    | 'portalSubcostal';
   label: string;
   phi: number;
   z: number;
@@ -34,7 +44,7 @@ export const START_POINTS: readonly StartPoint[] = [
     z: -20,
     yaw: 0,
     rock: 0.45,
-    hint: 'Subxifoidea, marcador craneal: VCI por el hígado hasta la AD. Bascula hacia la cabeza y afina hacia la derecha.',
+    hint: 'VCI subcostal en eje largo hasta la aurícula derecha. Marcador craneal; bascula hacia la cabeza y afina hacia la derecha.',
   },
   {
     id: 'epigastric',
@@ -50,7 +60,7 @@ export const START_POINTS: readonly StartPoint[] = [
     phi: Math.PI / 2,
     z: -20,
     yaw: -Math.PI / 2,
-    hint: 'Transversa en el epigastrio, bajo el xifoides en la línea media, marcador a la derecha del paciente: vértebra con su sombra al fondo, aorta redonda justo delante y VCI oval a su lado con hígado delante; deslizar hacia los pies para el celíaco y la AMS y abanicar hacia la cabeza para ver llegar las suprahepáticas a la VCI.',
+    hint: 'VCI subcostal en eje corto, con aorta y vértebra como referencias. Marcador hacia la derecha del paciente; abanica hacia la cabeza para las suprahepáticas.',
   },
   {
     id: 'intercostal',
@@ -73,7 +83,7 @@ export const START_POINTS: readonly StartPoint[] = [
     phi: Math.PI,
     z: 0,
     yaw: -1.15,
-    hint: 'Suprahepáticas y VCI por el 8.º espacio intercostal en la línea axilar media: la sonda a lo largo del espacio, marcador hacia la axila, sin costillas en el sector (los bordes, sobre el tórax curvo, no apoyan); la cortina pulmonar entra por el lado craneal y baja con la inspiración.',
+    hint: 'Acceso lateral intercostal derecho. Alinea la huella con el espacio y el marcador hacia la axila; afina para despejar costillas y pulmón.',
   },
   {
     id: 'subcostal',
@@ -94,7 +104,7 @@ export const START_POINTS: readonly StartPoint[] = [
     yaw: 0.4,
     rock: 0.25,
     tilt: -0.398,
-    hint: 'Suprahepática media por debajo del reborde costal derecho, 5 cm bajo el xifoides: marcador craneal algo girado hacia la izquierda del paciente, haz basculado hacia la cabeza y abanicado hacia la derecha del paciente; la VSH media baja hasta el tronco común y la VCI, con la derecha desembocando a su lado; puerta PW en la VSH media a 1–2 cm de la VCI.',
+    hint: 'Suprahepática media bajo el reborde costal derecho. Marcador craneal; abanica hacia la VCI y coloca la puerta a 1–2 cm de su unión.',
   },
   {
     id: 'flank',
@@ -106,7 +116,7 @@ export const START_POINTS: readonly StartPoint[] = [
     z: -20,
     yaw: 0,
     tilt: -0.2,
-    hint: 'VCI transhepática coronal por la línea axilar media: marcador craneal, abanicar hacia atrás hasta la VCI con las suprahepáticas desembocando en ella.',
+    hint: 'VCI coronal desde el flanco; abanica hacia atrás por el hígado.',
   },
   {
     id: 'portal',
@@ -119,7 +129,7 @@ export const START_POINTS: readonly StartPoint[] = [
     yaw: 0.7,
     rock: 0.2,
     tilt: -0.4,
-    hint: 'Rama portal derecha dentro del hígado desde lateral. Seleccionarla aplica ajuste abdominal: 15 cm, foco 10 cm, color ±35 cm/s y ganancia 12 dB; afina caja y controles. Para medir VExUS, busca el tronco principal.',
+    hint: 'Porta intrahepática desde lateral: ajusta caja, escala y foco. Esta rama no sustituye el tronco principal para medir VExUS.',
   },
   {
     id: 'portalTrunk',
@@ -145,7 +155,7 @@ export const START_POINTS: readonly StartPoint[] = [
     z: -90,
     yaw: -0.3,
     tilt: -0.4,
-    hint: 'Riñón derecho en eje largo por el flanco (línea axilar posterior): hígado como ventana, cápsula, corteza, pirámides y seno ecogénico (la pelvis, colapsada; la vena renal sale por el hilio); puerta PW en un vaso interlobar.',
+    hint: 'Riñón derecho en eje largo desde el flanco posterior. Afina cápsula, corteza y seno; para PW, busca una vena interlobar.',
   },
   {
     id: 'hepatorenal',
@@ -156,7 +166,19 @@ export const START_POINTS: readonly StartPoint[] = [
     yaw: -0.1,
     tilt: -0.4,
     rock: 0.1,
-    hint: 'Hígado y riñón derecho en eje largo: compara parénquima hepático y corteza renal a igual profundidad, sin incluir vasos, pirámides ni seno. Afina el espacio intercostal para despejar sombras.',
+    hint: 'Hígado y riñón derecho en eje largo. Compara corteza y parénquima hepático a igual profundidad, evitando vasos, pirámides y seno.',
+  },
+  {
+    id: 'portalSubcostal',
+    label: 'Porta · subcostal',
+    color: '#b49ad9',
+    // [EXTRAPOLACIÓN PROPIA] Búsqueda subcostal sobre anatomía fija (212), no calibración humana.
+    phi: 1.55,
+    z: -100,
+    yaw: -0.494953,
+    rock: 0.465943,
+    tilt: -0.031699,
+    hint: 'Tronco portal desde el reborde subcostal anterior. Afina el hilio y coloca PW lejos de la bifurcación. 15 cm y foco a 10 cm.',
   },
 ];
 
@@ -220,15 +242,16 @@ const REFERENCE_POSES = {
     rock: -0.218131,
     tilt: -0.41084,
   },
+  portalSubcostal: { phi: 1.6, z: -95, yaw: -0.509852, rock: 0.39367, tilt: -0.007846 },
 } satisfies Record<StartPoint['id'], Pick<StartPoint, 'phi' | 'z' | 'yaw' | 'rock' | 'tilt'>>;
 const REFERENCE_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
   ...sp,
   ...REFERENCE_POSES[sp.id],
   hint:
     sp.id === 'intercostal'
-      ? 'Ventana intercostal derecha del adulto de referencia: marcador oblicuo hacia la axila posterior; afinar entre las superficies costales para ver la VSH derecha.'
+      ? 'Intercostal derecha: marcador hacia la axila posterior. Afina entre costillas hasta la suprahepática derecha.'
       : sp.id === 'renal'
-        ? 'Ventana renal derecha del adulto de referencia: desde el flanco, afinar el eje largo y colocar la puerta en una vena interlobar visible.'
+        ? 'Desde el flanco derecho, afina el eje largo renal y una vena interlobar para PW.'
         : sp.hint,
 }));
 const ABDOMINAL_POSES = {
@@ -250,17 +273,18 @@ const ABDOMINAL_POSES = {
   // Recheck actual renal transmission after the continuous pressure correction;
   // a 2-mm cranial slide clears the grazing rib without altering the skeleton.
   hepatorenal: { phi: 2.99, z: -113, yaw: -0.24452521426888207, rock: -0.13406390040993016, tilt: -0.3591483268294911 },
+  portalSubcostal: { phi: 1.65, z: -55, yaw: -0.292365, rock: -0.312705, tilt: -0.079291 },
 } as const;
 const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
   ...sp,
   ...ABDOMINAL_POSES[sp.id],
   hint:
     sp.id === 'intercostal'
-      ? 'Ventana hepática intercostal oblicua: marcador hacia la axila posterior y huella a lo largo del espacio. Rota o abanica para adquirir la suprahepática; las costillas conservan cortical y sombra.'
+      ? 'Intercostal derecha, marcador hacia la axila posterior. Rota o abanica para adquirir la suprahepática entre costillas.'
       : sp.id === 'portal'
-        ? 'Rama portal derecha dentro del hígado desde lateral. Encuadre de 13 cm y foco a 10 cm; color ±35 cm/s, ganancia 12 dB. Afina entre costillas y ajusta la caja. Para medir VExUS, busca el tronco principal.'
+        ? 'Rama portal intrahepática desde lateral. 13 cm, foco a 10 cm, Color ±35 cm/s y ganancia 12 dB. Para medir VExUS, usa el tronco principal.'
         : sp.id === 'portalTrunk'
-          ? 'Tronco portal principal para PW, marcador craneal. Encuadre de 16 cm y foco a 13 cm; afina en el hilio y coloca la puerta en el tronco, sin sustituirlo por una rama intrahepática.'
+          ? 'Tronco portal principal desde lateral: 16 cm y foco a 13 cm. Afina el hilio y coloca la puerta en el tronco.'
           : sp.hint,
 }));
 /** Scene-specific presets; legacy tests/torso retain their own poses. */

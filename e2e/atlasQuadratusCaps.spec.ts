@@ -14,7 +14,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
     budget(180000);
     const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
     if (caseId !== 'normal-adult') await page.selectOption('#case-select', caseId);
-    await page.locator('.win-card').nth(7).click();
+    await page.locator('[data-window="renal"]').click();
     await windowAcquired(page, 'renal');
     const reports = [];
     for (const control of [null, 'Rotación', 'Inclinación', 'Basculación']) {

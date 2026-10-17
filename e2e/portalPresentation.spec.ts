@@ -14,7 +14,7 @@ for (const reference of [false, true, 'atlas'] as const)
         `?e2e=app&abdomen=${reference === 'atlas' ? 'atlas' : 'legacy'}${reference === true ? '&reference=1' : ''}`,
       );
       if (severe) await page.selectOption('#case-select', 'severe-congestion');
-      await page.locator('.win-card').filter({ hasText: 'Porta · intrahepática' }).click();
+      await page.locator('[data-window="portal"]').click();
       await page.waitForFunction(
         () => {
           const p = window.__vexusTest!.sim().pose;

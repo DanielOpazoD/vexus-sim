@@ -360,9 +360,9 @@ test('elegir ventanas reinicia Doppler y M en 2D, sale del cine y adquiere el nu
   budget(180_000);
   const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
   for (const destination of [
-    { id: 'portal', label: 'Porta · intrahepática', mode: 'color' },
-    { id: 'renal', label: 'Renal', mode: 'triplex' },
-    { id: 'portalTrunk', label: 'Porta · tronco PW', mode: 'M' },
+    { id: 'portal', mode: 'color' },
+    { id: 'renal', mode: 'triplex' },
+    { id: 'portalSubcostal', mode: 'M' },
   ] as const) {
     if (destination.mode === 'M') await page.locator('#mode-m').click();
     else {
@@ -375,10 +375,7 @@ test('elegir ventanas reinicia Doppler y M en 2D, sale del cine y adquiere el nu
       await page.getByRole('tab', { name: 'Medir', exact: true }).click();
       await page.getByRole('button', { name: 'VCI diámetro', exact: true }).click();
     }
-    await page
-      .locator('.win-card')
-      .filter({ has: page.locator('.win-name', { hasText: new RegExp(`^${destination.label}$`) }) })
-      .click();
+    await page.locator(`[data-window="${destination.id}"]`).click();
     await expect(page.locator('#mode-b')).toHaveAttribute('aria-pressed', 'true');
     for (const mode of ['m', 'color', 'pw']) await expect(page.locator(`#mode-${mode}`)).toHaveAttribute('aria-pressed', 'false');
     await expect(page.locator('#freeze')).toHaveAttribute('aria-pressed', 'false');

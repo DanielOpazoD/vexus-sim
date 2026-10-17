@@ -7324,3 +7324,40 @@ el ratón, con una valla GPU retenida, comprueba pose estable y el cambio explí
 La geometría adquirida se verifica tras una cadencia física de Color: las vueltas JS no son
 cuadros Doppler. La aceptación mantiene presupuestos, plazos y aserciones existentes; exige
 el check completo y CI del árbol publicado.
+
+## 212. Selector por territorio y acceso portal subcostal anterior
+
+**Contexto.** El usuario pide sustituir «Ventanas VExUS» por un selector simple: cuatro territorios,
+dos accesos cada uno. El menú previo ofrecía nueve tarjetas largas y una porta de tronco lateral;
+renombrarla «subcostal» habría atribuido a una pose lateral un acceso que no tenía.
+
+**Opciones.** Conservar nueve tarjetas no simplifica el recorrido. Cambiar solo nombres falsea la
+posición. Mover vasos para que coincidan con el menú rompe la causalidad. Se busca el tronco desde
+la superficie anterior de cada modelo, manteniendo su anatomía y ambos pacientes.
+
+**Decisión.** `windowGroups.ts` define Porta (intrahepática/subcostal), Suprahepáticas
+(intercostal/subcostal), VCI (eje corto/largo) y Renal (focalizada/hepatorrenal). El menú usa grupos
+accesibles y ocho botones nativos de una línea; las marcas 3D consumen la misma lista. Se conservan
+los anclajes históricos de rótulos y los IDs/presets internos `flank` y `portalTrunk` para calibración.
+Los selectores E2E pasan de índices/textos extensos a `data-window` estable.
+
+Se añade `portalSubcostal`, sin alterar las nueve poses previas. La búsqueda anterior sobre geometría
+fija filtra hueso, pulmón y gas, ángulo y transmisión; después evalúa composición PSF y adquisición IQ.
+Una candidata de referencia con 79–83 % de tronco se descarta frente a la elegida, con más de 99 %
+en ambos pacientes. Otra candidata produce PF normal 33,39 % por mezcla de ramas y se rechaza.
+Se conserva el mismo preset por modelo para ambos casos: no se consulta el grado para elegir pose.
+Las coordenadas son estimaciones propias del modelo, no medidas de pacientes. El equipo subcostal
+portal usa profundidad 150 mm y foco 100 mm; se conserva la respuesta física existente.
+
+**Consecuencias.** Ocho accesos legibles sin scroll interno en escritorio; son puntos de partida,
+nunca zonas permitidas ni restricciones al movimiento. Se conserva el regreso a 2D al elegir una
+ventana y el modo durante movimiento libre. No cambia transporte/reposición PW (208), anatomía,
+fisiología, resolución, presupuestos ni plazos. No acredita validación clínica externa.
+
+**Verificación.** Seis adquisiciones de 8,5 s (tres modelos × dos pacientes) exigen tronco >90 %,
+transmisión >0,01, coseno ≥0,5, calidad sin incidencia y PF normal <30 % / severa >50 %, usando los
+contratos portales existentes. Se mantienen los cuatro casos intrahepáticos previos. Tests de menú,
+contraste, compresión y rótulos conservan sus umbrales. Navegador comprueba los cuatro grupos,
+Tab/Enter, preset, regreso a 2D, corte correspondiente al cuadro adquirido y paridad GPU del lumen
+portal; siguen los barridos desde seis coordenadas y ambos pacientes. La aceptación requiere
+`npm run check`, revisión visual y CI completa del árbol publicado; el PR enlaza los originales.

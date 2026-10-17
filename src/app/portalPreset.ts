@@ -1,26 +1,32 @@
 import type { EquipmentCommand } from './equipment';
 
-/** Ajuste estimado de la adquisición intrahepática; se aplica al elegir la tarjeta, no al mover la sonda. */
+/** [EXTRAPOLACIÓN PROPIA] Ajuste de la adquisición portal; se aplica al elegir la tarjeta, no al mover la sonda. */
 export function portalPreset(
   reference: boolean,
   f0Doppler: number,
   abdominalAtlas = false,
   mainTrunk = false,
+  subcostal = false,
 ): readonly EquipmentCommand[] {
   const trunk = abdominalAtlas && mainTrunk;
   return [
     {
       type: 'bmode',
-      patch: { depthMm: trunk ? 160 : abdominalAtlas ? 130 : 150, focusMm: trunk ? 130 : 100, gainDb: -2, dynamicRangeDb: 65 },
+      patch: {
+        depthMm: subcostal ? 150 : trunk ? 160 : abdominalAtlas ? 130 : 150,
+        focusMm: trunk ? 130 : 100,
+        gainDb: -2,
+        dynamicRangeDb: 65,
+      },
     },
     {
       type: 'color',
       patch: {
-        theta0: abdominalAtlas ? -0.2 : reference ? 0.1 : -0.1,
-        theta1: abdominalAtlas ? 0.2 : reference ? 0.52 : 0.32,
+        theta0: subcostal ? -0.3 : abdominalAtlas ? -0.2 : reference ? 0.1 : -0.1,
+        theta1: subcostal ? 0.3 : abdominalAtlas ? 0.2 : reference ? 0.52 : 0.32,
         // Empirical framing of the selected oblique portal plane; anatomy and flow are unchanged.
-        r0: trunk ? 110 : abdominalAtlas ? 47.5 : 70,
-        r1: trunk ? 155 : abdominalAtlas ? 102.5 : 125,
+        r0: subcostal ? 60 : trunk ? 110 : abdominalAtlas ? 47.5 : 70,
+        r1: subcostal ? 130 : trunk ? 155 : abdominalAtlas ? 102.5 : 125,
         prfHz: (4 * f0Doppler * 350) / 1_540_000,
         gainDb: 12,
         wallFilterHz: 60,

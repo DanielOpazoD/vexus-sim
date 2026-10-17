@@ -8,7 +8,8 @@ registra 18 adquisiciones del atlas (nueve ventanas y dos pacientes), rechaza un
 pierde la señal renal de referencia (208) y unifica los límites del mando de presión con la pose (209).
 La siguiente ronda aborda interfaz clara y disposición adaptable (210), con invariantes de adquisición.
 El usuario añadió arrastre Doppler en vivo y regreso a 2D al elegir otra ventana (211).
-Ambas están en PR258, pendiente de aceptación; no forman parte del último cierre acreditado.
+Ambas se integraron en PR258 con CI completa. La ronda actual simplifica el selector por territorio
+y añade un acceso portal subcostal anterior sobre la anatomía fija (212); aún requiere su propio cierre.
 Se conserva el circuito de PR pequeño, evidencia antes/después y CI completa antes de integrar.
 
 Este documento es el punto de entrada. `CONTRIBUTING.md` define el procedimiento de aceptación;
@@ -18,21 +19,24 @@ las pestañas abiertas y los JSON de una sesión son antecedentes, no estado viv
 ## Último cierre funcional acreditado
 
 - Repositorio: [DanielOpazoD/vexus-sim](https://github.com/DanielOpazoD/vexus-sim).
-- [PR257](https://github.com/DanielOpazoD/vexus-sim/pull/257), fusionado el 17 de octubre a las
-  17:35:59 UTC: límites compartidos del mando de presión (209) y evidencia del experimento PW
-  rechazado (208). Head `dba48ab3da6aef9af4e0d05561de975c567d9822`; main
-  `b1cced43936678a7d17ccda911321cd4d79b7815`.
-- Árbol `2001078b233c8bc25e984ca656373379eae8e6f3`, idéntico al merge probado
-  `e40ed01488d4c68930e99ca40dac386a7e1836c9`.
-- [CI del cierre](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39052321451): 15 trabajos
-  aprobados; 141 E2E únicas, una ejecución por prueba y cero reintentos entre 12 informes originales.
-  Core: 1.517 aprobadas y 10 fallos esperados; matrices: 54 aprobadas y un fallo esperado.
-  Informes y procedencia comprobados con los verificadores del repo.
-- Coherencia en Metal: seis coordenadas × dos pacientes, traslación y todos los ángulos;
-  2.560 puntos corte/GPU sin discrepancias y 4.254 puntos de envoltura renal concordantes.
-  Dos vistas SwiftShader: 509.591 ms bajo el plazo original de 540.000 ms.
-- El 17 de octubre, antes de la siguiente iteración visual, GitHub no tenía PR abiertos y
-  `origin/main` seguía en `b1cced4`. Es una observación fechada, no estado vivo.
+- [PR258](https://github.com/DanielOpazoD/vexus-sim/pull/258), fusionado el 17 de octubre a las
+  19:38:18 UTC: interfaz clara/adaptable (210) y arrastre Doppler/cambio de ventana en 2D (211).
+  Head `18cb7ac1b238a0b0ca02786ad411c7380654840e`; main
+  `203f6b35ea1874d70020b6e4cc49189b8cd94343`.
+- Árbol `e4e82269c5df0d7b7dfbe66ea60d06f0383ccd46`, idéntico al merge probado
+  `1ae657417dd35f5a3a2c5d4796668ec32bb0c34b`.
+- [CI del cierre](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39060965556): 15 trabajos
+  aprobados; 144 E2E únicas, una ejecución por prueba y cero reintentos entre 12 informes originales.
+  Core: 1.518 aprobadas y 10 fallos esperados; matrices: 54 aprobadas y un fallo esperado.
+  Verificadores de fuente e informes aprobados. Validaciones adicionales venosa y de estabilidad PW
+  también verdes; sus alcances y originales constan en el PR.
+- Comprobación local del head: check completo, dos pruebas Doppler SwiftShader y seis pruebas Metal
+  de coherencia/adaptación, sin reintentos. Adaptación verificada entre 320 y 1.600 px; los lienzos y
+  la adquisición congelada se conservan al redimensionar. El anterior desborde móvil queda corregido.
+- [PR257](https://github.com/DanielOpazoD/vexus-sim/pull/257) conserva el cierre anterior de presión
+  (209) y el experimento PW rechazado (208). La entrega nueva no resuelve su transporte/reposición.
+- Al iniciar la ronda 212, GitHub no tenía PR abiertos y `origin/main` seguía en `203f6b3`.
+  Es una observación fechada, no estado vivo.
 - Cierres anteriores: [PR254](https://github.com/DanielOpazoD/vexus-sim/pull/254), anatomía/movimiento/arranque;
   [PR255](https://github.com/DanielOpazoD/vexus-sim/pull/255), corte durante movimiento;
   [PR256](https://github.com/DanielOpazoD/vexus-sim/pull/256), entorno y continuidad.
@@ -62,6 +66,24 @@ La espera del barrido renal/hepatorrenal se fortaleció con `windowAcquired` ant
 ángulos: corte y marco podían coincidir durante la animación anterior al destino. El cierre pasó
 también con dos vistas en SwiftShader: 502.232 ms en CI frente al plazo original de 540.000 ms.
 
+## Ronda en curso: selector por territorio (212)
+
+El selector ofrece ocho accesos en cuatro grupos: Porta (intrahepática/subcostal), Suprahepáticas
+(intercostal/subcostal), VCI (eje corto/largo) y Renal (focalizada/hepatorrenal). Menú y marcas 3D
+comparten la lista. Los presets históricos `flank` y `portalTrunk` siguen disponibles para calibración
+interna, fuera del menú; las diez poses no restringen el desplazamiento continuo.
+
+`portalSubcostal` es un acceso anterior nuevo, estimado sobre cada geometría fija: no cambia órganos,
+vasos, flujo ni shaders. Se seleccionó una misma pose por modelo para ambos pacientes mediante
+trayectoria acústica y composición de la puerta, con adquisición IQ posterior. Las seis pruebas
+nuevas exigen tronco dominante >90 %, transmisión >0,01, coseno ≥0,5, calidad útil y PF normal <30 % /
+severa >50 %. Pasaron localmente, junto con las cuatro pruebas portales intrahepáticas existentes.
+Son controles del simulador; no constituyen calibración humana ni validación clínica independiente.
+
+Al elegir el acceso subcostal portal se usan 15 cm y foco a 10 cm. Se conserva el regreso a 2D,
+salida de cine/congelación y cancelación de medición pendiente; mover la sonda libremente conserva
+el modo. La aceptación de esta ronda exige check completo, inspección visual y CI protegida.
+
 ## Límites y resultados que no deben perderse
 
 - El corte es asíncrono; las tres presentaciones no son simultáneas durante todo movimiento.
@@ -69,7 +91,10 @@ también con dos vistas en SwiftShader: 502.232 ms en CI frente al plazo origina
   negativo; la comparación aislada posterior se interrumpió y no cuenta como aprobación.
 - Las primeras cifras 150,2 → 67,4 ms incluían otra vista adquiriendo. Su régimen es diferente del
   cierre final; no mezclar las dos series.
-- La disposición móvil 390×844 tenía desborde previo; no quedó aprobada una adaptación móvil.
+- El desborde móvil anterior se corrigió en PR258; en móvil consola y anatomía se alcanzan
+  desplazándose verticalmente, sin prometer la simultaneidad de un escritorio.
+- La primera CI de PR258 falló en una captura VSH; se conservan sus originales y el diagnóstico.
+  El éxito del cierre posterior no demuestra que esa intermitencia esté resuelta.
 - Un perfil exploratorio del HUD no demostró la causa del timeout ni produjo un cambio integrado.
 - La paridad del modelo y las pruebas automatizadas no acreditan validación clínica independiente.
 - El margen del bundle del cierre era pequeño: 1.032,7 / 1.033 KiB. Se mantiene el presupuesto.
@@ -90,3 +115,12 @@ también con dos vistas en SwiftShader: 502.232 ms en CI frente al plazo origina
 Al cerrar una nueva entrega, añadir aquí su referencia comprobada y límites. Conservar los cierres
 previos como historia, retirar tareas ya terminadas del estado operativo y fechar toda afirmación
 que dependa de GitHub, procesos o pestañas.
+
+### Observación local durante la ronda212
+
+Una corrida SwiftShader de seis pruebas registró cinco aprobadas y un error «corte sin avance durante
+3 s» al exportar la porta intrahepática del modelo reference, antes de entrar al acceso subcostal
+nuevo. La pose y el vigilante del corte no cambian en esta ronda. Un control de esa adquisición sobre
+main203f6b3 pasó; por tanto no se aisló la causa y no se declara reparada ni se atribuye al entorno.
+Se conservan ambos originales. La aceptación sigue dependiendo de la CI completa del head final;
+un resultado verde posterior no convierte esa corrida local fallida en aprobada.

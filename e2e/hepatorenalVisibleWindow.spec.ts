@@ -6,7 +6,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
     budget(120000);
     const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
     if (caseId !== 'normal-adult') await page.selectOption('#case-select', caseId);
-    await page.locator('.win-card').nth(8).click();
+    await page.locator('[data-window="hepatorenal"]').click();
     await windowAcquired(page, 'hepatorenal');
     await page.locator('#freeze').click();
     const result = await page.evaluate(() => {

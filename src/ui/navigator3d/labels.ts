@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { windowMenuPoints } from '../../app/windowGroups';
 import { startPointsFor } from '../../app/startPoints';
 import { torsoNormal, torsoSkinPoint } from '../../anatomy/primitives';
 import type { AnatomyScene } from '../../anatomy/scene';
@@ -8,7 +9,7 @@ import { CM, surfaceAt } from './common';
 /** Rótulos (sprites de lienzo) y anillos de los puntos de partida sobre la piel. */
 export function buildWindowMarks(a: AnatomyScene): THREE.Group {
   const g = new THREE.Group();
-  const marks = startPointsFor(a.torso);
+  const marks = windowMenuPoints(a.torso);
   // Orientación del paciente: cabeza, pies, derecha e izquierda
   const orient: Array<[string, Vec3]> = [
     ['cabeza', [0, 12, 52]],
@@ -50,19 +51,19 @@ const skinNormal = (a: AnatomyScene, phi: number, z: number) => new THREE.Vector
  */
 export function windowLabelPositions(a: AnatomyScene): THREE.Vector3[] {
   const placed: THREE.Vector3[] = [];
-  const positions: THREE.Vector3[] = [];
-  // La adquisición intrahepática nueva cede espacio a los rótulos previamente calibrados.
-  const ordered = startPointsFor(a.torso)
-    .map((m, i) => ({ m, i }))
-    .sort((a, b) => Number(a.m.id === 'portal') - Number(b.m.id === 'portal'));
-  for (const { m, i } of ordered) {
+  const positions = new Map<string, THREE.Vector3>();
+  // Reservar los anclajes históricos evita mover rótulos calibrados al simplificar el menú.
+  const ordered = [...startPointsFor(a.torso)].sort(
+    (a, b) => Number(a.id === 'portal' || a.id === 'portalSubcostal') - Number(b.id === 'portal' || b.id === 'portalSubcostal'),
+  );
+  for (const m of ordered) {
     const at = surfaceAt(a, m.phi, m.z, 1.01).add(skinNormal(a, m.phi, m.z).multiplyScalar(2.8));
     while (placed.some((q) => Math.abs(q.z - at.z) < LABEL_STEP_CM && Math.hypot(q.x - at.x, q.y - at.y) < LABEL_NEAR_CM))
       at.z += LABEL_STEP_CM;
     placed.push(at);
-    positions[i] = at;
+    positions.set(m.id, at);
   }
-  return positions;
+  return windowMenuPoints(a.torso).map((sp) => positions.get(sp.id)!);
 }
 
 export function labelSprite(text: string, color: string): THREE.Sprite {

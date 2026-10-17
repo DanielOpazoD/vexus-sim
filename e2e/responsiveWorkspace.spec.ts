@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { START_POINTS } from '../src/app/startPoints';
+import { WINDOW_GROUPS } from '../src/app/windowGroups';
 import { bootWithoutErrors, budget, checkAfterEach } from './support';
 
 checkAfterEach();
@@ -116,7 +116,7 @@ test('el espacio claro conserva mandos, lienzos y adquisición congelada de 320 
         expect(contrasts.find((s) => s.selector === '.brand')!.backgroundLuminance).toBeGreaterThan(0.8);
         for (const selector of ['.disclaimer', '#cine-time'])
           expect(contrasts.find((s) => s.selector === selector)!.backgroundLuminance, selector).toBeLessThan(0.1);
-        await expect(page.locator('.win-card')).toHaveCount(START_POINTS.length);
+        await expect(page.locator('.win-card')).toHaveCount(WINDOW_GROUPS.reduce((n, group) => n + group.windows.length, 0));
         const lastWindow = page.locator('.win-card').last();
         await lastWindow.focus();
         await expect(lastWindow).toBeFocused();

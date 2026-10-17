@@ -8,7 +8,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
     const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
     await page.selectOption('#case-select', caseId);
     await page.getByRole('button', { name: 'Apnea espiratoria', exact: true }).click();
-    await page.locator('.win-card').nth(8).click();
+    await page.locator('[data-window="hepatorenal"]').click();
     await page.waitForFunction(() => Math.abs(window.__vexusTest!.sim().pose.z + 113) < 1e-8);
     const inspect = () =>
       page.evaluate(() => {

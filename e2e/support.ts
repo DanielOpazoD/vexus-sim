@@ -29,9 +29,11 @@ export function budget(workMs: number, boots = 1): void {
 export async function windowAcquired(page: Page, id: StartPoint['id']) {
   const torso = await page.evaluate(() => {
     const t = window.__vexusTest!.sim().scene.torso;
-    return { a: t.a, b: t.b, profile: Array.from(t.profile!) };
+    return { a: t.a, b: t.b, profile: t.profile ? Array.from(t.profile) : undefined };
   });
-  const target = startPointsFor({ ...torso, profile: new Float32Array(torso.profile) }).find((p) => p.id === id)!;
+  const target = startPointsFor({ ...torso, profile: torso.profile ? new Float32Array(torso.profile) : undefined }).find(
+    (p) => p.id === id,
+  )!;
   const expected = { phi: target.phi, z: target.z, yaw: target.yaw, rock: target.rock ?? 0, tilt: target.tilt ?? 0, lift: 0 };
   // ProbeAnimator converges in simulation time and snaps all six fields to the target.
   // Require BOTH the current probe and the displayed acquisition, with the existing test budget unchanged.

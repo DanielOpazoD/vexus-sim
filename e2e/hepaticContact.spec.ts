@@ -6,7 +6,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
     budget(120_000);
     const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
     if (caseId !== 'normal-adult') await page.selectOption('#case-select', caseId);
-    await page.locator('.win-card').nth(3).click();
+    await page.locator('[data-window="subcostal"]').click();
     await windowAcquired(page, 'subcostal');
     await page.locator('#freeze').click();
     const result = await page.evaluate(() => {
@@ -68,19 +68,21 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
     expect(errors).toEqual([]);
   });
 
-test('main portal PW window restores its own depth after the intrahepatic window', async ({ page }, info) => {
+test('subcostal portal window restores its own depth after the intrahepatic window', async ({ page }, info) => {
   budget(120_000);
   const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
-  await page.locator('.win-card').nth(5).click();
+  await page.locator('[data-window="portal"]').click();
   await expect(page.getByLabel('Profundidad', { exact: true })).toHaveValue('130');
-  await page.locator('.win-card').nth(6).click();
-  await expect(page.getByLabel('Profundidad', { exact: true })).toHaveValue('160');
-  await windowAcquired(page, 'portalTrunk');
+  await page.locator('[data-window="portalSubcostal"]').click();
+  await expect(page.getByLabel('Profundidad', { exact: true })).toHaveValue('150');
+  await windowAcquired(page, 'portalSubcostal');
   await page.locator('#freeze').click();
   const result = await page.evaluate(() => {
     const s = window.__vexusTest!.sim(),
       a = s.renderer.displayedAnatomy!,
-      hits = [];
+      hits = [],
+      inner: number[] = [],
+      cpu: number[] = [];
     for (let v = 0; v < 180; v++)
       for (let u = 0; u < 96; u++) {
         const theta = (((u + 0.5) / 96) * 2 - 1) * s.transducer.halfSector,
@@ -88,25 +90,38 @@ test('main portal PW window restores its own depth after the intrahepatic window
         const p = a.frame.curvatureCenter.map(
           (x, i) => x + (s.transducer.curvatureRadius + r) * (a.frame.axial[i] * Math.cos(theta) + a.frame.lateral[i] * Math.sin(theta)),
         ) as [number, number, number];
-        if (s.anatomy.classifyWorld(p, a.sample).vessel === 'pvTrunk') hits.push({ theta, r });
+        const q = s.anatomy.classifyWorld(p, a.sample);
+        if (q.vessel === 'pvTrunk') {
+          hits.push({ theta, r });
+          if (q.boundaryDistance > 1.2) {
+            inner.push(...p);
+            cpu.push(q.tissue);
+          }
+        }
       }
     return {
       depth: s.displayed.bmode.depthMm,
       focus: s.displayed.bmode.focusMm,
       pose: s.pose,
       hits,
+      cpu,
+      gpu: Array.from(s.gpuQuery(new Float32Array(inner), a.frame, true).tissue),
       errors: window.__vexusTest!.loggedErrors(),
     };
   });
   await info.attach('main-portal-window.json', { body: JSON.stringify(result, null, 2), contentType: 'application/json' });
   await page.screenshot({ path: info.outputPath('main-portal-window.png') });
+  expect(result.depth).toBe(150);
+  expect(result.focus).toBe(100);
   expect(result.hits.length).toBeGreaterThan(20);
+  expect(result.cpu.length).toBeGreaterThan(0);
+  expect(result.gpu).toEqual(result.cpu);
   expect(Math.max(...result.hits.map((p) => p.r)) - Math.min(...result.hits.map((p) => p.r))).toBeGreaterThan(8);
   expect(result.errors).toEqual([]);
   expect(errors).toEqual([]);
   // Portal acquisition settings must not crop the following renal/caval examination.
-  for (const index of [7, 8, 0]) {
-    await page.locator('.win-card').nth(index).click();
+  for (const id of ['renal', 'hepatorenal', 'subxiphoid']) {
+    await page.locator(`[data-window="${id}"]`).click();
     await expect(page.getByLabel('Profundidad', { exact: true })).toHaveValue('180');
     await expect(page.getByLabel('Foco', { exact: true })).toHaveValue('90');
   }

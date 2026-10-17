@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { AnatomyScene } from '../anatomy/scene';
 import { START_POINTS } from '../app/startPoints';
+import { WINDOW_GROUPS, windowMenuPoints } from '../app/windowGroups';
 import { NORMAL_ADULT } from '../cases';
 import { CURRENT_WINDOW_MM, CURRENT_WINDOW_YAW, currentStartPoint, startPointDistanceMm, yawDelta } from '../ui/startPointCards';
 
@@ -49,5 +50,22 @@ describe('Tarjetas de ventanas: la ventana actual', () => {
     expect(yawDelta(3.1, -3.1)).toBeCloseTo(2 * Math.PI - 6.2, 12);
     expect(yawDelta(Math.PI / 2, -Math.PI / 2)).toBeCloseTo(Math.PI, 12);
     expect(yawDelta(7, 7 - 2 * Math.PI)).toBeCloseTo(0, 12);
+  });
+});
+
+describe('Selector por territorio (212)', () => {
+  it('ofrece cuatro grupos y ocho accesos únicos, compartidos con las marcas 3D', () => {
+    expect(WINDOW_GROUPS.map((group) => group.label)).toEqual(['Porta', 'Suprahepáticas', 'VCI', 'Renal']);
+    expect(WINDOW_GROUPS.map((group) => group.windows.map(([id]) => id))).toEqual([
+      ['portal', 'portalSubcostal'],
+      ['intercostal', 'subcostal'],
+      ['epigastric', 'subxiphoid'],
+      ['renal', 'hepatorenal'],
+    ]);
+    const visible = windowMenuPoints(torso);
+    expect(visible).toHaveLength(8);
+    expect(new Set(visible.map((point) => point.id)).size).toBe(8);
+    for (const point of visible) expect(START_POINTS).toContain(point);
+    expect(visible.some((point) => point.id === 'flank' || point.id === 'portalTrunk')).toBe(false);
   });
 });

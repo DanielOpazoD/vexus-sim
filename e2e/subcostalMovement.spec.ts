@@ -27,7 +27,7 @@ test('the anatomical worker receives the exact acquisition wall and costal atlas
     };
   });
   const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
-  await page.locator('.win-card').nth(2).click();
+  await page.locator('[data-window="intercostal"]').click();
   await windowAcquired(page, 'intercostal');
   await withinFrames(page, 30, 'mapa del plano intercostal adquirido', async () =>
     page.evaluate(() => {
@@ -80,15 +80,15 @@ test('the anatomical worker receives the exact acquisition wall and costal atlas
   expect(errors).toEqual([]);
 });
 
-for (const [index, target] of [
-  [0, 'ivcInfra'],
-  [3, 'hvMiddle'],
+for (const [id, target] of [
+  ['subxiphoid', 'ivcInfra'],
+  ['subcostal', 'hvMiddle'],
 ] as const)
   test(`subcostal ${target} has a transhepatic near field and continuously acquired frames`, async ({ page }, info) => {
     budget(180000);
     const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
-    await page.locator('.win-card').nth(index).click();
-    await windowAcquired(page, index === 0 ? 'subxiphoid' : 'subcostal');
+    await page.locator(`[data-window="${id}"]`).click();
+    await windowAcquired(page, id);
     const report = await page.evaluate((target) => {
       const s = window.__vexusTest!.sim(),
         a = s.renderer.displayedAnatomy!,

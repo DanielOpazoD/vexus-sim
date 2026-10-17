@@ -61,10 +61,7 @@ test('manual probe sliders retain the requested pose during an automatic window 
   budget(60_000);
   const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
   for (const [i, name] of ['Rotación', 'Inclinación', 'Basculación', 'Presión'].entries()) {
-    await page
-      .locator('.win-card')
-      .nth(i % 2 ? 2 : 8)
-      .click();
+    await page.locator(`[data-window="${i % 2 ? 'intercostal' : 'hepatorenal'}"]`).click();
     await page.getByRole('slider', { name, exact: true }).press('ArrowRight');
     const manual = await page.evaluate(() => {
       const s = window.__vexusTest!.sim();
@@ -115,7 +112,7 @@ test('two live atlas views keep producing the current cut through probe and case
       await Promise.all(
         pages.map(async (p) => {
           await p.selectOption('#case-select', id);
-          await p.locator('.win-card').nth(8).click();
+          await p.locator('[data-window="hepatorenal"]').click();
           for (const name of ['Rotación', 'Inclinación', 'Basculación'])
             await p.getByRole('slider', { name, exact: true }).press('ArrowRight');
         }),

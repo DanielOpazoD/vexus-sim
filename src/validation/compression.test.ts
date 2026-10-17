@@ -63,6 +63,7 @@ const CENTRAL_LANDMARK: Record<StartPoint['id'], { landmark: Tissue; vessel?: Re
   // Primer parénquima junto a la pared; no es el riñón profundo de la pose portal anterior.
   portal: { landmark: Tissue.Liver, approach: 'none' },
   portalTrunk: { landmark: Tissue.RenalCortex, approach: 'half' },
+  portalSubcostal: { landmark: Tissue.Blood, vessel: /^pvTrunk$/, approach: 'full' },
   renal: { landmark: Tissue.RenalCortex, approach: 'none' },
   // Medición geométrica de la nueva ventana: 69,5 → 61,5 mm con δ=18,77 mm.
   hepatorenal: { landmark: Tissue.RenalCortex, approach: 'half' },

@@ -33,7 +33,7 @@ test('el trabajador modular conserva clasificación y estado separado al cambiar
   const errors = await bootWithoutErrors(page, '?e2e=app&reference=1');
   for (const id of ['normal-adult', 'severe-congestion']) {
     await page.selectOption('#case-select', id);
-    await page.locator('.win-card').nth(2).click();
+    await page.locator('[data-window="intercostal"]').click();
     const priorId = await page.evaluate(() => window.sharedMapWitness?.map?.id ?? -1);
     await page.getByLabel('Rotación', { exact: true }).press('ArrowRight');
     await page.getByLabel('Inclinación', { exact: true }).press('ArrowRight');

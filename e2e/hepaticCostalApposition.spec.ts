@@ -5,7 +5,7 @@ import { Interface } from '../src/anatomy/interfaces';
 test('registered costal cortical interfaces precede bone in the production atlas', async ({ page }, info) => {
   budget(180000);
   const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
-  await page.locator('.win-card').nth(2).click();
+  await page.locator('[data-window="intercostal"]').click();
   await page.waitForFunction(() => Math.abs(window.__vexusTest!.sim().pose.yaw + 1.2) < 0.001);
   await page.locator('#freeze').click();
   const report = await page.evaluate((ribInterface) => {

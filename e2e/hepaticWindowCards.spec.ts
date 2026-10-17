@@ -1,10 +1,10 @@
 import { expect, test } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { exportAcquiredFrame } from '../tools/fidelity/registeredAcquisition';
-import { bootWithoutErrors, budget } from './support';
+import { bootWithoutErrors, budget, windowAcquired } from './support';
 
 for (const reference of [false, true]) {
-  test(`ventanas hepáticas: rama, tronco PW y cava longitudinal, reference=${reference}`, async ({ page }, info) => {
+  test(`ventanas hepáticas: rama, porta subcostal y cava longitudinal, reference=${reference}`, async ({ page }, info) => {
     budget(180_000);
     const errors = await bootWithoutErrors(page, `?e2e=app&abdomen=legacy${reference ? '&reference=1' : ''}`);
     const sourceSha = execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
@@ -21,29 +21,14 @@ for (const reference of [false, true]) {
       await page.screenshot({ path: info.outputPath(name + '.png') });
       await page.locator('#freeze').click();
     };
-    await page.locator('.win-card').filter({ hasText: 'Porta · intrahepática' }).click();
-    await page.waitForFunction(() => {
-      const s = window.__vexusTest!.sim();
-      return Math.abs(s.pose.phi - 3.5) < 0.0001 && Math.abs(s.pose.z - (s.scene.torso.profile ? -60 : -90)) < 0.01;
-    });
-    await page.evaluate(() => {
-      const s = window.__vexusTest!.sim();
-      s.advance(s.physiology.clock.dt);
-      s.advance(s.physiology.clock.dt);
-      s.render();
-    });
+    await page.locator('[data-window="portal"]').click();
+    await windowAcquired(page, 'portal');
     await capture('porta-intrahepatica');
-    await page.locator('.win-card').filter({ hasText: 'Porta · tronco PW' }).click();
-    await page.waitForFunction(() => {
-      const s = window.__vexusTest!.sim();
-      return Math.abs(s.pose.z - (s.scene.torso.profile ? -55 : -66)) < 0.01;
-    });
-    await capture('porta-tronco-pw');
-    await page.locator('.win-card').filter({ hasText: 'Subcostal · VCI longitudinal' }).click();
-    await page.waitForFunction(() => {
-      const s = window.__vexusTest!.sim();
-      return Math.abs(s.pose.z - (s.scene.torso.profile ? -15 : -20)) < 0.01;
-    });
+    await page.locator('[data-window="portalSubcostal"]').click();
+    await windowAcquired(page, 'portalSubcostal');
+    await capture('porta-subcostal');
+    await page.locator('[data-window="subxiphoid"]').click();
+    await windowAcquired(page, 'subxiphoid');
     await capture('cava-longitudinal');
     expect(errors).toEqual([]);
   });

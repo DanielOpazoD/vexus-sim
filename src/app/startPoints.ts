@@ -248,11 +248,13 @@ const REFERENCE_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
   ...sp,
   ...REFERENCE_POSES[sp.id],
   hint:
-    sp.id === 'intercostal'
-      ? 'Intercostal derecha: marcador hacia la axila posterior. Afina entre costillas hasta la suprahepática derecha.'
-      : sp.id === 'renal'
-        ? 'Desde el flanco derecho, afina el eje largo renal y una vena interlobar para PW.'
-        : sp.hint,
+    sp.id === 'portalSubcostal'
+      ? 'Rama portal derecha desde el reborde subcostal derecho. Tramo longitudinal para PW dentro de la luz, lejos de bifurcaciones. 15 cm y foco a 10 cm.'
+      : sp.id === 'intercostal'
+        ? 'Intercostal derecha: marcador hacia la axila posterior. Afina entre costillas hasta la suprahepática derecha.'
+        : sp.id === 'renal'
+          ? 'Desde el flanco derecho, afina el eje largo renal y una vena interlobar para PW.'
+          : sp.hint,
 }));
 const ABDOMINAL_POSES = {
   // Intrahepatic IVC in long axis, rather than aiming the whole face at its
@@ -278,20 +280,17 @@ const ABDOMINAL_POSES = {
 } as const;
 const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
   ...sp,
-  ...(sp.id === 'portalSubcostal'
-    ? {
-        hint: 'Rama portal derecha desde el reborde subcostal derecho. Tramo longitudinal para PW dentro de la luz, lejos de bifurcaciones. 15 cm y foco a 10 cm.',
-      }
-    : {}),
   ...ABDOMINAL_POSES[sp.id],
   hint:
-    sp.id === 'intercostal'
-      ? 'Intercostal derecha, marcador hacia la axila posterior. Rota o abanica para adquirir la suprahepática entre costillas.'
-      : sp.id === 'portal'
-        ? 'Rama portal intrahepática desde lateral. 13 cm, foco a 10 cm, Color ±35 cm/s y ganancia 12 dB. Para medir VExUS, usa el tronco principal.'
-        : sp.id === 'portalTrunk'
-          ? 'Tronco portal principal desde lateral: 16 cm y foco a 13 cm. Afina el hilio y coloca la puerta en el tronco.'
-          : sp.hint,
+    sp.id === 'portalSubcostal'
+      ? 'Rama portal derecha desde el reborde subcostal derecho. Tramo longitudinal para PW dentro de la luz, lejos de bifurcaciones. 15 cm y foco a 10 cm.'
+      : sp.id === 'intercostal'
+        ? 'Intercostal derecha, marcador hacia la axila posterior. Rota o abanica para adquirir la suprahepática entre costillas.'
+        : sp.id === 'portal'
+          ? 'Rama portal intrahepática desde lateral. 13 cm, foco a 10 cm, Color ±35 cm/s y ganancia 12 dB. Para medir VExUS, usa el tronco principal.'
+          : sp.id === 'portalTrunk'
+            ? 'Tronco portal principal desde lateral: 16 cm y foco a 13 cm. Afina el hilio y coloca la puerta en el tronco.'
+            : sp.hint,
 }));
 /** Scene-specific presets; legacy tests/torso retain their own poses. */
 export function startPointsFor(torso: Pick<Torso, 'a' | 'b' | 'profile'>): readonly StartPoint[] {

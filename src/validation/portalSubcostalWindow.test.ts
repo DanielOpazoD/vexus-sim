@@ -70,6 +70,7 @@ describe('Porta subcostal: adquisición real sobre el cuerpo completo (212–213
         // 8 mm bajo la proyección inferior del reborde: evita renombrar un acceso intercostal.
         // Resolución ósea 1,5 mm; margen estimado de apoyo, no umbral clínico.
         if (model === 'atlas') expect(sp.z).toBeLessThanOrEqual(inferiorCostalProjection(sp.phi, session.scene.torso) - 8);
+        if (model === 'atlas') expect(sp.hint).toContain('Rama portal derecha');
         const contact = probeAt(session, sp.id);
         const target = model === 'atlas' ? 'pvRight' : 'pvTrunk';
         const gate = placeGate(session, contact, [target], { maxDepthMm: 145 });

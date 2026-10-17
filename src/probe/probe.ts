@@ -23,6 +23,9 @@ export interface ProbePose {
   tilt: number;
 }
 
+/** Separación/hundimiento permitidos en mm; los mandos de presión usan el signo opuesto. */
+export const PROBE_LIFT_LIMITS = { min: -6, max: 25 } as const;
+
 export type TransducerType = 'convex' | 'phased';
 
 export interface Transducer {
@@ -183,7 +186,7 @@ export function clampPose(p: ProbePose, torso?: Torso): ProbePose {
         ? p.phi
         : ((((p.phi + Math.PI / 2) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI / 2,
     z: clamp(p.z, torso?.zMin ?? -420, torso?.zMax ?? 200),
-    lift: clamp(p.lift, -6, 25),
+    lift: clamp(p.lift, PROBE_LIFT_LIMITS.min, PROBE_LIFT_LIMITS.max),
     yaw: ((((p.yaw + Math.PI) % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)) - Math.PI,
     rock: angle(p.rock),
     tilt: angle(p.tilt),

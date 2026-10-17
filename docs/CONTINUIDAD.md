@@ -1,11 +1,12 @@
 # Continuidad de VExUS Sim
 
-## Alcance vigente al 16 de octubre de 2026
+## Alcance vigente al 17 de octubre de 2026
 
-El usuario pausó el desarrollo funcional para ordenar el entorno. Después autorizó ejecutar esa
-limpieza con autonomía. Esta autorización abarca documentación, herramientas de trabajo y su
-integración; no reabre mejoras anatómicas, físicas, visuales o de interacción. Una petición posterior
-explícita del usuario puede reanudar ese desarrollo.
+El usuario pausó el desarrollo funcional para ordenar el entorno y autorizó esa limpieza con
+autonomía. El 17 de octubre autorizó retomar fidelidad externa y coherencia interna. La primera ronda
+registra 18 adquisiciones del atlas (nueve ventanas y dos pacientes), rechaza una rotación PW que
+pierde la señal renal de referencia (208) y unifica los límites del mando de presión con la pose (209).
+Se conserva el circuito de PR pequeño, evidencia antes/después y CI completa antes de integrar.
 
 Este documento es el punto de entrada. `CONTRIBUTING.md` define el procedimiento de aceptación;
 la configuración ejecutable de CI y sus verificadores determinan qué se ejecuta. Los prompts antiguos,
@@ -73,8 +74,9 @@ también con dos vistas en SwiftShader: 502.232 ms en CI frente al plazo origina
 4. Consultar [el manifiesto del cierre](evidence/session-20261015/manifest.json) y
    [el índice de evidencias](evidence/session-20261015/README.md). Un clon puede no incluir los
    artefactos locales originales: declararlo y usar los enlaces remotos disponibles.
-5. Elegir un alcance concreto. Durante esta pausa solo corresponde mantener el entorno y su
-   documentación; no ejecutar el antiguo backlog funcional por iniciativa propia.
+5. Elegir un defecto reproducible y un mecanismo por ronda. La siguiente corrección PW necesita
+   resolver transporte/reposición antes de integrar la rotación; no basta el fantoma de frontera.
+   Las mejoras visuales requieren referencias independientes y evaluación del SHA actual.
 
 Al cerrar una nueva entrega, añadir aquí su referencia comprobada y límites. Conservar los cierres
 previos como historia, retirar tareas ya terminadas del estado operativo y fechar toda afirmación

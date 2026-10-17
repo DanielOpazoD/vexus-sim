@@ -23,12 +23,12 @@
   },
   "selected": {
     "pose": {
-      "phi": 2.8500000000000014,
+      "phi": 2.85,
       "z": -95,
       "lift": 0,
-      "yaw": -1.211765194696763,
-      "rock": -0.009266432526945935,
-      "tilt": 0.15798649836822976
+      "yaw": -0.6221036627292623,
+      "rock": 0.08071761767827003,
+      "tilt": 0.1362715976343187
     },
     "results": [
       {
@@ -36,17 +36,17 @@
         "gate": {
           "theta": 0.006588054321928313,
           "r": 82.5,
-          "bd": 3.4140161987255713,
-          "cosAngle": 0.8749115258212177,
+          "bd": 3.429632313297468,
+          "cosAngle": 0.8761655123410915,
           "vessel": "pvRight"
         },
         "transmission": 0.07753398813497367,
         "rightFraction": 1,
         "weights": {
-          "pvRight": 263.9945168992009
+          "pvRight": 264.41873279096967
         },
         "capture": {
-          "PF": 14.375174923033995,
+          "PF": 13.712746902831029,
           "quality": {
             "beats": 4,
             "validBeats": 4,
@@ -55,8 +55,8 @@
             "bloodColumns": 1,
             "issue": null
           },
-          "vMin": 21.40516304347821,
-          "vMax": 24.9517663043478
+          "vMin": 21.719021739130397,
+          "vMax": 25.07730978260867
         }
       },
       {
@@ -64,17 +64,17 @@
         "gate": {
           "theta": 0.006588054321928313,
           "r": 84,
-          "bd": 3.5922281422308693,
-          "cosAngle": 0.8748664892422064,
+          "bd": 3.551637450495879,
+          "cosAngle": 0.8761207334435495,
           "vessel": "pvRight"
         },
         "transmission": 0.07606900776292445,
         "rightFraction": 1,
         "weights": {
-          "pvRight": 265.5912573362628
+          "pvRight": 265.48574997730526
         },
         "capture": {
-          "PF": 70.84260945827435,
+          "PF": 70.70438111819766,
           "quality": {
             "beats": 4,
             "validBeats": 4,
@@ -83,8 +83,8 @@
             "bloodColumns": 1,
             "issue": null
           },
-          "vMin": 8.91358695652173,
-          "vMax": 30.507065217391325
+          "vMin": 8.725271739130504,
+          "vMax": 29.78519021739139
         }
       }
     ]
@@ -94,7 +94,11 @@
     "ranked-subcostal-atlas-right.json": "ab5e64b7aeaef85075e8b3aa77e0c5182017fbed08788e14325a5b9f6b7dc8b1",
     "find-portal-skeleton.mts": "3504ba8c0ea42fee44788f4cd316a23193a09f232929796e53317b64549d46fa",
     "filter-subcostal-source.mts": "b56384579411ace25a00bdaad2fc3a320774a4cde6413e49b76a6b6a348c309a",
-    "rank-subcostal-atlas.mts": "311c344f5635a39c49aef38fcc2e0c9e4a767f29ebd91b6e5873d9fbbe650b84"
+    "rank-subcostal-atlas.mts": "311c344f5635a39c49aef38fcc2e0c9e4a767f29ebd91b6e5873d9fbbe650b84",
+    "ranked-oriented-atlas-right.json": "a4f55e2ead25a5215a9beb0e4e5782ae845c9aeb1e44bbe12728dacab0351941",
+    "refine-portal-orientation.mts": "3d16a973661b751e7963fecdc7e4580509a3d35607a5da57deb7eb9a4abf5e0e",
+    "orientation-candidates.json": "7985942ff4269da374489911a22289332932d724564ffb30b0f4b9c3730c97f2",
+    "rank-oriented-atlas.mts": "092f8133aeeb1f8e059886d68499f562ed3a5d22ab5b272ccc51710a79db499f"
   },
   "limits": [
     "Synthetic anatomy and signal; no independent human calibration.",
@@ -102,5 +106,6 @@
     "Legacy/reference retain prior trunk poses.",
     "Best1\u201313degree lateral candidates rejected as intercostal.",
     "Prior PW transport/repopulation and intermittent cut watchdog remain unresolved."
-  ]
+  ],
+  "orientationRefinement": "Rotate image plane toward cranial projected marker (blend1), keeping same subcostal support and Doppler alignment; markerZ0.7696 > existing0.5 contract. Unmodified probeOrientation test now passes."
 }

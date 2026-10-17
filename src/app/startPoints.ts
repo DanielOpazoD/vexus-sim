@@ -276,7 +276,7 @@ const ABDOMINAL_POSES = {
   // a 2-mm cranial slide clears the grazing rib without altering the skeleton.
   hepatorenal: { phi: 2.99, z: -113, yaw: -0.24452521426888207, rock: -0.13406390040993016, tilt: -0.3591483268294911 },
   // [EXTRAPOLACIÓN PROPIA] Reborde derecho registrado; rama portal derecha, no tronco (213).
-  portalSubcostal: { phi: 2.85, z: -95, yaw: -1.211765, rock: -0.009266, tilt: 0.157986 },
+  portalSubcostal: { phi: 2.85, z: -95, yaw: -0.622104, rock: 0.080718, tilt: 0.136272 },
 } as const;
 const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
   ...sp,

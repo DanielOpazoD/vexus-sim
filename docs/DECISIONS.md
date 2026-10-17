@@ -7380,12 +7380,14 @@ prompt quedan en la evidencia local; los recursos usados por la app viven en `pu
 El barrido Atlas abarca φ 0,35–3,3 rad y z −150 a −35 mm, carga abdomen y tórax y comprueba la
 transmisión real. Excluye el apoyo por encima de la proyección inferior de las costillas 7–10 del
 campo registrado, con margen estimado de 8 mm. De 393 candidatos geométricos quedan 187 accesos
-subcostales derechos con transmisión útil. Se selecciona φ 2,85, z −95 mm, yaw −1,211765,
-rock −0,009266 y tilt 0,157986: rama `pvRight`, coseno ≈0,875 (≈29°) en ambos pacientes.
+subcostales derechos con transmisión útil. Se selecciona φ 2,85, z −95 mm, yaw −0,622104,
+rock 0,080718 y tilt 0,136272: rama `pvRight`, coseno ≈0,876 (≈29°) en ambos pacientes.
 Una misma pose sirve a ambos, sin escogerla por PF. Las adquisiciones posteriores de 8,5 s dan
-100 % de composición derecha ponderada, calidad útil, PF normal 14,38 % y severa 70,84 %.
+100 % de composición derecha ponderada, calidad útil, PF normal 13,71 % y severa 70,70 %.
 La búsqueda, sus límites y recibos resumidos constan en `docs/evidence/portal-subcostal-213.json`.
-Legacy y reference conservan sus poses y contratos de tronco de 212.
+Legacy y reference conservan sus poses y contratos de tronco de 212. La primera rotación del
+plano no cumplía el contrato craneal del marcador (0,344 <0,5): se corrige la orientación, sin
+rebajar esa prueba; el marcador pasa a 0,770 y el coseno se mantiene en 0,876.
 
 **Consecuencias.** El acceso es más lateral y la rama se ve longitudinal con mayor componente
 Doppler. Se conservan 15 cm, foco a 10 cm, movimiento continuo y reset a 2D al elegir ventana.

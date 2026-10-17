@@ -84,7 +84,7 @@ salida de cine/congelación y cancelación de medición pendiente; mover la sond
 el modo. La ronda 212 se integró con check y CI completa. En 213 solo cambia el apoyo Atlas: bajo el reborde
 subcostal derecho, rama `pvRight`, φ 2,85, z −95 mm. El barrido incluye el esqueleto real y descarta
 los candidatos intercostales; mejora el ángulo de unos 53° a 29° en la referencia sintética. La puerta
-adquirida es 100 % derecha en ambos pacientes, PF 14,38/70,84 %, con calidad útil. Legacy/reference
+adquirida es 100 % derecha en ambos pacientes, PF 13,71/70,70 %, con calidad útil. Legacy/reference
 conservan el tronco anterior. Ver decisión 213 y `docs/evidence/portal-subcostal-213.json`.
 La aceptación 213 exige check completo, inspección visual y CI protegida sobre el head final.
 

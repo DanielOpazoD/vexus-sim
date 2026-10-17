@@ -154,6 +154,10 @@ export async function start(): Promise<void> {
     // Carril izquierdo: ventanas VExUS (la sonda se desliza hasta su punto de partida), ayuda y corte plegable
     const windows = new StartPointCards($('start-points'), {
       onPick: (sp) => {
+        // La tarjeta pide una adquisición 2D nueva: sale de cine y cancela la medición pendiente.
+        // Los gestos libres no pasan por esta ruta y conservan el modo.
+        store.set({ mode: 'B', tab: tabAfterMode('B', store.get().tab), frozen: false, tool: 'none' });
+        imageClick.cancelCaliper();
         if (sp.id === 'portal' || (sp.id === 'portalTrunk' && sim().scene.hasAbdominalAtlas))
           for (const cmd of portalPreset(
             !!sim().scene.torso.profile,

@@ -7,6 +7,8 @@ autonomía. El 17 de octubre autorizó retomar fidelidad externa y coherencia in
 registra 18 adquisiciones del atlas (nueve ventanas y dos pacientes), rechaza una rotación PW que
 pierde la señal renal de referencia (208) y unifica los límites del mando de presión con la pose (209).
 La siguiente ronda aborda interfaz clara y disposición adaptable (210), con invariantes de adquisición.
+El usuario añadió arrastre Doppler en vivo y regreso a 2D al elegir otra ventana (211).
+Ambas están en PR258, pendiente de aceptación; no forman parte del último cierre acreditado.
 Se conserva el circuito de PR pequeño, evidencia antes/después y CI completa antes de integrar.
 
 Este documento es el punto de entrada. `CONTRIBUTING.md` define el procedimiento de aceptación;

@@ -7294,3 +7294,33 @@ contra el main anterior falla por desborde y lienzos de ancho cero. Se conservan
 CSS existentes y las pruebas de presión, mapa al redimensionar y movimiento libre entre seis
 coordenadas en ambos pacientes. El cierre exige `npm run check`, inspección de navegador y CI completa
 sobre el árbol publicado; los resultados se enlazan en el PR y en continuidad tras verificarse.
+
+## 211. Doppler durante el arrastre y nueva ventana en 2D
+
+**Contexto.** La selección de PW y caja de color solo respondía al clic al soltar el ratón; un
+arrastre trasladaba la sonda. En tríplex la caja seguía a la puerta únicamente cuando esta salía
+de sus límites. Cambiar de ventana conservaba los modos del examen anterior.
+
+**Decisión.** El ratón primario dentro del sector coloca el control desde `pointerdown` y en cada
+`pointermove`: puerta en PW, caja en Color y ambas en tríplex. Un comando atómico mueve puerta y
+caja incluso con desplazamientos pequeños, conservando tamaño, límites y normalización física.
+Los mandos numéricos mantienen su ajuste independiente dentro de la caja. La entrada captura el
+gesto antes del controlador de sonda; Alt/botón derecho, teclado, 3D y gestos táctiles conservan
+su función. El modo M conserva el arrastre desde su línea.
+
+El contorno interactivo de Color usa el equipo vivo, como la puerta PW; su dibujo 2D no espera
+la valla GPU. Los píxeles de color, escala, imagen, corte y anatomía siguen describiendo la
+adquisición real. Congelada o en cine, la caja corresponde al cuadro mostrado y el arrastre
+no modifica Doppler ni la pose. No se sintetizan cuadros para simular respuesta. Las ayudas
+describen el arrastre con ratón y su diferencia respecto del desplazamiento de la sonda en 2D.
+
+Elegir explícitamente una tarjeta inicia una nueva adquisición 2D: desactiva Color, PW y M,
+sale de congelación/cine y cancela el calibrador pendiente. El movimiento libre entre coordenadas
+no pasa por esta ruta y conserva el modo. La composición Color/PW mediante sus botones no cambia.
+
+**Verificación.** Pruebas del reductor cubren movimientos interiores, bordes, tamaño, contención
+y normalización. La prueba de navegador inspecciona estado y trazos visibles antes de soltar
+el ratón, con una valla GPU retenida, comprueba pose estable y el cambio explícito de ventana.
+La geometría adquirida se verifica tras una cadencia física de Color: las vueltas JS no son
+cuadros Doppler. La aceptación mantiene presupuestos, plazos y aserciones existentes; exige
+el check completo y CI del árbol publicado.

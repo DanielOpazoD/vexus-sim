@@ -56,7 +56,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
   const color = document.createElement('div');
   p.appendChild(color);
   const c = ctx.section(color, 'Doppler color', {
-    info: 'Clic en la imagen: centra la caja (con PW, en tríplex, coloca la puerta y la caja la acompaña). Escala baja → aliasing; filtro alto → desaparece el flujo lento; el color depende de la orientación del haz.',
+    info: 'Arrastra en la imagen para mover la caja; en tríplex acompaña a PW. Escala baja → aliasing; filtro alto → pierde flujo lento. El color depende del ángulo del haz.',
   });
   ctx.track(
     slider(
@@ -126,7 +126,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
   const pw = document.createElement('div');
   p.appendChild(pw);
   const w = ctx.section(pw, 'Doppler pulsado', {
-    info: 'Clic en la imagen coloca la puerta. El filtro de pared elimina las frecuencias bajas de la señal.',
+    info: 'Arrastra en la imagen para mover la puerta. El filtro de pared elimina frecuencias bajas.',
   });
   ctx.track(
     slider(

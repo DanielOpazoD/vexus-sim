@@ -198,6 +198,35 @@ describe('Tríplex (decisión 66)', () => {
     expect(gateInColorBox(e)).toBe(true);
     expect(normalizeEquipment(e, ctx)).toEqual(e);
   });
+
+  it('el arrastre tríplex mueve caja y puerta también dentro de la caja, conservando tamaño y límites físicos', () => {
+    let e = reduceEquipment(base(), { type: 'color', patch: { theta0: -0.1, theta1: 0.1, r0: 100, r1: 140 } }, ctx);
+    e = reduceEquipment(e, { type: 'mode', mode: 'triplex' }, ctx);
+    for (const [theta, r] of [
+      [0.02, 125],
+      [-0.03, 122],
+    ]) {
+      e = reduceEquipment(e, { type: 'placeGate', theta, r, withColorBox: true }, ctx);
+      expect(e.pw.theta).toBeCloseTo(theta, 9);
+      expect(e.pw.depthMm).toBeCloseTo(r, 9);
+      expect((e.color.theta0 + e.color.theta1) / 2).toBeCloseTo(theta, 9);
+      expect((e.color.r0 + e.color.r1) / 2).toBeCloseTo(r, 9);
+    }
+    for (const [theta, r] of [
+      [ctx.halfSectorRad, 180],
+      [-ctx.halfSectorRad, 5],
+    ]) {
+      e = reduceEquipment(e, { type: 'placeGate', theta, r, withColorBox: true }, ctx);
+      expect(gateInColorBox(e)).toBe(true);
+      expect(e.color.theta1 - e.color.theta0).toBeCloseTo(0.2, 9);
+      expect(e.color.r1 - e.color.r0).toBeCloseTo(40, 9);
+      expect(normalizeEquipment(e, ctx)).toEqual(e);
+    }
+    e = reduceEquipment(e, { type: 'mode', mode: 'pw' }, ctx);
+    const inactiveBox = box(e);
+    e = reduceEquipment(e, { type: 'placeGate', theta: 0, r: 80, withColorBox: true }, ctx);
+    expect(box(e)).toEqual(inactiveBox);
+  });
 });
 
 describe('Modo M (decisión 80)', () => {

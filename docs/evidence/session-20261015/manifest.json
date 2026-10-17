@@ -1,0 +1,496 @@
+{
+  "schemaVersion": 1,
+  "kind": "historical-functional-delivery",
+  "recordedAt": "2026-10-16T23:58:28.599656+00:00",
+  "delivery": {
+    "outcome": "merged",
+    "pullRequest": {
+      "headRefOid": "7539a31a07b24d7a660c886892c39180bf45f781",
+      "mergeCommit": {
+        "oid": "70d1d0df1b7ca65818a430e3e40e9de2732eb336"
+      },
+      "mergedAt": "2026-10-15T20:40:05Z",
+      "state": "MERGED",
+      "url": "https://github.com/DanielOpazoD/vexus-sim/pull/255"
+    },
+    "main": "70d1d0df1b7ca65818a430e3e40e9de2732eb336",
+    "tree": "9f8b8304967d26ea4818257453205f34e046cf70",
+    "testedMerge": "8a954a65413f4567fb22843042d9ea945cc8db8b",
+    "ci": "https://github.com/DanielOpazoD/vexus-sim/actions/runs/38799555332",
+    "gate": "https://github.com/DanielOpazoD/vexus-sim/actions/runs/38799555332/job/116657692367",
+    "verificationComment": "https://github.com/DanielOpazoD/vexus-sim/pull/255#issuecomment-6201816725",
+    "e2e": {
+      "uniquePassedExactlyOnce": 139,
+      "retries": 0,
+      "originalReports": 12,
+      "sourceVerified": true
+    },
+    "local": {
+      "core": 1514,
+      "coreExpectedFail": 10,
+      "matrix": 54,
+      "matrixExpectedFail": 1,
+      "bundleKiB": 1032.6,
+      "budgetKiB": 1033,
+      "finalMetalTwoViewMs": 17266,
+      "finalSwiftTwoViewMs": 455826,
+      "twoViewDeadlineMs": 540000,
+      "ciTwoViewMs": 502232,
+      "parityPointsPerBackend": 1024,
+      "mismatches": 0
+    },
+    "modelAndResolutionUnchanged": true,
+    "productionSinceMeasuredSourceDiffBytes": 0,
+    "deployment": "not performed"
+  },
+  "benchmark": {
+    "head": "a8df3b5a85b8410037dfa7a4007346c62e1d5094",
+    "environment": {
+      "renderer": "ANGLE (Apple, ANGLE Metal Renderer: Apple M4, Unspecified Version)",
+      "vendor": "Google Inc. (Apple)",
+      "version": "v0.5.0 · a8df3b5",
+      "userAgent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36",
+      "hardwareConcurrency": 10
+    },
+    "conditions": "Only measured page acquiring. Five preserved IAB references frozen. No other intensive own workload.",
+    "before": {
+      "samples": 1728,
+      "ageP50": 86.2000000178814,
+      "ageP95": 151.19999998807907,
+      "mmP95": 27.973228062072657,
+      "liveToUsMmP95": 0,
+      "rafGapP95": 19.69999998807907,
+      "settled": true,
+      "errors": []
+    },
+    "after": {
+      "samples": 1728,
+      "ageP50": 50.70000001788139,
+      "ageP95": 84.19999998807907,
+      "mmP95": 13.923531706151335,
+      "liveToUsMmP95": 0,
+      "rafGapP95": 19.599999994039536,
+      "settled": true,
+      "errors": []
+    },
+    "rows": [
+      {
+        "patient": "normal-adult",
+        "region": 0,
+        "name": "anterior superior",
+        "beforeP95": 135.5,
+        "afterP95": 50.80000001192093,
+        "beforeMmP95": 15.506489948870065,
+        "afterMmP95": 6.290377563387758
+      },
+      {
+        "patient": "normal-adult",
+        "region": 1,
+        "name": "torax derecho",
+        "beforeP95": 136.90000000596046,
+        "afterP95": 66.40000000596046,
+        "beforeMmP95": 36.80316456157912,
+        "afterMmP95": 10.277314130577784
+      },
+      {
+        "patient": "normal-adult",
+        "region": 2,
+        "name": "renal derecho posterior",
+        "beforeP95": 167,
+        "afterP95": 84.2999999821186,
+        "beforeMmP95": 40.994020987794826,
+        "afterMmP95": 17.349238311600722
+      },
+      {
+        "patient": "normal-adult",
+        "region": 3,
+        "name": "flanco izquierdo",
+        "beforeP95": 165.19999998807907,
+        "afterP95": 84.09999999403954,
+        "beforeMmP95": 17.482576892376624,
+        "afterMmP95": 7.939548921895554
+      },
+      {
+        "patient": "normal-adult",
+        "region": 4,
+        "name": "abdomen anterior inferior",
+        "beforeP95": 150.30000001192093,
+        "afterP95": 67.2999999821186,
+        "beforeMmP95": 32.83958331137422,
+        "afterMmP95": 19.853018885771895
+      },
+      {
+        "patient": "normal-adult",
+        "region": 5,
+        "name": "espalda costura angular",
+        "beforeP95": 151.89999997615814,
+        "afterP95": 83.80000001192093,
+        "beforeMmP95": 26.107183768113394,
+        "afterMmP95": 12.538879356901255
+      },
+      {
+        "patient": "severe-congestion",
+        "region": 0,
+        "name": "anterior superior",
+        "beforeP95": 134.2000000178814,
+        "afterP95": 51.599999994039536,
+        "beforeMmP95": 15.365591847836422,
+        "afterMmP95": 6.26220885456238
+      },
+      {
+        "patient": "severe-congestion",
+        "region": 1,
+        "name": "torax derecho",
+        "beforeP95": 150.90000000596046,
+        "afterP95": 66.09999999403954,
+        "beforeMmP95": 36.80383521254606,
+        "afterMmP95": 9.494669448079266
+      },
+      {
+        "patient": "severe-congestion",
+        "region": 2,
+        "name": "renal derecho posterior",
+        "beforeP95": 164.40000000596046,
+        "afterP95": 83.09999999403954,
+        "beforeMmP95": 40.656627085417576,
+        "afterMmP95": 17.338046086684145
+      },
+      {
+        "patient": "severe-congestion",
+        "region": 3,
+        "name": "flanco izquierdo",
+        "beforeP95": 150.7999999821186,
+        "afterP95": 84.30000001192093,
+        "beforeMmP95": 17.5500375704415,
+        "afterMmP95": 13.60222969131738
+      },
+      {
+        "patient": "severe-congestion",
+        "region": 4,
+        "name": "abdomen anterior inferior",
+        "beforeP95": 150.30000001192093,
+        "afterP95": 116.5,
+        "beforeMmP95": 32.76883589403111,
+        "afterMmP95": 21.02839662800516
+      },
+      {
+        "patient": "severe-congestion",
+        "region": 5,
+        "name": "espalda costura angular",
+        "beforeP95": 166.40000000596046,
+        "afterP95": 101.60000002384186,
+        "beforeMmP95": 26.147752892490114,
+        "afterMmP95": 22.50488460243619
+      }
+    ]
+  },
+  "pathBase": "Session directory containing work/ and outputs/; original local artifacts may be absent in a fresh clone.",
+  "artifacts": [
+    {
+      "path": "work/continuous-cut-latency/DELIVERY_STATUS.json",
+      "classification": "accepted",
+      "bytes": 6815,
+      "sha256": "b8eacaab600c9cd4742ab9cca08114d7cb074147c7dd62d0077646db38dc35b3"
+    },
+    {
+      "path": "work/continuous-cut-latency/pr-255-merged.json",
+      "classification": "accepted",
+      "bytes": 233,
+      "sha256": "3382c3d835aaf96c25031dc238e0053c25d87e70820cc3d5de15f8cc839ba59e"
+    },
+    {
+      "path": "work/continuous-cut-latency/premerge-verification.md",
+      "classification": "accepted",
+      "bytes": 1781,
+      "sha256": "73acf5ea5d83de25ae661ae42cb27b7d45830d76686a5394dc05b08d216f22bf"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e-verified.log",
+      "classification": "accepted",
+      "bytes": 309,
+      "sha256": "8076f48c25cf4ee4f8eb8a29fb6ddc591bfacc69802e81254aa58d385de03d9b"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-validation-verified.log",
+      "classification": "accepted",
+      "bytes": 308,
+      "sha256": "2ad879a38b73403e7de61addad906bb156a40a287813c74e4316e4a5c6e0cc81"
+    },
+    {
+      "path": "work/continuous-cut-latency/comparison-single.json",
+      "classification": "accepted",
+      "bytes": 4105,
+      "sha256": "19806709cfd49ee12788366e38bea8aa7248188ee4945a02131a1c36fd77b0bd"
+    },
+    {
+      "path": "work/continuous-cut-latency/continuous-tour-proof.json",
+      "classification": "accepted",
+      "bytes": 524,
+      "sha256": "4201f7c92b8b9d853a5717cdb68c04417a576ea0c112897cf5800cb16aee91d6"
+    },
+    {
+      "path": "work/continuous-cut-latency/physical-model.diff",
+      "classification": "accepted",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "work/continuous-cut-latency/production-since-a8df3b5.diff",
+      "classification": "accepted",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "work/continuous-cut-latency/report-metal-7539a31.json",
+      "classification": "accepted",
+      "bytes": 37743,
+      "sha256": "f7b6f741d5ca8ad80c42de3e4cc304725f9c5149abc6f99e8e278b347963b792"
+    },
+    {
+      "path": "work/continuous-cut-latency/report-swiftshader-7539a31.json",
+      "classification": "accepted",
+      "bytes": 33911,
+      "sha256": "47e355ce9c672beb0d8e9a936da37dbddda677b1d21b41384a2e2e5a8fa81b59"
+    },
+    {
+      "path": "work/continuous-cut-latency/check-7539a31.exit",
+      "classification": "accepted",
+      "bytes": 2,
+      "sha256": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa"
+    },
+    {
+      "path": "work/continuous-cut-latency/comparison.json",
+      "classification": "superseded-measurement",
+      "bytes": 4785,
+      "sha256": "b3525c0f898ae3349b7947fac13883887134f368b4475c6ca4c937ab2f7e75f3"
+    },
+    {
+      "path": "work/continuous-cut-latency/baseline-including-relocation.json",
+      "classification": "superseded-measurement",
+      "bytes": 2106421,
+      "sha256": "82e181ece48618471ea34733c20f3043db22f185ccf43b1e453842c695416ffe"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-a8df3b5-negative-summary.json",
+      "classification": "negative",
+      "bytes": 432,
+      "sha256": "25783ef33ccb88cf4d95f9b9b7a15295ab866255e8098f6c51b10bb4a21feac4"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-negative-angle-capture.json",
+      "classification": "negative",
+      "bytes": 4463,
+      "sha256": "8f9cf6f3072d9c42a36f8007d0680f081a6eafd52b4cc9dbd9b348006f8bb9c9"
+    },
+    {
+      "path": "work/continuous-cut-latency/report-swiftshader-a8df3b5.json",
+      "classification": "negative",
+      "bytes": 31530,
+      "sha256": "077181d59ec8e168e8e0b58bdd2875bd70f57f1046bd16876c90bac80f57d264"
+    },
+    {
+      "path": "work/continuous-cut-latency/report-swiftshader-candidate-isolated.json",
+      "classification": "interrupted",
+      "bytes": 13897,
+      "sha256": "cf17b73eb6939f4b40bb32dc1572d4ec95a974ccb9cc662e2a803371e3696d9b"
+    },
+    {
+      "path": "work/continuous-cut-latency/hud-before.json",
+      "classification": "exploratory",
+      "bytes": 9349,
+      "sha256": "8f138679ba53a6c56e0fc79a3e34e6613a58b02b1bc49238f37b39f15d68636b"
+    },
+    {
+      "path": "work/continuous-cut-latency/invalid-harness-missing-lift.json",
+      "classification": "exploratory",
+      "bytes": 923,
+      "sha256": "e14b01a156348f6a22fb1248c71aba06fae491e7230ca0275d44b294cb2ae5e7"
+    },
+    {
+      "path": "work/continuous-cut-latency/invalid-config-import-meta.log",
+      "classification": "exploratory",
+      "bytes": 2340,
+      "sha256": "d1426a929f002309574eb1d65428f57f98f1ca9995539812bbb1c053229be26b"
+    },
+    {
+      "path": "work/continuous-cut-latency/measure-single-view.mjs",
+      "classification": "measurement-source",
+      "bytes": 7776,
+      "sha256": "1e561ad0d2845b2faf4833c71167b894d3de496aa46c86a28a2131ef7994eb23"
+    },
+    {
+      "path": "work/continuous-cut-latency/measure-registered.mjs",
+      "classification": "measurement-source",
+      "bytes": 7773,
+      "sha256": "c549769bf30b1547eace27a08e2eb86b6f4b3972ab44832c8b786fad93cbf495"
+    },
+    {
+      "path": "work/continuous-cut-latency/measure.mjs",
+      "classification": "measurement-source",
+      "bytes": 8165,
+      "sha256": "265e0e622036f814688e98fa928881199e824b7a46acca72ed1580393ad8e947"
+    },
+    {
+      "path": "work/continuous-cut-latency/PLAN.md",
+      "classification": "measurement-source",
+      "bytes": 2832,
+      "sha256": "0eefc8f995d4d62f0be6aaa27a15d383fd18b5b95bcc2bc9f9aebf3dc9922483"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-1/e2e-results.json",
+      "classification": "accepted-original-report",
+      "bytes": 140997,
+      "sha256": "6c1f252330a1def535d9b8850a72930f5038853d0e4def600d20c01e9d49d5f2"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-10/e2e-results.json",
+      "classification": "accepted-original-report",
+      "bytes": 813115,
+      "sha256": "a4ae9f0df3c1583016d57ad1cffe7634aee7520c6cd5ef77f3f6b86ab4267f70"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-11/e2e-results.json",
+      "classification": "accepted-original-report",
+      "bytes": 103465,
+      "sha256": "7f27d396b29fd58ac2db22779063c5e76463efd97608c00fc1b0baa1e2be05b2"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-12/e2e-results.json",
+      "classification": "accepted-original-report",
+      "bytes": 203672,
+      "sha256": "aca59d3c08944aafa59b0f3f31cd7fff2576265dbaf7dd89e91e7f51703a3e89"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-2/e2e-results.json",
+      "classification": "accepted-original-report",
+      "bytes": 97953,
+      "sha256": "459cee70189306467e9ac06e0106caf8f465562ede539c3d37516ae7e7b13b00"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-3/e2e-results.json",
+      "classification": "accepted-original-report",
+      "bytes": 93689,
+      "sha256": "aab42410d6b139fab2c9b295a845712fbe4a3b55f3b6cd0983e4f713427a6869"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-4/e2e-results.json",
+      "classification": "accepted-original-report",
+      "bytes": 99311,
+      "sha256": "3b88310c34b426f7f17c1e3316fbf23b909068129c54110cba2b692343dde148"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-5/e2e-results.json",
+      "classification": "accepted-original-report",
+      "bytes": 102907,
+      "sha256": "fba33c16492a72c84c12098ee81b73c92279d6cd185b26c8e77af9be921cb1e7"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-6/e2e-results.json",
+      "classification": "accepted-original-report",
+      "bytes": 118384,
+      "sha256": "ce9a9c09eb64ec7249f7342aaa769b6da5eab734459adf227cb9a92a1b823030"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-7/e2e-results.json",
+      "classification": "accepted-original-report",
+      "bytes": 92611,
+      "sha256": "c530aaa898016bca6a09985bd60e85b1d0c37f0d39d420400d6a0588505662db"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-8/e2e-results.json",
+      "classification": "accepted-original-report",
+      "bytes": 117446,
+      "sha256": "dd645488be5073d258e9758e9449e979a208794341ee27280ef81a9e6677d114"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-9/e2e-results.json",
+      "classification": "accepted-original-report",
+      "bytes": 129760,
+      "sha256": "e5d604f30b7a506321e03e048bd0642f040383c63deb984e434be8614bb7c0c8"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-1/.validation/e2e-execution.json",
+      "classification": "accepted-original-report",
+      "bytes": 17617,
+      "sha256": "de76d9353b272a52370ae5156107d951c506a83583af128b4f76bf6d95d7c69c"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-10/.validation/e2e-execution.json",
+      "classification": "accepted-original-report",
+      "bytes": 17618,
+      "sha256": "0bc99505c8297843a7737802207de284abcc7d308b013af96f9c4debf1ad416e"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-11/.validation/e2e-execution.json",
+      "classification": "accepted-original-report",
+      "bytes": 17618,
+      "sha256": "11b0f5a69a91ea829ee44cff287d0d18dd4836de9ef7348a600b5985d8d464da"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-12/.validation/e2e-execution.json",
+      "classification": "accepted-original-report",
+      "bytes": 17618,
+      "sha256": "0583da5d3aace452ed0c6683ad02e8cfd7abc688eeed82500bed51db06cd60d7"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-2/.validation/e2e-execution.json",
+      "classification": "accepted-original-report",
+      "bytes": 17617,
+      "sha256": "87568cd7aa8d5feae94d6b320ac59f7564328fd60eed706b8926a86d8e720aad"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-3/.validation/e2e-execution.json",
+      "classification": "accepted-original-report",
+      "bytes": 17617,
+      "sha256": "693bcbd20729a09c5891e1e1f8236c207cab3671822fc026c709694c6c99e1b4"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-4/.validation/e2e-execution.json",
+      "classification": "accepted-original-report",
+      "bytes": 17617,
+      "sha256": "29f6d844437adbf3f8270304f2c2b82f3e7e96bb7e1da28c2db49499275c53b1"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-5/.validation/e2e-execution.json",
+      "classification": "accepted-original-report",
+      "bytes": 17617,
+      "sha256": "cfdd3d54f1a78265db54ab67f973550547f6e964e914b9b5787e0b6d15eec06e"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-6/.validation/e2e-execution.json",
+      "classification": "accepted-original-report",
+      "bytes": 17617,
+      "sha256": "bb6798adbdb4f25356ecabbf3924a691f0db23c93265698a99efefe09c81caf1"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-7/.validation/e2e-execution.json",
+      "classification": "accepted-original-report",
+      "bytes": 17617,
+      "sha256": "5b2d87bc13a695bd81ced1b19dedb51c57d7c79cce888bcbf5f5263e25584d44"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-8/.validation/e2e-execution.json",
+      "classification": "accepted-original-report",
+      "bytes": 17617,
+      "sha256": "533342e2dcacc011f89e7231826a5a43a1e4713eed73542e820f0415d27cba88"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-e2e/e2e-tiempos-9/.validation/e2e-execution.json",
+      "classification": "accepted-original-report",
+      "bytes": 17617,
+      "sha256": "66382c219509eb070957d6aa1a1b4c268340b589992ffd5c7505818fb685d289"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-validation/validation-core/core.source.json",
+      "classification": "accepted-original-report",
+      "bytes": 183,
+      "sha256": "b975c609f8ecb2551f15819be96728ad1fcaa689feb6a170b875e09145b4e08d"
+    },
+    {
+      "path": "work/continuous-cut-latency/ci-7539-validation/validation-matrix/matrix.source.json",
+      "classification": "accepted-original-report",
+      "bytes": 185,
+      "sha256": "c030ef7254e6980d5b16aa8c5b9f4aec217f879a08e572d5a46ee8f9be2bf690"
+    }
+  ]
+}

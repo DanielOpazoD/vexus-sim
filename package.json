@@ -28,7 +28,9 @@
     "test:coverage:full": "VITEST_TIER=all VITEST_COVERAGE_PARTITION=all vitest run --coverage --testTimeout=180000",
     "test:coverage:core": "node --import tsx tools/ci/run-validation-phase.ts core",
     "test:matrix": "node --import tsx tools/ci/run-validation-phase.ts matrix",
-    "test:coverage:verify": "node --import tsx tools/ci/verify-validation.ts"
+    "test:coverage:verify": "node --import tsx tools/ci/verify-validation.ts",
+    "workspace:doctor": "node tools/workspace/doctor.ts",
+    "workspace:e2e": "node --import tsx tools/workspace/e2e.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

@@ -226,3 +226,9 @@ material de septos y estrías sobre perfiles reales); después textura/contraste
 emparejada y, por separado, señal Color/PW. Cada bloque requiere un defecto visible y un
 mecanismo causal antes de cambiar la imagen. La meta de indistinguibilidad necesita revisión
 ciega humana independiente; las métricas internas y CI no la acreditan.
+
+La ronda 221 corrige una discrepancia entre la orientación de los septos subcutáneos y su
+campo material. Conserva posición y peso; usa los gradientes completos de profundidad y arco
+en TS/GLSL, con negativos CPU/GPU y una prueba del shader de producción. Es un error físico,
+no una nueva calibración estética. La orientación de las estrías musculares y la costura polar
+posterior siguen pendientes de evaluación. Ver decisión 221 y la CI final del PR para su cierre.

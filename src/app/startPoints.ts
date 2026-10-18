@@ -274,7 +274,7 @@ const ABDOMINAL_POSES = {
   portalTrunk: { phi: 3.05, z: -80, yaw: 0.22135021897142884, rock: -0.13225461110004316, tilt: 0.11100678455374574 },
   // Recheck actual renal transmission after the continuous pressure correction;
   // a 2-mm cranial slide clears the grazing rib without altering the skeleton.
-  hepatorenal: { phi: 2.99, z: -113, yaw: -0.24452521426888207, rock: -0.13406390040993016, tilt: -0.3591483268294911 },
+  hepatorenal: { phi: 2.99, z: -113, yaw: -0.24452521426888207, rock: -0.23878365552958994, tilt: -0.3591483268294911 },
   // [EXTRAPOLACIÓN PROPIA] Reborde derecho registrado; rama portal derecha, no tronco (213).
   portalSubcostal: { phi: 2.85, z: -95, yaw: -0.622104, rock: 0.080718, tilt: 0.136272 },
 } as const;

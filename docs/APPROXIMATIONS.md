@@ -241,3 +241,11 @@ Son **[EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION**: no hay nueva segmentación 
 ni calibración externa del contorno. Las 128 direcciones del perfil ajustado evitan perder una
 guarda entre las 64 direcciones anteriores; la rejilla de coeficientes y resolución acústica no cambian.
 Las cotas geométricas de las pruebas no equivalen a precisión clínica.
+
+### Lectura de interfaces óseas y encuadre hepatorrenal (223)
+
+La interpolación precisa mantiene los ocho nodos originales de RG16F dentro de una celda de
+la superficie ósea; no aumenta la resolución fuente de 1,5 mm. La distancia y su gradiente siguen
+siendo aproximaciones de ese campo registrado. El inicio hepatorrenal se bascula 6° sobre el mismo
+apoyo para conservar extensión renal visible en ambos pacientes. Es una coordenada inicial estimada,
+no una recomendación clínica ni una restricción de exploración.

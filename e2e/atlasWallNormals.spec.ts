@@ -11,8 +11,16 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
       .first()
       .click();
     const rows = [];
-    for (const startPoint of ['hepatorenal', 'renal', 'portalSubcostal'] as const) {
-      const n = await page.evaluate((id) => window.__vexusTest!.wallNormals({ startPoint: id }), startPoint);
+    for (const options of [
+      { startPoint: 'hepatorenal' },
+      // Conserva el plano exacto que reveló la cuantización del filtro (223),
+      // aunque el inicio se haya basculado 6° para mejorar la extensión renal.
+      { startPoint: 'hepatorenal', pose: { rockDeg: 6 } },
+      { startPoint: 'renal' },
+      { startPoint: 'portalSubcostal' },
+    ] as const) {
+      const startPoint = options.startPoint;
+      const n = await page.evaluate((opts) => window.__vexusTest!.wallNormals(opts), options);
       const tag = `${startPoint}: ${JSON.stringify(n)}`;
       // Mismos contratos TS/GLSL del banco de pared existente (smoke.spec),
       // ahora en el perfil Atlas ajustado de ambos pacientes, incluidas sus capas.

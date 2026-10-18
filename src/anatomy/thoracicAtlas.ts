@@ -58,7 +58,11 @@ vec2 thoracicValue(vec3 p) {
   if (uAbdominalAtlasEnabled == 0) return vec2(16.0, 0.0);
   vec3 q=(p-vec3(${vec(F.originMm)}))/${F.pitchMm.toFixed(1)};
   if(any(lessThan(q,vec3(0.0)))||any(greaterThan(q,vec3(${vec(F.textureDimensions.map((v) => v - 1))}))))return vec2(16.0,0.0);
-  return vec2(textureLod(uThoracicAtlas,(q+0.5)/vec3(${vec(F.textureDimensions)}),0.0).r,texelFetch(uThoracicAtlas,ivec3(floor(q+0.5)),0).g);
+  float d=textureLod(uThoracicAtlas,(q+0.5)/vec3(${vec(F.textureDimensions)}),0.0).r;
+  // Una celda contiene la cortical y sus diferencias de 0,02 mm: evita
+  // amplificar la cuantización del filtro fijo en la norma del gradiente (223).
+  if(abs(d)<${F.pitchMm.toFixed(1)})d=sourceDistancePrecise(uThoracicAtlas,q,ivec3(${F.textureDimensions.join(',')}),ivec3(0));
+  return vec2(d,texelFetch(uThoracicAtlas,ivec3(floor(q+0.5)),0).g);
 }
 float thoracicSdf(vec3 p) { return thoracicValue(p).x; }
 const int THORACIC_MATERIALS[${F.materials.length}]=int[${F.materials.length}](${F.materials.join(',')});

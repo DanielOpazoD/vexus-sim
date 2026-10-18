@@ -1,3 +1,4 @@
+import { SOURCE_DISTANCE_GLSL } from '../sourceVolume';
 import { RENAL_FASCIA_MM, RENAL_ATLAS_GRADIENT_EPS_MM } from '../organs/kidney';
 import { GALLBLADDER_WALL_MM } from '../organs/gallbladder';
 import { THORACIC_GLSL } from '../thoracicAtlas';
@@ -144,6 +145,7 @@ ivec2 tubeCandidates(vec3 m) {
 }
 vec4 sceneTexel(int i) { return texelFetch(uSceneTex, ivec2(i % SCENE_TEX_W, i / SCENE_TEX_W), 0); }
 
+${SOURCE_DISTANCE_GLSL}
 ${THORACIC_GLSL}
 vec4 ribData(int k) { return sceneTexel(${RIB_BASE} + k * ${RIB_TEXELS}); }
 vec4 ribShapeData(int k) { return sceneTexel(${RIB_BASE} + k * ${RIB_TEXELS} + 1); }

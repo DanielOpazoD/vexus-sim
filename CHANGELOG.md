@@ -6,6 +6,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 ## [Sin publicar]
 
 - Pared hepatorrenal: continuidad bajo el borde hepático para eliminar la cuña de relleno que deformaba la musculatura, con protección de vísceras y huesos en el modelo compartido (222).
+- Coherencia ósea CPU/GPU junto a los platillos vertebrales y normales costales; diagnósticos de corte y error de arranque inmediato, con los controles originales de cuadros/GPU (223).
 
 - Entorno: continuidad canónica, diagnóstico Node/Git/dependencias y perfiles locales Metal/SwiftShader con evidencias separadas, sin cambiar el simulador ni los controles de CI (207).
 

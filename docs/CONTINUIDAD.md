@@ -17,7 +17,16 @@ Este documento es el punto de entrada. `CONTRIBUTING.md` define el procedimiento
 la configuración ejecutable de CI y sus verificadores determinan qué se ejecuta. Los prompts antiguos,
 las pestañas abiertas y los JSON de una sesión son antecedentes, no estado vivo.
 
-## Último cierre funcional acreditado
+## Referencia para retomar la entrega actual
+
+- [PR267](https://github.com/DanielOpazoD/vexus-sim/pull/267): pared abdominal y cuña de relleno
+  (222), lectura ósea precisa y diagnósticos de arranque/corte (223). La segunda anotación corrige
+  la lectura inicial: la masa roja es tejido no segmentado. La aceptación y el estado de fusión
+  deben consultarse en la PR y su CI final; los negativos del head 57189da quedan conservados.
+  El inicio renal se registra sobre la nueva piel y el hepatorrenal se bascula 6° para conservar
+  visibilidad A/B. El campo fuente, resolución, plazos y movimiento libre siguen siendo los mismos.
+
+### Cierre acreditado anterior
 
 - [PR266](https://github.com/DanielOpazoD/vexus-sim/pull/266): seno renal más fino (220)
   y normales septales derivadas de su campo material (221). Main `3e4614cfa3ffd0695b3fd12cc438229dce20799a`,
@@ -257,3 +266,9 @@ Antes de darla por cerrada: check y calibración del head final, GPU Metal/Swift
 continua y adquisición con dos vistas, capturas A/B y CI completa del PR. No confundir pruebas
 locales del experimento anterior con aceptación. El timeout posmerge de PR266 sigue como negativo
 independiente; no se declara reparado por una ejecución posterior aprobada.
+
+La GPU del primer candidato 57189da detectó además un error de lectura en un platillo vertebral:
+el corte CPU conservaba hueso y GPU devolvía grasa. La decisión 223 interpola los mismos ocho nodos
+cerca de las interfaces óseas. Las pruebas conservan el plano original que reveló el error y la
+exigencia de cero discrepancias; los mensajes de fallo explícito de arranque terminan la espera
+sin ampliar su plazo. La aceptación del head final se acredita en PR267, no con esos ensayos previos.

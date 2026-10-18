@@ -65,7 +65,11 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
         cpuInterfaceDistance: seamCpu.interfaceDistance,
         gpuInterfaceDistance: seamGpu.ifd[0],
       };
-      return { atlas: s.scene.hasAbdominalAtlas, interior, matches, fields: [...fields], blood, velocityWorst, mismatches, seam };
+      const endplate = [-230.25122820831348, -230.24877179168652].map((z) => {
+        const p = s.anatomy.deformation.toWorld([6.4103899509458415, -24.390790709253594, z], s.sample.resp);
+        return { cpu: s.anatomy.classifyWorld(p, s.sample).tissue, gpu: s.gpuQuery(new Float32Array(p), s.frame, true).tissue[0] };
+      });
+      return { atlas: s.scene.hasAbdominalAtlas, interior, matches, fields: [...fields], blood, velocityWorst, mismatches, seam, endplate };
     }, points);
     expect(result.atlas).toBe(true);
     expect(result.interior).toBeGreaterThan(500);
@@ -76,6 +80,12 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
     expect(result.seam.gpuTissue).toBe(4);
     expect(result.seam.cpuInterfaceDistance).toBeGreaterThan(5);
     expect(result.seam.gpuInterfaceDistance).toBeGreaterThan(5);
+    // Dos lados del platillo caudal: el filtro anterior devolvía grasa en lugar
+    // del hueso de la captura fallida. Se exige identidad exacta, sin excluir bordes.
+    expect(result.endplate).toEqual([
+      { cpu: 22, gpu: 22 },
+      { cpu: 16, gpu: 16 },
+    ]);
     await page.screenshot({ path: info.outputPath('abdomen.png') });
     expect(errors).toEqual([]);
   });

@@ -7813,3 +7813,48 @@ frecuentes para respetar el presupuesto original. Los tests ordinarios conservan
 byte a byte de los GLSL ensamblados, incluidos Three y el mapa de renombrado. No cambia física.
 Los originales, ensayos rechazados y negativos permanecen fuera de Git en
 `abdominal-wall-222-evidence`; cada ejecución final debe identificar su fuente real.
+
+## 223. Distancia ósea precisa y errores de arranque visibles de inmediato
+
+**Contexto.** El candidato 57189da supera el check completo, pero la GPU real rechaza su
+aceptación: norma de la pared hepatorrenal A 0,010297 frente a <0,01; extensión renal visible
+33,75 mm frente a >35 mm; un punto del corte devuelve vértebra (22) en CPU y grasa (29) en GPU.
+El punto material (6,410389951; −24,390790709; −230,251228208) está 0,001228 mm dentro del
+platillo vertebral fuente. La lectura lineal GPU pierde ese signo; no es desalineación del Worker.
+La mayor exposición de hueso tras corregir la pared revela la diferencia de precisión de la lectura.
+
+**Opciones.** Relajar percentiles, excluir puntos de frontera, mover órganos o modificar la marcha
+ocultaría el defecto. El primer lector tuvo un error GLSL real: el parámetro sampler3D carecía de
+precisión explícita. Dos diagnósticos se interrumpieron y se conservan como negativos de montaje;
+la espera de cuadros no demostraba lentitud de compilación. No se cambia BOOT_MS.
+
+**Decisión.** `sourceDistancePrecise` interpola explícitamente los mismos ocho nodos RG16F con
+`highp sampler3D` y ocho lecturas directas. Se usa dentro de una celda fuente (1,5 mm) de la superficie
+torácica y de los cuerpos/discos abdominales (campos 8/10). El resto conserva su lector. Los campos,
+rejilla, etiquetas y diferencia de gradiente de 0,02 mm permanecen iguales. No se añade segmentación
+ni precisión clínica. La norma del gradiente vuelve a compararse en el plano que falló, además del
+nuevo inicio hepatorrenal: el encuadre se bascula 6° para recuperar extensión renal en A/B.
+
+`renalCutTracking` adjunta el punto, tejidos y distancia CPU de cada discrepancia antes de exigir
+cero. `bootWithoutErrors` espera un estado terminal (listo o error explícito) y después conserva las
+exigencias completas: lista de errores vacía, dos vueltas JS y primer cuadro GPU confirmado.
+Un fallo de compilación deja de consumir el plazo como si faltaran cuadros; un bloqueo sin error
+conserva el plazo original. También quedan las etapas de arranque y el negativo original.
+
+**Consecuencias.** Piel, corte y adquisición usan el mismo contorno corregido y la clasificación
+cerca del esqueleto conserva el signo de la fuente. La lectura precisa cuesta más consultas locales;
+se limita al entorno de superficie observado y requiere comprobar arranque/rendimiento en Metal y
+SwiftShader. El encuadre inicial es una coordenada estimada, sin limitar el recorrido libre.
+No resuelve por declaración el timeout histórico posmerge de PR266.
+
+**Verificación.** La prueba de producción añade ambos lados del platillo observado, con identidad
+exacta hueso/cartílago en CPU/GPU. Las normales conservan el plano anterior mediante un offset de
+6° y sus cotas originales; cambiar el inicio no elimina el punto que falló. Se conservan los
+negativos de visibilidad A/B y de lectura ósea. Se exige el barrido original con dos vistas, cero
+discrepancias, Color/PW, navegación continua, check y CI completa del head final. Los ensayos de
+montaje y los resultados previos no acreditan ese head.
+
+La mutación al lector anterior falla en los dos lados del platillo: GPU devuelve 29 donde CPU
+exige 22/16. La mutación que elimina `highp` falla por compilación en 992 ms con el nuevo vigilante,
+con el mensaje real del shader, sin esperar BOOT_MS. Son negativos explícitos, con cero reintentos;
+ambos archivos se restauran y sus hashes quedan registrados. No son aceptación del candidato final.

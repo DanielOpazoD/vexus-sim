@@ -141,7 +141,7 @@ describe('Lóbulos del seno renal (decisión 87)', () => {
         }
   const db = (f: number) => 20 * Math.log10(f);
 
-  it('factor log-normal anclado, igual con cualquier haz, de potencia media 1 y ~3,2 dB de desviación a la escala de 3 mm', () => {
+  it('factor log-normal anclado, igual con cualquier haz, de potencia media 1 y ~3,2 dB de desviación', () => {
     expect(sinus.length).toBeGreaterThan(3000);
     for (const m of sinus.slice(0, 200)) {
       const f = retroTexture(m, Tissue.RenalSinus, [0, 1, 0]);

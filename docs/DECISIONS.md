@@ -7669,3 +7669,37 @@ el patch binario completo. La huella combina ahora el inventario del índice con
 archivos modificados/nuevos, sus modos y borrados. Evita generar ese patch y detecta cambios de
 índice sin modificar el contenido de trabajo. La regresión grande falla con el evaluador anterior
 y pasa con el nuevo; el negativo se conserva. Sigue siendo diagnóstico local, nunca aceptación.
+
+## 220. Afinar el medio dispersor del seno renal sin filtrar la imagen
+
+**Contexto.** El usuario retoma la fidelidad ecográfica como prioridad. La adquisición Atlas de
+main `5700415` conserva islas brillantes grandes en el seno renal. El contrato 215 estaba integrado
+como fallo esperado, pero su experimento de imagen no se había entregado. La comparación externa
+sigue siendo la [imagen hepatorrenal de Ptrump16](https://commons.wikimedia.org/wiki/File:Ultrasound_liver_right_lobe_and_right_kidney.jpg)
+(Toshiba Aplio 500, CC BY-SA 4.0) y la [revisión de Hansen et al.](https://www.mdpi.com/2075-4418/6/1/2).
+Respaldan la organización y heterogeneidad del seno, no calibran su escala material.
+
+**Opciones.** Desenfocar la imagen afectaría cápsula, vasos y corteza; bajar ganancia global
+alteraría el contraste hepatorrenal. Se retoma el experimento acotado 215 después de cerrar
+la continuidad de la pared 216/217 y el proceso 219.
+
+**Decisión.** `SINUS_TEXTURE.cellMm` pasa de 3 a 1,5 mm. TS y GLSL consumen la misma constante.
+Se conserva la distribución del medio, normalización, dispersión, retrodispersión basal,
+semilla, anatomía, fisiología, haz, PSF y resolución. El contrato 215 pasa de `it.fails` a `it`.
+La escala es **[EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION**, sin ajuste por pose o ventana.
+
+**Consecuencias.** La modulación de concentración se vuelve más fina antes de la formación
+coherente del eco; la PSF integra ese medio. No se añaden píxeles ni se retocan capturas.
+El seno no representa todavía sus componentes histológicos individuales. No declara resueltos
+el realismo global, el transporte PW 208, las intermitencias históricas ni la validación humana.
+
+**Verificación.** La prueba ordinaria falla con 3 mm (correlación 0,64976 en el eje X a 1,5 mm,
+límite QA <0,4) y pasa con 1,5 mm. Las 14 pruebas focales conservan potencia, continuidad,
+contraste y anclaje a 50 micras; no cambian sus umbrales. La aceptación exige además ocho
+adquisiciones pareadas registradas, revisión de imagen, navegación desde seis coordenadas
+con ambos pacientes, coherencia 3D/corte/ecografía, Color/PW, check y CI completa del head final.
+En las cuatro imágenes renales registradas de ambos pacientes, el CV del gris interior del
+seno baja entre 5,6 y 18,8 %, con el resto de tejidos medidos intactos; las cuatro imágenes
+portal/subcostal son idénticas píxel a píxel. Las máscaras son sintéticas y no equivalen a
+medidas clínicas ni a una prueba ciega. Los registros originales y el negativo se conservan fuera de Git en `renal-fidelity-220-evidence`.
+La CI del PR acredita el cierre efectivo; este texto no sustituye su veredicto.

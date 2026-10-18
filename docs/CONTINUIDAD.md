@@ -1,6 +1,6 @@
 # Continuidad de VExUS LAB
 
-## Alcance vigente al 17 de octubre de 2026
+## Alcance vigente al 18 de octubre de 2026
 
 El usuario pausó el desarrollo funcional para ordenar el entorno y autorizó esa limpieza con
 autonomía. El 17 de octubre autorizó retomar fidelidad externa y coherencia interna. La primera ronda
@@ -18,6 +18,19 @@ la configuración ejecutable de CI y sus verificadores determinan qué se ejecut
 las pestañas abiertas y los JSON de una sesión son antecedentes, no estado vivo.
 
 ## Último cierre funcional acreditado
+
+- [PR264](https://github.com/DanielOpazoD/vexus-sim/pull/264): transición costal localizada (217)
+  y pausa sin vallas GPU vacías (218). Main `f031e438eec59b3a74633cb058307447f6449115`, árbol
+  `9e3f91434a9168dd1a10b274af7db5b100429226`. La [CI del PR](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39110219774)
+  verificó 152 E2E únicas una vez, cero reintentos, core y matrices completos. La [CI posterior del push](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39112783065)
+  también terminó aprobada. El barrido renal del PR pasó en 538.371 de 540.000 ms: sigue habiendo
+  poco margen y no se dan por aisladas todas las intermitencias previas. Se conservan los negativos.
+- La decisión 219 ordena el proceso: feedback local focalizado, build/presupuesto temprano,
+  cero reintentos automáticos y recibo compacto después del veredicto completo. No modifica
+  comportamiento, anatomía ni física. Ver [criterios y comandos](engineering/iteration.md).
+  La aceptación de cada entrega debe consultarse en su PR; este documento no sustituye Git/CI.
+
+## Historial de cierres anteriores
 
 - [PR261](https://github.com/DanielOpazoD/vexus-sim/pull/261), fusionado el 18 de octubre a las
   01:20:18 UTC: escala Color legible en píxeles CSS (214). Main

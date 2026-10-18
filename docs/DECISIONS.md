@@ -7612,3 +7612,36 @@ descongelar. Falla con el código anterior (31 vallas vacías) y pasa con el cam
 Metal. Las pruebas de vallas, turnos y cine conservan sus límites; las de transporte verifican
 identidad exacta de los shaders. El barrido original con dos vistas permanece intacto y debe
 pasar junto con la CI completa del head final, sin reintentos como aceptación.
+
+## 219. Acortar el feedback sin sustituir la aceptación completa
+
+**Contexto.** La CI39110219774 ejecutó152 E2E una vez en244,70 minutos acumulados, con fragmentos
+de12,68–33,89 minutos. Volver a descargar y reconciliar sus27 ZIP principales consumía trabajo ya
+hecho por el gate. El lanzador `tsx` falló por IPC al final de un check local aprobado hasta ese
+punto; repetirlo entero añadió espera. El reintento automático del negativo renal previo consumió
+otros nueve minutos aunque `failOnFlakyTests` impedía convertirlo en aceptación.
+
+**Opciones.** Se rechazan plazos mayores, menos escenarios, cachés de aceptación por HEAD y
+dependencias nuevas. Tampoco se cambian reparto o física con una sola observación de tiempos.
+La selección relacionada tiene límites con imports dinámicos y solo sirve para diagnóstico.
+
+**Decisión.** `feedback` registra diff completo, archivos nuevos y huella de contenido, selecciona
+formato/lint, tipos y tests focales o rápidos, y etiqueta el resultado como local sin aceptación.
+Los scripts usan `node --import tsx`. Build/presupuesto preceden a las suites largas. CI ejecuta
+un intento; las repeticiones diagnósticas son explícitas y conservan el negativo inicial. El
+veredicto protegido conserva ambos verificadores originales y después publica un recibo con
+inventario, fuente/árbol, intento, hashes y costes. `workspace:ci` verifica proveedor y digest sin
+descargar/reconciliar otra vez todos los informes. Los originales siguen disponibles.
+
+**Consecuencias.** Menos espera entre ediciones y menos manipulación manual de evidencias. No cambia
+la aplicación, sus resoluciones, umbrales, plazos, hooks o contratos. Check y CI completos siguen
+siendo obligatorios. El recibo no sustituye revisión visual, workflows adicionales ni validación
+externa. El margen reducido del barrido renal sigue pendiente. Protocolo y evaluación crítica en
+`docs/engineering/iteration.md`; continuidad actualizada sin borrar el historial.
+
+**Verificación.** Fixtures Git reales cubren commits, index, ediciones y borrados; otra edición con
+el mismo estado M cambia la huella. El exportador rechaza ejecución fuera del veredicto sin
+sobrescribir evidencia. Contraejemplos del consumidor rechazan head/árbol/intento/repositorio
+incorrectos, recibo local, fases/hashes ausentes, duplicados y reintentos. La validación de la
+entrega exige además ejecutar el CLI real, check final completo y consumir el recibo de la nueva
+CI protegida del head publicado. Los resultados efectivos se registran en el PR.

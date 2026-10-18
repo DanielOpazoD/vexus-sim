@@ -32,6 +32,7 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm run build
       - name: Todas las pruebas E2E previstas, una vez entre los fragmentos
         run: node --import tsx tools/ci/verify-e2e-shards.ts
       - name: Cobertura de fuentes (umbrales intactos)
@@ -48,11 +49,10 @@ jobs:
             .validation/coverage-summary.json
           retention-days: 14
           if-no-files-found: error
-      - run: npm run build
       - name: Auditoría de dependencias de producción
         run: npm audit --omit=dev --audit-level=high
       - name: Índice de decisiones al día
-        run: npx tsx tools/docs/decisions-index.ts --check
+        run: node --import tsx tools/docs/decisions-index.ts --check
       - name: Guardar el build
         if: success()
         uses: actions/upload-artifact@v7
@@ -218,10 +218,25 @@ jobs:
           path: .validation
           merge-multiple: true
       - name: Ambas fases, mismo SHA e informes íntegros, sin omisiones
+        id: validation
         run: npm run test:coverage:verify
       - uses: actions/download-artifact@v8.0.2
         with:
           pattern: e2e-tiempos-*
           path: e2e-evidence
       - name: Todas las pruebas realmente ejecutadas, exactamente una vez
+        id: execution
         run: node --import tsx tools/ci/verify-e2e-execution.ts e2e-evidence
+      - name: Publicar el recibo de las comprobaciones anteriores, sin repetirlas
+        run: node --import tsx tools/ci/write-acceptance-receipt.ts e2e-evidence
+        env:
+          VERIFIED_VALIDATION: ${{ steps.validation.outcome }}
+          VERIFIED_EXECUTION: ${{ steps.execution.outcome }}
+      - uses: actions/upload-artifact@v7
+        if: success()
+        with:
+          name: acceptance-receipt
+          include-hidden-files: true
+          path: .validation/acceptance-receipt.json
+          retention-days: 14
+          if-no-files-found: error

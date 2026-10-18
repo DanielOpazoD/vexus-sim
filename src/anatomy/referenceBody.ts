@@ -37,14 +37,19 @@ export const BODY_SECTORS = 128;
 export const BODY_COEFFICIENT_STRIDE = BODY_SECTORS * 16 + 4;
 const coefficients = new WeakMap<Float32Array, Float64Array>();
 const slope = (a: number, b: number): number => (a * b > 0 ? Math.sign(a) * Math.min(Math.abs(a), Math.abs(b)) : 0);
+const angularSlope = (a: number, b: number): number =>
+  a * b > 0 ? Math.sign(a) * Math.max(Math.min(2 * Math.abs(a), Math.abs(b)), Math.min(Math.abs(a), 2 * Math.abs(b))) : 0;
 const power = (a: number, b: number, da: number, db: number): number[] => [a, da, 3 * (b - a) - 2 * da - db, 2 * (a - b) + da + db];
 
-/** Hermite con pendientes minmod limitadas y derivada mixta nula.
+/** Hermite con pendientes limitadas y derivada mixta nula.
  * Reconstrucción C1 [EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION visual: interpola los nodos, sin una nueva segmentación. */
 export function bodyCoefficients(data: Float32Array): Float64Array {
   const cached = coefficients.get(data);
   if (cached) return cached;
   const rows = BODY_SUBDIVISIONS * (data.length / BODY_STRIDE - 1) + 1;
+  // El perfil costal ya está ajustado al contacto visceral: mantiene minmod.
+  // En los cortes fuente, Superbee angular conserva mejor las bandas costales registradas.
+  const limitAngle = data.length === COSTAL_BODY_ROWS * BODY_STRIDE ? slope : angularSlope;
   const out = new Float64Array((rows - 1) * BODY_COEFFICIENT_STRIDE);
   const raw = (r: number, a: number): number => {
     const q = Math.max(0, Math.min((rows - 1) / BODY_SUBDIVISIONS, r / BODY_SUBDIVISIONS)),
@@ -61,7 +66,7 @@ export function bodyCoefficients(data: Float32Array): Float64Array {
   };
   const radius = (r: number, a: number) => at(r, (a + BODY_SECTORS) % BODY_SECTORS);
   const dz = (r: number, a: number) => slope(at(r, a) - at(r - 1, a), at(r + 1, a) - at(r, a));
-  const dx = (r: number, a: number) => slope(radius(r, a) - radius(r, a - 1), radius(r, a + 1) - radius(r, a));
+  const dx = (r: number, a: number) => limitAngle(radius(r, a) - radius(r, a - 1), radius(r, a + 1) - radius(r, a));
   for (let r = 0; r < rows - 1; r++) {
     for (let a = 0; a < BODY_SECTORS; a++) {
       const b = (a + 1) % BODY_SECTORS;

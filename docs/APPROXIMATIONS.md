@@ -215,8 +215,8 @@ revisión experta del plano; no se deben desplazar órganos ni cambiar el flujo 
 ### Reconstrucción de la pared corporal (216)
 
 El perfil conserva sus observaciones discretas y el ajuste costal estimado anterior. La superficie
-entre ellas usa Hermite C1 con pendientes minmod, derivadas mixtas nulas, 128 sectores y cuatro
-subintervalos por fila original. Es [EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION visual: regulariza
+entre ellas usa Hermite C1 con pendientes limitadas, derivadas mixtas nulas, 128 sectores y cuatro
+subintervalos por fila original. Minmod se conserva en Z y en el perfil costal ajustado; los cortes fuente usan Superbee angular para preservar sus bandas costales. Es [EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION visual: regulariza
 la representación, sin aportar segmentación humana nueva ni una precisión clínica submilimétrica.
 La malla se aproxima al mismo campo a <0,5 mm en su banco numérico. Las capas pueden conservar
 formas esquemáticas; continuidad y paridad no equivalen a fidelidad clínica externa.

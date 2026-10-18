@@ -137,7 +137,7 @@ export interface TestHooks {
    * (`AnatomyScene.faceGradient`) en los puntos del
    * plano a 0,02–0,4 mm de la cara que dibujan según la CPU. Ver `WallNormalStats`.
    */
-  wallNormals: (opts: { startPoint: StartPoint['id'] }) => WallNormalStats;
+  wallNormals: (opts: { startPoint: StartPoint['id']; pose?: { rockDeg?: number; tiltDeg?: number } }) => WallNormalStats;
   /**
    * Coste medio de `n` cuadros de imagen en tiempo de pared (ms), sincronizado con la GPU al
    * principio y al final: compara versiones del renderizador en la misma máquina. El reloj no avanza,
@@ -535,6 +535,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
     wallNormals: (opts) => {
       const sim = getSim();
       goTo(sim, opts.startPoint);
+      if (opts.pose) offsetPose(sim, opts.pose);
       return wallNormalStats(sim);
     },
     frameCostMs: (n, opts) => {

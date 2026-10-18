@@ -15,9 +15,11 @@ for (const model of ['legacy', 'reference', 'atlas'] as const)
     });
     expect(observedModel).toBe(model);
     await page.locator('.win-card').filter({ hasText: 'Hepatorrenal' }).click();
+    // Inicio hepatorrenal basculado 6° sobre la pared corregida (223).
+    // La llegada y la conservación posterior de los tres ejes siguen siendo exactas.
     const target =
       model === 'atlas'
-        ? { phi: 2.99, z: -113, yaw: -0.24452521426888207, rock: -0.13406390040993016, tilt: -0.3591483268294911 }
+        ? { phi: 2.99, z: -113, yaw: -0.24452521426888207, rock: -0.23878365552958994, tilt: -0.3591483268294911 }
         : { phi: 3.2, z: -80, yaw: model === 'reference' ? 0 : -0.1, rock: model === 'reference' ? -0.2 : 0.1, tilt: -0.4 };
     await withinFrames(
       page,

@@ -7751,3 +7751,189 @@ ese negativo también se conserva. La derivada final se evalúa a 2 micras con e
 sin descartar esa muestra. Pasa en ambos pacientes; la mutación al shader anterior vuelve a
 fallar en ambos, por la aserción de alineación. Se conservan ambos negativos y la restauración
 exacta de la fuente. El instrumento no cuenta el éxito de una repetición sin corregir su método.
+
+## 222. Continuidad parietal bajo el borde hepático sin cuña de relleno
+
+**Contexto.** El usuario señala una masa bajo la pared y la deformación muscular que produce
+en la captura hepatorrenal de main `3e4614c`. Una primera lectura de la orientación de la imagen
+fue incorrecta: los ángulos negativos del haz aparecen a la derecha de pantalla. Al registrar
+la segunda anotación, la masa roja corresponde a `UnsegmentedSoftTissue` (39), con trayectos
+radiales de unos 18–28 mm. No basta con eliminar la separación nominal de 1,5 mm. El ajuste
+parietal de 183 termina al desaparecer el hígado y conserva el perfil heredado con su relleno
+en el flanco caudal. La musculatura sigue ese perfil; el defecto existe en la anatomía compartida.
+La [revisión de Draghi et al.](https://pmc.ncbi.nlm.nih.gov/articles/PMC7441131/) describe las capas
+reales de la pared, pero no calibra este ajuste de contorno ni justifica su espesor en humanos.
+
+**Opciones.** Cambiar el gris u ocultar un tejido solo en la ecografía rompe la coherencia del
+modelo. El experimento de compresión lateral C1 pasó su check local, pero no eliminó la masa:
+se conserva separado, sin incorporarlo a esta entrega. La continuación con 64 sectores quitaba
+la cuña, pero recortaba una víscera entre nodos. Densificar también Z sin conservar el ajuste
+previo introdujo quiebres de fascia y se rechazó. El primer check completo detectó pérdida de la puerta portal por refinar fuera del territorio afectado;
+se limita ese refinamiento al flanco. El apoyo renal se recalcula sobre el contorno nuevo; una
+misma coordenada recupera vena y arteria pareada en A/B. No se amplían tolerancias ni cambia la pose portal.
+
+**Decisión.** `hepaticCostalBody` continúa la apposición sobre las vísceras registradas del flanco
+derecho bajo el borde hepático, con transiciones suaves en φ y Z. Mantiene el mayor radio exigido
+por hígado, otras vísceras y hueso. La cara interna no suma la banda nominal de 1,5 mm a una pared
+que ya contiene grasa preperitoneal. En el flanco, el margen visceral de 2 mm añade una celda fuente
+de 1,5 mm para proteger cruces entre filas. Los espesores parietales y los campos fuente quedan fijos.
+Son **[EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION**, no segmentación cutánea nueva.
+
+El perfil ajustado usa 128 direcciones en vez de 64, coincidiendo con las direcciones de sus
+coeficientes existentes. Las medias direcciones se ajustan de nuevo solo en el flanco: fuera de él
+interpolan las observaciones previas para conservar el apoyo portal. Conserva 53 filas, cuatro
+subdivisiones Z y la misma rejilla de 209 filas auxiliares × 128 sectores y tamaño de textura. El perfil serializado lleva su disposición mediante su tamaño; CPU, Worker del corte,
+GLSL y piel 3D consultan el mismo campo. Se elimina una copia cruda del perfil que el shader ya no
+leía: además de ser redundante, el perfil más ancho invadiría los registros de las costillas.
+La malla conserva como mínimo las mismas 256 muestras circunferenciales.
+El inicio renal Atlas pasa a φ 3,2, Z −165 mm y tilt −0,632081 rad sobre la nueva piel; yaw y rock
+se conservan. Es una coordenada inicial estimada, sin limitar el movimiento libre ni mover vasos.
+El barrido previo quedó sin luz venosa; la candidata conserva transmisión venosa/arterial de
+aproximadamente 0,15 y coseno >0,92 en ambos pacientes a los 2 s de apnea simulada.
+
+**Consecuencias.** La pared deja de adaptarse a esa cuña de relleno; no se borra hígado, grasa
+subcutánea/preperitoneal, vísceras ni esqueleto para obtener la imagen. Cambia el contorno estimado
+y por ello el apoyo adquirido puede cambiar incluso con las mismas coordenadas de sonda.
+No se modifican señal, dispersores, resolución acústica, controles, ley de compresión ni navegación.
+La continuidad interna y la reducción del defecto no acreditan indistinguibilidad clínica.
+
+**Verificación.** Una regresión con dos pacientes y doce puntos por paciente, independientes de
+los nodos angulares/axiales, limita la separación parietal a <4 mm y el recorte visceral a menos
+de una celda fuente (1,5 mm); protege también la piel sobre la costilla interpuesta. Son cotas
+computacionales, no espesores normales humanos. El perfil anterior falla por exceso de separación;
+la primera continuación falla por recorte. La apposición hepática conserva su máximo original por
+punto y añade sesgo medio <0,75 mm (media celda) para detectar la banda nominal añadida.
+Se conservan los contratos originales de continuidad, gradiente, distancia piel 3D/campo <0,5 mm,
+caras/normales TS-GPU y los plazos de adquisición con dos vistas. La cadena Atlas existente comprueba además la
+arteria pareada y exige transmisión renal >0,01 en ambos planos para rechazar puertas en sombra. La validación debe incluir
+navegación, Color/PW, capturas A/B con angulaciones vecinas, check y CI completa del head final.
+
+El diccionario reversible conserva 512 palabras, 128 frases y su formato: prioriza secuencias
+frecuentes para respetar el presupuesto original. Los tests ordinarios conservan la igualdad
+byte a byte de los GLSL ensamblados, incluidos Three y el mapa de renombrado. No cambia física.
+Los originales, ensayos rechazados y negativos permanecen fuera de Git en
+`abdominal-wall-222-evidence`; cada ejecución final debe identificar su fuente real.
+
+## 223. Distancia ósea precisa y errores de arranque visibles de inmediato
+
+**Contexto.** El candidato 57189da supera el check completo, pero la GPU real rechaza su
+aceptación: norma de la pared hepatorrenal A 0,010297 frente a <0,01; extensión renal visible
+33,75 mm frente a >35 mm; un punto del corte devuelve vértebra (22) en CPU y grasa (29) en GPU.
+El punto material (6,410389951; −24,390790709; −230,251228208) está 0,001228 mm dentro del
+platillo vertebral fuente. La lectura lineal GPU pierde ese signo; no es desalineación del Worker.
+La mayor exposición de hueso tras corregir la pared revela la diferencia de precisión de la lectura.
+
+**Opciones.** Relajar percentiles, excluir puntos de frontera, mover órganos o modificar la marcha
+ocultaría el defecto. El primer lector tuvo un error GLSL real: el parámetro sampler3D carecía de
+precisión explícita. Dos diagnósticos se interrumpieron y se conservan como negativos de montaje;
+la espera de cuadros no demostraba lentitud de compilación. No se cambia BOOT_MS.
+
+**Decisión.** `sourceDistancePrecise` interpola explícitamente los mismos ocho nodos RG16F con
+`highp sampler3D` y ocho lecturas directas. Se usa dentro de una celda fuente (1,5 mm) de la superficie
+torácica y de los cuerpos/discos abdominales (campos 8/10). El resto conserva su lector. Los campos,
+rejilla, etiquetas y diferencia de gradiente de 0,02 mm permanecen iguales. No se añade segmentación
+ni precisión clínica. La norma del gradiente vuelve a compararse en el plano que falló, además del
+nuevo inicio hepatorrenal: el encuadre se bascula 6° para recuperar extensión renal en A/B.
+
+`renalCutTracking` adjunta el punto, tejidos y distancia CPU de cada discrepancia antes de exigir
+cero. `bootWithoutErrors` espera un estado terminal (listo o error explícito) y después conserva las
+exigencias completas: lista de errores vacía, dos vueltas JS y primer cuadro GPU confirmado.
+Un fallo de compilación deja de consumir el plazo como si faltaran cuadros; un bloqueo sin error
+conserva el plazo original. También quedan las etapas de arranque y el negativo original.
+
+**Consecuencias.** Piel, corte y adquisición usan el mismo contorno corregido y la clasificación
+cerca del esqueleto conserva el signo de la fuente. La lectura precisa cuesta más consultas locales;
+se limita al entorno de superficie observado y requiere comprobar arranque/rendimiento en Metal y
+SwiftShader. El encuadre inicial es una coordenada estimada, sin limitar el recorrido libre.
+No resuelve por declaración el timeout histórico posmerge de PR266.
+
+**Verificación.** La prueba de producción añade ambos lados del platillo observado, con identidad
+exacta hueso/cartílago en CPU/GPU. Las normales conservan el plano anterior mediante un offset de
+6° y sus cotas originales; cambiar el inicio no elimina el punto que falló. Se conservan los
+negativos de visibilidad A/B y de lectura ósea. Se exige el barrido original con dos vistas, cero
+discrepancias, Color/PW, navegación continua, check y CI completa del head final. Los ensayos de
+montaje y los resultados previos no acreditan ese head.
+
+La mutación al lector anterior falla en los dos lados del platillo: GPU devuelve 29 donde CPU
+exige 22/16. La mutación que elimina `highp` falla por compilación en 992 ms con el nuevo vigilante,
+con el mensaje real del shader, sin esperar BOOT_MS. Son negativos explícitos, con cero reintentos;
+ambos archivos se restauran y sus hashes quedan registrados. No son aceptación del candidato final.
+
+La primera CI de b5ad9c0 detecta además una regresión del mensaje del vigilante: la prueba
+`startupFailure` exige el identificador `ultrasound:gpu-failed`, pero el rechazo terminal devolvía
+la aserción genérica de cuadro pendiente. Se restaura ese error explícito fuera del sondeo,
+conservando la salida temprana y todas las condiciones de aprobación. La prueba existente
+permanece intacta y debe pasar antes de repetir la aceptación del nuevo head.
+
+El grupo 4 de esa CI conserva un segundo negativo: `probeRigidTranslation` esperaba la
+basculación anterior (−0,134064 rad) después de elegir el inicio corregido (−0,238784 rad), por lo
+que agotaba 270 s esperando una pose distinta de la publicada. Se actualiza únicamente esa
+coordenada esperada. Se conservan el límite de 100 cuadros, 1e−8 para la llegada, la identidad
+de los tres ejes durante el arrastre y el plazo original. Las coordenadas antiguas de los
+tests independientes de contacto quedan como testigos, sin cambiarlas para seguir al preset.
+
+## 224. Transporte compacto de capturas sin modificar la imagen
+
+**Contexto.** La CI de 50934f6 conserva dos negativos: `acquiredPoseProvenance` agota
+270 s y `renalCutTracking` 540 s. La traza del primero tarda 167,4 s al devolver
+`Array.from(gray)` por el protocolo del navegador. El segundo completa los cuatro mapas
+CPU/GPU en local sin diferencias, pero llega al plazo original al final. El verde Metal
+no acredita SwiftShader ni autoriza integrar ese candidato.
+
+**Opciones.** Ampliar plazos, quitar capturas, reducir el barrido o bajar resolución ocultaría
+el coste. `gl.finish()` no proporcionó una medida útil en este backend: el diagnóstico por
+pasadas debe drenar con una lectura real. Un ensayo que omitía gradientes sin consumo no
+mostró ahorro estable. Su comparación PNG usó viewports distintos y es inválida como
+prueba de regresión. Se retiró el ensayo por rendimiento no acreditado; se conservan datos,
+patch y la rectificación fuera de Git.
+
+**Decisión.** `captureBMode` transporta el mismo `Uint8Array` como Base64 en bloques acotados,
+en vez de un valor de protocolo por píxel. Node recupera todos los bytes y usa el mismo
+codificador PNG, orden de filas y controles de vacío/dimensiones. No hay interpolación,
+compresión de imagen con pérdidas ni cambio de tamaño. Cuatro secuencias cortas frecuentes
+mejoran el diccionario reversible; permanecen las 512 palabras, 128 frases y el presupuesto.
+
+**Consecuencias.** Se elimina transporte sin cambiar el contenido adquirido, manteniendo
+píxeles, muestras del barrido, vistas, aserciones y plazos. Esta corrección no da por resuelto
+el timeout del barrido con dos vistas.
+
+**Verificación.** El transporte genera el mismo PNG byte a byte con todos los niveles de gris
+y cruzando varios bloques. Se exige ejecutar las dos pruebas que agotaron su plazo,
+check completo, calibración, GPU Metal/SwiftShader y CI completa del head final. Los ensayos
+descartados y el check de 50934f6 no acreditan el nuevo candidato.
+
+## 225. Medir dos vistas sin grabación continua adicional
+
+**Contexto.** `renalCutTracking` conserva su timeout de 540 s. La traza de la variante
+paralela contiene más de 300 recursos de imagen además de los informes; las dos consultas
+congeladas tardan unos 40 s cada una cuando se lanzan juntas, frente a 19–21 s en serie.
+Solaparlas no aporta ahorro: comparten recursos del backend. Se retira la paralelización.
+
+**Opciones.** Se ensayaron retornos/discard de teselas sin lector y reutilización del punto
+material. No acreditaron ahorro suficiente; la reutilización conservó exactamente el PNG
+con el protocolo correcto, pero añadía 3 MiB. Un gradiente completo en un dibujo pasó cine
+(unos 240 de 270 s), pero aumentó el arranque frío a 115–127 s y la segunda preparación a
+216 s, agotando el barrido. Todos los ensayos de shader se retiraron. Sus patches, trazas
+y resultados permanecen fuera de Git. No se amplían plazos ni se baja resolución.
+
+**Decisión.** Solo este test conserva `retain-on-failure` con fuentes y snapshots del DOM,
+pero sin el screencast continuo de lienzos. Sus cuatro capturas explícitas permanecen en
+el mismo lugar y secuencia. No se retiran artefactos anteriores ni cambia la configuración
+de las otras E2E. Debe medirse si eliminar estas copias adicionales aporta margen real.
+
+**Consecuencias.** Anatomía, renderizador, viewport, resolución, relojes, dos vistas y
+barridos permanecen iguales. La traza deja de incluir la película continua de esta prueba;
+conserva protocolo/DOM/fuentes y todas las capturas de adquisición previstas. Las
+aserciones, 24 pasos por eje, puntos de paridad, límites y treinta cuadros congelados
+mantienen su contrato. No se acepta un verde por recortar comprobaciones.
+
+**Verificación.** Se exige la misma prueba completa dentro de sus 540 s, cero reintentos,
+cuatro mapas sin diferencias y cuatro capturas. El check y la CI completa del head final
+siguen siendo obligatorios. Una ejecución posterior aprobada no aísla por declaración
+las intermitencias históricas; los negativos originales no se sustituyen ni borran.
+
+La reproducción local del candidato termina en 532.721 de 540.000 ms, una ejecución y cero
+reintentos: cuatro mapas de 256 puntos sin discrepancias, cuatro PNG y el control final
+de congelación. El cuerpo del test es idéntico byte a byte al de 50934f6; solo se añade
+la configuración de traza. El margen de 7.279 ms sigue siendo estrecho y no acredita por
+sí solo la CI del head final ni resuelve todas las intermitencias históricas.

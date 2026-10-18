@@ -229,3 +229,23 @@ el margen parietal de1,5mm y los órganos registrados. Es [EXTRAPOLACIÓN PROPIA
 visual; reduce una esquina de la fascia hepatorrenal y no aporta una segmentación nueva ni valida
 externamente el espesor de la pared. Se rechazaron suavizados globales y reducir el margen de contacto
 al degradar apposición o separación anatómica. Otras capas pueden conservar tramos esquemáticos.
+
+### Continuación parietal bajo el borde hepático (222)
+
+El ajuste estimado continúa en el flanco derecho entre φ 2,65–3,45 y Z −240…−90 mm,
+con una zona central de peso completo y transiciones suaves. Ajusta el perfil heredado sobre
+las vísceras fuente, conservando huesos y espesores parietales; no elimina grasa humana real.
+El margen visceral del flanco es 2 mm más una celda fuente de 1,5 mm. El contacto hepático deja
+de sumar la separación nominal de 1,5 mm de 183/217 fuera del espesor parietal ya definido.
+Son **[EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION**: no hay nueva segmentación cutánea humana
+ni calibración externa del contorno. Las 128 direcciones del perfil ajustado evitan perder una
+guarda entre las 64 direcciones anteriores; la rejilla de coeficientes y resolución acústica no cambian.
+Las cotas geométricas de las pruebas no equivalen a precisión clínica.
+
+### Lectura de interfaces óseas y encuadre hepatorrenal (223)
+
+La interpolación precisa mantiene los ocho nodos originales de RG16F dentro de una celda de
+la superficie ósea; no aumenta la resolución fuente de 1,5 mm. La distancia y su gradiente siguen
+siendo aproximaciones de ese campo registrado. El inicio hepatorrenal se bascula 6° sobre el mismo
+apoyo para conservar extensión renal visible en ambos pacientes. Es una coordenada inicial estimada,
+no una recomendación clínica ni una restricción de exploración.

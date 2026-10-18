@@ -1,4 +1,4 @@
-import { BODY_SUBDIVISIONS } from '../referenceBody';
+import { bodyStride, BODY_SUBDIVISIONS } from '../referenceBody';
 import { TUBE_GRID_PITCH_MM, type TubeGrid } from './tubeGrid';
 import type { ProbeCompression } from '../compression';
 import { RespiratoryDeformation } from '../deformation';
@@ -40,7 +40,11 @@ interface UniformSpec {
 }
 
 export const SCENE_UNIFORMS: readonly UniformSpec[] = [
-  { name: 'uBodyRows', type: 'int', value: (s) => [BODY_SUBDIVISIONS * ((s.torso.profile?.length ?? 520) / 65 - 1) + 1] },
+  {
+    name: 'uBodyRows',
+    type: 'int',
+    value: (s) => [BODY_SUBDIVISIONS * (s.torso.profile ? s.torso.profile.length / bodyStride(s.torso.profile) - 1 : 7) + 1],
+  },
   { name: 'uBodyMinZ', type: 'float', value: (s) => [s.torso.profile && s.torso.profile.length !== 520 ? -400 : -160] },
   { name: 'uAbdominalAtlasEnabled', type: 'int', value: (s) => [s.hasAbdominalAtlas ? 1 : 0] },
   /** a, b, zMin, zMax */

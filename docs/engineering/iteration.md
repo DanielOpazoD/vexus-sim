@@ -90,6 +90,14 @@ si cambia un contrato GPU, también SwiftShader y su paridad. Guardar renderer, 
 reales. No lanzar otra carga local intensiva a la vez. Un cambio solo documental o de herramientas
 no necesita repetir capturas anatómicas locales; la colección completa permanece en CI.
 
+Los negativos de la ronda 223 muestran dos dependencias E2E que la selección de Vitest por imports
+no cubre. Al cambiar coordenadas de inicio, incluir `probeRigidTranslation.spec.ts` (llegada exacta
+independiente), `hepatorenalVisibleWindow.spec.ts` y `probeFreeNavigation.spec.ts`. Al cambiar
+`bootWithoutErrors`, incluir `startupFailure.spec.ts` y el arranque real con dos vistas de
+`renalCutTracking.spec.ts`. La prueba de fallo sintético conserva el identificador del error;
+la de adquisición conserva el primer cuadro GPU. Así se detectan incompatibilidades en el ciclo
+focalizado antes de esperar una CI completa. Sus plazos y aserciones permanecen intactos.
+
 Con el candidato estable: **check completo, hook normal, PR y CI completa del último head**.
 Si falla una fase, conservar su negativo y diagnosticar esa fase; no volver a lanzar todo a ciegas.
 Tras corregir código se vuelve a acreditar el candidato final. El feedback nunca sustituye la aceptación.

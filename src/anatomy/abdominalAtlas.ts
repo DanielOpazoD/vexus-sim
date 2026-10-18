@@ -152,6 +152,9 @@ vec2 abdominalAtlasValue(vec3 p, int k){
   if(any(lessThan(q,vec3(0.0)))||any(greaterThan(q,dim-1.0)))return vec2(16.0,0.0); 
   // Normalized texel-center coordinates; linear filtering stays inside the selected brick.
   float d=textureLod(uAbdominalAtlas,(off+q+0.5)/vec3(${ABDOMINAL_ATLAS.textureDimensions.map((v) => v.toFixed(1)).join(',')}),0.0).r;
+  // Cuerpos/discos: conserva el signo de la misma superficie cerca del
+  // platillo; el filtro fijo anulaba distancias interiores de ~0,001 mm (223).
+  if((k==8||k==10)&&abs(d)<1.5)d=sourceDistancePrecise(uAbdominalAtlas,q,ivec3(dim),ivec3(off));
   float label=texelFetch(uAbdominalAtlas,ivec3(off+floor(q+0.5)),0).g; 
   return vec2(d,label); 
 }

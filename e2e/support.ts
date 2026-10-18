@@ -93,22 +93,30 @@ export async function bootWithoutErrors(page: Page, query = '?e2e=1&abdomen=lega
     await page.goto(`/${query}`);
     // Dos vueltas JS pueden haber encolado trabajo que aún no completó la GPU.
     // La valla se registra en el host; el adjunto conserva el bloqueo aun sin respuesta de la página.
+    let ready = { frames: false, gpu: false };
     await expect
       .poll(
         async () => {
-          if (startup.some((entry) => entry.stage === 'ultrasound:gpu-failed'))
-            throw new Error('arranque: ultrasound:gpu-failed; el primer cuadro no puede completar');
-          return {
+          // Un error explícito ya es terminal: no consumir BOOT_MS esperando
+          // cuadros que ese shader no puede producir. La aprobación sigue
+          // exigiendo cero errores, dos vueltas JS y la valla GPU (223).
+          if (errors.length || startup.some((entry) => entry.stage === 'ultrasound:gpu-failed')) return true;
+          ready = {
             frames: (await page.evaluate(() => window.__vexusTest?.framesRendered() ?? -1)) >= 2,
             gpu: startup.some((entry) => entry.stage === 'ultrasound:gpu-ready'),
           };
+          return ready.frames && ready.gpu;
         },
         {
           timeout: BOOT_MS,
-          message: 'arranque: dos vueltas JS y primer cuadro confirmado por la GPU',
+          message: 'arranque: cuadro GPU listo o error explícito',
         },
       )
-      .toEqual({ frames: true, gpu: true });
+      .toBe(true);
+    if (startup.some((entry) => entry.stage === 'ultrasound:gpu-failed'))
+      throw new Error('arranque: ultrasound:gpu-failed; el primer cuadro no puede completar');
+    expect(errors, 'arranque sin errores de página ni consola').toEqual([]);
+    expect(ready, 'arranque: dos vueltas JS y primer cuadro confirmado por la GPU').toEqual({ frames: true, gpu: true });
     // El estado se escribe en el primer cuadro con más de250ms desde el anterior.
     await withinFrames(page, 30, 'estado con fps', async () => {
       const s = (await page.locator('#status').textContent()) ?? '';

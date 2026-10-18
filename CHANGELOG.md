@@ -5,6 +5,13 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Banco de pruebas: evita grabación continua adicional durante el barrido con dos vistas; conserva sus capturas explícitas, DOM/fuentes, todos los puntos y los plazos (225).
+
+- Validación sin pérdida de imagen: capturas con transporte compacto, conservando todos los píxeles y los plazos (224).
+
+- Pared hepatorrenal: continuidad bajo el borde hepático para eliminar la cuña de relleno que deformaba la musculatura, con protección de vísceras y huesos en el modelo compartido (222).
+- Coherencia ósea CPU/GPU junto a los platillos vertebrales y normales costales; diagnósticos de corte y error de arranque inmediato, con los controles originales de cuadros/GPU (223).
+
 - Entorno: continuidad canónica, diagnóstico Node/Git/dependencias y perfiles locales Metal/SwiftShader con evidencias separadas, sin cambiar el simulador ni los controles de CI (207).
 
 ### Corregido

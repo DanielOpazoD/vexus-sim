@@ -2,6 +2,10 @@ import { expect, test, type Page } from '@playwright/test';
 import type { CutMapInit, CutMapRequest, CutMapResponse } from '../src/ui/cutMapWorker';
 import { bootWithoutErrors, budget, windowAcquired, withinFrames } from './support';
 
+// Evitar copias continuas de los dos lienzos durante la medición en SwiftShader.
+// Se conservan DOM/fuentes y las cuatro capturas explícitas del test.
+test.use({ trace: { mode: 'retain-on-failure', screenshots: false, snapshots: true, sources: true } });
+
 interface AcquiredCut {
   request: CutMapRequest;
   n: number;
@@ -171,12 +175,26 @@ test('renal and hepatorenal sweeps retain acquisition geometry with two views an
           const image = s.renderer.readDisplay();
           return {
             mismatches: expected.filter((x, i) => x !== actual[i]).length,
+            mismatchDetails: expected.flatMap((value, i) => {
+              if (value === actual[i]) return [];
+              const point: [number, number, number] = [points[3 * i], points[3 * i + 1], points[3 * i + 2]];
+              const cpu = s.anatomy.classifyWorld(point, shown.anatomy.sample);
+              return [
+                {
+                  point,
+                  expected: value,
+                  gpu: actual[i],
+                  cpu: { tissue: cpu.tissue, material: cpu.material, boundaryDistance: cpu.boundaryDistance, interface: cpu.interface },
+                },
+              ];
+            }),
             points: expected.length,
             nonzeroPixels: image.gray.filter((x) => x > 0).length,
             errors: window.__vexusTest!.loggedErrors(),
           };
         });
         reports.push({ windowId, view: i, sweeps: sweeps[i], parity });
+        await info.attach(`${windowId}-view-${i}-parity`, { body: JSON.stringify(parity, null, 2), contentType: 'application/json' });
         expect(parity.nonzeroPixels).toBeGreaterThan(1000);
         expect(parity.mismatches).toBe(0);
         expect(parity.errors).toEqual([]);

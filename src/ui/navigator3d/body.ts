@@ -1,3 +1,4 @@
+import { bodyStride } from '../../anatomy/referenceBody';
 import { mergeVertices } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 import { THORACIC_ATLAS } from '../../anatomy/thoracicAtlasData';
 import { thoracicSurface } from '../../anatomy/abdominalSurface';
@@ -18,22 +19,26 @@ export function buildSkin(a: AnatomyScene): THREE.Mesh {
   const angles: number[] = [],
     heights: number[] = [];
   if (profile) {
-    const rows = profile.length / 65,
+    const stride = bodyStride(profile),
+      sectors = stride - 1;
+    const rows = profile.length / stride,
       minZ = rows === 8 ? -160 : -400;
     const step = (120 - minZ) / (rows - 1);
     // Refina donde las muestras cambian más: error de cuerda submilimétrico
     // frente al mismo campo acústico, sin inflar toda la malla (216).
-    for (let k = 0; k < 64; k++) {
+    for (let k = 0; k < sectors; k++) {
       let delta = 0;
-      for (let r = 0; r < rows; r++) delta = Math.max(delta, Math.abs(profile[r * 65 + 1 + k] - profile[r * 65 + 1 + ((k + 1) % 64)]));
-      const n = 4 * Math.max(1, Math.ceil(Math.sqrt(delta / 0.15) / 4));
-      for (let j = 0; j < n; j++) angles.push(((k + j / n) * Math.PI) / 32);
+      for (let r = 0; r < rows; r++)
+        delta = Math.max(delta, Math.abs(profile[r * stride + 1 + k] - profile[r * stride + 1 + ((k + 1) % sectors)]));
+      const minimum = 256 / sectors;
+      const n = minimum * Math.max(1, Math.ceil(Math.sqrt(delta / 0.15) / minimum));
+      for (let j = 0; j < n; j++) angles.push(((k + j / n) * 2 * Math.PI) / sectors);
     }
     angles.push(2 * Math.PI);
     heights.push(t.zMin);
     for (let r = 0; r < rows - 1; r++) {
       let delta = 0;
-      for (let k = 0; k < 65; k++) delta = Math.max(delta, Math.abs(profile[r * 65 + k] - profile[(r + 1) * 65 + k]));
+      for (let k = 0; k < stride; k++) delta = Math.max(delta, Math.abs(profile[r * stride + k] - profile[(r + 1) * stride + k]));
       const n = 4 * Math.max(1, Math.ceil(Math.max(step / 3, Math.sqrt(delta / 0.15)) / 4));
       for (let j = 0; j < n; j++) heights.push(minZ + (r + j / n) * step);
     }

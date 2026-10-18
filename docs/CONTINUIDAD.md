@@ -17,7 +17,29 @@ Este documento es el punto de entrada. `CONTRIBUTING.md` define el procedimiento
 la configuración ejecutable de CI y sus verificadores determinan qué se ejecuta. Los prompts antiguos,
 las pestañas abiertas y los JSON de una sesión son antecedentes, no estado vivo.
 
-## Último cierre funcional acreditado
+## Referencia para retomar la entrega actual
+
+- [PR267](https://github.com/DanielOpazoD/vexus-sim/pull/267): pared abdominal y cuña de relleno
+  (222), lectura ósea precisa y diagnósticos de arranque/corte (223). La segunda anotación corrige
+  la lectura inicial: la masa roja es tejido no segmentado. La aceptación y el estado de fusión
+  deben consultarse en la PR y su CI final; los negativos de 57189da y los timeouts de
+  50934f6 quedan conservados. La ronda 224 reduce transporte de capturas. La 225 evita grabación continua adicional durante el barrido sin cambiar sus comprobaciones;
+  ambas exigen de nuevo la aceptación completa del head final.
+  El inicio renal se registra sobre la nueva piel y el hepatorrenal se bascula 6° para conservar
+  visibilidad A/B. El campo fuente, resolución, plazos y movimiento libre siguen siendo los mismos.
+
+### Cierre acreditado anterior
+
+- [PR266](https://github.com/DanielOpazoD/vexus-sim/pull/266): seno renal más fino (220)
+  y normales septales derivadas de su campo material (221). Main `3e4614cfa3ffd0695b3fd12cc438229dce20799a`,
+  árbol `8df306c471ce3ff33b0da6857626cbb51488272a`. La [CI del PR](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39123181714)
+  aprobó 154 E2E únicas sin reintentos; seis workflows y 30 comprobaciones aprobadas.
+  La [CI posterior del push](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39125336068)
+  falló por el plazo original de 540 s durante la captura final de `renalCutTracking`.
+  No es aprobación ni prueba de una nueva causa aislada; el negativo se conserva en la ronda 222.
+  Las comprobaciones locales del cierre fueron 13 Metal y 5 SwiftShader, sin ampliar plazos.
+
+### Cierre anterior
 
 - [PR264](https://github.com/DanielOpazoD/vexus-sim/pull/264): transición costal localizada (217)
   y pausa sin vallas GPU vacías (218). Main `f031e438eec59b3a74633cb058307447f6449115`, árbol
@@ -232,3 +254,23 @@ campo material. Conserva posición y peso; usa los gradientes completos de profu
 en TS/GLSL, con negativos CPU/GPU y una prueba del shader de producción. Es un error físico,
 no una nueva calibración estética. La orientación de las estrías musculares y la costura polar
 posterior siguen pendientes de evaluación. Ver decisión 221 y la CI final del PR para su cierre.
+
+## Ronda actual: pared deformada por una cuña de relleno (222)
+
+La segunda anotación del usuario sitúa la masa roja en tejido no segmentado, no en hígado:
+el diagnóstico inicial invirtió la orientación angular de la imagen. La cuña de 18–28 mm aparece
+al terminar el ajuste costal y conservar relleno del perfil heredado en el flanco. La corrección
+continúa el ajuste sobre las vísceras fuente y refina las direcciones del perfil, con el mismo
+campo compartido en CPU, corte Worker, GLSL y piel 3D. El experimento previo de compresión C1 no
+solucionó la masa y queda fuera de esta entrega. Ver decisión 222 y sus aproximaciones declaradas.
+
+Antes de darla por cerrada: check y calibración del head final, GPU Metal/SwiftShader, navegación
+continua y adquisición con dos vistas, capturas A/B y CI completa del PR. No confundir pruebas
+locales del experimento anterior con aceptación. El timeout posmerge de PR266 sigue como negativo
+independiente; no se declara reparado por una ejecución posterior aprobada.
+
+La GPU del primer candidato 57189da detectó además un error de lectura en un platillo vertebral:
+el corte CPU conservaba hueso y GPU devolvía grasa. La decisión 223 interpola los mismos ocho nodos
+cerca de las interfaces óseas. Las pruebas conservan el plano original que reveló el error y la
+exigencia de cero discrepancias; los mensajes de fallo explícito de arranque terminan la espera
+sin ampliar su plazo. La aceptación del head final se acredita en PR267, no con esos ensayos previos.

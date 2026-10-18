@@ -23,8 +23,13 @@ export async function captureBMode(page: Page, path: string): Promise<void> {
     const sim = window.__vexusTest!.sim();
     if (!sim.frozen || sim.color.enabled) throw new Error('Captura exige B-mode congelado sin color');
     const { width, height, gray } = sim.renderer.readDisplay();
-    return { width, height, gray: Array.from(gray) };
+    // Un valor de protocolo por píxel hacía que la serialización dominara la
+    // captura en CI. Transportar los mismos bytes, sin comprimir ni remuestrear.
+    let binary = '';
+    for (let i = 0; i < gray.length; i += 32768) binary += String.fromCharCode(...gray.subarray(i, i + 32768));
+    return { width, height, base64: btoa(binary) };
   });
-  if (!frame.gray.some((x) => x > 0)) throw new Error('Framebuffer B-mode vacío en la ventana de comparación');
-  writeFileSync(path, encodeBMode(frame.width, frame.height, frame.gray));
+  const gray = Buffer.from(frame.base64, 'base64');
+  if (!gray.some((x) => x > 0)) throw new Error('Framebuffer B-mode vacío en la ventana de comparación');
+  writeFileSync(path, encodeBMode(frame.width, frame.height, gray));
 }

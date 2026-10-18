@@ -48,7 +48,6 @@ import { M_COLUMNS, M_SAMPLES, MColumnRing, mLineU } from './mmode';
 import { lookWavenumber } from './steering';
 import { MIRROR_BISECTION_STEPS, type SegmentGrid } from './transmission';
 import {
-  BODY_BASE,
   RIB_BASE,
   RIB_TEXELS,
   CARTILAGE_BASE,
@@ -800,7 +799,7 @@ export class UltrasoundRenderer {
         profileN: 2,
       })),
     ];
-    if (s.torso.profile) this.sceneData.set(s.torso.profile, BODY_BASE * 4);
+    // La GPU consume los coeficientes de bodyTex, no una segunda copia del perfil crudo.
     s.ribs.forEach((r, i) => {
       this.sceneData.set([r.zAnterior, r.tilt, r.halfWidth, r.halfThickness], (RIB_BASE + i * RIB_TEXELS) * 4);
       this.sceneData.set(ribShape(r, s.torso), (RIB_BASE + i * RIB_TEXELS + 1) * 4);

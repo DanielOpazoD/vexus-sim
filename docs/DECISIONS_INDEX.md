@@ -225,3 +225,7 @@ Generado por `npm run docs:index` — no editar a mano.
 | [219](DECISIONS.md#L7616) | Acortar el feedback sin sustituir la aceptación completa | vigente |
 | [220](DECISIONS.md#L7673) | Afinar el medio dispersor del seno renal sin filtrar la imagen | vigente |
 | [221](DECISIONS.md#L7707) | La orientación de los septos sigue su campo material tridimensional | vigente |
+| [222](DECISIONS.md#L7755) | Continuidad parietal bajo el borde hepático sin cuña de relleno | vigente |
+| [223](DECISIONS.md#L7817) | Distancia ósea precisa y errores de arranque visibles de inmediato | vigente |
+| [224](DECISIONS.md#L7875) | Transporte compacto de capturas sin modificar la imagen | vigente |
+| [225](DECISIONS.md#L7905) | Medir dos vistas sin grabación continua adicional | vigente |

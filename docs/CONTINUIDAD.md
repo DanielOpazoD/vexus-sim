@@ -158,5 +158,5 @@ un resultado verde posterior no convierte esa corrida local fallida en aprobada.
 El usuario señala bordes rectos y cambios de forma abruptos al mover la sonda. La prueba negativa
 identifica discontinuidad de las normales en la interpolación lineal del perfil corporal. La decisión
 216 planifica su corrección compartida TS/GLSL y conserva los nodos registrados. Este PR contiene
-solo la regresión esperada; todavía no corrige la imagen. El ensayo local de textura del seno renal
+solo la regresión esperada; todavía no corrige la imagen. El contrato del seno renal (215) se conserva como plan; su cambio de imagen
 queda en su rama, sin integrar. No debe confundirse con una mejora entregada.

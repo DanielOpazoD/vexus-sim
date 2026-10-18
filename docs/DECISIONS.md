@@ -7440,6 +7440,41 @@ en vivo y el reinicio a 2D; `probeFreeNavigation` protege 3D/corte/ecografía du
 seis coordenadas y ambos pacientes, además del acceso portal subcostal con PW activo. Se exige
 `npm run check` y CI completa sobre el head publicado antes de fusionar.
 
+## 215. Contrato previo para afinar la textura del seno renal
+
+**Contexto.** La revisión del Atlas en hepatorrenal muestra islas gruesas de brillo en el seno.
+Se contrasta con la [ecografía hepatorrenal de Ptrump16](https://commons.wikimedia.org/wiki/File:Ultrasound_liver_right_lobe_and_right_kidney.jpg),
+Toshiba Aplio 500, CC BY-SA 4.0, y la descripción/casos publicados por
+[Hansen et al.](https://pmc.ncbi.nlm.nih.gov/articles/PMC4808817/): seno central ecogénico y heterogéneo,
+parénquima periférico más homogéneo y cápsula fina. La referencia ya se empleó en el banco histórico;
+no es un paciente reservado ni un ajuste histológico o una validación humana independiente.
+
+**Opciones.** Filtrar el framebuffer borraría también detalle adquirido; bajar ganancia global cambiaría
+hígado, corteza y paredes. El ensayo modifica solo la escala espacial del campo material `sinusLobules`.
+El factor sigue siendo determinista, continuo y común a las miradas/elevación, con la misma distribución,
+potencia media y contraste basal. La escala de 1,5 mm es una aproximación de presentación,
+**[EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION**, no una dimensión anatómica medida.
+
+**Decisión.** Este PR solo incorpora el contrato `sinusTextureScale.test.ts`, con el defecto actual
+como `it.fails`, antes del PR de imagen, según `docs/TESTING.md`. La correlación de amplitud a 1,5 mm
+debe ser <0,4 en los tres ejes materiales (ahora ~0,65); a 0,05 mm debe seguir >0,99 para rechazar
+ruido independiente. Son límites de QA que separan la escala gruesa de la fina, no umbrales clínicos.
+Permanecen las guardas existentes de potencia, desviación de 3,2 dB, continuidad, anclaje y contraste.
+
+**Consecuencias.** No cambia la imagen de este PR. El experimento local con célula de 1,5 mm conserva
+potencia media ~1 y reduce la correlación a ~0,18 sin cambiar ganancia, impedancias, órganos, haz,
+PSF, Doppler ni resolución. Ocho parejas Atlas de t=30 s/cuadro39, misma pose/paciente/semilla/equipo,
+conservan el clasificador; las cuatro parejas portal/subcostal son idénticas píxel a píxel. En las cuatro
+renales baja el CV del gris del seno aproximadamente 4–11 %, con brillo medio próximo al anterior.
+No acredita realismo global, calibración de seno/cálices ni mejora de la cápsula; el aspecto de los
+bordes externos sigue pendiente de comparación independiente.
+
+**Verificación.** El contrato como prueba ordinaria falla en la versión de 3 mm y pasa en el ensayo
+fino. Doce pruebas existentes de textura/contraste pasan con el ensayo sin relajar sus aserciones.
+El PR de imagen deberá activar el contrato, repetir adquisiciones pareadas y movimientos en ambos
+pacientes, verificar 3D/corte/ecografía y Color/PW, y superar check y CI completa sobre su head.
+Las capturas, diferencias de fuente y negativos permanecen fuera del repositorio.
+
 ## 216. Continuidad de la pared entre muestras del perfil corporal [Estado: planificada]
 
 **Estado: planificada; este PR no modifica la imagen.**
@@ -7464,7 +7499,7 @@ movimiento desde seis coordenadas y ambos pacientes, apposición hepática y cos
 **Consecuencias.** No se mueven órganos, no se cambian los assets ni se añaden bordes dibujados.
 La interpolación necesitará revisar posibles sobrepasos y la aproximación de la malla visible.
 No se modifican física, resolución de adquisición, plazos ni presupuestos para conseguir verde.
-El ensayo local del seno renal (215, no integrado) queda separado; no forma parte de este PR.
+El ensayo local del seno renal queda separado; este PR conserva solamente su contrato pendiente (215), sin integrar su cambio de imagen.
 
 **Verificación.** Sin `it.fails`, cuatro pruebas fallan y dos pasan sobre main 1da143a;
 con los fallos esperados, seis pruebas pasan. Se exige check completo y CI protegida antes de

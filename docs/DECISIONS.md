@@ -7475,32 +7475,50 @@ El PR de imagen deberá activar el contrato, repetir adquisiciones pareadas y mo
 pacientes, verificar 3D/corte/ecografía y Color/PW, y superar check y CI completa sobre su head.
 Las capturas, diferencias de fuente y negativos permanecen fuera del repositorio.
 
-## 216. Continuidad de la pared entre muestras del perfil corporal [Estado: planificada]
+## 216. Pared corporal continua y normales compartidas entre apoyo, corte y ecografía
 
-**Estado: planificada; este PR no modifica la imagen.**
+**Contexto.** El usuario observa bordes rectos y quiebres abruptos al mover la sonda. El perfil
+interpolaba linealmente 64 sectores y sus filas: la posición era continua, la normal no. El negativo
+sobre los assets reference y abdominal registra saltos unitarios hasta 0,829/0,559 (unos 49°/32°).
+PR262 deja primero cuatro regresiones como `it.fails`, sin cambio de imagen, según TESTING.md.
+Objetivos 1–3 y 7 de la misión; el seno renal (215) permanece como plan, sin activar su ensayo.
 
-**Contexto.** El usuario observa bordes rectos y quiebres abruptos en la pared abdominal.
-`bodySection` y `bodyInfo` interpolan linealmente 64 sectores y las filas craneocaudales;
-la posición es continua, pero su derivada cambia en cada nodo. El negativo reproducible sobre
-los assets reference y abdominal registra saltos de normal de hasta 0,829 y 0,559 en norma
-unitaria (aproximadamente 49° y 32°). Las capas y su eco heredan esa pendiente. Objetivos 1–3 y 7.
+**Opciones.** Filtrar el framebuffer no corrige el apoyo ni la geometría. La cúbica cardinal sin
+limitador elimina la discontinuidad, pero falla las guardas de apposición hepática y malla; se rechaza.
+Una interpolación limitada y anclada también a muestras intermedias conserva mejor el ajuste previo.
 
-**Opciones.** Un filtro de imagen no corrige el apoyo, el corte ni la normal del eco. Aumentar
-solo la malla 3D conserva las discontinuidades del campo acústico. Se propone interpolación
-cúbica periódica en ángulo y continua en altura, con sus derivadas en TS y GLSL.
+**Decisión.** El perfil final se reconstruye mediante parches Hermite C1 periódicos, pendientes
+minmod y derivadas mixtas nulas. Se conservan todos los radios/centros fuente y muestras intermedias
+de su reconstrucción bilineal: dos subintervalos angulares y cuatro en Z. La estimación costal (183)
+sigue tomando los mismos valores de las muestras originales; no se recalibra el ajuste al hígado.
+La reconstrucción es **[EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION visual**, no nueva segmentación.
+La base técnica de reconstrucción cúbica y derivadas se contrasta con
+[GPU Gems 2, cap. 20](https://developer.nvidia.com/gpugems/gpugems2/part-iii-high-quality-rendering/chapter-20-fast-third-order-texture-filtering);
+el limitador, muestreo y tolerancias son decisiones numéricas propias, sin valor clínico asignado.
 
-**Decisión.** Antes del cambio de imagen, `bodyContinuity.test.ts` deja cuatro `it.fails`
-para continuidad de normal a ambos lados de los nodos; exige diferencia <0,001 con separación
-0,00002 mm/rad. Es una tolerancia numérica de continuidad, no un umbral clínico.
-Dos controles ordinarios conservan todos los radios y centros de los assets en sus nodos.
-El futuro PR activará las cuatro pruebas y comprobará gradientes, apoyo real, paridad GPU/corte,
-movimiento desde seis coordenadas y ambos pacientes, apposición hepática y coste/arranque.
+CPU y GPU evalúan los mismos coeficientes, redondeados a Float32 al subirlos. Se calculan una vez
+por perfil y viven al final de la textura de escena: la carga dinámica de compresión no vuelve a
+copiarlos. Cada celda requiere cuatro lecturas vectoriales; el centro usa una más. La malla de piel
+refina sus intervalos según el cambio de las muestras y emplea las normales del campo compartido.
+No se agregan grano, líneas ni sombras a la imagen.
 
-**Consecuencias.** No se mueven órganos, no se cambian los assets ni se añaden bordes dibujados.
-La interpolación necesitará revisar posibles sobrepasos y la aproximación de la malla visible.
-No se modifican física, resolución de adquisición, plazos ni presupuestos para conseguir verde.
-El ensayo local del seno renal queda separado; este PR conserva solamente su contrato pendiente (215), sin integrar su cambio de imagen.
+**Consecuencias.** Se corrige la discontinuidad geométrica; no se acredita realismo global de las
+capas ni validación clínica. El modelo puede conservar tramos esquemáticos de su perfil estimado.
+No cambian órganos, vasos, flujo, PSF, resolución de adquisición, plazos ni presupuestos. La tabla
+estática GPU del perfil máximo ocupa aproximadamente 1,63 MiB, a cambio de evitar dieciséis lecturas
+por consulta. Se aprovechan ranuras libres del diccionario de transporte existente para respetar el
+bundle; las pruebas exigen shaders ensamblados idénticos byte por byte con y sin empaquetado.
+Browser plugin not available: se usan Playwright existente y CUA. Modern Web Guidance falló por
+certificado; se consultaron las especificaciones oficiales WebGL/GLSL, sin omitir la verificación TLS.
 
-**Verificación.** Sin `it.fails`, cuatro pruebas fallan y dos pasan sobre main 1da143a;
-con los fallos esperados, seis pruebas pasan. Se exige check completo y CI protegida antes de
-integrar el plan. El positivo y la revisión visual pertenecen al posterior PR de implementación.
+**Verificación.** Se activan las cuatro regresiones, sin cambiar sus límites: diferencia de normal
+<0,001 a ambos lados de los nodos separados 0,00002 mm/rad. Los controles conservan todos los nodos.
+Sesenta y cuatro pruebas focalizadas pasan, incluidas apposición, apoyo, gradiente y contorno renal.
+La malla debe quedar a <0,5 mm del campo acústico; es un contrato gráfico, no precisión clínica.
+Ocho capturas a t=30 s/cuadro39, ambos pacientes, cuatro accesos y ANGLE Metal Apple M4, registran
+coste del receptor entre 0,99 y 1,03 veces el anterior (tres bloques de cinco cuadros por captura).
+No es latencia de entrada ni garantía universal. El cambio estático es pequeño; el objetivo es la
+continuidad al mover. `atlasWallNormals.spec.ts` protege caras/normales TS↔GPU en renal, hepatorrenal
+y porta subcostal de ambos pacientes. `probeFreeNavigation` exige movimiento desde seis coordenadas,
+tres ángulos y paridad 3D/corte/ecografía. La aceptación exige check completo, calibrate y CI protegida
+sobre el head publicado, con informes y fuente verificados, sin reintentos como aceptación.

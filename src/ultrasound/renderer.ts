@@ -1,3 +1,4 @@
+import { bodyCoefficients } from '../anatomy/referenceBody';
 import { buildTubeGrid, tubeGridReach, tubeGridRegions, TUBE_GRID_WIDTH, type TubeGrid, type TubeSphere } from '../anatomy/gpu/tubeGrid';
 import { assembleQueryGradient } from './queryGradient';
 import { segmentGasKind } from './segmentTag';
@@ -796,7 +797,7 @@ export class UltrasoundRenderer {
         profileN: 2,
       })),
     ];
-    if (s.torso.profile) this.sceneData.set(s.torso.profile, BODY_BASE * 4);
+    if (s.torso.profile) this.sceneData.set(bodyCoefficients(s.torso.profile), BODY_BASE * 4);
     s.ribs.forEach((r, i) => {
       this.sceneData.set([r.zAnterior, r.tilt, r.halfWidth, r.halfThickness], (RIB_BASE + i * RIB_TEXELS) * 4);
       this.sceneData.set(ribShape(r, s.torso), (RIB_BASE + i * RIB_TEXELS + 1) * 4);

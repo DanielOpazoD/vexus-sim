@@ -19,6 +19,15 @@ las pestañas abiertas y los JSON de una sesión son antecedentes, no estado viv
 
 ## Último cierre funcional acreditado
 
+- [PR261](https://github.com/DanielOpazoD/vexus-sim/pull/261), fusionado el 18 de octubre a las
+  01:20:18 UTC: escala Color legible en píxeles CSS (214). Main
+  `1da143a6601b744862da2f328ea0781521f556e8`, árbol `c1acd4f997b401fc5d1b8f6e5c48f57b4fc1bf68`.
+  [CI protegida](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39081851788): 149 E2E únicas,
+  una ejecución y cero reintentos, core/matrices íntegros y procedencia verificada. La comprobación
+  venosa adicional ejecutó 14 pruebas tres veces sin reintentos. El push posterior
+  [39086118287](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39086118287) también terminó
+  correctamente; no demuestra que las intermitencias históricas hayan sido aisladas.
+
 - [PR260](https://github.com/DanielOpazoD/vexus-sim/pull/260), fusionado el 17 de octubre a las
   22:52:53 UTC: VExUS LAB y acceso subcostal Atlas a la rama portal derecha (213).
   Main `e368c838db9f59b5a1c30a468711579fa7f34ef3`, árbol `8e5cefdda0a86ab1082424cbed4025cf90addc5f`,
@@ -155,8 +164,15 @@ un resultado verde posterior no convierte esa corrida local fallida en aprobada.
 
 ## Prioridad actual: pared abdominal (216)
 
-El usuario señala bordes rectos y cambios de forma abruptos al mover la sonda. La prueba negativa
-identifica discontinuidad de las normales en la interpolación lineal del perfil corporal. La decisión
-216 planifica su corrección compartida TS/GLSL y conserva los nodos registrados. Este PR contiene
-solo la regresión esperada; todavía no corrige la imagen. El contrato del seno renal (215) se conserva como plan; su cambio de imagen
-queda en su rama, sin integrar. No debe confundirse con una mejora entregada.
+El plan se integró en [PR262](https://github.com/DanielOpazoD/vexus-sim/pull/262), con 149 E2E
+únicas sin reintentos y los 26 ZIP originales verificados; no cambió la imagen.
+
+El usuario señala bordes rectos y cambios abruptos al mover la sonda. La implementación sustituye
+la interpolación lineal por parches C1 limitados, conserva nodos/ajuste previo y comparte coeficientes
+entre CPU/GPU. La malla refina sus intervalos y usa las normales del mismo campo. Los primeros
+ensayos se rechazaron al fallar apposición/malla; no se relajaron sus guardas. El aspecto estático
+cambia poco; no presentar esta ronda como realismo global ni validación humana.
+La aceptación se acredita con el PR, check y CI protegida sobre su head, más movimiento desde seis
+coordenadas y ambos pacientes. El contrato del seno renal (215) queda planificado y su cambio de
+imagen no se integra en esta ronda. Los pendientes PW/transportes e intermitencias anteriores
+siguen abiertos hasta aislar sus causas; una nueva ejecución positiva no los resuelve por sí sola.

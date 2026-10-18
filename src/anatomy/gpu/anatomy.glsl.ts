@@ -6,7 +6,7 @@ import { RESPIRATORY_INVERSE_STEPS } from '../deformation';
 import { BOWEL_TEXELS } from '../organs/bowel';
 import { CARTILAGE_GLSL } from './referenceCartilage.glsl';
 import { CARTILAGE_ROWS } from '../referenceCartilageData';
-import { BODY_MAX_ROWS, BODY_STRIDE } from '../referenceBody';
+import { BODY_MAX_ROWS, BODY_COEFFICIENT_STRIDE, BODY_SECTORS, BODY_SUBDIVISIONS } from '../referenceBody';
 /**
  * Fragmento GLSL compartido: la misma anatomía implícita que `anatomy/scene.ts`,
  * evaluada en la GPU a partir de los mismos datos declarativos. Los tubos
@@ -57,13 +57,13 @@ export const MAX_TUBE_SEGMENTS = 8;
 
 /** Primer téxel de la tabla de compresión de la sonda (decisión 63): tras los nodos de los tubos. */
 export const COMPRESSION_BASE = NODE_BASE + MAX_NODES;
-export const BODY_BASE = COMPRESSION_BASE + PROBE_COMPRESSION.nodes;
-export const RIB_BASE = BODY_BASE + Math.ceil((BODY_MAX_ROWS * BODY_STRIDE) / 4);
+export const RIB_BASE = COMPRESSION_BASE + PROBE_COMPRESSION.nodes;
 /** Tres téxeles por par: z/tilt/sección, forma transversal, extremo y flags. */
 export const RIB_TEXELS = 3;
 export const CARTILAGE_BASE = RIB_BASE + MAX_RIBS * RIB_TEXELS;
 export const BOWEL_BASE = CARTILAGE_BASE + CARTILAGE_ROWS.length;
-export const SCENE_TEX_H = Math.ceil((BOWEL_BASE + BOWEL_TEXELS) / SCENE_TEX_W);
+export const BODY_BASE = BOWEL_BASE + BOWEL_TEXELS;
+export const SCENE_TEX_H = Math.ceil((BODY_BASE + (BODY_SUBDIVISIONS * (BODY_MAX_ROWS - 1) * BODY_COEFFICIENT_STRIDE) / 4) / SCENE_TEX_W);
 export { MAX_RIBS } from './sceneUniforms';
 
 const TISSUE_DEFINES = Object.entries(TISSUE_GLSL_NAME)
@@ -148,20 +148,23 @@ ${THORACIC_GLSL}
 vec4 ribData(int k) { return sceneTexel(${RIB_BASE} + k * ${RIB_TEXELS}); }
 vec4 ribShapeData(int k) { return sceneTexel(${RIB_BASE} + k * ${RIB_TEXELS} + 1); }
 vec4 ribEndData(int k) { return sceneTexel(${RIB_BASE} + k * ${RIB_TEXELS} + 2); }
-float bodyValue(int i) { return sceneTexel(${BODY_BASE} + i / 4)[i % 4]; }
 vec4 bodyInfo(float phi, float z, out float dc) {
   float step = (120.0 - uBodyMinZ) / float(uBodyRows - 1);
   float zz = clamp((z - uBodyMinZ) / step, 0.0, float(uBodyRows-1));
   int row = min(uBodyRows-2, int(floor(zz))); float f = zz - float(row);
-  float angle = fract(phi / 6.28318530718) * 64.0;
-  int i = int(floor(angle)), j = (i + 1) % 64; float g = fract(angle);
-  float a = bodyValue(row * 65 + 1 + i), b = bodyValue(row * 65 + 1 + j);
-  float c = bodyValue((row + 1) * 65 + 1 + i), d = bodyValue((row + 1) * 65 + 1 + j);
-  float r0 = mix(a, b, g), r1 = mix(c, d, g);
-  float cy0 = bodyValue(row * 65), cy1 = bodyValue((row + 1) * 65);
-  bool inside = z >= uBodyMinZ && z <= 120.0;
-  dc = inside ? (cy1 - cy0) / step : 0.0;
-  return vec4(mix(r0, r1, f), mix(b - a, d - c, f) * 64.0 / 6.28318530718, inside ? (r1 - r0) / step : 0.0, mix(cy0, cy1, f));
+  float angle = fract(phi / 6.28318530718) * ${BODY_SECTORS}.0, g = fract(angle);
+  int base = ${BODY_BASE} + row * ${BODY_COEFFICIENT_STRIDE / 4};
+  vec4 p = vec4(1.0, g, g*g, g*g*g), dp = vec4(0.0, 1.0, 2.0*g, 3.0*g*g);
+  vec4 v = vec4(1.0, f, f*f, f*f*f), dv = vec4(0.0, 1.0, 2.0*f, 3.0*f*f);
+  vec4 r, a;
+  for (int k = 0; k < 4; k++) {
+    vec4 c = sceneTexel(base + int(floor(angle)) * 4 + k);
+    r[k] = dot(c, p); a[k] = dot(c, dp);
+  }
+  vec4 cy = sceneTexel(base + ${BODY_SECTORS * 4});
+  float scale = z >= uBodyMinZ && z <= 120.0 ? 1.0 / step : 0.0;
+  dc = dot(cy, dv) * scale;
+  return vec4(dot(r, v), dot(a, v) * ${BODY_SECTORS}.0 / 6.28318530718, dot(r, dv) * scale, dot(cy, v));
 }
 vec3 bodyGradient(vec3 p) {
   float dc; vec4 centre = bodyInfo(0.0, p.z, dc);

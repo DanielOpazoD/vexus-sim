@@ -20,7 +20,7 @@ describe.each(profiles)('continuidad del perfil $name (plan 216)', ({ data }) =>
 
   // Contrato geométrico, no tolerancia clínica: dos puntos separados 0,00002 mm
   // o rad no pueden adquirir normales distintas por cruzar un nodo de la tabla.
-  it.fails('no cambia de normal de golpe al cruzar los 64 sectores angulares', () => {
+  it('no cambia de normal de golpe al cruzar los 64 sectores angulares', () => {
     let worst = 0;
     for (const z of [-119, -81, -43, 1])
       for (let k = 0; k < 64; k++) {
@@ -34,7 +34,7 @@ describe.each(profiles)('continuidad del perfil $name (plan 216)', ({ data }) =>
     expect(worst).toBeLessThan(0.001);
   });
 
-  it.fails('no cambia de normal de golpe al cruzar las filas craneocaudales', () => {
+  it('no cambia de normal de golpe al cruzar las filas craneocaudales', () => {
     let worst = 0;
     for (let row = 1; row < rows - 1; row++)
       for (const phi of [0.27, 1.67, 2.99, 4.13, 5.51]) {

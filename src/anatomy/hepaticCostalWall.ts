@@ -1,5 +1,5 @@
 import { abdominalAtlas, abdominalAtlasSdf } from './abdominalAtlas';
-import { bodySection, BODY_STRIDE, COSTAL_BODY_ROWS } from './referenceBody';
+import { BODY_ROWS, BODY_STRIDE, COSTAL_BODY_ROWS } from './referenceBody';
 import { thoracicAtlas, thoracicValue } from './thoracicAtlas';
 import { smoothstep, type Vec3 } from '../core/vec3';
 
@@ -24,11 +24,19 @@ export function hepaticCostalBody(source: Float32Array, wallMm: number, skinMm: 
   const padding = Math.max(0, wallMm - 10);
   for (let row = 0; row < COSTAL_BODY_ROWS; row++) {
     const z = -400 + (row * 520) / (COSTAL_BODY_ROWS - 1);
-    const cy = bodySection(0, z, source)[3];
+    // Conserva el ajuste calibrado a partir de las muestras fuente (183).
+    // La superficie C1 se reconstruye sobre el perfil final, no dentro del ajuste.
+    const rows = source.length / BODY_STRIDE,
+      minZ = rows === BODY_ROWS ? -160 : -400;
+    const q = Math.max(0, Math.min(rows - 1, ((z - minZ) * (rows - 1)) / (120 - minZ)));
+    const r0 = Math.min(rows - 2, Math.floor(q)),
+      f = q - r0;
+    const sample = (k: number) => source[r0 * BODY_STRIDE + k] * (1 - f) + source[(r0 + 1) * BODY_STRIDE + k] * f;
+    const cy = sample(0);
     profile[row * BODY_STRIDE] = cy;
     for (let k = 0; k < 64; k++) {
       const phi = (k * 2 * Math.PI) / 64;
-      const inherited = bodySection(phi, z, source)[0] + padding;
+      const inherited = sample(k + 1) + padding;
       // Include the anterior hepatic face used by subcostal acquisition. The
       // liver crossing and competing source viscera still decide whether to fit.
       const weight = smoothstep(1.1, 1.4, phi) * (1 - smoothstep(3.6, 3.9, phi)) * smoothstep(-145, -115, z) * (1 - smoothstep(0, 30, z));

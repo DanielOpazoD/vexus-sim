@@ -230,3 +230,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [224](DECISIONS.md#L7875) | Transporte compacto de capturas sin modificar la imagen | vigente |
 | [225](DECISIONS.md#L7905) | Medir dos vistas sin grabación continua adicional | vigente |
 | [226](DECISIONS.md#L7941) | Costes de iteración medidos, reparto actualizado y una carga GPU local | vigente |
+| [227](DECISIONS.md#L7977) | Identidad automática del build antes de ocupar la GPU local | vigente |

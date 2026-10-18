@@ -37,8 +37,9 @@ export function feedbackFiles(root: string, base: string, explicit: string[]): s
 }
 
 /** Detecta también una segunda edición de un archivo que ya estaba marcado M. No es una caché. */
-export function feedbackFingerprint(root: string, output: string): string {
+export function feedbackFingerprint(root: string, output: string | string[]): string {
   const hash = createHash('sha256');
+  const outputs = typeof output === 'string' ? [output] : output;
   const git = (...args: string[]) => execFileSync('git', args, { cwd: root, encoding: 'utf8', env: feedbackGitEnvironment() });
   // Identidad del índice y contenido actual: no fabricar un patch binario potencialmente enorme.
   hash.update(git('ls-files', '--stage', '-z'));
@@ -49,7 +50,7 @@ export function feedbackFingerprint(root: string, output: string): string {
     .sort();
   for (const file of files) {
     const absolute = resolve(root, file);
-    if (absolute === output || absolute.startsWith(output + '/')) continue;
+    if (outputs.some((out) => absolute === out || absolute.startsWith(out + '/'))) continue;
     hash.update(file + '\0');
     const stat = lstatSync(absolute, { throwIfNoEntry: false });
     if (!stat) hash.update('deleted\0');

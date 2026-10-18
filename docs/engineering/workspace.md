@@ -51,10 +51,19 @@ tools/workspace/run.sh npm run workspace:e2e -- --backend swiftshader --out .cac
 
 Sin `--url`, construye este checkout e inicia una preview propia en 6609 con puerto estricto, sin
 reutilizar servidores. Con `--url http://127.0.0.1:3078` usa una preview externa, sin construirla,
-abrirla ni cerrarla. Registrar por separado el commit observado de ese build: el SHA del checkout
-de pruebas no certifica un servidor externo. El `sourceSha` de las etapas de arranque identifica el
-checkout de pruebas; `run.json` declara ese papel y cualquier cambio sin commit. No es procedencia
-CI verificada.
+abrirla ni cerrarla. Antes de abrir Chromium exige que `dist/vexus-build.json` corresponda a este
+checkout (commit, árbol, índice y contenido de los cambios locales), que los recursos locales no
+hayan cambiado y que la preview sirva exactamente ese recibo y todos sus recursos, incluidos
+HTML, workers, CSS, mapas y archivos públicos. Un puerto equivocado, una edición posterior o un
+build antiguo sin recibo fallan antes de gastar GPU: construir el checkout que se quiere probar
+y servir su `dist`. El recibo se genera automáticamente en `vite build`; no añade JS a la app.
+También se verifica la fuente y el build local al terminar las pruebas.
+
+`build-verification.json` conserva el hash del recibo, fuente, fecha y volumen comprobados en el
+sondeo externo; `run.json` distingue `external-verified-this-checkout` de un preflight fallido.
+El `sourceSha` de las etapas de arranque sigue identificando el checkout de pruebas, declarado
+como tal. El sondeo acredita identidad local al inicio; no es aprobación CI, seguimiento continuo
+del servidor ni validación clínica. `--list` continúa recogiendo casos sin construir ni sondear.
 
 El runner crea una carpeta nueva o falla si existe, incluso vacía. Conserva `run.json`, `report.json`,
 trazas de fallos en `test-results/` y etapas de arranque en `startup.jsonl`. Registra el checkout,
@@ -96,6 +105,7 @@ gh pr checks NUMERO
 ```
 
 Un HTTP 200 no certifica la revisión mostrada; comprobar también el identificador del build.
+Para las E2E externas, el runner hace esa comprobación con los hashes, sin depender del pie de la app.
 Revalidar PID, comando y checkout antes de detener un servidor propio. La pestaña puede conservar
 una página aunque su servidor haya terminado. No reiniciar todas las previews históricas.
 

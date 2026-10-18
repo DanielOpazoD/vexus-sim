@@ -10,6 +10,7 @@ import { glslPacking } from './tools/build/glslPacking';
 import { marchingTable } from './tools/build/marchingTable';
 import { sharedCutMapWorker } from './tools/build/sharedCutMapWorker';
 import { coverageFiles } from './tools/ci/coveragePartition';
+import { buildProvenance } from './tools/build/provenance';
 
 /**
  * Niveles de prueba (práctica de EchoTwin): un archivo cuya PRIMERA línea es
@@ -50,7 +51,7 @@ export default defineConfig({
   // Source modules expose tagged GLSL to the token-preserving compactor; no vendor fork.
   resolve: { alias: [{ find: /^three$/, replacement: join(ROOT, 'node_modules/three/src/Three.js') }] },
   // el texto de los shaders sin comentarios, sangría, nombres largos ni espacios de más en el build (tools/build/glslMinify.ts)
-  plugins: [glslMinify(), glslUniformNames(), threeGlslCompact(), marchingTable(), glslPacking(), sharedCutMapWorker()],
+  plugins: [glslMinify(), glslUniformNames(), threeGlslCompact(), marchingTable(), glslPacking(), sharedCutMapWorker(), buildProvenance()],
   define: {
     __APP_VERSION__: JSON.stringify(PKG.version),
     __GIT_COMMIT__: JSON.stringify(process.env['GITHUB_SHA']?.slice(0, 7) ?? gitCommit()),

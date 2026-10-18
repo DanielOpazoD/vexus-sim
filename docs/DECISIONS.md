@@ -7973,3 +7973,42 @@ vez de un worker). Se ejecutan los tests originales de calibración, partición 
 recolecta la unión de las 154 E2E sin omisiones ni duplicados. Formato, lint, tipos, check, hook y
 CI protegida sobre el head final siguen siendo obligatorios. No se requieren nuevas capturas
 anatómicas locales para este cambio de herramientas/configuración; el simulador no cambia.
+
+## 227. Identidad automática del build antes de ocupar la GPU local
+
+**Contexto.** El runner local declaraba una preview externa como `external-unverified`; comprobar
+SHA visible y recursos servidos exigía un script fuera del repo. Un puerto antiguo o una segunda
+edición sin commit podían gastar minutos de adquisición sobre otra fuente. La continuidad de la
+ronda 226 tampoco registraba el resultado independiente: PR268 duró 27m29s frente a 29m41s de
+PR267 (−7,41 %), inferior a la predicción retrospectiva de 18–24 %.
+
+**Opciones.** Se revisó extender la imagen Playwright fijada de CI a los workflows de estabilidad.
+La referencia observada tardó 36 s en iniciar un contenedor y 18–24 s en instalar Chromium; no
+demuestra ahorro de preparación. Se conserva esa configuración. Tampoco se añade otro lanzador,
+dependencia, caché de aceptación ni verificación basada solo en el pie de la aplicación.
+
+**Decisión.** `vite build` escribe `dist/vexus-build.json` después de generar los recursos: HEAD,
+árbol, huella del índice y cambios locales, hashes y tamaños de todos los archivos publicados,
+incluidos HTML, CSS, workers, mapas y recursos públicos. Una edición durante el build impide
+emitir el recibo. No se incluye en el JS de la app. El runner existente, con `--url`, comprueba
+primero la fuente, `dist` y todos los bytes servidos. Rechaza discrepancias antes de abrir
+Chromium y conserva la causa en `run.json`; un éxito conserva `build-verification.json`. Sin
+`--url` sigue construyendo y sirviendo su propio checkout. Al terminar verifica de nuevo el build
+local. La huella reutiliza la implementación existente, excluyendo sus salidas de evidencia.
+El primer check de esta ronda detectó el índice documental desplazado una línea tras formatear:
+190,328 s para un fallo sin relación con el simulador. Se adelanta la comprobación existente del
+índice a continuación del formato, tanto en check local como en CI. El test documental y la
+cobertura completa se conservan. Formatear decisiones antes de regenerar su índice.
+
+**Límites.** Es atribución local al inicio y comprobación local al cierre, sin vigilancia continua
+del servidor ni autoridad de aceptación. El SHA de arranque sigue identificando el checkout de
+pruebas. `--list` no construye, sondea ni aprueba. Un build antiguo sin recibo debe reconstruirse
+para usar este perfil. Física, resolución, muestras, plazos, repeticiones, workers y pruebas
+obligatorias permanecen; no se añaden experimentos sobre el simulador.
+
+**Verificación.** Una integración pequeña construye una app real con Vite y un repositorio
+temporal aislado, sirve HTTP y rechaza otro recibo, un recurso alterado, redirecciones, HTML
+local modificado, cambios sin commit, ausencia de recibo y edición durante el build. El candidato
+estable exige además feedback focalizado, check completo, hook y CI protegida. Las mediciones
+del sondeo real y los resultados del head final se conservan en el comentario de verificación
+de la PR; no se predice un ahorro porcentual sin observarlo.

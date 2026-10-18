@@ -1,16 +1,24 @@
 import { describe, expect, it } from 'vitest';
-import { execFileSync } from 'node:child_process';
-import { mkdtempSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { execFileSync, spawnSync } from 'node:child_process';
+import { mkdtempSync, mkdirSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { feedbackFiles, feedbackFingerprint, feedbackPlan } from '../../tools/workspace/feedbackPlan';
+import { feedbackFiles, feedbackFingerprint, feedbackGitEnvironment, feedbackPlan } from '../../tools/workspace/feedbackPlan';
 
 describe('Feedback focalizado sin confundirse con aceptación', () => {
   it('incluye cambios confirmados, preparados, sin preparar, nuevos con espacios y borrados', () => {
     const root = mkdtempSync(join(tmpdir(), 'vexus-feedback-'));
-    const git = (...args: string[]) => execFileSync('git', args, { cwd: root, stdio: 'pipe' });
+    // Punteros deliberadamente inválidos: si vuelven a heredarse, falla sin tocar otro repo.
+    const env = feedbackGitEnvironment({
+      ...process.env,
+      GIT_DIR: join(root, 'foreign.git'),
+      GIT_WORK_TREE: join(root, 'foreign-tree'),
+      GIT_INDEX_FILE: join(root, 'foreign-index'),
+    });
+    const git = (...args: string[]) => execFileSync('git', args, { cwd: root, stdio: 'pipe', env });
     try {
       git('init');
+      expect(git('rev-parse', '--show-toplevel').toString().trim()).toBe(realpathSync(root));
       git('config', 'user.name', 'Feedback fixture');
       git('config', 'user.email', 'fixture@example.invalid');
       mkdirSync(join(root, 'src'));
@@ -37,6 +45,40 @@ describe('Feedback focalizado sin confundirse con aceptación', () => {
       expect(() => feedbackFiles(root, base, ['../elsewhere.ts'])).toThrow();
       expect(() => feedbackFiles(root, base, ['node_modules/dependency.ts'])).toThrow();
       expect(() => feedbackFiles(root, base, ['src'])).toThrow();
+    } finally {
+      rmSync(root, { recursive: true, force: true });
+    }
+  });
+  it.each(['none', 'head', 'index', 'config'])('el hook real detecta contaminación Git: %s', (mutation) => {
+    const root = mkdtempSync(join(tmpdir(), 'vexus-hook-'));
+    const env = feedbackGitEnvironment();
+    const git = (...args: string[]) => execFileSync('git', args, { cwd: root, stdio: 'pipe', env }).toString().trim();
+    try {
+      git('init');
+      git('config', 'user.name', 'Hook fixture');
+      git('config', 'user.email', 'fixture@example.invalid');
+      writeFileSync(join(root, 'seed'), 'one');
+      git('add', '.');
+      git('commit', '-m', 'one');
+      const baseline = git('rev-parse', 'HEAD');
+      writeFileSync(join(root, 'seed'), 'two');
+      git('commit', '-am', 'two');
+      const next = git('rev-parse', 'HEAD');
+      git('update-ref', 'HEAD', baseline);
+      git('read-tree', baseline);
+      mkdirSync(join(root, 'bin'));
+      writeFileSync(
+        join(root, 'bin/npm'),
+        '#!/bin/sh\ncase "$FIXTURE_MUTATION" in\nhead) git update-ref HEAD "$FIXTURE_NEXT";;\nindex) echo changed >> seed; git add seed;;\nconfig) git config fixture.changed true;;\nesac\nexit 0\n',
+        { mode: 0o755 },
+      );
+      const result = spawnSync('sh', [join(import.meta.dirname, '../../.githooks/pre-push')], {
+        cwd: root,
+        encoding: 'utf8',
+        env: { ...env, PATH: join(root, 'bin') + ':' + (env.PATH ?? ''), FIXTURE_MUTATION: mutation, FIXTURE_NEXT: next },
+      });
+      expect(result.status).toBe(mutation === 'none' ? 0 : 1);
+      if (mutation !== 'none') expect(result.stderr).toContain('publicación detenida');
     } finally {
       rmSync(root, { recursive: true, force: true });
     }

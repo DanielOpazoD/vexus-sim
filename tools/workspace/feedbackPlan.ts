@@ -3,9 +3,15 @@ import { createHash } from 'node:crypto';
 import { existsSync, lstatSync, readFileSync, readlinkSync, statSync } from 'node:fs';
 import { isAbsolute, relative, resolve } from 'node:path';
 
+/** Un hook exporta GIT_DIR/index: cwd por sí solo no aísla un repositorio temporal. */
+export function feedbackGitEnvironment(inherited = process.env): NodeJS.ProcessEnv {
+  return Object.fromEntries(Object.entries(inherited).filter(([name]) => !name.startsWith('GIT_')));
+}
+
 /** Incluye cambios confirmados, preparados, sin preparar y archivos nuevos; nunca usa la shell. */
 export function feedbackFiles(root: string, base: string, explicit: string[]): string[] {
-  const git = (...args: string[]) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).split('\0').filter(Boolean);
+  const git = (...args: string[]) =>
+    execFileSync('git', args, { cwd: root, encoding: 'utf8', env: feedbackGitEnvironment() }).split('\0').filter(Boolean);
   if (base.startsWith('-')) throw new Error('La base debe ser una revisión Git');
   const inputs = explicit.length
     ? explicit
@@ -33,8 +39,12 @@ export function feedbackFiles(root: string, base: string, explicit: string[]): s
 /** Detecta también una segunda edición de un archivo que ya estaba marcado M. No es una caché. */
 export function feedbackFingerprint(root: string, output: string): string {
   const hash = createHash('sha256');
-  hash.update(execFileSync('git', ['diff', '--binary', 'HEAD'], { cwd: root }));
-  const files = execFileSync('git', ['ls-files', '--others', '--exclude-standard', '-z'], { cwd: root, encoding: 'utf8' })
+  hash.update(execFileSync('git', ['diff', '--binary', 'HEAD'], { cwd: root, env: feedbackGitEnvironment() }));
+  const files = execFileSync('git', ['ls-files', '--others', '--exclude-standard', '-z'], {
+    cwd: root,
+    encoding: 'utf8',
+    env: feedbackGitEnvironment(),
+  })
     .split('\0')
     .filter(Boolean)
     .sort();

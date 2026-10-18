@@ -13,6 +13,15 @@ sin cambios en el simulador. La aceptación sigue definida por `CONTRIBUTING.md`
 | Reconciliar otra vez en local todos los informes ya verificados por el gate protegido.             | Descargas y scripts improvisados aumentan tiempo, ruido y riesgo de confundir SHA, intento o colección.     | Publicar un recibo compacto después de ambos verificadores originales y consumirlo con `workspace:ci`, validando proveedor, digest, head, árbol e intento.                             |
 | El encabezado de continuidad seguía en PR261 aunque el cierre era PR264.                           | Una nueva sesión puede repetir tareas o tomar un estado histórico por actual.                               | Actualizar el punto de entrada y separar el último cierre del historial.                                                                                                               |
 
+Se encontró además un negativo de la herramienta nueva: su fixture Git pasó en shell normal,
+pero heredó `GIT_DIR` del hook y alteró metadatos del checkout aislado. Un test puede contaminar
+el entorno que debe proteger. Se conserva el negativo; se restauran índice/ref/configuración y
+se aíslan las variables Git heredadas. La comprobación debe incluir el hook real, no solo Vitest directo.
+El hook conserva tipos y pruebas rápidas y ahora rechaza cambios de HEAD, índice o configuración
+durante su ejecución. Fixtures aislados comprueban los tres negativos y el caso sin contaminación.
+La [documentación de hooks de Git](https://git-scm.com/docs/githooks#_description) explica por qué
+deben limpiarse esas variables al operar sobre otro repositorio.
+
 La CI de referencia [39110219774](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39110219774)
 ejecutó 152 E2E únicas una vez: **244,70 minutos acumulados**, con fragmentos de **12,68–33,89 minutos**
 (duración del informe, sin preparación del job). Sus 147 registros de arranque suman 65,76 minutos:

@@ -1,3 +1,14 @@
 #!/bin/sh
 # Antes de empujar: tipos y pruebas rápidas (~40 s). El check completo lo hace CI.
-npm run typecheck --silent && npm test --silent
+set -e
+hook_head=$(git rev-parse HEAD)
+hook_index=$(git write-tree)
+hook_config=$(git hash-object "$(git rev-parse --git-common-dir)/config")
+npm run typecheck --silent
+npm test --silent
+if [ "$(git rev-parse HEAD)" != "$hook_head" ] ||
+  [ "$(git write-tree)" != "$hook_index" ] ||
+  [ "$(git hash-object "$(git rev-parse --git-common-dir)/config")" != "$hook_config" ]; then
+  echo 'El hook modificó HEAD, índice o configuración Git; publicación detenida.' >&2
+  exit 1
+fi

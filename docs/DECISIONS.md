@@ -7634,7 +7634,7 @@ inventario, fuente/árbol, intento, hashes y costes. `workspace:ci` verifica pro
 descargar/reconciliar otra vez todos los informes. Los originales siguen disponibles.
 
 **Consecuencias.** Menos espera entre ediciones y menos manipulación manual de evidencias. No cambia
-la aplicación, sus resoluciones, umbrales, plazos, hooks o contratos. Check y CI completos siguen
+la aplicación, sus resoluciones, umbrales, plazos o contratos. Los controles del hook, check y CI completos siguen
 siendo obligatorios. El recibo no sustituye revisión visual, workflows adicionales ni validación
 externa. El margen reducido del barrido renal sigue pendiente. Protocolo y evaluación crítica en
 `docs/engineering/iteration.md`; continuidad actualizada sin borrar el historial.
@@ -7645,3 +7645,13 @@ sobrescribir evidencia. Contraejemplos del consumidor rechazan head/árbol/inten
 incorrectos, recibo local, fases/hashes ausentes, duplicados y reintentos. La validación de la
 entrega exige además ejecutar el CLI real, check final completo y consumir el recibo de la nueva
 CI protegida del head publicado. Los resultados efectivos se registran en el PR.
+
+**Negativo del hook y corrección.** El fixture Git nuevo pasó fuera del hook, pero el pre-push
+exportaba `GIT_DIR`: cambiar solo cwd no lo aisló. Alteró índice, configuración y referencia de
+la rama aislada; no cambió archivos del simulador ni main. Se conservó el estado afectado y se
+restauraron únicamente esos metadatos. Las operaciones del fixture y del plan ahora eliminan
+variables `GIT_*` heredadas; punteros inválidos deliberados comprueban el aislamiento. La rama
+remota propia se corrige con lease explícito y hook activo antes de abrir el PR. La aceptación
+anterior de shell no sustituye check y hook nuevos sobre el código corregido.
+El hook mantiene tipos y suite rápida y añade una guarda de HEAD, árbol del índice y configuración;
+un fixture aislado prueba que cualquier alteración bloquea publicar aunque los comandos devuelvan0.

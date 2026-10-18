@@ -3,7 +3,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import { createWriteStream, mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { parseArgs } from 'node:util';
-import { feedbackFiles, feedbackFingerprint, feedbackPlan } from './feedbackPlan';
+import { feedbackFiles, feedbackFingerprint, feedbackGitEnvironment, feedbackPlan } from './feedbackPlan';
 
 const root = resolve(import.meta.dirname, '../..');
 const { values, positionals } = parseArgs({
@@ -21,7 +21,7 @@ if (values.help) {
   const out = resolve(root, values.out ?? `.cache/feedback/${new Date().toISOString().replaceAll(/[:.]/g, '-')}-${process.pid}`);
   mkdirSync(dirname(out), { recursive: true });
   mkdirSync(out);
-  const git = (...args: string[]) => execFileSync('git', args, { cwd: root, encoding: 'utf8' }).trim();
+  const git = (...args: string[]) => execFileSync('git', args, { cwd: root, encoding: 'utf8', env: feedbackGitEnvironment() }).trim();
   const manifest = {
     scope: 'local-feedback-not-acceptance',
     state: 'running',

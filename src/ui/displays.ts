@@ -72,7 +72,7 @@ export function drawOverlay(canvas: HTMLCanvasElement, sim: Simulator): void {
     ctx.closePath();
     ctx.stroke();
   }
-  if (shown.color.enabled) drawColorScale(ctx, W, H, sim);
+  if (shown.color.enabled) drawColorScale(ctx, W, sim);
   // Línea M (decisión 80): de la cara al fondo, con un asa arriba para arrastrarla
   if (sim.mmode.enabled) {
     const a = sim.renderer.beamToPixel(sim.mmode.theta, 0, tr);
@@ -391,14 +391,15 @@ function drawCaptureOverlay(
  * Barra de escala del color (decisión 70), como en los equipos: arriba el flujo hacia la sonda, abajo el que se aleja,
  * negro en la línea de base y ±Nyquist en cm/s en los extremos (con «Invertir mapa» se intercambian los colores).
  */
-function drawColorScale(ctx: CanvasRenderingContext2D, W: number, H: number, sim: Simulator): void {
+function drawColorScale(ctx: CanvasRenderingContext2D, W: number, sim: Simulator): void {
   const tr = sim.renderer.displayedFrame?.anatomy.transducer ?? sim.transducer;
   const nyq = Math.round(nyquistVelocityCms(sim.displayed.color.prfHz, tr.f0Doppler));
-  const s = H / 800;
+  // Píxeles CSS: activar PW reduce el sector, no el tamaño legible de la leyenda.
+  const s = W / (ctx.canvas.clientWidth || W);
   const x = Math.round(12 * s);
-  const w = Math.max(6, Math.round(9 * s));
-  const y0 = Math.round(H * 0.16);
-  const h = Math.round(H * 0.22);
+  const w = Math.round(12 * s);
+  const y0 = Math.round(64 * s);
+  const h = 2 * Math.round(56 * s) + 1;
   const inv = sim.displayed.color.invert;
   for (let i = 0; i < h; i++) {
     // i = 0 arriba (+Nyquist, hacia la sonda); h/2 la línea de base
@@ -412,8 +413,9 @@ function drawColorScale(ctx: CanvasRenderingContext2D, W: number, H: number, sim
   ctx.lineWidth = 1;
   ctx.strokeRect(x - 0.5, y0 - 0.5, w + 1, h + 1);
   ctx.fillStyle = '#c9d2dc';
-  ctx.font = `${Math.round(11 * s)}px sans-serif`;
+  ctx.font = `${12 * s}px sans-serif`;
   ctx.fillText(`+${nyq}`, x + w + 4, y0 + Math.round(9 * s));
   ctx.fillText(`−${nyq}`, x + w + 4, y0 + h);
-  ctx.fillText('cm/s', x + w + 4, y0 + Math.round(h / 2 + 4 * s));
+  ctx.fillText('0', x + w + 4, y0 + Math.round(h / 2 + 4 * s));
+  ctx.fillText('cm/s', x, y0 - 8 * s);
 }

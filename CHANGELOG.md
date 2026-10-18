@@ -9,6 +9,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Doppler Color: degradado y cifras legibles en la esquina, también con PW; cero y ±cm/s conservan la escala de la adquisición congelada (214).
+
 - VExUS LAB: nueva marca e icono; la porta subcostal Atlas se apoya bajo el reborde derecho y muestra su rama derecha más alineada con el haz, con PW adquirido en ambos pacientes y geometría compartida durante el movimiento (213).
 
 - Ventanas: selector compacto por territorio con ocho accesos; añade una porta subcostal anterior real en los tres modelos, conservando el movimiento libre y la lista compartida con 3D (212).

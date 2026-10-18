@@ -6,7 +6,7 @@ import { SCENE_UNIFORMS } from '../src/anatomy/gpu/sceneUniforms';
 import { ANATOMY_GLSL } from '../src/anatomy/gpu/anatomy.glsl';
 import { SPECKLE_TISSUE_GLSL } from '../src/ultrasound/speckleField';
 import { WALL_TEXTURE_GLSL } from '../src/ultrasound/wallTexture';
-import { bootWithoutErrors, budget, checkAfterEach } from './support';
+import { bootWithoutErrors, budget, checkAfterEach, withinFrames } from './support';
 
 checkAfterEach();
 // Campo de producción: las diferencias muestrean su propio peso escalar.
@@ -35,7 +35,14 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
   test(`septal normals follow their material field on the acquired body, ${caseId}`, async ({ page }, info) => {
     budget(120_000);
     await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
+    const previousFrame = await page.evaluate(() => window.__vexusTest!.sim().renderer.displayedFrame!.n);
     if (caseId !== 'normal-adult') await page.selectOption('#case-select', caseId);
+    await withinFrames(page, 30, 'cuadro adquirido del paciente actual', () =>
+      page.evaluate((previous) => {
+        const s = window.__vexusTest!.sim();
+        return ((s.renderer.displayedFrame?.n ?? 0) > previous && s.renderer.displayedAnatomy?.seed === s.patient.seed) || 'pendiente';
+      }, previousFrame),
+    );
     await page.locator('#freeze').click();
     const torso = await page.evaluate(() => {
       const t = window.__vexusTest!.sim().scene.torso;

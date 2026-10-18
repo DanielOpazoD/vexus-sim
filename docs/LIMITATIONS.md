@@ -298,8 +298,8 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   capas de la pared son localmente planos para el eco. Sin la curvatura elevacional del riñón, Morison salía
   ~1,5 dB más brillante que en el diseño (gemelo: 2,23 frente a 2,08 sobre el hígado a 0–20°); la s de la
   cápsula renal, la cara que da su pico, pasa de 0,21 a 0,25 y lo deja en 2,17.
-- **La pared es genérica** (`wall-generic-layers`, decisión 62): el mismo modelo de tres músculos con dos
-  planos intermusculares en el tórax, el flanco y la espalda (sin intercostales, serrato ni paravertebrales
+- **La pared es genérica** (`wall-generic-layers`, decisión 62): un campo muscular genérico con dos
+  planos intermusculares en tórax y flanco; hacia la espalda se reúnen con sus vainas de forma estimada (229) (sin intercostales, serrato ni paravertebrales
   propios), sin línea alba ni intersecciones tendinosas del recto, y un solo hábito de lóbulos y estrías cuyos
   tamaños, retrodispersiones y rugosidades efectivas son [ESTIMADO] (se calibran con GPU frente a las
   referencias). u es la longitud de arco de la piel: en la cara interna de la pared del flanco las estructuras

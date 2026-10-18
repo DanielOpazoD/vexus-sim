@@ -64,6 +64,15 @@ export const WALL = {
   planeSwell: 0.06,
   /** Transición del recto (línea media) a la pared lateral: |u| en mm (línea semilunar a 5–8 cm). */
   rectusMm: [50, 80] as const,
+  /**
+   * Fin posterior estimado del soporte de los vientres oblicuos: fracciones del
+   * semiperímetro desde anterior (0) hasta la línea media posterior (1). Las
+   * láminas se reúnen con sus vainas al llegar a la región toracolumbar, en vez
+   * de prolongar dos planos interoblicuos por toda la espalda. No reconstruye
+   * los músculos dorsales ni una inserción segmentada. [EXTRAPOLACIÓN PROPIA]
+   * Relación anatómica: https://pubmed.ncbi.nlm.nih.gov/30113090/.
+   */
+  posteriorFusion: [0.6, 0.88] as const,
   /** Un plano a menos de esto (mm) de su vaina, o del otro plano, se ha fundido con él: no dibuja cara. */
   planeMinMm: 1,
   /** Grasa preperitoneal: 15 % de la subcutánea, entre 1,5 y 4 mm. */
@@ -262,7 +271,9 @@ export function wallArc(m: Vec3, t: Pick<Torso, 'a' | 'b' | 'y0' | 'profile'>): 
  */
 export function wallPlaneDepth(u: number, z: number, i: number, t: Torso, w: WallDepths = wallDepths(t, u, z)): number {
   const M = w.transversalis - w.fascia;
-  const L = smooth(WALL.rectusMm[0], WALL.rectusMm[1], Math.abs(u));
+  const L =
+    smooth(WALL.rectusMm[0], WALL.rectusMm[1], Math.abs(u)) *
+    (1 - smooth(WALL.posteriorFusion[0], WALL.posteriorFusion[1], (2 * Math.abs(u)) / wallPerimeter(t)));
   const f = WALL.planeFractions[i] + WALL.planeSwell * wallSwell(u, z, i, t);
   const wave = WALL.planeWaveMm * wallWave(u, z, i, t);
   return i === 0 ? w.fascia + f * L * M + wave : w.transversalis - f * L * M + wave;
@@ -479,6 +490,8 @@ export const WALL_GLSL = /* glsl */ `
 #define WALL_SLOPE_STEP ${WALL_SLOPE_STEP_MM.toFixed(4)}
 #define WALL_RECTUS_MM0 ${WALL.rectusMm[0].toFixed(4)}
 #define WALL_RECTUS_MM1 ${WALL.rectusMm[1].toFixed(4)}
+#define WALL_POSTERIOR_FUSION0 ${WALL.posteriorFusion[0].toFixed(4)}
+#define WALL_POSTERIOR_FUSION1 ${WALL.posteriorFusion[1].toFixed(4)}
 #define WALL_PLANE_MIN_MM ${WALL.planeMinMm.toFixed(4)}
 #define WALL_RIB_PRIORITY_MM ${WALL.ribFacePriorityMm.toFixed(4)}
 #define WALL_RIB_SEARCH_MARGIN_MM ${WALL.ribSearchMarginMm.toFixed(4)}
@@ -518,7 +531,8 @@ vec4 wallDepths(float u, float z) {
 float wallPlaneDepth(float u, float z, int i, vec4 w) {
   float iP = 6.2831853 / wallPerimeter();
   float M = w.z - w.y;
-  float L = smoothstep(WALL_RECTUS_MM0, WALL_RECTUS_MM1, abs(u));
+  float L = smoothstep(WALL_RECTUS_MM0, WALL_RECTUS_MM1, abs(u))
+    * (1.0 - smoothstep(WALL_POSTERIOR_FUSION0, WALL_POSTERIOR_FUSION1, 2.0 * abs(u) / wallPerimeter()));
   return i == 0 ? w.y + (WALL_PLANE_F0 + WALL_PLANE_SWELL * wallSwell0(u, z, iP)) * L * M + WALL_PLANE_WAVE_MM * wallWave0(u, z, iP)
                 : w.z - (WALL_PLANE_F1 + WALL_PLANE_SWELL * wallSwell1(u, z, iP)) * L * M + WALL_PLANE_WAVE_MM * wallWave1(u, z, iP);
 }

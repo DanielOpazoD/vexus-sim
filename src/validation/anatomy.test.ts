@@ -38,6 +38,12 @@ describe('Anatomía implícita (base B)', () => {
   type V = [number, number, number];
   const sdf = (face: FaceGeometry) => (p: V) => scene.faceSdf(p, BASELINE_CALIBER, face);
 
+  it('no atribuye un plano interoblicuo al músculo junto a la línea media posterior (229)', () => {
+    const posterior = cls([-40, -82, -100]);
+    expect(posterior.tissue).toBe(Tissue.Muscle);
+    expect(posterior.interface).toBe(Interface.DeepFascia);
+  });
+
   it('mantiene la superficie y la tangente de la pared al cruzar un nodo registrado (216)', () => {
     const profile = new Float32Array(8 * 65);
     for (let row = 0; row < 8; row++) for (let k = 0; k < 64; k++) profile[row * 65 + 1 + k] = 100 + 5 * Math.sin((k * Math.PI) / 32);

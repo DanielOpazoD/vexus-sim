@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Pared: los planos entre oblicuos se reúnen con sus fascias hacia la espalda, sin cambiar órganos ni espesores (229).
+
 - Entorno: recibo de build y verificación automática de fuente/recursos de la preview antes de abrir Chromium; detecta builds obsoletos sin gastar GPU (227).
 
 - Iteración: reparto actualizado de las 154 E2E con tres CI verificadas, un worker GPU local por defecto y auditoría de costes del proceso, sin reducir casos ni controles (226).

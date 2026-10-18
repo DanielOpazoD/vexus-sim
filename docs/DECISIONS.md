@@ -8012,3 +8012,47 @@ local modificado, cambios sin commit, ausencia de recibo y edición durante el b
 estable exige además feedback focalizado, check completo, hook y CI protegida. Las mediciones
 del sondeo real y los resultados del head final se conservan en el comentario de verificación
 de la PR; no se predice un ahorro porcentual sin observarlo.
+
+## 228. Auditoría del build antes de continuar la fidelidad
+
+**Contexto.** El diagnóstico sobre f3e029c conserva 16 imágenes estáticas Atlas,
+864 muestras de movimiento en Apple M4/Metal, seis adquisiciones Doppler válidas
+y nueve E2E aprobadas sin reintentos. Fuente y 50 recursos HTTP verificados antes
+y después. Evidencia local de sesión: `work/fidelity-audit-228-evidence/AUDITORIA.md`.
+
+**Decisión.** Priorizar pared regional, atribución de cortical vertebral fragmentada
+y desfase del corte. El corte lleva mediana de dos cuadros; su separación respecto
+al plano US llega a 2,223 mm a 90 mm en el protocolo medido y converge al congelar.
+No se modifica el modelo en la auditoría ni se acredita aceptación clínica externa.
+
+**Verificación y límites.** Las seis búsquedas Doppler iniciales sin espera del
+destino exacto se excluyen y conservan. Las seis registradas sí encuentran vaso.
+La comparación clínica visual emparejada y evaluación humana ciega siguen pendientes.
+
+## 229. Reunir los planos interoblicuos al llegar a la espalda
+
+**Contexto.** La pared conserva dos planos entre oblicuos alrededor de todo el
+tronco. La auditoría 228 identifica esa generalización. La continuidad del oblicuo
+externo con la fascia toracolumbar está descrita en
+[la disección de 2018](https://pubmed.ncbi.nlm.nih.gov/30113090/); la localización
+normalizada empleada aquí es estimada, no una inserción segmentada.
+
+**Opciones.** No se retira grasa ni músculo, no se cambia el contorno visceral y
+no se pinta una pared diferente en el shader. Reconstruir toda la musculatura
+dorsal exige fuentes adicionales y queda fuera de este bloque.
+
+**Decisión.** En TS y GLSL, el soporte de los dos planos se reduce suavemente entre
+0,60 y 0,88 del semiperímetro, desde anterior hacia la línea media posterior.
+Se reúnen con sus vainas mediante la misma fusión geométrica usada hacia el recto.
+La derivada del soporte es cero en los extremos. Los espesores, superficie corporal,
+clasificación tisular y órganos permanecen. [EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION.
+
+**Consecuencias.** La espalda deja de mostrar dos caras interoblicuas falsas. No
+se reconstruyen intercostales, serrato ni paravertebrales. La pared sigue siendo
+una aproximación; esta fusión no acredita realismo humano global.
+
+**Verificación.** La regresión comprueba toda la profundidad muscular posterior,
+ambos lados, cinco alturas, dos hábitos y continuidad de profundidad/pendiente;
+el código anterior falla y el candidato la supera. `anatomy.test.ts` fija además
+un punto material posterior. Capturas, equivalencia GPU, calibración, check y CI
+completos se documentan sobre el candidato final antes de aceptar la entrega.

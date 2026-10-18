@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Iteración: reparto actualizado de las 154 E2E con tres CI verificadas, un worker GPU local por defecto y auditoría de costes del proceso, sin reducir casos ni controles (226).
+
 - Banco de pruebas: evita grabación continua adicional durante el barrido con dos vistas; conserva sus capturas explícitas, DOM/fuentes, todos los puntos y los plazos (225).
 
 - Validación sin pérdida de imagen: capturas con transporte compacto, conservando todos los píxeles y los plazos (224).

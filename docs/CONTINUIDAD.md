@@ -19,12 +19,24 @@ las pestañas abiertas y los JSON de una sesión son antecedentes, no estado viv
 
 ## Referencia para retomar la entrega actual
 
+- La ronda 226 revisa el coste de iteración y el entorno, sin cambios funcionales: ver
+  [auditoría y prioridades](engineering/iteration-audit-226.md). Actualiza pesos E2E con tres CI
+  completas y evita workers GPU locales simultáneos por omisión; mantiene aceptación, física,
+  resolución y plazos. Su aceptación efectiva debe consultarse en la PR correspondiente.
+
+### Último cierre funcional acreditado
+
 - [PR267](https://github.com/DanielOpazoD/vexus-sim/pull/267): pared abdominal y cuña de relleno
   (222), lectura ósea precisa y diagnósticos de arranque/corte (223). La segunda anotación corrige
-  la lectura inicial: la masa roja es tejido no segmentado. La aceptación y el estado de fusión
-  deben consultarse en la PR y su CI final; los negativos de 57189da y los timeouts de
-  50934f6 quedan conservados. La ronda 224 reduce transporte de capturas. La 225 evita grabación continua adicional durante el barrido sin cambiar sus comprobaciones;
-  ambas exigen de nuevo la aceptación completa del head final.
+  la lectura inicial: la masa roja es tejido no segmentado. Fusionado en main
+  `62feab58544803f4430a76ad4fcfc9b514577f09`, árbol `18b9cddabf202b2ab274a85730964f25d370b102`,
+  idéntico al aprobado. La [CI del PR](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39154581661)
+  acredita 154 E2E únicas, cero reintentos, core/matrices íntegros y recibo original verificado;
+  nueve workflows y 48 comprobaciones aprobadas. La [CI posterior de main](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39156988840)
+  también terminó aprobada. Los negativos de 57189da y los timeouts de 50934f6 se conservan.
+  La ronda 224 reduce transporte de capturas. La 225 evita grabación continua adicional durante
+  el barrido sin cambiar sus comprobaciones. Hubo además 25 E2E Metal y diez capturas A/B
+  controladas del head final, y revisión nativa del merge en ambos pacientes.
   El inicio renal se registra sobre la nueva piel y el hepatorrenal se bascula 6° para conservar
   visibilidad A/B. El campo fuente, resolución, plazos y movimiento libre siguen siendo los mismos.
 

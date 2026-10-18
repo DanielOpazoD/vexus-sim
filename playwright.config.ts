@@ -10,14 +10,14 @@ export default defineConfig({
   testDir: 'e2e',
   timeout: 90_000,
   expect: { timeout: 15_000 },
-  // en CI la e2e se reparte en fragmentos (`--shard`, ci.yml): por prueba y no por archivo, que son dos y muy
-  // desiguales (la equivalencia, una prueba; el humo, el resto). Con un trabajador por fragmento el orden no
-  // importa (cada prueba abre su página). En local, por archivo como siempre.
+  // CI reparte pruebas individuales en doce listas verificadas y equilibradas por coste.
+  // Cada prueba conserva su contexto aislado; en local se mantiene el orden por archivo.
   fullyParallel: !!process.env.CI,
   // Un trabajador por corredor: SwiftShader reparte cada cuadro entre todos los núcleos, y con dos trabajadores (el
   // valor por omisión en los 4 vCPU del corredor) las dos páginas se los disputaban: los mismos cuadros tardaban el
   // doble y variaban tanto que las pruebas agotaban sus plazos a días alternos. El paralelismo lo dan los fragmentos.
-  workers: process.env.CI ? 1 : undefined,
+  // También al invocar npm run e2e directamente en local: no abrir varias cargas GPU por omisión.
+  workers: 1,
   // Un fallo ya impide integrar: repetirlo automáticamente solo retrasa el diagnóstico.
   // Las repeticiones diagnósticas son explícitas y nunca sustituyen el fallo original.
   retries: 0,

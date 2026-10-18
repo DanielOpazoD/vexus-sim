@@ -7937,3 +7937,39 @@ reintentos: cuatro mapas de 256 puntos sin discrepancias, cuatro PNG y el contro
 de congelación. El cuerpo del test es idéntico byte a byte al de 50934f6; solo se añade
 la configuración de traza. El margen de 7.279 ms sigue siendo estrecho y no acredita por
 sí solo la CI del head final ni resuelve todas las intermitencias históricas.
+
+## 226. Costes de iteración medidos, reparto actualizado y una carga GPU local
+
+**Contexto.** El usuario pide revisar entorno, código y pruebas para reducir la demora de cada
+mejora. La última CI del PR267 ejecutó 154 E2E en 12 corredores: 227,81 minutos acumulados de
+pruebas, fragmentos de 12,52 a 27,42 minutos y 29,68 minutos de workflow. Los pesos históricos
+solo cubren 83 identidades actuales; 71 reciben el coste genérico. `npm run e2e` deja además el
+número de workers locales por defecto, aunque SwiftShader/GPU requieren una carga a la vez.
+La auditoría completa, costes de workflows, límites y autocrítica del proceso están en
+`docs/engineering/iteration-audit-226.md`, con resumen numérico versionado.
+
+**Opciones.** No se reducen casos, muestras, aserciones, cobertura ni plazos; tampoco se quitan
+repeticiones de estabilidad o CI de main para aparentar ahorro. No se añaden frameworks,
+dependencias, una caché de aceptación ni otro lanzador. El coste de arranque y preparación se
+distingue del tiempo físico de adquirir; un shader especulativo no es la primera respuesta
+a un cuello del banco de pruebas.
+
+**Decisión.** Usar el recalibrador existente con tres ejecuciones completas aprobadas y sin
+reintentos: 39123181714, 39154581661 y 39156988840. Se verifican digests originales y hashes
+de informes/planes contra sus recibos. `e2eTimingWeights.json` conserva las fuentes, sus hashes
+y medianas para las 154 pruebas, manteniendo los doce corredores y verificadores de unión y
+ejecución exacta. Playwright fija un worker también en local, incluido el comando E2E directo.
+La regresión importa la configuración real en lugar de comprobar una cadena del código fuente.
+
+**Consecuencias.** El backtest con los mismos costes individuales reduce el máximo previsto
+17,56–24,35 % en las tres fuentes. Es una simulación retrospectiva sobre las fuentes de ajuste,
+no un ahorro independiente ya medido: la CI nueva acreditará el comportamiento y coste real.
+El ciclo cotidiano usa primero tests explícitos/relacionados y Metal focalizado; el candidato
+estable conserva check, hook y CI completos. Los ocho workflows suplementarios y la CI posterior
+de main permanecen. Su frecuencia y preparación son trabajo separado, con evidencia de utilidad.
+
+**Verificación.** El test de configuración falla con el valor local anterior (`undefined` en
+vez de un worker). Se ejecutan los tests originales de calibración, partición y evidencia, y se
+recolecta la unión de las 154 E2E sin omisiones ni duplicados. Formato, lint, tipos, check, hook y
+CI protegida sobre el head final siguen siendo obligatorios. No se requieren nuevas capturas
+anatómicas locales para este cambio de herramientas/configuración; el simulador no cambia.

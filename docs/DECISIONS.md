@@ -7612,3 +7612,60 @@ descongelar. Falla con el código anterior (31 vallas vacías) y pasa con el cam
 Metal. Las pruebas de vallas, turnos y cine conservan sus límites; las de transporte verifican
 identidad exacta de los shaders. El barrido original con dos vistas permanece intacto y debe
 pasar junto con la CI completa del head final, sin reintentos como aceptación.
+
+## 219. Acortar el feedback sin sustituir la aceptación completa
+
+**Contexto.** La CI39110219774 ejecutó152 E2E una vez en244,70 minutos acumulados, con fragmentos
+de12,68–33,89 minutos. Volver a descargar y reconciliar sus27 ZIP principales consumía trabajo ya
+hecho por el gate. El lanzador `tsx` falló por IPC al final de un check local aprobado hasta ese
+punto; repetirlo entero añadió espera. El reintento automático del negativo renal previo consumió
+otros nueve minutos aunque `failOnFlakyTests` impedía convertirlo en aceptación.
+
+**Opciones.** Se rechazan plazos mayores, menos escenarios, cachés de aceptación por HEAD y
+dependencias nuevas. Tampoco se cambian reparto o física con una sola observación de tiempos.
+La selección relacionada tiene límites con imports dinámicos y solo sirve para diagnóstico.
+
+**Decisión.** `feedback` registra diff completo, archivos nuevos y huella de contenido, selecciona
+formato/lint, tipos y tests focales o rápidos, y etiqueta el resultado como local sin aceptación.
+Los scripts usan `node --import tsx`. Build/presupuesto preceden a las suites largas. CI ejecuta
+un intento; las repeticiones diagnósticas son explícitas y conservan el negativo inicial. El
+veredicto protegido conserva ambos verificadores originales y después publica un recibo con
+inventario, fuente/árbol, intento, hashes y costes. `workspace:ci` verifica proveedor y digest sin
+descargar/reconciliar otra vez todos los informes. Los originales siguen disponibles.
+
+**Consecuencias.** Menos espera entre ediciones y menos manipulación manual de evidencias. No cambia
+la aplicación, sus resoluciones, umbrales, plazos o contratos. Los controles del hook, check y CI completos siguen
+siendo obligatorios. El recibo no sustituye revisión visual, workflows adicionales ni validación
+externa. El margen reducido del barrido renal sigue pendiente. Protocolo y evaluación crítica en
+`docs/engineering/iteration.md`; continuidad actualizada sin borrar el historial.
+
+**Verificación.** Fixtures Git reales cubren commits, index, ediciones y borrados; otra edición con
+el mismo estado M cambia la huella. El exportador rechaza ejecución fuera del veredicto sin
+sobrescribir evidencia. Contraejemplos del consumidor rechazan head/árbol/intento/repositorio
+incorrectos, recibo local, fases/hashes ausentes, duplicados y reintentos. La validación de la
+entrega exige además ejecutar el CLI real, check final completo y consumir el recibo de la nueva
+CI protegida del head publicado. Los resultados efectivos se registran en el PR.
+
+**Negativo del hook y corrección.** El fixture Git nuevo pasó fuera del hook, pero el pre-push
+exportaba `GIT_DIR`: cambiar solo cwd no lo aisló. Alteró índice, configuración y referencia de
+la rama aislada; no cambió archivos del simulador ni main. Se conservó el estado afectado y se
+restauraron únicamente esos metadatos. Las operaciones del fixture y del plan ahora eliminan
+variables `GIT_*` heredadas; punteros inválidos deliberados comprueban el aislamiento. La rama
+remota propia se corrige con lease explícito y hook activo antes de abrir el PR. La aceptación
+anterior de shell no sustituye check y hook nuevos sobre el código corregido.
+El hook mantiene tipos y suite rápida y añade una guarda de HEAD, árbol del índice y configuración;
+un fixture aislado prueba que cualquier alteración bloquea publicar aunque los comandos devuelvan0.
+
+**Distribución explícita.** La CI39116437102 avisó de migración automática de `ubuntu-latest`
+a26.04 desde el19 de octubre; su log usa24.04.5, imagen20261012.334.1. Se fija `ubuntu-24.04`
+en todos los workflows: el SO observado permanece explícito, incluido el host de los contenedores
+ya fijados por digest. No cambia ningún trabajo, escenario, plazo o umbral. La imagen del host
+continúa recibiendo parches y el hardware puede variar: no es una garantía de tiempos idénticos.
+El candidato anterior se conserva como ejecución sustituida; una nueva CI completa acredita
+el head final con la distribución explícita.
+
+**Huella con archivos grandes.** El ensayo de2 MiB reprodujo `spawnSync git ENOBUFS` al capturar
+el patch binario completo. La huella combina ahora el inventario del índice con hashes de los
+archivos modificados/nuevos, sus modos y borrados. Evita generar ese patch y detecta cambios de
+índice sin modificar el contenido de trabajo. La regresión grande falla con el evaluador anterior
+y pasa con el nuevo; el negativo se conserva. Sigue siendo diagnóstico local, nunca aceptación.

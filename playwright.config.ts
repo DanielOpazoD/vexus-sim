@@ -18,9 +18,9 @@ export default defineConfig({
   // valor por omisión en los 4 vCPU del corredor) las dos páginas se los disputaban: los mismos cuadros tardaban el
   // doble y variaban tanto que las pruebas agotaban sus plazos a días alternos. El paralelismo lo dan los fragmentos.
   workers: process.env.CI ? 1 : undefined,
-  // Un reintento para diagnosticar (¿falla siempre o a veces?), pero una prueba que solo pasa al reintentarla hace
-  // fallar la ejecución: la CI decide la fusión y una prueba inestable no es verde (docs/MISION.md, objetivo 8).
-  retries: process.env.CI ? 1 : 0,
+  // Un fallo ya impide integrar: repetirlo automáticamente solo retrasa el diagnóstico.
+  // Las repeticiones diagnósticas son explícitas y nunca sustituyen el fallo original.
+  retries: 0,
   failOnFlakyTests: !!process.env.CI,
   // en CI: anotaciones de GitHub + lista con la duración de cada prueba (para ver qué encarece la e2e)
   // y el JSON con las anotaciones de cada prueba (arranque y ritmo del bucle, e2e/support.ts), que ci.yml guarda siempre

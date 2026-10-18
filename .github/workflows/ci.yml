@@ -19,7 +19,7 @@ concurrency:
 jobs:
   check:
     name: lint · tipos · tests · build · presupuesto
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # La matriz IQ corre en otro corredor; conserva umbrales y el veredicto exige ambas fases.
     timeout-minutes: 25
     steps:
@@ -32,6 +32,7 @@ jobs:
       - run: npm run format:check
       - run: npm run lint
       - run: npm run typecheck
+      - run: npm run build
       - name: Todas las pruebas E2E previstas, una vez entre los fragmentos
         run: node --import tsx tools/ci/verify-e2e-shards.ts
       - name: Cobertura de fuentes (umbrales intactos)
@@ -48,11 +49,10 @@ jobs:
             .validation/coverage-summary.json
           retention-days: 14
           if-no-files-found: error
-      - run: npm run build
       - name: Auditoría de dependencias de producción
         run: npm audit --omit=dev --audit-level=high
       - name: Índice de decisiones al día
-        run: npx tsx tools/docs/decisions-index.ts --check
+        run: node --import tsx tools/docs/decisions-index.ts --check
       - name: Guardar el build
         if: success()
         uses: actions/upload-artifact@v7
@@ -63,7 +63,7 @@ jobs:
 
   matrix-validation:
     name: Matrices exhaustivas IQ y anatomía
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
@@ -89,7 +89,7 @@ jobs:
   # entrega antes sus errores internos, vallas GPU y reservas, sin cambiar el caso.
   triplex-early:
     name: tríplex SwiftShader · diagnóstico temprano
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
@@ -124,7 +124,7 @@ jobs:
   # el doble y agotaban sus plazos a días alternos (79 % de ejecuciones de main en rojo, septiembre de 2026).
   e2e:
     name: extremo a extremo (Chromium + SwiftShader) ${{ matrix.shard }}/${{ strategy.job-total }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # El navegador y sus bibliotecas corresponden al lockfile; no descargar APT en cada fragmento.
     # CI37762865146 perdió 9 min en esa preparación y agotó el límite sin completar el informe.
     container:
@@ -197,7 +197,7 @@ jobs:
     name: CI verde (check + e2e)
     if: always()
     needs: [check, matrix-validation, triplex-early, e2e]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: check, matriz IQ y E2E en verde
         run: |
@@ -218,10 +218,25 @@ jobs:
           path: .validation
           merge-multiple: true
       - name: Ambas fases, mismo SHA e informes íntegros, sin omisiones
+        id: validation
         run: npm run test:coverage:verify
       - uses: actions/download-artifact@v8.0.2
         with:
           pattern: e2e-tiempos-*
           path: e2e-evidence
       - name: Todas las pruebas realmente ejecutadas, exactamente una vez
+        id: execution
         run: node --import tsx tools/ci/verify-e2e-execution.ts e2e-evidence
+      - name: Publicar el recibo de las comprobaciones anteriores, sin repetirlas
+        run: node --import tsx tools/ci/write-acceptance-receipt.ts e2e-evidence
+        env:
+          VERIFIED_VALIDATION: ${{ steps.validation.outcome }}
+          VERIFIED_EXECUTION: ${{ steps.execution.outcome }}
+      - uses: actions/upload-artifact@v7
+        if: success()
+        with:
+          name: acceptance-receipt
+          include-hidden-files: true
+          path: .validation/acceptance-receipt.json
+          retention-days: 14
+          if-no-files-found: error

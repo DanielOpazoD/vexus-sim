@@ -6,6 +6,8 @@
    invariantes delicados; `docs/ARCHITECTURE.md` y `docs/TESTING.md` explican los contratos.
 3. Entorno: `tools/workspace/run.sh npm run workspace:doctor`. Comandos y evidencias en
    `docs/engineering/workspace.md`. Node 24; una sola carga intensiva local a la vez.
+   Durante la edición usa feedback focalizado según `docs/engineering/iteration.md`; check y CI
+   completos siguen siendo obligatorios para aceptar el candidato final.
 4. Consulta `docs/DECISIONS_INDEX.md` antes de abrir el historial completo. No conviertas un pendiente
    histórico en trabajo actual sin revisar el cierre y Git/CI.
 

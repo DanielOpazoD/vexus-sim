@@ -48,13 +48,18 @@ Después: `npm run workspace:doctor`. Ver `docs/engineering/workspace.md`.
 
 ## Antes de abrir un PR
 
+Durante la edición usa `npm run feedback` o tests explícitos: ver
+[ciclo de iteración](docs/engineering/iteration.md). Ese diagnóstico no acredita aceptación.
+Ejecuta el check completo cuando el candidato esté estable:
+
 ```bash
 npm run check
 ```
 
 Ejecuta formato, lint, tipos, **todas** las pruebas (rápidas y lentas), cobertura, build y presupuesto
-de bundle. La duración depende de la carga y el backend: el último cierre local necesitó unos 13 minutos
-y el grupo E2E más largo de CI unos 32. Son observaciones, no plazos ni garantías.
+de bundle. Build y presupuesto preceden a las suites largas para detectar sus fallos pronto.
+La duración depende de la carga y el backend; la CI de referencia de la decisión 219 tuvo un grupo
+E2E de 33,89 minutos. Es una observación, no un plazo ni una garantía.
 Usa una sola carga intensiva local a la vez y conserva el código de salida.
 No se acepta `npm run check | grep …`: el código de salida es lo que cuenta. Si el cambio toca
 la anatomía, también:

@@ -24,7 +24,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   texture:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v7
@@ -62,7 +62,7 @@ jobs:
           if-no-files-found: error
   comparison:
     needs: texture
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7

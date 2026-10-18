@@ -31,7 +31,7 @@ jobs:
       matrix:
         attempt: [1, 2, 3]
         suite: [renalTerritory, venousViewer, venousAcquisition, velocityRuler]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7

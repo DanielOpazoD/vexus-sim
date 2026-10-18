@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -p tsconfig.json --noEmit && vite build && tsx tools/ci/bundle-budget.ts",
+    "build": "tsc -p tsconfig.json --noEmit && vite build && node --import tsx tools/ci/bundle-budget.ts",
     "preview": "vite preview",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
@@ -16,12 +16,12 @@
     "test:slow": "VITEST_TIER=slow vitest run --testTimeout=180000",
     "test:all": "VITEST_TIER=all vitest run --testTimeout=180000",
     "test:watch": "vitest",
-    "calibrate": "tsx tools/calibrate.ts",
-    "docs:index": "tsx tools/docs/decisions-index.ts",
-    "fidelity": "tsx tools/fidelity/bench.ts",
-    "fidelity:audit": "tsx tools/fidelity/windowAudit.ts",
-    "fidelity:blind": "tsx tools/fidelity/blind-pairs.ts",
-    "check": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && vite build && tsx tools/ci/bundle-budget.ts",
+    "calibrate": "node --import tsx tools/calibrate.ts",
+    "docs:index": "node --import tsx tools/docs/decisions-index.ts",
+    "fidelity": "node --import tsx tools/fidelity/bench.ts",
+    "fidelity:audit": "node --import tsx tools/fidelity/windowAudit.ts",
+    "fidelity:blind": "node --import tsx tools/fidelity/blind-pairs.ts",
+    "check": "npm run format:check && npm run lint && npm run typecheck && vite build && node --import tsx tools/ci/bundle-budget.ts && npm run test:coverage",
     "test:coverage": "npm run test:coverage:core && npm run test:matrix && npm run test:coverage:verify",
     "e2e": "playwright test",
     "prepare": "git config core.hooksPath .githooks 2>/dev/null || true",
@@ -30,7 +30,9 @@
     "test:matrix": "node --import tsx tools/ci/run-validation-phase.ts matrix",
     "test:coverage:verify": "node --import tsx tools/ci/verify-validation.ts",
     "workspace:doctor": "node tools/workspace/doctor.ts",
-    "workspace:e2e": "node --import tsx tools/workspace/e2e.ts"
+    "workspace:e2e": "node --import tsx tools/workspace/e2e.ts",
+    "feedback": "node --import tsx tools/workspace/feedback.ts",
+    "workspace:ci": "node --import tsx tools/workspace/ci.ts"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

@@ -25,6 +25,10 @@ referencia local: necesita `git fetch origin` para refrescarse.
 
 ## Tres usos distintos
 
+Para el ciclo de edición usar primero `npm run feedback`. La evaluación de costes, selección de
+pruebas y cierre compacto de CI están en [Iterar con evidencia y menos espera](iteration.md).
+El feedback local no es un sustituto de la aceptación completa.
+
 | Uso                       | Comando / evidencia                                         | Qué permite afirmar                                        |
 | ------------------------- | ----------------------------------------------------------- | ---------------------------------------------------------- |
 | Diagnóstico focalizado    | Perfil local y filtros explícitos                           | Resultado del caso ejecutado en ese entorno                |

@@ -42,6 +42,12 @@ describe('Feedback focalizado sin confundirse con aceptación', () => {
       writeFileSync(join(root, 'src/a.ts'), 'edited again');
       expect(git('status', '--short').toString()).toBe(status);
       expect(feedbackFingerprint(root, '/unrelated-output')).not.toBe(before);
+      // Una tabla/modelo puede superar el búfer por defecto de execFileSync (1 MiB).
+      writeFileSync(join(root, 'src/a.ts'), 'x'.repeat(2 * 1024 * 1024));
+      expect(feedbackFingerprint(root, '/unrelated-output')).not.toBe(before);
+      const beforeStage = feedbackFingerprint(root, '/unrelated-output');
+      git('add', 'src/a.ts');
+      expect(feedbackFingerprint(root, '/unrelated-output')).not.toBe(beforeStage);
       expect(() => feedbackFiles(root, base, ['../elsewhere.ts'])).toThrow();
       expect(() => feedbackFiles(root, base, ['node_modules/dependency.ts'])).toThrow();
       expect(() => feedbackFiles(root, base, ['src'])).toThrow();

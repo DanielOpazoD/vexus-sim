@@ -30,6 +30,11 @@ confirma la transición. La etiqueta fija la familia de SO, no congela parches, 
 del proveedor; el contenedor Playwright sigue fijado por digest. No se atribuye a esta medida
 la reparación de los timeouts históricos.
 
+Una regresión con 2 MiB reprodujo `ENOBUFS` en la huella que capturaba `git diff --binary`.
+La huella final combina el índice Git y hashes del contenido modificado/nuevo, permisos y borrados;
+evita generar un patch binario grande y detecta también cambios del índice con contenido de trabajo
+idéntico. El ensayo conserva el negativo y comprueba la ruta de archivos grandes.
+
 La CI de referencia [39110219774](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39110219774)
 ejecutó 152 E2E únicas una vez: **244,70 minutos acumulados**, con fragmentos de **12,68–33,89 minutos**
 (duración del informe, sin preparación del job). Sus 147 registros de arranque suman 65,76 minutos:

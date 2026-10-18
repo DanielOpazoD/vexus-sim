@@ -7663,3 +7663,9 @@ ya fijados por digest. No cambia ningún trabajo, escenario, plazo o umbral. La 
 continúa recibiendo parches y el hardware puede variar: no es una garantía de tiempos idénticos.
 El candidato anterior se conserva como ejecución sustituida; una nueva CI completa acredita
 el head final con la distribución explícita.
+
+**Huella con archivos grandes.** El ensayo de2 MiB reprodujo `spawnSync git ENOBUFS` al capturar
+el patch binario completo. La huella combina ahora el inventario del índice con hashes de los
+archivos modificados/nuevos, sus modos y borrados. Evita generar ese patch y detecta cambios de
+índice sin modificar el contenido de trabajo. La regresión grande falla con el evaluador anterior
+y pasa con el nuevo; el negativo se conserva. Sigue siendo diagnóstico local, nunca aceptación.

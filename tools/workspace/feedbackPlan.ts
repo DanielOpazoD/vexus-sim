@@ -39,20 +39,24 @@ export function feedbackFiles(root: string, base: string, explicit: string[]): s
 /** Detecta también una segunda edición de un archivo que ya estaba marcado M. No es una caché. */
 export function feedbackFingerprint(root: string, output: string): string {
   const hash = createHash('sha256');
-  hash.update(execFileSync('git', ['diff', '--binary', 'HEAD'], { cwd: root, env: feedbackGitEnvironment() }));
-  const files = execFileSync('git', ['ls-files', '--others', '--exclude-standard', '-z'], {
-    cwd: root,
-    encoding: 'utf8',
-    env: feedbackGitEnvironment(),
-  })
-    .split('\0')
+  const git = (...args: string[]) => execFileSync('git', args, { cwd: root, encoding: 'utf8', env: feedbackGitEnvironment() });
+  // Identidad del índice y contenido actual: no fabricar un patch binario potencialmente enorme.
+  hash.update(git('ls-files', '--stage', '-z'));
+  const files = [
+    ...new Set((git('diff', '--name-only', '-z', 'HEAD', '--') + git('ls-files', '--others', '--exclude-standard', '-z')).split('\0')),
+  ]
     .filter(Boolean)
     .sort();
   for (const file of files) {
     const absolute = resolve(root, file);
     if (absolute === output || absolute.startsWith(output + '/')) continue;
     hash.update(file + '\0');
-    hash.update(lstatSync(absolute).isSymbolicLink() ? readlinkSync(absolute) : readFileSync(absolute));
+    const stat = lstatSync(absolute, { throwIfNoEntry: false });
+    if (!stat) hash.update('deleted\0');
+    else {
+      const bytes = stat.isSymbolicLink() ? readlinkSync(absolute) : readFileSync(absolute);
+      hash.update(stat.mode + '\0' + createHash('sha256').update(bytes).digest('hex') + '\0');
+    }
   }
   return hash.digest('hex');
 }

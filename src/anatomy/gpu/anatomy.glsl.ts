@@ -157,11 +157,11 @@ vec4 bodyInfo(float phi, float z, out float dc) {
   int base = row * ${BODY_COEFFICIENT_STRIDE / 4};
   vec4 p = vec4(1.0, g, g*g, g*g*g), dp = vec4(0.0, 1.0, 2.0*g, 3.0*g*g);
   vec4 v = vec4(1.0, f, f*f, f*f*f), dv = vec4(0.0, 1.0, 2.0*f, 3.0*f*f);
-  vec4 r, a;
-  for (int k = 0; k < 4; k++) {
-    vec4 c = bodyTexel(base + int(floor(angle)) * 4 + k);
-    r[k] = dot(c, p); a[k] = dot(c, dp);
-  }
+  // Las mismas cuatro lecturas explícitas evitan un bucle dentro del clasificador (216).
+  int cell = base + int(floor(angle)) * 4;
+  vec4 c0 = bodyTexel(cell), c1 = bodyTexel(cell + 1), c2 = bodyTexel(cell + 2), c3 = bodyTexel(cell + 3);
+  vec4 r = vec4(dot(c0, p), dot(c1, p), dot(c2, p), dot(c3, p));
+  vec4 a = vec4(dot(c0, dp), dot(c1, dp), dot(c2, dp), dot(c3, dp));
   vec4 cy = bodyTexel(base + ${BODY_SECTORS * 4});
   float scale = z >= uBodyMinZ && z <= 120.0 ? 1.0 / step : 0.0;
   dc = dot(cy, dv) * scale;

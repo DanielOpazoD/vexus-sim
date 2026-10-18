@@ -398,6 +398,13 @@ describe('Límites del shader con margen para crecer', () => {
     expect(() => uniformSlots('uniform vec4 uX[SIN_DEFINIR];')).toThrow(/sin resolver/);
   });
 
+  it('evalúa los cuatro coeficientes corporales sin añadir un bucle al clasificador', () => {
+    // 216: el mismo tríplex móvil tarda 178,7 s con el bucle y 123,5 s sin él en
+    // SwiftShader local. La paridad geométrica sigue a cargo de atlasWallNormals.
+    const body = glslCallGraph(ANATOMY_GLSL).get('bodyInfo')!;
+    expect(loopBodies(new Map([['bodyInfo', body]]))).toHaveLength(0);
+  });
+
   // Coste de compilación en SwiftShader (el de la e2e y el CI): el compilador inlinea cada llamada, y el JIT
   // (LLVM) de SwiftShader crece con el código inlineado y se dispara con código pesado dentro de un bucle. La
   // decisión 61 metió faceGradient (6–8 distancias, ~67 kB) en el bucle de las muestras del medio de B: el

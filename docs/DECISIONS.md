@@ -7536,3 +7536,79 @@ La CI 39095291930 detectó además falta de avance en Color+PW, en móvil y escr
 **Coste del evaluador GLSL.** El tríplex temprano de Linux39100173993 pasó sobre6ebf61f con el bucle, en206,2 s: no reproduce ni explica el bloqueo anterior. En Mac SwiftShader se comparó consecutivamente la misma prueba móvil original, un trabajador y cero reintentos: evaluación explícita123,5 s y bucle178,7 s. El arranque fue48,2/46,2 s; los cuadros posteriores74,7/131,0 s. La versión estable1da143a tardó124,5 s; otra observación previa del bucle170,1 s. Son ejecuciones completas, no tiempos GPU aislados ni latencias por cuadro sostenidas.
 
 Se eliminó el bucle interior de `bodyInfo`: las cuatro lecturas y sus productos escalares aparecen explícitos, con los mismos coeficientes, orden y fórmulas. El coste adicional se reproduce al restaurar solo ese bucle; es consistente con la sensibilidad del compilador software al anidamiento ya documentada en61/190, sin demostrar la causa de cada bloqueo histórico. Una guarda estructural falla con el bucle y pasa con la evaluación explícita; la paridad GPU continúa comprobando el campo resultante. La aceptación exige una nueva CI del código final, conservando los negativos anteriores y sin reutilizar como aceptación las corridas del evaluador anterior.
+
+## 217. Redondear la transición costal sin anclar de nuevo sus rectas auxiliares
+
+**Contexto.** Tras216, la captura del usuario seguía mostrando una esquina en la fascia a la derecha
+de la sombra costal hepatorrenal. C1 evita un salto infinitesimal de normal, pero no una curva muy
+cerrada en pocos milímetros: las muestras auxiliares cada2,5mm seguían ancladas al perfil lineal
+anterior. En el tramo registrado de3–15° del sector, las secantes de0,25° cambiaban hasta5,785° enA
+y5,722° enB. Es una medida geométrica de esa adquisición, no una tolerancia clínica.
+
+**Opciones.** Se rechazó una base cuadrática en la tabla de compresión: mejoraba poco el contorno y
+rompía el contrato de normales en el contacto. Suavizar globalmente el perfil o quitar sus anclajes
+intermedios separaba el hígado más de2,5mm en una observación existente. Reducir el margen estimado
+de contacto pasaba ese banco, pero aumentaba la intrusión en un muestreo independiente más amplio:
+también se rechazó. No se modifica un umbral de prueba para aceptar esas variantes.
+
+**Decisión.** La reconstrucción Hermite limitada de las muestras auxiliares se aplica únicamente al
+soporte de cuatro muestras que cruza la transición caudal del ajuste costal existente, −145…−115mm.
+`COSTAL_BODY_BLEND_Z` comparte esos extremos entre el ajuste y la reconstrucción. Se conservan los
+nodos originales, el centro corporal, el margen de1,5mm, los demás órganos y la reconstrucción del
+contacto hepático establecido. Las subdivisiones siguen siendo cuatro; fuera del soporte, las
+muestras auxiliares conservan la interpolación anterior. CPU, GPU y malla siguen usando los mismos
+coeficientes; no hay cambios en el shader ni un filtro de imagen.
+
+**Consecuencias.** El cambio es local y estimado: reduce una esquina concreta sin acreditar realismo
+global de las capas. No altera física acústica, adquisición, flujos, reloj, plazos ni presupuesto.
+El perfil puede seguir siendo esquemático en otras zonas. Los ensayos rechazados se conservan en
+la evidencia local217. Browser plugin not available: Playwright existente para las comparaciones;
+CUA para la entrega nativa. La consulta Modern Web Guidance falló por certificado; no se desactivó TLS.
+
+**Verificación.** Dos regresiones sobre la fascia real comprimida, una por paciente, fallan con el
+código de216 (5,785°/5,722°) y exigen menos de3° con la corrección. Se comprueban los extremos del
+intervalo de búsqueda de cada cruce, continuidad/gradiente, observaciones fuente, malla<0,5mm,
+apposición y corticales con sus límites originales. La variante localizada da2,752° enA. Un banco
+independiente de447 rayos conserva el mínimo de separación0,186mm del código anterior; fuera del
+contacto completo existen separaciones amplias heredadas y no se presentan como apposición normal.
+La aceptación requiere check completo, calibrate, capturas registradas, navegación desde seis
+coordenadas y ambos pacientes, paridad de caras/normales, dos vistas y CI protegida del head final,
+sin reintentos como aceptación. Los informes del PR acreditan lo ejecutado, no esta lista por sí sola.
+
+## 218. No fabricar vallas GPU en una pausa sin comandos
+
+**Contexto.** La CI39106183480 del candidato321eccb falló en `renalCutTracking`: el intento
+principal y el reintento automático agotaron el plazo original de540000ms en la comprobación
+final de las vistas congeladas. En ambos se habían completado los288 movimientos y las cuatro
+comparaciones de paridad, con cero diferencias y cero errores internos. No se acepta repetir
+la CI sin una corrección ni ampliar ese plazo. Los30 ZIP originales/SHA256 y las dos trazas
+quedan conservados. La ejecución anterior aprobada de main tardó343,7s; otros controles legacy
+también fueron más lentos en la corrida negativa, por lo que esos tiempos entre corredores
+no demuestran una regresión causada por la curva anatómica.
+
+**Opciones.** Aumentar tiempo, reducir movimientos/cuadros, bajar resolución o saltarse la fase
+congelada se rechazan. `Navigator3D` y cine ya evitaban redibujar estados idénticos; la espera
+innecesaria persistía en el coordinador: cada vuelta, incluso sin comandos, añadía `fenceSync`
+y `flush`. Una prueba nueva observó31 vallas y cero dibujos en30 vueltas reales congeladas.
+
+**Decisión.** El bucle conserva la identidad de presentación: renderizador, cuadro de cine,
+revisión del dibujo3D, estado presentado y pérdida de contexto. En pausa y sin cambios completa
+el turno compartido sin añadir una valla vacía. Cámara, capas, cine, tamaños, equipo y recuperación
+invalidan esa identidad. Los dos primeros cuadros, la adquisición en vivo, Docente, el visor y
+los cuadros que lanzan después de trabajo parcial conservan el drenaje anterior. El contador
+de revisiones3D solo aumenta al ejecutar el dibujo real; no cambia geometría ni reloj.
+
+**Consecuencias.** Se elimina un coste reproducible de pausa, también cuando otra vista sigue
+adquiriendo. No se cambia física, muestreo, cantidad de movimientos, resolución, aserciones,
+plazos ni presupuesto. Dos entradas poco aprovechadas del diccionario se sustituyen sin ampliar
+capacidad ni cambiar el decodificador; los programas ensamblados deben permanecer idénticos
+byte por byte. El impacto en la duración completa requiere la CI del código final; no se
+atribuyen a este mecanismo todas las intermitencias históricas.
+
+**Verificación.** `frozenGpuIdle.spec.ts` observa llamadas reales de dibujo y vallas en dos vistas:
+tras30 vueltas estables exige cero dibujos/vallas, el mismo cuadro y el mismo tiempo físico.
+Después exige dibujo y valla al cambiar cámara, tamaño y cine, y una adquisición nueva al
+descongelar. Falla con el código anterior (31 vallas vacías) y pasa con el cambio en el ensayo
+Metal. Las pruebas de vallas, turnos y cine conservan sus límites; las de transporte verifican
+identidad exacta de los shaders. El barrido original con dos vistas permanece intacto y debe
+pasar junto con la CI completa del head final, sin reintentos como aceptación.

@@ -587,7 +587,7 @@ export const GLSL_PHRASES = [
   ');\n#endif\n',
   '\nuniform sampler2D ',
   ';\n#else\n',
-  ';\nconst float ',
+  '{float shadowIntensity;float shadowBias;float shadowNormalBias;float shadowRadius;vec2',
   '\n#endif\n#if ',
   ';\n#include <',
   '\nuniform float ',
@@ -642,7 +642,7 @@ export const GLSL_PHRASES = [
   '+vec3(1,',
   'z);float ',
   'int(floor(',
-  ', 0.0, ',
+  ' USE_SHADOWMAP ) && ',
 ] as const;
 export const GLSL_MARKERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_$';
 const GLSL_BANKS = ['', '~', '!', ':', ';', '?', '%', '=', '+', '^'];

@@ -7,6 +7,8 @@ import type { Vec3 } from '../core/vec3';
 export const BODY_ROWS = 8;
 export const ABDOMINAL_BODY_ROWS = 14;
 export const COSTAL_BODY_ROWS = 53;
+/** Transición caudal del ajuste parietal estimado (183, 217). */
+export const COSTAL_BODY_BLEND_Z = [-145, -115] as const;
 export const BODY_MAX_ROWS = COSTAL_BODY_ROWS;
 export const BODY_STRIDE = 65;
 export let referenceBody: Float32Array | undefined;
@@ -54,10 +56,22 @@ export function bodyCoefficients(data: Float32Array): Float64Array {
   const raw = (r: number, a: number): number => {
     const q = Math.max(0, Math.min((rows - 1) / BODY_SUBDIVISIONS, r / BODY_SUBDIVISIONS)),
       i = Math.min((rows - 1) / BODY_SUBDIVISIONS - 1, Math.floor(q));
-    return data[i * BODY_STRIDE + a] + (data[(i + 1) * BODY_STRIDE + a] - data[i * BODY_STRIDE + a]) * (q - i);
+    const v = (j: number) => data[Math.max(0, Math.min(data.length / BODY_STRIDE - 1, j)) * BODY_STRIDE + a];
+    const t = q - i,
+      linear = v(i) + (v(i + 1) - v(i)) * t;
+    if (data.length !== COSTAL_BODY_ROWS * BODY_STRIDE || a === 0) return linear;
+    const step = 520 / (COSTAL_BODY_ROWS - 1),
+      z = -400 + i * step;
+    // Solo el soporte de cuatro muestras que cruza la transición del ajuste.
+    // El contacto hepático ya establecido y los cortes fuente quedan intactos.
+    if (z + 2 * step < COSTAL_BODY_BLEND_Z[0] || z - step > COSTAL_BODY_BLEND_Z[1]) return linear;
+    const left = v(i) - v(i - 1),
+      middle = v(i + 1) - v(i),
+      right = v(i + 2) - v(i + 1);
+    return polynomial(power(v(i), v(i + 1), slope(left, middle), slope(middle, right)), 0, t);
   };
-  // Ancla también muestras intermedias de la reconstrucción bilineal previa:
-  // limita la desviación entre observaciones sin conservar sus esquinas.
+  // Muestras auxiliares del perfil anterior, reconstruidas dentro de la
+  // transición costal; fuera de ella conservan el anclaje bilineal (216–217).
   const at = (r: number, a: number): number => {
     if (a < 0) return raw(r, 0);
     const q = (((a + BODY_SECTORS) % BODY_SECTORS) * 64) / BODY_SECTORS,

@@ -220,3 +220,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [214](DECISIONS.md#L7411) | Leyenda Color legible en píxeles CSS y ligada al cuadro adquirido | vigente |
 | [215](DECISIONS.md#L7443) | Contrato previo para afinar la textura del seno renal | vigente |
 | [216](DECISIONS.md#L7478) | Pared corporal continua y normales compartidas entre apoyo, corte y ecografía | vigente |
+| [217](DECISIONS.md#L7540) | Redondear la transición costal sin anclar de nuevo sus rectas auxiliares | vigente |
+| [218](DECISIONS.md#L7578) | No fabricar vallas GPU en una pausa sin comandos | vigente |

@@ -75,6 +75,11 @@ export class Navigator3D {
   private lastY = 0;
   private slideScale = { phiPerPixel: 0, zPerPixel: 0 };
   private dirty = true;
+  private renderSerial = 0;
+  /** Cambia solo al enviar un dibujo real, también con cámara/capas en pausa. */
+  get renderRevision(): number {
+    return this.renderSerial;
+  }
   private lastResp = -1;
   private respiratoryMotion: ReturnType<typeof bindRespiratoryMotion> | null = null;
   private lastPoseKey = '';
@@ -394,6 +399,7 @@ export class Navigator3D {
     updateFan(this.fan, this.fanEdges, fr, this.transducer, depth);
     this.updateCamera();
     this.renderer.render(this.scene, this.camera);
+    this.renderSerial++;
     this.releaseRetired();
   }
 

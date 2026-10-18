@@ -220,3 +220,12 @@ subintervalos por fila original. Minmod se conserva en Z y en el perfil costal a
 la representación, sin aportar segmentación humana nueva ni una precisión clínica submilimétrica.
 La malla se aproxima al mismo campo a <0,5 mm en su banco numérico. Las capas pueden conservar
 formas esquemáticas; continuidad y paridad no equivalen a fidelidad clínica externa.
+
+### Transición caudal del ajuste costal (217)
+
+La corrección reconstruye las muestras auxiliares con Hermite limitado solo en el soporte de cuatro
+muestras que cruza el inicio del ajuste estimado, −145…−115mm. Conserva las observaciones, los centros,
+el margen parietal de1,5mm y los órganos registrados. Es [EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION
+visual; reduce una esquina de la fascia hepatorrenal y no aporta una segmentación nueva ni valida
+externamente el espesor de la pared. Se rechazaron suavizados globales y reducir el margen de contacto
+al degradar apposición o separación anatómica. Otras capas pueden conservar tramos esquemáticos.

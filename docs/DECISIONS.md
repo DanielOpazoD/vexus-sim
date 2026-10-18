@@ -8085,3 +8085,32 @@ supera el candidato; el cilindro anterior falla al variar sus parámetros obsole
 La entrega requiere además capturas A/B registradas, coste en el mismo equipo,
 calibración, paridad GPU, check y CI final. Los resultados finales van en el PR;
 una captura más lisa sin esos controles no basta.
+
+## 231. Evitar trabajo repetido sin cambiar las muestras del corte
+
+**Contexto.** La medición nativa 228 observa mediana de dos cuadros de desfase.
+La CPU interpola campos fuente en cada consulta y reconstruye la misma dirección
+normalizada para cada profundidad de una columna. Se comprueba ese trabajo antes
+de alterar planificación, resolución o criterios de espera.
+
+**Opciones.** No se descartan muestras, aproximan planos por interpolación de
+etiquetas ni cambia la rejilla 96×128. Se conservan las cesiones del Worker, su
+cancelación por paciente, watchdog y transporte sin copias de los resultados.
+
+**Decisión.** La interpolación TS ejecuta explícitamente los mismos ocho productos
+y sumas en el mismo orden z/y/x, sin bucles de dos iteraciones ni sus ramas.
+El corte calcula una vez por columna su dirección normalizada y reutiliza esos
+valores float64 a todas las profundidades, con el mismo orden de operaciones
+que `pointOnLine`. No cambia ningún dato del atlas ni su lectura GLSL.
+
+**Consecuencias.** El coste computacional puede bajar sin alterar física ni
+geometría. No se convierte el microbenchmark en una promesa de latencia global:
+la actualización sigue siendo asíncrona y se mide en el mismo equipo/recorridos.
+
+**Verificación.** Cero diferencias bit a bit en 60.000 consultas no afines
+comparadas con el código anterior; la prueba del ladrillo incluye términos
+mixtos, límites y etiquetas. Los 36.864 centros de tres rejillas adquiridas
+con traslación y angulación coinciden exactamente con la construcción anterior.
+El microbenchmark alterna el orden tras calentar y registra sus resultados fuera
+del repo. El PR debe aportar comparación nativa del corte, paridad TS/GPU y
+aceptación completa del último commit; no se amplían plazos ni tolerancias.

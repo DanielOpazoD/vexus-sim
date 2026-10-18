@@ -12,7 +12,8 @@ import { Tissue } from '../anatomy/tissues';
 import type { Vec3 } from '../core/vec3';
 import type { PhysiologySample } from '../physiology/engine';
 import type { PatientState } from '../physiology/patientState';
-import { pointOnLine, type ProbeFrame, type Transducer } from '../probe/probe';
+import type { ProbeFrame, Transducer } from '../probe/probe';
+import { cutMapDirections, cutMapPoint } from './cutMapGeometry';
 
 /**
  * Worker del «corte ecográfico»: clasifica la rejilla del plano de la imagen con
@@ -110,12 +111,13 @@ self.onmessage = async (ev: MessageEvent<CutMapInit | CutMapRequest>) => {
     const structure = new Uint8Array(width * height);
     const sample = msg.sample as PhysiologySample;
     const caliber = query.caliberFor(sample);
+    const directions = cutMapDirections(frame, transducer, width);
     let deadline = performance.now() + 16;
     for (let v = 0; v < height; v++) {
       const r = (depthMm * (v + 0.5)) / height;
+      const range = transducer.curvatureRadius + r;
       for (let u = 0; u < width; u++) {
-        const theta = -transducer.halfSector + (2 * transducer.halfSector * (u + 0.5)) / width;
-        const p = pointOnLine(frame, transducer, theta, r);
+        const p = cutMapPoint(frame.curvatureCenter, directions[u], range);
         const material = query.deformation.toMaterial(p, sample.resp);
         const c = query.scene.classify(material, caliber);
         const i = v * width + u;

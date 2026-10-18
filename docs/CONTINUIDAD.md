@@ -8,9 +8,9 @@ registra 18 adquisiciones del atlas (nueve ventanas y dos pacientes), rechaza un
 pierde la señal renal de referencia (208) y unifica los límites del mando de presión con la pose (209).
 La siguiente ronda aborda interfaz clara y disposición adaptable (210), con invariantes de adquisición.
 El usuario añadió arrastre Doppler en vivo y regreso a 2D al elegir otra ventana (211).
-Ambas se integraron en PR258 con CI completa. PR259 integró el selector por territorio y el acceso portal subcostal anterior (212). La ronda actual
-213 añade el nombre/logo VExUS LAB y mejora el acceso subcostal Atlas hacia la rama portal derecha.
-El cierre 213 sigue pendiente de su CI protegida y fusión.
+Ambas se integraron en PR258 con CI completa. PR259 integró el selector por territorio y el acceso portal subcostal anterior (212). La ronda
+213 añadió el nombre/logo VExUS LAB y mejora el acceso subcostal Atlas hacia la rama portal derecha.
+La ronda 213 se integró en PR260. La ronda 214 corrige la legibilidad de la leyenda Color; su aceptación sigue pendiente de check y CI protegida.
 Se conserva el circuito de PR pequeño, evidencia antes/después y CI completa antes de integrar.
 
 Este documento es el punto de entrada. `CONTRIBUTING.md` define el procedimiento de aceptación;
@@ -18,6 +18,16 @@ la configuración ejecutable de CI y sus verificadores determinan qué se ejecut
 las pestañas abiertas y los JSON de una sesión son antecedentes, no estado vivo.
 
 ## Último cierre funcional acreditado
+
+- [PR260](https://github.com/DanielOpazoD/vexus-sim/pull/260), fusionado el 17 de octubre a las
+  22:52:53 UTC: VExUS LAB y acceso subcostal Atlas a la rama portal derecha (213).
+  Main `e368c838db9f59b5a1c30a468711579fa7f34ef3`, árbol `8e5cefdda0a86ab1082424cbed4025cf90addc5f`,
+  idéntico al árbol probado. [CI del PR](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39074433956):
+  147 E2E únicas, una ejecución y cero reintentos; core y matrices íntegros verificados.
+  La ejecución posterior al merge [39076839522](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39076839522)
+  falló en `renalCutTracking`: Rotación conservó −3° cuando la pose hepatorrenal ya estaba en −14,0103°.
+  El reintento diagnóstico repitió el fallo. No es un timeout de arranque ni prueba de error geométrico;
+  deja pendiente aislar por qué el mando no se sincronizó. La ronda 214 no lo da por resuelto.
 
 - Repositorio: [DanielOpazoD/vexus-sim](https://github.com/DanielOpazoD/vexus-sim).
 - [PR259](https://github.com/DanielOpazoD/vexus-sim/pull/259), fusionado el 17 de octubre a las
@@ -84,9 +94,23 @@ salida de cine/congelación y cancelación de medición pendiente; mover la sond
 el modo. La ronda 212 se integró con check y CI completa. En 213 solo cambia el apoyo Atlas: bajo el reborde
 subcostal derecho, rama `pvRight`, φ 2,85, z −95 mm. El barrido incluye el esqueleto real y descarta
 los candidatos intercostales; mejora el ángulo de unos 53° a 29° en la referencia sintética. La puerta
-adquirida es 100 % derecha en ambos pacientes, PF 13,71/70,70 %, con calidad útil. Legacy/reference
+adquirida es 100 % derecha en ambos pacientes. La pose publicada, redondeada a seis decimales,
+registró PF 15,01/70,84 % con calidad útil; 13,71/70,70 % corresponde al candidato de precisión completa. Legacy/reference
 conservan el tronco anterior. Ver decisión 213 y `docs/evidence/portal-subcostal-213.json`.
-La aceptación 213 exige check completo, inspección visual y CI protegida sobre el head final.
+La aceptación 213 quedó acreditada en el PR; el fallo posterior se conserva arriba como evidencia independiente.
+
+## Ronda 214: leyenda Doppler y siguiente comparación de fidelidad
+
+El degradado compartía la paleta de la imagen, pero `H/800` reducía sus cifras al activar PW.
+Se dimensiona en píxeles CSS, con 12 px de texto y barra de 12 × 113 px aproximadamente, en la esquina
+superior izquierda. Incluye cero y ±Nyquist de la adquisición mostrada; conserva PRF e inversión al
+congelar/cine. No se modifica el flujo, la paleta del vaso, la textura ni la señal PW.
+
+El siguiente paso de fidelidad debe comparar capturas del SHA vigente con referencias independientes,
+a igual ventana y ajustes: primero interfaces y contraste hígado/corteza/grasa/músculo; después tamaño
+y relaciones anatómicas del modelo compartido; PW continúa condicionado por transporte/reposición (208).
+Cada ronda elige un defecto reproducible y un mecanismo causal. No se añaden grano, sombras o trazas
+superpuestas para aparentar realismo. Es una prioridad de trabajo, no una validación del aspecto actual.
 
 ## Límites y resultados que no deben perderse
 

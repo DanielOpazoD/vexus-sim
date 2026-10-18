@@ -8,6 +8,12 @@ import { AnatomyScene } from '../anatomy/scene';
 import { CASES } from '../cases';
 import type { Vec3 } from '../core/vec3';
 import { buildSkin } from '../ui/navigator3d/body';
+import { Interface } from '../anatomy/interfaces';
+import { wallFaceSd } from '../anatomy/organs/wall';
+import { startPointsFor } from '../app/startPoints';
+import { probeContact } from '../probe/contact';
+import { CONVEX_C35, pointOnLine } from '../probe/probe';
+import { uncompress } from '../anatomy/compression';
 
 beforeAll(() => {
   const load = (name: string) => {
@@ -36,6 +42,8 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
         const phi = (k * 2 * Math.PI) / 64,
           z = -400 + row * 10;
         const [r, , , cy] = bodySection(phi, z, profile);
+        expect(r).toBeCloseTo(profile[row * 65 + 1 + k], 9);
+        expect(cy).toBeCloseTo(profile[row * 65], 9);
         const p: Vec3 = [(r - 15) * Math.cos(phi), cy + (r - 15) * Math.sin(phi), z];
         const g = bodyGradient(p, profile);
         for (let axis = 0; axis < 3; axis++) {
@@ -90,4 +98,40 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
     // Error geométrico submilimétrico frente al campo acústico, no precisión clínica del atlas.
     console.log({ caseId, jump, gradientError, maxDistanceMm, worstPoint });
     expect(maxDistanceMm).toBeLessThan(0.5);
+  });
+
+for (const caseId of ['normal-adult', 'severe-congestion'])
+  it(`redondea el quiebre visible de la fascia hepatorrenal, ${caseId} (217)`, () => {
+    const scene = new AnatomyScene(CASES.find((c) => c.id === caseId)!);
+    const sp = startPointsFor(scene.torso).find((p) => p.id === 'hepatorenal')!;
+    const k = probeContact({ ...sp, lift: 0, rock: sp.rock ?? 0, tilt: sp.tilt ?? 0 }, CONVEX_C35, scene.torso);
+    const points: [number, number][] = [];
+    for (let deg = 3; deg <= 15; deg += 0.125) {
+      const theta = (deg * Math.PI) / 180;
+      let lo = 0,
+        hi = 40;
+      const face = (r: number) => wallFaceSd(uncompress(pointOnLine(k.frame, CONVEX_C35, theta, r), k), Interface.DeepFascia, scene.torso);
+      expect(face(lo)).toBeLessThan(0);
+      expect(face(hi)).toBeGreaterThan(0);
+      for (let n = 0; n < 30; n++) {
+        const r = (lo + hi) / 2;
+        if (face(r) > 0) hi = r;
+        else lo = r;
+      }
+      const rho = CONVEX_C35.curvatureRadius + (lo + hi) / 2;
+      points.push([rho * Math.sin(theta), rho * Math.cos(theta)]);
+    }
+    let turn = 0;
+    for (let i = 2; i < points.length - 2; i++) {
+      const a = points[i - 2],
+        b = points[i],
+        c = points[i + 2];
+      const incoming = Math.atan2(b[1] - a[1], b[0] - a[0]);
+      const outgoing = Math.atan2(c[1] - b[1], c[0] - b[0]);
+      turn = Math.max(turn, (Math.abs(outgoing - incoming) * 180) / Math.PI);
+    }
+    // Tramo registrado de la captura del usuario. Secantes de 0,25°: antes
+    // había 5,8° en A. Cota geométrica de suavidad, no normalidad clínica.
+    console.log({ caseId, fasciaTurnDeg: turn });
+    expect(turn).toBeLessThan(3);
   });

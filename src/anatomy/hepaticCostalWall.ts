@@ -1,5 +1,5 @@
 import { abdominalAtlas, abdominalAtlasSdf } from './abdominalAtlas';
-import { BODY_ROWS, BODY_STRIDE, COSTAL_BODY_ROWS } from './referenceBody';
+import { BODY_ROWS, BODY_STRIDE, COSTAL_BODY_ROWS, COSTAL_BODY_BLEND_Z } from './referenceBody';
 import { thoracicAtlas, thoracicValue } from './thoracicAtlas';
 import { smoothstep, type Vec3 } from '../core/vec3';
 
@@ -39,7 +39,11 @@ export function hepaticCostalBody(source: Float32Array, wallMm: number, skinMm: 
       const inherited = sample(k + 1) + padding;
       // Include the anterior hepatic face used by subcostal acquisition. The
       // liver crossing and competing source viscera still decide whether to fit.
-      const weight = smoothstep(1.1, 1.4, phi) * (1 - smoothstep(3.6, 3.9, phi)) * smoothstep(-145, -115, z) * (1 - smoothstep(0, 30, z));
+      const weight =
+        smoothstep(1.1, 1.4, phi) *
+        (1 - smoothstep(3.6, 3.9, phi)) *
+        smoothstep(COSTAL_BODY_BLEND_Z[0], COSTAL_BODY_BLEND_Z[1], z) *
+        (1 - smoothstep(0, 30, z));
       let radius = inherited;
       if (weight > 0) {
         const point = (r: number): Vec3 => [r * Math.cos(phi), cy + r * Math.sin(phi), z];

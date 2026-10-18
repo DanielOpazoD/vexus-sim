@@ -7536,3 +7536,41 @@ La CI 39095291930 detectó además falta de avance en Color+PW, en móvil y escr
 **Coste del evaluador GLSL.** El tríplex temprano de Linux39100173993 pasó sobre6ebf61f con el bucle, en206,2 s: no reproduce ni explica el bloqueo anterior. En Mac SwiftShader se comparó consecutivamente la misma prueba móvil original, un trabajador y cero reintentos: evaluación explícita123,5 s y bucle178,7 s. El arranque fue48,2/46,2 s; los cuadros posteriores74,7/131,0 s. La versión estable1da143a tardó124,5 s; otra observación previa del bucle170,1 s. Son ejecuciones completas, no tiempos GPU aislados ni latencias por cuadro sostenidas.
 
 Se eliminó el bucle interior de `bodyInfo`: las cuatro lecturas y sus productos escalares aparecen explícitos, con los mismos coeficientes, orden y fórmulas. El coste adicional se reproduce al restaurar solo ese bucle; es consistente con la sensibilidad del compilador software al anidamiento ya documentada en61/190, sin demostrar la causa de cada bloqueo histórico. Una guarda estructural falla con el bucle y pasa con la evaluación explícita; la paridad GPU continúa comprobando el campo resultante. La aceptación exige una nueva CI del código final, conservando los negativos anteriores y sin reutilizar como aceptación las corridas del evaluador anterior.
+
+## 217. Redondear la transición costal sin anclar de nuevo sus rectas auxiliares
+
+**Contexto.** Tras216, la captura del usuario seguía mostrando una esquina en la fascia a la derecha
+de la sombra costal hepatorrenal. C1 evita un salto infinitesimal de normal, pero no una curva muy
+cerrada en pocos milímetros: las muestras auxiliares cada2,5mm seguían ancladas al perfil lineal
+anterior. En el tramo registrado de3–15° del sector, las secantes de0,25° cambiaban hasta5,785° enA
+y5,722° enB. Es una medida geométrica de esa adquisición, no una tolerancia clínica.
+
+**Opciones.** Se rechazó una base cuadrática en la tabla de compresión: mejoraba poco el contorno y
+rompía el contrato de normales en el contacto. Suavizar globalmente el perfil o quitar sus anclajes
+intermedios separaba el hígado más de2,5mm en una observación existente. Reducir el margen estimado
+de contacto pasaba ese banco, pero aumentaba la intrusión en un muestreo independiente más amplio:
+también se rechazó. No se modifica un umbral de prueba para aceptar esas variantes.
+
+**Decisión.** La reconstrucción Hermite limitada de las muestras auxiliares se aplica únicamente al
+soporte de cuatro muestras que cruza la transición caudal del ajuste costal existente, −145…−115mm.
+`COSTAL_BODY_BLEND_Z` comparte esos extremos entre el ajuste y la reconstrucción. Se conservan los
+nodos originales, el centro corporal, el margen de1,5mm, los demás órganos y la reconstrucción del
+contacto hepático establecido. Las subdivisiones siguen siendo cuatro; fuera del soporte, las
+muestras auxiliares conservan la interpolación anterior. CPU, GPU y malla siguen usando los mismos
+coeficientes; no hay cambios en el shader ni un filtro de imagen.
+
+**Consecuencias.** El cambio es local y estimado: reduce una esquina concreta sin acreditar realismo
+global de las capas. No altera física acústica, adquisición, flujos, reloj, plazos ni presupuesto.
+El perfil puede seguir siendo esquemático en otras zonas. Los ensayos rechazados se conservan en
+la evidencia local217. Browser plugin not available: Playwright existente para las comparaciones;
+CUA para la entrega nativa. La consulta Modern Web Guidance falló por certificado; no se desactivó TLS.
+
+**Verificación.** Dos regresiones sobre la fascia real comprimida, una por paciente, fallan con el
+código de216 (5,785°/5,722°) y exigen menos de3° con la corrección. Se comprueban los extremos del
+intervalo de búsqueda de cada cruce, continuidad/gradiente, observaciones fuente, malla<0,5mm,
+apposición y corticales con sus límites originales. La variante localizada da2,752° enA. Un banco
+independiente de447 rayos conserva el mínimo de separación0,186mm del código anterior; fuera del
+contacto completo existen separaciones amplias heredadas y no se presentan como apposición normal.
+La aceptación requiere check completo, calibrate, capturas registradas, navegación desde seis
+coordenadas y ambos pacientes, paridad de caras/normales, dos vistas y CI protegida del head final,
+sin reintentos como aceptación. Los informes del PR acreditan lo ejecutado, no esta lista por sí sola.

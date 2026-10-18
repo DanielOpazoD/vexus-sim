@@ -178,3 +178,13 @@ imagen no se integra en esta ronda. Los pendientes PW/transportes e intermitenci
 siguen abiertos hasta aislar sus causas; una nueva ejecución positiva no los resuelve por sí sola.
 
 La primera CI de imagen39095291930 es negativa: bloqueo de avance Color+PW (móvil y escritorio), adquisición portal y una cortical de referencia perdida; los fragmentos 1/6 terminaron cancelados por su plazo original. No aceptar una repetición positiva como reparación. La corrección numérica de la cortical mantiene los coeficientes Atlas ajustados y no amplía dueños de tejidos. El tríplex temprano39100173993 pasó con el evaluador anterior, por lo que no aisló aquel bloqueo. Una comparación consecutiva sí reprodujo un coste evitable del bucle de coeficientes GLSL:178,7 s frente a123,5 s con las mismas cuatro lecturas explícitas, prueba móvil original y cero reintentos en Mac SwiftShader (estable124,5 s). Se conserva la evaluación explícita con una guarda; no se atribuyen automáticamente a ese mecanismo todas las intermitencias anteriores. El código final requiere su propia CI completa, con plazos y aserciones intactos.
+
+## Seguimiento de la captura de pared (217)
+
+PR263 integró216 en e5c22c0. La nueva captura del usuario demuestra que la continuidad C1 de esa
+entrega no elimina por sí sola la esquina visible de la fascia. La ronda217 reconstruye únicamente
+las muestras auxiliares del soporte caudal del ajuste; mantiene margen, nodos, órganos y shader.
+Sus regresiones fallan con216 en ambos pacientes. La decisión217 documenta los ensayos rechazados;
+no retomarlos como variantes aprobadas ni confundir sus capturas con el candidato localizado.
+La aceptación efectiva y sus límites deben consultarse en el PR y CI del head final. Los pendientes
+del seno renal215, transporte PW208 y las intermitencias anteriores no quedan cerrados por esta ronda.

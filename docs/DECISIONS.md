@@ -7655,3 +7655,11 @@ remota propia se corrige con lease explícito y hook activo antes de abrir el PR
 anterior de shell no sustituye check y hook nuevos sobre el código corregido.
 El hook mantiene tipos y suite rápida y añade una guarda de HEAD, árbol del índice y configuración;
 un fixture aislado prueba que cualquier alteración bloquea publicar aunque los comandos devuelvan0.
+
+**Distribución explícita.** La CI39116437102 avisó de migración automática de `ubuntu-latest`
+a26.04 desde el19 de octubre; su log usa24.04.5, imagen20261012.334.1. Se fija `ubuntu-24.04`
+en todos los workflows: el SO observado permanece explícito, incluido el host de los contenedores
+ya fijados por digest. No cambia ningún trabajo, escenario, plazo o umbral. La imagen del host
+continúa recibiendo parches y el hardware puede variar: no es una garantía de tiempos idénticos.
+El candidato anterior se conserva como ejecución sustituida; una nueva CI completa acredita
+el head final con la distribución explícita.

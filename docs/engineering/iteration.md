@@ -22,6 +22,14 @@ durante su ejecución. Fixtures aislados comprueban los tres negativos y el caso
 La [documentación de hooks de Git](https://git-scm.com/docs/githooks#_description) explica por qué
 deben limpiarse esas variables al operar sobre otro repositorio.
 
+La propia CI avisó de la migración automática de `ubuntu-latest` a Ubuntu 26.04 desde el 19 de
+octubre. Su log confirma Ubuntu 24.04.5, imagen `20261012.334.1`. Los workflows fijan ahora
+`ubuntu-24.04`, conservando la distribución observada; una actualización de distribución será
+un cambio explícito y comprobable. El [aviso oficial de GitHub](https://github.com/actions/runner-images/issues/14748)
+confirma la transición. La etiqueta fija la familia de SO, no congela parches, hardware o carga
+del proveedor; el contenedor Playwright sigue fijado por digest. No se atribuye a esta medida
+la reparación de los timeouts históricos.
+
 La CI de referencia [39110219774](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39110219774)
 ejecutó 152 E2E únicas una vez: **244,70 minutos acumulados**, con fragmentos de **12,68–33,89 minutos**
 (duración del informe, sin preparación del job). Sus 147 registros de arranque suman 65,76 minutos:

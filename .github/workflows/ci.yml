@@ -19,7 +19,7 @@ concurrency:
 jobs:
   check:
     name: lint · tipos · tests · build · presupuesto
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # La matriz IQ corre en otro corredor; conserva umbrales y el veredicto exige ambas fases.
     timeout-minutes: 25
     steps:
@@ -63,7 +63,7 @@ jobs:
 
   matrix-validation:
     name: Matrices exhaustivas IQ y anatomía
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v7
@@ -89,7 +89,7 @@ jobs:
   # entrega antes sus errores internos, vallas GPU y reservas, sin cambiar el caso.
   triplex-early:
     name: tríplex SwiftShader · diagnóstico temprano
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     container:
       image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
@@ -124,7 +124,7 @@ jobs:
   # el doble y agotaban sus plazos a días alternos (79 % de ejecuciones de main en rojo, septiembre de 2026).
   e2e:
     name: extremo a extremo (Chromium + SwiftShader) ${{ matrix.shard }}/${{ strategy.job-total }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     # El navegador y sus bibliotecas corresponden al lockfile; no descargar APT en cada fragmento.
     # CI37762865146 perdió 9 min en esa preparación y agotó el límite sin completar el informe.
     container:
@@ -197,7 +197,7 @@ jobs:
     name: CI verde (check + e2e)
     if: always()
     needs: [check, matrix-validation, triplex-early, e2e]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: check, matriz IQ y E2E en verde
         run: |

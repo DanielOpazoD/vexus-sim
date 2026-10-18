@@ -3,6 +3,7 @@ import { execFileSync, spawn } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { e2eOptions } from './e2eOptions';
+import { verifyLocalBuild, verifyPreviewBuild } from './previewBuild';
 
 const root = resolve(import.meta.dirname, '../..');
 const options = e2eOptions(process.argv.slice(2), root);
@@ -10,7 +11,9 @@ if (options.help) {
   console.log(
     'npm run workspace:e2e -- --backend metal|swiftshader --out <carpeta nueva> [--url http://127.0.0.1:puerto] -- [filtros Playwright]',
   );
-  console.log('Sin --url construye este checkout e inicia preview. Con --url usa un build externo cuya identidad debe comprobarse aparte.');
+  console.log(
+    'Sin --url construye este checkout e inicia preview. Con --url verifica fuente y todos los recursos de la preview antes de abrir Chromium.',
+  );
   console.log('Un trabajador, cero reintentos, CI=true y plazos originales. --list solo recoge pruebas; no las aprueba.');
 } else {
   mkdirSync(dirname(options.out), { recursive: true });
@@ -26,6 +29,8 @@ if (options.help) {
     backend: options.backend,
     url: options.url,
     buildMode: collectOnly ? 'not-started-collection-only' : options.external ? 'external-unverified' : 'built-from-this-checkout',
+    buildVerification: null as Awaited<ReturnType<typeof verifyPreviewBuild>> | null,
+    error: null as string | null,
     scope: 'local reproduction; not protected CI approval',
     startupSourceRole: 'test-checkout-commit; not preview identity',
     args: options.tests,
@@ -78,6 +83,13 @@ if (options.help) {
   try {
     let result = { code: 0 as number | null, signal: null as NodeJS.Signals | null };
     if (!options.external && !collectOnly) result = await run('npm', ['run', 'build']);
+    if (result.code === 0 && !result.signal && !collectOnly) {
+      if (options.external) {
+        manifest.buildVerification = await verifyPreviewBuild(root, options.url, options.out);
+        manifest.buildMode = 'external-verified-this-checkout';
+        writeFileSync(join(options.out, 'build-verification.json'), JSON.stringify(manifest.buildVerification, null, 2) + '\n');
+      } else verifyLocalBuild(root, options.out);
+    }
     if (result.code === 0 && !result.signal) {
       manifest.state = 'running';
       save();
@@ -91,10 +103,13 @@ if (options.help) {
     }
     manifest.exitCode = result.code;
     manifest.signal = result.signal;
+    if (result.code === 0 && !result.signal && !collectOnly) verifyLocalBuild(root, options.out);
     manifest.state = result.signal ? 'interrupted' : result.code === 0 ? (collectOnly ? 'collected-only' : 'command-succeeded') : 'failed';
     process.exitCode = result.signal ? (result.signal === 'SIGINT' ? 130 : 143) : (result.code ?? 1);
   } catch (error) {
     manifest.state = 'failed';
+    manifest.exitCode = 1;
+    manifest.error = error instanceof Error ? error.message : String(error);
     process.exitCode = 1;
     console.error(error);
   } finally {

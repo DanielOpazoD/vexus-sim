@@ -19,10 +19,18 @@ las pestañas abiertas y los JSON de una sesión son antecedentes, no estado viv
 
 ## Referencia para retomar la entrega actual
 
+- La ronda 227 vincula el build local con su fuente y verifica los recursos de la preview externa
+  antes de las E2E; ver [entorno y reproducción](engineering/workspace.md). No cambia el simulador
+  ni la aceptación. Se conserva la preparación de workflows suplementarios: los datos disponibles
+  no prueban que sustituir su instalación por contenedores vaya a ahorrar tiempo.
 - La ronda 226 revisa el coste de iteración y el entorno, sin cambios funcionales: ver
   [auditoría y prioridades](engineering/iteration-audit-226.md). Actualiza pesos E2E con tres CI
   completas y evita workers GPU locales simultáneos por omisión; mantiene aceptación, física,
-  resolución y plazos. Su aceptación efectiva debe consultarse en la PR correspondiente.
+  resolución y plazos. Integrada en [PR268](https://github.com/DanielOpazoD/vexus-sim/pull/268):
+  [CI protegida](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39161264500), 154 E2E únicas,
+  cero reintentos. La primera medición independiente fue 27m29s frente a 29m41s del PR267
+  (−7,41 % de workflow), menor que la predicción retrospectiva de 18–24 %; no confundir ambos datos.
+  La aceptación posterior y la de cada ronda nueva deben consultarse en Git/CI.
 
 ### Último cierre funcional acreditado
 

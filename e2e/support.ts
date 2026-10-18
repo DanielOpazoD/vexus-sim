@@ -113,6 +113,8 @@ export async function bootWithoutErrors(page: Page, query = '?e2e=1&abdomen=lega
         },
       )
       .toBe(true);
+    if (startup.some((entry) => entry.stage === 'ultrasound:gpu-failed'))
+      throw new Error('arranque: ultrasound:gpu-failed; el primer cuadro no puede completar');
     expect(errors, 'arranque sin errores de página ni consola').toEqual([]);
     expect(ready, 'arranque: dos vueltas JS y primer cuadro confirmado por la GPU').toEqual({ frames: true, gpu: true });
     // El estado se escribe en el primer cuadro con más de250ms desde el anterior.

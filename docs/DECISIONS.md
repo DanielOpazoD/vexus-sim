@@ -7858,3 +7858,16 @@ La mutación al lector anterior falla en los dos lados del platillo: GPU devuelv
 exige 22/16. La mutación que elimina `highp` falla por compilación en 992 ms con el nuevo vigilante,
 con el mensaje real del shader, sin esperar BOOT_MS. Son negativos explícitos, con cero reintentos;
 ambos archivos se restauran y sus hashes quedan registrados. No son aceptación del candidato final.
+
+La primera CI de b5ad9c0 detecta además una regresión del mensaje del vigilante: la prueba
+`startupFailure` exige el identificador `ultrasound:gpu-failed`, pero el rechazo terminal devolvía
+la aserción genérica de cuadro pendiente. Se restaura ese error explícito fuera del sondeo,
+conservando la salida temprana y todas las condiciones de aprobación. La prueba existente
+permanece intacta y debe pasar antes de repetir la aceptación del nuevo head.
+
+El grupo 4 de esa CI conserva un segundo negativo: `probeRigidTranslation` esperaba la
+basculación anterior (−0,134064 rad) después de elegir el inicio corregido (−0,238784 rad), por lo
+que agotaba 270 s esperando una pose distinta de la publicada. Se actualiza únicamente esa
+coordenada esperada. Se conservan el límite de 100 cuadros, 1e−8 para la llegada, la identidad
+de los tres ejes durante el arrastre y el plazo original. Las coordenadas antiguas de los
+tests independientes de contacto quedan como testigos, sin cambiarlas para seguir al preset.

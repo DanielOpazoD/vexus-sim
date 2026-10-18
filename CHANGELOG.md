@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Corte: acelera el descarte vascular observado en el perfil CPU, conservando el cálculo original junto al límite numérico (232).
+
 - Corte: reutiliza direcciones de haz y elimina bucles repetidos de interpolación, conservando los mismos puntos y valores fuente (231).
 
 - Cortical vertebral Atlas: eje y curvatura proceden de su campo fuente, en lugar del cilindro antiguo (230).

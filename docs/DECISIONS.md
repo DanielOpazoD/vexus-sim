@@ -8114,3 +8114,26 @@ con traslación y angulación coinciden exactamente con la construcción anterio
 El microbenchmark alterna el orden tras calentar y registra sus resultados fuera
 del repo. El PR debe aportar comparación nativa del corte, paridad TS/GPU y
 aceptación completa del último commit; no se amplían plazos ni tolerancias.
+
+## 232. Atacar el coste observado de la búsqueda vascular del corte
+
+**Contexto.** La optimización 231 conserva las muestras pero la mediana del Worker
+solo pasa de 23,1/23,9 a 22,7/22,45 ms en el primer A/B; no resuelve la cola global.
+El perfil CPU del Worker identifica `bestTube` y `tubeQuery` como costes principales.
+El perfil bruto, mapas de fuente y medición negativa se conservan fuera del repo.
+
+**Decisión.** El descarte esférico de candidatos usa distancias cuadradas lejos
+del límite de redondeo. A menos de ocho epsilons relativos —cota que cubre los
+productos y sumas—, con desbordamiento, subdesbordamiento o radio inválido vuelve
+al `Math.hypot` original. El orden de candidatos, radios, consulta exacta del tubo,
+prioridad de tejidos, rejilla, física y cálculos GLSL permanecen iguales.
+
+**Consecuencias.** Se evita el coste de una norma robusta en cada candidato sin
+aproximar la clasificación ni aplicar un margen anatómico nuevo. La cota es un
+control aritmético de float64, no una tolerancia clínica ni una aserción relajada.
+
+**Verificación.** Comparación exacta del predicado en 5940 puntos dentro, fuera,
+en el borde y a epsilons del borde; incluye subnormales, desbordamiento, infinito,
+radio negativo y NaN. Se conservan las pruebas del índice vascular completo y
+la equivalencia CPU/GPU. El A/B nativo del candidato final debe medir el efecto
+sobre el Worker, geometría y desfase; el microbenchmark aislado no lo sustituye.

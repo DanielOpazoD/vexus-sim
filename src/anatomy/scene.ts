@@ -224,6 +224,18 @@ export function tubeBoundingSphere(t: Tube, marginMm: number): { center: Vec3; r
   return { center: c, r: r + marginMm };
 }
 
+/** Same sphere predicate without a robust norm away from its rounding boundary.
+ * Eight epsilons cover the three squares, two sums and comparison; ambiguous,
+ * underflowed or overflowed values retain the original Math.hypot decision. */
+export function outsideTubeSphere(p: Vec3, center: Vec3, radius: number): boolean {
+  const x = p[0] - center[0],
+    y = p[1] - center[1],
+    z = p[2] - center[2];
+  const d2 = x * x + y * y + z * z,
+    r2 = radius * radius;
+  return radius >= 0 && Math.abs(d2 - r2) > 8 * Number.EPSILON * Math.max(d2, r2) ? d2 > r2 : Math.hypot(x, y, z) > radius;
+}
+
 /**
  * Sección de las costillas derechas 5.ª–10.ª en su cuerpo lateral (decisión 88): semialtura craneocaudal y semiespesor
  * radial (mm). Antes las seis eran la misma elipse de 12 × 6,4 mm y en la imagen eran cúpulas idénticas. El cuerpo de
@@ -969,7 +981,7 @@ export class AnatomyScene {
     for (let candidate = 0; candidate < count; candidate++) {
       const i = grid ? grid.data[2 * (first + candidate)] : candidate;
       const b = this.tubeBounds[i];
-      if (Math.hypot(m[0] - b.center[0], m[1] - b.center[1], m[2] - b.center[2]) > b.r) continue;
+      if (outsideTubeSphere(m, b.center, b.r)) continue;
       if (i < this.vessels.length) {
         const def = this.vessels[i];
         const scale = caliber.radiusScale(def.id);

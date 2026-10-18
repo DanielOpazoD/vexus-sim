@@ -136,8 +136,14 @@ El veredicto protegido exige ambos y todos los fragmentos E2E. Los artefactos
 commit del checkout y la lista completa de archivos, sin omisiones ni duplicados.
 No basta un informe exitoso procedente de otra revisión.
 
-En local, `npm run test:coverage` mantiene las dos fases secuenciales y verifica
-su unión. Para ejecutarlas por separado, usar `npm run test:coverage:core`,
+En local, `npm run test:coverage` verifica la unión de las dos fases. Con diez o más plazas
+estimadas por Node, fuera de CI, ejecuta un lote CPU acotado con `plazas - 5` workers core
+y tres matrix; no cambia el aislamiento de archivos. En otros casos conserva la secuencia
+original. `VEXUS_VALIDATION_MODE=serial npm run check` permite elegirla explícitamente.
+`.validation/local-schedule.json` describe el plan y el equipo, sin acreditar aceptación.
+El preflight HTTP rechaza la falta de loopback antes de iniciar los pools y borra informes
+anteriores; un fallo o interrupción de cualquiera de las fases nunca aprueba el lote.
+Para ejecutarlas por separado, usar `npm run test:coverage:core`,
 `npm run test:matrix` y finalmente `npm run test:coverage:verify`, sin cambiar
 HEAD entre fases. Invocar Vitest manualmente no produce el sello exigido.
 La referencia `npm run test:coverage:full` sigue disponible. El SHA local no

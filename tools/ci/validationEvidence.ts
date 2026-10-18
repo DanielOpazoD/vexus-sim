@@ -3,8 +3,9 @@ export type ValidationPhase = 'core' | 'matrix';
 export function assertValidationPhase(value: unknown): asserts value is ValidationPhase {
   if (value !== 'core' && value !== 'matrix') throw new Error('Unknown validation phase');
 }
-export function validationArgs(phase: ValidationPhase): string[] {
+export function validationArgs(phase: ValidationPhase, workers?: number): string[] {
   assertValidationPhase(phase);
+  if (workers !== undefined && (!Number.isSafeInteger(workers) || workers < 1)) throw new Error('Invalid validation workers');
   return [
     'node_modules/vitest/vitest.mjs',
     'run',
@@ -13,6 +14,7 @@ export function validationArgs(phase: ValidationPhase): string[] {
     '--reporter=default',
     '--reporter=json',
     `--outputFile=.validation/${phase}.json`,
+    ...(workers === undefined ? [] : [`--maxWorkers=${workers}`]),
   ];
 }
 export function validationEvidence(phase: ValidationPhase, sourceSha: string, report: string) {

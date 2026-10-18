@@ -85,8 +85,10 @@ Antes de comparar:
    versión de Node y protocolo. No sustituir el build de referencia por un `main` más nuevo.
 2. Inventariar las páginas propias: LIVE, congeladas o cerradas. Congelar detiene la adquisición,
    pero no todos los bucles. Mantener las mismas condiciones entre antes y después y declararlas.
-3. Ejecutar una carga intensiva local a la vez. Compilación, cobertura, hook y pruebas GPU van en
-   secuencia; CI remota puede correr en paralelo. No tocar procesos ajenos para mejorar cifras.
+3. Ejecutar una carga intensiva local a la vez. Compilación, lote CPU de cobertura/matrices, hook y
+   pruebas GPU van en secuencia; CI remota puede correr en paralelo. El lote de `check` puede
+   solapar sus dos fases con workers acotados (decisión 233); no ejecutar otro trabajo intensivo
+   mientras corre. No tocar procesos ajenos para mejorar cifras.
 4. Usar las mismas entradas continuas, seis coordenadas como muestras y ambos pacientes. Incluir
    posiciones intermedias, traslación y ángulos. No convertir esas muestras en límites del producto.
 5. Separar antigüedad del corte mostrado, tiempo del Worker, separación geométrica y cadencia RAF.

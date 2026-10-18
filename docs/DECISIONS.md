@@ -8137,3 +8137,38 @@ en el borde y a epsilons del borde; incluye subnormales, desbordamiento, infinit
 radio negativo y NaN. Se conservan las pruebas del índice vascular completo y
 la equivalencia CPU/GPU. El A/B nativo del candidato final debe medir el efecto
 sobre el Worker, geometría y desfase; el microbenchmark aislado no lo sustituye.
+
+## 233. Acortar la validación local sin reducir sus controles
+
+**Contexto.** Un `EPERM` de loopback consumió el plazo HTTP de 180 s porque el
+fixture solo esperaba el callback de éxito. La reevaluación registra además un
+check secuencial de 384,21 s; sus fases core y matrices suman 358,28 s. El lote
+acotado de ambas tarda 277,41 s sobre el mismo commit, con inventario y resultados
+idénticos: 22,6 % menos tiempo en pruebas, sin atribuirlo al check completo.
+Ver [auditoría y límites de la medición](engineering/iteration-audit-233.md).
+
+**Opciones.** No se reducen tests, repeticiones, aislamiento, cobertura, plazos,
+resolución ni física. No se migran contenedores ni añaden cachés de aceptación:
+los costes observados no demuestran ahorro. Se conserva feedback focalizado
+durante edición y aceptación íntegra del candidato estable.
+
+**Decisión.** El lanzador existente admite `all`: comprueba loopback y borra
+informes anteriores antes de iniciar procesos. Fuera de CI y con al menos diez
+plazas estimadas, core usa `plazas - 5` workers y matrices tres, con entornos e
+informes separados. CI, equipos menores y `VEXUS_VALIDATION_MODE=serial` siguen
+la secuencia original. No se superpone otra carga intensiva local al lote.
+La espera HTTP propaga el error real. Las evidencias describen recursos del
+equipo mediante una lista permitida, sin cambiar las decisiones de aceptación.
+
+**Consecuencias.** La falta de permiso se detecta en 0,54–0,61 s en los negativos
+locales; no se inicia cobertura ni se conserva una aprobación antigua. El lote
+espera ambas fases y rechaza errores o señales aunque un hijo devuelva cero.
+El paralelismo es una estimación y no garantiza ganancias en otras máquinas.
+No cambia la distribución de CI ni el comportamiento del simulador.
+
+**Verificación.** Tests del presupuesto, ruta secuencial, error parcial, señales
+reales, error de servidor y privacidad de metadatos. Los argumentos conservan
+el plazo de 180 s y controles originales. Los negativos reales de loopback,
+informes comparables y ensayo diagnóstico quedan preservados. El check completo
+final, hook, CI completa, recibo y comentario previo al merge acreditan el PR;
+la medición diagnóstica no sustituye esos controles.

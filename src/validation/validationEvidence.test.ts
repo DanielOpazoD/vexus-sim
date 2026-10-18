@@ -28,6 +28,10 @@ describe('procedencia de fases CI paralelas', () => {
       expect(args).toContain('--reporter=json');
       expect(args).toContain('--outputFile=.validation/' + phase + '.json');
       expect(args.includes('--coverage')).toBe(phase === 'core');
+      const bounded = validationArgs(phase, 5);
+      expect(bounded.filter((arg) => !arg.startsWith('--maxWorkers='))).toEqual(args);
+      expect(bounded).toContain('--maxWorkers=5');
     }
+    for (const workers of [0, -1, NaN, 1.5]) expect(() => validationArgs('core', workers)).toThrow();
   });
 });

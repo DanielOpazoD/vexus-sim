@@ -8,6 +8,15 @@ workflows adicionales y los desvíos del proceso de la ronda de pared. Actualiza
 reparto y fija un worker también para E2E locales directas; no añade otro lanzador ni elimina
 pruebas. Sus cifras retrospectivas son estimaciones, pendientes de observación en la nueva CI.
 
+La [reevaluación 233](iteration-audit-233.md) mide en el mismo equipo y commit un lote CPU
+acotado: cobertura core y matrices mantienen procesos, selección e informes separados, pero se
+solapan dentro de `check` en local cuando Node estima al menos diez plazas disponibles. Usa
+`availableParallelism() - 5` workers para core y tres para matrices; deja dos plazas sin asignar
+a esos pools. Es una estimación de recursos, no una reserva del sistema ni una garantía de tiempo.
+En CI, equipos menores o con `VEXUS_VALIDATION_MODE=serial` se conserva la ruta secuencial.
+No lanzar otras cargas locales intensivas durante el lote. La unión verificada, las pruebas,
+su aislamiento, cobertura, plazos y CI completa permanecen obligatorios.
+
 ## Diagnóstico crítico
 
 | Hallazgo observado                                                                                 | Cómo frena la iteración                                                                                     | Corrección mínima aplicada                                                                                                                                                             |

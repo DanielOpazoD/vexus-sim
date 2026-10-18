@@ -7497,8 +7497,9 @@ La base técnica de reconstrucción cúbica y derivadas se contrasta con
 el limitador, muestreo y tolerancias son decisiones numéricas propias, sin valor clínico asignado.
 
 CPU y GPU evalúan los mismos coeficientes, redondeados a Float32 al subirlos. Se calculan una vez
-por perfil y viven al final de la textura de escena: la carga dinámica de compresión no vuelve a
-copiarlos. Cada celda requiere cuatro lecturas vectoriales; el centro usa una más. La malla de piel
+por perfil y viven en una textura estática propia: la textura de escena conserva sus diez filas,
+perfil fuente y capacidad del cartílago. La carga dinámica de compresión no copia los coeficientes. A0 por etapas usa la unidad 10 para esta tabla y el resto la 5, evitando colisiones con sus
+entradas y conservando el mínimo WebGL2 de dieciséis unidades. Cada celda requiere cuatro lecturas vectoriales; el centro usa una más. La malla de piel
 refina sus intervalos según el cambio de las muestras y emplea las normales del campo compartido.
 No se agregan grano, líneas ni sombras a la imagen.
 
@@ -7517,7 +7518,12 @@ Sesenta y cuatro pruebas focalizadas pasan, incluidas apposición, apoyo, gradie
 La malla debe quedar a <0,5 mm del campo acústico; es un contrato gráfico, no precisión clínica.
 Ocho capturas a t=30 s/cuadro39, ambos pacientes, cuatro accesos y ANGLE Metal Apple M4, registran
 coste del receptor entre 0,99 y 1,03 veces el anterior (tres bloques de cinco cuadros por captura).
-No es latencia de entrada ni garantía universal. El cambio estático es pequeño; el objetivo es la
+No es latencia de entrada ni garantía universal.
+Otra comparación del corte reúne 1.728 muestras por versión, seis coordenadas y ambos pacientes:
+antigüedad p95 66,9 → 67,2 ms, Worker mediano 20,7 → 23,8 ms, RAF mediano 16,6 → 16,7 ms y
+separación final 0 mm. El máximo de convergencia al congelar fue 135,8 → 152,1 ms. Una pestaña nativa
+estaba congelada y una referencia histórica quedó sin inspeccionar en ambas series: comparación
+pareada, sin afirmar aislamiento del navegador ni mezclarla con las condiciones de la ronda 206. El cambio estático es pequeño; el objetivo es la
 continuidad al mover. `atlasWallNormals.spec.ts` protege caras/normales TS↔GPU en renal, hepatorrenal
 y porta subcostal de ambos pacientes. `probeFreeNavigation` exige movimiento desde seis coordenadas,
 tres ángulos y paridad 3D/corte/ecografía. La aceptación exige check completo, calibrate y CI protegida

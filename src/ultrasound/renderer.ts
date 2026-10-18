@@ -446,6 +446,7 @@ export class UltrasoundRenderer {
   }
   /** Textura de datos de la escena (cabeceras de tubos + nodos, decisión 24). */
   private sceneTex: WebGLTexture;
+  private bodyTex: WebGLTexture;
   private tubeGridTex: WebGLTexture;
   private tubeGrid: TubeGrid | null = null;
   private tubeGridKey = '';
@@ -646,6 +647,7 @@ export class UltrasoundRenderer {
     this.couplingTex = createTexture(gl, LINES, 1, gl.R32F, gl.RED, gl.FLOAT, gl.LINEAR);
     this.tubeGridTex = createTexture(gl, 1, 1, gl.RG32F, gl.RG, gl.FLOAT, gl.NEAREST);
     this.sceneTex = createTexture(gl, SCENE_TEX_W, SCENE_TEX_H, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
+    this.bodyTex = createTexture(gl, 1, 1, gl.RGBA32F, gl.RGBA, gl.FLOAT, gl.NEAREST);
     this.abdominalTex = createAbdominalTexture(gl, this.currentScene.hasAbdominalAtlas);
     this.thoracicTex = createAbdominalTexture(gl, this.currentScene.hasAbdominalAtlas, true);
     this.uploadSceneStatic();
@@ -753,6 +755,7 @@ export class UltrasoundRenderer {
     if (this.tPersist) for (const t of this.tPersist) deleteTarget(gl, t);
     gl.deleteTexture(this.couplingTex);
     gl.deleteTexture(this.sceneTex);
+    gl.deleteTexture(this.bodyTex);
     gl.deleteTexture(this.tubeGridTex);
     gl.deleteTexture(this.abdominalTex);
     gl.deleteTexture(this.thoracicTex);
@@ -797,7 +800,7 @@ export class UltrasoundRenderer {
         profileN: 2,
       })),
     ];
-    if (s.torso.profile) this.sceneData.set(bodyCoefficients(s.torso.profile), BODY_BASE * 4);
+    if (s.torso.profile) this.sceneData.set(s.torso.profile, BODY_BASE * 4);
     s.ribs.forEach((r, i) => {
       this.sceneData.set([r.zAnterior, r.tilt, r.halfWidth, r.halfThickness], (RIB_BASE + i * RIB_TEXELS) * 4);
       this.sceneData.set(ribShape(r, s.torso), (RIB_BASE + i * RIB_TEXELS + 1) * 4);
@@ -840,6 +843,15 @@ export class UltrasoundRenderer {
     const gl = this.gl;
     gl.bindTexture(gl.TEXTURE_2D, this.sceneTex);
     gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, SCENE_TEX_W, SCENE_TEX_H, gl.RGBA, gl.FLOAT, this.sceneData);
+    // La escena conserva su textura de diez filas y el perfil fuente inspeccionable.
+    // Solo esta tabla estática reconstruida crece; se sube una vez por paciente (216).
+    const coefficients = s.torso.profile ? bodyCoefficients(s.torso.profile) : new Float32Array(4);
+    const width = s.torso.profile ? SCENE_TEX_W : 1,
+      height = Math.ceil(coefficients.length / (width * 4));
+    const bodyData = new Float32Array(width * height * 4);
+    bodyData.set(coefficients);
+    gl.bindTexture(gl.TEXTURE_2D, this.bodyTex);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, width, height, 0, gl.RGBA, gl.FLOAT, bodyData);
     for (let i = 0; i < TISSUE_COUNT; i++) {
       // Frecuencia efectiva de penetración del perfil (banda baja por atenuación)
       this.alpha[i] = attenuationDbPerCm(i, this.profile.bEffectiveMHz);
@@ -855,7 +867,7 @@ export class UltrasoundRenderer {
    * Uniforms de la anatomía desde el esquema único (`anatomy/gpu/sceneUniforms.ts`): se evalúan una vez por
    * instante y se suben a cada programa; la textura de escena va aparte (unidad 6).
    */
-  private setSceneUniforms(p: GLProgram, inputs: FrameInputs): void {
+  private setSceneUniforms(p: GLProgram, inputs: FrameInputs, bodyUnit: 5 | 10 = SCENE_SAMPLERS[4].unit): void {
     if (
       this.sceneValuesFor !== inputs.sample ||
       this.sceneValuesTubes !== this.tubeCount ||
@@ -875,6 +887,7 @@ export class UltrasoundRenderer {
       this.sceneValuesCompression = inputs.compression;
     }
     uploadSceneUniforms(p, this.sceneValues);
+    p.tex(SCENE_SAMPLERS[4].name, bodyUnit, this.bodyTex);
     p.tex(SCENE_SAMPLERS[3].name, SCENE_SAMPLERS[3].unit, this.tubeGridTex);
     p.tex(SCENE_SAMPLERS[0].name, SCENE_SAMPLERS[0].unit, this.sceneTex);
     p.tex(SCENE_SAMPLERS[1].name, SCENE_SAMPLERS[1].unit, this.abdominalTex, this.gl.TEXTURE_3D);
@@ -1403,7 +1416,8 @@ export class UltrasoundRenderer {
     const setup = (p: GLProgram, target: RenderTarget, previous: RenderTarget) => {
       bindTarget(gl, target);
       p.use();
-      this.setSceneUniforms(p, inputs);
+      // A0 por etapas usa la unidad 5 para uA0Grid; la 10 queda libre (B usa 5).
+      this.setSceneUniforms(p, inputs, 10);
       this.setBeamUniforms(p, inputs);
       p.f('uCoarseN', COARSE_DEPTH);
       p.tex('uA0Initial0', 0, stages.initial.textures[0]);

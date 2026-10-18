@@ -11,7 +11,7 @@ import type { AnatomyScene } from '../../anatomy/scene';
 import { ribAnteriorEndX, ribCentre, ribShape, torsoSkinPoint, torsoNormal, sdRib, SPINE_SHAPE, type Rib } from '../../anatomy/primitives';
 import { CM, surfaceAt } from './common';
 
-/** Piel superelíptica del tronco (misma elipse que `torsoDepth`) y esqueleto procedural. */
+/** Piel del campo corporal compartido (`torsoDepth`) y esqueleto procedural. */
 export function buildSkin(a: AnatomyScene): THREE.Mesh {
   const t = a.torso;
   const profile = t.profile;
@@ -51,8 +51,7 @@ export function buildSkin(a: AnatomyScene): THREE.Mesh {
     const z = heights[j];
     for (let i = 0; i <= nT; i++) {
       const th = angles[i];
-      // La piel usa la misma elipse que el modelo acústico (torsoDepth): así la
-      // sonda apoya exactamente donde la ve el haz.
+      // La piel muestrea el mismo campo corporal que el apoyo y el haz.
       const p = torsoSkinPoint(th, z, t);
       pos.push(...p.map((v) => v * CM));
       normals.push(...torsoNormal(p, t));

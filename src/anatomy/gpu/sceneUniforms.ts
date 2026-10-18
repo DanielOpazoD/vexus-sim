@@ -229,6 +229,7 @@ export const SCENE_SAMPLERS = [
   { name: 'uAbdominalAtlas', type: 'sampler3D', unit: 8 },
   { name: 'uThoracicAtlas', type: 'sampler3D', unit: 9 },
   { name: 'uTubeGrid', type: 'sampler2D', unit: 15 },
+  { name: 'uBodyCoefficients', type: 'sampler2D', unit: 5 },
 ] as const;
 
 /** Declaraciones GLSL generadas del esquema y sus samplers. */

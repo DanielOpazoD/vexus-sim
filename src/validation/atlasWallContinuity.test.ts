@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { gunzipSync } from 'node:zlib';
 import { afterAll, beforeAll, expect, it } from 'vitest';
 import { setAbdominalAtlas } from '../anatomy/abdominalAtlas';
-import { bodyDepth, bodyGradient, bodySection, setAbdominalBody } from '../anatomy/referenceBody';
+import { bodyDepth, bodyGradient, bodySection, bodyStride, validateReferenceBody, setAbdominalBody } from '../anatomy/referenceBody';
 import { setThoracicAtlas } from '../anatomy/thoracicAtlas';
 import { AnatomyScene } from '../anatomy/scene';
 import { CASES } from '../cases';
@@ -34,16 +34,19 @@ afterAll(() => {
 for (const caseId of ['normal-adult', 'severe-congestion'])
   it(`conserva continuidad, gradiente y superficie 3D del perfil costal ajustado, ${caseId}`, () => {
     const scene = new AnatomyScene(CASES.find((c) => c.id === caseId)!);
-    const profile = scene.torso.profile!;
+    const profile = scene.torso.profile!,
+      stride = bodyStride(profile),
+      sectors = stride - 1;
+    expect(validateReferenceBody(structuredClone(profile))).toEqual(profile);
     let jump = 0,
       gradientError = 0;
-    for (let k = 0; k < 64; k++)
+    for (let k = 0; k < sectors; k++)
       for (let row = 26; row < 45; row++) {
-        const phi = (k * 2 * Math.PI) / 64,
+        const phi = (k * 2 * Math.PI) / sectors,
           z = -400 + row * 10;
         const [r, , , cy] = bodySection(phi, z, profile);
-        expect(r).toBeCloseTo(profile[row * 65 + 1 + k], 9);
-        expect(cy).toBeCloseTo(profile[row * 65], 9);
+        expect(r).toBeCloseTo(profile[row * stride + 1 + k], 9);
+        expect(cy).toBeCloseTo(profile[row * stride], 9);
         const p: Vec3 = [(r - 15) * Math.cos(phi), cy + (r - 15) * Math.sin(phi), z];
         const g = bodyGradient(p, profile);
         for (let axis = 0; axis < 3; axis++) {

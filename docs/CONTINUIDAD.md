@@ -19,6 +19,17 @@ las pestañas abiertas y los JSON de una sesión son antecedentes, no estado viv
 
 ## Último cierre funcional acreditado
 
+- [PR266](https://github.com/DanielOpazoD/vexus-sim/pull/266): seno renal más fino (220)
+  y normales septales derivadas de su campo material (221). Main `3e4614cfa3ffd0695b3fd12cc438229dce20799a`,
+  árbol `8df306c471ce3ff33b0da6857626cbb51488272a`. La [CI del PR](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39123181714)
+  aprobó 154 E2E únicas sin reintentos; seis workflows y 30 comprobaciones aprobadas.
+  La [CI posterior del push](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39125336068)
+  falló por el plazo original de 540 s durante la captura final de `renalCutTracking`.
+  No es aprobación ni prueba de una nueva causa aislada; el negativo se conserva en la ronda 222.
+  Las comprobaciones locales del cierre fueron 13 Metal y 5 SwiftShader, sin ampliar plazos.
+
+### Cierre anterior
+
 - [PR264](https://github.com/DanielOpazoD/vexus-sim/pull/264): transición costal localizada (217)
   y pausa sin vallas GPU vacías (218). Main `f031e438eec59b3a74633cb058307447f6449115`, árbol
   `9e3f91434a9168dd1a10b274af7db5b100429226`. La [CI del PR](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39110219774)
@@ -232,3 +243,17 @@ campo material. Conserva posición y peso; usa los gradientes completos de profu
 en TS/GLSL, con negativos CPU/GPU y una prueba del shader de producción. Es un error físico,
 no una nueva calibración estética. La orientación de las estrías musculares y la costura polar
 posterior siguen pendientes de evaluación. Ver decisión 221 y la CI final del PR para su cierre.
+
+## Ronda actual: pared deformada por una cuña de relleno (222)
+
+La segunda anotación del usuario sitúa la masa roja en tejido no segmentado, no en hígado:
+el diagnóstico inicial invirtió la orientación angular de la imagen. La cuña de 18–28 mm aparece
+al terminar el ajuste costal y conservar relleno del perfil heredado en el flanco. La corrección
+continúa el ajuste sobre las vísceras fuente y refina las direcciones del perfil, con el mismo
+campo compartido en CPU, corte Worker, GLSL y piel 3D. El experimento previo de compresión C1 no
+solucionó la masa y queda fuera de esta entrega. Ver decisión 222 y sus aproximaciones declaradas.
+
+Antes de darla por cerrada: check y calibración del head final, GPU Metal/SwiftShader, navegación
+continua y adquisición con dos vistas, capturas A/B y CI completa del PR. No confundir pruebas
+locales del experimento anterior con aceptación. El timeout posmerge de PR266 sigue como negativo
+independiente; no se declara reparado por una ejecución posterior aprobada.

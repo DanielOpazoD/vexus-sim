@@ -11,6 +11,12 @@ export const COSTAL_BODY_ROWS = 53;
 export const COSTAL_BODY_BLEND_Z = [-145, -115] as const;
 export const BODY_MAX_ROWS = COSTAL_BODY_ROWS;
 export const BODY_STRIDE = 65;
+/** El ajuste costal usa las mismas 128 direcciones que sus coeficientes, sin
+ * inventar una recta auxiliar entre dos guardas viscerales (222). */
+export const COSTAL_BODY_STRIDE = 129;
+export function bodyStride(data: Float32Array): number {
+  return data.length === COSTAL_BODY_ROWS * COSTAL_BODY_STRIDE ? COSTAL_BODY_STRIDE : BODY_STRIDE;
+}
 export let referenceBody: Float32Array | undefined;
 export let abdominalBody: Float32Array | undefined;
 export function setAbdominalBody(values?: Float32Array): void {
@@ -19,12 +25,17 @@ export function setAbdominalBody(values?: Float32Array): void {
 }
 export function validateReferenceBody(values: Float32Array): Float32Array {
   if (
-    ![BODY_ROWS * BODY_STRIDE, ABDOMINAL_BODY_ROWS * BODY_STRIDE, COSTAL_BODY_ROWS * BODY_STRIDE].includes(values.length) ||
+    ![
+      BODY_ROWS * BODY_STRIDE,
+      ABDOMINAL_BODY_ROWS * BODY_STRIDE,
+      COSTAL_BODY_ROWS * BODY_STRIDE,
+      COSTAL_BODY_ROWS * COSTAL_BODY_STRIDE,
+    ].includes(values.length) ||
     !values.every(Number.isFinite)
   )
     throw new Error('Referencia corporal inválida');
   for (let i = 0; i < values.length; i++)
-    if (i % BODY_STRIDE !== 0 && (values[i] < 40 || values[i] > 300)) throw new Error('Radio corporal fuera del dominio del asset');
+    if (i % bodyStride(values) !== 0 && (values[i] < 40 || values[i] > 300)) throw new Error('Radio corporal fuera del dominio del asset');
   return values;
 }
 export function setReferenceBody(values?: Float32Array): void {
@@ -48,18 +59,21 @@ const power = (a: number, b: number, da: number, db: number): number[] => [a, da
 export function bodyCoefficients(data: Float32Array): Float64Array {
   const cached = coefficients.get(data);
   if (cached) return cached;
-  const rows = BODY_SUBDIVISIONS * (data.length / BODY_STRIDE - 1) + 1;
+  const stride = bodyStride(data),
+    angles = stride - 1;
+  const rows = BODY_SUBDIVISIONS * (data.length / stride - 1) + 1;
   // El perfil costal ya está ajustado al contacto visceral: mantiene minmod.
   // En los cortes fuente, Superbee angular conserva mejor las bandas costales registradas.
-  const limitAngle = data.length === COSTAL_BODY_ROWS * BODY_STRIDE ? slope : angularSlope;
+  const costal = data.length / stride === COSTAL_BODY_ROWS;
+  const limitAngle = costal ? slope : angularSlope;
   const out = new Float64Array((rows - 1) * BODY_COEFFICIENT_STRIDE);
   const raw = (r: number, a: number): number => {
     const q = Math.max(0, Math.min((rows - 1) / BODY_SUBDIVISIONS, r / BODY_SUBDIVISIONS)),
       i = Math.min((rows - 1) / BODY_SUBDIVISIONS - 1, Math.floor(q));
-    const v = (j: number) => data[Math.max(0, Math.min(data.length / BODY_STRIDE - 1, j)) * BODY_STRIDE + a];
+    const v = (j: number) => data[Math.max(0, Math.min(data.length / stride - 1, j)) * stride + a];
     const t = q - i,
       linear = v(i) + (v(i + 1) - v(i)) * t;
-    if (data.length !== COSTAL_BODY_ROWS * BODY_STRIDE || a === 0) return linear;
+    if (!costal || a === 0) return linear;
     const step = 520 / (COSTAL_BODY_ROWS - 1),
       z = -400 + i * step;
     // Solo el soporte de cuatro muestras que cruza la transición del ajuste.
@@ -74,9 +88,9 @@ export function bodyCoefficients(data: Float32Array): Float64Array {
   // transición costal; fuera de ella conservan el anclaje bilineal (216–217).
   const at = (r: number, a: number): number => {
     if (a < 0) return raw(r, 0);
-    const q = (((a + BODY_SECTORS) % BODY_SECTORS) * 64) / BODY_SECTORS,
+    const q = (((a + BODY_SECTORS) % BODY_SECTORS) * angles) / BODY_SECTORS,
       k = Math.floor(q);
-    return raw(r, k + 1) + (raw(r, 1 + ((k + 1) % 64)) - raw(r, k + 1)) * (q - k);
+    return raw(r, k + 1) + (raw(r, 1 + ((k + 1) % angles)) - raw(r, k + 1)) * (q - k);
   };
   const radius = (r: number, a: number) => at(r, (a + BODY_SECTORS) % BODY_SECTORS);
   const dz = (r: number, a: number) => slope(at(r, a) - at(r - 1, a), at(r + 1, a) - at(r, a));
@@ -107,7 +121,7 @@ const differential = (a: ArrayLike<number>, offset: number, t: number): number =
 /** Radio, derivadas en φ/z, centro Y y su derivada. Ángulo periódico y
  * tangente nula en los extremos Z de la prolongación constante. */
 export function bodySection(phi: number, z: number, data: Float32Array): [number, number, number, number, number] {
-  const rows = BODY_SUBDIVISIONS * (data.length / BODY_STRIDE - 1) + 1,
+  const rows = BODY_SUBDIVISIONS * (data.length / bodyStride(data) - 1) + 1,
     minZ = data.length === BODY_ROWS * BODY_STRIDE ? -160 : -400;
   const step = (120 - minZ) / (rows - 1);
   const zz = Math.max(0, Math.min(rows - 1, (z - minZ) / step));

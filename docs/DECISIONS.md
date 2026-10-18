@@ -7751,3 +7751,57 @@ ese negativo también se conserva. La derivada final se evalúa a 2 micras con e
 sin descartar esa muestra. Pasa en ambos pacientes; la mutación al shader anterior vuelve a
 fallar en ambos, por la aserción de alineación. Se conservan ambos negativos y la restauración
 exacta de la fuente. El instrumento no cuenta el éxito de una repetición sin corregir su método.
+
+## 222. Continuidad parietal bajo el borde hepático sin cuña de relleno
+
+**Contexto.** El usuario señala una masa bajo la pared y la deformación muscular que produce
+en la captura hepatorrenal de main `3e4614c`. Una primera lectura de la orientación de la imagen
+fue incorrecta: los ángulos negativos del haz aparecen a la derecha de pantalla. Al registrar
+la segunda anotación, la masa roja corresponde a `UnsegmentedSoftTissue` (39), con trayectos
+radiales de unos 18–28 mm. No basta con eliminar la separación nominal de 1,5 mm. El ajuste
+parietal de 183 termina al desaparecer el hígado y conserva el perfil heredado con su relleno
+en el flanco caudal. La musculatura sigue ese perfil; el defecto existe en la anatomía compartida.
+La [revisión de Draghi et al.](https://pmc.ncbi.nlm.nih.gov/articles/PMC7441131/) describe las capas
+reales de la pared, pero no calibra este ajuste de contorno ni justifica su espesor en humanos.
+
+**Opciones.** Cambiar el gris u ocultar un tejido solo en la ecografía rompe la coherencia del
+modelo. El experimento de compresión lateral C1 pasó su check local, pero no eliminó la masa:
+se conserva separado, sin incorporarlo a esta entrega. La continuación con 64 sectores quitaba
+la cuña, pero recortaba una víscera entre nodos. Densificar también Z sin conservar el ajuste
+previo introdujo quiebres de fascia y se rechazó. No se ampliaron sus tolerancias.
+
+**Decisión.** `hepaticCostalBody` continúa la apposición sobre las vísceras registradas del flanco
+derecho bajo el borde hepático, con transiciones suaves en φ y Z. Mantiene el mayor radio exigido
+por hígado, otras vísceras y hueso. La cara interna no suma la banda nominal de 1,5 mm a una pared
+que ya contiene grasa preperitoneal. En el flanco, el margen visceral de 2 mm añade una celda fuente
+de 1,5 mm para proteger cruces entre filas. Los espesores parietales y los campos fuente quedan fijos.
+Son **[EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION**, no segmentación cutánea nueva.
+
+El perfil ajustado usa 128 direcciones en vez de 64, coincidiendo con las direcciones de sus
+coeficientes existentes. Conserva 53 filas, cuatro subdivisiones Z y la misma textura de coeficientes
+209 × 128. El perfil serializado lleva su disposición mediante su tamaño; CPU, Worker del corte,
+GLSL y piel 3D consultan el mismo campo. Se elimina una copia cruda del perfil que el shader ya no
+leía: además de ser redundante, el perfil más ancho invadiría los registros de las costillas.
+La malla conserva como mínimo las mismas 256 muestras circunferenciales.
+
+**Consecuencias.** La pared deja de adaptarse a esa cuña de relleno; no se borra hígado, grasa
+subcutánea/preperitoneal, vísceras ni esqueleto para obtener la imagen. Cambia el contorno estimado
+y por ello el apoyo adquirido puede cambiar incluso con las mismas coordenadas de sonda.
+No se modifican señal, dispersores, resolución acústica, controles, ley de compresión ni navegación.
+La continuidad interna y la reducción del defecto no acreditan indistinguibilidad clínica.
+
+**Verificación.** Una regresión con dos pacientes y doce puntos por paciente, independientes de
+los nodos angulares/axiales, limita la separación parietal a <4 mm y el recorte visceral a menos
+de una celda fuente (1,5 mm); protege también la piel sobre la costilla interpuesta. Son cotas
+computacionales, no espesores normales humanos. El perfil anterior falla por exceso de separación;
+la primera continuación falla por recorte. La apposición hepática conserva su máximo original por
+punto y añade sesgo medio <0,75 mm (media celda) para detectar la banda nominal añadida.
+Se conservan los contratos originales de continuidad, gradiente, distancia piel 3D/campo <0,5 mm,
+caras/normales TS-GPU y los plazos de adquisición con dos vistas. La validación debe incluir
+navegación, Color/PW, capturas A/B con angulaciones vecinas, check y CI completa del head final.
+
+El diccionario reversible conserva 512 palabras, 128 frases y su formato: prioriza secuencias
+frecuentes para respetar el presupuesto original. Los tests ordinarios conservan la igualdad
+byte a byte de los GLSL ensamblados, incluidos Three y el mapa de renombrado. No cambia física.
+Los originales, ensayos rechazados y negativos permanecen fuera de Git en
+`abdominal-wall-222-evidence`; cada ejecución final debe identificar su fuente real.

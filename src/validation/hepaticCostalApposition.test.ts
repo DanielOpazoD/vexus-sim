@@ -31,6 +31,7 @@ afterEach(() => {
 it('apposes the hepatic lateral surface to the actual parietal boundary at held-out positions', () => {
   const s = new AnatomyScene(NORMAL_ADULT);
   let count = 0;
+  const gaps: number[] = [];
   const failures: unknown[] = [];
   for (let z = -78.3; z <= -28; z += 9.1)
     for (let phi = 2.73; phi <= 3.22; phi += 0.071) {
@@ -53,12 +54,19 @@ it('apposes the hepatic lateral surface to the actual parietal boundary at held-
       if (bone > r + s.wallThickness() - 4) continue;
       const gap = -torsoDepth(p(r), s.torso) - s.wallThickness();
       count++;
+      gaps.push(gap);
       // Independent 1.5-mm atlas plus interpolation on curved skin, not a clinical tolerance.
       if (Math.abs(gap) > 2.5) failures.push({ z, phi, r, gap });
     }
   console.log(JSON.stringify({ count, failures }));
   expect(count).toBeGreaterThan(25);
   expect(failures).toEqual([]);
+  // El espesor preperitoneal ya vive en wallThickness. No debe añadirse una
+  // segunda banda residual sobre el hígado: sesgo medio < media celda del atlas
+  // (1,5 mm), conservando además el máximo original de 2,5 mm por punto.
+  const meanGap = gaps.reduce((sum, gap) => sum + gap, 0) / gaps.length;
+  console.log({ count, meanGap });
+  expect(Math.abs(meanGap)).toBeLessThan(0.75);
 });
 it('apposes the right hepatic anterior surface to the actual parietal boundary at held-out positions', () => {
   const s = new AnatomyScene(NORMAL_ADULT);

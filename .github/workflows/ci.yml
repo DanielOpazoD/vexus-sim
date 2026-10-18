@@ -85,6 +85,39 @@ jobs:
           retention-days: 14
           if-no-files-found: error
 
+  # El mismo caso sigue en la colección completa. Este diagnóstico sin reintentos
+  # entrega antes sus errores internos, vallas GPU y reservas, sin cambiar el caso.
+  triplex-early:
+    name: tríplex SwiftShader · diagnóstico temprano
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    container:
+      image: mcr.microsoft.com/playwright:v1.63.0-noble@sha256:eff16c30e6f3f4af0a03fa4b706120d5e9b0891c344a27d64559aff5900a4a27
+    steps:
+      - uses: actions/checkout@v7
+      - run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx vite build
+      - name: Color y PW móviles, mismas aserciones y plazos
+        run: |
+          mkdir -p .validation
+          E2E_SOURCE_SHA="$GITHUB_SHA" E2E_STARTUP_EVIDENCE=.validation/triplex-startup.jsonl npm run e2e -- e2e/colorLegend.spec.ts --grep '390px' --workers=1 --retries=0 --forbid-only
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: triplex-early
+          include-hidden-files: true
+          path: |
+            e2e-results.json
+            .validation/triplex-startup.jsonl
+            test-results
+          retention-days: 14
+          if-no-files-found: error
+
   # En paralelo con `check` (no depende de él): el tiempo total de CI es el del más lento.
   # Repartida en doce fragmentos, cada uno con un solo trabajador (playwright.config.ts): SwiftShader usa todos los
   # núcleos del corredor en cada cuadro, y con dos trabajadores por corredor las pruebas se disputaban la CPU, tardaban
@@ -148,7 +181,7 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
       - name: Guardar el informe si falla
-        if: failure()
+        if: failure() || cancelled()
         uses: actions/upload-artifact@v7
         with:
           name: playwright-report-${{ matrix.shard }}
@@ -163,14 +196,15 @@ jobs:
   veredicto:
     name: CI verde (check + e2e)
     if: always()
-    needs: [check, matrix-validation, e2e]
+    needs: [check, matrix-validation, triplex-early, e2e]
     runs-on: ubuntu-latest
     steps:
       - name: check, matriz IQ y E2E en verde
         run: |
-          echo "check: ${{ needs.check.result }} · matriz: ${{ needs.matrix-validation.result }} · e2e: ${{ needs.e2e.result }}"
+          echo "check: ${{ needs.check.result }} · matriz: ${{ needs.matrix-validation.result }} · tríplex: ${{ needs.triplex-early.result }} · e2e: ${{ needs.e2e.result }}"
           test "${{ needs.check.result }}" = success
           test "${{ needs.matrix-validation.result }}" = success
+          test "${{ needs.triplex-early.result }}" = success
           test "${{ needs.e2e.result }}" = success
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7

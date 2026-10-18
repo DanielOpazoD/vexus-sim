@@ -12,7 +12,7 @@ beforeAll(() => {
 });
 afterAll(() => setReferenceBody());
 
-it('conserva las diez caras costales registradas aunque crucen la pared estimada', () => {
+it('conserva las diez caras costales registradas al reconstruir el perfil', () => {
   const scene = new AnatomyScene(NORMAL_ADULT);
   // Mismas bandas fuente de referenceAdult.spec.ts: costillas 6–10, a 0,1 mm de la cortical.
   const angles = [2.443460952792061, 2.356194490192345, 2.5132741228718345, 2.600540585471551, 2.6354471705114375];

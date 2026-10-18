@@ -176,3 +176,5 @@ La aceptación se acredita con el PR, check y CI protegida sobre su head, más m
 coordenadas y ambos pacientes. El contrato del seno renal (215) queda planificado y su cambio de
 imagen no se integra en esta ronda. Los pendientes PW/transportes e intermitencias anteriores
 siguen abiertos hasta aislar sus causas; una nueva ejecución positiva no los resuelve por sí sola.
+
+La primera CI de imagen39095291930 es negativa: bloqueo de avance Color+PW (móvil y escritorio), adquisición portal y una cortical de referencia perdida; los fragmentos 1/6 terminaron cancelados por su plazo original. No aceptar una repetición positiva como reparación. La corrección numérica de la cortical mantiene los coeficientes Atlas ajustados y no amplía dueños de tejidos. El bloqueo tríplex sigue requiriendo causa y corrección; el gate temprano y los adjuntos de adquisición permiten aislarlo sin ampliar plazos ni debilitar las pruebas.

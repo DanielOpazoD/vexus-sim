@@ -7488,7 +7488,7 @@ limitador elimina la discontinuidad, pero falla las guardas de apposición hepá
 Una interpolación limitada y anclada también a muestras intermedias conserva mejor el ajuste previo.
 
 **Decisión.** El perfil final se reconstruye mediante parches Hermite C1 periódicos, pendientes
-minmod y derivadas mixtas nulas. Se conservan todos los radios/centros fuente y muestras intermedias
+limitadas y derivadas mixtas nulas. Minmod conserva el contacto del perfil costal ajustado y las pendientes en Z; Superbee limita el ángulo de los cortes fuente sin desplazar sus bandas costales registradas. Se conservan todos los radios/centros fuente y muestras intermedias
 de su reconstrucción bilineal: dos subintervalos angulares y cuatro en Z. La estimación costal (183)
 sigue tomando los mismos valores de las muestras originales; no se recalibra el ajuste al hígado.
 La reconstrucción es **[EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION visual**, no nueva segmentación.
@@ -7528,3 +7528,7 @@ continuidad al mover. `atlasWallNormals.spec.ts` protege caras/normales TS↔GPU
 y porta subcostal de ambos pacientes. `probeFreeNavigation` exige movimiento desde seis coordenadas,
 tres ángulos y paridad 3D/corte/ecografía. La aceptación exige check completo, calibrate y CI protegida
 sobre el head publicado, con informes y fuente verificados, sin reintentos como aceptación.
+
+**Contratos preservados tras la primera CI de imagen.** La reconstrucción minmod movía en 0,032 mm la profundidad de una muestra de la séptima costilla de referencia: cruzaba el espesor parietal estimado y perdía su cortical. La nueva regresión CPU conserva las diez observaciones de `referenceAdult.spec.ts`, con las mismas coordenadas y expectativas. Se rechazó extender la cortical a otros tejidos porque violaba el contrato existente de dueños; también se rechazó Superbee global al incumplir la apposición hepática. La elección por procedencia del perfil mantiene bit a bit los coeficientes Atlas ajustados de ambos pacientes; solo cambia el limitador angular de los cortes fuente. El esquema de [Superbee de Clawpack](https://www.clawpack.org/pyclaw/evolve/limiters.html) es una referencia numérica, no validación clínica de su uso en esta reconstrucción.
+
+La CI 39095291930 detectó además falta de avance en Color+PW, en móvil y escritorio, y en adquisición portal; los dos intentos diagnósticos fallaron. Los fragmentos 1/6 agotaron su plazo original y no aportan aceptación completa. Una reproducción Mac SwiftShader pasó y no identifica la causa Linux. Se conservan los informes y trazas; no se declara resuelto el bloqueo. La observación E2E de vallas y Web Locks no añade consultas ni trabajo GPU, conserva los métodos originales y adjunta también los errores internos cuando falla. El diagnóstico temprano ejecuta el mismo tríplex móvil sin reintentos, como gate adicional, y no lo retira de la colección de doce fragmentos. Los artefactos se conservan también si se cancela un job. No se cambia ningún plazo ni presupuesto existente.

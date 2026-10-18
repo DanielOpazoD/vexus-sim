@@ -15,7 +15,7 @@ import {
   sdSpine,
   spineBodySd,
   spineDistances,
-  spineFaceCurvature,
+  spineFaceFrame,
   sdDiaphragm,
   sdDiaphragmSlope,
   sdRib,
@@ -829,8 +829,10 @@ export class AnatomyScene {
     }
     const geometry = face;
     // la columna (PR119; recuperación provisional de la decisión 103): el costado de los cuerpos es un cilindro en z, con la curvatura de su elipse
-    if (geometry === 'spine')
-      return { ...this.numericGradient(m, (p) => spineBodySd(p, this.spine), spineFaceCurvature(m, this.spine)), axis: [0, 0, 1] };
+    if (geometry === 'spine') {
+      const frame = spineFaceFrame(m, this.spine);
+      return { ...this.numericGradient(m, (p) => spineBodySd(p, this.spine), frame.curvature), axis: frame.axis };
+    }
     return this.numericGradient(
       m,
       (p) => this.faceSdf(p, caliber, geometry)!,

@@ -8056,3 +8056,32 @@ ambos lados, cinco alturas, dos hábitos y continuidad de profundidad/pendiente;
 el código anterior falla y el candidato la supera. `anatomy.test.ts` fija además
 un punto material posterior. Capturas, equivalencia GPU, calibración, check y CI
 completos se documentan sobre el candidato final antes de aceptar la entrega.
+
+## 230. Curvatura vertebral derivada del mismo campo que su superficie
+
+**Contexto.** La cortical Atlas usa la normal del campo fuente pero conserva
+curvatura y eje del cilindro analítico anterior, incluidos sus platillos periódicos.
+Una regresión mantiene el campo y cambia solo los parámetros obsoletos: el eco
+adquirido no debería depender de ellos. La implementación anterior falla.
+El atlas torácico por sí solo no cubre toda la región lumbar: daría curvatura cero.
+
+**Opciones.** No se alisa la imagen, cambia el brillo ni rellena una sombra.
+Tampoco se modifica o densifica el campo fuente. Se reutiliza el estimador
+principal ya usado para las costillas sobre el campo vertebral combinado.
+
+**Decisión.** TS y GLSL estiman eje y curvatura desde `spineBodySd`, la misma
+superficie torácica/lumbar que clasifica la cortical. El Hessiano tangencial usa
+el soporte existente de dos celdas (3 mm) y el gradiente de 0,25 mm. En GPU se
+calcula después de las salidas por distancia/incidencia, solo para ecos que lo
+requieren; las otras pasadas de adquisición no pagan este coste.
+
+**Consecuencias.** El eco deja de heredar platillos y orientación de otra columna.
+La superficie, materiales, resolución, transmisión, reflectividad y ley de ruido
+permanecen. Sigue siendo una aproximación de coherencia por la dirección principal
+y no una solución de dispersión ósea completa. No acredita indistinguibilidad.
+
+**Verificación.** La regresión del campo adquirido, esfera, plano y campo constante
+supera el candidato; el cilindro anterior falla al variar sus parámetros obsoletos.
+La entrega requiere además capturas A/B registradas, coste en el mismo equipo,
+calibración, paridad GPU, check y CI final. Los resultados finales van en el PR;
+una captura más lisa sin esos controles no basta.

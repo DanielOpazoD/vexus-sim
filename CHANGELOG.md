@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Cortical vertebral Atlas: eje y curvatura proceden de su campo fuente, en lugar del cilindro antiguo (230).
+
 - Pared: los planos entre oblicuos se reúnen con sus fascias hacia la espalda, sin cambiar órganos ni espesores (229).
 
 - Entorno: recibo de build y verificación automática de fuente/recursos de la preview antes de abrir Chromium; detecta builds obsoletos sin gastar GPU (227).

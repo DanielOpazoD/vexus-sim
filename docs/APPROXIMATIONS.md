@@ -258,3 +258,11 @@ Es una transición C1 compartida por TS y GLSL; conserva espesores y órganos.
 [EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION: no es una segmentación de inserciones
 ni reconstruye músculos dorsales. La relación fascial se apoya en
 https://pubmed.ncbi.nlm.nih.gov/30113090/; las fracciones no proceden de ese estudio.
+
+## Coherencia de la cortical vertebral Atlas (230)
+
+Eje y curvatura se estiman sobre el mismo campo combinado torácico/lumbar que
+su superficie. Hessiano tangencial a 3 mm (dos celdas), gradiente a 0,25 mm;
+se conserva el modelo de coherencia cilíndrica en la dirección principal.
+No se recupera detalle subvoxel, anisotropía ósea completa ni dispersión clínica
+calibrada. No modifica la fuente ni sus superficies 3D.

@@ -135,3 +135,7 @@ La API y el digest están descritos en la [documentación de GitHub](https://doc
 Medir el tiempo real de `feedback` y el tamaño/tiempo de `workspace:ci` en su `run.json` /
 `verification.json`. Comparar el mismo alcance; el recibo principal no acredita por sí solo otros
 workflows ni realismo clínico. No añadir reglas, pruebas o herramientas sin un fallo concreto que proteger.
+
+El índice de decisiones se comprueba inmediatamente después del formato, antes de lint, build y
+cobertura (227). Al editar `DECISIONS.md`: formatear primero y ejecutar después `npm run docs:index`;
+sus enlaces dependen de las líneas definitivas. El test documental completo se conserva.

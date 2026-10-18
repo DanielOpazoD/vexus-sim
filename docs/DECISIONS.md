@@ -7995,6 +7995,10 @@ primero la fuente, `dist` y todos los bytes servidos. Rechaza discrepancias ante
 Chromium y conserva la causa en `run.json`; un éxito conserva `build-verification.json`. Sin
 `--url` sigue construyendo y sirviendo su propio checkout. Al terminar verifica de nuevo el build
 local. La huella reutiliza la implementación existente, excluyendo sus salidas de evidencia.
+El primer check de esta ronda detectó el índice documental desplazado una línea tras formatear:
+190,328 s para un fallo sin relación con el simulador. Se adelanta la comprobación existente del
+índice a continuación del formato, tanto en check local como en CI. El test documental y la
+cobertura completa se conservan. Formatear decisiones antes de regenerar su índice.
 
 **Límites.** Es atribución local al inicio y comprobación local al cierre, sin vigilancia continua
 del servidor ni autoridad de aceptación. El SHA de arranque sigue identificando el checkout de

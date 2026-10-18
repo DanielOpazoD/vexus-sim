@@ -30,6 +30,8 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run format:check
+      - name: Índice de decisiones al día
+        run: node --import tsx tools/docs/decisions-index.ts --check
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run build
@@ -51,8 +53,6 @@ jobs:
           if-no-files-found: error
       - name: Auditoría de dependencias de producción
         run: npm audit --omit=dev --audit-level=high
-      - name: Índice de decisiones al día
-        run: node --import tsx tools/docs/decisions-index.ts --check
       - name: Guardar el build
         if: success()
         uses: actions/upload-artifact@v7

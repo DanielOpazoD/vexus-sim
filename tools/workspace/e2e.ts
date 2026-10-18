@@ -4,6 +4,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { e2eOptions } from './e2eOptions';
 import { verifyLocalBuild, verifyPreviewBuild } from './previewBuild';
+import { executionEnvironment } from './executionEnvironment';
 
 const root = resolve(import.meta.dirname, '../..');
 const options = e2eOptions(process.argv.slice(2), root);
@@ -33,6 +34,7 @@ if (options.help) {
     error: null as string | null,
     scope: 'local reproduction; not protected CI approval',
     startupSourceRole: 'test-checkout-commit; not preview identity',
+    environment: executionEnvironment(),
     args: options.tests,
     workers: 1,
     retries: 0,

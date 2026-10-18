@@ -8,6 +8,7 @@ import { expect, it } from 'vitest';
 import { buildProvenance, provenanceFile } from '../../tools/build/provenance';
 import { feedbackGitEnvironment } from '../../tools/workspace/feedbackPlan';
 import { verifyLocalBuild, verifyPreviewBuild } from '../../tools/workspace/previewBuild';
+import { listenLoopback } from '../../tools/workspace/loopback';
 
 it('vincula un build real a su fuente y rechaza ediciones, recursos alterados y otra preview antes de usar GPU', async () => {
   const root = mkdtempSync(join(tmpdir(), 'vexus-build-'));
@@ -48,7 +49,7 @@ it('vincula un build real a su fuente y rechaza ediciones, recursos alterados y 
     await build({ root, configFile: false, logLevel: 'silent', plugins: [buildProvenance()], build: { sourcemap: true } });
     const receipt = verifyLocalBuild(root, output).receipt;
     expect(receipt.files.some((file) => file.path.endsWith('.js.map'))).toBe(true);
-    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve));
+    await listenLoopback(server);
     const address = server.address();
     if (!address || typeof address === 'string') throw new Error('Missing fixture server');
     const origin = `http://127.0.0.1:${address.port}`;

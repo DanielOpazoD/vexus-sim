@@ -2,6 +2,8 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { copyFileSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { assertValidationPhase, validationArgs, validationEvidence } from './validationEvidence';
+import { assertLoopbackAvailable } from '../workspace/loopback';
+import { executionEnvironment } from '../workspace/executionEnvironment';
 const phase = process.argv[2];
 assertValidationPhase(phase);
 const head = () => execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim();
@@ -11,6 +13,10 @@ const reportPath = `.validation/${phase}.json`,
   evidencePath = `.validation/${phase}.source.json`;
 rmSync(reportPath, { force: true });
 rmSync(evidencePath, { force: true });
+if (phase === 'core') {
+  await assertLoopbackAvailable();
+  console.log('core: loopback disponible; comienza cobertura');
+}
 const result = spawnSync(process.execPath, validationArgs(phase), {
   stdio: 'inherit',
   env: { ...process.env, VITEST_TIER: 'all', VITEST_COVERAGE_PARTITION: phase },
@@ -20,5 +26,5 @@ if (result.status !== 0) process.exit(result.status ?? 1);
 if (head() !== sourceSha) throw new Error('Source commit changed during validation');
 if (phase === 'core') copyFileSync('coverage/coverage-summary.json', '.validation/coverage-summary.json');
 const evidence = validationEvidence(phase, sourceSha, readFileSync(reportPath, 'utf8'));
-writeFileSync(evidencePath, JSON.stringify(evidence, null, 2) + '\n');
+writeFileSync(evidencePath, JSON.stringify({ ...evidence, environment: executionEnvironment() }, null, 2) + '\n');
 console.log(`${phase}: report bound to source ${sourceSha}, SHA256 ${evidence.reportSha256}`);

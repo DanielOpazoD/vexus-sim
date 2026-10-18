@@ -29,6 +29,21 @@ describe('VExUS through the actual abdominal atlas', () => {
     it(`${patient.id}: real hepatic, main portal and interlobar venous acoustic gates`, () => {
       const s = openSession(patient, 'apnea-expiratory');
       const a = new VenousSpectralAcquisition(s.anatomy, s.engine.sample, patient.seed, s.patient, DEFAULT_BMODE);
+      const paired = new VenousSpectralAcquisition(
+        s.anatomy,
+        s.engine.sample,
+        patient.seed,
+        s.patient,
+        DEFAULT_BMODE,
+        'paired',
+        'standard',
+        2,
+      );
+      // Tras corregir el apoyo parietal, ambas adquisiciones deben conservar
+      // una trayectoria acústica útil. 0,01 evita aceptar una puerta en sombra
+      // (cota instrumental del simulador, no umbral clínico).
+      expect(a.gateInfo[2].transmission).toBeGreaterThan(0.01);
+      expect(paired.gateInfo[0].transmission).toBeGreaterThan(0.01);
       const depths = a.gateDepthsMm;
       expect(depths).toHaveLength(3);
       for (const d of depths) {
@@ -38,11 +53,17 @@ describe('VExUS through the actual abdominal atlas', () => {
       const history = Array.from({ length: 75 }, () => s.engine.step());
       const before = JSON.stringify(history);
       a.push(history, s.engine.clock.dt);
+      paired.push(history, s.engine.clock.dt);
       expect(JSON.stringify(history)).toBe(before);
       for (const chain of a.chains) {
         expect(chain.sampleVolume.lastComposition.bloodFraction).toBeGreaterThan(0);
         expect(chain.spectral.columns.length).toBeGreaterThan(0);
       }
+      expect(
+        Object.keys(paired.chains[0].sampleVolume.lastComposition.vessels).some((id) =>
+          ['interlobarArtery1', 'interlobarArtery2', 'interlobarArtery3'].includes(id),
+        ),
+      ).toBe(true);
       for (const [i, ids] of [['hvRight'], ['pvTrunk'], ['interlobarVein1', 'interlobarVein2', 'interlobarVein3']].entries()) {
         expect(Object.keys(a.chains[i].sampleVolume.lastComposition.vessels).some((id) => ids.includes(id))).toBe(true);
       }

@@ -7768,7 +7768,9 @@ reales de la pared, pero no calibra este ajuste de contorno ni justifica su espe
 modelo. El experimento de compresión lateral C1 pasó su check local, pero no eliminó la masa:
 se conserva separado, sin incorporarlo a esta entrega. La continuación con 64 sectores quitaba
 la cuña, pero recortaba una víscera entre nodos. Densificar también Z sin conservar el ajuste
-previo introdujo quiebres de fascia y se rechazó. No se ampliaron sus tolerancias.
+previo introdujo quiebres de fascia y se rechazó. El primer check completo detectó pérdida de la puerta portal por refinar fuera del territorio afectado;
+se limita ese refinamiento al flanco. El apoyo renal se recalcula sobre el contorno nuevo; una
+misma coordenada recupera vena y arteria pareada en A/B. No se amplían tolerancias ni cambia la pose portal.
 
 **Decisión.** `hepaticCostalBody` continúa la apposición sobre las vísceras registradas del flanco
 derecho bajo el borde hepático, con transiciones suaves en φ y Z. Mantiene el mayor radio exigido
@@ -7778,11 +7780,16 @@ de 1,5 mm para proteger cruces entre filas. Los espesores parietales y los campo
 Son **[EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION**, no segmentación cutánea nueva.
 
 El perfil ajustado usa 128 direcciones en vez de 64, coincidiendo con las direcciones de sus
-coeficientes existentes. Conserva 53 filas, cuatro subdivisiones Z y la misma textura de coeficientes
-209 × 128. El perfil serializado lleva su disposición mediante su tamaño; CPU, Worker del corte,
+coeficientes existentes. Las medias direcciones se ajustan de nuevo solo en el flanco: fuera de él
+interpolan las observaciones previas para conservar el apoyo portal. Conserva 53 filas, cuatro
+subdivisiones Z y la misma rejilla de 209 filas auxiliares × 128 sectores y tamaño de textura. El perfil serializado lleva su disposición mediante su tamaño; CPU, Worker del corte,
 GLSL y piel 3D consultan el mismo campo. Se elimina una copia cruda del perfil que el shader ya no
 leía: además de ser redundante, el perfil más ancho invadiría los registros de las costillas.
 La malla conserva como mínimo las mismas 256 muestras circunferenciales.
+El inicio renal Atlas pasa a φ 3,2, Z −165 mm y tilt −0,632081 rad sobre la nueva piel; yaw y rock
+se conservan. Es una coordenada inicial estimada, sin limitar el movimiento libre ni mover vasos.
+El barrido previo quedó sin luz venosa; la candidata conserva transmisión venosa/arterial de
+aproximadamente 0,15 y coseno >0,92 en ambos pacientes a los 2 s de apnea simulada.
 
 **Consecuencias.** La pared deja de adaptarse a esa cuña de relleno; no se borra hígado, grasa
 subcutánea/preperitoneal, vísceras ni esqueleto para obtener la imagen. Cambia el contorno estimado
@@ -7797,7 +7804,8 @@ computacionales, no espesores normales humanos. El perfil anterior falla por exc
 la primera continuación falla por recorte. La apposición hepática conserva su máximo original por
 punto y añade sesgo medio <0,75 mm (media celda) para detectar la banda nominal añadida.
 Se conservan los contratos originales de continuidad, gradiente, distancia piel 3D/campo <0,5 mm,
-caras/normales TS-GPU y los plazos de adquisición con dos vistas. La validación debe incluir
+caras/normales TS-GPU y los plazos de adquisición con dos vistas. La cadena Atlas existente comprueba además la
+arteria pareada y exige transmisión renal >0,01 en ambos planos para rechazar puertas en sombra. La validación debe incluir
 navegación, Color/PW, capturas A/B con angulaciones vecinas, check y CI completa del head final.
 
 El diccionario reversible conserva 512 palabras, 128 frases y su formato: prioriza secuencias

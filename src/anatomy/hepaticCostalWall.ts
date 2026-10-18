@@ -7,6 +7,8 @@ import { smoothstep, type Vec3 } from '../core/vec3';
  * Registered viscera/bone remain fixed. Outside the hepatic/right-flank territory,
  * retain the inherited source profile plus the former habitus padding. (183)
  * Cache only for identical loaded fields/profile and wall thickness. */
+const flankApposition = (phi: number, z: number): number =>
+  smoothstep(2.65, 2.85, phi) * (1 - smoothstep(3.2, 3.45, phi)) * smoothstep(-240, -190, z) * (1 - smoothstep(-110, -90, z));
 let cached:
   | { atlas: Uint16Array; bone: Uint16Array | undefined; source: Float32Array; wall: number; skin: number; profile: Float32Array }
   | undefined;
@@ -50,11 +52,10 @@ export function hepaticCostalBody(source: Float32Array, wallMm: number, skinMm: 
       // bajo el reborde, el mismo compartimento parietal continúa sobre las
       // vísceras fuente. La transición anterior dejaba hasta ~28 mm de relleno
       // no segmentado en el flanco. Ajuste estimado, no nueva segmentación (222).
-      const flankWeight =
-        smoothstep(2.65, 2.85, phi) * (1 - smoothstep(3.2, 3.45, phi)) * smoothstep(-240, -190, z) * (1 - smoothstep(-110, -90, z));
+      const flankWeight = flankApposition(phi, z);
       const weight = 1 - (1 - hepaticWeight) * (1 - flankWeight);
       let radius = inherited;
-      if (weight > 0) {
+      if (weight > 0 && (k % 2 === 0 || flankWeight > 0)) {
         const point = (r: number): Vec3 => [r * Math.cos(phi), cy + r * Math.sin(phi), z];
         let hepatic = -1,
           other = -1,
@@ -82,13 +83,23 @@ export function hepaticCostalBody(source: Float32Array, wallMm: number, skinMm: 
           // protege los cruces viscerales entre las filas del perfil.
           // Preserve all source organs outside wall, and at least skin + 2 mm
           // over cortical bone. A competing organ/too superficial rib wins.
-          const protectedRadius = Math.max(contact, other + wallMm + (flankWeight > 0 ? 3.5 : 2), bone + skinMm + 2);
+          const protectedRadius = Math.max(contact, other + wallMm + 2 + 1.5 * flankWeight, bone + skinMm + 2);
           radius = inherited + weight * (Math.min(inherited, protectedRadius) - inherited);
         }
       }
       profile[row * COSTAL_BODY_STRIDE + 1 + k] = radius;
     }
   }
+  // Las medias direcciones solo aportan nueva geometría donde continúa el
+  // flanco. Fuera de él conservan las observaciones costales previas: ajustar
+  // otra vez ese dominio desplazaba el apoyo portal (222).
+  for (let row = 0; row < COSTAL_BODY_ROWS; row++)
+    for (let k = 1; k < COSTAL_BODY_STRIDE - 1; k += 2) {
+      const i = row * COSTAL_BODY_STRIDE + 1 + k;
+      const inherited = (profile[i - 1] + profile[row * COSTAL_BODY_STRIDE + 1 + ((k + 1) % (COSTAL_BODY_STRIDE - 1))]) / 2;
+      const weight = flankApposition((k * 2 * Math.PI) / (COSTAL_BODY_STRIDE - 1), -400 + row * 10);
+      profile[i] = inherited + weight * (profile[i] - inherited);
+    }
   cached = { atlas: abdominalAtlas, bone: thoracicAtlas, source, wall: wallMm, skin: skinMm, profile };
   return profile;
 }

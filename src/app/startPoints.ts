@@ -268,9 +268,9 @@ const ABDOMINAL_POSES = {
   flank: { phi: 3.1, z: -75, yaw: 0.1767952406260464, rock: 0.4707775613505776, tilt: -0.04687503959831865 },
   // Pose de rótulos redondeados elegida por Daniel en esta misma versión.
   portal: { phi: (173 * Math.PI) / 180, z: -40, yaw: (-72 * Math.PI) / 180, rock: (-6 * Math.PI) / 180, tilt: (-2 * Math.PI) / 180 },
-  // A 2.86-degree venous sweep reaches an interlobar lumen with the existing 1.2 mm wall safeguard.
-  // Kidney/vasculature, skin point and in-plane orientation remain registered and unchanged.
-  renal: { phi: 3.15, z: -175, yaw: -0.04682166646295555, rock: 0.37638199977635656, tilt: -0.28301506696896933 },
+  // Apoyo sobre la pared corregida (222), sin mover riñón ni vasos.
+  // Una misma coordenada conserva vena y barrido arterial pareado en A/B.
+  renal: { phi: 3.2, z: -165, yaw: -0.04682166646295555, rock: 0.37638199977635656, tilt: -0.6320809173678352 },
   portalTrunk: { phi: 3.05, z: -80, yaw: 0.22135021897142884, rock: -0.13225461110004316, tilt: 0.11100678455374574 },
   // Recheck actual renal transmission after the continuous pressure correction;
   // a 2-mm cranial slide clears the grazing rib without altering the skeleton.

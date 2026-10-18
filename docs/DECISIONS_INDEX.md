@@ -219,4 +219,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [213](DECISIONS.md#L7365) | VExUS LAB y porta subcostal derecha con el esqueleto completo | vigente |
 | [214](DECISIONS.md#L7411) | Leyenda Color legible en píxeles CSS y ligada al cuadro adquirido | vigente |
 | [215](DECISIONS.md#L7443) | Contrato previo para afinar la textura del seno renal | vigente |
-| [216](DECISIONS.md#L7478) | Continuidad de la pared entre muestras del perfil corporal | planificada |
+| [216](DECISIONS.md#L7478) | Pared corporal continua y normales compartidas entre apoyo, corte y ecografía | vigente |

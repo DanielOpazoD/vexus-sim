@@ -2,6 +2,7 @@ import { startPointsFor, type StartPoint } from '../src/app/startPoints';
 import { expect, test, type ConsoleMessage, type Page } from '@playwright/test';
 import { startupEntry, type StartupEntry } from '../src/app/startupTrace';
 import { startupEvidenceSink } from '../tools/ci/e2eStartupEvidence';
+import { gpuDiagnostic, observeGpuProgress } from './gpuProgress';
 
 /**
  * Esperas de la e2e. Corre con SwiftShader (WebGL2 por CPU: el corredor de GitHub no tiene GPU) y lo que tarda un
@@ -88,6 +89,7 @@ export async function bootWithoutErrors(page: Page, query = '?e2e=1&abdomen=lega
   page.on('console', collectStartup);
   let bootCompleted = false;
   try {
+    await observeGpuProgress(page);
     await page.goto(`/${query}`);
     // Dos vueltas JS pueden haber encolado trabajo que aún no completó la GPU.
     // La valla se registra en el host; el adjunto conserva el bloqueo aun sin respuesta de la página.
@@ -243,7 +245,15 @@ export function checkAfterEach(): void {
       type: 'ritmo del bucle',
       description: `arranque ${(p.bootMs / 1000).toFixed(1)} s; después ${n ?? '?'} cuadros en ${dt.toFixed(1)} s${n ? ` (${(dt / n).toFixed(2)} s/cuadro)` : ''}`,
     });
-    if (info.status !== info.expectedStatus) return;
+    if (info.status !== info.expectedStatus) {
+      const diagnostic = await gpuDiagnostic(page).catch((error: unknown) => ({ unavailable: String(error) }));
+      const body = JSON.stringify(diagnostic);
+      await info.attach('failed-acquisition', { body, contentType: 'application/json' });
+      // El reporte conserva también los errores internos: no van a la consola de la app.
+      info.annotations.push({ type: 'adquisición al fallar', description: body });
+      console.log(`::notice title=Adquisición al fallar::${body.replaceAll('%', '%25').replaceAll('\n', '%0A').replaceAll('\r', '%0D')}`);
+      return;
+    }
     const logged = [...(stashedLogged.get(page) ?? []), ...((await page.evaluate(() => window.__vexusTest?.loggedErrors() ?? null)) ?? [])];
     const allowed = allowedLogged.get(page) ?? [];
     expect(

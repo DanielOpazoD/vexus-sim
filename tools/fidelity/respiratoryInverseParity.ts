@@ -5,7 +5,7 @@ import { AnatomyScene } from '../../src/anatomy/scene';
 import { RespiratoryDeformation, RESPIRATORY_INVERSE_STEPS } from '../../src/anatomy/deformation';
 import { anatomyWarpAt, respiratoryWeightGradient } from '../../src/anatomy/respiratoryNormals';
 import { warpNormal, warpBound } from '../../src/anatomy/compression';
-import { setReferenceBody } from '../../src/anatomy/referenceBody';
+import { bodyCoefficients, setReferenceBody } from '../../src/anatomy/referenceBody';
 import { ANATOMY_GLSL, BODY_BASE, COMPRESSION_BASE, SCENE_TEX_H, SCENE_TEX_W } from '../../src/anatomy/gpu/anatomy.glsl';
 import { evaluateSceneUniforms } from '../../src/anatomy/gpu/sceneUniforms';
 import { NORMAL_ADULT } from '../../src/cases';
@@ -55,6 +55,12 @@ try {
         const sceneData = new Float32Array(SCENE_TEX_W * SCENE_TEX_H * 4);
         if (reference) sceneData.set(profile, BODY_BASE * 4);
         if (compressed) contact.nodes.forEach((n, i) => sceneData.set([n[0], n[1], n[2], contact.radiusMm], (COMPRESSION_BASE + i) * 4));
+        // El banco independiente carga el mismo recurso estático de pared que el renderer.
+        const body = scene.torso.profile ? bodyCoefficients(scene.torso.profile) : new Float32Array(4);
+        const bodyWidth = scene.torso.profile ? SCENE_TEX_W : 1,
+          bodyHeight = Math.ceil(body.length / (bodyWidth * 4));
+        const bodyData = new Float32Array(bodyWidth * bodyHeight * 4);
+        bodyData.set(body);
         const world = materials.map((m) => deformation.toWorld(m, sample.resp).map(Math.fround) as Vec3);
         const cpu = world.map((p) => deformation.toMaterial(p, sample.resp));
         const normalMaterials = materials.map((m) => m.map((x, j) => Math.fround(x + [0.371, 0.217, 0.113][j])) as Vec3);
@@ -76,7 +82,19 @@ try {
           return { value: warpNormal(w, normals[i % 4]), bound: warpBound(w) };
         });
         const result = await page.evaluate(
-          ({ anatomy, values, sceneData, world, normalMaterials, normalWorld, sceneWidth, sceneHeight }) => {
+          ({
+            anatomy,
+            values,
+            sceneData,
+            bodyData,
+            bodyWidth,
+            bodyHeight,
+            world,
+            normalMaterials,
+            normalWorld,
+            sceneWidth,
+            sceneHeight,
+          }) => {
             const width = 256,
               height = Math.ceil(world.length / width),
               canvas = document.createElement('canvas');
@@ -143,6 +161,9 @@ vec3 p=texelFetch(uInputPoints,uv,0).xyz;vec3 m=toMaterial(p);vec3 q=uncompress(
             gl.activeTexture(gl.TEXTURE0);
             texture(sceneWidth, sceneHeight, Float32Array.from(sceneData));
             gl.uniform1i(gl.getUniformLocation(program, 'uSceneTex'), 0);
+            gl.activeTexture(gl.TEXTURE5);
+            texture(bodyWidth, bodyHeight, Float32Array.from(bodyData));
+            gl.uniform1i(gl.getUniformLocation(program, 'uBodyCoefficients'), 5);
             const points = new Float32Array(width * height * 4);
             world.forEach((p, i) => points.set(p, i * 4));
             gl.activeTexture(gl.TEXTURE1);
@@ -211,6 +232,9 @@ vec3 p=texelFetch(uInputPoints,uv,0).xyz;vec3 m=toMaterial(p);vec3 q=uncompress(
             anatomy: ANATOMY_GLSL,
             values,
             sceneData: Array.from(sceneData),
+            bodyData: Array.from(bodyData),
+            bodyWidth,
+            bodyHeight,
             world,
             normalMaterials,
             normalWorld,

@@ -1,3 +1,4 @@
+import { BODY_SUBDIVISIONS } from '../referenceBody';
 import { TUBE_GRID_PITCH_MM, type TubeGrid } from './tubeGrid';
 import type { ProbeCompression } from '../compression';
 import { RespiratoryDeformation } from '../deformation';
@@ -39,7 +40,7 @@ interface UniformSpec {
 }
 
 export const SCENE_UNIFORMS: readonly UniformSpec[] = [
-  { name: 'uBodyRows', type: 'int', value: (s) => [(s.torso.profile?.length ?? 520) / 65] },
+  { name: 'uBodyRows', type: 'int', value: (s) => [BODY_SUBDIVISIONS * ((s.torso.profile?.length ?? 520) / 65 - 1) + 1] },
   { name: 'uBodyMinZ', type: 'float', value: (s) => [s.torso.profile && s.torso.profile.length !== 520 ? -400 : -160] },
   { name: 'uAbdominalAtlasEnabled', type: 'int', value: (s) => [s.hasAbdominalAtlas ? 1 : 0] },
   /** a, b, zMin, zMax */
@@ -228,6 +229,7 @@ export const SCENE_SAMPLERS = [
   { name: 'uAbdominalAtlas', type: 'sampler3D', unit: 8 },
   { name: 'uThoracicAtlas', type: 'sampler3D', unit: 9 },
   { name: 'uTubeGrid', type: 'sampler2D', unit: 15 },
+  { name: 'uBodyCoefficients', type: 'sampler2D', unit: 5 },
 ] as const;
 
 /** Declaraciones GLSL generadas del esquema y sus samplers. */

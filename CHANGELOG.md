@@ -9,6 +9,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ### Corregido
 
+- Pared corporal continua al mover la sonda: geometría y normales compartidas, malla adaptable y regresiones de continuidad (216).
+
 - Doppler Color: degradado y cifras legibles en la esquina, también con PW; cero y ±cm/s conservan la escala de la adquisición congelada (214).
 
 - VExUS LAB: nueva marca e icono; la porta subcostal Atlas se apoya bajo el reborde derecho y muestra su rama derecha más alineada con el haz, con PW adquirido en ambos pacientes y geometría compartida durante el movimiento (213).

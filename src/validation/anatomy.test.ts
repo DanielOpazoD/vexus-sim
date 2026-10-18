@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AnatomyQuery } from '../anatomy/query';
+import { bodyDepth, bodyGradient } from '../anatomy/referenceBody';
 import { uncompress } from '../anatomy/compression';
 import { START_POINTS } from '../app/startPoints';
 import { AnatomyScene, BASELINE_CALIBER, wallThicknessMm, type FaceGeometry } from '../anatomy/scene';
@@ -36,6 +37,15 @@ describe('Anatomía implícita (base B)', () => {
   const cls = (p: [number, number, number]) => scene.classify(p, BASELINE_CALIBER);
   type V = [number, number, number];
   const sdf = (face: FaceGeometry) => (p: V) => scene.faceSdf(p, BASELINE_CALIBER, face);
+
+  it('mantiene la superficie y la tangente de la pared al cruzar un nodo registrado (216)', () => {
+    const profile = new Float32Array(8 * 65);
+    for (let row = 0; row < 8; row++) for (let k = 0; k < 64; k++) profile[row * 65 + 1 + k] = 100 + 5 * Math.sin((k * Math.PI) / 32);
+    expect(bodyDepth([100, 0, -80], profile)).toBeCloseTo(0, 10);
+    const a = bodyGradient([100, -0.00001, -80], profile),
+      b = bodyGradient([100, 0.00001, -80], profile);
+    expect(Math.hypot(...a.map((v, i) => v - b[i]))).toBeLessThan(0.001);
+  });
 
   it('clasifica puntos de referencia', () => {
     expect(cls([0, 200, 0]).tissue).toBe(Tissue.Air);

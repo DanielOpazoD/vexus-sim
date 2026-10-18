@@ -68,7 +68,7 @@ describe('reparto E2E íntegro y sin concurrencia dentro de SwiftShader', () => 
       config = readFileSync('playwright.config.ts', 'utf8');
     expect(browserShardCount(ci)).toBe(12);
     expect(ci).toContain('node --import tsx tools/ci/verify-e2e-shards.ts');
-    expect(ci).toContain('needs: [check, matrix-validation, e2e]');
+    expect(ci).toContain('needs: [check, matrix-validation, triplex-early, e2e]');
     expect(ci).toContain('needs.matrix-validation.result');
     expect(config).toContain('workers: process.env.CI ? 1 : undefined');
     expect(config).toContain('failOnFlakyTests: !!process.env.CI');

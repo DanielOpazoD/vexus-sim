@@ -204,10 +204,10 @@ describe('summarizeGpuTimings', () => {
  * declarada que no muestrea ninguno son errores: el grafo no puede mentir sobre sus dependencias.
  */
 const SAMPLERS: Record<PassId, { srcs: readonly string[]; samplers: Record<string, Resource> }> = {
-  transmissionHits: { srcs: [FRAG_TRANS_HITS], samplers: { uTubeGrid: 'scene' } },
+  transmissionHits: { srcs: [FRAG_TRANS_HITS], samplers: { uBodyCoefficients: 'scene', uTubeGrid: 'scene' } },
   transmissionSegments: {
     srcs: [FRAG_TRANS_SEGMENTS],
-    samplers: { uTubeGrid: 'scene', uHits0: 'transHits', uHits1: 'transHits', uHits2: 'transHits' },
+    samplers: { uBodyCoefficients: 'scene', uTubeGrid: 'scene', uHits0: 'transHits', uHits1: 'transHits', uHits2: 'transHits' },
   },
   transmissionPrefix: {
     srcs: [FRAG_TRANS_PREFIX, FRAG_TRANS_PREFIX_STEERED],
@@ -227,14 +227,22 @@ const SAMPLERS: Record<PassId, { srcs: readonly string[]; samplers: Record<strin
   // la pleura parietal de A0 (uHits2, decisión 61) en los dos programas de B
   rawField: {
     srcs: [FRAG_RAWFIELD, FRAG_RAWFIELD_STEERED],
-    samplers: { uTubeGrid: 'scene', uTrans0: 'trans', uTrans1: 'trans', uTrans2: 'trans', uTrans3: 'trans', uHits2: 'transHits' },
+    samplers: {
+      uBodyCoefficients: 'scene',
+      uTubeGrid: 'scene',
+      uTrans0: 'trans',
+      uTrans1: 'trans',
+      uTrans2: 'trans',
+      uTrans3: 'trans',
+      uHits2: 'transHits',
+    },
   },
   axial: { srcs: [FRAG_AXIAL], samplers: { uField: 'raw', uTrans: 'trans' } },
   // y la fracción del haz que sobrevive a los huesos (A o2, decisión 88)
   lateral: { srcs: [FRAG_LATERAL], samplers: { uField: 'axial', uRxNoise: 'axial', uShadow: 'trans' } },
   // y la pleura de A0 (la cortina de la mirada 0, decisión 61)
   compound: { srcs: [FRAG_COMPOUND], samplers: { uLook0: 'envLooks', uLook1: 'envLooks', uLook2: 'envLooks', uHits2: 'transHits' } },
-  color: { srcs: [FRAG_COLOR], samplers: { uTubeGrid: 'scene', uTransDoppler: 'transPrefix' } },
+  color: { srcs: [FRAG_COLOR], samplers: { uBodyCoefficients: 'scene', uTubeGrid: 'scene', uTransDoppler: 'transPrefix' } },
   colorFilter: { srcs: [COLOR_FILTER_GLSL], samplers: { uRawColor: 'colorRaw' } },
   scanConvert: { srcs: [FRAG_SCANCONVERT], samplers: { uEnv: 'env', uColor: 'color' } },
   persistence: { srcs: [FRAG_PERSIST], samplers: { uCur: 'scan', uPrev: 'persist' } },
@@ -270,6 +278,12 @@ function samplerErrors(passes: readonly PassSpec[], table = SAMPLERS): string[] 
 describe('las lecturas declaradas son las de los shaders', () => {
   it('cada pasada muestrea exactamente lo que declara el grafo', () => {
     expect(samplerErrors(FRAME_PASSES)).toEqual([]);
+  });
+
+  it('rechaza la textura corporal si falta su dependencia explícita de escena', () => {
+    const { uBodyCoefficients: _omit, ...samplers } = SAMPLERS.rawField.samplers;
+    const table = { ...SAMPLERS, rawField: { ...SAMPLERS.rawField, samplers } };
+    expect(samplerErrors(FRAME_PASSES, table)).toEqual(['rawField: el sampler uBodyCoefficients no está en la tabla']);
   });
 
   it('B sin leer la transmisión (su programa dirigido muestrea uTrans3): lo detecta', () => {

@@ -28,33 +28,96 @@ export function validateReferenceBody(values: Float32Array): Float32Array {
 export function setReferenceBody(values?: Float32Array): void {
   referenceBody = values ? validateReferenceBody(values) : undefined;
 }
-/** Radio, derivadas en φ/z, centro Y y su derivada; clamping explícito fuera de los cortes fuente. */
+/** Coeficientes bicúbicos compartidos por CPU/GPU; cuatro téxeles por celda y uno
+ * para el centro de cada franja. Perfiles cargados inmutables por identidad (216). */
+/** Subdivisión numérica Z; 128 sectores angulares. Conserva muestras intermedias
+ * de la geometría previa al reconstruir las esquinas, no resolución del equipo. */
+export const BODY_SUBDIVISIONS = 4;
+export const BODY_SECTORS = 128;
+export const BODY_COEFFICIENT_STRIDE = BODY_SECTORS * 16 + 4;
+const coefficients = new WeakMap<Float32Array, Float64Array>();
+const slope = (a: number, b: number): number => (a * b > 0 ? Math.sign(a) * Math.min(Math.abs(a), Math.abs(b)) : 0);
+const angularSlope = (a: number, b: number): number =>
+  a * b > 0 ? Math.sign(a) * Math.max(Math.min(2 * Math.abs(a), Math.abs(b)), Math.min(Math.abs(a), 2 * Math.abs(b))) : 0;
+const power = (a: number, b: number, da: number, db: number): number[] => [a, da, 3 * (b - a) - 2 * da - db, 2 * (a - b) + da + db];
+
+/** Hermite con pendientes limitadas y derivada mixta nula.
+ * Reconstrucción C1 [EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION visual: interpola los nodos, sin una nueva segmentación. */
+export function bodyCoefficients(data: Float32Array): Float64Array {
+  const cached = coefficients.get(data);
+  if (cached) return cached;
+  const rows = BODY_SUBDIVISIONS * (data.length / BODY_STRIDE - 1) + 1;
+  // El perfil costal ya está ajustado al contacto visceral: mantiene minmod.
+  // En los cortes fuente, Superbee angular conserva mejor las bandas costales registradas.
+  const limitAngle = data.length === COSTAL_BODY_ROWS * BODY_STRIDE ? slope : angularSlope;
+  const out = new Float64Array((rows - 1) * BODY_COEFFICIENT_STRIDE);
+  const raw = (r: number, a: number): number => {
+    const q = Math.max(0, Math.min((rows - 1) / BODY_SUBDIVISIONS, r / BODY_SUBDIVISIONS)),
+      i = Math.min((rows - 1) / BODY_SUBDIVISIONS - 1, Math.floor(q));
+    return data[i * BODY_STRIDE + a] + (data[(i + 1) * BODY_STRIDE + a] - data[i * BODY_STRIDE + a]) * (q - i);
+  };
+  // Ancla también muestras intermedias de la reconstrucción bilineal previa:
+  // limita la desviación entre observaciones sin conservar sus esquinas.
+  const at = (r: number, a: number): number => {
+    if (a < 0) return raw(r, 0);
+    const q = (((a + BODY_SECTORS) % BODY_SECTORS) * 64) / BODY_SECTORS,
+      k = Math.floor(q);
+    return raw(r, k + 1) + (raw(r, 1 + ((k + 1) % 64)) - raw(r, k + 1)) * (q - k);
+  };
+  const radius = (r: number, a: number) => at(r, (a + BODY_SECTORS) % BODY_SECTORS);
+  const dz = (r: number, a: number) => slope(at(r, a) - at(r - 1, a), at(r + 1, a) - at(r, a));
+  const dx = (r: number, a: number) => limitAngle(radius(r, a) - radius(r, a - 1), radius(r, a + 1) - radius(r, a));
+  for (let r = 0; r < rows - 1; r++) {
+    for (let a = 0; a < BODY_SECTORS; a++) {
+      const b = (a + 1) % BODY_SECTORS;
+      const p = power(radius(r, a), radius(r, b), dx(r, a), dx(r, b));
+      const q = power(radius(r + 1, a), radius(r + 1, b), dx(r + 1, a), dx(r + 1, b));
+      const u = power(dz(r, a), dz(r, b), 0, 0);
+      const v = power(dz(r + 1, a), dz(r + 1, b), 0, 0);
+      for (let k = 0; k < 4; k++) {
+        const c = power(p[k], q[k], u[k], v[k]);
+        for (let j = 0; j < 4; j++) out[r * BODY_COEFFICIENT_STRIDE + a * 16 + j * 4 + k] = c[j];
+      }
+    }
+    out.set(power(at(r, -1), at(r + 1, -1), dz(r, -1), dz(r + 1, -1)), (r + 1) * BODY_COEFFICIENT_STRIDE - 4);
+  }
+  coefficients.set(data, out);
+  return out;
+}
+
+const polynomial = (a: ArrayLike<number>, offset: number, t: number): number =>
+  ((a[offset + 3] * t + a[offset + 2]) * t + a[offset + 1]) * t + a[offset];
+const differential = (a: ArrayLike<number>, offset: number, t: number): number =>
+  (3 * a[offset + 3] * t + 2 * a[offset + 2]) * t + a[offset + 1];
+
+/** Radio, derivadas en φ/z, centro Y y su derivada. Ángulo periódico y
+ * tangente nula en los extremos Z de la prolongación constante. */
 export function bodySection(phi: number, z: number, data: Float32Array): [number, number, number, number, number] {
-  const rows = data.length / BODY_STRIDE,
-    minZ = rows === BODY_ROWS ? -160 : -400;
+  const rows = BODY_SUBDIVISIONS * (data.length / BODY_STRIDE - 1) + 1,
+    minZ = data.length === BODY_ROWS * BODY_STRIDE ? -160 : -400;
   const step = (120 - minZ) / (rows - 1);
   const zz = Math.max(0, Math.min(rows - 1, (z - minZ) / step));
-  const row = Math.min(rows - 2, Math.floor(zz));
-  const f = zz - row;
-  const angle = ((((phi / (2 * Math.PI)) % 1) + 1) % 1) * 64;
+  const row = Math.min(rows - 2, Math.floor(zz)),
+    f = zz - row;
+  const angle = ((((phi / (2 * Math.PI)) % 1) + 1) % 1) * BODY_SECTORS;
   const i = Math.floor(angle),
     g = angle - i;
-  const sample = (r: number, a: number) => data[r * BODY_STRIDE + 1 + (a % 64)];
-  const a = sample(row, i),
-    b = sample(row, i + 1),
-    c = sample(row + 1, i),
-    d = sample(row + 1, i + 1);
-  const r0 = a + (b - a) * g,
-    r1 = c + (d - c) * g;
-  const cy0 = data[row * BODY_STRIDE],
-    cy1 = data[(row + 1) * BODY_STRIDE];
-  const inside = z >= minZ && z <= 120;
+  const c = bodyCoefficients(data),
+    base = row * BODY_COEFFICIENT_STRIDE + i * 16;
+  const r = [],
+    dp = [];
+  for (let k = 0; k < 4; k++) {
+    r.push(polynomial(c, base + k * 4, g));
+    dp.push(differential(c, base + k * 4, g));
+  }
+  const center = (row + 1) * BODY_COEFFICIENT_STRIDE - 4;
+  const scale = z >= minZ && z <= 120 ? 1 / step : 0;
   return [
-    r0 + (r1 - r0) * f,
-    (((b - a) * (1 - f) + (d - c) * f) * 64) / (2 * Math.PI),
-    inside ? (r1 - r0) / step : 0,
-    cy0 + (cy1 - cy0) * f,
-    inside ? (cy1 - cy0) / step : 0,
+    polynomial(r, 0, f),
+    (polynomial(dp, 0, f) * BODY_SECTORS) / (2 * Math.PI),
+    scale ? differential(r, 0, f) * scale : 0,
+    polynomial(c, center, f),
+    scale ? differential(c, center, f) * scale : 0,
   ];
 }
 export function bodyDepth(p: Vec3, data: Float32Array): number {

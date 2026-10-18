@@ -63,6 +63,14 @@ describe('Esquema de uniforms de la escena', () => {
     expect(SCENE_UNIFORMS_GLSL).toContain('uniform highp sampler2D uTubeGrid;');
   });
 
+  it('la reconstrucción corporal usa una ranura libre dentro del mínimo de dieciséis unidades', () => {
+    expect(SCENE_SAMPLERS.find((s) => s.name === 'uBodyCoefficients')).toEqual({ name: 'uBodyCoefficients', type: 'sampler2D', unit: 5 });
+    expect(SCENE_UNIFORMS_GLSL).toContain('uniform highp sampler2D uBodyCoefficients;');
+    const units = SCENE_SAMPLERS.map((s) => s.unit);
+    expect(new Set(units).size).toBe(units.length);
+    expect(units.every((n) => n >= 0 && n < 16)).toBe(true);
+  });
+
   it('cada caso da valores finitos del tamaño correcto y la subida llama al setter del tipo', () => {
     for (const c of CASES) {
       const scene = new AnatomyScene(c);

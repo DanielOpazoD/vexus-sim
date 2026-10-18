@@ -8,37 +8,64 @@ import { meshFromSdf } from './organs';
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeometry.js';
 import type { AnatomyScene } from '../../anatomy/scene';
-import { ribAnteriorEndX, ribCentre, ribShape, torsoSkinPoint, sdRib, SPINE_SHAPE, type Rib } from '../../anatomy/primitives';
+import { ribAnteriorEndX, ribCentre, ribShape, torsoSkinPoint, torsoNormal, sdRib, SPINE_SHAPE, type Rib } from '../../anatomy/primitives';
 import { CM, surfaceAt } from './common';
 
-/** Piel superelíptica del tronco (misma elipse que `torsoDepth`) y esqueleto procedural. */
+/** Piel del campo corporal compartido (`torsoDepth`) y esqueleto procedural. */
 export function buildSkin(a: AnatomyScene): THREE.Mesh {
   const t = a.torso;
-  // Align atlas picking geometry with the registered 64 sectors / 10-mm rows.
-  const nT = a.hasAbdominalAtlas ? 64 : 72;
-  const z0 = t.zMin;
-  const z1 = t.zMax;
-  const nZ = a.hasAbdominalAtlas ? Math.ceil((z1 - z0) / 10) : 40;
+  const profile = t.profile;
+  const angles: number[] = [],
+    heights: number[] = [];
+  if (profile) {
+    const rows = profile.length / 65,
+      minZ = rows === 8 ? -160 : -400;
+    const step = (120 - minZ) / (rows - 1);
+    // Refina donde las muestras cambian más: error de cuerda submilimétrico
+    // frente al mismo campo acústico, sin inflar toda la malla (216).
+    for (let k = 0; k < 64; k++) {
+      let delta = 0;
+      for (let r = 0; r < rows; r++) delta = Math.max(delta, Math.abs(profile[r * 65 + 1 + k] - profile[r * 65 + 1 + ((k + 1) % 64)]));
+      const n = 4 * Math.max(1, Math.ceil(Math.sqrt(delta / 0.15) / 4));
+      for (let j = 0; j < n; j++) angles.push(((k + j / n) * Math.PI) / 32);
+    }
+    angles.push(2 * Math.PI);
+    heights.push(t.zMin);
+    for (let r = 0; r < rows - 1; r++) {
+      let delta = 0;
+      for (let k = 0; k < 65; k++) delta = Math.max(delta, Math.abs(profile[r * 65 + k] - profile[(r + 1) * 65 + k]));
+      const n = 4 * Math.max(1, Math.ceil(Math.max(step / 3, Math.sqrt(delta / 0.15)) / 4));
+      for (let j = 0; j < n; j++) heights.push(minZ + (r + j / n) * step);
+    }
+    heights.push(120, t.zMax);
+  } else {
+    for (let i = 0; i <= 72; i++) angles.push((i * Math.PI) / 36);
+    for (let j = 0; j <= 40; j++) heights.push(t.zMin + ((t.zMax - t.zMin) * j) / 40);
+  }
+  const nT = angles.length - 1,
+    nZ = heights.length - 1;
   const pos: number[] = [];
+  const normals: number[] = [];
   const idx: number[] = [];
   for (let j = 0; j <= nZ; j++) {
-    const z = z0 + ((z1 - z0) * j) / nZ;
+    const z = heights[j];
     for (let i = 0; i <= nT; i++) {
-      const th = (i / nT) * Math.PI * 2;
-      // La piel usa la misma elipse que el modelo acústico (torsoDepth): así la
-      // sonda apoya exactamente donde la ve el haz.
-      pos.push(...torsoSkinPoint(th, z, t).map((v) => v * CM));
+      const th = angles[i];
+      // La piel muestrea el mismo campo corporal que el apoyo y el haz.
+      const p = torsoSkinPoint(th, z, t);
+      pos.push(...p.map((v) => v * CM));
+      normals.push(...torsoNormal(p, t));
     }
   }
   for (let j = 0; j < nZ; j++)
     for (let i = 0; i < nT; i++) {
       const p = j * (nT + 1) + i;
-      idx.push(p, p + nT + 1, p + 1, p + 1, p + nT + 1, p + nT + 2);
+      idx.push(p, p + 1, p + nT + 1, p + 1, p + nT + 2, p + nT + 1);
     }
   const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
   g.setIndex(idx);
-  g.computeVertexNormals();
   const mat = new THREE.MeshStandardMaterial({
     color: 0xd9b59a,
     roughness: 0.75,

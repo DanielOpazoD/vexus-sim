@@ -1,0 +1,136 @@
+{
+  "scope": "Measured observations and retrospective scheduling simulation, not a promise of future speedup. No cases,assertions,physics,resolution,deadlines or retries changed.",
+  "baselineRuns": [
+    {
+      "runId": 39123181714,
+      "head": "47f13876135ae171aaba04960ae3a0f6497f33bd",
+      "tests": 154,
+      "testMilliseconds": 14113834,
+      "workflowElapsedSeconds": 1699.0,
+      "longestShardMilliseconds": 1612756.928,
+      "shortestShardMilliseconds": 638441.078
+    },
+    {
+      "runId": 39154581661,
+      "head": "96dd2176fe3a4d93aece87364d60310977eff524",
+      "tests": 154,
+      "testMilliseconds": 13668409,
+      "workflowElapsedSeconds": 1781.0,
+      "longestShardMilliseconds": 1645291.4440000001,
+      "shortestShardMilliseconds": 751393.772
+    },
+    {
+      "runId": 39156988840,
+      "head": "62feab58544803f4430a76ad4fcfc9b514577f09",
+      "tests": 154,
+      "testMilliseconds": 13906381,
+      "workflowElapsedSeconds": 1749.0,
+      "longestShardMilliseconds": 1663827.483,
+      "shortestShardMilliseconds": 681692.951
+    }
+  ],
+  "scheduling": {
+    "scope": "Retrospective scheduling simulation; same per-test measured costs, ignores changed order/cold starts/runner variation. Not a measured CI speedup.",
+    "historicalWeightCount": 87,
+    "currentWeights": 154,
+    "weightsCoveredCurrentBefore": 83,
+    "runs": [
+      {
+        "run": 39123181714,
+        "testMs": 14113834,
+        "oldMaxSumMs": 1610320,
+        "oldMinSumMs": 636758,
+        "rebalancedMaxSumMs": 1327592,
+        "rebalancedMinSumMs": 990690,
+        "observedLongestShardMs": 1612756.928,
+        "predictedReductionPercent": 17.55725570073029
+      },
+      {
+        "run": 39154581661,
+        "testMs": 13668409,
+        "oldMaxSumMs": 1638073,
+        "oldMinSumMs": 749502,
+        "rebalancedMaxSumMs": 1239208,
+        "rebalancedMinSumMs": 1034536,
+        "observedLongestShardMs": 1645291.4440000001,
+        "predictedReductionPercent": 24.349647421085628
+      },
+      {
+        "run": 39156988840,
+        "testMs": 13906381,
+        "oldMaxSumMs": 1656742,
+        "oldMinSumMs": 680243,
+        "rebalancedMaxSumMs": 1263640,
+        "rebalancedMinSumMs": 1068860,
+        "observedLongestShardMs": 1663827.483,
+        "predictedReductionPercent": 23.727411992935533
+      }
+    ]
+  },
+  "latestLongestTests": [
+    {
+      "id": "070e848ea549160e5848-cd86abdd162e18ed298c/chromium",
+      "file": "registeredComparison.spec.ts",
+      "title": "compara imágenes registradas pese a distinto trabajo del receptor antes de adquirir",
+      "duration": 462875,
+      "retry": 0
+    },
+    {
+      "id": "470c9e38653f21195b94-6b88423a495415e7ed86/chromium",
+      "file": "portalPresentation.spec.ts",
+      "title": "porta: tarjeta real, rojo y sensibilidad, reference=atlas, severe=true",
+      "duration": 357359,
+      "retry": 0
+    },
+    {
+      "id": "41757334d96980b729a2-9f5de2e88759bcb18384/chromium",
+      "file": "probeFreeNavigation.spec.ts",
+      "title": "free thoracoabdominal translation and all angles from six starting regions, severe-congestion",
+      "duration": 317276,
+      "retry": 0
+    },
+    {
+      "id": "470c9e38653f21195b94-b35d04eae6ca38ebf903/chromium",
+      "file": "portalPresentation.spec.ts",
+      "title": "porta: tarjeta real, rojo y sensibilidad, reference=false, severe=true",
+      "duration": 298628,
+      "retry": 0
+    },
+    {
+      "id": "470c9e38653f21195b94-fb3a7458932524a3979d/chromium",
+      "file": "portalPresentation.spec.ts",
+      "title": "porta: tarjeta real, rojo y sensibilidad, reference=true, severe=true",
+      "duration": 290953,
+      "retry": 0
+    }
+  ],
+  "latestSuccessfulBoots": {
+    "count": 148,
+    "hostMilliseconds": 4100365,
+    "p50Milliseconds": 28425,
+    "p95Milliseconds": 36798,
+    "scope": "boot:begin through successful boot:end, includes all observed startup; not pure shader compile or GPU timing"
+  },
+  "workflowJobs": {
+    "jobs": 48,
+    "totalJobSeconds": 27594.0,
+    "supplementaryJobSeconds": 11416.0,
+    "browserInstallSteps": 30,
+    "browserInstallSeconds": 645,
+    "npmCiSteps": 46,
+    "npmCiSeconds": 137,
+    "scope": "Sum of job/step wall time, not billed or end-to-end latency"
+  },
+  "localReference": {
+    "metal25Seconds": 127.109,
+    "coreSuiteSeconds": 187.38,
+    "matrixSuiteSeconds": 197.42,
+    "corePassed": 1566,
+    "coreExpectedFailures": 10,
+    "matrixPassed": 54,
+    "matrixExpectedFailures": 1,
+    "pushFastSuiteSeconds": 32.79,
+    "scope": "Original96dd217 check,Metal andpush logs;fullcheck also includes format,lint,types,build,verification"
+  },
+  "provenance": "GitHub originals downloaded with matching provider ZIP digests and protected receipt report/execution SHA256s. Per-shard hashes retained in e2eTimingWeights.json. Full originals preserved outside Git in iteration-audit-226-evidence."
+}

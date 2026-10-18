@@ -3,6 +3,11 @@
 Evaluación del 18 de octubre de 2026, decisión 219. Alcance: herramientas, pruebas y continuidad;
 sin cambios en el simulador. La aceptación sigue definida por `CONTRIBUTING.md` y la CI protegida.
 
+La [reevaluación 226](iteration-audit-226.md) mide tres CI completas de 154 E2E, el coste de
+workflows adicionales y los desvíos del proceso de la ronda de pared. Actualiza los pesos de
+reparto y fija un worker también para E2E locales directas; no añade otro lanzador ni elimina
+pruebas. Sus cifras retrospectivas son estimaciones, pendientes de observación en la nueva CI.
+
 ## Diagnóstico crítico
 
 | Hallazgo observado                                                                                 | Cómo frena la iteración                                                                                     | Corrección mínima aplicada                                                                                                                                                             |

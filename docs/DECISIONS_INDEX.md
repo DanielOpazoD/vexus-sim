@@ -229,3 +229,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [223](DECISIONS.md#L7817) | Distancia ósea precisa y errores de arranque visibles de inmediato | vigente |
 | [224](DECISIONS.md#L7875) | Transporte compacto de capturas sin modificar la imagen | vigente |
 | [225](DECISIONS.md#L7905) | Medir dos vistas sin grabación continua adicional | vigente |
+| [226](DECISIONS.md#L7941) | Costes de iteración medidos, reparto actualizado y una carga GPU local | vigente |

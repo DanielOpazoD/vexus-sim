@@ -22,7 +22,9 @@ las pestañas abiertas y los JSON de una sesión son antecedentes, no estado viv
 - [PR267](https://github.com/DanielOpazoD/vexus-sim/pull/267): pared abdominal y cuña de relleno
   (222), lectura ósea precisa y diagnósticos de arranque/corte (223). La segunda anotación corrige
   la lectura inicial: la masa roja es tejido no segmentado. La aceptación y el estado de fusión
-  deben consultarse en la PR y su CI final; los negativos del head 57189da quedan conservados.
+  deben consultarse en la PR y su CI final; los negativos de 57189da y los timeouts de
+  50934f6 quedan conservados. La ronda 224 reduce transporte de capturas. La 225 evita grabación continua adicional durante el barrido sin cambiar sus comprobaciones;
+  ambas exigen de nuevo la aceptación completa del head final.
   El inicio renal se registra sobre la nueva piel y el hepatorrenal se bascula 6° para conservar
   visibilidad A/B. El campo fuente, resolución, plazos y movimiento libre siguen siendo los mismos.
 

@@ -7871,3 +7871,69 @@ que agotaba 270 s esperando una pose distinta de la publicada. Se actualiza úni
 coordenada esperada. Se conservan el límite de 100 cuadros, 1e−8 para la llegada, la identidad
 de los tres ejes durante el arrastre y el plazo original. Las coordenadas antiguas de los
 tests independientes de contacto quedan como testigos, sin cambiarlas para seguir al preset.
+
+## 224. Transporte compacto de capturas sin modificar la imagen
+
+**Contexto.** La CI de 50934f6 conserva dos negativos: `acquiredPoseProvenance` agota
+270 s y `renalCutTracking` 540 s. La traza del primero tarda 167,4 s al devolver
+`Array.from(gray)` por el protocolo del navegador. El segundo completa los cuatro mapas
+CPU/GPU en local sin diferencias, pero llega al plazo original al final. El verde Metal
+no acredita SwiftShader ni autoriza integrar ese candidato.
+
+**Opciones.** Ampliar plazos, quitar capturas, reducir el barrido o bajar resolución ocultaría
+el coste. `gl.finish()` no proporcionó una medida útil en este backend: el diagnóstico por
+pasadas debe drenar con una lectura real. Un ensayo que omitía gradientes sin consumo no
+mostró ahorro estable. Su comparación PNG usó viewports distintos y es inválida como
+prueba de regresión. Se retiró el ensayo por rendimiento no acreditado; se conservan datos,
+patch y la rectificación fuera de Git.
+
+**Decisión.** `captureBMode` transporta el mismo `Uint8Array` como Base64 en bloques acotados,
+en vez de un valor de protocolo por píxel. Node recupera todos los bytes y usa el mismo
+codificador PNG, orden de filas y controles de vacío/dimensiones. No hay interpolación,
+compresión de imagen con pérdidas ni cambio de tamaño. Cuatro secuencias cortas frecuentes
+mejoran el diccionario reversible; permanecen las 512 palabras, 128 frases y el presupuesto.
+
+**Consecuencias.** Se elimina transporte sin cambiar el contenido adquirido, manteniendo
+píxeles, muestras del barrido, vistas, aserciones y plazos. Esta corrección no da por resuelto
+el timeout del barrido con dos vistas.
+
+**Verificación.** El transporte genera el mismo PNG byte a byte con todos los niveles de gris
+y cruzando varios bloques. Se exige ejecutar las dos pruebas que agotaron su plazo,
+check completo, calibración, GPU Metal/SwiftShader y CI completa del head final. Los ensayos
+descartados y el check de 50934f6 no acreditan el nuevo candidato.
+
+## 225. Medir dos vistas sin grabación continua adicional
+
+**Contexto.** `renalCutTracking` conserva su timeout de 540 s. La traza de la variante
+paralela contiene más de 300 recursos de imagen además de los informes; las dos consultas
+congeladas tardan unos 40 s cada una cuando se lanzan juntas, frente a 19–21 s en serie.
+Solaparlas no aporta ahorro: comparten recursos del backend. Se retira la paralelización.
+
+**Opciones.** Se ensayaron retornos/discard de teselas sin lector y reutilización del punto
+material. No acreditaron ahorro suficiente; la reutilización conservó exactamente el PNG
+con el protocolo correcto, pero añadía 3 MiB. Un gradiente completo en un dibujo pasó cine
+(unos 240 de 270 s), pero aumentó el arranque frío a 115–127 s y la segunda preparación a
+216 s, agotando el barrido. Todos los ensayos de shader se retiraron. Sus patches, trazas
+y resultados permanecen fuera de Git. No se amplían plazos ni se baja resolución.
+
+**Decisión.** Solo este test conserva `retain-on-failure` con fuentes y snapshots del DOM,
+pero sin el screencast continuo de lienzos. Sus cuatro capturas explícitas permanecen en
+el mismo lugar y secuencia. No se retiran artefactos anteriores ni cambia la configuración
+de las otras E2E. Debe medirse si eliminar estas copias adicionales aporta margen real.
+
+**Consecuencias.** Anatomía, renderizador, viewport, resolución, relojes, dos vistas y
+barridos permanecen iguales. La traza deja de incluir la película continua de esta prueba;
+conserva protocolo/DOM/fuentes y todas las capturas de adquisición previstas. Las
+aserciones, 24 pasos por eje, puntos de paridad, límites y treinta cuadros congelados
+mantienen su contrato. No se acepta un verde por recortar comprobaciones.
+
+**Verificación.** Se exige la misma prueba completa dentro de sus 540 s, cero reintentos,
+cuatro mapas sin diferencias y cuatro capturas. El check y la CI completa del head final
+siguen siendo obligatorios. Una ejecución posterior aprobada no aísla por declaración
+las intermitencias históricas; los negativos originales no se sustituyen ni borran.
+
+La reproducción local del candidato termina en 532.721 de 540.000 ms, una ejecución y cero
+reintentos: cuatro mapas de 256 puntos sin discrepancias, cuatro PNG y el control final
+de congelación. El cuerpo del test es idéntico byte a byte al de 50934f6; solo se añade
+la configuración de traza. El margen de 7.279 ms sigue siendo estrecho y no acredita por
+sí solo la CI del head final ni resuelve todas las intermitencias históricas.

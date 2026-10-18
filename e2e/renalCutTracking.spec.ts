@@ -2,6 +2,10 @@ import { expect, test, type Page } from '@playwright/test';
 import type { CutMapInit, CutMapRequest, CutMapResponse } from '../src/ui/cutMapWorker';
 import { bootWithoutErrors, budget, windowAcquired, withinFrames } from './support';
 
+// Evitar copias continuas de los dos lienzos durante la medición en SwiftShader.
+// Se conservan DOM/fuentes y las cuatro capturas explícitas del test.
+test.use({ trace: { mode: 'retain-on-failure', screenshots: false, snapshots: true, sources: true } });
+
 interface AcquiredCut {
   request: CutMapRequest;
   n: number;

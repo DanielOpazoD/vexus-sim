@@ -24,7 +24,7 @@ function correlation(axis: number, lagMm: number): number {
 }
 
 describe('escala material del seno renal, contrato 215', () => {
-  it.fails('pierde la correlación de los grumos gruesos antes de 1,5 mm en los tres ejes', () => {
+  it('pierde la correlación de los grumos gruesos antes de 1,5 mm en los tres ejes', () => {
     // Límite de diseño QA, no medida poblacional: rechaza la correlación ~0,65 del
     // campo de 3 mm observado como islas gruesas. Objetivo: <0,4 sin filtrar la imagen.
     for (const axis of [0, 1, 2]) expect(correlation(axis, 1.5), `eje ${axis}`).toBeLessThan(0.4);

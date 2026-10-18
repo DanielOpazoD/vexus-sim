@@ -7669,3 +7669,85 @@ el patch binario completo. La huella combina ahora el inventario del índice con
 archivos modificados/nuevos, sus modos y borrados. Evita generar ese patch y detecta cambios de
 índice sin modificar el contenido de trabajo. La regresión grande falla con el evaluador anterior
 y pasa con el nuevo; el negativo se conserva. Sigue siendo diagnóstico local, nunca aceptación.
+
+## 220. Afinar el medio dispersor del seno renal sin filtrar la imagen
+
+**Contexto.** El usuario retoma la fidelidad ecográfica como prioridad. La adquisición Atlas de
+main `5700415` conserva islas brillantes grandes en el seno renal. El contrato 215 estaba integrado
+como fallo esperado, pero su experimento de imagen no se había entregado. La comparación externa
+sigue siendo la [imagen hepatorrenal de Ptrump16](https://commons.wikimedia.org/wiki/File:Ultrasound_liver_right_lobe_and_right_kidney.jpg)
+(Toshiba Aplio 500, CC BY-SA 4.0) y la [revisión de Hansen et al.](https://www.mdpi.com/2075-4418/6/1/2).
+Respaldan la organización y heterogeneidad del seno, no calibran su escala material.
+
+**Opciones.** Desenfocar la imagen afectaría cápsula, vasos y corteza; bajar ganancia global
+alteraría el contraste hepatorrenal. Se retoma el experimento acotado 215 después de cerrar
+la continuidad de la pared 216/217 y el proceso 219.
+
+**Decisión.** `SINUS_TEXTURE.cellMm` pasa de 3 a 1,5 mm. TS y GLSL consumen la misma constante.
+Se conserva la distribución del medio, normalización, dispersión, retrodispersión basal,
+semilla, anatomía, fisiología, haz, PSF y resolución. El contrato 215 pasa de `it.fails` a `it`.
+La escala es **[EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION**, sin ajuste por pose o ventana.
+
+**Consecuencias.** La modulación de concentración se vuelve más fina antes de la formación
+coherente del eco; la PSF integra ese medio. No se añaden píxeles ni se retocan capturas.
+El seno no representa todavía sus componentes histológicos individuales. No declara resueltos
+el realismo global, el transporte PW 208, las intermitencias históricas ni la validación humana.
+
+**Verificación.** La prueba ordinaria falla con 3 mm (correlación 0,64976 en el eje X a 1,5 mm,
+límite QA <0,4) y pasa con 1,5 mm. Las 14 pruebas focales conservan potencia, continuidad,
+contraste y anclaje a 50 micras; no cambian sus umbrales. La aceptación exige además ocho
+adquisiciones pareadas registradas, revisión de imagen, navegación desde seis coordenadas
+con ambos pacientes, coherencia 3D/corte/ecografía, Color/PW, check y CI completa del head final.
+En las cuatro imágenes renales registradas de ambos pacientes, el CV del gris interior del
+seno baja entre 5,6 y 18,8 %, con el resto de tejidos medidos intactos; las cuatro imágenes
+portal/subcostal son idénticas píxel a píxel. Las máscaras son sintéticas y no equivalen a
+medidas clínicas ni a una prueba ciega. Los registros originales y el negativo se conservan fuera de Git en `renal-fidelity-220-evidence`.
+La CI del PR acredita el cierre efectivo; este texto no sustituye su veredicto.
+
+## 221. La orientación de los septos sigue su campo material tridimensional
+
+**Contexto.** La revisión de la pared revela un error de geometría acústica, independiente del
+ajuste de apariencia 220: la normal de `fatSeptum` no es el gradiente del septo que genera.
+TS usa un marco elíptico sin el centro/perfil reales; GLSL usa la normal corporal pero pierde
+su componente craneocaudal y trata el gradiente del arco como tangente unitaria. Al angular,
+la ley de incidencia puede dar brillo a una orientación distinta de la lámina existente.
+En 239 muestras interiores del perfil Atlas, ambos pacientes, el error p95 es 27,9/27,2°.
+La consulta del shader de producción en Metal confirma el defecto: mínimos de alineación
+0,894/0,889 y percentiles 5 de 0,929/0,918. No son medidas clínicas ni una evaluación ciega.
+
+**Opciones.** Cambiar brillo, ganancia o rugosidad escondería el error; desplazar las láminas
+alteraría la microestructura. La corrección aplica la cadena de derivación de sus coordenadas,
+sin parámetros de apariencia nuevos ni recalibración de tejidos.
+
+**Decisión.** Las dos ramas de `fatSeptum` usan `wallArcGradient`; los techos añaden el gradiente
+completo de `-torsoDepth`, incluida z. Se replica exactamente en `WALL_TEXTURE_GLSL`.
+Posiciones, selección de la lámina, distancia gaussiana y peso permanecen iguales. La normal
+sigue pasando al mundo mediante la jacobiana de compresión ya existente. La ley angular no cambia.
+Las estrías musculares conservan su aproximación anterior; no se da por resuelta su orientación.
+
+**Consecuencias.** El brillo especular responde a la lámina material que se está examinando.
+No modifica el clasificador, la geometría del paciente, la malla 3D, la resolución ni la PSF.
+El campo usa una coordenada polar con corte posterior; allí no existe una derivada única.
+El ensayo inicial que incluía ese corte conserva sus resultados y no cuenta como prueba de
+alineación interior. Este cambio no reconstruye la microestructura histológica ni elimina esa costura.
+
+**Verificación.** Las regresiones CPU ordinarias fallan antes y pasan después; las 40 pruebas
+focales de pared/textura pasan sin relajar umbrales. En las mismas 239 muestras interiores,
+el error corregido es inferior a 0,000005°. La nueva E2E evalúa el GLSL de producción y el
+gradiente de su propio peso, con los coeficientes y uniforms adquiridos de cada paciente.
+El primer montaje no vinculaba los nombres compactados: produjo cero muestras y se conserva
+como error del instrumento. Con el esquema único correctamente vinculado, falla por la
+orientación del shader anterior en ambos pacientes. La aceptación requiere su aprobación
+con el shader corregido en Metal/SwiftShader, capturas bajo angulaciones vecinas, coherencia
+3D/corte/ecografía, Color/PW y check/CI completos del candidato final.
+
+El primer build excede el límite original en 34 bytes. Se sustituyen tres frases de escaso
+rendimiento del diccionario reversible por secuencias medidas del texto actual. Los tests
+existentes exigen programas ensamblados idénticos byte a byte, incluidos los shaders de Three.
+No se amplía el diccionario, el presupuesto ni se elimina código físico para recuperar margen.
+
+La diferencia GPU inicial de 10 micras dejó una muestra corregida en 0,994788 frente a >0,995;
+ese negativo también se conserva. La derivada final se evalúa a 2 micras con el mismo umbral,
+sin descartar esa muestra. Pasa en ambos pacientes; la mutación al shader anterior vuelve a
+fallar en ambos, por la aserción de alineación. Se conservan ambos negativos y la restauración
+exacta de la fuente. El instrumento no cuenta el éxito de una repetición sin corregir su método.

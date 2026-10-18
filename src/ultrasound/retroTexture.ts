@@ -33,14 +33,16 @@ export const RETRO_TEXTURE = {
 } as const;
 
 /**
- * Seno renal: modulación lobular material de 3 mm, además del moteado y los grumos existentes.
+ * Seno renal: modulación lobular material de 1,5 mm, además del moteado y los grumos existentes.
  * Decisión 201: reducir gain de 4 a 2 (~6,4 a ~3,2 dB de desviación) evita islas gruesas
  * dominantes en los barridos renal/hepatorrenal. norm conserva E[amplitud²] ≈ 1; no cambia
  * la retrodispersión basal ni compensa por ventana, pose o profundidad.
+ * Decisión 220 (contrato 215): afinar la célula reduce las islas macroscópicas sin cambiar
+ * distribución, potencia o dispersión; la PSF del equipo integra el mismo medio material.
  * NEEDS_CALIBRATION: escala, dispersión y modelo log-normal son estimados. ACEP respalda
  * el seno central ecogénico, no estos parámetros ni una segmentación de sus componentes.
  */
-export const SINUS_TEXTURE = { cellMm: 3, gain: 2, salt: 57.3, norm: 0.875 } as const;
+export const SINUS_TEXTURE = { cellMm: 1.5, gain: 2, salt: 57.3, norm: 0.875 } as const;
 
 /** Factor de amplitud de los lóbulos del seno renal en el punto material `m` (potencia media 1). */
 export function sinusLobules(m: Vec3): number {

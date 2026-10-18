@@ -223,3 +223,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [217](DECISIONS.md#L7540) | Redondear la transición costal sin anclar de nuevo sus rectas auxiliares | vigente |
 | [218](DECISIONS.md#L7578) | No fabricar vallas GPU en una pausa sin comandos | vigente |
 | [219](DECISIONS.md#L7616) | Acortar el feedback sin sustituir la aceptación completa | vigente |
+| [220](DECISIONS.md#L7673) | Afinar el medio dispersor del seno renal sin filtrar la imagen | vigente |
+| [221](DECISIONS.md#L7707) | La orientación de los septos sigue su campo material tridimensional | vigente |

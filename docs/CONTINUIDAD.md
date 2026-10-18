@@ -212,3 +212,23 @@ cámara, cine, tamaños, adquisición y recuperación siguen invalidando la pres
 el plazo de540000ms ni el barrido original. La nueva prueba de recursos debe fallar con el código
 anterior y el head final necesita su propia aceptación completa. No presentar el Metal/Swift
 local de321eccb como aprobación de esa CI ni dar el PR264 por fusionado antes de verificarlo.
+
+## Ronda 220: seno renal, contrato 215 activado
+
+El usuario retoma bloques de fidelidad ecográfica. La ronda 220 implementa la célula material de
+1,5 mm del contrato 215, tras conservar el negativo del campo de 3 mm; distribución y potencia
+se mantienen. No confundir con el experimento histórico `9dff00a`: la nueva entrega parte de
+main `5700415` y necesita sus propias adquisiciones y CI. Ver decisión220 y el PR de esta ronda
+para aceptación efectiva. La escala no es una calibración clínica.
+
+Secuencia de trabajo siguiente: comparar interfaces/pared bajo angulación (incluido el marco
+material de septos y estrías sobre perfiles reales); después textura/contraste a profundidad
+emparejada y, por separado, señal Color/PW. Cada bloque requiere un defecto visible y un
+mecanismo causal antes de cambiar la imagen. La meta de indistinguibilidad necesita revisión
+ciega humana independiente; las métricas internas y CI no la acreditan.
+
+La ronda 221 corrige una discrepancia entre la orientación de los septos subcutáneos y su
+campo material. Conserva posición y peso; usa los gradientes completos de profundidad y arco
+en TS/GLSL, con negativos CPU/GPU y una prueba del shader de producción. Es un error físico,
+no una nueva calibración estética. La orientación de las estrías musculares y la costura polar
+posterior siguen pendientes de evaluación. Ver decisión 221 y la CI final del PR para su cierre.

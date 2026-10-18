@@ -188,3 +188,14 @@ Sus regresiones fallan con216 en ambos pacientes. La decisión217 documenta los 
 no retomarlos como variantes aprobadas ni confundir sus capturas con el candidato localizado.
 La aceptación efectiva y sus límites deben consultarse en el PR y CI del head final. Los pendientes
 del seno renal215, transporte PW208 y las intermitencias anteriores no quedan cerrados por esta ronda.
+
+### Negativo y corrección de recursos al pausar (218)
+
+La CI39106183480 de321eccb es negativa por tiempo total del barrido con dos vistas, tanto en el
+intento principal como en el reintento automático. Se completaron288 movimientos y cuatro
+paridades sin diferencias antes del timeout final en pausa. Se conservan30 ZIP originales y
+ambas trazas. La corrección218 evita vallas/flush vacíos al permanecer congelado sin cambios;
+cámara, cine, tamaños, adquisición y recuperación siguen invalidando la presentación. No cambia
+el plazo de540000ms ni el barrido original. La nueva prueba de recursos debe fallar con el código
+anterior y el head final necesita su propia aceptación completa. No presentar el Metal/Swift
+local de321eccb como aprobación de esa CI ni dar el PR264 por fusionado antes de verificarlo.

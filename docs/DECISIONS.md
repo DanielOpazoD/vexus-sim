@@ -7574,3 +7574,41 @@ contacto completo existen separaciones amplias heredadas y no se presentan como 
 La aceptación requiere check completo, calibrate, capturas registradas, navegación desde seis
 coordenadas y ambos pacientes, paridad de caras/normales, dos vistas y CI protegida del head final,
 sin reintentos como aceptación. Los informes del PR acreditan lo ejecutado, no esta lista por sí sola.
+
+## 218. No fabricar vallas GPU en una pausa sin comandos
+
+**Contexto.** La CI39106183480 del candidato321eccb falló en `renalCutTracking`: el intento
+principal y el reintento automático agotaron el plazo original de540000ms en la comprobación
+final de las vistas congeladas. En ambos se habían completado los288 movimientos y las cuatro
+comparaciones de paridad, con cero diferencias y cero errores internos. No se acepta repetir
+la CI sin una corrección ni ampliar ese plazo. Los30 ZIP originales/SHA256 y las dos trazas
+quedan conservados. La ejecución anterior aprobada de main tardó343,7s; otros controles legacy
+también fueron más lentos en la corrida negativa, por lo que esos tiempos entre corredores
+no demuestran una regresión causada por la curva anatómica.
+
+**Opciones.** Aumentar tiempo, reducir movimientos/cuadros, bajar resolución o saltarse la fase
+congelada se rechazan. `Navigator3D` y cine ya evitaban redibujar estados idénticos; la espera
+innecesaria persistía en el coordinador: cada vuelta, incluso sin comandos, añadía `fenceSync`
+y `flush`. Una prueba nueva observó31 vallas y cero dibujos en30 vueltas reales congeladas.
+
+**Decisión.** El bucle conserva la identidad de presentación: renderizador, cuadro de cine,
+revisión del dibujo3D, estado presentado y pérdida de contexto. En pausa y sin cambios completa
+el turno compartido sin añadir una valla vacía. Cámara, capas, cine, tamaños, equipo y recuperación
+invalidan esa identidad. Los dos primeros cuadros, la adquisición en vivo, Docente, el visor y
+los cuadros que lanzan después de trabajo parcial conservan el drenaje anterior. El contador
+de revisiones3D solo aumenta al ejecutar el dibujo real; no cambia geometría ni reloj.
+
+**Consecuencias.** Se elimina un coste reproducible de pausa, también cuando otra vista sigue
+adquiriendo. No se cambia física, muestreo, cantidad de movimientos, resolución, aserciones,
+plazos ni presupuesto. Dos entradas poco aprovechadas del diccionario se sustituyen sin ampliar
+capacidad ni cambiar el decodificador; los programas ensamblados deben permanecer idénticos
+byte por byte. El impacto en la duración completa requiere la CI del código final; no se
+atribuyen a este mecanismo todas las intermitencias históricas.
+
+**Verificación.** `frozenGpuIdle.spec.ts` observa llamadas reales de dibujo y vallas en dos vistas:
+tras30 vueltas estables exige cero dibujos/vallas, el mismo cuadro y el mismo tiempo físico.
+Después exige dibujo y valla al cambiar cámara, tamaño y cine, y una adquisición nueva al
+descongelar. Falla con el código anterior (31 vallas vacías) y pasa con el cambio en el ensayo
+Metal. Las pruebas de vallas, turnos y cine conservan sus límites; las de transporte verifican
+identidad exacta de los shaders. El barrido original con dos vistas permanece intacto y debe
+pasar junto con la CI completa del head final, sin reintentos como aceptación.

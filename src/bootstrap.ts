@@ -447,6 +447,7 @@ export async function start(): Promise<void> {
     let eqPrevCpu: CutMapView['lastMap'] = null;
     let presentationDirty = true;
     let presentedCpuState: unknown[] = [];
+    let submittedGpuState: unknown[] = [];
     // An unchanged 2D canvas must not keep submitting compositor work while the
     // software GPU is busy. Cut interaction invalidates its annotation in that turn.
     for (const event of ['pointermove', 'pointerleave', 'click', 'keydown'])
@@ -500,7 +501,7 @@ export async function start(): Promise<void> {
       cutMap?.drawHighlight(overlay, s, store.get().torso && !gpu.lost);
     }
 
-    function frame(now: number, dt: number): void {
+    function frame(now: number, dt: number): boolean {
       if (loopFrames === 0) markStartup('frame:begin');
       const s = sim();
       fitCanvases();
@@ -572,6 +573,13 @@ export async function start(): Promise<void> {
         panel.sync(); // la pose y el acoplamiento cambian con el ratón; el equipo avisa por su cuenta
         windows.sync();
       }
+      const state = [s.renderer, s.renderer.cineShownFrame, nav?.renderRevision, presentedCpuState, gpu.lost];
+      // Una pausa estable no envía comandos: no fabricar una valla/flush.
+      // Cine, tamaño, cámara, modos y recuperación invalidan esta identidad.
+      // Docente/visor y los dos primeros cuadros conservan el drenaje completo.
+      const work = loopFrames < 2 || !s.frozen || comparisonOpen || store.get().debug || state.some((v, i) => v !== submittedGpuState[i]);
+      submittedGpuState = state;
+      return work;
     }
 
     function loop(now: number): void {
@@ -589,13 +597,15 @@ export async function start(): Promise<void> {
         // Acumular el tiempo entre cuadros adquiridos, con el mismo techo de 0,25 s.
         const dt = Math.min(0.25, (now - last) / 1000);
         last = now;
+        let gpuWork = true; // Un cuadro que lanza puede haber enviado trabajo parcial.
         try {
-          frame(now, dt);
+          gpuWork = frame(now, dt);
         } finally {
           // Drain even a partially submitted frame before another page prepares
           // contexts. No lease is released merely because JS returned or threw.
-          if (!gpu.lost) gpuFramePacer.submit(sim().renderer.gl);
+          if (!gpu.lost && gpuWork) gpuFramePacer.submit(sim().renderer.gl);
           gpuTurns.submitted();
+          if (!gpuWork) gpuTurns.completed();
         }
         loopFrames++;
         if (loopFrames === 1) markStartup('frame:first');

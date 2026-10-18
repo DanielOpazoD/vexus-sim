@@ -19,6 +19,11 @@ las pestañas abiertas y los JSON de una sesión son antecedentes, no estado viv
 
 ## Referencia para retomar la entrega actual
 
+La auditoría 228 ordena el trabajo por pared regional, cortical vertebral y desfase del corte.
+Las decisiones 229–231 limitan el soporte posterior de los planos interoblicuos, derivan la
+curvatura vertebral de su campo fuente y reducen trabajo repetido del corte sin cambiar muestras.
+La aceptación del candidato debe consultarse en Git/CI, no inferirse de esta descripción.
+
 - La ronda 227 vincula el build local con su fuente y verifica los recursos de la preview externa
   antes de las E2E; ver [entorno y reproducción](engineering/workspace.md). No cambia el simulador
   ni la aceptación. Se conserva la preparación de workflows suplementarios: los datos disponibles

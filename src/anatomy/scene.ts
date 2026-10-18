@@ -15,7 +15,7 @@ import {
   sdSpine,
   spineBodySd,
   spineDistances,
-  spineFaceCurvature,
+  spineFaceFrame,
   sdDiaphragm,
   sdDiaphragmSlope,
   sdRib,
@@ -222,6 +222,18 @@ export function tubeBoundingSphere(t: Tube, marginMm: number): { center: Vec3; r
   let r = 0;
   for (const n of t.nodes) r = Math.max(r, Math.hypot(n.p[0] - c[0], n.p[1] - c[1], n.p[2] - c[2]) + n.r * 1.6);
   return { center: c, r: r + marginMm };
+}
+
+/** Same sphere predicate without a robust norm away from its rounding boundary.
+ * Eight epsilons cover the three squares, two sums and comparison; ambiguous,
+ * underflowed or overflowed values retain the original Math.hypot decision. */
+export function outsideTubeSphere(p: Vec3, center: Vec3, radius: number): boolean {
+  const x = p[0] - center[0],
+    y = p[1] - center[1],
+    z = p[2] - center[2];
+  const d2 = x * x + y * y + z * z,
+    r2 = radius * radius;
+  return radius >= 0 && Math.abs(d2 - r2) > 8 * Number.EPSILON * Math.max(d2, r2) ? d2 > r2 : Math.hypot(x, y, z) > radius;
 }
 
 /**
@@ -829,8 +841,10 @@ export class AnatomyScene {
     }
     const geometry = face;
     // la columna (PR119; recuperación provisional de la decisión 103): el costado de los cuerpos es un cilindro en z, con la curvatura de su elipse
-    if (geometry === 'spine')
-      return { ...this.numericGradient(m, (p) => spineBodySd(p, this.spine), spineFaceCurvature(m, this.spine)), axis: [0, 0, 1] };
+    if (geometry === 'spine') {
+      const frame = spineFaceFrame(m, this.spine);
+      return { ...this.numericGradient(m, (p) => spineBodySd(p, this.spine), frame.curvature), axis: frame.axis };
+    }
     return this.numericGradient(
       m,
       (p) => this.faceSdf(p, caliber, geometry)!,
@@ -967,7 +981,7 @@ export class AnatomyScene {
     for (let candidate = 0; candidate < count; candidate++) {
       const i = grid ? grid.data[2 * (first + candidate)] : candidate;
       const b = this.tubeBounds[i];
-      if (Math.hypot(m[0] - b.center[0], m[1] - b.center[1], m[2] - b.center[2]) > b.r) continue;
+      if (outsideTubeSphere(m, b.center, b.r)) continue;
       if (i < this.vessels.length) {
         const def = this.vessels[i];
         const scale = caliber.radiusScale(def.id);

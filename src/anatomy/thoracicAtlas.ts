@@ -26,8 +26,14 @@ export function thoracicGradient(p: Vec3): Vec3 {
   }) as Vec3;
 }
 /** Local principal directions of the same field; resolution remains 1.5 mm. */
-export function thoracicFrame(p: Vec3): { axis: Vec3; curvature: number } {
-  const g = thoracicGradient(p),
+export function boneSurfaceFrame(p: Vec3, distance: (p: Vec3) => number): { axis: Vec3; curvature: number } {
+  const g = [0, 1, 2].map((i) => {
+      const a: Vec3 = [...p],
+        b: Vec3 = [...p];
+      a[i] += 0.25;
+      b[i] -= 0.25;
+      return (distance(a) - distance(b)) / 0.5;
+    }) as Vec3,
     norm = Math.hypot(...g),
     n = g.map((v) => v / (norm || 1)) as Vec3;
   if (norm < 1e-6) return { axis: [0, 0, 1], curvature: 0 };
@@ -36,7 +42,7 @@ export function thoracicFrame(p: Vec3): { axis: Vec3; curvature: number } {
   u.forEach((v, i) => (u[i] = v / (l || 1)));
   const v: Vec3 = [n[1] * u[2] - n[2] * u[1], n[2] * u[0] - n[0] * u[2], n[0] * u[1] - n[1] * u[0]];
   const h = 2 * F.pitchMm,
-    at = (a: number, b: number) => thoracicSdf(p.map((x, i) => x + h * (a * u[i] + b * v[i])) as Vec3),
+    at = (a: number, b: number) => distance(p.map((x, i) => x + h * (a * u[i] + b * v[i])) as Vec3),
     d = at(0, 0);
   const a = (at(1, 0) + at(-1, 0) - 2 * d) / (h * h),
     c = (at(0, 1) + at(0, -1) - 2 * d) / (h * h),
@@ -52,6 +58,7 @@ export function thoracicFrame(p: Vec3): { axis: Vec3; curvature: number } {
     curvature: Math.max(Math.abs(lo), Math.abs(hi)) / (norm || 1),
   };
 }
+export const thoracicFrame = (p: Vec3): { axis: Vec3; curvature: number } => boneSurfaceFrame(p, thoracicSdf);
 const vec = (a: readonly number[]) => a.map((v) => v.toFixed(3)).join(',');
 export const THORACIC_GLSL = /* glsl */ `
 vec2 thoracicValue(vec3 p) {
@@ -69,11 +76,15 @@ const int THORACIC_MATERIALS[${F.materials.length}]=int[${F.materials.length}]($
 int thoracicMaterial(float label){return THORACIC_MATERIALS[clamp(int(label+.5),0,${F.materials.length - 1})];}
 
 vec3 thoracicGradient(vec3 p){vec2 h=vec2(.25,0);return vec3(thoracicSdf(p+h.xyy)-thoracicSdf(p-h.xyy),thoracicSdf(p+h.yxy)-thoracicSdf(p-h.yxy),thoracicSdf(p+h.yyx)-thoracicSdf(p-h.yyx))/.5;}
-void thoracicFrame(vec3 p,out vec3 axis,out float curvature){
-  vec3 g=thoracicGradient(p);float gn=length(g);if(gn<1e-6){axis=vec3(0,0,1);curvature=0.0;return;}vec3 n=g/gn;
-  vec3 u=abs(n.z)<.9?vec3(-n.y,n.x,0):vec3(0,-n.z,n.y);u/=max(length(u),1e-6);vec3 v=cross(n,u);float h=${(2 * F.pitchMm).toFixed(1)};vec3 U=h*u,V=h*v;float d=thoracicSdf(p);
-  float a=(thoracicSdf(p+U)+thoracicSdf(p-U)-2.0*d)/(h*h),c=(thoracicSdf(p+V)+thoracicSdf(p-V)-2.0*d)/(h*h),b=(thoracicSdf(p+U+V)-thoracicSdf(p+U-V)-thoracicSdf(p-U+V)+thoracicSdf(p-U-V))/(4.0*h*h);
+float spineBodySd(vec3 m);
+float boneFrameDistance(vec3 p,bool spine){return spine?spineBodySd(p):thoracicSdf(p);}
+void boneSurfaceFrame(vec3 p,bool spine,out vec3 axis,out float curvature){
+  vec2 e=vec2(.25,0);vec3 g=vec3(boneFrameDistance(p+e.xyy,spine)-boneFrameDistance(p-e.xyy,spine),boneFrameDistance(p+e.yxy,spine)-boneFrameDistance(p-e.yxy,spine),boneFrameDistance(p+e.yyx,spine)-boneFrameDistance(p-e.yyx,spine))/.5;
+  float gn=length(g);if(gn<1e-6){axis=vec3(0,0,1);curvature=0.0;return;}vec3 n=g/gn;
+  vec3 u=abs(n.z)<.9?vec3(-n.y,n.x,0):vec3(0,-n.z,n.y);u/=max(length(u),1e-6);vec3 v=cross(n,u);float h=${(2 * F.pitchMm).toFixed(1)};vec3 U=h*u,V=h*v;float d=boneFrameDistance(p,spine);
+  float a=(boneFrameDistance(p+U,spine)+boneFrameDistance(p-U,spine)-2.0*d)/(h*h),c=(boneFrameDistance(p+V,spine)+boneFrameDistance(p-V,spine)-2.0*d)/(h*h),b=(boneFrameDistance(p+U+V,spine)-boneFrameDistance(p+U-V,spine)-boneFrameDistance(p-U+V,spine)+boneFrameDistance(p-U-V,spine))/(4.0*h*h);
   float theta=.5*atan(2.0*b,a-c),co=cos(theta),si=sin(theta),hi=.5*(a+c+length(vec2(a-c,2.0*b))),lo=.5*(a+c-length(vec2(a-c,2.0*b)));
   axis=abs(hi)<abs(lo)?co*u+si*v:-si*u+co*v;curvature=max(abs(lo),abs(hi))/gn;
 }
+void thoracicFrame(vec3 p,out vec3 axis,out float curvature){boneSurfaceFrame(p,false,axis,curvature);}
 `;

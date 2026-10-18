@@ -25,10 +25,19 @@ export function sourceDistance(data: Uint16Array, p: Vec3, f: SourceVolume, text
     sz = sy * textureDimensions[1],
     base = (az + f.offset[2]) * sz + (ay + f.offset[1]) * sy + 2 * (ax + f.offset[0]);
   let d = 0;
-  for (let z = 0; z <= 1; z++)
-    for (let y = 0; y <= 1; y++)
-      for (let x = 0; x <= 1; x++)
-        d += HALF[data[base + z * sz + y * sy + 2 * x]] * (x ? tx : 1 - tx) * (y ? ty : 1 - ty) * (z ? tz : 1 - tz);
+  const mx = 1 - tx,
+    my = 1 - ty,
+    mz = 1 - tz;
+  // Same eight products and summation order as the former z/y/x loops.
+  // Keep float64 arithmetic and its boundary signs; remove only loop/branch work.
+  d += HALF[data[base]] * mx * my * mz;
+  d += HALF[data[base + 2]] * tx * my * mz;
+  d += HALF[data[base + sy]] * mx * ty * mz;
+  d += HALF[data[base + sy + 2]] * tx * ty * mz;
+  d += HALF[data[base + sz]] * mx * my * tz;
+  d += HALF[data[base + sz + 2]] * tx * my * tz;
+  d += HALF[data[base + sz + sy]] * mx * ty * tz;
+  d += HALF[data[base + sz + sy + 2]] * tx * ty * tz;
   return d;
 }
 

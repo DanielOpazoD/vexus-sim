@@ -543,6 +543,9 @@ vec2 interfaceEcho(Cls c, vec3 m, vec3 dir, float r, float se, Warp w, bool with
   if ((c.iface == IF_RIB || c.iface == IF_VERTEBRAL_CORTEX) && dot(fg.xyz, dir) > 0.0) return vec2(0.0);
   float cosI = abs(dot(fg.xyz, dir));
   if (cosI < IFACE_MIN_COS) return vec2(0.0);
+  // Source curvature only after the existing distance/incidence exits. Do not
+  // pay for a Hessian on every anatomy query in the other acquisition passes.
+  if (uAbdominalAtlasEnabled != 0 && c.iface == IF_VERTEBRAL_CORTEX) boneSurfaceFrame(m, true, c.tangent, c.kc);
   // tubos y costillas (decisión 62): cilindros con la curvatura de su sección en c.kc y su eje en c.tangent
   float curv = c.iface <= IF_LAST_TUBE || c.iface == IF_RIB || c.iface == IF_VERTEBRAL_CORTEX || c.iface == IF_PERICHONDRIUM || c.iface == IF_BOWEL_LUMEN || c.iface == IF_BOWEL_SEROSA ? tubeCurvature(c, fg.xyz, dir, r, se) : 1.0;
   // las caras de la pared: la variación anclada de su reflectividad a lo largo de la cara (wallTexture.ts)

@@ -1,4 +1,4 @@
-import { thoracicAtlas, thoracicValue, thoracicMaterial } from './thoracicAtlas';
+import { thoracicAtlas, thoracicValue, thoracicMaterial, boneSurfaceFrame } from './thoracicAtlas';
 import { abdominalAtlas, abdominalAtlasSdf, hepaticDomeValue, registeredDomeHeight, registeredDomeSample } from './abdominalAtlas';
 import { referenceCartilage } from './referenceCartilage';
 import { bodyDepth, bodyGradient, bodySection } from './referenceBody';
@@ -524,6 +524,7 @@ export function sdSpineDisc(p: Vec3, sp: Spine): number {
  * cilindro es z. Gemelo de `spineFaceCurvature` (GLSL): la coherencia de curvatura de su eco (decisión 57).
  */
 export function spineFaceCurvature(p: Vec3, sp: Spine): number {
+  if (thoracicAtlas && abdominalAtlas) return spineFaceFrame(p, sp).curvature;
   const e = spineEllipseSd(p, sp);
   if (spineSlabSd(p[2]) > e) return 0;
   const a = sp.r * SPINE_SHAPE.aspect;
@@ -535,6 +536,14 @@ export function spineFaceCurvature(p: Vec3, sp: Spine): number {
   if (k < 1e-6) return 0;
   const q = Math.hypot(a * ky, b * kx) / k;
   return (a * b) / (q * q * q);
+}
+
+/** Atlas: same combined source field as the cortical surface, including lumbar
+ * bodies outside the thoracic brick. Legacy keeps its analytic cylinder. */
+export function spineFaceFrame(p: Vec3, sp: Spine): { axis: Vec3; curvature: number } {
+  return thoracicAtlas && abdominalAtlas
+    ? boneSurfaceFrame(p, (q) => spineBodySd(q, sp))
+    : { axis: [0, 0, 1], curvature: spineFaceCurvature(p, sp) };
 }
 
 export interface TubeHit {

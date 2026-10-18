@@ -5,6 +5,14 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Corte: acelera el descarte vascular observado en el perfil CPU, conservando el cálculo original junto al límite numérico (232).
+
+- Corte: reutiliza direcciones de haz y elimina bucles repetidos de interpolación, conservando los mismos puntos y valores fuente (231).
+
+- Cortical vertebral Atlas: eje y curvatura proceden de su campo fuente, en lugar del cilindro antiguo (230).
+
+- Pared: los planos entre oblicuos se reúnen con sus fascias hacia la espalda, sin cambiar órganos ni espesores (229).
+
 - Entorno: recibo de build y verificación automática de fuente/recursos de la preview antes de abrir Chromium; detecta builds obsoletos sin gastar GPU (227).
 
 - Iteración: reparto actualizado de las 154 E2E con tres CI verificadas, un worker GPU local por defecto y auditoría de costes del proceso, sin reducir casos ni controles (226).

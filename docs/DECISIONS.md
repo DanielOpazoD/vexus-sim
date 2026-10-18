@@ -8012,3 +8012,128 @@ local modificado, cambios sin commit, ausencia de recibo y edición durante el b
 estable exige además feedback focalizado, check completo, hook y CI protegida. Las mediciones
 del sondeo real y los resultados del head final se conservan en el comentario de verificación
 de la PR; no se predice un ahorro porcentual sin observarlo.
+
+## 228. Auditoría del build antes de continuar la fidelidad
+
+**Contexto.** El diagnóstico sobre f3e029c conserva 16 imágenes estáticas Atlas,
+864 muestras de movimiento en Apple M4/Metal, seis adquisiciones Doppler válidas
+y nueve E2E aprobadas sin reintentos. Fuente y 50 recursos HTTP verificados antes
+y después. Evidencia local de sesión: `work/fidelity-audit-228-evidence/AUDITORIA.md`.
+
+**Decisión.** Priorizar pared regional, atribución de cortical vertebral fragmentada
+y desfase del corte. El corte lleva mediana de dos cuadros; su separación respecto
+al plano US llega a 2,223 mm a 90 mm en el protocolo medido y converge al congelar.
+No se modifica el modelo en la auditoría ni se acredita aceptación clínica externa.
+
+**Verificación y límites.** Las seis búsquedas Doppler iniciales sin espera del
+destino exacto se excluyen y conservan. Las seis registradas sí encuentran vaso.
+La comparación clínica visual emparejada y evaluación humana ciega siguen pendientes.
+
+## 229. Reunir los planos interoblicuos al llegar a la espalda
+
+**Contexto.** La pared conserva dos planos entre oblicuos alrededor de todo el
+tronco. La auditoría 228 identifica esa generalización. La continuidad del oblicuo
+externo con la fascia toracolumbar está descrita en
+[la disección de 2018](https://pubmed.ncbi.nlm.nih.gov/30113090/); la localización
+normalizada empleada aquí es estimada, no una inserción segmentada.
+
+**Opciones.** No se retira grasa ni músculo, no se cambia el contorno visceral y
+no se pinta una pared diferente en el shader. Reconstruir toda la musculatura
+dorsal exige fuentes adicionales y queda fuera de este bloque.
+
+**Decisión.** En TS y GLSL, el soporte de los dos planos se reduce suavemente entre
+0,60 y 0,88 del semiperímetro, desde anterior hacia la línea media posterior.
+Se reúnen con sus vainas mediante la misma fusión geométrica usada hacia el recto.
+La derivada del soporte es cero en los extremos. Los espesores, superficie corporal,
+clasificación tisular y órganos permanecen. [EXTRAPOLACIÓN PROPIA] / NEEDS_CALIBRATION.
+
+**Consecuencias.** La espalda deja de mostrar dos caras interoblicuas falsas. No
+se reconstruyen intercostales, serrato ni paravertebrales. La pared sigue siendo
+una aproximación; esta fusión no acredita realismo humano global.
+
+**Verificación.** La regresión comprueba toda la profundidad muscular posterior,
+ambos lados, cinco alturas, dos hábitos y continuidad de profundidad/pendiente;
+el código anterior falla y el candidato la supera. `anatomy.test.ts` fija además
+un punto material posterior. Capturas, equivalencia GPU, calibración, check y CI
+completos se documentan sobre el candidato final antes de aceptar la entrega.
+
+## 230. Curvatura vertebral derivada del mismo campo que su superficie
+
+**Contexto.** La cortical Atlas usa la normal del campo fuente pero conserva
+curvatura y eje del cilindro analítico anterior, incluidos sus platillos periódicos.
+Una regresión mantiene el campo y cambia solo los parámetros obsoletos: el eco
+adquirido no debería depender de ellos. La implementación anterior falla.
+El atlas torácico por sí solo no cubre toda la región lumbar: daría curvatura cero.
+
+**Opciones.** No se alisa la imagen, cambia el brillo ni rellena una sombra.
+Tampoco se modifica o densifica el campo fuente. Se reutiliza el estimador
+principal ya usado para las costillas sobre el campo vertebral combinado.
+
+**Decisión.** TS y GLSL estiman eje y curvatura desde `spineBodySd`, la misma
+superficie torácica/lumbar que clasifica la cortical. El Hessiano tangencial usa
+el soporte existente de dos celdas (3 mm) y el gradiente de 0,25 mm. En GPU se
+calcula después de las salidas por distancia/incidencia, solo para ecos que lo
+requieren; las otras pasadas de adquisición no pagan este coste.
+
+**Consecuencias.** El eco deja de heredar platillos y orientación de otra columna.
+La superficie, materiales, resolución, transmisión, reflectividad y ley de ruido
+permanecen. Sigue siendo una aproximación de coherencia por la dirección principal
+y no una solución de dispersión ósea completa. No acredita indistinguibilidad.
+
+**Verificación.** La regresión del campo adquirido, esfera, plano y campo constante
+supera el candidato; el cilindro anterior falla al variar sus parámetros obsoletos.
+La entrega requiere además capturas A/B registradas, coste en el mismo equipo,
+calibración, paridad GPU, check y CI final. Los resultados finales van en el PR;
+una captura más lisa sin esos controles no basta.
+
+## 231. Evitar trabajo repetido sin cambiar las muestras del corte
+
+**Contexto.** La medición nativa 228 observa mediana de dos cuadros de desfase.
+La CPU interpola campos fuente en cada consulta y reconstruye la misma dirección
+normalizada para cada profundidad de una columna. Se comprueba ese trabajo antes
+de alterar planificación, resolución o criterios de espera.
+
+**Opciones.** No se descartan muestras, aproximan planos por interpolación de
+etiquetas ni cambia la rejilla 96×128. Se conservan las cesiones del Worker, su
+cancelación por paciente, watchdog y transporte sin copias de los resultados.
+
+**Decisión.** La interpolación TS ejecuta explícitamente los mismos ocho productos
+y sumas en el mismo orden z/y/x, sin bucles de dos iteraciones ni sus ramas.
+El corte calcula una vez por columna su dirección normalizada y reutiliza esos
+valores float64 a todas las profundidades, con el mismo orden de operaciones
+que `pointOnLine`. No cambia ningún dato del atlas ni su lectura GLSL.
+
+**Consecuencias.** El coste computacional puede bajar sin alterar física ni
+geometría. No se convierte el microbenchmark en una promesa de latencia global:
+la actualización sigue siendo asíncrona y se mide en el mismo equipo/recorridos.
+
+**Verificación.** Cero diferencias bit a bit en 60.000 consultas no afines
+comparadas con el código anterior; la prueba del ladrillo incluye términos
+mixtos, límites y etiquetas. Los 36.864 centros de tres rejillas adquiridas
+con traslación y angulación coinciden exactamente con la construcción anterior.
+El microbenchmark alterna el orden tras calentar y registra sus resultados fuera
+del repo. El PR debe aportar comparación nativa del corte, paridad TS/GPU y
+aceptación completa del último commit; no se amplían plazos ni tolerancias.
+
+## 232. Atacar el coste observado de la búsqueda vascular del corte
+
+**Contexto.** La optimización 231 conserva las muestras pero la mediana del Worker
+solo pasa de 23,1/23,9 a 22,7/22,45 ms en el primer A/B; no resuelve la cola global.
+El perfil CPU del Worker identifica `bestTube` y `tubeQuery` como costes principales.
+El perfil bruto, mapas de fuente y medición negativa se conservan fuera del repo.
+
+**Decisión.** El descarte esférico de candidatos usa distancias cuadradas lejos
+del límite de redondeo. A menos de ocho epsilons relativos —cota que cubre los
+productos y sumas—, con desbordamiento, subdesbordamiento o radio inválido vuelve
+al `Math.hypot` original. El orden de candidatos, radios, consulta exacta del tubo,
+prioridad de tejidos, rejilla, física y cálculos GLSL permanecen iguales.
+
+**Consecuencias.** Se evita el coste de una norma robusta en cada candidato sin
+aproximar la clasificación ni aplicar un margen anatómico nuevo. La cota es un
+control aritmético de float64, no una tolerancia clínica ni una aserción relajada.
+
+**Verificación.** Comparación exacta del predicado en 5940 puntos dentro, fuera,
+en el borde y a epsilons del borde; incluye subnormales, desbordamiento, infinito,
+radio negativo y NaN. Se conservan las pruebas del índice vascular completo y
+la equivalencia CPU/GPU. El A/B nativo del candidato final debe medir el efecto
+sobre el Worker, geometría y desfase; el microbenchmark aislado no lo sustituye.

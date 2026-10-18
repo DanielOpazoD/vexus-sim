@@ -231,3 +231,8 @@ Generado por `npm run docs:index` — no editar a mano.
 | [225](DECISIONS.md#L7905) | Medir dos vistas sin grabación continua adicional | vigente |
 | [226](DECISIONS.md#L7941) | Costes de iteración medidos, reparto actualizado y una carga GPU local | vigente |
 | [227](DECISIONS.md#L7977) | Identidad automática del build antes de ocupar la GPU local | vigente |
+| [228](DECISIONS.md#L8016) | Auditoría del build antes de continuar la fidelidad | vigente |
+| [229](DECISIONS.md#L8032) | Reunir los planos interoblicuos al llegar a la espalda | vigente |
+| [230](DECISIONS.md#L8060) | Curvatura vertebral derivada del mismo campo que su superficie | vigente |
+| [231](DECISIONS.md#L8089) | Evitar trabajo repetido sin cambiar las muestras del corte | vigente |
+| [232](DECISIONS.md#L8118) | Atacar el coste observado de la búsqueda vascular del corte | vigente |

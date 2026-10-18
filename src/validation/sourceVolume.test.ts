@@ -17,6 +17,20 @@ for (let z = 0; z < 3; z++)
     }
 const world = (q: Vec3): Vec3 => q.map((v, i) => f.originMm[i] + v * f.pitchMm) as Vec3;
 
+it('conserva los términos mixtos de un campo trilineal en todo el ladrillo desplazado', () => {
+  const polynomial = (x: number, y: number, z: number) => 1 + 2 * x - 3 * y + 4 * z + (x * y) / 4 - (y * z) / 2 + (x * y * z) / 8;
+  const mixed = data.slice();
+  for (let z = 0; z < 3; z++)
+    for (let y = 0; y < 3; y++)
+      for (let x = 0; x < 3; x++) mixed[2 * ((z + 1) * 9 * 8 + (y + 3) * 9 + x + 2)] = DataUtils.toHalfFloat(polynomial(x, y, z));
+  let maxError = 0;
+  for (let z = 0; z <= 2; z += 0.2)
+    for (let y = 0; y <= 2; y += 0.2)
+      for (let x = 0; x <= 2; x += 0.2)
+        maxError = Math.max(maxError, Math.abs(sourceDistance(mixed, world([x, y, z]), f, dimensions) - polynomial(x, y, z)));
+  expect(maxError).toBeLessThan(1e-12); // float64 roundoff; corner values are exactly representable in half floats.
+});
+
 describe('campo fuente en el mismo registro material', () => {
   it('reproduce el campo afín en el interior y en nodos finales sin leer otro ladrillo', () => {
     for (const q of [

@@ -10,7 +10,7 @@ La siguiente ronda aborda interfaz clara y disposición adaptable (210), con inv
 El usuario añadió arrastre Doppler en vivo y regreso a 2D al elegir otra ventana (211).
 Ambas se integraron en PR258 con CI completa. PR259 integró el selector por territorio y el acceso portal subcostal anterior (212). La ronda
 213 añadió el nombre/logo VExUS LAB y mejora el acceso subcostal Atlas hacia la rama portal derecha.
-La ronda 213 se integró en PR260. La ronda 214 corrige la legibilidad de la leyenda Color; su aceptación sigue pendiente de check y CI protegida.
+La ronda 213 se integró en PR260. La ronda 214 corrige la legibilidad de la leyenda Color; se integró en PR261 con check y CI protegida (149 E2E únicas sin reintentos).
 Se conserva el circuito de PR pequeño, evidencia antes/después y CI completa antes de integrar.
 
 Este documento es el punto de entrada. `CONTRIBUTING.md` define el procedimiento de aceptación;
@@ -152,3 +152,11 @@ nuevo. La pose y el vigilante del corte no cambian en esta ronda. Un control de 
 main203f6b3 pasó; por tanto no se aisló la causa y no se declara reparada ni se atribuye al entorno.
 Se conservan ambos originales. La aceptación sigue dependiendo de la CI completa del head final;
 un resultado verde posterior no convierte esa corrida local fallida en aprobada.
+
+## Prioridad actual: pared abdominal (216)
+
+El usuario señala bordes rectos y cambios de forma abruptos al mover la sonda. La prueba negativa
+identifica discontinuidad de las normales en la interpolación lineal del perfil corporal. La decisión
+216 planifica su corrección compartida TS/GLSL y conserva los nodos registrados. Este PR contiene
+solo la regresión esperada; todavía no corrige la imagen. El ensayo local de textura del seno renal
+queda en su rama, sin integrar. No debe confundirse con una mejora entregada.

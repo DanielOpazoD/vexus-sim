@@ -218,3 +218,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [212](DECISIONS.md#L7328) | Selector por territorio y acceso portal subcostal anterior | vigente |
 | [213](DECISIONS.md#L7365) | VExUS LAB y porta subcostal derecha con el esqueleto completo | vigente |
 | [214](DECISIONS.md#L7411) | Leyenda Color legible en píxeles CSS y ligada al cuadro adquirido | vigente |
+| [216](DECISIONS.md#L7443) | Continuidad de la pared entre muestras del perfil corporal | planificada |

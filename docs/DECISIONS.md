@@ -7439,3 +7439,33 @@ y móvil DPR 2. El control negativo usa el build anterior. `dopplerInteraction` 
 en vivo y el reinicio a 2D; `probeFreeNavigation` protege 3D/corte/ecografía durante movimiento desde
 seis coordenadas y ambos pacientes, además del acceso portal subcostal con PW activo. Se exige
 `npm run check` y CI completa sobre el head publicado antes de fusionar.
+
+## 216. Continuidad de la pared entre muestras del perfil corporal [Estado: planificada]
+
+**Estado: planificada; este PR no modifica la imagen.**
+
+**Contexto.** El usuario observa bordes rectos y quiebres abruptos en la pared abdominal.
+`bodySection` y `bodyInfo` interpolan linealmente 64 sectores y las filas craneocaudales;
+la posición es continua, pero su derivada cambia en cada nodo. El negativo reproducible sobre
+los assets reference y abdominal registra saltos de normal de hasta 0,829 y 0,559 en norma
+unitaria (aproximadamente 49° y 32°). Las capas y su eco heredan esa pendiente. Objetivos 1–3 y 7.
+
+**Opciones.** Un filtro de imagen no corrige el apoyo, el corte ni la normal del eco. Aumentar
+solo la malla 3D conserva las discontinuidades del campo acústico. Se propone interpolación
+cúbica periódica en ángulo y continua en altura, con sus derivadas en TS y GLSL.
+
+**Decisión.** Antes del cambio de imagen, `bodyContinuity.test.ts` deja cuatro `it.fails`
+para continuidad de normal a ambos lados de los nodos; exige diferencia <0,001 con separación
+0,00002 mm/rad. Es una tolerancia numérica de continuidad, no un umbral clínico.
+Dos controles ordinarios conservan todos los radios y centros de los assets en sus nodos.
+El futuro PR activará las cuatro pruebas y comprobará gradientes, apoyo real, paridad GPU/corte,
+movimiento desde seis coordenadas y ambos pacientes, apposición hepática y coste/arranque.
+
+**Consecuencias.** No se mueven órganos, no se cambian los assets ni se añaden bordes dibujados.
+La interpolación necesitará revisar posibles sobrepasos y la aproximación de la malla visible.
+No se modifican física, resolución de adquisición, plazos ni presupuestos para conseguir verde.
+El ensayo local del seno renal (215, no integrado) queda separado; no forma parte de este PR.
+
+**Verificación.** Sin `it.fails`, cuatro pruebas fallan y dos pasan sobre main 1da143a;
+con los fallos esperados, seis pruebas pasan. Se exige check completo y CI protegida antes de
+integrar el plan. El positivo y la revisión visual pertenecen al posterior PR de implementación.

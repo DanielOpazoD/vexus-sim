@@ -73,8 +73,8 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
         const shaders: WebGLShader[] = [],
           textures: WebGLTexture[] = [],
           bindings: Array<WebGLTexture | null> = [];
-        const program = gl.createProgram()!,
-          fb = gl.createFramebuffer()!;
+        const program = gl.createProgram(),
+          fb = gl.createFramebuffer();
         const compile = (kind: number, text: string) => {
           const shader = gl.createShader(kind)!;
           shaders.push(shader);
@@ -110,7 +110,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
             packed = new Float32Array(count * 4);
           for (let i = 0; i < count; i++) packed.set(points.slice(3 * i, 3 * i + 3), 4 * i);
           const texture = (unit: number, data: Float32Array | null) => {
-            const tex = gl.createTexture()!;
+            const tex = gl.createTexture();
             textures.push(tex);
             gl.activeTexture(gl.TEXTURE0 + unit);
             gl.bindTexture(gl.TEXTURE_2D, tex);
@@ -142,7 +142,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
           return {
             caseId: sim.patient.id,
             rows,
-            renderer: ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER),
+            renderer: String(ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER)),
           };
         } finally {
           for (const [i, unit] of [0, 5, 6].entries()) {

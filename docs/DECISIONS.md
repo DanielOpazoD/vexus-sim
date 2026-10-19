@@ -8172,3 +8172,114 @@ el plazo de 180 s y controles originales. Los negativos reales de loopback,
 informes comparables y ensayo diagnóstico quedan preservados. El check completo
 final, hook, CI completa, recibo y comentario previo al merge acreditan el PR;
 la medición diagnóstica no sustituye esos controles.
+
+## 234. Color y PW comparten la respuesta digital estacionaria del filtro de pared
+
+**Contexto.** La auditoría externa/interna encuentra dos respuestas para el mismo
+corte: Color usa `(f²/(f²+fc²))⁴`, con potencia 0,0625 en `fc`, mientras las dos
+secciones Butterworth PW producen 0,25. La diferencia de 6,02 dB puede borrar en
+Color sangre lenta que conserva PW sin que haya cambiado el flujo.
+
+**Opciones.** No se fuerza igualdad entre un estimador analítico Color y la IQ
+PW ni se modifica el filtro PW para ajustarlo a Color. La respuesta estacionaria
+del filtro digital se puede evaluar directamente sin generar ensembles por píxel.
+
+**Decisión.** `colorWallFilter.ts` usa la respuesta de potencia de las dos
+secciones digitales, con prewarping bilineal, frecuencia plegada y el mismo
+límite de corte (45 % de PRF) que PW, propiedad de `core/highPass.ts`. El equipo
+normaliza y expone ese corte efectivo, también al bajar la PRF Color. La GLSL
+usa el mismo cociente de tangentes y π redondeado al mismo float32. No cambia
+velocidad, PRF, resolución, ruido, adquisición ni IQ/audio PW. Se retiran de
+los dispersores dos campos privados que solo se escribían (`phase`,
+`ampTarget`); se conserva orden RNG y cálculo de rampas. La comparación con
+main exige IQ idéntica bit a bit, no una señal de aspecto parecido.
+
+**Consecuencias.** Color conserva más señal cerca del corte y tiende a ganancia
+unidad cerca de Nyquist, como el receptor PW. Sigue siendo una emulación
+analítica: no reproduce transitorios del IIR ni filtrado de un ensemble finito,
+y no acredita equivalencia con un equipo clínico. La limitación sigue declarada.
+
+**Verificación.** Las frecuencias aliadas y cortes existentes se contrastan con
+los biquads PW, y una prueba distinta mide la potencia de tonos IQ realmente
+filtrados. El código Color anterior falla estas regresiones. La GPU compila la
+fuente productiva y mantiene sus tolerancias originales; añade corte, signos
+y Nyquist. La aceptación requiere check y CI completos del candidato final.
+
+## 235. La prueba de cine adquiere mediante el regulador GPU ordinario
+
+**Contexto.** La CI independiente de main `46b6443`, ejecución `39181911250`,
+falla a 270 s en `acquiredPoseProvenance`. La traza original acredita 20 renders
+manuales en 48 ms y seis en 116 ms; las lecturas posteriores drenan la cola:
+167,912 s antes y 54,950 s después de mover. Repetir congelado cuesta 0,164 s.
+La cuarta captura termina durante teardown: cuatro PNG no equivalen a éxito.
+
+**Opciones.** No ampliar el plazo, reducir las comparaciones ni atribuirlo a
+arranque (44,15 s). Encolar cuadros manuales evita la valla de la aplicación
+y crea una carga que el usuario no puede provocar con ese flujo.
+
+**Decisión.** Esperar tres entradas históricas y luego la pose adquirida nueva
+mediante `withinFrames` y el bucle normal, con el regulador GPU de producción.
+Se conservan ruta de inicio, composición/armónica, cuatro imágenes, hashes,
+mutación directa de pose, setter posterior, reproducción histórica y asserts.
+
+**Consecuencias.** La prueba usa adquisiciones causales sin acumular renders
+artificiales. No cambia el simulador, el readback, el presupuesto ni los plazos.
+Este negativo no demuestra aislados los otros timeouts históricos.
+
+**Verificación.** Original, SHA256 del artefacto y acciones temporizadas quedan
+en la evidencia local 234. E2E del candidato sobre Metal y SwiftShader, y CI
+íntegra sobre el último head antes de integrar; no usar un reintento como verde.
+
+## 236. Ventilación contextual sin presuponer una VCI ni descartar congestión
+
+**Contexto.** El aviso afirmaba que la VCI estaba dilatada, poco variable y sin
+PAD alta aun sin observarla. M mostraba «colapso» también al marcar presión
+positiva. Rola et al. (2024, doi:10.1186/s13089-024-00395-0) aclaran que PEEP y
+ventilación no justifican descartar un VExUS alto ni transformarlo en volemia.
+
+**Opciones.** No añadir una exclusión, cambiar umbrales ni elegir el rótulo a
+partir de la verdad oculta del paciente. El contexto lo declara el operador.
+
+**Decisión.** El aviso se vuelve condicional. Con presión positiva marcada,
+M informa «variación respiratoria» y conserva la medida `(máx−mín)/máx`, sin
+llamarla distensibilidad ni cambiar denominador. Sin marcarla conserva «colapso».
+
+**Consecuencias.** No cambia fisiología, medida, calidad, grado ni intervalos.
+Se evita una afirmación causal que el dato aislado no permite; la interpretación
+sigue necesitando contexto. No añade una nueva regla de la clasificación original.
+
+**Verificación.** Ambos clasificadores conservan todo el resultado salvo aviso
+con VCI 18/20/26 mm. La UI prueba calibres públicos 24/18 mm → 25 %, rótulo
+reversible en ambos pacientes y ausencia de verdad docente antes de revelarla.
+
+## 237. Admitir referencias externas sin confundir identidad con validación
+
+**Contexto.** El usuario acepta el convexo genérico de 3,5 MHz. Hay bancos
+internos y referencias ya usadas para ajustar, pero falta un contrato ejecutable
+común que distinga esa evidencia de mediciones físicas reservadas y evaluación
+humana. Ninguno de esos resultados se deduce de CI ni de capturas agradables.
+
+**Opciones.** Reutilizar perfil y protocolos existentes; no crear otro equipo,
+framework ni nota sintética de fidelidad. Tampoco convertir retrospectivamente
+los juicios históricos de agentes en validación humana o conjunto reservado.
+
+**Decisión.** `fidelity:external` valida JSON desconocido, perfil y archivos
+locales por SHA256, ajustes conocidos/desconocidos, nivel de señal, unidad,
+método y región de cada observable. Rechaza originales vacíos, valores físicos
+imposibles y sujeto/sesión/hash compartidos entre desarrollo y reservado, además
+de referencias reservadas declaradas como usadas para ajuste. La salida es
+nueva y externa al checkout; se rechazan escapes por ruta y symlink.
+
+**Consecuencias.** `admitted` significa procedencia declarada y metadatos
+coherentes; no autentica identidades, derechos ni métodos. Siempre conserva
+calibración, evaluación reservada y evaluación humana pendientes. Datos
+sintéticos/bibliográficos no cuentan como medición física independiente.
+El protocolo humano preparado separa apariencia, adquisición y transferencia;
+no afirma participantes ni resultados. Ver `docs/fidelity/external-evidence.md`
+y `docs/fidelity/human-validation.md`.
+
+**Verificación.** Fixtures exclusivamente sintéticos prueban integridad, fugas,
+valores no finitos, unidades/niveles, límite poblacional de `stdGray`, originales
+vacíos, rutas, symlinks y no sobrescritura. El comando `--profile` registra los
+parámetros genéricos actuales, sin modificar el motor. La aceptación del cambio
+sigue requiriendo check y CI del último head.

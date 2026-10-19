@@ -237,3 +237,7 @@ Generado por `npm run docs:index` — no editar a mano.
 | [231](DECISIONS.md#L8089) | Evitar trabajo repetido sin cambiar las muestras del corte | vigente |
 | [232](DECISIONS.md#L8118) | Atacar el coste observado de la búsqueda vascular del corte | vigente |
 | [233](DECISIONS.md#L8141) | Acortar la validación local sin reducir sus controles | vigente |
+| [234](DECISIONS.md#L8176) | Color y PW comparten la respuesta digital estacionaria del filtro de pared | vigente |
+| [235](DECISIONS.md#L8208) | La prueba de cine adquiere mediante el regulador GPU ordinario | vigente |
+| [236](DECISIONS.md#L8233) | Ventilación contextual sin presuponer una VCI ni descartar congestión | vigente |
+| [237](DECISIONS.md#L8255) | Admitir referencias externas sin confundir identidad con validación | vigente |

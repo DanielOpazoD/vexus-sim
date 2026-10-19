@@ -17,6 +17,36 @@ Este documento es el punto de entrada. `CONTRIBUTING.md` define el procedimiento
 la configuración ejecutable de CI y sus verificadores determinan qué se ejecuta. Los prompts antiguos,
 las pestañas abiertas y los JSON de una sesión son antecedentes, no estado vivo.
 
+## Ronda 234–237: coherencia Doppler y evidencia independiente
+
+El usuario autoriza implementar las prioridades clínicas/acústicas por entregas,
+con PR y merge cuando aprueben. Confirma convexo **genérico de 3,5 MHz**. La
+[secuencia y criterios](fidelity/ITERATIVE_REVIEW.md#referencia-externa-y-siguiente-secuencia)
+separa cambios comprobables de lo que necesita referencias o participantes reales.
+
+- Color adopta la respuesta estacionaria del receptor PW; el corte efectivo se
+  refleja también en el equipo. Sigue sin procesar ensembles IQ reales (234).
+- La prueba de procedencia de cine usa el regulador GPU ordinario, conserva sus
+  cuatro capturas y plazo original (235). La CI independiente de main `46b6443`,
+  [39181911250](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39181911250),
+  falló en esa prueba; su traza demuestra cola de renders manuales. El negativo
+  queda preservado y no se convierte en verde con capturas adjuntas durante teardown.
+- Ventilación: aviso condicional y rótulo M contextual, sin modificar grado ni
+  medida y sin consultar la verdad oculta para elegir texto (236).
+- [Admisión externa](fidelity/external-evidence.md): archivos y partición de
+  referencias verificables, con calibración y humanos pendientes. El
+  [protocolo humano](fidelity/human-validation.md) está preparado, sin resultados (237).
+
+PW fino **continúa abierto**: se reprodujo en la referencia renal quieta una
+fracción 0,432 y peso 0,0463 frente a 0,568 y 0,0701 frescos a 10,5 s. La
+clasificación por anclaje fue rechazada porque emitiría sangre desde tejido.
+Un prototipo curvo con Jacobiano permanece fuera del runtime: falta reconciliar
+trayectoria, campo de velocidad y reposición con la geometría fuente. No cambiar
+gates, ganancia ni calidad para aceptar esa recuperación.
+
+La aceptación y el cierre deben consultarse en el PR y la CI del head final.
+Estas notas describen el candidato y no acreditan fidelidad externa ni cierre PW.
+
 ## Referencia para retomar la entrega actual
 
 La auditoría 228 ordena el trabajo por pared regional, cortical vertebral y desfase del corte.

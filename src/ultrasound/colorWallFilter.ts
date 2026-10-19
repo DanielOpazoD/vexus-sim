@@ -18,9 +18,9 @@ export function colorWallResponseHz(frequencyHz: number, cutoffHz: number, prfHz
 export const COLOR_WALL_FILTER_GLSL = /* glsl */ `
 float colorWallResponseHz(float frequencyHz, float cutoffHz, float prfHz) {
   if (cutoffHz <= 0.0) return 1.0;
-  float cycles = frequencyHz / prfHz;
-  float a = tan(3.1415927 * (cycles - floor(cycles + 0.5)));
-  float b = tan(3.1415927 * min(cutoffHz / prfHz, ${WALL_FILTER_MAX_PRF_FRACTION}));
+  float f = frequencyHz - prfHz * floor(frequencyHz / prfHz + 0.5);
+  float a = tan(3.1415927 * f / prfHz);
+  float b = tan(3.1415927 * min(cutoffHz, ${WALL_FILTER_MAX_PRF_FRACTION} * prfHz) / prfHz);
   a *= a;
   b *= b;
   float stage = a * a / (a * a + b * b);

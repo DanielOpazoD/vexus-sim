@@ -8199,7 +8199,12 @@ unidad cerca de Nyquist, como el receptor PW. Sigue siendo una emulación
 analítica: no reproduce transitorios del IIR ni filtrado de un ensemble finito,
 y no acredita equivalencia con un equipo clínico. La limitación sigue declarada.
 
-**Verificación.** Las frecuencias aliadas y cortes existentes se contrastan con
+**Verificación.** El primer candidato `60da67e` falló en Metal: con corte
+limitado a 450 Hz devolvió 0,250000775 frente a 0,25, fuera de los 5e−7
+originales. Normalizar antes de limitar mezclaba el redondeo de una división
+con el de la constante 0,45. Se pliega y limita primero en Hz y se aplican
+las mismas operaciones a frecuencia/corte; el oráculo conserva su tolerancia.
+Las frecuencias aliadas y cortes existentes se contrastan con
 los biquads PW, y una prueba distinta mide la potencia de tonos IQ realmente
 filtrados. El código Color anterior falla estas regresiones. La GPU compila la
 fuente productiva y mantiene sus tolerancias originales; añade corte, signos

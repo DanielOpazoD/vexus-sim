@@ -84,6 +84,17 @@ Una creación o consulta fallida conserva el contexto pendiente para recercarlo;
 solo una señal válida o su pérdida permiten liberarlo. Una valla de un contexto
 no acredita la finalización de otro ni del compositor.
 
+En SwiftShader, la pasada B del atlas separa clasificación, elevación, gradiente
+y eco. El gradiente conserva tres draws del mismo programa por mirada (240):
+la cortical vertebral, cápsula hepática y diafragma producen una diferencia por
+eje, marcada con `w=-1`; el eco ensambla sus tres tiles antes de normalizar.
+Las demás ramas producen el `vec4` completo en el tile 0, que el eco devuelve
+cuando `w>=0`; sus tiles 1/2 se escriben a cero sin repetir ese cálculo.
+El guard respeta el orden de ramas de `faceGradient` y solo existe en el stage
+de gradiente de imagen. No cambia la función anatómica, el campo, las muestras
+ni la consulta independiente de normales/paridad. El consumidor conserva su
+comparación `>=0`, incluido el comportamiento previo ante valores no finitos.
+
 Cine y modo M (decisión 80): tras la presentación, `render` guarda en un anillo de la GPU (`CineRing`,
 `src/ultrasound/cine.ts`; ≤ 20 Hz, 6 s) la envolvente compuesta y el campo de color del cuadro, antes de la
 conversión de barrido, con sus ajustes; `showCine` los devuelve a `tEnv`/`tColor`, dibuja G con esos ajustes y funde

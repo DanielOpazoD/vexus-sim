@@ -17,7 +17,7 @@ Este documento es el punto de entrada. `CONTRIBUTING.md` define el procedimiento
 la configuración ejecutable de CI y sus verificadores determinan qué se ejecuta. Los prompts antiguos,
 las pestañas abiertas y los JSON de una sesión son antecedentes, no estado vivo.
 
-## Ronda 234–239: coherencia Doppler y evidencia independiente
+## Ronda 234–240: coherencia Doppler y evidencia independiente
 
 El usuario autoriza implementar las prioridades clínicas/acústicas por entregas,
 con PR y merge cuando aprueben. Confirma convexo **genérico de 3,5 MHz**. La
@@ -44,6 +44,18 @@ defecto de contrato comprobable; su contribución al coste acumulado requiere
 medición. La decisión 239 renueva cuatro frases reversibles de transporte GLSL
 para mantener 1033 KiB sin modificar tokens. No integrar sin repetir la prueba
 original y aceptar el head final.
+
+La repetición original sobre `d3bdfce` terminó con **seis pruebas aprobadas y
+una fallida**: `renalCutTracking` volvió a agotar 540 s. La reparación del
+contrato multicontexto no acredita haber resuelto ese coste. Un perfil posterior
+del mismo head limpio, SwiftShader con readbacks serializados, registró 535,3 ms
+de mediana posterior del render instrumentado, 52,1 ms por draw de gradiente
+dirigido (tres por adquisición) y 0,55 ms de `advance`. Es diagnóstico de coste,
+no fps ni comparación de aceptación. La decisión 240 evita recalcular los
+gradientes completos en los dos tiles que el eco no consume, conservando el
+eje 0 y las tres ramas de diferencias separadas. **Ahorro e igualdad GPU siguen
+pendientes de medición**, junto con presupuesto, check y aceptación original
+del candidato final. Se conservan el negativo y el perfil anterior.
 
 PW fino **continúa abierto**: se reprodujo en la referencia renal quieta una
 fracción 0,432 y peso 0,0463 frente a 0,568 y 0,0701 frescos a 10,5 s. La

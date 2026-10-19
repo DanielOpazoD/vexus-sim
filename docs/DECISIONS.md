@@ -8361,3 +8361,56 @@ No altera cachés de aceptación ni los controles de procedencia de assets.
 plantillas propias y de Three, con interpolaciones y marcadores, más los dos
 léxicos del minificador. Build y presupuesto reales, GPU Metal/SwiftShader y
 CI íntegra del último head siguen obligatorios. Se conserva el build rechazado.
+
+## 240. Evitar gradientes completos en tiles que el eco no consume
+
+**Contexto.** La aceptación local original de `d3bdfce`, después de completar
+las vallas multicontexto (238), termina con seis pruebas aprobadas y una
+fallida: `renalCutTracking` vuelve a agotar 540 s. No se oculta ese negativo ni
+se atribuye la duración a una causa única. El perfil posterior del mismo head
+limpio conserva trece adquisiciones con SwiftShader y lectura síncrona de un
+píxel después de cada draw. La mediana posterior del render instrumentado es
+535,3 ms; `rawClassSteered`, 100,9 ms; `rawGradientSteered`, 52,1 ms por draw
+(tres por adquisición); `advance`, 0,55 ms. Las lecturas serializan la GPU:
+localizan trabajo repetido, no miden fps ni aíslan compilación inicial. El
+registro original queda en `profile-240-before/summary.json` de la evidencia
+externa de la entrega.
+
+**Opciones.** Conservar plazos, dos vistas, muestras, resolución y física.
+No volver a un gradiente monolítico grande, crear tres programas por eje ni
+alterar el clasificador. La fuente muestra trabajo descartado: las ramas
+renal/perirrenal, pared, costilla, vesícula y tubos calculan un gradiente
+completo en cada tile, aunque `cachedFaceGradient` devuelve solo el tile 0
+cuando su `w>=0`. Las ramas separadas de cortical vertebral, cápsula hepática
+y diafragma marcan `w=-1` y sí necesitan los tres tiles.
+
+**Decisión.** El guard vive únicamente en el cuerpo del stage `gradient`,
+compartido por las dos miradas. Conserva entero el eje 0 y, en ejes 1/2, calcula
+las ramas separadas; escribe cero en los otros resultados no consumidos.
+Mantiene el orden anatómico: las caras perirrenal/fascia y cápsula renal ganan
+al diafragma. No modifica `faceGradient`, su normalización ni fallbacks, el
+consumidor, los otros stages, la consulta de normales o el renderer. Siguen
+existiendo los mismos programas, tres draws y la misma rejilla. No cambia
+la interpretación de cero, NaN o infinito; el marcador sigue siendo el del
+productor anterior y el consumidor conserva su comparación `>=0`.
+
+**Consecuencias.** Se elimina cálculo de resultados descartados sin cambiar
+las operaciones de los valores consumidos. El ahorro aún debe medirse: el
+perfil previo no prueba una reducción de tiempo ni aceptación. El presupuesto
+sigue en 1033 KiB y no se cambia el diccionario para acomodar una estimación.
+
+**Verificación.** Una prueba de alcance reconstruye mediante el cuerpo previo
+los dos shaders de gradiente completos y compara sus SHA256 con `d3bdfce`;
+también fija los trece programas de campo/clasificación/elevación/eco/consulta
+que deben permanecer idénticos. No demuestra equivalencia GPU por sí sola.
+Antes de aceptar se requiere comparar byte a byte el `vec4` consumido contra
+el shader anterior, con controles negativos del eje 0 y de cada eje separado
+de cortical, cápsula y diafragma; después, igualdad de imagen, paridad/normales
+y el barrido original de dos vistas, 24 muestras, tres RAF, cuatro paridades/
+capturas y 540 s. El oráculo incorpora 1230 combinaciones de tejido/cara,
+testigos con tres componentes no nulas y 21 mutaciones en los tres cuerpos
+actuales. Reutiliza anatomía y consumidor reales, y verifica el esquema de
+uniforms compactados antes de enlazar la escena. Los casos no finitos se
+inyectan en el consumidor; no acreditan todas las entradas posibles del productor.
+Build, check, GPU nativa/SwiftShader y CI íntegra del head
+final siguen pendientes. No sustituir esos controles por capturas agradables.

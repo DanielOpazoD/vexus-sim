@@ -1011,8 +1011,16 @@ function rawFieldShader(look: Look, stage: RawFieldStage = 'direct'): string {
     return vec2(0.0);`
         : stage === 'gradient'
           ? /* glsl */ `
-    oGradient = faceGradient(rawClass(), toMaterial(p));
+    Cls c = rawClass();
+    // Only split differences consume tiles 1/2; complete gradients use tile 0.
+    // Keep faceGradient's branch priority, including the renal faces before diaphragm.
+    bool split = c.iface == IF_VERTEBRAL_CORTEX || c.tissue == T_CAPSULE ||
+      (c.tissue == T_DIAPHRAGM && c.iface != IF_PERIRENAL &&
+       c.iface != IF_RENAL_FASCIA && c.iface != IF_RENAL_CAPSULE);
+    oGradient = vec4(0.0);
     spec = 0.0;
+    if (uGradientAxis != 0 && !split) return vec2(0.0);
+    oGradient = faceGradient(c, toMaterial(p));
     return vec2(0.0);`
           : stage === 'echo'
             ? /* glsl */ `

@@ -4,12 +4,27 @@
 
 El usuario autoriza continuar con el desfase del corte. La decisión 241 elimina
 la espera al siguiente RAF para presentar una respuesta del Worker y atender
-la última adquisición. En la comparación nativa de seis coordenadas y ambos
-pacientes, envío a primer pintado p95 pasa de 36,2 a 28,3 ms; la antigüedad
-mostrada p95 sigue en 66,7 ms. Es mejora de una etapa, no cierre del desfase.
-Conservar instantáneas adquiridas, una petición, resolución, física y plazos.
-La aceptación del candidato debe consultarse en su PR/CI, separada de esa pareja
-diagnóstica sobre una fuente identificada por recibo de contenido.
+la última adquisición. El primer candidato `2618ed33` se rechaza: el barrido
+original SwiftShader de dos vistas agota 540 s en basculación hepatorrenal.
+El segundo limita el callback a `cutMap.draw` y separa el mapa del estado que
+invalida ECG/espectro/M; overlay y contorno se atienden en el siguiente RAF.
+
+La pareja nativa de seis coordenadas y ambos pacientes del segundo candidato
+(árbol modificado, con recibo propio) registra envío a primer pintado p95
+**36,2 → 28,5 ms**, mejora en **11/12** filas, máximo **37,8 → 44,4 ms** y
+antigüedad mostrada p95 **66,7 → 66,9 ms**. No resuelve el desfase global ni
+hereda los 288 registros renales del primer candidato. La prueba focalizada
+conserva 111 respuestas activas sin pintura auxiliar adicional y 707 fondos
+ECG adquiridos sin duplicados; las tres pinturas previas a adquisición quedan
+explícitas fuera de comparación. Restaurar el callback completo falla con
+contador auxiliar 66 → 68.
+
+El estado de aceptación se consulta en
+[PR273](https://github.com/DanielOpazoD/vexus-sim/pull/273) y su CI del último
+head. Exige check, barrido SwiftShader original e imagen/interacción; los
+resultados del primer candidato no lo acreditan. Conservar instantáneas
+adquiridas, una petición, resolución, física, plazos y negativos. La
+comparación diagnóstica no sustituye esa aceptación.
 
 [PR272](https://github.com/DanielOpazoD/vexus-sim/pull/272) integró 234–240 en
 `84c210fe800a73e6025e7ab1a23a669ffe0d4d34`, árbol

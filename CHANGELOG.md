@@ -5,7 +5,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
-- Corte: presenta el mapa al recibirlo del Worker y atiende la última adquisición sin esperar otro RAF; conserva rejilla, física, una petición y controles originales (241).
+- Corte: publica el mapa al recibirlo y atiende la última adquisición, sin repetir ECG/espectro/M por ese mapa; conserva rejilla, física, una petición y plazos (241).
 
 - Iteración: preflight HTTP inmediato, recursos del equipo en las evidencias y lote CPU local acotado con fallback secuencial; conserva inventario, cobertura, aislamiento, plazos y CI completa (233).
 

@@ -171,10 +171,13 @@ se sirve el módulo TS desde `cutMapWorkerUrl.ts`. El presupuesto sigue contando
 todos los archivos JS, incluidos entrada del trabajador y chunks compartidos.
 
 La respuesta válida del Worker publica su instantánea antes de notificar a
-bootstrap. Este atiende la presentación CPU sin esperar otro RAF y sin adquirir
-ecografía ni dibujar 3D/modo M en GPU. Conserva una petición en vuelo, agrupa los
-movimientos hacia la última adquisición y respeta escena, visor modal y torso
-visible (241). La asincronía conserva un desfase medido; no predice anatomía.
+bootstrap. Este llama solo a `cutMap.draw`: presenta el corte y pide la última
+adquisición disponible sin esperar otro RAF, adquirir ecografía ni dibujar
+3D/modo M en GPU. Conserva una petición, escena, visor modal y torso visible.
+La identidad del mapa invalida por separado overlay/contorno en el siguiente
+RAF; no invalida ECG/espectro/M si su estado sigue igual. La decisión 241 conserva
+la asincronía y su desfase medido; no predice anatomía ni garantiza
+presentación simultánea.
 
 ## Anatomía compartida CPU/GPU
 

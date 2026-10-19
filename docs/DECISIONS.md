@@ -8438,33 +8438,46 @@ reducir la rejilla o añadir lecturas GPU. La cola ya conserva una petición
 y agrupa el movimiento hacia la última adquisición disponible.
 
 **Decisión.** `CutMapView` notifica el mapa aceptado después de publicar sus
-inputs y liberar la petición y el watchdog. Bootstrap atiende las vistas CPU
-en ese evento, con las guardas de torso, contexto y visor modal, y registra
-cualquier error. No adquiere otra ecografía, dibuja 3D, ejecuta M en GPU ni
-modifica turnos/vallas. La reentrada despacha como máximo la última adquisición.
+inputs y liberar la petición y el watchdog. Bootstrap llama únicamente a
+`cutMap.draw` en ese evento, con las guardas de torso, contexto y visor modal,
+y registra cualquier error. La referencia del mapa se separa del estado que
+invalida ECG/espectro/M: el RAF siguiente actualiza el overlay y el contorno,
+sin repetir las trazas si su estado no cambió. No adquiere otra ecografía,
+dibuja 3D, ejecuta M en GPU ni modifica turnos/vallas. La reentrada despacha
+como máximo la última adquisición.
 Se conservan instantánea, escena, cine, congelación, watchdog y cadencia quieta
 de 8 Hz. Dos frases del transporte GLSL se sustituyen sin cambiar el decoder
 ni texto decodificado: el build inicial excede 1033 KiB y el siguiente registra
 1032,9 KiB con el mismo límite. No se cambian shaders, física ni resolución.
 
-**Consecuencias.** La pareja diagnóstica con el mismo arnés registra mediana
-22,4 ms y p95 28,3 ms a primer pintado, con mejora de ese p95 en las doce
-filas. El máximo empeora de 37,8 a 55,0 ms; la antigüedad mostrada p95 permanece
-en 66,7 ms y la separación p95 en cuatro adquisiciones. El barrido original
-de dos vistas conserva sus 288 muestras y cuatro paridades 0/256; antigüedad
-p95 85,0 → 82,6 ms, separación p95 todavía dos adquisiciones. Son cohortes
-distintas y una pareja por versión: no se declara eliminado el desfase global.
-El candidato medido está identificado por recibo/huella de contenido, separado
-de la aceptación final. Originales y análisis: `cut-latency-241-evidence` fuera
-del repo. El listener diagnóstico de recepción corre después del handler:
-pintado menos recepción negativo indica orden de eventos, no latencia negativa.
+**Consecuencias.** El primer candidato `2618ed33`, que llamaba a
+`drawAcquiredViews` completo, se rechaza: el barrido original SwiftShader de
+dos vistas agota 540 s en la basculación hepatorrenal. La traza no mide el
+coste de esas pinturas ni demuestra que expliquen todo el timeout.
+El segundo candidato es un árbol modificado sobre ese commit, identificado
+por recibo/huella, no una ejecución del head limpio. En la pareja nativa de
+seis coordenadas, 1728 muestras y 588 peticiones por versión, envío a primer
+`putImageData` p95 pasa de **36,2 a 28,5 ms**, con mejora en **11/12** filas;
+el máximo empeora **37,8 → 44,4 ms** y la antigüedad mostrada p95 es
+**66,7 → 66,9 ms**. El flanco izquierdo severo empeora en primer pintado y
+el abdomen inferior en separación geométrica. No se declara resuelto el
+desfase global ni se trasladan al segundo candidato los 288 registros renales
+del primero. Originales y análisis permanecen en `cut-latency-241-evidence`
+fuera del repo. Una pareja local no aísla causalidad ni latencia física; el
+listener recibe después del handler y un pintado menos recepción negativo
+indica orden de eventos.
 
 **Verificación.** La regresión entre RAFs exige publicar N y pedir únicamente
 N+2 adquirido antes de otro `draw`; quitar el callback la hace fallar. También
 protege respuestas obsoletas, progreso, fallo, cambio de Worker, disposición,
 congelación y 8 Hz. El test E2E existente observa el Worker real después del
 handler y exige la misma adquisición ya pintada en ambas vistas y cambios de
-paciente, conservando todo su estrés y sus controles anteriores. El transporte
-exige igualdad byte a byte de todos los programas propios y de Three. Check,
-SwiftShader, imagen/interacción y CI completa del último head siguen siendo
-condiciones para integrar; no se cambian plazos ni criterios de aceptación.
+paciente. El observador cuenta el `fillRect` real del ECG y el borrado del
+overlay: 111 respuestas activas sin pinturas auxiliares durante su entrega,
+707 pinturas ECG con clave adquirida y cero duplicadas. Conserva tres pinturas
+previas a adquisición fuera de esa comparación, sin ocultarlas. Restituir el
+callback completo hace fallar la guarda real: contador auxiliar **66 → 68**.
+Continúan todo el estrés y los controles anteriores; el transporte exige
+igualdad byte a byte de programas propios y de Three. [PR273](https://github.com/DanielOpazoD/vexus-sim/pull/273)
+registra el estado de aceptación: exige check, barrido SwiftShader original,
+imagen/interacción y CI completa del último head. No cambian los plazos.

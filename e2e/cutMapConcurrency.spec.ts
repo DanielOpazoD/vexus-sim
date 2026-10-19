@@ -2,11 +2,35 @@ import { expect, test, type Page } from '@playwright/test';
 import { bootWithoutErrors, budget, withinFrames } from './support';
 import type { CutMapInit, CutMapProgress, CutMapRequest, CutMapResponse } from '../src/ui/cutMapWorker';
 
+interface CutPaintWitness {
+  acquiredFrame: number;
+  sceneId: number;
+  auxiliaryPaintsBefore: number;
+  auxiliaryPaintsAfter?: number;
+}
+
+interface TracePaintWitness {
+  sceneId: number;
+  acquiredFrame: number | null;
+  timeSeconds: number | null;
+  width: number;
+  height: number;
+}
+
+interface UnkeyedTracePaintWitness extends TracePaintWitness {
+  scope: 'outside-acquired-trace-comparison';
+  reason: 'test-hook-unavailable' | 'before-first-acquisition';
+}
+
 declare global {
   interface Window {
     cutWitness: {
       stressNext?: boolean;
       stressId?: number;
+      tracePaints: number;
+      keyedTracePaints: number;
+      duplicateTracePaints: TracePaintWitness[];
+      unkeyedTracePaints: UnkeyedTracePaintWitness[];
       progress: Array<{ id: number; rows: number }>;
       initializations: Array<{ patient: string; bytes: number; postMs: number }>;
       replies: Array<{
@@ -17,6 +41,8 @@ declare global {
         acquiredFrame: number;
         paintedFrame: number;
         activeScene: boolean;
+        sceneId: number;
+        paint?: CutPaintWitness;
       }>;
     };
   }
@@ -24,7 +50,15 @@ declare global {
 
 async function observe(page: Page) {
   await page.addInitScript(() => {
-    window.cutWitness = { initializations: [], replies: [], progress: [] };
+    window.cutWitness = {
+      initializations: [],
+      replies: [],
+      progress: [],
+      tracePaints: 0,
+      keyedTracePaints: 0,
+      duplicateTracePaints: [],
+      unkeyedTracePaints: [],
+    };
     const original: unknown = Reflect.get(Worker.prototype, 'postMessage');
     if (typeof original !== 'function') throw new Error('Worker.postMessage unavailable');
     const requests = new Map<
@@ -33,6 +67,64 @@ async function observe(page: Page) {
     >();
     const patients = new WeakMap<Worker, string>();
     const scenes = new WeakMap<Worker, number>();
+    let currentSceneId = -1;
+    let auxiliaryPaints = 0;
+    let latestPaint: CutPaintWitness | undefined;
+    let previousTraceKey: unknown[] | undefined;
+    const clear = CanvasRenderingContext2D.prototype.clearRect;
+    CanvasRenderingContext2D.prototype.clearRect = function (...args) {
+      Reflect.apply(clear, this, args);
+      if (this.canvas.id === 'overlay') auxiliaryPaints++;
+    };
+    const fill = CanvasRenderingContext2D.prototype.fillRect;
+    CanvasRenderingContext2D.prototype.fillRect = function (x, y, width, height) {
+      Reflect.apply(fill, this, [x, y, width, height]);
+      // drawEcg starts each real strip with this full-canvas background fill.
+      if (this.canvas.id === 'ecg' && x === 0 && y === 0 && width === this.canvas.width && height === this.canvas.height) {
+        auxiliaryPaints++;
+        const sim = window.__vexusTest?.sim();
+        const frame = sim?.renderer.displayedFrame;
+        const witness = {
+          sceneId: currentSceneId,
+          acquiredFrame: frame?.n ?? null,
+          timeSeconds: sim?.physiology.clock.t ?? null,
+          width: this.canvas.width,
+          height: this.canvas.height,
+        };
+        window.cutWitness.tracePaints++;
+        if (!sim || !frame)
+          window.cutWitness.unkeyedTracePaints.push({
+            ...witness,
+            scope: 'outside-acquired-trace-comparison',
+            reason: !sim ? 'test-hook-unavailable' : 'before-first-acquisition',
+          });
+        else {
+          window.cutWitness.keyedTracePaints++;
+          // This scenario changes probe/case only: no capture, mark, M or
+          // trace-setting control can legitimately invalidate an identical key.
+          const key = [sim, frame, sim.equipment, sim.physiology.clock.t, this.canvas.width, this.canvas.height];
+          if (previousTraceKey && key.every((value, index) => value === previousTraceKey![index]))
+            window.cutWitness.duplicateTracePaints.push(witness);
+          previousTraceKey = key;
+        }
+      }
+    };
+    const put = CanvasRenderingContext2D.prototype.putImageData;
+    CanvasRenderingContext2D.prototype.putImageData = function (image: ImageData, x: number, y: number, ...dirty: number[]) {
+      Reflect.apply(put, this, [image, x, y, ...dirty]);
+      if (this.canvas.id !== 'cutmap') return;
+      const paint: CutPaintWitness = {
+        acquiredFrame: Number(this.canvas.dataset.acquiredFrame),
+        sceneId: currentSceneId,
+        auxiliaryPaintsBefore: auxiliaryPaints,
+      };
+      latestPaint = paint;
+      // Observe the rest of this real delivery handler, without allowing a RAF
+      // or timer to interleave. Keep this object shared with its reply witness.
+      queueMicrotask(() => {
+        paint.auxiliaryPaintsAfter = auxiliaryPaints;
+      });
+    };
     Worker.prototype.postMessage = function (message: unknown, transfer: Transferable[] | StructuredSerializeOptions = []) {
       const packet = message as CutMapInit | CutMapRequest;
       const at = performance.now();
@@ -51,12 +143,14 @@ async function observe(page: Page) {
               ms: performance.now() - req.at,
               paintedFrame: Number(document.querySelector<HTMLElement>('#cutmap')!.dataset.acquiredFrame),
               activeScene: scenes.get(this) === req.sceneId,
+              paint: latestPaint?.sceneId === req.sceneId && latestPaint.acquiredFrame === req.acquiredFrame ? latestPaint : undefined,
             });
             requests.delete(event.data.id);
           });
         }
         patients.set(this, packet.patient.id);
         scenes.set(this, packet.id);
+        currentSceneId = packet.id;
       } else if (packet.type === 'map') {
         // A denser REAL classifier job reproduces CPU contention without fake
         // timers/responses or changing the worker's production timeout.
@@ -165,6 +259,8 @@ test('two live atlas views keep producing the current cut through probe and case
         const delivered = await p.evaluate(() => window.cutWitness.replies.at(-1)!);
         expect(delivered.activeScene).toBe(true);
         expect(delivered.paintedFrame).toBe(delivered.acquiredFrame);
+        expect(delivered.paint).toMatchObject({ acquiredFrame: delivered.acquiredFrame, sceneId: delivered.sceneId });
+        expect(delivered.paint!.auxiliaryPaintsAfter).toBe(delivered.paint!.auxiliaryPaintsBefore);
       }
     }
     await page.evaluate(() => {
@@ -196,7 +292,20 @@ test('two live atlas views keep producing the current cut through probe and case
     for (const p of pages) {
       const delivered = await p.evaluate(() => window.cutWitness.replies.filter((reply) => reply.activeScene));
       expect(delivered.length).toBeGreaterThan(0);
-      for (const reply of delivered) expect(reply.paintedFrame).toBe(reply.acquiredFrame);
+      for (const reply of delivered) {
+        expect(reply.paintedFrame).toBe(reply.acquiredFrame);
+        expect(reply.paint).toMatchObject({ acquiredFrame: reply.acquiredFrame, sceneId: reply.sceneId });
+        expect(reply.paint!.auxiliaryPaintsAfter).toBe(reply.paint!.auxiliaryPaintsBefore);
+      }
+      const traces = await p.evaluate(() => ({
+        paints: window.cutWitness.tracePaints,
+        keyedPaints: window.cutWitness.keyedTracePaints,
+        duplicates: window.cutWitness.duplicateTracePaints,
+        unkeyed: window.cutWitness.unkeyedTracePaints,
+      }));
+      expect(traces.paints).toBeGreaterThan(0);
+      expect(traces.keyedPaints).toBeGreaterThan(0);
+      expect(traces.duplicates).toEqual([]);
       const loads = await p.evaluate(() => window.cutWitness.initializations);
       expect(loads[0].bytes).toBeGreaterThan(100_000_000);
       expect(loads.slice(1).every((i) => i.bytes === 0)).toBe(true);

@@ -33,8 +33,9 @@ separa cambios comprobables de lo que necesita referencias o participantes reale
   queda preservado y no se convierte en verde con capturas adjuntas durante teardown.
 - Ventilación: aviso condicional y rótulo M contextual, sin modificar grado ni
   medida y sin consultar la verdad oculta para elegir texto (236).
-- [Admisión externa](fidelity/external-evidence.md): archivos y partición de
-  referencias verificables, con calibración y humanos pendientes. El
+- [Admisión externa](fidelity/external-evidence.md): integridad de archivos y
+  separación declarada por sujeto, sesión y hash, con calibración medida,
+  evaluación reservada y validación humana pendientes. El
   [protocolo humano](fidelity/human-validation.md) está preparado, sin resultados (237).
 
 El candidato e68029c pasó Metal, pero el barrido local de dos vistas SwiftShader
@@ -53,9 +54,17 @@ de mediana posterior del render instrumentado, 52,1 ms por draw de gradiente
 dirigido (tres por adquisición) y 0,55 ms de `advance`. Es diagnóstico de coste,
 no fps ni comparación de aceptación. La decisión 240 evita recalcular los
 gradientes completos en los dos tiles que el eco no consume, conservando el
-eje 0 y las tres ramas de diferencias separadas. **Ahorro e igualdad GPU siguen
-pendientes de medición**, junto con presupuesto, check y aceptación original
-del candidato final. Se conservan el negativo y el perfil anterior.
+eje 0 y las tres ramas de diferencias separadas. El perfil instrumentado de
+`6e59ee7` registra 511,65 ms frente a 535,3 ms (−4,42 %), una cohorte por versión,
+sin acreditar fps ni aislar una causa de todo el coste. Los oráculos diagnósticos
+Metal y SwiftShader conservan los bytes consumidos y detectan 21 mutaciones.
+El barrido original de dos vistas pasó en el head limpio `6e59ee7`, en 8,9 min
+y con los mismos 540 s: el margen es pequeño. La adquisición ordinaria Metal
+usa B directa; el oráculo compila el cuerpo por etapas en ambos backends.
+Se conservan negativos y perfiles anteriores. La comparación temporal por
+hashes queda como evidencia histórica de alcance, fuera del gate permanente;
+el oráculo GPU funcional protege las iteraciones posteriores. Check y CI
+íntegros del head final siguen siendo condiciones de aceptación.
 
 PW fino **continúa abierto**: se reprodujo en la referencia renal quieta una
 fracción 0,432 y peso 0,0463 frente a 0,568 y 0,0701 frescos a 10,5 s. La

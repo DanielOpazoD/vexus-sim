@@ -84,8 +84,10 @@ Una creación o consulta fallida conserva el contexto pendiente para recercarlo;
 solo una señal válida o su pérdida permiten liberarlo. Una valla de un contexto
 no acredita la finalización de otro ni del compositor.
 
-En SwiftShader, la pasada B del atlas separa clasificación, elevación, gradiente
-y eco. El gradiente conserva tres draws del mismo programa por mirada (240):
+Con SwiftShader o renderer no identificable, la pasada B del atlas separa
+clasificación, elevación, gradiente y eco; Metal conserva B directa. El oráculo
+compila el cuerpo por etapas también en Metal, sin cambiar su adquisición ordinaria.
+El gradiente conserva tres draws del mismo programa por mirada (240):
 la cortical vertebral, cápsula hepática y diafragma producen una diferencia por
 eje, marcada con `w=-1`; el eco ensambla sus tres tiles antes de normalizar.
 Las demás ramas producen el `vec4` completo en el tile 0, que el eco devuelve

@@ -8395,15 +8395,19 @@ la interpretación de cero, NaN o infinito; el marcador sigue siendo el del
 productor anterior y el consumidor conserva su comparación `>=0`.
 
 **Consecuencias.** Se elimina cálculo de resultados descartados sin cambiar
-las operaciones de los valores consumidos. El ahorro aún debe medirse: el
-perfil previo no prueba una reducción de tiempo ni aceptación. El presupuesto
-sigue en 1033 KiB y no se cambia el diccionario para acomodar una estimación.
+las operaciones de los valores consumidos. La cohorte instrumentada posterior
+de `6e59ee7` registra 511,65 ms frente a 535,3 ms (−4,42 %); las lecturas
+serializadas y una cohorte por versión no acreditan fps ni causalidad aislada.
+El barrido original de dos vistas pasó en ese head limpio en 8,9 min, dentro de
+los mismos 540 s y con margen pequeño. El presupuesto sigue en 1033 KiB y no
+se cambia el diccionario para acomodar una estimación.
 
-**Verificación.** Una prueba de alcance reconstruye mediante el cuerpo previo
-los dos shaders de gradiente completos y compara sus SHA256 con `d3bdfce`;
-también fija los trece programas de campo/clasificación/elevación/eco/consulta
-que deben permanecer idénticos. No demuestra equivalencia GPU por sí sola.
-Antes de aceptar se requiere comparar byte a byte el `vec4` consumido contra
+**Verificación.** La comparación temporal por hashes de los dos gradientes y
+trece programas restantes se conserva como evidencia histórica de alcance.
+Se retira `rawGradientScope.test.ts` del gate permanente: replica la
+implementación y congelaría futuros cambios legítimos de anatomía. Pasó antes
+de retirarlo; no se usa su retirada para convertir un fallo en verde.
+La regresión funcional compara byte a byte el `vec4` consumido contra
 el shader anterior, con controles negativos del eje 0 y de cada eje separado
 de cortical, cápsula y diafragma; después, igualdad de imagen, paridad/normales
 y el barrido original de dos vistas, 24 muestras, tres RAF, cuatro paridades/
@@ -8412,5 +8416,8 @@ testigos con tres componentes no nulas y 21 mutaciones en los tres cuerpos
 actuales. Reutiliza anatomía y consumidor reales, y verifica el esquema de
 uniforms compactados antes de enlazar la escena. Los casos no finitos se
 inyectan en el consumidor; no acreditan todas las entradas posibles del productor.
-Build, check, GPU nativa/SwiftShader y CI íntegra del head
-final siguen pendientes. No sustituir esos controles por capturas agradables.
+Los diagnósticos Metal y SwiftShader pasan y detectan las 21 mutaciones; la
+adquisición Metal ordinaria usa B directa, por lo que sus imágenes no acreditan
+el guard por etapas. La aceptación conserva build, check, imágenes y paridad
+de adquisición, además de CI íntegra del head final. No sustituir esos controles
+por capturas agradables ni reasignar resultados de otro head.

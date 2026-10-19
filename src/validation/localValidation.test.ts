@@ -16,7 +16,7 @@ it('limita el lote local, reserva dos plazas y conserva la ejecución secuencial
   expect(() => localValidationPlan(10, false, 'turbo')).toThrow();
 });
 
-it('espera ambas fases paralelas y rechaza todos sus errores sin convertir una aprobación parcial en éxito', async () => {
+it.each(['core', 'matrix'])('espera ambas fases y rechaza el fallo de %s sin aprobar parcialmente', async (failedPhase) => {
   const called: string[] = [];
   let finishMatrix!: () => void;
   const matrix = new Promise<void>((resolve) => {
@@ -26,7 +26,7 @@ it('espera ambas fases paralelas y rechaza todos sus errores sin convertir una a
   let finished = false;
   const result = runValidationSchedule(localValidationPlan(10, false), async (phase) => {
     called.push(phase);
-    if (phase === 'core') throw error;
+    if (phase === failedPhase) throw error;
     await matrix;
   });
   void result.then(

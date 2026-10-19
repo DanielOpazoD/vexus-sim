@@ -29,6 +29,12 @@ No se cambian plazos de 180 s, aserciones, cobertura ni aislamiento. Los tests d
 planificador se añaden después del benchmark; el check completo del candidato final y su CI
 se acreditan por separado en el PR. No se generaliza una corrida local a otras máquinas ni a CI.
 
+El primer check del planificador (`b80fdec`) falló a los 318,53 s: el contrato de
+`coveragePartition.test.ts` todavía exigía el comando secuencial anterior. Las matrices
+aprobaron y el lote rechazó la aprobación parcial. Se conserva ese negativo; se actualiza
+la entrada esperada manteniendo el verificador y se incluyen los contratos que leen
+`package.json` en el feedback. Este coste era evitable y no cuenta como aceptación ni ahorro.
+
 Los logs, informes originales, negativos y comparación están fuera del repo en el grupo
 `workflow-performance-233-evidence` del espacio de trabajo; la entrega conserva su manifiesto
 y verificación de hashes. No usar un benchmark o una colección `--list` como aprobación.

@@ -97,6 +97,10 @@ cambios durante la ejecución y no sobrescribe carpetas de evidencia.
 La selección relacionada **no descubre toda dependencia dinámica**. Si el riesgo es transversal,
 usar `--all-fast` o un test explícito. No encontrar tests es un fallo, no una aprobación vacía.
 Para editar repetidamente un módulo también sirve `npm run test:watch -- <test>`.
+Al cambiar scripts de `package.json`, incluir sus contratos que leen el archivo en tiempo de
+ejecución (`coveragePartition`, `iterationFeedback` y `docs`), aunque no aparezcan por imports.
+La primera comprobación final de la ronda 233 encontró así un cableado aún secuencial tras el
+feedback de módulos nuevos; el negativo se conserva y se actualiza el contrato de entrada.
 La semántica de selección está descrita en la [documentación de Vitest](https://vitest.dev/guide/cli.html#vitest-related).
 
 Si cambia imagen/interacción, añadir una prueba original focalizada en Metal y revisión visual;

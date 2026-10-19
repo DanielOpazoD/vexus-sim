@@ -71,12 +71,14 @@ async function observe(page: Page) {
     let auxiliaryPaints = 0;
     let latestPaint: CutPaintWitness | undefined;
     let previousTraceKey: unknown[] | undefined;
-    const clear = CanvasRenderingContext2D.prototype.clearRect;
+    const clear: unknown = Reflect.get(CanvasRenderingContext2D.prototype, 'clearRect');
+    if (typeof clear !== 'function') throw new Error('CanvasRenderingContext2D.clearRect unavailable');
     CanvasRenderingContext2D.prototype.clearRect = function (...args) {
       Reflect.apply(clear, this, args);
       if (this.canvas.id === 'overlay') auxiliaryPaints++;
     };
-    const fill = CanvasRenderingContext2D.prototype.fillRect;
+    const fill: unknown = Reflect.get(CanvasRenderingContext2D.prototype, 'fillRect');
+    if (typeof fill !== 'function') throw new Error('CanvasRenderingContext2D.fillRect unavailable');
     CanvasRenderingContext2D.prototype.fillRect = function (x, y, width, height) {
       Reflect.apply(fill, this, [x, y, width, height]);
       // drawEcg starts each real strip with this full-canvas background fill.
@@ -109,7 +111,8 @@ async function observe(page: Page) {
         }
       }
     };
-    const put = CanvasRenderingContext2D.prototype.putImageData;
+    const put: unknown = Reflect.get(CanvasRenderingContext2D.prototype, 'putImageData');
+    if (typeof put !== 'function') throw new Error('CanvasRenderingContext2D.putImageData unavailable');
     CanvasRenderingContext2D.prototype.putImageData = function (image: ImageData, x: number, y: number, ...dirty: number[]) {
       Reflect.apply(put, this, [image, x, y, ...dirty]);
       if (this.canvas.id !== 'cutmap') return;

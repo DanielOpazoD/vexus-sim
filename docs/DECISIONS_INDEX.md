@@ -242,4 +242,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [236](DECISIONS.md#L8238) | Ventilación contextual sin presuponer una VCI ni descartar congestión | vigente |
 | [237](DECISIONS.md#L8260) | Admitir referencias externas sin confundir identidad con validación | vigente |
 | [238](DECISIONS.md#L8292) | Drenar los contextos WebGL de ecografía y navegador antes de liberar la vista | vigente |
-| [239](DECISIONS.md#L8338) | Renovar cuatro secuencias de transporte GLSL sin cambiar sus tokens | vigente |
+| [239](DECISIONS.md#L8337) | Renovar cuatro secuencias de transporte GLSL sin cambiar sus tokens | vigente |

@@ -53,7 +53,7 @@ describe('partición de cobertura sin perder pruebas', () => {
   });
   it('la ruta habitual exige ambas fases y conserva la referencia totalmente instrumentada', () => {
     const scripts = (JSON.parse(readFileSync(join(root, 'package.json'), 'utf8')) as { scripts: Record<string, string> }).scripts;
-    expect(scripts['test:coverage']).toBe('npm run test:coverage:core && npm run test:matrix && npm run test:coverage:verify');
+    expect(scripts['test:coverage']).toBe('node --import tsx tools/ci/run-validation-phase.ts all && npm run test:coverage:verify');
     expect(scripts['test:coverage:core']).toBe('node --import tsx tools/ci/run-validation-phase.ts core');
     expect(scripts['test:matrix']).toBe('node --import tsx tools/ci/run-validation-phase.ts matrix');
     expect(scripts['test:coverage:full']).toBe('VITEST_TIER=all VITEST_COVERAGE_PARTITION=all vitest run --coverage --testTimeout=180000');

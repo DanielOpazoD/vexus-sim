@@ -8,6 +8,15 @@ workflows adicionales y los desvíos del proceso de la ronda de pared. Actualiza
 reparto y fija un worker también para E2E locales directas; no añade otro lanzador ni elimina
 pruebas. Sus cifras retrospectivas son estimaciones, pendientes de observación en la nueva CI.
 
+La [reevaluación 233](iteration-audit-233.md) mide en el mismo equipo y commit un lote CPU
+acotado: cobertura core y matrices mantienen procesos, selección e informes separados, pero se
+solapan dentro de `check` en local cuando Node estima al menos diez plazas disponibles. Usa
+`availableParallelism() - 5` workers para core y tres para matrices; deja dos plazas sin asignar
+a esos pools. Es una estimación de recursos, no una reserva del sistema ni una garantía de tiempo.
+En CI, equipos menores o con `VEXUS_VALIDATION_MODE=serial` se conserva la ruta secuencial.
+No lanzar otras cargas locales intensivas durante el lote. La unión verificada, las pruebas,
+su aislamiento, cobertura, plazos y CI completa permanecen obligatorios.
+
 ## Diagnóstico crítico
 
 | Hallazgo observado                                                                                 | Cómo frena la iteración                                                                                     | Corrección mínima aplicada                                                                                                                                                             |
@@ -88,6 +97,10 @@ cambios durante la ejecución y no sobrescribe carpetas de evidencia.
 La selección relacionada **no descubre toda dependencia dinámica**. Si el riesgo es transversal,
 usar `--all-fast` o un test explícito. No encontrar tests es un fallo, no una aprobación vacía.
 Para editar repetidamente un módulo también sirve `npm run test:watch -- <test>`.
+Al cambiar scripts de `package.json`, incluir sus contratos que leen el archivo en tiempo de
+ejecución (`coveragePartition`, `iterationFeedback` y `docs`), aunque no aparezcan por imports.
+La primera comprobación final de la ronda 233 encontró así un cableado aún secuencial tras el
+feedback de módulos nuevos; el negativo se conserva y se actualiza el contrato de entrada.
 La semántica de selección está descrita en la [documentación de Vitest](https://vitest.dev/guide/cli.html#vitest-related).
 
 Si cambia imagen/interacción, añadir una prueba original focalizada en Metal y revisión visual;

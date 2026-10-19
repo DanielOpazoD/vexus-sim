@@ -20,9 +20,14 @@ las pestañas abiertas y los JSON de una sesión son antecedentes, no estado viv
 ## Referencia para retomar la entrega actual
 
 La auditoría 228 ordena el trabajo por pared regional, cortical vertebral y desfase del corte.
-Las decisiones 229–231 limitan el soporte posterior de los planos interoblicuos, derivan la
+Las decisiones 229–232 limitan el soporte posterior de los planos interoblicuos, derivan la
 curvatura vertebral de su campo fuente y reducen trabajo repetido del corte sin cambiar muestras.
 La aceptación del candidato debe consultarse en Git/CI, no inferirse de esta descripción.
+
+- La ronda 233 reevalúa el entorno por petición del usuario: [mediciones y alcance](engineering/iteration-audit-233.md).
+  Añade preflight HTTP, recursos del equipo en las evidencias y lote CPU local acotado con modo
+  secuencial explícito. No cambia el simulador ni la distribución de CI. Conserva aceptación,
+  inventario, aislamiento y plazos; el PR debe acreditar el check final y la CI completa.
 
 - La ronda 227 vincula el build local con su fuente y verifica los recursos de la preview externa
   antes de las E2E; ver [entorno y reproducción](engineering/workspace.md). No cambia el simulador
@@ -38,6 +43,19 @@ La aceptación del candidato debe consultarse en Git/CI, no inferirse de esta de
   La aceptación posterior y la de cada ronda nueva deben consultarse en Git/CI.
 
 ### Último cierre funcional acreditado
+
+- [PR270](https://github.com/DanielOpazoD/vexus-sim/pull/270): pared posterior, curvatura vertebral
+  compartida y menor trabajo CPU del corte (229–232). Main `faf5cc19318be65340b87a5d9eac7f35b41bda11`,
+  árbol `ee131608fa969d9346855ed0e83e80184e4b1a52`, idéntico al aprobado. La
+  [CI del PR](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39173366446) y la
+  [CI posterior de main](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39175680502)
+  aprobaron 154 E2E únicas, doce grupos y cero reintentos; recibos originales verificados.
+  La entrega revisó además los seis workflows suplementarios aplicables y sus 17 trabajos.
+  El build de main verificó sus 50 recursos y ocho capturas nativas coincidieron con el candidato.
+  El Worker bajó alrededor de 8 % en la muestra nativa; el desfase mediano siguió en dos cuadros
+  y la antigüedad del corte no mejoró. No dar esa latencia ni la fidelidad externa por resueltas.
+
+### Cierre funcional anterior
 
 - [PR267](https://github.com/DanielOpazoD/vexus-sim/pull/267): pared abdominal y cuña de relleno
   (222), lectura ósea precisa y diagnósticos de arranque/corte (223). La segunda anotación corrige

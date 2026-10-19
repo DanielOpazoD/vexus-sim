@@ -5,7 +5,8 @@
 2. Lee `docs/MISION.md` y `CONTRIBUTING.md`: misión, aceptación y fusión. `CLAUDE.md` resume los
    invariantes delicados; `docs/ARCHITECTURE.md` y `docs/TESTING.md` explican los contratos.
 3. Entorno: `tools/workspace/run.sh npm run workspace:doctor`. Comandos y evidencias en
-   `docs/engineering/workspace.md`. Node 24; una sola carga intensiva local a la vez.
+   `docs/engineering/workspace.md`. Node 24; una sola carga intensiva local a la vez. El lote CPU
+   acotado de `check` cuenta como una carga; no superponer GPU, build ni hook mientras corre.
    Durante la edición usa feedback focalizado según `docs/engineering/iteration.md`; check y CI
    completos siguen siendo obligatorios para aceptar el candidato final.
 4. Consulta `docs/DECISIONS_INDEX.md` antes de abrir el historial completo. No conviertas un pendiente

@@ -134,7 +134,15 @@ export async function start(): Promise<void> {
     markStartup('cut:import');
     void import('./ui/cutMapView')
       .then(({ CutMapView }) => {
-        cutMap = new CutMapView(cutCanvas);
+        cutMap = new CutMapView(cutCanvas, () => {
+          if (store.get().torso && !gpu.lost && !panel.venousComparisonOpen) {
+            try {
+              cutMap?.draw(sim(), performance.now());
+            } catch (error) {
+              errorLog.report('corte', error);
+            }
+          }
+        });
         cutMap.setLabels(store.get().debug);
         markStartup('cut:ready');
       })
@@ -447,6 +455,7 @@ export async function start(): Promise<void> {
     let eqPrevCpu: CutMapView['lastMap'] = null;
     let presentationDirty = true;
     let presentedCpuState: unknown[] = [];
+    let presentedCutMap: unknown;
     let submittedGpuState: unknown[] = [];
     // Incluye el dibujo inicial que navigatorReady envía antes del primer cuadro.
     let submittedNavRevision = 0;
@@ -475,13 +484,13 @@ export async function start(): Promise<void> {
       fitTraceCanvases();
       // Always service the Worker, including progress, cancellation and new maps.
       if (store.get().torso && !gpu.lost) cutMap?.draw(s, now);
+      const map = cutMap?.lastMap?.map;
       const state = [
         s,
         s.renderer.displayedFrame,
         s.equipment,
         store.get(),
         s.physiology.clock.t,
-        cutMap?.lastMap?.map,
         panel.captureOverlay,
         panel.mMarks,
         panel.mMarks.length,
@@ -495,10 +504,13 @@ export async function start(): Promise<void> {
         mCanvas.height,
         allowGpu && s.mmode.enabled,
       ];
-      if (!presentationDirty && state.every((value, i) => value === presentedCpuState[i])) return;
+      const tracesChanged = presentationDirty || !state.every((value, i) => value === presentedCpuState[i]);
+      if (!tracesChanged && map === presentedCutMap) return;
       presentationDirty = false;
       presentedCpuState = state;
-      drawTraces(s, allowGpu);
+      presentedCutMap = map;
+      // Un mapa nuevo solo invalida el contorno anatómico, no ECG/espectro/M.
+      if (tracesChanged) drawTraces(s, allowGpu);
       drawOverlay(overlay, s);
       cutMap?.drawHighlight(overlay, s, store.get().torso && !gpu.lost);
     }

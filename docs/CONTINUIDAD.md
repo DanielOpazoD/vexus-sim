@@ -1,6 +1,42 @@
 # Continuidad de VExUS LAB
 
-## Alcance vigente al 18 de octubre de 2026
+## Alcance vigente al 19 de octubre de 2026
+
+El usuario autoriza continuar con el desfase del corte. La decisión 241 elimina
+la espera al siguiente RAF para presentar una respuesta del Worker y atender
+la última adquisición. El primer candidato `2618ed33` se rechaza: el barrido
+original SwiftShader de dos vistas agota 540 s en basculación hepatorrenal.
+El segundo limita el callback a `cutMap.draw` y separa el mapa del estado que
+invalida ECG/espectro/M; overlay y contorno se atienden en el siguiente RAF.
+
+La pareja nativa de seis coordenadas y ambos pacientes del segundo candidato
+(árbol modificado, con recibo propio) registra envío a primer pintado p95
+**36,2 → 28,5 ms**, mejora en **11/12** filas, máximo **37,8 → 44,4 ms** y
+antigüedad mostrada p95 **66,7 → 66,9 ms**. No resuelve el desfase global ni
+hereda los 288 registros renales del primer candidato. La prueba focalizada
+conserva 111 respuestas activas sin pintura auxiliar adicional y 707 fondos
+ECG adquiridos sin duplicados; las tres pinturas previas a adquisición quedan
+explícitas fuera de comparación. Restaurar el callback completo falla con
+contador auxiliar 66 → 68.
+
+El estado de aceptación se consulta en
+[PR273](https://github.com/DanielOpazoD/vexus-sim/pull/273) y su CI del último
+head. Exige check, barrido SwiftShader original e imagen/interacción; los
+resultados del primer candidato no lo acreditan. Conservar instantáneas
+adquiridas, una petición, resolución, física, plazos y negativos. La
+comparación diagnóstica no sustituye esa aceptación.
+
+[PR272](https://github.com/DanielOpazoD/vexus-sim/pull/272) integró 234–240 en
+`84c210fe800a73e6025e7ab1a23a669ffe0d4d34`, árbol
+`31d08ff0df2f9e1295e17cdf4e0f4f6a1109e6bf`. Su CI aprobó 156 E2E sin reintentos.
+La CI independiente de ese main,
+[39200993860](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39200993860),
+terminó fallida: las 13 pruebas del grupo 12 pasaron, pero dos uploads de
+artefactos agotaron la conexión. No es aprobación ni fallo observado del
+simulador. Log, metadatos y artefacto parcial original permanecen en la evidencia
+241; no sustituye los informes ausentes ni justifica debilitar el gate.
+
+## Antecedentes de alcance
 
 El usuario pausó el desarrollo funcional para ordenar el entorno y autorizó esa limpieza con
 autonomía. El 17 de octubre autorizó retomar fidelidad externa y coherencia interna. La primera ronda

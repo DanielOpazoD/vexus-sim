@@ -80,6 +80,10 @@ export class Navigator3D {
   get renderRevision(): number {
     return this.renderSerial;
   }
+  /** La valla de ecografía no cubre el contexto WebGL separado de three.js. */
+  get gpuContext(): WebGL2RenderingContext {
+    return this.renderer.getContext() as WebGL2RenderingContext;
+  }
   private lastResp = -1;
   private respiratoryMotion: ReturnType<typeof bindRespiratoryMotion> | null = null;
   private lastPoseKey = '';

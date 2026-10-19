@@ -77,6 +77,13 @@ cine.tick()                         con la imagen congelada: el cuadro elegido d
 overlay, navegador 3D, corte, ECG, espectrograma, franja M, HUD, consola   vistas
 ```
 
+El regulador GPU sondea sin espera una valla de ecografía y, cuando se ha
+dibujado, otra del contexto WebGL separado del navegador 3D (238). Solo libera
+el turno entre vistas tras drenar todas; la pausa estable no crea vallas.
+Una creación o consulta fallida conserva el contexto pendiente para recercarlo;
+solo una señal válida o su pérdida permiten liberarlo. Una valla de un contexto
+no acredita la finalización de otro ni del compositor.
+
 Cine y modo M (decisión 80): tras la presentación, `render` guarda en un anillo de la GPU (`CineRing`,
 `src/ultrasound/cine.ts`; ≤ 20 Hz, 6 s) la envolvente compuesta y el campo de color del cuadro, antes de la
 conversión de barrido, con sus ajustes; `showCine` los devuelve a `tEnv`/`tColor`, dibuja G con esos ajustes y funde

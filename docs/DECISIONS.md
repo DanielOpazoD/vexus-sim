@@ -8288,3 +8288,76 @@ valores no finitos, unidades/niveles, límite poblacional de `stdGray`, original
 vacíos, rutas, symlinks y no sobrescritura. El comando `--profile` registra los
 parámetros genéricos actuales, sin modificar el motor. La aceptación del cambio
 sigue requiriendo check y CI del último head.
+
+## 238. Drenar los contextos WebGL de ecografía y navegador antes de liberar la vista
+
+**Contexto.** El candidato `e68029c` aprueba diez E2E Metal, pero la prueba local
+SwiftShader de dos vistas agota sus 540 s durante Basculación hepatorrenal.
+Los arranques consumen 82,2 y 137,7 s; renal completa 144 muestras, dos mapas de
+256 puntos sin discrepancias y dos PNG. Sus dos bloques de consulta/lectura
+suman 38,11 s. La traza acredita coste acumulado, no una causa única ni una
+regresión emparejada contra main. No se presenta ese negativo como aceptación.
+
+**Opciones.** No ampliar plazos, esconder vistas, reducir pasos ni sustituir
+paridad por una captura. La fuente revela además un contrato incompleto:
+`GpuFramePacer` solo cerca el contexto de ecografía, aunque `nav.draw()` envía
+trabajo al contexto separado de three.js. Una valla WebGL no garantiza que
+haya terminado otro contexto. La traza no mide sus vallas y no demuestra por
+sí sola cuánto explica este defecto del timeout.
+
+**Decisión.** El regulador conserva una valla por contexto usado y espera a
+todas antes de liberar el turno. El navegador expone su contexto para este
+único control; se incluye cuando cambia su revisión de render y, de forma
+conservadora, si el cuadro lanza. Se conserva la pausa estable sin vallas
+vacías, el sondeo sin espera y la cesión de una RAF tras espera. Un contexto
+perdido no permite olvidar el otro todavía pendiente. Si no se pudo crear una
+valla o su consulta falla, se conserva el contexto pendiente y se vuelve a
+cercar antes de ceder el turno. Ausencia de valla no significa trabajo terminado.
+No cambia la geometría, la física, las muestras ni la resolución de las vistas.
+
+**Consecuencias.** El contrato de vuelo cubre ambos contextos WebGL de la vista.
+No certifica la cola interna del compositor 2D ni mejora universal de latencia.
+Su efecto en el barrido se debe medir con la prueba original; un pase aislado
+no demuestra resueltos los timeouts históricos.
+
+**Verificación.** Tests discriminantes con segundo contexto lento, finalización
+parcial, pérdida y errores, además de los casos originales de un contexto. La
+E2E observa las vallas de producción de ecografía y 3D; conserva dos páginas,
+24 muestras por ángulo, tres RAF por paso, paridad y cuatro capturas, y plazo
+540 s. Otro caso hace fallar la primera valla 3D de cada cuadro y exige repararla
+en ese mismo cuadro antes de conceder una reserva Web Locks real. Comprueba cero
+trabajos sin cercar y vallas válidas pendientes, y recupera pose/adquisición;
+protege el registro del turno aun con envío parcial. Metal/SwiftShader, check y
+CI completos del head final son condiciones pendientes de aceptación; los
+negativos anteriores se conservan. La revisión limpia encontró que omitir el
+contexto cuya valla falló liberaba trabajo sin confirmar; se conserva ese
+hallazgo. Las antiguas expectativas de quedar libre tras un fallo se sustituyen
+por la condición más estricta de confirmación o pérdida del contexto.
+
+## 239. Renovar cuatro secuencias de transporte GLSL sin cambiar sus tokens
+
+**Contexto.** Completar el regulador multicontexto (238) deja el JS en
+1.058.095 bytes, 303 sobre el presupuesto vigente de 1.057.792 bytes. El build
+lo rechaza. El diccionario reversible conserva secuencias que ya ahorran poco
+en la fuente actual; existe margen de distribución sin cambiar los programas.
+
+**Opciones.** No subir el presupuesto ni quitar vistas, pruebas o física. Se
+consideró acortar literales flotantes, pero cambiaría el contrato léxico y
+podría perder coincidencias del diccionario. Renovar cuatro frases conserva
+el texto GLSL exacto que recibe el compilador.
+
+**Decisión.** Sustituir cuatro entradas de `GLSL_PHRASES`, conservando sus 128
+posiciones, bancos y decodificador: `,vec3(0.0` por `){float `; `int line,int `
+por `);if(`; `, 0.0, ` por `);return `; y `,tangent,curvature)` por `,float `.
+Las frases se expanden antes de compilar. No se transforman constantes,
+directivas, identificadores ni operaciones acústicas.
+
+**Consecuencias.** El análisis secuencial de empaquetado estima 680 bytes menos,
+incluido el diccionario, y conserva el mapa de renombrado. El ahorro final debe
+medirse con el build; no se acepta una estimación como presupuesto aprobado.
+No altera cachés de aceptación ni los controles de procedencia de assets.
+
+**Verificación.** El contrato existente exige reconstrucción byte a byte de
+plantillas propias y de Three, con interpolaciones y marcadores, más los dos
+léxicos del minificador. Build y presupuesto reales, GPU Metal/SwiftShader y
+CI íntegra del último head siguen obligatorios. Se conserva el build rechazado.

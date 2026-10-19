@@ -17,7 +17,7 @@ Este documento es el punto de entrada. `CONTRIBUTING.md` define el procedimiento
 la configuración ejecutable de CI y sus verificadores determinan qué se ejecuta. Los prompts antiguos,
 las pestañas abiertas y los JSON de una sesión son antecedentes, no estado vivo.
 
-## Ronda 234–237: coherencia Doppler y evidencia independiente
+## Ronda 234–239: coherencia Doppler y evidencia independiente
 
 El usuario autoriza implementar las prioridades clínicas/acústicas por entregas,
 con PR y merge cuando aprueben. Confirma convexo **genérico de 3,5 MHz**. La
@@ -36,6 +36,14 @@ separa cambios comprobables de lo que necesita referencias o participantes reale
 - [Admisión externa](fidelity/external-evidence.md): archivos y partición de
   referencias verificables, con calibración y humanos pendientes. El
   [protocolo humano](fidelity/human-validation.md) está preparado, sin resultados (237).
+
+El candidato e68029c pasó Metal, pero el barrido local de dos vistas SwiftShader
+agotó 540 s durante movimiento hepatorrenal. La decisión 238 completa la valla
+que solo cubría ecografía para incluir el contexto WebGL separado de 3D. Es un
+defecto de contrato comprobable; su contribución al coste acumulado requiere
+medición. La decisión 239 renueva cuatro frases reversibles de transporte GLSL
+para mantener 1033 KiB sin modificar tokens. No integrar sin repetir la prueba
+original y aceptar el head final.
 
 PW fino **continúa abierto**: se reprodujo en la referencia renal quieta una
 fracción 0,432 y peso 0,0463 frente a 0,568 y 0,0701 frescos a 10,5 s. La

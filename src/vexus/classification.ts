@@ -91,7 +91,7 @@ export interface VexusContext {
   noEcg?: boolean;
   /** Fibrilación auricular: la onda S se reduce sin congestión. */
   atrialFibrillation?: boolean;
-  /** Ventilación con presión positiva: VCI dilatada y poco variable sin PAD alta; su tabla frente a la PAD no vale. */
+  /** Ventilación con presión positiva: interpretar la VCI con el contexto respiratorio, sin descartar el grado. */
   positivePressureVentilation?: boolean;
   /** Presión intraabdominal elevada o ascitis a tensión: la VCI puede ser pequeña con la PAD alta (grado 0 falso). */
   raisedIntraAbdominalPressure?: boolean;
@@ -122,8 +122,8 @@ export function contextWarnings(ctx: VexusContext = {}): ReliabilityWarning[] {
   }
   if (ctx.noEcg) warn('hepatic', 'sin ECG: S y D se rotulan sin referencia');
   if (ctx.atrialFibrillation) warn('hepatic', 'fibrilación auricular: la onda S se reduce sin congestión');
-  if (ctx.positivePressureVentilation)
-    warn('ivc', 'ventilación con presión positiva: la VCI está dilatada y varía poco (se distiende en la insuflación) sin PAD alta');
+  // Rola et al. 2024, doi:10.1186/s13089-024-00395-0: la ventilación/PEEP no descarta un VExUS elevado.
+  if (ctx.positivePressureVentilation) warn('ivc', 'presión positiva: puede alterar la VCI; no descarta congestión ni mide volemia');
   if (ctx.raisedIntraAbdominalPressure) warn('ivc', 'presión intraabdominal alta: la VCI puede ser pequeña con la PAD alta');
   return w;
 }

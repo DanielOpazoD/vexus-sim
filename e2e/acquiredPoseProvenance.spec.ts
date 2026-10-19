@@ -3,18 +3,17 @@ import { createHash } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { acquisitionSnapshot, validateAcquisition } from '../tools/fidelity/acquisitionSnapshot';
 import { captureBMode } from '../tools/fidelity/captureBMode';
-import { bootWithoutErrors, budget } from './support';
+import { bootWithoutErrors, budget, withinFrames } from './support';
 
 test('conserva pose adquirida al mover controles congelados y recuperar cine antiguo', async ({ page }, info) => {
   budget(90_000);
   const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
-  await page.evaluate(() => {
-    const s = window.__vexusTest!.sim();
-    for (let i = 0; i < 20; i++) {
-      s.advance(0.05);
-      s.render();
-    }
-  });
+  // Let the ordinary GPU pacer acquire the historical frames. Rendering twenty
+  // frames synchronously bypassed its fence and queued minutes of SwiftShader
+  // work, later charged to readDisplay. Three cine entries provide oldIndex >= 1.
+  await withinFrames(page, 12, 'historia de cine adquirida', () =>
+    page.evaluate(() => window.__vexusTest!.sim().renderer.cineCount >= 3 || 'faltan cuadros históricos'),
+  );
   await page.locator('#freeze').click();
   // Compare the SAME historical reconstruction before/after a new acquisition.
   // Live persistence versus R16F cine reconstruction is a separate signal audit.
@@ -57,11 +56,19 @@ test('conserva pose adquirida al mover controles congelados y recuperar cine ant
     const s = window.__vexusTest!.sim();
     // Use the ordinary setter for the next real acquisition, beyond the aliasing stimulus.
     s.setPose({ ...s.pose, phi: s.pose.phi + 0.08 });
-    for (let i = 0; i < 6; i++) {
-      s.advance(s.physiology.clock.dt);
-      s.render();
-    }
   });
+  await withinFrames(page, 12, 'pose nueva adquirida por el bucle normal', () =>
+    page.evaluate((previous) => {
+      const s = window.__vexusTest!.sim();
+      const acquired = s.renderer.displayedAnatomy?.pose;
+      return (
+        (!!acquired &&
+          acquired.phi !== previous.phi &&
+          (['phi', 'z', 'lift', 'yaw', 'rock', 'tilt'] as const).every((key) => acquired[key] === s.pose[key])) ||
+        'sigue la pose anterior'
+      );
+    }, before.pose),
+  );
   await page.locator('#freeze').click();
   const current = await page.evaluate(acquisitionSnapshot, 'subxiphoid' as const);
   expect(current.pose).toEqual(current.livePose);

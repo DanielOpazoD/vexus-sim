@@ -64,6 +64,12 @@ test('renal and hepatorenal sweeps retain acquisition geometry with two views an
     for (const p of pages) {
       await observe(p);
       errors.push(await bootWithoutErrors(p, '?e2e=app&abdomen=atlas'));
+      // A fence in the ultrasound context cannot drain the separate 3D context.
+      // Observe the production wiring without adding work or waiting for the GPU.
+      const fences = await p.evaluate(() => window.gpuProgress ?? []);
+      await info.attach(`gpu-fences-view-${pages.indexOf(p)}`, { body: JSON.stringify(fences), contentType: 'application/json' });
+      expect(fences.find((row) => row.canvas === 'gl')?.fences ?? 0).toBeGreaterThan(0);
+      expect(fences.find((row) => row.canvas === 'nav3d')?.fences ?? 0).toBeGreaterThan(0);
     }
     for (const windowId of ['renal', 'hepatorenal'] as const) {
       for (const p of pages) await p.evaluate((id) => window.__vexusTest!.goToStartPoint(id), windowId);

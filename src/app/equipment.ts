@@ -1,4 +1,4 @@
-import { effectiveWallFilterCutoff } from '../doppler/wallFilter';
+import { effectiveWallFilterCutoff } from '../core/highPass';
 import type { BModeSettings, ColorSettings } from '../ultrasound/renderer';
 import type { EquipmentSettings, PwSettings } from './simulator';
 
@@ -109,14 +109,15 @@ export function normalizeEquipment(e: EquipmentSettings, ctx: EquipmentContext):
   const span = clamp(Math.abs(c.r1 - c.r0), L.colorBox.minDepthMm, depth - L.colorBox.minR0Mm);
   const rMid = clamp((c.r0 + c.r1) / 2, L.colorBox.minR0Mm + span / 2, depth - span / 2);
   const r1 = rMid + span / 2;
+  const colorPrf = clamp(c.prfHz, L.prfHz.min, maxPrfForDepth(r1, ctx.cMmS));
   const color: ColorSettings = {
     ...c,
     theta0: thetaMid - width / 2,
     theta1: thetaMid + width / 2,
     r0: rMid - span / 2,
     r1,
-    prfHz: clamp(c.prfHz, L.prfHz.min, maxPrfForDepth(r1, ctx.cMmS)),
-    wallFilterHz: Math.max(0, c.wallFilterHz),
+    prfHz: colorPrf,
+    wallFilterHz: effectiveWallFilterCutoff(c.wallFilterHz, colorPrf),
     gainDb: clamp(c.gainDb, L.colorGainDb.min, L.colorGainDb.max),
   };
   // Puerta PW: dentro del sector y de la imagen; PRF limitada por su profundidad

@@ -16,6 +16,23 @@ declare global {
       reservationReady: boolean;
       releaseReservation?: () => void;
     };
+    partialGpuTurn: {
+      fault: boolean;
+      nulls: number;
+      unfencedFrames: Set<number>;
+      reservationReady: boolean;
+      reservationError?: string;
+      grant?: {
+        nulls: number;
+        frame: number;
+        loops: number;
+        unfencedFrames: number[];
+        contexts: Array<{ canvas: string; fences: number; pending: number }>;
+      };
+      restoreFence: () => void;
+      abortReservation?: () => void;
+      releaseReservation?: () => void;
+    };
   }
 }
 
@@ -220,6 +237,143 @@ test('initializes both real WebGL contexts before acquisition and retains the 3D
   expect(errors).toEqual([]);
   expect(await page.evaluate(() => window.__vexusTest!.loggedErrors())).toEqual([]);
   expect(await page.evaluate(() => window.startupContexts.overlappingFrames)).toBe(0);
+});
+
+test('a partial GPU submission drains before releasing its page turn and recovers the requested pose', async ({ page }, info) => {
+  budget(90_000); // Un solo arranque, con el mismo presupuesto de trabajo que los otros casos de contexto.
+  const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
+  expect(await page.evaluate(() => window.__vexusTest!.loggedErrors())).toEqual([]);
+  try {
+    await page.evaluate(() => {
+      const prototype = WebGL2RenderingContext.prototype;
+      const fence: unknown = Reflect.get(prototype, 'fenceSync');
+      if (typeof fence !== 'function') throw new Error('WebGL.fenceSync unavailable');
+      const control: Window['partialGpuTurn'] = (window.partialGpuTurn = {
+        fault: true,
+        nulls: 0,
+        unfencedFrames: new Set<number>(),
+        reservationReady: false,
+        restoreFence: () => {
+          Reflect.set(prototype, 'fenceSync', fence);
+        },
+      });
+      const failedFrames = new Set<number>();
+      Reflect.set(prototype, 'fenceSync', function (this: WebGL2RenderingContext, ...args: unknown[]) {
+        const frame =
+          this.canvas instanceof HTMLCanvasElement && this.canvas.parentElement?.id === 'nav3d'
+            ? window.__vexusTest!.sim().renderer.displayedFrame!.n
+            : null;
+        // Cada adquisición falla una vez. Solo el reintento nativo sobre ese
+        // mismo cuadro puede cercar su trabajo; otro cuadro no salda la deuda.
+        if (control.fault && frame !== null && !failedFrames.has(frame)) {
+          failedFrames.add(frame);
+          control.unfencedFrames.add(frame);
+          control.nulls++;
+          return null;
+        }
+        const result: unknown = Reflect.apply(fence, this, args);
+        if (frame !== null && result) control.unfencedFrames.delete(frame);
+        return result;
+      });
+    });
+    const before = await page.evaluate(() => window.__vexusTest!.sim().pose);
+    await page.getByRole('slider', { name: 'Rotación', exact: true }).press('ArrowRight');
+    const requested = await page.evaluate(() => window.__vexusTest!.sim().pose);
+    expect(requested).not.toEqual(before);
+    await withinFrames(page, 45, 'el gesto envía un cuadro con fallo de valla solo en 3D', async () =>
+      page.evaluate(() => window.partialGpuTurn.nulls > 0 || 'falta el envío parcial'),
+    );
+    // Cada cuadro nuevo sigue fallando hasta conceder la reserva; ready() puede
+    // reparar la valla del mismo cuadro sin una adquisición posterior exitosa
+    // que oculte la omisión de submitted().
+    // Las consultas y señales de las vallas válidas siguen siendo nativas.
+    await page.evaluate(() => {
+      const control = window.partialGpuTurn;
+      const abort = new AbortController();
+      control.abortReservation = () => abort.abort();
+      void navigator.locks
+        .request('vexus-gpu-preparation', { mode: 'exclusive', signal: abort.signal }, () => {
+          control.grant = {
+            nulls: control.nulls,
+            frame: window.__vexusTest!.sim().renderer.displayedFrame!.n,
+            loops: window.__vexusTest!.framesRendered(),
+            unfencedFrames: [...control.unfencedFrames],
+            contexts: (window.gpuProgress ?? []).map((row) => ({
+              canvas: row.canvas,
+              fences: row.fences,
+              pending: row.fences - row.deletes,
+            })),
+          };
+          control.fault = false;
+          control.reservationReady = true;
+          return new Promise<void>((release) => {
+            control.releaseReservation = () => {
+              control.reservationReady = false;
+              release();
+            };
+          });
+        })
+        .catch((error: unknown) => {
+          if (!abort.signal.aborted) control.reservationError = String(error);
+        });
+    });
+    await withinFrames(page, 90, 'la reserva entra después de drenar el envío parcial', async () =>
+      page.evaluate(() => window.partialGpuTurn.reservationReady || window.partialGpuTurn.reservationError || 'reserva pendiente'),
+    );
+    const grant = await page.evaluate(() => window.partialGpuTurn.grant!);
+    expect(grant.nulls).toBeGreaterThan(0);
+    expect(grant.unfencedFrames, 'todo trabajo 3D debe obtener una valla nativa antes de ceder la reserva').toEqual([]);
+    expect(grant.contexts.map((row) => row.canvas).sort()).toEqual(['gl', 'nav3d']);
+    for (const context of grant.contexts) {
+      expect(context.fences, context.canvas).toBeGreaterThan(0);
+      expect(context.pending, `${context.canvas}: vallas válidas drenadas al conceder la reserva`).toBe(0);
+    }
+    await page.evaluate(() => window.partialGpuTurn.releaseReservation!());
+    await withinFrames(page, 45, 'la adquisición normal recupera la pose y la valla 3D', async () =>
+      page.evaluate(
+        ({ grant, requested }) => {
+          const shown = window.__vexusTest!.sim().renderer.displayedFrame!;
+          const navFences = window.gpuProgress?.find((row) => row.canvas === 'nav3d')?.fences ?? 0;
+          const beforeNavFences = grant.contexts.find((row) => row.canvas === 'nav3d')!.fences;
+          return (
+            (shown.n > grant.frame &&
+              window.__vexusTest!.framesRendered() > grant.loops &&
+              JSON.stringify(shown.anatomy.pose) === JSON.stringify(requested) &&
+              navFences > beforeNavFences) ||
+            'adquisición o valla 3D pendiente'
+          );
+        },
+        { grant, requested },
+      ),
+    );
+    expect(await page.evaluate(() => window.partialGpuTurn.nulls)).toBe(grant.nulls);
+    expect(await page.evaluate(() => [...window.partialGpuTurn.unfencedFrames])).toEqual([]);
+    expect(await page.evaluate(() => window.partialGpuTurn.reservationError)).toBeUndefined();
+    expectLoggedErrors(page, [/^bucle: No se pudo crear la valla del cuadro GPU$/]);
+    expect(await page.evaluate(() => window.__vexusTest!.loggedErrors())).toEqual(['bucle: No se pudo crear la valla del cuadro GPU']);
+    expect(errors).toEqual([]);
+  } finally {
+    const receipt = await page.evaluate(() => {
+      const control = window.partialGpuTurn;
+      if (control) {
+        control.fault = false;
+        control.restoreFence();
+        control.abortReservation?.();
+        control.releaseReservation?.();
+      }
+      return {
+        nulls: control?.nulls,
+        unfencedFrames: control ? [...control.unfencedFrames] : [],
+        grant: control?.grant,
+        reservationError: control?.reservationError,
+        frames: window.__vexusTest!.framesRendered(),
+        acquiredFrame: window.__vexusTest!.sim().renderer.displayedFrame?.n,
+        gpu: window.gpuProgress,
+        logged: window.__vexusTest!.loggedErrors(),
+      };
+    });
+    await info.attach('partial-gpu-turn.json', { body: JSON.stringify({ ...receipt, errors }), contentType: 'application/json' });
+  }
 });
 
 for (const stage of ['module', 'draw'] as const)

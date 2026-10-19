@@ -8172,3 +8172,252 @@ el plazo de 180 s y controles originales. Los negativos reales de loopback,
 informes comparables y ensayo diagnóstico quedan preservados. El check completo
 final, hook, CI completa, recibo y comentario previo al merge acreditan el PR;
 la medición diagnóstica no sustituye esos controles.
+
+## 234. Color y PW comparten la respuesta digital estacionaria del filtro de pared
+
+**Contexto.** La auditoría externa/interna encuentra dos respuestas para el mismo
+corte: Color usa `(f²/(f²+fc²))⁴`, con potencia 0,0625 en `fc`, mientras las dos
+secciones Butterworth PW producen 0,25. La diferencia de 6,02 dB puede borrar en
+Color sangre lenta que conserva PW sin que haya cambiado el flujo.
+
+**Opciones.** No se fuerza igualdad entre un estimador analítico Color y la IQ
+PW ni se modifica el filtro PW para ajustarlo a Color. La respuesta estacionaria
+del filtro digital se puede evaluar directamente sin generar ensembles por píxel.
+
+**Decisión.** `colorWallFilter.ts` usa la respuesta de potencia de las dos
+secciones digitales, con prewarping bilineal, frecuencia plegada y el mismo
+límite de corte (45 % de PRF) que PW, propiedad de `core/highPass.ts`. El equipo
+normaliza y expone ese corte efectivo, también al bajar la PRF Color. La GLSL
+usa el mismo cociente de tangentes y π redondeado al mismo float32. No cambia
+velocidad, PRF, resolución, ruido, adquisición ni IQ/audio PW. Se retiran de
+los dispersores dos campos privados que solo se escribían (`phase`,
+`ampTarget`); se conserva orden RNG y cálculo de rampas. La comparación con
+main exige IQ idéntica bit a bit, no una señal de aspecto parecido.
+
+**Consecuencias.** Color conserva más señal cerca del corte y tiende a ganancia
+unidad cerca de Nyquist, como el receptor PW. Sigue siendo una emulación
+analítica: no reproduce transitorios del IIR ni filtrado de un ensemble finito,
+y no acredita equivalencia con un equipo clínico. La limitación sigue declarada.
+
+**Verificación.** El primer candidato `60da67e` falló en Metal: con corte
+limitado a 450 Hz devolvió 0,250000775 frente a 0,25, fuera de los 5e−7
+originales. Normalizar antes de limitar mezclaba el redondeo de una división
+con el de la constante 0,45. Se pliega y limita primero en Hz y se aplican
+las mismas operaciones a frecuencia/corte; el oráculo conserva su tolerancia.
+Las frecuencias aliadas y cortes existentes se contrastan con
+los biquads PW, y una prueba distinta mide la potencia de tonos IQ realmente
+filtrados. El código Color anterior falla estas regresiones. La GPU compila la
+fuente productiva y mantiene sus tolerancias originales; añade corte, signos
+y Nyquist. La aceptación requiere check y CI completos del candidato final.
+
+## 235. La prueba de cine adquiere mediante el regulador GPU ordinario
+
+**Contexto.** La CI independiente de main `46b6443`, ejecución `39181911250`,
+falla a 270 s en `acquiredPoseProvenance`. La traza original acredita 20 renders
+manuales en 48 ms y seis en 116 ms; las lecturas posteriores drenan la cola:
+167,912 s antes y 54,950 s después de mover. Repetir congelado cuesta 0,164 s.
+La cuarta captura termina durante teardown: cuatro PNG no equivalen a éxito.
+
+**Opciones.** No ampliar el plazo, reducir las comparaciones ni atribuirlo a
+arranque (44,15 s). Encolar cuadros manuales evita la valla de la aplicación
+y crea una carga que el usuario no puede provocar con ese flujo.
+
+**Decisión.** Esperar tres entradas históricas y luego la pose adquirida nueva
+mediante `withinFrames` y el bucle normal, con el regulador GPU de producción.
+Se conservan ruta de inicio, composición/armónica, cuatro imágenes, hashes,
+mutación directa de pose, setter posterior, reproducción histórica y asserts.
+
+**Consecuencias.** La prueba usa adquisiciones causales sin acumular renders
+artificiales. No cambia el simulador, el readback, el presupuesto ni los plazos.
+Este negativo no demuestra aislados los otros timeouts históricos.
+
+**Verificación.** Original, SHA256 del artefacto y acciones temporizadas quedan
+en la evidencia local 234. E2E del candidato sobre Metal y SwiftShader, y CI
+íntegra sobre el último head antes de integrar; no usar un reintento como verde.
+
+## 236. Ventilación contextual sin presuponer una VCI ni descartar congestión
+
+**Contexto.** El aviso afirmaba que la VCI estaba dilatada, poco variable y sin
+PAD alta aun sin observarla. M mostraba «colapso» también al marcar presión
+positiva. Rola et al. (2024, doi:10.1186/s13089-024-00395-0) aclaran que PEEP y
+ventilación no justifican descartar un VExUS alto ni transformarlo en volemia.
+
+**Opciones.** No añadir una exclusión, cambiar umbrales ni elegir el rótulo a
+partir de la verdad oculta del paciente. El contexto lo declara el operador.
+
+**Decisión.** El aviso se vuelve condicional. Con presión positiva marcada,
+M informa «variación respiratoria» y conserva la medida `(máx−mín)/máx`, sin
+llamarla distensibilidad ni cambiar denominador. Sin marcarla conserva «colapso».
+
+**Consecuencias.** No cambia fisiología, medida, calidad, grado ni intervalos.
+Se evita una afirmación causal que el dato aislado no permite; la interpretación
+sigue necesitando contexto. No añade una nueva regla de la clasificación original.
+
+**Verificación.** Ambos clasificadores conservan todo el resultado salvo aviso
+con VCI 18/20/26 mm. La UI prueba calibres públicos 24/18 mm → 25 %, rótulo
+reversible en ambos pacientes y ausencia de verdad docente antes de revelarla.
+
+## 237. Admitir referencias externas sin confundir identidad con validación
+
+**Contexto.** El usuario acepta el convexo genérico de 3,5 MHz. Hay bancos
+internos y referencias ya usadas para ajustar, pero falta un contrato ejecutable
+común que distinga esa evidencia de mediciones físicas reservadas y evaluación
+humana. Ninguno de esos resultados se deduce de CI ni de capturas agradables.
+
+**Opciones.** Reutilizar perfil y protocolos existentes; no crear otro equipo,
+framework ni nota sintética de fidelidad. Tampoco convertir retrospectivamente
+los juicios históricos de agentes en validación humana o conjunto reservado.
+
+**Decisión.** `fidelity:external` valida JSON desconocido, perfil y archivos
+locales por SHA256, ajustes conocidos/desconocidos, nivel de señal, unidad,
+método y región de cada observable. Rechaza originales vacíos, valores físicos
+imposibles y sujeto/sesión/hash compartidos entre desarrollo y reservado, además
+de referencias reservadas declaradas como usadas para ajuste. La salida es
+nueva y externa al checkout; se rechazan escapes por ruta y symlink.
+
+**Consecuencias.** `admitted` significa procedencia declarada y metadatos
+coherentes; no autentica identidades, derechos ni métodos. Siempre conserva
+calibración, evaluación reservada y evaluación humana pendientes. Datos
+sintéticos/bibliográficos no cuentan como medición física independiente.
+El protocolo humano preparado separa apariencia, adquisición y transferencia;
+no afirma participantes ni resultados. Ver `docs/fidelity/external-evidence.md`
+y `docs/fidelity/human-validation.md`.
+
+**Verificación.** Fixtures exclusivamente sintéticos prueban integridad, fugas,
+valores no finitos, unidades/niveles, límite poblacional de `stdGray`, originales
+vacíos, rutas, symlinks y no sobrescritura. El comando `--profile` registra los
+parámetros genéricos actuales, sin modificar el motor. La aceptación del cambio
+sigue requiriendo check y CI del último head.
+
+## 238. Drenar los contextos WebGL de ecografía y navegador antes de liberar la vista
+
+**Contexto.** El candidato `e68029c` aprueba diez E2E Metal, pero la prueba local
+SwiftShader de dos vistas agota sus 540 s durante Basculación hepatorrenal.
+Los arranques consumen 82,2 y 137,7 s; renal completa 144 muestras, dos mapas de
+256 puntos sin discrepancias y dos PNG. Sus dos bloques de consulta/lectura
+suman 38,11 s. La traza acredita coste acumulado, no una causa única ni una
+regresión emparejada contra main. No se presenta ese negativo como aceptación.
+
+**Opciones.** No ampliar plazos, esconder vistas, reducir pasos ni sustituir
+paridad por una captura. La fuente revela además un contrato incompleto:
+`GpuFramePacer` solo cerca el contexto de ecografía, aunque `nav.draw()` envía
+trabajo al contexto separado de three.js. Una valla WebGL no garantiza que
+haya terminado otro contexto. La traza no mide sus vallas y no demuestra por
+sí sola cuánto explica este defecto del timeout.
+
+**Decisión.** El regulador conserva una valla por contexto usado y espera a
+todas antes de liberar el turno. El navegador expone su contexto para este
+único control; se incluye cuando cambia su revisión de render y, de forma
+conservadora, si el cuadro lanza. Se conserva la pausa estable sin vallas
+vacías, el sondeo sin espera y la cesión de una RAF tras espera. Un contexto
+perdido no permite olvidar el otro todavía pendiente. Si no se pudo crear una
+valla o su consulta falla, se conserva el contexto pendiente y se vuelve a
+cercar antes de ceder el turno. Ausencia de valla no significa trabajo terminado.
+No cambia la geometría, la física, las muestras ni la resolución de las vistas.
+
+**Consecuencias.** El contrato de vuelo cubre ambos contextos WebGL de la vista.
+No certifica la cola interna del compositor 2D ni mejora universal de latencia.
+Su efecto en el barrido se debe medir con la prueba original; un pase aislado
+no demuestra resueltos los timeouts históricos.
+
+**Verificación.** Tests discriminantes con segundo contexto lento, finalización
+parcial, pérdida y errores, además de los casos originales de un contexto. La
+E2E observa las vallas de producción de ecografía y 3D; conserva dos páginas,
+24 muestras por ángulo, tres RAF por paso, paridad y cuatro capturas, y plazo
+540 s. Otro caso hace fallar la primera valla 3D de cada cuadro y exige repararla
+en ese mismo cuadro antes de conceder una reserva Web Locks real. Comprueba cero
+trabajos sin cercar y vallas válidas pendientes, y recupera pose/adquisición;
+protege el registro del turno aun con envío parcial. Metal/SwiftShader, check y
+CI completos del head final son condiciones pendientes de aceptación; los
+negativos anteriores se conservan. La revisión limpia encontró que omitir el
+contexto cuya valla falló liberaba trabajo sin confirmar; se conserva ese
+hallazgo. Las antiguas expectativas de quedar libre tras un fallo se sustituyen
+por la condición más estricta de confirmación o pérdida del contexto.
+
+## 239. Renovar cuatro secuencias de transporte GLSL sin cambiar sus tokens
+
+**Contexto.** Completar el regulador multicontexto (238) deja el JS en
+1.058.095 bytes, 303 sobre el presupuesto vigente de 1.057.792 bytes. El build
+lo rechaza. El diccionario reversible conserva secuencias que ya ahorran poco
+en la fuente actual; existe margen de distribución sin cambiar los programas.
+
+**Opciones.** No subir el presupuesto ni quitar vistas, pruebas o física. Se
+consideró acortar literales flotantes, pero cambiaría el contrato léxico y
+podría perder coincidencias del diccionario. Renovar cuatro frases conserva
+el texto GLSL exacto que recibe el compilador.
+
+**Decisión.** Sustituir cuatro entradas de `GLSL_PHRASES`, conservando sus 128
+posiciones, bancos y decodificador: `,vec3(0.0` por `){float `; `int line,int `
+por `);if(`; `, 0.0, ` por `);return `; y `,tangent,curvature)` por `,float `.
+Las frases se expanden antes de compilar. No se transforman constantes,
+directivas, identificadores ni operaciones acústicas.
+
+**Consecuencias.** El análisis secuencial de empaquetado estima 680 bytes menos,
+incluido el diccionario, y conserva el mapa de renombrado. El ahorro final debe
+medirse con el build; no se acepta una estimación como presupuesto aprobado.
+No altera cachés de aceptación ni los controles de procedencia de assets.
+
+**Verificación.** El contrato existente exige reconstrucción byte a byte de
+plantillas propias y de Three, con interpolaciones y marcadores, más los dos
+léxicos del minificador. Build y presupuesto reales, GPU Metal/SwiftShader y
+CI íntegra del último head siguen obligatorios. Se conserva el build rechazado.
+
+## 240. Evitar gradientes completos en tiles que el eco no consume
+
+**Contexto.** La aceptación local original de `d3bdfce`, después de completar
+las vallas multicontexto (238), termina con seis pruebas aprobadas y una
+fallida: `renalCutTracking` vuelve a agotar 540 s. No se oculta ese negativo ni
+se atribuye la duración a una causa única. El perfil posterior del mismo head
+limpio conserva trece adquisiciones con SwiftShader y lectura síncrona de un
+píxel después de cada draw. La mediana posterior del render instrumentado es
+535,3 ms; `rawClassSteered`, 100,9 ms; `rawGradientSteered`, 52,1 ms por draw
+(tres por adquisición); `advance`, 0,55 ms. Las lecturas serializan la GPU:
+localizan trabajo repetido, no miden fps ni aíslan compilación inicial. El
+registro original queda en `profile-240-before/summary.json` de la evidencia
+externa de la entrega.
+
+**Opciones.** Conservar plazos, dos vistas, muestras, resolución y física.
+No volver a un gradiente monolítico grande, crear tres programas por eje ni
+alterar el clasificador. La fuente muestra trabajo descartado: las ramas
+renal/perirrenal, pared, costilla, vesícula y tubos calculan un gradiente
+completo en cada tile, aunque `cachedFaceGradient` devuelve solo el tile 0
+cuando su `w>=0`. Las ramas separadas de cortical vertebral, cápsula hepática
+y diafragma marcan `w=-1` y sí necesitan los tres tiles.
+
+**Decisión.** El guard vive únicamente en el cuerpo del stage `gradient`,
+compartido por las dos miradas. Conserva entero el eje 0 y, en ejes 1/2, calcula
+las ramas separadas; escribe cero en los otros resultados no consumidos.
+Mantiene el orden anatómico: las caras perirrenal/fascia y cápsula renal ganan
+al diafragma. No modifica `faceGradient`, su normalización ni fallbacks, el
+consumidor, los otros stages, la consulta de normales o el renderer. Siguen
+existiendo los mismos programas, tres draws y la misma rejilla. No cambia
+la interpretación de cero, NaN o infinito; el marcador sigue siendo el del
+productor anterior y el consumidor conserva su comparación `>=0`.
+
+**Consecuencias.** Se elimina cálculo de resultados descartados sin cambiar
+las operaciones de los valores consumidos. La cohorte instrumentada posterior
+de `6e59ee7` registra 511,65 ms frente a 535,3 ms (−4,42 %); las lecturas
+serializadas y una cohorte por versión no acreditan fps ni causalidad aislada.
+El barrido original de dos vistas pasó en ese head limpio en 8,9 min, dentro de
+los mismos 540 s y con margen pequeño. El presupuesto sigue en 1033 KiB y no
+se cambia el diccionario para acomodar una estimación.
+
+**Verificación.** La comparación temporal por hashes de los dos gradientes y
+trece programas restantes se conserva como evidencia histórica de alcance.
+Se retira `rawGradientScope.test.ts` del gate permanente: replica la
+implementación y congelaría futuros cambios legítimos de anatomía. Pasó antes
+de retirarlo; no se usa su retirada para convertir un fallo en verde.
+La regresión funcional compara byte a byte el `vec4` consumido contra
+el shader anterior, con controles negativos del eje 0 y de cada eje separado
+de cortical, cápsula y diafragma; después, igualdad de imagen, paridad/normales
+y el barrido original de dos vistas, 24 muestras, tres RAF, cuatro paridades/
+capturas y 540 s. El oráculo incorpora 1230 combinaciones de tejido/cara,
+testigos con tres componentes no nulas y 21 mutaciones en los tres cuerpos
+actuales. Reutiliza anatomía y consumidor reales, y verifica el esquema de
+uniforms compactados antes de enlazar la escena. Los casos no finitos se
+inyectan en el consumidor; no acreditan todas las entradas posibles del productor.
+Los diagnósticos Metal y SwiftShader pasan y detectan las 21 mutaciones; la
+adquisición Metal ordinaria usa B directa, por lo que sus imágenes no acreditan
+el guard por etapas. La aceptación conserva build, check, imágenes y paridad
+de adquisición, además de CI íntegra del head final. No sustituir esos controles
+por capturas agradables ni reasignar resultados de otro head.

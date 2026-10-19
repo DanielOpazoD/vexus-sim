@@ -77,6 +77,26 @@ cine.tick()                         con la imagen congelada: el cuadro elegido d
 overlay, navegador 3D, corte, ECG, espectrograma, franja M, HUD, consola   vistas
 ```
 
+El regulador GPU sondea sin espera una valla de ecografía y, cuando se ha
+dibujado, otra del contexto WebGL separado del navegador 3D (238). Solo libera
+el turno entre vistas tras drenar todas; la pausa estable no crea vallas.
+Una creación o consulta fallida conserva el contexto pendiente para recercarlo;
+solo una señal válida o su pérdida permiten liberarlo. Una valla de un contexto
+no acredita la finalización de otro ni del compositor.
+
+Con SwiftShader o renderer no identificable, la pasada B del atlas separa
+clasificación, elevación, gradiente y eco; Metal conserva B directa. El oráculo
+compila el cuerpo por etapas también en Metal, sin cambiar su adquisición ordinaria.
+El gradiente conserva tres draws del mismo programa por mirada (240):
+la cortical vertebral, cápsula hepática y diafragma producen una diferencia por
+eje, marcada con `w=-1`; el eco ensambla sus tres tiles antes de normalizar.
+Las demás ramas producen el `vec4` completo en el tile 0, que el eco devuelve
+cuando `w>=0`; sus tiles 1/2 se escriben a cero sin repetir ese cálculo.
+El guard respeta el orden de ramas de `faceGradient` y solo existe en el stage
+de gradiente de imagen. No cambia la función anatómica, el campo, las muestras
+ni la consulta independiente de normales/paridad. El consumidor conserva su
+comparación `>=0`, incluido el comportamiento previo ante valores no finitos.
+
 Cine y modo M (decisión 80): tras la presentación, `render` guarda en un anillo de la GPU (`CineRing`,
 `src/ultrasound/cine.ts`; ≤ 20 Hz, 6 s) la envolvente compuesta y el campo de color del cuadro, antes de la
 conversión de barrido, con sus ajustes; `showCine` los devuelve a `tEnv`/`tColor`, dibuja G con esos ajustes y funde
@@ -176,10 +196,10 @@ par CPU→GPU sistemático es una divergencia real.
 - `doppler/spectral.ts`: STFT y utilidades de envolvente.
 - `audio/directional.ts`: Hilbert → z⁺/z⁻; `public/doppler-worklet.js`: remuestreo.
 - Color (`ultrasound/shaders/passes.glsl.ts`, pasada F): emulación analítica del estimador de
-  autocorrelación sobre la mezcla sangre/clutter/ruido. Solo comparte con el PW el campo de
-  velocidades y la convención de signo: no procesa la IQ del volumen de muestra, y su filtro de
-  clutter es un modelo propio, (f²/(f²+fc²))⁴, no el IIR del PW; con el mismo corte, el color atenúa
-  ~6 dB más en fc (`color-emulated-estimator`).
+  autocorrelación sobre la mezcla sangre/clutter/ruido. Comparte con el PW el campo de
+  velocidades, la convención de signo y la respuesta digital de potencia de sus dos biquads de
+  pared. Aplica esa respuesta estacionaria a la mezcla, sin procesar un ensemble IQ temporal ni
+  reproducir sus transitorios (`color-emulated-estimator`).
 
 ## Extensión prevista
 

@@ -1,9 +1,5 @@
-/** Corte efectivo del receptor, estrictamente por debajo de Nyquist. */
-export function effectiveWallFilterCutoff(cutoffHz: number, sampleRateHz: number): number {
-  if (!Number.isFinite(cutoffHz) || !Number.isFinite(sampleRateHz) || sampleRateHz <= 0)
-    throw new RangeError('Invalid wall-filter frequency');
-  return Math.min(Math.max(0, cutoffHz), sampleRateHz * 0.45);
-}
+import { effectiveWallFilterCutoff } from '../core/highPass';
+export { effectiveWallFilterCutoff } from '../core/highPass';
 
 /**
  * Filtro de pared (clutter) IIR paso alto: dos secciones de 2.º orden en

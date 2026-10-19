@@ -1,4 +1,5 @@
 import { expect, test } from '@playwright/test';
+import { WallFilter } from '../src/doppler/wallFilter';
 import { COLOR_WALL_FILTER_GLSL } from '../src/ultrasound/colorWallFilter';
 import { budget } from './support';
 
@@ -21,6 +22,13 @@ test('GPU color filter: sampled aliases and disabled stationary signal remain fi
     [-600, 60],
     [400, 600],
     [1000, 0],
+    [60, 60],
+    [-60, 60],
+    [500, 60],
+    [450, 600],
+    [499.9, 600],
+    [-499.9, 600],
+    [1499.9, 600],
   ];
   const output = await page.evaluate(
     ({ source, inputs }) => {
@@ -87,7 +95,7 @@ void main(){vec2 inputs[${inputs.length}]=vec2[${inputs.length}](${values});vec2
     // Independent sample-to-sample IQ phase, not the production folding function.
     const phase = Math.atan2(Math.sin((2 * Math.PI * frequency) / 1000), Math.cos((2 * Math.PI * frequency) / 1000));
     const f = (phase * 1000) / (2 * Math.PI);
-    const expected = cutoff === 0 ? 1 : Math.pow(1 / (1 + (cutoff / Math.abs(f)) ** 2), 4);
+    const expected = new WallFilter(cutoff, 1000).magnitude(f) ** 2;
     expect(output[4 * i + 2]).toBeCloseTo(expected, 6);
     // Check filtered known IQ at the original bounds: 2e-6 per component, 5e-7 power.
     // The independent sample-to-sample phase still defines the aliased frequency.

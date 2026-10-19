@@ -84,6 +84,24 @@ describe('VExUS con el contexto clínico (decisión 82)', () => {
     }
   });
 
+  it('la ventilación no presupone una VCI dilatada ni cambia el grado o convierte congestión en exceso de volumen', () => {
+    for (const ivcMaxDiameterMm of [18, 20, 26]) {
+      const input = { ...congested, ivcMaxDiameterMm };
+      for (const classify of [classifyVexusC, classifyModifiedVexus]) {
+        const baseline = classify(input);
+        const ventilated = classify(input, { positivePressureVentilation: true });
+        expect({ ...ventilated, warnings: [] }).toEqual(baseline);
+        expect(ventilated.warnings).toEqual([
+          {
+            territory: 'ivc',
+            excluded: false,
+            reason: 'presión positiva: puede alterar la VCI; no descarta congestión ni mide volemia',
+          },
+        ]);
+      }
+    }
+  });
+
   it('presión intraabdominal alta: una VCI pequeña no cierra en grado 0', () => {
     const small = { ...congested, ivcMaxDiameterMm: 14 };
     expect(classifyVexusC(small).grade).toBe(0);

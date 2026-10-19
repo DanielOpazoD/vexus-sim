@@ -448,6 +448,8 @@ export async function start(): Promise<void> {
     let presentationDirty = true;
     let presentedCpuState: unknown[] = [];
     let submittedGpuState: unknown[] = [];
+    // Incluye el dibujo inicial que navigatorReady envía antes del primer cuadro.
+    let submittedNavRevision = 0;
     // An unchanged 2D canvas must not keep submitting compositor work while the
     // software GPU is busy. Cut interaction invalidates its annotation in that turn.
     for (const event of ['pointermove', 'pointerleave', 'click', 'keydown'])
@@ -597,15 +599,26 @@ export async function start(): Promise<void> {
         // Acumular el tiempo entre cuadros adquiridos, con el mismo techo de 0,25 s.
         const dt = Math.min(0.25, (now - last) / 1000);
         last = now;
-        let gpuWork = true; // Un cuadro que lanza puede haber enviado trabajo parcial.
+        // undefined conserva el drenaje conservador si frame lanza tras enviar trabajo parcial.
+        let gpuWork: boolean | undefined;
         try {
           gpuWork = frame(now, dt);
         } finally {
           // Drain even a partially submitted frame before another page prepares
           // contexts. No lease is released merely because JS returned or threw.
-          if (!gpu.lost && gpuWork) gpuFramePacer.submit(sim().renderer.gl);
-          gpuTurns.submitted();
-          if (!gpuWork) gpuTurns.completed();
+          try {
+            if (gpuWork !== false) {
+              const contexts = [sim().renderer.gl];
+              if (nav && (gpuWork === undefined || nav.renderRevision !== submittedNavRevision)) contexts.push(nav.gpuContext);
+              gpuFramePacer.submit(...contexts);
+              submittedNavRevision = nav?.renderRevision ?? 0;
+            }
+          } finally {
+            // submit puede lanzar después de crear una valla válida: el turno
+            // debe registrarse también para poder liberarlo cuando termine.
+            gpuTurns.submitted();
+            if (gpuWork === false) gpuTurns.completed();
+          }
         }
         loopFrames++;
         if (loopFrames === 1) markStartup('frame:first');

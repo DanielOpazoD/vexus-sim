@@ -424,7 +424,7 @@ export class MeasureTab {
       mM
         ? !mM.respiratoryCycle
           ? '<div>VCI modo M: sin ciclo respiratorio completo. Activa la respiración y adquiere un ciclo completo; reduce el barrido si no cabe. Repite los calibres.</div>'
-          : `<div>VCI modo M: máx ${mm(mM.maxMm)} · mín ${mm(mM.minMm)} mm → colapso <b>${mM.ciPct.toFixed(0)} %</b>${mTruth}<div class="small">Resolución: ${mM.pixels.map(mm).join('–')} %; excluye pared y error físico.</div></div>`
+          : `<div>VCI modo M: máx ${mm(mM.maxMm)} · mín ${mm(mM.minMm)} mm → ${this.#context.positivePressureVentilation ? 'variación respiratoria' : 'colapso'} <b>${mM.ciPct.toFixed(0)} %</b>${mTruth}<div class="small">Resolución: ${mM.pixels.map(mm).join('–')} %; excluye pared y error físico.</div></div>`
         : '',
       line(
         'hepatic',

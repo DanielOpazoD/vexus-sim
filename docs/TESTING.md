@@ -227,4 +227,10 @@ Los resultados locales nunca sustituyen el veredicto remoto del head publicado.
 
 `bootWithoutErrors` observa las llamadas originales a vallas WebGL2, sin agregar esperas o comandos GPU. Si una prueba con `checkAfterEach` falla, adjunta `failed-acquisition`: reloj, cuadros, modos, errores internos, contadores por contexto y reservas Web Locks. La captura fallida se conserva aunque no llegue al assert final de errores de la app. No demuestra por sí sola la causa de un bloqueo.
 
+El observador identifica también el host del lienzo sin id (`nav3d`). El barrido
+renal exige vallas productivas tanto de ecografía como de 3D tras cada arranque;
+no crea vallas para hacer pasar esa comprobación. Conserva muestras, paridad,
+capturas y plazo de dos vistas. Los tests del regulador retienen un contexto
+lento aunque el otro complete o se pierda (238).
+
 El job `triplex-early` ejecuta el caso móvil existente de `colorLegend.spec.ts` con un trabajador, cero reintentos y sus plazos/aserciones originales. Es una repetición intencional adicional y conserva un artefacto propio, separado de los doce informes `e2e-tiempos-N`. El caso permanece en la colección completa; el veredicto exige también este gate temprano. No cambian sus inventarios, física ni resolución. Los informes de un job cancelado se suben como evidencia incompleta y no autorizan fusión.

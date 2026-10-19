@@ -237,3 +237,10 @@ Generado por `npm run docs:index` — no editar a mano.
 | [231](DECISIONS.md#L8089) | Evitar trabajo repetido sin cambiar las muestras del corte | vigente |
 | [232](DECISIONS.md#L8118) | Atacar el coste observado de la búsqueda vascular del corte | vigente |
 | [233](DECISIONS.md#L8141) | Acortar la validación local sin reducir sus controles | vigente |
+| [234](DECISIONS.md#L8176) | Color y PW comparten la respuesta digital estacionaria del filtro de pared | vigente |
+| [235](DECISIONS.md#L8213) | La prueba de cine adquiere mediante el regulador GPU ordinario | vigente |
+| [236](DECISIONS.md#L8238) | Ventilación contextual sin presuponer una VCI ni descartar congestión | vigente |
+| [237](DECISIONS.md#L8260) | Admitir referencias externas sin confundir identidad con validación | vigente |
+| [238](DECISIONS.md#L8292) | Drenar los contextos WebGL de ecografía y navegador antes de liberar la vista | vigente |
+| [239](DECISIONS.md#L8337) | Renovar cuatro secuencias de transporte GLSL sin cambiar sus tokens | vigente |
+| [240](DECISIONS.md#L8365) | Evitar gradientes completos en tiles que el eco no consume | vigente |

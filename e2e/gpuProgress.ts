@@ -28,7 +28,8 @@ export async function observeGpuProgress(page: Page): Promise<void> {
       let row = contexts.get(gl);
       if (!row) {
         row = {
-          canvas: gl.canvas instanceof HTMLCanvasElement ? gl.canvas.id || `canvas-${rows.length}` : 'offscreen',
+          canvas:
+            gl.canvas instanceof HTMLCanvasElement ? gl.canvas.id || gl.canvas.parentElement?.id || `canvas-${rows.length}` : 'offscreen',
           fences: 0,
           deletes: 0,
           waits: 0,

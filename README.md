@@ -30,6 +30,9 @@ criterios para decidir están en [`docs/MISION.md`](docs/MISION.md).
 Para retomar trabajo: [continuidad](docs/CONTINUIDAD.md),
 [entorno y mediciones](docs/engineering/workspace.md) y [contribución](CONTRIBUTING.md).
 `npm run workspace:doctor` comprueba el entorno local sin instalar ni modificar nada.
+`npm run fidelity:external -- --profile` identifica el convexo genérico;
+[el contrato de referencias](docs/fidelity/external-evidence.md) conserva explícitamente
+pendientes la calibración, la evaluación reservada y la humana.
 
 ```bash
 ./tools/workspace/run.sh npm ci

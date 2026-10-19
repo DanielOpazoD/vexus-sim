@@ -60,3 +60,41 @@ Los archivos de evidencia se guardan fuera del repositorio.
 El contrato por ventana continúa en `docs/anatomy/vexus-window-acceptance.md`.
 Las notas internas y los tests no sustituyen reconocimiento/adquisición por
 ultrasonografistas ni validación educativa.
+
+## Referencia externa y siguiente secuencia
+
+El usuario acepta continuar con el convexo **genérico de 3,5 MHz**, no con una
+calibración comercial. [Admisión de evidencia](external-evidence.md) verifica
+procedencia, archivos y separación entre desarrollo y reservado. Un informe
+admitido no prueba fidelidad; datos sintéticos o referencias ya usadas para
+ajustar nunca se convierten en una evaluación independiente.
+
+Prioridades aceptadas y condición de cierre:
+
+1. Respuesta estacionaria Color/PW y contexto ventilatorio: decisiones 234/236;
+   aceptar con negativos discriminantes, GPU y CI del head final. Persisten las
+   diferencias de estimador y transitorios, y el reparto tríplex declarado.
+2. Reposición PW: reproducida la pérdida de peso renal frente a siembra nueva;
+   rotación aislada y clasificación en una posición de referencia distinta de
+   la que emite IQ son rechazadas. Exigir densidad, trayectoria anatómica,
+   velocidad coherente, potencia, audio/espectro sin impulsos y las capturas
+   renales existentes; no cerrar con un fantoma sin flujo.
+3. Referencia acústica independiente: PSF/flujo lineal con Field II o SIMUS y
+   fantomas heterogéneos seleccionados con k-Wave, offline. Registrar versión,
+   ajustes, unidades, ROI, archivos y límites; reservar datos antes de ajustar.
+   El banco gaussiano interno y su gemelo no sustituyen ese contraste.
+4. Pared hepatorrenal regional: comparar el SHA actual y poses intermedias con
+   referencia anatómica independiente. Solo entonces cambiar geometría
+   compartida, conservando paridad TS/GLSL y ambos pacientes. No borrar grasa
+   humana ni añadir textura para ocultar un límite geométrico.
+5. Evaluación educativa: separar política de feedback del modo docente. Un
+   intento debe conservar captura original y aplazar todos los juicios hasta
+   finalizar, incluidos DOM, anuncios, contadores y marcas. Mantener enseñanza
+   actual y no inventar una rúbrica ni notas.
+6. Validación humana: evaluadores clínicos e ingeniería independientes, clips
+   reservados y tareas de adquisición, discriminación experto/novato y estudio
+   de transferencia. Usar [protocolo humano](human-validation.md); las rondas
+   históricas de agentes sirven a desarrollo y no acreditan resultados humanos.
+
+Estas son condiciones de trabajo, no una declaración de cierre de los seis
+bloques. Las limitaciones se conservan hasta disponer de evidencia suficiente.

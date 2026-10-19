@@ -9,7 +9,15 @@ declare global {
       stressId?: number;
       progress: Array<{ id: number; rows: number }>;
       initializations: Array<{ patient: string; bytes: number; postMs: number }>;
-      replies: Array<{ id: number; patient: string; ms: number; frame: CutMapRequest['frame'] }>;
+      replies: Array<{
+        id: number;
+        patient: string;
+        ms: number;
+        frame: CutMapRequest['frame'];
+        acquiredFrame: number;
+        paintedFrame: number;
+        activeScene: boolean;
+      }>;
     };
   }
 }
@@ -19,8 +27,12 @@ async function observe(page: Page) {
     window.cutWitness = { initializations: [], replies: [], progress: [] };
     const original: unknown = Reflect.get(Worker.prototype, 'postMessage');
     if (typeof original !== 'function') throw new Error('Worker.postMessage unavailable');
-    const requests = new Map<number, { at: number; patient: string; frame: CutMapRequest['frame'] }>();
+    const requests = new Map<
+      number,
+      { at: number; patient: string; frame: CutMapRequest['frame']; acquiredFrame: number; sceneId: number }
+    >();
     const patients = new WeakMap<Worker, string>();
+    const scenes = new WeakMap<Worker, number>();
     Worker.prototype.postMessage = function (message: unknown, transfer: Transferable[] | StructuredSerializeOptions = []) {
       const packet = message as CutMapInit | CutMapRequest;
       const at = performance.now();
@@ -30,11 +42,21 @@ async function observe(page: Page) {
             if (event.data.type === 'progress') window.cutWitness.progress.push({ id: event.data.id, rows: event.data.rows });
             const req = requests.get(event.data.id);
             if (event.data.type !== 'map' || !req) return;
-            window.cutWitness.replies.push({ id: event.data.id, ...req, ms: performance.now() - req.at });
+            // This listener was registered at init post, after the production
+            // onmessage handler. Observe its synchronous publication before
+            // another RAF can acquire or paint a different frame.
+            window.cutWitness.replies.push({
+              id: event.data.id,
+              ...req,
+              ms: performance.now() - req.at,
+              paintedFrame: Number(document.querySelector<HTMLElement>('#cutmap')!.dataset.acquiredFrame),
+              activeScene: scenes.get(this) === req.sceneId,
+            });
             requests.delete(event.data.id);
           });
         }
         patients.set(this, packet.patient.id);
+        scenes.set(this, packet.id);
       } else if (packet.type === 'map') {
         // A denser REAL classifier job reproduces CPU contention without fake
         // timers/responses or changing the worker's production timeout.
@@ -44,7 +66,13 @@ async function observe(page: Page) {
           packet.width *= 16;
           packet.height *= 16;
         }
-        requests.set(packet.id, { at, patient: patients.get(this)!, frame: packet.frame });
+        requests.set(packet.id, {
+          at,
+          patient: patients.get(this)!,
+          frame: packet.frame,
+          acquiredFrame: window.__vexusTest!.sim().renderer.displayedFrame!.n,
+          sceneId: scenes.get(this)!,
+        });
       }
       Reflect.apply(original, this, [message, transfer]);
       if ('patient' in packet)
@@ -134,6 +162,9 @@ test('two live atlas views keep producing the current cut through probe and case
             { id, prior },
           ),
         );
+        const delivered = await p.evaluate(() => window.cutWitness.replies.at(-1)!);
+        expect(delivered.activeScene).toBe(true);
+        expect(delivered.paintedFrame).toBe(delivered.acquiredFrame);
       }
     }
     await page.evaluate(() => {
@@ -163,6 +194,9 @@ test('two live atlas views keep producing the current cut through probe and case
     );
     expect(await page.evaluate((id) => window.cutWitness.replies.some((r) => r.id === id), abandoned)).toBe(false);
     for (const p of pages) {
+      const delivered = await p.evaluate(() => window.cutWitness.replies.filter((reply) => reply.activeScene));
+      expect(delivered.length).toBeGreaterThan(0);
+      for (const reply of delivered) expect(reply.paintedFrame).toBe(reply.acquiredFrame);
       const loads = await p.evaluate(() => window.cutWitness.initializations);
       expect(loads[0].bytes).toBeGreaterThan(100_000_000);
       expect(loads.slice(1).every((i) => i.bytes === 0)).toBe(true);

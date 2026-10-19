@@ -1,6 +1,27 @@
 # Continuidad de VExUS LAB
 
-## Alcance vigente al 18 de octubre de 2026
+## Alcance vigente al 19 de octubre de 2026
+
+El usuario autoriza continuar con el desfase del corte. La decisión 241 elimina
+la espera al siguiente RAF para presentar una respuesta del Worker y atender
+la última adquisición. En la comparación nativa de seis coordenadas y ambos
+pacientes, envío a primer pintado p95 pasa de 36,2 a 28,3 ms; la antigüedad
+mostrada p95 sigue en 66,7 ms. Es mejora de una etapa, no cierre del desfase.
+Conservar instantáneas adquiridas, una petición, resolución, física y plazos.
+La aceptación del candidato debe consultarse en su PR/CI, separada de esa pareja
+diagnóstica sobre una fuente identificada por recibo de contenido.
+
+[PR272](https://github.com/DanielOpazoD/vexus-sim/pull/272) integró 234–240 en
+`84c210fe800a73e6025e7ab1a23a669ffe0d4d34`, árbol
+`31d08ff0df2f9e1295e17cdf4e0f4f6a1109e6bf`. Su CI aprobó 156 E2E sin reintentos.
+La CI independiente de ese main,
+[39200993860](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39200993860),
+terminó fallida: las 13 pruebas del grupo 12 pasaron, pero dos uploads de
+artefactos agotaron la conexión. No es aprobación ni fallo observado del
+simulador. Log, metadatos y artefacto parcial original permanecen en la evidencia
+241; no sustituye los informes ausentes ni justifica debilitar el gate.
+
+## Antecedentes de alcance
 
 El usuario pausó el desarrollo funcional para ordenar el entorno y autorizó esa limpieza con
 autonomía. El 17 de octubre autorizó retomar fidelidad externa y coherencia interna. La primera ronda

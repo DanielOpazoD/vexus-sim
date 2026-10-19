@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Corte: presenta el mapa al recibirlo del Worker y atiende la última adquisición sin esperar otro RAF; conserva rejilla, física, una petición y controles originales (241).
+
 - Iteración: preflight HTTP inmediato, recursos del equipo en las evidencias y lote CPU local acotado con fallback secuencial; conserva inventario, cobertura, aislamiento, plazos y CI completa (233).
 
 - Corte: acelera el descarte vascular observado en el perfil CPU, conservando el cálculo original junto al límite numérico (232).

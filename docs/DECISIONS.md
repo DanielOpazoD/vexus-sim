@@ -8421,3 +8421,50 @@ adquisición Metal ordinaria usa B directa, por lo que sus imágenes no acredita
 el guard por etapas. La aceptación conserva build, check, imágenes y paridad
 de adquisición, además de CI íntegra del head final. No sustituir esos controles
 por capturas agradables ni reasignar resultados de otro head.
+
+## 241. Presentar el corte cuando llega, sin esperar otra adquisición
+
+**Contexto.** El Worker termina un mapa pero su publicación y el siguiente
+pedido esperan a `draw` en otro RAF, que puede adquirir una ecografía y dibujar
+el navegador antes de atenderlo. La línea base nueva de `84c210fe`, en Metal
+Apple M4, conserva 1728 muestras desde seis coordenadas y ambos pacientes.
+Envío a primer `putImageData`: mediana 34,6 ms, p95 36,2 ms; recepción observada
+a pintado: mediana 10,9 ms. Es programación y presentación, no coste CPU puro
+del Worker ni latencia física desde el gesto.
+
+**Opciones.** No cancelar cada mapa durante el movimiento: podría impedir
+completar alguno. No usar poses aún no adquiridas, interpolar etiquetas,
+reducir la rejilla o añadir lecturas GPU. La cola ya conserva una petición
+y agrupa el movimiento hacia la última adquisición disponible.
+
+**Decisión.** `CutMapView` notifica el mapa aceptado después de publicar sus
+inputs y liberar la petición y el watchdog. Bootstrap atiende las vistas CPU
+en ese evento, con las guardas de torso, contexto y visor modal, y registra
+cualquier error. No adquiere otra ecografía, dibuja 3D, ejecuta M en GPU ni
+modifica turnos/vallas. La reentrada despacha como máximo la última adquisición.
+Se conservan instantánea, escena, cine, congelación, watchdog y cadencia quieta
+de 8 Hz. Dos frases del transporte GLSL se sustituyen sin cambiar el decoder
+ni texto decodificado: el build inicial excede 1033 KiB y el siguiente registra
+1032,9 KiB con el mismo límite. No se cambian shaders, física ni resolución.
+
+**Consecuencias.** La pareja diagnóstica con el mismo arnés registra mediana
+22,4 ms y p95 28,3 ms a primer pintado, con mejora de ese p95 en las doce
+filas. El máximo empeora de 37,8 a 55,0 ms; la antigüedad mostrada p95 permanece
+en 66,7 ms y la separación p95 en cuatro adquisiciones. El barrido original
+de dos vistas conserva sus 288 muestras y cuatro paridades 0/256; antigüedad
+p95 85,0 → 82,6 ms, separación p95 todavía dos adquisiciones. Son cohortes
+distintas y una pareja por versión: no se declara eliminado el desfase global.
+El candidato medido está identificado por recibo/huella de contenido, separado
+de la aceptación final. Originales y análisis: `cut-latency-241-evidence` fuera
+del repo. El listener diagnóstico de recepción corre después del handler:
+pintado menos recepción negativo indica orden de eventos, no latencia negativa.
+
+**Verificación.** La regresión entre RAFs exige publicar N y pedir únicamente
+N+2 adquirido antes de otro `draw`; quitar el callback la hace fallar. También
+protege respuestas obsoletas, progreso, fallo, cambio de Worker, disposición,
+congelación y 8 Hz. El test E2E existente observa el Worker real después del
+handler y exige la misma adquisición ya pintada en ambas vistas y cambios de
+paciente, conservando todo su estrés y sus controles anteriores. El transporte
+exige igualdad byte a byte de todos los programas propios y de Three. Check,
+SwiftShader, imagen/interacción y CI completa del último head siguen siendo
+condiciones para integrar; no se cambian plazos ni criterios de aceptación.

@@ -170,6 +170,12 @@ instancia y recibe paciente, perfil, pose y compresión por mensajes. En desarro
 se sirve el módulo TS desde `cutMapWorkerUrl.ts`. El presupuesto sigue contando
 todos los archivos JS, incluidos entrada del trabajador y chunks compartidos.
 
+La respuesta válida del Worker publica su instantánea antes de notificar a
+bootstrap. Este atiende la presentación CPU sin esperar otro RAF y sin adquirir
+ecografía ni dibujar 3D/modo M en GPU. Conserva una petición en vuelo, agrupa los
+movimientos hacia la última adquisición y respeta escena, visor modal y torso
+visible (241). La asincronía conserva un desfase medido; no predice anatomía.
+
 ## Anatomía compartida CPU/GPU
 
 La escena es declarativa (`anatomy/scene.ts`: primitivas y riñones orientados; el árbol vascular y

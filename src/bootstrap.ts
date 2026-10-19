@@ -134,7 +134,15 @@ export async function start(): Promise<void> {
     markStartup('cut:import');
     void import('./ui/cutMapView')
       .then(({ CutMapView }) => {
-        cutMap = new CutMapView(cutCanvas);
+        cutMap = new CutMapView(cutCanvas, () => {
+          if (store.get().torso && !gpu.lost && !panel.venousComparisonOpen) {
+            try {
+              drawAcquiredViews(sim(), performance.now(), false);
+            } catch (error) {
+              errorLog.report('corte', error);
+            }
+          }
+        });
         cutMap.setLabels(store.get().debug);
         markStartup('cut:ready');
       })

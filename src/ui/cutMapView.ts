@@ -232,7 +232,10 @@ export class CutMapView {
     transducer: Simulator['transducer'];
   } | null = null;
 
-  constructor(private readonly canvas: HTMLCanvasElement) {
+  constructor(
+    private readonly canvas: HTMLCanvasElement,
+    private readonly onMapReady: () => void = () => {},
+  ) {
     this.tooltip = document.createElement('div');
     this.tooltip.className = 'anatomy-tooltip';
     this.tooltip.setAttribute('role', 'tooltip');
@@ -499,6 +502,9 @@ export class CutMapView {
       this.pendingInputs = null;
       this.watchdog.stop();
       this.failures = 0;
+      // Presentar el resultado y atender la última adquisición entre RAFs;
+      // la cola ya está libre antes de permitir la reentrada del consumidor.
+      this.onMapReady();
     };
     worker.onerror = (ev) => {
       ev.preventDefault();

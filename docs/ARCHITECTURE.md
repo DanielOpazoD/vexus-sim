@@ -176,10 +176,10 @@ par CPU→GPU sistemático es una divergencia real.
 - `doppler/spectral.ts`: STFT y utilidades de envolvente.
 - `audio/directional.ts`: Hilbert → z⁺/z⁻; `public/doppler-worklet.js`: remuestreo.
 - Color (`ultrasound/shaders/passes.glsl.ts`, pasada F): emulación analítica del estimador de
-  autocorrelación sobre la mezcla sangre/clutter/ruido. Solo comparte con el PW el campo de
-  velocidades y la convención de signo: no procesa la IQ del volumen de muestra, y su filtro de
-  clutter es un modelo propio, (f²/(f²+fc²))⁴, no el IIR del PW; con el mismo corte, el color atenúa
-  ~6 dB más en fc (`color-emulated-estimator`).
+  autocorrelación sobre la mezcla sangre/clutter/ruido. Comparte con el PW el campo de
+  velocidades, la convención de signo y la respuesta digital de potencia de sus dos biquads de
+  pared. Aplica esa respuesta estacionaria a la mezcla, sin procesar un ensemble IQ temporal ni
+  reproducir sus transitorios (`color-emulated-estimator`).
 
 ## Extensión prevista
 

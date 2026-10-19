@@ -95,6 +95,27 @@ function mountMeasure(caseId: string) {
       t.lastPortal = m.portal ?? null;
       t.lastRenal = m.renal ?? null;
     },
+    /** Calibres públicos sobre un ciclo M continuo; la verdad sintética difiere de lo medido. */
+    measureM: () => {
+      Object.assign(sim, {
+        physiology: {
+          samples: Array.from({ length: 9 }, (_, i) => ({
+            t: i / 8,
+            resp: { cycling: true, phase: (i / 8) % 1, volume: (1 - Math.cos((i * Math.PI) / 4)) / 2 },
+            ivc: { dApMm: 40 - i },
+          })),
+        },
+        renderer: { mStrip: { count: 9, time: (i: number) => i / 8 } },
+      });
+      ctx.store.set({ tool: 'mmode' });
+      for (const p of [
+        { t: 0, r: 50 },
+        { t: 0, r: 74 },
+        { t: 1, r: 50 },
+        { t: 1, r: 68 },
+      ])
+        tab.addMPoint({ ...p, pixelMm: 0.2 }, [0, 1]);
+    },
   };
 }
 
@@ -222,6 +243,26 @@ describe('Pestaña Medir: contexto clínico (decisión 82)', () => {
     expect(m.boxes().every((b) => !b.checked)).toBe(true);
     expect(warnings()).toBe(0);
     expect(m.vignette()).toBe(CASE_VIGNETTES['normal-adult']);
+  });
+
+  it('el rótulo de VCI M sigue la casilla respiratoria del alumno, conserva los calibres y no revela la verdad', () => {
+    for (const caseId of ['normal-adult', 'mechanical-ventilation']) {
+      const m = mountMeasure(caseId);
+      m.measureM();
+      const spontaneous = m.result();
+      const grade = m.live().textContent;
+      expect(spontaneous).toContain('máx 24,0 · mín 18,0 mm → colapso <b>25 %</b>');
+      expect(spontaneous).not.toContain('variación respiratoria');
+      expect(spontaneous).not.toContain('verdad');
+      m.box('Ventilación con presión positiva').click();
+      expect(m.result()).toContain('máx 24,0 · mín 18,0 mm → variación respiratoria <b>25 %</b>');
+      expect(m.result()).toContain('puede alterar la VCI');
+      expect(m.result()).not.toContain('colapso');
+      expect(m.result()).not.toContain('verdad');
+      expect(m.live().textContent).toBe(grade);
+      m.box('Ventilación con presión positiva').click();
+      expect(m.result()).toBe(spontaneous);
+    }
   });
 });
 

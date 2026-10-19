@@ -22,7 +22,7 @@ import { VESSEL_META, type VesselId } from '../physiology/vessels';
  *
  * El resultado es una IQ que comparten espectro y audio. El color no la usa:
  * es una emulación analítica por celda (pasada F) que solo comparte con el PW
- * el campo de velocidades y la convención de signo. Ningún elemento aquí
+ * el campo de velocidades, la convención de signo y la respuesta estacionaria del filtro. Ningún elemento aquí
  * consulta «si el cursor está dentro del vaso».
  */
 export interface GateGeometry {
@@ -57,7 +57,6 @@ interface Scatterer {
   /** Posición material (mm). */
   m: Vec3;
   amp: number;
-  phase: number;
   /** Ángulo (rad) con que la apertura ve a ESTE dispersor respecto al eje del haz (fijo por dispersor). */
   apAngle: number;
   /** Fasor e^{iφ} y rotación por tick e^{i2πfDΔt} (se recalcula cada SLOW_EVERY ticks). */
@@ -70,14 +69,13 @@ interface Scatterer {
   /** Salió de la caja y se está apagando en rampa; se resiembra cuando la rampa termina. */
   fading: boolean;
   /**
-   * Amplitud objetivo y rampa hacia ella (incremento por tick y ticks restantes, AMP_RAMP_TICKS):
+   * Rampa de amplitud (incremento por tick y ticks restantes, AMP_RAMP_TICKS):
    * el tejido entra y sale en rampa y todo cambio de identidad (sangre ↔ tejido, ×100) se hace en dos
    * rampas. Un salto brusco de un dispersor de tejido (40 dB sobre la sangre) es un chasquido de banda
    * ancha: con la respiración llenaba todo el espectro de energía «de sangre». La sangre que reentra
    * por su cuerda y la que sale lo hacen con su amplitud (por caras de peso ≈ 0; apagarla en rampa
    * vaciaba la caja en el flujo rápido); la que se siembra al azar entra en rampa.
    */
-  ampTarget: number;
   dAmp: number;
   rampLeft: number;
   /**
@@ -133,7 +131,6 @@ const TRANSMISSION_ALPHA = 1 / AMP_RAMP_TICKS;
 
 /** Lleva la amplitud del dispersor a `target` en AMP_RAMP_TICKS ticks. */
 function startAmpRamp(s: Scatterer, target: number): void {
-  s.ampTarget = target;
   s.dAmp = (target - s.amp) / AMP_RAMP_TICKS;
   s.rampLeft = AMP_RAMP_TICKS;
 }
@@ -270,11 +267,10 @@ export class SampleVolumeIQ {
     const isBlood = q.tissue === Tissue.Blood && q.bloodVelocity !== null;
     const phase = this.rng.float() * 2 * Math.PI;
     const d = this.dispNow;
+    const amp = TISSUES[q.tissue].backscatter * (0.7 + 0.6 * this.rng.float());
     const s: Scatterer = {
       m: [world[0] - d[0], world[1] - d[1], world[2] - d[2]],
       amp: 0,
-      ampTarget: TISSUES[q.tissue].backscatter * (0.7 + 0.6 * this.rng.float()),
-      phase,
       apAngle: this.rng.gaussian(),
       cr: Math.cos(phase),
       ci: Math.sin(phase),
@@ -297,7 +293,7 @@ export class SampleVolumeIQ {
     // que por esta vía (siembra, resiembra al azar cuando la respiración aparta su cuerda de la caja)
     // puede aparecer en el centro de la puerta; de golpe era una línea vertical en el espectrograma.
     // La reentrada por su cuerda (`reenter`, en una cara de peso ≈ 0) entra con su amplitud.
-    startAmpRamp(s, s.ampTarget);
+    startAmpRamp(s, amp);
     return s;
   }
 
@@ -363,11 +359,9 @@ export class SampleVolumeIQ {
   private reenter(exited: Scatterer, world: Vec3): Scatterer {
     const phase = this.rng.float() * 2 * Math.PI;
     const d = this.dispNow;
-    const s: Scatterer = {
+    return {
       m: [world[0] - d[0], world[1] - d[1], world[2] - d[2]],
-      amp: 0,
-      ampTarget: TISSUES[exited.tissue].backscatter * (0.7 + 0.6 * this.rng.float()),
-      phase,
+      amp: TISSUES[exited.tissue].backscatter * (0.7 + 0.6 * this.rng.float()),
       apAngle: this.rng.gaussian(),
       cr: Math.cos(phase),
       ci: Math.sin(phase),
@@ -386,8 +380,6 @@ export class SampleVolumeIQ {
       flowBasis: exited.flowBasis,
       tissue: exited.tissue,
     };
-    s.amp = s.ampTarget;
-    return s;
   }
 
   private updateComposition(): void {

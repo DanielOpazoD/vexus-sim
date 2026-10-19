@@ -50,6 +50,17 @@ describe('Estado del equipo', () => {
     expect(e.pw.prfHz).toBeGreaterThan(10_000);
   });
 
+  it('Color muestra el corte efectivo también al bajar la PRF', () => {
+    let e = reduceEquipment(base(), { type: 'color', patch: { prfHz: 2000, wallFilterHz: 400 } }, ctx);
+    expect(e.color.wallFilterHz).toBe(400);
+    e = reduceEquipment(e, { type: 'color', patch: { prfHz: 500 } }, ctx);
+    expect(e.color.wallFilterHz).toBe(225);
+    expect(e.color.prfHz).toBe(500);
+    e = reduceEquipment(e, { type: 'color', patch: { prfHz: 2000 } }, ctx);
+    expect(e.color.wallFilterHz).toBe(225);
+    expect(normalizeEquipment(e, ctx)).toEqual(e);
+  });
+
   it('la caja de color y la puerta no salen del sector; escalar conserva el centro', () => {
     let e = base();
     e = reduceEquipment(e, { type: 'centerColorBox', theta: 2, r: 60 }, ctx);

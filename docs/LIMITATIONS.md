@@ -485,6 +485,8 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   simultáneo (o pasan a «actualizar», con la imagen congelada) y el Nyquist baja.
 - **El color es una emulación del estimador** (`color-emulated-estimator`): potencia y fase se
   calculan por celda a partir de la mezcla sangre/clutter/ruido, no de una IQ real por ensemble.
+  La respuesta estacionaria del filtro coincide con los biquads PW (234), pero no reproduce
+  sus transitorios ni el rechazo de un ensemble finito.
 - **Con respiración tranquila la puerta pierde el vaso** (`gate-lost-with-quiet-breathing`): es
   físico solo para vasos finos (el hígado se desplaza 10 mm y una interlobar de 3 mm sale de una
   puerta de 4 mm); el operador debe usar apnea espiratoria o un segmento más grueso, como en la

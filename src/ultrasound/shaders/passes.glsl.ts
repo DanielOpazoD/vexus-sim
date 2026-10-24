@@ -1,6 +1,6 @@
 import { TISSUE_COUNT } from '../../anatomy/tissues';
 import { COLOR_MAP_GLSL } from '../colorMap';
-import { COLOR_WALL_FILTER_GLSL } from '../colorWallFilter';
+import { COLOR_MIXTURE_GLSL } from '../colorMixture';
 import { SEGMENT_TAG_STRIDE } from '../segmentTag';
 import { C_RECONSTRUCTION_MM_S } from '../../core/units';
 import { ANATOMY_GLSL, anatomyGlsl } from '../../anatomy/gpu/anatomy.glsl';
@@ -1469,7 +1469,7 @@ uniform float uFrame;
 in vec2 vUv;
 out vec4 oColor;
 float hash12(vec2 p) { vec3 p3 = fract(vec3(p.xyx) * 0.1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
-${COLOR_WALL_FILTER_GLSL}
+${COLOR_MIXTURE_GLSL}
 // Normales en los nodos de la retícula de resolución del color (una línea de color × un paquete axial), dos por nodo
 vec2 colorGaussAt(vec2 q, float seed) {
   float a = hash12(q * 0.917 + vec2(seed * 1.37, seed * 0.61) + 0.5);
@@ -1507,7 +1507,9 @@ void main() {
   float T = pow(10.0, -dopplerDb / 20.0);
   // Sin contacto no hay eco: el acoplamiento de la línea multiplica la transmisión como en modo B.
   T *= texture(uCoupling, vec2(u, 0.5)).r;
-  float bf = 0.0; float vb = 0.0; float vt = 0.0;
+  float bf = 0.0;
+  float frequency[5];
+  bool blood[5];
   vec3 lat = normalize(cross(uElev, dir));
   const int NS = 5;
   vec3 offs[5];
@@ -1516,45 +1518,42 @@ void main() {
     vec3 m = toMaterial(p + offs[i]);
     Cls c = classify(m);
     vec3 vtis = tissueVelocity(m) - uProbeVel;
-    vt += dot(vtis, bhat);
-    if (c.tissue == T_BLOOD && c.vessel >= 0) {
+    blood[i] = c.tissue == T_BLOOD && c.vessel >= 0;
+    if (blood[i]) {
       bf += 1.0;
-      vb += dot(bloodVelocity(c) + vtis, bhat);
+      vtis += bloodVelocity(c);
     }
+    frequency[i] = 2.0 * uF0 * dot(vtis, bhat) / ${C_RECONSTRUCTION_MM_S}.0;
   }
-  vt /= float(NS);
-  if (bf > 0.0) vb /= bf;
   bf /= float(NS);
-  float c_mm = ${C_RECONSTRUCTION_MM_S}.0;
-  float fdB = 2.0 * uF0 * vb / c_mm;
-  float fdT = 2.0 * uF0 * vt / c_mm;
   // Ensanchamiento espectral de la sangre en la celda: dispersión angular de la
   // apertura (σθ = D_rx/4r, como en el PW), tiempo de tránsito y gradiente del
   // perfil de velocidades (mayor en las celdas que tocan la pared, bf < 1).
   float dRx = min(uBeam.z, r / uBeam.w);
   float apSig = dRx / (4.0 * max(10.0, r));
-  float sigF = abs(fdB) * (2.0 * apSig + 0.12 + (bf < 1.0 ? 0.25 : 0.0));
-  // Coherencia de la autocorrelación a un retardo: |ρ| = exp(−2(π·σf/PRF)²)
-  float rho = exp(-2.0 * pow(3.14159265 * sigF / uPrf, 2.0));
+  float width = 2.0 * apSig + 0.12 + (bf < 1.0 ? 0.25 : 0.0);
   // Potencias en unidades de sangre (amplitud de sangre = 1 a transmisión 1).
   float Ac = 0.9 / 0.008; // clutter tisular ≈ +41 dB respecto a sangre
   // Moteado de la sangre (decisión 70): potencia exponencial de media 1 (dispersores de Rayleigh), correlada a la celda
   // de resolución y renovada en cada cuadro (la sangre avanza); da el relleno moteado y los huecos del color real
   vec2 sp = colorGauss(grid, uFrame + 17.0);
   float speckle = 0.5 * dot(sp, sp);
-  float Pb = bf * T * T * colorWallResponseHz(fdB, uWallHz, uPrf) * speckle;
-  float Pc = (1.0 - bf) * Ac * Ac * T * T * colorWallResponseHz(fdT, uWallHz, uPrf);
+  vec2 tissueR1;
+  vec4 mixture = colorMixture(frequency, blood, T * T * speckle, Ac * Ac * T * T, width, uWallHz, uPrf, tissueR1);
+  float Pb = mixture.z;
+  float Pc = mixture.w;
+  // Coherence of the mixed blood correlation; opposing phases may cancel, not average to zero velocity.
+  float coherentBlood = length(mixture.xy);
+  float rho = clamp(coherentBlood / max(1e-9, Pb), 0.0, 1.0);
   float Pn = 3.2e-4; // suelo de ruido Doppler ≈ −35 dB re sangre a T=1 ([EXTRAPOLACIÓN PROPIA])
-  float phB = 6.2831853 * fdB / uPrf;
-  float phT = 6.2831853 * fdT / uPrf;
-  vec2 R1 = Pb * rho * vec2(cos(phB), sin(phB)) + Pc * vec2(cos(phT), sin(phT));
+  vec2 R1 = mixture.xy + tissueR1;
   // Ruido del estimador: ∝ sqrt(P_total·P_n / ensemble), complejo gaussiano correlado a la celda de resolución
   float sigma = sqrt((Pb + Pc + Pn) * Pn / uEnsemble);
   R1 += sigma * colorGauss(grid, uFrame * 1.0 + 3.0);
   // Varianza de fase de Kasai con N pares: σφ² ≈ (1 − ρ²) / (2·N·ρ²), ponderada por
   // la fracción de sangre (el clutter residual es coherente). Es el moteado de
   // velocidad dentro del vaso y el mosaico en el borde del aliasing.
-  float wB = Pb * rho / max(1e-9, Pb * rho + Pc);
+  float wB = coherentBlood / max(1e-9, coherentBlood + Pc);
   float sigPh = wB * sqrt((1.0 - rho * rho) / (2.0 * uEnsemble * max(1e-3, rho * rho)));
   float g = colorGauss(grid, uFrame + 29.0).x;
   float ph = atan(R1.y, R1.x) + sigPh * g;

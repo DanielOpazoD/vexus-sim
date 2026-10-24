@@ -110,6 +110,23 @@ e2e`; CI lo ejecuta en paralelo con `check`, en los fragmentos definidos en `ci.
   `?e2e=app`, como el usuario (subxifoidea, armónica y composición), también con los ganchos.
 - Los umbrales de una aserción se justifican en un comentario (qué observable, de dónde sale).
 
+## Evolución de pruebas
+
+Autorización del usuario del 24 de octubre de 2026: las pruebas sirven a la fidelidad física,
+anatómica, perceptual y al uso eficiente del simulador. Una expectativa histórica no es una
+verdad física. Puede modificarse, sustituirse o retirarse si fija una aproximación superada,
+duplica otro contrato sin aportar detección o mide un indicador que no representa el producto.
+
+El PR debe identificar el contrato anterior, su defecto y el contrato nuevo; conservar el
+negativo; comprobar una regresión o contrafactual que el nuevo control detecte; y explicar la
+cobertura que se conserva o cambia, sus referencias y el coste medido. No ajustar expectativas
+a la salida del candidato ni borrar el caso que lo refuta. Un resultado externo adverso se
+registra como brecha, no se convierte automáticamente en umbral aprobado.
+
+La resolución y la causalidad se conservan. La aceptación completa del head final sigue siendo
+obligatoria, con el inventario vigente reconciliado y sin omitir hooks. La validación numérica,
+la percepción humana y la transferencia docente permanecen como evidencias distintas.
+
 ## Estilo
 
 `.editorconfig` (2 espacios, LF, UTF-8), `eslint` estricto y `prettier` (`npm run format`).

@@ -1,5 +1,22 @@
 # Continuidad de VExUS LAB
 
+## Ronda vigente: quince bloques, prioridad 1, 2 y 5
+
+El usuario autoriza el 24 de octubre de 2026 la [ronda siguiente](fidelity/NEXT15.md): referencias
+independientes, desfase completo y moteado primero; luego los demás bloques según dependencias.
+Autoriza revisar pruebas obsoletas con justificación y evidencia, sin bajar resolución ni convertir
+fallos en aprobación. Los contratos y negativos se preservan según `CONTRIBUTING.md`.
+
+Base local/remota comprobada: main `8d7ad19209ac7a375f27ba7466a27c64220f3eee`, PR276. La ronda
+anterior quedó cerrada con CI postmerge40087942261 aprobada (162 E2E únicas, sin reintentos) y
+seguimiento automático eliminado. Las cifras y pendientes de las secciones históricas siguientes
+no sustituyen este cierre. Estado activo nuevo: `../fidelity-next15-evidence/CURRENT_STATE.json`
+y `PROGRESS.md`. No hay entrega aceptada de esta nueva ronda por el mero hecho de iniciar trabajo.
+
+Antes de editar se apartaron reversiblemente trece archivos duplicados no seguidos: doce idénticos
+a los originales y `dist 2` (enlace simbólico frente al directorio `dist`). Manifiesto y hashes en
+`../fidelity-next15-evidence/quarantine-initial-duplicates/`; causa no determinada.
+
 ## Ronda 243–256: imagen, Doppler y comprobación (24 de octubre de 2026)
 
 El usuario autoriza al menos diez mejoras adicionales, con commits, PR y merge

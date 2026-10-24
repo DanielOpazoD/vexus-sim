@@ -5,6 +5,9 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Referencia acústica independiente: adquisición puntual RF/IQ con PyMUST offline, comparación de PSF y control de apertura sobre los mismos originales; diferencias y límites explícitos, sin modificar la imagen (257).
+- Continuidad: ronda de quince bloques y evolución justificada de contratos de prueba, conservando negativos y aceptación final.
+
 - Transmisión: reutiliza A0/A1 solo con entradas GPU idénticas; conserva ruido, composición, resolución y cuadros al explorar (256).
 - Medición: drena el calentamiento desde un framebuffer válido y restaura READ sin alterar DRAW; evita atribuir trabajo previo al coste medido (255).
 

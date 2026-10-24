@@ -254,7 +254,7 @@ Generado por `npm run docs:index` — no editar a mano.
 | [248](DECISIONS.md#L8578) | Derivar la normal muscular de la fase material completa | vigente |
 | [249](DECISIONS.md#L8586) | Aplazar la corrección del ancho muscular normal al campo real | vigente |
 | [250](DECISIONS.md#L8594) | Mezclar correlaciones Color antes de estimar su fase | vigente |
-| [251](DECISIONS.md#L8602) | Medir septos grasos con la métrica material | vigente |
+| [251](DECISIONS.md#L8602) | Aplazar la corrección de septos grasos con la métrica material | vigente |
 | [252](DECISIONS.md#L8610) | Eliminar la costura posterior de reflectividad | vigente |
 | [253](DECISIONS.md#L8618) | Reutilizar la captura registrada para verificar su hash | vigente |
 | [254](DECISIONS.md#L8626) | Conservar rango y fase del Color al recuperar cine | vigente |

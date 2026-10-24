@@ -268,3 +268,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [262](DECISIONS.md#L8724) | Comparar corte y GPU en las coordenadas efectivamente consultadas | vigente |
 | [263](DECISIONS.md#L8738) | Conservar campos fuente constantes al interpolar distancias | vigente |
 | [264](DECISIONS.md#L8750) | Incluir el eco sanguíneo en el pulso de reentrada | vigente |
+| [265](DECISIONS.md#L8768) | Una ejecución venosa temprana por suite | vigente |

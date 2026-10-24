@@ -25,11 +25,10 @@ concurrency:
   group: venous-viewer-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  repeat:
+  verify:
     strategy:
       fail-fast: false
       matrix:
-        attempt: [1, 2, 3]
         suite: [renalTerritory, venousViewer, venousAcquisition, velocityRuler]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
@@ -51,7 +50,7 @@ jobs:
       - uses: actions/upload-artifact@v7
         if: always()
         with:
-          name: venous-viewer-early-${{ github.run_attempt }}-${{ matrix.attempt }}-${{ matrix.suite }}
+          name: venous-viewer-early-${{ github.run_attempt }}-${{ matrix.suite }}
           path: |
             e2e-results.json
             test-results

@@ -8547,9 +8547,9 @@ el mismo recibo y los mismos 50 recursos antes de cualquier edición.
 
 **Contexto.** Un SHA corto en pantalla no distingue una preview obsoleta del mismo HEAD. La huella propia de la auditoría omitía CSS/HTML/GLSL y usaba un diff binario con buffer limitado.
 **Opciones.** Otra huella duplicada mantendría reglas dispersas; aceptar el rótulo no demuestra procedencia.
-**Decisión.** Reutilizar buildSource y verifyPreviewBuild antes de abrir Chromium y al terminar. Comparar fuente y hash del recibo inicial/final; conservar ambos y cualquier fallo en el manifiesto. Revisión independiente detectó que el primer candidato solo comprobaba el cierre local: se corrige también el servidor HTTP.
+**Decisión.** Reutilizar buildSource y verifyPreviewBuild antes de abrir Chromium y al terminar. Comparar fuente y hash del recibo inicial/final; conservar ambos y cualquier fallo en el manifiesto. El sidecar acredita solo el estado de adquisición y enlaza el manifiesto; este distingue pending/verified/rejected, sin confundir una captura con el cierre de toda la corrida. Se rechazan pacientes desconocidos, vacíos o repetidos antes de crear archivos, evitando sobrescribir una captura ya registrada. Revisión independiente detectó que el primer candidato solo comprobaba el cierre local: se corrige también el servidor HTTP.
 **Consecuencias.** Una comparación exige build actualizado y recursos íntegros. El rechazo de procedencia ocurre antes de ocupar GPU cuando es posible. No acredita calidad clínica.
-**Verificación.** Fixtures de build/preview distintos, recurso HTTP cambiado, CSS editado sin commit y binario de 2 MiB sin ENOBUFS. El cierre final se revisó de forma independiente; captura real y aceptación completa pendientes.
+**Verificación.** Fixtures de build/preview distintos, recurso HTTP cambiado, CSS editado sin commit y binario de 2 MiB sin ENOBUFS. El cierre final se revisó de forma independiente. Una preview con el mismo HEAD y otra huella termina rejected antes de abrir el navegador; tres CLI con casos inválidos se rechazan sin crear salida. Captura real y aceptación completa pendientes.
 
 ## 245. Registrar la fase receptora en la comparación de imágenes
 

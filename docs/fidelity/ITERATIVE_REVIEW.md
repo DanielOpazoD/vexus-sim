@@ -43,7 +43,11 @@ El protocolo UI recorre tarjetas y congela con el botón real. El estático
 reinicia explícitamente la historia para comparación de señal; no demuestra
 fluidez de exploración. `--views portal,subcostal` y `--cases normal-adult`
 permiten iteraciones focalizadas; la salida declara el subconjunto utilizado.
-Los archivos de evidencia se guardan fuera del repositorio.
+Los archivos de evidencia se guardan fuera del repositorio. Cada sidecar marca
+solo `acquisition-state-verified` y enlaza su `manifest.json` por `runId`. El
+manifiesto permanece `pending` durante el trabajo, pasa a `verified` tras
+comprobar también los recursos HTTP finales y ausencia de fallos, o queda
+`rejected`. Un sidecar aislado no acredita el cierre de una corrida.
 
 ## Circuito de cada corrección
 

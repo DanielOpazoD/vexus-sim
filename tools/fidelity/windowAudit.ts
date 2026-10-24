@@ -7,6 +7,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
 import { chromium, type Browser } from '@playwright/test';
 import { START_POINTS, startPointsFor, type StartPoint } from '../../src/app/startPoints';
+import { isCaseId } from '../../src/cases';
 import { acquisitionSnapshot, validateAcquisition } from './acquisitionSnapshot';
 import { comparisonHistoryStart, comparisonState } from './comparisonState';
 import { captureBMode } from './captureBMode';
@@ -35,6 +36,7 @@ const views = (args.get('views')?.split(',') ?? START_POINTS.map((p) => p.id)) a
 if (!views.length || new Set(views).size !== views.length || views.some((v) => !START_POINTS.some((p) => p.id === v)))
   throw new Error('Unknown/repeated window');
 const cases = args.get('cases')?.split(',') ?? ['normal-adult', 'severe-congestion'];
+if (!cases.length || new Set(cases).size !== cases.length || cases.some((id) => !isCaseId(id))) throw new Error('Unknown/repeated patient');
 const time = Number(args.get('time') ?? 30);
 if (!Number.isFinite(time) || time < 1) throw new Error('Comparison time must allow at least one second to prepare');
 const hash = (data: Buffer | string) => createHash('sha256').update(data).digest('hex');
@@ -71,10 +73,11 @@ const provenance = {
 };
 const rows: unknown[] = [];
 const failures: unknown[] = [];
+let integrity: 'pending' | 'verified' | 'rejected' = 'pending';
 const writeManifest = () =>
   writeFileSync(
     join(runOut, 'manifest.json'),
-    JSON.stringify({ schemaVersion: 2, runId, provenance, scope: { views, cases }, rows, failures }, null, 2) + '\n',
+    JSON.stringify({ schemaVersion: 2, runId, integrity, provenance, scope: { views, cases }, rows, failures }, null, 2) + '\n',
   );
 let browser: Browser | undefined;
 try {
@@ -160,7 +163,9 @@ try {
           comparisonProtocol: comparison?.protocol ?? null,
           provenance: { ...provenance, gpu, browser: browser.version(), build },
           artifacts,
-          integrity: 'verified',
+          integrity: 'acquisition-state-verified',
+          runId,
+          runManifest: 'manifest.json',
           clinicalAcceptance: 'pending',
         };
         const json = acquisitionJson(item);
@@ -186,8 +191,10 @@ try {
     'Preview build changed during acquisition',
   );
   if (failures.length) throw new Error(`${failures.length} rejected acquisitions; retained in ${runOut}`);
+  integrity = 'verified';
   console.log(runOut);
 } catch (error) {
+  integrity = 'rejected';
   failures.push({ runFailure: String(error) });
   throw error;
 } finally {

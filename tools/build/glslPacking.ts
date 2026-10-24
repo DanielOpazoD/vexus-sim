@@ -11,8 +11,7 @@ export function packGlslTemplates(code: string, id: string, root: string): strin
   let used = false;
   let out = code;
   const words = new RegExp(`\\b(?:${GLSL_WORDS.join('|')})\\b`, 'g');
-  const encodeWords = (source: string) =>
-    source.replace(words, (word) => glslMarker(GLSL_WORDS.indexOf(word as (typeof GLSL_WORDS)[number])));
+  const encodeWords = (source: string) => source.replace(words, (word) => glslMarker(GLSL_WORDS.indexOf(word)));
   const phrases = GLSL_PHRASES.map((phrase, i) => [encodeWords(phrase), glslMarker(512 + i)] as const);
   for (const t of findGlslTemplates(code).reverse()) {
     const parts = t.statics.map((raw) => {

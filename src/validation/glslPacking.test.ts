@@ -25,11 +25,24 @@ describe('transporte GLSL sin pérdida', () => {
     expect(new Set(GLSL_WORDS.map((_, i) => glslMarker(i))).size).toBe(GLSL_WORDS.length);
     expect(unpackGlsl('@~! @~~A @:! @::A')).toBe('@~! @~~A @:! @::A');
     expect(GLSL_WORDS).toHaveLength(512);
-    expect(GLSL_PHRASES.length).toBeLessThanOrEqual(2 * GLSL_MARKERS.length);
+    // Los bancos nuevos no reinterpretan ninguno de los 640 códigos anteriores.
+    expect(
+      createHash('sha256')
+        .update(JSON.stringify(GLSL_PHRASES.slice(0, 128)))
+        .digest('hex'),
+    ).toBe('d0514d1bdc94d37a600cf255b9f854c36fec5ca5ecb1f0e0cbc161890ee17df4');
+    expect(GLSL_PHRASES.length).toBeLessThanOrEqual(5 * GLSL_MARKERS.length);
+    const codes = Array.from({ length: GLSL_WORDS.length + GLSL_PHRASES.length }, (_, index) => glslMarker(index));
+    expect(new Set(codes).size).toBe(codes.length);
+    expect(codes.every((code) => Buffer.byteLength(code, 'utf8') <= 3)).toBe(true);
     expect(unpackGlsl(GLSL_PHRASES.map((_, i) => glslMarker(512 + i)).join('\n'))).toBe(GLSL_PHRASES.join('\n'));
     expect([512, 575, 576, 639].map(glslMarker)).toEqual(['@+A', '@+$', '@^A', '@^$']);
+    expect([640, 703, 704, 767, 768, 831].map(glslMarker)).toEqual(['@&A', '@&$', '@<A', '@<$', '@>A', '@>$']);
     expect(unpackGlsl('@+! @++A @^! @^^A')).toBe('@+! @++A @^! @^^A');
-    for (const index of [-1, 640, NaN, 0.5]) expect(() => glslMarker(index)).toThrow(RangeError);
+    expect(unpackGlsl('@&! @&&A @<! @<<A @>! @>>A')).toBe('@&! @&&A @<! @<<A @>! @>>A');
+    // Los códigos sin entrada y texto no marcado siguen sin tocarse.
+    expect(unpackGlsl(glslMarker(831))).toBe(glslMarker(831));
+    for (const index of [-1, 832, NaN, 0.5]) expect(() => glslMarker(index)).toThrow(RangeError);
   });
   it('decodifica los diez tokens adicionales sin renombrar identificadores', () => {
     expect(unpackGlsl('@Q @R @S @T @U @V @W @X @Y @Z')).toBe(
@@ -70,8 +83,17 @@ describe('transporte GLSL sin pérdida', () => {
     // nombres nuevos ni cambiar los programas antes de aplicar el empaquetado.
     const withoutPhrases = sources.map((s) =>
       s.path === join(root, 'src/core/glslPacking.ts')
-        ? { ...s, code: s.code.replace(/export const GLSL_PHRASES = \[[\s\S]*?\] as const;/, 'export const GLSL_PHRASES = [] as const;') }
+        ? {
+            ...s,
+            code: s.code.replace(
+              /export const GLSL_PHRASES[\s\S]*?(?=export const GLSL_MARKERS)/,
+              'export const GLSL_PHRASES = [] as const;\n',
+            ),
+          }
         : s,
+    );
+    expect(withoutPhrases.find((s) => s.path.endsWith('/src/core/glslPacking.ts'))!.code).not.toBe(
+      map.get(join(root, 'src/core/glslPacking.ts')),
     );
     const withoutPhraseNames = prepareGlslMangle(withoutPhrases);
     const baseline = loadShaderGraph(entry, map, (p, c) =>

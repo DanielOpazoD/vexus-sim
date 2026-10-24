@@ -122,7 +122,7 @@ relacionada rápida lo excluye. Para textura, reflectividad o normales de pared,
 añadir este banco explícito antes del check completo, sin cambiar su nivel:
 
 ```bash
-npm run feedback -- src/validation/wall.test.ts src/validation/wallTwin.test.ts src/validation/wallDisplayTwin.test.ts src/validation/wallTextureNormals.test.ts src/validation/muscleTextureGeometry.test.ts src/validation/fatTextureMetric.test.ts src/validation/wallFaceContinuity.test.ts
+npm run feedback -- src/validation/wall.test.ts src/validation/wallTwin.test.ts src/validation/wallDisplayTwin.test.ts src/validation/wallTextureNormals.test.ts src/validation/muscleTextureGeometry.test.ts src/validation/wallFaceContinuity.test.ts
 ```
 
 Este lote conserva los umbrales de contraste, continuidad y geometría; evita

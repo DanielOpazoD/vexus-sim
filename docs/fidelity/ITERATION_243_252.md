@@ -1,13 +1,15 @@
-# Once bloques candidatos de fidelidad: 243–254
+# Diez bloques candidatos de fidelidad: 243–254
 
 El usuario autoriza una secuencia de al menos diez mejoras adicionales y su
 aceptación por commits, PR y merge. Convexo genérico de 3,5 MHz; ninguna prueba
 interna acredita indistinguibilidad clínica o validación educativa humana.
 
-El lote final incluye 243–248 y 250–254: once mejoras. **249 queda aplazado**: su
-corrección de ancho no satisfizo el banco histórico de textura y se retira del
-runtime, sin cambiar ese control. Se conservan sus diagnósticos y la aproximación
-de ancho anterior; no cuenta como mejora entregada.
+El lote final incluye 243–248, 250 y 252–254: diez mejoras. **249 y 251 quedan
+aplazados**: el ancho muscular no satisfizo el banco histórico de textura; la
+métrica del septo graso no conservó la alineación de su normal con el peso
+escalar en GPU. Se retiran ambos del runtime sin relajar sus controles. Se
+conservan diagnósticos y aproximaciones de ancho anteriores; no cuentan como
+mejoras entregadas.
 
 ## Contrato
 
@@ -26,7 +28,7 @@ Las seis zonas son coordenadas de prueba dentro de una exploración continua.
 | 248    | Normal muscular de un marco simplificado: derivarla de la fase material real.                |
 | 249    | **Aplazado**: ancho muscular material; se mantiene la aproximación anterior.                 |
 | 250    | Promedio de velocidades antes de fase: sumar correlaciones complejas por submuestra.         |
-| 251    | Espesor septal graso dependiente del marco: usar su métrica material local.                  |
+| 251    | **Aplazado**: métrica septal grasa; se conserva la normal y el campo de 221.                 |
 | 252    | Costura de textura en el dorso: continuidad periódica sin modificar la pared anatómica.      |
 | 253    | Capturas registradas: hashear el PNG adquirido sin repetir lecturas GPU.                     |
 | 254    | Cine Color: conservar rango y fase de R1 con precisión de 32 bits.                           |
@@ -57,7 +59,7 @@ Estas referencias sustentan las operaciones, no calibran el simulador completo.
 Durante la revisión se añade la decisión253: retirar una lectura duplicada de
 las capturas registradas. El timeout de main046 se conserva; los cuatro PNG
 y hashes originales prueban equivalencia de datos. No se reducen renders ni
-se amplían los720s. 253 y 254 se suman a los nueve bloques conservados de la secuencia inicial.
+se amplían los720s. 253 y 254 se suman a los ocho bloques conservados de la secuencia inicial.
 
 La revisión añade también 254: el cine RG16F saturaba componentes de Color
 adquiridas con movimiento real y alteraba su fase. RG32F preserva el campo

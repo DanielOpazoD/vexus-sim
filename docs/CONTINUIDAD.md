@@ -5,9 +5,10 @@
 El usuario autoriza al menos diez mejoras adicionales, con commits, PR y merge
 cuando estén validados. La [secuencia 243–254](fidelity/ITERATION_243_252.md)
 aborda defectos reproducidos en pared muscular/grasa, Doppler y procedencia
-de las comparaciones. El candidato conserva once bloques: 243–248 y 250–254.
-249 (ancho muscular) se retira porque no satisfizo el banco histórico; se
-conservan su diagnóstico y el ancho anterior, sin relajar el control.
+de las comparaciones. El candidato conserva diez bloques: 243–248, 250 y 252–254.
+249 (ancho muscular) y 251 (métrica septal grasa) se retiran al no satisfacer
+sus controles de textura y gradiente. Se conservan los diagnósticos, los
+anchos anteriores y los controles intactos.
 El perfil sigue siendo convexo genérico de 3,5 MHz.
 El estado vivo de cada bloque está en `../fidelity-243-evidence/PROGRESS.md`;
 consultar Git/CI para el cierre, sin inferirlo de esta lista.

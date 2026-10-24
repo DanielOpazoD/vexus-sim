@@ -235,34 +235,35 @@ Generado por `npm run docs:index` — no editar a mano.
 | [229](DECISIONS.md#L8032) | Reunir los planos interoblicuos al llegar a la espalda | vigente |
 | [230](DECISIONS.md#L8060) | Curvatura vertebral derivada del mismo campo que su superficie | vigente |
 | [231](DECISIONS.md#L8089) | Evitar trabajo repetido sin cambiar las muestras del corte | vigente |
-| [232](DECISIONS.md#L8118) | Atacar el coste observado de la búsqueda vascular del corte | vigente |
-| [233](DECISIONS.md#L8141) | Acortar la validación local sin reducir sus controles | vigente |
-| [234](DECISIONS.md#L8176) | Color y PW comparten la respuesta digital estacionaria del filtro de pared | vigente |
-| [235](DECISIONS.md#L8213) | La prueba de cine adquiere mediante el regulador GPU ordinario | vigente |
-| [236](DECISIONS.md#L8238) | Ventilación contextual sin presuponer una VCI ni descartar congestión | vigente |
-| [237](DECISIONS.md#L8260) | Admitir referencias externas sin confundir identidad con validación | vigente |
-| [238](DECISIONS.md#L8292) | Drenar los contextos WebGL de ecografía y navegador antes de liberar la vista | vigente |
-| [239](DECISIONS.md#L8337) | Renovar cuatro secuencias de transporte GLSL sin cambiar sus tokens | vigente |
-| [240](DECISIONS.md#L8365) | Evitar gradientes completos en tiles que el eco no consume | vigente |
-| [241](DECISIONS.md#L8425) | Presentar el corte cuando llega, sin esperar otra adquisición | vigente |
-| [242](DECISIONS.md#L8485) | Evaluar profundidad corporal sin calcular derivadas descartadas | vigente |
-| [243](DECISIONS.md#L8538) | Transportar los mismos programas GLSL con margen para iterar | vigente |
-| [244](DECISIONS.md#L8546) | Vincular la auditoría visual a los bytes realmente servidos | vigente |
-| [245](DECISIONS.md#L8554) | Registrar la fase receptora en la comparación de imágenes | vigente |
-| [246](DECISIONS.md#L8562) | Separar adquisición PW cuando cambia la PRF | vigente |
-| [247](DECISIONS.md#L8570) | Convertir ganancia Color como potencia de autocorrelación | vigente |
-| [248](DECISIONS.md#L8578) | Derivar la normal muscular de la fase material completa | vigente |
-| [249](DECISIONS.md#L8586) | Aplazar la corrección del ancho muscular normal al campo real | vigente |
-| [250](DECISIONS.md#L8594) | Mezclar correlaciones Color antes de estimar su fase | vigente |
-| [251](DECISIONS.md#L8602) | Aplazar la corrección de septos grasos con la métrica material | vigente |
-| [252](DECISIONS.md#L8610) | Eliminar la costura posterior de reflectividad | vigente |
-| [253](DECISIONS.md#L8618) | Reutilizar la captura registrada para verificar su hash | vigente |
-| [254](DECISIONS.md#L8626) | Conservar rango y fase del Color al recuperar cine | vigente |
-| [255](DECISIONS.md#L8634) | Sincronizar el cronometraje con una lectura GPU válida | vigente |
-| [256](DECISIONS.md#L8642) | Reutilizar la transmisión solo con entradas GPU idénticas | vigente |
-| [257](DECISIONS.md#L8650) | Contrastar la PSF con una adquisición independiente de dos vías | vigente |
-| [258](DECISIONS.md#L8662) | Reutilizar la proyección del corte sin alterar los mapas adquiridos | vigente |
-| [259](DECISIONS.md#L8680) | Evitar consultas anatómicas redundantes en el clasificador del corte | vigente |
-| [260](DECISIONS.md#L8694) | Comparar geometría del contorno entre arquitecturas | vigente |
-| [261](DECISIONS.md#L8708) | Reanudar un gesto de sonda sin acumular movimiento congelado | vigente |
-| [262](DECISIONS.md#L8722) | Comparar corte y GPU en las coordenadas efectivamente consultadas | vigente |
+| [232](DECISIONS.md#L8120) | Atacar el coste observado de la búsqueda vascular del corte | vigente |
+| [233](DECISIONS.md#L8143) | Acortar la validación local sin reducir sus controles | vigente |
+| [234](DECISIONS.md#L8178) | Color y PW comparten la respuesta digital estacionaria del filtro de pared | vigente |
+| [235](DECISIONS.md#L8215) | La prueba de cine adquiere mediante el regulador GPU ordinario | vigente |
+| [236](DECISIONS.md#L8240) | Ventilación contextual sin presuponer una VCI ni descartar congestión | vigente |
+| [237](DECISIONS.md#L8262) | Admitir referencias externas sin confundir identidad con validación | vigente |
+| [238](DECISIONS.md#L8294) | Drenar los contextos WebGL de ecografía y navegador antes de liberar la vista | vigente |
+| [239](DECISIONS.md#L8339) | Renovar cuatro secuencias de transporte GLSL sin cambiar sus tokens | vigente |
+| [240](DECISIONS.md#L8367) | Evitar gradientes completos en tiles que el eco no consume | vigente |
+| [241](DECISIONS.md#L8427) | Presentar el corte cuando llega, sin esperar otra adquisición | vigente |
+| [242](DECISIONS.md#L8487) | Evaluar profundidad corporal sin calcular derivadas descartadas | vigente |
+| [243](DECISIONS.md#L8540) | Transportar los mismos programas GLSL con margen para iterar | vigente |
+| [244](DECISIONS.md#L8548) | Vincular la auditoría visual a los bytes realmente servidos | vigente |
+| [245](DECISIONS.md#L8556) | Registrar la fase receptora en la comparación de imágenes | vigente |
+| [246](DECISIONS.md#L8564) | Separar adquisición PW cuando cambia la PRF | vigente |
+| [247](DECISIONS.md#L8572) | Convertir ganancia Color como potencia de autocorrelación | vigente |
+| [248](DECISIONS.md#L8580) | Derivar la normal muscular de la fase material completa | vigente |
+| [249](DECISIONS.md#L8588) | Aplazar la corrección del ancho muscular normal al campo real | vigente |
+| [250](DECISIONS.md#L8596) | Mezclar correlaciones Color antes de estimar su fase | vigente |
+| [251](DECISIONS.md#L8604) | Aplazar la corrección de septos grasos con la métrica material | vigente |
+| [252](DECISIONS.md#L8612) | Eliminar la costura posterior de reflectividad | vigente |
+| [253](DECISIONS.md#L8620) | Reutilizar la captura registrada para verificar su hash | vigente |
+| [254](DECISIONS.md#L8628) | Conservar rango y fase del Color al recuperar cine | vigente |
+| [255](DECISIONS.md#L8636) | Sincronizar el cronometraje con una lectura GPU válida | vigente |
+| [256](DECISIONS.md#L8644) | Reutilizar la transmisión solo con entradas GPU idénticas | vigente |
+| [257](DECISIONS.md#L8652) | Contrastar la PSF con una adquisición independiente de dos vías | vigente |
+| [258](DECISIONS.md#L8664) | Reutilizar la proyección del corte sin alterar los mapas adquiridos | vigente |
+| [259](DECISIONS.md#L8682) | Evitar consultas anatómicas redundantes en el clasificador del corte | vigente |
+| [260](DECISIONS.md#L8696) | Comparar geometría del contorno entre arquitecturas | vigente |
+| [261](DECISIONS.md#L8710) | Reanudar un gesto de sonda sin acumular movimiento congelado | vigente |
+| [262](DECISIONS.md#L8724) | Comparar corte y GPU en las coordenadas efectivamente consultadas | vigente |
+| [263](DECISIONS.md#L8738) | Conservar campos fuente constantes al interpolar distancias | vigente |

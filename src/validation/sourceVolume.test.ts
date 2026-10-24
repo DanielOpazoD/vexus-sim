@@ -71,4 +71,18 @@ describe('campo fuente en el mismo registro material', () => {
     expect(sourceDistance(saturated, world([1.25, 1.25, 1.25]), f, dimensions)).toBe(16);
     expect(sourceLabel(saturated, world([1.25, 1.25, 1.25]), f, dimensions)).toBe(14);
   });
+  it('preserva exactamente campos constantes con pesos no diádicos, incluido el límite16', () => {
+    const fractions = [0, 0.1, 1 / 3, Math.SQRT2 - 1, 0.7, 0.9, 1];
+    for (const value of [16, -16, 0, 1, -0.5, 7.25]) {
+      const constant = data.slice();
+      for (let i = 0; i < constant.length; i += 2) constant[i] = DataUtils.toHalfFloat(value);
+      for (const z of fractions)
+        for (const y of fractions)
+          for (const x of fractions) {
+            const p = world([x, y, z]);
+            expect(sourceDistance(constant, p, f, dimensions), `constant ${value}, (${x}, ${y}, ${z})`).toBe(value);
+            expect(sourceLabel(constant, p, f, dimensions)).toBe(sourceLabel(data, p, f, dimensions));
+          }
+    }
+  });
 });

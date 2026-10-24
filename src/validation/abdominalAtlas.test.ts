@@ -7,7 +7,8 @@ import { ABDOMINAL_ATLAS, ABDOMINAL_FIELDS } from '../anatomy/abdominalAtlasData
 import { setAbdominalAtlas, abdominalAtlasSdf, abdominalAtlasValue } from '../anatomy/abdominalAtlas';
 import { setAbdominalBody } from '../anatomy/referenceBody';
 import { AnatomyScene, BASELINE_CALIBER } from '../anatomy/scene';
-import { NORMAL_ADULT } from '../cases';
+import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
+import type { Vec3 } from '../core/vec3';
 import { Tissue } from '../anatomy/tissues';
 import { VESSEL_IDS } from '../physiology/vessels';
 import { AnatomyQuery } from '../anatomy/query';
@@ -33,6 +34,28 @@ afterEach(() => {
 });
 
 describe('registered abdomen: actual shipped acoustic data', () => {
+  it('does not create mesenteric tissue from a constant clipped field and preserves earlier anatomical owners', () => {
+    const scene = new AnatomyScene(SEVERE_CONGESTION);
+    // Material witnesses from the acquired cut diagnostic (263). The eight gut
+    // nodes equal16, while the liver query lies outside its brick. A clipped
+    // distance retains its categorical label; it does not imply known fat.
+    const witnesses: Array<[Vec3, Tissue]> = [
+      [[96.65056272238104, 48.2023181972377, -227.87938338959754], Tissue.UnsegmentedSoftTissue],
+      [[18.982849694260686, 6.445272593570451, -223.8585405506492], Tissue.UnsegmentedSoftTissue],
+      [[39.171779834364486, 8.838763350313144, -225.28148021926816], Tissue.UnsegmentedSoftTissue],
+      [[30.28238809797179, -13.059727968885483, -160.0813808471727], Tissue.RetroperitonealFat],
+      [[17.13867834301108, -15.33673454741816, -218.53001383708653], Tissue.RetroperitonealFat],
+      [[30.533443274348986, -11.885858682053396, -170.8357136641459], Tissue.RetroperitonealFat],
+    ];
+    for (const [point, expected] of witnesses)
+      for (const material of [point, point.map(Math.fround) as Vec3]) {
+        expect(abdominalAtlasValue(material, 1)).toEqual({ d: 16, label: 3 });
+        expect(abdominalAtlasSdf(material, 4)).toBe(16);
+        const c = scene.classify(material, BASELINE_CALIBER);
+        expect(c.tissue, material.join(',')).toBe(expected);
+        expect(c.vessel).toBeNull();
+      }
+  });
   it('keeps splenic venous lumen and wall outside left renal parenchyma without classifier priority masking', () => {
     const scene = new AnatomyScene(NORMAL_ADULT);
     const vein = scene.vesselById.get('portalSplenic')!;

@@ -48,6 +48,7 @@ import { CINE_FRAMES, CineRing, persistenceReplay } from './cine';
 import { M_COLUMNS, M_SAMPLES, MColumnRing, mLineU } from './mmode';
 import { lookWavenumber } from './steering';
 import { MIRROR_BISECTION_STEPS, type SegmentGrid } from './transmission';
+import { TransmissionReuse } from './transmissionReuse';
 import {
   RIB_BASE,
   RIB_TEXELS,
@@ -391,6 +392,7 @@ export class UltrasoundRenderer {
   private sceneValuesCompression: ProbeCompression | null = null;
   private sceneValuesTubes = -1;
   private sceneValuesGrid: TubeGrid | null = null;
+  private readonly transmissionReuse = new TransmissionReuse();
   private tMap: RenderTarget;
   private mapPixels = new Uint8Array(0);
   private mapPbo: WebGLBuffer | null = null;
@@ -657,6 +659,7 @@ export class UltrasoundRenderer {
       throw new Error('El modelo anatómico cambió: reconstruya el renderer');
     const gl = this.gl;
     this.currentScene = scene;
+    this.transmissionReuse.clear();
     this.speckleAnchor.reset();
     // las miradas guardadas son de otro paciente: el siguiente cuadro reinicia el anillo con la mirada 0
     this.ring.invalidate();
@@ -859,7 +862,7 @@ export class UltrasoundRenderer {
    * Uniforms de la anatomía desde el esquema único (`anatomy/gpu/sceneUniforms.ts`): se evalúan una vez por
    * instante y se suben a cada programa; la textura de escena va aparte (unidad 6).
    */
-  private setSceneUniforms(p: GLProgram, inputs: FrameInputs, bodyUnit: 5 | 10 = SCENE_SAMPLERS[4].unit): void {
+  private prepareSceneUniforms(inputs: FrameInputs): void {
     if (
       this.sceneValuesFor !== inputs.sample ||
       this.sceneValuesTubes !== this.tubeCount ||
@@ -878,6 +881,10 @@ export class UltrasoundRenderer {
       if (this.sceneValuesCompression !== inputs.compression) this.uploadCompressionTable(inputs.compression);
       this.sceneValuesCompression = inputs.compression;
     }
+  }
+
+  private setSceneUniforms(p: GLProgram, inputs: FrameInputs, bodyUnit: 5 | 10 = SCENE_SAMPLERS[4].unit): void {
+    this.prepareSceneUniforms(inputs);
     uploadSceneUniforms(p, this.sceneValues);
     p.tex(SCENE_SAMPLERS[4].name, bodyUnit, this.bodyTex);
     p.tex(SCENE_SAMPLERS[3].name, SCENE_SAMPLERS[3].unit, this.tubeGridTex);
@@ -1051,8 +1058,35 @@ export class UltrasoundRenderer {
     this.timer.poll();
     this.updateCoupling(inputs);
     this.updateSceneDynamic(inputs);
-    // mirada de este cuadro (decisión 58): con el compuesto inactivo, siempre la 0
+    // Preparar todas las entradas efectivas: las consultas pueden haber cambiado las tablas,
+    // y radiusScale puede devolver otro calibre sin cambiar su identidad de función.
+    this.prepareSceneUniforms(inputs);
     const fr = inputs.frame;
+    const tr = inputs.transducer;
+    const transmissionInputs = [
+      this.sceneData,
+      this.alpha,
+      this.back,
+      this.flags,
+      this.couplingData,
+      ...this.sceneValues.map(({ data }) => data),
+      Float32Array.of(
+        ...fr.face,
+        ...fr.axial,
+        ...fr.lateral,
+        ...fr.elevation,
+        ...fr.curvatureCenter,
+        tr.curvatureRadius,
+        tr.halfSector,
+        inputs.bmode.depthMm,
+      ),
+      ...(this.tubeGrid ? [this.tubeGrid.data] : []),
+    ];
+    // A0/A1 no dependen del ruido, serial ni mirada dirigida. Sus destinos de tamaño fijo persisten;
+    // cambiar escena/reconstruir los invalida. Las pasadas posteriores conservan su cadencia original.
+    const reuseTransmission = repeat === undefined && this.transmissionReuse.matches(transmissionInputs);
+    if (!reuseTransmission) this.transmissionReuse.clear();
+    // mirada de este cuadro (decisión 58): con el compuesto inactivo, siempre la 0
     this.lookActive = compoundActive(inputs.bmode, inputs.color);
     this.look = this.ring.next({
       active: this.lookActive,
@@ -1072,9 +1106,10 @@ export class UltrasoundRenderer {
     for (const pass of FRAME_PASSES) {
       if (pass.cadence === 'color' && !colorDue) continue;
       this.timer.begin(pass.id);
-      this.passes[pass.id](inputs);
+      if (!reuseTransmission || (pass.id !== 'transmissionHits' && pass.id !== 'transmissionSegments')) this.passes[pass.id](inputs);
       if (rep !== null && rep.pass === pass.id) this.drawRepeats(pass.id, rep.targets, rep.times);
       this.timer.end();
+      if (!reuseTransmission && pass.id === 'transmissionSegments') this.transmissionReuse.remember(transmissionInputs);
     }
     this.afterFrame(inputs);
   }

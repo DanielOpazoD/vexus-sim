@@ -1,4 +1,4 @@
-# Diez bloques candidatos de fidelidad: 243–254
+# Diez bloques de fidelidad y dos reparaciones: 243–256
 
 El usuario autoriza una secuencia de al menos diez mejoras adicionales y su
 aceptación por commits, PR y merge. Convexo genérico de 3,5 MHz; ninguna prueba
@@ -66,3 +66,10 @@ adquiridas con movimiento real y alteraba su fase. RG32F preserva el campo
 vivo, con 7,37 MB adicionales y sin reducir resolución ni historia. La
 regresión compara ambos pacientes a +12/+24 dB y conserva el negativo real;
 el positivo y la aceptación dependen del build y CI finales.
+
+La aceptación añadió 255 (cronometraje GPU válido) y 256 (reutilización exacta de transmisión).
+El perfil identifica trabajo repetido en A0/A1; la comparación de sus cuatro adjuntos contra
+recomputación conserva todos los bytes en ambos backends. Un negativo con geometría obsoleta
+falla al mover la sonda. Los 76 renders de coste abarcan seis coordenadas y ambos pacientes;
+la copia CPU p95 observada es 0,0125 ms en Metal y 0,025 ms en SwiftShader. No acredita una
+mejora global de latencia; la aceptación exige la CI completa del último head del PR276.

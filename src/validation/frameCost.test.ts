@@ -217,15 +217,19 @@ function realRig() {
 describe('repeatPass en el renderizador real (WebGL falso)', () => {
   const perFrame = FRAME_PASSES.filter((p) => p.cadence === 'frame').length;
 
-  it('sin repetición, un dibujo por pasada y ningún destino de prueba', () => {
+  it('sin repetición, reutiliza solo A0/A1 estáticos y conserva los demás dibujos y destinos', () => {
     const { sim, draws, attachments } = realRig();
     const fbos = attachments.size;
     sim.render();
     expect(draws.length).toBe(perFrame);
     expect(attachments.size).toBe(fbos + 3); // conversión de barrido y las dos historias, del primer cuadro
-    draws.length = 0;
+    const first = draws.splice(0);
     sim.render();
-    expect(draws.length).toBe(perFrame);
+    expect(draws.length).toBe(perFrame - 2);
+    expect(draws.map((d) => d.program)).toEqual(first.slice(2).map((d) => d.program));
+    draws.length = 0;
+    sim.render(); // misma paridad de persistencia que el primero
+    expect(draws.map((d) => [d.program, d.fbo])).toEqual(first.slice(2).map((d) => [d.program, d.fbo]));
     expect(attachments.size).toBe(fbos + 3);
   });
 

@@ -138,6 +138,12 @@ ensayo. Usar `workspace:e2e --backend metal|swiftshader` con ese archivo y
 carpetas de evidencia distintas. El oráculo independiente, sus tolerancias y
 la aceptación completa se conservan; pasar en un backend no acredita el otro.
 
+Coordinar las ediciones con quien ejecuta un control: cambiar un módulo importado o su configuración
+durante una prueba puede invalidar el resultado antes de comprobar el defecto. Las revisiones de lectura
+y la preparación externa pueden continuar en paralelo. Para arneses ESM fuera del paquete, usar
+`.mts`/`.mjs` y el entry ESM de Playwright; verificar `--list` antes de ocupar GPU. Dos intentos externos
+de 256 fallaron antes del navegador por mezclar esos formatos; no se contaron como negativos.
+
 Con el candidato estable: **check completo, hook normal, PR y CI completa del último head**.
 Si falla una fase, conservar su negativo y diagnosticar esa fase; no volver a lanzar todo a ciegas.
 Tras corregir código se vuelve a acreditar el candidato final. El feedback nunca sustituye la aceptación.

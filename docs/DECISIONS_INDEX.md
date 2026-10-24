@@ -258,3 +258,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [252](DECISIONS.md#L8610) | Eliminar la costura posterior de reflectividad | vigente |
 | [253](DECISIONS.md#L8618) | Reutilizar la captura registrada para verificar su hash | vigente |
 | [254](DECISIONS.md#L8626) | Conservar rango y fase del Color al recuperar cine | vigente |
+| [255](DECISIONS.md#L8634) | Sincronizar el cronometraje con una lectura GPU válida | vigente |
+| [256](DECISIONS.md#L8642) | Reutilizar la transmisión solo con entradas GPU idénticas | vigente |

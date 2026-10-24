@@ -5,6 +5,9 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Transmisión: reutiliza A0/A1 solo con entradas GPU idénticas; conserva ruido, composición, resolución y cuadros al explorar (256).
+- Medición: drena el calentamiento desde un framebuffer válido y restaura READ sin alterar DRAW; evita atribuir trabajo previo al coste medido (255).
+
 - Pared: normales musculares derivadas del campo material; textura de caras continua en el dorso, sin cambiar capas anatómicas (248,252).
 - Cine Color: conserva rango y fase de las correlaciones con ganancia alta mediante RG32F; mantiene los 120 cuadros y añade 7,37 MB (254).
 - Pruebas: reutiliza los PNG registrados para sus hashes sin repetir lecturas GPU, conservando adquisiciones y plazos (253).

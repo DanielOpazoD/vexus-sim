@@ -1,6 +1,6 @@
 # Continuidad de VExUS LAB
 
-## Misión vigente: diez bloques de fidelidad (24 de octubre de 2026)
+## Ronda 243–256: imagen, Doppler y comprobación (24 de octubre de 2026)
 
 El usuario autoriza al menos diez mejoras adicionales, con commits, PR y merge
 cuando estén validados. La [secuencia 243–254](fidelity/ITERATION_243_252.md)
@@ -9,6 +9,10 @@ de las comparaciones. El candidato conserva diez bloques: 243–248, 250 y 252�
 249 (ancho muscular) y 251 (métrica septal grasa) se retiran al no satisfacer
 sus controles de textura y gradiente. Se conservan los diagnósticos, los
 anchos anteriores y los controles intactos.
+La validación añade dos reparaciones: lectura GPU válida para medir el coste (255) y reutilización
+exacta de A0/A1 con entradas iguales (256). Se mantienen todos los cuadros, ruido, resolución y
+plazos. La instantánea se invalida con cambios anatómicos; no congela la imagen ni el movimiento.
+El [PR276](https://github.com/DanielOpazoD/vexus-sim/pull/276) reúne el cambio y el cierre verificable.
 El perfil sigue siendo convexo genérico de 3,5 MHz.
 El estado vivo de cada bloque está en `../fidelity-243-evidence/PROGRESS.md`;
 consultar Git/CI para el cierre, sin inferirlo de esta lista.
@@ -25,7 +29,7 @@ pacientes, con recursos/build verificados. El banco inicial sin fase fija se
 conserva, pero no se usa como igualdad A/B. Ningún resultado interno demuestra
 que un experto humano confundiría el simulador con un ecógrafo real.
 
-## Alcance vigente al 24 de octubre de 2026
+## Antecedente: ronda 242 del 24 de octubre de 2026
 
 La ronda 242 continúa el desfase del corte mediante una evaluación corporal
 que omite derivadas cuando solo se consume profundidad. Conserva fórmula,

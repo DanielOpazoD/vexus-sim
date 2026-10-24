@@ -125,6 +125,13 @@ con una sola mirada válida (compuesto apagado, color encendido o el cuadro tras
 directo exacto. Las pruebas leen la fuente explícita: `readEnvelope({ source: 'look0' | 'compound' })`,
 `readLookEnvelope(ranura)` y `readTransmission({ look })`.
 
+A0/A1 conservan una única salida mientras todas sus entradas float32 preparadas sean idénticas
+(decisión 256): escena, compresión, uniforms, haz, material, acoplamiento e índice de tubos.
+La comparación usa snapshots independientes, sin hashes ni identidades de funciones. Un cambio
+invalida antes de dibujar y la pareja se confirma después de A1; setScene/reconstrucción invalidan.
+Las repeticiones de medida ejecutan los pases reales. A2 y posteriores siguen formando cada cuadro,
+con su ruido, mirada de composición, persistencia y serial originales. No se añaden texturas.
+
 Pleura parietal y cortina pulmonar (decisión 61): A0 escribe una tercera salida por línea (`h2`: el cruce
 exacto de la pleura, la distancia al borde de la cortina y la pérdida de la lámina de pulmón) que leen A1 y
 los dos programas de B. En las líneas con cortina, B suma la línea pleural, la serie de reverberaciones de la

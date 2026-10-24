@@ -172,7 +172,7 @@ for (const reference of [false, true, 'atlas'] as const)
       const report = await page.evaluate(capture, { fat: Tissue.Fat, muscle: Tissue.Muscle });
       const tag = JSON.stringify(report);
       expect(bmode.depthMm).toBe(reference === 'atlas' ? 130 : 150);
-      expect(report.settings.gainDb).toBe(12);
+      expect(report.settings.gainDb).toBe(6);
       expect(
         report.after.every((f) => f.blood > 100),
         tag,

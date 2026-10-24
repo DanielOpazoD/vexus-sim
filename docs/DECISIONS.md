@@ -8570,10 +8570,10 @@ el mismo recibo y los mismos 50 recursos antes de cualquier edición.
 ## 247. Convertir ganancia Color como potencia de autocorrelación
 
 **Contexto.** length(R1) es potencia; multiplicar por 10^(dB/20) hacía que +20 dB declarados produjeran +10 dB de potencia.
-**Opciones.** No compensar con umbrales, presets o ganancia basal. Renombrar el control no corrige sus unidades físicas.
-**Decisión.** colorPowerGain usa 10^(dB/10), conservando la referencia ×2 a cero. Retirar el comentario histórico que confundía ×2 potencia con +6 dB.
+**Opciones.** No compensar con umbrales, reajustes empíricos de presets ni ganancia basal. La conversión dimensional de un preset debe preservar su potencia lineal anterior. Renombrar solo el control no corrige sus unidades físicas.
+**Decisión.** colorPowerGain usa 10^(dB/10), conservando la referencia ×2 a cero. Retirar el comentario histórico que confundía ×2 potencia con +6 dB. El único preset Color no nulo migra de 12 unidades antiguas a 6 dB de potencia: 2·10^(12/20)=2·10^(6/10), sin modificar señal ni ruido respecto a su ganancia lineal previa. La referencia de cero y el rango editable en dB físicos se mantienen; no se reinterpretan capturas históricas.
 **Consecuencias.** Ganancias positivas aumentan antes señal y ruido; las negativas atenúan lo declarado. La fase no cambia por esta conversión. Las cifras antiguas del control no son calibración vigente.
-**Verificación.** Seis negativos detectan /20; 25 pruebas focales pasan con el oráculo independiente 10log10(P/P0). Capturas0/+12 dB e integración GPU pendientes. Fuente de unidades: [Analog Devices](https://www.analog.com/en/resources/glossary/db.html), no calibración comercial.
+**Verificación.** Seis negativos detectan /20; 25 pruebas focales pasan con el oráculo independiente 10log10(P/P0). La primera batería Metal detectó la migración omitida: seis ventanas portal tenían 7.127–10.150 celdas de ruido sobre umbral en 61.440 muestras sin sangre. Cinco controles de equivalencia lineal del preset fallan con 12 y pasan con 6; ninguna aserción de ruido, relleno, filtro o inversión cambia. La expectativa numérica del rótulo pasa a 6. Capturas a igual potencia (antes12/después6), nuevas pruebas con el mando a +12 dB e integración GPU pendientes. Fuente de unidades: [Analog Devices](https://www.analog.com/en/resources/glossary/db.html), no calibración comercial.
 
 ## 248. Derivar la normal muscular de la fase material completa
 

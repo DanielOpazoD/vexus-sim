@@ -287,7 +287,7 @@ const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
       : sp.id === 'intercostal'
         ? 'Intercostal derecha, marcador hacia la axila posterior. Rota o abanica para adquirir la suprahepática entre costillas.'
         : sp.id === 'portal'
-          ? 'Rama portal intrahepática desde lateral. 13 cm, foco a 10 cm, Color ±35 cm/s y ganancia 12 dB. Para medir VExUS, usa el tronco principal.'
+          ? 'Rama portal intrahepática desde lateral. 13 cm, foco a 10 cm, Color ±35 cm/s y ganancia 6 dB. Para medir VExUS, usa el tronco principal.'
           : sp.id === 'portalTrunk'
             ? 'Tronco portal principal desde lateral: 16 cm y foco a 13 cm. Afina el hilio y coloca la puerta en el tronco.'
             : sp.hint,

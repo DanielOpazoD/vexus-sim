@@ -1,6 +1,36 @@
 # Continuidad de VExUS LAB
 
-## Alcance vigente al 19 de octubre de 2026
+## Alcance vigente al 24 de octubre de 2026
+
+La ronda 242 continúa el desfase del corte mediante una evaluación corporal
+que omite derivadas cuando solo se consume profundidad. Conserva fórmula,
+coeficientes, orden de Horner y las cinco salidas completas para geometría y
+normales. No modifica GLSL, adquisición, resolución ni plazos. El código de
+la comparación es `e1b7279`, sobre main `338d123`.
+
+La pareja nueva en Metal M4 conserva seis coordenadas, ambos pacientes,
+1728 muestras y 588 peticiones por versión. Primer pintado p95 **26,8 →
+25,2 ms**, mejora en 10/12 filas; antigüedad mostrada p95 **66,5 → 66,5 ms**.
+Las doce trayectorias convergen a la adquisición congelada sin separación.
+La mejora de cálculo/presentación es parcial: no declara resuelto el desfase
+global ni mide latencia física. Dos variantes previas excedieron el presupuesto
+y se descartaron; el límite original permanece. Evidencias y negativos:
+`cut-latency-242-evidence`, fuera del repo, con originales y hashes.
+
+La aceptación de esta ronda exige check completo, hook normal, coherencia
+3D/corte/ecografía en Metal, barrido original de dos vistas SwiftShader y CI
+completa del último head del PR. Los diagnósticos anteriores no sustituyen
+esos controles. Consultar el PR y Git para conocer su cierre efectivo.
+
+La CI posterior al merge anterior de main `338d123`,
+[39213603114](https://github.com/DanielOpazoD/vexus-sim/actions/runs/39213603114),
+falló en `registeredComparison`: agotó 720 s en `captureBMode → page.evaluate`
+al capturar una imagen registrada. No fue un fallo de subida de artefactos.
+El stack no separa lectura, serialización o trabajo GPU pendiente; no demuestra
+una causa en el Worker del corte. El negativo queda conservado y esa prueba
+sigue siendo obligatoria en la nueva CI, sin reintentos automáticos.
+
+## Antecedente del 19 de octubre: ronda 241
 
 El usuario autoriza continuar con el desfase del corte. La decisión 241 elimina
 la espera al siguiente RAF para presentar una respuesta del Worker y atender

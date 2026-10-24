@@ -245,3 +245,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [239](DECISIONS.md#L8337) | Renovar cuatro secuencias de transporte GLSL sin cambiar sus tokens | vigente |
 | [240](DECISIONS.md#L8365) | Evitar gradientes completos en tiles que el eco no consume | vigente |
 | [241](DECISIONS.md#L8425) | Presentar el corte cuando llega, sin esperar otra adquisición | vigente |
+| [242](DECISIONS.md#L8485) | Evaluar profundidad corporal sin calcular derivadas descartadas | vigente |

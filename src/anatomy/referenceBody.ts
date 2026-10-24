@@ -118,40 +118,48 @@ const polynomial = (a: ArrayLike<number>, offset: number, t: number): number =>
 const differential = (a: ArrayLike<number>, offset: number, t: number): number =>
   (3 * a[offset + 3] * t + 2 * a[offset + 2]) * t + a[offset + 1];
 
-/** Radio, derivadas en φ/z, centro Y y su derivada. Ángulo periódico y
- * tangente nula en los extremos Z de la prolongación constante. */
-export function bodySection(phi: number, z: number, data: Float32Array): [number, number, number, number, number] {
+/** Evalúa el mismo campo con o sin las derivadas de la sección completa. */
+function bodySample(phi: number, z: number, data: Float32Array): [number, number, number, number, number];
+function bodySample(phi: number, z: number, data: Float32Array, point: Vec3): number;
+function bodySample(phi: number, z: number, data: Float32Array, point?: Vec3): [number, number, number, number, number] | number {
   const rows = BODY_SUBDIVISIONS * (data.length / bodyStride(data) - 1) + 1,
     minZ = data.length === BODY_ROWS * BODY_STRIDE ? -160 : -400;
   const step = (120 - minZ) / (rows - 1);
   const zz = Math.max(0, Math.min(rows - 1, (z - minZ) / step));
   const row = Math.min(rows - 2, Math.floor(zz)),
     f = zz - row;
-  const angle = ((((phi / (2 * Math.PI)) % 1) + 1) % 1) * BODY_SECTORS;
-  const i = Math.floor(angle),
-    g = angle - i;
   const c = bodyCoefficients(data),
+    center = (row + 1) * BODY_COEFFICIENT_STRIDE - 4,
+    cy = polynomial(c, center, f),
+    y = point ? point[1] - cy : 0;
+  const angle = (((((point ? Math.atan2(y, point[0]) : phi) / (2 * Math.PI)) % 1) + 1) % 1) * BODY_SECTORS;
+  const i = Math.floor(angle),
+    g = angle - i,
     base = row * BODY_COEFFICIENT_STRIDE + i * 16;
   const r = [],
     dp = [];
   for (let k = 0; k < 4; k++) {
     r.push(polynomial(c, base + k * 4, g));
-    dp.push(differential(c, base + k * 4, g));
+    if (!point) dp.push(differential(c, base + k * 4, g));
   }
-  const center = (row + 1) * BODY_COEFFICIENT_STRIDE - 4;
+  const radius = polynomial(r, 0, f);
+  if (point) return Math.hypot(point[0], y) - radius;
   const scale = z >= minZ && z <= 120 ? 1 / step : 0;
   return [
-    polynomial(r, 0, f),
+    radius,
     (polynomial(dp, 0, f) * BODY_SECTORS) / (2 * Math.PI),
     scale ? differential(r, 0, f) * scale : 0,
-    polynomial(c, center, f),
+    cy,
     scale ? differential(c, center, f) * scale : 0,
   ];
 }
+/** Radio, derivadas en φ/z, centro Y y su derivada. Ángulo periódico y
+ * tangente nula en los extremos Z de la prolongación constante. */
+export function bodySection(phi: number, z: number, data: Float32Array): [number, number, number, number, number] {
+  return bodySample(phi, z, data);
+}
 export function bodyDepth(p: Vec3, data: Float32Array): number {
-  const cy = bodySection(0, p[2], data)[3];
-  const y = p[1] - cy;
-  return Math.hypot(p[0], y) - bodySection(Math.atan2(y, p[0]), p[2], data)[0];
+  return bodySample(0, p[2], data, p);
 }
 export function bodyGradient(p: Vec3, data: Float32Array): Vec3 {
   const cy = bodySection(0, p[2], data)[3];

@@ -8481,3 +8481,56 @@ Continúan todo el estrés y los controles anteriores; el transporte exige
 igualdad byte a byte de programas propios y de Three. [PR273](https://github.com/DanielOpazoD/vexus-sim/pull/273)
 registra el estado de aceptación: exige check, barrido SwiftShader original,
 imagen/interacción y CI completa del último head. No cambian los plazos.
+
+## 242. Evaluar profundidad corporal sin calcular derivadas descartadas
+
+**Contexto.** `bodyDepth` evaluaba dos secciones completas: una para obtener
+centro Y y otra para obtener radio. Descartaba ambas parejas de derivadas y
+el primer radio. El perfil CPU conservado de `5c19b72` sitúa `bodySection`
+entre los costes principales del Worker; no es un perfil nuevo de todas las
+zonas ni una predicción del ahorro. La nueva línea base de `338d123` mide en
+Metal M4 las seis coordenadas continuas y ambos pacientes: 1728 muestras y
+588 peticiones, primer pintado p95 26,8 ms y antigüedad mostrada p95 66,5 ms.
+
+**Opciones.** Duplicar el localizador y el cálculo escalar excedió el presupuesto
+original de 1033 KiB; compartir solo el localizador aún excedió por 90 bytes.
+Ambas variantes quedan descartadas y sus negativos preservados. No reducir
+resolución, aproximar el campo, interpolar etiquetas ni ampliar el presupuesto.
+
+**Decisión.** Un evaluador privado comparte localizador, centro e interpolación
+angular/radial. La sección completa sigue calculando radio, derivadas y centro;
+la profundidad retorna `hypot(x, y-centro) - radio` y omite únicamente valores
+descartados. Conserva coeficientes Float64, límites Z, periodicidad angular y
+el orden de Horner. Las firmas públicas y el gradiente permanecen iguales.
+GLSL conserva su campo original: no cambia la fórmula TS ni un parámetro
+anatómico, solo el trabajo CPU requerido para obtener el mismo valor.
+
+**Consecuencias.** El código `e1b7279` cumple el presupuesto con 1.057.779 bytes
+JS de 1.057.792 permitidos, margen todavía mínimo. En la pareja local, primer
+pintado p50/p95 pasa de **21,9/26,8 a 20,6/25,2 ms**, mejora en 10/12 filas y
+máximo **33,1 → 31,6 ms**. Empeoran ligeramente abdomen inferior normal y
+tórax severo. La antigüedad p50/p95 sigue en **48,9/66,5 ms**, la separación
+geométrica p95 pasa de **9,835 a 9,756 mm**, y su máximo permanece en 47,474 mm.
+Todas las trayectorias convergen a cero separación y la misma adquisición.
+No se declara resuelto el desfase global. Una pareja local no aísla causalidad,
+no mide latencia física ni generaliza rendimiento a otros equipos. El listener
+observa después del handler: envío a recepción/pintado incluye entrega y
+presentación, no es tiempo CPU aislado del Worker.
+
+**Verificación.** Un oráculo independiente conserva la sección completa
+anterior y compara exactamente profundidad y sus cinco salidas en 4800 puntos
+de los cuatro formatos válidos: límites Z, nodos ±epsilon, extrapolación,
+costura angular, centro variable y radios. Solo comparte los coeficientes,
+cuyo generador no cambia. Mutar el signo del centro o duplicar la derivada
+angular hace fallar la prueba; restaurados los bytes, pasan las cuatro suites
+focalizadas (17 pruebas). `calibrate` conserva normal: VCI 17,9/12,4 mm,
+S/D 1,45, PF 20 %, renal continuo, grado 0; congestión grave: VCI 31,0/28,9 mm,
+S/D −0,29, PF 70 %, renal monofásico, grado 3. Son observables fisiológicos
+verdaderos, no acreditación clínica de señales adquiridas ni calibración de
+un ecógrafo. La aceptación requiere además check, hook, paridad GPU,
+geometría 3D durante movimiento, barrido original SwiftShader y CI íntegra
+del head final. Protocolos, originales, recibos de fuente/50 recursos y
+análisis quedan en `cut-latency-242-evidence`, fuera del repo. La medición
+baseline terminó con exit 0; su comprobación HTTP posterior falló y se
+conserva como negativo. Una comprobación independiente posterior verificó
+el mismo recibo y los mismos 50 recursos antes de cualquier edición.

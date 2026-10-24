@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Corte: calcula profundidad corporal sin las derivadas descartadas, conservando el campo anatómico exacto; primera pintura p95 26,8 → 25,2 ms en la pareja local, sin mejora del desfase global p95 (242).
+
 - Corte: publica el mapa al recibirlo y atiende la última adquisición, sin repetir ECG/espectro/M por ese mapa; conserva rejilla, física, una petición y plazos (241).
 
 - Iteración: preflight HTTP inmediato, recursos del equipo en las evidencias y lote CPU local acotado con fallback secuencial; conserva inventario, cobertura, aislamiento, plazos y CI completa (233).

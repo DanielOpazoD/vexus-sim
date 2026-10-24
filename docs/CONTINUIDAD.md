@@ -13,23 +13,30 @@ seguimiento automático eliminado. Las cifras y pendientes de las secciones hist
 no sustituyen este cierre. Estado activo nuevo: `../fidelity-next15-evidence/CURRENT_STATE.json`
 y `PROGRESS.md`. No hay entrega aceptada de esta nueva ronda por el mero hecho de iniciar trabajo.
 
-El primer componente del bloque 1 se fusionó mediante [PR277](https://github.com/DanielOpazoD/vexus-sim/pull/277)
-en `77a9f9c`, con 162 E2E sin reintentos y originales verificados. Su CI postmerge `40119491086`
-también aprobó y sus originales se verificaron por separado. Es una referencia puntual sintética PyMUST, sin cambios en la imagen ni
-calibración clínica. [PR278](https://github.com/DanielOpazoD/vexus-sim/pull/278) reutiliza la proyección
-del corte, retira código sin uso (258) y evita consultas anatómicas redundantes (259). Reduce trabajo,
-pero todavía no acredita menor desfase geométrico global. La aceptación depende del head final.
-La CI de PR278 detectó hashes de contorno dependientes de ARM/x86; la causa se reprodujo con
-fuente histórica. El contrato portable de 260 conserva píxeles exactos y negativos discriminantes;
-falta la aceptación completa del nuevo head. Las pruebas de moteado reproducen dependencia de
-trayectoria; la referencia material fija retorna y converge en Metal y SwiftShader, pero el coste
-completo adicional impide promoverla todavía. No cambia la textura productiva. Bloques 1, 2 y 5 abiertos.
+El componente 1a se fusionó mediante [PR277](https://github.com/DanielOpazoD/vexus-sim/pull/277)
+en `77a9f9c`, con 162 E2E sin reintentos y originales verificados. Su CI independiente postmerge
+`40119491086` también se verificó. Es una referencia puntual sintética PyMUST, sin cambios en la
+imagen ni calibración clínica. [PR278](https://github.com/DanielOpazoD/vexus-sim/pull/278) se fusionó
+en `fe6b5a9`: elimina trabajo redundante de proyección/clasificación del corte (258–259), sin
+acreditar menor desfase geométrico global. Su head final `17de00e` y el postmerge `40127418625`
+aprobaron por separado 162 E2E/12 grupos/cero reintentos, con originales verificados. El negativo
+ARM/x86 de hashes de contorno y su reemplazo portable discriminante se conservan (260).
 
-La rama siguiente prepara la corrección de salto al reanudar un gesto de sonda (261), basada en
-`17de00e` mientras PR278 completa su CI. Debe rebasarse sobre el squash de PR278 **antes** de abrir
-su PR para evitar conflictos y CI duplicada. El baseline real demuestra el salto en ambos pacientes,
-ratón y tacto; los negativos y la observación anatómica no localizada de 1/64 se conservan por separado.
-Estado y aceptación del candidato de navegación: expediente externo, no inferirlos de esta descripción.
+[PR279](https://github.com/DanielOpazoD/vexus-sim/pull/279) se fusionó en `bbdf5ad`: consume
+coordenadas ignoradas durante un arrastre pausado para evitar el salto al reanudar (261), con
+oráculo de paridad que distingue inputs double y Float32 exactos (262). Head `01bdb37` aprobado
+por CI `40128645328`: 164 E2E/12 grupos/cero reintentos; recibo, 14 ZIP y 28 informes originales
+verificados. Su CI postmerge independiente está pendiente de cierre; consultar el estado vivo.
+
+La candidata 263 conserva campos constantes del atlas y elimina la clasificación mesentérica
+espuria del testigo localizado. Metal8/Swift2 aprueban con fuente/build verificados; falta la
+aceptación completa del head final. No identifica el tejido humano ni acredita reparar toda la
+pared histórica. La observación inicial no localizada de 1/64 permanece separada.
+
+B5 conserva la dependencia de trayectoria como negativo. La referencia material de 65 muestras
+retorna y converge en ambos backends, pero su coste completo impide promoverla. La caché de
+heterogeneidad se retiró: introduce diferencias numéricas y el coste exploratorio no supera la
+variación A/A predeclarada. No cambia la textura productiva. Bloques 1, 2 y 5 siguen abiertos.
 
 Antes de editar se apartaron reversiblemente trece archivos duplicados no seguidos: doce idénticos
 a los originales y `dist 2` (enlace simbólico frente al directorio `dist`). Manifiesto y hashes en

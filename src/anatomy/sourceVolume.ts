@@ -24,21 +24,24 @@ export function sourceDistance(data: Uint16Array, p: Vec3, f: SourceVolume, text
     sy = 2 * textureDimensions[0],
     sz = sy * textureDimensions[1],
     base = (az + f.offset[2]) * sz + (ay + f.offset[1]) * sy + 2 * (ax + f.offset[0]);
-  let d = 0;
-  const mx = 1 - tx,
-    my = 1 - ty,
-    mz = 1 - tz;
-  // Same eight products and summation order as the former z/y/x loops.
-  // Keep float64 arithmetic and its boundary signs; remove only loop/branch work.
-  d += HALF[data[base]] * mx * my * mz;
-  d += HALF[data[base + 2]] * tx * my * mz;
-  d += HALF[data[base + sy]] * mx * ty * mz;
-  d += HALF[data[base + sy + 2]] * tx * ty * mz;
-  d += HALF[data[base + sz]] * mx * my * tz;
-  d += HALF[data[base + sz + 2]] * tx * my * tz;
-  d += HALF[data[base + sz + sy]] * mx * ty * tz;
-  d += HALF[data[base + sz + sy + 2]] * tx * ty * tz;
-  return d;
+  // Nested interpolation preserves every finite constant field exactly,
+  // including the clipped distance16 used by the mesentery eligibility test.
+  const a000 = HALF[data[base]],
+    a100 = HALF[data[base + 2]],
+    a010 = HALF[data[base + sy]],
+    a110 = HALF[data[base + sy + 2]],
+    a001 = HALF[data[base + sz]],
+    a101 = HALF[data[base + sz + 2]],
+    a011 = HALF[data[base + sz + sy]],
+    a111 = HALF[data[base + sz + sy + 2]],
+    x00 = a000 + tx * (a100 - a000),
+    x10 = a010 + tx * (a110 - a010),
+    x01 = a001 + tx * (a101 - a001),
+    x11 = a011 + tx * (a111 - a011),
+    y0 = x00 + ty * (x10 - x00),
+    y1 = x01 + ty * (x11 - x01);
+  // Preserve the previous positive zero at an exact nodal zero.
+  return 0 + (y0 + tz * (y1 - y0));
 }
 
 /** Nearest label only when identity is requested; a clipped distance16 is still inside the brick. */

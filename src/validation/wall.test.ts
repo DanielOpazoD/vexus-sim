@@ -37,6 +37,7 @@ import {
   wallPlaneGap,
   wallSwell,
   wallWave,
+  wallWavenumber,
 } from '../anatomy/organs/wall';
 import { ribAnteriorEndX, sdRib, torsoDepth, torsoDepthGradient, torsoNormal, torsoSkinPoint } from '../anatomy/primitives';
 import { AnatomyScene, BASELINE_CALIBER, faceGeometryOf } from '../anatomy/scene';
@@ -46,6 +47,7 @@ import { CASES, NORMAL_ADULT } from '../cases';
 import type { Vec3 } from '../core/vec3';
 import { CONVEX_C35, lineDirection, pointOnLine, probeFrame } from '../probe/probe';
 import { CONVEX_C35_PROFILE } from '../ultrasound/transducerProfile';
+import { valueNoise } from '../ultrasound/speckleField';
 import {
   IFACE_GRADIENT_MAX,
   IFACE_REACH_MM,
@@ -793,7 +795,7 @@ describe('textura de la pared (wallTexture.ts)', () => {
     expect(wallOrientation([0, 0, 1], [Math.sin(1.05), 0, Math.cos(1.05)])).toBeLessThan(0.3);
   });
 
-  it('estrías del músculo: cada ~2,2 mm en profundidad, casi paralelas a la piel y en tramos finitos', () => {
+  it('estrías del músculo: cada ~2,2 mm, ondulación nominal acotada, normal de su fase y tramos finitos', () => {
     const peaks: number[] = [];
     let covered = 0;
     let total = 0;
@@ -816,12 +818,40 @@ describe('textura de la pared (wallTexture.ts)', () => {
     // la máscara de tramos deja fuera parte de las estrías; las que hay ocupan una fracción pequeña del músculo
     expect(covered / total).toBeGreaterThan(0.02);
     expect(covered / total).toBeLessThan(0.3);
-    // pendiente ≤ 15° (peniforme): la normal de la estría se aparta ≤ 15° de la de la piel
+    // Fase escalar anterior a 248, independiente de las nuevas derivadas analíticas.
+    const phase = (p: Vec3, complete: boolean): number => {
+      const u = wallArc(p, t),
+        z = p[2];
+      const U = 1.1 * Math.sin(wallWavenumber(7, t) * u + 0.8 * Math.sin(z / 11)) + 0.5 * Math.sin(z / 9 + wallWavenumber(17, t) * u);
+      const J =
+        WALL_TEXTURE.striationJitter *
+        WALL_TEXTURE.striationSpacingMm *
+        (valueNoise([u / WALL_TEXTURE.striationJitterMm, z / WALL_TEXTURE.striationJitterMm, 0], 71.3) - 0.5);
+      return -torsoDepth(p, t) + U + (complete ? J - wallDepths(t, u, z).fascia : 0);
+    };
+    const gradient = (p: Vec3, complete: boolean): Vec3 =>
+      [0, 1, 2].map((axis) => {
+        const q = [...p] as Vec3;
+        q[axis] += 0.001;
+        const plus = phase(q, complete);
+        q[axis] -= 0.002;
+        return (plus - phase(q, complete)) / 0.002;
+      }) as Vec3;
+    // Los 15° estimados limitan U, no la fascia ondulada ni J. La decisión 88 ya
+    // documenta fascia hasta 31–37°. El antiguo assert sobre la normal incompleta
+    // ocultaba esta diferencia: la fase original supera 15° en estas mismas muestras.
     for (let z = -60; z <= 20; z += 10) {
       const m = at(FLANK, z, t.skinMm + t.fatMm + 3);
       const s = muscleStriation(m, t);
       const n = torsoNormal(m, t);
-      expect(Math.abs(s[0] * n[0] + s[1] * n[1] + s[2] * n[2])).toBeGreaterThan(Math.cos((15 * Math.PI) / 180));
+      const nominal = gradient(m, false),
+        complete = gradient(m, true);
+      expect(Math.abs(nominal.reduce((sum, value, i) => sum + value * n[i], 0)) / Math.hypot(...nominal)).toBeGreaterThan(
+        Math.cos((15 * Math.PI) / 180),
+      );
+      // La normal usada para brillo debe corresponder a la fase completa, también
+      // con máscara pequeña: no omitir muestras para hacer pasar la orientación.
+      expect(Math.abs(complete.reduce((sum, value, i) => sum + value * s[i], 0)) / Math.hypot(...complete)).toBeGreaterThan(0.999999);
     }
   });
 

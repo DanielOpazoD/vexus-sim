@@ -271,4 +271,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [265](DECISIONS.md#L8778) | Una ejecución venosa temprana por suite | vigente |
 | [266](DECISIONS.md#L8790) | Referencia espectral independiente de camino y receptor | vigente |
 | [267](DECISIONS.md#L8802) | Conservar la curvatura mixta de un cilindro al girar su eje | vigente |
-| [268](DECISIONS.md#L8823) | Retirar registros Three sin consumidor, conservando sus programas utilizados | vigente |
+| [268](DECISIONS.md#L8822) | Retirar registros Three sin consumidor, conservando sus programas utilizados | vigente |

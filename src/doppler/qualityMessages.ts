@@ -23,7 +23,7 @@ function primaryQualityText(q: Pick<MeasurementQuality, 'issue' | 'wrongVessel'>
     case 'no-signal':
       return 'no medible: no hay flujo en la puerta (¿está sobre el vaso? ¿hay sombra o poco contacto? si respira, pida apnea)';
     case 'intermittent':
-      return 'no medible: señal intermitente (pida apnea o amplíe la puerta)';
+      return 'no medible: señal irregular entre latidos (pida apnea o amplíe la puerta)';
     case 'inconsistent':
       return 'no medible: la onda cambia entre latidos (revise la puerta; si respira, pida apnea)';
     case 'aliasing':

@@ -106,6 +106,10 @@ persistencia). Con el modo M, cada cuadro copia su línea de `tEnv` con los gris
 del lienzo de la imagen, la copia a su lienzo con `drawImage` y devuelve la imagen a la pantalla (`represent`): nada
 vuelve a la CPU (un `getBufferSubData` de Chrome es síncrono aunque la valla esté cumplida).
 
+La envolvente del cine usa R16F; el campo Color conserva ambas componentes de R1 en RG32F (254),
+para no saturar su rango ni alterar fase con clutter móvil. A resolución completa, los 120 cuadros
+ocupan 61.931.520 bytes; guardar y recuperar siguen siendo copias GPU sin lectura por cuadro.
+
 Composición espacial (decisión 58): cada cuadro B forma una mirada, en el orden 0, +θ, −θ, que lleva el
 anillo `CompoundRing` de `src/ultrasound/compound.ts` dentro del renderizador. A2, A y B tienen dos
 programas cada una, de una sola fuente en `src/ultrasound/shaders/passes.glsl.ts`: el de la mirada 0, byte a

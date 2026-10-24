@@ -5,7 +5,7 @@
  * cuadros anteriores repite la persistencia al mostrar uno.
  */
 
-/** Cuadros del anillo: 120 × (192 × 1024 R16F + 96 × 160 RG16F) = 54,6 MB de GPU. */
+/** Cuadros del anillo: 120 × (192 × 1024 R16F + 96 × 160 RG32F) = 61,93 MB de GPU (decisión 254). */
 export const CINE_FRAMES = 120;
 /** Cadencia máxima de guardado (Hz del reloj de la simulación): el anillo cubre 6 s. */
 export const CINE_RATE_HZ = 20;

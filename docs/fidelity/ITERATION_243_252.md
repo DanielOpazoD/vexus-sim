@@ -51,3 +51,9 @@ Durante la revisión se añade la decisión253: retirar una lectura duplicada de
 las capturas registradas. El timeout de main046 se conserva; los cuatro PNG
 y hashes originales prueban equivalencia de datos. No se reducen renders ni
 se amplían los720s. Este bloque adicional no sustituye ninguno de los diez.
+
+La revisión añade también 254: el cine RG16F saturaba componentes de Color
+adquiridas con movimiento real y alteraba su fase. RG32F preserva el campo
+vivo, con 7,37 MB adicionales y sin reducir resolución ni historia. La
+regresión compara ambos pacientes a +12/+24 dB y conserva el negativo real;
+el positivo y la aceptación dependen del build y CI finales.

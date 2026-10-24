@@ -464,7 +464,7 @@ export class UltrasoundRenderer {
   display: SectorLayout = { apexX: 0, apexY: 0, scale: 1, width: 1, height: 1 };
   /**
    * Cine (decisión 80): anillo de cuadros en la GPU antes de la conversión de barrido, en dos texturas de capas
-   * que se crean con el primer cuadro que las usa: la envolvente compuesta (R16F) y el campo de color (RG16F).
+   * que se crean con el primer cuadro que las usa: la envolvente compuesta (R16F) y el campo de color (RG32F, 254).
    */
   private readonly cine = new CineRing<CineFrame>();
   private cineEnv: WebGLTexture | null = null;
@@ -1126,13 +1126,13 @@ export class UltrasoundRenderer {
     this.cineEnv ??= this.cineLayers(gl.R16F, this.lines, FINE_DEPTH);
     this.blitLayer(this.cineEnv, slot, this.tEnv, true);
     if (frame.colorFrame) {
-      // R1 complejo (real, imaginario): G recupera fase y potencia también al reproducir el cine.
-      this.cineColor ??= this.cineLayers(gl.RG16F, COLOR_W, COLOR_H);
+      // R1 complejo conserva rango y precisión: el clutter móvil supera 65504 con ganancia ajustable.
+      this.cineColor ??= this.cineLayers(gl.RG32F, COLOR_W, COLOR_H);
       this.blitLayer(this.cineColor, slot, this.tColor, true);
     }
   }
 
-  /** Textura de capas del anillo (una por cuadro): R16F y RG16F son destinos con EXT_color_buffer_float. */
+  /** Textura de capas del anillo (una por cuadro): R16F y RG32F son destinos con EXT_color_buffer_float. */
   private cineLayers(internal: number, w: number, h: number): WebGLTexture {
     const gl = this.gl;
     const t = gl.createTexture();
@@ -1146,7 +1146,7 @@ export class UltrasoundRenderer {
   }
 
   /**
-   * Copia exacta, con la conversión de formato de la GPU (R32F ↔ R16F, RGBA32F ↔ RG16F), entre el destino `t` y la
+   * Copia con conversión de formato GPU (R32F ↔ R16F, RGBA32F ↔ RG32F), entre el destino `t` y la
    * capa `slot` del anillo: hacia la capa (`store`) o de vuelta a `t`, donde la lee G.
    */
   private blitLayer(layers: WebGLTexture, slot: number, t: RenderTarget, store: boolean): void {

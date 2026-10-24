@@ -257,3 +257,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [251](DECISIONS.md#L8602) | Medir septos grasos con la métrica material | vigente |
 | [252](DECISIONS.md#L8610) | Eliminar la costura posterior de reflectividad | vigente |
 | [253](DECISIONS.md#L8618) | Reutilizar la captura registrada para verificar su hash | vigente |
+| [254](DECISIONS.md#L8626) | Conservar rango y fase del Color al recuperar cine | vigente |

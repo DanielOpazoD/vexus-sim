@@ -283,3 +283,9 @@ de fase permanecen aproximados; en particular, la dependencia angular del
 ensanchamiento de apertura requiere un contraste independiente. La ganancia
 aplica decibelios de potencia a R1; las cifras históricas del control con
 exponente /20 no calibran este control corregido.
+
+El cine Color conserva R1 en RG32F (254), con la precisión del campo vivo y
+sin saturar el rango por almacenamiento. Esto añade 7,37 MB decimales al
+anillo de 120 cuadros; no modifica la aproximación analítica del estimador,
+su sensibilidad ni la calibración pendiente de ganancia y clutter. La
+envolvente B del cine continúa cuantizada a R16F.

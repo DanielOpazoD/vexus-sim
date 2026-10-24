@@ -246,3 +246,17 @@ Generado por `npm run docs:index` — no editar a mano.
 | [240](DECISIONS.md#L8365) | Evitar gradientes completos en tiles que el eco no consume | vigente |
 | [241](DECISIONS.md#L8425) | Presentar el corte cuando llega, sin esperar otra adquisición | vigente |
 | [242](DECISIONS.md#L8485) | Evaluar profundidad corporal sin calcular derivadas descartadas | vigente |
+| [243](DECISIONS.md#L8538) | Transportar los mismos programas GLSL con margen para iterar | vigente |
+| [244](DECISIONS.md#L8546) | Vincular la auditoría visual a los bytes realmente servidos | vigente |
+| [245](DECISIONS.md#L8554) | Registrar la fase receptora en la comparación de imágenes | vigente |
+| [246](DECISIONS.md#L8562) | Separar adquisición PW cuando cambia la PRF | vigente |
+| [247](DECISIONS.md#L8570) | Convertir ganancia Color como potencia de autocorrelación | vigente |
+| [248](DECISIONS.md#L8578) | Derivar la normal muscular de la fase material completa | vigente |
+| [249](DECISIONS.md#L8586) | Aplazar la corrección del ancho muscular normal al campo real | vigente |
+| [250](DECISIONS.md#L8594) | Mezclar correlaciones Color antes de estimar su fase | vigente |
+| [251](DECISIONS.md#L8602) | Aplazar la corrección de septos grasos con la métrica material | vigente |
+| [252](DECISIONS.md#L8610) | Eliminar la costura posterior de reflectividad | vigente |
+| [253](DECISIONS.md#L8618) | Reutilizar la captura registrada para verificar su hash | vigente |
+| [254](DECISIONS.md#L8626) | Conservar rango y fase del Color al recuperar cine | vigente |
+| [255](DECISIONS.md#L8634) | Sincronizar el cronometraje con una lectura GPU válida | vigente |
+| [256](DECISIONS.md#L8642) | Reutilizar la transmisión solo con entradas GPU idénticas | vigente |

@@ -106,6 +106,10 @@ persistencia). Con el modo M, cada cuadro copia su línea de `tEnv` con los gris
 del lienzo de la imagen, la copia a su lienzo con `drawImage` y devuelve la imagen a la pantalla (`represent`): nada
 vuelve a la CPU (un `getBufferSubData` de Chrome es síncrono aunque la valla esté cumplida).
 
+La envolvente del cine usa R16F; el campo Color conserva ambas componentes de R1 en RG32F (254),
+para no saturar su rango ni alterar fase con clutter móvil. A resolución completa, los 120 cuadros
+ocupan 61.931.520 bytes; guardar y recuperar siguen siendo copias GPU sin lectura por cuadro.
+
 Composición espacial (decisión 58): cada cuadro B forma una mirada, en el orden 0, +θ, −θ, que lleva el
 anillo `CompoundRing` de `src/ultrasound/compound.ts` dentro del renderizador. A2, A y B tienen dos
 programas cada una, de una sola fuente en `src/ultrasound/shaders/passes.glsl.ts`: el de la mirada 0, byte a
@@ -120,6 +124,13 @@ lóbulos laterales bajo una costilla, decisión 88) y la pasada K (`FRAG_COMPOUN
 con una sola mirada válida (compuesto apagado, color encendido o el cuadro tras un reinicio) es un paso
 directo exacto. Las pruebas leen la fuente explícita: `readEnvelope({ source: 'look0' | 'compound' })`,
 `readLookEnvelope(ranura)` y `readTransmission({ look })`.
+
+A0/A1 conservan una única salida mientras todas sus entradas float32 preparadas sean idénticas
+(decisión 256): escena, compresión, uniforms, haz, material, acoplamiento e índice de tubos.
+La comparación usa snapshots independientes, sin hashes ni identidades de funciones. Un cambio
+invalida antes de dibujar y la pareja se confirma después de A1; setScene/reconstrucción invalidan.
+Las repeticiones de medida ejecutan los pases reales. A2 y posteriores siguen formando cada cuadro,
+con su ruido, mirada de composición, persistencia y serial originales. No se añaden texturas.
 
 Pleura parietal y cortina pulmonar (decisión 61): A0 escribe una tercera salida por línea (`h2`: el cruce
 exacto de la pleura, la distancia al borde de la cortina y la pérdida de la lámina de pulmón) que leen A1 y

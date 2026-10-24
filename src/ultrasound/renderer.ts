@@ -15,6 +15,7 @@ import { lineAngle, type ProbeFrame, type ProbePose, type Transducer } from '../
 import type { TransducerProfile } from './transducerProfile';
 import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
 import { COLOR_FILTER_GLSL } from './colorCorrelation';
+import { colorPowerGain } from './colorGain';
 import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
 import { GREY_CURVE, greyOfLevel } from './greyMap';
 import { axialSigmaMm, focalReferenceFwhmMm, txApertureMm } from './beamModel';
@@ -47,6 +48,7 @@ import { CINE_FRAMES, CineRing, persistenceReplay } from './cine';
 import { M_COLUMNS, M_SAMPLES, MColumnRing, mLineU } from './mmode';
 import { lookWavenumber } from './steering';
 import { MIRROR_BISECTION_STEPS, type SegmentGrid } from './transmission';
+import { TransmissionReuse } from './transmissionReuse';
 import {
   RIB_BASE,
   RIB_TEXELS,
@@ -213,14 +215,6 @@ export const COARSE_DEPTH = 160;
 const COLOR_W = 96;
 /** Umbral de potencia para pintar una celda de color (unidades de sangre a transmisión 1). */
 export const COLOR_DISPLAY_THRESHOLD = 0.0035;
-/**
- * Ganancia lineal del color a 0 dB del deslizador. Calibrada con GPU real (ruido puro con la sonda
- * levantada; factor ×1 → celdas con color): 0 % hasta ×1 +14 dB, 0,11 % a +18, 4,8 % a +22, 29 % a
- * +26, 64 % a +30. Con ×2 (+6 dB) el 0 dB muestra la suprahepática desde la ventana intercostal
- * (−18 dB de transmisión: 1 400 celdas; con ×1, 32) sin una sola celda de ruido, y el máximo del
- * deslizador (+24 dB) llena de ruido el 64 % de la caja, como un equipo real al límite.
- */
-export const COLOR_GAIN_REF = 2;
 const COLOR_H = 160;
 const MAP_W = 96;
 const MAP_H = 128;
@@ -398,6 +392,7 @@ export class UltrasoundRenderer {
   private sceneValuesCompression: ProbeCompression | null = null;
   private sceneValuesTubes = -1;
   private sceneValuesGrid: TubeGrid | null = null;
+  private readonly transmissionReuse = new TransmissionReuse();
   private tMap: RenderTarget;
   private mapPixels = new Uint8Array(0);
   private mapPbo: WebGLBuffer | null = null;
@@ -471,7 +466,7 @@ export class UltrasoundRenderer {
   display: SectorLayout = { apexX: 0, apexY: 0, scale: 1, width: 1, height: 1 };
   /**
    * Cine (decisión 80): anillo de cuadros en la GPU antes de la conversión de barrido, en dos texturas de capas
-   * que se crean con el primer cuadro que las usa: la envolvente compuesta (R16F) y el campo de color (RG16F).
+   * que se crean con el primer cuadro que las usa: la envolvente compuesta (R16F) y el campo de color (RG32F, 254).
    */
   private readonly cine = new CineRing<CineFrame>();
   private cineEnv: WebGLTexture | null = null;
@@ -664,6 +659,7 @@ export class UltrasoundRenderer {
       throw new Error('El modelo anatómico cambió: reconstruya el renderer');
     const gl = this.gl;
     this.currentScene = scene;
+    this.transmissionReuse.clear();
     this.speckleAnchor.reset();
     // las miradas guardadas son de otro paciente: el siguiente cuadro reinicia el anillo con la mirada 0
     this.ring.invalidate();
@@ -866,7 +862,7 @@ export class UltrasoundRenderer {
    * Uniforms de la anatomía desde el esquema único (`anatomy/gpu/sceneUniforms.ts`): se evalúan una vez por
    * instante y se suben a cada programa; la textura de escena va aparte (unidad 6).
    */
-  private setSceneUniforms(p: GLProgram, inputs: FrameInputs, bodyUnit: 5 | 10 = SCENE_SAMPLERS[4].unit): void {
+  private prepareSceneUniforms(inputs: FrameInputs): void {
     if (
       this.sceneValuesFor !== inputs.sample ||
       this.sceneValuesTubes !== this.tubeCount ||
@@ -885,6 +881,10 @@ export class UltrasoundRenderer {
       if (this.sceneValuesCompression !== inputs.compression) this.uploadCompressionTable(inputs.compression);
       this.sceneValuesCompression = inputs.compression;
     }
+  }
+
+  private setSceneUniforms(p: GLProgram, inputs: FrameInputs, bodyUnit: 5 | 10 = SCENE_SAMPLERS[4].unit): void {
+    this.prepareSceneUniforms(inputs);
     uploadSceneUniforms(p, this.sceneValues);
     p.tex(SCENE_SAMPLERS[4].name, bodyUnit, this.bodyTex);
     p.tex(SCENE_SAMPLERS[3].name, SCENE_SAMPLERS[3].unit, this.tubeGridTex);
@@ -1058,8 +1058,35 @@ export class UltrasoundRenderer {
     this.timer.poll();
     this.updateCoupling(inputs);
     this.updateSceneDynamic(inputs);
-    // mirada de este cuadro (decisión 58): con el compuesto inactivo, siempre la 0
+    // Preparar todas las entradas efectivas: las consultas pueden haber cambiado las tablas,
+    // y radiusScale puede devolver otro calibre sin cambiar su identidad de función.
+    this.prepareSceneUniforms(inputs);
     const fr = inputs.frame;
+    const tr = inputs.transducer;
+    const transmissionInputs = [
+      this.sceneData,
+      this.alpha,
+      this.back,
+      this.flags,
+      this.couplingData,
+      ...this.sceneValues.map(({ data }) => data),
+      Float32Array.of(
+        ...fr.face,
+        ...fr.axial,
+        ...fr.lateral,
+        ...fr.elevation,
+        ...fr.curvatureCenter,
+        tr.curvatureRadius,
+        tr.halfSector,
+        inputs.bmode.depthMm,
+      ),
+      ...(this.tubeGrid ? [this.tubeGrid.data] : []),
+    ];
+    // A0/A1 no dependen del ruido, serial ni mirada dirigida. Sus destinos de tamaño fijo persisten;
+    // cambiar escena/reconstruir los invalida. Las pasadas posteriores conservan su cadencia original.
+    const reuseTransmission = repeat === undefined && this.transmissionReuse.matches(transmissionInputs);
+    if (!reuseTransmission) this.transmissionReuse.clear();
+    // mirada de este cuadro (decisión 58): con el compuesto inactivo, siempre la 0
     this.lookActive = compoundActive(inputs.bmode, inputs.color);
     this.look = this.ring.next({
       active: this.lookActive,
@@ -1079,9 +1106,10 @@ export class UltrasoundRenderer {
     for (const pass of FRAME_PASSES) {
       if (pass.cadence === 'color' && !colorDue) continue;
       this.timer.begin(pass.id);
-      this.passes[pass.id](inputs);
+      if (!reuseTransmission || (pass.id !== 'transmissionHits' && pass.id !== 'transmissionSegments')) this.passes[pass.id](inputs);
       if (rep !== null && rep.pass === pass.id) this.drawRepeats(pass.id, rep.targets, rep.times);
       this.timer.end();
+      if (!reuseTransmission && pass.id === 'transmissionSegments') this.transmissionReuse.remember(transmissionInputs);
     }
     this.afterFrame(inputs);
   }
@@ -1133,13 +1161,13 @@ export class UltrasoundRenderer {
     this.cineEnv ??= this.cineLayers(gl.R16F, this.lines, FINE_DEPTH);
     this.blitLayer(this.cineEnv, slot, this.tEnv, true);
     if (frame.colorFrame) {
-      // R1 complejo (real, imaginario): G recupera fase y potencia también al reproducir el cine.
-      this.cineColor ??= this.cineLayers(gl.RG16F, COLOR_W, COLOR_H);
+      // R1 complejo conserva rango y precisión: el clutter móvil supera 65504 con ganancia ajustable.
+      this.cineColor ??= this.cineLayers(gl.RG32F, COLOR_W, COLOR_H);
       this.blitLayer(this.cineColor, slot, this.tColor, true);
     }
   }
 
-  /** Textura de capas del anillo (una por cuadro): R16F y RG16F son destinos con EXT_color_buffer_float. */
+  /** Textura de capas del anillo (una por cuadro): R16F y RG32F son destinos con EXT_color_buffer_float. */
   private cineLayers(internal: number, w: number, h: number): WebGLTexture {
     const gl = this.gl;
     const t = gl.createTexture();
@@ -1153,7 +1181,7 @@ export class UltrasoundRenderer {
   }
 
   /**
-   * Copia exacta, con la conversión de formato de la GPU (R32F ↔ R16F, RGBA32F ↔ RG16F), entre el destino `t` y la
+   * Copia con conversión de formato GPU (R32F ↔ R16F, RGBA32F ↔ RG32F), entre el destino `t` y la
    * capa `slot` del anillo: hacia la capa (`store`) o de vuelta a `t`, donde la lee G.
    */
   private blitLayer(layers: WebGLTexture, slot: number, t: RenderTarget, store: boolean): void {
@@ -1751,7 +1779,7 @@ export class UltrasoundRenderer {
     this.pColor.f('uPrf', c.prfHz);
     this.pColor.f('uF0', tr.f0Doppler);
     this.pColor.f('uWallHz', c.wallFilterHz);
-    this.pColor.f('uColorGain', COLOR_GAIN_REF * Math.pow(10, c.gainDb / 20));
+    this.pColor.f('uColorGain', colorPowerGain(c.gainDb));
     this.pColor.f('uEnsemble', c.ensemble);
     this.pColor.v3('uProbeVel', inputs.probeVelocity);
     this.pColor.f('uFrame', this.frameCount);
@@ -2248,8 +2276,17 @@ export class UltrasoundRenderer {
    * sirve para medir el coste de un cuadro en tiempo de pared.
    */
   finishForTiming(): void {
-    const px = new Uint8Array(4);
-    this.gl.readPixels(0, 0, 1, 1, this.gl.RGBA, this.gl.UNSIGNED_BYTE, px);
+    const gl = this.gl,
+      readTarget = gl.READ_FRAMEBUFFER,
+      previous = gl.getParameter(gl.READ_FRAMEBUFFER_BINDING) as WebGLFramebuffer | null;
+    // Cine puede dejar la envolvente flotante como origen: RGBA/UNSIGNED_BYTE
+    // no es válido allí. Leer la pantalla sin alterar el destino de dibujo.
+    gl.bindFramebuffer(readTarget, null);
+    try {
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+    } finally {
+      gl.bindFramebuffer(readTarget, previous);
+    }
   }
 
   /**

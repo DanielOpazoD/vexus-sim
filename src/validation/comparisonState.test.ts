@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { SimulationClock } from '../core/clock';
-import { comparisonState } from '../../tools/fidelity/comparisonState';
+import { comparisonHistoryStart, comparisonState } from '../../tools/fidelity/comparisonState';
 afterEach(() => vi.unstubAllGlobals());
 function fixture(initialSteps = 4, initialFrame = 2) {
   let serial = initialFrame;
@@ -51,6 +51,16 @@ function fixture(initialSteps = 4, initialFrame = 2) {
   return { sim: advancedSim, clock, step, hooks, button };
 }
 describe('comparaciones visuales con estado y reloj reproducibles', () => {
+  it('registra la fase solo al solicitarla explícitamente en el protocolo estático', () => {
+    expect(comparisonHistoryStart('static', undefined)).toBeUndefined();
+    expect(comparisonHistoryStart('ui', undefined)).toBeUndefined();
+    expect(comparisonHistoryStart('static', '65')).toBe(65);
+    expect(comparisonHistoryStart('static', '4090')).toBe(4090);
+    expect(() => comparisonHistoryStart('ui', '65')).toThrow('static protocol');
+    for (const input of ['', ' ', '1', '1.5', '-1', 'NaN', 'Infinity', '1e2', '4091'])
+      expect(() => comparisonHistoryStart('static', input)).toThrow('Invalid receiver');
+    for (const frames of [0, 1.5, NaN, Infinity]) expect(() => comparisonHistoryStart('static', '65', frames)).toThrow('Invalid receiver');
+  });
   it('arranques diferentes alcanzan la misma muestra sin reiniciar el reloj', () => {
     const results = [];
     for (const initial of [4, 31]) {

@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import { BOOT_MS, budget } from './support';
 import { comparisonState } from '../tools/fidelity/comparisonState';
-import { captureBMode, encodeBMode } from '../tools/fidelity/captureBMode';
+import { captureBMode } from '../tools/fidelity/captureBMode';
 
 test('compara imágenes registradas pese a distinto trabajo del receptor antes de adquirir', async ({ page }, info) => {
   // Dos arranques y hasta 78 cuadros: misma historia de siete cuadros, sin trabajo de relleno innecesario.
@@ -36,17 +37,15 @@ test('compara imágenes registradas pese a distinto trabajo del receptor antes d
       if (sim.sample.t !== 5) throw new Error('El control del receptor avanzó la fisiología');
     }, trial * 11);
     const raw = await page.evaluate(comparisonState, { phase: 'capture' as const, targetSeconds: 30, view: 'portal' as const, frames: 6 });
-    const read = async () => {
-      const frame = await page.evaluate(() => {
-        const { width, height, gray } = window.__vexusTest!.sim().renderer.readDisplay();
-        return { width, height, gray: Array.from(gray) };
-      });
-      return createHash('sha256')
-        .update(encodeBMode(frame.width, frame.height, frame.gray))
-        .digest('hex');
+    expect(await page.evaluate(() => window.__vexusTest!.sim().renderer.gl.getError()), 'adquisición sin errores WebGL').toBe(0);
+    // El PNG conservado procede del mismo framebuffer congelado y encodeBMode.
+    // Evitar otra lectura GPU y un Array.from por píxel conserva los mismos bytes (253).
+    const captureHash = async (name: string) => {
+      const path = info.outputPath(name);
+      await captureBMode(page, path);
+      return createHash('sha256').update(readFileSync(path)).digest('hex');
     };
-    const rawHash = await read();
-    await captureBMode(page, info.outputPath(`unregistered-${trial}.png`));
+    const rawHash = await captureHash(`unregistered-${trial}.png`);
     const registered = await page.evaluate(comparisonState, {
       phase: 'capture' as const,
       targetSeconds: 60,
@@ -54,14 +53,15 @@ test('compara imágenes registradas pese a distinto trabajo del receptor antes d
       frames: 6,
       historyStartFrame: 33,
     });
+    expect(await page.evaluate(() => window.__vexusTest!.sim().renderer.gl.getError()), 'registro sin errores WebGL').toBe(0);
     expect(registered).toMatchObject({
       time: 60,
       frozen: true,
       renderedFrame: 39,
       protocol: { receiverPhaseRegistered: true, receiverPhaseReset: false, historyStartFrame: 33, historyEndFrame: 39, frames: 7 },
     });
-    await captureBMode(page, info.outputPath(`registered-${trial}.png`));
-    results.push({ raw, registered, rawHash, hash: await read() });
+    const hash = await captureHash(`registered-${trial}.png`);
+    results.push({ raw, registered, rawHash, hash });
     expect(errors).toEqual([]);
   }
   await info.attach('receiver-comparison.json', { body: JSON.stringify(results, null, 2), contentType: 'application/json' });

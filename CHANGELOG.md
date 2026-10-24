@@ -5,6 +5,15 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Transmisión: reutiliza A0/A1 solo con entradas GPU idénticas; conserva ruido, composición, resolución y cuadros al explorar (256).
+- Medición: drena el calentamiento desde un framebuffer válido y restaura READ sin alterar DRAW; evita atribuir trabajo previo al coste medido (255).
+
+- Pared: normales musculares derivadas del campo material; textura de caras continua en el dorso, sin cambiar capas anatómicas (248,252).
+- Cine Color: conserva rango y fase de las correlaciones con ganancia alta mediante RG32F; mantiene los 120 cuadros y añade 7,37 MB (254).
+- Pruebas: reutiliza los PNG registrados para sus hashes sin repetir lecturas GPU, conservando adquisiciones y plazos (253).
+- Doppler: memoria PW separada al cambiar PRF, ganancia Color en unidades de potencia y mezcla compleja por submuestra antes de estimar velocidad (246,247,250).
+- Iteración: transporte GLSL sin pérdida, auditorías vinculadas a la fuente/build servido y fase de receptor explícita para comparaciones registradas (243–245).
+
 - Corte: calcula profundidad corporal sin las derivadas descartadas, conservando el campo anatómico exacto; primera pintura p95 26,8 → 25,2 ms en la pareja local, sin mejora del desfase global p95 (242).
 
 - Corte: publica el mapa al recibirlo y atiende la última adquisición, sin repetir ECG/espectro/M por ese mapa; conserva rejilla, física, una petición y plazos (241).

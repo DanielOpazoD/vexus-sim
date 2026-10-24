@@ -6,7 +6,7 @@ import { NORMAL_ADULT } from '../cases';
 import { C_RECONSTRUCTION_MM_S } from '../core/units';
 import { clonePatient } from '../physiology/patientState';
 import { FRAME_PASSES, type PassId } from '../ultrasound/passGraph';
-import type { FrameInputs, PassRepeat, UltrasoundRenderer } from '../ultrasound/renderer';
+import { UltrasoundRenderer, type FrameInputs, type PassRepeat } from '../ultrasound/renderer';
 import { recordingGl } from './support/recordingGl';
 
 /** Renderizador falso: registra lo que pide cada cuadro (el coste en GPU lo mide el banco, no vitest). */
@@ -159,6 +159,49 @@ describe('frameCostMs: el coste del cuadro con color y por pasada', () => {
   });
 });
 
+describe('finishForTiming: drenaje independiente del framebuffer que dejó el cine', () => {
+  for (const previous of [null, { format: 'R32F' }])
+    for (const fail of [false, true])
+      it(`restaura READ ${previous?.format ?? 'pantalla'} y conserva DRAW${fail ? ' si la lectura falla' : ''}`, () => {
+        let read: typeof previous = previous;
+        const draw = { format: 'RGBA8' };
+        let currentDraw = draw;
+        let reads = 0;
+        const failure = new Error('lectura interrumpida');
+        const gl = {
+          READ_FRAMEBUFFER: 0x8ca8,
+          DRAW_FRAMEBUFFER: 0x8ca9,
+          FRAMEBUFFER: 0x8d40,
+          READ_FRAMEBUFFER_BINDING: 0x8caa,
+          RGBA: 0x1908,
+          UNSIGNED_BYTE: 0x1401,
+          getParameter: (key: number) => {
+            expect(key).toBe(gl.READ_FRAMEBUFFER_BINDING);
+            return read;
+          },
+          bindFramebuffer: (target: number, fbo: typeof previous) => {
+            if (target === gl.READ_FRAMEBUFFER || target === gl.FRAMEBUFFER) read = fbo;
+            if (target === gl.DRAW_FRAMEBUFFER || target === gl.FRAMEBUFFER) currentDraw = fbo as typeof draw;
+          },
+          readPixels: (x: number, y: number, w: number, h: number, format: number, type: number, pixels: Uint8Array) => {
+            expect(read, 'la lectura de bytes exige la pantalla, no la envolvente flotante').toBeNull();
+            expect(currentDraw).toBe(draw);
+            expect([x, y, w, h, format, type]).toEqual([0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE]);
+            expect(pixels).toBeInstanceOf(Uint8Array);
+            expect(pixels.byteLength).toBe(4);
+            reads++;
+            if (fail) throw failure;
+          },
+        };
+        const invoke = () => UltrasoundRenderer.prototype.finishForTiming.call({ gl } as unknown as UltrasoundRenderer);
+        if (fail) expect(invoke).toThrow(failure);
+        else invoke();
+        expect(reads).toBe(1);
+        expect(read).toBe(previous);
+        expect(currentDraw).toBe(draw);
+      });
+});
+
 /**
  * Simulador con el renderizador REAL sobre el WebGL falso (sin caja de color: 11 pasadas por cuadro). Sin
  * composición espacial: con ella, D escribe cada cuadro en otra ranura del anillo (decisión 58,
@@ -174,15 +217,19 @@ function realRig() {
 describe('repeatPass en el renderizador real (WebGL falso)', () => {
   const perFrame = FRAME_PASSES.filter((p) => p.cadence === 'frame').length;
 
-  it('sin repetición, un dibujo por pasada y ningún destino de prueba', () => {
+  it('sin repetición, reutiliza solo A0/A1 estáticos y conserva los demás dibujos y destinos', () => {
     const { sim, draws, attachments } = realRig();
     const fbos = attachments.size;
     sim.render();
     expect(draws.length).toBe(perFrame);
     expect(attachments.size).toBe(fbos + 3); // conversión de barrido y las dos historias, del primer cuadro
-    draws.length = 0;
+    const first = draws.splice(0);
     sim.render();
-    expect(draws.length).toBe(perFrame);
+    expect(draws.length).toBe(perFrame - 2);
+    expect(draws.map((d) => d.program)).toEqual(first.slice(2).map((d) => d.program));
+    draws.length = 0;
+    sim.render(); // misma paridad de persistencia que el primero
+    expect(draws.map((d) => [d.program, d.fbo])).toEqual(first.slice(2).map((d) => [d.program, d.fbo]));
     expect(attachments.size).toBe(fbos + 3);
   });
 

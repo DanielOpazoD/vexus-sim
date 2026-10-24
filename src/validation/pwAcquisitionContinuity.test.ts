@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { AnatomyQuery } from '../anatomy/query';
 import { AnatomyScene } from '../anatomy/scene';
 import { NORMAL_ADULT } from '../cases';
+import { PhysiologyEngine } from '../physiology/engine';
 import { PwDopplerChain } from '../doppler/pwChain';
 import { SpectralProcessor } from '../doppler/spectral';
 
@@ -17,6 +18,39 @@ const push = (p: SpectralProcessor, n: number, offset = 0) => {
 };
 
 describe('continuidad de la adquisición IQ antes de la FFT', () => {
+  it('cambiar la PRF reinicia la adquisición sin reinterpretar las columnas anteriores', () => {
+    const p = new SpectralProcessor();
+    p.sync(0, PRF);
+    push(p, N);
+    const previous = p.columns[0];
+    expect(p.sync(N / PRF, PRF / 2)).toBe(true);
+    push(p, N - 1);
+    expect(p.columns).toEqual([previous]);
+    push(p, 1, N - 1);
+    expect(p.columns[1].prfHz).toBe(PRF / 2);
+    expect(previous.prfHz).toBe(PRF);
+    expect(p.columns[1].t).toBeCloseTo(N / PRF + N / PRF, 12);
+  });
+
+  it('cambiar la PRF descarta memoria del filtro, audio y el residuo de la tasa anterior', () => {
+    const scene = new AnatomyScene(NORMAL_ADULT);
+    const sample = new PhysiologyEngine(NORMAL_ADULT, scene.vesselAreas()).sample;
+    const audio = { pushIQ: vi.fn(), reset: vi.fn() };
+    const chain = new PwDopplerChain(new AnatomyQuery(scene), 17, audio);
+    const reset = vi.spyOn(chain.wallFilter, 'reset');
+    const generate = vi.spyOn(chain.sampleVolume, 'generate');
+    chain.begin(PRF, 2.5e6, 0, 25, 0);
+    chain.step(sample, [0, 0, 0], 0.0003); // 0.6 muestras pendientes a 2 kHz.
+    chain.begin(PRF / 2, 2.5e6, 0, 25, 0.0003);
+    expect(reset).toHaveBeenCalledOnce();
+    expect(audio.reset).toHaveBeenCalledOnce();
+    chain.step(sample, [0, 0, 0], 0.0004); // 0.4 nuevas: no sumar el residuo de 2 kHz.
+    expect(generate).not.toHaveBeenCalled();
+    chain.step(sample, [0, 0, 0], 0.0006);
+    expect(generate).toHaveBeenCalledOnce();
+    expect(generate.mock.calls[0][2]).toBe(1);
+  });
+
   it.each([1, -1])('no completa una FFT con muestras separadas por un salto a %s s', (resume) => {
     const p = new SpectralProcessor();
     p.sync(0, PRF);

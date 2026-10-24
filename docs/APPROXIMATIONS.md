@@ -96,7 +96,7 @@ La extensión de doce pares costales y el esternón acústico (decisiones 166–
 
 Doppler color: conserva y filtra R1 complejo con [1 2 1]²/16 antes de estimar fase/potencia. Kernel espacial ESTIMADO, no ensembles IQ adquiridos ni calibración contra equipo clínico. La interpolación explícita mantiene continuidad de fase cerca de Nyquist.
 
-Porta intrahepática: ajuste al seleccionar tarjeta estimado para estos adultos: B 130 mm atlas (150 mm legacy/reference)/foco 100 mm/−2 dB/RD65; caja 70–125 mm y anchura 0,42 rad, centro angular dependiente del cuerpo; color ±35 cm/s, +12 dB, filtro 60 Hz. No deriva de máquina clínica; permanece editable y no se reaplica al mover sonda manualmente. La paleta positiva es roja y la negativa azul; el signo procede del haz, no del nombre del vaso.
+Porta intrahepática: ajuste al seleccionar tarjeta estimado para estos adultos: B 130 mm atlas (150 mm legacy/reference)/foco 100 mm/−2 dB/RD65; caja 70–125 mm y anchura 0,42 rad, centro angular dependiente del cuerpo; color ±35 cm/s, +6 dB de potencia, filtro 60 Hz. La ganancia conserva exactamente la potencia lineal del preset histórico rotulado +12 con conversión /20 (247); no es un nuevo ajuste empírico. No deriva de máquina clínica; permanece editable y no se reaplica al mover sonda manualmente. La paleta positiva es roja y la negativa azul; el signo procede del haz, no del nombre del vaso.
 
 Cava superior (172): ley regional D=28·sigmoid((P_unión−P_pleural−4)/6) mm, residual 3 mm y área de pared con τ=0,2 s. ESTIMADA para el adulto sintético; requiere validación independiente de diámetros/velocidades y registro de la transición por el hiato. El volumen abdominal y las ondas de la red permanecen iguales.
 
@@ -266,3 +266,35 @@ su superficie. Hessiano tangencial a 3 mm (dos celdas), gradiente a 0,25 mm;
 se conserva el modelo de coherencia cilíndrica en la dirección principal.
 No se recupera detalle subvoxel, anisotropía ósea completa ni dispersión clínica
 calibrada. No modifica la fuente ni sus superficies 3D.
+
+## Correcciones de coherencia de textura y Color (243–252)
+
+La orientación de las estrías musculares (248) y de los septos grasos (221)
+se deriva del campo material existente. Sus anchos conservan las
+aproximaciones anteriores: el muscular solo contempla la ondulación nominal
+y omite la métrica corporal, la fascia y el jitter; el graso usa distancias
+en coordenadas ideales u,z,d. Las correcciones 249 y 251 quedan aplazadas
+tras fallar la aceptación conjunta; no se dan por resueltos esos espesores
+normales. Estas correcciones no convierten las
+escalas, ganancias o estadística estimadas en parámetros histológicos
+calibrados. La textura periódica de pared elimina una costura de coordenadas
+con un ajuste local dorsal; no modifica las capas anatómicas ni acredita
+una distribución ecográfica humana.
+
+Color suma las autocorrelaciones esperadas de sus cinco submuestras antes
+de estimar fase, con la respuesta estacionaria del filtro. Sigue sin
+adquirir ensembles IQ por píxel. El ancho espectral, el ruido y la varianza
+de fase permanecen aproximados; en particular, la dependencia angular del
+ensanchamiento de apertura requiere un contraste independiente. La fase y
+la respuesta estacionaria del filtro usan una aproximación polinómica
+explícita de seno, verificada contra IQ independiente en Metal y SwiftShader;
+esto corrige precisión numérica entre drivers, sin añadir adquisición IQ ni
+calibración física. La ganancia
+aplica decibelios de potencia a R1; las cifras históricas del control con
+exponente /20 no calibran este control corregido.
+
+El cine Color conserva R1 en RG32F (254), con la precisión del campo vivo y
+sin saturar el rango por almacenamiento. Esto añade 7,37 MB decimales al
+anillo de 120 cuadros; no modifica la aproximación analítica del estimador,
+su sensibilidad ni la calibración pendiente de ganancia y clutter. La
+envolvente B del cine continúa cuantizada a R16F.

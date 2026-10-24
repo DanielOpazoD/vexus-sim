@@ -28,7 +28,8 @@ export function portalPreset(
         r0: subcostal ? 60 : trunk ? 110 : abdominalAtlas ? 47.5 : 70,
         r1: subcostal ? 130 : trunk ? 155 : abdominalAtlas ? 102.5 : 125,
         prfHz: (4 * f0Doppler * 350) / 1_540_000,
-        gainDb: 12,
+        // Same linear power as the historical /20 conversion at 12; now expressed in power dB (247).
+        gainDb: 6,
         wallFilterHz: 60,
       },
     },

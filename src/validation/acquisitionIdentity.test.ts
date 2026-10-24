@@ -74,6 +74,11 @@ describe('integridad de la evidencia de adquisición', () => {
   it('acepta geometría presentada y tiempo coincidentes sin exigir igualdad de contador RAF', () => {
     expect(() => validateAcquisition(acquisition(), expected)).not.toThrow();
   });
+  it('no atribuye ruido de otro cuadro a la misma fase registrada aunque coincidan pose y reloj', () => {
+    expect(() => validateAcquisition(acquisition(), { ...expected, receiverFrame: 31 })).not.toThrow();
+    for (const receiverFrame of [30, 32, 0, 31.5, NaN, Infinity])
+      expect(() => validateAcquisition(acquisition(), { ...expected, receiverFrame })).toThrow('receiver phase');
+  });
   it('rechaza perfiles de transductor distintos o incompletos aunque coincidan pose y marco', () => {
     const shot = acquisition();
     shot.liveTransducer.f0B += 1;
@@ -105,6 +110,12 @@ describe('integridad de la evidencia de adquisición', () => {
     expect(() => validateAcquisition(shot, { ...expected, time: 3 })).toThrow('requested time');
     shot.acquiredTimeSeconds = NaN;
     expect(() => validateAcquisition(shot, expected)).toThrow('times differ');
+  });
+  it.each([NaN, Infinity, -Infinity])('rechaza tiempo presentado no finito: %s', (time) => {
+    expect(() => validateAcquisition({ ...acquisition(), presentedSampleTimeSeconds: time }, expected)).toThrow('times differ');
+  });
+  it.each([NaN, Infinity, -Infinity])('rechaza tiempo esperado no finito: %s', (time) => {
+    expect(() => validateAcquisition(acquisition(), { ...expected, time })).toThrow('requested time');
   });
   it('rechaza legacy o un paciente distinto en una comparación declarada atlas normal', () => {
     expect(() => validateAcquisition({ ...acquisition(), anatomyMode: 'legacy' }, expected)).toThrow('domain');

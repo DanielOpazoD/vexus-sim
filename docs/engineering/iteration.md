@@ -116,6 +116,34 @@ independiente), `hepatorenalVisibleWindow.spec.ts` y `probeFreeNavigation.spec.t
 la de adquisición conserva el primer cuadro GPU. Así se detectan incompatibilidades en el ciclo
 focalizado antes de esperar una CI completa. Sus plazos y aserciones permanecen intactos.
 
+La ronda 252 encontró una regresión de contraste hepático que no apareció en los
+nuevos tests geométricos: `wallDisplayTwin.test.ts` es lento y la selección
+relacionada rápida lo excluye. Para textura, reflectividad o normales de pared,
+añadir este banco explícito antes del check completo, sin cambiar su nivel:
+
+```bash
+npm run feedback -- src/validation/wall.test.ts src/validation/wallTwin.test.ts src/validation/wallDisplayTwin.test.ts src/validation/wallTextureNormals.test.ts src/validation/muscleTextureGeometry.test.ts src/validation/wallFaceContinuity.test.ts
+```
+
+Este lote conserva los umbrales de contraste, continuidad y geometría; evita
+esperar toda la cobertura para descubrir un cambio distante de la costura.
+
+El oráculo de mezcla Color de la ronda 250 pasó en Metal y falló en SwiftShader
+por la precisión de funciones trascendentes, aunque las capturas y pruebas
+CPU pasaban. Para cambios numéricos GLSL, ejecutar primero el oráculo pequeño
+en **ambos backends**, antes de check y CI completos. `colorMixture.spec.ts`
+compila el shader sobre un píxel, sin arrancar la aplicación ni recorrer el
+paciente; permite aislar aritmética sin pagar el barrido de dos vistas en cada
+ensayo. Usar `workspace:e2e --backend metal|swiftshader` con ese archivo y
+carpetas de evidencia distintas. El oráculo independiente, sus tolerancias y
+la aceptación completa se conservan; pasar en un backend no acredita el otro.
+
+Coordinar las ediciones con quien ejecuta un control: cambiar un módulo importado o su configuración
+durante una prueba puede invalidar el resultado antes de comprobar el defecto. Las revisiones de lectura
+y la preparación externa pueden continuar en paralelo. Para arneses ESM fuera del paquete, usar
+`.mts`/`.mjs` y el entry ESM de Playwright; verificar `--list` antes de ocupar GPU. Dos intentos externos
+de 256 fallaron antes del navegador por mezclar esos formatos; no se contaron como negativos.
+
 Con el candidato estable: **check completo, hook normal, PR y CI completa del último head**.
 Si falla una fase, conservar su negativo y diagnosticar esa fase; no volver a lanzar todo a ciegas.
 Tras corregir código se vuelve a acreditar el candidato final. El feedback nunca sustituye la aceptación.

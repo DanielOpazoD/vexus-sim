@@ -62,7 +62,7 @@ export function validateAcquisition(
     | 'transducer'
     | 'liveTransducer'
   >,
-  expected: { anatomy: string; caseId: string; time?: number },
+  expected: { anatomy: string; caseId: string; time?: number; receiverFrame?: number },
 ): void {
   if (snapshot.schemaVersion !== 3) throw new Error('Acquisition lacks separate acquired and live pose/seed provenance');
   if (!Number.isFinite(snapshot.seed) || !Number.isFinite(snapshot.liveSeed) || snapshot.seed !== snapshot.liveSeed)
@@ -91,9 +91,18 @@ export function validateAcquisition(
   if (snapshot.anatomyMode !== expected.anatomy || snapshot.caseId !== expected.caseId) throw new Error('Unexpected acquisition domain');
   if (snapshot.color.enabled) throw new Error('B-mode audit requires color disabled');
   if (!Number.isSafeInteger(snapshot.presentedFrame) || snapshot.presentedFrame < 1) throw new Error('Invalid presented frame');
-  if (!Number.isFinite(snapshot.acquiredTimeSeconds) || Math.abs(snapshot.acquiredTimeSeconds - snapshot.presentedSampleTimeSeconds) > 1e-9)
+  if (
+    expected.receiverFrame !== undefined &&
+    (!Number.isSafeInteger(expected.receiverFrame) || expected.receiverFrame < 1 || snapshot.presentedFrame !== expected.receiverFrame)
+  )
+    throw new Error('Presented image differs from the registered receiver phase');
+  if (
+    !Number.isFinite(snapshot.acquiredTimeSeconds) ||
+    !Number.isFinite(snapshot.presentedSampleTimeSeconds) ||
+    Math.abs(snapshot.acquiredTimeSeconds - snapshot.presentedSampleTimeSeconds) > 1e-9
+  )
     throw new Error('Presented anatomy and signal times differ');
-  if (expected.time !== undefined && Math.abs(snapshot.acquiredTimeSeconds - expected.time) > 1e-9)
+  if (expected.time !== undefined && (!Number.isFinite(expected.time) || Math.abs(snapshot.acquiredTimeSeconds - expected.time) > 1e-9))
     throw new Error('Static acquisition did not reach its requested time');
   if (snapshot.errors.length) throw new Error('Acquisition contains renderer errors');
   // An animator may change controls while both cached frames remain unchanged.

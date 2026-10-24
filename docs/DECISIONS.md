@@ -8534,3 +8534,91 @@ análisis quedan en `cut-latency-242-evidence`, fuera del repo. La medición
 baseline terminó con exit 0; su comprobación HTTP posterior falló y se
 conserva como negativo. Una comprobación independiente posterior verificó
 el mismo recibo y los mismos 50 recursos antes de cualquier edición.
+
+## 243. Transportar los mismos programas GLSL con margen para iterar
+
+**Contexto.** Main 0465256 consume 1.057.779 de 1.057.792 bytes JS: 13 bytes de margen. Las tablas de transporte repiten separadores y dejan secuencias frecuentes sin codificar.
+**Opciones.** Se descarta ampliar presupuesto, quitar programas o reducir resolución. Anidar frases existentes ahorra solo 48 bytes estimados y se descarta.
+**Decisión.** Las mismas 512 palabras se serializan con un separador. Se preservan los 640 códigos anteriores y se añaden 153 frases con identificadores ya reservados, en tres bancos ASCII; las 281 frases usan un delimitador ausente de su contenido. La expansión continúa en una pasada y es exacta.
+**Consecuencias.** No cambia GLSL compilado, anatomía ni señal. Primer build conjunto: 1.057.223 bytes (569 de margen); el ahorro neto incluye el coste de los demás bloques, no es un benchmark aislado del empaquetador.
+**Verificación.** Hashes independientes de palabras y frases anteriores, comparación byte por byte de todos los shaders propios y Three, escapes/coerción/reservas. La mutación que omite un banco del decoder falla; fuente restaurada exactamente. Check, GPU y CI del candidato final siguen pendientes.
+
+## 244. Vincular la auditoría visual a los bytes realmente servidos
+
+**Contexto.** Un SHA corto en pantalla no distingue una preview obsoleta del mismo HEAD. La huella propia de la auditoría omitía CSS/HTML/GLSL y usaba un diff binario con buffer limitado.
+**Opciones.** Otra huella duplicada mantendría reglas dispersas; aceptar el rótulo no demuestra procedencia.
+**Decisión.** Reutilizar buildSource y verifyPreviewBuild antes de abrir Chromium y al terminar. Comparar fuente y hash del recibo inicial/final; conservar ambos y cualquier fallo en el manifiesto. Revisión independiente detectó que el primer candidato solo comprobaba el cierre local: se corrige también el servidor HTTP.
+**Consecuencias.** Una comparación exige build actualizado y recursos íntegros. El rechazo de procedencia ocurre antes de ocupar GPU cuando es posible. No acredita calidad clínica.
+**Verificación.** Fixtures de build/preview distintos, recurso HTTP cambiado, CSS editado sin commit y binario de 2 MiB sin ENOBUFS. El cierre final se revisó de forma independiente; captura real y aceptación completa pendientes.
+
+## 245. Registrar la fase receptora en la comparación de imágenes
+
+**Contexto.** La captura inicial de esta ronda, con t=30 s, produjo cuadros 13,14 y16. El ruido temporal puede cambiar aunque pose y reloj coincidan.
+**Opciones.** No postprocesar imágenes para hacerlas coincidir ni reiniciar contadores privados. No reinterpretar capturas históricas.
+**Decisión.** Opción explícita --history-start-frame del protocolo static, usando el callback existente. Manifiesto y sidecar registran fase/padding, y el snapshot comprueba el cuadro final por separado. UI y static sin la opción mantienen su significado.
+**Consecuencias.** Comparar solo cohortes con fase y protocolo iguales. No mide latencia o navegación continua.
+**Verificación.** 22 pruebas focales; rechazo de fase distinta, serial sobrepasado, no avance y tiempos imposibles. Doce imágenes base registradas t=30, historia33–39, seis accesos y dos pacientes, con todos los recursos verificados. Capturas sin fase fija conservadas fuera de la comparación.
+
+## 246. Separar adquisición PW cuando cambia la PRF
+
+**Contexto.** sync vaciaba la FFT al cambiar PRF pero no notificaba discontinuidad a la cadena; seguían vivos filtro, audio y residuo de muestreo a la tasa anterior.
+**Opciones.** Un reset total borraría columnas históricas válidas. Ignorar el cambio mezcla memorias de tasas distintas.
+**Decisión.** La PRF diferente es discontinuidad una vez iniciada la adquisición; reutiliza el reset de esas memorias y conserva columnas con su PRF original.
+**Consecuencias.** La FFT nueva requiere su ventana completa. No cambia reloj, fisiología ni calibración.
+**Verificación.** Dos negativos fallan antes y 15 pruebas de tres suites pasan después, incluyendo partición en lotes e instantes de columnas. Aceptación conjunta pendiente.
+
+## 247. Convertir ganancia Color como potencia de autocorrelación
+
+**Contexto.** length(R1) es potencia; multiplicar por 10^(dB/20) hacía que +20 dB declarados produjeran +10 dB de potencia.
+**Opciones.** No compensar con umbrales, presets o ganancia basal. Renombrar el control no corrige sus unidades físicas.
+**Decisión.** colorPowerGain usa 10^(dB/10), conservando la referencia ×2 a cero. Retirar el comentario histórico que confundía ×2 potencia con +6 dB.
+**Consecuencias.** Ganancias positivas aumentan antes señal y ruido; las negativas atenúan lo declarado. La fase no cambia por esta conversión. Las cifras antiguas del control no son calibración vigente.
+**Verificación.** Seis negativos detectan /20; 25 pruebas focales pasan con el oráculo independiente 10log10(P/P0). Capturas0/+12 dB e integración GPU pendientes. Fuente de unidades: [Analog Devices](https://www.analog.com/en/resources/glossary/db.html), no calibración comercial.
+
+## 248. Derivar la normal muscular de la fase material completa
+
+**Contexto.** La fase usa profundidad registrada, fascia, ondulación y jitter; su normal omitía fascia/jitter y usaba una elipse XY. En el diagnóstico atlas: desviación p95 de40,76° normal y36,10° congestión respecto al gradiente de esa misma fase.
+**Opciones.** Limitar la normal o retocar ganancias ocultaría el error. Diferencias finitas del clasificador añadirían coste innecesario.
+**Decisión.** Regla de la cadena con gradientes de profundidad/arco, cinco derivadas analíticas del relieve fascial y cuatro nodos compartidos del ruido plano. No cambia fase, ganancias ni ubicación.
+**Consecuencias.** La respuesta angular sigue el tejido que se dibuja. Sigue siendo arquitectura muscular estimada. La prueba histórica de15° respecto piel contradice el relieve aceptado en88 (máximos31–37°): se reconcilia con el componente nominal y se añade contrato diferencial completo, sin deformar el modelo para conseguir verde.
+**Verificación.** Diferencias centrales independientes de la fase anterior, ambos pacientes y perfiles atlas/elipse; negativo con normal antigua falla. El conflicto del test original queda conservado. GPU, apariencia y aceptación completa pendientes.
+
+## 249. Medir el ancho muscular normal al campo real
+
+**Contexto.** La gaussiana dividía la fase por sqrt(1+Uu²+Uv²), omitiendo el relieve fascial, jitter y métrica corporal aunque la normal se corrigiera.
+**Opciones.** Cambiar sigma por pose no corrige la causa y rompe anclaje material.
+**Decisión.** Distancia local a la estría dividida por la norma del gradiente completo. Se conservan sigma0,15 mm, máscara, espaciado y retrodispersión.
+**Consecuencias.** El ancho se expresa en la métrica local del tejido, una aproximación tangente, no una segmentación histológica.
+**Verificación.** Oráculo escalar anterior y gradiente independiente; ocho pruebas de248/249 pasan, denominador plano restaurado hace fallar cuatro. GPU y aceptación conjunta pendientes.
+
+## 250. Mezclar correlaciones Color antes de estimar su fase
+
+**Contexto.** Promediar velocidades antes de R1 y del filtro convierte componentes+490/−490 Hz con PRF1000 en reposo aparente. El filtro entre celdas ya conservaba fases; la mezcla dentro de la celda no.
+**Opciones.** Bajar filtro o pintar por vaso oculta el defecto. Un ensemble IQ real por píxel es otro alcance.
+**Decisión.** Cada una de las cinco submuestras aporta su autocorrelación filtrada; se acumulan sangre y tejido por separado antes de estimar fase. Solo las muestras no sanguíneas aportan clutter. Se mantienen posiciones, número de clasificaciones, transmisión, ruido, cadencia y fórmula estimada de anchura por componente.
+**Consecuencias.** La mezcla cercana a Nyquist ya no inventa reposo. Sigue siendo estimador analítico, no IQ adquirido ni calibración comercial; el ensanchamiento angular requiere contraste independiente.
+**Verificación.** Oráculo GPU de14 casos mediante IQ conocido, filtro PW y cuadratura independiente del ancho: Metal pasa. Mutación del promedio escalar falla con error0,798 frente a tolerancia2,4e−6; fuente restaurada. Referencia: [Kasai et al.,1985](https://courses.healthtech.dtu.dk/22485/documents/kasai_et_al_1985.pdf), ecuaciones12–16. Falta aceptación conjunta.
+
+## 251. Medir septos grasos con la métrica material
+
+**Contexto.** La normal corregida en221 seguía acompañada por una distancia de coordenadas ideales. En123 muestras atlas, sigma efectiva/nominal fue0,681–1,147.
+**Opciones.** No eliminar grasa ni cambiar grosor para disimular su textura. La métrica del cuerpo ya ofrece las derivadas necesarias.
+**Decisión.** Usar las normas de los gradientes materiales para comparar distancias de los septos, conservando sigma y ganancias. La revisión cruzada exige seleccionar cada mediatriz después de aplicar su métrica, para no introducir una discontinuidad por cambio de candidata.
+**Consecuencias.** No modifica capas anatómicas. Es distancia normal local, no una reconstrucción de lobulillos humanos.
+**Verificación.** Oráculo de distancia y gradiente independiente, ambos pacientes; se mantiene intacto el contrato221. Negativo del ancho plano falla. Revisión de selección entre mediatrices, GPU y aceptación completa pendientes.
+
+## 252. Eliminar la costura posterior de reflectividad
+
+**Contexto.** El ruido no periódico recibía el salto de wallArc de−P/2 a+P/2. En dos puntos separados0,00002 mm, la ganancia fascial pasaba3,777→0,360: salto artificial de≈20,4 dB.
+**Opciones.** No ocultarlo con suavizado de imagen, mezcla de realizaciones ni cambio de anatomía.
+**Decisión.** Ruido cúbico periódico en u, ocho hashes y smoothstep originales, periodo entero N=round(P/4 mm), paso efectivo P/N. Representantes centrados conservan la realización interior cuando el periodo original es entero. Mismas sales y ganancias.
+**Consecuencias.** Continuidad de valor y pendiente al cruzar el dorso. La escala cambia solo por cuantización del número de células; su estadística sigue siendo estimada y necesita referencia externa.
+**Verificación.** Caras y alturas de ambos pacientes, continuidad C1 y anclaje. Ruido anterior restaurado falla. Quince pruebas focales de248–252 pasan tras restaurar negativos; oráculo GPU y comparación visual pendientes.
+
+## 253. Reutilizar la captura registrada para verificar su hash
+
+**Contexto.** La CI postmerge de main0465256 agotó720s en registeredComparison. La traza completó después las cuatro capturas y sus aserciones: la duración fue724,410s. Los cuatro readDisplay→Array.from usados solo para hash consumieron15,284s; las cuatro capturas PNG transportadas en base64 costaron0,21–0,45s cada una. Esto no atribuye todo el coste a serialización: los bloques de renders manuales dominan el tiempo.
+**Opciones.** No ampliar plazo, quitar renders, reducir resolución, omitir negativos ni repetir hasta verde. Un PNG ya capturado conserva exactamente los bytes que el hash volvía a codificar.
+**Decisión.** Hashear los cuatro PNG originales escritos por captureBMode, eliminando solo su lectura/serialización duplicada. Se conservan todas las adquisiciones, fase33–39, control sin registrar y todas las aserciones.
+**Consecuencias.** Menos transporte de evidencia redundante. No cambia runtime, imagen ni protocolo; no declara resueltos todos los costes de la colaGPU.
+**Verificación.** En el artefacto fallido de main, los cuatro hashes de PNG coinciden exactamente con los cuatro calculados por la ruta anterior; registrados iguales y controles distintos. Se conserva trace y comprobante de equivalencia. E2E original con esta ruta y720s requiere nueva ejecución y CI final.

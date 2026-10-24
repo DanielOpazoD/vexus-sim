@@ -5,6 +5,10 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Pared: normales y espesores de estrías musculares y septos grasos derivados del campo material; textura de caras continua en el dorso, sin cambiar capas anatómicas (248,249,251,252).
+- Doppler: memoria PW separada al cambiar PRF, ganancia Color en unidades de potencia y mezcla compleja por submuestra antes de estimar velocidad (246,247,250).
+- Iteración: transporte GLSL sin pérdida, auditorías vinculadas a la fuente/build servido y fase de receptor explícita para comparaciones registradas (243–245).
+
 - Corte: calcula profundidad corporal sin las derivadas descartadas, conservando el campo anatómico exacto; primera pintura p95 26,8 → 25,2 ms en la pareja local, sin mejora del desfase global p95 (242).
 
 - Corte: publica el mapa al recibirlo y atiende la última adquisición, sin repetir ECG/espectro/M por ese mapa; conserva rejilla, física, una petición y plazos (241).

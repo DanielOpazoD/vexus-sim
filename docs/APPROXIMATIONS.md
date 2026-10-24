@@ -266,3 +266,20 @@ su superficie. Hessiano tangencial a 3 mm (dos celdas), gradiente a 0,25 mm;
 se conserva el modelo de coherencia cilíndrica en la dirección principal.
 No se recupera detalle subvoxel, anisotropía ósea completa ni dispersión clínica
 calibrada. No modifica la fuente ni sus superficies 3D.
+
+## Correcciones de coherencia de textura y Color (243–252)
+
+La orientación y el ancho de las estrías musculares y los septos grasos se
+derivan del campo material existente. Esto corrige la geometría numérica de
+su respuesta angular; no convierte las escalas, ganancias o estadística
+estimadas en parámetros histológicos calibrados. La textura periódica de
+pared elimina una costura de coordenadas; no modifica las capas anatómicas
+ni acredita una distribución ecográfica humana.
+
+Color suma las autocorrelaciones esperadas de sus cinco submuestras antes
+de estimar fase, con la respuesta estacionaria del filtro. Sigue sin
+adquirir ensembles IQ por píxel. El ancho espectral, el ruido y la varianza
+de fase permanecen aproximados; en particular, la dependencia angular del
+ensanchamiento de apertura requiere un contraste independiente. La ganancia
+aplica decibelios de potencia a R1; las cifras históricas del control con
+exponente /20 no calibran este control corregido.

@@ -1,5 +1,26 @@
 # Continuidad de VExUS LAB
 
+## Misión vigente: diez bloques de fidelidad (24 de octubre de 2026)
+
+El usuario autoriza al menos diez mejoras adicionales, con commits, PR y merge
+cuando estén validados. La [secuencia 243–252](fidelity/ITERATION_243_252.md)
+aborda defectos reproducidos en pared muscular/grasa, Doppler y procedencia
+de las comparaciones. El perfil sigue siendo convexo genérico de 3,5 MHz.
+El estado vivo de cada bloque está en `../fidelity-243-evidence/PROGRESS.md`;
+consultar Git/CI para el cierre, sin inferirlo de esta lista.
+
+La base es main `0465256f216f11aeabf90d8505f17b317fa5737a`, PR275 fusionado.
+Su CI de PR aprobó 156 E2E sin reintentos; la CI postmerge40071232877 terminó
+fallida durante esta ronda por el plazo de720s de registeredComparison. El
+negativo se conserva; no se atribuye a los cambios243–252. La optimización242 redujo el primer pintado
+del corte alrededor de6%, pero su antigüedad global p95 sigue en≈66,5ms.
+La fidelidad clínica externa y el transporte fino PW continúan abiertos.
+
+La nueva referencia visual registra t=30s y fase33–39 en seis accesos y ambos
+pacientes, con recursos/build verificados. El banco inicial sin fase fija se
+conserva, pero no se usa como igualdad A/B. Ningún resultado interno demuestra
+que un experto humano confundiría el simulador con un ecógrafo real.
+
 ## Alcance vigente al 24 de octubre de 2026
 
 La ronda 242 continúa el desfase del corte mediante una evaluación corporal

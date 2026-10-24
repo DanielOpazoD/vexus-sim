@@ -1,4 +1,7 @@
 /** Lossless transport dictionary. Decoding happens once while shader modules initialize. */
+export const GLSL_MARKERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_$';
+const GLSL_BANKS = ['', '~', '!', ':', ';', '?', '%', '=', '+', '^', '&', '<', '>'];
+
 export const GLSL_WORDS: readonly string[] = (
   'float return vec3 uniform vec2 vec4 const normalize length texture clamp smoothstep sampler2D precision highp ' +
   'inversesqrt tissue define texelFetch int gl_FragCoord referenceCartilage min ivec2 continue max include ' +
@@ -77,300 +80,306 @@ export const GLSL_WORDS: readonly string[] = (
   'start USE_ALPHATEST uTissueAlpha4 atan label FINGER lessThan'
 ).split(' ');
 /** Frequent static sequences; transport only, expanded byte-for-byte before compilation. */
+// The table transports word codes only; no phrase dictionary is consulted during its initialization.
 export const GLSL_PHRASES: readonly string[] = (
-  'const in vec3@' +
-  'const in float@' +
-  'void main(){@' +
-  'vec3(0.0)@' +
-  'for(int i=0;@' +
-  '0.0,1.0@' +
-  '#if defined(@' +
-  ') || defined(@' +
-  '#include <common>@' +
-  '(vec3 m){@' +
-  ';for(int@' +
-  ',1)).xy;@' +
-  ';layout(location=@' +
-  ',ivec2(line,@' +
-  'vec2(0.0);@' +
-  ',out float@' +
-  '}else if(@' +
-  '){c.tissue=@' +
-  ';c.ifd=@' +
-  '>=0.0&&@' +
-  ')out vec4@' +
-  '(vec3 p,int k@' +
-  '(vec3 m,float@' +
-  ',out vec3@' +
-  '_fragment>\n@' +
-  'uniform float opacity;@' +
-  '*(3.0-2.0*@' +
-  'vec3(0,0,1)@' +
-  '#include <begin_vertex>@' +
-  '0.0);float@' +
-  '#include <project_vertex>@' +
-  '+0.5)*step@' +
-  '#pragma unroll_loop_end@' +
-  ',0),0).@' +
-  'vec4 h=vec4(diffuse,@' +
-  '#pragma unroll_loop_start@' +
-  '++){if(@' +
-  '0.0,0.0@' +
-  ',1.0);}@' +
-  ')/(2.0*@' +
-  'vec3(0.0,@' +
-  ');return @' +
-  '){return @' +
-  ')return 0.0;@' +
-  '){float @' +
-  '\n#define @' +
-  ',ivec2(0),size-1),0).@' +
-  'int line=int(gl_FragCoord.@' +
-  ',float @' +
-  '=min(min(@' +
-  '(m);if(@' +
-  '6.2831853*@' +
-  '*2.0*0.511664*@' +
-  '*2.0*0.429043*@' +
-  'vec3(0,1,@' +
-  '=0.0;float@' +
-  ';out vec4 oColor;@' +
-  '#elif defined(@' +
-  '#include <uv_vertex>@' +
-  'varying vec3 vViewPosition;@' +
-  ',scale,mean,@' +
-  ';return vec4(@' +
-  '#include <morphtarget_vertex>@' +
-  '#include <logdepthbuf_vertex>@' +
-  '>\n#include <@' +
-  '\n#endif\n#ifdef @' +
-  ';\n#endif\n#@' +
-  ';uniform float @' +
-  ');if(@' +
-  ');\n#endif\n@' +
-  '\nuniform sampler2D @' +
-  ';\n#else\n@' +
-  '{float shadowIntensity;float shadowBias;float shadowNormalBias;float shadowRadius;vec2@' +
-  '\n#endif\n#if @' +
-  ';\n#include <@' +
-  '\nuniform float @' +
-  '\nuniform mat3 @' +
-  ';uniform sampler2D @' +
-  '));}float @' +
-  ';}\n#endif\n@' +
-  '\nvarying vec2 @' +
-  ';varying vec2 @' +
-  '0.0)return @' +
-  ';c.bd=min(@' +
-  ');vec2 @' +
-  '=C(dot(@' +
-  '.x);float @' +
-  ';in vec2 vUv@' +
-  ';\n#endif\n@' +
-  '));float @' +
-  ';\n#ifdef @' +
-  ');}float @' +
-  '\n#include <@' +
-  '*(1.0-@' +
-  'const in @' +
-  'uniform vec3 @' +
-  ');}vec3 @' +
-  ',0.0);@' +
-  ');\nfloat @' +
-  '));vec3 @' +
-  '));return @' +
-  'const float @' +
-  'varying vec3 @' +
-  '>0.0&&@' +
-  '.x;float @' +
-  ');}vec2 @' +
-  '6.2831853@' +
-  'return vec2(@' +
-  '>=0.0?@' +
-  ';}else{@' +
-  'vec3 dir@' +
-  '.y;float @' +
-  '<0.0){@' +
-  'c.tissue==@' +
-  '(vec3 m,@' +
-  'return vec3(@' +
-  '));if(@' +
-  ';vec3 @' +
-  '1.0;float @' +
-  '=false;bool @' +
-  ';uniform vec2 @' +
-  'uniform vec4 @' +
-  '\n#ifdef @' +
-  ',s);vec2@' +
-  '+vec3(1,@' +
-  'z);float @' +
-  ';float @' +
-  ' USE_SHADOWMAP ) && @' +
-  ',R,E,J,U,material,@' +
-  ' ) && defined( @' +
-  '(float a){return(1.0/6.0)*(@' +
-  ');\nconst vec4 @' +
-  '=0.5*(lo+@' +
-  ',vec2(vUv.x,@' +
-  '),0);vec4 @' +
-  '))+texture(shadowMap,@' +
-  ' material,inout @' +
-  '=texture(probesSH,vec3(@' +
-  'ivec2(gl_FragCoord.xy)@' +
-  '.rgb*0.9478672986+vec3(0.0521327014),vec3(2.4)@' +
-  '[i];H.color*=(H.visible&@' +
-  ' > 0\nstruct @' +
-  ');\nconst vec3 @' +
-  '(u,z,iP)@' +
-  ',spine)-@' +
-  ' - 0.5) * g + 0.5)@' +
-  ')),dir)-1.0)*s.w;}@' +
-  ' x=j%size;int y=j/size@' +
-  ', 0.0, 1.0@' +
-  'float(c.tissue)@' +
-  '(b+uvec3(0u,0u,@' +
-  '++) {\nfloat @' +
-  'spineBodySd(@' +
-  '[t/4][t%4];}@' +
-  ')-0.5)*texelSize.xy;@' +
-  'vec3(q.x,q.y@' +
-  'int line,int @' +
-  '=normalize(cross(@' +
-  ' i){int size=textureSize(@' +
-  'if(any(lessThan(q,@' +
-  '))||any(greaterThan(q,@' +
-  '(p.x,p.y@' +
-  '=1.0;if(@' +
-  '>0.0?vec4(c.n/@' +
-  '*sin(phi)@' +
-  '*cos(phi)@' +
-  '(b.w-a.w)@' +
-  ',Warp w){@' +
-  '(-0.5*x*x@' +
-  '[i]!=0.0)@' +
-  ',0).x;int j=int(i)@' +
-  '*(0.743125*z*z-0.247708);result+=@' +
-  ' material;material.h=h.rgb;@' +
-  '*vec2(cos(@' +
-  '((-5.55473*al-6.98316)*al@' +
-  'h*h*k*0.25@' +
-  ',-depth-wall@' +
-  '(1.0-s.x))@' +
-  'frequency[@' +
-  ' j=0;j<9;j@' +
-  'rawClass()@' +
-  ')*radius,o.z@' +
-  '=0.0;if(@' +
-  'ph0,vec3 g,vec3 s){@' +
-  ' > 0 || @' +
-  'o.x<=1.0&&o.y@' +
-  '(1.0,shadow,shadowIntensity)@' +
-  '(vec3 p){if(@' +
-  ',tangent,curvature)@' +
-  '(e/4.0+3.0*e*e*e/128.0@' +
-  '(-1.0, 0.0, 0.0, 0.0);@' +
-  '=dot(material.@' +
-  ' ) || defined ( @' +
-  '(1.0+dot(@' +
-  '(vec3 q,int k@' +
-  '(3.14159265*@' +
-  ';out vec4 @' +
-  ' s=0;s<512;s@' +
-  'vec3(o.xy+@' +
-  '-1.0)*min(@' +
-  'rib.x+rib.y*(0.5-0.5@' +
-  '(max(1e-6,a))@' +
-  '(G,ser.x);bool series=under&@' +
-  'vec2 h=vec2(@' +
-  'rib.z*rib.z@' +
-  '(k).z>0.5){@' +
-  '17.1,0.0));bool strong=b>=1.0@' +
-  ',inout vec3 @' +
-  '(lo,lo+1.0,@' +
-  '*0.70710678@' +
-  'step / 10.0@' +
-  ',0.0,0.9999@' +
-  '.rgb*0.0773993808,vec3(@' +
-  'o.y<=1.0;bool @' +
-  '+1e-3)n=@' +
-  ';\nconst vec2 @' +
-  'vec4 h=texelFetch(@' +
-  'blood[i]@' +
-  '1.0,0.0)@' +
-  '*2.0-1.0@' +
-  '(c.tissue,step);@' +
-  'r=vUv.y*@' +
-  'vUv*vec2(ts)),vec2(ts)-1.0@' +
-  'd=j==1?ser.y:ser.z@' +
-  'f*(j==1?(ser.x+1.0@' +
-  '*0.9,0.0@' +
-  '(m,h,se,@' +
-  ',0.0)+o)@' +
-  '.rgb,vec3(0.04045)))),@' +
-  '*0.429043*(x*x-y*y@' +
-  ';\n#if ( @' +
-  '[i]):1.0@' +
-  '(vec3 color){@' +
-  ' DEPTH_PACKING == @' +
-  '-1));int @' +
-  '(atan(xy.y,xy.x),p.@' +
-  '(0.0,25.0,@' +
-  '(max(0.0,@' +
-  '(xy.x,xy.y@' +
-  'rib.w*rib.@' +
-  '=0.0;int @' +
-  'c.bd,min(@' +
-  '\nfor(int @' +
-  'd,0,last),k),0).x@' +
-  '=dot(0.5*(s[j]+s[@' +
-  'oGradient=@' +
-  '>=1.0)return @' +
-  '\n#if NUM_CLIPPING_PLANES > 0\n@' +
-  '0.25/255.0@' +
-  '(material.h);}@' +
-  ' v){if(v<=@' +
-  ' shadowMap,vec2 shadowMapSize@' +
-  '.y)*texelSize,@' +
-  'vec4(0.0);@' +
-  '=vec4(1.0,@' +
-  '!=0){vec2 @' +
-  ');\nd=max(d,@' +
-  '#version 300 es\n@' +
-  'lo=max(r-step,@' +
-  '(vec3(1.0)@' +
-  'material.specularColor,material.@' +
-  ' shadowMapSize;};uniform @' +
-  '[i];shadow*=receiveShadow?@' +
-  '(rotation)*cm.@' +
-  '(v.y-v.x)@' +
-  ',0.0,float(@' +
-  '=1.0-smoothstep(@' +
-  'p.x>0.0?-@' +
-  ';}return true;}@' +
-  '*0.1031);@' +
-  '+0.5*cos(@' +
-  '/(r.y*r.y@' +
-  '+d;if(l<0||l>=int@' +
-  '.z):h.y):h.z;if@' +
-  'r=(float(s)@' +
-  '<1.5){if(@' +
-  'original.@' +
-  '=true;if(g.z>0.5&&!@' +
-  '\nin vec2 vUv@' +
-  '(vec3(vUv.x*190.0,r@' +
-  '*z;result+='
-).split('@');
-export const GLSL_MARKERS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_$';
-const GLSL_BANKS = ['', '~', '!', ':', ';', '?', '%', '=', '+', '^', '&', '<', '>'];
+  '@G in @C`' +
+  '@G in @A`' +
+  '@m @t(){`' +
+  '@C(0.0)`' +
+  'for(@T i=0;`' +
+  '0.0,1.0`' +
+  '#if @f(`' +
+  ') || @f(`' +
+  '#@a <@2>`' +
+  '(@C m){`' +
+  ';for(@T`' +
+  ',1)).xy;`' +
+  ';@:6(@!p=`' +
+  ',@X(@u,`' +
+  '@E(0.0);`' +
+  ',out @A`' +
+  '}@j if(`' +
+  '){c.@Q=`' +
+  ';c.ifd=`' +
+  '>=0.0&&`' +
+  ')out @F`' +
+  '(@C p,@T k`' +
+  '(@C m,@A`' +
+  ',out @C`' +
+  '_fragment>\n`' +
+  '@D @A @4;`' +
+  '*(3.0-2.0*`' +
+  '@C(0,0,1)`' +
+  '#@a <@~2>`' +
+  '0.0);@A`' +
+  '#@a <@~f>`' +
+  '+0.5)*@v`' +
+  '#@!F @~M`' +
+  ',0),0).`' +
+  '@F h=@F(@!L,`' +
+  '#@!F @~B`' +
+  '++){if(`' +
+  '0.0,0.0`' +
+  ',1.0);}`' +
+  ')/(2.0*`' +
+  '@C(0.0,`' +
+  ');@B `' +
+  '){@B `' +
+  ')@B 0.0;`' +
+  '){@A `' +
+  '\n#@R `' +
+  ',@X(0),@=S-1),0).`' +
+  '@T @u=@T(@U.`' +
+  ',@A `' +
+  '=@W(@W(`' +
+  '(m);if(`' +
+  '6.2831853*`' +
+  '*2.0*0.511664*`' +
+  '*2.0*0.429043*`' +
+  '@C(0,1,`' +
+  '=0.0;@A`' +
+  ';out @F @;h;`' +
+  '#@%1 @f(`' +
+  '#@a <@:Q>`' +
+  '@g @C @s;`' +
+  ',@3,mean,`' +
+  ';@B @F(`' +
+  '#@a <@~D>`' +
+  '#@a <@~E>`' +
+  '>\n#@a <`' +
+  '\n#@c\n#@d `' +
+  ';\n#@c\n#`' +
+  ';@D @A `' +
+  ');if(`' +
+  ');\n#@c\n`' +
+  '\n@D @M `' +
+  ';\n#@j\n`' +
+  '{@A @!t;@A @5;@A @~Y;@A @~k;@E`' +
+  '\n#@c\n#if `' +
+  ';\n#@a <`' +
+  '\n@D @A `' +
+  '\n@D @r `' +
+  ';@D @M `' +
+  '));}@A `' +
+  ';}\n#@c\n`' +
+  '\n@g @E `' +
+  ';@g @E `' +
+  '0.0)@B `' +
+  ';c.bd=@W(`' +
+  ');@E `' +
+  '=C(dot(`' +
+  '.x);@A `' +
+  ';in @E vUv`' +
+  ';\n#@c\n`' +
+  '));@A `' +
+  ';\n#@d `' +
+  ');}@A `' +
+  '\n#@a <`' +
+  '*(1.0-`' +
+  '@G in `' +
+  '@D @C `' +
+  ');}@C `' +
+  ',0.0);`' +
+  ');\n@A `' +
+  '));@C `' +
+  '));@B `' +
+  '@G @A `' +
+  '@g @C `' +
+  '>0.0&&`' +
+  '.x;@A `' +
+  ');}@E `' +
+  '6.2831853`' +
+  '@B @E(`' +
+  '>=0.0?`' +
+  ';}@j{`' +
+  '@C dir`' +
+  '.y;@A `' +
+  '<0.0){`' +
+  'c.@Q==`' +
+  '(@C m,`' +
+  '@B @C(`' +
+  '));if(`' +
+  ';@C `' +
+  '1.0;@A `' +
+  '=@?B;@o `' +
+  ';@D @E `' +
+  '@D @F `' +
+  '\n#@d `' +
+  ',s);@E`' +
+  '+@C(1,`' +
+  'z);@A `' +
+  ';@A `' +
+  ' @~X ) && `' +
+  ',R,E,J,U,@b,`' +
+  ' ) && @f( `' +
+  '(@A a){@B(1.0/6.0)*(`' +
+  ');\n@G @F `' +
+  '=0.5*(lo+`' +
+  ',@E(vUv.x,`' +
+  '),0);@F `' +
+  '))+@J(@~g,`' +
+  ' @b,@?D `' +
+  '=@J(@;v,@C(`' +
+  '@X(@U.xy)`' +
+  '.rgb*0.9478672986+@C(0.0521327014),@C(2.4)`' +
+  '[i];H.@n*=(H.@;p&`' +
+  ' > 0\n@:K `' +
+  ');\n@G @C `' +
+  '(u,z,iP)`' +
+  ',spine)-`' +
+  ' - 0.5) * g + 0.5)`' +
+  ')),dir)-1.0)*s.w;}`' +
+  ' x=j%@=S;@T y=j/@=S`' +
+  ', 0.0, 1.0`' +
+  '@A(c.@Q)`' +
+  '(b+@%w(0u,0u,`' +
+  '++) {\n@A `' +
+  'spineBodySd(`' +
+  '[t/4][t%4];}`' +
+  ')-0.5)*@!g.xy;`' +
+  '@C(q.x,q.y`' +
+  '@T @u,@T `' +
+  '=@H(@;B(`' +
+  ' i){@T @=S=@!x(`' +
+  'if(any(@=$(q,`' +
+  '))||any(@?_(q,`' +
+  '(p.x,p.y`' +
+  '=1.0;if(`' +
+  '>0.0?@F(c.n/`' +
+  '*sin(phi)`' +
+  '*cos(phi)`' +
+  '(b.w-a.w)`' +
+  ',@=y w){`' +
+  '(-0.5*x*x`' +
+  '[i]!=0.0)`' +
+  ',0).x;@T j=@T(i)`' +
+  '*(0.743125*z*z-0.247708);@:G+=`' +
+  ' @b;@b.h=h.rgb;`' +
+  '*@E(cos(`' +
+  '((-5.55473*al-6.98316)*al`' +
+  'h*h*k*0.25`' +
+  ',-@w-wall`' +
+  '(1.0-s.x))`' +
+  'frequency[`' +
+  ' j=0;j<9;j`' +
+  'rawClass()`' +
+  ')*@?k,o.z`' +
+  '=0.0;if(`' +
+  'ph0,@C g,@C s){`' +
+  ' > 0 || `' +
+  'o.x<=1.0&&o.y`' +
+  '(1.0,@6,@!t)`' +
+  '(@C p){if(`' +
+  ',@y,@!S)`' +
+  '(e/4.0+3.0*e*e*e/128.0`' +
+  '(-1.0, 0.0, 0.0, 0.0);`' +
+  '=dot(@b.`' +
+  ' ) || @f ( `' +
+  '(1.0+dot(`' +
+  '(@C q,@T k`' +
+  '(3.14159265*`' +
+  ';out @F `' +
+  ' s=0;s<512;s`' +
+  '@C(o.xy+`' +
+  '-1.0)*@W(`' +
+  'rib.x+rib.y*(0.5-0.5`' +
+  '(@Z(1e-6,a))`' +
+  '(G,ser.x);@o series=@?G&`' +
+  '@E h=@E(`' +
+  'rib.z*rib.z`' +
+  '(k).z>0.5){`' +
+  '17.1,0.0));@o @%5=b>=1.0`' +
+  ',@?D @C `' +
+  '(lo,lo+1.0,`' +
+  '*0.70710678`' +
+  '@v / 10.0`' +
+  ',0.0,0.9999`' +
+  '.rgb*0.0773993808,@C(`' +
+  'o.y<=1.0;@o `' +
+  '+1e-3)n=`' +
+  ';\n@G @E `' +
+  '@F h=@S(`' +
+  'blood[i]`' +
+  '1.0,0.0)`' +
+  '*2.0-1.0`' +
+  '(c.@Q,@v);`' +
+  'r=vUv.y*`' +
+  'vUv*@E(ts)),@E(ts)-1.0`' +
+  'd=j==1?ser.y:ser.z`' +
+  'f*(j==1?(ser.x+1.0`' +
+  '*0.9,0.0`' +
+  '(m,h,se,`' +
+  ',0.0)+o)`' +
+  '.rgb,@C(0.04045)))),`' +
+  '*0.429043*(x*x-y*y`' +
+  ';\n#if ( `' +
+  '[i]):1.0`' +
+  '(@C @n){`' +
+  ' @:q == `' +
+  '-1));@T `' +
+  '(@=8(xy.y,xy.x),p.`' +
+  '(0.0,25.0,`' +
+  '(@Z(0.0,`' +
+  '(xy.x,xy.y`' +
+  'rib.w*rib.`' +
+  '=0.0;@T `' +
+  'c.bd,@W(`' +
+  '\nfor(@T `' +
+  'd,0,last),k),0).x`' +
+  '=dot(0.5*(s[j]+s[`' +
+  'oGradient=`' +
+  '>=1.0)@B `' +
+  '\n#if @!C > 0\n`' +
+  '0.25/255.0`' +
+  '(@b.h);}`' +
+  ' v){if(v<=`' +
+  ' @~g,@E @?d`' +
+  '.y)*@!g,`' +
+  '@F(0.0);`' +
+  '=@F(1.0,`' +
+  '!=0){@E `' +
+  ');\nd=@Z(d,`' +
+  '#version 300 es\n`' +
+  'lo=@Z(r-@v,`' +
+  '(@C(1.0)`' +
+  '@b.@p,@b.`' +
+  ' @?d;};@D `' +
+  '[i];@6*=@!a?`' +
+  '(@%E)*cm.`' +
+  '(v.y-v.x)`' +
+  ',0.0,@A(`' +
+  '=1.0-@L(`' +
+  'p.x>0.0?-`' +
+  ';}@B @9;}`' +
+  '*0.1031);`' +
+  '+0.5*cos(`' +
+  '/(r.y*r.y`' +
+  '+d;if(l<0||l>=@T`' +
+  '.z):h.y):h.z;if`' +
+  'r=(@A(s)`' +
+  '<1.5){if(`' +
+  'original.`' +
+  '=@9;if(g.z>0.5&&!`' +
+  '\nin @E vUv`' +
+  '(@C(vUv.x*190.0,r`' +
+  '*z;@:G+='
+)
+  .split('`')
+  .map((phrase) => expandGlsl(phrase, GLSL_WORDS));
+const GLSL_DICTIONARY = [...GLSL_WORDS, ...GLSL_PHRASES];
 /** Stable short codes for the first bank; a prefix selects subsequent banks without changing existing codes. */
 export function glslMarker(index: number): string {
   if (!Number.isInteger(index) || index < 0 || index >= GLSL_BANKS.length * GLSL_MARKERS.length)
     throw new RangeError('Invalid GLSL marker index');
   return '@' + GLSL_BANKS[Math.floor(index / GLSL_MARKERS.length)] + GLSL_MARKERS[index % GLSL_MARKERS.length];
 }
-export function unpackGlsl(s: string): string {
+/** One pass over either the word dictionary at initialization or the complete runtime dictionary. */
+function expandGlsl(s: string, dictionary: readonly string[]): string {
   return s.replace(/@([~!:;?%=+^&<>]?)([A-Za-z0-9_$])/g, (original, bank: string, c: string) => {
     const index = GLSL_MARKERS.indexOf(c) + GLSL_BANKS.indexOf(bank) * GLSL_MARKERS.length;
-    return (index < 512 ? GLSL_WORDS[index] : GLSL_PHRASES[index - 512]) ?? original;
+    return dictionary[index] ?? original;
   });
+}
+export function unpackGlsl(s: string): string {
+  return expandGlsl(s, GLSL_DICTIONARY);
 }

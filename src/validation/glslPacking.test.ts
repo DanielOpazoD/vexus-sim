@@ -31,6 +31,11 @@ describe('transporte GLSL sin pérdida', () => {
         .update(JSON.stringify(GLSL_PHRASES.slice(0, 128)))
         .digest('hex'),
     ).toBe('d0514d1bdc94d37a600cf255b9f854c36fec5ca5ecb1f0e0cbc161890ee17df4');
+    // The complete pre-transport table is an independent identity oracle, not regenerated from the payload.
+    expect(GLSL_PHRASES).toHaveLength(281);
+    expect(createHash('sha256').update(JSON.stringify(GLSL_PHRASES)).digest('hex')).toBe(
+      'ae69a5ebf647698d1e8a7933f7517f10fb9a3b0748733ecbe1be18dd1c919af9',
+    );
     expect(GLSL_PHRASES.length).toBeLessThanOrEqual(5 * GLSL_MARKERS.length);
     const codes = Array.from({ length: GLSL_WORDS.length + GLSL_PHRASES.length }, (_, index) => glslMarker(index));
     expect(new Set(codes).size).toBe(codes.length);
@@ -86,7 +91,7 @@ describe('transporte GLSL sin pérdida', () => {
         ? {
             ...s,
             code: s.code.replace(
-              /export const GLSL_PHRASES[\s\S]*?(?=export const GLSL_MARKERS)/,
+              /export const GLSL_PHRASES[\s\S]*?(?=const GLSL_DICTIONARY)/,
               'export const GLSL_PHRASES = [] as const;\n',
             ),
           }

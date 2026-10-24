@@ -1,14 +1,18 @@
 import { acquisitionJson } from './acquisitionJson';
 /** Reproducible nine-window evidence; captures actual UI/framebuffer, never generated illustrations. */
+import { deepStrictEqual } from 'node:assert';
 import { execFileSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve, join } from 'node:path';
-import { chromium } from '@playwright/test';
+import { chromium, type Browser } from '@playwright/test';
 import { START_POINTS, startPointsFor, type StartPoint } from '../../src/app/startPoints';
 import { acquisitionSnapshot, validateAcquisition } from './acquisitionSnapshot';
 import { comparisonState } from './comparisonState';
 import { captureBMode } from './captureBMode';
+import { buildSource } from '../build/provenance';
+import { verifyLocalBuild, verifyPreviewBuild } from '../workspace/previewBuild';
+import { feedbackGitEnvironment } from '../workspace/feedbackPlan';
 
 const args = new Map<string, string>();
 for (let i = 2; i < process.argv.length; i += 2) {
@@ -33,7 +37,7 @@ const cases = args.get('cases')?.split(',') ?? ['normal-adult', 'severe-congesti
 const time = Number(args.get('time') ?? 30);
 if (!Number.isFinite(time) || time < 1) throw new Error('Comparison time must allow at least one second to prepare');
 const hash = (data: Buffer | string) => createHash('sha256').update(data).digest('hex');
-const git = (...argv: string[]) => execFileSync('git', argv, { encoding: 'utf8' }).trim();
+const git = (...argv: string[]) => execFileSync('git', argv, { encoding: 'utf8', env: feedbackGitEnvironment() }).trim();
 const sha = git('rev-parse', 'HEAD');
 const files = [
   'src/anatomy/abdominal-atlas.gzip.bin',
@@ -44,17 +48,8 @@ const files = [
 const sourceHashes = () => Object.fromEntries(files.filter(existsSync).map((f) => [f, hash(readFileSync(f))]));
 const geometry = sourceHashes();
 const dirty = git('status', '--porcelain');
-const sourceDiffHash = hash(execFileSync('git', ['diff', '--binary', 'HEAD']));
-const treeHash = () =>
-  hash(
-    git('ls-files', '-co', '--exclude-standard')
-      .split('\n')
-      .sort()
-      .filter((f) => /\.(ts|json|bin)$/.test(f) && existsSync(f))
-      .map((f) => `${f}:${hash(readFileSync(f))}`)
-      .join('\n'),
-  );
-const sourceTreeHash = treeHash();
+// La identidad compartida cubre también CSS/HTML/GLSL, índice y borrados sin fabricar un patch binario.
+const source = buildSource(process.cwd(), [join(process.cwd(), 'dist'), out]);
 mkdirSync(out, { recursive: true });
 const runId = new Date().toISOString().replace(/[:.]/g, '-');
 const runOut = join(out, runId);
@@ -62,8 +57,8 @@ mkdirSync(runOut);
 const provenance = {
   sha,
   dirty: !!dirty,
-  sourceDiffHash,
-  sourceTreeHash,
+  source,
+  buildVerification: null as Awaited<ReturnType<typeof verifyPreviewBuild>> | null,
   geometry,
   protocol,
   historyPolicy: protocol === 'static' ? 'explicit reset via comparisonState' : 'preserved during UI movement',
@@ -76,12 +71,17 @@ const failures: unknown[] = [];
 const writeManifest = () =>
   writeFileSync(
     join(runOut, 'manifest.json'),
-    JSON.stringify({ schemaVersion: 1, runId, provenance, scope: { views, cases }, rows, failures }, null, 2) + '\n',
+    JSON.stringify({ schemaVersion: 2, runId, provenance, scope: { views, cases }, rows, failures }, null, 2) + '\n',
   );
-const browser = await chromium.launch({
-  args: process.platform === 'darwin' ? ['--use-angle=metal', '--ignore-gpu-blocklist'] : ['--enable-gpu', '--ignore-gpu-blocklist'],
-});
+let browser: Browser | undefined;
 try {
+  // Un SHA corto en pantalla no distingue un dist anterior del mismo HEAD con cambios locales.
+  // Rechazar esa comparación antes del arranque GPU y conservar el motivo en el manifiesto.
+  provenance.buildVerification = await verifyPreviewBuild(process.cwd(), baseUrl.origin, runOut);
+  deepStrictEqual(provenance.buildVerification.source, source, 'Source changed before acquisition');
+  browser = await chromium.launch({
+    args: process.platform === 'darwin' ? ['--use-angle=metal', '--ignore-gpu-blocklist'] : ['--enable-gpu', '--ignore-gpu-blocklist'],
+  });
   for (const caseId of cases)
     for (const view of views) {
       const page = await browser.newPage({ viewport: { width: 1440, height: 1000 }, deviceScaleFactor: 1 });
@@ -162,8 +162,7 @@ try {
         await page.close();
       }
     }
-  if (JSON.stringify(sourceHashes()) !== JSON.stringify(geometry) || git('rev-parse', 'HEAD') !== sha || treeHash() !== sourceTreeHash)
-    throw new Error('Source changed during acquisition');
+  deepStrictEqual(verifyLocalBuild(process.cwd(), runOut).receipt.source, source, 'Source changed during acquisition');
   if (failures.length) throw new Error(`${failures.length} rejected acquisitions; retained in ${runOut}`);
   console.log(runOut);
 } catch (error) {
@@ -171,5 +170,5 @@ try {
   throw error;
 } finally {
   writeManifest();
-  await browser.close();
+  await browser?.close();
 }

@@ -43,6 +43,7 @@ it('vincula un build real a su fuente y rechaza ediciones, recursos alterados y 
     writeFileSync(join(root, '.gitignore'), 'dist/\n.cache/\n');
     writeFileSync(join(root, 'index.html'), '<script type="module" src="/main.js"></script>');
     writeFileSync(join(root, 'main.js'), 'document.body.textContent = "fixture";');
+    writeFileSync(join(root, 'style.css'), 'canvas { opacity: 1; }');
     git('init', '-q');
     git('add', '.');
     git('-c', 'user.name=fixture', '-c', 'user.email=fixture@example.invalid', '-c', 'commit.gpgSign=false', 'commit', '-qm', 'fixture');
@@ -71,6 +72,15 @@ it('vincula un build real a su fuente y rechaza ediciones, recursos alterados y 
     writeFileSync(join(root, 'main.js'), 'document.body.textContent = "edited";');
     expect(() => verifyLocalBuild(root, output)).toThrow('anterior a la última edición');
     writeFileSync(join(root, 'main.js'), 'document.body.textContent = "fixture";');
+    // La auditoría de imagen también depende del CSS; mismo HEAD no acredita el mismo build.
+    writeFileSync(join(root, 'style.css'), 'canvas { opacity: 0.5; }');
+    expect(() => verifyLocalBuild(root, output)).toThrow('anterior a la última edición');
+    writeFileSync(join(root, 'style.css'), 'canvas { opacity: 1; }');
+    // El fingerprint compartido evita el antiguo ENOBUFS de git diff --binary en la auditoría.
+    writeFileSync(join(root, 'new-atlas.bin'), Buffer.alloc(2 * 1024 * 1024, 173));
+    expect(() => verifyLocalBuild(root, output)).toThrow('anterior a la última edición');
+    rmSync(join(root, 'new-atlas.bin'));
+    expect(verifyLocalBuild(root, output).receipt.source).toEqual(receipt.source);
     const resource = join(root, 'dist', 'index.html');
     const html = readFileSync(resource);
     writeFileSync(resource, 'old HTML');

@@ -62,8 +62,17 @@ export class ProbeInput {
   };
 
   private onMove = (e: PointerEvent): void => {
-    // un arrastre que empezó antes de congelar tampoco mueve la sonda congelada
-    if (!this.live()) return;
+    // Congelar no mueve la sonda; consume solo el cursor de un gesto ya activo.
+    // Al reanudar, los movimientos ignorados no se convierten en un salto.
+    if (!this.live()) {
+      if (e.pointerType === 'touch') {
+        if (this.touches.has(e.pointerId)) this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      } else if (this.dragging) {
+        this.lastX = e.clientX;
+        this.lastY = e.clientY;
+      }
+      return;
+    }
     if (e.pointerType === 'touch') {
       const prev = this.touches.get(e.pointerId);
       if (!prev) return;

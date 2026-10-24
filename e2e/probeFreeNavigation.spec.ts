@@ -16,6 +16,8 @@ declare global {
     freeNavigation: {
       cuts: Array<{ request: CutMapRequest; pose: ProbePose; n: number; response?: CutMapResponse }>;
       navigator?: NavigatorWitness;
+      inputs?: Array<{ type: string; pointerType: string; primary: boolean; trusted: boolean; x: number; y: number; frozen: boolean }>;
+      parityDiagnostics?: unknown[];
     };
   }
 }
@@ -139,7 +141,7 @@ async function parity(page: Page) {
         );
         expected.push(map.tissue[v * map.width + u]);
       }
-    const actual = s.renderer.queryPoints(
+    const gpu = s.renderer.queryPoints(
       new Float32Array(points),
       {
         ...shown.anatomy,
@@ -150,7 +152,47 @@ async function parity(page: Page) {
         updateColor: false,
       },
       true,
-    ).tissue;
+    );
+    const actual = gpu.tissue;
+    const caliber = s.anatomy.caliberFor(shown.anatomy.sample);
+    const classify = (world: [number, number, number]) => {
+      const material = s.anatomy.deformation.toMaterial(world, req.sample.resp);
+      const c = s.scene.classify(material, caliber);
+      return {
+        material,
+        tissue: c.tissue,
+        boundaryDistance: c.boundaryDistance,
+        interface: c.interface,
+        interfaceDistance: c.interfaceDistance,
+        vessel: c.vessel,
+      };
+    };
+    window.freeNavigation.parityDiagnostics?.push({
+      acquired: shown.n,
+      pose: shown.anatomy.pose,
+      sample: shown.anatomy.sample,
+      request: req,
+      compressionMatches: JSON.stringify(s.anatomy.probeCompression) === JSON.stringify(req.compression),
+      points,
+      expected,
+      gpuTissue: Array.from(actual),
+      mismatches: expected.flatMap((tissue, i) => {
+        if (tissue === actual[i]) return [];
+        const world = points.slice(3 * i, 3 * i + 3) as [number, number, number];
+        const worldFloat32 = Array.from(new Float32Array(world)) as [number, number, number];
+        return [
+          {
+            index: i,
+            world,
+            worldFloat32,
+            expected: tissue,
+            gpu: { tissue: actual[i], vessel: gpu.vessel[i], interface: gpu.iface[i], interfaceDistance: gpu.ifd[i] },
+            cpuExact: classify(world),
+            cpuFloat32: classify(worldFloat32),
+          },
+        ];
+      }),
+    });
     return {
       points: expected.length,
       mismatches: expected.filter((x, i) => x !== actual[i]).length,
@@ -305,4 +347,149 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
     expect(errors).toEqual([]);
     expect(await page.evaluate(() => window.__vexusTest!.loggedErrors())).toEqual([]);
     await info.attach('subcostal-portal-motion.json', { body: JSON.stringify({ caseId, records }), contentType: 'application/json' });
+  });
+
+for (const caseId of ['normal-adult', 'severe-congestion'])
+  test(`captured probe drag resumes without accumulating frozen movement, ${caseId}`, async ({ page }, info) => {
+    budget(180_000);
+    await observe(page);
+    const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
+    if (caseId !== 'normal-adult') await page.selectOption('#case-select', caseId);
+    await observeNavigator(page);
+    await page.evaluate(() => {
+      window.freeNavigation.inputs = [];
+      window.freeNavigation.parityDiagnostics = [];
+      for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'])
+        window.addEventListener(type, (event) => {
+          const e = event as PointerEvent;
+          window.freeNavigation.inputs!.push({
+            type: e.type,
+            pointerType: e.pointerType,
+            primary: e.isPrimary,
+            trusted: e.isTrusted,
+            x: e.clientX,
+            y: e.clientY,
+            frozen: window.__vexusTest!.sim().frozen,
+          });
+        });
+    });
+    const cdp = await page.context().newCDPSession(page);
+    const records = [];
+    let touchEnabled = false;
+    const freeze = () => page.locator('#freeze').evaluate((el: HTMLButtonElement) => el.click());
+    const state = () =>
+      page.evaluate(() => {
+        const s = window.__vexusTest!.sim(),
+          shown = s.renderer.displayedFrame!;
+        return { pose: s.pose, frozen: s.frozen, n: shown.n, t: shown.t, frame: shown.anatomy.frame };
+      });
+    try {
+      for (const device of ['mouse', 'touch'] as const)
+        for (const mode of ['slide', 'angle'] as const) {
+          if (device === 'touch' && !touchEnabled) {
+            await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
+            touchEnabled = true;
+          }
+          // Interior pose: no clamps or angular seam can explain the resumed increment.
+          await page.evaluate(() => window.__vexusTest!.sim().setPose({ phi: 0.73, z: -173, lift: 0, yaw: 0.37, rock: -0.42, tilt: 0.61 }));
+          await acquired(page);
+          const box = (await page.locator('#sector-wrap').boundingBox())!;
+          const origin = { x: Math.round(box.x + box.width * 0.4), y: Math.round(box.y + box.height * 0.3) };
+          let x = origin.x,
+            y = origin.y;
+          const button = mode === 'angle' ? 'right' : 'left';
+          const points = () => [
+            { id: 1, x, y, force: 1 },
+            ...(mode === 'angle' ? [{ id: 2, x: origin.x + 40, y: origin.y + 20, force: 1 }] : []),
+          ];
+          const begin = async () => {
+            x = origin.x;
+            y = origin.y;
+            if (device === 'mouse') {
+              await page.mouse.move(x, y);
+              await page.mouse.down({ button });
+            } else await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: points() });
+          };
+          const move = async (dx: number, dy: number) => {
+            const firstEvent = await page.evaluate(() => window.freeNavigation.inputs!.length);
+            x += dx;
+            y += dy;
+            if (device === 'mouse') await page.mouse.move(x, y);
+            else await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: points() });
+            // CDP acknowledges dispatch before a coalesced touch move must reach JS.
+            // Observe the real primary pointer event before changing freeze state.
+            await withinFrames(page, 90, `${device}/${mode}: delivered pointermove`, async () =>
+              page.evaluate(
+                ({ firstEvent, device, x, y }) =>
+                  window.freeNavigation
+                    .inputs!.slice(firstEvent)
+                    .some(
+                      (e) => e.type === 'pointermove' && e.pointerType === device && e.primary && e.trusted && e.x === x && e.y === y,
+                    ) || `pointermove pending: ${JSON.stringify(window.freeNavigation.inputs!.slice(-5))}`,
+                { firstEvent, device, x, y },
+              ),
+            );
+          };
+          const end = async () => {
+            if (device === 'mouse') await page.mouse.up({ button });
+            else await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+          };
+          const before = await state();
+          expect(before.frozen).toBe(false);
+          await begin();
+          await move(2, 2);
+          const liveMove = await state();
+          const keys = mode === 'slide' ? (['phi', 'z'] as const) : (['rock', 'tilt'] as const);
+          for (const key of keys)
+            expect(Math.abs(liveMove.pose[key] - before.pose[key]), `${device}/${mode}: real live input changes ${key}`).toBeGreaterThan(0);
+          await acquired(page);
+          // DOM activation preserves the captured pointer and does not move its coordinates.
+          await freeze();
+          await acquired(page);
+          const paused = await state();
+          expect(paused.frozen).toBe(true);
+          await move(60, 100);
+          const afterIgnoredMove = await state();
+          expect(afterIgnoredMove, `${device}/${mode}: pause preserves pose and acquisition`).toEqual(paused);
+          await freeze();
+          await move(2, 2);
+          const resumed = await state();
+          await end();
+          records.push({ device, mode, before, liveMove, paused, afterIgnoredMove, resumed });
+          for (const key of keys)
+            // Compare equal physical cursor increments with an observed live control;
+            // no copy of the implementation's pixel-to-pose gains.
+            expect
+              .soft(resumed.pose[key] - paused.pose[key], `${device}/${mode}: resumed ${key} only follows the last 2px`)
+              .toBeCloseTo(liveMove.pose[key] - before.pose[key], 10);
+          const coherent = await parity(page);
+          records.push({ device, mode, coherent });
+          // A new gesture begun while frozen remains ignored even after resume.
+          const ignoredStart = await state();
+          expect(ignoredStart.frozen).toBe(true);
+          await begin();
+          await move(60, 100);
+          expect(await state()).toEqual(ignoredStart);
+          await freeze();
+          await move(2, 2);
+          const ignoredResume = await state();
+          await end();
+          expect(ignoredResume.pose, `${device}/${mode}: a gesture begun frozen never becomes active`).toEqual(ignoredStart.pose);
+          await acquired(page);
+          records.push({ device, mode, ignoredStart, ignoredResume });
+        }
+      expect(errors).toEqual([]);
+      expect(await page.evaluate(() => window.__vexusTest!.loggedErrors())).toEqual([]);
+    } finally {
+      await info.attach('freeze-resume-input.json', {
+        body: JSON.stringify({
+          caseId,
+          records,
+          observed: await page.evaluate(() => ({ inputs: window.freeNavigation.inputs, parity: window.freeNavigation.parityDiagnostics })),
+        }),
+        contentType: 'application/json',
+      });
+      if (touchEnabled) await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+      await cdp.detach();
+    }
   });

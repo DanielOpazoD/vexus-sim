@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Sonda: un arrastre activo consume el movimiento ignorado durante la congelación y se reanuda sin salto, también con uno o dos dedos; los gestos iniciados congelados siguen ignorados (261).
+
 - Pruebas del corte: sustituye hashes de contorno sensibles a ARM/x86 por geometría histórica con residuo numérico explícito; conserva píxeles exactos y controles de caché y desplazamiento (260).
 
 - Clasificación del corte: reutiliza la distancia vertebral ya calculada y evita consultar el diafragma para tubos que no requieren corrección auricular; misma clasificación completa, sin estado ni aproximaciones nuevos (259).

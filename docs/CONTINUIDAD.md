@@ -25,6 +25,12 @@ falta la aceptación completa del nuevo head. Las pruebas de moteado reproducen 
 trayectoria; la referencia material fija retorna y converge en Metal y SwiftShader, pero el coste
 completo adicional impide promoverla todavía. No cambia la textura productiva. Bloques 1, 2 y 5 abiertos.
 
+La rama siguiente prepara la corrección de salto al reanudar un gesto de sonda (261), basada en
+`17de00e` mientras PR278 completa su CI. Debe rebasarse sobre el squash de PR278 **antes** de abrir
+su PR para evitar conflictos y CI duplicada. El baseline real demuestra el salto en ambos pacientes,
+ratón y tacto; los negativos y la observación anatómica no localizada de 1/64 se conservan por separado.
+Estado y aceptación del candidato de navegación: expediente externo, no inferirlos de esta descripción.
+
 Antes de editar se apartaron reversiblemente trece archivos duplicados no seguidos: doce idénticos
 a los originales y `dist 2` (enlace simbólico frente al directorio `dist`). Manifiesto y hashes en
 `../fidelity-next15-evidence/quarantine-initial-duplicates/`; causa no determinada.

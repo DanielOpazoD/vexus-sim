@@ -125,18 +125,16 @@ export function fatSeptum(m: Vec3, t: Torso): [number, number, number, number] {
   let dV = 1e9;
   let gu = 1;
   let gv = 0;
-  const arcGradient = wallArcGradient(m, t);
   for (let j = 0; j < 9; j++) {
     if (j === k1) continue;
     const du = su[j] - su[k1];
     const dv = sv[j] - sv[k1];
-    // Elegir en mm materiales: normalizar solo la ganadora de u,z crea saltos.
-    const l = Math.hypot(du * arcGradient[0], du * arcGradient[1], dv);
+    const l = Math.hypot(du, dv);
     const dist = ((0.5 * (su[j] + su[k1]) - qu) * du + (0.5 * (sv[j] + sv[k1]) - qv) * dv) / l;
     if (dist < dV) {
       dV = dist;
-      gu = du;
-      gv = dv;
+      gu = du / l;
+      gv = dv / l;
     }
   }
   const iu1 = cu + (k1 % 3) - 1;
@@ -145,16 +143,16 @@ export function fatSeptum(m: Vec3, t: Torso): [number, number, number, number] {
   const tu = (2 * hash13([iu1, iv1, SALT.tiltU]) - 1) * T.septumTiltMax;
   const tv = (2 * hash13([iu1, iv1, SALT.tiltV]) - 1) * T.septumTiltMax;
   const s = (d - w.skin + tu * (u - su[k1] * T.lobuleMm) + tv * (m[2] - sv[k1] * T.lobuleMm)) / T.stratumMm + off;
-  // Cadena de derivación de ambas láminas materiales (221). Su norma convierte
-  // también la distancia a mm normales (251), antes de elegir la más cercana.
+  const dh = (Math.abs(s - Math.round(s)) * T.stratumMm) / Math.sqrt(1 + tu * tu + tv * tv);
+  // Cadena de derivación de la lámina material: el perfil corporal incluye pendiente
+  // craneocaudal y su arco no es una tangente unitaria (221). No mueve los septos.
   const depthGradient = torsoDepthGradient(m, t);
-  const vg: Vec3 = [gu * arcGradient[0], gu * arcGradient[1], gv];
-  const hg: Vec3 = [-depthGradient[0] + tu * arcGradient[0], -depthGradient[1] + tu * arcGradient[1], -depthGradient[2] + tv];
-  const dv = dV * T.lobuleMm;
-  const dh = (Math.abs(s - Math.round(s)) * T.stratumMm) / Math.hypot(...hg);
-  const vertical = dv < dh;
-  const dist = vertical ? dv : dh;
-  const normal = norm3(vertical ? vg : hg);
+  const arcGradient = wallArcGradient(m, t);
+  const vertical = dV * T.lobuleMm < dh;
+  const dist = vertical ? dV * T.lobuleMm : dh;
+  const normal = vertical
+    ? norm3([gu * arcGradient[0], gu * arcGradient[1], gv])
+    : norm3([-depthGradient[0] + tu * arcGradient[0], -depthGradient[1] + tu * arcGradient[1], -depthGradient[2] + tv]);
   const weight = Math.exp(-0.5 * (dist / T.septumSigmaMm) ** 2);
   return [normal[0], normal[1], normal[2], weight];
 }
@@ -268,8 +266,9 @@ function wallFaceNoise(u: number, z: number, face: number, perimeter: number): n
     period = Math.max(1, Math.round(perimeter / L));
   const x = u / L,
     edge = perimeter / (2 * L),
-    start = Math.floor((period - 1) / 2),
-    blend = Math.min(1, Math.max(0, (Math.abs(x) - start) / (edge - start)));
+    start = Math.floor((period - 1) / 2);
+  if (Math.abs(x) <= start) return valueNoise([x, z / L, face * 3.7], SALT.face);
+  const blend = Math.min(1, Math.max(0, (Math.abs(x) - start) / (edge - start)));
   // El ajuste y su derivada son cero al entrar; en ±P/2 llega a ±period/2 con derivada 1.
   const q = [x + Math.sign(x) * (period / 2 - edge) * blend * blend * (3 - 2 * blend), z / L, face * 3.7];
   const c = q.map(Math.floor),
@@ -278,7 +277,7 @@ function wallFaceNoise(u: number, z: number, face: number, perimeter: number): n
       return x * x * (3 - 2 * x);
     });
   // Representantes centrados: se conserva la realización interior y solo se identifica la costura.
-  const wrap = (x: number) => x - period * Math.floor((x + period / 2) / period);
+  const wrap = (x: number) => (x >= period / 2 ? x - period : x < -period / 2 ? x + period : x);
   const h = (x: number, y: number, z0: number) => hash13([wrap(c[0] + x) + SALT.face, c[1] + y + SALT.face, c[2] + z0 + SALT.face]);
   const mix = (a: number, b: number, w: number) => a + (b - a) * w;
   const x00 = mix(h(0, 0, 0), h(1, 0, 0), s[0]),
@@ -381,26 +380,24 @@ vec4 fatSeptum(vec3 m) {
   }
   float dV = 1e9;
   vec2 gdir = vec2(1.0, 0.0);
-  vec3 gu = wallArcGradient(m);
   for (int j = 0; j < 9; j++) {
     if (j == k1) continue;
     vec2 dv = s[j] - s[k1];
-    float l = length(vec3(dv.x * gu.xy, dv.y));
+    float l = length(dv);
     float dist = dot(0.5 * (s[j] + s[k1]) - q, dv) / l;
-    if (dist < dV) { dV = dist; gdir = dv; }
+    if (dist < dV) { dV = dist; gdir = dv / l; }
   }
   vec2 cell1 = c + vec2(float(k1 % 3 - 1), float(k1 / 3 - 1));
   float off = hash13(vec3(cell1, ${f4(SALT.offset)}));
   float tu = (2.0 * hash13(vec3(cell1, ${f4(SALT.tiltU)})) - 1.0) * WT_TILT_MAX;
   float tv = (2.0 * hash13(vec3(cell1, ${f4(SALT.tiltV)})) - 1.0) * WT_TILT_MAX;
   float st = (d - skin + tu * (u - s[k1].x * WT_LOBULE_MM) + tv * (m.z - s[k1].y * WT_LOBULE_MM)) / WT_STRATUM_MM + off;
+  float dh = abs(st - floor(st + 0.5)) * WT_STRATUM_MM / sqrt(1.0 + tu * tu + tv * tv);
   vec3 gd = torsoDepthGrad(m);
-  vec3 vg = vec3(gdir.x * gu.xy, gdir.y), hg = -gd + tu * gu + vec3(0.0, 0.0, tv);
-  float dv = dV * WT_LOBULE_MM;
-  float dh = abs(st - floor(st + 0.5)) * WT_STRATUM_MM / length(hg);
-  bool vertical = dv < dh;
-  float dist = vertical ? dv : dh;
-  vec3 normal = normalize(vertical ? vg : hg);
+  vec3 gu = wallArcGradient(m);
+  bool vertical = dV * WT_LOBULE_MM < dh;
+  float dist = vertical ? dV * WT_LOBULE_MM : dh;
+  vec3 normal = vertical ? normalize(vec3(gdir.x * gu.xy, gdir.y)) : normalize(-gd + tu * gu + vec3(0.0, 0.0, tv));
   float x = dist / WT_SEPTUM_SIGMA;
   return vec4(normal, exp(-0.5 * x * x));
 }
@@ -448,11 +445,16 @@ vec4 muscleStriation(vec3 m) {
 float wallFaceNoise(float u, float z, float face) {
   float P = wallPerimeter(), period = max(1.0, floor(P / WT_FACE_VAR_MM + 0.5));
   float x = u / WT_FACE_VAR_MM, edge = P / (2.0 * WT_FACE_VAR_MM);
-  float blend = smoothstep(floor((period - 1.0) / 2.0), edge, abs(x));
+  float start = floor((period - 1.0) / 2.0);
+  if (abs(x) <= start) return valueNoise(vec3(x, z / WT_FACE_VAR_MM, face * 3.7), ${f4(SALT.face)});
+  float blend = smoothstep(start, edge, abs(x));
   vec3 q = vec3(x + sign(x) * (period / 2.0 - edge) * blend, z / WT_FACE_VAR_MM, face * 3.7);
   vec3 c = floor(q), s = q - c;
   s = s * s * (3.0 - 2.0 * s);
-  vec2 nx = mod(c.xx + vec2(0.0, 1.0) + 0.5 * period, period) - 0.5 * period;
+  // Un modulo puede perturbar nodos enteros en GPU y cambiar su hash en el interior.
+  vec2 nx = c.xx + vec2(0.0, 1.0);
+  nx = vec2(nx.x >= 0.5 * period ? nx.x - period : nx.x < -0.5 * period ? nx.x + period : nx.x,
+            nx.y >= 0.5 * period ? nx.y - period : nx.y < -0.5 * period ? nx.y + period : nx.y);
   vec3 o = vec3(${f4(SALT.face)});
   float x00 = mix(hash13(vec3(nx.x,c.yz)+o),hash13(vec3(nx.y,c.yz)+o),s.x);
   float x10 = mix(hash13(vec3(nx.x,c.y+1.0,c.z)+o),hash13(vec3(nx.y,c.y+1.0,c.z)+o),s.x);

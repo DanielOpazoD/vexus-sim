@@ -30,13 +30,14 @@ float phaseAt(vec3 p) {
   return -torsoDepth(p)-wallDepths(u,v).y+U+J;
 }
 void main() {
-  vec3 p = texelFetch(uPoints, ivec2(int(gl_FragCoord.x),0),0).xyz;
+  vec4 point = texelFetch(uPoints, ivec2(int(gl_FragCoord.x),0),0);
+  vec3 p = point.xyz;
   if (int(gl_FragCoord.x) >= uMuscleCount) {
     float a=wallFaceGain(vec3(-0.002,p.yz),int(p.x)),b=wallFaceGain(vec3(0.002,p.yz),int(p.x));
-    float angle=sign(p.z)*(0.17+0.31*float(int(p.x)-IF_FIRST_WALL+1));
-    vec3 interior=vec3(uTorso.x*sin(angle),uTorso.y*cos(angle)+uTorsoY,p.z);
-    float expected=exp(WT_FACE_VAR[int(p.x)-IF_FIRST_WALL]*(valueNoise(vec3(wallArc(interior)/WT_FACE_VAR_MM,p.z/WT_FACE_VAR_MM,float(int(p.x)-IF_FIRST_WALL+1)*3.7),37.3)-0.5));
-    result=vec4(a,b,abs(log(a/b)),abs(log(wallFaceGain(interior,int(p.x))/expected)));return;
+    float face=float(int(p.x)-IF_FIRST_WALL+1);
+    float expected=valueNoise(vec3(point.w/WT_FACE_VAR_MM,p.z/WT_FACE_VAR_MM,face*3.7),37.3);
+    float actual=wallFaceNoise(point.w,p.z,face);
+    result=vec4(a,b,abs(log(a/b)),abs(WT_FACE_VAR[int(p.x)-IF_FIRST_WALL]*(actual-expected)));return;
   }
   vec4 s=muscleStriation(p);
   float h=0.002;
@@ -70,17 +71,22 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
         const skin = torsoSkinPoint((2 * Math.PI * (angle + 0.17)) / 32, z, t);
         const n = torsoNormal(skin, t);
         const w = wallDepths(t, wallArc(skin, t), z);
-        for (const fraction of [0.25, 0.5, 0.75]) {
+        for (const fraction of [0.125, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875]) {
           const depth = w.fascia + fraction * (w.transversalis - w.fascia);
           const p = skin.map((v, i) => v - depth * n[i]) as Vec3;
           points.push(...p);
         }
       }
     const muscleCount = points.length / 3;
+    const faceArcs: number[] = [];
     for (let face = FIRST_WALL_INTERFACE; face <= LAST_WALL_INTERFACE; face++)
-      for (const z of [-150, -125, -100, -75, -25, 25]) points.push(face, -t.b + (t.y0 ?? 0), z);
+      for (const z of [-150, -125, -100, -75, -25, 25]) {
+        points.push(face, -t.b + (t.y0 ?? 0), z);
+        const angle = Math.sign(z) * (0.17 + 0.31 * (face - FIRST_WALL_INTERFACE + 1));
+        faceArcs.push(wallArc([t.a * Math.sin(angle), t.b * Math.cos(angle) + (t.y0 ?? 0), z], t));
+      }
     const result = await page.evaluate(
-      ({ source, points, schema, muscleCount }) => {
+      ({ source, points, schema, muscleCount, faceArcs }) => {
         const sim = window.__vexusTest!.sim(),
           r = sim.renderer,
           gl = r.gl;
@@ -133,7 +139,10 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
           }
           const count = points.length / 3,
             packed = new Float32Array(count * 4);
-          for (let i = 0; i < count; i++) packed.set(points.slice(3 * i, 3 * i + 3), 4 * i);
+          for (let i = 0; i < count; i++) {
+            packed.set(points.slice(3 * i, 3 * i + 3), 4 * i);
+            if (i >= muscleCount) packed[4 * i + 3] = faceArcs[i - muscleCount];
+          }
           const texture = (unit: number, data: Float32Array | null) => {
             const tex = gl.createTexture();
             textures.push(tex);
@@ -162,7 +171,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
           const rows = [],
             faces = [];
           for (let i = 0; i < count; i++) {
-            const row = [...Array.from(output.slice(4 * i, 4 * i + 4)), ...points.slice(3 * i, 3 * i + 3)];
+            const row = [...Array.from(output.slice(4 * i, 4 * i + 4)), ...points.slice(3 * i, 3 * i + 3), packed[4 * i + 3]];
             if (i >= muscleCount) faces.push(row);
             else if (output[4 * i + 1] > 0.1 && output[4 * i + 1] < 0.8) rows.push(row);
           }
@@ -190,7 +199,7 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
           gl.deleteProgram(program);
         }
       },
-      { source, points, muscleCount, schema: SCENE_UNIFORMS.map(({ name, type }) => ({ name, type })) },
+      { source, points, muscleCount, faceArcs, schema: SCENE_UNIFORMS.map(({ name, type }) => ({ name, type })) },
     );
     await info.attach('muscle-normal-gradient-and-wall-continuity', { body: JSON.stringify(result), contentType: 'application/json' });
     expect(result.caseId).toBe(caseId);
@@ -207,8 +216,8 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
       expect(right).toBeGreaterThan(0);
       // 4 micras: límite numérico/espacial, ~0,043 dB; el defecto anterior supera20dB.
       expect(logJump).toBeLessThan(0.005);
-      // Cerrar la costura no cambia la realización fuera de ella; oráculo GLSL
-      // original dentro de la misma GPU, sin comparar hashes entre CPU y GPU.
+      // Misma coordenada material float32 para las dos funciones: se mide el
+      // cierre del ruido, sin mezclar redondeos de dos reevaluaciones de wallArc.
       expect(interiorError).toBeLessThan(0.00001);
     }
   });

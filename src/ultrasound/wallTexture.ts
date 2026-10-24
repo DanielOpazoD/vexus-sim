@@ -125,16 +125,18 @@ export function fatSeptum(m: Vec3, t: Torso): [number, number, number, number] {
   let dV = 1e9;
   let gu = 1;
   let gv = 0;
+  const arcGradient = wallArcGradient(m, t);
   for (let j = 0; j < 9; j++) {
     if (j === k1) continue;
     const du = su[j] - su[k1];
     const dv = sv[j] - sv[k1];
-    const l = Math.hypot(du, dv);
+    // Elegir en mm materiales: normalizar solo la ganadora de u,z crea saltos.
+    const l = Math.hypot(du * arcGradient[0], du * arcGradient[1], dv);
     const dist = ((0.5 * (su[j] + su[k1]) - qu) * du + (0.5 * (sv[j] + sv[k1]) - qv) * dv) / l;
     if (dist < dV) {
       dV = dist;
-      gu = du / l;
-      gv = dv / l;
+      gu = du;
+      gv = dv;
     }
   }
   const iu1 = cu + (k1 % 3) - 1;
@@ -146,10 +148,9 @@ export function fatSeptum(m: Vec3, t: Torso): [number, number, number, number] {
   // Cadena de derivación de ambas láminas materiales (221). Su norma convierte
   // también la distancia a mm normales (251), antes de elegir la más cercana.
   const depthGradient = torsoDepthGradient(m, t);
-  const arcGradient = wallArcGradient(m, t);
   const vg: Vec3 = [gu * arcGradient[0], gu * arcGradient[1], gv];
   const hg: Vec3 = [-depthGradient[0] + tu * arcGradient[0], -depthGradient[1] + tu * arcGradient[1], -depthGradient[2] + tv];
-  const dv = (dV * T.lobuleMm) / Math.hypot(...vg);
+  const dv = dV * T.lobuleMm;
   const dh = (Math.abs(s - Math.round(s)) * T.stratumMm) / Math.hypot(...hg);
   const vertical = dv < dh;
   const dist = vertical ? dv : dh;
@@ -375,12 +376,13 @@ vec4 fatSeptum(vec3 m) {
   }
   float dV = 1e9;
   vec2 gdir = vec2(1.0, 0.0);
+  vec3 gu = wallArcGradient(m);
   for (int j = 0; j < 9; j++) {
     if (j == k1) continue;
     vec2 dv = s[j] - s[k1];
-    float l = length(dv);
+    float l = length(vec3(dv.x * gu.xy, dv.y));
     float dist = dot(0.5 * (s[j] + s[k1]) - q, dv) / l;
-    if (dist < dV) { dV = dist; gdir = dv / l; }
+    if (dist < dV) { dV = dist; gdir = dv; }
   }
   vec2 cell1 = c + vec2(float(k1 % 3 - 1), float(k1 / 3 - 1));
   float off = hash13(vec3(cell1, ${f4(SALT.offset)}));
@@ -388,9 +390,8 @@ vec4 fatSeptum(vec3 m) {
   float tv = (2.0 * hash13(vec3(cell1, ${f4(SALT.tiltV)})) - 1.0) * WT_TILT_MAX;
   float st = (d - skin + tu * (u - s[k1].x * WT_LOBULE_MM) + tv * (m.z - s[k1].y * WT_LOBULE_MM)) / WT_STRATUM_MM + off;
   vec3 gd = torsoDepthGrad(m);
-  vec3 gu = wallArcGradient(m);
   vec3 vg = vec3(gdir.x * gu.xy, gdir.y), hg = -gd + tu * gu + vec3(0.0, 0.0, tv);
-  float dv = dV * WT_LOBULE_MM / length(vg);
+  float dv = dV * WT_LOBULE_MM;
   float dh = abs(st - floor(st + 0.5)) * WT_STRATUM_MM / length(hg);
   bool vertical = dv < dh;
   float dist = vertical ? dv : dh;

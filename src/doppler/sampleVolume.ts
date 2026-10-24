@@ -470,7 +470,7 @@ export class SampleVolumeIQ {
       const slow = this.tick % SLOW_EVERY === 0;
       const reclass = this.tick % RECLASSIFY_EVERY === 0;
       for (let j = 0; j < this.scatterers.length; j++) {
-        const s = this.scatterers[j];
+        let s = this.scatterers[j];
         if (s.isBlood) {
           s.weightEpoch = -1;
           // Advección en coordenadas materiales (la sangre se mueve respecto al vaso).
@@ -481,14 +481,18 @@ export class SampleVolumeIQ {
         const dx = s.m[0] + disp[0] - g.center[0];
         const dy = s.m[1] + disp[1] - g.center[1];
         const dz = s.m[2] + disp[2] - g.center[2];
-        const ax = dx * g.beamDir[0] + dy * g.beamDir[1] + dz * g.beamDir[2];
-        const la = dx * g.lateral[0] + dy * g.lateral[1] + dz * g.lateral[2];
-        const el = dx * g.elevation[0] + dy * g.elevation[1] + dz * g.elevation[2];
-        const outside = Math.abs(ax) > this.halfAxial || Math.abs(la) > this.halfLateral || Math.abs(el) > this.halfElev;
+        let ax = dx * g.beamDir[0] + dy * g.beamDir[1] + dz * g.beamDir[2];
+        let la = dx * g.lateral[0] + dy * g.lateral[1] + dz * g.lateral[2];
+        let el = dx * g.elevation[0] + dy * g.elevation[1] + dz * g.elevation[2];
+        let outside = Math.abs(ax) > this.halfAxial || Math.abs(la) > this.halfLateral || Math.abs(el) > this.halfElev;
         // Transport at every emitted pulse, with periodic overshoot preserved: no density clumps at PRF/8.
         if (outside && s.isBlood && !s.fading) {
-          this.scatterers[j] = this.spawn(phys, s);
-          continue;
+          s = this.spawn(phys, s);
+          this.scatterers[j] = s;
+          // The replacement already occupies this pulse's position. Do not advect it twice
+          // or omit its echo; random fallback keeps its real identity and amplitude ramp.
+          [ax, la, el] = this.worldToGate(this.worldOf(s));
+          outside = Math.abs(ax) > this.halfAxial || Math.abs(la) > this.halfLateral || Math.abs(el) > this.halfElev;
         }
         const refresh = slow || s.fresh;
         if (slow && s.fading && s.rampLeft <= 0) {

@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Doppler PW: incluye el eco del reemplazo sanguíneo en el pulso de cruce, en su posición transportada y sin duplicar advección, fase o rampa; conserva los controles espectrales y la captura renal (264).
+
 - Atlas: conserva exactamente los campos constantes al interpolar distancias y evita atribuir grasa mesentérica por redondeo en un campo saturado; mismos nodos, etiquetas y resolución (263).
 
 - Sonda: un arrastre activo consume el movimiento ignorado durante la congelación y se reanuda sin salto, también con uno o dos dedos; los gestos iniciados congelados siguen ignorados (261).

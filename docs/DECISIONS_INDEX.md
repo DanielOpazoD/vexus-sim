@@ -269,3 +269,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [263](DECISIONS.md#L8738) | Conservar campos fuente constantes al interpolar distancias | vigente |
 | [264](DECISIONS.md#L8750) | Incluir el eco sanguíneo en el pulso de reentrada | vigente |
 | [265](DECISIONS.md#L8776) | Una ejecución venosa temprana por suite | vigente |
+| [266](DECISIONS.md#L8788) | Referencia espectral independiente de camino y receptor | vigente |

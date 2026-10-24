@@ -53,7 +53,13 @@ Metal/Swift y el consumidor Metal aprobaron con negativos y recursos verificados
 GPU permanente sustituye exclusivamente la comprobación textual. Cuatro pares visuales registrados
 normal/grave × hepatorrenal/renal conservan adquisición y resolución, sin corrupción observada;
 la diferencia es pequeña y no demuestra realismo externo. El rebase tras PR281 conserva el árbol
-completo de `2859ee4`. Check y CI del head final siguen pendientes; B4/B7 no están fusionados.
+completo de `2859ee4`. El head `11edcaa` pasó check completo (1.738 core, 54 matrices y 11 controles de fallo esperado),
+hook normal y verificación de 50 recursos. Está publicado en [PR282](https://github.com/DanielOpazoD/vexus-sim/pull/282):
+CI `40142356662` y seis complementos pendientes; B4/B7 no están fusionados.
+
+B13 evalúa la poda de registros Three sin consumidor (268): tres controles focales, tipos y lint
+aprobados; ahorro diagnóstico de 5.925 bytes JS con los 50 recursos intactos. No cambia shaders
+utilizados ni resolución. Faltan controles del navegador y aceptación completa antes de promoverlo.
 
 La variante GPU del corte se retiró: en 3RAF redujo el desfase un 14,8 % pero la cadencia B un
 16,2 %; el beneficio en 1RAF no satisface el filtro conjunto previo. Conserva la auditoría de

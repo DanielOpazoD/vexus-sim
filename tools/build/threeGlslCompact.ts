@@ -2,6 +2,7 @@ import type { Plugin } from 'vite';
 import { readFileSync, readdirSync, realpathSync } from 'node:fs';
 import { join } from 'node:path';
 import { prepareGlslMangle, transformWithMangle, type GlslMangleContext, type SourceModule } from './glslMinify';
+import { pruneThreeShaderRegistry } from './threeShaderFamilies';
 
 /** Optimize Three's tagged GLSL with one map across its source modules.
  * Renderer strings, uniforms, attributes and preprocessor lines retain their contracts. */
@@ -31,6 +32,8 @@ export function threeGlslCompact(): Plugin {
       context.map.names = new Map([...context.map.names].filter(([name]) => !name.endsWith('ToneMapping')));
     },
     transform(code, id) {
+      const registry = pruneThreeShaderRegistry(code, id);
+      if (registry !== null) return { code: registry, map: null };
       if (!/node_modules\/three\/src\/renderers\/shaders\/(?:ShaderChunk|ShaderLib)\/[^/]+\.glsl\.js$/.test(id.replaceAll('\\', '/')))
         return null;
       return { code: transformWithMangle(code, realpathSync(id), context, { compact: true }), map: null };

@@ -111,6 +111,12 @@ describe('integridad de la evidencia de adquisición', () => {
     shot.acquiredTimeSeconds = NaN;
     expect(() => validateAcquisition(shot, expected)).toThrow('times differ');
   });
+  it.each([NaN, Infinity, -Infinity])('rechaza tiempo presentado no finito: %s', (time) => {
+    expect(() => validateAcquisition({ ...acquisition(), presentedSampleTimeSeconds: time }, expected)).toThrow('times differ');
+  });
+  it.each([NaN, Infinity, -Infinity])('rechaza tiempo esperado no finito: %s', (time) => {
+    expect(() => validateAcquisition(acquisition(), { ...expected, time })).toThrow('requested time');
+  });
   it('rechaza legacy o un paciente distinto en una comparación declarada atlas normal', () => {
     expect(() => validateAcquisition({ ...acquisition(), anatomyMode: 'legacy' }, expected)).toThrow('domain');
     expect(() => validateAcquisition({ ...acquisition(), caseId: 'severe-congestion' }, expected)).toThrow('domain');

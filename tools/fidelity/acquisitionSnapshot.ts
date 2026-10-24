@@ -96,9 +96,13 @@ export function validateAcquisition(
     (!Number.isSafeInteger(expected.receiverFrame) || expected.receiverFrame < 1 || snapshot.presentedFrame !== expected.receiverFrame)
   )
     throw new Error('Presented image differs from the registered receiver phase');
-  if (!Number.isFinite(snapshot.acquiredTimeSeconds) || Math.abs(snapshot.acquiredTimeSeconds - snapshot.presentedSampleTimeSeconds) > 1e-9)
+  if (
+    !Number.isFinite(snapshot.acquiredTimeSeconds) ||
+    !Number.isFinite(snapshot.presentedSampleTimeSeconds) ||
+    Math.abs(snapshot.acquiredTimeSeconds - snapshot.presentedSampleTimeSeconds) > 1e-9
+  )
     throw new Error('Presented anatomy and signal times differ');
-  if (expected.time !== undefined && Math.abs(snapshot.acquiredTimeSeconds - expected.time) > 1e-9)
+  if (expected.time !== undefined && (!Number.isFinite(expected.time) || Math.abs(snapshot.acquiredTimeSeconds - expected.time) > 1e-9))
     throw new Error('Static acquisition did not reach its requested time');
   if (snapshot.errors.length) throw new Error('Acquisition contains renderer errors');
   // An animator may change controls while both cached frames remain unchanged.

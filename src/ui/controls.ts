@@ -26,7 +26,7 @@ export function controlId(label: string): string {
 }
 
 /** Deslizador: rótulo y valor en una fila, la barra debajo a todo el ancho. */
-export function slider(parent: HTMLElement, spec: SliderSpec, onChange: () => void): Syncable {
+export function slider(parent: HTMLElement, spec: SliderSpec): Syncable {
   const row = document.createElement('div');
   row.className = 'control';
   const input = document.createElement('input');
@@ -48,7 +48,6 @@ export function slider(parent: HTMLElement, spec: SliderSpec, onChange: () => vo
   input.addEventListener('input', () => {
     spec.set(Number(input.value));
     out.textContent = fmt(Number(input.value));
-    onChange();
   });
   row.append(l, out, input);
   parent.appendChild(row);

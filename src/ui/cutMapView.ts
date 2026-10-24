@@ -215,6 +215,8 @@ export class CutMapView {
   private requestId = 0;
   private map: CutMapResponse | null = null;
   private mapDirty = false;
+  /** Exact screen pixel → acquired map cell; one entry, replaced when projection changes. */
+  private raster: { key: number[]; cells: Int32Array } | null = null;
   /** Instante (muestra, marco, profundidad) con el que se pidió cada mapa, por id. */
   private pendingInputs: MapInputs | null = null;
   private mapInputs: MapInputs | null = null;
@@ -437,11 +439,6 @@ export class CutMapView {
     this.tooltip.remove();
   }
 
-  /** El corte está degradado: el Worker falló y se espera al siguiente reintento. */
-  get degraded(): boolean {
-    return this.failures > 0;
-  }
-
   /** Registra el fallo, descarta el Worker y programa un reintento con espera creciente (1 s → 30 s). */
   private fail(error: unknown, nowMs: number): void {
     errorLog.report('corte', error);
@@ -584,22 +581,34 @@ export class CutMapView {
     if (!this.img || this.img.width !== W || this.img.height !== H) this.img = ctx.createImageData(W, H);
     const px = this.img.data;
     const vesselIds = sim.scene.vessels.map((v) => v.id);
-    // acumuladores de centroides por estructura
-    const acc = new Map<string, { x: number; y: number; n: number; label: string }>();
+    const key = [W, H, depth, tr.curvatureRadius, tr.halfSector, map.width, map.height];
+    if (!this.raster || this.raster.key.some((value, i) => value !== key[i])) {
+      const cells = new Int32Array(W * H).fill(-1);
+      for (let y = 0; y < H; y++) {
+        for (let x = 0; x < W; x++) {
+          const beam = pixelToBeam(layout, tr, depth, x, y);
+          if (!beam) continue;
+          const u = Math.min(map.width - 1, Math.floor(((beam.theta + tr.halfSector) / (2 * tr.halfSector)) * map.width));
+          const v = Math.min(map.height - 1, Math.floor((beam.r / depth) * map.height));
+          cells[y * W + x] = v * map.width + u;
+        }
+      }
+      this.raster = { key, cells };
+    }
+    const cells = this.raster.cells;
+    // Label centroids are unused in the learner view; pixels and selection remain identical.
+    const acc = this.labels ? new Map<string, { x: number; y: number; n: number; label: string }>() : null;
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
-        const beam = pixelToBeam(layout, tr, depth, x, y);
+        const i = cells[y * W + x];
         const o = (y * W + x) * 4;
-        if (!beam) {
+        if (i < 0) {
           px[o] = 13;
           px[o + 1] = 15;
           px[o + 2] = 19;
           px[o + 3] = 255;
           continue;
         }
-        const u = Math.min(map.width - 1, Math.floor(((beam.theta + tr.halfSector) / (2 * tr.halfSector)) * map.width));
-        const v = Math.min(map.height - 1, Math.floor((beam.r / depth) * map.height));
-        const i = v * map.width + u;
         const t = map.tissue[i];
         const vi = map.vessel[i];
         let c: [number, number, number];
@@ -624,7 +633,7 @@ export class CutMapView {
         px[o + 1] = c[1];
         px[o + 2] = c[2];
         px[o + 3] = 255;
-        if (key) {
+        if (key && acc) {
           const a = acc.get(key) ?? { x: 0, y: 0, n: 0, label };
           a.x += x;
           a.y += y;
@@ -645,7 +654,7 @@ export class CutMapView {
     this.updateSelection(sim);
     this.paintContour(ctx, sim, false);
     // rótulos (el alumno no los ve: identificar la estructura es parte del examen)
-    if (!this.labels) return;
+    if (!acc) return;
     ctx.font = `bold ${Math.round(11 * (W / 300))}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.lineWidth = 3;

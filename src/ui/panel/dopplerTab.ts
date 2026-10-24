@@ -44,7 +44,6 @@ export function sweepRow(ctx: PanelContext, parent: HTMLElement): void {
 /** Pestaña Doppler (contextual): color o PW según el modo; vacía en modo B. Lo avanzado del PW, plegado. */
 export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanels {
   const s = ctx.sim;
-  const ch = () => undefined;
   const empty = document.createElement('div');
   empty.className = 'empty';
   note(empty, 'Doppler apagado: activa Color o PW en la barra inferior (teclas C y P).');
@@ -59,47 +58,35 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
     info: 'Arrastra en la imagen para mover la caja; en tríplex acompaña a PW. Escala baja → aliasing; filtro alto → pierde flujo lento. El color depende del ángulo del haz.',
   });
   ctx.track(
-    slider(
-      c,
-      {
-        label: 'Escala',
-        min: 4,
-        max: 60,
-        step: 1,
-        get: () => Math.round(nyquistVelocityCms(s().color.prfHz, s().transducer.f0Doppler)),
-        set: (v) => ctx.dispatch({ type: 'color', patch: { prfHz: Math.round(prfFromNyquistCms(v, s().transducer.f0Doppler)) } }),
-        format: (v) => `±${v} cm/s`,
-      },
-      ch,
-    ),
+    slider(c, {
+      label: 'Escala',
+      min: 4,
+      max: 60,
+      step: 1,
+      get: () => Math.round(nyquistVelocityCms(s().color.prfHz, s().transducer.f0Doppler)),
+      set: (v) => ctx.dispatch({ type: 'color', patch: { prfHz: Math.round(prfFromNyquistCms(v, s().transducer.f0Doppler)) } }),
+      format: (v) => `±${v} cm/s`,
+    }),
   );
   ctx.track(
-    slider(
-      c,
-      {
-        label: 'Filtro de pared',
-        min: 20,
-        max: 400,
-        step: 10,
-        get: () => s().color.wallFilterHz,
-        set: (v) => ctx.dispatch({ type: 'color', patch: { wallFilterHz: v } }),
-        format: (v) => `${v} Hz`,
-      },
-      ch,
-    ),
+    slider(c, {
+      label: 'Filtro de pared',
+      min: 20,
+      max: 400,
+      step: 10,
+      get: () => s().color.wallFilterHz,
+      set: (v) => ctx.dispatch({ type: 'color', patch: { wallFilterHz: v } }),
+      format: (v) => `${v} Hz`,
+    }),
   );
   ctx.track(
-    slider(
-      c,
-      {
-        label: 'Ganancia',
-        ...EQUIPMENT_LIMITS.colorGainDb,
-        get: () => s().color.gainDb,
-        set: (v) => ctx.dispatch({ type: 'color', patch: { gainDb: v } }),
-        format: (v) => `${v} dB`,
-      },
-      ch,
-    ),
+    slider(c, {
+      label: 'Ganancia',
+      ...EQUIPMENT_LIMITS.colorGainDb,
+      get: () => s().color.gainDb,
+      set: (v) => ctx.dispatch({ type: 'color', patch: { gainDb: v } }),
+      format: (v) => `${v} dB`,
+    }),
   );
   const cr = document.createElement('div');
   cr.className = 'field-row';
@@ -129,62 +116,46 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
     info: 'Arrastra en la imagen para mover la puerta. El filtro de pared elimina frecuencias bajas.',
   });
   ctx.track(
-    slider(
-      w,
-      {
-        label: 'Escala',
-        min: 5,
-        max: 120,
-        step: 1,
-        get: () => Math.round(nyquistVelocityCms(s().pw.prfHz, s().transducer.f0Doppler)),
-        set: (v) => ctx.dispatch({ type: 'pw', patch: { prfHz: Math.round(prfFromNyquistCms(v, s().transducer.f0Doppler)) } }),
-        format: (v) => `±${v} cm/s`,
-      },
-      ch,
-    ),
+    slider(w, {
+      label: 'Escala',
+      min: 5,
+      max: 120,
+      step: 1,
+      get: () => Math.round(nyquistVelocityCms(s().pw.prfHz, s().transducer.f0Doppler)),
+      set: (v) => ctx.dispatch({ type: 'pw', patch: { prfHz: Math.round(prfFromNyquistCms(v, s().transducer.f0Doppler)) } }),
+      format: (v) => `±${v} cm/s`,
+    }),
   );
   ctx.track(
-    slider(
-      w,
-      {
-        label: 'Puerta',
-        min: 1,
-        max: 10,
-        step: 0.5,
-        get: () => s().pw.gateMm,
-        set: (v) => ctx.dispatch({ type: 'pw', patch: { gateMm: v } }),
-        format: (v) => `${v.toFixed(1)} mm`,
-      },
-      ch,
-    ),
+    slider(w, {
+      label: 'Puerta',
+      min: 1,
+      max: 10,
+      step: 0.5,
+      get: () => s().pw.gateMm,
+      set: (v) => ctx.dispatch({ type: 'pw', patch: { gateMm: v } }),
+      format: (v) => `${v.toFixed(1)} mm`,
+    }),
   );
   ctx.track(
-    slider(
-      w,
-      {
-        label: 'Filtro de pared',
-        min: 10,
-        max: 300,
-        step: 5,
-        get: () => s().pw.wallFilterHz,
-        set: (v) => ctx.dispatch({ type: 'pw', patch: { wallFilterHz: v } }),
-        format: (v) => `${v} Hz`,
-      },
-      ch,
-    ),
+    slider(w, {
+      label: 'Filtro de pared',
+      min: 10,
+      max: 300,
+      step: 5,
+      get: () => s().pw.wallFilterHz,
+      set: (v) => ctx.dispatch({ type: 'pw', patch: { wallFilterHz: v } }),
+      format: (v) => `${v} Hz`,
+    }),
   );
   ctx.track(
-    slider(
-      w,
-      {
-        label: 'Ganancia',
-        ...EQUIPMENT_LIMITS.gainDb,
-        get: () => s().pw.gainDb,
-        set: (v) => ctx.dispatch({ type: 'pw', patch: { gainDb: v } }),
-        format: (v) => `${v} dB`,
-      },
-      ch,
-    ),
+    slider(w, {
+      label: 'Ganancia',
+      ...EQUIPMENT_LIMITS.gainDb,
+      get: () => s().pw.gainDb,
+      set: (v) => ctx.dispatch({ type: 'pw', patch: { gainDb: v } }),
+      format: (v) => `${v} dB`,
+    }),
   );
   sweepRow(ctx, w);
   ctx.track(
@@ -201,49 +172,37 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
     info: 'La corrección angular solo cambia la velocidad rotulada y la línea de base solo la presentación; ninguna de las dos toca la señal.',
   });
   ctx.track(
-    slider(
-      adv,
-      {
-        label: 'Línea de base',
-        min: -0.45,
-        max: 0.45,
-        step: 0.05,
-        get: () => s().pw.baselineShift,
-        set: (v) => ctx.dispatch({ type: 'pw', patch: { baselineShift: v } }),
-        format: (v) => `${(v * 100).toFixed(0)} %`,
-      },
-      ch,
-    ),
+    slider(adv, {
+      label: 'Línea de base',
+      min: -0.45,
+      max: 0.45,
+      step: 0.05,
+      get: () => s().pw.baselineShift,
+      set: (v) => ctx.dispatch({ type: 'pw', patch: { baselineShift: v } }),
+      format: (v) => `${(v * 100).toFixed(0)} %`,
+    }),
   );
   ctx.track(
-    slider(
-      adv,
-      {
-        label: 'Corrección angular',
-        min: -80,
-        max: 80,
-        step: 1,
-        get: () => (s().pw.angleCorrection * 180) / Math.PI,
-        set: (v) => ctx.dispatch({ type: 'pw', patch: { angleCorrection: (v * Math.PI) / 180 } }),
-        format: (v) => `${v.toFixed(0)}°`,
-      },
-      ch,
-    ),
+    slider(adv, {
+      label: 'Corrección angular',
+      min: -80,
+      max: 80,
+      step: 1,
+      get: () => (s().pw.angleCorrection * 180) / Math.PI,
+      set: (v) => ctx.dispatch({ type: 'pw', patch: { angleCorrection: (v * Math.PI) / 180 } }),
+      format: (v) => `${v.toFixed(0)}°`,
+    }),
   );
   ctx.track(
-    slider(
-      adv,
-      {
-        label: 'Volumen del audio',
-        min: 0,
-        max: 1,
-        step: 0.05,
-        get: () => s().audio.volume,
-        set: (v) => s().audio.setVolume(v),
-        format: (v) => `${(v * 100).toFixed(0)} %`,
-      },
-      ch,
-    ),
+    slider(adv, {
+      label: 'Volumen del audio',
+      min: 0,
+      max: 1,
+      step: 0.05,
+      get: () => s().audio.volume,
+      set: (v) => s().audio.setVolume(v),
+      format: (v) => `${(v * 100).toFixed(0)} %`,
+    }),
   );
   return { empty, color, pw };
 }

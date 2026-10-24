@@ -56,11 +56,6 @@ export class SeededRandom {
     const v = this.float();
     return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
   }
-
-  /** Deriva un generador hijo independiente y reproducible. */
-  fork(label: string): SeededRandom {
-    return new SeededRandom((this.uint32() ^ hashString(label)) >>> 0);
-  }
 }
 
 export function hashString(s: string): number {

@@ -13,6 +13,13 @@ seguimiento automático eliminado. Las cifras y pendientes de las secciones hist
 no sustituyen este cierre. Estado activo nuevo: `../fidelity-next15-evidence/CURRENT_STATE.json`
 y `PROGRESS.md`. No hay entrega aceptada de esta nueva ronda por el mero hecho de iniciar trabajo.
 
+El primer componente del bloque 1 está en [PR277](https://github.com/DanielOpazoD/vexus-sim/pull/277),
+referencia puntual sintética PyMUST, sin cambios en la imagen ni calibración clínica. Su aceptación
+se consulta en Git/CI. El candidato siguiente reutiliza exactamente la proyección del corte y retira
+código sin uso (258): reduce coste de pintado y bytes, pero no acredita menor desfase geométrico global.
+Las pruebas de moteado reproducen dependencia de trayectoria; la referencia material fija converge,
+pero su implementación directa sigue fuera del runtime por coste pendiente. Bloques 1, 2 y 5 abiertos.
+
 Antes de editar se apartaron reversiblemente trece archivos duplicados no seguidos: doce idénticos
 a los originales y `dist 2` (enlace simbólico frente al directorio `dist`). Manifiesto y hashes en
 `../fidelity-next15-evidence/quarantine-initial-duplicates/`; causa no determinada.

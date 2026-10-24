@@ -221,11 +221,6 @@ export class Navigator3D {
     this.dirty = true;
   }
 
-  resetCamera(): void {
-    this.orbit = { azimuth: 0.6, elevation: 0.2, distance: 72, target: new THREE.Vector3(6, 0, -2) };
-    this.dirty = true;
-  }
-
   // --- interacción ---------------------------------------------------------
 
   private ndc(e: PointerEvent): THREE.Vector2 {

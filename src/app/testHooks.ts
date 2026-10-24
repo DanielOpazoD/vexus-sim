@@ -760,7 +760,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       const u = (theta + tr.halfSector) / (2 * tr.halfSector);
       const transmission = sim.renderer.readTransmission();
       const fD = sim.profile.dopplerEffectiveMHz;
-      // el téxel que lee el color (el mismo índice que `transmissionAt`) y el acoplamiento como lo muestrea:
+      // el téxel de `readTransmission` que lee el color y el acoplamiento como lo muestrea:
       // textura LINEAR de `lines` téxeles con el valor de `lineAngle(i)` en el i-ésimo
       const line = Math.min(lines - 1, Math.max(0, Math.floor(u * lines)));
       const row = Math.min(COARSE_DEPTH - 1, Math.max(0, Math.floor((depthMm / depth) * COARSE_DEPTH)));

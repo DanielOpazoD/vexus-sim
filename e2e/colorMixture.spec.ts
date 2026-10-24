@@ -43,6 +43,29 @@ const samples: Sample[] = [
   ...[-6, 6, 12].map((gainDb) => ({ ...base, name: `ganancia ${gainDb} dB`, gainDb })),
 ];
 
+// Driver trig error must not be hidden by a few convenient phases. Include
+// aliases, the clamp, DC and either side of Nyquist at several actual PRFs.
+// Quantize inputs as WebGL uniforms do: the oracle measures arithmetic error,
+// not the inevitable difference between a JS number and its float32 input.
+const phases = [...Array.from({ length: 33 }, (_, i) => i / 32 - 0.5), -0.50001, -0.49999, -0.00001, 0.00001, 0.49999, 0.50001];
+for (const prf of [375, 1000, 2400]) {
+  for (const cutoffRatio of [0, 0.001, 0.06, 0.45, 0.8]) {
+    for (const alias of [-3, 0, 3]) {
+      for (const phase of phases) {
+        const f = Math.fround((alias + phase) * prf);
+        samples.push({
+          ...base,
+          name: `barrido PRF ${prf}, corte ${cutoffRatio}, ciclos ${alias + phase}`,
+          frequency: [f, f, f, f, f],
+          width: 0,
+          cutoff: Math.fround(cutoffRatio * prf),
+          prf,
+        });
+      }
+    }
+  }
+}
+
 // Independent pulsed-IQ oracle: average z[n+1]·conj(z[n]) for each incoherent
 // spatial component, with the PW filter's response. The declared Gaussian
 // bandwidth is integrated numerically, rather than copying exp(-2π²σ²/PRF²).

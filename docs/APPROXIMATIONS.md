@@ -285,7 +285,11 @@ Color suma las autocorrelaciones esperadas de sus cinco submuestras antes
 de estimar fase, con la respuesta estacionaria del filtro. Sigue sin
 adquirir ensembles IQ por píxel. El ancho espectral, el ruido y la varianza
 de fase permanecen aproximados; en particular, la dependencia angular del
-ensanchamiento de apertura requiere un contraste independiente. La ganancia
+ensanchamiento de apertura requiere un contraste independiente. La fase y
+la respuesta estacionaria del filtro usan una aproximación polinómica
+explícita de seno, verificada contra IQ independiente en Metal y SwiftShader;
+esto corrige precisión numérica entre drivers, sin añadir adquisición IQ ni
+calibración física. La ganancia
 aplica decibelios de potencia a R1; las cifras históricas del control con
 exponente /20 no calibran este control corregido.
 

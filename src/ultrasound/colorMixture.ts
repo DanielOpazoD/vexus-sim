@@ -12,8 +12,8 @@ vec4 colorMixture(float frequency[5], bool blood[5], float bloodPower, float tis
   for (int i = 0; i < 5; i++) {
     float f = frequency[i];
     float power = colorWallResponseHz(f, cutoff, prf) * (blood[i] ? bloodPower : tissuePower) / 5.0;
-    float phase = 6.2831853 * f / prf;
-    vec2 r1 = power * vec2(cos(phase), sin(phase));
+    float folded = f - prf * floor(f / prf + 0.5);
+    vec2 r1 = power * colorPhase(folded / prf);
     if (blood[i]) {
       float rho = exp(-2.0 * pow(3.14159265 * abs(f) * width / prf, 2.0));
       result.xy += rho * r1;

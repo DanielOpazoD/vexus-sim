@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { curvatureCoherence, cylindricalCurvatureCoherence, interfaceEchoGlsl } from '../ultrasound/interfaceEcho';
+import { curvatureCoherence, cylindricalCurvatureCoherence } from '../ultrasound/interfaceEcho';
 import fixture from './fixtures/cylindricalCurvature.json';
 
 const cylinders = fixture.cases.filter((row) => row.model === 'rank-one-cylinder');
@@ -64,15 +64,5 @@ describe('coherencia cilíndrica con Hessiana mixta (267)', () => {
     );
     expect(Math.abs(legacy - amplitude(oblique))).toBeGreaterThan(tolerance);
     expect(Math.abs(coherence(oblique) ** 2 - amplitude(oblique))).toBeGreaterThan(tolerance);
-  });
-
-  it('conecta la suma cilíndrica en ambas variantes GLSL; la lectura de fuente no acredita ejecución GPU', () => {
-    for (const cached of [false, true]) {
-      const source = interfaceEchoGlsl(cached);
-      const body = source.slice(source.indexOf('float tubeCurvature('), source.indexOf('// Eco de la cara'));
-      expect(body).toContain('if (cl < 1e-4) return 1.0;');
-      expect(body).toContain('float a = 2.0 * k * c.kc * (sl * sl * vl * vl + sE * sE * ve * ve);');
-      expect(body).toContain('return inversesqrt(sqrt(1.0 + a * a));');
-    }
   });
 });

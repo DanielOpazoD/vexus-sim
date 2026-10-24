@@ -47,6 +47,13 @@ esa heurística al lado evaluado y conserva la identidad arterial junto a otros 
 umbrales ni señal. Las pruebas E2E originales permanecen intactas. La aceptación del nuevo head
 sigue pendiente; no sustituirla por el check previo de `86ecdb0`.
 
+B4 conserva una referencia espectral fundamental independiente (266), todavía sin cambiar el
+render productivo. B7 corrige el término mixto de la coherencia cilíndrica (267). Sobre `bc91bf33`,
+los núcleos Metal/Swift y el consumidor Metal aprobaron de forma focal, con negativos y recursos
+verificados; se sustituye la comprobación textual por una E2E pequeña con cuadratura versionada.
+La fuente productiva de ese traslado permanece idéntica. A/B visual, check y CI del head final
+siguen pendientes; B4/B7 no están fusionados. PR281 sigue pendiente de su CI final separada.
+
 La variante GPU del corte se retiró: en 3RAF redujo el desfase un 14,8 % pero la cadencia B un
 16,2 %; el beneficio en 1RAF no satisface el filtro conjunto previo. Conserva la auditoría de
 768 puntos y los negativos, sin integración. Las EMA GPU no acreditan coste aislado por pasada.

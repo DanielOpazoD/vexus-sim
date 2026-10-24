@@ -6,6 +6,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 ## [Sin publicar]
 
 - Ecos cilíndricos: conserva el término mixto de curvatura al girar el eje, con referencia compleja 2D y sin reajustar ganancias; mantiene el contrato diagonal genérico y explicita el alcance a incidencia normal del oráculo (267).
+- Pruebas de curvatura: sustituye la comprobación de cadenas GLSL por ejecución WebGL2 frente al fixture independiente, con degeneración y negativo histórico; conserva los cinco controles físicos CPU y los límites numéricos (267).
 
 - Referencia espectral fundamental: separa camino tisular, pérdida fija y receptor con un oráculo offline y muestras complejas trazables; conserva el negativo de convergencia, sin modificar todavía la imagen (266).
 

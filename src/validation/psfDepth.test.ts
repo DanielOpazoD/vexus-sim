@@ -215,8 +215,7 @@ describe('ganancia focal de la emisión (decisión 84)', () => {
     // la coherencia de curvatura de las caras, con el número de onda del eco en el lateral y en la elevación
     const iface = flat(INTERFACE_ECHO_GLSL);
     expect(iface).toContain('float k = uIfaceK0 * echoFrequency(r);');
-    expect(iface).toContain('float al = 2.0 * k * sl * sl * kl;');
-    expect(iface).toContain('float ae = 2.0 * k * sE * sE * ke;');
+    // La dependencia de k y ambas sigmas del cilindro la contrasta cylindricalCurvature.spec.ts con cuadratura (267).
     // la ganancia focal va al eco de la pasada B, en las dos miradas; D y el color no la llevan
     expect(FRAG_RAWFIELD).toContain('out2 *= harmonicNearGain(r) * focalGain(r);');
     expect(FRAG_RAWFIELD_STEERED).toContain('out2 *= harmonicNearGain(s) * focalGain(s);');

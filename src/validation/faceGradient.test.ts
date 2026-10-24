@@ -354,7 +354,7 @@ describe('Eco de interfaz en la distancia por la normal (|∇| de la cara)', () 
     expect(echo).toContain('vec3 gw = warpNormal(w, fg.xyz * fg.w); float gn = length(gw); fg = vec4(gw / max(gn, 1e-9), gn);');
     expect(echo).toContain('float g = faceShape(c.iface, c.ifd / (fg.w * cosI)) * gain;');
     expect(echo).toContain('return vec2(faceEcho(c.iface, cosF, min(1.0 - 4.0 * FACET_TILT2 * P.z, 1.0 - FACET_RHO2), 1.0, curv, g),');
-    expect(echo).toContain('float kl = dot(lat, circ); kl = kl * kl * c.kc;');
+    // La curvatura cilíndrica mixta se verifica numéricamente en cylindricalCurvature.spec.ts (267).
     expect(FRAG_QUERY).toContain('o2 = faceGradient(c, m);');
     // La vesícula usa el gradiente analítico; la fosa hepática conserva la sobrecarga escalar.
     expect(glsl).not.toContain('gallbladderSdf(m + h.xyy)');

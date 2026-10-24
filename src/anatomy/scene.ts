@@ -12,7 +12,6 @@ import { ABDOMINAL_VESSEL_RADII, type VesselAreas, type VesselId } from '../phys
 import {
   diaphragmHeight,
   orthonormalBasis,
-  sdSpine,
   spineBodySd,
   spineDistances,
   spineFaceFrame,
@@ -600,7 +599,7 @@ export class AnatomyScene {
     const c: Classification =
       d.disc < 0
         ? { ...NONE, tissue: Tissue.Cartilage, boundaryDistance: -d.disc }
-        : this.classifyInside(m, caliber, withCurtain, depth, wall.wallMm);
+        : this.classifyInside(m, caliber, withCurtain, depth, wall.wallMm, d.bone);
     const result = withSpineFace(c, d.bone, d.body, d.disc);
     if (this.hasAbdominalAtlas && thoracicAtlas) {
       const q = thoracicValue(m);
@@ -624,10 +623,18 @@ export class AnatomyScene {
   }
 
   /** `classify` dentro de la cavidad y fuera de la columna: cortina, tubos, tórax, diafragma y vísceras. */
-  private classifyInside(m: Vec3, caliber: VesselCaliber, withCurtain: boolean, depth: number, wallMm: number): Classification {
+  private classifyInside(
+    m: Vec3,
+    caliber: VesselCaliber,
+    withCurtain: boolean,
+    depth: number,
+    wallMm: number,
+    spineDistance: number,
+  ): Classification {
     const curtain = withCurtain ? this.classifyLungCurtain(m, -depth - wallMm, caliber.diaphragmCaudalMm) : null;
     if (curtain) return curtain;
     const tube = this.classifyTubes(m, caliber);
+    if (tube && tube.interface !== Interface.IvcLumen) return tube;
     const [dDome, slope] = sdDiaphragmSlope(m, this.diaphragm, this.torso);
     const floor = heartFloor(dDome, slope);
     // la VCI que entra en la aurícula derecha (decisión 85): dentro de ella no hay pared que dibujar (antes daba un eco de
@@ -650,7 +657,7 @@ export class AnatomyScene {
       const t = thorax(m, dDome, floor);
       const face = t.ifd < NONE.interfaceDistance ? { interface: Interface.Pericardium, interfaceDistance: t.ifd } : {};
       // su distancia a la frontera cuenta también la columna y la pared (como el retroperitoneo)
-      const bd = Math.min(t.bd, sdSpine(m, this.spine), -depth - wallMm);
+      const bd = Math.min(t.bd, spineDistance, -depth - wallMm);
       return { ...NONE, tissue: t.tissue, boundaryDistance: bd, ...face };
     }
     if (dDome < DIAPHRAGM_THICKNESS_MM) {
@@ -692,7 +699,7 @@ export class AnatomyScene {
     // intestino. Su distancia a la frontera cuenta también la columna, que se clasifica antes (el psoas la bordea)
     const retroPoint: Vec3 = [m[0], m[1] - this.spineReferenceOffset, m[2]];
     const [tissue, dRetro] = retroperitoneum(retroPoint, -depth - wallMm, kidney.dPeriMm, this.hasAbdominalAtlas ? m : retroPoint);
-    bd = Math.max(0, Math.min(bd, dRetro, sdSpine(m, this.spine)));
+    bd = Math.max(0, Math.min(bd, dRetro, spineDistance));
     if (tissue !== Tissue.Bowel) return { ...NONE, tissue, boundaryDistance: bd };
     if (this.hasAbdominalAtlas) {
       const gut = abdominalAtlasValue(m, 1);

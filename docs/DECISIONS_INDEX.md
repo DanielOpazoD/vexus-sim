@@ -262,3 +262,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [256](DECISIONS.md#L8642) | Reutilizar la transmisión solo con entradas GPU idénticas | vigente |
 | [257](DECISIONS.md#L8650) | Contrastar la PSF con una adquisición independiente de dos vías | vigente |
 | [258](DECISIONS.md#L8662) | Reutilizar la proyección del corte sin alterar los mapas adquiridos | vigente |
+| [259](DECISIONS.md#L8680) | Evitar consultas anatómicas redundantes en el clasificador del corte | vigente |

@@ -37,6 +37,7 @@ test('compara imágenes registradas pese a distinto trabajo del receptor antes d
       if (sim.sample.t !== 5) throw new Error('El control del receptor avanzó la fisiología');
     }, trial * 11);
     const raw = await page.evaluate(comparisonState, { phase: 'capture' as const, targetSeconds: 30, view: 'portal' as const, frames: 6 });
+    expect(await page.evaluate(() => window.__vexusTest!.sim().renderer.gl.getError()), 'adquisición sin errores WebGL').toBe(0);
     // El PNG conservado procede del mismo framebuffer congelado y encodeBMode.
     // Evitar otra lectura GPU y un Array.from por píxel conserva los mismos bytes (253).
     const captureHash = async (name: string) => {
@@ -52,6 +53,7 @@ test('compara imágenes registradas pese a distinto trabajo del receptor antes d
       frames: 6,
       historyStartFrame: 33,
     });
+    expect(await page.evaluate(() => window.__vexusTest!.sim().renderer.gl.getError()), 'registro sin errores WebGL').toBe(0);
     expect(registered).toMatchObject({
       time: 60,
       frozen: true,

@@ -2241,8 +2241,17 @@ export class UltrasoundRenderer {
    * sirve para medir el coste de un cuadro en tiempo de pared.
    */
   finishForTiming(): void {
-    const px = new Uint8Array(4);
-    this.gl.readPixels(0, 0, 1, 1, this.gl.RGBA, this.gl.UNSIGNED_BYTE, px);
+    const gl = this.gl,
+      readTarget = gl.READ_FRAMEBUFFER,
+      previous = gl.getParameter(gl.READ_FRAMEBUFFER_BINDING) as WebGLFramebuffer | null;
+    // Cine puede dejar la envolvente flotante como origen: RGBA/UNSIGNED_BYTE
+    // no es válido allí. Leer la pantalla sin alterar el destino de dibujo.
+    gl.bindFramebuffer(readTarget, null);
+    try {
+      gl.readPixels(0, 0, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, new Uint8Array(4));
+    } finally {
+      gl.bindFramebuffer(readTarget, previous);
+    }
   }
 
   /**

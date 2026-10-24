@@ -43,15 +43,11 @@ void main() {
   vec3 g=vec3(phaseAt(p+vec3(h,0,0))-phaseAt(p-vec3(h,0,0)),
               phaseAt(p+vec3(0,h,0))-phaseAt(p-vec3(0,h,0)),
               phaseAt(p+vec3(0,0,h))-phaseAt(p-vec3(0,0,h)))/(2.0*h);
-  float f=phaseAt(p),k=floor(f/WT_STRIA_SPACING+0.5);
-  float distance=abs(f-k*WT_STRIA_SPACING)/length(g);
-  float mask=smoothstep(WT_STRIA_MASK0,WT_STRIA_MASK1,valueNoise(vec3(wallArc(p)/WT_STRIA_SEGMENT_MM,p.z/WT_STRIA_SEGMENT_MM,k*1.37),83.7));
-  float expected=mask*exp(-0.5*distance*distance/(WT_STRIA_SIGMA*WT_STRIA_SIGMA));
-  result=vec4(abs(dot(normalize(g),s.xyz)),s.w,abs(s.w-expected),length(s.xyz));
+  result=vec4(abs(dot(normalize(g),s.xyz)),s.w,length(s.xyz),length(g));
 }`;
 
 for (const caseId of ['normal-adult', 'severe-congestion'])
-  test(`muscle normals and width follow their material phase, ${caseId}`, async ({ page }, info) => {
+  test(`muscle normals follow their material phase and wall faces remain continuous, ${caseId}`, async ({ page }, info) => {
     budget(120_000);
     await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
     const previousFrame = await page.evaluate(() => window.__vexusTest!.sim().renderer.displayedFrame!.n);
@@ -196,13 +192,12 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
       },
       { source, points, muscleCount, schema: SCENE_UNIFORMS.map(({ name, type }) => ({ name, type })) },
     );
-    await info.attach('muscle-normal-width-gradient', { body: JSON.stringify(result), contentType: 'application/json' });
+    await info.attach('muscle-normal-gradient-and-wall-continuity', { body: JSON.stringify(result), contentType: 'application/json' });
     expect(result.caseId).toBe(caseId);
     expect(result.rows.length).toBeGreaterThan(40);
     // Diferencias centrales de 2 micras en float32: alineación <5,8° y normal unitaria.
-    for (const [dot, weight, widthError, length] of result.rows) {
+    for (const [dot, weight, length] of result.rows) {
       expect(weight).toBeGreaterThan(0.1);
-      expect(widthError).toBeLessThan(0.01);
       expect(length).toBeCloseTo(1, 5);
       expect(dot).toBeGreaterThan(0.995);
     }

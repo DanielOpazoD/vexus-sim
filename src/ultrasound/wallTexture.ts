@@ -231,8 +231,8 @@ export function muscleStriation(m: Vec3, t: Torso): [number, number, number, num
   const fz = Uv + jitterGain * noise[2] - fasciaSlope[1];
   const gradient: Vec3 = [-gd[0] + fu * gu[0], -gd[1] + fu * gu[1], -gd[2] + fz];
   const normal = norm3(gradient);
-  // Distancia normal local de la fase implícita (249), con sigma en mm materiales.
-  const dist = (Math.abs(s - k) * T.striationSpacingMm) / Math.hypot(...gradient);
+  // Ancho aproximado anterior: la corrección métrica 249 queda aplazada (DECISIONS).
+  const dist = (Math.abs(s - k) * T.striationSpacingMm) / Math.sqrt(1 + Uu * Uu + Uv * Uv);
   return [normal[0], normal[1], normal[2], mask * Math.exp(-0.5 * (dist / T.striationSigmaMm) ** 2)];
 }
 
@@ -442,7 +442,7 @@ vec4 muscleStriation(vec3 m) {
   float mask = smoothstep(WT_STRIA_MASK0, WT_STRIA_MASK1, valueNoise(vec3(u / WT_STRIA_SEGMENT_MM, v / WT_STRIA_SEGMENT_MM, k * 1.37), ${f4(SALT.mask)}));
   vec2 slope = vec2(Uu, Uv) + jitterGain * noise.yz - striationFasciaSlope(u, v, 6.2831853 / P);
   vec3 gradient = -torsoDepthGrad(m) + slope.x * wallArcGradient(m) + vec3(0.0, 0.0, slope.y);
-  float x = abs(s - k) * WT_STRIA_SPACING / (length(gradient) * WT_STRIA_SIGMA);
+  float x = abs(s - k) * WT_STRIA_SPACING / (sqrt(1.0 + Uu * Uu + Uv * Uv) * WT_STRIA_SIGMA);
   return vec4(normalize(gradient), mask * exp(-0.5 * x * x));
 }
 float wallFaceNoise(float u, float z, float face) {

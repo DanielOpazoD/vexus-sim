@@ -269,12 +269,16 @@ calibrada. No modifica la fuente ni sus superficies 3D.
 
 ## Correcciones de coherencia de textura y Color (243–252)
 
-La orientación y el ancho de las estrías musculares y los septos grasos se
-derivan del campo material existente. Esto corrige la geometría numérica de
-su respuesta angular; no convierte las escalas, ganancias o estadística
-estimadas en parámetros histológicos calibrados. La textura periódica de
-pared elimina una costura de coordenadas; no modifica las capas anatómicas
-ni acredita una distribución ecográfica humana.
+La orientación de las estrías musculares y la orientación y el ancho de los
+septos grasos se derivan del campo material existente. El ancho muscular
+conserva la aproximación anterior: su denominador solo contempla la
+ondulación nominal y omite la métrica corporal, la fascia y el jitter. La
+corrección 249 queda aplazada tras fallar la aceptación conjunta; no se da
+por resuelto ese espesor normal. Estas correcciones no convierten las
+escalas, ganancias o estadística estimadas en parámetros histológicos
+calibrados. La textura periódica de pared elimina una costura de coordenadas
+con un ajuste local dorsal; no modifica las capas anatómicas ni acredita
+una distribución ecográfica humana.
 
 Color suma las autocorrelaciones esperadas de sus cinco submuestras antes
 de estimar fase, con la respuesta estacionaria del filtro. Sigue sin

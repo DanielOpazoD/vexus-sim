@@ -45,7 +45,7 @@ function samples(t: Torso): Vec3[] {
   return points;
 }
 
-describe('geometría material de las estrías musculares, 248–249', () => {
+describe('normal material de las estrías musculares, 248', () => {
   for (const patient of [NORMAL_ADULT, SEVERE_CONGESTION])
     for (const atlas of [false, true]) {
       const t: Torso = { ...new AnatomyScene(patient).torso, ...(atlas ? { profile } : {}) };
@@ -58,18 +58,6 @@ describe('geometría material de las estrías musculares, 248–249', () => {
           const alignment = Math.abs(g.reduce((sum, v, i) => sum + v * s[i], 0)) / Math.hypot(...g);
           // Tolerancia numérica (0,081°), no un umbral de ecogenicidad humana.
           expect(alignment).toBeGreaterThan(0.999999);
-        }
-      });
-      it(`${patient.id}, ${atlas ? 'atlas' : 'elipse'}: ancho gaussiano medido en la normal material`, () => {
-        for (const p of samples(t)) {
-          const f = phase(p, t),
-            k = Math.round(f / T.striationSpacingMm);
-          const distance = Math.abs(f - k * T.striationSpacingMm) / Math.hypot(...gradient(p, t));
-          const noise = valueNoise([wallArc(p, t) / T.striationSegmentMm, p[2] / T.striationSegmentMm, k * 1.37], 83.7);
-          const x = Math.max(0, Math.min(1, (noise - T.striationMask[0]) / (T.striationMask[1] - T.striationMask[0])));
-          const expected = x * x * (3 - 2 * x) * Math.exp(-0.5 * (distance / T.striationSigmaMm) ** 2);
-          // Solo error de diferencias centrales; no se ajusta la amplitud esperada al resultado.
-          expect(Math.abs(muscleStriation(p, t)[3] - expected)).toBeLessThan(0.00001);
         }
       });
     }

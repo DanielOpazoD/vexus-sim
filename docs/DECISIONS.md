@@ -8583,13 +8583,13 @@ el mismo recibo y los mismos 50 recursos antes de cualquier edición.
 **Consecuencias.** La respuesta angular sigue el tejido que se dibuja. Sigue siendo arquitectura muscular estimada. La prueba histórica de15° respecto piel contradice el relieve aceptado en88 (máximos31–37°): se reconcilia con el componente nominal y se añade contrato diferencial completo, sin deformar el modelo para conseguir verde.
 **Verificación.** Diferencias centrales independientes de la fase anterior, ambos pacientes y perfiles atlas/elipse; negativo con normal antigua falla. El conflicto del test original queda conservado. GPU, apariencia y aceptación completa pendientes.
 
-## 249. Medir el ancho muscular normal al campo real
+## 249. Aplazar la corrección del ancho muscular normal al campo real
 
 **Contexto.** La gaussiana dividía la fase por sqrt(1+Uu²+Uv²), omitiendo el relieve fascial, jitter y métrica corporal aunque la normal se corrigiera.
 **Opciones.** Cambiar sigma por pose no corrige la causa y rompe anclaje material.
-**Decisión.** Distancia local a la estría dividida por la norma del gradiente completo. Se conservan sigma0,15 mm, máscara, espaciado y retrodispersión.
-**Consecuencias.** El ancho se expresa en la métrica local del tejido, una aproximación tangente, no una segmentación histológica.
-**Verificación.** Oráculo escalar anterior y gradiente independiente; ocho pruebas de248/249 pasan, denominador plano restaurado hace fallar cuatro. GPU y aceptación conjunta pendientes.
+**Decisión.** Se ensayó dividir la distancia local a la estría por la norma del gradiente completo, conservando sigma 0,15 mm, máscara, espaciado y retrodispersión. Se retira de este lote al no superar la aceptación conjunta. La normal completa de 248 permanece; el ancho conserva su denominador aproximado anterior.
+**Consecuencias.** El defecto de métrica del ancho sigue pendiente y se declara en APPROXIMATIONS. No se cambian ganancias, tolerancias ni la exclusión de 1 mm para aceptar el candidato. Esta decisión no demuestra que la propuesta sea clínicamente incorrecta: impide declararla validada con el banco actual.
+**Verificación.** Los oráculos diferenciales focales aprobaban la propuesta, pero `wallTwin` rechazó 1,558712 dB frente al límite histórico de 1,5 dB. Sobre una misma imagen sin textura, la selección con normal/ancho anteriores mide 1,143216 dB; solo la normal 248 mide 1,210166 dB; normal y ancho nuevos seleccionan otra ROI y producen el fallo. Un control causal por cambio absoluto entre imágenes con/sin caras también supera el límite (1,589287 dB), incluso convirtiendo la exclusión a distancia normal (1,541761 dB). Se conserva esa evidencia, el código y los oráculos propuestos en el expediente de 249; se retiran únicamente las comprobaciones nuevas de ancho que el candidato ya no implementa. El contrato histórico permanece intacto y debe aprobar el lote final.
 
 ## 250. Mezclar correlaciones Color antes de estimar su fase
 

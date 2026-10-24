@@ -57,7 +57,8 @@ export class SpectralProcessor {
   sync(tNextSample: number, prfHz: number): boolean {
     // Physiology batches round to whole IQ samples. Anything beyond one sample
     // is a real acquisition gap, not a window that the FFT may bridge.
-    const interrupted = this.synced && Math.abs(tNextSample - this.t0 - this.sampleIndex / this.prfHz) > 1 / this.prfHz + 1e-9;
+    const interrupted =
+      this.synced && (prfHz !== this.prfHz || Math.abs(tNextSample - this.t0 - this.sampleIndex / this.prfHz) > 1 / this.prfHz + 1e-9);
     if (interrupted || prfHz !== this.prfHz) this.filled = 0;
     this.prfHz = prfHz;
     this.t0 = tNextSample - this.sampleIndex / prfHz;

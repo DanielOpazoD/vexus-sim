@@ -5,6 +5,12 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Pruebas venosas tempranas: una ejecución de cada suite en lugar de tres; conserva host, aserciones, plazos, originales y CI completa. Reduce consumo repetido de corredores con el coste de menor detección probabilística de intermitencias (265).
+
+- Calidad renal: la energía arterial opuesta no se atribuye a aliasing del lado venoso; conserva el predominio arterial y los rechazos espectrales simultáneos sin habilitar marcas inválidas (264).
+
+- Doppler PW: incluye el eco del reemplazo sanguíneo en el pulso de cruce, en su posición transportada y sin duplicar advección, fase o rampa; conserva los controles espectrales y la captura renal (264).
+
 - Atlas: conserva exactamente los campos constantes al interpolar distancias y evita atribuir grasa mesentérica por redondeo en un campo saturado; mismos nodos, etiquetas y resolución (263).
 
 - Sonda: un arrastre activo consume el movimiento ignorado durante la congelación y se reanuda sin salto, también con uno o dos dedos; los gestos iniciados congelados siguen ignorados (261).

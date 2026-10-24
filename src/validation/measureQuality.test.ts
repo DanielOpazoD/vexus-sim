@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { assessQuality, bloodInColumn, wavesInconsistent } from '../doppler/measureQuality';
+import { assessQuality, bloodInColumn, outerBandExcessDb, wavesInconsistent } from '../doppler/measureQuality';
 import type { SpectralColumn } from '../doppler/spectral';
 import type { Beat } from '../physiology/rhythm';
 
@@ -34,6 +34,46 @@ const beats: Beat[] = Array.from({ length: 5 }, (_, i) => ({ tR: 0.5 + i * 0.8, 
 const venous: [number, number] = [N / 2 + 12, N / 2 + 20]; // ≈ 375–625 Hz, hacia la sonda
 
 describe('Calidad de la captura PW', () => {
+  it('una banda arterial opuesta sin plegado no demuestra aliasing en el lado venoso vacío', () => {
+    // 1125–1500 Hz < Nyquist 2000 Hz, lejos de ambos bordes: sólo hay flujo positivo.
+    const cols = columns(5, () => [100, 113]);
+    const q = assessQuality(cols, beats, { wallFilterHz: 25, side: 'neg', receiverNoiseDb: -60 });
+    expect(outerBandExcessDb(cols, -60)).toBeGreaterThan(3);
+    expect(outerBandExcessDb(cols, -60, 'neg')).toBeLessThan(3);
+    expect(q.edgeEnergyFraction).toBe(0);
+    expect(q.wrappedBeats).toBe(0);
+    expect(q.issue).toBe('no-signal');
+    expect(assessQuality(cols, beats, { wallFilterHz: 25, side: 'neg' }).issue).toBe('no-signal');
+  });
+
+  it('conserva el detector de banda llena sobre ruido en cada lado y su valor original por defecto', () => {
+    // Control del fallback calibrado: banda amplia sin contraste respecto de su propio suelo.
+    const filled = columns(5, () => null).map((c) => ({ ...c, powerDb: new Float32Array(N).fill(-52) }));
+    for (const side of ['both', 'pos', 'neg'] as const) {
+      expect(outerBandExcessDb(filled, -60, side)).toBeCloseTo(8, 12);
+      const q = assessQuality(filled, beats, { wallFilterHz: 25, side, receiverNoiseDb: -60 });
+      expect(q.wrappedBeats).toBe(0);
+      expect(q.issue).toBe('aliasing');
+    }
+    expect(outerBandExcessDb(filled, -60)).toBe(outerBandExcessDb(filled, -60, 'both'));
+    const empty = columns(5, () => null);
+    for (const side of ['both', 'pos', 'neg'] as const)
+      expect(assessQuality(empty, beats, { wallFilterHz: 25, side, receiverNoiseDb: -60 }).issue).toBe('no-signal');
+  });
+
+  it('la envoltura que ocupa ambos bordes sigue detectable al medir un solo lado', () => {
+    const wrapped = columns(5, () => [N - 4, N]).map((c) => {
+      const powerDb = Float32Array.from(c.powerDb);
+      powerDb.fill(-30, 0, 4);
+      return { ...c, powerDb };
+    });
+    for (const side of ['pos', 'neg'] as const) {
+      const q = assessQuality(wrapped, beats, { wallFilterHz: 25, side, receiverNoiseDb: -60 });
+      expect(q.wrappedBeats).toBe(5);
+      expect(q.issue).toBe('aliasing');
+    }
+  });
+
   it('flujo estable en todos los latidos: medible', () => {
     const q = assessQuality(
       columns(5, () => venous),

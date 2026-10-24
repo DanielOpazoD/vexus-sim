@@ -267,3 +267,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [261](DECISIONS.md#L8710) | Reanudar un gesto de sonda sin acumular movimiento congelado | vigente |
 | [262](DECISIONS.md#L8724) | Comparar corte y GPU en las coordenadas efectivamente consultadas | vigente |
 | [263](DECISIONS.md#L8738) | Conservar campos fuente constantes al interpolar distancias | vigente |
+| [264](DECISIONS.md#L8750) | Incluir el eco sanguíneo en el pulso de reentrada | vigente |
+| [265](DECISIONS.md#L8776) | Una ejecución venosa temprana por suite | vigente |

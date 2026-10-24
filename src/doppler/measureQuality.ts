@@ -49,6 +49,8 @@ export interface MeasurementQuality {
   issue: QualityIssue | null;
   /** Con 'wrong-vessel' (decisión 94): la fila y el sistema vascular que dominaba la puerta. */
   wrongVessel?: { kind: ProtocolVessel; found: VesselSystem };
+  /** La composición de al menos un latido medido es de predominio arterial renal, aunque coexista otro rechazo. */
+  renalArterialDominance?: true;
 }
 
 export interface QualityOptions {
@@ -126,19 +128,25 @@ const S_SIGN_FRACTION = 0.25;
  * la banda (|f| > PRF/4) sobre el ruido del receptor. Medido en la cadena del alumno en apnea: la sangre plegada deja
  * 3–21 dB (±6–14 cm/s en los tres territorios); la puerta fuera del vaso, con el clutter del tejido que respira,
  * −0,2 a +0,3 dB. Solo cambia el motivo de una captura que ya no era medible («no hay flujo» o «intermitente»).
+ * En una medición unilateral sólo cuenta ese lado: una arteria opuesta fuerte no demuestra plegado venoso.
  */
 const SEVERE_ALIAS_OUTER_DB = 3;
 /** Borde de la mitad exterior de la banda (fracción de la PRF). */
 const OUTER_BAND = 0.25;
 
-/** Mediana de la potencia media de |f| > OUTER_BAND·PRF sobre el ruido del receptor (dB). */
-export function outerBandExcessDb(columns: readonly SpectralColumn[], receiverNoiseDb: number): number {
+/** Mediana de la potencia media exterior del lado evaluado sobre el ruido por bin del receptor (dB). */
+export function outerBandExcessDb(
+  columns: readonly SpectralColumn[],
+  receiverNoiseDb: number,
+  side: QualityOptions['side'] = 'both',
+): number {
   const ex = columns.map((c) => {
     const N = c.powerDb.length;
     let s = 0;
     let n = 0;
     for (let k = 0; k < N; k++) {
-      if (Math.abs(((k - N / 2) / N) * c.prfHz) <= OUTER_BAND * c.prfHz) continue;
+      const f = ((k - N / 2) / N) * c.prfHz;
+      if (Math.abs(f) <= OUTER_BAND * c.prfHz || (side !== 'both' && (side === 'pos' ? f < 0 : f > 0))) continue;
       s += Math.pow(10, c.powerDb[k] / 10);
       n++;
     }
@@ -292,7 +300,7 @@ export function assessQuality(
   if (
     (issue === 'no-signal' || issue === 'intermittent') &&
     opts.receiverNoiseDb !== undefined &&
-    outerBandExcessDb(columns, opts.receiverNoiseDb) >= SEVERE_ALIAS_OUTER_DB
+    outerBandExcessDb(columns, opts.receiverNoiseDb, opts.side) >= SEVERE_ALIAS_OUTER_DB
   )
     issue = 'aliasing';
   return { beats: coveredBeats, validBeats, edgeEnergyFraction, wrappedBeats, bloodColumns, issue };

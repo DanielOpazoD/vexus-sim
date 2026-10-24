@@ -47,7 +47,9 @@ describe('identidad renal: un espectro arterial fuerte no demuestra continuidad 
     )!;
     expect(m.measuredBeats.length).toBeGreaterThanOrEqual(4);
     expect(m.quality.issue).toBe('renal-identity');
+    expect(m.quality.renalArterialDominance).toBe(true);
     expect(qualityText(m.quality)).toContain('arteria');
+    expect(qualityText(m.quality).match(/arteria/g)).toHaveLength(1);
     expect(cols.map((c) => [...c.powerDb])).toEqual(before);
   });
   it('conserva una captura cuyo volumen está dominado por la vena', () => {
@@ -60,6 +62,7 @@ describe('identidad renal: un espectro arterial fuerte no demuestra continuidad 
       track(() => false),
     )!;
     expect(m.quality.issue).toBeNull();
+    expect(m.quality.renalArterialDominance).toBeUndefined();
   });
   it('considera solo la identidad de los latidos realmente medidos', () => {
     const t = track((v) => v < 2);
@@ -67,6 +70,7 @@ describe('identidad renal: un espectro arterial fuerte no demuestra continuidad 
     const m = captureProtocolVessel('renal', spectrum(), rhythm, 5.4, opts, t)!;
     expect(m.measuredBeats[0].tR).toBeGreaterThanOrEqual(2);
     expect(m.quality.issue).toBeNull();
+    expect(m.quality.renalArterialDominance).toBeUndefined();
   });
   it('rechaza un latido arterial aunque la media de toda la captura sea venosa', () => {
     const m = captureProtocolVessel(
@@ -78,6 +82,7 @@ describe('identidad renal: un espectro arterial fuerte no demuestra continuidad 
       track((t) => t >= 2 && t < 2.8),
     )!;
     expect(m.quality.issue).toBe('renal-identity');
+    expect(m.quality.renalArterialDominance).toBe(true);
   });
   it('no oculta un problema físico de aliasing ya detectado', () => {
     const m = captureProtocolVessel(
@@ -89,5 +94,43 @@ describe('identidad renal: un espectro arterial fuerte no demuestra continuidad 
       track(() => true),
     )!;
     expect(m.quality.issue).toBe('aliasing');
+    expect(m.quality.renalArterialDominance).toBe(true);
+    expect(qualityText(m.quality)).toContain('aliasing');
+    expect(qualityText(m.quality)).toContain('domina la arteria');
+  });
+  it('el aliasing de una puerta venosa no inventa predominio arterial', () => {
+    const m = captureProtocolVessel(
+      'renal',
+      spectrum(true),
+      rhythm,
+      5.4,
+      opts,
+      track(() => false),
+    )!;
+    expect(m.quality.issue).toBe('aliasing');
+    expect(m.quality.renalArterialDominance).toBeUndefined();
+    expect(qualityText(m.quality)).toContain('aliasing');
+    expect(qualityText(m.quality)).not.toContain('arteria');
+  });
+  it('no atribuye a una captura portal la identidad renal de su puerta equivocada', () => {
+    const m = captureProtocolVessel(
+      'portal',
+      spectrum(true),
+      rhythm,
+      5.4,
+      opts,
+      track(() => true),
+    )!;
+    expect(m.quality.issue).toBe('wrong-vessel');
+    expect(m.quality.renalArterialDominance).toBeUndefined();
+  });
+  it('la evidencia arterial nunca se rotula medible por un issue ausente', () => {
+    expect(qualityText({ issue: null, renalArterialDominance: true })).toContain('no medible');
+  });
+  it('un lado venoso vacío no se presenta como ausencia de flujo en una puerta arterial', () => {
+    const text = qualityText({ issue: 'no-signal', renalArterialDominance: true });
+    expect(text).toContain('domina la arteria');
+    expect(text).toContain('no se identifica la vena');
+    expect(text).not.toContain('no hay flujo en la puerta');
   });
 });

@@ -8605,15 +8605,15 @@ el mismo recibo y los mismos 50 recursos antes de cualquier edición.
 **Opciones.** No eliminar grasa ni cambiar grosor para disimular su textura. La métrica del cuerpo ya ofrece las derivadas necesarias.
 **Decisión.** Usar las normas de los gradientes materiales para comparar distancias de los septos, conservando sigma y ganancias. La revisión cruzada exige seleccionar cada mediatriz después de aplicar su métrica, para no introducir una discontinuidad por cambio de candidata.
 **Consecuencias.** No modifica capas anatómicas. Es distancia normal local, no una reconstrucción de lobulillos humanos.
-**Verificación.** Oráculo de distancia y gradiente independiente, ambos pacientes; se mantiene intacto el contrato221. Negativo del ancho plano falla. Revisión de selección entre mediatrices, GPU y aceptación completa pendientes.
+**Verificación.** Oráculo de distancia y gradiente independiente, ambos pacientes; se mantiene intacto el contrato 221. Negativo del ancho plano falla. La revisión reprodujo un salto de peso de 0,1100 entre puntos separados 2,34e−8 mm al normalizar solo la mediatriz ganadora: `5b53eca` aplica la métrica antes de elegir cada candidata. El nuevo control independiente detecta el negativo; pasan las cinco pruebas de distancia y normales. GPU y aceptación completa pendientes.
 
 ## 252. Eliminar la costura posterior de reflectividad
 
 **Contexto.** El ruido no periódico recibía el salto de wallArc de−P/2 a+P/2. En dos puntos separados0,00002 mm, la ganancia fascial pasaba3,777→0,360: salto artificial de≈20,4 dB.
 **Opciones.** No ocultarlo con suavizado de imagen, mezcla de realizaciones ni cambio de anatomía.
-**Decisión.** Ruido cúbico periódico en u, ocho hashes y smoothstep originales, periodo entero N=round(P/4 mm), paso efectivo P/N. Representantes centrados conservan la realización interior cuando el periodo original es entero. Mismas sales y ganancias.
-**Consecuencias.** Continuidad de valor y pendiente al cruzar el dorso. La escala cambia solo por cuantización del número de células; su estadística sigue siendo estimada y necesita referencia externa.
-**Verificación.** Caras y alturas de ambos pacientes, continuidad C1 y anclaje. Ruido anterior restaurado falla. Quince pruebas focales de248–252 pasan tras restaurar negativos; oráculo GPU y comparación visual pendientes.
+**Decisión.** Ruido cúbico periódico en u, ocho hashes y smoothstep originales, periodo entero N=round(P/4 mm). Se conserva q=u/4 exactamente fuera de la celda dorsal de cierre. Allí, una corrección C1 lleva ambos extremos a ±N/2 con derivada unitaria; los índices de los nodos se envuelven alrededor de ese periodo. Mismas sales y ganancias, sin mezclar realizaciones.
+**Consecuencias.** Continuidad de valor y pendiente al cruzar el dorso, manteniendo la reflectividad del resto del abdomen. El primer candidato reescalaba toda la circunferencia y alteraba su realización: el banco de contraste hepático rechazó una diferencia de 2,5126 dB frente al límite original de 1,5 dB. Se corrigió la causa sin cambiar ese límite, amplitudes ni anatomía. La reflectividad sigue siendo estimada y necesita referencia externa.
+**Verificación.** Caras y alturas de ambos pacientes, continuidad C1, anclaje e igualdad con el ruido original fuera del cierre; perímetros no enteros, periodos pares e impares. Reponer solo la función anterior aisló la regresión. Con el cierre local pasan 24 pruebas de cinco archivos, incluido `wallDisplayTwin` completo; reponer el reescalado global falla en cinco controles. El oráculo GPU añade la conservación del ruido interior junto al control de costura, sin adquisiciones adicionales. GPU, comparación visual y aceptación completa pendientes.
 
 ## 253. Reutilizar la captura registrada para verificar su hash
 

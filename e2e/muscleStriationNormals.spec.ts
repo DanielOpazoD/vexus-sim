@@ -33,7 +33,10 @@ void main() {
   vec3 p = texelFetch(uPoints, ivec2(int(gl_FragCoord.x),0),0).xyz;
   if (int(gl_FragCoord.x) >= uMuscleCount) {
     float a=wallFaceGain(vec3(-0.002,p.yz),int(p.x)),b=wallFaceGain(vec3(0.002,p.yz),int(p.x));
-    result=vec4(a,b,abs(log(a/b)),p.x);return;
+    float angle=sign(p.z)*(0.17+0.31*float(int(p.x)-IF_FIRST_WALL+1));
+    vec3 interior=vec3(uTorso.x*sin(angle),uTorso.y*cos(angle)+uTorsoY,p.z);
+    float expected=exp(WT_FACE_VAR[int(p.x)-IF_FIRST_WALL]*(valueNoise(vec3(wallArc(interior)/WT_FACE_VAR_MM,p.z/WT_FACE_VAR_MM,float(int(p.x)-IF_FIRST_WALL+1)*3.7),37.3)-0.5));
+    result=vec4(a,b,abs(log(a/b)),abs(log(wallFaceGain(interior,int(p.x))/expected)));return;
   }
   vec4 s=muscleStriation(p);
   float h=0.002;
@@ -204,10 +207,13 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
       expect(dot).toBeGreaterThan(0.995);
     }
     expect(result.faces).toHaveLength(6 * (LAST_WALL_INTERFACE - FIRST_WALL_INTERFACE + 1));
-    for (const [left, right, logJump] of result.faces) {
+    for (const [left, right, logJump, interiorError] of result.faces) {
       expect(left).toBeGreaterThan(0);
       expect(right).toBeGreaterThan(0);
       // 4 micras: límite numérico/espacial, ~0,043 dB; el defecto anterior supera20dB.
       expect(logJump).toBeLessThan(0.005);
+      // Cerrar la costura no cambia la realización fuera de ella; oráculo GLSL
+      // original dentro de la misma GPU, sin comparar hashes entre CPU y GPU.
+      expect(interiorError).toBeLessThan(0.00001);
     }
   });

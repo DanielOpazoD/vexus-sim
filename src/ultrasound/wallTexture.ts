@@ -261,12 +261,17 @@ export function wallTexture(m: Vec3, tissue: Tissue, dir: Vec3, t: Torso, warp: 
 }
 
 /** Mismo ruido cúbico, con nodos periódicos en u: no hay corte al cruzar la espalda.
- * El número entero de células conserva una escala cercana a faceVariationMm sin fundidos.
+ * Solo la celda de cierre ajusta su coordenada; el resto conserva exactamente u/faceVariationMm.
  * La correlación y la reflectividad son estimadas; no implica microanatomía segmentada. */
 function wallFaceNoise(u: number, z: number, face: number, perimeter: number): number {
   const L = WALL_TEXTURE.faceVariationMm,
     period = Math.max(1, Math.round(perimeter / L));
-  const q = [(u * period) / perimeter, z / L, face * 3.7];
+  const x = u / L,
+    edge = perimeter / (2 * L),
+    start = Math.floor((period - 1) / 2),
+    blend = Math.min(1, Math.max(0, (Math.abs(x) - start) / (edge - start)));
+  // El ajuste y su derivada son cero al entrar; en ±P/2 llega a ±period/2 con derivada 1.
+  const q = [x + Math.sign(x) * (period / 2 - edge) * blend * blend * (3 - 2 * blend), z / L, face * 3.7];
   const c = q.map(Math.floor),
     s = q.map((v, i) => {
       const x = v - c[i];
@@ -442,7 +447,9 @@ vec4 muscleStriation(vec3 m) {
 }
 float wallFaceNoise(float u, float z, float face) {
   float P = wallPerimeter(), period = max(1.0, floor(P / WT_FACE_VAR_MM + 0.5));
-  vec3 q = vec3(u * period / P, z / WT_FACE_VAR_MM, face * 3.7);
+  float x = u / WT_FACE_VAR_MM, edge = P / (2.0 * WT_FACE_VAR_MM);
+  float blend = smoothstep(floor((period - 1.0) / 2.0), edge, abs(x));
+  vec3 q = vec3(x + sign(x) * (period / 2.0 - edge) * blend, z / WT_FACE_VAR_MM, face * 3.7);
   vec3 c = floor(q), s = q - c;
   s = s * s * (3.0 - 2.0 * s);
   vec2 nx = mod(c.xx + vec2(0.0, 1.0) + 0.5 * period, period) - 0.5 * period;

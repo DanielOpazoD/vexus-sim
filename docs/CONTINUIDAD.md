@@ -26,12 +26,26 @@ ARM/x86 de hashes de contorno y su reemplazo portable discriminante se conservan
 coordenadas ignoradas durante un arrastre pausado para evitar el salto al reanudar (261), con
 oráculo de paridad que distingue inputs double y Float32 exactos (262). Head `01bdb37` aprobado
 por CI `40128645328`: 164 E2E/12 grupos/cero reintentos; recibo, 14 ZIP y 28 informes originales
-verificados. Su CI postmerge independiente está pendiente de cierre; consultar el estado vivo.
+verificados. Su CI postmerge independiente `40131184263` también aprobó 164 E2E/12 grupos/cero
+reintentos, con recibo y originales verificados por separado.
 
-La candidata 263 conserva campos constantes del atlas y elimina la clasificación mesentérica
-espuria del testigo localizado. Metal8/Swift2 aprueban con fuente/build verificados; falta la
-aceptación completa del head final. No identifica el tejido humano ni acredita reparar toda la
-pared histórica. La observación inicial no localizada de 1/64 permanece separada.
+[PR280](https://github.com/DanielOpazoD/vexus-sim/pull/280) se fusionó en `124b8e7`: conserva
+campos constantes del atlas y elimina la clasificación mesentérica espuria del testigo (263).
+Metal8/Swift2, check completo, siete casos fisiológicos, hook normal y CI `40131828116` aprobados:
+164 E2E/12 grupos/cero reintentos, con originales y dos complementarios verificados. Su CI postmerge
+se verifica aparte. No identifica tejido humano ni acredita reparar toda la pared histórica.
+La observación inicial no localizada de 1/64 permanece separada.
+
+La candidata 264 incluye en el pulso actual el eco de la sangre que reentra al volumen PW, sin
+segunda advección ni fase duplicada. Pasan 45 controles focales y los negativos discriminantes;
+las comparaciones renales conservan advertencias y déficit poblacional, sin promesa de mejora
+uniforme. La decisión 265 retira dos repeticiones del complemento venoso, conserva sus cuatro
+suites y la CI protegida; reduce muestras de intermitencia y lo declara. Ambos cambios esperan
+aceptación completa del head final tras rebase sobre PR280.
+
+La variante GPU del corte se retiró: en 3RAF redujo el desfase un 14,8 % pero la cadencia B un
+16,2 %; el beneficio en 1RAF no satisface el filtro conjunto previo. Conserva la auditoría de
+768 puntos y los negativos, sin integración. Las EMA GPU no acreditan coste aislado por pasada.
 
 B5 conserva la dependencia de trayectoria como negativo. La referencia material de 65 muestras
 retorna y converge en ambos backends, pero su coste completo impide promoverla. La caché de

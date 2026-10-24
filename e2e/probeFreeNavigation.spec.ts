@@ -2,7 +2,14 @@ import { expect, test, type Page } from '@playwright/test';
 import type { Camera, Matrix4, Vector3 } from 'three';
 import type { CutMapInit, CutMapRequest, CutMapResponse } from '../src/ui/cutMapWorker';
 import type { ProbePose } from '../src/probe/probe';
+import type { AnatomyQuery } from '../src/anatomy/query';
+import type { AnatomyScene } from '../src/anatomy/scene';
+import type { PhysiologySample } from '../src/physiology/engine';
 import { bootWithoutErrors, budget, windowAcquired, withinFrames, withinSimSeconds } from './support';
+
+interface CutModelSnapshot extends Pick<CutMapInit, 'patient' | 'referenceProfile'> {
+  hasAbdominalAtlas: boolean;
+}
 
 interface NavigatorWitness {
   n: number;
@@ -14,8 +21,11 @@ interface NavigatorWitness {
 declare global {
   interface Window {
     freeNavigation: {
-      cuts: Array<{ request: CutMapRequest; pose: ProbePose; n: number; response?: CutMapResponse }>;
+      cuts: Array<{ request: CutMapRequest; model: CutModelSnapshot; pose: ProbePose; n: number; response?: CutMapResponse }>;
+      model?: CutModelSnapshot;
       navigator?: NavigatorWitness;
+      inputs?: Array<{ type: string; pointerType: string; primary: boolean; trusted: boolean; x: number; y: number; frozen: boolean }>;
+      parityDiagnostics?: unknown[];
     };
   }
 }
@@ -27,6 +37,12 @@ async function observe(page: Page) {
     if (typeof original !== 'function') throw new Error('Worker.postMessage unavailable');
     Worker.prototype.postMessage = function (message: unknown, transfer: Transferable[] | StructuredSerializeOptions = []) {
       const request = message as CutMapInit | CutMapRequest;
+      if (request.type !== 'map')
+        window.freeNavigation.model = {
+          patient: structuredClone(request.patient),
+          referenceProfile: request.referenceProfile?.slice(),
+          hasAbdominalAtlas: request.type === 'init' ? !!request.abdominalField : !!window.freeNavigation.model?.hasAbdominalAtlas,
+        };
       if (request.type === 'init')
         this.addEventListener('message', (event: MessageEvent<CutMapResponse>) => {
           if (event.data.type !== 'map') return;
@@ -38,7 +54,14 @@ async function observe(page: Page) {
         });
       if (request.type === 'map') {
         const acquired = window.__vexusTest!.sim().renderer.displayedFrame!;
-        window.freeNavigation.cuts.push({ request, pose: structuredClone(acquired.anatomy.pose), n: acquired.n });
+        const model = window.freeNavigation.model;
+        if (!model) throw new Error('Cut request without observed model initialization');
+        window.freeNavigation.cuts.push({
+          request: structuredClone(request),
+          model,
+          pose: structuredClone(acquired.anatomy.pose),
+          n: acquired.n,
+        });
         if (window.freeNavigation.cuts.length > 20) window.freeNavigation.cuts.shift();
       }
       Reflect.apply(original, this, [message, transfer]);
@@ -125,35 +148,119 @@ async function parity(page: Page) {
       .reverse()
       .find((c) => c.n === shown.n && c.response);
     if (!cut?.response) throw new Error('No observed cut for the displayed acquisition');
-    const { request: req, response: map } = cut;
+    const { request: req, response: map, model } = cut;
+    // Own scene/query: setting compression also changes scene.bowelRadii. Never
+    // use or mutate the current simulator query to judge an acquired snapshot.
+    const Scene = s.scene.constructor as typeof AnatomyScene;
+    const Query = s.anatomy.constructor as typeof AnatomyQuery;
+    const cpuScene = new Scene(structuredClone(model.patient), model.referenceProfile);
+    const cpu = new Query(cpuScene);
+    cpu.setProbeCompression(structuredClone(req.compression));
+    const sample = structuredClone(req.sample) as PhysiologySample;
+    const caliber = cpu.caliberFor(sample);
     const points: number[] = [],
       expected: number[] = [];
     for (let v = 0; v < map.height; v += 16)
       for (let u = 0; u < map.width; u += 12) {
         const theta = -req.transducer.halfSector + (2 * req.transducer.halfSector * (u + 0.5)) / map.width;
-        const r = req.transducer.curvatureRadius + (req.depthMm * (v + 0.5)) / map.height;
-        points.push(
-          ...req.frame.curvatureCenter.map(
-            (x, i) => x + r * (req.frame.axial[i] * Math.cos(theta) + req.frame.lateral[i] * Math.sin(theta)),
-          ),
-        );
+        const range = req.transducer.curvatureRadius + (req.depthMm * (v + 0.5)) / map.height;
+        // Independent geometric reconstruction; the beam direction is a unit
+        // vector. Do not import the production cut-map projection as its oracle.
+        const direction = req.frame.axial.map((a, i) => a * Math.cos(theta) + req.frame.lateral[i] * Math.sin(theta));
+        const inverseLength = 1 / Math.hypot(...direction);
+        points.push(...req.frame.curvatureCenter.map((x, i) => x + direction[i] * inverseLength * range));
         expected.push(map.tissue[v * map.width + u]);
       }
-    const actual = s.renderer.queryPoints(
-      new Float32Array(points),
+    // This exact array is sent to the renderer and used for the CPU comparison;
+    // GPU input is Float32. No point is moved to avoid an anatomical boundary.
+    const uploaded = new Float32Array(points);
+    const gpu = s.renderer.queryPoints(
+      uploaded,
       {
-        ...shown.anatomy,
-        caliber: s.anatomy.caliberFor(shown.anatomy.sample),
+        ...structuredClone(shown.anatomy),
+        caliber: cpu.caliberFor(structuredClone(shown.anatomy.sample)),
         probeVelocity: [0, 0, 0],
-        bmode: shown.bmode,
-        color: shown.color,
+        bmode: structuredClone(shown.bmode),
+        color: structuredClone(shown.color),
         updateColor: false,
       },
       true,
-    ).tissue;
+    );
+    const classify = (world: [number, number, number]) => {
+      const material = cpu.deformation.toMaterial(world, sample.resp);
+      const c = cpu.scene.classify(material, caliber);
+      return {
+        material,
+        tissue: Number(c.tissue), // Worker/GPU readbacks carry numeric tissue IDs.
+        boundaryDistance: c.boundaryDistance,
+        interface: c.interface,
+        interfaceDistance: c.interfaceDistance,
+        vessel: c.vessel,
+      };
+    };
+    const samples = expected.map((tissue, i) => {
+      const world = points.slice(3 * i, 3 * i + 3) as [number, number, number];
+      const worldFloat32 = Array.from(uploaded.subarray(3 * i, 3 * i + 3)) as [number, number, number];
+      return {
+        index: i,
+        world,
+        worldFloat32,
+        worker: tissue,
+        gpu: { tissue: gpu.tissue[i], vessel: gpu.vessel[i], interface: gpu.iface[i], interfaceDistance: gpu.ifd[i] },
+        cpuExact: classify(world),
+        cpuFloat32: classify(worldFloat32),
+      };
+    });
+    const workerMismatches = samples.filter((p) => p.worker !== p.cpuExact.tissue);
+    const gpuMismatches = samples.filter((p) => p.gpu.tissue !== p.cpuFloat32.tissue);
+    const precisionTransitions = samples.filter((p) => p.cpuExact.tissue !== p.cpuFloat32.tissue);
+    // Round-to-nearest Float32 relative error <= 2^-24, or half a subnormal
+    // spacing (2^-150). This bound permits only quantization, never a free shift.
+    const rounding = points.map((world, i) => ({
+      component: i,
+      world,
+      uploaded: uploaded[i],
+      deltaMm: Math.abs(uploaded[i] - world),
+      boundMm: Math.max(Math.abs(world) * 2 ** -24, 2 ** -150),
+    }));
+    const roundingErrors = rounding.filter(
+      (p) =>
+        !Number.isFinite(p.world) || !Number.isFinite(p.uploaded) || !Object.is(p.uploaded, Math.fround(p.world)) || p.deltaMm > p.boundMm,
+    );
+    const sampleFields = ['resp', 'ivc', 'ivcSupra', 'hvRadiusScale', 'pvRadiusScale', 'velocities'] as const;
+    const sameSample = sampleFields.every((key) => JSON.stringify(req.sample[key]) === JSON.stringify(shown.anatomy.sample[key]));
+    const sameCompression = JSON.stringify(req.compression) === JSON.stringify(shown.anatomy.compression);
+    const samePatient = JSON.stringify(model.patient) === JSON.stringify(s.patient);
+    const sameProfile = JSON.stringify(model.referenceProfile) === JSON.stringify(s.scene.torso.profile);
+    const sameAtlas = cpuScene.hasAbdominalAtlas === model.hasAbdominalAtlas && model.hasAbdominalAtlas === s.scene.hasAbdominalAtlas;
+    window.freeNavigation.parityDiagnostics?.push({
+      acquired: shown.n,
+      pose: shown.anatomy.pose,
+      sample: shown.anatomy.sample,
+      request: req,
+      model,
+      sameSample,
+      sameCompression,
+      samePatient,
+      sameProfile,
+      sameAtlas,
+      samples,
+      rounding,
+      precisionTransitions,
+      workerMismatches,
+      gpuMismatches,
+    });
     return {
       points: expected.length,
-      mismatches: expected.filter((x, i) => x !== actual[i]).length,
+      workerMismatches,
+      gpuMismatches,
+      roundingErrors,
+      precisionTransitions,
+      sameSample,
+      sameCompression,
+      samePatient,
+      sameProfile,
+      sameAtlas,
       sameCutFrame: JSON.stringify(req.frame) === JSON.stringify(shown.anatomy.frame),
       sameCutPose: JSON.stringify(cut.pose) === JSON.stringify(shown.anatomy.pose),
       navigator: window.freeNavigation.navigator!,
@@ -162,7 +269,14 @@ async function parity(page: Page) {
     };
   });
   expect(result.points).toBeGreaterThanOrEqual(64);
-  expect(result.mismatches).toBe(0);
+  expect(result.roundingErrors, 'GPU coordinates are exactly Float32 quantization of the sampled world points').toEqual([]);
+  expect(result.sameSample, 'Worker and GPU use the acquired physiology').toBe(true);
+  expect(result.sameCompression, 'Worker and GPU use the acquired probe compression').toBe(true);
+  expect(result.samePatient).toBe(true);
+  expect(result.sameProfile).toBe(true);
+  expect(result.sameAtlas).toBe(true);
+  expect(result.workerMismatches, 'Worker versus independent CPU query at the exact sampled world coordinates').toEqual([]);
+  expect(result.gpuMismatches, 'GPU versus independent CPU query at the actual uploaded Float32 coordinates').toEqual([]);
   expect(result.sameCutFrame).toBe(true);
   expect(result.sameCutPose).toBe(true);
   expect(result.navigator.faceErrorMm).toBeLessThan(1e-5);
@@ -305,4 +419,149 @@ for (const caseId of ['normal-adult', 'severe-congestion'])
     expect(errors).toEqual([]);
     expect(await page.evaluate(() => window.__vexusTest!.loggedErrors())).toEqual([]);
     await info.attach('subcostal-portal-motion.json', { body: JSON.stringify({ caseId, records }), contentType: 'application/json' });
+  });
+
+for (const caseId of ['normal-adult', 'severe-congestion'])
+  test(`captured probe drag resumes without accumulating frozen movement, ${caseId}`, async ({ page }, info) => {
+    budget(180_000);
+    await observe(page);
+    const errors = await bootWithoutErrors(page, '?e2e=app&abdomen=atlas');
+    if (caseId !== 'normal-adult') await page.selectOption('#case-select', caseId);
+    await observeNavigator(page);
+    await page.evaluate(() => {
+      window.freeNavigation.inputs = [];
+      window.freeNavigation.parityDiagnostics = [];
+      for (const type of ['pointerdown', 'pointermove', 'pointerup', 'pointercancel'])
+        window.addEventListener(type, (event) => {
+          const e = event as PointerEvent;
+          window.freeNavigation.inputs!.push({
+            type: e.type,
+            pointerType: e.pointerType,
+            primary: e.isPrimary,
+            trusted: e.isTrusted,
+            x: e.clientX,
+            y: e.clientY,
+            frozen: window.__vexusTest!.sim().frozen,
+          });
+        });
+    });
+    const cdp = await page.context().newCDPSession(page);
+    const records = [];
+    let touchEnabled = false;
+    const freeze = () => page.locator('#freeze').evaluate((el: HTMLButtonElement) => el.click());
+    const state = () =>
+      page.evaluate(() => {
+        const s = window.__vexusTest!.sim(),
+          shown = s.renderer.displayedFrame!;
+        return { pose: s.pose, frozen: s.frozen, n: shown.n, t: shown.t, frame: shown.anatomy.frame };
+      });
+    try {
+      for (const device of ['mouse', 'touch'] as const)
+        for (const mode of ['slide', 'angle'] as const) {
+          if (device === 'touch' && !touchEnabled) {
+            await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 2 });
+            touchEnabled = true;
+          }
+          // Interior pose: no clamps or angular seam can explain the resumed increment.
+          await page.evaluate(() => window.__vexusTest!.sim().setPose({ phi: 0.73, z: -173, lift: 0, yaw: 0.37, rock: -0.42, tilt: 0.61 }));
+          await acquired(page);
+          const box = (await page.locator('#sector-wrap').boundingBox())!;
+          const origin = { x: Math.round(box.x + box.width * 0.4), y: Math.round(box.y + box.height * 0.3) };
+          let x = origin.x,
+            y = origin.y;
+          const button = mode === 'angle' ? 'right' : 'left';
+          const points = () => [
+            { id: 1, x, y, force: 1 },
+            ...(mode === 'angle' ? [{ id: 2, x: origin.x + 40, y: origin.y + 20, force: 1 }] : []),
+          ];
+          const begin = async () => {
+            x = origin.x;
+            y = origin.y;
+            if (device === 'mouse') {
+              await page.mouse.move(x, y);
+              await page.mouse.down({ button });
+            } else await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: points() });
+          };
+          const move = async (dx: number, dy: number) => {
+            const firstEvent = await page.evaluate(() => window.freeNavigation.inputs!.length);
+            x += dx;
+            y += dy;
+            if (device === 'mouse') await page.mouse.move(x, y);
+            else await cdp.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: points() });
+            // CDP acknowledges dispatch before a coalesced touch move must reach JS.
+            // Observe the real primary pointer event before changing freeze state.
+            await withinFrames(page, 90, `${device}/${mode}: delivered pointermove`, async () =>
+              page.evaluate(
+                ({ firstEvent, device, x, y }) =>
+                  window.freeNavigation
+                    .inputs!.slice(firstEvent)
+                    .some(
+                      (e) => e.type === 'pointermove' && e.pointerType === device && e.primary && e.trusted && e.x === x && e.y === y,
+                    ) || `pointermove pending: ${JSON.stringify(window.freeNavigation.inputs!.slice(-5))}`,
+                { firstEvent, device, x, y },
+              ),
+            );
+          };
+          const end = async () => {
+            if (device === 'mouse') await page.mouse.up({ button });
+            else await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+          };
+          const before = await state();
+          expect(before.frozen).toBe(false);
+          await begin();
+          await move(2, 2);
+          const liveMove = await state();
+          const keys = mode === 'slide' ? (['phi', 'z'] as const) : (['rock', 'tilt'] as const);
+          for (const key of keys)
+            expect(Math.abs(liveMove.pose[key] - before.pose[key]), `${device}/${mode}: real live input changes ${key}`).toBeGreaterThan(0);
+          await acquired(page);
+          // DOM activation preserves the captured pointer and does not move its coordinates.
+          await freeze();
+          await acquired(page);
+          const paused = await state();
+          expect(paused.frozen).toBe(true);
+          await move(60, 100);
+          const afterIgnoredMove = await state();
+          expect(afterIgnoredMove, `${device}/${mode}: pause preserves pose and acquisition`).toEqual(paused);
+          await freeze();
+          await move(2, 2);
+          const resumed = await state();
+          await end();
+          records.push({ device, mode, before, liveMove, paused, afterIgnoredMove, resumed });
+          for (const key of keys)
+            // Compare equal physical cursor increments with an observed live control;
+            // no copy of the implementation's pixel-to-pose gains.
+            expect
+              .soft(resumed.pose[key] - paused.pose[key], `${device}/${mode}: resumed ${key} only follows the last 2px`)
+              .toBeCloseTo(liveMove.pose[key] - before.pose[key], 10);
+          const coherent = await parity(page);
+          records.push({ device, mode, coherent });
+          // A new gesture begun while frozen remains ignored even after resume.
+          const ignoredStart = await state();
+          expect(ignoredStart.frozen).toBe(true);
+          await begin();
+          await move(60, 100);
+          expect(await state()).toEqual(ignoredStart);
+          await freeze();
+          await move(2, 2);
+          const ignoredResume = await state();
+          await end();
+          expect(ignoredResume.pose, `${device}/${mode}: a gesture begun frozen never becomes active`).toEqual(ignoredStart.pose);
+          await acquired(page);
+          records.push({ device, mode, ignoredStart, ignoredResume });
+        }
+      expect(errors).toEqual([]);
+      expect(await page.evaluate(() => window.__vexusTest!.loggedErrors())).toEqual([]);
+    } finally {
+      await info.attach('freeze-resume-input.json', {
+        body: JSON.stringify({
+          caseId,
+          records,
+          observed: await page.evaluate(() => ({ inputs: window.freeNavigation.inputs, parity: window.freeNavigation.parityDiagnostics })),
+        }),
+        contentType: 'application/json',
+      });
+      if (touchEnabled) await cdp.send('Emulation.setTouchEmulationEnabled', { enabled: false });
+      await cdp.detach();
+    }
   });

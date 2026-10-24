@@ -264,3 +264,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [258](DECISIONS.md#L8662) | Reutilizar la proyección del corte sin alterar los mapas adquiridos | vigente |
 | [259](DECISIONS.md#L8680) | Evitar consultas anatómicas redundantes en el clasificador del corte | vigente |
 | [260](DECISIONS.md#L8694) | Comparar geometría del contorno entre arquitecturas | vigente |
+| [261](DECISIONS.md#L8708) | Reanudar un gesto de sonda sin acumular movimiento congelado | vigente |
+| [262](DECISIONS.md#L8722) | Comparar corte y GPU en las coordenadas efectivamente consultadas | vigente |

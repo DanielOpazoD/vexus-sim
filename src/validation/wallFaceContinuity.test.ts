@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { AnatomyScene } from '../anatomy/scene';
-import { FIRST_WALL_INTERFACE, LAST_WALL_INTERFACE, type Interface } from '../anatomy/interfaces';
+import { FIRST_WALL_INTERFACE, LAST_WALL_INTERFACE } from '../anatomy/interfaces';
 import type { Torso } from '../anatomy/primitives';
 import { wallArc, wallPerimeter } from '../anatomy/organs/wall';
 import { NORMAL_ADULT, SEVERE_CONGESTION } from '../cases';
@@ -37,8 +37,8 @@ describe('reflectividad parietal continua alrededor del paciente, 252', () => {
           T.faceVariation[index] *
             (valueNoise([wallArc(p, t) / T.faceVariationMm, p[2] / T.faceVariationMm, (index + 1) * 3.7], 37.3) - 0.5),
         );
-        expect(wallFaceGain(p, f as Interface, t)).toBeCloseTo(expected, 10);
-        expect(wallFaceGain(p, f as Interface, t)).toBe(wallFaceGain([...p], f as Interface, t));
+        expect(wallFaceGain(p, f, t)).toBeCloseTo(expected, 10);
+        expect(wallFaceGain(p, f, t)).toBe(wallFaceGain([...p], f, t));
       }
   });
 });

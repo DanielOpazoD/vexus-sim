@@ -74,6 +74,11 @@ describe('integridad de la evidencia de adquisición', () => {
   it('acepta geometría presentada y tiempo coincidentes sin exigir igualdad de contador RAF', () => {
     expect(() => validateAcquisition(acquisition(), expected)).not.toThrow();
   });
+  it('no atribuye ruido de otro cuadro a la misma fase registrada aunque coincidan pose y reloj', () => {
+    expect(() => validateAcquisition(acquisition(), { ...expected, receiverFrame: 31 })).not.toThrow();
+    for (const receiverFrame of [30, 32, 0, 31.5, NaN, Infinity])
+      expect(() => validateAcquisition(acquisition(), { ...expected, receiverFrame })).toThrow('receiver phase');
+  });
   it('rechaza perfiles de transductor distintos o incompletos aunque coincidan pose y marco', () => {
     const shot = acquisition();
     shot.liveTransducer.f0B += 1;

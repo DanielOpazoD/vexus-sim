@@ -8,7 +8,7 @@ import { resolve, join } from 'node:path';
 import { chromium, type Browser } from '@playwright/test';
 import { START_POINTS, startPointsFor, type StartPoint } from '../../src/app/startPoints';
 import { acquisitionSnapshot, validateAcquisition } from './acquisitionSnapshot';
-import { comparisonState } from './comparisonState';
+import { comparisonHistoryStart, comparisonState } from './comparisonState';
 import { captureBMode } from './captureBMode';
 import { buildSource } from '../build/provenance';
 import { verifyLocalBuild, verifyPreviewBuild } from '../workspace/previewBuild';
@@ -25,6 +25,7 @@ const anatomy = args.get('anatomy');
 const protocol = args.get('protocol') ?? 'ui';
 if (!['atlas', 'legacy'].includes(anatomy ?? '') || !['ui', 'static'].includes(protocol))
   throw new Error('Declare --anatomy atlas|legacy and --protocol ui|static');
+const historyStartFrame = comparisonHistoryStart(protocol, args.get('history-start-frame'));
 if (out === process.cwd() || out.startsWith(process.cwd() + '/')) throw new Error('Evidence must be outside the checkout');
 const baseUrl = new URL(args.get('url') ?? 'http://127.0.0.1:6600');
 if (!['localhost', '127.0.0.1', '[::1]'].includes(baseUrl.hostname)) throw new Error('Audit requires a local server');
@@ -62,6 +63,7 @@ const provenance = {
   geometry,
   protocol,
   historyPolicy: protocol === 'static' ? 'explicit reset via comparisonState' : 'preserved during UI movement',
+  historyStartFrame: historyStartFrame ?? null,
   anatomy,
   url: baseUrl.toString(),
   browserPath: 'Browser plugin not available; repository Playwright',
@@ -99,10 +101,17 @@ try {
         if (!build.includes(sha.slice(0, 7))) throw new Error('Server is running a different revision');
         await page.selectOption('#case-select', caseId);
         await page.getByRole('button', { name: 'Apnea espiratoria', exact: true }).click();
+        let comparison: ReturnType<typeof comparisonState> | null = null;
         if (protocol === 'static') {
           // Fresh page, explicit clock/history protocol. These hooks do not prove UI movement.
           await page.evaluate(comparisonState, { phase: 'prepare' as const, targetSeconds: time - 1 });
-          await page.evaluate(comparisonState, { phase: 'capture' as const, targetSeconds: time, view, frames: 6 });
+          comparison = await page.evaluate(comparisonState, {
+            phase: 'capture' as const,
+            targetSeconds: time,
+            view,
+            frames: 6,
+            historyStartFrame,
+          });
         } else {
           const torso = await page.evaluate(() => {
             const t = window.__vexusTest!.sim().scene.torso;
@@ -128,7 +137,12 @@ try {
           await page.locator('#freeze').click();
         }
         const snapshot = await page.evaluate(acquisitionSnapshot, view);
-        validateAcquisition(snapshot, { anatomy: anatomy!, caseId, ...(protocol === 'static' ? { time } : {}) });
+        validateAcquisition(snapshot, {
+          anatomy: anatomy!,
+          caseId,
+          ...(protocol === 'static' ? { time } : {}),
+          ...(historyStartFrame === undefined ? {} : { receiverFrame: historyStartFrame + 6 }),
+        });
         if (errors.length) throw new Error(errors.join('\n'));
         const gpu = await page.evaluate(() => {
           const gl = document.querySelector<HTMLCanvasElement>('#gl')!.getContext('webgl2')!;
@@ -142,6 +156,7 @@ try {
         const artifacts = Object.fromEntries([bmodePath, uiPath].map((p) => [p, hash(readFileSync(p))]));
         const item = {
           ...snapshot,
+          comparisonProtocol: comparison?.protocol ?? null,
           provenance: { ...provenance, gpu, browser: browser.version(), build },
           artifacts,
           integrity: 'verified',

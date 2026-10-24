@@ -1,5 +1,22 @@
 import type { StartPoint } from '../../src/app/startPoints';
 
+/** Opt-in de auditoría: no reinterpreta las capturas históricas ni el protocolo de interacción. */
+export function comparisonHistoryStart(protocol: string, input: string | undefined, frames = 6): number | undefined {
+  if (input === undefined) return undefined;
+  const start = Number(input);
+  if (protocol !== 'static') throw new Error('Receiver phase registration requires the static protocol');
+  if (
+    !/^\d+$/.test(input) ||
+    !Number.isSafeInteger(start) ||
+    start < 2 ||
+    !Number.isSafeInteger(frames) ||
+    frames < 1 ||
+    start + frames > 4096
+  )
+    throw new RangeError('Invalid receiver history start frame');
+  return start;
+}
+
 /** Self-contained callback for page.evaluate: no module-scoped runtime dependencies. */
 export function comparisonState(args: {
   phase: 'prepare' | 'capture';

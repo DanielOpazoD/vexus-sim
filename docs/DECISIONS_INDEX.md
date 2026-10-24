@@ -260,3 +260,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [254](DECISIONS.md#L8626) | Conservar rango y fase del Color al recuperar cine | vigente |
 | [255](DECISIONS.md#L8634) | Sincronizar el cronometraje con una lectura GPU válida | vigente |
 | [256](DECISIONS.md#L8642) | Reutilizar la transmisión solo con entradas GPU idénticas | vigente |
+| [257](DECISIONS.md#L8650) | Contrastar la PSF con una adquisición independiente de dos vías | vigente |

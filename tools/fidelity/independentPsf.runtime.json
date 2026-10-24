@@ -1,0 +1,110 @@
+[
+  {
+    "name": "contourpy",
+    "version": "1.4.0",
+    "wheel": "contourpy-1.4.0-cp313-cp313-macosx_11_0_arm64.whl",
+    "sha256": "196759a3e4db60e1546167e361090ebb6d199aa3aafc9e34ea17a5ac3b23e814",
+    "licenses": ["licenses/contourpy-1.4.0-cp313-cp313-macosx_11_0_arm64/contourpy-1.4.0.dist-info/licenses/LICENSE"]
+  },
+  {
+    "name": "cycler",
+    "version": "0.12.1",
+    "wheel": "cycler-0.12.1-py3-none-any.whl",
+    "sha256": "85cef7cff222d8644161529808465972e51340599459b8ac3ccbac5a854e0d30",
+    "licenses": ["licenses/cycler-0.12.1-py3-none-any/cycler-0.12.1.dist-info/LICENSE"]
+  },
+  {
+    "name": "fonttools",
+    "version": "4.67.0",
+    "wheel": "fonttools-4.67.0-cp313-cp313-macosx_10_13_universal2.whl",
+    "sha256": "8239e2ca24878715a19f061d065b5721e87da81d145e48b3418f771a469b5a24",
+    "licenses": [
+      "licenses/fonttools-4.67.0-cp313-cp313-macosx_10_13_universal2/fonttools-4.67.0.dist-info/licenses/LICENSE",
+      "licenses/fonttools-4.67.0-cp313-cp313-macosx_10_13_universal2/fonttools-4.67.0.dist-info/licenses/LICENSE.external"
+    ]
+  },
+  {
+    "name": "kiwisolver",
+    "version": "1.5.1",
+    "wheel": "kiwisolver-1.5.1-cp313-cp313-macosx_11_0_arm64.whl",
+    "sha256": "77a4c8187a5948d7f8795adb765a3c7b553d07d86d88e43038fc32fc1fb9a3f3",
+    "licenses": ["licenses/kiwisolver-1.5.1-cp313-cp313-macosx_11_0_arm64/kiwisolver-1.5.1.dist-info/licenses/LICENSE"]
+  },
+  {
+    "name": "matplotlib",
+    "version": "3.10.7",
+    "wheel": "matplotlib-3.10.7-cp313-cp313-macosx_11_0_arm64.whl",
+    "sha256": "37a1fea41153dd6ee061d21ab69c9cf2cf543160b1b85d89cd3d2e2a7902ca4c",
+    "licenses": ["licenses/matplotlib-3.10.7-cp313-cp313-macosx_11_0_arm64/matplotlib-3.10.7.dist-info/LICENSE"]
+  },
+  {
+    "name": "numpy",
+    "version": "2.3.4",
+    "wheel": "numpy-2.3.4-cp313-cp313-macosx_14_0_arm64.whl",
+    "sha256": "3634093d0b428e6c32c3a69b78e554f0cd20ee420dcad5a9f3b2a63762ce4197",
+    "licenses": ["licenses/numpy-2.3.4-cp313-cp313-macosx_14_0_arm64/numpy-2.3.4.dist-info/LICENSE.txt"]
+  },
+  {
+    "name": "packaging",
+    "version": "26.3",
+    "wheel": "packaging-26.3-py3-none-any.whl",
+    "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+    "licenses": [
+      "licenses/packaging-26.3-py3-none-any/packaging-26.3.dist-info/licenses/LICENSE",
+      "licenses/packaging-26.3-py3-none-any/packaging-26.3.dist-info/licenses/LICENSE.APACHE",
+      "licenses/packaging-26.3-py3-none-any/packaging-26.3.dist-info/licenses/LICENSE.BSD"
+    ]
+  },
+  {
+    "name": "pillow",
+    "version": "13.0.0",
+    "wheel": "pillow-13.0.0-cp313-cp313-macosx_11_0_arm64.whl",
+    "sha256": "f11a3c1358bb3c68012a7b1f41b223c3db9f7bfde90b481df028cfe1c3363313",
+    "licenses": ["licenses/pillow-13.0.0-cp313-cp313-macosx_11_0_arm64/pillow-13.0.0.dist-info/licenses/LICENSE"]
+  },
+  {
+    "name": "PyMUST",
+    "version": "0.1.9",
+    "wheel": "pymust-0.1.9-py3-none-any.whl",
+    "sha256": "9151727ae9a61d14fc3f2577192b09f2da1c7fd2e0e14f5300cd8d1597cf3392",
+    "licenses": ["licenses/pymust-0.1.9-py3-none-any/pymust-0.1.9.dist-info/licenses/LICENSE"]
+  },
+  {
+    "name": "pyparsing",
+    "version": "3.3.3",
+    "wheel": "pyparsing-3.3.3-py3-none-any.whl",
+    "sha256": "ece8c00a69cf01b45d0b1dedabb469c90d8caf996d4fda40f147627a122849a4",
+    "licenses": ["licenses/pyparsing-3.3.3-py3-none-any/pyparsing-3.3.3.dist-info/licenses/LICENSE"]
+  },
+  {
+    "name": "python-dateutil",
+    "version": "3.0.0",
+    "wheel": "python_dateutil-3.0.0-py2.py3-none-any.whl",
+    "sha256": "3c79630202e4152c6add678446984236efe4f57e84d8e892aab0637bab82e9fd",
+    "licenses": ["licenses/python_dateutil-3.0.0-py2.py3-none-any/python_dateutil-3.0.0.dist-info/licenses/LICENSE"]
+  },
+  {
+    "name": "scipy",
+    "version": "1.16.2",
+    "wheel": "scipy-1.16.2-cp313-cp313-macosx_14_0_arm64.whl",
+    "sha256": "e52729ffd45b68777c5319560014d6fd251294200625d9d70fd8626516fc49f5",
+    "licenses": ["licenses/scipy-1.16.2-cp313-cp313-macosx_14_0_arm64/scipy-1.16.2.dist-info/LICENSE.txt"]
+  },
+  {
+    "name": "six",
+    "version": "1.17.0",
+    "wheel": "six-1.17.0-py2.py3-none-any.whl",
+    "sha256": "4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274",
+    "licenses": ["licenses/six-1.17.0-py2.py3-none-any/six-1.17.0.dist-info/LICENSE"]
+  },
+  {
+    "name": "tzdata",
+    "version": "2026.5",
+    "wheel": "tzdata-2026.5-py2.py3-none-any.whl",
+    "sha256": "b683bd1b6659ddcd810ff02ad09ba821d4bf1065072805063eb35c49617905ac",
+    "licenses": [
+      "licenses/tzdata-2026.5-py2.py3-none-any/tzdata-2026.5.dist-info/licenses/LICENSE",
+      "licenses/tzdata-2026.5-py2.py3-none-any/tzdata-2026.5.dist-info/licenses/licenses/LICENSE_APACHE"
+    ]
+  }
+]

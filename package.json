@@ -20,6 +20,7 @@
     "docs:index": "node --import tsx tools/docs/decisions-index.ts",
     "fidelity": "node --import tsx tools/fidelity/bench.ts",
     "fidelity:external": "node --import tsx tools/fidelity/externalEvidence.ts",
+    "fidelity:psf": "node --import tsx tools/fidelity/independentPsf.ts",
     "fidelity:audit": "node --import tsx tools/fidelity/windowAudit.ts",
     "fidelity:blind": "node --import tsx tools/fidelity/blind-pairs.ts",
     "check": "npm run format:check && node --import tsx tools/docs/decisions-index.ts --check && npm run lint && npm run typecheck && vite build && node --import tsx tools/ci/bundle-budget.ts && npm run test:coverage",

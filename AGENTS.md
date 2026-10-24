@@ -13,5 +13,8 @@
    histórico en trabajo actual sin revisar el cierre y Git/CI.
 
 No amplíes plazos, reduzcas física/resolución/aserciones ni omitas hooks para conseguir verde.
+El usuario autoriza revisar, sustituir o retirar pruebas que perpetúen una aproximación superada.
+Documenta el contrato sustituido y demuestra que el reemplazo detecta los errores relevantes;
+conserva negativos y compara calidad/coste. Véase «Evolución de pruebas» en `CONTRIBUTING.md`.
 No elimines evidencias negativas ni procesos ajenos. No confundas CI verde, merge, despliegue y
 validación clínica. No introduzcas dependencias o frameworks para ordenar el entorno.

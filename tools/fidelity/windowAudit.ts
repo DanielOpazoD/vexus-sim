@@ -11,7 +11,7 @@ import { acquisitionSnapshot, validateAcquisition } from './acquisitionSnapshot'
 import { comparisonHistoryStart, comparisonState } from './comparisonState';
 import { captureBMode } from './captureBMode';
 import { buildSource } from '../build/provenance';
-import { verifyLocalBuild, verifyPreviewBuild } from '../workspace/previewBuild';
+import { verifyPreviewBuild } from '../workspace/previewBuild';
 import { feedbackGitEnvironment } from '../workspace/feedbackPlan';
 
 const args = new Map<string, string>();
@@ -60,6 +60,7 @@ const provenance = {
   dirty: !!dirty,
   source,
   buildVerification: null as Awaited<ReturnType<typeof verifyPreviewBuild>> | null,
+  finalBuildVerification: null as Awaited<ReturnType<typeof verifyPreviewBuild>> | null,
   geometry,
   protocol,
   historyPolicy: protocol === 'static' ? 'explicit reset via comparisonState' : 'preserved during UI movement',
@@ -177,7 +178,13 @@ try {
         await page.close();
       }
     }
-  deepStrictEqual(verifyLocalBuild(process.cwd(), runOut).receipt.source, source, 'Source changed during acquisition');
+  provenance.finalBuildVerification = await verifyPreviewBuild(process.cwd(), baseUrl.origin, runOut);
+  deepStrictEqual(provenance.finalBuildVerification.source, source, 'Source changed during acquisition');
+  deepStrictEqual(
+    provenance.finalBuildVerification.receiptSha256,
+    provenance.buildVerification.receiptSha256,
+    'Preview build changed during acquisition',
+  );
   if (failures.length) throw new Error(`${failures.length} rejected acquisitions; retained in ${runOut}`);
   console.log(runOut);
 } catch (error) {

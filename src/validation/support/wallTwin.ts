@@ -37,7 +37,7 @@ import {
   IFACE_REACH_MM,
   IFACE_SHIFT_MM,
   addInterfaceEcho,
-  curvatureCoherence,
+  cylindricalCurvatureCoherence,
   diffuseEchoField,
   faceDelta,
   faceLitFromProbe,
@@ -425,9 +425,14 @@ function echoOf(
     if (cl >= 1e-4) {
       const cu: Vec3 = [circ[0] / cl, circ[1] / cl, circ[2] / cl];
       const lat = normalize(cross(frame.elevation, dir));
-      const kl = dot(lat, cu) ** 2 * fg.curvature;
-      const ke = dot(frame.elevation, cu) ** 2 * fg.curvature;
-      curv = curvatureCoherence(lateralSigmaMm(r, g.focusMm, g.beam), se * Math.SQRT1_2, kl, ke, K0 * frequencyRatio(r, g.beam));
+      curv = cylindricalCurvatureCoherence(
+        lateralSigmaMm(r, g.focusMm, g.beam),
+        se * Math.SQRT1_2,
+        dot(lat, cu),
+        dot(frame.elevation, cu),
+        fg.curvature,
+        K0 * frequencyRatio(r, g.beam),
+      );
     }
   }
   const delta = faceDelta(c.interfaceDistance, fg.norm, cosI);

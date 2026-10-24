@@ -69,12 +69,9 @@ export function captureProtocolVessel<K extends ProtocolVessel>(
   // vein. When anatomy says the artery dominates, a continuous arterial trace
   // must not be accepted as venous continuity. This is an estimator limitation,
   // not a claim that a clinician cannot interpret a mixed arterial/venous gate.
-  if (
-    kind === 'renal' &&
-    m.quality.issue === null &&
-    effective.some((b) => dominantGateSystem(gateTrack, b.tR, b.tR + b.rr) === 'interlobarArtery')
-  )
-    return { ...m, quality: { ...m.quality, issue: 'renal-identity' } };
+  // Keep this fact even when a spectral issue already rejects the capture.
+  if (kind === 'renal' && effective.some((b) => dominantGateSystem(gateTrack, b.tR, b.tR + b.rr) === 'interlobarArtery'))
+    return { ...m, quality: { ...m.quality, issue: m.quality.issue ?? 'renal-identity', renalArterialDominance: true } };
 
   if (
     kind === 'hepatic' &&

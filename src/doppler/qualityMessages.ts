@@ -2,16 +2,24 @@ import type { MeasurementQuality } from './measureQuality';
 import { wrongVesselText } from './vesselIdentity';
 
 export const CAPTURE_BEATS = 4;
+const RENAL_IDENTITY_REASON = 'domina la arteria y no se identifica la vena con seguridad (ajuste la puerta)';
 
 /** Texto para el alumno: qué pasó y cómo corregirlo. */
-export function qualityText(q: Pick<MeasurementQuality, 'issue' | 'wrongVessel'>): string {
+export function qualityText(q: Pick<MeasurementQuality, 'issue' | 'wrongVessel' | 'renalArterialDominance'>): string {
+  if (!q.renalArterialDominance || q.issue === 'renal-identity') return primaryQualityText(q);
+  // An empty inferred venous side does not mean this arterial gate has no flow.
+  if (q.issue === null || q.issue === 'no-signal') return primaryQualityText({ issue: 'renal-identity' });
+  return `${primaryQualityText(q)}; además, ${RENAL_IDENTITY_REASON}`;
+}
+
+function primaryQualityText(q: Pick<MeasurementQuality, 'issue' | 'wrongVessel'>): string {
   switch (q.issue) {
     case null:
       return 'medible';
     case 'wrong-vessel':
       return q.wrongVessel ? wrongVesselText(q.wrongVessel.kind, q.wrongVessel.found) : 'no medible: vaso equivocado (recoloque la puerta)';
     case 'renal-identity':
-      return 'no medible automáticamente: domina la arteria y no se identifica la vena con seguridad (ajuste la puerta)';
+      return `no medible automáticamente: ${RENAL_IDENTITY_REASON}`;
     case 'no-signal':
       return 'no medible: no hay flujo en la puerta (¿está sobre el vaso? ¿hay sombra o poco contacto? si respira, pida apnea)';
     case 'intermittent':

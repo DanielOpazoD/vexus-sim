@@ -7,7 +7,7 @@ independientes, desfase completo y moteado primero; luego los demás bloques seg
 Autoriza revisar pruebas obsoletas con justificación y evidencia, sin bajar resolución ni convertir
 fallos en aprobación. Los contratos y negativos se preservan según `CONTRIBUTING.md`.
 
-Base local/remota comprobada: main `8d7ad19209ac7a375f27ba7466a27c64220f3eee`, PR276. La ronda
+Base inicial de la ronda: main `8d7ad19209ac7a375f27ba7466a27c64220f3eee`, PR276. La ronda
 anterior quedó cerrada con CI postmerge40087942261 aprobada (162 E2E únicas, sin reintentos) y
 seguimiento automático eliminado. Las cifras y pendientes de las secciones históricas siguientes
 no sustituyen este cierre. Estado activo nuevo: `../fidelity-next15-evidence/CURRENT_STATE.json`
@@ -33,15 +33,19 @@ reintentos, con recibo y originales verificados por separado.
 campos constantes del atlas y elimina la clasificación mesentérica espuria del testigo (263).
 Metal8/Swift2, check completo, siete casos fisiológicos, hook normal y CI `40131828116` aprobados:
 164 E2E/12 grupos/cero reintentos, con originales y dos complementarios verificados. Su CI postmerge
-se verifica aparte. No identifica tejido humano ni acredita reparar toda la pared histórica.
+independiente `40134364958` también se verificó sobre `124b8e7`: 164 E2E, 14 ZIP y 28 informes
+originales. No identifica tejido humano ni acredita reparar toda la pared histórica.
 La observación inicial no localizada de 1/64 permanece separada.
 
 La candidata 264 incluye en el pulso actual el eco de la sangre que reentra al volumen PW, sin
 segunda advección ni fase duplicada. Pasan 45 controles focales y los negativos discriminantes;
 las comparaciones renales conservan advertencias y déficit poblacional, sin promesa de mejora
 uniforme. La decisión 265 retira dos repeticiones del complemento venoso, conserva sus cuatro
-suites y la CI protegida; reduce muestras de intermitencia y lo declara. Ambos cambios esperan
-aceptación completa del head final tras rebase sobre PR280.
+suites y la CI protegida; reduce muestras de intermitencia y lo declara. El PR281 falló en su complemento venoso: la energía arterial opuesta se atribuía a aliasing
+venoso. El diagnóstico de Chromium y su contrafactual están conservados. La candidata restringe
+esa heurística al lado evaluado y conserva la identidad arterial junto a otros rechazos, sin tocar
+umbrales ni señal. Las pruebas E2E originales permanecen intactas. La aceptación del nuevo head
+sigue pendiente; no sustituirla por el check previo de `86ecdb0`.
 
 La variante GPU del corte se retiró: en 3RAF redujo el desfase un 14,8 % pero la cadencia B un
 16,2 %; el beneficio en 1RAF no satisface el filtro conjunto previo. Conserva la auditoría de

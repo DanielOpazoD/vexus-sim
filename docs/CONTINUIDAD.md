@@ -13,6 +13,18 @@ seguimiento automático eliminado. Las cifras y pendientes de las secciones hist
 no sustituyen este cierre. Estado activo nuevo: `../fidelity-next15-evidence/CURRENT_STATE.json`
 y `PROGRESS.md`. No hay entrega aceptada de esta nueva ronda por el mero hecho de iniciar trabajo.
 
+El primer componente del bloque 1 se fusionó mediante [PR277](https://github.com/DanielOpazoD/vexus-sim/pull/277)
+en `77a9f9c`, con 162 E2E sin reintentos y originales verificados. Su CI postmerge `40119491086`
+también aprobó y sus originales se verificaron por separado. Es una referencia puntual sintética PyMUST, sin cambios en la imagen ni
+calibración clínica. [PR278](https://github.com/DanielOpazoD/vexus-sim/pull/278) reutiliza la proyección
+del corte, retira código sin uso (258) y evita consultas anatómicas redundantes (259). Reduce trabajo,
+pero todavía no acredita menor desfase geométrico global. La aceptación depende del head final.
+La CI de PR278 detectó hashes de contorno dependientes de ARM/x86; la causa se reprodujo con
+fuente histórica. El contrato portable de 260 conserva píxeles exactos y negativos discriminantes;
+falta la aceptación completa del nuevo head. Las pruebas de moteado reproducen dependencia de
+trayectoria; la referencia material fija retorna y converge en Metal y SwiftShader, pero el coste
+completo adicional impide promoverla todavía. No cambia la textura productiva. Bloques 1, 2 y 5 abiertos.
+
 Antes de editar se apartaron reversiblemente trece archivos duplicados no seguidos: doce idénticos
 a los originales y `dist 2` (enlace simbólico frente al directorio `dist`). Manifiesto y hashes en
 `../fidelity-next15-evidence/quarantine-initial-duplicates/`; causa no determinada.

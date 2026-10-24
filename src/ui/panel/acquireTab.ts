@@ -26,64 +26,48 @@ export function buildAcquireTab(ctx: PanelContext, p: HTMLElement): HTMLElement 
   });
   const deg = (v: number) => `${v.toFixed(0)}°`;
   ctx.track(
-    slider(
-      probe,
-      {
-        label: 'Rotación',
-        min: -180,
-        max: 180,
-        step: 1,
-        get: () => (s().pose.yaw * 180) / Math.PI,
-        set: (v) => ctx.setPose({ ...s().pose, yaw: (v * Math.PI) / 180 }),
-        format: deg,
-      },
-      () => undefined,
-    ),
+    slider(probe, {
+      label: 'Rotación',
+      min: -180,
+      max: 180,
+      step: 1,
+      get: () => (s().pose.yaw * 180) / Math.PI,
+      set: (v) => ctx.setPose({ ...s().pose, yaw: (v * Math.PI) / 180 }),
+      format: deg,
+    }),
   );
   ctx.track(
-    slider(
-      probe,
-      {
-        label: 'Inclinación',
-        min: -180,
-        max: 180,
-        step: 1,
-        get: () => (s().pose.tilt * 180) / Math.PI,
-        set: (v) => ctx.setPose({ ...s().pose, tilt: (v * Math.PI) / 180 }),
-        format: deg,
-      },
-      () => undefined,
-    ),
+    slider(probe, {
+      label: 'Inclinación',
+      min: -180,
+      max: 180,
+      step: 1,
+      get: () => (s().pose.tilt * 180) / Math.PI,
+      set: (v) => ctx.setPose({ ...s().pose, tilt: (v * Math.PI) / 180 }),
+      format: deg,
+    }),
   );
   ctx.track(
-    slider(
-      probe,
-      {
-        label: 'Basculación',
-        min: -180,
-        max: 180,
-        step: 1,
-        get: () => (s().pose.rock * 180) / Math.PI,
-        set: (v) => ctx.setPose({ ...s().pose, rock: (v * Math.PI) / 180 }),
-        format: deg,
-      },
-      () => undefined,
-    ),
+    slider(probe, {
+      label: 'Basculación',
+      min: -180,
+      max: 180,
+      step: 1,
+      get: () => (s().pose.rock * 180) / Math.PI,
+      set: (v) => ctx.setPose({ ...s().pose, rock: (v * Math.PI) / 180 }),
+      format: deg,
+    }),
   );
   ctx.track(
-    slider(
-      probe,
-      {
-        label: 'Presión',
-        min: -PROBE_LIFT_LIMITS.max,
-        max: -PROBE_LIFT_LIMITS.min,
-        step: 0.5,
-        get: () => -s().pose.lift,
-        set: (v) => ctx.setPose({ ...s().pose, lift: -v }),
-        format: (v) => `${v.toFixed(1)} mm`,
-      },
-      () => undefined,
-    ),
+    slider(probe, {
+      label: 'Presión',
+      min: -PROBE_LIFT_LIMITS.max,
+      max: -PROBE_LIFT_LIMITS.min,
+      step: 0.5,
+      get: () => -s().pose.lift,
+      set: (v) => ctx.setPose({ ...s().pose, lift: -v }),
+      format: (v) => `${v.toFixed(1)} mm`,
+    }),
   );
   const pos = note(probe);
   ctx.track({

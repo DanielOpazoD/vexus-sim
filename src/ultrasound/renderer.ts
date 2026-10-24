@@ -2084,23 +2084,6 @@ export class UltrasoundRenderer {
   }
 
   /**
-   * Transmisión de amplitud de ida y vuelta de la pasada A (a la frecuencia B) en (u, v) del sector
-   * (u: línea 0–1, v: profundidad / profundidad del sector). Solo pruebas: lectura GPU→CPU bloqueante.
-   */
-  transmissionAt(u: number, v: number): number {
-    const gl = this.gl;
-    const x = Math.min(this.lines - 1, Math.max(0, Math.floor(u * this.lines)));
-    const y = Math.min(COARSE_DEPTH - 1, Math.max(0, Math.floor(v * COARSE_DEPTH)));
-    const px = new Float32Array(4);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.tTrans.fbo);
-    // un solo rayo: la transmisión que ven el color y el PW
-    gl.readBuffer(gl.COLOR_ATTACHMENT2);
-    gl.readPixels(x, y, 1, 1, gl.RGBA, gl.FLOAT, px);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    return px[0];
-  }
-
-  /**
    * Envolvente detectada (líneas × profundidad, antes de la compresión logarítmica y de la persistencia).
    * Solo pruebas: lectura GPU→CPU bloqueante. La fuente es explícita (decisión 58):
    *  - `'look0'` (por defecto): la mirada 0, la imagen de una mirada de siempre. Lanza si la mirada 0 no es

@@ -6,47 +6,34 @@ import type { PanelContext } from './context';
 /** Mandos básicos de la imagen 2D (profundidad, ganancia, foco), a mano mientras se busca la ventana. */
 export function buildImageBasics(ctx: PanelContext, sec: HTMLElement): void {
   const s = ctx.sim;
-  const ch = () => undefined;
   ctx.track(
-    slider(
-      sec,
-      {
-        label: 'Profundidad',
-        ...EQUIPMENT_LIMITS.depthMm,
-        get: () => s().bmode.depthMm,
-        set: (v) => ctx.dispatch({ type: 'bmode', patch: { depthMm: v } }),
-        format: (v) => `${(v / 10).toFixed(0)} cm`,
-      },
-      ch,
-    ),
+    slider(sec, {
+      label: 'Profundidad',
+      ...EQUIPMENT_LIMITS.depthMm,
+      get: () => s().bmode.depthMm,
+      set: (v) => ctx.dispatch({ type: 'bmode', patch: { depthMm: v } }),
+      format: (v) => `${(v / 10).toFixed(0)} cm`,
+    }),
   );
   ctx.track(
-    slider(
-      sec,
-      {
-        label: 'Ganancia',
-        ...EQUIPMENT_LIMITS.gainDb,
-        get: () => s().bmode.gainDb,
-        set: (v) => ctx.dispatch({ type: 'bmode', patch: { gainDb: v } }),
-        format: (v) => `${v} dB`,
-      },
-      ch,
-    ),
+    slider(sec, {
+      label: 'Ganancia',
+      ...EQUIPMENT_LIMITS.gainDb,
+      get: () => s().bmode.gainDb,
+      set: (v) => ctx.dispatch({ type: 'bmode', patch: { gainDb: v } }),
+      format: (v) => `${v} dB`,
+    }),
   );
   ctx.track(
-    slider(
-      sec,
-      {
-        label: 'Foco',
-        min: 20,
-        max: 200,
-        step: 5,
-        get: () => s().bmode.focusMm,
-        set: (v) => ctx.dispatch({ type: 'bmode', patch: { focusMm: v } }),
-        format: (v) => `${(v / 10).toFixed(1)} cm`,
-      },
-      ch,
-    ),
+    slider(sec, {
+      label: 'Foco',
+      min: 20,
+      max: 200,
+      step: 5,
+      get: () => s().bmode.focusMm,
+      set: (v) => ctx.dispatch({ type: 'bmode', patch: { focusMm: v } }),
+      format: (v) => `${(v / 10).toFixed(1)} cm`,
+    }),
   );
 }
 
@@ -61,36 +48,27 @@ export const IMAGE_ADVANCED_INFO =
 /** Mandos avanzados de la imagen 2D: rango dinámico, persistencia, composición espacial, armónica y TGC de 8 bandas. */
 export function buildImageAdvanced(ctx: PanelContext, sec: HTMLElement): void {
   const s = ctx.sim;
-  const ch = () => undefined;
   ctx.track(
-    slider(
-      sec,
-      {
-        label: 'Rango dinámico',
-        min: 40,
-        max: 80,
-        step: 2,
-        get: () => s().bmode.dynamicRangeDb,
-        set: (v) => ctx.dispatch({ type: 'bmode', patch: { dynamicRangeDb: v } }),
-        format: (v) => `${v} dB`,
-      },
-      ch,
-    ),
+    slider(sec, {
+      label: 'Rango dinámico',
+      min: 40,
+      max: 80,
+      step: 2,
+      get: () => s().bmode.dynamicRangeDb,
+      set: (v) => ctx.dispatch({ type: 'bmode', patch: { dynamicRangeDb: v } }),
+      format: (v) => `${v} dB`,
+    }),
   );
   ctx.track(
-    slider(
-      sec,
-      {
-        label: 'Persistencia',
-        min: 0,
-        max: 0.8,
-        step: 0.05,
-        get: () => s().bmode.persistence,
-        set: (v) => ctx.dispatch({ type: 'bmode', patch: { persistence: v } }),
-        format: (v) => v.toFixed(2),
-      },
-      ch,
-    ),
+    slider(sec, {
+      label: 'Persistencia',
+      min: 0,
+      max: 0.8,
+      step: 0.05,
+      get: () => s().bmode.persistence,
+      set: (v) => ctx.dispatch({ type: 'bmode', patch: { persistence: v } }),
+      format: (v) => v.toFixed(2),
+    }),
   );
   // Composición espacial (decisión 58): el conmutador; con el color encendido no se forma
   ctx.track(

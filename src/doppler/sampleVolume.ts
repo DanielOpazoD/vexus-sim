@@ -195,10 +195,6 @@ export class SampleVolumeIQ {
     this.equipment = { ...this.equipment, ...e };
   }
 
-  get equipmentState(): GateEquipment {
-    return this.equipment;
-  }
-
   /** Cambia la geometría de la puerta; si se movió mucho, resiembra los dispersores. */
   setGate(g: GateGeometry, phys: PhysiologySample): void {
     const moved =

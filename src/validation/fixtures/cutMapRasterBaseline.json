@@ -1,0 +1,487 @@
+{
+  "protocolId": "cut-raster-byte-baseline-v1",
+  "baselineCommit": "311a0cf3ef519807523609bd5efd4e6625494361",
+  "cutMapViewSha256": "fad6d800f50d8e1df15189f65921c32f3cfed92526231c40e015ce45d5c18ef2",
+  "rows": [
+    {
+      "labels": false,
+      "step": 0,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "4f84438d7fd516549a69483f69718144f26270e43720329e91d1d8eb82045132",
+      "textSha256": "9e046ff254522b3ec220fcf9b5906bb0389385c4e170cda6b24ce465b9fb5699",
+      "pathsSha256": "0f09042c5a4917dd2b20b143d951d75ab7464bf87859178f9e5595486f02188e"
+    },
+    {
+      "labels": false,
+      "step": 1,
+      "projection": {
+        "width": 91,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "be401c2d42639d0f00e0023749069a79eed8ee50962a599dff5652b922b7cdbb",
+      "textSha256": "2e3a4830d88be92fe46e68bbf4c185aff358ca9da5442e781b6c8e2af7793f2d",
+      "pathsSha256": "332770bda067dd881bf9d5aeeeba77b148538021d80c2cca266a9311f96c9aa1"
+    },
+    {
+      "labels": false,
+      "step": 2,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "c4d2f1531d883e8fd258fbdf1ebdf7156d4c58bb8a9f2da1d00f43afc844eb70",
+      "textSha256": "9e046ff254522b3ec220fcf9b5906bb0389385c4e170cda6b24ce465b9fb5699",
+      "pathsSha256": "d493b546dfb6a77c7f91f3c383ccf6d7fc44cb069b1b773b294ccfe73b5a9215"
+    },
+    {
+      "labels": false,
+      "step": 3,
+      "projection": {
+        "width": 79,
+        "height": 95,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "76186f6ae921b932af081b9debd93f9608b6349ca9ef7ca82d0aff37183bd190",
+      "textSha256": "9e046ff254522b3ec220fcf9b5906bb0389385c4e170cda6b24ce465b9fb5699",
+      "pathsSha256": "317297abd7a10798b37a5069d28005727526984c198e983817edbf4cfc04fb1f"
+    },
+    {
+      "labels": false,
+      "step": 4,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "4f84438d7fd516549a69483f69718144f26270e43720329e91d1d8eb82045132",
+      "textSha256": "9e046ff254522b3ec220fcf9b5906bb0389385c4e170cda6b24ce465b9fb5699",
+      "pathsSha256": "0f09042c5a4917dd2b20b143d951d75ab7464bf87859178f9e5595486f02188e"
+    },
+    {
+      "labels": false,
+      "step": 5,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 110,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "a7e7e462f32450efb2f86c6323c75798718e4a216f31eba022d1b0fa42aee49d",
+      "textSha256": "5e34664b092f0e5bdfd34ce27376be6d59b51c246a0ce4597d666a52557262ac",
+      "pathsSha256": "5020bff2c4296cc12baa0b7476c92afb8637bd508cd95c5a05b030822a3f8431"
+    },
+    {
+      "labels": false,
+      "step": 6,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "c4d2f1531d883e8fd258fbdf1ebdf7156d4c58bb8a9f2da1d00f43afc844eb70",
+      "textSha256": "9e046ff254522b3ec220fcf9b5906bb0389385c4e170cda6b24ce465b9fb5699",
+      "pathsSha256": "d493b546dfb6a77c7f91f3c383ccf6d7fc44cb069b1b773b294ccfe73b5a9215"
+    },
+    {
+      "labels": false,
+      "step": 7,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 68,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "b72ca0a549a687d896ffd68cd47f60fcb95854245ec40540f06faf3829818a84",
+      "textSha256": "6a067936bec3984d0b3eb749e7ba726b32aaeb9a944535374e9b5882efb47707",
+      "pathsSha256": "75bc446c49bd1240c42bab1513fe5bc7290664b775ce586110078d14fff934c5"
+    },
+    {
+      "labels": false,
+      "step": 8,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "4f84438d7fd516549a69483f69718144f26270e43720329e91d1d8eb82045132",
+      "textSha256": "9e046ff254522b3ec220fcf9b5906bb0389385c4e170cda6b24ce465b9fb5699",
+      "pathsSha256": "0f09042c5a4917dd2b20b143d951d75ab7464bf87859178f9e5595486f02188e"
+    },
+    {
+      "labels": false,
+      "step": 9,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.4747295565424577,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "7e3dfb33236503043c928d77bf4741ef608705fda28f38f3d523c419d78e9a8f",
+      "textSha256": "98b2154aefd9bd52e2ccc8f790922a7dda9d2e2385751dec65e04fde76fcdc2c",
+      "pathsSha256": "40ce9cbfb4c9403dd9fd01ff68acc0532e0369307057189d92a4766b0ae40708"
+    },
+    {
+      "labels": false,
+      "step": 10,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "c4d2f1531d883e8fd258fbdf1ebdf7156d4c58bb8a9f2da1d00f43afc844eb70",
+      "textSha256": "9e046ff254522b3ec220fcf9b5906bb0389385c4e170cda6b24ce465b9fb5699",
+      "pathsSha256": "d493b546dfb6a77c7f91f3c383ccf6d7fc44cb069b1b773b294ccfe73b5a9215"
+    },
+    {
+      "labels": false,
+      "step": 11,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 48,
+        "mapH": 128
+      },
+      "rgbaSha256": "42fd5fc78f78a64204dc17873745f372004cb23a05757cbbaa9828528a8c9bac",
+      "textSha256": "9e046ff254522b3ec220fcf9b5906bb0389385c4e170cda6b24ce465b9fb5699",
+      "pathsSha256": "00d8f150268b077910045d9a3f647d11f960398557e75a5337cbb2387c6cbdc1"
+    },
+    {
+      "labels": false,
+      "step": 12,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "4f84438d7fd516549a69483f69718144f26270e43720329e91d1d8eb82045132",
+      "textSha256": "9e046ff254522b3ec220fcf9b5906bb0389385c4e170cda6b24ce465b9fb5699",
+      "pathsSha256": "0f09042c5a4917dd2b20b143d951d75ab7464bf87859178f9e5595486f02188e"
+    },
+    {
+      "labels": false,
+      "step": 13,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 64
+      },
+      "rgbaSha256": "3b3926e07504f3eb1c8572caf5930c7c1395f41cb24637045f36021f6cc06657",
+      "textSha256": "9e046ff254522b3ec220fcf9b5906bb0389385c4e170cda6b24ce465b9fb5699",
+      "pathsSha256": "0dc77b8e1ae39da81db987caa53239a44b77e93a3980cd060064d5e80b6da982"
+    },
+    {
+      "labels": false,
+      "step": 14,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "c4d2f1531d883e8fd258fbdf1ebdf7156d4c58bb8a9f2da1d00f43afc844eb70",
+      "textSha256": "9e046ff254522b3ec220fcf9b5906bb0389385c4e170cda6b24ce465b9fb5699",
+      "pathsSha256": "d493b546dfb6a77c7f91f3c383ccf6d7fc44cb069b1b773b294ccfe73b5a9215"
+    },
+    {
+      "labels": true,
+      "step": 0,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "4f84438d7fd516549a69483f69718144f26270e43720329e91d1d8eb82045132",
+      "textSha256": "b69c0c5bc491bc24b298a9ed937531d894cd58fa8d781772c35659ba72d85a35",
+      "pathsSha256": "0f09042c5a4917dd2b20b143d951d75ab7464bf87859178f9e5595486f02188e"
+    },
+    {
+      "labels": true,
+      "step": 1,
+      "projection": {
+        "width": 91,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "be401c2d42639d0f00e0023749069a79eed8ee50962a599dff5652b922b7cdbb",
+      "textSha256": "e7f45c4b055fd431c7aa9f6e89f1d27eeb138b808a3f3d74f010a791695f6ebd",
+      "pathsSha256": "332770bda067dd881bf9d5aeeeba77b148538021d80c2cca266a9311f96c9aa1"
+    },
+    {
+      "labels": true,
+      "step": 2,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "c4d2f1531d883e8fd258fbdf1ebdf7156d4c58bb8a9f2da1d00f43afc844eb70",
+      "textSha256": "a9be1e661a1032eb67998c9ff25914d85f2b462effc80c1db165f181e568523e",
+      "pathsSha256": "d493b546dfb6a77c7f91f3c383ccf6d7fc44cb069b1b773b294ccfe73b5a9215"
+    },
+    {
+      "labels": true,
+      "step": 3,
+      "projection": {
+        "width": 79,
+        "height": 95,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "76186f6ae921b932af081b9debd93f9608b6349ca9ef7ca82d0aff37183bd190",
+      "textSha256": "69c0b9d7396393c87ef84cf17bb0492fc45c780c4b306fac5a76dd7dc58bf1a9",
+      "pathsSha256": "317297abd7a10798b37a5069d28005727526984c198e983817edbf4cfc04fb1f"
+    },
+    {
+      "labels": true,
+      "step": 4,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "4f84438d7fd516549a69483f69718144f26270e43720329e91d1d8eb82045132",
+      "textSha256": "b69c0c5bc491bc24b298a9ed937531d894cd58fa8d781772c35659ba72d85a35",
+      "pathsSha256": "0f09042c5a4917dd2b20b143d951d75ab7464bf87859178f9e5595486f02188e"
+    },
+    {
+      "labels": true,
+      "step": 5,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 110,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "a7e7e462f32450efb2f86c6323c75798718e4a216f31eba022d1b0fa42aee49d",
+      "textSha256": "a48feaa58306cad6ad033d135740de1de7ed4d1b66e13dfe3db0cc8d147ed3c0",
+      "pathsSha256": "5020bff2c4296cc12baa0b7476c92afb8637bd508cd95c5a05b030822a3f8431"
+    },
+    {
+      "labels": true,
+      "step": 6,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "c4d2f1531d883e8fd258fbdf1ebdf7156d4c58bb8a9f2da1d00f43afc844eb70",
+      "textSha256": "a9be1e661a1032eb67998c9ff25914d85f2b462effc80c1db165f181e568523e",
+      "pathsSha256": "d493b546dfb6a77c7f91f3c383ccf6d7fc44cb069b1b773b294ccfe73b5a9215"
+    },
+    {
+      "labels": true,
+      "step": 7,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 68,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "b72ca0a549a687d896ffd68cd47f60fcb95854245ec40540f06faf3829818a84",
+      "textSha256": "13e1b7918bc40f5c086ecee51fca0b26823120568a44d3f7bea6d9d05f55f2b2",
+      "pathsSha256": "75bc446c49bd1240c42bab1513fe5bc7290664b775ce586110078d14fff934c5"
+    },
+    {
+      "labels": true,
+      "step": 8,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "4f84438d7fd516549a69483f69718144f26270e43720329e91d1d8eb82045132",
+      "textSha256": "b69c0c5bc491bc24b298a9ed937531d894cd58fa8d781772c35659ba72d85a35",
+      "pathsSha256": "0f09042c5a4917dd2b20b143d951d75ab7464bf87859178f9e5595486f02188e"
+    },
+    {
+      "labels": true,
+      "step": 9,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.4747295565424577,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "7e3dfb33236503043c928d77bf4741ef608705fda28f38f3d523c419d78e9a8f",
+      "textSha256": "55c1b91bede84f7f3d153c41bec42eb144d87d7f151de71fad1d79d87b02b8a0",
+      "pathsSha256": "40ce9cbfb4c9403dd9fd01ff68acc0532e0369307057189d92a4766b0ae40708"
+    },
+    {
+      "labels": true,
+      "step": 10,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "c4d2f1531d883e8fd258fbdf1ebdf7156d4c58bb8a9f2da1d00f43afc844eb70",
+      "textSha256": "a9be1e661a1032eb67998c9ff25914d85f2b462effc80c1db165f181e568523e",
+      "pathsSha256": "d493b546dfb6a77c7f91f3c383ccf6d7fc44cb069b1b773b294ccfe73b5a9215"
+    },
+    {
+      "labels": true,
+      "step": 11,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 48,
+        "mapH": 128
+      },
+      "rgbaSha256": "42fd5fc78f78a64204dc17873745f372004cb23a05757cbbaa9828528a8c9bac",
+      "textSha256": "03f840bd4f2b18ef7294b3da6f602b5caee4b942be624a695c745c5e61a9cacd",
+      "pathsSha256": "00d8f150268b077910045d9a3f647d11f960398557e75a5337cbb2387c6cbdc1"
+    },
+    {
+      "labels": true,
+      "step": 12,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "4f84438d7fd516549a69483f69718144f26270e43720329e91d1d8eb82045132",
+      "textSha256": "b69c0c5bc491bc24b298a9ed937531d894cd58fa8d781772c35659ba72d85a35",
+      "pathsSha256": "0f09042c5a4917dd2b20b143d951d75ab7464bf87859178f9e5595486f02188e"
+    },
+    {
+      "labels": true,
+      "step": 13,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 64
+      },
+      "rgbaSha256": "3b3926e07504f3eb1c8572caf5930c7c1395f41cb24637045f36021f6cc06657",
+      "textSha256": "f5ae62e30dd9b2581abda98749ca79402a5c4826da5b464d5274f142617f6b0f",
+      "pathsSha256": "0dc77b8e1ae39da81db987caa53239a44b77e93a3980cd060064d5e80b6da982"
+    },
+    {
+      "labels": true,
+      "step": 14,
+      "projection": {
+        "width": 79,
+        "height": 83,
+        "depth": 180,
+        "radius": 60,
+        "halfSector": 0.5934119456780721,
+        "mapW": 96,
+        "mapH": 128
+      },
+      "rgbaSha256": "c4d2f1531d883e8fd258fbdf1ebdf7156d4c58bb8a9f2da1d00f43afc844eb70",
+      "textSha256": "a9be1e661a1032eb67998c9ff25914d85f2b462effc80c1db165f181e568523e",
+      "pathsSha256": "d493b546dfb6a77c7f91f3c383ccf6d7fc44cb069b1b773b294ccfe73b5a9215"
+    }
+  ]
+}

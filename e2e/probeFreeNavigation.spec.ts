@@ -191,7 +191,7 @@ async function parity(page: Page) {
       const c = cpu.scene.classify(material, caliber);
       return {
         material,
-        tissue: c.tissue,
+        tissue: Number(c.tissue), // Worker/GPU readbacks carry numeric tissue IDs.
         boundaryDistance: c.boundaryDistance,
         interface: c.interface,
         interfaceDistance: c.interfaceDistance,

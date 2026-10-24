@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import { afterEach, expect, it, vi } from 'vitest';
 import baseline from './fixtures/cutMapRasterBaseline.json';
+import contourBaseline from './fixtures/cutMapContourBaseline.json';
 import type { Simulator } from '../app/simulator';
 import { Tissue } from '../anatomy/tissues';
 import { CONVEX_C35 } from '../probe/probe';
@@ -131,13 +132,16 @@ it.each([false, true])('preserves raster, contours and labels=%s across every pr
   for (const [i, projection] of variants.entries()) {
     const map = mapFor(projection, i % 4);
     const actual = cached.paint(projection, map, labels, true);
-    // These hashes are captured from unmodified 311a0cf, not fitted to this candidate.
+    // Historical RGBA bytes and text (including its coordinates) stay exact.
+    // Floating contour coordinates match a fresh instance here and history below.
     const original = baseline.rows.find((row) => row.labels === labels && row.step === i);
     expect(original).toBeDefined();
     const digest = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
     expect(digest(actual.rgba)).toBe(original?.rgbaSha256);
     expect(digest(actual.text)).toBe(original?.textSha256);
-    expect(digest(actual.paths)).toBe(original?.pathsSha256);
+    const fresh = fixture();
+    expect(actual.paths).toEqual(fresh.paint(projection, map, labels, true).paths);
+    fresh.view.dispose();
     expect(actual.paths.length).toBeGreaterThan(0);
     expect(actual.frame).toBe(String(i + 1));
   }
@@ -166,4 +170,56 @@ it('reuses projection work for a new acquired map, while changing its pixels and
   expect(teacher.rgba).toEqual(second.rgba);
   expect(teacher.text.length).toBeGreaterThan(second.text.length);
   cached.view.dispose();
+});
+
+/** Small islands and a hole exercise topology and projection without a multi-MB float fixture. */
+function contourMap(p: Projection): CutMapResponse {
+  const map = mapFor(p);
+  map.tissue.fill(Tissue.Fat);
+  map.vessel.fill(-1);
+  const rect = (x: number, y: number, width: number, height: number, tissue = Tissue.Liver) => {
+    for (let v = y; v < y + height; v++) for (let u = x; u < x + width; u++) map.tissue[v * p.mapW + u] = tissue;
+  };
+  rect(1, 2, 2, 3);
+  rect(p.mapW - 7, 0, 2, 1);
+  const cx = Math.floor(p.mapW / 2),
+    cy = Math.floor(p.mapH / 2);
+  rect(cx - 2, cy - 2, 5, 5);
+  rect(cx - 1, cy - 1, 3, 3, Tissue.Fat);
+  rect(p.mapW - 4, p.mapH - 5, 3, 4);
+  rect(Math.floor(p.mapW / 3), Math.floor((2 * p.mapH) / 3), 1, 1);
+  return map;
+}
+
+function expectHistoricalContour(actual: unknown[][], expected: (string | number)[][], projection: Projection) {
+  // Exact commands, arity and order preserve topology. Math.sin/cos are
+  // implementation-approximated; 64 roundoff units at canvas scale only admit
+  // numerical residue (at most 1.4e-12 px here), never a visible geometry change.
+  expect(actual.map((command) => [command[0], command.length])).toEqual(expected.map((command) => [command[0], command.length]));
+  let maxErrorPx = 0;
+  let worst = { command: -1, coordinate: -1, actual: 0, expected: 0 };
+  for (const [i, command] of actual.entries())
+    for (let j = 1; j < command.length; j++) {
+      const value = command[j],
+        target = expected[i][j];
+      if (typeof value !== 'number' || typeof target !== 'number' || !Number.isFinite(value) || !Number.isFinite(target))
+        throw new Error(`Non-finite contour coordinate at command ${i}, coordinate ${j}`);
+      const error = Math.abs(value - target);
+      if (error > maxErrorPx) {
+        maxErrorPx = error;
+        worst = { command: i, coordinate: j, actual: value, expected: target };
+      }
+    }
+  expect(maxErrorPx, `Contour residual in pixels: ${JSON.stringify({ projection, ...worst })}`).toBeLessThanOrEqual(
+    64 * Number.EPSILON * Math.max(projection.width, projection.height),
+  );
+}
+
+it('retains historical contour geometry for holes, islands and every projection dimension', () => {
+  for (const row of contourBaseline.rows) {
+    const fresh = fixture();
+    const actual = fresh.paint(row.projection, contourMap(row.projection), false, true);
+    expectHistoricalContour(actual.paths, row.paths, row.projection);
+    fresh.view.dispose();
+  }
 });

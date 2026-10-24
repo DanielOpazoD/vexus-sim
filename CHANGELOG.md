@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Pruebas del corte: sustituye hashes de contorno sensibles a ARM/x86 por geometría histórica con residuo numérico explícito; conserva píxeles exactos y controles de caché y desplazamiento (260).
+
 - Clasificación del corte: reutiliza la distancia vertebral ya calculada y evita consultar el diafragma para tubos que no requieren corrección auricular; misma clasificación completa, sin estado ni aproximaciones nuevos (259).
 
 - Corte: reutiliza la proyección exacta y omite centroides de rótulos ocultos; conserva píxeles, mapas y selección. Retira código sin uso y reduce 374 bytes de JS; menor coste de pintado, sin mejora demostrada del desfase global (258).

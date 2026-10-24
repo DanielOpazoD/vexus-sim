@@ -1,6 +1,7 @@
 import { dirname, join } from 'node:path';
 import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { GLSL_WORDS, GLSL_PHRASES, GLSL_MARKERS, glslMarker, unpackGlsl } from '../core/glslPacking';
 import { glslPacking, packGlslTemplates } from '../../tools/build/glslPacking';
@@ -12,6 +13,10 @@ import { loadShaderGraph } from './support/shaderGraph';
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 describe('transporte GLSL sin pérdida', () => {
   it('decodifica el diccionario completo sin tocar texto normal', () => {
+    // Identidad anterior a la serialización compacta: un marcador no puede cambiar de palabra.
+    expect(createHash('sha256').update(JSON.stringify(GLSL_WORDS)).digest('hex')).toBe(
+      'd5949a89a4bbd52a858ea47330623fae48857cd865d9c1ede433fbec2f441391',
+    );
     expect(unpackGlsl(GLSL_WORDS.map((_, i) => glslMarker(i)).join(' '))).toBe(GLSL_WORDS.join(' '));
     expect(unpackGlsl('x + 1.0; @! @[')).toBe('x + 1.0; @! @[');
     expect(unpackGlsl('@z')).toBe('logdepthbuf_pars_vertex');
@@ -74,6 +79,26 @@ describe('transporte GLSL sin pérdida', () => {
     );
     const before = loadShaderGraph(entry, map, compact);
     expect(before).toEqual(baseline);
+    // La cadena concatenada conserva también las reservas del minificador, no solo el decoder.
+    const arrayWords = sources.map((s) =>
+      s.path === join(root, 'src/core/glslPacking.ts')
+        ? {
+            ...s,
+            code: s.code.replace(
+              /export const GLSL_WORDS: readonly string\[\] = \([\s\S]*?\)\.split\(' '\);/,
+              `export const GLSL_WORDS = ${JSON.stringify(GLSL_WORDS)} as const;`,
+            ),
+          }
+        : s,
+    );
+    const arrayNames = prepareGlslMangle(arrayWords);
+    expect(arrayWords.find((s) => s.path.endsWith('/src/core/glslPacking.ts'))!.code).not.toBe(
+      map.get(join(root, 'src/core/glslPacking.ts')),
+    );
+    const arrayPrograms = loadShaderGraph(entry, map, (p, c) =>
+      compactBindings(transformWithMangle(c, p, arrayNames, { compact: true }), bindings),
+    );
+    expect(before).toEqual(arrayPrograms);
     const after = loadShaderGraph(entry, map, (p, c) => packGlslTemplates(compact(p, c), p, root));
     let programs = 0,
       saved = 0;

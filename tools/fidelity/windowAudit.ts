@@ -12,7 +12,7 @@ import { acquisitionSnapshot, validateAcquisition } from './acquisitionSnapshot'
 import { comparisonHistoryStart, comparisonState } from './comparisonState';
 import { captureBMode } from './captureBMode';
 import { buildSource } from '../build/provenance';
-import { verifyPreviewBuild } from '../workspace/previewBuild';
+import { verifyPreviewBuild, verifyPreviewEntry } from '../workspace/previewBuild';
 import { feedbackGitEnvironment } from '../workspace/feedbackPlan';
 
 const args = new Map<string, string>();
@@ -83,8 +83,10 @@ let browser: Browser | undefined;
 try {
   // Un SHA corto en pantalla no distingue un dist anterior del mismo HEAD con cambios locales.
   // Rechazar esa comparación antes del arranque GPU y conservar el motivo en el manifiesto.
-  provenance.buildVerification = await verifyPreviewBuild(process.cwd(), baseUrl.origin, runOut);
+  provenance.buildVerification = await verifyPreviewBuild(process.cwd(), baseUrl.origin, runOut, baseUrl.href);
   deepStrictEqual(provenance.buildVerification.source, source, 'Source changed before acquisition');
+  const entry = provenance.buildVerification.entry;
+  if (!entry) throw new Error('Missing verified application entry');
   browser = await chromium.launch({
     args: process.platform === 'darwin' ? ['--use-angle=metal', '--ignore-gpu-blocklist'] : ['--enable-gpu', '--ignore-gpu-blocklist'],
   });
@@ -100,6 +102,7 @@ try {
       try {
         const response = await page.goto(baseUrl.toString());
         if (response?.status() !== 200) throw new Error('Application HTTP response is not 200');
+        verifyPreviewEntry(entry, response.url(), await response.body(), response.request().redirectedFrom() !== null);
         await page.waitForFunction(() => (window.__vexusTest?.framesRendered() ?? 0) > 3, undefined, { timeout: 180_000 });
         const build = await page.locator('#build-info').innerText();
         if (!build.includes(sha.slice(0, 7))) throw new Error('Server is running a different revision');
@@ -183,7 +186,7 @@ try {
         await page.close();
       }
     }
-  provenance.finalBuildVerification = await verifyPreviewBuild(process.cwd(), baseUrl.origin, runOut);
+  provenance.finalBuildVerification = await verifyPreviewBuild(process.cwd(), baseUrl.origin, runOut, baseUrl.href);
   deepStrictEqual(provenance.finalBuildVerification.source, source, 'Source changed during acquisition');
   deepStrictEqual(
     provenance.finalBuildVerification.receiptSha256,

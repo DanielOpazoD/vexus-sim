@@ -143,16 +143,17 @@ export function fatSeptum(m: Vec3, t: Torso): [number, number, number, number] {
   const tu = (2 * hash13([iu1, iv1, SALT.tiltU]) - 1) * T.septumTiltMax;
   const tv = (2 * hash13([iu1, iv1, SALT.tiltV]) - 1) * T.septumTiltMax;
   const s = (d - w.skin + tu * (u - su[k1] * T.lobuleMm) + tv * (m[2] - sv[k1] * T.lobuleMm)) / T.stratumMm + off;
-  const dh = (Math.abs(s - Math.round(s)) * T.stratumMm) / Math.sqrt(1 + tu * tu + tv * tv);
-  // Cadena de derivación de la lámina material: el perfil corporal incluye pendiente
-  // craneocaudal y su arco no es una tangente unitaria (221). No mueve los septos.
+  // Cadena de derivación de ambas láminas materiales (221). Su norma convierte
+  // también la distancia a mm normales (251), antes de elegir la más cercana.
   const depthGradient = torsoDepthGradient(m, t);
   const arcGradient = wallArcGradient(m, t);
-  const vertical = dV * T.lobuleMm < dh;
-  const dist = vertical ? dV * T.lobuleMm : dh;
-  const normal = vertical
-    ? norm3([gu * arcGradient[0], gu * arcGradient[1], gv])
-    : norm3([-depthGradient[0] + tu * arcGradient[0], -depthGradient[1] + tu * arcGradient[1], -depthGradient[2] + tv]);
+  const vg: Vec3 = [gu * arcGradient[0], gu * arcGradient[1], gv];
+  const hg: Vec3 = [-depthGradient[0] + tu * arcGradient[0], -depthGradient[1] + tu * arcGradient[1], -depthGradient[2] + tv];
+  const dv = (dV * T.lobuleMm) / Math.hypot(...vg);
+  const dh = (Math.abs(s - Math.round(s)) * T.stratumMm) / Math.hypot(...hg);
+  const vertical = dv < dh;
+  const dist = vertical ? dv : dh;
+  const normal = norm3(vertical ? vg : hg);
   const weight = Math.exp(-0.5 * (dist / T.septumSigmaMm) ** 2);
   return [normal[0], normal[1], normal[2], weight];
 }
@@ -364,12 +365,14 @@ vec4 fatSeptum(vec3 m) {
   float tu = (2.0 * hash13(vec3(cell1, ${f4(SALT.tiltU)})) - 1.0) * WT_TILT_MAX;
   float tv = (2.0 * hash13(vec3(cell1, ${f4(SALT.tiltV)})) - 1.0) * WT_TILT_MAX;
   float st = (d - skin + tu * (u - s[k1].x * WT_LOBULE_MM) + tv * (m.z - s[k1].y * WT_LOBULE_MM)) / WT_STRATUM_MM + off;
-  float dh = abs(st - floor(st + 0.5)) * WT_STRATUM_MM / sqrt(1.0 + tu * tu + tv * tv);
   vec3 gd = torsoDepthGrad(m);
   vec3 gu = wallArcGradient(m);
-  bool vertical = dV * WT_LOBULE_MM < dh;
-  float dist = vertical ? dV * WT_LOBULE_MM : dh;
-  vec3 normal = vertical ? normalize(vec3(gdir.x * gu.xy, gdir.y)) : normalize(-gd + tu * gu + vec3(0.0, 0.0, tv));
+  vec3 vg = vec3(gdir.x * gu.xy, gdir.y), hg = -gd + tu * gu + vec3(0.0, 0.0, tv);
+  float dv = dV * WT_LOBULE_MM / length(vg);
+  float dh = abs(st - floor(st + 0.5)) * WT_STRATUM_MM / length(hg);
+  bool vertical = dv < dh;
+  float dist = vertical ? dv : dh;
+  vec3 normal = normalize(vertical ? vg : hg);
   float x = dist / WT_SEPTUM_SIGMA;
   return vec4(normal, exp(-0.5 * x * x));
 }

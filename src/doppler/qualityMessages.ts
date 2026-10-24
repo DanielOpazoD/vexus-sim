@@ -23,13 +23,13 @@ function primaryQualityText(q: Pick<MeasurementQuality, 'issue' | 'wrongVessel'>
     case 'no-signal':
       return 'no medible: no hay flujo en la puerta (¿está sobre el vaso? ¿hay sombra o poco contacto? si respira, pida apnea)';
     case 'intermittent':
-      return 'no medible: el flujo no se repite de un latido a otro (el vaso entra y sale de la puerta: pida apnea o agrande la puerta)';
+      return 'no medible: señal intermitente (pida apnea o amplíe la puerta)';
     case 'inconsistent':
       return 'no medible: la onda cambia entre latidos (revise la puerta; si respira, pida apnea)';
     case 'aliasing':
       return 'no medible: aliasing (suba la escala y vuelva a capturar)';
     case 'wall-filter':
-      return 'no medible: el valle de la onda cae en la banda del filtro de pared (baje el filtro de pared)';
+      return 'no medible: el valle cae en el filtro de pared (baje el filtro de pared)';
     case 'few-beats':
       return 'no medible: pocos latidos (espere 4 latidos completos con la puerta quieta)';
   }

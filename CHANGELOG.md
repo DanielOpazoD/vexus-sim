@@ -5,7 +5,9 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
-- Pared: normales y espesores de estrías musculares y septos grasos derivados del campo material; textura de caras continua en el dorso, sin cambiar capas anatómicas (248,249,251,252).
+- Pared: normales musculares y espesor de septos grasos derivados del campo material; textura de caras continua en el dorso, sin cambiar capas anatómicas (248,251,252).
+- Cine Color: conserva rango y fase de las correlaciones con ganancia alta mediante RG32F; mantiene los 120 cuadros y añade 7,37 MB (254).
+- Pruebas: reutiliza los PNG registrados para sus hashes sin repetir lecturas GPU, conservando adquisiciones y plazos (253).
 - Doppler: memoria PW separada al cambiar PRF, ganancia Color en unidades de potencia y mezcla compleja por submuestra antes de estimar velocidad (246,247,250).
 - Iteración: transporte GLSL sin pérdida, auditorías vinculadas a la fuente/build servido y fase de receptor explícita para comparaciones registradas (243–245).
 

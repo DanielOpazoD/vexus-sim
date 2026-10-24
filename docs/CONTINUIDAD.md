@@ -3,9 +3,12 @@
 ## Misión vigente: diez bloques de fidelidad (24 de octubre de 2026)
 
 El usuario autoriza al menos diez mejoras adicionales, con commits, PR y merge
-cuando estén validados. La [secuencia 243–252](fidelity/ITERATION_243_252.md)
+cuando estén validados. La [secuencia 243–254](fidelity/ITERATION_243_252.md)
 aborda defectos reproducidos en pared muscular/grasa, Doppler y procedencia
-de las comparaciones. El perfil sigue siendo convexo genérico de 3,5 MHz.
+de las comparaciones. El candidato conserva once bloques: 243–248 y 250–254.
+249 (ancho muscular) se retira porque no satisfizo el banco histórico; se
+conservan su diagnóstico y el ancho anterior, sin relajar el control.
+El perfil sigue siendo convexo genérico de 3,5 MHz.
 El estado vivo de cada bloque está en `../fidelity-243-evidence/PROGRESS.md`;
 consultar Git/CI para el cierre, sin inferirlo de esta lista.
 

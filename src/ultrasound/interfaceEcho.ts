@@ -19,8 +19,8 @@ import { valueNoise } from './speckleField';
  *   Λ    = sec²θ · exp(−tan²θ / (4 s²))               lóbulo de Kirchhoff (óptica geométrica) en amplitud;
  *                                                     con s_ref/s conserva la energía y Λ(0; s_ref) = 1
  *   χ    = exp(−2 (k0 σz cosθ)²)                      rugosidad fina (Ament)
- *   C    = [(1 + (2k0σl²κl)²)(1 + (2k0σe²κe)²)]^(−1/4) coherencia de curvatura de un haz gaussiano (tubos y,
- *                                                     desde la decisión 62, costillas: `hasCurvatureCoherence`)
+ *   C    = [1 + (2kκ(σl²vl² + σe²ve²))²]^(−1/4)      coherencia cilíndrica: v proyecta la dirección circunferencial
+ *                                                     sobre el haz (`hasCurvatureCoherence`, decisión 267)
  *   g    = N(δ'; 0, σh), δ' = ifd/(|∇|·cosθ) − (dos lados ? 0 : 2,5σh), |δ'| ≤ 3,5σh
  *
  * Escala: con S = 1 el pico de la envolvente iguala la envolvente RMS del hígado. K es el de un plano
@@ -215,7 +215,7 @@ export function roughnessCoherence(cosI: number, sigmaZMm: number, k0: number): 
 
 /**
  * Coherencia de curvatura de un haz gaussiano de dos vías (σl lateral, σe elevacional) sobre una cara
- * de curvaturas κl y κe en esas direcciones (fase estacionaria): [(1+(2kσl²κl)²)(1+(2kσe²κe)²)]^(−1/4), con k el
+ * con Hessiana diagonal en esos ejes: [(1+(2kσl²κl)²)(1+(2kσe²κe)²)]^(−1/4), con k el
  * número de onda del eco: k0·f(r)/f0 con la bajada de la frecuencia central (decisión 84, `frequencyRatio`). La σl
  * de `beamModel.ts` ya lleva la bajada; la σe de la lente es un perfil fijo que no la lleva (`psf-nominal-tissue`).
  */
@@ -223,6 +223,23 @@ export function curvatureCoherence(sigmaLatMm: number, sigmaElevMm: number, kapp
   const al = 2 * k * sigmaLatMm * sigmaLatMm * kappaLat;
   const ae = 2 * k * sigmaElevMm * sigmaElevMm * kappaElev;
   return ((1 + al * al) * (1 + ae * ae)) ** -0.25;
+}
+
+/**
+ * Cilindro local: K = κ·v·vᵀ incluye la curvatura mixta al girar su eje en el plano tangente.
+ * Módulo de la integral gaussiana compleja a incidencia normal (267); ambas σ son de amplitud de dos vías.
+ * No añade la fase de esa integral ni valida la aproximación de incidencia oblicua/compresión del consumidor.
+ */
+export function cylindricalCurvatureCoherence(
+  sigmaLatMm: number,
+  sigmaElevMm: number,
+  circLat: number,
+  circElev: number,
+  kappa: number,
+  k: number,
+): number {
+  const a = 2 * k * kappa * (sigmaLatMm * sigmaLatMm * circLat * circLat + sigmaElevMm * sigmaElevMm * circElev * circElev);
+  return (1 + a * a) ** -0.25;
 }
 
 /** Perfil de integral unidad de la cara a la distancia δ del cruce (mm), desplazado si es de un lado. */
@@ -499,8 +516,8 @@ float interfaceProfileEcho(int id, float cosI, float curv, float delta) {
   return faceEcho(id, cosI, 1.0, cosI, curv, faceShape(id, delta));
 }
 // Coherencia de curvatura de un haz gaussiano sobre un tubo (fase estacionaria): la curvatura del
-// tubo (c.kc, la local de su sección) va por la dirección circunferencial; se proyecta sobre el lateral
-// y la elevación del haz
+// tubo (c.kc, la local de su sección) va por la dirección circunferencial. Su Hessiana es de rango uno:
+// conservar el término mixto da una suma dentro del factor, no dos curvaturas independientes (267).
 float tubeCurvature(Cls c, vec3 n, vec3 dir, float r, float se) {
   vec3 circ = cross(n, c.tangent);
   float cl = length(circ);
@@ -509,12 +526,11 @@ float tubeCurvature(Cls c, vec3 n, vec3 dir, float r, float se) {
   vec3 lat = normalize(cross(uElev, dir));
   float sl = lateralSigmaMm(r);                       // dos vías (beamModel)
   float sE = se * 0.70710678;                         // elevSigma es de una vía
-  float kl = dot(lat, circ); kl = kl * kl * c.kc;
-  float ke = dot(uElev, circ); ke = ke * ke * c.kc;
+  float vl = dot(lat, circ);
+  float ve = dot(uElev, circ);
   float k = uIfaceK0 * echoFrequency(r);              // el número de onda del eco (decisión 84)
-  float al = 2.0 * k * sl * sl * kl;
-  float ae = 2.0 * k * sE * sE * ke;
-  return inversesqrt(sqrt((1.0 + al * al) * (1.0 + ae * ae)));
+  float a = 2.0 * k * c.kc * (sl * sl * vl * vl + sE * sE * ve * ve);
+  return inversesqrt(sqrt(1.0 + a * a));
 }
 // Eco de la cara que dibuja la muestra (material m, rayo dir, profundidad r): (especular, amplitud de la difusa).
 // La normal y su norma pasan del material al mundo por ambas jacobianas: respiración y compresión (w).

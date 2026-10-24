@@ -1,0 +1,48 @@
+{
+  "scope": "Preserved excerpt of the failed original v1 run; complete original report/script/spec/NPZ remain outside Git under evidence/b4/oracle-run-01",
+  "protocolId": "b4-fundamental-spectral-oracle-v1",
+  "status": "failed",
+  "sourceUnchanged": true,
+  "reportSha256": "b2315ace7a1d143f8b052075dea3b7216fc62dc29fee11647c5a6ace87e8ac07",
+  "scriptSha256": "df76b4c19735e5e05c5f9e9ca057b691d176a4cc9b68b0153181bca3827c681b",
+  "specSha256": "37dac0472f07f18dc67d4ae27152acb76386d91a359f47cdb415eb7047e7d5c8",
+  "profilesSha256": "2bc47cb71af782cfa126d5350a26989073cebc81c09f806ad59434fde039301a",
+  "checksTotal": 378,
+  "failedChecks": [
+    {
+      "name": "unfiltered-liver/coarse/Amplitude/varianceMHz2",
+      "passed": false,
+      "detail": {
+        "actual": 0.4472762200072673,
+        "expected": 0.4472762327290404,
+        "tolerance": 5e-9
+      }
+    },
+    {
+      "name": "positive-support-stress/frequency-refinement",
+      "passed": false,
+      "detail": null
+    }
+  ],
+  "grids": [
+    {
+      "id": "coarse",
+      "maxMHz": 12,
+      "stepMHz": 0.0078125,
+      "nfft": 131072
+    },
+    {
+      "id": "refined",
+      "maxMHz": 12,
+      "stepMHz": 0.00390625,
+      "nfft": 524288
+    },
+    {
+      "id": "support",
+      "maxMHz": 16,
+      "stepMHz": 0.00390625,
+      "nfft": 524288
+    }
+  ],
+  "v2Change": "Only frequency step halved; unchanged code, tolerances, FFT maximum, cases and six counterfactuals."
+}

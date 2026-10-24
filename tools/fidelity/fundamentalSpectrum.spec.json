@@ -1,0 +1,214 @@
+{
+  "protocolId": "b4-fundamental-spectral-oracle-v2",
+  "status": "predeclared-not-executed",
+  "scope": "Scalar fundamental linear-frequency propagation and separate Gaussian receiver; no image, clinical calibration, THI, Doppler or spatial aperture",
+  "units": {
+    "frequency": "MHz (cycles/us)",
+    "time": "us relative to echo arrival",
+    "depth": "mm (one-way)",
+    "soundSpeedMmUs": 1.54,
+    "attenuationSlope": "dB/(cm MHz) for amplitude using 20 log10",
+    "spectrum": "Relative Fourier amplitude (amplitude\u00b7us), arbitrary scale; integral over MHz yields relative amplitude",
+    "band": "full width at half amplitude, -6.020599913279624 dB; not half power",
+    "powerSpectrum": "Squared Fourier amplitude, not an absolute calibrated power density; frequency moments reported separately",
+    "noisePsd": "Unit white analytic input PSD before the electronic receiver filter; arbitrary power/MHz"
+  },
+  "source": {
+    "muMHz": 3.5,
+    "fractionalHalfAmplitudeBandwidth": 0.45,
+    "axialSigmaAtFaceMm": 0.26,
+    "receiverSigmaDefinition": "1/sigmaR^2 = 1/sigmaOut^2 - 1/sigmaEcho^2; sigmaOut=c/(4*pi*0.26). Chosen generic benchmark, not measured calibration."
+  },
+  "slopes": {
+    "liver": 0.601,
+    "fluid": 0.0022
+  },
+  "grids": [
+    {
+      "id": "coarse",
+      "maxMHz": 12,
+      "stepMHz": 0.00390625,
+      "nfft": 131072
+    },
+    {
+      "id": "refined",
+      "maxMHz": 12,
+      "stepMHz": 0.001953125,
+      "nfft": 524288
+    },
+    {
+      "id": "support",
+      "maxMHz": 16,
+      "stepMHz": 0.001953125,
+      "nfft": 524288
+    }
+  ],
+  "timing": {
+    "directTimesUs": [-1, -0.5, -0.25, 0, 0.25, 0.5, 1],
+    "retainedWindowUs": 2,
+    "rootBracketUs": [0, 8],
+    "rootIterations": 44
+  },
+  "acceptance": {
+    "ordinaryMomentAbsoluteTolerance": 5e-9,
+    "dcStressMomentAbsoluteTolerance": 2e-5,
+    "normalizedDirectIfftAbsoluteTolerance": 5e-10,
+    "quadratureRootFrequencyRefinementAbsoluteToleranceUs": 2e-6,
+    "supportChangeMomentAbsoluteTolerance": 5e-10,
+    "analyticInverseNumericalAllowanceRelative": 2e-9,
+    "unit": "Numerical contracts on this synthetic scalar case; not fidelity tolerances or clinical acceptance",
+    "dcStressInverseQuadratureBound": "Composite trapezoid: F*df^2/12 * [1/v + 2*|omega|/(sqrt(v)*sqrt(e)) + omega^2] / sqrt(2*pi*v); added to omitted amplitude mass fraction for this stress only.",
+    "receiverNoiseIndependentReference": "Gaussian truncated PSD with variance vR/2 and peak1; without receiver, integralF, meanF/2, varianceF^2/12. Trapezoid uniform-PSD variance has the known discretization term df^2/6."
+  },
+  "cases": [
+    {
+      "id": "face",
+      "layers": [],
+      "passes": 2,
+      "receiver": "fixed"
+    },
+    {
+      "id": "liver-100",
+      "layers": [
+        {
+          "material": "liver",
+          "lengthMm": 100
+        }
+      ],
+      "passes": 2,
+      "receiver": "fixed"
+    },
+    {
+      "id": "fluid-100",
+      "layers": [
+        {
+          "material": "fluid",
+          "lengthMm": 100
+        }
+      ],
+      "passes": 2,
+      "receiver": "fixed"
+    },
+    {
+      "id": "liver-split",
+      "layers": [
+        {
+          "material": "liver",
+          "lengthMm": 50
+        },
+        {
+          "material": "liver",
+          "lengthMm": 50
+        }
+      ],
+      "passes": 2,
+      "receiver": "fixed"
+    },
+    {
+      "id": "mixed",
+      "layers": [
+        {
+          "material": "liver",
+          "lengthMm": 40
+        },
+        {
+          "material": "fluid",
+          "lengthMm": 60
+        }
+      ],
+      "passes": 2,
+      "receiver": "fixed"
+    },
+    {
+      "id": "mixed-reversed",
+      "layers": [
+        {
+          "material": "fluid",
+          "lengthMm": 60
+        },
+        {
+          "material": "liver",
+          "lengthMm": 40
+        }
+      ],
+      "passes": 2,
+      "receiver": "fixed"
+    },
+    {
+      "id": "one-pass-factor",
+      "layers": [
+        {
+          "material": "liver",
+          "lengthMm": 100
+        }
+      ],
+      "passes": 1,
+      "receiver": "fixed"
+    },
+    {
+      "id": "fixed-loss",
+      "layers": [
+        {
+          "material": "liver",
+          "lengthMm": 100
+        }
+      ],
+      "passes": 2,
+      "receiver": "fixed",
+      "fixedAmplitudeLossDb": 20
+    },
+    {
+      "id": "narrow-receiver",
+      "layers": [
+        {
+          "material": "liver",
+          "lengthMm": 100
+        }
+      ],
+      "passes": 2,
+      "receiver": "narrow"
+    },
+    {
+      "id": "unfiltered-liver",
+      "layers": [
+        {
+          "material": "liver",
+          "lengthMm": 100
+        }
+      ],
+      "passes": 2,
+      "receiver": "none"
+    },
+    {
+      "id": "positive-support-stress",
+      "layers": [],
+      "passes": 2,
+      "receiver": "none",
+      "sourceMuMHz": 0.5
+    }
+  ],
+  "negativeControls": [
+    "10-vs-20-log amplitude conversion",
+    "one-way silently substituted for round-trip",
+    "fixed attenuation incorrectly treated as frequency slope",
+    "receiver-noise passed through source and patient",
+    "rational downshift with tied fractional bandwidth used as fixed-receiver propagation",
+    "receiver-noise passed through the source pulse alone"
+  ],
+  "assumptions": [
+    "Non-dispersive equal sound speed in every layer; no interfaces, scattering spectra, focusing, gain, compression or log display.",
+    "S0 is an unattenuated fundamental echo spectrum; it is not silently reused as a physical one-way transmit spectrum.",
+    "Positive support truncation is explicit. Whole-axis Gaussian widths and moments are never equated to truncated moments without a reported error bound.",
+    "No reciprocal clinical assumption for arbitrary paths: passes=2 means this declared reciprocal scalar path only.",
+    "No temporal noise realization: noise control is receiver-shaped spectral density of unit white analytic input introduced after propagation.",
+    "S0 is the effective unfiltered pulse-echo spectrum; R is a separate electronic receiving filter, not a second copy of acoustic receive directivity.",
+    "Time is relative to propagation delay; the transform is a positive-frequency complex analytic impulse before demodulation, not a real Hermitian reconstruction or baseband IQ."
+  ],
+  "revision": {
+    "previousProtocol": "b4-fundamental-spectral-oracle-v1",
+    "reason": "Preserved run01 fails two predeclared quadrature-resolution checks; refine frequency step only. Same cases, tolerances, support and FFT limits. No changed production model.",
+    "previousSpecSha256": "37dac0472f07f18dc67d4ae27152acb76386d91a359f47cdb415eb7047e7d5c8",
+    "previousReportSha256": "b2315ace7a1d143f8b052075dea3b7216fc62dc29fee11647c5a6ace87e8ac07",
+    "previousScriptSha256": "df76b4c19735e5e05c5f9e9ca057b691d176a4cc9b68b0153181bca3827c681b"
+  }
+}

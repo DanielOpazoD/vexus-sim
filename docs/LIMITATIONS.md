@@ -293,11 +293,15 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   de la cortical sale del plano central; un equipo vería ahí el eco de volumen parcial de la cortical, y la sombra de esa
   parte del haz más abajo (la transmisión es la del plano central). El músculo de la intercostal queda 3,6 dB más oscuro
   que antes de la decisión 88, ~2,5 dB por esto.
-- **La coherencia de curvatura solo la tienen los tubos y las costillas** (`interface-curvature-tubes-only`;
+- **Curvatura local cilíndrica, no todas las superficies** (`interface-curvature-tubes-only`;
   las costillas desde la decisión 62, con la curvatura de su sección elíptica): vesícula, riñón, cúpula y las
   capas de la pared son localmente planos para el eco. Sin la curvatura elevacional del riñón, Morison salía
   ~1,5 dB más brillante que en el diseño (gemelo: 2,23 frente a 2,08 sobre el hígado a 0–20°); la s de la
   cápsula renal, la cara que da su pico, pasa de 0,21 a 0,25 y lo deja en 2,17.
+  La selección actual incluye también interfaces intestinales y cortical vertebral. El factor cilíndrico conserva
+  su término mixto (267), contrastado con una integral gaussiana local a incidencia normal y sin deformación.
+  Esto no valida la curvatura completa de esas estructuras, la incidencia oblicua ni la mezcla de tangente
+  material y normal transformada bajo compresión. Se usa sólo el módulo: la fase de esa integral sigue sin propagarse.
 - **La pared es genérica** (`wall-generic-layers`, decisión 62): un campo muscular genérico con dos
   planos intermusculares en tórax y flanco; hacia la espalda se reúnen con sus vainas de forma estimada (229) (sin intercostales, serrato ni paravertebrales
   propios), sin línea alba ni intersecciones tendinosas del recto, y un solo hábito de lóbulos y estrías cuyos

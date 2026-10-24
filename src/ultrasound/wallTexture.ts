@@ -259,6 +259,29 @@ export function wallTexture(m: Vec3, tissue: Tissue, dir: Vec3, t: Torso, warp: 
   return 1;
 }
 
+/** Mismo ruido cúbico, con nodos periódicos en u: no hay corte al cruzar la espalda.
+ * El número entero de células conserva una escala cercana a faceVariationMm sin fundidos.
+ * La correlación y la reflectividad son estimadas; no implica microanatomía segmentada. */
+function wallFaceNoise(u: number, z: number, face: number, perimeter: number): number {
+  const L = WALL_TEXTURE.faceVariationMm,
+    period = Math.max(1, Math.round(perimeter / L));
+  const q = [(u * period) / perimeter, z / L, face * 3.7];
+  const c = q.map(Math.floor),
+    s = q.map((v, i) => {
+      const x = v - c[i];
+      return x * x * (3 - 2 * x);
+    });
+  // Representantes centrados: se conserva la realización interior y solo se identifica la costura.
+  const wrap = (x: number) => x - period * Math.floor((x + period / 2) / period);
+  const h = (x: number, y: number, z0: number) => hash13([wrap(c[0] + x) + SALT.face, c[1] + y + SALT.face, c[2] + z0 + SALT.face]);
+  const mix = (a: number, b: number, w: number) => a + (b - a) * w;
+  const x00 = mix(h(0, 0, 0), h(1, 0, 0), s[0]),
+    x10 = mix(h(0, 1, 0), h(1, 1, 0), s[0]);
+  const x01 = mix(h(0, 0, 1), h(1, 0, 1), s[0]),
+    x11 = mix(h(0, 1, 1), h(1, 1, 1), s[0]);
+  return mix(mix(x00, x10, s[1]), mix(x01, x11, s[1]), s[2]);
+}
+
 /**
  * Ganancia de amplitud del eco de la cara de pared `face` en el punto (1 en el resto de caras): la
  * variación anclada de su reflectividad a lo largo de la cara (`faceVariation`).
@@ -266,8 +289,7 @@ export function wallTexture(m: Vec3, tissue: Tissue, dir: Vec3, t: Torso, warp: 
 export function wallFaceGain(m: Vec3, face: Interface, t: Torso): number {
   if (face < FIRST_WALL_INTERFACE || face > LAST_WALL_INTERFACE) return 1;
   const a = WALL_TEXTURE.faceVariation[face - FIRST_WALL_INTERFACE];
-  const L = WALL_TEXTURE.faceVariationMm;
-  return Math.exp(a * (valueNoise([wallArc(m, t) / L, m[2] / L, (face - FIRST_WALL_INTERFACE + 1) * 3.7], SALT.face) - 0.5));
+  return Math.exp(a * (wallFaceNoise(wallArc(m, t), m[2], face - FIRST_WALL_INTERFACE + 1, wallPerimeter(t)) - 0.5));
 }
 
 /**
@@ -417,10 +439,23 @@ vec4 muscleStriation(vec3 m) {
   float x = abs(s - k) * WT_STRIA_SPACING / (length(gradient) * WT_STRIA_SIGMA);
   return vec4(normalize(gradient), mask * exp(-0.5 * x * x));
 }
+float wallFaceNoise(float u, float z, float face) {
+  float P = wallPerimeter(), period = max(1.0, floor(P / WT_FACE_VAR_MM + 0.5));
+  vec3 q = vec3(u * period / P, z / WT_FACE_VAR_MM, face * 3.7);
+  vec3 c = floor(q), s = q - c;
+  s = s * s * (3.0 - 2.0 * s);
+  vec2 nx = mod(c.xx + vec2(0.0, 1.0) + 0.5 * period, period) - 0.5 * period;
+  vec3 o = vec3(${f4(SALT.face)});
+  float x00 = mix(hash13(vec3(nx.x,c.yz)+o),hash13(vec3(nx.y,c.yz)+o),s.x);
+  float x10 = mix(hash13(vec3(nx.x,c.y+1.0,c.z)+o),hash13(vec3(nx.y,c.y+1.0,c.z)+o),s.x);
+  float x01 = mix(hash13(vec3(nx.x,c.y,c.z+1.0)+o),hash13(vec3(nx.y,c.y,c.z+1.0)+o),s.x);
+  float x11 = mix(hash13(vec3(nx.x,c.yz+1.0)+o),hash13(vec3(nx.y,c.yz+1.0)+o),s.x);
+  return mix(mix(x00,x10,s.y),mix(x01,x11,s.y),s.z);
+}
 // Ganancia del eco de una cara de la pared: variación anclada de su reflectividad a lo largo de la cara
 float wallFaceGain(vec3 m, int face) {
   if (face < IF_FIRST_WALL || face > IF_LAST_WALL) return 1.0;
-  return exp(WT_FACE_VAR[face - IF_FIRST_WALL] * (valueNoise(vec3(wallArc(m) / WT_FACE_VAR_MM, m.z / WT_FACE_VAR_MM, float(face - IF_FIRST_WALL + 1) * 3.7), ${f4(SALT.face)}) - 0.5));
+  return exp(WT_FACE_VAR[face - IF_FIRST_WALL] * (wallFaceNoise(wallArc(m), m.z, float(face - IF_FIRST_WALL + 1)) - 0.5));
 }
 // Factor de amplitud de la textura de la pared (grasa subcutánea y músculo; 1 en el resto); la incidencia, la del
 // mundo: la normal de la lámina por la jacobiana de la compresión (w, decisión 63)

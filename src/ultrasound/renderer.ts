@@ -15,6 +15,7 @@ import { lineAngle, type ProbeFrame, type ProbePose, type Transducer } from '../
 import type { TransducerProfile } from './transducerProfile';
 import { COLOR_PACKET_MM, colorLineCount } from './colorTiming';
 import { COLOR_FILTER_GLSL } from './colorCorrelation';
+import { colorPowerGain } from './colorGain';
 import { beamToPixel, pixelToBeam, sectorLayout, type SectorLayout } from './sectorGeometry';
 import { GREY_CURVE, greyOfLevel } from './greyMap';
 import { axialSigmaMm, focalReferenceFwhmMm, txApertureMm } from './beamModel';
@@ -213,14 +214,6 @@ export const COARSE_DEPTH = 160;
 const COLOR_W = 96;
 /** Umbral de potencia para pintar una celda de color (unidades de sangre a transmisión 1). */
 export const COLOR_DISPLAY_THRESHOLD = 0.0035;
-/**
- * Ganancia lineal del color a 0 dB del deslizador. Calibrada con GPU real (ruido puro con la sonda
- * levantada; factor ×1 → celdas con color): 0 % hasta ×1 +14 dB, 0,11 % a +18, 4,8 % a +22, 29 % a
- * +26, 64 % a +30. Con ×2 (+6 dB) el 0 dB muestra la suprahepática desde la ventana intercostal
- * (−18 dB de transmisión: 1 400 celdas; con ×1, 32) sin una sola celda de ruido, y el máximo del
- * deslizador (+24 dB) llena de ruido el 64 % de la caja, como un equipo real al límite.
- */
-export const COLOR_GAIN_REF = 2;
 const COLOR_H = 160;
 const MAP_W = 96;
 const MAP_H = 128;
@@ -1751,7 +1744,7 @@ export class UltrasoundRenderer {
     this.pColor.f('uPrf', c.prfHz);
     this.pColor.f('uF0', tr.f0Doppler);
     this.pColor.f('uWallHz', c.wallFilterHz);
-    this.pColor.f('uColorGain', COLOR_GAIN_REF * Math.pow(10, c.gainDb / 20));
+    this.pColor.f('uColorGain', colorPowerGain(c.gainDb));
     this.pColor.f('uEnsemble', c.ensemble);
     this.pColor.v3('uProbeVel', inputs.probeVelocity);
     this.pColor.f('uFrame', this.frameCount);

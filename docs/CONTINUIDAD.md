@@ -37,22 +37,23 @@ independiente `40134364958` también se verificó sobre `124b8e7`: 164 E2E, 14 Z
 originales. No identifica tejido humano ni acredita reparar toda la pared histórica.
 La observación inicial no localizada de 1/64 permanece separada.
 
-La candidata 264 incluye en el pulso actual el eco de la sangre que reentra al volumen PW, sin
-segunda advección ni fase duplicada. Pasan 45 controles focales y los negativos discriminantes;
-las comparaciones renales conservan advertencias y déficit poblacional, sin promesa de mejora
-uniforme. La decisión 265 retira dos repeticiones del complemento venoso, conserva sus cuatro
-suites y la CI protegida; reduce muestras de intermitencia y lo declara. El PR281 falló en su complemento venoso: la energía arterial opuesta se atribuía a aliasing
-venoso. El diagnóstico de Chromium y su contrafactual están conservados. La candidata restringe
-esa heurística al lado evaluado y conserva la identidad arterial junto a otros rechazos, sin tocar
-umbrales ni señal. Las pruebas E2E originales permanecen intactas. La aceptación del nuevo head
-sigue pendiente; no sustituirla por el check previo de `86ecdb0`.
+[PR281](https://github.com/DanielOpazoD/vexus-sim/pull/281) se fusionó en `12c2817`:
+264 incluye el eco de sangre que reentra al volumen PW en el pulso actual y corrige el diagnóstico
+que atribuía energía arterial opuesta a aliasing venoso. Mantiene identidad arterial junto a
+otros rechazos, con señal y umbrales intactos. La decisión 265 reduce el complemento venoso de
+tres repeticiones a una por suite, declarando menor muestreo de intermitencias. El fallo del head
+anterior `86ec` y su diagnóstico permanecen conservados. Head final `b935cdb`: check completo,
+hook normal, Metal5/Swift1, CI principal `40138435966` (164 E2E/12 grupos/cero reintentos) y
+complemento `40138435960` (cuatro suites/14 pruebas) verificados con originales. La CI independiente
+postmerge `40140755295` sigue en curso; no hereda el pase del PR.
 
 B4 conserva una referencia espectral fundamental independiente (266), todavía sin cambiar el
-render productivo. B7 corrige el término mixto de la coherencia cilíndrica (267). Sobre `bc91bf33`,
-los núcleos Metal/Swift y el consumidor Metal aprobaron de forma focal, con negativos y recursos
-verificados; se sustituye la comprobación textual por una E2E pequeña con cuadratura versionada.
-La fuente productiva de ese traslado permanece idéntica. A/B visual, check y CI del head final
-siguen pendientes; B4/B7 no están fusionados. PR281 sigue pendiente de su CI final separada.
+render productivo. B7 corrige el término mixto de la coherencia cilíndrica (267). Los núcleos
+Metal/Swift y el consumidor Metal aprobaron con negativos y recursos verificados; el test numérico
+GPU permanente sustituye exclusivamente la comprobación textual. Cuatro pares visuales registrados
+normal/grave × hepatorrenal/renal conservan adquisición y resolución, sin corrupción observada;
+la diferencia es pequeña y no demuestra realismo externo. El rebase tras PR281 conserva el árbol
+completo de `2859ee4`. Check y CI del head final siguen pendientes; B4/B7 no están fusionados.
 
 La variante GPU del corte se retiró: en 3RAF redujo el desfase un 14,8 % pero la cadencia B un
 16,2 %; el beneficio en 1RAF no satisface el filtro conjunto previo. Conserva la auditoría de
@@ -61,7 +62,9 @@ La variante GPU del corte se retiró: en 3RAF redujo el desfase un 14,8 % pero l
 B5 conserva la dependencia de trayectoria como negativo. La referencia material de 65 muestras
 retorna y converge en ambos backends, pero su coste completo impide promoverla. La caché de
 heterogeneidad se retiró: introduce diferencias numéricas y el coste exploratorio no supera la
-variación A/A predeclarada. No cambia la textura productiva. Bloques 1, 2 y 5 siguen abiertos.
+variación A/A predeclarada. No cambia la textura productiva. El fantoma material GPU12b posterior pasó en Metal y SwiftShader
+con retorno exacto y negativos; sólo un parche32×64 del target192×1024 y fase sintética, sin
+validar portadora acústica ni rendimiento del sector completo. Bloques 1, 2 y 5 siguen abiertos.
 
 Antes de editar se apartaron reversiblemente trece archivos duplicados no seguidos: doce idénticos
 a los originales y `dist 2` (enlace simbólico frente al directorio `dist`). Manifiesto y hashes en

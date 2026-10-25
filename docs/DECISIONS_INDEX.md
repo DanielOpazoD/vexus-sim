@@ -136,7 +136,7 @@ Generado por `npm run docs:index` — no editar a mano.
 | [130](DECISIONS.md#L5374) | Explorador hemodinámico por estados calculados y progresión docente | vigente |
 | [131](DECISIONS.md#L5382) | Distinguir máximos por fase de ondas renales independientes | vigente |
 | [132](DECISIONS.md#L5404) | Margen de distribución con un tercer banco GLSL reversible | vigente |
-| [133](DECISIONS.md#L5422) | Ventana renal pareada explícita, sin escalar la vena | vigente |
+| [133](DECISIONS.md#L5422) | Ventana renal pareada explícita, sin escalar la vena | presentación superada por 270 |
 | [134](DECISIONS.md#L5448) | Recalibrar el reparto E2E con tiempos actuales verificados | vigente |
 | [135](DECISIONS.md#L5470) | Mostrar velocidades observadas junto a las marcas PW | vigente |
 | [136](DECISIONS.md#L5497) | Compliance de reservorios con mecanismo volumen-presión | vigente |
@@ -272,3 +272,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [266](DECISIONS.md#L8790) | Referencia espectral independiente de camino y receptor | vigente |
 | [267](DECISIONS.md#L8802) | Conservar la curvatura mixta de un cilindro al girar su eje | vigente |
 | [268](DECISIONS.md#L8822) | Retirar registros Three sin consumidor, conservando sus programas utilizados | vigente |
+| [270](DECISIONS.md#L8836) | Identificar la puerta arterial sin prometer un trazado venoso | vigente |

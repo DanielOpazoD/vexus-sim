@@ -9,7 +9,7 @@ import { hasRespiratoryCycle } from '../../vexus/ivcCollapse';
 import { measurePhysiologyTruth } from '../../vexus/measurements';
 import { button, element, controlId, note, row } from '../controls';
 import type { PanelContext } from './context';
-import { contextText, gradeValueText, patternText, renalText } from './vexusText';
+import { contextText, gradeValueText, patternText, renalText, portalPulsatilityText } from './vexusText';
 import { VenousViewer } from './venousViewer';
 
 /** Niveles de PEEP de la botonera (cmH₂O). */
@@ -22,7 +22,7 @@ const FLUID_STEP_ML = { bolusSmall: 250, bolusLarge: 500, diuresis: 500 } as con
 export function interventionText(i: Intervention): string {
   if (i.kind === 'peep') return `PEEP ${i.cmH2O} cmH₂O`;
   const ml = Math.round(i.volumeMl);
-  return i.kind === 'bolus' ? `bolo de ${ml} mL` : `diurético de −${ml} mL`;
+  return i.kind === 'bolus' ? `adición de ${ml} mL al modelo` : `retirada de ${ml} mL del modelo`;
 }
 
 /** Anuncio de lo aplicado (región `role="status"`): lo recortado al límite del paciente se dice. */
@@ -34,11 +34,11 @@ export function announcement(requested: Intervention, applied: AppliedInterventi
   return `${text[0].toUpperCase()}${text.slice(1)} en curso${capped}.`;
 }
 
-/** Tiempo desde una intervención; para los líquidos, con su equivalente clínico (tiempo docente acelerado). */
+/** Tiempo del escenario; no equivale a una evolución farmacológica o clínica validada. */
 export function elapsedText(i: AppliedIntervention, t: number): string {
   const s = Math.max(0, t - i.t0);
   if (i.kind === 'peep') return `hace ${s.toFixed(0)} s`;
-  return `hace ${s.toFixed(0)} s (≈ ${((s * FLUID_TIME_ACCELERATION) / 60).toFixed(0)} min clínicos)`;
+  return `hace ${s.toFixed(0)} s de simulación`;
 }
 
 /**
@@ -127,24 +127,26 @@ export class TeacherTab {
     const sec = this.#ctx.section(p, 'Intervenciones', {
       info:
         `La PAD media sale del cruce del retorno venoso con la curva de Starling del VD; las ondas conservan su forma. ` +
-        `Líquidos en tiempo docente acelerado ×${FLUID_TIME_ACCELERATION} (1 s ≈ ${FLUID_TIME_ACCELERATION} s clínicos): el bolo ` +
-        `llega en ~30 s y el diurético en ~2 min. La PEEP (CPAP si respira solo) actúa en segundos. «Reiniciar paciente» ` +
+        `Las perturbaciones de volumen usan una cinética sintética acelerada ×${FLUID_TIME_ACCELERATION}; no modelan ` +
+        `dosis, farmacología ni respuesta clínica. La PEEP cambia las condiciones del modelo. «Reiniciar paciente» ` +
         `vuelve al caso. Cada intervención borra las mediciones de «Medir»: el grado no mezcla el antes y el después.`,
     });
     const fluids = row(sec);
     const fluidButtons: Array<{ el: HTMLButtonElement; sign: 1 | -1 }> = [
       {
-        el: button(fluids, `Bolo ${FLUID_STEP_ML.bolusSmall} mL`, () => this.#apply({ kind: 'bolus', volumeMl: FLUID_STEP_ML.bolusSmall }))
-          .el,
+        el: button(fluids, `Añadir ${FLUID_STEP_ML.bolusSmall} mL`, () =>
+          this.#apply({ kind: 'bolus', volumeMl: FLUID_STEP_ML.bolusSmall }),
+        ).el,
         sign: 1,
       },
       {
-        el: button(fluids, `Bolo ${FLUID_STEP_ML.bolusLarge} mL`, () => this.#apply({ kind: 'bolus', volumeMl: FLUID_STEP_ML.bolusLarge }))
-          .el,
+        el: button(fluids, `Añadir ${FLUID_STEP_ML.bolusLarge} mL`, () =>
+          this.#apply({ kind: 'bolus', volumeMl: FLUID_STEP_ML.bolusLarge }),
+        ).el,
         sign: 1,
       },
       {
-        el: button(fluids, `Diurético −${FLUID_STEP_ML.diuresis} mL`, () =>
+        el: button(fluids, `Retirar ${FLUID_STEP_ML.diuresis} mL`, () =>
           this.#apply({ kind: 'diuresis', volumeMl: FLUID_STEP_ML.diuresis }),
         ).el,
         sign: -1,
@@ -310,7 +312,7 @@ export class TeacherTab {
             ? `  VCI AP máx/mín ${m.ivcMaxMm.toFixed(1)}/${m.ivcMinMm.toFixed(1)} mm → colapso ${(m.ivcCollapse * 100).toFixed(0)} %\n`
             : `  VCI AP actual ${s.ivc.dApMm.toFixed(1)} mm · colapsabilidad respiratoria no aplicable: sin ciclo completo\n`) +
           `  VSH S/D/A ${m.hvS.toFixed(1)}/${m.hvD.toFixed(1)}/${m.hvA.toFixed(1)} cm/s → ${patternText(m.hepaticPattern)}\n` +
-          `  Porta ${m.pvMax.toFixed(1)}/${m.pvMin.toFixed(1)} cm/s → PF ${m.portalPF.toFixed(0)} %\n` +
+          `  Porta ${m.pvMax.toFixed(1)}/${m.pvMin.toFixed(1)} cm/s → PF ${portalPulsatilityText(m.portalPF)}\n` +
           `  V. interlobar S/D/mín ${m.rvS.toFixed(1)}/${m.rvD.toFixed(1)}/${m.rvMin.toFixed(1)} cm/s → ${renalText(m.renalPattern)}\n` +
           `  Grado C de referencia: ${gradeValueText(g)} · con el contexto del caso: ${gradeValueText(gc)} (mVExUS ${gradeValueText(classifyModifiedVexus(veins, context))})\n`;
       } catch (e) {

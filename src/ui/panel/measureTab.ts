@@ -22,6 +22,7 @@ import {
   gradeValueText,
   patternText,
   portalText,
+  portalPulsatilityText,
   renalText,
   resultStatusText,
   type ContextFlag,
@@ -437,7 +438,7 @@ export class MeasureTab {
         'portal',
         rejected(this.lastPortal, 'Porta') ??
           (p
-            ? `Porta: ${p.vMax.toFixed(1)}/${p.vMin.toFixed(1)} cm/s → PF <b>${Number.isFinite(p.pulsatilityFraction) ? p.pulsatilityFraction.toFixed(0) + ' %' : 'n/a'}</b> <span class="small">(${portalText(res.portalClass)}${res.portalNearThreshold ? ', próximo al umbral' : ''}) · ${portalBeatSummary(p)}</span>`
+            ? `Porta: ${p.vMax.toFixed(1)}/${p.vMin.toFixed(1)} cm/s → PF <b>${portalPulsatilityText(p.pulsatilityFraction)}</b> <span class="small">(${portalText(res.portalClass)}${res.portalNearThreshold ? ', próximo al umbral' : ''}) · ${portalBeatSummary(p)}</span>`
             : 'Porta: —'),
       ),
       line(

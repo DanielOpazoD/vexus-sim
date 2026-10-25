@@ -128,6 +128,37 @@ const CONTINUOUS_RV = { ...OK, pattern: 'continuous', sPeak: 13, dPeak: 22, vMin
 const MONOPHASIC_RV = { ...CONTINUOUS_RV, pattern: 'monophasic', sPeak: 8, dPeak: 36, vMin: -6 };
 
 describe('Pestaña Medir: contexto clínico (decisión 82)', () => {
+  it('no presenta entradas inválidas ni fases indeterminadas como un estudio normal', () => {
+    const m = mountMeasure('normal-adult');
+    m.tab.setIvcCaliper(-1);
+    expect(m.result()).toContain('entrada inválida');
+    expect(m.result()).not.toContain('VExUS 0 ');
+    m.measured({
+      hepatic: { ...NORMAL_HV, sPeak: 0, pattern: 'indeterminate' },
+      portal: NORMAL_PV,
+      renal: { ...CONTINUOUS_RV, dPeak: 0, pattern: 'systolic-only' },
+    });
+    m.tab.setIvcCaliper(25);
+    expect(m.result()).toContain('indeterminado: fase no identificable');
+    expect(m.result()).toContain('solo S: fuera del esquema');
+    expect(m.result()).toContain('incompleto');
+    expect(m.result()).not.toContain('S invertida');
+    expect(m.result()).not.toContain('bifásico (S+D)');
+  });
+
+  it('una PF inmediatamente inferior al umbral no se presenta redondeada en la siguiente categoría', () => {
+    const m = mountMeasure('normal-adult');
+    for (const [pf, threshold, label] of [
+      [29.999, 30, 'normal'],
+      [49.999, 50, 'leve'],
+    ] as const) {
+      m.measured({ hepatic: NORMAL_HV, portal: { ...NORMAL_PV, pulsatilityFraction: pf }, renal: CONTINUOUS_RV });
+      m.tab.setIvcCaliper(25);
+      expect(m.result()).toContain(`PF <b>menos de ${threshold} %</b>`);
+      expect(m.result()).toContain(`(${label}, próximo al umbral)`);
+    }
+  });
+
   it('«Contexto clínico» va antes del protocolo, con la viñeta del caso y una casilla sin marcar por confusor', () => {
     const m = mountMeasure('abdominal-hypertension');
     expect(m.sections).toEqual(['Contexto clínico', 'Protocolo VExUS', 'Resultado']);
@@ -336,7 +367,7 @@ describe('Pestaña Docente: lo que solo ve el docente (decisión 82)', () => {
     ctx.sync();
     const notes = () => findAll(host, (e) => e.classList.contains('case-notes'))[0].textContent;
     const loop = () => findAll(host, (e) => e.classList.contains('loop-state'))[0].textContent;
-    expect(notes()).toContain('Grado 0 falso');
+    expect(notes()).toContain('VCI comprimida: el cálculo literal de grado 0');
     expect(loop()).toContain('14.0 mmHg · caso 14.0');
     // la verdad que pintó el bucle (`renderDebug`, que aquí no corre: necesita el simulador entero)
     const truth = findAll(host, (e) => e.classList.contains('debug'))[0];

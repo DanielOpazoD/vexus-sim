@@ -1058,7 +1058,7 @@ test('modo alumno ciego: sin diagnóstico en pantalla; el docente lo ve con ?doc
   // Guía §17. Nombres clínicos de los casos (no deben aparecer en modo alumno).
   // Arranca la aplicación dos veces: con SwiftShader cada arranque compila los 16 programas (decisión 58)
   budget(120_000, 2);
-  const diagnoses = ['Adulto sano', 'Congestión venosa', 'congestión moderada', 'fallo derecho', 'Trampa', 'sin congestión', 'casi normal'];
+  const diagnoses = ['Adulto sano', 'Congestión venosa', 'patrones no graves', 'fallo derecho', 'Trampa', 'sin congestión', 'casi normal'];
   const errors = await bootWithoutErrors(page);
   await expect(page.locator('#debug-toggle')).toBeHidden();
   await page.selectOption('#case-select', 'severe-congestion');
@@ -1167,8 +1167,8 @@ test('intervenciones docentes (decisión 79): bolo y PEEP mueven el lazo del sim
   await page.getByRole('tab', { name: 'Docente' }).click({ force: true });
   const loop = () => page.evaluate(() => window.__vexusTest!.circulation());
   expect(await loop()).toMatchObject({ caseId: 'normal-adult', rapMeanMmHg: 5, fluidTargetMl: 0, peepTargetCmH2O: 0, interventions: 0 });
-  await page.getByRole('button', { name: 'Bolo 500 mL', exact: true }).click({ force: true });
-  await expect(page.getByRole('status').filter({ hasText: 'Bolo de 500 mL en curso' })).toBeVisible();
+  await page.getByRole('button', { name: 'Añadir 500 mL', exact: true }).click({ force: true });
+  await expect(page.getByRole('status').filter({ hasText: 'Adición de 500 mL al modelo en curso' })).toBeVisible();
   expect(await loop()).toMatchObject({ fluidTargetMl: 500, interventions: 1 });
   // 30 s de simulación sin renderizar (tiempo docente acelerado: el bolo llega en ~30 s): la PAD sube ~3 mmHg
   await page.evaluate(() => window.__vexusTest!.advance(30));
@@ -1192,7 +1192,7 @@ test('intervenciones docentes (decisión 79): bolo y PEEP mueven el lazo del sim
     return v === 'ninguna' || `última intervención «${v}»`;
   });
   // con el teclado: el sano admite −563 mL; el segundo diurético se recorta y el botón queda no disponible sin perder el foco
-  const diuretic = page.getByRole('button', { name: 'Diurético −500 mL', exact: true });
+  const diuretic = page.getByRole('button', { name: 'Retirar 500 mL', exact: true });
   await diuretic.focus();
   await page.keyboard.press('Enter');
   await page.keyboard.press('Enter');

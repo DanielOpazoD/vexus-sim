@@ -20,9 +20,10 @@
  * normal de un deportista siguen contando, y la S invertida de un cirrótico también (decisión 82, revisión de la
  * literatura de VExUS del 26-09-2026).
  */
-export type HepaticPattern = 'normal' | 'mild' | 'severe' | 'not-assessed';
-export type RenalPattern = 'continuous' | 'biphasic' | 'monophasic' | 'reversal-out-of-scheme' | 'not-assessed';
-export type PortalClass = 'normal' | 'mild' | 'severe' | 'not-applicable' | 'not-assessed';
+export type HepaticPattern = 'normal' | 'mild' | 'severe' | 'indeterminate' | 'not-assessed';
+export type RenalPattern =
+  'continuous' | 'biphasic' | 'monophasic' | 'systolic-only' | 'indeterminate' | 'reversal-out-of-scheme' | 'not-assessed';
+export type PortalClass = 'normal' | 'mild' | 'severe' | 'invalid-input' | 'not-applicable' | 'not-assessed';
 
 export interface VexusInputs {
   ivcMaxDiameterMm: number | null;
@@ -33,10 +34,10 @@ export interface VexusInputs {
 }
 
 export interface VexusResult {
-  /** Grado único si se puede determinar; si no, el mínimo compatible. */
+  /** Grado único si se puede determinar; null si no. */
   grade: 0 | 1 | 2 | 3 | null;
   gradeRange: [number, number] | null;
-  status: 'complete' | 'incomplete' | 'ivc-not-assessed';
+  status: 'complete' | 'incomplete' | 'ivc-not-assessed' | 'invalid-input';
   ivcDilated: boolean | null;
   portalClass: PortalClass;
   hepaticClass: HepaticPattern;
@@ -52,6 +53,7 @@ export interface VexusResult {
   ivcNearThreshold: boolean;
   /** Avisos de fiabilidad por el contexto clínico, con el territorio y el motivo. */
   warnings: ReliabilityWarning[];
+  inputIssues: { territory: 'ivc' | 'portal'; reason: string }[];
 }
 
 /** Territorios del VExUS: la puerta de la VCI y las tres venas. */
@@ -137,7 +139,8 @@ export const PF_SEVERE = 50;
 
 export function classifyPortal(pf: number | null): PortalClass {
   if (pf === null) return 'not-assessed';
-  if (!Number.isFinite(pf)) return 'not-applicable';
+  if (Number.isNaN(pf)) return 'not-applicable';
+  if (!Number.isFinite(pf) || pf < 0) return 'invalid-input';
   if (pf < PF_MILD) return 'normal';
   if (pf < PF_SEVERE) return 'mild';
   return 'severe';
@@ -150,13 +153,17 @@ export function classifyVexusC(input: VexusInputs, ctx: VexusContext = {}): Vexu
   const pf = input.portalPulsatilityFraction;
   const portalNearThreshold = pf !== null && Number.isFinite(pf) && (Math.abs(pf - PF_MILD) <= 1 || Math.abs(pf - PF_SEVERE) <= 1);
   const ivc = input.ivcMaxDiameterMm;
+  const inputIssues: VexusResult['inputIssues'] = [];
+  if (ivc !== null && !Number.isNaN(ivc) && (!Number.isFinite(ivc) || ivc <= 0))
+    inputIssues.push({ territory: 'ivc', reason: 'el diámetro debe ser finito y mayor que cero' });
+  if (portalClass === 'invalid-input') inputIssues.push({ territory: 'portal', reason: 'la PF debe ser finita y no negativa' });
   const ivcNearThreshold = ivc !== null && Number.isFinite(ivc) && Math.abs(ivc - IVC_THRESHOLD_MM) <= IVC_NEAR_THRESHOLD_MM;
   // cada confusor quita solo el hallazgo que puede falsear (`Discount`); un territorio sin medir ya cuenta como no
   // evaluado, y la VCI nunca se quita (la presión intraabdominal abre el intervalo más abajo)
   const assessed = {
-    hepatic: hepaticClass !== 'not-assessed',
-    portal: portalClass !== 'not-assessed' && portalClass !== 'not-applicable',
-    renal: renalClass !== 'not-assessed' && renalClass !== 'reversal-out-of-scheme',
+    hepatic: hepaticClass === 'normal' || hepaticClass === 'mild' || hepaticClass === 'severe',
+    portal: portalClass === 'normal' || portalClass === 'mild' || portalClass === 'severe',
+    renal: renalClass === 'continuous' || renalClass === 'biphasic' || renalClass === 'monophasic',
   };
   const severe = { hepatic: hepaticClass === 'severe', portal: portalClass === 'severe', renal: renalClass === 'monophasic' };
   const discounted = (w: ReliabilityWarning): boolean => {
@@ -171,15 +178,27 @@ export function classifyVexusC(input: VexusInputs, ctx: VexusContext = {}): Vexu
   let missingCount = 0;
   if (excluded.has('hepatic')) missingCount++;
   else if (hepaticClass === 'severe') severeCount++;
-  else if (hepaticClass === 'not-assessed') missingCount++;
+  else if (!assessed.hepatic) missingCount++;
   if (excluded.has('portal')) missingCount++;
   else if (portalClass === 'severe') severeCount++;
-  else if (portalClass === 'not-assessed' || portalClass === 'not-applicable') missingCount++;
+  else if (!assessed.portal) missingCount++;
   if (excluded.has('renal')) missingCount++;
   else if (renalClass === 'monophasic') severeCount++;
-  else if (renalClass === 'not-assessed' || renalClass === 'reversal-out-of-scheme') missingCount++;
+  else if (!assessed.renal) missingCount++;
 
-  const base = { portalClass, hepaticClass, renalClass, severeCount, missingCount, portalNearThreshold, ivcNearThreshold, warnings };
+  const base = {
+    portalClass,
+    hepaticClass,
+    renalClass,
+    severeCount,
+    missingCount,
+    portalNearThreshold,
+    ivcNearThreshold,
+    warnings,
+    inputIssues,
+  };
+
+  if (inputIssues.length) return { grade: null, gradeRange: null, status: 'invalid-input', ivcDilated: null, ...base };
 
   if (ivc === null || !Number.isFinite(ivc)) {
     return { grade: null, gradeRange: null, status: 'ivc-not-assessed', ivcDilated: null, ...base };
@@ -213,7 +232,7 @@ export function classifyModifiedVexus(input: Omit<VexusInputs, 'renal'>, ctx: Ve
 
 /** Fracción de pulsatilidad portal (%) sin recorte: puede superar 100 si Vmín < 0. */
 export function portalPulsatilityFraction(vMax: number, vMin: number): number {
-  if (!(vMax > 0) || !Number.isFinite(vMax) || !Number.isFinite(vMin)) return Number.NaN;
+  if (!(vMax > 0) || !Number.isFinite(vMax) || !Number.isFinite(vMin) || vMin > vMax) return Number.NaN;
   return (100 * (vMax - vMin)) / vMax;
 }
 
@@ -237,9 +256,12 @@ export const RENAL_INTERRUPTION_FRACTION = 0.1;
  * Umbrales [EXTRAPOLACIÓN PROPIA] de la descripción cualitativa de la base (D.9, A.1).
  */
 export function renalPatternFromPeaks(sPeak: number, dPeak: number, vMin: number, floorCms = RENAL_INTERRUPTION_FLOOR_CMS): RenalPattern {
-  if (![sPeak, dPeak, vMin].every(Number.isFinite)) return 'not-assessed';
+  if (![sPeak, dPeak, vMin, floorCms].every(Number.isFinite) || floorCms < 0) return 'not-assessed';
   const vMax = Math.max(sPeak, dPeak);
   if (!(vMax > 0)) return 'not-assessed';
+  // El suelo pertenece a la observabilidad del instrumento, no a un nuevo criterio clínico.
+  if (vMax <= floorCms) return 'indeterminate';
+  if (dPeak <= floorCms) return 'systolic-only';
   if (vMin > Math.max(floorCms, RENAL_INTERRUPTION_FRACTION * vMax)) return 'continuous';
   if (sPeak >= 0.3 * dPeak) return vMin < -0.2 * vMax ? 'reversal-out-of-scheme' : 'biphasic';
   return 'monophasic';
@@ -248,7 +270,8 @@ export function renalPatternFromPeaks(sPeak: number, dPeak: number, vMin: number
 /** Patrón suprahepático a partir de picos con signo (positivo = hacia la AD). */
 export function hepaticPatternFromPeaks(sPeak: number, dPeak: number): HepaticPattern {
   if (!Number.isFinite(sPeak) || !Number.isFinite(dPeak)) return 'not-assessed';
-  if (sPeak <= 0) return 'severe';
+  if (sPeak === 0 || dPeak <= 0) return 'indeterminate';
+  if (sPeak < 0) return 'severe';
   if (sPeak > dPeak) return 'normal';
   return 'mild';
 }

@@ -8986,3 +8986,37 @@ propiedades, eventos o controles. El presupuesto original se conserva.
 El check, capturas Metal/Swift y CI del head final se registran en
 `../fidelity-next15-evidence/teaching-signals-01/`. No es validación clínica humana ni
 cierre de B9/B15; medición portal por el alumno y adquisición renal pareada siguen abiertas.
+
+## 272. No inferir patrones venosos a partir de fases ausentes o entradas imposibles
+
+**Contexto.** La auditoría del 25-10-2026 reprodujo S hepática nula etiquetada como inversión,
+renal solo S como S+D y diámetro/PF negativos como normalidad. Tres regresiones nuevas fallaron
+contra la base ce28b0c. Además, el texto mostraba PF 49,96 % redondeada a 50 % con categoría leve.
+
+**Opciones.** Cambiar únicamente `S <= 0` por `< 0` seguiría clasificando una fase ausente.
+Recortar PF a 0–100 % destruiría la reversión portal real. Recalibrar pacientes para hacer
+coincidir un nombre docente con un grado alteraría la causalidad sin evidencia.
+
+**Decisión.** Añadir estados hepático indeterminado y renal solo S/no resoluble; las fases
+no clasificables cuentan como información faltante. Mantener el suelo instrumental renal
+existente, sin elevarlo a criterio clínico. Rechazar VCI no positiva/infinita y PF negativa/infinita
+con motivo visible; extremos portal incoherentes producen NaN, conservando la API numérica.
+NaN sigue siendo el valor histórico de PF no aplicable; no acredita por sí solo hepatofugalia.
+La inversión hepática requiere S negativa con D positiva; una señal cercana a cero sigue
+necesitando calidad instrumental, no se introduce un nuevo umbral clínico.
+El formato PF nunca cruza de categoría por redondeo.
+
+**Consecuencias.** Sustituir la expectativa histórica que exigía `hepaticPatternFromPeaks(0,20)`
+grave por indeterminado; conservar la inversión verdadera y el resto de fronteras.
+Actualizar textos de IT/ventilación, sin declarar ausencia de congestión a partir de una PAD
+media o de su etiología (Rola et al., doi:10.1186/s13089-024-00395-0). Renombrar FA según su
+objetivo. Las adiciones/retiradas de volumen y su tiempo se presentan como perturbaciones
+sintéticas, sin sugerir farmacología. No cambia ninguna presión, velocidad, onda o imagen.
+
+**Verificación.** Feedback local: formato, lint, tipos y 225 archivos/1627 pruebas rápidas
+aprobados. Matriz independiente de 600 combinaciones válidas/faltantes sin discrepancias;
+14 integraciones CPU (7 casos × respiración tranquila/pausa espiratoria) conservan sus grados.
+Los seis contraejemplos dejan de afirmar patrones o normalidad inexistentes. Las pruebas UI
+comprueban los nuevos estados y PF 29,999/49,999 %. La ocultación de notas docentes se conserva
+con el texto actualizado. La aceptación completa del candidato requiere check y CI; estos
+controles locales no son validación clínica ni una matriz WebGL.

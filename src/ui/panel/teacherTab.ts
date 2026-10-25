@@ -247,7 +247,7 @@ export class TeacherTab {
   #apply(i: Intervention): void {
     const applied = this.#ctx.sim().physiology.intervene(i);
     let text = announcement(i, applied);
-    if (applied && this.onIntervention()) text += ' Mediciones borradas: el grado no mezcla el antes y el después.';
+    if (applied && this.onIntervention()) text += ' Mediciones archivadas: el grado no mezcla el antes y el después.';
     this.#announce(text);
     this.#ctx.sync();
     this.#renderLoop();

@@ -9020,3 +9020,13 @@ Los seis contraejemplos dejan de afirmar patrones o normalidad inexistentes. Las
 comprueban los nuevos estados y PF 29,999/49,999 %. La ocultación de notas docentes se conserva
 con el texto actualizado. La aceptación completa del candidato requiere check y CI; estos
 controles locales no son validación clínica ni una matriz WebGL.
+
+## 273. Separar series al cambiar respiración o intervenir
+
+**Problema.** El cambio manual de régimen respiratorio conservaba mediciones y los siete segundos de espectro anteriores. Una intervención borraba resultados, pero no la señal adquirida. Una captura podía mezclar condiciones.
+
+**Decisión.** Abrir una serie al cambiar realmente de régimen o aplicar una intervención: limpiar PW, identidad de puerta y franja M sin reiniciar fisiología ni reloj. El ciclo respiratorio natural no abre series. Archivar las mediciones previas como copias con tiempo, respiración, pose y equipo; mostrarlas separadas del grado actual. El historial dura la sesión y se borra al cambiar/reiniciar paciente. No representa almacenamiento persistente ni exportación del IQ. Una imagen de cine anterior al límite de adquisición no puede alimentar un calibre nuevo. Conservar el cálculo contextual, rotulado adaptación local, junto al cálculo literal independiente.
+
+**Verificación.** Dos negativos previos fallaron por ausencia de notificación y de reinicio de adquisición; pasan con el cambio. Tres archivos/16 pruebas comprueban evento real de controles, no-op al repetir régimen, reloj conservado, archivo separado y rechazo de cine antiguo. Typecheck aprobado. La validación de navegador y el check completo corresponden al candidato final. La procedencia de PW describe el equipo en la captura; los cambios instrumentales durante la ventana siguen sometidos a los controles de calidad existentes, no se afirma reconstrucción completa de cada pulso.
+
+La ampliación de feedback pasó formato/lint/tipos, pero fue interrumpida tras tres vencimientos de tiempo con cargas concurrentes del host. Los tres archivos afectados y las regresiones del bloque se repitieron con un trabajador, sin cambiar plazos: 54 pruebas aprobadas. Se conservan los registros negativos; no se atribuye rendimiento de referencia a esta sesión.

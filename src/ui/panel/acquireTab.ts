@@ -89,11 +89,16 @@ export function buildRespirationControls(ctx: PanelContext, p: HTMLElement): voi
     info: 'Apagada: referencia de fin de espiración. Las maniobras cambian presiones y movimiento; el corazón, el flujo y el reloj continúan.',
   });
   const breathing = () => s().patient.respiratoryPattern === 'quiet' || s().patient.respiratoryPattern === 'deep';
+  const setPattern = (v: RespiratoryPattern) => {
+    if (s().patient.respiratoryPattern === v) return;
+    s().patient.respiratoryPattern = v;
+    ctx.onAcquisitionConditionsChanged?.('respiration');
+  };
   const toggle = button(
     row(resp),
     'Activar respiración',
     () => {
-      s().patient.respiratoryPattern = breathing() ? 'apnea-expiratory' : 'quiet';
+      setPattern(breathing() ? 'apnea-expiratory' : 'quiet');
       // Actualiza rótulo, estado accesible y maniobra sin esperar otro cuadro GPU.
       ctx.sync();
     },
@@ -120,7 +125,7 @@ export function buildRespirationControls(ctx: PanelContext, p: HTMLElement): voi
         ['apnea-inspiratory', 'Apnea inspiratoria'],
       ],
       () => s().patient.respiratoryPattern,
-      (v) => (s().patient.respiratoryPattern = v),
+      setPattern,
     )
     .classList.add('grid2');
 }

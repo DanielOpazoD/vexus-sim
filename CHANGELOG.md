@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Adquisición: cambios respiratorios e intervenciones abren una serie sin mezclar señales; historial de mediciones separado y cálculo literal/contextual identificado (273).
+
 - Patrones venosos: fases ausentes/solo S e entradas inválidas dejan de parecer inversión, S+D o normalidad; PF sin contradicción por redondeo y textos docentes que distinguen modelo, contexto y hallazgos (272).
 
 - Laboratorio venoso: presión auricular sincronizada con ECG/PW y cursor común; selector sinusal/FA que conserva el escenario y exportación v2 de parámetros con importación compatible v1 (271).

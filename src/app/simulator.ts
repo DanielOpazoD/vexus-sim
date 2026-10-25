@@ -133,6 +133,8 @@ export class Simulator {
   /** Instantánea inmutable que asigna `EquipmentController` (sobrevive a los cambios de caso). */
   equipment: EquipmentSettings = defaultEquipment();
   frozen = false;
+  acquisitionEpoch = 0;
+  acquisitionFrameAfter: number | null = null;
   /** Marco del último avance físico, conservado para estimar la velocidad aunque se dibuje entre pasos. */
   private lastFrame: ProbeFrame;
   /** Contacto de la sonda del cuadro (decisión 63): el marco efectivo (hundido), la compresión y el acoplamiento. */
@@ -218,6 +220,15 @@ export class Simulator {
     this.syncProbeContact();
   }
 
+  /** Cambia el régimen de adquisición, conservando paciente, dinámica y reloj. */
+  beginAcquisitionEpoch(): void {
+    this.acquisitionEpoch++;
+    this.acquisitionFrameAfter = this.renderer.acquisitionSerial;
+    this.pwChain.reset();
+    this.gateTrack.length = 0;
+    this.renderer.mStrip.clear();
+  }
+
   /** El contacto depende de la pose, no de que el reloj haya integrado otro paso (decisión 179). */
   private syncProbeContact(): void {
     if (samePose(this.pose, this.contactPose)) return;
@@ -231,6 +242,7 @@ export class Simulator {
     // The browser already released the lost context's resources. Deleting those
     // invalid handles after restoration sets INVALID_OPERATION in the new context.
     this.renderer = new UltrasoundRenderer(canvas, this.scene, this.profile);
+    this.beginAcquisitionEpoch();
   }
 
   /**

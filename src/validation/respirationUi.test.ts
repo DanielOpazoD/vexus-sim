@@ -16,7 +16,9 @@ function mount() {
   patient.respiratoryPattern = 'apnea-expiratory';
   const syncables: Syncable[] = [];
   const host = new FakeElement('div');
+  const conditionsChanged = vi.fn(() => true);
   const ctx: PanelContext = {
+    onAcquisitionConditionsChanged: conditionsChanged,
     setPose: vi.fn(),
     sim: () => ({ patient }) as Simulator,
     store: new Store({
@@ -61,10 +63,21 @@ function mount() {
   buildRespirationControls(ctx, host as unknown as HTMLElement);
   ctx.sync();
   const control = (label: string) => findAll(host, (el) => el.tagName === 'BUTTON' && el.textContent === label)[0];
-  return { patient, host, control };
+  return { patient, host, control, conditionsChanged };
 }
 
 describe('respuesta respiratoria del panel sin reloj ni cuadros GPU', () => {
+  it('abre una nueva serie al cambiar de régimen, nunca por repetir la opción actual', () => {
+    const { control, conditionsChanged } = mount();
+    control('Apnea espiratoria').click();
+    expect(conditionsChanged).not.toHaveBeenCalled();
+    control('Activar respiración').click();
+    expect(conditionsChanged).toHaveBeenCalledExactlyOnceWith('respiration');
+    control('Tranquila').click();
+    expect(conditionsChanged).toHaveBeenCalledTimes(1);
+    control('Apnea inspiratoria').click();
+    expect(conditionsChanged).toHaveBeenCalledTimes(2);
+  });
   it('publica etiqueta, aria-pressed, maniobra y nota en ambos sentidos y tras clics repetidos', () => {
     const { patient, host, control } = mount();
     const original = structuredClone(patient);

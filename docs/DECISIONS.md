@@ -9072,3 +9072,11 @@ El contraste final a **igual escala ±50, filtro 20 Hz, foco 90 mm y ganancia 0*
 **Decisión.** Corregir esa descripción y mostrar junto a la PF que se usa el sentido dominante y que debe confirmarse la dirección anatómica. Conservar el identificador interno por compatibilidad; no reinterpretar el signo de pantalla como una prueba anatómica, ni alterar PF o velocidades.
 
 **Verificación y límite.** Los contratos espectrales y de interfaz existentes se conservan. Es una aclaración de la medición asistida, no un nuevo detector de hepatopetalia ni el cierre de la validación independiente.
+
+## 278. Negativo M congelado antes de los calibres
+
+**Contexto.** En la validación Metal del 299c1b4, 19/20 E2E aprobaron. La prueba respiratoria legacy esperaba una franja M incompleta tras avanzar el motor sin dibujar. Durante los controles y clics posteriores, seguía adquiriendo: la traza deja aproximadamente seis segundos entre el avance y el resultado. Un ciclo real podía convertir el negativo en una adquisición válida. La variante reference pasó; no se convierte ese reintento implícito en aprobación del lote.
+
+**Decisión.** En la prueba, dibujar antes y después de los cinco segundos avanzados, congelar mediante el botón real en el mismo turno y acreditar el hueco >4,9 s. Medir esa franja sellada, exigir el rechazo por ciclo incompleto y demostrar que el reloj no cambia entre calibres. Luego descongelar y verificar la desactivación respiratoria como antes. Se conservan todas las aserciones funcionales, el plazo de 180 s, los dos cuerpos y cero reintentos; no cambia código del simulador.
+
+**Verificación.** Las cuatro E2E respiratorias aprobaron en Metal (36,8 s en esta ejecución), con el hueco y estado congelado adjuntos. El negativo original y la traza se conservan. Lint y tipos aprobados. La CI vuelve a ejecutar el inventario completo sobre el nuevo head; esto corrige el experimento temporal, no acredita una medición clínica de VCI.

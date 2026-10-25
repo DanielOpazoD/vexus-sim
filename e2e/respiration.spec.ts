@@ -77,7 +77,7 @@ for (const reference of [false, true]) {
     expect(pw).toMatchObject({ cycling: false, phase: 0 });
     expect(errors).toEqual([]);
   });
-  test(`respiración y M: activar, medir y volver a apagar (${reference ? 'referencia' : 'legacy'})`, async ({ page }) => {
+  test(`respiración y M: activar, medir y volver a apagar (${reference ? 'referencia' : 'legacy'})`, async ({ page }, info) => {
     test.setTimeout(180_000);
     const errors = await bootWithoutErrors(page, reference ? '?e2e=1&abdomen=legacy&reference=1' : '?e2e=1&abdomen=legacy');
     await expect(page.getByRole('button', { name: 'Activar respiración', exact: true })).toBeVisible();
@@ -96,28 +96,43 @@ for (const reference of [false, true]) {
     await activate(page.getByRole('tab', { name: 'Adquirir' }));
     await activate(page.getByRole('button', { name: 'Activar respiración', exact: true }));
     await expect(page.getByRole('button', { name: 'Desactivar respiración', exact: true })).toBeVisible();
-    expect(
-      await page.evaluate(() => {
-        const s = window.__vexusTest!.sim();
-        const values = [];
-        for (let i = 0; i < 50; i++) {
-          window.__vexusTest!.advance(0.1);
-          values.push(s.sample.resp.volume);
-        }
-        return Math.max(...values) - Math.min(...values);
-      }),
-    ).toBeGreaterThan(0.9);
-    // Avanzar fisiología sin renderizar deja un hueco real en la franja M: no acredita un ciclo adquirido.
+    const gapSnapshot = await page.evaluate(() => {
+      const s = window.__vexusTest!.sim();
+      const values = [];
+      s.render();
+      for (let i = 0; i < 50; i++) {
+        window.__vexusTest!.advance(0.1);
+        values.push(s.sample.resp.volume);
+      }
+      s.render();
+      // Sellar la adquisición en el mismo turno: los clics posteriores no
+      // deben añadir un ciclo real y transformar el negativo en un caso válido.
+      document.querySelector<HTMLButtonElement>('#freeze')!.click();
+      const strip = s.renderer.mStrip;
+      return {
+        excursion: Math.max(...values) - Math.min(...values),
+        gap: strip.time(strip.count - 1) - strip.time(strip.count - 2),
+        t: s.physiology.clock.t,
+        frozen: s.frozen,
+      };
+    });
+    expect(gapSnapshot.excursion).toBeGreaterThan(0.9);
+    expect(gapSnapshot.gap).toBeGreaterThan(4.9);
+    expect(gapSnapshot.frozen).toBe(true);
+    await info.attach('incomplete-m-acquisition.json', { body: JSON.stringify(gapSnapshot), contentType: 'application/json' });
+    // El motor recorrió un ciclo; la franja congelada tiene un hueco real y no lo acredita.
     await activate(page.getByRole('tab', { name: 'Medir' }));
     await activate(page.getByRole('button', { name: 'VCI modo M', exact: true }));
     await expect(page.locator('#mmode')).toBeVisible();
-    await acquiredMFrame(page);
+    await expect(page.locator('#freeze')).toHaveAttribute('aria-pressed', 'true');
     const freshBox = (await page.locator('#mmode').boundingBox())!;
     expect(freshBox.width).toBeGreaterThan(100);
     expect(freshBox.height).toBeGreaterThan(70);
     for (const dx of [50, 100]) for (const dy of [40, 70]) await page.mouse.click(freshBox.x + dx, freshBox.y + dy);
     await expect(page.locator('.result')).toContainText('sin ciclo respiratorio completo');
     await expect(page.locator('.result')).not.toContainText('colapso');
+    expect(await page.evaluate(() => window.__vexusTest!.sim().physiology.clock.t)).toBe(gapSnapshot.t);
+    await activate(page.locator('#freeze'));
     await activate(page.getByRole('tab', { name: 'Adquirir' }));
     await activate(page.getByRole('button', { name: 'Desactivar respiración', exact: true }));
     await expect(page.getByRole('button', { name: 'Activar respiración', exact: true })).toBeVisible();

@@ -281,3 +281,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [275](DECISIONS.md#L9046) | Repeticiones GLSL sin cambiar los programas | vigente |
 | [276](DECISIONS.md#L9056) | Ventana renal posterolateral con pareja vascular adquirible | vigente |
 | [277](DECISIONS.md#L9068) | Sentido portal dominante no equivale a hepatopetalia | vigente |
+| [278](DECISIONS.md#L9076) | Negativo M congelado antes de los calibres | vigente |

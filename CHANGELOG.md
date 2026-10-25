@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Build: retira ocho registros gráficos Three sin consumidor y conserva los GLSL utilizados; reduce 5.925 bytes JS en la medición candidata, con inventario independiente y guarda de versión (268).
+
 - Ecos cilíndricos: conserva el término mixto de curvatura al girar el eje, con referencia compleja 2D y sin reajustar ganancias; mantiene el contrato diagonal genérico y explicita el alcance a incidencia normal del oráculo (267).
 - Pruebas de curvatura: sustituye la comprobación de cadenas GLSL por ejecución WebGL2 frente al fixture independiente, con degeneración y negativo histórico; conserva los cinco controles físicos CPU y los límites numéricos (267).
 

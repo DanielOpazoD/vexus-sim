@@ -74,3 +74,11 @@ captura automática conserva el control de identidad: el predominio arterial pue
 invalidar una medición venosa aunque el par sea útil para inspección visual. Las
 otras dos adquisiciones y la fisiología permanecen iguales. Esta selección no
 reemplaza la calibración pendiente ni la habilidad de obtener una puerta venosa.
+
+## Revisión de presentación del 25 de octubre de 2026
+
+La decisión 270 sustituye el nombre visible de la opción por «Arteria: contraste» y su título
+por «Arteria interlobar derecha · contraste». El valor interno `paired` se conserva para la
+adquisición histórica. La presencia de ambas poblaciones no asegura que ambos trazados sean
+identificables: no se presenta esta puerta como referencia venosa. La alternativa inicial
+«Vena: medición» sigue adquiriendo la vena mediante la misma cadena IQ.

@@ -5419,7 +5419,7 @@ El shader enviado a WebGL es el mismo. El build medido baja de 1023,9 a 1018,9 K
 sin aumentar el límite de 1024 KiB. Es reducción de transporte, no una afirmación
 de aumento de FPS ni de fidelidad clínica.
 
-## 133. Ventana renal pareada explícita, sin escalar la vena
+## 133. Ventana renal pareada explícita, sin escalar la vena [Estado: presentación superada por 270]
 
 **Problema.** En el visor comparativo la puerta centrada en vena puede dejar la
 arteria acompañante fuera del plano principal. Comparar alturas sin conocer la
@@ -8904,3 +8904,41 @@ sigue pendiente. La primera aceptación local completa pasó con 249 archivos co
 Referencias: [intercalación dúplex/tríplex](https://pmc.ncbi.nlm.nih.gov/articles/PMC8248305/),
 [dos pulsos en inversión de pulso](https://pmc.ncbi.nlm.nih.gov/articles/PMC5024924/).
 Estas fuentes sustentan las restricciones, no la política de empaquetamiento propia ni sus cifras.
+
+## 270. Identificar la puerta arterial sin prometer un trazado venoso
+
+**Contexto.** El usuario muestra picos arteriales en la comparación venosa. La opción
+«Par arteria/vena» busca explícitamente una arteria interlobar; su título prometía ambos
+vasos aunque la señal venosa no fuera identificable. El contrato histórico solo exigía
+peso no nulo de ambas poblaciones, que no demuestra un par espectral reconocible.
+
+**Contraste.** Rola et al. (2021), [serie clínica VExUS](https://doi.org/10.1186/s13089-021-00232-8),
+describen flujo intrarrenal normal continuo y la progresión a interrupciones S/D y D con
+congestión. En el diagnóstico interno se adquirieron ocho señales con la cadena productiva:
+30 s de estabilización, 6 s de IQ, dos cuerpos, dos pacientes y ambas puertas. Las cuatro
+puertas venosas conservaron identidad y dirección negativas: sano continuo, grave monofásico;
+las cuatro puertas arteriales fueron rechazadas por `renal-identity`. Estos patrones son
+resultados del modelo, no calibración de velocidades ni validación clínica independiente.
+
+**Opciones.** Reescalar la vena para hacerla visible o dibujar ondas no resolvería la adquisición.
+Buscar una nueva puerta que capte ambos vasos de forma reconocible requiere un contrato
+espectral más fuerte que «peso > 0» y permanece pendiente. Conservarla como contraste arterial
+explícito permite enseñar el error de adquisición sin anunciar un par venoso válido.
+
+**Decisión.** El selector conserva la vena por defecto y denomina la alternativa «Arteria:
+contraste». El título y la descripción accesible identifican la puerta seleccionada. Encima
+del espectro arterial se lee «No interpretar como trazado venoso». La vuelta a vena restaura
+el título y la orientación venosos. Se conserva la cadena IQ, población, geometría, escala,
+resolución y los rechazos de calidad; la decisión 133 conserva su adquisición, no su rótulo.
+
+**Verificación.** La E2E existente mantiene las cuatro combinaciones de cuerpo/paciente,
+el cambio de señal, rechazo arterial, ausencia de marcas inválidas, retorno a vena, reloj,
+ventana ausente y accesibilidad móvil. Añade títulos visibles/accesibles y capturas de la
+adquisición venosa inicial. El código anterior falla esas expectativas en ambos casos atlas;
+el candidato supera las nueve E2E Metal del visor y sus adquisiciones. Check, SwiftShader
+y CI del head final se registran por separado en el estado durable; esto no anticipa su pase.
+
+**Evidencias y límites.** `../fidelity-next15-evidence/renal-user-review-01/` conserva el
+original del usuario, las ocho señales y sus métricas, negativos, capturas y procedencia.
+Este cambio corrige la identificación docente. No acredita un preset simultáneo arteria/vena
+óptimo ni cierra el transporte PW del bloque 9.

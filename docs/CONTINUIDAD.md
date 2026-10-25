@@ -75,6 +75,10 @@ El segundo fallo comparaba transmisión GPU antigua con la pose CPU actual: el g
 ahora espera una adquisición completa, con0,1dB y plazos intactos. Tres regresiones CPU y el
 negativo Metal conservan la causa. Consultar el head y su aceptación en el estado vivo; no
 fusionar el candidato rechazado.
+El head reparado `44cd08f` aprobó check, Metal17 y CI `40153790816`:165 E2E únicas/12 grupos/
+cero reintentos; recibo y originales verificados, junto con tres complementos (23 ejecuciones).
+Se reconcilia con main tras PR285 conservando el código físico; la combinación necesita su
+propio check, Metal/Swift y CI final. Los pases anteriores no acreditan esa combinación.
 No es un calendario medido de un equipo ni adquisición geométrica por disparo; B11 sigue abierto.
 
 La variante GPU del corte se retiró: en 3RAF redujo el desfase un 14,8 % pero la cadencia B un
@@ -91,6 +95,17 @@ validar portadora acústica ni rendimiento del sector completo. Bloques 1, 2 y 5
 Antes de editar se apartaron reversiblemente trece archivos duplicados no seguidos: doce idénticos
 a los originales y `dist 2` (enlace simbólico frente al directorio `dist`). Manifiesto y hashes en
 `../fidelity-next15-evidence/quarantine-initial-duplicates/`; causa no determinada.
+
+La revisión renal solicitada por el usuario identificó un problema de presentación: la opción
+`paired` centra la puerta en una arteria, aunque su título prometía arteria y vena. La decisión
+270 la identifica como contraste arterial y conserva la vena como selección inicial. Ocho
+adquisiciones internas distinguen sano continuo/grave monofásico en vena y rechazan la puerta
+arterial para medición venosa. Evidencia y aceptación del head en
+`../fidelity-next15-evidence/renal-user-review-01/` y el estado vivo. [PR285](https://github.com/DanielOpazoD/vexus-sim/pull/285)
+se fusionó en `67e65bf`: check/hook, Metal9/Swift2, CI `40155344673` (165 E2E únicas/12 grupos/
+cero reintentos) y complemento venoso (14 pruebas), con originales verificados. Su CI independiente
+postmerge `40159158094` sigue pendiente; no hereda el pase del PR. No equivale a reparar
+transporte ni validar clínicamente un preset pareado; ese objetivo permanece abierto.
 
 ## Ronda 243–256: imagen, Doppler y comprobación (24 de octubre de 2026)
 

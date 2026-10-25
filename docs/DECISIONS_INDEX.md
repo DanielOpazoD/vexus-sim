@@ -272,4 +272,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [266](DECISIONS.md#L8790) | Referencia espectral independiente de camino y receptor | vigente |
 | [267](DECISIONS.md#L8802) | Conservar la curvatura mixta de un cilindro al girar su eje | vigente |
 | [268](DECISIONS.md#L8822) | Retirar registros Three sin consumidor, conservando sus programas utilizados | vigente |
-| [270](DECISIONS.md#L8836) | Identificar la puerta arterial sin prometer un trazado venoso | vigente |
+| [269](DECISIONS.md#L8836) | Calendario Doppler con intervalos completos y escalas efectivas | candidata en PR284 |
+| [270](DECISIONS.md#L8844) | Identificar la puerta arterial sin prometer un trazado venoso | vigente |

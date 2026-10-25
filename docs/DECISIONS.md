@@ -8833,6 +8833,14 @@ El build diagnóstico del árbol modificado reduce JS de 1.057.747 a 1.051.822 b
 
 **Consecuencias.** Aumenta el margen a 5.970 bytes sin cambiar código anatómico, señal, resolución, cine o materiales consumidos. Introduce mantenimiento explícito al actualizar Three: volver a auditar dos registros y su inventario de consumidores. La prueba debe permitir nuevas familias conservadas y sólo impedir una eliminación que deje un consumidor sin programa. No se afirma cierre del bloque de memoria/rendimiento ni se retiran otros programas por inercia. Evidencia: `work/fidelity-next15-evidence/b13/`.
 
+## 269. Calendario Doppler con intervalos completos y escalas efectivas [Estado: candidata en PR284]
+
+La decisión y su implementación se encuentran en el [PR284](https://github.com/DanielOpazoD/vexus-sim/pull/284),
+head `44cd08f`. Se conserva el número ya asignado mientras ese candidato se valida de forma
+independiente. Esta entrada registra la propuesta; no incorpora su código ni acredita su
+aprobación. El detalle y los negativos permanecen en la rama del PR y en
+`../fidelity-next15-evidence/b12/`. Al integrar el candidato se incorpora su registro completo.
+
 ## 270. Identificar la puerta arterial sin prometer un trazado venoso
 
 **Contexto.** El usuario muestra picos arteriales en la comparación venosa. La opción

@@ -79,6 +79,14 @@ Antes de editar se apartaron reversiblemente trece archivos duplicados no seguid
 a los originales y `dist 2` (enlace simbólico frente al directorio `dist`). Manifiesto y hashes en
 `../fidelity-next15-evidence/quarantine-initial-duplicates/`; causa no determinada.
 
+La revisión renal solicitada por el usuario identificó un problema de presentación: la opción
+`paired` centra la puerta en una arteria, aunque su título prometía arteria y vena. La decisión
+270 la identifica como contraste arterial y conserva la vena como selección inicial. Ocho
+adquisiciones internas distinguen sano continuo/grave monofásico en vena y rechazan la puerta
+arterial para medición venosa. Evidencia y aceptación del head en
+`../fidelity-next15-evidence/renal-user-review-01/` y el estado vivo. No equivale a reparar
+transporte ni validar clínicamente un preset pareado; ese objetivo permanece abierto.
+
 ## Ronda 243–256: imagen, Doppler y comprobación (24 de octubre de 2026)
 
 El usuario autoriza al menos diez mejoras adicionales, con commits, PR y merge

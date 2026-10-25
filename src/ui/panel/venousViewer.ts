@@ -240,7 +240,7 @@ export class VenousViewer {
               ]
             : [
                 ['venous', 'Vena: medición'],
-                ['paired', 'Par arteria/vena: inspección'],
+                ['paired', 'Arteria: contraste'],
               ];
           for (const [value, text] of options) select.add(new Option(text, value));
           select.addEventListener('change', () => {
@@ -649,14 +649,18 @@ export class VenousViewer {
       this.#plots[i].setAttribute('style', this.#spectralMode ? 'display:none' : '');
       this.#canvases[i].hidden = !this.#spectralMode;
       this.#spectralControls[i].hidden = !this.#spectralMode;
-      if (i === 2)
-        this.dialog.querySelectorAll('.venous-row figcaption strong')[i].textContent = this.#spectralMode
-          ? 'Arteria y vena interlobares derechas'
-          : 'Vena interlobar derecha';
+      const arterialRenalGate = i === 2 && this.#spectralMode && this.#renalWindow === 'paired';
+      if (i === 2) {
+        const label = arterialRenalGate ? 'Arteria interlobar derecha · contraste' : 'Vena interlobar derecha';
+        this.dialog.querySelectorAll('.venous-row figcaption strong')[i].textContent = label;
+        this.#canvases[i].setAttribute('aria-label', `${label}: espectro Doppler pulsado simulado y reloj ECG compartido`);
+      }
       const detail = this.dialog.querySelectorAll('.venous-direction')[i];
       detail.textContent =
         i === 2 && this.#spectralMode
-          ? `${this.#inverted[i] ? '− arteria · + vena' : '+ arteria · − vena'} · misma puerta PW${this.#renalWindow === 'paired' ? ' · inspección: predominio arterial puede impedir medición venosa' : ' · centrada en vena'}`
+          ? arterialRenalGate
+            ? `${this.#inverted[i] ? '−' : '+'} flujo arterial · puerta centrada en arteria. No interpretar como trazado venoso.`
+            : `${this.#inverted[i] ? '+' : '−'} hacia el hilio renal · puerta centrada en vena`
           : `${this.#spectralMode && VENOUS_FORWARD_SIGN[i] * (this.#inverted[i] ? -1 : 1) < 0 ? '−' : '+'} ${VENOUS_COMPARISON_CHANNELS[i].forward}${this.#spectralMode ? ' · orientación virtual' : ''}`;
       if (this.#spectralMode && this.#inverted[i]) detail.textContent += ' · INV: presentación';
     }

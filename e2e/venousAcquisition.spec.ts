@@ -39,10 +39,16 @@ for (const atlas of [false, true])
           );
         await expect(selector).toHaveValue('venous');
         await ready();
+        await renal.screenshot({ path: info.outputPath('venous-renal-selected.png') });
+        await expect(renal.locator('figcaption strong')).toHaveText('Vena interlobar derecha');
+        await expect(canvas).toHaveAttribute('aria-label', /^Vena interlobar derecha:/);
+        await expect(renal).toContainText('centrada en vena');
         const original = await canvas.evaluate((el) => (el as HTMLCanvasElement).toDataURL());
         await selector.selectOption('paired');
         await ready();
-        await expect(renal).toContainText('inspección: predominio arterial');
+        await expect(renal.locator('figcaption strong')).toHaveText('Arteria interlobar derecha · contraste');
+        await expect(canvas).toHaveAttribute('aria-label', /^Arteria interlobar derecha · contraste:/);
+        await expect(renal).toContainText('No interpretar como trazado venoso');
         await expect(renal.locator('.venous-limits')).toContainText(/arterial|arteria/i);
         expect(await canvas.evaluate((el) => (el as HTMLCanvasElement).toDataURL())).not.toBe(original);
         await expect(canvas).toHaveAttribute('data-marks', '');
@@ -66,6 +72,7 @@ for (const atlas of [false, true])
         await page.screenshot({ path: info.outputPath('venous-paired-renal-mobile.png') });
         await selector.selectOption('venous');
         await ready();
+        await expect(renal.locator('figcaption strong')).toHaveText('Vena interlobar derecha');
         await expect(renal).toContainText('centrada en vena');
         await expect(renal.locator('.venous-limits')).not.toContainText('domina la arteria');
         expect(

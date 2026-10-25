@@ -277,4 +277,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [271](DECISIONS.md#L8946) | Presión auricular y ritmo independientes en el laboratorio docente | vigente |
 | [272](DECISIONS.md#L8990) | No inferir patrones venosos a partir de fases ausentes o entradas imposibles | vigente |
 | [273](DECISIONS.md#L9024) | Separar series al cambiar respiración o intervenir | vigente |
-| [274](DECISIONS.md#L9035) | Escala renal inicial y lectura del filtro color | vigente |
+| [274](DECISIONS.md#L9034) | Escala renal inicial y lectura del filtro color | vigente |
+| [275](DECISIONS.md#L9046) | Repeticiones GLSL sin cambiar los programas | vigente |

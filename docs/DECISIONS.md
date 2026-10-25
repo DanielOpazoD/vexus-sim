@@ -9042,3 +9042,13 @@ La ampliación de feedback pasó formato/lint/tipos, pero fue interrumpida tras 
 **Fuentes y límites.** [Rola 2024](https://pmc.ncbi.nlm.nih.gov/articles/PMC11576717/) recomienda escala intrarrenal <20 y advierte sobre aliasing a escala insuficiente; [Polish Ultrasound Society](https://pmc.ncbi.nlm.nih.gov/articles/PMC4579749/) distingue velocidad máxima portal de velocidad media. El orden de magnitud es compatible, pero la velocidad proyectada, el perfil radial y la ganancia impiden usar una única cifra como calibración externa. Color conserva su respuesta estacionaria analítica, no un ensemble IQ temporal. La simultaneidad arterial/venosa sigue dependiendo del plano y del volumen muestreado.
 
 **Verificación.** 22 pruebas de preset, equipo y filtro aprobadas, más tipos. Evidencia diagnóstica externa al checkout: diez adquisiciones IQ y siete verdades fisiológicas. Validación de interfaz, poses y check/CI corresponden al candidato final.
+
+## 275. Repeticiones GLSL sin cambiar los programas
+
+**Problema.** La corrección de series y los ajustes Doppler dejaron el candidato 274 en 1037,0 KiB de JavaScript, sobre el presupuesto conservado de 1033 KiB.
+
+**Decisión.** Codificar referencias hacia texto previo dentro de cada fragmento GLSL estático, después del diccionario existente. Expandirlas antes de expandir las palabras. No atraviesan interpolaciones, no usan solapamientos ni cambian programas, resolución, precisión o uniformes. El marcador reservado ya excluía los fragmentos inseguros de la ruta de empaquetado. El decodificador rechaza referencias fuera de lo reconstruido. No se amplía ningún presupuesto.
+
+**Verificación.** Siete pruebas de transporte, incluyendo igualdad byte por byte de todos los programas propios y de Three frente al build sin empaquetar; conserva coerción y orden de interpolaciones, escapes y diccionario. La estimación previa del corpus completo ahorraba 8408 bytes antes de tree-shaking; el ahorro real y la compilación WebGL se miden sobre el build siguiente, no se deducen de esa estimación.
+
+El build productivo resultante aprobó tipos y presupuesto: **1029,5 KiB**, frente a 1037,0 KiB del candidato anterior, con límite 1033 KiB intacto. Las siete pruebas de identidad y el lint también aprobaron. Compilación WebGL y check completos se registran sobre el candidato final.

@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Build: referencias estáticas GLSL sin pérdida recuperan 7,5 KiB sin cambiar programas ni ampliar presupuestos (275).
+
 - Renal: escala inicial ±15 cm/s en Color/PW, filtro bajo y caja propia; explicación del filtro color y del aliasing sin modificar las velocidades (274).
 
 - Adquisición: cambios respiratorios e intervenciones abren una serie sin mezclar señales; historial de mediciones separado y cálculo literal/contextual identificado (273).

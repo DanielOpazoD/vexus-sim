@@ -381,5 +381,15 @@ function expandGlsl(s: string, dictionary: readonly string[]): string {
   });
 }
 export function unpackGlsl(s: string): string {
-  return expandGlsl(s, GLSL_DICTIONARY);
+  let out = '';
+  let end = 0;
+  for (const m of s.matchAll(/`([0-9a-z]+),([0-9a-z]+);/g)) {
+    out += s.slice(end, m.index);
+    const distance = parseInt(m[1], 36);
+    const length = parseInt(m[2], 36);
+    if (!(distance > 0 && distance <= out.length && length >= 8 && length <= distance)) throw new Error('Invalid GLSL back reference');
+    out += out.slice(out.length - distance, out.length - distance + length);
+    end = m.index + m[0].length;
+  }
+  return expandGlsl(out + s.slice(end), GLSL_DICTIONARY);
 }

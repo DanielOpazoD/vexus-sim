@@ -5,6 +5,7 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { GLSL_WORDS, GLSL_PHRASES, GLSL_MARKERS, glslMarker, unpackGlsl } from '../core/glslPacking';
 import { glslPacking, packGlslTemplates } from '../../tools/build/glslPacking';
+import { packBackrefs } from '../../tools/build/glslBackrefs';
 import { threeGlslCompact } from '../../tools/build/threeGlslCompact';
 import { prepareGlslMangle, readSources, transformWithMangle } from '../../tools/build/glslMinify';
 import { bindingNames, compactBindings } from '../../tools/build/glslUniformNames';
@@ -12,6 +13,15 @@ import { loadShaderGraph } from './support/shaderGraph';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../..');
 describe('transporte GLSL sin pérdida', () => {
+  it('expande repeticiones estáticas antes del diccionario, incluidas referencias a texto ya expandido', () => {
+    for (const s of ['abcdefgh'.repeat(300), 'ab'.repeat(900), '@A variable=@C(1.0);'.repeat(60), 'sin repetición']) {
+      const packed = packBackrefs(s);
+      expect(unpackGlsl(packed)).toBe(unpackGlsl(s));
+      expect(packed.length).toBeLessThanOrEqual(s.length);
+    }
+    expect(() => packBackrefs('`literal')).toThrow('Reserved');
+    for (const s of ['abcdefgh`0,8;', 'abcdefgh`9,8;', 'abcdefgh`8,9;']) expect(() => unpackGlsl(s)).toThrow('Invalid');
+  });
   it('decodifica el diccionario completo sin tocar texto normal', () => {
     // Identidad anterior a la serialización compacta: un marcador no puede cambiar de palabra.
     expect(createHash('sha256').update(JSON.stringify(GLSL_WORDS)).digest('hex')).toBe(

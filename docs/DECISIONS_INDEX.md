@@ -275,3 +275,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [269](DECISIONS.md#L8836) | Calendario Doppler con intervalos completos y escalas efectivas | vigente |
 | [270](DECISIONS.md#L8908) | Identificar la puerta arterial sin prometer un trazado venoso | vigente |
 | [271](DECISIONS.md#L8946) | Presión auricular y ritmo independientes en el laboratorio docente | vigente |
+| [272](DECISIONS.md#L8990) | Declarar la dimensionalidad realmente ejecutada por la referencia PSF | vigente |

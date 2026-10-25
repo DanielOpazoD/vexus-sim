@@ -27,6 +27,7 @@ import pymust
 
 
 PROTOCOL = "convex-c35-pymust-point-v2"
+PFIELD_SHA256 = "a999ae8ffa4934968ea01e8ab57136aadad6beafc4ceaddf48edd031e2c33576"
 CASES = {
     "near": (60.0, 90.0),
     "focal": (90.0, 90.0),
@@ -38,6 +39,14 @@ CASES = {
 
 def digest(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def registered_field_model(package):
+    # PyMUST 0.1.9 selects its 2-D model for an explicit all-zero Y array.
+    # Height/focus are supplied parameters, but that branch does not apply them.
+    if digest(package / "pfield.py") != PFIELD_SHA256:
+        raise ValueError("Protocol v2 requires the registered unmodified pfield source; a different field model needs a new protocol")
+    return {"dimensionality": 2, "elevationFocusing": False, "sourcePlaneYMm": 0}
 
 
 def dump(path, value):
@@ -76,6 +85,7 @@ def acquire(depth_mm, focus_mm, spacing_scale):
     options.FrequencyStep = 1.0
     options.dBThresh = -100.0
     source_x = np.array([0.0])
+    # Under this registered engine this selects 2-D, not a focused 3-D Y=0 slice.
     source_y = np.array([0.0])
     source_z = np.array([target_z])
     rf, rf_spectrum = pymust.simus(source_x, source_y, source_z, np.array([1.0]), delays, p, options)
@@ -152,11 +162,14 @@ def main():
         actual = runtime.parent / "wheels" / wheel["wheel"]
         if digest(actual) != wheel["sha256"]:
             parser.error("Reference wheel hash differs")
+    package = Path(pymust.__file__).parent
+    field_model = registered_field_model(package)
     out.mkdir(parents=False, exist_ok=False)
     started = time.perf_counter()
     report = {
         "schemaVersion": 1, "protocolId": PROTOCOL, "origin": "synthetic", "role": "development",
         "lateralMethod": "source-offset-fixed-transmit-and-receive-at-nominal-depth",
+        "fieldModel": field_model,
         "engine": {"name": "PyMUST", "version": "0.1.9",
                    "licenseFile": "LGPL-2.1", "licenseMetadata": "LGPL-3.0",
                    "licenseNote": "Upstream wheel LICENSE and METADATA disagree; originals preserved, no upstream code bundled into the application.",
@@ -179,11 +192,11 @@ def main():
             "PyMUST uses uniform receive aperture; production uses an equivalent k=1.3 receive width.",
             "PyMUST limits reception by angle to each convex element normal; production uses depth/F-number chord. Effective aperture is reported per target.",
             "PyMUST simulates its specified pulse/bandpass and DAS; production uses a reduced Gaussian PSF.",
+            "The all-zero Y input selects PyMUST's 2-D field: supplied elevation height/focus are inactive; no elevation or slice-thickness validation.",
             "Only point-target profiles in the central elevation plane; no heterogeneous medium or speckle validation.",
         ],
         "cases": [],
     }
-    package = Path(pymust.__file__).parent
     dump(out / "engine-source-hashes.json", {
         str(p.relative_to(package)): digest(p) for p in sorted(package.rglob("*.py"))
     })

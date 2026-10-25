@@ -13,6 +13,14 @@ seguimiento automático eliminado. Las cifras y pendientes de las secciones hist
 no sustituyen este cierre. Estado activo nuevo: `../fidelity-next15-evidence/CURRENT_STATE.json`
 y `PROGRESS.md`. No hay entrega aceptada de esta nueva ronda por el mero hecho de iniciar trabajo.
 
+Corrección de alcance de B1 (272): el protocolo puntual v2 ejecuta el campo **2D**
+de PyMUST cuando Y=0; altura/foco en elevación son parámetros suministrados pero
+inactivos. No acredita espesor ni foco elevacional. Se conservan los originales.
+El diagnóstico trazado y la referencia 3D adaptada se distinguen en
+`../fidelity-next15-evidence/speckle/material-rf-17-zero-elevation-b/VERIFIED.json`.
+La generación RF/IQ material de B5 sólo está validada en el piloto de 32 dispersores;
+su portado GPU, imagen nativa y coste completo siguen pendientes.
+
 El componente 1a se fusionó mediante [PR277](https://github.com/DanielOpazoD/vexus-sim/pull/277)
 en `77a9f9c`, con 162 E2E sin reintentos y originales verificados. Su CI independiente postmerge
 `40119491086` también se verificó. Es una referencia puntual sintética PyMUST, sin cambios en la

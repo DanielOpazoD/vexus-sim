@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Referencia PSF: declara el campo 2D realmente utilizado por PyMUST con Y=0, rechaza atribuciones de foco elevacional y conserva los originales y sus anchuras (272).
+
 - Laboratorio venoso: presión auricular sincronizada con ECG/PW y cursor común; selector sinusal/FA que conserva el escenario y exportación v2 de parámetros con importación compatible v1 (271).
 
 - Comparación renal: identifica por separado la puerta venosa y el contraste arterial; deja de prometer ambas señales y advierte antes del espectro cuando la adquisición no debe interpretarse como venosa (270).

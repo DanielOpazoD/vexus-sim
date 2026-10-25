@@ -54,6 +54,23 @@ describe('independent point response measurement', () => {
     expect(focal.lateral.widthMm).toBeCloseTo(2.6374013514276546, 10);
     expect(focal.fullReceiveControl.widthMm).toBeCloseTo(1.855948240034797, 10);
     expect(result.calibration).toBe('pending');
+    expect(result.fieldModel).toEqual({
+      dimensionality: 2,
+      elevationFocusing: false,
+      sourcePlaneYMm: 0,
+      provenance: 'inferred-from-registered-v2-engine',
+    });
+    expect(result.interpretation).toContain('No elevation or slice-thickness validation');
+  });
+  it('accepts an explicit 2-D declaration but rejects focused 3-D claims under the same protocol', () => {
+    const fieldModel = { dimensionality: 2, elevationFocusing: false, sourcePlaneYMm: 0 };
+    expect(compareIndependentPsf({ ...acquiredPoint, fieldModel }).fieldModel.provenance).toBe('declared-and-protocol-checked');
+    for (const invalid of [
+      { ...fieldModel, dimensionality: 3 },
+      { ...fieldModel, elevationFocusing: true },
+      { ...fieldModel, sourcePlaneYMm: 0.01 },
+    ])
+      expect(() => compareIndependentPsf({ ...acquiredPoint, fieldModel: invalid })).toThrow('2-D field');
   });
   it('binds the raw-profile verifier to exact JSON bytes and every original', () => {
     const cases = [{ id: 'focal', raw: { sha256: 'a'.repeat(64) } }];

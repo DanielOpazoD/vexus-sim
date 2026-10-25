@@ -64,6 +64,19 @@ function parseReference(input: unknown) {
     engine.version !== '0.1.9'
   )
     throw new Error('Unsupported independent reference');
+  // The registered v2 source uses Y=0. PyMUST 0.1.9 then selects 2-D even
+  // though height/focus are supplied. Preserve legacy originals without
+  // relabelling their unused parameters as evidence of elevation focusing.
+  const fieldModel = { dimensionality: 2, elevationFocusing: false, sourcePlaneYMm: 0 } as const;
+  if (r.fieldModel !== undefined) {
+    const declared = record(r.fieldModel);
+    if (
+      declared.dimensionality !== fieldModel.dimensionality ||
+      declared.elevationFocusing !== fieldModel.elevationFocusing ||
+      declared.sourcePlaneYMm !== fieldModel.sourcePlaneYMm
+    )
+      throw new Error('Protocol v2 uses a 2-D field without elevation focusing');
+  }
   const p = record(r.parameters);
   const profile = CONVEX_C35_PROFILE;
   const expected = {
@@ -136,11 +149,19 @@ function parseReference(input: unknown) {
       lateral: measure('lateral'),
     };
   });
-  return { cases, parameters: p, engine };
+  return {
+    cases,
+    parameters: p,
+    engine,
+    fieldModel: {
+      ...fieldModel,
+      provenance: r.fieldModel === undefined ? 'inferred-from-registered-v2-engine' : 'declared-and-protocol-checked',
+    },
+  };
 }
 
 export function compareIndependentPsf(input: unknown) {
-  const { cases, parameters, engine } = parseReference(input);
+  const { cases, parameters, engine, fieldModel } = parseReference(input);
   const beam = bmodeBeam(CONVEX_C35_PROFILE, { harmonic: false });
   return {
     protocolId,
@@ -151,8 +172,9 @@ export function compareIndependentPsf(input: unknown) {
     profileSha256: sha(JSON.stringify(CONVEX_C35_PROFILE)),
     engine,
     parameters,
+    fieldModel,
     interpretation:
-      'Differences include pulse and aperture models; they are not isolated renderer errors. No acceptance threshold is fitted to these observations.',
+      'Differences include pulse and aperture models; they are not isolated renderer errors. This reference is 2-D: supplied elevation height/focus are inactive. No elevation or slice-thickness validation. No acceptance threshold is fitted to these observations.',
     cases: cases.map((c) => {
       const compare = (referenceMm: number, modelMm: number) => ({
         referenceMm,

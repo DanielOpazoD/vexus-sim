@@ -8986,3 +8986,13 @@ propiedades, eventos o controles. El presupuesto original se conserva.
 El check, capturas Metal/Swift y CI del head final se registran en
 `../fidelity-next15-evidence/teaching-signals-01/`. No es validación clínica humana ni
 cierre de B9/B15; medición portal por el alumno y adquisición renal pareada siguen abiertas.
+
+## 272. Declarar la dimensionalidad realmente ejecutada por la referencia PSF
+
+**Contexto.** Al generar RF nueva desde material en B5, las ocho poses no aplanadas concordaron con la referencia, pero el control Y=0 difería en más del 400 % RMS. PyMUST 0.1.9 trata un array de Y casi cero como entrada 2D: desactiva la apertura en elevación y cambia la propagación. B1 también utiliza Y=0; su documentación atribuía erróneamente foco elevacional a parámetros suministrados pero inactivos.
+
+**Decisión.** Conservar protocolo v2, adquisiciones, perfiles, fixture y anchuras. Declarar campo 2D en nuevas exportaciones, verificar la huella de la fuente registrada e inferir explícitamente ese alcance al leer originales antiguos. Rechazar declaraciones 3D/foco elevacional bajo v2. Una referencia que cambie de modelo requiere otro protocolo y evidencia propia; no se modifica el motor instalado ni se recalibran resultados para pasar.
+
+**Verificación.** La traza observó `ElevationFocusing=false` y reprodujo exactamente espectro, RF, IQ y perfiles del control antiguo. Una adaptación aislada que elimina sólo el cambio implícito a 2D coincidió exactamente con Y=1e-8 m del motor intacto, ambos con elevación activa. El control 2D incorrecto conserva un error superior al 80 % frente al 3D. La primera comprobación de Q falló porque el banco convirtió COO a CSR: se conservó y se corrigió el orden de sumas sin cambiar la igualdad exigida. Evidencia en `../fidelity-next15-evidence/speckle/material-rf-17-zero-elevation-b/VERIFIED.json`; resultados finales de check/CI en el estado vivo. Regresión del comparador: fixture antiguo conserva anchuras, declaración 2D aceptada y tres declaraciones incompatibles rechazadas.
+
+**Consecuencias.** Corrige el alcance de la decisión 257 y de la inspección histórica B5, sin invalidar sus datos como referencia 2D ni atribuirles validación de elevación. El piloto material conserva el mismo límite del 2 %, dos contrastes de apertura y negativos de fase/estado/elevación, pero no acredita imagen GPU, sector completo ni realismo clínico. No hay cambios en render, anatomía, resolución o plazos del simulador.

@@ -1,5 +1,6 @@
 import { C_RECONSTRUCTION_MM_S, nyquistVelocityCms } from '../core/units';
-import { colorTiming, pwDutyCycle, type ColorTiming } from '../ultrasound/colorTiming';
+import type { ColorTiming } from '../ultrasound/colorTiming';
+import { AcquisitionEquipment } from './acquisitionEquipment';
 import { CONVEX_C35_PROFILE, type TransducerProfile } from '../ultrasound/transducerProfile';
 import type { ProbeCompression } from '../anatomy/compression';
 import { AnatomyQuery } from '../anatomy/query';
@@ -139,7 +140,8 @@ export class Simulator {
   private contactPose: ProbePose;
   private lastFrameT = 0;
   private probeVel: Vec3 = [0, 0, 0];
-  private lastColorUpdate = -1;
+  private lastColorUpdate = -Infinity;
+  private readonly acquisition = new AcquisitionEquipment();
   private lastGate: GateGeometry | null = null;
   /** Información de la puerta para la UI/depuración. */
   gateInfo: PwGateInfo | null = null;
@@ -173,10 +175,10 @@ export class Simulator {
     return this.equipment.bmode;
   }
   get color(): Readonly<ColorSettings> {
-    return this.equipment.color;
+    return this.acquiredEquipment.color;
   }
   get pw(): Readonly<PwSettings> {
-    return this.equipment.pw;
+    return this.acquiredEquipment.pw;
   }
   get mmode(): Readonly<MModeSettings> {
     return this.equipment.mmode;
@@ -186,7 +188,9 @@ export class Simulator {
    * Antes del primer cuadro se usan los del equipo.
    */
   get displayed(): { bmode: Readonly<BModeSettings>; color: Readonly<ColorSettings> } {
-    return this.renderer.displayedFrame ?? this.equipment;
+    return (
+      this.renderer.displayedFrame ?? (this.color === this.equipment.color ? this.equipment : { bmode: this.bmode, color: this.color })
+    );
   }
   get spectral(): PwDopplerChain['spectral'] {
     return this.pwChain.spectral;
@@ -280,24 +284,13 @@ export class Simulator {
     if (old > 0) this.gateTrack.splice(0, old);
   }
 
-  /**
-   * Cadencia física del color con la caja, PRF y ensemble actuales (decisión 39); en tríplex el PW
-   * intercalado se lleva su parte del tiempo de disparo (decisión 66).
-   */
+  private get acquiredEquipment() {
+    return this.acquisition.get(this.equipment, this.transducer.lines, this.profile.colorLineSpacingRad, C_RECONSTRUCTION_MM_S);
+  }
+
+  /** Cadencia compartida por B/Color/PW, con líneas y ensembles completos. */
   get colorTiming(): ColorTiming {
-    const c = this.color;
-    const pw = this.pw;
-    return colorTiming(
-      c.theta0,
-      c.theta1,
-      c.prfHz,
-      c.ensemble,
-      this.transducer.lines,
-      this.bmode.depthMm,
-      C_RECONSTRUCTION_MM_S,
-      this.profile.colorLineSpacingRad,
-      pw.enabled ? pwDutyCycle(pw.prfHz, pw.depthMm + pw.gateMm / 2, C_RECONSTRUCTION_MM_S) : 0,
-    );
+    return this.acquiredEquipment.timing;
   }
 
   /** Dibuja un cuadro con el estado actual; `measure` solo lo pasan los ganchos de medida. */
@@ -305,13 +298,13 @@ export class Simulator {
     if (this.frozen) return;
     const s = this.sample;
     const t = this.physiology.clock.t;
-    // Con color, la imagen entera (B + color) se refresca a la cadencia que permite
-    // la caja: cada cuadro de color cuesta líneas × ensemble disparos a la PRF.
-    const colorPeriod = this.color.enabled ? 1 / this.colorTiming.frameHz : 0;
+    // Con Doppler, cada imagen reserva todas las recepciones B/Color/PW.
+    // La UI puede responder entre adquisiciones sin inventar un cuadro nuevo.
+    const colorPeriod = this.color.enabled || this.pw.enabled ? this.acquiredEquipment.schedule.frameS : 0;
     const forceColor = measure?.forceColor === true;
     if (forceColor && !this.color.enabled) throw new Error('render({ forceColor }) exige la caja de color encendida');
     const updateColor = forceColor || t - this.lastColorUpdate >= colorPeriod;
-    if (this.color.enabled && !updateColor) return;
+    if ((this.color.enabled || this.pw.enabled) && !updateColor) return;
     if (updateColor) this.lastColorUpdate = t;
     this.renderer.render(
       {

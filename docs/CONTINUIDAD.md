@@ -48,21 +48,38 @@ complemento `40138435960` (cuatro suites/14 pruebas) verificados con originales.
 postmerge `40140755295` también se verificó sobre `12c2817`: 164 E2E/12 grupos/cero reintentos,
 con otros 14 ZIP y 28 informes originales; no hereda el pase del PR.
 
-B4 conserva una referencia espectral fundamental independiente (266), todavía sin cambiar el
-render productivo. B7 corrige el término mixto de la coherencia cilíndrica (267). Los núcleos
-Metal/Swift y el consumidor Metal aprobaron con negativos y recursos verificados; el test numérico
-GPU permanente sustituye exclusivamente la comprobación textual. Cuatro pares visuales registrados
-normal/grave × hepatorrenal/renal conservan adquisición y resolución, sin corrupción observada;
-la diferencia es pequeña y no demuestra realismo externo. El rebase tras PR281 conserva el árbol
-completo de `2859ee4`. El head `11edcaa` pasó check completo (1.738 core, 54 matrices y 11 controles de fallo esperado),
-hook normal y verificación de 50 recursos. Está publicado en [PR282](https://github.com/DanielOpazoD/vexus-sim/pull/282):
-CI `40142356662` y seis complementos pendientes; B4/B7 no están fusionados.
+[PR282](https://github.com/DanielOpazoD/vexus-sim/pull/282) se fusionó en `082240ee`:
+B4 conserva una referencia espectral fundamental independiente (266), sin cambiar su render;
+B7 corrige la coherencia de curvatura cilíndrica (267). CI del PR `40142356662` y seis complementos
+verificados. La CI independiente postmerge `40144677162` también aprobó: 165 E2E únicas/12 grupos/
+cero reintentos, con otros 53 originales verificados. Las comparaciones visuales no acreditan
+realismo clínico externo.
 
-B13 evalúa la poda de registros Three sin consumidor (268): tres controles focales, tipos y lint
-aprobados; ahorro diagnóstico de 5.925 bytes JS con los 50 recursos intactos. No cambia shaders
-utilizados ni resolución. El candidato `bf101398` pasó ocho E2E originales Metal y tres SwiftShader,
-incluidos arranque de ambos contextos, selección anatómica, capas, dos vistas congeladas y recuperación
-del contexto ecográfico. Check final, hook y CI siguen pendientes antes de promoverlo.
+[PR283](https://github.com/DanielOpazoD/vexus-sim/pull/283) se fusionó en `0c2d2ba`:
+B13 retira ocho familias Three sin consumidor (268), con ahorro de 5.925 bytes JS y 50 recursos
+intactos. Head final `fb0efc0`, árbol idéntico al check completo; ocho E2E Metal/tres Swift,
+hook normal y CI `40144825733` verificados: 165 E2E/12 grupos/cero reintentos. Tres complementos
+conservan nueve ejecuciones de tres casos y ocho pares visuales. CI independiente postmerge
+`40149428839` también verificada:165 E2E/12 grupos/cero reintentos, recibo y53 originales conservados.
+
+B12 integra un calendario de recepción por intervalos completos (269). El candidato conserva
+peticiones y deriva relojes efectivos para señal, escalas y capturas, con coste de dos disparos
+por línea THI. El oráculo Python independiente pasó 22 casos/cinco negativos sobre el módulo TS;
+la primera GPU detectó un control de escala atascado en tríplex. Se conserva el negativo y se
+corrige el avance a valores alcanzables sin cambiar esa E2E. El primer head del PR284,
+`8de1190`, pasó check, Metal16 y Swift7 (barrido dos vistas520,335s), pero su CI detectó un input
+de escala ignorado al coincidir con el rótulo redondeado. El negativo y su reparación permanecen
+trazados; dos regresiones CPU lo detectan. La expectativa fija de±80 en la fase posterior de
+`velocityRuler` se reemplaza por PRF adquirida y límite de vuelo, conservando sus demás controles.
+El segundo fallo comparaba transmisión GPU antigua con la pose CPU actual: el gancho diagnóstico
+ahora espera una adquisición completa, con0,1dB y plazos intactos. Tres regresiones CPU y el
+negativo Metal conservan la causa. Consultar el head y su aceptación en el estado vivo; no
+fusionar el candidato rechazado.
+El head reparado `44cd08f` aprobó check, Metal17 y CI `40153790816`:165 E2E únicas/12 grupos/
+cero reintentos; recibo y originales verificados, junto con tres complementos (23 ejecuciones).
+Se reconcilia con main tras PR285 conservando el código físico; la combinación necesita su
+propio check, Metal/Swift y CI final. Los pases anteriores no acreditan esa combinación.
+No es un calendario medido de un equipo ni adquisición geométrica por disparo; B11 sigue abierto.
 
 La variante GPU del corte se retiró: en 3RAF redujo el desfase un 14,8 % pero la cadencia B un
 16,2 %; el beneficio en 1RAF no satisface el filtro conjunto previo. Conserva la auditoría de
@@ -84,7 +101,10 @@ La revisión renal solicitada por el usuario identificó un problema de presenta
 270 la identifica como contraste arterial y conserva la vena como selección inicial. Ocho
 adquisiciones internas distinguen sano continuo/grave monofásico en vena y rechazan la puerta
 arterial para medición venosa. Evidencia y aceptación del head en
-`../fidelity-next15-evidence/renal-user-review-01/` y el estado vivo. No equivale a reparar
+`../fidelity-next15-evidence/renal-user-review-01/` y el estado vivo. [PR285](https://github.com/DanielOpazoD/vexus-sim/pull/285)
+se fusionó en `67e65bf`: check/hook, Metal9/Swift2, CI `40155344673` (165 E2E únicas/12 grupos/
+cero reintentos) y complemento venoso (14 pruebas), con originales verificados. Su CI independiente
+postmerge `40159158094` sigue pendiente; no hereda el pase del PR. No equivale a reparar
 transporte ni validar clínicamente un preset pareado; ese objetivo permanece abierto.
 
 ## Ronda 243–256: imagen, Doppler y comprobación (24 de octubre de 2026)

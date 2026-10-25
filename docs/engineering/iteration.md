@@ -138,6 +138,14 @@ ensayo. Usar `workspace:e2e --backend metal|swiftshader` con ese archivo y
 carpetas de evidencia distintas. El oráculo independiente, sus tolerancias y
 la aceptación completa se conservan; pasar en un backend no acredita el otro.
 
+Al cambiar mandos o escalas Doppler, incluir `velocityRuler.spec.ts` junto a `colorLegend.spec.ts`
+y `dopplerInteraction.spec.ts` en el feedback Metal. Para reloj de adquisición o lecturas
+diagnósticas, añadir `smoke.spec.ts:1243`: compara transmisión Color/CPU/PW en la misma adquisición. El primer head de269 pasó las dos últimas,
+pero CI detectó que un input igual al entero mostrado conservaba una frecuencia anterior.
+La regla lateral también debe contrastarse con la PRF adquirida cuando el límite físico impide
+alcanzar la petición; no sustituirla por un número elegido de una captura. Sus ocho segundos,
+contraste de inversión, tamaños y plazos permanecen intactos.
+
 Coordinar las ediciones con quien ejecuta un control: cambiar un módulo importado o su configuración
 durante una prueba puede invalidar el resultado antes de comprobar el defecto. Las revisiones de lectura
 y la preparación externa pueden continuar en paralelo. Para arneses ESM fuera del paquete, usar

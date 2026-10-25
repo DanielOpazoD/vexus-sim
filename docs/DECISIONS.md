@@ -501,7 +501,7 @@ reproduce la misma fórmula; la puerta PW usa 1,2 × esa σ; y cada dispersor de
 espectro como el ensanchamiento intrínseco de un equipo real (Δf/f ≈ tan θ·D/2r) en vez de dibujar
 una línea fina. Aperturas y F# son [EXTRAPOLACIÓN PROPIA] hasta medir la PSF de un equipo (E.7).
 
-## 39. Doppler color por celdas, varianza de Kasai y cadencia física de cuadro
+## 39. Doppler color por celdas, varianza de Kasai y cadencia física de cuadro [Estado: cadencia superada por 269]
 
 El color se estimaba por píxel de una textura de 96 × 160 con velocidad uniforme dentro del vaso: una
 mancha plana de bordes nítidos que se refrescaba a 15 Hz fijos, sin relación con la caja ni la PRF.
@@ -2135,7 +2135,7 @@ difusa, y las dos familias de la cara interna de la pared en la ventana renal), 
 eco de la faceta en la cápsula y las capas de la pared), `shaderLimits.test.ts` (ranuras, y ni `interfaceEcho` ni
 `facetTilt` en un bucle), la e2e completa y el banco con GPU.
 
-## 66. Tríplex: el color sigue en pantalla con el PW, la puerta nace en la caja y la caja acompaña a la puerta
+## 66. Tríplex: el color sigue en pantalla con el PW, la puerta nace en la caja y la caja acompaña a la puerta [Estado: calendario superado por 269]
 
 **Contexto.** El dueño (médico, 25-09-2026): «al poner color doppler y luego poner PW se espera que se mantenga el
 doppler color en pantalla». En un ecógrafo real, pulsar PW con el color encendido da el modo tríplex (B + color +
@@ -8833,13 +8833,77 @@ El build diagnóstico del árbol modificado reduce JS de 1.057.747 a 1.051.822 b
 
 **Consecuencias.** Aumenta el margen a 5.970 bytes sin cambiar código anatómico, señal, resolución, cine o materiales consumidos. Introduce mantenimiento explícito al actualizar Three: volver a auditar dos registros y su inventario de consumidores. La prueba debe permitir nuevas familias conservadas y sólo impedir una eliminación que deje un consumidor sin programa. No se afirma cierre del bloque de memoria/rendimiento ni se retiran otros programas por inercia. Evidencia: `work/fidelity-next15-evidence/b13/`.
 
-## 269. Calendario Doppler con intervalos completos y escalas efectivas [Estado: candidata en PR284]
+## 269. Calendario Doppler con intervalos completos y escalas efectivas
 
-La decisión y su implementación se encuentran en el [PR284](https://github.com/DanielOpazoD/vexus-sim/pull/284),
-head `44cd08f`. Se conserva el número ya asignado mientras ese candidato se valida de forma
-independiente. Esta entrada registra la propuesta; no incorpora su código ni acredita su
-aprobación. El detalle y los negativos permanecen en la rama del PR y en
-`../fidelity-next15-evidence/b12/`. Al integrar el candidato se incorpora su registro completo.
+**Problema.** `frameHz *= (1 − duty)` trataba los huecos entre pulsos PW como tiempo divisible:
+una línea B podía «caber» en el total aunque ningún hueco permitiera recibirla entera. El techo
+artificial duty≤0,8 inventaba capacidad. Cambiar sólo los fps habría dejado IQ, filtro, espectro,
+audio, leyenda y captura usando frecuencias diferentes.
+
+**Contrato nuevo.** Política genérica de un haz, `[EXTRAPOLACIÓN PROPIA / NEEDS_CALIBRATION]`:
+PW uniforme; Color en subdivisiones o múltiplos enteros de su periodo; líneas B completas en
+cada hueco libre. Se cuentan todos los ensembles y los restos, incluidos los PW entre cuadros.
+Las fronteras se comparan exactamente sobre las entradas binary64; como máximo dos vecinos
+representables o ajustes enteros, y error explícito fuera de ese límite. No hay epsilon que
+permita colisión. El cálculo BigInt se cachea por ajustes físicos, fuera del bucle de imagen/IQ.
+La composición adquiere una mirada por cuadro; THI reserva dos disparos por línea por la inversión
+de pulso que ya declara el modelo. Se conservan líneas, muestras, targets y receptores.
+
+`EquipmentController` conserva los ajustes solicitados normalizados. `Simulator.color/pw`
+deriva PRF y filtro efectivos sin realimentar recíprocos al estado solicitado. Render, señal,
+Nyquist, espectro y audio consumen ese equipo; los cuadros adquiridos/cine conservan su propia
+frecuencia. La historia FFT no combina muestras anteriores tras cambiar PRF. La cadencia física
+se aplica a B+PW además de Color/tríplex; la presentación B pura conserva su contrato previo.
+El control de escala salta mesetas al siguiente valor alcanzable y conserva el límite físico:
+una flecha no queda atrapada en la misma escala cuando existe otra. El barrido acotado sólo ocurre
+ante un gesto del operador. Los ganchos esperan el periodo completo en pasos que el reloj admite;
+la medición estática con PW exige el mismo `forceColor` explícito que con Color.
+
+**Evolución de pruebas.** Se reemplazan exclusivamente el duty medio/techo0,8 y la monotonicidad
+estricta con profundidad: la cadencia puede ser una meseta cuando B ya cabe en huecos libres.
+Se conservan los conteos de líneas y penalizaciones de caja/ensemble. La expansión independiente
+Python `Fraction` pasó 22 escenarios y cinco falsificadores sobre el módulo TS en 0,666 s;
+los originales externos incluyen intervalos exactos de dos cuadros y las entradas binary64.
+El oráculo permanente TS usa fracciones obtenidas de la cadena binaria y enumera los pulsos,
+sin copiar fórmulas de capacidad o número de ticks. Detecta colisiones incluso de 2⁻¹⁰⁰ s,
+restos Color descartados, PW omitidos y empaquetado innecesariamente lento. Las pruebas de
+consumidores verifican caché, cambios de modo/geometría/THI, señal/audio/filtro/FFT/Nyquist y cuadro
+congelado. La primera prueba Metal conserva dos fallos de `colorLegend` por mesetas del control;
+arrastre y anatomía renal aprobaron. La reparación pasó las siete E2E Metal originales en34,6s, cero reintentos: leyenda en dos tamaños, arrastres, cambio de ventanas, presentación de captura y anatomía renal en ambos pacientes. Se conservan el negativo, la aserción y su plazo.
+
+La CI del primer head publicado `8de1190` reprodujo otro fallo del mando: seleccionar40 cuando
+el rótulo ya decía40 conservaba2600Hz, que equivale a40,04cm/s. Se corrige la entrada explícita
+aunque coincida con el entero mostrado; no se redondea el muestreo ni se modifica la primera
+aserción60,0. Dos regresiones CPU (Color/PW) deben fallar con esa asignación anterior.
+
+La fase posterior de `velocityRuler` pedía80cm/s y exigía siempre±80: fijaba la ausencia del
+nuevo límite de vuelo compartido. Sólo esa expectativa se sustituye por Nyquist calculado
+independientemente desde la PRF de columnas realmente adquiridas y f0. Se exige petición≈80,
+PRF adquirida igual a la efectiva, menor que la solicitada y compatible con dos trayectos completos
+B+puerta; el rótulo debe rechazar±80 en ese caso. Se conservan40, inversión, geometría/ECG en dos
+tamaños, ocho segundos, conteo/edad de columnas y los plazos originales. Negativos y resultados
+se conservan en `b12/ci-venous-negative-01` y `b12/scale-input-repair-01`; no se presenta el pase
+previo de Metal como cobertura de esa E2E que no estaba en el lote.
+
+El segundo negativo de CI conserva Color−170,258dB frente a CPU−13,839dB: el gancho de
+transmisión pedía render sin avanzar el reloj y leía la textura previa, aunque la sonda CPU ya
+estaba en la pose renal. Se reprodujo en Metal. La reparación adquiere un periodo completo antes
+de leer, con el mismo avance por pasos acotados que Color, sin `forceColor`; rechaza lectura
+nueva desde congelación. Tres controles de cronología fallan con el gancho anterior. Pasaron73
+controles CPU focales y las dos E2E de reparación en Metal; `smoke:1243` conserva íntegros su
+texto, tolerancia0,1dB, cotaPW2dB y plazo. El contrafactual que rotula la PRF solicitada en lugar
+de la adquirida falla la nueva regla lateral; fuente restaurada por hash. Aceptación final
+completa pendiente sobre el siguiente head; no se reutiliza como verde la CI rechazada.
+
+**Alcance.** Tiempos de vuelo ideales 2d/c con overhead de emisión, ringdown y recuperación cero.
+No son FPS medidos ni calibración comercial. Una geometría por imagen y Color analítico todavía
+no son adquisición progresiva ni ensemble IQ temporal. La pareja THI reserva tiempo, pero no
+simula dos geometrías distintas ni sus artefactos de movimiento. La validación clínica humana
+sigue pendiente. La primera aceptación local completa pasó con 249 archivos core y cuatro de matrices; los originales se conservan antes del ajuste de rótulos a Hz enteros. Este ajuste sólo formatea texto: reloj y metadatos siguen exactos. El check final y los negativos se consultan en el estado vivo de la ronda.
+
+Referencias: [intercalación dúplex/tríplex](https://pmc.ncbi.nlm.nih.gov/articles/PMC8248305/),
+[dos pulsos en inversión de pulso](https://pmc.ncbi.nlm.nih.gov/articles/PMC5024924/).
+Estas fuentes sustentan las restricciones, no la política de empaquetamiento propia ni sus cifras.
 
 ## 270. Identificar la puerta arterial sin prometer un trazado venoso
 

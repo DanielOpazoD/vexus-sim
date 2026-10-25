@@ -544,9 +544,9 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
       const sim = getSim();
       // sin cuadros dibujados la media sería ≈ 0 ms: un número sin sentido, no una medida
       if (sim.frozen) throw new RangeError('frameCostMs: con la imagen congelada no se dibuja ningún cuadro');
-      if (sim.color.enabled && !measure.forceColor)
+      if ((sim.color.enabled || sim.pw.enabled) && !measure.forceColor)
         throw new RangeError(
-          'frameCostMs: con la caja de color encendida hace falta forceColor (con el reloj quieto su cadencia salta los cuadros)',
+          'frameCostMs: con Color o PW activo hace falta forceColor (con el reloj quieto su cadencia salta los cuadros)',
         );
       if (opts?.startPoint) goTo(sim, opts.startPoint);
       const switchColor = measure.forceColor === true && !sim.color.enabled;
@@ -1494,7 +1494,7 @@ function goTo(sim: Simulator, id: StartPoint['id']): void {
 
 /** Avanza lo que exige la cadencia del color para que el siguiente render dibuje un cuadro de color. */
 function renderColorFrame(sim: Simulator): number {
-  sim.advance(1 / Math.max(1, sim.colorTiming.frameHz) + 0.02);
+  for (let remaining = 1 / sim.colorTiming.frameHz + 0.02; remaining > 0; remaining -= 0.25) sim.advance(Math.min(0.25, remaining));
   sim.render();
   return sim.renderer.colorCellsAbove();
 }

@@ -49,7 +49,7 @@ export function hudText(v: HudInput): HudText {
         ? [(v.mode === 'M' ? `M ${v.pw.sweepMmS} mm/s · ` : '') + `resp ${v.respVolume.toFixed(2)}`]
         : [
             ...(modeHasColor(v.mode)
-              ? [`Color ±${nyq(v.color.prfHz)} cm/s · WF ${v.color.wallFilterHz} Hz · ${v.color.frameHz.toFixed(0)} Hz`]
+              ? [`Color ±${nyq(v.color.prfHz)} cm/s · WF ${v.color.wallFilterHz.toFixed(0)} Hz · ${v.color.frameHz.toFixed(0)} Hz`]
               : []),
             ...(modeHasPw(v.mode) ? [`PW ±${nyq(v.pw.prfHz)} cm/s · puerta ${v.pw.gateMm.toFixed(1)} mm`] : []),
           ],

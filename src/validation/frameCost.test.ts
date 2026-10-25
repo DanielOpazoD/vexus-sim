@@ -81,6 +81,19 @@ describe('frameCostMs: el coste del cuadro con color y por pasada', () => {
     expect(sim.color.enabled).toBe(true);
   });
 
+  it('PW también exige forzar adquisiciones para medir un reloj quieto, sin perder sus ajustes', () => {
+    const { fake, sim, dispatch, equipment, hooks } = rig();
+    dispatch({ type: 'mode', mode: 'pw' });
+    const before = structuredClone(equipment.state);
+    expect(() => hooks.frameCostMs(3)).toThrow(/forceColor/);
+    expect(fake.frames).toHaveLength(0);
+    hooks.frameCostMs(3, { forceColor: true });
+    expect(fake.frames).toHaveLength(4);
+    expect(fake.frames.every((f) => f.colorOn && f.updateColor)).toBe(true);
+    expect(equipment.state).toEqual(before);
+    expect(sim.pw.enabled).toBe(true);
+  });
+
   it('lanza si no dibujaría ningún cuadro: imagen congelada o n que no es un entero ≥ 1', () => {
     const { fake, sim, hooks } = rig();
     sim.frozen = true;

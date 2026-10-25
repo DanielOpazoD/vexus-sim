@@ -308,7 +308,7 @@ export class SpectrogramView {
     ctx.font = '10px sans-serif';
     const nyq = sim.pwNyquistCms();
     ctx.fillText(
-      `Nyquist ±${nyq.toFixed(0)} cm/s · PRF ${pw.prfHz} Hz · WF ${pw.wallFilterHz} Hz · ${pw.sweepMmS} mm/s · θ ${((pw.angleCorrection * 180) / Math.PI).toFixed(0)}°${pw.invert ? ' · INV' : ''}`,
+      `Nyquist ±${nyq.toFixed(0)} cm/s · PRF ${pw.prfHz.toFixed(0)} Hz · WF ${pw.wallFilterHz.toFixed(0)} Hz · ${pw.sweepMmS} mm/s · θ ${((pw.angleCorrection * 180) / Math.PI).toFixed(0)}°${pw.invert ? ' · INV' : ''}`,
       6,
       H - 4,
     );

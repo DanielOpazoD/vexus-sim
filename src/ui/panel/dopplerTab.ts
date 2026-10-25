@@ -1,5 +1,6 @@
 import { EQUIPMENT_LIMITS } from '../../app/equipment';
-import { nyquistVelocityCms, prfFromNyquistCms } from '../../core/units';
+import { nyquistVelocityCms } from '../../core/units';
+import { dopplerScaleCommand } from '../../app/dopplerScale';
 import { button, controlId, note, row, slider } from '../controls';
 import type { PanelContext } from './context';
 
@@ -55,7 +56,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
   const color = document.createElement('div');
   p.appendChild(color);
   const c = ctx.section(color, 'Doppler color', {
-    info: 'Arrastra en la imagen para mover la caja; en tríplex acompaña a PW. Escala baja → aliasing; filtro alto → pierde flujo lento. El color depende del ángulo del haz.',
+    info: 'Arrastra en la imagen para mover la caja; en tríplex acompaña a PW. Escala baja → aliasing; filtro alto → pierde flujo lento. La escala avanza por los valores alcanzables y puede limitarse en tríplex o a mayor profundidad. El color depende del ángulo del haz.',
   });
   ctx.track(
     slider(c, {
@@ -64,7 +65,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
       max: 60,
       step: 1,
       get: () => Math.round(nyquistVelocityCms(s().color.prfHz, s().transducer.f0Doppler)),
-      set: (v) => ctx.dispatch({ type: 'color', patch: { prfHz: Math.round(prfFromNyquistCms(v, s().transducer.f0Doppler)) } }),
+      set: (v) => ctx.dispatch(dopplerScaleCommand(s().equipment, s().profile, 'color', v)),
       format: (v) => `±${v} cm/s`,
     }),
   );
@@ -76,7 +77,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
       step: 10,
       get: () => s().color.wallFilterHz,
       set: (v) => ctx.dispatch({ type: 'color', patch: { wallFilterHz: v } }),
-      format: (v) => `${v} Hz`,
+      format: (v) => `${Math.round(v)} Hz`,
     }),
   );
   ctx.track(
@@ -122,7 +123,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
       max: 120,
       step: 1,
       get: () => Math.round(nyquistVelocityCms(s().pw.prfHz, s().transducer.f0Doppler)),
-      set: (v) => ctx.dispatch({ type: 'pw', patch: { prfHz: Math.round(prfFromNyquistCms(v, s().transducer.f0Doppler)) } }),
+      set: (v) => ctx.dispatch(dopplerScaleCommand(s().equipment, s().profile, 'pw', v)),
       format: (v) => `±${v} cm/s`,
     }),
   );
@@ -145,7 +146,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
       step: 5,
       get: () => s().pw.wallFilterHz,
       set: (v) => ctx.dispatch({ type: 'pw', patch: { wallFilterHz: v } }),
-      format: (v) => `${v} Hz`,
+      format: (v) => `${Math.round(v)} Hz`,
     }),
   );
   ctx.track(

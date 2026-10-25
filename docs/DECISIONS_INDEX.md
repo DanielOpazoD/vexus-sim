@@ -42,7 +42,7 @@ Generado por `npm run docs:index` — no editar a mano.
 | [36](DECISIONS.md#L451) | Proporciones craneocaudales referidas al xifoides y diafragma en dos hemicúpulas | vigente |
 | [37](DECISIONS.md#L471) | Riñón en judía con escotadura hiliar, 16 pirámides e interlobares en abanico | vigente |
 | [38](DECISIONS.md#L491) | PSF lateral con número F y ensanchamiento espectral intrínseco | vigente |
-| [39](DECISIONS.md#L504) | Doppler color por celdas, varianza de Kasai y cadencia física de cuadro | vigente |
+| [39](DECISIONS.md#L504) | Doppler color por celdas, varianza de Kasai y cadencia física de cuadro | cadencia superada por 269 |
 | [40](DECISIONS.md#L520) | Fisura umbilical y ligamento redondo | vigente |
 | [41](DECISIONS.md#L534) | Vesícula en pera con pared y porción umbilical de la porta izquierda en la fisura | vigente |
 | [42](DECISIONS.md#L549) | Segmentos de Couinaud derivados de los vasos, ligamento venoso e hígado 3D translúcido | vigente |
@@ -69,7 +69,7 @@ Generado por `npm run docs:index` — no editar a mano.
 | [63](DECISIONS.md#L1789) | La sonda comprime el tejido: solo empuja, la pared bajo las líneas acopladas queda paralela a la cara y el acoplamiento es el contacto conseguido | vigente |
 | [64](DECISIONS.md#L1998) | Reservada: lámina difusa de la cápsula hepática | reservada |
 | [65](DECISIONS.md#L2003) | Modulación de R_ef de las caras: facetas inclinadas ancladas, rugosidad fina de frente y componente difusa | vigente |
-| [66](DECISIONS.md#L2138) | Tríplex: el color sigue en pantalla con el PW, la puerta nace en la caja y la caja acompaña a la puerta | vigente |
+| [66](DECISIONS.md#L2138) | Tríplex: el color sigue en pantalla con el PW, la puerta nace en la caja y la caja acompaña a la puerta | calendario superado por 269 |
 | [67](DECISIONS.md#L2175) | Vesícula en pera curvada con una sola pared; ningún vaso la atraviesa | vigente |
 | [68](DECISIONS.md#L2210) | Riñón con una sola línea capsular, pirámides tenues y distintas, seno digitado y pelvis colapsada | vigente |
 | [69](DECISIONS.md#L2271) | VCI con curva sagital y embudo, por delante de la aorta; ramas viscerales de la aorta; hilio hepático reordenado | vigente |
@@ -272,3 +272,4 @@ Generado por `npm run docs:index` — no editar a mano.
 | [266](DECISIONS.md#L8790) | Referencia espectral independiente de camino y receptor | vigente |
 | [267](DECISIONS.md#L8802) | Conservar la curvatura mixta de un cilindro al girar su eje | vigente |
 | [268](DECISIONS.md#L8822) | Retirar registros Three sin consumidor, conservando sus programas utilizados | vigente |
+| [269](DECISIONS.md#L8836) | Calendario Doppler con intervalos completos y escalas efectivas | vigente |

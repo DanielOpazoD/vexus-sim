@@ -8942,3 +8942,47 @@ y CI del head final se registran por separado en el estado durable; esto no anti
 original del usuario, las ocho señales y sus métricas, negativos, capturas y procedencia.
 Este cambio corrige la identificación docente. No acredita un preset simultáneo arteria/vena
 óptimo ni cierra el transporte PW del bloque 9.
+
+## 271. Presión auricular y ritmo independientes en el laboratorio docente
+
+**Problema.** La comparación ya comparte muestras de ECG y velocidades, pero la presión
+solo aparece como un número. Cambiar al caso clínico de FA cambia además PAD, VD, IT y
+anatomía, por lo que no permite observar el efecto aislado del ritmo.
+
+**Decisión.** Añadir una fila de PAD instantánea tomada de `PhysiologySample.pRa`, con
+el mismo historial, barrido y cursor que ECG, respiración y PW. El eje permanece fijo
+entre −10 y +50 mmHg; son límites de presentación, no umbrales clínicos. Los valores
+fuera de escala se anuncian y siguen disponibles en el cursor. No normalizar cada curva
+ni recrear ondas A/S/D en la interfaz. La fila se identifica como presión del modelo,
+no como presión invasiva adquirida ni presión inferida del Doppler.
+
+El selector sinusal/FA del experimento conserva los controles numéricos y la anatomía.
+Reutiliza la generación de ritmo existente: en FA no hay contracción auricular organizada
+y la dispersión RR es 0,22, heredada únicamente del parámetro de ritmo del caso AF. Esta
+cifra sigue siendo **[EXTRAPOLACIÓN PROPIA]**, no una calibración ni un nuevo modelo.
+La FC es nominal. Las guías conservan ritmo, FC y compliance venosa. Guardar parámetros
+produce v2 con ritmo obligatorio; v1 se migra explícitamente a sinusal sin aceptar claves
+extra. El paciente observado permanece independiente del experimento.
+
+**Motivo docente y límites.** Las ideas de alineación de ECG/presión/flujo y controles
+separados de [CVP–HV](https://www.pulmonarypocus.com/cvp-hv) y
+[VExUS Lab](https://www.pulmonarypocus.com/vexus-lab) se adoptan con implementación propia.
+No se copian generadores, código ni imágenes ni se usan esas páginas como calibración.
+[Scheinfeld et al.](https://doi.org/10.1148/rg.297095715) sustentan la relación entre fases
+cardíacas, respiración y flujo hepático; no certifican las amplitudes ni constantes de
+este motor reducido. Su contorno de PAD sigue sujeto a las limitaciones registradas.
+No se fuerza S/D a un valor fijo ni se presenta VExUS como medición directa de PAD.
+
+**Verificación discriminante.** Matriz sinusal/FA × PAD 5/18 × IT 0,05/0,7: mismos otros
+parámetros, RR y contracción auricular del motor, presión/flujo distintos y finitos.
+E2E contrasta todos los puntos dibujados de presión con las muestras originales, en
+mmHg y tiempo absolutos; un desfase de 200 ms resulta distinguible. Se conservan controles
+de pausa, cursor, ejes PW, móvil y teclado, además de migración estricta v1/v2 y carreras
+de importación. La afirmación histórica «cinco filas» pasa a seis para incluir PAD; las
+aserciones previas de señal y plazos se mantienen. Un fixture regional explicita su ritmo
+sinusal anterior. El primer build excedió el presupuesto JS en 1.422 bytes, antes de abrir Chromium.
+Se centraliza la creación HTML repetida en las fábricas DOM existentes, sin cambiar
+propiedades, eventos o controles. El presupuesto original se conserva.
+El check, capturas Metal/Swift y CI del head final se registran en
+`../fidelity-next15-evidence/teaching-signals-01/`. No es validación clínica humana ni
+cierre de B9/B15; medición portal por el alumno y adquisición renal pareada siguen abiertas.

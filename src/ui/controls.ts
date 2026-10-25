@@ -1,4 +1,8 @@
 /** Fábricas de controles DOM mínimas, sin framework. */
+export function element<K extends keyof HTMLElementTagNameMap>(tag: K): HTMLElementTagNameMap[K] {
+  return document.createElement(tag);
+}
+
 export interface SliderSpec {
   label: string;
   min: number;
@@ -27,18 +31,18 @@ export function controlId(label: string): string {
 
 /** Deslizador: rótulo y valor en una fila, la barra debajo a todo el ancho. */
 export function slider(parent: HTMLElement, spec: SliderSpec): Syncable {
-  const row = document.createElement('div');
+  const row = element('div');
   row.className = 'control';
-  const input = document.createElement('input');
+  const input = element('input');
   input.type = 'range';
   input.id = controlId(spec.label);
   input.min = String(spec.min);
   input.max = String(spec.max);
   input.step = String(spec.step);
-  const l = document.createElement('label');
+  const l = element('label');
   l.htmlFor = input.id;
   l.textContent = spec.label;
-  const out = document.createElement('output');
+  const out = element('output');
   out.htmlFor.add(input.id);
   const fmt = spec.format ?? ((v: number) => v.toFixed(0));
   const sync = () => {
@@ -62,7 +66,7 @@ export function button(
   onClick: () => void,
   isOn?: () => boolean,
 ): Syncable & { el: HTMLButtonElement } {
-  const b = document.createElement('button');
+  const b = element('button');
   b.type = 'button';
   b.textContent = label;
   const sync = () => {
@@ -84,7 +88,7 @@ export function setPressed(b: HTMLButtonElement, on: boolean): void {
 }
 
 export function row(parent: HTMLElement): HTMLElement {
-  const r = document.createElement('div');
+  const r = element('div');
   r.className = 'row';
   parent.appendChild(r);
   return r;
@@ -92,7 +96,7 @@ export function row(parent: HTMLElement): HTMLElement {
 
 /** Línea corta en gris (dato o aclaración); las explicaciones largas van al ⓘ de la sección. */
 export function note(parent: HTMLElement, text = ''): HTMLElement {
-  const d = document.createElement('div');
+  const d = element('div');
   d.className = 'note';
   d.textContent = text;
   parent.appendChild(d);

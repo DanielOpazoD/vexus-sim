@@ -1,17 +1,18 @@
 import { errorLog, errorMessage } from '../../app/errorLog';
 import { decodeVenousParameters, encodeVenousParameters, VENOUS_PARAMETER_FILE_BYTES } from '../../app/venousParameterFile';
 import { congestionParameters, VENOUS_EXPERIMENT_FIELDS, type VenousExperimentParameters } from '../../app/venousExperiment';
-import { button, controlId, row } from '../controls';
+import { button, element, controlId, row } from '../controls';
 
 /** Scenario controls. Unsupported mechanisms stay explicit rather than changing a picture. */
 export class VenousExperimentControls {
-  readonly element = document.createElement('details');
-  readonly status = document.createElement('small');
-  readonly #enabled = document.createElement('input');
-  readonly #file = document.createElement('input');
-  readonly #fields = document.createElement('fieldset');
-  readonly #progress = document.createElement('input');
-  readonly #pathValue = document.createElement('output');
+  readonly element = element('details');
+  readonly status = element('small');
+  readonly #enabled = element('input');
+  readonly #file = element('input');
+  readonly #fields = element('fieldset');
+  readonly #progress = element('input');
+  readonly #rhythm = element('select');
+  readonly #pathValue = element('output');
   readonly #inputs = new Map<string, { input: HTMLInputElement; value: HTMLOutputElement }>();
   #parameters = congestionParameters(0);
   #revision = 0;
@@ -20,11 +21,11 @@ export class VenousExperimentControls {
     this.status.id = controlId('estado-laboratorio-venoso');
     this.status.setAttribute('role', 'status');
     this.status.setAttribute('aria-label', 'Estado del laboratorio venoso');
-    const summary = document.createElement('summary');
+    const summary = element('summary');
     summary.textContent = 'Laboratorio hemodinámico';
     this.element.className = 'venous-experiment';
     this.element.appendChild(summary);
-    const label = document.createElement('label');
+    const label = element('label');
     this.#enabled.type = 'checkbox';
     label.append(this.#enabled, ' Explorar estados estables independientes');
     this.element.appendChild(label);
@@ -35,11 +36,11 @@ export class VenousExperimentControls {
       this.status.textContent = this.#enabled.checked ? 'Calculando escenario…' : 'Experimento desactivado';
       this.changed(this.#enabled.checked ? { ...this.#parameters } : null);
     });
-    const info = document.createElement('p');
+    const info = element('p');
     info.textContent =
-      'Modelo simplificado: cada ajuste recalcula un estado estable. La transición clínica continua aún no está modelada. El paciente original se conserva. FC: ritmo sinusal del modelo; no simula estimulación ni respuesta autonómica. Compliance venosa: solo reservorios esplácnico/periférico, a PAD basal fija; no equivale a venodilatación. Las guías conservan FC y compliance venosa; no fijan el grado.';
+      'Modelo simplificado: cada ajuste recalcula un estado estable. La transición clínica continua aún no está modelada. El paciente original se conserva. FC nominal: no simula estimulación ni respuesta autonómica. FA: sin contracción auricular organizada, dispersión RR del 22 %; cambiar ritmo conserva PAD, VD y regurgitación. Compliance venosa: solo reservorios esplácnico/periférico, a PAD basal fija; no equivale a venodilatación. Las guías conservan ritmo, FC y compliance venosa; no fijan el grado.';
     this.element.appendChild(info);
-    const progression = document.createElement('label');
+    const progression = element('label');
     progression.textContent = 'Progresión de congestión · ajuste fino';
     this.#progress.type = 'range';
     this.#progress.min = '0';
@@ -65,10 +66,30 @@ export class VenousExperimentControls {
       this.#setProgress();
       this.#schedule();
     });
+    const rhythmLabel = element('label');
+    rhythmLabel.textContent = 'Ritmo cardíaco ';
+    this.#rhythm.setAttribute('aria-label', 'Ritmo cardíaco experimental');
+    for (const [value, text] of [
+      ['sinus', 'Sinusal'],
+      ['atrial-fibrillation', 'Fibrilación auricular'],
+    ]) {
+      const option = element('option');
+      option.value = value;
+      option.textContent = text;
+      this.#rhythm.appendChild(option);
+    }
+    rhythmLabel.appendChild(this.#rhythm);
+    this.#fields.appendChild(rhythmLabel);
+    this.#rhythm.addEventListener('change', () => {
+      this.#nextEdit();
+      this.#parameters.rhythm = this.#rhythm.value as VenousExperimentParameters['rhythm'];
+      this.#pathValue.value = 'Personalizado';
+      this.#apply();
+    });
     for (const field of VENOUS_EXPERIMENT_FIELDS) {
-      const label = document.createElement('label'),
-        input = document.createElement('input'),
-        value = document.createElement('output');
+      const label = element('label'),
+        input = element('input'),
+        value = element('output');
       label.textContent = `${field.label} (${field.unit}) `;
       input.type = 'range';
       input.min = String(field.min);
@@ -89,14 +110,14 @@ export class VenousExperimentControls {
     this.element.append(this.#fields, this.status);
     const files = row(this.element);
     button(files, 'Guardar parámetros', () => {
-      const a = document.createElement('a');
+      const a = element('a');
       const url = URL.createObjectURL(new Blob([encodeVenousParameters(this.#parameters)], { type: 'application/json' }));
       a.href = url;
       a.download = 'vexus-parametros-venosos.json';
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     });
-    const fileLabel = document.createElement('label');
+    const fileLabel = element('label');
     fileLabel.textContent = 'Importar parámetros ';
     const file = this.#file;
     file.type = 'file';
@@ -110,10 +131,10 @@ export class VenousExperimentControls {
       file.value = '';
       if (selected) void this.#import(selected);
     });
-    const fileInfo = document.createElement('small');
+    const fileInfo = element('small');
     fileInfo.textContent = 'Solo parámetros del modelo; no guarda señales ni garantiza curvas idénticas entre versiones.';
     this.element.appendChild(fileInfo);
-    const pending = document.createElement('p');
+    const pending = element('p');
     pending.textContent =
       'Pendiente de mecanismos propios: taponamiento, distensibilidad sistémica venosa y distensibilidad diastólica del VD.';
     this.element.appendChild(pending);
@@ -125,12 +146,13 @@ export class VenousExperimentControls {
   }
   #setProgress(): void {
     this.#nextEdit();
-    const { heartRateBpm, venousReservoirCompliance } = this.#parameters;
-    this.#parameters = { ...congestionParameters(Number(this.#progress.value)), heartRateBpm, venousReservoirCompliance };
+    const { rhythm, heartRateBpm, venousReservoirCompliance } = this.#parameters;
+    this.#parameters = { ...congestionParameters(Number(this.#progress.value)), rhythm, heartRateBpm, venousReservoirCompliance };
     this.#pathValue.value = `${(100 * Number(this.#progress.value)).toFixed(1)} %`;
     this.#sync();
   }
   #sync(): void {
+    this.#rhythm.value = this.#parameters.rhythm;
     for (const field of VENOUS_EXPERIMENT_FIELDS) {
       const { input, value } = this.#inputs.get(field.key)!;
       input.value = String(this.#parameters[field.key]);

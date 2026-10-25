@@ -39,6 +39,7 @@ describe('regional cava area before velocity and rendering', () => {
   });
   it('reproduces the 19 m/s counterfactual and resolves it using regional Q/A without clipping', () => {
     const p = venousExperimentPatient({
+      rhythm: 'sinus',
       heartRateBpm: 50,
       rapMeanMmHg: 2,
       intraAbdominalPressureMmHg: 25,

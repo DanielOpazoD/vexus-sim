@@ -557,6 +557,16 @@ El abdomen de referencia de la decisión 178 incorpora órganos y soporte poster
   acota el coste. No resuelve la limitación previa de reclasificación parcial,
   el vaso acompañante fuera de plano ni la separación arterial/venosa.
 
+## Señales docentes sincronizadas
+
+- `venous-teaching-pressure-model`: la presión auricular mostrada comparte reloj y muestras
+  con ECG y flujo, pero conserva el contorno reducido del motor; no es una medición invasiva
+  ni una estimación de PAD desde PW. Escala fija −10 a +50 mmHg, con aviso si se excede.
+  El selector sinusal/FA mantiene PAD basal, VD, IT y anatomía, y usa la dispersión RR de
+  0,22 del escenario AF existente ([EXTRAPOLACIÓN PROPIA]). No simula cardioversión,
+  evolución continua ni respuesta autonómica; cada cambio recalcula otro estado estable.
+  La integración docente (271) no calibra las amplitudes ni valida el aprendizaje humano.
+
 ## Compliance venosa experimental
 
 - `venous-reservoir-compliance-scope`: el factor relativo del laboratorio cambia

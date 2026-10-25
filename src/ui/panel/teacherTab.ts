@@ -7,7 +7,7 @@ import { FLUID_TIME_ACCELERATION, type AppliedIntervention, type Intervention } 
 import { classifyModifiedVexus, classifyVexusC } from '../../vexus/classification';
 import { hasRespiratoryCycle } from '../../vexus/ivcCollapse';
 import { measurePhysiologyTruth } from '../../vexus/measurements';
-import { button, controlId, note, row } from '../controls';
+import { button, element, controlId, note, row } from '../controls';
 import type { PanelContext } from './context';
 import { contextText, gradeValueText, patternText, renalText } from './vexusText';
 import { VenousViewer } from './venousViewer';
@@ -48,12 +48,12 @@ export function elapsedText(i: AppliedIntervention, t: number): string {
 export function renderCaseNotes(el: HTMLElement, notes: CaseTeacherNotes | null): void {
   el.textContent = '';
   if (!notes) return;
-  const name = document.createElement('div');
+  const name = element('div');
   name.className = 'case-name';
   name.textContent = notes.label;
-  const context = document.createElement('div');
+  const context = element('div');
   context.textContent = `Contexto real: ${contextText(notes.context)}`;
-  const trap = document.createElement('p');
+  const trap = element('p');
   trap.textContent = notes.trap ?? 'Caso de referencia, sin trampa.';
   el.append(name, context, trap);
 }
@@ -97,7 +97,7 @@ export class TeacherTab {
         'El nombre del caso, los confusores que tiene de verdad (las casillas que el alumno debería marcar en «Medir») y por ' +
         'qué engaña. El alumno solo ve la viñeta; esto no llega a su pantalla ni a su DOM.',
     });
-    this.#caseEl = document.createElement('div');
+    this.#caseEl = element('div');
     this.#caseEl.className = 'case-notes';
     caseSec.appendChild(this.#caseEl);
     this.#buildInterventions(p);
@@ -108,7 +108,7 @@ export class TeacherTab {
     });
     const sec = this.#ctx.section(p, 'Verdad fisiológica y adquisición');
     note(sec, 'Oculto al alumno; la verdad del caso y lo adquirido se calculan por separado.');
-    this.#debugEl = document.createElement('div');
+    this.#debugEl = element('div');
     this.#debugEl.className = 'debug';
     sec.appendChild(this.#debugEl);
     const diag = this.#ctx.section(p, 'Diagnóstico', {
@@ -158,9 +158,9 @@ export class TeacherTab {
         for (const b of fluidButtons) b.el.setAttribute('aria-disabled', String(c.fluidRoom(b.sign) < 1));
       },
     });
-    const peepRow = document.createElement('div');
+    const peepRow = element('div');
     peepRow.className = 'field-row';
-    const peepLabel = document.createElement('span');
+    const peepLabel = element('span');
     peepLabel.className = 'grow';
     peepLabel.id = controlId('peep');
     peepLabel.textContent = 'PEEP (cmH₂O)';
@@ -187,12 +187,12 @@ export class TeacherTab {
       this.#ctx.sync();
       this.#renderLoop();
     });
-    const dl = document.createElement('dl');
+    const dl = element('dl');
     dl.className = 'loop-state';
     const field = (label: string) => {
-      const dt = document.createElement('dt');
+      const dt = element('dt');
       dt.textContent = label;
-      const dd = document.createElement('dd');
+      const dd = element('dd');
       dl.append(dt, dd);
       return dd;
     };

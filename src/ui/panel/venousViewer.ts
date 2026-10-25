@@ -23,10 +23,33 @@ import type { Beat } from '../../physiology/rhythm';
 import type { PhysiologySample } from '../../physiology/engine';
 import { drawVenousSpectrum } from '../venousSpectralPlot';
 import { VENOUS_COMPARISON_CHANNELS, venousComparisonTrace, type VenousComparisonPoint } from '../../physiology/venousComparison';
-import { button, controlId, note, row } from '../controls';
+import { button, element, controlId, note, row } from '../controls';
 import type { PanelContext } from './context';
 
 const NS = 'http://www.w3.org/2000/svg';
+// Fixed axes make changes of pressure/amplitude visible across experiments. These
+// are display ranges, not normality thresholds or calibration of an invasive monitor.
+const REFERENCE_SIGNALS = [
+  { key: 'ecgMv', label: 'ECG', detail: 'Reloj cardíaco común', unit: 'mV', min: -2, max: 2, limits: '+2 / 0 / −2 mV' },
+  {
+    key: 'rightAtrialMmHg',
+    label: 'Presión auricular derecha',
+    detail: 'PAD instantánea del modelo · misma muestra que ECG y flujo',
+    unit: 'mmHg',
+    min: -10,
+    max: 50,
+    limits: '+50 / +20 / −10 mmHg · escala fija, no umbrales clínicos',
+  },
+  {
+    key: 'inspiredFraction',
+    label: 'Respiración',
+    detail: 'Fracción inspirada del modelo',
+    unit: '0–1',
+    min: 0,
+    max: 1,
+    limits: '0 = espiración · 1 = inspiración',
+  },
+] as const;
 const svg = (tag: string, attrs: Record<string, string>) => {
   const el = document.createElementNS(NS, tag);
   for (const [k, v] of Object.entries(attrs)) el.setAttribute(k, v);
@@ -35,13 +58,13 @@ const svg = (tag: string, attrs: Record<string, string>) => {
 
 /** Vista docente observadora. Pausar esta ventana no pausa ni altera al paciente. */
 export class VenousViewer {
-  readonly dialog = document.createElement('dialog');
+  readonly dialog = element('dialog');
   readonly #ctx: PanelContext;
-  readonly #header = document.createElement('header');
+  readonly #header = element('header');
   readonly #headerSize = new ResizeObserver(() => {
     this.dialog.style.setProperty('--venous-header-height', `${this.#header.offsetHeight + 12}px`);
   });
-  readonly #cursor = document.createElement('input');
+  readonly #cursor = element('input');
   readonly #status: HTMLElement;
   readonly #case: HTMLElement;
   readonly #readout: HTMLElement;
@@ -106,7 +129,7 @@ export class VenousViewer {
       this.#experimentWallTime = 0;
       this.update();
     });
-    const heading = document.createElement('h2');
+    const heading = element('h2');
     heading.id = controlId('comparacion-venosa');
     heading.textContent = 'Comparación venosa';
     d.setAttribute('aria-labelledby', heading.id);
@@ -120,7 +143,7 @@ export class VenousViewer {
     description.id = controlId('referencia-fisiologica');
     d.setAttribute('aria-describedby', description.id);
     const controls = row(d);
-    const mode = document.createElement('select');
+    const mode = element('select');
     mode.setAttribute('aria-label', 'Tipo de visualización venosa');
     for (const [value, label] of [
       ['pw', 'Espectro PW'],
@@ -132,9 +155,9 @@ export class VenousViewer {
       this.#rebuildEquipment();
     });
     controls.appendChild(mode);
-    const sweepLabel = document.createElement('label');
+    const sweepLabel = element('label');
     sweepLabel.textContent = 'Ventana visible ';
-    const sweep = document.createElement('select');
+    const sweep = element('select');
     sweep.setAttribute('aria-label', 'Ventana temporal visible');
     sweep.title = 'Solo barrido: no cambia IQ, frecuencia cardíaca ni los cuatro latidos de medición';
     for (const seconds of [3, 6]) sweep.add(new Option(`${seconds} s`, String(seconds)));
@@ -146,8 +169,8 @@ export class VenousViewer {
     });
     sweepLabel.appendChild(sweep);
     controls.appendChild(sweepLabel);
-    const annotationLabel = document.createElement('label');
-    const annotations = document.createElement('input');
+    const annotationLabel = element('label');
+    const annotations = element('input');
     annotations.type = 'checkbox';
     annotations.addEventListener('change', () => {
       this.#annotations = annotations.checked;
@@ -162,9 +185,9 @@ export class VenousViewer {
       this.#cursor.disabled = !this.#paused;
       this.update();
     }).el;
-    const label = document.createElement('label');
+    const label = element('label');
     label.textContent = 'Escala común ';
-    const scale = document.createElement('select');
+    const scale = element('select');
     scale.setAttribute('aria-label', 'Escala común de velocidad');
     for (const n of [20, 60, 120]) scale.add(new Option(`±${n} cm/s`, String(n)));
     scale.value = '60';
@@ -183,21 +206,19 @@ export class VenousViewer {
     this.#status.className = 'venous-status';
     d.appendChild(this.#experimentControls.element);
     const trace = venousComparisonTrace([]);
-    const rows = [
-      ...trace.channels.map((c) => ({ label: c.label, detail: `+ ${c.forward}`, unit: 'cm/s' })),
-      { label: 'ECG', detail: 'Reloj cardíaco común', unit: 'mV' },
-      { label: 'Respiración', detail: 'Fracción inspirada del modelo', unit: '0–1' },
-    ];
+    const rows = [...trace.channels.map((c) => ({ label: c.label, detail: `+ ${c.forward}`, unit: 'cm/s' })), ...REFERENCE_SIGNALS];
     for (const [i, r] of rows.entries()) {
-      const figure = document.createElement('figure');
+      const figure = element('figure');
       figure.className = i < 3 ? 'venous-row' : 'venous-row venous-marker-row';
-      const caption = document.createElement('figcaption');
-      const name = document.createElement('strong');
+      const signal = i < 3 ? null : REFERENCE_SIGNALS[i - 3];
+      if (signal?.key === 'rightAtrialMmHg') figure.classList.add('venous-pressure-row');
+      const caption = element('figcaption');
+      const name = element('strong');
       name.textContent = r.label;
-      const value = document.createElement('span');
+      const value = element('span');
       this.#values.push(value);
       caption.append(name, value);
-      const detail = document.createElement('small');
+      const detail = element('small');
       detail.textContent = r.detail;
       detail.className = 'venous-direction';
       const plot = svg('svg', {
@@ -207,18 +228,19 @@ export class VenousViewer {
         'aria-label': `${r.label}, ${r.unit}, mismo eje temporal`,
       });
       this.#plots.push(plot);
-      plot.appendChild(svg('path', { d: `M0 ${i === 4 ? 85 : 45}H800 M200 0V90 M400 0V90 M600 0V90`, class: 'venous-grid' }));
+      const zeroY = signal ? 85 + (80 * signal.min) / (signal.max - signal.min) : 45;
+      plot.appendChild(svg('path', { d: `M0 ${zeroY}H800 M200 0V90 M400 0V90 M600 0V90`, class: 'venous-grid' }));
       const path = svg('path', { class: 'venous-wave', d: '' });
       const marker = svg('path', { class: 'venous-cursor', d: '' });
       this.#paths.push(path);
       this.#markers.push(marker);
       plot.append(path, marker);
-      const limit = document.createElement('small');
+      const limit = element('small');
       limit.className = 'venous-limits';
       this.#limits.push(limit);
       figure.append(caption, detail, plot, limit);
       if (i < 3) {
-        const canvas = document.createElement('canvas');
+        const canvas = element('canvas');
         canvas.width = 800;
         canvas.height = 184;
         canvas.className = 'venous-spectrum';
@@ -229,9 +251,9 @@ export class VenousViewer {
         const controls = row(figure);
         if (i === 0 || i === 2) {
           const hepatic = i === 0;
-          const label = document.createElement('label');
+          const label = element('label');
           label.textContent = hepatic ? 'Ventana VSH ' : 'Ventana renal ';
-          const select = document.createElement('select');
+          const select = element('select');
           select.setAttribute('aria-label', hepatic ? 'Ventana suprahepática PW' : 'Ventana renal PW');
           const options = hepatic
             ? [
@@ -253,9 +275,9 @@ export class VenousViewer {
           label.appendChild(select);
           controls.appendChild(label);
         }
-        const gateLabel = document.createElement('label');
+        const gateLabel = element('label');
         gateLabel.textContent = 'Puerta ';
-        const gateSize = document.createElement('select');
+        const gateSize = element('select');
         gateSize.setAttribute('aria-label', `Longitud de puerta PW ${r.label}`);
         for (const mm of [2, 4, 6]) gateSize.add(new Option(`${mm} mm`, String(mm)));
         gateSize.value = String(this.#gateLengthsMm[i]);
@@ -265,9 +287,9 @@ export class VenousViewer {
         });
         gateLabel.appendChild(gateSize);
         controls.appendChild(gateLabel);
-        const scaleLabel = document.createElement('label');
+        const scaleLabel = element('label');
         scaleLabel.textContent = 'Nyquist solicitado ';
-        const selector = document.createElement('select');
+        const selector = element('select');
         selector.setAttribute('aria-label', `Escala PW ${r.label}`);
         for (const n of [10, 20, 30, 40, 50, 60, 80, 120]) selector.add(new Option(`±${n} cm/s`, String(n)));
         selector.value = String(this.#spectralScales[i]);
@@ -275,9 +297,9 @@ export class VenousViewer {
           this.#spectralScales[i] = Number(selector.value);
           this.#rebuildEquipment(i);
         });
-        const filterLabel = document.createElement('label');
+        const filterLabel = element('label');
         filterLabel.textContent = 'Filtro de pared ';
-        const filter = document.createElement('select');
+        const filter = element('select');
         filter.setAttribute('aria-label', `Filtro PW ${r.label}`);
         for (const hz of [5, 10, 15, 25, 50]) filter.add(new Option(`${hz} Hz`, String(hz)));
         filter.value = String(this.#wallFilters[i]);
@@ -289,9 +311,9 @@ export class VenousViewer {
         controls.appendChild(filterLabel);
         scaleLabel.appendChild(selector);
         controls.appendChild(scaleLabel);
-        const baselineLabel = document.createElement('label');
+        const baselineLabel = element('label');
         baselineLabel.textContent = 'Línea de base ';
-        const baseline = document.createElement('input');
+        const baseline = element('input');
         baseline.type = 'range';
         baseline.min = '-0.4';
         baseline.max = '0.4';
@@ -304,12 +326,12 @@ export class VenousViewer {
         });
         baselineLabel.appendChild(baseline);
         controls.appendChild(baselineLabel);
-        const image = document.createElement('details');
-        const summary = document.createElement('summary');
+        const image = element('details');
+        const summary = element('summary');
         summary.textContent = 'Imagen y muestreo';
         image.appendChild(summary);
-        const invertLabel = document.createElement('label');
-        const invert = document.createElement('input');
+        const invertLabel = element('label');
+        const invert = element('input');
         invert.type = 'checkbox';
         invert.setAttribute('aria-label', `Invertir espectro ${r.label}`);
         invert.addEventListener('change', () => {
@@ -323,9 +345,9 @@ export class VenousViewer {
           ['gainDb', 'Ganancia de imagen (dB)', [-6, 0, 6, 9, 12, 15, 18, 24]],
           ['dynamicRangeDb', 'Rango dinámico (dB)', [20, 25, 30, 35, 45, 60]],
         ] as const) {
-          const label = document.createElement('label');
+          const label = element('label');
           label.textContent = text;
-          const select = document.createElement('select');
+          const select = element('select');
           select.setAttribute('aria-label', `${text} ${r.label}`);
           for (const v of values) select.add(new Option(String(v), String(v)));
           select.value = String(this.#presentation[i][key]);
@@ -344,7 +366,7 @@ export class VenousViewer {
       }
       d.appendChild(figure);
     }
-    const cursorLabel = document.createElement('label');
+    const cursorLabel = element('label');
     cursorLabel.textContent = 'Cursor sincronizado (pausa la vista para explorar)';
     this.#cursor.type = 'range';
     this.#cursor.min = '0';
@@ -624,7 +646,7 @@ export class VenousViewer {
   }
 
   #value(p: VenousComparisonPoint, row: number): number {
-    return row < 3 ? p.meanVelocityCmS[row] : row === 3 ? p.ecgMv : p.inspiredFraction;
+    return row < 3 ? p.meanVelocityCmS[row] : p[REFERENCE_SIGNALS[row - 3].key];
   }
 
   #syncCursorRange(): void {
@@ -672,27 +694,28 @@ export class VenousViewer {
       b = this.#points.at(-1)!;
     const axis = spectralTimeAxis(b.t, this.#visibleSeconds);
     let clipped = false;
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < this.#paths.length; i++) {
       (this.#plots[i] as SVGElement).dataset.timeStart = String(axis.start);
       (this.#plots[i] as SVGElement).dataset.timeEnd = String(axis.end);
       if (i < 3 && this.#spectralMode) continue;
-      const scale = i < 3 ? this.#scale : i === 3 ? 2 : 1;
+      const signal = i < 3 ? null : REFERENCE_SIGNALS[i - 3];
+      const min = signal?.min ?? -this.#scale,
+        max = signal?.max ?? this.#scale;
       let d = '',
         previous = -Infinity;
       for (const p of this.#points) {
         if (p.t < axis.start) continue;
         const value = this.#value(p, i);
-        if (!this.#spectralMode && i < 3 && Math.abs(value) > scale) clipped = true;
-        const y = i === 4 ? 85 - value * 80 : 45 - (value / scale) * 40;
+        if (value < min || value > max) clipped = true;
+        const y = 85 - ((value - min) / (max - min)) * 80;
         // No conectar huecos de adquisición como si fueran datos continuos.
         d += `${p.t - previous > 0.0081 ? 'M' : 'L'}${(800 * axis.fractionOf(p.t)).toFixed(1)},${y.toFixed(1)}`;
         previous = p.t;
       }
       this.#paths[i].setAttribute('d', d);
-      this.#limits[i].textContent =
-        i < 3 ? `+${scale} / 0 / −${scale} cm/s` : i === 3 ? '+2 / 0 / −2 mV' : '0 = espiración · 1 = inspiración';
+      this.#limits[i].textContent = signal?.limits ?? `+${this.#scale} / 0 / −${this.#scale} cm/s`;
     }
-    this.#status.textContent = `${this.#paused ? 'Vista pausada (solo esta ventana)' : this.#experiment ? 'Experimento en vivo' : this.#ctx.sim().frozen ? 'Paciente congelado' : 'En vivo'} · ${Math.max(a.t, axis.start).toFixed(2)}–${b.t.toFixed(2)} s · ${b.respiratoryCycling ? 'Respiración activa' : 'Respiración sin ciclo'}${clipped ? ' · Hay valores fuera de escala: amplía el rango' : ''}`;
+    this.#status.textContent = `${this.#paused ? 'Vista pausada (solo esta ventana)' : this.#experiment ? 'Experimento en vivo' : this.#ctx.sim().frozen ? 'Paciente congelado' : 'En vivo'} · ${Math.max(a.t, axis.start).toFixed(2)}–${b.t.toFixed(2)} s · ${b.respiratoryCycling ? 'Respiración activa' : 'Respiración sin ciclo'}${clipped ? ' · Hay valores fuera de escala: consulta la lectura del cursor' : ''}`;
     if (this.#spectralMode && this.#spectral.some((a, i) => a && b.t - this.#processedT[i] > 0.2))
       this.#status.textContent += ' · Reconstruyendo señal IQ…';
     if (this.#spectralMode && this.#unavailable.some(Boolean))
@@ -707,12 +730,12 @@ export class VenousViewer {
     const p = this.#points[Number(this.#cursor.value)];
     if (!p) return;
     const x = (800 * spectralTimeAxis(this.#points.at(-1)!.t, this.#visibleSeconds).fractionOf(p.t)).toFixed(1);
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < this.#paths.length; i++) {
       this.#markers[i].setAttribute('d', `M${x} 0V90`);
       this.#values[i].textContent =
         i < 3 && this.#spectralMode && !this.#spectral[i]
           ? 'Sin adquisición'
-          : `${this.#value(p, i).toFixed(2)} ${i < 3 ? 'cm/s' : i === 3 ? 'mV' : ''}`;
+          : `${this.#value(p, i).toFixed(2)} ${i < 3 ? 'cm/s' : REFERENCE_SIGNALS[i - 3].unit}`;
     }
     this.#drawSpectra();
     this.#cursor.setAttribute('aria-valuetext', `${p.t.toFixed(3)} segundos`);

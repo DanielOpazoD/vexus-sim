@@ -98,9 +98,9 @@ export class VenousSpectralAcquisition {
       )
         throw new Error('The reference body changed during acquisition setup');
       const sp = startPointsFor(scene.torso).find((s) => s.id === window)!;
-      // Registered posterior kidney: the arterial plane is 3.5° behind its venous plane.
-      // Procedural acquisition retains its audited 2° offset; physiology is untouched.
-      const pairedTilt = paired ? ((scene.torso.profile ? 3.5 : 2) * Math.PI) / 180 : 0;
+      // En el atlas ambas puertas se adquieren en el nuevo plano renal (276).
+      // Las anatomías anteriores conservan sus barridos auditados.
+      const pairedTilt = paired && !scene.hasAbdominalAtlas ? ((scene.torso.profile ? 3.5 : 2) * Math.PI) / 180 : 0;
       // Reversing the registered intercostal marker also reverses local tilt.
       // Keep the audited physical 2-degree sweep, rather than sweeping away.
       const hepaticTilt = window === 'intercostal' && hepaticWindow === 'tilted' ? ((scene.torso.profile ? -1 : 1) * Math.PI) / 90 : 0;

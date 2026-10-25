@@ -533,7 +533,7 @@ export class MeasureTab {
         'portal',
         rejected(this.lastPortal, 'Porta') ??
           (p
-            ? `Porta: ${p.vMax.toFixed(1)}/${p.vMin.toFixed(1)} cm/s → PF <b>${portalPulsatilityText(p.pulsatilityFraction)}</b> <span class="small">(${portalText(res.portalClass)}${res.portalNearThreshold ? ', próximo al umbral' : ''}) · ${portalBeatSummary(p)}</span>`
+            ? `Porta: ${p.vMax.toFixed(1)}/${p.vMin.toFixed(1)} cm/s → PF <b>${portalPulsatilityText(p.pulsatilityFraction)}</b> <span class="small">(${portalText(res.portalClass)}${res.portalNearThreshold ? ', próximo al umbral' : ''}) · ${portalBeatSummary(p)}. Sentido dominante; confirma la dirección anatómica.</span>`
             : 'Porta: —'),
       ),
       line(

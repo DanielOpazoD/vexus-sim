@@ -6,3 +6,6 @@ package-lock.json
 
 # generado por npm run fidelity (tools/fidelity/bench.ts)
 docs/fidelity/baseline.json
+
+# Documento externo original, no código de la aplicación; conservar sus bytes.
+docs/referencia-local/VExUS_Especificacion_Simulador_Alta_Fidelidad.html

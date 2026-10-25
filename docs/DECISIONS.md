@@ -9052,3 +9052,23 @@ La ampliación de feedback pasó formato/lint/tipos, pero fue interrumpida tras 
 **Verificación.** Siete pruebas de transporte, incluyendo igualdad byte por byte de todos los programas propios y de Three frente al build sin empaquetar; conserva coerción y orden de interpolaciones, escapes y diccionario. La estimación previa del corpus completo ahorraba 8408 bytes antes de tree-shaking; el ahorro real y la compilación WebGL se miden sobre el build siguiente, no se deducen de esa estimación.
 
 El build productivo resultante aprobó tipos y presupuesto: **1029,5 KiB**, frente a 1037,0 KiB del candidato anterior, con límite 1033 KiB intacto. Las siete pruebas de identidad y el lint también aprobaron. Compilación WebGL y check completos se registran sobre el candidato final.
+
+## 276. Ventana renal posterolateral con pareja vascular adquirible
+
+**Problema.** En la entrada del atlas anterior, la sonda muy oblicua producía curvas parietales pronunciadas y una costilla atravesaba el campo renal. La arteria acompañante quedaba fuera del plano que favorecía a la vena. El árbol ya contiene ambos vasos; añadir color artificial o eliminar el hueso ocultaría el defecto de adquisición.
+
+**Decisión.** Cambiar únicamente el punto de partida renal del atlas a un acceso posterior y caudal: φ 3,55, z −180 mm, giro −0,132188, basculación 0,378021 e inclinación 0,047207 rad. Es una posición estimada, no una ventana clínicamente validada. Conserva riñón, vasos, pared, hueso y física. La caja inicial abarca 45–110 mm, ±0,35 rad, con escala ±15 cm/s. La entrada hepatorrenal y las anatomías anteriores conservan su posición. En el laboratorio del atlas, el contraste arterial selecciona otra puerta en este mismo plano; las anatomías anteriores conservan su barrido.
+
+**Alternativas y límites.** Se conservaron y descartaron las rotaciones amplias y otros cortes longitudinales que mejoraban un indicador geométrico pero tapaban el riñón con una costilla o perdían la puerta venosa. La nueva entrada reduce las curvas de la pared visible; no demuestra que toda la pared estimada sea anatómicamente fiel en cualquier orientación. Queda sombra costal lateral y hay que afinar con respiración/movimiento. El color arterial puede ser tenue durante parte del ciclo o plegarse a escala baja: no se impone rojo ni se agrandan vasos.
+
+**Verificación.** Atlas abdominal y torácico exactos, dos pacientes: el mismo plano permite puerta venosa con margen ≥1,2 mm y arterial con el criterio ya existente de ≥0,2 mm. A los 2 s conserva la adquisición del laboratorio; tras 30 s, 8 s de IQ conservan normal continuo y grave monofásico, sin rechazo de calidad a ±15 y ±50 respectivamente. 21 pruebas en cuatro archivos aprobadas. El candidato previo a 0,057207 rad dio picos espectrales medianos −19,83/−19,70 dB y separación pico–suelo 27,59/28,47 dB, con ganancia 0; es diagnóstico instrumental, no calibración externa. Se eligió 0,047207 por mayor margen venoso mínimo entre ambos pacientes, y se repitió el contrato IQ completo. La revisión nativa y la aceptación completa se registran sobre el head final.
+
+El contraste final a **igual escala ±50, filtro 20 Hz, foco 90 mm y ganancia 0** dio, normal/grave: pico espectral mediano −19,83/−22,13 dB y margen pico–suelo 28,37/26,08 dB. Velocidades adquiridas S/D 12,50/10,55 y 5,86/24,61 cm/s; ambas capturas sin rechazo, con continuidad y monofasia respectivamente. No justifica igualar amplitudes ni reducir velocidades por apariencia. El check local completo aprobó 1811 pruebas core, 54 de matrices y un negativo esperado; inventario 251+4 archivos reconciliado. Bundle 1029,8 KiB bajo 1033. El primer intento quedó rechazado por formato del HTML externo original; se conserva intacto y se excluye únicamente ese documento del formateador. GPU y CI protegida se registran por separado.
+
+## 277. Sentido portal dominante no equivale a hepatopetalia
+
+**Problema.** La envolvente portal elige el semiplano de mayor energía; la documentación lo llamaba anterógrado/hepatópeto sin una referencia anatómica adquirida.
+
+**Decisión.** Corregir esa descripción y mostrar junto a la PF que se usa el sentido dominante y que debe confirmarse la dirección anatómica. Conservar el identificador interno por compatibilidad; no reinterpretar el signo de pantalla como una prueba anatómica, ni alterar PF o velocidades.
+
+**Verificación y límite.** Los contratos espectrales y de interfaz existentes se conservan. Es una aclaración de la medición asistida, no un nuevo detector de hepatopetalia ni el cierre de la validación independiente.

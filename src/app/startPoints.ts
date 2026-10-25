@@ -268,9 +268,9 @@ const ABDOMINAL_POSES = {
   flank: { phi: 3.1, z: -75, yaw: 0.1767952406260464, rock: 0.4707775613505776, tilt: -0.04687503959831865 },
   // Pose de rótulos redondeados elegida por Daniel en esta misma versión.
   portal: { phi: (173 * Math.PI) / 180, z: -40, yaw: (-72 * Math.PI) / 180, rock: (-6 * Math.PI) / 180, tilt: (-2 * Math.PI) / 180 },
-  // Apoyo sobre la pared corregida (222), sin mover riñón ni vasos.
-  // Una misma coordenada conserva vena y barrido arterial pareado en A/B.
-  renal: { phi: 3.2, z: -165, yaw: -0.04682166646295555, rock: 0.37638199977635656, tilt: -0.6320809173678352 },
+  // [EXTRAPOLACIÓN PROPIA] Acceso posterolateral: menor oblicuidad parietal y pareja interlobar
+  // adquirible en el mismo plano. Conserva órganos y sombra costal (276).
+  renal: { phi: 3.55, z: -180, yaw: -0.13218823454545353, rock: 0.3780207766067785, tilt: 0.04720718521646405 },
   portalTrunk: { phi: 3.05, z: -80, yaw: 0.22135021897142884, rock: -0.13225461110004316, tilt: 0.11100678455374574 },
   // Recheck actual renal transmission after the continuous pressure correction;
   // a 2-mm cranial slide clears the grazing rib without altering the skeleton.
@@ -290,7 +290,9 @@ const ABDOMINAL_POINTS: readonly StartPoint[] = START_POINTS.map((sp) => ({
           ? 'Rama portal intrahepática desde lateral. 13 cm, foco a 10 cm, Color ±35 cm/s y ganancia 6 dB. Para medir VExUS, usa el tronco principal.'
           : sp.id === 'portalTrunk'
             ? 'Tronco portal principal desde lateral: 16 cm y foco a 13 cm. Afina el hilio y coloca la puerta en el tronco.'
-            : sp.hint,
+            : sp.id === 'renal'
+              ? 'Riñón derecho desde flanco posterior. Afina el eje largo y distingue vena y arteria interlobares. Escala inicial ±15 cm/s; amplíala si hay aliasing.'
+              : sp.hint,
 }));
 /** Scene-specific presets; legacy tests/torso retain their own poses. */
 export function startPointsFor(torso: Pick<Torso, 'a' | 'b' | 'profile'>): readonly StartPoint[] {

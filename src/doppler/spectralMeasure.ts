@@ -29,8 +29,8 @@ import {
  * que puso el alumno (no de la física); las ventanas S/D se anclan al ECG
  * (mismo reloj). La dirección «anterógrada» se infiere como hace un
  * clínico: en la suprahepática, la onda D siempre drena hacia la aurícula;
- * en la porta, el sentido dominante se toma como hepatópeto. Identificar el
- * vaso correcto sigue siendo responsabilidad del operador.
+ * en la porta se usa el sentido de mayor energía, que NO demuestra hepatopetalia.
+ * Identificar el vaso y la dirección anatómica sigue siendo responsabilidad del operador.
  */
 export interface ObservedTracePoint {
   t: number;
@@ -422,7 +422,7 @@ function movingAverageFinite(t: readonly number[], v: readonly number[], w: numb
 }
 
 /**
- * Traza de la porta en su semiplano anterógrado fijo (cm/s con signo de pantalla; NaN = hueco) y ese signo. La
+ * Traza de la porta en su semiplano dominante fijo (cm/s con signo de pantalla; NaN = hueco) y ese signo. La
  * usan la medición y el trazado que ve el alumno sobre el espectro.
  */
 export function portalTrace(
@@ -436,7 +436,7 @@ export function portalTrace(
   const floors = captureNoiseFloorsDb(smoothed);
   const inWindow = directionWindow ? columns.filter((c) => c.t >= directionWindow[0] && c.t <= directionWindow[1]) : columns;
   const energy = sideEnergyDb(inWindow, opts);
-  // semiplano físico del flujo anterógrado (+ = hacia la sonda) y su signo de pantalla
+  // Semiplano de mayor energía (+ = hacia la sonda); no identifica la dirección anatómica.
   const phys: 1 | -1 = energy.pos >= energy.neg ? 1 : -1;
   const screen = opts.invert ? -1 : 1;
   const toCm = (hz: number) => {

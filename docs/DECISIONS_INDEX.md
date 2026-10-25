@@ -279,3 +279,5 @@ Generado por `npm run docs:index` — no editar a mano.
 | [273](DECISIONS.md#L9024) | Separar series al cambiar respiración o intervenir | vigente |
 | [274](DECISIONS.md#L9034) | Escala renal inicial y lectura del filtro color | vigente |
 | [275](DECISIONS.md#L9046) | Repeticiones GLSL sin cambiar los programas | vigente |
+| [276](DECISIONS.md#L9056) | Ventana renal posterolateral con pareja vascular adquirible | vigente |
+| [277](DECISIONS.md#L9068) | Sentido portal dominante no equivale a hepatopetalia | vigente |

@@ -5,6 +5,8 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
+- Renal: escala inicial ±15 cm/s en Color/PW, filtro bajo y caja propia; explicación del filtro color y del aliasing sin modificar las velocidades (274).
+
 - Adquisición: cambios respiratorios e intervenciones abren una serie sin mezclar señales; historial de mediciones separado y cálculo literal/contextual identificado (273).
 
 - Patrones venosos: fases ausentes/solo S e entradas inválidas dejan de parecer inversión, S+D o normalidad; PF sin contradicción por redondeo y textos docentes que distinguen modelo, contexto y hallazgos (272).

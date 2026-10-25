@@ -1,5 +1,5 @@
 import { EQUIPMENT_LIMITS } from '../../app/equipment';
-import { nyquistVelocityCms } from '../../core/units';
+import { nyquistVelocityCms, velocityFromShiftMmS } from '../../core/units';
 import { dopplerScaleCommand } from '../../app/dopplerScale';
 import { button, controlId, note, row, slider } from '../controls';
 import type { PanelContext } from './context';
@@ -56,7 +56,7 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
   const color = document.createElement('div');
   p.appendChild(color);
   const c = ctx.section(color, 'Doppler color', {
-    info: 'Arrastra en la imagen para mover la caja; en tríplex acompaña a PW. Escala baja → aliasing; filtro alto → pierde flujo lento. La escala avanza por los valores alcanzables y puede limitarse en tríplex o a mayor profundidad. El color depende del ángulo del haz.',
+    info: 'Arrastra en la imagen para mover la caja; en tríplex acompaña a PW. Una escala baja puede plegar rojo a azul sin inversión real del flujo: aumenta la escala para comprobarlo. El filtro atenúa señales lentas; si el flujo supera su banda, el cambio puede ser poco visible. La escala avanza por los valores alcanzables y puede limitarse en tríplex o a mayor profundidad. El color depende del ángulo del haz.',
   });
   ctx.track(
     slider(c, {
@@ -89,6 +89,14 @@ export function buildDopplerTab(ctx: PanelContext, p: HTMLElement): DopplerPanel
       format: (v) => `${v} dB`,
     }),
   );
+  const cutoff = note(c);
+  ctx.track({
+    sync: () => {
+      const hz = s().color.wallFilterHz;
+      const velocity = velocityFromShiftMmS(hz, s().transducer.f0Doppler, 0) / 10;
+      cutoff.textContent = `Filtro ${Math.round(hz)} Hz ≈ ${velocity.toFixed(1)} cm/s axiales. Atenuación gradual; no es un límite de velocidad absoluta.`;
+    },
+  });
   const cr = document.createElement('div');
   cr.className = 'field-row';
   c.appendChild(cr);

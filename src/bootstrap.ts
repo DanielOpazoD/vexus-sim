@@ -7,6 +7,7 @@ import { compareTissueGrids } from './app/equivalenceCheck';
 import { errorLog, errorMessage } from './app/errorLog';
 import { ProbeAnimator } from './app/probeAnimation';
 import { portalPreset } from './app/portalPreset';
+import { renalPreset } from './app/renalPreset';
 import { startPointsFor } from './app/startPoints';
 import { SimulationSession } from './app/session';
 import type { Simulator } from './app/simulator';
@@ -175,6 +176,8 @@ export async function start(): Promise<void> {
             sp.id === 'portalSubcostal',
           ))
             dispatch(cmd);
+        else if (sp.id === 'renal' || sp.id === 'hepatorenal')
+          for (const cmd of renalPreset(sim().transducer.f0Doppler, sim().scene.hasAbdominalAtlas)) dispatch(cmd);
         else if (sim().scene.hasAbdominalAtlas) dispatch({ type: 'bmode', patch: { depthMm: 180, focusMm: 90 } });
         probeAnimator.goTo(sp);
       },

@@ -20,7 +20,9 @@ export function dopplerScaleCommand(
   const scale = (settings: EquipmentSettings) => Math.round(nyquistVelocityCms(read(settings).prfHz, tr.f0Doppler));
   const start = scale(e),
     direction = Math.sign(value - start);
-  let prfHz = e[mode].prfHz;
+  // Selecting the displayed integer still requests that value, not the hidden
+  // fractional scale that happened to round to it.
+  let prfHz = direction ? e[mode].prfHz : Math.round(prfFromNyquistCms(value, tr.f0Doppler));
   if (direction)
     for (let next = value; next >= (mode === 'color' ? 4 : 5) && next <= (mode === 'color' ? 60 : 120); next += direction) {
       prfHz = Math.round(prfFromNyquistCms(next, tr.f0Doppler));

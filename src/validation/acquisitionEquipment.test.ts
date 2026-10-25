@@ -77,6 +77,22 @@ describe('estado solicitado y relojes efectivos', () => {
     expect(read(cache, e).color.prfHz).toBe(atCeiling);
   });
 
+  it.each([
+    ['color', 31, 2013],
+    ['pw', 40, 2597],
+  ] as const)('aplica el valor explícito %s aunque coincida con su rótulo redondeado', (mode, value, prf) => {
+    const e = reduceEquipment(defaultEquipment(), { type: 'mode', mode }, ctx),
+      original = structuredClone(e),
+      cache = new AcquisitionEquipment();
+    expect(Math.round(nyquistVelocityCms(read(cache, e)[mode].prfHz, profile.geometry.f0Doppler))).toBe(value);
+    expect(e[mode].prfHz).not.toBe(prf);
+    const next = reduceEquipment(e, dopplerScaleCommand(e, profile, mode, value), ctx);
+    expect(next[mode].prfHz).toBe(prf);
+    expect(next[mode === 'pw' ? 'color' : 'pw']).toEqual(e[mode === 'pw' ? 'color' : 'pw']);
+    expect(e).toEqual(original);
+    expect(read(cache, next)[mode].prfHz).toBeLessThanOrEqual(prf);
+  });
+
   it('invalida por cada parámetro físico y conserva una traslación angular de igual anchura', () => {
     const e = triplex();
     const variants: EquipmentSettings[] = [

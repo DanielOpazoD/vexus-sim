@@ -5,7 +5,7 @@ detalles de cada decisión están en `docs/DECISIONS.md` (número entre parénte
 
 ## [Sin publicar]
 
-- Calendario Doppler por intervalos completos: PRF efectiva compartida por señal, escala y captura; controla mesetas de escala sin modificar imágenes adquiridas (269).
+- Calendario Doppler por intervalos completos: PRF efectiva compartida por señal, escala y captura; controla mesetas de escala y entradas iguales al rótulo redondeado sin modificar imágenes adquiridas; las lecturas diagnósticas esperan su adquisición (269).
 
 - Build: retira ocho registros gráficos Three sin consumidor y conserva los GLSL utilizados; reduce 5.925 bytes JS en la medición candidata, con inventario independiente y guarda de versión (268).
 

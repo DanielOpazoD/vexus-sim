@@ -60,13 +60,21 @@ B13 retira ocho familias Three sin consumidor (268), con ahorro de 5.925 bytes J
 intactos. Head final `fb0efc0`, árbol idéntico al check completo; ocho E2E Metal/tres Swift,
 hook normal y CI `40144825733` verificados: 165 E2E/12 grupos/cero reintentos. Tres complementos
 conservan nueve ejecuciones de tres casos y ocho pares visuales. CI independiente postmerge
-`40149428839` pendiente al iniciar B12; consultar el estado vivo antes de repetir trabajo.
+`40149428839` también verificada:165 E2E/12 grupos/cero reintentos, recibo y53 originales conservados.
 
 B12 integra un calendario de recepción por intervalos completos (269). El candidato conserva
 peticiones y deriva relojes efectivos para señal, escalas y capturas, con coste de dos disparos
 por línea THI. El oráculo Python independiente pasó 22 casos/cinco negativos sobre el módulo TS;
 la primera GPU detectó un control de escala atascado en tríplex. Se conserva el negativo y se
-corrige el avance a valores alcanzables sin cambiar esa E2E. Aceptación completa/PR aún pendientes.
+corrige el avance a valores alcanzables sin cambiar esa E2E. El primer head del PR284,
+`8de1190`, pasó check, Metal16 y Swift7 (barrido dos vistas520,335s), pero su CI detectó un input
+de escala ignorado al coincidir con el rótulo redondeado. El negativo y su reparación permanecen
+trazados; dos regresiones CPU lo detectan. La expectativa fija de±80 en la fase posterior de
+`velocityRuler` se reemplaza por PRF adquirida y límite de vuelo, conservando sus demás controles.
+El segundo fallo comparaba transmisión GPU antigua con la pose CPU actual: el gancho diagnóstico
+ahora espera una adquisición completa, con0,1dB y plazos intactos. Tres regresiones CPU y el
+negativo Metal conservan la causa. Consultar el head y su aceptación en el estado vivo; no
+fusionar el candidato rechazado.
 No es un calendario medido de un equipo ni adquisición geométrica por disparo; B11 sigue abierto.
 
 La variante GPU del corte se retiró: en 3RAF redujo el desfase un 14,8 % pero la cadencia B un

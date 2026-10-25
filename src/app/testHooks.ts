@@ -752,7 +752,7 @@ export function createTestHooks(getSim: () => Simulator, dispatch: (cmd: Equipme
     setColorGainDb: (db) => dispatch({ type: 'color', patch: { gainDb: db } }),
     gateTransmissionDb: () => {
       const sim = getSim();
-      sim.render();
+      renderAcquisitionFrame(sim);
       const { theta, depthMm } = sim.pw;
       const tr = sim.transducer;
       const depth = sim.bmode.depthMm;
@@ -1492,10 +1492,15 @@ function goTo(sim: Simulator, id: StartPoint['id']): void {
   sim.advance(0.05);
 }
 
-/** Avanza lo que exige la cadencia del color para que el siguiente render dibuje un cuadro de color. */
-function renderColorFrame(sim: Simulator): number {
+/** Adquiere antes de leer: no mezcla una textura anterior con la pose/fisiología actual. */
+function renderAcquisitionFrame(sim: Simulator): void {
+  if (sim.frozen) throw new Error('adquisición diagnóstica: imagen congelada');
   for (let remaining = 1 / sim.colorTiming.frameHz + 0.02; remaining > 0; remaining -= 0.25) sim.advance(Math.min(0.25, remaining));
   sim.render();
+}
+
+function renderColorFrame(sim: Simulator): number {
+  renderAcquisitionFrame(sim);
   return sim.renderer.colorCellsAbove();
 }
 

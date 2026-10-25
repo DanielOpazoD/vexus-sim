@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { EquipmentController, type EquipmentCommand } from '../app/equipment';
 import { Simulator, defaultEquipment } from '../app/simulator';
 import { createTestHooks, frameMeasureOptions } from '../app/testHooks';
@@ -92,6 +92,42 @@ describe('frameCostMs: el coste del cuadro con color y por pasada', () => {
     expect(fake.frames.every((f) => f.colorOn && f.updateColor)).toBe(true);
     expect(equipment.state).toEqual(before);
     expect(sim.pw.enabled).toBe(true);
+  });
+
+  it.each(['pw', 'color', 'triplex'] as const)(
+    'la lectura de transmisión en %s adquiere después de la pose, sin forzar la cadencia',
+    (mode) => {
+      const { sim, fake, dispatch, hooks } = rig();
+      dispatch({ type: 'mode', mode });
+      sim.render();
+      sim.setPose({ ...sim.pose, yaw: sim.pose.yaw + 0.01 });
+      sim.advance(0.01);
+      const before = sim.physiology.clock.t,
+        period = 1 / sim.colorTiming.frameHz,
+        render = vi.spyOn(fake, 'render'),
+        read = vi.fn(() => {
+          throw new Error('capture-read');
+        });
+      Object.assign(fake, { lines: sim.transducer.lines, readTransmission: read });
+      expect(() => hooks.gateTransmissionDb()).toThrow('capture-read');
+      expect(read).toHaveBeenCalledTimes(1);
+      expect(render).toHaveBeenCalledTimes(1);
+      expect(render.mock.calls[0][0].sample).toBe(sim.sample);
+      expect(render.mock.calls[0][0].pose).toEqual(sim.pose);
+      expect(sim.physiology.clock.t - before).toBeGreaterThanOrEqual(period);
+      expect(render.mock.calls[0][1]).toBeUndefined();
+    },
+  );
+
+  it('la adquisición diagnóstica rechaza una imagen congelada antes de leer texturas', () => {
+    const { sim, fake, hooks } = rig();
+    sim.frozen = true;
+    const read = vi.fn();
+    Object.assign(fake, { readTransmission: read });
+    expect(() => hooks.gateTransmissionDb()).toThrow(/congelada/);
+    expect(() => hooks.colorCells()).toThrow(/congelada/);
+    expect(fake.frames).toHaveLength(0);
+    expect(read).not.toHaveBeenCalled();
   });
 
   it('lanza si no dibujaría ningún cuadro: imagen congelada o n que no es un entero ≥ 1', () => {

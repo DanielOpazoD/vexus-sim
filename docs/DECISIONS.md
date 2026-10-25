@@ -8871,6 +8871,30 @@ consumidores verifican caché, cambios de modo/geometría/THI, señal/audio/filt
 congelado. La primera prueba Metal conserva dos fallos de `colorLegend` por mesetas del control;
 arrastre y anatomía renal aprobaron. La reparación pasó las siete E2E Metal originales en34,6s, cero reintentos: leyenda en dos tamaños, arrastres, cambio de ventanas, presentación de captura y anatomía renal en ambos pacientes. Se conservan el negativo, la aserción y su plazo.
 
+La CI del primer head publicado `8de1190` reprodujo otro fallo del mando: seleccionar40 cuando
+el rótulo ya decía40 conservaba2600Hz, que equivale a40,04cm/s. Se corrige la entrada explícita
+aunque coincida con el entero mostrado; no se redondea el muestreo ni se modifica la primera
+aserción60,0. Dos regresiones CPU (Color/PW) deben fallar con esa asignación anterior.
+
+La fase posterior de `velocityRuler` pedía80cm/s y exigía siempre±80: fijaba la ausencia del
+nuevo límite de vuelo compartido. Sólo esa expectativa se sustituye por Nyquist calculado
+independientemente desde la PRF de columnas realmente adquiridas y f0. Se exige petición≈80,
+PRF adquirida igual a la efectiva, menor que la solicitada y compatible con dos trayectos completos
+B+puerta; el rótulo debe rechazar±80 en ese caso. Se conservan40, inversión, geometría/ECG en dos
+tamaños, ocho segundos, conteo/edad de columnas y los plazos originales. Negativos y resultados
+se conservan en `b12/ci-venous-negative-01` y `b12/scale-input-repair-01`; no se presenta el pase
+previo de Metal como cobertura de esa E2E que no estaba en el lote.
+
+El segundo negativo de CI conserva Color−170,258dB frente a CPU−13,839dB: el gancho de
+transmisión pedía render sin avanzar el reloj y leía la textura previa, aunque la sonda CPU ya
+estaba en la pose renal. Se reprodujo en Metal. La reparación adquiere un periodo completo antes
+de leer, con el mismo avance por pasos acotados que Color, sin `forceColor`; rechaza lectura
+nueva desde congelación. Tres controles de cronología fallan con el gancho anterior. Pasaron73
+controles CPU focales y las dos E2E de reparación en Metal; `smoke:1243` conserva íntegros su
+texto, tolerancia0,1dB, cotaPW2dB y plazo. El contrafactual que rotula la PRF solicitada en lugar
+de la adquirida falla la nueva regla lateral; fuente restaurada por hash. Aceptación final
+completa pendiente sobre el siguiente head; no se reutiliza como verde la CI rechazada.
+
 **Alcance.** Tiempos de vuelo ideales 2d/c con overhead de emisión, ringdown y recuperación cero.
 No son FPS medidos ni calibración comercial. Una geometría por imagen y Color analítico todavía
 no son adquisición progresiva ni ensemble IQ temporal. La pareja THI reserva tiempo, pero no

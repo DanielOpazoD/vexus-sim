@@ -87,7 +87,7 @@ test('escala PW lateral: cero, inversión, tamaño y ECG alineados', async ({ pa
   await page.getByRole('button', { name: 'Invertir espectro', exact: true }).click();
   await expect(page.locator('#pw-scale')).toHaveAttribute('aria-label', /-60\.0 a 20\.0/);
   await page.screenshot({ path: testInfo.outputPath('venous-pw-lateral-scale.png') });
-  // A separate wide-band acquisition after resetting the displayed scale.
+  // Request a wider band; the B/PW flight schedule may limit the acquired PRF.
   // The asymmetric example above verifies ruler geometry, not a clinical velocity threshold.
   await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole('button', { name: 'Invertir espectro', exact: true }).click();
@@ -108,7 +108,38 @@ test('escala PW lateral: cero, inversión, tamaño y ECG alineados', async ({ pa
     window.__vexusTest!.sim().render();
   });
   await page.locator('#freeze').click();
-  await expect(page.locator('#pw-scale')).toHaveAttribute('aria-label', /-80\.0 a 80\.0/);
+  const sampling = await page.evaluate(() => {
+    const sim = window.__vexusTest!.sim(),
+      columns = sim.pwChain.spectral.columns,
+      last = columns.at(-1)!;
+    return {
+      acquiredPrf: last.prfHz,
+      effectivePrf: sim.pw.prfHz,
+      requestedPrf: sim.equipment.pw.prfHz,
+      f0Hz: sim.transducer.f0Doppler,
+      bDepthMm: sim.bmode.depthMm,
+      gateFarMm: sim.pw.depthMm + sim.pw.gateMm / 2,
+      angle: sim.pw.angleCorrection,
+      baseline: sim.pw.baselineShift,
+      invert: sim.pw.invert,
+      count: columns.filter((c) => c.prfHz === last.prfHz).length,
+    };
+  });
+  // Independent Doppler/flight identities, read from actual spectral columns.
+  // Displaying the unattainable request must fail this comparison.
+  expect(sampling.angle).toBe(0);
+  expect(sampling.baseline).toBe(0);
+  expect(sampling.invert).toBe(false);
+  expect(sampling.count).toBeGreaterThan(100);
+  expect(sampling.acquiredPrf).toBe(sampling.effectivePrf);
+  expect(sampling.acquiredPrf).toBeLessThan(sampling.requestedPrf);
+  expect(sampling.acquiredPrf).toBeLessThanOrEqual(1540000 / (2 * (sampling.bDepthMm + sampling.gateFarMm)));
+  expect((sampling.requestedPrf * 154000) / (4 * sampling.f0Hz)).toBeCloseTo(80, 1);
+  const nyquist = (sampling.acquiredPrf * 154000) / (4 * sampling.f0Hz);
+  const label = `Escala PW en cm/s: ${(-nyquist).toFixed(1)} a ${nyquist.toFixed(1)}, cero en la línea de base`;
+  await expect(page.locator('#pw-scale')).toHaveAttribute('aria-label', label);
+  expect(label).not.toContain('-80.0 a 80.0');
+  await testInfo.attach('acquired-scale', { body: JSON.stringify(sampling, null, 2), contentType: 'application/json' });
   await page.screenshot({ path: testInfo.outputPath('venous-pw-lateral-scale-renal.png') });
   await page.locator('#mode-pw').click();
   await expect(page.locator('#pw-scale')).not.toBeVisible();
